@@ -988,7 +988,7 @@ class CurveEditor extends Component {
 			bounds.xMin = 0.0;
 			bounds.xMax = 1.0;
 		}
-		
+
 		if(bounds.height <= 0) {
 			bounds.yMin = -1.0;
 			bounds.yMax = 1.0;
@@ -1185,7 +1185,7 @@ class CurveEditor extends Component {
 		svg.line(overlayGroup, xt(1), svg.element.height(), xt(1), 0, { stroke:'#000000', 'stroke-width':'1px', 'stroke-dasharray':'10, 5' });
 		svg.line(overlayGroup, minX, svg.element.height(), minX, 0, { stroke:'#000000', 'stroke-width':'1px' });
 		svg.line(overlayGroup, maxX, svg.element.height(), maxX, 0, { stroke:'#000000', 'stroke-width':'1px' });
-		svg.rect(overlayGroup, 0, 0, xt(0), svg.element.height(), { 'fill':'#000000', opacity:0.3});
+		svg.rect(overlayGroup, 0, 0, Math.max(0,xt(0)), svg.element.height(), { 'fill':'#000000', opacity:0.3});
 		svg.rect(overlayGroup, maxX, 0, svg.element.width(), svg.element.height(), { 'fill':'#000000', opacity:0.3});
 	}
 
@@ -1305,7 +1305,7 @@ class CurveEditor extends Component {
 				}
 				else {
 					// Basic value of xScale is 200
-					var pts = curve.sample(500 * cast (xScale / 200.0));
+					var pts = curve.sample(cast Math.min(5000, 500 * cast (xScale / 200.0)));
 					var poly = [];
 
 					for(i in 0...pts.length) {

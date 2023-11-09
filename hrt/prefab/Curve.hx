@@ -155,6 +155,10 @@ class Curve extends Prefab {
 
 	public function getBounds(bounds: h2d.col.Bounds = null) {
 		var ret = bounds == null ? new h2d.col.Bounds() : bounds;
+
+		// We always want to show 0,0
+		ret.addPos(0.0,0.0);
+		
 		for(k in keys) {
 			ret.addPos(k.time, k.value);
 			if (k.nextHandle != null) {
@@ -164,6 +168,7 @@ class Curve extends Prefab {
 				ret.addPos(k.time + k.prevHandle.dt, k.value + k.prevHandle.dv);
 			}
 		}
+
 		return ret;
 	}
 
