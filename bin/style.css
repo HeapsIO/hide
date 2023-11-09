@@ -1131,6 +1131,38 @@ input[type=checkbox]:checked:after {
 .hide-properties .cdb-large .btn-cdb-large {
   opacity: 1;
 }
+/* Image Viewer */
+.image-properties {
+  height: 100%;
+  background-color: #111;
+  width: 320px;
+}
+.image-properties .title {
+  text-align: center;
+  font-size: 12px;
+  margin: 4px;
+  background-color: #1e1e1e;
+}
+.image-properties .save-compression {
+  width: 100%;
+  margin: 4px;
+}
+.image-properties .compression-infos {
+  width: 100%;
+  margin-top: 10px;
+  margin-bottom: 10px;
+}
+.image-properties .field {
+  margin: 5px 5px 0 50px;
+  display: flex;
+  flex-direction: row;
+}
+.image-properties .field label {
+  margin-right: 4px;
+}
+.image-properties .field select {
+  flex-grow: 1;
+}
 /* Curve editor */
 .hide-curve-editor {
   position: relative;

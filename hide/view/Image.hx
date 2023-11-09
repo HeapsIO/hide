@@ -76,19 +76,59 @@ class Image extends FileView {
 		element.html('
 			<div class="flex vertical">
 				<div class="toolbar"></div>
-				<div class="heaps-scene">
+				<div class="scene-partition" style="display: flex; flex-direction: row; flex: 1; overflow: hidden;">
+					<div class="heaps-scene"></div>
+					<div class="image-properties">
+						<div class="title">Image compression</div>
+						<div class="compression-infos"></div>
+						<input type="button" class="save-compression" value="Save"/>
+					</div>
 				</div>
 			</div>
 		');
 
 		cleanUp();
-
+		
 		scene = new hide.comp.Scene(config, null, element.find(".heaps-scene"));
+
+		var compressionInfo = element.find(".compression-infos");
+		function addField(parent: Element, label:String, options:Array<String>) {
+			var field = new Element('<div class="field">
+				<label>${label}</label>
+				<select class="field-select">
+				</select>
+			</div>');
+
+			var select = field.find(".field-select");
+			for (opt in options) {
+				select.append(new Element('<option value="${opt}">${opt}</option>'));
+			}
+
+			parent.append(field);
+		}
+
+		addField(compressionInfo, "Format :", ["No compression", "BC1", "BC2", "BC3", "R16U", "RG16U", "RGB16U", "RGBA16U"] );
+
+		var fs:hxd.fs.LocalFileSystem = Std.downcast(hxd.res.Loader.currentInstance.fs, hxd.fs.LocalFileSystem);
+		@:privateAccess var textureConvertRule = fs.convert.getConvertRule(state.path);
+
+		var fieldSelect = compressionInfo.find(".field-select");
+		fieldSelect.val(textureConvertRule == null ? "No compression" : textureConvertRule.cmd.params.format);
+		fieldSelect.on("change", function(_) {
+			var newVal = fieldSelect.val();
+			trace(newVal);
+		});
 
 		this.saveDisplayKey = state.path;
 		this.viewMode = getDisplayState("ViewMode");
 		if (this.viewMode == null)
 			this.viewMode = Compressed;
+
+		var saveCompression = element.find(".save-compression");
+		saveCompression.on("click", function(_) {
+			var dirPos = state.path.lastIndexOf("/");
+			//var name = dirPos < 0 ? path : path.substr(dirPos + 1);
+		});
 
 		var shader = new ImageViewerShader();
 
