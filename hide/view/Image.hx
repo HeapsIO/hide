@@ -87,6 +87,8 @@ class Image extends FileView {
 
 		this.saveDisplayKey = state.path;
 		this.viewMode = getDisplayState("ViewMode");
+		if (this.viewMode == null)
+			this.viewMode = Compressed;
 
 		var shader = new ImageViewerShader();
 
@@ -98,39 +100,41 @@ class Image extends FileView {
 			tools.element.find(".show-uncompressed").removeAttr("checked");
 			tools.element.find(".show-comparison").removeAttr("checked");
 
-			this.saveDisplayState("ViewMode", Compressed);
-			this.viewMode = Compressed;
-			
-			if (bmp != null)
+			if (bmp != null) {
+				this.saveDisplayState("ViewMode", Compressed);
+				this.viewMode = Compressed;
+				
 				applyShaderConfiguration(shader);
-
-		});
+			}
+		}, this.viewMode.match(Compressed));
 		tgCompressed.element.addClass("show-compressed");
 
 		var tgUncompressed = tools.addToggle("file-image-o", "Show uncompressed texture", "", function (e) {
 			tools.element.find(".show-compressed").removeAttr("checked");
 			tools.element.find(".show-comparison").removeAttr("checked");
 
-			this.saveDisplayState("ViewMode", Uncompressed);
-			this.viewMode = Uncompressed;
-			
-			if (bmp != null)
-				applyShaderConfiguration(shader);
+			if (bmp != null) {
+				this.saveDisplayState("ViewMode", Uncompressed);
+				this.viewMode = Uncompressed;
 
-		});
+				applyShaderConfiguration(shader);
+			}
+
+		}, this.viewMode.match(Uncompressed));
 		tgUncompressed.element.addClass("show-uncompressed");
 
 		var tgComparison = tools.addToggle("arrows-h", "Show comparison between compressed and uncompressed texture", "", function (e) {
 			tools.element.find(".show-uncompressed").removeAttr("checked");
 			tools.element.find(".show-compressed").removeAttr("checked");
+			
+			if (bmp != null) {
+				this.saveDisplayState("ViewMode", Comparison);
+				this.viewMode = Comparison;
 
-			this.saveDisplayState("ViewMode", Comparison);
-			this.viewMode = Comparison;
-			
-			if (bmp != null)
 				applyShaderConfiguration(shader);
+			}
 			
-		});
+		}, this.viewMode.match(Comparison));
 		tgComparison.element.addClass("show-comparison");
 
 		tools.addSeparator();
@@ -142,7 +146,7 @@ class Image extends FileView {
 		scene.onReady = function() {
 			scene.loadTexture(state.path, state.path, function(compressedTexture) {
 				scene.loadTexture(state.path, state.path, function(uncompressedTexture) {
-					var path = hide.Ide.inst.appPath + "/res/slider.png";
+					var path = hide.Ide.inst.appPath + "/res/sliderTexture.png";
 					scene.loadTexture(path, path, function(sliderTexture) {
 						this.sliderTexture = sliderTexture;
 						onTexturesLoaded(compressedTexture, uncompressedTexture, shader, tgCompressed, tgUncompressed, tgComparison);
@@ -176,10 +180,6 @@ class Image extends FileView {
 				if( b ) shader.channels |= 1 << i;
 			});
 		}
-
-		tgCompressed.toggle(this.viewMode.match(Compressed));
-		tgUncompressed.toggle(this.viewMode.match(Uncompressed));
-		tgComparison.toggle(this.viewMode.match(Comparison));
 
 		if( !compressedTexture.flags.has(Cube) ) {
 			bmp = new h2d.Bitmap(h2d.Tile.fromTexture(compressedTexture), scene.s2d);
