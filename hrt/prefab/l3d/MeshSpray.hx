@@ -407,9 +407,6 @@ class MeshSpray extends Spray {
 	}
 
 	override function edit( ectx : EditContext ) {
-		#if editor
-		this.dirty = true;
-		#end
 		invParent = getAbsPos().clone();
 		invParent.invert();
 

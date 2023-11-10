@@ -310,10 +310,6 @@ class Polygon extends Object3D {
 	override function edit( ctx : EditContext ) {
 		super.edit(ctx);
 		createEditor(ctx);
-
-		#if editor
-		this.dirty = true;
-		#end
 		
 		var prevKind : Shape = this.shape;
 		var viewModel = {

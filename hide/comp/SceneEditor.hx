@@ -1911,10 +1911,6 @@ class SceneEditor {
 			var el = tree.getElement(p);
 			if( el != null && el.toggleClass != null ) applyTreeStyle(p, el, pname);
 		}
-
-		#if editor
-		p.dirty = true;
-		#end
 		
 		applySceneStyle(p);
 	}
