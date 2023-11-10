@@ -944,8 +944,9 @@ class Model extends FileView {
 					var event = events[i][j];
 					var tf = new h2d.TextInput(hxd.res.DefaultFont.get(), timeline);
 					tf.backgroundColor = 0xFF0000;
-					tf.onFocus = function(e) {
+					tf.onClick = function(e) {
 						sceneEditor.view.keys.pushDisable();
+						e.propagate = false;
 					}
 					tf.onFocusLost = function(e){
 						events[i][j] = tf.text;
