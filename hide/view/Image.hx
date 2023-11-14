@@ -136,8 +136,10 @@ class Image extends FileView {
 
 		var fs:hxd.fs.LocalFileSystem = Std.downcast(hxd.res.Loader.currentInstance.fs, hxd.fs.LocalFileSystem);
 		@:privateAccess var textureConvertRule = fs.convert.getConvertRule(state.path);
+
+		var convertRuleEmpty = textureConvertRule == null || textureConvertRule.cmd == null || textureConvertRule.cmd.params == null;
 		
-		format.val(textureConvertRule == null ? "none" : textureConvertRule.cmd.params.format);
+		format.val(convertRuleEmpty ? "none" : textureConvertRule.cmd.params.format);
 		format.on("change", function(_) {
 			createPreviewTexture(format, alpha, mips, size);
 
@@ -148,7 +150,7 @@ class Image extends FileView {
 				alpha.parent().css({"display":"flex"});
 		});
 
-		alpha.val(textureConvertRule == null || Reflect.field(textureConvertRule.cmd.params, "alpha") == null ? "undefined" : textureConvertRule.cmd.params.alpha);
+		alpha.val(convertRuleEmpty || Reflect.field(textureConvertRule.cmd.params, "alpha") == null ? "undefined" : textureConvertRule.cmd.params.alpha);
 		alpha.on("change", function(_) {
 			createPreviewTexture(format, alpha, mips, size);
 		});
@@ -163,12 +165,12 @@ class Image extends FileView {
 		if (format.val() != "BC1")
 			alpha.parent().css({"display":"none"});
 
-		size.val(textureConvertRule == null || Reflect.field(textureConvertRule.cmd.params, "size") == null ? "undefined" : textureConvertRule.cmd.params.size);
+		size.val(convertRuleEmpty || Reflect.field(textureConvertRule.cmd.params, "size") == null ? "undefined" : textureConvertRule.cmd.params.size);
 		size.on("change", function(_) {
 			createPreviewTexture(format, alpha, mips, size);
 		});
 
-		if (textureConvertRule != null && textureConvertRule.cmd.params.mips)
+		if (!convertRuleEmpty && textureConvertRule.cmd.params.mips)
 			mips.prop("checked", true);
 		else
 			mips.removeProp("checked");
@@ -187,11 +189,11 @@ class Image extends FileView {
 
 		var resetPreview = element.find(".reset-preview");
 		resetPreview.on("click", function(_) {
-			format.val(textureConvertRule == null ? "none" : textureConvertRule.cmd.params.format);
-			alpha.val(textureConvertRule == null || Reflect.field(textureConvertRule.cmd.params, "alpha") == null ? "undefined" : textureConvertRule.cmd.params.alpha);
-			size.val(textureConvertRule == null || Reflect.field(textureConvertRule.cmd.params, "size") == null ? "undefined" : textureConvertRule.cmd.params.size);
+			format.val(convertRuleEmpty ? "none" : textureConvertRule.cmd.params.format);
+			alpha.val(convertRuleEmpty || Reflect.field(textureConvertRule.cmd.params, "alpha") == null ? "undefined" : textureConvertRule.cmd.params.alpha);
+			size.val(convertRuleEmpty || Reflect.field(textureConvertRule.cmd.params, "size") == null ? "undefined" : textureConvertRule.cmd.params.size);
 
-			if (textureConvertRule != null && textureConvertRule.cmd.params.mips)
+			if (convertRuleEmpty && textureConvertRule.cmd.params.mips)
 				mips.prop("checked", true);
 			else
 				mips.removeProp("checked");
@@ -207,23 +209,49 @@ class Image extends FileView {
 
 		var saveCompression = element.find(".save-compression");
 		saveCompression.on("click", function(_) {
+			var bytes = new haxe.io.BytesOutput();
+			var convertRule = { };
+
+			if (format.val() == "none") {
+				convertRule = { convert : "none" };
+			}
+			else {
+				convertRule = { convert : "dds", format : format.val(), mips : mips.is(':checked') };
+				
+				if (size.val() != "undefined")
+					Reflect.setField(convertRule, "size", size.val());
+
+				if (alpha.val() != "undefined")
+					Reflect.setField(convertRule, "alpha", alpha.val());
+			}
+
 			var propsFilePath = ide.getPath(dirPath + "props.json");
 			if (sys.FileSystem.exists(propsFilePath)) {
-				//
+				var propsJson = haxe.Json.parse(sys.io.File.getContent(propsFilePath));
+
+				if (Reflect.hasField(propsJson, "fs.convert")) {
+					var fsConvertObj = Reflect.getProperty(propsJson, "fs.convert");
+					Reflect.setField(fsConvertObj, state.path, convertRule);
+				}
+
+				var data = haxe.Json.stringify(propsJson, "\t");
+				bytes.writeString(data);
+				hxd.File.saveBytes(propsFilePath, bytes.getBytes());
 			} else {
-				// //! Functionnal
-				// var bytes = new haxe.io.BytesOutput();
-				// bytes.writeString('{ "fs.convert": { "${state.path}":{ "convert" : "dds", "format" : "${compressionInfo.find(".field-select").val()}" } } }');
-				// hxd.File.saveBytes(propsFilePath, bytes.getBytes());
-				// //fs.clearCache();
+				var fsConvertObj = { };
+				var pathObj = { };
 
-				// var localEntry = @:privateAccess new hxd.fs.LocalFileSystem.LocalEntry(fs, name, state.path, Ide.inst.getPath(state.path));
-				// fs.convert.run(localEntry);
+				Reflect.setProperty(pathObj, state.path, convertRule);
+				Reflect.setProperty(fsConvertObj, "fs.convert", pathObj);
 
-				// //var r = new hxd.res.Any(hxd.res.Loader.currentInstance, localEntry);
-
-				// //var img = r.toImage();
+				var data = haxe.Json.stringify(fsConvertObj, "\t");
+				bytes.writeString(data);
+				hxd.File.saveBytes(propsFilePath, bytes.getBytes());
 			}
+
+			// todo : trigger converter
+			// var localEntry = @:privateAccess new hxd.fs.LocalFileSystem.LocalEntry(fs, name, state.path, Ide.inst.getPath(state.path));
+			// fs.convert.run(localEntry);
 		});
 
 		shader = new ImageViewerShader();
