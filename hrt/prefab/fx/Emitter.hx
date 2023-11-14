@@ -250,13 +250,13 @@ private class ParticleInstance {
 		//SCALE
 		var def = emitter.instDef;
 		var scaleVec = evaluator.getVector(idx, def.stretch, t, tmpScale);
-		scaleVec.scale3(evaluator.getFloat(idx, def.scale, t));
+		scaleVec.scale(evaluator.getFloat(idx, def.scale, t));
 		localMat.initScale(scaleVec.x, scaleVec.y, scaleVec.z);
 
 		// ROTATION
 		if(def.rotation != VZero) {
 			var rot = evaluator.getVector(idx, def.rotation, t, tmpRot);
-			rot.scale3(Math.PI / 180.0);
+			rot.scale(Math.PI / 180.0);
 			localMat.rotate(rot.x, rot.y, rot.z);
 		}
 
@@ -298,7 +298,7 @@ private class ParticleInstance {
 		// ACCELERATION
 		if(def.acceleration != VZero) {
 			evaluator.getVector(idx, def.acceleration, t, tmpSpeedAccumulation);
-			tmpSpeedAccumulation.scale3(dt);
+			tmpSpeedAccumulation.scale(dt);
 			tmpSpeedAccumulation.transform3x3(emitOrientation);
 			add(speedAccumulation, tmpSpeedAccumulation);
 		}
@@ -306,7 +306,7 @@ private class ParticleInstance {
 		// WORLD ACCELERATION
 		if(def.worldAcceleration != VZero) {
 			evaluator.getVector(idx, def.worldAcceleration, t, tmpSpeedAccumulation);
-			tmpSpeedAccumulation.scale3(dt);
+			tmpSpeedAccumulation.scale(dt);
 			if(emitter.simulationSpace == Local)
 				tmpSpeedAccumulation.transform3x3(emitter.invTransform);
 			add(speedAccumulation, tmpSpeedAccumulation);
@@ -325,7 +325,7 @@ private class ParticleInstance {
 		if (def.dampen != VZero) {
 			var dampen = evaluator.getFloat(idx, def.dampen, t);
 			var scale = Math.exp(dampen* -dt);
-			speedAccumulation.scale3(scale);
+			speedAccumulation.scale(scale);
 		}
 
 
@@ -870,7 +870,7 @@ class EmitterObject extends h3d.scene.Object {
 						while( tmpOffset.lengthSq() > 1.0 );
 						if( emitSurface )
 							tmpOffset.normalize();
-						tmpOffset.scale3(0.5);
+						tmpOffset.scale(0.5);
 						if( emitOrientation == Normal )
 							tmpQuat.initDirection(tmpOffset);
 					case Cone:
@@ -881,7 +881,7 @@ class EmitterObject extends h3d.scene.Object {
 						tmpDir.x = Math.cos(phi) * scaleX;
 						tmpDir.y = Math.sin(phi) * Math.sin(theta) * scaleY;
 						tmpDir.z = Math.sin(phi) * Math.cos(theta) * scaleZ;
-						tmpDir.normalizeFast();
+						tmpDir.normalize();
 						tmpQuat.initDirection(tmpDir);
 				}
 

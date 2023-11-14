@@ -159,7 +159,7 @@ class GenFog extends RendererFX {
 			else
 				fogPass.shader.lightDirection.load(@:privateAccess ls.getShadowDirection());
 			fogPass.shader.lightColor.setColor(lightColor);
-			fogPass.shader.lightColor.scale3(lightColorAmount);
+			fogPass.shader.lightColor.scale(lightColorAmount);
 			fogPass.shader.dotThreshold = hxd.Math.cos(lightAngle * Math.PI/180);
 
 			fogPass.setGlobals(ctx);

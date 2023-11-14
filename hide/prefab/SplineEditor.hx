@@ -125,7 +125,7 @@ class SplineEditor {
 			var screenPos = sp.getPoint().toVector();
 			screenPos.project(ctx.local3d.getScene().camera.m);
 			screenPos.z = 0;
-			screenPos.scale3(0.5);
+			screenPos.scale(0.5);
 			screenPos = screenPos.add(new h3d.Vector(0.5,0.5));
 			var dist = screenPos.distance(mousePos);
 			if( dist < minDist || minDist == -1 ) {
@@ -169,7 +169,7 @@ class SplineEditor {
 			var screenPos = s.pos.toVector();
 			screenPos.project(ctx.local3d.getScene().camera.m);
 			screenPos.z = 0;
-			screenPos.scale3(0.5);
+			screenPos.scale(0.5);
 			screenPos = screenPos.add(new h3d.Vector(0.5,0.5));
 			var dist = screenPos.distance(mousePos);
 			if( (dist < minDist || minDist == -1) && dist < 0.1 ) {
@@ -186,7 +186,7 @@ class SplineEditor {
 			var firstPtScreenPos = firstPt.toVector();
 			firstPtScreenPos.project(ctx.local3d.getScene().camera.m);
 			firstPtScreenPos.z = 0;
-			firstPtScreenPos.scale3(0.5);
+			firstPtScreenPos.scale(0.5);
 			firstPtScreenPos = firstPtScreenPos.add(new h3d.Vector(0.5,0.5));
 			var distToFirstPoint = firstPtScreenPos.distance(mousePos);
 
@@ -195,7 +195,7 @@ class SplineEditor {
 			var lastPtSreenPos = lastPt.toVector();
 			lastPtSreenPos.project(ctx.local3d.getScene().camera.m);
 			lastPtSreenPos.z = 0;
-			lastPtSreenPos.scale3(0.5);
+			lastPtSreenPos.scale(0.5);
 			lastPtSreenPos = lastPtSreenPos.add(new h3d.Vector(0.5,0.5));
 			var distTolastPoint = lastPtSreenPos.distance(mousePos);
 
@@ -251,7 +251,7 @@ class SplineEditor {
 		if( spd.tangent != null ) {
 			var dir = spd.tangent.toVector();
 			dir.transform3x3(invMatrix); // Don't take the translation
-			dir.scale3(-1);
+			dir.scale(-1);
 			sp.rotationX = h3d.Matrix.lookAtX(dir).getFloats()[0];
 			sp.rotationY = h3d.Matrix.lookAtX(dir).getFloats()[1];
 			sp.rotationZ = h3d.Matrix.lookAtX(dir).getFloats()[2];

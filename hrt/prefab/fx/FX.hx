@@ -175,7 +175,7 @@ class FXAnimation extends h3d.scene.Object {
 
 						if(anim.rotation != null) {
 							var rotation = evaluator.getVector(anim.rotation, time, tempVec);
-							rotation.scale3(Math.PI / 180.0);
+							rotation.scale(Math.PI / 180.0);
 							m.rotate(rotation.x, rotation.y, rotation.z);
 						}
 
@@ -296,8 +296,8 @@ class FXAnimation extends h3d.scene.Object {
 			var c = Curve.getCurve(elt, name);
 			if(c != null)
 				anyFound = true;
-			
-			if (c == null) 
+
+			if (c == null)
 				return def;
 
 			return c.blendMode == CurveBlendMode.Blend ? VBlendCurve(c, blendFactor) : VCurve(c);
@@ -311,7 +311,7 @@ class FXAnimation extends h3d.scene.Object {
 			anyFound = true;
 
 			if(uniform && curves.length == 1 && curves[0].name == name) {
-				if (curves[0].blendMode == CurveBlendMode.Blend) 
+				if (curves[0].blendMode == CurveBlendMode.Blend)
 					return VBlendCurve(curves[0], blendFactor);
 
 				return scale != 1.0 ? VCurveScale(curves[0], scale) : VCurve(curves[0]);

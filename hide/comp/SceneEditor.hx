@@ -727,7 +727,7 @@ class SceneEditor {
 				cameraController.set(r, null, null, s.getCenter());
 			}
 			else {
-				centroid.scale3(1.0 / objs.length);
+				centroid.scale(1.0 / objs.length);
 				cameraController.set(centroid.toPoint());
 			}
 		}
@@ -2674,7 +2674,7 @@ class SceneEditor {
 					++count;
 				}
 			}
-			pivot.scale3(1.0 / count);
+			pivot.scale(1.0 / count);
 		}
 		var local = new h3d.Matrix();
 		local.initTranslation(pivot.x, pivot.y, pivot.z);

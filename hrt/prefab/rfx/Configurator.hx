@@ -149,7 +149,7 @@ class Configurator extends RendererFX {
 	}
 
 	function mixColor ( x : Int, y : Int, t : Float ) : Int {
-		return h3d.Vector.fromColor(x).multiply(1-t).add(h3d.Vector.fromColor(y).multiply(t)).toColor();
+		return h3d.Vector.fromColor(x).scaled(1-t).add(h3d.Vector.fromColor(y).scaled(t)).toColor();
 	}
 
 	function getParts( r : Renderer, id : String) {

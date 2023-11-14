@@ -200,7 +200,7 @@ class SplinePoint extends Object3D {
 	public function getFirstControlPoint() : h3d.col.Point {
 		var absPos = getAbsPos();
 		var right = absPos.front();
-		right.scale3(scaleX*scaleY);
+		right.scale(scaleX*scaleY);
 		var pos = new h3d.col.Point(absPos.tx, absPos.ty, absPos.tz);
 		pos = pos.add(right.toPoint());
 		return pos;
@@ -209,7 +209,7 @@ class SplinePoint extends Object3D {
 	public function getSecondControlPoint() : h3d.col.Point {
 		var absPos = getAbsPos();
 		var left = absPos.front();
-		left.scale3(-scaleX*scaleZ);
+		left.scale(-scaleX*scaleZ);
 		var pos = new h3d.col.Point(absPos.tx, absPos.ty, absPos.tz);
 		pos = pos.add(left.toPoint());
 		return pos;
@@ -580,7 +580,7 @@ class Spline extends Object3D {
 	// Linear Interpolation
 	// p(t) = p0 + (p1 - p0) * t
 	inline function getLinearBezierPoint( t : Float, p0 : h3d.col.Point, p1 : h3d.col.Point ) : h3d.col.Point {
-		return p0.add((p1.sub(p0).multiply(t)));
+		return p0.add((p1.sub(p0).scaled(t)));
 	}
 	// p'(t) = (p1 - p0)
 	inline function getLinearBezierTangent( t : Float, p0 : h3d.col.Point, p1 : h3d.col.Point ) : h3d.col.Point {
@@ -590,21 +590,21 @@ class Spline extends Object3D {
 	// Quadratic Interpolation
 	// p(t) = p0 * (1 - t)² + p1 * t * 2 * (1 - t) + p2 * t²
 	inline function getQuadraticBezierPoint( t : Float, p0 : h3d.col.Point, p1 : h3d.col.Point, p2 : h3d.col.Point) : h3d.col.Point {
-		return p0.multiply((1 - t) * (1 - t)).add(p1.multiply(t * 2 * (1 - t))).add(p2.multiply(t * t));
+		return p0.scaled((1 - t) * (1 - t)).add(p1.scaled(t * 2 * (1 - t))).add(p2.scaled(t * t));
 	}
 	// p'(t) = 2 * (1 - t) * (p1 - p0) + 2 * t * (p2 - p1)
 	inline function getQuadraticBezierTangent( t : Float, p0 : h3d.col.Point, p1 : h3d.col.Point, p2 : h3d.col.Point) : h3d.col.Point {
-		return p1.sub(p0).multiply(2 * (1 - t)).add(p2.sub(p1).multiply(2 * t)).normalized();
+		return p1.sub(p0).scaled(2 * (1 - t)).add(p2.sub(p1).scaled(2 * t)).normalized();
 	}
 
 	// Cubic Interpolation
 	// p(t) = p0 * (1 - t)³ + p1 * t * 3 * (1 - t)² + p2 * t² * 3 * (1 - t) + p3 * t³
 	inline function getCubicBezierPoint( t : Float, p0 : h3d.col.Point, p1 : h3d.col.Point, p2 : h3d.col.Point, p3 : h3d.col.Point) : h3d.col.Point {
-		return p0.multiply((1 - t) * (1 - t) * (1 - t)).add(p1.multiply(t * 3 * (1 - t) * (1 - t))).add(p2.multiply(t * t * 3 * (1 - t))).add(p3.multiply(t * t * t));
+		return p0.scaled((1 - t) * (1 - t) * (1 - t)).add(p1.scaled(t * 3 * (1 - t) * (1 - t))).add(p2.scaled(t * t * 3 * (1 - t))).add(p3.scaled(t * t * t));
 	}
 	// p'(t) = 3 * (1 - t)² * (p1 - p0) + 6 * (1 - t) * t * (p2 - p1) + 3 * t² * (p3 - p2)
 	inline function getCubicBezierTangent( t : Float, p0 : h3d.col.Point, p1 : h3d.col.Point, p2 : h3d.col.Point, p3 : h3d.col.Point) : h3d.col.Point {
-		return p1.sub(p0).multiply(3 * (1 - t) * (1 - t)).add(p2.sub(p1).multiply(6 * (1 - t) * t)).add(p3.sub(p2).multiply(3 * t * t)).normalized();
+		return p1.sub(p0).scaled(3 * (1 - t) * (1 - t)).add(p2.sub(p1).scaled(6 * (1 - t) * t)).add(p3.sub(p2).scaled(3 * t * t)).normalized();
 	}
 
 	function generateSplineGraph( ctx : hrt.prefab.Context ) {

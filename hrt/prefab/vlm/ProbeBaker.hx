@@ -279,7 +279,7 @@ class ProbeBaker {
 			case 5: dir.x = -1.0 + u; dir.y = -1.0 + v;  dir.z = -1.0;
 			default:
 		}
-		dir.normalizeFast();
+		dir.normalize();
 		return dir;
 	}
 

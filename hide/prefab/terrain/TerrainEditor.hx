@@ -307,20 +307,20 @@ class TerrainEditor {
 				var v3 = new h3d.Vector(0, -1, h3 - h);
 				var v4 = new h3d.Vector(-1, 0, h4 - h);
 				var n = v1.cross(v2).add(v2.cross(v3).add(v3.cross(v4).add(v4.cross(v1))));
-				n.scale3(-1.0);
+				n.scale(-1.0);
 				n.normalize();
 				return n;
 			}
 
 			inline function packNormal( n : h3d.Vector ) {
-				n.scale3(0.5);
+				n.scale(0.5);
 				return n.add(new h3d.Vector(0.5, 0.5, 0.5)).toColor();
 			}
 
 			inline function unpackNormal( n : Int ) {
 				var n = h3d.Vector.fromColor(n);
 				n = n.add(new h3d.Vector(-0.5, -0.5, -0.5));
-				n.scale3(2.0);
+				n.scale(2.0);
 				return n;
 			}
 

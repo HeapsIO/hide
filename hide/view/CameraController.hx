@@ -174,7 +174,7 @@ class OrthoController extends CameraControllerBase {
 		);
 		var moveSpeed = Ide.inst.currentConfig.get("sceneeditor.camera.moveSpeed", 1.5);
 
-		var delta = dir.multiply(0.01 * moveSpeed * (distance + scene.camera.zNear));
+		var delta = dir.scaled(0.01 * moveSpeed * (distance + scene.camera.zNear));
 		delta.w = 0;
 		targetOffset = targetOffset.sub(delta);
 	}
@@ -316,7 +316,7 @@ class FPSController extends CameraControllerBase {
 		mov.transform3x3(getScene().camera.getInverseView());
 		var moveSpeed = Ide.inst.currentConfig.get("sceneeditor.camera.moveSpeed", 1.5) * camSpeed;
 
-		var delta = mov.multiply(moveSpeed);
+		var delta = mov.scaled(moveSpeed);
 		delta.w = 0;
 		targetOffset = targetOffset.sub(delta);
 	}
@@ -456,7 +456,7 @@ class CamController extends CameraControllerBase {
 		);
 		var moveSpeed = Ide.inst.currentConfig.get("sceneeditor.camera.moveSpeed", 1.5);
 
-		var delta = dir.multiply(0.01 * moveSpeed * (distance + scene.camera.zNear));
+		var delta = dir.scaled(0.01 * moveSpeed * (distance + scene.camera.zNear));
 		delta.w = 0;
 		targetOffset = targetOffset.sub(delta);
 	}

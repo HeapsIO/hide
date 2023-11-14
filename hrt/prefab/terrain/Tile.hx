@@ -145,7 +145,7 @@ class Tile extends h3d.scene.Mesh {
 			// Normal
 			var n = h3d.Vector.fromColor(normalMapPixels.getPixel(x, y));
 			n = n.add(new h3d.Vector(-0.5, -0.5, -0.5));
-			n.scale3(2.0);
+			n.scale(2.0);
 			bigPrim.addVertexValue(n.x);
 			bigPrim.addVertexValue(n.y);
 			bigPrim.addVertexValue(n.z);

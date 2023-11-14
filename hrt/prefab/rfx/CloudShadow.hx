@@ -81,7 +81,7 @@ class CloudShadow extends RendererFX {
 				mainLight.shader = dlwc;
 				dlwc.lightDir = mainLight.pbr.lightDir;
 				dlwc.lightColor.load(mainLight._color);
-				dlwc.lightColor.scale3(mainLight.power * mainLight.power);
+				dlwc.lightColor.scale(mainLight.power * mainLight.power);
 				dlwc.occlusionFactor = mainLight.occlusionFactor;
 				var angle = angle * Math.PI / 180;
 				var speed = speed / scale;
