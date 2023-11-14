@@ -2,13 +2,7 @@ package hrt.prefab.fx;
 
 @:access(hrt.prefab.fx.LookAt)
 class BillboardObject extends h3d.scene.Object {
-	var definition:Billboard;
 	var graphics:h3d.scene.Graphics;
-
-	public function new(parent, def) {
-		super(parent);
-		this.definition = def;
-	}
 
 	static var tmpMat = new h3d.Matrix();
 	static var tmpVec = new h3d.Vector();
@@ -51,7 +45,7 @@ class Billboard extends Object3D {
 
 	override function makeInstance(ctx:Context) {
 		ctx = ctx.clone(this);
-		ctx.local3d = new BillboardObject(ctx.local3d, this);
+		ctx.local3d = new BillboardObject(ctx.local3d);
 		ctx.local3d.name = name;
 		updateInstance(ctx);
 		return ctx;
