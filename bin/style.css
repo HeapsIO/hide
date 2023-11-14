@@ -1143,7 +1143,8 @@ input[type=checkbox]:checked:after {
   margin: 4px;
   background-color: #1e1e1e;
 }
-.image-properties .save-compression {
+.image-properties .save-compression,
+.image-properties .reset-preview {
   width: 100%;
   margin: 4px;
 }
@@ -1160,7 +1161,8 @@ input[type=checkbox]:checked:after {
 .image-properties .field label {
   margin-right: 4px;
 }
-.image-properties .field select {
+.image-properties .field select,
+.image-properties .field input[type="text"] {
   flex-grow: 1;
 }
 /* Curve editor */

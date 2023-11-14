@@ -16,13 +16,14 @@ class Range extends Component {
 	var inputView : Element;
 	var scale : Float;
 
-	public function new(?parent:Element,?root:Element) {
+	public function new(?parent:Element,?root:Element, ?className : String) {
 		if( root == null )
 			root = new Element('<input type="range">');
 		super(parent,root);
 
 		this.f = root;
-		root = root.wrap('<div class="hide-range"/>').parent();
+		var fullClassName = className == null ? "hide-range": "hide-range " + className;
+		root = root.wrap('<div class="$fullClassName"/>').parent();
 
 		if( f.attr("step") == null )
 			f.attr("step", "any");

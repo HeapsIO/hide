@@ -67,12 +67,15 @@ class Image extends FileView {
 	var bmp : h2d.Bitmap;
 	var sliderBmp : h2d.Bitmap;
 	var scene : hide.comp.Scene;
+	var shader : ImageViewerShader;
 	var viewMode : ViewMode = Compressed;
 	var interactive : h2d.Interactive;
 	var tools : hide.comp.Toolbar;
 	var sliderTexture : Null<h3d.mat.Texture>;
 
 	override function onDisplay() {
+		cleanUp();
+
 		element.html('
 			<div class="flex vertical">
 				<div class="toolbar"></div>
@@ -81,25 +84,23 @@ class Image extends FileView {
 					<div class="image-properties">
 						<div class="title">Image compression</div>
 						<div class="compression-infos"></div>
+						<input type="button" class="reset-preview" value="Reset preview"/>
 						<input type="button" class="save-compression" value="Save"/>
 					</div>
 				</div>
 			</div>
 		');
-
-		cleanUp();
-		
+	
 		scene = new hide.comp.Scene(config, null, element.find(".heaps-scene"));
 
-		var compressionInfo = element.find(".compression-infos");
-		function addField(parent: Element, label:String, options:Array<String>) {
+		function addField(parent: Element, label:String, selectClass:String, options:Array<String>) {
 			var field = new Element('<div class="field">
 				<label>${label}</label>
-				<select class="field-select">
+				<select class="${selectClass}">
 				</select>
 			</div>');
 
-			var select = field.find(".field-select");
+			var select = field.find(".select-format");
 			for (opt in options) {
 				select.append(new Element('<option value="${opt}">${opt}</option>'));
 			}
@@ -107,16 +108,73 @@ class Image extends FileView {
 			parent.append(field);
 		}
 
-		addField(compressionInfo, "Format :", ["No compression", "BC1", "BC2", "BC3", "R16U", "RG16U", "RGB16U", "RGBA16U"] );
+		var compressionInfo = element.find(".compression-infos");
+		addField(compressionInfo, "Format :", "select-format", ["none", "BC1", "BC2", "BC3", "RGBA", "R16F", "RG16F", "RGBA16F", "R32F", "RG32F", "RGBA32F", "R16U", "RG16U", "RGBA16U"] );
+		
+		var mipsField = new Element('<div class="field">
+			<label>Mip maps :</label>
+			<input type="checkbox" class="mips-checkbox"></input>
+		</div>');
+		compressionInfo.append(mipsField);
+
+		var sizeField = new Element('<div class="field">
+			<label>Size :</label>
+			<input type="text" class="size"></input>
+		</div>');
+		compressionInfo.append(sizeField);
+
+		var alphaField = new Element('<div class="field">
+			<label>Alpha :</label>
+			<input type="text" class="alpha-threshold"></input>
+		</div>');
+		compressionInfo.append(alphaField);
+
+		var format = compressionInfo.find(".select-format");
+		var mips = compressionInfo.find(".mips-checkbox");
+		var size = compressionInfo.find(".size");
+		var alpha = compressionInfo.find(".alpha-threshold");
 
 		var fs:hxd.fs.LocalFileSystem = Std.downcast(hxd.res.Loader.currentInstance.fs, hxd.fs.LocalFileSystem);
 		@:privateAccess var textureConvertRule = fs.convert.getConvertRule(state.path);
+		
+		format.val(textureConvertRule == null ? "none" : textureConvertRule.cmd.params.format);
+		format.on("change", function(_) {
+			createPreviewTexture(format, alpha, mips, size);
 
-		var fieldSelect = compressionInfo.find(".field-select");
-		fieldSelect.val(textureConvertRule == null ? "No compression" : textureConvertRule.cmd.params.format);
-		fieldSelect.on("change", function(_) {
-			var newVal = fieldSelect.val();
-			trace(newVal);
+			// Alpha treshold make sense for BC1 format
+			if (format.val() != "BC1")
+				alpha.parent().css({"display":"none"});
+			else 
+				alpha.parent().css({"display":"flex"});
+		});
+
+		alpha.val(textureConvertRule == null || Reflect.field(textureConvertRule.cmd.params, "alpha") == null ? "undefined" : textureConvertRule.cmd.params.alpha);
+		alpha.on("change", function(_) {
+			createPreviewTexture(format, alpha, mips, size);
+		});
+
+		// Alpha treshold make sense for BC1 format
+		if (format.val() != "BC1")
+			alpha.parent().css({"display":"none"});
+		else 
+			alpha.parent().css({"display":"flex"});
+
+		// Alpha treshold make sense for BC1 format
+		if (format.val() != "BC1")
+			alpha.parent().css({"display":"none"});
+
+		size.val(textureConvertRule == null || Reflect.field(textureConvertRule.cmd.params, "size") == null ? "undefined" : textureConvertRule.cmd.params.size);
+		size.on("change", function(_) {
+			createPreviewTexture(format, alpha, mips, size);
+		});
+
+		if (textureConvertRule != null && textureConvertRule.cmd.params.mips)
+			mips.prop("checked", true);
+		else
+			mips.removeProp("checked");
+
+		mips.on("change", function(_) {
+			createPreviewTexture(format, alpha, mips, size);
 		});
 
 		this.saveDisplayKey = state.path;
@@ -124,13 +182,51 @@ class Image extends FileView {
 		if (this.viewMode == null)
 			this.viewMode = Compressed;
 
-		var saveCompression = element.find(".save-compression");
-		saveCompression.on("click", function(_) {
-			var dirPos = state.path.lastIndexOf("/");
-			//var name = dirPos < 0 ? path : path.substr(dirPos + 1);
+		var dirPos = state.path.lastIndexOf("/");
+		var dirPath = dirPos < 0 ? state.path : state.path.substr(0, dirPos + 1);
+
+		var resetPreview = element.find(".reset-preview");
+		resetPreview.on("click", function(_) {
+			format.val(textureConvertRule == null ? "none" : textureConvertRule.cmd.params.format);
+			alpha.val(textureConvertRule == null || Reflect.field(textureConvertRule.cmd.params, "alpha") == null ? "undefined" : textureConvertRule.cmd.params.alpha);
+			size.val(textureConvertRule == null || Reflect.field(textureConvertRule.cmd.params, "size") == null ? "undefined" : textureConvertRule.cmd.params.size);
+
+			if (textureConvertRule != null && textureConvertRule.cmd.params.mips)
+				mips.prop("checked", true);
+			else
+				mips.removeProp("checked");
+
+			// Alpha treshold make sense for BC1 format
+			if (format.val() != "BC1")
+				alpha.parent().css({"display":"none"});
+			else 
+				alpha.parent().css({"display":"flex"});
+
+			createPreviewTexture(format, alpha, mips, size);
 		});
 
-		var shader = new ImageViewerShader();
+		var saveCompression = element.find(".save-compression");
+		saveCompression.on("click", function(_) {
+			var propsFilePath = ide.getPath(dirPath + "props.json");
+			if (sys.FileSystem.exists(propsFilePath)) {
+				//
+			} else {
+				// //! Functionnal
+				// var bytes = new haxe.io.BytesOutput();
+				// bytes.writeString('{ "fs.convert": { "${state.path}":{ "convert" : "dds", "format" : "${compressionInfo.find(".field-select").val()}" } } }');
+				// hxd.File.saveBytes(propsFilePath, bytes.getBytes());
+				// //fs.clearCache();
+
+				// var localEntry = @:privateAccess new hxd.fs.LocalFileSystem.LocalEntry(fs, name, state.path, Ide.inst.getPath(state.path));
+				// fs.convert.run(localEntry);
+
+				// //var r = new hxd.res.Any(hxd.res.Loader.currentInstance, localEntry);
+
+				// //var img = r.toImage();
+			}
+		});
+
+		shader = new ImageViewerShader();
 
 		tools = new hide.comp.Toolbar(null,element.find(".toolbar"));
 
@@ -144,7 +240,7 @@ class Image extends FileView {
 				this.saveDisplayState("ViewMode", Compressed);
 				this.viewMode = Compressed;
 				
-				applyShaderConfiguration(shader);
+				applyShaderConfiguration();
 			}
 		}, this.viewMode.match(Compressed));
 		tgCompressed.element.addClass("show-compressed");
@@ -157,7 +253,7 @@ class Image extends FileView {
 				this.saveDisplayState("ViewMode", Uncompressed);
 				this.viewMode = Uncompressed;
 
-				applyShaderConfiguration(shader);
+				applyShaderConfiguration();
 			}
 
 		}, this.viewMode.match(Uncompressed));
@@ -171,15 +267,11 @@ class Image extends FileView {
 				this.saveDisplayState("ViewMode", Comparison);
 				this.viewMode = Comparison;
 
-				applyShaderConfiguration(shader);
+				applyShaderConfiguration();
 			}
 			
 		}, this.viewMode.match(Comparison));
 		tgComparison.element.addClass("show-comparison");
-
-		tools.addSeparator();
-
-		tools.addPopup(null, "Compression", (e) -> new hide.comp.SceneEditor.CompressionPopup(null, e, state.path), null);
 
 		tools.addSeparator();
 		
@@ -189,7 +281,8 @@ class Image extends FileView {
 					var path = hide.Ide.inst.appPath + "/res/sliderTexture.png";
 					scene.loadTexture(path, path, function(sliderTexture) {
 						this.sliderTexture = sliderTexture;
-						onTexturesLoaded(compressedTexture, uncompressedTexture, shader, tgCompressed, tgUncompressed, tgComparison);
+						uncompressedTexture.filter = Nearest;
+						onTexturesLoaded(compressedTexture, uncompressedTexture);
 					}, false);
 				}, false, true);
 			}, false);
@@ -212,7 +305,7 @@ class Image extends FileView {
 		bmp.y = -Std.int(bmp.tile.height * bmp.scaleY) >> 1;
 	}
 
-	public function onTexturesLoaded(compressedTexture: Null<h3d.mat.Texture>, uncompressedTexture: Null<h3d.mat.Texture>, shader : ImageViewerShader, tgCompressed : hide.comp.Toolbar.ToolToggle, tgUncompressed : hide.comp.Toolbar.ToolToggle, tgComparison : hide.comp.Toolbar.ToolToggle) {
+	public function onTexturesLoaded(compressedTexture: Null<h3d.mat.Texture>, uncompressedTexture: Null<h3d.mat.Texture>) {
 		for( i in 0...4 ) {
 			var name = "RGBA".charAt(i);
 			tools.addToggle("", "Channel "+name, name, function(b) {
@@ -253,18 +346,18 @@ class Image extends FileView {
 
 		if( compressedTexture.flags.has(MipMapped) ) {
 			compressedTexture.mipMap = Linear;
-			tools.addRange("MipMap", function(f) shader.mipLod = f, 0, 0, compressedTexture.mipLevels - 1);
+			tools.addRange("MipMap", function(f) shader.mipLod = f, 0, 0, compressedTexture.mipLevels - 1, "mipmap");
 		}
 
 		if( hxd.Pixels.isFloatFormat(compressedTexture.format) ) {
 			tools.addRange("Exposure", function(f) shader.exposure = f, 0, -10, 10);
 		}
 
-		applyShaderConfiguration(shader);
+		applyShaderConfiguration();
 		onResize();
 	}
 
-	public function applyShaderConfiguration(shader : ImageViewerShader) {
+	public function applyShaderConfiguration() {
 		switch (this.viewMode) {
 			case  Compressed:
 				{
@@ -348,6 +441,80 @@ class Image extends FileView {
 		bmp = null;
 		interactive = null;
 		sliderTexture = null;
+		shader = null;
+	}
+	
+	public function replaceImage(path : String) {
+		var bytes = sys.io.File.getBytes(path);
+		var res = hxd.res.Any.fromBytes(path, bytes);
+		var t = res.toTexture();
+
+		if (bmp != null) {
+			bmp.remove();
+			bmp = null;
+		}
+
+		if( !t.flags.has(Cube) ) {
+			bmp = new h2d.Bitmap(h2d.Tile.fromTexture(t), scene.s2d);
+			bmp.addShader(shader);
+			if( t.layerCount > 1 ) {
+				shader.isArray = true;
+				shader.textureArray = cast(t, h3d.mat.TextureArray);
+				tools.addRange("Layer", function(f) shader.layer = f, 0, 0, t.layerCount-1, 1);
+			} else
+			shader.compressedTex = t;
+		} else {
+			var r = new h3d.scene.fwd.Renderer();
+			var ls = new h3d.scene.fwd.LightSystem();
+			ls.ambientLight.set(1,1,1,1);
+			scene.s3d.lightSystem = ls;
+			scene.s3d.renderer = r;
+			var sp = new h3d.prim.Sphere(1,64,64);
+			sp.addNormals();
+			sp.addUVs();
+			shader.textureCube = t;
+			shader.isCube = true;
+			var sp = new h3d.scene.Mesh(sp, scene.s3d);
+			sp.material.texture = t;
+			sp.material.mainPass.addShader(shader);
+			sp.material.shadows = false;
+			new h3d.scene.CameraController(5,scene.s3d);
+		}
+
+		tools.element.find(".hide-range").remove();
+
+		if( t.flags.has(MipMapped) ) {
+			t.mipMap = Linear;
+			tools.addRange("MipMap", function(f) shader.mipLod = f, 0, 0, t.mipLevels - 1, "mipmap");
+		}
+
+		if( hxd.Pixels.isFloatFormat(t.format) ) {
+			tools.addRange("Exposure", function(f) shader.exposure = f, 0, -10, 10);
+		}
+
+		applyShaderConfiguration();
+		onResize();
+	}
+
+	public function createPreviewTexture(format: Element, alpha: Element, mips: Element, size: Element) {
+		var dirPos = state.path.lastIndexOf("/");
+		var name = dirPos < 0 ? state.path : state.path.substr(dirPos + 1);
+		var tmpPath = StringTools.replace(Sys.getEnv("TEMP"), "\\","/") + "/tempTexture.dds";
+
+		if (format.val().toString() != "none") {
+			var comp = new hxd.fs.Convert.CompressIMG("png,tga,jpg,jpeg,dds,envd,envs","dds");
+			comp.srcPath = Ide.inst.getPath(state.path);
+			comp.dstPath = Ide.inst.getPath(tmpPath);
+			comp.originalFilename = name;
+			var val = mips.val();
+			comp.params = { alpha:Std.parseInt(alpha.val()), format:format.val().toString(), mips:mips.is(':checked'), size:Std.parseInt(size.val()) };
+			comp.convert();
+		}
+		else {
+			tmpPath = state.path;
+		}
+			
+		replaceImage(Ide.inst.getPath(tmpPath));
 	}
 
 	static var _ = FileTree.registerExtension(Image,hide.Ide.IMG_EXTS.concat(["envd","envs"]),{ icon : "picture-o" });
