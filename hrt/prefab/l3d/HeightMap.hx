@@ -1138,14 +1138,19 @@ class HeightGrid extends h3d.prim.Primitive {
 	 **/
 	public var zMax = 0.;
 
+	public var xOffset = 0.;
+	public var yOffset = 0.;
+
 	var hasNormals : Bool;
 	var hasUVs : Bool;
 
-	public function new( width : Int, height : Int, cellWidth = 1., cellHeight = 1. ) {
+	public function new( width : Int, height : Int, cellWidth = 1., cellHeight = 1., xOffset = 0., yOffset = 0. ) {
 		this.width = width;
 		this.height = height;
 		this.cellWidth = cellWidth;
 		this.cellHeight = cellHeight;
+		this.xOffset = xOffset;
+		this.yOffset = yOffset;
 	}
 
 	public function addNormals() {
@@ -1157,7 +1162,7 @@ class HeightGrid extends h3d.prim.Primitive {
 	}
 
 	override function getBounds():h3d.col.Bounds {
-		return h3d.col.Bounds.fromValues(0,0,zMin,width*cellWidth,height*cellHeight,zMax-zMin);
+		return h3d.col.Bounds.fromValues(xOffset,yOffset,zMin,width*cellWidth+xOffset,height*cellHeight+yOffset,zMax-zMin);
 	}
 
 	override function alloc(engine:h3d.Engine) {
@@ -1174,8 +1179,8 @@ class HeightGrid extends h3d.prim.Primitive {
 		var p = 0;
 		for( y in 0...height + 1 )
 			for( x in 0...width + 1 ) {
-				buf[p++] = x * cellWidth;
-				buf[p++] = y * cellHeight;
+				buf[p++] = x * cellWidth + xOffset;
+				buf[p++] = y * cellHeight + yOffset;
 				buf[p++] = 0;
 				if( hasNormals ) {
 					buf[p++] = 0;
