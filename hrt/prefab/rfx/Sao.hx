@@ -39,6 +39,8 @@ class Sao extends RendererFX {
 
 	override function begin( r : h3d.scene.Renderer, step : h3d.impl.RendererFX.Step ) {
 		if( step == Lighting ) {
+			if ( intensity <= 0.0 )
+				return;
 			r.mark("SSAO");
 			if( sao == null ) sao = new h3d.pass.ScalableAO();
 			var ctx = r.ctx;
