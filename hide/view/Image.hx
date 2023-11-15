@@ -243,15 +243,19 @@ class Image extends FileView {
 
 				Reflect.setProperty(pathObj, state.path, convertRule);
 				Reflect.setProperty(fsConvertObj, "fs.convert", pathObj);
-
 				var data = haxe.Json.stringify(fsConvertObj, "\t");
 				bytes.writeString(data);
 				hxd.File.saveBytes(propsFilePath, bytes.getBytes());
 			}
 
-			// todo : trigger converter
-			// var localEntry = @:privateAccess new hxd.fs.LocalFileSystem.LocalEntry(fs, name, state.path, Ide.inst.getPath(state.path));
-			// fs.convert.run(localEntry);
+			var dirPos = state.path.lastIndexOf("/");
+			var name = dirPos < 0 ? state.path : state.path.substr(dirPos + 1);
+
+			@:privateAccess fs.convert.configs.clear();
+			@:privateAccess fs.convert.loadConfig(state.path);
+
+			var localEntry = @:privateAccess new hxd.fs.LocalFileSystem.LocalEntry(fs, name, state.path, Ide.inst.getPath(state.path));
+			fs.convert.run(localEntry);
 		});
 
 		shader = new ImageViewerShader();
@@ -303,6 +307,10 @@ class Image extends FileView {
 
 		tools.addSeparator();
 		
+		// We don't want to load old texture from cache because convert rule might
+		// have been changed
+		@:privateAccess fs.fileCache.remove(state.path);
+
 		scene.onReady = function() {
 			scene.loadTexture(state.path, state.path, function(compressedTexture) {
 				scene.loadTexture(state.path, state.path, function(uncompressedTexture) {
