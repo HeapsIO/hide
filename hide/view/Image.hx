@@ -161,10 +161,6 @@ class Image extends FileView {
 		else 
 			alpha.parent().css({"display":"flex"});
 
-		// Alpha treshold make sense for BC1 format
-		if (format.val() != "BC1")
-			alpha.parent().css({"display":"none"});
-
 		size.val(convertRuleEmpty || Reflect.field(textureConvertRule.cmd.params, "size") == null ? "undefined" : textureConvertRule.cmd.params.size);
 		size.on("change", function(_) {
 			createPreviewTexture(format, alpha, mips, size);
@@ -259,7 +255,6 @@ class Image extends FileView {
 		});
 
 		shader = new ImageViewerShader();
-
 		tools = new hide.comp.Toolbar(null,element.find(".toolbar"));
 
 		tools.addSeparator();
@@ -474,6 +469,10 @@ class Image extends FileView {
 			scene.dispose();
 
 		sliderBmp = null;
+
+		if (bmp != null && !bmp.tile.isDisposed())
+			bmp.tile.dispose();
+		
 		bmp = null;
 		interactive = null;
 		sliderTexture = null;
@@ -486,6 +485,9 @@ class Image extends FileView {
 		var t = res.toTexture();
 
 		if (bmp != null) {
+			if (!bmp.tile.isDisposed())
+				bmp.tile.dispose();
+
 			bmp.remove();
 			bmp = null;
 		}
@@ -542,7 +544,6 @@ class Image extends FileView {
 			comp.srcPath = Ide.inst.getPath(state.path);
 			comp.dstPath = Ide.inst.getPath(tmpPath);
 			comp.originalFilename = name;
-			var val = mips.val();
 			comp.params = { alpha:Std.parseInt(alpha.val()), format:format.val().toString(), mips:mips.is(':checked'), size:Std.parseInt(size.val()) };
 			comp.convert();
 		}
