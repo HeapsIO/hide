@@ -44,7 +44,7 @@ class Curve extends Prefab {
 	@:s public var blendFactor : Float = 0;
 	@:s public var loop : Bool = false;
 
-	public var maxTime : Float;
+	public var maxTime : Float = 5000.;
 	public var duration(get, never): Float;
 	public var minValue : Float = 0.;
 	public var maxValue : Float = 0.;
@@ -158,7 +158,7 @@ class Curve extends Prefab {
 
 		// We always want to show 0,0
 		ret.addPos(0.0,0.0);
-		
+
 		for(k in keys) {
 			ret.addPos(k.time, k.value);
 			if (k.nextHandle != null) {
