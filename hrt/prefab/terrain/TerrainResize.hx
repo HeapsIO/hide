@@ -30,7 +30,7 @@ class TerrainResize {
 
 	static inline function getTileBounds( xi, yi, s : h2d.col.Point ) : h2d.col.Bounds {
 		var b = new h2d.col.Bounds();
-		b.xMin = xi * s.x; 
+		b.xMin = xi * s.x;
 		b.yMin = yi * s.y;
 		b.xMax = (xi + 1) * s.x;
 		b.yMax = (yi + 1) * s.y;
@@ -50,7 +50,7 @@ class TerrainResize {
 		var curSize = tileSize;
 
 		// Recreate tiles to fit with the new size
-		var terrainMinMax = new h3d.Vector();
+		var terrainMinMax = new h3d.Vector4();
 		terrainMinMax.set(hxd.Math.POSITIVE_INFINITY, hxd.Math.POSITIVE_INFINITY, hxd.Math.NEGATIVE_INFINITY);
 		for( t in prefab.terrain.tiles ) {
 			terrainMinMax.x = hxd.Math.min(terrainMinMax.x, t.tileX * prevSize.x);
@@ -94,7 +94,7 @@ class TerrainResize {
 			}
 			y = terrainMinMax.y;
 			x += curSize.x;
-		}	
+		}
 
 		// Copy Textures
 		for( curTile in prefab.terrain.tiles ) {
@@ -102,9 +102,9 @@ class TerrainResize {
 			for( prevTile in prevTiles ) {
 
 				var prevTileBounds = getTileBounds(prevTile.tileX, prevTile.tileY, prevSize);
-				if( !prevTileBounds.intersects(curTileBounds) ) 
+				if( !prevTileBounds.intersects(curTileBounds) )
 					continue;
-				
+
 				terrainCopy.shader.from.set((prevTileBounds.x - curTileBounds.x) / curTileBounds.width, (prevTileBounds.y - curTileBounds.y) / curTileBounds.height);
 				terrainCopy.shader.to.set(terrainCopy.shader.from.x + prevTileBounds.width / curTileBounds.width, terrainCopy.shader.from.y + prevTileBounds.height / curTileBounds.height );
 

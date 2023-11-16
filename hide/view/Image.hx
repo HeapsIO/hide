@@ -90,7 +90,7 @@ class Image extends FileView {
 				</div>
 			</div>
 		');
-	
+
 		scene = new hide.comp.Scene(config, null, element.find(".heaps-scene"));
 
 		function addField(parent: Element, label:String, selectClass:String, options:Array<String>) {
@@ -110,7 +110,7 @@ class Image extends FileView {
 
 		var compressionInfo = element.find(".compression-infos");
 		addField(compressionInfo, "Format :", "select-format", ["none", "BC1", "BC2", "BC3", "RGBA", "R16F", "RG16F", "RGBA16F", "R32F", "RG32F", "RGBA32F", "R16U", "RG16U", "RGBA16U"] );
-		
+
 		var mipsField = new Element('<div class="field">
 			<label>Mip maps :</label>
 			<input type="checkbox" class="mips-checkbox"></input>
@@ -138,7 +138,7 @@ class Image extends FileView {
 		@:privateAccess var textureConvertRule = fs.convert.getConvertRule(state.path);
 
 		var convertRuleEmpty = textureConvertRule == null || textureConvertRule.cmd == null || textureConvertRule.cmd.params == null;
-		
+
 		format.val(convertRuleEmpty ? "none" : textureConvertRule.cmd.params.format);
 		format.on("change", function(_) {
 			createPreviewTexture(format, alpha, mips, size);
@@ -146,7 +146,7 @@ class Image extends FileView {
 			// Alpha treshold make sense for BC1 format
 			if (format.val() != "BC1")
 				alpha.parent().css({"display":"none"});
-			else 
+			else
 				alpha.parent().css({"display":"flex"});
 		});
 
@@ -158,7 +158,7 @@ class Image extends FileView {
 		// Alpha treshold make sense for BC1 format
 		if (format.val() != "BC1")
 			alpha.parent().css({"display":"none"});
-		else 
+		else
 			alpha.parent().css({"display":"flex"});
 
 		size.val(convertRuleEmpty || Reflect.field(textureConvertRule.cmd.params, "size") == null ? "undefined" : textureConvertRule.cmd.params.size);
@@ -197,7 +197,7 @@ class Image extends FileView {
 			// Alpha treshold make sense for BC1 format
 			if (format.val() != "BC1")
 				alpha.parent().css({"display":"none"});
-			else 
+			else
 				alpha.parent().css({"display":"flex"});
 
 			createPreviewTexture(format, alpha, mips, size);
@@ -213,7 +213,7 @@ class Image extends FileView {
 			}
 			else {
 				convertRule = { convert : "dds", format : format.val(), mips : mips.is(':checked') };
-				
+
 				if (size.val() != "undefined")
 					Reflect.setField(convertRule, "size", size.val());
 
@@ -266,7 +266,7 @@ class Image extends FileView {
 			if (bmp != null) {
 				this.saveDisplayState("ViewMode", Compressed);
 				this.viewMode = Compressed;
-				
+
 				applyShaderConfiguration();
 			}
 		}, this.viewMode.match(Compressed));
@@ -289,19 +289,19 @@ class Image extends FileView {
 		var tgComparison = tools.addToggle("arrows-h", "Show comparison between compressed and uncompressed texture", "", function (e) {
 			tools.element.find(".show-uncompressed").removeAttr("checked");
 			tools.element.find(".show-compressed").removeAttr("checked");
-			
+
 			if (bmp != null) {
 				this.saveDisplayState("ViewMode", Comparison);
 				this.viewMode = Comparison;
 
 				applyShaderConfiguration();
 			}
-			
+
 		}, this.viewMode.match(Comparison));
 		tgComparison.element.addClass("show-comparison");
 
 		tools.addSeparator();
-		
+
 		// We don't want to load old texture from cache because convert rule might
 		// have been changed
 		@:privateAccess fs.fileCache.remove(state.path);
@@ -360,7 +360,7 @@ class Image extends FileView {
 		} else {
 			var r = new h3d.scene.fwd.Renderer();
 			var ls = new h3d.scene.fwd.LightSystem();
-			ls.ambientLight.set(1,1,1,1);
+			ls.ambientLight.set(1,1,1);
 			scene.s3d.lightSystem = ls;
 			scene.s3d.renderer = r;
 			var sp = new h3d.prim.Sphere(1,64,64);
@@ -416,15 +416,15 @@ class Image extends FileView {
 				{
 					if (sliderBmp == null)
 						sliderBmp = new h2d.Bitmap(h2d.Tile.fromTexture(sliderTexture), bmp);
-					else 
+					else
 						sliderBmp.alpha = 1;
 
 					bmp.addChild(sliderBmp);
 					sliderBmp.height = bmp.tile.height;
-			
+
 					var bounds = new h2d.col.Bounds();
 					sliderBmp.getSize(bounds);
-			
+
 					if (interactive != null)
 						interactive.remove();
 
@@ -432,33 +432,33 @@ class Image extends FileView {
 					interactive.propagateEvents = true;
 					interactive.x = bmp.tile.dx;
 					interactive.y = bmp.tile.dy;
-			
+
 					sliderBmp.x = bmp.tile.width / 2.0 - bounds.width / 2.0;
 					shader.comparisonFactor = 0.5;
 					var clicked = false;
-			
+
 					function updateSlider(e: hxd.Event) {
 						if (!clicked)
 							return;
-			
+
 						sliderBmp.x = e.relX - bounds.width / 2.0;
 						shader.comparisonFactor = e.relX / interactive.width;
 					}
-			
+
 					interactive.onPush = function (e) {
 						clicked = true;
 						updateSlider(e);
 					}
-			
+
 					interactive.onRelease = function (e) {
 						clicked = false;
 					}
-			
+
 					interactive.onMove = function (e) {
 						updateSlider(e);
 					};
 				}
-			
+
 				default:
 					trace("Not implemented yet");
 		}
@@ -472,13 +472,13 @@ class Image extends FileView {
 
 		if (bmp != null && !bmp.tile.isDisposed())
 			bmp.tile.dispose();
-		
+
 		bmp = null;
 		interactive = null;
 		sliderTexture = null;
 		shader = null;
 	}
-	
+
 	public function replaceImage(path : String) {
 		var bytes = sys.io.File.getBytes(path);
 		var res = hxd.res.Any.fromBytes(path, bytes);
@@ -504,7 +504,7 @@ class Image extends FileView {
 		} else {
 			var r = new h3d.scene.fwd.Renderer();
 			var ls = new h3d.scene.fwd.LightSystem();
-			ls.ambientLight.set(1,1,1,1);
+			ls.ambientLight.set(1,1,1);
 			scene.s3d.lightSystem = ls;
 			scene.s3d.renderer = r;
 			var sp = new h3d.prim.Sphere(1,64,64);
@@ -550,7 +550,7 @@ class Image extends FileView {
 		else {
 			tmpPath = state.path;
 		}
-			
+
 		replaceImage(Ide.inst.getPath(tmpPath));
 	}
 

@@ -539,7 +539,7 @@ class PropsField extends Component {
 				}
 				var newVal : Dynamic =
 					if(arr != null) {
-						var vec = h3d.Vector.fromColor(picker.value);
+						var vec = h3d.Vector4.fromColor(picker.value);
 						if(alpha)
 							[vec.x, vec.y, vec.z, vec.w];
 						else

@@ -135,7 +135,7 @@ class Color extends ShaderConst {
 		picker.value = start.toColor();
 
 		picker.onChange = function(move) {
-			var vec = h3d.Vector.fromColor(picker.value);
+			var vec = h3d.Vector4.fromColor(picker.value);
 			r = vec.x;
 			g = vec.y;
 			b = vec.z;

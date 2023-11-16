@@ -188,7 +188,7 @@ class LightProbeBaker {
 				for( coef in 0 ... coefCount ) {
 					var u = coords.x + volumetricLightMap.probeCount.x * coef;
 					var v = coords.y + coords.z * volumetricLightMap.probeCount.y;
-					pixels.setPixelF(u, v, new h3d.Vector(sh.coefR[coef], sh.coefG[coef], sh.coefB[coef], 0));
+					pixels.setPixelF(u, v, new h3d.Vector4(sh.coefR[coef], sh.coefG[coef], sh.coefB[coef], 0));
 				}
 			}
 
@@ -309,11 +309,11 @@ class LightProbeBaker {
 		for(coef in 0 ... maxCoef){
 			var pixels = textureArray[coef].capturePixels();
 			for( index in 0 ... pixels.width){
-				var coefs : h3d.Vector = pixels.getPixelF(index, 0);
+				var coefs = pixels.getPixelF(index, 0);
 				var coords = volumetricLightMap.getProbeCoords(index);
 				var u = coords.x + volumetricLightMap.probeCount.x * coef;
 				var v = coords.y + coords.z * volumetricLightMap.probeCount.y;
-				pixelsOut.setPixelF(u, v, new h3d.Vector(coefs.r, coefs.g, coefs.b, 0));
+				pixelsOut.setPixelF(u, v, new h3d.Vector4(coefs.r, coefs.g, coefs.b, 0));
 
 				// Last coefs is inside the alpha channel
 				if( order == 3 ){

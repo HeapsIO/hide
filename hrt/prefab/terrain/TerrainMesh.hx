@@ -125,8 +125,8 @@ class TerrainMesh extends h3d.scene.Object {
 
 	public function updateSurfaceParams() {
 		for( i in 0 ... surfaces.length ) {
-			surfaceArray.params[i] = new h3d.Vector(surfaces[i].tilling, surfaces[i].offset.x, surfaces[i].offset.y, hxd.Math.degToRad(surfaces[i].angle));
-			surfaceArray.secondParams[i] = new h3d.Vector(surfaces[i].minHeight, surfaces[i].maxHeight, 0, 0);
+			surfaceArray.params[i] = new h3d.Vector4(surfaces[i].tilling, surfaces[i].offset.x, surfaces[i].offset.y, hxd.Math.degToRad(surfaces[i].angle));
+			surfaceArray.secondParams[i] = new h3d.Vector4(surfaces[i].minHeight, surfaces[i].maxHeight, 0, 0);
 		}
 	}
 

@@ -1,11 +1,12 @@
 package hrt.impl;
 
-import h3d.Vector;
+import h3d.Vector4;
+import h3d.Vector4;
 
 typedef ColorMode = {
-	name: String, 
-	valueToARGB : (value : Vector,  outColor : Color) -> Color, 
-	ARGBToValue : (color : Color, outVector: Vector) -> Vector
+	name: String,
+	valueToARGB : (value : Vector4,  outColor : Color) -> Color,
+	ARGBToValue : (color : Color, outVector: Vector4) -> Vector4
 };
 
 class Color {
@@ -32,24 +33,24 @@ class Color {
 }
 
 class ColorSpace {
-    public static function iRGBtofRGB(color : Color, outVector: Vector) : Vector {
+    public static function iRGBtofRGB(color : Color, outVector: Vector4) : Vector4 {
 		if (outVector == null)
-			outVector = new Vector();
+			outVector = new Vector4();
 		outVector.set(color.r/255.0, color.g/255.0, color.b/255.0, color.a/255.0);
 		return outVector;
 	}
 
-	public static function fRGBtoiRGB(color : Vector, outColor : Color) {
+	public static function fRGBtoiRGB(color : Vector4, outColor : Color) {
 		if (outColor == null)
 			outColor = new Color();
 		outColor.r = Std.int(color.r*255.0);
-		outColor.g = Std.int(color.g*255.0); 
+		outColor.g = Std.int(color.g*255.0);
 		outColor.b = Std.int(color.b*255.0);
 		outColor.a = Std.int(color.a*255.0);
 		return outColor;
 	}
 
-	public static function iRGBtoHSV(color: Color, outVector: Vector = null) : Vector {
+	public static function iRGBtoHSV(color: Color, outVector: Vector4 = null) : Vector4 {
 		var r = color.r / 255.0;
 		var g = color.g / 255.0;
 		var b = color.b / 255.0;
@@ -63,10 +64,10 @@ class ColorSpace {
 				else if(Cmax == r) hxd.Math.ufmod((g - b)/D, 6) * 60.0
 				else if (Cmax == g) ((b - r)/D + 2) * 60.0
 				else ((r - g)/D + 4) * 60.0;
-		
+
 		H = H / 360.0;
 		H = Math.min(Math.max(H, 0.0), 1.0);
-		
+
 		var S = if (Cmax == 0) 0 else D/Cmax;
 
 		var V = Cmax;
@@ -74,12 +75,12 @@ class ColorSpace {
 		var A = a;
 
 		if (outVector == null)
-			outVector = new Vector();
+			outVector = new Vector4();
 		outVector.set(H, S, V, A);
 		return outVector;
 	}
 
-	public static function HSVtoiRGB(hsv:Vector, outColor : Color) {
+	public static function HSVtoiRGB(hsv:Vector4, outColor : Color) {
 		if (outColor == null)
 			outColor = new Color();
 		var h = hsv.x * 360.0;
@@ -94,11 +95,11 @@ class ColorSpace {
 		var g = 0.0;
 		var b = 0.0;
 
-		if (h < 60) {r = C; g = X;} 
-		else if (h < 120) {r = X; g = C;} 
-		else if (h < 180) {g = C; b = X;} 
-		else if (h < 240) {g = X; b = C;} 
-		else if (h < 300) {r = X; b = C;} 
+		if (h < 60) {r = C; g = X;}
+		else if (h < 120) {r = X; g = C;}
+		else if (h < 180) {g = C; b = X;}
+		else if (h < 240) {g = X; b = C;}
+		else if (h < 300) {r = X; b = C;}
 		else {r = C; b = X;};
 
 		outColor.r = Std.int(Math.round((r+m)*255));
@@ -109,7 +110,7 @@ class ColorSpace {
 		return outColor;
 	}
 
-	public static function iRGBtoHSL(color : Color, outVector: Vector = null) : Vector {
+	public static function iRGBtoHSL(color : Color, outVector: Vector4 = null) : Vector4 {
 		var r = color.r / 255.0;
 		var g = color.g / 255.0;
 		var b = color.b / 255.0;
@@ -123,7 +124,7 @@ class ColorSpace {
 				else if(Cmax == r) hxd.Math.ufmod((g - b)/D, 6) * 60.0
 				else if (Cmax == g) ((b - r)/D + 2) * 60.0
 				else ((r - g)/D + 4) * 60.0;
-		
+
 		H = H / 360.0;
 		H = Math.min(Math.max(H, 0.0), 1.0);
 
@@ -131,12 +132,12 @@ class ColorSpace {
 		var S = if (D == 0) 0 else D / (1 - Math.abs(2 * L - 1));
 
 		if (outVector == null)
-			outVector = new Vector();
+			outVector = new Vector4();
 		outVector.set(H, S, L, a);
 		return outVector;
 	}
 
-	public static function HSLtoiRGB(hsl : Vector, outColor : Color) {
+	public static function HSLtoiRGB(hsl : Vector4, outColor : Color) {
 		if (outColor == null)
 			outColor = new Color();
 		var h = hsl.x * 360.0;
@@ -151,11 +152,11 @@ class ColorSpace {
 		var g = 0.0;
 		var b = 0.0;
 
-		if (h < 60) {r = C; g = X;} 
-		else if (h < 120) {r = X; g = C;} 
-		else if (h < 180) {g = C; b = X;} 
-		else if (h < 240) {g = X; b = C;} 
-		else if (h < 300) {r = X; b = C;} 
+		if (h < 60) {r = C; g = X;}
+		else if (h < 120) {r = X; g = C;}
+		else if (h < 180) {g = C; b = X;}
+		else if (h < 240) {g = X; b = C;}
+		else if (h < 300) {r = X; b = C;}
 		else {r = C; b = X;};
 
 		outColor.r = Std.int(Math.round((r+m)*255));
@@ -167,7 +168,7 @@ class ColorSpace {
 
 
 
-	public static function iRGBtoXYZ(color : Color, outVector: Vector = null) : Vector {
+	public static function iRGBtoXYZ(color : Color, outVector: Vector4 = null) : Vector4 {
 		outVector = iRGBtofRGB(color, outVector);
 
 		inline function linearize(v:Float) : Float {
@@ -188,8 +189,8 @@ class ColorSpace {
 		return outVector;
 	}
 
-	static var tmpVector : Vector = new Vector();
-	public static function XYZtoiRGB(value: Vector, outColor : Color) : Color {
+	static var tmpVector : Vector4 = new Vector4();
+	public static function XYZtoiRGB(value: Vector4, outColor : Color) : Color {
 		if (outColor == null)
 			outColor = new Color();
 
@@ -217,7 +218,7 @@ class ColorSpace {
 	static final Yn = 100;
 	static final Zn = 108.8840;
 
-	public static function LABtoiRGB(value: Vector, outColor : Color) : Color {
+	public static function LABtoiRGB(value: Vector4, outColor : Color) : Color {
 		// lab -> XYZ
 		inline function fn(t:Float) : Float {
 			var d = 6.0/29.0;
@@ -239,7 +240,7 @@ class ColorSpace {
 		return XYZtoiRGB(tmpVector, outColor);
 	}
 
-	public static function iRGBtoLAB(color : Color, outVector: Vector = null) : Vector {
+	public static function iRGBtoLAB(color : Color, outVector: Vector4 = null) : Vector4 {
 		tmpVector = iRGBtoXYZ(color, tmpVector);
 
 		inline function fn(t:Float) : Float {
@@ -252,17 +253,17 @@ class ColorSpace {
 		var b = 200.0 * (fn(tmpVector.y*100.0 / Yn) - fn(tmpVector.z*100.0/Zn));
 
 		if (outVector == null)
-			outVector = new Vector();
+			outVector = new Vector4();
 		outVector.set(
-			hxd.Math.clamp(L/100.0), 
-			hxd.Math.clamp((a+128.0)/255.0), 
+			hxd.Math.clamp(L/100.0),
+			hxd.Math.clamp((a+128.0)/255.0),
 			hxd.Math.clamp((b+128.0)/255.0),
 			outVector.a
 		);
 		return outVector;
 	}
 
-	public static function iRGBtoHCL(color: Color, outVector: Vector = null) : Vector {
+	public static function iRGBtoHCL(color: Color, outVector: Vector4 = null) : Vector4 {
 		outVector = iRGBtoLAB(color, outVector);
 
 
@@ -280,8 +281,8 @@ class ColorSpace {
 		return outVector;
 	}
 
-	public static function HCLtoiRGB(value: Vector, outColor : Color) : Color {
-		
+	public static function HCLtoiRGB(value: Vector4, outColor : Color) : Color {
+
 		tmpVector.x = value.z;
 
 		var a = value.x * hxd.Math.PI * 2.0;

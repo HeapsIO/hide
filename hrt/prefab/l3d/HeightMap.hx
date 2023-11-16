@@ -351,7 +351,7 @@ class HeightMapTile {
 		if( shader.albedoIsArray ) {
 			var arr = hmap.getTextureArray(Albedo);
 			shader.albedoArray = arr.texture;
-			shader.albedoIndexes = [for( i in arr.indexes ) new h3d.Vector(i)];
+			shader.albedoIndexes = [for( i in arr.indexes ) new h3d.Vector4(i)];
 			shader.AlbedoCount = arr.indexes.length;
 			if( hmap.albedoNormals > 0 ) {
 				shader.hasAlbedoNormals = true;
@@ -622,7 +622,7 @@ class HeightMap extends Object3D {
 
 	// todo : instead of storing the context, we should find a way to have a texture loader
 	var storedCtx : hrt.prefab.Context;
-	var albedoProps : Array<h3d.Vector>;
+	var albedoProps : Array<h3d.Vector4>;
 	var texArrayCache : Map<HeightMaPTexturePathKind, { texture : h3d.mat.TextureArray, indexes : Array<Int> }>;
 
 	override function save():{} {
@@ -643,7 +643,7 @@ class HeightMap extends Object3D {
 		textures = [for( o in (obj.textures:Array<Dynamic>) ) { path : o.path, kind : o.kind, enable : o.enable == null ? true : o.enable, props : o.props }];
 	}
 
-	function getAlbedoProps() {
+	function getAlbedoProps() : Array<h3d.Vector4> {
 		if( albedoProps != null )
 			return albedoProps;
 		var hasProps = false;
@@ -654,8 +654,8 @@ class HeightMap extends Object3D {
 			albedoProps = [];
 			return albedoProps;
 		}
-		albedoProps = [for( t in textures ) if( t.kind == Albedo ) t.props == null ? new h3d.Vector(1,1,1,albedoTiling) : {
-			var v = h3d.Vector.fromColor(t.props.color);
+		albedoProps = [for( t in textures ) if( t.kind == Albedo ) t.props == null ? new h3d.Vector4(1,1,1,albedoTiling) : {
+			var v = h3d.Vector4.fromColor(t.props.color);
 			v.r = Math.pow(v.r,albedoColorGamma);
 			v.g = Math.pow(v.g,albedoColorGamma);
 			v.b = Math.pow(v.b,albedoColorGamma);

@@ -25,7 +25,7 @@ class Bitmap extends Object2D {
 				bmp.tile = h2d.Tile.fromColor(0xFF00FF,32,32,0.5);
 			}
 		}
-		bmp.color = h3d.Vector.fromColor(color);
+		bmp.color = h3d.Vector4.fromColor(color);
 		bmp.color.w = 1;
 		var cRatio = getCenterRatio(dx, dy);
 		bmp.tile.setCenterRatio(cRatio[0], cRatio[1]);

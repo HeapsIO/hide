@@ -689,7 +689,7 @@ class ShaderEditor extends hide.view.Graph {
 				shaderGraph.setParameterDefaultValue(parameter.id, value);
 				picker.value = start.toColor();
 				picker.onChange = function(move) {
-					var vecColor = h3d.Vector.fromColor(picker.value);
+					var vecColor = h3d.Vector4.fromColor(picker.value);
 					if (!shaderGraph.setParameterDefaultValue(parameter.id, [vecColor.x, vecColor.y, vecColor.z, vecColor.w]))
 						return;
 					setBoxesParam(parameter.id);

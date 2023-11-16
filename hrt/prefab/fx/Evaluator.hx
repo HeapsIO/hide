@@ -68,7 +68,7 @@ class Evaluator {
 		return 0.0;
 	}
 
-	public function getVector(pidx: Int=0, v: Value, time: Float, vec: h3d.Vector) {
+	public function getVector(pidx: Int=0, v: Value, time: Float, vec: h3d.Vector4) {
 		switch(v) {
 			case VMult(a, b):
 				throw "need optimization";

@@ -28,7 +28,6 @@ class LookAtObject extends h3d.scene.Object {
 		else {
 			if(getScene() == null || getScene().camera == null) return;
 			lookAtPos.load(getScene().camera.pos);
-			lookAtPos.w = 1;
 		}
 
 		super.calcAbsPos();

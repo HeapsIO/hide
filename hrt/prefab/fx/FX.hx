@@ -157,7 +157,7 @@ class FXAnimation extends h3d.scene.Object {
 
 	static var tempMat = new h3d.Matrix();
 	static var tempTransform = new h3d.Matrix();
-	static var tempVec = new h3d.Vector();
+	static var tempVec = new h3d.Vector4();
 	public function setTime( time : Float, fullSync=true ) {
 		var dt = time - this.prevTime;
 		this.localTime = time;
@@ -175,7 +175,7 @@ class FXAnimation extends h3d.scene.Object {
 
 						if(anim.rotation != null) {
 							var rotation = evaluator.getVector(anim.rotation, time, tempVec);
-							rotation.scale(Math.PI / 180.0);
+							rotation.scale3(Math.PI / 180.0);
 							m.rotate(rotation.x, rotation.y, rotation.z);
 						}
 
@@ -214,7 +214,10 @@ class FXAnimation extends h3d.scene.Object {
 							case PointLight( color, power, size, range ) :
 								var l = Std.downcast(anim.obj, h3d.scene.pbr.PointLight);
 								if( l != null ) {
-									if( color != null ) l.color = evaluator.getVector(color, time, tempVec);
+									if( color != null ) {
+										var v = evaluator.getVector(color, time, tempVec);
+										l.color.set(v.x, v.y, v.z);
+									}
 									if( power != null ) l.power = evaluator.getFloat(power, time);
 									if( size != null ) l.size = evaluator.getFloat(size, time);
 									if( range != null ) l.range = evaluator.getFloat(range, time);
@@ -222,13 +225,19 @@ class FXAnimation extends h3d.scene.Object {
 							case DirLight(color, power):
 								var l = Std.downcast(anim.obj, h3d.scene.pbr.DirLight);
 								if( l != null ) {
-									if( color != null ) l.color = evaluator.getVector(color, time, tempVec);
+									if( color != null ) {
+										var v = evaluator.getVector(color, time, tempVec);
+										l.color.set(v.x, v.y, v.z);
+									}
 									if( power != null ) l.power = evaluator.getFloat(power, time);
 								}
 							case SpotLight(color, power, range, angle, fallOff):
 								var l = Std.downcast(anim.obj, h3d.scene.pbr.SpotLight);
 								if( l != null ) {
-									if( color != null ) l.color = evaluator.getVector(color, time, tempVec);
+									if( color != null ) {
+										var v = evaluator.getVector(color, time, tempVec);
+										l.color.set(v.x, v.y, v.z);
+									}
 									if( power != null ) l.power = evaluator.getFloat(power, time);
 									if( range != null ) l.range = evaluator.getFloat(range, time);
 									if( angle != null ) l.angle = evaluator.getFloat(angle, time);

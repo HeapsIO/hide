@@ -22,13 +22,13 @@ class GradientBox extends Component {
     var prevHash : Int32 = 0;
 
     function set_value(value: GradientData) {
-        // Cleanup previous gradient value from the cache 
+        // Cleanup previous gradient value from the cache
         var cache = Gradient.getCache();
         cache.remove(prevHash);
 
         innerValue = value;
         prevHash = Gradient.getDataHash(innerValue);
-        
+
         gradientView.value = innerValue;
         if (gradientEditor != null)
             gradientEditor.value = innerValue;
@@ -140,7 +140,7 @@ class GradientEditor extends Popup {
         super(parent, root);
 
         popup.addClass("gradient-editor");
-        
+
         // Allows the popup to become focusable,
         // allowing the handling of keyboard events
         popup.attr("tabindex","-1");
@@ -184,7 +184,7 @@ class GradientEditor extends Popup {
         linesSvg.element.attr({preserveAspectRatio:"xMidYMid slice"});
 
         linesSvg.line(linesSvg.element, 0.0,0.5,1.0,0.5).attr("vector-effect","non-scaling-stroke");
-        
+
         stopsSvg = new SVG(gradientView.element);
         stopsSvg.element.attr({viewBox: '0.0 0.0 1.0 1.0'});
         stopsSvg.element.attr({preserveAspectRatio:"xMidYMid slice"});
@@ -196,7 +196,7 @@ class GradientEditor extends Popup {
         <rect x="0" y="0" width=".25" height=".25" fill="#aaa"/>
         <rect x="0.25" y="0.25" width=".25" height=".25" fill="#aaa"/>
         </pattern>
-         
+
         <filter id="shadow" color-interpolation-filters="sRGB" y="-40%" x="-40%" height="180%" width="180%">
         <feDropShadow dx="0.005" dy="0.005" stdDeviation="0.007" flood-opacity="0.5"/>
         </filter>
@@ -204,14 +204,14 @@ class GradientEditor extends Popup {
 
         var editor = new Element("<div>").addClass("editor").appendTo(popup);
         stopEditor = new Element("<div>").addClass("stop-editor").appendTo(editor);
-        
+
         stopLabel = new Element("<p>").appendTo(stopEditor);
 
         colorbox = new ColorBox(stopEditor, null, true, true);
         colorbox.element.width(64);
         colorbox.element.height(64);
 
-        colorbox.onChange = 
+        colorbox.onChange =
         function(isDragging : Bool) {
             if (selectedStop != null) {
                 var id = stopMarquers.indexOf(selectedStop);
@@ -251,7 +251,7 @@ class GradientEditor extends Popup {
 
 
         isVerticalCheckbox = new Element("<select id='isVertical'>");
-        
+
         new Element('<option value="0">').text('Horizontal').appendTo(isVerticalCheckbox);
         new Element('<option value="1">').text('Vertical').appendTo(isVerticalCheckbox);
 
@@ -339,7 +339,7 @@ class GradientEditor extends Popup {
             stopsSvg.circle(group, 0, 0, 0.05, {}).addClass("outline");
             stopsSvg.circle(group, 0, 0, 0.05, {}).addClass("checkboard");
             stopsSvg.circle(group, 0, 0, 0.05, {}).addClass("fill");
-            
+
             stopMarquers.push(group);
 
             var elem = group.get(0);
@@ -380,7 +380,7 @@ class GradientEditor extends Popup {
             }
         }
 
-        var vector : Vector = new Vector();
+        var vector = new h3d.Vector4();
         for (i in 0...stopMarquers.length) {
             var marquer = stopMarquers[i];
             var stop = innerValue.stops[i];
@@ -415,7 +415,7 @@ class GradientEditor extends Popup {
     function removeStop(element : Element) {
         if (stopMarquers.length <= 1)
             return;
-        
+
         var idx = stopMarquers.indexOf(element);
         innerValue.stops.splice(idx, 1);
 
@@ -427,7 +427,7 @@ class GradientEditor extends Popup {
     function addStop(pos : Float) {
         var color = Gradient.evalData(innerValue, pos);
         innerValue.stops.push({position: pos, color:color.toColor()});
-        innerValue.stops.sort((a, b) -> return if (a.position < b.position) -1 
+        innerValue.stops.sort((a, b) -> return if (a.position < b.position) -1
                                 else if (a.position > b.position) 1
                                 else 0);
         onChange(false);
@@ -444,14 +444,14 @@ class GradientEditor extends Popup {
         }
 
         arr[stopId].stop.position = pos;
-        arr.sort((a, b) -> return if (a.stop.position < b.stop.position) -1 
+        arr.sort((a, b) -> return if (a.stop.position < b.stop.position) -1
                                 else if (a.stop.position > b.stop.position) 1
                                 else 0);
 
         var prevPos = 0.0;
-        
+
         for (i in 0...stopMarquers.length) {
-            innerValue.stops[i] = arr[i].stop;            
+            innerValue.stops[i] = arr[i].stop;
             stopMarquers[i] = arr[i].marquer;
         }
     }
@@ -479,7 +479,7 @@ class GradientView extends Component {
         var c2d = canvas.getContext("2d");
 
         var image_data = c2d.getImageData(0,0,innerValue.resolution,1);
-		var color : Vector = new Vector();
+		var color = new h3d.Vector4();
 
         for (x in 0...innerValue.resolution) {
             var index = x * 4;
@@ -497,7 +497,7 @@ class GradientView extends Component {
         var e = new Element("<div class='gradient-container checkerboard-bg'>");
         super(parent, e);
 
-        var canvasElement = new Element("<canvas class='gradient-preview'>").css({display:"block"}).appendTo(element);           
+        var canvasElement = new Element("<canvas class='gradient-preview'>").css({display:"block"}).appendTo(element);
         canvas = cast(canvasElement.get(0),CanvasElement);
         canvas.height = 1;
     }

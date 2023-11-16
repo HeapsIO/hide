@@ -55,13 +55,13 @@ class BillboardObj extends h3d.scene.Mesh {
         return material.texture;
     }
 
-    public var color(get, set) : h3d.Vector;
+    public var color(get, set) : h3d.Vector4;
 
-    function set_color(col : h3d.Vector) : h3d.Vector {
+    function set_color(col : h3d.Vector4) : h3d.Vector4 {
         return material.color = col;
     }
 
-    function get_color() : h3d.Vector {
+    function get_color() : h3d.Vector4 {
         return material.color;
     }
 

@@ -20,6 +20,7 @@ typedef ShaderParams = Array<ShaderParam>;
 class ShaderAnimation extends Evaluator {
 	public var params : ShaderParams;
 	public var shader : hxsl.Shader;
+	var vector4 = new h3d.Vector4();
 	var vector = new h3d.Vector();
 
 	public function setTime(time: Float) {
@@ -33,8 +34,12 @@ class ShaderAnimation extends Evaluator {
 				continue;
 			case TInt: val = hxd.Math.round(getFloat(param.value, time));
 			case TBool: val = getFloat(param.value, time) >= 0.5;
+			case TVec(4, VFloat):
+				getVector(param.value, time, vector4);
+				val = vector4;
 			case TVec(_, VFloat):
-				getVector(param.value, time, vector);
+				getVector(param.value, time, vector4);
+				vector.set(vector4.x, vector4.y, vector4.z);
 				val = vector;
 			default:
 				continue;
@@ -46,7 +51,8 @@ class ShaderAnimation extends Evaluator {
 
 class ShaderDynAnimation extends ShaderAnimation {
 
-	var vectors : Array<h3d.Vector>;
+	static var tmpVec = new h3d.Vector();
+	var vectors : Array<h3d.Vector4>;
 	override function setTime(time: Float) {
 		var shader : hxsl.DynamicShader = cast shader;
 		for(param in params) {
@@ -61,16 +67,21 @@ class ShaderDynAnimation extends ShaderAnimation {
 				case TBool:
 					var val = getFloat(param.value, time) >= 0.5;
 					shader.setParamValue(v, val);
-				case TVec(_, VFloat):
+				case TVec(size, VFloat):
 					if(vectors == null)
 						vectors = [];
 					var vec = vectors[param.idx];
 					if(vec == null) {
-						vec = new h3d.Vector();
+						vec = new h3d.Vector4();
 						vectors[param.idx] = vec;
 					}
 					getVector(param.value, time, vec);
-					shader.setParamValue(v, vec);
+					if( size < 4 ) {
+						var tmpVec = tmpVec;
+						tmpVec.set(vec.x, vec.y, vec.z);
+						shader.setParamValue(v, tmpVec);
+					} else
+						shader.setParamValue(v, vec);
 				default:
 			}
 		}
@@ -196,7 +207,7 @@ class BaseFX extends hrt.prefab.Library {
 				var perInstance = batch.instancedParams;
 				if ( perInstance == null ) {
 					perInstance = new hxsl.Cache.BatchInstanceParams([]);
-					batch.instancedParams = perInstance; 
+					batch.instancedParams = perInstance;
 				}
 				perInstance.forcedPerInstance.push({
 					shader: shader.shader.data.name,

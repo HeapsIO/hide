@@ -44,6 +44,13 @@ class CameraControllerBase extends h3d.scene.CameraController {
 		data.zNear = zNear;
 		data.zFar = zFar;
 	}
+
+	function offset(pt:h3d.Vector) {
+		targetOffset.x -= pt.x;
+		targetOffset.y -= pt.y;
+		targetOffset.z -= pt.z;
+	}
+
 }
 
 class OrthoController extends CameraControllerBase {
@@ -136,8 +143,7 @@ class OrthoController extends CameraControllerBase {
 							if(fromPt == null || toPt == null)
 								return;
 							var delta = toPt.sub(fromPt).toVector();
-							delta.w = 0;
-							targetOffset = targetOffset.sub(delta);
+							offset(delta);
 						}
 					}
 					pushX = e.relX;
@@ -175,8 +181,7 @@ class OrthoController extends CameraControllerBase {
 		var moveSpeed = Ide.inst.currentConfig.get("sceneeditor.camera.moveSpeed", 1.5);
 
 		var delta = dir.scaled(0.01 * moveSpeed * (distance + scene.camera.zNear));
-		delta.w = 0;
-		targetOffset = targetOffset.sub(delta);
+		offset(delta);
 	}
 
 	override function sync(ctx : h3d.scene.RenderContext) {
@@ -216,7 +221,7 @@ class FPSController extends CameraControllerBase {
 	override function loadSettings(data : Dynamic) : Void {
 		super.loadSettings(data);
 		var cam = sceneEditor.scene.s3d.camera;
-		cam.up.set(0,0,1,0);
+		cam.up.set(0,0,1);
 	}
 
 	override function onEvent(e : hxd.Event) {
@@ -267,8 +272,7 @@ class FPSController extends CameraControllerBase {
 						if(fromPt == null || toPt == null)
 							return;
 						var delta = toPt.sub(fromPt).toVector();
-						delta.w = 0;
-						targetOffset = targetOffset.sub(delta);
+						offset(delta);
 					}
 					pushX = e.relX;
 					pushY = e.relY;
@@ -317,8 +321,7 @@ class FPSController extends CameraControllerBase {
 		var moveSpeed = Ide.inst.currentConfig.get("sceneeditor.camera.moveSpeed", 1.5) * camSpeed;
 
 		var delta = mov.scaled(moveSpeed);
-		delta.w = 0;
-		targetOffset = targetOffset.sub(delta);
+		offset(delta);
 	}
 
 	override function sync(ctx : h3d.scene.RenderContext) {
@@ -350,7 +353,7 @@ class CamController extends CameraControllerBase {
 	override function loadSettings(data : Dynamic) : Void {
 		super.loadSettings(data);
 		var cam = sceneEditor.scene.s3d.camera;
-		cam.up.set(0,0,1,0);
+		cam.up.set(0,0,1);
 		set(data.distance);
 	}
 
@@ -418,8 +421,7 @@ class CamController extends CameraControllerBase {
 							if(fromPt == null || toPt == null)
 								return;
 							var delta = toPt.sub(fromPt).toVector();
-							delta.w = 0;
-							targetOffset = targetOffset.sub(delta);
+							offset(delta);
 						}
 					}
 					pushX = e.relX;
@@ -457,8 +459,7 @@ class CamController extends CameraControllerBase {
 		var moveSpeed = Ide.inst.currentConfig.get("sceneeditor.camera.moveSpeed", 1.5);
 
 		var delta = dir.scaled(0.01 * moveSpeed * (distance + scene.camera.zNear));
-		delta.w = 0;
-		targetOffset = targetOffset.sub(delta);
+		offset(delta);
 	}
 
 	override function sync(ctx : h3d.scene.RenderContext) {
@@ -561,8 +562,6 @@ class FlightController extends CameraControllerBase {
 		tmpVec.load(mat.up());
 		tmpVec.scale(mov.z);
 		targetFlightPos = targetFlightPos.add(tmpVec);
-
-		targetFlightPos.w = 1.0;
 
 		if (roll != 0) {
 			lookAround(0,0,roll * 0.05);
@@ -667,8 +666,7 @@ class FlightController extends CameraControllerBase {
 						if(fromPt == null || toPt == null)
 							return;
 						var delta = toPt.sub(fromPt).toVector();
-						delta.w = 0;
-						targetOffset = targetOffset.sub(delta);
+						offset(delta);
 					}
 					pushX = e.relX;
 					pushY = e.relY;

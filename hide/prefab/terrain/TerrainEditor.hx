@@ -180,7 +180,7 @@ class TerrainEditor {
 		engine.begin();
 		engine.pushTarget(uvTex);
 		engine.clear(0xffffff,1,0);
-		engine.clearF(new h3d.Vector(-1, -1, -1, -1),1,0);
+		engine.clearF(new h3d.Vector4(-1, -1, -1, -1),1,0);
 		customScene.render(engine);
 		engine.popTarget();
 
@@ -709,7 +709,7 @@ class TerrainEditor {
 			brushWorldPos = getBrushWorldPosFromTex(pos, ctx);
 		}
 
-		currentBrush.bitmap.color = new h3d.Vector(1.0);
+		currentBrush.bitmap.color = new h3d.Vector4(1.0);
 		var shader : hrt.shader.Brush = currentBrush.bitmap.getShader(hrt.shader.Brush);
 		if( shader == null ) shader = currentBrush.bitmap.addShader(new hrt.shader.Brush());
 		currentBrush.bitmap.blendMode = currentBrush.brushMode.accumulate ? Add : Max;
@@ -747,7 +747,7 @@ class TerrainEditor {
 
 		var shader : hrt.shader.Brush = currentBrush.bitmap.getShader(hrt.shader.Brush);
 		if( shader == null ) shader = currentBrush.bitmap.addShader(new hrt.shader.Brush());
-		currentBrush.bitmap.color = new h3d.Vector(1.0);
+		currentBrush.bitmap.color = new h3d.Vector4(1.0);
 		shader.size.set(currentBrush.size / terrainPrefab.tileSizeX, currentBrush.size / terrainPrefab.tileSizeY);
 
 		switch( currentBrush.brushMode.mode ) {
@@ -892,18 +892,18 @@ class TerrainEditor {
 		for( tile in terrainPrefab.terrain.tiles )
 			tileRevertDatas.push(new TileRevertData(tile.tileX, tile.tileY));
 
-		var oldIndexes : Array<h3d.Vector> = [];
-		var newIndexes : Array<h3d.Vector> = [];
+		var oldIndexes : Array<h3d.Vector4> = [];
+		var newIndexes : Array<h3d.Vector4> = [];
 		for( i in 0 ... terrainPrefab.terrain.surfaces.length )
-			oldIndexes.push(new h3d.Vector(i));
+			oldIndexes.push(new h3d.Vector4(i));
 		var offset = 0;
 		for( i in 0 ... terrainPrefab.terrain.surfaces.length ) {
 			if( i == index ) {
 				offset = -1;
-				newIndexes.push(new h3d.Vector(0)); // Replace the surface removec by the surface 0
+				newIndexes.push(new h3d.Vector4(0)); // Replace the surface removec by the surface 0
 			}
 			else
-				newIndexes.push(new h3d.Vector(i + offset));
+				newIndexes.push(new h3d.Vector4(i + offset));
 		}
 
 		swapIndex.shader.USE_ARRAY = true;
@@ -1160,7 +1160,7 @@ class TerrainEditor {
 							currentBrush.bitmap = new h2d.Bitmap(h2d.Tile.fromTexture(currentBrush.tex));
 
 						currentBrush.bitmap.smooth = true;
-						currentBrush.bitmap.color = new h3d.Vector(currentBrush.strength);
+						currentBrush.bitmap.color = new h3d.Vector4(currentBrush.strength);
 					}
 					refreshBrushes();
 				});

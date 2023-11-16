@@ -307,7 +307,7 @@ class Layers2D extends hrt.prefab.Object3D {
 			sh.collideMap = collideMap;
 
 			sh.collideEnable = collideEnable && collideMap != null;
-			sh.collideMask = h3d.Vector.fromColor(collideMask);
+			sh.collideMask = h3d.Vector4.fromColor(collideMask);
 
 			sh.layerEnable = currentTexture != null;
 			sh.layerMap = currentTexture;
@@ -319,7 +319,7 @@ class Layers2D extends hrt.prefab.Object3D {
 			}
 
 			sh.highlightNoPixels = highlightNotPaintedPixels;
-			sh.highlightColor = h3d.Vector.fromColor(highlightColor);
+			sh.highlightColor = h3d.Vector4.fromColor(highlightColor);
 		}
 	}
 
@@ -570,7 +570,7 @@ class Layers2D extends hrt.prefab.Object3D {
 	}
 
 	public function drawCircle(ctx : hrt.prefab.Context, originX : Float, originY : Float, originZ : Float, radius: Float, thickness: Float, color) {
-		var newColor = h3d.Vector.fromColor(color);
+		var newColor = h3d.Vector4.fromColor(color);
 		if (gBrushes == null || gBrushes.length == 0 || gBrushes[0].scaleX != radius || gBrushes[0].material.color != newColor) {
 			clearBrushes();
 			gBrushes = [];

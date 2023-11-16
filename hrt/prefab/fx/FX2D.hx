@@ -75,7 +75,7 @@ class FX2DAnimation extends h2d.Object {
 	}
 
 
-	static var tmpPt = new h3d.Vector();
+	static var tmpPt = new h3d.Vector4();
 	public function setTime( time : Float ) {
 
 		this.localTime = time;

@@ -872,7 +872,7 @@ class MeshSpray extends Spray {
 
 	override function removeItemsAround(ctx : Context, point : h3d.col.Point) {
 		var vecRelat = point.toVector();
-		vecRelat.transform3x4(invParent);
+		vecRelat.transform(invParent);
 		var point2d = new h2d.col.Point(vecRelat.x, vecRelat.y);
 
 		var childToRemove = [];

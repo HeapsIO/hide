@@ -63,8 +63,8 @@ class GameController extends Object3D {
 		var camSave = null;
 		var dummy : h3d.scene.Object = null;
 		var cam = ctx.scene.s3d.camera;
-		var camRot : h3d.Vector = null;
-		var startCamRot : h3d.Vector = null;
+		var camRot : h3d.Vector4 = null;
+		var startCamRot : h3d.Vector4 = null;
 		var zSpeed = 0.;
 		var startJumpTime = 1e9;
 
@@ -133,7 +133,7 @@ class GameController extends Object3D {
 					var delta = cam.pos.sub(cam.target);
 					var q = new h3d.Quat();
 					q.initDirection(delta);
-					startCamRot = q.toEuler();
+					startCamRot = q.toEuler().toVector4();
 					startCamRot.w = delta.length();
 					camRot = startCamRot.clone();
 

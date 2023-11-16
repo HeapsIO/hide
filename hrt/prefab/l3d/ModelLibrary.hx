@@ -624,7 +624,7 @@ class ModelLibrary extends Prefab {
 		for( inf in dataToStore ) {
 			var g = inf.g;
 			g.vertexPosition = dataOut.length;
-			var buf = inf.lib.getBuffers(inf.origin, geomAll.vertexFormat, [for( v in geomAll.vertexFormat.getInputs() ) new h3d.Vector(0,0,0,0)]);
+			var buf = inf.lib.getBuffers(inf.origin, geomAll.vertexFormat, [for( v in geomAll.vertexFormat.getInputs() ) new h3d.Vector4(0,0,0,0)]);
 			for( i in 0...geomAll.vertexFormat.stride * inf.origin.vertexCount )
 				dataOut.addFloat(buf.vertexes[i]);
 		}

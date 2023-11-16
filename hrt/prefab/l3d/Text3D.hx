@@ -213,7 +213,7 @@ class Text3D extends Object3D {
 			shader = new SignedDistanceField3D();
 			shader.alphaCutoff = cutoff;
 			shader.smoothing = smoothing;
-			shader.color = h3d.Vector.fromColor(color);
+			shader.color = h3d.Vector4.fromColor(color);
 			mesh.material.mainPass.addShader(shader);
 		}
 	}

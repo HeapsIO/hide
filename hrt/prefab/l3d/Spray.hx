@@ -377,7 +377,7 @@ class Spray extends Object3D {
 		}
 		var nbItemsInZone = 0;
 		var vecRelat = point.toVector();
-		vecRelat.transform3x4(invParent);
+		vecRelat.transform(invParent);
 		var point2d = new h2d.col.Point(vecRelat.x, vecRelat.y);
 
 		final CONFIG = currentConfig;
@@ -412,7 +412,7 @@ class Spray extends Object3D {
 
 					position = new h3d.col.Point(point.x + randomRadius*Math.cos(angle), point.y + randomRadius*Math.sin(angle), 0);
 					var vecRelat = position.toVector();
-					vecRelat.transform3x4(invParent);
+					vecRelat.transform(invParent);
 
 					var isNextTo = false;
 					for (cPivot in currentPivots) {
@@ -514,7 +514,7 @@ class Spray extends Object3D {
 
 	function removeItemsAround(ctx : Context, point : h3d.col.Point) {
 		var vecRelat = point.toVector();
-		vecRelat.transform3x4(invParent);
+		vecRelat.transform(invParent);
 		var point2d = new h2d.col.Point(vecRelat.x, vecRelat.y);
 
 		var childToRemove = [];
@@ -543,7 +543,7 @@ class Spray extends Object3D {
 	}
 
 	public function drawCircle(ctx : Context, originX : Float, originY : Float, originZ : Float, radius: Float, thickness: Float, color) {
-		var newColor = h3d.Vector.fromColor(color);
+		var newColor = h3d.Vector4.fromColor(color);
 		if (gBrushes == null || gBrushes.length == 0 || gBrushes[0].scaleX != radius || gBrushes[0].material.color != newColor) {
 			clearBrushes();
 			gBrushes = [];

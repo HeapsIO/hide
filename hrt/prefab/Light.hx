@@ -419,7 +419,7 @@ class Light extends Object3D {
 
 		var icon = Std.downcast(ctx.custom, hrt.impl.EditorTools.EditorIcon);
 		if (icon != null) {
-			icon.color = h3d.Vector.fromColor(color);
+			icon.color = h3d.Vector4.fromColor(color);
 
 			var ide = hide.Ide.inst;
 			switch(kind) {

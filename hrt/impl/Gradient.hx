@@ -2,7 +2,7 @@ package hrt.impl;
 
 import haxe.Int32;
 import h3d.mat.Texture;
-import h3d.Vector;
+import h3d.Vector4;
 
 typedef ColorStop = {position : Float, color : Int};
 
@@ -38,8 +38,8 @@ class Gradient {
         return data;
     }
 
-    public static function evalData(data : GradientData, position : Float, ?outVector : Vector) : Vector {
-        if (outVector == null) outVector = new Vector();
+    public static function evalData(data : GradientData, position : Float, ?outVector : Vector4) : Vector4 {
+        if (outVector == null) outVector = new Vector4();
         var i : Int = 0;
         while(i < data.stops.length && data.stops[i].position < position) {
             i += 1;
@@ -116,7 +116,7 @@ class Gradient {
         return outVector;
     }
 
-    public function eval(position : Float, ?outVector : Vector) : Vector {
+    public function eval(position : Float, ?outVector : Vector4) : Vector4 {
         return evalData(data, position, outVector);
     }
 
@@ -176,7 +176,7 @@ class Gradient {
             var yScale = 1 - xScale;
             var pixels = hxd.Pixels.alloc(data.resolution * xScale + 1 * yScale,1 * xScale + data.resolution * yScale, ARGB);
 
-            var vec = new Vector();
+            var vec = new Vector4();
             for (x in 0...data.resolution) {
                 evalData(data, x / data.resolution, vec);
                 pixels.setPixelF(x * xScale,x*yScale, vec);

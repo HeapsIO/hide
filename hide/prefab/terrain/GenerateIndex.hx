@@ -24,6 +24,6 @@ class GenerateIndex extends h3d.shader.ScreenShader {
 
 	public function new(){
 		super();
-		mask = [new h3d.Vector(1,0,0,0), new h3d.Vector(0,1,0,0), new h3d.Vector(0,0,1,0), new h3d.Vector(0,0,0,1)];
+		mask = [new h3d.Vector4(1,0,0,0), new h3d.Vector4(0,1,0,0), new h3d.Vector4(0,0,1,0), new h3d.Vector4(0,0,0,1)];
 	}
 }

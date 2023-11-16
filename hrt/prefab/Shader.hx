@@ -35,6 +35,16 @@ class Shader extends Prefab {
 				continue;
 			var val : Dynamic = Reflect.field(props, v.name);
 			switch(v.type) {
+			case TVec(4, VFloat):
+				if(val != null) {
+					if( Std.isOfType(val,Int) ) {
+						var v = new h3d.Vector4();
+						v.setColor(val);
+						val = v;
+					} else
+						val = h3d.Vector4.fromArray(val);
+				} else
+					val = new h3d.Vector4();
 			case TVec(_, VFloat):
 				if(val != null) {
 					if( Std.isOfType(val,Int) ) {

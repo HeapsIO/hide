@@ -36,8 +36,8 @@ class SurfaceArray {
 	public var normal : h3d.mat.TextureArray;
 	public var pbr : h3d.mat.TextureArray;
 	public var surfaceCount : Int;
-	public var params : Array<h3d.Vector> = [];
-	public var secondParams : Array<h3d.Vector> = [];
+	public var params : Array<h3d.Vector4> = [];
+	public var secondParams : Array<h3d.Vector4> = [];
 
 	public function new( count, res ) {
 		surfaceCount = count;

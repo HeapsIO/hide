@@ -76,7 +76,7 @@ class MeshPart {
 			socket.name = o.socket.name;
 		}
 		if( o.offset != null )
-			offset.set(o.offset.x, o.offset.y, o.offset.z, 0.0);
+			offset.set(o.offset.x, o.offset.y, o.offset.z);
 		meshPath = o.meshPath == "none" ? null : o.meshPath;
 		var ps : Array<Dynamic> = o.childParts;
 		if( ps != null ) {
