@@ -114,6 +114,7 @@ class SSR extends RendererFX {
 	@:s public var maxRoughness : Float = 0.75;
 	@:s public var minAngle : Float = 5.0;
 	@:s public var rayMarchingResolution : Float = 0.5;
+	@:s public var support4K : Bool = false;
 
 	function new(?parent) {
 		super(parent);
@@ -140,6 +141,10 @@ class SSR extends RendererFX {
 			ssrShader.maxRoughness = maxRoughness;
 			ssrShader.minCosAngle = Math.cos(hxd.Math.degToRad(minAngle));
 			ssrShader.rayMarchingResolution = rayMarchingResolution;
+			var resRescale = 1.0;
+			if ( !support4K )
+				resRescale = hxd.Math.max(1.0, hxd.Math.max(ssrShader.texSize.x / 2560, ssrShader.texSize.y / 1440));
+			ssrShader.rayMarchingResolution /= resRescale;
 
 			ssrShader.cameraView = r.ctx.camera.mcam;
 			ssrShader.cameraProj = r.ctx.camera.mproj;
@@ -148,7 +153,7 @@ class SSR extends RendererFX {
 
 			ssrPass.setGlobals(r.ctx);
 
-			ssr = r.allocTarget("ssr", false, textureSize, hdrMap.format);
+			ssr = r.allocTarget("ssr", false, textureSize / resRescale, hdrMap.format);
 			ssr.clear(0, 0);
 			r.ctx.engine.pushTarget(ssr);
 			ssrPass.render();
@@ -174,6 +179,7 @@ class SSR extends RendererFX {
 				<dt>Ray marching resolution</dt><dd><input type="range" min="0" max="1" field="rayMarchingResolution"/></dd>
 				<dt>Blur radius</dt><dd><input type="range" min="0" max="5" field="blurRadius"/></dd>
 				<dt>Texture size</dt><dd><input type="range" min="0" max="1" field="textureSize"/></dd>
+				<dt>Support 4K</dt><dd><input type="checkbox" field="support4K"/></dd>
 			</dl>
 		</div>
 		'),this);
