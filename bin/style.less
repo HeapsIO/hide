@@ -1222,10 +1222,11 @@ input[type=checkbox] {
 	}
 }
 /* Image Viewer */
+@imgPanelWidht : 320px;
 .image-properties {
 	height : 100%;
 	background-color: #111;
-	width: 320px;
+	width: @imgPanelWidht;
 
 	.title {
 		text-align: center;
@@ -1234,29 +1235,97 @@ input[type=checkbox] {
 		background-color : rgb(30,30,30);
 	}
 
-	.save-compression, .reset-preview {
-		width: 100%;
-		margin: 4px;
+	.preview-btns {
+		display:flex;
+		flex-direction: row;
+
+		input[type="button"] {
+			flex: 1;
+			margin: 5px 5px 5px 5px;
+		}
+	}
+
+	.reset-compression {
+		outline: 2px solid #fd5151;
+		width: 95%;
+		margin-left: 2.5%;
 	}
 
 	.compression-infos {
 		width: 100%;
 		margin-top: 10px;
 		margin-bottom: 10px;
+
+		p {
+			margin: 0px 0px 0px 5px;
+			font-weight: bold;
+			text-align: center;
+		}
 	}
 
 	.field {
-		margin: 5px 5px 0 50px;
+		margin: 5px 5px 0px 50px;
 		display: flex;
     	flex-direction: row;
+
+		&.alpha {
+			margin: 5px 5px 5px 80px;
+
+			label {
+				flex: 1;
+				flex-shrink: 0;
+				white-space: nowrap;
+			}
+
+			input[type="checkbox"]{
+				margin-right: 5px;
+			}
+
+			input[type="number"]{
+				flex: 1;
+
+				&:disabled {
+					pointer-events: none;
+					background-color: #111111;
+					color: #757575;
+				}
+			}
+		}
 
 		label {
 			margin-right: 4px;
 		}
 
+		.size {
+			width: 50px;
+			margin-right: 5px;
+		}
+
 		select, input[type="text"] {
 			flex-grow: 1;
 		}
+	}
+}
+
+.identifiers {
+	position: absolute;
+	left: 0;
+	right: @imgPanelWidht;
+	bottom: 50px;
+
+	label {
+		position: absolute;
+		color: white;
+		font-weight: bold;
+		font-size: 30px;
+	}
+
+	:nth-child(1) {
+		left: 20px;
+	}
+
+	:nth-child(2) {
+		right:20px;
 	}
 }
 
@@ -1511,7 +1580,7 @@ input[type=checkbox] {
 	.key-event.selected, .key-event:hover.selected {
 		fill: #ffbe33;
 	}
-	
+
 	text {
 		font: 10px sans-serif; fill: #8d8d8d;
 	}
@@ -1592,7 +1661,7 @@ input[type=checkbox] {
 		background: #4a4a4a;
 		text-align: left;
 		white-space: nowrap;
-		
+
 		.name {
 			padding: 1px;
 			padding-left: 5px;
@@ -1636,17 +1705,17 @@ input[type=checkbox] {
 		position: relative;
 		background: #1b1b1b;
 		text-align: left;
-		
+
 		&.hidden {
 			display: none;
 		}
-		
+
 		.name {
 			padding: 1px;
 			padding-left: 5px;
 			padding-right: 5px;
 		}
-		
+
 		.abspath {
 			position: absolute;
 			opacity: 0.5;
@@ -1695,7 +1764,7 @@ input[type=checkbox] {
 		}
 	}
 
-	.track {		
+	.track {
 		min-height: 20px;
 		display: flex;
 		user-select: none;
@@ -1721,11 +1790,11 @@ input[type=checkbox] {
 				background: rgba(0, 0, 0, 0.438);
 			}
 		}
-			
+
 		&.hidden {
 			display: none;
 		}
-		
+
 		.curve {
 			margin-left: @leftPanelWidth;
 			position: relative;

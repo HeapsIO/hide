@@ -80,23 +80,33 @@ class Image extends FileView {
 			<div class="flex vertical">
 				<div class="toolbar"></div>
 				<div class="scene-partition" style="display: flex; flex-direction: row; flex: 1; overflow: hidden;">
-					<div class="heaps-scene"></div>
-					<div class="image-properties">
-						<div class="title">Image compression</div>
-						<div class="compression-infos"></div>
-						<input type="button" class="reset-preview" value="Reset preview"/>
-						<input type="button" class="save-compression" value="Save"/>
+				<div class="heaps-scene"></div>
+				<div class="image-properties">
+					<div class="title">Image compression</div>
+					<div class="compression-infos">
+						<p class="comp-tex-weight">Compressed texture weight : missing info </p>
+						<p class="uncomp-tex-weight">Uncompressed texture weight : missing info</p>
 					</div>
+						<div class="preview-btns">
+							<input type="button" class="reset-preview" value="Reset preview" title="Reset preview compression."/>
+							<input type="button" class="save-compression" value="Save" title="Save current compression options into a props.json file."/>
+						</div>
+						<input type="button" class="reset-compression" value="Reset compression" title="Remove the current compression\'s rules applied to this texture, from props.json file."/>
+					</div>
+				</div>
+				<div class="identifiers">
+					<label>Compressed texture</label>
+					<label>Uncompressed texture</label>
 				</div>
 			</div>
 		');
 
 		scene = new hide.comp.Scene(config, null, element.find(".heaps-scene"));
 
-		function addField(parent: Element, label:String, selectClass:String, options:Array<String>) {
+		function addField(parent: Element, label:String, title:String, selectClass:String, options:Array<String>) {
 			var field = new Element('<div class="field">
 				<label>${label}</label>
-				<select class="${selectClass}">
+				<select class="${selectClass}" title="${title}">
 				</select>
 			</div>');
 
@@ -109,39 +119,36 @@ class Image extends FileView {
 		}
 
 		var compressionInfo = element.find(".compression-infos");
-		addField(compressionInfo, "Format :", "select-format", ["none", "BC1", "BC2", "BC3", "RGBA", "R16F", "RG16F", "RGBA16F", "R32F", "RG32F", "RGBA32F", "R16U", "RG16U", "RGBA16U"] );
+		addField(compressionInfo, "Format :", "Compression format used to compress texture", "select-format", ["none", "BC1", "BC2", "BC3", "RGBA", "R16F", "RG16F", "RGBA16F", "R32F", "RG32F", "RGBA32F", "R16U", "RG16U", "RGBA16U"] );
+
+		var alphaField = new Element('<div class="field alpha">
+			<label>Alpha :</label>
+			<input type="checkbox" class="use-alpha" title="Does the BC1 format use alpha"></input>
+			<input type="number" class="alpha-threshold" placeholder="Alpha threshold" title="Alpha threshold value"></input>
+		</div>');
+		compressionInfo.append(alphaField);
 
 		var mipsField = new Element('<div class="field">
-			<label>Mip maps :</label>
-			<input type="checkbox" class="mips-checkbox"></input>
+		<label>Mip maps :</label>
+		<input type="checkbox" class="mips-checkbox" title="Generate mip maps for the texture"></input>
 		</div>');
 		compressionInfo.append(mipsField);
 
 		var sizeField = new Element('<div class="field">
-			<label>Size :</label>
-			<input type="text" class="size"></input>
+		<label>Size :</label>
+		<input type="number" class="size"></input>
+		<label class="max-size">/ 128 px</label>
 		</div>');
 		compressionInfo.append(sizeField);
-
-		var alphaField = new Element('<div class="field">
-			<label>Alpha :</label>
-			<input type="text" class="alpha-threshold"></input>
-		</div>');
-		compressionInfo.append(alphaField);
 
 		var format = compressionInfo.find(".select-format");
 		var mips = compressionInfo.find(".mips-checkbox");
 		var size = compressionInfo.find(".size");
+		var useAlpha = compressionInfo.find(".use-alpha");
 		var alpha = compressionInfo.find(".alpha-threshold");
 
-		var fs:hxd.fs.LocalFileSystem = Std.downcast(hxd.res.Loader.currentInstance.fs, hxd.fs.LocalFileSystem);
-		@:privateAccess var textureConvertRule = fs.convert.getConvertRule(state.path);
-
-		var convertRuleEmpty = textureConvertRule == null || textureConvertRule.cmd == null || textureConvertRule.cmd.params == null;
-
-		format.val(convertRuleEmpty ? "none" : textureConvertRule.cmd.params.format);
 		format.on("change", function(_) {
-			createPreviewTexture(format, alpha, mips, size);
+			createPreviewTexture(format, useAlpha, alpha, mips, size);
 
 			// Alpha treshold make sense for BC1 format
 			if (format.val() != "BC1")
@@ -150,44 +157,67 @@ class Image extends FileView {
 				alpha.parent().css({"display":"flex"});
 		});
 
-		alpha.val(convertRuleEmpty || Reflect.field(textureConvertRule.cmd.params, "alpha") == null ? "undefined" : textureConvertRule.cmd.params.alpha);
+		useAlpha.on("change", function(_) {
+			if (useAlpha.is(':checked')) {
+				alpha.removeAttr("disabled");
+
+				if (alpha.val() == null || alpha.val() == "")
+					alpha.val(128);
+			}
+			else {
+				alpha.prop("disabled", true);
+			}
+
+			createPreviewTexture(format, useAlpha, alpha, mips, size);
+		});
+
 		alpha.on("change", function(_) {
-			createPreviewTexture(format, alpha, mips, size);
+			createPreviewTexture(format, useAlpha, alpha, mips, size);
 		});
 
-		// Alpha treshold make sense for BC1 format
-		if (format.val() != "BC1")
-			alpha.parent().css({"display":"none"});
-		else
-			alpha.parent().css({"display":"flex"});
-
-		size.val(convertRuleEmpty || Reflect.field(textureConvertRule.cmd.params, "size") == null ? "undefined" : textureConvertRule.cmd.params.size);
 		size.on("change", function(_) {
-			createPreviewTexture(format, alpha, mips, size);
+			createPreviewTexture(format, useAlpha, alpha, mips, size);
 		});
-
-		if (!convertRuleEmpty && textureConvertRule.cmd.params.mips)
-			mips.prop("checked", true);
-		else
-			mips.removeProp("checked");
 
 		mips.on("change", function(_) {
-			createPreviewTexture(format, alpha, mips, size);
+			createPreviewTexture(format, useAlpha, alpha, mips, size);
 		});
+
+		var fs:hxd.fs.LocalFileSystem = Std.downcast(hxd.res.Loader.currentInstance.fs, hxd.fs.LocalFileSystem);
+		@:privateAccess var textureConvertRule = fs.convert.getConvertRule(state.path);
+
+		var convertRuleEmpty = textureConvertRule == null || textureConvertRule.cmd == null || textureConvertRule.cmd.params == null;
 
 		this.saveDisplayKey = state.path;
 		this.viewMode = getDisplayState("ViewMode");
 		if (this.viewMode == null)
 			this.viewMode = Compressed;
 
+		var identifiers = element.find(".identifiers");
+		identifiers.css(this.viewMode.match(ViewMode.Comparison) ? {"visibility":"inherit"} : {"visibility":"hidden"});
+
 		var dirPos = state.path.lastIndexOf("/");
 		var dirPath = dirPos < 0 ? state.path : state.path.substr(0, dirPos + 1);
+		var name = dirPos < 0 ? state.path : state.path.substr(dirPos + 1);
+		var propsFilePath = ide.getPath(dirPath + "props.json");
 
 		var resetPreview = element.find(".reset-preview");
 		resetPreview.on("click", function(_) {
+			var texMaxSize = getTextureMaxSize();
 			format.val(convertRuleEmpty ? "none" : textureConvertRule.cmd.params.format);
-			alpha.val(convertRuleEmpty || Reflect.field(textureConvertRule.cmd.params, "alpha") == null ? "undefined" : textureConvertRule.cmd.params.alpha);
-			size.val(convertRuleEmpty || Reflect.field(textureConvertRule.cmd.params, "size") == null ? "undefined" : textureConvertRule.cmd.params.size);
+			alpha.val(convertRuleEmpty || Reflect.field(textureConvertRule.cmd.params, "alpha") == null ? null : textureConvertRule.cmd.params.alpha);
+			size.val(convertRuleEmpty || Reflect.field(textureConvertRule.cmd.params, "size") == null ? texMaxSize : textureConvertRule.cmd.params.size);
+
+			if (Reflect.field(textureConvertRule.cmd.params, "alpha") != null) {
+				useAlpha.prop("checked", true);
+				alpha.removeAttr("disabled");
+				alpha.val(128);
+			}
+			else {
+				useAlpha.prop("checked", false);
+				alpha.prop("disabled", true);
+				alpha.val(null);
+			}
 
 			if (convertRuleEmpty && textureConvertRule.cmd.params.mips)
 				mips.prop("checked", true);
@@ -200,11 +230,12 @@ class Image extends FileView {
 			else
 				alpha.parent().css({"display":"flex"});
 
-			createPreviewTexture(format, alpha, mips, size);
+			createPreviewTexture(format, useAlpha, alpha, mips, size);
 		});
 
 		var saveCompression = element.find(".save-compression");
 		saveCompression.on("click", function(_) {
+			var texMaxSize = getTextureMaxSize();
 			var bytes = new haxe.io.BytesOutput();
 			var convertRule = { };
 
@@ -214,20 +245,24 @@ class Image extends FileView {
 			else {
 				convertRule = { convert : "dds", format : format.val(), mips : mips.is(':checked') };
 
-				if (size.val() != "undefined")
+				if (size.val() != texMaxSize)
 					Reflect.setField(convertRule, "size", size.val());
 
-				if (alpha.val() != "undefined")
+				if (useAlpha.is(':checked'))
 					Reflect.setField(convertRule, "alpha", alpha.val());
 			}
 
-			var propsFilePath = ide.getPath(dirPath + "props.json");
 			if (sys.FileSystem.exists(propsFilePath)) {
 				var propsJson = haxe.Json.parse(sys.io.File.getContent(propsFilePath));
 
 				if (Reflect.hasField(propsJson, "fs.convert")) {
 					var fsConvertObj = Reflect.getProperty(propsJson, "fs.convert");
 					Reflect.setField(fsConvertObj, state.path, convertRule);
+				}
+				else {
+					var fsConvertObj = {} ;
+					Reflect.setField(fsConvertObj, state.path, convertRule);
+					Reflect.setProperty(propsJson, "fs.convert", fsConvertObj);
 				}
 
 				var data = haxe.Json.stringify(propsJson, "\t");
@@ -244,14 +279,47 @@ class Image extends FileView {
 				hxd.File.saveBytes(propsFilePath, bytes.getBytes());
 			}
 
-			var dirPos = state.path.lastIndexOf("/");
-			var name = dirPos < 0 ? state.path : state.path.substr(dirPos + 1);
-
 			@:privateAccess fs.convert.configs.clear();
 			@:privateAccess fs.convert.loadConfig(state.path);
 
 			var localEntry = @:privateAccess new hxd.fs.LocalFileSystem.LocalEntry(fs, name, state.path, Ide.inst.getPath(state.path));
 			fs.convert.run(localEntry);
+		});
+
+		var resetCompression = element.find(".reset-compression");
+		resetCompression.on("click", function(_) {
+			if (!sys.FileSystem.exists(propsFilePath))
+				ide.message('The file ${propsFilePath} does not exist !');
+
+			var rulesObj = haxe.Json.parse(sys.io.File.getContent(propsFilePath));
+
+			var fsConvertObj = Reflect.getProperty(rulesObj, "fs.convert");
+			if (fsConvertObj == null || Reflect.getProperty(fsConvertObj, state.path) == null)
+				ide.message('The file ${propsFilePath} does not contain compression rule for ${state.path} !');
+			else {
+				if(!ide.confirm('Do you really want to remove ${state.path} from ${propsFilePath} ?'))
+					return;
+
+				Reflect.deleteField(fsConvertObj, state.path);
+
+				if (Reflect.getProperty(rulesObj, fsConvertObj) == null)
+					Reflect.deleteField(rulesObj, "fs.convert");
+
+				if (Reflect.fields(rulesObj).length == 0) {
+					sys.FileSystem.deleteFile(propsFilePath);
+					updateImageCompressionInfos();
+					replaceImage(ide.getPath(state.path));
+					return;
+				}
+			}
+
+			var bytes = new haxe.io.BytesOutput();
+			var data = haxe.Json.stringify(rulesObj, "\t");
+			bytes.writeString(data);
+			hxd.File.saveBytes(propsFilePath, bytes.getBytes());
+
+			updateImageCompressionInfos();
+			replaceImage(ide.getPath(state.path));
 		});
 
 		shader = new ImageViewerShader();
@@ -267,6 +335,9 @@ class Image extends FileView {
 				this.saveDisplayState("ViewMode", Compressed);
 				this.viewMode = Compressed;
 
+				var identifiers = element.find(".identifiers");
+				identifiers.css(this.viewMode.match(ViewMode.Comparison) ? {"visibility":"inherit"} : {"visibility":"hidden"});
+
 				applyShaderConfiguration();
 			}
 		}, this.viewMode.match(Compressed));
@@ -279,6 +350,9 @@ class Image extends FileView {
 			if (bmp != null) {
 				this.saveDisplayState("ViewMode", Uncompressed);
 				this.viewMode = Uncompressed;
+
+				var identifiers = element.find(".identifiers");
+				identifiers.css(this.viewMode.match(ViewMode.Comparison) ? {"visibility":"inherit"} : {"visibility":"hidden"});
 
 				applyShaderConfiguration();
 			}
@@ -293,6 +367,9 @@ class Image extends FileView {
 			if (bmp != null) {
 				this.saveDisplayState("ViewMode", Comparison);
 				this.viewMode = Comparison;
+
+				var identifiers = element.find(".identifiers");
+				identifiers.css(this.viewMode.match(ViewMode.Comparison) ? {"visibility":"inherit"} : {"visibility":"hidden"});
 
 				applyShaderConfiguration();
 			}
@@ -384,6 +461,10 @@ class Image extends FileView {
 			tools.addRange("Exposure", function(f) shader.exposure = f, 0, -10, 10);
 		}
 
+		var compTexMemSize = element.find(".comp-tex-weight");
+		compTexMemSize.text('Compressed texture weight : ${@:privateAccess floatToStringPrecision(compressedTexture.mem.memSize(compressedTexture) / (1024 * 1024)) } mb');
+
+		updateImageCompressionInfos();
 		applyShaderConfiguration();
 		onResize();
 	}
@@ -479,6 +560,72 @@ class Image extends FileView {
 		shader = null;
 	}
 
+	public function updateImageCompressionInfos() {
+		var compressionInfo = element.find(".compression-infos");
+
+		// Compression infos fields
+		var format = compressionInfo.find(".select-format");
+		var mips = compressionInfo.find(".mips-checkbox");
+		var size = compressionInfo.find(".size");
+		var useAlpha = compressionInfo.find(".use-alpha");
+		var alpha = compressionInfo.find(".alpha-threshold");
+		var maxSize = compressionInfo.find(".max-size");
+
+		var dirPos = state.path.lastIndexOf("/");
+		var name = dirPos < 0 ? state.path : state.path.substr(dirPos + 1);
+
+		// We want to clear file system because we don't want to load texture from older texture's convert rules
+		var fs:hxd.fs.LocalFileSystem = Std.downcast(hxd.res.Loader.currentInstance.fs, hxd.fs.LocalFileSystem);
+		@:privateAccess fs.convert.configs.clear();
+		@:privateAccess fs.convert.loadConfig(state.path);
+
+		var localEntry = @:privateAccess new hxd.fs.LocalFileSystem.LocalEntry(fs, name, state.path, Ide.inst.getPath(state.path));
+		fs.convert.run(localEntry);
+
+		@:privateAccess var texConvRule = fs.convert.getConvertRule(state.path);
+		var convertRuleEmpty = texConvRule == null || texConvRule.cmd == null || texConvRule.cmd.params == null;
+
+		format.val(convertRuleEmpty ? "none" : texConvRule.cmd.params.format);
+
+		if (!convertRuleEmpty) {
+			if (Reflect.field(texConvRule.cmd.params, "alpha") != null) {
+				useAlpha.prop("checked", true);
+				alpha.removeAttr("disabled");
+				alpha.val(128);
+			}
+			else {
+				useAlpha.removeProp("checked");
+				alpha.prop("disabled", true);
+				alpha.val(null);
+			}
+		}
+
+		alpha.val(convertRuleEmpty || Reflect.field(texConvRule.cmd.params, "alpha") == null ? null : texConvRule.cmd.params.alpha);
+
+		// Alpha treshold make sense for BC1 format
+		if (format.val() != "BC1")
+			alpha.parent().css({"display":"none"});
+		else
+			alpha.parent().css({"display":"flex"});
+
+		var strMaxSize = getTextureMaxSize();
+		size.val(convertRuleEmpty || Reflect.field(texConvRule.cmd.params, "size") == null ? strMaxSize : texConvRule.cmd.params.size);
+
+		if (!convertRuleEmpty && texConvRule.cmd.params.mips)
+			mips.prop("checked", true);
+		else
+			mips.removeProp("checked");
+
+		var texMaxSize = getTextureMaxSize();
+
+		maxSize.text('/${texMaxSize} px');
+		if(size.val() == null || size.val() == "")
+			size.val(texMaxSize);
+
+		var uncompTWeight = element.find(".uncomp-tex-weight");
+		uncompTWeight.text('Uncompressed texture weight : ${getTextureMemSize(state.path)} mb');
+	}
+
 	public function replaceImage(path : String) {
 		var bytes = sys.io.File.getBytes(path);
 		var res = hxd.res.Any.fromBytes(path, bytes);
@@ -530,11 +677,14 @@ class Image extends FileView {
 			tools.addRange("Exposure", function(f) shader.exposure = f, 0, -10, 10);
 		}
 
+		var compTexMemSize = element.find(".comp-tex-weight");
+		compTexMemSize.text('Compressed texture weight : ${@:privateAccess floatToStringPrecision(t.mem.memSize(t) / (1024 * 1024)) } mb');
+
 		applyShaderConfiguration();
 		onResize();
 	}
 
-	public function createPreviewTexture(format: Element, alpha: Element, mips: Element, size: Element) {
+	public function createPreviewTexture(format: Element, useAlpha: Element, alpha: Element, mips: Element, size: Element) {
 		var dirPos = state.path.lastIndexOf("/");
 		var name = dirPos < 0 ? state.path : state.path.substr(dirPos + 1);
 		var tmpPath = StringTools.replace(Sys.getEnv("TEMP"), "\\","/") + "/tempTexture.dds";
@@ -544,7 +694,12 @@ class Image extends FileView {
 			comp.srcPath = Ide.inst.getPath(state.path);
 			comp.dstPath = Ide.inst.getPath(tmpPath);
 			comp.originalFilename = name;
-			comp.params = { alpha:Std.parseInt(alpha.val()), format:format.val().toString(), mips:mips.is(':checked'), size:Std.parseInt(size.val()) };
+
+			if (useAlpha.is(':checked'))
+				comp.params = { format:format.val().toString(), mips:mips.is(':checked'), size:Std.parseInt(size.val()) };
+			else
+				comp.params = { alpha:Std.parseInt(alpha.val()), format:format.val().toString(), mips:mips.is(':checked'), size:Std.parseInt(size.val()) };
+
 			comp.convert();
 		}
 		else {
@@ -552,6 +707,30 @@ class Image extends FileView {
 		}
 
 		replaceImage(Ide.inst.getPath(tmpPath));
+	}
+
+	public function getTextureMaxSize(): Int {
+		var path = ide.getPath(state.path);
+		var bytes = sys.io.File.getBytes(path);
+		var res = hxd.res.Any.fromBytes(path, bytes);
+		var t = res.toTexture();
+
+		return t.width;
+	}
+
+	public function getTextureMemSize(path: String) {
+		// Return texture mem size in MB
+		var p = ide.getPath(path);
+		var bytes = sys.io.File.getBytes(p);
+		var res = hxd.res.Any.fromBytes(p, bytes);
+		var t = res.toTexture();
+
+		return @:privateAccess floatToStringPrecision(t.mem.memSize(t) / (1024 * 1024));
+	}
+
+	public function floatToStringPrecision(number:Float, ?precision=2) {
+		number *= Math.pow(10, precision);
+		return Math.round(number) / Math.pow(10, precision);
 	}
 
 	static var _ = FileTree.registerExtension(Image,hide.Ide.IMG_EXTS.concat(["envd","envs"]),{ icon : "picture-o" });

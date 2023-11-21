@@ -1143,27 +1143,81 @@ input[type=checkbox]:checked:after {
   margin: 4px;
   background-color: #1e1e1e;
 }
-.image-properties .save-compression,
-.image-properties .reset-preview {
-  width: 100%;
-  margin: 4px;
+.image-properties .preview-btns {
+  display: flex;
+  flex-direction: row;
+}
+.image-properties .preview-btns input[type="button"] {
+  flex: 1;
+  margin: 5px 5px 5px 5px;
+}
+.image-properties .reset-compression {
+  outline: 2px solid #fd5151;
+  width: 95%;
+  margin-left: 2.5%;
 }
 .image-properties .compression-infos {
   width: 100%;
   margin-top: 10px;
   margin-bottom: 10px;
 }
+.image-properties .compression-infos p {
+  margin: 0px 0px 0px 5px;
+  font-weight: bold;
+  text-align: center;
+}
 .image-properties .field {
-  margin: 5px 5px 0 50px;
+  margin: 5px 5px 0px 50px;
   display: flex;
   flex-direction: row;
+}
+.image-properties .field.alpha {
+  margin: 5px 5px 5px 80px;
+}
+.image-properties .field.alpha label {
+  flex: 1;
+  flex-shrink: 0;
+  white-space: nowrap;
+}
+.image-properties .field.alpha input[type="checkbox"] {
+  margin-right: 5px;
+}
+.image-properties .field.alpha input[type="number"] {
+  flex: 1;
+}
+.image-properties .field.alpha input[type="number"]:disabled {
+  pointer-events: none;
+  background-color: #111111;
+  color: #757575;
 }
 .image-properties .field label {
   margin-right: 4px;
 }
+.image-properties .field .size {
+  width: 50px;
+  margin-right: 5px;
+}
 .image-properties .field select,
 .image-properties .field input[type="text"] {
   flex-grow: 1;
+}
+.identifiers {
+  position: absolute;
+  left: 0;
+  right: 320px;
+  bottom: 50px;
+}
+.identifiers label {
+  position: absolute;
+  color: white;
+  font-weight: bold;
+  font-size: 30px;
+}
+.identifiers :nth-child(1) {
+  left: 20px;
+}
+.identifiers :nth-child(2) {
+  right: 20px;
 }
 /* Curve editor */
 .hide-curve-editor {
