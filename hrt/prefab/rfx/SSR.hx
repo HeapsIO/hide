@@ -22,6 +22,8 @@ class SSRShader extends h3d.shader.ScreenShader {
 		@param var minCosAngle : Float;
 		@param var rayMarchingResolution : Float;
 
+		@const var batchSample : Bool;
+
 		function reflectedRay(ray : Vec3, normal : Vec3) : Vec3 {
 			return ray - 2.0 * dot(ray, normal) * normal;
 		}
@@ -70,21 +72,52 @@ class SSRShader extends h3d.shader.ScreenShader {
 			var frag = startFrag.xy + increment;
 			var uv = frag / texSize;
 
-			do {
-			  	var positionTo = getViewPos(uv);
-				var viewStepLength = distance(positionTo.xy, positionFrom.xy);
-			  	var viewDistance = positionFrom.z + reflectedRay.z * viewStepLength;
-			  	var depth = viewDistance - positionTo.z;
+			if (!batchSample) {
+				do {
+					var positionTo = getViewPos(uv);
+					var viewStepLength = distance(positionTo.xy, positionFrom.xy);
+					var viewDistance = positionFrom.z + reflectedRay.z * viewStepLength;
+					var depth = viewDistance - positionTo.z;
 
-			  	if (depth >= 0.0 && depth < thickness) {
-					hit = 1;
-					break;
-				}
+					if (depth >= 0.0 && depth < thickness) {
+						hit = 1;
+						break;
+					}
 
-				frag += increment;
-				uv = frag / texSize;
+					frag += increment;
+					uv = frag / texSize;
 
-			} while (uv.x >= 0.0 && uv.x < 1.0 && uv.y >= 0.0 && uv.y < 1.0);
+				} while (uv.x >= 0.0 && uv.x < 1.0 && uv.y >= 0.0 && uv.y < 1.0);
+			}
+			else {
+				do {
+					var result = bVec4(false);
+					@unroll
+					for ( i in 0...4 ) {
+						var positionTo = getViewPos(uv);
+						var viewStepLength = distance(positionTo.xy, positionFrom.xy);
+						var viewDistance = positionFrom.z + reflectedRay.z * viewStepLength;
+						var depth = viewDistance - positionTo.z;
+						if( i == 0)
+							result.x = depth >= 0.0 && depth < thickness;
+						else if( i == 1)
+							result.y = depth >= 0.0 && depth < thickness;
+						else if( i == 2)
+							result.z = depth >= 0.0 && depth < thickness;
+						else if( i == 3)
+							result.w = depth >= 0.0 && depth < thickness;
+
+						frag += increment;
+						uv = frag / texSize;
+					}
+
+					  if (result.x || result.y || result.z || result.w) {
+						hit = 1;
+						break;
+					}
+				} while (uv.x >= 0.0 && uv.x < 1.0 && uv.y >= 0.0 && uv.y < 1.0);
+			}
+
 
 			if (hit != 1)
 				discard;
@@ -115,6 +148,7 @@ class SSR extends RendererFX {
 	@:s public var minAngle : Float = 5.0;
 	@:s public var rayMarchingResolution : Float = 0.5;
 	@:s public var support4K : Bool = false;
+	@:s public var batchSample : Bool = false;
 
 	function new(?parent) {
 		super(parent);
@@ -145,6 +179,7 @@ class SSR extends RendererFX {
 			if ( !support4K )
 				resRescale = hxd.Math.max(1.0, hxd.Math.max(ssrShader.texSize.x / 2560, ssrShader.texSize.y / 1440));
 			ssrShader.rayMarchingResolution /= resRescale;
+			ssrShader.batchSample = batchSample;
 
 			ssrShader.cameraView = r.ctx.camera.mcam;
 			ssrShader.cameraProj = r.ctx.camera.mproj;
@@ -180,6 +215,7 @@ class SSR extends RendererFX {
 				<dt>Blur radius</dt><dd><input type="range" min="0" max="5" field="blurRadius"/></dd>
 				<dt>Texture size</dt><dd><input type="range" min="0" max="1" field="textureSize"/></dd>
 				<dt>Support 4K</dt><dd><input type="checkbox" field="support4K"/></dd>
+				<dt>Fast sample</dt><dd><input type="checkbox" field="batchSample"/></dd>
 			</dl>
 		</div>
 		'),this);
