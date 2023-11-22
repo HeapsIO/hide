@@ -65,13 +65,13 @@ enum ViewMode {
 class Image extends FileView {
 
 	var bmp : h2d.Bitmap;
-	var sliderBmp : h2d.Bitmap;
+	var sliderBmp : h2d.Graphics;
 	var scene : hide.comp.Scene;
 	var shader : ImageViewerShader;
 	var viewMode : ViewMode = Compressed;
 	var interactive : h2d.Interactive;
 	var tools : hide.comp.Toolbar;
-	var sliderTexture : Null<h3d.mat.Texture>;
+	var cam : Dynamic;
 
 	override function onDisplay() {
 		cleanUp();
@@ -95,8 +95,8 @@ class Image extends FileView {
 					</div>
 				</div>
 				<div class="identifiers">
-					<label>Compressed texture</label>
-					<label>Uncompressed texture</label>
+					<label>Compressed</label>
+					<label>Uncompressed</label>
 				</div>
 			</div>
 		');
@@ -208,7 +208,7 @@ class Image extends FileView {
 			alpha.val(convertRuleEmpty || Reflect.field(textureConvertRule.cmd.params, "alpha") == null ? null : textureConvertRule.cmd.params.alpha);
 			size.val(convertRuleEmpty || Reflect.field(textureConvertRule.cmd.params, "size") == null ? texMaxSize : textureConvertRule.cmd.params.size);
 
-			if (Reflect.field(textureConvertRule.cmd.params, "alpha") != null) {
+			if (!convertRuleEmpty && Reflect.field(textureConvertRule.cmd.params, "alpha") != null) {
 				useAlpha.prop("checked", true);
 				alpha.removeAttr("disabled");
 				alpha.val(128);
@@ -219,7 +219,7 @@ class Image extends FileView {
 				alpha.val(null);
 			}
 
-			if (convertRuleEmpty && textureConvertRule.cmd.params.mips)
+			if (!convertRuleEmpty && textureConvertRule.cmd.params.mips)
 				mips.prop("checked", true);
 			else
 				mips.removeProp("checked");
@@ -386,12 +386,7 @@ class Image extends FileView {
 		scene.onReady = function() {
 			scene.loadTexture(state.path, state.path, function(compressedTexture) {
 				scene.loadTexture(state.path, state.path, function(uncompressedTexture) {
-					var path = hide.Ide.inst.appPath + "/res/sliderTexture.png";
-					scene.loadTexture(path, path, function(sliderTexture) {
-						this.sliderTexture = sliderTexture;
-						uncompressedTexture.filter = Nearest;
-						onTexturesLoaded(compressedTexture, uncompressedTexture);
-					}, false);
+					onTexturesLoaded(compressedTexture, uncompressedTexture);
 				}, false, true);
 			}, false);
 		};
@@ -407,13 +402,29 @@ class Image extends FileView {
 
 	override function onResize() {
 		if( bmp == null ) return;
+
 		var scale = Math.min(1,Math.min((contentWidth - 20) / bmp.tile.width, (contentHeight - 20) / bmp.tile.height));
-		bmp.setScale(scale * js.Browser.window.devicePixelRatio);
-		bmp.x = -Std.int(bmp.tile.width * bmp.scaleX) >> 1;
-		bmp.y = -Std.int(bmp.tile.height * bmp.scaleY) >> 1;
+
+		var cam2d = Std.downcast(cam, hide.view.l3d.CameraController2D);
+		if (cam2d != null) {
+			@:privateAccess cam2d.curPos.set(bmp.tile.width / 2, bmp.tile.width / 2, (1 / bmp.tile.width) * 500);
+		}
+		else {
+			bmp.setScale(scale * js.Browser.window.devicePixelRatio);
+			bmp.x = -Std.int(bmp.tile.width * bmp.scaleX) >> 1;
+			bmp.y = -Std.int(bmp.tile.height * bmp.scaleY) >> 1;
+		}
+
+		updateSliderVisual();
 	}
 
 	public function onTexturesLoaded(compressedTexture: Null<h3d.mat.Texture>, uncompressedTexture: Null<h3d.mat.Texture>) {
+		uncompressedTexture.filter = Nearest;
+
+		scene.element.on("wheel", function(_) {
+			updateSliderVisual();
+		});
+
 		for( i in 0...4 ) {
 			var name = "RGBA".charAt(i);
 			tools.addToggle("", "Channel "+name, name, function(b) {
@@ -433,7 +444,7 @@ class Image extends FileView {
 			shader.compressedTex = compressedTexture;
 			shader.uncompressedTex = uncompressedTexture;
 			shader.comparisonFactor = 0.5;
-			new hide.view.l3d.CameraController2D(scene.s2d);
+			this.cam = new hide.view.l3d.CameraController2D(scene.s2d);
 		} else {
 			var r = new h3d.scene.fwd.Renderer();
 			var ls = new h3d.scene.fwd.LightSystem();
@@ -449,7 +460,7 @@ class Image extends FileView {
 			sp.material.texture = compressedTexture;
 			sp.material.mainPass.addShader(shader);
 			sp.material.shadows = false;
-			new h3d.scene.CameraController(5,scene.s3d);
+			this.cam = new h3d.scene.CameraController(5,scene.s3d);
 		}
 
 		if( compressedTexture.flags.has(MipMapped) ) {
@@ -496,12 +507,11 @@ class Image extends FileView {
 			case Comparison:
 				{
 					if (sliderBmp == null)
-						sliderBmp = new h2d.Bitmap(h2d.Tile.fromTexture(sliderTexture), bmp);
+						drawSlider();
 					else
 						sliderBmp.alpha = 1;
 
 					bmp.addChild(sliderBmp);
-					sliderBmp.height = bmp.tile.height;
 
 					var bounds = new h2d.col.Bounds();
 					sliderBmp.getSize(bounds);
@@ -521,8 +531,7 @@ class Image extends FileView {
 					function updateSlider(e: hxd.Event) {
 						if (!clicked)
 							return;
-
-						sliderBmp.x = e.relX - bounds.width / 2.0;
+						sliderBmp.x = e.relX - (bounds.width * sliderBmp.scaleX) / 2.0;
 						shader.comparisonFactor = e.relX / interactive.width;
 					}
 
@@ -556,7 +565,6 @@ class Image extends FileView {
 
 		bmp = null;
 		interactive = null;
-		sliderTexture = null;
 		shader = null;
 	}
 
@@ -641,6 +649,7 @@ class Image extends FileView {
 
 		if( !t.flags.has(Cube) ) {
 			bmp = new h2d.Bitmap(h2d.Tile.fromTexture(t), scene.s2d);
+			drawSlider();
 			bmp.addShader(shader);
 			if( t.layerCount > 1 ) {
 				shader.isArray = true;
@@ -663,7 +672,6 @@ class Image extends FileView {
 			sp.material.texture = t;
 			sp.material.mainPass.addShader(shader);
 			sp.material.shadows = false;
-			new h3d.scene.CameraController(5,scene.s3d);
 		}
 
 		tools.element.find(".hide-range").remove();
@@ -731,6 +739,30 @@ class Image extends FileView {
 	public function floatToStringPrecision(number:Float, ?precision=2) {
 		number *= Math.pow(10, precision);
 		return Math.round(number) / Math.pow(10, precision);
+	}
+
+	public function updateSliderVisual() {
+		var cam2d = Std.downcast(cam, hide.view.l3d.CameraController2D);
+		if (cam2d != null && sliderBmp != null) {
+			var oldWidth = sliderBmp.getSize().width;
+			@:privateAccess sliderBmp.scaleX = (1 / (cam2d.curPos.z)) * 2;
+			var offset = sliderBmp.getSize().width - oldWidth;
+			sliderBmp.x -= offset / 4;
+		}
+
+		// todo : handle slider zoom for cam 3d
+	}
+
+	public function drawSlider() {
+		if (sliderBmp == null)
+			sliderBmp = new h2d.Graphics(scene.s2d);
+
+		sliderBmp.clear();
+		sliderBmp.beginFill(0xFFFFFF, 1);
+		sliderBmp.drawRect(0,0,2, shader.compressedTex.height);
+		sliderBmp.endFill();
+
+		updateSliderVisual();
 	}
 
 	static var _ = FileTree.registerExtension(Image,hide.Ide.IMG_EXTS.concat(["envd","envs"]),{ icon : "picture-o" });
