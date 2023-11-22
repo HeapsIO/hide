@@ -638,26 +638,27 @@ class PolygonEditor {
 				centroid.y += pts.y;
 				idx++;
 			}
-			
+
 			centroid.x /= idx;
 			centroid.y /= idx;
 			centroid.transform(t);
-			
+
 			// Move root transform to centroid point
 			polygonPrefab.x = centroid.x;
 			polygonPrefab.y = centroid.y;
 			polygonPrefab.z = centroid.z;
-			
+
 			var newPos = polygonPrefab.getTransform().getPosition();
-			
+
 			// Reset poly points to ensure they don't move locally
 			var offset = polygonPrefab.getTransform().getPosition().sub(prevPos);
+			var vecOffset = new h3d.Vector4(offset.x, offset.y, offset.z, 0);
 			var it = polygonPrefab.getTransform().getInverse();
-			offset.transform(it);
+			vecOffset.transform(it);
 
 			for (pts in polygonPrefab.points.points) {
-				pts.x = pts.x - offset.x;
-				pts.y = pts.y - offset.y;
+				pts.x = pts.x - vecOffset.x;
+				pts.y = pts.y - vecOffset.y;
 			}
 
 			// Reset children of poly to ensure they don't move locally
@@ -665,9 +666,9 @@ class PolygonEditor {
 				if (!(child is hrt.prefab.Object3D)) continue;
 
 				var obj : hrt.prefab.Object3D = cast child;
-				obj.x -= offset.x;
-				obj.y -= offset.y;
-				obj.z -= offset.z;
+				obj.x -= vecOffset.x;
+				obj.y -= vecOffset.y;
+				obj.z -= vecOffset.z;
 			}
 
 			undo.change(Custom(function(undo) {
@@ -715,7 +716,7 @@ class PolygonEditor {
 						obj.z -= offset.z;
 					}
 				}
-				
+
 				refreshPolygon();
 				refreshInteractive();
 				ctx.scene.editor.refresh();
@@ -725,7 +726,7 @@ class PolygonEditor {
 			refreshInteractive();
 			ctx.scene.editor.refresh();
 		});
-		
+
 		props.find(".snap").click(function(_) {
 			if (!polygonPrefab.enabled) return;
 
@@ -734,43 +735,43 @@ class PolygonEditor {
 			var prevPos = pos.clone();
 			var prevList = copyArray(polygonPrefab.points);
 			var deltaChildSpace = new h3d.Vector(pos.x, pos.y, pos.z);
-			
+
 			pos.x = hxd.Math.round((pos.x) / gridSize) * gridSize;
 			pos.y = hxd.Math.round((pos.y) / gridSize) * gridSize;
 			pos.z = hxd.Math.round((pos.z) / gridSize) * gridSize;
-			
+
 			var nextPos = pos.clone();
 
 			deltaChildSpace.x -= pos.x;
 			deltaChildSpace.y -= pos.y;
 			deltaChildSpace.z -= pos.z;
-			
+
 			t.setPosition(pos);
 			polygonPrefab.setTransform(t);
-			
+
 			t.setPosition(new h3d.Vector());
 			var it = t.getInverse();
 			deltaChildSpace.transform(it);
-			
+
 			for (p in polygonPrefab.points.points) {
 				p.x = hxd.Math.round((p.x) / gridSize) * gridSize;
 				p.y = hxd.Math.round((p.y) / gridSize) * gridSize;
 			}
-			
+
 			var nextList = copyArray(polygonPrefab.points);
 
 			// Reset children to their previous world pos
 			for (child in polygonPrefab.children) {
 				if (!(child is hrt.prefab.Object3D)) continue;
-				
+
 				var obj : hrt.prefab.Object3D = cast child;
-				
+
 				obj.x += deltaChildSpace.x;
 				obj.y += deltaChildSpace.y;
 				obj.z += deltaChildSpace.z;
 				obj.updateInstance(editContext.getContext(obj));
 			}
-			
+
 			refreshPolygon();
 			refreshInteractive();
 			ctx.scene.editor.refresh();
@@ -786,9 +787,9 @@ class PolygonEditor {
 					// Reset children to their previous world pos
 					for (child in polygonPrefab.children) {
 						if (!(child is hrt.prefab.Object3D)) continue;
-						
+
 						var obj : hrt.prefab.Object3D = cast child;
-						
+
 						obj.x -= undoDelta.x;
 						obj.y -= undoDelta.y;
 						obj.z -= undoDelta.z;
@@ -798,17 +799,17 @@ class PolygonEditor {
 					polygonPrefab.x = undoPrevPos.x;
 					polygonPrefab.y = undoPrevPos.y;
 					polygonPrefab.z = undoPrevPos.z;
-					
+
 					polygonPrefab.points = undoPrevList;
-					
+
 				}
 				else {
 					// Reset children to their previous world pos
 					for (child in polygonPrefab.children) {
 						if (!(child is hrt.prefab.Object3D)) continue;
-						
+
 						var obj : hrt.prefab.Object3D = cast child;
-						
+
 						obj.x += undoDelta.x;
 						obj.y += undoDelta.y;
 						obj.z += undoDelta.z;
