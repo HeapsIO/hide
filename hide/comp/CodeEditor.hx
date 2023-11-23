@@ -7,6 +7,7 @@ class CodeEditor extends Component {
 	var currrentDecos : Array<String> = [];
 	public var code(get,never) : String;
 	public var propagateKeys : Bool = false;
+	public var saveOnBlur : Bool = true;
 
 	public function new( code : String, lang : String, ?parent : Element, ?root : Element ) {
 		super(parent,root);
@@ -32,7 +33,7 @@ class CodeEditor extends Component {
 		(model : Dynamic).__comp__ = this;
 		model.updateOptions({ insertSpaces:false, trimAutoWhitespace:true });
 		editor.onDidChangeModelContent(function() onChanged());
-		editor.onDidBlurEditorText(function() onSave());
+		editor.onDidBlurEditorText(function() if( saveOnBlur ) onSave());
 		editor.addCommand(monaco.KeyCode.KEY_S | monaco.KeyMod.CtrlCmd, function() { clearSpaces(); onSave(); });
 		errorMessage = new Element('<div class="codeErrorMessage"></div>').appendTo(root).hide();
 	}
