@@ -226,7 +226,7 @@ input[type=button] {
 }
 
 input[type=range] {
-	-webkit-appearance: none;
+	appearance: none;
 	background: transparent;
 	border:none;
 	padding:0;
@@ -3111,4 +3111,26 @@ div.gradient-box {
 	box-sizing: border-box;
 	margin-bottom: 8px;
 	border-radius: 3px;
+}
+
+
+.domkitEditor {
+	tr, td {
+		padding : 0;
+		margin : 0;
+		border : 0px;
+		border-collapse: collapse;
+	}
+	width : 100%;
+	.cssEditor, .dmlEditor {
+		position: relative;
+		width : 50%;
+		.codeeditor {
+			height : 600px;
+		}
+	}
+	.separator {
+		width : 20;
+		background : #111;
+	}
 }

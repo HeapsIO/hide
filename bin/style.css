@@ -221,7 +221,7 @@ input[type=button]:active {
   background-color: #424242;
 }
 input[type=range] {
-  -webkit-appearance: none;
+  appearance: none;
   background: transparent;
   border: none;
   padding: 0;
@@ -2716,4 +2716,27 @@ div.gradient-box {
   box-sizing: border-box;
   margin-bottom: 8px;
   border-radius: 3px;
+}
+.domkitEditor {
+  width: 100%;
+}
+.domkitEditor tr,
+.domkitEditor td {
+  padding: 0;
+  margin: 0;
+  border: 0px;
+  border-collapse: collapse;
+}
+.domkitEditor .cssEditor,
+.domkitEditor .dmlEditor {
+  position: relative;
+  width: 50%;
+}
+.domkitEditor .cssEditor .codeeditor,
+.domkitEditor .dmlEditor .codeeditor {
+  height: 600px;
+}
+.domkitEditor .separator {
+  width: 20;
+  background: #111;
 }
