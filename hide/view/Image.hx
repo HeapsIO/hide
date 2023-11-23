@@ -240,10 +240,10 @@ class Image extends FileView {
 			var convertRule = { };
 
 			if (format.val() == "none") {
-				convertRule = { convert : "none" };
+				convertRule = { convert : "none", priority: 10000000 };
 			}
 			else {
-				convertRule = { convert : "dds", format : format.val(), mips : mips.is(':checked') };
+				convertRule = { convert : "dds", format : format.val(), mips : mips.is(':checked'), priority: 10000000 };
 
 				if (size.val() != texMaxSize)
 					Reflect.setField(convertRule, "size", size.val());
@@ -302,7 +302,7 @@ class Image extends FileView {
 
 				Reflect.deleteField(fsConvertObj, state.path);
 
-				if (Reflect.getProperty(rulesObj, fsConvertObj) == null)
+				if (Reflect.fields(fsConvertObj).length == 0)
 					Reflect.deleteField(rulesObj, "fs.convert");
 
 				if (Reflect.fields(rulesObj).length == 0) {
