@@ -36,13 +36,6 @@ class Instance extends Object3D {
 				ctx.shared.onError(e);
 			}
 		}
-		else {
-			var tile = unknown ? getDefaultTile().center() : findTile(kind.sheet, kind.idx.obj).center();
-			var objFollow = new h2d.ObjectFollower(ctx.local3d, ctx.local2d);
-			objFollow.followVisibility = true;
-			var bmp = new h2d.Bitmap(tile, objFollow);
-			ctx.local2d = objFollow;
-		}
 		return ctx;
 	}
 
@@ -164,43 +157,6 @@ class Instance extends Object3D {
 
 	override function getHideProps() : HideProps {
 		return { icon : "circle", name : "Instance" };
-	}
-
-	static function getModel(refSheet : cdb.Sheet, obj : Dynamic) {
-		var path = findModelPath(refSheet, obj);
-		if(path == null)
-			return null;
-		try {
-			var model = hxd.res.Loader.currentInstance.load(path).toModel();
-			return model;
-		} catch( e : hxd.res.NotFound ) {}
-		return null;
-	}
-
-	static function findTile(refSheet : cdb.Sheet, obj : Dynamic) {
-		var tileCol = refSheet.columns.find(c -> c.type == cdb.Data.ColumnType.TTilePos);
-		if(tileCol != null) {
-			var tile: cdb.Types.TilePos = Reflect.getProperty(obj, tileCol.name);
-			if(tile != null)
-				return makeTile(tile);
-		}
-		return getDefaultTile();
-	}
-
-	static function getDefaultTile() : h2d.Tile {
-		var engine = h3d.Engine.getCurrent();
-		var t = @:privateAccess engine.resCache.get(Instance);
-		if( t == null ) {
-			t = hxd.res.Any.fromBytes("",sys.io.File.getBytes(hide.Ide.inst.getPath("${HIDE}/res/icons/unknown.png"))).toTile();
-			@:privateAccess engine.resCache.set(Instance, t);
-		}
-		return t.clone();
-	}
-
-	static function makeTile(p:cdb.Types.TilePos) : h2d.Tile {
-		var w = (p.width == null ? 1 : p.width) * p.size;
-		var h = (p.height == null ? 1 : p.height) * p.size;
-		return hxd.res.Loader.currentInstance.load(p.file).toTile().sub(p.x * p.size, p.y * p.size, w, h);
 	}
 	#end
 
