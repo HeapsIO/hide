@@ -364,7 +364,7 @@ class FileTree extends FileView {
 
 	public static function exploreFile(path : String) {
 		var fullPath = sys.FileSystem.absolutePath(path);
-		
+
 		switch(Sys.systemName()) {
 			case "Windows": Sys.command("explorer.exe /select," + fullPath);
 			case "Mac":	Sys.command("open " + haxe.io.Path.directory(fullPath));
@@ -480,6 +480,7 @@ class FileTree extends FileView {
 
 		var view : hide.view.FileView = Type.createEmptyInstance(Type.resolveClass(ext.component));
 		view.ide = ide;
+		view.state = { path : basePath+"/"+file };
 		sys.io.File.saveBytes(fullPath + "/" + file, view.getDefaultContent());
 
 		var fpath = basePath == "" ? file : basePath + "/" + file;
