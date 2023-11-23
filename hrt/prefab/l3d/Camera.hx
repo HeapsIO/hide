@@ -33,6 +33,7 @@ class Camera extends Object3D {
 	var obj : h3d.scene.Object = null;
 	#if editor
 	var editContext : hide.prefab.EditContext;
+	var beforePreviewCam : h3d.Camera; // Used to save scene camera controller's values
 	#end
 
 	public function new(?parent) {
@@ -258,6 +259,7 @@ class Camera extends Object3D {
 			var cam = ctx.scene.s3d.camera;
 			var renderer = @:privateAccess ctx.scene.s3d.renderer;
 			if (preview) {
+				beforePreviewCam = ctx.scene.s3d.camera.clone();
 				updateInstance(ctx.getContext(this));
 				applyTo(cam);
 				for ( effect in getAll(hrt.prefab.rfx.RendererFX) ) {
@@ -299,6 +301,26 @@ class Camera extends Object3D {
 					this.zFar = cam.zFar;
 					this.zNear = cam.zNear;
 					this.fovY = cam.fovY;
+
+					// Rollback to previous preview value for scene camera
+					cam.load(beforePreviewCam);
+					ctx.scene.editor.cameraController.loadFromCamera();
+
+					function floatToStringPrecision(number:Float, ?precision=4) {
+						number *= Math.pow(10, precision);
+						return Math.round(number) / Math.pow(10, precision);
+					}
+
+					// Round values to remove floating point error
+					this.x = floatToStringPrecision(floatToStringPrecision(this.x));
+					this.y = floatToStringPrecision(floatToStringPrecision(this.y));
+					this.z = floatToStringPrecision(floatToStringPrecision(this.z));
+					this.scaleX = floatToStringPrecision(floatToStringPrecision(this.scaleX));
+					this.scaleY = floatToStringPrecision(floatToStringPrecision(this.scaleY));
+					this.scaleZ = floatToStringPrecision(floatToStringPrecision(this.scaleZ));
+					this.rotationX = floatToStringPrecision(floatToStringPrecision(this.rotationX));
+					this.rotationY = floatToStringPrecision(floatToStringPrecision(this.rotationY));
+					this.rotationZ = floatToStringPrecision(floatToStringPrecision(this.rotationZ));
 				});
 			}
 		});

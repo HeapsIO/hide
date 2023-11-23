@@ -27,6 +27,9 @@ class CameraControllerBase extends h3d.scene.CameraController {
 
 	override public function loadFromCamera( animate = false) {
 		super.loadFromCamera(animate);
+
+		var scene = if( scene == null ) getScene() else scene;
+		wantedFOV = scene.camera.fovY;
 	}
 
 	public function loadSettings(data : Dynamic) : Void {
