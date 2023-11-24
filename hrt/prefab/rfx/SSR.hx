@@ -91,7 +91,7 @@ class SSRShader extends h3d.shader.ScreenShader {
 			}
 			else {
 				do {
-					var result = bVec4(false);
+					var result = bVec4(false, false, false, false);
 					@unroll
 					for ( i in 0...4 ) {
 						var positionTo = getViewPos(uv);
