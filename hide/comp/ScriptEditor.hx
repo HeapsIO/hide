@@ -375,23 +375,10 @@ class ScriptChecker {
 
 class ScriptEditor extends CodeEditor {
 
-	static var INIT_DONE = false;
 	var checker : ScriptChecker;
 	var checkTypes : Bool;
 
 	public function new( script : String, ?checker : ScriptChecker, ?parent : Element, ?root : Element, ?lang ) {
-		if( !INIT_DONE ) {
-			INIT_DONE = true;
-			(monaco.Languages : Dynamic).typescript.javascriptDefaults.setCompilerOptions({ noLib: true, allowNonTsExtensions: true }); // disable js stdlib completion
-			monaco.Languages.registerCompletionItemProvider("javascript", {
-				triggerCharacters : ["."],
-				provideCompletionItems : function(model,position,_,_) {
-					var comp : ScriptEditor = (model : Dynamic).__comp__;
-			        var code = model.getValueInRange({startLineNumber: 1, startColumn: 1, endLineNumber: position.lineNumber, endColumn: position.column});
-					return comp.getCompletion(code.length);
-				}
-			});
-		}
 		super(script, lang, parent,root);
 		if( checker == null ) {
 			checker = new ScriptChecker(new hide.Config(),"");
@@ -408,10 +395,11 @@ class ScriptEditor extends CodeEditor {
 		}
 		this.checker = checker;
 		onChanged = doCheckScript;
+		initCompletion(["."]);
 		haxe.Timer.delay(function() doCheckScript(), 0);
 	}
 
-	function getCompletion( position : Int ) : Array<monaco.Languages.CompletionItem> {
+	override function getCompletion( position : Int ) : Array<monaco.Languages.CompletionItem> {
 		var script = code.substr(0,position);
 		var vars = checker.checker.getGlobals();
 		if( script.charCodeAt(script.length-1) == ".".code ) {

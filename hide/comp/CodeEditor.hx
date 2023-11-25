@@ -2,6 +2,10 @@ package hide.comp;
 
 class CodeEditor extends Component {
 
+	static var INIT_DONE = false;
+	static var COMPLETIONS = [];
+
+	var lang : String;
 	var editor : monaco.ScriptEditor;
 	var errorMessage : Element;
 	var currrentDecos : Array<String> = [];
@@ -10,8 +14,17 @@ class CodeEditor extends Component {
 	public var saveOnBlur : Bool = true;
 
 	public function new( code : String, lang : String, ?parent : Element, ?root : Element ) {
+
+		if( !INIT_DONE ) {
+			INIT_DONE = true;
+			(monaco.Languages : Dynamic).typescript.javascriptDefaults.setCompilerOptions({ noLib: true, allowNonTsExtensions: true }); // disable js stdlib completion
+			(monaco.Languages : Dynamic).html.htmlDefaults.setModeConfiguration({ completionItems : false });
+			(monaco.Languages : Dynamic).css.lessDefaults.setModeConfiguration({ completionItems : false });
+		}
+
 		super(parent,root);
 		var root = element;
+		this.lang = lang;
 		root.addClass("codeeditor");
 		root.on("keydown", function(e) {
 			if( e.keyCode == 27 && root.find(".suggest-widget.visible").length == 0 ) onClose();
@@ -36,6 +49,28 @@ class CodeEditor extends Component {
 		editor.onDidBlurEditorText(function() if( saveOnBlur ) onSave());
 		editor.addCommand(monaco.KeyCode.KEY_S | monaco.KeyMod.CtrlCmd, function() { clearSpaces(); onSave(); });
 		errorMessage = new Element('<div class="codeErrorMessage"></div>').appendTo(root).hide();
+	}
+
+	function initCompletion( ?chars ) {
+		if( COMPLETIONS.indexOf(lang) < 0 ) {
+			COMPLETIONS.push(lang);
+			monaco.Languages.registerCompletionItemProvider(lang, {
+				triggerCharacters : chars,
+				provideCompletionItems : function(model,position,_,_) {
+					var comp : CodeEditor = (model : Dynamic).__comp__;
+			        var code = model.getValueInRange({startLineNumber: 1, startColumn: 1, endLineNumber: position.lineNumber, endColumn: position.column});
+					var res = comp.getCompletion(code.length);
+					for( r in res )
+						if( r.insertText == null )
+							r.insertText = r.label;
+					return { suggestions : res };
+				}
+			});
+		}
+	}
+
+	function getCompletion( position : Int ) : Array<monaco.Languages.CompletionItem> {
+		return [];
 	}
 
 	function clearSpaces() {

@@ -51,9 +51,9 @@ class DomkitChecker extends ScriptEditor.ScriptChecker {
 
 	var t_string : Type;
 	var parsers : Array<domkit.CssValue.ValueParser>;
-	var components : Map<String, TypedComponent>;
-	var properties : Map<String, Array<TypedProperty>>;
-	var definedIdents : Map<String, Array<TypedComponent>>;
+	public var components : Map<String, TypedComponent>;
+	public var properties : Map<String, Array<TypedProperty>>;
+	public var definedIdents : Map<String, Array<TypedComponent>>;
 
 	public function new(config) {
 		super(config,"domkit");
@@ -533,7 +533,14 @@ class DomkitEditor extends CodeEditor {
 
 	public function new( config, kind, code : String, ?checker, ?parent : Element, ?root : Element ) {
 		this.kind = kind;
-		super(code, kind == DML ? "html" : "less", parent, root);
+		var lang = kind == DML ? "html" : "less";
+		super(code, lang, parent, root);
+		switch( kind ) {
+		case DML:
+			initCompletion(["<","/"]);
+		case Less:
+			initCompletion();
+		}
 		saveOnBlur = false;
 		if( checker == null )
 			checker = new DomkitChecker(config);
@@ -555,6 +562,41 @@ class DomkitEditor extends CodeEditor {
 		} catch( e : domkit.Error ) {
 			setDomkitError(e);
 		}
+	}
+
+	override function getCompletion( position : Int ) {
+		var code = code;
+		var results = super.getCompletion(position);
+		for( c in checker.components )
+			results.push({
+				kind : Class,
+				label : c.name,
+			});
+		if( kind == DML && (code.charCodeAt(position-1) == "<".code || code.charCodeAt(position-1) == "/".code) )
+			return results;
+		for( pname => pl in checker.properties ) {
+			var p = pl[0];
+			results.push({
+				kind : Field,
+				label : kind == Less ? pname : p.field,
+			});
+		}
+		switch( kind ) {
+		case Less:
+			for( c => def in checker.constants )
+				results.push({
+					kind : Property,
+					label : "@"+c,
+					detail : domkit.CssParser.valueStr(def),
+				});
+			for( id in checker.definedIdents.keys() )
+				results.push({
+					kind : Property,
+					label : id.charCodeAt(0) == "#".code ? id : "."+id,
+				});
+		case DML:
+		}
+		return results;
 	}
 
 }
