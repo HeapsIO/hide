@@ -2717,15 +2717,19 @@ div.gradient-box {
   margin-bottom: 8px;
   border-radius: 3px;
 }
-.domkitEditor {
-  width: 100%;
-}
 .domkitEditor tr,
 .domkitEditor td {
   padding: 0;
   margin: 0;
   border: 0px;
   border-collapse: collapse;
+}
+.domkitEditor table {
+  width: 100%;
+}
+.domkitEditor .scene {
+  width: 1px;
+  height: 1px;
 }
 .domkitEditor .cssEditor,
 .domkitEditor .dmlEditor {

@@ -1,5 +1,9 @@
 package hrt.impl;
 
+#if (!hscript || !hscriptPos)
+#error "DomkitViewer requires --library hscript with -D hscriptPos"
+#end
+
 #if domkit
 class DomkitInterp extends hscript.Async.AsyncInterp {
 
@@ -221,20 +225,14 @@ class DomkitViewer extends h2d.Object {
 			var c = domkit.Component.get(name, true);
 			// if we are top component, resolve our parent component
 			if( parent.parent == null ) {
+				var parts = name.split(":");
 				var parent = null;
-				var arg0 = e.arguments[0];
-				switch( arg0?.value ) {
-				case null:
-				case Code(code):
-					var code = parseCode(code, e.pmin);
-					var name = getParentName(code);
-					if( name != null ) {
-						e.arguments.shift();
-						parent = domkit.Component.get(name, true);
-						if( parent == null )
-							throw new domkit.Error("Unknown parent component "+name, arg0.pmin, arg0.pmax);
-					}
-				default:
+				if( parts.length == 2 ) {
+					name = parts[0];
+					c = domkit.Component.get(name, true);
+					parent = domkit.Component.get(parts[1], true);
+					if( parent == null )
+						throw new domkit.Error("Unknown parent component "+parts[1], e.pmin + name.length, e.pmin + name.length + parts[1].length + 1);
 				}
 				if( parent == null && c == null )
 					parent = domkit.Component.get("flow");
