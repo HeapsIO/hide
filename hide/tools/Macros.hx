@@ -15,6 +15,16 @@ class Macros {
 	}
 
 	#if macro
+
+	public static function initHide() {
+		switch( Context.getType("Reflect") ) {
+		case TInst(c,_):
+			// avoid conflict with monaco class
+			c.get().meta.add(":native",[macro "_Reflect"], (macro null).pos);
+		default:
+		}
+	}
+
 	static function includeShaderSources() {
 		var paths = [
 			"h3d/shader/BaseMesh.hx",
@@ -106,10 +116,10 @@ class Macros {
 				case FVar(t, e):
 					// Don't save a field with his default value
 					if( e != null )
-						saveExpr.push(macro if( this.$name != $e ) obj.$name = this.$name); 
+						saveExpr.push(macro if( this.$name != $e ) obj.$name = this.$name);
 					else {
 						switch t {
-							// Basic types default values : https://haxe.org/manual/types-nullability.html 					
+							// Basic types default values : https://haxe.org/manual/types-nullability.html
 							case TPath(p):
 								if( p.name == "Bool" )
 									saveExpr.push(macro if( this.$name != false) obj.$name = this.$name);
@@ -117,7 +127,7 @@ class Macros {
 									saveExpr.push(macro if( this.$name != #if flash NaN #else 0.0 #end ) obj.$name = this.$name);
 								else if( p.name == "Int" )
 									saveExpr.push(macro if( this.$name != 0 ) obj.$name = this.$name);
-								else 
+								else
 									saveExpr.push(macro if( this.$name != null ) obj.$name = this.$name);
 							default:
 								saveExpr.push(macro if( this.$name != null ) obj.$name = this.$name);
