@@ -12,7 +12,7 @@
 <link rel="stylesheet" type="text/css" href="icons.css"/>
 <link rel="stylesheet" type="text/css" href="libs/spectrum.css"/>
 <link rel="stylesheet" type="text/css" href="libs/select2.css"/>
-<link rel="stylesheet" data-name="vs/editor/editor.main" href="libs/monaco/vs/editor/editor.main.css">
+<link rel="stylesheet" data-name="vs/editor/editor.main" href="libs/monaco/min/vs/editor/editor.main.css">
 <link rel="stylesheet" href="libs/jquery.contextMenu.css">
 
 <script src="libs/jquery-3.2.1.js"></script>
@@ -36,12 +36,12 @@
 	var nodeRequire = require;
 	monaco = {};
 </script>
-<script src="libs/monaco/vs/loader.js"></script>
+<script src="libs/monaco/min/vs/loader.js"></script>
 <script>
 	var amdRequire = require;
 	require = nodeRequire;
 	require.nodeRequire = require;
-	amdRequire.config({ baseUrl: 'libs/monaco' });
+	amdRequire.config({ baseUrl: 'libs/monaco/min' });
 	amdRequire(['vs/editor/editor.main'], function() { });
 </script>
 
