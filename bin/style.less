@@ -3113,6 +3113,23 @@ div.gradient-box {
 	border-radius: 3px;
 }
 
+.lesseditor {
+	width : 100%;
+	height : 100%;
+	position : relative;
+	.scene {
+		width : 1px;
+		height : 1px;
+	}
+	.codeeditor {
+		margin-top : 20px;
+		height : 100%;
+		.codeErrorMessage {
+			top : 20px;
+			width : 90%;
+		}
+	}
+}
 
 .domkitEditor {
 	tr, td {
@@ -3133,6 +3150,10 @@ div.gradient-box {
 		width : 50%;
 		.codeeditor {
 			height : 600px;
+			.codeErrorMessage {
+				top : 1px;
+				width : 90%;
+			}
 		}
 	}
 	.separator {

@@ -2717,6 +2717,23 @@ div.gradient-box {
   margin-bottom: 8px;
   border-radius: 3px;
 }
+.lesseditor {
+  width: 100%;
+  height: 100%;
+  position: relative;
+}
+.lesseditor .scene {
+  width: 1px;
+  height: 1px;
+}
+.lesseditor .codeeditor {
+  margin-top: 20px;
+  height: 100%;
+}
+.lesseditor .codeeditor .codeErrorMessage {
+  top: 20px;
+  width: 90%;
+}
 .domkitEditor tr,
 .domkitEditor td {
   padding: 0;
@@ -2739,6 +2756,11 @@ div.gradient-box {
 .domkitEditor .cssEditor .codeeditor,
 .domkitEditor .dmlEditor .codeeditor {
   height: 600px;
+}
+.domkitEditor .cssEditor .codeeditor .codeErrorMessage,
+.domkitEditor .dmlEditor .codeeditor .codeErrorMessage {
+  top: 1px;
+  width: 90%;
 }
 .domkitEditor .separator {
   width: 20;
