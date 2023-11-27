@@ -16,7 +16,7 @@ typedef PropTrackDef = {
 typedef Section = {
 	root: PrefabElement,
 	curves: Array<Curve>,
-	children: Array<Section>, 
+	children: Array<Section>,
 	events: Array<IEvent>
 };
 
@@ -409,7 +409,7 @@ class FXEditor extends FileView {
 		treePanel.saveDisplayKey = "treeColumn";
 		treePanel.onResize = () -> @:privateAccess if( scene.window != null) scene.window.checkResize();
 
-		var fxPanel = element.find(".fx-animpanel").first(); 
+		var fxPanel = element.find(".fx-animpanel").first();
 		animPanel = new hide.comp.ResizablePanel(Vertical, fxPanel);
 		animPanel.saveDisplayKey = "animPanel";
 		animPanel.onResize = () -> @:privateAccess { if( scene.window != null) scene.window.checkResize(); if( this.curveEditor != null) this.curveEditor.refresh();}
@@ -579,10 +579,10 @@ class FXEditor extends FileView {
 
 		tools.addSeparator();
 
-		tools.addPopup(null, "View Modes", (e) -> new hide.comp.SceneEditor.ViewModePopup(null, e, Std.downcast(@:privateAccess scene.s3d.renderer, h3d.scene.pbr.Renderer)), null);
-		
+		tools.addPopup(null, "View Modes", (e) -> new hide.comp.SceneEditor.ViewModePopup(null, e, Std.downcast(@:privateAccess scene.s3d.renderer, h3d.scene.pbr.Renderer), sceneEditor), null);
+
 		tools.addSeparator();
-		
+
 		tools.addPopup(null, "Render Props", (e) -> new hide.comp.SceneEditor.RenderPropsPopup(null, e, sceneEditor, true), null);
 
 		tools.addSeparator();
@@ -632,7 +632,7 @@ class FXEditor extends FileView {
 				var toRemove: Array<Curve> = [];
 				for (child in curve.children) {
 					var c = Std.downcast(child, Curve);
-					if (c != null) 
+					if (c != null)
 						toRemove.push(c);
 				}
 
@@ -640,14 +640,14 @@ class FXEditor extends FileView {
 					var c = toRemove.pop();
 					c.removeInstance(sceneEditor.context);
 					c.parent.children.remove(c);
-				}	
+				}
 			}
 
 			if (curve != null) {
-				if (curve.blendMode == CurveBlendMode.Blend || curve.blendMode == CurveBlendMode.RandomBlend) {	
+				if (curve.blendMode == CurveBlendMode.Blend || curve.blendMode == CurveBlendMode.RandomBlend) {
 					if (curve.children.length != 2) {
 						removeCurves();
-						
+
 						// We're currently supporting blending with only 2 curves
 						for (i in 0...2) {
 							var c = new Curve();
@@ -657,8 +657,8 @@ class FXEditor extends FileView {
 					}
 				}
 				else {
-					removeCurves();				
-				}				
+					removeCurves();
+				}
 			}
 
 			sceneEditor.refresh();
@@ -678,7 +678,7 @@ class FXEditor extends FileView {
 			if (this.curveEditor != null)
 				this.curveEditor.refreshGraph();
 		}
-		
+
 	}
 
 	function onRefreshScene() {
@@ -716,14 +716,14 @@ class FXEditor extends FileView {
 		var previousTime = 0.0;
 		if (this.curveEditor != null)
 			previousTime = @:privateAccess this.curveEditor.currentTime;
-		
+
 		this.curveEditor = new hide.comp.CurveEditor(this.undo, rightPanel);
 
 		var overviewEditor = new hide.comp.CurveEditor.OverviewEditor(rightPanel, this.curveEditor);
 		var eventEditor = new hide.comp.CurveEditor.EventsEditor(rightPanel, this, this.curveEditor);
 		for (e in events)
 			eventEditor.events.push(e);
-		
+
 		var minHeight = 40;
 		var curveEditorHeight = 100;
 		var ctx = sceneEditor.getContext(data);
@@ -732,18 +732,18 @@ class FXEditor extends FileView {
 			var dispKey = getPath() + "/" + curve.getAbsPath(true);
 			curve.maxTime = data.duration == 0 ? 5000 : data.duration;
 			this.curveEditor.saveDisplayKey = dispKey;
-	
+
 			this.curveEditor.requestXZoom = function(xMin, xMax) {
 				var margin = 10.0;
 				var scroll = element.find(".timeline-scroll");
 				var width = scroll.parent().width();
 				xScale = (width - margin * 2.0) / (xMax);
 				xOffset = 0.0;
-	
+
 				this.curveEditor.xOffset = xOffset;
 				this.curveEditor.xScale = xScale;
 			}
-	
+
 			if(["visibility", "s", "l", "a"].indexOf(curve.name.split(".").pop()) >= 0) {
 				curve.minValue = 0;
 				curve.maxValue = 1;
@@ -776,7 +776,7 @@ class FXEditor extends FileView {
 				this.curveEditor.onChange = function(anim) {
 					//refreshDopesheet();
 				}
-	
+
 				rightPanel.on("mousewheel", function(e) {
 				var step = e.originalEvent.wheelDelta > 0 ? 1.0 : -1.0;
 				if(e.ctrlKey) {
@@ -789,13 +789,13 @@ class FXEditor extends FileView {
 					e.preventDefault();
 					e.stopPropagation();
 				}
-			});	
+			});
 		}
-		
+
 		this.curveEditor.refreshTimeline(previousTime);
 		this.curveEditor.refresh();
 	}
-	
+
 	function addHeadersToCurveEditor(sections: Array<Section>) {
 		var savedFoldList : Array<String> = getDisplayState("foldList") != null ? getDisplayState("foldList") : [];
 		var toFoldList : Array<{ el: Element, parentEl: Element }> = [];
@@ -807,7 +807,7 @@ class FXEditor extends FileView {
 		var toHiddenList : Array<{ parentEl: Element, elements: Array<Dynamic> }> = [];
 
 		var leftPanel = element.find(".left-fx-animpanel").first();
-		
+
 		function drawSection(parent : Element, section: Section, depth: Int) {
 
 			function getTagRec(elt : PrefabElement) {
@@ -851,7 +851,7 @@ class FXEditor extends FileView {
 					var visible = visibilityEl.first().hasClass("ico-eye");
 					if (visible) {
 						visibilityEl.removeClass("ico-eye").addClass("ico-eye-slash");
-						
+
 						savedHiddenList = savedHiddenList.filter(hidden -> !StringTools.contains(hidden, saveKey));
 						savedHiddenList.push(saveKey);
 					}
@@ -859,12 +859,12 @@ class FXEditor extends FileView {
 						visibilityEl.removeClass("ico-eye-slash").addClass("ico-eye");
 						savedHiddenList = savedHiddenList.filter(hidden -> !StringTools.contains(saveKey, hidden));
 					}
-	
+
 					saveDisplayState("hiddenList", savedHiddenList);
 
 					for (c in affectedElements)
 						c.hidden = visibilityEl.hasClass("ico-eye-slash");
-	
+
 					rebuildAnimPanel();
 				});
 			}
@@ -881,7 +881,7 @@ class FXEditor extends FileView {
 					// the html tree might not be fully constructed
 					lockEl = parentEl.find(".lock");
 					var locked = lockEl.first().hasClass("ico-lock");
-					
+
 					if (locked) {
 						lockEl.removeClass("ico-lock").addClass("ico-unlock");
 
@@ -909,7 +909,7 @@ class FXEditor extends FileView {
 
 					for (c in this.curveEditor.curves)
 						c.selected = false;
-					
+
 					for (c in affectedElements)
 						c.selected = true;
 
@@ -922,14 +922,14 @@ class FXEditor extends FileView {
 
 				if (savedFoldList.contains(section.root.getAbsPath(true)))
 					toFoldList.push( {el:foldEl, parentEl: parentEl} );
-			
+
 				foldEl.click(function(e) {
 					var expanded = foldEl.hasClass("ico-angle-down");
 					if (expanded) {
 						foldEl.removeClass("ico-angle-down").addClass("ico-angle-right");
 						parentEl.children().find(".tracks-header").addClass("hidden");
 						parentEl.children().find(".track-header").addClass("hidden");
-						
+
 						if (!savedFoldList.contains(section.root.getAbsPath(true)))
 							savedFoldList.push(section.root.getAbsPath(true));
 					}
@@ -953,7 +953,7 @@ class FXEditor extends FileView {
 				if(parentTag != null) {
 					parentEl.find(".name").css("background", parentTag.color);
 				}
-	
+
 				addTrackEl.click(function(e) {
 					var menuItems = getNewTrackMenu(secRoot);
 					new hide.comp.ContextMenu(menuItems);
@@ -962,7 +962,7 @@ class FXEditor extends FileView {
 
 			var allElements: Array<Dynamic> = [];
 			var curves = section.root.flatten(Curve);
-			for (c in curves) 
+			for (c in curves)
 				allElements.push(c);
 
 			if (section.root is Curve) {
@@ -984,7 +984,7 @@ class FXEditor extends FileView {
 				events.push(cast section.root);
 				allElements.push(cast section.root);
 			}
-			
+
 			var sectionEl = new Element('<div class="section" name="${section.root.name}">
 			<div class="tracks-header" style="margin-left: ${depth * 10}px">
 			<div class="track-button fold ico ico-angle-down"></div>
@@ -1002,7 +1002,7 @@ class FXEditor extends FileView {
 			addOnSelectListener(sectionEl, allElements);
 			addFoldButtonListener(sectionEl);
 			addAddTrackButtonListener(sectionEl, section.root);
-			
+
 			if (section.curves.length > 0) {
 				for (i in 0...section.curves.length) {
 					var c = section.curves[i];
@@ -1012,7 +1012,7 @@ class FXEditor extends FileView {
 					if (StringTools.contains(c.name, ".y") || StringTools.contains(c.name, ".s")) curveColor = hide.comp.CurveEditor.CURVE_COLORS[1];
 					if (StringTools.contains(c.name, ".z") || StringTools.contains(c.name, ".l")) curveColor = hide.comp.CurveEditor.CURVE_COLORS[2];
 					if (StringTools.contains(c.name, ".w") || StringTools.contains(c.name, ".a")) curveColor = hide.comp.CurveEditor.CURVE_COLORS[3];
-					
+
 					// Assign same color to curve and curve's header
 					c.color = curveColor;
 					var hexColor = '#${StringTools.hex(curveColor)}';
@@ -1027,7 +1027,7 @@ class FXEditor extends FileView {
 						</div>
 						<div class="tracks"></div>
 					</div>');
-					
+
 					sectionEl.append(trackEl);
 
 					addVisibilityButtonListener(trackEl, [ c ]);
@@ -1053,7 +1053,7 @@ class FXEditor extends FileView {
 						</div>
 						<div class="tracks"></div>
 					</div>');
-					
+
 					sectionEl.append(trackEl);
 
 					addVisibilityButtonListener(trackEl, [ e ]);
@@ -1081,9 +1081,9 @@ class FXEditor extends FileView {
 						</div>
 						<div class="tracks"></div>
 					</div>');
-						
+
 					sectionEl.append(trackEl);
-	
+
 					addVisibilityButtonListener(trackEl, curves);
 					addLockButtonListener(trackEl, curves);
 					addOnSelectListener(trackEl, curves);
@@ -1104,7 +1104,7 @@ class FXEditor extends FileView {
 					</div>
 					<div class="tracks"></div>
 				</div>');
-				
+
 				sectionEl.append(trackEl);
 
 				addVisibilityButtonListener(trackEl, [ e ]);
@@ -1115,10 +1115,10 @@ class FXEditor extends FileView {
 
 			for (child in section.children)
 				drawSection(sectionEl, child, depth + 1);
-				
+
 			parent.append(sectionEl);
 		}
-		
+
 		for (sec in sections)
 			drawSection(leftPanel, sec, 0);
 
@@ -1162,7 +1162,7 @@ class FXEditor extends FileView {
 		var curvesToDraw : Array<Curve> = [];
 		var eventsToDraw : Array<IEvent> = [];
 
-		function getSection(?root : PrefabElement, depth = 0): Section {		
+		function getSection(?root : PrefabElement, depth = 0): Section {
 			var section: Section = { root:root, curves: [], children: [], events: []};
 			var eventAdded = false;
 
@@ -1177,8 +1177,8 @@ class FXEditor extends FileView {
 					if (child is Curve) {
 						var c = Std.downcast(child, Curve);
 						curvesToDraw.push(c);
-						
-						if (c.blendMode == CurveBlendMode.Blend || c.blendMode == CurveBlendMode.RandomBlend) 
+
+						if (c.blendMode == CurveBlendMode.Blend || c.blendMode == CurveBlendMode.RandomBlend)
 							section.children.push(getSection(c,depth+1));
 						else
 							section.curves.push(c);
@@ -1203,12 +1203,12 @@ class FXEditor extends FileView {
 						eventsToDraw.push(s);
 					}
 				}
-			
+
 			}
-			
+
 			return section;
 		}
-		
+
 		var sections : Array<Section> = [];
 		for (sel in selection) {
 			sections.push(getSection(sel));
@@ -1789,12 +1789,12 @@ class FXEditor extends FileView {
 	static var _ = FileTree.registerExtension(FXEditor, ["fx"], { icon : "sitemap", createNew : "FX" });
 
 	function set_currentTime(value:Float):Float {
-		if (this.curveEditor != null) 
+		if (this.curveEditor != null)
 			@:privateAccess this.curveEditor.currentTime = value;
 
 		return this.currentTime = value;
 	}
-	
+
 	function get_currentTime():Float {
 		return @:privateAccess this.curveEditor.currentTime;
 	}

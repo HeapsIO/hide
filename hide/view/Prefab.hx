@@ -469,7 +469,7 @@ class Prefab extends FileView {
 
 		toolsDefs.push({id: "", title : "", icon : "", type : Separator});
 
-		toolsDefs.push({id: "viewModes", title: "View Modes", type: Popup((e) -> new hide.comp.SceneEditor.ViewModePopup(null, e, Std.downcast(@:privateAccess scene.s3d.renderer, h3d.scene.pbr.Renderer)))});
+		toolsDefs.push({id: "viewModes", title: "View Modes", type: Popup((e) -> new hide.comp.SceneEditor.ViewModePopup(null, e, Std.downcast(@:privateAccess scene.s3d.renderer, h3d.scene.pbr.Renderer), sceneEditor))});
 
 		toolsDefs.push({id: "", title : "", icon : "", type : Separator});
 

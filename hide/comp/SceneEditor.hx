@@ -203,13 +203,24 @@ class ViewModePopup extends hide.comp.Popup {
 				display: Performance,
 				debug: Normal
 			}
+		},
+		{
+			name : "UVChecker",
+			inf : {
+				display : Pbr,
+				debug : Normal
+			},
 		}
 	];
 	var renderer:h3d.scene.pbr.Renderer;
+	var editor : SceneEditor;
+	var isUvChecker = false;
 
-	public function new(?parent:Element, ?root:Element, engineRenderer:h3d.scene.pbr.Renderer) {
+	public function new(?parent:Element, ?root:Element, engineRenderer:h3d.scene.pbr.Renderer, editor: SceneEditor) {
 		super(parent, root);
 		this.renderer = engineRenderer;
+		this.editor = editor;
+		this.saveDisplayKey = "ViewModePopup";
 		popup.addClass("settings-popup");
 		popup.css("max-width", "300px");
 
@@ -218,33 +229,64 @@ class ViewModePopup extends hide.comp.Popup {
 
 		var form_div = new Element("<div>").addClass("form-grid").appendTo(popup);
 
-		{
-			var initDone = false;
-			{
+		var slides = @:privateAccess renderer.slides;
+		for (v in viewFilter) {
+			var typeid = v.name;
 
-				var slides = @:privateAccess renderer.slides;
-				for (v in viewFilter) {
-					var typeid = v.name;
-					var on = renderer.displayMode == v.inf.display && (renderer.displayMode == Debug ? slides.shader.mode == v.inf.debug : true);
-					var input = new Element('<input type="radio" name="filter" id="$typeid" value="$typeid"/>');
-					if (on)
-						input.get(0).toggleAttribute("checked", true);
+			var currMode = this.getDisplayState("ViewMode");
 
-					input.change((e) -> {
-						var slides = @:privateAccess renderer.slides;
-						if (slides == null)
-							return;
-						renderer.displayMode = v.inf.display;
-						if (renderer.displayMode == Debug) {
-							slides.shader.mode = v.inf.debug;
-						}
-					});
-
-					form_div.append(input);
-					form_div.append(new Element('<label for="$typeid" class="left">$typeid</label>'));
-				}
+			var input = new Element('<input type="radio" name="filter" id="$typeid" value="$typeid"/>');
+			if (currMode == v.name || (currMode == null && v.name == "LIT")) {
+				input.get(0).toggleAttribute("checked", true);
+				this.saveDisplayState("ViewMode", v.name);
+				this.applyViewMode(input, v);
 			}
+
+			input.change((e) -> {
+				this.applyViewMode(input, v);
+			});
+
+			form_div.append(input);
+			form_div.append(new Element('<label for="$typeid" class="left">$typeid</label>'));
 		}
+	}
+
+	public function applyViewMode(input: Element, v: Dynamic) {
+		var slides = @:privateAccess renderer.slides;
+			if (slides == null)
+				return;
+
+			if (input.is(':checked')) {
+				this.saveDisplayState("ViewMode", v.name);
+			}
+
+			renderer.displayMode = v.inf.display;
+			if (renderer.displayMode == Debug) {
+				slides.shader.mode = v.inf.debug;
+			}
+
+			function checkUV(obj: Object, addShader = true) {
+				for (mat in obj.getMaterials()) {
+					if (mat.mainPass.getShader(h3d.shader.Texture) != null) {
+
+						if (addShader) {
+							if (mat.mainPass.getShader(h3d.shader.Checker) == null)
+								mat.mainPass.addShader(new h3d.shader.Checker());
+						}
+						else {
+							var s = mat.mainPass.getShader(h3d.shader.Checker);
+							if (s != null)
+								mat.mainPass.removeShader(s);
+						}
+					}
+				}
+
+				for (idx in 0...obj.numChildren)
+					checkUV(obj.getChildAt(idx), addShader);
+			}
+
+			var isUvChecker = v.name == "UVChecker" && input.is(":checked");
+			@:privateAccess checkUV(editor.context.local3d, isUvChecker);
 	}
 }
 
@@ -1911,7 +1953,7 @@ class SceneEditor {
 			var el = tree.getElement(p);
 			if( el != null && el.toggleClass != null ) applyTreeStyle(p, el, pname);
 		}
-		
+
 		applySceneStyle(p);
 	}
 

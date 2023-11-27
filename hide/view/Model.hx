@@ -148,7 +148,7 @@ class Model extends FileView {
 			var toSave = root.children[0];
 			@:privateAccess toSave.save();
 
-			save();			
+			save();
 		});
 	}
 
@@ -539,18 +539,18 @@ class Model extends FileView {
 
 		// Remove current instancied render props
 		sceneEditor.context.local3d.removeChildren();
-		
+
 		// Remove current library to create a new one with the actual render prop
 		root = new hrt.prefab.Library();
 		for (c in @:privateAccess sceneEditor.sceneData.children)
 			@:privateAccess sceneEditor.sceneData.children.remove(c);
-		
+
 
 		@:privateAccess sceneEditor.createRenderProps(@:privateAccess sceneEditor.sceneData);
 
 		if (sceneEditor.renderPropsRoot != null && sceneEditor.renderPropsRoot.source != null)
 			root.children.push(sceneEditor.renderPropsRoot);
-		
+
 		// Create default render props if no render props has been created yet
 		var r = root.getOpt(hrt.prefab.RenderProps, true);
 		if( r == null) {
@@ -584,13 +584,13 @@ class Model extends FileView {
 			if( renderProps != null )
 				renderProps.applyProps(scene.s3d.renderer);
 		}
-		
+
 		plight = root.getAll(hrt.prefab.Light)[0];
 		if( plight != null ) {
 			this.light = sceneEditor.context.shared.contexts.get(plight).local3d;
 			lightDirection = this.light.getLocalDirection();
 		}
-		
+
 		undo.onChange = function() {};
 
 		if (obj != null)
@@ -685,7 +685,7 @@ class Model extends FileView {
 
 		tools.addSeparator();
 
-		tools.addPopup(null, "View Modes", (e) -> new hide.comp.SceneEditor.ViewModePopup(null, e, Std.downcast(@:privateAccess scene.s3d.renderer, h3d.scene.pbr.Renderer)), null);
+		tools.addPopup(null, "View Modes", (e) -> new hide.comp.SceneEditor.ViewModePopup(null, e, Std.downcast(@:privateAccess scene.s3d.renderer, h3d.scene.pbr.Renderer), sceneEditor), null);
 
 		tools.addSeparator();
 
@@ -725,10 +725,10 @@ class Model extends FileView {
 		if (sceneEditor.view.getDisplayState("Camera") == null) {
 			var bnds = new h3d.col.Bounds();
 			var centroid = new h3d.Vector();
-	
+
 			centroid = centroid.add(this.obj.getAbsPos().getPosition());
 			bnds.add(this.obj.getBounds());
-			
+
 			var s = bnds.toSphere();
 			var r = s.r * 4.0;
 			sceneEditor.cameraController.set(r, null, null, s.getCenter());
@@ -792,7 +792,7 @@ class Model extends FileView {
 		];
 		return menu.concat(arr);
 	}
-	
+
 	function setAnimation( file : String ) {
 
 		scene.setCurrent();
