@@ -214,13 +214,12 @@ class ViewModePopup extends hide.comp.Popup {
 	];
 	var renderer:h3d.scene.pbr.Renderer;
 	var editor : SceneEditor;
-	var isUvChecker = false;
 
 	public function new(?parent:Element, ?root:Element, engineRenderer:h3d.scene.pbr.Renderer, editor: SceneEditor) {
 		super(parent, root);
 		this.renderer = engineRenderer;
 		this.editor = editor;
-		this.saveDisplayKey = "ViewModePopup";
+
 		popup.addClass("settings-popup");
 		popup.css("max-width", "300px");
 
@@ -232,15 +231,14 @@ class ViewModePopup extends hide.comp.Popup {
 		var slides = @:privateAccess renderer.slides;
 		for (v in viewFilter) {
 			var typeid = v.name;
+			var on = renderer.displayMode == v.inf.display && (renderer.displayMode == Debug ? slides.shader.mode == v.inf.debug : true && v.name != "UVChecker");
 
-			var currMode = this.getDisplayState("ViewMode");
+			if (v.name == "UVChecker" && isUvChecker())
+				on = true;
 
 			var input = new Element('<input type="radio" name="filter" id="$typeid" value="$typeid"/>');
-			if (currMode == v.name || (currMode == null && v.name == "LIT")) {
+			if (on)
 				input.get(0).toggleAttribute("checked", true);
-				this.saveDisplayState("ViewMode", v.name);
-				this.applyViewMode(input, v);
-			}
 
 			input.change((e) -> {
 				this.applyViewMode(input, v);
@@ -266,10 +264,14 @@ class ViewModePopup extends hide.comp.Popup {
 			}
 
 			function checkUV(obj: Object, addShader = true) {
-				for (mat in obj.getMaterials()) {
-					if (mat.mainPass.getShader(h3d.shader.Texture) != null) {
+				var mesh = Std.downcast(obj, Mesh);
 
-						if (addShader) {
+				if (mesh != null && mesh.primitive.buffer != null &&
+					!mesh.primitive.buffer.isDisposed() &&
+					mesh.primitive.buffer.format != null &&
+					mesh.primitive.buffer.format.getInput("uv") != null) {
+					 for (mat in mesh.getMaterials(null, false)) {
+							if (addShader) {
 							if (mat.mainPass.getShader(h3d.shader.Checker) == null)
 								mat.mainPass.addShader(new h3d.shader.Checker());
 						}
@@ -286,7 +288,30 @@ class ViewModePopup extends hide.comp.Popup {
 			}
 
 			var isUvChecker = v.name == "UVChecker" && input.is(":checked");
-			@:privateAccess checkUV(editor.context.local3d, isUvChecker);
+			@:privateAccess checkUV(editor.scene.s3d, isUvChecker);
+	}
+
+	public function isUvChecker() {
+		function hasCheckUV(obj: Object) {
+				var mesh = Std.downcast(obj, Mesh);
+
+				if (mesh != null && mesh.primitive.buffer != null &&
+					!mesh.primitive.buffer.isDisposed() &&
+					mesh.primitive.buffer.format != null &&
+					mesh.primitive.buffer.format.getInput("uv") != null) {
+					for (mat in mesh.getMaterials(null, false)) {
+						if (mat.mainPass.getShader(h3d.shader.Checker) != null)
+							return true;
+					}
+				}
+
+				for (idx in 0...obj.numChildren)
+					hasCheckUV(obj.getChildAt(idx));
+
+				return false;
+			}
+
+		@:privateAccess return hasCheckUV(editor.scene.s3d);
 	}
 }
 
