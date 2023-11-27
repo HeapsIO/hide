@@ -96,6 +96,7 @@ class Plugin {
 		}		
 		for( e in EXCLUDES )
 			C.exclude(e);
+		hide.tools.Macros.initHide();
 	}
 	#end
 
