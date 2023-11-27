@@ -378,7 +378,7 @@ class ScriptEditor extends CodeEditor {
 	var checker : ScriptChecker;
 	var checkTypes : Bool;
 
-	public function new( script : String, ?checker : ScriptChecker, ?parent : Element, ?root : Element, ?lang ) {
+	public function new( script : String, ?checker : ScriptChecker, ?parent : Element, ?root : Element, ?lang = "javascript" ) {
 		super(script, lang, parent,root);
 		if( checker == null ) {
 			checker = new ScriptChecker(new hide.Config(),"");
