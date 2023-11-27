@@ -269,15 +269,20 @@ class DomkitChecker extends ScriptEditor.ScriptChecker {
 		for( def in cdefs ) {
 			var comp = components.get(def.name);
 			var c = def.c;
-			if( c.superClass != null )
-				switch( c.superClass ) {
-				case TInst(csup,_):
-					var parent = cmap.get(csup.name);
-					if( parent == null )
-						throw "Missing parent "+csup.name;
-					comp.parent = parent;
+			var p = c;
+			var parent = null;
+			while( parent == null && p.superClass != null ) {
+				switch( p.superClass ) {
+				case null:
+					break;
+				case TInst(pp, _):
+					parent = cmap.get(pp.name);
+					p = pp;
 				default:
+					throw "assert";
 				}
+			}
+			comp.parent = parent;
 		}
 	}
 
