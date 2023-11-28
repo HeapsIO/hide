@@ -200,7 +200,9 @@ class Object3D extends Prefab {
 						if( t.file != null ) {
 							var t : cdb.Types.TilePos = t;
 							var bmp = Std.downcast(obj.getObjectByName("$huds"), h2d.Bitmap);
+							var shouldAddInt = false;
 							if( bmp == null ) {
+								shouldAddInt = true;
 								bmp = new h2d.Bitmap(null, obj);
 								bmp.name = "$huds";
 							}
@@ -210,6 +212,20 @@ class Object3D extends Prefab {
 								(t.width == null ? 1 : t.width) * t.size,
 								(t.height == null ? 1 : t.height) * t.size
 							);
+
+							if (shouldAddInt) {
+								var int = new h2d.Interactive(huds.maxWidth, huds.maxWidth, bmp);
+								int.propagateEvents = false;
+								int.x = bmp.tile.dx;
+								int.y = bmp.tile.dy;
+
+								int.onClick = function(e) {
+									var editorContext = Std.downcast(ctx.shared, hide.prefab.ContextShared);
+									if (editorContext != null)
+										editorContext.editor.selectElements([ this ]);
+								}
+							}
+
 							var maxWidth : Dynamic = huds.maxWidth;
 							if( maxWidth != null && bmp.tile.width > maxWidth )
 								bmp.width = maxWidth;
