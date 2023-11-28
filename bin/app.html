@@ -104,7 +104,10 @@
 <script src="hide.js"></script>
 <script>
 	// fix for monaco
-	$hxClasses["Reflect"].construct = global.Reflect.construct;
+	var _R = Reflect;
+	Reflect = global.Reflect;
+	for( f in _R )
+		Reflect[f] = _R[f];
 </script>
 
 
