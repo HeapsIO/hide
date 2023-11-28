@@ -16,15 +16,6 @@ class Macros {
 
 	#if macro
 
-	public static function initHide() {
-		switch( Context.getType("Reflect") ) {
-		case TInst(c,_):
-			// avoid conflict with monaco class
-			c.get().meta.add(":native",[macro "_Reflect"], (macro null).pos);
-		default:
-		}
-	}
-
 	static function includeShaderSources() {
 		var paths = [
 			"h3d/shader/BaseMesh.hx",
