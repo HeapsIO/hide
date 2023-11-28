@@ -17,7 +17,8 @@ class CodeEditor extends Component {
 
 		if( !INIT_DONE ) {
 			INIT_DONE = true;
-			(monaco.Languages : Dynamic).typescript.javascriptDefaults.setCompilerOptions({ noLib: true, allowNonTsExtensions: true }); // disable js stdlib completion
+			// disable default completion
+			(monaco.Languages : Dynamic).typescript.javascriptDefaults.setModeConfiguration({ completionItems : false });
 			(monaco.Languages : Dynamic).html.htmlDefaults.setModeConfiguration({ completionItems : false });
 			(monaco.Languages : Dynamic).css.lessDefaults.setModeConfiguration({ completionItems : false });
 		}
