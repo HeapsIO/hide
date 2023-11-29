@@ -43,7 +43,6 @@ class Particles extends h2d.Particles {
 
 	function tick( dt : Float, full=true) {
 		var group = this.groups[0];
-		trace(curTime);
 		var enableValue = evaluator.getFloat(enable, curTime) >= 0.5;
 		if (group.enable != enableValue) // prevent batch.clear() when false
 			group.enable = enableValue;
