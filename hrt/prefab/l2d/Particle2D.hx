@@ -23,11 +23,17 @@ class Particles extends h2d.Particles {
 	public var speedIncr : Value;
 	public var gravity : Value;
 
+	public var isBurstEmit : Bool;
+	public var burstDelay : Float;
+	public var curBurstDelay : Float;
+	public var saveNParts : Int;
+
 	public function new( ?parent ) {
 		super(parent);
 		randomSeed = Std.random(0xFFFFFF);
 		random = new hxd.Rand(randomSeed);
 		evaluator = new Evaluator();
+		curBurstDelay = burstDelay;
 		onEnd = function() {
 			for( g in groups ) {
 				if( g.emitLoop )
@@ -42,6 +48,20 @@ class Particles extends h2d.Particles {
 		var enableValue = evaluator.getFloat(enable, curTime) >= 0.5;
 		if (group.enable != enableValue) // prevent batch.clear() when false
 			group.enable = enableValue;
+
+		// Burst emit mode
+		if (isBurstEmit) {
+			group.emitSync = 1; // If not 1, there is some delay between particle spawns.
+			group.emitDelay = 0;
+
+			if (curBurstDelay <= 0) {
+				group.nparts = saveNParts;
+				group.rebuild();
+				curBurstDelay = burstDelay;
+			}
+
+			curBurstDelay -= dt;
+		}
 
 		group.speed = evaluator.getFloat(speed, curTime);
 		group.speedIncr = evaluator.getFloat(speedIncr, curTime);
@@ -94,6 +114,8 @@ class Particles extends h2d.Particles {
 class Particle2D extends Object2D {
 
 	@:s var paramsParticleGroup : Dynamic;
+	@:s var isBurstEmit : Bool;
+	@:s var burstDelay : Float;
 
 	override function updateInstance( ctx: Context, ?propName : String ) {
 		super.updateInstance(ctx, propName);
@@ -101,6 +123,17 @@ class Particle2D extends Object2D {
 		var particles2d = (cast ctx.local2d : Particles);
 
 		particles2d.visible = visible;
+		particles2d.isBurstEmit = this.isBurstEmit;
+		particles2d.burstDelay = this.burstDelay;
+
+		for (g in particles2d.getGroups()) {
+			if (this.isBurstEmit) {
+				particles2d.saveNParts = g.nparts;
+				g.nparts = 0;
+			} else {
+				g.nparts = particles2d.saveNParts;
+			}
+		}
 
 		function makeVal(name, def ) : Value {
 			var c = Curve.getCurve(this, name);
@@ -164,6 +197,15 @@ class Particle2D extends Object2D {
 		if( context != null ) {
 			var particles2d = (cast context.local2d : Particles);
 			var group = @:privateAccess particles2d.groups[0];
+			ctx.properties.add(new Element('
+			<div class="content">
+				<div class="group" name="Emit">
+					<dt>Is burst emit</dt><dd><input type="checkbox" field="isBurstEmit"/></dd>
+					<dt>Burst delay</dt><dd><input type="range" field="burstDelay" min="0" max="10" step="0.1"/></dd>
+				</div>
+			</div>
+			'), this);
+
 			ctx.properties.add(params, group, function (pname) {
 				// if fx2d is running, tick() changes group params and modifies group.save()
 				// if a param has a curve and we changed this param on the right panel,
