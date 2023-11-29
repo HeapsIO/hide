@@ -25,15 +25,14 @@ class Particles extends h2d.Particles {
 
 	public var isBurstEmit : Bool;
 	public var burstDelay : Float;
-	public var curBurstDelay : Float;
-	public var saveNParts : Int;
+	public var initialBurstDelay : Float;
+	public var burstParticleCount : Int;
 
 	public function new( ?parent ) {
 		super(parent);
 		randomSeed = Std.random(0xFFFFFF);
 		random = new hxd.Rand(randomSeed);
 		evaluator = new Evaluator();
-		curBurstDelay = burstDelay;
 		onEnd = function() {
 			for( g in groups ) {
 				if( g.emitLoop )
@@ -44,7 +43,7 @@ class Particles extends h2d.Particles {
 
 	function tick( dt : Float, full=true) {
 		var group = this.groups[0];
-
+		trace(curTime);
 		var enableValue = evaluator.getFloat(enable, curTime) >= 0.5;
 		if (group.enable != enableValue) // prevent batch.clear() when false
 			group.enable = enableValue;
@@ -54,13 +53,14 @@ class Particles extends h2d.Particles {
 			group.emitSync = 1; // If not 1, there is some delay between particle spawns.
 			group.emitDelay = 0;
 
-			if (curBurstDelay <= 0) {
-				group.nparts = saveNParts;
+			var shouldBurst = (curTime >= initialBurstDelay && (lastTime < initialBurstDelay || lastTime > curTime)) ||
+			(curTime - initialBurstDelay >= 0 && ((lastTime - initialBurstDelay) % burstDelay >= (curTime - initialBurstDelay) % burstDelay && lastTime <= curTime));
+			if (shouldBurst) {
+				group.nparts = burstParticleCount;
 				group.rebuild();
-				curBurstDelay = burstDelay;
+				group.nparts = 0;
+				@:privateAccess group.needRebuild = false;
 			}
-
-			curBurstDelay -= dt;
 		}
 
 		group.speed = evaluator.getFloat(speed, curTime);
@@ -115,6 +115,8 @@ class Particle2D extends Object2D {
 
 	@:s var paramsParticleGroup : Dynamic;
 	@:s var isBurstEmit : Bool;
+	@:s var burstParticleCount : Int;
+	@:s var initialBurstDelay : Float;
 	@:s var burstDelay : Float;
 
 	override function updateInstance( ctx: Context, ?propName : String ) {
@@ -124,14 +126,13 @@ class Particle2D extends Object2D {
 
 		particles2d.visible = visible;
 		particles2d.isBurstEmit = this.isBurstEmit;
+		particles2d.burstParticleCount = this.burstParticleCount;
+		particles2d.initialBurstDelay = this.initialBurstDelay;
 		particles2d.burstDelay = this.burstDelay;
 
-		for (g in particles2d.getGroups()) {
-			if (this.isBurstEmit) {
-				particles2d.saveNParts = g.nparts;
+		if (this.isBurstEmit) {
+			for (g in particles2d.getGroups()) {
 				g.nparts = 0;
-			} else {
-				g.nparts = particles2d.saveNParts;
 			}
 		}
 
@@ -201,16 +202,20 @@ class Particle2D extends Object2D {
 			<div class="content">
 				<div class="group" name="Emit">
 					<dt>Is burst emit</dt><dd><input type="checkbox" field="isBurstEmit"/></dd>
-					<dt>Burst delay</dt><dd><input type="range" field="burstDelay" min="0" max="10" step="0.1"/></dd>
+					<dt>Burst particle count</dt><dd><input type="range" field="burstParticleCount" min="0" max="100" step="1"/></dd>
+					<dt>Initial burst delay</dt><dd><input type="range" field="initialBurstDelay" min="0" max="10" step="0.1"/></dd>
+					<dt>Delay between burst</dt><dd><input type="range" field="burstDelay" min="0" max="10" step="0.1"/></dd>
 				</div>
 			</div>
-			'), this);
+			'), this, function (pname) { ctx.onChange(this, pname); });
 
 			ctx.properties.add(params, group, function (pname) {
 				// if fx2d is running, tick() changes group params and modifies group.save()
 				// if a param has a curve and we changed this param on the right panel,
 				// the saved value will be the value of the curve at this point.
 				Reflect.setField(paramsParticleGroup, pname, Reflect.field(group.save(), pname));
+
+
 				ctx.onChange(this, pname);
 			});
 		}

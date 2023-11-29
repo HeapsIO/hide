@@ -64,10 +64,10 @@ class Particles2D extends FileView {
 			}
 		}
 	}
-	
+
 
 	static public function getParamsHTMLform() {
-		return 
+		return
 			'<div class="content">
 				<div class="group" name="Display">
 					<dl>
@@ -225,7 +225,7 @@ class Particles2D extends FileView {
 				</div>
 			</div>
 		');
-		
+
 		extra = properties.add(extra, uiProps);
 		extra.find(".new").click(function(_) {
 			var g = parts.addGroup();
