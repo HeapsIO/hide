@@ -260,10 +260,35 @@ class Editor extends Component {
 			var entry = {};
 
 			for (el in element.getElementsByClassName("c")) {
+				var isProp = false;
+					if (el.classList.contains("t_properties"))
+						isProp = true;
+
 				for (c in el.classList) {
 					if (StringTools.startsWith(c, "n_")) {
 						var colName = c.substr(2, c.length - 2);
-						Reflect.setField(entry, colName.toLowerCase(), el.textContent.toLowerCase());
+
+						if (!isProp)
+							Reflect.setField(entry, colName.toLowerCase(), el.textContent.toLowerCase());
+						else {
+							var propsObj = {};
+							var props = el.innerText.split("\n");
+							for (p in props) {
+								var pArr = p.split(":");
+
+								if (pArr.length != 2) {
+									Reflect.setField(propsObj, "", "");
+									continue;
+								}
+
+								var pName = StringTools.trim(pArr[0]).toLowerCase();
+								var pValue = StringTools.trim(pArr[1]).toLowerCase();
+								Reflect.setField(propsObj, pName, pValue);
+							}
+
+							Reflect.setField(entry, colName.toLowerCase(), propsObj);
+						}
+
 						break;
 					}
 				}
@@ -284,8 +309,14 @@ class Editor extends Component {
 					var value = expression.split(comp)[1].toLowerCase();
 					var val : String = cast Reflect.field(entry, prop);
 
-					if (val == null)
+					if (val == null) {
+						for (f in Reflect.fields(entry)) {
+							if (Type.typeof(Reflect.field(entry, f)) == Type.ValueType.TObject && getExpressionResult(Reflect.field(entry, f), expression))
+								return true;
+						}
+
 						return false;
+					}
 
 					switch comp {
 						case "!=":
@@ -1578,6 +1609,8 @@ class Editor extends Component {
 			currentFilters.clear();
 			filters.clear();
 			filters.push({text: "", isExpr: false});
+			if(searchBox.find(".expr-btn").hasClass("fa-superscript"))
+				searchBox.find(".expr-btn").removeClass("fa-superscript").addClass("fa-font");
 			searchBox.toggle();
 			var c = cursor.save();
 			focus();
