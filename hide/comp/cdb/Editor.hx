@@ -44,9 +44,15 @@ typedef EditorSheetProps = {
 	var ?categories : Array<String>;
 }
 
+typedef SearchFilter = {
+	var text: String;
+	var isExpr: Bool;
+}
+
 @:allow(hide.comp.cdb)
 class Editor extends Component {
 
+	static var COMPARISON_EXPR_CHARS = ["!=", ">=", "<=", "=", "<", ">"];
 	var base : cdb.Database;
 	var currentSheet : cdb.Sheet;
 	var existsCache : Map<String,{ t : Float, r : Bool }> = new Map();
@@ -61,7 +67,7 @@ class Editor extends Component {
 		schema : Array<cdb.Data.Column>,
 	};
 	var changesDepth : Int = 0;
-	var currentFilters : Array<String> = [];
+	var currentFilters : Array<SearchFilter> = [];
 	var api : EditorApi;
 	var undoState : Array<UndoState> = [];
 	var currentValue : Any;
@@ -223,13 +229,13 @@ class Editor extends Component {
 			searchFilter(currentFilters, false);
 	}
 
-	public function setFilter( f : String ) {
+	public function setFilter( f : SearchFilter ) {
 		if( searchBox != null ) {
 			if( f == null )
 				searchBox.hide();
 			else {
 				searchBox.show();
-				searchBox.find("input").val(f);
+				searchBox.find("input").val(f.text);
 			}
 		}
 		if ( f == null )
@@ -238,22 +244,115 @@ class Editor extends Component {
 			searchFilter([f]);
 	}
 
-	function searchFilter( filters : Array<String>, updateCursor=true ) {
-		while( filters.indexOf("") >= 0 )
-			filters.remove("");
+	function searchFilter( filters : Array<SearchFilter>, updateCursor=true ) {
 		while( filters.indexOf(null) >= 0 )
 			filters.remove(null);
+		for (f in filters) {
+			if (f.text == "")
+				filters.remove(f);
+		}
+		for (f in filters) {
+			if (f.text == null)
+				filters.remove(f);
+		}
 
-		function matches(haysack: String, needle: String) {
-			return needle.split(" ").all(f -> haysack.indexOf(f) >= 0);
+		function elementToEntry(element: js.html.Element) {
+			var entry = {};
+
+			for (el in element.getElementsByClassName("c")) {
+				for (c in el.classList) {
+					if (StringTools.startsWith(c, "n_")) {
+						var colName = c.substr(2, c.length - 2);
+						Reflect.setField(entry, colName.toLowerCase(), el.textContent.toLowerCase());
+						break;
+					}
+				}
+			}
+
+			return entry;
+		}
+
+		function getExpressionResult(entry : Dynamic, expression: String) {
+			for (comp in Editor.COMPARISON_EXPR_CHARS) {
+				if (StringTools.contains(expression, comp)) {
+					var strArr = expression.split(comp);
+
+					if (strArr.length != 2)
+						return false;
+
+					var prop = expression.split(comp)[0].toLowerCase();
+					var value = expression.split(comp)[1].toLowerCase();
+					var val : String = cast Reflect.field(entry, prop);
+
+					if (val == null)
+						return false;
+
+					switch comp {
+						case "!=":
+							return val.toLowerCase() != value.toLowerCase();
+						case "=":
+							return val.toLowerCase() == value.toLowerCase();
+						case "<=":
+							var v1 = Std.parseFloat(val.toLowerCase());
+							var v2 = Std.parseFloat(value.toLowerCase());
+							return v1 <= v2;
+						case ">=":
+							var v1 = Std.parseFloat(val.toLowerCase());
+							var v2 = Std.parseFloat(value.toLowerCase());
+							return v1 >= v2;
+						case "<":
+							var v1 = Std.parseFloat(val.toLowerCase());
+							var v2 = Std.parseFloat(value.toLowerCase());
+							return v1 < v2;
+						case ">":
+							var v1 = Std.parseFloat(val.toLowerCase());
+							var v2 = Std.parseFloat(value.toLowerCase());
+							return v1 > v2;
+						default:
+							return false;
+					}
+				}
+			}
+
+			return false;
+		}
+
+		function matchesExpression(element: js.html.Element, searchExpression: String) {
+			var result = false;
+			var init = false;
+
+			var entry = elementToEntry(element);
+
+			for (e1 in searchExpression.split("&&")) {
+				if (StringTools.contains(e1, "||")) {
+					var resultOr = false;
+					for (e2 in e1.split("||")) {
+						resultOr = resultOr || getExpressionResult(entry, StringTools.trim(e2));
+					}
+
+					result = init ? result && resultOr : resultOr;
+					init = true;
+				}
+				else {
+					result = init ? result && getExpressionResult(entry, StringTools.trim(e1)) : getExpressionResult(entry, StringTools.trim(e1));
+					init = true;
+				}
+			}
+
+			return result;
+		}
+
+		function matches(content: String, searchExpression: String) {
+			return content.indexOf(searchExpression) >= 0;
 		}
 
 		function removeAccents(str: String) {
 			var t = untyped str.toLowerCase().normalize('NFD');
 			return ~/[\u0300-\u036f]/g.map(t, (r) -> "");
 		}
+
 		for( i in 0...filters.length )
-			filters[i] = removeAccents(filters[i]);
+			filters[i].text = removeAccents(filters[i].text);
 
 		var all = element.find("table.cdb-sheet > tbody > tr").not(".head");
 		if( config.get("cdb.filterIgnoreSublist") )
@@ -261,6 +360,7 @@ class Editor extends Component {
 		var seps = all.filter(".separator");
 		var lines = all.not(".separator");
 		all.removeClass("filtered");
+
 		if( filters.length > 0 ) {
 			if (searchHidden) {
 				var currentTable = tables.filter((t) -> t.sheet == currentSheet)[0];
@@ -271,10 +371,25 @@ class Editor extends Component {
 			}
 
 			for( t in lines ) {
-				var content = removeAccents(t.textContent);
-				if( !filters.any(f -> matches(content, f)) )
+				var filtered = true;
+				for (f in filters) {
+					if (f.isExpr) {
+						filtered = !matchesExpression(t, f.text);
+						if (!filtered)
+							break;
+					}
+					else {
+						var content = removeAccents(t.textContent);
+						filtered = !matches(content, f.text);
+						if (!filtered)
+							break;
+					}
+				}
+
+				if (filtered)
 					t.classList.add("filtered");
 			}
+
 			for( t in lines ) {
 				var l = new Element(t);
 				var parent: Element = l.data("parent-tr");
@@ -284,6 +399,7 @@ class Editor extends Component {
 					parent.toggleClass("filtered", f);
 				}
 			}
+
 			all = all.not(".filtered");
 			if (!searchHidden)
 				all = all.not(".hidden");
@@ -294,6 +410,7 @@ class Editor extends Component {
 				}
 			}
 		}
+
 		currentFilters = filters;
 		if (updateCursor)
 			cursor.update();
@@ -1361,18 +1478,27 @@ class Editor extends Component {
 		element.empty();
 		element.addClass('cdb');
 
-		var filters: Array<String> = [];
+		var filters: Array<SearchFilter> = [];
 
 		searchBox = new Element('<div><div class="input-col"><div class="input-cont"/></div></div>').addClass("searchBox").appendTo(element);
 		var inputCont = searchBox.find(".input-cont");
 		var inputCol = searchBox.find(".input-col");
 
+		function removeSearchInput() {
+			if( filters.length > 1 ) {
+				inputCont.find(".expr-btn").last().remove();
+				inputCont.find("input").last().remove();
+				filters.pop();
+				searchFilter(filters.copy());
+				inputCol.find(".remove-btn").toggleClass("hidden", filters.length <= 1);
+			}
+		}
+
 		function addSearchInput() {
 			var index = filters.length;
-			filters.push("");
+			filters.push({text:"", isExpr: false});
 
-
-			new Element("<input type='text'>").appendTo(inputCont).keydown(function(e) {
+			var searchBar = new Element("<input type='text' class='search-bar-cdb'></input>").appendTo(inputCont).keydown(function(e) {
 				if( e.keyCode == 27 ) {
 					searchBox.find("i.close-search").click();
 					return;
@@ -1381,7 +1507,21 @@ class Editor extends Component {
 					return;
 				}
 			}).keyup(function(e) {
-				filters[index] = e.getThis().val();
+				// If user input a comaprison character, switch to expression mode for
+				// the current filter
+				for (c in Editor.COMPARISON_EXPR_CHARS) {
+					if (StringTools.contains(e.getThis().val(), c)) {
+						var btnExpr = e.getThis().next();
+						if (!btnExpr.hasClass("fa-superscript")){
+							btnExpr.removeClass("fa-font");
+							btnExpr.addClass("fa-superscript");
+						}
+						break;
+					}
+				}
+
+				filters[index].text = e.getThis().val();
+				filters[index].isExpr = e.getThis().next().hasClass("fa-superscript");
 
 				// Slow table refresh protection
 				if (currentSheet.lines.length > 300) {
@@ -1398,15 +1538,22 @@ class Editor extends Component {
 					searchFilter(filters.copy());
 				}
 			});
+
+			var exprBtn = new Element("<i title='Switch between expression search mode and litteral search mode'>").addClass("expr-btn fa fa-font").appendTo(inputCont);
+			var topOffset = 3 + (Std.parseInt(exprBtn.css("margin-top")) + Std.parseInt(exprBtn.css("height"))) * index;
+			exprBtn.css({top:'${topOffset}px'});
+
+			exprBtn.click(function(_) {
+				if (exprBtn.hasClass("fa-superscript")) {
+					exprBtn.removeClass("fa-superscript");
+					exprBtn.addClass("fa-font");
+				}
+				else {
+					exprBtn.removeClass("fa-font");
+					exprBtn.addClass("fa-superscript");
+				}
+			});
 			inputCol.find(".remove-btn").toggleClass("hidden", filters.length <= 1);
-		}
-		function removeSearchInput() {
-			if( filters.length > 1 ) {
-				var a = inputCont.find("input").last().remove();
-				filters.pop();
-				searchFilter(filters.copy());
-				inputCol.find(".remove-btn").toggleClass("hidden", filters.length <= 1);
-			}
 		}
 
 		var hideButton = new Element("<i>").addClass("fa fa-eye").appendTo(searchBox);
@@ -1426,6 +1573,11 @@ class Editor extends Component {
 
 		new Element("<i>").addClass("close-search ico ico-times-circle").appendTo(searchBox).click(function(_) {
 			searchFilter([]);
+			searchBox.find(".search-bar-cdb").not(':first').remove();
+			searchBox.find(".expr-btn").not(':first').remove();
+			currentFilters.clear();
+			filters.clear();
+			filters.push({text: "", isExpr: false});
 			searchBox.toggle();
 			var c = cursor.save();
 			focus();
@@ -1469,7 +1621,7 @@ class Editor extends Component {
 				var inputs = inputCont.find("input");
 				for( i in 0...inputs.length ) {
 					var input: js.html.InputElement = cast inputs[i];
-					input.value = currentFilters[i];
+					input.value = currentFilters[i].text;
 				}
 			}
 		}

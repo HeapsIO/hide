@@ -913,7 +913,7 @@ input[type=checkbox]:checked:after {
 }
 .searchBox {
   display: none;
-  width: 230px;
+  width: 300px;
   position: fixed;
   z-index: 800;
   top: 20px;
@@ -933,8 +933,15 @@ input[type=checkbox]:checked:after {
 }
 .searchBox .input-col input {
   display: block;
-  width: 170px;
+  width: 240px;
   background-color: black;
+}
+.searchBox .input-col .expr-btn {
+  border: none;
+  position: absolute;
+  right: 60px;
+  height: 17px;
+  width: 17px;
 }
 .searchBox .input-col i {
   margin-top: 2px;
