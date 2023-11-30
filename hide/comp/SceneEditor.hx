@@ -295,7 +295,7 @@ class ViewModePopup extends hide.comp.Popup {
 		function hasCheckUV(obj: Object) {
 				var mesh = Std.downcast(obj, Mesh);
 
-				if (mesh != null && mesh.primitive.buffer != null &&
+				if (mesh != null && mesh.primitive != null && mesh.primitive.buffer != null &&
 					!mesh.primitive.buffer.isDisposed() &&
 					mesh.primitive.buffer.format != null &&
 					mesh.primitive.buffer.format.getInput("uv") != null) {
