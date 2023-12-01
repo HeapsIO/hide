@@ -315,12 +315,13 @@ class Editor extends Component {
 				}
 			}
 			else {
+				var f_Filters = new Array<SearchFilter>();
 				for( i in 0...filters.length )
-					filters[i].text = removeAccents(filters[i].text);
+					f_Filters.push({text:removeAccents(filters[i].text), isExpr:false});
 
 				for( t in lines ) {
 					var content = removeAccents(t.textContent);
-					if( !filters.any(f -> matches(content, f.text.toLowerCase())) )
+					if( !f_Filters.any(f -> matches(content, f.text.toLowerCase())) )
 						t.classList.add("filtered");
 				}
 			}
