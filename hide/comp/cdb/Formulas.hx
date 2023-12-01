@@ -131,8 +131,14 @@ class Formulas {
 			case TList:
 				var sub = s.getSub(c);
 				v = [for( o in (v:Array<Dynamic>) ) remap(o, sub)];
-			//case TEnum(values) -- TODO later (remap String?)
-			//case TFlags(values) -- TODO later
+			case TEnum(values):
+				v = values[v];
+			case TFlags(flags):
+				var fl = {};
+				for( i => f in flags )
+					if( v&(1<<i) != 0 )
+						Reflect.setField(fl,f,true);
+				v = fl;
 			default:
 			}
 			Reflect.setField(m, c.name, v);
@@ -370,12 +376,20 @@ class FormulasView extends hide.view.Script {
 			];
 			check.checker.setGlobal(cdef.name, TAnon(afields));
 		}
+
+		var tenum = TInst(check.checker.types.defineClass("EnumValue"),[]);
 		for( s in ide.database.sheets ) {
 			var cdef = cdefs.get(s.name);
 			for( c in s.columns ) {
 				var t = switch( c.type ) {
 				case TId: skind.get(s.name);
-				case TInt, TColor, TEnum(_), TFlags(_): TInt;
+				case TInt, TColor: TInt;
+				case TEnum(values):
+					for( v in values )
+						check.checker.setGlobal(v,tenum);
+					tenum;
+				case TFlags(flags):
+					TAnon([for(f in flags) { name : f, t : TBool, opt : true }]);
 				case TFloat: TFloat;
 				case TBool: TBool;
 				case TDynamic: TDynamic;
