@@ -59,6 +59,7 @@ class Editor extends Component {
 	var tables : Array<Table> = [];
 	var searchBox : Element;
 	var searchHidden : Bool = true;
+	var searchExp : Bool = false;
 	var pendingSearchRefresh : haxe.Timer = null;
 	var displayMode : Table.DisplayMode;
 	var clipboard : {
@@ -256,125 +257,8 @@ class Editor extends Component {
 				filters.remove(f);
 		}
 
-		function elementToEntry(element: js.html.Element) {
-			var entry = {};
-
-			for (el in element.getElementsByClassName("c")) {
-				var isProp = false;
-					if (el.classList.contains("t_properties"))
-						isProp = true;
-
-				for (c in el.classList) {
-					if (StringTools.startsWith(c, "n_")) {
-						var colName = c.substr(2, c.length - 2);
-
-						if (!isProp)
-							Reflect.setField(entry, colName.toLowerCase(), el.textContent.toLowerCase());
-						else {
-							var propsObj = {};
-							var props = el.innerText.split("\n");
-							for (p in props) {
-								var pArr = p.split(":");
-
-								if (pArr.length != 2) {
-									Reflect.setField(propsObj, "", "");
-									continue;
-								}
-
-								var pName = StringTools.trim(pArr[0]).toLowerCase();
-								var pValue = StringTools.trim(pArr[1]).toLowerCase();
-								Reflect.setField(propsObj, pName, pValue);
-							}
-
-							Reflect.setField(entry, colName.toLowerCase(), propsObj);
-						}
-
-						break;
-					}
-				}
-			}
-
-			return entry;
-		}
-
-		function getExpressionResult(entry : Dynamic, expression: String) {
-			for (comp in Editor.COMPARISON_EXPR_CHARS) {
-				if (StringTools.contains(expression, comp)) {
-					var strArr = expression.split(comp);
-
-					if (strArr.length != 2)
-						return false;
-
-					var prop = expression.split(comp)[0].toLowerCase();
-					var value = expression.split(comp)[1].toLowerCase();
-					var val : String = cast Reflect.field(entry, prop);
-
-					if (val == null) {
-						for (f in Reflect.fields(entry)) {
-							if (Type.typeof(Reflect.field(entry, f)) == Type.ValueType.TObject && getExpressionResult(Reflect.field(entry, f), expression))
-								return true;
-						}
-
-						return false;
-					}
-
-					switch comp {
-						case "!=":
-							return val.toLowerCase() != value.toLowerCase();
-						case "=":
-							return val.toLowerCase() == value.toLowerCase();
-						case "<=":
-							var v1 = Std.parseFloat(val.toLowerCase());
-							var v2 = Std.parseFloat(value.toLowerCase());
-							return v1 <= v2;
-						case ">=":
-							var v1 = Std.parseFloat(val.toLowerCase());
-							var v2 = Std.parseFloat(value.toLowerCase());
-							return v1 >= v2;
-						case "<":
-							var v1 = Std.parseFloat(val.toLowerCase());
-							var v2 = Std.parseFloat(value.toLowerCase());
-							return v1 < v2;
-						case ">":
-							var v1 = Std.parseFloat(val.toLowerCase());
-							var v2 = Std.parseFloat(value.toLowerCase());
-							return v1 > v2;
-						default:
-							return false;
-					}
-				}
-			}
-
-			return false;
-		}
-
-		function matchesExpression(element: js.html.Element, searchExpression: String) {
-			var result = false;
-			var init = false;
-
-			var entry = elementToEntry(element);
-
-			for (e1 in searchExpression.split("&&")) {
-				if (StringTools.contains(e1, "||")) {
-					var resultOr = false;
-					for (e2 in e1.split("||")) {
-						resultOr = resultOr || getExpressionResult(entry, StringTools.trim(e2));
-					}
-
-					result = init ? result && resultOr : resultOr;
-					init = true;
-				}
-				else {
-					result = init ? result && getExpressionResult(entry, StringTools.trim(e1)) : getExpressionResult(entry, StringTools.trim(e1));
-					init = true;
-				}
-			}
-
-			return result;
-		}
-
-		function matches(content: String, searchExpression: String) {
-			return content.indexOf(searchExpression) >= 0;
+		function matches(haysack: String, needle: String) {
+			return haysack.indexOf(needle) >= 0;
 		}
 
 		function removeAccents(str: String) {
@@ -382,15 +266,16 @@ class Editor extends Component {
 			return ~/[\u0300-\u036f]/g.map(t, (r) -> "");
 		}
 
-		for( i in 0...filters.length )
-			filters[i].text = removeAccents(filters[i].text);
-
 		var all = element.find("table.cdb-sheet > tbody > tr").not(".head");
 		if( config.get("cdb.filterIgnoreSublist") )
 			all = element.find("> table.cdb-sheet > tbody > tr").not(".head");
 		var seps = all.filter(".separator");
 		var lines = all.not(".separator");
 		all.removeClass("filtered");
+
+		var parser = new hscript.Parser();
+		parser.allowTypes = true;
+		var interp = new hscript.Interp();
 
 		if( filters.length > 0 ) {
 			if (searchHidden) {
@@ -401,24 +286,41 @@ class Editor extends Component {
 				}
 			}
 
-			for( t in lines ) {
-				var filtered = true;
-				for (f in filters) {
-					if (f.isExpr) {
-						filtered = !matchesExpression(t, f.text);
-						if (!filtered)
-							break;
-					}
-					else {
-						var content = removeAccents(t.textContent);
-						filtered = !matches(content, f.text);
-						if (!filtered)
-							break;
-					}
-				}
+			// There is two types of search :
+			// Expression search : hscript parser on search expression
+			// Litteral search : litteral text search
+			if (searchExp) {
+				if (@:privateAccess formulas.currentMap == null)
+					@:privateAccess formulas.currentMap = new Map();
 
-				if (filtered)
-					t.classList.add("filtered");
+				for (idx => l in currentSheet.lines) {
+					// Register variables for the current line
+					interp.variables.clear();
+					interp.variables.set("this", @:privateAccess formulas.remap(l, this.currentSheet));
+
+					var filtered = true;
+					for (f in filters) {
+						var expr = try parser.parseString(f.text) catch( e : Dynamic ) continue;
+						var res = try interp.execute(expr) catch(e : Dynamic ) { trace(e); continue;} // Catch errors that can be thrown if search input text is not interpretabled
+						if (res) {
+							filtered = false;
+							break;
+						}
+					}
+
+					if (filtered)
+						lines[idx].classList.add("filtered");
+				}
+			}
+			else {
+				for( i in 0...filters.length )
+					filters[i].text = removeAccents(filters[i].text);
+
+				for( t in lines ) {
+					var content = removeAccents(t.textContent);
+					if( !filters.any(f -> matches(content, f.text.toLowerCase())) )
+						t.classList.add("filtered");
+				}
 			}
 
 			for( t in lines ) {
@@ -1517,7 +1419,6 @@ class Editor extends Component {
 
 		function removeSearchInput() {
 			if( filters.length > 1 ) {
-				inputCont.find(".expr-btn").last().remove();
 				inputCont.find("input").last().remove();
 				filters.pop();
 				searchFilter(filters.copy());
@@ -1541,12 +1442,12 @@ class Editor extends Component {
 				// If user input a comaprison character, switch to expression mode for
 				// the current filter
 				for (c in Editor.COMPARISON_EXPR_CHARS) {
-					if (StringTools.contains(e.getThis().val(), c)) {
-						var btnExpr = e.getThis().next();
-						if (!btnExpr.hasClass("fa-superscript")){
-							btnExpr.removeClass("fa-font");
-							btnExpr.addClass("fa-superscript");
-						}
+					if (StringTools.contains(e.getThis().val(), c) && !searchExp) {
+						searchExp = true;
+						var searchTypeBtn = searchBox.find(".search-type");
+						searchTypeBtn.toggleClass("fa-superscript", searchExp);
+						searchTypeBtn.toggleClass("fa-font", !searchExp);
+						updateFilter();
 						break;
 					}
 				}
@@ -1570,22 +1471,18 @@ class Editor extends Component {
 				}
 			});
 
-			var exprBtn = new Element("<i title='Switch between expression search mode and litteral search mode'>").addClass("expr-btn fa fa-font").appendTo(inputCont);
-			var topOffset = 3 + (Std.parseInt(exprBtn.css("margin-top")) + Std.parseInt(exprBtn.css("height"))) * index;
-			exprBtn.css({top:'${topOffset}px'});
-
-			exprBtn.click(function(_) {
-				if (exprBtn.hasClass("fa-superscript")) {
-					exprBtn.removeClass("fa-superscript");
-					exprBtn.addClass("fa-font");
-				}
-				else {
-					exprBtn.removeClass("fa-font");
-					exprBtn.addClass("fa-superscript");
-				}
-			});
 			inputCol.find(".remove-btn").toggleClass("hidden", filters.length <= 1);
 		}
+
+		var searchTypeButton = new Element("<i>").addClass("search-type fa fa-font").appendTo(searchBox);
+		searchTypeButton.attr("title", "Switch to litteral search or expression search");
+
+		searchTypeButton.click(function(_) {
+			searchExp = !searchExp;
+			searchTypeButton.toggleClass("fa-superscript", searchExp);
+			searchTypeButton.toggleClass("fa-font", !searchExp);
+			updateFilter();
+		});
 
 		var hideButton = new Element("<i>").addClass("fa fa-eye").appendTo(searchBox);
 		hideButton.attr("title", "Search through hidden categories");

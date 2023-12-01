@@ -933,15 +933,8 @@ input[type=checkbox]:checked:after {
 }
 .searchBox .input-col input {
   display: block;
-  width: 240px;
+  width: 220px;
   background-color: black;
-}
-.searchBox .input-col .expr-btn {
-  border: none;
-  position: absolute;
-  right: 60px;
-  height: 17px;
-  width: 17px;
 }
 .searchBox .input-col i {
   margin-top: 2px;
