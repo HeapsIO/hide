@@ -290,6 +290,8 @@ class Editor extends Component {
 			// Expression search : hscript parser on search expression
 			// Litteral search : litteral text search
 			if (searchExp) {
+				this.formulas.evaluateAll(this.currentSheet.realSheet);
+
 				if (@:privateAccess formulas.currentMap == null)
 					@:privateAccess formulas.currentMap = new Map();
 
