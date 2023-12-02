@@ -2,8 +2,7 @@ package hrt.impl;
 
 import hrt.impl.Gradient;
 
-@:enum
-abstract TextureType(String) from String to String {
+enum abstract TextureType(String) from String to String {
     var gradient;
     var path;       // Not used as a type inside the json (the playload is a string), default value
 }

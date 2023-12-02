@@ -6,8 +6,7 @@ import h3d.Vector4;
 
 typedef ColorStop = {position : Float, color : Int};
 
-@:enum
-abstract GradientInterpolation(String) from String to String {
+enum abstract GradientInterpolation(String) from String to String {
     var Linear;
     var Cubic;
     var Constant;
