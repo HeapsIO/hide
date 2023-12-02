@@ -233,7 +233,8 @@ class TrailObj extends h3d.scene.Mesh {
 
 
 	public function reset() {
-		for (t in trails) {
+		for (i in 0...numTrails) {
+			var t = trails[i];
 			var p = t.firstPoint;
 			while (p != null) {
 				var n = p.next;
@@ -570,7 +571,8 @@ class TrailObj extends h3d.scene.Mesh {
 
 		// render
 
-		for (trail in trails) {
+		for (i in 0...numTrails) {
+			var trail = trails[i];
 			var prev : TrailPoint = null;
 			var cur = trail.firstPoint;
 			var len = 0.0;

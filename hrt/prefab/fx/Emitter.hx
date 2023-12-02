@@ -417,6 +417,7 @@ class EmitterObject extends h3d.scene.Object {
 	public var instDef : InstanceDef;
 
 	public var particles : PartArray;
+	public var particlesCount : Int;
 	public var listHead : ParticleInstance;
 	public var batch : h3d.scene.MeshBatch;
 	public var shaderAnims : ShaderAnims;
@@ -654,6 +655,7 @@ class EmitterObject extends h3d.scene.Object {
 		}
 
 		particles = #if (hl_ver >= version("1.13.0")) hl.CArray.alloc(ParticleInstance, maxCount) #else [for(i in 0...maxCount) new ParticleInstance()] #end;
+		particlesCount = maxCount;
 		randomValues = [for(i in 0...(maxCount * randSlots)) 0];
 		evaluator = new Evaluator(randomValues, randSlots);
 		reset();
@@ -684,8 +686,8 @@ class EmitterObject extends h3d.scene.Object {
 		}
 
 		if(particles != null) {
-			for(p in particles)
-				p.idx = ParticleInstance.REMOVED_IDX;
+			for(i in 0...particlesCount)
+				particles[i].idx = ParticleInstance.REMOVED_IDX;
 		}
 
 		if(subEmitters != null) {
