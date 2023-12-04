@@ -134,11 +134,6 @@ class ModalColumnForm extends Modal {
 					<td><label><input type="checkbox" name="req"/>&nbsp;Required</label>
 				</tr>
 
-				<tr class="opt">
-					<td>&nbsp;
-					<td><label><input type="checkbox" name="copyPasteImmutable"/>&nbsp;Copy/paste immutable</label>
-				</tr>
-
 				<tr>
 					<td>&nbsp;
 					<td>
@@ -214,7 +209,6 @@ class ModalColumnForm extends Modal {
 			form.find("[name=name]").val(column.name);
 			form.find("[name=type]").val(column.type.getName().substr(1).toLowerCase()).change();
 			form.find("[name=req]").prop("checked", !column.opt);
-			form.find("[name=copyPasteImmutable]").prop("checked", column.copyPasteImmutable);
 			form.find("[name=display]").val(column.display == null ? "0" : Std.string(column.display));
 			form.find("[name=kind]").val(column.kind == null ? "" : ""+column.kind);
 			form.find("[name=scope]").val(column.scope == null ? "" : ""+column.scope);
@@ -242,8 +236,6 @@ class ModalColumnForm extends Modal {
 			form.find("input").not("[type=submit]").val("");
 			var isProp = sheet.parent != null && sheet.parent.sheet.columns[sheet.parent.column].type == TProperties;
 			form.find("[name=req]").prop("checked", !isProp);
-			var isCopyPasteImmutable = sheet.parent != null && sheet.parent.sheet.columns[sheet.parent.column].copyPasteImmutable;
-			form.find("[name=copyPasteImmutable]").prop("checked", isCopyPasteImmutable);
 			form.find("[name=kind]").val("");
 		}
 
@@ -382,7 +374,6 @@ class ModalColumnForm extends Modal {
 			name : v.name,
 		};
 		if( v.req != "on" ) c.opt = true;
-		if( v.copyPasteImmutable == "on" ) c.copyPasteImmutable = true;
 		if( v.display != "0" ) c.display = cast Std.parseInt(v.display);
 		c.kind = null;
 		switch( v.kind ) {

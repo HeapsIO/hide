@@ -543,7 +543,7 @@ class Editor extends Component {
 				toRefresh.push(cursor.getCell());
 				var col = line.columns[x1];
 
-				if( !cursor.table.canEditColumn(col.name) || col.copyPasteImmutable)
+				if( !cursor.table.canEditColumn(col.name) )
 					return;
 
 				var value = parseText(text, col.type);
@@ -557,7 +557,7 @@ class Editor extends Component {
 				beginChanges();
 				for( x in x1...x2+1 ) {
 					var col = columns[x];
-					if( !cursor.table.canEditColumn(col.name) || col.copyPasteImmutable)
+					if( !cursor.table.canEditColumn(col.name) )
 						continue;
 					var lines = y1 == y2 ? [text] : text.split("\n");
 					for( y in y1...y2+1 ) {
@@ -652,7 +652,7 @@ class Editor extends Component {
 				beginChanges();
 				for( c1 in clipboard.schema ) {
 					var c2 = cursor.table.sheet.columns.find(c -> c.name == c1.name);
-					if( c2 == null || !cursor.table.canEditColumn(c2.name) || c2.copyPasteImmutable)
+					if( c2 == null || !cursor.table.canEditColumn(c2.name))
 						continue;
 					if( !cursor.table.canInsert() && c2.opt && !Reflect.hasField(obj2, c2.name) )
 						continue;
@@ -676,7 +676,7 @@ class Editor extends Component {
 					var c2 = columns[cid + posX];
 					if( c2 == null ) continue;
 
-					if( !cursor.table.canEditColumn(c2.name) || c2.copyPasteImmutable)
+					if( !cursor.table.canEditColumn(c2.name) )
 						continue;
 
 					setValue(obj1, obj2, c1, c2);
