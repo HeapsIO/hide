@@ -48,8 +48,17 @@ class CodeEditor extends Component {
 		model.updateOptions({ insertSpaces:false, trimAutoWhitespace:true });
 		editor.onDidChangeModelContent(function() onChanged());
 		editor.onDidBlurEditorText(function() if( saveOnBlur ) onSave());
-		editor.addCommand(monaco.KeyCode.KEY_S | monaco.KeyMod.CtrlCmd, function() { clearSpaces(); onSave(); });
+		editor.addCommand(monaco.KeyCode.KEY_S | monaco.KeyMod.CtrlCmd, function() { saveBind(); });
 		errorMessage = new Element('<div class="codeErrorMessage"></div>').appendTo(root).hide();
+	}
+
+	function saveBind() {
+		clearSpaces();
+		onSave();
+		customCtrlSBehavior();
+	}
+
+	public dynamic function customCtrlSBehavior() {
 	}
 
 	function initCompletion( ?chars ) {

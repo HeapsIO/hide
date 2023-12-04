@@ -225,6 +225,9 @@ class Editor extends Component {
 		return false;
 	}
 
+	public dynamic function onScriptCtrlS() {
+	}
+
 	public function updateFilter() {
 		if (currentFilters.length > 0)
 			searchFilter(currentFilters, false);

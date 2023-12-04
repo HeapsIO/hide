@@ -2374,6 +2374,9 @@ class SceneEditor {
 				fileRef = ctx.shared.currentPath;
 			detachable.element.appendTo(props);
 			var editor = new hide.comp.cdb.ObjEditor(curType, view.config, e.props, fileRef, detachable.element);
+			editor.onScriptCtrlS = function() {
+				view.save();
+			}
 			editor.undo = properties.undo;
 			editor.fileView = view;
 			editor.onChange = function(pname) {

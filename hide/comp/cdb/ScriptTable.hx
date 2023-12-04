@@ -58,7 +58,14 @@ class ScriptTable extends SubTable {
 			"cdb.groupID" => cell.line.getGroupID(),
 		]);
 		script = new ScriptEditor(cell.value, checker, div);
-		script.onSave = saveValue;
+		script.onSave = function() {
+			saveValue();
+		}
+
+		script.customCtrlSBehavior = function() {
+			editor.onScriptCtrlS();
+		}
+
 		script.propagateKeys = true;
 		script.onClose = function() { close(); cell.focus(); }
 		lines = [new Line(this,[],0,script.element)];
@@ -67,4 +74,3 @@ class ScriptTable extends SubTable {
 	}
 
 }
-
