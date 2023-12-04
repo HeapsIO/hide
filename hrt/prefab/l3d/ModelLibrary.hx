@@ -676,7 +676,7 @@ class ModelLibrary extends Prefab {
 	function compression( shared : ContextShared, scene : hide.comp.Scene ) {
 		var convert = new hxd.fs.Convert.CompressIMG("png,tga,jpg,jpeg,dds,envd,envs","dds");
 		convert.params = {format: "BC3"};
-		var path = new haxe.io.Path(hxd.impl.Api.downcast(hxd.res.Loader.currentInstance.fs, hxd.fs.LocalFileSystem).baseDir+shared.currentPath);
+		var path = new haxe.io.Path(Std.downcast(hxd.res.Loader.currentInstance.fs, hxd.fs.LocalFileSystem).baseDir+shared.currentPath);
 		path.ext = "dat";
 		var datDir = path.toString() + "/modelLib/";
 		convert.dstPath = datDir;
