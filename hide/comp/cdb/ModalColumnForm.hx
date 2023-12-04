@@ -134,6 +134,11 @@ class ModalColumnForm extends Modal {
 					<td><label><input type="checkbox" name="req"/>&nbsp;Required</label>
 				</tr>
 
+				<tr class="opt">
+					<td>&nbsp;
+					<td><label><input type="checkbox" name="copyPasteImmutable"/>&nbsp;Copy/paste immutable</label>
+				</tr>
+
 				<tr>
 					<td>&nbsp;
 					<td>
@@ -213,6 +218,8 @@ class ModalColumnForm extends Modal {
 			form.find("[name=kind]").val(column.kind == null ? "" : ""+column.kind);
 			form.find("[name=scope]").val(column.scope == null ? "" : ""+column.scope);
 			form.find("[name=hidden]").prop("checked", column.kind == Hidden);
+			var p = Editor.getColumnProps(column);
+			form.find("[name=copyPasteImmutable]").prop( "checked", p.copyPasteImmutable );
 			if( column.documentation != null ) {
 				form.find("[name=doc]").val(column.documentation);
 				form.find(".doc").removeClass("hide");
@@ -226,7 +233,6 @@ class ModalColumnForm extends Modal {
 			case TCustom(name):
 				form.find("[name=ctype]").val(name);
 			case TInt, TFloat:
-				var p = Editor.getColumnProps(column);
 				form.find("[name=formula]").val( p.formula == null ? "" : p.formula );
 				form.find("[name=export]").prop( "checked", !p.ignoreExport );
 			default:
@@ -383,6 +389,7 @@ class ModalColumnForm extends Modal {
 		if( form.find("[name=hidden]").is(":checked") ) c.kind = Hidden;
 
 		var props = Editor.getColumnProps(c);
+		props.copyPasteImmutable = form.find("[name=copyPasteImmutable]").is(":checked") ? true : null;
 		switch( t ) {
 		case TFloat, TInt:
 			props.formula = form.find("[name=formula]").val();
