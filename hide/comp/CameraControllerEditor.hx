@@ -29,7 +29,7 @@ class CameraControllerEditor extends Popup {
         var ortho =
             Type.getClass(editor.cameraController) == OrthoController;
 
-        var fly = 
+        var fly =
             Type.getClass(editor.cameraController) == FPSController ||
             Type.getClass(editor.cameraController) == FlightController;
 
@@ -49,7 +49,17 @@ class CameraControllerEditor extends Popup {
         if (form_div == null)
             form_div = new Element("<div>").addClass("form-grid").appendTo(popup);
         form_div.empty();
-    
+
+        {
+            var dd = new Element("<label for='savePref'>").text("Global camera settings").appendTo(form_div);
+            var checkBox = new Element('<input type="checkbox"/>').appendTo(form_div);
+            var isGlobal = Ide.inst.currentConfig.get("sceneeditor.camera.isglobalsettings", false);
+            checkBox.prop("checked", isGlobal);
+            checkBox.on("change", function(_) {
+                Ide.inst.currentConfig.set("sceneeditor.camera.isglobalsettings", checkBox.is(':checked'));
+            });
+        }
+
         {
             var dd = new Element("<label for='fov'>").text("FOV").appendTo(form_div);
             var range = new Range(form_div, new Element("<input id='fov' type='range' min='30' max='120'>"));
