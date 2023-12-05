@@ -2846,6 +2846,8 @@ class SceneEditor {
 				}
 				addElements(lib.children);
 			}
+
+			refreshScene();
 		}
 	}
 
