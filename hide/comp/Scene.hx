@@ -482,12 +482,37 @@ class Scene extends Component implements h3d.IDrawable {
 		return @:privateAccess h3d.Engine.getCurrent().resCache.get(Scene);
 	}
 
-	public function listMaterialFromLibraries( path : String ) {
-
+	public function listMatLibraries(path : String) {
 		var config = hide.Config.loadForFile(ide, path);
 
-		var paths : Array<String> = config.get("materialLibraries");
-		if( paths == null ) paths = [];
+		var matLibs : Array<Dynamic> = config.get("materialLibraries");
+		if( matLibs == null ) matLibs = [];
+
+		if (matLibs.length > 0 && matLibs[0] is String) {
+			for (idx in 0...matLibs.length) {
+				matLibs[idx] = { name : matLibs[idx], path : matLibs[idx] };
+			}
+		}
+
+		return matLibs;
+	}
+
+	public function listMaterialFromLibrary( path : String, library : String ) {
+		var config = hide.Config.loadForFile(ide, path);
+
+		var libraries = listMatLibraries(path);
+		var lib : Dynamic = null;
+
+		var lPath = "";
+		for (l in libraries) {
+			if (l.name == library) {
+				lPath = l.path;
+				break;
+			}
+		}
+
+		if (lPath == "")
+			return [];
 
 		var materials = [];
 		function pathRec(p : String) {
@@ -500,9 +525,9 @@ class Scene extends Component implements h3d.IDrawable {
 				ide.error('Material library ${p} not found, please update props.json');
 			}
 		}
-		for ( p in paths ) {
-			pathRec(p);
-		}
+
+		pathRec(lPath);
+
 		materials.sort((m1, m2) -> { return (m1.mat.name > m2.mat.name ? 1 : -1); });
 		return materials;
 	}

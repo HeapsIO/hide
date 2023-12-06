@@ -182,12 +182,15 @@ class Model extends FileView {
 		<br/>
 		');
 
-		var materials = scene.listMaterialFromLibraries(getPath());
+		var matLibs = scene.listMatLibraries(getPath());
+		var materials = [];
 
-		var selected = null;
+		var selectedLib = null;
+		var selectedMat = null;
 		var props : Dynamic =  h3d.mat.MaterialSetup.current.loadMaterialProps(m);
 		if ( props != null && props.__ref != null && !def ) {
-			selected = props.__ref + "/" + props.name;
+			selectedMat = props.__ref + "/" + props.name;
+			selectedLib = props.__ref;
 			tex.hide();
 			matEl.hide();
 		}
@@ -195,11 +198,17 @@ class Model extends FileView {
 			def = false;
 		var matLibrary = new Element('
 			<div class="group" name="Material Library">
-				<dt>Reference</dt>
+				<dt>Library</dt>
 				<dd>
-					<select class="matLib">
+					<select class="lib">
 						<option value="">None</option>
-						${[for( i in 0...materials.length ) '<option value="${materials[i].path + "/" + materials[i].mat.name}" ${(selected == materials[i].path + "/" + materials[i].mat.name) ? 'selected' : ''}>${materials[i].mat.name}</option>'].join("")}
+						${[for( i in 0...matLibs.length ) '<option value="${matLibs[i].name}" ${(selectedLib == matLibs[i].path) ? 'selected' : ''}>${matLibs[i].name}</option>'].join("")}
+					</select>
+				</dd>
+				<dt>Material</dt>
+				<dd>
+					<select class="mat">
+						<option value="">None</option>
 					</select>
 				</dd>
 				<dt>Mode</dt>
@@ -215,6 +224,22 @@ class Model extends FileView {
 			<br/>
 		');
 
+		var mode = matLibrary.find(".mode");
+		var saveButton = matLibrary.find(".save");
+		var libSelect = matLibrary.find(".lib");
+		var matSelect = matLibrary.find(".mat");
+
+		function updateMatSelect() {
+			matSelect.empty();
+			new Element('<option value="">None</option>').appendTo(matSelect);
+
+			materials = scene.listMaterialFromLibrary(getPath(), libSelect.val());
+
+			for (idx in 0...materials.length) {
+				new Element('<option value="${materials[idx].path + "/" + materials[idx].mat.name}" ${(selectedMat == materials[idx].path + "/" + materials[idx].mat.name) ? 'selected' : ''}>${materials[idx].mat.name}</option>').appendTo(matSelect);
+			}
+		}
+
 		function findMat(key:String) {
 			var p = key.split("/");
 			var name = p.pop();
@@ -225,13 +250,18 @@ class Model extends FileView {
 			}
 			return null;
 		}
-		var mode = matLibrary.find(".mode");
-		var saveButton = matLibrary.find(".save");
-		var matLib = matLibrary.find(".matLib");
+
+		updateMatSelect();
+
 		if ( props != null && props.__refMode != null )
 			mode.val((props:Dynamic).__refMode).select();
-		matLib.change(function(_) {
-			var mat = findMat(matLib.val());
+
+		libSelect.change(function(_) {
+			updateMatSelect();
+		});
+
+		matSelect.change(function(_) {
+			var mat = findMat(matSelect.val());
 			if ( mat != null ) {
 				@:privateAccess mat.mat.update(m, mat.mat.renderProps(), function(path:String) {
 					return hxd.res.Loader.currentInstance.load(path).toTexture();
@@ -245,12 +275,14 @@ class Model extends FileView {
 				selectMaterial(m);
 			}
 		});
+
 		matLibrary.find(".goTo").click(function(_) {
-			var mat = findMat(matLib.val());
+			var mat = findMat(matSelect.val());
 			if ( mat != null ) {
 				ide.openFile(mat.path);
 			}
 		});
+
 		var lib = @:privateAccess scene.loadHMD(this.getPath(),false);
 		var hmd = lib.header;
 		var defaultProps = null;
@@ -265,7 +297,7 @@ class Model extends FileView {
 			}
 		}
 		var saveCallback = function(_) {
-			var mat = findMat(matLib.val());
+			var mat = findMat(matSelect.val());
 			if ( mat != null ) {
 				for ( f in Reflect.fields((m.props:Dynamic)) )
 					Reflect.deleteField((m.props:Dynamic), f);
