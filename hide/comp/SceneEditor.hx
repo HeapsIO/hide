@@ -266,7 +266,7 @@ class ViewModePopup extends hide.comp.Popup {
 			function checkUV(obj: Object, addShader = true) {
 				var mesh = Std.downcast(obj, Mesh);
 
-				if (mesh != null && mesh.primitive.buffer != null &&
+				if (mesh != null && mesh.primitive != null && mesh.primitive.buffer != null &&
 					!mesh.primitive.buffer.isDisposed() &&
 					mesh.primitive.buffer.format != null &&
 					mesh.primitive.buffer.format.getInput("uv") != null) {
@@ -885,12 +885,8 @@ class SceneEditor {
 		if (!camera2D)
 			resetCamera();
 
-		var cam = @:privateAccess view.getDisplayState("Camera");
-		var isGlobalSettings = Ide.inst.currentConfig.get("sceneeditor.camera.isglobalsettings", false);
-		if (isGlobalSettings) {
-			cam = haxe.Json.parse(js.Browser.window.localStorage.getItem("Global/Camera"));
-		}
 
+		var cam = @:privateAccess view.getDisplayState("Camera");
 		if( cam != null ) {
 			scene.s3d.camera.pos.set(cam.x, cam.y, cam.z);
 			scene.s3d.camera.target.set(cam.tx, cam.ty, cam.tz);
@@ -910,7 +906,6 @@ class SceneEditor {
 		var cam = scene.s3d.camera;
 		if (cam == null)
 			return;
-
 		var toSave : Dynamic = @:privateAccess view.getDisplayState("Camera");
 		if (toSave == null)
 			toSave = {};
@@ -942,14 +937,7 @@ class SceneEditor {
 				camSpeed : cc.camSpeed,
 				fov : cc.wantedFOV,
 			};*/
-
-		var isGlobalSettings = Ide.inst.currentConfig.get("sceneeditor.camera.isglobalsettings", false);
-		if (isGlobalSettings) {
-			js.Browser.window.localStorage.setItem("Global/Camera", haxe.Json.stringify(toSave));
-		}
-		else {
-			@:privateAccess view.saveDisplayState("Camera", toSave);
-		}
+		@:privateAccess view.saveDisplayState("Camera", toSave);
 	}
 
     function loadSnapSettings() {
@@ -2556,7 +2544,7 @@ class SceneEditor {
 			cameraController2D.initFromScene();
 		} else {
 			scene.s3d.camera.zNear = scene.s3d.camera.zFar = 0;
-			scene.s3d.camera.fovY = 60; // reset to default fov
+			scene.s3d.camera.fovY = 25; // reset to default fov
 			scene.resetCamera(distanceFactor);
 			cameraController.lockZPlanes = scene.s3d.camera.zNear != 0;
 			cameraController.loadFromCamera();
@@ -2858,8 +2846,6 @@ class SceneEditor {
 				}
 				addElements(lib.children);
 			}
-
-			refreshScene();
 		}
 	}
 
