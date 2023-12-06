@@ -8,9 +8,18 @@ class ShaderGraph extends DynamicShader {
 	}
 
 	override public function loadShaderDef(ctx: Context) {
+		if (shaderDef == null) {
+			shaderDef = @:privateAccess ctx.shared.shaderCache.get(this.source);
+			if (shaderDef != null) {
+				trace('[shgraph] Cache hit for $source');
+			}
+		}
+
 		if(shaderDef == null) {
+			trace('[shgraph] Cache miss for $source, recompiling');
 			var shaderGraph = new hrt.shgraph.ShaderGraph(source);
 			shaderDef = shaderGraph.compile2(false);
+			@:privateAccess ctx.shared.shaderCache.set(this.source, shaderDef);
 		}
 		if(shaderDef == null)
 			return;
