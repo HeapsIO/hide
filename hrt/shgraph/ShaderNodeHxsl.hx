@@ -89,6 +89,7 @@ class ShaderNodeHxsl extends ShaderNode {
 			// DynamicType is the smallest vector type or float if all inputTypes are floats
 			var dynamicType : Type = null;
 			if (inputTypes != null) {
+				dynamicType = TFloat;
 				for (i => t in inputTypes) {
 					var targetInput = inVars[i];
 					if (targetInput == null)
