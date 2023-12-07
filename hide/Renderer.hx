@@ -182,4 +182,3 @@ class PbrRenderer extends h3d.scene.pbr.Renderer {
 	}
 
 }
-

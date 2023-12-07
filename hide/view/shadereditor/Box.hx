@@ -182,8 +182,8 @@ class Box {
 		return node;
 	}
 
-	public function generateProperties(editor : SVG) {
-		var props = nodeInstance.getHTML(this.width);
+	public function generateProperties(editor : SVG, config:  hide.Config) {
+		var props = nodeInstance.getHTML(this.width, config);
 
 		if (props.length == 0) return;
 

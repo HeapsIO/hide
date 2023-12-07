@@ -319,7 +319,7 @@ class Graph extends FileView {
 			});
 		}
 
-		box.generateProperties(editor);
+		box.generateProperties(editor, config);
 
 		return box;
 	}

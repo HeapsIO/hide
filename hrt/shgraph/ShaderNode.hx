@@ -194,10 +194,10 @@ class ShaderNode {
 	}
 
 	#if editor
-	final public function getHTML(width: Float) {
+	final public function getHTML(width: Float, config: hide.Config) {
 		var props = getPropertiesHTML(width);
 		//if (previewEnabled)
-			props.push(getPreview(width));
+			props.push(getPreview(width, config));
 		return props;
 	}
 
@@ -224,10 +224,10 @@ class ShaderNode {
 
 	var alphaPreview : AlphaPreview = null;
 	var inited = false;
-	public var config : hide.Config;
+	var config : hide.Config;
 
-	public function getPreview(width : Float) : hide.Element {
-
+	public function getPreview(width : Float, config:  hide.Config) : hide.Element {
+		this.config = config;
 		if (previewElement == null) {
 			previewElement = new hide.Element('<div style="width: ${width}px; height: ${width}px"><div class="preview-parent"><div class="node-preview" style="height: ${width}px; width: ${width}px;" ></div></div></div>');
 			nodePreview = previewElement.find(".node-preview");

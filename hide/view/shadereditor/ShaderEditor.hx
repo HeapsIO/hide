@@ -500,7 +500,6 @@ class ShaderEditor extends hide.view.Graph {
 			var shaderPreview = node.instance;
 			//var shaderPreview = Std.downcast(node.instance, hrt.shgraph.nodes.Preview);
 			//if (shaderPreview != null) {
-				shaderPreview.config = config;
 				shaderPreview.shaderGraph = shaderGraph;
 				//addBox(new Point(node.x, node.y), std.Type.getClass(node.instance), shaderPreview);
 				//continue;
@@ -813,7 +812,7 @@ class ShaderEditor extends hide.view.Graph {
 			var shaderParam = Std.downcast(b.getInstance(), ShaderParam);
 			if (shaderParam != null && shaderParam.parameterId == id) {
 				setDisplayValue(shaderParam, param.type, param.defaultValue);
-				b.generateProperties(editor);
+				b.generateProperties(editor, config);
 			}
 		}
 	}
@@ -932,7 +931,6 @@ class ShaderEditor extends hide.view.Graph {
 				var preview = node.instance;//Std.downcast(node.instance, hrt.shgraph.nodes.Preview);
 				if (preview != null) {
 					preview.shaderGraphDef = shaderGraphDef;
-					preview.config = config;
 					preview.update();
 				}
 			}
@@ -1027,7 +1025,6 @@ class ShaderEditor extends hide.view.Graph {
 			return;
 		var shaderPreview = node;//Std.downcast(node, hrt.shgraph.nodes.Preview);
 		if (shaderPreview != null) {
-			shaderPreview.config = config;
 			shaderPreview.shaderGraph = shaderGraph;
 			return;
 		}
