@@ -13,6 +13,7 @@ class Material extends Prefab {
 	@:s public var materialName : String;
 	@:c public var color : Array<Float> = [1,1,1,1];
 	@:s public var mainPassName : String;
+	@:s public var refMatLib : String;
 
 	public function new(?parent) {
 		super(parent);
@@ -77,6 +78,28 @@ class Material extends Prefab {
 		if( ctx.local3d == null )
 			return;
 
+		if (this.refMatLib != null && this.refMatLib != "") {
+			// We want to save some infos to reapply them after loading datas from the choosen mat
+			var previousRefMatLib = this.refMatLib;
+			var previousName = this.name;
+
+			var refMatLibPath = this.refMatLib.substring(0, this.refMatLib.lastIndexOf("/"));
+			var refMatName = this.refMatLib.substring(this.refMatLib.lastIndexOf("/") + 1);
+
+			var prefabLib = hxd.res.Loader.currentInstance.load(refMatLibPath).toPrefab().load();
+
+			for(c in prefabLib.children) {
+				if (c.name != refMatName)
+					continue;
+
+				this.load(c);
+
+				// Reapply some infos that we don't want to be modified by the load of the new mat
+				this.refMatLib = previousRefMatLib;
+				this.name = previousName;
+			}
+		}
+
 		var mats = getMaterials(ctx);
 		var props = renderProps();
 		#if editor
@@ -109,9 +132,129 @@ class Material extends Prefab {
 	#if editor
 	override function edit( ctx : EditContext ) {
 		super.edit(ctx);
+
 		var isPbr = Std.isOfType(ctx.scene.s3d.renderer, h3d.scene.pbr.Renderer);
 		var mat = h3d.mat.Material.create();
 		mat.props = renderProps();
+
+		var matLibs = ctx.scene.listMatLibraries(this.getAbsPath());
+		var selectedLib = this.refMatLib == null ? null : this.refMatLib.substring(0, this.refMatLib.lastIndexOf("/"));
+		var selectedMat = this.refMatLib == null ? null : this.refMatLib.substring(this.refMatLib.lastIndexOf("/") + 1);
+		var materials = [];
+
+		var materialLibrary = new hide.Element('<div class="group" name="Material Library">
+		<dl>
+			<dt>Library</dt>
+			<dd>
+				<select class="lib">
+					<option value="">None</option>
+					${[for( i in 0...matLibs.length ) '<option value="${matLibs[i].name}" ${(selectedLib == matLibs[i].path) ? 'selected' : ''}>${matLibs[i].name}</option>'].join("")}
+				</select>
+			</dd>
+			<dt>Material</dt>
+			<dd>
+				<select class="mat">
+					<option value="">None</option>
+				</select>
+			</dd>
+			<dt>Mode</dt>
+			<dd>
+				<select class="mode">
+					<option value="folder">Shared by folder</option>
+					<option value="modelSpec">Model specific</option>
+				</select>
+			</dd>
+			<dt></dt><dd><input type="button" value="Go to library" class="goTo"/></dd>
+		</dl></div>');
+
+		var libSelect = materialLibrary.find(".lib");
+		var matSelect = materialLibrary.find(".mat");
+
+		function findMat(key:String) {
+			var p = key.split("/");
+			var name = p.pop();
+			var path = p.join("/");
+			for ( m in materials ) {
+				if ( m.path == path && m.mat.name == name )
+					return m;
+			}
+			return null;
+		}
+
+		function updateLibSelect() {
+			libSelect.empty();
+			new Element('<option value="">None</option>').appendTo(libSelect);
+
+			for (idx in 0...matLibs.length) {
+				new Element('<option value="${matLibs[idx].name}" ${(selectedLib == matLibs[idx].path) ? 'selected' : ''}>${matLibs[idx].name}</option>');
+			}
+		}
+
+		function updateMatSelect() {
+			matSelect.empty();
+			new Element('<option value="">None</option>').appendTo(matSelect);
+
+			materials = ctx.scene.listMaterialFromLibrary(this.getAbsPath(), libSelect.val());
+			for (idx in 0...materials.length) {
+				new Element('<option value="${materials[idx].path + "/" + materials[idx].mat.name}" ${(selectedMat == materials[idx].mat.name) ? 'selected' : ''}>${materials[idx].mat.name}</option>').appendTo(matSelect);
+			}
+		}
+
+		function updateMat() {
+			var previousMat = this.clone();
+
+			var mat = findMat(matSelect.val());
+			if ( mat != null ) {
+				var previousName = this.name;
+				this.load(mat.mat);
+				this.name = previousName;
+				this.refMatLib = mat.path + "/" + mat.mat.name;
+				ctx.rebuildProperties();
+				updateInstance(ctx.scene.editor.getContext(this));
+			} else {
+				this.refMatLib = "";
+			}
+
+			var newMat = this.clone();
+
+			ctx.properties.undo.change(Custom(function(undo) {
+				if( undo ) {
+					this.load(previousMat);
+				}
+				else {
+					this.load(newMat);
+				}
+
+				updateLibSelect();
+				updateMatSelect();
+				ctx.rebuildProperties();
+				updateInstance(ctx.scene.editor.getContext(this));
+			}));
+		}
+
+		updateMatSelect();
+
+		libSelect.change(function(_) {
+			var previousMatSelect = matSelect.val();
+			updateMatSelect();
+
+			if (libSelect.val() == "" || previousMatSelect != "")
+				updateMat();
+		});
+
+		matSelect.change(function(_) {
+			updateMat();
+		});
+
+		materialLibrary.find(".goTo").click(function(_) {
+			var mat = findMat(matSelect.val());
+			if ( mat != null ) {
+				hide.Ide.inst.openFile(mat.path);
+			}
+		});
+
+		ctx.properties.add(materialLibrary, this);
+
 		var group = ctx.properties.add(new hide.Element('<div class="group" name="Material"></div>'));
 		ctx.properties.addMaterial(mat, group.find('.group > .content'), function(pname) {
 			Reflect.setField(props, h3d.mat.MaterialSetup.current.name, mat.props);
@@ -305,7 +448,6 @@ class Material extends Prefab {
 				ctx.rebuildPrefab(fx, true);
 		});
 		select.val(materialName == null ? "any" : materialName);
-
 
 		var matProps = new hide.Element('<div class="group" name="Overrides">
 		<dl>
