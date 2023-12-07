@@ -497,13 +497,14 @@ class ShaderEditor extends hide.view.Graph {
 		updateMatrix();
 
 		for (node in currentGraph.getNodes()) {
-			var shaderPreview = Std.downcast(node.instance, hrt.shgraph.nodes.Preview);
-			if (shaderPreview != null) {
+			var shaderPreview = node.instance;
+			//var shaderPreview = Std.downcast(node.instance, hrt.shgraph.nodes.Preview);
+			//if (shaderPreview != null) {
 				shaderPreview.config = config;
 				shaderPreview.shaderGraph = shaderGraph;
-				addBox(new Point(node.x, node.y), std.Type.getClass(node.instance), shaderPreview);
-				continue;
-			}
+				//addBox(new Point(node.x, node.y), std.Type.getClass(node.instance), shaderPreview);
+				//continue;
+			//}
 			var paramNode = Std.downcast(node.instance, ShaderParam);
 			if (paramNode != null) {
 				var paramShader = shaderGraph.getParameter(paramNode.parameterId);
@@ -928,7 +929,7 @@ class ShaderEditor extends hide.view.Graph {
 			currentShaderDef = shaderGraphDef;//{shader: shaderGraphDef, inits:[]};
 
 			for (node in currentGraph.getNodes()) {
-				var preview = Std.downcast(node.instance, hrt.shgraph.nodes.Preview);
+				var preview = node.instance;//Std.downcast(node.instance, hrt.shgraph.nodes.Preview);
 				if (preview != null) {
 					preview.shaderGraphDef = shaderGraphDef;
 					preview.config = config;
@@ -1000,7 +1001,7 @@ class ShaderEditor extends hide.view.Graph {
 		var param = shaderGraph.getParameter(id);
 		setParamValueByName(currentShader, param.name, param.defaultValue);
 		for (b in listOfBoxes) {
-			var previewBox = Std.downcast(b.getInstance(), hrt.shgraph.nodes.Preview);
+			var previewBox = b.getInstance();//Std.downcast(b.getInstance(), hrt.shgraph.nodes.Preview);
 			if (previewBox != null) {
 				previewBox.setParamValueByName(param.variable.name, param.defaultValue);
 			}
@@ -1024,7 +1025,7 @@ class ShaderEditor extends hide.view.Graph {
 	function initSpecifics(node : Null<ShaderNode>) {
 		if( node == null )
 			return;
-		var shaderPreview = Std.downcast(node, hrt.shgraph.nodes.Preview);
+		var shaderPreview = node;//Std.downcast(node, hrt.shgraph.nodes.Preview);
 		if (shaderPreview != null) {
 			shaderPreview.config = config;
 			shaderPreview.shaderGraph = shaderGraph;

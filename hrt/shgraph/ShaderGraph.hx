@@ -143,6 +143,7 @@ class ShaderGraph extends hrt.prefab.Prefab {
 
 			for (arr in [[for (v in gen.inVars) v.v], gen.externVars]) {
 				for (v in arr) {
+					trace(v);
 					var split = v.name.split(".");
 					switch(split[0]) {
 						case "input": {
@@ -553,6 +554,8 @@ class Graph {
 			};
 		}
 
+
+
 		inline function getNewVarName(node: Node, id: Int) : String {
 			return '_sg_${(node.type).split(".").pop()}_var_$id';
 		}
@@ -671,6 +674,18 @@ class Graph {
 		var graphInputVars : Array<ShaderNodeDefInVar> = [];
 		var graphOutputVars : Array<ShaderNodeDefOutVar> = [];
 		var externs : Array<TVar> = [];
+
+		var outputSelectVar : TVar = null;
+		var outputPreviewPixelColor : TVar = null;
+		if (includePreviews) {
+			outputPreviewPixelColor = {name: "pixelColor", id: getNewVarId(), type: TVec(4, VFloat), kind: Local, qualifiers: []};
+			graphOutputVars.push({v: outputPreviewPixelColor, internal: true, isDynamic: false});
+
+			outputSelectVar = {name: "__sg_PREVIEW_output_select", id: getNewVarId(), type: TInt, kind: Param, qualifiers: []};
+			graphInputVars.push({v: outputSelectVar, internal: true, isDynamic: false});
+			inits.push({variable: outputSelectVar, value: 0});
+		}
+
 
 		var outsideVars : Map<String, TVar> = [];
 		function getOutsideVar(name: String, original: TVar, isInput: Bool) : TVar {
@@ -973,7 +988,7 @@ class Graph {
 				}
 
 				if (expr != null) {
-					for (nodeVar in def.outVars) {
+					for (i => nodeVar in def.outVars) {
 						var outputVar : TVar = outputs.get(nodeVar.v.name);
 						// Kinda of a hack : skip decl writing for shaderParams
 						// var shParam = Std.downcast(currentNode.instance, ShaderParam);
@@ -984,10 +999,67 @@ class Graph {
 							var v = getOutsideVar(nodeVar.v.name, nodeVar.v, false);
 							expr = replaceVar(expr, nodeVar.v, {e: TVar(v), p:pos, t: nodeVar.v.type});
 
+							if (includePreviews && nodeVar.v.name == "pixelColor") {
+								expr = {
+									e: TIf(
+											{
+												e: TBinop(
+													OpEq,
+													{e:TVar(outputSelectVar),p:pos, t:TInt},
+													{e:TConst(CInt(0)), p:pos, t:TInt}
+												),
+												p:pos,
+												t:TInt
+											},
+											expr,
+											null
+										),
+									p: pos,
+									t:null
+								};
+							}
+
 							//graphOutputVars.push({v: nodeVar.v, internal: false});
 						} else {
 							expr = replaceVar(expr, nodeVar.v, {e: TVar(outputVar), p:pos, t: nodeVar.v.type});
 							outputDecls.push(outputVar);
+						}
+
+						if (i == 0 && includePreviews && outputVar != null) {
+
+							if (true) {
+
+								var finalExpr : TExpr = {e: TBinop(OpAssign, {e:TVar(outputPreviewPixelColor), p:pos, t:outputPreviewPixelColor.type}, convertToType(outputPreviewPixelColor.type, {e: TVar(outputVar), p: pos, t: outputVar.type})), p: pos, t: outputPreviewPixelColor.type};
+
+								var ifExpr : TExpr = {
+									e: TIf(
+											{
+												e: TBinop(
+													OpEq,
+													{e:TVar(outputSelectVar),p:pos, t:TInt},
+													{e:TConst(CInt(currentNode.id + 1)), p:pos, t:TInt}
+												),
+												p:pos,
+												t:TInt
+											},
+											finalExpr,
+											null
+										),
+									p: pos,
+									t:null
+								};
+
+								expr = {
+									e: TBlock(
+										[
+											expr,
+											ifExpr
+										]
+									),
+									p:pos,
+									t: TVoid
+								}
+							}
 						}
 					}
 				}

@@ -26,29 +26,29 @@ class ShaderOutput extends ShaderNode {
 		//inits.push({variable: inVar, value: param.defaultValue});
 		var inVars = [{v: inVar, internal: false, isDynamic: false}];
 
-		if (generatePreview && variable.name == "pixelColor") {
-			var outputSelect : TVar = {name: "__sg_output_select", id: getNewIdFn(), type: TInt, kind: Param, qualifiers: []};
+		// if (generatePreview && variable.name == "pixelColor") {
+		// 	var outputSelect : TVar = {name: "__sg_PREVIEW_output_select", id: getNewIdFn(), type: TInt, kind: Param, qualifiers: []};
 
-			finalExpr = {
-				e: TIf(
-						{
-							e: TBinop(
-								OpEq,
-								{e:TVar(outputSelect),p:pos, t:TInt},
-								{e:TConst(CInt(0)), p:pos, t:TInt}
-							),
-							p:pos,
-							t:TInt
-						},
-						finalExpr,
-						null
-					),
-				p: pos,
-				t:null
-			};
+		// 	finalExpr = {
+		// 		e: TIf(
+		// 				{
+		// 					e: TBinop(
+		// 						OpEq,
+		// 						{e:TVar(outputSelect),p:pos, t:TInt},
+		// 						{e:TConst(CInt(0)), p:pos, t:TInt}
+		// 					),
+		// 					p:pos,
+		// 					t:TInt
+		// 				},
+		// 				finalExpr,
+		// 				null
+		// 			),
+		// 		p: pos,
+		// 		t:null
+		// 	};
 
-			inVars.push( {v: outputSelect, internal: true, isDynamic: false});
-		}
+		// 	inVars.push( {v: outputSelect, internal: true, isDynamic: false});
+		// }
 
 		return {expr: finalExpr, inVars: inVars, outVars:[{v: output, internal: true, isDynamic: false}], externVars: [], inits: []};
 	}

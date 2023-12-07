@@ -183,15 +183,15 @@ class Box {
 	}
 
 	public function generateProperties(editor : SVG) {
-		var props = nodeInstance.getPropertiesHTML(this.width);
+		var props = nodeInstance.getHTML(this.width);
 
 		if (props.length == 0) return;
 
-		if (!hadToShowInputs && inputs.length <= 1 && outputs.length <= 1) {
-			element.find(".nodes").remove();
-			element.find(".input-node-group > .title-node").html("");
-			element.find(".output-node-group > .title-node").html("");
-		}
+		// if (!hadToShowInputs && inputs.length <= 1 && outputs.length <= 1) {
+		// 	element.find(".nodes").remove();
+		// 	element.find(".input-node-group > .title-node").html("");
+		// 	element.find(".output-node-group > .title-node").html("");
+		// }
 
 		var children = propertiesGroup.children();
 		if (children.length > 0) {
@@ -226,12 +226,12 @@ class Box {
 		var height = getNodesHeight();
 		element.find(".nodes").height(height);
 		element.find(".outline").attr("height", getHeight()+2);
-		if (inputs.length >= 1 && outputs.length >= 1) {
+		/*if (inputs.length >= 1 && outputs.length >= 1) {
 			element.find(".nodes-separator").attr("y2", HEADER_HEIGHT + height);
 			element.find(".nodes-separator").show();
 		} else if (!hadToShowInputs) {
 			element.find(".nodes-separator").hide();
-		}
+		}*/
 
 		if (propertiesGroup != null) {
 			propertiesGroup.attr("transform", 'translate(0, ${HEADER_HEIGHT + height})');
@@ -277,9 +277,9 @@ class Box {
 	}
 	public function getNodesHeight() {
 		var maxNb = Std.int(Math.max(inputs.length, outputs.length));
-		if (!hadToShowInputs && maxNb <= 1 && propsHeight > 0) {
+		/*if (!hadToShowInputs && maxNb <= 1 && propsHeight > 0) {
 			return 0;
-		}
+		}*/
 		return NODE_MARGIN * (maxNb+1) + NODE_RADIUS * maxNb;
 	}
 	public function getHeight() {
