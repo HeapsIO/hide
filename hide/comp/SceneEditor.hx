@@ -3452,7 +3452,7 @@ class SceneEditor {
 
 	function getNewShaderMenu(parentElt: PrefabElement, ?onMake: PrefabElement->Void) : hide.comp.ContextMenu.ContextMenuItem {
 		function isClassShader(path: String) {
-			return Type.resolveClass(path) != null || StringTools.endsWith(path, ".hx");
+			return Type.resolveClass(path) != null || StringTools.endsWith(path, ".hx") || StringTools.endsWith(path, ".shgraph");
 		}
 
 		var shModel = hrt.prefab.Library.getRegistered().get("shader");

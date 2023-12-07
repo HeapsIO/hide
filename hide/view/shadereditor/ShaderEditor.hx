@@ -62,7 +62,9 @@ class ShaderEditor extends hide.view.Graph {
 
 	override function onDisplay() {
 		super.onDisplay();
-		shaderGraph = new ShaderGraph(state.path);
+
+		shaderGraph = cast hide.Ide.inst.loadPrefab(state.path, null,  true);
+
 		domain = Fragment;
 
 		addMenu = null;
@@ -99,7 +101,7 @@ class ShaderEditor extends hide.view.Graph {
 						</div>)');
 		parent.on("drop", function(e) {
 			var posCursor = new Point(lX(ide.mouseX - 25), lY(ide.mouseY - 10));
-			var node = Std.downcast(currentGraph.addNode(posCursor.x, posCursor.y, ShaderParam), ShaderParam);
+			var node = Std.downcast(currentGraph.addNode(posCursor.x, posCursor.y, ShaderParam, []), ShaderParam);
 			node.parameterId = draggedParamId;
 			var paramShader = shaderGraph.getParameter(draggedParamId);
 			node.variable = paramShader.variable;
@@ -705,11 +707,11 @@ class ShaderEditor extends hide.view.Graph {
 			case TSampler2D:
 				var parentSampler = new Element('<input type="texturepath" field="sampler2d" />').appendTo(defaultValue);
 
-				var tselect = new hide.comp.TextureSelect(null, parentSampler);
-				if (value != null && value.length > 0) tselect.path = value;
-				tselect.onChange = function() {
+				var tselect = new hide.comp.TextureChoice(null, parentSampler);
+				tselect.value = value;
+				tselect.onChange = function(undo: Bool) {
 					beforeChange();
-					if (!shaderGraph.setParameterDefaultValue(parameter.id, tselect.path))
+					if (!shaderGraph.setParameterDefaultValue(parameter.id, tselect.value))
 						return;
 					afterChange();
 					setBoxesParam(parameter.id);
@@ -1035,10 +1037,10 @@ class ShaderEditor extends hide.view.Graph {
 		// }
 	}
 
-	function addNode(p : Point, nodeClass : Class<ShaderNode>) {
+	function addNode(p : Point, nodeClass : Class<ShaderNode>, args : Array<Dynamic>) {
 		beforeChange();
 
-		var node = currentGraph.addNode(p.x, p.y, nodeClass);
+		var node = currentGraph.addNode(p.x, p.y, nodeClass, args);
 		afterChange();
 
 		initSpecifics(node);
@@ -1049,8 +1051,7 @@ class ShaderEditor extends hide.view.Graph {
 	}
 
 	function addSubGraph(p : Point, path : String) {
-		var node : SubGraph = cast addNode(p, SubGraph);
-		@:privateAccess node.pathShaderGraph = path;
+		var node : SubGraph = cast addNode(p, SubGraph, [path]);
 		// node.loadGraphShader();
 		return node;
 	}
@@ -1239,7 +1240,7 @@ class ShaderEditor extends hide.view.Graph {
 					closeAddMenu();
 					refreshShaderGraph();
 				} else {
-					addNode(posCursor, ShaderNode.registeredNodes[key]);
+					addNode(posCursor, ShaderNode.registeredNodes[key], []);
 					closeAddMenu();
 				}
 			} else {
@@ -1291,7 +1292,7 @@ class ShaderEditor extends hide.view.Graph {
 				closeAddMenu();
 				refreshShaderGraph();
 			} else {
-				addNode(posCursor, ShaderNode.registeredNodes[key]);
+				addNode(posCursor, ShaderNode.registeredNodes[key], []);
 				closeAddMenu();
 			}
 		});
@@ -1332,7 +1333,7 @@ class ShaderEditor extends hide.view.Graph {
 				addSubGraph(posCursor, node.key);
 				refreshShaderGraph();
 			} else {
-				addNode(posCursor, ShaderNode.registeredNodes[node.key]);
+				addNode(posCursor, ShaderNode.registeredNodes[node.key], []);
 			}
 		}
 
@@ -1476,7 +1477,7 @@ class ShaderEditor extends hide.view.Graph {
 				instancedBoxes.push(null);
 				continue;
 			}
-			var node = currentGraph.addNode(offset.x + n.pos.x, offset.y + n.pos.y, n.nodeType);
+			var node = currentGraph.addNode(offset.x + n.pos.x, offset.y + n.pos.y, n.nodeType, []);
 			node.loadProperties(n.props);
 			initSpecifics(node);
 			var shaderParam = Std.downcast(node, ShaderParam);

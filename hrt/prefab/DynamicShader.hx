@@ -78,7 +78,13 @@ class DynamicShader extends Shader {
 	public function loadShaderDef(ctx: Context) {
 		if(shaderDef == null) {
 			fixSourcePath();
-			if( isInstance ) {
+			if (StringTools.endsWith(source, ".shgraph")) {
+				var shgraph = Std.downcast(hxd.res.Loader.currentInstance.load(source).toPrefab().load(), hrt.shgraph.ShaderGraph);
+				if (shgraph == null)
+					throw source + " is not a valid shadergraph";
+				shaderDef = shgraph.compile2(false);
+			}
+			else if( isInstance ) {
 				shaderClass = loadShaderClass();
 				var shared : hxsl.SharedShader = (shaderClass:Dynamic)._SHADER;
 				if( shared == null ) {

@@ -1823,6 +1823,35 @@ input[type=checkbox]:checked:after {
   border: 1px solid;
   margin: 5px;
   background-color: #222;
+  /*.content {
+							background-color: #b3b3b3;
+							padding: 5px;
+							box-shadow: inset 0px 13px 6px -15px black;
+
+							div {
+								width: 100%;
+								height: 20px;
+
+								span {
+									float: left;
+									color: black;
+									font-size: 13px;
+									padding-right: 5px;
+									font-weight: normal;
+								}
+							}
+							.texture-preview {
+								background-repeat: no-repeat;
+								background-size: 20px 20px!important;
+								border: 2px #444444 solid;
+								width: 20px;
+							}
+							.action-btns {
+								input {
+									float: right;
+								}
+							}
+						}*/
 }
 .graph-view .tabs .tab .hide-block #parametersList .parameter .header {
   background-color: #d6d6d6;
@@ -1845,34 +1874,6 @@ input[type=checkbox]:checked:after {
   font-style: italic;
   font-size: 13px;
   padding-right: 5px;
-}
-.graph-view .tabs .tab .hide-block #parametersList .parameter .content {
-  background-color: #b3b3b3;
-  padding: 5px;
-  box-shadow: inset 0px 13px 6px -15px black;
-}
-.graph-view .tabs .tab .hide-block #parametersList .parameter .content div:first-child {
-  display: inline;
-}
-.graph-view .tabs .tab .hide-block #parametersList .parameter .content div {
-  width: 100%;
-  height: 20px;
-}
-.graph-view .tabs .tab .hide-block #parametersList .parameter .content div span {
-  float: left;
-  color: black;
-  font-size: 13px;
-  padding-right: 5px;
-  font-weight: normal;
-}
-.graph-view .tabs .tab .hide-block #parametersList .parameter .content .texture-preview {
-  background-repeat: no-repeat;
-  background-size: 20px 20px!important;
-  border: 2px #444444 solid;
-  width: 20px;
-}
-.graph-view .tabs .tab .hide-block #parametersList .parameter .content .action-btns input {
-  float: right;
 }
 .graph-view .tabs .tab .hide-block #parametersList .parameter > span {
   font-size: 12px;

@@ -165,7 +165,7 @@ class ScreenShaderGraph extends RendererFX {
 		if(source == null)
 			return null;
 
-		shaderGraph = new hrt.shgraph.ShaderGraph(source);
+		shaderGraph = cast hxd.res.Loader.currentInstance.load(source).toPrefab().load();
 		return shaderGraph;
 	}
 

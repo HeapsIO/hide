@@ -62,36 +62,15 @@ enum Domain {
 	Fragment;
 }
 
-class ShaderGraph {
+class ShaderGraph extends hrt.prefab.Prefab {
 
-	var filepath : String;
 	var graphs : Array<Graph>;
 
+	var cachedDef : hrt.prefab.ContextShared.ShaderDef = null;
 
-	public function new(filepath : String) {
-		this.filepath = filepath;
+	static var _ = hrt.prefab.Library.register("shgraph", hrt.shgraph.ShaderGraph, "shgraph");
 
-		var json : Dynamic = {};
-		if (filepath != null) {
-			try {
-				var content : String = null;
-				#if editor
-				content = sys.io.File.getContent(hide.Ide.inst.resourceDir + "/" + this.filepath);
-				#else
-				content = hxd.res.Loader.currentInstance.load(this.filepath).toText();
-				//content = hxd.Res.load(this.filepath).toText();
-				#end
-				if (content.length == 0) return;
-				json = haxe.Json.parse(content);
-			} catch( e : Dynamic ) {
-				throw "Invalid shader graph parsing ("+e+")";
-			}
-		}
-
-		load(json);
-	}
-
-	public function load(json : Dynamic) : Void {
+	override public function load(json : Dynamic) : Void {
 
 		graphs = [];
 		parametersAvailable = [];
@@ -109,8 +88,8 @@ class ShaderGraph {
 		}
 	}
 
-	#if editor
-	public function saveToDynamic() : Dynamic {
+
+	override function save() {
 		var json : Dynamic = {};
 
 		json.parameters = [
@@ -126,11 +105,18 @@ class ShaderGraph {
 	}
 
 	public function saveToText() : String {
-		return haxe.Json.stringify(saveToDynamic(), "\t");
+		return haxe.Json.stringify(save(), "\t");
 	}
-	#end
+
 
 	public function compile2(includePreviews: Bool) : hrt.prefab.ContextShared.ShaderDef {
+		#if !editor
+		if (cachedDef != null)
+			return cachedDef;
+		#end
+
+		trace("[shgraph] Compiling : " + source);
+
 		var start = haxe.Timer.stamp();
 
 		var gens : Array<ShaderNodeDef> = [];
@@ -283,10 +269,12 @@ class ShaderGraph {
 		var time = haxe.Timer.stamp() - start;
 		//trace("Shader compile2 in " + time * 1000 + " ms");
 
-		return {shader : shared, inits: inits};
+		cachedDef = {shader : shared, inits: inits};
+
+		return cachedDef;
 	}
 
-	public function makeInstance(ctx: hrt.prefab.ContextShared) : hxsl.DynamicShader {
+	public function makeShaderInstance(ctx: hrt.prefab.ContextShared) : hxsl.DynamicShader {
 		var def = compile2(false);
 		var s = new hxsl.DynamicShader(def.shader);
 		for (init in def.inits)
@@ -298,7 +286,7 @@ class ShaderGraph {
 		try {
 			switch (variable.type) {
 				case TSampler2D:
-					var t = ctx.loadTexture(value);
+					var t = hrt.impl.TextureType.Utils.getTextureFromValue(value);
 					t.wrap = Repeat;
 					shader.setParamValue(variable, t);
 				case TVec(size, _):
@@ -411,6 +399,7 @@ class ShaderGraph {
 
 class Graph {
 
+	var cachedGen : ShaderNodeDef = null;
 	var allParamDefaultValue = [];
 	var current_node_id = 0;
 	var nodes : Map<Int, Node> = [];
@@ -553,7 +542,10 @@ class Graph {
 
 
 	public function generate2(includePreviews: Bool, ?getNewVarId: () -> Int) : ShaderNodeDef {
-
+		#if !editor
+		if (cachedGen != null)
+			return cachedGen;
+		#end
 		if (getNewVarId == null) {
 			getNewVarId = function()
 			{
@@ -1017,13 +1009,15 @@ class Graph {
 
 		exprsReverse.reverse();
 
-		return {
+		cachedGen = {
 			expr: {e: TBlock(exprsReverse), t:TVoid, p:pos},
 			inVars: graphInputVars,
 			outVars: graphOutputVars,
 			externVars: externs,
 			inits: inits,
 		};
+
+		return cachedGen;
 	}
 
 	public function getParameter(id : Int) {
@@ -1031,11 +1025,10 @@ class Graph {
 	}
 
 
-	#if editor
-	public function addNode(x : Float, y : Float, nameClass : Class<ShaderNode>) {
+	public function addNode(x : Float, y : Float, nameClass : Class<ShaderNode>, args: Array<Dynamic>) {
 		var node : Node = { x : x, y : y, id : current_node_id, type: std.Type.getClassName(nameClass) };
 
-		node.instance = std.Type.createInstance(nameClass, []);
+		node.instance = std.Type.createInstance(nameClass, args);
 		node.instance.setId(current_node_id);
 		node.instance.computeOutputs();
 		node.outputs = [];
@@ -1115,6 +1108,5 @@ class Graph {
 
 		return json;
 	}
-	#end
 
 }

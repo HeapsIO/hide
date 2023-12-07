@@ -10,8 +10,16 @@ class SubGraph extends ShaderNode {
 
 	@prop() public var pathShaderGraph : String;
 
+	override function new(path: String) {
+		pathShaderGraph = path;
+	}
+
 	override public function getShaderDef(domain: ShaderGraph.Domain, getNewIdFn : () -> Int, ?inputTypes: Array<Type>):hrt.shgraph.ShaderGraph.ShaderNodeDef {
-		var shader = new ShaderGraph(pathShaderGraph);
+		#if !editor
+		var shader = cast hxd.res.Loader.currentInstance.load(pathShaderGraph).toPrefab().load();
+		#else
+		var shader = cast hide.Ide.inst.loadPrefab(pathShaderGraph);
+		#end
 		var gen = shader.getGraph(domain).generate2(false, getNewIdFn);
 
 		// for (tvar in gen.externVars) {
