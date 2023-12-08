@@ -74,7 +74,7 @@ class InstanceDef {
 }
 
 typedef ShaderAnims = Array<ShaderAnimation>;
-typedef PartArray = #if (hl_ver >= version("1.13.0")) hl.CArray<ParticleInstance> #else Array<ParticleInstance> #end;
+typedef PartArray = #if (hl_ver >= version("1.14.0")) hl.CArray<ParticleInstance> #else Array<ParticleInstance> #end;
 typedef Single = #if (hl_ver >= version("1.13.0")) hl.F32 #else Float #end;
 
 @:publicFields @:struct
@@ -654,7 +654,7 @@ class EmitterObject extends h3d.scene.Object {
 
 		}
 
-		particles = #if (hl_ver >= version("1.13.0")) hl.CArray.alloc(ParticleInstance, maxCount) #else [for(i in 0...maxCount) new ParticleInstance()] #end;
+		particles = #if (hl_ver >= version("1.14.0")) hl.CArray.alloc(ParticleInstance, maxCount) #else [for(i in 0...maxCount) new ParticleInstance()] #end;
 		particlesCount = maxCount;
 		randomValues = [for(i in 0...(maxCount * randSlots)) 0];
 		evaluator = new Evaluator(randomValues, randSlots);
