@@ -59,8 +59,8 @@ enum UVRepeat {
 }
 
 
-typedef PointsArray = #if (hl_ver >= version("1.13.0")) hl.CArray<TrailPoint> #else Array<TrailPoint> #end;
-typedef TrailsArray = #if (hl_ver >= version("1.13.0")) hl.CArray<TrailHead> #else Array<TrailHead> #end;
+typedef PointsArray = #if (hl_ver >= version("1.14.0")) hl.CArray<TrailPoint> #else Array<TrailPoint> #end;
+typedef TrailsArray = #if (hl_ver >= version("1.14.0")) hl.CArray<TrailHead> #else Array<TrailHead> #end;
 
 
 class TrailObj extends h3d.scene.Mesh {
@@ -152,9 +152,9 @@ class TrailObj extends h3d.scene.Mesh {
 
 		maxNumPoints = calcMaxTrailPoints() * numTrails;
 		if (maxNumPoints <= 0) maxNumPoints = 1;
-		points = #if (hl_ver >= version("1.13.0")) hl.CArray.alloc(TrailPoint, maxNumPoints) #else [for(i in 0...maxNumPoints) new TrailPoint()] #end;
+		points = #if (hl_ver >= version("1.14.0")) hl.CArray.alloc(TrailPoint, maxNumPoints) #else [for(i in 0...maxNumPoints) new TrailPoint()] #end;
 
-		trails = #if (hl_ver >= version("1.13.0")) hl.CArray.alloc(TrailHead, numTrails) #else [for(i in 0...numTrails) new TrailHead()] #end;
+		trails = #if (hl_ver >= version("1.14.0")) hl.CArray.alloc(TrailHead, numTrails) #else [for(i in 0...numTrails) new TrailHead()] #end;
 
 		lastAddTime = [for (i in 0...numTrails) 0.0];
 
