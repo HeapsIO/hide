@@ -33,6 +33,66 @@ class ShaderInput extends ShaderNode {
 		var output : TVar = {name: "output", id: getNewIdFn(), type: variable.v.type, kind: Local, qualifiers: []};
 		var finalExpr : TExpr = {e: TBinop(OpAssign, {e:TVar(output), p:pos, t:output.type}, {e: TVar(inVar), p: pos, t: output.type}), p: pos, t: output.type};
 
+		if (variable.v.name == "pixelColor") {
+			var vec3 = TVec(3, VFloat);
+			output.type = vec3;
+			finalExpr =
+				{
+					e: TBinop(
+					OpAssign,
+						{
+							e: TVar(output),
+							p: pos,
+							t: vec3
+						},
+						{
+							e: TSwiz(
+									{
+										e: TVar(inVar),
+										p: pos,
+										t: vec3,
+									},
+									[X,Y,Z]
+								),
+							p:pos,
+							t:vec3
+						}
+					),
+					p: pos,
+					t: vec3
+				};
+		}
+		else if (variable.v.name == "alpha") {
+			var flt = TFloat;
+			output.type = flt;
+			inVar.name = "pixelColor";
+			finalExpr =
+				{
+					e: TBinop(
+					OpAssign,
+						{
+							e: TVar(output),
+							p: pos,
+							t: flt
+						},
+						{
+							e: TSwiz(
+									{
+										e: TVar(inVar),
+										p: pos,
+										t: flt,
+									},
+									[W]
+								),
+							p:pos,
+							t:flt
+						}
+					),
+					p: pos,
+					t: flt
+				};
+		}
+
 
 		return {expr: finalExpr, inVars: [{v:inVar, internal: true, isDynamic: false}], outVars:[{v:output, internal: false, isDynamic: false}], externVars: [], inits: []};
 	}
@@ -50,6 +110,7 @@ class ShaderInput extends ShaderNode {
 
 	public static var availableInputs : Map<String, InputVariable> = [
 		"pixelColor" => {display: "Pixel Color", v: { parent: null, id: 0, kind: Local, name: "pixelColor", type: TVec(4, VFloat) }},
+		"alpha" => {display: "Alpha", v: { parent: null, id: 0, kind: Local, name: "alpha", type: TVec(4, VFloat) }},
 		"calculatedUV" => {display: "UV", v: { parent: null, id: 0, kind: Local, name: "calculatedUV", type: TVec(2, VFloat) }},
 		"relativePosition" => {display: "Object Space Position", v: { parent: null, id: 0, kind: Local, name: "relativePosition", type: TVec(3, VFloat) }},
 		"transformedPosition" => {display: "World Space Position", v: { parent: null, id: 0, kind: Local, name: "transformedPosition", type: TVec(3, VFloat) }},

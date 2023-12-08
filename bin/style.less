@@ -1997,6 +1997,21 @@ input[type=checkbox] {
 /* Shader Editor */
 .graph-view {
 	outline: none !important;
+
+	.mini-preview {
+		position: absolute;
+		top: 0px;
+		left: 0px;
+		z-index: 0;
+	}
+
+	#graph-root {
+		position: absolute;
+		top: 0px;
+		left: 0px;
+		z-index: 1;
+	}
+
 	.tabs {
 		width: 280px;
 		padding-top: 10px;
@@ -2011,6 +2026,8 @@ input[type=checkbox] {
 			font-size: 15px;
 			font-weight: bold;
 		}
+
+
 
 		.tab {
 			height: 100%;

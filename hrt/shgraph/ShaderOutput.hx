@@ -26,6 +26,65 @@ class ShaderOutput extends ShaderNode {
 		//inits.push({variable: inVar, value: param.defaultValue});
 		var inVars = [{v: inVar, internal: false, isDynamic: false}];
 
+		if (variable.name == "pixelColor") {
+			var vec3 = TVec(3, VFloat);
+			inVar.type = vec3;
+			finalExpr =
+				{
+					e: TBinop(
+					OpAssign,
+						{
+							e: TSwiz(
+									{
+										e: TVar(output),
+										p: pos,
+										t: vec3,
+									},
+									[X,Y,Z]
+								),
+							p:pos,
+							t:vec3
+						},
+						{
+							e: TVar(inVar),
+							p: pos,
+							t: vec3
+						}
+					),
+					p: pos,
+					t: vec3
+				};
+		} else if (variable.name == "alpha") {
+			var flt = TFloat;
+			inVar.type = flt;
+			output.name = "pixelColor";
+			output.type = TVec(4, VFloat);
+			finalExpr =
+				{
+					e: TBinop(
+					OpAssign,
+						{
+							e: TSwiz(
+									{
+										e: TVar(output),
+										p: pos,
+										t: flt,
+									},
+									[W]
+								),
+							p:pos,
+							t:flt
+						},
+						{
+							e: TVar(inVar),
+							p: pos,
+							t: flt
+						}
+					),
+					p: pos,
+					t: flt
+				};
+		}
 		// if (generatePreview && variable.name == "pixelColor") {
 		// 	var outputSelect : TVar = {name: "__sg_PREVIEW_output_select", id: getNewIdFn(), type: TInt, kind: Param, qualifiers: []};
 
@@ -167,7 +226,7 @@ class ShaderOutput extends ShaderNode {
 	#if editor
 	override public function getPropertiesHTML(width : Float) : Array<hide.Element> {
 		var elements = super.getPropertiesHTML(width);
-		var element = new hide.Element('<div style="width: 110px; height: 70px"></div>');
+		var element = new hide.Element('<div style="width: 110px; height: 30px"></div>');
 		element.append(new hide.Element('<select id="variable"></select>'));
 
 		if (this.variable == null) {

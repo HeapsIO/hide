@@ -7,6 +7,7 @@ import hrt.shgraph.ShaderParam;
 import hrt.shgraph.ShaderException;
 import haxe.Timer;
 using hxsl.Ast.Type;
+using Lambda;
 
 import hide.comp.SceneEditor;
 import js.jquery.JQuery;
@@ -27,6 +28,36 @@ typedef SavedClipboard = {
 	edges : Array<{ fromIdx : Int, fromName : String, toIdx : Int, toName : String }>,
 }
 
+
+class Preview extends h2d.Bitmap {
+
+	public var shaderDef(default, set) : hrt.prefab.ContextShared.ShaderDef;
+	public var shader : DynamicShader;
+
+	function rebuildShader() {
+		if (shader != null) {
+			removeShader(shader);
+		}
+		if (shaderDef == null)
+			return;
+		trace("shader set");
+		shader = new DynamicShader(shaderDef.shader);
+		addShader(shader);
+	}
+
+	function set_shaderDef(v: hrt.prefab.ContextShared.ShaderDef) {
+		shaderDef = v;
+		rebuildShader();
+		return v;
+	}
+
+	public function new(parent: h2d.Object) {
+		super(h2d.Tile.fromColor(0xFF00FF,1,1), parent);
+		this.blendMode = None;
+	}
+
+}
+
 class ShaderEditor extends hide.view.Graph {
 
 	var parametersList : JQuery;
@@ -37,6 +68,8 @@ class ShaderEditor extends hide.view.Graph {
 	var addMenu : JQuery;
 	var selectedNode : JQuery;
 	var listOfClasses : Map<String, Array<NodeInfo>>;
+
+	var previewsScene : hide.comp.Scene;
 
 	// used to preview
 	var sceneEditor : SceneEditor;
@@ -110,6 +143,13 @@ class ShaderEditor extends hide.view.Graph {
 			node.computeOutputs();
 			addBox(posCursor, ShaderParam, node);
 		});
+
+		var parentScene = element.find(".heaps-scene");
+		var miniPreviews = new Element('<div class="mini-preview"></div>');
+		parentScene.prepend(miniPreviews);
+		previewsScene = new hide.comp.Scene(config, null, miniPreviews);
+		previewsScene.onReady = onMiniPreviewReady;
+		previewsScene.onUpdate = onMiniPreviewUpdate;
 
 		var preview = new Element('<div id="preview" ></div>');
 		preview.on("mousedown", function(e) { e.stopPropagation(); });
@@ -497,13 +537,6 @@ class ShaderEditor extends hide.view.Graph {
 		updateMatrix();
 
 		for (node in currentGraph.getNodes()) {
-			var shaderPreview = node.instance;
-			//var shaderPreview = Std.downcast(node.instance, hrt.shgraph.nodes.Preview);
-			//if (shaderPreview != null) {
-				shaderPreview.shaderGraph = shaderGraph;
-				//addBox(new Point(node.x, node.y), std.Type.getClass(node.instance), shaderPreview);
-				//continue;
-			//}
 			var paramNode = Std.downcast(node.instance, ShaderParam);
 			if (paramNode != null) {
 				var paramShader = shaderGraph.getParameter(paramNode.parameterId);
@@ -927,13 +960,7 @@ class ShaderEditor extends hide.view.Graph {
 			currentShader = newShader;
 			currentShaderDef = shaderGraphDef;//{shader: shaderGraphDef, inits:[]};
 
-			for (node in currentGraph.getNodes()) {
-				var preview = node.instance;//Std.downcast(node.instance, hrt.shgraph.nodes.Preview);
-				if (preview != null) {
-					preview.shaderGraphDef = shaderGraphDef;
-					preview.update();
-				}
-			}
+
 			info('Shader compiled in  ${Date.now().getTime() - timeStart}ms');
 
 		} catch (e : Dynamic) {
@@ -999,10 +1026,11 @@ class ShaderEditor extends hide.view.Graph {
 		var param = shaderGraph.getParameter(id);
 		setParamValueByName(currentShader, param.name, param.defaultValue);
 		for (b in listOfBoxes) {
-			var previewBox = b.getInstance();//Std.downcast(b.getInstance(), hrt.shgraph.nodes.Preview);
-			if (previewBox != null) {
-				previewBox.setParamValueByName(param.variable.name, param.defaultValue);
-			}
+			// TODO
+			// var previewBox = b.getInstance();//Std.downcast(b.getInstance(), hrt.shgraph.nodes.Preview);
+			// if (previewBox != null) {
+			// 	previewBox.setParamValueByName(param.variable.name, param.defaultValue);
+			// }
 		}
 	}
 
@@ -1020,19 +1048,69 @@ class ShaderEditor extends hide.view.Graph {
 		@:privateAccess ShaderGraph.setParamValue(sceneEditor.context.shared, shader, variable, value);
 	}
 
+	var boxToPreview : Map<Box, Preview>;
+
+	function onMiniPreviewReady() {
+		var bg = new h2d.Flow(previewsScene.s2d);
+		bg.fillHeight = true;
+		bg.fillWidth = true;
+		bg.backgroundTile = h2d.Tile.fromColor(0x333333);
+		boxToPreview = [];
+	}
+
+	function onMiniPreviewUpdate(dt: Float) {
+		var newBoxToPreview : Map<Box, Preview> = [];
+		for (box in listOfBoxes) {
+			var preview = boxToPreview.get(box);
+			if (preview == null) {
+				var bmp = new Preview(previewsScene.s2d);
+				bmp.shaderDef = currentShaderDef;
+				preview = bmp;
+			} else {
+				boxToPreview.remove(box);
+			}
+			newBoxToPreview.set(box,preview);
+		}
+
+		for (preview in boxToPreview) {
+			preview.remove();
+		}
+		boxToPreview = newBoxToPreview;
+
+		var select = null;
+		if (currentShaderDef != null) {
+			select = currentShaderDef.inits.find((e) -> e.variable.name == "__sg_PREVIEW_output_select");
+		}
+		for (box => preview in boxToPreview) {
+			if (preview.shaderDef != currentShaderDef) {
+				preview.shaderDef = currentShaderDef;
+			}
+			if (preview.shader != null) {
+				for (init in currentShaderDef.inits) {
+					if (init == select) {
+						setParamValue(preview.shader, init.variable, box.getId() + 1);
+					}
+					else {
+						var param = shaderGraph.parametersAvailable.find((v) -> v.name == init.variable.name);
+						if (param != null) {
+							setParamValue(preview.shader, init.variable,  param.defaultValue);
+						}
+						else {
+						}
+					}
+				}
+			}
+			preview.x = gX(box.getX());
+			preview.y = gY(box.getY() + box.getHeight());
+			preview.scaleX = transformMatrix[0] * box.getWidth();
+			preview.scaleY = transformMatrix[3] * box.getWidth();
+
+		}
+	}
+
 	function initSpecifics(node : Null<ShaderNode>) {
 		if( node == null )
 			return;
-		var shaderPreview = node;//Std.downcast(node, hrt.shgraph.nodes.Preview);
-		if (shaderPreview != null) {
-			shaderPreview.shaderGraph = shaderGraph;
-			return;
-		}
-		// var subGraphNode = Std.downcast(node, hrt.shgraph.nodes.SubGraph);
-		// if (subGraphNode != null) {
-		// 	subGraphNode.loadGraphShader();
-		// 	return;
-		// }
 	}
 
 	function addNode(p : Point, nodeClass : Class<ShaderNode>, args : Array<Dynamic>) {

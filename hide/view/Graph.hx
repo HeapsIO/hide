@@ -71,6 +71,7 @@ class Graph extends FileView {
 			</div>');
 		parent = element.find(".heaps-scene");
 		editor = new SVG(parent);
+		editor.element.attr("id", "graph-root");
 		statusBar = new Element('<div id="status-bar" ><pre> </pre></div>').appendTo(parent).find("pre");
 		statusBar.on("wheel", (e) -> { e.stopPropagation(); });
 

@@ -1796,6 +1796,18 @@ input[type=checkbox]:checked:after {
 .graph-view {
   outline: none !important;
 }
+.graph-view .mini-preview {
+  position: absolute;
+  top: 0px;
+  left: 0px;
+  z-index: 0;
+}
+.graph-view #graph-root {
+  position: absolute;
+  top: 0px;
+  left: 0px;
+  z-index: 1;
+}
 .graph-view .tabs {
   width: 280px;
   padding-top: 10px;

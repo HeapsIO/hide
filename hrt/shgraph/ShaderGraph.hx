@@ -115,7 +115,6 @@ class ShaderGraph extends hrt.prefab.Prefab {
 			return cachedDef;
 		#end
 
-		trace("[shgraph] Compiling : " + source);
 
 		var start = haxe.Timer.stamp();
 
@@ -143,7 +142,6 @@ class ShaderGraph extends hrt.prefab.Prefab {
 
 			for (arr in [[for (v in gen.inVars) v.v], gen.externVars]) {
 				for (v in arr) {
-					trace(v);
 					var split = v.name.split(".");
 					switch(split[0]) {
 						case "input": {
