@@ -317,7 +317,7 @@ class IconTree<T:{}> extends Component {
 	public function revealNode(e : T) {
 		openNode(e);
 		var el = getElement(e);
-		if(el != null)
+		if(el != null && el.length > 0)
 			(el[0] : Dynamic).scrollIntoViewIfNeeded();
 	}
 
