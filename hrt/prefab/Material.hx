@@ -83,6 +83,8 @@ class Material extends Prefab {
 		if( ctx.local3d == null )
 			return;
 
+		var mats = getMaterials(ctx);
+
 		if (this.refMatLib != null && this.refMatLib != "") {
 			// We want to save some infos to reapply them after loading datas from the choosen mat
 			var previousRefMatLib = this.refMatLib;
@@ -98,6 +100,17 @@ class Material extends Prefab {
 				if (c.name != refMatName)
 					continue;
 
+				// Apply shaders to this material if the referenced one has shaders
+				var shaders = c.flatten(Shader);
+				if (shaders != null) {
+					for (s in shaders) {
+						var shader = s.makeShader(ctx);
+
+						for( m in mats )
+							m.mainPass.addShader(shader);
+					}
+				}
+
 				this.load(c);
 
 				// Reapply some infos that we don't want to be modified by the load of the new mat
@@ -110,7 +123,7 @@ class Material extends Prefab {
 			}
 		}
 
-		var mats = getMaterials(ctx);
+
 		var props = renderProps();
 		#if editor
 		if ( mats == null || mats.length == 0 ) {
@@ -279,6 +292,8 @@ class Material extends Prefab {
 		function updateHighlightOverrides() {
 			ctx.properties.element.find(".override").removeClass("override");
 			ctx.properties.element.find(".remove-override-btn").remove();
+
+			var e = overrides;
 
 			// Highlight field that are overrides
 			for (o in overrides) {
