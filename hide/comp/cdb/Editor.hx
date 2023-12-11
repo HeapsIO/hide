@@ -308,13 +308,15 @@ class Editor extends Component {
 					for (f in filters) {
 						var input = f.text;
 
-						// Manage input variable without 'this.'
-						input = StringTools.replace(input, "this.", "");
-						for (v in Reflect.fields(interp.variables.get("this"))) {
-							if (StringTools.contains(input, v)) {
-								input = StringTools.replace(input, v, "this." + v);
-							}
-						}
+						// Not working for now, should check with expression variables
+						// instead of contains() in input string
+						// // Manage input variable without 'this.'
+						// input = StringTools.replace(input, "this.", "");
+						// for (v in Reflect.fields(interp.variables.get("this"))) {
+						// 	if (StringTools.contains(input, v)) {
+						// 		input = StringTools.replace(input, v, "this." + v);
+						// 	}
+						// }
 
 						var expr = try parser.parseString(input) catch( e : Dynamic ) continue;
 						var res = try interp.execute(expr) catch(e : Dynamic ) { trace(e); continue;} // Catch errors that can be thrown if search input text is not interpretabled
