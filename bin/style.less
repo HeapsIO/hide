@@ -1096,6 +1096,20 @@ input[type=checkbox] {
 		user-select:none;
 		text-transform: capitalize;
 		cursor:pointer;
+		font-weight: normal;
+	}
+
+	.override > dt {
+		font-weight: bold;
+	}
+
+	.override > dt::before {
+		display: inline-block;
+		background-color: #fd002f;
+		width:5px;
+		height:12px;
+		content: " ";
+		margin-right: 5px;
 	}
 
 	input {

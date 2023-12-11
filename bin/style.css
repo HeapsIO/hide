@@ -1029,6 +1029,18 @@ input[type=checkbox]:checked:after {
   user-select: none;
   text-transform: capitalize;
   cursor: pointer;
+  font-weight: normal;
+}
+.hide-properties .override > dt {
+  font-weight: bold;
+}
+.hide-properties .override > dt::before {
+  display: inline-block;
+  background-color: #fd002f;
+  width: 5px;
+  height: 12px;
+  content: " ";
+  margin-right: 5px;
 }
 .hide-properties input {
   width: 190px;

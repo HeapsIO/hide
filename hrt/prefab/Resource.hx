@@ -31,7 +31,7 @@ class Resource extends hxd.res.Resource {
 	}
 
 	public function load() : Prefab {
-		if( lib != null && cacheVersion == CACHE_VERSION )
+		if( lib != null && cacheVersion == CACHE_VERSION)
 			return lib;
 		var data = loadData();
 		lib = Library.create(entry.extension);

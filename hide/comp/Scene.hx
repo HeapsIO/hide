@@ -498,11 +498,7 @@ class Scene extends Component implements h3d.IDrawable {
 	}
 
 	public function listMaterialFromLibrary( path : String, library : String ) {
-		var config = hide.Config.loadForFile(ide, path);
-
 		var libraries = listMatLibraries(path);
-		var lib : Dynamic = null;
-
 		var lPath = "";
 		for (l in libraries) {
 			if (l.name == library) {

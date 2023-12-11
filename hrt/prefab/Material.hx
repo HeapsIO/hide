@@ -14,6 +14,7 @@ class Material extends Prefab {
 	@:c public var color : Array<Float> = [1,1,1,1];
 	@:s public var mainPassName : String;
 	@:s public var refMatLib : String;
+	@:s public var overrides : Array<Dynamic> = [];
 
 	public function new(?parent) {
 		super(parent);
@@ -36,11 +37,15 @@ class Material extends Prefab {
 	function renderProps() {
 		var cur = h3d.mat.MaterialSetup.current;
 		var setupName = cur.name;
+
+		applyOverrides();
+
 		var r = Reflect.field(props, setupName);
 		if(r == null) {
 			r = cur.getDefaults();
 			Reflect.setField(props, setupName, r);
 		}
+
 		return r;
 	}
 
@@ -82,11 +87,12 @@ class Material extends Prefab {
 			// We want to save some infos to reapply them after loading datas from the choosen mat
 			var previousRefMatLib = this.refMatLib;
 			var previousName = this.name;
+			var previousOverrides = this.overrides.copy();
 
 			var refMatLibPath = this.refMatLib.substring(0, this.refMatLib.lastIndexOf("/"));
 			var refMatName = this.refMatLib.substring(this.refMatLib.lastIndexOf("/") + 1);
 
-			var prefabLib = hxd.res.Loader.currentInstance.load(refMatLibPath).toPrefab().load();
+			var prefabLib = hxd.res.Loader.currentInstance.load(refMatLibPath).toPrefab().load().clone(true);
 
 			for(c in prefabLib.children) {
 				if (c.name != refMatName)
@@ -97,6 +103,10 @@ class Material extends Prefab {
 				// Reapply some infos that we don't want to be modified by the load of the new mat
 				this.refMatLib = previousRefMatLib;
 				this.name = previousName;
+				this.overrides = previousOverrides;
+
+				applyOverrides();
+				break;
 			}
 		}
 
@@ -127,6 +137,39 @@ class Material extends Prefab {
 
 		updateInstance(ctx);
 		return ctx;
+	}
+
+	function applyOverrides() {
+		// We want to break the reference between props of the current material and props of the material we loaded
+		var newProps = {};
+		var newMaterialSetupObj = {};
+
+		var materialSetupObj = Reflect.getProperty(this.props, h3d.mat.MaterialSetup.current.name);
+		for (f in Reflect.fields(materialSetupObj)) {
+			Reflect.setField(newMaterialSetupObj, f, Reflect.field(materialSetupObj, f));
+		}
+
+		for (o in overrides) {
+			if (o.pname.indexOf("/") > 0) {
+
+
+				var pname = o.pname.substring(o.pname.indexOf("/") + 1);
+				var v = o.value;
+
+				if (v == "__toremove") {
+					Reflect.deleteField(newMaterialSetupObj, pname);
+				}
+				else {
+					Reflect.setProperty(newMaterialSetupObj, pname, o.value);
+				}
+			}
+			else {
+				Reflect.setProperty(this, o.pname, o.value);
+			}
+		}
+
+		Reflect.setProperty(newProps, h3d.mat.MaterialSetup.current.name, newMaterialSetupObj);
+		this.props = newProps;
 	}
 
 	#if editor
@@ -165,6 +208,7 @@ class Material extends Prefab {
 				</select>
 			</dd>
 			<dt></dt><dd><input type="button" value="Go to library" class="goTo"/></dd>
+			<dt></dt><dd><input type="button" value="Clear overrides" class="clearOverrides"/></dd>
 		</dl></div>');
 
 		var libSelect = materialLibrary.find(".lib");
@@ -195,6 +239,7 @@ class Material extends Prefab {
 			new Element('<option value="">None</option>').appendTo(matSelect);
 
 			materials = ctx.scene.listMaterialFromLibrary(this.getAbsPath(), libSelect.val());
+
 			for (idx in 0...materials.length) {
 				new Element('<option value="${materials[idx].path + "/" + materials[idx].mat.name}" ${(selectedMat == materials[idx].mat.name) ? 'selected' : ''}>${materials[idx].mat.name}</option>').appendTo(matSelect);
 			}
@@ -202,15 +247,14 @@ class Material extends Prefab {
 
 		function updateMat() {
 			var previousMat = this.clone();
-
 			var mat = findMat(matSelect.val());
 			if ( mat != null ) {
 				var previousName = this.name;
 				this.load(mat.mat);
 				this.name = previousName;
 				this.refMatLib = mat.path + "/" + mat.mat.name;
-				ctx.rebuildProperties();
 				updateInstance(ctx.scene.editor.getContext(this));
+				ctx.rebuildProperties();
 			} else {
 				this.refMatLib = "";
 			}
@@ -230,6 +274,58 @@ class Material extends Prefab {
 				ctx.rebuildProperties();
 				updateInstance(ctx.scene.editor.getContext(this));
 			}));
+		}
+
+		function updateHighlightOverrides() {
+			ctx.properties.element.find(".override").removeClass("override");
+
+			// Highlight field that are overrides
+			for (o in overrides) {
+				var idxStart = o.pname.indexOf("/");
+				var fieldName = o.pname.substring(idxStart + 1);
+				var el = ctx.properties.element.find('[field=${fieldName}]');
+				if (el.length != 1)
+					continue;
+
+				var parentDiv = el.parent();
+				while (!parentDiv.parent().is("dl") && parentDiv != null)
+					parentDiv = parentDiv.parent();
+
+				parentDiv.addClass("override");
+
+				var label = parentDiv.children().first();
+				var removeOverrideBtn = new Element('<i title="Remove override" class="icon ico ico-remove"></i>').insertBefore(label);
+				removeOverrideBtn.css({ "cursor":"pointer" });
+				removeOverrideBtn.on("click", function(_){
+					overrides.remove(o);
+					updateInstance(ctx.scene.editor.getContext(this));
+					ctx.rebuildProperties();
+				});
+			}
+		}
+
+		function addOverrideProperty(pname : String, isMatSetupProp : Bool) {
+			// Remove previous value of this props name in overrides
+			var idx = 0;
+			while (idx < overrides.length) {
+				if (overrides[idx].pname == (isMatSetupProp ? h3d.mat.MaterialSetup.current.name+"/"+pname : pname)) {
+					overrides.remove(overrides[idx]);
+					continue;
+				}
+
+				idx++;
+			}
+
+			if (isMatSetupProp) {
+				var materialSetupObj = Reflect.getProperty(this.props, h3d.mat.MaterialSetup.current.name);
+				var v = Reflect.getProperty(materialSetupObj, pname);
+				overrides.push( { pname:h3d.mat.MaterialSetup.current.name+"/"+pname, value:v == null ? "__toremove" : v } );
+			}
+			else {
+				overrides.push( { pname:pname, value:Reflect.field(this, pname) } );
+			}
+
+			updateHighlightOverrides();
 		}
 
 		updateMatSelect();
@@ -253,10 +349,19 @@ class Material extends Prefab {
 			}
 		});
 
+		materialLibrary.find(".clearOverrides").click(function(_) {
+			this.overrides = [];
+			updateMatSelect();
+			updateMat();
+		});
+
 		ctx.properties.add(materialLibrary, this);
 
 		var group = ctx.properties.add(new hide.Element('<div class="group" name="Material"></div>'));
 		ctx.properties.addMaterial(mat, group.find('.group > .content'), function(pname) {
+			if (this.refMatLib != null && this.refMatLib != "")
+				addOverrideProperty(pname, true);
+
 			Reflect.setField(props, h3d.mat.MaterialSetup.current.name, mat.props);
 			ctx.onChange(this, "props");
 
@@ -461,12 +566,18 @@ class Material extends Prefab {
 
 		dropDownMaterials.appendTo(matProps);
 		ctx.properties.add(matProps, this, function(pname) {
+
+			if (this.refMatLib != null && this.refMatLib != "")
+				addOverrideProperty(pname, false);
+
 			ctx.onChange(this, pname);
 
 			var fx = getParent(hrt.prefab.fx.FX);
 			if(fx != null)
 				ctx.rebuildPrefab(fx, true);
 		});
+
+		updateHighlightOverrides();
 	}
 
 	override function getHideProps() : HideProps {
