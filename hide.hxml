@@ -11,3 +11,4 @@ common.hxml
 --macro include("hrt.prefab")
 --macro include("hrt.shgraph.nodes")
 -dce no
+-debug
