@@ -278,6 +278,7 @@ class Material extends Prefab {
 
 		function updateHighlightOverrides() {
 			ctx.properties.element.find(".override").removeClass("override");
+			ctx.properties.element.find(".remove-override-btn").remove();
 
 			// Highlight field that are overrides
 			for (o in overrides) {
@@ -294,7 +295,7 @@ class Material extends Prefab {
 				parentDiv.addClass("override");
 
 				var label = parentDiv.children().first();
-				var removeOverrideBtn = new Element('<i title="Remove override" class="icon ico ico-remove"></i>').insertBefore(label);
+				var removeOverrideBtn = new Element('<i title="Remove override" class="remove-override-btn icon ico ico-remove"></i>').insertBefore(label);
 				removeOverrideBtn.css({ "cursor":"pointer" });
 				removeOverrideBtn.on("click", function(_){
 					overrides.remove(o);
