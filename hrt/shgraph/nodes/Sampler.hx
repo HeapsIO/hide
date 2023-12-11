@@ -2,7 +2,7 @@ package hrt.shgraph.nodes;
 
 using hxsl.Ast;
 
-@name("Sampler")
+@name("Sample Texture 2D")
 @description("Get color from texture and UV")
 @group("Property")
 class Sampler extends ShaderNodeHxsl {
@@ -11,13 +11,17 @@ class Sampler extends ShaderNodeHxsl {
 		@sginput var texture : Sampler2D;
 		@sginput(calculatedUV) var uv : Vec2;
 		@sgoutput var RGBA : Vec4;
-		@sgoutput var RGB : Vec3;
+		@sgoutput var R : Float;
+		@sgoutput var G : Float;
+		@sgoutput var B : Float;
 		@sgoutput var A : Float;
 
 
 		function fragment() {
 			RGBA = texture.get(uv);
-			RGB = RGBA.rgb;
+			R = RGBA.r;
+			G = RGBA.g;
+			B = RGBA.b;
 			A = RGBA.a;
 		}
 	}

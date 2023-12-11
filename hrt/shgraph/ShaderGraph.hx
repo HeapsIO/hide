@@ -152,11 +152,11 @@ class ShaderGraph extends hrt.prefab.Prefab {
 							v.name = split[1] ?? throw "Invalid variable name";
 							globalInputVars.pushUnique(v);
 						}
-						default:
-							if (split.length > 1) {
+						default: {
+							if (split.length > 1)
 								throw "Var has a dot in its name without being input or global var";
-							}
-						shaderData.vars.pushUnique(v);
+							shaderData.vars.pushUnique(v);
+						}
 					}
 				}
 			}

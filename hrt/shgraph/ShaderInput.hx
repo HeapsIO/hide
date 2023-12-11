@@ -92,6 +92,12 @@ class ShaderInput extends ShaderNode {
 					t: flt
 				};
 		}
+		else if (variable.v.name == "projectedNormal") {
+			inVar.name == "transformedNormal";
+
+			//var expr = new MacroParser().parseExpr(macro var transformedNormal = vec4(transformedNormal, 1) * camera.viewProj;);
+			//final
+		}
 
 
 		return {expr: finalExpr, inVars: [{v:inVar, internal: true, isDynamic: false}], outVars:[{v:output, internal: false, isDynamic: false}], externVars: [], inits: []};

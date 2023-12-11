@@ -28,6 +28,31 @@ typedef SavedClipboard = {
 	edges : Array<{ fromIdx : Int, fromName : String, toIdx : Int, toName : String }>,
 }
 
+class PreviewShaderBase extends hxsl.Shader {
+	static var SRC = {
+
+		@input var input : {
+			var position : Vec2;
+		};
+
+		@global var camera : {
+			var viewProj : Mat4;
+		}
+
+		var relativePosition : Vec3;
+		var transformedPosition : Vec3;
+		var projectedPosition : Vec4;
+		var transformedNormal : Vec3;
+
+		function __init__() {
+			relativePosition = vec3(input.position, 0.0);
+			transformedPosition = vec3(input.position, 0.0);
+			projectedPosition = vec4(input.position, 0.0, 0.0);
+			transformedNormal = vec3(0,0,-1);
+		}
+	}
+}
+
 
 class Preview extends h2d.Bitmap {
 
@@ -54,6 +79,8 @@ class Preview extends h2d.Bitmap {
 	public function new(parent: h2d.Object) {
 		super(h2d.Tile.fromColor(0xFF00FF,1,1), parent);
 		this.blendMode = None;
+		var shaderBase = new PreviewShaderBase();
+		addShader(shaderBase);
 	}
 
 }
@@ -150,6 +177,7 @@ class ShaderEditor extends hide.view.Graph {
 		previewsScene = new hide.comp.Scene(config, null, miniPreviews);
 		previewsScene.onReady = onMiniPreviewReady;
 		previewsScene.onUpdate = onMiniPreviewUpdate;
+
 
 		var preview = new Element('<div id="preview" ></div>');
 		preview.on("mousedown", function(e) { e.stopPropagation(); });
@@ -1056,6 +1084,10 @@ class ShaderEditor extends hide.view.Graph {
 		bg.fillWidth = true;
 		bg.backgroundTile = h2d.Tile.fromColor(0x333333);
 		boxToPreview = [];
+
+		var identity : h3d.Matrix = new h3d.Matrix();
+		identity.identity();
+		@:privateAccess previewsScene.s2d.renderer.manager.globals.set("camera.viewProj", identity);
 	}
 
 	function onMiniPreviewUpdate(dt: Float) {
