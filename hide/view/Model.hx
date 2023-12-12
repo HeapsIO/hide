@@ -240,17 +240,6 @@ class Model extends FileView {
 			}
 		}
 
-		function findMat(key:String) {
-			var p = key.split("/");
-			var name = p.pop();
-			var path = p.join("/");
-			for ( m in materials ) {
-				if ( m.path == path && m.mat.name == name )
-					return m;
-			}
-			return null;
-		}
-
 		updateMatSelect();
 
 		if ( props != null && props.__refMode != null )
@@ -261,9 +250,9 @@ class Model extends FileView {
 		});
 
 		matSelect.change(function(_) {
-			var mat = findMat(matSelect.val());
+			var mat = Reflect.field(scene.findMat(materials, matSelect.val()), "mat");
 			if ( mat != null ) {
-				@:privateAccess mat.mat.update(m, mat.mat.renderProps(), function(path:String) {
+				@:privateAccess mat.update(m, mat.renderProps(), function(path:String) {
 					return hxd.res.Loader.currentInstance.load(path).toTexture();
 				});
 				tex.hide();
@@ -277,7 +266,7 @@ class Model extends FileView {
 		});
 
 		matLibrary.find(".goTo").click(function(_) {
-			var mat = findMat(matSelect.val());
+			var mat = scene.findMat(materials, matSelect.val());
 			if ( mat != null ) {
 				ide.openFile(mat.path);
 			}
@@ -297,7 +286,7 @@ class Model extends FileView {
 			}
 		}
 		var saveCallback = function(_) {
-			var mat = findMat(matSelect.val());
+			var mat = scene.findMat(materials, matSelect.val());
 			if ( mat != null ) {
 				for ( f in Reflect.fields((m.props:Dynamic)) )
 					Reflect.deleteField((m.props:Dynamic), f);
