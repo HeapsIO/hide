@@ -227,17 +227,6 @@ class Material extends Prefab {
 		var libSelect = materialLibrary.find(".lib");
 		var matSelect = materialLibrary.find(".mat");
 
-		function findMat(key:String) {
-			var p = key.split("/");
-			var name = p.pop();
-			var path = p.join("/");
-			for ( m in materials ) {
-				if ( m.path == path && m.mat.name == name )
-					return m;
-			}
-			return null;
-		}
-
 		function updateLibSelect() {
 			libSelect.empty();
 			new Element('<option value="">None</option>').appendTo(libSelect);
@@ -260,12 +249,12 @@ class Material extends Prefab {
 
 		function updateMat() {
 			var previousMat = this.clone();
-			var mat = findMat(matSelect.val());
+			var mat = ctx.scene.findMat(materials, matSelect.val());
 			if ( mat != null ) {
 				var previousName = this.name;
-				this.load(mat.mat);
+				this.load(Reflect.field(mat, "mat"));
 				this.name = previousName;
-				this.refMatLib = mat.path + "/" + mat.mat.name;
+				this.refMatLib = Reflect.field(mat, "path") + "/" + Reflect.field(mat, "mat").name;
 				updateInstance(ctx.scene.editor.getContext(this));
 				ctx.rebuildProperties();
 			} else {
@@ -359,9 +348,9 @@ class Material extends Prefab {
 		});
 
 		materialLibrary.find(".goTo").click(function(_) {
-			var mat = findMat(matSelect.val());
+			var mat = ctx.scene.findMat(materials, matSelect.val());
 			if ( mat != null ) {
-				hide.Ide.inst.openFile(mat.path);
+				hide.Ide.inst.openFile(Reflect.field(mat, "path"));
 			}
 		});
 

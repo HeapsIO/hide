@@ -497,6 +497,18 @@ class Scene extends Component implements h3d.IDrawable {
 		return matLibs;
 	}
 
+	public function findMat(materials : Array<Dynamic>, key:String) {
+		var p = key.split("/");
+		var name = p.pop();
+		var path = p.join("/");
+		for ( m in materials ) {
+			if ( m.path == path && m.mat.name == name )
+				return m;
+		}
+
+		return null;
+	}
+
 	public function listMaterialFromLibrary( path : String, library : String ) {
 		var libraries = listMatLibraries(path);
 		var lPath = "";

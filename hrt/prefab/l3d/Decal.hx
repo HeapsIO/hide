@@ -27,6 +27,7 @@ class Decal extends Object3D {
 	@:s var normalFade : Bool = false;
 	@:s var normalFadeStart : Float = 0;
 	@:s var normalFadeEnd : Float = 1;
+	@:s var refMatLib : String;
 
 	override function save() {
 		var obj : Dynamic = super.save();
@@ -78,6 +79,41 @@ class Decal extends Object3D {
 
 	public function updateRenderParams(ctx) {
 		var mesh = Std.downcast(ctx.local3d, h3d.scene.Mesh);
+
+		if (this.refMatLib != null && this.refMatLib != "") {
+			// If a decal reference a material in the material library, we only
+			// want the decal to apply certain params of the material since
+			// some params won't make any sense on a decal.
+
+			var refMatLibPath = this.refMatLib.substring(0, this.refMatLib.lastIndexOf("/"));
+			var refMatName = this.refMatLib.substring(this.refMatLib.lastIndexOf("/") + 1);
+
+			var prefabLib = hxd.res.Loader.currentInstance.load(refMatLibPath).toPrefab().load().clone(true);
+			var mat : Material = null;
+			for(c in prefabLib.children) {
+				if (c.name != refMatName)
+					continue;
+
+				var mat = Std.downcast(c, Material);
+
+				this.albedoMap = mat.diffuseMap;
+				this.normalMap = mat.normalMap;
+				this.pbrMap = mat.specularMap;
+
+				var materialSetup = Reflect.field(mat.props, h3d.mat.MaterialSetup.current.name);
+				this.emissive = Reflect.field(materialSetup, "emissive");
+
+				var blend = Reflect.field(materialSetup, "blend");
+				switch (blend)
+				{
+					case "Add", "Alpha", "Multiply":
+						this.blendMode = h2d.BlendMode.createByName(blend);
+					default:
+						this.blendMode = h2d.BlendMode.None;
+				}
+			}
+		}
+
 		mesh.material.mainPass.setBlendMode(blendMode);
 
 		inline function commonSetup(shader: h3d.shader.pbr.VolumeDecal.BaseDecal) {
@@ -210,6 +246,110 @@ class Decal extends Object3D {
 		}
 
 		function refreshProps() {
+			var matLibs = ctx.scene.listMatLibraries(this.getAbsPath());
+			var selectedLib = this.refMatLib == null ? null : this.refMatLib.substring(0, this.refMatLib.lastIndexOf("/"));
+			var selectedMat = this.refMatLib == null ? null : this.refMatLib.substring(this.refMatLib.lastIndexOf("/") + 1);
+			var materials = [];
+
+			var materialLibrary = new hide.Element('<div class="group" name="Material Library">
+			<dl>
+				<dt>Library</dt>
+				<dd>
+					<select class="lib">
+						<option value="">None</option>
+						${[for( i in 0...matLibs.length ) '<option value="${matLibs[i].name}" ${(selectedLib == matLibs[i].path) ? 'selected' : ''}>${matLibs[i].name}</option>'].join("")}
+					</select>
+				</dd>
+				<dt>Material</dt>
+				<dd>
+					<select class="mat">
+						<option value="">None</option>
+					</select>
+				</dd>
+				<dt>Mode</dt>
+				<dd>
+					<select class="mode">
+						<option value="folder">Shared by folder</option>
+						<option value="modelSpec">Model specific</option>
+					</select>
+				</dd>
+				<dt></dt><dd><input type="button" value="Go to library" class="goTo"/></dd>
+			</dl></div>');
+
+			var libSelect = materialLibrary.find(".lib");
+			var matSelect = materialLibrary.find(".mat");
+
+			function updateMatSelect() {
+				matSelect.empty();
+				new Element('<option value="">None</option>').appendTo(matSelect);
+
+				materials = ctx.scene.listMaterialFromLibrary(this.getAbsPath(), libSelect.val());
+
+				for (idx in 0...materials.length) {
+					new Element('<option value="${materials[idx].path + "/" + materials[idx].mat.name}" ${(selectedMat == materials[idx].mat.name) ? 'selected' : ''}>${materials[idx].mat.name}</option>').appendTo(matSelect);
+				}
+			}
+
+			function updateLibSelect() {
+				libSelect.empty();
+				new Element('<option value="">None</option>').appendTo(libSelect);
+
+				for (idx in 0...matLibs.length) {
+					new Element('<option value="${matLibs[idx].name}" ${(selectedLib == matLibs[idx].path) ? 'selected' : ''}>${matLibs[idx].name}</option>');
+				}
+			}
+
+			function updateMat() {
+				var previousDecal = this.clone();
+				var mat = ctx.scene.findMat(materials, matSelect.val());
+				if ( mat != null ) {
+					this.refMatLib = mat.path + "/" + mat.mat.name;
+					updateInstance(ctx.scene.editor.getContext(this));
+					ctx.rebuildProperties();
+				} else {
+					this.refMatLib = "";
+				}
+
+				var newDecal = this.clone();
+
+				ctx.properties.undo.change(Custom(function(undo) {
+					if( undo ) {
+						this.load(previousDecal.saveData());
+					}
+					else {
+						this.load(newDecal.saveData());
+					}
+
+					updateLibSelect();
+					updateMatSelect();
+					ctx.rebuildProperties();
+					updateInstance(ctx.scene.editor.getContext(this));
+				}));
+			}
+
+			updateMatSelect();
+
+			libSelect.change(function(_) {
+				var previousMatSelect = matSelect.val();
+				updateMatSelect();
+
+				if (libSelect.val() == "" || previousMatSelect != "")
+					updateMat();
+			});
+
+			matSelect.change(function(_) {
+				updateMat();
+			});
+
+			materialLibrary.find(".goTo").click(function(_) {
+				var mat = ctx.scene.findMat(materials, matSelect.val());
+				if ( mat != null ) {
+					hide.Ide.inst.openFile(Reflect.field(mat, "path"));
+				}
+			});
+
+			ctx.properties.add(materialLibrary, this);
+
 			var props = ctx.properties.add(new hide.Element('
 			<div class="decal">
 				<div class="group" name="Decal">
