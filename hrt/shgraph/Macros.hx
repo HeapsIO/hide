@@ -107,18 +107,15 @@ class Macros {
 							expr.iter(iter);
 							var shader = new hxsl.MacroParser().parseExpr(expr);
 							f.kind = FVar(null, macro @:pos(pos) $v{shader});
+							var name = Std.string(c);
+
 							var check = new hxsl.Checker();
 							check.warning = function(msg,pos) {
 								haxe.macro.Context.warning(msg, pos);
 							};
 
-							var name = Std.string(c);
+							check.loadShader = loadShader;
 
-							var name = Std.string(c);
-							var check = new hxsl.Checker();
-							check.warning = function(msg,pos) {
-								haxe.macro.Context.warning(msg, pos);
-							};
 							var shader = check.check(name, shader);
 							//trace(shader);
 							//Printer.check(shader);
@@ -157,6 +154,20 @@ class Macros {
 			}
 		}
 		return fields;
+	}
+
+	static function loadShader( path : String ) {
+		var m = Context.follow(Context.getType(path));
+		switch( m ) {
+		case TInst(c, _):
+			var c = c.get();
+			for( m in c.meta.get() )
+				if( m.name == ":src" )
+					return new hxsl.MacroParser().parseExpr(m.params[0]);
+		default:
+		}
+		throw path + " is not a shader";
+		return null;
 	}
 
 	static function autoRegisterNode() {

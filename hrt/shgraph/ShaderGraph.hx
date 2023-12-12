@@ -20,6 +20,7 @@ typedef ShaderNodeDef = {
 	externVars: Array<TVar>, // other external variables like globals and stuff
 	inits: Array<{variable: TVar, value: Dynamic}>, // Default values for some variables
 	?__inits__: Array<{name: String, e:TExpr}>,
+	?functions: Array<TFunction>,
 };
 
 typedef Node = {
@@ -249,6 +250,11 @@ class ShaderGraph extends hrt.prefab.Prefab {
 			};
 			shaderData.funs.push(fn);
 			shaderData.vars.push(funcVar);
+ 
+			for (func in gen.functions) {
+				shaderData.funs.push(func);
+				shaderData.vars.push(func.ref);
+			}
 
 			for (init in gen.inits) {
 				inits.pushUnique(init);
@@ -888,6 +894,7 @@ class Graph {
 			}
 		}
 
+		var functions : Array<TFunction> = [];
 
 		// Actually build the final shader expression
 		var exprsReverse : Array<TExpr> = [];
@@ -905,6 +912,19 @@ class Graph {
 
 			{
 				var def = getDef(currentNode);
+
+				if (def.functions != null) {
+					for (func in def.functions) {
+						var prev = functions.find((f) -> f.ref.name == func.ref.name);
+						// Patch new functions declarations with this one
+						if (prev != null) {
+							func.ref = prev.ref;
+						}
+						else {
+							functions.push(func);
+						}
+					}
+				}
 				var expr = def.expr;
 
 				var outputDecls : Array<TVar> = [];
@@ -1085,6 +1105,7 @@ class Graph {
 			outVars: graphOutputVars,
 			externVars: externs,
 			inits: inits,
+			functions: functions,
 		};
 
 		return cachedGen;

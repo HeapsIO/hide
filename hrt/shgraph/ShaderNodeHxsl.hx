@@ -19,7 +19,17 @@ class ShaderNodeHxsl extends ShaderNode {
 			var toUnser = (cl:Dynamic).SRC;
 			if (toUnser == null) throw "Node " + className + " has no SRC";
 			var data = @:privateAccess unser.unserialize(toUnser);
-			var expr = data.funs[0].expr;
+			var expr = null;
+			var funs = null;
+			for (fun in data.funs) {
+				if (fun.ref.name == "fragment")
+					expr = fun.expr;
+				else {
+					if (funs == null)
+						funs = new Array<TFunction>();
+					funs.push(fun);
+				}
+			}
 
 			var idToNewId : Map<Int, Int> = [];
 
@@ -134,7 +144,7 @@ class ShaderNodeHxsl extends ShaderNode {
 				}
 			}
 
-			def = {expr: expr, inVars: inVars, outVars: outVars, externVars: externVars, inits: []};
+			def = {expr: expr, inVars: inVars, outVars: outVars, externVars: externVars, inits: [], functions: funs};
 			nodeCache.set(className, def);
 		}
 
