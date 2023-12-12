@@ -9,7 +9,7 @@ using hxsl.Ast;
 @color("#A90707")
 class ShaderOutput extends ShaderNode {
 
-	@prop("Variable") public var variable : TVar;
+	@prop("Variable") public var variable : TVar = ShaderNode.availableVariables[0];
 
 	var components = [X, Y, Z, W];
 

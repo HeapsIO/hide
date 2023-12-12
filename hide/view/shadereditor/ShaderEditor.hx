@@ -239,15 +239,11 @@ class ShaderEditor extends hide.view.Graph {
 				// Stop link creation
 				if (isCreatingLink != None) {
 					if (startLinkBox != null && endLinkBox != null && createEdgeInShaderGraph()) {
-
+						cleanupLinkCreation();
 					} else {
-						if (currentLink != null) currentLink.remove();
-						currentLink = null;
+						openAddMenu();
 					}
-					startLinkBox = endLinkBox = null;
-					startLinkGrNode = endLinkNode = null;
-					isCreatingLink = None;
-					clearAvailableNodes();
+
 					return;
 				}
 				return;
@@ -449,6 +445,16 @@ class ShaderEditor extends hide.view.Graph {
 				centerView();
 			}
 		});
+	}
+
+	function cleanupLinkCreation() {
+		startLinkBox = endLinkBox = null;
+		startLinkGrNode = endLinkNode = null;
+		isCreatingLink = None;
+		clearAvailableNodes();	
+
+		if (currentLink != null) currentLink.remove();
+		currentLink = null;
 	}
 
 	override function save() {
@@ -1150,11 +1156,31 @@ class ShaderEditor extends hide.view.Graph {
 		beforeChange();
 
 		var node = currentGraph.addNode(p.x, p.y, nodeClass, args);
-		afterChange();
 
 		initSpecifics(node);
 
-		addBox(p, nodeClass, node);
+		var box = addBox(p, nodeClass, node);
+
+		if (isCreatingLink != None) {
+			if (startLinkBox != null) {
+				endLinkBox = box;
+				var node = isCreatingLink == FromInput ? box.outputs[0] : box.inputs[0];
+				if (node != null) {
+					endLinkNode = node;
+					createEdgeInShaderGraph();
+				} 
+			}
+			else if (endLinkBox != null) {
+				startLinkBox = box;
+				var node = box.outputs[0];
+				if (node != null) {
+					startLinkGrNode = node;
+					createEdgeInShaderGraph();
+				}
+			}
+		}
+
+		afterChange();
 
 		return node;
 	}
@@ -1411,6 +1437,7 @@ class ShaderEditor extends hide.view.Graph {
 		if (addMenu != null) {
 			addMenu.hide();
 			parent.focus();
+			cleanupLinkCreation();
 		}
 	}
 
