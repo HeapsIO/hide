@@ -289,7 +289,8 @@ class ShaderEditor extends hide.view.Graph {
 
 		parent.on("contextmenu", function(e) {
 			e.preventDefault();
-			new hide.comp.ContextMenu([
+			openAddMenu();
+			/*new hide.comp.ContextMenu([
 				{ label : "Add node", menu : contextMenuAddNode() },
 				{ label : "", isSeparator : true },
 				{
@@ -302,7 +303,7 @@ class ShaderEditor extends hide.view.Graph {
 						}
 					},
 				},
-			]);
+			]);*/
 			return false;
 		});
 
