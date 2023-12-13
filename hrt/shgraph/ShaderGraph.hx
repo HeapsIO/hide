@@ -1108,7 +1108,13 @@ class Graph {
 
 
 				for (nodeVar in def.externVars) {
-					externs.pushUnique(nodeVar);
+					var prev = externs.find((v) -> v.name == nodeVar.name);
+					if (prev != null) {
+						expr = replaceVar(expr, nodeVar, {e: TVar(prev), p:pos, t: prev.type});
+					}
+					else {
+						externs.push(nodeVar);
+					}
 				}
 
 				if (expr != null)
