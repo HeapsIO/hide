@@ -175,7 +175,7 @@ private class FXSceneEditor extends hide.comp.SceneEditor {
 				if (arr.length == 0) {
 					break;
 				}
-				pos += len;
+				var label = name;
 				var firstChar = arr[0].label.charAt(0);
 				var endChar = (entries.length < pos+len) ? "Z" : arr[arr.length-1].label.charAt(0);
 
@@ -187,14 +187,22 @@ private class FXSceneEditor extends hide.comp.SceneEditor {
 					label: label,
 					menu: arr
 				});
+
+				pos += len;
 			}
 		}
+
+		var shaderItems : Array<hide.comp.ContextMenu.ContextMenuItem> = [];
 
 		if (parent.is2D) {
 			for(name in ["Group 2D", "Bitmap", "Anim2D", "Atlas", "Particle2D", "Text", "Shader", "Shader Graph", "Placeholder"]) {
 				var item = allTypes.find(i -> i.label == name);
 				if(item == null) continue;
 				allTypes.remove(item);
+				if (name == "Shader") {
+					shaderItems = item.menu;
+					continue;
+				}
 				menu.push(item);
 			}
 			if(current != null) {
@@ -208,6 +216,10 @@ private class FXSceneEditor extends hide.comp.SceneEditor {
 				var item = allTypes.find(i -> i.label == name);
 				if(item == null) continue;
 				allTypes.remove(item);
+				if (name == "Shader") {
+					shaderItems = item.menu;
+					continue;
+				}
 				menu.push(item);
 			}
 			if(current != null) {
@@ -248,6 +260,10 @@ private class FXSceneEditor extends hide.comp.SceneEditor {
 			for(e in events)
 				allTypes.remove(e);
 		}
+
+		menu.push({label: null, isSeparator: true});
+
+		splitMenu(menu, "Shader", shaderItems);
 
 		menu.push({label: null, isSeparator: true});
 
