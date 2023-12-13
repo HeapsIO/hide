@@ -38,33 +38,11 @@ class Preview extends ShaderNode {
 	override function getShaderDef(domain: ShaderGraph.Domain, getNewIdFn : () -> Int, ?inputTypes: Array<Type>):hrt.shgraph.ShaderGraph.ShaderNodeDef {
 		var pos : Position = {file: "", min: 0, max: 0};
 
-		var outputSelect : TVar = {name: "__sg_output_select", id: getNewIdFn(), type: TInt, kind: Param, qualifiers: []};
 		var inVar : TVar = {name: "input", id: getNewIdFn(), type: TVec(4, VFloat), kind: Param, qualifiers: []};
-		var output : TVar = {name: "pixelColor", id: getNewIdFn(), type: TVec(4, VFloat), kind: Local, qualifiers: []};
+		var output : TVar = {name: "_sg_tmp", id: getNewIdFn(), type: TVec(4, VFloat), kind: Local, qualifiers: []};
 		var finalExpr : TExpr = {e: TBinop(OpAssign, {e:TVar(output), p:pos, t:output.type}, {e: TVar(inVar), p: pos, t: output.type}), p: pos, t: output.type};
 
-		//var param = getParameter(inputNode.parameterId);
-		//inits.push({variable: inVar, value: param.defaultValue});
-
-		var ifExpr : TExpr = {
-			e: TIf(
-					{
-						e: TBinop(
-							OpEq,
-							{e:TVar(outputSelect),p:pos, t:TInt},
-							{e:TConst(CInt(previewID)), p:pos, t:TInt}
-						),
-						p:pos,
-						t:TInt
-					},
-					finalExpr,
-					null
-				),
-			p: pos,
-			t:null
-		};
-
-		return {expr: ifExpr, inVars: [{v: inVar, internal: false, isDynamic: false}, {v: outputSelect, internal: true, isDynamic: false}], outVars:[{v: output, internal: true, isDynamic: false}], externVars: [], inits: []};
+		return {expr: finalExpr, inVars: [{v: inVar, internal: false, isDynamic: false}], outVars:[{v: output, internal: true, isDynamic: false}], externVars: [], inits: []};
 	}
 
 	// @input("Input") var input = SType.Vec4;

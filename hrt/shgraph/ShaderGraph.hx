@@ -259,12 +259,6 @@ class ShaderGraph extends hrt.prefab.Prefab {
 			for (init in gen.inits) {
 				inits.pushUnique(init);
 			}
-
-			var output_select = gen.inVars.find((v) -> v.v.name == "__sg_output_select");
-			if (output_select != null) {
-				inits.push({variable: output_select.v, value: 0});
-			}
-
 		}
 
 		var shared = new SharedShader("");
@@ -710,6 +704,8 @@ class Graph {
 			}
 			else {
 				if (graphOutputVars.find((o) -> o.v == v) == null) {
+					if (v == null)
+						throw "null var";
 					graphOutputVars.push({v: v, internal: false, isDynamic: false});
 				}
 			}
@@ -1156,7 +1152,8 @@ class Graph {
 					t: vec3
 				};
 
-			finalExpr = {
+			if (includePreviews) {
+				finalExpr = {
 					e: TIf(
 							{
 								e: TBinop(
@@ -1173,6 +1170,8 @@ class Graph {
 					p: pos,
 					t:null
 				};
+			}
+
 
 			exprsReverse.push(finalExpr);
 		}
@@ -1206,23 +1205,26 @@ class Graph {
 				t: flt
 			};
 
-			finalExpr = {
-				e: TIf(
-						{
-							e: TBinop(
-								OpEq,
-								{e:TVar(outputSelectVar),p:pos, t:TInt},
-								{e:TConst(CInt(0)), p:pos, t:TInt}
-							),
-							p:pos,
-							t:TInt
-						},
-						finalExpr,
-						null
-					),
-				p: pos,
-				t:null
-			};
+			if (includePreviews) {
+				finalExpr = {
+					e: TIf(
+							{
+								e: TBinop(
+									OpEq,
+									{e:TVar(outputSelectVar),p:pos, t:TInt},
+									{e:TConst(CInt(0)), p:pos, t:TInt}
+								),
+								p:pos,
+								t:TInt
+							},
+							finalExpr,
+							null
+						),
+					p: pos,
+					t:null
+				};
+			}
+
 
 			exprsReverse.push(finalExpr);
 		}
