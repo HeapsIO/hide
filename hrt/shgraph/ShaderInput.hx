@@ -2,8 +2,6 @@ package hrt.shgraph;
 
 using hxsl.Ast;
 
-typedef InputVariable = {display: String, v: TVar};
-
 @name("Inputs")
 @description("Shader inputs of Heaps, it's dynamic")
 @group("Property")
@@ -24,7 +22,7 @@ class ShaderInput extends ShaderNode {
 	override function getShaderDef(domain: ShaderGraph.Domain, getNewIdFn : () -> Int, ?inputTypes: Array<Type>):hrt.shgraph.ShaderGraph.ShaderNodeDef {
 		var pos : Position = {file: "", min: 0, max: 0};
 
-		var variable : InputVariable = availableInputs.get(this.variable);
+		var variable : ShaderNode.VariableDecl = availableInputs.get(this.variable);
 		if (variable == null)
 			throw "Unknown input variable " + this.variable;
 
@@ -105,7 +103,7 @@ class ShaderInput extends ShaderNode {
 
 	override function loadProperties(props:Dynamic) {
 		super.loadProperties(props);
-		var ivar : InputVariable = availableInputs.get(this.variable);
+		var ivar : ShaderNode.VariableDecl = availableInputs.get(this.variable);
 		if (ivar == null) {
 			for (k => v in availableInputs) {
 				variable = k;
@@ -114,7 +112,7 @@ class ShaderInput extends ShaderNode {
 		}
 	}
 
-	public static var availableInputs : Map<String, InputVariable> = [
+	public static var availableInputs : Map<String, ShaderNode.VariableDecl> = [
 		"pixelColor" => {display: "Pixel Color", v: { parent: null, id: 0, kind: Local, name: "pixelColor", type: TVec(4, VFloat) }},
 		"alpha" => {display: "Alpha", v: { parent: null, id: 0, kind: Local, name: "alpha", type: TVec(4, VFloat) }},
 		"calculatedUV" => {display: "UV", v: { parent: null, id: 0, kind: Local, name: "calculatedUV", type: TVec(2, VFloat) }},

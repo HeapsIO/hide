@@ -26,6 +26,8 @@ class AlphaPreview extends hxsl.Shader {
 	}
 }
 
+typedef VariableDecl = {v: TVar, display: String};
+
 @:autoBuild(hrt.shgraph.Macros.autoRegisterNode())
 @:keepSub
 class ShaderNode {

@@ -9,17 +9,23 @@ using hxsl.Ast;
 @color("#A90707")
 class ShaderOutput extends ShaderNode {
 
-	@prop("Variable") public var variable : TVar = ShaderNode.availableVariables[0];
+	@prop("Variable") public var variable : String = "_sg_out_color";
 
 	var components = [X, Y, Z, W];
 
 	public var generatePreview = false;
 
+	public function getVariable() {
+		return availableOutputs.get(variable).v;
+	}
+
 	override function getShaderDef(domain: ShaderGraph.Domain, getNewIdFn : () -> Int, ?inputTypes: Array<Type>):hrt.shgraph.ShaderGraph.ShaderNodeDef {
 		var pos : Position = {file: "", min: 0, max: 0};
 
-		var inVar : TVar = {name: "input", id: getNewIdFn(), type: this.variable.type, kind: Param, qualifiers: []};
-		var output : TVar = {name: variable.name, id: getNewIdFn(), type: this.variable.type, kind: Local, qualifiers: []};
+		var variable = availableOutputs.get(variable).v;
+
+		var inVar : TVar = {name: "input", id: getNewIdFn(), type: variable.type, kind: Param, qualifiers: []};
+		var output : TVar = {name: variable.name, id: getNewIdFn(), type: variable.type, kind: Local, qualifiers: []};
 		var finalExpr : TExpr = {e: TBinop(OpAssign, {e:TVar(output), p:pos, t:output.type}, {e: TVar(inVar), p: pos, t: output.type}), p: pos, t: output.type};
 
 		//var param = getParameter(inputNode.parameterId);
@@ -129,83 +135,30 @@ class ShaderOutput extends ShaderNode {
 
 	// }
 
-	static var availableOutputs = [
-		{
-			parent: null,
-			id: 0,
-			kind: Var,
-			name: "calculatedUV",
-			type: TVec(2, VFloat)
-		},
-		{
-			parent: null,
-			id: 0,
-			kind: Var,
-			name: "transformedNormal",
-			type: TVec(3, VFloat)
-		},
-		{
-			parent: null,
-			id: 0,
-			kind: Var,
-			name: "metalnessValue",
-			type: TFloat
-		},
-		{
-			parent: null,
-			id: 0,
-			kind: Var,
-			name: "roughnessValue",
-			type: TFloat
-		},
-		{
-			parent: null,
-			id: 0,
-			kind: Var,
-			name: "emissiveValue",
-			type: TFloat
-		}
+	static var availableOutputs : Map<String, ShaderNode.VariableDecl> = [
+		"_sg_out_color" => {display:"Pixel Color", v:{parent: null,id: 0,kind: Global,name: "_sg_out_color",type: TVec(3, VFloat)}},
+		"_sg_out_alpha" => {display:"Alpha", v:{parent: null,id: 0,kind: Global,name: "_sg_out_alpha",type: TFloat}},
+		// Disabled because calculated UV need to be initialized in vertexShader for some reason
+		//"calculatedUV" => { display: "UV", v: { parent: null, id: 0, kind: Var, name: "calculatedUV", type: TVec(2, VFloat)}},
+		"transformedNormal" => { display: "Normal", v: {parent: null, id: 0, kind: Var, name: "transformedNormal", type: TVec(3, VFloat)}},
+		"metalnessValue" => {display: "Metalness", v: {parent: null,id: 0,kind: Var,name: "metalnessValue",type: TFloat}},
+		"roughnessValue" => {display: "Roughness", v: {parent: null, id: 0, kind: Var, name: "roughnessValue", type: TFloat}},
+		"emissiveValue" => {display: "Emissive", v: {parent: null, id: 0, kind: Var, name: "emissiveValue", type: TFloat}},
+		"occlusionValue" => {display: "Occlusion", v: {parent: null, id: 0, kind: Var, name: "occlusionValue", type: TFloat}},
 	];
 
-	override public function loadProperties(props : Dynamic) {
-		var type: Type;
-		if(props.type != null) {
-			var args = [];
-			if(props.type == "TVec") {
-				args.push(props.vecSize);
-				args.push(VecType.createByName(props.vecType));
+	override function loadProperties(props:Dynamic) {
+		super.loadProperties(props);
+		var ivar = availableOutputs.get(this.variable);
+		if (ivar == null) {
+			for (k => v in availableOutputs) {
+				variable = k;
+				break;
 			}
-			type = hxsl.Ast.Type.createByName(props.type, args);
 		}
-		else @:deprecated {
-			var paramVariable : Array<Dynamic> = Reflect.field(props, "variable");
-			if( paramVariable[0] == null)
-				return;
-
-			for (c in ShaderNode.availableVariables) {
-				if (c.name == paramVariable[0]) {
-					this.variable = c;
-					return;
-				}
-			}
-			for (c in ShaderOutput.availableOutputs) {
-				if (c.name == paramVariable[0]) {
-					this.variable = c;
-					return;
-				}
-			}
-			type = haxe.EnumTools.createByName(Type, paramVariable[1], paramVariable[2]);
-		}
-		this.variable = {
-			parent: null,
-			id: 0,
-			kind: Local,
-			name: props.name,
-			type: type,
-		};
 	}
 
-	override public function saveProperties() : Dynamic {
+	/*override public function saveProperties() : Dynamic {
 		if (this.variable == null) {
 			this.variable = ShaderNode.availableVariables[0];
 		}
@@ -220,7 +173,7 @@ class ShaderOutput extends ShaderNode {
 			default:
 		}
 		return parameters;
-	}
+	}*/
 
 
 	#if editor
@@ -230,28 +183,16 @@ class ShaderOutput extends ShaderNode {
 		element.append(new hide.Element('<select id="variable"></select>'));
 
 		if (this.variable == null) {
-			this.variable = ShaderNode.availableVariables[0];
+			variable = "__sg_out_color";
 		}
 		var input = element.children("select");
-		var indexOption = 0;
 		var selectingDefault = false;
-		for (c in ShaderNode.availableVariables) {
-			input.append(new hide.Element('<option value="${indexOption}">${c.name}</option>'));
-			if (this.variable.name == c.name) {
-				input.val(indexOption);
-				selectingDefault = true;
-			}
-			indexOption++;
+		for (k => c in ShaderOutput.availableOutputs) {
+			input.append(new hide.Element('<option value="${k}">${c.display}</option>'));
 		}
-		for (c in ShaderOutput.availableOutputs) {
-			input.append(new hide.Element('<option value="${indexOption}">${c.name}</option>'));
-			if (this.variable.name == c.name) {
-				input.val(indexOption);
-				selectingDefault = true;
-			}
-			indexOption++;
-		}
-		var maxIndex = indexOption;
+		input.val(variable);
+
+		/*var maxIndex = indexOption;
 		input.append(new hide.Element('<option value="${maxIndex}">Other...</option>'));
 		var initialName : String = null;
 		var initialType : Type = null;
@@ -259,19 +200,20 @@ class ShaderOutput extends ShaderNode {
 			input.val(maxIndex);
 			initialName = this.variable.name;
 			initialType = this.variable.type;
-		}
+		}*/
 
-		var customVarChooser = new CustomVarChooser(element, initialName, initialType, function(val) {
+		/*var customVarChooser = new CustomVarChooser(element, initialName, initialType, function(val) {
 			this.variable = val;
 		});
 
 		if( !selectingDefault )
 			customVarChooser.show();
 		else
-			customVarChooser.hide();
+			customVarChooser.hide();*/
 
 		input.on("change", function(e) {
-			var value = input.val();
+			variable = input.val();
+			/*var value = input.val();
 			if (value < ShaderNode.availableVariables.length) {
 				this.variable = ShaderNode.availableVariables[value];
 			} else if (value < maxIndex) {
@@ -284,7 +226,7 @@ class ShaderOutput extends ShaderNode {
 				}
 			} else {
 				customVarChooser.hide();
-			}
+			}*/
 		});
 
 		elements.push(element);

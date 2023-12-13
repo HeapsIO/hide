@@ -1018,7 +1018,8 @@ class ShaderEditor extends hide.view.Graph {
 						for (b in listOfBoxes) {
 							var shaderOutput = Std.downcast(b.getInstance(), hrt.shgraph.ShaderOutput);
 							if (shaderOutput != null) {
-								if (shaderOutput.variable.name == nameOutput) {
+								var v = shaderOutput.getVariable();
+								if (v.name == nameOutput) {
 									error("Compilation of shader failed > Invalid inputs", shaderOutput.id);
 									errorSent = true;
 									break;
