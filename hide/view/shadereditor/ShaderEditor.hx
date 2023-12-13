@@ -451,7 +451,7 @@ class ShaderEditor extends hide.view.Graph {
 		startLinkBox = endLinkBox = null;
 		startLinkGrNode = endLinkNode = null;
 		isCreatingLink = None;
-		clearAvailableNodes();	
+		clearAvailableNodes();
 
 		if (currentLink != null) currentLink.remove();
 		currentLink = null;
@@ -1168,7 +1168,7 @@ class ShaderEditor extends hide.view.Graph {
 				if (node != null) {
 					endLinkNode = node;
 					createEdgeInShaderGraph();
-				} 
+				}
 			}
 			else if (endLinkBox != null) {
 				startLinkBox = box;

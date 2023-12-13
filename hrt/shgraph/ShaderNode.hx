@@ -39,14 +39,14 @@ class ShaderNode {
 						parent: null,
 						id: 0,
 						kind: Global,
-						name: "pixelColor",
-						type: TVec(4, VFloat)
+						name: "_sg_out_color",
+						type: TVec(3, VFloat)
 					},
 					{
 						parent: null,
 						id: 0,
 						kind: Global,
-						name: "alpha",
+						name: "_sg_out_alpha",
 						type: TFloat
 					},
 				];

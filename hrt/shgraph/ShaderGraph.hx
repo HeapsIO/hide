@@ -250,7 +250,7 @@ class ShaderGraph extends hrt.prefab.Prefab {
 			};
 			shaderData.funs.push(fn);
 			shaderData.vars.push(funcVar);
- 
+
 			for (func in gen.functions) {
 				shaderData.funs.push(func);
 				shaderData.vars.push(func.ref);
@@ -681,9 +681,12 @@ class Graph {
 
 		var outputSelectVar : TVar = null;
 		var outputPreviewPixelColor : TVar = null;
+		var pixelColor = {name: "pixelColor", id: getNewVarId(), type: TVec(4, VFloat), kind: Local, qualifiers: []};
+		graphOutputVars.push({v: pixelColor, internal: true, isDynamic: false});
+
 		if (includePreviews) {
-			outputPreviewPixelColor = {name: "pixelColor", id: getNewVarId(), type: TVec(4, VFloat), kind: Local, qualifiers: []};
-			graphOutputVars.push({v: outputPreviewPixelColor, internal: true, isDynamic: false});
+			outputPreviewPixelColor = pixelColor;//{name: "pixelColor", id: getNewVarId(), type: TVec(4, VFloat), kind: Local, qualifiers: []};
+			//graphOutputVars.push({v: outputPreviewPixelColor, internal: true, isDynamic: false});
 
 			outputSelectVar = {name: "__sg_PREVIEW_output_select", id: getNewVarId(), type: TInt, kind: Param, qualifiers: []};
 			graphInputVars.push({v: outputSelectVar, internal: true, isDynamic: false});
@@ -929,6 +932,9 @@ class Graph {
 
 				var outputDecls : Array<TVar> = [];
 
+				// Used to capture input for output node preview
+				var firstInputVar = null;
+
 				for (nodeVar in def.inVars) {
 					var connection = currentNode.instance.connections.get(nodeVar.v.name);
 
@@ -938,6 +944,7 @@ class Graph {
 						var outputs = getOutputs(connection.from);
 						var outputVar = outputs[connection.fromName];
 						if (outputVar == null) throw "null tvar";
+						if (firstInputVar == null) firstInputVar = outputVar;
 						replacement = convertToType(nodeVar.v.type,  {e: TVar(outputVar), p:pos, t: outputVar.type});
 					}
 					else {
@@ -1015,24 +1022,45 @@ class Graph {
 						// }
 						if (outputVar == null) {
 							var v = getOutsideVar(nodeVar.v.name, nodeVar.v, false);
-							expr = replaceVar(expr, nodeVar.v, {e: TVar(v), p:pos, t: nodeVar.v.type});
+							var outputVar = {e: TVar(v), p:pos, t: nodeVar.v.type};
+							expr = replaceVar(expr, nodeVar.v, outputVar);
 
-							if (includePreviews && nodeVar.v.name == "pixelColor") {
+							if (includePreviews) {
+
+								if (expr == null)
+									throw "break";
+
+								if (firstInputVar == null)
+									throw "impossible";
+
+								// switch (outputVar.t) {
+								// 	switch ()
+								// }
+
+								var previewExpr : TExpr = {e: TBinop(OpAssign, {e:TVar(outputPreviewPixelColor), p:pos, t:outputPreviewPixelColor.type}, convertToType(outputPreviewPixelColor.type, {e: TVar(v), p: pos, t: v.type})), p: pos, t: outputPreviewPixelColor.type};
+
 								expr = {
-									e: TIf(
-											{
-												e: TBinop(
-													OpEq,
-													{e:TVar(outputSelectVar),p:pos, t:TInt},
-													{e:TConst(CInt(0)), p:pos, t:TInt}
-												),
-												p:pos,
-												t:TInt
-											},
-											expr,
-											null
-										),
-									p: pos,
+									e: TBlock([
+										expr,
+										{
+											e: TIf(
+												{
+													e: TBinop(
+														OpEq,
+														{e:TVar(outputSelectVar), p:pos, t:TInt},
+														{e:TConst(CInt(currentNode.id + 1)), p:pos, t:TInt}
+													),
+													p:pos,
+													t:TBool,
+												},
+												previewExpr,
+												null
+											),
+											p:pos,
+											t:null
+										}
+									]),
+									p:pos,
 									t:null
 								};
 							}
@@ -1098,6 +1126,106 @@ class Graph {
 		}
 
 		exprsReverse.reverse();
+
+		var color = graphOutputVars.find((v) -> v.v.name == "_sg_out_color");
+		if (color != null) {
+			var vec3 = TVec(3, VFloat);
+			var finalExpr =
+				{
+					e: TBinop(
+					OpAssign,
+						{
+							e: TSwiz(
+									{
+										e: TVar(pixelColor),
+										p: pos,
+										t: vec3,
+									},
+									[X,Y,Z]
+								),
+							p:pos,
+							t:vec3
+						},
+						{
+							e: TVar(color.v),
+							p: pos,
+							t: vec3
+						}
+					),
+					p: pos,
+					t: vec3
+				};
+
+			finalExpr = {
+					e: TIf(
+							{
+								e: TBinop(
+									OpEq,
+									{e:TVar(outputSelectVar),p:pos, t:TInt},
+									{e:TConst(CInt(0)), p:pos, t:TInt}
+								),
+								p:pos,
+								t:TInt
+							},
+							finalExpr,
+							null
+						),
+					p: pos,
+					t:null
+				};
+
+			exprsReverse.push(finalExpr);
+		}
+
+		var alpha = graphOutputVars.find((v) -> v.v.name == "_sg_out_alpha");
+		if (alpha != null) {
+			var flt = TFloat;
+			var finalExpr =
+			{
+				e: TBinop(
+				OpAssign,
+					{
+						e: TSwiz(
+								{
+									e: TVar(pixelColor),
+									p: pos,
+									t: flt,
+								},
+								[W]
+							),
+						p:pos,
+						t:flt
+					},
+					{
+						e: TVar(alpha.v),
+						p: pos,
+						t: flt
+					}
+				),
+				p: pos,
+				t: flt
+			};
+
+			finalExpr = {
+				e: TIf(
+						{
+							e: TBinop(
+								OpEq,
+								{e:TVar(outputSelectVar),p:pos, t:TInt},
+								{e:TConst(CInt(0)), p:pos, t:TInt}
+							),
+							p:pos,
+							t:TInt
+						},
+						finalExpr,
+						null
+					),
+				p: pos,
+				t:null
+			};
+
+			exprsReverse.push(finalExpr);
+		}
 
 		cachedGen = {
 			expr: {e: TBlock(exprsReverse), t:TVoid, p:pos},
