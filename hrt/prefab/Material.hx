@@ -100,17 +100,6 @@ class Material extends Prefab {
 				if (c.name != refMatName)
 					continue;
 
-				// Apply shaders to this material if the referenced one has shaders
-				var shaders = c.flatten(Shader);
-				if (shaders != null) {
-					for (s in shaders) {
-						var shader = s.makeShader(ctx);
-
-						for( m in mats )
-							m.mainPass.addShader(shader);
-					}
-				}
-
 				this.load(c);
 
 				// Reapply some infos that we don't want to be modified by the load of the new mat
