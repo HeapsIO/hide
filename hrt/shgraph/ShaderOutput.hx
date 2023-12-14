@@ -25,7 +25,7 @@ class ShaderOutput extends ShaderNode {
 		var variable = availableOutputs.get(variable).v;
 
 		var inVar : TVar = {name: "input", id: getNewIdFn(), type: variable.type, kind: Param, qualifiers: []};
-		var output : TVar = {name: variable.name, id: getNewIdFn(), type: variable.type, kind: Local, qualifiers: []};
+		var output : TVar = {name: variable.name, id: getNewIdFn(), type: variable.type, kind: variable.kind, qualifiers: []};
 		var finalExpr : TExpr = {e: TBinop(OpAssign, {e:TVar(output), p:pos, t:output.type}, {e: TVar(inVar), p: pos, t: output.type}), p: pos, t: output.type};
 
 		//var param = getParameter(inputNode.parameterId);
@@ -136,15 +136,16 @@ class ShaderOutput extends ShaderNode {
 	// }
 
 	static var availableOutputs : Map<String, ShaderNode.VariableDecl> = [
-		"_sg_out_color" => {display:"Pixel Color", v:{parent: null,id: 0,kind: Global,name: "_sg_out_color",type: TVec(3, VFloat)}},
-		"_sg_out_alpha" => {display:"Alpha", v:{parent: null,id: 0,kind: Global,name: "_sg_out_alpha",type: TFloat}},
+		"_sg_out_color" => {display:"Pixel Color", v:{parent: null,id: 0,kind: Local,name: "_sg_out_color",type: TVec(3, VFloat)}},
+		"_sg_out_alpha" => {display:"Alpha", v:{parent: null,id: 0,kind: Local,name: "_sg_out_alpha",type: TFloat}},
+		"transformedPosition" => {display:"World Position", v:{parent: null,id: 0,kind: Local,name: "transformedPosition",type: TVec(3, VFloat)}},
 		// Disabled because calculated UV need to be initialized in vertexShader for some reason
 		//"calculatedUV" => { display: "UV", v: { parent: null, id: 0, kind: Var, name: "calculatedUV", type: TVec(2, VFloat)}},
-		"transformedNormal" => { display: "Normal", v: {parent: null, id: 0, kind: Var, name: "transformedNormal", type: TVec(3, VFloat)}},
-		"metalnessValue" => {display: "Metalness", v: {parent: null,id: 0,kind: Var,name: "metalnessValue",type: TFloat}},
-		"roughnessValue" => {display: "Roughness", v: {parent: null, id: 0, kind: Var, name: "roughnessValue", type: TFloat}},
-		"emissiveValue" => {display: "Emissive", v: {parent: null, id: 0, kind: Var, name: "emissiveValue", type: TFloat}},
-		"occlusionValue" => {display: "Occlusion", v: {parent: null, id: 0, kind: Var, name: "occlusionValue", type: TFloat}},
+		"transformedNormal" => { display: "Normal", v: {parent: null, id: 0, kind: Local, name: "transformedNormal", type: TVec(3, VFloat)}},
+		"metalnessValue" => {display: "Metalness", v: {parent: null,id: 0,kind: Local,name: "metalnessValue",type: TFloat}},
+		"roughnessValue" => {display: "Roughness", v: {parent: null, id: 0, kind: Local, name: "roughnessValue", type: TFloat}},
+		"emissiveValue" => {display: "Emissive", v: {parent: null, id: 0, kind: Local, name: "emissiveValue", type: TFloat}},
+		"occlusionValue" => {display: "Occlusion", v: {parent: null, id: 0, kind: Local, name: "occlusionValue", type: TFloat}},
 	];
 
 	override function loadProperties(props:Dynamic) {

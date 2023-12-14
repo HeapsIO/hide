@@ -97,6 +97,7 @@ class ShaderEditor extends hide.view.Graph {
 	var listOfClasses : Map<String, Array<NodeInfo>>;
 
 	var previewsScene : hide.comp.Scene;
+	var currentShaderPreviewsDef : hrt.prefab.ContextShared.ShaderDef;
 
 	// used to preview
 	var sceneEditor : SceneEditor;
@@ -116,6 +117,8 @@ class ShaderEditor extends hide.view.Graph {
 	var VIEW_VISIBLE_CHECK_TIMER : Int = 500;
 	var currentShader : DynamicShader;
 	var currentShaderDef : hrt.prefab.ContextShared.ShaderDef;
+
+
 
 	static var clipboard : SavedClipboard = null;
 	static var lastCopyEditor : ShaderEditor = null;
@@ -368,7 +371,7 @@ class ShaderEditor extends hide.view.Graph {
 		element.find("#displayGlsl").on("click", () -> displayCompiled("glsl"));
 		element.find("#displayHlsl").on("click", () -> displayCompiled("hlsl"));
 
-		element.find("#display2").on("click", () -> {@:privateAccess info(hxsl.Printer.shaderToString(shaderGraph.compile2(true).shader.data, true));});
+		element.find("#display2").on("click", () -> {@:privateAccess info(hxsl.Printer.shaderToString(shaderGraph.compile2(domain).shader.data, true));});
 
 
 		editorMatrix.on("click", "input, select", function(ev) {
@@ -959,7 +962,7 @@ class ShaderEditor extends hide.view.Graph {
 	function displayCompiled(type : String) {
 		var text = "\n";
 
-		var def = shaderGraph.compile2(false);
+		var def = shaderGraph.compile2(null);
 
 		if( currentShaderDef != null) {
 			text += switch( type ) {
@@ -983,7 +986,7 @@ class ShaderEditor extends hide.view.Graph {
 				for (m in obj.getMaterials())
 					m.mainPass.removeShader(currentShader);
 
-			var shaderGraphDef = shaderGraph.compile2(true);
+			var shaderGraphDef = shaderGraph.compile2(domain);
 			newShader = new hxsl.DynamicShader(shaderGraphDef.shader);
 			for (init in shaderGraphDef.inits) {
 				setParamValue(newShader, init.variable, init.value);
@@ -1055,6 +1058,8 @@ class ShaderEditor extends hide.view.Graph {
 				}
 			}
 		}
+
+		currentShaderPreviewsDef = shaderGraph.compile2(domain);
 	}
 
 	function updateParam(id : Int) {
@@ -1104,7 +1109,7 @@ class ShaderEditor extends hide.view.Graph {
 			var preview = boxToPreview.get(box);
 			if (preview == null) {
 				var bmp = new Preview(previewsScene.s2d);
-				bmp.shaderDef = currentShaderDef;
+				bmp.shaderDef = currentShaderPreviewsDef;
 				preview = bmp;
 			} else {
 				boxToPreview.remove(box);
@@ -1118,15 +1123,15 @@ class ShaderEditor extends hide.view.Graph {
 		boxToPreview = newBoxToPreview;
 
 		var select = null;
-		if (currentShaderDef != null) {
+		if (currentShaderPreviewsDef != null) {
 			select = currentShaderDef.inits.find((e) -> e.variable.name == "__sg_PREVIEW_output_select");
 		}
 		for (box => preview in boxToPreview) {
-			if (preview.shaderDef != currentShaderDef) {
-				preview.shaderDef = currentShaderDef;
+			if (preview.shaderDef != currentShaderPreviewsDef) {
+				preview.shaderDef = currentShaderPreviewsDef;
 			}
 			if (preview.shader != null) {
-				for (init in currentShaderDef.inits) {
+				for (init in currentShaderPreviewsDef.inits) {
 					if (init == select) {
 						setParamValue(preview.shader, init.variable, box.getId() + 1);
 					}

@@ -110,7 +110,7 @@ class ShaderGraph extends hrt.prefab.Prefab {
 	}
 
 
-	public function compile2(includePreviews: Bool) : hrt.prefab.ContextShared.ShaderDef {
+	public function compile2(?previewDomain: Domain) : hrt.prefab.ContextShared.ShaderDef {
 		#if !editor
 		if (cachedDef != null)
 			return cachedDef;
@@ -128,12 +128,13 @@ class ShaderGraph extends hrt.prefab.Prefab {
 			funs: [],
 		};
 
-
 		for (i => graph in graphs) {
+			/*if (previewDomain != null && graph.domain != previewDomain)
+				continue;*/
 			// Temp fix for code generation
-			if (graph.domain == Vertex)
-				continue;
-			var gen = graph.generate2(includePreviews);
+			//if (graph.domain == Vertex)
+			//	continue;
+			var gen = graph.generate2(previewDomain != null);
 			gens.push(gen);
 
 			//shaderData.vars.append(gen.externVars);
@@ -232,8 +233,15 @@ class ShaderGraph extends hrt.prefab.Prefab {
 			for (v in gen.outVars)
 				shaderData.vars.pushUnique(v.v);
 
+			var fnKind : FunctionKind = switch(graph.domain) {
+				case Fragment: Fragment;
+				case Vertex: Vertex;
+			};
 
-			var functionName : String = EnumValueTools.getName(graph.domain).toLowerCase();
+			/*if (previewDomain != null)
+				fnKind = Fragment;*/
+
+			var functionName : String = EnumValueTools.getName(fnKind).toLowerCase();
 
 			var funcVar : TVar = {
 				name : functionName,
@@ -243,7 +251,7 @@ class ShaderGraph extends hrt.prefab.Prefab {
 			};
 
 			var fn : TFunction = {
-				ret : TVoid, kind : Fragment,
+				ret : TVoid, kind : fnKind,
 				ref : funcVar,
 				expr : gen.expr,
 				args : []
@@ -274,7 +282,7 @@ class ShaderGraph extends hrt.prefab.Prefab {
 	}
 
 	public function makeShaderInstance(ctx: hrt.prefab.ContextShared) : hxsl.DynamicShader {
-		var def = compile2(false);
+		var def = compile2(null);
 		var s = new hxsl.DynamicShader(def.shader);
 		for (init in def.inits)
 			setParamValue(ctx, s, init.variable, init.value);
@@ -552,7 +560,7 @@ class Graph {
 			};
 		}
 
-
+		includePreviews = includePreviews && this.domain == Fragment;
 
 		inline function getNewVarName(node: Node, id: Int) : String {
 			return '_sg_${(node.type).split(".").pop()}_var_$id';
