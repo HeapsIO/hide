@@ -656,7 +656,7 @@ class MeshGenerator extends Object3D {
 
 		undo = ctx.properties.undo;
 
-		var families : Array<Dynamic> = ctx.scene.config.get("meshGenerator.families");
+		var families : Array<Dynamic> = ctx.scene.config.get("meshGenerator.families", []);
 
 		if( !filterInit ) {
 			for( f in families )
