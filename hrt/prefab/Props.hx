@@ -8,6 +8,7 @@ enum PropType {
 	PTexturePath;
 	PTexture;
 	PGradient;
+	PColor;
 	PChoice( choices : Array<String> );
 	PFile( exts : Array<String> );
 	PEnum( e : Enum<Dynamic>);

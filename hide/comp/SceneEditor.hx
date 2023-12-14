@@ -3460,7 +3460,7 @@ class SceneEditor {
 		var custom = {
 			label : "Custom...",
 			click : function() {
-				ide.chooseFile(shModel.inf.fileSource.concat(graphModel.inf.fileSource).concat([".shgraph"]), function(path) {
+				ide.chooseFile(shModel.inf.fileSource.concat(graphModel.inf.fileSource).concat(["shgraph"]), function(path) {
 					var cl = isClassShader(path) ? shModel.cl : graphModel.cl;
 					var p = Type.createInstance(cl, [parentElt]);
 					p.source = path;

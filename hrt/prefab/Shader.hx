@@ -233,7 +233,10 @@ class Shader extends Prefab {
 		case TSampler2D:
 			PTexture;
 		case TVec(n, VFloat):
-			PVec(n);
+			if (n == 3 || n == 4) {
+				PColor;
+			}
+			else PVec(n);
 		default:
 			PUnsupported(hxsl.Ast.Tools.toString(v.type));
 		}

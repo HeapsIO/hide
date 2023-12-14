@@ -78,6 +78,8 @@ class PropsEditor extends Component {
 			new Element('<input type="texturepath" field="${p.name}">').appendTo(parent);
 		case PTexture:
 			new Element('<input type="texturechoice" field="${p.name}">').appendTo(parent);
+		case PColor:
+			new Element('<input type="color" field="${p.name}">').appendTo(parent);
 		case PGradient:
 			new Element('<input type="gradient" field="${p.name}">').appendTo(parent);
 		case PUnsupported(text):
