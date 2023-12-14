@@ -807,7 +807,6 @@ class Graph {
 		var outputSelectVar : TVar = null;
 		var outputPreviewPixelColor : TVar = null;
 		var pixelColor = {name: "pixelColor", id: getNewVarId(), type: TVec(4, VFloat), kind: Local, qualifiers: []};
-		graphOutputVars.push({v: pixelColor, internal: true, isDynamic: false});
 
 		if (includePreviews) {
 			outputPreviewPixelColor = pixelColor;//{name: "pixelColor", id: getNewVarId(), type: TVec(4, VFloat), kind: Local, qualifiers: []};
@@ -1257,6 +1256,10 @@ class Graph {
 				}
 			}
 		}
+
+		// Push pixel color last so it's not picked by the preview
+		graphOutputVars.push({v: pixelColor, internal: true, isDynamic: false});
+
 
 		exprsReverse.reverse();
 
