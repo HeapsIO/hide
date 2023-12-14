@@ -316,7 +316,7 @@ class Graph extends FileView {
 			});
 		}
 		for (outputName => outputVar in box.getInstance().getOutputs2(domain)) {
-			var grNode = box.addOutput(editor, outputName, outputVar.type);
+			var grNode = box.addOutput(editor, outputName, outputVar.v.type);
 			grNode.find(".node").attr("field", outputName);
 			grNode.on("mousedown", function(e) {
 				e.stopPropagation();
@@ -392,7 +392,7 @@ class Graph extends FileView {
 
 	// TODO(ces) : nuke SType from orbit
 	function setAvailableInputNodes(boxOutput : Box, field : String) {
-		var type = boxOutput.getInstance().getOutputs2(domain)[field].type;
+		var type = boxOutput.getInstance().getOutputs2(domain)[field].v.type;
 		var sType : SType;
 
 		for (box in listOfBoxes) {
@@ -408,7 +408,7 @@ class Graph extends FileView {
 		for (box in listOfBoxes) {
 			for (output in box.outputs) {
 				var outputField = output.attr("field");
-				var type = box.getInstance().getOutputs2(domain)[outputField].type;
+				var type = box.getInstance().getOutputs2(domain)[outputField].v.type;
 				var sType = ShaderType.getSType(type);
 				if (boxInput.getInstance().checkTypeAndCompatibilyInput(field, type)) {
 					output.addClass("nodeMatch");

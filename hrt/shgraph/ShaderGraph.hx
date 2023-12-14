@@ -596,23 +596,23 @@ class Graph {
 
 		// Patch I/O if name have changed
 		if (!outputs.exists(outputName)) {
-			var def = output.instance.getShaderDef(domain, () -> 0);
-			if(edge.outputId != null && def.outVars.length > edge.outputId) {
-				outputName = def.outVars[edge.outputId].v.name;
+			outputName = null;
+			for (k => v in outputs) {
+				if (v.index == edge.outputId)
+					outputName = k;
 			}
-			else {
+			if (outputName == null)
 				return false;
-			}
 		}
 
 		if (!inputs.exists(inputName)) {
-			var def = node.instance.getShaderDef(domain,  () -> 0);
-			if (edge.inputId != null && def.inVars.length > edge.inputId) {
-				inputName = def.inVars[edge.inputId].v.name;
+			inputName = null;
+			for (k => v in inputs) {
+				if (v.index == edge.inputId)
+					inputName = k;
 			}
-			else {
+			if (inputName == null)
 				return false;
-			}
 		}
 
 		var connection : Connection = {from: output, fromName: outputName};
@@ -625,7 +625,7 @@ class Graph {
 		}
 
 		var inputType = inputs[inputName].v.type;
-		var outputType = outputs[outputName].type;
+		var outputType = outputs[outputName].v.type;
 
 		if (!areTypesCompatible(inputType, outputType)) {
 			removeEdge(edge.inputNodeId, inputName);
@@ -1060,7 +1060,7 @@ class Graph {
 				var outputDecls : Array<TVar> = [];
 
 				// Used to capture input for output node preview
-				var firstInputVar = null;
+				//var firstInputVar = null;
 
 				for (nodeVar in def.inVars) {
 					var connection = currentNode.instance.connections.get(nodeVar.v.name);
@@ -1071,7 +1071,7 @@ class Graph {
 						var outputs = getOutputs(connection.from);
 						var outputVar = outputs[connection.fromName];
 						if (outputVar == null) throw "null tvar";
-						if (firstInputVar == null) firstInputVar = outputVar;
+						//if (firstInputVar == null) firstInputVar = outputVar;
 						replacement = convertToType(nodeVar.v.type,  {e: TVar(outputVar), p:pos, t: outputVar.type});
 					}
 					else {
@@ -1157,8 +1157,8 @@ class Graph {
 								if (expr == null)
 									throw "break";
 
-								if (firstInputVar == null)
-									throw "impossible";
+								//if (firstInputVar == null)
+								//	throw "impossible";
 
 								// switch (outputVar.t) {
 								// 	switch ()

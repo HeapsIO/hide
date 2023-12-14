@@ -64,23 +64,28 @@ class ShaderNode {
 	public var outputCompiled : Map<String, Bool> = []; // todo: put with outputs variable
 
 	// TODO(ces) : caching
-	public function getOutputs2(domain: ShaderGraph.Domain, ?inputTypes: Array<Type>) : Map<String, TVar> {
+	public function getOutputs2(domain: ShaderGraph.Domain, ?inputTypes: Array<Type>) : Map<String, {v: TVar, index: Int}> {
 		var def = getShaderDef(domain, () -> 0);
-		var map : Map<String, TVar> = [];
-		for (tvar in def.outVars) {
-			if (!tvar.internal)
-				map.set(tvar.v.name, tvar.v);
+		var map : Map<String, {v: TVar, index: Int}> = [];
+		var count = 0;
+		for (i => tvar in def.outVars) {
+			if (!tvar.internal) {
+				map.set(tvar.v.name, {v: tvar.v, index: count});
+				count += 1;
+			}
 		}
 		return map;
 	}
 
 	// TODO(ces) : caching
-	public function getInputs2(domain: ShaderGraph.Domain) : Map<String, {v: TVar, ?def: hrt.shgraph.ShaderGraph.ShaderDefInput}> {
+	public function getInputs2(domain: ShaderGraph.Domain) : Map<String, {v: TVar, ?def: hrt.shgraph.ShaderGraph.ShaderDefInput, index: Int}> {
 		var def = getShaderDef(domain, () -> 0);
-		var map : Map<String, {v: TVar, ?def: hrt.shgraph.ShaderGraph.ShaderDefInput}> = [];
-		for (i => tvar in def.inVars) {
+		var map : Map<String, {v: TVar, ?def: hrt.shgraph.ShaderGraph.ShaderDefInput, index: Int}> = [];
+		var count = 0;
+		for (tvar in def.inVars) {
 			if (!tvar.internal) {
-				map.set(tvar.v.name, {v: tvar.v, def: tvar.defVal});
+				map.set(tvar.v.name, {v: tvar.v, def: tvar.defVal, index: count});
+				count += 1;
 			}
 		}
 		return map;
