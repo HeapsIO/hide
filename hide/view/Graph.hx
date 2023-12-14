@@ -22,6 +22,8 @@ class Graph extends FileView {
 	var editor : SVG;
 	var editorMatrix : JQuery;
 	var statusBar : JQuery;
+	var statusClose : JQuery;
+
 
 	var listOfBoxes : Array<Box> = [];
 	var listOfEdges : Array<Edge> = [];
@@ -72,7 +74,14 @@ class Graph extends FileView {
 		parent = element.find(".heaps-scene");
 		editor = new SVG(parent);
 		editor.element.attr("id", "graph-root");
-		statusBar = new Element('<div id="status-bar" ><pre> </pre></div>').appendTo(parent).find("pre");
+		var status = new Element('<div id="status-bar" ><div id="close">-- close --</div><pre></pre></div>');
+		statusBar = status.appendTo(parent).find("pre");
+		statusClose = status.find("#close");
+		statusClose.hide();
+		statusClose.on("click", function(e) {
+			statusBar.html("");
+			statusClose.hide();
+		});
 		statusBar.on("wheel", (e) -> { e.stopPropagation(); });
 
 		editorMatrix = editor.group(editor.element);
@@ -414,6 +423,7 @@ class Graph extends FileView {
 
 	function error(str : String, ?idBox : Int) {
 		statusBar.html(str);
+		statusClose.show();
 		statusBar.addClass("error");
 
 		new Element(".box").removeClass("error");
@@ -425,6 +435,7 @@ class Graph extends FileView {
 
 	function info(str : String) {
 		statusBar.html(str);
+		statusClose.show();
 		statusBar.removeClass("error");
 		new Element(".box").removeClass("error");
 	}

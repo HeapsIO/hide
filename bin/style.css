@@ -2077,6 +2077,11 @@ input[type=checkbox]:checked:after {
 .graph-view .heaps-scene #status-bar pre.error {
   color: #c74848;
 }
+.graph-view .heaps-scene #status-bar #close {
+  width: 100%;
+  text-align: center;
+  cursor: pointer;
+}
 .graph-view .heaps-scene svg g {
   stroke: #202020;
 }

@@ -986,7 +986,7 @@ class ShaderEditor extends hide.view.Graph {
 				for (m in obj.getMaterials())
 					m.mainPass.removeShader(currentShader);
 
-			var shaderGraphDef = shaderGraph.compile2(domain);
+			var shaderGraphDef = shaderGraph.compile2(null);
 			newShader = new hxsl.DynamicShader(shaderGraphDef.shader);
 			for (init in shaderGraphDef.inits) {
 				setParamValue(newShader, init.variable, init.value);

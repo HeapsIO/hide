@@ -129,8 +129,8 @@ class ShaderGraph extends hrt.prefab.Prefab {
 		};
 
 		for (i => graph in graphs) {
-			/*if (previewDomain != null && graph.domain != previewDomain)
-				continue;*/
+			if (previewDomain != null && graph.domain != previewDomain)
+				continue;
 			// Temp fix for code generation
 			//if (graph.domain == Vertex)
 			//	continue;
@@ -238,8 +238,8 @@ class ShaderGraph extends hrt.prefab.Prefab {
 				case Vertex: Vertex;
 			};
 
-			/*if (previewDomain != null)
-				fnKind = Fragment;*/
+			if (previewDomain != null)
+				fnKind = Fragment;
 
 			var functionName : String = EnumValueTools.getName(fnKind).toLowerCase();
 
@@ -250,10 +250,135 @@ class ShaderGraph extends hrt.prefab.Prefab {
 				type : TFun([{ ret : TVoid, args : [] }])
 			};
 
+			var finalExpr = gen.expr;
+
+			// Patch Color
+			if (fnKind == Fragment) {
+				var includePreviews = previewDomain != null;
+				var finalBlock = [finalExpr];
+
+				var pos : Position = {file: "", min: 0, max: 0};
+				var pixelColor = gen.outVars.find((v) -> v.v.name == "pixelColor")?.v;
+				var outputPreviewPixelColor = pixelColor;
+				var outputSelectVar = gen.inVars.find((v) -> v.v.name == "__sg_PREVIEW_output_select")?.v;
+
+
+				var color = gen.outVars.find((v) -> v.v.name == "_sg_out_color");
+				if (color != null) {
+					var vec3 = TVec(3, VFloat);
+					var finalExpr =
+						{
+							e: TBinop(
+							OpAssign,
+								{
+									e: TSwiz(
+											{
+												e: TVar(pixelColor),
+												p: pos,
+												t: vec3,
+											},
+											[X,Y,Z]
+										),
+									p:pos,
+									t:vec3
+								},
+								{
+									e: TVar(color.v),
+									p: pos,
+									t: vec3
+								}
+							),
+							p: pos,
+							t: vec3
+						};
+
+					if (includePreviews) {
+						if (outputSelectVar == null)
+							throw "WTF";
+						finalExpr = {
+							e: TIf(
+									{
+										e: TBinop(
+											OpEq,
+											{e:TVar(outputSelectVar),p:pos, t:TInt},
+											{e:TConst(CInt(0)), p:pos, t:TInt}
+										),
+										p:pos,
+										t:TInt
+									},
+									finalExpr,
+									null
+								),
+							p: pos,
+							t:null
+						};
+					}
+
+
+					finalBlock.push(finalExpr);
+				}
+
+				var alpha = gen.outVars.find((v) -> v.v.name == "_sg_out_alpha");
+				if (alpha != null) {
+					var flt = TFloat;
+					var finalExpr =
+					{
+						e: TBinop(
+						OpAssign,
+							{
+								e: TSwiz(
+										{
+											e: TVar(pixelColor),
+											p: pos,
+											t: flt,
+										},
+										[W]
+									),
+								p:pos,
+								t:flt
+							},
+							{
+								e: TVar(alpha.v),
+								p: pos,
+								t: flt
+							}
+						),
+						p: pos,
+						t: flt
+					};
+
+					if (includePreviews) {
+						finalExpr = {
+							e: TIf(
+									{
+										e: TBinop(
+											OpEq,
+											{e:TVar(outputSelectVar),p:pos, t:TInt},
+											{e:TConst(CInt(0)), p:pos, t:TInt}
+										),
+										p:pos,
+										t:TInt
+									},
+									finalExpr,
+									null
+								),
+							p: pos,
+							t:null
+						};
+					}
+
+
+					finalBlock.push(finalExpr);
+				}
+
+				finalExpr = {e: TBlock(finalBlock), t: TVoid, p: pos};
+			}
+
+
 			var fn : TFunction = {
 				ret : TVoid, kind : fnKind,
 				ref : funcVar,
-				expr : gen.expr,
+				expr : finalExpr,
 				args : []
 			};
 			shaderData.funs.push(fn);
@@ -559,8 +684,6 @@ class Graph {
 				return hxsl.Tools.allocVarId();
 			};
 		}
-
-		includePreviews = includePreviews && this.domain == Fragment;
 
 		inline function getNewVarName(node: Node, id: Int) : String {
 			return '_sg_${(node.type).split(".").pop()}_var_$id';
@@ -1136,112 +1259,6 @@ class Graph {
 		}
 
 		exprsReverse.reverse();
-
-		var color = graphOutputVars.find((v) -> v.v.name == "_sg_out_color");
-		if (color != null) {
-			var vec3 = TVec(3, VFloat);
-			var finalExpr =
-				{
-					e: TBinop(
-					OpAssign,
-						{
-							e: TSwiz(
-									{
-										e: TVar(pixelColor),
-										p: pos,
-										t: vec3,
-									},
-									[X,Y,Z]
-								),
-							p:pos,
-							t:vec3
-						},
-						{
-							e: TVar(color.v),
-							p: pos,
-							t: vec3
-						}
-					),
-					p: pos,
-					t: vec3
-				};
-
-			if (includePreviews) {
-				finalExpr = {
-					e: TIf(
-							{
-								e: TBinop(
-									OpEq,
-									{e:TVar(outputSelectVar),p:pos, t:TInt},
-									{e:TConst(CInt(0)), p:pos, t:TInt}
-								),
-								p:pos,
-								t:TInt
-							},
-							finalExpr,
-							null
-						),
-					p: pos,
-					t:null
-				};
-			}
-
-
-			exprsReverse.push(finalExpr);
-		}
-
-		var alpha = graphOutputVars.find((v) -> v.v.name == "_sg_out_alpha");
-		if (alpha != null) {
-			var flt = TFloat;
-			var finalExpr =
-			{
-				e: TBinop(
-				OpAssign,
-					{
-						e: TSwiz(
-								{
-									e: TVar(pixelColor),
-									p: pos,
-									t: flt,
-								},
-								[W]
-							),
-						p:pos,
-						t:flt
-					},
-					{
-						e: TVar(alpha.v),
-						p: pos,
-						t: flt
-					}
-				),
-				p: pos,
-				t: flt
-			};
-
-			if (includePreviews) {
-				finalExpr = {
-					e: TIf(
-							{
-								e: TBinop(
-									OpEq,
-									{e:TVar(outputSelectVar),p:pos, t:TInt},
-									{e:TConst(CInt(0)), p:pos, t:TInt}
-								),
-								p:pos,
-								t:TInt
-							},
-							finalExpr,
-							null
-						),
-					p: pos,
-					t:null
-				};
-			}
-
-
-			exprsReverse.push(finalExpr);
-		}
 
 		cachedGen = {
 			expr: {e: TBlock(exprsReverse), t:TVoid, p:pos},

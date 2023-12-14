@@ -138,10 +138,12 @@ class ShaderOutput extends ShaderNode {
 	static var availableOutputs : Map<String, ShaderNode.VariableDecl> = [
 		"_sg_out_color" => {display:"Pixel Color", v:{parent: null,id: 0,kind: Local,name: "_sg_out_color",type: TVec(3, VFloat)}},
 		"_sg_out_alpha" => {display:"Alpha", v:{parent: null,id: 0,kind: Local,name: "_sg_out_alpha",type: TFloat}},
-		"transformedPosition" => {display:"World Position", v:{parent: null,id: 0,kind: Local,name: "transformedPosition",type: TVec(3, VFloat)}},
+		"relativePosition" => {display:"Position (Object Space)", v:{parent: null,id: 0,kind: Local,name: "relativePosition",type: TVec(3, VFloat)}},
+		"transformedPosition" => {display:"Position (World Space)", v:{parent: null,id: 0,kind: Local,name: "transformedPosition",type: TVec(3, VFloat)}},
+		"projectedPosition" => {display: "Position (View Space)", v: { parent: null, id: 0, kind: Local, name: "projectedPosition", type: TVec(4, VFloat) }},
 		// Disabled because calculated UV need to be initialized in vertexShader for some reason
 		//"calculatedUV" => { display: "UV", v: { parent: null, id: 0, kind: Var, name: "calculatedUV", type: TVec(2, VFloat)}},
-		"transformedNormal" => { display: "Normal", v: {parent: null, id: 0, kind: Local, name: "transformedNormal", type: TVec(3, VFloat)}},
+		"transformedNormal" => { display: "Normal (World Space)", v: {parent: null, id: 0, kind: Local, name: "transformedNormal", type: TVec(3, VFloat)}},
 		"metalnessValue" => {display: "Metalness", v: {parent: null,id: 0,kind: Local,name: "metalnessValue",type: TFloat}},
 		"roughnessValue" => {display: "Roughness", v: {parent: null, id: 0, kind: Local, name: "roughnessValue", type: TFloat}},
 		"emissiveValue" => {display: "Emissive", v: {parent: null, id: 0, kind: Local, name: "emissiveValue", type: TFloat}},
