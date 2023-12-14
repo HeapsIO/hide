@@ -167,7 +167,9 @@ class ShaderNode {
 				defaults = Reflect.field(props, f);
 			}
 			else {
-				Reflect.setField(this, f, Reflect.field(props, f));
+				if (Reflect.hasField(this, f)) {
+					Reflect.setField(this, f, Reflect.field(props, f));
+				}
 			}
 		}
 	}
