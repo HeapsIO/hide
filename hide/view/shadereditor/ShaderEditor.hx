@@ -116,7 +116,7 @@ class ShaderEditor extends hide.view.Graph {
 	var COMPILE_SHADER_DEBOUNCE : Int = 100;
 	var VIEW_VISIBLE_CHECK_TIMER : Int = 500;
 	var currentShader : DynamicShader;
-	var currentShaderDef : hrt.prefab.ContextShared.ShaderDef;
+	var currentShaderDefMainPreview : hrt.prefab.ContextShared.ShaderDef;
 
 
 
@@ -964,7 +964,7 @@ class ShaderEditor extends hide.view.Graph {
 
 		var def = shaderGraph.compile2(null);
 
-		if( currentShaderDef != null) {
+		if( def != null) {
 			text += switch( type ) {
 				case "hxsl": hxsl.Printer.shaderToString(def.shader.data);
 				case "glsl": hxsl.GlslOut.compile(def.shader.data);
@@ -996,7 +996,7 @@ class ShaderEditor extends hide.view.Graph {
 			}
 			sceneEditor.scene.render(sceneEditor.scene.engine);
 			currentShader = newShader;
-			currentShaderDef = shaderGraphDef;//{shader: shaderGraphDef, inits:[]};
+			currentShaderDefMainPreview = shaderGraphDef;//{shader: shaderGraphDef, inits:[]};
 
 
 			info('Shader compiled in  ${Date.now().getTime() - timeStart}ms');
@@ -1076,8 +1076,8 @@ class ShaderEditor extends hide.view.Graph {
 	}
 
 	function setParamValueByName(shader : DynamicShader, varName : String, value : Dynamic) {
-		if (currentShaderDef == null) return;
-		for (init in currentShaderDef.inits) {
+		if (currentShaderDefMainPreview == null) return;
+		for (init in currentShaderDefMainPreview.inits) {
 			if (init.variable.name == varName) {
 				setParamValue(shader, init.variable, value);
 				return;
@@ -1124,7 +1124,7 @@ class ShaderEditor extends hide.view.Graph {
 
 		var select = null;
 		if (currentShaderPreviewsDef != null) {
-			select = currentShaderDef.inits.find((e) -> e.variable.name == "__sg_PREVIEW_output_select");
+			select = currentShaderPreviewsDef.inits.find((e) -> e.variable.name == "__sg_PREVIEW_output_select");
 		}
 		for (box => preview in boxToPreview) {
 			if (preview.shaderDef != currentShaderPreviewsDef) {
