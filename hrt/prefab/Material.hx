@@ -165,7 +165,6 @@ class Material extends Prefab {
 		for (o in overrides) {
 			if (o.pname.indexOf("/") > 0) {
 
-
 				var pname = o.pname.substring(o.pname.indexOf("/") + 1);
 				var v = o.value;
 
@@ -278,61 +277,6 @@ class Material extends Prefab {
 			}));
 		}
 
-		function updateHighlightOverrides() {
-			ctx.properties.element.find(".override").removeClass("override");
-			ctx.properties.element.find(".remove-override-btn").remove();
-
-			var e = overrides;
-
-			// Highlight field that are overrides
-			for (o in overrides) {
-				var idxStart = o.pname.indexOf("/");
-				var fieldName = o.pname.substring(idxStart + 1);
-				var el = ctx.properties.element.find('[field=${fieldName}]');
-				if (el.length != 1)
-					continue;
-
-				var parentDiv = el.parent();
-				while (!parentDiv.parent().is("dl") && parentDiv != null)
-					parentDiv = parentDiv.parent();
-
-				parentDiv.addClass("override");
-
-				var label = parentDiv.children().first();
-				var removeOverrideBtn = new Element('<i title="Remove override" class="remove-override-btn icon ico ico-remove"></i>').insertBefore(label);
-				removeOverrideBtn.css({ "cursor":"pointer" });
-				removeOverrideBtn.on("click", function(_){
-					overrides.remove(o);
-					updateInstance(ctx.scene.editor.getContext(this));
-					ctx.rebuildProperties();
-				});
-			}
-		}
-
-		function addOverrideProperty(pname : String, isMatSetupProp : Bool) {
-			// Remove previous value of this props name in overrides
-			var idx = 0;
-			while (idx < overrides.length) {
-				if (overrides[idx].pname == (isMatSetupProp ? h3d.mat.MaterialSetup.current.name+"/"+pname : pname)) {
-					overrides.remove(overrides[idx]);
-					continue;
-				}
-
-				idx++;
-			}
-
-			if (isMatSetupProp) {
-				var materialSetupObj = Reflect.getProperty(this.props, h3d.mat.MaterialSetup.current.name);
-				var v = Reflect.getProperty(materialSetupObj, pname);
-				overrides.push( { pname:h3d.mat.MaterialSetup.current.name+"/"+pname, value:v == null ? "__toremove" : v } );
-			}
-			else {
-				overrides.push( { pname:pname, value:Reflect.field(this, pname) } );
-			}
-
-			updateHighlightOverrides();
-		}
-
 		updateMatSelect();
 
 		libSelect.change(function(_) {
@@ -364,10 +308,11 @@ class Material extends Prefab {
 
 		var group = ctx.properties.add(new hide.Element('<div class="group" name="Material"></div>'));
 		ctx.properties.addMaterial(mat, group.find('.group > .content'), function(pname) {
-			if (this.refMatLib != null && this.refMatLib != "")
-				addOverrideProperty(pname, true);
-
 			Reflect.setField(props, h3d.mat.MaterialSetup.current.name, mat.props);
+
+			if (this.refMatLib != null && this.refMatLib != "")
+				addOverrideProperty(ctx, pname, true);
+
 			ctx.onChange(this, "props");
 
 			var fx = getParent(hrt.prefab.fx.FX);
@@ -571,18 +516,70 @@ class Material extends Prefab {
 
 		dropDownMaterials.appendTo(matProps);
 		ctx.properties.add(matProps, this, function(pname) {
+			ctx.onChange(this, pname);
 
 			if (this.refMatLib != null && this.refMatLib != "")
-				addOverrideProperty(pname, false);
-
-			ctx.onChange(this, pname);
+				addOverrideProperty(ctx, pname, false);
 
 			var fx = getParent(hrt.prefab.fx.FX);
 			if(fx != null)
 				ctx.rebuildPrefab(fx, true);
 		});
 
-		updateHighlightOverrides();
+		updateHighlightOverrides(ctx);
+	}
+
+	public function addOverrideProperty(ctx : EditContext, pname : String, isMatSetupProp : Bool) {
+		// Remove previous value of this props name in overrides
+		var idx = 0;
+		while (idx < overrides.length) {
+			if (overrides[idx].pname == (isMatSetupProp ? h3d.mat.MaterialSetup.current.name+"/"+pname : pname)) {
+				overrides.remove(overrides[idx]);
+				continue;
+			}
+
+			idx++;
+		}
+
+		if (isMatSetupProp) {
+			var materialSetupObj = Reflect.getProperty(this.props, h3d.mat.MaterialSetup.current.name);
+			var v = Reflect.getProperty(materialSetupObj, pname);
+			overrides.push( { pname:h3d.mat.MaterialSetup.current.name+"/"+pname, value:v == null ? "__toremove" : v } );
+		}
+		else {
+			overrides.push( { pname:pname, value:Reflect.field(this, pname) } );
+		}
+
+		updateHighlightOverrides(ctx);
+	}
+
+	public function updateHighlightOverrides(ctx : EditContext) {
+		ctx.properties.element.find(".override").removeClass("override");
+		ctx.properties.element.find(".remove-override-btn").remove();
+
+		// Highlight field that are overrides
+		for (o in overrides) {
+			var idxStart = o.pname.indexOf("/");
+			var fieldName = o.pname.substring(idxStart + 1);
+			var el = ctx.properties.element.find('[field=${fieldName}]');
+			if (el.length != 1)
+				continue;
+
+			var parentDiv = el.parent();
+			while (!parentDiv.parent().is("dl") && parentDiv != null)
+				parentDiv = parentDiv.parent();
+
+			parentDiv.addClass("override");
+
+			var label = parentDiv.children().first();
+			var removeOverrideBtn = new Element('<i title="Remove override" class="remove-override-btn icon ico ico-remove"></i>').insertBefore(label);
+			removeOverrideBtn.css({ "cursor":"pointer" });
+			removeOverrideBtn.on("click", function(_){
+				overrides.remove(o);
+				updateInstance(ctx.scene.editor.getContext(this));
+				ctx.rebuildProperties();
+			});
+		}
 	}
 
 	override function getHideProps() : HideProps {
