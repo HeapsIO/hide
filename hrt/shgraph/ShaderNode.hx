@@ -27,14 +27,19 @@ class AlphaPreview extends hxsl.Shader {
 }
 
 typedef VariableDecl = {v: TVar, display: String};
-
+typedef AliasInfo = {?name : String, ?description : String, ?args : Array<Dynamic>};
 @:autoBuild(hrt.shgraph.Macros.autoRegisterNode())
 @:keepSub
+@:keep
 class ShaderNode {
 
 	public var id : Int;
 
 	public var defaults : Dynamic = {};
+
+	public static function registerAliases(name: String, description: String) : Array<AliasInfo> {
+		return null;
+	}
 
 	static var availableVariables = [
 					{

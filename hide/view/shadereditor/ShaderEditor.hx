@@ -94,7 +94,7 @@ class ShaderEditor extends hide.view.Graph {
 
 	var addMenu : JQuery;
 	var selectedNode : JQuery;
-	var listOfClasses : Map<String, Array<NodeInfo>>;
+	var classRepository : Array<{cl: Class<ShaderNode>, group: String, name: String, description: String, args: Array<Dynamic>}>;
 
 	var previewsScene : hide.comp.Scene;
 	var currentShaderPreviewsDef : hrt.prefab.ContextShared.ShaderDef;
@@ -289,20 +289,6 @@ class ShaderEditor extends hide.view.Graph {
 		parent.on("contextmenu", function(e) {
 			e.preventDefault();
 			openAddMenu();
-			/*new hide.comp.ContextMenu([
-				{ label : "Add node", menu : contextMenuAddNode() },
-				{ label : "", isSeparator : true },
-				{
-					label : "Delete nodes",
-					click : function() {
-						if (listOfBoxesSelected.length > 0) {
-							if (ide.confirm("Delete all theses nodes ?")) {
-								deleteSelection();
-							}
-						}
-					},
-				},
-			]);*/
 			return false;
 		});
 
@@ -392,19 +378,51 @@ class ShaderEditor extends hide.view.Graph {
 		});
 
 		addMenu = null;
-		listOfClasses = new Map<String, Array<NodeInfo>>();
-		var mapOfNodes = ShaderNode.registeredNodes;
-		for (key in mapOfNodes.keys()) {
-			var metas = haxe.rtti.Meta.getType(mapOfNodes[key]);
+
+		classRepository = [];
+
+		for (node in ShaderNode.registeredNodes) {
+			var metas = haxe.rtti.Meta.getType(node);
 			if (metas.group == null) {
 				continue;
 			}
-			var group = metas.group[0];
+			var group = metas.group != null ? metas.group[0] : "Other";
+			var name = metas.name != null ? metas.name[0] : "unknown";
+			var description = metas.description != null ? metas.description[0] : "";
 
-			if (listOfClasses[group] == null)
-				listOfClasses[group] = new Array<NodeInfo>();
 
-			listOfClasses[group].push({ name : (metas.name != null) ? metas.name[0] : key , description : (metas.description != null) ? metas.description[0] : "" , key : key });
+			classRepository.push({name : name, group : group, description: description, args: [], cl: node});
+
+			if (node == hrt.shgraph.ShaderInput) {
+				for (key => input in hrt.shgraph.ShaderInput.availableInputs) {
+					classRepository.push({
+						name : name + " - " + input.display,
+						group: group,
+						description: description,
+						args: [key],
+						cl: node
+					});
+				}
+			}
+
+			if (node == hrt.shgraph.ShaderOutput) {
+				for (key => output in hrt.shgraph.ShaderOutput.availableOutputs) {
+					classRepository.push({
+						name : name + " - " + output.display,
+						group: group,
+						description: description,
+						args: [key],
+						cl: node
+					});
+				}
+			}
+			// var cl : Dynamic = node;
+			// var aliases : Array<hrt.shgraph.ShaderNode.AliasInfo> = cl.registerAliases(name, description);
+			// if (aliases != null) {
+			// 	for (alias in aliases) {
+			// 		classRepository.push({name : alias.name ?? name, description: alias.description ?? description, args: alias.args ?? [], cl: node, group: group});
+			// 	}
+			// }
 		}
 
 		var libPaths : Array<String> = config.get("shadergraph.libfolders", ["shaders"]);
@@ -419,28 +437,20 @@ class ShaderEditor extends hide.view.Graph {
 					&& haxe.io.Path.extension(relPath).toLowerCase() == "shgraph"
 				) {
 					var group = 'SubGraph from $lpath';
-					if (listOfClasses[group] == null)
-						listOfClasses[group] = new Array<NodeInfo>();
 
 					var fileName = new haxe.io.Path(relPath).file;
 
-					listOfClasses[group].push({
-						name : fileName,
-						// TODO: Add a the description to the shgraph file
-						description : "",
-						key : relPath,
-					});
+					classRepository.push({name: fileName, description: "", args: [relPath], cl: SubGraph, group: group});
 				}
 			}
 		}
 
-		for (key in listOfClasses.keys()) {
-			listOfClasses[key].sort(function (a, b): Int {
-				if (a.name < b.name) return -1;
-				else if (a.name > b.name) return 1;
-				return 0;
-			});
-		}
+		classRepository.sort((a,b) -> {
+			if (a.group == b.group) {
+				return Reflect.compare(a.name, b.name);
+			}
+			return Reflect.compare(a.group, b.group);
+		});
 
 		new Element("svg").ready(function(e) {
 			refreshShaderGraph();
@@ -1298,29 +1308,22 @@ class ShaderEditor extends hide.view.Graph {
 			e.stopPropagation();
 		});
 
-		var keys = listOfClasses.keys();
-		var sortedKeys = [];
-		for (k in keys) {
-			sortedKeys.push(k);
-		}
-		sortedKeys.sort(function (a, b) {
-			if (a < b) return -1;
-			if (a > b) return 1;
-			return 0;
-		});
-
-		for (key in sortedKeys) {
-			new Element('
-				<div class="group" >
-					<span> ${key} </span>
-				</div>').appendTo(results);
-			for (node in listOfClasses[key]) {
+		var prevGroup = null;
+		for (i => node in classRepository) {
+			if (node.group != prevGroup) {
 				new Element('
-					<div node="${node.key}" >
-						<span> ${node.name} </span> <span> ${node.description} </span>
-					</div>').appendTo(results);
+				<div class="group" >
+					<span> ${node.group} </span>
+				</div>').appendTo(results);
+				prevGroup = node.group;
 			}
+
+			new Element('
+				<div node="$i" >
+					<span> ${node.name} </span> <span> ${node.description} </span>
+				</div>').appendTo(results);
 		}
+
 		var menuWidth = Std.parseInt(addMenu.css("width")) + 10;
 		var menuHeight = Std.parseInt(addMenu.css("height")) + 10;
 		if( posCursor.x + menuWidth > boundsWidth )
@@ -1373,17 +1376,22 @@ class ShaderEditor extends hide.view.Graph {
 			}
 
 			if (ev.keyCode == 13) {
-				var key = this.selectedNode.attr("node");
+				var key = Std.parseInt(this.selectedNode.attr("node"));
 				var posCursor = new Point(lX(ide.mouseX - 25), lY(ide.mouseY - 10));
 
-				if( key.toLowerCase().indexOf(".shgraph") != -1 ) {
+				var node = classRepository[key];
+				addNode(posCursor, node.cl, node.args);
+				closeAddMenu();
+				refreshShaderGraph();
+
+				/*if( key.toLowerCase().indexOf(".shgraph") != -1 ) {
 					addSubGraph(posCursor, key);
 					closeAddMenu();
 					refreshShaderGraph();
 				} else {
 					addNode(posCursor, ShaderNode.registeredNodes[key], []);
 					closeAddMenu();
-				}
+				}*/
 			} else {
 				if (this.selectedNode != null)
 					this.selectedNode.removeClass("selected");
@@ -1426,16 +1434,14 @@ class ShaderEditor extends hide.view.Graph {
 			if (ev.getThis().hasClass("group")) {
 				return;
 			}
-			var key = ev.getThis().attr("node");
+
+			var key = Std.parseInt(this.selectedNode.attr("node"));
 			var posCursor = new Point(lX(ide.mouseX - 25), lY(ide.mouseY - 10));
-			if( key.toLowerCase().indexOf(".shgraph") != -1 ) {
-				addSubGraph(posCursor, key);
-				closeAddMenu();
-				refreshShaderGraph();
-			} else {
-				addNode(posCursor, ShaderNode.registeredNodes[key], []);
-				closeAddMenu();
-			}
+
+			var node = classRepository[key];
+			addNode(posCursor, node.cl, node.args);
+			closeAddMenu();
+			refreshShaderGraph();
 		});
 	}
 
@@ -1445,52 +1451,6 @@ class ShaderEditor extends hide.view.Graph {
 			parent.focus();
 			cleanupLinkCreation();
 		}
-	}
-
-
-	// CONTEXT MENU
-	function contextMenuAddNode() : Array<hide.comp.ContextMenu.ContextMenuItem> {
-		var items : Array<hide.comp.ContextMenu.ContextMenuItem> = [
-			{
-				label : "Search",
-				click : function() { openAddMenu(-40, -16); },
-			},
-			{ label : "", isSeparator : true },
-		];
-
-		var keys = listOfClasses.keys();
-		var sortedKeys = [];
-		for (k in keys) {
-			sortedKeys.push(k);
-		}
-		sortedKeys.sort(function (a, b) {
-			if (a < b) return -1;
-			if (a > b) return 1;
-			return 0;
-		});
-
-		function createNewNode(node : NodeInfo) {
-			var posCursor = new Point(lX(ide.mouseX - 25), lY(ide.mouseY - 10));
-			if( node.key.toLowerCase().indexOf(".shgraph") != -1 ) {
-				addSubGraph(posCursor, node.key);
-				refreshShaderGraph();
-			} else {
-				addNode(posCursor, ShaderNode.registeredNodes[node.key], []);
-			}
-		}
-
-		var newItems : Array<hide.comp.ContextMenu.ContextMenuItem> = [ for (key in sortedKeys)
-			{
-				label : key,
-				menu : [ for (node in listOfClasses[key])
-					{
-						label : node.name,
-						click : () -> createNewNode(node),
-					}
-				]
-			}
-		];
-		return items.concat(newItems);
 	}
 
 	function beforeChange() {

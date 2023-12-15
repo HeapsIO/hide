@@ -135,7 +135,7 @@ class ShaderOutput extends ShaderNode {
 
 	// }
 
-	static var availableOutputs : Map<String, ShaderNode.VariableDecl> = [
+	public static var availableOutputs : Map<String, ShaderNode.VariableDecl> = [
 		"_sg_out_color" => {display:"Pixel Color", v:{parent: null,id: 0,kind: Local,name: "_sg_out_color",type: TVec(3, VFloat)}},
 		"_sg_out_alpha" => {display:"Alpha", v:{parent: null,id: 0,kind: Local,name: "_sg_out_alpha",type: TFloat}},
 		"relativePosition" => {display:"Position (Object Space)", v:{parent: null,id: 0,kind: Local,name: "relativePosition",type: TVec(3, VFloat)}},

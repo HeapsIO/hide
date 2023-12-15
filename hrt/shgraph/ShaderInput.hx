@@ -19,6 +19,10 @@ class ShaderInput extends ShaderNode {
 	// 	return null;
 	// }
 
+	public function new(variable = "pixelColor") {
+		this.variable = variable;
+	}
+
 	override function getShaderDef(domain: ShaderGraph.Domain, getNewIdFn : () -> Int, ?inputTypes: Array<Type>):hrt.shgraph.ShaderGraph.ShaderNodeDef {
 		var pos : Position = {file: "", min: 0, max: 0};
 
