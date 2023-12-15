@@ -1356,18 +1356,20 @@ class Ide {
 		window.menu = new hide.ui.Menu(menu).root;
 	}
 
-	public function openFile( file : String, ?onCreate ) {
+	public function openFile( file : String, ?onCreate, ?onOpen) {
 		var ext = @:privateAccess hide.view.FileTree.getExtension(file);
 		if( ext == null ) return;
 		// look if already open
 		var path = makeRelative(file);
 		for( v in views )
 			if( Type.getClassName(Type.getClass(v)) == ext.component && v.state.path == path ) {
-				if( v.container.tab != null )
+				if( v.container.tab != null ) {
 					v.container.parent.parent.setActiveContentItem(v.container.parent);
+					if (onOpen != null ) onOpen(v);
+				}
 				return;
 			}
-		open(ext.component, { path : path }, onCreate);
+		open(ext.component, { path : path }, onCreate, onOpen);
 	}
 
 	public function openSubView<T>( component : Class<hide.ui.View<T>>, state : T, events : {} ) {
@@ -1387,7 +1389,7 @@ class Ide {
 		if( subView != null ) Reflect.callMethod(subView.events,Reflect.field(subView.events,name),[param]);
 	}
 
-	public function open( component : String, state : Dynamic, ?onCreate : hide.ui.View<Dynamic> -> Void ) {
+	public function open( component : String, state : Dynamic, ?onCreate : hide.ui.View<Dynamic> -> Void, ?onOpen : hide.ui.View<Dynamic> -> Void ) {
 		if( state == null ) state = {};
 
 		var c = hide.ui.View.viewClasses.get(component);
@@ -1399,6 +1401,7 @@ class Ide {
 			if( v.viewClass == component && haxe.Json.stringify(v.state) == haxe.Json.stringify(state) ) {
 				v.activate();
 				if( onCreate != null ) onCreate(v);
+				if ( onOpen != null ) onOpen(v);
 				return;
 			}
 		}
@@ -1429,6 +1432,7 @@ class Ide {
 			target.off("componentCreated");
 			var view : hide.ui.View<Dynamic> = untyped c.origin.__view;
 			if( onCreate != null ) onCreate(view);
+			if ( onOpen != null ) onOpen(view);
 			if( needResize ) {
 				// when opening restricted size after free size
 				haxe.Timer.delay(function() {

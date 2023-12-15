@@ -268,7 +268,33 @@ class Model extends FileView {
 		matLibrary.find(".goTo").click(function(_) {
 			var mat = scene.findMat(materials, matSelect.val());
 			if ( mat != null ) {
-				ide.openFile(mat.path);
+				var matName = mat.mat.name;
+				hide.Ide.inst.openFile(Reflect.field(mat, "path"), null, (view) -> {
+					var prefabView : hide.view.Prefab.Prefab = cast view;
+					haxe.Timer.delay(function() {
+						for (p in @:privateAccess prefabView.data.flatten(hrt.prefab.Prefab)) {
+							if (p.name == matName) {
+								prefabView.sceneEditor.selectElements([p]);
+								@:privateAccess prefabView.sceneEditor.focusSelection();
+							}
+						}
+					}, 500);
+				});
+			}
+			else if (libSelect != null) {
+				var libraries = scene.listMatLibraries(this.getPath());
+				var lPath = "";
+				for (l in libraries) {
+					if (l.name == libSelect.val()) {
+						lPath = l.path;
+						break;
+					}
+				}
+
+				if (lPath == "")
+					return;
+
+				hide.Ide.inst.openFile(lPath);
 			}
 		});
 
