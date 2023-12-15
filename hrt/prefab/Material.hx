@@ -608,6 +608,7 @@ class Material extends Prefab {
 				normalMap = f(normalMap);
 				specularMap = f(specularMap);
 			},
+			allowChildren: function(t) return !Library.isOfType(t, Material),
 		};
 	}
 	#end
