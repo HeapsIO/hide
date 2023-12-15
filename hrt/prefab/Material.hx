@@ -89,6 +89,7 @@ class Material extends Prefab {
 			// We want to save some infos to reapply them after loading datas from the choosen mat
 			var previousRefMatLib = this.refMatLib;
 			var previousName = this.name;
+			var previousMatName = this.materialName;
 			var previousOverrides = this.overrides.copy();
 
 			var refMatLibPath = this.refMatLib.substring(0, this.refMatLib.lastIndexOf("/"));
@@ -105,6 +106,7 @@ class Material extends Prefab {
 				// Reapply some infos that we don't want to be modified by the load of the new mat
 				this.refMatLib = previousRefMatLib;
 				this.name = previousName;
+				this.materialName = previousMatName;
 				this.overrides = previousOverrides;
 
 				applyOverrides();
@@ -507,11 +509,11 @@ class Material extends Prefab {
 				materialName = undo ? previous : actual;
 				ctx.onChange(this, null);
 				ctx.rebuildProperties();
-				ctx.scene.editor.refresh(Partial);
+				ctx.scene.editor.refresh();
 			}));
 			ctx.onChange(this, null);
 			ctx.rebuildProperties();
-			ctx.scene.editor.refresh(Partial);
+			ctx.scene.editor.refresh();
 
 			var fx = getParent(hrt.prefab.fx.FX);
 			if(fx != null)
