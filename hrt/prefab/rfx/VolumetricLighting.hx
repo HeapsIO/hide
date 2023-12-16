@@ -6,7 +6,7 @@ class VolumetricLightingShader extends hrt.shader.PbrShader {
 		@param var bottom : Float;
 		@param var top : Float;
 		@param var fallOff : Float;
-		
+
 		@param var shadowMap : Sampler2D;
 		@param var shadowProj : Mat3x4;
 		@param var shadowBias : Float;
@@ -154,7 +154,7 @@ class VolumetricLighting extends RendererFX {
 
 			pass.shader.maxDist = maxDist;
 			pass.shader.decayPower = decayPower;
-			
+
 			pass.shader.gamma = gamma;
 			pass.shader.bottom = bottom;
 			pass.shader.top = top;
@@ -175,7 +175,7 @@ class VolumetricLighting extends RendererFX {
 			var alignedFactor = (1.0 - dot) / (1.0 - cosAngle);
 			alignedFactor = hxd.Math.clamp(alignedFactor);
 			var realBlur = hxd.Math.lerp(fadeBlur, blur, alignedFactor);
-			alignedFactor = hxd.Math.lerp(minIntensity, 1.0, alignedFactor); 
+			alignedFactor = hxd.Math.lerp(minIntensity, 1.0, alignedFactor);
 			pass.shader.brightOpacity = brightOpacity * alignedFactor;
 			pass.shader.darkOpacity = darkOpacity * alignedFactor;
 
@@ -194,7 +194,6 @@ class VolumetricLighting extends RendererFX {
 			pass.shader.targetSize.set(tex.width, tex.height);
 			pass.shader.ditheringSize.set(pass.shader.ditheringNoise.width, pass.shader.ditheringNoise.height);
 			pass.pass.setBlendMode(Alpha);
-			pass.setGlobals(r.ctx);
 			pass.render();
 
 			r.ctx.engine.popTarget();

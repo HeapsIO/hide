@@ -186,8 +186,6 @@ class SSR extends RendererFX {
 			ssrShader.cameraInverseProj = r.ctx.camera.getInverseProj();
 			ssrShader.cameraPos = r.ctx.camera.pos;
 
-			ssrPass.setGlobals(r.ctx);
-
 			ssr = r.allocTarget("ssr", false, textureSize / resRescale, hdrMap.format);
 			ssr.clear(0, 0);
 			r.ctx.engine.pushTarget(ssr);

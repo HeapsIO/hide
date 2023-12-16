@@ -101,7 +101,6 @@ class DistanceBlur extends RendererFX {
 			lbrBlur.apply(ctx, lbrBlurred);
 
 			blurPass.shader.blurredTexture = lbrBlurred;
-			blurPass.setGlobals(ctx);
 			blurPass.render();
 		}
 	}
