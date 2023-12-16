@@ -739,7 +739,7 @@ class TrailObj extends h3d.scene.Mesh {
 		shader.uvStretch = prefab.uvStretch;
 
 		dprim.buffer.uploadFloats(vbuf, 0, numVerts, 0);
-		dprim.indexes.upload(ibuf, 0, numVertsIndices);
+		dprim.indexes.uploadIndexes(ibuf, 0, numVertsIndices);
 
 
 	}
