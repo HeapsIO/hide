@@ -1110,7 +1110,7 @@ class ShaderEditor extends hide.view.Graph {
 
 		var identity : h3d.Matrix = new h3d.Matrix();
 		identity.identity();
-		@:privateAccess previewsScene.s2d.renderer.manager.globals.set("camera.viewProj", identity);
+		@:privateAccess previewsScene.s2d.renderer.globals.set("camera.viewProj", identity);
 	}
 
 	function onMiniPreviewUpdate(dt: Float) {

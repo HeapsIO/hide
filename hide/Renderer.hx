@@ -143,7 +143,7 @@ class PbrRenderer extends h3d.scene.pbr.Renderer {
 		outline.pass.setBlendMode(Alpha);
 	}
 
-	override function getPassByName(name:String):h3d.pass.Base {
+	override function getPassByName(name:String):h3d.pass.Output {
 		switch( name ) {
 		case "highlight", "highlightBack":
 			return defaultPass;

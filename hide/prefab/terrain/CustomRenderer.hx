@@ -7,7 +7,7 @@ class CustomRenderer extends h3d.scene.Renderer {
 	public function new(passName) {
 		super();
 		this.passName = passName;
-		defaultPass = new h3d.pass.Default("default");
+		defaultPass = new h3d.pass.Output("default");
 		allPasses.push(defaultPass);
 	}
 

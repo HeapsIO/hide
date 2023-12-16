@@ -1,6 +1,5 @@
 package hrt.prefab.pbr;
 
-import h3d.pass.Default;
 import hrt.shader.AnisotropicForward;
 
 enum abstract AnisotropyMode(String) {
