@@ -640,8 +640,13 @@ class Model extends FileView {
 
 		undo.onChange = function() {};
 
-		if (obj != null)
+		if (obj != null) {
 			obj.remove();
+
+			if (obj.isMesh()) {
+				obj.toMesh().primitive.buffer.dispose();
+			}
+		}
 
 		scene.setCurrent();
 		obj = scene.loadModel(state.path, true, true);

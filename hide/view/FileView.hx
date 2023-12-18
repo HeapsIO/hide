@@ -17,6 +17,15 @@ class FileView extends hide.ui.View<{ path : String }> {
 					skipNextChange = false;
 					return;
 				}
+
+				var fs:hxd.fs.LocalFileSystem = Std.downcast(hxd.res.Loader.currentInstance.fs, hxd.fs.LocalFileSystem);
+				var e = null;
+				var f = Ide.inst.getPath(state.path);
+				f = f.split("\\").join("/");
+				@:privateAccess e = new hxd.fs.LocalFileSystem.LocalEntry(fs, state.path.split("/").pop(), state.path, f);
+				@:privateAccess if( e.file == null ) e = null;
+
+				fs.convert.run(e);
 				onFileChanged(!sys.FileSystem.exists(ide.getPath(state.path)));
 			}, { checkDelete : true, keepOnRebuild : true });
 	}
