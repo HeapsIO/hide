@@ -30,6 +30,8 @@ class FileView extends hide.ui.View<{ path : String }> {
 				return;
 			}
 		}
+
+		this.modified = false;
 		super.onRebuild();
 	}
 
