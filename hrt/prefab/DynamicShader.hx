@@ -4,7 +4,8 @@ class DynamicShader extends Shader {
 
 	var shaderDef : hrt.prefab.ContextShared.ShaderDef;
 	var shaderClass : Class<hxsl.Shader>;
-	@:s var isInstance : Bool;
+	@:s var isInstance : Bool = false;
+	var isShadergraph : Bool = false;
 
 	public function new(?parent) {
 		super(parent);
@@ -12,7 +13,7 @@ class DynamicShader extends Shader {
 	}
 
 	override function setShaderParam(shader:hxsl.Shader, v:hxsl.Ast.TVar, value:Dynamic) {
-		if( isInstance ) {
+		if( isInstance && !isShadergraph ) {
 			super.setShaderParam(shader,v,value);
 			return;
 		}
@@ -29,7 +30,7 @@ class DynamicShader extends Shader {
 		if( getShaderDefinition(ctx) == null )
 			return null;
 		var shader;
-		if( isInstance )
+		if( isInstance && !isShadergraph)
 			shader = Type.createInstance(shaderClass,[]);
 		else {
 			var dshader = new hxsl.DynamicShader(shaderDef.shader);
@@ -79,12 +80,13 @@ class DynamicShader extends Shader {
 		if(shaderDef == null) {
 			fixSourcePath();
 			if (StringTools.endsWith(source, ".shgraph")) {
+				isShadergraph = true;
 				var shgraph = Std.downcast(hxd.res.Loader.currentInstance.load(source).toPrefab().load(), hrt.shgraph.ShaderGraph);
 				if (shgraph == null)
 					throw source + " is not a valid shadergraph";
 				shaderDef = shgraph.compile2(null);
 			}
-			else if( isInstance ) {
+			else if( isInstance && !isShadergraph ) {
 				shaderClass = loadShaderClass();
 				var shared : hxsl.SharedShader = (shaderClass:Dynamic)._SHADER;
 				if( shared == null ) {
@@ -101,7 +103,7 @@ class DynamicShader extends Shader {
 		if(shaderDef == null)
 			return;
 
-		#if editor
+		//#if editor
 		// TODO: Where to init prefab default values?
 		for( v in shaderDef.inits ) {
 			if(!Reflect.hasField(props, v.variable.name)) {
@@ -115,13 +117,13 @@ class DynamicShader extends Shader {
 				Reflect.setField(props, v.name, getDefault(v.type));
 			}
 		}
-		#end
+		//#end
 	}
 
 	#if editor
 	override function edit( ectx ) {
 		super.edit(ectx);
-		if( isInstance || loadShaderClass(true) != null ) {
+		if( (isInstance && !isShaderGraph) || loadShaderClass(true) != null ) {
 			ectx.properties.add(hide.comp.PropsEditor.makePropsList([{
 				name : "isInstance",
 				t : PBool,
