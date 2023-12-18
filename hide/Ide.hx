@@ -637,9 +637,45 @@ class Ide {
 	}
 
 	var showErrors = true;
+	var errorWindow :Element = null;
 	public function error( e : Dynamic ) {
 		if( showErrors && !js.Browser.window.confirm(e) )
 			showErrors = false;
+
+		if (!showErrors) {
+			if (errorWindow == null) {
+				errorWindow = new Element('
+				<div class="error-panel">
+					<div class="error-banner">
+						<button class="show-errors"><i class="icon ico ico-warning"></i>Show errors</button>
+						<button class="reload"><i class="icon ico ico-refresh"></i>Reload</button>
+						Warning : errors are currently suppressed in the editor. Your editor might be in an unstable state, please save and reload.
+					</div>
+					<div class="error-log hidden">
+					</div>
+				</div>');
+
+				var errorLog = errorWindow.find(".error-log");
+
+				var btnSaveReload = errorWindow.find(".reload");
+				btnSaveReload.click(function(_) {
+					this.reload();
+				});
+
+				var btnShowErrors = errorWindow.find(".show-errors");
+				btnShowErrors.click(function(_) {
+					if (errorLog.hasClass("hidden"))
+						errorLog.removeClass("hidden");
+					else
+						errorLog.addClass("hidden");
+				});
+
+				errorWindow.appendTo(window.window.document.body);
+			}
+
+			errorWindow.find(".error-log").append(new Element('<p>${e}</p>'));
+		}
+
 		js.Browser.console.error(e);
 	}
 

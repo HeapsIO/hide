@@ -26,6 +26,67 @@ body {
 	border : 1px solid #C00;
 }
 
+.error-panel {
+	position : absolute;
+	width: 100%;
+	z-index : 999;
+	bottom:0px;
+	left:0px;
+	padding : 1px;
+
+	.error-banner {
+		text-align: center;
+		z-index : 999;
+		padding : 1px;
+		width: 100%;
+		background: #ff5555;
+		color : #191A21;
+		border : 1px solid #ff5555;
+		display: inline-block;
+
+		button {
+			i {
+				margin-right: 3px;
+			}
+
+			height: 100%;
+			background: #ff5555;
+			color : #191A21;
+			float: left;
+			font-family : Verdana, serif;
+			margin-left: 5px;
+			border: none;
+			font-family : Verdana, serif;
+			font-size : 9pt;
+		}
+
+		button:hover {
+			background:#FA6868;
+			color:white;
+		}
+	}
+
+	.error-log {
+		&.hidden {
+			display: none;
+		}
+
+		p {
+			font-family : Verdana, serif;
+			margin: 0px;
+			padding-top: 5px;
+			padding-left: 5px;
+		}
+
+		display: flex;
+		flex-direction: column-reverse;
+		height: 150px;
+		width: 100%;
+		background-color: #111111;
+		overflow-y: scroll;
+	}
+}
+
 //:focus { outline: none; }
 
 ul, li {
