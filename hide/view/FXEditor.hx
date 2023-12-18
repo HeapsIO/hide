@@ -1391,6 +1391,8 @@ class FXEditor extends FileView {
 			var inEmitter = shaderElt.getParent(hrt.prefab.fx.Emitter) != null;
 			var params = shader == null ? [] : @:privateAccess shader.shader.data.vars.filter(v -> v.kind == Param);
 			for(param in params) {
+				if (param.qualifiers?.contains(Ignore) ?? false)
+					continue;
 				var item : hide.comp.ContextMenu.ContextMenuItem = switch(param.type) {
 					case TVec(n, VFloat):
 						var color = param.name.toLowerCase().indexOf("color") >= 0;

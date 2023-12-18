@@ -812,6 +812,16 @@ class ShaderEditor extends hide.view.Graph {
 									</div>
 								</div>');
 
+		var internal = new Element('<div><input type="checkbox" name="internal" id="internal"></input><label for="internal">Internal</label><div>').appendTo(content).find("#internal");
+		internal.prop("checked", parameter.internal ?? false);
+
+		internal.on('change', function(e) {
+			beforeChange();
+			parameter.internal = internal.prop("checked");
+			afterChange();
+
+		});
+
 		header.appendTo(elt);
 		content.appendTo(elt);
 		var actionBtns = new Element('<div class="action-btns" ></div>').appendTo(content);

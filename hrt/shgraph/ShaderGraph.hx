@@ -55,6 +55,7 @@ typedef Parameter = {
 	defaultValue : Dynamic,
 	?id : Int,
 	?variable : TVar,
+	?internal: Bool,
 	index : Int
 };
 
@@ -94,7 +95,7 @@ class ShaderGraph extends hrt.prefab.Prefab {
 		var json : Dynamic = {};
 
 		json.parameters = [
-			for (p in parametersAvailable) { id : p.id, name : p.name, type : [p.type.getName(), p.type.getParameters().toString()], defaultValue : p.defaultValue, index : p.index }
+			for (p in parametersAvailable) { id : p.id, name : p.name, type : [p.type.getName(), p.type.getParameters().toString()], defaultValue : p.defaultValue, index : p.index, internal : p.internal }
 		];
 
 		for (graph in graphs) {
@@ -819,7 +820,7 @@ class Graph {
 
 
 		var outsideVars : Map<String, TVar> = [];
-		function getOutsideVar(name: String, original: TVar, isInput: Bool) : TVar {
+		function getOutsideVar(name: String, original: TVar, isInput: Bool, internal: Bool) : TVar {
 			var v : TVar = outsideVars.get(name);
 			if (v == null) {
 				v = Reflect.copy(original);
@@ -829,7 +830,7 @@ class Graph {
 			}
 			if (isInput) {
 				if (graphInputVars.find((o) -> o.v == v) == null) {
-					graphInputVars.pushUnique({v: v, internal: false, defVal: null, isDynamic: false});
+					graphInputVars.pushUnique({v: v, internal: internal, defVal: null, isDynamic: false});
 				}
 			}
 			else {
@@ -1097,11 +1098,18 @@ class Graph {
 								continue;
 							}
 
-							var inVar = getOutsideVar(nodeVar.v.name, nodeVar.v, true);
+							var inVar = getOutsideVar(nodeVar.v.name, nodeVar.v, true, false);
 
 							var shParam = Std.downcast(currentNode.instance, ShaderParam);
 							if (shParam != null) {
 								var param = getParameter(shParam.parameterId);
+								var v = graphInputVars.find((v) -> v.v == inVar);
+								v.internal = param.internal ?? false;
+								if (v.internal) {
+									if (inVar.qualifiers == null)
+										inVar.qualifiers = [];
+									inVar.qualifiers.push(Ignore);
+								}
 								inits.push({variable: inVar, value: param.defaultValue});
 							}
 							replacement = {e: TVar(inVar), p: pos, t:nodeVar.v.type};
@@ -1147,7 +1155,7 @@ class Graph {
 						// 	continue;
 						// }
 						if (outputVar == null) {
-							var v = getOutsideVar(nodeVar.v.name, nodeVar.v, false);
+							var v = getOutsideVar(nodeVar.v.name, nodeVar.v, false, false);
 							var outputVar = {e: TVar(v), p:pos, t: nodeVar.v.type};
 							expr = replaceVar(expr, nodeVar.v, outputVar);
 
