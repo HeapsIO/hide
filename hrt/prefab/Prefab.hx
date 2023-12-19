@@ -167,7 +167,7 @@ class Prefab {
 	/**
 		Save the whole prefab data and its children.
 	**/
-	public final function saveData() : {} {
+	public function saveData() : {} {
 		var obj : Dynamic = save();
 
 		if( children.length > 0 )
@@ -179,7 +179,7 @@ class Prefab {
 	/**
 		Load the whole prefab data and creates its children.
 	**/
-	public final function loadData( v : Dynamic ) {
+	public function loadData( v : Dynamic ) {
 		load(v);
 		if( children.length > 0 )
 			children = [];

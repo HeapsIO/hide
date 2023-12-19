@@ -48,7 +48,7 @@ class FiltersPopup extends hide.comp.Popup {
 }
 
 @:access(hide.view.Prefab)
-private class PrefabSceneEditor extends hide.comp.SceneEditor {
+class PrefabSceneEditor extends hide.comp.SceneEditor {
 	var parent : Prefab;
 
 	public function new(view, data) {
@@ -202,10 +202,19 @@ class Prefab extends FileView {
 	public var properties(get, null):  hide.comp.PropsEditor;
 	function get_properties() return sceneEditor.properties;
 
+
+	function createData() {
+		data = new hrt.prefab.Library();
+	}
+
+	function createEditor() {
+		sceneEditor = new PrefabSceneEditor(this, data);
+	}
+
 	override function onDisplay() {
 		if( sceneEditor != null ) sceneEditor.dispose();
 
-		data = new hrt.prefab.Library();
+		createData();
 		var content = sys.io.File.getContent(getPath());
 		data.loadData(haxe.Json.parse(content));
 		currentSign = ide.makeSignature(content);
@@ -270,7 +279,7 @@ class Prefab extends FileView {
 		layerToolbar = new hide.comp.Toolbar(null,element.find(".layer-buttons"));
 		currentVersion = undo.currentID;
 
-		sceneEditor = new PrefabSceneEditor(this, data);
+		createEditor();
 		element.find(".hide-scenetree").first().append(sceneEditor.tree.element);
 		element.find(".hide-scroll").first().append(properties.element);
 		element.find(".heaps-scene").first().append(scene.element);
