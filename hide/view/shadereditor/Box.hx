@@ -37,6 +37,7 @@ class Box {
 	var hasHeader : Bool = true;
 	var hadToShowInputs : Bool = false;
 	var color : String;
+	var closePreviewBtn : JQuery;
 
 	var element : JQuery;
 	var propertiesGroup : JQuery;
@@ -86,7 +87,23 @@ class Box {
 		if (!hasHeader && color != null) {
 			bg.css("fill", color);
 		}
+
+		closePreviewBtn = editor.foreignObject(element, width / 2 - 16, 0, 32,32);
+		closePreviewBtn.append(new JQuery('<div class="close-preview"><span class="ico"></span></div>'));
+
+		refreshCloseIcon();
+		closePreviewBtn.on("click", (e) -> {
+			e.stopPropagation();
+			node.showPreview = !node.showPreview;
+			refreshCloseIcon();
+		});
+
 		//editor.line(element, width/2, HEADER_HEIGHT, width/2, 0, {display: "none"}).addClass("nodes-separator");
+	}
+
+	function refreshCloseIcon() {
+		closePreviewBtn.find(".ico").toggleClass("ico-angle-down", !nodeInstance.showPreview);
+		closePreviewBtn.find(".ico").toggleClass("ico-angle-up", nodeInstance.showPreview);
 	}
 
 	public function addInput(editor : SVG, name : String, valueDefault : String = null, type : hxsl.Ast.Type) {
@@ -212,7 +229,7 @@ class Box {
 			var propWidth = (p.width() > 0 ? p.width() : this.width);
 			var fObject = editor.foreignObject(prop, (this.width - propWidth) / 2, 5, propWidth, p.height());
 			p.appendTo(fObject);
-			propsHeight += Std.int(p.height()) + 5;
+			propsHeight += Std.int(p.outerHeight()) + 5;
 		}
 
 		refreshHeight();
@@ -237,6 +254,8 @@ class Box {
 			propertiesGroup.attr("transform", 'translate(0, ${HEADER_HEIGHT + height})');
 			propertiesGroup.find(".properties").attr("height", propsHeight);
 		}
+
+		closePreviewBtn.attr("y",HEADER_HEIGHT + height + propsHeight - 16);
 	}
 
 	public function setPosition(x : Float, y : Float) {

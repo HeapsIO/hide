@@ -2165,6 +2165,14 @@ input[type=checkbox]:checked:after {
 .graph-view .heaps-scene svg .hasLink .input-field {
   display: none;
 }
+.graph-view .heaps-scene svg .close-preview {
+  text-align: center;
+  cursor: pointer;
+  color: #999;
+}
+.graph-view .heaps-scene svg .close-preview:hover {
+  color: #FFF;
+}
 .graph-view .heaps-scene svg .input-node,
 .graph-view .heaps-scene svg .output-node {
   fill: #c8c8c8;

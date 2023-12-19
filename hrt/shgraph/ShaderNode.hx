@@ -34,6 +34,7 @@ typedef AliasInfo = {?name : String, ?description : String, ?args : Array<Dynami
 class ShaderNode {
 
 	public var id : Int;
+	public var showPreview : Bool = true;
 
 	public var defaults : Dynamic = {};
 
@@ -176,6 +177,7 @@ class ShaderNode {
 
 	public function loadProperties(props : Dynamic) {
 		var fields = Reflect.fields(props);
+		showPreview = props.showPreview ?? true;
 		for (f in fields) {
 			if (f == "defaults") {
 				defaults = Reflect.field(props, f);
@@ -189,7 +191,7 @@ class ShaderNode {
 	}
 
 	public function saveProperties() : Dynamic {
-		var parameters = {};
+		var parameters : Dynamic = {};
 
 		var thisClass = std.Type.getClass(this);
 		var fields = std.Type.getInstanceFields(thisClass);
@@ -214,6 +216,8 @@ class ShaderNode {
 		if (Reflect.fields(defaults).length > 0) {
 			Reflect.setField(parameters, "defaults", defaults);
 		}
+
+		parameters.showPreview = showPreview;
 
 		return parameters;
 	}

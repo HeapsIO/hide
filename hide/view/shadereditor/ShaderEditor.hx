@@ -1125,6 +1125,9 @@ class ShaderEditor extends hide.view.Graph {
 			select = currentShaderPreviewsDef.inits.find((e) -> e.variable.name == "__sg_PREVIEW_output_select");
 		}
 		for (box => preview in boxToPreview) {
+			preview.visible = box.getInstance().showPreview;
+			if (!preview.visible)
+				continue;
 			if (preview.shaderDef != currentShaderPreviewsDef) {
 				preview.shaderDef = currentShaderPreviewsDef;
 			}
