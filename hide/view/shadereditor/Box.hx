@@ -94,11 +94,15 @@ class Box {
 		refreshCloseIcon();
 		closePreviewBtn.on("click", (e) -> {
 			e.stopPropagation();
-			node.showPreview = !node.showPreview;
-			refreshCloseIcon();
+			setPreviewVisibility(!node.showPreview);
 		});
 
 		//editor.line(element, width/2, HEADER_HEIGHT, width/2, 0, {display: "none"}).addClass("nodes-separator");
+	}
+
+	public function setPreviewVisibility(visible: Bool) {
+		nodeInstance.showPreview = visible;
+		refreshCloseIcon();
 	}
 
 	function refreshCloseIcon() {

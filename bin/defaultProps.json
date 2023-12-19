@@ -85,6 +85,9 @@
 	"key.sceneeditor.scalingMode": "R",
 	"key.sceneeditor.toggleSnap": "X",
 
+	"key.shadergraph.hide" : "H",
+
+
 	// cdb config
 	"cdb.databaseFile" : "data.cdb",
 	"cdb.formulasFile" : "formulas.hx",

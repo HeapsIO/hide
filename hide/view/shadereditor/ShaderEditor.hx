@@ -282,6 +282,7 @@ class ShaderEditor extends hide.view.Graph {
 		keys.register("delete", deleteSelection);
 		keys.register("duplicate", duplicateSelection);
 		keys.register("copy", onCopy);
+		keys.register("shadergraph.hide", onHide);
 		keys.register("paste", onPaste);
 		keys.register("sceneeditor.focus", centerView);
 		keys.register("view.refresh", reloadFullView);
@@ -1125,7 +1126,7 @@ class ShaderEditor extends hide.view.Graph {
 			select = currentShaderPreviewsDef.inits.find((e) -> e.variable.name == "__sg_PREVIEW_output_select");
 		}
 		for (box => preview in boxToPreview) {
-			preview.visible = box.getInstance().showPreview;
+			preview.visible = box.getInstance().shouldShowPreview();
 			if (!preview.visible)
 				continue;
 			if (preview.shaderDef != currentShaderPreviewsDef) {
@@ -1637,6 +1638,19 @@ class ShaderEditor extends hide.view.Graph {
 		var posOffset = new Point(lX(ide.mouseX - 40), lY(ide.mouseY - 20));
 		beforeChange();
 		loadClipboard(posOffset, clipboard);
+		afterChange();
+	}
+
+	function onHide() {
+		if (listOfBoxesSelected.length <= 0)
+			return;
+
+		beforeChange();
+
+		var visiblity = !listOfBoxesSelected[0].getInstance().showPreview;
+		for (box in listOfBoxesSelected) {
+			box.setPreviewVisibility(visiblity);
+		}
 		afterChange();
 	}
 

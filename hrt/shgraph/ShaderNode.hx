@@ -190,6 +190,10 @@ class ShaderNode {
 		}
 	}
 
+	public function shouldShowPreview() {
+		return showPreview;
+	}
+
 	public function saveProperties() : Dynamic {
 		var parameters : Dynamic = {};
 
