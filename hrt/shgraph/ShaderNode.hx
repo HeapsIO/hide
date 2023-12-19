@@ -41,6 +41,10 @@ class ShaderNode {
 		return null;
 	}
 
+	public function getAliases(name: String, group: String, description: String) : Null<Array<AliasInfo>> {
+		return null;
+	}
+
 	static var availableVariables = [
 					{
 						parent: null,

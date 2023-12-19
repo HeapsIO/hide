@@ -15,6 +15,23 @@ class ShaderOutput extends ShaderNode {
 
 	public var generatePreview = false;
 
+	public function new(variable = "_sg_out_color") {
+		this.variable = variable;
+	}
+
+	override public function getAliases(name: String, group: String, description: String) {
+		var aliases = [];
+		for (key => output in hrt.shgraph.ShaderOutput.availableOutputs) {
+			aliases.push({
+				name : name + " - " + output.display,
+				group: group,
+				description: description,
+				args: [key],
+			});
+		}
+		return aliases;
+	}
+
 	public function getVariable() {
 		return availableOutputs.get(variable).v;
 	}

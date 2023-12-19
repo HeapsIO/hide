@@ -23,6 +23,19 @@ class ShaderInput extends ShaderNode {
 		this.variable = variable;
 	}
 
+	override public function getAliases(name: String, group: String, description: String) {
+		var aliases = [];
+		for (key => input in hrt.shgraph.ShaderInput.availableInputs) {
+			aliases.push({
+				name : name + " - " + input.display,
+				group: group,
+				description: description,
+				args: [key],
+			});
+		}
+		return aliases;
+	}
+
 	override function getShaderDef(domain: ShaderGraph.Domain, getNewIdFn : () -> Int, ?inputTypes: Array<Type>):hrt.shgraph.ShaderGraph.ShaderNodeDef {
 		var pos : Position = {file: "", min: 0, max: 0};
 

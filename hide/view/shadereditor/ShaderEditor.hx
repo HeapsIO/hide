@@ -393,36 +393,13 @@ class ShaderEditor extends hide.view.Graph {
 
 			classRepository.push({name : name, group : group, description: description, args: [], cl: node});
 
-			if (node == hrt.shgraph.ShaderInput) {
-				for (key => input in hrt.shgraph.ShaderInput.availableInputs) {
-					classRepository.push({
-						name : name + " - " + input.display,
-						group: group,
-						description: description,
-						args: [key],
-						cl: node
-					});
+			var inst = std.Type.createEmptyInstance(node);
+			var aliases = inst.getAliases(name, group, description);
+			if (aliases != null) {
+				for (alias in aliases) {
+					classRepository.push({name : alias.name ?? name, description: alias.description ?? description, args: alias.args ?? [], cl: node, group: group});
 				}
 			}
-
-			if (node == hrt.shgraph.ShaderOutput) {
-				for (key => output in hrt.shgraph.ShaderOutput.availableOutputs) {
-					classRepository.push({
-						name : name + " - " + output.display,
-						group: group,
-						description: description,
-						args: [key],
-						cl: node
-					});
-				}
-			}
-			// var cl : Dynamic = node;
-			// var aliases : Array<hrt.shgraph.ShaderNode.AliasInfo> = cl.registerAliases(name, description);
-			// if (aliases != null) {
-			// 	for (alias in aliases) {
-			// 		classRepository.push({name : alias.name ?? name, description: alias.description ?? description, args: alias.args ?? [], cl: node, group: group});
-			// 	}
-			// }
 		}
 
 		var libPaths : Array<String> = config.get("shadergraph.libfolders", ["shaders"]);
@@ -525,7 +502,8 @@ class ShaderEditor extends hide.view.Graph {
 			var sp = new h3d.prim.Sphere(1, 128, 128);
 			sp.addNormals();
 			sp.addUVs();
-			obj = new h3d.scene.Mesh(sp);
+			var mesh = new h3d.scene.Mesh(sp);
+			obj = mesh;
 		}
 		if( prefabObj == null )
 			sceneEditor.scene.s3d.addChild(obj);
