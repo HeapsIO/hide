@@ -287,8 +287,6 @@ class FXEditor extends FileView {
 	var sceneEditor : FXSceneEditor;
 	var data : hrt.prefab.fx.BaseFX;
 	var is2D : Bool = false;
-	var tabs : hide.comp.Tabs;
-	var fxprops : hide.comp.PropsEditor;
 
 	var tools : hide.comp.Toolbar;
 	var treePanel : hide.comp.ResizablePanel;
@@ -414,7 +412,7 @@ class FXEditor extends FileView {
 				</div>
 			</div>');
 		tools = new hide.comp.Toolbar(null,element.find(".tools-buttons"));
-		tabs = new hide.comp.Tabs(null,element.find(".tabs"));
+		var tabs = new hide.comp.Tabs(null,element.find(".tabs"));
 		sceneEditor = new FXSceneEditor(this, data);
 		element.find(".hide-scenetree").first().append(sceneEditor.tree.element);
 		element.find(".hide-scroll").first().append(sceneEditor.properties.element);
@@ -467,7 +465,7 @@ class FXEditor extends FileView {
 		element.find(".collapse-btn").click(function(e) {
 			sceneEditor.collapseTree();
 		});
-		fxprops = new hide.comp.PropsEditor(undo,null,element.find(".fx-props"));
+		var fxprops = new hide.comp.PropsEditor(undo,null,element.find(".fx-props"));
 		{
 			var edit = new FXEditContext(this, sceneEditor.context);
 			edit.properties = fxprops;
