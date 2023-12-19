@@ -607,6 +607,12 @@ class Material extends Prefab {
 				diffuseMap = f(diffuseMap);
 				normalMap = f(normalMap);
 				specularMap = f(specularMap);
+
+				if (refMatLib == null)
+					refMatLib = "";
+
+				var refPath = refMatLib.substr(0,refMatLib.lastIndexOf("/"));
+				refMatLib = f(refPath) + refMatLib.substr(refMatLib.lastIndexOf("/"));
 			},
 			allowChildren: function(t) return !Library.isOfType(t, Material),
 		};
