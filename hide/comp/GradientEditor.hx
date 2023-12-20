@@ -23,8 +23,8 @@ class GradientBox extends Component {
 
     function set_value(value: GradientData) {
         // Cleanup previous gradient value from the cache
-        var cache = Gradient.getCache();
-        cache.remove(prevHash);
+        /*var cache = Gradient.getCache();
+        cache.remove(prevHash);*/
 
         innerValue = value;
         prevHash = Gradient.getDataHash(innerValue);

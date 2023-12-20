@@ -1172,32 +1172,18 @@ class Graph {
 								// 	switch ()
 								// }
 
-								var previewExpr : TExpr = {e: TBinop(OpAssign, {e:TVar(outputPreviewPixelColor), p:pos, t:outputPreviewPixelColor.type}, convertToType(outputPreviewPixelColor.type, {e: TVar(v), p: pos, t: v.type})), p: pos, t: outputPreviewPixelColor.type};
+								var previewExpr = makeAssign(makeVar(outputPreviewPixelColor), convertToType(outputPreviewPixelColor.type, makeVar(v)));
 
-								expr = {
-									e: TBlock([
+								expr = makeExpr(TBlock(
+									[
 										expr,
-										{
-											e: TIf(
-												{
-													e: TBinop(
-														OpEq,
-														{e:TVar(outputSelectVar), p:pos, t:TInt},
-														{e:TConst(CInt(currentNode.id + 1)), p:pos, t:TInt}
-													),
-													p:pos,
-													t:TBool,
-												},
-												previewExpr,
-												null
-											),
-											p:pos,
-											t:null
-										}
+										makeIf(makeEq(makeVar(outputSelectVar), makeInt(currentNode.id + 1)),
+											previewExpr,
+										)
 									]),
-									p:pos,
-									t:null
-								};
+									TVoid
+								);
+
 							}
 
 							//graphOutputVars.push({v: nodeVar.v, internal: false});
