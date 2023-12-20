@@ -641,6 +641,11 @@ class Model extends FileView {
 		undo.onChange = function() {};
 
 		if (obj != null) {
+			for (m in this.obj.getMeshes()) {
+				if(!m.primitive.buffer.isDisposed())
+					m.primitive.buffer.dispose();
+			}
+
 			obj.remove();
 
 			if (obj.isMesh()) {
