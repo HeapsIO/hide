@@ -1103,6 +1103,13 @@ class ShaderEditor extends hide.view.Graph {
 	}
 
 	function onMiniPreviewUpdate(dt: Float) {
+
+		@:privateAccess
+		if (sceneEditor?.scene?.s3d?.renderer?.ctx?.time != null) {
+			sceneEditor.scene.s3d.renderer.ctx.time = previewsScene.s3d.renderer.ctx.time;
+		}
+
+
 		var newBoxToPreview : Map<Box, Preview> = [];
 		for (box in listOfBoxes) {
 			var preview = boxToPreview.get(box);
