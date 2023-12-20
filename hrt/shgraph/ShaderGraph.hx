@@ -268,52 +268,14 @@ class ShaderGraph extends hrt.prefab.Prefab {
 				var color = gen.outVars.find((v) -> v.v.name == "_sg_out_color");
 				if (color != null) {
 					var vec3 = TVec(3, VFloat);
-					var finalExpr =
-						{
-							e: TBinop(
-							OpAssign,
-								{
-									e: TSwiz(
-											{
-												e: TVar(pixelColor),
-												p: pos,
-												t: vec3,
-											},
-											[X,Y,Z]
-										),
-									p:pos,
-									t:vec3
-								},
-								{
-									e: TVar(color.v),
-									p: pos,
-									t: vec3
-								}
-							),
-							p: pos,
-							t: vec3
-						};
+
+					var finalExpr = makeAssign(makeExpr(TSwiz(makeVar(pixelColor), [X,Y,Z]), TVec(3, VFloat)), makeVar(color.v));
 
 					if (includePreviews) {
 						if (outputSelectVar == null)
 							throw "WTF";
-						finalExpr = {
-							e: TIf(
-									{
-										e: TBinop(
-											OpEq,
-											{e:TVar(outputSelectVar),p:pos, t:TInt},
-											{e:TConst(CInt(0)), p:pos, t:TInt}
-										),
-										p:pos,
-										t:TInt
-									},
-									finalExpr,
-									null
-								),
-							p: pos,
-							t:null
-						};
+
+						finalExpr = makeIf(makeEq(makeVar(outputSelectVar), makeInt(0)), finalExpr);
 					}
 
 
@@ -323,52 +285,12 @@ class ShaderGraph extends hrt.prefab.Prefab {
 				var alpha = gen.outVars.find((v) -> v.v.name == "_sg_out_alpha");
 				if (alpha != null) {
 					var flt = TFloat;
-					var finalExpr =
-					{
-						e: TBinop(
-						OpAssign,
-							{
-								e: TSwiz(
-										{
-											e: TVar(pixelColor),
-											p: pos,
-											t: flt,
-										},
-										[W]
-									),
-								p:pos,
-								t:flt
-							},
-							{
-								e: TVar(alpha.v),
-								p: pos,
-								t: flt
-							}
-						),
-						p: pos,
-						t: flt
-					};
+
+					var finalExpr = makeAssign(makeExpr(TSwiz(makeVar(pixelColor), [W]), TFloat), makeVar(alpha.v));
 
 					if (includePreviews) {
-						finalExpr = {
-							e: TIf(
-									{
-										e: TBinop(
-											OpEq,
-											{e:TVar(outputSelectVar),p:pos, t:TInt},
-											{e:TConst(CInt(0)), p:pos, t:TInt}
-										),
-										p:pos,
-										t:TInt
-									},
-									finalExpr,
-									null
-								),
-							p: pos,
-							t:null
-						};
+						finalExpr = makeIf(makeEq(makeVar(outputSelectVar), makeInt(0)), finalExpr);
 					}
-
 
 					finalBlock.push(finalExpr);
 				}
