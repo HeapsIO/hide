@@ -21,6 +21,7 @@ typedef GradientData = {
 };
 
 class Gradient {
+
     public var data : GradientData = {
         stops: new Array<ColorStop>(),
         resolution: 32,
@@ -107,6 +108,7 @@ class Gradient {
                 outVector.a = cubicInterpolate(start.a, end.a, c0.a, c3.a, blend);
             default:
                 throw "Unknown interpolation mode";
+
         }
 
         var tmp = func.valueToARGB(outVector, null);
