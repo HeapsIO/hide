@@ -22,6 +22,7 @@ typedef GradientData = {
 
 class Gradient {
 
+
     public var data : GradientData = {
         stops: new Array<ColorStop>(),
         resolution: 32,
