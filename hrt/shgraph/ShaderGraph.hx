@@ -5,6 +5,7 @@ using hxsl.Ast;
 using hide.tools.Extensions.ArrayExtensions;
 using haxe.EnumTools.EnumValueTools;
 using Lambda;
+import hrt.shgraph.AstTools.*;
 
 enum ShaderDefInput {
 	Var(name: String);
@@ -1207,39 +1208,19 @@ class Graph {
 
 						if (i == 0 && includePreviews && outputVar != null) {
 
-							if (true) {
 
-								var finalExpr : TExpr = {e: TBinop(OpAssign, {e:TVar(outputPreviewPixelColor), p:pos, t:outputPreviewPixelColor.type}, convertToType(outputPreviewPixelColor.type, {e: TVar(outputVar), p: pos, t: outputVar.type})), p: pos, t: outputPreviewPixelColor.type};
+							var finalExpr = makeAssign(makeVar(outputPreviewPixelColor), convertToType(outputPreviewPixelColor.type, makeVar(outputVar)));
+							//var finalExpr : TExpr = {e: TBinop(OpAssign, {e:TVar(outputPreviewPixelColor), p:pos, t:outputPreviewPixelColor.type}, convertToType(outputPreviewPixelColor.type, {e: TVar(outputVar), p: pos, t: outputVar.type})), p: pos, t: outputPreviewPixelColor.type};
 
-								var ifExpr : TExpr = {
-									e: TIf(
-											{
-												e: TBinop(
-													OpEq,
-													{e:TVar(outputSelectVar),p:pos, t:TInt},
-													{e:TConst(CInt(currentNode.id + 1)), p:pos, t:TInt}
-												),
-												p:pos,
-												t:TInt
-											},
-											finalExpr,
-											null
-										),
-									p: pos,
-									t:null
-								};
+							var ifExpr = makeIf(
+								makeEq(makeInt(currentNode.id + 1), makeVar(outputSelectVar)),
+								finalExpr
+							);
 
-								expr = {
-									e: TBlock(
-										[
-											expr,
-											ifExpr
-										]
-									),
-									p:pos,
-									t: TVoid
-								}
-							}
+							expr = makeExpr(
+								TBlock([expr,ifExpr]),
+								TVoid,
+							);
 						}
 					}
 				}

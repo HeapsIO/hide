@@ -36,15 +36,6 @@ class ShaderInput extends ShaderNode {
 		return aliases;
 	}
 
-	override function shouldShowPreview() {
-		if (!super.shouldShowPreview())
-			return false;
-
-		var variable : ShaderNode.VariableDecl = availableInputs.get(this.variable);
-		if(variable != null)
-			return variable.v.type != TSampler2D;
-		return false;
-	}
 
 	override function getShaderDef(domain: ShaderGraph.Domain, getNewIdFn : () -> Int, ?inputTypes: Array<Type>):hrt.shgraph.ShaderGraph.ShaderNodeDef {
 		var pos : Position = {file: "", min: 0, max: 0};

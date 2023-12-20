@@ -60,6 +60,16 @@ class ShaderParam extends ShaderNode {
 		return parameters;
 	}
 
+
+	override function shouldShowPreview() {
+		if (!super.shouldShowPreview())
+			return false;
+
+		if(this.variable.type == TSampler2D)
+			return false;
+		return true;
+	}
+
 	override public function build(key : String) : TExpr {
 		if (variable != null){
 			if (variable.qualifiers == null)
