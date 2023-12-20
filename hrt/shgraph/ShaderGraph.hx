@@ -10,6 +10,7 @@ import hrt.shgraph.AstTools.*;
 enum ShaderDefInput {
 	Var(name: String);
 	Const(intialValue: Float);
+	ConstBool(initialValue: Bool);
 }
 
 typedef ShaderNodeDefInVar = {v: TVar, internal: Bool, ?defVal: ShaderDefInput, isDynamic: Bool};
@@ -73,6 +74,7 @@ class ShaderGraph extends hrt.prefab.Prefab {
 
 	static var _ = hrt.prefab.Library.register("shgraph", hrt.shgraph.ShaderGraph, "shgraph");
 
+
 	override public function load(json : Dynamic) : Void {
 
 		graphs = [];
@@ -109,6 +111,36 @@ class ShaderGraph extends hrt.prefab.Prefab {
 
 	public function saveToText() : String {
 		return haxe.Json.stringify(save(), "\t");
+	}
+
+	static public function resolveDynamicType(inputTypes: Array<Type>, inVars: Array<ShaderNodeDefInVar>) : Type {
+		var dynamicType : Type = TFloat;
+		for (i => t in inputTypes) {
+			var targetInput = inVars[i];
+			if (targetInput == null)
+				throw "More input types than inputs";
+			if (!targetInput.isDynamic)
+				continue; // Skip variables not marked as dynamic
+			switch (t) {
+				case null:
+				case TFloat:
+					if (dynamicType == null)
+						dynamicType = TFloat;
+				case TVec(size, t1): // Vec2 always convert to it because it's the smallest vec type
+					switch(dynamicType) {
+						case TFloat, null:
+							dynamicType = t;
+						case TVec(size2, t2):
+							if (t1 != t2)
+								throw "Incompatible vectors types";
+							dynamicType = TVec(size < size2 ? size : size2, t1);
+						default:
+					}
+				default:
+					throw "Type " + t + " is incompatible with Dynamic";
+			}
+		}
+		return dynamicType;
 	}
 
 
@@ -653,16 +685,24 @@ class Graph {
 
 			var def = node.instance.getShaderDef(domain, getNewVarId, data.inputTypes);
 
-			// Don't cache vars while there still are dynamics inputs as getShaderDef
-			// is responsible for dynamic typing resolution
-			for (input in def.inVars) {
-				if (input.isDynamic)
-					return def;
+			var type = ShaderGraph.resolveDynamicType(data.inputTypes, def.inVars);
+
+			// Don't cache vars while there still are dynamics inputs
+			if (type == null)
+				return def;
+
+			for (v in def.inVars) {
+				if (v.isDynamic) {
+					v.v.type = type;
+					v.isDynamic = false;
+				}
 			}
 
-			for (output in def.outVars) {
-				if (output.isDynamic)
-					throw "Output is dynamic while there is no remaining dynamic inputs.";
+			for (v in def.outVars) {
+				if (v.isDynamic) {
+					v.v.type = type;
+					v.isDynamic = false;
+				}
 			}
 
 			return def;
@@ -1047,6 +1087,13 @@ class Graph {
 										defVal = Std.parseFloat(defaultValue) ?? defVal;
 									}
 									replacement = convertToType(nodeVar.v.type, {e: TConst(CFloat(defVal)), p: pos, t:TFloat});
+								case ConstBool(def):
+									var defVal = def;
+									var defaultValue = Reflect.getProperty(currentNode.instance.defaults, nodeVar.v.name);
+									if (defaultValue != null) {
+										defVal = defaultValue == "true";
+									}
+									replacement = makeExpr(TConst(CBool(defVal)), TBool);
 								case Var(name):
 									var tvar = externs.find((v) -> v.name == name);
 									if (tvar == null) {
@@ -1114,7 +1161,7 @@ class Graph {
 							outputDecls.push(outputVar);
 						}
 
-						if (i == 0 && includePreviews && outputVar != null) {
+						if (i == 0 && includePreviews && outputVar != null && currentNode.instance.canHavePreview()) {
 
 
 							var finalExpr = makeAssign(makeVar(outputPreviewPixelColor), convertToType(outputPreviewPixelColor.type, makeVar(outputVar)));

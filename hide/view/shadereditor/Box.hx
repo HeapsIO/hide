@@ -88,15 +88,16 @@ class Box {
 			bg.css("fill", color);
 		}
 
-		closePreviewBtn = editor.foreignObject(element, width / 2 - 16, 0, 32,32);
-		closePreviewBtn.append(new JQuery('<div class="close-preview"><span class="ico"></span></div>'));
+		if (node.canHavePreview()) {
+			closePreviewBtn = editor.foreignObject(element, width / 2 - 16, 0, 32,32);
+			closePreviewBtn.append(new JQuery('<div class="close-preview"><span class="ico"></span></div>'));
 
-		refreshCloseIcon();
-		closePreviewBtn.on("click", (e) -> {
-			e.stopPropagation();
-			setPreviewVisibility(!node.showPreview);
-		});
-
+			refreshCloseIcon();
+			closePreviewBtn.on("click", (e) -> {
+				e.stopPropagation();
+				setPreviewVisibility(!node.showPreview);
+			});
+		}
 		//editor.line(element, width/2, HEADER_HEIGHT, width/2, 0, {display: "none"}).addClass("nodes-separator");
 	}
 
@@ -106,6 +107,8 @@ class Box {
 	}
 
 	function refreshCloseIcon() {
+		if (closePreviewBtn == null)
+			return;
 		closePreviewBtn.find(".ico").toggleClass("ico-angle-down", !nodeInstance.showPreview);
 		closePreviewBtn.find(".ico").toggleClass("ico-angle-up", nodeInstance.showPreview);
 	}
@@ -259,7 +262,7 @@ class Box {
 			propertiesGroup.find(".properties").attr("height", propsHeight);
 		}
 
-		closePreviewBtn.attr("y",HEADER_HEIGHT + height + propsHeight - 16);
+		closePreviewBtn?.attr("y",HEADER_HEIGHT + height + propsHeight - 16);
 	}
 
 	public function setPosition(x : Float, y : Float) {

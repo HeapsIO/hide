@@ -190,8 +190,12 @@ class ShaderNode {
 		}
 	}
 
-	public function shouldShowPreview() {
-		return showPreview;
+	final public function shouldShowPreview() : Bool {
+		return showPreview && canHavePreview();
+	}
+
+	public function canHavePreview() : Bool {
+		return true;
 	}
 
 	public function saveProperties() : Dynamic {

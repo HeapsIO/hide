@@ -54,6 +54,8 @@ class ShaderNodeHxsl extends ShaderNode {
 			var outVars : Array<hrt.shgraph.ShaderGraph.ShaderNodeDefOutVar> = [];
 			var externVars = [];
 
+			var classDynamicVal : Array<String> = cast (cl:Dynamic)._dynamicValues;
+
 			for (tvar in data.vars) {
 					var input = false;
 					var output = false;
@@ -72,7 +74,7 @@ class ShaderNodeHxsl extends ShaderNode {
 								def = Var(defStr);
 							}
 						}
-						inVars.push({v:tvar, internal: false, defVal: def, isDynamic: false});
+						inVars.push({v:tvar, internal: false, defVal: def, isDynamic: classDynamicVal.contains(tvar.name)});
 						// TODO : handle default values
 						input = true;
 					}
@@ -94,53 +96,9 @@ class ShaderNodeHxsl extends ShaderNode {
 					}
 			}
 
-			var classDynamicVal : Array<String> = cast (cl:Dynamic)._dynamicValues;
-
-			// DynamicType is the smallest vector type or float if all inputTypes are floats
-			var dynamicType : Type = null;
-			if (inputTypes != null) {
-				dynamicType = TFloat;
-				for (i => t in inputTypes) {
-					var targetInput = inVars[i];
-					if (targetInput == null)
-						throw "More input types than inputs";
-					if (!classDynamicVal.contains(targetInput.v.name))
-						continue; // Skip variables not marked as dynamic
-					switch (t) {
-						case null:
-						case TFloat:
-							if (dynamicType == null)
-								dynamicType = TFloat;
-						case TVec(size, t1): // Vec2 always convert to it because it's the smallest vec type
-							switch(dynamicType) {
-								case TFloat, null:
-									dynamicType = t;
-								case TVec(size2, t2):
-									if (t1 != t2)
-										throw "Incompatible vectors types";
-									dynamicType = TVec(size < size2 ? size : size2, t1);
-								default:
-							}
-						default:
-							throw "Type " + t + " is incompatible with Dynamic";
-					}
-				}
-			}
-
-
-			for (v in inVars) {
-				if (classDynamicVal.contains(v.v.name)) {
-					v.v.type = dynamicType;
-					if (dynamicType == null)
-						v.isDynamic = true;
-				}
-			}
-
 			for (v in outVars) {
 				if (classDynamicVal.contains(v.v.name)) {
-					v.v.type = dynamicType;
-					if (dynamicType == null)
-						v.isDynamic = true;
+					v.isDynamic = true;
 				}
 			}
 
