@@ -1158,6 +1158,7 @@ class SceneEditor {
 					actionItems = actionItems.concat([
 						{ label : "Isolate", click : function() isolate(curEdit.elements), keys : view.config.get("key.sceneeditor.isolate") },
 						{ label : "Group", enabled : curEdit != null && canGroupSelection(), click : groupSelection, keys : view.config.get("key.group") },
+						{ label : "Export", enabled : curEdit != null && canExportSelection(), click : exportSelection, keys : null },
 					]);
 			}
 
@@ -2755,6 +2756,35 @@ class SceneEditor {
 				return false;
 
 		return true;
+	}
+
+	function canExportSelection() {
+		var elts = curEdit.rootElements;
+		if(elts.length == 0)
+			return false;
+
+		// Check if every selected elements has a mesh
+		for (e in elts) {
+			if (false)
+				return false;
+		}
+
+		// Only allow grouping of sibling elements
+		var parent = elts[0].parent;
+		for(e in elts)
+			if(e.parent != parent)
+				return false;
+
+		return true;
+	}
+
+	function exportSelection() {
+		// Handle the export of selection into a fbx file
+		Ide.inst.chooseFileSave("Export.fbx", function(filePath) {
+			var out = new haxe.io.BytesOutput();
+			new hxd.fmt.fbx.Writer(out).write(null);
+			sys.io.File.saveBytes(filePath, out.getBytes());
+		});
 	}
 
 	function groupSelection() {
