@@ -779,28 +779,6 @@ class ShaderEditor extends hide.view.Graph {
 				}
 				typeName = "Texture";
 
-				var texWrap = new Element('<div><select name="texWrap" id="texwrap"></select><label for="texWrap">Texture Wrap</label></div>').appendTo(defaultValue).find("#texwrap");
-				for (i => wrap in ShaderGraph.wraps) {
-					texWrap.append(new Element('<option value="$i">$wrap</option>'));
-					if (shaderGraph.getParameterSetting(parameter.id, "wrap") == wrap) {
-						texWrap.val(""+wrap);
-					}
-				}
-				texWrap.on("change", (e) -> {
-					shaderGraph.setParameterSetting(parameter.id, "wrap", texWrap.val());
-				});
-
-				var texfilter = new Element('<div><select name="texfilter" id="texfilter"></select><label for="texfilter">Texture filter</label></div>').appendTo(defaultValue).find("#texfilter");
-				for (i => filter in ShaderGraph.filters) {
-					texfilter.append(new Element('<option value="$i">$filter</option>'));
-					if (shaderGraph.getParameterSetting(parameter.id, "filter") == filter) {
-						texfilter.val(""+filter);
-					}
-				}
-				texfilter.on("change", (e) -> {
-					shaderGraph.setParameterSetting(parameter.id, "filter", texfilter.val());
-				});
-
 			default:
 		}
 
