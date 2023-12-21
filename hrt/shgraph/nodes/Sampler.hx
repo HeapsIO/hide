@@ -2,10 +2,29 @@ package hrt.shgraph.nodes;
 
 using hxsl.Ast;
 
+
+enum abstract TexFilter(String) from String to String {
+	var Nearest;
+	var Linear;
+}
+
+var filters = [Nearest, Linear];
+
+enum abstract TexWrap(String) from String to String {
+	var Clamp;
+	var Repeat;
+}
+
+var wraps = [Clamp, Repeat];
+
 @name("Sample Texture 2D")
 @description("Get color from texture and UV")
 @group("Property")
 class Sampler extends ShaderNodeHxsl {
+
+	@prop() var filter : TexFilter = Linear;
+	@prop() var wrap : TexWrap = Repeat;
+
 
 	static var SRC = {
 		@sginput var texture : Sampler2D;
@@ -16,15 +35,104 @@ class Sampler extends ShaderNodeHxsl {
 		@sgoutput var B : Float;
 		@sgoutput var A : Float;
 
+		@sgconst var wrap : Int;
+		@sgconst var filter : Int;
+
+
 
 		function fragment() {
-			RGBA = texture.get(uv);
+			var uv2 = uv;
+			if (wrap == 0) {
+				var size = texture.size();
+				uv2 = saturate(uv2);
+				uv2 = clamp(uv2, 0.5 / size, (size - vec2(0.5)) / size);
+			}
+
+			if (filter == 0) {
+				var size = texture.size();
+				uv2 = (floor( size * uv2 ) + 0.5) / size ;
+			}
+			RGBA = texture.get(uv2);
 			R = RGBA.r;
 			G = RGBA.g;
 			B = RGBA.b;
 			A = RGBA.a;
 		}
 	}
+
+	override function getConstValue(name: String) : Null<Int> {
+		switch (name) {
+			case "wrap":
+				return wrap == Clamp ? 0 : 1;
+			case "filter":
+				return filter == Nearest ? 0 : 1;
+			default:
+				return null;
+		}
+	}
+
+
+	#if editor
+	override public function getPropertiesHTML(width : Float) : Array<hide.Element> {
+		var elements = super.getPropertiesHTML(width);
+
+
+		{
+			var element = new hide.Element('<div style="width: ${width * 0.8}px; height: 40px"></div>');
+			element.append('<span>Wrap</span>');
+			element.append(new hide.Element('<select id="wrap"></select>'));
+
+			if (this.wrap == null) {
+				this.wrap = wraps[1];
+			}
+			var input = element.children("#wrap");
+			var indexOption = 0;
+			for (i => currentWrap in wraps) {
+				input.append(new hide.Element('<option value="${i}">${currentWrap}</option>'));
+				if (this.wrap == currentWrap) {
+					input.val(i);
+				}
+				indexOption++;
+			}
+
+			input.on("change", function(e) {
+				var value = input.val();
+				this.wrap = wraps[value];
+			});
+
+			elements.push(element);
+		}
+
+		{
+			var element = new hide.Element('<div style="width: ${width * 0.8}px; height: 40px"></div>');
+			element.append('<span>Filter</span>');
+			element.append(new hide.Element('<select id="filter"></select>'));
+
+			if (this.filter == null) {
+				this.filter = filters[1];
+			}
+			var input = element.children("#filter");
+			var indexOption = 0;
+			for (i => currentfilter in filters) {
+				input.append(new hide.Element('<option value="${i}">${currentfilter}</option>'));
+				if (this.filter == currentfilter) {
+					input.val(i);
+				}
+				indexOption++;
+			}
+
+			input.on("change", function(e) {
+				var value = input.val();
+				this.filter = filters[value];
+			});
+
+			elements.push(element);
+		}
+
+
+		return elements;
+	}
+	#end
 
 	// @input("Texture") var texture = SType.Sampler;
 	// @input("UV") var uv = SType.Vec2;

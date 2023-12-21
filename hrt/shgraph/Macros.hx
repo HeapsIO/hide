@@ -31,6 +31,7 @@ class Macros {
 
 							var inVars : Array<String> = [];
 							var outVars : Array<String> = [];
+							var constVars : Array<String> = [];
 							var defValues : Array<String> = [];
 							var dynamicValues : Array<String> = [];
 
@@ -98,6 +99,16 @@ class Macros {
 													default:
 														throw "sgoutput must be used with variables only";
 												}
+											case "sgconst":
+												switch(subexpr.expr) {
+													case EVars(vars):
+														for (v in vars) {
+															constVars.push(v.name);
+														}
+														e.expr = subexpr.expr;
+													default:
+														throw "sgconst must be used with variables only";
+												}
 											default:
 										}
 									default:
@@ -144,6 +155,8 @@ class Macros {
 							fields.push(makeField("_outVars", outVars));
 							fields.push(makeField("_defValues", defValues));
 							fields.push(makeField("_dynamicValues", dynamicValues));
+							fields.push(makeField("_constVars", constVars));
+
 
 						} catch( e : hxsl.Ast.Error ) {
 							fields.remove(f);

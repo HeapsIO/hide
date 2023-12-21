@@ -102,10 +102,36 @@ class ShaderNodeHxsl extends ShaderNode {
 				}
 			}
 
+			var classConstVars : Array<String> = cast (cl:Dynamic)._constVars;
+
+			// Const replacement
+			for (const in classConstVars) {
+				var value = getConstValue(const);
+				if (value == null)
+					throw "unhandled const value " + const;
+
+				function patchExprConst(expr : TExpr) {
+					switch (expr.e) {
+						case TVar(v):
+							if (v.name == const) {
+								expr.e = TConst(CInt(value));
+							}
+						default:
+							expr.map(patchExprConst);
+					}
+					return expr;
+				}
+				expr.map(patchExprConst);
+			}
+
 			def = {expr: expr, inVars: inVars, outVars: outVars, externVars: externVars, inits: [], functions: funs};
 			nodeCache.set(className, def);
 		}
 
 		return def;
+	}
+
+	function getConstValue(name: String) : Null<Int> {
+		return null;
 	}
 }

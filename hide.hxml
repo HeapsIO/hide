@@ -12,3 +12,4 @@ common.hxml
 --macro include("hrt.shgraph.nodes")
 -dce no
 -debug
+#-D shader_debug_dump

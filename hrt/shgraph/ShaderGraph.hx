@@ -58,6 +58,7 @@ typedef Parameter = {
 	?id : Int,
 	?variable : TVar,
 	?internal: Bool,
+	?settings: Dynamic,
 	index : Int
 };
 
@@ -65,6 +66,35 @@ enum Domain {
 	Vertex;
 	Fragment;
 }
+
+enum abstract TexFilter(String) from String to String {
+	var Nearest;
+	var Linear;
+}
+
+var filters = [Nearest, Linear];
+
+function TexFilterToFilter(t: TexFilter) : h3d.mat.Data.Filter {
+	return switch (t) {
+		case Nearest: Nearest;
+		case Linear: Linear;
+	}
+}
+
+enum abstract TexWrap(String) from String to String {
+	var Clamp;
+	var Repeat;
+}
+
+var wraps = [Clamp, Repeat];
+
+function TexWrapToWrap(t: TexWrap) : h3d.mat.Data.Wrap {
+	return switch (t) {
+		case Clamp: Clamp;
+		case Repeat: Repeat;
+	}
+}
+
 
 class ShaderGraph extends hrt.prefab.Prefab {
 
@@ -464,6 +494,25 @@ class ShaderGraph extends hrt.prefab.Prefab {
 			}
 		}
 		return false;
+	}
+
+	public function getParameterSetting(id : Int, name: String) : Null<Dynamic> {
+		var p = parametersAvailable.get(id);
+		if (p?.settings != null) {
+			return Reflect.getProperty(p.settings, name);
+		}
+		return null;
+	}
+
+	public function setParameterSetting(id : Int, name: String, value:Dynamic) {
+		var p = parametersAvailable.get(id);
+		if (p == null)
+			throw "invalid parameter";
+
+		if (p?.settings == null) {
+			p.settings = {};
+		}
+		Reflect.setField(p.settings, name, value);
 	}
 
 	public function removeParameter(id : Int) {
