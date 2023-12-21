@@ -798,29 +798,9 @@ class ShaderEditor extends hide.view.Graph {
 			beforeChange();
 			parameter.internal = internal.prop("checked");
 			afterChange();
-
 		});
 
-		header.appendTo(elt);
-		content.appendTo(elt);
-		var actionBtns = new Element('<div class="action-btns" ></div>').appendTo(content);
-		var deleteBtn = new Element('<input type="button" value="Delete" />');
-		deleteBtn.on("click", function() {
-			for (b in listOfBoxes) {
-				var shaderParam = Std.downcast(b.getInstance(), ShaderParam);
-				if (shaderParam != null && shaderParam.parameterId == parameter.id) {
-					error("This parameter is used in the graph.");
-					return;
-				}
-			}
-			beforeChange();
-			shaderGraph.removeParameter(parameter.id);
-			afterChange();
-			elt.remove();
-		});
-		deleteBtn.appendTo(actionBtns);
-
-		var perInstanceCb = new Element('<div><span>PerInstance</span><input type="checkbox"/><div>');
+		var perInstanceCb = new Element('<div><input type="checkbox" name="perinstance"/><label for="perinstance">Per instance</label><div>');
 		var shaderParams : Array<ShaderParam> = [];
 		for (b in listOfBoxes) {
 			var tmpShaderParam = Std.downcast(b.getInstance(), ShaderParam);
@@ -842,6 +822,27 @@ class ShaderEditor extends hide.view.Graph {
 			compileShader();
 		});
 		perInstanceCb.appendTo(content);
+
+		header.appendTo(elt);
+		content.appendTo(elt);
+		var actionBtns = new Element('<div class="action-btns" ></div>').appendTo(content);
+		var deleteBtn = new Element('<input type="button" value="Delete" />');
+		deleteBtn.on("click", function() {
+			for (b in listOfBoxes) {
+				var shaderParam = Std.downcast(b.getInstance(), ShaderParam);
+				if (shaderParam != null && shaderParam.parameterId == parameter.id) {
+					error("This parameter is used in the graph.");
+					return;
+				}
+			}
+			beforeChange();
+			shaderGraph.removeParameter(parameter.id);
+			afterChange();
+			elt.remove();
+		});
+		deleteBtn.appendTo(actionBtns);
+
+
 
 		var inputTitle = elt.find(".input-title");
 		inputTitle.on("click", function(e) {

@@ -1951,6 +1951,12 @@ input[type=checkbox]:checked:after {
   font-size: 13px;
   padding-right: 5px;
 }
+.graph-view .tabs .tab .hide-block #parametersList .parameter .content {
+  padding: 4px;
+}
+.graph-view .tabs .tab .hide-block #parametersList .parameter .content > div {
+  margin-top: 2px;
+}
 .graph-view .tabs .tab .hide-block #parametersList .parameter > span {
   font-size: 12px;
 }
