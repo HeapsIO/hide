@@ -144,6 +144,9 @@ class Material extends Prefab {
 	}
 
 	function applyOverrides() {
+		if (this.overrides == null || this.overrides.length == 0)
+			return;
+
 		// We want to break the reference between props of the current material and props of the material we loaded
 		var newProps = {};
 		var newMaterialSetupObj = {};
