@@ -108,13 +108,6 @@ class ShaderInput extends ShaderNode {
 					t: flt
 				};
 		}
-		else if (variable.v.name == "projectedNormal") {
-			inVar.name == "transformedNormal";
-
-			//var expr = new MacroParser().parseExpr(macro var transformedNormal = vec4(transformedNormal, 1) * camera.viewProj;);
-			//final
-		}
-
 
 		return {expr: finalExpr, inVars: [{v:inVar, internal: true, isDynamic: false}], outVars:[{v:output, internal: false, isDynamic: false}], externVars: [], inits: []};
 	}
@@ -137,8 +130,12 @@ class ShaderInput extends ShaderNode {
 		"relativePosition" => {display: "Position (Object Space)", v: { parent: null, id: 0, kind: Local, name: "relativePosition", type: TVec(3, VFloat) }},
 		"transformedPosition" => {display: "Position (World Space)", v: { parent: null, id: 0, kind: Local, name: "transformedPosition", type: TVec(3, VFloat) }},
 		"projectedPosition" => {display: "Position (View Space)", v: { parent: null, id: 0, kind: Local, name: "projectedPosition", type: TVec(4, VFloat) }},
+		"normal" => {display: "Normal (Object Space)", v: { parent: null, id: 0, kind: Local, name: "input.normal", type: TVec(3, VFloat) }},
 		"transformedNormal" => {display: "Normal (World Space)", v: { parent: null, id: 0, kind: Local, name: "transformedNormal", type: TVec(3, VFloat) }},
-
+		"metalness" => {display: "Metalness", v: {parent: null,id: 0,kind: Local,name: "metalness",type: TFloat}},
+		"roughness" => {display: "Roughness", v: {parent: null, id: 0, kind: Local, name: "roughness", type: TFloat}},
+		"emissive" => {display: "Emissive", v: {parent: null, id: 0, kind: Local, name: "emissive", type: TFloat}},
+		"occlusion" => {display: "Occlusion", v: {parent: null, id: 0, kind: Local, name: "occlusion", type: TFloat}},
 		// "position" => {display: "Source Position", v: { parent: null, id: 0, kind: Input, name: "input.position", type: TVec(3, VFloat) }},
 		// "color" => 	{display: "Source Vertex Color", v: { parent: null, id: 0, kind: Input, name: "input.color", type: TVec(3, VFloat) }},
 		"uv" => {display: "Source UV", v: { parent: null, id: 0, kind: Input, name: "input.uv", type: TVec(2, VFloat) }},

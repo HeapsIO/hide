@@ -1063,6 +1063,9 @@ class Graph {
 							}
 
 							var inVar = getOutsideVar(nodeVar.v.name, nodeVar.v, true, false);
+							if (inVar.name == "input.normal" && includePreviews) {
+								inVar.name = "fakeNormal";
+							}
 
 							var shParam = Std.downcast(currentNode.instance, ShaderParam);
 							if (shParam != null) {

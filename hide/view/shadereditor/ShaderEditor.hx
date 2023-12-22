@@ -43,11 +43,14 @@ class PreviewShaderBase extends hxsl.Shader {
 		var transformedPosition : Vec3;
 		var projectedPosition : Vec4;
 		var transformedNormal : Vec3;
+		var fakeNormal : Vec3;
+
 
 		function __init__() {
 			relativePosition = vec3(input.position, 0.0);
 			transformedPosition = vec3(input.position, 0.0);
 			projectedPosition = vec4(input.position, 0.0, 0.0);
+			fakeNormal = vec3(0,0,-1);
 			transformedNormal = vec3(0,0,-1);
 		}
 	}
@@ -81,6 +84,8 @@ class Preview extends h2d.Bitmap {
 		this.blendMode = None;
 		var shaderBase = new PreviewShaderBase();
 		addShader(shaderBase);
+		var props = new h3d.shader.pbr.PropsValues();
+		addShader(props);
 	}
 
 }
