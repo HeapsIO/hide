@@ -132,10 +132,13 @@ class ShaderInput extends ShaderNode {
 		"projectedPosition" => {display: "Position (View Space)", v: { parent: null, id: 0, kind: Local, name: "projectedPosition", type: TVec(4, VFloat) }},
 		"normal" => {display: "Normal (Object Space)", v: { parent: null, id: 0, kind: Local, name: "input.normal", type: TVec(3, VFloat) }},
 		"transformedNormal" => {display: "Normal (World Space)", v: { parent: null, id: 0, kind: Local, name: "transformedNormal", type: TVec(3, VFloat) }},
+		"depth" => {display: "Depth", v: {parent: null, id: 0, kind: Local, name: "depth", type: TFloat}},
+
 		"metalness" => {display: "Metalness", v: {parent: null,id: 0,kind: Local,name: "metalness",type: TFloat}},
 		"roughness" => {display: "Roughness", v: {parent: null, id: 0, kind: Local, name: "roughness", type: TFloat}},
 		"emissive" => {display: "Emissive", v: {parent: null, id: 0, kind: Local, name: "emissive", type: TFloat}},
 		"occlusion" => {display: "Occlusion", v: {parent: null, id: 0, kind: Local, name: "occlusion", type: TFloat}},
+
 		// "position" => {display: "Source Position", v: { parent: null, id: 0, kind: Input, name: "input.position", type: TVec(3, VFloat) }},
 		// "color" => 	{display: "Source Vertex Color", v: { parent: null, id: 0, kind: Input, name: "input.color", type: TVec(3, VFloat) }},
 		"uv" => {display: "Source UV", v: { parent: null, id: 0, kind: Input, name: "input.uv", type: TVec(2, VFloat) }},

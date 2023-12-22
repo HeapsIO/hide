@@ -44,9 +44,11 @@ class PreviewShaderBase extends hxsl.Shader {
 		var projectedPosition : Vec4;
 		var transformedNormal : Vec3;
 		var fakeNormal : Vec3;
+		var depth : Float;
 
 
 		function __init__() {
+			depth = 0.0;
 			relativePosition = vec3(input.position, 0.0);
 			transformedPosition = vec3(input.position, 0.0);
 			projectedPosition = vec4(input.position, 0.0, 0.0);
