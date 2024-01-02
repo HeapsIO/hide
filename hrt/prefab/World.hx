@@ -8,14 +8,13 @@ typedef ChunkData = {
 }
 
 @:access(h3d.scene.HierarchicalWorld)
-class World extends Library {
+class World extends Object3D {
 
 	#if editor
-	var editor : hide.view.World.WorldSceneEditor;
+	public var editor : hide.comp.SceneEditor;
 	#end
 
 	var size : Int = 64;
-	var bounds : h2d.col.Bounds;
 	@:s public var worldUnit : Int = 1;
 	@:s public var chunkGrid : Int = 32;
 	public var chunkSize(get, null) : Int;
@@ -33,8 +32,9 @@ class World extends Library {
 	}
 	var datDir : String;
 
-	public function new() {
-		super();
+	public function new(?parent) {
+		super(parent);
+		type = "world";
 		chunkPrefabs = [];
 	}
 
@@ -81,17 +81,7 @@ class World extends Library {
 	}
 
 	function loadDataFromFiles() {
-		bounds = new h2d.col.Bounds();
-		var tmp = new h2d.col.Point();
 		for ( data in chunkData ) {
-			tmp.load(getChunkPos(data));
-			var chunkSize = getChunkSizeAtLevel(data.level);
-			tmp.x += chunkSize * 0.5;
-			tmp.y += chunkSize * 0.5;
-			bounds.addPoint(tmp);
-			tmp.x -= chunkSize;
-			tmp.y -= chunkSize;
-			bounds.addPoint(tmp);
 			var id = data.id;
 			var path = datDir + id + "/content.prefab";
 			var p = hxd.res.Loader.currentInstance.load(path).toPrefab().load();
@@ -111,6 +101,36 @@ class World extends Library {
 				c.parent = this; // beware, this line remove c from c.parent.children
 			}
 		}
+	}
+
+	function initBounds() {
+		// As dat chunk can exist without associated content (such as terrain), check all existing dat folders to extends bounds.
+		#if editor
+		var ide = hide.Ide.inst;
+		var datDir = ide.getPath(datDir);
+		#else
+		var datDir = "res/" + datDir;
+		#end
+		var bounds = new h2d.col.Bounds();
+		if ( !sys.FileSystem.exists(datDir) )
+			return;
+		for ( dir in sys.FileSystem.readDirectory(datDir) ) {
+			try {
+				var parts = dir.split("_");
+				var I = Std.parseInt(parts[1]);
+				var J = Std.parseInt(parts[2]);
+
+				var tmp = new h2d.col.Point((I + 0.5) * chunkSize, (J + 0.5) * chunkSize);
+				tmp.x += chunkSize * 0.5;
+				tmp.y += chunkSize * 0.5;
+				bounds.addPoint(tmp);
+				tmp.x -= chunkSize;
+				tmp.y -= chunkSize;
+				bounds.addPoint(tmp);
+			} catch (e : Dynamic) {
+				continue;
+			}
+		}
 		var maxX = Math.max(Math.abs(bounds.xMin), Math.abs(bounds.xMax));
 		var maxY = Math.max(Math.abs(bounds.yMin), Math.abs(bounds.yMax));
 		size = Math.ceil(Math.max(maxX, maxY) / worldUnit);
@@ -126,7 +146,7 @@ class World extends Library {
 		var chunkSize = getChunkSizeAtLevel(level);
 		var I = Math.floor(x / chunkSize) + 1;
 		var J = Math.floor(y / chunkSize) + 1;
-		var id = 'L${level}_${I >= 0 ? '+' : ''}${Std.string(I)}_${J >= 0 ? '+' : ''}${Std.string(J)}';
+		var id = 'L${level}_${I >= 0 ? '+' : ''}${I}_${J >= 0 ? '+' : ''}${J}';
 		return {id : id, level : level, I : I, J : J};
 	}
 
@@ -228,25 +248,31 @@ class World extends Library {
 	}
 
 	function isStreamable(p : hrt.prefab.Prefab) {
-		return Std.isOfType(p, hrt.prefab.Object3D) && p.name != "immediateLoading";
+		return Std.isOfType(p, hrt.prefab.Object3D);
 	}
 
-	function createObject(ctx : hrt.prefab.Context, data : h3d.scene.HierarchicalWorld.WorldData) : h3d.scene.HierarchicalWorld {
+	function createObjectFromData(ctx : hrt.prefab.Context, data : h3d.scene.HierarchicalWorld.WorldData) : h3d.scene.HierarchicalWorld {
 		return new h3d.scene.HierarchicalWorld(ctx.local3d, data);
 	}
 
 	override function make(ctx : hrt.prefab.Context) {
+		if( !enabled )
+			return ctx;
+		var fromRef = #if editor ctx.shared.parent != null #else true #end;
+		if (fromRef && editorOnly #if editor || inGameOnly #end)
+			return ctx;
 		ctx = ctx.clone(this);
 		initPath(ctx);
 		loadDataFromFiles();
+		initBounds();
 		var d = { size : size,
 			x : 0,
 			y : 0,
 			depth : 0,
 			maxDepth : depth,
-			onCreate : onCreateChunk
+			onCreate : onCreateChunk,
 		};
-		var worldObj = createObject(ctx, d);
+		var worldObj = createObjectFromData(ctx, d);
 		ctx.local3d = worldObj;
 		for( c in children ) {
 			if ( !isStreamable(c) )
@@ -266,6 +292,7 @@ class World extends Library {
 
 	#if editor
 	override function edit( ctx : hide.prefab.EditContext ) {
+		super.edit(ctx);
 		var props = new hide.Element('
 		<div class="group" name="World">
 			<dl>
@@ -294,5 +321,5 @@ class World extends Library {
 	}
 	#end
 
-	static var _ = Library.register("world", World, "world");
+	static var _ = Library.register("world", World);
 }

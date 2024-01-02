@@ -1352,6 +1352,9 @@ class SceneEditor {
 				lastRenderProps = r;
 				break;
 			}
+		var worlds = getAllWithRefs(sceneData, hrt.prefab.World);
+		for ( w in worlds )
+			w.editor = this;
 
 		if( lastRenderProps == null )
 			lastRenderProps = renderProps[0];
@@ -2141,8 +2144,13 @@ class SceneEditor {
 			p = p.parent;
 		}
 		var ctx = elt.make(parentCtx);
-		for( p in elt.flatten() )
+		for( p in elt.flatten() ) {
 			makeInteractive(p, ctx.shared);
+			if ( p.type == "world" ) {
+				var world = Std.downcast(p, hrt.prefab.World);
+				world.editor = this;
+			}
+		}
 		scene.init(ctx.local3d);
 	}
 
