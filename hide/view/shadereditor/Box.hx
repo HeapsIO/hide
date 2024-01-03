@@ -236,8 +236,10 @@ class Box {
 			var propWidth = (p.width() > 0 ? p.width() : this.width);
 			var fObject = editor.foreignObject(prop, (this.width - propWidth) / 2, 5, propWidth, p.height());
 			p.appendTo(fObject);
-			propsHeight += Std.int(p.outerHeight()) + 5;
+			propsHeight += Std.int(p.outerHeight()) + 1;
 		}
+
+		propsHeight += 10;
 
 		refreshHeight();
 	}

@@ -30,10 +30,6 @@ class Sampler extends ShaderNodeHxsl {
 		@sginput var texture : Sampler2D;
 		@sginput(calculatedUV) var uv : Vec2;
 		@sgoutput var RGBA : Vec4;
-		@sgoutput var R : Float;
-		@sgoutput var G : Float;
-		@sgoutput var B : Float;
-		@sgoutput var A : Float;
 
 		@sgconst var wrap : Int;
 		@sgconst var filter : Int;
@@ -53,10 +49,6 @@ class Sampler extends ShaderNodeHxsl {
 				uv2 = (floor( size * uv2 ) + 0.5) / size ;
 			}
 			RGBA = texture.get(uv2);
-			R = RGBA.r;
-			G = RGBA.g;
-			B = RGBA.b;
-			A = RGBA.a;
 		}
 	}
 
