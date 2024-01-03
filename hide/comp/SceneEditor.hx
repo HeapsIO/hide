@@ -2781,8 +2781,10 @@ class SceneEditor {
 	function exportSelection() {
 		// Handle the export of selection into a fbx file
 		Ide.inst.chooseFileSave("Export.fbx", function(filePath) {
+			var mesh = curEdit.rootObjects[0].getMeshes()[0];
+
 			var out = new haxe.io.BytesOutput();
-			new hxd.fmt.fbx.Writer(out).write(null);
+			new hxd.fmt.fbx.Writer(out).write(mesh);
 			sys.io.File.saveBytes(filePath, out.getBytes());
 		});
 	}
