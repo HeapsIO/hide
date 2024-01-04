@@ -161,6 +161,13 @@ class PrefabSceneEditor extends hide.comp.SceneEditor {
 			label : "Recents",
 			menu : recents,
 		});
+
+		newItems.push({label: null, isSeparator: true});
+
+		var shaders = newItems.find(i -> i.label == "Shader");
+		newItems.remove(shaders);
+		splitMenu(newItems, "Shader", shaders.menu);
+
 		return newItems;
 	}
 

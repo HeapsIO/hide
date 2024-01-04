@@ -828,6 +828,32 @@ class SceneEditor {
 		});
 	}
 
+	function splitMenu(menu : Array<hide.comp.ContextMenu.ContextMenuItem>, name : String, entries : Array<hide.comp.ContextMenu.ContextMenuItem>, len : Int = 30) {
+		entries.sort((a,b) -> Reflect.compare(a.label, b.label));
+
+		var pos = 0;
+		while(true) {
+			var arr = entries.slice(pos, pos+len);
+			if (arr.length == 0) {
+				break;
+			}
+			var label = name;
+			var firstChar = arr[0].label.charAt(0);
+			var endChar = (entries.length < pos+len) ? "Z" : arr[arr.length-1].label.charAt(0);
+
+			var label = name + " " + firstChar + "-" + endChar;
+			if (pos == 0 && arr.length < len) {
+				label = name;
+			}
+			menu.push({
+				label: label,
+				menu: arr
+			});
+
+			pos += len;
+		}
+	}
+
 	function getTagMenu(p: PrefabElement) : Array<hide.comp.ContextMenu.ContextMenuItem> {
 		var tags = getAvailableTags(p);
 		if(tags == null) return null;
