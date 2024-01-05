@@ -746,7 +746,7 @@ class Model extends FileView {
 
 		tools.addSeparator();
 
-		tools.addPopup(null, "Render Props", (e) -> new hide.comp.SceneEditor.RenderPropsPopup(null, e, sceneEditor, true, true), null);
+		tools.addPopup(null, "Render Props", (e) -> new hide.comp.SceneEditor.RenderPropsPopup(null, e, this, sceneEditor, true, true), null);
 
 		tools.addSeparator();
 

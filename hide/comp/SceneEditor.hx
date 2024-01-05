@@ -453,7 +453,7 @@ class HelpPopup extends Popup {
 class RenderPropsPopup extends Popup {
 	var editor:SceneEditor;
 
-	public function new(?parent:Element, ?root:Element, editor:SceneEditor, isSearchable = false, canChangeCurrRp = false) {
+	public function new(?parent:Element, ?root:Element, view:hide.view.FileView, editor:SceneEditor, isSearchable = false, canChangeCurrRp = false) {
 		super(parent, root, isSearchable);
 		this.editor = editor;
 
@@ -476,7 +476,7 @@ class RenderPropsPopup extends Popup {
 			return;
 		}
 
-		var renderProps = hide.Ide.inst.currentConfig.get("scene.renderProps");
+		var renderProps = view.config.getLocal("scene.renderProps");
 
 		if (renderProps is String) {
 			var s_renderProps:String = cast renderProps;
