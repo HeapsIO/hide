@@ -690,7 +690,7 @@ class ModelLibrary extends Prefab {
 			convert.srcBytes = hxd.File.getBytes(convert.srcPath);
 			convert.convert();
 			var success = false;
-			for ( fmt in ["BC1", "BC3"] ) {
+			for ( fmt in ["BC1", "BC3", "dds_BC1", "dds_BC3"] ) {
 				try {
 					sys.FileSystem.rename(datDir + name + "_" + fmt + ".dds", convert.srcPath);
 					success = true;
@@ -796,7 +796,7 @@ class ModelLibrary extends Prefab {
 						batch.fixedPosition = true;
 					}
 					batch.cullingCollider = bounds;
-					batch.name = "modelLibrary"+"_"+(bk.configIndex + indexOffset);
+					batch.name = "modelLibrary_"+(bk.configIndex + indexOffset);
 					batch.material.mainPass.addShader(shader);
 					if ( debug ) batches.push(batch);
 					batch.material.props = materialConfigs[bk.configIndex];
@@ -834,6 +834,7 @@ class ModelLibrary extends Prefab {
 			clearOptimized(obj);
 	}
 
+	final reg = ~/[0-9]+/g;
 	function optimizeRec( obj : h3d.scene.Object, out : Array<SubMeshes> ) {
 		if( !obj.visible )
 			return;
@@ -862,12 +863,10 @@ class ModelLibrary extends Prefab {
 			var prim = Std.downcast(mesh.primitive, h3d.prim.HMDModel);
 			if( prim != null ) {
 				var mat = mesh.getMaterials(false);
-
 				mesh.culled = true;
 				for( i in 0...mat.length ) {
 					var matName = mat[i].name;
-					for ( i in 0... 9)
-						matName = matName.split('${i}').join("");
+					matName = reg.replace(matName,'');
 					var bk = bakedMaterials.get(@:privateAccess prim.lib.resource.entry.path + "_" + mesh.name + "_" + matName);
 					if ( bk == null )
 						bk = bakedMaterials.get(@:privateAccess prim.lib.resource.entry.path + "_" + matName);
