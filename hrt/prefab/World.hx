@@ -17,6 +17,7 @@ class World extends Object3D {
 	var size : Int = 64;
 	@:s public var worldUnit : Int = 1;
 	@:s public var chunkGrid : Int = 32;
+	@:s public var subdivPow : Float = 2.0;
 	public var chunkSize(get, null) : Int;
 	public function get_chunkSize() {
 		return chunkGrid * worldUnit;
@@ -269,6 +270,7 @@ class World extends Object3D {
 			x : 0,
 			y : 0,
 			depth : 0,
+			subdivPow : subdivPow,
 			maxDepth : depth,
 			onCreate : onCreateChunk,
 		};
@@ -312,6 +314,7 @@ class World extends Object3D {
 			</dl>
 			<dl>
 				<dt>World unit</dt><dd><input type="range" field="worldUnit" min="1" step="1"/></dd>
+				<dt>Distance pow</dt><dd><input type="range" min="0.5" max="5" field="subdivPow" min="0.5"/></dd>
 				<dt>Debug</dt><dd><input type="checkbox" field="debug"/></dd>
 			</dl>
 		</div>');
