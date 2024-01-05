@@ -386,7 +386,7 @@ class PolygonEditor {
 			};
 			interactive.onKeyDown =
 			function(e) {
-				if (ctx.local3d.getScene() == null) return;
+				if (polygonPrefab.getLocal3d().getScene().getScene() == null) return;
 				e.propagate = false;
 				if( K.isDown( K.SHIFT ) ){
 					clearSelectedPoint();
@@ -457,7 +457,7 @@ class PolygonEditor {
 			};
 			interactive.onRelease =
 			function(e) {
-				if (ctx.local3d.getScene() == null) return;
+				if (polygonPrefab.getLocal3d().getScene() == null) return;
 				//lastPos = null;
 				lastPointSelected = null;
 				if( beforeMoveList != null ){
@@ -770,7 +770,7 @@ class PolygonEditor {
 				obj.x += deltaChildSpace.x;
 				obj.y += deltaChildSpace.y;
 				obj.z += deltaChildSpace.z;
-				obj.updateInstance(editContext.getContext(obj));
+				obj.updateInstance();
 			}
 
 			refreshPolygon();
@@ -794,7 +794,7 @@ class PolygonEditor {
 						obj.x -= undoDelta.x;
 						obj.y -= undoDelta.y;
 						obj.z -= undoDelta.z;
-						obj.updateInstance(editContext.getContext(obj));
+						obj.updateInstance();
 					}
 
 					polygonPrefab.x = undoPrevPos.x;
@@ -814,7 +814,7 @@ class PolygonEditor {
 						obj.x += undoDelta.x;
 						obj.y += undoDelta.y;
 						obj.z += undoDelta.z;
-						obj.updateInstance(editContext.getContext(obj));
+						obj.updateInstance();
 					}
 
 					polygonPrefab.x = undoNextPos.x;

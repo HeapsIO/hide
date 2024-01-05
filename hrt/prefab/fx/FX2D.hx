@@ -168,6 +168,8 @@ class FX2D extends Object2D implements BaseFX {
 	@:c public var scriptCode : String;
 	@:c public var cullingRadius : Float;
 	@:c public var markers : Array<{t: Float}> = [];
+	@:c public var blendFactor : Float;
+
 
 	@:s var loop : Bool = false;
 	@:s var startLoop : Float = 0.0;

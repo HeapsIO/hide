@@ -390,7 +390,7 @@ class Light extends Object3D {
 				var rangeCapsule : h3d.scene.Capsule;
 
 				if(debugCapsule == null) {
-					debugCapsule = new h3d.scene.Object(ctx.local3d);
+					debugCapsule = new h3d.scene.Object(local3d);
 					debugCapsule.name = "_debugCapsule";
 
 					rangeCapsule = new h3d.scene.Capsule(0xffffff, 1, true, debugCapsule);

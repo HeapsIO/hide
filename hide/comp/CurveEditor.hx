@@ -1028,7 +1028,7 @@ class CurveEditor extends hide.comp.Component {
 	}
 
 	function beforeChange() {
-		lastValue = [for (c in curves) c.save()];
+		lastValue = [for (c in curves) c.serializeToDynamic()];
 
 		for (c in components)
 			c.beforeChange();

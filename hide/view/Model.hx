@@ -120,9 +120,9 @@ class Model extends FileView {
 		tabs = new hide.comp.Tabs(null,element.find(".tabs"));
 		eventList = element.find(".event-editor");
 
-			var def = new hrt.prefab.Library();
-			new hrt.prefab.RenderProps(def).name = "renderer";
-			var l = new hrt.prefab.Light(def);
+		var def = new hrt.prefab.Prefab(null, null);
+		new hrt.prefab.RenderProps(def, null).name = "renderer";
+		var l = new hrt.prefab.Light(def, null);
 		sceneEditor = new hide.comp.SceneEditor(this, root);
 		sceneEditor.editorDisplay = false;
 		sceneEditor.onRefresh = onRefresh;
@@ -144,14 +144,17 @@ class Model extends FileView {
 		sceneEditor.view.keys.register("sceneeditor.focus", {name: "Focus Selection", category: "Scene"},
 			function() {if (lastSelectedObject != null) refreshSelectionHighlight(lastSelectedObject);});
 		sceneEditor.tree.element.addClass("small");
-		element.find("input[value=\"Save render props\"]").click(function(_) {
+		var e = element.find("input[value=\"Save render props\"]");
+		function callback(ev : js.jquery.Event) : Void {
 			if( !canSave() )
 				return;
 			var toSave = root.children[0];
-			@:privateAccess toSave.save();
+			@:privateAccess toSave.save({});
 
 			save();
-		});
+		}
+
+		e.on("click", callback);
 	}
 
 	override function onActivate() {
@@ -592,10 +595,10 @@ class Model extends FileView {
 		sceneEditor.loadSavedCameraController3D(true);
 
 		// Remove current instancied render props
-		sceneEditor.context.local3d.removeChildren();
+		sceneEditor.root3d.removeChildren();
 
 		// Remove current library to create a new one with the actual render prop
-		root = new hrt.prefab.Library();
+		root = new hrt.prefab.Prefab(null, null);
 		for (c in @:privateAccess sceneEditor.sceneData.children)
 			@:privateAccess sceneEditor.sceneData.children.remove(c);
 
@@ -608,11 +611,11 @@ class Model extends FileView {
 		// Create default render props if no render props has been created yet
 		var r = root.getOpt(hrt.prefab.RenderProps, true);
 		if( r == null) {
-			var def = new hrt.prefab.Object3D(root);
+			var def = new hrt.prefab.Object3D(root, null);
 			def.name = "Default Ligthing";
-			var render = new hrt.prefab.RenderProps(def);
+			var render = new hrt.prefab.RenderProps(def, null);
 			render.name = "renderer";
-			var l = new hrt.prefab.Light(def);
+			var l = new hrt.prefab.Light(def, null);
 			l.name = "sunLight";
 			l.kind = Directional;
 			l.power = 1.5;
@@ -625,16 +628,16 @@ class Model extends FileView {
 			l.shadows.mode = Dynamic;
 			l.shadows.size = 1024;
 
-			def.make(sceneEditor.context);
+			def.make();
 
 			r = render;
 			r.applyProps(scene.s3d.renderer);
 		}
 
 		// Apply render props properties on scene
-		var refPrefab = new hrt.prefab.Reference();
-		if( @:privateAccess refPrefab.ref != null ) {
-			var renderProps = @:privateAccess refPrefab.ref.getOpt(hrt.prefab.RenderProps);
+		var refPrefab = new hrt.prefab.Reference(null, null);
+		if( @:privateAccess refPrefab.refInstance != null ) {
+			var renderProps = @:privateAccess refPrefab.refInstance.getOpt(hrt.prefab.RenderProps);
 			if( renderProps != null )
 				renderProps.applyProps(scene.s3d.renderer);
 		}

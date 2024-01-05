@@ -212,7 +212,7 @@ class Prefab extends hide.view.FileView {
 
 
 	function createData() {
-		data = new hrt.prefab.Library();
+		data = new hrt.prefab.Prefab(null, null);
 	}
 
 	function createEditor() {

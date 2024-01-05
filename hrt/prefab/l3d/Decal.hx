@@ -86,7 +86,7 @@ class Decal extends Object3D {
 			var refMatLibPath = this.refMatLib.substring(0, this.refMatLib.lastIndexOf("/"));
 			var refMatName = this.refMatLib.substring(this.refMatLib.lastIndexOf("/") + 1);
 
-			var prefabLib = hxd.res.Loader.currentInstance.load(refMatLibPath).toPrefab().load().clone(true);
+			var prefabLib = hxd.res.Loader.currentInstance.load(refMatLibPath).toPrefab().load().clone();
 			var mat : Material = null;
 			for(c in prefabLib.children) {
 				if (c.name != refMatName)
@@ -279,21 +279,21 @@ class Decal extends Object3D {
 
 			function updateMatSelect() {
 				matSelect.empty();
-				new Element('<option value="">None</option>').appendTo(matSelect);
+				new hide.Element('<option value="">None</option>').appendTo(matSelect);
 
 				materials = ctx.scene.listMaterialFromLibrary(this.getAbsPath(), libSelect.val());
 
 				for (idx in 0...materials.length) {
-					new Element('<option value="${materials[idx].path + "/" + materials[idx].mat.name}" ${(selectedMat == materials[idx].mat.name) ? 'selected' : ''}>${materials[idx].mat.name}</option>').appendTo(matSelect);
+					new hide.Element('<option value="${materials[idx].path + "/" + materials[idx].mat.name}" ${(selectedMat == materials[idx].mat.name) ? 'selected' : ''}>${materials[idx].mat.name}</option>').appendTo(matSelect);
 				}
 			}
 
 			function updateLibSelect() {
 				libSelect.empty();
-				new Element('<option value="">None</option>').appendTo(libSelect);
+				new hide.Element('<option value="">None</option>').appendTo(libSelect);
 
 				for (idx in 0...matLibs.length) {
-					new Element('<option value="${matLibs[idx].name}" ${(selectedLib == matLibs[idx].path) ? 'selected' : ''}>${matLibs[idx].name}</option>');
+					new hide.Element('<option value="${matLibs[idx].name}" ${(selectedLib == matLibs[idx].path) ? 'selected' : ''}>${matLibs[idx].name}</option>');
 				}
 			}
 
@@ -302,7 +302,7 @@ class Decal extends Object3D {
 				var mat = ctx.scene.findMat(materials, matSelect.val());
 				if ( mat != null ) {
 					this.refMatLib = mat.path + "/" + mat.mat.name;
-					updateInstance(ctx.scene.editor.getContext(this));
+					updateInstance();
 					ctx.rebuildProperties();
 				} else {
 					this.refMatLib = "";
@@ -312,16 +312,16 @@ class Decal extends Object3D {
 
 				ctx.properties.undo.change(Custom(function(undo) {
 					if( undo ) {
-						this.load(previousDecal.saveData());
+						this.load(previousDecal.serializeToDynamic());
 					}
 					else {
-						this.load(newDecal.saveData());
+						this.load(newDecal.serializeToDynamic());
 					}
 
 					updateLibSelect();
 					updateMatSelect();
 					ctx.rebuildProperties();
-					updateInstance(ctx.scene.editor.getContext(this));
+					updateInstance();
 				}));
 			}
 

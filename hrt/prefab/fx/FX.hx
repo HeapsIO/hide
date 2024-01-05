@@ -427,6 +427,8 @@ class FX extends Object3D implements BaseFX {
 	@:c public var scriptCode : String;
 	@:s public var cullingRadius : Float;
 	@:s public var markers : Array<{t: Float}> = [];
+	@:c public var blendFactor : Float;
+
 
 	/*override function save(data : Dynamic) {
 		super.save(data);
@@ -441,28 +443,6 @@ class FX extends Object3D implements BaseFX {
 		blendFactor = 1.0;
 	}
 
-<<<<<<< HEAD
-	override function save() {
-		var obj : Dynamic = super.save();
-		obj.cullingRadius = cullingRadius;
-		obj.blendFactor = blendFactor;
-		if( scriptCode != "" ) obj.scriptCode = scriptCode;
-		return obj;
-	}
-
-	override function load( obj : Dynamic ) {
-		super.load(obj);
-		if(obj.cullingRadius != null)
-			cullingRadius = obj.cullingRadius;
-		if(obj.blendFactor != null)
-			blendFactor = obj.blendFactor;
-		scriptCode = obj.scriptCode;
-	}
-
-	override function make( ctx : Context ) : Context {
-		ctx = ctx.clone(this);
-		var fxanim = createInstance(ctx.local3d);
-=======
 	override function makeInstanceRec() : Void  {
 		var fromRef = shared.parent != null;
 		var useFXRoot = #if editor fromRef #else true #end;
@@ -479,7 +459,6 @@ class FX extends Object3D implements BaseFX {
 
 	override function makeObject(parent3d:h3d.scene.Object):h3d.scene.Object {
 		var fxanim = createInstance(parent3d);
->>>>>>> f08d29d5 (New Prefab System)
 		fxanim.duration = duration;
 		fxanim.cullingRadius = cullingRadius;
 		fxanim.blendFactor = blendFactor;

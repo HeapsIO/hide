@@ -190,7 +190,7 @@ class Particle2D extends Object2D {
 
 		var particles2d = (cast local2d : Particles);
 			var group = @:privateAccess particles2d.groups[0];
-			ctx.properties.add(new Element('
+			ctx.properties.add(new hide.Element('
 			<div class="content">
 				<div class="group" name="Emit">
 					<dt>Is burst emit</dt><dd><input type="checkbox" field="isBurstEmit"/></dd>

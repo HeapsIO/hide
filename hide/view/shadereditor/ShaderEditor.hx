@@ -93,7 +93,7 @@ class PreviewShaderParticle extends hxsl.Shader {
 
 class Preview extends h2d.Bitmap {
 
-	public var shaderDef(default, set) : hrt.prefab.ContextShared.ShaderDef;
+	public var shaderDef(default, set) : hrt.prefab.Cache.ShaderDef;
 	public var shader : DynamicShader;
 
 	function rebuildShader() {
@@ -106,7 +106,7 @@ class Preview extends h2d.Bitmap {
 		addShader(shader);
 	}
 
-	function set_shaderDef(v: hrt.prefab.ContextShared.ShaderDef) {
+	function set_shaderDef(v: hrt.prefab.Cache.ShaderDef) {
 		shaderDef = v;
 		rebuildShader();
 		return v;
@@ -137,7 +137,7 @@ class ShaderEditor extends hide.view.Graph {
 
 	var previewsScene : hide.comp.Scene;
 	var previewParamDirty : Bool = true;
-	var currentShaderPreviewsDef : hrt.prefab.ContextShared.ShaderDef;
+	var currentShaderPreviewsDef : hrt.prefab.Cache.ShaderDef;
 
 	// used to preview
 	var sceneEditor : SceneEditor;

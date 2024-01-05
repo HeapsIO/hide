@@ -1419,7 +1419,7 @@ class SceneEditor {
 	}
 
 	function createRenderProps(?parent: hrt.prefab.Prefab){
-		renderPropsRoot = new Reference();
+		renderPropsRoot = new hrt.prefab.Reference(parent, parent?.shared);
 
 		if (parent != null)
 			renderPropsRoot.parent = parent;
@@ -1449,9 +1449,9 @@ class SceneEditor {
 				renderPropsRoot.source = savedRenderProp.value;
 		}
 
-		var ctx2 = renderPropsRoot.makeInstance(context);
+		renderPropsRoot.make();
 
-		var lights = renderPropsRoot.getAll(hrt.prefab.Light, true);
+		/*var lights = renderPropsRoot.getAll(hrt.prefab.Light, true);
 		for (light in lights) {
 			var ctxs = ctx2.shared.getContexts(light);
 			for (ctx in ctxs) {
@@ -1461,10 +1461,10 @@ class SceneEditor {
 					ctx.custom = null;
 				}
 			}
-		}
+		}*/
 
-		if( @:privateAccess renderPropsRoot.ref != null ) {
-			var renderProps = @:privateAccess renderPropsRoot.ref.getOpt(hrt.prefab.RenderProps);
+		if( @:privateAccess renderPropsRoot.refInstance != null ) {
+			var renderProps = @:privateAccess renderPropsRoot.refInstance.getOpt(hrt.prefab.RenderProps);
 			if( renderProps != null )
 				renderProps.applyProps(scene.s3d.renderer);
 		}

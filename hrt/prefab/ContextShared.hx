@@ -43,7 +43,8 @@ class ContextShared {
 
 	public var customCleanup : Void -> Void;
 
-	public function new( ?res : hxd.res.Resource ) {
+	// use Prefab.createContextShared instead
+	function new( ?res : hxd.res.Resource ) {
 		if( res != null ) currentPath = res.entry.path;
 	}
 

@@ -236,7 +236,7 @@ class Object3D extends Prefab {
 								int.y = bmp.tile.dy;
 
 								int.onClick = function(e) {
-									var editorContext = Std.downcast(ctx.shared, hide.prefab.ContextShared);
+									var editorContext = Std.downcast(shared, hide.prefab.ContextShared);
 									if (editorContext != null)
 										editorContext.editor.selectElements([ this ]);
 								}

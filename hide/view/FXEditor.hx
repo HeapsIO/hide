@@ -747,7 +747,7 @@ class FXEditor extends hide.view.FileView {
 
 				while (toRemove.length > 0) {
 					var c = toRemove.pop();
-					c.removeInstance(sceneEditor.context);
+					//c.removeInstance();
 					c.parent.children.remove(c);
 				}
 			}
@@ -759,7 +759,7 @@ class FXEditor extends hide.view.FileView {
 
 						// We're currently supporting blending with only 2 curves
 						for (i in 0...2) {
-							var c = new Curve();
+							var c = new Curve(null, null);
 							c.parent = curve;
 							c.name = '${curve.name}.${i}';
 						}

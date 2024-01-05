@@ -715,6 +715,8 @@ class Prefab {
 		return this.copyToDynamic(to);
 	}
 
+
+
 	/**
 		Updates in-place the whole prefab data and its children.
 	**/
@@ -962,7 +964,7 @@ class Prefab {
 	}
 
 	public static dynamic function createContextShared(?res : hxd.res.Resource) : ContextShared {
-		return #if editor new hide.prefab.ContextShared(res); #else new ContextShared(res); #end
+		@:privateAccess return #if editor new hide.prefab.ContextShared(res); #else new ContextShared(res); #end
 	}
 	// Static initialization trick to register this class with the given name
 	// in the prefab registry. Call this in your own classes

@@ -102,7 +102,7 @@ class Material extends Prefab {
 			var refMatLibPath = this.refMatLib.substring(0, this.refMatLib.lastIndexOf("/"));
 			var refMatName = this.refMatLib.substring(this.refMatLib.lastIndexOf("/") + 1);
 
-			var prefabLib = hxd.res.Loader.currentInstance.load(refMatLibPath).toPrefab().load().clone(true);
+			var prefabLib = hxd.res.Loader.currentInstance.load(refMatLibPath).toPrefab().load().clone();
 
 			for(c in prefabLib.children) {
 				if (c.name != refMatName)
@@ -229,21 +229,21 @@ class Material extends Prefab {
 
 		function updateLibSelect() {
 			libSelect.empty();
-			new Element('<option value="">None</option>').appendTo(libSelect);
+			new hide.Element('<option value="">None</option>').appendTo(libSelect);
 
 			for (idx in 0...matLibs.length) {
-				new Element('<option value="${matLibs[idx].name}" ${(selectedLib == matLibs[idx].path) ? 'selected' : ''}>${matLibs[idx].name}</option>');
+				new hide.Element('<option value="${matLibs[idx].name}" ${(selectedLib == matLibs[idx].path) ? 'selected' : ''}>${matLibs[idx].name}</option>');
 			}
 		}
 
 		function updateMatSelect() {
 			matSelect.empty();
-			new Element('<option value="">None</option>').appendTo(matSelect);
+			new hide.Element('<option value="">None</option>').appendTo(matSelect);
 
 			materials = ctx.scene.listMaterialFromLibrary(this.getAbsPath(), libSelect.val());
 
 			for (idx in 0...materials.length) {
-				new Element('<option value="${materials[idx].path + "/" + materials[idx].mat.name}" ${(selectedMat == materials[idx].mat.name) ? 'selected' : ''}>${materials[idx].mat.name}</option>').appendTo(matSelect);
+				new hide.Element('<option value="${materials[idx].path + "/" + materials[idx].mat.name}" ${(selectedMat == materials[idx].mat.name) ? 'selected' : ''}>${materials[idx].mat.name}</option>').appendTo(matSelect);
 			}
 		}
 
@@ -255,7 +255,7 @@ class Material extends Prefab {
 				this.load(Reflect.field(mat, "mat"));
 				this.name = previousName;
 				this.refMatLib = Reflect.field(mat, "path") + "/" + Reflect.field(mat, "mat").name;
-				updateInstance(ctx.scene.editor.getContext(this));
+				updateInstance();
 				ctx.rebuildProperties();
 			} else {
 				this.refMatLib = "";
@@ -274,7 +274,7 @@ class Material extends Prefab {
 				updateLibSelect();
 				updateMatSelect();
 				ctx.rebuildProperties();
-				updateInstance(ctx.scene.editor.getContext(this));
+				updateInstance();
 			}));
 		}
 
@@ -556,7 +556,7 @@ class Material extends Prefab {
 		updateHighlightOverrides(ctx);
 	}
 
-	public function addOverrideProperty(ctx : EditContext, pname : String, isMatSetupProp : Bool) {
+	public function addOverrideProperty(ctx : hide.prefab.EditContext, pname : String, isMatSetupProp : Bool) {
 		// Remove previous value of this props name in overrides
 		var idx = 0;
 		while (idx < overrides.length) {
@@ -580,7 +580,7 @@ class Material extends Prefab {
 		updateHighlightOverrides(ctx);
 	}
 
-	public function updateHighlightOverrides(ctx : EditContext) {
+	public function updateHighlightOverrides(ctx : hide.prefab.EditContext) {
 		ctx.properties.element.find(".override").removeClass("override");
 		ctx.properties.element.find(".remove-override-btn").remove();
 
@@ -599,11 +599,11 @@ class Material extends Prefab {
 			parentDiv.addClass("override");
 
 			var label = parentDiv.children().first();
-			var removeOverrideBtn = new Element('<i title="Remove override" class="remove-override-btn icon ico ico-remove"></i>').insertBefore(label);
+			var removeOverrideBtn = new hide.Element('<i title="Remove override" class="remove-override-btn icon ico ico-remove"></i>').insertBefore(label);
 			removeOverrideBtn.css({ "cursor":"pointer" });
 			removeOverrideBtn.on("click", function(_){
 				overrides.remove(o);
-				updateInstance(ctx.scene.editor.getContext(this));
+				updateInstance();
 				ctx.rebuildProperties();
 			});
 		}
@@ -624,7 +624,7 @@ class Material extends Prefab {
 				var refPath = refMatLib.substr(0,refMatLib.lastIndexOf("/"));
 				refMatLib = f(refPath) + refMatLib.substr(refMatLib.lastIndexOf("/"));
 			},
-			allowChildren: function(t) return !Library.isOfType(t, Material),
+			allowChildren: function(t) return !Prefab.isOfType(t, Material),
 		};
 	}
 	#end
