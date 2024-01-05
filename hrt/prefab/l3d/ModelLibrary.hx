@@ -722,7 +722,6 @@ class ModelLibrary extends Prefab {
 
 	override function makeInstanceRec() : Void {
 		// don't load/build children
-		var shared = ctx.shared;
 		wasMake = true;
 		if ( hmdPrim == null )
 			hmdPrim = Std.downcast(shared.loadModel(shared.getPrefabDatPath("model","hmd",this.name)).toMesh().primitive, h3d.prim.HMDModel);
