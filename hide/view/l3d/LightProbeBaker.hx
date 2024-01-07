@@ -110,9 +110,7 @@ class LightProbeBaker {
 		if( customCamera.rightHanded )
 			engine.driver.setRenderFlag(CameraHandness,1);
 
-		ctx.camera = customCamera;
 		ctx.engine = engine;
-		ctx.scene = offScreenScene;
 		ctx.start();
 		offScreenScene.renderer.start();
 		ctx.lightSystem = @:privateAccess offScreenScene.lightSystem;
