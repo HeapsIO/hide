@@ -3013,6 +3013,8 @@ class SceneEditor {
 			o.locked = locked;
 			for( c in o.flatten(hrt.prefab.Prefab) ) {
 				var el = tree.getElement(c);
+				if (el is Bool)
+					continue;
 				applyTreeStyle(c, el);
 				applySceneStyle(c);
 				toggleInteractive(c,!isLocked(c));
