@@ -1450,7 +1450,7 @@ class SceneEditor {
 				renderPropsRoot.source = savedRenderProp.value;
 		}
 
-		renderPropsRoot.make();
+		renderPropsRoot.instanciate(root2d, root3d, true);
 
 		/*var lights = renderPropsRoot.getAll(hrt.prefab.Light, true);
 		for (light in lights) {
