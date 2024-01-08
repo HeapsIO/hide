@@ -77,7 +77,7 @@ class ShaderGraph extends hrt.prefab.Prefab {
 
 
 	override public function load(json : Dynamic) : Void {
-
+		super.load(json);
 		graphs = [];
 		parametersAvailable = [];
 		parametersKeys = [];
@@ -96,6 +96,7 @@ class ShaderGraph extends hrt.prefab.Prefab {
 
 
 	override function save() {
+		super.save();
 		var json : Dynamic = {};
 
 		json.parameters = [
