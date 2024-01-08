@@ -2763,13 +2763,28 @@ class SceneEditor {
 		if(elts.length == 0)
 			return false;
 
-		// Check if every selected elements has a mesh
-		for (e in elts) {
-			if (false)
+		function isExportable(element: PrefabElement) {
+			// We only support model export for now
+			var model = Std.downcast(element, hrt.prefab.Model);
+			if (model == null)
 				return false;
+			else {
+				if (element.children.length <= 0)
+					return true;
+
+				for (c in element.children)
+					if (!isExportable(c))
+						return false;
+
+				return true;
+			}
 		}
 
-		// Only allow grouping of sibling elements
+		for (e in elts)
+			if (!isExportable(e))
+				return false;
+
+		// Only allow export of sibling element
 		var parent = elts[0].parent;
 		for(e in elts)
 			if(e.parent != parent)
