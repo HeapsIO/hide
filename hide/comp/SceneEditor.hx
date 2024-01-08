@@ -1420,6 +1420,7 @@ class SceneEditor {
 
 	function createRenderProps(?parent: hrt.prefab.Prefab){
 		renderPropsRoot = new hrt.prefab.Reference(parent, parent?.shared);
+		renderPropsRoot.setEditor(this);
 
 		if (parent != null)
 			renderPropsRoot.parent = parent;
