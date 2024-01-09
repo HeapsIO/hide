@@ -1,5 +1,6 @@
 package hrt.prefab;
 
+using hrt.prefab.Object3D;
 typedef ChunkData = {
 	var id : String;
 	var level : Int;
@@ -55,7 +56,7 @@ class World extends Object3D {
 		tmp.y = -chunkPos.y;
 		for ( p in content.children ) {
 			var context = p.make(tmp, shared);
-			if ( context.local3d == tmp )
+			if ( context.getLocal3d() == tmp )
 				continue;
 			#if editor
 			for ( elt in p.flatten() )

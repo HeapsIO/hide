@@ -113,10 +113,10 @@ class ModelLibrary extends Prefab {
 
     final reg = ~/[0-9]+/g;
     
-	public function dispose() {
+	override public function dispose() {
+		super.dispose();
 		optimizedMeshes = [];
 		batches = [];
-
 	}
 
 	#if editor
