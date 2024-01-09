@@ -465,6 +465,7 @@ class EmitterObject extends h3d.scene.Object {
 	public var emitRateCurrent : Null<Float>;
 	public var emitRatePrevious : Null<Float>;
 	public var emitRateTarget : Null<Float>;
+	public var emitScale : Float = 1.0;
 	public var maxCount = 20;
 	public var enableSort = true;
 	// EMIT SHAPE
@@ -994,10 +995,10 @@ class EmitterObject extends h3d.scene.Object {
 			invTransform.load(parent.getInvPos());
 		}
 
-		if( enable ) {
+		if( enable && emitScale > 0.) {
 			switch emitType {
 				case Infinity:
-					emitTarget += evaluator.getFloat(emitRate, curTime) * dt;
+					emitTarget += evaluator.getFloat(emitRate, curTime) * hxd.Math.clamp(emitScale) * dt;
 					var delta = hxd.Math.ceil(hxd.Math.min(maxCount - numInstances, emitTarget - emitCount));
 					doEmit(delta);
 					if( isSubEmitter && (parentEmitter == null || parentEmitter.parent == null) )
@@ -1025,14 +1026,14 @@ class EmitterObject extends h3d.scene.Object {
 					var t = (curTime - emitRateChangeDelayStart) / emitRateChangeDelay;
 					emitRateCurrent = (emitRatePrevious - emitRateTarget) * t + emitRatePrevious;
 
-					emitTarget += emitRateCurrent * dt;
+					emitTarget += emitRateCurrent * hxd.Math.clamp(emitScale) * dt;
 
 					var delta = hxd.Math.ceil(hxd.Math.min(maxCount - numInstances, emitTarget - emitCount));
 					doEmit(delta);
 					if( isSubEmitter && (parentEmitter == null || parentEmitter.parent == null) )
 						enable = false;
 				case Duration:
-					emitTarget += evaluator.getFloat(emitRate, hxd.Math.min(curTime, emitDuration)) * dt;
+					emitTarget += evaluator.getFloat(emitRate, hxd.Math.min(curTime, emitDuration)) * hxd.Math.clamp(emitScale) * dt;
 					var delta = hxd.Math.ceil(hxd.Math.min(maxCount - numInstances, emitTarget - emitCount));
 					doEmit(delta);
 					if( isSubEmitter && curTime >= emitDuration )
@@ -1254,6 +1255,23 @@ class EmitterObject extends h3d.scene.Object {
 				}
 			}
 		}
+	}
+
+	public function hasActiveParts() : Bool {
+		if(particles == null)
+			return false;
+
+		inline function isActive(p : ParticleInstance){
+			return p.idx != ParticleInstance.REMOVED_IDX && p.life <= p.lifeTime;
+		}
+
+		for(i in 0...particlesCount){
+			var p = particles[i];
+			if(isActive(p))
+				return true;
+		}
+
+		return false;
 	}
 
 	public function setRandSeed(seed: Int) {
