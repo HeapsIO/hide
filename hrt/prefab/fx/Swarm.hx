@@ -186,7 +186,7 @@ class SwarmObject extends h3d.scene.Object {
 	static var tmpQuat = new h3d.Quat();
 
 	var stepSize = 1.0/15.0;
-	var maxIter = 3;
+	var maxIter = 1;
 
 	// Performs a fixed step in the simulation
 	// Avoid degenerating parameters at low framerates
