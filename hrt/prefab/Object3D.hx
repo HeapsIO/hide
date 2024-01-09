@@ -2,6 +2,9 @@ package hrt.prefab;
 import hxd.Math;
 
 class Object3D extends Prefab {
+
+	public var local3d : h3d.scene.Object = null;
+
 	@:s @:range(0,400) public var x : Float = 0.0;
 	@:s @:range(0,400) public var y : Float = 0.0;
 	@:s @:range(0,400) public var z : Float = 0.0;
@@ -21,7 +24,10 @@ class Object3D extends Prefab {
 	#end
 
 	public static inline function getLocal3d(prefab: Prefab) : h3d.scene.Object {
-		return prefab.local3d;
+		var obj3d = Std.downcast(prefab, Object3D);
+		if (obj3d != null)
+			return obj3d.local3d;
+		return null;
 	}
 
 	/*function set_x(v : Float) {

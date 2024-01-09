@@ -84,10 +84,6 @@ class Prefab {
 	/**Cache of values**/
 	public var shared(get, default) : ContextShared = null;
 
-	public var local3d : h3d.scene.Object;
-	public var local2d : h2d.Object;
-
-
 	function get_shared() {
 		return if (shared != null)
 			shared;
