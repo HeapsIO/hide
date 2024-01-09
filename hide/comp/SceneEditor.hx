@@ -2242,11 +2242,10 @@ class SceneEditor {
 
 	function removeInstance(elt : PrefabElement) {
 		elt.parent = null;
-		if (elt.getLocal3d() != null)
-			elt.getLocal3d().remove();
-		if (elt.getLocal2d() != null)
-			elt.getLocal2d().remove();
-		return true;
+
+		elt.getLocal3d()?.remove();
+		elt.getLocal2d()?.remove();
+		elt.dispose();
 	}
 
 	function makePrefab(elt: PrefabElement) {
@@ -2296,8 +2295,7 @@ class SceneEditor {
 			if(undo) {
 				selectElements([], NoHistory);
 				for (e in elts) {
-					if(!removeInstance(e))
-						fullRefresh = true;
+					removeInstance(e);
 					e.parent.children.remove(e);
 				}
 				refresh(fullRefresh ? Full : Partial);
@@ -2771,8 +2769,7 @@ class SceneEditor {
 			if( undo ) {
 				var fullRefresh = false;
 				for(e in elts) {
-					if(!removeInstance(e))
-						fullRefresh = true;
+					removeInstance(e);
 					parent.children.remove(e);
 				}
 				refresh(fullRefresh ? Full : Partial);
@@ -3264,10 +3261,7 @@ class SceneEditor {
 			var fullRefresh = false;
 			if(undo) {
 				for(elt in newElements) {
-					if(!removeInstance(elt)) {
-						fullRefresh = true;
-						break;
-					}
+					removeInstance(elt);
 				}
 			}
 
@@ -3301,12 +3295,13 @@ class SceneEditor {
 			removeInstance(e);
 			e.parent = null;
 		}
-		refresh();
+		refresh(Partial);
+
+
 		/*var fullRefresh = false;
 		var undoes = [];
 		for(elt in elts) {
-			if(!removeInstance(elt))
-				fullRefresh = true;
+			removeInstance(elt);
 			var index = elt.parent.children.indexOf(elt);
 			elt.parent.children.remove(elt);
 			undoes.unshift(function(undo) {
@@ -3391,14 +3386,14 @@ class SceneEditor {
 
 			effects.push(function(undo) {
 				if( undo ) {
-					!removeInstance(elt);
+					removeInstance(elt);
 					elt.parent = prev;
 					prev.children.remove(elt);
 					prev.children.insert(prevIndex, elt);
 					if(obj3d != null && prevState != null)
 						obj3d.loadTransform(prevState);
 				} else {
-					!removeInstance(elt);
+					removeInstance(elt);
 					elt.parent = toElt;
 					toElt.children.remove(elt);
 					toElt.children.insert(index, elt);

@@ -102,10 +102,7 @@ private class FXSceneEditor extends hide.comp.SceneEditor {
 			var fullRefresh = false;
 			if(undo) {
 				for(elt in newElements) {
-					if(!removeInstance(elt)) {
-						fullRefresh = true;
-						break;
-					}
+					removeInstance(elt);
 				}
 			}
 
