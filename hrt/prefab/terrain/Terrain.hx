@@ -49,8 +49,8 @@ class Terrain extends Object3D {
 	@:s public var brushOpacity : Float = 1.0;
 	#end
 
-	override function copy( obj : Dynamic ) {
-		super.copy(obj);
+	override function load( obj : Dynamic ) {
+		super.load(obj);
 		if( obj.surfaces != null ) tmpSurfacesProps = obj.surfaces;
 		surfaceCount = obj.surfaceCount == null ? 0 : obj.surfaceCount;
 		surfaceSize = obj.surfaceSize == null ? 0 : obj.surfaceSize;
@@ -471,9 +471,8 @@ class Terrain extends Object3D {
 		return new TerrainMesh(parent);
 	}
 
-	override function makeInstance() : Void {
-
-		terrain = createTerrain(shared.current3d);
+	override function makeObject(parent3d:h3d.scene.Object) : h3d.scene.Object {
+		this.terrain = createTerrain(parent3d);
 		terrain.tileSize = new h2d.col.Point(tileSizeX, tileSizeY);
 		terrain.cellCount = new h2d.col.IPoint(Math.ceil(tileSizeX * vertexPerMeter), Math.ceil(tileSizeY * vertexPerMeter) );
 		terrain.cellSize = new h2d.col.Point(tileSizeX / terrain.cellCount.x, tileSizeY / terrain.cellCount.y );
@@ -485,11 +484,11 @@ class Terrain extends Object3D {
 		terrain.heightBlendStrength = heightBlendStrength;
 		terrain.blendSharpness = blendSharpness;
 		terrain.name = "terrain";
+		return terrain;
+	}
 
-		local3d = terrain;
-		local3d.name = name;
-
-		updateInstance();
+	override function makeInstance() : Void {
+		super.makeInstance();
 		initTerrain();
 	}
 

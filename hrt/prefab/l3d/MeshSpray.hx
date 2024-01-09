@@ -340,8 +340,8 @@ class MeshSpray extends Spray {
 		return super.save(obj);
 	}
 
-	override function copy(obj : Dynamic) {
-		super.copy(obj);
+	override function load(obj : Dynamic) {
+		super.load(obj);
 		//backward compatibility
 		if(Reflect.hasField(obj, "meshes")) {
 			var oldSources : Array<Spray.Source> = Reflect.field(obj, "meshes");

@@ -42,6 +42,12 @@ class Decal extends Object3D {
 		blendMode = obj.blendMode;
 	}
 
+	override function load( obj : Dynamic ) {
+		super.load(obj);
+		if( obj.blendMode != null ) 
+			blendMode = h2d.BlendMode.createByIndex(obj.blendMode);
+	}
+
 	override function makeObject(parent3d:h3d.scene.Object):h3d.scene.Object {
 		var mesh = new h3d.scene.pbr.Decal(h3d.prim.Cube.defaultUnitCube(), parent3d);
 

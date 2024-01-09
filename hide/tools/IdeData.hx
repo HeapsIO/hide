@@ -233,7 +233,10 @@ class IdeData {
 			var path = getPath(file);
 			if( checkExists && !sys.FileSystem.exists(path) )
 				return null;
-			return hrt.prefab.Prefab.loadPath(path).get(cl);
+			var p = hrt.prefab.Prefab.loadPath(makeRelative(path));
+			if( cl == null )
+				return cast p;
+			return p.get(cl);
 		} catch( e : Dynamic ) {
 			error("Invalid prefab "+file+" ("+e+")");
 			throw e;

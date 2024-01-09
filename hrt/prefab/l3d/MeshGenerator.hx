@@ -129,6 +129,12 @@ class MeshGenerator extends Object3D {
 		return obj;
 	}
 
+	override function load( obj : Dynamic ) {
+		super.load(obj);
+		root = new MeshPart();
+		root.load(obj.root);
+	}
+
 	override function copy( obj : Dynamic ) {
 		super.copy(obj);
 		root = new MeshPart();

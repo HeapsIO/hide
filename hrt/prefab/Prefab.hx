@@ -676,8 +676,6 @@ class Prefab {
 		Create a copy of this prefab and it's childrens, whitout initializing their fields
 	**/
 	final function copyDefault(?parent:Prefab = null, sh: ContextShared) : Prefab {
-		if (!shouldBeInstanciated()) return null;
-
 		var thisClass = Type.getClass(this);
 
 		var inst = Type.createInstance(thisClass, [parent, sh]);
