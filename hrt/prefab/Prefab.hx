@@ -715,7 +715,14 @@ class Prefab {
 		return this.copyToDynamic(to);
 	}
 
-
+	/**
+		Cleanup prefab specific ressources, and call dispose on it's children
+	**/
+	public function dispose() {
+		for (child in children) {
+			dispose();
+		}
+	}
 
 	/**
 		Updates in-place the whole prefab data and its children.
