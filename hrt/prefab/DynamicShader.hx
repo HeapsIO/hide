@@ -103,21 +103,22 @@ class DynamicShader extends Shader {
 		if(shaderDef == null)
 			return;
 
-		//#if editor
-		// TODO: Where to init prefab default values?
-		for( v in shaderDef.inits ) {
-			if(!Reflect.hasField(props, v.variable.name)) {
-				Reflect.setField(props, v.variable.name, v.value);
+		var forceInit = #if editor true #else false #end;
+		if (forceInit || isShadergraph) {
+			// TODO: Where to init prefab default values?
+			for( v in shaderDef.inits ) {
+				if(!Reflect.hasField(props, v.variable.name)) {
+					Reflect.setField(props, v.variable.name, v.value);
+				}
+			}
+			for(v in shaderDef.shader.data.vars) {
+				if(v.kind != Param)
+					continue;
+				if(!Reflect.hasField(props, v.name)) {
+					Reflect.setField(props, v.name, getDefault(v.type));
+				}
 			}
 		}
-		for(v in shaderDef.shader.data.vars) {
-			if(v.kind != Param)
-				continue;
-			if(!Reflect.hasField(props, v.name)) {
-				Reflect.setField(props, v.name, getDefault(v.type));
-			}
-		}
-		//#end
 	}
 
 	#if editor
