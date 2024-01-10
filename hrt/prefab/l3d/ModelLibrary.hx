@@ -14,8 +14,12 @@ typedef MaterialData = {
 	var configIndex : Int;
 }
 
+typedef MaterialMesh = {
+	mat : MaterialData,
+	mesh : h3d.scene.Mesh,
+}
 typedef SubMeshes = {
-	meshes : Array<{mat : MaterialData, mesh : h3d.scene.Mesh}>,
+	meshes : Array<MaterialMesh>,
 	name : String,
 }
 
@@ -107,6 +111,7 @@ class ModelLibrary extends Prefab {
 	@:s var mipPower : Float;
 	@:s var mipLevels : Int = 1;
 
+	final reg = ~/[0-9]+/g;
 	#if editor
 
 	@:s var compress : Bool = true;
@@ -505,8 +510,7 @@ class ModelLibrary extends Prefab {
 				if ( pos == null )
 					return null;
 				var matName = m.name;
-				for ( i in 0... 9)
-					matName = matName.split('${i}').join("");
+				matName = reg.replace(matName, '');
 				var key = lib.resource.entry.path + (modelName != "root" ? "_" + modelName : "") + "_" + matName;
 				var bk = bakedMaterials.get(key);
 				if ( bk != null )
@@ -790,37 +794,16 @@ class ModelLibrary extends Prefab {
 			for ( m in meshes.meshes ) {
 				var bk = m.mat;
 				if ( meshBatches[bk.configIndex + indexOffset] == null) {
-					var batch = new h3d.scene.MeshBatch(hmdPrim, h3d.mat.Material.create(), namedObject);
-					if ( isStatic ) {
-						batch.material.staticShadows = true;
-						batch.fixedPosition = true;
-					}
-					batch.cullingCollider = bounds;
-					batch.name = "modelLibrary_"+(bk.configIndex + indexOffset);
-					batch.material.mainPass.addShader(shader);
+					var batch = createMeshBatch(namedObject, isStatic, bounds, materialConfigs[bk.configIndex]);
+					batch.name += "_"+(bk.configIndex + indexOffset);
 					if ( debug ) batches.push(batch);
-					batch.material.props = materialConfigs[bk.configIndex];
-					batch.material.refreshProps();
-					if ( (batch.material.props:PbrProps).alphaKill && batch.material.textureShader == null )
-						batch.material.mainPass.addShader(killAlpha);
 					meshBatches[bk.configIndex + indexOffset] = batch;
 				}
 			}
 			for( m in meshes.meshes ) {
 				var bk = m.mat;
-				shader.delta = 1.0 / 4096 / bk.uvSX;
-				shader.uvTransform.set(bk.uvX, bk.uvY, bk.uvSX, bk.uvSY);
-				shader.material = bk.texId;
 				var batch = meshBatches[bk.configIndex + indexOffset];
-				if ( batch.primitiveSubPart == null ) {
-					batch.primitiveSubPart = new h3d.scene.MeshBatch.MeshBatchPart();
-					batch.begin();
-				}
-				batch.primitiveSubPart.indexCount = bk.indexCount;
-				batch.primitiveSubPart.indexStart = bk.indexStart;
-				batch.primitiveSubPart.bounds = geomBounds[bk.geomId];
-				batch.worldPosition = m.mesh.getAbsPos();
-				batch.emitInstance();
+				emit(m, batch);
 			}
 			indexOffset += materialConfigs.length;
 		}
@@ -834,7 +817,24 @@ class ModelLibrary extends Prefab {
 			clearOptimized(obj);
 	}
 
-	final reg = ~/[0-9]+/g;
+	public function createMeshBatch(parent : h3d.scene.Object, isStatic : Bool, ?bounds : h3d.col.Bounds, ?props : h3d.mat.PbrMaterial.PbrProps) {
+		var batch = new h3d.scene.MeshBatch(hmdPrim, h3d.mat.Material.create(), parent);
+		if ( isStatic ) {
+			batch.material.staticShadows = true;
+			batch.fixedPosition = true;
+		}
+		batch.cullingCollider = bounds;
+		batch.name = "modelLibrary";
+		batch.material.mainPass.addShader(shader);
+		if ( props != null ) {
+			batch.material.props = props;
+			batch.material.refreshProps();
+			if ( (batch.material.props:PbrProps).alphaKill && batch.material.textureShader == null )
+				batch.material.mainPass.addShader(killAlpha);
+		}
+		return batch;
+	}
+
 	function optimizeRec( obj : h3d.scene.Object, out : Array<SubMeshes> ) {
 		if( !obj.visible )
 			return;
@@ -864,12 +864,8 @@ class ModelLibrary extends Prefab {
 			if( prim != null ) {
 				var mat = mesh.getMaterials(false);
 				mesh.culled = true;
-				for( i in 0...mat.length ) {
-					var matName = mat[i].name;
-					matName = reg.replace(matName,'');
-					var bk = bakedMaterials.get(@:privateAccess prim.lib.resource.entry.path + "_" + mesh.name + "_" + matName);
-					if ( bk == null )
-						bk = bakedMaterials.get(@:privateAccess prim.lib.resource.entry.path + "_" + matName);
+				for ( m in mat ) {
+					var bk = getBakedMat(m, prim, mesh.name);
 					if( bk == null ) {
 						mesh.culled = false;
 						while( curSubMeshes.meshes.length > 0 && curSubMeshes.meshes[curSubMeshes.meshes.length-1].mesh == mesh )
@@ -885,6 +881,16 @@ class ModelLibrary extends Prefab {
 		for( o in obj )
 			optimizeRec(o, out);
 		curSubMeshes = prevSubMeshes;
+	}
+
+	public function getBakedMat(mat : h3d.mat.Material, prim : h3d.prim.HMDModel, meshName : String) {
+		var matName = mat.name;
+		matName = reg.replace(matName,'');
+		// TODO : optimize string add.
+		var bk = bakedMaterials.get(@:privateAccess prim.lib.resource.entry.path + "_" + meshName + "_" + matName);
+		if ( bk == null )
+			bk = bakedMaterials.get(@:privateAccess prim.lib.resource.entry.path + "_" + matName);
+		return bk;
 	}
 
 	function clearOptimized(obj: h3d.scene.Object) {
@@ -908,6 +914,22 @@ class ModelLibrary extends Prefab {
 			m.culled = true;
 		for (b in batches)
 			b.culled = true;
+	}
+
+	public function emit(m : MaterialMesh, batch : h3d.scene.MeshBatch) {
+		var bk = m.mat;
+		shader.delta = 1.0 / 4096 / bk.uvSX;
+		shader.uvTransform.set(bk.uvX, bk.uvY, bk.uvSX, bk.uvSY);
+		shader.material = bk.texId;
+		if ( batch.primitiveSubPart == null ) {
+			batch.primitiveSubPart = new h3d.scene.MeshBatch.MeshBatchPart();
+			batch.begin();
+		}
+		batch.primitiveSubPart.indexCount = bk.indexCount;
+		batch.primitiveSubPart.indexStart = bk.indexStart;
+		batch.primitiveSubPart.bounds = geomBounds[bk.geomId];
+		batch.worldPosition = m.mesh.getAbsPos();
+		batch.emitInstance();
 	}
 
 	#end
