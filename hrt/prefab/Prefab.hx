@@ -143,6 +143,7 @@ class Prefab {
 	}
 
 	function makeChild(p: Prefab) {
+		if (!p.shouldBeInstanciated()) return;
 		if (shared.customMake == null) {
 			p.makeInstanceRec();
 		}
@@ -714,7 +715,7 @@ class Prefab {
 	**/
 	public function dispose() {
 		for (child in children) {
-			dispose();
+			child.dispose();
 		}
 	}
 
