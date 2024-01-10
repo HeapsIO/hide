@@ -61,11 +61,6 @@ class SplineMover extends Spline {
 	@:s public var showDebug : Bool = true;
 	#end
 
-	override public function new(parent, shared) {
-		super(parent, shared);
-	}
-
-
 	override function makeObject(parent:h3d.scene.Object) {
 		return new SplineMoverObject(parent, this);
 	}
@@ -81,11 +76,6 @@ class SplineMover extends Spline {
 	override function postMakeInstance() {
 		super.postMakeInstance();
 		(cast local3d:SplineMoverObject).updatePoint(1.0);
-	}
-
-	override function updateInstance(?propName:String) {
-		super.updateInstance(propName);
-
 	}
 
 	#if editor

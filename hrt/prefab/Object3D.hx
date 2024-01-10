@@ -65,6 +65,8 @@ class Object3D extends Prefab {
 	/* Override makeObject instead of this */
 	override function makeInstance() : Void {
 		local3d = makeObject(shared.current3d);
+		if( local3d != null )
+			local3d.name = name;
 		updateInstance();
 	}
 

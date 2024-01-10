@@ -72,7 +72,7 @@ class SplinePoint extends Object3D {
 
 	override function makeInstance() : Void {
 		#if editor
-		local3d = new h3d.scene.Object(shared.current3d);
+		local3d = makeObject(shared.current3d);
 		pointViewer = new h3d.scene.Mesh(h3d.prim.Sphere.defaultUnitSphere(), null, local3d.getScene());
 		pointViewer.ignoreParentTransform = true;
 		pointViewer.follow = local3d;
@@ -312,7 +312,7 @@ class Spline extends Object3D {
 	}
 
 	override function makeInstance() : Void {
-		local3d = new h3d.scene.Object(shared.current3d);
+		local3d = makeObject(shared.current3d);
 		local3d.name = name;
 
 		// Backward compatibility
