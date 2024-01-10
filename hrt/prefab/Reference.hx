@@ -106,8 +106,10 @@ class Reference extends Object3D {
 
 	override public function find<T>( f : Prefab -> Null<T>, followRefs : Bool = false ) : Null<T> {
 		var res = super.find(f, followRefs);
-		if (res == null && followRefs && refInstance != null) {
-			return refInstance.find(f, followRefs);
+		if (res == null && followRefs ) {
+			var p = resolveRef();
+			if( p != null )
+				return p.find(f, followRefs);
 		}
 		return res;
 	}
