@@ -22,11 +22,11 @@ class Spray extends Object3D {
 		return spray;
 	}
 
-	override function makeChild( p : hrt.prefab.Prefab ) {
+	override function makeInstance() {
+		super.makeInstance();
 		children.sort(function(c1, c2) {
 			return Std.isOfType(c1, Object3D) ? -1 : 1;
 		});
-		super.makeChild(p);
 
 	}
 }
