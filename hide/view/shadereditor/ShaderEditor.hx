@@ -1171,8 +1171,15 @@ class ShaderEditor extends hide.view.Graph {
 	}
 
 	var boxToPreview : Map<Box, Preview>;
-
+	var timeout = 0;
 	function onMiniPreviewReady() {
+		if (previewsScene.s2d == null) {
+			timeout ++;
+			if (timeout > 10)
+				throw "Couldn't initialize background previews";
+			haxe.Timer.delay(() -> onMiniPreviewReady, 100);
+			return;
+		}
 		var bg = new h2d.Flow(previewsScene.s2d);
 		bg.fillHeight = true;
 		bg.fillWidth = true;
