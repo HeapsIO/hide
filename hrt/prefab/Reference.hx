@@ -60,31 +60,68 @@ class Reference extends Object3D {
 			return null;
 		if (refInstance != null)
 			return refInstance;
-		var p = Prefab.loadPath(source);
-		return p;
+		return Prefab.loadPath(source);
 	}
 
-	override function makeObject(parent3d: h3d.scene.Object) : h3d.scene.Object {
-		if (source != null) {
-			var p = resolveRef();
-			var sh = Prefab.createContextShared();
-			sh.currentPath = source;
-			sh.parent = this;
-			sh.customMake = this.shared.customMake;
-			#if editor
-			p.setEditor((cast shared:hide.prefab.ContextShared).editor);
-			#end
-			if (p.to(Object3D) != null) {
-				refInstance = p.make(null, findFirstLocal2d(), parent3d, sh);
-				return Object3D.getLocal3d(refInstance);
-			} else {
-				var local3d = new h3d.scene.Object(parent3d);
-				refInstance = p.make(null, findFirstLocal2d(), local3d, sh);
-				return local3d;
-			}
+	override function makeInstance() {
+		if( source == null )
+			return;
+		var p = resolveRef();
+		var sh = Prefab.createContextShared();
+		sh.currentPath = source;
+		sh.parent = this;
+		sh.customMake = this.shared.customMake;
+		refInstance = p.clone(null, sh);
+		#if editor
+		refInstance.setEditor((cast shared:hide.prefab.ContextShared).editor);
+		#end
+		if (refInstance.to(Object3D) != null) {
+			var obj3d = refInstance.to(Object3D);
+			obj3d.loadTransform(this); // apply this transform to the reference prefab
+			obj3d.name = name;
+			obj3d.visible = visible;
+			refInstance.instanciate(findFirstLocal2d(), shared.current3d);
+			local3d = Object3D.getLocal3d(refInstance);
+		} else {
+			super.makeInstance();
+			refInstance.instanciate(findFirstLocal2d(), local3d);
 		}
-		return null;
 	}
+
+	// override function makeInstance() {
+	// 	if( source == null )
+	// 		return;
+	// 	var p = resolveRef();
+	// 	var sh = Prefab.createContextShared();
+	// 	sh.currentPath = source;
+	// 	sh.parent = this;
+	// 	sh.customMake = this.shared.customMake;
+	// 	#if editor
+	// 	p.setEditor((cast shared:hide.prefab.ContextShared).editor);
+	// 	#end
+	// 	if (p.to(Object3D) != null) {
+	// 		refInstance = p.clone(null, sh);
+	// 		#if editor
+	// 		refInstance.setEditor((cast shared:hide.prefab.ContextShared).editor);
+	// 		#end
+	// 		sh.root3d = sh.current3d = shared.current3d;
+	// 		refInstance.makeInstance();
+	// 		local3d = Object3D.getLocal3d(refInstance);
+	// 		local3d.name = name;
+	// 		updateInstance();
+
+	// 		sh.current3d = local3d;
+	// 		for (c in refInstance.children) {
+	// 			refInstance.makeChild(c);
+	// 		}
+	// 		sh.current3d = shared.current3d;
+	// 		refInstance.postMakeInstance();
+	// 		sh.current3d = shared.current3d;
+	// 	} else {
+	// 		super.makeInstance();
+	// 		refInstance = p.make(null, findFirstLocal2d(), local3d, sh);
+	// 	}
+	// }
 
 	override public function findAll<T>( f : Prefab -> Null<T>, followRefs : Bool = false, ?arr : Array<T> ) : Array<T> {
 		arr = super.findAll(f, followRefs, arr);
