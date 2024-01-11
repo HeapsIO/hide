@@ -55,14 +55,6 @@ class Reference extends Object3D {
 	}
 	#end
 
-	override public function flatten<T:Prefab>( ?cl : Class<T>, ?arr: Array<T> ) : Array<T> {
-		arr = super.flatten(cl, arr);
-		if (refInstance != null) {
-			arr = refInstance.flatten(cl, arr);
-		}
-		return arr;
-	}
-
 	function resolveRef() : Prefab {
 		if(source == null)
 			return null;
@@ -122,7 +114,22 @@ class Reference extends Object3D {
 		return res;
 	}
 
+	override public function flatten<T:Prefab>( ?cl : Class<T>, ?arr: Array<T> ) : Array<T> {
+		arr = super.flatten(cl, arr);
+		if (editMode && refInstance != null) {
+			arr = refInstance.flatten(cl, arr);
+		}
+		return arr;
+	}
+
 	#if editor
+
+	override function makeInteractive() {
+		if( editMode )
+			return null;
+		return super.makeInteractive();
+	}
+
 	override function edit( ctx : hide.prefab.EditContext ) {
 		var element = new hide.Element('
 			<div class="group" name="Reference">

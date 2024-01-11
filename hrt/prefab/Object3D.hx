@@ -275,7 +275,7 @@ class Object3D extends Prefab {
 	override function makeInteractive() : hxd.SceneEvents.Interactive {
 		if(local3d == null)
 			return null;
-		var meshes = [];
+		var meshes = getObjects(h3d.scene.Mesh);
 		var mesh = Std.downcast(local3d, h3d.scene.Mesh);
 		if (mesh != null ) {
 			meshes.push(mesh);
