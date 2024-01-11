@@ -302,6 +302,8 @@ class ShaderEditor extends hide.view.Graph {
 
 		var newParamCtxMenu : Array<hide.comp.ContextMenu.ContextMenuItem> = [
 			{ label : "Number", click : () -> createParameter(TFloat) },
+			{ label : "Vec2", click : () -> createParameter(TVec(2, VFloat)) },
+			{ label : "Vec3", click : () -> createParameter(TVec(3, VFloat)) },
 			{ label : "Color", click : () -> createParameter(TVec(4, VFloat)) },
 			{ label : "Texture", click : () -> createParameter(TSampler2D) },
 		];
@@ -770,7 +772,41 @@ class ShaderEditor extends hide.view.Graph {
 				picker.element.on("dragstop.spectrum", function() {
 					afterChange();
 				});*/
-				typeName = "Color";
+			case TVec(n, VFloat):
+				if (value == null)
+					value = [for (i in 0...n) 0.0];
+
+				shaderGraph.setParameterDefaultValue(parameter.id, value);
+				//var row = new Element('<div class="flex"/>').appendTo(defaultValue);
+
+				for( i in 0...n ) {
+					var parentRange = new Element('<input type="range" min="-1" max="1" />').appendTo(defaultValue);
+					var range = new hide.comp.Range(null, parentRange);
+					range.value = value[i];
+
+					var rangeInput = @:privateAccess range.f;
+					rangeInput.on("mousedown", function(e) {
+						elt.attr("draggable", "false");
+						beforeChange();
+					});
+					rangeInput.on("mouseup", function(e) {
+						elt.attr("draggable", "true");
+						afterChange();
+					});
+
+					range.onChange = function(move) {
+						value[i] = range.value;
+						if (!shaderGraph.setParameterDefaultValue(parameter.id, value))
+							return;
+						setBoxesParam(parameter.id);
+						updateParam(parameter.id);
+					};
+					//if(min == null) min = isColor ? 0.0 : -1.0;
+					//if(max == null)	max = 1.0;
+					//e.attr("min", "" + min);
+					//e.attr("max", "" + max);
+				}
+				typeName = "Vec" + n;
 			case TSampler2D:
 				var parentSampler = new Element('<input type="texturepath" field="sampler2d"/>').appendTo(defaultValue);
 
