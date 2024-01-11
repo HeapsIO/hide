@@ -35,9 +35,10 @@ class PreviewShaderBase extends hxsl.Shader {
 			var position : Vec2;
 		};
 
+
 		@global var camera : {
 			var viewProj : Mat4;
-		}
+		};
 
 		var relativePosition : Vec3;
 		var transformedPosition : Vec3;
@@ -54,6 +55,37 @@ class PreviewShaderBase extends hxsl.Shader {
 			projectedPosition = vec4(input.position, 0.0, 0.0);
 			fakeNormal = vec3(0,0,-1);
 			transformedNormal = vec3(0,0,-1);
+
+
+		}
+
+
+	}
+}
+
+class PreviewShaderParticle extends hxsl.Shader {
+	static var SRC = {
+
+		@global var global : {
+			var time : Float;
+		};
+
+		var particleRandom : Float;
+        var particleLifeTime : Float;
+        var particleLife : Float;
+
+		function __init__() {
+			particleLife = mod(global.time, 1.0);
+			particleLifeTime = 1.0;
+			particleRandom = hash12(vec2(floor(global.time)));
+		}
+
+		function hash12(p: Vec2) : Float
+		{
+			p = sign(p)*(floor(abs(p))+floor(fract(abs(p))*1000.0)/1000.0);
+			var p3  = fract(vec3(p.xyx) * .1031);
+			p3 += dot(p3, p3.yzx + 33.33);
+			return fract((p3.x + p3.y) * p3.z);
 		}
 	}
 }
@@ -86,6 +118,7 @@ class Preview extends h2d.Bitmap {
 		this.blendMode = None;
 		var shaderBase = new PreviewShaderBase();
 		addShader(shaderBase);
+		addShader(new PreviewShaderParticle());
 		var props = new h3d.shader.pbr.PropsValues();
 		addShader(props);
 	}
@@ -514,6 +547,10 @@ class ShaderEditor extends hide.view.Graph {
 			sp.addUVs();
 			var mesh = new h3d.scene.Mesh(sp);
 			obj = mesh;
+		}
+		for (m in obj.getMaterials()) {
+			var sh = new PreviewShaderParticle();
+			m.mainPass.addShader(sh);
 		}
 		if( prefabObj == null )
 			sceneEditor.scene.s3d.addChild(obj);
