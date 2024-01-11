@@ -55,7 +55,7 @@ class Shader extends Prefab {
 						val = h3d.Vector.fromArray(val);
 				} else
 					val = new h3d.Vector();
-			case TSampler2D:
+			case TSampler(_):
 				if( val != null ) {
 					val = Utils.getTextureFromValue(val);
 				}
@@ -230,7 +230,7 @@ class Shader extends Prefab {
 			PFloat(min != null ? min : 0.0, max != null ? max : 1.0);
 		case TBool:
 			PBool;
-		case TSampler2D:
+		case TSampler(_):
 			PTexture;
 		case TVec(n, VFloat):
 			if (n == 3 || n == 4) {

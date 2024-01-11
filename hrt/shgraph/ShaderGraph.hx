@@ -375,7 +375,7 @@ class ShaderGraph extends hrt.prefab.Prefab {
 	static function setParamValue(ctx: hrt.prefab.ContextShared, shader : hxsl.DynamicShader, variable : hxsl.Ast.TVar, value : Dynamic) {
 		try {
 			switch (variable.type) {
-				case TSampler2D:
+				case TSampler(_):
 					var t = hrt.impl.TextureType.Utils.getTextureFromValue(value);
 					t.wrap = Repeat;
 					shader.setParamValue(variable, t);
@@ -1041,7 +1041,7 @@ class Graph {
 					}
 					else {
 						if (nodeVar.internal) {
-							if (nodeVar.v.type == TSampler2D) {
+							if (nodeVar.v.type.isTexture()) {
 								// Rewrite output var to be the sampler directly because we can't assign
 								// a sampler to a temporary variable
 								var outVar = outputs["output"];

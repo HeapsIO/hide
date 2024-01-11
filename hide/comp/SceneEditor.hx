@@ -2819,7 +2819,7 @@ class SceneEditor {
 			if (t != null)
 				roots.push(t);
 		}
-
+/*
 		// Handle the export of selection into a fbx file
 		Ide.inst.chooseFileSave("Export.fbx", function(filePath) {
 			if (filePath != null) {
@@ -2829,7 +2829,7 @@ class SceneEditor {
 				Ide.inst.message('Successfully exported object at path : ${filePath}');
 			}
 		});
-
+*/
 	}
 
 	function groupSelection() {

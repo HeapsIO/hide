@@ -48,7 +48,7 @@ class ShaderType {
 			case Float:
 				return TFloat;
 			case Sampler:
-				return TSampler2D;
+				return TSampler(T2D,false);
 			default:
 		}
 		return null;
@@ -72,7 +72,7 @@ class ShaderType {
 				return Bool;
 			case TFloat:
 				return Float;
-			case TSampler2D:
+			case TSampler(_):
 				return Sampler;
 			default:
 		}
