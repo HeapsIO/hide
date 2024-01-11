@@ -2764,31 +2764,9 @@ class SceneEditor {
 	}
 
 	function canExportSelection() {
-		return true;
 		var elts = curEdit.rootElements;
 		if(elts.length == 0)
 			return false;
-
-		function isExportable(element: PrefabElement) {
-			// We only support model export for now
-			var model = Std.downcast(element, hrt.prefab.Model);
-			if (model == null)
-				return false;
-			else {
-				if (element.children.length <= 0)
-					return true;
-
-				for (c in element.children)
-					if (!isExportable(c))
-						return false;
-
-				return true;
-			}
-		}
-
-		for (e in elts)
-			if (!isExportable(e))
-				return false;
 
 		// Only allow export of sibling element
 		var parent = elts[0].parent;
@@ -2800,15 +2778,14 @@ class SceneEditor {
 	}
 
 	function exportSelection(?params : Dynamic) {
-		function clone(obj : h3d.scene.Object, ?into : h3d.scene.Mesh) : h3d.scene.Mesh {
-			var o : h3d.scene.Mesh = null;
-			if (into != null) {
-				o = into;
-			}
-			else {
-				var m = Std.downcast(obj, h3d.scene.Mesh);
-				o = new h3d.scene.Mesh(m.primitive, m.material, null);
-			}
+		function clean( obj : Object ) : Object {
+			if (Std.downcast(obj, h3d.scene.Interactive) != null)
+				return null;
+
+			var o = new Object();
+			var m = Std.downcast(obj, Mesh);
+			if (m != null)
+				o = new Mesh(m.primitive, m.material);
 
 			o.x = obj.x;
 			o.y = obj.y;
@@ -2816,164 +2793,37 @@ class SceneEditor {
 			o.scaleX = obj.scaleX;
 			o.scaleY = obj.scaleY;
 			o.scaleZ = obj.scaleZ;
-			@:privateAccess o.qRot.load(obj.qRot);
+			@:privateAccess o.qRot.load(@:privateAccess obj.qRot);
 			o.name = obj.name;
 			o.follow = obj.follow;
 			o.followPositionOnly = obj.followPositionOnly;
 			o.visible = obj.visible;
-			if( obj.defaultTransform != null ) {
-				if (o.defaultTransform != null)
-					o.defaultTransform = o.defaultTransform.multiplied(obj.defaultTransform.clone());
-				else
-					o.defaultTransform = obj.defaultTransform.clone();
+			if( obj.defaultTransform != null )
+				o.defaultTransform = obj.defaultTransform.clone();
+			for( c in @:privateAccess obj.children ) {
+				var c2 = clean(c);
+				if (c2 == null)
+					continue;
+				@:privateAccess c2.parent = o;
+				@:privateAccess o.children.push(c2);
 			}
+
 			return o;
 		}
 
-		function deepClone(m : h3d.scene.Mesh, ?parent : h3d.scene.Mesh) {
-			var copy = clone(m);
-
-			if (parent != null)
-				parent.addChild(copy);
-
-			for (child in @:privateAccess m.children) {
-				var childMesh = Std.downcast(child, h3d.scene.Mesh);
-
-				if (childMesh != null)
-					deepClone(childMesh, copy);
-			}
-
-			return copy;
+		// Clean a bit the object hierarchy to remove non-needed objects
+		// (Interactibles for example)
+		var roots = new Array<Object>();
+		for (o in @:privateAccess curEdit.rootObjects) {
+			var t = clean(o);
+			if (t != null)
+				roots.push(t);
 		}
-
-		function applyInverseDefaultTransform(obj : h3d.scene.Object, defaultTransform : h3d.Matrix) {
-			if (defaultTransform != null) {
-				var t = obj.getTransform().multiplied(defaultTransform.getInverse());
-				obj.x = t.getPosition().x;
-				obj.y = t.getPosition().y;
-				obj.z = t.getPosition().z;
-
-				var q : h3d.Quat = new h3d.Quat();
-				q.initRotation(t.getEulerAngles().x, t.getEulerAngles().y, t.getEulerAngles().z);
-				@:privateAccess obj.qRot.w = q.w;
-				@:privateAccess obj.qRot.x = q.x;
-				@:privateAccess obj.qRot.y = q.y;
-				@:privateAccess obj.qRot.z = q.z;
-
-				obj.scaleX = t.getScale().x;
-				obj.scaleY = t.getScale().y;
-				obj.scaleZ = t.getScale().z;
-			}
-		}
-
-		var roots : Array<h3d.scene.Mesh> = [];
-		function extractMeshes( o : h3d.scene.Object, ?parent : h3d.scene.Mesh) {
-			var m = Std.downcast(o, h3d.scene.Mesh);
-
-			// If this object isn't a mesh, we have to find into his children which mesh(s)
-			// is/are associated to it
-			if (m == null) {
-				var associatedMesh : h3d.scene.Object = null;
-
-				for (c in @:privateAccess o.children)
-					if (c.name == "root") // Associated mesh is named root (see makeInstance() of Model)
-						associatedMesh = c;
-
-				if (associatedMesh != null) {
-					var m2 = Std.downcast(associatedMesh, h3d.scene.Mesh);
-					var alreadyExtracted = new Array<h3d.scene.Object>();
-
-					if (m2 != null) {
-						// Single mesh object
-						var mesh = clone(m2);
-
-						// Since it's the parent object that is holding informations
-						// apply it on mesh object
-						clone(o, mesh);
-
-						if (parent == null)
-							roots.push(mesh);
-						else {
-							parent.addChild(mesh);
-							applyInverseDefaultTransform(mesh, parent.defaultTransform);
-						}
-
-						parent = cast mesh;
-						alreadyExtracted.push(m2);
-					}
-					else {
-						// Multiple mesh object
-						var randomRootMesh : h3d.scene.Mesh = null;
-						for (c in @:privateAccess associatedMesh.children) {
-							var mesh = Std.downcast(c, h3d.scene.Mesh);
-
-							if (mesh != null) {
-								var copy = deepClone(mesh);
-								clone(o, copy);
-
-								if (parent == null)
-									roots.push(copy);
-								else {
-									parent.addChild(copy);
-									applyInverseDefaultTransform(copy, parent.defaultTransform);
-								}
-								randomRootMesh = copy;
-							}
-						}
-
-						parent = randomRootMesh;
-						alreadyExtracted.push(associatedMesh);
-					}
-
-					// Continue to extract meshes on other objects
-					for (c in @:privateAccess o.children) {
-						if (alreadyExtracted.contains(c))
-							continue;
-
-						extractMeshes(c, parent);
-					}
-				}
-				else {
-					// We're in the case where there is multiple meshes
-					// and no children
-					for (c in @:privateAccess o.children) {
-						var mesh = Std.downcast(c, h3d.scene.Mesh);
-
-						if (mesh != null) {
-							var copy = deepClone(mesh);
-							clone(o, copy);
-
-							if (parent == null)
-								roots.push(copy);
-							else {
-								parent.addChild(copy);
-								applyInverseDefaultTransform(copy, parent.defaultTransform);
-							}
-						}
-					}
-				}
-			}
-			else {
-				var copy = clone(m);
-				if (parent == null)
-					roots.push(copy);
-				else {
-					parent.addChild(copy);
-					applyInverseDefaultTransform(copy, parent.defaultTransform);
-				}
-			}
-		}
-
-		// We have to extract meshes object from the incomming objects to remove
-		// non-needed parent objects that are created in hide in make instance
-		// of model
-		for (o in @:privateAccess curEdit.rootObjects)
-			extractMeshes(o);
 
 		// Handle the export of selection into a fbx file
 		Ide.inst.chooseFileSave("Export.fbx", function(filePath) {
 			var out = new haxe.io.BytesOutput();
-			new hxd.fmt.fbx.Writer(out).write(cast curEdit.rootObjects, params);
+			new hxd.fmt.fbx.Writer(out).write(roots, params);
 			sys.io.File.saveBytes(filePath, out.getBytes());
 			Ide.inst.message('Successfully exported object at path : ${filePath}');
 		});
