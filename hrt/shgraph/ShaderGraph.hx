@@ -427,7 +427,6 @@ class ShaderGraph extends hrt.prefab.Prefab {
 					p.type = std.Type.createEnum(Type, typeString[0], [Std.parseInt(paramsEnum[0]), std.Type.createEnum(VecType, paramsEnum[1])]);
 				}
 			}
-			trace(p);
 			p.variable = generateParameter(p.name, p.type);
 			this.parametersAvailable.set(p.id, p);
 			parametersKeys.push(p.id);
