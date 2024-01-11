@@ -22,6 +22,8 @@ class Evaluator {
 			case VOne: return 1.0;
 			case VConst(v): return v;
 			case VCurve(c): return c.getVal(time);
+			case VBlendCurve(c, factor):
+				return c.getVal(time);
 			case VRandomBetweenCurves(ridx, c):
 				{
 					var c1 = Std.downcast(c.children[0], Curve);

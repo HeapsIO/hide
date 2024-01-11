@@ -378,7 +378,7 @@ class Curve extends Prefab {
 		return curves.find(c -> StringTools.endsWith(c.name, suffix));
 	}
 
-	public static function getVectorValue(curves: Array<Curve>, defVal: Float=0.0, scale: Float=1.0, blendFactor: Float = 1.0) : hrt.prefab.fx.Value {
+	public static function getVectorValue(curves: Array<Curve>, defVal: Float=0.0, scale: Float=1.0, blendFactor: Float = 1.0, randomValue: Float = 0) : hrt.prefab.fx.Value {
 		inline function find(s) {
 			return findCurve(curves, s);
 		}
@@ -388,7 +388,16 @@ class Curve extends Prefab {
 		var w = find(".w");
 
 		inline function curveOrVal(c: Curve, defVal: Float) : hrt.prefab.fx.Value {
-			return c != null ? (c.blendMode == CurveBlendMode.Blend ? VBlendCurve(c, blendFactor) : (scale != 1.0 ? VCurveScale(c, scale) : VCurve(c))) : VConst(defVal);
+			if (c == null)
+				return VConst(defVal);
+
+			if (c.blendMode == CurveBlendMode.Blend)
+				return VBlendCurve(c, blendFactor);
+
+			if (scale != 1.0)
+				return VCurveScale(c, scale);
+
+			return VCurve(c);
 		}
 
 		return VVector(
