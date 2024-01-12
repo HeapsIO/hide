@@ -113,11 +113,9 @@ class ShaderParam extends ShaderNode {
 				displayDiv = new hide.Element('<div class="float-preview" ></div>');
 				height += 20;
 			case TSampler2D:
-				displayDiv = new hide.Element('<div class="texture-preview" ></div>');
-				height += 50;
+				displayDiv = null;
 			case TVec(4, VFloat):
-				displayDiv = new hide.Element('<div class="color-preview" ></div>');
-				height += 25;
+				displayDiv = null;
 			default:
 				displayDiv = null;
 		}
