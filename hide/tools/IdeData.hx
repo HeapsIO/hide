@@ -233,7 +233,7 @@ class IdeData {
 			var path = getPath(file);
 			if( checkExists && !sys.FileSystem.exists(path) )
 				return null;
-			var p = hrt.prefab.Prefab.loadPath(makeRelative(path));
+			var p = hrt.prefab.Prefab.createFromDynamic(parseJSON(sys.io.File.getContent(path)));
 			if( cl == null )
 				return cast p;
 			return p.get(cl);
