@@ -713,7 +713,7 @@ class Model extends FileView {
 		selectedAxes = makeAxes(3.0, 1.0, "overlay");
 		selectedAxes.visible = false;
 
-		tools.addToggle("location-arrow", "Toggle Axis", function(v) {
+		tools.addToggle("localTransformsToggle", "location-arrow", "Toggle Axis", function(v) {
 			axes.visible = v;
 			showSelectionAxes = v;
 			refreshSelectionHighlight(lastSelectedObject);
@@ -724,14 +724,14 @@ class Model extends FileView {
         toolsDefs.push({id: "iconVisibility-menu", title : "", icon: "", type : Popup((e) -> new hide.comp.SceneEditor.IconVisibilityPopup(null, e, sceneEditor))});
 		tools.makeToolbar(toolsDefs);
 
-		tools.addToggle("connectdevelop", "Wireframe",(b) -> {
+		tools.addToggle("wireframeToggle", "connectdevelop", "Wireframe",(b) -> {
 			sceneEditor.setWireframe(b);
 		});
-		displayJoints = tools.addToggle("connectdevelop", "Joints",(b) -> {
+		displayJoints = tools.addToggle("jointsToggle", "connectdevelop", "Joints",(b) -> {
 			sceneEditor.setJoints(b, selectedJoint);
 		});
 
-		tools.addToggle("square-o", "Show selection Outline",(b) -> {
+		tools.addToggle("show-outline","square-o", "Show selection Outline",(b) -> {
 			highlightSelection = b;
 			refreshSelectionHighlight(lastSelectedObject);
 		}, highlightSelection);
@@ -750,7 +750,7 @@ class Model extends FileView {
 
 		tools.addSeparator();
 
-		aloop = tools.addToggle("refresh", "Loop animation", function(v) {
+		aloop = tools.addToggle("refresh", "refresh", "Loop animation", function(v) {
 			if( obj.currentAnimation != null ) {
 				obj.currentAnimation.loop = v;
 				obj.currentAnimation.onAnimEnd = function() {
@@ -759,11 +759,11 @@ class Model extends FileView {
 			}
 		});
 
-		apause = tools.addToggle("pause", "Pause animation", function(v) {
+		apause = tools.addToggle("pause", "pause", "Pause animation", function(v) {
 			if( obj.currentAnimation != null ) obj.currentAnimation.pause = v;
 		});
 
-		aretarget = tools.addToggle("share-square-o", "Retarget Animation", function(b) {
+		aretarget = tools.addToggle("retarget", "share-square-o", "Retarget Animation", function(b) {
 			setRetargetAnim(b);
 		});
 

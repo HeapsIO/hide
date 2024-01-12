@@ -21,10 +21,12 @@ typedef ToolDef = {
 }
 
 typedef ToolToggle = {
+	var id : String;
 	var element : Element;
 	function toggle( v : Bool ) : Void;
 	function isDown(): Bool;
 	function rightClick( v : Void -> Void ) : Void;
+	function refresh() : Void;
 }
 
 typedef ToolSelect<T> = {
@@ -42,11 +44,13 @@ typedef ToolMenu<T> = {
 class Toolbar extends Component {
 
 	var curGroup : Element = null;
+	var toggles : Array<ToolToggle>;
 
 	public function new(?parent,?el) {
 		super(parent,el);
 		element.addClass("hide-toolbar2");
 		newGroup();
+		toggles = new Array<ToolToggle>();
 	}
 
 	public function clear() {
@@ -82,11 +86,11 @@ class Toolbar extends Component {
 
 	public function addToggle( id: String, icon : String, ?title : String, ?label : String, ?onToggle : Bool -> Void, ?defValue = false, ?toggledIcon : String) : ToolToggle {
 		var e = new Element('<div class="button2" id="${id}" title="${title==null ? "" : title}"><div class="icon ico ico-$icon"/></div>');
-		if(label != null) {
-			new Element('<label>$label</label>').appendTo(e);
-		}
-		function tog() {
 
+		if(label != null)
+			new Element('<label>$label</label>').appendTo(e);
+
+		function tog() {
 			e.get(0).toggleAttribute("checked");
 			var checked = e.get(0).hasAttribute("checked");
 
@@ -95,25 +99,30 @@ class Toolbar extends Component {
 				e.find(".icon").toggleClass('ico-$toggledIcon', checked);
 			}
 
-			this.saveDisplayState("toggle:" + icon, checked);
+			Ide.inst.currentConfig.set('sceneeditor.${id}', checked);
 			if( onToggle != null ) onToggle(checked);
 		}
+
 		e.click(function(e) if( e.button == 0 ) tog());
 		e.appendTo(curGroup);
-		var def = getDisplayState("toggle:" + icon);
-		if( def == null ) def = defValue;
-		if( def )
-			tog(); // false -> true
-		else if( defValue ) {
-			e.get(0).toggleAttribute("checked");
-			tog(); // true -> false
-		}
+
+
+		var def = defValue != null ? defValue : false;
+		if( Ide.inst.currentConfig.get('sceneeditor.${id}', def) )
+			tog();
+
 		return {
+			id : id,
 			element : e,
 			toggle : function(b) tog(),
 			isDown: function() return e.get(0).hasAttribute("checked"),
 			rightClick : function(f) {
 				e.contextmenu(function(e) { f(); e.preventDefault(); });
+			},
+			refresh : function() {
+				var isCheck = e.get(0).hasAttribute("checked");
+				if (isCheck != Ide.inst.currentConfig.get('sceneeditor.${id}', false))
+					tog();
 			}
 		};
 	}
@@ -221,6 +230,7 @@ class Toolbar extends Component {
 						keys.register("sceneeditor." + tool.id, () -> toggle.toggle(!toggle.isDown()));
 					if (tool.rightClick != null)
 						toggle.rightClick(tool.rightClick);
+					toggles.push(toggle);
 				case Color(f):
 					el = addColor(tool.title, f).element;
 				case Range(f):
@@ -241,4 +251,8 @@ class Toolbar extends Component {
 		}
 	}
 
+	public function refreshToggles() {
+		for (tog in toggles)
+			tog.refresh();
+	}
 }

@@ -345,10 +345,8 @@ class Prefab extends FileView {
 			return;
 		if( sceneEditor != null )
 			refreshColLayout();
-
-		if (tools != null) {
-			tools.element.find("#tog-scene-render").attr({'checked':Ide.inst.currentConfig.get("sceneeditor.scenerender", false)});
-		}
+		if (tools != null)
+			tools.refreshToggles();
 	}
 
 	public function hideColumns(?_) {
@@ -491,7 +489,7 @@ class Prefab extends FileView {
 
 		toolsDefs.push({id: "", title : "", icon : "", type : Separator});
 
-		toolsDefs.push({id: "tog-scene-render", title : "Disable/Enable scene render" , icon: "eye-slash", type : Toggle((b) -> { sceneEditor.setRenderScene(b); })});
+		toolsDefs.push({id: "tog-scene-render", title : "Disable/Enable scene render" , icon: "eye-slash", type : Toggle((b) -> {})});
 
 		toolsDefs.push({id: "", title : "", icon : "", type : Separator});
 

@@ -556,11 +556,11 @@ class FXEditor extends FileView {
 			});
 		}
 		tools.addButton("gears", "Renderer Properties", renderProps);
-		tools.addToggle("refresh", "Auto synchronize", function(b) {
+		tools.addToggle("refresh", "refresh", "Auto synchronize", function(b) {
 			autoSync = b;
 		});
 
-		tools.addToggle("connectdevelop", "Wireframe",(b) -> { sceneEditor.setWireframe(b); });
+		tools.addToggle("wireframeToggle","connectdevelop", "Wireframe",(b) -> { sceneEditor.setWireframe(b); });
 
 		tools.addColor("Background color", function(v) {
 			scene.engine.backgroundColor = v;
@@ -578,7 +578,7 @@ class FXEditor extends FileView {
 		tools.addSeparator();
 
 
-		pauseButton = tools.addToggle("pause", "Pause animation", function(v) {}, false, "play");
+		pauseButton = tools.addToggle("pause", "pause", "Pause animation", function(v) {}, false, "play");
 		tools.addRange("Speed", function(v) {
 			scene.speed = v;
 		}, scene.speed);
