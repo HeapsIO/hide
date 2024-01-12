@@ -75,6 +75,10 @@ class ShaderGraph extends hrt.prefab.Prefab {
 
 	static var _ = hrt.prefab.Library.register("shgraph", hrt.shgraph.ShaderGraph, "shgraph");
 
+	function new(?parent) {
+		super(parent);
+		type = "shgraph";
+	};
 
 	override public function load(json : Dynamic) : Void {
 		super.load(json);
@@ -96,9 +100,9 @@ class ShaderGraph extends hrt.prefab.Prefab {
 
 
 	override function save() {
-		super.save();
-		var json : Dynamic = {};
+		type = "shgraph";// band aid because shadergraphs didn't always had a type and so when they are loaded type is set to null
 
+		var json : Dynamic = super.save();
 		json.parameters = [
 			for (p in parametersAvailable) { id : p.id, name : p.name, type : [p.type.getName(), p.type.getParameters().toString()], defaultValue : p.defaultValue, index : p.index, internal : p.internal }
 		];
