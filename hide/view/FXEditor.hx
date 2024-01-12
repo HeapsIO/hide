@@ -485,6 +485,8 @@ class FXEditor extends FileView {
 	override function onActivate() {
 		if( sceneEditor != null )
 			refreshLayout();
+		if (tools != null)
+			tools.refreshToggles();
 	}
 
 	public function onSceneReady() {

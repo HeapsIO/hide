@@ -152,6 +152,11 @@ class Model extends FileView {
 		});
 	}
 
+	override function onActivate() {
+		if (tools != null)
+			tools.refreshToggles();
+	}
+
 	inline function get_scene() return sceneEditor.scene;
 
 	var def = false;
