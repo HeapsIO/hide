@@ -61,9 +61,9 @@ class ShaderParam extends ShaderNode {
 	}
 
 
-	override public function canHavePreview() {
-		return this.variable.type != TSampler2D;
-	}
+	// override public function canHavePreview() {
+	// 	return this.variable.type != TSampler2D;
+	// }
 
 	override public function build(key : String) : TExpr {
 		if (variable != null){

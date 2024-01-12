@@ -770,6 +770,23 @@ class Graph {
 		var graphOutputVars : Array<ShaderNodeDefOutVar> = [];
 		var externs : Array<TVar> = [];
 
+		function getOrCreateExtern(name: String, type: Type) : TVar {
+			var tvar = externs.find((v) -> v.name == name);
+			if (tvar == null) {
+				tvar = {
+					id: getNewVarId(),
+					name: name,
+					type: type,
+					kind: Local
+				};
+				externs.push(tvar);
+			}
+			else if (!EnumValueTools.equals(tvar.type, type)) {
+				throw 'Extern was declared with 2 different types (original : ${tvar.type}, new : ${type}';
+			}
+			return tvar;
+		}
+
 		var outputSelectVar : TVar = null;
 		var outputPreviewPixelColor : TVar = null;
 		var pixelColor = {name: "pixelColor", id: getNewVarId(), type: TVec(4, VFloat), kind: Local, qualifiers: []};
@@ -1060,6 +1077,23 @@ class Graph {
 									inits.push({variable: outVar, value: param.defaultValue});
 								}
 
+								if (includePreviews) {
+									var calulatedUV = getOrCreateExtern("calculatedUV", TVec(2, VFloat));
+									var sample = makeExpr(
+										TCall(makeExpr(TGlobal(Texture),TVoid), [
+											makeVar(outVar),
+											makeVar(calulatedUV),
+										]), TVec(4, VFloat));
+
+									var previewExpr = makeAssign(makeVar(outputPreviewPixelColor), sample);
+
+									var expr = makeIf(makeEq(makeVar(outputSelectVar), makeInt(currentNode.id + 1)),
+										previewExpr,
+									);
+
+									exprsReverse.push(expr);
+								}
+
 								continue;
 							}
 
@@ -1100,16 +1134,7 @@ class Graph {
 									}
 									replacement = makeExpr(TConst(CBool(defVal)), TBool);
 								case Var(name):
-									var tvar = externs.find((v) -> v.name == name);
-									if (tvar == null) {
-										tvar = {
-											id: getNewVarId(),
-											name: name,
-											type: nodeVar.v.type,
-											kind: Local
-										};
-										externs.push(tvar);
-									}
+									var tvar = getOrCreateExtern(name, nodeVar.v.type);
 									replacement = {e: TVar(tvar), p: pos, t:nodeVar.v.type};
 								default:
 									replacement = convertToType(nodeVar.v.type, {e: TConst(CFloat(0.0)), p: pos, t:TFloat});
@@ -1211,6 +1236,8 @@ class Graph {
 
 
 		exprsReverse.reverse();
+
+		//trace(haxe.Json.stringify(exprsReverse, "\t"));
 
 		cachedGen = {
 			expr: {e: TBlock(exprsReverse), t:TVoid, p:pos},
