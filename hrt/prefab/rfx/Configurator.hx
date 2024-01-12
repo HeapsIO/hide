@@ -192,7 +192,7 @@ class Configurator extends RendererFX {
 	override function makeInstance() : Void {
 		for( v in vars )
 			values.set(v.name, v.defValue);
-		rootPrefab = getRoot();
+		rootPrefab = getRoot(true);
 		resetCache();
 		super.makeInstance();
 	}

@@ -217,11 +217,14 @@ class Prefab {
 	/**
 		Returns the root prefab, i.e. the first prefab that doesn't have any parent.
 	**/
-	public function getRoot() : Prefab {
+	public function getRoot( followRefs : Bool = false ) : Prefab {
 		var root = this;
 
-		while (root.parent != null) {
-			root = root.parent;
+		while( root.parent != null || (followRefs && root.shared.parent != null) ) {
+			if( root.parent != null )
+				root = root.parent;
+			else if( followRefs )
+				root = root.shared.parent;
 		}
 		return root;
 	}

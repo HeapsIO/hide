@@ -88,41 +88,6 @@ class Reference extends Object3D {
 		}
 	}
 
-	// override function makeInstance() {
-	// 	if( source == null )
-	// 		return;
-	// 	var p = resolveRef();
-	// 	var sh = Prefab.createContextShared();
-	// 	sh.currentPath = source;
-	// 	sh.parent = this;
-	// 	sh.customMake = this.shared.customMake;
-	// 	#if editor
-	// 	p.setEditor((cast shared:hide.prefab.ContextShared).editor);
-	// 	#end
-	// 	if (p.to(Object3D) != null) {
-	// 		refInstance = p.clone(null, sh);
-	// 		#if editor
-	// 		refInstance.setEditor((cast shared:hide.prefab.ContextShared).editor);
-	// 		#end
-	// 		sh.root3d = sh.current3d = shared.current3d;
-	// 		refInstance.makeInstance();
-	// 		local3d = Object3D.getLocal3d(refInstance);
-	// 		local3d.name = name;
-	// 		updateInstance();
-
-	// 		sh.current3d = local3d;
-	// 		for (c in refInstance.children) {
-	// 			refInstance.makeChild(c);
-	// 		}
-	// 		sh.current3d = shared.current3d;
-	// 		refInstance.postMakeInstance();
-	// 		sh.current3d = shared.current3d;
-	// 	} else {
-	// 		super.makeInstance();
-	// 		refInstance = p.make(null, findFirstLocal2d(), local3d, sh);
-	// 	}
-	// }
-
 	override public function findAll<T>( f : Prefab -> Null<T>, followRefs : Bool = false, ?arr : Array<T> ) : Array<T> {
 		arr = super.findAll(f, followRefs, arr);
 
@@ -194,6 +159,10 @@ class Reference extends Object3D {
 		});
 
 		super.edit(ctx);
+	}
+
+	override function getHideProps() : hide.prefab.HideProps {
+		return { icon : "share", name : "Reference" };
 	}
 	#end
 

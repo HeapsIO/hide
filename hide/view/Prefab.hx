@@ -886,7 +886,7 @@ class Prefab extends hide.view.FileView {
 		return null;
 	}
 
-	static var _ = hide.view.FileTree.registerExtension(Prefab, ["prefab"], { icon : "sitemap", createNew : "prefab" });
+	static var _ = hide.view.FileTree.registerExtension(Prefab, ["prefab"], { icon : "sitemap", createNew : "Prefab" });
 	static var _1 = hide.view.FileTree.registerExtension(Prefab, ["l3d"], { icon : "sitemap" });
 
 }
