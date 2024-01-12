@@ -455,6 +455,9 @@ class Scene extends Component implements h3d.IDrawable {
 	}
 
 	public function render( e : h3d.Engine ) {
+		if (Ide.inst.currentConfig.get("sceneeditor.scenerender", false))
+			return;
+
 		s3d.render(e);
 		s2d.render(e);
 	}

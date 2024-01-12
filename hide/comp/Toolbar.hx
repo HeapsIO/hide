@@ -80,8 +80,8 @@ class Toolbar extends Component {
 		return e;
 	}
 
-	public function addToggle( icon : String, ?title : String, ?label : String, ?onToggle : Bool -> Void, ?defValue = false, ?toggledIcon : String) : ToolToggle {
-		var e = new Element('<div class="button2" title="${title==null ? "" : title}"><div class="icon ico ico-$icon"/></div>');
+	public function addToggle( id: String, icon : String, ?title : String, ?label : String, ?onToggle : Bool -> Void, ?defValue = false, ?toggledIcon : String) : ToolToggle {
+		var e = new Element('<div class="button2" id="${id}" title="${title==null ? "" : title}"><div class="icon ico ico-$icon"/></div>');
 		if(label != null) {
 			new Element('<label>$label</label>').appendTo(e);
 		}
@@ -215,7 +215,7 @@ class Toolbar extends Component {
 				case Button(f):
 					el = addButton(tool.icon, tool.title + shortcut, f, tool.rightClick);
 				case Toggle(f):
-					var toggle = addToggle(tool.icon, tool.title + shortcut, null, f, tool.defaultValue);
+					var toggle = addToggle(tool.id, tool.icon, tool.title + shortcut, null, f, tool.defaultValue);
 					el = toggle.element;
 					if( key != null && keys != null)
 						keys.register("sceneeditor." + tool.id, () -> toggle.toggle(!toggle.isDown()));

@@ -1958,6 +1958,10 @@ class SceneEditor {
 		}
 	}
 
+	public function setRenderScene(val = true) {
+		Ide.inst.currentConfig.set("sceneeditor.scenerender", val);
+	}
+
 	var jointsGraphics : h3d.scene.Graphics = null;
 	@:access(h3d.scene.Skin)
 	public function setJoints(showJoints = true, selectedJoint : String) {
