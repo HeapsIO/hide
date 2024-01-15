@@ -31,6 +31,17 @@ class AstTools {
 		return makeExpr(TConst(CInt(int)), TInt);
 	}
 
+	public inline static function makeVec(values : Array<Float>) : TExpr {
+		var ctor = switch(values.length) {
+			case 2: Vec2;
+			case 3: Vec3;
+			case 4: Vec4;
+			default: throw "Can't create a vector of size " + values.length;
+		}
+		var params = [for (v in values) makeExpr(TConst(CFloat(v)), TFloat)];
+		return makeExpr(TCall(makeExpr(TGlobal(ctor), TVoid), params), TVec(values.length, VFloat));
+	}
+
 	public inline static function makeVar(v: TVar, ?pos: Position) : TExpr {
 		return makeExpr(TVar(v), v.type, pos);
 	}

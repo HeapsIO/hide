@@ -1048,6 +1048,8 @@ class Graph {
 				// Used to capture input for output node preview
 				//var firstInputVar = null;
 
+				var allInputsVarsBound = true;
+
 				for (nodeVar in def.inVars) {
 					var connection = currentNode.instance.connections.get(nodeVar.v.name);
 
@@ -1121,7 +1123,11 @@ class Graph {
 							replacement = {e: TVar(inVar), p: pos, t:nodeVar.v.type};
 						}
 						else {
-							// default parameter if no connection
+							if (nodeVar.v.type == TSampler2D) {
+								allInputsVarsBound = false;
+								continue;
+							}
+								// default parameter if no connection
 							switch(nodeVar.defVal) {
 								case Const(def):
 									var defVal = def;
@@ -1143,7 +1149,6 @@ class Graph {
 								default:
 									replacement = convertToType(nodeVar.v.type, {e: TConst(CFloat(0.0)), p: pos, t:TFloat});
 							}
-
 						}
 					}
 
@@ -1158,9 +1163,17 @@ class Graph {
 						// if (shParam != null) {
 						// 	continue;
 						// }
+
+						if (Std.downcast(currentNode.instance, hrt.shgraph.nodes.Sampler) != null) {
+							if (!allInputsVarsBound) {
+								expr = makeAssign(makeVar(nodeVar.v), makeVec([0.0,0.0,0.0,0.0]));
+							}
+						}
+
 						if (outputVar == null) {
 							var v = getOutsideVar(nodeVar.v.name, nodeVar.v, false, false);
 							var outputVar = {e: TVar(v), p:pos, t: nodeVar.v.type};
+
 							expr = replaceVar(expr, nodeVar.v, outputVar);
 
 							if (includePreviews) {
