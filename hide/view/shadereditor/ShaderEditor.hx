@@ -1220,8 +1220,7 @@ class ShaderEditor extends hide.view.Graph {
 	}
 
 	function setParamValue(shader : DynamicShader, variable : hxsl.Ast.TVar, value : Dynamic) {
-		throw "Re-implement";
-		//@:privateAccess ShaderGraph.setParamValue(sceneEditor.context.shared, shader, variable, value);
+		@:privateAccess ShaderGraph.setParamValue(shader, variable, value);
 	}
 
 	var boxToPreview : Map<Box, Preview>;

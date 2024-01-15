@@ -414,15 +414,15 @@ class ShaderGraph extends hrt.prefab.Prefab {
 		return cachedDef;
 	}
 
-	public function makeShaderInstance(ctx: hrt.prefab.ContextShared) : hxsl.DynamicShader {
+	public function makeShaderInstance() : hxsl.DynamicShader {
 		var def = compile2(null);
 		var s = new hxsl.DynamicShader(def.shader);
 		for (init in def.inits)
-			setParamValue(ctx, s, init.variable, init.value);
+			setParamValue(s, init.variable, init.value);
 		return s;
 	}
 
-	static function setParamValue(ctx: hrt.prefab.ContextShared, shader : hxsl.DynamicShader, variable : hxsl.Ast.TVar, value : Dynamic) {
+	static function setParamValue(shader : hxsl.DynamicShader, variable : hxsl.Ast.TVar, value : Dynamic) {
 		try {
 			switch (variable.type) {
 				case TSampler(_):
