@@ -181,8 +181,6 @@ class SwarmObject extends h3d.scene.Object {
 	}
 
 	static var tmpVector = new h3d.Vector();
-	static var tmpVector2 = new h3d.Vector();
-	static var tmpVector3 = new h3d.Vector();
 	static var tmpQuat = new h3d.Quat();
 
 	var stepSize = 1.0/15.0;
@@ -205,10 +203,8 @@ class SwarmObject extends h3d.scene.Object {
 
 			if (delta.lengthSq() > 0.00001) {
 				delta.normalize();
-				var forward = tmpVector;
-				forward.set(1.0,0.0,0.0);
-				var up = tmpVector2;
-				up.set(0.0,0.0,1.0);
+				var forward = new h3d.Vector(1., 0., 0.);
+				var up = new h3d.Vector(0., 0., 1.);
 
 				targetAngle = -hxd.Math.atan2(delta.cross(forward).dot(up), delta.dot(forward));
 			}
@@ -271,8 +267,7 @@ class SwarmObject extends h3d.scene.Object {
 			}
 
 			target.transform(absPos);
-			var dir = tmpVector2;
-			dir.set(target.x - e.x, target.y - e.y, target.z - e.z);
+			var dir = new h3d.Vector(target.x - e.x, target.y - e.y, target.z - e.z);
 			var len = dir.length();
 
 			e.prev_vx = e.vx;
@@ -284,15 +279,15 @@ class SwarmObject extends h3d.scene.Object {
 			e.prev_z = e.z;
 
 			if (len > 0.001) {
-				var curVec = tmpVector3;
-				curVec.set(e.vx, e.vy, e.vz);
+				var curVec = new h3d.Vector(e.vx, e.vy, e.vz);
 				dir.normalize();
 
 				var randAccelMult = Math.exp((hashf(i, 456317) - 0.5) * prefab.accelerationRandom);
 				var noiseAccelMult = prefab.accelerationNoise != 0 ? Math.exp(noise(i) * prefab.accelerationNoise) : 1.0;
 				dir.scale(len * prefab.acceleration * randAccelMult * noiseAccelMult);
 				curVec.scale(prefab.braking);
-				dir = dir.sub(curVec);
+
+				dir.load(dir.sub(curVec));
 
 				e.vx += dir.x * stepSize;
 				e.vy += dir.y * stepSize;
@@ -306,8 +301,7 @@ class SwarmObject extends h3d.scene.Object {
 				spd = hxd.Math.clamp(spd, 0.0, prefab.maxSpeed * randMaxSpeedMult * noiseMaxSpeedMult);
 				curVec.normalize();
 
-				var spdNorm = tmpVector2;
-				spdNorm.load(curVec);
+				var spdNorm = new h3d.Vector(curVec.x, curVec.y, curVec.z);
 				spdNorm.set(spdNorm.y, -spdNorm.x, spdNorm.z);
 
 				spdNorm.scale(hxd.Math.sin(time * prefab.objectSelfSinFreq + hashf(i, 17) * hxd.Math.PI * 2.0) * prefab.objectSelfSin * hxd.Math.max(0.10, spd/prefab.maxSpeed));
@@ -355,14 +349,13 @@ class SwarmObject extends h3d.scene.Object {
 	}
 
 	static var tmpMatrix = new h3d.Matrix();
+
 	function updateMeshBatch() {
 		if(batch == null) return;
 
-		var parentScale = tmpVector3;
+		var parentScale = new h3d.Vector(1., 1., 1.);
 		if (parent != null) {
 			parentScale.load(parent.getAbsPos().getScale());
-		} else {
-			parentScale.set(1.0,1.0,1.0);
 		}
 		batch.begin(hxd.Math.nextPOT(prefab.numObjects));
 
