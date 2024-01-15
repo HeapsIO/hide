@@ -2783,9 +2783,14 @@ class SceneEditor {
 				return null;
 
 			var o = new Object();
-			var m = Std.downcast(obj, Mesh);
-			if (m != null)
-				o = new Mesh(m.primitive, m.material);
+			var multiMat = Std.downcast(obj, h3d.scene.MultiMaterial);
+			if (multiMat != null)
+				o = new h3d.scene.MultiMaterial(multiMat.primitive, multiMat.materials);
+			else {
+				var m = Std.downcast(obj, Mesh);
+				if (m != null)
+					o = new Mesh(m.primitive, m.material);
+			}
 
 			o.x = obj.x;
 			o.y = obj.y;
