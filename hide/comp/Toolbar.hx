@@ -84,7 +84,7 @@ class Toolbar extends Component {
 		return e;
 	}
 
-	public function addToggle( id: String, icon : String, ?title : String, ?label : String, ?onToggle : Bool -> Void, ?defValue = false, ?toggledIcon : String) : ToolToggle {
+	public function addToggle( id: String, icon : String, ?title : String, ?label : String, ?onToggle : Bool -> Void, ?defValue = false, ?toggledIcon : String, saveToggleState = true) : ToolToggle {
 		var e = new Element('<div class="button2" id="${id}" title="${title==null ? "" : title}"><div class="icon ico ico-$icon"/></div>');
 
 		if(label != null)
@@ -100,6 +100,7 @@ class Toolbar extends Component {
 			}
 
 			Ide.inst.currentConfig.set('sceneeditor.${id}', checked);
+
 			if( onToggle != null ) onToggle(checked);
 		}
 
@@ -108,7 +109,7 @@ class Toolbar extends Component {
 
 
 		var def = defValue != null ? defValue : false;
-		if( Ide.inst.currentConfig.get('sceneeditor.${id}', def) )
+		if( (saveToggleState && Ide.inst.currentConfig.get('sceneeditor.${id}', def)) || (!saveToggleState && def) )
 			tog();
 
 		return {
@@ -120,8 +121,11 @@ class Toolbar extends Component {
 				e.contextmenu(function(e) { f(); e.preventDefault(); });
 			},
 			refresh : function() {
+				if (!saveToggleState)
+					return;
+
 				var isCheck = e.get(0).hasAttribute("checked");
-				if (isCheck != Ide.inst.currentConfig.get('sceneeditor.${id}', false))
+				if (isCheck != Ide.inst.currentConfig.get('sceneeditor.${id}', def))
 					tog();
 			}
 		};

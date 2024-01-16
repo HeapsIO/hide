@@ -327,7 +327,7 @@ class Image extends FileView {
 
 		tools.addSeparator();
 
-		var tgCompressed = tools.addToggle("file-zip-o", "Show compressed texture", "", function (e) {
+		var tgCompressed = tools.addToggle("show-compressed", "file-zip-o", "Show compressed texture", "", function (e) {
 			tools.element.find(".show-uncompressed").removeAttr("checked");
 			tools.element.find(".show-comparison").removeAttr("checked");
 
@@ -340,10 +340,10 @@ class Image extends FileView {
 
 				applyShaderConfiguration();
 			}
-		}, this.viewMode.match(Compressed));
+		}, this.viewMode.match(Compressed), null, false);
 		tgCompressed.element.addClass("show-compressed");
 
-		var tgUncompressed = tools.addToggle("file-image-o", "Show uncompressed texture", "", function (e) {
+		var tgUncompressed = tools.addToggle("show-uncompressed","file-image-o", "Show uncompressed texture", "", function (e) {
 			tools.element.find(".show-compressed").removeAttr("checked");
 			tools.element.find(".show-comparison").removeAttr("checked");
 
@@ -357,10 +357,10 @@ class Image extends FileView {
 				applyShaderConfiguration();
 			}
 
-		}, this.viewMode.match(Uncompressed));
+		}, this.viewMode.match(Uncompressed), null, false);
 		tgUncompressed.element.addClass("show-uncompressed");
 
-		var tgComparison = tools.addToggle("arrows-h", "Show comparison between compressed and uncompressed texture", "", function (e) {
+		var tgComparison = tools.addToggle("show-comparison","arrows-h", "Show comparison between compressed and uncompressed texture", "", function (e) {
 			tools.element.find(".show-uncompressed").removeAttr("checked");
 			tools.element.find(".show-compressed").removeAttr("checked");
 
@@ -374,7 +374,7 @@ class Image extends FileView {
 				applyShaderConfiguration();
 			}
 
-		}, this.viewMode.match(Comparison));
+		}, this.viewMode.match(Comparison), null, false);
 		tgComparison.element.addClass("show-comparison");
 
 		tools.addSeparator();
@@ -390,6 +390,11 @@ class Image extends FileView {
 				}, false, true);
 			}, false);
 		};
+	}
+
+	override function onActivate() {
+		if (tools != null)
+			tools.refreshToggles();
 	}
 
 	override function onRebuild() {
@@ -427,7 +432,7 @@ class Image extends FileView {
 
 		for( i in 0...4 ) {
 			var name = "RGBA".charAt(i);
-			tools.addToggle("", "Channel "+name, name, function(b) {
+			tools.addToggle("Channel"+name, "", "Channel "+name, name, function(b) {
 				shader.channels &= ~(1 << i);
 				if( b ) shader.channels |= 1 << i;
 			});
