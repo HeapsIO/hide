@@ -182,6 +182,24 @@ class ShaderGraph extends hrt.prefab.Prefab {
 			var inputInputVars = [];
 			var globalInputVars = [];
 
+			#if editor
+			gen.inVars.sort((a,b) -> {
+				var aIndex = -1;
+				var bIndex = -1;
+				for (k => v in parametersAvailable) {
+					if (aIndex == -1 && v.name == a.v.name) {
+						aIndex = k;
+					}
+					if (bIndex == -1 && v.name == b.v.name) {
+						bIndex = k;
+					}
+					if (aIndex != -1 && bIndex != -1)
+						return Reflect.compare(aIndex, bIndex);
+				}
+				return 0;
+			});
+			#end
+
 			for (arr in [[for (v in gen.inVars) v.v], gen.externVars]) {
 				for (v in arr) {
 					var split = v.name.split(".");
