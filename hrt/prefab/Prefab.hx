@@ -129,15 +129,24 @@ class Prefab {
 		if (!forceInstanciate && (shared.isPrototype))
 			throw "Can't instanciate a template prefab unless params.forceInstanciate is true.";
 
+		var old2d = shared.current2d;
+		var old3d = shared.current3d;
 
-		if (local2d != null)
-		shared.root2d = shared.current2d = local2d;
-		if (local3d != null)
-		shared.root3d = shared.current3d = local3d;
+		if (local2d != null) {
+			if( shared.root2d == null ) shared.root2d = local2d;
+			shared.current2d = local2d;
+		}
+		if (local3d != null) {
+			if( shared.root3d == null ) shared.root3d = local3d;
+			shared.current3d = local3d;
+		}
 
 		shared.isPrototype = false;
 
 		makeInstanceRec();
+
+		shared.current2d = old2d;
+		shared.current3d = old3d;
 
 		refresh();
 	}
@@ -662,6 +671,10 @@ class Prefab {
 
 		o2d = o2d != null ? o2d : (root != null ? root.findFirstLocal2d() : null);
 		o3d = o3d != null ? o3d : (root != null ? root.findFirstLocal3d() : null);
+		if( o2d != null )
+			newInstance.shared.root2d = o2d;
+		if( o3d != null )
+			newInstance.shared.root3d = o3d;
 		newInstance.instanciate(o2d, o3d);
 
 		return newInstance;
