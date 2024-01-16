@@ -739,7 +739,7 @@ class ModelLibrary extends Prefab {
 			tex.wrap = Repeat;
 			tnormal.wrap = Repeat;
 			tspec.wrap = Repeat;
-			if( texturesCount == 1 ) {
+			if( texturesCount == 1 || !Std.isOfType(tex, h3d.mat.TextureArray) ) {
 				shader.singleTexture = true;
 				shader.texture = tex;
 				shader.normalMap = tnormal;
