@@ -17,7 +17,7 @@ class World extends Object3D {
 	var size : Int = 64;
 	@:s public var worldUnit : Int = 1;
 	@:s public var chunkGrid : Int = 32;
-	@:s public var subdivPow : Float = 1.0;
+	@:s public var subdivPow : Float = 2.0;
 	public var chunkSize(get, null) : Int;
 	public function get_chunkSize() {
 		return chunkGrid * worldUnit;
