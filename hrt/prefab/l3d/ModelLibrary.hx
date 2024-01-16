@@ -916,14 +916,14 @@ class ModelLibrary extends Prefab {
 			b.culled = true;
 	}
 
-	public function emit(m : MaterialMesh, batch : h3d.scene.MeshBatch) {
+	public function emit(m : MaterialMesh, batch : h3d.scene.MeshBatch, emitCountTip = -1) {
 		var bk = m.mat;
 		shader.delta = 1.0 / 4096 / bk.uvSX;
 		shader.uvTransform.set(bk.uvX, bk.uvY, bk.uvSX, bk.uvSY);
 		shader.material = bk.texId;
 		if ( batch.primitiveSubPart == null ) {
 			batch.primitiveSubPart = new h3d.scene.MeshBatch.MeshBatchPart();
-			batch.begin();
+			batch.begin(emitCountTip);
 		}
 		batch.primitiveSubPart.indexCount = bk.indexCount;
 		batch.primitiveSubPart.indexStart = bk.indexStart;
