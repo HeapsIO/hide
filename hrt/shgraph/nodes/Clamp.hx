@@ -13,7 +13,7 @@ class Clamp extends ShaderNodeHxsl {
 		@sginput var min : Dynamic;
 		@sginput var max : Dynamic;
 
-		@sgoutput var output : Vec4;
+		@sgoutput var output : Dynamic;
 		function fragment() {
 			output = clamp(a, min, max);
 		}
