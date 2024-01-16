@@ -960,6 +960,14 @@ class MeshSpray extends Spray {
 		var old3d = shared.current3d;
 
 		makeInstance();
+
+		var new2d = Object2D.getLocal2d(this);
+		if (new2d != null)
+			shared.current2d = new2d;
+		var new3d = Object3D.getLocal3d(this);
+		if (new3d != null)
+			shared.current3d = new3d;
+
 		// add all children then build meshspray
 		for( c in children )
 			if( c.type == "model" )
