@@ -30,6 +30,15 @@
             "port": 9222,
             "webRoot": "${workspaceFolder}/bin",
             "preLaunchTask": "Build"
+        },
+        {
+            "type": "chrome",
+            "request": "attach",
+            "name": "Attach to HIDE (chrome)",
+            "port": 9222,
+            "preLaunchTask": "Build",
+			"sourceMaps": true,
+			"webRoot": "${workspaceFolder}/bin",
         }
     ]
 }
