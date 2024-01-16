@@ -735,6 +735,24 @@ class ShaderEditor extends hide.view.Graph {
 		shaderGraph.checkParameterIndex();
 	}
 
+	function moveParameterTo(paramA: Parameter, paramB: Parameter, after: Bool) {
+		if (paramA == paramB)
+			return;
+		var aElt = parametersList.find("#param_" + paramA.id);
+		var bElt = parametersList.find("#param_" + paramB.id);
+
+		if (!after) {
+			aElt.insertBefore(bElt);
+		} else {
+			aElt.insertAfter(bElt);
+		}
+
+		shaderGraph.parametersKeys.remove(paramA.id);
+		shaderGraph.parametersKeys.insert(shaderGraph.parametersKeys.indexOf(paramB.id)+ (after ? 1 : 0) , paramA.id);
+
+		shaderGraph.checkParameterIndex();
+	}
+
 	function addParameter(parameter : Parameter, ?value : Dynamic) {
 
 		var elt = new Element('<div id="param_${parameter.id}" class="parameter" draggable="true" ></div>').appendTo(parametersList);
@@ -953,6 +971,34 @@ class ShaderEditor extends hide.view.Graph {
 
 		elt.on("dragstart", function(e) {
 			draggedParamId = parameter.id;
+		});
+
+		inline function isAfter(e) {
+			return e.clientY > (elt.offset().top + elt.outerHeight() / 2.0);
+		}
+
+		elt.on("dragover", function(e : js.jquery.Event) {
+			var after = isAfter(e);
+			elt.toggleClass("hovertop", !after);
+			elt.toggleClass("hoverbot", after);
+			e.preventDefault();
+		});
+
+		elt.on("dragleave", function(e) {
+			elt.toggleClass("hovertop", false);
+			elt.toggleClass("hoverbot", false);
+		});
+
+		elt.on("dragenter", function(e) {
+			e.preventDefault();
+		});
+
+		elt.on("drop", function(e) {
+			elt.toggleClass("hovertop", false);
+			elt.toggleClass("hoverbot", false);
+			var other = shaderGraph.getParameter(draggedParamId);
+			var after = isAfter(e);
+			moveParameterTo(other, parameter, after);
 		});
 
 		return elt;

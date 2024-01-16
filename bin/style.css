@@ -1899,6 +1899,7 @@ input[type=checkbox]:checked:after {
   border: 1px solid;
   margin: 5px;
   background-color: #222;
+  position: relative;
   /*.content {
 							background-color: #b3b3b3;
 							padding: 5px;
@@ -1928,6 +1929,23 @@ input[type=checkbox]:checked:after {
 								}
 							}
 						}*/
+}
+.graph-view .tabs .tab .hide-block #parametersList .parameter.hovertop:before,
+.graph-view .tabs .tab .hide-block #parametersList .parameter.hoverbot:after {
+  display: block;
+  position: absolute;
+  z-index: 100;
+  margin: 0 auto;
+  width: 100%;
+  content: "";
+}
+.graph-view .tabs .tab .hide-block #parametersList .parameter:before {
+  border-top: 5px solid red;
+  top: -10px;
+}
+.graph-view .tabs .tab .hide-block #parametersList .parameter:after {
+  border-bottom: 5px solid red;
+  bottom: -10px;
 }
 .graph-view .tabs .tab .hide-block #parametersList .parameter .header {
   background-color: #d6d6d6;

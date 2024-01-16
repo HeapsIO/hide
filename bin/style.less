@@ -2117,6 +2117,27 @@ input[type=checkbox] {
 						border: 1px solid;
 						margin: 5px;
 						background-color: #222;
+						position: relative;
+
+						&.hovertop:before, &.hoverbot:after {
+							display: block;
+							position: absolute;
+							z-index: 100;
+							margin: 0 auto;
+							width: 100%;
+							content: "";
+						}
+
+						&:before {
+							border-top: 5px solid red;
+							top: -10px;
+						}
+
+						&:after {
+							border-bottom: 5px solid red;
+							bottom: -10px;
+						}
+
 
 						.header {
 							background-color: #d6d6d6;
