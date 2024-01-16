@@ -188,10 +188,10 @@ class ShaderGraph extends hrt.prefab.Prefab {
 				var bIndex = -1;
 				for (k => v in parametersAvailable) {
 					if (aIndex == -1 && v.name == a.v.name) {
-						aIndex = k;
+						aIndex = v.index;
 					}
 					if (bIndex == -1 && v.name == b.v.name) {
-						bIndex = k;
+						bIndex = v.index;
 					}
 					if (aIndex != -1 && bIndex != -1)
 						return Reflect.compare(aIndex, bIndex);
