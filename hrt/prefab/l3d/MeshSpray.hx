@@ -963,10 +963,10 @@ class MeshSpray extends Spray {
 
 		var new2d = Object2D.getLocal2d(this);
 		if (new2d != null)
-			shared.current2d = new2d;
+			@:privateAccess shared.setCurrent2d(new2d);
 		var new3d = Object3D.getLocal3d(this);
 		if (new3d != null)
-			shared.current3d = new3d;
+			@:privateAccess shared.setCurrent3d(new3d);
 
 		// add all children then build meshspray
 		for( c in children )
@@ -978,16 +978,16 @@ class MeshSpray extends Spray {
 		for( c in children )
 			if( c.type != "model" )
 				makeChild(c);
+
+		@:privateAccess shared.setCurrent2d(old2d);
+		@:privateAccess shared.setCurrent3d( old3d);
 		// rebuild to apply per instance shaders
 		cast(local3d, MeshSprayObject).redraw(true);
 
-		shared.current2d = old2d;
-		shared.current3d = old3d;
 
 		postMakeInstance();
 
-		shared.current2d = old2d;
-		shared.current3d = old3d;
+
 	}
 
 	override function applyTransform() {

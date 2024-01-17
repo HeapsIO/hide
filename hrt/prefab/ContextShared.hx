@@ -26,11 +26,21 @@ class ContextShared {
 
 	// When makeInstance is called, this contains the 3d object that should be used as a parent for the newly created object
 	@:noCompletion
-	public var current3d : h3d.scene.Object = null;
+	public var current3d(default, null) : h3d.scene.Object = null;
 
 	// When makeInstance is called, this contains the 2d object that should be used as a parent for the newly created object
 	@:noCompletion
-	public var current2d : h2d.Object = null;
+	public var current2d(default, null) : h2d.Object = null;
+
+	// Never call this in the middle of a instanciate chain unless you perfecly know what you are doing
+	function setCurrent3d(o :  h3d.scene.Object) {
+		current3d = o;
+	}
+
+	// Never call this in the middle of a instanciate chain unless you perfecly know what you are doing
+	function setCurrent2d(o: h2d.Object) {
+		current2d = o;
+	}
 
 	// Parent prefab if the object if it was created as a reference
 	public var parent : Prefab = null;

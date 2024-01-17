@@ -3011,7 +3011,9 @@ class SceneEditor {
 		var opts : { ref : {source:String,name:String} } = { ref : null };
 		var obj = view.getClipboard("prefab",opts);
 		if(obj != null) {
-			var p = hrt.prefab.Prefab.createFromDynamic(obj).make(parent);
+			var p = hrt.prefab.Prefab.createFromDynamic(obj);
+			p.setEditor(this);
+			p = p.make(parent);
 			autoName(p);
 
 			if( opts.ref != null && opts.ref.source != null && opts.ref.name != null ) {

@@ -134,19 +134,22 @@ class Prefab {
 
 		if (local2d != null) {
 			if( shared.root2d == null ) shared.root2d = local2d;
-			shared.current2d = local2d;
+			@:privateAccess shared.setCurrent2d(local2d);
 		}
 		if (local3d != null) {
 			if( shared.root3d == null ) shared.root3d = local3d;
-			shared.current3d = local3d;
+			@:privateAccess shared.setCurrent3d(local3d);
 		}
 
 		shared.isPrototype = false;
 
 		makeInstanceRec();
 
-		shared.current2d = old2d;
-		shared.current3d = old3d;
+		@:privateAccess
+		{
+			shared.setCurrent2d(old2d);
+			shared.setCurrent3d(old3d);
+		}
 
 		refresh();
 	}
@@ -591,28 +594,29 @@ class Prefab {
 	function makeInstanceRec() : Void {
 		if (!shouldBeInstanciated()) return;
 
+		makeInstance();
+
+		makeChildren();
+
+		postMakeInstance();
+	}
+
+	final function makeChildren() : Void {
 		var old2d = shared.current2d;
 		var old3d = shared.current3d;
 
-		makeInstance();
-
 		var new2d = this.getLocal2d();
 		if (new2d != null)
-			shared.current2d = new2d;
+			@:privateAccess shared.setCurrent2d(new2d);
 		var new3d = this.getLocal3d();
 		if (new3d != null)
-			shared.current3d = new3d;
+			@:privateAccess shared.setCurrent3d(new3d);
 		for (c in children) {
 			makeChild(c);
 		}
 
-		shared.current2d = old2d;
-		shared.current3d = old3d;
-
-		postMakeInstance();
-
-		shared.current2d = old2d;
-		shared.current3d = old3d;
+		@:privateAccess shared.setCurrent2d(old2d);
+		@:privateAccess shared.setCurrent3d(old3d);
 	}
 
 	/**
