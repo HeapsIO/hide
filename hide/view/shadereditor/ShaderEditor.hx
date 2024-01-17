@@ -102,7 +102,6 @@ class Preview extends h2d.Bitmap {
 		}
 		if (shaderDef == null)
 			return;
-		trace("shader set");
 		shader = new DynamicShader(shaderDef.shader);
 		addShader(shader);
 	}
@@ -1081,8 +1080,10 @@ class ShaderEditor extends hide.view.Graph {
 		}
 		timerCompileShader = new Timer(COMPILE_SHADER_DEBOUNCE);
 		timerCompileShader.run = function() {
-			timerCompileShader.stop();
-			compileShader();
+			if (obj != null) {
+				timerCompileShader.stop();
+				compileShader();
+			}
 		};
 	}
 

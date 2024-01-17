@@ -10,8 +10,8 @@ class Clamp extends ShaderNodeHxsl {
 
 	static var SRC = {
 		@sginput(0.0) var a : Dynamic;
-		@sginput var min : Dynamic;
-		@sginput var max : Dynamic;
+		@sginput(0.0) var min : Dynamic;
+		@sginput(1.0) var max : Dynamic;
 
 		@sgoutput var output : Dynamic;
 		function fragment() {
