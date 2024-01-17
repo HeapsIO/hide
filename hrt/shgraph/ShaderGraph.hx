@@ -7,6 +7,41 @@ using haxe.EnumTools.EnumValueTools;
 using Lambda;
 import hrt.shgraph.AstTools.*;
 
+enum AngleUnit {
+	Radian;
+	Degree;
+}
+
+final angleUnits = [Radian, Degree];
+
+#if editor
+function getAngleUnitDropdown(self: Dynamic, width: Float) : hide.Element {
+	var element = new hide.Element('<div style="width: ${width * 0.8}px; height: 40px"></div>');
+	element.append('<span>Unit</span>');
+	element.append(new hide.Element('<select id="unit"></select>'));
+	if (self.unit == null) {
+		self.unit = angleUnits[0];
+	}
+
+	var input = element.children("#unit");
+	var indexOption = 0;
+	for (i => curAngle in angleUnits) {
+		input.append(new hide.Element('<option value="${i}">${curAngle}</option>'));
+		if (self.unit == curAngle) {
+			input.val(i);
+		}
+		indexOption++;
+	}
+
+	input.on("change", function(e) {
+		var value = input.val();
+		self.unit = angleUnits[value];
+	});
+
+	return element;
+}
+#end
+
 enum ShaderDefInput {
 	Var(name: String);
 	Const(intialValue: Float);
