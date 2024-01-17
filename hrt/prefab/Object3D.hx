@@ -124,16 +124,48 @@ class Object3D extends Prefab {
 		rotationZ = t.rotationZ;
 	}
 
-	public function getAbsPos() {
+	public function getAbsPos( followRefs : Bool = false ) {
 		var p = parent;
 		while( p != null ) {
 			var obj = p.to(Object3D);
 			if( obj == null ) {
+				if( p.parent == null && followRefs ) {
+					p = p.shared.parent;
+					continue;
+				}
 				p = p.parent;
 				continue;
 			}
 			var m = getTransform();
 			var abs = obj.getAbsPos();
+			m.multiply3x4(m, abs);
+			return m;
+		}
+		return getTransform();
+	}
+
+	/**
+		Returns the absolute position of this prefab using heaps object when instanciated
+	**/
+	public function getAbsPos3d() {
+		var p = parent;
+		while( p != null ) {
+			var obj = p.to(Object3D);
+			if( obj == null ) {
+				if( p.parent == null ) {
+					p = p.shared.parent;
+					continue;
+				}
+				p = p.parent;
+				continue;
+			}
+			var m = getTransform();
+			var abs : h3d.Matrix;
+			if( obj.local3d != null ) {
+				abs = obj.local3d.getAbsPos();
+			} else {
+				abs = obj.getAbsPos(true);
+			}
 			m.multiply3x4(m, abs);
 			return m;
 		}

@@ -176,8 +176,8 @@ class SplinePoint extends Object3D {
 	}
 	#end
 
-	override public function getAbsPos() {
-		var result = obj != null ? obj.getAbsPos() : super.getAbsPos();
+	override public function getAbsPos( followRefs : Bool = false ) {
+		var result = obj != null ? obj.getAbsPos() : super.getAbsPos(followRefs);
 		if (offset != null) result.multiply(result, offset);
 		return result;
 	}
