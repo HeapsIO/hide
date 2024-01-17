@@ -156,16 +156,13 @@ class Gradient {
     public static function textureFromData(data : GradientData) : h3d.mat.Texture {
         var hash = getDataHash(data);
 
-		// Cache is disabled in editor because of
-		// multi engine context that can cause crashes
-		#if !editor
+
         var cache = getCache();
         var entry = cache.get(hash);
         if (entry != null)
         {
             return entry;
         }
-		#end
 
         #if !release
         var oldHash = Gradient.getDataHash(data);
