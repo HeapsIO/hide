@@ -686,25 +686,28 @@ class Prefab {
 
 
 	// Todo : maybe make the same shananigans as make to have a "type safe" clone
-	public final function clone(?root: Prefab = null, ?contextShared:ContextShared = null) : Prefab {
+	public final function clone(?root: Prefab = null, ?contextShared:ContextShared = null, withChildren : Bool = true) : Prefab {
 		var sh = contextShared == null ? Prefab.createContextShared() : contextShared;
 		sh.isPrototype = false;
 		sh.currentPath = contextShared?.currentPath ?? this.shared?.currentPath;
-		return copyDefault(root, sh);
+		return copyDefault(root, sh, withChildren);
 	}
 
 	/**
 		Create a copy of this prefab and it's childrens, whitout initializing their fields
 	**/
-	final function copyDefault(?parent:Prefab = null, sh: ContextShared) : Prefab {
+	final function copyDefault(?parent:Prefab = null, sh: ContextShared, withChildren : Bool = true) : Prefab {
 		var thisClass = Type.getClass(this);
 
 		var inst = Type.createInstance(thisClass, [parent, sh]);
 		//copyShallow(this, inst, false, true, true, getSerializableProps());
 		inst.copy(this);
-		for (child in children) {
-			child.copyDefault(inst, sh);
+		if (withChildren) {
+			for (child in children) {
+				child.copyDefault(inst, sh);
+			}
 		}
+
 		return inst;
 	}
 
