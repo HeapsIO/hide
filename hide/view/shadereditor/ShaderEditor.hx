@@ -136,6 +136,7 @@ class ShaderEditor extends hide.view.Graph {
 	var classRepository : Array<{cl: Class<ShaderNode>, group: String, name: String, description: String, args: Array<Dynamic>}>;
 
 	var previewsScene : hide.comp.Scene;
+	var previewParamDirty : Bool = true;
 	var currentShaderPreviewsDef : hrt.prefab.ContextShared.ShaderDef;
 
 	// used to preview
@@ -1129,6 +1130,7 @@ class ShaderEditor extends hide.view.Graph {
 			currentShader = newShader;
 			currentShaderDefMainPreview = shaderGraphDef;//{shader: shaderGraphDef, inits:[]};
 
+			previewParamDirty = true;
 
 			info('Shader compiled in  ${Date.now().getTime() - timeStart}ms');
 
@@ -1197,6 +1199,7 @@ class ShaderEditor extends hide.view.Graph {
 		sceneEditor.scene.setCurrent();
 		var param = shaderGraph.getParameter(id);
 		setParamValueByName(currentShader, param.name, param.defaultValue);
+		previewParamDirty = true;
 		for (b in listOfBoxes) {
 			// TODO
 			// var previewBox = b.getInstance();//Std.downcast(b.getInstance(), hrt.shgraph.nodes.Preview);
@@ -1267,6 +1270,12 @@ class ShaderEditor extends hide.view.Graph {
 		}
 		boxToPreview = newBoxToPreview;
 
+		var updateShaderParams = false;
+		if (previewParamDirty) {
+			updateShaderParams = true;
+			previewParamDirty = false;
+		}
+
 		var select = null;
 		if (currentShaderPreviewsDef != null) {
 			select = currentShaderPreviewsDef.inits.find((e) -> e.variable.name == "__sg_PREVIEW_output_select");
@@ -1278,7 +1287,7 @@ class ShaderEditor extends hide.view.Graph {
 			if (preview.shaderDef != currentShaderPreviewsDef) {
 				preview.shaderDef = currentShaderPreviewsDef;
 			}
-			if (preview.shader != null) {
+			if (preview.shader != null && updateShaderParams) {
 				for (init in currentShaderPreviewsDef.inits) {
 					if (init == select) {
 						setParamValue(preview.shader, init.variable, box.getId() + 1);
