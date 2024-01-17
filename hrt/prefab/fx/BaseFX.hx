@@ -185,7 +185,7 @@ class BaseFXTools {
 		}
 
 		var shader = elt.to(hrt.prefab.Shader);
-		if(shader == null)
+		if(shader == null || shader.shader == null)
 			return;
 
 		var params = makeShaderParams(shader);
@@ -196,7 +196,7 @@ class BaseFXTools {
 			var perInstance = batch.instancedParams;
 			if ( perInstance == null ) {
 				perInstance = new hxsl.Cache.BatchInstanceParams([]);
-					batch.instancedParams = perInstance; 
+					batch.instancedParams = perInstance;
 			}
 			perInstance.forcedPerInstance.push({
 				shader: shader.shader.data.name,
