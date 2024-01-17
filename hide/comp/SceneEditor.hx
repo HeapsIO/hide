@@ -1859,8 +1859,8 @@ class SceneEditor {
 			gizmo.visible = showGizmo;
 			gizmo.setPosition(pos.x, pos.y, pos.z);
 
-			if(curEdit.rootObjects.length == 1 && (localTransform || K.isDown(K.ALT) || gizmo.editMode == Scaling)) {
-				var obj = curEdit.rootObjects[0];
+			if(curEdit.rootObjects.length >= 1 && (localTransform || K.isDown(K.ALT) || gizmo.editMode == Scaling)) {
+				var obj = curEdit.rootObjects[curEdit.rootObjects.length - 1];
 				var mat = worldMat(obj);
 				var s = mat.getScale();
 				if(s.x != 0 && s.y != 0 && s.z != 0) {
