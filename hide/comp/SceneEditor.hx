@@ -3295,7 +3295,8 @@ class SceneEditor {
 			removeInstance(e);
 			e.parent = null;
 		}
-		refresh(Partial);
+		if (doRefresh)
+			refresh(Partial);
 
 
 		/*var fullRefresh = false;
