@@ -139,10 +139,10 @@ class Shader extends Prefab {
 				if (flow != null) {
 					@:privateAccess if (flow.background != null) {
 						flow.background.addShader(shader);
-						}
 					}
 				}
 			}
+		}
 
 		if( shared.current3d != null )
 			iterMaterials(function(obj,mat) if(checkMaterial(mat)) applyShader(obj, mat, shader));

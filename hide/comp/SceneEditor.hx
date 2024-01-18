@@ -748,7 +748,7 @@ class SceneEditor {
 		view.keys.register("duplicate", {name: "Duplicate", category: "Scene"}, duplicate.bind(true));
 		view.keys.register("duplicateInPlace", {name: "Duplicate in place", category: "Scene"}, duplicate.bind(false));
 		view.keys.register("group", {name: "Group Selection", category: "Scene"}, groupSelection);
-		view.keys.register("delete", {name: "Delete", category: "Scene"}, () -> deleteElements(curEdit.rootElements));
+		view.keys.register("delete", {name: "Delete", category: "Scene"}, () -> deleteElements(selectedPrefabs));
 		view.keys.register("search", {name: "Search", category: "Scene"}, function() tree.openFilter());
 		view.keys.register("rename", {name: "Rename", category: "Scene"}, function () {
 			if(selectedPrefabs.length > 0)
@@ -763,8 +763,8 @@ class SceneEditor {
 				setVisible(selectedPrefabs, isHidden);
 			}
 		});
-		view.keys.register("sceneeditor.isolate", {name: "Isolate", category: "Scene"}, function() {	isolate(curEdit.elements); });
-		view.keys.register("sceneeditor.showAll", {name: "Show all", category: "Scene"}, function() {	setVisible(curEdit.elements, true); });
+		view.keys.register("sceneeditor.isolate", {name: "Isolate", category: "Scene"}, function() {	isolate(selectedPrefabs); });
+		view.keys.register("sceneeditor.showAll", {name: "Show all", category: "Scene"}, function() {	setVisible(selectedPrefabs, true); });
 		view.keys.register("sceneeditor.selectParent", {name: "Select Parent", category: "Scene"}, function() {
 			if(selectedPrefabs.length > 0) {
 				var p = selectedPrefabs[0].parent;
@@ -2241,7 +2241,7 @@ class SceneEditor {
 	}
 
 	function removeInstance(elt : PrefabElement) {
-		elt.parent = null;
+		elt.parent.children.remove(elt);
 
 		elt.getLocal3d()?.remove();
 		elt.getLocal2d()?.remove();
@@ -2265,6 +2265,7 @@ class SceneEditor {
 		//scene.init(ctx.local3d);
 	}
 
+
 	function refreshParents( elts : Array<PrefabElement> ) {
 		var parents = new Map();
 		for( e in elts ) {
@@ -2275,7 +2276,7 @@ class SceneEditor {
 			var h = p.getHideProps();
 			if( h.onChildListChanged != null ) h.onChildListChanged();
 		}
-		if( lastRenderProps != null && parents.exists(lastRenderProps) )
+		if( lastRenderProps != null && elts.contains(lastRenderProps) )
 			lastRenderProps.applyProps(scene.s3d.renderer);
 	}
 
@@ -2924,10 +2925,6 @@ class SceneEditor {
 
 	function groupSelection() {
 		if(!canGroupSelection()) {
-            var elts = curEdit.rootElements;
-            if (elts.length == 0) {
-            }
-
 			return;
         }
 
@@ -3293,20 +3290,18 @@ class SceneEditor {
 	}
 
 	public function deleteElements(elts : Array<PrefabElement>, ?then: Void->Void, doRefresh : Bool = true, enableUndo : Bool = true) {
-		for (e in elts) {
-			removeInstance(e);
-			e.parent = null;
-		}
-		if (doRefresh)
-			refresh(Partial);
+		// for (e in elts) {
+		// 	removeInstance(e);
+		// 	e.parent = null;
+		// }
 
-
-		/*var fullRefresh = false;
+		var fullRefresh = false;
 		var undoes = [];
 		for(elt in elts) {
-			removeInstance(elt);
+			var parent = elt.parent;
 			var index = elt.parent.children.indexOf(elt);
-			elt.parent.children.remove(elt);
+			removeInstance(elt);
+
 			undoes.unshift(function(undo) {
 				if(undo) elt.parent.children.insert(index, elt);
 				else elt.parent.children.remove(elt);
@@ -3329,11 +3324,11 @@ class SceneEditor {
 				for(u in undoes) u(undo);
 
 				if(undo)
-					for(e in elts) makeInstance(e);
+					for(e in elts) makePrefab(e);
 
 				refreshFunc(then != null ? then : selectElements.bind(undo ? elts : [],NoHistory));
 			}));
-		}*/
+		}
 	}
 
 	function reparentElement(e : Array<PrefabElement>, to : PrefabElement, index : Int) {
