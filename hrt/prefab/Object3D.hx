@@ -148,7 +148,10 @@ class Object3D extends Prefab {
 		Returns the absolute position of this prefab using heaps object when instanciated
 	**/
 	public function getAbsPos3d() {
+		if( local3d != null )
+			return local3d.getAbsPos();
 		var p = parent;
+		var m = getTransform();
 		while( p != null ) {
 			var obj = p.to(Object3D);
 			if( obj == null ) {
@@ -159,7 +162,7 @@ class Object3D extends Prefab {
 				p = p.parent;
 				continue;
 			}
-			var m = getTransform();
+
 			var abs : h3d.Matrix;
 			if( obj.local3d != null ) {
 				abs = obj.local3d.getAbsPos();
@@ -169,7 +172,11 @@ class Object3D extends Prefab {
 			m.multiply3x4(m, abs);
 			return m;
 		}
-		return getTransform();
+		if( shared.root3d != null ) {
+			m.multiply3x4(m, shared.root3d.getAbsPos());
+			return m;
+		}
+		return m;
 	}
 
 	public function getDisplayFilters() : Array<String> {
