@@ -24,7 +24,7 @@ class BillboardObject extends h3d.scene.Object {
 		var fwd = tmpVec;
 		fwd.load(camera.target.sub(camera.pos));
 		fwd.normalize();
-		qRot.initDirection(fwd);
+		qRot.initDirection(fwd, camera.up);
 
 		absPos.tx = tmpMat.tx;
 		absPos.ty = tmpMat.ty;
