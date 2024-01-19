@@ -555,6 +555,69 @@ class RenderPropsPopup extends Popup {
 	}
 }
 
+@:access(hide.comp.SceneEditor)
+class CustomEditor {
+
+    var ide(get, never) : hide.Ide;
+	function get_ide() { return editor.ide; }
+    var editor : SceneEditor;
+
+	var element : hide.Element;
+
+	public function new( editor : SceneEditor ) {
+		this.editor = editor;
+	}
+
+    public function setElementSelected( p : hrt.prefab.Prefab, ctx : hrt.prefab.Context, b : Bool ) {
+		return true;
+    }
+	
+	public function update( dt : Float ) {
+		
+	}
+
+	function iterPrefabsUntil( p : hrt.prefab.Prefab, fct : hrt.prefab.Prefab -> Bool, maxDepth = -1 ) {
+		var queue : Array<hrt.prefab.Prefab> = [p];
+		var cDepth = 0;
+		while( queue.length > 0 ) {
+			if( maxDepth >= 0 && cDepth > maxDepth )
+				return null;
+			var prefab = queue.shift();
+			if( prefab == null ) {
+				cDepth++;
+				continue;
+			}
+			if( fct(prefab) )
+				return prefab;
+			for( p in prefab.children ) {
+				queue.push(p);
+			}
+			var ref = Std.downcast(prefab, hrt.prefab.Reference);
+			if( ref != null && ref.ref != null ) {
+				queue.push(ref.ref);
+			}
+			queue.push(null);
+		}
+		return null;
+	}
+
+	function refresh( ?callb: Void->Void ) {
+		editor.refresh(Full, callb);
+	}
+
+	function show( elt : hide.Element ) {
+		element = new hide.Element('<div class="custom-editor"></div>');
+		editor.scene.element.append(element);
+		elt.appendTo(element);
+	}
+
+	function hide() {
+		if( element != null )
+			element.remove();
+	}
+
+}
+
 class SceneEditor {
 
 	public var tree : hide.comp.IconTree<PrefabElement>;
@@ -597,6 +660,8 @@ class SceneEditor {
 	public var view(default, null) : hide.view.FileView;
 	var sceneData : PrefabElement;
 	var lastRenderProps : hrt.prefab.RenderProps;
+
+	var customEditor : CustomEditor;
 
 	public var lastFocusObjects : Array<Object> = [];
 
@@ -680,6 +745,17 @@ class SceneEditor {
 				}
 			}
 		}
+
+		var customEditorProps = @:privateAccess ide.config.current.get("customEditor");
+		if( customEditorProps != null ) {
+			var cl = try js.Lib.eval(customEditorProps) catch( e : Dynamic ) null;
+			if( cl == null  ) {
+				ide.error(customEditorProps+" could not be found");
+				return;
+			}
+			customEditor = Type.createInstance(cl,[this]);
+		}
+
 	}
 
 
@@ -2459,6 +2535,8 @@ class SceneEditor {
 	}
 
 	function setElementSelected( p : PrefabElement, ctx : hrt.prefab.Context, b : Bool ) {
+		if( customEditor != null && !customEditor.setElementSelected(p, ctx, b) )
+			return false;
 		return p.setSelected(ctx, b);
 	}
 
@@ -3403,6 +3481,8 @@ class SceneEditor {
 		event.update(dt);
 		for( f in updates )
 			f(dt);
+		if( customEditor != null )
+			customEditor.update(dt);
 		onUpdate(dt);
 	}
 

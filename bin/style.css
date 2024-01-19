@@ -476,6 +476,19 @@ input[type=checkbox]:checked:after {
 .detached.detachable-panel .splitter.handle-bottom {
   bottom: -5px;
 }
+.custom-editor {
+  position: absolute;
+  top: 15px;
+  right: 15px;
+  background-color: #222222;
+  border: 1px solid #444;
+  padding: 10px;
+}
+.custom-editor h1,
+.custom-editor h2,
+.custom-editor h3 {
+  margin-top: 0;
+}
 .hide-scenetree {
   flex: 1;
   background-color: #111;
