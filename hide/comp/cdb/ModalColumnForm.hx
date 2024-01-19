@@ -118,6 +118,11 @@ class ModalColumnForm extends Modal {
 				</tr>
 
 				<tr class="doc hide">
+					<td>&nbsp;
+					<td><label><input type="checkbox" name="copyPasteImmutable"/>&nbsp;Ignore copy paste</label>
+				</tr>
+
+				<tr class="doc hide">
 					<td>Documentation
 					<td><textarea name="doc" rows=10 columns=70></textarea>
 				</tr>
@@ -132,11 +137,6 @@ class ModalColumnForm extends Modal {
 				<tr class="opt">
 					<td>&nbsp;
 					<td><label><input type="checkbox" name="req"/>&nbsp;Required</label>
-				</tr>
-
-				<tr class="opt">
-					<td>&nbsp;
-					<td><label><input type="checkbox" name="copyPasteImmutable"/>&nbsp;Copy/paste immutable</label>
 				</tr>
 
 				<tr>
