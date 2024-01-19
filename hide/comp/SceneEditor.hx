@@ -2082,6 +2082,12 @@ class SceneEditor {
 			}
 			lockTog.css({visibility: p.locked ? "visible" : "hidden"});
 		}
+
+		var shader = Std.downcast(p, hrt.prefab.Shader);
+		if (shader != null && (getContext(p) == null || shader.getShaderDefinition(getContext(p)) == null)) {
+			aEl.css("text-decoration", "line-through");
+			aEl.css("color", "#ff5555");
+		}
 	}
 
 	public function applySceneStyle(p: PrefabElement) {

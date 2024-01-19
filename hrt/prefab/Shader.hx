@@ -173,8 +173,12 @@ class Shader extends Prefab {
 
 		var ctx = ectx.getContext(this);
 		var shaderDef = getShaderDefinition(ctx);
-		if( shaderDef == null || ctx == null )
+		if( shaderDef == null || ctx == null ) {
+			var el = new Element("<p>Shader definition is missing</p>");
+			el.css("color", "#ff5555");
+			ectx.properties.add(el);
 			return;
+		}
 
 		var propGroup = new hide.Element('<div class="group" name="Properties">
 			<dl>
