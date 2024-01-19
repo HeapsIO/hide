@@ -16,7 +16,7 @@ class ShaderParam extends ShaderNode {
 		var pos : Position = {file: "", min: 0, max: 0};
 
 		var qual = [];
-		if (this.variable.type == TSampler2D) {
+		if (this.variable.type.isTexture()) {
 			qual.push(Sampler(this.variable.name));
 		}
 
@@ -96,7 +96,7 @@ class ShaderParam extends ShaderNode {
 			case TFloat:
 				if (displayDiv != null)
 					displayDiv.html(value);
-			case TSampler2D:
+			case TSampler(_):
 				if (displayDiv != null)
 					displayDiv.css("background-image", 'url(${value})');
 			case TVec(4, VFloat):
@@ -112,7 +112,7 @@ class ShaderParam extends ShaderNode {
 			case TFloat:
 				displayDiv = new hide.Element('<div class="float-preview" ></div>');
 				height += 20;
-			case TSampler2D:
+			case TSampler(_):
 				displayDiv = null;
 			case TVec(4, VFloat):
 				displayDiv = null;

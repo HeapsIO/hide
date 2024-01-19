@@ -432,7 +432,7 @@ class ShaderGraph extends hrt.prefab.Prefab {
 	static function setParamValue(ctx: hrt.prefab.ContextShared, shader : hxsl.DynamicShader, variable : hxsl.Ast.TVar, value : Dynamic) {
 		try {
 			switch (variable.type) {
-				case TSampler2D:
+				case TSampler(_):
 					var t = hrt.impl.TextureType.Utils.getTextureFromValue(value);
 					t.wrap = Repeat;
 					shader.setParamValue(variable, t);
@@ -477,8 +477,14 @@ class ShaderGraph extends hrt.prefab.Prefab {
 		for (p in parameters) {
 			var typeString : Array<Dynamic> = Reflect.field(p, "type");
 			if (Std.isOfType(typeString, Array)) {
-				if (typeString[1] == null || typeString[1].length == 0)
-					p.type = std.Type.createEnum(Type, typeString[0]);
+				if (typeString[1] == null || typeString[1].length == 0) {
+					if ( typeString[0] == "TSampler2D" )
+						typeString[0] = "TSampler";
+					if ( typeString[0] == "TSampler" )
+						p.type = std.Type.createEnum(Type, typeString[0], [T2D, false]);
+					else
+						p.type = std.Type.createEnum(Type, typeString[0]);
+				}
 				else {
 					var paramsEnum = typeString[1].split(",");
 					p.type = std.Type.createEnum(Type, typeString[0], [Std.parseInt(paramsEnum[0]), std.Type.createEnum(VecType, paramsEnum[1])]);
@@ -1117,7 +1123,7 @@ class Graph {
 					}
 					else {
 						if (nodeVar.internal) {
-							if (nodeVar.v.type == TSampler2D) {
+							if (nodeVar.v.type.isTexture()) {
 								// Rewrite output var to be the sampler directly because we can't assign
 								// a sampler to a temporary variable
 								var outVar = outputs["output"];
@@ -1176,7 +1182,7 @@ class Graph {
 							replacement = {e: TVar(inVar), p: pos, t:nodeVar.v.type};
 						}
 						else {
-							if (nodeVar.v.type == TSampler2D) {
+							if (nodeVar.v.type.match(TSampler(_)) ) {
 								allInputsVarsBound = false;
 								continue;
 							}

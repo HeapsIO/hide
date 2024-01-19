@@ -338,7 +338,7 @@ class ShaderEditor extends hide.view.Graph {
 			{ label : "Vec2", click : () -> createParameter(TVec(2, VFloat)) },
 			{ label : "Vec3", click : () -> createParameter(TVec(3, VFloat)) },
 			{ label : "Color", click : () -> createParameter(TVec(4, VFloat)) },
-			{ label : "Texture", click : () -> createParameter(TSampler2D) },
+			{ label : "Texture", click : () -> createParameter(TSampler(T2D,false)) },
 		];
 
 		parametersList = element.find("#parametersList");
@@ -864,7 +864,7 @@ class ShaderEditor extends hide.view.Graph {
 					//e.attr("max", "" + max);
 				}
 				typeName = "Vec" + n;
-			case TSampler2D:
+			case TSampler(_):
 				var parentSampler = new Element('<input type="texturepath" field="sampler2d"/>').appendTo(defaultValue);
 
 				var tselect = new hide.comp.TextureChoice(null, parentSampler);
@@ -1019,7 +1019,7 @@ class ShaderEditor extends hide.view.Graph {
 
 	function setDisplayValue(node : ShaderParam, type : Type, defaultValue : Dynamic) {
 		switch (type) {
-			case TSampler2D:
+			case TSampler(_):
 				if (defaultValue != null && defaultValue.length > 0)
 					node.setDisplayValue('file://${ide.getPath(defaultValue)}');
 			case TVec(4, VFloat):

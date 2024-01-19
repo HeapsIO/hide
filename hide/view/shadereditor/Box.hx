@@ -134,7 +134,7 @@ class Box {
 						case 4:
 							style.fill = vec4Color;
 					}
-				case TSampler2D:
+				case TSampler(_):
 					style.fill = samplerColor;
 				default:
 			}
@@ -189,7 +189,7 @@ class Box {
 						style.fill = vec3Color;
 					else if (size == 4)
 						style.fill = vec4Color;
-				case TSampler2D:
+				case TSampler(_):
 					style.fill = samplerColor;
 				default:
 			}
