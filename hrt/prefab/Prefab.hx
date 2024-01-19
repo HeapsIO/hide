@@ -129,7 +129,7 @@ class Prefab {
 
 	// Create the hierarchy of heaps objects from this prefab. Can only be done on cloned prefabs or if forceInstanciate is true ()
 	public function instanciate() {
-		if (shared.root2d == null || shared.root3d == null)
+		if (shared.root2d == null && shared.root3d == null && !shared.forceInstanciate)
 			throw "Can't instanciate a template prefab.";
 
 		var old2d = shared.current2d;
@@ -563,7 +563,7 @@ class Prefab {
 	*/
 
 	function shouldBeInstanciated() : Bool {
-		if (shared.root2d == null || shared.root3d == null)
+		if (shared.root2d == null && shared.root3d == null && !shared.forceInstanciate)
 			throw "Prefab is missing a shared context for instanciation";
 
 		if (!enabled) return false;

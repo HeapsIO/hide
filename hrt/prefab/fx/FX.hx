@@ -283,7 +283,7 @@ class FXAnimation extends h3d.scene.Object {
 	}
 
 	function initObjAnimations(elt: PrefabElement) {
-		if(!elt.enabled) return;
+		if(@:privateAccess !elt.shouldBeInstanciated()) return;
 		if(Std.downcast(elt, hrt.prefab.fx.Emitter) == null) {
 			// Don't extract animations for children of Emitters
 			for(c in elt.children) {
@@ -336,8 +336,7 @@ class FXAnimation extends h3d.scene.Object {
 
 		var ap : AdditionalProperies = null;
 		var local3d = Object3D.getLocal3d(elt);
-		if (local3d == null)
-			trace("break");
+
 		if( Std.isOfType(local3d, h3d.scene.pbr.PointLight)) {
 			ap = PointLight(makeColor("color"), makeVal("power", null), makeVal("size", null), makeVal("range", null) );
 		}

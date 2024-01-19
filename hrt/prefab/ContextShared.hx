@@ -36,6 +36,12 @@ class ContextShared {
 	// Parent prefab if the object if it was created as a reference
 	public var parent : Prefab = null;
 
+	/**
+		Disable some checks at the prefab instanciation time. Used to initialize prefabs that
+		don't need locals2d/3d like shaders
+	**/
+	public var forceInstanciate : Bool = false;
+
 	var bakedData : Map<String, haxe.io.Bytes>;
 
 	public function new( ?res : hxd.res.Resource, ?root2d: h2d.Object = null, ?root3d: h3d.scene.Object = null) {
