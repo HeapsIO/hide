@@ -3571,6 +3571,20 @@ class SceneEditor {
 			return Type.resolveClass(path) != null || StringTools.endsWith(path, ".hx") || StringTools.endsWith(path, ".shgraph");
 		}
 
+		function getPackagePath(path: String) {
+			var fullPath = null;
+			for (shaderPath in @:privateAccess Ide.inst.shaderLoader.shaderPath) {
+				fullPath = Ide.inst.projectDir + "/" + shaderPath + "/" + path;
+				if (sys.FileSystem.exists(fullPath))
+					break;
+			}
+
+			if (!sys.FileSystem.exists(fullPath))
+				return null;
+
+			return fullPath;
+		}
+
 		var shModel = hrt.prefab.Library.getRegistered().get("shader");
 		var graphModel = hrt.prefab.Library.getRegistered().get("shgraph");
 		var custom = {
@@ -3620,7 +3634,7 @@ class SceneEditor {
 			var fullPath = ide.getPath(strippedSlash);
 			if( isClassShader(path) ) {
 				menu.push(classShaderItem(path));
-			} else if( StringTools.endsWith(path, ".shgraph")) {
+			} else if (StringTools.endsWith(path, ".shgraph") ) {
 				menu.push(graphShaderItem(path));
 			} else if( sys.FileSystem.exists(fullPath) && sys.FileSystem.isDirectory(fullPath) ) {
 				for( c in sys.FileSystem.readDirectory(fullPath) ) {
@@ -3631,6 +3645,21 @@ class SceneEditor {
 						menu.push(graphShaderItem(relPath));
 					}
 				}
+			} else if (getPackagePath(path) != null) {
+				function addShadersInFolder(path : String) {
+					var files = sys.FileSystem.readDirectory(path);
+
+					for (f in files) {
+						var filePath = path + "/" + f;
+						if (sys.FileSystem.isDirectory(filePath))
+							addShadersInFolder(filePath);
+						else if (isClassShader(filePath)){
+							menu.push(classShaderItem(filePath));
+						}
+					}
+				}
+
+				addShadersInFolder(getPackagePath(path));
 			}
 		}
 
