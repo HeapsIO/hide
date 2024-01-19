@@ -71,10 +71,15 @@ private class FXSceneEditor extends hide.comp.SceneEditor {
 		var undoes = [];
 		var newElements = [];
 		for(elt in elements) {
-			var clone = elt.make(elt.parent);
+			var clone = elt.clone(elt.parent, null);
 			var index = elt.parent.children.indexOf(elt) + 1;
 			elt.parent.children.remove(clone);
 			elt.parent.children.insert(index, clone);
+
+			clone.shared.current2d = elt.parent.findFirstLocal2d();
+			clone.shared.current3d = elt.parent.findFirstLocal3d();
+			clone.instanciate();
+
 			autoName(clone);
 			newElements.push(clone);
 

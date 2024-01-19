@@ -1,14 +1,14 @@
 package hide.prefab;
 
-class ContextShared extends hrt.prefab.ContextShared {
+class ContextShared extends hrt.prefab.ContextShared.ContextSharedBase {
 	#if editor
 	public var editor : hide.comp.SceneEditor;
+	public var scene : hide.comp.Scene = null;
+	public var editorDisplay : Bool;
 
-	private function new(?res : hxd.res.Resource ) {
-		super(res);
+	public function new(?res : hxd.res.Resource, ?root2d: h2d.Object = null, ?root3d: h3d.scene.Object = null) {
+		super(res, root2d, root3d);
 	}
-
-
 
 	override function onError( e : Dynamic ) {
 		hide.Ide.inst.error(e);

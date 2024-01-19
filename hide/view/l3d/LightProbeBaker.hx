@@ -77,7 +77,8 @@ class LightProbeBaker {
 					filter(c);
 		}
 		filter(sceneData);
-		sceneData.make(null, sceneData.shared.root2d, offScreenScene);
+		var shared = new hrt.prefab.ContextShared(sceneData.shared.root2d, offScreenScene);
+		sceneData.make(shared);
 
 		/*function disableFaceCulling( o : Object ){
 			for( m in o.getMaterials() )

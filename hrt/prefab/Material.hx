@@ -102,7 +102,7 @@ class Material extends Prefab {
 			var refMatLibPath = this.refMatLib.substring(0, this.refMatLib.lastIndexOf("/"));
 			var refMatName = this.refMatLib.substring(this.refMatLib.lastIndexOf("/") + 1);
 
-			var prefabLib = hxd.res.Loader.currentInstance.load(refMatLibPath).toPrefab().load().clone();
+			var prefabLib = hxd.res.Loader.currentInstance.load(refMatLibPath).toPrefab().load();
 
 			for(c in prefabLib.children) {
 				if (c.name != refMatName)
@@ -248,7 +248,7 @@ class Material extends Prefab {
 		}
 
 		function updateMat() {
-			var previousMat = this.clone();
+			var previousMat = this.serializeToDynamic();
 			var mat = ctx.scene.findMat(materials, matSelect.val());
 			if ( mat != null ) {
 				var previousName = this.name;
@@ -261,7 +261,7 @@ class Material extends Prefab {
 				this.refMatLib = "";
 			}
 
-			var newMat = this.clone();
+			var newMat = this.serializeToDynamic();
 
 			ctx.properties.undo.change(Custom(function(undo) {
 				if( undo ) {

@@ -67,24 +67,34 @@ class Reference extends Object3D {
 		if( source == null )
 			return;
 		var p = resolveRef();
-		var sh = Prefab.createContextShared();
+		var refLocal3d : h3d.scene.Object = null;
+
+		if (p.to(Object3D) != null) {
+			refLocal3d = shared.current3d;
+		} else {
+			super.makeInstance();
+			refLocal3d = local3d;
+		}
+
+		#if editor
+		p.setEditor(this.shared.editor);
+		#end
+		var sh = new ContextShared(findFirstLocal2d(), refLocal3d);
 		sh.currentPath = source;
 		sh.parent = this;
 		sh.customMake = this.shared.customMake;
 		refInstance = p.clone(null, sh);
-		#if editor
-		refInstance.setEditor((cast shared:hide.prefab.ContextShared).editor);
-		#end
+
 		if (refInstance.to(Object3D) != null) {
 			var obj3d = refInstance.to(Object3D);
 			obj3d.loadTransform(this); // apply this transform to the reference prefab
 			obj3d.name = name;
 			obj3d.visible = visible;
-			refInstance.instanciate(findFirstLocal2d(), shared.current3d);
+			refInstance.instanciate();
 			local3d = Object3D.getLocal3d(refInstance);
-		} else {
-			super.makeInstance();
-			refInstance.instanciate(findFirstLocal2d(), local3d);
+		}
+		else {
+			refInstance.instanciate();
 		}
 	}
 

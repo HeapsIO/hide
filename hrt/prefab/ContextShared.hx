@@ -1,14 +1,15 @@
 package hrt.prefab;
 
+#if editor
+typedef ContextShared = hide.prefab.ContextShared;
+class ContextSharedBase {
+#else
 class ContextShared {
-	public var root2d : h2d.Object;
-	public var root3d : h3d.scene.Object;
+#end
+	public var root2d(default, null) : h2d.Object;
+	public var root3d(default, null) : h3d.scene.Object;
 
 	public var currentPath : String;
-	public var editorDisplay : Bool;
-
-	public var isPrototype = true;
-
 	public var prefabSource : String = "";
 
 	/**
@@ -24,38 +25,26 @@ class ContextShared {
 	 **/
 	 public var customMake : Prefab -> Void;
 
-	// When makeInstance is called, this contains the 3d object that should be used as a parent for the newly created object
-	@:noCompletion
-	public var current3d(default, null) : h3d.scene.Object = null;
+	// When make/instanciate is called, this contains the 3d object that should be used as a parent for the newly created object
+	// Never modify this in the middle of a instanciate without restoring it after
+	public var current3d : h3d.scene.Object = null;
 
-	// When makeInstance is called, this contains the 2d object that should be used as a parent for the newly created object
-	@:noCompletion
-	public var current2d(default, null) : h2d.Object = null;
-
-	// Never call this in the middle of a instanciate chain unless you perfecly know what you are doing
-	function setCurrent3d(o :  h3d.scene.Object) {
-		current3d = o;
-	}
-
-	// Never call this in the middle of a instanciate chain unless you perfecly know what you are doing
-	function setCurrent2d(o: h2d.Object) {
-		current2d = o;
-	}
+	// When make/instanciate is called, this contains the 2d object that should be used as a parent for the newly created object
+	// Never modify this in the middle of a instanciate without restoring it after
+	public var current2d : h2d.Object = null;
 
 	// Parent prefab if the object if it was created as a reference
 	public var parent : Prefab = null;
 
 	var bakedData : Map<String, haxe.io.Bytes>;
 
-	#if editor
-	public var scene : hide.comp.Scene = null;
-	#end
-
-	public var customCleanup : Void -> Void;
-
-	// use Prefab.createContextShared instead
-	function new( ?res : hxd.res.Resource ) {
+	public function new( ?res : hxd.res.Resource, ?root2d: h2d.Object = null, ?root3d: h3d.scene.Object = null) {
 		if( res != null ) currentPath = res.entry.path;
+		this.root2d = root2d ?? new h2d.Object();
+		this.root3d = root3d ?? new h3d.scene.Object();
+
+		this.current2d = this.root2d;
+		this.current3d = this.root3d;
 	}
 
 	public function onError( e : Dynamic ) {

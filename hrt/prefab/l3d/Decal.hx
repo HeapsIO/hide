@@ -44,7 +44,7 @@ class Decal extends Object3D {
 
 	override function load( obj : Dynamic ) {
 		super.load(obj);
-		if( obj.blendMode != null ) 
+		if( obj.blendMode != null )
 			blendMode = h2d.BlendMode.createByIndex(obj.blendMode);
 	}
 
@@ -92,7 +92,7 @@ class Decal extends Object3D {
 			var refMatLibPath = this.refMatLib.substring(0, this.refMatLib.lastIndexOf("/"));
 			var refMatName = this.refMatLib.substring(this.refMatLib.lastIndexOf("/") + 1);
 
-			var prefabLib = hxd.res.Loader.currentInstance.load(refMatLibPath).toPrefab().load().clone();
+			var prefabLib = hxd.res.Loader.currentInstance.load(refMatLibPath).toPrefab().load();
 			var mat : Material = null;
 			for(c in prefabLib.children) {
 				if (c.name != refMatName)
@@ -304,7 +304,7 @@ class Decal extends Object3D {
 			}
 
 			function updateMat() {
-				var previousDecal = this.clone();
+				var previousData = this.serializeToDynamic();
 				var mat = ctx.scene.findMat(materials, matSelect.val());
 				if ( mat != null ) {
 					this.refMatLib = mat.path + "/" + mat.mat.name;
@@ -314,14 +314,14 @@ class Decal extends Object3D {
 					this.refMatLib = "";
 				}
 
-				var newDecal = this.clone();
+				var newDecal = this.serializeToDynamic();
 
 				ctx.properties.undo.change(Custom(function(undo) {
 					if( undo ) {
-						this.load(previousDecal.serializeToDynamic());
+						this.load(previousData);
 					}
 					else {
-						this.load(newDecal.serializeToDynamic());
+						this.load(newDecal);
 					}
 
 					updateLibSelect();

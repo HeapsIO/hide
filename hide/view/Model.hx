@@ -120,6 +120,7 @@ class Model extends FileView {
 		tabs = new hide.comp.Tabs(null,element.find(".tabs"));
 		eventList = element.find(".event-editor");
 
+		root = new hrt.prefab.Prefab(null, null);
 		var def = new hrt.prefab.Prefab(null, null);
 		new hrt.prefab.RenderProps(def, null).name = "renderer";
 		var l = new hrt.prefab.Light(def, null);
@@ -628,7 +629,7 @@ class Model extends FileView {
 			l.shadows.mode = Dynamic;
 			l.shadows.size = 1024;
 
-			def.make();
+			def.make(new hrt.prefab.ContextShared());
 
 			r = render;
 			r.applyProps(scene.s3d.renderer);

@@ -558,13 +558,9 @@ class EmitterObject extends h3d.scene.Object {
 				baseEmitMat = null;
 
 			var empty3d = new h3d.scene.Object();
-			// if (particleTemplate.local3d == null)
-			// 	particleTemplate.instanciate(null, empty3d);
-			// var loc3d = particleTemplate.local3d;
-
-			var clone = particleTemplate.clone(false);
-			particleTemplate.instanciate(empty3d);
-			var loc3d = particleTemplate.local3d;
+			var clone = particleTemplate.clone(new hrt.prefab.ContextShared(empty3d),false);
+			clone.instanciate();
+			var loc3d = Object3D.getLocal3d(clone);
 
 			var mesh = Std.downcast(loc3d, h3d.scene.Mesh);
 			if( mesh == null ) {
@@ -819,7 +815,8 @@ class EmitterObject extends h3d.scene.Object {
 			var scene = relativeScenePosition ? getScene() : null;
 
 			if (trailsTemplate != null && trails == null) {
-				trails = cast trailsTemplate.make(this).local3d;
+				trailsTemplate.instanciate();
+				trails = cast trailsTemplate.local3d;
 				trails.autoTrackPosition = false;
 			}
 
@@ -1217,7 +1214,8 @@ class EmitterObject extends h3d.scene.Object {
 					if( subEmitterTemplates != null ) {
 
 						for (subEmitterTemplate in subEmitterTemplates) {
-						    var emitter : EmitterObject = cast @:privateAccess subEmitterTemplate.make().local3d;
+							var subEmitterInstance : Emitter = cast @:privateAccess subEmitterTemplate.make(new ContextShared());
+						    var emitter : EmitterObject = cast subEmitterInstance.local3d;
 							var pos = p.absPos.getPosition();
 							emitter.setPosition(pos.x, pos.y, pos.z);
 							emitter.isSubEmitter = true;

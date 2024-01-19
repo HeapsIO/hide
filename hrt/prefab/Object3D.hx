@@ -30,24 +30,6 @@ class Object3D extends Prefab {
 		return null;
 	}
 
-	/*function set_x(v : Float) {
-		x = v;
-		local3d.x = x;
-		return x;
-	}
-
-	function set_y(v : Float) {
-		y = v;
-		local3d.y = y;
-		return y;
-	}
-
-	function set_z(v : Float) {
-		z = v;
-		local3d.z = z;
-		return z;
-	}*/
-
 	public function setTransform(mat : h3d.Matrix) {
 		var rot = mat.getEulerAngles();
 		x = mat.tx;
@@ -60,6 +42,17 @@ class Object3D extends Prefab {
 		rotationX = Math.radToDeg(rot.x);
 		rotationY = Math.radToDeg(rot.y);
 		rotationZ = Math.radToDeg(rot.z);
+	}
+
+	override function makeChildren() {
+		var old3d = shared.current3d;
+		shared.current3d = local3d ?? shared.current3d;
+
+		for (c in children) {
+			makeChild(c);
+		}
+
+		shared.current3d = old3d;
 	}
 
 	/* Override makeObject instead of this */

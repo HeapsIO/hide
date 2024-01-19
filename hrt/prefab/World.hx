@@ -55,7 +55,8 @@ class World extends Object3D {
 		tmp.x = -chunkPos.x;
 		tmp.y = -chunkPos.y;
 		for ( p in content.children ) {
-			var context = p.make(tmp, shared);
+			shared.current3d = tmp;
+			var context = p.make(shared);
 			if ( context.getLocal3d() == tmp )
 				continue;
 			#if editor
@@ -176,7 +177,7 @@ class World extends Object3D {
 					var object3D = Std.downcast(c, hrt.prefab.Object3D);
 					if ( object3D == null )
 						throw "TODO : stream prefab that are not 3D objects";
-					object3D = cast(object3D.clone(), hrt.prefab.Object3D);
+					object3D = cast(object3D.clone(null, null), hrt.prefab.Object3D);
 					var data = getChunkData(getObjectLevel(object3D), object3D.x, object3D.y);
 					// prefab positions are stored relative to the chunk parent.
 					// it's arbitrary but some work has to be done as the make occurs with the chunk as parent.

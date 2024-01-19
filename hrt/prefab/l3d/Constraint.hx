@@ -40,7 +40,7 @@ class Constraint extends Prefab {
 			</dl>
 		'),this, function(_) {
 			if( curObj != null ) curObj.follow = null;
-			make(getRoot());
+			apply(shared.root3d);
 			curObj = getRoot().locateObject(object);
 		});
 

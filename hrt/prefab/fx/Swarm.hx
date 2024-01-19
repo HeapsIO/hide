@@ -83,8 +83,7 @@ class SwarmObject extends h3d.scene.Object {
 
 			var empty3d = new h3d.scene.Object();
 
-			// swarmElementTemplate.shared.root3d = swarmElementTemplate.shared.current3d = empty3d;
-			var template = @:privateAccess swarmElementTemplate.make(empty3d);
+			var template = swarmElementTemplate.make(new ContextShared(empty3d));
 			var local3d = Object3D.getLocal3d(template);
 			var mesh = Std.downcast(local3d, h3d.scene.Mesh);
 			if( mesh == null ) {

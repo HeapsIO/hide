@@ -24,7 +24,7 @@
             "preLaunchTask": "Build"
         },
         {
-            "type": "nwjs",
+            "type": "chrome",
             "request": "attach",
             "name": "Attach to HIDE",
             "port": 9222,

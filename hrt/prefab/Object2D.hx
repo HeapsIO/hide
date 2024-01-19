@@ -22,18 +22,6 @@ class Object2D extends Prefab {
 		return null;
 	}
 
-	/*function set_x(v : Float) {
-		x = v;
-		local2d.x = x;
-		return x;
-	}
-
-	function set_y(v : Float) {
-		y = v;
-		local2d.y = y;
-		return y;
-	}*/
-
 	function makeObject(parent2d: h2d.Object) : h2d.Object {
 		return new h2d.Object(parent2d);
 	}
@@ -45,6 +33,16 @@ class Object2D extends Prefab {
 		updateInstance();
 	}
 
+	override function makeChildren() {
+		var old2d = shared.current2d;
+		shared.current2d = local2d ?? shared.current2d;
+
+		for (c in children) {
+			makeChild(c);
+		}
+
+		shared.current2d = old2d;
+	}
 
 	public function loadTransform(t) {
 		x = t.x;

@@ -302,33 +302,6 @@ class Macros {
 
 		var typeName = Context.getLocalClass().get().name;
 
-
-		// allow child classes to return an object of their type when using make
-		var make : Function = {
-			args: [
-				{ name : "root", type : macro : hrt.prefab.Prefab, value: macro null},
-				{ name : "o2d", type : macro :  h2d.Object, value: macro null},
-				{ name : "o3d", type : macro :  h3d.scene.Object, value: macro null},
-				{ name : "contextShared", type : macro :  hrt.prefab.ContextShared, value: macro null}
-			],
-			expr: macro {
-				return hrt.prefab.Macros.Cast(${macro makeInternal(root, o2d, o3d, contextShared)}, $v{typeName});
-			}
-		}
-
-		var access = [APublic];
-		if (typeName != "Prefab")
-			access.push(AOverride);
-
-
-
-		buildFields.push({
-			name: "make",
-			access : access,
-			pos : Context.currentPos(),
-			kind: FFun(make)
-		});
-
 		var buildFields2 = buildSerializableInternal(buildFields);
 		for (f in buildFields2) {
 			buildFields.push(f);
