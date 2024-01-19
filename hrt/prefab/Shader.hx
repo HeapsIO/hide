@@ -170,8 +170,8 @@ class Shader extends Prefab {
 		super.edit(ectx);
 
 		var shaderDef = getShaderDefinition();
-		if( shaderDef == null)
-			var el = new Element("<p>Shader definition is missing</p>");
+		if( shaderDef == null) {
+			var el = new hide.Element("<p>Shader definition is missing</p>");
 			el.css("color", "#ff5555");
 			ectx.properties.add(el);
 			return;

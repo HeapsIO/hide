@@ -2202,7 +2202,7 @@ class SceneEditor {
 		}
 
 		var shader = Std.downcast(p, hrt.prefab.Shader);
-		if (shader != null && (getContext(p) == null || shader.getShaderDefinition(getContext(p)) == null)) {
+		if (shader != null && (shader.getShaderDefinition() == null)) {
 			aEl.css("text-decoration", "line-through");
 			aEl.css("color", "#ff5555");
 		}
