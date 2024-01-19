@@ -124,6 +124,12 @@ class Reference extends Object3D {
 		return arr;
 	}
 
+	override function dispose() {
+		super.dispose();
+		if( refInstance != null )
+			refInstance.dispose();
+	}
+
 	#if editor
 
 	override function makeInteractive() {
