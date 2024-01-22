@@ -477,7 +477,7 @@ class HeightMapMesh extends h3d.scene.Object {
 		var t = hmap.getTile(x,y);
 		if( !ctx.camera.frustum.hasBounds(t.bounds) || t.isEmpty() ) {
 			if( t.root != null ) t.root.visible = false;
-			return x >= 0 && y >= 0 && x < hmap.sizeX && y < hmap.sizeY;
+			return hmap.isTileInBounds(x, y);
 		}
 		if( t.root != null )
 			t.root.visible = true;
@@ -611,6 +611,8 @@ class HeightMap extends Object3D {
 	}
 	@:s var sizeX = 0;
 	@:s var sizeY = 0;
+	@:s var minTileX = 0;
+	@:s var minTileY = 0;
 	@:s var autoSize = false;
 	@:s var albedoTiling = 1.;
 	@:s var albedoGamma = 1.;
@@ -748,10 +750,14 @@ class HeightMap extends Object3D {
 		return -1;
 	}
 
+	public inline function isTileInBounds(x : Int, y : Int) {
+		return x >= minTileX && y >= minTileX && x < sizeX + minTileX && y < sizeY + minTileX;
+	}
+
 	function getTile( x : Int, y : Int ) {
-		if( (sizeX > 0 && sizeY > 0 && (x < 0 || y < 0 || x >= sizeX || y >= sizeY)) || (sizeX == 0 && sizeY == 0 && (x != 0 || y != 0) && !autoSize) ) {
+		if( (sizeX > 0 && sizeY > 0 && !isTileInBounds(x, y)) || (sizeX == 0 && sizeY == 0 && (x != 0 || y != 0) && !autoSize) ) {
 			if( emptyTile == null )
-				emptyTile = new HeightMapTile(this, -1, -1);
+				emptyTile = new HeightMapTile(this, -minTileX - 1, -minTileY - 1);
 			return emptyTile;
 		}
 		var id = x + y * 65535;
@@ -1001,6 +1007,8 @@ class HeightMap extends Object3D {
 				<dt>Gamma</dt><dd><input type="range" min="0" max="4" field="albedoGamma"/></dd>
 				<dt>Gamma Color</dt><dd><input type="range" min="0" max="4" field="albedoColorGamma"/></dd>
 				<dt>Fixed Size</dt><dd><input type="number" style="width:50px" field="sizeX"/><input type="number" style="width:50px" field="sizeY"/> <label><input type="checkBox" field="autoSize"> Auto</label></dd>
+				<dt>Min Tile X</dt><dd><input type="range" min="-1000" max="0" field="minTileX"/></dd>
+				<dt>Min Tile Y</dt><dd><input type="range" min="-1000" max="0" field="minTileY"/></dd>
 				<dt>Bake Albedo</dt><dd><input type="checkbox" field="bakedAlbedo"/></dd>
 				<dt>Baked Albedo Size</dt><dd><input type="range" step="2" field="bakedAlbedoSize"/></dd>
 			</dl>

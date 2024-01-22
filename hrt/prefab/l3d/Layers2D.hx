@@ -17,6 +17,8 @@ class LayerView2DRFXShader extends h3d.shader.ScreenShader {
 
 		@param var layerAlpha : Float;
 		@param var worldSize : Float;
+		@param var offsetX : Float;
+		@param var offsetY : Float;
 
 		@param var collideMap : Sampler2D;
 		@const var collideEnable : Bool;
@@ -60,6 +62,8 @@ class LayerView2DRFXShader extends h3d.shader.ScreenShader {
 			pixelColor = curColor;
 
 			var curPos = getPixelPosition(calculatedUV).xy;
+			curPos.x -= offsetX;
+			curPos.y -= offsetY;
 
 			var collide = false;
 
@@ -142,6 +146,8 @@ class Layers2D extends hrt.prefab.Object3D {
 	@:s var collidePath : String;
 	@:s var collideMask : Int = 0xff0000;
 	@:s var worldSize : Int = 4096;
+	@:s var offsetX : Int = 0;
+	@:s var offsetY : Int = 0;
 	var layerTextures : Map<String, hxd.Pixels> = [];
 
 	@:s var highlightColor : Int = 0xff00ff;
@@ -235,8 +241,8 @@ class Layers2D extends hrt.prefab.Object3D {
 	public function getLayerColor( layer : hxd.Pixels, x : Float, y : Float ) {
 		if ( layer == null )
 			return -1;
-		var ix = Std.int(x / layerScale);
-		var iy = Std.int(y / layerScale);
+		var ix = Std.int( (x - offsetX) / layerScale);
+		var iy = Std.int( (y - offsetY) / layerScale);
 		if ( ix < 0 || ix > layer.width || iy < 0 || iy > layer.height )
 			return -1;
 
@@ -303,6 +309,8 @@ class Layers2D extends hrt.prefab.Object3D {
 
 			sh.layerAlpha = layerAlpha;
 			sh.worldSize = worldSize;
+			sh.offsetX = offsetX;
+			sh.offsetY = offsetY;
 			sh.collideScale = (collideMap != null) ? worldSize / collideMap.width : 1;
 			sh.collideMap = collideMap;
 
@@ -421,8 +429,8 @@ class Layers2D extends hrt.prefab.Object3D {
 			var collideScale = collidePixels.width / worldSize;
 
 			if ( worldPos != null ) {
-				var startX = worldPos.x;
-				var startY = worldPos.y;
+				var startX = worldPos.x - offsetX;
+				var startY = worldPos.y - offsetY;
 
 				var brRadius = ( clean ) ? eraseRadius : brushRadius;
 				var radiusSq = brRadius * brRadius;
@@ -643,6 +651,7 @@ class Layers2D extends hrt.prefab.Object3D {
 						<dl>
 							<dt>World Size</dt><dd><input type="text" value="$worldSize" style="width:110px" disabled /><button id="changeWorldSize" >Change</button></dd>
 							<dt>Layer Scale</dt><dd><input type="text" value="$layerScale" style="width:110px" disabled /><button id="changeLayerScale" >Change</button></dd>
+							<dt>World Offset</dt><dd><input type="text" value="$offsetX" style="width:50px" disabled/><input type="text" value="$offsetY" style="width:50px" disabled/><button id="changeWorldOffset" >Change</button></dd></dd>
 						</dl>
 						<dl>
 							<dt>Collide</dt>
@@ -717,6 +726,34 @@ class Layers2D extends hrt.prefab.Object3D {
 			}
 			ectx.rebuildProperties();
 		});
+
+		props.find("#changeWorldOffset").click(function(_) {
+			var input = hide.Ide.inst.ask("New world offset (x,y): ", offsetX + "," + offsetY);
+			if( input == null || input.length == 0 ) return;
+			var inputs = input.split(",");
+			if( inputs.length < 2) return;
+			var ox = Std.parseInt(inputs[0]), oy = Std.parseInt(inputs[1]);
+			if( Std.string(ox) != inputs[0] || Std.string(oy) != inputs[1] || (ox == offsetX && oy == offsetY) ) return;
+			var dox = Math.floor((ox - offsetX) / layerScale);
+			var doy = Math.floor((oy - offsetY) / layerScale);
+			var size = Math.floor(worldSize / layerScale);
+			var copySizeX = size - hxd.Math.iabs(dox);
+			var copySizeY = size - hxd.Math.iabs(doy);
+			offsetX = ox;
+			offsetY = oy;
+			for( key => layerTexture in layerTextures ) {
+				var newLayerTexture = hxd.Pixels.alloc(size, size, R8);
+				newLayerTexture.blit(
+					hxd.Math.imax(0, -dox), hxd.Math.imax(0, -doy), 
+					layerTexture, 
+					hxd.Math.imax(0, dox), hxd.Math.imax(0, doy),
+					copySizeX, copySizeY
+				);
+				layerTextures.set(key, newLayerTexture);
+			}
+			ectx.rebuildProperties();
+		});
+
 		var list = props.find("ul#layers");
 		ectx.properties.add(props,this, (pname) -> {
 			if ( pname == "collidePath" ) {
