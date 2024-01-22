@@ -477,17 +477,20 @@ class ShaderGraph extends hrt.prefab.Prefab {
 		for (p in parameters) {
 			var typeString : Array<Dynamic> = Reflect.field(p, "type");
 			if (Std.isOfType(typeString, Array)) {
-				if (typeString[1] == null || typeString[1].length == 0) {
-					if ( typeString[0] == "TSampler2D" )
-						typeString[0] = "TSampler";
-					if ( typeString[0] == "TSampler" )
-						p.type = std.Type.createEnum(Type, typeString[0], [T2D, false]);
-					else
-						p.type = std.Type.createEnum(Type, typeString[0]);
-				}
-				else {
-					var paramsEnum = typeString[1].split(",");
-					p.type = std.Type.createEnum(Type, typeString[0], [Std.parseInt(paramsEnum[0]), std.Type.createEnum(VecType, paramsEnum[1])]);
+				typeString[1] = typeString[1] ?? "";
+				var enumParamsString = typeString[1].split(",");
+
+				switch(typeString[0]) {
+					case "TSampler2D": // Legacy parameters conversion
+						p.type = TSampler(T2D, false);
+					case "TSampler":
+						var params : Array<Dynamic> = [std.Type.createEnum(TexDimension, enumParamsString[0] ?? "T2D"), enumParamsString[1] == "true"];
+						p.type = std.Type.createEnum(Type, typeString[0], params);
+					case "TVec":
+						var params : Array<Dynamic> = [Std.parseInt(enumParamsString[0]), std.Type.createEnum(VecType, enumParamsString[1])];
+						p.type = std.Type.createEnum(Type, typeString[0], params);
+					default:
+						throw "Couldn't unserialize type " + enumParamsString[0];
 				}
 			}
 			p.variable = generateParameter(p.name, p.type);
