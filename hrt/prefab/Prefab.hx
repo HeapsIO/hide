@@ -645,7 +645,13 @@ class Prefab {
 		Internal functionalities
 	*/
 
-	public final function make(contextShared:ContextShared) : Prefab {
+	public function make(contextShared:ContextShared) : Prefab {
+		// Implemented in a macro, calls makeInternal() with an automatic cast
+		// see hrt.prefab.Macros
+		return null;
+	}
+
+	public final function makeInternal(contextShared:ContextShared) : Prefab {
 		var newInstance = clone(null, contextShared);
 		if (newInstance == null)
 			return null;
