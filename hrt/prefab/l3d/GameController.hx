@@ -96,7 +96,7 @@ class GameController extends Object3D {
 		var baseZ = obj.z;
 
 		function playAnim( anim : String ) {
-			for( o in getAll(Model,true) ) {
+			for( o in findAll(Model,true) ) {
 				if( o.source == null ) continue;
 
 				if( currentAnim.get(local3d) == anim )

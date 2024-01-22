@@ -531,7 +531,7 @@ class Scene extends hide.comp.Component implements h3d.IDrawable {
 		function pathRec(p : String) {
 			try {
 				var prefab = hxd.res.Loader.currentInstance.load(p).toPrefab().load();
-				var mats = prefab.getAll(hrt.prefab.Material);
+				var mats = prefab.findAll(hrt.prefab.Material);
 				for ( m in mats )
 					materials.push({ path : p, mat : m});
 			} catch ( e : hxd.res.NotFound ) {

@@ -793,7 +793,7 @@ class FXEditor extends hide.view.FileView {
 	}
 
 	function onRefreshScene() {
-		var renderProps = cast(data, hrt.prefab.Prefab).find(e -> e.to(hrt.prefab.RenderProps));
+		var renderProps = cast(data, hrt.prefab.Prefab).find(hrt.prefab.RenderProps);
 		if(renderProps != null)
 			renderProps.applyProps(scene.s3d.renderer);
 		updateGrid();

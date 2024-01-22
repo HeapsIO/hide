@@ -174,7 +174,7 @@ class Camera extends Object3D {
 		if (renderer == null) return;
 		if (preview) {
 
-			for ( effect in getAll(hrt.prefab.rfx.RendererFX) ) {
+			for ( effect in findAll(hrt.prefab.rfx.RendererFX) ) {
 				var prevEffect = renderer.getEffect(hrt.prefab.rfx.RendererFX);
 				if ( prevEffect != null )
 					renderer.effects.remove(prevEffect);
@@ -182,7 +182,7 @@ class Camera extends Object3D {
 			}
 		}
 		else {
-			for ( effect in getAll(hrt.prefab.rfx.RendererFX) )
+			for ( effect in findAll(hrt.prefab.rfx.RendererFX) )
 				renderer.effects.remove( effect );
 		}
 	}
@@ -258,7 +258,7 @@ class Camera extends Object3D {
 				beforePreviewCam = ctx.scene.s3d.camera.clone();
 				updateInstance();
 				applyTo(cam);
-				for ( effect in getAll(hrt.prefab.rfx.RendererFX) ) {
+				for ( effect in findAll(hrt.prefab.rfx.RendererFX) ) {
 					var prevEffect = @:privateAccess renderer.getEffect(hrt.prefab.rfx.RendererFX);
 					if ( prevEffect != null )
 						renderer.effects.remove(prevEffect);
@@ -269,7 +269,7 @@ class Camera extends Object3D {
 				renderer.effects.push(new hrt.prefab.rfx.Border(null, null, 0.02, 0x0000ff, 0.5));
 			}
 			else {
-				for ( effect in getAll(hrt.prefab.rfx.RendererFX) )
+				for ( effect in findAll(hrt.prefab.rfx.RendererFX) )
 					renderer.effects.remove( effect );
 				for ( effect in renderer.effects ) {
 					if ( Std.isOfType(effect, hrt.prefab.rfx.Border) ) {

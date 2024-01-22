@@ -687,7 +687,7 @@ class Prefab extends hide.view.FileView {
 		saveDisplayState("graphicsFilters/" + typeid, enable);
 
 		var r : h3d.scene.Renderer = scene.s3d.renderer;
-		var all = data.getAll(hrt.prefab.Object3D, true);
+		var all = data.findAll(hrt.prefab.Object3D, true);
 		for (obj in all) {
 			if (obj.getDisplayFilters().contains(typeid)) {
 				obj.updateInstance();
@@ -706,7 +706,7 @@ class Prefab extends hide.view.FileView {
 		saveDisplayState("sceneFilters/" + typeid, visible);
 		var all = [];
 		if (typeid != 'light')
-			all = data.getAll(hrt.prefab.Prefab, true);
+			all = data.findAll(hrt.prefab.Prefab, true);
 		else
 			all = data.flatten(hrt.prefab.Prefab);
 		for(p in all) {
@@ -744,7 +744,7 @@ class Prefab extends hide.view.FileView {
 
 	function refreshGraphicsFilters() {
 		var filters : Array<String> = ["shadows"];
-		var all = data.getAll(hrt.prefab.Object3D, true);
+		var all = data.findAll(hrt.prefab.Object3D, true);
 		for (obj in all) {
 			var objFilters = obj.getDisplayFilters();
 			for (f in filters) {

@@ -5,19 +5,6 @@ class Reference extends Object3D {
 
 	public var refInstance : Prefab;
 
-
-
-	//@:s @:copy(copy_overrides)
-	//public var overrides : haxe.ds.StringMap<Dynamic> = new haxe.ds.StringMap<Dynamic>();
-
-	/*override public function getLocal2d() : h2d.Object {
-		return refInstance != null ? refInstance.getLocal2d() : null;
-	}
-
-	override public function getLocal3d() : h3d.scene.Object {
-		return refInstance != null ? refInstance.getLocal3d() : null;
-	}*/
-
 	public static function copy_overrides(from:Dynamic) : haxe.ds.StringMap<Dynamic> {
 		if (Std.isOfType(from, haxe.ds.StringMap)) {
 			return from != null ? cast(from, haxe.ds.StringMap<Dynamic>).copy() : new haxe.ds.StringMap<Dynamic>();
@@ -98,22 +85,12 @@ class Reference extends Object3D {
 		}
 	}
 
-	override public function findAll<T>( f : Prefab -> Null<T>, followRefs : Bool = false, ?arr : Array<T> ) : Array<T> {
-		arr = super.findAll(f, followRefs, arr);
-
-		if (followRefs && refInstance != null) {
-			return refInstance.findAll(f, followRefs, arr);
-		}
-
-		return arr;
-	}
-
-	override public function find<T>( f : Prefab -> Null<T>, followRefs : Bool = false ) : Null<T> {
-		var res = super.find(f, followRefs);
+	override public function find<T:Prefab>(cl: Class<T>, ?filter : T -> Bool, followRefs : Bool = false ) : Null<T> {
+		var res = super.find(cl, filter, followRefs);
 		if (res == null && followRefs ) {
 			var p = resolveRef();
 			if( p != null )
-				return p.find(f, followRefs);
+				return p.find(cl, filter, followRefs);
 		}
 		return res;
 	}

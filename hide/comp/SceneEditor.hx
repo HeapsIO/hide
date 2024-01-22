@@ -829,7 +829,7 @@ class SceneEditor {
 
 	public function onResourceChanged(lib : hxd.fmt.hmd.Library) {
 
-		var models = sceneData.findAll(p -> Std.downcast(p, PrefabElement));
+		var models = sceneData.findAll(PrefabElement);
 		var toRebuild : Array<PrefabElement> = [];
 		for(m in models) {
 			if(m.shared.prefabSource == lib.resource.entry.path) {
@@ -3763,7 +3763,7 @@ class SceneEditor {
 		var now = haxe.Timer.stamp();
 		if( now - groundPrefabsCacheTime > 5 ) {
 			function getAll(data:PrefabElement) {
-				var all = data.findAll((p) -> p);
+				var all = data.findAll(hrt.prefab.Prefab);
 				for( a in all.copy() ) {
 					var r = Std.downcast(a, hrt.prefab.Reference);
 					if( r != null ) {

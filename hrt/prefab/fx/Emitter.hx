@@ -597,7 +597,7 @@ class EmitterObject extends h3d.scene.Object {
 
 			// Setup mats.
 			// Should we do this manually here or make a recursive makeInstance on the template?
-			var materials = emitterPrefab.getAll(hrt.prefab.Material);
+			var materials = emitterPrefab.findAll(hrt.prefab.Material);
 			for(mat in materials) {
 
 				// Remove materials that are not directly parented to this emitter
@@ -615,7 +615,7 @@ class EmitterObject extends h3d.scene.Object {
 
 			// Setup shaders
 			shaderAnims = [];
-			var shaders = emitterPrefab.getAll(hrt.prefab.Shader);
+			var shaders = emitterPrefab.findAll(hrt.prefab.Shader);
 			for( shader in shaders ) {
 				// Remove shaders that are not directly parented to this emitter
 				var p = shader.parent;

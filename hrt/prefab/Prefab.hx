@@ -76,12 +76,12 @@ class Prefab {
 	/**
 		The parent of the prefab in the tree view
 	**/
-	public var parent(default, set) : Prefab = null;
+	public var parent(default, set) : Prefab;
 
-	/**Cache of values**/
-	public var shared(default, null) : ContextShared = null;
-
-	// Public API
+	/**
+		Infos shared by all the prefabs in a given prefab hierarchy (but not by references)
+	**/
+	public var shared(default, null) : ContextShared;
 
 	public function new(parent:Prefab, contextShared: ContextShared) {
 		if (parent == null) {
@@ -193,13 +193,6 @@ class Prefab {
 	}
 
 	/**
-		Return all prefabs in the tree matching the given prefab class.
-	**/
-	public function getAll<T:Prefab>( cl : Class<T>, ?followRefs : Bool, ?arr: Array<T> ) : Array<T> {
-		return findAll(function(p) return p.to(cl), followRefs, arr);
-	}
-
-	/**
 		Simlar to get() but returns null if not found.
 	**/
 	public function getOpt<T:Prefab>( cl : Class<T>, ?name : String, ?followRefs : Bool ) : Null<T> {
@@ -272,51 +265,41 @@ class Prefab {
 
 
 	/**
-		Find a single prefab in the tree by calling `f` on each and returning the first not-null value returned, or null if not found.
+		Find a the first prefab in the tree with the given class that matches the optionnal `filter`.
+		Returns null if no matching prefab was found
 	**/
-	public function find<T>( f : Prefab -> Null<T>, followRefs : Bool = false ) : Null<T> {
-		var v = f(this);
-		if( v != null )
-			return v;
+	public function find<T:Prefab>(cl: Class<T>, ?filter : T -> Bool, followRefs : Bool = false ) : Null<T> {
+		var asCl = Std.downcast(this, cl);
+		if (asCl != null)
+			if (filter == null || filter(asCl))
+				return asCl;
 		for( p in children ) {
-			var v = p.find(f, followRefs);
+			var v = p.find(cl, filter, followRefs);
 			if( v != null ) return v;
 		}
 		return null;
 	}
 
-	/**
-		Return the first prefab with the class `cl` on this or the children of this prefab
-	**/
-	public function findClass<T:Prefab>(cl: Class<T>, followRefs : Bool = false) : Null<T> {
-		return find((p: Prefab) -> Std.downcast(p, cl), followRefs);
-	}
-
 
 	/**
-		Find several prefabs in the tree by calling `f` on each and returning all the non-null values returned.
+		Find all the prefabs of the given class `cl` in the tree, that matches `filter` if it is is defined, in the given array `arr`.
 	**/
-	public function findAll<T>( f : Prefab -> Null<T>, followRefs : Bool = false, ?arr : Array<T> ) : Array<T> {
+	public function findAll<T:Prefab>(cl: Class<T>,  ?filter : Prefab -> Bool, followRefs : Bool = false, ?arr : Array<T> ) : Array<T> {
 		if( arr == null ) arr = [];
-		var v = f(this);
-		if( v != null )
-			arr.push(v);
+		var asCl = Std.downcast(this, cl);
+		if (asCl != null) {
+			if (filter == null || filter(asCl))
+				arr.push(asCl);
+		}
 		if (followRefs) {
 			var ref = to(Reference);
 			if (ref != null && ref.refInstance != null) {
-				ref.refInstance.findAll(f, followRefs, arr);
+				ref.refInstance.findAll(cl, filter, followRefs, arr);
 			}
 		}
 		for( o in children )
-			o.findAll(f,followRefs,arr);
+			o.findAll(cl, filter,followRefs,arr);
 		return arr;
-	}
-
-	/**
-		Return all the prefabs in this hierarcy that have the class `cl`
-	**/
-	public function findAllClass<T:Prefab>(cl: Class<T>, followRefs : Bool = false, ?arr : Array<T> ) : Array<T> {
-		return findAll((p: Prefab) -> Std.downcast(p, cl), followRefs, arr);
 	}
 
 	/**

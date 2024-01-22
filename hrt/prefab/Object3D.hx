@@ -212,10 +212,12 @@ class Object3D extends Prefab {
 	}
 
 	public function addEditorUI(ctx : hide.prefab.EditContext) {
-		var objs = findAll((p) -> p.to(Object3D).local3d, true);
-		for( r in objs )
-			if( r.name != null && StringTools.startsWith(r.name,"$UI.") )
-				r.remove();
+		var objs = findAll(Object3D, true);
+		for( obj in objs ) {
+			var local3d : h3d.scene.Object = obj.local3d;
+			if( local3d.name != null && StringTools.startsWith(local3d.name,"$UI.") )
+				local3d.remove();
+		}
 		// add ranges
 
 			var sheet = getCdbType();

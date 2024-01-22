@@ -64,7 +64,7 @@ class RenderProps extends Object3D {
 		for(fx in renderer.effects)
 			fx.dispose();
 
-		renderer.effects = [for( v in getAll(hrt.prefab.rfx.RendererFX,true) ) v];
+		renderer.effects = [for( v in findAll(hrt.prefab.rfx.RendererFX,true) ) v];
 		var env = getOpt(hrt.prefab.l3d.Environment);
 		if( env != null )
 			env.applyToRenderer(renderer);

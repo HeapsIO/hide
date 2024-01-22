@@ -123,7 +123,7 @@ class SwarmObject extends h3d.scene.Object {
 
 			// Setup mats.
 			// Should we do this manually here or make a recursive makeInstance on the template?
-			var materials = prefab.getAll(hrt.prefab.Material);
+			var materials = prefab.findAll(hrt.prefab.Material);
 			for(mat in materials) {
 
 				// Remove materials that are not directly parented to this Swarm
@@ -141,7 +141,7 @@ class SwarmObject extends h3d.scene.Object {
 
 			// Setup shaders
 			shaderAnims = [];
-			var shaders = prefab.getAll(hrt.prefab.Shader);
+			var shaders = prefab.findAll(hrt.prefab.Shader);
 			for( shader in shaders ) {
 				// Remove shaders that are not directly parented to this Swarm
 				var p = shader.parent;

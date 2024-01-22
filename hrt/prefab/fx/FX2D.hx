@@ -227,7 +227,7 @@ class FX2D extends Object2D implements BaseFX {
 			visibility: makeVal("visibility", null),
 		};
 
-		for(evt in elt.getAll(Event)) {
+		for(evt in elt.findAll(Event)) {
 			var eventObj = evt.prepare();
 			if(eventObj == null) continue;
 			if(anim.events == null) anim.events = [];

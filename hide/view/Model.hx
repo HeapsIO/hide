@@ -643,7 +643,7 @@ class Model extends FileView {
 				renderProps.applyProps(scene.s3d.renderer);
 		}
 
-		plight = root.getAll(hrt.prefab.Light)[0];
+		plight = root.find(hrt.prefab.Light);
 		if( plight != null ) {
 			this.light = hrt.prefab.Object3D.getLocal3d(plight);
 			lightDirection = this.light.getLocalDirection();

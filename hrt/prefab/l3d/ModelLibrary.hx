@@ -112,7 +112,7 @@ class ModelLibrary extends Prefab {
 	@:s var mipLevels : Int = 1;
 
     final reg = ~/[0-9]+/g;
-    
+
 	override public function dispose() {
 		super.dispose();
 		optimizedMeshes = [];
@@ -451,7 +451,7 @@ class ModelLibrary extends Prefab {
 		modelRoot.position.qz = 0;
 		hmd.models.push(modelRoot);
 
-		for( m in getAll(hrt.prefab.Model, true) ) {
+		for( m in findAll(hrt.prefab.Model, true) ) {
 			if( models.exists(m.source) )
 				continue;
 			if( m.getParent(hrt.prefab.fx.FX) != null )
