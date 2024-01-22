@@ -760,7 +760,7 @@ class HeightMap extends Object3D {
 				emptyTile = new HeightMapTile(this, -minTileX - 1, -minTileY - 1);
 			return emptyTile;
 		}
-		var id = x + y * 65535;
+		var id = x - minTileX + (y - minTileY) * 65535;
 		var t = tilesCache[id];
 		if( t != null )
 			return t;
