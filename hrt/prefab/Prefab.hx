@@ -1,8 +1,5 @@
 package hrt.prefab;
 
-using hrt.prefab.Object3D;
-using hrt.prefab.Object2D;
-
 typedef PrefabField = {
 	var name : String;
 	var hasSetter : Bool;
@@ -174,13 +171,13 @@ class Prefab {
 	// Hierarchical Helpers
 
 	public function findFirstLocal2d() : h2d.Object {
-		var l2d = findParent((p) -> p.getLocal2d(), true);
+		var l2d = findParent((p) -> Object2D.getLocal2d(p), true);
 		return l2d != null ? l2d : shared.root2d;
 	}
 
 	// Find the first local3d object, either in this object or it's parents
 	public function findFirstLocal3d() : h3d.scene.Object {
-		var l3d = findParent((p) -> p.getLocal3d(), true);
+		var l3d = findParent((p) -> Object3D.getLocal3d(p), true);
 		return l3d != null ? l3d : shared.root3d;
 	}
 
