@@ -7,9 +7,9 @@ using haxe.EnumTools.EnumValueTools;
 using Lambda;
 import hrt.shgraph.AstTools.*;
 
-enum AngleUnit {
-	Radian;
-	Degree;
+enum abstract AngleUnit(String) {
+	var Radian;
+	var Degree;
 }
 
 final angleUnits = [Radian, Degree];
