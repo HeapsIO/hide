@@ -654,6 +654,9 @@ class Prefab {
 		return newInstance;
 	};
 
+	/*
+		Create a copy of this prefab with a new context shared
+	*/
 	public final function clone(?root: Prefab = null, contextShared:ContextShared, withChildren : Bool = true) : Prefab {
 		var sh = contextShared;
 
@@ -668,7 +671,7 @@ class Prefab {
 	}
 
 	/**
-		Create a copy of this prefab and it's childrens, whitout initializing their fields
+		Create a copy of this prefab and it's childrens
 	**/
 	final function copyDefault(?parent:Prefab = null, sh: ContextShared, withChildren : Bool = true) : Prefab {
 		var thisClass = Type.getClass(this);
