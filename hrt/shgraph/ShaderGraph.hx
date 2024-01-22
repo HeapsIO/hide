@@ -489,8 +489,10 @@ class ShaderGraph extends hrt.prefab.Prefab {
 					case "TVec":
 						var params : Array<Dynamic> = [Std.parseInt(enumParamsString[0]), std.Type.createEnum(VecType, enumParamsString[1])];
 						p.type = std.Type.createEnum(Type, typeString[0], params);
+					case "TFloat":
+						p.type = TFloat;
 					default:
-						throw "Couldn't unserialize type " + enumParamsString[0];
+						throw "Couldn't unserialize type " + typeString[0];
 				}
 			}
 			p.variable = generateParameter(p.name, p.type);
