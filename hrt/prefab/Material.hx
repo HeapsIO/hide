@@ -342,7 +342,7 @@ class Material extends Prefab {
 
 			ctx.onChange(this, "props");
 
-			var fx = getParent(hrt.prefab.fx.FX);
+			var fx = findParent(hrt.prefab.fx.FX);
 			if(fx != null)
 				ctx.rebuildPrefab(fx, true);
 		});
@@ -362,7 +362,7 @@ class Material extends Prefab {
 			</div>');
 			ctx.properties.add(colorMask, this, function(pname) {
 				ctx.onChange(this, pname);
-				var fx = getParent(hrt.prefab.fx.FX);
+				var fx = findParent(hrt.prefab.fx.FX);
 				if(fx != null)
 					ctx.rebuildPrefab(fx, true);
 			});
@@ -385,7 +385,7 @@ class Material extends Prefab {
 						mask.prop("checked", val & (1<<bitIndex) > 0 ? true : false);
 					}));
 
-					var fx = getParent(hrt.prefab.fx.FX);
+					var fx = findParent(hrt.prefab.fx.FX);
 					if(fx != null)
 						ctx.rebuildPrefab(fx, true);
 				});
@@ -525,7 +525,7 @@ class Material extends Prefab {
 			ctx.rebuildProperties();
 			ctx.scene.editor.refresh();
 
-			var fx = getParent(hrt.prefab.fx.FX);
+			var fx = findParent(hrt.prefab.fx.FX);
 			if(fx != null)
 				ctx.rebuildPrefab(fx, true);
 		});
@@ -548,7 +548,7 @@ class Material extends Prefab {
 			if (this.refMatLib != null && this.refMatLib != "")
 				addOverrideProperty(ctx, pname, false);
 
-			var fx = getParent(hrt.prefab.fx.FX);
+			var fx = findParent(hrt.prefab.fx.FX);
 			if(fx != null)
 				ctx.rebuildPrefab(fx, true);
 		});

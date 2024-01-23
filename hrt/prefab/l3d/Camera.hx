@@ -286,7 +286,7 @@ class Camera extends Object3D {
 					transform.rotate(angles.x, angles.y, angles.z);
 					transform.translate(cam.pos.x, cam.pos.y, cam.pos.z);
 
-					var parent = getParent(hrt.prefab.Object3D);
+					var parent = findParent(hrt.prefab.Object3D);
 					if ( parent != null ) {
 						var invPos = new h3d.Matrix();
 						invPos._44 = 0;
@@ -339,7 +339,7 @@ class Camera extends Object3D {
 				transform.rotate(angles.x, angles.y, angles.z);
 				transform.translate(cam.pos.x, cam.pos.y, cam.pos.z);
 
-				var parent = getParent(hrt.prefab.Object3D);
+				var parent = findParent(hrt.prefab.Object3D);
 				if ( parent != null ) {
 					var invPos = new h3d.Matrix();
 					invPos._44 = 0;

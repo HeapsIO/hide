@@ -454,7 +454,7 @@ class ModelLibrary extends Prefab {
 		for( m in findAll(hrt.prefab.Model, true) ) {
 			if( models.exists(m.source) )
 				continue;
-			if( m.getParent(hrt.prefab.fx.FX) != null )
+			if( m.findParent(hrt.prefab.fx.FX) != null )
 				continue;
 			var ignoreModel = false;
 			if ( m.animation != null )

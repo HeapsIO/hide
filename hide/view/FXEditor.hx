@@ -135,7 +135,7 @@ private class FXSceneEditor extends hide.comp.SceneEditor {
 	}
 
 	override function setElementSelected( p : PrefabElement, b : Bool ) {
-		if( p.getParent(hrt.prefab.fx.Emitter) != null )
+		if( p.findParent(hrt.prefab.fx.Emitter) != null )
 			return false;
 		return super.setElementSelected(p, b);
 	}
@@ -1483,7 +1483,7 @@ class FXEditor extends hide.view.FileView {
 		}
 		if(shaderElt != null) {
 			var shader = shaderElt.makeShader();
-			var inEmitter = shaderElt.getParent(hrt.prefab.fx.Emitter) != null;
+			var inEmitter = shaderElt.findParent(hrt.prefab.fx.Emitter) != null;
 			var params = shader == null ? [] : @:privateAccess shader.shader.data.vars.filter(v -> v.kind == Param);
 			for(param in params) {
 				if (param.qualifiers?.contains(Ignore) ?? false)
@@ -1895,7 +1895,7 @@ class FXEditor extends hide.view.FileView {
 	}
 
 	static function isInstanceCurve(curve: Curve) {
-		return curve.getParent(hrt.prefab.fx.Emitter) != null;
+		return curve.findParent(hrt.prefab.fx.Emitter) != null;
 	}
 
 	static var _ = FileTree.registerExtension(FXEditor, ["fx"], { icon : "sitemap", createNew : "FX" });

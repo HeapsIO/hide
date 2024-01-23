@@ -210,7 +210,7 @@ class Shader extends Prefab {
 			ectx.onChange(this, pname);
 
 			// Notify change to FX in case param is used by curves
-			var fx = getParent(hrt.prefab.fx.FX);
+			var fx = findParent(hrt.prefab.fx.FX);
 			if(fx != null)
 				ectx.rebuildPrefab(fx, true);
 		});

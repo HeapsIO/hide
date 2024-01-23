@@ -171,14 +171,14 @@ class Prefab {
 	// Hierarchical Helpers
 
 	public function findFirstLocal2d() : h2d.Object {
-		var l2d = findParent((p) -> Object2D.getLocal2d(p), true);
-		return l2d != null ? l2d : shared.root2d;
+		var o2d = findParent(Object2D, (p) -> p.local2d != null, true);
+		return o2d != null ? o2d.local2d : shared.root2d;
 	}
 
 	// Find the first local3d object, either in this object or it's parents
 	public function findFirstLocal3d() : h3d.scene.Object {
-		var l3d = findParent((p) -> Object3D.getLocal3d(p), true);
-		return l3d != null ? l3d : shared.root3d;
+		var o3d = findParent(Object3D, (p) -> p.local3d != null, true);
+		return o3d != null ? o3d.local3d : shared.root3d;
 	}
 
 	/**
@@ -221,13 +221,6 @@ class Prefab {
 				root = root.shared.parent;
 		}
 		return root;
-	}
-
-	/**
-		Returns the first parent in the tree matching the specified class or null if not found.
-	**/
-	public function getParent<T:Prefab>( c : Class<T> ) : Null<T> {
-		return findParent(p -> p.to(c));
 	}
 
 	/**
@@ -306,18 +299,17 @@ class Prefab {
 		Apply the filter function to this object, returning the result of filter if it's not null.
 		If the filters returns null, it's then applied to the parent of this prefab, and this recursively.
 	**/
-	public function findParent<T>(filter : (p:Prefab) -> Null<T>, includeSelf:Bool = false) : Null<T> {
+	public function findParent<T:Prefab>(cl:Class<T> ,?filter : (p:T) -> Bool, includeSelf:Bool = false) : Null<T> {
 		var current = includeSelf ? this : this.parent;
-		var val = null;
-		while(current != null && val == null) {
-			val = filter(current);
+		while(current != null) {
+			var asCl = Std.downcast(current, cl);
+			if (asCl != null) {
+				if (filter == null || filter(asCl))
+					return asCl;
+			}
 			current = current.parent;
 		}
-		return val;
-	}
-
-	public function findParentClass<T:Prefab>(cl: Class<T>, includeSelf:Bool = false) : Null<T> {
-		return findParent((p: Prefab) -> Std.downcast(p, cl), includeSelf);
+		return null;
 	}
 
 	public function filterParents<T>(filter : (p:Prefab) -> Null<T>, includeSelf: Bool = false, ?array: Array<T>) : Array<T> {
