@@ -96,15 +96,19 @@ class Domkit extends FileView {
 
 	function check() {
 		modified = prevSave.css != cssEditor.code || prevSave.dml != dmlEditor.code || prevSave.params != paramsEditor.code;
+		var allParams = new Map();
+		dmlEditor.checker.params = allParams;
 		var comp = dmlEditor.getComponent();
-		if( comp != null && comp.arguments.length > 0 )
+		if( comp != null && comp.arguments.length > 0 ) {
 			@:privateAccess paramsEditor.checker.checker.setGlobal("defaultArgs", TAnon(comp.arguments.copy()));
+			for( a in comp.arguments )
+				allParams.set(a.name, a.t);
+		}
 		paramsEditor.doCheckScript();
-		var params = @:privateAccess paramsEditor.checker.checker.locals.get("params");
-		if( params == null ) params = TAnon([]);
-		switch( params ) {
+		var tparams = @:privateAccess paramsEditor.checker.checker.locals.get("params");
+		if( tparams == null ) tparams = TAnon([]);
+		switch( tparams ) {
 		case TAnon(fields):
-			dmlEditor.checker.params = new Map();
 			var any : hscript.Checker.TType = TUnresolved("???");
 			for( f in fields ) {
 				var t = f.t;
@@ -130,7 +134,7 @@ class Domkit extends FileView {
 					}
 				}
 				setRec(t);
-				dmlEditor.checker.params.set(f.name, t);
+				allParams.set(f.name, t);
 			}
 		case null, _:
 			paramsEditor.setError("Params definition is missing", 0, 0, 0);
@@ -155,7 +159,7 @@ class Domkit extends FileView {
 		if( cssText != cssEditor.code ) cssEditor.setCode(cssText);
 		if( dmlText != dmlEditor.code ) dmlEditor.setCode(dmlText);
 		if( paramsText != paramsEditor.code ) paramsEditor.setCode(paramsText);
-		sys.io.File.saveContent(getPath(),('<css>\n$cssText\n</css>\n')+(hasParams?'<params>\n$paramsText\n</params>':'')+dmlText);
+		sys.io.File.saveContent(getPath(),('<css>\n$cssText\n</css>\n\n')+(hasParams?'<params>\n$paramsText\n</params>\n\n':'')+dmlText);
 	}
 
 	override function getDefaultContent() {

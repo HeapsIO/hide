@@ -69,6 +69,7 @@ class DomkitViewer extends h2d.Object {
 	var variables : Map<String,Dynamic> = [];
 	var rebuilding = false;
 	var compArgs : Map<String,Dynamic>;
+	var rootObject : h2d.Object;
 
 	public function new( style : h2d.domkit.Style, res : hxd.res.Resource, ?parent ) {
 		super(parent);
@@ -282,9 +283,10 @@ class DomkitViewer extends h2d.Object {
 				if( !evalCode(expr) )
 					return;
 			}
+			var isRoot = parent.parent == null;
 			var c = domkit.Component.get(name, true);
 			// if we are top component, resolve our parent component
-			if( parent.parent == null ) {
+			if( isRoot ) {
 				var parts = name.split(":");
 				var parent = null;
 				if( parts.length == 2 ) {
@@ -314,23 +316,77 @@ class DomkitViewer extends h2d.Object {
 				// TODO : typecheck argument
 				v;
 			}];
-			if( compArgs != null ) {
+			if( isRoot && compArgs != null  ) {
 				if( e.arguments.length == 0 ) {
-					for( a in c.argsNames )
-						args.push(compArgs.get(a));
+					for( a in @:privateAccess c.argsNames ) {
+						var v : Dynamic = compArgs.get(a);
+						args.push(v);
+						interp.variables.set(a, v);
+					}
 				}
 				compArgs = null;
 			}
 			var attributes = {};
+			var objId = null, objIdArray = false;
 			for( a in e.attributes ) {
+				if( a.name == "id" ) {
+					objId = switch( a.value ) {
+					case RawValue("true"):
+						var name = null;
+						for( a in e.attributes )
+							if( a.name == "class" ) {
+								name = switch( a.value ) { case RawValue(v): v; default: null; };
+								break;
+							}
+						name;
+					case RawValue(name) if( StringTools.endsWith(name,"[]") ):
+						objIdArray = true;
+						name.substr(0,name.length - 2);
+					case RawValue(name):
+						name;
+					case Code(_): null;
+					}
+					if( objId != null )
+						(attributes:Dynamic).id = objId;
+					continue;
+				}
 				switch( a.value ) {
 				case RawValue(v):
 					Reflect.setField(attributes,a.name,v);
 				case Code(_):
-					throw "TODO";
+					// skip (init after)
 				}
 			}
+			var childrenCreated = false;
+			if( isRoot ) {
+				// only create parent structure, since we will create our own structure here
+				@:privateAccess c.createHook = function(obj) {
+					rootObject = obj;
+					interp.variables.set("this", obj);
+					// create children immediately as our post-init code might require some components to be init
+					childrenCreated = true;
+					for( c in e.children )
+						addRec(c, obj);
+				};
+			}
 			var p = @:privateAccess domkit.Properties.createNew(c.name, parent.dom, args, attributes);
+			if( isRoot ) {
+				rootObject = cast p.obj;
+				@:privateAccess c.createHook = null;
+				interp.variables.set("this", p.obj);
+			}
+			if( objId != null ) {
+				if( objIdArray ) {
+					var arr : Array<Dynamic> = try Reflect.getProperty(rootObject, objId) catch( e : Dynamic ) null;
+					if( arr == null ) {
+						arr = [];
+						try Reflect.setProperty(rootObject, objId, arr) catch( e : Dynamic ) {};
+					}
+					arr.push(p.obj);
+				} else {
+					try Reflect.setProperty(rootObject, objId, p.obj) catch( e : Dynamic ) {}
+				}
+			}
 			for( a in e.attributes ) {
 				var h = p.component.getHandler(domkit.Property.get(a.name));
 				if( h == null ) {
@@ -342,10 +398,13 @@ class DomkitViewer extends h2d.Object {
 				case Code(code):
 					var v : Dynamic = evalCode(parseCode(code, a.pmin));
 					@:privateAccess p.initStyle(a.name, v);
+					h.apply(p.obj, v);
 				}
 			}
-			for( c in e.children )
-				addRec(c, cast p.contentRoot);
+			if( !childrenCreated ) {
+				for( c in e.children )
+					addRec(c, cast p.contentRoot);
+			}
 		case Text(text):
 			var tf = new h2d.HtmlText(hxd.res.DefaultFont.get(), parent);
 			tf.dom = domkit.Properties.create("html-text", tf);

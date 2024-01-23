@@ -23,6 +23,7 @@ private typedef TypedProperty = {
 
 private typedef TypedComponent = {
 	var name : String;
+	var ?classDef : hscript.Checker.CClass;
 	var ?parent : TypedComponent;
 	var properties : Map<String, TypedProperty>;
 	var vars : Map<String, Type>;
@@ -77,6 +78,7 @@ class DomkitChecker extends ScriptEditor.ScriptChecker {
 	}
 
 	public function checkDML( dmlCode : String, filePath : String, position = 0 ) {
+		init();
 		// reset locals and other vars
 		checker.check({ e : EBlock([]), pmin : 0, pmax : 0, origin : "", line : 0 });
 		@:privateAccess checker.locals = params.copy();
@@ -84,6 +86,17 @@ class DomkitChecker extends ScriptEditor.ScriptChecker {
 		var parser = new domkit.MarkupParser();
 		parser.allowRawText = true;
 		var expr = parser.parse(dmlCode,filePath, position);
+		switch( expr.kind ) {
+		case Node(null) if( expr.children.length == 1 ): expr = expr.children[0];
+		default:
+		}
+		switch( expr.kind ) {
+		case Node(name) if( name != null ):
+			var comp = resolveComp(name.split(":")[0]);
+			if( comp != null && comp.classDef != null )
+				checker.setGlobal("this",TInst(comp.classDef,[]));
+		default:
+		}
 		try {
 			checkDMLRec(expr, true);
 		} catch( e : hscript.Expr.Error ) {
@@ -213,6 +226,7 @@ class DomkitChecker extends ScriptEditor.ScriptChecker {
 			if( name == null )
 				continue;
 			var comp = makeComponent(name);
+			comp.classDef = c;
 			cmap.set(c.name, comp);
 			if( StringTools.startsWith(c.name,"h2d.domkit.") )
 				cmap.set("h2d."+c.name.substr(11,c.name.length-11-4), comp);
