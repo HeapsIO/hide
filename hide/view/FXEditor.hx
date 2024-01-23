@@ -78,7 +78,7 @@ private class FXSceneEditor extends hide.comp.SceneEditor {
 
 			clone.shared.current2d = elt.parent.findFirstLocal2d();
 			clone.shared.current3d = elt.parent.findFirstLocal3d();
-			clone.instanciate();
+			clone.make();
 
 			autoName(clone);
 			newElements.push(clone);

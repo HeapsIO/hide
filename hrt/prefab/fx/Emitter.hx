@@ -559,7 +559,7 @@ class EmitterObject extends h3d.scene.Object {
 
 			var empty3d = new h3d.scene.Object();
 			var clone = particleTemplate.clone(new hrt.prefab.ContextShared(empty3d),false);
-			clone.instanciate();
+			clone.make();
 			var loc3d = Object3D.getLocal3d(clone);
 
 			var mesh = Std.downcast(loc3d, h3d.scene.Mesh);
@@ -815,7 +815,7 @@ class EmitterObject extends h3d.scene.Object {
 			var scene = relativeScenePosition ? getScene() : null;
 
 			if (trailsTemplate != null && trails == null) {
-				trailsTemplate.instanciate();
+				trailsTemplate.make();
 				trails = cast trailsTemplate.local3d;
 				trails.autoTrackPosition = false;
 			}

@@ -1448,7 +1448,7 @@ class SceneEditor {
 
 		renderPropsRoot.shared.current2d = root2d;
 		renderPropsRoot.shared.current3d = root3d;
-		renderPropsRoot.instanciate();
+		renderPropsRoot.make();
 
 		/*var lights = renderPropsRoot.getAll(hrt.prefab.Light, true);
 		for (light in lights) {
@@ -1488,11 +1488,11 @@ class SceneEditor {
 		scene.setCurrent();
 		scene.onResize();
 
-		sceneData.setSharedRec(new ContextShared(root2d,root3d));
+		@:privateAccess sceneData.setSharedRec(new ContextShared(root2d,root3d));
 		sceneData.shared.currentPath = view.state.path;
 		sceneData.setEditor(this);
 
-		sceneData.instanciate();
+		sceneData.make();
 		var bgcol = scene.engine.backgroundColor;
 		scene.init();
 		scene.engine.backgroundColor = bgcol;
@@ -2259,7 +2259,7 @@ class SceneEditor {
 		elt.shared.current3d = elt.parent.findFirstLocal3d();
 		elt.shared.current2d = elt.parent.findFirstLocal2d();
 		elt.setEditor(this);
-		elt.instanciate();
+		elt.make();
 
 		for( p in elt.flatten() ) {
 			makeInteractive(p);
@@ -2964,7 +2964,7 @@ class SceneEditor {
 
 		group.shared.current2d = parent.findFirstLocal2d();
 		group.shared.current3d = parent.findFirstLocal3d();
-		group.instanciate();
+		group.make();
 
 		var effectFunc = reparentImpl(elts, group, 0);
 		undo.change(Custom(function(undo) {
@@ -3019,7 +3019,7 @@ class SceneEditor {
 			var p = hrt.prefab.Prefab.createFromDynamic(obj, parent);
 			p.shared.current2d = parent.findFirstLocal2d();
 			p.shared.current3d = parent.findFirstLocal3d();
-			p.instanciate();
+			p.make();
 			autoName(p);
 
 			if( opts.ref != null && opts.ref.source != null && opts.ref.name != null ) {
@@ -3236,14 +3236,14 @@ class SceneEditor {
 		var lastElem = elements[elements.length-1];
 		var lastIndex = lastElem.parent.children.indexOf(lastElem) + 1;
 		for(elt in elements) {
-			@:privateAccess var clone = elt.copyDefault(elt.parent, elt.parent.shared);
+			var clone = elt.clone(elt.parent, elt.parent.shared);
 			var index = lastIndex+1;
 			elt.parent.children.remove(clone);
 			elt.parent.children.insert(index, clone);
 
 			clone.shared.current2d = elt.parent.findFirstLocal2d();
 			clone.shared.current3d = elt.parent.findFirstLocal3d();
-			clone.instanciate();
+			clone.make();
 
 			autoName(clone);
 			newElements.push(clone);

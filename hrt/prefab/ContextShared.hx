@@ -40,14 +40,15 @@ class ContextShared {
 		Disable some checks at the prefab instanciation time. Used to initialize prefabs that
 		don't need locals2d/3d like shaders
 	**/
-	public var forceInstanciate : Bool = false;
+	public var isInstance(default, null) : Bool = false;
 
 	var bakedData : Map<String, haxe.io.Bytes>;
 
-	public function new( ?res : hxd.res.Resource, ?root2d: h2d.Object = null, ?root3d: h3d.scene.Object = null) {
-		if( res != null ) currentPath = res.entry.path;
-		this.root2d = root2d ?? new h2d.Object();
-		this.root3d = root3d ?? new h3d.scene.Object();
+	public function new( ?path : String, isInstance: Bool = true, ?root2d: h2d.Object = null, ?root3d: h3d.scene.Object = null) {
+		if( path != null ) currentPath = path;
+		this.isInstance = isInstance;
+		this.root2d = root2d;
+		this.root3d = root3d;
 
 		this.current2d = this.root2d;
 		this.current3d = this.root3d;

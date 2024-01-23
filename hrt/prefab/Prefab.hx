@@ -87,14 +87,14 @@ class Prefab {
 		if (parent == null) {
 			shared = contextShared;
 			if (shared == null) {
-				shared = Type.createEmptyInstance(ContextShared);
+				shared = new ContextShared(false);
 			}
 		}
 		else
 			this.parent = parent;
 	}
 
-	public function setSharedRec(newShared : ContextShared) {
+	function setSharedRec(newShared : ContextShared) {
 		this.shared = newShared;
 		for (c in children)
 			c.setSharedRec(newShared);
@@ -117,26 +117,12 @@ class Prefab {
 			parent.children.push(this);
 		}
 		else {
-			shared = null;
+			setSharedRec(new ContextShared(false));
 		}
 		return p;
 	}
 
 	// Lifetime
-
-	// Create the hierarchy of heaps objects from this prefab. Can only be done on cloned prefabs or if forceInstanciate is true ()
-	public function instanciate() {
-		if (shared.root2d == null && shared.root3d == null && !shared.forceInstanciate)
-			throw "Can't instanciate a template prefab.";
-
-		var old2d = shared.current2d;
-		var old3d = shared.current3d;
-
-		makeInstanceRec();
-
-		if (old2d != shared.current2d || old3d != shared.current3d)
-			throw "Shared.current2d/3d is different bewteen the start and end of instanciate. (Someone has modified current2d/3d without restoring it to it's previous value)";
-	}
 
 	function makeChild(p: Prefab) {
 		if (!p.shouldBeInstanciated()) return;
@@ -154,7 +140,6 @@ class Prefab {
 			throw "No editor for setEditor";
 
 		shared.editor = sceneEditor;
-		shared.scene = sceneEditor.scene;
 
 		setEditorChildren(sceneEditor);
 	}
@@ -440,9 +425,6 @@ class Prefab {
 	}
 
 	function shouldBeInstanciated() : Bool {
-		if (shared.root2d == null && shared.root3d == null && !shared.forceInstanciate)
-			throw "Prefab is missing a shared context for instanciation";
-
 		if (!enabled) return false;
 
 		var fromRef = #if editor (shared.parent != null) #else true #end;
@@ -506,48 +488,62 @@ class Prefab {
 
 	}
 
-	public function make(contextShared:ContextShared) : Prefab {
-		// Implemented in a macro, calls makeInternal() with an automatic cast
-		// see hrt.prefab.Macros
-		return null;
-	}
-
-	public final function makeInternal(contextShared:ContextShared) : Prefab {
-		var newInstance = clone(null, contextShared);
-		if (newInstance == null)
-			return null;
-
-		newInstance.instanciate();
-		return newInstance;
-	};
 
 	/**
-		Create a copy of this prefab with a new context shared
-	**/
-	public final function clone(?root: Prefab = null, contextShared:ContextShared, withChildren : Bool = true) : Prefab {
-		var sh = contextShared;
+		Instanciate this prefab. If `newContextShared` is given or if `this.shared.isInstance` is false,
+		this prefab is cloned and then the clone is instanciated and returned.
+		If `this.shared.isInstance` is true, this prefab is instanciated instead;
 
-		sh.currentPath = contextShared?.currentPath ?? this.shared?.currentPath;
-		var p = copyDefault(root, sh, withChildren);
-		#if editor
-		if (shared.editor != null) {
-			p.setEditor(shared.editor);
+		Make returns a Prefab of the same type as the one that was made, so you don't have to
+		manually cast the created object.
+	**/
+	public final function make(?newContextShared:ContextShared) : Prefab {
+		return makeInternal(newContextShared);
+	}
+
+	final function makeInternal(?newContextShared: ContextShared) : Prefab {
+		var toMake : Prefab = null;
+
+		if (newContextShared == null) {
+			if (this.shared.isInstance) {
+				toMake = this;
+			}
 		}
-		#end
-		return p;
+
+		if (toMake == null) {
+			toMake = this.clone(newContextShared);
+		}
+
+		toMake.makeInstanceRec();
+
+		return toMake;
 	}
 
 	/**
-		Create a copy of this prefab and it's childrens
+		Create a copy of this prefab and it's childrens without making it
 	**/
-	final function copyDefault(?parent:Prefab = null, sh: ContextShared, withChildren : Bool = true) : Prefab {
+	public final function clone(?parent:Prefab = null, ?sh: ContextShared = null, withChildren : Bool = true) : Prefab {
+		if (parent != null && sh != null && parent.shared != sh)
+			throw "Both parent and sh are set but shared don't match";
+
+		if (sh == null) {
+			if (parent != null) {
+				sh = parent.shared;
+			} else {
+				sh = new hrt.prefab.ContextShared(this.shared.currentPath, true);
+				#if editor
+				sh.editor = shared.editor;
+				#end
+			}
+		}
+
 		var thisClass = Type.getClass(this);
 
 		var inst = Type.createInstance(thisClass, [parent, sh]);
 		inst.copy(this);
 		if (withChildren) {
 			for (child in children) {
-				child.copyDefault(inst, sh);
+				child.clone(inst, sh);
 			}
 		}
 
