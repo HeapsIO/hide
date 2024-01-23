@@ -3455,7 +3455,7 @@ class SceneEditor {
 		if(uniqueName) {
 			prefix += "_";
 			var id = 0;
-			while( sceneData.getPrefabByName(prefix + id) != null )
+			while( sceneData.find(hrt.prefab.Prefab, (p) -> p.name == prefix + id) != null )
 				id++;
 
 			p.name = prefix + id;

@@ -350,6 +350,7 @@ class Prefab {
 		return dyn;
 	}
 
+	#if editor
 	// Helpers function for meta
 	final function getSerializableProps() : Array<PrefabField> {
 		return getSerializablePropsForClass(Type.getClass(this));
@@ -394,19 +395,7 @@ class Prefab {
 		return type.split(".").pop();
 	}
 
-	/**
-		Search the prefab tree for the prefab matching the given name, returns null if not found
-	**/
-	public function getPrefabByName( name : String ) {
-		if( this.name == name )
-			return this;
-		for( c in children ) {
-			var p = c.getPrefabByName(name);
-			if( p != null )
-				return p;
-		}
-		return null;
-	}
+	#end
 
 	public function locateObject( path : String ) {
 		if( path == null )
