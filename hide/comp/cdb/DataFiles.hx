@@ -265,6 +265,30 @@ class DataFiles {
 		return obj;
 	}
 
+	static function getPrefabsByPath(prefab: hrt.prefab.Prefab, path : String ) : Array<hrt.prefab.Prefab> {
+		function rec(prefab: hrt.prefab.Prefab, parts : Array<String>, index : Int, out : Array<hrt.prefab.Prefab> ) {
+			var name = parts[index++];
+			if( name == null ) {
+				out.push(prefab);
+				return;
+			}
+			var r = name.indexOf('*') < 0 ? null : new EReg("^"+name.split("*").join(".*")+"$","");
+			for( c in prefab.children ) {
+				var cname = c.name;
+				if( cname == null ) cname = c.getDefaultName();
+				if( r == null ? c.name == name : r.match(cname) )
+					rec(prefab, parts, index, out);
+			}
+		}
+
+		var out = [];
+		if( path == "" )
+			out.push(prefab);
+		else
+			rec(prefab,path.split("."), 0, out);
+		return out;
+	}
+
 	public static function save( ?onSaveBase, ?force, ?prevSheetNames : Map<String,String> ) {
 		var ide = Ide.inst;
 		var temp = [];
@@ -303,7 +327,7 @@ class DataFiles {
 							pf = ide.loadPrefab(p.file);
 							prefabs.set(p.file, pf);
 						}
-						var all = pf.getPrefabsByPath(p.path);
+						var all = getPrefabsByPath(pf, p.path);
 						var inst : hrt.prefab.Prefab = all[p.index];
 						if( inst == null || inst.getCdbType() != prevName )
 							ide.error("Can't save prefab data "+p.path);

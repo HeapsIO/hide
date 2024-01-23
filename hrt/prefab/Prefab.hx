@@ -316,34 +316,6 @@ class Prefab {
 	}
 
 	/**
-		Search the prefab tree for the prefabs matching the given path.
-		Can use wildcards, such as `*`/level`*`/collision
-	**/
-	public function getPrefabsByPath( path : String ) {
-		var out = [];
-		if( path == "" )
-			out.push(this);
-		else
-			getPrefabsByPathRec(path.split("."), 0, out);
-		return out;
-	}
-
-	function getPrefabsByPathRec( parts : Array<String>, index : Int, out : Array<Prefab> ) {
-		var name = parts[index++];
-		if( name == null ) {
-			out.push(this);
-			return;
-		}
-		var r = name.indexOf('*') < 0 ? null : new EReg("^"+name.split("*").join(".*")+"$","");
-		for( c in children ) {
-			var cname = c.name;
-			if( cname == null ) cname = c.getDefaultName();
-			if( r == null ? c.name == name : r.match(cname) )
-				c.getPrefabsByPathRec(parts, index, out);
-		}
-	}
-
-	/**
 		Iterate over children prefab
 	**/
 	public inline function iterator() : Iterator<Prefab> {
@@ -379,7 +351,7 @@ class Prefab {
 	}
 
 	// Helpers function for meta
-	public final function getSerializableProps() : Array<PrefabField> {
+	final function getSerializableProps() : Array<PrefabField> {
 		return getSerializablePropsForClass(Type.getClass(this));
 	}
 
@@ -630,7 +602,6 @@ class Prefab {
 		var thisClass = Type.getClass(this);
 
 		var inst = Type.createInstance(thisClass, [parent, sh]);
-		//copyShallow(this, inst, false, true, true, getSerializableProps());
 		inst.copy(this);
 		if (withChildren) {
 			for (child in children) {
@@ -644,20 +615,17 @@ class Prefab {
 	/** Copy all the properties in data to this prefab object. This is not recursive. Done when loading the json data of the prefab**/
 	function load(data : Dynamic) : Void {
 		this.copyFromDynamic(data);
-		//copyShallow(data, this, false, false, false, getSerializableProps());
 	}
 
 	/** Copy all the properties in Prefab to this prefab object. Done when cloning an existing prefab**/
 	function copy(data: Prefab) : Void {
 		this.copyFromOther(data);
-		//copyShallow(data, this, false, false, false, getSerializableProps());
 	}
 
 	/** Save all the properties to the given dynamic object. This is not recursive. Returns the updated dynamic object.
 		If to is null, a new dynamic object is created automatically and returned by the
 	**/
 	function save(to: Dynamic) : Dynamic {
-		//copyShallow(this, to, false, false, false, getSerializableProps());
 		return this.copyToDynamic(to);
 	}
 
@@ -802,17 +770,6 @@ class Prefab {
 		return false;
 	}
 
-	/**
-		Copy all the fields from this prefab to the target prefab, recursively
-	**/
-	public static function copyRecursive(source:Prefab, dest:Prefab, useProperty:Bool, copyNull:Bool)
-	{
-		copyShallow(source, dest, useProperty, copyNull, false, source.getSerializableProps());
-		for (idx in 0...source.children.length) {
-			copyRecursive(source.children[idx], dest.children[idx], useProperty, copyNull);
-		}
-	}
-
 	inline public static function getSerializablePropsForClass(cl : Class<Prefab>) {
 		return (cl:Dynamic).getSerializablePropsStatic();
 	}
@@ -870,72 +827,7 @@ class Prefab {
 		return out;
 	}
 
-
-	/**
-		Only copy a prefab serializable properties without it's children
-	**/
-	static function copyShallow(source:Dynamic, dest:Dynamic, useProperty:Bool, copyNull:Bool, copyDefault: Bool, props:Array<PrefabField>) {
-		var set = useProperty ? Reflect.setProperty : Reflect.setField;
-
-		for (prop in props) {
-			var v : Dynamic = Reflect.getProperty(source, prop.name);
-			var shouldCopy = true;
-			shouldCopy = shouldCopy && (v != null || copyNull);
-			shouldCopy = shouldCopy && (copyDefault || useProperty || v != prop.defaultValue);
-			//shouldCopy &= (copyDefault || )
-			if (shouldCopy) {
-				// Fixup enums for non JS targets
-				switch (Type.typeof(Reflect.getProperty(dest, prop.name))) {
-					case TEnum(e):
-						if (Type.getClass(v) == String) {
-							v = e.createByName(v);
-						}
-					default:
-				}
-				set(dest, prop.name, copyValue(v));
-			}
-		}
-	}
-
-	static function copyValue(v:Dynamic) : Dynamic {
-		switch (Type.typeof(v)) {
-			case TClass(c):
-				switch(c) {
-					case cast Array:
-						var v:Array<Dynamic> = v;
-						return v.copy();
-					case cast String:
-						var v:String = v;
-						return v;
-					default:
-						// TODO : oh no
-						return haxe.Json.parse(haxe.Json.stringify(v));
-				}
-			default:
-				return v;
-		}
-	}
-
 	// Static initialization trick to register this class with the given name
 	// in the prefab registry. Call this in your own classes
 	public static var _ = Prefab.register("prefab", Prefab, "prefab");
-
-	/*inline public function findParent<T:Prefab,R>( cl : Class<T>, ?filter : (p:T) -> Null<R>) : Null<R> {
-		var current = this;
-		var val = null;
-
-		while(current != null && val == null) {
-			var c = Std.downcast(current, cl);
-			if (c != null) {
-				if (filter != null)
-					val = filter(c);
-				else
-					val = c;
-			}
-			current = current.parent;
-		}
-
-		return val;
-	}*/
-
 }

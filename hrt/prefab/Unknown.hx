@@ -12,7 +12,7 @@ class Unknown extends Prefab {
 				name = newData.name;
 			}
 			else if (f != "children") {
-				Reflect.setField(data, f, Prefab.copyValue(Reflect.getProperty(newData, f)));
+				Reflect.setField(data, f, copyValue(Reflect.getProperty(newData, f)));
 			}
 		}
 	}
@@ -20,9 +20,28 @@ class Unknown extends Prefab {
 	override function save(to:Dynamic) {
 		to.name = name;
 		for (f in Reflect.fields(data)) {
-			Reflect.setField(to, f, Prefab.copyValue(Reflect.getProperty(data, f)));
+			Reflect.setField(to, f, copyValue(Reflect.getProperty(data, f)));
 		}
 		return to;
+	}
+
+	static function copyValue(v:Dynamic) : Dynamic {
+		switch (Type.typeof(v)) {
+			case TClass(c):
+				switch(c) {
+					case cast Array:
+						var v:Array<Dynamic> = v;
+						return v.copy();
+					case cast String:
+						var v:String = v;
+						return v;
+					default:
+						// TODO : oh no
+						return haxe.Json.parse(haxe.Json.stringify(v));
+				}
+			default:
+				return v;
+		}
 	}
 
 #if editor
