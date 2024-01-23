@@ -433,36 +433,11 @@ class Prefab {
 		return Reflect.field(props, "$cdbtype");
 	}
 
-	/**
-		Misc
-	**/
-
 	public final function toString() : String{
-		return 'prefab:{type: $type, name: $name}';
+		var str = type;
+		if (name != "") str += '($name)';
+		return str;
 	}
-
-	public function dumpInfo() : String {
-		return haxe.Json.stringify(serializeToDynamic(), null, "\t");
-	}
-
-	// Returns a string that represent all the enabled prefabs in this
-	// tree, with idtentation.
-	public function getTreeString(indent: String = "\t") : String {
-		var sb = new StringBuf();
-		function rec(prefab:Prefab, prefix:String) {
-			sb.add('\n$prefix${prefab.name} (${Type.getClassName(Type.getClass(prefab))})');
-			for (c in prefab.children) {
-				rec(c, prefix+indent);
-			}
-		}
-
-		rec(this, "");
-		return sb.toString();
-	}
-
-	/*
-		overridable API
-	*/
 
 	function shouldBeInstanciated() : Bool {
 		if (shared.root2d == null && shared.root3d == null && !shared.forceInstanciate)
@@ -496,11 +471,13 @@ class Prefab {
 		postMakeInstance();
 	}
 
-	// Make children is responsible for setting the relevant
-	// current2d and/or current3d of this prefab so the children
-	// can create and attach their object to them. Then, makeChild
-	// can be called on all the children, and current2d/3d must be
-	// restored to their previous values.
+	/**
+		Make children is responsible for setting the relevant
+		current2d and/or current3d of this prefab so the children
+		can create and attach their object to them. Then, makeChild
+		can be called on all the children, and current2d/3d must be
+		restored to their previous values.
+	**/
 	function makeChildren() : Void {
 		for (c in children) {
 			makeChild(c);
@@ -510,7 +487,6 @@ class Prefab {
 	/**
 		Override this function to create runtime objects from this prefab
 	**/
-	// NOTE(ces) : Change to makeObject
 	function makeInstance() : Void {
 
 	}
@@ -524,14 +500,11 @@ class Prefab {
 
 	/**
 		Allows to customize how an instance gets updated when a property name changes.
-		You can also call updateInstance(ctx) in order to force whole instance synchronization against current prefab data.
+		You can also call updateInstance() in order to force whole instance synchronization against current prefab data.
 	**/
 	public function updateInstance(?propName : String ) {
-	}
 
-	/*
-		Internal functionalities
-	*/
+	}
 
 	public function make(contextShared:ContextShared) : Prefab {
 		// Implemented in a macro, calls makeInternal() with an automatic cast
@@ -548,9 +521,9 @@ class Prefab {
 		return newInstance;
 	};
 
-	/*
+	/**
 		Create a copy of this prefab with a new context shared
-	*/
+	**/
 	public final function clone(?root: Prefab = null, contextShared:ContextShared, withChildren : Bool = true) : Prefab {
 		var sh = contextShared;
 
@@ -581,17 +554,22 @@ class Prefab {
 		return inst;
 	}
 
-	/** Copy all the properties in data to this prefab object. This is not recursive. Done when loading the json data of the prefab**/
+	/**
+		Copy all the properties in data to this prefab object. This is not recursive. Done when loading the json data of the prefab
+	**/
 	function load(data : Dynamic) : Void {
 		this.copyFromDynamic(data);
 	}
 
-	/** Copy all the properties in Prefab to this prefab object. Done when cloning an existing prefab**/
+	/**
+		Copy all the properties in Prefab to this prefab object. Done when cloning an existing prefab
+	**/
 	function copy(data: Prefab) : Void {
 		this.copyFromOther(data);
 	}
 
-	/** Save all the properties to the given dynamic object. This is not recursive. Returns the updated dynamic object.
+	/**
+		Save all the properties to the given dynamic object. This is not recursive. Returns the updated dynamic object.
 		If to is null, a new dynamic object is created automatically and returned by the
 	**/
 	function save(to: Dynamic) : Dynamic {
@@ -680,6 +658,9 @@ class Prefab {
 		return { icon : "question-circle", name : "Unknown" };
 	}
 
+	/**
+		Create an interactive object to the scene objects of this prefab
+	**/
 	public function makeInteractive() : hxd.SceneEvents.Interactive {
 		return null;
 	}
@@ -701,10 +682,9 @@ class Prefab {
 	}
 #end
 
-	public static function loadPath(path: String, ?contextShared: ContextShared) : Prefab {
-		return hxd.res.Loader.currentInstance.load(path).to(hrt.prefab.Resource).load(contextShared);
-	}
-
+	/**
+		Create a new prefab from the given `data`.
+	**/
 	public static function createFromDynamic(data:Dynamic, parent:Prefab = null, contextShared:ContextShared = null) : Prefab {
 		var type : String = data.type;
 
@@ -730,6 +710,9 @@ class Prefab {
 		return prefabInstance;
 	}
 
+	/**
+		Check if `original` prefab is or inherits from `parent`.
+	**/
 	public static function isOfType( original : Class<Prefab>, parent : Class<Prefab> ) {
 		var c : Class<Dynamic> = original;
 		while( c != null ) {
@@ -739,7 +722,7 @@ class Prefab {
 		return false;
 	}
 
-	inline public static function getSerializablePropsForClass(cl : Class<Prefab>) {
+	inline static function getSerializablePropsForClass(cl : Class<Prefab>) {
 		return (cl:Dynamic).getSerializablePropsStatic();
 	}
 
@@ -784,7 +767,10 @@ class Prefab {
 		return extensionRegistry.get(extension);
 	}
 
-
+	/**
+		Return the first h3d.scene.Objects found in each of this prefab children.
+		If a children has no h3d.scene.Objects, it then search in it's children and so on.
+	**/
 	static function getChildrenRoots( base : h3d.scene.Object, p : Prefab, out : Array<h3d.scene.Object> ) {
 		for( c in p.children ) {
 			var local3d = Object3D.getLocal3d(c);

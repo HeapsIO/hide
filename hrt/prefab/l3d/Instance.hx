@@ -22,7 +22,7 @@ class Instance extends Object3D {
 		if(modelPath != null) {
 			try {
 				if(hrt.prefab.Prefab.getPrefabType(modelPath) != null) {
-					var ref = Prefab.loadPath(modelPath);
+					var ref = hxd.res.Loader.currentInstance.load(modelPath).to(hrt.prefab.Resource).load();
 					if(ref != null) {
 						var sh = new hrt.prefab.ContextShared(findFirstLocal2d(), parent3d);
 						sh.currentPath = source;

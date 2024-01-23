@@ -47,7 +47,7 @@ class Reference extends Object3D {
 			return null;
 		if (refInstance != null)
 			return refInstance;
-		return Prefab.loadPath(source);
+		return hxd.res.Loader.currentInstance.load(source).to(hrt.prefab.Resource).load();
 	}
 
 	override function makeInstance() {
