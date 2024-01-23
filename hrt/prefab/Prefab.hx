@@ -136,8 +136,6 @@ class Prefab {
 
 		if (old2d != shared.current2d || old3d != shared.current3d)
 			throw "Shared.current2d/3d is different bewteen the start and end of instanciate. (Someone has modified current2d/3d without restoring it to it's previous value)";
-
-		refresh();
 	}
 
 	function makeChild(p: Prefab) {
@@ -360,7 +358,7 @@ class Prefab {
 		Recursively copy this prefab and it's children into a dynamic object, containing
 		all the serializable properties and the type of the object
 	**/
-	public function serializeToDynamic() : Dynamic {
+	function serializeToDynamic() : Dynamic {
 		var thisClass = Type.getClass(this);
 		var typeName = getClassTypeName(thisClass);
 		var dyn : Dynamic = {
@@ -590,20 +588,6 @@ class Prefab {
 	public function updateInstance(?propName : String ) {
 	}
 
-	/**
-		Call all the setters of this object and its children
-	**/
-	public function refresh() {
-		/*for (field in getSerializableProps()) {
-			if (field.hasSetter) {
-				Reflect.setProperty(this, field.name, Reflect.getProperty(this, field.name));
-			}
-		}
-		for (child in children) {
-			child.refresh();
-		}*/
-	}
-
 	/*
 		Internal functionalities
 	*/
@@ -658,13 +642,13 @@ class Prefab {
 	}
 
 	/** Copy all the properties in data to this prefab object. This is not recursive. Done when loading the json data of the prefab**/
-	public function load(data : Dynamic) : Void {
+	function load(data : Dynamic) : Void {
 		this.copyFromDynamic(data);
 		//copyShallow(data, this, false, false, false, getSerializableProps());
 	}
 
 	/** Copy all the properties in Prefab to this prefab object. Done when cloning an existing prefab**/
-	public function copy(data: Prefab) : Void {
+	function copy(data: Prefab) : Void {
 		this.copyFromOther(data);
 		//copyShallow(data, this, false, false, false, getSerializableProps());
 	}
@@ -672,7 +656,7 @@ class Prefab {
 	/** Save all the properties to the given dynamic object. This is not recursive. Returns the updated dynamic object.
 		If to is null, a new dynamic object is created automatically and returned by the
 	**/
-	public function save(to: Dynamic) : Dynamic {
+	function save(to: Dynamic) : Dynamic {
 		//copyShallow(this, to, false, false, false, getSerializableProps());
 		return this.copyToDynamic(to);
 	}

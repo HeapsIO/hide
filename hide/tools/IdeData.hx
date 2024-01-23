@@ -247,7 +247,7 @@ class IdeData {
 	}
 
 	public function savePrefab( file : String, f : hrt.prefab.Prefab ) {
-		var content = f.serialize();
+		@:privateAccess var content = f.serialize();
 		sys.io.File.saveContent(getPath(file), toJSON(content));
 	}
 

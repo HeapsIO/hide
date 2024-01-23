@@ -1841,11 +1841,11 @@ class SceneEditor {
 					}
 
 					for(o in objects3d)
-						o.refresh();
+						o.updateInstance();
 				}));
 
 				for(o in objects3d)
-					o.refresh();
+					o.updateInstance();
 			}
 		}
 		gizmo2d.onStartMove = function(mode) {
@@ -1931,10 +1931,10 @@ class SceneEditor {
 						refreshProps();
 					}
 					for(o in objects2d)
-						o.refresh();
+						o.updateInstance();
 				}));
 				for(o in objects2d)
-					o.refresh();
+					o.updateInstance();
 			};
 		};
 	}
@@ -2815,7 +2815,7 @@ class SceneEditor {
 			obj3d.x = hxd.Math.round(localMat.tx * 10) / 10;
 			obj3d.y = hxd.Math.round(localMat.ty * 10) / 10;
 			obj3d.z = hxd.Math.floor(localMat.tz * 10) / 10;
-			obj3d.refresh();
+			obj3d.updateInstance();
 		}
 		var newState = [for(o in objects3d) o.saveTransform()];
 		refreshProps();
@@ -2835,7 +2835,7 @@ class SceneEditor {
 				refreshProps();
 			}
 			for(o in objects3d)
-				o.refresh();
+				o.updateInstance();
 		}));
 	}
 
@@ -2990,14 +2990,14 @@ class SceneEditor {
 		if(selectedPrefabs == null) return;
 		if(selectedPrefabs.length == 1) {
 			var prefab = selectedPrefabs[0];
-			view.setClipboard(prefab.serializeToDynamic(), "prefab", { source : view.state.path, name : prefab.name });
+			@:privateAccess view.setClipboard(prefab.serializeToDynamic(), "prefab", { source : view.state.path, name : prefab.name });
 		}
 		else {
 			var lib = new hrt.prefab.Prefab(null, null);
 			for(e in selectedPrefabs) {
 				lib.children.push(e);
 			}
-			view.setClipboard(lib.serializeToDynamic(), "prefab");
+			@:privateAccess view.setClipboard(lib.serializeToDynamic(), "prefab");
 		}
 	}
 
@@ -3299,7 +3299,7 @@ class SceneEditor {
 			obj3d.y = position.y;
 			obj3d.z = position.z;
 		}
-		obj3d.refresh();
+		obj3d.updateInstance();
 	}
 
 	public function deleteElements(elts : Array<PrefabElement>, ?then: Void->Void, doRefresh : Bool = true, enableUndo : Bool = true) {
