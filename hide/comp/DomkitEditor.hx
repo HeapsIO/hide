@@ -577,6 +577,14 @@ class DomkitEditor extends CodeEditor {
 		}
 	}
 
+	public function getComponent() {
+		var compReg = ~/<([A-Za-z0-9_]+)/;
+		if( !compReg.match(code) )
+			return null;
+		var name = compReg.matched(1);
+		return checker.components.get(name);
+	}
+
 	override function getCompletion( position : Int ) {
 		var code = code;
 		var results = super.getCompletion(position);

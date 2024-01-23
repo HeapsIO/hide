@@ -61,7 +61,7 @@ class Domkit extends FileView {
 
 		var content = sys.io.File.getContent(getPath());
 		var cssText = "";
-		var paramsText = "typedef Params = {}";
+		var paramsText = DEFAULT_PARAMS;
 
 		content = StringTools.trim(content);
 
@@ -96,6 +96,9 @@ class Domkit extends FileView {
 
 	function check() {
 		modified = prevSave.css != cssEditor.code || prevSave.dml != dmlEditor.code || prevSave.params != paramsEditor.code;
+		var comp = dmlEditor.getComponent();
+		if( comp != null && comp.arguments.length > 0 )
+			@:privateAccess paramsEditor.checker.checker.setGlobal("defaultArgs", TAnon(comp.arguments.copy()));
 		paramsEditor.doCheckScript();
 		var params = @:privateAccess paramsEditor.checker.checker.locals.get("params");
 		if( params == null ) params = TAnon([]);
