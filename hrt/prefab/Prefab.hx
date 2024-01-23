@@ -39,7 +39,13 @@ class Prefab {
 	/**
 		Tells if the prefab will create an instance when used in an other prefab or in game. Also apply to this prefab children.
 	**/
-	@:s public var editorOnly : Bool = false;
+	@:s public var editorOnly(get, default) : Bool = false;
+	function get_editorOnly() {
+		if (ignoreEditorOnly)
+			return false;
+		return editorOnly;
+	}
+	public static var ignoreEditorOnly = false;
 
 	/**
 		Tells if the prefab will create an instance when used in editor. Also apply to this prefab children.
