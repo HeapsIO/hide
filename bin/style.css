@@ -2878,16 +2878,19 @@ div.gradient-box {
   height: 1px;
 }
 .domkitEditor .cssEditor,
-.domkitEditor .dmlEditor {
+.domkitEditor .dmlEditor,
+.domkitEditor .paramsEditor {
   position: relative;
   width: 50%;
 }
 .domkitEditor .cssEditor .codeeditor,
-.domkitEditor .dmlEditor .codeeditor {
+.domkitEditor .dmlEditor .codeeditor,
+.domkitEditor .paramsEditor .codeeditor {
   height: 600px;
 }
 .domkitEditor .cssEditor .codeeditor .codeErrorMessage,
-.domkitEditor .dmlEditor .codeeditor .codeErrorMessage {
+.domkitEditor .dmlEditor .codeeditor .codeErrorMessage,
+.domkitEditor .paramsEditor .codeeditor .codeErrorMessage {
   top: 1px;
   width: 90%;
 }

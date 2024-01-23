@@ -4,8 +4,10 @@ class Domkit extends FileView {
 
 	var cssEditor : hide.comp.DomkitEditor;
 	var dmlEditor : hide.comp.DomkitEditor;
-	var prevSave : { css : String, dml : String };
+	var paramsEditor : hide.comp.ScriptEditor;
+	var prevSave : { css : String, dml : String, params : String };
 	var checker : hide.comp.DomkitEditor.DomkitChecker;
+	static var DEFAULT_PARAMS = "var params = {}";
 
 	override function onDisplay() {
 
@@ -32,27 +34,60 @@ class Domkit extends FileView {
 					<td class="cssEditor">
 					</td>
 				</tr>
+				<tr class="title>
+					<td>
+						Parameters
+					</td>
+					<td class="separator">
+					&nbsp;
+					</td>
+					<td>
+						&nbsp;
+					</td>
+				</tr>
+				<tr>
+					<td class="paramsEditor">
+					</td>
+					<td class="separator">
+					&nbsp;
+					</td>
+					<td>
+						&nbsp;
+					</td>
+				</tr>
 			</table>
 			<div class="scene"></div>
 		</div>');
 
 		var content = sys.io.File.getContent(getPath());
 		var cssText = "";
+		var paramsText = "typedef Params = {}";
+
+		content = StringTools.trim(content);
 
 		if( StringTools.startsWith(content,"<css>") ) {
 			var pos = content.indexOf("</css>");
-			cssText = content.substr(5, pos - 5);
+			cssText = StringTools.trim(content.substr(5, pos - 6));
 			content = content.substr(pos + 6);
+			content = StringTools.trim(content);
 		}
 
-		var dmlText = StringTools.trim(content);
-		cssText = StringTools.trim(cssText);
+		if( StringTools.startsWith(content,"<params>") ) {
+			var pos = content.indexOf("</params>");
+			paramsText = StringTools.trim(content.substr(8, pos - 9));
+			content = content.substr(pos + 9);
+			content = StringTools.trim(content);
+		}
 
-		prevSave = { css : cssText, dml : dmlText };
+		var dmlText = content;
+
+		prevSave = { css : cssText, dml : dmlText, params : paramsText };
 		dmlEditor = new hide.comp.DomkitEditor(config, DML, dmlText, element.find(".dmlEditor"));
 		cssEditor = new hide.comp.DomkitEditor(config, Less, cssText, dmlEditor.checker, element.find(".cssEditor"));
-		cssEditor.onChanged = dmlEditor.onChanged = check;
-		cssEditor.onSave = dmlEditor.onSave = save;
+		var checker = new hide.comp.DomkitEditor.DomkitChecker(config);
+		paramsEditor = new hide.comp.ScriptEditor(paramsText, checker, element.find(".paramsEditor"));
+		cssEditor.onChanged = dmlEditor.onChanged = paramsEditor.onChanged = check;
+		cssEditor.onSave = dmlEditor.onSave = paramsEditor.onSave = save;
 
 		// add a scene so the CssParser can resolve Tiles
 		var scene = element.find(".scene");
@@ -60,17 +95,64 @@ class Domkit extends FileView {
 	}
 
 	function check() {
-		modified = prevSave.css != cssEditor.code || prevSave.dml != dmlEditor.code;
+		modified = prevSave.css != cssEditor.code || prevSave.dml != dmlEditor.code || prevSave.params != paramsEditor.code;
+		paramsEditor.doCheckScript();
+		var params = @:privateAccess paramsEditor.checker.checker.locals.get("params");
+		if( params == null ) params = TAnon([]);
+		switch( params ) {
+		case TAnon(fields):
+			dmlEditor.checker.params = new Map();
+			var any : hscript.Checker.TType = TUnresolved("???");
+			for( f in fields ) {
+				var t = f.t;
+				function setRec(t:hscript.Checker.TType) {
+					switch( t ) {
+					case TMono(r) if( r.r == null ): r.r = any;
+					default:
+					}
+					switch( t ) {
+					case TMono(r) if( r.r != null ): setRec(r.r);
+					case TNull(t): setRec(t);
+					case TInst(_,tl), TAbstract(_,tl), TEnum(_,tl), TType(_,tl):
+						for( t in tl ) setRec(t);
+					case TFun(args,ret):
+						for( t in args ) setRec(t.t);
+						setRec(ret);
+					case TAnon(fl):
+						for( f in fl )
+							setRec(f.t);
+					case TLazy(f):
+						setRec(f());
+					default:
+					}
+				}
+				setRec(t);
+				dmlEditor.checker.params.set(f.name, t);
+			}
+		case null, _:
+			paramsEditor.setError("Params definition is missing", 0, 0, 0);
+		}
 		dmlEditor.check();
 		cssEditor.check();
 	}
 
+	function trimSpaces( code : String ) {
+		code = StringTools.trim(code);
+		code = [for( l in code.split("\n") ) StringTools.rtrim(l)].join("\n");
+		return code;
+	}
+
 	override function save() {
 		super.save();
-		var cssText = cssEditor.code;
-		var dmlText = dmlEditor.code;
-		sys.io.File.saveContent(getPath(),'<css>\n$cssText\n</css>\n$dmlText');
-		prevSave = { css : cssText, dml : dmlText };
+		var cssText = trimSpaces(cssEditor.code);
+		var dmlText = trimSpaces(dmlEditor.code);
+		var paramsText = trimSpaces(paramsEditor.code);
+		var hasParams = paramsText != DEFAULT_PARAMS;
+		prevSave = { css : cssText, dml : dmlText, params : paramsText };
+		if( cssText != cssEditor.code ) cssEditor.setCode(cssText);
+		if( dmlText != dmlEditor.code ) dmlEditor.setCode(dmlText);
+		if( paramsText != paramsEditor.code ) paramsEditor.setCode(paramsText);
+		sys.io.File.saveContent(getPath(),('<css>\n$cssText\n</css>\n')+(hasParams?'<params>\n$paramsText\n</params>':'')+dmlText);
 	}
 
 	override function getDefaultContent() {
