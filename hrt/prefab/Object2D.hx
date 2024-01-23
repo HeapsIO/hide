@@ -122,8 +122,8 @@ class Object2D extends Prefab {
 
 	#end
 
-	override function getDefaultName() {
-		return type == "object2D" ? "group2D" : super.getDefaultName();
+	override function getDefaultEditorName() {
+		return type == "object2D" ? "group2D" : super.getDefaultEditorName();
 	}
 
 	static var _ = Prefab.register("object2D", Object2D);

@@ -3450,7 +3450,7 @@ class SceneEditor {
 				prefix = p.name;
 		}
 		else
-			prefix = p.getDefaultName();
+			prefix = p.getDefaultEditorName();
 
 		if(uniqueName) {
 			prefix += "_";

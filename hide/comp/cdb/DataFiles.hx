@@ -275,7 +275,7 @@ class DataFiles {
 			var r = name.indexOf('*') < 0 ? null : new EReg("^"+name.split("*").join(".*")+"$","");
 			for( c in prefab.children ) {
 				var cname = c.name;
-				if( cname == null ) cname = c.getDefaultName();
+				if( cname == null ) cname = c.getDefaultEditorName();
 				if( r == null ? c.name == name : r.match(cname) )
 					rec(prefab, parts, index, out);
 			}

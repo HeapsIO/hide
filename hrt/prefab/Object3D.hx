@@ -172,6 +172,28 @@ class Object3D extends Prefab {
 		return m;
 	}
 
+	/**
+		Returns the list of all h3d.scene.Object with the given class contained
+		by this prefab and all of it's children
+	**/
+	public function getObjects<T:h3d.scene.Object>(c: Class<T> ) : Array<T> {
+		var root = Object3D.getLocal3d(this);
+		if(root == null) return [];
+		var childObjs = Prefab.getChildrenRoots(root, this, []);
+		var ret = [];
+		function rec(o : h3d.scene.Object) {
+			var m = Std.downcast(o, c);
+			if(m != null) {
+				ret.push(m);
+			}
+			for( child in o )
+				if( childObjs.indexOf(child) < 0 )
+					rec(child);
+		}
+		rec(root);
+		return ret;
+	}
+
 	public function getDisplayFilters() : Array<String> {
 		return [];
 	}

@@ -118,7 +118,9 @@ class Shader extends Prefab {
 						pushUnique(o);
 			} else
 			{
-				objs = parent.getObjects(h3d.scene.Object);
+				var obj3d = Std.downcast(parent,hrt.prefab.Object3D);
+				if (obj3d != null)
+					objs = obj3d.getObjects(h3d.scene.Object);
 			}
 			for( obj in objs )
 				for( m in obj.getMaterials(false) )

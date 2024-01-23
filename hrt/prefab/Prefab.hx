@@ -362,7 +362,7 @@ class Prefab {
 	public function getAbsPath(unique=false) {
 		if(parent == null)
 			return "";
-		var path = name != null ? name : getDefaultName();
+		var path = name != null ? name : getDefaultEditorName();
 		if(unique) {
 			var suffix = 0;
 			for(i in 0...parent.children.length) {
@@ -370,7 +370,7 @@ class Prefab {
 				if(c == this)
 					break;
 				else {
-					var cname = c.name != null ? c.name : c.getDefaultName();
+					var cname = c.name != null ? c.name : c.getDefaultEditorName();
 					if(cname == path)
 						++suffix;
 				}
@@ -386,7 +386,7 @@ class Prefab {
 	/**
 		Returns the default display name for this prefab
 	**/
-	public function getDefaultName() : String {
+	public function getDefaultEditorName() : String {
 		if(source != null) {
 			var f = new haxe.io.Path(source).file;
 			f = f.split(" ")[0].split("-")[0];
@@ -422,26 +422,6 @@ class Prefab {
 			root = v;
 		}
 		return root;
-	}
-
-	public function getObjects<T:h3d.scene.Object>(c: Class<T> ) : Array<T> {
-		var root = Object3D.getLocal3d(this);
-		if(root == null) return [];
-		var childObjs = getChildrenRoots(root, this, []);
-		var ret = [];
-		function rec(o : h3d.scene.Object) {
-			var m = Std.downcast(o, c);
-			if(m != null) {
-				if(ret.contains(m))
-					throw "?!";
-				ret.push(m);
-			}
-			for( child in o )
-				if( childObjs.indexOf(child) < 0 )
-					rec(child);
-		}
-		rec(root);
-		return ret;
 	}
 
 	/**
