@@ -302,39 +302,39 @@ class Macros {
 
 		var typeName = Context.getLocalClass().get().name;
 
-		if (typeName != "Prefab") {
-			// allow child classes to return an object of their type when using make
-			var make : Function = {
-				args: [
-					{ name : "newContextShared", type : macro : hrt.prefab.ContextShared, opt: true}
-				],
-				expr: macro {
-					return hrt.prefab.Macros.Cast(${macro makeInternal(newContextShared)}, $v{typeName});
-				}
-			}
+		// if (typeName != "Prefab") {
+		// 	// allow child classes to return an object of their type when using make
+		// 	var make : Function = {
+		// 		args: [
+		// 			{ name : "newContextShared", type : macro : hrt.prefab.ContextShared, opt: true}
+		// 		],
+		// 		expr: macro {
+		// 			return hrt.prefab.Macros.Cast(${macro makeInternal(newContextShared)}, $v{typeName});
+		// 		}
+		// 	}
 
-			var access = [APublic, AOverride];
+		// 	var access = [APublic, AOverride];
 
-			for (f in buildFields) {
-				if (f.name == "make") {
-					throw "Prefab " + typeName + " tries to override function make";
-				}
-			}
+		// 	for (f in buildFields) {
+		// 		if (f.name == "make") {
+		// 			throw "Prefab " + typeName + " tries to override function make";
+		// 		}
+		// 	}
 
-			buildFields.push({
-				name: "make",
-				access : access,
-				pos : Context.currentPos(),
-				kind: FFun(make)
-			});
-		} else {
-			for (f in buildFields) {
-				if (f.name == "make") {
-					f.access.remove(AFinal);
-					break;
-				}
-			}
-		}
+		// 	buildFields.push({
+		// 		name: "make",
+		// 		access : access,
+		// 		pos : Context.currentPos(),
+		// 		kind: FFun(make)
+		// 	});
+		// } else {
+		// 	for (f in buildFields) {
+		// 		if (f.name == "make") {
+		// 			f.access.remove(AFinal);
+		// 			break;
+		// 		}
+		// 	}
+		// }
 
 
 		var buildFields2 = buildSerializableInternal(buildFields);

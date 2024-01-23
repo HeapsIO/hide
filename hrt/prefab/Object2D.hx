@@ -37,9 +37,7 @@ class Object2D extends Prefab {
 		var old2d = shared.current2d;
 		shared.current2d = local2d ?? shared.current2d;
 
-		for (c in children) {
-			makeChild(c);
-		}
+		super.makeChildren();
 
 		shared.current2d = old2d;
 	}

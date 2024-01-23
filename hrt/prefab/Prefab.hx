@@ -124,16 +124,6 @@ class Prefab {
 
 	// Lifetime
 
-	function makeChild(p: Prefab) {
-		if (!p.shouldBeInstanciated()) return;
-		if (shared.customMake == null) {
-			p.makeInstanceRec();
-		}
-		else {
-			shared.customMake(p);
-		}
-	}
-
 	#if editor
 	public function setEditor(sceneEditor: hide.comp.SceneEditor) {
 		if (sceneEditor == null)
@@ -424,33 +414,26 @@ class Prefab {
 		return str;
 	}
 
+	/**
+		Determines if `child` prefab should be made in the makeChildren() function
+	**/
+	function shouldMakeChild(child: Prefab) : Bool {
+		return child.shouldBeInstanciated();
+	}
+
 	function shouldBeInstanciated() : Bool {
 		if (!enabled) return false;
 
-		var fromRef = #if editor (shared.parent != null) #else true #end;
-
 		#if editor
-		if (fromRef && inGameOnly)
+		if (shared.parent != null && inGameOnly)
 			return false;
 		#else
-		if (fromRef && editorOnly)
+		if (editorOnly)
 			return false;
 		#end
 
 
 		return true;
-	}
-
-	/**
-		Override this function if you want to controll how the childrens are
-		made
-	**/
-	function makeInstanceRec() : Void {
-		if (!shouldBeInstanciated()) return;
-
-		makeInstance();
-		makeChildren();
-		postMakeInstance();
 	}
 
 	/**
@@ -463,6 +446,16 @@ class Prefab {
 	function makeChildren() : Void {
 		for (c in children) {
 			makeChild(c);
+		}
+	}
+
+	function makeChild(c:Prefab) : Void {
+		if (!shouldMakeChild(c)) return;
+		if (shared.customMake == null) {
+			c.make(shared);
+		}
+		else {
+			shared.customMake(c);
 		}
 	}
 
@@ -497,26 +490,32 @@ class Prefab {
 		Make returns a Prefab of the same type as the one that was made, so you don't have to
 		manually cast the created object.
 	**/
-	public final function make(?newContextShared:ContextShared) : Prefab {
-		return makeInternal(newContextShared);
+	public final function make(?shared:ContextShared) : Prefab {
+		if (shared == null) {
+			shared = this.shared;
+		}
+
+		if (!shared.isInstance) {
+			shared = new ContextShared(shared.currentPath);
+			#if editor
+			shared.editor = this.shared.editor;
+			#end
+			var clone = this.clone(shared);
+			return clone.make(shared);
+		}
+
+		makeInstanceRec();
+
+		return this;
 	}
 
-	final function makeInternal(?newContextShared: ContextShared) : Prefab {
-		var toMake : Prefab = null;
+	// TODO : Remove ???
+	function makeInstanceRec() : Void {
+		trace(this.toString());
 
-		if (newContextShared == null) {
-			if (this.shared.isInstance) {
-				toMake = this;
-			}
-		}
-
-		if (toMake == null) {
-			toMake = this.clone(newContextShared);
-		}
-
-		toMake.makeInstanceRec();
-
-		return toMake;
+		makeInstance();
+		makeChildren();
+		postMakeInstance();
 	}
 
 	/**

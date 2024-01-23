@@ -472,9 +472,9 @@ class Swarm extends Object3D {
 	@:s public var debugTargets : Bool = false;
 
 	// Override child creation
-	override function makeChild(p:Prefab) {
-
-	};
+	override function shouldMakeChild(p:Prefab) {
+		return false;
+	}
 
 	override function makeObject(parent:h3d.scene.Object) {
 		return new SwarmObject(parent, this);

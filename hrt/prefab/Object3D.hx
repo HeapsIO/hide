@@ -48,9 +48,7 @@ class Object3D extends Prefab {
 		var old3d = shared.current3d;
 		shared.current3d = local3d ?? shared.current3d;
 
-		for (c in children) {
-			makeChild(c);
-		}
+		super.makeChildren();
 
 		shared.current3d = old3d;
 	}
