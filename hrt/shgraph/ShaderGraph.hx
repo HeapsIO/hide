@@ -1228,7 +1228,8 @@ class Graph {
 						// 	continue;
 						// }
 
-						if (Std.downcast(currentNode.instance, hrt.shgraph.nodes.Sampler) != null) {
+						if (Std.downcast(currentNode.instance, hrt.shgraph.nodes.Sampler) != null ||
+							Std.downcast(currentNode.instance, hrt.shgraph.nodes.Dissolve) != null) {
 							if (!allInputsVarsBound) {
 								expr = makeAssign(makeVar(nodeVar.v), makeVec([0.0,0.0,0.0,0.0]));
 							}
