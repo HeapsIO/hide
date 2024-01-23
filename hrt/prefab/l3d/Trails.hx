@@ -469,6 +469,11 @@ class TrailObj extends h3d.scene.Mesh {
 		shader.setPriority(-999);
 
 		updateParams();
+
+		if (trails != null && trails.length > 0) {
+			var pos = this.getAbsPos();
+			addPoint(trails[0], pos.tx, pos.ty, pos.tz, ECamera, 1.0);
+		}
 	}
 
 	#if editor
