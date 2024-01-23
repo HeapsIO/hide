@@ -170,12 +170,17 @@ class Prefab {
 
 	// Hierarchical Helpers
 
+	/**
+		Find the first h2d.Object in this hierarchy, in either this or it's parents
+	**/
 	public function findFirstLocal2d() : h2d.Object {
 		var o2d = findParent(Object2D, (p) -> p.local2d != null, true);
 		return o2d != null ? o2d.local2d : shared.root2d;
 	}
 
-	// Find the first local3d object, either in this object or it's parents
+	/**
+		Find the first h3d.scene.Object in this hierarchy, in either this or it's parents
+	**/
 	public function findFirstLocal3d() : h3d.scene.Object {
 		var o3d = findParent(Object3D, (p) -> p.local3d != null, true);
 		return o3d != null ? o3d.local3d : shared.root3d;
@@ -310,20 +315,6 @@ class Prefab {
 			current = current.parent;
 		}
 		return null;
-	}
-
-	public function filterParents<T>(filter : (p:Prefab) -> Null<T>, includeSelf: Bool = false, ?array: Array<T>) : Array<T> {
-		if (array == null)
-			array = [];
-
-		var current = includeSelf ? this : this.parent;
-		while(current != null) {
-			var val = filter(current);
-			if (val != null)
-				array.push(val);
-			current = current.parent;
-		}
-		return array;
 	}
 
 	/**
