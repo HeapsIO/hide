@@ -33,6 +33,7 @@ class SwarmElement {
 	public var prev_vz: Float = 0.0;
 }
 
+@:access(hrt.prefab.Prefab)
 class SwarmObject extends h3d.scene.Object {
 	public var prefab : Swarm = null;
 	public var elements: Array<SwarmElement> = [];

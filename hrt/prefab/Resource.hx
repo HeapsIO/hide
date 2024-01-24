@@ -1,5 +1,6 @@
 package hrt.prefab;
 
+@:access(hrt.prefab.Prefab)
 class Resource extends hxd.res.Resource {
 
 	var prefab : Prefab;

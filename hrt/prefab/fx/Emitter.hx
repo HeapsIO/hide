@@ -417,6 +417,7 @@ class ParticleInstance {
 	}
 }
 
+@:access(hrt.prefab.Prefab)
 @:allow(hrt.prefab.fx.ParticleInstance)
 @:allow(hrt.prefab.fx.Emitter)
 class EmitterObject extends h3d.scene.Object {

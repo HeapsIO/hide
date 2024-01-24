@@ -89,6 +89,8 @@ class Prefab {
 	**/
 	public var shared(default, null) : ContextShared;
 
+	// Public API
+
 	public function new(parent:Prefab, contextShared: ContextShared) {
 		if (parent == null) {
 			shared = contextShared;
@@ -100,14 +102,6 @@ class Prefab {
 			this.parent = parent;
 	}
 
-	function setSharedRec(newShared : ContextShared) {
-		this.shared = newShared;
-		for (c in children)
-			c.setSharedRec(newShared);
-	}
-
-	// Accessors
-	
 	function get_type() {
 		var thisClass = Type.getClass(this);
 		return getClassTypeName(thisClass);
@@ -128,26 +122,131 @@ class Prefab {
 		return p;
 	}
 
-	// Lifetime
+	/**
+		Instanciate this prefab. If `newContextShared` is given or if `this.shared.isInstance` is false,
+		this prefab is cloned and then the clone is instanciated and returned.
+		If `this.shared.isInstance` is true, this prefab is instanciated instead.
+	**/
+	public final function make(?shared:ContextShared) : Prefab {
+		if (shared == null) {
+			shared = this.shared;
+		}
 
-	#if editor
-	public function setEditor(sceneEditor: hide.comp.SceneEditor) {
-		if (sceneEditor == null)
-			throw "No editor for setEditor";
+		if (!shared.isInstance) {
+			shared = new ContextShared(shared.currentPath);
+			#if editor
+			shared.editor = this.shared.editor;
+			#end
+			var clone = this.clone(shared);
+			return clone.make(shared);
+		}
 
-		shared.editor = sceneEditor;
+		makeInstanceRec();
 
-		setEditorChildren(sceneEditor);
+		return this;
 	}
 
-	function setEditorChildren(sceneEditor: hide.comp.SceneEditor) {
-		for (c in children) {
-			c.setEditorChildren(sceneEditor);
+	/**
+		Create a copy of the data this prefab and all of it's children (unless `withChildren` is `false`), without calling `make()` on them.
+		If `parent` is given, then `sh` will be set to `parent.shared`. If `parent` and `sh` is null, `sh` will be set to a new context shared will be created.
+		The `parent` and `sh` are then given to the clone constructor.
+	**/
+	public final function clone(?parent:Prefab = null, ?sh: ContextShared = null, withChildren : Bool = true) : Prefab {
+		if (parent != null && sh != null && parent.shared != sh)
+			throw "Both parent and sh are set but shared don't match";
+
+		if (sh == null) {
+			if (parent != null) {
+				sh = parent.shared;
+			} else {
+				sh = new hrt.prefab.ContextShared(this.shared.currentPath, true);
+				#if editor
+				sh.editor = shared.editor;
+				#end
+			}
+		}
+
+		var thisClass = Type.getClass(this);
+
+		var inst = Type.createInstance(thisClass, [parent, sh]);
+		inst.copy(this);
+		if (withChildren) {
+			for (child in children) {
+				child.clone(inst, sh);
+			}
+		}
+
+		return inst;
+	}
+
+	/**
+		Updates in-place the whole prefab data and its children.
+	**/
+	public function reload( p : Dynamic ) {
+		var prevProps = props;
+		load(p);
+
+		if( props != null && prevProps != null ) {
+			// update prev props object instead of rebinding it : allow to propagate cdb changes
+			var old = Reflect.fields(prevProps);
+			for( k in Reflect.fields(props) ) {
+				if( haxe.Json.stringify(Reflect.field(props,k)) == haxe.Json.stringify(Reflect.field(prevProps,k)) ) {
+					old.remove(k);
+					continue;
+				}
+				Reflect.setField(prevProps, k, Reflect.field(props,k));
+				old.remove(k);
+			}
+			for( k in old )
+				Reflect.deleteField(prevProps, k);
+			props = prevProps;
+		}
+
+		var childData : Array<Dynamic> = p.children;
+		if( childData == null ) {
+			if( this.children.length > 0 ) this.children = [];
+			return;
+		}
+		var curChild = new Map();
+		for( c in children ) {
+			var cl = curChild.get(c.name);
+			if( cl == null ) {
+				cl = [];
+				curChild.set(c.name, cl);
+			}
+			cl.push(c);
+		}
+		var newchild = [];
+		for( v in childData ) {
+			var name : String = v.name;
+			var cl = curChild.get(name);
+			var prev = null;
+			if( cl != null ) {
+				for( c in cl )
+					if( c.type == v.type ) {
+						prev = c;
+						cl.remove(prev);
+						break;
+					}
+			}
+			if( prev != null ) {
+				prev.reload(v);
+				newchild.push(prev);
+			} else {
+				newchild.push(createFromDynamic(v,this));
+			}
+		}
+		children = newchild;
+	}
+
+	/**
+		Cleanup prefab specific ressources, and call dispose on it's children.
+	**/
+	public function dispose() {
+		for (child in children) {
+			child.dispose();
 		}
 	}
-	#end
-
-	// Hierarchical Helpers
 
 	/**
 		Find the first h2d.Object in this hierarchy, in either this or it's parents
@@ -305,27 +404,6 @@ class Prefab {
 		return [].iterator();
 	}
 
-	// (Un)Serialization
-
-	/**
-		Recursively copy this prefab and it's children into a dynamic object, containing
-		all the serializable properties and the type of the object
-	**/
-	function serialize() : Dynamic {
-		var ser = save();
-		ser.type = type;
-
-		if (children.length > 0) {
-			var serChildren = [];
-			for (child in children) {
-				serChildren.push(child.serialize());
-			}
-			ser.children = serChildren;
-		}
-
-		return ser;
-	}
-
 	/**
 		Returns the absolute name path for this prefab
 	**/
@@ -353,52 +431,6 @@ class Prefab {
 		return path;
 	}
 
-	#if editor
-	// Helpers function for meta
-	final function getSerializableProps() : Array<PrefabField> {
-		return getSerializablePropsForClass(Type.getClass(this));
-	}
-
-	/**
-		Returns the default display name for this prefab
-	**/
-	public function getDefaultEditorName() : String {
-		if(source != null) {
-			var f = new haxe.io.Path(source).file;
-			f = f.split(" ")[0].split("-")[0];
-			return f;
-		}
-		return type.split(".").pop();
-	}
-	#end
-
-	public function locateObject( path : String ) {
-		if( path == null )
-			return null;
-		var parts = path.split(".");
-		var root = shared.root3d;
-		while( parts.length > 0 ) {
-			var v = null;
-			var pname = parts.shift();
-			for( o in root )
-				if( o.name == pname ) {
-					v = o;
-					break;
-				}
-			if( v == null ) {
-				v = root.getObjectByName(pname);
-				//if( v != null && v.parent != root ) v = null; ??
-			}
-			if( v == null ) {
-				var parts2 = path.split(".");
-				for( i in 0...parts.length ) parts2.pop();
-				return null;
-			}
-			root = v;
-		}
-		return root;
-	}
-
 	/**
 		If the prefab `props` represent CDB data, returns the sheet name of it, or null.
 	 **/
@@ -415,229 +447,20 @@ class Prefab {
 	}
 
 	/**
-		Determines if `child` prefab should be made in the makeChildren() function
+		Check if `original` prefab class is or inherits for the class `parent`.
 	**/
-	function shouldMakeChild(child: Prefab) : Bool {
-		return child.shouldBeInstanciated();
-	}
-
-	function shouldBeInstanciated() : Bool {
-		if (!enabled) return false;
-
-		#if editor
-		if (shared.parent != null && inGameOnly)
-			return false;
-		#else
-		if (editorOnly)
-			return false;
-		#end
-
-
-		return true;
-	}
-
-	/**
-		Make children is responsible for setting the relevant
-		current2d and/or current3d of this prefab so the children
-		can create and attach their object to them. Then, makeChild
-		can be called on all the children, and current2d/3d must be
-		restored to their previous values.
-	**/
-	function makeChildren() : Void {
-		for (c in children) {
-			makeChild(c);
+	public static function isOfType( original : Class<Prefab>, parent : Class<Prefab> ) {
+		var c : Class<Dynamic> = original;
+		while( c != null ) {
+			if( c == parent ) return true;
+			c = Type.getSuperClass(c);
 		}
+		return false;
 	}
 
-	function makeChild(c:Prefab) : Void {
-		if (!shouldMakeChild(c)) return;
-		if (shared.customMake == null) {
-			c.make(shared);
-		}
-		else {
-			shared.customMake(c);
-		}
-	}
-
-	/**
-		Override this function to create runtime objects from this prefab
-	**/
-	function makeInstance() : Void {
-	}
-
-	/**
-		Called after makeInstance (and by extension postMakeInstance) has been called on all the children
-	**/
-	function postMakeInstance() : Void {
-	}
-
-	/**
-		Allows to customize how an instance gets updated when a property name changes.
-		You can also call updateInstance() in order to force whole instance synchronization against current prefab data.
-	**/
-	public function updateInstance(?propName : String ) {
-	}
-
-	/**
-		Instanciate this prefab. If `newContextShared` is given or if `this.shared.isInstance` is false,
-		this prefab is cloned and then the clone is instanciated and returned.
-		If `this.shared.isInstance` is true, this prefab is instanciated instead.
-	**/
-	public final function make(?shared:ContextShared) : Prefab {
-		if (shared == null) {
-			shared = this.shared;
-		}
-
-		if (!shared.isInstance) {
-			shared = new ContextShared(shared.currentPath);
-			#if editor
-			shared.editor = this.shared.editor;
-			#end
-			var clone = this.clone(shared);
-			return clone.make(shared);
-		}
-
-		makeInstanceRec();
-
-		return this;
-	}
-
-	function makeInstanceRec() : Void {
-		trace(this.toString());
-
-		makeInstance();
-		makeChildren();
-		postMakeInstance();
-	}
-
-	/**
-		Create a copy of the data this prefab and all of it's children (unless `withChildren` is `false`), without calling `make()` on them.
-		If `parent` is given, then `sh` will be set to `parent.shared`. If `parent` and `sh` is null, `sh` will be set to a new context shared will be created.
-		The `parent` and `sh` are then given to the clone constructor.
-	**/
-	public final function clone(?parent:Prefab = null, ?sh: ContextShared = null, withChildren : Bool = true) : Prefab {
-		if (parent != null && sh != null && parent.shared != sh)
-			throw "Both parent and sh are set but shared don't match";
-
-		if (sh == null) {
-			if (parent != null) {
-				sh = parent.shared;
-			} else {
-				sh = new hrt.prefab.ContextShared(this.shared.currentPath, true);
-				#if editor
-				sh.editor = shared.editor;
-				#end
-			}
-		}
-
-		var thisClass = Type.getClass(this);
-
-		var inst = Type.createInstance(thisClass, [parent, sh]);
-		inst.copy(this);
-		if (withChildren) {
-			for (child in children) {
-				child.clone(inst, sh);
-			}
-		}
-
-		return inst;
-	}
-
-	/**
-		Copy all the properties in data to this prefab object. This is not recursive. Done when loading the json data of the prefab.
-	**/
-	function load(data : Dynamic) : Void {
-		this.copyFromDynamic(data);
-	}
-
-	/**
-		Copy all the properties in Prefab to this prefab object. Done when cloning an existing prefab.
-	**/
-	function copy(data: Prefab) : Void {
-		this.copyFromOther(data);
-	}
-
-	/**
-		Save all the properties to the given dynamic object. This is not recursive. Returns the updated dynamic object.
-	**/
-	function save() : Dynamic {
-		return this.copyToDynamic({});
-	}
-
-	/**
-		Cleanup prefab specific ressources, and call dispose on it's children.
-	**/
-	public function dispose() {
-		for (child in children) {
-			child.dispose();
-		}
-	}
-
-	/**
-		Updates in-place the whole prefab data and its children.
-	**/
-	public function reload( p : Dynamic ) {
-		var prevProps = props;
-		load(p);
-
-		if( props != null && prevProps != null ) {
-			// update prev props object instead of rebinding it : allow to propagate cdb changes
-			var old = Reflect.fields(prevProps);
-			for( k in Reflect.fields(props) ) {
-				if( haxe.Json.stringify(Reflect.field(props,k)) == haxe.Json.stringify(Reflect.field(prevProps,k)) ) {
-					old.remove(k);
-					continue;
-				}
-				Reflect.setField(prevProps, k, Reflect.field(props,k));
-				old.remove(k);
-			}
-			for( k in old )
-				Reflect.deleteField(prevProps, k);
-			props = prevProps;
-		}
-
-		var childData : Array<Dynamic> = p.children;
-		if( childData == null ) {
-			if( this.children.length > 0 ) this.children = [];
-			return;
-		}
-		var curChild = new Map();
-		for( c in children ) {
-			var cl = curChild.get(c.name);
-			if( cl == null ) {
-				cl = [];
-				curChild.set(c.name, cl);
-			}
-			cl.push(c);
-		}
-		var newchild = [];
-		for( v in childData ) {
-			var name : String = v.name;
-			var cl = curChild.get(name);
-			var prev = null;
-			if( cl != null ) {
-				for( c in cl )
-					if( c.type == v.type ) {
-						prev = c;
-						cl.remove(prev);
-						break;
-					}
-			}
-			if( prev != null ) {
-				prev.reload(v);
-				newchild.push(prev);
-			} else {
-				newchild.push(createFromDynamic(v,this));
-			}
-		}
-		children = newchild;
-	}
-
-
-#if editor
-	
 	// Editor API
 
+	#if editor
 	/**
 		Allows to customize how the prefab object is displayed / handled within Hide
 	**/
@@ -666,12 +489,192 @@ class Prefab {
 	**/
 	public function edit(editContext : hide.prefab.EditContext) {
 	}
-#end
+
+	public function setEditor(sceneEditor: hide.comp.SceneEditor) {
+		if (sceneEditor == null)
+			throw "No editor for setEditor";
+
+		shared.editor = sceneEditor;
+
+		setEditorChildren(sceneEditor);
+	}
+
+	function setEditorChildren(sceneEditor: hide.comp.SceneEditor) {
+		for (c in children) {
+			c.setEditorChildren(sceneEditor);
+		}
+	}
+
+	/**
+		Returns a list of all the serializable fieds of the prefab.
+	**/
+	public final function getSerializableProps() : Array<PrefabField> {
+		return getSerializablePropsForClass(Type.getClass(this));
+	}
+
+	/**
+		Returns the default display name for this prefab
+	**/
+	public function getDefaultEditorName() : String {
+		if(source != null) {
+			var f = new haxe.io.Path(source).file;
+			f = f.split(" ")[0].split("-")[0];
+			return f;
+		}
+		return type.split(".").pop();
+	}
+	#end
+
+	// Internal
+
+	function setSharedRec(newShared : ContextShared) {
+		this.shared = newShared;
+		for (c in children)
+			c.setSharedRec(newShared);
+	}
+
+	/**
+		Recursively copy this prefab and it's children into a dynamic object, containing
+		all the serializable properties and the type of the object
+	**/
+	function serialize() : Dynamic {
+		var ser = save();
+		ser.type = type;
+
+		if (children.length > 0) {
+			var serChildren = [];
+			for (child in children) {
+				serChildren.push(child.serialize());
+			}
+			ser.children = serChildren;
+		}
+
+		return ser;
+	}
+
+	function locateObject( path : String ) {
+		if( path == null )
+			return null;
+		var parts = path.split(".");
+		var root = shared.root3d;
+		while( parts.length > 0 ) {
+			var v = null;
+			var pname = parts.shift();
+			for( o in root )
+				if( o.name == pname ) {
+					v = o;
+					break;
+				}
+			if( v == null ) {
+				v = root.getObjectByName(pname);
+				//if( v != null && v.parent != root ) v = null; ??
+			}
+			if( v == null ) {
+				var parts2 = path.split(".");
+				for( i in 0...parts.length ) parts2.pop();
+				return null;
+			}
+			root = v;
+		}
+		return root;
+	}
+
+	/**
+		Determines if `child` prefab should be made in the makeChildren() function
+	**/
+	function shouldMakeChild(child: Prefab) : Bool {
+		return child.shouldBeInstanciated();
+	}
+
+	function shouldBeInstanciated() : Bool {
+		if (!enabled) return false;
+
+		#if editor
+		if (shared.parent != null && inGameOnly)
+			return false;
+		#else
+		if (editorOnly)
+			return false;
+		#end
+
+		return true;
+	}
+
+	/**
+		Make children is responsible for setting the relevant
+		current2d and/or current3d of this prefab so the children
+		can create and attach their object to them. Then, makeChild
+		can be called on all the children, and current2d/3d must be
+		restored to their previous values.
+	**/
+	function makeChildren() : Void {
+		for (c in children) {
+			makeChild(c);
+		}
+	}
+
+	function makeChild(c:Prefab) : Void {
+		if (!shouldMakeChild(c)) return;
+		if (shared.customMake == null) {
+			c.make(shared);
+		}
+		else {
+			shared.customMake(c);
+		}
+	}
+
+	function makeInstanceRec() : Void {
+		trace(this.toString());
+
+		makeInstance();
+		makeChildren();
+		postMakeInstance();
+	}
+
+	/**
+		Override this function to create runtime objects from this prefab
+	**/
+	function makeInstance() : Void {
+	}
+
+	/**
+		Called after makeInstance (and by extension postMakeInstance) has been called on all the children
+	**/
+	function postMakeInstance() : Void {
+	}
+
+	/**
+		Allows to customize how an instance gets updated when a property name changes.
+		You can also call updateInstance() in order to force whole instance synchronization against current prefab data.
+	**/
+	function updateInstance(?propName : String) {
+	}
+
+	/**
+		Copy all the properties in data to this prefab object. This is not recursive. Done when loading the json data of the prefab.
+	**/
+	function load(data : Dynamic) : Void {
+		this.copyFromDynamic(data);
+	}
+
+	/**
+		Copy all the properties in Prefab to this prefab object. Done when cloning an existing prefab.
+	**/
+	function copy(data: Prefab) : Void {
+		this.copyFromOther(data);
+	}
+
+	/**
+		Save all the properties to the given dynamic object. This is not recursive. Returns the updated dynamic object.
+	**/
+	function save() : Dynamic {
+		return this.copyToDynamic({});
+	}
 
 	/**
 		Create a new prefab from the given `data`.
 	**/
-	public static function createFromDynamic(data:Dynamic, parent:Prefab = null, contextShared:ContextShared = null) : Prefab {
+	static function createFromDynamic(data:Dynamic, parent:Prefab = null, contextShared:ContextShared = null) : Prefab {
 		var type : String = data.type;
 
 		var cl : Class<Prefab> = Unknown;
@@ -697,27 +700,35 @@ class Prefab {
 	}
 
 	/**
-		Check if `original` prefab class is or inherits for the class `parent`.
+		Return the first h3d.scene.Objects found in each of this prefab children.
+		If a children has no h3d.scene.Objects, it then search in it's children and so on.
 	**/
-	public static function isOfType( original : Class<Prefab>, parent : Class<Prefab> ) {
-		var c : Class<Dynamic> = original;
-		while( c != null ) {
-			if( c == parent ) return true;
-			c = Type.getSuperClass(c);
+	static function getChildrenRoots( base : h3d.scene.Object, p : Prefab, out : Array<h3d.scene.Object> ) {
+		for( c in p.children ) {
+			var local3d = Object3D.getLocal3d(c);
+			if( local3d == base )
+				getChildrenRoots(base, c, out);
+			else
+				out.push(local3d);
 		}
-		return false;
+		return out;
 	}
 
 	inline static function getSerializablePropsForClass(cl : Class<Prefab>) {
 		return (cl:Dynamic).getSerializablePropsStatic();
 	}
 
-	public static function getClassTypeName(cl : Class<Prefab>) : String {
+	static function getClassTypeName(cl : Class<Prefab>) : String {
 		return reverseRegistry.get(Type.getClassName(cl));
 	}
 
-	public static function getPrefabInfoByName(name:String) : PrefabInfo {
+	static function getPrefabInfoByName(name:String) : PrefabInfo {
 		return registry[name];
+	}
+
+	static function getPrefabType(path: String) {
+		var extension = path.split(".").pop().toLowerCase();
+		return extensionRegistry.get(extension);
 	}
 
 	static var registry : Map<String, PrefabInfo> = new Map();
@@ -748,27 +759,7 @@ class Prefab {
 		return true;
 	}
 
-	public static function getPrefabType(path: String) {
-		var extension = path.split(".").pop().toLowerCase();
-		return extensionRegistry.get(extension);
-	}
-
-	/**
-		Return the first h3d.scene.Objects found in each of this prefab children.
-		If a children has no h3d.scene.Objects, it then search in it's children and so on.
-	**/
-	static function getChildrenRoots( base : h3d.scene.Object, p : Prefab, out : Array<h3d.scene.Object> ) {
-		for( c in p.children ) {
-			var local3d = Object3D.getLocal3d(c);
-			if( local3d == base )
-				getChildrenRoots(base, c, out);
-			else
-				out.push(local3d);
-		}
-		return out;
-	}
-
 	// Static initialization trick to register this class with the given name
 	// in the prefab registry. Call this in your own classes
-	public static var _ = Prefab.register("prefab", Prefab, "prefab");
+	static var _ = Prefab.register("prefab", Prefab, "prefab");
 }
