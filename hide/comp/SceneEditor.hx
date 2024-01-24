@@ -579,7 +579,7 @@ class CustomEditor {
 		this.editor = editor;
 	}
 
-    public function setElementSelected( p : hrt.prefab.Prefab, ctx : hrt.prefab.Context, b : Bool ) {
+    public function setElementSelected( p : hrt.prefab.Prefab, b : Bool ) {
 		return true;
     }
 
@@ -604,8 +604,8 @@ class CustomEditor {
 				queue.push(p);
 			}
 			var ref = Std.downcast(prefab, hrt.prefab.Reference);
-			if( ref != null && ref.ref != null ) {
-				queue.push(ref.ref);
+			if( ref != null && ref.refInstance != null ) {
+				queue.push(ref.refInstance);
 			}
 			queue.push(null);
 		}
