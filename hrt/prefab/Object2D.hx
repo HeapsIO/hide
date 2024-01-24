@@ -118,11 +118,11 @@ class Object2D extends Prefab {
 		});
 	}
 
-	#end
-
 	override function getDefaultEditorName() {
 		return type == "object2D" ? "group2D" : super.getDefaultEditorName();
 	}
+
+	#end
 
 	static var _ = Prefab.register("object2D", Object2D);
 

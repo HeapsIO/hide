@@ -63,8 +63,7 @@ class Reference extends Object3D {
 			refLocal3d = local3d;
 		}
 
-		var sh = new ContextShared(findFirstLocal2d(), refLocal3d);
-		sh.currentPath = source;
+		var sh = new ContextShared(source, findFirstLocal2d(), refLocal3d);
 		#if editor
 		sh.editor = this.shared.editor;
 		#end

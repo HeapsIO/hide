@@ -127,18 +127,16 @@ class Prefab {
 		this prefab is cloned and then the clone is instanciated and returned.
 		If `this.shared.isInstance` is true, this prefab is instanciated instead.
 	**/
-	public final function make(?shared:ContextShared) : Prefab {
-		if (shared == null) {
-			shared = this.shared;
-		}
-
-		if (!shared.isInstance) {
-			shared = new ContextShared(shared.currentPath);
+	public final function make( ?sh:ContextShared ) : Prefab {
+		if( (sh != null && this.shared != sh) || !this.shared.isInstance ) {
+			if( sh == null ) {
+				sh = new ContextShared(shared.currentPath);
+			}
 			#if editor
-			shared.editor = this.shared.editor;
+			sh.editor = this.shared.editor;
 			#end
-			var clone = this.clone(shared);
-			return clone.make(shared);
+			var clone = this.clone(sh);
+			return clone.make(sh);
 		}
 
 		makeInstanceRec();
