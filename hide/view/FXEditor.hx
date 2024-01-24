@@ -763,7 +763,7 @@ class FXEditor extends FileView {
 			this.curveEditor.xOffset = xOffset;
 			this.curveEditor.xScale = xScale;
 			if(isInstanceCurve(curve) && curve.parent.to(hrt.prefab.fx.Emitter) == null || curve.name.indexOf("inst") >= 0)
-				curve.maxTime = 1.0;
+				curve.maxTime = curve.name.indexOf("OverTime") >= 0 ? 5000 : 1.0;
 				this.curveEditor.curves.push(curve);
 				this.curveEditor.onChange = function(anim) {
 					//refreshDopesheet();

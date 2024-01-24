@@ -65,6 +65,7 @@ class InstanceDef {
 	var worldAcceleration: Value;
 	var localOffset: Value;
 	var scale: Value;
+	var scaleOverTime: Value;
 	var stretch: Value;
 	var stretchVelocity: Value;
 	var rotation: Value;
@@ -250,6 +251,7 @@ private class ParticleInstance {
 		var def = emitter.instDef;
 		var scaleVec = evaluator.getVector(idx, def.stretch, t, tmpScale);
 		scaleVec.scale3(evaluator.getFloat(idx, def.scale, t));
+		scaleVec.scale3(evaluator.getFloat(idx, def.scaleOverTime, emitter.curTime));
 		localMat.initScale(scaleVec.x, scaleVec.y, scaleVec.z);
 
 		// ROTATION
@@ -1410,6 +1412,7 @@ class Emitter extends Object3D {
 		{ name: "instMaxVelocity",      			t: PFloat(0, 10.0),    def: 0.,         disp: "Max Velocity", groupName: "Limit Velocity"},
 		{ name: "instDampen",      			t: PFloat(0, 10.0),    def: 0.,         disp: "Dampen", groupName: "Limit Velocity"},
 		{ name: "instScale",      			t: PFloat(0, 2.0),    def: 1.,         disp: "Scale", groupName: "Particle Transform"},
+		{ name: "instScaleOverTime",      			t: PFloat(0, 2.0),    def: 1.,         disp: "Scale over time", groupName: "Particle Transform"},
 		{ name: "instStretch",    			t: PVec(3, 0.0, 2.0), def: [1.,1.,1.], disp: "Stretch", groupName: "Particle Transform"},
 		{ name: "instStretchVelocity",    	t: PFloat(0.0, 2.0), def: 0.0, disp: "Stretch Vel.", groupName: "Particle Transform"},
 		{ name: "instRotation",   			t: PVec(3, 0, 360),   def: [0.,0.,0.], disp: "Rotation", groupName: "Particle Transform"},
@@ -1650,6 +1653,7 @@ class Emitter extends Object3D {
 		d.worldAcceleration = makeParam(this, "instWorldAcceleration");
 		d.localOffset = makeParam(this, "instOffset");
 		d.scale = makeParam(this, "instScale");
+		d.scaleOverTime = makeParam(this, "instScaleOverTime");
 		d.dampen = makeParam(this, "instDampen");
 		d.maxVelocity = makeParam(this, "instMaxVelocity");
 		d.stretch = makeParam(this, "instStretch");
