@@ -14,9 +14,15 @@ typedef PrefabMeta = {
 	var ?range_step : Float;
 }
 
+typedef PrefabInfo = {
+	var prefabClass : Class<Prefab>;
+	var ?extension: String;
+	#if editor
+	var inf : hide.prefab.HideProps; 
+	#end
+};
 
-typedef PrefabInfo = {prefabClass : Class<Prefab> #if editor, inf : hide.prefab.HideProps #end, ?extension: String};
-
+@:allow(hide)
 @:keepSub
 @:autoBuild(hrt.prefab.Macros.buildPrefab())
 @:build(hrt.prefab.Macros.buildPrefab())
@@ -101,6 +107,7 @@ class Prefab {
 	}
 
 	// Accessors
+	
 	function get_type() {
 		var thisClass = Type.getClass(this);
 		return getClassTypeName(thisClass);
@@ -233,7 +240,6 @@ class Prefab {
 		return Std.downcast(this, c);
 	}
 
-
 	/**
 		Find a the first prefab in the tree with the given class that matches the optionnal `filter`.
 		Returns null if no matching prefab was found
@@ -250,9 +256,10 @@ class Prefab {
 		return null;
 	}
 
-
 	/**
-		Find all the prefabs of the given class `cl` in the tree, that matches `filter` if it is is defined, in the given array `arr`.
+		Find all the prefabs of the given class `cl` in the tree, that matches `filter` if it is is defined.
+		The result is stored in the given array `arr` if it's defined, otherwise an array is created. The final array
+		is then returned.
 	**/
 	public function findAll<T:Prefab>(cl: Class<T>,  ?filter : Prefab -> Bool, followRefs : Bool = false, ?arr : Array<T> ) : Array<T> {
 		if( arr == null ) arr = [];
@@ -273,8 +280,8 @@ class Prefab {
 	}
 
 	/**
-		Apply the filter function to this object, returning the result of filter if it's not null.
-		If the filters returns null, it's then applied to the parent of this prefab, and this recursively.
+		Find the first prefab in this prefab parent chain that matches the given class `cl`, and optionally the given `filter`.
+		If `includeSelf` is true, then this prefab is checked as well.
 	**/
 	public function findParent<T:Prefab>(cl:Class<T> ,?filter : (p:T) -> Bool, includeSelf:Bool = false) : Null<T> {
 		var current = includeSelf ? this : this.parent;
@@ -290,7 +297,7 @@ class Prefab {
 	}
 
 	/**
-		Iterate over children prefab
+		Iterate over this children prefab
 	**/
 	public inline function iterator() : Iterator<Prefab> {
 		if (children != null)
@@ -317,12 +324,6 @@ class Prefab {
 		}
 
 		return ser;
-	}
-
-	#if editor
-	// Helpers function for meta
-	final function getSerializableProps() : Array<PrefabField> {
-		return getSerializablePropsForClass(Type.getClass(this));
 	}
 
 	/**
@@ -352,6 +353,12 @@ class Prefab {
 		return path;
 	}
 
+	#if editor
+	// Helpers function for meta
+	final function getSerializableProps() : Array<PrefabField> {
+		return getSerializablePropsForClass(Type.getClass(this));
+	}
+
 	/**
 		Returns the default display name for this prefab
 	**/
@@ -363,7 +370,6 @@ class Prefab {
 		}
 		return type.split(".").pop();
 	}
-
 	#end
 
 	public function locateObject( path : String ) {
@@ -404,7 +410,7 @@ class Prefab {
 
 	public final function toString() : String{
 		var str = type;
-		if (name != "") str += '($name)';
+		if ( name != "" ) str += '($name)';
 		return str;
 	}
 
@@ -457,14 +463,12 @@ class Prefab {
 		Override this function to create runtime objects from this prefab
 	**/
 	function makeInstance() : Void {
-
 	}
 
 	/**
 		Called after makeInstance (and by extension postMakeInstance) has been called on all the children
 	**/
 	function postMakeInstance() : Void {
-
 	}
 
 	/**
@@ -472,17 +476,12 @@ class Prefab {
 		You can also call updateInstance() in order to force whole instance synchronization against current prefab data.
 	**/
 	public function updateInstance(?propName : String ) {
-
 	}
-
 
 	/**
 		Instanciate this prefab. If `newContextShared` is given or if `this.shared.isInstance` is false,
 		this prefab is cloned and then the clone is instanciated and returned.
-		If `this.shared.isInstance` is true, this prefab is instanciated instead;
-
-		Make returns a Prefab of the same type as the one that was made, so you don't have to
-		manually cast the created object.
+		If `this.shared.isInstance` is true, this prefab is instanciated instead.
 	**/
 	public final function make(?shared:ContextShared) : Prefab {
 		if (shared == null) {
@@ -503,7 +502,6 @@ class Prefab {
 		return this;
 	}
 
-	// TODO : Remove ???
 	function makeInstanceRec() : Void {
 		trace(this.toString());
 
@@ -513,7 +511,9 @@ class Prefab {
 	}
 
 	/**
-		Create a copy of this prefab and it's childrens without making it
+		Create a copy of the data this prefab and all of it's children (unless `withChildren` is `false`), without calling `make()` on them.
+		If `parent` is given, then `sh` will be set to `parent.shared`. If `parent` and `sh` is null, `sh` will be set to a new context shared will be created.
+		The `parent` and `sh` are then given to the clone constructor.
 	**/
 	public final function clone(?parent:Prefab = null, ?sh: ContextShared = null, withChildren : Bool = true) : Prefab {
 		if (parent != null && sh != null && parent.shared != sh)
@@ -544,14 +544,14 @@ class Prefab {
 	}
 
 	/**
-		Copy all the properties in data to this prefab object. This is not recursive. Done when loading the json data of the prefab
+		Copy all the properties in data to this prefab object. This is not recursive. Done when loading the json data of the prefab.
 	**/
 	function load(data : Dynamic) : Void {
 		this.copyFromDynamic(data);
 	}
 
 	/**
-		Copy all the properties in Prefab to this prefab object. Done when cloning an existing prefab
+		Copy all the properties in Prefab to this prefab object. Done when cloning an existing prefab.
 	**/
 	function copy(data: Prefab) : Void {
 		this.copyFromOther(data);
@@ -559,14 +559,13 @@ class Prefab {
 
 	/**
 		Save all the properties to the given dynamic object. This is not recursive. Returns the updated dynamic object.
-		If to is null, a new dynamic object is created automatically and returned by the
 	**/
 	function save() : Dynamic {
 		return this.copyToDynamic({});
 	}
 
 	/**
-		Cleanup prefab specific ressources, and call dispose on it's children
+		Cleanup prefab specific ressources, and call dispose on it's children.
 	**/
 	public function dispose() {
 		for (child in children) {
@@ -636,9 +635,8 @@ class Prefab {
 
 
 #if editor
-	/*
-		Editor API
-	*/
+	
+	// Editor API
 
 	/**
 		Allows to customize how the prefab object is displayed / handled within Hide
@@ -667,7 +665,6 @@ class Prefab {
 		Used to create the various editor interfaces
 	**/
 	public function edit(editContext : hide.prefab.EditContext) {
-
 	}
 #end
 
@@ -700,7 +697,7 @@ class Prefab {
 	}
 
 	/**
-		Check if `original` prefab is or inherits from `parent`.
+		Check if `original` prefab class is or inherits for the class `parent`.
 	**/
 	public static function isOfType( original : Class<Prefab>, parent : Class<Prefab> ) {
 		var c : Class<Dynamic> = original;
@@ -737,7 +734,7 @@ class Prefab {
 		public static var _ = Prefab.register("myPrefabName", myPrefabClassName);
 		```
 	**/
-	public static function register(typeName : String, prefabClass: Class<hrt.prefab.Prefab>, ?extension: String) {
+	static function register(typeName : String, prefabClass: Class<hrt.prefab.Prefab>, ?extension: String) {
 		#if editor
 		var info : hide.prefab.HideProps = cast Type.createEmptyInstance(prefabClass).getHideProps();
 		#end
