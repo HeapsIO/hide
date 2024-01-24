@@ -1393,6 +1393,22 @@ class Ide {
 		window.menu = new hide.ui.Menu(menu).root;
 	}
 
+	public static function showFileInExplorer(path : String) {
+		if(!haxe.io.Path.isAbsolute(path)) {
+			path = Ide.inst.getPath(path);
+		}
+
+		switch(Sys.systemName()) {
+			case "Windows": {
+				var cmd = "explorer.exe /select," + '"' + StringTools.replace(path, "/", "\\") + '"';
+				trace("OpenInExplorer: " + cmd);
+				Sys.command(cmd);
+			};
+			case "Mac":	Sys.command("open " + haxe.io.Path.directory(path));
+			default: throw "Exploration not implemented on this platform";
+		}
+	}
+
 	public function openFile( file : String, ?onCreate, ?onOpen) {
 		var ext = @:privateAccess hide.view.FileTree.getExtension(file);
 		if( ext == null ) return;

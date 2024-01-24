@@ -34,9 +34,7 @@ class FileSelect extends Component {
 					onChange();
 				}},
 				{ label : "Open in explorer", enabled : fpath != null, click : function(){
-					var p = "/select,"+fpath.split("/").join("\\");
-					trace(p);
-					Sys.command("explorer.exe",[p]);
+					Ide.showFileInExplorer(fpath);
 				} },
 			]);
 			return false;
