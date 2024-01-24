@@ -589,7 +589,7 @@ class Prefab extends hide.view.FileView {
 	}
 
 	override function getDefaultContent() {
-		@:privateAccess return haxe.io.Bytes.ofString(ide.toJSON(new hrt.prefab.Prefab(null, null).serializeToDynamic()));
+		@:privateAccess return haxe.io.Bytes.ofString(ide.toJSON(new hrt.prefab.Prefab(null, null).serialize()));
 	}
 
 	override function canSave() {
@@ -600,7 +600,7 @@ class Prefab extends hide.view.FileView {
 		if( !canSave() )
 			return;
 
-		@:privateAccess var content = ide.toJSON(data.serializeToDynamic());
+		@:privateAccess var content = ide.toJSON(data.serialize());
 		var newSign = ide.makeSignature(content);
 		if(newSign != currentSign)
 			haxe.Timer.delay(saveBackup.bind(content), 0);

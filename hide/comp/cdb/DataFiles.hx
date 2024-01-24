@@ -351,7 +351,7 @@ class DataFiles {
 		for( file => pf in prefabs ) {
 			skip++;
 			var path = ide.getPath(file);
-			@:privateAccess var out = ide.toJSON(pf.serializeToDynamic());
+			@:privateAccess var out = ide.toJSON(pf.serialize());
 			if( force ) {
 				var txt = try sys.io.File.getContent(path) catch( e : Dynamic ) null;
 				if( txt == out ) continue;

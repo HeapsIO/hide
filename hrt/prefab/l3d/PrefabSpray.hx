@@ -22,9 +22,9 @@ class PrefabSpray extends Spray {
 		return hide.Ide.inst.resourceDir + "/" + PREFAB_SPRAY_CONFIG_FILE;
 	}
 
-	override function save(obj: Dynamic) : Dynamic {
+	override function save() : Dynamic {
 		clearPreview();
-		return super.save(obj);
+		return super.save();
 	}
 
 	override function getHideProps() : hide.prefab.HideProps {

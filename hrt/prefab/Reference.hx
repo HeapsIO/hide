@@ -18,14 +18,14 @@ class Reference extends Object3D {
 		}
 	}
 
-	override function save(obj : Dynamic) {
-		var obj : Dynamic = super.save(obj);
+	override function save() {
+		var obj : Dynamic = super.save();
 		#if editor
 		if( editMode && refInstance != null ) {
 			var sheditor = Std.downcast(shared, hide.prefab.ContextShared);
 			if( sheditor.editor != null ) sheditor.editor.watchIgnoreChanges(source);
 
-			var s = refInstance.serializeToDynamic();
+			var s = refInstance.serialize();
 			sys.io.File.saveContent(hide.Ide.inst.getPath(source), hide.Ide.inst.toJSON(s));
 		}
 		#end

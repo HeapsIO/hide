@@ -33,8 +33,8 @@ class Material extends Prefab {
 		this.color = p.color;
 	}
 
-	override function save(obj:Dynamic) : Dynamic {
-		super.save(obj);
+	override function save() : Dynamic {
+		var obj = super.save();
 		if(color != null && h3d.Vector.fromArray(color).toColor() != 0xffffffff) obj.color = color;
 		if(mainPassName == "" || mainPassName == null ) Reflect.deleteField(obj, "mainPassName");
 		return obj;
@@ -248,7 +248,7 @@ class Material extends Prefab {
 		}
 
 		function updateMat() {
-			var previousMat = this.serializeToDynamic();
+			var previousMat = this.serialize();
 			var mat = ctx.scene.findMat(materials, matSelect.val());
 			if ( mat != null ) {
 				var previousName = this.name;
@@ -261,7 +261,7 @@ class Material extends Prefab {
 				this.refMatLib = "";
 			}
 
-			var newMat = this.serializeToDynamic();
+			var newMat = this.serialize();
 
 			ctx.properties.undo.change(Custom(function(undo) {
 				if( undo ) {

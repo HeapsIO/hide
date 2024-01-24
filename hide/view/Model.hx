@@ -150,7 +150,7 @@ class Model extends FileView {
 			if( !canSave() )
 				return;
 			var toSave = root.children[0];
-			@:privateAccess toSave.save({});
+			@:privateAccess toSave.save();
 
 			save();
 		}

@@ -129,8 +129,8 @@ class ShaderGraph extends hrt.prefab.Prefab {
 	}
 
 
-	override function save(to:Dynamic) {
-		var json = super.save(to);
+	override function save() {
+		var json = super.save();
 		json.parameters = [
 			for (p in parametersAvailable) { id : p.id, name : p.name, type : [p.type.getName(), p.type.getParameters().toString()], defaultValue : p.defaultValue, index : p.index, internal : p.internal }
 		];
@@ -144,7 +144,7 @@ class ShaderGraph extends hrt.prefab.Prefab {
 	}
 
 	public function saveToText() : String {
-		return haxe.Json.stringify(save({}), "\t");
+		return haxe.Json.stringify(save(), "\t");
 	}
 
 	static public function resolveDynamicType(inputTypes: Array<Type>, inVars: Array<ShaderNodeDefInVar>) : Type {

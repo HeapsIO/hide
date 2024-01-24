@@ -271,8 +271,8 @@ class Spline extends Object3D {
 	#end
 	public var wasEdited = false;
 
-	override function save(obj:Dynamic) : Dynamic {
-		super.save(obj);
+	override function save() : Dynamic {
+		var obj = super.save();
 
 		obj.shape = shape.getIndex();
 		return obj;

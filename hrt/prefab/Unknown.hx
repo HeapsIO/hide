@@ -1,6 +1,8 @@
 package hrt.prefab;
 
-// Unknown prefab storage
+/**
+	Allow openning prefabs with a type not found in the project, keeping the data unchanged.
+**/
 class Unknown extends Prefab {
 	public var data : Dynamic = null;
 
@@ -17,7 +19,8 @@ class Unknown extends Prefab {
 		}
 	}
 
-	override function save(to:Dynamic) {
+	override function save() {
+		var to : Dynamic = {};
 		to.name = name;
 		for (f in Reflect.fields(data)) {
 			Reflect.setField(to, f, copyValue(Reflect.getProperty(data, f)));
@@ -36,7 +39,7 @@ class Unknown extends Prefab {
 						var v:String = v;
 						return v;
 					default:
-						// TODO : oh no
+						// Fallback hard data copy
 						return haxe.Json.parse(haxe.Json.stringify(v));
 				}
 			default:
@@ -55,7 +58,7 @@ class Unknown extends Prefab {
 	override function edit( ctx : hide.prefab.EditContext ) {
 		var props = new hide.Element('
 			<p>Unknown prefab type : <code>${data.type}</code></p>
-			<p>This prefab might has been saved in a more recent version of hide (in that case try to update), or this type no longer exists. </p>
+			<p>This prefab might has been saved in a more recent version of hide (in that case try to update), or this type no longer exists.</p>
 			<p>No data will be lost if this prefab is saved, but rendering glitches or strange offsets can occur.</p>
 		');
 		ctx.properties.add(props, this, function(pname) {

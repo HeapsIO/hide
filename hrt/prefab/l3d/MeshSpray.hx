@@ -334,10 +334,10 @@ class MeshSpray extends Spray {
 		return hide.Ide.inst.resourceDir + "/" + MESH_SPRAY_CONFIG_FILE;
 	}
 
-	override function save(obj: Dynamic) : Dynamic {
+	override function save() : Dynamic {
 		clearPreview();
 		if( binaryStorage ) saveToBinary();
-		return super.save(obj);
+		return super.save();
 	}
 
 	override function load(obj : Dynamic) {

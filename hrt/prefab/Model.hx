@@ -11,9 +11,9 @@ class Model extends Object3D {
 		super(parent, shared);
 	}
 
-	override function save(to: Dynamic) : Dynamic {
+	override function save() : Dynamic {
 		if( retargetIgnore == "" ) retargetIgnore = null;
-		return super.save(to);
+		return super.save();
 	}
 
 	override function makeObject(parent3d:h3d.scene.Object):h3d.scene.Object {

@@ -809,7 +809,7 @@ class Ide extends hide.tools.IdeData {
 			}
 			filterRec(prefab);
 			if( !changed ) return;
-			@:privateAccess todo.push(function() sys.io.File.saveContent(getPath(path), toJSON(prefab.serializeToDynamic())));
+			@:privateAccess todo.push(function() sys.io.File.saveContent(getPath(path), toJSON(prefab.serialize())));
 		});
 		for( t in todo )
 			t();

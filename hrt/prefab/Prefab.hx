@@ -304,24 +304,19 @@ class Prefab {
 		Recursively copy this prefab and it's children into a dynamic object, containing
 		all the serializable properties and the type of the object
 	**/
-	function serializeToDynamic() : Dynamic {
-		var thisClass = Type.getClass(this);
-		var typeName = getClassTypeName(thisClass);
-		var dyn : Dynamic = {
-			type: typeName,
-		};
-
-		save(dyn);
+	function serialize() : Dynamic {
+		var ser = save();
+		ser.type = type;
 
 		if (children.length > 0) {
 			var serChildren = [];
 			for (child in children) {
-				serChildren.push(child.serializeToDynamic());
+				serChildren.push(child.serialize());
 			}
-			dyn.children = serChildren;
+			ser.children = serChildren;
 		}
 
-		return dyn;
+		return ser;
 	}
 
 	#if editor
@@ -566,8 +561,8 @@ class Prefab {
 		Save all the properties to the given dynamic object. This is not recursive. Returns the updated dynamic object.
 		If to is null, a new dynamic object is created automatically and returned by the
 	**/
-	function save(to: Dynamic) : Dynamic {
-		return this.copyToDynamic(to);
+	function save() : Dynamic {
+		return this.copyToDynamic({});
 	}
 
 	/**

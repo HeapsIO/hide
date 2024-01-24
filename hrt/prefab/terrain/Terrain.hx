@@ -56,8 +56,8 @@ class Terrain extends Object3D {
 		surfaceSize = obj.surfaceSize == null ? 0 : obj.surfaceSize;
 	}
 
-	override function save( obj : Dynamic ) : Dynamic {
-		super.save(obj);
+	override function save() : Dynamic {
+		var obj = super.save();
 		if( terrain != null && terrain.surfaces != null ) {
 
 			obj.surfaceCount = terrain.surfaces.length == 0 ? 0 : terrain.surfaceArray.surfaceCount;

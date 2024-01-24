@@ -105,8 +105,8 @@ class Light extends Object3D {
 		zNear = 0.02;
 	}
 
-	override function save(to:Dynamic) : Dynamic {
-		var obj : Dynamic = super.save(to);
+	override function save() : Dynamic {
+		var obj : Dynamic = super.save();
 		if( shadows.mode != None ) {
 			obj.shadows = Reflect.copy(shadows);
 			obj.shadows.mode = shadows.mode.getName();

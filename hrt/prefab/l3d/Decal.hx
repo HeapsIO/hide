@@ -31,8 +31,8 @@ class Decal extends Object3D {
 	@:s var normalFadeEnd : Float = 1;
 	@:s var refMatLib : String;
 
-	override function save(data:Dynamic) : Dynamic {
-		var obj : Dynamic = super.save(data);
+	override function save() : Dynamic {
+		var obj : Dynamic = super.save();
 		if(blendMode != Alpha) obj.blendMode = blendMode.getIndex();
 		return obj;
 	}
@@ -304,7 +304,7 @@ class Decal extends Object3D {
 			}
 
 			function updateMat() {
-				var previousData = this.serializeToDynamic();
+				var previousData = this.serialize();
 				var mat = ctx.scene.findMat(materials, matSelect.val());
 				if ( mat != null ) {
 					this.refMatLib = mat.path + "/" + mat.mat.name;
@@ -314,7 +314,7 @@ class Decal extends Object3D {
 					this.refMatLib = "";
 				}
 
-				var newDecal = this.serializeToDynamic();
+				var newDecal = this.serialize();
 
 				ctx.properties.undo.change(Custom(function(undo) {
 					if( undo ) {

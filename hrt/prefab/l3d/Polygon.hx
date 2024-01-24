@@ -34,8 +34,8 @@ class Polygon extends Object3D {
 	var prevScale = [1.0, 1.0];
 	#end
 
-	override function save(data: Dynamic) {
-		super.save(data);
+	override function save() {
+		var data = super.save();
 		data.kind = shape.getIndex();
 		switch(shape){
 		case Quad(_), Disc(_), Sphere(_), Capsule(_):

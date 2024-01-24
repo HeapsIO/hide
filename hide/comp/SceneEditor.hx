@@ -2990,14 +2990,14 @@ class SceneEditor {
 		if(selectedPrefabs == null) return;
 		if(selectedPrefabs.length == 1) {
 			var prefab = selectedPrefabs[0];
-			@:privateAccess view.setClipboard(prefab.serializeToDynamic(), "prefab", { source : view.state.path, name : prefab.name });
+			@:privateAccess view.setClipboard(prefab.serialize(), "prefab", { source : view.state.path, name : prefab.name });
 		}
 		else {
 			var lib = new hrt.prefab.Prefab(null, null);
 			for(e in selectedPrefabs) {
 				lib.children.push(e);
 			}
-			@:privateAccess view.setClipboard(lib.serializeToDynamic(), "prefab");
+			@:privateAccess view.setClipboard(lib.serialize(), "prefab");
 		}
 	}
 

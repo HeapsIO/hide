@@ -1420,8 +1420,8 @@ class Emitter extends Object3D {
 		a;
 	};
 
-	override function save(data : Dynamic) {
-		super.save(data);
+	override function save() {
+		var data = super.save();
 		data.props = Reflect.copy(props);
 		for(param in PARAMS) {
 			var f : Dynamic = Reflect.field(props, param.name);

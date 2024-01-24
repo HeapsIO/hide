@@ -747,7 +747,7 @@ class CurveEditor extends hide.comp.Component {
 				maxLength = c.maxTime;
 		}
 
-		@:privateAccess lastValue = [for (c in curves) c.serializeToDynamic()];
+		@:privateAccess lastValue = [for (c in curves) c.serialize()];
 		refresh();
 		return curves;
 	}
@@ -1028,14 +1028,14 @@ class CurveEditor extends hide.comp.Component {
 	}
 
 	function beforeChange() {
-		@:privateAccess lastValue = [for (c in curves) c.serializeToDynamic()];
+		@:privateAccess lastValue = [for (c in curves) c.serialize()];
 
 		for (c in components)
 			c.beforeChange();
 	}
 
 	function afterChange() {
-		@:privateAccess var newVal = [for (c in curves) c.serializeToDynamic()];
+		@:privateAccess var newVal = [for (c in curves) c.serialize()];
 		var oldVal = lastValue;
 		undo.change(Custom(function(undo) {
 			if(undo) {
@@ -1046,7 +1046,7 @@ class CurveEditor extends hide.comp.Component {
 				for (i in 0...curves.length)
 					curves[i].load(newVal[i]);
 			}
-			@:privateAccess lastValue = [for (c in curves) c.serializeToDynamic()];
+			@:privateAccess lastValue = [for (c in curves) c.serialize()];
 			selectedElements = [];
 			refresh();
 			onChange(false);

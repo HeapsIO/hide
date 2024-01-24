@@ -308,7 +308,7 @@ class FXEditor extends hide.view.FileView {
     var viewModes : Array<String>;
 
 	override function getDefaultContent() {
-		@:privateAccess return haxe.io.Bytes.ofString(ide.toJSON(new hrt.prefab.fx.FX(null, null).serializeToDynamic()));
+		@:privateAccess return haxe.io.Bytes.ofString(ide.toJSON(new hrt.prefab.fx.FX(null, null).serialize()));
 	}
 
 	override function canSave() {
@@ -318,7 +318,7 @@ class FXEditor extends hide.view.FileView {
 	override function save() {
 		if( !canSave() )
 			return;
-		@:privateAccess var content = ide.toJSON(cast(data, hrt.prefab.Prefab).serializeToDynamic());
+		@:privateAccess var content = ide.toJSON(cast(data, hrt.prefab.Prefab).serialize());
 		var newSign = ide.makeSignature(content);
 		if(newSign != currentSign)
 			haxe.Timer.delay(saveBackup.bind(content), 0);
@@ -1916,7 +1916,7 @@ class FXEditor extends hide.view.FileView {
 class FX2DEditor extends FXEditor {
 
 	override function getDefaultContent() {
-		@:privateAccess return haxe.io.Bytes.ofString(ide.toJSON(new hrt.prefab.fx.FX2D(null, null).save({})));
+		@:privateAccess return haxe.io.Bytes.ofString(ide.toJSON(new hrt.prefab.fx.FX2D(null, null).save()));
 	}
 
 	static var _2d = FileTree.registerExtension(FX2DEditor, ["fx2d__"], { icon : "sitemap", createNew : "FX 2D" });

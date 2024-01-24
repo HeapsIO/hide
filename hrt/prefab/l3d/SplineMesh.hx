@@ -122,8 +122,8 @@ class SplineMesh extends Spline {
 	var meshMaterial : h3d.mat.Material = null;
 	@:s var customPass : String;
 
-	override function save(obj:Dynamic) : Dynamic {
-		super.save(obj);
+	override function save() : Dynamic {
+		var obj = super.save();
 		obj.meshScale = meshScale;
 		obj.meshRotation = meshRotation;
 		return obj;

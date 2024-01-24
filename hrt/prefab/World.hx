@@ -165,14 +165,14 @@ class World extends Object3D {
 		return 0;
 	}
 
-	override function serializeToDynamic() : Dynamic {
+	override function serialize() : Dynamic {
 		var tmpChildren = [];
 
 		var chunks = new Map();
 		if ( children.length > 0 ) {
 			for ( c in children ) {
 				if ( !isStreamable(c) )
-					tmpChildren.push(c.serializeToDynamic());
+					tmpChildren.push(c.serialize());
 				else {
 					var object3D = Std.downcast(c, hrt.prefab.Object3D);
 					if ( object3D == null )
@@ -191,7 +191,7 @@ class World extends Object3D {
 						chunk.children = [];
 						chunks.set(data.id, chunk);
 					}
-					chunk.children.push(object3D.serializeToDynamic());
+					chunk.children.push(object3D.serialize());
 					if ( findChunk(data.id) == null ) {
 						chunkData.push(data);
 					}
@@ -233,7 +233,7 @@ class World extends Object3D {
 		if ( sys.FileSystem.exists(datDir) && sys.FileSystem.readDirectory(datDir).length == 0 )
 			sys.FileSystem.deleteDirectory(datDir);
 		#end
-		var obj : Dynamic = save({});
+		var obj : Dynamic = save();
 		obj.children = tmpChildren;
 		return obj;
 	}

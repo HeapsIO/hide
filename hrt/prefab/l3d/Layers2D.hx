@@ -190,8 +190,8 @@ class Layers2D extends hrt.prefab.Object3D {
 	#end
 
 	#if editor
-	override function save(obj : Dynamic) : Dynamic {
-		super.save(obj);
+	override function save() : Dynamic {
+		var obj = super.save();
 
 		for ( l in layers ) {
 			var pixels = layerTextures.get(l.name);

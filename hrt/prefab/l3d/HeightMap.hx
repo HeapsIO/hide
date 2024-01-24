@@ -628,8 +628,8 @@ class HeightMap extends Object3D {
 	var albedoProps : Array<h3d.Vector4>;
 	var texArrayCache : Map<HeightMaPTexturePathKind, { texture : h3d.mat.TextureArray, indexes : Array<Int> }>;
 
-	override function save(obj:Dynamic):Dynamic {
-		var o : Dynamic = super.save(obj);
+	override function save():Dynamic {
+		var o : Dynamic = super.save();
 		o.textures = [for( t in textures ) {
 			var v : Dynamic = { path : t.path, kind : t.kind };
 			if( !t.enable ) v.enable = false;
