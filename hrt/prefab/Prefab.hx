@@ -410,7 +410,7 @@ class Prefab {
 	public function getAbsPath(unique=false) {
 		if(parent == null)
 			return "";
-		var path = name != null ? name : getDefaultEditorName();
+		var path = name ?? "";
 		if(unique) {
 			var suffix = 0;
 			for(i in 0...parent.children.length) {
@@ -418,7 +418,7 @@ class Prefab {
 				if(c == this)
 					break;
 				else {
-					var cname = c.name != null ? c.name : c.getDefaultEditorName();
+					var cname = c.name ?? "";
 					if(cname == path)
 						++suffix;
 				}
