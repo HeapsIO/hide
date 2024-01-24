@@ -98,7 +98,6 @@ class Prefab {
 		this.shared = newShared;
 		for (c in children)
 			c.setSharedRec(newShared);
-		return newShared;
 	}
 
 	// Accessors
@@ -134,7 +133,7 @@ class Prefab {
 		setEditorChildren(sceneEditor);
 	}
 
-	public function setEditorChildren(sceneEditor: hide.comp.SceneEditor) {
+	function setEditorChildren(sceneEditor: hide.comp.SceneEditor) {
 		for (c in children) {
 			c.setEditorChildren(sceneEditor);
 		}
