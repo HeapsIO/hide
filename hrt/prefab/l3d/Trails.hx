@@ -254,7 +254,6 @@ class TrailObj extends h3d.scene.Mesh {
 	var statusText : h2d.Text;
 
 	public function addPoint(t : TrailHead, x : Float, y : Float, z : Float, orient : TrailOrientation, w : Float) {
-
 		var ux : Float = 0.0;
 		var uy : Float = 0.0;
 		var uz : Float = 0.0;
@@ -710,7 +709,8 @@ class TrailObj extends h3d.scene.Mesh {
 
 
 				if (prev != null ) {
-					var spd = cur.len / hxd.Math.max((cur.lifetime - prev.lifetime), 1.0/maxFramerate);
+					var d = new h3d.Vector(prev.x, prev.y, prev.z) - new h3d.Vector(cur.x, cur.y, cur.z);
+					var spd = d.length() / hxd.Math.max((cur.lifetime - prev.lifetime), 1.0/maxFramerate);
 					if (spd < prefab.maxSpeed && spd > prefab.minSpeed) {
 						if (numVertsIndices + 6 > currentAllocatedIndexCount) break;
 
@@ -726,7 +726,6 @@ class TrailObj extends h3d.scene.Mesh {
 
 						numVertsIndices += 3;
 					}
-
 				}
 
 				currentIndex += 2;
