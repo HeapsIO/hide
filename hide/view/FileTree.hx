@@ -366,7 +366,10 @@ class FileTree extends FileView {
 		var fullPath = sys.FileSystem.absolutePath(path);
 
 		switch(Sys.systemName()) {
-			case "Windows": Sys.command("explorer.exe /select," + fullPath);
+			case "Windows": {
+				var cmd = "explorer.exe /select," + '"' + StringTools.replace(fullPath, "/", "\\") + '"';
+				Sys.command(cmd);
+			};
 			case "Mac":	Sys.command("open " + haxe.io.Path.directory(fullPath));
 			default: throw "Exploration not implemented on this platform";
 		}
