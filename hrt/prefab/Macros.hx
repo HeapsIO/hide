@@ -302,39 +302,39 @@ class Macros {
 
 		var typeName = Context.getLocalClass().get().name;
 
-		// if (typeName != "Prefab") {
-		// 	// allow child classes to return an object of their type when using make
-		// 	var make : Function = {
-		// 		args: [
-		// 			{ name : "newContextShared", type : macro : hrt.prefab.ContextShared, opt: true}
-		// 		],
-		// 		expr: macro {
-		// 			return hrt.prefab.Macros.Cast(${macro makeInternal(newContextShared)}, $v{typeName});
-		// 		}
-		// 	}
 
-		// 	var access = [APublic, AOverride];
+		for (f in buildFields) {
+			if (f.name == "make") {
+				f.name = "__makeInternal";
+				f.meta.push({name: ":noCompletion", pos:Context.currentPos()});
+			}
+		}
 
-		// 	for (f in buildFields) {
-		// 		if (f.name == "make") {
-		// 			throw "Prefab " + typeName + " tries to override function make";
-		// 		}
-		// 	}
+		var expr = macro {
+			if (shared == sh) sh = null;
+			if (sh != null || !this.shared.isInstance) return cast makeClone(sh);
+			return cast __makeInternal();
+		};
 
-		// 	buildFields.push({
-		// 		name: "make",
-		// 		access : access,
-		// 		pos : Context.currentPos(),
-		// 		kind: FFun(make)
-		// 	});
-		// } else {
-		// 	for (f in buildFields) {
-		// 		if (f.name == "make") {
-		// 			f.access.remove(AFinal);
-		// 			break;
-		// 		}
-		// 	}
-		// }
+		var make : Function = {
+			args: [
+				{ name : "sh", type : macro : hrt.prefab.Prefab.ContextMake, opt: true}
+			],
+			expr: expr,
+			ret: haxe.macro.TypeTools.toComplexType(Context.getLocalType()),
+		}
+
+		var access = [APublic];
+		if (typeName != "Prefab")
+			access.push(AOverride);
+
+		buildFields.push({
+			name: "make",
+			access : access,
+			pos : Context.currentPos(),
+			kind: FFun(make)
+		});
+
 
 
 		var buildFields2 = buildSerializableInternal(buildFields);

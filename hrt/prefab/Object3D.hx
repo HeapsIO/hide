@@ -44,13 +44,20 @@ class Object3D extends Prefab {
 		rotationZ = Math.radToDeg(rot.z);
 	}
 
-	override function makeChildren() {
+	override function make( ?sh:hrt.prefab.Prefab.ContextMake) : Prefab {
+		makeInstance();
+
 		var old3d = shared.current3d;
 		shared.current3d = local3d ?? shared.current3d;
 
-		super.makeChildren();
+		for (c in children)
+			makeChild(c);
 
 		shared.current3d = old3d;
+
+		postMakeInstance();
+
+		return this;
 	}
 
 	/* Override makeObject instead of this */

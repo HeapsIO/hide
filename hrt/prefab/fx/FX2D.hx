@@ -242,9 +242,9 @@ class FX2D extends Object2D implements BaseFX {
 			anims.push(anim);
 	}
 
-	override function makeInstanceRec() : Void {
+	override function make( ?sh:hrt.prefab.Prefab.ContextMake) : Prefab {
 		#if editor
-		super.makeInstanceRec();
+		return super.__makeInternal(sh);
 		#else
 		var fromRef = shared.parent != null;
 		var useFXRoot = #if editor fromRef #else true #end;
@@ -252,10 +252,11 @@ class FX2D extends Object2D implements BaseFX {
 		if( useFXRoot && root != null ) {
 			var childrenBackup = children;
 			children = [root];
-			super.makeInstanceRec();
+			var r = super.__makeInternal(sh);
 			children = childrenBackup;
+			return r;
 		} else
-			super.makeInstanceRec();
+			return super.__makeInternal(sh);
 		#end
 	}
 

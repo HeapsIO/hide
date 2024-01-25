@@ -141,11 +141,11 @@ class SplineMesh extends Spline {
 		meshRotation = obj.meshRotation == null ? new h3d.Vector(0,0,0) : new h3d.Vector(obj.meshRotation.x, obj.meshRotation.y, obj.meshRotation.z);
 	}
 
-	override function makeInstanceRec() : Void{
-		if (!enabled) return;
+	override function make( ?sh:hrt.prefab.Prefab.ContextMake) : Prefab {
 		makeInstance();
-
 		postMakeInstance();
+
+		return this;
 	}
 
 	override function updateInstance(?propName : String ) {

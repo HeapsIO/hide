@@ -33,13 +33,20 @@ class Object2D extends Prefab {
 		updateInstance();
 	}
 
-	override function makeChildren() {
+	override function make(?sh:hrt.prefab.Prefab.ContextMake) : Prefab {
+		makeInstance();
+
 		var old2d = shared.current2d;
 		shared.current2d = local2d ?? shared.current2d;
 
-		super.makeChildren();
+		for (c in children)
+			makeChild(c);
 
 		shared.current2d = old2d;
+
+		postMakeInstance();
+
+		return this;
 	}
 
 	public function loadTransform(t) {

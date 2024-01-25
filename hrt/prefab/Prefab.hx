@@ -18,9 +18,21 @@ typedef PrefabInfo = {
 	var prefabClass : Class<Prefab>;
 	var ?extension: String;
 	#if editor
-	var inf : hide.prefab.HideProps; 
+	var inf : hide.prefab.HideProps;
 	#end
 };
+
+@:access(Prefab)
+abstract ContextMake(ContextShared) from ContextShared to ContextShared {
+
+	@:from static function fromObject3D( parent : h3d.scene.Object ) : ContextMake {
+		return new ContextShared(parent, true);
+	}
+
+	@:from static function fromObject2D( parent : h2d.Object ) : ContextMake {
+		return new ContextShared(parent, true);
+	}
+}
 
 @:allow(hide)
 @:keepSub
@@ -127,21 +139,26 @@ class Prefab {
 		this prefab is cloned and then the clone is instanciated and returned.
 		If `this.shared.isInstance` is true, this prefab is instanciated instead.
 	**/
-	public final function make( ?sh:ContextShared ) : Prefab {
-		if( (sh != null && this.shared != sh) || !this.shared.isInstance ) {
-			if( sh == null ) {
-				sh = new ContextShared(shared.currentPath);
-			}
-			#if editor
-			sh.editor = this.shared.editor;
-			#end
-			var clone = this.clone(sh);
-			return clone.make(sh);
-		}
-
-		makeInstanceRec();
+	public function make( ?sh:ContextMake ) : Prefab {
+		// -- There is generated code here to properly clone the prefab if sh is set. See hrt.prefab.Macros
+		makeInstance();
+		for (c in children)
+			makeChild(c);
+		postMakeInstance();
 
 		return this;
+	}
+
+	function makeClone(?sh:ContextShared) : Prefab {
+		if( sh == null ) {
+			sh = new ContextShared(shared.currentPath);
+		}
+		if( !sh.isInstance ) throw "assert";
+		if( sh.currentPath == null ) sh.currentPath = shared.currentPath;
+		#if editor
+		sh.editor = this.shared.editor;
+		#end
+		return this.clone(sh).make(sh);
 	}
 
 	/**
@@ -598,19 +615,6 @@ class Prefab {
 		return true;
 	}
 
-	/**
-		Make children is responsible for setting the relevant
-		current2d and/or current3d of this prefab so the children
-		can create and attach their object to them. Then, makeChild
-		can be called on all the children, and current2d/3d must be
-		restored to their previous values.
-	**/
-	function makeChildren() : Void {
-		for (c in children) {
-			makeChild(c);
-		}
-	}
-
 	function makeChild(c:Prefab) : Void {
 		if (!shouldMakeChild(c)) return;
 		if (shared.customMake == null) {
@@ -619,14 +623,6 @@ class Prefab {
 		else {
 			shared.customMake(c);
 		}
-	}
-
-	function makeInstanceRec() : Void {
-		trace(this.toString());
-
-		makeInstance();
-		makeChildren();
-		postMakeInstance();
 	}
 
 	/**

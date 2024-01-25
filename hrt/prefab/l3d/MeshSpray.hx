@@ -957,7 +957,9 @@ class MeshSpray extends Spray {
 		super.makeInstance();
 	}
 
-	override function makeChildren() {
+	override function make(?sh:hrt.prefab.Prefab.ContextMake) : Prefab {
+		makeInstance();
+
 		var old3d = shared.current3d;
 		shared.current3d = local3d ?? old3d;
 
@@ -973,6 +975,10 @@ class MeshSpray extends Spray {
 				makeChild(c);
 
 		shared.current3d = old3d;
+
+		postMakeInstance();
+
+		return this;
 	}
 
 	override function postMakeInstance() {
