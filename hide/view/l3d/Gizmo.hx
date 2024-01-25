@@ -68,7 +68,6 @@ class Gizmo extends h3d.scene.Object {
 	var updateFunc: Float -> Void;
 	var mouseX : Float;
 	var mouseY : Float;
-	var mouseLock(get, set) : Bool;
 
 	public var onStartMove: TransformMode -> Void;
 	public var onMove: h3d.Vector -> h3d.Quat -> h3d.Vector -> Void;
@@ -124,7 +123,6 @@ class Gizmo extends h3d.scene.Object {
 			}
 			interactive.onPush = function(e) {
 				startDrag(function(e) {
-					trace(scene.element.offset().left);
 					mouseX = e.clientX - scene.element.offset().left;
 					mouseY = e.clientY - scene.element.offset().top;
 				}, function(e) {
@@ -212,8 +210,6 @@ class Gizmo extends h3d.scene.Object {
 	}
 
 	public function startMove(mode: TransformMode, ?duplicating=false) {
-		if (mode == Scale || (axisScale && (mode == MoveX || mode == MoveY || mode == MoveZ)))
-			mouseLock = true;
 		moving = true;
 		if(onStartMove != null) onStartMove(mode);
 		var startMat = getAbsPos().clone();
@@ -289,7 +285,6 @@ class Gizmo extends h3d.scene.Object {
 			}
 
             var isMove = (mode == MoveX || mode == MoveY || mode == MoveZ || mode == MoveXY || mode == MoveYZ || mode == MoveZX);
-
 			if(mode == MoveX || mode == MoveXY || mode == MoveZX) vec.x = scene.editor.snap(delta.dot(startMat.front().toPoint()),scene.editor.snapMoveStep);
 			if(mode == MoveY || mode == MoveYZ || mode == MoveXY) vec.y = scene.editor.snap(delta.dot(startMat.right().toPoint()),scene.editor.snapMoveStep);
 			if(mode == MoveZ || mode == MoveZX || mode == MoveYZ) vec.z = scene.editor.snap(delta.dot(startMat.up().toPoint()),scene.editor.snapMoveStep);
@@ -319,7 +314,7 @@ class Gizmo extends h3d.scene.Object {
 			}
 
 			if(mode == Scale) {
-				var scale = scaleFunc(delta.z * 0.5);
+				var scale = scene.editor.snap(delta.z * 2, scene.editor.snapScaleStep);
 				vec.set(scale, scale, scale);
 			}
 
@@ -353,9 +348,9 @@ class Gizmo extends h3d.scene.Object {
 
 			if(onMove != null) {
 				if(axisScale && mode != Scale) {
-					vec.x = scene.editor.snap(scaleFunc(vec.x), scene.editor.snapScaleStep);
-					vec.y = scene.editor.snap(scaleFunc(vec.y), scene.editor.snapScaleStep);
-					vec.z = scene.editor.snap(scaleFunc(vec.z), scene.editor.snapScaleStep);
+					vec.x = scene.editor.snap(vec.x * 2, scene.editor.snapScaleStep);
+					vec.y = scene.editor.snap(vec.y * 2, scene.editor.snapScaleStep);
+					vec.z = scene.editor.snap(vec.z * 2, scene.editor.snapScaleStep);
 					if (vec.x != 1) {
 						tx.visible = true;
 						tx.text = ""+ Math.round(vec.x*100)/100.;
@@ -369,6 +364,7 @@ class Gizmo extends h3d.scene.Object {
 						tz.text = ""+ Math.round(vec.z*100)/100.;
 					}
 					onMove(null, null, vec);
+
 				}
 				else {
 					if(mode == Scale) {
@@ -401,17 +397,8 @@ class Gizmo extends h3d.scene.Object {
 		}
 	}
 
-	function get_mouseX() return @:privateAccess scene.window.mouseX;
-	function get_mouseY() return @:privateAccess scene.window.mouseY;
-	function get_mouseLock() return @:privateAccess scene.window.mouseMode != Absolute;
-	function set_mouseLock(v : Bool) {
-		@:privateAccess scene.window.mouseMode = v ? AbsoluteUnbound(true) : Absolute;
-		return v;
-	}
-
 	function finishMove() {
 		deltaTextObject.remove();
-		mouseLock = false;
 		updateFunc = null;
 		if(onFinishMove != null)
 			onFinishMove();
