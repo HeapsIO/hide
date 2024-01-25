@@ -79,7 +79,7 @@ typedef PartArray = #if (hl_ver >= version("1.14.0")) hl.CArray<ParticleInstance
 typedef Single = #if (hl_ver >= version("1.13.0")) hl.F32 #else Float #end;
 
 @:publicFields @:struct
-private class ParticleInstance {
+class ParticleInstance {
 	var prev : ParticleInstance;
 	var next : ParticleInstance;
 
