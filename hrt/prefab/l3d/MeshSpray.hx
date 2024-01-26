@@ -127,12 +127,12 @@ class MeshSpray extends Spray {
 		return true;
 	}
 
-	override function makeInstanceRec() {
+	override function make(?sh:hrt.prefab.prefab.ContextMake) {
 		if( !enabled )
 			return;
 		if( binaryStorage )
 			loadBinary();
-		super.makeInstanceRec();
+		super.__makeInternal();
 		var mspray = Std.downcast(local3d, MeshSprayObject);
 		var pos = mspray.getAbsPos();
 		var tmp = new h3d.Matrix();
@@ -203,7 +203,7 @@ class MeshSpray extends Spray {
 			b.worldPosition = null;
 		if ( clearBinaryMeshes )
 			binaryMeshes = null;
-
+		return this;
 	}
 
 	override function makeChild(p : hrt.prefab.Prefab ) {
