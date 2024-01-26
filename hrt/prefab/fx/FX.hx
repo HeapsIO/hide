@@ -443,7 +443,7 @@ class FX extends Object3D implements BaseFX {
 	}
 
 	override function make( ?sh:hrt.prefab.Prefab.ContextMake) : Prefab  {
-		var fromRef =shared.parent != null;
+		var fromRef = shared.parentPrefab != null;
 		var useFXRoot = #if editor fromRef #else true #end;
 		var root = hrt.prefab.fx.BaseFX.BaseFXTools.getFXRoot(this);
 		if(useFXRoot && root != null){
@@ -473,7 +473,7 @@ class FX extends Object3D implements BaseFX {
 			p = p.parent;
 		}
 
-		var fromRef = shared.parent != null;
+		var fromRef = shared.parentPrefab != null;
 		#if editor
 		// only play if we are as a reference
 		if( fromRef ) fxanim.playSpeed = 1.0;

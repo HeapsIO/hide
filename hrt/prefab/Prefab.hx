@@ -317,11 +317,11 @@ class Prefab {
 	public function getRoot( followRefs : Bool = false ) : Prefab {
 		var root = this;
 
-		while( root.parent != null || (followRefs && root.shared.parent != null) ) {
+		while( root.parent != null || (followRefs && root.shared.parentPrefab != null) ) {
 			if( root.parent != null )
 				root = root.parent;
 			else if( followRefs )
-				root = root.shared.parent;
+				root = root.shared.parentPrefab;
 		}
 		return root;
 	}
@@ -599,18 +599,11 @@ class Prefab {
 		return root;
 	}
 
-	/**
-		Determines if `child` prefab should be made in the makeChildren() function
-	**/
-	function shouldMakeChild(child: Prefab) : Bool {
-		return child.shouldBeInstanciated();
-	}
-
 	function shouldBeInstanciated() : Bool {
 		if (!enabled) return false;
 
 		#if editor
-		if (shared.parent != null && inGameOnly)
+		if (shared.parentPrefab != null && inGameOnly)
 			return false;
 		#else
 		if (editorOnly)
@@ -621,7 +614,7 @@ class Prefab {
 	}
 
 	function makeChild(c:Prefab) : Void {
-		if (!shouldMakeChild(c)) return;
+		if (!c.shouldBeInstanciated()) return;
 		if (shared.customMake == null) {
 			c.make(shared);
 		}

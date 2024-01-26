@@ -26,7 +26,7 @@ class Instance extends Object3D {
 					if(ref != null) {
 						var sh = new hrt.prefab.ContextShared(findFirstLocal2d(), parent3d);
 						sh.currentPath = source;
-						sh.parent = this;
+						sh.parentPrefab = this;
 						sh.customMake = this.shared.customMake;
 						#if editor
 						ref.setEditor(shared.editor);

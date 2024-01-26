@@ -67,7 +67,7 @@ class Reference extends Object3D {
 		#if editor
 		sh.editor = this.shared.editor;
 		#end
-		sh.parent = this;
+		sh.parentPrefab = this;
 		sh.customMake = this.shared.customMake;
 		refInstance = p.clone(null, sh);
 

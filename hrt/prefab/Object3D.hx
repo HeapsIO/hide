@@ -128,7 +128,7 @@ class Object3D extends Prefab {
 			var obj = p.to(Object3D);
 			if( obj == null ) {
 				if( p.parent == null && followRefs ) {
-					p = p.shared.parent;
+					p = p.shared.parentPrefab;
 					continue;
 				}
 				p = p.parent;
@@ -154,7 +154,7 @@ class Object3D extends Prefab {
 			var obj = p.to(Object3D);
 			if( obj == null ) {
 				if( p.parent == null ) {
-					p = p.shared.parent;
+					p = p.shared.parentPrefab;
 					continue;
 				}
 				p = p.parent;

@@ -1735,8 +1735,7 @@ class Emitter extends Object3D {
 		#end
 	}
 
-	override function shouldMakeChild(p:Prefab) {
-		return false;
+	override function makeChild(p:Prefab) {
 	};
 
 	override function makeObject(parent3d: h3d.scene.Object) : h3d.scene.Object {
