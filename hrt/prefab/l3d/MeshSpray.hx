@@ -127,7 +127,7 @@ class MeshSpray extends Spray {
 		return true;
 	}
 
-	override function make(?sh:hrt.prefab.prefab.ContextMake) {
+	override function make(?sh:hrt.prefab.Prefab.ContextMake) {
 		if( !enabled )
 			return;
 		if( binaryStorage )
