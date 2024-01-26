@@ -760,10 +760,9 @@ class ModelLibrary extends Prefab {
 		batches = [];
 	}
 
-	var killAlpha = new h3d.shader.KillAlpha();
+	var killAlpha = new h3d.shader.KillAlpha(0.5);
 	var curSubMeshes : SubMeshes = null;
 	public function optimize( obj : h3d.scene.Object, isStatic = true ) {
-		killAlpha.threshold = 0.5;
 		if( bakedMaterials == null )
 			throw "Model library was not built or saved";
 		if( !wasMake )
