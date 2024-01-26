@@ -194,6 +194,43 @@ class Prefab {
 		return inst;
 	}
 
+	// Make related functions
+
+	/**
+		Create a child from this prefab. Override to filter which child should
+		be created
+	**/
+	function makeChild(c:Prefab) : Void {
+		if (!c.shouldBeInstanciated()) return;
+		if (shared.customMake == null) {
+			c.make(shared);
+		}
+		else {
+			shared.customMake(c);
+		}
+	}
+
+	/**
+		Override this function to create runtime objects from this prefab
+	**/
+	function makeInstance() : Void {
+	}
+
+	/**
+		Called after makeInstance (and by extension postMakeInstance) has been called on all the children
+	**/
+	function postMakeInstance() : Void {
+	}
+
+	/**
+		Allows to customize how an instance gets updated when a property name changes.
+		You can also call updateInstance() in order to force whole instance synchronization against current prefab data.
+	**/
+	function updateInstance(?propName : String) {
+	}
+
+	// End of make related functions
+
 	/**
 		Updates in-place the whole prefab data and its children.
 	**/
@@ -611,35 +648,6 @@ class Prefab {
 		#end
 
 		return true;
-	}
-
-	function makeChild(c:Prefab) : Void {
-		if (!c.shouldBeInstanciated()) return;
-		if (shared.customMake == null) {
-			c.make(shared);
-		}
-		else {
-			shared.customMake(c);
-		}
-	}
-
-	/**
-		Override this function to create runtime objects from this prefab
-	**/
-	function makeInstance() : Void {
-	}
-
-	/**
-		Called after makeInstance (and by extension postMakeInstance) has been called on all the children
-	**/
-	function postMakeInstance() : Void {
-	}
-
-	/**
-		Allows to customize how an instance gets updated when a property name changes.
-		You can also call updateInstance() in order to force whole instance synchronization against current prefab data.
-	**/
-	function updateInstance(?propName : String) {
 	}
 
 	/**
