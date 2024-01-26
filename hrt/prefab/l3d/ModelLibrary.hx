@@ -720,7 +720,7 @@ class ModelLibrary extends Prefab {
 	public var debug = false;
 	public var clear = false;
 
-	override function makeInstanceRec() : Void {
+	override function make(?sh:hrt.prefab.Prefab.ContextMake) : hrt.prefab.Prefab {
 		// don't load/build children
 		wasMake = true;
 		if ( hmdPrim == null )
@@ -753,6 +753,7 @@ class ModelLibrary extends Prefab {
 			shader.hasNormal = tnormal != null;
 			shader.hasPbr = tspec != null;
 		}
+		return this;
 	}
 
 

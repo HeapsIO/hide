@@ -127,12 +127,12 @@ class MeshSpray extends Spray {
 		return true;
 	}
 
-	override function make(?sh:hrt.prefab.Prefab.ContextMake) {
+	override function make(?sh:hrt.prefab.Prefab.ContextMake) : hrt.prefab.Prefab {
 		if( !enabled )
-			return;
+			return this;
 		if( binaryStorage )
 			loadBinary();
-		super.__makeInternal();
+		super.__makeInternal(sh);
 		var mspray = Std.downcast(local3d, MeshSprayObject);
 		var pos = mspray.getAbsPos();
 		var tmp = new h3d.Matrix();
