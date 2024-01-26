@@ -996,19 +996,28 @@ class Cell {
 				var customType = editor.base.getCustomType(typeName);
 				var curValue = currentValue != null ? customType.cases[currentValue[0]] : null;
 
+				var shouldClose = false;
+				if (elementHtml.classList.contains("edit"))
+					shouldClose = true;
+
 				elementHtml.innerHTML = null;
 				elementHtml.classList.add("edit");
 
 				var cellEl = new Element(elementHtml);
-				new Element('<p>...</p>').css("margin", "0px").css("text-align","center").appendTo(cellEl);
+				var rootEl = new Element("<div></div>").appendTo(cellEl);
+				new Element('<p>...</p>').css("margin", "0px").css("text-align","center").appendTo(rootEl);
 
 				function getHtml(value : Dynamic, type : cdb.Data.ColumnType) {
 					switch (type) {
 						case TId, TString, TDynamic:
 							return new Element('<input type="text" ${value != null ? 'value="${value}"': ''}></input>');
 						case TBool:
-							return new Element('<input type="checkbox" ${value != null ? 'value="${value}"': ''}></input>');
+							var el =  new Element('<input type="checkbox"></input>');
+							if (value != null && value)
+								el.attr("checked", "true");
+							return el;
 						case TInt, TFloat:
+							var t = value;
 							return new Element('<input type="number" ${value != null ? 'value="${value}"': ''}></input>');
 						case TRef(name):
 							{
@@ -1069,7 +1078,7 @@ class Cell {
 
 								var html = new Element('
 								<select name="ref">
-									${ [for(idx in 0...elts.length) '<option value="${idx}">${elts[idx].text}</option>'].join('') }
+									${ [for(idx in 0...elts.length) '<option value="${idx}" ${elts[idx].text == value ? "selected":""}>${elts[idx].text}</option>'].join('') }
 								</select>');
 								return html;
 							}
@@ -1082,13 +1091,6 @@ class Cell {
 					}
 				}
 
-				cellEl.keydown(function(e) {
-					if (e.keyCode == K.ESCAPE || e.keyCode == K.ENTER)
-						closeEdit();
-
-					e.stopPropagation();
-				});
-
 				var content = new Element('
 				<div class="cdb-types">
 					<select name="customType" id="dropdown-custom-type">
@@ -1100,6 +1102,9 @@ class Cell {
 				</div>');
 
 				var d = content.find("#dropdown-custom-type");
+				if (currentValue != null)
+					d.find("option").eq(Std.int(currentValue[0] + 1)).attr("selected", "true");
+
 				var paramsContent = content.find("#parameters");
 
 				function buildParameters() {
@@ -1110,7 +1115,9 @@ class Cell {
 					if (selected != null && selected.args.length > 0) {
 						for (idx in 0...selected.args.length) {
 							new Element('<p>${idx == 0 ? '(' : ''}${selected.args[idx].name}&nbsp:&nbsp</p>').appendTo(paramsContent);
-							getHtml(Reflect.field(line.obj, column.name), selected.args[idx].type).addClass("value").appendTo(paramsContent);
+
+							var paramVal = Reflect.field(line.obj, column.name);
+							getHtml(paramVal != null ? paramVal[idx + 1] : null, selected.args[idx].type).addClass("value").appendTo(paramsContent);
 
 							if (idx != selected.args.length - 1)
 								new Element('<p>&nbsp,&nbsp</p>').appendTo(paramsContent);
@@ -1133,7 +1140,15 @@ class Cell {
 
 							var paramsValues = paramsContent.find(".value");
 							for (idx in 0...selected.args.length) {
-								stringValue += paramsValues.eq(idx).val();
+								var paramValue = paramsValues.eq(idx);
+
+								if (paramValue.is("input[type=checkbox]"))
+									stringValue += paramValue.is(":checked");
+								else if (paramValue.is("select")) {
+									stringValue += paramValue.find(":selected").text();
+								}
+								else
+									stringValue += paramsValues.eq(idx).val();
 
 								if (idx != selected.args.length -1)
 									stringValue += (",");
@@ -1148,13 +1163,15 @@ class Cell {
 					this.closeEdit();
 				}
 
+				buildParameters();
+
 				d.on("change", function(e) {
 					buildParameters();
 				});
 
 				// Prevent missclick to actually close the edit mode and
 				// open another one
-				cellEl.on("click", function(e) { closeCdbTypeEdit(); e.stopPropagation(); });
+				rootEl.on("click", function(e) { closeCdbTypeEdit(); e.stopPropagation(); });
 				content.on("click", function(e) { e.stopPropagation(); });
 				content.on("dblclick", function(e) { e.stopPropagation(); });
 
@@ -1163,6 +1180,12 @@ class Cell {
 				content.css("top", '${cellEl.offset().top}px');
 				content.css("min-width", '${cellEl.width()}px');
 				content.appendTo(cellEl);
+
+				d.focus();
+
+				if (shouldClose)
+					closeCdbTypeEdit();
+
 			}
 		case TColor:
 			var elem = new Element(elementHtml);
