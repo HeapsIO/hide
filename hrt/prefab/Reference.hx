@@ -84,7 +84,7 @@ class Reference extends Object3D {
 		}
 	}
 
-	override public function find<T:Prefab>(cl: Class<T>, ?filter : T -> Bool, followRefs : Bool = false ) : Null<T> {
+	override public function find<T:Prefab>(?cl: Class<T>, ?filter : T -> Bool, followRefs : Bool = false ) : Null<T> {
 		var res = super.find(cl, filter, followRefs);
 		if (res == null && followRefs ) {
 			var p = resolveRef();
@@ -94,7 +94,7 @@ class Reference extends Object3D {
 		return res;
 	}
 
-	override public function getOpt<T:Prefab>( cl : Class<T>, ?name : String, ?followRefs : Bool ) : Null<T> {
+	override public function getOpt<T:Prefab>( ?cl : Class<T>, ?name : String, ?followRefs : Bool ) : Null<T> {
 		var res = super.getOpt(cl, name, followRefs);
 		if (res == null && followRefs && refInstance != null) {
 			return refInstance.getOpt(cl, name, followRefs);

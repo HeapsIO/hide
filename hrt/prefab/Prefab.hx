@@ -283,7 +283,7 @@ class Prefab {
 		Search the prefab tree for the prefab matching the given prefab class (and name, if specified).
 		Throw an exception if not found. Uses getOpt() to return null instead.
 	**/
-	public function get<T:Prefab>( cl : Class<T>, ?name : String ) : T {
+	public function get<T:Prefab>( ?cl : Class<T>, ?name : String ) : T {
 		var v = getOpt(cl, name);
 		if( v == null )
 			throw "Missing prefab " + (name == null ? Type.getClassName(cl) : (cl == null ? name : name+"(" + Type.getClassName(cl) + ")"));
@@ -293,10 +293,15 @@ class Prefab {
 	/**
 		Simlar to get() but returns null if not found.
 	**/
-	public function getOpt<T:Prefab>( cl : Class<T>, ?name : String, ?followRefs : Bool ) : Null<T> {
+	public function getOpt<T:Prefab>( ?cl : Class<T>, ?name : String, ?followRefs : Bool ) : Null<T> {
 		if( name == null || this.name == name ) {
-			var cval = to(cl);
-			if( cval != null ) return cval;
+			if (cl != null) {
+				var cval = to(cl);
+				if( cval != null ) return cval;
+			}
+			else {
+				return cast this;
+			}
 		}
 		for( c in children ) {
 			var p = c.getOpt(cl, name, followRefs);
@@ -358,8 +363,8 @@ class Prefab {
 		Find a the first prefab in the tree with the given class that matches the optionnal `filter`.
 		Returns null if no matching prefab was found
 	**/
-	public function find<T:Prefab>(cl: Class<T>, ?filter : T -> Bool, followRefs : Bool = false ) : Null<T> {
-		var asCl = Std.downcast(this, cl);
+	public function find<T:Prefab>(?cl: Class<T>, ?filter : T -> Bool, followRefs : Bool = false ) : Null<T> {
+		var asCl = cl != null ? Std.downcast(this, cl) : cast this;
 		if (asCl != null)
 			if (filter == null || filter(asCl))
 				return asCl;
@@ -375,9 +380,9 @@ class Prefab {
 		The result is stored in the given array `arr` if it's defined, otherwise an array is created. The final array
 		is then returned.
 	**/
-	public function findAll<T:Prefab>(cl: Class<T>,  ?filter : Prefab -> Bool, followRefs : Bool = false, ?arr : Array<T> ) : Array<T> {
+	public function findAll<T:Prefab>(?cl: Class<T>,  ?filter : Prefab -> Bool, followRefs : Bool = false, ?arr : Array<T> ) : Array<T> {
 		if( arr == null ) arr = [];
-		var asCl = Std.downcast(this, cl);
+		var asCl = cl != null ? Std.downcast(this, cl) : cast this;
 		if (asCl != null) {
 			if (filter == null || filter(asCl))
 				arr.push(asCl);
@@ -397,10 +402,10 @@ class Prefab {
 		Find the first prefab in this prefab parent chain that matches the given class `cl`, and optionally the given `filter`.
 		If `includeSelf` is true, then this prefab is checked as well.
 	**/
-	public function findParent<T:Prefab>(cl:Class<T> ,?filter : (p:T) -> Bool, includeSelf:Bool = false) : Null<T> {
+	public function findParent<T:Prefab>(?cl:Class<T> ,?filter : (p:T) -> Bool, includeSelf:Bool = false) : Null<T> {
 		var current = includeSelf ? this : this.parent;
 		while(current != null) {
-			var asCl = Std.downcast(current, cl);
+			var asCl = cl != null ? Std.downcast(current, cl) : cast current;
 			if (asCl != null) {
 				if (filter == null || filter(asCl))
 					return asCl;
