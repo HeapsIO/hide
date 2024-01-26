@@ -621,6 +621,8 @@ class Prefab {
 			return null;
 		var parts = path.split(".");
 		var root = shared.root3d;
+		if (root == null)
+			return null;
 		while( parts.length > 0 ) {
 			var v = null;
 			var pname = parts.shift();

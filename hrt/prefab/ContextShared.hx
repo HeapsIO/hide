@@ -38,7 +38,7 @@ class ContextShared {
 	var bakedData : Map<String, haxe.io.Bytes>;
 
 	public function new( ?path : String, ?root2d: h2d.Object = null, ?root3d: h3d.scene.Object = null, isInstance: Bool = true) {
-		if( path != null ) currentPath = path;
+		if( path != null ) prefabSource = currentPath = path;
 		this.isInstance = isInstance;
 		this.root2d = root2d;
 		this.root3d = root3d;

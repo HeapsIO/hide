@@ -94,10 +94,10 @@ class ModelLibShader extends hxsl.Shader {
 
 class ModelLibraryCache {
 	public function new() {};
-	var wasMade = false;
-	var hmdPrim : h3d.prim.HMDModel;
-	var shader : ModelLibShader;
-	var geomBounds : Array<h3d.col.Bounds>;
+	public var wasMade = false;
+	public var hmdPrim : h3d.prim.HMDModel;
+	public var shader : ModelLibShader;
+	public var geomBounds : Array<h3d.col.Bounds>;
 }
 
 class ModelLibrary extends Prefab {
@@ -736,7 +736,7 @@ class ModelLibrary extends Prefab {
 		if (cache.wasMade)
 			return this;
 
-		cache.wasMake = true;
+		cache.wasMade = true;
 		if ( cache.hmdPrim == null )
 			cache.hmdPrim = Std.downcast(shared.loadModel(shared.getPrefabDatPath("model","hmd",this.name)).toMesh().primitive, h3d.prim.HMDModel);
 		if ( cache.geomBounds == null )
@@ -771,7 +771,7 @@ class ModelLibrary extends Prefab {
 	}
 
 	override function clone(?parent:Prefab = null, ?sh: ContextShared = null, withChildren : Bool = true) : Prefab {
-		var clone = super.clone(parent, sh, withChildren);
+		var clone : ModelLibrary = cast super.clone(parent, sh, withChildren);
 		clone.cache = cache;
 		return clone;
 	}
@@ -787,7 +787,7 @@ class ModelLibrary extends Prefab {
 	public function optimize( obj : h3d.scene.Object, isStatic = true ) {
 		if( bakedMaterials == null )
 			throw "Model library was not built or saved";
-		if( !wasMake )
+		if( !cache.wasMade )
 			throw "Please call make() on modelLibrary first";
 
 		var meshBatches = [for (i in 0...materialConfigs.length * (preserveObjectNames.length + 1)) null];
@@ -839,14 +839,14 @@ class ModelLibrary extends Prefab {
 	}
 
 	public function createMeshBatch(parent : h3d.scene.Object, isStatic : Bool, ?bounds : h3d.col.Bounds, ?props : h3d.mat.PbrMaterial.PbrProps) {
-		var batch = new h3d.scene.MeshBatch(hmdPrim, h3d.mat.Material.create(), parent);
+		var batch = new h3d.scene.MeshBatch(cache.hmdPrim, h3d.mat.Material.create(), parent);
 		if ( isStatic ) {
 			batch.material.staticShadows = true;
 			batch.fixedPosition = true;
 		}
 		batch.cullingCollider = bounds;
 		batch.name = "modelLibrary";
-		batch.material.mainPass.addShader(shader);
+		batch.material.mainPass.addShader(cache.shader);
 		if ( props != null ) {
 			batch.material.props = props;
 			batch.material.refreshProps();
@@ -939,16 +939,16 @@ class ModelLibrary extends Prefab {
 
 	public function emit(m : MaterialMesh, batch : h3d.scene.MeshBatch, emitCountTip = -1) {
 		var bk = m.mat;
-		shader.delta = 1.0 / 4096 / bk.uvSX;
-		shader.uvTransform.set(bk.uvX, bk.uvY, bk.uvSX, bk.uvSY);
-		shader.material = bk.texId;
+		cache.shader.delta = 1.0 / 4096 / bk.uvSX;
+		cache.shader.uvTransform.set(bk.uvX, bk.uvY, bk.uvSX, bk.uvSY);
+		cache.shader.material = bk.texId;
 		if ( batch.primitiveSubPart == null ) {
 			batch.primitiveSubPart = new h3d.scene.MeshBatch.MeshBatchPart();
 			batch.begin(emitCountTip);
 		}
 		batch.primitiveSubPart.indexCount = bk.indexCount;
 		batch.primitiveSubPart.indexStart = bk.indexStart;
-		batch.primitiveSubPart.bounds = geomBounds[bk.geomId];
+		batch.primitiveSubPart.bounds = cache.geomBounds[bk.geomId];
 		batch.worldPosition = m.mesh.getAbsPos();
 		batch.emitInstance();
 	}

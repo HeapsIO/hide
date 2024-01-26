@@ -34,6 +34,8 @@ class Object2D extends Prefab {
 	}
 
 	override function make(?sh:hrt.prefab.Prefab.ContextMake) : Prefab {
+		if (shared.root2d == null) @:privateAccess shared.root2d = shared.current2d = new h2d.Object();
+
 		makeInstance();
 
 		var old2d = shared.current2d;

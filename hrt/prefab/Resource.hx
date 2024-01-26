@@ -31,13 +31,11 @@ class Resource extends hxd.res.Resource {
 		return isBSON ? new hxd.fmt.hbson.Reader(entry.getBytes(),false).read() : haxe.Json.parse(entry.getText());
 	}
 
-	public function load(?shared: ContextShared) : Prefab {
+	public function load() : Prefab {
 		if( prefab != null && cacheVersion == CACHE_VERSION )
 			return prefab;
 		var data = loadData();
-		prefab = Prefab.createFromDynamic(data);
-		prefab.shared.prefabSource = entry.path;
-		prefab.shared.currentPath = entry.path;
+		prefab = Prefab.createFromDynamic(data, new ContextShared(entry.path, false));
 		cacheVersion = CACHE_VERSION;
 		onPrefabLoaded(prefab);
 		watch(function() {}); // auto lib reload
