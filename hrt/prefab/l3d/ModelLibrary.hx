@@ -92,6 +92,14 @@ class ModelLibShader extends hxsl.Shader {
 	}
 }
 
+class ModelLibraryCache {
+	public function new() {};
+	var wasMade = false;
+	var hmdPrim : h3d.prim.HMDModel;
+	var shader : ModelLibShader;
+	var geomBounds : Array<h3d.col.Bounds>;
+}
+
 class ModelLibrary extends Prefab {
 
 	@:s var bakedMaterials : haxe.DynamicAccess<MaterialData>;
@@ -117,6 +125,12 @@ class ModelLibrary extends Prefab {
 		super.dispose();
 		optimizedMeshes = [];
 		batches = [];
+	}
+
+	var cache : ModelLibraryCache;
+	public function new(prefab, shared) {
+		super(prefab, shared);
+		cache = new ModelLibraryCache();
 	}
 
 	#if editor
@@ -713,27 +727,27 @@ class ModelLibrary extends Prefab {
 	#else
 
 	// var shared : hrt.prefab.ContextShared;
-	var wasMake = false;
-	var hmdPrim : h3d.prim.HMDModel;
-	var shader : ModelLibShader;
-	var geomBounds : Array<h3d.col.Bounds>;
+
 	public var debug = false;
 	public var clear = false;
 
 	override function make(?sh:hrt.prefab.Prefab.ContextMake) : hrt.prefab.Prefab {
 		// don't load/build children
-		wasMake = true;
-		if ( hmdPrim == null )
-			hmdPrim = Std.downcast(shared.loadModel(shared.getPrefabDatPath("model","hmd",this.name)).toMesh().primitive, h3d.prim.HMDModel);
-		if ( geomBounds == null )
-			geomBounds = [for( g in @:privateAccess hmdPrim.lib.header.geometries ) g.bounds];
-		@:privateAccess hmdPrim.curMaterial = -1;
-		if ( shader == null ) {
-			shader = new ModelLibShader();
-			shader.mipStart = mipStart;
-			shader.mipEnd = mipEnd;
-			shader.mipPower = mipPower;
-			shader.mipNumber = mipLevels;
+		if (cache.wasMade)
+			return this;
+
+		cache.wasMake = true;
+		if ( cache.hmdPrim == null )
+			cache.hmdPrim = Std.downcast(shared.loadModel(shared.getPrefabDatPath("model","hmd",this.name)).toMesh().primitive, h3d.prim.HMDModel);
+		if ( cache.geomBounds == null )
+			cache.geomBounds = [for( g in @:privateAccess cache.hmdPrim.lib.header.geometries ) g.bounds];
+		@:privateAccess cache.hmdPrim.curMaterial = -1;
+		if ( cache.shader == null ) {
+			cache.shader = new ModelLibShader();
+			cache.shader.mipStart = mipStart;
+			cache.shader.mipEnd = mipEnd;
+			cache.shader.mipPower = mipPower;
+			cache.shader.mipNumber = mipLevels;
 			var tex = shared.loadTexture(shared.getPrefabDatPath("texture","dds",this.name));
 			var tnormal = try shared.loadTexture(shared.getPrefabDatPath("normal","dds",this.name)) catch( e : hxd.res.NotFound ) null;
 			var tspec = try shared.loadTexture(shared.getPrefabDatPath("specular","dds",this.name)) catch( e : hxd.res.NotFound ) null;
@@ -741,19 +755,25 @@ class ModelLibrary extends Prefab {
 			tnormal.wrap = Repeat;
 			tspec.wrap = Repeat;
 			if( texturesCount == 1 || !Std.isOfType(tex, h3d.mat.TextureArray) ) {
-				shader.singleTexture = true;
-				shader.texture = tex;
-				shader.normalMap = tnormal;
-				shader.specular = tspec;
+				cache.shader.singleTexture = true;
+				cache.shader.texture = tex;
+				cache.shader.normalMap = tnormal;
+				cache.shader.specular = tspec;
 			} else {
-				shader.textures = cast(tex,h3d.mat.TextureArray);
-				shader.normalMaps = cast(tnormal,h3d.mat.TextureArray);
-				shader.speculars = cast(tspec,h3d.mat.TextureArray);
+				cache.shader.textures = cast(tex,h3d.mat.TextureArray);
+				cache.shader.normalMaps = cast(tnormal,h3d.mat.TextureArray);
+				cache.shader.speculars = cast(tspec,h3d.mat.TextureArray);
 			}
-			shader.hasNormal = tnormal != null;
-			shader.hasPbr = tspec != null;
+			cache.shader.hasNormal = tnormal != null;
+			cache.shader.hasPbr = tspec != null;
 		}
 		return this;
+	}
+
+	override function clone(?parent:Prefab = null, ?sh: ContextShared = null, withChildren : Bool = true) : Prefab {
+		var clone = super.clone(parent, sh, withChildren);
+		clone.cache = cache;
+		return clone;
 	}
 
 

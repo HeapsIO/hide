@@ -104,6 +104,10 @@ class Prefab {
 	// Public API
 
 	public function new(parent:Prefab, contextShared: ContextShared) {
+		initParentShared(parent, shared);
+	}
+
+	function initParentShared(parent:Prefab, contextShared: ContextShared) {
 		if (parent == null) {
 			shared = contextShared;
 			if (shared == null) {
@@ -166,7 +170,7 @@ class Prefab {
 		If `parent` is given, then `sh` will be set to `parent.shared`. If `parent` and `sh` is null, `sh` will be set to a new context shared will be created.
 		The `parent` and `sh` are then given to the clone constructor.
 	**/
-	public final function clone(?parent:Prefab = null, ?sh: ContextShared = null, withChildren : Bool = true) : Prefab {
+	public function clone(?parent:Prefab = null, ?sh: ContextShared = null, withChildren : Bool = true) : Prefab {
 		if (parent != null && sh != null && parent.shared != sh)
 			throw "Both parent and sh are set but shared don't match";
 
@@ -183,8 +187,11 @@ class Prefab {
 
 		var thisClass = Type.getClass(this);
 
-		var inst = Type.createInstance(thisClass, [parent, sh]);
+		var inst = Type.createEmptyInstance(thisClass);
+		inst.initParentShared(parent, sh);
+		inst.postCloneInit();	// Macro function that init all the non serializable fields of a prefab
 		inst.copy(this);
+		inst.children = [];
 		if (withChildren) {
 			for (child in children) {
 				child.clone(inst, sh);

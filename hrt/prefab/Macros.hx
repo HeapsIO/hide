@@ -359,6 +359,7 @@ class Macros {
 
 		var serializableFields = [];
 		var copyableFields = [];
+		var cloneInitFields : Array<Field> = [];
 		var pos = Context.currentPos();
 
 
@@ -386,6 +387,10 @@ class Macros {
 
 			if (isCopyable || isSerializable) {
 				copyableFields.push({field: f, deepCopy: isDeepCopy});
+			}
+
+			if (!isSerializable && !isDeepCopy && !isCopyable) {
+				cloneInitFields.push(f);
 			}
 		}
 
@@ -442,7 +447,6 @@ class Macros {
 		for (f in copyableFields) {
 			var name = f.field.name;
 			var defExpr = getDefExpr(f.field);
-
 			if (f.deepCopy) {
 				copyFromOther.push(macro hrt.prefab.Macros.deepCopyFromOther(this.$name, obj.$name, null));
 			} else {
@@ -450,13 +454,46 @@ class Macros {
 			}
 		}
 
+		var cloneInitExprs = [];
+		if (!isRoot) {
+			cloneInitExprs.push(macro super.postCloneInit());
+			for (f in cloneInitFields) {
+				var name = f.name;
+				if (f.access != null) {
+					if (f.access.contains(AStatic) || f.access.contains(AFinal)) {
+						continue;
+					}
+				}
+				switch (f.kind) {
+					case FVar(_, defaultValue): {
+						if (defaultValue != null) {
+							cloneInitExprs.push(macro this.$name = ${defaultValue});
+						}
+					}
+					case FProp(_,set, _, defaultValue): {
+						if (defaultValue != null) {
+							switch(set) {
+								case "default", "set", "null":
+									cloneInitExprs.push(macro this.$name = ${defaultValue});
+								case "never":
+								default: throw "Unexpected setter kind " + set;
+							}
+						}
+					}
+					default:
+
+				}
+			}
+		}
+
+
 		function makeFun(name,expr, paramType, returnType) : Field {
 			return {
 				name : name,
 				kind : FFun({
 					ret : returnType,
 					expr : { expr : expr, pos : pos },
-					args : [{ name : "obj", type : paramType }],
+					args : paramType != null ? [{ name : "obj", type : paramType }] : [],
 				}),
 				meta : [{ name : ":noCompletion", pos : pos }],
 				access : isRoot ? [] : [AOverride],
@@ -476,6 +513,9 @@ class Macros {
 			return obj;
 		};
 		fields.push(makeFun("copyToDynamic", EBlock([expr]), macro : Dynamic, macro : Dynamic));
+
+		fields.push(makeFun("postCloneInit", EBlock(cloneInitExprs), null, null));
+
 
 
 		return fields;
