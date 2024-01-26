@@ -104,7 +104,7 @@ class Prefab {
 	// Public API
 
 	public function new(parent:Prefab, contextShared: ContextShared) {
-		initParentShared(parent, shared);
+		initParentShared(parent, contextShared);
 	}
 
 	function initParentShared(parent:Prefab, contextShared: ContextShared) {
