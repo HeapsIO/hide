@@ -694,7 +694,7 @@ class Cell {
 		switch( column.type ) {
 		case TString if( column.kind == Script ):
 			open();
-		case TInt, TFloat, TString, TId, TCustom(_), TDynamic:
+		case TInt, TFloat, TString, TId, TDynamic:
 			var val = value;
 			if (column.display == Percent) {
 				val *= 100;
@@ -990,6 +990,179 @@ class Cell {
 					e.stopPropagation();
 				});
 				s.on("select2:close", function(_) closeEdit());
+			}
+		case TCustom(typeName):
+			{
+				var customType = editor.base.getCustomType(typeName);
+				var curValue = currentValue != null ? customType.cases[currentValue[0]] : null;
+
+				elementHtml.innerHTML = null;
+				elementHtml.classList.add("edit");
+
+				var cellEl = new Element(elementHtml);
+				new Element('<p>...</p>').css("margin", "0px").css("text-align","center").appendTo(cellEl);
+
+				function getHtml(value : Dynamic, type : cdb.Data.ColumnType) {
+					switch (type) {
+						case TId, TString, TDynamic:
+							return new Element('<input type="text" ${value != null ? 'value="${value}"': ''}></input>');
+						case TBool:
+							return new Element('<input type="checkbox" ${value != null ? 'value="${value}"': ''}></input>');
+						case TInt, TFloat:
+							return new Element('<input type="number" ${value != null ? 'value="${value}"': ''}></input>');
+						case TRef(name):
+							{
+								var sdat = editor.base.getSheet(name);
+								if( sdat == null ) return new Element("<p>No sheet data found</p>");
+
+								var isLocal = sdat.idCol.scope != null;
+								var elts: Array<hide.comp.Dropdown.Choice>;
+
+								function makeClasses(o: cdb.Sheet.SheetIndex) {
+									var ret = [];
+									for( c in sdat.columns ) {
+										switch( c.type ) {
+											case TId | TBool:
+												ret.push("r_" + c.name + "_" + Reflect.field(o.obj, c.name));
+											case TEnum( values ):
+												ret.push("r_" + c.name + "_" + values[Reflect.field(o.obj, c.name)]);
+											case TFlags( values ):
+											default:
+										}
+									}
+									return ret;
+								}
+
+								if( isLocal ) {
+									var scope = refScope(sdat,table.getRealSheet(),line.obj,[]);
+									var prefix = table.makeId(scope, sdat.idCol.scope, null)+":";
+									elts = [ for( d in sdat.all ) if( StringTools.startsWith(d.id,prefix) ) {
+										id : d.id.split(":").pop(),
+										ico : d.ico,
+										text : d.disp,
+										classes : makeClasses(d),
+									}];
+								} else {
+									elts = [ for( d in sdat.all ) {
+										id : d.id,
+										ico : d.ico,
+										text : d.disp,
+										classes : makeClasses(d),
+									}];
+								}
+
+								if( column.opt || currentValue == null || currentValue == "" ) {
+									elts.unshift({
+										id : null,
+										ico : null,
+										text : "--- None ---",
+									});
+								}
+
+								function makeIcon(c: hide.comp.Dropdown.Choice) {
+									if (sdat.props.displayIcon == null)
+										return null;
+									if (c.ico == null)
+										return new Element("<div style='display:inline-block;width:16px'/>");
+									return new Element(tileHtml(c.ico, true).str);
+								}
+
+								var html = new Element('
+								<select name="ref">
+									${ [for(idx in 0...elts.length) '<option value="${idx}">${elts[idx].text}</option>'].join('') }
+								</select>');
+								return html;
+							}
+						case TCustom(name):
+							{
+								return null;
+							}
+						default:
+							return new Element('<p>Not supported</p>');
+					}
+				}
+
+				cellEl.keydown(function(e) {
+					if (e.keyCode == K.ESCAPE || e.keyCode == K.ENTER)
+						closeEdit();
+
+					e.stopPropagation();
+				});
+
+				var content = new Element('
+				<div class="cdb-types">
+					<select name="customType" id="dropdown-custom-type">
+					<option value="none">None</option>
+					${ [for (idx in 0...customType.cases.length) '<option value=${idx}>${customType.cases[idx].name}</option>'].join("") }
+					</select>
+					<div id="parameters">
+					<div>
+				</div>');
+
+				var d = content.find("#dropdown-custom-type");
+				var paramsContent = content.find("#parameters");
+
+				function buildParameters() {
+					paramsContent.empty();
+					var val = d.val();
+					var selected = val != null ? customType.cases[content.find("#dropdown-custom-type").val()] : null;
+
+					if (selected != null && selected.args.length > 0) {
+						for (idx in 0...selected.args.length) {
+							new Element('<p>${idx == 0 ? '(' : ''}${selected.args[idx].name}&nbsp:&nbsp</p>').appendTo(paramsContent);
+							getHtml(Reflect.field(line.obj, column.name), selected.args[idx].type).addClass("value").appendTo(paramsContent);
+
+							if (idx != selected.args.length - 1)
+								new Element('<p>&nbsp,&nbsp</p>').appendTo(paramsContent);
+							else
+								new Element('<p>&nbsp)</p>').appendTo(paramsContent);
+						}
+					}
+				}
+
+				function closeCdbTypeEdit() {
+					var val = d.val();
+					var selected = val != null ? customType.cases[content.find("#dropdown-custom-type").val()] : null;
+					var stringValue = "";
+
+					if (selected != null) {
+						stringValue = selected.name;
+
+						if (selected.args != null && selected.args.length > 0) {
+							stringValue = '${selected.name}(';
+
+							var paramsValues = paramsContent.find(".value");
+							for (idx in 0...selected.args.length) {
+								stringValue += paramsValues.eq(idx).val();
+
+								if (idx != selected.args.length -1)
+									stringValue += (",");
+							}
+
+							stringValue += ')';
+						}
+					}
+
+					cellEl.empty();
+					this.setRawValue(stringValue);
+					this.closeEdit();
+				}
+
+				d.on("change", function(e) {
+					buildParameters();
+				});
+
+				// Prevent missclick to actually close the edit mode and
+				// open another one
+				cellEl.on("click", function(e) { closeCdbTypeEdit(); e.stopPropagation(); });
+				content.on("click", function(e) { e.stopPropagation(); });
+				content.on("dblclick", function(e) { e.stopPropagation(); });
+
+				var offset = 1920 - (cellEl.offset().left + cellEl.width());
+				content.css("right", '${offset}px');
+				content.css("top", '${cellEl.offset().top}px');
+				content.css("min-width", '${cellEl.width()}px');
+				content.appendTo(cellEl);
 			}
 		case TColor:
 			var elem = new Element(elementHtml);

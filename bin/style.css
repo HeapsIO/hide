@@ -1296,6 +1296,33 @@ input[type=checkbox]:checked:after {
 .identifiers :nth-child(2) {
   right: 20px;
 }
+.cdb-types {
+  position: absolute;
+  padding: 2px 2px 2px 2px;
+  margin: 2px 2px 2px 2px;
+  display: flex;
+  background-color: #333333;
+}
+.cdb-types #dropdown-custom-type {
+  width: fit-content;
+}
+.cdb-types #parameters {
+  display: flex;
+}
+.cdb-types input {
+  width: 50px;
+}
+.cdb-types input[type="checkbox"] {
+  width: auto;
+  height: auto;
+  margin: 0px 0px 0px 0px;
+  margin-top: 2px;
+  margin-bottom: 2px;
+}
+.cdb-types p {
+  margin-top: 2px;
+  margin-bottom: 2px;
+}
 /* Curve editor */
 .hide-curve-editor {
   position: relative;
