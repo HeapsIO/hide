@@ -187,7 +187,7 @@ class ContextShared {
 	}
 
 	public function getObjects<T:h3d.scene.Object>( p : Prefab, c: Class<T> ) : Array<T> {
-		var root = p.findFirstLocal3d();
+		var root = p.to(Object3D)?.local3d;
 		if(root == null) return [];
 		var childObjs = getChildrenRoots(root, p, []);
 		var ret = [];
