@@ -135,7 +135,7 @@ class Config {
 		return config;
 	}
 
-	public static function loadForProject( projectPath : String, resourcePath : String ) {
+	public static function loadForProject( projectPath : String, resourcePath : String, appDataPath : String ) {
 		var hidePath = Ide.inst.appPath;
 
 		var defaults = new Config();
@@ -161,7 +161,7 @@ class Config {
 
 		var perProject = loadConfig(new Config(userGlobals), resourcePath + "/props.json");
 
-		var projectUserCustom = loadConfig(new Config(perProject), nw.App.dataPath + "/" + projectPath.split("\\").join("/").split("/").join("_").split(":").join("_") + ".json");
+		var projectUserCustom = loadConfig(new Config(perProject), appDataPath + "/" + projectPath.split("\\").join("/").split("/").join("_").split(":").join("_") + ".json");
 		var p = projectUserCustom;
 		if( p.source.hide == null )
 			p.source.hide = ({ layouts : [], renderer : null, dbCategories: null, dbProofread: null } : HideProjectConfig);

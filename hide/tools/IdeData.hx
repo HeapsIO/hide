@@ -35,8 +35,12 @@ class IdeData {
 	function get_projectDir() return ideConfig.currentProject.split("\\").join("/");
 	function get_resourceDir() return projectDir+"/res";
 
+	function getAppDataPath() {
+		return ".";
+	}
+
 	function initConfig( cwd : String ) {
-		config = Config.loadForProject(cwd, cwd+"/res");
+		config = Config.loadForProject(cwd, cwd+"/res", getAppDataPath());
 		fileWatcher = new hide.tools.FileWatcher();
 	}
 
@@ -50,7 +54,7 @@ class IdeData {
 			if( ideConfig.recentProjects.length > 10 ) ideConfig.recentProjects.pop();
 			config.global.save();
 		}
-		config = Config.loadForProject(projectDir, resourceDir);
+		config = Config.loadForProject(projectDir, resourceDir, getAppDataPath());
 		databaseFile = config.project.get("cdb.databaseFile");
 		databaseDiff = config.user.get("cdb.databaseDiff");
 

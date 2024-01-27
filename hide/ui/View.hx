@@ -79,6 +79,7 @@ class View<T> extends hide.comp.Component {
 		return Type.getClassName(Type.getClass(this));
 	}
 
+	#if !hl
 	public function setClipboard( v : Dynamic, ?type : String, ?opts : {} ) {
 		nw.Clipboard.get().set(ide.toJSON({ type : type == null ? viewClass : type, value : v, opts : opts }));
 	}
@@ -96,7 +97,6 @@ class View<T> extends hide.comp.Component {
 		return v == null || v.type != type ? null : v.value;
 	}
 
-	#if !hl
 	function syncTitle() {
 		container.setTitle(getTitle());
 	}

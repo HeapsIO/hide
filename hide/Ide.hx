@@ -59,6 +59,10 @@ class Ide extends hide.tools.IdeData {
 		return js.Browser.window.localStorage;
 	}
 
+	override function getAppDataPath() {
+		return nw.App.dataPath;
+	}
+
 	function initPad() {
 		gamePad = hxd.Pad.createDummy();
 		hxd.Pad.wait((p) -> gamePad = p);
