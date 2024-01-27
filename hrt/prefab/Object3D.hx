@@ -169,7 +169,7 @@ class Object3D extends Prefab {
 				if( ranges != null ) {
 					for( key in Reflect.fields(ranges) ) {
 						var color = Std.parseInt(Reflect.field(ranges,key));
-						var value : Dynamic = ide.resolveCDBValue(sheet,key, props);
+						var value : Dynamic = hide.comp.cdb.DataFiles.resolveCDBValue(sheet,key, props);
 						if( value != null ) {
 							var mesh = new h3d.scene.Mesh(hrt.prefab.l3d.Spray.makePrimCircle(128, 0.99), ctx.local3d);
 							mesh.name = "$UI.RANGE";
@@ -189,7 +189,7 @@ class Object3D extends Prefab {
 				var huds : Dynamic = shared.scene.config.get("sceneeditor.huds");
 				var icon = Reflect.field(huds, sheet);
 				if( icon != null ) {
-					var t : Dynamic = ide.resolveCDBValue(sheet,icon, props);
+					var t : Dynamic = hide.comp.cdb.DataFiles.resolveCDBValue(sheet,icon, props);
 					if( t != null && (t.file != null || Std.isOfType(t,String)) ) {
 						var obj = Std.downcast(ctx.local2d, h2d.ObjectFollower);
 						if( obj == null || obj.follow != ctx.local3d ) {

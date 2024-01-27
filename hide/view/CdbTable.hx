@@ -206,13 +206,11 @@ class CdbTable extends hide.ui.View<{}> {
 		var sheets = getSheets();
 		if( sheets.length == 0 ) {
 			element.html("No CDB sheet created, <a href='#'>create one</a>");
-			#if js
 			element.find("a").click(function(_) {
-				var sheet = ide.createDBSheet();
+				var sheet = editor.createDBSheet();
 				if( sheet == null ) return;
 				rebuild();
 			});
-			#end
 			return;
 		}
 		element.addClass("cdb-view");

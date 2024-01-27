@@ -1,13 +1,9 @@
 package hide;
 
 @:expose
-class Ide {
+class Ide extends hide.tools.IdeData {
 
-	public var currentConfig(get,never) : Config;
-	public var projectDir(get,never) : String;
-	public var resourceDir(get,never) : String;
 	public var initializing(default,null) : Bool;
-	public var appPath(get, null): String;
 
 	public var mouseX : Int = 0;
 	public var mouseY : Int = 0;
@@ -15,29 +11,12 @@ class Ide {
 	public var isWindows(get, never) : Bool;
 	public var isFocused(get, never) : Bool;
 
-	public var database : cdb.Database = new cdb.Database();
 	public var shaderLoader : hide.tools.ShaderLoader;
-	public var fileWatcher : hide.tools.FileWatcher;
 	public var isCDB = false;
 	public var isDebugger = false;
 
 	public var gamePad(default,null) : hxd.Pad;
 	public var localStorage(get,never) : js.html.Storage;
-
-	var databaseFile : String;
-	var databaseDiff : String;
-	var pakFile : hxd.fmt.pak.FileSystem;
-	var originDataBase : cdb.Database;
-	var dbWatcher : hide.tools.FileWatcher.FileWatchEvent;
-
-	var config : {
-		global : Config,
-		project : Config,
-		user : Config,
-		current : Config,
-	};
-	public var ideConfig(get, never) : hide.Config.HideGlobalConfig;
-	public var projectConfig(get, never) : hide.Config.HideProjectConfig;
 
 	var window : nw.Window;
 	var saveMenu : nw.Menu;
@@ -62,6 +41,7 @@ class Ide {
 	static var firstInit = true;
 
 	function new() {
+		super();
 		initPad();
 		isCDB = Sys.getEnv("HIDE_START_CDB") == "1" || nw.App.manifest.name == "CDB";
 		isDebugger = Sys.getEnv("HIDE_DEBUG") == "1";
@@ -88,7 +68,7 @@ class Ide {
 		inst = this;
 		window = nw.Window.get();
 		var cwd = Sys.getCwd();
-		config = Config.loadForProject(cwd, cwd+"/res");
+		initConfig(cwd);
 		var current = ideConfig.currentProject;
 		if( StringTools.endsWith(cwd,"package.nw") && sys.FileSystem.exists(cwd.substr(0,-10)+"res") )
 			cwd = cwd.substr(0,-11);
@@ -135,8 +115,6 @@ class Ide {
 
 		if( config.global.get("hide") == null )
 			error("Failed to load defaultProps.json");
-
-		fileWatcher = new hide.tools.FileWatcher();
 
 		if( !sys.FileSystem.exists(current) || !sys.FileSystem.isDirectory(current) ) {
 			if( current != "" ) js.Browser.alert(current+" no longer exists");
@@ -492,30 +470,6 @@ class Ide {
 		};
 	}
 
-	function get_ideConfig() return cast config.global.source.hide;
-	function get_projectConfig() return cast config.user.source.hide;
-	function get_currentConfig() return config.user;
-
-	function get_appPath() {
-		if( appPath != null )
-			return appPath;
-		var path = js.Node.process.argv[0].split("\\").join("/").split("/");
-		path.pop();
-		var hidePath = path.join("/");
-		if( !sys.FileSystem.exists(hidePath + "/package.json") ) {
-			var prevPath = new haxe.io.Path(hidePath).dir;
-			if( sys.FileSystem.exists(prevPath + "/hide.js") )
-				return appPath = prevPath;
-			// nwjs launch
-			var path = Sys.getCwd().split("\\").join("/");
-			if( sys.FileSystem.exists(path+"/hide.js") )
-				return appPath = path;
-			message("Hide application path was not found");
-			Sys.exit(0);
-		}
-		return appPath = hidePath;
-	}
-
 	public function setClipboard( text : String ) {
 		nw.Clipboard.get().set(text, Text);
 	}
@@ -548,15 +502,6 @@ class Ide {
 				Reflect.deleteField(v, f);
 	}
 
-	public function getPath( relPath : String ) {
-		if( relPath == null )
-			return null;
-		relPath = relPath.split("${HIDE}").join(appPath);
-		if( haxe.io.Path.isAbsolute(relPath) )
-			return relPath;
-		return resourceDir+"/"+relPath;
-	}
-
 	static var textureCacheKey = "TextureCache";
 
 	public function getHideResPath(basePath:String) {
@@ -587,63 +532,9 @@ class Ide {
 		return tex;
 	}
 
-	public function resolveCDBValue( path : String, key : Dynamic, obj : Dynamic ) : Dynamic {
-
-		// allow Array as key (first choice)
-		if( Std.isOfType(key,Array) ) {
-			for( v in (key:Array<Dynamic>) ) {
-				var value = resolveCDBValue(path, v, obj);
-				if( value != null ) return value;
-			}
-			return null;
-		}
-		path += "."+key;
-
-		var path = path.split(".");
-		var sheet = database.getSheet(path.shift());
-		if( sheet == null )
-			return null;
-		while( path.length > 0 && sheet != null ) {
-			var f = path.shift();
-			var value : Dynamic;
-			if( f.charCodeAt(f.length-1) == "]".code ) {
-				var parts = f.split("[");
-				f = parts[0];
-				value = Reflect.field(obj, f);
-				if( value != null )
-					value = value[Std.parseInt(parts[1])];
-			} else
- 				value = Reflect.field(obj, f);
-			if( value == null )
-				return null;
-			var current = sheet;
-			sheet = null;
-			for( c in current.columns ) {
-				if( c.name == f ) {
-					switch( c.type ) {
-					case TRef(name):
-						sheet = database.getSheet(name);
-						var ref = sheet.index.get(value);
-						if( ref == null )
-							return null;
-						value = ref.obj;
-					case TProperties, TList:
-						sheet = current.getSub(c);
-					default:
-					}
-					break;
-				}
-			}
-			obj = value;
-		}
-		for( f in path )
-			obj = Reflect.field(obj, f);
-		return obj;
-	}
-
 	var showErrors = true;
 	var errorWindow :Element = null;
-	public function error( e : Dynamic ) {
+	override function error( e : Dynamic ) {
 		if( showErrors && !js.Browser.window.confirm(e) )
 			showErrors = false;
 
@@ -690,25 +581,8 @@ class Ide {
 		haxe.Timer.delay(() -> e.remove(), 5000);
 	}
 
-	function get_projectDir() return ideConfig.currentProject.split("\\").join("/");
-	function get_resourceDir() return projectDir+"/res";
-
-	function setProject( dir : String ) {
-		fileWatcher.dispose();
-
-		if( dir != ideConfig.currentProject ) {
-			ideConfig.currentProject = dir;
-			ideConfig.recentProjects.remove(dir);
-			ideConfig.recentProjects.unshift(dir);
-			if( ideConfig.recentProjects.length > 10 ) ideConfig.recentProjects.pop();
-			config.global.save();
-		}
-		try {
-			config = Config.loadForProject(projectDir, resourceDir);
-		} catch( e : Dynamic ) {
-			js.Browser.alert(e);
-			return;
-		}
+	override function setProject( dir : String ) {
+		super.setProject(dir);
 
 		setProgress();
 		shaderLoader = new hide.tools.ShaderLoader();
@@ -727,23 +601,7 @@ class Ide {
 		for ( plugin in plugins )
 			loadPlugin(plugin, function() {});
 
-		databaseFile = config.project.get("cdb.databaseFile");
-		databaseDiff = config.user.get("cdb.databaseDiff");
-		var pak = config.project.get("pak.dataFile");
-		pakFile = null;
-		if( pak != null ) {
-			pakFile = new hxd.fmt.pak.FileSystem();
-			try {
-				pakFile.loadPak(getPath(pak));
-			} catch( e : Dynamic ) {
-				error(""+e);
-			}
-		}
 		loadDatabase();
-		dbWatcher = fileWatcher.register(databaseFile,function() {
-			loadDatabase(true);
-			hide.comp.cdb.Editor.refreshAll(true);
-		});
 
 		if( config.project.get("debug.displayErrors")  ) {
 			js.Browser.window.onerror = function(msg, url, line, col, error) {
@@ -865,119 +723,6 @@ class Ide {
 		js.Browser.location.reload();
 	}
 
-	public function fileExists( path : String ) {
-		if( sys.FileSystem.exists(getPath(path)) ) return true;
-		if( pakFile != null && pakFile.exists(path) ) return true;
-		return false;
-	}
-
-	public function getFile( path : String ) {
-		var fullPath = getPath(path);
-		try {
-			return sys.io.File.getBytes(fullPath);
-		} catch( e : Dynamic ) {
-			if( pakFile != null )
-				return pakFile.get(path).getBytes();
-			throw e;
-		}
-	}
-
-	public function getFileText( path : String ) {
-		var fullPath = getPath(path);
-		try {
-			return sys.io.File.getContent(fullPath);
-		} catch( e : Dynamic ) {
-			if( pakFile != null )
-				return pakFile.get(path).getText();
-			throw e;
-		}
-	}
-
-	var lastDBContent = null;
-	function loadDatabase( ?checkExists ) {
-		var exists = fileExists(databaseFile);
-		if( checkExists && !exists )
-			return; // cancel load
-		var loadedDatabase = new cdb.Database();
-		if( !exists ) {
-			database = loadedDatabase;
-			return;
-		}
-		try {
-			lastDBContent = getFileText(databaseFile);
-			loadedDatabase.load(lastDBContent);
-		} catch( e : Dynamic ) {
-			error(e);
-			return;
-		}
-		database = loadedDatabase;
-		if( databaseDiff != null ) {
-			originDataBase = new cdb.Database();
-			lastDBContent = getFileText(databaseFile);
-			originDataBase.load(lastDBContent);
-			if( fileExists(databaseDiff) ) {
-				var d = new cdb.DiffFile();
-				d.apply(database,parseJSON(getFileText(databaseDiff)),config.project.get("cdb.view"));
-			}
-		}
-	}
-
-	public function saveDatabase( ?forcePrefabs ) {
-		hide.comp.cdb.DataFiles.save(function() {
-			if( databaseDiff != null ) {
-				sys.io.File.saveContent(getPath(databaseDiff), toJSON(new cdb.DiffFile().make(originDataBase,database)));
-				fileWatcher.ignorePrevChange(dbWatcher);
-			} else {
-				if( !sys.FileSystem.exists(getPath(databaseFile)) && fileExists(databaseFile) ) {
-					// was loaded from pak, cancel changes
-					loadDatabase();
-					hide.comp.cdb.Editor.refreshAll();
-					return;
-				}
-				lastDBContent = database.save();
-				sys.io.File.saveContent(getPath(databaseFile), lastDBContent);
-				fileWatcher.ignorePrevChange(dbWatcher);
-			}
-		}, forcePrefabs);
-	}
-
-	public function createDBSheet( ?index : Int ) {
-		var value = ask("Sheet name");
-		if( value == "" || value == null ) return null;
-		var s = database.createSheet(value, index);
-		if( s == null ) {
-			error("Name already exists");
-			return null;
-		}
-		saveDatabase();
-		hide.comp.cdb.Editor.refreshAll();
-		return s;
-	}
-
-	public function makeRelative( path : String ) {
-		path = path.split("\\").join("/");
-		if( StringTools.startsWith(path.toLowerCase(), resourceDir.toLowerCase()+"/") )
-			return path.substr(resourceDir.length+1);
-
-		// is already a relative path
-		if( path.charCodeAt(0) != "/".code && path.charCodeAt(1) != ":".code )
-			return path;
-
-		var resParts = resourceDir.split("/");
-		var pathParts = path.split("/");
-		for( i in 0...resParts.length ) {
-			if( pathParts[i].toLowerCase() != resParts[i].toLowerCase() ) {
-				if( pathParts[i].charCodeAt(pathParts[i].length-1) == ":".code )
-					return path; // drive letter change
-				var newPath = pathParts.splice(i, pathParts.length - i);
-				for( k in 0...resParts.length - i )
-					newPath.unshift("..");
-				return newPath.join("/");
-			}
-		}
-		return path;
-	}
-
 	public function getUnCachedUrl( path : String ) {
 		return "file://" + getPath(path) + "?t=" + fileWatcher.getVersion(path);
 	}
@@ -1037,19 +782,6 @@ class Ide {
 			onSelect(dir == "" ? null : (isAbsolute ? dir : makeRelative(dir)));
 			e.remove();
 		}).appendTo(window.window.document.body).click();
-	}
-
-	public function parseJSON( str : String ) : Dynamic {
-		// remove comments
-		str = ~/^[ \t]+\/\/[^\n]*/gm.replace(str, "");
-		return haxe.Json.parse(str);
-	}
-
-	public function toJSON( v : Dynamic ) {
-		var str = haxe.Json.stringify(v, "\t");
-		str = ~/,\n\t+"__id__": [0-9]+/g.replace(str, "");
-		str = ~/\t+"__id__": [0-9]+,\n/g.replace(str, "");
-		return str;
 	}
 
 	public function loadPrefab<T:hrt.prefab.Prefab>( file : String, ?cl : Class<T>, ?checkExists ) : T {

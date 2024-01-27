@@ -1623,6 +1623,7 @@ class Editor extends Component {
 	}
 
 	public function newColumn( sheet : cdb.Sheet, ?index : Int, ?onDone : cdb.Data.Column -> Void, ?col ) {
+		#if js
 		var modal = new hide.comp.cdb.ModalColumnForm(this, sheet, col, element);
 		modal.setCallback(function() {
 			var c = modal.getColumn(col);
@@ -1652,6 +1653,7 @@ class Editor extends Component {
 					t.refresh();
 			modal.closeModal();
 		});
+		#end
 	}
 
 	public function editColumn( sheet : cdb.Sheet, col : cdb.Data.Column ) {
@@ -2173,6 +2175,19 @@ class Editor extends Component {
 		return menu;
 	}
 
+	public function createDBSheet( ?index : Int ) {
+		var value = ide.ask("Sheet name");
+		if( value == "" || value == null ) return null;
+		var s = ide.database.createSheet(value, index);
+		if( s == null ) {
+			ide.error("Name already exists");
+			return null;
+		}
+		ide.saveDatabase();
+		refreshAll();
+		return s;
+	}
+
 	public function popupSheet( withMacro = true, ?sheet : cdb.Sheet, ?onChange : Void -> Void ) {
 		if( view != null )
 			return;
@@ -2183,7 +2198,7 @@ class Editor extends Component {
 		var content : Array<ContextMenu.ContextMenuItem> = [];
 		if (withMacro) {
 			content = content.concat([
-				{ label : "Add Sheet", click : function() { beginChanges(); var db = ide.createDBSheet(index+1); endChanges(); if( db != null ) onChange(); } },
+				{ label : "Add Sheet", click : function() { beginChanges(); var db = createDBSheet(index+1); endChanges(); if( db != null ) onChange(); } },
 				{ label : "Move Left", click : function() { beginChanges(); base.moveSheet(sheet,-1); endChanges(); onChange(); } },
 				{ label : "Move Right", click : function() { beginChanges(); base.moveSheet(sheet,1); endChanges(); onChange(); } },
 				{ label : "Rename", click : function() {
