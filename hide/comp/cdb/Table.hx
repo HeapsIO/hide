@@ -395,7 +395,7 @@ class Table extends Component {
 		var syncLevel : Int = -1;
 		function sync() {
 			data.hidden = title == null ? false : isSepHidden(sindex);
-			toggle.css({ display : title == null ? "none" : "" });
+			toggle.toggle(title != null);
 			toggle.text(data.hidden ? "🡆" : "🡇");
 			content.text(title == null ? "" : title+(data.hidden ? " ("+getLines().length+")" : ""));
 			sep.toggleClass("sep-hidden", data.hidden == true);

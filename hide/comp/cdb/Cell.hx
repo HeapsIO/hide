@@ -312,7 +312,7 @@ class Cell {
 
 	function valueHtml( c : cdb.Data.Column, v : Dynamic, sheet : cdb.Sheet, obj : Dynamic, scope : Array<{ s : cdb.Sheet, obj : Dynamic }> ) : {str: String, containsHtml: Bool} {
 
-		inline function val(s:String) {
+		inline function val(s:Dynamic) {
 			return {str: Std.string(s), containsHtml:false};
 		}
 

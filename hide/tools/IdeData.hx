@@ -36,7 +36,7 @@ class IdeData {
 	function get_resourceDir() return projectDir+"/res";
 
 	function getAppDataPath() {
-		return ".";
+		return new haxe.io.Path(Sys.programPath()).dir+"/";
 	}
 
 	function initConfig( cwd : String ) {

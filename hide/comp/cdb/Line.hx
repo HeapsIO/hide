@@ -33,7 +33,7 @@ class Line extends Component {
 		element.get(0).classList.remove("hidden");
 		var id: String = null;
 		for( c in columns ) {
-			var e = #if hl { throw "TODO"; (null:Element.HTMLElement); } #else js.Browser.document.createTableCellElement() #end;
+			var e = #if hl ide.createElement("table") #else js.Browser.document.createTableCellElement() #end;
 			e.classList.add("c");
 			this.element.get(0).appendChild(e);
 			var cell = new Cell(e, this, c);
