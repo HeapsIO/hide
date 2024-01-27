@@ -22,6 +22,7 @@ class Ide {
 	public var isDebugger = false;
 
 	public var gamePad(default,null) : hxd.Pad;
+	public var localStorage(get,never) : js.html.Storage;
 
 	var databaseFile : String;
 	var databaseDiff : String;
@@ -72,6 +73,10 @@ class Ide {
 			startup();
 		}
 		wait();
+	}
+
+	function get_localStorage() {
+		return js.Browser.window.localStorage;
 	}
 
 	function initPad() {

@@ -18,9 +18,9 @@ class ScriptCache {
 
 	public function new(configSign:String) {
 		this.configSign = configSign;
-		var key = js.Browser.window.localStorage.getItem("script_cache_key");
+		var key = hide.Ide.inst.localStorage.getItem("script_cache_key");
 		if( key == configSign ) {
-			var values = js.Browser.window.localStorage.getItem("script_cache_val").split(";");
+			var values = hide.Ide.inst.localStorage.getItem("script_cache_val").split(";");
 			for( v in values )
 				content.set(v,true);
 		}
@@ -38,8 +38,8 @@ class ScriptCache {
 			if( b )
 				all.push(key);
 		}
-		js.Browser.window.localStorage.setItem("script_cache_key", configSign);
-		js.Browser.window.localStorage.setItem("script_cache_val", all.join(";"));
+		hide.Ide.inst.localStorage.setItem("script_cache_key", configSign);
+		hide.Ide.inst.localStorage.setItem("script_cache_val", all.join(";"));
 	}
 
 }
@@ -373,6 +373,7 @@ class ScriptChecker {
 
 }
 
+#if !hl
 class ScriptEditor extends CodeEditor {
 
 	var checker : ScriptChecker;
@@ -456,3 +457,4 @@ class ScriptEditor extends CodeEditor {
 	}
 
 }
+#end

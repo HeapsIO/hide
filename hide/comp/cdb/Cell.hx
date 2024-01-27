@@ -10,7 +10,7 @@ class Cell {
 
 	var ide : hide.Ide;
 
-	public var elementHtml : js.html.Element;
+	public var elementHtml : Element.HTMLElement;
 	var editor : Editor;
 	var currentValue : Dynamic;
 	var watches : Array<String> = new Array<String>();
@@ -21,9 +21,9 @@ class Cell {
 	public var table(get, never) : Table;
 	var blurOff = false;
 	public var inEdit = false;
-	var dropdown : js.html.Element = null;
+	var dropdown : Element.HTMLElement = null;
 
-	public function new( root : js.html.Element, line : Line, column : cdb.Data.Column ) {
+	public function new( root : Element.HTMLElement, line : Line, column : cdb.Data.Column ) {
 		this.elementHtml = root;
 		ide = hide.Ide.inst;
 
@@ -149,7 +149,9 @@ class Cell {
 			var forms : Array<hide.comp.ContextMenu.ContextMenuItem>;
 			var current = editor.formulas.get(this);
 			forms = [for( f in editor.formulas.getList(table.sheet) ) { label : f.name, click : () -> if( f == current ) setF(null) else setF(f), checked : f == current }];
+			#if !hl
 			forms.push({ label : "New...", click : () -> editor.formulas.createNew(this, setF) });
+			#end
 			menu = [
 				{ label : "Formula", menu : forms }
 			];
@@ -185,12 +187,14 @@ class Cell {
 	}
 
 	public function refresh(withSubtable = false) {
+		#if js
 		if (dropdown != null) {
 			if (js.Browser.document.body.contains(dropdown)) {
 				return;
 			}
 			dropdown = null;
 		}
+		#end
 		currentValue = Reflect.field(line.obj, column.name);
 
 		blurOff = true;
@@ -440,13 +444,14 @@ class Cell {
 			html('<div class="color" style="background-color:#${StringTools.hex(v,6)}"></div>');
 		case TFile:
 			var path = ide.getPath(v);
-			var url = ide.getUnCachedUrl(path);
 			var ext = v.split(".").pop().toLowerCase();
 			if (v == "") return html('<span class="error">#MISSING</span>');
 			var innerHtml = StringTools.htmlEscape(v);
 			innerHtml = '<span title=\'$innerHtml\' >' + innerHtml  + '</span>';
 			if (!editor.quickExists(path)) return html('<span class="error">#NOTFOUND : $innerHtml</span>');
 			else if( ext == "png" || ext == "jpg" || ext == "jpeg" || ext == "gif" ) {
+				#if js
+				var url = ide.getUnCachedUrl(path);
 				var dims = imageDims.get(url);
 				var dimsText = dims != null ? dims.width+"x"+dims.height : "";
 				var onload = dims != null ? "" : 'onload="hide.comp.cdb.Cell.onImageLoad(this, \'$url\');"';
@@ -461,6 +466,7 @@ class Cell {
 						<div class="previewContent"><div class="label">$dimsText</div>$img</div>
 					</span>';
 				}
+				#end
 			}
 			return html(innerHtml + ' <input type="submit" value="open" onclick="hide.Ide.inst.openFile(\'$path\')"/>');
 		case TTilePos:
@@ -479,11 +485,13 @@ class Cell {
 		}
 	}
 
+	#if js
 	static function onImageLoad(img : js.html.ImageElement, url) {
 		var dims = {width : img.width, height : img.height};
 		imageDims.set(url, dims);
 		new Element(img).parent().find(".label").text(dims.width+'x'+dims.height);
 	}
+	#end
 
 	static var KWDS = ["for","if","var","this","while","else","do","break","continue","switch","function","return","new","throw","try","catch","case","default"];
 	static var KWD_REG = new EReg([for( k in KWDS ) "(\\b"+k+"\\b)"].join("|"),"g");
@@ -561,6 +569,7 @@ class Cell {
 		var max = width > height ? width : height;
 		var zoom = max <= 32 ? 2 : 64 / max;
 		var inl = isInline ? 'display:inline-block;' : '';
+		#if js
 		var url = ide.getUnCachedUrl(path);
 
 		var px = Std.int(v.size*v.x*zoom);
@@ -577,8 +586,12 @@ class Cell {
 		queueTileLoading();
 		watchFile(path);
 		return {str: html, containsHtml: true};
+		#else
+		return {str : "", containsHtml : false};
+		#end
 	}
 
+	#if !hl
 	static var isTileLoadingQueued = false;
 	static function queueTileLoading() {
 		if (!isTileLoadingQueued) {
@@ -631,6 +644,7 @@ class Cell {
 			elt.parentElement.append(img);
 		}
 	}
+	#end
 
 	public function isTextInput() {
 		return switch( column.type ) {
@@ -709,16 +723,17 @@ class Cell {
 			var i = new Element("<div contenteditable='true' tabindex='1' class='custom-text-edit'>");
 			// replace all spaces with unbreakable spaces (I wanna die)
 			str = spacesToNBSP(str);
-			i[0].innerText = str;
-			var textHeight = i[0].offsetHeight;
+			i.get(0).innerText = str;
+			var textHeight = i.get(0).offsetHeight;
 			var longText = textHeight > 25 || str.indexOf("\n") >= 0;
 
-			elementHtml.appendChild(i[0]);
+			elementHtml.appendChild(i.get(0));
+			#if js
 			i.keypress(function(e) {
 				e.stopPropagation();
 			});
 
-			i[0].addEventListener("paste", function(e) {
+			i.get(0).addEventListener("paste", function(e) {
 				e.preventDefault();
 
 				var event : Dynamic = e;
@@ -726,9 +741,9 @@ class Cell {
 					event = e.originalEvent;
 				}
 				var text = event.clipboardData.getData('text/plain');
-
 				js.Browser.document.execCommand("insertText", false, text);
 			});
+			#end
 			i.dblclick(function(e) e.stopPropagation());
 
 			i.val(str);
@@ -737,7 +752,7 @@ class Cell {
 				this.closeEdit();
 			}
 			i.keydown(function(e) {
-				var t : js.html.HtmlElement = cast e.target;
+				var t : Element.HTMLElement = cast e.target;
 				var textHeight = t.offsetHeight;
 				var longText = textHeight > 25 || t.innerText.indexOf("\n") >= 0;
 				switch( e.keyCode ) {
@@ -763,7 +778,7 @@ class Cell {
 				e.stopPropagation();
 			});
 			i.keyup(function(e) try {
-				var t : js.html.HtmlElement = cast e.target;
+				var t : Element.HTMLElement = cast e.target;
 				var v = editor.base.parseValue(column.type, t.innerText);
 
 				if (column.type == TId && !isUniqueID((v:String), true)) {
@@ -783,11 +798,13 @@ class Cell {
 
 			// Select whole content of contenteditable div
 			{
-				var range =  js.Browser.document.createRange();
-				range.selectNodeContents(i[0]);
+				var range = #if hl ide.createElement("range") #else js.Browser.document.createRange() #end;
+				range.selectNodeContents(i.get(0));
+				#if js
 				var sel = js.Browser.window.getSelection();
 				sel.removeAllRanges();
 				sel.addRange(range);
+				#end
 			}
 
 
@@ -802,7 +819,7 @@ class Cell {
 			if( sdat == null ) return;
 			elementHtml.innerHTML = null;
 			elementHtml.classList.add("edit");
-
+			#if js
 			if (!useSelect2) {
 				var isLocal = sdat.idCol.scope != null;
 				var elts: Array<hide.comp.Dropdown.Choice>;
@@ -916,10 +933,11 @@ class Cell {
 				});
 				s.on("select2:close", function(_) closeEdit());
 			}
+			#end
 		case TEnum(values):
 			elementHtml.innerHTML = null;
 			elementHtml.classList.add("edit");
-
+			#if js
 			if (!useSelect2) {
 				var elts : Array<hide.comp.Dropdown.Choice> = [for( i in 0...values.length ){
 					id : "" + i,
@@ -991,6 +1009,7 @@ class Cell {
 				});
 				s.on("select2:close", function(_) closeEdit());
 			}
+			#end
 		case TColor:
 			var elem = new Element(elementHtml);
 			var preview = elem.find(".color");
@@ -998,6 +1017,7 @@ class Cell {
 				elem.html('<div class="color" style="background-color:#${StringTools.hex(0xFFFFFF,6)}"></div>');
 				preview = elem.find(".color");
 			}
+			#if js
 			var cb = new ColorPicker(false, elem, preview);
 			cb.value = currentValue;
 			cb.onChange = function(drag) {
@@ -1008,6 +1028,7 @@ class Cell {
 				cb.remove();
 				closeEdit();
 			};
+			#end
 		case TFile:
 			ide.chooseFile(["*"], function(file) {
 				setValue(file);
@@ -1040,8 +1061,8 @@ class Cell {
 			}
 			elementHtml.innerHTML = null;
 			var modal = new Element("<div>").addClass("hide-modal");
-			elementHtml.appendChild(modal[0]);
-			elementHtml.appendChild(div[0]);
+			elementHtml.appendChild(modal.get(0));
+			elementHtml.appendChild(div.get(0));
 			modal.click(function(e) {
 				setValue(val);
 				closeEdit();
@@ -1122,6 +1143,7 @@ class Cell {
 				return;
 			}
 
+			#if js
 			var ts = new hide.comp.TileSelector(file,dims,modal.content);
 			ts.allowRectSelect = true;
 			ts.allowSizeSelect = true;
@@ -1138,6 +1160,7 @@ class Cell {
 				refresh();
 				focus();
 			};
+			#end
 		case TLayer(_), TTileLayer:
 			// no edit
 		case TImage:
@@ -1146,6 +1169,7 @@ class Cell {
 	}
 
 	public function open( ?immediate : Bool ) {
+		#if js
 		if( column.type == TString && column.kind == Script ) {
 
 			// prevent opening the script if we are undo/redo-ing as this
@@ -1155,15 +1179,16 @@ class Cell {
 			var str = value == null ? "" : editor.base.valToString(column.type, value);
 			table.toggleList(this, immediate, function() return new ScriptTable(editor, this));
 		} else
+		#end
 			table.toggleList(this, immediate);
 	}
 
 	public function setErrorMessage( msg : String ) {
-		var prevError = elementHtml.querySelector("div.error");
+		var prevError = new Element(elementHtml).find("div.error");
 		if (prevError != null)
 			prevError.remove();
 		if( msg == null ) return;
-		var div = js.Browser.document.createDivElement();
+		var div = #if hl ide.createElement("div") #else js.Browser.document.createDivElement() #end;
 		div.classList.add("error");
 		div.innerText = msg;
 		elementHtml.appendChild(div);
@@ -1253,7 +1278,7 @@ class Cell {
 
 	public function closeEdit() {
 		inEdit = false;
-		var input = elementHtml.querySelector("div[contenteditable]");
+		var input = new Element(elementHtml).find("div[contenteditable]").get(0);
 		var text : String = input?.innerText;
 		if (text != null) {
 			text = nBSPtoSpaces(text);

@@ -1,17 +1,16 @@
 {
-    "version": "2.0.0",
     "tasks": [
         {
-            "type": "hxml",
-            "file": "hide.hxml",
-            "label": "Build",
+            "type": "haxe",
+            "args": "active configuration",
+            "problemMatcher": [
+                "haxe-fake"
+            ],
             "group": {
                 "kind": "build",
                 "isDefault": true
             },
-            "presentation": {
-                "reveal": "never"
-            }
+            "label": "Build"
         }
-    ],
+    ]
 }

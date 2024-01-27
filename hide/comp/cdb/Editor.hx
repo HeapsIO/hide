@@ -171,7 +171,7 @@ class Editor extends Component {
 		refresh();
 	}
 
-	function onMouseDown( e : js.jquery.Event ) {
+	function onMouseDown( e : hide.Element.Event ) {
 		switch ( e.which ) {
 		case 4:
 			cursorJump(true);
@@ -183,7 +183,7 @@ class Editor extends Component {
 		return true;
 	}
 
-	function onKey( e : js.jquery.Event ) {
+	function onKey( e : hide.Element.Event ) {
 		if( e.altKey )
 			return false;
 		var isRepeat: Bool = untyped e.originalEvent.repeat;
@@ -327,7 +327,7 @@ class Editor extends Component {
 					}
 
 					if (filtered)
-						lines[idx].classList.add("filtered");
+						lines.get(idx).classList.add("filtered");
 				}
 			}
 			else {
@@ -1060,7 +1060,11 @@ class Editor extends Component {
 		}
 		return id;
 	}
+
 	public function getReferences(id: String, withCodePaths = true, returnAtFirstRef = false, sheet: cdb.Sheet, ?codeFileCache: Array<{path: String, data:String}>, ?prefabFileCache: Array<{path: String, data:String}>) : Array<{str:String, ?goto:Void->Void}> {
+		#if hl
+		return [];
+		#else
 		if( id == null )
 			return [];
 
@@ -1312,6 +1316,7 @@ class Editor extends Component {
 			}
 		}
 		return message;
+		#end
 	}
 
 	public function findUnreferenced(col: cdb.Data.Column, table: Table) {
@@ -1574,10 +1579,12 @@ class Editor extends Component {
 				addSearchInput();
 			if( filters.length <= currentFilters.length ) {
 				var inputs = inputCont.find("input");
+				#if js
 				for( i in 0...inputs.length ) {
 					var input: js.html.InputElement = cast inputs[i];
 					input.value = currentFilters[i].text;
 				}
+				#end
 			}
 		}
 	}
@@ -2268,8 +2275,10 @@ class Editor extends Component {
 	}
 
 	public function focus() {
+		#if js
 		if( element.is(":focus") ) return;
 		(element[0] : Dynamic).focus({ preventScroll : true });
+		#end
 	}
 
 	static public function getSheetProps( s : cdb.Sheet ) {

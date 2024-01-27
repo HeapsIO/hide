@@ -12,10 +12,12 @@ typedef ViewOptions = { ?position : DisplayPosition, ?width : Int }
 @:keepSub @:allow(hide.Ide)
 class View<T> extends hide.comp.Component {
 
+	#if !hl
 	var container : golden.Container;
 	var containerView : golden.ContentItem;
-	var watches : Array<{ keep : Bool, path : String, callb : Void -> Void }> = [];
 	public var fullScreen(get,set) : Bool;
+	#end
+	var watches : Array<{ keep : Bool, path : String, callb : Void -> Void }> = [];
 	public var keys(get,null) : Keys;
 	public var state(default, null) : T;
 	public var undo(default, null) = new hide.ui.UndoHistory();
@@ -32,7 +34,9 @@ class View<T> extends hide.comp.Component {
 		element = null;
 		this.state = state;
 		ide = Ide.inst;
+		#if !hl
 		@:privateAccess ide.currentFullScreen = null;
+		#end
 	}
 
 	public function watch( filePath : String, onChange : Void -> Void, ?opts : { ?checkDelete : Bool, ?keepOnRebuild : Bool } ) {
@@ -57,7 +61,9 @@ class View<T> extends hide.comp.Component {
 	function get_keys() {
 		if( keys == null ) {
 			keys = new Keys(null);
+			#if js
 			keys.register("view.fullScreen", function() fullScreen = !fullScreen);
+			#end
 		}
 		return keys;
 	}
@@ -91,6 +97,7 @@ class View<T> extends hide.comp.Component {
 		return v == null || v.type != type ? null : v.value;
 	}
 
+	#if !hl
 	function syncTitle() {
 		container.setTitle(getTitle());
 	}
@@ -193,6 +200,13 @@ class View<T> extends hide.comp.Component {
 		element.off();
 		onDisplay();
 	}
+	#end
+
+	#if hl
+	public final function rebuild() {
+		onDisplay();
+	}
+	#end
 
 	function onDisplay() {
 		element.text(viewClass+(state == null ? "" : " "+state));
@@ -201,19 +215,21 @@ class View<T> extends hide.comp.Component {
 	public function onResize() {
 	}
 
-	public function onActivate() {
-	}
-
-	public function isActive() {
-		return container != null && !container.isHidden;
-	}
-
 	public function onDragDrop(items : Array<String>, isDrop : Bool) {
 		return false;
 	}
 
 	function toString() {
 		return Type.getClassName(Type.getClass(this)) + (this.state == null ? "" : "("+haxe.Json.stringify(this.state)+")");
+	}
+
+	#if !hl
+
+	public function isActive() {
+		return container != null && !container.isHidden;
+	}
+
+	public function onActivate() {
 	}
 
 	/**
@@ -277,6 +293,7 @@ class View<T> extends hide.comp.Component {
 		if( !ide.isCDB ) ide.setFullscreen(v);
 		return v;
 	}
+	#end
 
 	public static var viewClasses = new Map<String,{ name : String, cl : Class<View<Dynamic>>, options : ViewOptions }>();
 	public static function register<T>( cl : Class<View<T>>, ?options : ViewOptions ) {

@@ -7,8 +7,8 @@ typedef Entry = {doc: EntryDoc, cb: Void->Void};
 class Keys {
 
 	var keys = new Map<String,Entry>();
-	var parent : js.html.Element;
-	var listeners = new Array<js.jquery.Event -> Bool>();
+	var parent : Element.HTMLElement;
+	var listeners = new Array<Element.Event -> Bool>();
 	var disabledStack : Int = 0;
 
 	public function pushDisable() {
@@ -25,7 +25,7 @@ class Keys {
 
 	public function new( parent : Element ) {
 		if( parent != null ) {
-			this.parent = parent[0];
+			this.parent = parent.get(0);
 			parent.attr("haskeys","true");
 			if( this.parent != null ) Reflect.setField(this.parent,"__keys",this);
 		}
@@ -47,7 +47,7 @@ class Keys {
 		listeners.push(l);
 	}
 
-	public function processEvent( e : js.jquery.Event, config : Config ) {
+	public function processEvent( e : Element.Event, config : Config ) {
 		if (disabledStack > 0)
 			return false;
 		var parts = [];
@@ -79,7 +79,7 @@ class Keys {
 		return false;
 	}
 
-	public function triggerKey( e : js.jquery.Event, key : String, config : Config ) {
+	public function triggerKey( e : Element.Event, key : String, config : Config ) {
 		for( l in listeners )
 			if( l(e) )
 				return true;
@@ -102,7 +102,7 @@ class Keys {
 	}
 
 	public static function get( e : Element ) : Keys {
-		return Reflect.field(e[0], "__keys");
+		return Reflect.field(e.get(0), "__keys");
 	}
 
 	public function sortDocCategories(config: Config) : Map<String, Array<{name: String, shortcut: String}>> {

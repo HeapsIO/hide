@@ -3,6 +3,7 @@ import hrt.prefab.Curve;
 import hrt.prefab.Prefab as PrefabElement;
 import hrt.prefab.fx.BaseFX.ObjectAnimation;
 import hrt.prefab.fx.BaseFX.ShaderAnimation;
+import hrt.prefab.fx.Event;
 
 @:allow(hrt.prefab.fx.FX2D)
 class FX2DAnimation extends h2d.Object {

@@ -82,6 +82,7 @@ class CdbTable extends hide.ui.View<{}> {
 				case Script(line):
 					var cell = lastCell;
 					if (cell != null) {
+						#if js
 						//cell.open(false);
 						var scr = Std.downcast(cell.line.subTable, hide.comp.cdb.ScriptTable);
 						if (scr != null) {
@@ -90,6 +91,7 @@ class CdbTable extends hide.ui.View<{}> {
 								haxe.Timer.delay(() ->@:privateAccess scr.script.editor.revealLineInCenter(line+1), 1);
 							}, 1);
 						}
+						#end
 					}
 					colNo = -1;
 					lineNo = -1;
@@ -159,10 +161,12 @@ class CdbTable extends hide.ui.View<{}> {
 				var cell = editor.cursor.getCell();
 				if (cell != null) {
 					cell.open(false);
+					#if js
 					var scr = Std.downcast(cell.line.subTable, hide.comp.cdb.ScriptTable);
 					if (scr != null) {
 						@:privateAccess scr.script.editor.setPosition({column:0, lineNumber: scriptLine});
 					}
+					#end
 				}
 			}
 		}
@@ -202,11 +206,13 @@ class CdbTable extends hide.ui.View<{}> {
 		var sheets = getSheets();
 		if( sheets.length == 0 ) {
 			element.html("No CDB sheet created, <a href='#'>create one</a>");
+			#if js
 			element.find("a").click(function(_) {
 				var sheet = ide.createDBSheet();
 				if( sheet == null ) return;
 				rebuild();
 			});
+			#end
 			return;
 		}
 		element.addClass("cdb-view");
@@ -290,7 +296,7 @@ class CdbTable extends hide.ui.View<{}> {
 			var tab = header.find('[index=$i]');
 			tab.toggleClass("hidden", !show);
 			tab.toggleClass("cat", props.categories != null);
-			tab[0].className = ~/(cat-[^\s]+)/g.replace(tab[0].className, "");
+			tab.get(0).className = ~/(cat-[^\s]+)/g.replace(tab.get(0).className, "");
 			if(props.categories != null)
 				for(c in props.categories)
 					tab.addClass("cat-" + c);
@@ -298,6 +304,7 @@ class CdbTable extends hide.ui.View<{}> {
 		if( doRefresh ) editor.refresh();
 	}
 
+	#if js
 	override public function onDragDrop( items : Array<String>, isDrop : Bool ) {
 		if( items.length == 0 )
 			return false;
@@ -319,6 +326,7 @@ class CdbTable extends hide.ui.View<{}> {
 		}
 		return null;
 	}
+	#end
 
 	override function getTitle() {
 		return "CDB"+ @:privateAccess (ide.databaseDiff != null ? " - "+ide.databaseDiff : "");

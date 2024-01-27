@@ -118,11 +118,19 @@ class Config {
 		save();
 	}
 
+	static function alert(msg) {
+		#if js
+		js.Browser.window.alert(msg);
+		#else
+		throw msg;
+		#end
+	}
+
 	public static function loadConfig(config : Config, path : String) : Config {
 		try {
 			config.load(path);
 		} catch(err) {
-			js.Browser.window.alert('Couldn\'t load config file ${path}. Reverting to default config.\n${err}.');
+			alert('Couldn\'t load config file ${path}. Reverting to default config.\n${err}.');
 		}
 		return config;
 	}
@@ -135,7 +143,7 @@ class Config {
 			defaults.load(hidePath + "/defaultProps.json");
 		}
 		catch (err) {
-			js.Browser.window.alert('Fatal error : Couldn\'t load ${hidePath}/defaultProps.json. Please check your hide installation.\n$err');
+			alert('Fatal error : Couldn\'t load ${hidePath}/defaultProps.json. Please check your hide installation.\n$err');
 			Sys.exit(-1);
 		}
 

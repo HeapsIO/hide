@@ -12,21 +12,21 @@ class Modal extends Component {
 		element.on("click dblclick keydown keyup keypressed mousedown mouseup mousewheel",function(e) e.stopPropagation());
 		content = new Element("<div class='content'></div>").appendTo(element);
 
-		var exterior = [element[0], content[0]];
-		element[0].addEventListener("mousedown", function(e) {
+		var exterior = [element.get(), content.get()];
+		element.get(0).addEventListener("mousedown", function(e) {
 			downTarget = e.target;
-		}, true);
-		element[0].addEventListener("mouseup", function(e) {
+		}#if js, true #end);
+		element.get(0).addEventListener("mouseup", function(e) {
 			upTarget = e.target;
-		}, true);
-		element.on("click", function(e : js.jquery.Event) {
+		}#if js, true #end);
+		element.on("click", function(e : Element.Event) {
 			if( exterior.contains(downTarget) && exterior.contains(upTarget) ) {
 				modalClick(e);
 			}
 		});
 	}
 
-	public dynamic function modalClick(e: js.jquery.Event) {
+	public dynamic function modalClick(e: Element.Event) {
 	}
 
 	public function close() {

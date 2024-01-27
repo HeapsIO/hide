@@ -1,11 +1,15 @@
 package hide.tools;
 
-typedef FileWatchEvent = {path:String,fun:Void->Void,checkDel:Bool,element:js.html.Element,?ignoreCheck:String};
+typedef FileWatchEvent = {path:String,fun:Void->Void,checkDel:Bool,element:Element.HTMLElement,?ignoreCheck:String};
 
 private typedef Watch = {
 	path : String,
 	events : Array<FileWatchEvent>,
+	#if js
 	w : js.node.fs.FSWatcher,
+	#else
+	w : Dynamic,
+	#end
 	wasChanged : Bool,
 	changed : Bool,
 	isDir : Bool,
@@ -57,6 +61,7 @@ class FileWatcher {
 	}
 
 	function getSignature( path : String ) : String {
+		#if js
 		var sign = js.node.Crypto.createHash(js.node.Crypto.CryptoAlgorithm.MD5);
 		try {
 			sign.update(js.node.Fs.readFileSync(ide.getPath(path)));
@@ -64,6 +69,9 @@ class FileWatcher {
 		} catch( e : Dynamic ) {
 			return null;
 		}
+		#else
+		return "";
+		#end
 	}
 
 	public function dispose() {
@@ -80,7 +88,7 @@ class FileWatcher {
 	public function register( path : String, updateFun, ?checkDelete : Bool, ?element : Element ) : FileWatchEvent {
 		path = ide.getPath(path);
 		var w = getWatches(path);
-		var f : FileWatchEvent = { path : path, fun : updateFun, checkDel : checkDelete, element : element == null ? null : element[0] };
+		var f : FileWatchEvent = { path : path, fun : updateFun, checkDel : checkDelete, element : element == null ? null : element.get(0) };
 		w.events.push(f);
 		if( element != null && timer == null ) {
 			timer = new haxe.Timer(1000);
@@ -89,7 +97,7 @@ class FileWatcher {
 		return f;
 	}
 
-	public function registerRaw( path : String, updateFun, ?checkDelete : Bool, ?element : js.html.Element) : FileWatchEvent {
+	public function registerRaw( path : String, updateFun, ?checkDelete : Bool, ?element : Element.HTMLElement) : FileWatchEvent {
 		path = ide.getPath(path);
 		var w = getWatches(path);
 		var f : FileWatchEvent = { path : path, fun : updateFun, checkDel : checkDelete, element: element};
@@ -118,7 +126,7 @@ class FileWatcher {
 	public function unregisterElement( element : Element ) {
 		for( path => w in watches ) {
 			for( e in w.events.copy() )
-				if( e.element == element[0] )
+				if( e.element == element.get(0) )
 					w.events.remove(e);
 			if( w.events.length == 0 ) {
 				watches.remove(path);
@@ -142,11 +150,13 @@ class FileWatcher {
 
 	function isLive( events : Array<FileWatchEvent>, e : FileWatchEvent ) {
 		if( e.element == null ) return true;
+		#if js
 		var elt = e.element;
 		while( elt != null ) {
 			if( elt.nodeName == "BODY" ) return true;
 			elt = elt.parentElement;
 		}
+		#end
 		events.remove(e);
 		return false;
 	}
@@ -168,6 +178,7 @@ class FileWatcher {
 	}
 
 	function initWatch( w : Watch ) {
+		#if js
 		w.w = js.node.Fs.watch(w.path, function(k:String, file:String) {
 			if( w.isDir && k == "change" ) return;
 			if( k == "change" ) w.wasChanged = true;
@@ -176,6 +187,7 @@ class FileWatcher {
 			w.version++;
 			haxe.Timer.delay(onEventChanged.bind(w),100);
 		});
+		#end
 	}
 
 	function getWatches( path : String ) {

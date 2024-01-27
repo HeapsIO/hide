@@ -280,6 +280,7 @@ class Formulas {
 		return t;
 	}
 
+	#if !hl
 	public function createNew( c : Cell, ?onCreated : Formula -> Void ) {
 		var name = ide.ask("Formula name");
 		if( name == null ) return;
@@ -302,9 +303,11 @@ class Formulas {
 			}
 		});
 	}
+	#end
 
 }
 
+#if !hl
 class FormulasView extends hide.view.Script {
 
 	override function getScriptChecker() {
@@ -411,3 +414,4 @@ class FormulasView extends hide.view.Script {
 
 	static var _ = hide.ui.View.register(FormulasView);
 }
+#end

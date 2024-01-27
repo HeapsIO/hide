@@ -11,7 +11,7 @@ class Tabs extends Component {
 		if( bottomTabs ) element.addClass("tabs-bottom");
 		header = new Element("<div>").addClass("tabs-header").prependTo(element);
 		syncTabs();
-		var t = getTabs()[0];
+		var t = getTabs().get();
 		if( t != null ) currentTab = new Element(t);
 	}
 
@@ -26,17 +26,19 @@ class Tabs extends Component {
 	}
 
 	public function getHeader( tab : Element ) {
-		var index = [for( t in getTabs() ) t].indexOf(tab[0]);
+		var index = [for( t in getTabs() ) t].indexOf(tab.get(0));
 		if( index < 0 ) return null;
 		return header.find('[index=$index]');
 	}
 
+	#if !hl
 	public function allowMask(scene : hide.comp.Scene) {
 		new Element('<a href="#" class="maskToggle"></a>').prependTo(element).click((_) -> {
 			element.toggleClass("masked");
 			@:privateAccess scene.window.checkResize();
 		});
 	}
+	#end
 
 	function set_currentTab( e : Element ) {
 		var index = Std.parseInt(e.attr("index"));
@@ -65,7 +67,7 @@ class Tabs extends Component {
 			var icon = t.attr("icon");
 			var name = t.attr("name");
 			var index = index++;
-			var tab = new Element("<div>").html( (icon != null ? '<div class="ico ico-$icon"></div> ' : '') + (name != null ? name : '') );
+			var tab = new Element("<div>").html( (icon != null ? '<div class="ico ico-$icon"></div> ' : '') + (name != null ? (name:String) : '') );
 			t.attr("index", index);
 			tab.attr("index", index);
 			tab.appendTo(header);

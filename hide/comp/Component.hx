@@ -25,7 +25,7 @@ class Component {
 	function getDisplayState( key : String ) : Dynamic {
 		if( saveDisplayKey == null )
 			return null;
-		var v = js.Browser.window.localStorage.getItem(saveDisplayKey + "/" + key);
+		var v = ide.localStorage.getItem(saveDisplayKey + "/" + key);
 		if( v == null )
 			return null;
 		return haxe.Json.parse(v);
@@ -34,13 +34,13 @@ class Component {
 	function saveDisplayState( key : String, value : Dynamic ) {
 		if( saveDisplayKey == null )
 			return;
-		js.Browser.window.localStorage.setItem(saveDisplayKey + "/" + key, haxe.Json.stringify(value));
+		ide.localStorage.setItem(saveDisplayKey + "/" + key, haxe.Json.stringify(value));
 	}
 
 	function removeDisplayState( key : String ) {
 		if( saveDisplayKey == null )
 			return;
-		js.Browser.window.localStorage.removeItem(saveDisplayKey + "/" + key);
+		ide.localStorage.removeItem(saveDisplayKey + "/" + key);
 	}
 
 }

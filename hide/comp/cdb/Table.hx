@@ -1,5 +1,5 @@
 package hide.comp.cdb;
-import js.jquery.Helper.*;
+import hide.ui.QueryHelper.*;
 
 enum DisplayMode {
 	Table;
@@ -93,14 +93,17 @@ class Table extends Component {
 
 	function setupTableElement() {
 		cloneTableHead();
+		#if js
 		@:privateAccess {
 			var elt = editor.element.parent();
 			var scrollbarWidth = elt.parent().width() - elt.width();
 			element.width(@:privateAccess editor.cdbTable.contentWidth - scrollbarWidth); // prevent to reflow all cdb-view
 		}
+		#end
 	}
 
 	function cloneTableHead() {
+		#if js
 		var target = element.find('thead').first().find('.head');
 		if (target.length == 0)
 			return;
@@ -116,7 +119,7 @@ class Table extends Component {
 			elt.width(targetElt.width());
 			elt.css("max-width", targetElt.width());
 
-			var txt = elt[0].innerHTML;
+			var txt = elt.get(0).innerHTML;
 			elt.empty();
 			J("<span>" + txt + "</span>").appendTo(elt);
 
@@ -124,9 +127,11 @@ class Table extends Component {
 		}
 
 		J('.cdb').prepend(clone);
+		#end
 	}
 
 	function updateDrag() {
+		#if js
 		var scrollHeight = js.Browser.document.body.scrollHeight;
 		if (ide.mouseY > scrollHeight*0.8) {
 			var scroll = element.get()[0].parentElement.parentElement;
@@ -136,6 +141,7 @@ class Table extends Component {
 			var scroll = element.get()[0].parentElement.parentElement;
 			scroll.scrollTop -= 15 + Std.int((scrollHeight*0.2 - ide.mouseY)/(scrollHeight*0.2)*30);
 		}
+		#end
 	}
 
 	function refreshTable() {
@@ -169,7 +175,8 @@ class Table extends Component {
 				}
 				editor.cursor.clickLine(line, e.shiftKey);
 			});
-			var headEl = head.get()[0];
+			#if js
+			var headEl = head.get(0);
 			headEl.draggable = true;
 			headEl.ondragstart = function(e:js.html.DragEvent) {
 				if (editor.cursor.getCell() != null && editor.cursor.getCell().inEdit) {
@@ -205,6 +212,7 @@ class Table extends Component {
 
 				return false;
 			}
+			#end
 			line;
 		}];
 
@@ -296,10 +304,12 @@ class Table extends Component {
 			element.append(l);
 		}
 
+		#if js
 		if( sheet.parent == null ) {
 			cols.ready(setupTableElement);
 			cols.on("resize", setupTableElement);
 		}
+		#end
 	}
 
 	function makeSeparatorTree( ?root ) {
@@ -343,13 +353,13 @@ class Table extends Component {
 		var t = makeSeparatorTree(sheet.separators[sepIndex]);
 		while( t.parent != null ) {
 			if( isSepHidden(t.index) )
-				new Element(subs[t.index]).find("a.toggle").click();
+				new Element(subs.get(t.index)).find("a.toggle").click();
 			t = t.parent;
 		}
 	}
 
 	function makeSeparator( sindex : Int, colCount : Int ) : Separator {
-		var sep = J("<tr>").addClass("separator").attr("sindex", sindex).append('<td colspan="${colCount+1}"><a href="#" class="toggle"></a><span></span></td>');
+		var sep = J("<tr>").addClass("separator").attr("sindex", sindex).append(J('<td colspan="${colCount+1}"><a href="#" class="toggle"></a><span></span></td>'));
 		var content = sep.find("span");
 		var toggle = sep.find("a");
 		var sepInfo = sheet.separators[sindex];
@@ -421,7 +431,7 @@ class Table extends Component {
 							showRec(s);
 					}
 					if( isSepHidden(t.index) == show )
-						new Element(subs[t.index]).find("a.toggle").click();
+						new Element(subs.get(t.index)).find("a.toggle").click();
 					if( show ) {
 						for( s in t.subs )
 							showRec(s);
@@ -494,9 +504,9 @@ class Table extends Component {
 		sep.dblclick(function(e) {
 			if( !canInsert() ) return;
 			content.empty();
-			J("<input>").appendTo(content).focus().val(title == null ? "" : title).blur(function(_) {
-				title = JTHIS.val();
-				JTHIS.remove();
+			J("<input>").appendTo(content).focus().val(title == null ? "" : title).blur(function(e) {
+				title = e.getThis().val();
+				e.getThis().remove();
 				if( title == "" ) title = null;
 				editor.beginChanges();
 				var sep = sheet.separators[sindex];
@@ -558,7 +568,7 @@ class Table extends Component {
 			var subs = element.find("tr.separator");
 			function toggleRec( t : SepTree ) {
 				var sid = sheet.separators.indexOf(t.sep);
-				subs[sid].style.display = hidden ? "none" : "";
+				subs.get(sid).style.display = hidden ? "none" : "";
 				if( !hidden ) {
 					if( isSepHidden(sid) ) return;
 					for( l in getLines(sid) )
@@ -668,7 +678,7 @@ class Table extends Component {
 			}
 
 			var line = new Line(this, [c], lines.length, l);
-			var cell = new Cell(td[0], line, c);
+			var cell = new Cell(td.get(0), line, c);
 			lines.push(line);
 
 			th.mousedown(function(e) {
