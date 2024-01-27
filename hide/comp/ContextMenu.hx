@@ -14,14 +14,12 @@ typedef ContextMenuItem = {
 
 class ContextMenu {
 
-	static var MENUS : Array<nw.Menu>;
-
 	static var CTX_ANCHOR : Element;
 	static final CONTEXTMENU_LAYER = 900;
 
 	public function new( config : Array<ContextMenuItem> ) {
 		var ide = hide.Ide.inst;
-
+		#if js
 		var args = {
 			selector: '#ctx-menu-anchor',
 			trigger: "none",
@@ -43,15 +41,7 @@ class ContextMenu {
 			untyped jQuery.contextMenu(args);
 			(CTX_ANCHOR : Dynamic).contextMenu();
 		}, 0);
-
-		// Old version that uses nwjs context menu
-		// MENUS = [];
-		// var menu = makeNwMenu(config);
-		// // wait until mousedown to get correct mouse pos
-		// haxe.Timer.delay(function() {
-		// 	if( MENUS[0] == menu )
-		// 		menu.popup(ide.mouseX, ide.mouseY);
-		// }, 0);
+		#end
 	}
 
 	public static function hideMenu() {
@@ -108,45 +98,6 @@ class ContextMenu {
 
 	function toKeyString( keyCode : String ) {
 		return keyCode.split("-").join("+");
-	}
-
-	function toNwKeys( keyCode : String ) {
-		if( keyCode == null )
-			return null;
-		var splitKeys = keyCode.split("-");
-		return {
-			key: splitKeys[splitKeys.length - 1],
-			modifiers: [for( i in 0...(splitKeys.length - 1)) splitKeys[i]].join("+"),
-		};
-	}
-
-	function makeNwMenu( config : Array<ContextMenuItem> ) {
-		var m = new nw.Menu({type:ContextMenu});
-		MENUS.push(m);
-		for( i in config )
-			m.append(makeNwMenuItem(i));
-		return m;
-	}
-
-	function makeNwMenuItem(i:ContextMenuItem) {
-		var mconf : nw.MenuItem.MenuItemOptions = { label : i.label, type : i.checked != null ? Checkbox : i.isSeparator ? Separator : Normal };
-		var keys = toNwKeys(i.keys);
-		if( keys != null ) {
-			mconf.key = keys.key;
-			mconf.modifiers = keys.modifiers;
-		}
-		if( i.menu != null ) mconf.submenu = makeNwMenu(i.menu);
-		var m = new nw.MenuItem(mconf);
-		if( i.checked != null ) m.checked = i.checked;
-		if( i.enabled != null ) m.enabled = i.enabled;
-		m.click = function() {
-			try {
-				i.click();
-			} catch( e : Dynamic ) {
-				hide.Ide.inst.error(e);
-			}
-		}
-		return m;
 	}
 
 }
