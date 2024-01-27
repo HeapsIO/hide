@@ -16,6 +16,8 @@ class View<T> extends hide.comp.Component {
 	var container : golden.Container;
 	var containerView : golden.ContentItem;
 	public var fullScreen(get,set) : Bool;
+	var contentWidth(get,never) : Int;
+	var contentHeight(get,never) : Int;
 	#end
 	var watches : Array<{ keep : Bool, path : String, callb : Void -> Void }> = [];
 	public var keys(get,null) : Keys;
@@ -24,9 +26,6 @@ class View<T> extends hide.comp.Component {
 	public var config(get, null) : Config;
 	public var viewClass(get, never) : String;
 	public var defaultOptions(get,never) : ViewOptions;
-
-	var contentWidth(get,never) : Int;
-	var contentHeight(get,never) : Int;
 	var needRebuild : Bool;
 
 	public function new(state:T) {
@@ -223,6 +222,8 @@ class View<T> extends hide.comp.Component {
 		return Type.getClassName(Type.getClass(this)) + (this.state == null ? "" : "("+haxe.Json.stringify(this.state)+")");
 	}
 
+	function get_defaultOptions() return viewClasses.get(Type.getClassName(Type.getClass(this))).options;
+
 	#if !hl
 
 	public function isActive() {
@@ -278,8 +279,6 @@ class View<T> extends hide.comp.Component {
 
 	function get_contentWidth() return container.width;
 	function get_contentHeight() return container.height;
-	function get_defaultOptions() return viewClasses.get(Type.getClassName(Type.getClass(this))).options;
-
 	function get_fullScreen() return container != null && container.getElement().is(".fullScreen");
 	function set_fullScreen(v) {
 		if( fullScreen == v )

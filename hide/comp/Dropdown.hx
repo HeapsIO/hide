@@ -30,7 +30,7 @@ class Dropdown extends Component {
 		this.options = options;
 		this.orderedOptions = options.copy();
 		filterInput = root.find("#filter").first();
-
+		#if js
 		optionsCont = root.find(".options").first();
 		for( o in options ) {
 			var el = new Element('<div tabindex="-1" class="dropdown-option">
@@ -66,7 +66,7 @@ class Dropdown extends Component {
 			return options.findIndex(o -> o.id == id1) - options.findIndex(o -> o.id == id2);
 		}
 
-		filterInput.on("input", (e : js.jquery.Event) -> {
+		filterInput.on("input", (e : Element.Event) -> {
 			var v = filterInput.val();
 			if (v != null) {
 				for( o in optionsCont.children().elements() ) {
@@ -119,9 +119,12 @@ class Dropdown extends Component {
 			if( !removed && element[0].isConnected )
 				remove();
 		});
-
+		#else
+		super(parent, root);
+		#end
 	}
 
+	#if js
 	function reflow() {
 		var offset = anchor.offset();
 		var popupHeight =  element.get(0).offsetHeight;
@@ -139,6 +142,7 @@ class Dropdown extends Component {
 		element.offset(offset);
 		element.width(popupWidth);
 	}
+	#end
 
 	var removed = false;
 	override function remove() {
@@ -197,7 +201,7 @@ class Dropdown extends Component {
 		return getMatchingScore(text, filter) >= 0;
 	}
 
-	function onKey( e : js.jquery.Event ) {
+	function onKey( e : Element.Event ) {
 		if( e.altKey )
 			return true;
 		var children = optionsCont.children();

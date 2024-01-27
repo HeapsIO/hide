@@ -6,7 +6,7 @@ typedef GlobalsDef = haxe.DynamicAccess<{
 	var contexts : Array<String>;
 	var events : String;
 	var evalTo : String;
-	var allowGlobalsDefine : Bool;
+	var allowGlobalsDefine : Null<Bool>;
 	var cdbEnums : Array<String>;
 }>;
 

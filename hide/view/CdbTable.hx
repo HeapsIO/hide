@@ -189,9 +189,11 @@ class CdbTable extends hide.ui.View<{}> {
 		return [for( s in getSheets() ) s.name].join("|");
 	}
 
+	#if js
 	override function onActivate() {
 		if( editor != null ) editor.focus();
 	}
+	#end
 
 	function setEditor(index:Int) {
 		var sheets = getSheets();
@@ -278,7 +280,7 @@ class CdbTable extends hide.ui.View<{}> {
 				tab.addClass("ignore-loc-" + ignoreCount);
 				if( ignoreCount > 0 ) {
 					tab.addClass("has-loc-ignored");
-					tab.append(' ($ignoreCount)');
+					tab.get(0).textContent += ' ($ignoreCount)';
 				}
 			}
 		}

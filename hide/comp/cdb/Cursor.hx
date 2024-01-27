@@ -138,7 +138,7 @@ class Cursor {
 			var index = lines.index(line.element);
 			var targetLine = lines.get(hxd.Math.imax(index + dy,0));
 			if( targetLine == null || targetLine == line.element.get(0) ) return;
-			dy = allLines.index(targetLine) - allLines.index(line.element);
+			dy = allLines.index(new Element(targetLine)) - allLines.index(line.element);
 		}
 
 		if( !shift )
@@ -231,7 +231,7 @@ class Cursor {
 				}
 			}
 		}
-		var e = line.element[0];
+		var e = line.element.get(0);
 		if( e != null ) untyped e.scrollIntoViewIfNeeded();
 	}
 

@@ -119,7 +119,7 @@ class Editor extends Component {
 			element.mousedown(onMouseDown);
 			keys = new hide.ui.Keys(element);
 		} else {
-			cdbTable.element.off("mousedown", onMouseDown);
+			cdbTable.element.off("mousedown" #if js, onMouseDown #end);
 			cdbTable.element.mousedown(onMouseDown);
 			keys = cdbTable.keys;
 		}
@@ -904,7 +904,7 @@ class Editor extends Component {
 			var commands = [for (h in hooks) if (h.sheets.has(s)) h.cmd];
 			function runRec(i: Int) {
 				runningHooks = true;
-				ide.runCommand(commands[i], (e, stdout, stderr) -> {
+				ide.runCommand(commands[i], (e) -> {
 					if (e != null) {
 						ide.error('Hook error:\n$e');
 						hookEnd();
@@ -1472,7 +1472,7 @@ class Editor extends Component {
 				// If user input a comaprison character, switch to expression mode for
 				// the current filter
 				for (c in Editor.COMPARISON_EXPR_CHARS) {
-					if (StringTools.contains(e.getThis().val(), c) && !searchExp) {
+					if (StringTools.contains(Element.getVal(e.getThis()), c) && !searchExp) {
 						searchExp = true;
 						var searchTypeBtn = searchBox.find(".search-type");
 						searchTypeBtn.toggleClass("fa-superscript", searchExp);
@@ -1482,7 +1482,7 @@ class Editor extends Component {
 					}
 				}
 
-				filters[index].text = e.getThis().val();
+				filters[index].text = Element.getVal(e.getThis());
 				filters[index].isExpr = e.getThis().next().hasClass("fa-superscript");
 
 				// Slow table refresh protection
@@ -1665,7 +1665,7 @@ class Editor extends Component {
 			return;
 		if( table.displayMode == Properties ) {
 			var ins = table.element.find("select.insertField");
-			var options = [for( o in ins.find("option").elements() ) o.val()];
+			var options = [for( o in ins.find("option").elements() ) Element.getVal(o)];
 			ins.attr("size", options.length);
 			options.shift();
 			ins.focus();
@@ -1682,7 +1682,7 @@ class Editor extends Component {
 				case K.DOWN if( index < options.length - 1 ):
 					ins.val(options[++index]);
 				case K.ENTER:
-					@:privateAccess table.insertProperty(ins.val());
+					@:privateAccess table.insertProperty(Element.getVal(ins));
 				default:
 				}
 				e.stopPropagation();
@@ -2152,7 +2152,9 @@ class Editor extends Component {
 				return;
 			categories = [for(s in wstr.split(",")) { var t = StringTools.trim(s); if(t.length > 0) t; }];
 			setFunc(categories.length > 0 ? categories : null);
+			#if editor
 			ide.initMenu();
+			#end
 		}}];
 
 		for(name in getCategories(base)) {

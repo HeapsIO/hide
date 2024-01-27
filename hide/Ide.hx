@@ -784,29 +784,6 @@ class Ide extends hide.tools.IdeData {
 		}).appendTo(window.window.document.body).click();
 	}
 
-	public function loadPrefab<T:hrt.prefab.Prefab>( file : String, ?cl : Class<T>, ?checkExists ) : T {
-		if( file == null )
-			return null;
-		var l = hrt.prefab.Library.create(file.split(".").pop().toLowerCase());
-		try {
-			var path = getPath(file);
-			if( checkExists && !sys.FileSystem.exists(path) )
-				return null;
-			l.loadData(parseJSON(sys.io.File.getContent(path)));
-		} catch( e : Dynamic ) {
-			error("Invalid prefab "+file+" ("+e+")");
-			throw e;
-		}
-		if( cl == null )
-			return cast l;
-		return l.get(cl);
-	}
-
-	public function savePrefab( file : String, f : hrt.prefab.Prefab ) {
-		var content = f.saveData();
-		sys.io.File.saveContent(getPath(file), toJSON(content));
-	}
-
 	public function filterPrefabs( callb : hrt.prefab.Prefab -> Bool ) {
 		var exts = Lambda.array({iterator : @:privateAccess hrt.prefab.Library.registeredExtensions.keys });
 		exts.push("prefab");
@@ -868,11 +845,11 @@ class Ide extends hide.tools.IdeData {
 		window.title = title != null ? title : ((isCDB ? "CastleDB" : "HIDE") + " - " + projectDir);
 	}
 
-	public function runCommand(cmd, ?callb) {
+	public function runCommand(cmd, ?callb:String->Void) {
 		var c = cmd.split("%PROJECTDIR%").join(projectDir);
 		var slash = isWindows ? "\\" : "/";
 		c = c.split("/").join(slash);
-		js.node.ChildProcess.exec(c, callb);
+		js.node.ChildProcess.exec(c, function(e:js.node.ChildProcess.ChildProcessExecError,_,_) callb(e == null ? null : e.message));
 	}
 
 	public function initMenu() {

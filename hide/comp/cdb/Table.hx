@@ -394,17 +394,18 @@ class Table extends Component {
 
 		var syncLevel : Int = -1;
 		function sync() {
-			data.hidden = title == null ? null : isSepHidden(sindex);
+			data.hidden = title == null ? false : isSepHidden(sindex);
 			toggle.css({ display : title == null ? "none" : "" });
 			toggle.text(data.hidden ? "🡆" : "🡇");
 			content.text(title == null ? "" : title+(data.hidden ? " ("+getLines().length+")" : ""));
 			sep.toggleClass("sep-hidden", data.hidden == true);
+			var def = #if js null #else 0 #end;
 			if( syncLevel != sepInfo.level ) {
-				sep.removeClass("seplevel-"+(syncLevel == null ? 0 : syncLevel));
+				sep.removeClass("seplevel-"+(syncLevel == def ? 0 : syncLevel));
 				syncLevel = sepInfo.level;
-				sep.addClass('seplevel-'+(syncLevel == null ? 0 : syncLevel));
+				sep.addClass('seplevel-'+(syncLevel == def ? 0 : syncLevel));
 			}
-			sep.attr("level", syncLevel == null ? 0 : sepInfo.level);
+			sep.attr("level", syncLevel == def ? 0 : sepInfo.level);
 		}
 
 		sep.contextmenu(function(e) {
@@ -459,7 +460,10 @@ class Table extends Component {
 									var level = t.sep.level;
 									if( level == null ) level = 0;
 									level += delta;
-									t.sep.level = level == 0 ? js.Lib.undefined : level;
+									if( level == 0 )
+										Reflect.deleteField(t.sep,"level")
+									else
+										t.sep.level = level;
 									for( s in t.subs )
 										deltaRec(s);
 								}
@@ -491,6 +495,7 @@ class Table extends Component {
 					editor.refresh();
 				}}
 			];
+			#if js
 			if( sepInfo.path != null )
 				opts.unshift({
 					label : "Open",
@@ -498,6 +503,7 @@ class Table extends Component {
 						ide.openFile(sepInfo.path);
 					},
 				});
+			#end
 			new hide.comp.ContextMenu(opts);
 		});
 
@@ -505,13 +511,16 @@ class Table extends Component {
 			if( !canInsert() ) return;
 			content.empty();
 			J("<input>").appendTo(content).focus().val(title == null ? "" : title).blur(function(e) {
-				title = e.getThis().val();
+				title = Element.getVal(e.getThis());
 				e.getThis().remove();
 				if( title == "" ) title = null;
 				editor.beginChanges();
 				var sep = sheet.separators[sindex];
 				var prevTitle = sep.title;
-				sep.title = title == null ? js.Lib.undefined : title;
+				if( title == null )
+					Reflect.deleteField(sep,"title");
+				else
+					sep.title = title;
 				if( prevTitle != null ) {
 					if( title == null ) {
 						if( sep.level == null ) sep.level = 0;
@@ -519,7 +528,8 @@ class Table extends Component {
 					}
 				} else if( title != null && sep.level > 0 ) {
 					sep.level--;
-					if( sep.level == 0 ) sep.level = js.Lib.undefined;
+					if( sep.level == 0 )
+						Reflect.deleteField(sep,"level");
 				}
 				editor.endChanges();
 				sync();
@@ -531,7 +541,7 @@ class Table extends Component {
 			}).keypress(function(e) {
 				e.stopPropagation();
 			}).keydown(function(e) {
-				if( e.keyCode == 13 ) { JTHIS.blur(); e.preventDefault(); } else if( e.keyCode == 27 ) content.text(title);
+				if( e.keyCode == 13 ) { e.getThis().blur(); e.preventDefault(); } else if( e.keyCode == 27 ) content.text(title);
 				e.stopPropagation();
 			});
 		});
@@ -543,7 +553,7 @@ class Table extends Component {
 				var s = sheet.separators[sindex - 1 - i];
 				if( s.title != null && (s.level == null || s.level == level) ) {
 					if( isSepHidden(sindex - 1 - i) ) {
-						sep[0].style.display = "none";
+						sep.hide();
 						data.hidden = true;
 					}
 					break;
@@ -568,7 +578,7 @@ class Table extends Component {
 			var subs = element.find("tr.separator");
 			function toggleRec( t : SepTree ) {
 				var sid = sheet.separators.indexOf(t.sep);
-				subs.get(sid).style.display = hidden ? "none" : "";
+				subs.eq(sid).toggle(!hidden);
 				if( !hidden ) {
 					if( isSepHidden(sid) ) return;
 					for( l in getLines(sid) )
@@ -621,6 +631,7 @@ class Table extends Component {
 		var ids = [];
 		if( id != null ) ids.push(id);
 		var pos = scopes.length;
+		var scope : Null<Int> = scope;
 		while( true ) {
 			pos -= scope;
 			if( pos < 0 ) {
@@ -712,7 +723,7 @@ class Table extends Component {
 		else if( !canInsert )
 			end.remove();
 		sel.change(function(e) {
-			var v = sel.val();
+			var v = Element.getVal(sel);
 			if( v == "" )
 				return;
 			sel.val("");

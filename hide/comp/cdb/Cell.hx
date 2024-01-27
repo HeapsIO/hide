@@ -798,9 +798,9 @@ class Cell {
 
 			// Select whole content of contenteditable div
 			{
-				var range = #if hl ide.createElement("range") #else js.Browser.document.createRange() #end;
-				range.selectNodeContents(i.get(0));
 				#if js
+				var range = js.Browser.document.createRange();
+				range.selectNodeContents(i.get(0));
 				var sel = js.Browser.window.getSelection();
 				sel.removeAllRanges();
 				sel.addRange(range);
@@ -1030,10 +1030,12 @@ class Cell {
 			};
 			#end
 		case TFile:
+			#if js
 			ide.chooseFile(["*"], function(file) {
 				setValue(file);
 				closeEdit();
 			}, false, currentValue);
+			#end
 		case TFlags(values):
 			var div = new Element("<div>").addClass("flagValues");
 			div.click(function(e) e.stopPropagation()).dblclick(function(e) e.stopPropagation());
@@ -1048,7 +1050,7 @@ class Cell {
 				if( mask & (1<<i) == 0 ) continue;
 				var f = new Element("<input>").attr("type", "checkbox").prop("checked", val & (1 << i) != 0).change(function(e) {
 					val &= ~(1 << i);
-					if( e.getThis().prop("checked") ) val |= 1 << i;
+					if( e.getThis().is(":checked") ) val |= 1 << i;
 					e.stopPropagation();
 				});
 				var line = new Element("<label>");
@@ -1130,6 +1132,7 @@ class Cell {
 			}
 
 			if( file == null ) {
+				#if js
 				ide.chooseImage(function(path) {
 					if( path == null ) {
 						closeEdit();
@@ -1140,6 +1143,7 @@ class Cell {
 					closeEdit();
 					edit();
 				},true);
+				#end
 				return;
 			}
 

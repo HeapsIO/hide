@@ -78,7 +78,7 @@ class IdeData {
 	function get_appPath() {
 		if( appPath != null )
 			return appPath;
-		var path = js.Node.process.argv[0].split("\\").join("/").split("/");
+		var path = #if hl Sys.programPath() #else js.Node.process.argv[0] #end.split("\\").join("/").split("/");
 		path.pop();
 		var hidePath = path.join("/");
 		if( !sys.FileSystem.exists(hidePath + "/package.json") ) {
@@ -221,5 +221,27 @@ class IdeData {
 		return str;
 	}
 
+	public function loadPrefab<T:hrt.prefab.Prefab>( file : String, ?cl : Class<T>, ?checkExists ) : T {
+		if( file == null )
+			return null;
+		var l = hrt.prefab.Library.create(file.split(".").pop().toLowerCase());
+		try {
+			var path = getPath(file);
+			if( checkExists && !sys.FileSystem.exists(path) )
+				return null;
+			l.loadData(parseJSON(sys.io.File.getContent(path)));
+		} catch( e : Dynamic ) {
+			error("Invalid prefab "+file+" ("+e+")");
+			throw e;
+		}
+		if( cl == null )
+			return cast l;
+		return l.get(cl);
+	}
+
+	public function savePrefab( file : String, f : hrt.prefab.Prefab ) {
+		var content = f.saveData();
+		sys.io.File.saveContent(getPath(file), toJSON(content));
+	}
 
 }
