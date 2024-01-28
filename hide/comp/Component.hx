@@ -20,7 +20,7 @@ class Component {
 		element.remove();
 	}
 
-	@:final function get_componentName() return Type.getClassName(Type.getClass(this));
+	final function get_componentName() return Type.getClassName(Type.getClass(this));
 
 	function getDisplayState( key : String ) : Dynamic {
 		if( saveDisplayKey == null )

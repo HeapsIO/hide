@@ -2,6 +2,8 @@
 -lib heaps
 -lib hide
 -lib castle
+-lib hscript
+-D hscriptPos
 --remap hide:notAllowed
 --macro include("hrt")
 -D no-compilation
