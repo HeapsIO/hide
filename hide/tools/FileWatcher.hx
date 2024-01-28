@@ -8,7 +8,7 @@ private typedef Watch = {
 	#if js
 	w : js.node.fs.FSWatcher,
 	#else
-	w : Dynamic,
+	w : hl.uv.Fs,
 	#end
 	wasChanged : Bool,
 	changed : Bool,
@@ -156,6 +156,9 @@ class FileWatcher {
 			if( elt.nodeName == "BODY" ) return true;
 			elt = elt.parentElement;
 		}
+		#else
+		var elt = e.element;
+		if( elt != null && @:privateAccess elt.element.getScene() != null ) return true;
 		#end
 		events.remove(e);
 		return false;
@@ -182,6 +185,15 @@ class FileWatcher {
 		w.w = js.node.Fs.watch(w.path, function(k:String, file:String) {
 			if( w.isDir && k == "change" ) return;
 			if( k == "change" ) w.wasChanged = true;
+			if( w.changed ) return;
+			w.changed = true;
+			w.version++;
+			haxe.Timer.delay(onEventChanged.bind(w),100);
+		});
+		#else
+		w.w = new hl.uv.Fs(w.path, function(ev) {
+			if( w.isDir && ev == Change ) return;
+			if( ev == Change ) w.wasChanged = true;
 			if( w.changed ) return;
 			w.changed = true;
 			w.version++;
