@@ -1436,6 +1436,8 @@ class Cell {
 							var sel = paramValue.find(":selected");
 							if (sel.val() != 0)
 								stringValue += sel.text();
+							else
+								stringValue += "null";
 						}
 						else if (paramValue.is("div")) {
 							// Case where the param value is another cdbType
@@ -1450,6 +1452,9 @@ class Cell {
 
 					stringValue += ')';
 				}
+			}
+			else {
+				stringValue = "null";
 			}
 
 			parentEl.empty();
