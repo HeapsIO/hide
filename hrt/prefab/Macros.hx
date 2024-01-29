@@ -533,15 +533,27 @@ class Macros {
 			cloneInitExprs.push(macro super.postCloneInit());
 			for (f in cloneInitFields) {
 				var name = f.name;
+				var isFinal = false;
 				if (f.access != null) {
-					if (f.access.contains(AStatic) || f.access.contains(AFinal)) {
+					if (f.access.contains(AStatic)) {
 						continue;
 					}
+
+					if (f.access.contains(AFinal)) {
+						isFinal = true;
+					}
 				}
+
 				switch (f.kind) {
 					case FVar(_, defaultValue): {
 						if (defaultValue != null) {
-							cloneInitExprs.push(macro this.$name = ${defaultValue});
+							if (isFinal) {
+								// Force final initialisation
+								cloneInitExprs.push(macro (this:Dynamic).$name = ${defaultValue});
+							}
+							else {
+								cloneInitExprs.push(macro this.$name = ${defaultValue});
+							}
 						}
 					}
 					case FProp(_,set, _, defaultValue): {
