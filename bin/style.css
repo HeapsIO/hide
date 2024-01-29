@@ -1305,8 +1305,10 @@ input[type=checkbox]:checked:after {
   border-style: solid;
   border-width: 1px;
   border-color: #474747;
+  cursor: pointer;
 }
 .cdb-types select {
+  cursor: pointer;
   min-width: 100px;
   width: auto!important;
 }
@@ -1317,6 +1319,7 @@ input[type=checkbox]:checked:after {
   display: flex;
 }
 .cdb-types input {
+  cursor: pointer;
   width: 50px;
 }
 .cdb-types input[type="checkbox"] {

@@ -1397,15 +1397,13 @@ class Cell {
 
 			if (selected != null && selected.args.length > 0) {
 				for (idx in 0...selected.args.length) {
-					new Element('<p>${idx == 0 ? '(' : ''}${selected.args[idx].name}&nbsp:&nbsp</p>').appendTo(paramsContent);
+					new Element('<p>&nbsp${selected.args[idx].name}&nbsp:</p>').appendTo(paramsContent);
 
 					var paramVal = cast currentValue;
 					getHtml(currentValue != null ? currentValue[idx + 1] : null, selected.args[idx]).addClass("value").appendTo(paramsContent);
 
 					if (idx != selected.args.length - 1)
-						new Element('<p>&nbsp,&nbsp</p>').appendTo(paramsContent);
-					else
-						new Element('<p>&nbsp)</p>').appendTo(paramsContent);
+						new Element('<p>,&nbsp</p>').appendTo(paramsContent);
 				}
 			}
 		}
