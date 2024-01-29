@@ -28,7 +28,7 @@ class ScreenShaderGraph extends RendererFX {
 
 	@:s public var renderMode : ScreenShaderGraphMode;
 
-	function new(?parent, shared: ContextShared) {
+	function new(parent, shared: ContextShared) {
 		super(parent, shared);
 		renderMode = AfterTonemapping;
 	}

@@ -8,7 +8,7 @@ class RenderProps extends Object3D {
 
 	@:s var isDefault = false;
 
-	public function new(?parent, shared: ContextShared) {
+	public function new(parent, shared: ContextShared) {
 		super(parent, shared);
 		props = {};
 	}

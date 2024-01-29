@@ -7,7 +7,7 @@ class DynamicShader extends Shader {
 	@:s var isInstance : Bool = false;
 	var isShadergraph : Bool = false;
 
-	public function new(?parent,  shared: ContextShared) {
+	public function new(parent,  shared: ContextShared) {
 		super(parent, shared);
 	}
 

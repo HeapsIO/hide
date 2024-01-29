@@ -20,7 +20,7 @@ class Refraction extends hrt.prefab.Shader {
 	@:s var albedoMult : Float = 1.0;
 
 	var refractionShader : RefractionPropsShader;
-	public function new(?parent, shared) {
+	public function new(parent, shared) {
 		super(parent, shared);
 
 		refractionShader = new RefractionPropsShader();

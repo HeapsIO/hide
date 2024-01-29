@@ -7,7 +7,7 @@ class Instance extends Object3D {
 	var model : h3d.scene.Object;
 	var icon : h2d.Object;
 
-	public function new(?parent, shared: ContextShared) {
+	public function new(parent, shared: ContextShared) {
 		super(parent, shared);
 		props = {};
 	}

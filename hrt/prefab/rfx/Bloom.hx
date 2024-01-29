@@ -26,7 +26,7 @@ class Bloom extends RendererFX {
 	@:s public var blurQuality : Float = 1;
 	@:s public var blurLinear : Float;
 
-	function new(?parent, shared: ContextShared) {
+	function new(parent, shared: ContextShared) {
 		super(parent, shared);
 		size = 0.5;
 		blur = 3;

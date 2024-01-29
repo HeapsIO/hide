@@ -7,7 +7,7 @@ class Model extends Object3D {
 	@:s var retargetAnim : Bool = false;
 	@:s var retargetIgnore : String;
 
-	public function new(?parent, shared: ContextShared) {
+	public function new(parent, shared: ContextShared) {
 		super(parent, shared);
 	}
 

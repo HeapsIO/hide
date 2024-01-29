@@ -11,7 +11,7 @@ class Shader extends Prefab {
 
 	public var shader : hxsl.Shader;
 
-	function new(?parent, sh: ContextShared) {
+	function new(parent, sh: ContextShared) {
 		super(parent, sh);
 		props = {};
 	}

@@ -34,7 +34,7 @@ class World extends Object3D {
 	}
 	var datDir : String;
 
-	public function new(?parent, ?shared) {
+	public function new(parent, shared) {
 		super(parent, shared);
 		chunkPrefabs = [];
 	}

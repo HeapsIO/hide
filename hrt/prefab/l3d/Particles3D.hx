@@ -6,7 +6,7 @@ class Particles3D extends Object3D {
 
 	@:s var data : Any;
 
-	public function new(?parent, shared: ContextShared) {
+	public function new(parent, shared: ContextShared) {
 		super(parent, shared);
 	}
 

@@ -215,7 +215,7 @@ class LightProbe extends Object3D {
 	@:s public var debugDisplay : Bool = true;
 	@:s public var sphereRadius : Float = 0.5;
 
-	public function new( ?parent : Prefab, shared: ContextShared) {
+	public function new(parent : Prefab, shared: ContextShared) {
 		super(parent, shared);
 
 		// Duplicate Name Fix - Prevent baked data conflict

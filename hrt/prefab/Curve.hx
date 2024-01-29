@@ -75,7 +75,7 @@ class Curve extends Prefab {
 		return keys[keys.length-1].time;
 	}
 
-	   public function new(?parent, shared: ContextShared) {
+	   public function new(parent, shared: ContextShared) {
 		super(parent, shared);
 	}
 

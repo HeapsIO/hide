@@ -187,9 +187,12 @@ class Prefab {
 
 		var thisClass = Type.getClass(this);
 
+		// We bypass the normal new function to avoid initializing the
+		// serializable fields, because they will be initialized by the copy function
 		var inst = Type.createEmptyInstance(thisClass);
-		inst.initParentShared(parent, sh);
-		inst.postCloneInit();	// Macro function that init all the non serializable fields of a prefab
+		inst.postCloneInit();		// Macro function that init all the non serializable fields of a prefab
+		inst.__newInit(parent, sh);// Macro function that contains the code of the new function
+
 		inst.copy(this);
 		inst.children = [];
 		if (withChildren) {

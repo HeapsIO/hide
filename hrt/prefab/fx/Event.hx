@@ -23,7 +23,7 @@ class Event extends hrt.prefab.Prefab implements IEvent {
 	public var lock:Bool = false;
 	public var selected:Bool = false;
 
-	public function new(?parent, shared: ContextShared) {
+	public function new(parent, shared: ContextShared) {
 		super(parent, shared);
 	}
 

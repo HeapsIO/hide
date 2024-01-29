@@ -70,7 +70,7 @@ class DistanceBlur extends RendererFX {
 	@:s public var blurTextureSize : Float;
 	@:s public var blurRange : Int;
 
-	function new(?parent, shared: ContextShared) {
+	function new(parent, shared: ContextShared) {
 		super(parent, shared);
 		nearEndDistance = 10;
 		farStartDistance = 100;

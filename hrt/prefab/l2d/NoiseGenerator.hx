@@ -37,7 +37,7 @@ class NoiseGenerator extends Object2D {
 
 	var tex : h3d.mat.Texture;
 
-	function new(?parent, shared: ContextShared) {
+	function new(parent, shared: ContextShared) {
 		super(parent, shared);
 		seed = Std.random(100);
 	}

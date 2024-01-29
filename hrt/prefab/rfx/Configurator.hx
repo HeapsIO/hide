@@ -130,7 +130,7 @@ class Configurator extends RendererFX {
 	#end
 	var rootPrefab : Prefab;
 
-	public function new(?parent, shared: ContextShared) {
+	public function new(parent, shared: ContextShared) {
 		super(parent, shared);
 	}
 

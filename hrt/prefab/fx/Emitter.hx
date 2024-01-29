@@ -1333,7 +1333,7 @@ class EmitterObject extends h3d.scene.Object {
 
 class Emitter extends Object3D {
 
-	public function new(?parent, shared: ContextShared) {
+	public function new(parent, shared: ContextShared) {
 		super(parent, shared);
 		props = { };
 		for(param in emitterParams) {

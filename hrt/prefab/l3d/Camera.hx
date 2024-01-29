@@ -36,7 +36,7 @@ class Camera extends Object3D {
 	var beforePreviewCam : h3d.Camera; // Used to save scene camera controller's values
 	#end
 
-	public function new(?parent, shared: ContextShared) {
+	public function new(parent, shared: ContextShared) {
 		super(parent, shared);
 	}
 
@@ -249,7 +249,8 @@ class Camera extends Object3D {
 			editModeButton.val(preview ? "Preview Mode : Enabled" : "Preview Mode : Disabled");
 			editModeButton.toggleClass("editModeEnabled", preview);
 		};
-		editModeButton.click(function(_) {
+
+		function onclick(e: js.jquery.Event) : Void {
 			preview = !preview;
 			setEditModeButton();
 			var cam = ctx.scene.s3d.camera;
@@ -266,7 +267,9 @@ class Camera extends Object3D {
 				}
 				ctx.scene.editor.cameraController.lockZPlanes = true;
 				ctx.scene.editor.cameraController.loadFromCamera();
-				renderer.effects.push(new hrt.prefab.rfx.Border(null, null, 0.02, 0x0000ff, 0.5));
+				var border = new hrt.prefab.rfx.Border(null, null);
+				border.setParams(0.02, 0x0000ff, 0.5);
+				renderer.effects.push(border);
 			}
 			else {
 				for ( effect in findAll(hrt.prefab.rfx.RendererFX) )
@@ -319,7 +322,8 @@ class Camera extends Object3D {
 					this.rotationZ = floatToStringPrecision(floatToStringPrecision(this.rotationZ));
 				});
 			}
-		});
+		};
+		editModeButton.click(onclick);
 
 		var deprecationButton = props.find(".upgrade");
 		deprecationButton.click(function(_) {

@@ -150,7 +150,7 @@ class SSR extends RendererFX {
 	@:s public var support4K : Bool = false;
 	@:s public var batchSample : Bool = false;
 
-	function new(?parent, ?shared) {
+	function new(parent, shared) {
 		super(parent, shared);
 		ssrPass = new h3d.pass.ScreenFx(new SSRShader());
 	}

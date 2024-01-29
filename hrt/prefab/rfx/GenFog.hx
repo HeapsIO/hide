@@ -107,7 +107,7 @@ class GenFog extends RendererFX {
 	@:s public var lightColorAmount : Float;
 	@:s public var lightAngle : Float = 90.0;
 
-	public function new(?parent, shared: ContextShared) {
+	public function new(parent, shared: ContextShared) {
 		super(parent, shared);
 		renderMode = AfterTonemapping;
 		endDistance = 100;

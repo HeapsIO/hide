@@ -23,7 +23,7 @@ class Anisotropy extends Prefab {
 	@:s public var noiseDirectionPath : String = null;
 	@:s public var rotationOffset : Float = 0.0;
 
-	public function new(?parent, shared: ContextShared) {
+	public function new(parent, shared: ContextShared) {
 		super(parent,shared);
 	}
 

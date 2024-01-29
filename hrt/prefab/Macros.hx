@@ -3,6 +3,7 @@ package hrt.prefab;
 import haxe.macro.Context;
 import haxe.macro.Expr;
 import haxe.macro.Type;
+import haxe.macro.ExprTools;
 
 using Lambda;
 
@@ -341,7 +342,80 @@ class Macros {
 		for (f in buildFields2) {
 			buildFields.push(f);
 		}
+
+		replaceNew(buildFields);
+
 		return buildFields;
+	}
+
+	static public function replaceNew(fields: Array<Field>) {
+		final newName = "__newInit";
+		var localClass = Context.getLocalClass().get();
+		var isRoot = localClass.superClass == null;
+
+		var newReplaced = false;
+		for (f in fields) {
+			if (f.name == "new") {
+				newReplaced = true;
+				f.name = newName;
+				if (!isRoot) {
+					f.access = f.access ?? [];
+					if (!f.access.contains(AOverride))
+						f.access.push(AOverride);
+				}
+
+				f.meta = f.meta ?? [];
+				if (f.meta.find((m) -> m.name == ":noCompletion") == null) {
+					f.meta.push({name: ":noCompletion", pos:Context.currentPos()});
+				}
+
+				switch (f.kind) {
+					case FFun(func): {
+						function rec(e: Expr){
+							switch (e.expr) {
+								case ECall(subE = {expr: EConst(CIdent("super"))}, _):
+									subE.expr = EField({pos:e.pos, expr: EConst(CIdent("super"))}, newName);
+								case _:
+									ExprTools.iter(e, rec);
+							}
+						};
+						ExprTools.iter(func.expr, rec);
+
+						//trace(ExprTools.toString(func.expr));
+					}
+					default:
+						throw "new is not a function";
+				}
+			}
+		}
+
+		if (newReplaced) {
+			var newExpr = null;
+			var access = [APublic];
+			if (isRoot) {
+				newExpr = macro {
+					this.$newName(parent, contextShared);
+				};
+			}
+			else {
+				access.push(AOverride);
+				newExpr = macro {
+					super(parent, contextShared);
+				};
+			}
+
+			var newDecl : Field = {
+				name: "new",
+				access: access,
+				kind: FFun({args:[
+					{name: "parent", type: {macro: hrt.prefab.Prefab;}},
+					{name: "contextShared", type: {macro: hrt.prefab.ContextShared;}},
+				],expr: newExpr}),
+				pos: Context.currentPos(),
+			}
+
+			fields.push(newDecl);
+		}
 	}
 
 	static public function buildSerializable() {

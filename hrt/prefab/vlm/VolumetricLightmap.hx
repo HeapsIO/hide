@@ -20,7 +20,7 @@ class VolumetricLightmap extends Object3D {
 	var baker : hide.view.l3d.ProbeBakerProcess;
 	#end
 
-	public function new(?parent, shared: ContextShared) {
+	public function new(parent, shared: ContextShared) {
 		super(parent, shared);
 	}
 
