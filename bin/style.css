@@ -1302,6 +1302,13 @@ input[type=checkbox]:checked:after {
   margin: 2px 2px 2px 2px;
   display: flex;
   background-color: #333333;
+  border-style: solid;
+  border-width: 1px;
+  border-color: #474747;
+}
+.cdb-types select {
+  min-width: 100px;
+  width: auto!important;
 }
 .cdb-types #dropdown-custom-type {
   width: fit-content;
@@ -1322,6 +1329,8 @@ input[type=checkbox]:checked:after {
 .cdb-types p {
   margin-top: 2px;
   margin-bottom: 2px;
+  padding-left: 2px;
+  padding-right: 2px;
 }
 /* Curve editor */
 .hide-curve-editor {
