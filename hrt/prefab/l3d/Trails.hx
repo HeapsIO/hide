@@ -254,7 +254,7 @@ class TrailObj extends h3d.scene.Mesh {
 	var statusText : h2d.Text;
 
 	public function addPoint(t : TrailHead, x : Float, y : Float, z : Float, orient : TrailOrientation, w : Float) {
-		var ux : Float = 0.0;
+		var ux : Float =  0.0;
 		var uy : Float = 0.0;
 		var uz : Float = 0.0;
 		var nx : Float = 0.0;
@@ -532,6 +532,7 @@ class TrailObj extends h3d.scene.Mesh {
 		}
 
 		if (autoTrackPosition) {
+			syncPos();
 			calcAbsPos();
 
 			var x = absPos.tx;
