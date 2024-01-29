@@ -1282,7 +1282,7 @@ class Cell {
 		var customType = editor.base.getCustomType(typeName);
 
 		parentEl.empty();
-		var rootEl = new Element("<div></div>").appendTo(parentEl);
+		var rootEl = new Element('<div class="cdb-type-string"></div>').appendTo(parentEl);
 		new Element('<p>...</p>').css("margin", "0px").css("text-align","center").appendTo(rootEl);
 
 		function getHtml(value : Dynamic, column : cdb.Data.Column) {
@@ -1411,6 +1411,11 @@ class Cell {
 		}
 
 		function closeCdbTypeEdit() {
+			// Close children cdb types editor before closing this one
+			var children = content.children().find(".cdb-type-string");
+			if (children.length > 0)
+				children.first().trigger("click");
+
 			var val = d.val();
 			var selected = val != null ? customType.cases[content.find("#dropdown-custom-type").val()] : null;
 			var stringValue = "";
