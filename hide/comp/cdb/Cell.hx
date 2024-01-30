@@ -1003,7 +1003,8 @@ class Cell {
 				elementHtml.innerHTML = null;
 				elementHtml.classList.add("edit");
 				var cellEl = new Element(elementHtml);
-				editCustomType(typeName, currentValue, cellEl);
+				var paddingCell = 4;
+				editCustomType(typeName, currentValue, cellEl, js.Browser.document.body.clientWidth - (cellEl.offset().left + paddingCell + (cellEl.width() + paddingCell) / 2.0), cellEl.offset().top);
 			}
 		case TColor:
 			var elem = new Element(elementHtml);
@@ -1278,12 +1279,24 @@ class Cell {
 		focus();
 	}
 
-	public function editCustomType(typeName : String, currentValue : Dynamic, parentEl : Element, depth : Int = 0, ?minWidth: Float) {
+	public function editCustomType(typeName : String, currentValue : Dynamic, parentEl : Element, rightAnchor: Float, topAnchor : Float, depth : Int = 0) {
 		var customType = editor.base.getCustomType(typeName);
 
 		parentEl.empty();
 		var rootEl = new Element('<div class="cdb-type-string"></div>').appendTo(parentEl);
 		new Element('<p>...</p>').css("margin", "0px").css("text-align","center").appendTo(rootEl);
+
+		var content = new Element('
+		<div class="cdb-types">
+			<select name="customType" id="dropdown-custom-type">
+			<option value="none">None</option>
+			${ [for (idx in 0...customType.cases.length) '<option value=${idx}>${customType.cases[idx].name}</option>'].join("") }
+			</select>
+			<div id="parameters">
+			<div>
+		</div>');
+
+		content.appendTo(parentEl);
 
 		function getHtml(value : Dynamic, column : cdb.Data.Column) {
 			switch (column.type) {
@@ -1364,7 +1377,10 @@ class Cell {
 						var valueHtml = this.valueHtml(column, value, line.table.getRealSheet(), currentValue, []);
 						var html = new Element('<div class="sub-cdb-type"><p>${valueHtml.str}</p></div>').css("min-width","80px").css("background-color","#222222");
 						html.on("click", function(e) {
-							editCustomType(name, value, html, depth + 1, minWidth == null ? parentEl.width() : minWidth);
+							// When opening one custom type, close others of the same level
+							content.find(".cdb-type-string").trigger("click");
+
+							editCustomType(name, value, html, content.width() - html.position().left - html.width(), 25, depth + 1);
 						});
 
 						return html;
@@ -1373,16 +1389,6 @@ class Cell {
 					return new Element('<p>Not supported</p>');
 			}
 		}
-
-		var content = new Element('
-		<div class="cdb-types">
-			<select name="customType" id="dropdown-custom-type">
-			<option value="none">None</option>
-			${ [for (idx in 0...customType.cases.length) '<option value=${idx}>${customType.cases[idx].name}</option>'].join("") }
-			</select>
-			<div id="parameters">
-			<div>
-		</div>');
 
 		var d = content.find("#dropdown-custom-type");
 		if (currentValue != null)
@@ -1478,11 +1484,8 @@ class Cell {
 		content.on("click", function(e) { e.stopPropagation(); });
 		content.on("dblclick", function(e) { e.stopPropagation(); });
 
-		var offset = depth == 0 ? 1920 - (parentEl.offset().left + parentEl.width()) : 0;
-		content.css("right", '${offset}px');
-		content.css("top", '${depth == 0 ? parentEl.offset().top : parentEl.height()}px');
-		content.css("min-width", '${minWidth == null ? parentEl.width() : minWidth}px');
-		content.appendTo(parentEl);
+		content.css("right", '${depth == 0 ? rightAnchor - content.width() / 2.0 : rightAnchor}px');
+		content.css("top", '${topAnchor}px');
 
 		d.focus();
 	}
