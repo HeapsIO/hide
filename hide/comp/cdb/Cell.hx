@@ -1380,7 +1380,14 @@ class Cell {
 						// Check if the value is a valid one
 						var valueStr = try {
 							this.valueHtml(column, editor.base.parseValue(column.type, valueHtml.str, false), line.table.getRealSheet(), currentValue, []).str;
-						} catch( e : Dynamic ) valueHtml.containsHtml ? valueHtml.str : '<span class="error">#NULL</span>';
+						} catch( e : Dynamic ) {
+							if (valueHtml.containsHtml)
+								valueHtml.str;
+							else if (column.opt)
+								'';
+							else
+								'<span class="error">#NULL</span>';
+						}
 
 						var html = new Element('<div class="sub-cdb-type"><p>${valueStr}</p></div>').css("min-width","80px").css("background-color","#222222");
 						html.on("click", function(e) {
@@ -1452,6 +1459,8 @@ class Cell {
 						else if (paramValue.is("div")) {
 							// Case where the param value is another cdbType
 							var v = paramValue.children().first().text();
+							if (v == "" || v == " ")
+								v = "null";
 							stringValue += v;
 						}
 						else
