@@ -1299,17 +1299,106 @@ class Cell {
 
 		content.appendTo(parentEl);
 
+		// Manage keyboard flow
+		content.keydown(function(e){
+			var focused = content.find(':focus');
+
+			if (e.altKey || e.shiftKey)
+				return;
+
+			switch (e.keyCode) {
+				case hxd.Key.ENTER:
+					if (focused.is('div'))
+						focused.trigger('click');
+
+					if (focused.is('input')) {
+						if (focused.is('input[type="checkbox"]'))
+							focused.prop('checked', !focused.is(':checked'));
+						else if (focused.prop('readonly'))
+							focused.prop('readonly', false);
+						else
+							focused.prop('readonly', true);
+					}
+
+					if (focused.is('select')) {
+
+					}
+
+					e.stopPropagation();
+					e.preventDefault();
+
+				case hxd.Key.ESCAPE:
+					if (focused.is('input') && !focused.is('input[type="checkbox"]') && !focused.prop('readonly')) {
+						focused.prop('readonly', true);
+
+						e.stopPropagation();
+						return;
+					}
+
+					rootEl.trigger('click');
+					e.stopPropagation();
+					e.preventDefault();
+
+				case hxd.Key.RIGHT:
+					if (focused.is('input') && !focused.prop('readonly') && !focused.is('input[type="checkbox"]')) {
+						e.stopPropagation();
+						return;
+					}
+
+					var s = content.children('select').first();
+					var p = content.find('#parameters').children('.value');
+
+					focused.blur();
+
+					if (focused.is(s))
+						p.first().focus();
+					else if (focused.is(p.last()))
+						s.focus();
+					else
+						p.eq(p.index(focused) + 1).focus();
+					e.stopPropagation();
+					e.preventDefault();
+
+				case hxd.Key.LEFT:
+					if (focused.is('input') && !focused.prop('readonly') && !focused.is('input[type="checkbox"]')) {
+						e.stopPropagation();
+						return;
+					}
+
+					var s = content.children('select').first();
+					var p = content.find('#parameters').children('.value');
+
+					focused.blur();
+
+					if (focused.is(s))
+						p.last().focus();
+					else if (focused.is(p.first()))
+						s.focus();
+					else
+						p.eq(p.index(focused) - 1).focus();
+					e.stopPropagation();
+					e.preventDefault();
+
+				case hxd.Key.UP, hxd.Key.DOWN:
+					e.stopPropagation();
+					e.preventDefault();
+
+				default:
+					trace("Not managed");
+			}
+		});
+
 		function getHtml(value : Dynamic, column : cdb.Data.Column) {
 			switch (column.type) {
 				case TId, TString, TDynamic:
-					return new Element('<input type="text" ${value != null ? 'value="${value}"': ''}></input>');
+					return new Element('<input type="text" readonly ${value != null ? 'value="${value}"': ''}></input>');
 				case TBool:
 					var el =  new Element('<input type="checkbox"></input>');
 					if (value != null && value)
 						el.attr("checked", "true");
 					return el;
 				case TInt, TFloat:
-					return new Element('<input type="number" ${'value="${value != null ? value : 0}"'}></input>');
+					return new Element('<input type="number" readonly ${'value="${value != null ? value : 0}"'}></input>');
 				case TRef(name):
 					{
 						var sdat = editor.base.getSheet(name);
@@ -1389,13 +1478,24 @@ class Cell {
 								'<span class="error">#NULL</span>';
 						}
 
-						var html = new Element('<div class="sub-cdb-type"><p>${valueStr}</p></div>').css("min-width","80px").css("background-color","#222222");
+						var html = new Element('<div tabindex="0" class="sub-cdb-type"><p>${valueStr}</p></div>').css("min-width","80px").css("background-color","#222222");
 						html.on("click", function(e) {
 							// When opening one custom type, close others of the same level
 							content.find(".cdb-type-string").trigger("click");
 
 							editCustomType(name, value, column, html, content.width() - html.position().left - html.width(), 25, depth + 1);
 						});
+
+						// html.keydown(function(e) {
+						// 	switch (e.keyCode) {
+						// 		case hxd.Key.ENTER:
+						// 			html.trigger("click");
+						// 		default:
+						// 			trace("Do nothing");
+						// 	}
+
+						// 	e.stopPropagation();
+						// });
 
 						return html;
 					}
@@ -1427,7 +1527,7 @@ class Cell {
 			}
 		}
 
-		function closeCdbTypeEdit() {
+		function closeCdbTypeEdit(applyModifications : Bool = true) {
 			// Close children cdb types editor before closing this one
 			var children = content.children().find(".cdb-type-string");
 			if (children.length > 0)
@@ -1481,14 +1581,16 @@ class Cell {
 
 			// Check if the value is correct
 			var newValue = try editor.base.parseValue(TCustom(customType.name), stringValue, false) catch( e : Dynamic ) null;
-			stringValue = valueHtml(col, newValue, line.table.getRealSheet(), currentValue, []).str;
+			stringValue = valueHtml(col, applyModifications ? newValue : currentValue, line.table.getRealSheet(), currentValue, []).str;
 
 			if (depth == 0) {
 				this.setRawValue(stringValue);
 				this.closeEdit();
+				this.focus();
 			}
 			else {
 				new Element('<p>${stringValue}</p>').appendTo(parentEl);
+				parentEl.focus();
 			}
 		}
 
@@ -1498,15 +1600,15 @@ class Cell {
 			buildParameters();
 		});
 
+		d.focus();
+
 		// Prevent missclick to actually close the edit mode and
 		// open another one
-		rootEl.on("click", function(e) { closeCdbTypeEdit(); e.stopPropagation(); });
+		rootEl.on("click", function(e, applyModifications) { closeCdbTypeEdit(applyModifications == null); e.stopPropagation(); });
 		content.on("click", function(e) { e.stopPropagation(); });
 		content.on("dblclick", function(e) { e.stopPropagation(); });
 
 		content.css("right", '${depth == 0 ? rightAnchor - content.width() / 2.0 : rightAnchor}px');
 		content.css("top", '${topAnchor}px');
-
-		d.focus();
 	}
 }
