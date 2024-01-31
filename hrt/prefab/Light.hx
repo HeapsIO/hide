@@ -164,7 +164,7 @@ class Light extends Object3D {
 			case Point: object = new h3d.scene.pbr.PointLight(parent3d);
 			case Directional: object = new h3d.scene.pbr.DirLight(parent3d, cascade);
 			case Spot: object = new h3d.scene.pbr.SpotLight(parent3d);
-			case Capsule: object = new h3d.scene.pbr.CapsuleLight(local3d);
+			case Capsule: object = new h3d.scene.pbr.CapsuleLight(parent3d);
 			}
 		}
 
