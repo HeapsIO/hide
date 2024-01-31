@@ -1440,13 +1440,11 @@ class Cell {
 							}];
 						}
 
-						if( column.opt || currentValue == null || currentValue == "" ) {
-							elts.unshift({
-								id : null,
-								ico : null,
-								text : "--- None ---",
-							});
-						}
+						elts.unshift({
+							id : null,
+							ico : null,
+							text : "None",
+						});
 
 						function makeIcon(c: hide.comp.Dropdown.Choice) {
 							if (sdat.props.displayIcon == null)
@@ -1485,17 +1483,6 @@ class Cell {
 
 							editCustomType(name, value, column, html, content.width() - html.position().left - html.width(), 25, depth + 1);
 						});
-
-						// html.keydown(function(e) {
-						// 	switch (e.keyCode) {
-						// 		case hxd.Key.ENTER:
-						// 			html.trigger("click");
-						// 		default:
-						// 			trace("Do nothing");
-						// 	}
-
-						// 	e.stopPropagation();
-						// });
 
 						return html;
 					}
@@ -1581,7 +1568,9 @@ class Cell {
 
 			// Check if the value is correct
 			var newValue = try editor.base.parseValue(TCustom(customType.name), stringValue, false) catch( e : Dynamic ) null;
-			stringValue = valueHtml(col, applyModifications ? newValue : currentValue, line.table.getRealSheet(), currentValue, []).str;
+			var htmlValue = valueHtml(col, applyModifications ? newValue : currentValue, line.table.getRealSheet(), currentValue, []);
+			if (StringTools.contains(htmlValue.str, '<span'))
+				stringValue = htmlValue.str;
 
 			if (depth == 0) {
 				this.setRawValue(stringValue);
