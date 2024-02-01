@@ -1508,13 +1508,15 @@ class Cell {
 						ctValue[idx + 1] = [];
 						v = ctValue[idx + 1];
 					}
-					var t = this.currentValue;
+
 					getHtml(v, selected.args[idx]).addClass("value").appendTo(paramsContent);
 
 					if (idx != selected.args.length - 1)
 						new Element('<p>,&nbsp</p>').appendTo(paramsContent);
 				}
 			}
+
+			content.css("right", '${depth == 0 ? rightAnchor - content.width() / 2.0 : rightAnchor}px');
 		}
 
 		function closeCdbTypeEdit(applyModifications : Bool = true) {
@@ -1611,8 +1613,6 @@ class Cell {
 			}
 			var t = this.currentValue;
 			buildParameters();
-
-			content.css("right", '${depth == 0 ? rightAnchor - content.width() / 2.0 : rightAnchor}px');
 		});
 
 		d.focus();
