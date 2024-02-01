@@ -1279,9 +1279,8 @@ class Cell {
 		focus();
 	}
 
-	public function editCustomType(typeName : String, currentValue : Dynamic, col : cdb.Data.Column, parentEl : Element, rightAnchor: Float, topAnchor : Float, depth : Int = 0) {
+	public function editCustomType(typeName : String, ctValue : Dynamic, col : cdb.Data.Column, parentEl : Element, rightAnchor: Float, topAnchor : Float, depth : Int = 0) {
 		var customType = editor.base.getCustomType(typeName);
-		var parsedValue = try editor.base.parseValue(col.type, parentEl.text(), false) catch( e : Dynamic ) null;
 
 		parentEl.empty();
 		var rootEl = new Element('<div class="cdb-type-string"></div>').appendTo(parentEl);
@@ -1462,21 +1461,13 @@ class Cell {
 					}
 				case TCustom(name):
 					{
-						var valueHtml = this.valueHtml(column, value, line.table.getRealSheet(), currentValue, []);
+						var valueHtml = this.valueHtml(column, value, line.table.getRealSheet(), ctValue, []);
+						var display = '<span class="error">#NULL</span>';
 
-						// Check if the value is a valid one
-						var valueStr = try {
-							this.valueHtml(column, editor.base.parseValue(column.type, valueHtml.str, false), line.table.getRealSheet(), currentValue, []).str;
-						} catch( e : Dynamic ) {
-							if (valueHtml.containsHtml)
-								valueHtml.str;
-							else if (column.opt)
-								'';
-							else
-								'<span class="error">#NULL</span>';
-						}
+						if (valueHtml != null && valueHtml.str != "")
+							display = valueHtml.str;
 
-						var html = new Element('<div tabindex="0" class="sub-cdb-type"><p>${valueStr}</p></div>').css("min-width","80px").css("background-color","#222222");
+						var html = new Element('<div tabindex="0" class="sub-cdb-type"><p>${display}</p></div>').css("min-width","80px").css("background-color","#222222");
 						html.on("click", function(e) {
 							// When opening one custom type, close others of the same level
 							content.find(".cdb-type-string").trigger("click");
@@ -1492,8 +1483,7 @@ class Cell {
 		}
 
 		var d = content.find("#dropdown-custom-type");
-		if (depth == 0 ? currentValue != null : parsedValue != null)
-			d.find("option").eq(Std.int(depth == 0 ? currentValue[0] + 1 : parsedValue[0] + 1)).attr("selected", "true");
+		d.find("option").eq(ctValue == null || ctValue.length == 0 ? 0 : Std.int(ctValue[0] + 1)).attr("selected", "true");
 
 		var paramsContent = content.find("#parameters");
 
@@ -1505,8 +1495,7 @@ class Cell {
 			if (selected != null && selected.args.length > 0) {
 				for (idx in 0...selected.args.length) {
 					new Element('<p>&nbsp${selected.args[idx].name}&nbsp:</p>').appendTo(paramsContent);
-					var paramVal = depth == 0 ? cast currentValue : parsedValue;
-					getHtml(paramVal != null ? paramVal[idx + 1] : null, selected.args[idx]).addClass("value").appendTo(paramsContent);
+					getHtml(ctValue != null ? ctValue[idx + 1] : null, selected.args[idx]).addClass("value").appendTo(paramsContent);
 
 					if (idx != selected.args.length - 1)
 						new Element('<p>,&nbsp</p>').appendTo(paramsContent);
@@ -1567,17 +1556,25 @@ class Cell {
 			parentEl.empty();
 
 			// Check if the value is correct
-			var newValue = try editor.base.parseValue(TCustom(customType.name), stringValue, false) catch( e : Dynamic ) null;
-			var htmlValue = valueHtml(col, applyModifications ? newValue : currentValue, line.table.getRealSheet(), currentValue, []);
-			if (StringTools.contains(htmlValue.str, '<span'))
-				stringValue = htmlValue.str;
+			var res = try editor.base.parseValue(TCustom(customType.name), stringValue, false) catch( e : Dynamic ) null;
+			if (res != null) {
+				if (ctValue == null) ctValue = [];
+				for (idx in 0...ctValue.length) ctValue.pop();
+				for (idx in 0...res.length) {
+					ctValue.push(res[idx]);
+				}
+			}
+			else
+				ctValue = null;
+
 
 			if (depth == 0) {
-				this.setRawValue(stringValue);
+				this.setValue(ctValue);
 				this.closeEdit();
 				this.focus();
 			}
 			else {
+				stringValue = valueHtml(col, ctValue, line.table.getRealSheet(), currentValue, []).str;
 				new Element('<p>${stringValue}</p>').appendTo(parentEl);
 				parentEl.focus();
 			}
@@ -1586,6 +1583,28 @@ class Cell {
 		buildParameters();
 
 		d.on("change", function(e) {
+			if (ctValue == null) ctValue = [];
+			for (idx in 0...ctValue.length) ctValue.pop();
+
+			var selected = d.val() == 0 ? null : customType.cases[d.val()];
+			if (selected != null) {
+				ctValue.push(d.val());
+				for (idx in 0...selected.args.length) {
+					switch (selected.args[idx].type) {
+						case TId, TString, TRef(_):
+							ctValue.push('');
+						case TBool:
+							ctValue.push(false);
+						case TInt, TFloat:
+							ctValue.push(0);
+						case TCustom(_), TList, TEnum(_):
+							ctValue.push([]);
+						default:
+							ctValue.push(null);
+					}
+				}
+			}
+			var t = this.currentValue;
 			buildParameters();
 		});
 
