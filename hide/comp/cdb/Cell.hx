@@ -1390,14 +1390,22 @@ class Cell {
 		function getHtml(value : Dynamic, column : cdb.Data.Column) {
 			switch (column.type) {
 				case TId, TString, TDynamic:
-					return new Element('<input type="text" readonly ${value != null ? 'value="${value}"': ''}></input>');
+					var e = new Element('<input type="text" readonly ${value != null ? 'value="${value}"': ''}></input>');
+					e.on('click', function(_) {
+						e.prop('readonly', false);
+					});
+					return e;
 				case TBool:
 					var el =  new Element('<input type="checkbox"></input>');
 					if (value != null && value)
 						el.attr("checked", "true");
 					return el;
 				case TInt, TFloat:
-					return new Element('<input type="number" readonly ${'value="${value != null ? value : 0}"'}></input>');
+					var e = new Element('<input type="number" readonly ${'value="${value != null ? value : 0}"'}></input>');
+					e.on('click', function(_) {
+						e.prop('readonly', false);
+					});
+					return e;
 				case TRef(name):
 					{
 						var sdat = editor.base.getSheet(name);
@@ -1509,64 +1517,52 @@ class Cell {
 			if (children.length > 0)
 				children.first().trigger("click");
 
-			var val = d.val();
-			var selected = val != null ? customType.cases[content.find("#dropdown-custom-type").val()] : null;
-			var stringValue = "";
+			var newCtValue : Array<Dynamic> = null;
 
+			var selected = d.val() != null ? customType.cases[d.val()] : null;
 			if (selected != null) {
-				stringValue = selected.name;
+				newCtValue = [];
+				newCtValue.push(Std.int(d.val()));
 
 				if (selected.args != null && selected.args.length > 0) {
-					stringValue = '${selected.name}(';
-
 					var paramsValues = paramsContent.find(".value");
 					for (idx in 0...selected.args.length) {
 						var paramValue = paramsValues.eq(idx);
 
-						if (paramValue.is("input[type=checkbox]"))
-							stringValue += paramValue.is(":checked");
+						if (paramValue.is("input[type=checkbox]")) {
+							var v = paramValue.is(':checked');
+							newCtValue.push(v);
+						}
+						else if (paramValue.is("input[type=number]"))
+							newCtValue.push(Std.parseFloat(paramValue.val()));
 						else if (paramValue.is("select")) {
 							var sel = paramValue.find(":selected");
 							if (sel.val() != 0)
-								stringValue += sel.text();
+								newCtValue.push(sel.text());
 							else
-								stringValue += "";
+								newCtValue.push("");
 						}
 						else if (paramValue.is("div")) {
 							// Case where the param value is another cdbType
-							var v = paramValue.children().first().text();
-							if (v == "" || v == " ")
-								v = "null";
-							stringValue += v;
+							var v = ctValue[idx + 1] != null && ctValue[idx + 1].length > 1 ? ctValue[idx + 1] : null;
+							newCtValue.push(v);
 						}
 						else
-							stringValue += paramsValues.eq(idx).val();
-
-						if (idx != selected.args.length -1)
-							stringValue += (",");
+							newCtValue.push(paramsValues.eq(idx).val());
 					}
-
-					stringValue += ')';
 				}
-			}
-			else {
-				stringValue = "";
 			}
 
 			parentEl.empty();
 
-			// Check if the value is correct
-			var res = try editor.base.parseValue(TCustom(customType.name), stringValue, false) catch( e : Dynamic ) null;
-			if (res != null) {
+			if (newCtValue != null) {
 				if (ctValue == null) ctValue = [];
 				for (idx in 0...ctValue.length) ctValue.pop();
-				for (idx in 0...res.length) {
-					ctValue.push(res[idx]);
+				for (idx in 0...newCtValue.length) {
+					var u = newCtValue[idx];
+					ctValue.push(newCtValue[idx]);
 				}
 			}
-			else
-				ctValue = null;
-
 
 			if (depth == 0) {
 				this.setValue(ctValue);
@@ -1574,8 +1570,8 @@ class Cell {
 				this.focus();
 			}
 			else {
-				stringValue = valueHtml(col, ctValue, line.table.getRealSheet(), currentValue, []).str;
-				new Element('<p>${stringValue}</p>').appendTo(parentEl);
+				var htmlValue = valueHtml(col, ctValue, line.table.getRealSheet(), currentValue, []);
+				new Element('<p>${htmlValue.str}</p>').appendTo(parentEl);
 				parentEl.focus();
 			}
 		}
