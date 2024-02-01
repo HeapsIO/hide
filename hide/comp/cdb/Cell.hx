@@ -1503,7 +1503,13 @@ class Cell {
 			if (selected != null && selected.args.length > 0) {
 				for (idx in 0...selected.args.length) {
 					new Element('<p>&nbsp${selected.args[idx].name}&nbsp:</p>').appendTo(paramsContent);
-					getHtml(ctValue != null ? ctValue[idx + 1] : null, selected.args[idx]).addClass("value").appendTo(paramsContent);
+					var v = ctValue != null ? ctValue[idx + 1] : null;
+					if (v == null && selected.args[idx].type.match(TCustom(_))) {
+						ctValue[idx + 1] = [];
+						v = ctValue[idx + 1];
+					}
+					var t = this.currentValue;
+					getHtml(v, selected.args[idx]).addClass("value").appendTo(paramsContent);
 
 					if (idx != selected.args.length - 1)
 						new Element('<p>,&nbsp</p>').appendTo(paramsContent);
@@ -1544,7 +1550,7 @@ class Cell {
 						}
 						else if (paramValue.is("div")) {
 							// Case where the param value is another cdbType
-							var v = ctValue[idx + 1] != null && ctValue[idx + 1].length > 1 ? ctValue[idx + 1] : null;
+							var v = ctValue[idx + 1] != null && ctValue[idx + 1].length > 0 ? ctValue[idx + 1] : null;
 							newCtValue.push(v);
 						}
 						else
@@ -1563,6 +1569,9 @@ class Cell {
 					ctValue.push(newCtValue[idx]);
 				}
 			}
+
+			if (ctValue.length == 0)
+				ctValue = null;
 
 			if (depth == 0) {
 				this.setValue(ctValue);
