@@ -682,8 +682,8 @@ class Editor extends Component {
 				for( cid in 0...clipboard.schema.length ) {
 					var c1 = clipboard.schema[cid];
 					var c2 = columns[cid + posX];
-					var p = Editor.getColumnProps(c2);
 					if( c2 == null ) continue;
+					var p = Editor.getColumnProps(c2);
 
 					if( !cursor.table.canEditColumn(c2.name) || p.copyPasteImmutable)
 						continue;
