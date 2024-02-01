@@ -1602,6 +1602,8 @@ class Cell {
 			}
 			var t = this.currentValue;
 			buildParameters();
+
+			content.css("right", '${depth == 0 ? rightAnchor - content.width() / 2.0 : rightAnchor}px');
 		});
 
 		d.focus();
@@ -1612,7 +1614,6 @@ class Cell {
 		content.on("click", function(e) { e.stopPropagation(); });
 		content.on("dblclick", function(e) { e.stopPropagation(); });
 
-		content.css("right", '${depth == 0 ? rightAnchor - content.width() / 2.0 : rightAnchor}px');
 		content.css("top", '${topAnchor}px');
 	}
 }
