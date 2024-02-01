@@ -11,7 +11,7 @@ class Tabs extends Component {
 		if( bottomTabs ) element.addClass("tabs-bottom");
 		header = new Element("<div>").addClass("tabs-header").prependTo(element);
 		syncTabs();
-		var t = getTabs().get();
+		var t = getTabs().get(0);
 		if( t != null ) currentTab = new Element(t);
 	}
 
