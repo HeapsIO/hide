@@ -235,7 +235,7 @@ class Spline extends Object3D {
 		//in editor spline can change
 		#if editor
 		for (i in 0...children.length) {
-			if (children[i].to(SplinePoint) != @:bypassAccessor points[i]) {
+			if (children[i].to(SplinePoint) != points[i]) {
 				recompute = true;
 				break;
 			}
@@ -243,17 +243,17 @@ class Spline extends Object3D {
 		#end
 		// spline never change at runtime, only compute at the beginning
 		#if !editor
-		if (@:bypassAccessor points.length == 0)
+		if (points.length == 0)
 			recompute = true;
 		#end
 		if (recompute) {
-			@:bypassAccessor points = [];
+			points = [];
 			for (c in children) {
 				var sp = c.to(SplinePoint);
-				if (sp != null) @:bypassAccessor points.push(sp);
+				if (sp != null) points.push(sp);
 			}
 		}
-		return @:bypassAccessor points;
+		return points;
 	}
 
 	@:c public var shape : CurveShape = Linear;
