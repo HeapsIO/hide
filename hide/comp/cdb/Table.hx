@@ -198,17 +198,7 @@ class Table extends Component {
 					e.preventDefault();
 				}
 
-				// Update preview of where the line while be dropped
-				var pickedEl = js.Browser.document.elementFromPoint(e.clientX, e.clientY);
-				var pickedLine = null;
-				var parentEl = pickedEl;
-				while (parentEl != null) {
-					if (lines.filter((otherLine) -> otherLine.element.get()[0] == parentEl).length > 0) {
-						pickedLine = lines.filter((otherLine) -> otherLine.element.get()[0] == parentEl)[0];
-						break;
-					}
-					parentEl = parentEl.parentElement;
-				}
+				var pickedLine = getPickedLine(e);
 				if (pickedLine != null) {
 					var lineEl = editor.getLine(line.table.sheet, pickedLine.index).element;
 					previewDrop.css("top",'${pickedLine.index > line.index ? lineEl.position().top + lineEl.height() : lineEl.position().top}px');
@@ -218,16 +208,7 @@ class Table extends Component {
 				ide.unregisterUpdate(updateDrag);
 				previewDrop.hide();
 				if (e.dataTransfer.dropEffect == "none") return false;
-				var pickedEl = js.Browser.document.elementFromPoint(e.clientX, e.clientY);
-				var pickedLine = null;
-				var parentEl = pickedEl;
-				while (parentEl != null) {
-					if (lines.filter((otherLine) -> otherLine.element.get()[0] == parentEl).length > 0) {
-						pickedLine = lines.filter((otherLine) -> otherLine.element.get()[0] == parentEl)[0];
-						break;
-					}
-					parentEl = parentEl.parentElement;
-				}
+				var pickedLine = getPickedLine(e);
 				if (pickedLine != null) {
 					editor.moveLine(line, pickedLine.index - line.index, true);
 					return true;
@@ -333,6 +314,21 @@ class Table extends Component {
 			cols.on("resize", setupTableElement);
 		}
 		#end
+	}
+
+	function getPickedLine(e : js.html.DragEvent) {
+		var pickedEl = js.Browser.document.elementFromPoint(e.clientX, e.clientY);
+		var pickedLine = null;
+		var parentEl = pickedEl;
+		while (parentEl != null) {
+			if (lines.filter((otherLine) -> otherLine.element.get()[0] == parentEl).length > 0) {
+				pickedLine = lines.filter((otherLine) -> otherLine.element.get()[0] == parentEl)[0];
+				break;
+			}
+			parentEl = parentEl.parentElement;
+		}
+
+		return pickedLine;
 	}
 
 	function makeSeparatorTree( ?root ) {
