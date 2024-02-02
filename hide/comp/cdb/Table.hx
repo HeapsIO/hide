@@ -22,6 +22,7 @@ class Table extends Component {
 	public var view : cdb.DiffFile.SheetView;
 
 	var separators : Array<Separator>;
+	var previewDrop : Element;
 
 	public var nestedIndex : Int = 0;
 
@@ -53,6 +54,10 @@ class Table extends Component {
 			}
 		}
 		refresh();
+
+		previewDrop = new Element('<div class="cdb-preview-drag"><div>');
+		previewDrop.appendTo(root);
+		previewDrop.hide();
 	}
 
 	public function getRealSheet() {
@@ -185,15 +190,33 @@ class Table extends Component {
 				}
 				ide.registerUpdate(updateDrag);
 				e.dataTransfer.effectAllowed = "move";
+				previewDrop.show();
 			}
 			headEl.ondrag = function(e:js.html.DragEvent) {
 				if (hxd.Key.isDown(hxd.Key.ESCAPE)) {
 					e.dataTransfer.dropEffect = "none";
 					e.preventDefault();
 				}
+
+				// Update preview of where the line while be dropped
+				var pickedEl = js.Browser.document.elementFromPoint(e.clientX, e.clientY);
+				var pickedLine = null;
+				var parentEl = pickedEl;
+				while (parentEl != null) {
+					if (lines.filter((otherLine) -> otherLine.element.get()[0] == parentEl).length > 0) {
+						pickedLine = lines.filter((otherLine) -> otherLine.element.get()[0] == parentEl)[0];
+						break;
+					}
+					parentEl = parentEl.parentElement;
+				}
+				if (pickedLine != null) {
+					var lineEl = editor.getLine(line.table.sheet, pickedLine.index).element;
+					previewDrop.css("top",'${pickedLine.index > line.index ? lineEl.position().top + lineEl.height() : lineEl.position().top}px');
+				}
 			}
 			headEl.ondragend = function(e:js.html.DragEvent) {
 				ide.unregisterUpdate(updateDrag);
+				previewDrop.hide();
 				if (e.dataTransfer.dropEffect == "none") return false;
 				var pickedEl = js.Browser.document.elementFromPoint(e.clientX, e.clientY);
 				var pickedLine = null;
