@@ -347,8 +347,11 @@ class Table extends Component {
 			if( s == root ) select = next;
 			if( lv > curLevel ) {
 				stack.push(cur);
-				cur = cur.subs[cur.subs.length - 1];
+
+				if (cur.subs.length > 0)
+					cur = cur.subs[cur.subs.length - 1];
 			}
+
 			cur.subs.push(next);
 			curLevel = lv;
 		}
