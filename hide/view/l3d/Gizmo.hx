@@ -68,6 +68,8 @@ class Gizmo extends h3d.scene.Object {
 	var updateFunc: Float -> Void;
 	var mouseX : Float;
 	var mouseY : Float;
+	var mouseLock(get, set) : Bool;
+	var mouseDown : Bool = false;
 
 	public var onStartMove: TransformMode -> Void;
 	public var onMove: h3d.Vector -> h3d.Quat -> h3d.Vector -> Void;
@@ -113,7 +115,6 @@ class Gizmo extends h3d.scene.Object {
 			color = hxd.Math.colorLerp(color, 0x000000, 0.2);
 			color = (color & 0x00ffffff) | 0x80000000;
 			mat.color.setColor(color);
-
 			interactive.onOver = function(e : hxd.Event) {
 				mat.color.setColor(highlight);
 				mat.color.w = 1.0;
@@ -122,16 +123,6 @@ class Gizmo extends h3d.scene.Object {
 				mat.color.setColor(color);
 			}
 			interactive.onPush = function(e) {
-				startDrag(function(e) {
-					mouseX = e.clientX - scene.element.offset().left;
-					mouseY = e.clientY - scene.element.offset().top;
-				}, function(e) {
-					if(moving)
-						finishMove();
-					else
-						updateFunc = null;
-				});
-
 				var startPt = new h2d.col.Point(mouseX, mouseY);
 				updateFunc = function(dt) {
 					var mousePt = new h2d.col.Point(mouseX, mouseY);
@@ -139,6 +130,12 @@ class Gizmo extends h3d.scene.Object {
 						startMove(mode);
 					}
 				}
+			}
+			interactive.onRelease = function(e) {
+				if(moving)
+					finishMove();
+				else
+					updateFunc = null;
 			}
 		}
 
@@ -157,21 +154,23 @@ class Gizmo extends h3d.scene.Object {
 		setup("zScale", 0x0000ff, MoveZ);
 
 		translationMode();
+
+		var el = new Element(scene.element[0].ownerDocument.body);
+		el.on("mousedown.gizmo", function(_) { this.mouseDown = true; });
+		el.on("mouseup.gizmo", function(_) { this.mouseDown = false; });
+		el.on("mousemove.gizmo", function(e) {
+			if (!this.mouseLock) {
+				mouseX = e.clientX - scene.element.offset().left;
+				mouseY = e.clientY - scene.element.offset().top;
+			}
+			else {
+				mouseX = @:privateAccess scene.window.mouseX;
+				mouseY = @:privateAccess scene.window.mouseY;
+			}
+		});
 	}
 
 	public dynamic function onChangeMode(mode : EditMode) {}
-
-	function startDrag(onMove: js.jquery.Event->Void, onStop: js.jquery.Event->Void) {
-		var el = new Element(scene.element[0].ownerDocument.body);
-		el.on("mousemove.gizmo", onMove);
-		el.on("mouseup.gizmo", function(e: js.jquery.Event) {
-			el.off("mousemove.gizmo");
-			el.off("mouseup.gizmo");
-			e.preventDefault();
-			e.stopPropagation();
-			onStop(e);
-		});
-	}
 
 	public function translationMode() {
 		editMode = Translation;
@@ -210,6 +209,8 @@ class Gizmo extends h3d.scene.Object {
 	}
 
 	public function startMove(mode: TransformMode, ?duplicating=false) {
+		if (mode == Scale || (axisScale && (mode == MoveX || mode == MoveY || mode == MoveZ)))
+			mouseLock = true;
 		moving = true;
 		if(onStartMove != null) onStartMove(mode);
 		var startMat = getAbsPos().clone();
@@ -263,9 +264,9 @@ class Gizmo extends h3d.scene.Object {
 			ty.visible = false;
 			tz.visible = false;
 			var curPt = getDragPoint(dragPlane);
-			tx.setPosition(mouseX + 50, mouseY - 15);
-			ty.setPosition(mouseX + 50, mouseY);
-			tz.setPosition(mouseX + 50, mouseY + 15);
+			tx.setPosition(mouseX + 32, mouseY - 15);
+			ty.setPosition(mouseX + 32, mouseY);
+			tz.setPosition(mouseX + 32, mouseY + 15);
 			var delta = curPt.sub(startDragPt);
 			var vec = new h3d.Vector(0,0,0);
 			var quat = new h3d.Quat();
@@ -285,6 +286,7 @@ class Gizmo extends h3d.scene.Object {
 			}
 
             var isMove = (mode == MoveX || mode == MoveY || mode == MoveZ || mode == MoveXY || mode == MoveYZ || mode == MoveZX);
+
 			if(mode == MoveX || mode == MoveXY || mode == MoveZX) vec.x = scene.editor.snap(delta.dot(startMat.front().toPoint()),scene.editor.snapMoveStep);
 			if(mode == MoveY || mode == MoveYZ || mode == MoveXY) vec.y = scene.editor.snap(delta.dot(startMat.right().toPoint()),scene.editor.snapMoveStep);
 			if(mode == MoveZ || mode == MoveZX || mode == MoveYZ) vec.z = scene.editor.snap(delta.dot(startMat.up().toPoint()),scene.editor.snapMoveStep);
@@ -364,7 +366,6 @@ class Gizmo extends h3d.scene.Object {
 						tz.text = ""+ Math.round(vec.z*100)/100.;
 					}
 					onMove(null, null, vec);
-
 				}
 				else {
 					if(mode == Scale) {
@@ -391,14 +392,21 @@ class Gizmo extends h3d.scene.Object {
 				}
 			}
 
-			if(duplicating && K.isPressed(K.MOUSE_LEFT) || K.isPressed(K.ESCAPE)) {
+			if(duplicating && K.isPressed(K.MOUSE_LEFT) || K.isPressed(K.ESCAPE) || (!duplicating && !mouseDown)) {
 				finishMove();
 			}
 		}
 	}
 
+	function get_mouseLock() return @:privateAccess scene.window.mouseMode != Absolute;
+	function set_mouseLock(v : Bool) {
+		@:privateAccess scene.window.mouseMode = v ? AbsoluteUnbound(true) : Absolute;
+		return v;
+	}
+
 	function finishMove() {
 		deltaTextObject.remove();
+		mouseLock = false;
 		updateFunc = null;
 		if(onFinishMove != null)
 			onFinishMove();
