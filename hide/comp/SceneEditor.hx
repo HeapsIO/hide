@@ -1446,8 +1446,8 @@ class SceneEditor {
 				renderPropsRoot.source = savedRenderProp.value;
 		}
 
-		renderPropsRoot.shared.current2d = root2d;
-		renderPropsRoot.shared.current3d = root3d;
+		@:privateAccess renderPropsRoot.shared.root2d = renderPropsRoot.shared.current2d = root2d;
+		@:privateAccess renderPropsRoot.shared.root3d = renderPropsRoot.shared.current3d = root3d;
 		renderPropsRoot.make();
 
 		/*var lights = renderPropsRoot.getAll(hrt.prefab.Light, true);
@@ -1463,7 +1463,7 @@ class SceneEditor {
 		}*/
 
 		if( @:privateAccess renderPropsRoot.refInstance != null ) {
-			var renderProps = @:privateAccess renderPropsRoot.refInstance.getOpt(hrt.prefab.RenderProps);
+			var renderProps = @:privateAccess renderPropsRoot.refInstance.getOpt(hrt.prefab.RenderProps, true);
 			if( renderProps != null )
 				renderProps.applyProps(scene.s3d.renderer);
 		}
