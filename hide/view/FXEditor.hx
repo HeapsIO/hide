@@ -334,6 +334,9 @@ class FXEditor extends hide.view.FileView {
 		var content = sys.io.File.getContent(getPath());
 		var json = haxe.Json.parse(content);
 
+		if (json.type == "fx2d") {
+			is2D = true;
+		}
 		data = cast(PrefabElement.createFromDynamic(json), hrt.prefab.fx.BaseFX);
 		currentSign = ide.makeSignature(content);
 
@@ -1538,7 +1541,7 @@ class FXEditor extends hide.view.FileView {
 
 	function onUpdate2D(dt:Float) {
 
-		var anim = Std.downcast(sceneEditor.root2d, hrt.prefab.fx.FX2D.FX2DAnimation);
+		var anim = sceneEditor.root2d.find((p) -> Std.downcast(p, hrt.prefab.fx.FX2D.FX2DAnimation));
 
 		if(!pauseButton.isDown()) {
 			currentTime += scene.speed * dt;
