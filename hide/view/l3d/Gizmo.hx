@@ -66,10 +66,9 @@ class Gizmo extends h3d.scene.Object {
 	var deltaTextObject : h2d.ObjectFollower;
 	var scene : hide.comp.Scene;
 	var updateFunc: Float -> Void;
-	var mouseX : Float;
-	var mouseY : Float;
+	var mouseX(get,never) : Float;
+	var mouseY(get,never) : Float;
 	var mouseLock(get, set) : Bool;
-	var mouseDown : Bool = false;
 
 	public var onStartMove: TransformMode -> Void;
 	public var onMove: h3d.Vector -> h3d.Quat -> h3d.Vector -> Void;
@@ -154,20 +153,6 @@ class Gizmo extends h3d.scene.Object {
 		setup("zScale", 0x0000ff, MoveZ);
 
 		translationMode();
-
-		var el = new Element(scene.element[0].ownerDocument.body);
-		el.on("mousedown.gizmo", function(_) { this.mouseDown = true; });
-		el.on("mouseup.gizmo", function(_) { this.mouseDown = false; });
-		el.on("mousemove.gizmo", function(e) {
-			if (!this.mouseLock) {
-				mouseX = e.clientX - scene.element.offset().left;
-				mouseY = e.clientY - scene.element.offset().top;
-			}
-			else {
-				mouseX = @:privateAccess scene.window.mouseX;
-				mouseY = @:privateAccess scene.window.mouseY;
-			}
-		});
 	}
 
 	public dynamic function onChangeMode(mode : EditMode) {}
@@ -316,7 +301,7 @@ class Gizmo extends h3d.scene.Object {
 			}
 
 			if(mode == Scale) {
-				var scale = scene.editor.snap(delta.z * 2, scene.editor.snapScaleStep);
+				var scale = scaleFunc(delta.z * 0.5);
 				vec.set(scale, scale, scale);
 			}
 
@@ -351,9 +336,9 @@ class Gizmo extends h3d.scene.Object {
 
 			if(onMove != null) {
 				if(axisScale && mode != Scale) {
-					vec.x = scene.editor.snap(vec.x * 2, scene.editor.snapScaleStep);
-					vec.y = scene.editor.snap(vec.y * 2, scene.editor.snapScaleStep);
-					vec.z = scene.editor.snap(vec.z * 2, scene.editor.snapScaleStep);
+					vec.x = scene.editor.snap(scaleFunc(vec.x), scene.editor.snapScaleStep);
+					vec.y = scene.editor.snap(scaleFunc(vec.y), scene.editor.snapScaleStep);
+					vec.z = scene.editor.snap(scaleFunc(vec.z), scene.editor.snapScaleStep);
 					if (vec.x != 1) {
 						tx.visible = true;
 						tx.text = ""+ Math.round(vec.x*100)/100.;
@@ -393,12 +378,14 @@ class Gizmo extends h3d.scene.Object {
 				}
 			}
 
-			if(duplicating && K.isPressed(K.MOUSE_LEFT) || K.isPressed(K.ESCAPE) || (!duplicating && !mouseDown)) {
+			if(duplicating && K.isPressed(K.MOUSE_LEFT) || K.isPressed(K.ESCAPE) || (!duplicating && !K.isDown(K.MOUSE_LEFT))) {
 				finishMove();
 			}
 		}
 	}
 
+	function get_mouseX() return @:privateAccess scene.window.mouseX;
+	function get_mouseY() return @:privateAccess scene.window.mouseY;
 	function get_mouseLock() return @:privateAccess scene.window.mouseMode != Absolute;
 	function set_mouseLock(v : Bool) {
 		@:privateAccess scene.window.mouseMode = v ? AbsoluteUnbound(true) : Absolute;
