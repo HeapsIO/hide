@@ -1799,5 +1799,5 @@ class FX2DEditor extends FXEditor {
 		@:privateAccess return haxe.io.Bytes.ofString(ide.toJSON(new hrt.prefab.fx.FX2D(null, null).save()));
 	}
 
-	static var _2d = FileTree.registerExtension(FX2DEditor, ["fx2d__"], { icon : "sitemap", createNew : "FX 2D" });
+	static var _2d = FileTree.registerExtension(FX2DEditor, ["fx2d"], { icon : "sitemap", createNew : "FX 2D" });
 }
