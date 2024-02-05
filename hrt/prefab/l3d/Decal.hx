@@ -83,6 +83,8 @@ class Decal extends Object3D {
 
 	public function updateRenderParams() {
 		var mesh = Std.downcast(local3d, h3d.scene.Mesh);
+		if (mesh == null)
+			return;
 
 		if (this.refMatLib != null && this.refMatLib != "") {
 			// If a decal reference a material in the material library, we only
