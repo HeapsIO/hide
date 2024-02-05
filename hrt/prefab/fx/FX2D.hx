@@ -79,8 +79,6 @@ class FX2DAnimation extends h2d.Object {
 
 		this.localTime = time;
 
-		trace(time);
-
 		for(anim in objects) {
 			if(anim.scale != null) {
 				evaluator.getVector(anim.scale, time, tmpPt);
