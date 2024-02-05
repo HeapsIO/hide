@@ -646,7 +646,9 @@ class Model extends FileView {
 		plight = root.find(hrt.prefab.Light);
 		if( plight != null ) {
 			this.light = hrt.prefab.Object3D.getLocal3d(plight);
-			lightDirection = this.light.getLocalDirection();
+
+			if (this.light != null)
+				lightDirection = this.light.getLocalDirection();
 		}
 
 		undo.onChange = function() {};
