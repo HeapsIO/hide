@@ -560,6 +560,9 @@ class EmitterObject extends h3d.scene.Object {
 
 			var empty3d = new h3d.scene.Object();
 			var clone = particleTemplate.clone(new hrt.prefab.ContextShared(empty3d),false);
+			#if editor
+			clone.setEditor(prefab.shared.editor);
+			#end
 			clone.make();
 			var loc3d = Object3D.getLocal3d(clone);
 
