@@ -137,7 +137,7 @@ class Object3D extends Prefab {
 				continue;
 			}
 			var m = getTransform();
-			var abs = obj.getAbsPos();
+			var abs = obj.getAbsPos(followRefs);
 			m.multiply3x4(m, abs);
 			return m;
 		}
