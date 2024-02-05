@@ -228,7 +228,6 @@ class IdeData {
 	public function loadPrefab<T:hrt.prefab.Prefab>( file : String, ?cl : Class<T>, ?checkExists ) : T {
 		if( file == null )
 			return null;
-		var l = hrt.prefab.Library.create(file.split(".").pop().toLowerCase());
 		try {
 			var path = getPath(file);
 			if( checkExists && !sys.FileSystem.exists(path) )
@@ -241,9 +240,6 @@ class IdeData {
 			error("Invalid prefab "+file+" ("+e+")");
 			throw e;
 		}
-		if( cl == null )
-			return cast l;
-		return l.get(cl);
 	}
 
 	public function savePrefab( file : String, f : hrt.prefab.Prefab ) {
