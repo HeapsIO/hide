@@ -251,7 +251,7 @@ class World extends Object3D {
 	}
 
 	function createObjectFromData(data : h3d.scene.HierarchicalWorld.WorldData) : h3d.scene.HierarchicalWorld {
-		return new h3d.scene.HierarchicalWorld(local3d, data);
+		return new h3d.scene.HierarchicalWorld(shared.current3d, data);
 	}
 
 	override function makeObject(parent3d: h3d.scene.Object) {
