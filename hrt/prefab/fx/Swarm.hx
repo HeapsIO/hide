@@ -33,6 +33,7 @@ class SwarmElement {
 	public var prev_vz: Float = 0.0;
 }
 
+@:access(hrt.prefab.Prefab)
 class SwarmObject extends h3d.scene.Object {
 	public var prefab : Swarm = null;
 	public var elements: Array<SwarmElement> = [];
@@ -41,7 +42,6 @@ class SwarmObject extends h3d.scene.Object {
 	public var targetAngle: Float = 0.0;
 
 	public var batch : h3d.scene.MeshBatch = null;
-	public var context : Context = null;
 
 	public var swarmElementTemplate: Object3D = null;
 
@@ -82,11 +82,14 @@ class SwarmObject extends h3d.scene.Object {
 			// if(baseEmitMat.isIdentityEpsilon(0.01))
 			// 	baseEmitMat = null;
 
-			var template = swarmElementTemplate.makeInstance(context);
-			var mesh = Std.downcast(template.local3d, h3d.scene.Mesh);
+			var empty3d = new h3d.scene.Object();
+
+			var template = swarmElementTemplate.make(new ContextShared(empty3d));
+			var local3d = Object3D.getLocal3d(template);
+			var mesh = Std.downcast(local3d, h3d.scene.Mesh);
 			if( mesh == null ) {
-				for( i in 0...template.local3d.numChildren ) {
-					mesh = Std.downcast(template.local3d.getChildAt(i), h3d.scene.Mesh);
+				for( i in 0...local3d.numChildren ) {
+					mesh = Std.downcast(local3d.getChildAt(i), h3d.scene.Mesh);
 					if( mesh != null ) {
 						break;
 					}
@@ -99,9 +102,7 @@ class SwarmObject extends h3d.scene.Object {
 				mesh.remove();
 			}
 
-			template.shared.contexts.remove(swarmElementTemplate);
-			template.local3d.remove();
-			template.local3d = null;
+			empty3d.remove();
 		}
 
 		if (meshPrimitive == null) {
@@ -121,11 +122,9 @@ class SwarmObject extends h3d.scene.Object {
 			batch.name = "emitter";
 			batch.calcBounds = true;
 
-			var batchContext = context.clone(null);
-			batchContext.local3d = batch;
 			// Setup mats.
 			// Should we do this manually here or make a recursive makeInstance on the template?
-			var materials = prefab.getAll(hrt.prefab.Material);
+			var materials = prefab.findAll(hrt.prefab.Material);
 			for(mat in materials) {
 
 				// Remove materials that are not directly parented to this Swarm
@@ -136,15 +135,14 @@ class SwarmObject extends h3d.scene.Object {
 
 				if (this.prefab == p) {
 					if(mat.enabled) {
-						var ctx = mat.makeInstance(batchContext);
-						ctx.local3d = null;
+						@:privateAccess mat.makeInstance();
 					}
 				}
 			}
 
 			// Setup shaders
 			shaderAnims = [];
-			var shaders = prefab.getAll(hrt.prefab.Shader);
+			var shaders = prefab.findAll(hrt.prefab.Shader);
 			for( shader in shaders ) {
 				// Remove shaders that are not directly parented to this Swarm
 				var p = shader.parent;
@@ -153,12 +151,11 @@ class SwarmObject extends h3d.scene.Object {
 				}
 				if (this.prefab == p) {
 					if( !shader.enabled ) continue;
-					var shCtx = makeShaderInstance(shader, batchContext);
-					if( shCtx == null ) continue;
+					makeShaderInstance(shader);
 
-					shCtx.local3d = null; // Prevent shader.iterMaterials from adding our objet to the list incorectly
+					//shCtx.local3d = null; // Prevent shader.iterMaterials from adding our objet to the list incorectly
 
-					hrt.prefab.fx.BaseFX.getShaderAnims(shCtx, shader, shaderAnims, batch);
+					hrt.prefab.fx.BaseFX.BaseFXTools.getShaderAnims(shader, shaderAnims, batch);
 				}
 			}
 
@@ -169,15 +166,11 @@ class SwarmObject extends h3d.scene.Object {
 
 	}
 
-	function makeShaderInstance(prefab: hrt.prefab.Shader, ctx:Context):Context {
-		ctx = ctx.clone(prefab);
-		var shader = prefab.makeShader(ctx);
+	function makeShaderInstance(prefab: hrt.prefab.Shader) {
+		var shader = prefab.makeShader();
 		if( shader == null )
-			return ctx;
-		ctx.custom = shader;
-		prefab.updateInstance(ctx);
-		ctx.local3d = null;  // prevent ContextShared.getSelfObject from incorrectly reporting object
-		return ctx;
+			return;
+		prefab.updateInstance();
 	}
 
 	static var tmpVector = new h3d.Vector();
@@ -480,24 +473,16 @@ class Swarm extends Object3D {
 	@:s public var debugTargets : Bool = false;
 
 	// Override child creation
-	override function make(ctx: Context) {
-		if( ctx == null ) {
-			ctx = new Context();
-			ctx.init();
-		}
-		ctx = makeInstance(ctx);
-		return ctx;
+	override function makeChild(p:Prefab) {
 	}
 
-	override function createObject(ctx:Context) {
-		var obj = new SwarmObject(ctx.local3d, this);
-		obj.context = ctx;
-		return obj;
+	override function makeObject(parent:h3d.scene.Object) {
+		return new SwarmObject(parent, this);
 	}
 
-	override function updateInstance( ctx: Context, ?propName : String) {
-		super.updateInstance(ctx, propName);
-		var swarm : SwarmObject = cast ctx.local3d;
+	override function updateInstance(?propName : String) {
+		super.updateInstance(propName);
+		var swarm : SwarmObject = cast local3d;
 
 		var template : Object3D = cast children.find(
 			c -> c.enabled &&
@@ -511,11 +496,11 @@ class Swarm extends Object3D {
 	}
 
 	#if editor
-	override function getHideProps() : HideProps {
+	override function getHideProps() : hide.prefab.HideProps {
 		return { icon : "random", name : "Swarm" };
 	}
 
-	override public function edit(ctx:EditContext) {
+	override public function edit(ctx:hide.prefab.EditContext) {
 		super.edit(ctx);
 		var props = ctx.properties.add(new hide.Element('
 		<div class="group" name="Swarm Entities">
@@ -572,5 +557,5 @@ class Swarm extends Object3D {
 	}
 	#end
 
-	static var _ = hrt.prefab.Library.register("Swarm", Swarm);
+	static var _ = hrt.prefab.Prefab.register("Swarm", Swarm);
 }

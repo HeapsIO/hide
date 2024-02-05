@@ -4,37 +4,28 @@ class Trail extends Object3D {
 
 	@:s var data : Dynamic;
 
-	function new(?parent) {
-		super(parent);
+	function new(parent, shared: ContextShared) {
+		super(parent, shared);
 		data = new h3d.scene.Trail().save();
 	}
 
-	public function create( ?parent : h3d.scene.Object ) {
-		var tr = new h3d.scene.Trail(parent);
+	override public function makeObject(parent3d:h3d.scene.Object):h3d.scene.Object {
+		var tr = new h3d.scene.Trail(parent3d);
 		tr.load(data);
-		applyTransform(tr);
-		tr.name = name;
+		applyTransform();
 		return tr;
-	}
-
-	override function makeInstance(ctx:Context):Context {
-		ctx = ctx.clone(this);
-		var tr = create(ctx.local3d);
-		ctx.local3d = tr;
-		return ctx;
 	}
 
 	#if editor
 
-	override function getHideProps():HideProps {
+	override function getHideProps():hide.prefab.HideProps {
 		return { icon : "toggle-on", name : "Trail" };
 	}
 
-	override public function edit(ctx:EditContext) {
+	override public function edit(ctx:hide.prefab.EditContext) {
 		super.edit(ctx);
 
-		var trailContext = ctx.getContext(this);
-		var trail = trailContext == null ? create(null) : Std.downcast(trailContext.local3d, h3d.scene.Trail);
+		var trail = Std.downcast(local3d, h3d.scene.Trail);
 		var props = ctx.properties.add(new hide.Element('
 		<div class="group" name="Material">
 		</div>
@@ -58,6 +49,6 @@ class Trail extends Object3D {
 
 	#end
 
-	static var _ = Library.register("trail", Trail);
+	static var _ = Prefab.register("trail", Trail);
 
 }

@@ -1,162 +1,130 @@
 package hrt.prefab;
 
 class Reference extends Object3D {
+	@:s public var editMode : Bool = false;
 
-	@:s var editMode : Bool = false;
-	public var ref: Prefab = null;
-	#if editor
-	var editor : hide.comp.SceneEditor;
-	#end
+	public var refInstance : Prefab;
 
-	public function new(?parent) {
-		super(parent);
-		type = "reference";
-	}
-
-	override function load(v:Dynamic) {
-		super.load(v);
-		// backward compatibility
-		var old : String = v.refpath;
-		if( old != null ) {
-			source = old.charCodeAt(0) == "/".code ? old.substr(1) : "/"+old;
+	public static function copy_overrides(from:Dynamic) : haxe.ds.StringMap<Dynamic> {
+		if (Std.isOfType(from, haxe.ds.StringMap)) {
+			return from != null ? cast(from, haxe.ds.StringMap<Dynamic>).copy() : new haxe.ds.StringMap<Dynamic>();
+		}
+		else {
+			var m = new haxe.ds.StringMap<Dynamic>();
+			for (f in Reflect.fields(from)) {
+				m.set(f, Reflect.getProperty(from ,f));
+			}
+			return m;
 		}
 	}
 
 	override function save() {
 		var obj : Dynamic = super.save();
 		#if editor
-		if( editMode && ref != null ) {
-			if( editor != null ) editor.watchIgnoreChanges(source);
+		if( editMode && refInstance != null ) {
+			var sheditor = Std.downcast(shared, hide.prefab.ContextShared);
+			if( sheditor.editor != null ) sheditor.editor.watchIgnoreChanges(source);
 
-			hide.Ide.inst.savePrefab(source, ref);
+			var s = refInstance.serialize();
+			sys.io.File.saveContent(hide.Ide.inst.getPath(source), hide.Ide.inst.toJSON(s));
 		}
 		#end
 		return obj;
 	}
 
-	public function resolveRef(shared : hrt.prefab.ContextShared) {
-		if(ref != null)
-			return ref;
+	#if editor
+	override function setEditorChildren(sceneEditor:hide.comp.SceneEditor) {
+		super.setEditorChildren(sceneEditor);
+
+		if (refInstance != null) {
+			refInstance.setEditor(sceneEditor);
+		}
+	}
+	#end
+
+	function resolveRef() : Prefab {
 		if(source == null)
 			return null;
-		if(shared == null) { // Allow resolving ref in Hide prefore makeInstance
-			#if editor
-			ref = hide.Ide.inst.loadPrefab(source, null, true);
-			#else
-			return null;
-			#end
-		}
-		else
-			ref = shared.loadPrefab(source);
-		return ref;
+		if (refInstance != null)
+			return refInstance;
+		return hxd.res.Loader.currentInstance.load(source).to(hrt.prefab.Resource).load();
 	}
 
-	override function updateInstance( ctx: Context, ?propName : String ) {
-		var p = resolveRef(ctx.shared);
-		if(p == null)
+	override function makeInstance() {
+		if( source == null )
 			return;
-		var parentCtx = parent == null ? null : ctx.shared.contexts.get(parent);
-		if(parentCtx == null || parentCtx.local3d != ctx.local3d) {
-			// Only apply reference Object3D properties (pos, scale...) to own local3D
-			// Not all refs will create their own scene object
-			super.updateInstance(ctx, propName);
+		var p = resolveRef();
+		var refLocal3d : h3d.scene.Object = null;
+
+		if (p.to(Object3D) != null) {
+			refLocal3d = shared.current3d;
+		} else {
+			super.makeInstance();
+			refLocal3d = local3d;
 		}
-	}
 
-	override function find<T>( f : Prefab -> Null<T>, ?followRefs : Bool ) : T {
-		if( followRefs && ref != null ) {
-			var v = ref.find(f, followRefs);
-			if( v != null ) return v;
-		}
-		return super.find(f, followRefs);
-	}
-
-	override function findAll<T>( f : Prefab -> Null<T>, ?followRefs : Bool, ?arr : Array<T> ) : Array<T> {
-		if( followRefs && ref != null )
-			arr = ref.findAll(f, followRefs, arr);
-		return super.findAll(f, followRefs, arr);
-	}
-
-	override function getOpt<T:Prefab>( cl : Class<T>, ?name : String, ?followRefs ) : T {
-		if( followRefs && ref != null ) {
-			var v = ref.getOpt(cl, name, true);
-			if( v != null )
-				return v;
-		}
-		return super.getOpt(cl, name, followRefs);
-	}
-
-	override function makeInstance(ctx: Context) : Context {
-		var p = resolveRef(ctx.shared);
-		if(p == null)
-			return ctx;
-
-		ctx = super.makeInstance(ctx);
-		var objFollow = new h2d.ObjectFollower(ctx.local3d, ctx.local2d);
-		objFollow.followVisibility = true;
-		ctx.local2d = objFollow;
-		var prevShared = ctx.shared;
-		ctx.shared = ctx.shared.cloneRef(this, source);
-		makeChild(ctx, p);
-		ctx.shared = prevShared;
-
+		var sh = new ContextShared(source, findFirstLocal2d(), refLocal3d);
 		#if editor
-
-		if( editMode ) {
-			editor = cast(ctx.shared, hide.prefab.ContextShared).editor;
-			if( editor != null ) editor.watch(source);
-		}
-
-		if (ctx.local2d == null) {
-			var path = hide.Ide.inst.appPath + "/res/icons/fileRef.png";
-			var data = sys.io.File.getBytes(path);
-			var tile = hxd.res.Any.fromBytes(path, data).toTile().center();
-			var objFollow = new h2d.ObjectFollower(ctx.local3d, ctx.shared.root2d);
-			objFollow.followVisibility = true;
-			var bmp = new h2d.Bitmap(tile, objFollow);
-			ctx.local2d = objFollow;
-		}
+		sh.editor = this.shared.editor;
 		#end
+		sh.parentPrefab = this;
+		sh.customMake = this.shared.customMake;
+		refInstance = p.clone(null, sh);
 
-		return ctx;
+		if (refInstance.to(Object3D) != null) {
+			var obj3d = refInstance.to(Object3D);
+			obj3d.loadTransform(this); // apply this transform to the reference prefab
+			obj3d.name = name;
+			obj3d.visible = visible;
+			refInstance.make();
+			local3d = Object3D.getLocal3d(refInstance);
+		}
+		else {
+			refInstance.make();
+		}
 	}
 
-	override function removeInstance(ctx:Context):Bool {
-		if(!super.removeInstance(ctx))
-			return false;
-		if(ctx.local2d != null)
-			ctx.local2d.remove();
-		return true;
+	override public function find<T:Prefab>(?cl: Class<T>, ?filter : T -> Bool, followRefs : Bool = false ) : Null<T> {
+		var res = super.find(cl, filter, followRefs);
+		if (res == null && followRefs ) {
+			var p = resolveRef();
+			if( p != null )
+				return p.find(cl, filter, followRefs);
+		}
+		return res;
 	}
 
-	override function to<T:Prefab>( c : Class<T> ) : Null<T> {
-		var base = super.to(c);
-		if(base != null)
-			return base;
-		var p = resolveRef(null);
-		if(p == null) return null;
-		return Std.downcast(p, c);
+	override public function getOpt<T:Prefab>( ?cl : Class<T>, ?name : String, ?followRefs : Bool ) : Null<T> {
+		var res = super.getOpt(cl, name, followRefs);
+		if (res == null && followRefs && refInstance != null) {
+			return refInstance.getOpt(cl, name, followRefs);
+		}
+		return res;
 	}
 
-	override function flatten<T:Prefab>(?cl:Class<T>, ?arr:Array<T>):Array<T> {
+	override public function flatten<T:Prefab>( ?cl : Class<T>, ?arr: Array<T> ) : Array<T> {
 		arr = super.flatten(cl, arr);
-		if (editMode && ref != null) {
-			for (c in ref.children) {
-				c.flatten(cl, arr);
-			}
+		if (editMode && refInstance != null) {
+			arr = refInstance.flatten(cl, arr);
 		}
 		return arr;
 	}
 
-	#if editor
-
-	override function makeInteractive(ctx) {
-		if( editMode )
-			return null;
-		return super.makeInteractive(ctx);
+	override function dispose() {
+		super.dispose();
+		if( refInstance != null )
+			refInstance.dispose();
 	}
 
-	override function edit( ctx : EditContext ) {
+	#if editor
+
+	override function makeInteractive() {
+		if( editMode )
+			return null;
+		return super.makeInteractive();
+	}
+
+	override function edit( ctx : hide.prefab.EditContext ) {
 		var element = new hide.Element('
 			<div class="group" name="Reference">
 			<dl>
@@ -167,7 +135,7 @@ class Reference extends Object3D {
 
 		function updateProps() {
 			var input = element.find("input");
-			var found = resolveRef(ctx.rootContext.shared) != null;
+			var found = resolveRef() != null;
 			input.toggleClass("error", !found);
 		}
 		updateProps();
@@ -175,7 +143,7 @@ class Reference extends Object3D {
 		var props = ctx.properties.add(element, this, function(pname) {
 			ctx.onChange(this, pname);
 			if(pname == "source" || pname == "editMode") {
-				ref = null;
+				refInstance = null;
 				updateProps();
 				if(!ctx.properties.isTempChange)
 					ctx.rebuildPrefab(this);
@@ -185,10 +153,11 @@ class Reference extends Object3D {
 		super.edit(ctx);
 	}
 
-	override function getHideProps() : HideProps {
+	override function getHideProps() : hide.prefab.HideProps {
 		return { icon : "share", name : "Reference" };
 	}
 	#end
 
-	static var _ = Library.register("reference", Reference);
+
+	public static var _ = hrt.prefab.Prefab.register("reference", Reference);
 }

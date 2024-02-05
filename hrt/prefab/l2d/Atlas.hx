@@ -11,10 +11,10 @@ class Atlas extends Object2D {
 
 	var atlas : hxd.res.Atlas;
 
-	override function updateInstance( ctx: Context, ?propName : String ) {
-		super.updateInstance(ctx, propName);
+	override function updateInstance(?propName : String ) {
+		super.updateInstance(propName);
 
-		var h2dAnim = (cast ctx.local2d : h2d.Anim);
+		var h2dAnim = (cast local2d : h2d.Anim);
 		h2dAnim.smooth = true;
 
 		if (propName == null || propName == "src" || propName == "forcePivotCenter") {
@@ -46,19 +46,14 @@ class Atlas extends Object2D {
 		#end
 	}
 
-	override function makeInstance(ctx:Context):Context {
-		ctx = ctx.clone(this);
-		var h2dAnim = new h2d.Anim([], fpsAnimation, ctx.local2d);
-		ctx.local2d = h2dAnim;
-		ctx.local2d.name = name;
-		updateInstance(ctx);
-		return ctx;
+	override function makeObject(parent2d:h2d.Object): h2d.Object {
+		var h2dAnim = new h2d.Anim([], fpsAnimation, parent2d);
+		return h2dAnim;
 	}
 
 	#if editor
 
-	override function makeInteractive(ctx:Context):h2d.Interactive {
-		var local2d = ctx.local2d;
+	override function makeInteractive():h2d.Interactive {
 		if(local2d == null)
 			return null;
 		var h2dAnim = cast(local2d, h2d.Anim);
@@ -71,7 +66,7 @@ class Atlas extends Object2D {
 		return int;
 	}
 
-	override function edit( ctx : EditContext ) {
+	override function edit( ctx : hide.prefab.EditContext ) {
 		super.edit(ctx);
 
 		var parameters = new hide.Element('<div class="group" name="Parameters"></div>');
@@ -86,7 +81,7 @@ class Atlas extends Object2D {
 		if (this.src != null && this.src.length > 0) tfile.path = this.src;
 		tfile.onChange = function() {
 			this.src = tfile.path;
-			updateInstance(ctx.getContext(this), "src");
+			updateInstance("src");
 		}
 		new hide.Element('<dt>FPS</dt><dd><input type="range" min="0" max="60" step="1" field="fpsAnimation"/></dd>').appendTo(gr);
 		new hide.Element('<dt>Delay Start</dt><dd><input type="range" min="0" max="5" field="delayStart"/></dd>').appendTo(gr);
@@ -99,12 +94,12 @@ class Atlas extends Object2D {
 		});
 	}
 
-	override function getHideProps() : HideProps {
+	override function getHideProps() : hide.prefab.HideProps {
 		return { icon : "square", name : "Atlas" };
 	}
 
 	#end
 
-	static var _ = Library.register("atlas", Atlas);
+	static var _ = Prefab.register("atlas", Atlas);
 
 }

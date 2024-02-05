@@ -3,7 +3,6 @@ using Lambda;
 import hxd.Pixels;
 import hrt.prefab.terrain.Tile;
 import hxd.Key as K;
-import hrt.prefab.Context;
 
 enum RenderMode {
 	PBR;
@@ -136,11 +135,11 @@ class TerrainEditor {
 		}
 	}
 
-	function renderTerrainUV( ctx : Context ) {
+	function renderTerrainUV() {
 		if( customScene == null ) return;
-		if( ctx == null || ctx.local3d == null || ctx.local3d.getScene() == null ) return;
+		if( terrainPrefab == null || terrainPrefab.local3d == null || terrainPrefab.local3d.getScene() == null ) return;
 		var engine = h3d.Engine.getCurrent();
-		var mainScene = @:privateAccess ctx.local3d.getScene();
+		var mainScene = @:privateAccess terrainPrefab.local3d.getScene();
 
 		if( uvTex == null || uvTex.width != Std.int(h3d.Engine.getCurrent().width * uvTexRes) || uvTex.height != Std.int(h3d.Engine.getCurrent().height * uvTexRes) ) {
 			if(uvTex != null) {
@@ -581,23 +580,23 @@ class TerrainEditor {
 		return minDist;
 	}
 
-	function screenToWorld( u : Float, v : Float, ctx : Context ) {
-		if( ctx == null || ctx.local3d == null || ctx.local3d.getScene() == null ) return new h3d.col.Point();
-		var camera = @:privateAccess ctx.local3d.getScene().camera;
+	function screenToWorld( u : Float, v : Float) {
+        if( terrainPrefab == null || terrainPrefab.local3d == null || terrainPrefab.local3d.getScene() == null ) return new h3d.col.Point();
+		var camera = @:privateAccess terrainPrefab.local3d.getScene().camera;
 		var ray = camera.rayFromScreen(u, v);
 		var dist = projectToGround(ray);
 		return dist >= 0 ? ray.getPoint(dist) : new h3d.col.Point();
 	}
 
-	function worldToScreen( wx: Float, wy: Float, wz: Float, ctx : Context ) {
-		if( ctx == null || ctx.local3d == null || ctx.local3d.getScene() == null || ctx.local2d == null || ctx.local2d.getScene() == null ) return new h2d.col.Point();
-		var camera = @:privateAccess ctx.local3d.getScene().camera;
+	function worldToScreen( wx: Float, wy: Float, wz: Float) {
+		if( terrainPrefab == null || terrainPrefab.local3d == null || terrainPrefab.local3d.getScene() == null) return new h2d.col.Point();
+		var camera = @:privateAccess terrainPrefab.local3d.getScene().camera;
 		var pt = camera.project(wx, wy, wz, h3d.Engine.getCurrent().width, h3d.Engine.getCurrent().height);
 		return new h2d.col.Point(hxd.Math.abs(pt.x), hxd.Math.abs(pt.y));
 	}
 
-	function getBrushPlanePos( mouseX : Float, mouseY : Float, ctx : Context ) {
-		var worldPos = screenToWorld(mouseX, mouseY, ctx);
+	function getBrushPlanePos( mouseX : Float, mouseY : Float) {
+		var worldPos = screenToWorld(mouseX, mouseY);
 		if( currentBrush.brushMode.snapToGrid ) {
 			var localPos = terrainPrefab.terrain.globalToLocal(worldPos.clone());
 			localPos.x = hxd.Math.round(localPos.x / terrainPrefab.terrain.cellSize.x) * terrainPrefab.terrain.cellSize.x;
@@ -608,9 +607,9 @@ class TerrainEditor {
 		return worldPos;
 	}
 
-	function getBrushWorldPosFromTex( worldPos : h3d.col.Point, ctx : Context ) : h3d.col.Point {
+	function getBrushWorldPosFromTex( worldPos : h3d.col.Point) : h3d.col.Point {
 		if(currentBrush.brushMode.snapToGrid) return worldPos;
-		var screenPos = worldToScreen(worldPos.x, worldPos.y, worldPos.z, ctx);
+		var screenPos = worldToScreen(worldPos.x, worldPos.y, worldPos.z);
 		var brushWorldPos = worldPos.clone();
 		var fetchPos = new h2d.col.Point(hxd.Math.floor(screenPos.x * uvTexRes), hxd.Math.floor(screenPos.y * uvTexRes));
 		fetchPos.x = hxd.Math.clamp(fetchPos.x, 0, uvTexPixels.width - 1);
@@ -623,27 +622,27 @@ class TerrainEditor {
 		return brushWorldPos;
 	}
 
-	function drawBrushPreview( worldPos : h3d.col.Point, ctx : Context ) {
-		if( ctx == null || ctx.local3d == null || ctx.local3d.getScene() == null ) return;
+	function drawBrushPreview( worldPos : h3d.col.Point) {
+		if(terrainPrefab == null || terrainPrefab.local3d == null || terrainPrefab.local3d.getScene() == null) return;
 		brushPreview.reset();
 		if( currentBrush.brushMode.mode == Delete || currentBrush.bitmap == null ) return;
-		var brushWorldPos = uvTexPixels == null ? worldPos : getBrushWorldPosFromTex(worldPos, ctx);
+		var brushWorldPos = uvTexPixels == null ? worldPos : getBrushWorldPosFromTex(worldPos);
 		brushPreview.previewAt(currentBrush, brushWorldPos);
 	}
 
-	function applyBrush( pos : h3d.col.Point, ctx : Context ) {
+	function applyBrush( pos : h3d.col.Point) {
 		switch ( currentBrush.brushMode.mode ) {
-			case Paint: drawSurface(pos, ctx);
-			case AddSub: drawHeight(pos, ctx);
-			case Smooth: drawHeight(pos, ctx);
-			case Set: drawHeight(pos, ctx);
-			case Delete: deleteTile(pos, ctx);
+			case Paint: drawSurface(pos);
+			case AddSub: drawHeight(pos);
+			case Smooth: drawHeight(pos);
+			case Set: drawHeight(pos);
+			case Delete: deleteTile(pos);
 			default:
 		}
 		terrainPrefab.modified = true;
 	}
 
-	function useBrush( from : h3d.col.Point, to : h3d.col.Point, ctx : Context ) {
+	function useBrush( from : h3d.col.Point, to : h3d.col.Point) {
 		var dist = (to.sub(from)).length();
 		if( currentBrush.firstClick ) {
 			if( currentBrush.brushMode.mode == Set ) {
@@ -652,7 +651,7 @@ class TerrainEditor {
 				else
 					currentBrush.brushMode.setHeightValue = currentBrush.strength;
 			}
-			applyBrush(from, ctx);
+			applyBrush(from);
 			previewStrokeBuffers();
 			return;
 		}
@@ -673,7 +672,7 @@ class TerrainEditor {
 					pos = pos.add(firstStep);
 				}else
 					pos = pos.add(step);
-				applyBrush(pos, ctx);
+				applyBrush(pos);
 				dist -= currentBrush.step - remainingDist;
 				remainingDist = 0;
 			}
@@ -683,8 +682,8 @@ class TerrainEditor {
 			remainingDist += dist;
 	}
 
-	public function deleteTile( pos : h3d.col.Point, ctx : Context ) {
-		var brushWorldPos = uvTexPixels == null ? pos : getBrushWorldPosFromTex(pos, ctx);
+	public function deleteTile( pos : h3d.col.Point) {
+		var brushWorldPos = uvTexPixels == null ? pos : getBrushWorldPosFromTex(pos);
 		if( brushWorldPos == null ) return;
 		var tile = terrainPrefab.terrain.getTileAtWorldPos(brushWorldPos.x, brushWorldPos.y);
 		if( tile == null ) return;
@@ -695,18 +694,18 @@ class TerrainEditor {
 			trd.prevWeightMapPixels.push(w.capturePixels());
 		tileTrashBin.push(trd);
 		terrainPrefab.terrain.removeTile(tile);
-		renderTerrainUV(ctx);
+		renderTerrainUV();
 	}
 
-	public function drawSurface( pos : h3d.col.Point, ctx : Context ) {
+	public function drawSurface( pos : h3d.col.Point) {
 		if( currentBrush.index == -1 ) return;
-		var brushWorldPos = uvTexPixels == null ? pos : getBrushWorldPosFromTex(pos, ctx);
+		var brushWorldPos = uvTexPixels == null ? pos : getBrushWorldPosFromTex(pos);
 		if( brushWorldPos == null ) return;
 		var c = terrainPrefab.terrain.tiles.length;
 		var tiles = terrainPrefab.terrain.getTiles(brushWorldPos.x, brushWorldPos.y, currentBrush.size / 2.0, autoCreateTile);
 		if( c != terrainPrefab.terrain.tiles.length ) {
-			renderTerrainUV(ctx);
-			brushWorldPos = getBrushWorldPosFromTex(pos, ctx);
+			renderTerrainUV();
+			brushWorldPos = getBrushWorldPosFromTex(pos);
 		}
 
 		currentBrush.bitmap.color = new h3d.Vector4(1.0);
@@ -735,14 +734,14 @@ class TerrainEditor {
 		}
 	}
 
-	public function drawHeight( pos : h3d.col.Point, ctx : Context ) {
-		var brushWorldPos = uvTexPixels == null ? pos : getBrushWorldPosFromTex(pos, ctx);
+	public function drawHeight( pos : h3d.col.Point) {
+		var brushWorldPos = uvTexPixels == null ? pos : getBrushWorldPosFromTex(pos);
 		if( brushWorldPos == null ) return;
 		var c = terrainPrefab.terrain.tiles.length;
 		var tiles = terrainPrefab.terrain.getTiles(brushWorldPos.x, brushWorldPos.y, currentBrush.size / 2.0, autoCreateTile);
 		if( c != terrainPrefab.terrain.tiles.length ) {
-			renderTerrainUV(ctx);
-			brushWorldPos = getBrushWorldPosFromTex(pos, ctx);
+			renderTerrainUV();
+			brushWorldPos = getBrushWorldPosFromTex(pos);
 		}
 
 		var shader : hrt.shader.Brush = currentBrush.bitmap.getShader(hrt.shader.Brush);
@@ -778,9 +777,9 @@ class TerrainEditor {
 		}
 	}
 
-	public function setSelected( ctx : Context, b : Bool ) {
+	public function setSelected(b : Bool ) {
 		if( b ) {
-			var s2d = ctx.shared.root2d.getScene();
+			var s2d = terrainPrefab.shared.root2d.getScene();
 			if( interactive == null )
 				interactive.remove();
 			interactive = new h2d.Interactive(10000, 10000, s2d);
@@ -789,9 +788,9 @@ class TerrainEditor {
 
 			interactive.onWheel = function(e) {
 				e.propagate = true;
-				var worldPos = getBrushPlanePos(s2d.mouseX, s2d.mouseY, ctx);
-				renderTerrainUV(ctx);
-				drawBrushPreview(worldPos, ctx);
+				var worldPos = getBrushPlanePos(s2d.mouseX, s2d.mouseY);
+				renderTerrainUV();
+				drawBrushPreview(worldPos);
 			};
 
 			interactive.onPush = function(e) {
@@ -799,28 +798,28 @@ class TerrainEditor {
 				currentBrush.brushMode.lockDir = K.isDown(K.ALT);
 				currentBrush.brushMode.subAction = K.isDown(K.SHIFT);
 				currentBrush.brushMode.snapToGrid = K.isDown(K.CTRL);
-				var worldPos = getBrushPlanePos(s2d.mouseX, s2d.mouseY, ctx);
+				var worldPos = getBrushPlanePos(s2d.mouseX, s2d.mouseY);
 				if( K.isDown( K.MOUSE_LEFT) ) {
 					currentBrush.firstClick = true;
 					lastPos = worldPos.clone();
 					if( currentBrush.isValid() ) {
-						useBrush( lastPos, worldPos, ctx);
+						useBrush( lastPos, worldPos);
 						previewStrokeBuffers();
-						drawBrushPreview(worldPos, ctx);
+						drawBrushPreview(worldPos);
 					}
 				}
 			};
 
 			interactive.onRelease = function(e) {
 				e.propagate = false;
-				var worldPos = getBrushPlanePos(s2d.mouseX, s2d.mouseY, ctx);
+				var worldPos = getBrushPlanePos(s2d.mouseX, s2d.mouseY);
 				remainingDist = 0;
 				lastPos = null;
 				currentBrush.brushMode.lockAxe = NoLock;
 				currentBrush.firstClick = false;
 				applyStrokeBuffers();
 				resetStrokeBuffers();
-				drawBrushPreview(worldPos, ctx);
+				drawBrushPreview(worldPos);
 				checkTrashBin();
 			};
 
@@ -838,7 +837,7 @@ class TerrainEditor {
 					var sensibility = 0.5;
 					currentBrush.size = hxd.Math.max(0, lastBrushSize + sensibility * dist);
 					@:privateAccess Lambda.find(editContext.properties.fields, f->f.fname=="editor.currentBrush.size").range.value = currentBrush.size;
-					drawBrushPreview(getBrushPlanePos(lastMousePos.x, lastMousePos.y, ctx), ctx);
+					drawBrushPreview(getBrushPlanePos(lastMousePos.x, lastMousePos.y));
 					return;
 				}
 				else {
@@ -847,7 +846,7 @@ class TerrainEditor {
 				}
 
 				currentBrush.brushMode.snapToGrid = /*K.isDown(K.CTRL)*/ false;
-				var worldPos = getBrushPlanePos(s2d.mouseX, s2d.mouseY, ctx);
+				var worldPos = getBrushPlanePos(s2d.mouseX, s2d.mouseY);
 				if( K.isDown( K.MOUSE_LEFT) ) {
 					currentBrush.firstClick = false;
 					e.propagate = false;
@@ -868,15 +867,15 @@ class TerrainEditor {
 								worldPos.y += distY;
 							}
 						}
-						useBrush( lastPos, worldPos, ctx);
+						useBrush( lastPos, worldPos);
 						lastPos = worldPos;
 					}
 				}
 				else {
-					renderTerrainUV(ctx);
+					renderTerrainUV();
 					e.propagate = true;
 				}
-				drawBrushPreview(worldPos, ctx);
+				drawBrushPreview(worldPos);
 			};
 		}
 		else {
@@ -991,7 +990,7 @@ class TerrainEditor {
 	}
 
 	function loadTexture( ctx : hide.prefab.EditContext, propsName : String, ?wrap : h3d.mat.Data.Wrap ) {
-		var texture = ctx.rootContext.shared.loadTexture(propsName);
+		var texture = terrainPrefab.shared.loadTexture(propsName);
 		texture.wrap = wrap == null ? Repeat : wrap;
 		return texture;
 	}
@@ -1191,9 +1190,9 @@ class TerrainEditor {
 		}
 		var name = split[0];
 		var ext = "."+path.split(".").pop();
-		var albedo = ctx.rootContext.shared.loadTexture(name + textureType[0] + ext);
-		var normal = ctx.rootContext.shared.loadTexture(name + textureType[1] + ext);
-		var pbr = ctx.rootContext.shared.loadTexture(name + textureType[2] + ext);
+		var albedo = terrainPrefab.shared.loadTexture(name + textureType[0] + ext);
+		var normal = terrainPrefab.shared.loadTexture(name + textureType[1] + ext);
+		var pbr = terrainPrefab.shared.loadTexture(name + textureType[2] + ext);
 
 		if( albedo == null || normal == null || pbr == null ) return;
 

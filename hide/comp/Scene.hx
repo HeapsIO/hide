@@ -1,6 +1,6 @@
 package hide.comp;
 
-class Scene extends Component implements h3d.IDrawable {
+class Scene extends hide.comp.Component implements h3d.IDrawable {
 
 	static var UID = 0;
 
@@ -24,6 +24,8 @@ class Scene extends Component implements h3d.IDrawable {
 	public var visible(default, null) : Bool = true;
 	public var editor : hide.comp.SceneEditor;
 	var unFocusedTime = 0.;
+
+	public static var cache : h3d.prim.ModelCache = new h3d.prim.ModelCache();
 
 	public function new(config, parent, el) {
 		super(parent,el);
@@ -529,7 +531,7 @@ class Scene extends Component implements h3d.IDrawable {
 		function pathRec(p : String) {
 			try {
 				var prefab = hxd.res.Loader.currentInstance.load(p).toPrefab().load();
-				var mats = prefab.getAll(hrt.prefab.Material);
+				var mats = prefab.findAll(hrt.prefab.Material);
 				for ( m in mats )
 					materials.push({ path : p, mat : m});
 			} catch ( e : hxd.res.NotFound ) {

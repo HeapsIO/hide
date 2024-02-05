@@ -1,30 +1,21 @@
 package hide.prefab;
 
-class ContextShared extends hrt.prefab.ContextShared {
+class ContextShared extends hrt.prefab.ContextShared.ContextSharedBase {
 	#if editor
-	public var scene : hide.comp.Scene;
 	public var editor : hide.comp.SceneEditor;
+	public var scene(get, never) : hide.comp.Scene;
+	public var editorDisplay : Bool;
 
-	public function new(scene, editor) {
-		super();
-		this.scene = scene;
-		this.editor = editor;
+	public function new(?path : String, ?root2d: h2d.Object = null, ?root3d: h3d.scene.Object = null, isInstance: Bool = true) {
+		super(path, root2d, root3d, isInstance);
 	}
 
-	function getScene() {
-		return scene;
-	}
-
-	override function allocForRef() {
-		return new ContextShared(scene, editor);
+	function get_scene() {
+		return editor.scene;
 	}
 
 	override function onError( e : Dynamic ) {
 		hide.Ide.inst.error(e);
-	}
-
-	override function loadPrefab( path : String ) : hrt.prefab.Prefab {
-		return hide.Ide.inst.loadPrefab(path, null, true);
 	}
 
 	override function loadShader( path : String ) {
@@ -32,15 +23,15 @@ class ContextShared extends hrt.prefab.ContextShared {
 	}
 
 	override function loadModel( path : String ) {
-		return getScene().loadModel(path);
+		return scene.loadModel(path);
 	}
 
 	override function loadAnimation( path : String ) {
-		return getScene().loadAnimation(path);
+		return scene.loadAnimation(path);
 	}
 
 	override function loadTexture( path : String, async : Bool = false ) {
-		return getScene().loadTexture("",path, async);
+		return scene.loadTexture("",path, async);
 	}
 
 	override function loadBakedFile():Null<haxe.io.Bytes> {

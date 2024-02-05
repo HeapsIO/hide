@@ -106,14 +106,9 @@ class ShaderGraph extends hrt.prefab.Prefab {
 
 	var graphs : Array<Graph>;
 
-	var cachedDef : hrt.prefab.ContextShared.ShaderDef = null;
+	var cachedDef : hrt.prefab.Cache.ShaderDef = null;
 
-	static var _ = hrt.prefab.Library.register("shgraph", hrt.shgraph.ShaderGraph, "shgraph");
-
-	function new(?parent) {
-		super(parent);
-		type = "shgraph";
-	};
+	static var _ = hrt.prefab.Prefab.register("shgraph", hrt.shgraph.ShaderGraph, "shgraph");
 
 	override public function load(json : Dynamic) : Void {
 		super.load(json);
@@ -135,9 +130,7 @@ class ShaderGraph extends hrt.prefab.Prefab {
 
 
 	override function save() {
-		type = "shgraph";// band aid because shadergraphs didn't always had a type and so when they are loaded type is set to null
-
-		var json : Dynamic = super.save();
+		var json = super.save();
 		json.parameters = [
 			for (p in parametersAvailable) { id : p.id, name : p.name, type : [p.type.getName(), p.type.getParameters().toString()], defaultValue : p.defaultValue, index : p.index, internal : p.internal }
 		];
@@ -185,7 +178,7 @@ class ShaderGraph extends hrt.prefab.Prefab {
 	}
 
 
-	public function compile2(?previewDomain: Domain) : hrt.prefab.ContextShared.ShaderDef {
+	public function compile2(?previewDomain: Domain) : hrt.prefab.Cache.ShaderDef {
 		#if !editor
 		if (cachedDef != null)
 			return cachedDef;
@@ -421,15 +414,15 @@ class ShaderGraph extends hrt.prefab.Prefab {
 		return cachedDef;
 	}
 
-	public function makeShaderInstance(ctx: hrt.prefab.ContextShared) : hxsl.DynamicShader {
+	public function makeShaderInstance() : hxsl.DynamicShader {
 		var def = compile2(null);
 		var s = new hxsl.DynamicShader(def.shader);
 		for (init in def.inits)
-			setParamValue(ctx, s, init.variable, init.value);
+			setParamValue(s, init.variable, init.value);
 		return s;
 	}
 
-	static function setParamValue(ctx: hrt.prefab.ContextShared, shader : hxsl.DynamicShader, variable : hxsl.Ast.TVar, value : Dynamic) {
+	static function setParamValue(shader : hxsl.DynamicShader, variable : hxsl.Ast.TVar, value : Dynamic) {
 		try {
 			switch (variable.type) {
 				case TSampler(_):

@@ -16,11 +16,6 @@ class Environment extends Object3D {
 	@:s var configName : String;
 	var env : h3d.scene.pbr.Environment;
 
-	public function new( ?parent ) {
-		super(parent);
-		type = "environment";
-	}
-
 	function loadFromBinary() {
 		try {
 			env.dispose();
@@ -53,27 +48,25 @@ class Environment extends Object3D {
 		#end
 	}
 
-	override function makeInstance( ctx : Context ) : Context {
-		super.makeInstance(ctx);
-		updateInstance(ctx);
-		return ctx;
+	override function makeObject(parent3d:h3d.scene.Object):h3d.scene.Object {
+		return super.makeObject(parent3d);
 	}
 
-	override function updateInstance( ctx : Context, ?propName : String ) {
-		super.updateInstance(ctx, propName);
+	override function updateInstance(?propName : String ) {
+		super.updateInstance(propName);
 
 		if( sourceMapPath == null )
 			return;
 
 		#if editor
-		var sourceMap = ctx.loadTexture(sourceMapPath);
+		var sourceMap = shared.loadTexture(sourceMapPath);
 		if( sourceMap == null )
 			return;
 		if( sourceMap.flags.has(Loading) ) {
 			haxe.Timer.delay(function() {
-				ctx.setCurrent();
+				shared.scene.setCurrent();
 				if( h3d.Engine.getCurrent().driver == null ) return; // was disposed
-				updateInstance(ctx,propName);
+				updateInstance(propName);
 			},100);
 			return;
 		}
@@ -106,12 +99,12 @@ class Environment extends Object3D {
 			env.dispose();
 			env.specular = null;
 			env.diffuse = null;
-			env.source = ctx.loadTexture(sourceMapPath);
+			env.source = shared.loadTexture(sourceMapPath);
 			env.compute();
 			saveToBinary();
 		}
 
-		var scene = ctx.local3d.getScene();
+		var scene = local3d.getScene();
 		// Auto Apply on change
 		if( scene != null )
 			applyToRenderer(scene.renderer);
@@ -125,11 +118,11 @@ class Environment extends Object3D {
 
 	#if editor
 
-	override function getHideProps() : HideProps {
+	override function getHideProps() : hide.prefab.HideProps {
 		return { icon : "sun-o", name : "Environment" };
 	}
 
-	override function edit( ctx : EditContext ) {
+	override function edit( ctx : hide.prefab.EditContext ) {
 		// super.edit(ctx);
 
 		var props = new hide.Element('
@@ -162,7 +155,7 @@ class Environment extends Object3D {
 
 		var applyButton = props.find(".apply");
 		applyButton.click(function(_) {
-			applyToRenderer(ctx.rootContext.local3d.getScene().renderer);
+			applyToRenderer(findFirstLocal3d().getScene().renderer);
 		});
 
 		props.find(".compute").click(function(_) {
@@ -184,5 +177,5 @@ class Environment extends Object3D {
 
 	#end
 
-	static var _ = Library.register("environment", Environment);
+	static var _ = Prefab.register("environment", Environment);
 }

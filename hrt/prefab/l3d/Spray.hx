@@ -17,18 +17,17 @@ class Spray extends Object3D {
 
 	@:s var sources : Array<{ path : String }> = [];
 
-	override function createObject( ctx : Context ) {
-		var spray = new SprayObject(ctx.local3d);
+	override function makeObject(parent3d: h3d.scene.Object ) : h3d.scene.Object {
+		var spray = new SprayObject(parent3d);
 		return spray;
 	}
 
-	override function make( ctx : Context ) {
-		if( !enabled )
-			return ctx;
+	override function makeInstance() {
+		super.makeInstance();
 		children.sort(function(c1, c2) {
 			return Std.isOfType(c1, Object3D) ? -1 : 1;
 		});
-		return super.make(ctx);
+
 	}
 }
 
@@ -126,8 +125,6 @@ class Spray extends Object3D {
 	var lastItemPos : h3d.col.Point;
 	var invParent : h3d.Matrix;
 
-	var shared : ContextShared;
-
 	function clearPreview() {
 		// prevent saving preview
 		if( previewItems.length > 0 ) {
@@ -162,7 +159,7 @@ class Spray extends Object3D {
 	}
 
 
-	function setGroundPos( ectx : EditContext, obj : Object3D = null, absPos : h3d.col.Point = null ) : { mz : Float, rotX : Float, rotY : Float, rotZ : Float } {
+	function setGroundPos(obj : Object3D = null, absPos : h3d.col.Point = null ) : { mz : Float, rotX : Float, rotY : Float, rotZ : Float } {
 		if (absPos == null && obj == null)
 			throw "setGroundPos should use either object or absPos";
 		var tx : Float; var ty : Float; var tz : Float;
@@ -176,7 +173,7 @@ class Spray extends Object3D {
 			tz = obj.getAbsPos().tz;
 		}
 		var config = currentConfig;
-		var groundZ = ectx.positionToGroundZ(tx, ty);
+		var groundZ = shared.scene.editor.getZ(tx, ty);
 		var mz = config.zOffset + groundZ - tz;
 		if ( obj != null )
 			obj.z += mz;
@@ -184,7 +181,7 @@ class Spray extends Object3D {
 		var tilt = config.tiltAmount;
 
 		inline function getPoint(dx,dy) {
-			var dz = ectx.positionToGroundZ(tx + 0.1 * dx, ty + 0.1 * dy) - groundZ;
+			var dz = shared.scene.editor.getZ(tx + 0.1 * dx, ty + 0.1 * dy) - groundZ;
 			return new h3d.col.Point(dx*0.1, dy*0.1, dz * orient);
 		}
 
@@ -212,10 +209,9 @@ class Spray extends Object3D {
 	var sprayedItems : Array<hrt.prefab.Prefab> = [];
 	var selectElement : hide.Element;
 
-	function createInteractiveBrush(ectx : EditContext) {
+	function createInteractiveBrush(ectx : hide.prefab.EditContext) {
 		if (!enabled) return;
-		var ctx = ectx.getContext(this);
-		var s2d = ctx.shared.root2d.getScene();
+		var s2d = shared.root2d.getScene();
 		interactive = new h2d.Interactive(10000, 10000, s2d);
 		interactive.propagateEvents = true;
 		interactive.cancelEvents = false;
@@ -231,7 +227,7 @@ class Spray extends Object3D {
 					if( !K.isDown( K.SHIFT) ) {
 						clearPreview();
 						var worldPos = ectx.screenToGround(s2d.mouseX, s2d.mouseY);
-						previewItemsAround(ectx, ctx, worldPos);
+						previewItemsAround(ectx, worldPos);
 					}
 					lastSpray = Date.now().getTime();
 					lastItemPos = null;
@@ -243,7 +239,7 @@ class Spray extends Object3D {
 				currentConfig.rotation = currentConfig.rotation % 360;
 				clearPreview();
 				var worldPos = ectx.screenToGround(s2d.mouseX, s2d.mouseY);
-				previewItemsAround(ectx, ctx, worldPos);
+				previewItemsAround(ectx, worldPos);
 			}
 
 			if (e.keyCode == K.D) {
@@ -252,7 +248,7 @@ class Spray extends Object3D {
 				currentConfig.rotation = currentConfig.rotation % 360;
 				clearPreview();
 				var worldPos = ectx.screenToGround(s2d.mouseX, s2d.mouseY);
-				previewItemsAround(ectx, ctx, worldPos);
+				previewItemsAround(ectx, worldPos);
 			}
 		}
 
@@ -261,10 +257,10 @@ class Spray extends Object3D {
 			sprayEnable = true;
 			var worldPos = ectx.screenToGround(s2d.mouseX, s2d.mouseY);
 			if( K.isDown( K.SHIFT) )
-				removeItemsAround(ctx, worldPos);
+				removeItemsAround(worldPos);
 			else {
 				lastItemPos = worldPos.clone();
-				addItems(ctx);
+				addItems();
 			}
 		};
 
@@ -281,7 +277,7 @@ class Spray extends Object3D {
 					else {
 						sceneEditor.addElements(addedModels, false, true, false);
 					}
-					cast(ctx.local3d,SprayObject).redraw();
+					cast(local3d,SprayObject).redraw();
 				}));
 				sprayedItems = [];
 			}
@@ -298,12 +294,12 @@ class Spray extends Object3D {
 				return;
 			}
 
-			drawCircle(ctx, worldPos.x, worldPos.y, worldPos.z, (shiftPressed) ? currentConfig.deleteRadius : currentConfig.radius, 5, (shiftPressed) ? 9830400 : 38400);
+			drawCircle(worldPos.x, worldPos.y, worldPos.z, (shiftPressed) ? currentConfig.deleteRadius : currentConfig.radius, 5, (shiftPressed) ? 9830400 : 38400);
 
 			if (lastSpray < Date.now().getTime() - 100) {
 				clearPreview();
 				if( !shiftPressed ) {
-					previewItemsAround(ectx, ctx, worldPos);
+					previewItemsAround(ectx, worldPos);
 				}
 
 				if( K.isDown( K.MOUSE_LEFT) ) {
@@ -311,17 +307,17 @@ class Spray extends Object3D {
 
 					if (sprayEnable) {
 						if( shiftPressed ) {
-							removeItemsAround(ctx, worldPos);
+							removeItemsAround(worldPos);
 						} else {
 							if (currentConfig.density == 1) {
 								if(lastItemPos.distance(worldPos) > currentConfig.step) {
 									lastItemPos = worldPos.clone();
-									addItems(ctx);
+									addItems();
 								}
 							}
 							else {
 								lastItemPos = worldPos.clone();
-								addItems(ctx);
+								addItems();
 							}
 						}
 					}
@@ -332,11 +328,7 @@ class Spray extends Object3D {
 
 	}
 
-	override function removeInstance(ctx : Context):Bool {
-		removeInteractiveBrush();
-		return super.removeInstance(ctx);
-	}
-	override function setSelected( ctx : Context, b : Bool ) {
+	override function setSelected(b : Bool ) {
 		if( !b )
 			removeInteractiveBrush();
 		return false;
@@ -371,7 +363,7 @@ class Spray extends Object3D {
 	var lastPos : h3d.col.Point;
 	var lastItemId = -1;
 	var lastSprayedObj : h3d.scene.Object;
-	function previewItemsAround(ectx : hide.prefab.EditContext, ctx : Context, point : h3d.col.Point) {
+	function previewItemsAround(ectx : hide.prefab.EditContext, point : h3d.col.Point) {
 		if (currentSources.length == 0) {
 			return;
 		}
@@ -463,11 +455,11 @@ class Spray extends Object3D {
 				var newPrefab : hrt.prefab.Object3D = null;
 
 				if (itemUsed.isRef) {
-					var refPrefab = new hrt.prefab.Reference(this);
+					var refPrefab = new hrt.prefab.Reference(this, null);
 					refPrefab.source = itemUsed.path;
 					newPrefab = refPrefab;
 				} else {
-					var model = new hrt.prefab.Model(this);
+					var model = new hrt.prefab.Model(this, null);
 					model.source = itemUsed.path;
 					newPrefab = model;
 				}
@@ -489,7 +481,7 @@ class Spray extends Object3D {
 				localMat.multiply(localMat, invParent);
 
 				newPrefab.setTransform(localMat);
-				setGroundPos(ectx, newPrefab);
+				setGroundPos(newPrefab);
 
 				previewItems.push(newPrefab);
 				currentPivots.push(new h2d.col.Point(newPrefab.x, newPrefab.y));
@@ -501,18 +493,18 @@ class Spray extends Object3D {
 		}
 	}
 
-	function addItems(ctx : Context) {
+	function addItems() {
 		lastItemId = -1;
 		if (previewItems.length > 0) {
 			wasEdited = true;
 			sprayedItems = sprayedItems.concat(previewItems);
 			previewItems = [];
 			clearBrushes();
-			cast(ctx.local3d,SprayObject).redraw();
+			cast(local3d,SprayObject).redraw();
 		}
 	}
 
-	function removeItemsAround(ctx : Context, point : h3d.col.Point) {
+	function removeItemsAround(point : h3d.col.Point) {
 		var vecRelat = point.toVector();
 		vecRelat.transform(invParent);
 		var point2d = new h2d.col.Point(vecRelat.x, vecRelat.y);
@@ -538,30 +530,30 @@ class Spray extends Object3D {
 
 		if( needRedraw ) {
 			clearBrushes();
-			cast(ctx.local3d,SprayObject).redraw();
+			cast(local3d,SprayObject).redraw();
 		}
 	}
 
-	public function drawCircle(ctx : Context, originX : Float, originY : Float, originZ : Float, radius: Float, thickness: Float, color) {
+	public function drawCircle(originX : Float, originY : Float, originZ : Float, radius: Float, thickness: Float, color) {
 		var newColor = h3d.Vector4.fromColor(color);
 		if (gBrushes == null || gBrushes.length == 0 || gBrushes[0].scaleX != radius || gBrushes[0].material.color != newColor) {
 			clearBrushes();
 			gBrushes = [];
-			var gBrush = new h3d.scene.Mesh(makePrimCircle(32, 0.95), ctx.local3d);
+			var gBrush = new h3d.scene.Mesh(makePrimCircle(32, 0.95), local3d);
 			gBrush.scaleX = gBrush.scaleY = radius;
 			gBrush.ignoreParentTransform = true;
 			var pass = gBrush.material.mainPass;
 			pass.setPassName("overlay");
-			pass.depthTest = Always;
+			pass.depthTest = h3d.mat.Data.Compare.Always;
 			pass.depthWrite = false;
 			gBrush.material.shadows = false;
 			gBrush.material.color = newColor;
 			gBrushes.push(gBrush);
-			gBrush = new h3d.scene.Mesh(new h3d.prim.Sphere(Math.min(radius*0.05, 0.35)), ctx.local3d);
+			gBrush = new h3d.scene.Mesh(new h3d.prim.Sphere(Math.min(radius*0.05, 0.35)), local3d);
 			gBrush.ignoreParentTransform = true;
 			var pass = gBrush.material.mainPass;
 			pass.setPassName("overlay");
-			pass.depthTest = Always;
+			pass.depthTest = h3d.mat.Data.Compare.Always;
 			pass.depthWrite = false;
 			gBrush.material.shadows = false;
 			gBrush.material.color = newColor;
@@ -575,23 +567,13 @@ class Spray extends Object3D {
 		}
 	}
 
-	override function makeInstance(ctx:Context):Context {
-		ctx = ctx.clone(this);
-		ctx.local3d = new SprayObject(this, ctx.local3d);
-		ctx.local3d.name = name;
-		updateInstance(ctx);
-		return ctx;
+	override function makeObject(parent3d: h3d.scene.Object ) : h3d.scene.Object {
+		return new SprayObject(this, parent3d);
 	}
 
-	override function make(ctx:Context):Context {
-		if( !enabled )
-			return ctx;
-		return super.make(ctx);
-	}
-
-	override function applyTransform(o : h3d.scene.Object) {
-		super.applyTransform(o);
-		cast(o, SprayObject).redraw();
+	override function applyTransform() {
+		super.applyTransform();
+		cast(local3d, SprayObject).redraw();
 	}
 
 

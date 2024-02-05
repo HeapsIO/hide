@@ -472,7 +472,7 @@ class OverviewEditor extends Component implements CurveEditorComponent
 	public function afterChange() {}
 }
 
-class CurveEditor extends Component {
+class CurveEditor extends hide.comp.Component {
 
 	public static var CURVE_COLORS: Array<Int> = [
 		0xff3352,
@@ -747,7 +747,7 @@ class CurveEditor extends Component {
 				maxLength = c.maxTime;
 		}
 
-		lastValue = [for (c in curves) c.save()];
+		@:privateAccess lastValue = [for (c in curves) c.serialize()];
 		refresh();
 		return curves;
 	}
@@ -1028,14 +1028,14 @@ class CurveEditor extends Component {
 	}
 
 	function beforeChange() {
-		lastValue = [for (c in curves) c.save()];
+		@:privateAccess lastValue = [for (c in curves) c.serialize()];
 
 		for (c in components)
 			c.beforeChange();
 	}
 
 	function afterChange() {
-		var newVal = [for (c in curves) c.save()];
+		@:privateAccess var newVal = [for (c in curves) c.serialize()];
 		var oldVal = lastValue;
 		undo.change(Custom(function(undo) {
 			if(undo) {
@@ -1046,7 +1046,7 @@ class CurveEditor extends Component {
 				for (i in 0...curves.length)
 					curves[i].load(newVal[i]);
 			}
-			lastValue = [for (c in curves) c.save()];
+			@:privateAccess lastValue = [for (c in curves) c.serialize()];
 			selectedElements = [];
 			refresh();
 			onChange(false);

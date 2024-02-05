@@ -47,13 +47,7 @@ class Terrain extends Object3D {
 	@:s public var showChecker = false;
 	@:s public var autoCreateTile = false;
 	@:s public var brushOpacity : Float = 1.0;
-	var myContext : Context;
 	#end
-
-	public function new( ?parent ) {
-		super(parent);
-		type = "terrain";
-	}
 
 	override function load( obj : Dynamic ) {
 		super.load(obj);
@@ -62,8 +56,8 @@ class Terrain extends Object3D {
 		surfaceSize = obj.surfaceSize == null ? 0 : obj.surfaceSize;
 	}
 
-	override function save() {
-		var obj : Dynamic = super.save();
+	override function save() : Dynamic {
+		var obj = super.save();
 		if( terrain != null && terrain.surfaces != null ) {
 
 			obj.surfaceCount = terrain.surfaces.length == 0 ? 0 : terrain.surfaceArray.surfaceCount;
@@ -97,14 +91,14 @@ class Terrain extends Object3D {
 		#if editor
 		if( modified ) {
 			modified = false;
-			saveTextures(myContext);
+			saveTextures();
 		}
 		#end
 
 		return obj;
 	}
 
-	override function localRayIntersection(ctx:Context, ray:h3d.col.Ray):Float {
+	override function localRayIntersection(ray:h3d.col.Ray):Float {
 		if( ray.lz > 0 )
 			return -1; // only from top
 		if( ray.lx == 0 && ray.ly == 0 ) {
@@ -149,9 +143,9 @@ class Terrain extends Object3D {
 		return -1;
 	}
 
-	function loadTiles( ctx : Context ) {
+	function loadTiles() {
 
-		var resDir = ctx.shared.loadDir(name);
+		var resDir = shared.loadDir(name);
 		if( resDir == null )
 			return;
 
@@ -297,16 +291,16 @@ class Terrain extends Object3D {
 		@:privateAccess hxd.res.Image.ENABLE_AUTO_WATCH = prevWatch;
 	}
 
-	function loadSurfaces( ctx : Context, onEnd : Void -> Void ) {
+	function loadSurfaces(onEnd : Void -> Void ) {
 		for( surfaceProps in tmpSurfacesProps ) {
 			var surface = terrain.addEmptySurface();
 		}
 		for( i in 0 ... tmpSurfacesProps.length ) {
 			var surfaceProps = tmpSurfacesProps[i];
 			var surface = terrain.getSurface(i);
-			var albedo = ctx.shared.loadTexture(surfaceProps.albedo);
-			var normal = ctx.shared.loadTexture(surfaceProps.normal);
-			var pbr = ctx.shared.loadTexture(surfaceProps.pbr);
+			var albedo = shared.loadTexture(surfaceProps.albedo);
+			var normal = shared.loadTexture(surfaceProps.normal);
+			var pbr = shared.loadTexture(surfaceProps.pbr);
 			function wait() {
 				if( albedo.isDisposed() || albedo.flags.has(Loading) || normal.flags.has(Loading) || pbr.flags.has(Loading) )
 					return;
@@ -331,7 +325,7 @@ class Terrain extends Object3D {
 		}
 	}
 
-	public function initTerrain( ctx : Context ) {
+	public function initTerrain() {
 
 		terrain.createBigPrimitive();
 
@@ -339,10 +333,6 @@ class Terrain extends Object3D {
 		if( terrain.surfaceArray != null )
 			return;
 
-		#if editor
-		var shared : hide.prefab.ContextShared = cast myContext.shared;
-		@:privateAccess shared.scene.setCurrent();
-		#end
 
 		var initDone = false;
 		function waitAll() {
@@ -356,30 +346,29 @@ class Terrain extends Object3D {
 			}
 			terrain.generateSurfaceArray();
 
-			loadTiles(ctx);
+			loadTiles();
 
 			initDone = true;
 		}
-		loadSurfaces(ctx, waitAll);
+		loadSurfaces(waitAll);
 	}
 
 	#if editor
 
-	public function saveTextures( ctx : Context )  {
-		if( !readyToSave(ctx) ) {
+	public function saveTextures()  {
+		if( !readyToSave() ) {
 			throw "Failed to save terrain";
 			return;
 		}
-		var shared : hide.prefab.ContextShared = cast myContext.shared;
 		@:privateAccess shared.scene.setCurrent();
-		clearSavedTextures(ctx);
-		saveWeightTextures(ctx);
-		saveHeightTextures(ctx);
-		saveNormalTextures(ctx);
+		clearSavedTextures();
+		saveWeightTextures();
+		saveHeightTextures();
+		saveNormalTextures();
 		return;
 	}
 
-	function readyToSave( ctx : Context ) : Bool {
+	function readyToSave() : Bool {
 		var error = "Failed to save terrain : ";
 		if( terrain == null ){
 			trace(error + "terrain is null");
@@ -429,8 +418,8 @@ class Terrain extends Object3D {
 		return true;
 	}
 
-	function clearSavedTextures( ctx : Context ) {
-		var datPath = new haxe.io.Path(ctx.shared.currentPath);
+	function clearSavedTextures() {
+		var datPath = new haxe.io.Path(shared.currentPath);
 		datPath.ext = "dat";
 		var fullPath = hide.Ide.inst.getPath(datPath.toString() + "/" + name);
 		if( sys.FileSystem.isDirectory(fullPath) ) {
@@ -440,23 +429,23 @@ class Terrain extends Object3D {
 		}
 	}
 
-	public function saveHeightTextures( ctx : Context ) {
+	public function saveHeightTextures() {
 		for( tile in terrain.tiles ) {
 			var pixels = tile.heightMap.capturePixels();
 			var fileName = tile.tileX + "_" + tile.tileY + "_" + "h";
-			ctx.shared.savePrefabDat(fileName, "bin", name, pixels.bytes);
+			shared.savePrefabDat(fileName, "bin", name, pixels.bytes);
 		}
 	}
 
-	public function saveNormalTextures( ctx : Context ) {
+	public function saveNormalTextures() {
 		for( tile in terrain.tiles ) {
 			var pixels : hxd.Pixels = tile.normalMap.capturePixels();
 			var fileName = tile.tileX + "_" + tile.tileY + "_" + "n";
-			ctx.shared.savePrefabDat(fileName, "bin", name, pixels.bytes);
+			shared.savePrefabDat(fileName, "bin", name, pixels.bytes);
 		}
 	}
 
-	public function saveWeightTextures( ctx : Context ) {
+	public function saveWeightTextures() {
 		var packedWeightsTex = new h3d.mat.Texture(terrain.weightMapResolution.x, terrain.weightMapResolution.y, [Target], RGBA);
 		for( tile in terrain.tiles ) {
 			h3d.Engine.getCurrent().pushTarget(packedWeightsTex);
@@ -468,27 +457,22 @@ class Terrain extends Object3D {
 
 			var pixels = packedWeightsTex.capturePixels();
 			var fileName = tile.tileX + "_" + tile.tileY + "_" + "w";
-			ctx.shared.savePrefabDat(fileName, "bin", name, pixels.bytes);
+			shared.savePrefabDat(fileName, "bin", name, pixels.bytes);
 
 			var pixels = tile.surfaceIndexMap.capturePixels();
 			var fileName = tile.tileX + "_" + tile.tileY + "_" + "i";
-			ctx.shared.savePrefabDat(fileName, "bin", name, pixels.bytes);
+			shared.savePrefabDat(fileName, "bin", name, pixels.bytes);
 		}
 	}
 
 	#end
 
-	function createTerrain( ctx : Context ) {
-		return new TerrainMesh(ctx.local3d);
+	function createTerrain( parent : h3d.scene.Object ) {
+		return new TerrainMesh(parent);
 	}
 
-	override function makeInstance( ctx : Context ) : Context {
-		ctx = ctx.clone(this);
-		#if editor
-		myContext = ctx;
-		#end
-
-		terrain = createTerrain(ctx);
+	override function makeObject(parent3d:h3d.scene.Object) : h3d.scene.Object {
+		this.terrain = createTerrain(parent3d);
 		terrain.tileSize = new h2d.col.Point(tileSizeX, tileSizeY);
 		terrain.cellCount = new h2d.col.IPoint(Math.ceil(tileSizeX * vertexPerMeter), Math.ceil(tileSizeY * vertexPerMeter) );
 		terrain.cellSize = new h2d.col.Point(tileSizeX / terrain.cellCount.x, tileSizeY / terrain.cellCount.y );
@@ -500,17 +484,16 @@ class Terrain extends Object3D {
 		terrain.heightBlendStrength = heightBlendStrength;
 		terrain.blendSharpness = blendSharpness;
 		terrain.name = "terrain";
-
-		ctx.local3d = terrain;
-		ctx.local3d.name = name;
-
-		updateInstance(ctx);
-		initTerrain(ctx);
-		return ctx;
+		return terrain;
 	}
 
-	override function updateInstance( ctx: Context, ?propName : String ) {
-		super.updateInstance(ctx, null);
+	override function makeInstance() : Void {
+		super.makeInstance();
+		initTerrain();
+	}
+
+	override function updateInstance(?propName : String ) {
+		super.updateInstance(propName);
 
 		#if editor
 		terrain.parallaxAmount = parallaxAmount;
@@ -533,20 +516,20 @@ class Terrain extends Object3D {
 	}
 
 	#if editor
-	override function makeInteractive( ctx : Context ) : h3d.scene.Interactive {
+	override function makeInteractive() : h3d.scene.Interactive {
 		return null;
 	}
 
-	override function setSelected( ctx : Context, b : Bool ) {
-		if( editor != null ) editor.setSelected(ctx, b);
+	override function setSelected(b : Bool ) {
+		if( editor != null ) editor.setSelected(b);
 		return true;
 	}
 
-	override function getHideProps() : HideProps {
+	override function getHideProps() : hide.prefab.HideProps {
 		return { icon : "industry", name : "Terrain", isGround : true };
 	}
 
-	override function edit( ctx : EditContext ) {
+	override function edit( ctx : hide.prefab.EditContext ) {
 		super.edit(ctx);
 		var props = new hide.Element('<div></div>');
 		if( editor == null ) editor = new hide.prefab.terrain.TerrainEditor(this, ctx.properties.undo);
@@ -623,5 +606,5 @@ class Terrain extends Object3D {
 	}
 	#end
 
-	static var _ = Library.register("terrain", Terrain);
+	static var _ = Prefab.register("terrain", Terrain);
 }

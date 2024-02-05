@@ -111,7 +111,7 @@ class ConfiguratorInterp extends hscript.Interp {
 }
 #end
 
-
+@:access(h3d.scene.Renderer)
 class Configurator extends RendererFX {
 
 	@:s public var vars : Array<{ name : String, defValue : Float }> = [];
@@ -130,9 +130,8 @@ class Configurator extends RendererFX {
 	#end
 	var rootPrefab : Prefab;
 
-	public function new(?parent) {
-		super(parent);
-		type = "configurator";
+	public function new(parent, shared: ContextShared) {
+		super(parent, shared);
 	}
 
 	public function set( name : String, value : Float ) {
@@ -190,19 +189,12 @@ class Configurator extends RendererFX {
 		#end
 	}
 
-	override function makeInstance(ctx:Context):Context {
+	override function makeInstance() : Void {
 		for( v in vars )
 			values.set(v.name, v.defValue);
-		rootPrefab = this;
-		var shared = ctx.shared;
-		while( shared.parent != null ) {
-			rootPrefab = shared.parent.prefab;
-			shared = shared.parent.shared;
-		}
-		while( rootPrefab.parent != null )
-			rootPrefab = rootPrefab.parent;
+		rootPrefab = getRoot(true);
 		resetCache();
-		return super.makeInstance(ctx);
+		super.makeInstance();
 	}
 
 	override function begin(r:h3d.scene.Renderer, step:h3d.impl.RendererFX.Step) {
@@ -263,11 +255,11 @@ class Configurator extends RendererFX {
 	#end
 
 	#if editor
-	override function getHideProps() : HideProps {
+	override function getHideProps() : hide.prefab.HideProps {
 		return { name : "Configurator", icon : "dashboard" };
 	}
 
-	override function edit( ectx : EditContext ) {
+	override function edit( ectx : hide.prefab.EditContext ) {
 		var props = new hide.Element('
 		<div>
 			<div class="group" name="Variables">
@@ -327,7 +319,7 @@ class Configurator extends RendererFX {
 	}
 	#end
 
-	static var _ = Library.register("rfx.configurator", Configurator);
+	static var _ = Prefab.register("rfx.configurator", Configurator);
 
 
 }

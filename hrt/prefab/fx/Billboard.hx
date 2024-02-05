@@ -34,25 +34,13 @@ class BillboardObject extends h3d.scene.Object {
 
 @:allow(hrt.prefab.fx.Billboard.BillboardInstance)
 class Billboard extends Object3D {
-	public function new(?parent) {
-		super(parent);
-		type = "billboard";
-	}
 
-	override function updateInstance(ctx:hrt.prefab.Context, ?propName:String) {
-		super.updateInstance(ctx, propName);
-	}
-
-	override function makeInstance(ctx:Context) {
-		ctx = ctx.clone(this);
-		ctx.local3d = new BillboardObject(ctx.local3d);
-		ctx.local3d.name = name;
-		updateInstance(ctx);
-		return ctx;
+	override function makeObject(parent3d: h3d.scene.Object) {
+		return new BillboardObject(parent3d);
 	}
 
 	#if editor
-	override function getHideProps():HideProps {
+	override function getHideProps():hide.prefab.HideProps {
 		return {
 			icon: "cog",
 			name: "Billboard"
@@ -60,5 +48,5 @@ class Billboard extends Object3D {
 	}
 	#end
 
-	static var _ = Library.register("billboard", Billboard);
+	static var _ = Prefab.register("billboard", Billboard);
 }

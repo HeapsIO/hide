@@ -228,23 +228,22 @@ class IdeData {
 	public function loadPrefab<T:hrt.prefab.Prefab>( file : String, ?cl : Class<T>, ?checkExists ) : T {
 		if( file == null )
 			return null;
-		var l = hrt.prefab.Library.create(file.split(".").pop().toLowerCase());
 		try {
 			var path = getPath(file);
 			if( checkExists && !sys.FileSystem.exists(path) )
 				return null;
-			l.loadData(parseJSON(sys.io.File.getContent(path)));
+			var p = hrt.prefab.Prefab.createFromDynamic(parseJSON(sys.io.File.getContent(path)));
+			if( cl == null )
+				return cast p;
+			return p.get(cl);
 		} catch( e : Dynamic ) {
 			error("Invalid prefab "+file+" ("+e+")");
 			throw e;
 		}
-		if( cl == null )
-			return cast l;
-		return l.get(cl);
 	}
 
 	public function savePrefab( file : String, f : hrt.prefab.Prefab ) {
-		var content = f.saveData();
+		@:privateAccess var content = f.serialize();
 		sys.io.File.saveContent(getPath(file), toJSON(content));
 	}
 

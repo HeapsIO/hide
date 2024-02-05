@@ -11,6 +11,7 @@ class BloomTonemap extends hxsl.Shader {
 	}
 }
 
+@:access(h3d.scene.Renderer)
 class Bloom extends RendererFX {
 
 	var bloomPass = new h3d.pass.ScreenFx(new hrt.shader.Bloom());
@@ -25,8 +26,8 @@ class Bloom extends RendererFX {
 	@:s public var blurQuality : Float = 1;
 	@:s public var blurLinear : Float;
 
-	function new(?parent) {
-		super(parent);
+	function new(parent, shared: ContextShared) {
+		super(parent, shared);
 		size = 0.5;
 		blur = 3;
 		threshold = 0.5;
@@ -72,6 +73,6 @@ class Bloom extends RendererFX {
 	}
 	#end
 
-	static var _ = Library.register("rfx.bloom", Bloom);
+	static var _ = Prefab.register("rfx.bloom", Bloom);
 
 }

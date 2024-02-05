@@ -4,7 +4,7 @@ import hrt.prefab.l3d.Spray;
 
 class PrefabSpray extends Spray {
 
-	static var _ = Library.register("prefabSpray", PrefabSpray);
+	static var _ = Prefab.register("prefabSpray", PrefabSpray);
 
 }
 
@@ -22,16 +22,16 @@ class PrefabSpray extends Spray {
 		return hide.Ide.inst.resourceDir + "/" + PREFAB_SPRAY_CONFIG_FILE;
 	}
 
-	override function save() {
+	override function save() : Dynamic {
 		clearPreview();
 		return super.save();
 	}
 
-	override function getHideProps() : HideProps {
+	override function getHideProps() : hide.prefab.HideProps {
 		return { icon : "paint-brush", name : "PrefabSpray", hideChildren : p -> return Std.isOfType(p, Object3D) };
 	}
 
-	override function edit( ectx : EditContext ) {
+	override function edit( ectx : hide.prefab.EditContext ) {
 
 		invParent = getAbsPos().clone();
 		invParent.invert();
@@ -308,16 +308,14 @@ class PrefabSpray extends Spray {
 		});
 
 		options.find("#toground").click(function(_) {
-			var ctx = ectx.getContext(this);
-			var mso = cast(ctx.local3d, Spray.SprayObject);
+			var mso = cast(local3d, Spray.SprayObject);
 			undo.change(Custom(function(undo) {
 			}));
 			for( c in this.children ) {
 				var obj = c.to(Object3D);
 				if( obj == null ) continue;
-				setGroundPos(ectx, obj);
-				var ctx = ectx.getContext(obj);
-				if( ctx != null ) obj.applyTransform(ctx.local3d);
+				setGroundPos(obj);
+				obj.applyTransform();
 				wasEdited = true;
 			}
 			mso.redraw();
@@ -339,7 +337,7 @@ class PrefabSpray extends Spray {
 					prefabs.push(c);
 				}
 				sceneEditor.deleteElements(prefabs);
-				cast(ectx.getContext(this).local3d, Spray.SprayObject).redraw();
+				cast(local3d, Spray.SprayObject).redraw();
 			}
 		});
 
@@ -399,7 +397,7 @@ class PrefabSpray extends Spray {
 			currentSources.push(source);
 	}
 
-	static var _ = Library.register("prefabSpray", PrefabSpray);
+	static var _ = Prefab.register("prefabSpray", PrefabSpray);
 
 }
 

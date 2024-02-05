@@ -1,5 +1,6 @@
 package hrt.prefab;
 
+using hrt.prefab.Object3D;
 typedef ChunkData = {
 	var id : String;
 	var level : Int;
@@ -33,9 +34,8 @@ class World extends Object3D {
 	}
 	var datDir : String;
 
-	public function new(?parent) {
-		super(parent);
-		type = "world";
+	public function new(parent, shared) {
+		super(parent, shared);
 		chunkPrefabs = [];
 	}
 
@@ -46,9 +46,7 @@ class World extends Object3D {
 		var content = chunkPrefabs.get(data.id);
 		if ( content == null )
 			return;
-		var ctx = new hrt.prefab.Context();
-		ctx.init();
-		ctx.local2d = null;
+
 		var tmp = new h3d.scene.Object();
 		tmp.name = "chunk_inverse_transform";
 		chunk.addChild(tmp);
@@ -56,26 +54,26 @@ class World extends Object3D {
 		// create a tmp object to hold chunk inverse transform as prefab positions are stored relative to chunk position.
 		tmp.x = -chunkPos.x;
 		tmp.y = -chunkPos.y;
-		ctx.local3d = tmp;
 		for ( p in content.children ) {
-			var context = p.make(ctx);
-			if ( context.local3d == tmp )
+			shared.current3d = tmp;
+			var context = p.make(shared);
+			if ( context.getLocal3d() == tmp )
 				continue;
 			#if editor
 			for ( elt in p.flatten() )
-				@:privateAccess editor.makeInteractive(elt, ctx.shared);
+				@:privateAccess editor.makeInteractive(elt);
 			if ( editor != null ) {
 				var curEdit = editor.curEdit;
-				var contexts = curEdit.rootContext.shared.contexts;
-				contexts.set(p, context);
-				if ( context != null ) {
+				//var contexts = curEdit.rootContext.shared.contexts;
+				//contexts.set(p, context);
+				/*if ( context != null ) {
 					var pobj = context.shared.root3d;
 					var pobj2d = context.shared.root2d;
 					if ( context.local3d != pobj && context.local3d != null )
 						editor.curEdit.rootObjects.push(context.local3d);
 					if ( context.local2d != pobj2d && context.local2d != null )
 						editor.curEdit.rootObjects2D.push(context.local2d);
-				}
+				}*/
 			}
 			#end
 		}
@@ -86,7 +84,7 @@ class World extends Object3D {
 			var id = data.id;
 			var path = datDir + id + "/content.prefab";
 			var p = hxd.res.Loader.currentInstance.load(path).toPrefab().load();
-			var content = new hrt.prefab.Object3D();
+			var content = new hrt.prefab.Object3D(this, shared);
 			chunkPrefabs.set(id, content);
 			var i = p.children.length;
 			while ( i-- > 0 ) {
@@ -167,19 +165,19 @@ class World extends Object3D {
 		return 0;
 	}
 
-	override function saveData() : {} {
+	override function serialize() : Dynamic {
 		var tmpChildren = [];
 
 		var chunks = new Map();
 		if ( children.length > 0 ) {
 			for ( c in children ) {
 				if ( !isStreamable(c) )
-					tmpChildren.push(c.saveData());
+					tmpChildren.push(c.serialize());
 				else {
 					var object3D = Std.downcast(c, hrt.prefab.Object3D);
 					if ( object3D == null )
 						throw "TODO : stream prefab that are not 3D objects";
-					object3D = cast(object3D.clone(), hrt.prefab.Object3D);
+					object3D = cast(object3D.clone(null, null), hrt.prefab.Object3D);
 					var data = getChunkData(getObjectLevel(object3D), object3D.x, object3D.y);
 					// prefab positions are stored relative to the chunk parent.
 					// it's arbitrary but some work has to be done as the make occurs with the chunk as parent.
@@ -193,7 +191,7 @@ class World extends Object3D {
 						chunk.children = [];
 						chunks.set(data.id, chunk);
 					}
-					chunk.children.push(object3D.saveData());
+					chunk.children.push(object3D.serialize());
 					if ( findChunk(data.id) == null ) {
 						chunkData.push(data);
 					}
@@ -240,8 +238,8 @@ class World extends Object3D {
 		return obj;
 	}
 
-	function initPath(ctx : hrt.prefab.Context) {
-		var path = new haxe.io.Path(ctx.shared.currentPath);
+	function initPath() {
+		var path = new haxe.io.Path(shared.currentPath);
 		datDir = if ( path.dir == null )
 			'${path.file}.dat/';
 		else
@@ -252,18 +250,12 @@ class World extends Object3D {
 		return Std.isOfType(p, hrt.prefab.Object3D);
 	}
 
-	function createObjectFromData(ctx : hrt.prefab.Context, data : h3d.scene.HierarchicalWorld.WorldData) : h3d.scene.HierarchicalWorld {
-		return new h3d.scene.HierarchicalWorld(ctx.local3d, data);
+	function createObjectFromData(data : h3d.scene.HierarchicalWorld.WorldData) : h3d.scene.HierarchicalWorld {
+		return new h3d.scene.HierarchicalWorld(local3d, data);
 	}
 
-	override function make(ctx : hrt.prefab.Context) {
-		if( !enabled )
-			return ctx;
-		var fromRef = #if editor ctx.shared.parent != null #else true #end;
-		if (fromRef && editorOnly #if editor || inGameOnly #end)
-			return ctx;
-		ctx = ctx.clone(this);
-		initPath(ctx);
+	override function makeObject(parent3d: h3d.scene.Object) {
+		initPath();
 		loadDataFromFiles();
 		initBounds();
 		var d = { size : size,
@@ -274,21 +266,21 @@ class World extends Object3D {
 			maxDepth : depth,
 			onCreate : onCreateChunk,
 		};
-		var worldObj = createObjectFromData(ctx, d);
-		ctx.local3d = worldObj;
+		var worldObj = createObjectFromData(d);
+
 		for( c in children ) {
 			if ( !isStreamable(c) )
-				makeChild(ctx, c);
+				makeChild(c);
 		}
 		// Calling init on root after non streamable objects are made.
 		// This way objects such as terrain can be created in custom onCreateChunk.
 		worldObj.init();
-		updateInstance(ctx);
-		return ctx;
+		updateInstance();
+		return worldObj;
 	}
 
-	override function updateInstance(ctx : hrt.prefab.Context, ?propName : String) {
-		super.updateInstance(ctx, propName);
+	override function updateInstance(?propName : String) {
+		super.updateInstance(propName);
 		h3d.scene.HierarchicalWorld.DEBUG = debug;
 	}
 
@@ -324,5 +316,5 @@ class World extends Object3D {
 	}
 	#end
 
-	static var _ = Library.register("world", World);
+	static var _ = Prefab.register("world", World);
 }

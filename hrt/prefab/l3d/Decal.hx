@@ -1,5 +1,7 @@
 package hrt.prefab.l3d;
 
+// NOTE(ces) : Not Tested
+
 enum abstract DecalMode(String) {
 	var Default;
 	var BeforeTonemapping;
@@ -29,20 +31,25 @@ class Decal extends Object3D {
 	@:s var normalFadeEnd : Float = 1;
 	@:s var refMatLib : String;
 
-	override function save() {
+	override function save() : Dynamic {
 		var obj : Dynamic = super.save();
 		if(blendMode != Alpha) obj.blendMode = blendMode.getIndex();
 		return obj;
 	}
 
-	override function load( obj : Dynamic ) {
-		super.load(obj);
-		blendMode = obj.blendMode != null ? h2d.BlendMode.createByIndex(obj.blendMode) : Alpha;
+	override function copy( obj : Dynamic ) {
+		super.copy(obj);
+		blendMode = obj.blendMode;
 	}
 
-	override function makeInstance(ctx:Context) : Context {
-		ctx = ctx.clone(this);
-		var mesh = new h3d.scene.pbr.Decal(h3d.prim.Cube.defaultUnitCube(), ctx.local3d);
+	override function load( obj : Dynamic ) {
+		super.load(obj);
+		if( obj.blendMode != null )
+			blendMode = h2d.BlendMode.createByIndex(obj.blendMode);
+	}
+
+	override function makeObject(parent3d:h3d.scene.Object):h3d.scene.Object {
+		var mesh = new h3d.scene.pbr.Decal(h3d.prim.Cube.defaultUnitCube(), parent3d);
 
 		switch (renderMode) {
 			case Default, Terrain:
@@ -71,14 +78,11 @@ class Decal extends Object3D {
 		mesh.material.mainPass.depthTest = GreaterEqual;
 		mesh.material.mainPass.culling = Front;
 		mesh.material.shadows = false;
-		ctx.local3d = mesh;
-		ctx.local3d.name = name;
-		updateInstance(ctx);
-		return ctx;
+		return mesh;
 	}
 
-	public function updateRenderParams(ctx) {
-		var mesh = Std.downcast(ctx.local3d, h3d.scene.Mesh);
+	public function updateRenderParams() {
+		var mesh = Std.downcast(local3d, h3d.scene.Mesh);
 
 		if (this.refMatLib != null && this.refMatLib != "") {
 			// If a decal reference a material in the material library, we only
@@ -88,7 +92,7 @@ class Decal extends Object3D {
 			var refMatLibPath = this.refMatLib.substring(0, this.refMatLib.lastIndexOf("/"));
 			var refMatName = this.refMatLib.substring(this.refMatLib.lastIndexOf("/") + 1);
 
-			var prefabLib = hxd.res.Loader.currentInstance.load(refMatLibPath).toPrefab().load().clone(true);
+			var prefabLib = hxd.res.Loader.currentInstance.load(refMatLibPath).toPrefab().load();
 			var mat : Material = null;
 			for(c in prefabLib.children) {
 				if (c.name != refMatName)
@@ -129,8 +133,8 @@ class Decal extends Object3D {
 			case Default, Terrain:
 				var shader = mesh.material.mainPass.getShader(h3d.shader.pbr.VolumeDecal.DecalPBR);
 				if( shader != null ){
-					shader.albedoTexture = albedoMap != null ? ctx.loadTexture(albedoMap) : null;
-					shader.normalTexture = normalMap != null ? ctx.loadTexture(normalMap) : null;
+					shader.albedoTexture = albedoMap != null ? shared.loadTexture(albedoMap) : null;
+					shader.normalTexture = normalMap != null ? shared.loadTexture(normalMap) : null;
 					if(shader.albedoTexture != null) shader.albedoTexture.wrap = Repeat;
 					if(shader.normalTexture != null) shader.normalTexture.wrap = Repeat;
 					shader.albedoStrength = albedoStrength;
@@ -142,7 +146,7 @@ class Decal extends Object3D {
 					shader.CENTERED = centered;
 					commonSetup(shader);
 				}
-				var pbrTexture = pbrMap != null ? ctx.loadTexture(pbrMap) : null;
+				var pbrTexture = pbrMap != null ? shared.loadTexture(pbrMap) : null;
 				if( pbrTexture != null ) {
 					var propsTexture = mesh.material.mainPass.getShader(h3d.shader.pbr.PropsTexture);
 					if( propsTexture == null )
@@ -167,7 +171,7 @@ class Decal extends Object3D {
 			case BeforeTonemapping, AfterTonemapping:
 				var shader = mesh.material.mainPass.getShader(h3d.shader.pbr.VolumeDecal.DecalOverlay);
 				if( shader != null ){
-					shader.colorTexture = albedoMap != null ? ctx.loadTexture(albedoMap) : null;
+					shader.colorTexture = albedoMap != null ? shared.loadTexture(albedoMap) : null;
 					if(shader.colorTexture != null) shader.colorTexture.wrap = Repeat;
 					shader.CENTERED = centered;
 					shader.GAMMA_CORRECT = renderMode == BeforeTonemapping;
@@ -178,19 +182,19 @@ class Decal extends Object3D {
 		}
 	}
 
-	override function updateInstance( ctx : Context, ?propName : String ) {
-		super.updateInstance(ctx,propName);
-		updateRenderParams(ctx);
+	override function updateInstance(?propName : String ) {
+		super.updateInstance(propName);
+		updateRenderParams();
 	}
 
 	#if editor
-	override function getHideProps() : HideProps {
+	override function getHideProps() : hide.prefab.HideProps {
 		return { icon : "paint-brush", name : "Decal" };
 	}
 
-	override function setSelected( ctx : Context, b : Bool ) {
+	override function setSelected(b : Bool ) {
 		if( b ) {
-			var obj = ctx.shared.getSelfObject(this);
+			var obj = local3d;
 			if(obj != null) {
 				var wire = new h3d.scene.Box(0xFFFFFFFF,obj);
 				wire.name = "_highlight";
@@ -206,20 +210,20 @@ class Decal extends Object3D {
 				wireCenter.material.mainPass.depthTest = Always;
 			}
 		} else {
-			clearSelection( ctx );
+			clearSelection();
 		}
 		return true;
 	}
 
-	function clearSelection( ctx : Context ) {
-		var obj = ctx.shared.getSelfObject(this);
+	function clearSelection() {
+		var obj = local3d;
 		if(obj == null) return;
 		var objs = obj.findAll( o -> if(o.name == "_highlight") o else null );
 		for( o in objs )
 			o.remove();
 	}
 
-	override function edit( ctx : EditContext ) {
+	override function edit( ctx : hide.prefab.EditContext ) {
 		super.edit(ctx);
 
 		var pbrParams = '<dt>Albedo</dt><dd><input type="texturepath" field="albedoMap"/>
@@ -281,49 +285,49 @@ class Decal extends Object3D {
 
 			function updateMatSelect() {
 				matSelect.empty();
-				new Element('<option value="">None</option>').appendTo(matSelect);
+				new hide.Element('<option value="">None</option>').appendTo(matSelect);
 
 				materials = ctx.scene.listMaterialFromLibrary(this.getAbsPath(), libSelect.val());
 
 				for (idx in 0...materials.length) {
-					new Element('<option value="${materials[idx].path + "/" + materials[idx].mat.name}" ${(selectedMat == materials[idx].mat.name) ? 'selected' : ''}>${materials[idx].mat.name}</option>').appendTo(matSelect);
+					new hide.Element('<option value="${materials[idx].path + "/" + materials[idx].mat.name}" ${(selectedMat == materials[idx].mat.name) ? 'selected' : ''}>${materials[idx].mat.name}</option>').appendTo(matSelect);
 				}
 			}
 
 			function updateLibSelect() {
 				libSelect.empty();
-				new Element('<option value="">None</option>').appendTo(libSelect);
+				new hide.Element('<option value="">None</option>').appendTo(libSelect);
 
 				for (idx in 0...matLibs.length) {
-					new Element('<option value="${matLibs[idx].name}" ${(selectedLib == matLibs[idx].path) ? 'selected' : ''}>${matLibs[idx].name}</option>');
+					new hide.Element('<option value="${matLibs[idx].name}" ${(selectedLib == matLibs[idx].path) ? 'selected' : ''}>${matLibs[idx].name}</option>');
 				}
 			}
 
 			function updateMat() {
-				var previousDecal = this.clone();
+				var previousData = this.serialize();
 				var mat = ctx.scene.findMat(materials, matSelect.val());
 				if ( mat != null ) {
 					this.refMatLib = mat.path + "/" + mat.mat.name;
-					updateInstance(ctx.scene.editor.getContext(this));
+					updateInstance();
 					ctx.rebuildProperties();
 				} else {
 					this.refMatLib = "";
 				}
 
-				var newDecal = this.clone();
+				var newDecal = this.serialize();
 
 				ctx.properties.undo.change(Custom(function(undo) {
 					if( undo ) {
-						this.load(previousDecal.saveData());
+						this.load(previousData);
 					}
 					else {
-						this.load(newDecal.saveData());
+						this.load(newDecal);
 					}
 
 					updateLibSelect();
 					updateMatSelect();
 					ctx.rebuildProperties();
-					updateInstance(ctx.scene.editor.getContext(this));
+					updateInstance();
 				}));
 			}
 
@@ -384,7 +388,7 @@ class Decal extends Object3D {
 			</div>
 			'),this, function(pname) {
 				if( pname == "renderMode" ) {
-					clearSelection( ctx.rootContext );
+					clearSelection();
 					ctx.rebuildPrefab(this);
 					ctx.rebuildProperties();
 				}
@@ -397,6 +401,6 @@ class Decal extends Object3D {
 	}
 	#end
 
-	static var _ = Library.register("advancedDecal", Decal);
+	static var _ = Prefab.register("advancedDecal", Decal);
 
 }

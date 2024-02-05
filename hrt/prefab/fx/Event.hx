@@ -9,8 +9,7 @@ typedef EventInstance = {
 interface IEvent {
 	#if editor
 	function getEventPrefab() : hrt.prefab.Prefab;
-	function getHideProps() : hide.prefab.HideProps;
-	function getDisplayInfo(ctx: EditContext) : { label: String, length: Float, ?loop: Bool};
+	function getDisplayInfo(ctx: hide.prefab.EditContext) : { label: String, length: Float, ?loop: Bool };
 	#end
 	var time(default, set) : Float;
 	var hidden : Bool;
@@ -24,16 +23,15 @@ class Event extends hrt.prefab.Prefab implements IEvent {
 	public var lock:Bool = false;
 	public var selected:Bool = false;
 
-	public function new(?parent) {
-		super(parent);
-		this.type = "event";
+	public function new(parent, shared: ContextShared) {
+		super(parent, shared);
 	}
 
 	function set_time(v) {
 		return time = v;
 	}
 
-	public function prepare(ctx: Context) : EventInstance {
+	public function prepare() : EventInstance {
 		return {
 			evt: this
 		};
@@ -74,7 +72,7 @@ class Event extends hrt.prefab.Prefab implements IEvent {
 		};
 	}
 
-	public function getDisplayInfo(ctx) {
+	public function getDisplayInfo(ctx: hide.prefab.EditContext) {
 		return {
 			label: name,
 			length: 1.0,
@@ -84,5 +82,5 @@ class Event extends hrt.prefab.Prefab implements IEvent {
 
 	#end
 
-	static var _ = Library.register("event", Event);
+	static var _ = Prefab.register("event", Event);
 }

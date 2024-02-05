@@ -1,16 +1,17 @@
 package hrt.prefab.l3d;
 
+// NOTE(ces) : Not Tested
+
 class Particles3D extends Object3D {
 
 	@:s var data : Any;
 
-	public function new(?parent) {
-		super(parent);
-		type = "particles3D";
+	public function new(parent, shared: ContextShared) {
+		super(parent, shared);
 	}
 
-	override function createObject(ctx:Context) {
-		var parts = new h3d.parts.GpuParticles(ctx.local3d);
+	override function makeObject(parent3d:h3d.scene.Object):h3d.scene.Object {
+		var parts = new h3d.parts.GpuParticles(parent3d);
 		if( source != null ) {
 			var src = null;
 			try {
@@ -28,16 +29,14 @@ class Particles3D extends Object3D {
 
 	#if editor
 
-	override function setSelected(ctx:Context, b:Bool):Bool {
+	override function setSelected(b:Bool):Bool {
 		return true;
 	}
 
-	override function edit(ectx:EditContext) {
+	override function edit(ectx:hide.prefab.EditContext) {
 		super.edit(ectx);
 		if(source == null) {
-			var ctx = ectx.getContext(this);
-			if( ctx == null ) return;
-			var parts = cast(ctx.local3d,h3d.parts.GpuParticles);
+			var parts = cast(local3d,h3d.parts.GpuParticles);
 
 			function undo(f) {
 				ectx.properties.undo.change(Custom(function(redo) { f(redo); data = parts.save(); }));
@@ -45,7 +44,7 @@ class Particles3D extends Object3D {
 			}
 
 			function addGroup( g : h3d.parts.GpuParticles.GpuPartGroup ) {
-				var e = new Element('
+				var e = new hide.Element('
 					<div class="section">
 						<h1><span>${g.name}</span> &nbsp;<input type="checkbox" field="enable"/></h1>
 						<div class="content">
@@ -179,7 +178,7 @@ class Particles3D extends Object3D {
 			for( g in parts.getGroups() )
 				addGroup(g);
 
-			var extra = new Element('
+			var extra = new hide.Element('
 				<div class="section">
 					<h1>Manage</h1>
 					<div class="content">
@@ -222,6 +221,6 @@ class Particles3D extends Object3D {
 	}
 	#end
 
-	static var _ = Library.register("particles3D", Particles3D);
+	static var _ = Prefab.register("particles3D", Particles3D);
 
 }

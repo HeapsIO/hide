@@ -19,36 +19,34 @@ class Refraction extends hrt.prefab.Shader {
 	@:s var intensity : Float = 0.25;
 	@:s var albedoMult : Float = 1.0;
 
-	var shader : RefractionPropsShader;
-	public function new(?parent) {
-		super(parent);
+	var refractionShader : RefractionPropsShader;
+	public function new(parent, shared) {
+		super(parent, shared);
 
-		shader = new RefractionPropsShader();
+		refractionShader = new RefractionPropsShader();
 	}
 
-	override function makeInstance(ctx:hrt.prefab.Context):hrt.prefab.Context {
-		ctx = ctx.clone(this);
-		updateInstance(ctx);
-		return ctx;
+	override function makeInstance() {
+		updateInstance();
 	}
 
-	function getMaterials( ctx : hrt.prefab.Context ) {
+	function getMaterials() {
 		if( Std.isOfType(parent, hrt.prefab.Material) ) {
 			var material : hrt.prefab.Material = cast parent;
-			return material.getMaterials(ctx);
+			return material.getMaterials();
 		}
 		else {
-			return ctx.local3d.getMaterials();
+			return findFirstLocal3d().getMaterials();
 		}
 	}
 
-	override function updateInstance( ctx : hrt.prefab.Context, ?propName : String ) {
-		shader.intensityInput = intensity * 0.025;
-		shader.albedoMultInput = albedoMult;
-		for( m in getMaterials(ctx) ) {
+	override function updateInstance(?propName : String ) {
+		refractionShader.intensityInput = intensity * 0.025;
+		refractionShader.albedoMultInput = albedoMult;
+		for( m in getMaterials() ) {
 			var s = m.mainPass.getShader(RefractionPropsShader);
 			if( s == null ) {
-				m.mainPass.addShader(shader);
+				m.mainPass.addShader(refractionShader);
 				m.mainPass.setPassName("refraction");
 			}
 		}
@@ -78,5 +76,5 @@ class Refraction extends hrt.prefab.Shader {
 	}
 	#end
 
-	static var _ = hrt.prefab.Library.register("refraction", Refraction);
+	static var _ = hrt.prefab.Prefab.register("refraction", Refraction);
 }

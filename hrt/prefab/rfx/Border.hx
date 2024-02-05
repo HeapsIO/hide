@@ -15,15 +15,20 @@ class BorderShader extends h3d.shader.ScreenShader {
 
 class Border extends RendererFX {
 	public var pass : h3d.pass.ScreenFx<BorderShader>;
+	public var shader : BorderShader;
 
-	public function new(size = 0.1, color: Int = 0, alpha = 1.0) {
-		super();
-		var shader = new BorderShader();
+	public function new(parent: Prefab, shared: ContextShared) {
+		super(parent, shared);
+		shader = new BorderShader();
+		setParams();
+		pass = new h3d.pass.ScreenFx(shader);
+		pass.pass.setBlendMode(Alpha);
+	}
+
+	public function setParams( size = 0.1, color: Int = 0, alpha = 1.0) {
 		shader.size = size;
 		shader.alpha = alpha;
 		shader.color = h3d.Vector.fromColor(color);
-		pass = new h3d.pass.ScreenFx(shader);
-		pass.pass.setBlendMode(Alpha);
 	}
 
 	public override function begin( r : h3d.scene.Renderer, step : h3d.impl.RendererFX.Step ) {

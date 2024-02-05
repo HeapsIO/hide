@@ -82,6 +82,10 @@ class Light extends Object3D {
 	// Debug
 	@:s public var debugDisplay : Bool = true;
 
+	#if editor
+	var icon : hrt.impl.EditorTools.EditorIcon = null;
+	#end
+
 	static function getShadowsDefault() : LightShadows {
 		return {
 			mode : None,
@@ -95,14 +99,13 @@ class Light extends Object3D {
 		};
 	}
 
-	public function new(?parent) {
-		super(parent);
-		type = "light";
+	public function new(parent, shared: ContextShared) {
+		super(parent, shared);
 		range = 10;
 		zNear = 0.02;
 	}
 
-	override function save() {
+	override function save() : Dynamic {
 		var obj : Dynamic = super.save();
 		if( shadows.mode != None ) {
 			obj.shadows = Reflect.copy(shadows);
@@ -117,23 +120,23 @@ class Light extends Object3D {
 		super.load(obj);
 		if( obj.shadows != null ) {
 			var sh : Dynamic = Reflect.copy(obj.shadows);
-			sh.mode = h3d.pass.Shadows.RenderMode.createByName(sh.mode);
 			shadows = sh;
+			shadows.mode = h3d.pass.Shadows.RenderMode.createByName(sh.mode);
 		} else
 			shadows = getShadowsDefault();
 	}
 
-	override function copy(p:Prefab) {
-		super.copy(p);
-		shadows = copyValue(p.shadows);
+	override function applyTransform() {
+		//super.applyTransform(o); // Disable scaling
+		applyTransformToObject(local3d);
 	}
 
-	override function applyTransform( o : h3d.scene.Object ) {
-		//super.applyTransform(o); // Disable scaling
+	public function applyTransformToObject( o : h3d.scene.Object ) {
 		o.x = x;
 		o.y = y;
 		o.z = z;
 		o.setRotation(hxd.Math.degToRad(rotationX), hxd.Math.degToRad(rotationY), hxd.Math.degToRad(rotationZ));
+
 	}
 
 	function initTexture( path : String, ?wrap : h3d.mat.Data.Wrap ) {
@@ -145,37 +148,36 @@ class Light extends Object3D {
 		return null;
 	}
 
-	override function makeInstance( ctx : Context ) : Context {
-		ctx = ctx.clone(this);
+	override function makeObject(parent3d:h3d.scene.Object) : h3d.scene.Object {
+		var object : h3d.scene.Object = null;
 
 		var isPbr = Std.isOfType(h3d.mat.MaterialSetup.current, h3d.mat.PbrMaterialSetup);
 		if( !isPbr ) {
 			switch( kind ) {
-			case Point: ctx.local3d = new h3d.scene.fwd.PointLight(ctx.local3d);
-			case Directional: ctx.local3d = new h3d.scene.fwd.DirLight(ctx.local3d);
+			case Point: object = new h3d.scene.fwd.PointLight(parent3d);
+			case Directional: object = new h3d.scene.fwd.DirLight(parent3d);
 			case Spot:
 			case Capsule:
 			}
 		} else {
 			switch( kind ) {
-			case Point: ctx.local3d = new h3d.scene.pbr.PointLight(ctx.local3d);
-			case Directional: ctx.local3d = new h3d.scene.pbr.DirLight(ctx.local3d, cascade);
-			case Spot: ctx.local3d = new h3d.scene.pbr.SpotLight(ctx.local3d);
-			case Capsule: ctx.local3d = new h3d.scene.pbr.CapsuleLight(ctx.local3d);
+			case Point: object = new h3d.scene.pbr.PointLight(parent3d);
+			case Directional: object = new h3d.scene.pbr.DirLight(parent3d, cascade);
+			case Spot: object = new h3d.scene.pbr.SpotLight(parent3d);
+			case Capsule: object = new h3d.scene.pbr.CapsuleLight(parent3d);
 			}
 		}
-		ctx.local3d.name = name;
 
 		#if editor
-		ctx.custom = hrt.impl.EditorTools.create3DIcon(ctx.local3d, hide.Ide.inst.getHideResPath("icons/PointLight.png"), 0.5, Light);
+		icon = hrt.impl.EditorTools.create3DIcon(local3d, hide.Ide.inst.getHideResPath("icons/PointLight.png"), 0.5, Light);
 		#end
 
 		cookieTex = initTexture(cookiePath);
-		updateInstance(ctx);
-		return ctx;
+
+		return object;
 	}
 
-	#if editor
+	/*#if editor
 	override function removeInstance(ctx:Context):Bool {
 		var icon = Std.downcast(ctx.custom, hrt.impl.EditorTools.EditorIcon);
 		if (icon != null) {
@@ -184,17 +186,18 @@ class Light extends Object3D {
 		}
 		return super.removeInstance(ctx);
 	}
-	#end
+	#end*/
 
-	override function updateInstance( ctx : Context, ?propName : String ) {
-		super.updateInstance(ctx, propName);
+	override function updateInstance(?propName : String ) {
+		super.updateInstance(propName);
 
 		var color = color | 0xff000000;
-		var pbrLight = Std.downcast(ctx.local3d, h3d.scene.pbr.Light);
-		var light = Std.downcast(ctx.local3d, h3d.scene.pbr.Light);
-		if( pbrLight != null ) { // PBR
-			pbrLight.isMainLight = isMainLight;
-			pbrLight.occlusionFactor = occlusionFactor;
+		var pbrLight = Std.downcast(local3d, h3d.scene.pbr.Light);
+		var light = Std.downcast(local3d, h3d.scene.pbr.Light);
+
+		if( light != null ) { // PBR
+			light.isMainLight = isMainLight;
+			light.occlusionFactor = occlusionFactor;
 
 			switch( kind ) {
 			case Directional:
@@ -266,10 +269,10 @@ class Light extends Object3D {
 		}
 
 		#if editor
-		var debugPoint = ctx.local3d.find(c -> if(c.name == "_debugPoint") c else null);
-		var debugDir = ctx.local3d.find(c -> if(c.name == "_debugDir") c else null);
-		var debugSpot = ctx.local3d.find(c -> if(c.name == "_debugSpot") c else null);
-		var debugCapsule = ctx.local3d.find(c -> if(c.name == "_debugCapsule") c else null);
+		var debugPoint = local3d.find(c -> if(c.name == "_debugPoint") c else null);
+		var debugDir = local3d.find(c -> if(c.name == "_debugDir") c else null);
+		var debugSpot = local3d.find(c -> if(c.name == "_debugSpot") c else null);
+		var debugCapsule = local3d.find(c -> if(c.name == "_debugCapsule") c else null);
 		var sel : h3d.scene.Object = null;
 
 		switch(kind){
@@ -283,7 +286,7 @@ class Light extends Object3D {
 				var rangeSphere : h3d.scene.Sphere;
 
 				if(debugPoint == null) {
-					debugPoint = new h3d.scene.Object(ctx.local3d);
+					debugPoint = new h3d.scene.Object(local3d);
 					debugPoint.name = "_debugPoint";
 
 					rangeSphere = new h3d.scene.Sphere(0xffffff, 1, true, debugPoint);
@@ -315,7 +318,7 @@ class Light extends Object3D {
 				if(debugCapsule != null) debugCapsule.remove();
 
 				if(debugDir == null) {
-					debugDir = new h3d.scene.Object(ctx.local3d);
+					debugDir = new h3d.scene.Object(local3d);
 					debugDir.name = "_debugDir";
 
 
@@ -342,7 +345,7 @@ class Light extends Object3D {
 				if(debugCapsule != null) debugCapsule.remove();
 
 				if(debugSpot == null) {
-					debugSpot = new h3d.scene.Object(ctx.local3d);
+					debugSpot = new h3d.scene.Object(local3d);
 					debugSpot.name = "_debugSpot";
 
 					var g = new h3d.scene.Graphics(debugSpot);
@@ -387,7 +390,7 @@ class Light extends Object3D {
 				var rangeCapsule : h3d.scene.Capsule;
 
 				if(debugCapsule == null) {
-					debugCapsule = new h3d.scene.Object(ctx.local3d);
+					debugCapsule = new h3d.scene.Object(local3d);
 					debugCapsule.name = "_debugCapsule";
 
 					rangeCapsule = new h3d.scene.Capsule(0xffffff, 1, true, debugCapsule);
@@ -417,7 +420,6 @@ class Light extends Object3D {
 		}
 
 
-		var icon = Std.downcast(ctx.custom, hrt.impl.EditorTools.EditorIcon);
 		if (icon != null) {
 			icon.color = h3d.Vector4.fromColor(color);
 
@@ -437,10 +439,10 @@ class Light extends Object3D {
 		var isSelected = false;
 		if(sel != null){
 			isSelected = sel.visible;
-			if( debugPoint != null ) debugPoint.visible = (isSelected || ctx.shared.editorDisplay);
-			if( debugDir != null ) debugDir.visible = (isSelected || ctx.shared.editorDisplay);
-			if( debugSpot != null ) debugSpot.visible = (isSelected || ctx.shared.editorDisplay);
-			if( debugCapsule != null ) debugCapsule.visible = (isSelected || ctx.shared.editorDisplay);
+			if( debugPoint != null ) debugPoint.visible = (isSelected || shared.editorDisplay);
+			if( debugDir != null ) debugDir.visible = (isSelected || shared.editorDisplay);
+			if( debugSpot != null ) debugSpot.visible = (isSelected || shared.editorDisplay);
+			if( debugCapsule != null ) debugCapsule.visible = (isSelected || shared.editorDisplay);
 			sel.name = "__selection";
 		}
 
@@ -452,14 +454,14 @@ class Light extends Object3D {
 
 	#if editor
 
-	override function setSelected( ctx : Context, b : Bool ) {
-		var sel = ctx.local3d.getObjectByName("__selection");
+	override function setSelected(b : Bool ) {
+		var sel = local3d.getObjectByName("__selection");
 		if( sel != null ) sel.visible = b;
-		updateInstance(ctx);
+		updateInstance();
 		return true;
 	}
 
-	override function edit( ctx : EditContext ) {
+	override function edit( ctx : hide.prefab.EditContext ) {
 		super.edit(ctx);
 
 		var group = new hide.Element('
@@ -527,7 +529,7 @@ class Light extends Object3D {
 				ctx.rebuildProperties();
 			}
 			else{
-				if( pname == "cookiePath") cookieTex = loadTexture(ctx, this.cookiePath, cookieTex, Clamp);
+				if( pname == "cookiePath") cookieTex = loadTextureCustom(this.cookiePath, cookieTex, Clamp);
 				ctx.onChange(this, pname);
 			}
 		});
@@ -655,18 +657,18 @@ class Light extends Object3D {
 		}
 	}
 
-	function loadTexture( ctx : hide.prefab.EditContext, propsName : String, texture : h3d.mat.Texture, ?wrap : h3d.mat.Data.Wrap){
+	function loadTextureCustom(propsName : String, texture : h3d.mat.Texture, ?wrap : h3d.mat.Data.Wrap){
 		if(texture != null) texture.dispose();
 		if(propsName == null) return null;
-		texture = ctx.rootContext.loadTexture(propsName);
+		texture = shared.loadTexture(propsName);
 		texture.wrap = wrap == null ? Repeat : wrap;
 		return texture;
 	}
 
-	override function getHideProps() : HideProps {
+	override function getHideProps() : hide.prefab.HideProps {
 		return { icon : "sun-o", name : "Light" };
 	}
 	#end
 
-	static var _ = Library.register("light", Light);
+	static var _ = Prefab.register("light", Light);
 }

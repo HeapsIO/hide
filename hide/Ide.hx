@@ -786,10 +786,15 @@ class Ide extends hide.tools.IdeData {
 			onSelect(dir == "" ? null : (isAbsolute ? dir : makeRelative(dir)));
 			e.remove();
 		}).appendTo(window.window.document.body).click();
+
+		// remove comments
+
+
+
 	}
 
 	public function filterPrefabs( callb : hrt.prefab.Prefab -> Bool ) {
-		var exts = Lambda.array({iterator : @:privateAccess hrt.prefab.Library.registeredExtensions.keys });
+		var exts = Lambda.array({iterator : @:privateAccess hrt.prefab.Prefab.extensionRegistry.keys });
 		exts.push("prefab");
 		var todo = [];
 		browseFiles(function(path) {
@@ -804,7 +809,7 @@ class Ide extends hide.tools.IdeData {
 			}
 			filterRec(prefab);
 			if( !changed ) return;
-			todo.push(function() sys.io.File.saveContent(getPath(path), toJSON(prefab.saveData())));
+			@:privateAccess todo.push(function() sys.io.File.saveContent(getPath(path), toJSON(prefab.serialize())));
 		});
 		for( t in todo )
 			t();

@@ -10,17 +10,13 @@ class Flow extends Object2D {
 	@:s var vAlign : Int = 0;
 	@:s var hAlign : Int = 0;
 
-	override function makeInstance(ctx:Context):Context {
-		ctx = ctx.clone(this);
-		ctx.local2d = new h2d.Flow(ctx.local2d);
-		ctx.local2d.name = name;
-		updateInstance(ctx);
-		return ctx;
+	override function makeObject(parent2d: h2d.Object) : h2d.Object {
+		return new h2d.Flow(parent2d);
 	}
 
-	override function updateInstance( ctx: Context, ?propName : String ) {
-		super.updateInstance(ctx, propName);
-		var flow = (cast ctx.local2d : h2d.Flow);
+	override function updateInstance(?propName : String ) {
+		super.updateInstance(propName);
+		var flow = (cast local2d : h2d.Flow);
 		if( height > 0 ) {
 			flow.minHeight = flow.maxHeight = height;
 		} else {
@@ -51,7 +47,7 @@ class Flow extends Object2D {
 
 	#if editor
 
-	override function edit( ctx : EditContext ) {
+	override function edit( ctx : hide.prefab.EditContext ) {
 		super.edit(ctx);
 
 		var parameters = new hide.Element('<div class="group" name="Parameters"></div>');
@@ -79,19 +75,19 @@ class Flow extends Object2D {
 		leftAlign.on("click", function(e) {
 			hAlign = 0;
 			updateDisabled();
-			updateInstance(ctx.getContext(this), "hAlign");
+			updateInstance("hAlign");
 		});
 		middleAlign.on("click", function(e) {
 			hAlign = 1;
 			updateDisabled();
-			updateInstance(ctx.getContext(this), "hAlign");
+			updateInstance("hAlign");
 		});
 		rightAlign.on("click", function(e) {
 			hAlign = 2;
 			updateDisabled();
-			updateInstance(ctx.getContext(this), "hAlign");
+			updateInstance("hAlign");
 		});
-		
+
 		new hide.Element('<dt>Vertical Align</dt>').appendTo(gr);
 		var vElement = new hide.Element('<dd></dd>').appendTo(gr);
 		var topAlign = new hide.Element('<input type="button" style="width: 50px" value="Top" /> ').appendTo(vElement);
@@ -113,17 +109,17 @@ class Flow extends Object2D {
 		topAlign.on("click", function(e) {
 			vAlign = 0;
 			updateDisabled();
-			updateInstance(ctx.getContext(this), "vAlign");
+			updateInstance("vAlign");
 		});
 		middleAlign.on("click", function(e) {
 			vAlign = 1;
 			updateDisabled();
-			updateInstance(ctx.getContext(this), "vAlign");
+			updateInstance("vAlign");
 		});
 		rightAlign.on("click", function(e) {
 			vAlign = 2;
 			updateDisabled();
-			updateInstance(ctx.getContext(this), "vAlign");
+			updateInstance("vAlign");
 		});
 		updateDisabled();
 
@@ -135,11 +131,11 @@ class Flow extends Object2D {
 		});
 	}
 
-	override function getHideProps() : HideProps {
+	override function getHideProps() : hide.prefab.HideProps {
 		return { icon : "square", name : "Flow" };
 	}
 	#end
 
-	static var _ = Library.register("flow", Flow);
+	static var _ = Prefab.register("flow", Flow);
 
 }

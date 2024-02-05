@@ -1,7 +1,6 @@
 package hrt.prefab.rfx;
 
 import hrt.prefab.rfx.RendererFX;
-import hrt.prefab.Library;
 import hxd.Math;
 
 private class GraphShader extends h3d.shader.ScreenShader {
@@ -19,18 +18,18 @@ enum abstract ScreenShaderGraphMode(String) {
 	var BeforeTonemapping;
 	var AfterTonemapping;
 }
-
+@:access(h3d.scene.Renderer)
 class ScreenShaderGraph extends RendererFX {
 
 	var shaderPass = new h3d.pass.ScreenFx(new GraphShader());
 	var shaderGraph : hrt.shgraph.ShaderGraph;
-	var shaderDef : hrt.prefab.ContextShared.ShaderDef;
+	var shaderDef : hrt.prefab.Cache.ShaderDef;
 	var shader : hxsl.DynamicShader;
 
 	@:s public var renderMode : ScreenShaderGraphMode;
 
-	function new(?parent) {
-		super(parent);
+	function new(parent, shared: ContextShared) {
+		super(parent, shared);
 		renderMode = AfterTonemapping;
 	}
 
@@ -67,12 +66,9 @@ class ScreenShaderGraph extends RendererFX {
 		}
 	}
 
-	override function load( obj : Dynamic ) {
-		super.load(obj);
-		loadSerializedFields(obj);
-	}
-
 	public function loadShaderDef() {
+		if (shaderGraph == null)
+			resolveRef();
 		shaderDef = shaderGraph.compile2(null);
 		if(shaderDef == null)
 			return;
@@ -88,6 +84,11 @@ class ScreenShaderGraph extends RendererFX {
 		#end
 	}
 
+	override function makeInstance() {
+		super.makeInstance();
+		updateInstance();
+	}
+
 	function getShaderDefinition():hxsl.SharedShader {
 		if( shaderDef == null )
 			loadShaderDef();
@@ -99,6 +100,10 @@ class ScreenShaderGraph extends RendererFX {
 	}
 
 	function syncShaderVars() {
+		// if (shaderDef == null)
+		// 	loadShaderDef();
+		// if (shader == null)
+		// 	makeShader();
 		for(v in shaderDef.shader.data.vars) {
 			if(v.kind != Param)
 				continue;
@@ -142,15 +147,9 @@ class ScreenShaderGraph extends RendererFX {
 		return shader;
 	}
 
-	override function makeInstance(ctx: Context) : Context {
-		ctx = super.makeInstance(ctx);
-		updateInstance(ctx);
-		return ctx;
-	}
-
-	override function updateInstance( ctx: Context, ?propName : String ) {
-		super.updateInstance(ctx, propName);
-		var p = resolveRef(ctx.shared);
+	override function updateInstance(?propName : String ) {
+		super.updateInstance(propName);
+		var p = resolveRef();
 		if(p == null)
 			return;
 		if (shader == null)
@@ -159,7 +158,7 @@ class ScreenShaderGraph extends RendererFX {
 			syncShaderVars();
 	}
 
-	public function resolveRef(shared : hrt.prefab.ContextShared) {
+	public function resolveRef() {
 		if(shaderGraph != null)
 			return shaderGraph;
 		if(source == null)
@@ -209,7 +208,7 @@ class ScreenShaderGraph extends RendererFX {
 
 		function updateProps() {
 			var input = element.find("input");
-			updateInstance(ectx.rootContext);
+			updateInstance();
 			var found = shaderGraph != null;
 			input.toggleClass("error", !found);
 		}
@@ -255,7 +254,7 @@ class ScreenShaderGraph extends RendererFX {
 		group.append(hide.comp.PropsEditor.makePropsList(props));
 		ectx.properties.add(group, this.props, function(pname) {
 			ectx.onChange(this, pname);
-			updateInstance(ectx.rootContext, pname);
+			updateInstance(pname);
 
 		});
 
@@ -271,6 +270,6 @@ class ScreenShaderGraph extends RendererFX {
 
 	#end
 
-	static var _ = Library.register("rfx.screenShaderGraph", ScreenShaderGraph);
+	static var _ = Prefab.register("rfx.screenShaderGraph", ScreenShaderGraph);
 
 }

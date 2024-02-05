@@ -13,7 +13,7 @@ class DistortionTonemap extends hxsl.Shader {
 		}
 	}
 }
-
+@:access(h3d.scene.Renderer)
 class Distortion extends RendererFX {
 
 	var tonemap = new DistortionTonemap();
@@ -46,6 +46,6 @@ class Distortion extends RendererFX {
 	}
 	#end
 
-	static var _ = Library.register("rfx.distortion", Distortion);
+	static var _ = Prefab.register("rfx.distortion", Distortion);
 
 }

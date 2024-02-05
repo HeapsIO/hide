@@ -60,7 +60,7 @@ class DataFiles {
 	}
 	#else
 	static function loadPrefab(file:String) {
-		var l = hrt.prefab.Library.create(file.split(".").pop().toLowerCase());
+		var l = hrt.prefab.Prefab.create(file.split(".").pop().toLowerCase());
 		var path = getPath(file);
 		l.loadData(haxe.Json.parse(sys.io.File.getContent(path)));
 		return l;
@@ -265,6 +265,30 @@ class DataFiles {
 		return obj;
 	}
 
+	static function getPrefabsByPath(prefab: hrt.prefab.Prefab, path : String ) : Array<hrt.prefab.Prefab> {
+		function rec(prefab: hrt.prefab.Prefab, parts : Array<String>, index : Int, out : Array<hrt.prefab.Prefab> ) {
+			var name = parts[index++];
+			if( name == null ) {
+				out.push(prefab);
+				return;
+			}
+			var r = name.indexOf('*') < 0 ? null : new EReg("^"+name.split("*").join(".*")+"$","");
+			for( c in prefab.children ) {
+				var cname = c.name;
+				if( cname == null ) cname = c.getDefaultEditorName();
+				if( r == null ? c.name == name : r.match(cname) )
+					rec(prefab, parts, index, out);
+			}
+		}
+
+		var out = [];
+		if( path == "" )
+			out.push(prefab);
+		else
+			rec(prefab,path.split("."), 0, out);
+		return out;
+	}
+
 	public static function save( ?onSaveBase, ?force, ?prevSheetNames : Map<String,String> ) {
 		var ide = Ide.inst;
 		var temp = [];
@@ -303,7 +327,7 @@ class DataFiles {
 							pf = ide.loadPrefab(p.file);
 							prefabs.set(p.file, pf);
 						}
-						var all = pf.getPrefabsByPath(p.path);
+						var all = getPrefabsByPath(pf, p.path);
 						var inst : hrt.prefab.Prefab = all[p.index];
 						if( inst == null || inst.getCdbType() != prevName )
 							ide.error("Can't save prefab data "+p.path);
@@ -327,7 +351,7 @@ class DataFiles {
 		for( file => pf in prefabs ) {
 			skip++;
 			var path = ide.getPath(file);
-			var out = ide.toJSON(pf.saveData());
+			@:privateAccess var out = ide.toJSON(pf.serialize());
 			if( force ) {
 				var txt = try sys.io.File.getContent(path) catch( e : Dynamic ) null;
 				if( txt == out ) continue;

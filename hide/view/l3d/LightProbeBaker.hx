@@ -7,7 +7,6 @@ class LightProbeBaker {
 	public var useGPU = false;
 	public var environment : h3d.scene.pbr.Environment;
 
-	var context : hrt.prefab.Context;
 	var offScreenScene : h3d.scene.Scene = null;
 	var prim : h3d.prim.Plane2D;
 
@@ -38,7 +37,6 @@ class LightProbeBaker {
 		customCamera.screenRatio = 1.0;
 		customCamera.fovY = 90;
 		customCamera.zFar = 100;
-		context = new hrt.prefab.Context();
 	}
 
 	public function dispose() {
@@ -58,16 +56,11 @@ class LightProbeBaker {
 		if(offScreenScene != null) offScreenScene.dispose();
 	}
 
-	public function initScene( sceneData : hrt.prefab.Prefab, shared : hide.prefab.ContextShared, scene : hide.comp.Scene , env : h3d.scene.pbr.Environment) {
+	public function initScene( sceneData : hrt.prefab.Prefab, scene : hide.comp.Scene , env : h3d.scene.pbr.Environment) {
 		if(offScreenScene != null) offScreenScene.dispose();
 		offScreenScene = new h3d.scene.Scene();
 
-		var newShared = new hide.prefab.ContextShared(scene, null);
-		newShared.currentPath = shared.currentPath;
-		@:privateAccess newShared.shaderCache =  @:privateAccess hide.Ide.inst.shaderLoader.shaderCache;
-		context.shared = newShared;
-		context.shared.root3d = offScreenScene;
-		context.local3d = offScreenScene;
+		//@:privateAccess sceneData.shared.shaderCache =  @:privateAccess hide.Ide.inst.shaderLoader.shaderCache;
 
 		var whiteList = [ "level3d", "object", "model", "material", "light"];
 		function keep( p : hrt.prefab.Prefab ) {
@@ -84,7 +77,8 @@ class LightProbeBaker {
 					filter(c);
 		}
 		filter(sceneData);
-		sceneData.make(context);
+		var shared = new hrt.prefab.ContextShared(sceneData.shared.root2d, offScreenScene);
+		sceneData.make(shared);
 
 		/*function disableFaceCulling( o : Object ){
 			for( m in o.getMaterials() )

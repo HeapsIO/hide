@@ -1,6 +1,7 @@
 package hrt.prefab.l3d;
 
 import hrt.prefab.l3d.Spray;
+
 #if !editor
 
 typedef BatchData = {
@@ -38,8 +39,8 @@ class MeshSpray extends Spray {
 		}
 	}
 
-	override function createObject( ctx : Context ) {
-		var mspray = new MeshSprayObject(ctx.local3d);
+	override function makeObject(parent3d:h3d.scene.Object):h3d.scene.Object {
+		var mspray = new MeshSprayObject(parent3d);
 		// preallocate batches so their materials can be resolved
 		var curID = 0, curMap = mspray.batchesMap.get(0);
 		if( curMap == null ) {
@@ -73,7 +74,7 @@ class MeshSpray extends Spray {
 				batch.emitCountTip++;
 				return;
 			}
-			var obj = ctx.loadModel(source);
+			var obj = shared.loadModel(source);
 			if ( obj.isMesh() ) {
 				loadBatchMesh( source, obj.toMesh() );
 			} else {
@@ -102,9 +103,9 @@ class MeshSpray extends Spray {
 		return mspray;
 	}
 
-	function loadBinary( ctx : Context ) {
+	function loadBinary() {
 		binaryMeshes = [];
-		var bytes = new haxe.io.BytesInput(ctx.shared.loadPrefabDat("content","dat",name).entry.getBytes());
+		var bytes = new haxe.io.BytesInput(shared.loadPrefabDat("content","dat",name).entry.getBytes());
 		try {
 			while( true ) {
 				binaryMeshes.push({
@@ -127,13 +128,13 @@ class MeshSpray extends Spray {
 		return true;
 	}
 
-	override function make( ctx : Context ) {
+	override function make(?sh:hrt.prefab.Prefab.ContextMake) : hrt.prefab.Prefab {
 		if( !enabled )
-			return ctx;
+			return this;
 		if( binaryStorage )
-			loadBinary(ctx);
-		ctx = super.make(ctx);
-		var mspray = Std.downcast(ctx.local3d, MeshSprayObject);
+			loadBinary();
+		super.__makeInternal(sh);
+		var mspray = Std.downcast(local3d, MeshSprayObject);
 		var pos = mspray.getAbsPos();
 		var tmp = new h3d.Matrix();
 		var curID = 0, curMap = mspray.batchesMap.get(0);
@@ -203,16 +204,16 @@ class MeshSpray extends Spray {
 			b.worldPosition = null;
 		if ( clearBinaryMeshes )
 			binaryMeshes = null;
-		return ctx;
+		return this;
 	}
 
-	override function makeChild( ctx : Context, p : hrt.prefab.Prefab ) {
+	override function makeChild(p : hrt.prefab.Prefab ) {
 		if( p.type == "model" )
 			return;
-		super.makeChild(ctx, p);
+		super.makeChild(p);
 	}
 
-	static var _ = Library.register("meshSpray", MeshSpray);
+	static var _ = Prefab.register("meshSpray", MeshSpray);
 
 }
 
@@ -334,7 +335,7 @@ class MeshSpray extends Spray {
 		return hide.Ide.inst.resourceDir + "/" + MESH_SPRAY_CONFIG_FILE;
 	}
 
-	override function save() {
+	override function save() : Dynamic {
 		clearPreview();
 		if( binaryStorage ) saveToBinary();
 		return super.save();
@@ -359,8 +360,9 @@ class MeshSpray extends Spray {
 		for( i => m in this.sources )
 			meshes.set(m.path, i+1);
 		for( c in children.copy() ) {
-			if( c.type != "model" || c.children.length != 0 || !meshes.exists(c.source) ) continue;
+			if( c.type != "model" || c.children.length != 0) continue;
 			var c = c.to(Model);
+			if (!meshes.exists(c.source)) continue;
 			binaryMeshes.push({ path : c.source, x : c.x, y : c.y, z : c.z, scale : c.scaleX, rotX : c.rotationX, rotY : c.rotationY, rotZ : c.rotationZ });
 			children.remove(c);
 			binaryChanged = true;
@@ -398,7 +400,7 @@ class MeshSpray extends Spray {
 		binaryChanged = false;
 	}
 
-	override function getHideProps() : HideProps {
+	override function getHideProps() : hide.prefab.HideProps {
 		return { icon : "paint-brush", name : "MeshSpray", hideChildren : p -> return (!editChildren && Std.isOfType(p, Model)) };
 	}
 
@@ -406,7 +408,7 @@ class MeshSpray extends Spray {
 		sys.io.File.saveContent(MESH_SPRAY_CONFIG_PATH, hide.Ide.inst.toJSON(allSetGroups));
 	}
 
-	override function edit( ectx : EditContext ) {
+	override function edit( ectx : hide.prefab.EditContext ) {
 		invParent = getAbsPos().clone();
 		invParent.invert();
 
@@ -455,7 +457,7 @@ class MeshSpray extends Spray {
 						removeSourcePath(elt.val());
 						addSourcePath(newPath);
 						for (child in children) {
-							var model = child.to(hrt.prefab.Object3D);
+							var model = child.to(Model);
 							if (model != null && model.source == elt.val()) {
 								model.source = newPath;
 							}
@@ -468,7 +470,7 @@ class MeshSpray extends Spray {
 								removeSourcePath(newPath);
 								addSourcePath(path);
 								for (child in children) {
-									var model = child.to(hrt.prefab.Object3D);
+									var model = child.to(Model);
 									if (model != null && model.source == elt.val()) {
 										model.source = path;
 									}
@@ -481,7 +483,7 @@ class MeshSpray extends Spray {
 								removeSourcePath(elt.val());
 								addSourcePath(newPath);
 								for (child in children) {
-									var model = child.to(hrt.prefab.Object3D);
+									var model = child.to(Model);
 									if (model != null && model.source == elt.val()) {
 										model.source = newPath;
 									}
@@ -687,16 +689,14 @@ class MeshSpray extends Spray {
 		});
 
 		options.find("#toground").click(function(_) {
-			var ctx = ectx.getContext(this);
-			var mso = cast(ctx.local3d,MeshSprayObject);
+			var mso = cast(local3d,MeshSprayObject);
 			undo.change(Custom(function(undo) {
 			}));
 			for( c in this.children ) {
 				var obj = c.to(Object3D);
 				if( obj == null ) continue;
-				setGroundPos(ectx, obj);
-				var ctx = ectx.getContext(obj);
-				if( ctx != null ) obj.applyTransform(ctx.local3d);
+				setGroundPos(obj);
+				obj.applyTransform();
 				wasEdited = true;
 			}
 			if ( this.binaryMeshes != null ) {
@@ -706,7 +706,7 @@ class MeshSpray extends Spray {
 					pos.x = bm.x + pivot.tx;
 					pos.y = bm.y + pivot.ty;
 					pos.z = bm.z + pivot.tz;
-					var ground = setGroundPos(ectx, null, pos);
+					var ground = setGroundPos(null, pos);
 					bm.z += ground.mz;
 					bm.rotX = ground.rotX;
 					bm.rotY = ground.rotY;
@@ -738,7 +738,7 @@ class MeshSpray extends Spray {
 					}
 				}
 				sceneEditor.deleteElements(meshes);
-				cast(ectx.getContext(this).local3d, MeshSprayObject).redraw();
+				cast(local3d, MeshSprayObject).redraw();
 			}
 		});
 
@@ -773,7 +773,7 @@ class MeshSpray extends Spray {
 			createInteractiveBrush(ectx);
 		super.edit(ectx);
 
-		ectx.properties.add(new Element('
+		ectx.properties.add(new hide.Element('
 		<div class="group" name="Extra">
 		<dl>
 			<dt>Split</dt><dd><input type="range" min="0" max="2048" field="split"/></dd>
@@ -783,12 +783,11 @@ class MeshSpray extends Spray {
 		</div>'), this);
 	}
 
-	override function createInteractiveBrush(ectx : EditContext) {
+	override function createInteractiveBrush(ectx : hide.prefab.EditContext) {
 		super.createInteractiveBrush(ectx);
 		if (!enabled) return;
-		var ctx = ectx.getContext(this);
 
-		var s2d = ctx.shared.root2d.getScene();
+		var s2d = shared.root2d.getScene();
 
 		interactive.onMove = function(e) {
 			var worldPos = ectx.screenToGround(s2d.mouseX, s2d.mouseY);
@@ -800,12 +799,12 @@ class MeshSpray extends Spray {
 				return;
 			}
 
-			drawCircle(ctx, worldPos.x, worldPos.y, worldPos.z, (shiftPressed) ? currentConfig.deleteRadius : currentConfig.radius, 5, (shiftPressed) ? 9830400 : 38400);
+			drawCircle(worldPos.x, worldPos.y, worldPos.z, (shiftPressed) ? currentConfig.deleteRadius : currentConfig.radius, 5, (shiftPressed) ? 9830400 : 38400);
 
 			if (lastSpray < Date.now().getTime() - 100) {
 				clearPreview();
 				if( !shiftPressed ) {
-					previewItemsAround(ectx, ctx, worldPos);
+					previewItemsAround(ectx, worldPos);
 				}
 
 				if( K.isDown( K.MOUSE_LEFT) ) {
@@ -814,17 +813,17 @@ class MeshSpray extends Spray {
 
 					if (sprayEnable) {
 						if( shiftPressed ) {
-							removeItemsAround(ctx, worldPos);
+							removeItemsAround(worldPos);
 						} else {
 							if (currentConfig.density == 1) {
 								if(lastItemPos.distance(worldPos) > currentConfig.step) {
 									lastItemPos = worldPos.clone();
-									addItems(ctx);
+									addItems();
 								}
 							}
 							else {
 								lastItemPos = worldPos.clone();
-								addItems(ctx);
+								addItems();
 							}
 						}
 					}
@@ -870,7 +869,7 @@ class MeshSpray extends Spray {
 			saveConfigMeshBatch();
 	}
 
-	override function removeItemsAround(ctx : Context, point : h3d.col.Point) {
+	override function removeItemsAround(point : h3d.col.Point) {
 		var vecRelat = point.toVector();
 		vecRelat.transform(invParent);
 		var point2d = new h2d.col.Point(vecRelat.x, vecRelat.y);
@@ -906,7 +905,7 @@ class MeshSpray extends Spray {
 					for( c in toDelete ) {
 						if( undo ) binaryMeshes.push(c) else binaryMeshes.remove(c);
 					}
-					cast(ctx.local3d,MeshSprayObject).redraw();
+					cast(local3d,MeshSprayObject).redraw();
 				}));
 				needRedraw = true;
 			}
@@ -914,36 +913,31 @@ class MeshSpray extends Spray {
 
 		if( needRedraw ) {
 			clearBrushes();
-			cast(ctx.local3d,MeshSprayObject).redraw();
+			cast(local3d,MeshSprayObject).redraw();
 		}
 	}
 
-	override function makeInstance(ctx:Context):Context {
-		ctx = ctx.clone(this);
-		ctx.local3d = new MeshSprayObject(this, ctx.local3d);
-		ctx.local3d.name = name;
-		updateInstance(ctx);
-		return ctx;
+	override function makeObject(parent3d:h3d.scene.Object):h3d.scene.Object {
+		return new MeshSprayObject(this, parent3d);
 	}
+
 
 	function emitCondition(m: h3d.Matrix) {
 		return true;
 	}
 
-	override function updateInstance(ctx:Context, ?propName) {
-		cast(ctx.local3d, MeshSprayObject).editChildren = editChildren;
-		@:privateAccess cast(ctx.local3d, MeshSprayObject).emitCondition = emitCondition;
+	override function updateInstance(?propName) {
+		cast(local3d, MeshSprayObject).editChildren = editChildren;
+		@:privateAccess cast(local3d, MeshSprayObject).emitCondition = emitCondition;
 		if ( editChildren )
 			locked = false;
-		super.updateInstance(ctx, propName);
+		super.updateInstance(propName);
 	}
 
-	override function make(ctx:Context):Context {
-		if( !enabled )
-			return ctx;
+	override function makeInstance() {
 		if( binaryStorage ) {
 			binaryMeshes = [];
-			var bytes = new haxe.io.BytesInput(ctx.shared.loadPrefabDat("content","dat",name).entry.getBytes());
+			var bytes = new haxe.io.BytesInput(shared.loadPrefabDat("content","dat",name).entry.getBytes());
 			try {
 				while( true ) {
 					binaryMeshes.push({
@@ -961,25 +955,41 @@ class MeshSpray extends Spray {
 			} catch( e : haxe.io.Eof ) {
 			}
 		}
-		shared = ctx.shared;
-		ctx = makeInstance(ctx);
+		super.makeInstance();
+	}
+
+	override function make(?sh:hrt.prefab.Prefab.ContextMake) : Prefab {
+		makeInstance();
+
+		var old3d = shared.current3d;
+		shared.current3d = local3d ?? old3d;
+
 		// add all children then build meshspray
 		for( c in children )
 			if( c.type == "model" )
-				makeChild(ctx, c);
-		cast(ctx.local3d, MeshSprayObject).redraw();
+				makeChild(c);
+
+		cast(local3d, MeshSprayObject).redraw();
 		// then add other children (shaders etc.)
 		for( c in children )
 			if( c.type != "model" )
-				makeChild(ctx, c);
-		// rebuild to apply per instance shaders
-		cast(ctx.local3d, MeshSprayObject).redraw(true);
-		return ctx;
+				makeChild(c);
+
+		shared.current3d = old3d;
+
+		postMakeInstance();
+
+		return this;
 	}
 
-	override function applyTransform(o : h3d.scene.Object) {
-		super.applyTransform(o);
-		cast(o, MeshSprayObject).redraw();
+	override function postMakeInstance() {
+		cast(local3d, MeshSprayObject).redraw(true);
+		super.postMakeInstance();
+	}
+
+	override function applyTransform() {
+		super.applyTransform();
+		cast(local3d, MeshSprayObject).redraw();
 	}
 
 
@@ -1041,7 +1051,7 @@ class MeshSpray extends Spray {
 		return arr;
 	}
 
-	static var _ = Library.register("meshSpray", MeshSpray);
+	static var _ = Prefab.register("meshSpray", MeshSpray);
 
 }
 

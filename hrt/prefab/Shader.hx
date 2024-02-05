@@ -2,31 +2,35 @@ package hrt.prefab;
 
 import hrt.impl.Gradient;
 import hrt.impl.TextureType;
+import hide.prefab.HideProps;
 
 class Shader extends Prefab {
 
 	@:s var targetMaterial : String;
 	@:s var recursiveApply = true;
 
-	function new(?parent) {
-		super(parent);
+	public var shader : hxsl.Shader;
+
+	function new(parent, sh: ContextShared) {
+		super(parent, sh);
 		props = {};
 	}
 
-	public function makeShader( ?ctx : hrt.prefab.Context ) : hxsl.Shader {
+	public function makeShader() : hxsl.Shader {
 		return null;
 	}
 
-	public function getShaderDefinition( ctx : hrt.prefab.Context ) : hxsl.SharedShader {
-		var s = makeShader(ctx);
+	public function getShaderDefinition() : hxsl.SharedShader {
+		var s = shader != null ? shader : makeShader();
+		this.shader = s;
 		return s == null ? null : @:privateAccess s.shader;
 	}
 
-	override function updateInstance(ctx: Context, ?propName) {
-		var shaderDef = getShaderDefinition(ctx);
-		if( ctx.custom == null || shaderDef == null )
+	override function updateInstance(?propName) {
+		var shaderDef = getShaderDefinition();
+		if( shader == null || shaderDef == null )
 			return;
-		syncShaderVars(ctx.custom, shaderDef);
+		syncShaderVars(shader, shaderDef);
 	}
 
 	function syncShaderVars( shader : hxsl.Shader, shaderDef : hxsl.SharedShader ) {
@@ -80,21 +84,20 @@ class Shader extends Prefab {
 		material.mainPass.addShader(shader);
 	}
 
+	function removeShader( obj : h3d.scene.Object, material : h3d.mat.Material, shader : hxsl.Shader ) {
+		material.mainPass.removeShader(shader);
+	}
+
 	function checkMaterial(mat: h3d.mat.Material) {
 		return targetMaterial == null || targetMaterial == mat.name;
 	}
 
-	function iterMaterials(ctx:Context, callb) {
+	function iterMaterials(callb) {
 		var parent = parent;
-		var shared = ctx.shared;
-		while( parent != null && parent.parent == null && shared.parent != null ) {
-			parent = shared.parent.prefab.parent; // reference parent
-			shared = shared.parent.shared;
-		}
+
 		if( Std.isOfType(parent, Material) ) {
 			var material : Material = cast parent;
-			if (ctx.local3d != null) // Fix non made materials in emitters
-				for( m in material.getMaterials(ctx) )
+			for( m in material.getMaterials() )
 					callb(null, m);
 		} else {
 			var objs = [];
@@ -114,42 +117,39 @@ class Shader extends Prefab {
 					for( o in shared.getObjects(c, h3d.scene.Object) )
 						pushUnique(o);
 			} else
-				objs = shared.getObjects(parent, h3d.scene.Object);
+			{
+				var obj3d = Std.downcast(parent,hrt.prefab.Object3D);
+				if (obj3d != null)
+					objs = obj3d.getObjects(h3d.scene.Object);
+			}
 			for( obj in objs )
 				for( m in obj.getMaterials(false) )
 					callb(obj, m);
 		}
 	}
 
-	override function makeInstance(ctx:Context):Context {
-		ctx = ctx.clone(this);
-		var shader = makeShader(ctx);
+	override function makeInstance() {
+		var shader = makeShader();
 		if( shader == null )
-			return ctx;
-		if( ctx.local2d != null ) {
-			var drawable = Std.downcast(ctx.local2d, h2d.Drawable);
+			return;
+		if( shared.current2d != null ) {
+			var drawable = Std.downcast(shared.current2d, h2d.Drawable);
 			if (drawable != null) {
 				drawable.addShader(shader);
-				ctx.cleanup = function() {
-					drawable.removeShader(shader);
-				}
 			} else {
-				var flow = Std.downcast(ctx.local2d, h2d.Flow);
+				var flow = Std.downcast(shared.current2d, h2d.Flow);
 				if (flow != null) {
 					@:privateAccess if (flow.background != null) {
 						flow.background.addShader(shader);
-						ctx.cleanup = function() {
-							flow.background.removeShader(shader);
-						}
 					}
 				}
 			}
 		}
-		if( ctx.local3d != null )
-			iterMaterials(ctx, function(obj,mat) if(checkMaterial(mat)) applyShader(obj, mat, shader));
-		ctx.custom = shader;
-		updateInstance(ctx);
-		return ctx;
+
+		if( shared.current3d != null )
+			iterMaterials(function(obj,mat) if(checkMaterial(mat)) applyShader(obj, mat, shader));
+		this.shader = shader;
+		updateInstance();
 	}
 
 	#if editor
@@ -168,13 +168,12 @@ class Shader extends Prefab {
 		return props;
 	}
 
-	override function edit( ectx : EditContext ) {
+	override function edit( ectx : hide.prefab.EditContext ) {
 		super.edit(ectx);
 
-		var ctx = ectx.getContext(this);
-		var shaderDef = getShaderDefinition(ctx);
-		if( shaderDef == null || ctx == null ) {
-			var el = new Element("<p>Shader definition is missing</p>");
+		var shaderDef = getShaderDefinition();
+		if( shaderDef == null) {
+			var el = new hide.Element("<p>Shader definition is missing</p>");
 			el.css("color", "#ff5555");
 			ectx.properties.add(el);
 			return;
@@ -186,7 +185,7 @@ class Shader extends Prefab {
 			</dl>
 		</div>');
 		var materials = [];
-		iterMaterials(ctx, function(_,m) if( m.name != null && materials.indexOf(m.name) < 0 ) materials.push(m.name));
+		iterMaterials(function(_,m) if( m.name != null && materials.indexOf(m.name) < 0 ) materials.push(m.name));
 		if( targetMaterial != null && materials.indexOf(targetMaterial) < 0 )
 			materials.push(targetMaterial);
 		if( materials.length >= 2 || targetMaterial != null ) {
@@ -213,7 +212,7 @@ class Shader extends Prefab {
 			ectx.onChange(this, pname);
 
 			// Notify change to FX in case param is used by curves
-			var fx = getParent(hrt.prefab.fx.FX);
+			var fx = findParent(hrt.prefab.fx.FX);
 			if(fx != null)
 				ectx.rebuildPrefab(fx, true);
 		});
@@ -252,7 +251,7 @@ class Shader extends Prefab {
 		return {
 			icon : "cog",
 			name : name,
-			fileSource : cl == DynamicShader ? ["hx"] : null,
+			fileSource : cl == hrt.prefab.DynamicShader ? ["hx"] : null,
 			allowParent : function(p) return p.to(Object2D) != null || p.to(Object3D) != null || p.to(Material) != null
 		};
 	}
