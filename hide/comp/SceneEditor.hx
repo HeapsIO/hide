@@ -1117,17 +1117,6 @@ class SceneEditor {
 
 		tree.saveDisplayKey = view.saveDisplayKey + '/tree';
 
-		if (root2d == null) {
-			root2d = new h2d.Object();
-		}
-
-		if (root3d == null) {
-			root3d = new h3d.scene.Object();
-		}
-
-		scene.s2d.addChild(root2d);
-		scene.s3d.addChild(root3d);
-
 		gizmo = new hide.view.l3d.Gizmo(scene);
 		view.keys.register("sceneeditor.translationMode", gizmo.translationMode);
 		view.keys.register("sceneeditor.rotationMode", gizmo.rotationMode);
@@ -1177,21 +1166,6 @@ class SceneEditor {
 
 		loadSavedCameraController3D();
 		loadSnapSettings();
-
-		scene.s2d.defaultSmooth = true;
-		root2d.x = scene.s2d.width >> 1;
-		root2d.y = scene.s2d.height >> 1;
-		cameraController2D = makeCamController2D();
-		cameraController2D.onClick = cameraController.onClick;
-		var cam2d = @:privateAccess view.getDisplayState("Camera2D");
-		if( cam2d != null ) {
-			root2d.x = scene.s2d.width*0.5 + cam2d.x;
-			root2d.y = scene.s2d.height*0.5 + cam2d.y;
-			root2d.setScale(cam2d.z);
-		}
-		cameraController2D.loadFromScene();
-		if (camera2D)
-			resetCamera();
 
 		scene.onUpdate = update;
 
@@ -1480,10 +1454,31 @@ class SceneEditor {
 			sceneData.dispose();
 
 		root3d = new h3d.scene.Object();
+		root3d.name = "root3d";
+
 		root2d = new h2d.Object();
+		root2d.name = "root2d";
 
 		scene.s3d.addChild(root3d);
 		scene.s2d.addChild(root2d);
+
+		scene.s2d.defaultSmooth = true;
+		root2d.x = scene.s2d.width >> 1;
+		root2d.y = scene.s2d.height >> 1;
+		cameraController2D = makeCamController2D();
+		cameraController2D.onClick = cameraController.onClick;
+		var cam2d = @:privateAccess view.getDisplayState("Camera2D");
+		if( cam2d != null ) {
+			root2d.x = scene.s2d.width*0.5 + cam2d.x;
+			root2d.y = scene.s2d.height*0.5 + cam2d.y;
+			root2d.setScale(cam2d.z);
+		}
+		cameraController2D.loadFromScene();
+		if (camera2D)
+			resetCamera();
+
+
+
 		root2d.addChild(cameraController2D);
 		scene.setCurrent();
 		scene.onResize();
@@ -2530,7 +2525,6 @@ class SceneEditor {
 	}
 
 	function makeEditContext(elts : Array<PrefabElement>) : SceneEditorContext {
-		var p = elts[0];
 		/*var rootCtx = context;
 		while( p != null ) {
 			var ctx = context.shared.getContexts(p)[0];
@@ -2539,6 +2533,7 @@ class SceneEditor {
 		}*/
 		// rootCtx might not be == context depending on references
 		var edit = new SceneEditorContext(elts, this);
+		edit.rootPrefab = sceneData;
 		edit.properties = properties;
 		edit.scene = scene;
 		return edit;

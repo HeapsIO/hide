@@ -12,6 +12,7 @@ class EditContext {
 	public var scene : hide.comp.Scene;
 	public var properties : hide.comp.PropsEditor;
 	public var cleanups : Array<Void->Void>;
+	public var rootPrefab : hrt.prefab.Prefab;
 	function get_ide() return hide.Ide.inst;
 
 	public function onChange(p : Prefab, propName : String) {
@@ -122,7 +123,7 @@ class EditContext {
 			path.pop();
 		}
 
-		for( o in scene.s3d)
+		for( o in rootPrefab.shared.root3d)
 			getRec([], o);
 
 		return out;
