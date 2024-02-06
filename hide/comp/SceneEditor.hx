@@ -3231,7 +3231,7 @@ class SceneEditor {
 		var lastElem = elements[elements.length-1];
 		var lastIndex = lastElem.parent.children.indexOf(lastElem) + 1;
 		for(elt in elements) {
-			var clone = elt.clone(elt.parent, elt.parent.shared);
+			@:pirvateAccess var clone = hrt.prefab.Prefab.createFromDynamic(haxe.Json.parse(haxe.Json.stringify(elt.serialize())), elt.parent, elt.parent.shared);
 			var index = lastIndex+1;
 			elt.parent.children.remove(clone);
 			elt.parent.children.insert(index, clone);
