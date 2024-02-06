@@ -218,7 +218,7 @@ class FX2D extends Object2D implements BaseFX {
 
 		var anim : ObjectAnimation = {
 			elt2d: obj2d,
-			obj2d: local2d,
+			obj2d: obj2d.local2d,
 			events: null,
 			position: makeVector("position", 0.0),
 			scale: makeVector("scale", 1.0, true),
