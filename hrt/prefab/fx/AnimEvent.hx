@@ -47,7 +47,7 @@ class AnimEvent extends hrt.prefab.fx.Event {
 				<dl>
 					<dt>Time</dt><dd><input type="number" value="0" field="time"/></dd>
 					<dt>Loop</dt><dd><input type="checkbox" field="loop"/></dd>
-					<dt>Animation</dt><dd><select><option value="">-- Choose --</option></select></dd>
+					<dt>Animation</dt><dd><input id="anim" value="--- Choose ---"></dd>
 					<dt>Speed</dt><dd><input type="number" value="0" field="speed"/></dd>
 					<dt>Duration</dt><dd><input type="number" value="0" field="duration"/></dd>
 					<dt>Offset</dt><dd><input type="number" value="0" field="offset"/></dd>
