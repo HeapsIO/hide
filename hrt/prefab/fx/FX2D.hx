@@ -181,7 +181,7 @@ class FX2D extends Object2D implements BaseFX {
 		}
 
 		var obj2d = elt.to(hrt.prefab.Object2D);
-		if(obj2d == null)
+		if(obj2d == null || obj2d.local2d == null)
 			return;
 
 		// TODO: Support references?
