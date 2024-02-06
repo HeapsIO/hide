@@ -234,7 +234,6 @@ class World extends Object3D {
 			sys.FileSystem.deleteDirectory(datDir);
 		#end
 		var obj : Dynamic = save();
-		obj.type = type;
 		obj.children = tmpChildren;
 		return obj;
 	}
@@ -255,7 +254,9 @@ class World extends Object3D {
 		return new h3d.scene.HierarchicalWorld(shared.current3d, data);
 	}
 
-	override function makeObject(parent3d: h3d.scene.Object) {
+	override function make(?sh:hrt.prefab.Prefab.ContextMake) : Prefab {
+		if (shared.root3d == null) @:privateAccess shared.root3d = shared.current3d = new h3d.scene.Object();
+
 		initPath();
 		loadDataFromFiles();
 		initBounds();
@@ -269,15 +270,24 @@ class World extends Object3D {
 		};
 		var worldObj = createObjectFromData(d);
 
+		local3d = worldObj;
+
+		var old3d = shared.current3d;
+		shared.current3d = local3d ?? shared.current3d;
+
 		for( c in children ) {
 			if ( !isStreamable(c) )
 				makeChild(c);
 		}
+
+		shared.current3d = old3d;
+
 		// Calling init on root after non streamable objects are made.
 		// This way objects such as terrain can be created in custom onCreateChunk.
 		worldObj.init();
 		updateInstance();
-		return worldObj;
+		postMakeInstance();
+		return this;
 	}
 
 	override function updateInstance(?propName : String) {
