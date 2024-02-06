@@ -563,6 +563,7 @@ class EmitterObject extends h3d.scene.Object {
 			#if editor
 			clone.setEditor(prefab.shared.editor);
 			#end
+			clone.children = particleTemplate.children;
 			@:privateAccess clone.makeInstance();
 			var loc3d = Object3D.getLocal3d(clone);
 
@@ -610,13 +611,9 @@ class EmitterObject extends h3d.scene.Object {
 				while (p != null && Std.downcast(p, Emitter) == null)
 					p = p.parent;
 
-				var clonedMat = mat.clone(new hrt.prefab.ContextShared(batch));
-				#if editor
-				clonedMat.setEditor(prefab.shared.editor);
-				#end
 				if (this.emitterPrefab == p) {
 					if(mat.enabled) {
-						@:privateAccess clonedMat.makeInstance();
+						@:privateAccess mat.makeInstance();
 					}
 				}
 			}
@@ -632,11 +629,7 @@ class EmitterObject extends h3d.scene.Object {
 				}
 				if (this.emitterPrefab == p) {
 					if( !shader.enabled ) continue;
-					var clonedShader = cast(shader.clone(new hrt.prefab.ContextShared(batch)), hrt.prefab.Shader);
-					#if editor
-					clonedShader.setEditor(prefab.shared.editor);
-					#end
-					makeShaderInstance(clonedShader);
+					makeShaderInstance(shader);
 					//shCtx.local3d = null; // Prevent shader.iterMaterials from adding our objet to the list incorectly
 					// TODO(ces) : It looks like particles anims are broken
 					hrt.prefab.fx.BaseFX.BaseFXTools.getShaderAnims(shader, shaderAnims, batch);
