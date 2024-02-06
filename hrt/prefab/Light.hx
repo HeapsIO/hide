@@ -37,6 +37,8 @@ typedef ShadowSamplingPCF = {> ShadowSamplingMode,
 
 typedef CascadeParams = {
 	var bias : Float;
+	var depthBias : Float;
+	var slopeBias : Float;
 }
 
 class Light extends Object3D {
@@ -219,7 +221,7 @@ class Light extends Object3D {
 						params.resize(cascadeNbr);
 						for ( i in 0...params.length )
 							if ( params[i] == null )
-								params[i] = {bias : 0.001};
+								params[i] = { bias : 0.001, depthBias : 0.0, slopeBias : 0.0 };
 						cs.params = params;
 					}
 				}
@@ -643,13 +645,17 @@ class Light extends Object3D {
 		}
 
 		var list = cascadeGroup.find("ul#params");
+
 		for ( param in params ) {
 			var e = new hide.Element('
 			<div class="group" name="Params">
 				<dl>
 					<dt>Bias</dt><dd><input type="range" min="0" max="0.1" field="bias"/></dd>
+					<dt>DepthBias</dt><dd><input type="range" min="0" max="10" step="1" field="depthBias"/></dd>
+					<dt>SlopeBias</dt><dd><input type="range" min="0" max="10" step="0.1" field="slopeBias"/></dd>
 				</dl>
-			</div>');
+			</div>
+			');
 			e.appendTo(list);
 			ctx.properties.build(e, param, (pname) -> {
 				ctx.onChange(this, "params");
