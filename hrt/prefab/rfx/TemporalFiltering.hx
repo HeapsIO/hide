@@ -133,6 +133,7 @@ class TemporalFiltering extends hrt.prefab.rfx.RendererFX {
 	public var pass = new h3d.pass.ScreenFx(new TemporalFilteringShader());
 	public var jitterMat = new h3d.Matrix();
 	var curMatNoJitter = new h3d.Matrix();
+	var curMatJittered = new h3d.Matrix();
 
 	var tmp = new h3d.Matrix();
 	public function getMatrixJittered( camera : h3d.Camera ) : h3d.Matrix {
@@ -159,14 +160,25 @@ class TemporalFiltering extends hrt.prefab.rfx.RendererFX {
 			s.jitterUV.set(-frustumJitter.curSample.x / ctx.engine.width, frustumJitter.curSample.y / ctx.engine.height);
 
 			curMatNoJitter.load(ctx.camera.m);
-			ctx.camera.m.load(getMatrixJittered(ctx.camera));
+			curMatJittered.load(getMatrixJittered(ctx.camera));
+			ctx.camera.m.load(curMatJittered);
 			@:privateAccess ctx.camera.needInv = true;
 			s.cameraInverseViewProj.initInverse(curMatNoJitter);
+		}
+
+		if( step == Shadows ) {
+			r.ctx.camera.m.load(curMatNoJitter);
+			return;
 		}
 	}
 
 	override function end( r:h3d.scene.Renderer, step:h3d.impl.RendererFX.Step ) {
 		var ctx = r.ctx;
+		if ( step == Shadows ) {
+			ctx.camera.m.load(curMatJittered);
+			return;
+		}
+
 		if( ( step == AfterTonemapping && renderMode == "AfterTonemapping") || (step == BeforeTonemapping && renderMode == "BeforeTonemapping" ) ) {
 			r.mark("TemporalFiltering");
 			var output : h3d.mat.Texture = ctx.engine.getCurrentTarget();
