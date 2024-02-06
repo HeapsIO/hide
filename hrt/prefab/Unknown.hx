@@ -6,6 +6,10 @@ package hrt.prefab;
 class Unknown extends Prefab {
 	public var data : Dynamic = null;
 
+	override function get_type():String {
+		return data.type;
+	}
+
 	override function load(newData: Dynamic) : Void {
 		data = {};
 
