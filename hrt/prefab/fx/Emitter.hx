@@ -563,7 +563,7 @@ class EmitterObject extends h3d.scene.Object {
 			#if editor
 			clone.setEditor(prefab.shared.editor);
 			#end
-			clone.make();
+			@:privateAccess clone.makeInstance();
 			var loc3d = Object3D.getLocal3d(clone);
 
 			var mesh = Std.downcast(loc3d, h3d.scene.Mesh);
@@ -579,6 +579,7 @@ class EmitterObject extends h3d.scene.Object {
 			if (mesh != null) {
 				meshPrimitive = Std.downcast(mesh.primitive, h3d.prim.MeshPrimitive);
 				meshMaterial = mesh.material;
+				mesh.remove();
 			}
 
 			empty3d.remove();
@@ -609,10 +610,13 @@ class EmitterObject extends h3d.scene.Object {
 				while (p != null && Std.downcast(p, Emitter) == null)
 					p = p.parent;
 
-				// TODO(ces) : Attach materials directly to the batch
+				var clonedMat = mat.clone(new hrt.prefab.ContextShared(batch));
+				#if editor
+				clonedMat.setEditor(prefab.shared.editor);
+				#end
 				if (this.emitterPrefab == p) {
 					if(mat.enabled) {
-						@:privateAccess mat.makeInstance();
+						@:privateAccess clonedMat.makeInstance();
 					}
 				}
 			}
@@ -628,9 +632,11 @@ class EmitterObject extends h3d.scene.Object {
 				}
 				if (this.emitterPrefab == p) {
 					if( !shader.enabled ) continue;
-					// TODO(ces) : Attach materials directly to the batch
-
-					makeShaderInstance(shader);
+					var clonedShader = cast(shader.clone(new hrt.prefab.ContextShared(batch)), hrt.prefab.Shader);
+					#if editor
+					clonedShader.setEditor(prefab.shared.editor);
+					#end
+					makeShaderInstance(clonedShader);
 					//shCtx.local3d = null; // Prevent shader.iterMaterials from adding our objet to the list incorectly
 					// TODO(ces) : It looks like particles anims are broken
 					hrt.prefab.fx.BaseFX.BaseFXTools.getShaderAnims(shader, shaderAnims, batch);
