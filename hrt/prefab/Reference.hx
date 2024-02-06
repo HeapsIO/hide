@@ -47,7 +47,7 @@ class Reference extends Object3D {
 			return null;
 		if (refInstance != null)
 			return refInstance;
-		return hxd.res.Loader.currentInstance.load(source).to(hrt.prefab.Resource).load();
+		return hxd.res.Loader.currentInstance.load(source).to(hrt.prefab.Resource).load().clone();
 	}
 
 	override function makeInstance() {
@@ -63,13 +63,16 @@ class Reference extends Object3D {
 			refLocal3d = local3d;
 		}
 
-		var sh = new ContextShared(source, findFirstLocal2d(), refLocal3d);
+		var sh = p.shared;
+		@:privateAccess sh.root3d = sh.current3d = refLocal3d;
+		@:privateAccess sh.root2d = sh.current2d = findFirstLocal2d();
+
 		#if editor
 		sh.editor = this.shared.editor;
 		#end
 		sh.parentPrefab = this;
 		sh.customMake = this.shared.customMake;
-		refInstance = p.clone(null, sh);
+		refInstance = p;
 
 		if (refInstance.to(Object3D) != null) {
 			var obj3d = refInstance.to(Object3D);
