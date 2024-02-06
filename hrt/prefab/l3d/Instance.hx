@@ -45,7 +45,7 @@ class Instance extends Object3D {
 				shared.onError(e);
 			}
 		}
-        return new h3d.scene.Object();
+        return new h3d.scene.Object(parent3d);
 	}
 
 	override function makeInteractive():hxd.SceneEvents.Interactive {
