@@ -234,6 +234,7 @@ class World extends Object3D {
 			sys.FileSystem.deleteDirectory(datDir);
 		#end
 		var obj : Dynamic = save();
+		obj.type = type;
 		obj.children = tmpChildren;
 		return obj;
 	}
