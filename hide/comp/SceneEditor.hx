@@ -1783,9 +1783,10 @@ class SceneEditor {
 					invParent.invert();
 					newMat.multiply(newMat, invParent);
 					if(scale != null) {
-						var previousScale = newMat.getScale();
-						newMat.prependScale(1 / previousScale.x, 1 / previousScale.y, 1 / previousScale.z);
-						newMat.prependScale(Math.max(0, previousScale.x  + scale.x), Math.max(0, previousScale.y + scale.y), Math.max(0, previousScale.z + scale.z));
+						newMat.prependScale(scale.x, scale.y, scale.z);
+						// var previousScale = newMat.getScale();
+						// newMat.prependScale(1 / previousScale.x, 1 / previousScale.y, 1 / previousScale.z);
+						// newMat.prependScale(Math.max(0, previousScale.x  + scale.x), Math.max(0, previousScale.y + scale.y), Math.max(0, previousScale.z + scale.z));
 					}
 					var obj3d = objects3d[i];
 					var euler = newMat.getEulerAngles();
