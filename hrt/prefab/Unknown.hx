@@ -7,7 +7,7 @@ class Unknown extends Prefab {
 	public var data : Dynamic = null;
 
 	override function get_type():String {
-		return data.type;
+		return data?.type ?? "unkown_missing_type";
 	}
 
 	override function load(newData: Dynamic) : Void {
