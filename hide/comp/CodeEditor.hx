@@ -73,6 +73,8 @@ class CodeEditor extends Component {
 					for( r in res )
 						if( r.insertText == null )
 							r.insertText = r.label;
+
+					res = res.concat(getKeyWordsCompletion());
 					return { suggestions : res };
 				}
 			});
@@ -81,6 +83,22 @@ class CodeEditor extends Component {
 
 	function getCompletion( position : Int ) : Array<monaco.Languages.CompletionItem> {
 		return [];
+	}
+
+	function getKeyWordsCompletion() : Array<monaco.Languages.CompletionItem> {
+		// Add keywords to autocompletion
+		var keywords = ["if", "var", "while", "do", "for", "break", "function", "return", "new", "throw", "try", "switch", "case", "default"];
+
+		var res = [];
+		for (k in keywords) {
+			res.push({
+				label: k,
+				kind: monaco.Languages.CompletionItemKind.Keyword,
+				insertText: k,
+			});
+		}
+
+		return res;
 	}
 
 	function clearSpaces() {
