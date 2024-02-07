@@ -3303,7 +3303,7 @@ class SceneEditor {
 		// 	e.parent = null;
 		// }
 
-		var fullRefresh = false;
+		var fullRefresh = true;
 		var undoes = [];
 		for(elt in elts) {
 			var parent = elt.parent;
