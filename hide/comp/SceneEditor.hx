@@ -3786,7 +3786,7 @@ class SceneEditor {
 			var obj = Std.downcast(elt, Object3D);
 			if( obj == null ) continue;
 
-			var local3d = obj.getLocal3d();
+			var local3d = obj.findFirstLocal3d();
 			var lray = ray.clone();
 			lray.transform(local3d.getInvPos());
 			var dist = obj.localRayIntersection(lray);
