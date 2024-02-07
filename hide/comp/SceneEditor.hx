@@ -3244,6 +3244,8 @@ class SceneEditor {
 			autoName(clone);
 			newElements.push(clone);
 
+			refreshInteractive(clone);
+
 			undoes.push(function(undo) {
 				if(undo) elt.parent.children.remove(clone);
 				else elt.parent.children.insert(index, clone);
