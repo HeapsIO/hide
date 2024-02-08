@@ -1378,7 +1378,7 @@ class Emitter extends Object3D {
 		{ name: "useRandomGradient", t: PBool, def: false, disp: "Random Gradient", groupName : "Color" },
 		{ name: "randomColor1", t: PVec(4), disp: "Color 1", def : [0,0,0,1], groupName : "Color" },
 		{ name: "randomColor2", t: PVec(4), disp: "Color 2", def : [1,1,1,1], groupName : "Color" },
-		{ name: "randomGradient", t:PGradient, disp: "Gradient", def: Gradient.getDefaultGradientData(), groupName : "Color" },
+		{ name: "randomGradient", t:PGradient, disp: "Gradient", def: null, groupName : "Color" },
 		// ANIMATION
 		{ name: "spriteSheet", t: PFile(["jpg","png"]), def: null, groupName : "Sprite Sheet Animation", disp: "Sheet" },
 		{ name: "frameCount", t: PInt(0), def: 0, groupName : "Sprite Sheet Animation", disp: "Frames" },
@@ -1426,6 +1426,8 @@ class Emitter extends Object3D {
 		var data = super.save();
 		data.props = Reflect.copy(props);
 		for(param in PARAMS) {
+			if (param.name == "randomGradient")
+				trace("break");
 			var f : Dynamic = Reflect.field(props, param.name);
 			if(f != null && haxe.Json.stringify(f) != haxe.Json.stringify(param.def)) {
 				var val : Dynamic = f;
@@ -1457,6 +1459,8 @@ class Emitter extends Object3D {
 			}
 			else if(param.def != null)
 				resetParam(param);
+			else if (param.name == "randomGradient")
+				(props:Dynamic).randomGradient = Gradient.getDefaultGradientData();
 		}
 	}
 
