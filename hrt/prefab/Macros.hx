@@ -278,19 +278,19 @@ class Macros {
 		var typeName = Context.getLocalClass().get().name;
 
 
-		var hasLoad = false;
-		var hasCopy = false;
+		var loadField = null;
+		var copyField = null;
 		for (f in buildFields) {
 			if (f.name == "copy") {
-				hasCopy = true;
+				copyField = f;
 			}
 			if (f.name == "load") {
-				hasLoad = true;
+				loadField = f;
 			}
 		}
 
-		if (hasLoad && !hasCopy) {
-			throw "Prefab \"" + typeName + "\" overrides load without overriding copy (data will be not properly initialized when cloning the prefab)";
+		if (loadField != null && copyField == null) {
+			Context.error("Prefab \"" + typeName + "\" overrides load without overriding copy (data will be not properly initialized when cloning the prefab)", loadField.pos);
 		}
 
 
@@ -523,7 +523,7 @@ class Macros {
 						e;
 					}
 				default:
-					throw "Invalid serializable field " + f.kind;
+					Context.error("Invalid serializable field " + f.kind, f.pos);
 			}
 		}
 
@@ -580,7 +580,7 @@ class Macros {
 								case "default", "set", "null":
 									cloneInitExprs.push(macro this.$name = ${defaultValue});
 								case "never":
-								default: throw "Unexpected setter kind " + set;
+								default: Context.error("Unexpected setter kind " + set, f.pos);
 							}
 						}
 					}
@@ -746,7 +746,8 @@ class Macros {
 					case "String":
 						return nullCheck(source, defaultValue); // No need to copy haxe string as they are immutable
 					default:
-						throw "Can't unserialize " + cl.toString();
+						Context.error("Can't unserialize " + cl.toString(), source.pos);
+						throw "error";
 				}
 			case TEnum(t, _):
 				return nullCheck(source, defaultValue);
