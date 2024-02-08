@@ -329,11 +329,33 @@ class Macros {
 			}
 		}
 
+		function classExtends(t: haxe.macro.Type.ClassType, name: String) {
+			if (t == null)
+				return false;
+			if (t.name == name) {
+				return true;
+			}
+			return classExtends(t.superClass?.t.get(), name);
+		}
+
+		var localClass = Context.getLocalClass().get();
+
+		var sharedRootInit = macro {};
+		if (classExtends(localClass, "Object3D")) {
+			sharedRootInit = macro if (shared.root3d == null) @:privateAccess shared.root3d = shared.current3d = new h3d.scene.Object();
+		}
+		else if (classExtends(localClass, "Object2D")) {
+			sharedRootInit = macro if (shared.root2d == null) @:privateAccess shared.root2d = shared.current2d = new h2d.Object();
+		}
+
 		var expr = macro {
 			if (shared == sh) sh = null;
 			if (sh != null || !this.shared.isInstance) return cast makeClone(sh);
+			if (!this.shouldBeInstanciated())
+				return this;
+			$e{sharedRootInit};
 			return cast __makeInternal();
-		};
+		}
 
 		var make : Function = {
 			args: [

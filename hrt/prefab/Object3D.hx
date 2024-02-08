@@ -45,11 +45,6 @@ class Object3D extends Prefab {
 	}
 
 	override function make( ?sh:hrt.prefab.Prefab.ContextMake) : Prefab {
-		if (!shouldBeInstanciated())
-			return this;
-
-		if (shared.root3d == null) @:privateAccess shared.root3d = shared.current3d = new h3d.scene.Object();
-
 		makeInstance();
 
 		var old3d = shared.current3d;

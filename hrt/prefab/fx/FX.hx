@@ -443,9 +443,6 @@ class FX extends Object3D implements BaseFX {
 	}
 
 	override function make( ?sh:hrt.prefab.Prefab.ContextMake) : Prefab  {
-		if (!shouldBeInstanciated())
-			return this;
-
 		var fromRef = shared.parentPrefab != null;
 		var useFXRoot = #if editor fromRef #else true #end;
 		var root = hrt.prefab.fx.BaseFX.BaseFXTools.getFXRoot(this);

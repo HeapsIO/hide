@@ -243,9 +243,6 @@ class FX2D extends Object2D implements BaseFX {
 	}
 
 	override function make( ?sh:hrt.prefab.Prefab.ContextMake) : Prefab {
-		if (!shouldBeInstanciated())
-			return this;
-
 		#if editor
 		return super.__makeInternal(sh);
 		#else

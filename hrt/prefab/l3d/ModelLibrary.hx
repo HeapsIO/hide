@@ -732,9 +732,6 @@ class ModelLibrary extends Prefab {
 	public var clear = false;
 
 	override function make(?sh:hrt.prefab.Prefab.ContextMake) : hrt.prefab.Prefab {
-		if (!shouldBeInstanciated())
-			return this;
-
 		// don't load/build children
 		if (cache.wasMade)
 			return this;
