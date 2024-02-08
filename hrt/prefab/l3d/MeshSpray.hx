@@ -134,8 +134,11 @@ class MeshSpray extends Spray {
 	}
 
 	override function make(?sh:hrt.prefab.Prefab.ContextMake) : hrt.prefab.Prefab {
-		if( !enabled )
+		if (!shouldBeInstanciated())
 			return this;
+
+		if (shared.root3d == null) @:privateAccess shared.root3d = shared.current3d = new h3d.scene.Object();
+
 		if( binaryStorage )
 			loadBinary();
 		super.__makeInternal(sh);
@@ -967,6 +970,11 @@ class MeshSpray extends Spray {
 	}
 
 	override function make(?sh:hrt.prefab.Prefab.ContextMake) : Prefab {
+		if (!shouldBeInstanciated())
+			return this;
+
+		if (shared.root3d == null) @:privateAccess shared.root3d = shared.current3d = new h3d.scene.Object();
+
 		makeInstance();
 
 		var old3d = shared.current3d;
