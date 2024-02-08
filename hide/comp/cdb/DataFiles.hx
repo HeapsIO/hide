@@ -277,7 +277,7 @@ class DataFiles {
 				var cname = c.name;
 				if( cname == null ) cname = c.getDefaultEditorName();
 				if( r == null ? c.name == name : r.match(cname) )
-					rec(prefab, parts, index, out);
+					rec(c, parts, index, out);
 			}
 		}
 
@@ -329,6 +329,9 @@ class DataFiles {
 						}
 						var all = getPrefabsByPath(pf, p.path);
 						var inst : hrt.prefab.Prefab = all[p.index];
+						trace(pf);
+						trace(p.path);
+						trace(inst);
 						if( inst == null || inst.getCdbType() != prevName )
 							ide.error("Can't save prefab data "+p.path);
 						else {
