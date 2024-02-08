@@ -145,6 +145,9 @@ class Prefab {
 	**/
 	public function make( ?sh:ContextMake ) : Prefab {
 		// -- There is generated code here to properly clone the prefab if sh is set. See hrt.prefab.Macros
+		if (!shouldBeInstanciated())
+			return this;
+
 		makeInstance();
 		for (c in children)
 			makeChild(c);
@@ -211,7 +214,6 @@ class Prefab {
 		be created
 	**/
 	function makeChild(c:Prefab) : Void {
-		if (!c.shouldBeInstanciated()) return;
 		if (shared.customMake == null) {
 			c.make(shared);
 		}
