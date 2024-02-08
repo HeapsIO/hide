@@ -212,7 +212,7 @@ class Object3D extends Prefab {
 		var objs = findAll(Object3D, true);
 		for( obj in objs ) {
 			var local3d : h3d.scene.Object = obj.local3d;
-			if( local3d.name != null && StringTools.startsWith(local3d.name,"$UI.") )
+			if( local3d != null && local3d.name != null && StringTools.startsWith(local3d.name,"$UI.") )
 				local3d.remove();
 		}
 		// add ranges
