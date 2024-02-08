@@ -217,7 +217,7 @@ class Prefab {
 		if (shared.customMake == null) {
 			c.make(shared);
 		}
-		else {
+		else if (c.shouldBeInstanciated()) {
 			shared.customMake(c);
 		}
 	}
