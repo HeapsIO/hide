@@ -29,6 +29,11 @@ class VolumetricLightmap extends Object3D {
 		super.load(obj);
 		displaySH_field = displaySH;
 	}
+
+	override function copy(other: Prefab) {
+		super.copy(other);
+		displaySH_field = displaySH;
+	}
 	#end
 
 	function initProbes(){

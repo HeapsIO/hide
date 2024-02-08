@@ -128,6 +128,10 @@ class ShaderGraph extends hrt.prefab.Prefab {
 		}
 	}
 
+	override public function copy(other: hrt.prefab.Prefab) : Void {
+		throw "Shadergraph is not meant to be put in a prefab tree. Use a dynamic shader that references this shadergraph instead";
+	}
+
 
 	override function save() {
 		var json = super.save();

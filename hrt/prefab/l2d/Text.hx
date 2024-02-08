@@ -41,6 +41,10 @@ class Text extends Object2D {
 			blendMode = Alpha;
 	}
 
+	override public function copy(other:Prefab) {
+		super.copy(other);
+	}
+
 	override function updateInstance(?propName : String ) {
 		super.updateInstance(propName);
 		var h2dText = (cast local2d : h2d.HtmlText);

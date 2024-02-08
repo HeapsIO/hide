@@ -87,6 +87,10 @@ class Curve extends Prefab {
 		}
 	}
 
+	public override function copy(o:Prefab) {
+		super.copy(o);
+	}
+
 	// public override function copy(o:Prefab) {
 	// 	super.copy(o);
 	// 	var p = Std.downcast(o, Curve);

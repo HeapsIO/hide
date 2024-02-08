@@ -56,6 +56,10 @@ class Terrain extends Object3D {
 		surfaceSize = obj.surfaceSize == null ? 0 : obj.surfaceSize;
 	}
 
+	override function copy(prefab: hrt.prefab.Prefab) {
+		super.copy(prefab);
+	}
+
 	override function save() : Dynamic {
 		var obj = super.save();
 		if( terrain != null && terrain.surfaces != null ) {

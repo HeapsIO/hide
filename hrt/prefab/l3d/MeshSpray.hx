@@ -39,6 +39,11 @@ class MeshSpray extends Spray {
 		}
 	}
 
+	override function copy(other : Prefab) {
+		super.copy(other);
+	}
+
+
 	override function makeObject(parent3d:h3d.scene.Object):h3d.scene.Object {
 		var mspray = new MeshSprayObject(parent3d);
 		// preallocate batches so their materials can be resolved
@@ -352,6 +357,9 @@ class MeshSpray extends Spray {
 		}
 	}
 
+	override function copy(other : Prefab) {
+		super.copy(other);
+	}
 
 	function saveToBinary() {
 		if( binaryMeshes == null )

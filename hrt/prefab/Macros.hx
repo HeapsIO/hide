@@ -275,6 +275,25 @@ class Macros {
 	static public function buildPrefab() {
 		var buildFields = Context.getBuildFields();
 
+		var typeName = Context.getLocalClass().get().name;
+
+
+		var hasLoad = false;
+		var hasCopy = false;
+		for (f in buildFields) {
+			if (f.name == "copy") {
+				hasCopy = true;
+			}
+			if (f.name == "load") {
+				hasLoad = true;
+			}
+		}
+
+		if (hasLoad && !hasCopy) {
+			throw "Prefab \"" + typeName + "\" overrides load without overriding copy (data will be not properly initialized when cloning the prefab)";
+		}
+
+
 		var getSerFunc : Function = {
 			args: [],
 			expr: macro {
@@ -301,7 +320,6 @@ class Macros {
 
 		buildFields.push(serFieldField);
 
-		var typeName = Context.getLocalClass().get().name;
 
 
 		for (f in buildFields) {

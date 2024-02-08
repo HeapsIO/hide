@@ -128,6 +128,10 @@ class Light extends Object3D {
 			shadows = getShadowsDefault();
 	}
 
+	override function copy(prefab: Prefab) {
+		super.copy(prefab);
+	}
+
 	override function applyTransform() {
 		//super.applyTransform(o); // Disable scaling
 		applyTransformToObject(local3d);

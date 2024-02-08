@@ -4,7 +4,7 @@ package hrt.prefab;
 	Allow openning prefabs with a type not found in the project, keeping the data unchanged.
 **/
 class Unknown extends Prefab {
-	public var data : Dynamic = null;
+	@:c public var data : Dynamic = null;
 
 	override function get_type():String {
 		return data?.type ?? "unkown_missing_type";
@@ -21,6 +21,10 @@ class Unknown extends Prefab {
 				Reflect.setField(data, f, copyValue(Reflect.getProperty(newData, f)));
 			}
 		}
+	}
+
+	override function copy(other: Prefab) : Void {
+		super.copy(other);
 	}
 
 	override function save() {
