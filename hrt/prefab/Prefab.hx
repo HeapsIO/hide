@@ -608,7 +608,6 @@ class Prefab {
 	**/
 	function serialize() : Dynamic {
 		var ser = save();
-		ser.type = type;
 
 		if (children.length > 0) {
 			var serChildren = [];
@@ -682,7 +681,9 @@ class Prefab {
 		Save all the properties to the given dynamic object. This is not recursive. Returns the updated dynamic object.
 	**/
 	function save() : Dynamic {
-		return this.copyToDynamic({});
+		var obj : Dynamic = {};
+		obj.type = type;
+		return this.copyToDynamic(obj);
 	}
 
 	/**
