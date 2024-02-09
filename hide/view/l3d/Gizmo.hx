@@ -82,7 +82,7 @@ class Gizmo extends h3d.scene.Object {
 	var axisScale = false;
 	var snapGround = false;
 	var intOverlay : h2d.Interactive;
-	var mainGizmosVisible : Bool;
+	var mainGizmosVisible : Bool = true;
 
 	public function new(scene: hide.comp.Scene) {
 		super(scene.s3d);
@@ -476,7 +476,10 @@ class Gizmo extends h3d.scene.Object {
 	}
 
 	public function toggleGizmosVisiblity(show : Bool) {
+		mainGizmosVisible = show;
+
 		for (o in objects)
 			o.getMaterials()[0].color.w = show ? 0.2 : 0;
+
 	}
 }
