@@ -758,7 +758,7 @@ class HeightMap extends Object3D {
 	}
 
 	public inline function isTileInBounds(x : Int, y : Int) {
-		return x >= minTileX && y >= minTileX && x < sizeX + minTileX && y < sizeY + minTileX;
+		return x >= minTileX && y >= minTileY && x < sizeX + minTileX && y < sizeY + minTileY;
 	}
 
 	function getTile( x : Int, y : Int ) {
