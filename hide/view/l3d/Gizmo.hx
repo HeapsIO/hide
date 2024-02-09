@@ -63,6 +63,7 @@ class ChangingStepViewer extends h3d.scene.Object {
 class Gizmo extends h3d.scene.Object {
 
 	var gizmo: h3d.scene.Object;
+	var objects: Array<h3d.scene.Object>;
 	var deltaTextObject : h2d.ObjectFollower;
 	var scene : hide.comp.Scene;
 	var updateFunc: Float -> Void;
@@ -81,6 +82,7 @@ class Gizmo extends h3d.scene.Object {
 	var axisScale = false;
 	var snapGround = false;
 	var intOverlay : h2d.Interactive;
+	var mainGizmosVisible : Bool;
 
 	public function new(scene: hide.comp.Scene) {
 		super(scene.s3d);
@@ -120,6 +122,9 @@ class Gizmo extends h3d.scene.Object {
 			}
 			interactive.onOut = function(e : hxd.Event) {
 				mat.color.setColor(color);
+
+				if (!mainGizmosVisible)
+					mat.color.w = 0;
 			}
 			interactive.onPush = function(e) {
 				var startPt = new h2d.col.Point(mouseX, mouseY);
@@ -136,7 +141,11 @@ class Gizmo extends h3d.scene.Object {
 				else
 					updateFunc = null;
 			}
+
+			objects.push(o);
 		}
+
+		objects = [];
 
 		setup("xAxis", 0xff0000, MoveX);
 		setup("yAxis", 0x00ff00, MoveY);
@@ -464,5 +473,10 @@ class Gizmo extends h3d.scene.Object {
 		if(updateFunc != null) {
 			updateFunc(dt);
 		}
+	}
+
+	public function toggleGizmosVisiblity(show : Bool) {
+		for (o in objects)
+			o.getMaterials()[0].color.w = show ? 0.2 : 0;
 	}
 }
