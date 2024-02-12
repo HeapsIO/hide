@@ -1873,7 +1873,7 @@ class ShaderEditor extends hide.view.Graph {
 	}
 
 	override function getDefaultContent() {
-		var p = { nodes: [], edges: [], parameters: [] };
+		var p = (new hrt.shgraph.ShaderGraph(null, null)).serialize();
 		return haxe.io.Bytes.ofString(ide.toJSON(p));
 	}
 

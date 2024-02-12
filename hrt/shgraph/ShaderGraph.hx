@@ -104,7 +104,7 @@ enum Domain {
 
 class ShaderGraph extends hrt.prefab.Prefab {
 
-	var graphs : Array<Graph>;
+	var graphs : Array<Graph> = [];
 
 	var cachedDef : hrt.prefab.Cache.ShaderDef = null;
 
