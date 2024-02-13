@@ -26,7 +26,7 @@ class World extends Object3D {
 	@:s public var chunkData : Array<ChunkData> = [];
 	@:s public var debug : Bool = false;
 	// Runtime map containing loaded prefabs.
-	var chunkPrefabs : Map<String, hrt.prefab.Object3D>;
+	var chunkPrefabs : Map<String, Array<hrt.prefab.Object3D>>;
 
 	public var depth(get, null) : Int;
 	public function get_depth() {
@@ -47,20 +47,20 @@ class World extends Object3D {
 		if ( content == null )
 			return;
 
-		var tmp = new h3d.scene.Object();
-		tmp.name = "chunk_inverse_transform";
-		chunk.addChild(tmp);
 		var chunkPos = getChunkPos(data);
-		// create a tmp object to hold chunk inverse transform as prefab positions are stored relative to chunk position.
-		tmp.x = -chunkPos.x;
-		tmp.y = -chunkPos.y;
-		for ( p in content.children ) {
-			shared.current3d = tmp;
-			var context = p.make(shared);
-			if ( context.getLocal3d() == tmp )
-				continue;
+		for ( p in content ) {
+			shared.current3d = chunk;
+			var oldX = p.x;
+			var oldY = p.y;
+
+			p.x -= chunkPos.x;
+			p.y -= chunkPos.y;
+			var newPrefab = p.make();
+			p.x = oldX;
+			p.y = oldY;
+
 			#if editor
-			for ( elt in p.flatten() )
+			for ( elt in newPrefab.flatten() )
 				@:privateAccess editor.makeInteractive(elt);
 			if ( editor != null ) {
 				var curEdit = editor.curEdit;
@@ -84,20 +84,22 @@ class World extends Object3D {
 			var id = data.id;
 			var path = datDir + id + "/content.prefab";
 			var p = hxd.res.Loader.currentInstance.load(path).toPrefab().load();
-			var content = new hrt.prefab.Object3D(this, shared);
-			chunkPrefabs.set(id, content);
+			var prefabs = [];
+			chunkPrefabs.set(id, prefabs);
 			var i = p.children.length;
 			while ( i-- > 0 ) {
-				var c = p.children[i];
+				var c = p.children[i].clone(this);
 				var object3D = Std.downcast(c, hrt.prefab.Object3D);
 				if ( object3D != null ) {
 					var trs = object3D.getTransform();
 					var pos = getChunkPos(data);
 					trs.translate(pos.x, pos.y, 0.0);
 					object3D.setTransform(trs);
+					prefabs.push(object3D);
 				}
-				content.children.push(c);
-				c.parent = this; // beware, this line remove c from c.parent.children
+				else {
+					throw "prefab " + path + " contains a child that is not an Object3D";
+				}
 			}
 		}
 	}
