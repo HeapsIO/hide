@@ -38,6 +38,7 @@ class PreviewShaderBase extends hxsl.Shader {
 
 		@global var camera : {
 			var viewProj : Mat4;
+			var position : Vec3;
 		};
 
 		var relativePosition : Vec3;
@@ -1242,6 +1243,7 @@ class ShaderEditor extends hide.view.Graph {
 		var identity : h3d.Matrix = new h3d.Matrix();
 		identity.identity();
 		@:privateAccess previewsScene.s2d.renderer.globals.set("camera.viewProj", identity);
+		@:privateAccess previewsScene.s2d.renderer.globals.set("camera.position", identity.getPosition());
 	}
 
 	function onMiniPreviewUpdate(dt: Float) {
