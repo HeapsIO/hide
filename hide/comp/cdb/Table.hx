@@ -341,7 +341,8 @@ class Table extends Component {
 			if( lv == null ) lv = 0;
 			if( lv < curLevel ) {
 				for( i in lv...curLevel )
-					cur = stack.pop();
+					if (stack.length > 0)
+						cur = stack.pop();
 			}
 			var next = { sep : s, index : index, subs : [], parent : cur };
 			if( s == root ) select = next;
