@@ -1903,7 +1903,7 @@ input[type=checkbox]:checked:after {
   height: 100%;
 }
 .graph-view .tabs .tab .hide-block {
-  height: calc(100% - 5% - max(250px, 25%));
+  height: 600px;
 }
 .graph-view .tabs .tab .hide-block #parametersList {
   height: 100%;
