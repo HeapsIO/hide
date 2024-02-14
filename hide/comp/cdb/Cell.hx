@@ -1024,7 +1024,7 @@ class Cell {
 				elementHtml.classList.add("edit");
 				var cellEl = new Element(elementHtml);
 				var paddingCell = 4;
-				editCustomType(typeName, currentValue, column, cellEl, js.Browser.document.body.clientWidth - (cellEl.offset().left + paddingCell + (cellEl.width() + paddingCell) / 2.0), cellEl.offset().top);
+				editCustomType(typeName, currentValue, column, cellEl, 0, 0);
 				#end
 			}
 		case TColor:
@@ -1547,7 +1547,8 @@ class Cell {
 				}
 			}
 
-			content.css("right", '${depth == 0 ? rightAnchor - content.width() / 2.0 : rightAnchor}px');
+			if (rightAnchor > 0)
+				content.css("right", '${depth == 0 ? rightAnchor - content.width() / 2.0 : rightAnchor}px');
 		}
 
 		function closeCdbTypeEdit(applyModifications : Bool = true) {
@@ -1654,6 +1655,7 @@ class Cell {
 		content.on("click", function(e) { e.stopPropagation(); });
 		content.on("dblclick", function(e) { e.stopPropagation(); });
 
-		content.css("top", '${topAnchor}px');
+		if (topAnchor > 0)
+			content.css("top", '${topAnchor}px');
 	}
 }
