@@ -657,6 +657,10 @@ class PropsField extends Component {
 
 	function setFieldValue( value : Dynamic ) {
 		var a = getAccess();
+
+		if (a.obj == null)
+			return;
+
 		if( a.name != null )
 			Reflect.setProperty(a.obj, a.name, value);
 		else

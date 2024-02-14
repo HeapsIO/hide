@@ -468,6 +468,23 @@ class Model extends FileView {
 			<br/>
 		'),obj);
 
+		var mesh = Std.downcast(obj, h3d.scene.Mesh);
+		if (mesh != null) {
+			var hmd = Std.downcast(mesh.primitive, h3d.prim.HMDModel);
+
+			if (hmd != null && @:privateAccess hmd.blendshape != null) {
+				var blendShape = new Element('
+				<div class="group" name="Blend Shapes">
+					<dt>Index</dt><dd><input id="bs-index" type="range" min="0" max="3" step="1" field=""/></dd>
+					<dt>Amount</dt><dd><input id="bs-amount" type="range" min="0" max="1" field=""/></dd>
+				</div>');
+
+				properties.add(blendShape, null, function(pname){
+					@:privateAccess hmd.blendshape.setBlendshapeAmount(blendShape.find("#bs-index").val(),blendShape.find("#bs-amount").val());
+				});
+			}
+		}
+
 		var select = e.find(".follow");
 		for( path in getNamedObjects(obj) ) {
 			var parts = path.split(".");
