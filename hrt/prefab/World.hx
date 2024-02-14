@@ -36,10 +36,42 @@ class World extends Object3D {
 
 	public function new(parent, shared) {
 		super(parent, shared);
-		chunkPrefabs = [];
 	}
 
 	static var tmpMat = new h3d.Matrix();
+
+	final chunkOffsetName = "_chunk_offset";
+
+	override function clone(?parent:Prefab = null, ?sh: ContextShared = null, withChildren : Bool = true) : Prefab {
+		var inst : World = cast super.clone(parent, sh, false);
+
+		if (withChildren) {
+			for (child in children) {
+				if (!isStreamable(child)) {
+					child.clone(inst, sh);
+				}
+			}
+
+			if (chunkPrefabs != null) {
+				throw "TBD";
+			}
+		}
+
+		return inst;
+	}
+
+	public function getChunkOffset(chunk : h3d.scene.HierarchicalWorld) : h3d.scene.Object {
+		var co = chunk.find((o) -> o.name == chunkOffsetName ? o : null);
+		if (co != null)
+			return co;
+		var chunkPos = chunk.getAbsPos().getPosition();
+		co = new h3d.scene.Object(chunk);
+		co.name = chunkOffsetName;
+		co.x -= chunkPos.x;
+		co.y -= chunkPos.y;
+		return co;
+	}
+
 	public function onCreateChunk(chunk : h3d.scene.HierarchicalWorld) {
 		var chunkPos = chunk.getAbsPos().getPosition();
 		var data = getChunkData(chunk.data.maxDepth - chunk.data.depth, chunkPos.x, chunkPos.y);
@@ -47,20 +79,13 @@ class World extends Object3D {
 		if ( content == null )
 			return;
 
-		var chunkPos = getChunkPos(data);
+		var chunkOffset = getChunkOffset(chunk);
 		for ( p in content ) {
-			shared.current3d = chunk;
-			var oldX = p.x;
-			var oldY = p.y;
-
-			p.x -= chunkPos.x;
-			p.y -= chunkPos.y;
-			var newPrefab = p.make();
-			p.x = oldX;
-			p.y = oldY;
+			shared.current3d = chunkOffset;
+			this.makeChild(p);
 
 			#if editor
-			for ( elt in newPrefab.flatten() )
+			for ( elt in p.flatten() )
 				@:privateAccess editor.makeInteractive(elt);
 			if ( editor != null ) {
 				var curEdit = editor.curEdit;
@@ -80,6 +105,7 @@ class World extends Object3D {
 	}
 
 	function loadDataFromFiles() {
+		chunkPrefabs = [];
 		for ( data in chunkData ) {
 			var id = data.id;
 			var path = datDir + id + "/content.prefab";
@@ -203,8 +229,12 @@ class World extends Object3D {
 
 		#if editor
 		var ide = hide.Ide.inst;
-		var i = chunkData.length;
 		var datDir = ide.getPath(datDir);
+		#else
+		var datDir = "res/" + datDir;
+		#end
+
+		var i = chunkData.length;
 		while ( i-- > 0 ) {
 			var data = chunkData[i];
 			var id = data.id;
@@ -227,14 +257,13 @@ class World extends Object3D {
 				sys.FileSystem.createDirectory(datDir);
 			if ( !sys.FileSystem.exists(datDir + id) )
 				sys.FileSystem.createDirectory(datDir + id);
-			var content = ide.toJSON(data);
+			var content = haxe.Json.stringify(data);
 			sys.io.File.saveContent('${datDir}/${id}/content.prefab', content);
 			first = false;
 		}
 
 		if ( sys.FileSystem.exists(datDir) && sys.FileSystem.readDirectory(datDir).length == 0 )
 			sys.FileSystem.deleteDirectory(datDir);
-		#end
 		var obj : Dynamic = save();
 		obj.children = tmpChildren;
 		return obj;
@@ -258,8 +287,10 @@ class World extends Object3D {
 
 	override function make(?sh:hrt.prefab.Prefab.ContextMake) : Prefab {
 		initPath();
-		loadDataFromFiles();
+		if (chunkPrefabs == null)
+			loadDataFromFiles();
 		initBounds();
+
 		var d = { size : size,
 			x : 0,
 			y : 0,
