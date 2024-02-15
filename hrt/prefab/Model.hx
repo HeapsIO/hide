@@ -135,6 +135,10 @@ class Model extends Object3D {
 			</div>
 		'),this, function(pname) {
 			if( pname == "retargetIgnore" && ctx.properties.isTempChange ) return;
+
+			if (pname == "source")
+				ctx.scene.editor.refreshScene();
+
 			ctx.onChange(this, pname);
 		});
 
