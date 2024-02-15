@@ -90,7 +90,7 @@ class PrefabSceneEditor extends hide.comp.SceneEditor {
 
 		function setup(p : PrefabElement) {
 			autoName(p);
-			haxe.Timer.delay(addElements.bind([p]), 0);
+			haxe.Timer.delay(() -> addElements([p]), 0);
 		}
 
 		function addNewInstances() {

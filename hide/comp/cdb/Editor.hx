@@ -2011,7 +2011,7 @@ class Editor extends Component {
 			moveSubmenu.push({
 				label : sep.title,
 				enabled : true,
-				click : isSelectedLine ? moveLines.bind(selection, delta) : moveLine.bind(usedLine, delta),
+				click : isSelectedLine ? moveLines.bind(selection, delta) : () -> moveLine(usedLine, delta),
 			});
 		}
 
@@ -2035,12 +2035,12 @@ class Editor extends Component {
 			{
 				label : "Move Up",
 				enabled:  (firstLine.index > 0 || sepIndex >= 0),
-				click : isSelectedLine ? moveLines.bind(selection, -1) : moveLine.bind(line, -1),
+				click : isSelectedLine ? moveLines.bind(selection, -1) : () -> moveLine(line, -1),
 			},
 			{
 				label : "Move Down",
 				enabled:  (lastLine.index < sheet.lines.length - 1),
-				click : isSelectedLine ? moveLines.bind(selection, 1) : moveLine.bind(line, 1),
+				click : isSelectedLine ? moveLines.bind(selection, 1) : () -> moveLine(line, 1),
 			},
 			{ label : "Move to Group", enabled : moveSubmenu.length > 0, menu : moveSubmenu },
 			{ label : "", isSeparator : true },
