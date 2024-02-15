@@ -193,6 +193,8 @@ class Gradient {
             texture.uploadPixels(genPixels());
         }
 
+        texture.wrap = Repeat;
+
 		#if !editor
         cache.set(hash, texture);
 		#end
