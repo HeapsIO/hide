@@ -31,6 +31,7 @@ class Fresnel extends ShaderNodeHxsl {
 		@sginput(1.0) var scale : Float;
 		@sginput(1.0) var power : Float;
 		@sginput(1.0) var totalAlpha : Float;
+		@sginput(1.0) var fresnalAlpha : Float;
 		@sgoutput var output : Vec4;
 
 		function fragment() {
@@ -45,7 +46,7 @@ class Fresnel extends ShaderNodeHxsl {
 				fresnel = clamp(bias + scale * pow(1.0 + dot(cameraDir, normals), power), 0 , 1);
 
 			if(RGB == 1)
-				output.rgb = mix(rgba.rgb, color, fresnel);
+				output.rgb = mix(rgba.rgb, color, fresnel * fresnalAlpha);
 			if(ALPHA == 1)
 				output.a *= fresnel * totalAlpha;
 			else if (ALPHA_ADD == 1)
