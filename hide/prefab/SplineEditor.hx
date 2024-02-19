@@ -287,7 +287,12 @@ class SplineEditor {
 		var sceneEditor = @:privateAccess editContext.scene.editor;
 		var sceneGizmo = @:privateAccess sceneEditor.gizmo;
 		for( sp in prefab.points ) {
-			var gizmo = new hide.view.l3d.Gizmo(editContext.scene);
+			var gizmo = new hide.view.l3d.Gizmo(editContext.scene.s3d, editContext.scene.s2d);
+			gizmo.snap = sceneEditor.gizmoSnap;
+			gizmo.shoudSnapOnGrid = function() {
+				return sceneEditor.snapForceOnGrid;
+			}
+
 			switch(sceneGizmo.editMode) {
 				case Translation:
 					gizmo.translationMode();

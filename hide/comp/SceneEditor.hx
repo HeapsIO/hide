@@ -815,6 +815,18 @@ class SceneEditor {
         return value;
     }
 
+	public function gizmoSnap(value: Float, mode: hide.view.l3d.Gizmo.EditMode) : Float {
+		switch(mode) {
+			case Translation:
+				return snap(value, snapMoveStep);
+			case Rotation:
+				return snap(value, snapRotateStep);
+			case Scaling:
+				return snap(value, snapScaleStep);
+		}
+		return value;
+	}
+
 	public function dispose() {
 		scene.dispose();
 		tree.dispose();
@@ -1117,7 +1129,7 @@ class SceneEditor {
 
 		tree.saveDisplayKey = view.saveDisplayKey + '/tree';
 
-		gizmo = new hide.view.l3d.Gizmo(scene);
+		gizmo = new hide.view.l3d.Gizmo(scene.s3d, scene.s2d);
 		view.keys.register("sceneeditor.translationMode", gizmo.translationMode);
 		view.keys.register("sceneeditor.rotationMode", gizmo.rotationMode);
 		view.keys.register("sceneeditor.scalingMode", gizmo.scalingMode);
@@ -1747,6 +1759,12 @@ class SceneEditor {
 			pivot.initTranslation(pivotPt.x, pivotPt.y, pivotPt.z);
 			var invPivot = pivot.clone();
 			invPivot.invert();
+
+			gizmo.snap = gizmoSnap;
+
+			gizmo.shoudSnapOnGrid = function() {
+				return this.snapForceOnGrid;
+			}
 
 			var localMats = [for(o in sceneObjs) {
 				var m = worldMat(o);

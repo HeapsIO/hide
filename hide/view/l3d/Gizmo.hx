@@ -37,7 +37,7 @@ class ChangingStepViewer extends h3d.scene.Object {
 	public function new( parentGizmo : Gizmo, stepText : String ) {
 		super(parentGizmo);
 		name = "ChangingStepViewer";
-		textObject = new h2d.ObjectFollower(parentGizmo, @:privateAccess parentGizmo.scene.s2d);
+		textObject = new h2d.ObjectFollower(parentGizmo, @:privateAccess parentGizmo.root2d);
 
 		text = new h2d.Text(hxd.res.DefaultFont.get(), textObject);
 		text.textAlign = Center;
@@ -65,16 +65,23 @@ class Gizmo extends h3d.scene.Object {
 	var gizmo: h3d.scene.Object;
 	var objects: Array<h3d.scene.Object>;
 	var deltaTextObject : h2d.ObjectFollower;
-	var scene : hide.comp.Scene;
+	var root2d : h2d.Object;
 	var updateFunc: Float -> Void;
 	var mouseX(get,never) : Float;
 	var mouseY(get,never) : Float;
 	var mouseLock(get, set) : Bool;
+	var window(get, never) : hxd.Window;
 
 	public var onStartMove: TransformMode -> Void;
 	public var onMove: h3d.Vector -> h3d.Quat -> h3d.Vector -> Void;
 	public var onFinishMove: Void -> Void;
 	public var moving(default, null): Bool;
+	dynamic public function snap(v: Float, mode: EditMode) : Float {
+		return v;
+	}
+	dynamic public function shoudSnapOnGrid() : Bool {
+		return false;
+	}
 
 	public var editMode : EditMode = Translation;
 
@@ -84,15 +91,16 @@ class Gizmo extends h3d.scene.Object {
 	var intOverlay : h2d.Interactive;
 	var mainGizmosVisible : Bool = true;
 
-	public function new(scene: hide.comp.Scene) {
-		super(scene.s3d);
-		this.scene = scene;
+	public function new(parent:h3d.scene.Object, root2d: h2d.Object) {
+		super(parent);
+		this.root2d=root2d;
+
 		var path = hide.Ide.inst.appPath + "/res/gizmo.hmd";
 		var data = sys.io.File.getBytes(path);
 		var hmd = hxd.res.Any.fromBytes(path, data).toModel().toHmd();
 		gizmo = hmd.makeObject();
 		addChild(gizmo);
-		debug = new h3d.scene.Graphics(scene.s3d);
+		debug = new h3d.scene.Graphics(this);
 
 		function setup(objname, color, mode: TransformMode) {
 			var o = gizmo.getObjectByName(objname);
@@ -212,9 +220,9 @@ class Gizmo extends h3d.scene.Object {
 		startQuat.initRotateMatrix(startMat);
 		var startPos = getAbsPos().getPosition().toPoint();
 		var dragPlane = null;
-		var cam = scene.s3d.camera;
+		var cam = getScene().camera;
 		var norm = startPos.sub(cam.pos.toPoint());
-		intOverlay = new h2d.Interactive(40000, 40000, scene.s2d);
+		intOverlay = new h2d.Interactive(40000, 40000, root2d);
 		intOverlay.onPush = function(e) finishMove();
 		switch(mode) {
 			case MoveXY: norm.set(0, 0, 1);
@@ -227,7 +235,7 @@ class Gizmo extends h3d.scene.Object {
 		}
 
 		if (mode == MoveX || mode == MoveY || mode == MoveZ || mode == Scale) {
-			var point = scene.s3d.camera.rayFromScreen(mouseX, mouseY).getDir();
+			var point = getScene().camera.rayFromScreen(mouseX, mouseY).getDir();
 			dragPlane = h3d.col.Plane.fromNormalPoint(point, startPos);
 		} else {
 			norm.normalize();
@@ -236,7 +244,7 @@ class Gizmo extends h3d.scene.Object {
 		}
 		var startDragPt = getDragPoint(dragPlane);
 		var cursor = new h3d.scene.Object();
-		deltaTextObject = new h2d.ObjectFollower(cursor, scene.s2d);
+		deltaTextObject = new h2d.ObjectFollower(cursor, root2d);
 
 		var tx = new h2d.Text(hxd.res.DefaultFont.get(), deltaTextObject);
 		tx.textColor = 0xff0000;
@@ -281,9 +289,9 @@ class Gizmo extends h3d.scene.Object {
 
 			var isMove = (mode == MoveX || mode == MoveY || mode == MoveZ || mode == MoveXY || mode == MoveYZ || mode == MoveZX);
 
-			if(mode == MoveX || mode == MoveXY || mode == MoveZX) vec.x = scene.editor.snap(delta.dot(startMat.front().toPoint()),scene.editor.snapMoveStep);
-			if(mode == MoveY || mode == MoveYZ || mode == MoveXY) vec.y = scene.editor.snap(delta.dot(startMat.right().toPoint()),scene.editor.snapMoveStep);
-			if(mode == MoveZ || mode == MoveZX || mode == MoveYZ) vec.z = scene.editor.snap(delta.dot(startMat.up().toPoint()),scene.editor.snapMoveStep);
+			if(mode == MoveX || mode == MoveXY || mode == MoveZX) vec.x = snap(delta.dot(startMat.front().toPoint()),Translation);
+			if(mode == MoveY || mode == MoveYZ || mode == MoveXY) vec.y = snap(delta.dot(startMat.right().toPoint()),Translation);
+			if(mode == MoveZ || mode == MoveZX || mode == MoveYZ) vec.z = snap(delta.dot(startMat.up().toPoint()),Translation);
 
 			if(!axisScale) {
 				vec.transform3x3(startMat);
@@ -302,10 +310,10 @@ class Gizmo extends h3d.scene.Object {
 				x = startPos.x + vec.x;
 				y = startPos.y + vec.y;
 				z = startPos.z + vec.z;
-				if (scene.editor.snapForceOnGrid && isMove) {
-					x = scene.editor.snap(x, scene.editor.snapMoveStep);
-					y = scene.editor.snap(y, scene.editor.snapMoveStep);
-					z = scene.editor.snap(z, scene.editor.snapMoveStep);
+				if (shoudSnapOnGrid() && isMove) {
+					x = snap(x, Translation);
+					y = snap(y, Translation);
+					z = snap(z, Translation);
 				}
 			}
 
@@ -322,7 +330,7 @@ class Gizmo extends h3d.scene.Object {
 				var v2 = curPt.sub(startPos);
 				v2.normalize();
 
-				var angle = scene.editor.snap(Math.radToDeg(Math.atan2(v1.cross(v2).dot(norm), v1.dot(v2)) * speedFactor), scene.editor.snapRotateStep);
+				var angle = snap(Math.radToDeg(Math.atan2(v1.cross(v2).dot(norm), v1.dot(v2)) * speedFactor), Rotation);
 				angle = Math.degToRad(angle);
 
 				if (mode == RotateX && angle != 0) {
@@ -345,9 +353,9 @@ class Gizmo extends h3d.scene.Object {
 
 			if(onMove != null) {
 				if(axisScale && mode != Scale) {
-					vec.x = scene.editor.snap(scaleFunc(vec.x), scene.editor.snapScaleStep);
-					vec.y = scene.editor.snap(scaleFunc(vec.y), scene.editor.snapScaleStep);
-					vec.z = scene.editor.snap(scaleFunc(vec.z), scene.editor.snapScaleStep);
+					vec.x = snap(scaleFunc(vec.x), Scaling);
+					vec.y = snap(scaleFunc(vec.y), Scaling);
+					vec.z = snap(scaleFunc(vec.z), Scaling);
 					if (vec.x != 1) {
 						tx.visible = true;
 						tx.text = ""+ Math.round(vec.x*100)/100.;
@@ -393,11 +401,12 @@ class Gizmo extends h3d.scene.Object {
 		}
 	}
 
-	function get_mouseX() return @:privateAccess scene.window.mouseX;
-	function get_mouseY() return @:privateAccess scene.window.mouseY;
-	function get_mouseLock() return @:privateAccess scene.window.mouseMode != Absolute;
+	function get_mouseX() return @:privateAccess window.mouseX;
+	function get_mouseY() return @:privateAccess window.mouseY;
+	function get_window() return @:privateAccess getScene().window;
+	function get_mouseLock() return @:privateAccess window.mouseMode != Absolute;
 	function set_mouseLock(v : Bool) {
-		@:privateAccess scene.window.mouseMode = v ? AbsoluteUnbound(true) : Absolute;
+		@:privateAccess window.mouseMode = v ? AbsoluteUnbound(true) : Absolute;
 		return v;
 	}
 
@@ -416,7 +425,7 @@ class Gizmo extends h3d.scene.Object {
 	}
 
 	function getDragPoint(plane: h3d.col.Plane) {
-		var cam = scene.s3d.camera;
+		var cam = getScene().camera;
 		var ray = cam.rayFromScreen(mouseX, mouseY);
 		return ray.intersect(plane);
 	}
