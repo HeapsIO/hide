@@ -83,7 +83,7 @@ class SplineEditor {
 	var interactive : h2d.Interactive;
 
 	 // Easy way to keep track of viewers
-	var gizmos : Array<hide.view.l3d.Gizmo> = [];
+	var gizmos : Array<hrt.tools.Gizmo> = [];
 	var newSplinePointViewer : NewSplinePointViewer;
 
 	public function new( prefab : Spline, undo : hide.ui.UndoHistory ){
@@ -287,7 +287,7 @@ class SplineEditor {
 		var sceneEditor = @:privateAccess editContext.scene.editor;
 		var sceneGizmo = @:privateAccess sceneEditor.gizmo;
 		for( sp in prefab.points ) {
-			var gizmo = new hide.view.l3d.Gizmo(editContext.scene.s3d, editContext.scene.s2d);
+			var gizmo = new hrt.tools.Gizmo(editContext.scene.s3d, editContext.scene.s2d);
 			gizmo.snap = sceneEditor.gizmoSnap;
 			gizmo.shoudSnapOnGrid = function() {
 				return sceneEditor.snapForceOnGrid;

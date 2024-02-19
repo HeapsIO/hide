@@ -61,7 +61,7 @@ class SnapSettingsPopup extends hide.comp.Popup {
 
 		var form_div = new Element("<div>").addClass("form-grid").appendTo(popup);
 
-		var editMode : hide.view.l3d.Gizmo.EditMode = @:privateAccess editor.gizmo.editMode;
+		var editMode : hrt.tools.Gizmo.EditMode = @:privateAccess editor.gizmo.editMode;
 
 		var steps : Array<Float> = [];
 		switch (editMode) {
@@ -410,7 +410,7 @@ class IconVisibilityPopup extends hide.comp.Popup {
 
         var form_div = new Element("<div>").addClass("form-grid").appendTo(popup);
 
-        var editMode : hide.view.l3d.Gizmo.EditMode = @:privateAccess editor.gizmo.editMode;
+        var editMode : hrt.tools.Gizmo.EditMode = @:privateAccess editor.gizmo.editMode;
 
 		var ide = hide.Ide.inst;
         for (k => v in ide.show3DIconsCategory) {
@@ -655,7 +655,7 @@ class SceneEditor {
 	var updates : Array<Float -> Void> = [];
 
 	var showGizmo = true;
-	var gizmo : hide.view.l3d.Gizmo;
+	var gizmo : hrt.tools.Gizmo;
 	var gizmo2d : hide.view.l3d.Gizmo2D;
 	var basis : h3d.scene.Object;
 	public var showBasis = false;
@@ -818,7 +818,7 @@ class SceneEditor {
         return value;
     }
 
-	public function gizmoSnap(value: Float, mode: hide.view.l3d.Gizmo.EditMode) : Float {
+	public function gizmoSnap(value: Float, mode: hrt.tools.Gizmo.EditMode) : Float {
 		switch(mode) {
 			case Translation:
 				return snap(value, snapMoveStep);
@@ -1132,7 +1132,7 @@ class SceneEditor {
 
 		tree.saveDisplayKey = view.saveDisplayKey + '/tree';
 
-		gizmo = new hide.view.l3d.Gizmo(scene.s3d, scene.s2d);
+		gizmo = new hrt.tools.Gizmo(scene.s3d, scene.s2d);
 		view.keys.register("sceneeditor.translationMode", gizmo.translationMode);
 		view.keys.register("sceneeditor.rotationMode", gizmo.rotationMode);
 		view.keys.register("sceneeditor.scalingMode", gizmo.scalingMode);

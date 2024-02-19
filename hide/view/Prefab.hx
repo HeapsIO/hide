@@ -535,7 +535,7 @@ class Prefab extends hide.view.FileView {
 
 		var gizmo = @:privateAccess sceneEditor.gizmo;
 
-		var onSetGizmoMode = function(mode: hide.view.l3d.Gizmo.EditMode) {
+		var onSetGizmoMode = function(mode: hrt.tools.Gizmo.EditMode) {
 			tools.element.find("#translationMode").get(0).toggleAttribute("checked", mode == Translation);
 			tools.element.find("#rotationMode").get(0).toggleAttribute("checked", mode == Rotation);
 			tools.element.find("#scalingMode").get(0).toggleAttribute("checked", mode == Scaling);
