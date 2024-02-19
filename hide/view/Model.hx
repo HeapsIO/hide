@@ -286,7 +286,7 @@ class Model extends FileView {
 						for (p in @:privateAccess prefabView.data.flatten(hrt.prefab.Prefab)) {
 							if (p.name == matName) {
 								prefabView.sceneEditor.selectElements([p]);
-								@:privateAccess prefabView.sceneEditor.focusSelection();
+								@:privateAccess prefabView.sceneEditor.focusObjects([Std.downcast(p, hrt.prefab.Material).previewSphere]);
 							}
 						}
 					}, 500);

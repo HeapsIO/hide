@@ -17,6 +17,10 @@ class Material extends Prefab {
 	@:s public var refMatLib : String;
 	@:s public var overrides : Array<Dynamic> = [];
 
+#if editor
+	var previewSphere : h3d.scene.Object;
+#end
+
 	public function new(parent, shared: ContextShared) {
 		super(parent, shared);
 		props = {};
@@ -57,7 +61,27 @@ class Material extends Prefab {
 
 	public function getMaterials() {
 		var mats = findFirstLocal3d().getMaterials();
-		var mat = Lambda.find(mats, m -> m.name == this.name || (m.name != null && m.name == materialName));
+
+		#if editor
+		if (mats != null) {
+			var idx = mats.length - 1;
+			while (idx >= 0) {
+				if (mats[idx].name == "previewMat")
+					mats.remove(mats[idx]);
+
+				idx--;
+			}
+		}
+		#end
+
+		var mat = Lambda.find(mats, function(m) {
+			#if editor
+			if (m.name != null && m.name == "previewMat")
+				return false;
+			#end
+			return m.name == this.name || (m.name != null && m.name == materialName);
+		});
+
 		return mat == null ? mats : [mat];
 	}
 
@@ -121,20 +145,31 @@ class Material extends Prefab {
 			}
 		}
 
-
 		var props = renderProps();
+
 		#if editor
 		if ( mats == null || mats.length == 0 ) {
+			if (previewSphere != null)
+				previewSphere.remove();
+
+			var parent = findFirstLocal3d();
+
 			var sphere = new h3d.prim.Sphere(1., 64, 48);
 			sphere.addUVs();
-            sphere.addNormals();
+			sphere.addNormals();
 			sphere.addTangents();
-			var preview = new h3d.scene.Mesh(sphere);
-			preview.name = "materialPreviewSphere";
-			local3d.parent.addChild(preview);
-			local3d = preview;
-			local3d.x = local3d.getScene().getMaterials().length * 5.0;
-			mats = getMaterials();
+			sphere.colors = sphere.points;
+
+			var m = new h3d.scene.Mesh(sphere);
+			m.name = "previewSphereObjName";
+			@:privateAccess m.material.name = "previewMat";
+			previewSphere = m;
+			parent.addChild(previewSphere);
+
+			var previewCount = findFirstLocal3d().getScene().findAll(o -> o.name == "previewSphereObjName" ? true : null).length;
+			previewSphere.x = ( previewCount - 1) * 5.0;
+
+			mats = [ @:privateAccess m.material ];
 		}
 		#end
 		function loadTextureCb( path : String ) : h3d.mat.Texture {
@@ -143,8 +178,6 @@ class Material extends Prefab {
 		for( m in mats )
 			update(m, props, loadTextureCb);
 	}
-
-
 
 	override function makeInstance() {
 		updateInstance();
@@ -302,7 +335,7 @@ class Material extends Prefab {
 						for (p in @:privateAccess prefabView.data.flatten(Prefab)) {
 							if (p.name == matName) {
 								prefabView.sceneEditor.selectElements([p]);
-								@:privateAccess prefabView.sceneEditor.focusSelection();
+								@:privateAccess prefabView.sceneEditor.focusObjects([Std.downcast(p, hrt.prefab.Material).previewSphere]);
 							}
 						}
 					}, 500);
@@ -626,6 +659,41 @@ class Material extends Prefab {
 			},
 			allowChildren: function(t) return !Prefab.isOfType(t, Material),
 		};
+	}
+
+	override public function setSelected(b : Bool ) : Bool {
+		if (previewSphere == null)
+			return true;
+
+		var materials = previewSphere.getMaterials();
+
+		if( !b ) {
+			for( m in materials ) {
+				//m.mainPass.stencil = null;
+				m.removePass(m.getPass("highlight"));
+				m.removePass(m.getPass("highlightBack"));
+			}
+			return true;
+		}
+
+		var shader = new h3d.shader.FixedColor(0xffffff);
+		var shader2 = new h3d.shader.FixedColor(0xff8000);
+		for( m in materials ) {
+			if( m.name != null && StringTools.startsWith(m.name,"$UI.") )
+				continue;
+			var p = m.allocPass("highlight");
+			p.culling = None;
+			p.depthWrite = false;
+			p.depthTest = LessEqual;
+			p.addShader(shader);
+			var p = m.allocPass("highlightBack");
+			p.culling = None;
+			p.depthWrite = false;
+			p.depthTest = Always;
+			p.addShader(shader2);
+		}
+
+		return true;
 	}
 	#end
 

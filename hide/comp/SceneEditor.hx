@@ -693,6 +693,9 @@ class SceneEditor {
 		var arr = [];
 		for (pref in selectedPrefabs) {
 			var local3d = pref.getLocal3d();
+			var mat = Std.downcast(pref, hrt.prefab.Material);
+			if (mat != null && @:privateAccess mat.previewSphere != null)
+				local3d = @:privateAccess mat.previewSphere;
 			if (local3d != null) {
 				arr.push(local3d);
 			}
