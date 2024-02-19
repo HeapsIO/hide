@@ -17,6 +17,7 @@ class Sao extends RendererFX {
 	var sao : h3d.pass.ScalableAO;
 	var saoBlur = new h3d.pass.Blur();
 	var saoCopy = new h3d.pass.Copy();
+	var saoTex : h3d.mat.Texture;
 
 	function new(parent, shared: ContextShared) {
 		super(parent, shared);
@@ -44,7 +45,7 @@ class Sao extends RendererFX {
 			r.mark("SSAO");
 			if( sao == null ) sao = new h3d.pass.ScalableAO();
 			var ctx = r.ctx;
-			var saoTex = r.allocTarget("sao",false, size); // TODO : R8
+			saoTex = r.allocTarget("sao",false, size); // TODO : R8
 			var normal : hxsl.ChannelTexture = ctx.getGlobal("normalMap");
 			var depth : hxsl.ChannelTexture = ctx.getGlobal("depthMap");
 			var occlu : hxsl.ChannelTexture = ctx.getGlobal("occlusionMap");
