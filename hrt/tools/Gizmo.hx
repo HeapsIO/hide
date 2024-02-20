@@ -169,13 +169,13 @@ class Gizmo extends h3d.scene.Object {
 	}
 
 	public function loadGizmoModel() : h3d.scene.Object {
-		#if editor
-		var path = hide.Ide.inst.appPath + "/res/gizmo.hmd";
-		#else
-		var path = "./res/Editor/gizmo.hmd";
-		#end
-		var data = sys.io.File.getBytes(path);
-		return hxd.res.Any.fromBytes(path, data).toModel().toHmd().makeObject();
+		var engine = h3d.Engine.getCurrent();
+		@:privateAccess var model : hxd.fmt.hmd.Library = engine.resCache.get(Gizmo);
+		if (model == null) {
+			model = hxd.res.Embed.getResource("hrt/tools/res/gizmo.hmd").toModel().toHmd();
+			@:privateAccess engine.resCache.set(Gizmo, model);
+		}
+		return model.makeObject();
 	}
 
 	public dynamic function onChangeMode(mode : EditMode) {}
