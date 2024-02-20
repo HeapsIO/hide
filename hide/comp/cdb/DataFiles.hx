@@ -60,10 +60,10 @@ class DataFiles {
 	}
 	#else
 	static function loadPrefab(file:String) {
-		var l = hrt.prefab.Prefab.create(file.split(".").pop().toLowerCase());
 		var path = getPath(file);
-		l.loadData(haxe.Json.parse(sys.io.File.getContent(path)));
-		return l;
+		var content = sys.io.File.getContent(path);
+		var parsed = haxe.Json.parse(content);
+		return hrt.prefab.Prefab.createFromDynamic(parsed);
 	}
 	#end
 
@@ -209,6 +209,30 @@ class DataFiles {
 		for( r in root.subs )
 			browseRec(r, 0);
 	}
+	
+	public static function getPrefabsByPath(prefab: hrt.prefab.Prefab, path : String ) : Array<hrt.prefab.Prefab> {
+		function rec(prefab: hrt.prefab.Prefab, parts : Array<String>, index : Int, out : Array<hrt.prefab.Prefab> ) {
+			var name = parts[index++];
+			if( name == null ) {
+				out.push(prefab);
+				return;
+			}
+			var r = name.indexOf('*') < 0 ? null : new EReg("^"+name.split("*").join(".*")+"$","");
+			for( c in prefab.children ) {
+				var cname = c.name;
+				if( cname == null ) cname = c.getDefaultEditorName();
+				if( r == null ? c.name == name : r.match(cname) )
+					rec(c, parts, index, out);
+			}
+		}
+
+		var out = [];
+		if( path == "" )
+			out.push(prefab);
+		else
+			rec(prefab,path.split("."), 0, out);
+		return out;
+	}
 
 	#if (editor || cdb_datafiles)
 
@@ -263,30 +287,6 @@ class DataFiles {
 		for( f in path )
 			obj = Reflect.field(obj, f);
 		return obj;
-	}
-
-	static function getPrefabsByPath(prefab: hrt.prefab.Prefab, path : String ) : Array<hrt.prefab.Prefab> {
-		function rec(prefab: hrt.prefab.Prefab, parts : Array<String>, index : Int, out : Array<hrt.prefab.Prefab> ) {
-			var name = parts[index++];
-			if( name == null ) {
-				out.push(prefab);
-				return;
-			}
-			var r = name.indexOf('*') < 0 ? null : new EReg("^"+name.split("*").join(".*")+"$","");
-			for( c in prefab.children ) {
-				var cname = c.name;
-				if( cname == null ) cname = c.getDefaultEditorName();
-				if( r == null ? c.name == name : r.match(cname) )
-					rec(c, parts, index, out);
-			}
-		}
-
-		var out = [];
-		if( path == "" )
-			out.push(prefab);
-		else
-			rec(prefab,path.split("."), 0, out);
-		return out;
 	}
 
 	public static function save( ?onSaveBase, ?force, ?prevSheetNames : Map<String,String> ) {

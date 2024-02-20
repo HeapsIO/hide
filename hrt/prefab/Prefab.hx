@@ -527,6 +527,19 @@ class Prefab {
 		return false;
 	}
 
+	/**
+		Returns the default display name for this prefab
+		Required outside of -D editor for the usage of hide as library
+	**/
+	public function getDefaultEditorName() : String {
+		if(source != null) {
+			var f = new haxe.io.Path(source).file;
+			f = f.split(" ")[0].split("-")[0];
+			return f;
+		}
+		return type.split(".").pop();
+	}
+
 	// Editor API
 
 	#if editor
@@ -581,17 +594,6 @@ class Prefab {
 		return getSerializablePropsForClass(Type.getClass(this));
 	}
 
-	/**
-		Returns the default display name for this prefab
-	**/
-	public function getDefaultEditorName() : String {
-		if(source != null) {
-			var f = new haxe.io.Path(source).file;
-			f = f.split(" ")[0].split("-")[0];
-			return f;
-		}
-		return type.split(".").pop();
-	}
 	#end
 
 	// Internal

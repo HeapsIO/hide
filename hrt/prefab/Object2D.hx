@@ -94,6 +94,10 @@ class Object2D extends Prefab {
 			if (blendMode != null) o.blendMode = blendMode;
 	}
 
+	override function getDefaultEditorName() {
+		return type == "object2D" ? "group2D" : super.getDefaultEditorName();
+	}
+
 	#if editor
 	override function getHideProps() : hide.prefab.HideProps {
 		// Check children
@@ -123,10 +127,6 @@ class Object2D extends Prefab {
 		ctx.properties.add(props, this, function(pname) {
 			ctx.onChange(this, pname);
 		});
-	}
-
-	override function getDefaultEditorName() {
-		return type == "object2D" ? "group2D" : super.getDefaultEditorName();
 	}
 
 	#end

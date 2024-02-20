@@ -21,6 +21,7 @@ class Unknown extends Prefab {
 				Reflect.setField(data, f, copyValue(Reflect.getProperty(newData, f)));
 			}
 		}
+		this.props = newData.props;
 	}
 
 	override function copy(other: Prefab) : Void {
