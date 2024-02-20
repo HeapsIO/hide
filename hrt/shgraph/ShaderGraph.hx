@@ -2,7 +2,6 @@ package hrt.shgraph;
 
 import hxsl.SharedShader;
 using hxsl.Ast;
-using hide.tools.Extensions.ArrayExtensions;
 using haxe.EnumTools.EnumValueTools;
 using Lambda;
 import hrt.shgraph.AstTools.*;
@@ -238,16 +237,16 @@ class ShaderGraph extends hrt.prefab.Prefab {
 					switch(split[0]) {
 						case "input": {
 							v.name = split[1] ?? throw "Invalid variable name";
-							inputInputVars.pushUnique(v);
+							inputInputVars.push(v);
 						}
 						case "global": {
 							v.name = split[1] ?? throw "Invalid variable name";
-							globalInputVars.pushUnique(v);
+							globalInputVars.push(v);
 						}
 						default: {
 							if (split.length > 1)
 								throw "Var has a dot in its name without being input or global var";
-							shaderData.vars.pushUnique(v);
+							shaderData.vars.push(v);
 						}
 					}
 				}
@@ -298,7 +297,7 @@ class ShaderGraph extends hrt.prefab.Prefab {
 						iv.parent = v;
 					}
 
-					shaderData.vars.pushUnique(v);
+					shaderData.vars.push(v);
 				}
 			}
 
@@ -321,7 +320,7 @@ class ShaderGraph extends hrt.prefab.Prefab {
 			// }
 
 			for (v in gen.outVars)
-				shaderData.vars.pushUnique(v.v);
+				shaderData.vars.push(v.v);
 
 			var fnKind : FunctionKind = switch(graph.domain) {
 				case Fragment: Fragment;
@@ -402,7 +401,7 @@ class ShaderGraph extends hrt.prefab.Prefab {
 			}
 
 			for (init in gen.inits) {
-				inits.pushUnique(init);
+				inits.push(init);
 			}
 		}
 
@@ -877,7 +876,7 @@ class Graph {
 			}
 			if (isInput) {
 				if (graphInputVars.find((o) -> o.v == v) == null) {
-					graphInputVars.pushUnique({v: v, internal: internal, defVal: null, isDynamic: false});
+					graphInputVars.push({v: v, internal: internal, defVal: null, isDynamic: false});
 				}
 			}
 			else {
@@ -1012,7 +1011,13 @@ class Graph {
 				for (input in inputs) {
 					var def = getDef(input.node);
 
-					var inputVarId = def.inVars.findIndex((v) -> v.v.name == input.inputName);
+					var inputVarId = -1;
+					for (i => v in def.inVars) {
+						if (v.v.name == input.inputName) {
+							inputVarId = i;
+							break;
+						}
+					}
 					if (inputVarId < 0)
 						throw "Missing var " + input.inputName;
 
