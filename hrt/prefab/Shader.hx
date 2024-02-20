@@ -97,7 +97,7 @@ class Shader extends Prefab {
 
 		if( Std.isOfType(parent, Material) ) {
 			var material : Material = cast parent;
-			for( m in material.getMaterials() )
+			for( m in material.getMaterials(true) )
 					callb(null, m);
 		} else {
 			var objs = [];

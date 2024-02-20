@@ -59,11 +59,11 @@ class Material extends Prefab {
 		return r;
 	}
 
-	public function getMaterials() {
+	public function getMaterials(includePreviewMats : Bool = false) {
 		var mats = findFirstLocal3d().getMaterials();
 
 		#if editor
-		if (mats != null) {
+		if (!includePreviewMats && mats != null) {
 			var idx = mats.length - 1;
 			while (idx >= 0) {
 				if (mats[idx].name == "previewMat")
