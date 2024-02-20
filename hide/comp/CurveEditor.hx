@@ -779,6 +779,11 @@ class CurveEditor extends hide.comp.Component {
 		afterChange();
 	}
 
+	function fixKeys(keys : Array<CurveKey>) {
+		for (k in keys)
+			fixKey(k);
+	}
+
 	function fixKey(key : CurveKey) {
 		for (c in curves) {
 			if (!c.selected)
@@ -1583,9 +1588,9 @@ class CurveEditor extends hide.comp.Component {
 							key.value -= dy / yScale;
 							if(e.altKey)
 								key.value += deltaY / yScale;
-
-							fixKey(key);
 						}
+
+						fixKeys(cast selectedEvents);
 
 						for(el in selectedEvents) {
 							el.event.time += dx / xScale;
