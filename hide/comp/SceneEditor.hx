@@ -1688,8 +1688,18 @@ class SceneEditor {
 				var newPos = new h3d.Matrix();
 				newPos.identity();
 				newPos.setPosition(originPt);
-				var invParent = getObject(parentEl).getAbsPos().clone();
-				invParent.invert();
+
+				var obj = getObject(parentEl);
+				var invParent : h3d.Matrix;
+				if (obj != null) {
+					invParent = obj.getAbsPos().clone();
+					invParent.invert();
+				}
+				else {
+					invParent = new h3d.Matrix();
+					invParent.identity();
+				}
+
 				newPos.multiply(newPos, invParent);
 				newObj3d.setTransform(newPos);
 			}
