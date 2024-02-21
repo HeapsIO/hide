@@ -127,7 +127,7 @@ class Model extends Object3D {
 				<dl>
 					<dt>Model</dt><dd><input type="model" field="source"/></dd>
 					<dt/><dd><input type="button" value="Change All" id="changeAll"/></dd>
-					<dt>Animation</dt><dd><select><option value="">-- Choose --</option></select>
+					<dt>Animation</dt><dd><input id="anim" value="--- Choose ---"></dd>
 					<dt title="Don\'t save animation changes">Lock</dt><dd><input type="checkbox" field="lockAnimation"></dd>
 					<dt>Retarget</dt><dd><input type="checkbox" field="retargetAnim"></dd>
 					<dt>Retarget Ignore</dt><dd><input type="text" field="retargetIgnore"></dd>
