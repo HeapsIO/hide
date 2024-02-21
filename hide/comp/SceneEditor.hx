@@ -2688,7 +2688,14 @@ class SceneEditor {
 	}
 
 	function hasBeenRemoved( e : hrt.prefab.Prefab ) {
-		var root = sceneData;
+		var root = e;
+
+		if (root.shared != null && root.shared.parentPrefab != null) {
+			if (hasBeenRemoved(root.shared.parentPrefab))
+				return true;
+			root = null;
+		}
+
 		while( e != null && e != root ) {
 			if( e.parent != null && e.parent.children.indexOf(e) < 0 )
 				return true;
