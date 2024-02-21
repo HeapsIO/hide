@@ -210,8 +210,8 @@ class ShaderGraph extends hrt.prefab.Prefab {
 
 			//shaderData.vars.append(gen.externVars);
 
-			var inputInputVars = [];
-			var globalInputVars = [];
+			var inputInputVars : Array<TVar> = [];
+			var globalInputVars : Array<TVar> = [];
 
 			#if editor
 			gen.inVars.sort((a,b) -> {
@@ -237,16 +237,19 @@ class ShaderGraph extends hrt.prefab.Prefab {
 					switch(split[0]) {
 						case "input": {
 							v.name = split[1] ?? throw "Invalid variable name";
-							inputInputVars.push(v);
+							if (inputInputVars.find((a) -> a.id == v.id) == null)
+								inputInputVars.push(v);
 						}
 						case "global": {
 							v.name = split[1] ?? throw "Invalid variable name";
-							globalInputVars.push(v);
+							if (globalInputVars.find((a) -> a.id == v.id) == null)
+								globalInputVars.push(v);
 						}
 						default: {
 							if (split.length > 1)
 								throw "Var has a dot in its name without being input or global var";
-							shaderData.vars.push(v);
+							if (shaderData.vars.find((a) -> a.id == v.id) == null)
+								shaderData.vars.push(v);
 						}
 					}
 				}
@@ -319,8 +322,11 @@ class ShaderGraph extends hrt.prefab.Prefab {
 			// 	shaderData.vars.pushUnique(v);
 			// }
 
-			for (v in gen.outVars)
-				shaderData.vars.push(v.v);
+			for (v in gen.outVars) {
+				if (shaderData.vars.find((a) -> a.id == v.v.id) == null) {
+					shaderData.vars.push(v.v);
+				}
+			}
 
 			var fnKind : FunctionKind = switch(graph.domain) {
 				case Fragment: Fragment;
