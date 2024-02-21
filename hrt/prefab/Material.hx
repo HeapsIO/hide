@@ -63,6 +63,9 @@ class Material extends Prefab {
 		var mats = findFirstLocal3d().getMaterials();
 
 		#if editor
+		if (this.previewSphere != null)
+			mats = previewSphere.getMaterials();
+
 		if (!includePreviewMats && mats != null) {
 			var idx = mats.length - 1;
 			while (idx >= 0) {
