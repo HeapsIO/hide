@@ -91,28 +91,26 @@ class SSRShader extends h3d.shader.ScreenShader {
 			}
 			else {
 				do {
-					var result = bVec4(false, false, false, false);
+					var results : Array<Bool, 4> = [false, false, false, false];
 					@unroll
 					for ( i in 0...4 ) {
 						var positionTo = getViewPos(uv);
 						var viewStepLength = distance(positionTo.xy, positionFrom.xy);
 						var viewDistance = positionFrom.z + reflectedRay.z * viewStepLength;
 						var depth = viewDistance - positionTo.z;
-						if( i == 0)
-							result.x = depth >= 0.0 && depth < thickness;
-						else if( i == 1)
-							result.y = depth >= 0.0 && depth < thickness;
-						else if( i == 2)
-							result.z = depth >= 0.0 && depth < thickness;
-						else if( i == 3)
-							result.w = depth >= 0.0 && depth < thickness;
-
+						results[i] = depth >= 0.0 && depth < thickness;
 						frag += increment;
 						uv = frag / texSize;
 					}
 
-					  if (result.x || result.y || result.z || result.w) {
+					  if (results[0] || results[1] || results[2] || results[3]) {
 						hit = 1;
+						for ( j in 0...4 ) {
+							if (results[j]) {
+								uv = (frag - (increment * (4 - j))) / texSize;
+								break;
+							}
+						}
 						break;
 					}
 				} while (uv.x >= 0.0 && uv.x < 1.0 && uv.y >= 0.0 && uv.y < 1.0);
@@ -148,7 +146,7 @@ class SSR extends RendererFX {
 	@:s public var minAngle : Float = 5.0;
 	@:s public var rayMarchingResolution : Float = 0.5;
 	@:s public var support4K : Bool = false;
-	@:s public var batchSample : Bool = false;
+	@:s public var batchSample : Bool = true;
 
 	function new(parent, shared) {
 		super(parent, shared);
