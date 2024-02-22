@@ -23,10 +23,29 @@ class SubFX extends Reference implements hrt.prefab.fx.Event.IEvent{
 				#if editor
 				instance = fxanim;
 				#end
+				if( fxanim != null && fxanim.events != null ) {
+					var parent = this.parent;
+					var parentFx : hrt.prefab.fx.FX = null;
+					while( parent != null ) {
+						var pfx = Std.downcast(parent, hrt.prefab.fx.FX);
+						if( pfx != null )
+							parentFx = pfx;
+						parent = parent.parent;
+					}
+					if( parentFx != null ) {
+						var parentFxAnim = Std.downcast(parentFx.local3d, hrt.prefab.fx.FX.FXAnimation);
+						for( e in fxanim.events ) {
+							e.evt.time += time;
+							if( parentFxAnim.events == null )
+								parentFxAnim.events = [];
+							parentFxAnim.events.push(e);
+						}
+						fxanim.events = null;
+					}
+				}
 			}
 		}
 	}
-
 
 	function set_time(v) {
 		#if editor

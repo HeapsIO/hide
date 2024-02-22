@@ -55,7 +55,7 @@ class FXAnimation extends h3d.scene.Object {
 		initEmitters(root);
 		hrt.prefab.fx.BaseFX.BaseFXTools.getShaderAnims(root, shaderAnims);
 		if(shaderAnims.length == 0) shaderAnims = null;
-		events = initEvents(root);
+		events = initEvents(root, events);
 		var root = hrt.prefab.fx.BaseFX.BaseFXTools.getFXRoot(def);
 		initConstraints(root != null ? root : def);
 
@@ -270,16 +270,15 @@ class FXAnimation extends h3d.scene.Object {
 		this.prevTime = localTime;
 	}
 
-	function initEvents(elt: PrefabElement) {
+	function initEvents(elt: PrefabElement, ?out : Array<Event.EventInstance> ) {
 		var childEvents = [for(c in elt.children) if(c.enabled && c.to(Event) != null) c.to(Event)];
-		var ret = null;
 		for(evt in childEvents) {
 			var eventObj = evt.prepare();
 			if(eventObj == null) continue;
-			if(ret == null) ret = [];
-			ret.push(eventObj);
+			if(out == null) out = [];
+			out.push(eventObj);
 		}
-		return ret;
+		return out;
 	}
 
 	function initObjAnimations(elt: PrefabElement) {
