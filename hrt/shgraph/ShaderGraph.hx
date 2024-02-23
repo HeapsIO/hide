@@ -435,8 +435,7 @@ class ShaderGraph extends hrt.prefab.Prefab {
 		try {
 			switch (variable.type) {
 				case TSampler(_):
-					var t = hrt.impl.TextureType.Utils.getTextureFromValue(value);
-					t.wrap = Repeat;
+					var t = hrt.impl.TextureType.Utils.getTextureFromValue(value, Repeat);
 					shader.setParamValue(variable, t);
 				case TVec(size, _):
 					shader.setParamValue(variable, h3d.Vector.fromArray(value));
