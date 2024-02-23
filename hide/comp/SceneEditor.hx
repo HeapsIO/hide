@@ -3022,17 +3022,13 @@ class SceneEditor {
 
 	function onCopy() {
 		if(selectedPrefabs == null) return;
-		if(selectedPrefabs.length == 1) {
-			var prefab = selectedPrefabs[0];
-			@:privateAccess view.setClipboard(prefab.serialize(), "prefab", { source : view.state.path, name : prefab.name });
+
+		var ser : Array<String> = [];
+		for (prefab in selectedPrefabs) {
+			ser.push(prefab.serialize());
 		}
-		else {
-			var lib = new hrt.prefab.Prefab(null, null);
-			for(e in selectedPrefabs) {
-				lib.children.push(e);
-			}
-			@:privateAccess view.setClipboard(lib.serialize(), "prefab");
-		}
+
+		view.setClipboard(haxe.Json.stringify(ser), "prefab", {source : view.state.path});
 	}
 
 	function getDataPath( prefabName : String, ?sourceFile : String ) {
@@ -3047,18 +3043,29 @@ class SceneEditor {
 		if(selectedPrefabs != null && selectedPrefabs.length > 0) {
 			parent = selectedPrefabs[0];
 		}
-		var opts : { ref : {source:String,name:String} } = { ref : null };
-		var obj = view.getClipboard("prefab",opts);
-		if(obj != null) {
+
+		var opts : { ref : {source:String} } = { ref : null };
+		var objs : Array<Dynamic> = haxe.Json.parse(view.getClipboard("prefab",opts));
+		if (objs == null)
+			return;
+
+		var createdPrefabs : Array<hrt.prefab.Prefab> = [];
+		for(obj in objs) {
+			if (!Reflect.hasField(obj, "type"))
+				continue;
+
 			var p = hrt.prefab.Prefab.createFromDynamic(obj, parent);
 			p.shared.current2d = parent.findFirstLocal2d();
 			p.shared.current3d = parent.findFirstLocal3d();
-			p.make();
+			var prevName = p.name;
 			autoName(p);
+			createdPrefabs.push(p);
 
-			if( opts.ref != null && opts.ref.source != null && opts.ref.name != null ) {
+			if( opts.ref != null && opts.ref.source != null && prevName != null ) {
 				// copy data
-				var srcDir = getDataPath(opts.ref.name, opts.ref.source);
+
+				var srcDir = getDataPath(prevName, opts.ref.source);
+
 				if( sys.FileSystem.exists(srcDir) && sys.FileSystem.isDirectory(srcDir) ) {
 					var dstDir = getDataPath(p.name);
 					function copyRec( src : String, dst : String ) {
@@ -3075,9 +3082,9 @@ class SceneEditor {
 					copyRec(srcDir, dstDir);
 				}
 			}
-
-			addElements([p]);
 		}
+
+		addElements(createdPrefabs);
 	}
 
 	public function isVisible(elt: PrefabElement) {
