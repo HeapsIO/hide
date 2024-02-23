@@ -324,7 +324,7 @@ class Gizmo extends h3d.scene.Object {
 			}
 
 			if(mode == Scale) {
-				var scale = scaleFunc(delta.z * 0.5);
+				var scale = snap(scaleFunc(delta.z * 0.5), Scaling);
 				vec.set(scale, scale, scale);
 			}
 
