@@ -8,10 +8,10 @@ enum abstract TextureType(String) from String to String {
 }
 
 class Utils {
-    public static function getTextureFromValue(val : Any) : h3d.mat.Texture {
+    public static function getTextureFromValue(val : Any, wrap : h3d.mat.Data.Wrap = Repeat) : h3d.mat.Texture {
         if (Std.isOfType(val, String)) {
             var t = hxd.res.Loader.currentInstance.load(val).toTexture();
-            t.wrap = Repeat;
+            t.wrap = wrap;
             return t;
         }
         else if (Type.typeof(val) == TObject) {
@@ -24,6 +24,7 @@ class Utils {
                         var gradData = Utils.getGradientData((val:Dynamic));
                         if (gradData != null) {
                             var t = Gradient.textureFromData(gradData);
+							t.wrap = wrap;
                             return t;
                         }
                     }

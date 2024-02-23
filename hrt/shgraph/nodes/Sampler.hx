@@ -40,7 +40,6 @@ class Sampler extends ShaderNodeHxsl {
 			var uv2 = uv;
 			if (wrap == 0) {
 				var size = texture.size();
-				uv2 = saturate(uv2);
 				uv2 = clamp(uv2, 0.5 / size, (size - vec2(0.5)) / size);
 			}
 
