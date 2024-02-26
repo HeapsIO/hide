@@ -338,7 +338,8 @@ class Ide extends hide.tools.IdeData {
 			content: state.state.content,
 			settings: {
 				// Default to false
-				reorderEnabled : config.user.get('layout.reorderEnabled') == true,
+				reorderEnabled : config.user.get('layout.reorderEnabled', true) == true,
+				constrainDragToHeader : config.user.get('layout.constrainDragToHeader', true) == true,
 				showPopoutIcon : config.user.get('layout.showPopoutIcon') == true,
 				showMaximiseIcon : config.user.get('layout.showMaximiseIcon') == true
 			}

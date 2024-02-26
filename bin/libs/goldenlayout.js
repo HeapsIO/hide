@@ -1527,6 +1527,7 @@ lm.config.defaultConfig = {
 	settings: {
 		hasHeaders: true,
 		constrainDragToContainer: true,
+		constrainDragToHeader: true,
 		reorderEnabled: true,
 		selectionEnabled: false,
 		popoutWholeStack: false,
@@ -2099,9 +2100,14 @@ lm.utils.copy( lm.controls.DragProxy.prototype, {
 
 		var x = event.pageX,
 			y = event.pageY,
-			isWithinContainer = x > this._minX && x < this._maxX && y > this._minY && y < this._maxY;
+			isWithinContainer = x > this._minX && x < this._maxX && y > this._minY && y < this._maxY,
+			isWithinHeader = x > this._area.x1 && x < this._area.x2 && y > this._area.y1 && y < this._area.y2;
 
 		if( !isWithinContainer && this._layoutManager.config.settings.constrainDragToContainer === true ) {
+			return;
+		}
+
+		if( !isWithinHeader && this._layoutManager.config.settings.constrainDragToHeader === true ) {
 			return;
 		}
 
@@ -4813,6 +4819,7 @@ lm.utils.ConfigMinifier = function() {
 		'settings',
 		'hasHeaders',
 		'constrainDragToContainer',
+		'constrainDragToHeader',
 		'selectionEnabled',
 		'dimensions',
 		'borderWidth',
