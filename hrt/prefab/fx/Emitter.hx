@@ -1294,7 +1294,7 @@ class EmitterObject extends h3d.scene.Object {
 			updateMeshBatch();  // Make sure mesh batch is reset even when no tick is called()
 		}
 
-		time = Math.max(0, time - delay);
+		time = Math.max(0, time - delay * speedFactor);
 
 		var catchupTime = time - curTime;
 
