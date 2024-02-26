@@ -457,6 +457,7 @@ class EmitterObject extends h3d.scene.Object {
 	public var lifeTimeRand = 0.0;
 	public var speedFactor = 1.0;
 	public var warmUpTime = 0.0;
+	public var delay = 0.0;
 	// EMIT PARAMS
 	public var emitOrientation : Orientation = Forward;
 	public var simulationSpace : SimulationSpace = Local;
@@ -1293,6 +1294,8 @@ class EmitterObject extends h3d.scene.Object {
 			updateMeshBatch();  // Make sure mesh batch is reset even when no tick is called()
 		}
 
+		time = Math.max(0, time - delay);
+
 		var catchupTime = time - curTime;
 
 		#if !editor  // Limit catchup time to avoid spikes when showing long running FX
@@ -1349,6 +1352,7 @@ class Emitter extends Object3D {
 		{ name: "lifeTimeRand", t: PFloat(0, 1), def: 0.0, groupName : "Properties" },
 		{ name: "speedFactor", disp: "Speed Factor", t: PFloat(0, 1), def: 1.0, groupName : "Properties" },
 		{ name: "warmUpTime", disp: "Warm Up", t: PFloat(0, 1), def: 0.0, groupName : "Properties" },
+		{ name: "delay", disp: "Delay", t: PFloat(0, 10), def: 0.0, groupName : "Properties" },
 		{ name: "seedGroup", t: PInt(0, 100), def: 0, groupName : "Properties", disp: "Seed"},
 		{ name: "alignMode", t: PEnum(AlignMode), def: AlignMode.None, disp: "Mode", groupName : "Properties" },
 		{ name: "alignLockAxis", t: PEnum(AlignLockAxis), def: AlignLockAxis.ScreenZ, disp: "Lock Axis", groupName : "Properties" },
@@ -1681,6 +1685,7 @@ class Emitter extends Object3D {
 		emitterObj.lifeTimeRand 		= 	getParamVal("lifeTimeRand");
 		emitterObj.speedFactor 			= 	getParamVal("speedFactor");
 		emitterObj.warmUpTime 			= 	getParamVal("warmUpTime");
+		emitterObj.delay 				= 	getParamVal("delay");
 		// EMIT PARAMS
 		emitterObj.emitType 			= 	getParamVal("emitType");
 		emitterObj.burstCount 			= 	getParamVal("burstCount");
