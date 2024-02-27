@@ -1071,7 +1071,8 @@ class TerrainEditor {
 			var img = new Element('<div class="terrain-brushModeIcon"></div>');
 			img.css("background-image", 'url("file://${ctx.ide.getPath("${HIDE}/res/" + brushIcons[i])}")');
 			elem.prepend(img);
-			elem.click(function(_) {
+
+			var select = function(_) {
 				editContext.scene.setCurrent();
 				var l = props.find(".terrain-brushModeIcon");
 				for( e in l ) {
@@ -1083,8 +1084,12 @@ class TerrainEditor {
 				var desc = props.find(".terrain-brushModeDescription");
 				desc.empty();
 				desc.append(brushDescription[i]);
+			};
 
-			});
+			elem.click(select);
+			if (currentBrush.brushMode.mode.equals(brushMode[i])) {
+				select(null);
+			}
 			brushModeContainer.append(elem);
 		}
 	}
