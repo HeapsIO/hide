@@ -1044,20 +1044,9 @@ class MeshSpray extends Spray {
 
 	override function flatten<T:Prefab>( ?cl : Class<T>, ?arr: Array<T> ) : Array<T> {
 		if ( !editChildren )
-			return super.flatten();
+			return flattenSpray(cl, arr);
 
-		if(arr == null)
-			arr = [];
-		if( cl == null )
-			arr.push(cast this);
-		else {
-			var i = to(cl);
-			if(i != null)
-				arr.push(i);
-		}
-		for(c in children)
-			c.flatten(cl, arr);
-		return arr;
+		return super.flatten(cl, arr);
 	}
 
 	static var _ = Prefab.register("meshSpray", MeshSpray);

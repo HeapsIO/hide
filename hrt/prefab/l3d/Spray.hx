@@ -620,7 +620,7 @@ class Spray extends Object3D {
 		return primitive;
 	}
 
-	override function flatten<T:Prefab>( ?cl : Class<T>, ?arr: Array<T> ) : Array<T> {
+	public function flattenSpray<T:Prefab>( ?cl : Class<T>, ?arr: Array<T> ) : Array<T> {
 		if(arr == null)
 			arr = [];
 		if( cl == null )
