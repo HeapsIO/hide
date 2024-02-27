@@ -1043,8 +1043,9 @@ class MeshSpray extends Spray {
 	}
 
 	override function flatten<T:Prefab>( ?cl : Class<T>, ?arr: Array<T> ) : Array<T> {
-		if ( editChildren )
+		if ( !editChildren )
 			return super.flatten();
+
 		if(arr == null)
 			arr = [];
 		if( cl == null )
@@ -1054,6 +1055,8 @@ class MeshSpray extends Spray {
 			if(i != null)
 				arr.push(i);
 		}
+		for(c in children)
+			c.flatten(cl, arr);
 		return arr;
 	}
 
