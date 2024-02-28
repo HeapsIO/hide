@@ -336,12 +336,7 @@ class Camera extends Object3D {
 
 	function copyCam(cam: h3d.Camera) {
 		var transform = new h3d.Matrix();
-		//@:privateAccess cam.makeCameraMatrix(transform);
 		h3d.Matrix.lookAtX(cam.target.sub(cam.pos), cam.up, transform);
-		// var q = new h3d.Quat();
-		// q.initDirection(cam.target.sub(cam.pos));
-		// var angles = q.toEuler();
-		// transform.rotate(angles.x, angles.y, angles.z);
 		transform.tx = cam.pos.x;
 		transform.ty = cam.pos.y;
 		transform.tz = cam.pos.z;
