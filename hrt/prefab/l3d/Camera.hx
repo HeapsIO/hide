@@ -30,9 +30,7 @@ class Camera extends Object3D {
 	@:s var zNear : Float = 0.02;
 	@:s var showFrustum = false;
 	var preview = false;
-
-	// Legacy api
-	var obj(get, set) : h3d.scene.Object;
+	var obj : h3d.scene.Object = null;
 	#if editor
 	var editContext : hide.prefab.EditContext;
 	var beforePreviewCam : h3d.Camera; // Used to save scene camera controller's values
@@ -40,15 +38,6 @@ class Camera extends Object3D {
 
 	public function new(parent, shared: ContextShared) {
 		super(parent, shared);
-	}
-
-	public function get_obj() : h3d.scene.Object {
-		return local3d;
-	}
-
-	public function set_obj(o: h3d.scene.Object) : h3d.scene.Object {
-		local3d = o;
-		return local3d;
 	}
 
 	var g : h3d.scene.Graphics;
@@ -115,7 +104,9 @@ class Camera extends Object3D {
 	}
 
 	override function makeObject(parent3d:Object):Object {
-		return new CameraSyncObject(parent3d);
+		var cam = new CameraSyncObject(parent3d);
+		obj = cam;
+		return obj;
 	}
 
 	override function updateInstance( ?p ) {
@@ -158,14 +149,20 @@ class Camera extends Object3D {
 
 	public function applyTo(c: h3d.Camera) {
 		var transform = null;
-		if ( local3d != null )
-			transform = local3d.getAbsPos();
+		if ( obj != null )
+			transform = obj.getAbsPos();
 		else
-			transform = getAbsPos(true);
+			transform = getAbsPos();
 		c.setTransform(transform);
-
 		var front = transform.front();
 		var ray = h3d.col.Ray.fromValues(transform.getPosition().x, transform.getPosition().y, transform.getPosition().z, front.x, front.y, front.z);
+
+		// this does not change camera rotation but allows for better navigation in editor
+		var plane = h3d.col.Plane.Z();
+		var pt = ray.intersect(plane);
+		if( pt != null && pt.sub(c.pos.toPoint()).length() > 1 )
+			c.target = pt.toVector();
+
 		c.fovY = fovY;
 		c.zFar = zFar;
 		c.zNear = zNear;
@@ -197,7 +194,7 @@ class Camera extends Object3D {
 	}
 
 	function upgrade() {
-		var parent = local3d.parent;
+		var parent = obj.parent;
 		var transform = getTransform();
 		if ( parent != null ) {
 			var invPos = new h3d.Matrix();
@@ -347,7 +344,8 @@ class Camera extends Object3D {
 		var parent = findParent(hrt.prefab.Object3D);
 		if ( parent != null ) {
 			var invPos = new h3d.Matrix();
-			invPos.initInverse(parent.getAbsPos());
+			invPos._44 = 0;
+			invPos.inverse3x4(parent.getAbsPos());
 			transform.multiply(transform, invPos);
 		}
 		setTransform(transform);
