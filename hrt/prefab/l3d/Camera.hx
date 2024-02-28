@@ -30,6 +30,9 @@ class Camera extends Object3D {
 	@:s var zNear : Float = 0.02;
 	@:s var showFrustum = false;
 	var preview = false;
+
+	// Legacy api
+	var obj(get, set) : h3d.scene.Object;
 	#if editor
 	var editContext : hide.prefab.EditContext;
 	var beforePreviewCam : h3d.Camera; // Used to save scene camera controller's values
@@ -37,6 +40,15 @@ class Camera extends Object3D {
 
 	public function new(parent, shared: ContextShared) {
 		super(parent, shared);
+	}
+
+	public function get_obj() : h3d.scene.Object {
+		return local3d;
+	}
+
+	public function set_obj(o: h3d.scene.Object) : h3d.scene.Object {
+		local3d = o;
+		return local3d;
 	}
 
 	var g : h3d.scene.Graphics;
