@@ -2273,11 +2273,25 @@ class SceneEditor {
 	}
 
 	function removeInstance(elt : PrefabElement) {
-		elt.parent.children.remove(elt);
+		var allRemoved = true;
+		function recRemove(e:PrefabElement) {
+			for (c in e.children) {
+				recRemove(e);
+			}
 
-		elt.getLocal3d()?.remove();
-		elt.getLocal2d()?.remove();
-		elt.dispose();
+			var int = interactives.get(e);
+			if(int != null) {
+				var i3d = Std.downcast(int, h3d.scene.Interactive);
+				if( i3d != null ) i3d.remove() else cast(int,h2d.Interactive).remove();
+				interactives.remove(e);
+			}
+			if (!e.editorRemoveInstance())
+				allRemoved = false;
+			e.dispose();
+		}
+
+		recRemove(elt);
+		return allRemoved;
 	}
 
 	function makePrefab(elt: PrefabElement) {
@@ -2329,7 +2343,8 @@ class SceneEditor {
 			if(undo) {
 				selectElements([], NoHistory);
 				for (e in elts) {
-					removeInstance(e);
+					if(!removeInstance(e))
+						fullRefresh = true;
 					e.parent.children.remove(e);
 				}
 				refresh(fullRefresh ? Full : Partial);
@@ -2810,7 +2825,8 @@ class SceneEditor {
 			if( undo ) {
 				var fullRefresh = false;
 				for(e in elts) {
-					removeInstance(e);
+					if(!removeInstance(e))
+						fullRefresh = true;
 					parent.children.remove(e);
 				}
 				refresh(fullRefresh ? Full : Partial);
@@ -3316,7 +3332,10 @@ class SceneEditor {
 			var fullRefresh = false;
 			if(undo) {
 				for(elt in newElements) {
-					removeInstance(elt);
+					if(!removeInstance(elt)) {
+						fullRefresh = true;
+						break;
+					}
 				}
 			}
 
@@ -3351,12 +3370,13 @@ class SceneEditor {
 		// 	e.parent = null;
 		// }
 
-		var fullRefresh = true;
+		var fullRefresh = false;
 		var undoes = [];
 		for(elt in elts) {
 			var parent = elt.parent;
 			var index = elt.parent.children.indexOf(elt);
-			removeInstance(elt);
+			if(!removeInstance(elt))
+				fullRefresh = true;
 
 			undoes.unshift(function(undo) {
 				if(undo) elt.parent.children.insert(index, elt);

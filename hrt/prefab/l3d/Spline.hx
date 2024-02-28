@@ -140,18 +140,17 @@ class SplinePoint extends Object3D {
 	}
 
 	// TODO(ces) : Restore
-	/*override function removeInstance( ctx : Context) : Bool {
-		haxe.Timer.delay(() -> { // wait for next frame, need the point to be removed from children to recompute spline accurately
-			#if editor
-				if (spline.editor != null && spline.editor.editContext.getContext(spline) != null)
-					@:privateAccess spline.computeSpline(spline.editor.editContext.getContext(spline));
-			#end
-		}, 0);
-		return super.removeInstance(ctx);
-	}*/
+
 
 
 	#if editor
+
+	override function editorRemoveInstance() : Bool {
+		haxe.Timer.delay(() -> { // wait for next frame, need the point to be removed from children to recompute spline accurately
+			@:privateAccess spline.computeSpline();
+		}, 0);
+		return super.editorRemoveInstance();
+	}
 
 	public function computeName() {
 		if( local3d == null ) return;

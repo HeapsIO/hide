@@ -183,17 +183,6 @@ class Light extends Object3D {
 		return object;
 	}
 
-	/*#if editor
-	override function removeInstance(ctx:Context):Bool {
-		var icon = Std.downcast(ctx.custom, hrt.impl.EditorTools.EditorIcon);
-		if (icon != null) {
-			icon.remove();
-			ctx.custom = null;
-		}
-		return super.removeInstance(ctx);
-	}
-	#end*/
-
 	override function updateInstance(?propName : String ) {
 		super.updateInstance(propName);
 
@@ -465,6 +454,13 @@ class Light extends Object3D {
 		if( sel != null ) sel.visible = b;
 		updateInstance();
 		return true;
+	}
+
+	override function editorRemoveInstance() : Bool {
+		if (icon != null) {
+			icon.remove();
+		}
+		return super.editorRemoveInstance();
 	}
 
 	override function edit( ctx : hide.prefab.EditContext ) {

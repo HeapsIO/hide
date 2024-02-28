@@ -567,6 +567,11 @@ class Spray extends Object3D {
 		}
 	}
 
+	override function editorRemoveInstance() : Bool {
+		removeInteractiveBrush();
+		return super.editorRemoveInstance();
+	}
+
 	override function makeObject(parent3d: h3d.scene.Object ) : h3d.scene.Object {
 		return new SprayObject(this, parent3d);
 	}

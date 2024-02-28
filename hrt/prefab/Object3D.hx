@@ -392,6 +392,14 @@ class Object3D extends Prefab {
 		return int;
 	}
 
+	override function editorRemoveInstance() : Bool {
+		if (local3d != null)
+			local3d.remove();
+		if (editorIcon != null)
+			editorIcon.remove();
+		return true;
+	}
+
 	override function edit( ctx : hide.prefab.EditContext ) {
 		var props = new hide.Element('
 			<div class="group" name="Position">

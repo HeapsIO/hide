@@ -66,24 +66,6 @@ class Instance extends Object3D {
 		return int;
 	}
 
-	// TODO(ces) restore
-
-	/*override function removeInstance():Bool {
-		if(!super.removeInstance(ctx))
-			return false;
-		if(ctx.local2d != null ) {
-			var p = parent;
-			var pctx = null;
-			while( p != null ) {
-				pctx = ctx.shared.getContexts(p)[0];
-				if( pctx != null ) break;
-				p = p.parent;
-			}
-			if( ctx.local2d != (pctx == null ? ctx.shared.root2d : pctx.local2d) ) ctx.local2d.remove();
-		}
-		return true;
-	}*/
-
 	// ---- statics
 
 	public static function getRefSheet(p: Prefab) {
@@ -164,6 +146,15 @@ class Instance extends Object3D {
 			}
 		}
 		return path;
+	}
+
+	override function editorRemoveInstance() : Bool {
+		if (!super.editorRemoveInstance())
+			return false;
+		if (icon != null) {
+			icon.remove();
+		}
+		return true;
 	}
 
 	override function getHideProps() : hide.prefab.HideProps {

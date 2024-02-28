@@ -154,15 +154,6 @@ class Camera extends Object3D {
 		else
 			transform = getAbsPos();
 		c.setTransform(transform);
-		var front = transform.front();
-		var ray = h3d.col.Ray.fromValues(transform.getPosition().x, transform.getPosition().y, transform.getPosition().z, front.x, front.y, front.z);
-
-		// this does not change camera rotation but allows for better navigation in editor
-		var plane = h3d.col.Plane.Z();
-		var pt = ray.intersect(plane);
-		if( pt != null && pt.sub(c.pos.toPoint()).length() > 1 )
-			c.target = pt.toVector();
-
 		c.fovY = fovY;
 		c.zFar = zFar;
 		c.zNear = zNear;
