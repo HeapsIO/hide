@@ -326,7 +326,7 @@ class SplineEditor {
 
 			gizmo.onStartMove = function(mode) {
 
-				var sceneObj = prefab.local3d;
+				var sceneObj = sp.local3d;
 				var obj3d = sp.to(hrt.prefab.Object3D);
 				var pivotPt = sceneObj.getAbsPos().getPosition();
 				var pivot = new h3d.Matrix();
