@@ -154,6 +154,17 @@ class Camera extends Object3D {
 		else
 			transform = getAbsPos();
 		c.setTransform(transform);
+		var front = transform.front();
+		var ray = h3d.col.Ray.fromValues(transform.getPosition().x, transform.getPosition().y, transform.getPosition().z, front.x, front.y, front.z);
+
+		if (ray.lz < 0) {
+			// get ray distance from Z plane
+			var d = (-ray.pz / ray.lz);
+			if (d > 1 && d < 10000.0) {
+				c.target.load(ray.getPoint(d));
+			}
+		}
+
 		c.fovY = fovY;
 		c.zFar = zFar;
 		c.zNear = zNear;
