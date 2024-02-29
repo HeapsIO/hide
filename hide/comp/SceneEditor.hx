@@ -2276,7 +2276,7 @@ class SceneEditor {
 		var allRemoved = true;
 		function recRemove(e:PrefabElement) {
 			for (c in e.children) {
-				recRemove(e);
+				recRemove(c);
 			}
 
 			var int = interactives.get(e);
