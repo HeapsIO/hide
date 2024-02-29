@@ -3377,6 +3377,7 @@ class SceneEditor {
 			var index = elt.parent.children.indexOf(elt);
 			if(!removeInstance(elt))
 				fullRefresh = true;
+			parent.children.remove(elt);
 
 			undoes.unshift(function(undo) {
 				if(undo) elt.parent.children.insert(index, elt);
