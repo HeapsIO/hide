@@ -3305,7 +3305,10 @@ class SceneEditor {
 			autoName(clone);
 			newElements.push(clone);
 
-			refreshInteractive(clone);
+			var all = clone.flatten();
+			for (p in all) {
+				refreshInteractive(p);
+			}
 
 			undoes.push(function(undo) {
 				if(undo) elt.parent.children.remove(clone);
