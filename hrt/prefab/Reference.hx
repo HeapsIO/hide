@@ -47,7 +47,15 @@ class Reference extends Object3D {
 			return null;
 		if (refInstance != null)
 			return refInstance;
-		return hxd.res.Loader.currentInstance.load(source).to(hrt.prefab.Resource).load().clone();
+		#if editor
+		try {
+		#end
+			return hxd.res.Loader.currentInstance.load(source).to(hrt.prefab.Resource).load().clone();
+		#if editor
+		} catch (_) {
+			return null;
+		}
+		#end
 	}
 
 	override function makeInstance() {
@@ -56,11 +64,16 @@ class Reference extends Object3D {
 		var p = resolveRef();
 		var refLocal3d : h3d.scene.Object = null;
 
-		if (p.to(Object3D) != null) {
+		if (Std.downcast(p, Object3D) != null) {
 			refLocal3d = shared.current3d;
 		} else {
 			super.makeInstance();
 			refLocal3d = local3d;
+		}
+
+		if (p == null) {
+			refInstance = null;
+			return;
 		}
 
 		var sh = p.shared;
