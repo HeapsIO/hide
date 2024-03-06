@@ -15,6 +15,30 @@ body {
 	user-select:none;
 }
 
+.quickMessage {
+	display: flex;
+	position : absolute;
+	z-index : 999;
+	bottom:50px;
+	left:800px;
+	border : 1px solid #686868;
+	border-radius : 5px;
+
+	.icon {
+		border : 0px solid #686868;
+		border-radius : 4px 0px 0px 4px;
+		padding: 5px 5px 3px 5px;
+		background: #666666;
+	}
+
+	.text {
+		border : 0px solid #686868;
+		border-radius : 0px 4px 4px 0px;
+		background: #222222;
+		padding: 3px 10px 3px 3px;
+	}
+}
+
 .globalErrorMessage {
 	position : absolute;
 	z-index : 999;

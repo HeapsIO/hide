@@ -1238,6 +1238,19 @@ class Ide extends hide.tools.IdeData {
 			target.addChild(config, index);
 	}
 
+	public function quickMessage( text : String ) {
+		var e = new Element('
+		<div class="quickMessage">
+			<div class="icon ico ico-info-circle"></div>
+			<div class="text">${text}</div>
+		</div>');
+
+		e.appendTo(window.window.document.body);
+		e.css({'left':'${(this.window.width / 2.0) - e.width() / 2}px'});
+
+		haxe.Timer.delay(() -> e.remove(), 5000);
+	}
+
 	public function message( text : String ) {
 		js.Browser.window.alert(text);
 	}

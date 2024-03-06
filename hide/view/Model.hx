@@ -339,6 +339,7 @@ class Model extends FileView {
 				Reflect.deleteField((m.props:Dynamic), "__refMode");
 			}
 			h3d.mat.MaterialSetup.current.saveMaterialProps(m, defaultProps);
+			Ide.inst.quickMessage('Properties for mat (${m.name}) had been saved');
 		};
 		saveButton.click(saveCallback);
 		properties.add(matLibrary, m);
