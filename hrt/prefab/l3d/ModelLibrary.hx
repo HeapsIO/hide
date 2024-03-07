@@ -312,6 +312,7 @@ class ModelLibrary extends Prefab {
 		hmd.materials = [];
 		hmd.models = [];
 		hmd.animations = [];
+		hmd.shapes = [];
 		var models = new Map();
 		var dataOut = new haxe.io.BytesBuffer();
 
