@@ -165,8 +165,7 @@ class FXAnimation extends h3d.scene.Object {
 		if(fullSync) {
 			if(objAnims != null) {
 				for(anim in objAnims) {
-					if(anim.scale != null || anim.rotation != null || anim.position != null
-						|| anim.localRotation != null || anim.localPosition != null) {
+					if(anim.scale != null || anim.rotation != null || anim.position != null) {
 						var m = tempMat;
 						if(anim.scale != null) {
 							var scale = evaluator.getVector(anim.scale, time, tempVec);
@@ -181,29 +180,6 @@ class FXAnimation extends h3d.scene.Object {
 							m.rotate(rotation.x, rotation.y, rotation.z);
 						}
 
-						if(anim.localRotation != null) {
-							var rotation = evaluator.getVector(anim.localRotation, time, tempVec);
-							rotation.scale3(Math.PI / 180.0);
-
-							var children = anim.obj.findAll(o -> Std.downcast(o, h3d.scene.Mesh));
-							for (c in children) {
-								var localTempMat = c.getTransform();
-								localTempMat.initRotation(rotation.x, rotation.y, rotation.z);
-								c.setTransform(localTempMat);
-							}
-						}
-
-						if(anim.localPosition != null) {
-							var localPosition = evaluator.getVector(anim.localPosition, time, tempVec);
-							var children = anim.obj.findAll(o -> Std.downcast(o, h3d.scene.Mesh));
-							for (c in children) {
-								var localTempMat = c.getTransform();
-								localTempMat.tx = localTempMat.ty = localTempMat.tz = 0;
-								localTempMat.translate(localPosition.x, localPosition.y, localPosition.z);
-								c.setTransform(localTempMat);
-							}
-						}
-
 						var baseMat = anim.elt.getTransform(tempTransform);
 						var offset = baseMat.getPosition();
 						baseMat.tx = baseMat.ty = baseMat.tz = 0.0;  // Ignore
@@ -216,6 +192,32 @@ class FXAnimation extends h3d.scene.Object {
 						}
 
 						anim.obj.setTransform(m);
+					}
+
+					// Animations that are only applied on local transforms of leafs objects
+					if (anim.localRotation != null || anim.localPosition != null) {
+						var leafObjects = anim.elt.findAll(Object3D, o -> o.children == null || o.children.length == 0);
+
+						for (o in leafObjects) {
+							var baseMat = o.getTransform();
+
+							tempMat.identity();
+							var m = tempMat;
+
+							if(anim.localRotation != null) {
+								var localRotation = evaluator.getVector(anim.localRotation, time, tempVec);
+								localRotation.scale3(Math.PI / 180.0);
+								m.rotate(localRotation.x, localRotation.y, localRotation.z);
+							}
+
+							if(anim.localPosition != null) {
+								var localPosition = evaluator.getVector(anim.localPosition, time, tempVec);
+								m.translate(localPosition.x, localPosition.y, localPosition.z);
+							}
+
+							m.multiply(m, baseMat);
+							o.local3d.setTransform(m);
+						}
 					}
 
 					if(anim.visibility != null)
