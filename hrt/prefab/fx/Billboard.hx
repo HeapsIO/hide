@@ -4,12 +4,14 @@ package hrt.prefab.fx;
 @:access(hrt.prefab.fx.LookAt)
 class BillboardObject extends h3d.scene.Object {
 	var graphics:h3d.scene.Graphics;
+	public var IsAbsolute: Bool;
 	public var LockX: Bool;
 	public var LockY: Bool;
 	public var LockZ: Bool;
 	public var initFwd: h3d.Vector;
 	static var tmpMat = new h3d.Matrix();
 	static var tmpVec = new h3d.Vector();
+	static var tmpQuat = new h3d.Quat();
 
 	override function syncRec(ctx) {
 		posChanged = true;
@@ -25,8 +27,6 @@ class BillboardObject extends h3d.scene.Object {
 
 		tmpMat.load(absPos);
 
-		var xRot = qRot;
-
 		var fwd = tmpVec;
 		fwd.load(camera.target.sub(camera.pos));
 		fwd.normalize();
@@ -40,7 +40,21 @@ class BillboardObject extends h3d.scene.Object {
 		if (LockZ)
 			fwd.z = initFwd.z;
 
-		qRot.initDirection(fwd, camera.up);
+		if (!IsAbsolute || this.parent == null)
+			qRot.initDirection(fwd, camera.up);
+		else {
+			tmpQuat.initDirection(fwd, camera.up);
+
+			var p = parent;
+			while(p != null) {
+				var q = p.qRot.clone();
+				q.conjugate();
+				tmpQuat.multiply(q, tmpQuat);
+				p = p.parent;
+			}
+
+			qRot.load(tmpQuat);
+		}
 
 		absPos.tx = tmpMat.tx;
 		absPos.ty = tmpMat.ty;
@@ -50,6 +64,7 @@ class BillboardObject extends h3d.scene.Object {
 
 @:allow(hrt.prefab.fx.Billboard.BillboardInstance)
 class Billboard extends Object3D {
+	@:s public var IsAbsolute: Bool;
 	@:s public var LockX: Bool;
 	@:s public var LockY: Bool;
 	@:s public var LockZ: Bool;
@@ -65,6 +80,7 @@ class Billboard extends Object3D {
 		super.updateInstance();
 
 		var billboard = Std.downcast(local3d, BillboardObject);
+		billboard.IsAbsolute = this.IsAbsolute;
 		billboard.LockX = this.LockX;
 		billboard.LockY = this.LockY;
 		billboard.LockZ = this.LockZ;
@@ -81,7 +97,8 @@ class Billboard extends Object3D {
 	override function edit( ctx : hide.prefab.EditContext ) {
 		super.edit(ctx);
 
-		var el = new hide.Element('<div class="group" name="Color Mask">
+		var el = new hide.Element('<div class="group" name="Billboard">
+		<dt>Is Absolute<dd><input type="checkbox" field="IsAbsolute" class="IsAbsolute"/></dd></dt>
 		<dt>Axis constraints</dt>
 			<dd>
 				X <input type="checkbox" field="LockX" class="LockX"/>
