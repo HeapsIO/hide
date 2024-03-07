@@ -98,8 +98,10 @@ typedef ObjectAnimation = {
 	?obj2d: h2d.Object,
 	events: Array<hrt.prefab.fx.Event.EventInstance>,
 	?position: Value,
+	?localPosition: Value,
 	?scale: Value,
 	?rotation: Value,
+	?localRotation: Value,
 	?color: Value,
 	?visibility: Value,
 	?additionalProperies : AdditionalProperies

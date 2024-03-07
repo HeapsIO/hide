@@ -165,7 +165,8 @@ class FXAnimation extends h3d.scene.Object {
 		if(fullSync) {
 			if(objAnims != null) {
 				for(anim in objAnims) {
-					if(anim.scale != null || anim.rotation != null || anim.position != null) {
+					if(anim.scale != null || anim.rotation != null || anim.position != null
+						|| anim.localRotation != null || anim.localPosition != null) {
 						var m = tempMat;
 						if(anim.scale != null) {
 							var scale = evaluator.getVector(anim.scale, time, tempVec);
@@ -178,6 +179,29 @@ class FXAnimation extends h3d.scene.Object {
 							var rotation = evaluator.getVector(anim.rotation, time, tempVec);
 							rotation.scale3(Math.PI / 180.0);
 							m.rotate(rotation.x, rotation.y, rotation.z);
+						}
+
+						if(anim.localRotation != null) {
+							var rotation = evaluator.getVector(anim.localRotation, time, tempVec);
+							rotation.scale3(Math.PI / 180.0);
+
+							var children = anim.obj.findAll(o -> Std.downcast(o, h3d.scene.Mesh));
+							for (c in children) {
+								var localTempMat = c.getTransform();
+								localTempMat.initRotation(rotation.x, rotation.y, rotation.z);
+								c.setTransform(localTempMat);
+							}
+						}
+
+						if(anim.localPosition != null) {
+							var localPosition = evaluator.getVector(anim.localPosition, time, tempVec);
+							var children = anim.obj.findAll(o -> Std.downcast(o, h3d.scene.Mesh));
+							for (c in children) {
+								var localTempMat = c.getTransform();
+								localTempMat.tx = localTempMat.ty = localTempMat.tz = 0;
+								localTempMat.translate(localPosition.x, localPosition.y, localPosition.z);
+								c.setTransform(localTempMat);
+							}
 						}
 
 						var baseMat = anim.elt.getTransform(tempTransform);
@@ -351,8 +375,10 @@ class FXAnimation extends h3d.scene.Object {
 			obj: local3d,
 			events: null,
 			position: makeVector("position", 0.0),
+			localPosition: makeVector("localPosition", 0.0),
 			scale: makeVector("scale", 1.0, true),
 			rotation: makeVector("rotation", 0.0, 360.0),
+			localRotation: makeVector("localRotation", 0.0, 360.0),
 			color: makeColor("color"),
 			visibility: makeVal("visibility", null),
 			additionalProperies: ap,

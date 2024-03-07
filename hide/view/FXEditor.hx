@@ -678,7 +678,7 @@ class FXEditor extends hide.view.FileView {
 				curve.minValue = 0;
 				curve.maxValue = 1;
 			}
-			if(curve.name.indexOf("Rotation") >= 0) {
+			if(curve.name.indexOf("Rotation") >= 0 || curve.name.indexOf("Local Rotation") >= 0) {
 				curve.minValue = -360;
 				curve.maxValue = 360;
 			}
@@ -1285,8 +1285,16 @@ class FXEditor extends hide.view.FileView {
 				menu: groupedTracks("position", xyzwTracks(3)),
 			});
 			menuItems.push({
+				label: "Local Position",
+				menu: groupedTracks("localPosition", xyzwTracks(3)),
+			});
+			menuItems.push({
 				label: "Rotation",
 				menu: groupedTracks("rotation", xyzwTracks(3)),
+			});
+			menuItems.push({
+				label: "Local Rotation",
+				menu: groupedTracks("localRotation", xyzwTracks(3)),
 			});
 			menuItems.push({
 				label: "Scale",
