@@ -3506,7 +3506,7 @@ class SceneEditor {
 		if( p.type == "volumetricLightmap" || p.type == "light" )
 			uniqueName = true;
 
-		if( !uniqueName && sys.FileSystem.exists(getDataPath(p.name)) )
+		if( !uniqueName && p.name != null && p.name.length > 0 && sys.FileSystem.exists(getDataPath(p.name)) )
 			uniqueName = true;
 
 		var prefix = null;
