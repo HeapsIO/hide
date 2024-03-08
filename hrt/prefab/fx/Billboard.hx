@@ -45,12 +45,20 @@ class BillboardObject extends h3d.scene.Object {
 		else {
 			tmpQuat.initDirection(fwd, camera.up);
 
+			var parents = [];
 			var p = parent;
 			while(p != null) {
+				parents.push(p);
+				p = p.parent;
+			}
+
+			var idx = parents.length - 1;
+			while (idx >= 0) {
+				var p = parents[idx];
 				var q = p.qRot.clone();
 				q.conjugate();
 				tmpQuat.multiply(q, tmpQuat);
-				p = p.parent;
+				idx--;
 			}
 
 			qRot.load(tmpQuat);
