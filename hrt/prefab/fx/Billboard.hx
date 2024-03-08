@@ -21,7 +21,7 @@ class BillboardObject extends h3d.scene.Object {
 	override function calcAbsPos() {
 		super.calcAbsPos();
 
-		var camera = getScene().camera;
+		var camera = getScene()?.camera;
 		if (camera == null)
 			return;
 
