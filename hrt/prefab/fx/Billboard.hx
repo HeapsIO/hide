@@ -46,7 +46,7 @@ class BillboardObject extends h3d.scene.Object {
 			tmpQuat.initDirection(fwd, camera.up);
 
 			var parents = [];
-			var p = parent;
+			var p = this.follow??parent;
 			while(p != null) {
 				parents.push(p);
 				p = p.parent;
