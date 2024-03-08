@@ -159,7 +159,7 @@ class ShaderOutput extends ShaderNode {
 		"transformedPosition" => {display:"Position (World Space)", vertexOnly: true, v:{parent: null,id: 0,kind: Local,name: "transformedPosition",type: TVec(3, VFloat)}},
 		"projectedPosition" => {display: "Position (View Space)", vertexOnly: true, v: { parent: null, id: 0, kind: Local, name: "projectedPosition", type: TVec(4, VFloat) }},
 		// Disabled because calculated UV need to be initialized in vertexShader for some reason
-		//"calculatedUV" => { display: "UV", v: { parent: null, id: 0, kind: Var, name: "calculatedUV", type: TVec(2, VFloat)}},
+		"calculatedUV" => { display: "UV", v: { parent: null, id: 0, kind: Var, name: "calculatedUV", type: TVec(2, VFloat)}},
 		"transformedNormal" => { display: "Normal (World Space)", vertexOnly: true, v: {parent: null, id: 0, kind: Local, name: "transformedNormal", type: TVec(3, VFloat)}},
 		"metalness" => {display: "Metalness", v: {parent: null,id: 0,kind: Local,name: "metalness",type: TFloat}},
 		"roughness" => {display: "Roughness", v: {parent: null, id: 0, kind: Local, name: "roughness", type: TFloat}},
