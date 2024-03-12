@@ -214,20 +214,16 @@ class ShaderGraph extends hrt.prefab.Prefab {
 			var globalInputVars : Array<TVar> = [];
 
 			#if editor
+			var names : Map<String, Parameter> = [];
+			for (p in parametersAvailable) {
+				names.set(p.name, p);
+			}
+
 			gen.inVars.sort((a,b) -> {
-				var aIndex = -1;
-				var bIndex = -1;
-				for (k => v in parametersAvailable) {
-					if (aIndex == -1 && v.name == a.v.name) {
-						aIndex = v.index;
-					}
-					if (bIndex == -1 && v.name == b.v.name) {
-						bIndex = v.index;
-					}
-					if (aIndex != -1 && bIndex != -1)
-						return Reflect.compare(aIndex, bIndex);
-				}
-				return 0;
+				// if the name is not a parameter, sort it at the start of the list
+				var aIndex = names.get(a.v.name)?.index ?? -1;
+				var bIndex = names.get(b.v.name)?.index ?? -1;
+				return Reflect.compare(aIndex, bIndex);
 			});
 			#end
 
