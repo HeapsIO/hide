@@ -257,7 +257,7 @@ class World extends Object3D {
 				sys.FileSystem.createDirectory(datDir);
 			if ( !sys.FileSystem.exists(datDir + id) )
 				sys.FileSystem.createDirectory(datDir + id);
-			var content = haxe.Json.stringify(data);
+			var content = haxe.Json.stringify(data, "\t");
 			sys.io.File.saveContent('${datDir}/${id}/content.prefab', content);
 			first = false;
 		}
