@@ -134,7 +134,9 @@ class Light extends Object3D {
 
 	override function applyTransform() {
 		//super.applyTransform(o); // Disable scaling
-		applyTransformToObject(local3d);
+
+		if (local3d != null)
+			applyTransformToObject(local3d);
 	}
 
 	public function applyTransformToObject( o : h3d.scene.Object ) {
@@ -185,6 +187,9 @@ class Light extends Object3D {
 
 	override function updateInstance(?propName : String ) {
 		super.updateInstance(propName);
+
+		if (local3d == null)
+			return;
 
 		var color = color | 0xff000000;
 		var pbrLight = Std.downcast(local3d, h3d.scene.pbr.Light);
@@ -450,7 +455,7 @@ class Light extends Object3D {
 	#if editor
 
 	override function setSelected(b : Bool ) {
-		var sel = local3d.getObjectByName("__selection");
+		var sel = local3d?.getObjectByName("__selection");
 		if( sel != null ) sel.visible = b;
 		updateInstance();
 		return true;
