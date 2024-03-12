@@ -1099,7 +1099,8 @@ input[type=checkbox]:checked:after {
 .hide-properties dt {
   vertical-align: middle;
   display: inline-block;
-  overflow-x: hidden;
+  text-wrap: wrap;
+  word-break: break-word;
   margin-top: 4px;
 }
 .hide-properties dd span,

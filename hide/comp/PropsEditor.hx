@@ -143,11 +143,36 @@ class PropsEditor extends Component {
 		return prop.charAt(0).toUpperCase() + prop.substr(1);
 	}
 
+	public static function getCategory(p: PropDef) {
+		if (p.name != null) {
+			return p.name.split("_")[0];
+		}
+		return null;
+	}
+
 	public static function makePropsList(props : Array<PropDef>) : Element {
 		var e = new Element('<dl>');
-		for( p in props ) {
-			new Element('<dt>${p.disp != null ? p.disp : upperCase(p.name)}</dt>').appendTo(e);
-			var def = new Element('<dd>').appendTo(e);
+		var currentParent = e;
+		var currentCategory = null;
+		for(i => p in props ) {
+			var name = p.disp != null ? p.disp : upperCase(p.name);
+
+			name = StringTools.replace(name, "_", " ");
+			var finalName = new StringBuf();
+			var prevWasSpace = true;
+			for (i => n in StringTools.keyValueIterator(name)) {
+				var c = StringTools.fastCodeAt(name, i);
+				if (c >= 65 && c <= 90 && !prevWasSpace) {
+					finalName.addChar(8203); // Zero width space;
+				}
+				prevWasSpace = c == 32;
+				finalName.addChar(c);
+			}
+
+			name = finalName.toString();
+
+			new Element('<dt>$name</dt>').appendTo(currentParent);
+			var def = new Element('<dd>').appendTo(currentParent);
 			makePropEl(p, def);
 		}
 		return e;
