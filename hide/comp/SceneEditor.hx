@@ -2259,7 +2259,7 @@ class SceneEditor {
 	}
 
 	public function getObject(elt: PrefabElement) {
-		return elt.getLocal3d();
+		return elt.getLocal3d() ?? root3d;
 	}
 
 	public function getSelfObject(elt: PrefabElement) {
@@ -3457,8 +3457,8 @@ class SceneEditor {
 				var mat = worldMat(obj);
 				var parentMat = worldMat(toObj);
 				parentMat.invert();
-				prevState = obj3d.saveTransform();
 				mat.multiply(mat, parentMat);
+				prevState = obj3d.saveTransform();
 				newState = makeTransform(mat);
 			}
 
