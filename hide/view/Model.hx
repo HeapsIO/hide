@@ -476,7 +476,7 @@ class Model extends FileView {
 			if (hmd != null && @:privateAccess hmd.blendshape != null) {
 				var blendShape = new Element('
 				<div class="group" name="Blend Shapes">
-					<dt>Index</dt><dd><input id="bs-index" type="range" min="0" max="3" step="1" field=""/></dd>
+					<dt>Index</dt><dd><input id="bs-index" type="range" min="0" max="${@:privateAccess hmd.blendshape.getBlendshapeCount() - 1}" step="1" field=""/></dd>
 					<dt>Amount</dt><dd><input id="bs-amount" type="range" min="0" max="1" field=""/></dd>
 				</div>');
 
