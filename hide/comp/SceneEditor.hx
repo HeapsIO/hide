@@ -3414,11 +3414,27 @@ class SceneEditor {
 	function reparentElement(e : Array<PrefabElement>, to : PrefabElement, index : Int) {
 		if( to == null )
 			to = sceneData;
+		if (e.length == 0)
+			return;
 
 		var ref = Std.downcast(to, Reference);
 		@:privateAccess if( ref != null && ref.editMode ) to = ref.refInstance;
 
-		var effectFunc = reparentImpl(e, to, index);
+		// Sort node based on where they appear in the scene tree
+		var flat = sceneData.flatten();
+		var prefabIndex : Map<hrt.prefab.Prefab, Int> = [];
+		for (i => p in flat) {
+			prefabIndex.set(p,i);
+		}
+
+		e.sort(function (a: hrt.prefab.Prefab, b: hrt.prefab.Prefab) : Int {
+			return Reflect.compare(prefabIndex.get(a), prefabIndex.get(b));
+		});
+
+		// jstree index on onMove seems to be where the last item
+		// of the selection should end, so we correct that
+		var targetIndex = index - e.length + 1;
+		var effectFunc = reparentImpl(e, to, targetIndex);
 		undo.change(Custom(function(undo) {
 			refresh(effectFunc(undo) ? Full : Partial);
 		}));
@@ -3444,7 +3460,7 @@ class SceneEditor {
 		var effects = [];
 		var fullRefresh = false;
 		var toRefresh : Array<PrefabElement> = null;
-		for(elt in elts) {
+		for(i => elt in elts) {
 			var prev = elt.parent;
 			var prevIndex = prev.children.indexOf(elt);
 
@@ -3472,9 +3488,9 @@ class SceneEditor {
 						obj3d.loadTransform(prevState);
 				} else {
 					removeInstance(elt);
-					elt.parent = toElt;
-					toElt.children.remove(elt);
-					toElt.children.insert(index, elt);
+					@:bypassAccessor elt.parent = toElt;
+					elt.shared = toElt.shared;
+					toElt.children.insert(index + i, elt);
 					if(obj3d != null && newState != null)
 						obj3d.loadTransform(newState);
 				};
@@ -3486,6 +3502,14 @@ class SceneEditor {
 		return function(undo) {
 			var refresh = false;
 			toRefresh = [];
+
+			// Remove all the children from their parent before
+			// adding them back in. Makes the index of insert() correct
+			if (!undo) {
+				for (elt in elts) {
+					elt.parent.children.remove(elt);
+				}
+			}
 			for(f in effects) {
 				if(f(undo))
 					refresh = true;
@@ -3593,8 +3617,6 @@ class SceneEditor {
 		}
 		for( ptype in allRegs.keys() ) {
 			var pinf = allRegs.get(ptype);
-			if (ptype == "UiDisplay")
-				trace("break");
 
 			if (!checkAllowParent(pinf, parent)) continue;
 			if(ptype == "shader") {
@@ -3648,8 +3670,6 @@ class SceneEditor {
 			label : label != null ? label : prefabInfo.inf.name,
 			click : function() {
 				function make(?sourcePath) {
-					if (ptype == "UiDisplay")
-						trace("Break");
 					var p = Type.createInstance(prefabInfo.prefabClass, [parent]);
 					//p.proto = new hrt.prefab.ProtoPrefab(p, sourcePath);
 					if(sourcePath != null)
