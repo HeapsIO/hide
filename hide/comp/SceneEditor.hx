@@ -1459,7 +1459,6 @@ class SceneEditor {
 	}
 
 	public function refreshScene() {
-
 		clearWatches();
 
 		if (root2d != null) root2d.remove();
@@ -2295,6 +2294,10 @@ class SceneEditor {
 	}
 
 	function makePrefab(elt: PrefabElement) {
+		if (elt == sceneData) {
+			refreshScene();
+			return;
+		}
 		scene.setCurrent();
 
 		elt.shared.current3d = elt.parent.findFirstLocal3d();
@@ -3458,8 +3461,6 @@ class SceneEditor {
 
 	function reparentImpl(elts : Array<PrefabElement>, toElt: PrefabElement, index: Int) : Bool -> Bool {
 		var effects = [];
-		var fullRefresh = false;
-		var toRefresh : Array<PrefabElement> = null;
 		for(i => elt in elts) {
 			var prev = elt.parent;
 			var prevIndex = prev.children.indexOf(elt);
@@ -3479,29 +3480,23 @@ class SceneEditor {
 			}
 
 			effects.push(function(undo) {
+				removeInstance(elt);
 				if( undo ) {
-					removeInstance(elt);
 					elt.parent = prev;
 					prev.children.remove(elt);
 					prev.children.insert(prevIndex, elt);
 					if(obj3d != null && prevState != null)
 						obj3d.loadTransform(prevState);
 				} else {
-					removeInstance(elt);
 					@:bypassAccessor elt.parent = toElt;
 					elt.shared = toElt.shared;
 					toElt.children.insert(index + i, elt);
 					if(obj3d != null && newState != null)
 						obj3d.loadTransform(newState);
 				};
-				toRefresh.pushUnique(elt);
-				toRefresh.pushUnique(toElt);
-				return true;
 			});
 		}
 		return function(undo) {
-			var refresh = false;
-			toRefresh = [];
 
 			// Remove all the children from their parent before
 			// adding them back in. Makes the index of insert() correct
@@ -3511,16 +3506,14 @@ class SceneEditor {
 				}
 			}
 			for(f in effects) {
-				if(f(undo))
-					refresh = true;
+				f(undo);
 			}
-			if(!refresh) {
-				for(elt in toRefresh) {
-					removeInstance(elt);
-					makePrefab(elt);
-				}
+
+			if (!removeInstance(toElt)) {
+				return true;
 			}
-			return refresh;
+			makePrefab(toElt);
+			return false;
 		}
 	}
 
