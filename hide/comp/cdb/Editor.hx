@@ -302,23 +302,19 @@ class Editor extends Component {
 				for (idx => l in currentSheet.lines) {
 					// Register variables for the current line
 					interp.variables.clear();
-					interp.variables.set("this", @:privateAccess formulas.remap(l, this.currentSheet));
+
+					var vars = @:privateAccess formulas.remap(l, this.currentSheet);
+					for (f in Reflect.fields(vars)) {
+						var v = Reflect.getProperty(vars, f);
+						interp.variables.set(f, v);
+					}
 
 					var filtered = true;
 					for (f in filters) {
 						var input = f.text;
 
-						// Not working for now, should check with expression variables
-						// instead of contains() in input string
-						// // Manage input variable without 'this.'
-						// input = StringTools.replace(input, "this.", "");
-						// for (v in Reflect.fields(interp.variables.get("this"))) {
-						// 	if (StringTools.contains(input, v)) {
-						// 		input = StringTools.replace(input, v, "this." + v);
-						// 	}
-						// }
-
-						var expr = try parser.parseString(input) catch( e : Dynamic ) continue;
+						var rootsField: Array<hscript.Expr> = [];
+						var expr = try parser.parseString(input) catch( e : Dynamic ) { continue; }
 						var res = try interp.execute(expr) catch(e : Dynamic ) { trace(e); continue;} // Catch errors that can be thrown if search input text is not interpretabled
 						if (res) {
 							filtered = false;
