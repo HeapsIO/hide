@@ -621,14 +621,23 @@ class Table extends Component {
 	public function showSeparator( line : Line ) {
 		if( separators == null ) return;
 		var sepIndexes = [];
+
 		for( i in 0...sheet.separators.length ) {
 			var s = sheet.separators[i];
-			if( s.index > line.index )
+			if( s.index > line.index ) {
+				if (s.level == null)
+					break;
+
+				for (idx in s.level...sepIndexes.length)
+					sepIndexes.remove(sepIndexes[idx]);
+
 				break;
+			}
 			if( s.level == null )
 				sepIndexes = [];
 			sepIndexes[s.level != null ? s.level : 0] = i;
 		}
+
 		for( sepIdx in sepIndexes ) {
 			var sep = separators[sepIdx];
 			if( sep != null && sep.hidden ) {
