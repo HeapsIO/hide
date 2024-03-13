@@ -53,7 +53,7 @@ typedef SearchFilter = {
 @:allow(hide.comp.cdb)
 class Editor extends Component {
 
-	static var COMPARISON_EXPR_CHARS = ["!=", ">=", "<=", "=", "<", ">"];
+	static var COMPARISON_EXPR_CHARS = ["!=", ">=", "<=", "==", "<", ">"];
 	var base : cdb.Database;
 	var currentSheet : cdb.Sheet;
 	var existsCache : Map<String,{ t : Float, r : Bool }> = new Map();
