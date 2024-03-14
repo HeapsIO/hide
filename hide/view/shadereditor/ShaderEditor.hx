@@ -324,6 +324,7 @@ class ShaderEditor extends hide.view.Graph {
 		keys.register("duplicate", duplicateSelection);
 		keys.register("copy", onCopy);
 		keys.register("shadergraph.hide", onHide);
+		keys.register("shadergraph.comment", commentFromSelection);
 		keys.register("paste", onPaste);
 		keys.register("sceneeditor.focus", centerView);
 		keys.register("view.refresh", reloadFullView);
@@ -1013,7 +1014,7 @@ class ShaderEditor extends hide.view.Graph {
 			var shaderParam = Std.downcast(b.getInstance(), ShaderParam);
 			if (shaderParam != null && shaderParam.parameterId == id) {
 				setDisplayValue(shaderParam, param.type, param.defaultValue);
-				b.generateProperties(editor, config);
+				b.generateProperties(this, config);
 			}
 		}
 	}
@@ -1641,6 +1642,37 @@ class ShaderEditor extends hide.view.Graph {
 				setAvailableInputNodes(edge.from, field);
 			}
 		}
+	}
+
+	function commentFromSelection() {
+		if (listOfBoxesSelected.length == 0)
+			return;
+
+		var bounds = inline new h2d.col.Bounds();
+		for (box in listOfBoxesSelected) {
+			var x = box.getX();
+			var y = box.getY();
+			bounds.addPos(x, y);
+			var previewHeight = box.getInstance().shouldShowPreview() ? box.getWidth() : 0;
+			bounds.addPos(x + box.getWidth(), y + box.getHeight() + previewHeight);
+		}
+
+		var border = 10;
+		bounds.xMin -= border;
+		bounds.yMin -= border + 34;
+		bounds.xMax += border;
+		bounds.yMax += border;
+
+		beforeChange();
+		var comment : hrt.shgraph.nodes.Comment = cast currentGraph.addNode(bounds.xMin, bounds.yMin, hrt.shgraph.nodes.Comment, []);
+		comment.width = Std.int(bounds.width);
+		comment.height = Std.int(bounds.height);
+
+		var box = addBox(new Point(bounds.xMin, bounds.yMin), hrt.shgraph.nodes.Comment, comment);
+		var elem = box.getElement().find(".comment-title").get(0);
+		elem.focus();
+		afterChange();
+
 	}
 
 	// Graph methods

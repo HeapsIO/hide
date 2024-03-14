@@ -10,12 +10,14 @@ import hide.comp.SVG;
 import hide.view.shadereditor.Box;
 import hrt.shgraph.ShaderNode;
 import hrt.shgraph.ShaderType;
+using Lambda;
 import hrt.shgraph.ShaderType.SType;
 
 enum EdgeState { None; FromInput; FromOutput; }
 
 typedef Edge = { from : Box, nodeFrom : JQuery, to : Box, nodeTo : JQuery, elt : JQuery };
 
+@:access(hide.view.shadereditor.Box)
 class Graph extends FileView {
 
 	var parent : JQuery;
@@ -40,6 +42,8 @@ class Graph extends FileView {
 
 	// used for selection
 	var listOfBoxesSelected : Array<Box> = [];
+	var listOfBoxesToMove : Array<Box> = [];
+	var undoSave : Any;
 	var recSelection : JQuery;
 	var startRecSelection : h2d.col.Point;
 	var lastClickDrag : h2d.col.Point;
@@ -130,6 +134,7 @@ class Graph extends FileView {
 							listOfBoxesSelected.push(b);
 					return;
 				}
+
 				return;
 			}
 
@@ -218,24 +223,9 @@ class Graph extends FileView {
 			var dx = (lX(clientX) - lastClickDrag.x);
 			var dy = (lY(clientY) - lastClickDrag.y);
 
-			for (b in listOfBoxesSelected) {
-				b.setPosition(b.getX() + dx, b.getY() + dy);
-				updatePosition(b);
-				// move edges from and to this box
-				for (edge in listOfEdges) {
-					if (edge.from == b || edge.to == b) {
-						edge.elt.remove();
-						edgeStyle.stroke = edge.nodeFrom.css("fill");
-						edge.elt = createCurve(edge.nodeFrom, edge.nodeTo);
 
-						edge.elt.on("mousedown", function(e) {
-							e.stopPropagation();
-							clearSelectionBoxes();
-							this.currentEdge = edge;
-							currentEdge.elt.addClass("selected");
-						});
-					}
-				}
+			for (b in listOfBoxesToMove) {
+				moveBox(b, b.getX() + dx, b.getY() + dy);
 			}
 			lastClickDrag.x = lX(clientX);
 			lastClickDrag.y = lY(clientY);
@@ -245,19 +235,95 @@ class Graph extends FileView {
 
 	dynamic function updatePosition(box : Box) { }
 
+	function moveBox(b: Box, x: Float, y: Float) {
+		b.setPosition(x, y);
+		updatePosition(b);
+		// move edges from and to this box
+		for (edge in listOfEdges) {
+			if (edge.from == b || edge.to == b) {
+				edge.elt.remove();
+				edgeStyle.stroke = edge.nodeFrom.css("fill");
+				edge.elt = createCurve(edge.nodeFrom, edge.nodeTo);
+
+				edge.elt.on("mousedown", function(e) {
+					e.stopPropagation();
+					clearSelectionBoxes();
+					this.currentEdge = edge;
+					currentEdge.elt.addClass("selected");
+				});
+			}
+		}
+	}
+
+	function beginMove(e: js.html.MouseEvent) {
+		lastClickDrag = new Point(lX(e.clientX), lY(e.clientY));
+
+		var boxesToMove : Map<Box, Bool> = [];
+
+		for (b in listOfBoxesSelected) {
+			boxesToMove.set(b, true);
+
+			if (b.comment != null && !e.shiftKey) {
+				var min = inline new Point(b.getX(), b.getY());
+				var max = inline new Point(b.getX() + b.comment.width, b.getY() + b.comment.height);
+
+				for (bb in listOfBoxes) {
+					if (isFullyInside(bb, min, max)) {
+						boxesToMove.set(bb, true);
+					}
+				}
+			}
+		}
+
+		listOfBoxesToMove = [for (k in boxesToMove.keys()) k];
+		undoSave = saveMovedBoxes();
+
+		trace(listOfBoxesToMove);
+	}
+
+	function saveMovedBoxes() {
+		var save : Map<Int, {x: Float, y: Float}> = [];
+		for (b in listOfBoxesToMove) {
+			save.set(b.nodeInstance.id, {x:b.getX(), y: b.getY()});
+		}
+		return save;
+	}
+
+	function endMove() {
+		if (lastClickDrag == null)
+			return;
+
+		lastClickDrag = null;
+
+		if (undoSave != null) {
+			var before : Map<Int, {x: Float, y: Float}> = undoSave;
+			var after : Map<Int, {x: Float, y: Float}> = saveMovedBoxes();
+
+			undo.change(Custom(function(undo) {
+				var toApply = undo ? before : after;
+				for (id => pos in toApply) {
+					var box = listOfBoxes.find((e) -> e.nodeInstance.id == id);
+					moveBox(box, pos.x ,pos.y);
+				}
+			}));
+			undoSave = null;
+		}
+
+		listOfBoxesToMove = [];
+	}
+
 	function addBox(p : Point, nodeClass : Class<ShaderNode>, node : ShaderNode) : Box {
 
 		var className = std.Type.getClassName(nodeClass);
 		className = className.substr(className.lastIndexOf(".") + 1);
 
-		var box = new Box(editor, editorMatrix, p.x, p.y, node);
+		var box = new Box(this, editorMatrix, p.x, p.y, node);
 		var elt = box.getElement();
-		elt.mousedown(function(e) {
+		elt.get(0).onmousedown = function(e: js.html.MouseEvent) {
 			if (e.button != 0)
 				return;
 			e.stopPropagation();
 
-			lastClickDrag = new Point(lX(e.clientX), lY(e.clientY));
 			if (!box.selected) {
 				if (!e.ctrlKey) {
 					// when not group selection and click on box not selected
@@ -267,11 +333,12 @@ class Graph extends FileView {
 					listOfBoxesSelected.push(box);
 				box.setSelected(true);
 			}
-		});
+			beginMove(e);
+		};
 		elt.mouseup(function(e) {
 			if (e.button != 0)
 				return;
-			lastClickDrag = null;
+			endMove();
 		});
 		listOfBoxes.push(box);
 
@@ -285,7 +352,7 @@ class Graph extends FileView {
 					}
 				default:
 			}
-			var grNode = box.addInput(editor, inputName, defaultValue, inputVar.v.type);
+			var grNode = box.addInput(this, inputName, defaultValue, inputVar.v.type);
 			if (defaultValue != null) {
 				var fieldEditInput = grNode.find("input");
 				fieldEditInput.on("change", function(ev) {
@@ -316,7 +383,7 @@ class Graph extends FileView {
 			});
 		}
 		for (outputName => outputVar in box.getInstance().getOutputs2(domain)) {
-			var grNode = box.addOutput(editor, outputName, outputVar.v.type);
+			var grNode = box.addOutput(this, outputName, outputVar.v.type);
 			grNode.find(".node").attr("field", outputName);
 			grNode.on("mousedown", function(e) {
 				e.stopPropagation();
@@ -329,7 +396,7 @@ class Graph extends FileView {
 			});
 		}
 
-		box.generateProperties(editor, config);
+		box.generateProperties(this, config);
 
 		return box;
 	}
@@ -712,6 +779,16 @@ class Graph extends FileView {
 
 		return true;
 	}
+
+	function isFullyInside(b: Box, min : Point, max : Point) {
+		if (min.x > b.getX() || max.x < b.getX() + b.getWidth())
+			return false;
+		if (min.y > b.getY() || max.y < b.getY() + b.getHeight())
+			return false;
+
+		return true;
+	}
+
 	function distanceToBox(b : Box, x : Int, y : Int) {
 		var dx = Math.max(Math.abs(lX(x) - (b.getX() + (b.getWidth() / 2))) - b.getWidth() / 2, 0);
 		var dy = Math.max(Math.abs(lY(y) - (b.getY() + (b.getHeight() / 2))) - b.getHeight() / 2, 0);

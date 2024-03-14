@@ -2479,6 +2479,37 @@ input[type=checkbox] {
 				fill: none;
 			}
 
+			.resize {
+				fill: rgba(0, 0, 0, 0.0);
+				stroke: none;
+			}
+
+			.comment {
+				.head-box {
+					fill: rgba(80,80,80,0.5);
+					stroke-width: 3;
+				}
+
+				.outline {
+					stroke-width: 3;
+				}
+			}
+
+			.comment-title {
+				display: inline-block;
+				max-width: calc(100% - 30px);
+				min-width: 20px;
+				height: 100%;
+				font-size: 2em;
+				background: rgba(0,0,0,0);
+				border: none;
+				overflow-x: hidden;
+				text-wrap: nowrap;
+				br {
+					display: none;
+				}
+			}
+
 			.head-box {
 				fill: #155358;
 			}

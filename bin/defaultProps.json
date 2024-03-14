@@ -86,6 +86,8 @@
 	"key.sceneeditor.toggleSnap": "X",
 
 	"key.shadergraph.hide" : "H",
+	"key.shadergraph.comment" : "C",
+
 
 
 	// cdb config
