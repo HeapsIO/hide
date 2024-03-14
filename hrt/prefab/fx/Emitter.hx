@@ -471,9 +471,9 @@ class EmitterObject extends h3d.scene.Object {
 	public var emitRateMax : Value;
 	public var emitRateChangeDelay : Float = 1.0;
 	public var emitRateChangeDelayStart : Float = 0.0;
-	public var emitRateCurrent : Null<Float>;
-	public var emitRatePrevious : Null<Float>;
-	public var emitRateTarget : Null<Float>;
+	public var emitRateCurrent : Float = Math.NaN;
+	public var emitRatePrevious : Float = Math.NaN;
+	public var emitRateTarget : Float = Math.NaN;
 	public var emitScale : Float = 1.0;
 	public var maxCount = 20;
 	public var enableSort = true;
@@ -1012,14 +1012,14 @@ class EmitterObject extends h3d.scene.Object {
 					var min = evaluator.getFloat(emitRateMin, curTime);
 					var max = evaluator.getFloat(emitRateMax, curTime);
 
-					var unInitiliazed = emitRateCurrent == Math.NaN || emitRateCurrent == null;
+					var unInitiliazed = Math.isNaN(emitRateCurrent);
 					var needNewValue = curTime - emitRateChangeDelayStart >= emitRateChangeDelay || curTime - emitRateChangeDelayStart < 0;
 					if (unInitiliazed || needNewValue) {
 						emitRateChangeDelayStart = curTime;
 						emitRatePrevious = emitRateTarget;
 						emitRateTarget = random.rand() * (max-min) + min;
 
-						if (emitRatePrevious == Math.NaN || emitRatePrevious == null)
+						if ( Math.isNaN(emitRatePrevious) )
 							emitRatePrevious = random.rand() * (max-min) + min;
 					}
 

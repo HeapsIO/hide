@@ -1612,7 +1612,7 @@ class FXEditor extends hide.view.FileView {
 		var totalParts = 0;
 		for(e in emitters) {
 			totalParts += @:privateAccess e.numInstances;
-			if (e.emitRateCurrent != null) {
+			if ( !Math.isNaN(e.emitRateCurrent) ) {
 				emitRateCurrent = e.emitRateCurrent;
 			}
 		}
