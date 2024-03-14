@@ -62,6 +62,14 @@ class ChangingStepViewer extends h3d.scene.Object {
 
 class Gizmo extends h3d.scene.Object {
 
+	static var GIZMO_COLORS = {
+		x : 0xff0000,
+		y : 0x00ff00,
+		z : 0x0000ff,
+		scale : 0xffffff,
+		multiAxes : 0xffff00
+	}
+
 	var gizmo: h3d.scene.Object;
 	var objects: Array<h3d.scene.Object>;
 	var deltaTextObject : h2d.ObjectFollower;
@@ -71,6 +79,12 @@ class Gizmo extends h3d.scene.Object {
 	var mouseY(get,never) : Float;
 	var mouseLock(get, set) : Bool;
 	var window(get, never) : hxd.Window;
+	var xFollow : h2d.ObjectFollower;
+	var yFollow : h2d.ObjectFollower;
+	var zFollow : h2d.ObjectFollower;
+	var xLabel : h2d.Text;
+	var yLabel : h2d.Text;
+	var zLabel : h2d.Text;
 
 	public var onStartMove: TransformMode -> Void;
 	public var onMove: h3d.Vector -> h3d.Quat -> h3d.Vector -> Void;
@@ -151,19 +165,44 @@ class Gizmo extends h3d.scene.Object {
 
 		objects = [];
 
-		setup("xAxis", 0xff0000, MoveX);
-		setup("yAxis", 0x00ff00, MoveY);
-		setup("zAxis", 0x0000ff, MoveZ);
-		setup("xy", 0xffff00, MoveXY);
-		setup("xz", 0xffff00, MoveZX);
-		setup("yz", 0xffff00, MoveYZ);
-		setup("xRotate", 0xff0000, RotateX);
-		setup("yRotate", 0x00ff00, RotateY);
-		setup("zRotate", 0x0000ff, RotateZ);
-		setup("scale", 0xffffff, Scale);
-		setup("xScale", 0xff0000, MoveX);
-		setup("yScale", 0x00ff00, MoveY);
-		setup("zScale", 0x0000ff, MoveZ);
+		setup("xAxis", GIZMO_COLORS.x, MoveX);
+		setup("yAxis", GIZMO_COLORS.y, MoveY);
+		setup("zAxis", GIZMO_COLORS.z, MoveZ);
+		setup("xy", GIZMO_COLORS.multiAxes, MoveXY);
+		setup("xz", GIZMO_COLORS.multiAxes, MoveZX);
+		setup("yz", GIZMO_COLORS.multiAxes, MoveYZ);
+		setup("xRotate", GIZMO_COLORS.x, RotateX);
+		setup("yRotate", GIZMO_COLORS.y, RotateY);
+		setup("zRotate", GIZMO_COLORS.z, RotateZ);
+		setup("scale", GIZMO_COLORS.scale, Scale);
+		setup("xScale", GIZMO_COLORS.x, MoveX);
+		setup("yScale", GIZMO_COLORS.y, MoveY);
+		setup("zScale", GIZMO_COLORS.z, MoveZ);
+
+		xFollow = new h2d.ObjectFollower(this, root2d);
+		yFollow = new h2d.ObjectFollower(this, root2d);
+		zFollow = new h2d.ObjectFollower(this, root2d);
+
+		xLabel = new h2d.Text(hxd.res.DefaultFont.get(), xFollow);
+		xLabel.text = "X";
+		xLabel.textColor = GIZMO_COLORS.x;
+		xLabel.textAlign = Center;
+		xLabel.dropShadow = { dx : 0.5, dy : 0.5, color : 0x202020, alpha : 1.0 };
+		xLabel.setScale(1.2);
+
+		yLabel = new h2d.Text(hxd.res.DefaultFont.get(), yFollow);
+		yLabel.text = "Y";
+		yLabel.textColor = GIZMO_COLORS.y;
+		yLabel.textAlign = Center;
+		yLabel.dropShadow = { dx : 0.5, dy : 0.5, color : 0x202020, alpha : 1.0 };
+		yLabel.setScale(1.2);
+
+		zLabel = new h2d.Text(hxd.res.DefaultFont.get(), zFollow);
+		zLabel.text = "Z";
+		zLabel.textColor = GIZMO_COLORS.z;
+		zLabel.textAlign = Center;
+		zLabel.dropShadow = { dx : 0.5, dy : 0.5, color : 0x202020, alpha : 1.0 };
+		zLabel.setScale(1.2);
 
 		translationMode();
 	}
@@ -253,17 +292,17 @@ class Gizmo extends h3d.scene.Object {
 		deltaTextObject = new h2d.ObjectFollower(cursor, root2d);
 
 		var tx = new h2d.Text(hxd.res.DefaultFont.get(), deltaTextObject);
-		tx.textColor = 0xff0000;
+		tx.textColor = GIZMO_COLORS.x;
 		tx.textAlign = Center;
 		tx.dropShadow = { dx : 0.5, dy : 0.5, color : 0x202020, alpha : 1.0 };
 		tx.setScale(1.2);
 		var ty = new h2d.Text(hxd.res.DefaultFont.get(), deltaTextObject);
-		ty.textColor = 0x00ff00;
+		ty.textColor = GIZMO_COLORS.y;
 		ty.textAlign = Center;
 		ty.dropShadow = { dx : 0.5, dy : 0.5, color : 0x202020, alpha : 1.0 };
 		ty.setScale(1.2);
 		var tz = new h2d.Text(hxd.res.DefaultFont.get(), deltaTextObject);
-		tz.textColor = 0x0000ff;
+		tz.textColor = GIZMO_COLORS.z;
 		tz.textAlign = Center;
 		tz.dropShadow = { dx : 0.5, dy : 0.5, color : 0x202020, alpha : 1.0 };
 		tz.setScale(1.2);
@@ -465,9 +504,23 @@ class Gizmo extends h3d.scene.Object {
 				rot.invert();
 				dir.transform3x3(rot);
 			}
+
+			var scale = 1.5 * gizmo.absPos.getScale();
+
 			gizmo.getObjectByName("xAxis").setRotation(0, 0, dir.x < 0 ? Math.PI : 0);
+			xFollow.offsetX = dir.x < 0 ? -scale.x : scale.x;
+			xLabel.text = dir.x < 0 ? '-X' : 'X';
+			xFollow.offsetZ = 0.09 * scale.x; // Center the text
+
 			gizmo.getObjectByName("yAxis").setRotation(0, 0, dir.y < 0 ? Math.PI : 0);
+			yFollow.offsetY = dir.y < 0 ? -scale.y : scale.y;
+			yLabel.text = dir.y < 0 ? '-Y' : 'Y';
+			yFollow.offsetZ = 0.09 * scale.y; // Center the text
+
 			gizmo.getObjectByName("zAxis").setRotation(dir.z < 0 ? Math.PI : 0, 0, 0);
+			zFollow.offsetZ = dir.z < 0 ? -scale.z : scale.z;
+			zFollow.offsetZ += 0.09 * scale.z; // Center the text
+			zLabel.text = dir.z < 0 ? '-Z' : 'Z';
 
 			var zrot = dir.x < 0 ? dir.y < 0 ? Math.PI : Math.PI / 2.0 : dir.y < 0 ? -Math.PI / 2.0 : 0;
 
@@ -479,6 +532,9 @@ class Gizmo extends h3d.scene.Object {
 			gizmo.getObjectByName("yRotate").setRotation(0, dir.z < 0 ? Math.PI : 0, dir.x < 0 ? Math.PI : 0);
 			gizmo.getObjectByName("xRotate").setRotation(dir.z < 0 ? Math.PI : 0, 0, dir.y < 0 ? Math.PI : 0);
 		}
+
+		var labelVisible = editMode == EditMode.Translation && this.visible && !moving;
+		xLabel.visible = yLabel.visible = zLabel.visible = labelVisible;
 
 		//axisScale = K.isDown(K.ALT);
 		// for(n in ["xRotate", "yRotate", "zRotate", "xy", "xz", "yz", "scale"]) {
