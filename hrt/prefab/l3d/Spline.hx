@@ -66,6 +66,9 @@ class SplinePoint extends Object3D {
 	var spline(get, default) : Spline;
 	var obj : SplinePointObject;
 	public var offset : h3d.Matrix;
+
+	static var tmpMat : h3d.Matrix = new h3d.Matrix();
+
 	function get_spline() {
 		return parent.to(Spline);
 	}
@@ -176,7 +179,14 @@ class SplinePoint extends Object3D {
 	#end
 
 	override public function getAbsPos( followRefs : Bool = false ) {
-		var result = obj != null ? obj.getAbsPos() : super.getAbsPos(followRefs);
+		var result = null;
+		if (obj != null)
+			result = obj.getAbsPos();
+		else {
+			result = this.getTransform(@:privateAccess SplinePoint.tmpMat);
+			result.multiply(result, spline.local3d.getAbsPos());
+		}
+
 		if (offset != null) result.multiply(result, offset);
 		return result;
 	}
@@ -264,6 +274,8 @@ class Spline extends Object3D {
 	@:s public var lineThickness : Int = 4;
 	@:s public var color : Int = 0xFFFFFFFF;
 	@:s public var loop : Bool = false;
+
+	static var tmpVec : h3d.Vector = new h3d.Vector();
 
 	#if editor
 	public var editor : hide.prefab.SplineEditor;
