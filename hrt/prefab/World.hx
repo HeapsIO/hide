@@ -298,6 +298,7 @@ class World extends Object3D {
 			subdivPow : subdivPow,
 			maxDepth : depth,
 			onCreate : onCreateChunk,
+			root : null,
 		};
 		var worldObj = createObjectFromData(d);
 
