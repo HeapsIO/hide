@@ -1302,6 +1302,26 @@ class SceneEditor {
 				tree.refresh();
 				refreshScene();
 			});
+
+			// When renaming a material, we want to rename every references in .props files
+			// of it, if it is a part of a material library
+			var prefabView = Std.downcast(view, hide.view.Prefab);
+			var mat = Std.downcast(e, hrt.prefab.Material);
+			if (prefabView != null && @:privateAccess prefabView.matLibPath != null && mat != null) {
+
+				var found = false;
+				for (entry in @:privateAccess prefabView.renameMatsHistory) {
+					if (entry.prefab == mat) {
+						entry.newName = name;
+						found = true;
+						break;
+					}
+				}
+
+				if (!found)
+					@:privateAccess prefabView.renameMatsHistory.push({ previousName: oldName, newName: name, prefab: e });
+			}
+
 			refreshScene();
 			return true;
 		};

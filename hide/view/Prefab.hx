@@ -204,12 +204,28 @@ class Prefab extends hide.view.FileView {
 	var viewModes : Map<String, Bool>;
 	var statusText : h2d.Text;
 	var posToolTip : h2d.Text;
+	var matLibPath : String;
+	var renameMatsHistory : Array<Dynamic>;
 
 	var scene(get, null):  hide.comp.Scene;
 	function get_scene() return sceneEditor.scene;
 	public var properties(get, null):  hide.comp.PropsEditor;
 	function get_properties() return sceneEditor.properties;
 
+
+	override function new(state) {
+		super(state);
+
+		var config = hide.Config.loadForFile(ide, ide.getPath(state.path));
+		var matLibs : Array<Dynamic> = config.get("materialLibraries");
+		for (lib in matLibs) {
+			if (state.path == lib.path) {
+				matLibPath = lib.path;
+				renameMatsHistory = [];
+				break;
+			}
+		}
+	}
 
 	function createData() {
 		data = new hrt.prefab.Prefab(null, null);
@@ -604,6 +620,74 @@ class Prefab extends hide.view.FileView {
 		currentSign = newSign;
 		sys.io.File.saveContent(getPath(), content);
 		super.save();
+
+		for (entry in renameMatsHistory)
+			saveMatLibsRenames(entry.previousName, entry.newName, entry.prefab);
+
+		renameMatsHistory = [];
+	}
+
+	function saveMatLibsRenames(oldName : String, newName : String, prefab : hrt.prefab.Prefab) {
+		function renameContent(content:Dynamic) {
+			var visited = new Array<Dynamic>();
+
+			function renamePath(p: String) {
+				if( p == null )
+					return null;
+
+				var pos = p.indexOf(oldName);
+				if (pos < 0)
+					return p;
+
+				if( p == newName )
+					return p;
+
+				if ((pos == 0 || p.charAt(pos -1) == '/') && (pos + oldName.length >= p.length || p.charAt(pos + oldName.length) == '/'))
+					p = StringTools.replace(p, oldName, newName);
+
+				return p;
+			}
+
+			function renameObj(obj:Dynamic) : Dynamic {
+				switch( Type.typeof(obj) ) {
+					case TObject:
+						if( visited.indexOf(obj) >= 0 ) return null;
+						visited.push(obj);
+						if (Reflect.hasField(obj, "__ref") && Reflect.getProperty(obj, "__ref") != matLibPath)
+							return null;
+						for( f in Reflect.fields(obj) ) {
+							var v : Dynamic = Reflect.field(obj, f);
+							v = renameObj(v);
+							if( v != null ) Reflect.setField(obj, f, v);
+						}
+					case TClass(Array):
+						if( visited.indexOf(obj) >= 0 ) return null;
+						visited.push(obj);
+						var arr : Array<Dynamic> = obj;
+						for( i in 0...arr.length ) {
+							var v : Dynamic = arr[i];
+							v = renameObj(v);
+							if( v != null ) arr[i] = v;
+						}
+					case TClass(String):
+						return renamePath(obj);
+
+					default:
+				}
+
+				return null;
+			}
+
+			for( f in Reflect.fields(content) ) {
+				var v = renameObj(Reflect.field(content,f));
+				if( v != null ) Reflect.setField(content,f,v);
+			}
+		}
+
+		ide.filterProps(function(content:Dynamic) {
+			renameContent(content);
+			return true;
+		});
 	}
 
 	function updateGrid() {
