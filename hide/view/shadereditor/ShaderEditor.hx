@@ -125,6 +125,39 @@ class Preview extends h2d.Bitmap {
 
 }
 
+typedef ClassRepoEntry =
+{
+	/**
+		Class of the node
+	**/
+	cl: Class<ShaderNode>,
+
+	/**
+		Group where the node is in the search
+	**/
+	group: String,
+
+	/**
+		Displayed name in the seach box
+	**/
+	nameSearch: String,
+
+	/**
+		Description of the node in the search box
+	**/
+	description: String,
+
+	/**
+		Custom name for the node that will be created
+	**/
+	?nameOverride: String,
+
+	/**
+		Arguments passed to the constructor when the node is created
+	**/
+	args: Array<Dynamic>
+};
+
 class ShaderEditor extends hide.view.Graph {
 
 	var parametersList : JQuery;
@@ -134,7 +167,7 @@ class ShaderEditor extends hide.view.Graph {
 
 	var addMenu : JQuery;
 	var selectedNode : JQuery;
-	var classRepository : Array<{cl: Class<ShaderNode>, group: String, name: String, description: String, args: Array<Dynamic>}>;
+	var classRepository : Array<ClassRepoEntry>;
 
 	var previewsScene : hide.comp.Scene;
 	var previewParamDirty : Bool = true;
@@ -435,14 +468,22 @@ class ShaderEditor extends hide.view.Graph {
 			var name = metas.name != null ? metas.name[0] : "unknown";
 			var description = metas.description != null ? metas.description[0] : "";
 
-
-			classRepository.push({name : name, group : group, description: description, args: [], cl: node});
+			classRepository.push({nameSearch : name, group : group, description: description, args: [], cl: node});
 
 			var inst = std.Type.createEmptyInstance(node);
 			var aliases = inst.getAliases(name, group, description);
 			if (aliases != null) {
 				for (alias in aliases) {
-					classRepository.push({name : alias.name ?? name, description: alias.description ?? description, args: alias.args ?? [], cl: node, group: group});
+					classRepository.push(
+						{
+							nameSearch : alias.nameSearch ?? alias.nameOverride ?? name,
+							nameOverride : alias.nameOverride,
+							description: alias.description ?? description,
+							args: alias.args ?? [],
+							cl: node,
+							group: alias.group ?? group
+						}
+					);
 				}
 			}
 		}
@@ -462,14 +503,14 @@ class ShaderEditor extends hide.view.Graph {
 
 					var fileName = new haxe.io.Path(relPath).file;
 
-					classRepository.push({name: fileName, description: "", args: [relPath], cl: SubGraph, group: group});
+					classRepository.push({nameSearch: fileName, description: "", args: [relPath], cl: SubGraph, group: group});
 				}
 			}
 		}
 
 		classRepository.sort((a,b) -> {
 			if (a.group == b.group) {
-				return Reflect.compare(a.name, b.name);
+				return Reflect.compare(a.nameSearch, b.nameSearch);
 			}
 			return Reflect.compare(a.group, b.group);
 		});
@@ -1470,7 +1511,7 @@ class ShaderEditor extends hide.view.Graph {
 
 			new Element('
 				<div node="$i" >
-					<span> ${node.name} </span> <span> ${node.description} </span>
+					<span> ${node.nameSearch} </span> <span> ${node.description} </span>
 				</div>').appendTo(results);
 		}
 
@@ -1530,7 +1571,8 @@ class ShaderEditor extends hide.view.Graph {
 				var posCursor = new Point(lX(ide.mouseX - 25), lY(ide.mouseY - 10));
 
 				var node = classRepository[key];
-				addNode(posCursor, node.cl, node.args);
+				var instance = addNode(posCursor, node.cl, node.args);
+				instance.nameOverride = node.nameOverride;
 				closeAddMenu();
 				refreshShaderGraph();
 
@@ -1589,7 +1631,8 @@ class ShaderEditor extends hide.view.Graph {
 			var posCursor = new Point(lX(ide.mouseX - 25), lY(ide.mouseY - 10));
 
 			var node = classRepository[key];
-			addNode(posCursor, node.cl, node.args);
+			var instance = addNode(posCursor, node.cl, node.args);
+			instance.nameOverride = node.nameOverride;
 			closeAddMenu();
 			refreshShaderGraph();
 		});

@@ -58,7 +58,7 @@ class Box {
 		if (Reflect.hasField(metas, "color")) {
 			color = Reflect.field(metas, "color");
 		}
-		var className = (metas.name != null) ? metas.name[0] : "Undefined";
+		var className = node.nameOverride ?? ((metas.name != null) ? metas.name[0] : "Undefined");
 
 		element = editor.editor.group(parent).addClass("box").addClass("not-selected");
 		element.attr("id", node.id);

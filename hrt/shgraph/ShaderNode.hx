@@ -1,5 +1,6 @@
 package hrt.shgraph;
 
+import Type as HaxeType;
 using hxsl.Ast;
 
 import h3d.scene.Mesh;
@@ -27,7 +28,7 @@ class AlphaPreview extends hxsl.Shader {
 }
 
 typedef VariableDecl = {v: TVar, display: String, ?vertexOnly: Bool};
-typedef AliasInfo = {?name : String, ?description : String, ?args : Array<Dynamic>};
+typedef AliasInfo = {?nameSearch: String, ?nameOverride : String, ?description : String, ?args : Array<Dynamic>, ?group: String};
 @:autoBuild(hrt.shgraph.Macros.autoRegisterNode())
 @:keepSub
 @:keep
@@ -35,15 +36,22 @@ class ShaderNode {
 
 	public var id : Int;
 	public var showPreview : Bool = true;
+	@prop public var nameOverride : String;
+
 
 	public var defaults : Dynamic = {};
 
-	public static function registerAliases(name: String, description: String) : Array<AliasInfo> {
-		return null;
-	}
+	public function getAliases(name: String, group: String, description: String) : Array<AliasInfo> {
+		var cl = HaxeType.getClass(this);
+		var meta = haxe.rtti.Meta.getType(cl);
+		var aliases : Array<AliasInfo> = [];
 
-	public function getAliases(name: String, group: String, description: String) : Null<Array<AliasInfo>> {
-		return null;
+		if (meta.alias != null) {
+			for (a in meta.alias) {
+				aliases.push({nameOverride: '$a'});
+			}
+		}
+		return aliases;
 	}
 
 	static var availableVariables = [
@@ -178,6 +186,8 @@ class ShaderNode {
 	public function loadProperties(props : Dynamic) {
 		var fields = Reflect.fields(props);
 		showPreview = props.showPreview ?? true;
+		nameOverride = props.nameOverride;
+
 		for (f in fields) {
 			if (f == "defaults") {
 				defaults = Reflect.field(props, f);
@@ -225,6 +235,7 @@ class ShaderNode {
 			Reflect.setField(parameters, "defaults", defaults);
 		}
 
+		parameters.nameOverride = nameOverride;
 		parameters.showPreview = showPreview;
 
 		return parameters;

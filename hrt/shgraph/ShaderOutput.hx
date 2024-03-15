@@ -20,10 +20,10 @@ class ShaderOutput extends ShaderNode {
 	}
 
 	override public function getAliases(name: String, group: String, description: String) {
-		var aliases = [];
+		var aliases = super.getAliases(name, group, description);
 		for (key => output in hrt.shgraph.ShaderOutput.availableOutputs) {
 			aliases.push({
-				name : name + " - " + output.display,
+				nameSearch : name + " - " + output.display,
 				group: group,
 				description: description,
 				args: [key],

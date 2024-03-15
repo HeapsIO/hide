@@ -24,10 +24,10 @@ class ShaderInput extends ShaderNode {
 	}
 
 	override public function getAliases(name: String, group: String, description: String) {
-		var aliases = [];
+		var aliases = super.getAliases(name, group, description);
 		for (key => input in hrt.shgraph.ShaderInput.availableInputs) {
 			aliases.push({
-				name : name + " - " + input.display,
+				nameSearch : name + " - " + input.display,
 				group: group,
 				description: description,
 				args: [key],
