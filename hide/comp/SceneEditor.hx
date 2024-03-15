@@ -1040,8 +1040,12 @@ class SceneEditor {
 		if (!camera2D)
 			resetCamera();
 
-
 		var cam = @:privateAccess view.getDisplayState("Camera");
+		var isGlobalSettings = Ide.inst.currentConfig.get("sceneeditor.camera.isglobalsettings", false);
+		if (isGlobalSettings) {
+			cam = haxe.Json.parse(js.Browser.window.localStorage.getItem("Global/Camera"));
+		}
+
 		if( cam != null ) {
 			scene.s3d.camera.pos.set(cam.x, cam.y, cam.z);
 			scene.s3d.camera.target.set(cam.tx, cam.ty, cam.tz);
@@ -1092,7 +1096,13 @@ class SceneEditor {
 				camSpeed : cc.camSpeed,
 				fov : cc.wantedFOV,
 			};*/
-		@:privateAccess view.saveDisplayState("Camera", toSave);
+		var isGlobalSettings = Ide.inst.currentConfig.get("sceneeditor.camera.isglobalsettings", false);
+		if (isGlobalSettings) {
+			js.Browser.window.localStorage.setItem("Global/Camera", haxe.Json.stringify(toSave));
+		}
+		else {
+			@:privateAccess view.saveDisplayState("Camera", toSave);
+		}
 	}
 
     function loadSnapSettings() {
@@ -2747,7 +2757,7 @@ class SceneEditor {
 			cameraController2D.initFromScene();
 		} else {
 			scene.s3d.camera.zNear = scene.s3d.camera.zFar = 0;
-			scene.s3d.camera.fovY = 25; // reset to default fov
+			scene.s3d.camera.fovY = 60; // reset to default fov
 			scene.resetCamera(distanceFactor);
 			cameraController.lockZPlanes = scene.s3d.camera.zNear != 0;
 			cameraController.loadFromCamera();
