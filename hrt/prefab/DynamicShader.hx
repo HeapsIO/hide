@@ -119,7 +119,7 @@ class DynamicShader extends Shader {
 		var element = new hide.Element('
 		<div class="group" name="Source">
 		<dl>
-			<dt>Source</dt><dd><input type="fileselect" extensions="hx shgraph" field="source"/></dd>
+			<dt>Path</dt><dd><input type="fileselect" extensions="hx shgraph" field="source"/></dd>
 		</dl>
 		</div>');
 
