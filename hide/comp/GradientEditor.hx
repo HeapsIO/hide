@@ -388,8 +388,7 @@ class GradientEditor extends Popup {
             var x : Float = stop.position;
             var y : Float = 0.5;
             marquer.attr("transform", 'translate(${x}, ${y})');
-
-            Gradient.evalData(innerValue, stop.position, vector);
+			vector.setColor(stop.color);
             marquer.children(".fill").attr({fill: 'rgba(${vector.r*255.0}, ${vector.g*255.0}, ${vector.b*255.0}, ${vector.a})'});
         }
 
