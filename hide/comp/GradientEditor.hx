@@ -483,7 +483,7 @@ class GradientView extends Component {
 
         for (x in 0...innerValue.resolution) {
             var index = x * 4;
-            Gradient.evalData(innerValue, x / innerValue.resolution, color);
+            Gradient.evalData(innerValue, x / (innerValue.resolution-1), color);
             image_data.data[index] = Std.int(color.r * 255.0);
             image_data.data[index+1] = Std.int(color.g * 255.0);
             image_data.data[index+2] = Std.int(color.b * 255.0);

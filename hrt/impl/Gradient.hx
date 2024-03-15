@@ -81,7 +81,7 @@ class Gradient {
                     outVector.x = lerp_angle(start.x, end.x, blend);
                 }
             case Constant:
-                outVector.load(start);
+                outVector.load(blend < 0.5 ? start : end);
             case Cubic:
                 // Honteusement copié de https://github.com/godotengine/godot/blob/c241f1c52386b21cf2df936ee927740a06970db6/scene/resources/gradient.h#L159
                 var i0 = firstStopIdx-1;
@@ -181,7 +181,7 @@ class Gradient {
 
             var vec = new Vector4();
             for (x in 0...data.resolution) {
-                evalData(data, x / data.resolution, vec);
+                evalData(data, x / (data.resolution-1), vec);
                 pixels.setPixelF(x * xScale,x*yScale, vec);
             }
             return pixels;
