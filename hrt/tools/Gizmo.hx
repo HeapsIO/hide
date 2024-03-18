@@ -179,7 +179,7 @@ class Gizmo extends h3d.scene.Object {
 		setup("yScale", GIZMO_COLORS.y, MoveY);
 		setup("zScale", GIZMO_COLORS.z, MoveZ);
 
-		xFollow = new h2d.ObjectFollower(this, root2d);
+		/*xFollow = new h2d.ObjectFollower(this, root2d);
 		yFollow = new h2d.ObjectFollower(this, root2d);
 		zFollow = new h2d.ObjectFollower(this, root2d);
 
@@ -202,7 +202,7 @@ class Gizmo extends h3d.scene.Object {
 		zLabel.textColor = GIZMO_COLORS.z;
 		zLabel.textAlign = Center;
 		zLabel.dropShadow = { dx : 0.5, dy : 0.5, color : 0x202020, alpha : 1.0 };
-		zLabel.setScale(1.2);
+		zLabel.setScale(1.2);*/
 
 		translationMode();
 	}
@@ -508,19 +508,19 @@ class Gizmo extends h3d.scene.Object {
 			var scale = 1.5 * gizmo.absPos.getScale();
 
 			gizmo.getObjectByName("xAxis").setRotation(0, 0, dir.x < 0 ? Math.PI : 0);
-			xFollow.offsetX = dir.x < 0 ? -scale.x : scale.x;
-			xLabel.text = dir.x < 0 ? '-X' : 'X';
-			xFollow.offsetZ = 0.09 * scale.x; // Center the text
+			// xFollow.offsetX = dir.x < 0 ? -scale.x : scale.x;
+			// xLabel.text = dir.x < 0 ? '-X' : 'X';
+			// xFollow.offsetZ = 0.09 * scale.x; // Center the text
 
 			gizmo.getObjectByName("yAxis").setRotation(0, 0, dir.y < 0 ? Math.PI : 0);
-			yFollow.offsetY = dir.y < 0 ? -scale.y : scale.y;
-			yLabel.text = dir.y < 0 ? '-Y' : 'Y';
-			yFollow.offsetZ = 0.09 * scale.y; // Center the text
+			// yFollow.offsetY = dir.y < 0 ? -scale.y : scale.y;
+			// yLabel.text = dir.y < 0 ? '-Y' : 'Y';
+			// yFollow.offsetZ = 0.09 * scale.y; // Center the text
 
 			gizmo.getObjectByName("zAxis").setRotation(dir.z < 0 ? Math.PI : 0, 0, 0);
-			zFollow.offsetZ = dir.z < 0 ? -scale.z : scale.z;
-			zFollow.offsetZ += 0.09 * scale.z; // Center the text
-			zLabel.text = dir.z < 0 ? '-Z' : 'Z';
+			// zFollow.offsetZ = dir.z < 0 ? -scale.z : scale.z;
+			// zFollow.offsetZ += 0.09 * scale.z; // Center the text
+			// zLabel.text = dir.z < 0 ? '-Z' : 'Z';
 
 			var zrot = dir.x < 0 ? dir.y < 0 ? Math.PI : Math.PI / 2.0 : dir.y < 0 ? -Math.PI / 2.0 : 0;
 
@@ -534,7 +534,7 @@ class Gizmo extends h3d.scene.Object {
 		}
 
 		var labelVisible = editMode == EditMode.Translation && this.visible && !moving;
-		xLabel.visible = yLabel.visible = zLabel.visible = labelVisible;
+		//xLabel.visible = yLabel.visible = zLabel.visible = labelVisible;
 
 		//axisScale = K.isDown(K.ALT);
 		// for(n in ["xRotate", "yRotate", "zRotate", "xy", "xz", "yz", "scale"]) {
