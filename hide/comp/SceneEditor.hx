@@ -3894,27 +3894,30 @@ class SceneEditor {
 		return groundPrefabsCache.copy();
 	}
 
-	public function projectToGround(ray: h3d.col.Ray, ?paintOn : hrt.prefab.Prefab ) {
+	public function projectToGround(ray: h3d.col.Ray, ?paintOn : hrt.prefab.Prefab, ignoreTerrain: Bool = false) {
 		var minDist = -1.;
 
-		for( elt in (paintOn == null ? getGroundPrefabs() : [paintOn]) ) {
-			var obj = Std.downcast(elt, Object3D);
-			if( obj == null ) continue;
+		if (!ignoreTerrain) {
+			for( elt in (paintOn == null ? getGroundPrefabs() : [paintOn]) ) {
+				var obj = Std.downcast(elt, Object3D);
+				if( obj == null ) continue;
 
-			var local3d = obj.findFirstLocal3d();
-			var lray = ray.clone();
-			lray.transform(local3d.getInvPos());
-			var dist = obj.localRayIntersection(lray);
-			if( dist > 0 ) {
-				var pt = lray.getPoint(dist);
-				pt.transform(local3d.getAbsPos());
-				var dist = pt.sub(ray.getPos()).length();
-				if( minDist < 0 || dist < minDist )
-					minDist = dist;
+				var local3d = obj.findFirstLocal3d();
+				var lray = ray.clone();
+				lray.transform(local3d.getInvPos());
+				var dist = obj.localRayIntersection(lray);
+				if( dist > 0 ) {
+					var pt = lray.getPoint(dist);
+					pt.transform(local3d.getAbsPos());
+					var dist = pt.sub(ray.getPos()).length();
+					if( minDist < 0 || dist < minDist )
+						minDist = dist;
+				}
 			}
+			if( minDist >= 0 )
+				return minDist;
 		}
-		if( minDist >= 0 )
-			return minDist;
+
 
 		var zPlane = h3d.col.Plane.Z(0);
 		var pt = ray.intersect(zPlane);
@@ -3928,19 +3931,19 @@ class SceneEditor {
 		return minDist;
 	}
 
-	public function screenDistToGround(sx : Float, sy : Float, ?paintOn : hrt.prefab.Prefab) : Null<Float> {
+	public function screenDistToGround(sx : Float, sy : Float, ?paintOn : hrt.prefab.Prefab, ignoreTerrain: Bool = false) : Null<Float> {
 		var camera = scene.s3d.camera;
 		var ray = camera.rayFromScreen(sx, sy);
-		var dist = projectToGround(ray, paintOn);
+		var dist = projectToGround(ray, paintOn, ignoreTerrain);
 		if( dist >= 0 )
 			return dist + camera.zNear;
 		return null;
 	}
 
-	public function screenToGround(sx: Float, sy: Float, ?paintOn : hrt.prefab.Prefab ) {
+	public function screenToGround(sx: Float, sy: Float, ?paintOn : hrt.prefab.Prefab, ignoreTerrain: Bool = false) {
 		var camera = scene.s3d.camera;
 		var ray = camera.rayFromScreen(sx, sy);
-		var dist = projectToGround(ray, paintOn);
+		var dist = projectToGround(ray, paintOn, ignoreTerrain);
 		if(dist >= 0) {
 			return ray.getPoint(dist);
 		}

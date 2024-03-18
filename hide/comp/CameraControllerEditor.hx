@@ -102,6 +102,14 @@ class CameraControllerEditor extends Popup {
             });
         }
 
+		{
+            var dd = new Element("<label for='snapToGround'>").text("Snap To Ground").appendTo(form_div);
+            var cb = new Element("<input id='snapToGround' type='checkbox'>").prop("checked", editor.cameraController.snapToGround).appendTo(form_div);
+			cb.on("change", function(_) {
+				editor.cameraController.snapToGround = cb.prop("checked");
+			});
+		}
+
         {
             var dd = new Element("<label for='cam-speed'>").text("Fly Speed").appendTo(form_div);
             var range = new Range(form_div, new Element("<input id='cam-speed' type='range' min='1' max='8' step='1'>"));
