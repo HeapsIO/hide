@@ -526,15 +526,19 @@ class Graph extends FileView {
 		var minDistNode = NODE_TRIGGER_NEAR;
 
 		// checking nearest box
-		var nearestBox = listOfBoxes[0];
-		var minDist = distanceToBox(nearestBox, clientX, clientY);
-		for (i in 1...listOfBoxes.length) {
+		var nearestBox = null;
+		var minDist = 999999999999999.0;
+		for (i in 0...listOfBoxes.length) {
+			if (listOfBoxes[i].comment != null)
+				continue;
 			var tmpDist = distanceToBox(listOfBoxes[i], clientX, clientY);
 			if (tmpDist < minDist) {
 				minDist = tmpDist;
 				nearestBox = listOfBoxes[i];
 			}
 		}
+		if (nearestBox == null)
+			return;
 
 		// checking nearest node in the nearest box
 		if (isCreatingLink == FromInput) {
