@@ -218,11 +218,13 @@ class Prefab extends hide.view.FileView {
 
 		var config = hide.Config.loadForFile(ide, ide.getPath(state.path));
 		var matLibs : Array<Dynamic> = config.get("materialLibraries");
-		for (lib in matLibs) {
-			if (state.path == lib.path) {
-				matLibPath = lib.path;
-				renameMatsHistory = [];
-				break;
+		if (matLibs != null) {
+			for (lib in matLibs) {
+				if (state.path == lib.path) {
+					matLibPath = lib.path;
+					renameMatsHistory = [];
+					break;
+				}
 			}
 		}
 	}
