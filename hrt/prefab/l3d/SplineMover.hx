@@ -50,6 +50,7 @@ class SplineMoverObject extends h3d.scene.Object {
 				c.follow = this.parent;
 			}
 			c.setPosition(pt.x, pt.y, pt.z);
+			if( prefab.orientTangent ) c.setDirection(state.tangent);
 		}
 	}
 }
@@ -57,6 +58,7 @@ class SplineMoverObject extends h3d.scene.Object {
 class SplineMover extends Spline {
 
 	@:s public var speed = 1.0;
+	@:s public var orientTangent = false;
 	#if editor
 	@:s public var showDebug : Bool = true;
 	#end
@@ -93,6 +95,7 @@ class SplineMover extends Spline {
 		<div class="group" name="Mover">
 			<dl>
 				<dt>Speed</dt><dd><input type="range" min="-100" max="100" field="speed"/></dd>
+				<dt>Orient To Tangent</dt><dd><input type="checkbox" field="orientTangent"/></dd>
 				<dt>Show Debug</dt><dd><input type="checkbox" field="showDebug"/></dd>
 			</dl>
 		</div>'), this, function(pname) { ctx.onChange(this, pname); });
