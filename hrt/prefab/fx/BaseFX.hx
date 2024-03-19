@@ -53,8 +53,6 @@ class ShaderAnimation extends Evaluator {
 }
 
 class ShaderDynAnimation extends ShaderAnimation {
-
-	static var tmpVec = new h3d.Vector();
 	var vectors : Array<h3d.Vector4>;
 	override function setTime(time: Float) {
 		var shader : hxsl.DynamicShader = cast shader;
@@ -70,7 +68,7 @@ class ShaderDynAnimation extends ShaderAnimation {
 				case TBool:
 					var val = getFloat(param.value, time) >= 0.5;
 					shader.setParamValue(v, val);
-				case TVec(size, VFloat):
+				case TVec(_, VFloat):
 					if(vectors == null)
 						vectors = [];
 					var vec = vectors[param.idx];
@@ -79,12 +77,7 @@ class ShaderDynAnimation extends ShaderAnimation {
 						vectors[param.idx] = vec;
 					}
 					getVector(param.value, time, vec);
-					if( size < 4 ) {
-						var tmpVec = tmpVec;
-						tmpVec.set(vec.x, vec.y, vec.z);
-						shader.setParamValue(v, tmpVec);
-					} else
-						shader.setParamValue(v, vec);
+					shader.setParamValue(v, vec);
 				default:
 			}
 		}
