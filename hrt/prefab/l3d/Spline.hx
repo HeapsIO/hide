@@ -68,6 +68,7 @@ class SplinePoint extends Object3D {
 	public var offset : h3d.Matrix;
 
 	static var tmpMat : h3d.Matrix = new h3d.Matrix();
+	static var tmpMatBis : h3d.Matrix = new h3d.Matrix();
 
 	function get_spline() {
 		return parent.to(Spline);
@@ -179,12 +180,21 @@ class SplinePoint extends Object3D {
 	#end
 
 	override public function getAbsPos( followRefs : Bool = false ) {
-		var result = null;
+		var result = tmpMatBis;
+
 		if (obj != null)
 			result = obj.getAbsPos();
-		else {
-			result = this.getTransform(@:privateAccess SplinePoint.tmpMat);
-			result.multiply(result, spline.local3d.getAbsPos());
+		else @:privateAccess {
+			result.load(this.getTransform(tmpMat));
+
+			var p = Std.downcast(this.parent, Object3D);
+			while (p != null)  {
+				p.getTransform(tmpMat);
+				tmpMat.multiply(result, tmpMat);
+				result.load(tmpMat);
+
+				p = Std.downcast(p.parent, Object3D);
+			}
 		}
 
 		if (offset != null) result.multiply(result, offset);
