@@ -669,6 +669,7 @@ class SceneEditor {
 	public var root2d : h2d.Object = null;
 	public var root3d : h3d.scene.Object = null;
 
+
 	function getRootObjects3d() : Array<Object> {
 		var arr = [];
 		for (e in selectedPrefabs) {
@@ -2185,6 +2186,40 @@ class SceneEditor {
 			return;
 		}*/
 
+		if (selectedPrefabs.length > 1) {
+			var propsThatChanged = [];
+			if (pname == "scale") {
+				propsThatChanged.push("scaleX");
+				propsThatChanged.push("scaleY");
+				propsThatChanged.push("scaleZ");
+			}
+			else {
+				propsThatChanged.push(pname);
+			}
+
+			for (pname in propsThatChanged) {
+				var pname = pname.split(".")[0];
+				var ctx = p.getPropObject(pname);
+				var v = Reflect.getProperty(ctx, pname);
+
+				var needRefresh = false;
+				for (e in selectedPrefabs) {
+					if (e == p)
+						continue;
+					var ctx = e.getPropObject(pname);
+
+					if (ctx != null) {
+						Reflect.setField(ctx, pname, v);
+
+						e.updateInstance(pname);
+
+						var el = tree.getElement(e);
+						if( el != null && el.toggleClass != null ) applyTreeStyle(e, el, pname);
+					}
+				}
+			}
+		}
+
 		if(p != sceneData) {
 			var el = tree.getElement(p);
 			if( el != null && el.toggleClass != null ) applyTreeStyle(p, el, pname);
@@ -2490,7 +2525,7 @@ class SceneEditor {
 		ide.setClipboard(serializeProps(fields));
 	}
 
-	function fillProps(edit : SceneEditorContext, e : PrefabElement ) {
+	function fillProps(edit : SceneEditorContext, e : PrefabElement) {
 		properties.element.append(new Element('<h1 class="prefab-name">${e.getHideProps().name}</h1>'));
 
 		var copyButton = new Element('<div class="hide-button" title="Copy all properties">').append(new Element('<div class="icon ico ico-copy">'));

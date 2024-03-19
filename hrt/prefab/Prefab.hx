@@ -575,6 +575,15 @@ class Prefab {
 	}
 
 	/**
+		Returns the object where the property with `name` can be found with Reflect.fields
+	**/
+	public function getPropObject(name: String) : Dynamic {
+		if (Reflect.hasField(this,name))
+			return this;
+		return null;
+	}
+
+	/**
 		Called when the hide editor wants to edit this Prefab.
 		Used to create the various editor interfaces
 	**/

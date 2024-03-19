@@ -1757,6 +1757,13 @@ class Emitter extends Object3D {
 		return false; // Emitter removal is buggy
 	}
 
+	override function getPropObject(name: String) : Dynamic {
+		if (PARAMS.find((e) -> e.name == name) != null) {
+			return this.props;
+		}
+		return super.getPropObject(name);
+	}
+
 	override function edit( ctx : hide.prefab.EditContext ) {
 		super.edit(ctx);
 
