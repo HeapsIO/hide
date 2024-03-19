@@ -997,7 +997,10 @@ class TerrainEditor {
 
 	inline function setRange( name, value, ctx : EditContext ) {
 		var field = Lambda.find(ctx.properties.fields, f->f.fname==name);
-		if(field != null) @:privateAccess field.range.value = value;
+		@:privateAccess if(field != null) {
+			field.current = value;
+			field.range.value = value;
+		}
 	}
 
 	function refreshSurfaces( props : hide.Element, ctx : EditContext ) {
