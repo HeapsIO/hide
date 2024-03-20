@@ -54,7 +54,7 @@ class Camera extends Object3D {
 		if( g == null ) {
 			g = new h3d.scene.Graphics(local3d);
 			g.name = "frustumDebug";
-			g.material.mainPass.setPassName("overlay");
+			g.material.mainPass.setPassName("debuggeom");
 			g.ignoreBounds = true;
 		}
 

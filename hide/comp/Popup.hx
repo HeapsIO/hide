@@ -37,7 +37,7 @@ class Popup extends Component {
 
 			searchBar.keyup((e) -> onSearchChanged(searchBar));
 		}
-		
+
 		var body = root.closest(".lm_content");
 		if (body.length == 0) body = new Element("body");
 		body.append(popup);

@@ -10,6 +10,8 @@ import hrt.prefab.Prefab as PrefabElement;
 import hrt.prefab.Object3D;
 import hide.comp.cdb.DataFiles;
 
+
+
 class FiltersPopup extends hide.comp.Popup {
 	var editor:Prefab;
 	public function new(?parent:Element, ?root:Element, editor:Prefab, filters:Map<String, Bool>, type:String) {
@@ -189,11 +191,8 @@ class Prefab extends hide.view.FileView {
 
 	var resizablePanel : hide.comp.ResizablePanel;
 
-	var grid : h3d.scene.Graphics;
 
-	var gridStep : Float = 0.;
-	var gridSize : Int;
-	var showGrid = false;
+
 
 	// autoSync
 	var autoSync : Bool;
@@ -202,7 +201,6 @@ class Prefab extends hide.view.FileView {
 	var sceneFilters : Map<String, Bool>;
 	var graphicsFilters : Map<String, Bool>;
 	var viewModes : Map<String, Bool>;
-	var statusText : h2d.Text;
 	var posToolTip : h2d.Text;
 	var matLibPath : String;
 	var renameMatsHistory : Array<Dynamic>;
@@ -411,15 +409,8 @@ class Prefab extends hide.view.FileView {
 		refreshGraphicsFilters();
 		refreshViewModes();
 		tools.saveDisplayKey = "Prefab/toolbar";
-		statusText = new h2d.Text(hxd.res.DefaultFont.get(), scene.s2d);
-		statusText = new h2d.Text(hxd.res.DefaultFont.get(), scene.s2d);
-		statusText.setPosition(5, 5);
-		statusText.visible = false;
 
 		/*gridStep = @:privateAccess sceneEditor.gizmo.moveStep;*/
-		sceneEditor.updateGrid = function() {
-			updateGrid();
-		};
 		var toolsDefs = new Array<hide.comp.Toolbar.ToolDef>();
 
 		toolsDefs.push({id: "perspectiveCamera", title : "Perspective camera", icon : "video-camera", type : Button(() -> resetCamera(false)) });
@@ -448,68 +439,48 @@ class Prefab extends hide.view.FileView {
 
 		toolsDefs.push({id: "", title : "", icon : "", type : Separator});
 
-		toolsDefs.push({id: "gridToggle", title : "Toggle grid", icon : "th", type : Toggle((v) -> { showGrid = v; updateGrid(); }) });
-		toolsDefs.push({id: "axisToggle", title : "Toggle model axis", icon : "cube", type : Toggle((v) -> { sceneEditor.showBasis = v; sceneEditor.updateBasis(); }) });
-		toolsDefs.push({id: "mainGizmos", title : "Hide main gizmos", icon : "eye-slash", type : Toggle((v) -> { @:privateAccess sceneEditor.gizmo.toggleGizmosVisiblity(!v); }) });
-		toolsDefs.push({id: "iconVisibility", title : "Toggle 3d icons visibility", icon : "image", type : Toggle((v) -> { hide.Ide.inst.show3DIcons = v; }), defaultValue: true });
-		toolsDefs.push({id: "iconVisibility-menu", title : "", icon: "", type : Popup((e) -> new hide.comp.SceneEditor.IconVisibilityPopup(null, e, sceneEditor))});
+		toolsDefs.push({id: "showViewportOverlays", title : "Viewport Overlays", icon : "eye", type : Toggle((v) -> { sceneEditor.updateViewportOverlays(); }) });
+		toolsDefs.push({id: "viewportoverlays-menu", title : "", icon: "", type : Popup((e) -> new hide.comp.SceneEditor.ViewportOverlaysPopup(null, e, sceneEditor))});
 
 		var texContent : Element = null;
-		toolsDefs.push({id: "sceneInformationToggle", title : "Scene information", icon : "info-circle", type : Toggle((b) -> statusText.visible = b), rightClick: () -> {
-			if( texContent != null ) {
-				texContent.remove();
-				texContent = null;
-			}
-			new hide.comp.ContextMenu([
-				{
-					label : "Show Texture Details",
-					click : function() {
-						var memStats = scene.engine.mem.stats();
-						var texs = @:privateAccess scene.engine.mem.textures;
-						var list = [for(t in texs) {
-							n: '${t.width}x${t.height}  ${t.format}  ${t.name}',
-							size: t.width * t.height
-						}];
-						list.sort((a, b) -> Reflect.compare(b.size, a.size));
-						var content = new Element('<div tabindex="1" class="overlay-info"><h2>Scene info</h2><pre></pre></div>');
-						new Element(element[0].ownerDocument.body).append(content);
-						var pre = content.find("pre");
-						pre.text([for(l in list) l.n].join("\n"));
-						texContent = content;
-						content.blur(function(_) {
-							content.remove();
-							texContent = null;
-						});
-					}
-				}
-			]);
-		}});
-		toolsDefs.push({id: "autoSyncToggle", title : "Auto synchronize", icon : "refresh", type : Toggle((b) -> autoSync = b)});
-		toolsDefs.push({
-			id: "wireframeToggle",
-			title: "Wireframe",
-			icon: "connectdevelop",
-			type: Toggle((b) -> { sceneEditor.setWireframe(b); }),
-		});
-
-		toolsDefs.push({
-			id: "jointsToggle",
-			title: "Joints",
-			icon: "share-alt",
-			type: Toggle((b) -> { sceneEditor.setJoints(b, null); }),
-		});
-		toolsDefs.push({id: "backgroundColor", title : "Background Color", type : Color(function(v) {
-			scene.engine.backgroundColor = v;
-			updateGrid();
-		})});
+		// toolsDefs.push({id: "sceneInformationToggle", title : "Scene information", icon : "info-circle", type : Toggle((b) -> statusText.visible = b), rightClick: () -> {
+		// 	if( texContent != null ) {
+		// 		texContent.remove();
+		// 		texContent = null;
+		// 	}
+		// 	new hide.comp.ContextMenu([
+		// 		{
+		// 			label : "Show Texture Details",
+		// 			click : function() {
+		// 				var memStats = scene.engine.mem.stats();
+		// 				var texs = @:privateAccess scene.engine.mem.textures;
+		// 				var list = [for(t in texs) {
+		// 					n: '${t.width}x${t.height}  ${t.format}  ${t.name}',
+		// 					size: t.width * t.height
+		// 				}];
+		// 				list.sort((a, b) -> Reflect.compare(b.size, a.size));
+		// 				var content = new Element('<div tabindex="1" class="overlay-info"><h2>Scene info</h2><pre></pre></div>');
+		// 				new Element(element[0].ownerDocument.body).append(content);
+		// 				var pre = content.find("pre");
+		// 				pre.text([for(l in list) l.n].join("\n"));
+		// 				texContent = content;
+		// 				content.blur(function(_) {
+		// 					content.remove();
+		// 					texContent = null;
+		// 				});
+		// 			}
+		// 		}
+		// 	]);
+		// }});
 
 		toolsDefs.push({id: "", title : "", icon : "", type : Separator});
+
+		toolsDefs.push({id: "autoSyncToggle", title : "Auto synchronize", icon : "refresh", type : Toggle((b) -> autoSync = b)});
+
+		toolsDefs.push({id: "", title : "", icon : "", type : Separator});
+
 
         toolsDefs.push({id: "help", title : "help", icon: "question", type : Popup((e) -> new hide.comp.SceneEditor.HelpPopup(null, e, sceneEditor))});
-
-		toolsDefs.push({id: "", title : "", icon : "", type : Separator});
-
-		toolsDefs.push({id: "tog-scene-render", title : "Disable/Enable scene render" , icon: "eye-slash", type : Toggle((b) -> {})});
 
 		toolsDefs.push({id: "", title : "", icon : "", type : Separator});
 
@@ -562,8 +533,6 @@ class Prefab extends hide.view.FileView {
 		gizmo.onChangeMode = onSetGizmoMode;
 		onSetGizmoMode(gizmo.editMode);
 
-		updateStats();
-		updateGrid();
 		initGraphicsFilters();
 
 		initSceneFilters();
@@ -571,24 +540,6 @@ class Prefab extends hide.view.FileView {
 			initGraphicsFilters();
 			initSceneFilters();
 		}
-	}
-
-	function updateStats() {
-		if( statusText.visible ) {
-			var memStats = scene.engine.mem.stats();
-			@:privateAccess
-			var lines : Array<String> = [
-				'Scene objects: ${scene.s3d.getObjectsCount()}',
-				'Interactives: ' + sceneEditor.interactives.count(),
-				'Triangles: ${scene.engine.drawTriangles}',
-				'Buffers: ${memStats.bufferCount}',
-				'Textures: ${memStats.textureCount}',
-				'FPS: ${Math.round(scene.engine.realFps)}',
-				'Draw Calls: ${scene.engine.drawCalls}',
-			];
-			statusText.text = lines.join("\n");
-		}
-		haxe.Timer.delay(function() sceneEditor.event.wait(0.5, updateStats), 0);
 	}
 
 	function resetCamera( top : Bool ) {
@@ -692,53 +643,6 @@ class Prefab extends hide.view.FileView {
 			renameContent(content);
 			return true;
 		});
-	}
-
-	function updateGrid() {
-		if(grid != null) {
-			grid.remove();
-			grid = null;
-		}
-
-		if(!showGrid)
-			return;
-
-		grid = new h3d.scene.Graphics(scene.s3d);
-		grid.scale(1);
-		grid.material.mainPass.setPassName("debuggeom");
-
-        if (sceneEditor.snapToggle) {
-    		gridStep = sceneEditor.snapMoveStep;
-        }
-        else {
-            gridStep = ide.currentConfig.get("sceneeditor.gridStep");
-        }
-		gridSize = ide.currentConfig.get("sceneeditor.gridSize");
-
-		var col = h3d.Vector.fromColor(scene.engine.backgroundColor);
-		var hsl = col.toColorHSL();
-
-        var mov = 0.1;
-
-        if (sceneEditor.snapToggle) {
-            mov = 0.2;
-            hsl.y += (1.0-hsl.y) * 0.2;
-        }
-		if(hsl.z > 0.5) hsl.z -= mov;
-		else hsl.z += mov;
-
-		col.makeColor(hsl.x, hsl.y, hsl.z);
-
-		grid.lineStyle(1.0, col.toColor(), 1.0);
-		for(i in 0...(hxd.Math.floor(gridSize / gridStep) + 1)) {
-			grid.moveTo(i * gridStep, 0, 0);
-			grid.lineTo(i * gridStep, gridSize, 0);
-
-			grid.moveTo(0, i * gridStep, 0);
-			grid.lineTo(gridSize, i * gridStep, 0);
-		}
-		grid.lineStyle(0);
-		grid.setPosition(-1 * gridSize / 2, -1 * gridSize / 2, 0);
 	}
 
 	function onUpdate(dt:Float) {
@@ -927,7 +831,7 @@ class Prefab extends hide.view.FileView {
 	function applySceneStyle(p: PrefabElement) {
 		var prefabView = Std.downcast(p, hrt.prefab.Prefab); // don't use "to" (Reference)
 		if( prefabView != null && prefabView.parent == null ) {
-			updateGrid();
+			sceneEditor.updateGrid();
 			return;
 		}
 

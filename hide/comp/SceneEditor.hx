@@ -4,6 +4,8 @@ import hrt.prefab.ContextShared;
 using hrt.prefab.Object3D; // GetLocal3D
 using hrt.prefab.Object2D; // GetLocal2D
 
+using Lambda;
+
 import hrt.prefab.Reference;
 import h3d.scene.Mesh;
 import h3d.col.FPoint;
@@ -46,6 +48,167 @@ enum SelectMode {
 		Don't refresh tree and don't undo command
 	**/
 	Nothing;
+}
+
+@:access(hide.comp.SceneEditor)
+class ViewportOverlaysPopup extends hide.comp.Popup {
+	var editor:SceneEditor;
+
+	public function new(?parent : Element, ?root: Element, editor: SceneEditor) {
+		super(parent, root);
+		this.editor = editor;
+
+		popup.append(new Element("<p>Viewport Overlays</p>"));
+		popup.addClass("settings-popup");
+		popup.css("max-width", "300px");
+
+		popup.append(new Element('
+			<h2>Guides</h2>
+			<div class="form-grid" id="guidesGroup"></div>
+			<h2>Selection</h2>
+			<div class="form-grid" id="selectionGroup"></div>
+			<h2>Debug</h2>
+			<div class="form-grid" id="debug"></div>
+			<h2>Icons</h2>
+			<div class="form-grid" id="showIconGroup"></div>
+			<div class="form-grid" id="allIcons"></div>
+		'));
+
+
+		function addButton(label: String, icon: String, key: String, cb: () -> Void) : Element {
+			var e = new Element('
+			<div class="tb-group small">
+				<div class="button2" id="$key">
+					<div class="icon ico ico-$icon"></div>
+				</div>
+			</div>
+			<label class="left">$label</label>');
+			var btn = e.find('#$key');
+			var store = 'sceneeditor.$key';
+			var v = ide.currentConfig.get(store);
+			editor.ide.currentConfig.set(store, v); // ensure default value is set if not set
+			btn.get(0).toggleAttribute("checked", v);
+
+			btn.click(function(e) {
+				if (e.button == 0) {
+					var v = !editor.ide.currentConfig.get(store);
+					editor.ide.currentConfig.set(store, v);
+					btn.get(0).toggleAttribute("checked", v);
+					cb();
+				}
+			});
+			return e;
+		}
+
+		{
+			var group = popup.find("#guidesGroup");
+			addButton("Grid", "th", "gridToggle", () -> editor.updateGrid()).appendTo(group);
+			addButton("Axis", "arrows", "axisToggle", () -> editor.updateBasis()).appendTo(group);
+			addButton("Joints", "share-alt", "jointsToggle", () -> editor.updateJointsVisibility()).appendTo(group);
+			addButton("Other", "question-circle", "showOtherGuides", () -> editor.updateOtherGuidesVisibility()).appendTo(group);
+
+			{
+				var key = "backgroundColor";
+				var e = new Element('
+				<div class="tb-group small">
+					<div class="button2" id="$key">
+					</div>
+				</div>
+				<label class="left">Background color</label>').appendTo(group);
+				var store = 'sceneeditor.$key';
+				var color = new hide.comp.ColorPicker.ColorBox(e.find('#$key'), null, true);
+				color.value = editor.ide.currentConfig.get(store);
+				color.element.height("100%");
+				color.element.width("100%");
+				color.onChange = function(move) {
+					editor.ide.currentConfig.set(store, color.value);
+					editor.updateBackgroundColor();
+				}
+
+				onShouldCloseOnClick = function(e) {
+					return !color.isPickerOpen();
+				}
+			}
+		}
+
+		{
+			var group = popup.find("#selectionGroup");
+			addButton("Gizmo", "arrows-alt", "showGizmo", () -> editor.updateGizmoVisibility()).appendTo(group);
+			addButton("Outline", "dot-circle-o", "showOutlines", () -> editor.updateOutlineVisibility()).appendTo(group);
+		}
+
+
+		{
+			var group = popup.find("#debug");
+			var btn = addButton("Scene Info", "info-circle", "sceneInformationToggle", () -> editor.updateStatusTextVisibility()).appendTo(group);
+			addButton("Wireframe", "connectdevelop", "wireframeToggle", () -> editor.updateWireframe()).appendTo(group);
+			addButton("Disable Scene Render", "eye-slash", "tog-scene-render", () -> {}).appendTo(group);
+
+			//btn.contextmenu(() -> {
+			//
+			//})
+		}
+
+
+		var allIcons = popup.find("#allIcons");
+		function refreshIconMenu() {
+			var visible = editor.ide.currentConfig.get("sceneeditor.iconVisibility");
+			if (visible) {
+				allIcons.show();
+			} else {
+				allIcons.hide();
+			}
+		}
+
+		{
+			var group = popup.find("#showIconGroup");
+			addButton("3D Icons", "image", "iconVisibility", () -> {refreshIconMenu(); editor.updateIconsVisibility();}).appendTo(group);
+
+			allIcons.css("margin-left", "3px");
+			for (k => v in ide.show3DIconsCategory) {
+				var input = new Element('<input type="checkbox" name="snap" id="$k" value="$k"/>');
+				if (v)
+					input.get(0).toggleAttribute("checked", true);
+				input.change((e) -> {
+					var val = !ide.show3DIconsCategory.get(k);
+					ide.show3DIconsCategory.set(k, val);
+					js.Browser.window.localStorage.setItem(hrt.impl.EditorTools.iconVisibilityKey(k), val ? "true" : "false");
+				});
+				allIcons.append(input);
+				allIcons.append(new Element('<label for="$k" class="left">$k</label>'));
+			}
+		}
+
+
+		refreshIconMenu();
+
+
+
+		// <input type="checkbox" name"showAxis" id="showAxis"/><label for="showAxis" class="left">Axis</label>
+
+
+		// {
+		// 	var input = popup.find("#showGrid");
+		// 	input.get(0).toggleAttribute("checked", editor.showGrid);
+		// 	input.click(function(e){
+		// 		if (e.button == 0) {
+		// 			var v = !editor.ide.currentConfig.get("sceneeditor.gridToggle", false);
+		// 			editor.ide.currentConfig.set("sceneeditor.gridToggle", v);
+		// 			input.get(0).toggleAttribute("checked", v);
+		// 			editor.updateGrid();
+		// 		}
+		// 	});
+		// }
+
+		// {
+		// 	var input = popup.find("#showAxis");
+		// 	input.prop("checked", editor.showBasis);
+		// 	input.on("change", function(){
+		// 		editor.showBasis = input.prop("checked");
+		// 		editor.updateBasis();
+		// 	});
+		// }
+	}
 }
 
 class SnapSettingsPopup extends hide.comp.Popup {
@@ -660,14 +823,22 @@ class SceneEditor {
 	var basis : h3d.scene.Object;
 	public var showBasis = false;
 	static var customPivot : CustomPivot;
-	var interactives : Map<PrefabElement, hxd.SceneEvents.Interactive>;
-	var ide : hide.Ide;
+	var interactives : Map<PrefabElement, hxd.SceneEvents.Interactive> = [];
+	public var ide : hide.Ide;
 	public var event(default, null) : hxd.WaitEvent;
 	var hideList : Map<PrefabElement, Bool> = new Map();
 	public var selectedPrefabs : Array<PrefabElement> = [];
 
 	public var root2d : h2d.Object = null;
 	public var root3d : h3d.scene.Object = null;
+
+	public var showOverlays : Bool = true;
+	var grid : h3d.scene.Graphics;
+	public var gridStep : Float = 0.;
+	public var gridSize : Int;
+	public var showGrid = false;
+
+	var statusText : h2d.Text;
 
 	function getRootObjects3d() : Array<Object> {
 		var arr = [];
@@ -802,10 +973,150 @@ class SceneEditor {
 			}
 			customEditor = Type.createInstance(cl,[this]);
 		}
-
 	}
 
+	public function setViewportOverlaysVisibility(visible: Bool) {
+		ide.currentConfig.set("sceneeditor.showViewportOverlays", visible);
+		updateViewportOverlays();
+	}
 
+	function getOrInitConfig(key:String, def:Dynamic) : Dynamic {
+		var v = ide.currentConfig.get(key);
+		if (v == null) {
+			ide.currentConfig.set(key, def);
+			return def;
+		}
+		return v;
+	}
+	public function updateViewportOverlays() {
+		showOverlays = getOrInitConfig("sceneeditor.showViewportOverlays", true);
+
+
+		updateGrid();
+		updateBasis();
+		updateGizmoVisibility();
+		updateOutlineVisibility();
+		updateOtherGuidesVisibility();
+		updateJointsVisibility();
+		updateIconsVisibility();
+		updateStatusTextVisibility();
+		updateWireframe();
+		updateBackgroundColor();
+	}
+
+	public function updateBackgroundColor() {
+		var color = getOrInitConfig("sceneeditor.backgroundColor", 0x333333);
+		scene.engine.backgroundColor = color;
+		updateGrid();
+	}
+
+	public function updateStatusTextVisibility() {
+		statusText.visible = getOrInitConfig("sceneeditor.sceneInformationToggle", false) && showOverlays;
+	}
+
+	public function updateWireframe() {
+		var visible = getOrInitConfig("sceneeditor.wireframeToggle", false) && showOverlays;
+		setWireframe(visible);
+	}
+
+	public function updateJointsVisibility() {
+		var visible = getOrInitConfig("sceneeditor.jointsToggle", false) && showOverlays;
+		setJoints(visible, null);
+	}
+
+	public function updateGizmoVisibility() {
+		if (gizmo == null)
+			return;
+
+		moveGizmoToSelection();
+	}
+
+	public function updateIconsVisibility() {
+		var visible = getOrInitConfig("sceneeditor.iconVisibility", true) && showOverlays;
+		ide.show3DIcons = visible;
+	}
+
+	public function updateOtherGuidesVisibility() {
+		if (scene?.s3d?.renderer == null)
+			return;
+
+		var show = showOverlays && getOrInitConfig("sceneeditor.showOtherGuides", true);
+		scene.s3d.renderer.showEditorGuides = show;
+	}
+
+	public function updateOutlineVisibility() {
+		if (scene?.s3d?.renderer == null)
+			return;
+
+		var show = showOverlays && getOrInitConfig("sceneeditor.showOutlines", true);
+		scene.s3d.renderer.showEditorOutlines = show;
+	}
+
+	public function updateGrid() {
+		if(grid != null) {
+			grid.remove();
+			grid = null;
+		}
+
+		showGrid = getOrInitConfig("sceneeditor.gridToggle", false);
+		if(!showGrid || !showOverlays)
+			return;
+
+		grid = new h3d.scene.Graphics(scene.s3d);
+		grid.scale(1);
+		grid.material.mainPass.setPassName("overlay");
+
+        if (snapToggle) {
+    		gridStep = snapMoveStep;
+        }
+        else {
+            gridStep = ide.currentConfig.get("sceneeditor.gridStep");
+        }
+		gridSize = ide.currentConfig.get("sceneeditor.gridSize");
+
+		var col = h3d.Vector.fromColor(scene?.engine?.backgroundColor ?? 0);
+		var hsl = col.toColorHSL();
+
+        var mov = 0.1;
+
+        if (snapToggle) {
+            mov = 0.2;
+            hsl.y += (1.0-hsl.y) * 0.2;
+        }
+		if(hsl.z > 0.5) hsl.z -= mov;
+		else hsl.z += mov;
+
+		col.makeColor(hsl.x, hsl.y, hsl.z);
+
+		grid.lineStyle(1.0, col.toColor(), 1.0);
+		for(i in 0...(hxd.Math.floor(gridSize / gridStep) + 1)) {
+			grid.moveTo(i * gridStep, 0, 0);
+			grid.lineTo(i * gridStep, gridSize, 0);
+
+			grid.moveTo(0, i * gridStep, 0);
+			grid.lineTo(gridSize, i * gridStep, 0);
+		}
+		grid.lineStyle(0);
+		grid.setPosition(-1 * gridSize / 2, -1 * gridSize / 2, 0);
+	}
+
+	function updateStats() {
+		if( statusText.visible ) {
+			var memStats = scene.engine.mem.stats();
+			@:privateAccess
+			var lines : Array<String> = [
+				'Scene objects: ${scene.s3d.getObjectsCount()}',
+				'Interactives: ' + interactives.count(),
+				'Triangles: ${scene.engine.drawTriangles}',
+				'Buffers: ${memStats.bufferCount}',
+				'Textures: ${memStats.textureCount}',
+				'FPS: ${Math.round(scene.engine.realFps)}',
+				'Draw Calls: ${scene.engine.drawCalls}',
+			];
+			statusText.text = lines.join("\n");
+		}
+		haxe.Timer.delay(function() event.wait(0.5, updateStats), 0);
+	}
 
     public function getSnapStatus() : Bool {
         var ctrl = K.isDown(K.CTRL);
@@ -1147,6 +1458,11 @@ class SceneEditor {
 		view.keys.register("sceneeditor.rotationMode", gizmo.rotationMode);
 		view.keys.register("sceneeditor.scalingMode", gizmo.scalingMode);
 
+		statusText = new h2d.Text(hxd.res.DefaultFont.get(), scene.s2d);
+		statusText = new h2d.Text(hxd.res.DefaultFont.get(), scene.s2d);
+		statusText.setPosition(5, 5);
+		updateStats();
+
 		gizmo2d = new hide.view.l3d.Gizmo2D();
 		scene.s2d.add(gizmo2d, 1); // over local3d
 
@@ -1357,6 +1673,8 @@ class SceneEditor {
 		selectElements([]);
 		refresh();
 		this.camera2D = camera2D;
+
+		updateViewportOverlays();
 	}
 
 	function checkAllowParent(prefabInf:hrt.prefab.Prefab.PrefabInfo, prefabParent : PrefabElement) : Bool {
@@ -1772,8 +2090,6 @@ class SceneEditor {
 		}
 	}
 
-	public dynamic function updateGrid() {
-	}
 
 	function setupGizmo() {
 		if(selectedPrefabs == null) return;
@@ -1997,10 +2313,11 @@ class SceneEditor {
 
 	public function updateBasis() {
 		if (basis == null) return;
+		showBasis = getOrInitConfig("sceneeditor.axisToggle", true);
 		if (selectedPrefabs != null && selectedPrefabs.length == 1) {
-			basis.visible = showBasis;
+			basis.visible = showBasis && showOverlays;
 			var rootObj = selectedPrefabs[0].getLocal3d();
-			var pos = getPivot([]);
+			var pos = getPivot([rootObj]);
 			basis.setPosition(pos.x, pos.y, pos.z);
 			var obj = getRootObjects3d()[0];
 			var mat = worldMat(obj);
@@ -2034,7 +2351,7 @@ class SceneEditor {
 		var roots = getRootObjects3d();
 		if(roots.length > 0) {
 			var pos = getPivot(roots);
-			gizmo.visible = showGizmo;
+			gizmo.visible = showGizmo && getOrInitConfig("sceneeditor.showGizmo", true) && showOverlays;
 			gizmo.setPosition(pos.x, pos.y, pos.z);
 
 			if(roots.length >= 1 && (localTransform || K.isDown(K.ALT) || gizmo.editMode == Scaling)) {
@@ -2053,7 +2370,7 @@ class SceneEditor {
 		var root2d = getRootObjects2d();
 		if( root2d.length > 0 && !gizmo.visible ) {
 			var pos = getPivot2D(root2d);
-			gizmo2d.visible = showGizmo;
+			gizmo2d.visible = showGizmo && getOrInitConfig("sceneeditor.showGizmo", true) && showOverlays;
 			gizmo2d.setPosition(pos.getCenter().x, pos.getCenter().y);
 			gizmo2d.setSize(pos.width, pos.height);
 		} else {

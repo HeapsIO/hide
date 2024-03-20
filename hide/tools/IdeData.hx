@@ -16,7 +16,7 @@ class IdeData {
 
 	var pakFile : hxd.fmt.pak.FileSystem;
 
-	var config : {
+	public var config : {
 		global : Config,
 		project : Config,
 		user : Config,
