@@ -65,7 +65,8 @@ class SplinePoint extends Object3D {
 	var indexText : h2d.ObjectFollower;
 	var spline(get, default) : Spline;
 	var obj : SplinePointObject;
-	public var offset : h3d.Matrix;
+	var absPos : h3d.Matrix;
+
 	function get_spline() {
 		return parent.to(Spline);
 	}
@@ -128,6 +129,8 @@ class SplinePoint extends Object3D {
 
 	override function updateInstance(?propName : String) {
 		super.updateInstance(propName);
+		absPos = null;
+
 		#if editor
 			if( spline.editor != null ) {
 				spline.editor.setSelected(true);
@@ -175,24 +178,23 @@ class SplinePoint extends Object3D {
 	}
 	#end
 
-	override public function getAbsPos( followRefs : Bool = false ) {
-		var result = obj != null ? obj.getAbsPos() : super.getAbsPos(followRefs);
-		if (offset != null) result.multiply(result, offset);
-		return result;
-	}
-
 	inline public function getPoint() : h3d.col.Point {
-		return getAbsPos().getPosition().toPoint();
+		if (absPos == null) {
+			absPos = new h3d.Matrix();
+			absPos.load(getAbsPos(true));
+		}
+
+		return absPos.getPosition().toPoint();
 	}
 
 	public function getTangent() : h3d.col.Point {
-		var tangent = getAbsPos().front().toPoint();
+		var tangent = getAbsPos(true).front().toPoint();
 		tangent.scale(-1);
 		return tangent;
 	}
 
 	public function getFirstControlPoint() : h3d.col.Point {
-		var absPos = getAbsPos();
+		var absPos = getAbsPos(true);
 		var right = absPos.front();
 		right.scale(scaleX*scaleY);
 		var pos = new h3d.col.Point(absPos.tx, absPos.ty, absPos.tz);
@@ -201,13 +203,14 @@ class SplinePoint extends Object3D {
 	}
 
 	public function getSecondControlPoint() : h3d.col.Point {
-		var absPos = getAbsPos();
+		var absPos = getAbsPos(true);
 		var left = absPos.front();
 		left.scale(-scaleX*scaleZ);
 		var pos = new h3d.col.Point(absPos.tx, absPos.ty, absPos.tz);
 		pos = pos.add(left.toPoint());
 		return pos;
 	}
+
 	public function setViewerVisible(visible : Bool) {
 		pointViewer.visible = visible;
 		indexText.visible = visible;
@@ -299,17 +302,6 @@ class Spline extends Object3D {
 		this.shape = p.shape;
 	}
 
-	// Generate the splineData from a matrix, can't move the spline after that
-	public function makeFromMatrix( m : h3d.Matrix ) {
-		var tmp = new h3d.Matrix();
-		tmp.load(m);
-		tmp.multiply(getAbsPos().getInverse(), tmp);
-		for( p in points ) {
-			p.offset = tmp;
-		}
-		computeSplineData();
-	}
-
 	override function makeInstance() : Void {
 		local3d = makeObject(shared.current3d);
 		local3d.name = name;
@@ -332,6 +324,10 @@ class Spline extends Object3D {
 		if( editor != null )
 			editor.update(propName);
 		#end
+
+		for (sp in points)
+			sp.updateInstance();
+
 		computeSpline();
 	}
 
