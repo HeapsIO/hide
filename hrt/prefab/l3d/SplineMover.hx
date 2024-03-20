@@ -44,12 +44,7 @@ class SplineMoverObject extends h3d.scene.Object {
 		var pt = state.point;
 
 		for (c in movables) {
-			if (c.follow == null) {
-				// We attach the object to this parent because moveAlongSpline already includes the transform of
-				// this spline
-				c.follow = this.parent;
-			}
-			c.setPosition(pt.x, pt.y, pt.z);
+			c.absPos.setPosition(pt.toVector());
 			if( prefab.orientTangent ) c.setDirection(state.tangent);
 		}
 	}
