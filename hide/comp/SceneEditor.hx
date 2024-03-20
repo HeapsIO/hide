@@ -2317,6 +2317,11 @@ class SceneEditor {
 		if (selectedPrefabs != null && selectedPrefabs.length == 1) {
 			basis.visible = showBasis && showOverlays;
 			var rootObj = selectedPrefabs[0].getLocal3d();
+			if (rootObj == null) {
+				basis.visible = false;
+				return;
+			}
+
 			var pos = getPivot([rootObj]);
 			basis.setPosition(pos.x, pos.y, pos.z);
 			var obj = getRootObjects3d()[0];

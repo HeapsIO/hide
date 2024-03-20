@@ -37,6 +37,9 @@ class FXEditContext extends hide.prefab.EditContext {
 @:access(hide.view.FXEditor)
 private class FXSceneEditor extends hide.comp.SceneEditor {
 	var parent : hide.view.FXEditor;
+	public var grid2d : h2d.Graphics;
+	public var is2D : Bool = false;
+
 
 	public function new(view,  data) {
 		super(view, data);
@@ -58,6 +61,48 @@ private class FXSceneEditor extends hide.comp.SceneEditor {
 		parent.onUpdate(dt);
 	}
 
+	override function updateStats() {
+		super.updateStats();
+
+		if( statusText.visible ) {
+			var emitters = scene.s3d.findAll(o -> Std.downcast(o, hrt.prefab.fx.Emitter.EmitterObject));
+			var totalParts = 0;
+			for(e in emitters) {
+				totalParts += @:privateAccess e.numInstances;
+			}
+
+			var emitterTime = 0.0;
+			for (e in emitters) {
+				emitterTime += e.tickTime;
+			}
+
+			var trails = scene.s3d.findAll(o -> Std.downcast(o, hrt.prefab.l3d.Trails.TrailObj));
+			var trailTime = 0.0;
+
+
+			var poolSize = 0;
+			@:privateAccess
+			for (trail in trails) {
+				for (head in trail.trails) {
+					var p = head.firstPoint;
+					var len = 0;
+					while(p != null) {
+						len ++;
+						p = p.next;
+					}
+				}
+				trailTime += trail.lastUpdateDuration;
+			}
+
+			var text : Array<String> = [
+				'Particles: $totalParts',
+				'Particles CPU time: $emitterTime',
+				'Trails CPU time: $trailTime',
+			];
+			statusText.text += "\n" + text.join("\n");
+		}
+	}
+
 	override function createDroppedElement(path:String, parent:PrefabElement):hrt.prefab.Object3D {
 		var type = hrt.prefab.Prefab.getPrefabType(path);
 		if(type == "fx") {
@@ -68,6 +113,34 @@ private class FXSceneEditor extends hide.comp.SceneEditor {
 			return ref;
 		}
 		return super.createDroppedElement(path, parent);
+	}
+
+	override function updateGrid() {
+		super.updateGrid();
+
+		var showGrid = getOrInitConfig("sceneeditor.gridToggle", false);
+
+		if(grid2d != null) {
+			grid2d.remove();
+			grid2d = null;
+		}
+
+		if(!showGrid)
+			return;
+
+		if (is2D) {
+			grid2d = new h2d.Graphics(scene.s2d);
+			grid2d.scale(1);
+
+			grid2d.lineStyle(1.0, 12632256, 1.0);
+			grid2d.moveTo(0, -2000);
+			grid2d.lineTo(0, 2000);
+			grid2d.moveTo(-2000, 0);
+			grid2d.lineTo(2000, 0);
+			grid2d.lineStyle(0);
+
+			return;
+		}
 	}
 
 	override function setElementSelected( p : PrefabElement, b : Bool ) {
@@ -81,7 +154,7 @@ private class FXSceneEditor extends hide.comp.SceneEditor {
 		parent.onSelect(elts);
 	}
 
-	override function refresh(?mode, ?callb:Void->Void) {
+	override function refresh(?mode: hide.comp.SceneEditor.RefreshMode, ?callb:Void->Void) {
 		// Always refresh scene
 		refreshScene();
 		refreshTree(callb);
@@ -216,9 +289,6 @@ class FXEditor extends hide.view.FileView {
 	var autoSync : Bool;
 	var currentVersion : Int = 0;
 	var lastSyncChange : Float = 0.;
-	var showGrid = true;
-	var grid : h3d.scene.Graphics;
-	var grid2d : h2d.Graphics;
 
 	var lastPan : h2d.col.Point;
 
@@ -272,6 +342,7 @@ class FXEditor extends hide.view.FileView {
 
 		if (json.type == "fx2d") {
 			is2D = true;
+			sceneEditor.is2D = true;
 		}
 		data = cast(PrefabElement.createFromDynamic(json), hrt.prefab.fx.BaseFX);
 		currentSign = ide.makeSignature(content);
@@ -433,10 +504,11 @@ class FXEditor extends hide.view.FileView {
 		axis.lineStyle(1,0x0000FF); axis.moveTo(0,0,0); axis.lineTo(0,0,1);
 		axis.lineStyle();
 		axis.material.mainPass.setPassName("debuggeom");
-		axis.visible = (!is2D) ? showGrid : false;
+		axis.visible = !is2D;
 
 		cullingPreview = new h3d.scene.Sphere(0xffffff, data.cullingRadius, true, scene.s3d);
-		cullingPreview.visible = (!is2D) ? showGrid : false;
+		cullingPreview.material.mainPass.setPassName("debuggeom");
+		cullingPreview.visible = !is2D;
 
 		var toolsDefs = new Array<hide.comp.Toolbar.ToolDef>();
 		toolsDefs.push({id: "perspectiveCamera", title : "Perspective camera", icon : "video-camera", type : Button(() -> sceneEditor.resetCamera()) });
@@ -459,11 +531,12 @@ class FXEditor extends hide.view.FileView {
 
 		toolsDefs.push({id: "", title : "", icon : "", type : Separator});
 
-		toolsDefs.push({id: "gridToggle", title : "Toggle grid", icon : "th", type : Toggle((v) -> { showGrid = v; updateGrid(); }) });
-		toolsDefs.push({id: "axisToggle", title : "Toggle model axis", icon : "cube", type : Toggle((v) -> { sceneEditor.showBasis = v; sceneEditor.updateBasis(); }) });
-		toolsDefs.push({id: "mainGizmos", title : "Hide main gizmos", icon : "eye-slash", type : Toggle((v) -> { @:privateAccess sceneEditor.gizmo.toggleGizmosVisiblity(!v); }) });
-		toolsDefs.push({id: "iconVisibility", title : "Toggle 3d icons visibility", icon : "image", type : Toggle((v) -> { hide.Ide.inst.show3DIcons = v; }), defaultValue: true });
-		toolsDefs.push({id: "iconVisibility-menu", title : "", icon: "", type : Popup((e) -> new hide.comp.SceneEditor.IconVisibilityPopup(null, e, sceneEditor))});
+		toolsDefs.push({id: "showViewportOverlays", title : "Viewport Overlays", icon : "eye", type : Toggle((v) -> { sceneEditor.updateViewportOverlays(); }) });
+		toolsDefs.push({id: "viewportoverlays-menu", title : "", icon: "", type : Popup((e) -> new hide.comp.SceneEditor.ViewportOverlaysPopup(null, e, sceneEditor))});
+
+
+		toolsDefs.push({id: "", title : "", icon : "", type : Separator});
+
 
 		tools.saveDisplayKey = "FXScene/tools";
 
@@ -496,14 +569,6 @@ class FXEditor extends hide.view.FileView {
 		tools.addToggle("refresh", "refresh", "Auto synchronize", function(b) {
 			autoSync = b;
 		});
-
-		tools.addToggle("wireframeToggle","connectdevelop", "Wireframe",(b) -> { sceneEditor.setWireframe(b); });
-
-		tools.addColor("Background color", function(v) {
-			scene.engine.backgroundColor = v;
-			updateGrid();
-		}, scene.engine.backgroundColor);
-
 
 		tools.addSeparator();
 
@@ -539,8 +604,6 @@ class FXEditor extends hide.view.FileView {
 
 		statusText = new h2d.Text(hxd.res.DefaultFont.get(), scene.s2d);
 		statusText.setPosition(5, 5);
-
-		updateGrid();
 	}
 
 	function onPrefabChange(p: PrefabElement, ?pname: String) {
@@ -616,7 +679,6 @@ class FXEditor extends hide.view.FileView {
 		var renderProps = cast(data, hrt.prefab.Prefab).find(hrt.prefab.RenderProps);
 		if(renderProps != null)
 			renderProps.applyProps(scene.s3d.renderer);
-		updateGrid();
 	}
 
 	override function onDragDrop(items : Array<String>, isDrop : Bool) {
@@ -1427,54 +1489,6 @@ class FXEditor extends hide.view.FileView {
 		return false;
 	}
 
-	function updateGrid() {
-		if(grid != null) {
-			grid.remove();
-			grid = null;
-		}
-		if(grid2d != null) {
-			grid2d.remove();
-			grid2d = null;
-		}
-
-		if(!showGrid)
-			return;
-
-		if (is2D) {
-			grid2d = new h2d.Graphics(scene.s2d);
-			grid2d.scale(1);
-
-			grid2d.lineStyle(1.0, 12632256, 1.0);
-			grid2d.moveTo(0, -2000);
-			grid2d.lineTo(0, 2000);
-			grid2d.moveTo(-2000, 0);
-			grid2d.lineTo(2000, 0);
-			grid2d.lineStyle(0);
-
-			return;
-		}
-
-		grid = new h3d.scene.Graphics(scene.s3d);
-		grid.scale(1);
-		grid.material.mainPass.setPassName("debuggeom");
-
-		var col = h3d.Vector.fromColor(scene.engine.backgroundColor);
-		var hsl = col.toColorHSL();
-		if(hsl.z > 0.5) hsl.z -= 0.1;
-		else hsl.z += 0.1;
-		col.makeColor(hsl.x, hsl.y, hsl.z);
-
-		grid.lineStyle(1.0, col.toColor(), 1.0);
-		for(ix in -10...11) {
-			grid.moveTo(ix, -10, 0);
-			grid.lineTo(ix, 10, 0);
-			grid.moveTo(-10, ix, 0);
-			grid.lineTo(10, ix, 0);
-
-		}
-		grid.lineStyle(0);
-	}
-
 	function onUpdate(dt : Float) {
 		if (is2D)
 			onUpdate2D(dt);
@@ -1520,8 +1534,8 @@ class FXEditor extends hide.view.FileView {
 			currentVersion = undo.currentID;
 		}
 
-		if (grid2d != null) {
-			@:privateAccess grid2d.setPosition(scene.s2d.children[0].x, scene.s2d.children[0].y);
+		if (sceneEditor.grid2d != null) {
+			@:privateAccess sceneEditor.grid2d.setPosition(scene.s2d.children[0].x, scene.s2d.children[0].y);
 		}
 
 	}
@@ -1605,97 +1619,6 @@ class FXEditor extends hide.view.FileView {
 
 		for(fx in allFx)
 			fx.setTime(currentTime - fx.startDelay);
-
-		var emitRateCurrent = 0.0;
-
-		var emitters = local3d.findAll(o -> Std.downcast(o, hrt.prefab.fx.Emitter.EmitterObject));
-		var totalParts = 0;
-		for(e in emitters) {
-			totalParts += @:privateAccess e.numInstances;
-			if ( !Math.isNaN(e.emitRateCurrent) ) {
-				emitRateCurrent = e.emitRateCurrent;
-			}
-		}
-
-		var emitterTime = 0.0;
-		for (e in emitters) {
-			emitterTime += e.tickTime;
-		}
-
-		var trails = local3d.findAll(o -> Std.downcast(o, hrt.prefab.l3d.Trails.TrailObj));
-		var trailCount = 0;
-		var trailTime = 0.0;
-		var trailTris = 0.0;
-		var trailMaxTris = 0;
-		var trailMaxLen = 0;
-		var trailCalcMaxLen = 0;
-		var trailRealIndicies = 0;
-		var trailAllocIndicies = 0;
-
-
-		var poolSize = 0;
-		@:privateAccess
-		for (trail in trails) {
-			for (head in trail.trails) {
-				trailCount ++;
-				var p = head.firstPoint;
-				var len = 0;
-				while(p != null) {
-					len ++;
-					p = p.next;
-				}
-				if (len > trailMaxLen) {
-					trailMaxLen = len;
-				}
-			}
-			trailTime += trail.lastUpdateDuration;
-			trailTris += trail.numVerts;
-
-			var p = trail.pool;
-			while(p != null) {
-				poolSize ++;
-				p = p.next;
-			}
-			trailMaxTris += Std.int(trail.vbuf.length/8.0);
-			trailCalcMaxLen = trail.calcMaxTrailPoints();
-			trailRealIndicies += trail.numVertsIndices;
-			trailAllocIndicies += trail.currentAllocatedIndexCount;
-		}
-
-		var smooth_factor = 0.10;
-		avg_smooth = avg_smooth * (1.0 - smooth_factor) + emitterTime * smooth_factor;
-		trailTime_smooth = trailTime_smooth * (1.0 - smooth_factor) + trailTime * smooth_factor;
-		num_trail_tri_smooth = num_trail_tri_smooth * (1.0-smooth_factor) + trailTris * smooth_factor;
-
-		if(statusText != null) {
-			var lines : Array<String> = [
-				'Time: ${Math.round(currentTime*1000)} ms',
-				'Scene objects: ${scene.s3d.getObjectsCount()}',
-				'Drawcalls: ${h3d.Engine.getCurrent().drawCalls}',
-				'Particles: $totalParts',
-				'Particles CPU time: ${floatToStringPrecision(avg_smooth * 1000, 3, true)} ms',
-			];
-
-			if (emitRateCurrent > 0.0) {
-				lines.push('Random emit rate : ${floatToStringPrecision(emitRateCurrent, 3, true)}');
-			}
-
-			if (trailCount > 0) {
-
-				lines.push('Trails CPU time : ${floatToStringPrecision(trailTime_smooth * 1000, 3, true)} ms');
-
-				/*lines.push("---");
-				lines.push('Num Trails : $trailCount');
-				lines.push('Trails Vertexes : ${floatToStringPrecision(num_trail_tri_smooth, 2, true)}');
-				lines.push('Allocated Trails Vertexes : $trailMaxTris');
-				lines.push('Max Trail Lenght : $trailMaxLen');
-				lines.push('Theorical Max Trail Lenght : $trailCalcMaxLen');
-				lines.push('Trail pool : $poolSize');
-				lines.push('Num Indices : $trailRealIndicies');
-				lines.push('Num Allocated Indices : $trailAllocIndicies');*/
-			}
-			statusText.text = lines.join("\n");
-		}
 
 		var cam = scene.s3d.camera;
 		if( light != null ) {
