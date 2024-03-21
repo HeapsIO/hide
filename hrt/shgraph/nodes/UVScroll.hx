@@ -16,7 +16,7 @@ class UVScroll extends  ShaderNodeHxsl {
 		@sgoutput var output : Vec2;
 
 		function fragment() {
-			output = mod(uv + vec2(uSpeed * time, vSpeed * time), 1.0);
+			output = uv + vec2(uSpeed * time, vSpeed * time);
 		}
 	};
 
