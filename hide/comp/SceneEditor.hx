@@ -2792,17 +2792,17 @@ class SceneEditor {
 			undo.change(Custom(function(undo) {
 				if (undo) {
 					unserializeProps(fields, currentData);
-					//edit.onChange(edit.elements[0], "props");
-					//edit.rebuildProperties();
+					curEdit.onChange(curEdit.elements[0], "props");
+					curEdit.rebuildProperties();
 				} else {
 					unserializeProps(fields, pasteData);
-					//edit.onChange(edit.elements[0], "props");
-					//edit.rebuildProperties();
+					curEdit.onChange(curEdit.elements[0], "props");
+					curEdit.rebuildProperties();
 				}
 			}));
 
-			//edit.onChange(edit.elements[0], "props");
-			//edit.rebuildProperties();
+			curEdit.onChange(curEdit.elements[0], "props");
+			curEdit.rebuildProperties();
 		}
 	}
 

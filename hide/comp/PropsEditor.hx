@@ -238,6 +238,9 @@ class PropsEditor extends Component {
 			var key = (s.length == 0 ? "" : StringTools.trim(s.children("h1").text()) + "/") + name;
 			if( getDisplayState("group:" + key) != false && !g.hasClass("closed") )
 				g.addClass("open");
+
+			var groupName = g.attr("name");
+			groups.set(groupName, []);
 		}
 
 		e.find(".group").not(".open").children(".content").hide();
@@ -257,17 +260,19 @@ class PropsEditor extends Component {
 			e.getThis().closest(".group").find(">.title").val(e.getThis().val());
 		});
 
-		var groupFields = [];
 		// init input reflection
-		for( f in e.find("[field]").elements() ) {
-			var f = new PropsField(this, f, context);
+		for( field in e.find("[field]").elements() ) {
+			var f = new PropsField(this, field, context);
 			f.onChange = function(undo) {
 				isTempChange = f.isTempChange;
 				lastChange = haxe.Timer.stamp();
 				if( onChange != null ) onChange(@:privateAccess f.fname);
 				isTempChange = false;
 			};
-			groupFields.push(f);
+			var groupName = field.closest(".group").attr("name");
+			if (groupName != null) {
+				groups.get(groupName).push(f);
+			}
 			fields.push(f);
 			// Init reset buttons
 			var def = f.element.attr("value");
@@ -286,9 +291,6 @@ class PropsEditor extends Component {
 				});
 			}
 		}
-
-		var groupName = e.find(".group").attr("name");
-		groups.set(groupName, groupFields);
 
 		return e;
 	}
