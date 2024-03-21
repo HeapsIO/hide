@@ -70,9 +70,9 @@ class Renderer extends h3d.scene.fwd.Renderer {
 		renderPass(defaultPass, get("overlay"), backToFront );
 		renderPass(defaultPass, get("ui"), backToFront);
 
-		var outlineTex = allocTarget("outlineBlur", false);
 		if (showEditorOutlines) {
 			{
+				var outlineTex = allocTarget("outlineBlur", false);
 				var outlineSrcTex = allocTarget("outline", true);
 				setTarget(outlineSrcTex);
 				clear(0);
@@ -80,16 +80,14 @@ class Renderer extends h3d.scene.fwd.Renderer {
 				draw("highlight");
 				resetTarget();
 				outlineBlur.apply(ctx, outlineSrcTex, outlineTex);
-				renderPass(defaultPass, get("gizmo"), backToFront);
+				composite.shader.outline = outlineTex;
 			}
 		}
-
 		resetTarget();
 		composite.shader.texture = output;
-		if (showEditorOutlines) {
-			composite.shader.outline = outlineTex;
-		}
 		composite.render();
+
+
 	}
 }
 
