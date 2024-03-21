@@ -101,9 +101,19 @@ class TileSelector extends Component {
 		element.click((e) -> e.stopPropagation());
 		element.attr("tabindex","0");
 		element.focus();
+
+		var el = new Element(element[0].ownerDocument.body);
+		el.off('keydown.tileselector');
+		el.on('keydown.tileselector', function(e) {
+			if( e.keyCode == 27 ) {
+				onChange(true);
+				el.off('keydown.tileselector');
+			}
+		});
 		element.on("keydown", function(e) {
 			if( e.keyCode == 27 ) {
 				onChange(true);
+				el.off('keydown.tileselector');
 			}
 		});
 
