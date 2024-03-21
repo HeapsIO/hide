@@ -85,8 +85,7 @@ class ViewportOverlaysPopup extends hide.comp.Popup {
 			<label class="left">$label</label>');
 			var btn = e.find('#$key');
 			var store = 'sceneeditor.$key';
-			var v = ide.currentConfig.get(store);
-			editor.ide.currentConfig.set(store, v); // ensure default value is set if not set
+			var v = ide.currentConfig.get(store, false);
 			btn.get(0).toggleAttribute("checked", v);
 
 			btn.click(function(e) {

@@ -203,12 +203,14 @@ class Decal extends Object3D {
 				var wire = new h3d.scene.Box(0xFFFFFFFF,obj);
 				wire.name = "_highlight";
 				wire.material.setDefaultProps("ui");
+				wire.material.mainPass.setPassName("debuggeom");
 				wire.ignoreCollide = true;
 				wire.material.shadows = false;
 				var wireCenter = new h3d.scene.Box(0xFFFF00, obj);
 				wireCenter.scaleZ = 0;
 				wireCenter.name = "_highlight";
 				wireCenter.material.setDefaultProps("ui");
+				wireCenter.material.mainPass.setPassName("debuggeom");
 				wireCenter.ignoreCollide = true;
 				wireCenter.material.shadows = false;
 				wireCenter.material.mainPass.depthTest = Always;
