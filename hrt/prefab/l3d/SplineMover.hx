@@ -11,6 +11,8 @@ class SplineMoverObject extends h3d.scene.Object {
 	var debugViz : h3d.scene.Mesh = null;
 	#end
 
+	static var targetAbsPos = new h3d.Matrix();
+	static var tmpMat = new h3d.Matrix();
 
 	override public function new(?parent : h3d.scene.Object, prefab : SplineMover) {
 		super(parent);
@@ -44,7 +46,15 @@ class SplineMoverObject extends h3d.scene.Object {
 		var pt = state.point;
 
 		for (c in movables) {
-			c.absPos.setPosition(pt.toVector());
+			c.getTransform(targetAbsPos);
+			targetAbsPos.identity();
+			targetAbsPos.setPosition(pt.toVector());
+
+			this.getAbsPos().getInverse(tmpMat);
+			tmpMat.multiply(targetAbsPos, tmpMat);
+			targetAbsPos.load(tmpMat);
+
+			c.setPosition(targetAbsPos.getPosition().x, targetAbsPos.getPosition().y, targetAbsPos.getPosition().z);
 			if( prefab.orientTangent ) c.setDirection(state.tangent);
 		}
 	}
