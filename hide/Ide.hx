@@ -1117,6 +1117,13 @@ class Ide extends hide.tools.IdeData {
 		window.menu = new hide.ui.Menu(menu).root;
 	}
 
+	public function showFileInResources(path: String) {
+		var filetree = getViews(hide.view.FileTree)[0];
+		if( filetree != null ) {
+			filetree.revealNode(path);
+		}
+	}
+
 	public static function showFileInExplorer(path : String) {
 		if(!haxe.io.Path.isAbsolute(path)) {
 			path = Ide.inst.getPath(path);

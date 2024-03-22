@@ -217,10 +217,7 @@ class FileView extends hide.ui.View<{ path : String }> {
 				{ label : "Copy Path", enabled : hasPath, click : function() { ide.setClipboard(state.path); } },
 				{ label : "Open in Explorer", enabled : hasPath, click : function() { Ide.showFileInExplorer(getPath()); } },
 				{ label : "Open in Resources", enabled : hasPath, click : function() {
-					var filetree = ide.getViews(FileTree)[0];
-					if( filetree != null ) {
-						filetree.revealNode(state.path);
-					}
+					ide.showFileInResources(state.path);
 				}},
 				{ label : null, isSeparator : true },
 			];
