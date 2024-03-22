@@ -13,6 +13,9 @@ class Sao extends RendererFX {
 	@:s public var microIntensity : Float = 1;
 	@:s public var useWorldUV : Bool;
 	@:s public var noiseTexturePath: String;
+	@:s public var USE_FADE : Bool = false;
+	@:s public var fadeStart: Float = 100.0;
+	@:s public var fadeEnd: Float = 200.0;
 
 	var sao : h3d.pass.ScalableAO;
 	var saoBlur = new h3d.pass.Blur();
@@ -65,6 +68,9 @@ class Sao extends RendererFX {
 				sao.shader.noiseTexture = loadNoiseTexture(noiseTexturePath, Repeat);
 			else
 				sao.shader.noiseTexture = h3d.mat.Texture.genNoise(128);
+			sao.shader.USE_FADE = USE_FADE;
+			sao.shader.fadeStart = fadeStart;
+			sao.shader.fadeEnd = fadeEnd;
 			sao.apply(depth.texture,normal.texture,ctx.camera);
 			ctx.engine.popTarget();
 
@@ -86,7 +92,7 @@ class Sao extends RendererFX {
 				<dt>Radius</dt><dd><input type="range" min="0" max="10" field="radius"/></dd>
 				<dt>Bias</dt><dd><input type="range" min="0" max="0.5" field="bias"/></dd>
 				<dt>Texture Size</dt><dd><input type="range" min="0" max="1" field="size"/></dd>
-				<dt>Samples</dt><dd><input type="range" min="3" max="255" field="samples" step="1"/></dd>
+				<dt>Samples</dt><dd><input type="range" min="3" max="127" field="samples" step="1"/></dd>
 				<dt>Materials occlusion</dt><dd><input type="range" min="0" max="1" field="microIntensity"/></dd>
 			</dl>
 		</div>
@@ -102,6 +108,12 @@ class Sao extends RendererFX {
 				<dt>Size</dt><dd><input type="range" min="0" max="10" field="blur"/></dd>
 				<dt>Quality</dt><dd><input type="range" min="0" max="1" field="blurQuality"/></dd>
 			</dl>
+		</div>
+		<div class="group" name="Fade">
+			<dl>
+				<dt>Use fade</dt><dd><input type="checkbox" field="USE_FADE"/></dd>
+				<dt>Fade start</dt><dd><input type="range" field="fadeStart"/></dd>
+				<dt>Fade end</dt><dd><input type="range" field="fadeEnd"/></dd>
 			</dl>
 		</div>
 		'),this);
