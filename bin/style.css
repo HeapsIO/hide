@@ -253,6 +253,10 @@ body .select2-container--default .select2-results__option--highlighted[aria-sele
   display: inline-block;
   margin: 0;
 }
+.hide-dropdown > .dropdown-cont .options .dropdown-option p.option-context {
+  margin-right: 5px;
+  color: #555;
+}
 .hide-dropdown > .dropdown-cont .options .dropdown-option.current-value {
   background-color: #444;
 }

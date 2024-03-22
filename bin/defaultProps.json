@@ -66,6 +66,8 @@
 	"key.cdb.moveAhead" : "Alt-Right",
 
 	"key.cdb.globalSeek" : "Ctrl-P",
+	"key.cdb.sheetSeekIds" : "Ctrl-O",
+	"key.cdb.globalSeekIds" : "Ctrl-Shift-O",
 
 	// Scene editor config
 	"key.sceneeditor.focus": "F",
