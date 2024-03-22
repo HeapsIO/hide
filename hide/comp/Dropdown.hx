@@ -7,6 +7,7 @@ typedef Choice = {
 	@:optional var ico: Dynamic;
 	@:optional var classes: Array<String>;
 	@:optional var doc: String;
+	@:optional var index: Int;
 }
 
 class Dropdown extends Component {
@@ -28,6 +29,8 @@ class Dropdown extends Component {
 			</div>
 		</div>');
 		this.options = options;
+		for( i in 0...options.length )
+			options[i].index = i;
 		this.orderedOptions = options.copy();
 		filterInput = root.find("#filter").first();
 		#if js
@@ -50,6 +53,7 @@ class Dropdown extends Component {
 			}
 			el.data("id", o.id);
 			el.data("text", o.text);
+			el.data("index", o.index);
 			el.click((_) -> applyValue(o.id));
 			el.mousemove(function(_) {
 				highlightIndex = orderedOptions.indexOf(o);
@@ -57,13 +61,12 @@ class Dropdown extends Component {
 			});
 			optionsCont.append(el);
 		}
-
-		function sorter(t1, id1, t2, id2, filter: String) {
+		function sorter(t1, id1, idx1, t2, id2, idx2, filter: String) {
 			var m1 = getMatchingScore(t1, filter);
 			var m2 = getMatchingScore(t2, filter);
 			if (m1 != m2)
 				return m1 - m2;
-			return options.findIndex(o -> o.id == id1) - options.findIndex(o -> o.id == id2);
+			return idx1 - idx2;
 		}
 
 		filterInput.on("input", (e : Element.Event) -> {
@@ -74,8 +77,8 @@ class Dropdown extends Component {
 					o.toggleClass("hidden", !m);
 				}
 				var sortedChildren = optionsCont.children().elements().toArray();
-				sortedChildren.sort((a, b) -> sorter(a.data("text"), a.data("id"), b.data("text"), b.data("id"), v));
-				orderedOptions.sort((a, b) -> sorter(a.text, a.id, b.text, b.id, v));
+				sortedChildren.sort((a, b) -> sorter(a.data("text"), a.data("id"), a.data("index"), b.data("text"), b.data("id"), b.data("index"), v));
+				orderedOptions.sort((a, b) -> sorter(a.text, a.id, a.index, b.text, b.id, b.index, v));
 				optionsCont.append(sortedChildren);
 			}
 			resetHighlight();
