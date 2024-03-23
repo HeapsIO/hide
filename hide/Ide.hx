@@ -169,7 +169,7 @@ class Ide extends hide.tools.IdeData {
 		var body = window.window.document.body;
 		window.on("focus", function() {
 			// handle cancel on type=file
-			haxe.Timer.delay(function() new Element(body).find("input[type=file]").change().remove(), 200);
+			haxe.Timer.delay(function() new Element(body).find("input[type=file]").change().remove(), 300);
 
 			if(fileExists(databaseFile) && getFileText(databaseFile) != lastDBContent) {
 				if(js.Browser.window.confirm(databaseFile + " has changed outside of Hide. Do you want to reload?")) {
