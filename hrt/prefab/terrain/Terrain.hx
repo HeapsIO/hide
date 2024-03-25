@@ -123,23 +123,30 @@ class Terrain extends Object3D {
 		}
 
 		var dist = b.rayIntersection(ray, false);
-		if( dist < 0 )
-			return -1;
+		if( dist < 0 ) {
+			// Check if we start IN the collision
+			if (!b.contains(ray.getPoint(0)))
+				return -1;
+			dist = 0;
+		}
 		var pt = ray.getPoint(dist);
 		var m = this.vertexPerMeter;
-		var prevH = pt.z;
+		var prevH = terrain.getLocalHeight(pt.x, pt.y);
 		while( true ) {
 			pt.x += ray.lx * m;
 			pt.y += ray.ly * m;
 			pt.z += ray.lz * m;
+
 			if( !b.contains(pt) )
 				break;
 			var h = terrain.getLocalHeight(pt.x, pt.y);
+
 			if( pt.z < h ) {
 				var k = 1 - (prevH - (pt.z - ray.lz * m)) / (ray.lz * m - (h - prevH));
 				pt.x -= k * ray.lx * m;
 				pt.y -= k * ray.ly * m;
 				pt.z -= k * ray.lz * m;
+
 				return pt.sub(ray.getPos()).length();
 			}
 			prevH = h;
