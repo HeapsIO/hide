@@ -17,9 +17,9 @@ class Material extends Prefab {
 	@:s public var refMatLib : String;
 	@:s public var overrides : Array<Dynamic> = [];
 
-#if editor
+	#if editor
 	var previewSphere : h3d.scene.Object;
-#end
+	#end
 
 	public function new(parent, shared: ContextShared) {
 		super(parent, shared);
