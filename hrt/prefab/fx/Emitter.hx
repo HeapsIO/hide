@@ -1219,7 +1219,7 @@ class EmitterObject extends h3d.scene.Object {
 					if( subEmitterTemplates != null ) {
 
 						for (subEmitterTemplate in subEmitterTemplates) {
-							var subEmitterInstance : Emitter = @:privateAccess subEmitterTemplate.make(this);
+							var subEmitterInstance : Emitter = @:privateAccess subEmitterTemplate.make(new ContextShared());
 						    var emitter : EmitterObject = cast subEmitterInstance.local3d;
 							var pos = p.absPos.getPosition();
 							emitter.setPosition(pos.x, pos.y, pos.z);
@@ -1419,14 +1419,18 @@ class Emitter extends Object3D {
 		{ name: "instOffset",     			t: PVec(3, -10, 10),  def: [0.,0.,0.], disp: "Offset", groupName: "Particle Transform"},
 	];
 
-	public static var PARAMS : Array<ParamDef> = {
-		var a = emitterParams.copy();
+
+	public static var PARAMS : Map<String, ParamDef> = {
+		var map = new Map();
+		for(e in emitterParams) {
+			map.set(e.name, e);
+		}
 		for(i in instanceParams) {
 			i.instance = true;
 			i.animate = true;
-			a.push(i);
+			map.set(i.name, i);
 		}
-		a;
+		map;
 	};
 
 	override function save() {
@@ -1494,7 +1498,7 @@ class Emitter extends Object3D {
 	}
 
 	function getParamVal(name: String, rand: Bool=false) : Dynamic {
-		var param = PARAMS.find(p -> p.name == name);
+		var param = PARAMS.get(name);
 		if(param == null)
 			return Reflect.field(props, name);
 		var isVector = switch(param.t) {
@@ -1622,7 +1626,7 @@ class Emitter extends Object3D {
 
 			var baseProp: Dynamic = Reflect.field(props, name);
 			var randProp: Dynamic = Reflect.field(props, randProp(name));
-			var param = PARAMS.find(p -> p.name == name);
+			var param = PARAMS.get(name);
 			switch(param.t) {
 				case PVec(_):
 					inline function makeComp(idx, suffix) {
