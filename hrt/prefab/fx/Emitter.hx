@@ -820,8 +820,8 @@ class EmitterObject extends h3d.scene.Object {
 			var scene = relativeScenePosition ? getScene() : null;
 
 			if (trailsTemplate != null && trails == null) {
-				trailsTemplate.make();
-				trails = cast trailsTemplate.local3d;
+				var made = trailsTemplate.make(this);
+				trails = cast made.local3d;
 				trails.autoTrackPosition = false;
 			}
 
