@@ -1114,6 +1114,12 @@ class Ide extends hide.tools.IdeData {
 			config.global.save();
 		});
 
+		// profilers
+		var profilers = menu.find(".prof");
+		profilers.find(".show").click(function(_) {
+			open("hide.view.Profiler",{});
+		});
+
 		window.menu = new hide.ui.Menu(menu).root;
 	}
 
