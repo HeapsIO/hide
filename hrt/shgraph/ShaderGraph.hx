@@ -323,7 +323,7 @@ class ShaderGraphGenContext {
 		}
 
 		sortedNodes = sortGraph();
-		typeGraph();
+		typeGraph(sortedNodes);
 
 		var exprsReverse : Array<TExpr> = [];
 		for (currentNode in sortedNodes) {
@@ -383,7 +383,19 @@ class ShaderGraphGenContext {
 		return sortedNodes;
 	}
 
-	public function typeGraph() {
+	public function typeGraph(sortedNodes: Array<Node>) {
+		for (node in sortedNodes) {
+			for (inputName => co in node.instance.connections) {
+				var targetNodeMap = nodeData[co.from.generateId].outputToInputMap;
+				var arr = targetNodeMap.get(co.fromName);
+				if (arr == null) {
+					arr = [];
+					targetNodeMap.set(co.fromName, arr);
+				}
+				arr.push({node: node, inputName: inputName});
+			}
+		}
+
 		for (i => _ in sortedNodes) {
 			var node = sortedNodes[sortedNodes.length - i - 1];
 

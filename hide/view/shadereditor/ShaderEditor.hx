@@ -580,8 +580,10 @@ class ShaderEditor extends hide.view.Graph {
 	}
 
 	function onRefresh() {
-		if (sceneEditor.scene.s3d == null)
-			throw "Scene 3d is not ready yet";
+		if (sceneEditor.scene.s3d == null) {
+			Timer.delay(onRefresh, 250);
+			return;
+		}
 		var saveCustomModel = getDisplayState("customModel");
 		if (saveCustomModel != null)
 			loadPreviewPrefab(saveCustomModel);
