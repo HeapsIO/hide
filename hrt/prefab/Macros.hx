@@ -762,12 +762,7 @@ class Macros {
 							else
 							{
 								var _a : Array<Dynamic> = cast $e{source};
-								var target = [];
-								target.resize(_a.length);
-								for (idx => _elem in _a) {
-									target[idx] = $e{hrt.prefab.Macros.deepCopyRec(params[0], macro @:pos(source.pos) _elem, targetType, null, custom, true)};
-								}
-								target;
+								[for (_elem in _a) $e{hrt.prefab.Macros.deepCopyRec(params[0], macro @:pos(source.pos) _elem, targetType, null, custom, true)}];
 							}
 						};
 					case "String":

@@ -195,15 +195,12 @@ class Prefab {
 		var inst = Type.createEmptyInstance(thisClass);
 		inst.postCloneInit();		// Macro function that init all the non serializable fields of a prefab
 		inst.children = [];
-		inst.children.resize(children.length);
 		inst.__newInit(parent, sh);// Macro function that contains the code of the new function
 
 		inst.copy(this);
 		if (withChildren) {
-			for (idx => child in children) {
-				var cloneChild = child.clone(null, sh);
-				@:bypassAccessor cloneChild.parent = inst;
-				inst.children[idx] = cloneChild;
+			for (child in children) {
+				child.clone(inst, sh);
 			}
 		}
 
