@@ -199,8 +199,14 @@ class Prefab {
 
 		inst.copy(this);
 		if (withChildren) {
-			for (child in children) {
-				child.clone(inst, sh);
+			inst.children.resize(children.length);
+			for (idx => child in children) {
+				var cloneChild = child.clone(null, sh);
+
+				// "parent" setter pushes into children, but we don't want that
+				// as we have prealocated the array children
+				@:bypassAccessor cloneChild.parent = inst;
+				inst.children[idx] = cloneChild;
 			}
 		}
 
