@@ -1127,6 +1127,9 @@ class ShaderEditor extends hide.view.Graph {
 		timerCompileShader = new Timer(COMPILE_SHADER_DEBOUNCE);
 		timerCompileShader.run = function() {
 			if (obj != null) {
+				if (previewsScene.engine == null || @:privateAccess previewsScene.window == null) {
+					return;
+				}
 				previewsScene.setCurrent();
 				timerCompileShader.stop();
 				compileShader();
