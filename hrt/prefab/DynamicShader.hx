@@ -116,21 +116,23 @@ class DynamicShader extends Shader {
 	#if editor
 	override function edit( ectx : hide.prefab.EditContext ) {
 
-		var element = new hide.Element('
-		<div class="group" name="Source">
-		<dl>
-			<dt>Path</dt><dd><input type="fileselect" extensions="hx shgraph" field="source"/></dd>
-		</dl>
-		</div>');
+		if (StringTools.endsWith(source, ".shgraph")) {
+			var element = new hide.Element('
+			<div class="group" name="Source">
+			<dl>
+				<dt>Path</dt><dd><input type="fileselect" extensions="shgraph" field="source"/></dd>
+			</dl>
+			</div>');
 
-		ectx.properties.add(element, this, function(pname) {
-			ectx.onChange(this, pname);
-			if (pname == "source") {
-				shaderDef = null;
-				if(!ectx.properties.isTempChange)
-					ectx.rebuildPrefab(this);
-			}
-		});
+			ectx.properties.add(element, this, function(pname) {
+				ectx.onChange(this, pname);
+				if (pname == "source") {
+					shaderDef = null;
+					if(!ectx.properties.isTempChange)
+						ectx.rebuildPrefab(this);
+				}
+			});
+		}
 
 		super.edit(ectx);
 
