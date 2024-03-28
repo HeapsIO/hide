@@ -112,14 +112,14 @@ class DomkitChecker extends ScriptEditor.ScriptChecker {
 		for( file in includes ) {
 			var content = sys.io.File.getContent(ide.getPath(file));
 			try {
-				parser.parseSheet(content);
+				parser.parseSheet(content, file);
 			}  catch( e : domkit.Error ) {
 				var line = content.substr(0, e.pmin).split("\n").length;
 				ide.quickError(file+":"+line+": "+e.message);
 			}
 		}
 		lastVariables = parser.variables;
-		var rules = parser.parseSheet(cssCode);
+		var rules = parser.parseSheet(cssCode, null);
 		var w = parser.warnings[0];
 		if( w != null )
 			throw new domkit.Error(w.msg, w.pmin, w.pmax);
