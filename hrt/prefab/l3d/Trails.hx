@@ -224,6 +224,16 @@ class TrailObj extends h3d.scene.Mesh {
 
 	override function onRemove() {
 		super.onRemove();
+		var p = parent;
+		var fxAnim : Array<hrt.prefab.fx.FX.FXAnimation> = [];
+		while ( p != null ) {
+			var fx = Std.downcast(p, hrt.prefab.fx.FX.FXAnimation);
+			if ( fx != null )
+				fxAnim.push(fx);
+			p = p.parent;
+		}
+		for ( fx in fxAnim )
+			fx.trails.remove(this);
 		dprim.dispose();
 	}
 
