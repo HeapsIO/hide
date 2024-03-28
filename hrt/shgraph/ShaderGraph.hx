@@ -108,6 +108,93 @@ typedef GenNodeInfo = {
 	?def: ShaderGraph.ShaderNodeDef,
 }
 
+typedef ExternVarDef = {v: TVar, isInput: Bool, isOutput: Bool, defValue: Dynamic};
+
+@:access(hrt.shgraph.Graph)
+class ShaderGraphGenContext2 {
+	var graph : Graph;
+	var includePreviews : Bool;
+
+	public function new(graph: Graph, includePreviews: Bool = false) {
+		this.graph = graph;
+		this.includePreviews = includePreviews;
+	}
+
+	var nodes : Array<{
+		var outputs: Array<Array<{to: Node, input: Node}>>;
+		var inputs : Array<TExpr>;
+		var node : Node;
+	}>;
+
+	var inputNodes : Array<Int> = [];
+
+	public function initNodes() {
+		nodes = [];
+		for (id => node in graph.nodes) {
+			nodes[id] = {node: node, inputs : [], outputs : []};
+		}
+	}
+
+	public function generate() : {e: TExpr, externs: ExternVarDef} {
+		initNodes();
+		var sortedNodes = sortGraph();
+
+		for (nodeId in sortedNodes) {
+			var node = nodes[nodeId];
+			trace(node.node.type + ":" + nodeId);
+		}
+
+		return null;
+	}
+
+	function sortGraph() : Array<Int>
+	{
+		// Topological sort all the nodes from input to ouputs
+
+		var nodeToExplore : Array<Int> = [];
+		var nodeTopology : Array<{to: Array<Int>, incoming: Int}> = [];
+		nodeTopology.resize(nodes.length);
+
+		for (id => node in nodes) {
+			if (node == null) continue;
+			nodeTopology[id] = {to: [], incoming: 0};
+		}
+
+		for (id => node in nodes) {
+			if (node == null) continue;
+			var inst = node.node.instance;
+			var empty = true;//false;!inst.connections.iterator().hasNext();
+			var inputs = inst.getInputs();
+			for (input in inst.connections) {
+				empty = false;
+				nodeTopology[input.from.id].to.push(id);
+				nodeTopology[id].incoming ++;
+			}
+			if (empty) {
+				nodeToExplore.push(id);
+			}
+		}
+
+		var sortedNodes : Array<Int> = [];
+
+		// Perform the sort
+		while (nodeToExplore.length > 0) {
+			var currentNodeId = nodeToExplore.pop();
+			sortedNodes.push(currentNodeId);
+			var currentTopology = nodeTopology[currentNodeId];
+			for (to in currentTopology.to) {
+				var remaining = --nodeTopology[to].incoming;
+				if (remaining == 0) {
+					nodeToExplore.push(to);
+				}
+			}
+		}
+
+		return sortedNodes;
+	}
+}
+
+
 @:access(hrt.shgraph.Graph)
 class ShaderGraphGenContext {
 	/** Generation inputs **/
@@ -308,6 +395,9 @@ class ShaderGraphGenContext {
 		}
 		return tvar;
 	}
+
+
+
 
 	public function generate() : ShaderNodeDef {
 		initNodeData();
@@ -888,6 +978,11 @@ class ShaderGraph extends hrt.prefab.Prefab {
 			}
 		}
 		return dynamicType;
+	}
+
+	public function compile3() {
+		var ctx = new ShaderGraphGenContext2(graphs[1], false);
+		ctx.generate();
 	}
 
 

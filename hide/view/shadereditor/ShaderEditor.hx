@@ -230,6 +230,7 @@ class ShaderEditor extends hide.view.Graph {
 									<input id="displayGlsl" type="button" value="Glsl" />
 									<input id="displayHlsl" type="button" value="Hlsl" />
 									<input id="display2" type="button" value="2" />
+									<input id="display3" type="button" value="3" />
 
 								</div>
 								<input id="togglelight" type="button" value="Toggle Default Lights" />
@@ -436,6 +437,8 @@ class ShaderEditor extends hide.view.Graph {
 		element.find("#displayHlsl").on("click", () -> displayCompiled("hlsl"));
 
 		element.find("#display2").on("click", () -> {@:privateAccess info(hxsl.Printer.shaderToString(shaderGraph.compile2(domain).shader.data, true));});
+		element.find("#display3").on("click", () -> shaderGraph.compile3());
+
 
 
 		editorMatrix.on("click", "input, select", function(ev) {

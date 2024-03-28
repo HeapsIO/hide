@@ -27,6 +27,31 @@ class AlphaPreview extends hxsl.Shader {
 	}
 }
 
+class NodeGenContext {
+	// Pour les rares nodes qui ont besoin de differencier entre vertex et fragment
+	public var domain : ShaderGraph.Domain;
+
+	// For general input/output of the shader graph. Allocate a new global var if name is not found,
+	// else return the previously allocated variable and assert that v.type == type and devValue == v.defValue
+	public function getGlobalInputVar(name: String, type: Type, ?defValue: Dynamic) : TVar {
+		return null;
+	}
+
+	public function getGlobalOutputVar(name: String, type: Type) : TVar {
+		return null;
+	}
+
+	// Could be done
+	//public function getFunction(name: String, expr: TExpr) : T
+
+	// Pour la generation des previews
+	public function getPreviewId() : TExpr {
+		return null;
+	}
+
+	var globalVars: Map<String, ShaderGraph.ExternVarDef>;
+}
+
 typedef VariableDecl = {v: TVar, display: String, ?vertexOnly: Bool};
 typedef AliasInfo = {?nameSearch: String, ?nameOverride : String, ?description : String, ?args : Array<Dynamic>, ?group: String};
 @:autoBuild(hrt.shgraph.Macros.autoRegisterNode())
@@ -40,6 +65,16 @@ class ShaderNode {
 
 
 	public var defaults : Dynamic = {};
+
+
+	public function getInputs() : Array<{name: String, type: Type}> {
+		return [];
+	}
+
+	public function generate(inputs: Array<TExpr>, ctx: NodeGenContext) : Array<{e: TExpr, ?name: String}> {
+		throw "generate is not defined for class " + std.Type.getClassName(std.Type.getClass(this));
+		return [];
+	}
 
 	public function getAliases(name: String, group: String, description: String) : Array<AliasInfo> {
 		var cl = HaxeType.getClass(this);
