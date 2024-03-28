@@ -289,7 +289,11 @@ class Profiler extends hide.ui.View<{}> {
 	}
 
 	public function refresh() {
-		// Update memory statistics on the right panel
+		refreshStats();
+		refreshHierarchicalView();
+	}
+
+	public function refreshStats() {
 		element.find('.stats').remove();
 
 		new Element ('
@@ -312,23 +316,27 @@ class Profiler extends hide.ui.View<{}> {
 			</dl>
 		</div>
 		').appendTo(element.find('.right-panel'));
+	}
 
-		// Update memory hierarchical view
+	public function refreshHierarchicalView() {
 		element.find('table').parent().remove();
 		var tab = new Element('
 		<div class="hide-scroll">
 			<table rules=none>
 				<thead>
-					<td>Count</td>
-					<td>Size</td>
+					<td class="sort-count">Count<div ${sort.match(SortType.ByCount) ? 'class="icon ico ico-caret-${sortOrderAscending ? 'up' : 'down'}"' : ''}></div></td>
+					<td class="sort-size">Size<div ${sort.match(SortType.ByMemory) ? 'class="icon ico ico-caret-${sortOrderAscending ? 'up' : 'down'}"' : ''}></div></td>
 					<td>Name</td>
-					<td>% Impact</td>
+					<td class="sort-size">% Impact<div ${sort.match(SortType.ByMemory) ? 'class="icon ico ico-caret-${sortOrderAscending ? 'up' : 'down'}"' : ''}></div></td>
 				</thead>
 				<tbody>
 				</tbody>
 			</table>
 		</div>'
 		).appendTo(element.find(".hierarchy"));
+
+		tab.find('.sort-count').on('click', function(e) { sortDatas(SortType.ByCount, sort.match(SortType.ByCount) ? !sortOrderAscending : false); });
+		tab.find('.sort-size').on('click', function(e) { sortDatas(SortType.ByMemory, sort.match(SortType.ByMemory) ? !sortOrderAscending : false); });
 
 		var body = tab.find('tbody');
 		for (l in lines)
@@ -371,6 +379,16 @@ class Profiler extends hide.ui.View<{}> {
 
 		children.sort((a, b) -> b.count - a.count);
 		return children.map(c -> {v : c.p, children : getChildren(depth+1, c.p, valid), line : c.line, total : {count : c.count, mem : c.size}});
+	}
+
+	public function sortDatas(sort: SortType, isAscending : Bool) {
+		this.sort = sort;
+		this.sortOrderAscending = isAscending;
+
+		if (mainMemory == null) return;
+
+		displayTypes(sort, isAscending);
+		refreshHierarchicalView();
 	}
 
 	static var _ = hide.ui.View.register(Profiler);

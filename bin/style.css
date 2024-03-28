@@ -2984,6 +2984,10 @@ div.gradient-box {
 .profiler .left-panel .hierarchy table thead td {
   font-weight: bold;
 }
+.profiler .left-panel .hierarchy table thead .sort-count,
+.profiler .left-panel .hierarchy table thead .sort-size {
+  cursor: pointer;
+}
 .profiler .left-panel .hierarchy table tr:hover {
   background-color: #272727;
 }
@@ -3018,6 +3022,9 @@ div.gradient-box {
 .profiler .left-panel .hierarchy table td .inner-gauge {
   background-color: #d6d6d6;
   height: 15px;
+}
+.profiler .left-panel .hierarchy table td .icon {
+  padding-left: 10px;
 }
 .profiler .left-panel .hierarchy table .inspect-row td {
   width: 100px;
