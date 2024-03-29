@@ -48,6 +48,15 @@ class NodeGenContext {
 		return getOrAllocateGlobalVar(id, false, true);
 	}
 
+	public function getGlobalParam(name: String, type: Type, ?defVal: Dynamic) : TVar {
+		var def : ShaderGraph.ExternVarDef = globalVars.get(name);
+		if (def == null) {
+			def = {v: {id: hxsl.Tools.allocVarId(), name: name, type: type, kind: Param}, isInput: true, isOutput: false, defValue:defVal};
+			globalVars.set(name, def);
+		}
+		return def.v;
+	}
+
 	function getOrAllocateGlobalVar(id: Variables.Global, ?isInput: Bool, ?isOutput: Bool) : TVar {
 		var global = Variables.Globals[id];
 		var def : ShaderGraph.ExternVarDef = globalVars.get(global.name);
