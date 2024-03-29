@@ -16,19 +16,17 @@ class NewAdd extends ShaderNode {
 		return def;
 	}
 
-	override function generate(inputs: Array<TExpr>, ctx: ShaderNode.NodeGenContext) {
-		var ret : Array<{e: TExpr, ?outputId: Int}> = [];
+	override function generate(inputs: Array<TExpr>, ctx: NodeGenContext) {
 		var a = inputs[0] ?? AstTools.makeFloat(getDef("a", 0.0));
 		var b = inputs[1] ?? AstTools.makeFloat(getDef("b", 0.0));
 		var id = hxsl.Tools.allocVarId();
 		var out = {id: id, name: 'output', kind: Local, type: TFloat};
 		var add = AstTools.makeBinop(a, OpAdd, b);
 
-		ret.push({e: AstTools.makeExpr(TVarDecl(out, add), out.type)});
-		ret.push({e: AstTools.makeVar(out), outputId: 0});
+		ctx.addExpr(AstTools.makeExpr(TVarDecl(out, add), out.type));
+		ctx.addOutput(AstTools.makeVar(out), 0);
 
-		ctx.addPreview(AstTools.makeVar(out), ret);
-		return ret;
+		ctx.addPreview(AstTools.makeVar(out));
 	}
 
 	override function getInputs() : Array<{name: String, ?type: Type}> {

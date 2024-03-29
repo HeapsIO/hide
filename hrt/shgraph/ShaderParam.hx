@@ -15,12 +15,10 @@ class ShaderParam extends ShaderNode {
 		return [{name: "output", type: null}];
 	}
 
-	override function generate(inputs: Array<TExpr>, ctx: ShaderNode.NodeGenContext) {
-		var ret : Array<{e: TExpr, ?outputId: Int}> = [];
+	override function generate(inputs: Array<TExpr>, ctx: NodeGenContext) {
 		var v = ctx.getGlobalParam(variable.name, variable.type, 0.0);
-		ret.push({e: AstTools.makeVar(v), outputId: 0});
-		ctx.addPreview(AstTools.makeVar(v), ret);
-		return ret;
+		ctx.addOutput(AstTools.makeVar(v), 0);
+		ctx.addPreview(AstTools.makeVar(v));
 	}
 
 

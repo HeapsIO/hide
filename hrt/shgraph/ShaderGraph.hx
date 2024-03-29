@@ -146,27 +146,25 @@ class ShaderGraphGenContext2 {
 		initNodes();
 		var sortedNodes = sortGraph();
 
-		var genContext = new ShaderNode.NodeGenContext(graph.domain);
+		var genContext = new NodeGenContext(graph.domain);
 		genContext.previewEnabled = true;
 		genContext.domain = Fragment;
 		var expressions : Array<TExpr> = [];
+		genContext.expressions = expressions;
 
 
 		for (nodeId in sortedNodes) {
 			var node = nodes[nodeId];
 			genContext.currentPreviewId = node.node.id + 1;
-			var generation = node.node.instance.generate(node.inputs, genContext);
+			genContext.outputs.resize(0);
+			node.node.instance.generate(node.inputs, genContext);
 
-			for (gen in generation) {
-				if (gen.outputId != null) {
-					var targets = node.outputs[gen.outputId];
-					if (targets == null) continue;
-					for (target in targets) {
-						nodes[target.to].inputs[target.input] = gen.e;
-					}
-				}
-				else {
-					expressions.push(gen.e);
+			for (outputId => expr in genContext.outputs) {
+				if (expr == null) throw "null expr for output " + outputId;
+				var targets = node.outputs[outputId];
+				if (targets == null) continue;
+				for (target in targets) {
+					nodes[target.to].inputs[target.input] = expr;
 				}
 			}
 		}
@@ -1057,7 +1055,9 @@ class ShaderGraph extends hrt.prefab.Prefab {
 		var gen = ctx.generate();
 
 		for (v in gen.externs) {
-			shaderData.vars.push(v.v);
+			if (v.v.parent == null) {
+				shaderData.vars.push(v.v);
+			}
 			if (v.defValue != null) {
 				inits.push({variable:v.v, value:v.defValue});
 			}
