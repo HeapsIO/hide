@@ -41,7 +41,6 @@ class Profiler extends hide.ui.View<{}> {
 	var tabs : hide.comp.Tabs;
 	var view : cdb.DiffFile.ConfigView;
 
-
 	public var mainMemory : hide.tools.memory.Memory = null;
 	public var currentMemory : hide.tools.memory.Memory = null;
 	public var names(default, null) : Array<String> = [];
@@ -370,10 +369,16 @@ class Profiler extends hide.ui.View<{}> {
 
 		tab.find('.sort-count').on('click', function(e) { sortDatas(SortType.ByCount, sort.match(SortType.ByCount) ? !sortOrderAscending : false); });
 		tab.find('.sort-size').on('click', function(e) { sortDatas(SortType.ByMemory, sort.match(SortType.ByMemory) ? !sortOrderAscending : false); });
+		tab.on('keydown', function(e) e.preventDefault());
 
 		var body = tab.find('tbody');
-		for (l in lines)
-			new ProfilerElement(this, l, null, null).element.appendTo(body);
+		for (idx => l in lines) {
+			var pe = new ProfilerElement(this, l, null, null);
+			pe.element.appendTo(body);
+
+			if (idx == 0)
+				pe.element.focus();
+		}
 	}
 
 	public function locate(str : String) @:privateAccess {
@@ -490,7 +495,7 @@ class ProfilerElement extends hide.comp.Component{
 		var count = path == null ? line.count : path.total.count;
 		var mem = path == null ? line.size : path.total.mem;
 
-		this.element = new Element('<tr><td><div class="folder icon ico ico-caret-right"></div>${count}</td><td>${hide.tools.memory.Memory.MB(mem)}</td><td title="${name}">${name}</td><td><div title="Allocated ${mem} (${100 * mem / Reflect.getProperty(profiler.statsObj[0], "totalAllocated")}% of total)" class="outer-gauge"><div class="inner-gauge" style="width:${100 * mem / Reflect.getProperty(profiler.statsObj[0], "totalAllocated")}%;"></div></div></td></tr>');
+		this.element = new Element('<tr tabindex="2"><td><div class="folder icon ico ico-caret-right"></div>${count}</td><td>${hide.tools.memory.Memory.MB(mem)}</td><td title="${name}">${name}</td><td><div title="Allocated ${mem} (${100 * mem / Reflect.getProperty(profiler.statsObj[0], "totalAllocated")}% of total)" class="outer-gauge"><div class="inner-gauge" style="width:${100 * mem / Reflect.getProperty(profiler.statsObj[0], "totalAllocated")}%;"></div></div></td></tr>');
 		this.element.find('td').first().css({'padding-left':'${10 * depth}px'});
 
 		this.foldBtn = this.element.find('.folder');
@@ -520,6 +525,44 @@ class ProfilerElement extends hide.comp.Component{
 			else {
 				this.close();
 			}
+		});
+
+		this.element.on('keydown', function(e) {
+
+			function selectUp() {
+				if (this.element.prev('tr').length > 0)
+					this.element.prev('tr').first().focus();
+				else
+					this.element.parent('tr').focus();
+			}
+
+			function selectDown() {
+				if (this.element.children('tr').length > 0)
+					this.element.children('tr').first().focus();
+				else
+					this.element.next('tr').focus();
+			}
+
+			switch( e.keyCode ) {
+				case hxd.Key.LEFT:
+					if (this.isOpen)
+						this.close();
+				case hxd.Key.RIGHT:
+					if (this.isOpen) {
+						selectDown();
+					}
+					else {
+						open();
+					}
+				case hxd.Key.DOWN:
+					selectDown();
+				case hxd.Key.UP:
+					selectUp();
+				default:
+			}
+
+			e.stopPropagation();
+			e.preventDefault();
 		});
     }
 

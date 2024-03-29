@@ -2986,6 +2986,9 @@ div.gradient-box {
 .profiler .left-panel table tr:hover {
   background-color: #272727;
 }
+.profiler .left-panel table tr:focus {
+  background-color: #2c5d87;
+}
 .profiler .left-panel table thead tr:hover {
   background-color: #151515;
 }
