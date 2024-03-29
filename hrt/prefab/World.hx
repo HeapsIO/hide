@@ -87,19 +87,6 @@ class World extends Object3D {
 			#if editor
 			for ( elt in p.flatten() )
 				@:privateAccess editor.makeInteractive(elt);
-			if ( editor != null ) {
-				var curEdit = editor.curEdit;
-				//var contexts = curEdit.rootContext.shared.contexts;
-				//contexts.set(p, context);
-				/*if ( context != null ) {
-					var pobj = context.shared.root3d;
-					var pobj2d = context.shared.root2d;
-					if ( context.local3d != pobj && context.local3d != null )
-						editor.curEdit.rootObjects.push(context.local3d);
-					if ( context.local2d != pobj2d && context.local2d != null )
-						editor.curEdit.rootObjects2D.push(context.local2d);
-				}*/
-			}
 			#end
 		}
 	}
