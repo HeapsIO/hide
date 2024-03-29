@@ -349,7 +349,9 @@ class Memory {
 		for (b in filteredBlocks)
 			fUsed += b.size;
 
-		return {
+		var objs = [];
+		var obj = {
+			memFile : memFile,
 			free: pagesSize - used - reserved,
 			used: used,
 			totalAllocated: pagesSize - reserved,
@@ -362,6 +364,11 @@ class Memory {
 			closuresCount : closuresPointers.length,
 			blockCount : blocks.length
 		};
+
+		objs.push(obj);
+		for (m in otherMems??[]) objs = objs.concat(m.getStatsObj());
+
+		return objs;
 	}
 
 	function printStats() {

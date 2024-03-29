@@ -3381,6 +3381,7 @@ div.gradient-box {
 		height: 100%;
 		width: 80%;
 		display: flex;
+		background-color: #303030;
 		flex-direction: column;
 
 		.tree-map {
@@ -3389,82 +3390,75 @@ div.gradient-box {
 			flex-grow: 1;
 		}
 
-		.hierarchy {
-			background-color: #303030;
-			width: 100%;
-			max-height: 1200px;
-			height: 30%;
+		table {
+			overflow-y: scroll;
 
-			table {
-				overflow-y: scroll;
-
-				thead {
-					position: sticky;
-					top: 0;
-					background-color: #151515;
-
-					td {
-						font-weight: bold;
-					}
-
-					.sort-count, .sort-size {
-						cursor: pointer;
-					}
-				}
-
-				tr:hover{
-					background-color: #272727;
-				}
-
-				thead {
-					tr:hover {
-						background-color: #151515;
-					}
-				}
-
-				td:last-child {
-					width: 100%;
-				}
-
-				td:nth-child(3) {
-					width: 70%;
-					max-width: 700px;
-				}
+			thead {
+				position: sticky;
+				top: 0;
+				background-color: #151515;
 
 				td {
-					padding: 3px 30px 3px 1px;
-					overflow: hidden;
-					white-space: nowrap;
-
-					.folder {
-						cursor: pointer;
-						margin-right: 10px;
-						margin-left: 5px;
-						font-size: 12pt;
-						text-align: center;
-						vertical-align: text-top;
-					}
-
-					.outer-gauge {
-						background-color: #535353;
-						width: 100%;
-						height: 15px;
-					}
-
-					.inner-gauge {
-						background-color: #d6d6d6;
-						height: 15px;
-					}
-
-					.icon {
-						padding-left:10px;
-					}
+					font-weight: bold;
 				}
 
-				.inspect-row {
-					td {
-						width: 100px;
-					}
+				.sort-count, .sort-size {
+					cursor: pointer;
+				}
+			}
+
+			tr:hover{
+				background-color: #272727;
+			}
+
+			thead {
+				tr:hover {
+					background-color: #151515;
+				}
+			}
+
+			td:last-child {
+				width: 100%;
+			}
+
+			td:nth-child(3) {
+				width: 70%;
+				max-width: 700px;
+			}
+
+			td {
+				padding: 3px 30px 3px 1px;
+				overflow: hidden;
+				white-space: nowrap;
+
+				.folder {
+					cursor: pointer;
+					margin-right: 10px;
+					margin-left: 5px;
+					font-size: 12pt;
+					text-align: center;
+					vertical-align: text-top;
+				}
+
+				.outer-gauge {
+					background-color: #535353;
+					width: 100%;
+					height: 15px;
+				}
+
+				.inner-gauge {
+					background-color: #d6d6d6;
+					height: 15px;
+				}
+
+				.icon {
+					padding-left:10px;
+				}
+			}
+
+			.inspect-row {
+				td {
+					width: 100px;
 				}
 			}
 		}
@@ -3518,8 +3512,17 @@ div.gradient-box {
 			height: 20px;
 		}
 
-		h4 {
+		h4, h5 {
 			margin-bottom: 2px;
+		}
+
+		h5 {
+			margin-top:2px;
+		}
+
+		hr {
+			margin-top: 25px;
+			border-top: 1px, solid, #666666;
 		}
 
 		.title {
@@ -3527,12 +3530,8 @@ div.gradient-box {
 			font-size: 9pt;
 			background-color: #151515;
 			margin-bottom: 5px;
-			margin-top: 20px;
-			vertical-align: middle;
-		}
-
-		.title:first-child {
 			margin-top: 5px;
+			vertical-align: middle;
 		}
 
 		.drop-zone {
@@ -3569,6 +3568,7 @@ div.gradient-box {
 			#process-btn {
 				width: 100%;
 				margin-top: 15px;
+				margin-bottom: 15px;
 			}
 		}
 	}

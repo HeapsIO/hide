@@ -49,16 +49,18 @@ class Profiler extends hide.ui.View<{}> {
 	public var lines(default, null) : Array<LineData> = [];
 	public var locationData(default, null) : Map<String, Array<LineData>> = [];
 
-	var hlPath = "";//"C:/Projects/wartales/trunk/wartales.hl";
-	var dumpPath = "";//"C:/Projects/wartales/trunk/capture.dump";
-
 	var error : String = "";
 
+	// Params
 	var sort : SortType = ByCount;
 	var sortOrderAscending = true;
 	var currentFilter : Filter = None;
-	var stats : Array<String> = [];
-	var statsObj : Dynamic;
+	var hlPath = "";
+	var dumpPaths : Array<String> = [];
+
+	// Cached values
+	var statsObj : Array<Dynamic> = [];
+	var fileSelects : Array<hide.comp.FileSelect> = [];
 
 	public function new( ?state ) {
 		super(state);
@@ -67,25 +69,24 @@ class Profiler extends hide.ui.View<{}> {
 	override function onDisplay() {
 		new Element('
 		<div class="profiler">
-			<div class="left-panel">
-				<div class="tree-map"></div>
-				<div class="hierarchy"></div>
-			</div>
+			<div class="left-panel"></div>
 			<div class="right-panel">
 				<div class="title">Files input</div>
-					<div class="files-input">
-						<div class="drop-zone hidden">
-							<p class="icon">+</p>
-							<p class="label">Drop .hl and .dump files here</p>
-						</div>
-						<div class="inputs">
-							<dl>
-								<dt>HL file</dt><dd><input class="hl-fileselect" type="fileselect" extensions="hl"/></dd>
-								<dt>Dump file</dt><dd><input class="dump-fileselect" type="fileselect" extension="dump"/></dd>
-							</dl>
-						</div>
+				<div class="files-input">
+					<div class="drop-zone hidden">
+						<p class="icon">+</p>
+						<p class="label">Drop .hl and .dump files here</p>
+					</div>
+					<div class="inputs">
+						<dl>
+							<dt>HL file</dt><dd><input class="hl-fileselect" type="fileselect" extensions="hl"/></dd>
+							<dt>Dump files</dt><dd><input class="dump-fileselect" type="fileselect" extension="dump"/></dd>
+							<dt></dt><dd><input class="dump-fileselect" type="fileselect" extension="dump"/></dd>
+						</dl>
 						<input type="button" value="Process Files" id="process-btn"/>
 					</div>
+				</div>
+				<div class="filters">
 				</div>
 			</div>
 		</div>'
@@ -94,8 +95,18 @@ class Profiler extends hide.ui.View<{}> {
 		var hlSelect = new hide.comp.FileSelect(["hl"], null, element.find(".hl-fileselect"));
 		hlSelect.onChange = function() { hlPath = Ide.inst.getPath(hlSelect.path); };
 
-		var dumpSelect = new hide.comp.FileSelect(["dump"], null, element.find(".dump-fileselect"));
-		dumpSelect.onChange = function() { dumpPath = Ide.inst.getPath(dumpSelect.path); };
+		for (el in element.find(".dump-fileselect")) {
+			var dumpSelect = new hide.comp.FileSelect(["dump"], null, new Element(el));
+			fileSelects.push(dumpSelect);
+
+			dumpSelect.onChange = function() {
+				dumpPaths = [];
+				for (fs in fileSelects) {
+					if (fs.path != null && fs.path != "")
+						dumpPaths.push(Ide.inst.getPath(fs.path));
+				}
+			};
+		}
 
 		var dropZone = element.find(".drop-zone");
 		dropZone.css({display:'none'});
@@ -125,6 +136,7 @@ class Profiler extends hide.ui.View<{}> {
 				inputs.css({display:'block'});
 				isDragging = false;
 
+				var tmpDumpPaths = [];
 				for (f in dt.files) {
 					var arrSplit = Reflect.getProperty(f, "name").split('.');
 					var ext = arrSplit[arrSplit.length - 1];
@@ -138,12 +150,19 @@ class Profiler extends hide.ui.View<{}> {
 					}
 
 					if (ext == "dump") {
-						dumpPath = p;
-						dumpSelect.path = p;
+						tmpDumpPaths.push(p);
 						continue;
 					}
 
 					Ide.inst.error('File ${p} is not supported, please provide .dump file or .hl file');
+				}
+
+				if (tmpDumpPaths.length > 0) dumpPaths = [];
+				for (idx => p in tmpDumpPaths) {
+					dumpPaths.push(p);
+
+					if (idx < fileSelects.length)
+						fileSelects[idx].path = p;
 				}
 			}
 		});
@@ -160,7 +179,7 @@ class Profiler extends hide.ui.View<{}> {
 
 		var processBtn = element.find("#process-btn");
 		processBtn.on('click', function() {
-			if (hlPath == null || hlPath == '' || dumpPath == null || dumpPath == '') {
+			if (hlPath == null || hlPath == '' || dumpPaths == null || dumpPaths.length <= 0) {
 				Ide.inst.quickMessage('.hl or/and .dump files are missing. Please provide both files before hit the process button');
 				return;
 			}
@@ -170,8 +189,7 @@ class Profiler extends hide.ui.View<{}> {
 			refresh();
 		});
 
-		var hierarchyPanel = new hide.comp.ResizablePanel(Vertical, element.find(".hierarchy"));
-		hierarchyPanel.saveDisplayKey = "hierarchyPanel";
+		refreshFilters();
 	}
 
 	override function getTitle() {
@@ -179,7 +197,7 @@ class Profiler extends hide.ui.View<{}> {
 	}
 
 	function load() {
-		names = [ dumpPath ];
+		names = dumpPaths;
 
 		var result = loadAll();
 		if ( result != null) {
@@ -187,9 +205,8 @@ class Profiler extends hide.ui.View<{}> {
 		} else {
 			error = "";
 			if (names.length > 0) {
-				filter(None);
+				this.currentFilter = None;
 				displayTypes(sort, sortOrderAscending);
-				stats = mainMemory?.getStats();
 				statsObj = mainMemory?.getStatsObj();
 			}
 		}
@@ -231,36 +248,7 @@ class Profiler extends hide.ui.View<{}> {
 		mainMemory = currentMemory = null;
 		lines = [];
 		locationData.clear();
-	}
-
-	function filter(f : Filter) {
-		switch (f) {
-			case None :
-				currentMemory = mainMemory;
-				mainMemory.setFilterMode(None);
-			/*case Unique :
-				currentMemory = mainMemory;
-				mainMemory.setFilterMode(Unique);
-			case Difference :
-				mainMemory.setFilterMode(None);
-				if (mainMemory.otherMems.length > 0){
-					var other = mainMemory.otherMems[0];
-					other.otherMems = [mainMemory];
-					other.setFilterMode(Unique);
-					other.otherMems = [];
-					currentMemory = other;
-				}
-			case Intersected :
-				var other = mainMemory.otherMems[0];
-				other.setFilterMode(None);
-				currentMemory = mainMemory;
-				mainMemory.setFilterMode(Intersect);*/
-			default:
-				currentMemory = mainMemory;
-				mainMemory.setFilterMode(None);
-		}
-
-		locationData.clear();
+		statsObj = null;
 	}
 
 	public function displayTypes(sort : SortType = ByCount, asc : Bool = true) @:privateAccess{
@@ -290,32 +278,77 @@ class Profiler extends hide.ui.View<{}> {
 
 	public function refresh() {
 		refreshStats();
+		refreshFilters();
 		refreshHierarchicalView();
+	}
+
+	public function refreshFilters() {
+		var filters = element.find('.filters');
+		filters.empty();
+
+		var fileNames = [];
+		for (p in dumpPaths) {
+			var arr = p.split('/');
+			fileNames.push(arr[arr.length - 1]);
+		}
+
+		new Element('
+			<div class="title">Filters</div>
+			<dt>Filter</dt><dd>
+				<select class="dd-filters">
+					<option value="0">None</option>
+					<option value="1">Show ${fileNames[0]}</option>
+					<option value="2">Show ${fileNames[1]}</option>
+					<option value="3">Intersected</option>
+				</select>
+			</dd>
+		').appendTo(filters);
+
+		var ddFilters = filters.find('.dd-filters');
+		ddFilters.on('change', function(e) {
+			var enumVal = Filter.None;
+			var val : Int = Std.parseInt(ddFilters.val());
+			switch (val) {
+				case 0: enumVal = Filter.None;
+				case 1: enumVal = Filter.Unique;
+				case 2: enumVal = Filter.Difference;
+				case 3: enumVal = Filter.Intersected;
+			}
+
+			this.filterDatas(enumVal);
+		});
+
+		if (dumpPaths.length >= 2)
+			filters.css({ display:'block' });
+		else
+			filters.css({ display:'none' });
 	}
 
 	public function refreshStats() {
 		element.find('.stats').remove();
 
-		new Element ('
-		<div class="stats">
-			<div class="title">Stats</div>
-			<h4>Memory usage on device</h4>
-			<div class="outer-gauge"><div class="inner-gauge" title="${hide.tools.memory.Memory.MB(statsObj?.used)} used (${ 100 * statsObj?.used / statsObj?.totalAllocated}% of total)" style="width:${ 100 * statsObj?.used / statsObj?.totalAllocated}%;"></div></div>
+		var stats = new Element ('<div class="stats"><div class="title">Stats</div></div>').appendTo(element.find('.right-panel'));
+		for (idx => s in statsObj) {
+			new Element('
+			<h4>Memory usage</h4>
+			<h5>${s.memFile}</h5>
+			<div class="outer-gauge"><div class="inner-gauge" title="${hide.tools.memory.Memory.MB(s.used)} used (${ 100 * s.used / s.totalAllocated}% of total)" style="width:${ 100 * s.used / s.totalAllocated}%;"></div></div>
 			<dl>
-				<dt>Allocated</dt><dd>${hide.tools.memory.Memory.MB(statsObj?.totalAllocated)}</dd>
-				<dt>Used</dt><dd>${hide.tools.memory.Memory.MB(statsObj?.used)}</dd>
-				<dt>Free</dt><dd>${hide.tools.memory.Memory.MB(statsObj?.free)}</dd>
-				<dt>GC</dt><dd>${hide.tools.memory.Memory.MB(statsObj?.gc)}</dd>
+				<dt>Allocated</dt><dd>${hide.tools.memory.Memory.MB(s.totalAllocated)}</dd>
+				<dt>Used</dt><dd>${hide.tools.memory.Memory.MB(s.used)}</dd>
+				<dt>Free</dt><dd>${hide.tools.memory.Memory.MB(s.free)}</dd>
+				<dt>GC</dt><dd>${hide.tools.memory.Memory.MB(s.gc)}</dd>
 				<dt>&nbsp</dt><dd></dd>
-				<dt>Pages</dt><dd>${statsObj?.pagesCount} (${hide.tools.memory.Memory.MB(statsObj?.pagesSize)})</dd>
-				<dt>Roots</dt><dd>${statsObj?.rootsCount}</dd>
-				<dt>Stacks</dt><dd>${statsObj?.stackCount}</dd>
-				<dt>Types</dt><dd>${statsObj?.typesCount}</dd>
-				<dt>Closures</dt><dd>${statsObj?.closuresCount}</dd>
-				<dt>Live blocks</dt><dd>${statsObj?.blockCount}</dd>
+				<dt>Pages</dt><dd>${s.pagesCount} (${hide.tools.memory.Memory.MB(s.pagesSize)})</dd>
+				<dt>Roots</dt><dd>${s.rootsCount}</dd>
+				<dt>Stacks</dt><dd>${s.stackCount}</dd>
+				<dt>Types</dt><dd>${s.typesCount}</dd>
+				<dt>Closures</dt><dd>${s.closuresCount}</dd>
+				<dt>Live blocks</dt><dd>${s.blockCount}</dd>
 			</dl>
-		</div>
-		').appendTo(element.find('.right-panel'));
+			${idx < statsObj.length - 1 ? '<hr class="solid"></hr>' : ''}
+			').appendTo(stats);
+		}
 	}
 
 	public function refreshHierarchicalView() {
@@ -333,7 +366,7 @@ class Profiler extends hide.ui.View<{}> {
 				</tbody>
 			</table>
 		</div>'
-		).appendTo(element.find(".hierarchy"));
+		).appendTo(element.find(".left-panel"));
 
 		tab.find('.sort-count').on('click', function(e) { sortDatas(SortType.ByCount, sort.match(SortType.ByCount) ? !sortOrderAscending : false); });
 		tab.find('.sort-size').on('click', function(e) { sortDatas(SortType.ByMemory, sort.match(SortType.ByMemory) ? !sortOrderAscending : false); });
@@ -391,6 +424,43 @@ class Profiler extends hide.ui.View<{}> {
 		refreshHierarchicalView();
 	}
 
+	public function filterDatas(filter: Filter) @:privateAccess{
+		this.currentFilter = filter;
+
+		switch (currentFilter) {
+			case None :
+				currentMemory = mainMemory;
+				mainMemory.setFilterMode(None);
+			case Unique :
+				currentMemory = mainMemory;
+				mainMemory.setFilterMode(Unique);
+			case Difference :
+				mainMemory.setFilterMode(None);
+				if (mainMemory.otherMems.length > 0){
+					var other = mainMemory.otherMems[0];
+					other.otherMems = [mainMemory];
+					other.setFilterMode(Unique);
+					other.otherMems = [];
+					currentMemory = other;
+				}
+			case Intersected :
+				var other = mainMemory.otherMems[0];
+				other.setFilterMode(None);
+				currentMemory = mainMemory;
+				mainMemory.setFilterMode(Intersect);
+			default:
+				currentMemory = mainMemory;
+				mainMemory.setFilterMode(None);
+		}
+
+		locationData.clear();
+
+		displayTypes(sort, sortOrderAscending);
+		statsObj = mainMemory?.getStatsObj();
+
+		refreshHierarchicalView();
+	}
+
 	static var _ = hide.ui.View.register(Profiler);
 
 }
@@ -420,7 +490,7 @@ class ProfilerElement extends hide.comp.Component{
 		var count = path == null ? line.count : path.total.count;
 		var mem = path == null ? line.size : path.total.mem;
 
-		this.element = new Element('<tr><td><div class="folder icon ico ico-caret-right"></div>${count}</td><td>${hide.tools.memory.Memory.MB(mem)}</td><td title="${name}">${name}</td><td><div title="Allocated ${mem} (${100 * mem / Reflect.getProperty(profiler.statsObj, "totalAllocated")}% of total)" class="outer-gauge"><div class="inner-gauge" style="width:${100 * mem / Reflect.getProperty(profiler.statsObj, "totalAllocated")}%;"></div></div></td></tr>');
+		this.element = new Element('<tr><td><div class="folder icon ico ico-caret-right"></div>${count}</td><td>${hide.tools.memory.Memory.MB(mem)}</td><td title="${name}">${name}</td><td><div title="Allocated ${mem} (${100 * mem / Reflect.getProperty(profiler.statsObj[0], "totalAllocated")}% of total)" class="outer-gauge"><div class="inner-gauge" style="width:${100 * mem / Reflect.getProperty(profiler.statsObj[0], "totalAllocated")}%;"></div></div></td></tr>');
 		this.element.find('td').first().css({'padding-left':'${10 * depth}px'});
 
 		this.foldBtn = this.element.find('.folder');

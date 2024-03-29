@@ -2960,6 +2960,7 @@ div.gradient-box {
   height: 100%;
   width: 80%;
   display: flex;
+  background-color: #303030;
   flex-direction: column;
 }
 .profiler .left-panel .tree-map {
@@ -2967,46 +2968,40 @@ div.gradient-box {
   width: 100%;
   flex-grow: 1;
 }
-.profiler .left-panel .hierarchy {
-  background-color: #303030;
-  width: 100%;
-  max-height: 1200px;
-  height: 30%;
-}
-.profiler .left-panel .hierarchy table {
+.profiler .left-panel table {
   overflow-y: scroll;
 }
-.profiler .left-panel .hierarchy table thead {
+.profiler .left-panel table thead {
   position: sticky;
   top: 0;
   background-color: #151515;
 }
-.profiler .left-panel .hierarchy table thead td {
+.profiler .left-panel table thead td {
   font-weight: bold;
 }
-.profiler .left-panel .hierarchy table thead .sort-count,
-.profiler .left-panel .hierarchy table thead .sort-size {
+.profiler .left-panel table thead .sort-count,
+.profiler .left-panel table thead .sort-size {
   cursor: pointer;
 }
-.profiler .left-panel .hierarchy table tr:hover {
+.profiler .left-panel table tr:hover {
   background-color: #272727;
 }
-.profiler .left-panel .hierarchy table thead tr:hover {
+.profiler .left-panel table thead tr:hover {
   background-color: #151515;
 }
-.profiler .left-panel .hierarchy table td:last-child {
+.profiler .left-panel table td:last-child {
   width: 100%;
 }
-.profiler .left-panel .hierarchy table td:nth-child(3) {
+.profiler .left-panel table td:nth-child(3) {
   width: 70%;
   max-width: 700px;
 }
-.profiler .left-panel .hierarchy table td {
+.profiler .left-panel table td {
   padding: 3px 30px 3px 1px;
   overflow: hidden;
   white-space: nowrap;
 }
-.profiler .left-panel .hierarchy table td .folder {
+.profiler .left-panel table td .folder {
   cursor: pointer;
   margin-right: 10px;
   margin-left: 5px;
@@ -3014,19 +3009,19 @@ div.gradient-box {
   text-align: center;
   vertical-align: text-top;
 }
-.profiler .left-panel .hierarchy table td .outer-gauge {
+.profiler .left-panel table td .outer-gauge {
   background-color: #535353;
   width: 100%;
   height: 15px;
 }
-.profiler .left-panel .hierarchy table td .inner-gauge {
+.profiler .left-panel table td .inner-gauge {
   background-color: #d6d6d6;
   height: 15px;
 }
-.profiler .left-panel .hierarchy table td .icon {
+.profiler .left-panel table td .icon {
   padding-left: 10px;
 }
-.profiler .left-panel .hierarchy table .inspect-row td {
+.profiler .left-panel table .inspect-row td {
   width: 100px;
 }
 .profiler .right-panel {
@@ -3072,19 +3067,24 @@ div.gradient-box {
   background-color: #d6d6d6;
   height: 20px;
 }
-.profiler .right-panel h4 {
+.profiler .right-panel h4,
+.profiler .right-panel h5 {
   margin-bottom: 2px;
+}
+.profiler .right-panel h5 {
+  margin-top: 2px;
+}
+.profiler .right-panel hr {
+  margin-top: 25px;
+  border-top: 1px, solid, #666666;
 }
 .profiler .right-panel .title {
   text-align: center;
   font-size: 9pt;
   background-color: #151515;
   margin-bottom: 5px;
-  margin-top: 20px;
-  vertical-align: middle;
-}
-.profiler .right-panel .title:first-child {
   margin-top: 5px;
+  vertical-align: middle;
 }
 .profiler .right-panel .drop-zone {
   background-color: #111111;
@@ -3115,4 +3115,5 @@ div.gradient-box {
 .profiler .right-panel .files-input #process-btn {
   width: 100%;
   margin-top: 15px;
+  margin-bottom: 15px;
 }
