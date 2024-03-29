@@ -108,7 +108,14 @@ typedef GenNodeInfo = {
 	?def: ShaderGraph.ShaderNodeDef,
 }
 
-typedef ExternVarDef = {v: TVar, isInput: Bool, isOutput: Bool, defValue: Dynamic};
+@:structInit @:publicFields
+class
+ExternVarDef {
+	var v: TVar;
+	var isInput: Bool;
+	var isOutput: Bool;
+	var defValue: Dynamic;
+}
 
 @:access(hrt.shgraph.Graph)
 class ShaderGraphGenContext2 {
@@ -121,7 +128,7 @@ class ShaderGraphGenContext2 {
 	}
 
 	var nodes : Array<{
-		var outputs: Array<Array<{to: Node, input: Node}>>;
+		var outputs: Array<Array<{to: Int, input: Int}>>;
 		var inputs : Array<TExpr>;
 		var node : Node;
 	}>;
@@ -135,16 +142,40 @@ class ShaderGraphGenContext2 {
 		}
 	}
 
-	public function generate() : {e: TExpr, externs: ExternVarDef} {
+	public function generate() : {e: TExpr, externs: Array<ExternVarDef>} {
 		initNodes();
 		var sortedNodes = sortGraph();
 
+		var genContext = new ShaderNode.NodeGenContext(graph.domain);
+		genContext.previewEnabled = true;
+		genContext.domain = Fragment;
+		var expressions : Array<TExpr> = [];
+
+
 		for (nodeId in sortedNodes) {
 			var node = nodes[nodeId];
-			trace(node.node.type + ":" + nodeId);
+			genContext.currentPreviewId = node.node.id + 1;
+			var generation = node.node.instance.generate(node.inputs, genContext);
+
+			for (gen in generation) {
+				if (gen.outputId != null) {
+					var targets = node.outputs[gen.outputId];
+					if (targets == null) continue;
+					for (target in targets) {
+						nodes[target.to].inputs[target.input] = gen.e;
+					}
+				}
+				else {
+					expressions.push(gen.e);
+				}
+			}
 		}
 
-		return null;
+		for (e in expressions) {
+			trace(hxsl.Printer.toString(e));
+		}
+
+		return {e: AstTools.makeExpr(TBlock(expressions), TVoid), externs: [for (v in genContext.globalVars) v]};
 	}
 
 	function sortGraph() : Array<Int>
@@ -163,12 +194,45 @@ class ShaderGraphGenContext2 {
 		for (id => node in nodes) {
 			if (node == null) continue;
 			var inst = node.node.instance;
-			var empty = true;//false;!inst.connections.iterator().hasNext();
+			var empty = true;
 			var inputs = inst.getInputs();
-			for (input in inst.connections) {
+
+			// Todo : store ID of input in connections instead of relying on the "name" at runtime
+			for (inputName => input in inst.connections) {
+				var inputId = -1;
+				for (id => i in inputs) {
+					if (i.name == inputName) {
+						inputId = id;
+					}
+				}
 				empty = false;
+				var nodeOutputs = input.from.instance.getOutputs();
+				var outputs = nodes[input.from.id].outputs;
+				if (outputs == null) {
+					outputs = [];
+					nodes[input.from.id].outputs = [];
+				}
+
+				var outputId = -1;
+				// Todo : store the id of the output instead of relying on the "name" at runtime
+				for (id => o in nodeOutputs) {
+					if (o.name == input.fromName) {
+						outputId = id;
+					}
+				}
+
+				var output = outputs[outputId];
+				if (output == null) {
+					output = [];
+					outputs[outputId] = output;
+				}
+
+				output.push({to: id, input: inputId});
+
 				nodeTopology[input.from.id].to.push(id);
 				nodeTopology[id].incoming ++;
+			}
+			for (inputId => input in inputs) {
 			}
 			if (empty) {
 				nodeToExplore.push(id);
@@ -980,9 +1044,49 @@ class ShaderGraph extends hrt.prefab.Prefab {
 		return dynamicType;
 	}
 
-	public function compile3() {
+	public function compile3() : hrt.prefab.Cache.ShaderDef {
 		var ctx = new ShaderGraphGenContext2(graphs[1], false);
-		ctx.generate();
+		var inits : Array<{variable: TVar, value: Dynamic}>= [];
+
+		var shaderData : ShaderData = {
+			name: "",
+			vars: [],
+			funs: [],
+		};
+
+		var gen = ctx.generate();
+
+		for (v in gen.externs) {
+			shaderData.vars.push(v.v);
+			if (v.defValue != null) {
+				inits.push({variable:v.v, value:v.defValue});
+			}
+		}
+		var fnKind : FunctionKind = Fragment;
+		var functionName : String = EnumValueTools.getName(fnKind).toLowerCase();
+
+		var funcVar : TVar = {
+			name : functionName,
+			id : hxsl.Tools.allocVarId(),
+			kind : Function,
+			type : TFun([{ ret : TVoid, args : [] }])
+		};
+
+		var fn : TFunction = {
+			ret: TVoid, kind: fnKind,
+			ref: funcVar,
+			expr: gen.e,
+			args: [],
+		};
+
+		shaderData.funs.push(fn);
+		shaderData.vars.push(funcVar);
+
+		var shared = new SharedShader("");
+		@:privateAccess shared.data = shaderData;
+		@:privateAccess shared.initialize();
+
+		return {shader : shared, inits: inits};
 	}
 
 
@@ -1560,25 +1664,7 @@ class Graph {
 		var edgesJson : Array<Edge> = [];
 		for (n in nodes) {
 			for (inputName => connection in n.instance.connections) {
-				var def = n.instance.getShaderDef(domain, () -> 0);
-				var inputId = null;
-				for (i => inVar in def.inVars) {
-					if (inVar.v.name == inputName) {
-						inputId = i;
-						break;
-					}
-				}
-
-				var def = connection.from.instance.getShaderDef(domain, () -> 0);
-				var outputId = null;
-				for (i => outVar in def.outVars) {
-					if (outVar.v.name == connection.fromName) {
-						outputId = i;
-						break;
-					}
-				}
-
-				edgesJson.push({ outputNodeId: connection.from.id, nameOutput: connection.fromName, inputNodeId: n.id, nameInput: inputName, inputId: inputId, outputId: outputId });
+				edgesJson.push({ outputNodeId: connection.from.id, nameOutput: connection.fromName, inputNodeId: n.id, nameInput: inputName, inputId: 0, outputId: 0 });
 			}
 		}
 		var json = {

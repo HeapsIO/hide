@@ -6,6 +6,8 @@ using hxsl.Ast;
 import h3d.scene.Mesh;
 
 using Lambda;
+import hrt.shgraph.AstTools.*;
+import hrt.shgraph.ShaderGraph;
 
 class AlphaPreview extends hxsl.Shader {
 	static var SRC = {
@@ -27,29 +29,117 @@ class AlphaPreview extends hxsl.Shader {
 	}
 }
 
+@:allow(hrt.shgraph.ShaderGraph)
 class NodeGenContext {
 	// Pour les rares nodes qui ont besoin de differencier entre vertex et fragment
 	public var domain : ShaderGraph.Domain;
 
-	// For general input/output of the shader graph. Allocate a new global var if name is not found,
-	// else return the previously allocated variable and assert that v.type == type and devValue == v.defValue
-	public function getGlobalInputVar(name: String, type: Type, ?defValue: Dynamic) : TVar {
-		return null;
+	public function new(domain: ShaderGraph.Domain) {
+		this.domain = domain;
 	}
 
-	public function getGlobalOutputVar(name: String, type: Type) : TVar {
-		return null;
+	// For general input/output of the shader graph. Allocate a new global var if name is not found,
+	// else return the previously allocated variable and assert that v.type == type and devValue == v.defValue
+	public function getGlobalInputVar(id: Variables.Global) : TVar {
+		return getOrAllocateGlobalVar(id, true, false);
+	}
+
+	public function getGlobalOutputVar(id: Variables.Global) : TVar {
+		return getOrAllocateGlobalVar(id, false, true);
+	}
+
+	function getOrAllocateGlobalVar(id: Variables.Global, ?isInput: Bool, ?isOutput: Bool) : TVar {
+		var global = Variables.Globals[id];
+		var def : ShaderGraph.ExternVarDef = globalVars.get(global.name);
+		if (def == null) {
+			var v : TVar = {id: hxsl.Tools.allocVarId(), name: global.name, type: global.type, kind: global.kind};
+			def = {v: v, isInput: isInput, isOutput: isOutput, defValue: global.def};
+			if (global.parent != null) {
+				v.parent = getOrAllocateGlobalVar(global.parent, null, null);
+			}
+			globalVars.set(global.name, def);
+		}
+		def.isInput = isInput ?? def.isInput;
+		def.isOutput = isOutput ?? def.isOutput;
+		return def.v;
+	}
+
+	// Generate a preview block that displays the content of expr
+	// in the preview box of the node. Expr must be a type that
+	// can be casted a Vec3
+	public function addPreview(expr: TExpr, outExpr: Array<{e: TExpr, ?outputId: Int}>) {
+		if (!previewEnabled) return;
+		var selector = makeVar(getGlobalInputVar(PreviewSelect));
+		var outputColor = makeVar(getGlobalInputVar(PixelColor));
+
+		var previewExpr = makeAssign(outputColor, convertToType(TVec(4, VFloat), expr));
+		var ifExpr = makeIf(makeEq(selector, makeInt(currentPreviewId)), previewExpr);
+		outExpr.push({e: ifExpr});
+	}
+
+	static function convertToType(targetType: hxsl.Ast.Type, sourceExpr: TExpr) : TExpr {
+		var sourceType = sourceExpr.t;
+
+		if (sourceType.equals(targetType))
+			return sourceExpr;
+
+		var sourceSize = switch (sourceType) {
+			case TFloat: 1;
+			case TVec(size, VFloat): size;
+			default:
+				throw "Unsupported source type " + sourceType;
+		}
+
+		var targetSize = switch (targetType) {
+			case TFloat: 1;
+			case TVec(size, VFloat): size;
+			default:
+				throw "Unsupported target type " + targetType;
+		}
+
+		var delta = targetSize - sourceSize;
+		if (delta == 0)
+			return sourceExpr;
+		if (delta > 0) {
+			var args = [];
+			if (sourceSize == 1) {
+				for (_ in 0...targetSize) {
+					args.push(sourceExpr);
+				}
+			}
+			else {
+
+				args.push(sourceExpr);
+				for (i in 0...delta) {
+					// Set alpha to 1.0 by default on upcasts casts
+					var value = i == delta - 1 ? 1.0 : 0.0;
+					args.push({e : TConst(CFloat(value)), p: sourceExpr.p, t: TFloat});
+				}
+			}
+			var global : TGlobal = switch (targetSize) {
+				case 2: Vec2;
+				case 3: Vec3;
+				case 4: Vec4;
+				default: throw "unreachable";
+			}
+			return {e: TCall({e: TGlobal(global), p: sourceExpr.p, t:targetType}, args), p: sourceExpr.p, t: targetType};
+		}
+		if (delta < 0) {
+			var swizz : Array<hxsl.Ast.Component> = [X,Y,Z,W];
+			swizz.resize(targetSize);
+			return {e: TSwiz(sourceExpr, swizz), p: sourceExpr.p, t: targetType};
+		}
+		throw "unreachable";
 	}
 
 	// Could be done
 	//public function getFunction(name: String, expr: TExpr) : T
 
 	// Pour la generation des previews
-	public function getPreviewId() : TExpr {
-		return null;
-	}
 
-	var globalVars: Map<String, ShaderGraph.ExternVarDef>;
+	public var previewEnabled: Bool = true;
+	var currentPreviewId: Int = -1;
+	var globalVars: Map<String, ShaderGraph.ExternVarDef> = [];
 }
 
 typedef VariableDecl = {v: TVar, display: String, ?vertexOnly: Bool};
@@ -67,11 +157,15 @@ class ShaderNode {
 	public var defaults : Dynamic = {};
 
 
-	public function getInputs() : Array<{name: String, type: Type}> {
+	public function getInputs() : Array<{name: String, ?type: Type}> {
 		return [];
 	}
 
-	public function generate(inputs: Array<TExpr>, ctx: NodeGenContext) : Array<{e: TExpr, ?name: String}> {
+	public function getOutputs() : Array<{name: String, ?type: Type}> {
+		return [];
+	}
+
+	public function generate(inputs: Array<TExpr>, ctx: NodeGenContext) : Array<{e: TExpr, ?outputId: Int}> {
 		throw "generate is not defined for class " + std.Type.getClassName(std.Type.getClass(this));
 		return [];
 	}

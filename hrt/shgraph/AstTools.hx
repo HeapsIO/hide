@@ -31,6 +31,10 @@ class AstTools {
 		return makeExpr(TConst(CInt(int)), TInt);
 	}
 
+	public inline static function makeFloat(float: Float) : TExpr {
+		return makeExpr(TConst(CFloat(float)), TFloat);
+	}
+
 	public inline static function makeVec(values : Array<Float>) : TExpr {
 		var ctor = switch(values.length) {
 			case 2: Vec2;
@@ -48,6 +52,11 @@ class AstTools {
 
 	public inline static function makeExpr(def: TExprDef, type: Type, ?pos: Position) : TExpr {
 		return {e: def, p: (pos ?? defPos), t: type}
+	}
+
+	// Expect a.t == b.t
+	public inline static function makeBinop(a: TExpr, op: Binop, b: TExpr) : TExpr {
+		return makeExpr(TBinop(op, a, b), a.t);
 	}
 
 	public inline static function makeEq(a: TExpr, b: TExpr) : TExpr {

@@ -437,9 +437,7 @@ class ShaderEditor extends hide.view.Graph {
 		element.find("#displayHlsl").on("click", () -> displayCompiled("hlsl"));
 
 		element.find("#display2").on("click", () -> {@:privateAccess info(hxsl.Printer.shaderToString(shaderGraph.compile2(domain).shader.data, true));});
-		element.find("#display3").on("click", () -> shaderGraph.compile3());
-
-
+		element.find("#display3").on("click", () -> {@:privateAccess info(hxsl.Printer.shaderToString(shaderGraph.compile3().shader.data, true));});
 
 		editorMatrix.on("click", "input, select", function(ev) {
 			beforeChange();
@@ -1169,7 +1167,7 @@ class ShaderEditor extends hide.view.Graph {
 				for (m in obj.getMaterials())
 					m.mainPass.removeShader(currentShader);
 
-			var shaderGraphDef = shaderGraph.compile2(null);
+			var shaderGraphDef = shaderGraph.compile3();
 			newShader = new hxsl.DynamicShader(shaderGraphDef.shader);
 			for (init in shaderGraphDef.inits) {
 				setParamValue(newShader, init.variable, init.value);
@@ -1243,7 +1241,7 @@ class ShaderEditor extends hide.view.Graph {
 			}
 		}
 
-		currentShaderPreviewsDef = shaderGraph.compile2(domain);
+		currentShaderPreviewsDef = shaderGraph.compile3();
 	}
 
 	function updateParam(id : Int) {
@@ -1330,7 +1328,7 @@ class ShaderEditor extends hide.view.Graph {
 
 		var select = null;
 		if (currentShaderPreviewsDef != null) {
-			select = currentShaderPreviewsDef.inits.find((e) -> e.variable.name == "__sg_PREVIEW_output_select");
+			select = currentShaderPreviewsDef.inits.find((e) -> e.variable.name == hrt.shgraph.Variables.previewSelectName);
 		}
 		for (box => preview in boxToPreview) {
 			preview.visible = box.getInstance().shouldShowPreview();
