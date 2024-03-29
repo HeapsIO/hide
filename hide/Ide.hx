@@ -1115,8 +1115,8 @@ class Ide extends hide.tools.IdeData {
 		});
 
 		// profilers
-		var profilers = menu.find(".prof");
-		profilers.find(".show").click(function(_) {
+		var profilers = menu.find(".analysis");
+		profilers.find(".memprof").click(function(_) {
 			open("hide.view.Profiler",{});
 		});
 
