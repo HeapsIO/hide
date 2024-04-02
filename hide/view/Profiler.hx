@@ -14,12 +14,6 @@ typedef Path = {
 	total : {count: Int, mem: Int},
 };
 
-enum DumpViewerPage {
-	None;
-	Stats;
-	Dump;
-}
-
 enum SortType {
 	ByMemory;
 	ByCount;
@@ -33,24 +27,12 @@ enum Filter {
 }
 
 class Profiler extends hide.ui.View<{}> {
-
-	var tabContents : Array<Element>;
-	var editor : hide.comp.cdb.Editor;
-	var currentSheet : String;
-	var tabCache : String;
-	var tabs : hide.comp.Tabs;
-	var view : cdb.DiffFile.ConfigView;
-
 	public var mainMemory : hlmem.Memory = null;
 	public var currentMemory : hlmem.Memory = null;
 	public var names(default, null) : Array<String> = [];
-
 	public var lines(default, null) : Array<LineData> = [];
 	public var locationData(default, null) : Map<String, Array<LineData>> = [];
 
-	var error : String = "";
-
-	// Params
 	var sort : SortType = ByCount;
 	var sortOrderAscending = true;
 	var currentFilter : Filter = None;
@@ -196,14 +178,12 @@ class Profiler extends hide.ui.View<{}> {
 	}
 
 	function load() {
-		var mem : hlmem.Memory;
 		names = dumpPaths;
 
 		var result = loadAll();
 		if ( result != null) {
-			error = result;
+			Ide.inst.quickError(result);
 		} else {
-			error = "";
 			if (names.length > 0) {
 				this.currentFilter = None;
 				displayTypes(sort, sortOrderAscending);
@@ -277,7 +257,6 @@ class Profiler extends hide.ui.View<{}> {
 	}
 
 	public function refresh() {
-		//var memo : memory.Memory;
 		refreshStats();
 		refreshFilters();
 		refreshHierarchicalView();
@@ -414,7 +393,6 @@ class Profiler extends hide.ui.View<{}> {
 					copy[0].size += path.size;
 				}
 			}
-
 		}
 
 		children.sort((a, b) -> b.count - a.count);
