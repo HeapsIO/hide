@@ -8,23 +8,16 @@ import hrt.shgraph.AstTools;
 @group("Property")
 @color("#0e8826")
 class NewTime extends ShaderNode {
-	function getDef(name: String, def: Float) {
-		var defaultValue = Reflect.getProperty(defaults, name);
-		if (defaultValue != null) {
-			def = Std.parseFloat(defaultValue) ?? def;
-		}
-		return def;
-	}
 
 	override function generate(ctx: NodeGenContext) {
-		var time = ctx.getGlobalInputVar(Time);
+		var time = ctx.getGlobalInput(Time);
 
-		ctx.setOutput(0, AstTools.makeVar(time));
-		ctx.addPreview(AstTools.makeVar(time));
+		ctx.setOutput(0, time);
+		ctx.addPreview(time);
 	}
 
 	override function getOutputs() : Array<ShaderNode.OutputInfo> {
-		static var o = [{name: "time", type: ShaderGraph.ShType.Float(1)}];
+		static var o = [{name: "time", type: SgFloat(1)}];
 		return o;
 	}
 

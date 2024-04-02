@@ -7,6 +7,56 @@ import hrt.shgraph.AstTools.*;
 import hrt.shgraph.ShaderGraph;
 import hrt.shgraph.ShaderNode;
 
+class NodeGenContextSubGraph extends NodeGenContext {
+	public function new(parentCtx : NodeGenContext) {
+		super(parentCtx?.domain ?? Fragment);
+		this.parentCtx = parentCtx;
+	}
+
+	override function getGlobalInput(id: Variables.Global) : TExpr {
+		var global = Variables.Globals[id];
+		var inputId = globalInVars.getOrPut(global.name, inputCount++);
+		return parentCtx?.nodeInputExprs[inputId] ?? parentCtx?.getGlobalInput(id) ?? super.getGlobalInput(id);
+	}
+
+	override  function setGlobalOutput(id: Variables.Global, expr: TExpr) : Void {
+		var global = Variables.Globals[id];
+		if (outputCount == 0 && parentCtx != null) {
+			parentCtx.addPreview(expr);
+		}
+		var outputId = globalOutVars.getOrPut(global.name, outputCount ++);
+		if (parentCtx != null) {
+			parentCtx.setOutput(outputId, expr);
+		} else {
+			super.setGlobalOutput(id, expr);
+		}
+	}
+
+	override  function getGlobalParam(name: String, type: Type, ?defVal: Dynamic) : TExpr {
+		var inputId = globalInVars.getOrPut(name, inputCount ++);
+		return parentCtx?.nodeInputExprs[inputId] ?? parentCtx?.getGlobalParam(name, type, defVal) ?? super.getGlobalParam(name, type, defVal);
+	}
+
+	override function setGlobalCustomOutput(name: String, expr: TExpr) : Void {
+		if (outputCount == 0 && parentCtx != null) {
+			parentCtx.addPreview(expr);
+		}
+		var outputId = globalOutVars.getOrPut(name, outputCount ++);
+		if (parentCtx != null) {
+			parentCtx.setOutput(outputId, expr);
+		} else {
+			super.setGlobalCustomOutput(name, expr);
+		}
+	}
+
+	var parentCtx : NodeGenContext;
+
+	var globalInVars: Map<String, Int> = [];
+	var globalOutVars: Map<String, Int> = [];
+	var inputCount = 0;
+	var outputCount = 0;
+}
+
 @:allow(hrt.shgraph.ShaderGraph)
 class NodeGenContext {
 	// Pour les rares nodes qui ont besoin de differencier entre vertex et fragment
@@ -19,32 +69,43 @@ class NodeGenContext {
 
 	// For general input/output of the shader graph. Allocate a new global var if name is not found,
 	// else return the previously allocated variable and assert that v.type == type and devValue == v.defValue
-	public inline function getGlobalInputVar(id: Variables.Global) : TVar {
-		return getOrAllocateGlobalVar(id, true, false);
+	public function getGlobalInput(id: Variables.Global) : TExpr {
+		return makeVar(getOrAllocateGlobal(id, true, false));
 	}
 
-	public inline function getGlobalOutputVar(id: Variables.Global) : TVar {
-		return getOrAllocateGlobalVar(id, false, true);
+	public function setGlobalOutput(id: Variables.Global, expr: TExpr) : Void {
+		var v = makeVar(getOrAllocateGlobal(id, false, true));
+		expressions.push(makeAssign(v, expr));
 	}
 
-	public inline function getGlobalParam(name: String, type: Type, ?defVal: Dynamic) : TVar {
-		return globalVars.getOrPut(name, {v: {id: hxsl.Tools.allocVarId(), name: name, type: type, kind: Param}, isInput: true, isOutput: false, defValue:defVal}).v;
+	public function getGlobalParam(name: String, type: Type, ?defVal: Dynamic) : TExpr {
+		return makeVar(globalVars.getOrPut(name, {v: {id: hxsl.Tools.allocVarId(), name: name, type: type, kind: Param}, isInput: true, isOutput: false, defValue:defVal, __init__: null}).v);
 	}
 
-	function getOrAllocateGlobalVar(id: Variables.Global, ?isInput: Bool, ?isOutput: Bool) : TVar {
+	public function setGlobalCustomOutput(name: String, expr: TExpr) : Void {
+		var v = makeVar(globalVars.getOrPut(name, {v: {id: hxsl.Tools.allocVarId(), name: name, type: expr.t, kind: Param}, isInput: false, isOutput: true, defValue:null, __init__: null}).v);
+		expressions.push(makeAssign(v, expr));
+	}
+
+	function getOrAllocateGlobal(id: Variables.Global, ?isInput: Bool, ?isOutput: Bool) : TVar {
 		var global = Variables.Globals[id];
 		var def : ShaderGraph.ExternVarDef = globalVars.get(global.name);
 		if (def == null) {
 			var v : TVar = {id: hxsl.Tools.allocVarId(), name: global.name, type: global.type, kind: global.kind};
-			def = {v: v, isInput: isInput, isOutput: isOutput, defValue: global.def};
+			def = {v: v, isInput: isInput, isOutput: isOutput, defValue: global.def, __init__: null};
 			if (global.parent != null) {
 				var p = Variables.Globals[global.parent];
-				v.parent = globalVars.getOrPut(p.name, {v : {id : hxsl.Tools.allocVarId(), name: p.name, type: TStruct([]), kind: p.kind}, isInput: false, isOutput: false, defValue: null}).v;
+				v.parent = globalVars.getOrPut(p.name, {v : {id : hxsl.Tools.allocVarId(), name: p.name, type: TStruct([]), kind: p.kind}, isInput: false, isOutput: false, defValue: null, __init__: null}).v;
 				switch(v.parent.type) {
 					case TStruct(arr):
 						arr.push(v);
 					default: throw "parent must be a TStruct";
 				}
+			}
+			if (id == CalculatedUV) {
+				var uv = getOrAllocateGlobal(UV);
+				var expr = makeAssign(makeVar(v), makeVar(uv));
+				def.__init__ = expr;
 			}
 			globalVars.set(global.name, def);
 		}
@@ -58,8 +119,8 @@ class NodeGenContext {
 	// can be casted a Vec4
 	public function addPreview(expr: TExpr) {
 		if (!previewEnabled) return;
-		var selector = makeVar(getGlobalInputVar(PreviewSelect));
-		var outputColor = makeVar(getGlobalInputVar(PixelColor));
+		var selector = getGlobalInput(PreviewSelect);
+		var outputColor = getGlobalInput(PixelColor);
 
 		var previewExpr = makeAssign(outputColor, convertToType(TVec(4, VFloat), expr));
 		var ifExpr = makeIf(makeEq(selector, makeInt(currentPreviewId)), previewExpr);
@@ -132,17 +193,12 @@ class NodeGenContext {
 		outputs[id]=e;
 	}
 
-	public function getType(type: ShType) {
+	public function getType(type: SgType) : Type {
 		switch (type) {
-			case Float(1):
-				return TFloat;
-			case Float(n):
-				return TVec(n, VFloat);
-			case Sampler:
-				return TSampler(T2D, false);
-			case Generic(id, consDtraint): {
+			case SgGeneric(id, consDtraint):
 				return getGenericType(id);
-			}
+			default:
+				return inline sgTypeToType(type);
 		}
 	}
 
@@ -182,7 +238,7 @@ class NodeGenContext {
 
 		for (inputId => input in nodeInputInfo) {
 			switch(input.type) {
-				case Generic(id, constraint):
+				case SgGeneric(id, constraint):
 					genericTypes[id] = constraint(nodeInputExprs[inputId]?.t, genericTypes[id]);
 				default:
 			}

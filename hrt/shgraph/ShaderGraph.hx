@@ -41,9 +41,9 @@ function getAngleUnitDropdown(self: Dynamic, width: Float) : hide.Element {
 }
 #end
 
-enum ShType {
-	Float(dimension: Int);
-	Sampler;
+enum SgType {
+	SgFloat(dimension: Int);
+	SgSampler;
 
 	/**
 		All the generics in the same shader node with the same id unify to the
@@ -55,7 +55,33 @@ enum ShType {
 			if both newType and previousType are null, the function should return the most generic type for the constraint
 			return : null if the newType can't be constrained, or a type that can fit both new and previous types
 	**/
-	Generic(id: Int, constraint: (newType: Type, previousType: Type) -> Null<Type>);
+	SgGeneric(id: Int, constraint: (newType: Type, previousType: Type) -> Null<Type>);
+}
+
+function typeToSgType(t: Type) : SgType {
+	return switch(t) {
+		case TFloat:
+			SgFloat(1);
+		case TVec(n, VFloat):
+			SgFloat(n);
+		case TSampler(T2D, false):
+			SgSampler;
+		default:
+			throw "Unsuported type";
+	}
+}
+
+function sgTypeToType(t: SgType) : Type {
+	return switch(t) {
+		case SgFloat(1):
+			return TFloat;
+		case SgFloat(n):
+			return TVec(n, VFloat);
+		case SgSampler:
+			return TSampler(T2D, false);
+		case SgGeneric(id, consDtraint):
+			throw "Can't resolve generic without context";
+	}
 }
 
 function ConstraintFloat(newType: Type, previousType: Type) : Null<Type> {
@@ -158,6 +184,7 @@ ExternVarDef {
 	var isInput: Bool;
 	var isOutput: Bool;
 	var defValue: Dynamic;
+	var __init__: TExpr;
 }
 
 @:access(hrt.shgraph.Graph)
@@ -185,16 +212,15 @@ class ShaderGraphGenContext2 {
 		}
 	}
 
-	public function generate() : {e: TExpr, externs: Array<ExternVarDef>} {
+	public function generate(?genContext: NodeGenContext) : {e: TExpr, externs: Array<ExternVarDef>} {
 		initNodes();
 		var sortedNodes = sortGraph();
 
-		var genContext = new NodeGenContext(graph.domain);
-		genContext.previewEnabled = true;
+		genContext = genContext ?? new NodeGenContext(graph.domain);
+		genContext.previewEnabled = includePreviews;
 		genContext.domain = Fragment;
 		var expressions : Array<TExpr> = [];
 		genContext.expressions = expressions;
-
 
 		for (nodeId in sortedNodes) {
 			var node = nodes[nodeId];
@@ -1087,8 +1113,8 @@ class ShaderGraph extends hrt.prefab.Prefab {
 		return dynamicType;
 	}
 
-	public function compile3() : hrt.prefab.Cache.ShaderDef {
-		var ctx = new ShaderGraphGenContext2(graphs[1], false);
+	public function compile3(includePreview: Bool) : hrt.prefab.Cache.ShaderDef {
+		var ctx = new ShaderGraphGenContext2(graphs[1], includePreview);
 		var inits : Array<{variable: TVar, value: Dynamic}>= [];
 
 		var shaderData : ShaderData = {
@@ -1099,6 +1125,7 @@ class ShaderGraph extends hrt.prefab.Prefab {
 
 		var gen = ctx.generate();
 
+		var __init__exprs : Array<TExpr>= [];
 		for (v in gen.externs) {
 			if (v.v.parent == null) {
 				shaderData.vars.push(v.v);
@@ -1106,7 +1133,30 @@ class ShaderGraph extends hrt.prefab.Prefab {
 			if (v.defValue != null) {
 				inits.push({variable:v.v, value:v.defValue});
 			}
+			if (v.__init__ != null) {
+				__init__exprs.push(v.__init__);
+			}
 		}
+
+		if (__init__exprs.length != 0) {
+			var funcVar : TVar = {
+				name : "__init__",
+				id : hxsl.Tools.allocVarId(),
+				kind : Function,
+				type : TFun([{ ret : TVoid, args : [] }])
+			};
+
+			var fn : TFunction = {
+				ret : TVoid, kind : Init,
+				ref : funcVar,
+				expr : makeExpr(TBlock(__init__exprs), TVoid),
+				args : []
+			};
+
+			shaderData.funs.push(fn);
+			shaderData.vars.push(funcVar);
+		}
+
 		var fnKind : FunctionKind = Fragment;
 		var functionName : String = EnumValueTools.getName(fnKind).toLowerCase();
 
@@ -1436,7 +1486,7 @@ class ShaderGraph extends hrt.prefab.Prefab {
 
 				switch(typeString[0]) {
 					case "TSampler2D": // Legacy parameters conversion
-						p.type = TSampler(T2D, false);
+						p.type = Type.TSampler(T2D, false);
 					case "TSampler":
 						var params : Array<Dynamic> = [std.Type.createEnum(TexDimension, enumParamsString[0] ?? "T2D"), enumParamsString[1] == "true"];
 						p.type = std.Type.createEnum(Type, typeString[0], params);

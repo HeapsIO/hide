@@ -43,7 +43,7 @@ class AstTools {
 			default: throw "Can't create a vector of size " + values.length;
 		}
 		var params = [for (v in values) makeExpr(TConst(CFloat(v)), TFloat)];
-		return makeExpr(TCall(makeExpr(TGlobal(ctor), TVoid), params), TVec(values.length, VFloat));
+		return makeGlobalCall(ctor, params, TVec(values.length, VFloat));
 	}
 
 	public inline static function makeVecExpr(values: Array<TExpr>) : TExpr {
@@ -53,7 +53,7 @@ class AstTools {
 			case 4: Vec4;
 			default: throw "Can't create a vector of size " + values.length;
 		}
-		return makeExpr(TCall(makeExpr(TGlobal(ctor), TVoid), values), TVec(values.length, VFloat));
+		return makeGlobalCall(ctor, values, TVec(values.length, VFloat));
 	}
 
 	public inline static function makeVar(v: TVar, ?pos: Position) : TExpr {
@@ -71,5 +71,9 @@ class AstTools {
 
 	public inline static function makeEq(a: TExpr, b: TExpr) : TExpr {
 		return makeExpr(TBinop(OpEq, a, b), TBool);
+	}
+
+	public inline static function makeGlobalCall(global: TGlobal, args: Array<TExpr>, retType: Type) : TExpr {
+		return makeExpr(TCall(makeExpr(TGlobal(global), TVoid), args), retType);
 	}
 }

@@ -30,8 +30,8 @@ class AlphaPreview extends hxsl.Shader {
 	}
 }
 
-typedef InputInfo = {name: String, type: ShType};
-typedef OutputInfo = {name: String, type: ShType};
+typedef InputInfo = {name: String, type: SgType};
+typedef OutputInfo = {name: String, type: SgType};
 typedef VariableDecl = {v: TVar, display: String, ?vertexOnly: Bool};
 typedef AliasInfo = {?nameSearch: String, ?nameOverride : String, ?description : String, ?args : Array<Dynamic>, ?group: String};
 @:autoBuild(hrt.shgraph.Macros.autoRegisterNode())
@@ -61,6 +61,14 @@ class ShaderNode {
 		throw "generate is not defined for class " + std.Type.getClassName(std.Type.getClass(this));
 	}
 
+	function getDef(name: String, def: Float) {
+		var defaultValue = Reflect.getProperty(defaults, name);
+		if (defaultValue != null) {
+			def = Std.parseFloat(defaultValue) ?? def;
+		}
+		return def;
+	}
+
 	// Old API ======================================================================================
 
 	public function getAliases(name: String, group: String, description: String) : Array<AliasInfo> {
@@ -82,14 +90,14 @@ class ShaderNode {
 						id: 0,
 						kind: Global,
 						name: "_sg_out_color",
-						type: TVec(3, VFloat)
+						type: Type.TVec(3, VFloat)
 					},
 					{
 						parent: null,
 						id: 0,
 						kind: Global,
 						name: "_sg_out_alpha",
-						type: TFloat
+						type: Type.TFloat
 					},
 				];
 
@@ -104,31 +112,13 @@ class ShaderNode {
 	public var outputCompiled : Map<String, Bool> = []; // todo: put with outputs variable
 
 	// TODO(ces) : caching
+
 	public function getOutputs2(domain: ShaderGraph.Domain, ?inputTypes: Array<Type>) : Map<String, {v: TVar, index: Int}> {
-		var def = getShaderDef(domain, () -> 0);
-		var map : Map<String, {v: TVar, index: Int}> = [];
-		var count = 0;
-		for (i => tvar in def.outVars) {
-			if (!tvar.internal) {
-				map.set(tvar.v.name, {v: tvar.v, index: count});
-				count += 1;
-			}
-		}
-		return map;
+		return [for (id => i in getOutputs()) i.name => {v: {id: 0, name: i.name, type: sgTypeToType(i.type), kind: Local}, index: id}];
 	}
 
-	// TODO(ces) : caching
 	public function getInputs2(domain: ShaderGraph.Domain) : Map<String, {v: TVar, ?def: hrt.shgraph.ShaderGraph.ShaderDefInput, index: Int}> {
-		var def = getShaderDef(domain, () -> 0);
-		var map : Map<String, {v: TVar, ?def: hrt.shgraph.ShaderGraph.ShaderDefInput, index: Int}> = [];
-		var count = 0;
-		for (tvar in def.inVars) {
-			if (!tvar.internal) {
-				map.set(tvar.v.name, {v: tvar.v, def: tvar.defVal, index: count});
-				count += 1;
-			}
-		}
-		return map;
+		return [for (id => i in getInputs()) i.name => {v: {id: 0, name: i.name, type: sgTypeToType(i.type), kind: Local}, index: id}];
 	}
 
 

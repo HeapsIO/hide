@@ -19,6 +19,16 @@ class ShaderOutput extends ShaderNode {
 		this.variable = variable;
 	}
 
+	override public function getInputs() : Array<ShaderNode.InputInfo> {
+		return [{name: "output", type: SgFloat(1)}];
+	}
+
+	override public function generate(ctx: NodeGenContext) {
+		var out = ctx.getInput(0, ShaderDefInput.Const(getDef("output", 0.0)));
+		ctx.setGlobalCustomOutput("customOutput", out);
+		ctx.addPreview(out);
+	}
+
 	override public function getAliases(name: String, group: String, description: String) {
 		var aliases = super.getAliases(name, group, description);
 		for (key => output in hrt.shgraph.ShaderOutput.availableOutputs) {

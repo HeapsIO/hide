@@ -12,13 +12,31 @@ class ShaderParam extends ShaderNode {
 	@prop() public var perInstance : Bool;
 
 	override function getOutputs() : Array<ShaderNode.OutputInfo> {
-		return [{name: "output", type: ShaderGraph.ShType.Float(1)}];
+		var t = switch(variable.type) {
+			case TFloat:
+				SgFloat(1);
+			case TVec(n, _):
+				SgFloat(n);
+			case TSampler(_,_):
+				SgSampler;
+			default:
+				throw "Unhandled var type " + variable.type;
+		}
+		return [{name: "output", type: t}];
 	}
 
 	override function generate(ctx: NodeGenContext) {
 		var v = ctx.getGlobalParam(variable.name, variable.type, 0.0);
-		ctx.setOutput(0, AstTools.makeVar(v));
-		ctx.addPreview(AstTools.makeVar(v));
+
+		ctx.setOutput(0, v);
+		if (v.t.match(TSampler(_,_))) {
+			var uv = ctx.getGlobalInput(CalculatedUV);
+			var sample = AstTools.makeGlobalCall(Texture, [v, uv], TVec(4, VFloat));
+			ctx.addPreview(sample);
+		}
+		else {
+			ctx.addPreview(v);
+		}
 	}
 
 

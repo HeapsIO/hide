@@ -8,13 +8,7 @@ import hrt.shgraph.AstTools;
 @group("Property")
 @color("#0e8826")
 class NewAdd extends ShaderNode {
-	function getDef(name: String, def: Float) {
-		var defaultValue = Reflect.getProperty(defaults, name);
-		if (defaultValue != null) {
-			def = Std.parseFloat(defaultValue) ?? def;
-		}
-		return def;
-	}
+
 
 	override function generate(ctx: NodeGenContext) {
 		var a = ctx.getInput(0, ShaderGraph.ShaderDefInput.Const(getDef("a", 0.0)));
@@ -31,12 +25,12 @@ class NewAdd extends ShaderNode {
 	}
 
 	override function getInputs() : Array<ShaderNode.InputInfo> {
-		static var inputs = [{name: "a", type: ShaderGraph.ShType.Generic(0, ShaderGraph.ConstraintFloat)}, {name: "b", type: ShaderGraph.ShType.Generic(0, ShaderGraph.ConstraintFloat)}];
+		static var inputs = [{name: "a", type: SgGeneric(0, ShaderGraph.ConstraintFloat)}, {name: "b", type: SgGeneric(0, ShaderGraph.ConstraintFloat)}];
 		return inputs;
 	}
 
 	override function getOutputs() : Array<ShaderNode.OutputInfo> {
-		static var outputs = [{name: "output", type: ShaderGraph.ShType.Generic(0, ShaderGraph.ConstraintFloat)}];
+		static var outputs = [{name: "output", type: SgGeneric(0, ShaderGraph.ConstraintFloat)}];
 		return outputs;
 	}
 
