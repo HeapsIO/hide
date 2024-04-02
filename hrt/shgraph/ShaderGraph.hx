@@ -41,6 +41,49 @@ function getAngleUnitDropdown(self: Dynamic, width: Float) : hide.Element {
 }
 #end
 
+enum ShType {
+	Float(dimension: Int);
+	Sampler;
+
+	/**
+		All the generics in the same shader node with the same id unify to the
+		same type.
+
+		Constraint :
+			newType : the type we are trying to constraint. If null the function should return previousType
+			previousType : the type previously constraint to this generic.
+			if both newType and previousType are null, the function should return the most generic type for the constraint
+			return : null if the newType can't be constrained, or a type that can fit both new and previous types
+	**/
+	Generic(id: Int, constraint: (newType: Type, previousType: Type) -> Null<Type>);
+}
+
+function ConstraintFloat(newType: Type, previousType: Type) : Null<Type> {
+	function getN(type:Type) {
+		return switch(type) {
+			case TFloat:
+				1;
+			case TVec(n, VFloat):
+				n;
+			case null, _:
+				null;
+		};
+	}
+
+	var newN = getN(newType) ?? return (previousType ?? TFloat);
+	var oldN = getN(previousType) ?? newN;
+
+	var maxN = hxd.Math.imax(newN, oldN);
+	switch (maxN) {
+		case 1:
+			return TFloat;
+		case 2,3,4:
+			return TVec(maxN, VFloat);
+		default:
+			throw "invalid float size " + maxN;
+	}
+}
+
 enum ShaderDefInput {
 	Var(name: String);
 	Const(intialValue: Float);
@@ -155,9 +198,9 @@ class ShaderGraphGenContext2 {
 
 		for (nodeId in sortedNodes) {
 			var node = nodes[nodeId];
-			genContext.currentPreviewId = node.node.id + 1;
-			genContext.outputs.resize(0);
-			node.node.instance.generate(node.inputs, genContext);
+			genContext.initForNode(node.node, node.inputs);
+
+			node.node.instance.generate(genContext);
 
 			for (outputId => expr in genContext.outputs) {
 				if (expr == null) throw "null expr for output " + outputId;
@@ -167,6 +210,8 @@ class ShaderGraphGenContext2 {
 					nodes[target.to].inputs[target.input] = expr;
 				}
 			}
+
+			genContext.finishNode();
 		}
 
 		for (e in expressions) {

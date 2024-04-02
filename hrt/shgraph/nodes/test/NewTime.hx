@@ -16,15 +16,16 @@ class NewTime extends ShaderNode {
 		return def;
 	}
 
-	override function generate(inputs: Array<TExpr>, ctx: NodeGenContext) {
+	override function generate(ctx: NodeGenContext) {
 		var time = ctx.getGlobalInputVar(Time);
 
-		ctx.addOutput(AstTools.makeVar(time), 0);
+		ctx.setOutput(0, AstTools.makeVar(time));
 		ctx.addPreview(AstTools.makeVar(time));
 	}
 
-	override function getOutputs() : Array<{name: String, ?type: Type}> {
-		return [{name: "time", type: TFloat}];
+	override function getOutputs() : Array<ShaderNode.OutputInfo> {
+		static var o = [{name: "time", type: ShaderGraph.ShType.Float(1)}];
+		return o;
 	}
 
 	override function getShaderDef(domain: ShaderGraph.Domain, getNewIdFn : () -> Int, ?inputTypes: Array<Type>) : ShaderGraph.ShaderNodeDef {
@@ -39,7 +40,7 @@ class NewTime extends ShaderNode {
 	}
 
 	override function getInputs2(domain: ShaderGraph.Domain) : Map<String, {v: TVar, ?def: hrt.shgraph.ShaderGraph.ShaderDefInput, index: Int}> {
-		return [for (id => i in getInputs())  i.name => {v: {id: 0, name: i.name, type: i.type, kind: Local}, def: hrt.shgraph.ShaderGraph.ShaderDefInput.Const(0.0), index: id}];
+		return [for (id => i in getInputs())  i.name => {v: {id: 0, name: i.name, type: TFloat, kind: Local}, def: hrt.shgraph.ShaderGraph.ShaderDefInput.Const(0.0), index: id}];
 	}
 
 }

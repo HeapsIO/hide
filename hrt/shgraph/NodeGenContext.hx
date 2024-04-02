@@ -5,11 +5,13 @@ using Lambda;
 using hrt.shgraph.Utils;
 import hrt.shgraph.AstTools.*;
 import hrt.shgraph.ShaderGraph;
+import hrt.shgraph.ShaderNode;
 
 @:allow(hrt.shgraph.ShaderGraph)
 class NodeGenContext {
 	// Pour les rares nodes qui ont besoin de differencier entre vertex et fragment
 	public var domain : ShaderGraph.Domain;
+	public var previewEnabled: Bool = true;
 
 	public function new(domain: ShaderGraph.Domain) {
 		this.domain = domain;
@@ -17,15 +19,15 @@ class NodeGenContext {
 
 	// For general input/output of the shader graph. Allocate a new global var if name is not found,
 	// else return the previously allocated variable and assert that v.type == type and devValue == v.defValue
-	public function getGlobalInputVar(id: Variables.Global) : TVar {
+	public inline function getGlobalInputVar(id: Variables.Global) : TVar {
 		return getOrAllocateGlobalVar(id, true, false);
 	}
 
-	public function getGlobalOutputVar(id: Variables.Global) : TVar {
+	public inline function getGlobalOutputVar(id: Variables.Global) : TVar {
 		return getOrAllocateGlobalVar(id, false, true);
 	}
 
-	public function getGlobalParam(name: String, type: Type, ?defVal: Dynamic) : TVar {
+	public inline function getGlobalParam(name: String, type: Type, ?defVal: Dynamic) : TVar {
 		return globalVars.getOrPut(name, {v: {id: hxsl.Tools.allocVarId(), name: name, type: type, kind: Param}, isInput: true, isOutput: false, defValue:defVal}).v;
 	}
 
@@ -53,7 +55,7 @@ class NodeGenContext {
 
 	// Generate a preview block that displays the content of expr
 	// in the preview box of the node. Expr must be a type that
-	// can be casted a Vec3
+	// can be casted a Vec4
 	public function addPreview(expr: TExpr) {
 		if (!previewEnabled) return;
 		var selector = makeVar(getGlobalInputVar(PreviewSelect));
@@ -123,18 +125,89 @@ class NodeGenContext {
 		expressions.push(e);
 	}
 
-	public function addOutput(e: TExpr, id: Int) {
+	public function setOutput(id: Int, e: TExpr) {
+		var expectedType = getType(nodeOutputInfo[id].type);
+		if (!expectedType.equals(e.t))
+			throw "Output " + id + " has different type than declared";
 		outputs[id]=e;
 	}
 
-	// Could be done
-	//public function getFunction(name: String, expr: TExpr) : T
+	public function getType(type: ShType) {
+		switch (type) {
+			case Float(1):
+				return TFloat;
+			case Float(n):
+				return TVec(n, VFloat);
+			case Sampler:
+				return TSampler(T2D, false);
+			case Generic(id, consDtraint): {
+				return getGenericType(id);
+			}
+		}
+	}
 
-	// Pour la generation des previews
+	public inline function getGenericType(id: Int) {
+		return genericTypes[id];
+	}
 
-	public var previewEnabled: Bool = true;
+	public function getInput(id: Int, ?defValue: ShaderGraph.ShaderDefInput) : Null<TExpr> {
+		var input = nodeInputExprs[id];
+		if (input != null) {
+			var inputType = getType(nodeInputInfo[id].type);
+			return convertToType(inputType, input);
+		}
+
+		if (defValue != null) {
+			switch(defValue) {
+				case Const(f):
+					return makeFloat(f);
+				default:
+					throw "def value not handled yet";
+			}
+		}
+		return null;
+	}
+
+	/**
+		API used by ShaderGraphGenContext
+	**/
+	function initForNode(node: ShaderGraph.Node, nodeInputExprs: Array<TExpr>) {
+		nodeInputInfo = node.instance.getInputs();
+		nodeOutputInfo = node.instance.getOutputs();
+		this.node = node;
+		this.nodeInputExprs = nodeInputExprs;
+
+		outputs.resize(0);
+		genericTypes.resize(0);
+
+		for (inputId => input in nodeInputInfo) {
+			switch(input.type) {
+				case Generic(id, constraint):
+					genericTypes[id] = constraint(nodeInputExprs[inputId]?.t, genericTypes[id]);
+				default:
+			}
+		}
+
+		currentPreviewId = node.id + 1;
+	}
+
+	function finishNode() {
+		if (nodeOutputInfo.length != outputs.length) {
+			throw "Missing outputs for node";
+		}
+	}
+
+	var node : ShaderGraph.Node = null;
+
 	var currentPreviewId: Int = -1;
 	var expressions: Array<TExpr> = [];
 	var outputs: Array<TExpr> = [];
+	var nodeOutputInfo: Array<OutputInfo>;
+
+
+	var genericTypes: Array<Type> = [];
+	var nodeInputExprs : Array<TExpr>;
+
+	var nodeInputInfo : Array<InputInfo>;
 	var globalVars: Map<String, ShaderGraph.ExternVarDef> = [];
 }

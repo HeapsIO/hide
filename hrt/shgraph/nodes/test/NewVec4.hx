@@ -3,11 +3,11 @@ package hrt.shgraph.nodes.test;
 using hxsl.Ast;
 import hrt.shgraph.AstTools;
 
-@name("NewAdd")
+@name("NewVec4")
 @description("New add, if this is in the final build come bonk Clement Espeute on the head plz")
 @group("Property")
 @color("#0e8826")
-class NewAdd extends ShaderNode {
+class NewVec4 extends ShaderNode {
 	function getDef(name: String, def: Float) {
 		var defaultValue = Reflect.getProperty(defaults, name);
 		if (defaultValue != null) {
@@ -19,24 +19,32 @@ class NewAdd extends ShaderNode {
 	override function generate(ctx: NodeGenContext) {
 		var a = ctx.getInput(0, ShaderGraph.ShaderDefInput.Const(getDef("a", 0.0)));
 		var b = ctx.getInput(1, ShaderGraph.ShaderDefInput.Const(getDef("b", 0.0)));
+		var c = ctx.getInput(2, ShaderGraph.ShaderDefInput.Const(getDef("c", 0.0)));
+		var d = ctx.getInput(3, ShaderGraph.ShaderDefInput.Const(getDef("d", 0.0)));
 
 		var id = hxsl.Tools.allocVarId();
-		var out = {id: id, name: 'output', kind: Local, type: ctx.getGenericType(0)};
-		var add = AstTools.makeBinop(a, OpAdd, b);
+		var out = {id: id, name: 'output', kind: Local, type: TVec(4, VFloat)};
+		var ctor = AstTools.makeVecExpr([a,b,c,d]);
 
-		ctx.addExpr(AstTools.makeExpr(TVarDecl(out, add), out.type));
+		ctx.addExpr(AstTools.makeExpr(TVarDecl(out, ctor), out.type));
 		ctx.setOutput(0, AstTools.makeVar(out));
 
 		ctx.addPreview(AstTools.makeVar(out));
 	}
 
 	override function getInputs() : Array<ShaderNode.InputInfo> {
-		static var inputs = [{name: "a", type: ShaderGraph.ShType.Generic(0, ShaderGraph.ConstraintFloat)}, {name: "b", type: ShaderGraph.ShType.Generic(0, ShaderGraph.ConstraintFloat)}];
+		static var inputs =
+		[
+			{name: "a", type: ShaderGraph.ShType.Float(1)},
+			{name: "b", type: ShaderGraph.ShType.Float(1)},
+			{name: "c", type: ShaderGraph.ShType.Float(1)},
+			{name: "d", type: ShaderGraph.ShType.Float(1)},
+		];
 		return inputs;
 	}
 
 	override function getOutputs() : Array<ShaderNode.OutputInfo> {
-		static var outputs = [{name: "output", type: ShaderGraph.ShType.Generic(0, ShaderGraph.ConstraintFloat)}];
+		static var outputs = [{name: "output", type: ShaderGraph.ShType.Float(4)}];
 		return outputs;
 	}
 

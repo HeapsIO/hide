@@ -30,7 +30,8 @@ class AlphaPreview extends hxsl.Shader {
 	}
 }
 
-
+typedef InputInfo = {name: String, type: ShType};
+typedef OutputInfo = {name: String, type: ShType};
 typedef VariableDecl = {v: TVar, display: String, ?vertexOnly: Bool};
 typedef AliasInfo = {?nameSearch: String, ?nameOverride : String, ?description : String, ?args : Array<Dynamic>, ?group: String};
 @:autoBuild(hrt.shgraph.Macros.autoRegisterNode())
@@ -45,18 +46,22 @@ class ShaderNode {
 
 	public var defaults : Dynamic = {};
 
-
-	public function getInputs() : Array<{name: String, ?type: Type}> {
+	//
+	// New API =======================================================================================
+	//
+	public function getInputs() : Array<InputInfo> {
 		return [];
 	}
 
-	public function getOutputs() : Array<{name: String, ?type: Type}> {
+	public function getOutputs() : Array<OutputInfo> {
 		return [];
 	}
 
-	public function generate(inputs: Array<TExpr>, ctx: NodeGenContext) : Void {
+	public function generate(ctx: NodeGenContext) : Void {
 		throw "generate is not defined for class " + std.Type.getClassName(std.Type.getClass(this));
 	}
+
+	// Old API ======================================================================================
 
 	public function getAliases(name: String, group: String, description: String) : Array<AliasInfo> {
 		var cl = HaxeType.getClass(this);

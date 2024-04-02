@@ -11,13 +11,13 @@ class ShaderParam extends ShaderNode {
 	@prop() public var parameterId : Int;
 	@prop() public var perInstance : Bool;
 
-	override function getOutputs() {
-		return [{name: "output", type: null}];
+	override function getOutputs() : Array<ShaderNode.OutputInfo> {
+		return [{name: "output", type: ShaderGraph.ShType.Float(1)}];
 	}
 
-	override function generate(inputs: Array<TExpr>, ctx: NodeGenContext) {
+	override function generate(ctx: NodeGenContext) {
 		var v = ctx.getGlobalParam(variable.name, variable.type, 0.0);
-		ctx.addOutput(AstTools.makeVar(v), 0);
+		ctx.setOutput(0, AstTools.makeVar(v));
 		ctx.addPreview(AstTools.makeVar(v));
 	}
 
