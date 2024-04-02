@@ -41,8 +41,8 @@ class Profiler extends hide.ui.View<{}> {
 	var tabs : hide.comp.Tabs;
 	var view : cdb.DiffFile.ConfigView;
 
-	public var mainMemory : hide.tools.memory.Memory = null;
-	public var currentMemory : hide.tools.memory.Memory = null;
+	public var mainMemory : hlmem.Memory = null;
+	public var currentMemory : hlmem.Memory = null;
 	public var names(default, null) : Array<String> = [];
 
 	public var lines(default, null) : Array<LineData> = [];
@@ -196,6 +196,7 @@ class Profiler extends hide.ui.View<{}> {
 	}
 
 	function load() {
+		var mem : hlmem.Memory;
 		names = dumpPaths;
 
 		var result = loadAll();
@@ -206,15 +207,15 @@ class Profiler extends hide.ui.View<{}> {
 			if (names.length > 0) {
 				this.currentFilter = None;
 				displayTypes(sort, sortOrderAscending);
-				statsObj = mainMemory?.getStatsObj();
+				statsObj = mainMemory?.getStats();
 			}
 		}
 	}
 
-	function loadAll() @:privateAccess{
+	function loadAll() @:privateAccess {
 		if (names.length < 1) return null;
 		for (i in 0...names.length) {
-			var newMem = new hide.tools.memory.Memory();
+			var newMem = new hlmem.Memory();
 			try {
 				if (i == 0) { // setup main Memory
 					newMem.loadBytecode(hlPath);
@@ -255,7 +256,7 @@ class Profiler extends hide.ui.View<{}> {
 
 		lines = [];
 
-		var ctx = new hide.tools.memory.Memory.Stats(currentMemory);
+		var ctx = new hlmem.Memory.Stats(currentMemory);
 		for ( b in currentMemory.filteredBlocks)
 			ctx.add(b.type, b.size);
 
@@ -267,15 +268,16 @@ class Profiler extends hide.ui.View<{}> {
 	}
 
 	public function getNameString(tid : Array<Int>) {
-		var path = hide.tools.memory.Memory.Stats.getPathStrings(mainMemory, tid);
+		var path = hlmem.Memory.Stats.getPathStrings(mainMemory, tid);
 		return path[path.length-1];
 	}
 
 	public function getPathString(tid : Array<Int>) {
-		return hide.tools.memory.Memory.Stats.getPathStrings(currentMemory, tid).join(" > ");
+		return hlmem.Memory.Stats.getPathStrings(currentMemory, tid).join(" > ");
 	}
 
 	public function refresh() {
+		//var memo : memory.Memory;
 		refreshStats();
 		refreshFilters();
 		refreshHierarchicalView();
@@ -331,14 +333,14 @@ class Profiler extends hide.ui.View<{}> {
 			new Element('
 			<h4>Memory usage</h4>
 			<h5>${s.memFile}</h5>
-			<div class="outer-gauge"><div class="inner-gauge" title="${hide.tools.memory.Memory.MB(s.used)} used (${ 100 * s.used / s.totalAllocated}% of total)" style="width:${ 100 * s.used / s.totalAllocated}%;"></div></div>
+			<div class="outer-gauge"><div class="inner-gauge" title="${hlmem.Memory.MB(s.used)} used (${ 100 * s.used / s.totalAllocated}% of total)" style="width:${ 100 * s.used / s.totalAllocated}%;"></div></div>
 			<dl>
-				<dt>Allocated</dt><dd>${hide.tools.memory.Memory.MB(s.totalAllocated)}</dd>
-				<dt>Used</dt><dd>${hide.tools.memory.Memory.MB(s.used)}</dd>
-				<dt>Free</dt><dd>${hide.tools.memory.Memory.MB(s.free)}</dd>
-				<dt>GC</dt><dd>${hide.tools.memory.Memory.MB(s.gc)}</dd>
+				<dt>Allocated</dt><dd>${hlmem.Memory.MB(s.totalAllocated)}</dd>
+				<dt>Used</dt><dd>${hlmem.Memory.MB(s.used)}</dd>
+				<dt>Free</dt><dd>${hlmem.Memory.MB(s.free)}</dd>
+				<dt>GC</dt><dd>${hlmem.Memory.MB(s.gc)}</dd>
 				<dt>&nbsp</dt><dd></dd>
-				<dt>Pages</dt><dd>${s.pagesCount} (${hide.tools.memory.Memory.MB(s.pagesSize)})</dd>
+				<dt>Pages</dt><dd>${s.pagesCount} (${hlmem.Memory.MB(s.pagesSize)})</dd>
 				<dt>Roots</dt><dd>${s.rootsCount}</dd>
 				<dt>Stacks</dt><dd>${s.stackCount}</dd>
 				<dt>Types</dt><dd>${s.typesCount}</dd>
@@ -385,7 +387,7 @@ class Profiler extends hide.ui.View<{}> {
 		var datas = [];
 		if (str == "null" || locationData.exists(str)) return;
 
-		var ctx = currentMemory.getLocate(str, 30);
+		var ctx = @:privateAccess currentMemory.locate(str, 30);
 		ctx.sort();
 		for (i in ctx.allT)
 			datas.push({count : i.count, size : i.mem, tid : i.tl, name : null, state: Unique});
@@ -461,7 +463,7 @@ class Profiler extends hide.ui.View<{}> {
 		locationData.clear();
 
 		displayTypes(sort, sortOrderAscending);
-		statsObj = mainMemory?.getStatsObj();
+		statsObj = mainMemory?.getStats();
 
 		refreshHierarchicalView();
 	}
@@ -491,11 +493,11 @@ class ProfilerElement extends hide.comp.Component{
 		this.parent = parent;
 		this.depth = parent != null ? parent.depth + 1 : 0;
 
-		var name = path == null ? line.name : hide.tools.memory.Memory.Stats.getTypeString(profiler.currentMemory, path.v);
+		var name = path == null ? line.name : hlmem.Memory.Stats.getTypeString(profiler.currentMemory, path.v);
 		var count = path == null ? line.count : path.total.count;
 		var mem = path == null ? line.size : path.total.mem;
 
-		this.element = new Element('<tr tabindex="2"><td><div class="folder icon ico ico-caret-right"></div>${count}</td><td>${hide.tools.memory.Memory.MB(mem)}</td><td title="${name}">${name}</td><td><div title="Allocated ${mem} (${100 * mem / Reflect.getProperty(profiler.statsObj[0], "totalAllocated")}% of total)" class="outer-gauge"><div class="inner-gauge" style="width:${100 * mem / Reflect.getProperty(profiler.statsObj[0], "totalAllocated")}%;"></div></div></td></tr>');
+		this.element = new Element('<tr tabindex="2"><td><div class="folder icon ico ico-caret-right"></div>${count}</td><td>${hlmem.Memory.MB(mem)}</td><td title="${name}">${name}</td><td><div title="Allocated ${mem} (${100 * mem / Reflect.getProperty(profiler.statsObj[0], "totalAllocated")}% of total)" class="outer-gauge"><div class="inner-gauge" style="width:${100 * mem / Reflect.getProperty(profiler.statsObj[0], "totalAllocated")}%;"></div></div></td></tr>');
 		this.element.find('td').first().css({'padding-left':'${10 * depth}px'});
 
 		this.foldBtn = this.element.find('.folder');
