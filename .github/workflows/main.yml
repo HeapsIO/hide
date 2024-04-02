@@ -25,6 +25,7 @@ jobs:
         haxelib git hxnodejs https://github.com/HaxeFoundation/hxnodejs
         haxelib git domkit https://github.com/HeapsIO/domkit
         haxelib git hx3compat https://github.com/HaxeFoundation/hx3compat
+        haxelib git hashlink https://github.com/HaxeFoundation/hashlink master other/haxelib/
         haxe hide.hxml
     - run: sudo apt-get install p7zip-full
     - name: Windows
