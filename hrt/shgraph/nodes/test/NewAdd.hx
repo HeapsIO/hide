@@ -25,7 +25,11 @@ class NewAdd extends ShaderNode {
 	}
 
 	override function getInputs() : Array<ShaderNode.InputInfo> {
-		static var inputs = [{name: "a", type: SgGeneric(0, ShaderGraph.ConstraintFloat)}, {name: "b", type: SgGeneric(0, ShaderGraph.ConstraintFloat)}];
+		static var inputs =
+		[
+			{name: "a", type: SgGeneric(0, ShaderGraph.ConstraintFloat), def: ShaderDefInput.Const(0.0)},
+			{name: "b", type: SgGeneric(0, ShaderGraph.ConstraintFloat), def: ShaderDefInput.Const(0.0)}
+		];
 		return inputs;
 	}
 

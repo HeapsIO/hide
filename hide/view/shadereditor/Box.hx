@@ -7,15 +7,15 @@ import hrt.shgraph.ShaderNode;
 @:access(hide.view.Graph)
 class Box {
 
-	var boolColor = "#cc0505";
-	var numberColor = "#00ffea";
-	var floatColor = "#00ff73";
-	var intColor = "#00ffea";
-	var vec2Color = "#5eff00";
-	var vec3Color = "#eeff00";
-	var vec4Color = "#fc6703";
-	var samplerColor = "#600aff";
-	var defaultColor = "#c8c8c8";
+	static final boolColor = "#cc0505";
+	static final numberColor = "#00ffea";
+	static final floatColor = "#00ff73";
+	static final intColor = "#00ffea";
+	static final vec2Color = "#5eff00";
+	static final vec3Color = "#eeff00";
+	static final vec4Color = "#fc6703";
+	static final samplerColor = "#600aff";
+	static final defaultColor = "#c8c8c8";
 
 	var nodeInstance : ShaderNode;
 
@@ -297,32 +297,11 @@ class Box {
 		closePreviewBtn.find(".ico").toggleClass("ico-angle-up", nodeInstance.showPreview);
 	}
 
-	public function addInput(editor : Graph, name : String, valueDefault : String = null, type : hxsl.Ast.Type) {
+	public function addInput(editor : Graph, name : String, valueDefault : String = null, type : hrt.shgraph.ShaderGraph.SgType) {
 		var node = editor.editor.group(element).addClass("input-node-group");
 		var nodeHeight = HEADER_HEIGHT + NODE_MARGIN * (inputs.length+1) + NODE_RADIUS * inputs.length;
 		var style = {fill : ""}
-		style.fill = defaultColor;
-
-		if (type != null) {
-			switch (type) {
-				case TBool:
-					style.fill = boolColor;
-				case TFloat:
-					style.fill = floatColor;
-				case TVec(size, _):
-					switch (size) {
-						case 2:
-							style.fill = vec2Color;
-						case 3:
-							style.fill = vec3Color;
-						case 4:
-							style.fill = vec4Color;
-					}
-				case TSampler(_):
-					style.fill = samplerColor;
-				default:
-			}
-		}
+		style.fill = getTypeColor(type);
 
 		var nodeCircle = editor.editor.circle(node, 0, nodeHeight, NODE_RADIUS, style).addClass("node input-node");
 
@@ -352,32 +331,33 @@ class Box {
 		return node;
 	}
 
-	public function addOutput(editor : Graph, name : String, ?type : hxsl.Ast.Type) {
+	public static function getTypeColor(type : hrt.shgraph.ShaderGraph.SgType) {
+		return switch (type) {
+			//case TBool:
+			//	style.fill = boolColor;
+			//case TInt:
+			//	style.fill = intColor;
+			case SgFloat(1):
+				floatColor;
+			case SgFloat(2):
+				vec2Color;
+			case SgFloat(3):
+				vec3Color;
+			case SgFloat(_):
+				vec4Color;
+			case SgGeneric(_, _):
+				vec4Color;
+			case SgSampler:
+				samplerColor;
+		}
+	}
+
+	public function addOutput(editor : Graph, name : String, ?type : hrt.shgraph.ShaderGraph.SgType) {
 		var node = editor.editor.group(element).addClass("output-node-group");
 		var nodeHeight = HEADER_HEIGHT + NODE_MARGIN * (outputs.length+1) + NODE_RADIUS * outputs.length;
 		var style = {fill : ""}
 
-		style.fill = defaultColor;
-		if (type != null) {
-			switch (type) {
-				case TBool:
-					style.fill = boolColor;
-				case TInt:
-					style.fill = intColor;
-				case TFloat:
-					style.fill = floatColor;
-				case TVec(size, t):
-					if (size == 2)
-						style.fill = vec2Color;
-					else if (size == 3)
-						style.fill = vec3Color;
-					else if (size == 4)
-						style.fill = vec4Color;
-				case TSampler(_):
-					style.fill = samplerColor;
-				default:
-			}
-		}
+		style.fill = getTypeColor(type);
 
 		var nodeCircle = editor.editor.circle(node, width, nodeHeight, NODE_RADIUS, style).addClass("node output-node");
 

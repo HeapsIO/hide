@@ -15,7 +15,7 @@ import hrt.shgraph.ShaderType.SType;
 
 enum EdgeState { None; FromInput; FromOutput; }
 
-typedef Edge = { from : Box, nodeFrom : JQuery, to : Box, nodeTo : JQuery, elt : JQuery };
+typedef Edge = { from : Box, outputFrom : Int, to : Box, inputTo : Int, elt : JQuery };
 
 @:access(hide.view.shadereditor.Box)
 class Graph extends FileView {
@@ -55,8 +55,8 @@ class Graph extends FileView {
 	var edgeStyle = {stroke : ""};
 	var startLinkBox : Box;
 	var endLinkBox : Box;
-	var startLinkGrNode : JQuery;
-	var endLinkNode : JQuery;
+	var startLinkNodeId : Int;
+	var endLinkNodeId : Int;
 	var currentLink : JQuery; // draft of edge
 
 	// used for deleting
@@ -169,11 +169,11 @@ class Graph extends FileView {
 		}
 		// Moving edge
 		if (currentEdge != null) {
-			var distOutput = distanceToElement(currentEdge.nodeFrom, clientX, clientY);
-			var distInput = distanceToElement(currentEdge.nodeTo, clientX, clientY);
+			var distOutput = distanceToElement(currentEdge.from.outputs[currentEdge.outputFrom], clientX, clientY);
+			var distInput = distanceToElement(currentEdge.to.inputs[currentEdge.inputTo], clientX, clientY);
 
 			if (distOutput > distInput) {
-				replaceEdge(FromOutput, currentEdge.nodeTo, clientX, clientY);
+				replaceEdge(FromOutput, currentEdge.to.inputs[currentEdge.inputTo], clientX, clientY);
 			} else {
 				replaceEdge(FromInput, currentEdge, clientX, clientY);
 			}
@@ -242,8 +242,8 @@ class Graph extends FileView {
 		for (edge in listOfEdges) {
 			if (edge.from == b || edge.to == b) {
 				edge.elt.remove();
-				edgeStyle.stroke = edge.nodeFrom.css("fill");
-				edge.elt = createCurve(edge.nodeFrom, edge.nodeTo);
+				edgeStyle.stroke = edge.from.outputs[edge.outputFrom].css("fill");
+				edge.elt = createCurve( edge.from.outputs[edge.outputFrom], edge.to.inputs[edge.inputTo]);
 
 				edge.elt.on("mousedown", function(e) {
 					e.stopPropagation();
@@ -342,17 +342,17 @@ class Graph extends FileView {
 		});
 		listOfBoxes.push(box);
 
-		for (inputName => inputVar in box.getInstance().getInputs2(domain)) {
+		for (inputId => input in box.getInstance().getInputs()) {
 			var defaultValue : String = null;
-			switch (inputVar.def) {
+			switch (input.def) {
 				case Const(defValue):
-					defaultValue= Reflect.getProperty(box.getInstance().defaults, '${inputName}');
+					defaultValue= Reflect.getProperty(box.getInstance().defaults, '${input.name}');
 					if (defaultValue == null) {
 						defaultValue = '$defValue';
 					}
 				default:
 			}
-			var grNode = box.addInput(this, inputName, defaultValue, inputVar.v.type);
+			var grNode = box.addInput(this, input.name, defaultValue, input.type);
 			if (defaultValue != null) {
 				var fieldEditInput = grNode.find("input");
 				fieldEditInput.on("change", function(ev) {
@@ -361,13 +361,13 @@ class Graph extends FileView {
 						fieldEditInput.addClass("error");
 					} else {
 						// Store the value as a string anyway
-						Reflect.setField(box.getInstance().defaults, '${inputName}', '$tmpValue');
+						Reflect.setField(box.getInstance().defaults, '${input.name}', '$tmpValue');
 						fieldEditInput.val(tmpValue);
 						fieldEditInput.removeClass("error");
 					}
 				});
 			}
-			grNode.find(".node").attr("field", inputName);
+			grNode.find(".node").attr("field", inputId);
 			grNode.on("mousedown", function(e : js.jquery.Event) {
 				e.stopPropagation();
 				var node = grNode.find(".node");
@@ -376,23 +376,21 @@ class Graph extends FileView {
 					return;
 				}
 				isCreatingLink = FromInput;
-				startLinkGrNode = grNode;
+				startLinkNodeId = inputId;
 				startLinkBox = box;
 				edgeStyle.stroke = node.css("fill");
-				setAvailableOutputNodes(box, grNode.find(".node").attr("field"));
 			});
 		}
-		for (outputName => outputVar in box.getInstance().getOutputs2(domain)) {
-			var grNode = box.addOutput(this, outputName, outputVar.v.type);
-			grNode.find(".node").attr("field", outputName);
+		for (outputId => info in box.getInstance().getOutputs()) {
+			var grNode = box.addOutput(this, info.name, info.type);
+			grNode.find(".node").attr("field", outputId);
 			grNode.on("mousedown", function(e) {
 				e.stopPropagation();
 				var node = grNode.find(".node");
 				isCreatingLink = FromOutput;
-				startLinkGrNode = grNode;
+				startLinkNodeId = outputId;
 				startLinkBox = box;
 				edgeStyle.stroke = node.css("fill");
-				setAvailableInputNodes(box, startLinkGrNode.find(".node").attr("field"));
 			});
 		}
 
@@ -419,8 +417,8 @@ class Graph extends FileView {
 
 	function removeEdge(edge : Edge) {
 		edge.elt.remove();
-		edge.nodeTo.removeAttr("hasLink");
-		edge.nodeTo.parent().removeClass("hasLink");
+		edge.to.inputs[edge.inputTo].removeAttr("hasLink");
+		edge.to.inputs[edge.inputTo].parent().removeClass("hasLink");
 		listOfEdges.remove(edge);
 	}
 
@@ -428,12 +426,11 @@ class Graph extends FileView {
 		switch (state) {
 			case FromOutput:
 				for (e in listOfEdges) {
-					if (e.nodeTo.is(node)) {
+					if (e.to.inputs[e.inputTo].is(node)) {
 						isCreatingLink = FromOutput;
-						startLinkGrNode = e.nodeFrom.parent();
+						startLinkNodeId = e.outputFrom;
 						startLinkBox = e.from;
-						edgeStyle.stroke = e.nodeFrom.css("fill");
-						setAvailableInputNodes(e.from, e.nodeFrom.attr("field"));
+						edgeStyle.stroke = e.from.outputs[e.outputFrom].css("fill");
 						removeEdge(e);
 						createLink(x, y);
 						return;
@@ -441,12 +438,11 @@ class Graph extends FileView {
 				}
 			case FromInput:
 				for (e in listOfEdges) {
-					if (e.nodeTo.is(edge.nodeTo) && e.nodeFrom.is(edge.nodeFrom)) {
+					if (e.to == edge.to && e.inputTo == edge.inputTo && e.from == edge.from && e.outputFrom == edge.outputFrom) {
 						isCreatingLink = FromInput;
-						startLinkGrNode = e.nodeTo.parent();
+						startLinkNodeId = e.inputTo;
 						startLinkBox = e.to;
-						edgeStyle.stroke = e.nodeFrom.css("fill");
-						setAvailableOutputNodes(e.to, e.nodeTo.attr("field"));
+						edgeStyle.stroke = e.from.outputs[e.outputFrom].css("fill");
 						removeEdge(e);
 						createLink(x, y);
 						return;
@@ -455,37 +451,6 @@ class Graph extends FileView {
 			default:
 				return;
 		}
-	}
-
-	// TODO(ces) : nuke SType from orbit
-	function setAvailableInputNodes(boxOutput : Box, field : String) {
-		var type = boxOutput.getInstance().getOutputs2(domain)[field].v.type;
-		var sType : SType;
-
-		for (box in listOfBoxes) {
-			for (input in box.inputs) {
-				if (box.getInstance().checkTypeAndCompatibilyInput(input.attr("field"), type)) {
-					input.addClass("nodeMatch");
-				}
-			}
-		}
-	}
-
-	function setAvailableOutputNodes(boxInput : Box, field : String) {
-		for (box in listOfBoxes) {
-			for (output in box.outputs) {
-				var outputField = output.attr("field");
-				var type = box.getInstance().getOutputs2(domain)[outputField].v.type;
-				var sType = ShaderType.getSType(type);
-				if (boxInput.getInstance().checkTypeAndCompatibilyInput(field, type)) {
-					output.addClass("nodeMatch");
-				}
-			}
-		}
-	}
-
-	function clearAvailableNodes() {
-		editor.element.find(".nodeMatch").removeClass("nodeMatch");
 	}
 
 	function error(str : String, ?idBox : Int) {
@@ -509,8 +474,8 @@ class Graph extends FileView {
 
 	function createEdgeInEditorGraph(edge) {
 		listOfEdges.push(edge);
-		edge.nodeTo.attr("hasLink", "true");
-		edge.nodeTo.parent().addClass("hasLink");
+		edge.to.inputs[edge.inputTo].attr("hasLink", "true");
+		edge.to.inputs[edge.inputTo].parent().addClass("hasLink");
 
 		edge.elt.on("mousedown", function(e) {
 			e.stopPropagation();
@@ -522,7 +487,7 @@ class Graph extends FileView {
 
 	function createLink(clientX : Int, clientY : Int) {
 
-		var nearestNode = null;
+		var nearestId = -1;
 		var minDistNode = NODE_TRIGGER_NEAR;
 
 		// checking nearest box
@@ -542,61 +507,47 @@ class Graph extends FileView {
 
 		// checking nearest node in the nearest box
 		if (isCreatingLink == FromInput) {
-			var startIndex = 0;
-			while (startIndex < nearestBox.outputs.length && !nearestBox.outputs[startIndex].hasClass("nodeMatch")) {
-				startIndex++;
-			}
-			if (startIndex < nearestBox.outputs.length) {
-				nearestNode = nearestBox.outputs[startIndex];
-				minDistNode = distanceToElement(nearestNode, clientX, clientY);
-				for (i in startIndex+1...nearestBox.outputs.length) {
-					if (!nearestBox.outputs[i].hasClass("nodeMatch"))
-						continue;
-					var tmpDist = distanceToElement(nearestBox.outputs[i], clientX, clientY);
-					if (tmpDist < minDistNode) {
-						minDistNode = tmpDist;
-						nearestNode = nearestBox.outputs[i];
-					}
+			for (id => o in nearestBox.outputs) {
+				var newMin = distanceToElement(o, clientX, clientY);
+				if (newMin < minDistNode) {
+					nearestId = id;
+					minDistNode = newMin;
 				}
 			}
 		} else {
 			// input has one edge at most
-			var startIndex = 0;
-			while (startIndex < nearestBox.inputs.length && !nearestBox.inputs[startIndex].hasClass("nodeMatch")) {
-				startIndex++;
-			}
-			if (startIndex < nearestBox.inputs.length) {
-				nearestNode = nearestBox.inputs[startIndex];
-				minDistNode = distanceToElement(nearestNode, clientX, clientY);
-				for (i in startIndex+1...nearestBox.inputs.length) {
-					if (!nearestBox.inputs[i].hasClass("nodeMatch"))
-						continue;
-					var tmpDist = distanceToElement(nearestBox.inputs[i], clientX, clientY);
-					if (tmpDist < minDistNode) {
-						minDistNode = tmpDist;
-						nearestNode = nearestBox.inputs[i];
-					}
+			for (id => i in nearestBox.inputs) {
+				var newMin = distanceToElement(i, clientX, clientY);
+				if (newMin < minDistNode) {
+					nearestId = id;
+					minDistNode = newMin;
 				}
 			}
 		}
-		if (minDistNode < NODE_TRIGGER_NEAR) {
-			endLinkNode = nearestNode;
+
+		if (minDistNode < NODE_TRIGGER_NEAR && nearestId >= 0) {
+			endLinkNodeId = nearestId;
 			endLinkBox = nearestBox;
 		} else {
-			endLinkNode = null;
+			endLinkNodeId = -1;
 			endLinkBox = null;
+			minDistNode = null;
 		}
 
 		// create edge
 		if (currentLink != null) currentLink.remove();
-		currentLink = createCurve(startLinkGrNode.find(".node"), nearestNode, minDistNode, clientX, clientY, true);
-
+		if (isCreatingLink == FromInput) {
+			currentLink = createCurve(startLinkBox.inputs[startLinkNodeId], endLinkBox?.outputs[endLinkNodeId], minDistNode, clientX, clientY, true);
+		}
+		else {
+			currentLink = createCurve(startLinkBox.outputs[startLinkNodeId], endLinkBox?.inputs[endLinkNodeId], minDistNode, clientX, clientY, true);
+		}
 	}
 
 	function createCurve(start : JQuery, end : JQuery, ?distance : Float, ?x : Float, ?y : Float, ?isDraft : Bool) {
 		var offsetEnd;
 		var offsetStart = start.offset();
-		if (distance == null || distance < NODE_TRIGGER_NEAR) {
+		if (end != null) {
 			offsetEnd = end.offset();
 		} else {
 			offsetEnd = { top : y, left : x };

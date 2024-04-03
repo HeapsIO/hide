@@ -30,7 +30,7 @@ class AlphaPreview extends hxsl.Shader {
 	}
 }
 
-typedef InputInfo = {name: String, type: SgType};
+typedef InputInfo = {name: String, type: SgType, ?def: ShaderDefInput};
 typedef OutputInfo = {name: String, type: SgType};
 typedef VariableDecl = {v: TVar, display: String, ?vertexOnly: Bool};
 typedef AliasInfo = {?nameSearch: String, ?nameOverride : String, ?description : String, ?args : Array<Dynamic>, ?group: String};
@@ -107,7 +107,7 @@ class ShaderNode {
 		return {expr: null, inVars: [], outVars: [], inits: [], externVars: []};
 	}
 
-	public var connections : Map<String, ShaderGraph.Connection> = [];
+	public var connections : Array<ShaderGraph.Connection> = [];
 
 	public var outputCompiled : Map<String, Bool> = []; // todo: put with outputs variable
 

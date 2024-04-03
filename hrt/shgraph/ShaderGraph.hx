@@ -140,18 +140,18 @@ typedef Node = {
 	?generateId : Int, // Id used to index the node in the generate function
 };
 
-private typedef Edge = {
+typedef Edge = {
 	?outputNodeId : Int,
-	nameOutput : String,
-	?outputId : Int, // Fallback if name has changed
+	nameOutput : String, // Fallback if name has changed
+	?outputId : Int,
 	?inputNodeId : Int,
-	nameInput : String,
-	?inputId : Int, // Fallback if name has changed
+	nameInput : String, // Fallback if name has changed
+	?inputId : Int,
 };
 
 typedef Connection = {
 	from : Node,
-	fromName : String,
+	outputId : Int,
 };
 
 typedef Parameter = {
@@ -271,30 +271,18 @@ class ShaderGraphGenContext2 {
 
 
 			// Todo : store ID of input in connections instead of relying on the "name" at runtime
-			for (inputName => input in inst.connections) {
-				var inputId = -1;
-				for (id => i in inputs) {
-					if (i.name == inputName) {
-						inputId = id;
-						break;
-					}
-				}
+			for (inputId => connection in inst.connections) {
+				if (connection == null)
+					continue;
 				empty = false;
-				var nodeOutputs = input.from.instance.getOutputs();
-				var outputs = nodes[input.from.id].outputs;
+				var nodeOutputs = connection.from.instance.getOutputs();
+				var outputs = nodes[connection.from.id].outputs;
 				if (outputs == null) {
 					outputs = [];
-					nodes[input.from.id].outputs = [];
+					nodes[connection.from.id].outputs = [];
 				}
 
-				var outputId = -1;
-				// Todo : store the id of the output instead of relying on the "name" at runtime
-				for (id => o in nodeOutputs) {
-					if (o.name == input.fromName) {
-						outputId = id;
-						break;
-					}
-				}
+				var outputId = connection.outputId;
 
 				var output = outputs[outputId];
 				if (output == null) {
@@ -304,7 +292,7 @@ class ShaderGraphGenContext2 {
 
 				output.push({to: id, input: inputId});
 
-				nodeTopology[input.from.id].to.push(id);
+				nodeTopology[connection.from.id].to.push(id);
 				nodeTopology[id].incoming ++;
 				totalEdges++;
 			}
@@ -337,716 +325,6 @@ class ShaderGraphGenContext2 {
 		return sortedNodes;
 	}
 }
-
-
-@:access(hrt.shgraph.Graph)
-class ShaderGraphGenContext {
-	/** Generation inputs **/
-	var graph : Graph;
-	var includePreviews : Bool;
-
-	/** Generation data **/
-	var nodeData : Array<GenNodeInfo> = [];
-	var inits : Array<{ variable : hxsl.Ast.TVar, value : Dynamic }> = [];
-	var allConnections : Array<Connection>;
-	var graphInputVars : Array<ShaderNodeDefInVar> = [];
-	var graphOutputVars : Array<ShaderNodeDefOutVar> = [];
-	var externs : Array<TVar> = [];
-	var outputSelectVar : TVar = null;
-	var outputPreviewPixelColor : TVar = null;
-	var pixelColor : TVar;
-	var outsideVars : Map<String, TVar> = [];
-	var sortedNodes : Array<Node>;
-	var functions : Array<TFunction> = [];
-
-	var exprsReverse : Array<TExpr> = [];
-
-
-	static var pos : Position = {file: "", min: 0, max: 0};
-
-	public function new(graph: Graph, includePreviews: Bool = false) {
-		this.graph = graph;
-		this.includePreviews = includePreviews;
-	}
-
-	static inline function getNewVarName(node: Node, id: Int) : String {
-		return '_sg_${(node.type).split(".").pop()}_var_$id';
-	}
-
-	static inline function getNewVarId() : Int {
-		return hxsl.Tools.allocVarId();
-	}
-
-	static function replaceVar(expr: TExpr, what: TVar, with: TExpr) : TExpr {
-		if(!what.type.equals(with.t))
-			throw "type missmatch " + what.type + " != " + with.t;
-		function repRec(f: TExpr) {
-			if (f.e.equals(TVar(what))) {
-				return with;
-			} else {
-				return f.map(repRec);
-			}
-		}
-		var expr = repRec(expr);
-		//trace("replaced " + what.getName() + " with " + switch(with.e) {case TVar(v): v.getName(); default: "err";});
-		//trace(hxsl.Printer.toString(expr));
-		return expr;
-	}
-
-
-	static function convertToType(targetType: hxsl.Ast.Type, sourceExpr: TExpr) : TExpr {
-		var sourceType = sourceExpr.t;
-
-		if (sourceType.equals(targetType))
-			return sourceExpr;
-
-		var sourceSize = switch (sourceType) {
-			case TFloat: 1;
-			case TVec(size, VFloat): size;
-			default:
-				throw "Unsupported source type " + sourceType;
-		}
-
-		var targetSize = switch (targetType) {
-			case TFloat: 1;
-			case TVec(size, VFloat): size;
-			default:
-				throw "Unsupported target type " + targetType;
-		}
-
-		var delta = targetSize - sourceSize;
-		if (delta == 0)
-			return sourceExpr;
-		if (delta > 0) {
-			var args = [];
-			if (sourceSize == 1) {
-				for (_ in 0...targetSize) {
-					args.push(sourceExpr);
-				}
-			}
-			else {
-
-				args.push(sourceExpr);
-				for (i in 0...delta) {
-					// Set alpha to 1.0 by default on upcasts casts
-					var value = i == delta - 1 ? 1.0 : 0.0;
-					args.push({e : TConst(CFloat(value)), p: sourceExpr.p, t: TFloat});
-				}
-			}
-			var global : TGlobal = switch (targetSize) {
-				case 2: Vec2;
-				case 3: Vec3;
-				case 4: Vec4;
-				default: throw "unreachable";
-			}
-			return {e: TCall({e: TGlobal(global), p: sourceExpr.p, t:targetType}, args), p: sourceExpr.p, t: targetType};
-		}
-		if (delta < 0) {
-			var swizz : Array<hxsl.Ast.Component> = [X,Y,Z,W];
-			swizz.resize(targetSize);
-			return {e: TSwiz(sourceExpr, swizz), p: sourceExpr.p, t: targetType};
-		}
-		throw "unreachable";
-	}
-
-	function getDef(node: Node) : ShaderGraph.ShaderNodeDef {
-		var data = nodeData[node.generateId];
-		if (data.def != null)
-			return data.def;
-
-		var def = node.instance.getShaderDef(graph.domain, getNewVarId, data.inputTypes);
-
-		var type = ShaderGraph.resolveDynamicType(data.inputTypes, def.inVars);
-
-		// Don't cache vars while there still are dynamics inputs
-		if (type == null)
-			return def;
-
-		for (v in def.inVars) {
-			if (v.isDynamic) {
-				v.v.type = type;
-				v.isDynamic = false;
-			}
-		}
-
-		for (v in def.outVars) {
-			if (v.isDynamic) {
-				v.v.type = type;
-				v.isDynamic = false;
-			}
-		}
-
-		return def;
-	}
-
-	function getOutputs(node: Node) : Map<String, TVar> {
-		var data = nodeData[node.generateId];
-		if (data.outputs != null)
-			return data.outputs;
-		data.outputs = [];
-
-
-		var def = getDef(node);
-		for (output in def.outVars) {
-			if (output.internal)
-				continue;
-			var type = output.v.type;
-			if (type == null) throw "no type";
-			var id = getNewVarId();
-			var outVar = {id: id, name: getNewVarName(node, id), type: type, kind : Local};
-			data.outputs.set(output.v.name, outVar);
-		}
-		return data.outputs;
-	}
-
-	function getOutsideVar(name: String, original: TVar, isInput: Bool, internal: Bool) : TVar {
-		var v : TVar = outsideVars.get(name);
-		if (v == null) {
-			v = Reflect.copy(original);
-			v.id = getNewVarId();
-			v.name = name;
-			outsideVars.set(name, v);
-		}
-		if (isInput) {
-			if (graphInputVars.find((o) -> o.v == v) == null) {
-				graphInputVars.push({v: v, internal: internal, defVal: null, isDynamic: false});
-			}
-		}
-		else {
-			if (graphOutputVars.find((o) -> o.v == v) == null) {
-				if (v == null)
-					throw "null var";
-				graphOutputVars.push({v: v, internal: false, isDynamic: false});
-			}
-		}
-
-		return v;
-	}
-
-	function getOrCreateExtern(name: String, type: Type) : TVar {
-		var tvar = externs.find((v) -> v.name == name);
-		if (tvar == null) {
-			tvar = {
-				id: getNewVarId(),
-				name: name,
-				type: type,
-				kind: Local
-			};
-			externs.push(tvar);
-		}
-		else if (!EnumValueTools.equals(tvar.type, type)) {
-			throw 'Extern was declared with 2 different types (original : ${tvar.type}, new : ${type}';
-		}
-		return tvar;
-	}
-
-
-
-
-	public function generate() : ShaderNodeDef {
-		initNodeData();
-
-		allConnections = [for (node in graph.nodes) for (connection in node.instance.connections) connection];
-		pixelColor = {name: "pixelColor", id: getNewVarId(), type: TVec(4, VFloat), kind: Local, qualifiers: []};
-
-		if (includePreviews) {
-			outputPreviewPixelColor = pixelColor;
-			outputSelectVar = {name: "__sg_PREVIEW_output_select", id: getNewVarId(), type: TInt, kind: Param, qualifiers: []};
-			graphInputVars.push({v: outputSelectVar, internal: true, isDynamic: false});
-			inits.push({variable: outputSelectVar, value: 0});
-		}
-
-		sortedNodes = sortGraph();
-		if (sortedNodes == null) {
-			throw "Graph is invalid/contains cycles";
-		}
-		typeGraph(sortedNodes);
-
-		var exprsReverse : Array<TExpr> = [];
-		for (currentNode in sortedNodes) {
-			generateNodeExpression(currentNode, exprsReverse);
-		}
-
-		graphOutputVars.push({v: pixelColor, internal: true, isDynamic: false});
-
-		exprsReverse.reverse();
-
-		//trace(haxe.Json.stringify(exprsReverse, "\t"));
-
-		return {
-			expr: {e: TBlock(exprsReverse), t:TVoid, p:pos},
-			inVars: graphInputVars,
-			outVars: graphOutputVars,
-			externVars: externs,
-			inits: inits,
-			functions: functions,
-		};
-	}
-
-	public function sortGraph() : Array<Node> {
-		var nodeToExplore : Array<Node> = [];
-
-		var nodeHasOutputs : Map<Node, Bool> = [];
-		for (node in graph.nodes) {
-			nodeHasOutputs.set(node, true);
-		}
-
-		for (connection in allConnections) {
-			nodeHasOutputs.remove(connection.from);
-		}
-
-		for (node in nodeHasOutputs.keys()) {
-			nodeToExplore.push(node);
-		}
-
-		var sortedNodes : Array<Node> = [];
-
-		// Topological sort the nodes with Kahn's algorithm
-		// https://en.wikipedia.org/wiki/Topological_sorting#Kahn's_algorithm
-		{
-			while (nodeToExplore.length > 0) {
-				var currentNode = nodeToExplore.pop();
-				sortedNodes.push(currentNode);
-				for (connection in currentNode.instance.connections) {
-					var targetNode = connection.from;
-					if (!allConnections.remove(connection)) throw "connection not in graph";
-					if (allConnections.find((n:Connection) -> n.from == targetNode) == null) {
-						nodeToExplore.push(targetNode);
-					}
-				}
-			}
-		}
-
-		return sortedNodes;
-	}
-
-	public function typeGraph(sortedNodes: Array<Node>) {
-		for (node in sortedNodes) {
-			for (inputName => co in node.instance.connections) {
-				var targetNodeMap = nodeData[co.from.generateId].outputToInputMap;
-				var arr = targetNodeMap.get(co.fromName);
-				if (arr == null) {
-					arr = [];
-					targetNodeMap.set(co.fromName, arr);
-				}
-				arr.push({node: node, inputName: inputName});
-			}
-		}
-
-		for (i => _ in sortedNodes) {
-			var node = sortedNodes[sortedNodes.length - i - 1];
-
-			var def = getDef(node);
-			var data = nodeData[node.generateId];
-
-			for (i => inputVar in def.inVars) {
-				var from = node.instance.connections.get(inputVar.v.name);
-				if (from == null) {
-					var init = def.inits.find((v) -> v.variable == inputVar.v);
-					if (init != null) {
-						data.inputTypes[i] = init.variable.type;
-					}
-				}
-			}
-
-			for (outputVar in def.outVars) {
-				if (outputVar.internal)
-					continue;
-				var inputs = data.outputToInputMap.get(outputVar.v.name);
-
-				if (inputs == null)
-					continue;
-
-				for (input in inputs) {
-					var def = getDef(input.node);
-
-					var inputVarId = -1;
-					for (i => v in def.inVars) {
-						if (v.v.name == input.inputName) {
-							inputVarId = i;
-							break;
-						}
-					}
-					if (inputVarId < 0)
-						throw "Missing var " + input.inputName;
-
-					nodeData[input.node.generateId].inputTypes[inputVarId] = outputVar.v.type;
-				}
-			}
-
-			data.def = def;
-		}
-	}
-
-	public function initNodeData() {
-		var currIndex = 0;
-		var previewIndex = 1;
-		for (node in graph.nodes) {
-			node.generateId = currIndex;
-			var preview = Std.downcast(node.instance, hrt.shgraph.nodes.Preview);
-			if (preview != null) {
-				preview.previewID = previewIndex;
-				previewIndex++;
-			}
-
-			var output = Std.downcast(node.instance, hrt.shgraph.ShaderOutput);
-			if (output != null) {
-				output.generatePreview = includePreviews;
-			}
-
-			nodeData[node.generateId] = {
-				outputToInputMap: [],
-				inputTypes: []
-			};
-			currIndex++;
-		}
-	}
-
-	public function generateNodeExpression(currentNode: Node, exprsReverse: Array<TExpr>) {
-		// Skip nodes with no outputs that arent a final node
-		if ((currentNode.outputs?.length ?? 0) > 0)
-		{
-			if (Std.downcast(currentNode.instance, ShaderOutput) != null && (Std.downcast(currentNode.instance, hrt.shgraph.nodes.Preview) != null && !includePreviews))
-				return;
-		}
-
-		var outputs = getOutputs(currentNode);
-
-		var def = getDef(currentNode);
-		var expr = def.expr;
-
-		{
-
-			if (def.functions != null) {
-				for (func in def.functions) {
-					var prev = functions.find((f) -> f.ref.name == func.ref.name);
-					// Patch new functions declarations with this one
-					if (prev != null) {
-						func.ref = prev.ref;
-					}
-					else {
-						functions.push(func);
-					}
-				}
-			}
-
-			var outputDecls : Array<TVar> = [];
-
-			// Used to capture input for output node preview
-			//var firstInputVar = null;
-
-			var allInputsVarsBound = true;
-
-			for (nodeVar in def.inVars) {
-				var connection = currentNode.instance.connections.get(nodeVar.v.name);
-
-				var replacement : TExpr = null;
-
-				if (connection != null) {
-					var outputs = getOutputs(connection.from);
-					var outputVar = outputs[connection.fromName];
-					if (outputVar == null) throw "null tvar";
-					//if (firstInputVar == null) firstInputVar = outputVar;
-					replacement = convertToType(nodeVar.v.type,  {e: TVar(outputVar), p:pos, t: outputVar.type});
-				}
-				else {
-					if (nodeVar.internal) {
-						if (nodeVar.v.type.isTexture()) {
-							// Rewrite output var to be the sampler directly because we can't assign
-							// a sampler to a temporary variable
-							var outVar = outputs["output"];
-							outVar.id = nodeVar.v.id;
-							outVar.name = nodeVar.v.name;
-							outVar.type = nodeVar.v.type;
-							outVar.qualifiers = nodeVar.v.qualifiers;
-							outVar.parent = nodeVar.v.parent;
-							outVar.kind = nodeVar.v.kind;
-
-							expr = null;
-							if (graphInputVars.find((v) -> v.v == outVar) == null) {
-								graphInputVars.push({v: outVar, internal: false, defVal: null, isDynamic: false});
-								var shParam = Std.downcast(currentNode.instance, ShaderParam);
-								var param = graph.getParameter(shParam.parameterId);
-								inits.push({variable: outVar, value: param.defaultValue});
-							}
-
-							if (includePreviews) {
-								var calulatedUV = getOrCreateExtern("calculatedUV", TVec(2, VFloat));
-								var sample = makeExpr(
-									TCall(makeExpr(TGlobal(Texture),TVoid), [
-										makeVar(outVar),
-										makeVar(calulatedUV),
-									]), TVec(4, VFloat));
-
-								var previewExpr = makeAssign(makeVar(outputPreviewPixelColor), sample);
-
-								var expr = makeIf(makeEq(makeVar(outputSelectVar), makeInt(currentNode.id + 1)),
-									previewExpr,
-								);
-
-								exprsReverse.push(expr);
-							}
-
-							return;
-						}
-
-						var inVar = getOutsideVar(nodeVar.v.name, nodeVar.v, true, false);
-						if (inVar.name == "input.normal" && includePreviews) {
-							inVar.name = "fakeNormal";
-						}
-
-						var shParam = Std.downcast(currentNode.instance, ShaderParam);
-						if (shParam != null) {
-							var param = graph.getParameter(shParam.parameterId);
-							var v = graphInputVars.find((v) -> v.v == inVar);
-							v.internal = param.internal ?? false;
-							if (v.internal) {
-								if (inVar.qualifiers == null)
-									inVar.qualifiers = [];
-								inVar.qualifiers.push(Ignore);
-							}
-							inits.push({variable: inVar, value: param.defaultValue});
-						}
-						replacement = {e: TVar(inVar), p: pos, t:nodeVar.v.type};
-					}
-					else {
-						if (nodeVar.v.type.match(TSampler(_)) ) {
-							allInputsVarsBound = false;
-							continue;
-						}
-							// default parameter if no connection
-						switch(nodeVar.defVal) {
-							case Const(def):
-								var defVal = def;
-								var defaultValue = Reflect.getProperty(currentNode.instance.defaults, nodeVar.v.name);
-								if (defaultValue != null) {
-									defVal = Std.parseFloat(defaultValue) ?? defVal;
-								}
-								replacement = convertToType(nodeVar.v.type, {e: TConst(CFloat(defVal)), p: pos, t:TFloat});
-							case ConstBool(def):
-								var defVal = def;
-								var defaultValue = Reflect.getProperty(currentNode.instance.defaults, nodeVar.v.name);
-								if (defaultValue != null) {
-									defVal = defaultValue == "true";
-								}
-								replacement = makeExpr(TConst(CBool(defVal)), TBool);
-							case Var(name):
-								var tvar = getOrCreateExtern(name, nodeVar.v.type);
-								replacement = {e: TVar(tvar), p: pos, t:nodeVar.v.type};
-							default:
-								replacement = convertToType(nodeVar.v.type, {e: TConst(CFloat(0.0)), p: pos, t:TFloat});
-						}
-					}
-				}
-
-				expr = replaceVar(expr, nodeVar.v, replacement);
-			}
-
-			if (expr != null) {
-				for (i => nodeVar in def.outVars) {
-					var outputVar : TVar = outputs.get(nodeVar.v.name);
-					// Kinda of a hack : skip decl writing for shaderParams
-					// var shParam = Std.downcast(currentNode.instance, ShaderParam);
-					// if (shParam != null) {
-					// 	continue;
-					// }
-
-					if (Std.downcast(currentNode.instance, hrt.shgraph.nodes.Sampler) != null ||
-						Std.downcast(currentNode.instance, hrt.shgraph.nodes.Dissolve) != null) {
-						if (!allInputsVarsBound) {
-							expr = makeAssign(makeVar(nodeVar.v), makeVec([0.0,0.0,0.0,0.0]));
-						}
-					}
-
-					if (outputVar == null) {
-						var v = getOutsideVar(nodeVar.v.name, nodeVar.v, false, false);
-						var outputVar = {e: TVar(v), p:pos, t: nodeVar.v.type};
-
-						expr = replaceVar(expr, nodeVar.v, outputVar);
-
-						if (includePreviews) {
-
-							if (expr == null)
-								throw "break";
-
-							//if (firstInputVar == null)
-							//	throw "impossible";
-
-							// switch (outputVar.t) {
-							// 	switch ()
-							// }
-
-							var previewExpr = makeAssign(makeVar(outputPreviewPixelColor), convertToType(outputPreviewPixelColor.type, makeVar(v)));
-
-							expr = makeExpr(TBlock(
-								[
-									expr,
-									makeIf(makeEq(makeVar(outputSelectVar), makeInt(currentNode.id + 1)),
-										previewExpr,
-									)
-								]),
-								TVoid
-							);
-
-						}
-
-						//graphOutputVars.push({v: nodeVar.v, internal: false});
-					} else {
-						expr = replaceVar(expr, nodeVar.v, {e: TVar(outputVar), p:pos, t: nodeVar.v.type});
-						outputDecls.push(outputVar);
-					}
-
-					if (i == 0 && includePreviews && outputVar != null && currentNode.instance.canHavePreview()) {
-
-
-						var finalExpr = makeAssign(makeVar(outputPreviewPixelColor), convertToType(outputPreviewPixelColor.type, makeVar(outputVar)));
-						//var finalExpr : TExpr = {e: TBinop(OpAssign, {e:TVar(outputPreviewPixelColor), p:pos, t:outputPreviewPixelColor.type}, convertToType(outputPreviewPixelColor.type, {e: TVar(outputVar), p: pos, t: outputVar.type})), p: pos, t: outputPreviewPixelColor.type};
-
-						var ifExpr = makeIf(
-							makeEq(makeInt(currentNode.id + 1), makeVar(outputSelectVar)),
-							finalExpr
-						);
-
-						expr = makeExpr(
-							TBlock([expr,ifExpr]),
-							TVoid,
-						);
-					}
-				}
-			}
-
-
-			for (nodeVar in def.externVars) {
-				var prev = externs.find((v) -> v.name == nodeVar.name);
-				if (prev != null) {
-					expr = replaceVar(expr, nodeVar, {e: TVar(prev), p:pos, t: prev.type});
-				}
-				else {
-					externs.push(nodeVar);
-				}
-			}
-
-			if (expr != null)
-				exprsReverse.push(expr);
-
-			for (output in outputDecls) {
-				var finalExpr : TExpr = {e: TVarDecl(output), p: pos, t: output.type};
-				exprsReverse.push(finalExpr);
-			}
-		}
-	}
-
-	var allInputsVarsBound : Bool; // tmp hack
-
-	public function patchExprVar(expr: TExpr, nodeVar: ShaderNodeDefInVar, currentNode: Node) : TExpr {
-		var connection = currentNode.instance.connections.get(nodeVar.v.name);
-
-		var replacement : TExpr = null;
-
-		if (connection != null) {
-			var outputs = getOutputs(connection.from);
-			var outputVar = outputs[connection.fromName];
-			if (outputVar == null) throw "null tvar";
-			//if (firstInputVar == null) firstInputVar = outputVar;
-			replacement = convertToType(nodeVar.v.type,  {e: TVar(outputVar), p:pos, t: outputVar.type});
-		}
-		else {
-			if (nodeVar.internal) {
-				if (nodeVar.v.type.isTexture()) {
-					// Rewrite output var to be the sampler directly because we can't assign
-					// a sampler to a temporary variable
-					var outVar = getOutputs(currentNode)["output"];
-					outVar.id = nodeVar.v.id;
-					outVar.name = nodeVar.v.name;
-					outVar.type = nodeVar.v.type;
-					outVar.qualifiers = nodeVar.v.qualifiers;
-					outVar.parent = nodeVar.v.parent;
-					outVar.kind = nodeVar.v.kind;
-
-					if (graphInputVars.find((v) -> v.v == outVar) == null) {
-						graphInputVars.push({v: outVar, internal: false, defVal: null, isDynamic: false});
-						var shParam = Std.downcast(currentNode.instance, ShaderParam);
-						var param = graph.getParameter(shParam.parameterId);
-						inits.push({variable: outVar, value: param.defaultValue});
-					}
-
-					if (!includePreviews)
-						return null;
-
-					var calulatedUV = getOrCreateExtern("calculatedUV", TVec(2, VFloat));
-					var sample = makeExpr(
-						TCall(makeExpr(TGlobal(Texture),TVoid), [
-							makeVar(outVar),
-							makeVar(calulatedUV),
-						]), TVec(4, VFloat));
-
-					var previewExpr = makeAssign(makeVar(outputPreviewPixelColor), sample);
-
-					var expr = makeIf(makeEq(makeVar(outputSelectVar), makeInt(currentNode.id + 1)),
-						previewExpr,
-					);
-
-					return expr;
-
-				}
-
-				var inVar = getOutsideVar(nodeVar.v.name, nodeVar.v, true, false);
-				if (inVar.name == "input.normal" && includePreviews) {
-					inVar.name = "fakeNormal";
-				}
-
-				var shParam = Std.downcast(currentNode.instance, ShaderParam);
-				if (shParam != null) {
-					var param = graph.getParameter(shParam.parameterId);
-					var v = graphInputVars.find((v) -> v.v == inVar);
-					v.internal = param.internal ?? false;
-					if (v.internal) {
-						if (inVar.qualifiers == null)
-							inVar.qualifiers = [];
-						inVar.qualifiers.push(Ignore);
-					}
-					inits.push({variable: inVar, value: param.defaultValue});
-				}
-				replacement = {e: TVar(inVar), p: pos, t:nodeVar.v.type};
-			}
-			else {
-				if (nodeVar.v.type.match(TSampler(_)) ) {
-					allInputsVarsBound = false;
-					return null;
-				}
-				replacement = getDefaultValue(nodeVar, currentNode);
-			}
-		}
-
-		return replaceVar(expr, nodeVar.v, replacement);
-	}
-
-	function getDefaultValue(nodeVar: ShaderNodeDefInVar, currentNode: Node) : TExpr {
-		switch(nodeVar.defVal) {
-			case Const(def):
-				var defVal = def;
-				var defaultValue = Reflect.getProperty(currentNode.instance.defaults, nodeVar.v.name);
-				if (defaultValue != null) {
-					defVal = Std.parseFloat(defaultValue) ?? defVal;
-				}
-				return convertToType(nodeVar.v.type, {e: TConst(CFloat(defVal)), p: pos, t:TFloat});
-			case ConstBool(def):
-				var defVal = def;
-				var defaultValue = Reflect.getProperty(currentNode.instance.defaults, nodeVar.v.name);
-				if (defaultValue != null) {
-					defVal = defaultValue == "true";
-				}
-				return makeExpr(TConst(CBool(defVal)), TBool);
-			case Var(name):
-				var tvar = getOrCreateExtern(name, nodeVar.v.type);
-				return {e: TVar(tvar), p: pos, t:nodeVar.v.type};
-			default:
-				return convertToType(nodeVar.v.type, {e: TConst(CFloat(0.0)), p: pos, t:TFloat});
-		}
-	}
-}
-
-
 
 class ShaderGraph extends hrt.prefab.Prefab {
 
@@ -1198,250 +476,8 @@ class ShaderGraph extends hrt.prefab.Prefab {
 		return {shader : shared, inits: inits};
 	}
 
-
-	public function compile2(?previewDomain: Domain) : hrt.prefab.Cache.ShaderDef {
-		#if !editor
-		if (cachedDef != null)
-			return cachedDef;
-		#end
-
-
-		var start = haxe.Timer.stamp();
-
-		var gens : Array<ShaderNodeDef> = [];
-		var inits : Array<{variable: TVar, value: Dynamic}>= [];
-
-		var shaderData : ShaderData = {
-			name: "",
-			vars: [],
-			funs: [],
-		};
-
-		for (i => graph in graphs) {
-			if (previewDomain != null && graph.domain != previewDomain)
-				continue;
-			// Temp fix for code generation
-			//if (graph.domain == Vertex)
-			//	continue;
-
-			var ctx = new ShaderGraphGenContext(graph, previewDomain != null);
-			var gen = ctx.generate();
-
-			gens.push(gen);
-
-			//shaderData.vars.append(gen.externVars);
-
-			var inputInputVars : Array<TVar> = [];
-			var globalInputVars : Array<TVar> = [];
-
-			#if editor
-			var names : Map<String, Parameter> = [];
-			for (p in parametersAvailable) {
-				names.set(p.name, p);
-			}
-
-			gen.inVars.sort((a,b) -> {
-				// if the name is not a parameter, sort it at the start of the list
-				var aIndex = names.get(a.v.name)?.index ?? -1;
-				var bIndex = names.get(b.v.name)?.index ?? -1;
-				return Reflect.compare(aIndex, bIndex);
-			});
-			#end
-
-			for (arr in [[for (v in gen.inVars) v.v], gen.externVars]) {
-				for (v in arr) {
-					var split = v.name.split(".");
-					switch(split[0]) {
-						case "input": {
-							v.name = split[1] ?? throw "Invalid variable name";
-							if (inputInputVars.find((a) -> a.id == v.id) == null)
-								inputInputVars.push(v);
-						}
-						case "global": {
-							v.name = split[1] ?? throw "Invalid variable name";
-							if (globalInputVars.find((a) -> a.id == v.id) == null)
-								globalInputVars.push(v);
-						}
-						default: {
-							if (split.length > 1)
-								throw "Var has a dot in its name without being input or global var";
-							if (shaderData.vars.find((a) -> a.id == v.id) == null)
-								shaderData.vars.push(v);
-						}
-					}
-				}
-			}
-
-
-
-			var cuv = shaderData.vars.find((v) -> v.name == "calculatedUV");
-			if (cuv != null) {
-				var inputUv : TVar = inputInputVars.find(v -> v.name == "uv");
-				if (inputUv == null) {
-					inputUv = { parent: null, id: hxsl.Tools.allocVarId(), kind: Input, name: "uv", type: TVec(2, VFloat) };
-					inputInputVars.push(inputUv);
-				}
-
-				var pos : Position = {file: "", min: 0, max: 0};
-				var finalExpr : TExpr = {e: TBinop(OpAssign, {e:TVar(cuv), p:pos, t:cuv.type}, {e: TVar(inputUv), p: pos, t: inputUv.type}), p: pos, t: inputUv.type};
-
-				var block: TExpr = {e: TBlock([finalExpr]), p:pos, t:null};
-				var funcVar : TVar = {
-					name : "__init__",
-					id : hxsl.Tools.allocVarId(),
-					kind : Function,
-					type : TFun([{ ret : TVoid, args : [] }])
-				};
-
-				var fn : TFunction = {
-					ret : TVoid, kind : Init,
-					ref : funcVar,
-					expr : block,
-					args : []
-				};
-
-				shaderData.funs.push(fn);
-				shaderData.vars.push(funcVar);
-			}
-
-			function makeVarStruct(elems: Array<TVar>, name: String, kind: VarKind) {
-				if (elems.length > 0) {
-					var v : TVar = {
-						id: hxsl.Tools.allocVarId(),
-						type: TStruct(elems),
-						kind: kind,
-						name: name,
-					};
-
-					for (iv in elems) {
-						iv.parent = v;
-					}
-
-					shaderData.vars.push(v);
-				}
-			}
-
-			makeVarStruct(inputInputVars, "input", Input);
-			makeVarStruct(globalInputVars, "global", Global);
-
-			// if (inputInputVars.length > 0) {
-			// 	var v : TVar = {
-			// 		id: hxsl.Tools.allocVarId(),
-			// 		type: TStruct(inputInputVars),
-			// 		kind: Input,
-			// 		name: "input",
-			// 	};
-
-			// 	for (iv in inputInputVars) {
-			// 		iv.parent = v;
-			// 	}
-
-			// 	shaderData.vars.pushUnique(v);
-			// }
-
-			for (v in gen.outVars) {
-				if (shaderData.vars.find((a) -> a.id == v.v.id) == null) {
-					shaderData.vars.push(v.v);
-				}
-			}
-
-			var fnKind : FunctionKind = switch(graph.domain) {
-				case Fragment: Fragment;
-				case Vertex: Vertex;
-			};
-
-			if (previewDomain != null)
-				fnKind = Fragment;
-
-			var functionName : String = EnumValueTools.getName(fnKind).toLowerCase();
-
-			var funcVar : TVar = {
-				name : functionName,
-				id : hxsl.Tools.allocVarId(),
-				kind : Function,
-				type : TFun([{ ret : TVoid, args : [] }])
-			};
-
-			var finalExpr = gen.expr;
-
-			// Patch Color
-			if (fnKind == Fragment) {
-				var includePreviews = previewDomain != null;
-				var finalBlock = [finalExpr];
-
-				var pos : Position = {file: "", min: 0, max: 0};
-				var pixelColor = gen.outVars.find((v) -> v.v.name == "pixelColor")?.v;
-				var outputPreviewPixelColor = pixelColor;
-				var outputSelectVar = gen.inVars.find((v) -> v.v.name == "__sg_PREVIEW_output_select")?.v;
-
-
-				var color = gen.outVars.find((v) -> v.v.name == "_sg_out_color");
-				if (color != null) {
-					var vec3 = TVec(3, VFloat);
-
-					var finalExpr = makeAssign(makeExpr(TSwiz(makeVar(pixelColor), [X,Y,Z]), TVec(3, VFloat)), makeVar(color.v));
-
-					if (includePreviews) {
-						if (outputSelectVar == null)
-							throw "WTF";
-
-						finalExpr = makeIf(makeEq(makeVar(outputSelectVar), makeInt(0)), finalExpr);
-					}
-
-
-					finalBlock.push(finalExpr);
-				}
-
-				var alpha = gen.outVars.find((v) -> v.v.name == "_sg_out_alpha");
-				if (alpha != null) {
-					var flt = TFloat;
-
-					var finalExpr = makeAssign(makeExpr(TSwiz(makeVar(pixelColor), [W]), TFloat), makeVar(alpha.v));
-
-					if (includePreviews) {
-						finalExpr = makeIf(makeEq(makeVar(outputSelectVar), makeInt(0)), finalExpr);
-					}
-
-					finalBlock.push(finalExpr);
-				}
-
-				finalExpr = {e: TBlock(finalBlock), t: TVoid, p: pos};
-			}
-
-
-			var fn : TFunction = {
-				ret : TVoid, kind : fnKind,
-				ref : funcVar,
-				expr : finalExpr,
-				args : []
-			};
-			shaderData.funs.push(fn);
-			shaderData.vars.push(funcVar);
-
-			for (func in gen.functions) {
-				shaderData.funs.push(func);
-				shaderData.vars.push(func.ref);
-			}
-
-			for (init in gen.inits) {
-				inits.push(init);
-			}
-		}
-
-		var shared = new SharedShader("");
-		@:privateAccess shared.data = shaderData;
-		@:privateAccess shared.initialize();
-
-		var time = haxe.Timer.stamp() - start;
-		//trace("Shader compile2 in " + time * 1000 + " ms");
-
-		cachedDef = {shader : shared, inits: inits};
-
-		return cachedDef;
-	}
-
 	public function makeShaderInstance() : hxsl.DynamicShader {
-		var def = compile2(null);
+		var def = compile3(null);
 		var s = new hxsl.DynamicShader(def.shader);
 		for (init in def.inits)
 			setParamValue(s, init.variable, init.value);
@@ -1632,73 +668,84 @@ class Graph {
 		var node = this.nodes.get(edge.inputNodeId);
 		var output = this.nodes.get(edge.outputNodeId);
 
-		var inputs = node.instance.getInputs2(domain);
-		var outputs = output.instance.getOutputs2(domain);
+		var inputs = node.instance.getInputs();
+		var outputs = output.instance.getOutputs();
 
-		var inputName = edge.nameInput;
-		var outputName = edge.nameOutput;
 
-		// Patch I/O if name have changed
-		if (!outputs.exists(outputName)) {
-			outputName = null;
-			for (k => v in outputs) {
-				if (v.index == edge.outputId)
-					outputName = k;
-			}
-			if (outputName == null)
-				return false;
+		var outputId = edge.outputId;
+		var inputId = edge.inputId;
+
+		{
+			// Check if there is an output with that id and if it has the same name
+			// else try to find the id of another output with the same name
+			var output = outputs[outputId];
+			if (output == null || output.name != edge.nameOutput) {
+				for (id => o in outputs) {
+					if (o.name == edge.nameOutput) {
+						outputId = id;
+						break;
+					}
+				}
+			};
 		}
 
-		if (!inputs.exists(inputName)) {
-			inputName = null;
-			for (k => v in inputs) {
-				if (v.index == edge.inputId)
-					inputName = k;
+		{
+			var input = inputs[inputId];
+			if (input == null || input.name != edge.nameInput) {
+				for (id => i in inputs) {
+					if (i.name == edge.nameInput) {
+						inputId = id;
+						break;
+					}
+				}
 			}
-			if (inputName == null)
-				return false;
 		}
 
-		var connection : Connection = {from: output, fromName: outputName};
-		node.instance.connections.set(inputName, connection);
+		node.instance.connections[inputId] = {from: output, outputId: outputId};
 
 		#if editor
 		if (hasCycle()){
-			removeEdge(edge.inputNodeId, inputName, false);
+			removeEdge(edge.inputNodeId, inputId, false);
 			return false;
 		}
 
-		var inputType = inputs[inputName].v.type;
-		var outputType = outputs[outputName].v.type;
+		var inputType = inputs[inputId].type;
+		var outputType = outputs[outputId].type;
 
 		if (!areTypesCompatible(inputType, outputType)) {
-			removeEdge(edge.inputNodeId, inputName);
+			removeEdge(edge.inputNodeId, inputId);
 		}
 		try {
 		} catch (e : Dynamic) {
-			removeEdge(edge.inputNodeId, inputName);
+			removeEdge(edge.inputNodeId, inputId);
 			throw e;
 		}
 		#end
 		return true;
 	}
 
-	public function areTypesCompatible(input: hxsl.Ast.Type, output: hxsl.Ast.Type) : Bool {
+	public function areTypesCompatible(input: SgType, output: SgType) : Bool {
 		return switch (input) {
-			case TFloat, TVec(_, VFloat), null:
+			case SgFloat(_):
 				switch (output) {
-					case TFloat, TVec(_, VFloat), null: true;
+					case SgFloat(_), SgGeneric(_,_): true;
 					default: false;
-				}
+				};
+			case SgGeneric(_, fn):
+				switch (output) {
+					case SgFloat(_), SgGeneric(_,_): true;
+					default: false;
+				};
 			default: haxe.EnumTools.EnumValueTools.equals(input, output);
 		}
 	}
 
-	public function removeEdge(idNode, nameInput, update = true) {
+	public function removeEdge(idNode, inputId, update = true) {
 		var node = this.nodes.get(idNode);
-		this.nodes.get(node.instance.connections[nameInput].from.id).outputs.remove(node);
+		if (node.instance.connections[inputId] == null) return;
+		this.nodes.get(node.instance.connections[inputId].from.id).outputs.remove(node);
 
-		node.instance.connections.remove(nameInput);
+		node.instance.connections[inputId] = null;
 	}
 
 	public function setPosition(idNode : Int, x : Float, y : Float) {
@@ -1748,8 +795,10 @@ class Graph {
 	public function saveToDynamic() : Dynamic {
 		var edgesJson : Array<Edge> = [];
 		for (n in nodes) {
-			for (inputName => connection in n.instance.connections) {
-				edgesJson.push({ outputNodeId: connection.from.id, nameOutput: connection.fromName, inputNodeId: n.id, nameInput: inputName, inputId: 0, outputId: 0 });
+			for (inputId => connection in n.instance.connections) {
+				if (connection == null) continue;
+				var outputId = connection.outputId;
+				edgesJson.push({ outputNodeId: connection.from.id, nameOutput: connection.from.instance.getOutputs()[outputId].name, inputNodeId: n.id, nameInput: n.instance.getInputs()[inputId].name, inputId: inputId, outputId: outputId });
 			}
 		}
 		var json = {
