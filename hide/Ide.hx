@@ -1117,7 +1117,11 @@ class Ide extends hide.tools.IdeData {
 		// profilers
 		var profilers = menu.find(".analysis");
 		profilers.find(".memprof").click(function(_) {
+			#if (hashlink >= version("1.15.0"))
 			open("hide.view.Profiler",{});
+			#else
+			quickMessage("Profiler not available. Please update hashlink to version 1.15.0 or later.");
+			#end
 		});
 
 		window.menu = new hide.ui.Menu(menu).root;

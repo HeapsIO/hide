@@ -27,6 +27,7 @@ enum Filter {
 }
 
 class Profiler extends hide.ui.View<{}> {
+	#if (hashlink >= version("1.15.0"))
 	public var mainMemory : hlmem.Memory = null;
 	public var currentMemory : hlmem.Memory = null;
 	public var names(default, null) : Array<String> = [];
@@ -446,11 +447,13 @@ class Profiler extends hide.ui.View<{}> {
 		refreshHierarchicalView();
 	}
 
-	static var _ = hide.ui.View.register(Profiler);
+	#end
 
+	static var _ = hide.ui.View.register(Profiler);
 }
 
 class ProfilerElement extends hide.comp.Component{
+	#if (hashlink >= version("1.15.0"))
 	public var profiler : Profiler;
 	public var line : LineData;
 	public var path : Path;
@@ -584,4 +587,5 @@ class ProfilerElement extends hide.comp.Component{
 			c.element.detach();
 		}
 	}
+	#end
 }
