@@ -754,7 +754,7 @@ class ShaderEditor extends hide.view.Graph {
 		box.dispose();
 		listOfBoxes.remove(box);
 		generateEdgesToBox(newBox);
-		generateEdgesFromBox(newBox);
+		//generateEdgesFromBox(newBox);
 		if (startLinkBox == box) {
 			startLinkBox = newBox;
 		}
@@ -1429,6 +1429,7 @@ class ShaderEditor extends hide.view.Graph {
 				createEdgeInEditorGraph(newEdge);
 				currentLink.removeClass("draft");
 				currentLink = null;
+				isCreatingLink = None;
 				launchCompileShader();
 				refreshBox(endLinkBox);
 				return true;
