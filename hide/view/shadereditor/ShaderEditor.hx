@@ -316,7 +316,8 @@ class ShaderEditor extends hide.view.Graph {
 			if (e.button == 0) {
 				// Stop link creation
 				if (isCreatingLink != None) {
-					if (startLinkBox != null && endLinkBox != null && createEdgeInShaderGraph()) {
+					if (startLinkBox != null && endLinkBox != null) {
+						createEdgeInShaderGraph();
 						cleanupLinkCreation();
 					} else {
 						openAddMenu();
@@ -437,7 +438,10 @@ class ShaderEditor extends hide.view.Graph {
 		element.find("#displayHlsl").on("click", () -> displayCompiled("hlsl"));
 
 		element.find("#display2").on("click", () -> {@:privateAccess info(hxsl.Printer.shaderToString(shaderGraph.compile2(domain).shader.data, true));});
-		element.find("#display3").on("click", () -> {@:privateAccess info(hxsl.Printer.shaderToString(shaderGraph.compile3(true).shader.data, true));});
+		element.find("#display3").on("click", () -> {
+			@:privateAccess info(
+				hxsl.Printer.shaderToString(shaderGraph.compile3(true).shader.data, true)
+			);});
 
 		editorMatrix.on("click", "input, select", function(ev) {
 			beforeChange();

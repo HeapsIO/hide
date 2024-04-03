@@ -35,5 +35,4 @@ class NewSampler extends ShaderNode {
 		static var o = [{name: "rgba", type: SgFloat(4)}];
 		return o;
 	}
-
 }

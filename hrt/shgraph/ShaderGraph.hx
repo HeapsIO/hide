@@ -247,6 +247,7 @@ class ShaderGraphGenContext2 {
 		return {e: AstTools.makeExpr(TBlock(expressions), TVoid), externs: [for (v in genContext.globalVars) v]};
 	}
 
+	// returns null if the graph couldn't be sorted (i.e. contains cycles)
 	function sortGraph() : Array<Int>
 	{
 		// Topological sort all the nodes from input to ouputs
@@ -260,11 +261,14 @@ class ShaderGraphGenContext2 {
 			nodeTopology[id] = {to: [], incoming: 0};
 		}
 
+		var totalEdges = 0;
+
 		for (id => node in nodes) {
 			if (node == null) continue;
 			var inst = node.node.instance;
 			var empty = true;
 			var inputs = inst.getInputs();
+
 
 			// Todo : store ID of input in connections instead of relying on the "name" at runtime
 			for (inputName => input in inst.connections) {
@@ -302,6 +306,7 @@ class ShaderGraphGenContext2 {
 
 				nodeTopology[input.from.id].to.push(id);
 				nodeTopology[id].incoming ++;
+				totalEdges++;
 			}
 			for (inputId => input in inputs) {
 			}
@@ -319,12 +324,16 @@ class ShaderGraphGenContext2 {
 			var currentTopology = nodeTopology[currentNodeId];
 			for (to in currentTopology.to) {
 				var remaining = --nodeTopology[to].incoming;
+				totalEdges --;
 				if (remaining == 0) {
 					nodeToExplore.push(to);
 				}
 			}
 		}
 
+		if (totalEdges > 0) {
+			return null;
+		}
 		return sortedNodes;
 	}
 }
@@ -548,6 +557,9 @@ class ShaderGraphGenContext {
 		}
 
 		sortedNodes = sortGraph();
+		if (sortedNodes == null) {
+			throw "Graph is invalid/contains cycles";
+		}
 		typeGraph(sortedNodes);
 
 		var exprsReverse : Array<TExpr> = [];
@@ -1723,34 +1735,10 @@ class Graph {
 	}
 
 	public function hasCycle() : Bool {
-		var queue : Array<Node> = [];
-
-		var counter = 0;
-		var nbNodes = 0;
-		for (n in nodes) {
-			n.indegree = n.outputs.length;
-			if (n.indegree == 0) {
-				queue.push(n);
-			}
-			nbNodes++;
-		}
-
-		var currentIndex = 0;
-		while (currentIndex < queue.length) {
-			var node = queue[currentIndex];
-			currentIndex++;
-
-			for (connection in node.instance.connections) {
-				var nodeInput = connection.from;
-				nodeInput.indegree -= 1;
-				if (nodeInput.indegree == 0) {
-					queue.push(nodeInput);
-				}
-			}
-			counter++;
-		}
-
-		return counter != nbNodes;
+		var ctx = new ShaderGraphGenContext2(this, false);
+		@:privateAccess ctx.initNodes();
+		var res = @:privateAccess ctx.sortGraph();
+		return res == null;
 	}
 
 	public function removeNode(idNode : Int) {
