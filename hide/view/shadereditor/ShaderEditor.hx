@@ -437,7 +437,7 @@ class ShaderEditor extends hide.view.Graph {
 		element.find("#displayHlsl").on("click", () -> displayCompiled("hlsl"));
 
 		element.find("#display2").on("click", () -> {@:privateAccess info(hxsl.Printer.shaderToString(shaderGraph.compile2(domain).shader.data, true));});
-		element.find("#display3").on("click", () -> {@:privateAccess info(hxsl.Printer.shaderToString(shaderGraph.compile3(false).shader.data, true));});
+		element.find("#display3").on("click", () -> {@:privateAccess info(hxsl.Printer.shaderToString(shaderGraph.compile3(true).shader.data, true));});
 
 		editorMatrix.on("click", "input, select", function(ev) {
 			beforeChange();

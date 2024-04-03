@@ -49,6 +49,12 @@ class NodeGenContextSubGraph extends NodeGenContext {
 		}
 	}
 
+	override function addExpr(expr: TExpr) : Void {
+		if (parentCtx != null) {
+			parentCtx.addExpr(expr);
+		}
+	}
+
 	var parentCtx : NodeGenContext;
 
 	var globalInVars: Map<String, Int> = [];

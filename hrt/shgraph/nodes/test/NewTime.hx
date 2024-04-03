@@ -28,7 +28,7 @@ class NewTime extends ShaderNode {
 
 	override function getOutputs2(domain: ShaderGraph.Domain, ?inputTypes: Array<Type>) : Map<String, {v: TVar, index: Int}> {
 		return [
-				"output" => {v: {id: 0, name: "a", type: TFloat, kind: Local}, index: 0},
+				"time" => {v: {id: 0, name: "time", type: TFloat, kind: Local}, index: 0},
 			];
 	}
 

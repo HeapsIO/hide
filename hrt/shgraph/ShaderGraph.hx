@@ -272,6 +272,7 @@ class ShaderGraphGenContext2 {
 				for (id => i in inputs) {
 					if (i.name == inputName) {
 						inputId = id;
+						break;
 					}
 				}
 				empty = false;
@@ -287,6 +288,7 @@ class ShaderGraphGenContext2 {
 				for (id => o in nodeOutputs) {
 					if (o.name == input.fromName) {
 						outputId = id;
+						break;
 					}
 				}
 
