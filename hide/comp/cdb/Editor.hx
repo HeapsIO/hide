@@ -510,6 +510,10 @@ class Editor extends Component {
 
 	function onPaste() {
 		var text = ide.getClipboard();
+
+		if (this.cursor.table == null)
+			return;
+
 		var columns = cursor.table.columns;
 		var sheet = cursor.table.sheet;
 		var realSheet = cursor.table.getRealSheet();
