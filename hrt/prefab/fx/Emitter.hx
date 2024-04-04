@@ -1517,9 +1517,8 @@ class Emitter extends Object3D {
 	}
 
 	function resetParam(param: ParamDef) {
-		var a = Std.downcast(param.def, Array);
-		if(a != null)
-			Reflect.setField(props, param.name, a.copy());
+		if(param.def is Array)
+			Reflect.setField(props, param.name, cast(param.def, Array<Dynamic>).copy());
 		else
 			Reflect.setField(props, param.name, param.def);
 	}
