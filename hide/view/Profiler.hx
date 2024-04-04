@@ -27,7 +27,7 @@ enum Filter {
 }
 
 class Profiler extends hide.ui.View<{}> {
-	#if (hashlink >= version("1.15.0"))
+	#if (hashlink >= "1.15.0")
 	public var mainMemory : hlmem.Memory = null;
 	public var currentMemory : hlmem.Memory = null;
 	public var names(default, null) : Array<String> = [];
@@ -453,7 +453,7 @@ class Profiler extends hide.ui.View<{}> {
 }
 
 class ProfilerElement extends hide.comp.Component{
-	#if (hashlink >= version("1.15.0"))
+	#if (hashlink >= "1.15.0")
 	public var profiler : Profiler;
 	public var line : LineData;
 	public var path : Path;
