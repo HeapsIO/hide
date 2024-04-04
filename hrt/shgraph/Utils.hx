@@ -1,5 +1,4 @@
 package hrt.shgraph;
-import hrt.shgraph.AstTools.*;
 
 class MapUtils {
 	public static inline function getOrPut<K,V>(map: Map<K,V>, key: K, def: V) : V {

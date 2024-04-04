@@ -11,8 +11,8 @@ class NewAdd extends ShaderNode {
 
 
 	override function generate(ctx: NodeGenContext) {
-		var a = ctx.getInput(0, ShaderGraph.ShaderDefInput.Const(getDef("a", 0.0)));
-		var b = ctx.getInput(1, ShaderGraph.ShaderDefInput.Const(getDef("b", 0.0)));
+		var a = ctx.getInput(0, SgHxslVar.ShaderDefInput.Const(getDef("a", 0.0)));
+		var b = ctx.getInput(1, SgHxslVar.ShaderDefInput.Const(getDef("b", 0.0)));
 
 		var id = hxsl.Tools.allocVarId();
 		var out = {id: id, name: 'output', kind: Local, type: ctx.getGenericType(0)};
@@ -27,8 +27,8 @@ class NewAdd extends ShaderNode {
 	override function getInputs() : Array<ShaderNode.InputInfo> {
 		static var inputs =
 		[
-			{name: "a", type: SgGeneric(0, ShaderGraph.ConstraintFloat), def: ShaderDefInput.Const(0.0)},
-			{name: "b", type: SgGeneric(0, ShaderGraph.ConstraintFloat), def: ShaderDefInput.Const(0.0)}
+			{name: "a", type: SgGeneric(0, ShaderGraph.ConstraintFloat), def: SgHxslVar.ShaderDefInput.Const(0.0)},
+			{name: "b", type: SgGeneric(0, ShaderGraph.ConstraintFloat), def: SgHxslVar.ShaderDefInput.Const(0.0)}
 		];
 		return inputs;
 	}
@@ -49,8 +49,8 @@ class NewAdd extends ShaderNode {
 			];
 	}
 
-	override function getInputs2(domain: ShaderGraph.Domain) : Map<String, {v: TVar, ?def: hrt.shgraph.ShaderGraph.ShaderDefInput, index: Int}> {
-		return [for (id => i in getInputs())  i.name => {v: {id: 0, name: i.name, type: TFloat, kind: Local}, def: hrt.shgraph.ShaderGraph.ShaderDefInput.Const(0.0), index: id}];
+	override function getInputs2(domain: ShaderGraph.Domain) : Map<String, {v: TVar, ?def: hrt.shgraph.SgHxslVar.ShaderDefInput, index: Int}> {
+		return [for (id => i in getInputs())  i.name => {v: {id: 0, name: i.name, type: TFloat, kind: Local}, def: hrt.shgraph.SgHxslVar.ShaderDefInput.Const(0.0), index: id}];
 	}
 
 }

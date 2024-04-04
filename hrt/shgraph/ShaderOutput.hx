@@ -24,7 +24,7 @@ class ShaderOutput extends ShaderNode {
 	}
 
 	override public function generate(ctx: NodeGenContext) {
-		var out = ctx.getInput(0, ShaderDefInput.Const(getDef("output", 0.0)));
+		var out = ctx.getInput(0, SgHxslVar.ShaderDefInput.Const(getDef("output", 0.0)));
 		ctx.setGlobalCustomOutput("customOutput", out);
 		ctx.addPreview(out);
 	}

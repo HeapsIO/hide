@@ -9,6 +9,8 @@ using Lambda;
 using hrt.shgraph.Utils;
 import hrt.shgraph.AstTools.*;
 import hrt.shgraph.ShaderGraph;
+import hrt.shgraph.SgHxslVar.ShaderDefInput;
+
 
 class AlphaPreview extends hxsl.Shader {
 	static var SRC = {
@@ -117,7 +119,7 @@ class ShaderNode {
 		return [for (id => i in getOutputs()) i.name => {v: {id: 0, name: i.name, type: sgTypeToType(i.type), kind: Local}, index: id}];
 	}
 
-	public function getInputs2(domain: ShaderGraph.Domain) : Map<String, {v: TVar, ?def: hrt.shgraph.ShaderGraph.ShaderDefInput, index: Int}> {
+	public function getInputs2(domain: ShaderGraph.Domain) : Map<String, {v: TVar, ?def: ShaderDefInput, index: Int}> {
 		return [for (id => i in getInputs()) i.name => {v: {id: 0, name: i.name, type: sgTypeToType(i.type), kind: Local}, index: id}];
 	}
 

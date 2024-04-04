@@ -11,7 +11,7 @@ class UVScroll extends  ShaderNodeHxsl {
 		@sginput("calculatedUV") var uv : Vec2;
 		@sginput(1.0) var uSpeed : Float;
 		@sginput(1.0) var vSpeed : Float;
-		@sginput("global.time") var time : Float;
+		@sginput("time") var time : Float;
 
 		@sgoutput var output : Vec2;
 

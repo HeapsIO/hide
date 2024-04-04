@@ -130,10 +130,10 @@ class NodeGenContext {
 
 		var previewExpr = makeAssign(outputColor, convertToType(TVec(4, VFloat), expr));
 		var ifExpr = makeIf(makeEq(selector, makeInt(currentPreviewId)), previewExpr);
-		addExpr(ifExpr);
+		preview = ifExpr;
 	}
 
-	static function convertToType(targetType: hxsl.Ast.Type, sourceExpr: TExpr) : TExpr {
+	public static function convertToType(targetType: hxsl.Ast.Type, sourceExpr: TExpr) : TExpr {
 		var sourceType = sourceExpr.t;
 
 		if (sourceType.equals(targetType))
@@ -212,17 +212,17 @@ class NodeGenContext {
 		return genericTypes[id];
 	}
 
-	public function getInput(id: Int, ?defValue: ShaderGraph.ShaderDefInput) : Null<TExpr> {
+	public function getInput(id: Int, ?defValue: SgHxslVar.ShaderDefInput) : Null<TExpr> {
 		var input = nodeInputExprs[id];
+		var inputType = getType(nodeInputInfo[id].type);
 		if (input != null) {
-			var inputType = getType(nodeInputInfo[id].type);
 			return convertToType(inputType, input);
 		}
 
 		if (defValue != null) {
 			switch(defValue) {
 				case Const(f):
-					return makeFloat(f);
+					return convertToType(inputType, makeFloat(f));
 				default:
 					throw "def value not handled yet";
 			}
@@ -241,6 +241,7 @@ class NodeGenContext {
 
 		outputs.resize(0);
 		genericTypes.resize(0);
+		preview = null;
 
 		for (inputId => input in nodeInputInfo) {
 			switch(input.type) {
@@ -257,6 +258,9 @@ class NodeGenContext {
 		if (nodeOutputInfo.length != outputs.length) {
 			throw "Missing outputs for node";
 		}
+		if (preview != null) {
+			addExpr(preview);
+		}
 	}
 
 	var node : ShaderGraph.Node = null;
@@ -264,6 +268,7 @@ class NodeGenContext {
 	var currentPreviewId: Int = -1;
 	var expressions: Array<TExpr> = [];
 	var outputs: Array<TExpr> = [];
+	var preview : TExpr = null;
 	var nodeOutputInfo: Array<OutputInfo>;
 
 

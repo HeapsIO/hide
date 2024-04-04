@@ -9,10 +9,10 @@ import hrt.shgraph.AstTools;
 @color("#0e8826")
 class NewVec4 extends ShaderNode {
 	override function generate(ctx: NodeGenContext) {
-		var a = ctx.getInput(0, ShaderGraph.ShaderDefInput.Const(getDef("a", 0.0)));
-		var b = ctx.getInput(1, ShaderGraph.ShaderDefInput.Const(getDef("b", 0.0)));
-		var c = ctx.getInput(2, ShaderGraph.ShaderDefInput.Const(getDef("c", 0.0)));
-		var d = ctx.getInput(3, ShaderGraph.ShaderDefInput.Const(getDef("d", 0.0)));
+		var a = ctx.getInput(0, SgHxslVar.ShaderDefInput.Const(getDef("a", 0.0)));
+		var b = ctx.getInput(1, SgHxslVar.ShaderDefInput.Const(getDef("b", 0.0)));
+		var c = ctx.getInput(2, SgHxslVar.ShaderDefInput.Const(getDef("c", 0.0)));
+		var d = ctx.getInput(3, SgHxslVar.ShaderDefInput.Const(getDef("d", 0.0)));
 
 		var id = hxsl.Tools.allocVarId();
 		var out = {id: id, name: 'output', kind: Local, type: TVec(4, VFloat)};
@@ -51,8 +51,8 @@ class NewVec4 extends ShaderNode {
 			];
 	}
 
-	override function getInputs2(domain: ShaderGraph.Domain) : Map<String, {v: TVar, ?def: hrt.shgraph.ShaderGraph.ShaderDefInput, index: Int}> {
-		return [for (id => i in getInputs())  i.name => {v: {id: 0, name: i.name, type: TFloat, kind: Local}, def: hrt.shgraph.ShaderGraph.ShaderDefInput.Const(0.0), index: id}];
+	override function getInputs2(domain: ShaderGraph.Domain) : Map<String, {v: TVar, ?def: hrt.shgraph.SgHxslVar.ShaderDefInput, index: Int}> {
+		return [for (id => i in getInputs())  i.name => {v: {id: 0, name: i.name, type: TFloat, kind: Local}, def: hrt.shgraph.SgHxslVar.ShaderDefInput.Const(0.0), index: id}];
 	}
 
 }

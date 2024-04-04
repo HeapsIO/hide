@@ -32,8 +32,8 @@ class NewTime extends ShaderNode {
 			];
 	}
 
-	override function getInputs2(domain: ShaderGraph.Domain) : Map<String, {v: TVar, ?def: hrt.shgraph.ShaderGraph.ShaderDefInput, index: Int}> {
-		return [for (id => i in getInputs())  i.name => {v: {id: 0, name: i.name, type: TFloat, kind: Local}, def: hrt.shgraph.ShaderGraph.ShaderDefInput.Const(0.0), index: id}];
+	override function getInputs2(domain: ShaderGraph.Domain) : Map<String, {v: TVar, ?def: SgHxslVar.ShaderDefInput, index: Int}> {
+		return [for (id => i in getInputs())  i.name => {v: {id: 0, name: i.name, type: TFloat, kind: Local}, def: SgHxslVar.ShaderDefInput.Const(0.0), index: id}];
 	}
 
 }

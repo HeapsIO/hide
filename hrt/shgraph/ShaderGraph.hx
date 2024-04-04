@@ -5,6 +5,7 @@ using hxsl.Ast;
 using haxe.EnumTools.EnumValueTools;
 using Lambda;
 import hrt.shgraph.AstTools.*;
+import hrt.shgraph.SgHxslVar.ShaderDefInput;
 
 enum abstract AngleUnit(String) {
 	var Radian;
@@ -44,6 +45,7 @@ function getAngleUnitDropdown(self: Dynamic, width: Float) : hide.Element {
 enum SgType {
 	SgFloat(dimension: Int);
 	SgSampler;
+	SgInt;
 
 	/**
 		All the generics in the same shader node with the same id unify to the
@@ -66,6 +68,8 @@ function typeToSgType(t: Type) : SgType {
 			SgFloat(n);
 		case TSampler(T2D, false):
 			SgSampler;
+		case TInt:
+			SgInt;
 		default:
 			throw "Unsuported type";
 	}
@@ -79,6 +83,8 @@ function sgTypeToType(t: SgType) : Type {
 			return TVec(n, VFloat);
 		case SgSampler:
 			return TSampler(T2D, false);
+		case SgInt:
+			return TInt;
 		case SgGeneric(id, consDtraint):
 			throw "Can't resolve generic without context";
 	}
@@ -110,11 +116,7 @@ function ConstraintFloat(newType: Type, previousType: Type) : Null<Type> {
 	}
 }
 
-enum ShaderDefInput {
-	Var(name: String);
-	Const(intialValue: Float);
-	ConstBool(initialValue: Bool);
-}
+
 
 typedef ShaderNodeDefInVar = {v: TVar, internal: Bool, ?defVal: ShaderDefInput, isDynamic: Bool};
 typedef ShaderNodeDefOutVar = {v: TVar, internal: Bool, isDynamic: Bool};

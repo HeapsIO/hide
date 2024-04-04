@@ -335,8 +335,8 @@ class Box {
 		return switch (type) {
 			//case TBool:
 			//	style.fill = boolColor;
-			//case TInt:
-			//	style.fill = intColor;
+			case SgInt:
+				intColor;
 			case SgFloat(1):
 				floatColor;
 			case SgFloat(2):
