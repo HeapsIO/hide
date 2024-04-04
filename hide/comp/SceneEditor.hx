@@ -663,7 +663,7 @@ class RenderPropsPopup extends Popup {
 		}
 
 		if (renderProps is Array) {
-			var a_renderProps = Std.downcast(renderProps, Array);
+			var a_renderProps = cast (renderProps, Array<Dynamic>);
 			var selectedRenderProps = editor.view.getDisplayState("renderProps");
 
 			for (idx in 0...a_renderProps.length) {
@@ -699,7 +699,7 @@ class RenderPropsPopup extends Popup {
 
 		var renderProps = hide.Ide.inst.currentConfig.get("scene.renderProps");
 		if (renderProps is Array) {
-			var a_renderProps = Std.downcast(renderProps, Array);
+			var a_renderProps = cast (renderProps, Array<Dynamic>);
 			var selectedRenderProps = editor.view.getDisplayState("renderProps");
 
 			for (idx in 0...a_renderProps.length) {
@@ -1767,7 +1767,7 @@ class SceneEditor {
 		}
 
 		if (renderProps is Array) {
-			var a_renderProps = Std.downcast(renderProps, Array);
+			var a_renderProps = cast (renderProps, Array<Dynamic>);
 			var savedRenderProp = @:privateAccess view.getDisplayState("renderProps");
 
 			// Check if the saved render prop hasn't been deleted from json
