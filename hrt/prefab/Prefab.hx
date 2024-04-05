@@ -670,7 +670,7 @@ class Prefab {
 		if (!enabled) return false;
 
 		#if editor
-		if (shared.parentPrefab != null && (editorOnly || inGameOnly))
+		if (shared.parentPrefab != null && inGameOnly)
 			return false;
 		#else
 		if (editorOnly)
