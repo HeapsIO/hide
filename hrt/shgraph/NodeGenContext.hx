@@ -94,6 +94,13 @@ class NodeGenContext {
 	}
 
 	function getOrAllocateGlobal(id: Variables.Global, ?isInput: Bool, ?isOutput: Bool) : TVar {
+		// Remap id for certains variables
+		switch (id) {
+			case Normal if (previewEnabled):
+				id = FakeNormal;
+			default:
+		}
+
 		var global = Variables.Globals[id];
 		var def : ShaderGraph.ExternVarDef = globalVars.get(global.name);
 		if (def == null) {
@@ -108,10 +115,14 @@ class NodeGenContext {
 					default: throw "parent must be a TStruct";
 				}
 			}
-			if (id == CalculatedUV) {
-				var uv = getOrAllocateGlobal(UV);
-				var expr = makeAssign(makeVar(v), makeVar(uv));
-				def.__init__ = expr;
+
+			// Post process certain variables
+			switch (id) {
+				case CalculatedUV:
+					var uv = getOrAllocateGlobal(UV);
+					var expr = makeAssign(makeVar(v), makeVar(uv));
+					def.__init__ = expr;
+				default:
 			}
 			globalVars.set(global.name, def);
 		}

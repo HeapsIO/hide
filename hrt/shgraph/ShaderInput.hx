@@ -7,20 +7,27 @@ using hxsl.Ast;
 @group("Property")
 @color("#0e8826")
 class ShaderInput extends ShaderNode {
-
-
 	@prop("Variable") public var variable : String = "pixelColor";
-
-	// override public function getOutput(key : String) : TVar {
-	// 	return variable;
-	// }
-
-	// override public function build(key : String) : TExpr {
-	// 	return null;
-	// }
 
 	public function new(variable = "pixelColor") {
 		this.variable = variable;
+	}
+
+	var outputs : Array<ShaderNode.OutputInfo>;
+	override function getOutputs() {
+		if (outputs == null) {
+			var global = availableInputs[variable].g;
+			var info = Variables.Globals[global];
+			outputs = [{name: "output", type: ShaderGraph.typeToSgType(info.type)}];
+		}
+		return outputs;
+	}
+
+	override function generate(ctx: NodeGenContext) {
+		var time = ctx.getGlobalInput(availableInputs[variable].g);
+
+		ctx.setOutput(0, time);
+		ctx.addPreview(time);
 	}
 
 	override public function getAliases(name: String, group: String, description: String) {
@@ -36,84 +43,9 @@ class ShaderInput extends ShaderNode {
 		return aliases;
 	}
 
-	override function getShaderDef(domain: ShaderGraph.Domain, getNewIdFn : () -> Int, ?inputTypes: Array<Type>):hrt.shgraph.ShaderGraph.ShaderNodeDef {
-		var pos : Position = {file: "", min: 0, max: 0};
-
-		var variable : ShaderNode.VariableDecl = availableInputs.get(this.variable);
-		if (variable == null)
-			throw "Unknown input variable " + this.variable;
-
-		var inVar : TVar = Reflect.copy(variable.v);
-		inVar.id = getNewIdFn();
-		var output : TVar = {name: "output", id: getNewIdFn(), type: variable.v.type, kind: Local, qualifiers: []};
-		var finalExpr : TExpr = {e: TBinop(OpAssign, {e:TVar(output), p:pos, t:output.type}, {e: TVar(inVar), p: pos, t: output.type}), p: pos, t: output.type};
-
-		if (variable.v.name == "pixelColor") {
-			var vec3 = TVec(3, VFloat);
-			output.type = vec3;
-			finalExpr =
-				{
-					e: TBinop(
-					OpAssign,
-						{
-							e: TVar(output),
-							p: pos,
-							t: vec3
-						},
-						{
-							e: TSwiz(
-									{
-										e: TVar(inVar),
-										p: pos,
-										t: vec3,
-									},
-									[X,Y,Z]
-								),
-							p:pos,
-							t:vec3
-						}
-					),
-					p: pos,
-					t: vec3
-				};
-		}
-		else if (variable.v.name == "alpha") {
-			var flt = TFloat;
-			output.type = flt;
-			inVar.name = "pixelColor";
-			finalExpr =
-				{
-					e: TBinop(
-					OpAssign,
-						{
-							e: TVar(output),
-							p: pos,
-							t: flt
-						},
-						{
-							e: TSwiz(
-									{
-										e: TVar(inVar),
-										p: pos,
-										t: flt,
-									},
-									[W]
-								),
-							p:pos,
-							t:flt
-						}
-					),
-					p: pos,
-					t: flt
-				};
-		}
-
-		return {expr: finalExpr, inVars: [{v:inVar, internal: true, isDynamic: false}], outVars:[{v:output, internal: false, isDynamic: false}], externVars: [], inits: []};
-	}
-
 	override function loadProperties(props:Dynamic) {
 		super.loadProperties(props);
-		var ivar : ShaderNode.VariableDecl = availableInputs.get(this.variable);
+		var ivar = availableInputs.get(this.variable);
 		if (ivar == null) {
 			for (k => v in availableInputs) {
 				variable = k;
@@ -122,54 +54,24 @@ class ShaderInput extends ShaderNode {
 		}
 	}
 
-	public static var availableInputs : Map<String, ShaderNode.VariableDecl> = [
-		"pixelColor" => {display: "Pixel Color", v: { parent: null, id: 0, kind: Local, name: "pixelColor", type: TVec(4, VFloat) }},
-		"alpha" => {display: "Alpha", v: { parent: null, id: 0, kind: Local, name: "alpha", type: TVec(4, VFloat) }},
-		"calculatedUV" => {display: "UV", v: { parent: null, id: 0, kind: Local, name: "calculatedUV", type: TVec(2, VFloat) }},
-		"relativePosition" => {display: "Position (Object Space)", v: { parent: null, id: 0, kind: Local, name: "relativePosition", type: TVec(3, VFloat) }},
-		"transformedPosition" => {display: "Position (World Space)", v: { parent: null, id: 0, kind: Local, name: "transformedPosition", type: TVec(3, VFloat) }},
-		"projectedPosition" => {display: "Position (View Space)", v: { parent: null, id: 0, kind: Local, name: "projectedPosition", type: TVec(4, VFloat) }},
-		"normal" => {display: "Normal (Object Space)", v: { parent: null, id: 0, kind: Local, name: "input.normal", type: TVec(3, VFloat) }},
-		"transformedNormal" => {display: "Normal (World Space)", v: { parent: null, id: 0, kind: Local, name: "transformedNormal", type: TVec(3, VFloat) }},
-		"depth" => {display: "Depth", v: {parent: null, id: 0, kind: Local, name: "depth", type: TFloat}},
+	public static var availableInputs : Map<String, {display: String, g: Variables.Global}> = [
+		"pixelColor" => {display: "Pixel Color", g: PixelColor},
+		"alpha" => {display: "Pixel Color", g: PixelColor},
+		"calculatedUv" => {display: "UV", g: CalculatedUV},
+		"relativePosition" => {display: "Position (Object Space)", g: RelativePosition},
+		"transformedPosition" => {display: "Position (World Space)", g: TransformedPosition},
+		"projectedPosition" => {display: "Position (View Space)", g: ProjectedPosition},
+		"normal" => {display: "Normal (Object Space)", g: Normal},
+		"transformedNormal" => {display: "Normal (World Space)", g: TransformedNormal},
 
-		"metalness" => {display: "Metalness", v: {parent: null,id: 0,kind: Local,name: "metalness",type: TFloat}},
-		"roughness" => {display: "Roughness", v: {parent: null, id: 0, kind: Local, name: "roughness", type: TFloat}},
-		"emissive" => {display: "Emissive", v: {parent: null, id: 0, kind: Local, name: "emissive", type: TFloat}},
-		"occlusion" => {display: "Occlusion", v: {parent: null, id: 0, kind: Local, name: "occlusion", type: TFloat}},
+		"depth" => {display: "Depth", g: Depth},
+		"metalness" => {display: "Metalness", g: Metalness},
+		"roughness" => {display: "Roughness", g: Roughness},
+		"emissive" => {display: "Emissive", g: Emissive},
+		"occlusion" => {display: "Occlusion", g: Occlusion},
 
-		// "position" => {display: "Source Position", v: { parent: null, id: 0, kind: Input, name: "input.position", type: TVec(3, VFloat) }},
-		// "color" => 	{display: "Source Vertex Color", v: { parent: null, id: 0, kind: Input, name: "input.color", type: TVec(3, VFloat) }},
-		"uv" => {display: "Source UV", v: { parent: null, id: 0, kind: Input, name: "input.uv", type: TVec(2, VFloat) }},
-		// "normal" => {display: "Source Normal", v: { parent: null, id: 0, kind: Input, name: "input.normal", type: TVec(3, VFloat) }},
-		// "tangent" => {display: "Source Tangent", v: { parent: null, id: 0, kind: Input, name: "input.tangent", type: TVec(3, VFloat) }},
+		"uv" => {display: "Source UV", g: UV},
 	];
-
-	/*public static var availableInputs : Array<TVar> = [
-									{ parent: null, id: 0, kind: Input, name: "position", type: TVec(3, VFloat) },
-									{ parent: null, id: 0, kind: Input, name: "color", type: TVec(3, VFloat) },
-									{ parent: null, id: 0, kind: Input, name: "uv", type: TVec(2, VFloat) },
-									{ parent: null, id: 0, kind: Input, name: "normal", type: TVec(3, VFloat) },
-									{ parent: null, id: 0, kind: Input, name: "tangent", type: TVec(3, VFloat) },
-									{ parent: null, id: 0, kind: Local, name: "relativePosition", type: TVec(3, VFloat) },
-									{ parent: null, id: 0, kind: Local, name: "transformedPosition", type: TVec(3, VFloat) },
-									{ parent: null, id: 0, kind: Local, name: "projectedPosition", type: TVec(4, VFloat) },
-									{ parent: null, id: 0, kind: Local, name: "transformedNormal", type: TVec(3, VFloat) },
-									{ parent: null, id: 0, kind: Local, name: "screenUV", type: TVec(2, VFloat) },
-									{ parent: null, id: 0, kind: Local, name: "calculatedUV", type: TVec(2, VFloat) },
-								];*/
-
-	// override public function loadProperties(props : Dynamic) {
-	// 	variable = Reflect.field(props, "Variable");
-	// }
-
-	// override public function saveProperties() : Dynamic {
-	// 	var parameters = {
-	// 		variable: variable;
-	// 	};
-
-	// 	return parameters;
-	// }
 
 	#if editor
 	override public function getPropertiesHTML(width : Float) : Array<hide.Element> {
@@ -190,6 +92,7 @@ class ShaderInput extends ShaderNode {
 
 		input.on("change", function(e) {
 			variable = input.val();
+			outputs = null;
 		});
 
 		elements.push(element);

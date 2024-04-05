@@ -46,8 +46,8 @@ class AstTools {
 		return makeGlobalCall(ctor, params, TVec(values.length, VFloat));
 	}
 
-	public inline static function makeVecExpr(values: Array<TExpr>) : TExpr {
-		var ctor = switch(values.length) {
+	public inline static function makeVecExpr(values: Array<TExpr>, ?ctor: TGlobal) : TExpr {
+		var ctor = ctor ?? switch(values.length) {
 			case 2: Vec2;
 			case 3: Vec3;
 			case 4: Vec4;
@@ -58,6 +58,10 @@ class AstTools {
 
 	public inline static function makeVar(v: TVar, ?pos: Position) : TExpr {
 		return makeExpr(TVar(v), v.type, pos);
+	}
+
+	public inline static function makeSwizzle(e: TExpr, components: Array<Component>) {
+		return makeExpr(TSwiz(e, components), components.length == 1 ? TFloat : TVec(components.length, VFloat));
 	}
 
 	public inline static function makeExpr(def: TExprDef, type: Type, ?pos: Position) : TExpr {

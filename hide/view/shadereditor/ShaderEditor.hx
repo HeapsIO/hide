@@ -1178,44 +1178,8 @@ class ShaderEditor extends hide.view.Graph {
 			if (Std.isOfType(e, String)) {
 				var str : String = e;
 				trace(str);
-				if (str.split(":")[0] == "An error occurred compiling the shaders") {
-					var strSplitted = str.split("(output_");
-					if (strSplitted.length >= 2) {
-						var idBox = strSplitted[1].split("_")[0];
-						var idBoxParsed = Std.parseInt(idBox);
-						if (Std.string(idBoxParsed) == idBox) {
-							error("Compilation of shader failed > Invalid inputs", idBoxParsed);
-						} else {
-							error("Compilation of shader failed > " + str);
-						}
-					} else {
-						var nameOutput = str.split("(")[1].split(" =")[0];
-						var errorSent = false;
-						for (b in listOfBoxes) {
-							var shaderOutput = Std.downcast(b.getInstance(), hrt.shgraph.ShaderOutput);
-							if (shaderOutput != null) {
-								var v = shaderOutput.getVariable();
-								if (v.name == nameOutput) {
-									error("Compilation of shader failed > Invalid inputs", shaderOutput.id);
-									errorSent = true;
-									break;
-								}
-							}
-							if (!errorSent) {
-								error("Compilation of shader failed > " + str);
-							}
-						}
-					}
-					if (newShader != null)
-						for (m in obj.getMaterials())
-							m.mainPass.removeShader(newShader);
-					if (currentShader != null) {
-						for (m in obj.getMaterials()) {
-							m.mainPass.addShader(currentShader);
-						}
-					}
-					return;
-				}
+
+				error("Compilation of shader failed > " + str);
 			} else if (Std.isOfType(e, ShaderException)) {
 				error(e.msg, e.idBox);
 				return;

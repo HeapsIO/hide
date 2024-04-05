@@ -242,8 +242,19 @@ class ShaderGraphGenContext2 {
 			genContext.finishNode();
 		}
 
-		for (e in expressions) {
-			trace(hxsl.Printer.toString(e));
+		// Combine sg_out_color and sg_out_alpha if they are declared in the shader
+		var _sg_out_color = genContext.globalVars.get(Variables.Globals[Variables.Global.SGPixelColor].name)?.v;
+		var _sg_out_alpha = genContext.globalVars.get(Variables.Globals[Variables.Global.SGPixelAlpha].name)?.v;
+		if (_sg_out_color != null || _sg_out_alpha != null) {
+			var pixelColor = genContext.getGlobalInput(PixelColor);
+			var color = _sg_out_color != null ? makeVar(_sg_out_color) : makeSwizzle(pixelColor, [X,Y,Z]);
+			var alpha = _sg_out_alpha != null ? makeVar(_sg_out_alpha) : makeSwizzle(pixelColor, [W]);
+
+			var e = makeAssign(pixelColor, makeVecExpr([color, alpha], Vec4));
+			if (includePreviews) {
+				e = makeIf(makeEq(genContext.getGlobalInput(PreviewSelect), makeInt(0)), e);
+			}
+			expressions.push(e);
 		}
 
 		return {e: AstTools.makeExpr(TBlock(expressions), TVoid), externs: [for (v in genContext.globalVars) v]};

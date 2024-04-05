@@ -19,13 +19,19 @@ class ShaderOutput extends ShaderNode {
 		this.variable = variable;
 	}
 
+	var inputs : Array<ShaderNode.InputInfo>;
 	override public function getInputs() : Array<ShaderNode.InputInfo> {
-		return [{name: "output", type: SgFloat(1)}];
+		if (inputs == null) {
+			var global = availableOutputs[variable].g;
+			var info = Variables.Globals[global];
+			inputs = [{name: "input", type: ShaderGraph.typeToSgType(info.type)}];
+		}
+		return inputs;
 	}
 
 	override public function generate(ctx: NodeGenContext) {
-		var out = ctx.getInput(0, SgHxslVar.ShaderDefInput.Const(getDef("output", 0.0)));
-		ctx.setGlobalCustomOutput("customOutput", out);
+		var out = ctx.getInput(0, SgHxslVar.ShaderDefInput.Const(getDef("input", 0.0)));
+		ctx.setGlobalOutput(availableOutputs[variable].g, out);
 		ctx.addPreview(out);
 	}
 
@@ -42,139 +48,19 @@ class ShaderOutput extends ShaderNode {
 		return aliases;
 	}
 
-	public function getVariable() {
-		return availableOutputs.get(variable).v;
-	}
+	public static var availableOutputs : Map<String, {display: String, g: Variables.Global}> = [
+		"_sg_out_color" => {display: "Pixel Color", g:SGPixelColor},
+		"_sg_out_alpha" => {display: "Alpha", g:SGPixelColor},
+		"relativePosition" => {display: "Position (Object Space)", g:RelativePosition},
+		"transformedPosition" => {display: "Position (World Space)", g:TransformedPosition},
+		"projectedPosition" => {display: "Position (View Space)", g:ProjectedPosition},
+		"calculatedUV" => { display: "UV", g:CalculatedUV},
+		"transformedNormal" => { display: "Normal (World Space)", g:TransformedNormal},
 
-	override function getShaderDef(domain: ShaderGraph.Domain, getNewIdFn : () -> Int, ?inputTypes: Array<Type>):hrt.shgraph.ShaderGraph.ShaderNodeDef {
-		var pos : Position = {file: "", min: 0, max: 0};
-
-		var variable = availableOutputs.get(variable).v;
-
-		var inVar : TVar = {name: "input", id: getNewIdFn(), type: variable.type, kind: Param, qualifiers: []};
-		var output : TVar = {name: variable.name, id: getNewIdFn(), type: variable.type, kind: variable.kind, qualifiers: []};
-		var finalExpr : TExpr = {e: TBinop(OpAssign, {e:TVar(output), p:pos, t:output.type}, {e: TVar(inVar), p: pos, t: output.type}), p: pos, t: output.type};
-
-		//var param = getParameter(inputNode.parameterId);
-		//inits.push({variable: inVar, value: param.defaultValue});
-		var inVars = [{v: inVar, internal: false, isDynamic: false}];
-
-		// if (variable.name == "pixelColor") {
-		// 	var vec3 = TVec(3, VFloat);
-		// 	inVar.type = vec3;
-		// 	finalExpr =
-		// 		{
-		// 			e: TBinop(
-		// 			OpAssign,
-		// 				{
-		// 					e: TSwiz(
-		// 							{
-		// 								e: TVar(output),
-		// 								p: pos,
-		// 								t: vec3,
-		// 							},
-		// 							[X,Y,Z]
-		// 						),
-		// 					p:pos,
-		// 					t:vec3
-		// 				},
-		// 				{
-		// 					e: TVar(inVar),
-		// 					p: pos,
-		// 					t: vec3
-		// 				}
-		// 			),
-		// 			p: pos,
-		// 			t: vec3
-		// 		};
-		// } else if (variable.name == "alpha") {
-		// 	var flt = TFloat;
-		// 	inVar.type = flt;
-		// 	output.name = "pixelColor";
-		// 	output.type = TVec(4, VFloat);
-		// 	finalExpr =
-		// 		{
-		// 			e: TBinop(
-		// 			OpAssign,
-		// 				{
-		// 					e: TSwiz(
-		// 							{
-		// 								e: TVar(output),
-		// 								p: pos,
-		// 								t: flt,
-		// 							},
-		// 							[W]
-		// 						),
-		// 					p:pos,
-		// 					t:flt
-		// 				},
-		// 				{
-		// 					e: TVar(inVar),
-		// 					p: pos,
-		// 					t: flt
-		// 				}
-		// 			),
-		// 			p: pos,
-		// 			t: flt
-		// 		};
-		// }
-		// if (generatePreview && variable.name == "pixelColor") {
-		// 	var outputSelect : TVar = {name: "__sg_PREVIEW_output_select", id: getNewIdFn(), type: TInt, kind: Param, qualifiers: []};
-
-		// 	finalExpr = {
-		// 		e: TIf(
-		// 				{
-		// 					e: TBinop(
-		// 						OpEq,
-		// 						{e:TVar(outputSelect),p:pos, t:TInt},
-		// 						{e:TConst(CInt(0)), p:pos, t:TInt}
-		// 					),
-		// 					p:pos,
-		// 					t:TInt
-		// 				},
-		// 				finalExpr,
-		// 				null
-		// 			),
-		// 		p: pos,
-		// 		t:null
-		// 	};
-
-		// 	inVars.push( {v: outputSelect, internal: true, isDynamic: false});
-		// }
-
-		return {expr: finalExpr, inVars: inVars, outVars:[{v: output, internal: true, isDynamic: false}], externVars: [], inits: []};
-	}
-
-	/*override public function checkValidityInput(key : String, type : hxsl.Ast.Type) : Bool {
-		return ShaderType.checkConversion(type, variable.type);
-	}*/
-
-	// override public function build(key : String) : TExpr {
-	// 	return {
-	// 			p : null,
-	// 			t : TVoid,
-	// 			e : TBinop(OpAssign, {
-	// 				e: TVar(variable),
-	// 				p: null,
-	// 				t: variable.type
-	// 			}, input.getVar(variable.type))
-	// 		};
-
-	// }
-
-	public static var availableOutputs : Map<String, ShaderNode.VariableDecl> = [
-		"_sg_out_color" => {display:"Pixel Color", v:{parent: null,id: 0,kind: Local,name: "_sg_out_color",type: TVec(3, VFloat)}},
-		"_sg_out_alpha" => {display:"Alpha", v:{parent: null,id: 0,kind: Local,name: "_sg_out_alpha",type: TFloat}},
-		"relativePosition" => {display:"Position (Object Space)", vertexOnly: true, v:{parent: null,id: 0,kind: Local,name: "relativePosition",type: TVec(3, VFloat)}},
-		"transformedPosition" => {display:"Position (World Space)", vertexOnly: true, v:{parent: null,id: 0,kind: Local,name: "transformedPosition",type: TVec(3, VFloat)}},
-		"projectedPosition" => {display: "Position (View Space)", vertexOnly: true, v: { parent: null, id: 0, kind: Local, name: "projectedPosition", type: TVec(4, VFloat) }},
-		// Disabled because calculated UV need to be initialized in vertexShader for some reason
-		"calculatedUV" => { display: "UV", v: { parent: null, id: 0, kind: Var, name: "calculatedUV", type: TVec(2, VFloat)}},
-		"transformedNormal" => { display: "Normal (World Space)", vertexOnly: true, v: {parent: null, id: 0, kind: Local, name: "transformedNormal", type: TVec(3, VFloat)}},
-		"metalness" => {display: "Metalness", v: {parent: null,id: 0,kind: Local,name: "metalness",type: TFloat}},
-		"roughness" => {display: "Roughness", v: {parent: null, id: 0, kind: Local, name: "roughness", type: TFloat}},
-		"emissive" => {display: "Emissive", v: {parent: null, id: 0, kind: Local, name: "emissive", type: TFloat}},
-		"occlusion" => {display: "Occlusion", v: {parent: null, id: 0, kind: Local, name: "occlusion", type: TFloat}},
+		"metalness" => {display: "Metalness", g: Metalness},
+		"roughness" => {display: "Roughness", g: Roughness},
+		"emissive" => {display: "Emissive", g: Emissive},
+		"occlusion" => {display: "Occlusion", g: Occlusion},
 	];
 
 	override function loadProperties(props:Dynamic) {
