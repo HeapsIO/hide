@@ -3,6 +3,7 @@ package hrt.shgraph;
 enum abstract Global(Int) to Int {
 	var PixelColor;
 	var Time;
+	var PixelSize;
 	var Global;
 
 	var CalculatedUV;
@@ -41,6 +42,7 @@ class Variables {
 		g[CalculatedUV] 		= {type: TVec(2, VFloat), 	name: "calculatedUV", 		kind: Local};
 
 		g[Time] 				= {type: TFloat, 	name: "time", 			kind: Local, parent: Global};
+		g[PixelSize]			= {type: TVec(2, VFloat), 	name: "pixelSize", 		kind: Local, parent: Global};
 		g[Global] 				= {type: TVoid, 	name: "global", 		kind: Global};
 
 		g[UV] 					= {type: TVec(2, VFloat), 	name: "uv", kind: Input};

@@ -26,7 +26,7 @@ class ShaderParam extends ShaderNode {
 	}
 
 	override function generate(ctx: NodeGenContext) {
-		var v = ctx.getGlobalParam(variable.name, variable.type, 0.0);
+		var v = ctx.getGlobalParam(variable.name, variable.type);
 
 		ctx.setOutput(0, v);
 		if (v.t.match(TSampler(_,_))) {

@@ -187,6 +187,7 @@ ExternVarDef {
 	var isOutput: Bool;
 	var defValue: Dynamic;
 	var __init__: TExpr;
+	@:optional var paramIndex: Int;
 }
 
 @:access(hrt.shgraph.Graph)
@@ -255,6 +256,14 @@ class ShaderGraphGenContext2 {
 				e = makeIf(makeEq(genContext.getGlobalInput(PreviewSelect), makeInt(0)), e);
 			}
 			expressions.push(e);
+		}
+
+		for (id => p in graph.parent.parametersAvailable) {
+			var global = genContext.globalVars.get(p.name);
+			if (global == null)
+				continue;
+			global.defValue = p.defaultValue;
+			global.paramIndex = p.index;
 		}
 
 		return {e: AstTools.makeExpr(TBlock(expressions), TVoid), externs: [for (v in genContext.globalVars) v]};
@@ -429,6 +438,8 @@ class ShaderGraph extends hrt.prefab.Prefab {
 		};
 
 		var gen = ctx.generate();
+
+		gen.externs.sort((a,b) -> Reflect.compare(a.paramIndex ?? -1, b.paramIndex ?? -1));
 
 		var __init__exprs : Array<TExpr>= [];
 		for (v in gen.externs) {

@@ -24,10 +24,10 @@ class ShaderInput extends ShaderNode {
 	}
 
 	override function generate(ctx: NodeGenContext) {
-		var time = ctx.getGlobalInput(availableInputs[variable].g);
+		var input = ctx.getGlobalInput(availableInputs[variable].g);
 
-		ctx.setOutput(0, time);
-		ctx.addPreview(time);
+		ctx.setOutput(0, input);
+		ctx.addPreview(input);
 	}
 
 	override public function getAliases(name: String, group: String, description: String) {

@@ -129,6 +129,7 @@ class ShaderOutput extends ShaderNode {
 
 		input.on("change", function(e) {
 			variable = input.val();
+			inputs = null;
 			/*var value = input.val();
 			if (value < ShaderNode.availableVariables.length) {
 				this.variable = ShaderNode.availableVariables[value];

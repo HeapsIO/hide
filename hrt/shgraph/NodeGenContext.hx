@@ -32,9 +32,9 @@ class NodeGenContextSubGraph extends NodeGenContext {
 		}
 	}
 
-	override  function getGlobalParam(name: String, type: Type, ?defVal: Dynamic) : TExpr {
+	override  function getGlobalParam(name: String, type: Type) : TExpr {
 		var inputId = globalInVars.getOrPut(name, inputCount ++);
-		return parentCtx?.nodeInputExprs[inputId] ?? parentCtx?.getGlobalParam(name, type, defVal) ?? super.getGlobalParam(name, type, defVal);
+		return parentCtx?.nodeInputExprs[inputId] ?? parentCtx?.getGlobalParam(name, type) ?? super.getGlobalParam(name, type);
 	}
 
 	override function setGlobalCustomOutput(name: String, expr: TExpr) : Void {
@@ -84,8 +84,8 @@ class NodeGenContext {
 		expressions.push(makeAssign(v, expr));
 	}
 
-	public function getGlobalParam(name: String, type: Type, ?defVal: Dynamic) : TExpr {
-		return makeVar(globalVars.getOrPut(name, {v: {id: hxsl.Tools.allocVarId(), name: name, type: type, kind: Param}, isInput: true, isOutput: false, defValue:defVal, __init__: null}).v);
+	public function getGlobalParam(name: String, type: Type) : TExpr {
+		return makeVar(globalVars.getOrPut(name, {v: {id: hxsl.Tools.allocVarId(), name: name, type: type, kind: Param}, isInput: true, isOutput: false, defValue:null, __init__: null}).v);
 	}
 
 	public function setGlobalCustomOutput(name: String, expr: TExpr) : Void {
