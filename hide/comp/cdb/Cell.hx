@@ -32,6 +32,12 @@ class Cell {
 		this.column = column;
 		@:privateAccess line.cells.push(this);
 
+		// This gets used by drag and drop
+		if (column.type == TFile) {
+			var eroot = new Element(root);
+			eroot.prop("cellComp", this);
+		}
+
 		root.classList.add("t_" + typeNames[column.type.getIndex()]);
 		root.classList.add("n_" + column.name);
 
