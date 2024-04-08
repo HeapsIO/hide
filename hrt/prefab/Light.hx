@@ -80,6 +80,7 @@ class Light extends Object3D {
 	@:s public var castingMaxDist : Float = 0.0;
 	@:s public var params : Array<CascadeParams> = [];
 	@:s public var debugShader : Bool = false;
+	@:s public var highPrecision : Bool = false;
 
 	// Debug
 	@:s public var debugDisplay : Bool = true;
@@ -221,6 +222,7 @@ class Light extends Object3D {
 							if ( params[i] == null )
 								params[i] = { bias : 0.001, depthBias : 0.0, slopeBias : 0.0 };
 						cs.params = params;
+						cs.highPrecision = highPrecision;
 					}
 				}
 			case Spot:
@@ -637,6 +639,7 @@ class Light extends Object3D {
 						<ul id="params"></ul>
 					</dl>
 					<dt>Debug shader</dt><dd><input type="checkbox" field="debugShader"/></dd>
+					<dt>High precision</dt><dd><input type="checkbox" field="highPrecision"/></dd>
 				</dl>
 			</div>'
 		);
