@@ -194,7 +194,7 @@ ExternVarDef {
 }
 
 @:access(hrt.shgraph.Graph)
-class ShaderGraphGenContext2 {
+class ShaderGraphGenContext {
 	var graph : Graph;
 	var includePreviews : Bool;
 
@@ -423,7 +423,7 @@ class ShaderGraph extends hrt.prefab.Prefab {
 		return dynamicType;
 	}
 
-	public function compile3(?previewDomain: Domain) : hrt.prefab.Cache.ShaderDef {
+	public function compile(?previewDomain: Domain) : hrt.prefab.Cache.ShaderDef {
 		var inits : Array<{variable: TVar, value: Dynamic}>= [];
 
 		var shaderData : ShaderData = {
@@ -440,7 +440,7 @@ class ShaderGraph extends hrt.prefab.Prefab {
 			if (previewDomain != null && previewDomain != graph.domain)
 				continue;
 			nodeGen.domain = graph.domain;
-			var ctx = new ShaderGraphGenContext2(graph);
+			var ctx = new ShaderGraphGenContext(graph);
 			var gen = ctx.generate(nodeGen);
 
 			var fnKind : FunctionKind = switch(previewDomain != null ? Fragment : graph.domain) {
@@ -513,7 +513,7 @@ class ShaderGraph extends hrt.prefab.Prefab {
 	}
 
 	public function makeShaderInstance() : hxsl.DynamicShader {
-		var def = compile3(null);
+		var def = compile(null);
 		var s = new hxsl.DynamicShader(def.shader);
 		for (init in def.inits)
 			setParamValue(s, init.variable, init.value);
@@ -816,7 +816,7 @@ class Graph {
 	}
 
 	public function hasCycle() : Bool {
-		var ctx = new ShaderGraphGenContext2(this, false);
+		var ctx = new ShaderGraphGenContext(this, false);
 		@:privateAccess ctx.initNodes();
 		var res = @:privateAccess ctx.sortGraph();
 		return res == null;

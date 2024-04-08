@@ -434,7 +434,7 @@ class ShaderEditor extends hide.view.Graph {
 
 		element.find("#display2").on("click", () -> {
 			@:privateAccess info(
-				hxsl.Printer.shaderToString(shaderGraph.compile3(domain).shader.data, true)
+				hxsl.Printer.shaderToString(shaderGraph.compile(domain).shader.data, true)
 			);});
 
 		editorMatrix.on("click", "input, select", function(ev) {
@@ -1131,7 +1131,7 @@ class ShaderEditor extends hide.view.Graph {
 	function displayCompiled(type : String) {
 		var text = "\n";
 
-		var def = shaderGraph.compile3(null);
+		var def = shaderGraph.compile(null);
 
 		if( def != null) {
 			text += switch( type ) {
@@ -1155,7 +1155,7 @@ class ShaderEditor extends hide.view.Graph {
 				for (m in obj.getMaterials())
 					m.mainPass.removeShader(currentShader);
 
-			var shaderGraphDef = shaderGraph.compile3(null);
+			var shaderGraphDef = shaderGraph.compile(null);
 			newShader = new hxsl.DynamicShader(shaderGraphDef.shader);
 			for (init in shaderGraphDef.inits) {
 				setParamValue(newShader, init.variable, init.value);
@@ -1193,7 +1193,7 @@ class ShaderEditor extends hide.view.Graph {
 			}
 		}
 
-		currentShaderPreviewsDef = shaderGraph.compile3(domain);
+		currentShaderPreviewsDef = shaderGraph.compile(domain);
 	}
 
 	function updateParam(id : Int) {
