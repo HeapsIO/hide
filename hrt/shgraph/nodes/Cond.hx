@@ -9,26 +9,27 @@ import hrt.shgraph.AstTools.*;
 @group("Condition")
 class Cond extends ShaderNode {
 
-	override public function getShaderDef(domain: ShaderGraph.Domain, getNewIdFn : () -> Int, ?inputTypes: Array<Type>) : ShaderGraph.ShaderNodeDef {
+	override function getOutputs() {
+		static var output : Array<ShaderNode.OutputInfo> = [{name: "output", type: SgBool}];
+		return output;
+	}
 
-		var a : TVar = {name : "a", id: getNewIdFn(), type: TFloat, kind: Local, qualifiers: []};
-		var b : TVar = {name : "b", id: getNewIdFn(), type: TFloat, kind: Local, qualifiers: []};
+	override function getInputs() {
+		static var inputs : Array<ShaderNode.InputInfo> =
+			[
+				{name: "a", type: SgFloat(1)},
+				{name: "b", type: SgFloat(1)},
+			];
+		return inputs;
+	}
 
-		var out : TVar = {name: "out", id: getNewIdFn(), type: TBool, kind: Local, qualifiers: []};
+	override function generate(ctx: NodeGenContext) {
+		var a = ctx.getInput(0, Const(0.0));
+		var b = ctx.getInput(1, Const(0.0));
 
-		var cond = makeExpr(TBinop(condition, makeVar(a), makeVar(b)), TBool);
-		var expr = makeAssign(makeVar(out), cond);
-		return {
-			expr: expr,
-			inVars: [{v:a, internal: false, defVal: Const(0.0), isDynamic: false}, {v:b, internal: false, defVal: Const(0.0), isDynamic: false}],
-			outVars:[{v:out, internal: false, isDynamic: false}],
-			inits: [],
-			externVars: []
-		};
-	};
-
-	override function canHavePreview():Bool {
-		return false;
+		var expr = makeExpr(TBinop(condition, a, b), TBool);
+		ctx.setOutput(0, expr);
+		ctx.addPreview(expr);
 	}
 
 	// @input("Left") var leftVar = SType.Number;

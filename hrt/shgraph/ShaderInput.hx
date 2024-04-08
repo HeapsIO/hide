@@ -2,6 +2,11 @@ package hrt.shgraph;
 
 using hxsl.Ast;
 
+enum InputKind {
+	IGlobal(g: Variables.Global);
+	ICustom(gen:(ctx:NodeGenContext) -> TExpr, t: hxsl.Ast.Type);
+}
+
 @name("Inputs")
 @description("Shader inputs of Heaps, it's dynamic")
 @group("Property")
@@ -16,18 +21,28 @@ class ShaderInput extends ShaderNode {
 	var outputs : Array<ShaderNode.OutputInfo>;
 	override function getOutputs() {
 		if (outputs == null) {
-			var global = availableInputs[variable].g;
-			var info = Variables.Globals[global];
-			outputs = [{name: "output", type: ShaderGraph.typeToSgType(info.type)}];
+			var global = availableInputs[variable].k;
+			var t = switch(global) {
+				case IGlobal(g):
+					Variables.Globals[g].type;
+				case ICustom(_,t):
+					t;
+			}
+			outputs = [{name: "output", type: ShaderGraph.typeToSgType(t)}];
 		}
 		return outputs;
 	}
 
 	override function generate(ctx: NodeGenContext) {
-		var input = ctx.getGlobalInput(availableInputs[variable].g);
+		var expr = switch(availableInputs[variable].k) {
+			case IGlobal(g):
+				ctx.getGlobalInput(g);
+			case ICustom(gen, _):
+				gen(ctx);
+		}
 
-		ctx.setOutput(0, input);
-		ctx.addPreview(input);
+		ctx.setOutput(0, expr);
+		ctx.addPreview(expr);
 	}
 
 	override public function getAliases(name: String, group: String, description: String) {
@@ -54,23 +69,24 @@ class ShaderInput extends ShaderNode {
 		}
 	}
 
-	public static var availableInputs : Map<String, {display: String, g: Variables.Global}> = [
-		"pixelColor" => {display: "Pixel Color", g: PixelColor},
-		"alpha" => {display: "Pixel Color", g: PixelColor},
-		"calculatedUv" => {display: "UV", g: CalculatedUV},
-		"relativePosition" => {display: "Position (Object Space)", g: RelativePosition},
-		"transformedPosition" => {display: "Position (World Space)", g: TransformedPosition},
-		"projectedPosition" => {display: "Position (View Space)", g: ProjectedPosition},
-		"normal" => {display: "Normal (Object Space)", g: Normal},
-		"transformedNormal" => {display: "Normal (World Space)", g: TransformedNormal},
 
-		"depth" => {display: "Depth", g: Depth},
-		"metalness" => {display: "Metalness", g: Metalness},
-		"roughness" => {display: "Roughness", g: Roughness},
-		"emissive" => {display: "Emissive", g: Emissive},
-		"occlusion" => {display: "Occlusion", g: Occlusion},
+	public static var availableInputs : Map<String, {display: String, k: InputKind}> = [
+		"pixelColor" => {display: "Pixel Color", k: ICustom((ctx:NodeGenContext) -> makeSwizzle(ctx.getGlobalInput(PixelColor), [X,Y,Z]), TVec(3, VFloat))},
+		"alpha" => {display: "Alpha", k: ICustom((ctx:NodeGenContext) -> makeSwizzle(ctx.getGlobalInput(PixelColor), [W]), TFloat)},
+		"calculatedUV" => {display: "UV", k: IGlobal(CalculatedUV)},
+		"relativePosition" => {display: "Position (Object Space)", k: IGlobal(RelativePosition)},
+		"transformedPosition" => {display: "Position (World Space)", k: IGlobal(TransformedPosition)},
+		"projectedPosition" => {display: "Position (View Space)", k: IGlobal(ProjectedPosition)},
+		"normal" => {display: "Normal (Object Space)", k: IGlobal(Normal)},
+		"transformedNormal" => {display: "Normal (World Space)", k: IGlobal(TransformedNormal)},
 
-		"uv" => {display: "Source UV", g: UV},
+		"depth" => {display: "Depth", k: IGlobal(Depth)},
+		"metalness" => {display: "Metalness", k: IGlobal(Metalness)},
+		"roughness" => {display: "Roughness", k: IGlobal(Roughness)},
+		"emissive" => {display: "Emissive", k: IGlobal(Emissive)},
+		"occlusion" => {display: "Occlusion", k: IGlobal(Occlusion)},
+
+		"uv" => {display: "Source UV", k: IGlobal(UV)},
 	];
 
 	#if editor

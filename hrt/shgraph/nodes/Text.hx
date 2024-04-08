@@ -12,8 +12,7 @@ class Text extends ShaderNode {
 
 	@prop() var text : String = "";
 
-	override function getShaderDef(domain: ShaderGraph.Domain, getNewIdFn : () -> Int, ?inputTypes: Array<Type>):hrt.shgraph.ShaderGraph.ShaderNodeDef {
-		return {expr: null, inVars: [], outVars: [], inits: [], externVars: []};
+	override function generate(ctx:NodeGenContext) {
 	}
 
 	#if editor

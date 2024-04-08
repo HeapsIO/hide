@@ -2,12 +2,15 @@ package hrt.shgraph;
 
 enum abstract Global(Int) to Int {
 	var PixelColor;
+	var PixelColorColor;
+	var PixelColorAlpha;
 	var Time;
 	var PixelSize;
 	var Global;
 
 	var CalculatedUV;
 
+	var Input;
 	var UV;
 
 	var RelativePosition;
@@ -26,12 +29,17 @@ enum abstract Global(Int) to Int {
 
 	var PreviewSelect;
 
+	// Particles
+	var ParticleLife;
+	var ParticleLifeTime;
+	var ParticleRandom;
+
 	// Internal Shadergraph vars
 	var SGPixelColor;
 	var SGPixelAlpha;
 }
 
-typedef GlobalInfo = {type: hxsl.Ast.Type, kind: hxsl.Ast.VarKind, name: String, ?display: String, ?parent: Global, ?def: Dynamic};
+typedef GlobalInfo = {type: hxsl.Ast.Type, kind: hxsl.Ast.VarKind, name: String, ?expr: (ctx:NodeGenContext) -> TExpr, ?display: String, ?parent: Global, ?def: Dynamic, ?isLocal: Bool};
 class Variables {
 	public static var previewSelectName = "previewSelect_SG";
 
@@ -39,18 +47,20 @@ class Variables {
 		var g : Array<GlobalInfo> = [];
 
 		g[PixelColor] 			= {type: TVec(4, VFloat), 	name: "pixelColor", 	kind: Local};
-		g[CalculatedUV] 		= {type: TVec(2, VFloat), 	name: "calculatedUV", 		kind: Local};
+
+		g[CalculatedUV] 		= {type: TVec(2, VFloat), 	name: "calculatedUV", 		kind: Var};
 
 		g[Time] 				= {type: TFloat, 	name: "time", 			kind: Local, parent: Global};
 		g[PixelSize]			= {type: TVec(2, VFloat), 	name: "pixelSize", 		kind: Local, parent: Global};
 		g[Global] 				= {type: TVoid, 	name: "global", 		kind: Global};
 
-		g[UV] 					= {type: TVec(2, VFloat), 	name: "uv", kind: Input};
-		g[RelativePosition]			= {type: TVec(3, VFloat), name: "relativePosition", kind: Input};
+		g[Input]			= {type: TVoid, name: "input", kind: Input};
+		g[UV] 					= {type: TVec(2, VFloat), 	name: "uv", kind: Input, parent: Input};
+		g[RelativePosition]			= {type: TVec(3, VFloat), name: "relativePosition", kind: Local};
 		g[TransformedPosition]		= {type: TVec(3, VFloat), name: "transformedPosition", kind: Local};
 		g[ProjectedPosition]		= {type: TVec(4, VFloat), name: "projectedPosition", kind: Local};
 
-		g[Normal] 				= {type: TVec(3, VFloat), name: "normal", kind: Input};
+		g[Normal] 				= {type: TVec(3, VFloat), name: "normal", kind: Input, parent: Input};
 		g[FakeNormal] 			= {type: TVec(3, VFloat), name: "fakeNormal", kind: Local};
 		g[TransformedNormal] 	= {type: TVec(3, VFloat), name: "transformedNormal", kind: Local};
 
@@ -64,6 +74,10 @@ class Variables {
 
 		g[SGPixelColor] 		= {type: TVec(3, VFloat), 	name: "_sg_out_color", 		display: "Pixel Color", kind: Local};
 		g[SGPixelAlpha] 		= {type: TFloat, 	name: "_sg_out_alpha", 		display: "Alpha", kind: Local};
+
+		g[ParticleLife]			= {type: TFloat, name: "particleLife", kind: Local};
+		g[ParticleLifeTime]		= {type: TFloat, name: "particleLifeTime", kind: Local};
+		g[ParticleRandom] 		= {type: TFloat, name: "particleRandom", kind: Local};
 
 		g;
 	};

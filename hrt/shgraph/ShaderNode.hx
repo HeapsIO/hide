@@ -48,17 +48,23 @@ class ShaderNode {
 
 	public var defaults : Dynamic = {};
 
-	//
-	// New API =======================================================================================
-	//
+	/**
+		Declare all the inputs this node uses
+	**/
 	public function getInputs() : Array<InputInfo> {
 		return [];
 	}
 
+	/**
+		Declare all the outputs this node uses
+	**/
 	public function getOutputs() : Array<OutputInfo> {
 		return [];
 	}
 
+	/**
+		Generate the hxsl expressions and outputs of the node
+	**/
 	public function generate(ctx: NodeGenContext) : Void {
 		throw "generate is not defined for class " + std.Type.getClassName(std.Type.getClass(this));
 	}
@@ -70,8 +76,6 @@ class ShaderNode {
 		}
 		return def;
 	}
-
-	// Old API ======================================================================================
 
 	public function getAliases(name: String, group: String, description: String) : Array<AliasInfo> {
 		var cl = HaxeType.getClass(this);
@@ -85,117 +89,11 @@ class ShaderNode {
 		}
 		return aliases;
 	}
-
-	static var availableVariables = [
-					{
-						parent: null,
-						id: 0,
-						kind: Global,
-						name: "_sg_out_color",
-						type: Type.TVec(3, VFloat)
-					},
-					{
-						parent: null,
-						id: 0,
-						kind: Global,
-						name: "_sg_out_alpha",
-						type: Type.TFloat
-					},
-				];
-
-
-	public function getShaderDef(domain: ShaderGraph.Domain, getNewIdFn : () -> Int, ?inputTypes: Array<Type>) : ShaderGraph.ShaderNodeDef {
-		throw "getShaderDef is not defined for class " + std.Type.getClassName(std.Type.getClass(this));
-		return {expr: null, inVars: [], outVars: [], inits: [], externVars: []};
-	}
-
 	public var connections : Array<ShaderGraph.Connection> = [];
-
-	public var outputCompiled : Map<String, Bool> = []; // todo: put with outputs variable
-
-	// TODO(ces) : caching
-
-	public function getOutputs2(domain: ShaderGraph.Domain, ?inputTypes: Array<Type>) : Map<String, {v: TVar, index: Int}> {
-		return [for (id => i in getOutputs()) i.name => {v: {id: 0, name: i.name, type: sgTypeToType(i.type), kind: Local}, index: id}];
-	}
-
-	public function getInputs2(domain: ShaderGraph.Domain) : Map<String, {v: TVar, ?def: ShaderDefInput, index: Int}> {
-		return [for (id => i in getInputs()) i.name => {v: {id: 0, name: i.name, type: sgTypeToType(i.type), kind: Local}, index: id}];
-	}
-
 
 	public function setId(id : Int) {
 		this.id = id;
 	}
-
-
-	function addOutput(key : String, t : Type) {
-		/*outputs.set(key, { parent: null,
-			id: 0,
-			kind: Local,
-			name: "output_" + id + "_" + key,
-			type: t
-		});*/
-	}
-
-	function removeOutput(key : String) {
-		/*outputs.remove(key);*/
-	}
-
-	function addOutputTvar(tVar : TVar) {
-		/*outputs.set(tVar.name, tVar);*/
-	}
-
-	public function computeOutputs() : Void {}
-
-	// public function getOutput(key : String) : TVar {
-	// 	return outputs.get(key);
-	// }
-
-	// public function getOutputType(key : String) : Type {
-	// 	var output = getOutput(key);
-	// 	if (output == null)
-	// 		return null;
-	// 	return output.type;
-	// }
-
-	// public function getOutputTExpr(key : String) : TExpr {
-	// 	var o = getOutput(key);
-	// 	if (o == null)
-	// 		return null;
-	// 	return {
-	// 		e: TVar(o),
-	// 		p: null,
-	// 		t: o.type
-	// 	};
-	// }
-
-	public function build(key : String) : TExpr {
-		throw "Build function not implemented";
-	}
-
-	public function checkTypeAndCompatibilyInput(key : String, type : hxsl.Ast.Type) : Bool {
-		/*var infoKey = getInputs2()[key].type;
-		if (infoKey != null && !(ShaderType.checkConversion(type, infoKey))) {
-			return false;
-		}
-		return checkValidityInput(key, type);*/
-		return true;
-	}
-
-	public function checkValidityInput(key : String, type : hxsl.Ast.Type) : Bool {
-		return true;
-	}
-
-
-
-	// public function getOutputInfoKeys() : Array<String> {
-	// 	return [];
-	// }
-
-	// public function getOutputInfo(key : String) : OutputInfo {
-	// 	return null;
-	// }
 
 	public function loadProperties(props : Dynamic) {
 		var fields = Reflect.fields(props);

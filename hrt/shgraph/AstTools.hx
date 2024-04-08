@@ -64,6 +64,10 @@ class AstTools {
 		return makeExpr(TSwiz(e, components), components.length == 1 ? TFloat : TVec(components.length, VFloat));
 	}
 
+	public inline static function makeVarDecl(v: TVar, ?init: TExpr) : TExpr {
+		return makeExpr(TVarDecl(v, init), v.type);
+	}
+
 	public inline static function makeExpr(def: TExprDef, type: Type, ?pos: Position) : TExpr {
 		return {e: def, p: (pos ?? defPos), t: type}
 	}

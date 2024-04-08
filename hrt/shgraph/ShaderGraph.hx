@@ -46,6 +46,7 @@ enum SgType {
 	SgFloat(dimension: Int);
 	SgSampler;
 	SgInt;
+	SgBool;
 
 	/**
 		All the generics in the same shader node with the same id unify to the
@@ -70,6 +71,8 @@ function typeToSgType(t: Type) : SgType {
 			SgSampler;
 		case TInt:
 			SgInt;
+		case TBool:
+			SgBool;
 		default:
 			throw "Unsuported type";
 	}
@@ -77,6 +80,8 @@ function typeToSgType(t: Type) : SgType {
 
 function sgTypeToType(t: SgType) : Type {
 	return switch(t) {
+		case SgBool:
+			return TBool;
 		case SgFloat(1):
 			return TFloat;
 		case SgFloat(n):
@@ -215,7 +220,7 @@ class ShaderGraphGenContext2 {
 		}
 	}
 
-	public function generate(?genContext: NodeGenContext) : {e: TExpr, externs: Array<ExternVarDef>} {
+	public function generate(?genContext: NodeGenContext) : TExpr {
 		initNodes();
 		var sortedNodes = sortGraph();
 
@@ -266,7 +271,7 @@ class ShaderGraphGenContext2 {
 			global.paramIndex = p.index;
 		}
 
-		return {e: AstTools.makeExpr(TBlock(expressions), TVoid), externs: [for (v in genContext.globalVars) v]};
+		return AstTools.makeExpr(TBlock(expressions), TVoid);
 	}
 
 	// returns null if the graph couldn't be sorted (i.e. contains cycles)
@@ -428,7 +433,6 @@ class ShaderGraph extends hrt.prefab.Prefab {
 	}
 
 	public function compile3(includePreview: Bool) : hrt.prefab.Cache.ShaderDef {
-		var ctx = new ShaderGraphGenContext2(graphs[1], includePreview);
 		var inits : Array<{variable: TVar, value: Dynamic}>= [];
 
 		var shaderData : ShaderData = {
@@ -437,12 +441,46 @@ class ShaderGraph extends hrt.prefab.Prefab {
 			funs: [],
 		};
 
-		var gen = ctx.generate();
 
-		gen.externs.sort((a,b) -> Reflect.compare(a.paramIndex ?? -1, b.paramIndex ?? -1));
+		var nodeGen = new NodeGenContext(Vertex);
+
+		for (i => graph in graphs) {
+			nodeGen.domain = graph.domain;
+			var ctx = new ShaderGraphGenContext2(graph, includePreview);
+			var gen = ctx.generate(nodeGen);
+
+			var fnKind : FunctionKind = switch(graph.domain) {
+				case Fragment: Fragment;
+				case Vertex: Vertex;
+			};
+
+			var functionName : String = EnumValueTools.getName(fnKind).toLowerCase();
+
+			var funcVar : TVar = {
+				name : functionName,
+				id : hxsl.Tools.allocVarId(),
+				kind : Function,
+				type : TFun([{ ret : TVoid, args : [] }])
+			};
+
+			var fn : TFunction = {
+				ret: TVoid, kind: fnKind,
+				ref: funcVar,
+				expr: gen,
+				args: [],
+			};
+
+			shaderData.funs.push(fn);
+			shaderData.vars.push(funcVar);
+		}
+
+		var externs = [for (v in nodeGen.globalVars) v];
 
 		var __init__exprs : Array<TExpr>= [];
-		for (v in gen.externs) {
+
+		externs.sort((a,b) -> Reflect.compare(a.paramIndex ?? -1, b.paramIndex ?? -1));
+
+		for (v in externs) {
 			if (v.v.parent == null) {
 				shaderData.vars.push(v.v);
 			}
@@ -472,26 +510,6 @@ class ShaderGraph extends hrt.prefab.Prefab {
 			shaderData.funs.push(fn);
 			shaderData.vars.push(funcVar);
 		}
-
-		var fnKind : FunctionKind = Fragment;
-		var functionName : String = EnumValueTools.getName(fnKind).toLowerCase();
-
-		var funcVar : TVar = {
-			name : functionName,
-			id : hxsl.Tools.allocVarId(),
-			kind : Function,
-			type : TFun([{ ret : TVoid, args : [] }])
-		};
-
-		var fn : TFunction = {
-			ret: TVoid, kind: fnKind,
-			ref: funcVar,
-			expr: gen.e,
-			args: [],
-		};
-
-		shaderData.funs.push(fn);
-		shaderData.vars.push(funcVar);
 
 		var shared = new SharedShader("");
 		@:privateAccess shared.data = shaderData;
@@ -669,7 +687,6 @@ class Graph {
 			if (shaderParam != null) {
 				var paramShader = getParameter(shaderParam.parameterId);
 				shaderParam.variable = paramShader.variable;
-				shaderParam.computeOutputs();
 			}
 		}
 		if (nodes[nodes.length-1] != null)
@@ -796,7 +813,6 @@ class Graph {
 
 		node.instance = std.Type.createInstance(nameClass, args);
 		node.instance.setId(current_node_id);
-		node.instance.computeOutputs();
 		node.outputs = [];
 
 		this.nodes.set(node.id, node);

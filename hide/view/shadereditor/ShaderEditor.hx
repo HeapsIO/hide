@@ -243,7 +243,6 @@ class ShaderEditor extends hide.view.Graph {
 			node.variable = paramShader.variable;
 			node.setName(paramShader.name);
 			setDisplayValue(node, paramShader.type, paramShader.defaultValue);
-			node.computeOutputs();
 			addBox(posCursor, ShaderParam, node);
 		});
 
@@ -1770,7 +1769,6 @@ class ShaderEditor extends hide.view.Graph {
 				shaderParam.variable = paramShader.variable;
 				shaderParam.setName(paramShader.name);
 				setDisplayValue(shaderParam, paramShader.type, paramShader.defaultValue);
-				shaderParam.computeOutputs();
 			}
 			var box = addBox(offset.add(n.pos), n.nodeType, node);
 			instancedBoxes.push(box);

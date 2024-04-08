@@ -333,8 +333,8 @@ class Box {
 
 	public static function getTypeColor(type : hrt.shgraph.ShaderGraph.SgType) {
 		return switch (type) {
-			//case TBool:
-			//	style.fill = boolColor;
+			case SgBool:
+				boolColor;
 			case SgInt:
 				intColor;
 			case SgFloat(1):
