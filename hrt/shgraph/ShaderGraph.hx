@@ -437,11 +437,13 @@ class ShaderGraph extends hrt.prefab.Prefab {
 		nodeGen.previewDomain = previewDomain;
 
 		for (i => graph in graphs) {
+			if (previewDomain != null && previewDomain != graph.domain)
+				continue;
 			nodeGen.domain = graph.domain;
 			var ctx = new ShaderGraphGenContext2(graph);
 			var gen = ctx.generate(nodeGen);
 
-			var fnKind : FunctionKind = switch(graph.domain) {
+			var fnKind : FunctionKind = switch(previewDomain != null ? Fragment : graph.domain) {
 				case Fragment: Fragment;
 				case Vertex: Vertex;
 			};
