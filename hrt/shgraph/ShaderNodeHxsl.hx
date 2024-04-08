@@ -222,8 +222,8 @@ class ShaderNodeHxsl extends ShaderNode {
 		if (genFailure) {
 			for (outputId => o in cache.outputs) {
 				var t = ctx.getType(o.type);
-				var expr = NodeGenContext.convertToType(t, makeVec([1.0,0.0,1.0,1.0]));
-				ctx.setOutput(outputId, NodeGenContext.convertToType(t, makeVec([1.0,0.0,1.0,1.0])));
+				var expr = NodeGenContext.convertToType(t, makeVec([0.0,0.0,0.0,0.0]));
+				ctx.setOutput(outputId, NodeGenContext.convertToType(t, makeVec([0.0,0.0,0.0,0.0])));
 				if (outputId == 0) {
 					ctx.addPreview(expr);
 				}
