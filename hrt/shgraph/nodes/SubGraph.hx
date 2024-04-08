@@ -34,17 +34,17 @@ class SubGraph extends ShaderNode {
 		#else
 		var shader = cast hide.Ide.inst.loadPrefab(pathShaderGraph);
 		#end
-		var graph = shader.getGraph(Fragment);
+		var graph = shader.getGraph(hrt.shgraph.Domain.Fragment);
 
 		var genCtx = new ShaderGraphGenContext2(graph, false);
 		var nodeGenCtx = new NodeGenContext.NodeGenContextSubGraph(null);
 		genCtx.generate(nodeGenCtx);
 		var inputs: Array<ShaderNode.InputInfo> = [];
 
-		for (name => id in nodeGenCtx.globalInVars) {
+		for (name => info in nodeGenCtx.globalInVars) {
 			var global = nodeGenCtx.globalVars.get(name);
 			var t = typeToSgType(global.v.type);
-			inputs[id] = {name: name, type: t};
+			inputs[info.id] = {name: name, type: hrt.shgraph.ShaderGraph.typeToSgType(info.type)};
 		}
 
 		return inputs;
@@ -56,17 +56,15 @@ class SubGraph extends ShaderNode {
 		#else
 		var shader = cast hide.Ide.inst.loadPrefab(pathShaderGraph);
 		#end
-		var graph = shader.getGraph(Fragment);
+		var graph = shader.getGraph(hrt.shgraph.Domain.Fragment);
 
 		var genCtx = new ShaderGraphGenContext2(graph, false);
 		var nodeGenCtx = new NodeGenContext.NodeGenContextSubGraph(null);
 		genCtx.generate(nodeGenCtx);
 		var outputs: Array<ShaderNode.InputInfo> = [];
 
-		for (name => id in nodeGenCtx.globalOutVars) {
-			var global = nodeGenCtx.globalVars.get(name);
-			var t = typeToSgType(global.v.type);
-			outputs[id] = {name: name, type: t};
+		for (name => info in nodeGenCtx.globalOutVars) {
+			outputs[info.id] = {name: name, type: hrt.shgraph.ShaderGraph.typeToSgType(info.type)};
 		}
 
 		return outputs;

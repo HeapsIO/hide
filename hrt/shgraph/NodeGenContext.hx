@@ -15,8 +15,8 @@ class NodeGenContextSubGraph extends NodeGenContext {
 
 	override function getGlobalInput(id: Variables.Global) : TExpr {
 		var global = Variables.Globals[id];
-		var inputId = globalInVars.getOrPut(global.name, inputCount++);
-		return parentCtx?.nodeInputExprs[inputId] ?? parentCtx?.getGlobalInput(id) ?? super.getGlobalInput(id);
+		var info = globalInVars.getOrPut(global.name, {type: global.type, id: inputCount++});
+		return parentCtx?.nodeInputExprs[info.id] ?? parentCtx?.getGlobalInput(id) ?? super.getGlobalInput(id);
 	}
 
 	override  function setGlobalOutput(id: Variables.Global, expr: TExpr) : Void {
@@ -24,26 +24,26 @@ class NodeGenContextSubGraph extends NodeGenContext {
 		if (outputCount == 0 && parentCtx != null) {
 			parentCtx.addPreview(expr);
 		}
-		var outputId = globalOutVars.getOrPut(global.name, outputCount ++);
+		var info = globalOutVars.getOrPut(global.name, {type: global.type, id: outputCount ++});
 		if (parentCtx != null) {
-			parentCtx.setOutput(outputId, expr);
+			parentCtx.setOutput(info.id, expr);
 		} else {
 			super.setGlobalOutput(id, expr);
 		}
 	}
 
 	override  function getGlobalParam(name: String, type: Type) : TExpr {
-		var inputId = globalInVars.getOrPut(name, inputCount ++);
-		return parentCtx?.nodeInputExprs[inputId] ?? parentCtx?.getGlobalParam(name, type) ?? super.getGlobalParam(name, type);
+		var info = globalInVars.getOrPut(name, {type: type, id: inputCount ++});
+		return parentCtx?.nodeInputExprs[info.id] ?? parentCtx?.getGlobalParam(name, type) ?? super.getGlobalParam(name, type);
 	}
 
 	override function setGlobalCustomOutput(name: String, expr: TExpr) : Void {
 		if (outputCount == 0 && parentCtx != null) {
 			parentCtx.addPreview(expr);
 		}
-		var outputId = globalOutVars.getOrPut(name, outputCount ++);
+		var info = globalOutVars.getOrPut(name, {type : expr.t, id: outputCount ++});
 		if (parentCtx != null) {
-			parentCtx.setOutput(outputId, expr);
+			parentCtx.setOutput(info.id, expr);
 		} else {
 			super.setGlobalCustomOutput(name, expr);
 		}
@@ -57,8 +57,8 @@ class NodeGenContextSubGraph extends NodeGenContext {
 
 	var parentCtx : NodeGenContext;
 
-	var globalInVars: Map<String, Int> = [];
-	var globalOutVars: Map<String, Int> = [];
+	var globalInVars: Map<String, {type: Type, id: Int}> = [];
+	var globalOutVars: Map<String, {type: Type, id: Int}> = [];
 	var inputCount = 0;
 	var outputCount = 0;
 }
