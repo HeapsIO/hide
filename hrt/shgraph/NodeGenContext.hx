@@ -67,7 +67,7 @@ class NodeGenContextSubGraph extends NodeGenContext {
 class NodeGenContext {
 	// Pour les rares nodes qui ont besoin de differencier entre vertex et fragment
 	public var domain : ShaderGraph.Domain;
-	public var previewEnabled: Bool = true;
+	public var previewDomain: ShaderGraph.Domain = null;
 
 	public function new(domain: ShaderGraph.Domain) {
 		this.domain = domain;
@@ -76,70 +76,90 @@ class NodeGenContext {
 	// For general input/output of the shader graph. Allocate a new global var if name is not found,
 	// else return the previously allocated variable and assert that v.type == type and devValue == v.defValue
 	public function getGlobalInput(id: Variables.Global) : TExpr {
-		return makeVar(getOrAllocateGlobal(id, true, false));
+		var global = Variables.Globals[id];
+		switch (global.varkind) {
+			case KVar(_,_,_):
+				var v = getOrAllocateGlobal(id);
+				return makeVar(v);
+			case KSwizzle(id, swiz):
+				var v = getOrAllocateGlobal(id);
+				return makeSwizzle(makeVar(v), swiz);
+		}
 	}
 
 	public function setGlobalOutput(id: Variables.Global, expr: TExpr) : Void {
-		var v = makeVar(getOrAllocateGlobal(id, false, true));
-		expressions.push(makeAssign(v, expr));
+		var global = Variables.Globals[id];
+		switch (global.varkind) {
+			case KVar(_,_,_):
+				var v = getOrAllocateGlobal(id);
+				expressions.push(makeAssign(makeVar(v), expr));
+			case KSwizzle(otherId, swiz):
+				var v = getOrAllocateGlobal(otherId);
+				expressions.push(makeAssign(makeSwizzle(makeVar(v), swiz), expr));
+		}
 	}
 
 	public function getGlobalParam(name: String, type: Type) : TExpr {
-		return makeVar(globalVars.getOrPut(name, {v: {id: hxsl.Tools.allocVarId(), name: name, type: type, kind: Param}, isInput: true, isOutput: false, defValue:null, __init__: null}).v);
+		return makeVar(globalVars.getOrPut(name, {v: {id: hxsl.Tools.allocVarId(), name: name, type: type, kind: Param}, defValue:null, __init__: null}).v);
 	}
 
 	public function setGlobalCustomOutput(name: String, expr: TExpr) : Void {
-		var v = makeVar(globalVars.getOrPut(name, {v: {id: hxsl.Tools.allocVarId(), name: name, type: expr.t, kind: Param}, isInput: false, isOutput: true, defValue:null, __init__: null}).v);
+		var v = makeVar(globalVars.getOrPut(name, {v: {id: hxsl.Tools.allocVarId(), name: name, type: expr.t, kind: Param}, defValue:null, __init__: null}).v);
 		expressions.push(makeAssign(v, expr));
 	}
 
-	function getOrAllocateGlobal(id: Variables.Global, ?isInput: Bool, ?isOutput: Bool) : TVar {
+	function getOrAllocateGlobal(id: Variables.Global) : TVar {
 		// Remap id for certains variables
 		switch (id) {
-			case Normal if (previewEnabled):
+			case Normal if (previewDomain == domain):
 				id = FakeNormal;
 			default:
 		}
 
 		var global = Variables.Globals[id];
 		var def : ShaderGraph.ExternVarDef = globalVars.get(global.name);
-		if (def == null) {
-			var v : TVar = {id: hxsl.Tools.allocVarId(), name: global.name, type: global.type, kind: global.kind};
-			def = {v: v, isInput: isInput, isOutput: isOutput, defValue: global.def, __init__: null};
-			if (global.parent != null) {
-				var p = Variables.Globals[global.parent];
-				v.parent = globalVars.getOrPut(p.name, {v : {id : hxsl.Tools.allocVarId(), name: p.name, type: TStruct([]), kind: p.kind}, isInput: false, isOutput: false, defValue: null, __init__: null}).v;
-				switch(v.parent.type) {
-					case TStruct(arr):
-						arr.push(v);
-					default: throw "parent must be a TStruct";
-				}
-			}
 
-			// Post process certain variables
-			switch (id) {
-				case CalculatedUV:
-					var uv = getOrAllocateGlobal(UV);
-					var expr = makeAssign(makeVar(v), makeVar(uv));
-					def.__init__ = expr;
-				default:
-			}
-			globalVars.set(global.name, def);
+		switch (global.varkind)
+		{
+			case KVar(kind, parent, defValue):
+				var def : ShaderGraph.ExternVarDef = globalVars.get(global.name);
+				if (def == null) {
+					var v : TVar = {id: hxsl.Tools.allocVarId(), name: global.name, type: global.type, kind: kind};
+					def = {v: v, defValue: defValue, __init__: null};
+					if (parent != null) {
+						var p = Variables.Globals[parent];
+						v.parent = globalVars.getOrPut(p.name, {v : {id : hxsl.Tools.allocVarId(), name: p.name, type: TStruct([]), kind: kind}, defValue: null, __init__: null}).v;
+						switch(v.parent.type) {
+							case TStruct(arr):
+								arr.push(v);
+							default: throw "parent must be a TStruct";
+						}
+					}
+
+					// Post process certain variables
+					switch (id) {
+						case CalculatedUV:
+							var uv = getOrAllocateGlobal(UV);
+							var expr = makeAssign(makeVar(v), makeVar(uv));
+							def.__init__ = expr;
+						default:
+					}
+					globalVars.set(global.name, def);
+				}
+				return def.v;
+			default: throw "id must be a global Var";
 		}
-		def.isInput = isInput ?? def.isInput;
-		def.isOutput = isOutput ?? def.isOutput;
-		return def.v;
 	}
 
 	// Generate a preview block that displays the content of expr
 	// in the preview box of the node. Expr must be a type that
 	// can be casted a Vec4
 	public function addPreview(expr: TExpr) {
-		if (!previewEnabled) return;
+		if (previewDomain != domain) return;
 		var selector = getGlobalInput(PreviewSelect);
-		var outputColor = getGlobalInput(PixelColor);
+		var outputColor = getOrAllocateGlobal(PreviewColor);
 
-		var previewExpr = makeAssign(outputColor, convertToType(TVec(4, VFloat), expr));
+		var previewExpr = makeAssign(makeVar(outputColor), convertToType(TVec(4, VFloat), expr));
 		var ifExpr = makeIf(makeEq(selector, makeInt(currentPreviewId)), previewExpr);
 		preview = ifExpr;
 	}

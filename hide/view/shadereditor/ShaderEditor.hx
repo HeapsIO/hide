@@ -56,8 +56,6 @@ class PreviewShaderBase extends hxsl.Shader {
 			projectedPosition = vec4(input.position, 0.0, 0.0);
 			fakeNormal = vec3(0,0,-1);
 			transformedNormal = vec3(0,0,-1);
-
-
 		}
 
 
@@ -436,7 +434,7 @@ class ShaderEditor extends hide.view.Graph {
 
 		element.find("#display2").on("click", () -> {
 			@:privateAccess info(
-				hxsl.Printer.shaderToString(shaderGraph.compile3(true).shader.data, true)
+				hxsl.Printer.shaderToString(shaderGraph.compile3(domain).shader.data, true)
 			);});
 
 		editorMatrix.on("click", "input, select", function(ev) {
@@ -1157,7 +1155,7 @@ class ShaderEditor extends hide.view.Graph {
 				for (m in obj.getMaterials())
 					m.mainPass.removeShader(currentShader);
 
-			var shaderGraphDef = shaderGraph.compile3(false);
+			var shaderGraphDef = shaderGraph.compile3(null);
 			newShader = new hxsl.DynamicShader(shaderGraphDef.shader);
 			for (init in shaderGraphDef.inits) {
 				setParamValue(newShader, init.variable, init.value);
@@ -1195,7 +1193,7 @@ class ShaderEditor extends hide.view.Graph {
 			}
 		}
 
-		currentShaderPreviewsDef = shaderGraph.compile3(true);
+		currentShaderPreviewsDef = shaderGraph.compile3(domain);
 	}
 
 	function updateParam(id : Int) {

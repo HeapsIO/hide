@@ -50,7 +50,7 @@ class ShaderOutput extends ShaderNode {
 
 	public static var availableOutputs : Map<String, {display: String, g: Variables.Global}> = [
 		"_sg_out_color" => {display: "Pixel Color", g:SGPixelColor},
-		"_sg_out_alpha" => {display: "Alpha", g:SGPixelColor},
+		"_sg_out_alpha" => {display: "Alpha", g:SGPixelAlpha},
 		"relativePosition" => {display: "Position (Object Space)", g:RelativePosition},
 		"transformedPosition" => {display: "Position (World Space)", g:TransformedPosition},
 		"projectedPosition" => {display: "Position (View Space)", g:ProjectedPosition},

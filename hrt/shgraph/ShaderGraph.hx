@@ -188,8 +188,6 @@ typedef GenNodeInfo = {
 class
 ExternVarDef {
 	var v: TVar;
-	var isInput: Bool;
-	var isOutput: Bool;
 	var defValue: Dynamic;
 	var __init__: TExpr;
 	@:optional var paramIndex: Int;
@@ -225,8 +223,6 @@ class ShaderGraphGenContext2 {
 		var sortedNodes = sortGraph();
 
 		genContext = genContext ?? new NodeGenContext(graph.domain);
-		genContext.previewEnabled = includePreviews;
-		genContext.domain = Fragment;
 		var expressions : Array<TExpr> = [];
 		genContext.expressions = expressions;
 
@@ -248,19 +244,14 @@ class ShaderGraphGenContext2 {
 			genContext.finishNode();
 		}
 
-		// Combine sg_out_color and sg_out_alpha if they are declared in the shader
-		var _sg_out_color = genContext.globalVars.get(Variables.Globals[Variables.Global.SGPixelColor].name)?.v;
-		var _sg_out_alpha = genContext.globalVars.get(Variables.Globals[Variables.Global.SGPixelAlpha].name)?.v;
-		if (_sg_out_color != null || _sg_out_alpha != null) {
-			var pixelColor = genContext.getGlobalInput(PixelColor);
-			var color = _sg_out_color != null ? makeVar(_sg_out_color) : makeSwizzle(pixelColor, [X,Y,Z]);
-			var alpha = _sg_out_alpha != null ? makeVar(_sg_out_alpha) : makeSwizzle(pixelColor, [W]);
-
-			var e = makeAssign(pixelColor, makeVecExpr([color, alpha], Vec4));
-			if (includePreviews) {
-				e = makeIf(makeEq(genContext.getGlobalInput(PreviewSelect), makeInt(0)), e);
-			}
-			expressions.push(e);
+		// Assign preview color to pixel color as last operation
+		var previewColor = genContext.globalVars.get(Variables.Globals[Variables.Global.PreviewColor].name);
+		if (previewColor != null) {
+			var previewSelect = genContext.getOrAllocateGlobal(PreviewSelect);
+			var pixelColor = genContext.getOrAllocateGlobal(PixelColor);
+			var assign = makeAssign(makeVar(pixelColor), makeVar(previewColor.v));
+			var ifExpr = makeIf(makeBinop(makeVar(previewSelect), OpNotEq, makeInt(0)), assign);
+			expressions.push(ifExpr);
 		}
 
 		for (id => p in graph.parent.parametersAvailable) {
@@ -432,7 +423,7 @@ class ShaderGraph extends hrt.prefab.Prefab {
 		return dynamicType;
 	}
 
-	public function compile3(includePreview: Bool) : hrt.prefab.Cache.ShaderDef {
+	public function compile3(?previewDomain: Domain) : hrt.prefab.Cache.ShaderDef {
 		var inits : Array<{variable: TVar, value: Dynamic}>= [];
 
 		var shaderData : ShaderData = {
@@ -443,10 +434,11 @@ class ShaderGraph extends hrt.prefab.Prefab {
 
 
 		var nodeGen = new NodeGenContext(Vertex);
+		nodeGen.previewDomain = previewDomain;
 
 		for (i => graph in graphs) {
 			nodeGen.domain = graph.domain;
-			var ctx = new ShaderGraphGenContext2(graph, includePreview);
+			var ctx = new ShaderGraphGenContext2(graph);
 			var gen = ctx.generate(nodeGen);
 
 			var fnKind : FunctionKind = switch(graph.domain) {
