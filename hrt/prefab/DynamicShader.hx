@@ -11,6 +11,11 @@ class DynamicShader extends Shader {
 		super(parent, shared);
 	}
 
+	override function copy(other:Prefab) {
+		super.copy(other);
+		var shaderDef = Std.downcast(other, DynamicShader)?.getShaderDefinition();
+	}
+
 	override function setShaderParam(shader:hxsl.Shader, v:hxsl.Ast.TVar, value:Dynamic) {
 		if( isInstance && !isShadergraph ) {
 			super.setShaderParam(shader,v,value);
@@ -76,7 +81,7 @@ class DynamicShader extends Shader {
 				var shgraph = Std.downcast(hxd.res.Loader.currentInstance.load(source).toPrefab().load(), hrt.shgraph.ShaderGraph);
 				if (shgraph == null)
 					throw source + " is not a valid shadergraph";
-				shaderDef = shgraph.compile2(null);
+				shaderDef = shgraph.compile(null);
 			}
 			else if( isInstance && !isShadergraph ) {
 				shaderClass = loadShaderClass();

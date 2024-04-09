@@ -10,8 +10,8 @@ class ShaderConst extends ShaderNode {
 	// 	return getOutputTExpr(key).t;
 	// }
 
-	override public function build(key : String) : TExpr {
-		return null;
+	override function generate(ctx:NodeGenContext) {
+
 	}
 
 	#if editor

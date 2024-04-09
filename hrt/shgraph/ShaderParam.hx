@@ -11,39 +11,35 @@ class ShaderParam extends ShaderNode {
 	@prop() public var parameterId : Int;
 	@prop() public var perInstance : Bool;
 
-
-	override function getShaderDef(domain: ShaderGraph.Domain, getNewIdFn : () -> Int, ?inputTypes: Array<Type>):hrt.shgraph.ShaderGraph.ShaderNodeDef {
-		var pos : Position = {file: "", min: 0, max: 0};
-
-		var qual = [];
-		if (this.variable.type.isTexture()) {
-			qual.push(Sampler(this.variable.name));
+	override function getOutputs() : Array<ShaderNode.OutputInfo> {
+		var t = switch(variable.type) {
+			case TFloat:
+				SgFloat(1);
+			case TVec(n, _):
+				SgFloat(n);
+			case TSampler(_,_):
+				SgSampler;
+			default:
+				throw "Unhandled var type " + variable.type;
 		}
+		return [{name: "output", type: t}];
+	}
 
-		//if (this.variable.type != TSampler2D) {
-			var inVar : TVar = {name: this.variable.name, id: getNewIdFn(), type: this.variable.type, kind: Param, qualifiers: qual};
-			var output : TVar = {name: "output", id: getNewIdFn(), type: this.variable.type, kind: Local, qualifiers: []};
-			var finalExpr : TExpr = {e: TBinop(OpAssign, {e:TVar(output), p:pos, t:output.type}, {e: TVar(inVar), p: pos, t: output.type}), p: pos, t: output.type};
+	override function generate(ctx: NodeGenContext) {
+		var v = ctx.getGlobalParam(variable.name, variable.type);
 
-			return {expr: finalExpr, inVars: [{v:inVar, internal: true, isDynamic: false}], outVars:[{v:output, internal: false, isDynamic: false}], externVars: [], inits: []};
-		//}
-		//else {
-			//var samplerVar : TVar = {name: this.variable.name, id: getNewIdFn(), type: this.variable.type, kind: Param, qualifiers: qual};
-			//var cuv = ShaderInput.availableInputs.get("calculatedUV");
-			//var uv : TVar = {name: cuv.v.name, id: getNewIdFn(), type: cuv.v.type, kind: cuv.v.kind, qualifiers: []};
-			//var output : TVar = {name: "output", id: getNewIdFn(), type: this.variable.type, kind: Local, qualifiers: []};
-		//	return
-		//}
+		ctx.setOutput(0, v);
+		if (v.t.match(TSampler(_,_))) {
+			var uv = ctx.getGlobalInput(CalculatedUV);
+			var sample = AstTools.makeGlobalCall(Texture, [v, uv], TVec(4, VFloat));
+			ctx.addPreview(sample);
+		}
+		else {
+			ctx.addPreview(v);
+		}
 	}
 
 	public var variable : TVar;
-
-	override public function computeOutputs() {
-		if (variable != null)
-			addOutput("output", variable.type);
-		else
-			removeOutput("output");
-	}
 
 
 	override public function loadProperties(props : Dynamic) {
@@ -58,25 +54,6 @@ class ShaderParam extends ShaderNode {
 		};
 
 		return parameters;
-	}
-
-
-	// override public function canHavePreview() {
-	// 	return this.variable.type != TSampler2D;
-	// }
-
-	override public function build(key : String) : TExpr {
-		if (variable != null){
-			if (variable.qualifiers == null)
-				variable.qualifiers = [];
-			if (perInstance)
-				if (!variable.qualifiers.contains(PerInstance(1)))
-					variable.qualifiers.push(PerInstance(1));
-			else
-				if (variable.qualifiers.contains(PerInstance(1)))
-					variable.qualifiers.remove(PerInstance(1));
-		}
-		return null;
 	}
 
 	#if editor

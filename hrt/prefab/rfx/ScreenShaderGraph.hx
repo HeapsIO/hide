@@ -69,7 +69,7 @@ class ScreenShaderGraph extends RendererFX {
 	public function loadShaderDef() {
 		if (shaderGraph == null)
 			resolveRef();
-		shaderDef = shaderGraph.compile2(null);
+		shaderDef = shaderGraph.compile(null);
 		if(shaderDef == null)
 			return;
 

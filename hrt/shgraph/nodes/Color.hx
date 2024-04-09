@@ -14,115 +14,16 @@ class Color extends ShaderConst {
 	@prop() var b : Float = 0;
 	@prop() var a : Float = 1;
 
-	// override public function computeOutputs() {
-	// 	addOutput("output", TVec(4, VFloat));
-	// }
-
-	// override public function getOutputTExpr(key : String) : TExpr {
-	// 	return {
-	// 		e: TVar(output),
-	// 		p: null,
-	// 		t: TVec(4, VFloat)
-	// 	};
-	// }
-
-	override function getShaderDef(domain: ShaderGraph.Domain, getNewIdFn : () -> Int, ?inputTypes: Array<Type>):hrt.shgraph.ShaderGraph.ShaderNodeDef {
-		var pos : Position = {file: "", min: 0, max: 0};
-
-		var output : TVar = {name: "output", id:getNewIdFn(), type: TVec(4, VFloat), kind: Local, qualifiers: []};
-		var finalExpr : TExpr =
-		{ e: TBinop(OpAssign, {
-				e: TVar(output),
-				p: null,
-				t: output.type
-			}, {
-				e: TCall({
-					e: TGlobal(Vec4),
-					p: null,
-					t: TFun([
-						{
-							ret: output.type,
-							args: [
-							{ name: "r", type : TFloat },
-							{ name: "g", type : TFloat },
-							{ name: "b", type : TFloat },
-							{ name: "a", type : TFloat }]
-						}
-					])
-				}, [{
-						e: TConst(CFloat(r)),
-						p: null,
-						t: TFloat
-					},
-					{
-						e: TConst(CFloat(g)),
-						p: null,
-						t: TFloat
-					},
-					{
-						e: TConst(CFloat(b)),
-						p: null,
-						t: TFloat
-					},{
-						e: TConst(CFloat(a)),
-						p: null,
-						t: TFloat
-					}]),
-				p: null,
-				t: output.type
-			}),
-			p: null,
-			t: output.type
-		};
-		return {expr: finalExpr, inVars: [], outVars:[{v: output, internal: false, isDynamic: false}], externVars: [], inits: []};
+	override function getOutputs() {
+		static var output : Array<ShaderNode.OutputInfo> = [{name: "output", type: SgFloat(4)}];
+		return output;
 	}
 
-	// override public function build(key : String) : TExpr {
-
-	// 	return { e: TBinop(OpAssign, {
-	// 					e: TVar(output),
-	// 					p: null,
-	// 					t: output.type
-	// 				}, {
-	// 					e: TCall({
-	// 						e: TGlobal(Vec4),
-	// 						p: null,
-	// 						t: TFun([
-	// 							{
-	// 								ret: output.type,
-	// 								args: [
-	// 								{ name: "r", type : TFloat },
-	// 								{ name: "g", type : TFloat },
-	// 								{ name: "b", type : TFloat },
-	// 								{ name: "a", type : TFloat }]
-	// 							}
-	// 						])
-	// 					}, [{
-	// 							e: TConst(CFloat(r)),
-	// 							p: null,
-	// 							t: TFloat
-	// 						},
-	// 						{
-	// 							e: TConst(CFloat(g)),
-	// 							p: null,
-	// 							t: TFloat
-	// 						},
-	// 						{
-	// 							e: TConst(CFloat(b)),
-	// 							p: null,
-	// 							t: TFloat
-	// 						},{
-	// 							e: TConst(CFloat(a)),
-	// 							p: null,
-	// 							t: TFloat
-	// 						}]),
-	// 					p: null,
-	// 					t: output.type
-	// 				}),
-	// 				p: null,
-	// 				t: output.type
-	// 			};
-	// }
+	override function generate(ctx: NodeGenContext) {
+		var expr = makeVec([r,g,b,a]);
+		ctx.setOutput(0, expr);
+		ctx.addPreview(expr);
+	}
 
 	#if editor
 	override public function getPropertiesHTML(width : Float) : Array<hide.Element> {
