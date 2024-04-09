@@ -449,6 +449,8 @@ class ColorPicker extends Popup {
 		if (color == null)
 			return null;
 
+		color = color & 0xFFFFFFFF;
+
 		var containsAlpha = false;
 		switch (str.length) {
 			case 2: // Assume color is shade of gray
@@ -471,7 +473,6 @@ class ColorPicker extends Popup {
 		else if (containsAlpha && !canEditAlpha) {
 			color = (color & 0xFFFFFF) ;
 		}
-
 		return color;
 	}
 
