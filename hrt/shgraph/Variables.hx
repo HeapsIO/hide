@@ -72,8 +72,8 @@ class Variables {
 
 		g[Depth] 				= {type: TFloat, name: "depth", varkind: KVar(Local)};
 		g[Metalness] 				= {type: TFloat, name: "metalness", varkind: KVar(Local)};
-		g[Roughness] 				= {type: TFloat, name: "depth", varkind: KVar(Local)};
-		g[Emissive] 				= {type: TFloat, name: "depth", varkind: KVar(Local)};
+		g[Roughness] 				= {type: TFloat, name: "roughness", varkind: KVar(Local)};
+		g[Emissive] 				= {type: TFloat, name: "emissive", varkind: KVar(Local)};
 		g[Occlusion]			= {type: TFloat, name: "occlusion", varkind: KVar(Local)};
 
 		g[PreviewSelect]		= {type: TInt, 		name: previewSelectName, varkind: KVar(Param,null, -1)};
