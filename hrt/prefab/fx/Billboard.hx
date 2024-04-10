@@ -2,6 +2,7 @@ package hrt.prefab.fx;
 
 
 @:access(hrt.prefab.fx.LookAt)
+@:deprecated("Use LookAt instead")
 class BillboardObject extends h3d.scene.Object {
 	var graphics:h3d.scene.Graphics;
 	public var IsAbsolute: Bool;
@@ -71,6 +72,7 @@ class BillboardObject extends h3d.scene.Object {
 }
 
 @:allow(hrt.prefab.fx.Billboard.BillboardInstance)
+@:deprecated("Use LookAt instead")
 class Billboard extends Object3D {
 	@:s public var IsAbsolute: Bool;
 	@:s public var LockX: Bool;
@@ -98,7 +100,8 @@ class Billboard extends Object3D {
 	override function getHideProps():hide.prefab.HideProps {
 		return {
 			icon: "cog",
-			name: "Billboard"
+			name: "Billboard",
+			allowParent : (p) -> false
 		};
 	}
 

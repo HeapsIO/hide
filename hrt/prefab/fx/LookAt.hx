@@ -1,6 +1,5 @@
 package hrt.prefab.fx;
 
-
 @:access(hrt.prefab.fx.LookAt)
 class LookAtObject extends h3d.scene.Object {
 	var target: h3d.scene.Object;
@@ -27,7 +26,8 @@ class LookAtObject extends h3d.scene.Object {
 			lookAtPos = target.getAbsPos().getPosition();
 		else {
 			if(getScene() == null || getScene().camera == null) return;
-			lookAtPos.load(getScene().camera.pos);
+			var cam = getScene().camera;
+			lookAtPos.load(definition.faceTargetForward ? this.getAbsPos().getPosition() + -1 * (cam.target - cam.pos) : cam.pos);
 		}
 
 		super.calcAbsPos();
@@ -62,12 +62,33 @@ class LookAtObject extends h3d.scene.Object {
 			q.initRotateAxis(lockAxis.x, lockAxis.y, lockAxis.z, angle);
 			q.normalize();
 			setRotationQuat(q);
+
 			super.calcAbsPos();
+
+			if (definition.constantScreenSize) {
+				var v = absPos.getPosition() - getScene().camera.pos;
+				var scaleFactor = v.length();
+				absPos._11 *= scaleFactor;
+				absPos._12 *= scaleFactor;
+				absPos._13 *= scaleFactor;
+				absPos._21 *= scaleFactor;
+				absPos._22 *= scaleFactor;
+				absPos._23 *= scaleFactor;
+				absPos._31 *= scaleFactor;
+				absPos._32 *= scaleFactor;
+				absPos._33 *= scaleFactor;
+			}
 		}
 		else
 		{
 			tmpMat.load(absPos);
 			var scale = tmpMat.getScale();
+
+			if (definition.constantScreenSize) {
+				var v = absPos.getPosition() - getScene().camera.pos;
+				scale *= v.length();
+			}
+
 			qRot.initDirection(deltaVec);
 			qRot.toMatrix(absPos);
 			absPos._11 *= scale.x;
@@ -90,6 +111,8 @@ class LookAtObject extends h3d.scene.Object {
 class LookAt extends Object3D {
 
 	@:s var target(default,null) : String;
+	@:s var faceTargetForward : Bool;
+	@:s var constantScreenSize : Bool;
 	@:s var lockAxis: Array<Float> = [0,0,0];
 
 	override function updateInstance(?propName:String) {
@@ -117,6 +140,8 @@ class LookAt extends Object3D {
 		<div class="group" name="LookAt">
 			<dl>
 				<dt>Target</dt><dd><select field="target"><option value="">-- Choose --</option></select></dd>
+				<dt>Face target forward</dt><dd><input type="checkbox" field="faceTargetForward"/></dd>
+				<dt>Constant screen size</dt><dd><input type="checkbox" field="constantScreenSize"/></dd>
 			</dl>
 		</div>');
 
@@ -125,8 +150,6 @@ class LookAt extends Object3D {
 		]));
 
 		var props = ctx.properties.add(group ,this);
-
-
 
 		var select = props.find("select");
 		var opt = new hide.Element("<option>").attr("value", "camera").html("Camera");
@@ -137,6 +160,7 @@ class LookAt extends Object3D {
 			var opt = new hide.Element("<option>").attr("value", path).html([for( p in 1...parts.length ) "&nbsp; "].join("") + parts.pop());
 			select.append(opt);
 		}
+
 		select.val(Reflect.field(this, select.attr("field")));
 	}
 	#end
