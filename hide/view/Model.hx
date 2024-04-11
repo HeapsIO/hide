@@ -611,7 +611,7 @@ class Model extends FileView {
 	function onRefresh() {
 		this.saveDisplayKey = "Model:" + state.path;
 
-		sceneEditor.loadSavedCameraController3D(true);
+		sceneEditor.loadCam3D();
 
 		// Remove current instancied render props
 		sceneEditor.root3d.removeChildren();

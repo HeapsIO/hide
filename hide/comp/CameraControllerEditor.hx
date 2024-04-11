@@ -96,6 +96,7 @@ class CameraControllerEditor extends Popup {
                 var newClass = controllersClasses[id];
                 if (Type.getClass(editor.cameraController) != newClass.cl) {
                     editor.switchCamController(newClass.cl);
+                    editor.saveCam3D();
                     refresh();
                 }
                 refresh();

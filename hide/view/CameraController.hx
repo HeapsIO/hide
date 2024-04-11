@@ -218,8 +218,6 @@ class OrthoController extends CameraControllerBase {
 		ctx.elapsedTime = hxd.Timer.dt;
 		super.sync(ctx);
 		ctx.elapsedTime = old;
-
-        trace(orthoZoom, curPos.x, cam.m, cam.getInverseViewProj());
 	}
 }
 

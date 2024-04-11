@@ -1314,30 +1314,86 @@ class SceneEditor {
 		return ret;
 	}
 
-	public function switchCamController(camClass : Class<CameraControllerBase>, force: Bool = false) {
-		if (cameraController != null) {
-			if (!force)
-				saveCam3D();
+	public function switchCamController(camClass : Class<CameraControllerBase>) {
+		// Temp save all cam parameters before re-applying them on the new instance
+		var settings = getCameraControllerSettings();
+
+		if (cameraController != null)
 			cameraController.remove();
-		}
 
 		cameraController = Type.createInstance(camClass, [scene.s3d, this]);
-		loadCam3D();
+
+		if (settings != null) {
+			for (i in 0...CameraControllerEditor.controllersClasses.length) {
+				if (CameraControllerEditor.controllersClasses[i].cl == camClass) {
+					Reflect.setProperty(settings, "camTypeIndex", i);
+					break;
+				}
+			}
+
+			applyCameraControllerSettings(settings);
+		}
 	}
 
-	public function loadSavedCameraController3D(force: Bool = false) {
-		var wantedClass : Class<CameraControllerBase> = CamController;
-		var cam = @:privateAccess view.getDisplayState("Camera");
-		if (cam != null && cam.camTypeIndex != null) {
-			if (cam.camTypeIndex >=0 && cam.camTypeIndex < CameraControllerEditor.controllersClasses.length) {
-				wantedClass = CameraControllerEditor.controllersClasses[cam.camTypeIndex].cl;
+	function getCameraControllerSettings() : Dynamic {
+		var cam = scene.s3d.camera;
+		if (cam == null)
+			return null;
+
+		var settings = {
+			x : cam.pos.x,
+			y : cam.pos.y,
+			z : cam.pos.z,
+			tx : cam.target.x,
+			ty : cam.target.y,
+			tz : cam.target.z,
+			ux : cam.up.x,
+			uy : cam.up.y,
+			uz : cam.up.z
+		};
+
+		for (i in 0...CameraControllerEditor.controllersClasses.length) {
+			if (CameraControllerEditor.controllersClasses[i].cl == Type.getClass(cameraController)) {
+				Reflect.setProperty(settings, "camTypeIndex", i);
+				break;
 			}
 		}
 
-		switchCamController(wantedClass, force);
+		cameraController.saveSettings(settings);
+
+		return settings;
+	}
+
+	function applyCameraControllerSettings(settings : Dynamic) {
+		if (settings == null)
+			throw "Camera settings can't be loaded";
+
+		if (!camera2D)
+			resetCamera();
+
+		var id = Std.parseInt(settings.camTypeIndex);
+        var newClass = CameraControllerEditor.controllersClasses[id];
+        if (Type.getClass(cameraController) != newClass.cl)
+            switchCamController(newClass.cl);
+
+		scene.s3d.camera.pos.set(settings.x, settings.y, settings.z);
+		scene.s3d.camera.target.set(settings.tx, settings.ty, settings.tz);
+
+		if (settings.ux == null) {
+			scene.s3d.camera.up.set(0,0,1);
+		}
+		else {
+			scene.s3d.camera.up.set(settings.ux,settings.uy,settings.uz);
+		}
+
+		cameraController.loadSettings(settings);
+		cameraController.loadFromCamera();
 	}
 
 	public function loadCam3D() {
+		if (cameraController == null)
+			cameraController = Type.createInstance(CamController, [scene.s3d, this]);
+
 		cameraController.onClick = function(e) {
 			switch( e.button ) {
 			case K.MOUSE_RIGHT:
@@ -1350,68 +1406,29 @@ class SceneEditor {
 		if (!camera2D)
 			resetCamera();
 
-		var cam = @:privateAccess view.getDisplayState("Camera");
+		var settings = @:privateAccess view.getDisplayState("Camera");
 		var isGlobalSettings = Ide.inst.currentConfig.get("sceneeditor.camera.isglobalsettings", false);
 		if (isGlobalSettings) {
-			cam = haxe.Json.parse(js.Browser.window.localStorage.getItem("Global/Camera"));
+			settings = haxe.Json.parse(js.Browser.window.localStorage.getItem("Global/Camera"));
 		}
 
-		if( cam != null ) {
-			scene.s3d.camera.pos.set(cam.x, cam.y, cam.z);
-			scene.s3d.camera.target.set(cam.tx, cam.ty, cam.tz);
-
-			if (cam.ux == null) {
-				scene.s3d.camera.up.set(0,0,1);
-			}
-			else {
-				scene.s3d.camera.up.set(cam.ux,cam.uy,cam.uz);
-			}
-			cameraController.loadSettings(cam);
-		}
-		cameraController.loadFromCamera();
+		applyCameraControllerSettings(settings);
 	}
 
 	public function saveCam3D() {
 		var cam = scene.s3d.camera;
 		if (cam == null)
 			return;
-		var toSave : Dynamic = @:privateAccess view.getDisplayState("Camera");
-		if (toSave == null)
-			toSave = {};
 
-		toSave.x = cam.pos.x;
-		toSave.y = cam.pos.y;
-		toSave.z = cam.pos.z;
-		toSave.tx = cam.target.x;
-		toSave.ty = cam.target.y;
-		toSave.tz = cam.target.z;
-		toSave.ux = cam.up.x;
-		toSave.uy = cam.up.y;
-		toSave.uz = cam.up.z;
+		var settings = getCameraControllerSettings();
+		cameraController.saveSettings(settings);
 
-		for (i in 0...CameraControllerEditor.controllersClasses.length) {
-			if (CameraControllerEditor.controllersClasses[i].cl == Type.getClass(cameraController)) {
-				toSave.camTypeIndex = i;
-				break;
-			}
-		}
-
-		cameraController.saveSettings(toSave);
-
-		/*var cc = Std.downcast(cameraController, hide.view.CameraController.CamController);
-		if (cc!=null) {
-			var toSave = { x : cam.pos.x, y : cam.pos.y, z : cam.pos.z, tx : cam.target.x, ty : cam.target.y, tz : cam.target.z,
-				isFps : cc.isFps,
-				isOrtho : cc.isOrtho,
-				camSpeed : cc.camSpeed,
-				fov : cc.wantedFOV,
-			};*/
 		var isGlobalSettings = Ide.inst.currentConfig.get("sceneeditor.camera.isglobalsettings", false);
 		if (isGlobalSettings) {
-			js.Browser.window.localStorage.setItem("Global/Camera", haxe.Json.stringify(toSave));
+			js.Browser.window.localStorage.setItem("Global/Camera", haxe.Json.stringify(settings));
 		}
 		else {
-			@:privateAccess view.saveDisplayState("Camera", toSave);
+			@:privateAccess view.saveDisplayState("Camera", settings);
 		}
 	}
 
@@ -1504,7 +1521,7 @@ class SceneEditor {
 
 		basis.visible = true;
 
-		loadSavedCameraController3D();
+		loadCam3D();
 		loadSnapSettings();
 
 		scene.onUpdate = update;
