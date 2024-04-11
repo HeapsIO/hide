@@ -1,5 +1,10 @@
 package hide;
 
+class IdeCache {
+	public var getTextureCache : Map<String, h3d.mat.Texture> = [];
+
+	public function new() {};
+}
 @:expose
 class Ide extends hide.tools.IdeData {
 
@@ -518,14 +523,17 @@ class Ide extends hide.tools.IdeData {
 		if (fullPath == null)
 			return null;
 
+
 		var engine = h3d.Engine.getCurrent();
-		var cache : Map<String, h3d.mat.Texture> = @:privateAccess engine.resCache.get(textureCacheKey);
+		var cache : IdeCache = cast @:privateAccess engine.resCache.get(IdeCache);
 		if(cache == null) {
-			cache = new Map();
-			@:privateAccess engine.resCache.set(textureCacheKey, cache);
+			cache = new IdeCache();
+			@:privateAccess engine.resCache.set(IdeCache, cache);
 		}
 
-		var tex = cache[fullPath];
+		var texCache = cache.getTextureCache;
+
+		var tex = texCache[fullPath];
 		if (tex != null)
 			return tex;
 
@@ -533,7 +541,7 @@ class Ide extends hide.tools.IdeData {
 		var res = hxd.res.Any.fromBytes(fullPath, data);
 		tex = res.toImage().toTexture();
 
-		cache.set(fullPath, tex);
+		texCache.set(fullPath, tex);
 		return tex;
 	}
 

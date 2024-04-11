@@ -1814,6 +1814,8 @@ class SceneEditor {
 		if (sceneData != null)
 			sceneData.dispose();
 
+		hrt.impl.Gradient.purgeEditorCache();
+
 		root3d = new h3d.scene.Object();
 		root3d.name = "root3d";
 
