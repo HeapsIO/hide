@@ -1365,11 +1365,11 @@ class SceneEditor {
 	}
 
 	function applyCameraControllerSettings(settings : Dynamic) {
-		if (settings == null)
-			throw "Camera settings can't be loaded";
-
 		if (!camera2D)
 			resetCamera();
+
+		if (settings == null)
+			return;
 
 		var id = Std.parseInt(settings.camTypeIndex);
         var newClass = CameraControllerEditor.controllersClasses[id];
