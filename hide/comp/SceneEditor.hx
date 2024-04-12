@@ -1157,7 +1157,7 @@ class SceneEditor {
 		var models = sceneData.findAll(PrefabElement);
 		var toRebuild : Array<PrefabElement> = [];
 		for(m in models) {
-			if(m.shared.prefabSource == lib.resource.entry.path) {
+			if(Ide.inst.getPath(m.source) == Reflect.getProperty(lib.resource.entry, "originalPath")) {
 				if (toRebuild.indexOf(m) < 0) {
 					toRebuild.push(m);
 				}
