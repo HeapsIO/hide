@@ -182,16 +182,18 @@ private class FXSceneEditor extends hide.comp.SceneEditor {
 				}
 				var param = fx.parameters.find(function (p) {return p.name == paramName;});
 
-				var color = param?.color ?? 0;
+				var color = param?.color ?? 0xFF0000;
 				var colorCode = StringTools.hex(color, 6);
-				var param = el.find('.fx-parameter');
-				if (param.length == 0 ){
-					var v = new Element('<span class="fx-parameter"></span>');
+				var paramEl = el.find('.fx-parameter');
+				if (paramEl.length == 0 ){
+					var v = new Element('<span class="fx-parameter"><i class="ico ico-link"></i><span class="fx-param-name"></span></span>');
 					el.find("a").first().append(v);
-					param = v;
+					paramEl = v;
 				}
-				param.get(0).innerText = '($paramName)';
-				param.css("color", '#$colorCode');
+				var paramNameEl = paramEl.find(".fx-param-name");
+				paramNameEl.get(0).innerText = '$paramName';
+				paramEl.css("color", '#$colorCode');
+				paramEl.toggleClass("missing", param == null);
 			}
 			else {
 				el.find(".fx-parameter").remove();
