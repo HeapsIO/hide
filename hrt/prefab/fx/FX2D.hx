@@ -202,7 +202,7 @@ class FX2D extends Object2D implements BaseFX {
 			anyFound = true;
 
 			if(uniform && curves.length == 1 && curves[0].name == name)
-				return scale != 1.0 ? VCurveScale(curves[0], scale) : VCurve(curves[0]);
+				return scale != 1.0 ? VMult(curves[0].makeVal(), VConst(scale)) : curves[0].makeVal();
 
 			return Curve.getVectorValue(curves, defVal, scale, blendFactor);
 		}

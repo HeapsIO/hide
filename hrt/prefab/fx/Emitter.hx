@@ -1619,9 +1619,9 @@ class Emitter extends Object3D {
 					}
 					else {
 						if (pname.indexOf("Rotation") >= 0 || pname.indexOf("Offset") >= 0)
-							return vAdd(vAdd(xVal, randVal), VCurve(xCurve));
+							return vAdd(vAdd(xVal, randVal), xCurve.makeVal());
 						else
-							return vMult(vAdd(xVal, randVal), VCurve(xCurve));
+							return vMult(vAdd(xVal, randVal), xCurve.makeVal());
 					}
 				}
 				else

@@ -459,7 +459,7 @@ class Curve extends Prefab {
 			if (c == null)
 				return VConst(defVal);
 
-			var vc = VCurve(c);
+			var vc = c.makeVal();
 			if (scale != 1.0) {
 				return VMult(vc, VConst(scale));
 			}
@@ -495,7 +495,7 @@ class Curve extends Prefab {
 		}
 
 		if(a != null && r == null && g == null && b == null)
-			return VCurve(a);
+			return a.makeVal();
 
 		if(a == null && r == null && g == null && b == null)
 			return VOne; // White by default

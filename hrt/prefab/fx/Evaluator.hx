@@ -48,7 +48,7 @@ class Evaluator {
 					var remappedRand = (rand - min) / (max - min);
 					return a + (b - a) * remappedRand;
 				}
-			case VCurveScale(c, scale): return c.getVal(time) * scale;
+			case VCurveScale(c, scale): throw "curveScale is deprecated";//return c.getVal(time) * scale;
 			case VRandom(ridx, scale):
 				return getRandom(pidx, ridx) * getFloat(pidx, scale, time);
 			case VRandomScale(ridx, scale):

@@ -350,7 +350,7 @@ class FXAnimation extends h3d.scene.Object {
 			anyFound = true;
 
 			if(uniform && curves.length == 1 && curves[0].name == name) {
-				return scale != 1.0 ? VCurveScale(curves[0], scale) : curves[0].makeVal();
+				return scale != 1.0 ? VMult(curves[0].makeVal(), VConst(scale)) : curves[0].makeVal();
 			}
 
 			return Curve.getVectorValue(curves, defVal, scale, blendFactor);

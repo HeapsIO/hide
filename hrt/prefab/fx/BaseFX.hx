@@ -164,7 +164,7 @@ class BaseFXTools {
 					var curve = Curve.getCurve(shaderElt, v.name);
 					var val = Value.VConst(base);
 					if(curve != null)
-						val = Value.VCurveScale(curve, base);
+						val = Value.VMult(curve.makeVal(), VConst(base));
 					if(ret == null) ret = [];
 					ret.push({
 						idx: paramCount - 1,
