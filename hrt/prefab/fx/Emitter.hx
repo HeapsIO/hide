@@ -1558,16 +1558,9 @@ class Emitter extends Object3D {
 				if(b == VOne) return a;
 				switch a {
 					case VConst(va):
-						switch b {
-							case VConst(vb): return VConst(va * vb);
-							case VCurve(cb): return VCurveScale(cb, va);
-							default:
-						}
+						return VMult(a, b);
 					case VCurve(ca):
-						switch b {
-							case VConst(vb): return VCurveScale(ca, vb);
-							default:
-						}
+						return VMult(a, b);
 					case VRandomScale(ri,rscale):
 						switch b {
 							case VCurve(vb): return VAddRandCurve(0, ri, rscale, vb);
@@ -1608,7 +1601,7 @@ class Emitter extends Object3D {
 				var randCurve = getCurve(pname + suffix + ".rand");
 				var randVal : Value = VZero;
 				if(randCurve != null)
-					randVal = VRandom(randIdx++, VCurveScale(randCurve, randProp != null ? randProp : 1.0));
+					randVal = VRandom(randIdx++, VMult(randCurve.makeVal(), VConst(randProp != null ? randProp : 1.0)));
 				else if(randProp != null && randProp != 0.0)
 					randVal = VRandomScale(randIdx++, randProp);
 

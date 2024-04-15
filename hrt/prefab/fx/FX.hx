@@ -81,6 +81,9 @@ class FXAnimation extends h3d.scene.Object {
 		for (p in params) {
 			evaluator.parameters[p.name] = p.def;
 		}
+		for (a in shaderAnims) {
+			a.setAllParameters(params);
+		}
 	}
 
 	public function setRandSeed(seed: Int) {

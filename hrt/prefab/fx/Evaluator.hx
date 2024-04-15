@@ -48,7 +48,6 @@ class Evaluator {
 					var remappedRand = (rand - min) / (max - min);
 					return a + (b - a) * remappedRand;
 				}
-			case VCurveScale(c, scale): throw "curveScale is deprecated";//return c.getVal(time) * scale;
 			case VRandom(ridx, scale):
 				return getRandom(pidx, ridx) * getFloat(pidx, scale, time);
 			case VRandomScale(ridx, scale):
@@ -68,12 +67,11 @@ class Evaluator {
 		switch(val) {
 			case VOne: return time;
 			case VConst(v): return v * time;
-			case VCurveScale(c, scale): return c.getSum(time) * scale;
 			case VCurve(c): return c.getSum(time);
 			case VAdd(a, b):
 				return getSum(a, time) + getSum(b, time);
-			case VMult(a, b):
-			case VZero:
+			case VMult(a, VConst(b)): return getSum(a, time) * b;
+			case VZero: return 0;
 			default: throw "Not implemented";
 		}
 		return 0.0;
