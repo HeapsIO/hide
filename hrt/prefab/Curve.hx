@@ -367,11 +367,12 @@ class Curve extends Prefab {
 				for (p in root.parameters) {
 					selecta.append(new hide.Element('<option value="${p.name}">${p.name}</option>'));
 				}
+				selecta.val(blendVariable);
 			}
 		}
 
 		refreshBlend();
-
+		blendModeSelect.val(Std.string(blendMode));
 		blendModeSelect.change((_) -> {
 			var val = blendModeSelect.val();
 			blendMode = cast Std.parseInt(val);
@@ -458,10 +459,11 @@ class Curve extends Prefab {
 			if (c == null)
 				return VConst(defVal);
 
-			if (scale != 1.0)
-				return VCurveScale(c, scale);
-
-			return VCurve(c);
+			var vc = VCurve(c);
+			if (scale != 1.0) {
+				return VMult(vc, VConst(scale));
+			}
+			return vc;
 		}
 
 		return VVector(
