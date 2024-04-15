@@ -32,6 +32,10 @@ class FXEditContext extends hide.prefab.EditContext {
 		super.onChange(p, propName);
 		parent.onPrefabChange(p, propName);
 	}
+
+	override function rebuildPrefab(p : hrt.prefab.Prefab, ?sceneOnly) {
+		parent.sceneEditor.refreshScene();
+	}
 }
 
 @:access(hide.view.FXEditor)
@@ -159,6 +163,40 @@ private class FXSceneEditor extends hide.comp.SceneEditor {
 		refreshScene();
 		refreshTree(callb);
 		parent.onRefreshScene();
+	}
+
+
+
+	override function applyTreeStyle(p: PrefabElement, el: Element, ?pname: String) {
+		super.applyTreeStyle(p, el, pname);
+		if (el == null)
+			return;
+
+		var asCurve = Std.downcast(p, Curve);
+		if (asCurve != null) {
+			if (asCurve.blendMode == Blend) {
+				var paramName = asCurve.blendParam;
+				var fx = Std.downcast(this.parent.data, hrt.prefab.fx.FX);
+				if (fx == null) {
+					return;
+				}
+				var param = fx.parameters.find(function (p) {return p.name == paramName;});
+
+				var color = param?.color ?? 0;
+				var colorCode = StringTools.hex(color, 6);
+				var param = el.find('.fx-parameter');
+				if (param.length == 0 ){
+					var v = new Element('<span class="fx-parameter"></span>');
+					el.find("a").first().append(v);
+					param = v;
+				}
+				param.get(0).innerText = '($paramName)';
+				param.css("color", '#$colorCode');
+			}
+			else {
+				el.find(".fx-parameter").remove();
+			}
+		}
 	}
 
 	override function getNewContextMenu(current: PrefabElement, ?onMake: PrefabElement->Void=null, ?groupByType = true ) {
@@ -617,6 +655,16 @@ class FXEditor extends hide.view.FileView {
 			previewMax = hxd.Math.min(data.duration == 0 ? 5000 : data.duration, previewMax);
 
 			cullingPreview.radius = data.cullingRadius;
+
+			if (pname == "parameters") {
+				var all = p.flatten();
+				for (e in all) {
+					var el = sceneEditor.tree.getElement(e);
+					if (el != null && el.toggleClass != null) {
+						sceneEditor.applyTreeStyle(e, el, pname);
+					}
+				}
+			}
 		}
 
 		if (pname == "blendMode") {
@@ -655,6 +703,11 @@ class FXEditor extends hide.view.FileView {
 				}
 			}
 
+			sceneEditor.refresh();
+			rebuildAnimPanel();
+		}
+
+		if (pname == "blendParam") {
 			sceneEditor.refresh();
 			rebuildAnimPanel();
 		}

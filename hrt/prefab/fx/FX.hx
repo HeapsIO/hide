@@ -646,6 +646,7 @@ class FX extends Object3D implements BaseFX {
 							var fn = function(isUndo : Bool) {
 								p.color = isUndo ? old : current;
 								colorPicker.value = p.color;
+								ctx.rebuildPrefab(this, false);
 							}
 							ctx.properties.undo.change(Custom(fn));
 							fn(false);

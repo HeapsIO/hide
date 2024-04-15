@@ -3156,6 +3156,14 @@ div.gradient-box {
 .fx-params dt {
   text-transform: none;
 }
+/* parameter name that appear near curves and other prefabs in the fx editor*/
+.fx-parameter {
+  font-size: 0.8em;
+  margin-left: 1em;
+}
+.fx-parameter.missing {
+  text-decoration: line-through;
+}
 .settings {
   width: 100%;
   height: 100%;

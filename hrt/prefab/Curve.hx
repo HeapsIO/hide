@@ -53,7 +53,7 @@ class Curve extends Prefab {
 
 	@:s public var blendMode : CurveBlendMode = None;
 	@:s public var loop : Bool = false;
-	@:s public var blendVariable : String = null;
+	@:s public var blendParam : String = null;
 
 	public var maxTime : Float = 5000.;
 	public var duration(get, never): Float;
@@ -203,7 +203,7 @@ class Curve extends Prefab {
 			case None:
 				return VCurve(this);
 			case Blend:
-				return VBlend(Std.downcast(this.children[0], Curve).makeVal(), Std.downcast(this.children[1], Curve).makeVal(), blendVariable);
+				return VBlend(Std.downcast(this.children[0], Curve).makeVal(), Std.downcast(this.children[1], Curve).makeVal(), blendParam);
 			case RandomBlend:
 				return VCurve(this);
 			default:
@@ -346,7 +346,7 @@ class Curve extends Prefab {
 				</dd>
 				<div id="parameter">
 					<dt>Parameter</dt><dd>
-					<select field="blendVariable"></select>
+					<select field="blendParam"></select>
 					</dd>
 				</div>
 			</dl>
@@ -356,7 +356,7 @@ class Curve extends Prefab {
 
 		var refreshBlend = function() {
 			var parameter = props.find('#parameter');
-			var selecta = props.find('[field="blendVariable"]');
+			var selecta = props.find('[field="blendParam"]');
 			if (blendMode != Blend) {
 				parameter.hide();
 			}
@@ -367,7 +367,7 @@ class Curve extends Prefab {
 				for (p in root.parameters) {
 					selecta.append(new hide.Element('<option value="${p.name}">${p.name}</option>'));
 				}
-				selecta.val(blendVariable);
+				selecta.val(blendParam);
 			}
 		}
 
