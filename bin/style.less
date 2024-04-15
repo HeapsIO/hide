@@ -50,6 +50,8 @@ body {
 	border : 1px solid #C00;
 }
 
+
+
 .error-panel {
 	position : absolute;
 	width: 100%;
@@ -3580,6 +3582,50 @@ div.gradient-box {
 				margin-bottom: 15px;
 			}
 		}
+	}
+}
+
+.hover-parent {
+	.hover-reveal {
+		visibility: hidden;
+	}
+	&:hover {
+		.hover-reveal {
+			visibility: visible;
+		}
+		background-color: rgba(255,255,255,0.05);
+	}
+}
+
+.flex-props {
+	input{
+		min-width: 0 !important;
+		width: 100% !important;
+		min-height: 0 !important;
+		overflow: hidden;
+		flex: 1;
+	}
+
+	.hide-range {
+		display: flex;
+		flex: 1;
+		[type="range"] {
+			flex: 3;
+		}
+	}
+
+	.flex {
+		display: inline-flex;
+	}
+
+	.fill {
+		flex: 1;
+	}
+}
+
+.fx-params {
+	dt {
+		text-transform: none;
 	}
 }
 

@@ -2,6 +2,7 @@ package hrt.prefab.fx;
 
 class Evaluator {
 	var randValues : Array<Float>;
+	public var parameters: Map<String, Float> = [];
 	var stride : Int;
 
 	public function new(?randValues: Array<Float>, stride: Int=0) {
@@ -14,6 +15,13 @@ class Evaluator {
 		return randValues[i];
 	}
 
+	public function setAllParameters(params: Array<hrt.prefab.fx.FX.Parameter>) {
+		parameters.clear();
+		for (p in params) {
+			parameters[p.name] = p.def;
+		}
+	}
+
 	public function getFloat(pidx: Int=0, val: Value, time: Float) : Float {
 		if(val == null)
 			return 0.0;
@@ -21,9 +29,10 @@ class Evaluator {
 			case VZero: return 0.0;
 			case VOne: return 1.0;
 			case VConst(v): return v;
-			case VCurve(c): return c.getVal(time);
-			case VBlendCurve(c, factor):
-				return c.getVal(time);
+			case VBlend(a,b,v):
+				var blend = parameters[v] ?? 0.0;
+				return hxd.Math.lerp(getFloat(pidx, a, time), getFloat(pidx, b, time), blend);
+			case VCurve(c):  return c.getVal(time);
 			case VRandomBetweenCurves(ridx, c):
 				{
 					var c1 = Std.downcast(c.children[0], Curve);

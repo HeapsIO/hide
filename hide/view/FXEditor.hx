@@ -668,9 +668,15 @@ class FXEditor extends hide.view.FileView {
 			rebuildAnimPanel();
 		}
 
-		if (pname == "blendFactor") {
-			if (this.curveEditor != null)
+		if (pname == "parameters") {
+			if (this.curveEditor != null) {
+				var fx3d = Std.downcast(data, hrt.prefab.fx.FX);
+				if (fx3d != null) {
+					var params = fx3d.parameters;
+					this.curveEditor.evaluator.setAllParameters(params);
+				}
 				this.curveEditor.refreshGraph();
+			}
 		}
 
 	}
@@ -784,6 +790,11 @@ class FXEditor extends hide.view.FileView {
 			});
 		}
 
+		var fx3d = Std.downcast(data, hrt.prefab.fx.FX);
+		if (fx3d != null) {
+			var params = fx3d.parameters;
+			this.curveEditor.evaluator.setAllParameters(params);
+		}
 		this.curveEditor.refreshTimeline(previousTime);
 		this.curveEditor.refresh();
 	}

@@ -493,6 +493,7 @@ class CurveEditor extends hide.comp.Component {
 	public var lockViewY = false;
 	public var lockKeyX = false;
 	public var maxLength = 0.0;
+	public var evaluator : hrt.prefab.fx.Evaluator;
 
 	public var components : Array<CurveEditorComponent> = [];
 	public var componentsGroup : Element;
@@ -541,6 +542,8 @@ class CurveEditor extends hide.comp.Component {
 		componentsGroup = svg.group(root, "components");
 		tlGroup = svg.group(root, "tlgroup");
 		markersGroup = svg.group(root, "markers").css({'pointer-events':'none'});
+
+		evaluator = new hrt.prefab.fx.Evaluator([]);
 
 		var sMin = 0.0;
 		var sMax = 0.0;
@@ -1309,8 +1312,17 @@ class CurveEditor extends hide.comp.Component {
 					svg.make(curveGroup, "path", {d: lines.join("")});
 				}
 				else {
+					var pts = [];
+
 					// Basic value of xScale is 200
-					var pts = curve.sample(cast Math.min(5000, 500 * cast (xScale / 200.0)));
+					var num : Int = Std.int(Math.min(5000, 500 * cast (xScale / 200.0)));
+					pts.resize(num);
+					var v = curve.makeVal();
+					if (v == null) throw "wtf";
+					var duration = curve.duration;
+					for (i in 0...num) {
+						pts[i] = evaluator.getFloat(v, duration * i/(num-1));
+					}
 					var poly = [];
 
 					for(i in 0...pts.length) {

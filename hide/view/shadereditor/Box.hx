@@ -204,54 +204,16 @@ class Box {
 				var fo = editor.editor.foreignObject(element, 7, 2, 0, HEADER_HEIGHT-4);
 				fo.get(0).id = "commentTitle";
 				var commentTitle = new Element("<span contenteditable spellcheck='false'>Comment</span>").addClass("comment-title").appendTo(fo);
-				var html : js.html.SpanElement = cast commentTitle.get(0);
-				if (comment.comment.length > 0) {
-					html.innerText = comment.comment;
-				}
 
-				var wasEdited = false;
 				var shaderEditor : ShaderEditor = cast editor;
 
-				html.onfocus = function() {
-					var range = js.Browser.document.createRange();
-					range.selectNodeContents(html);
-					var sel = js.Browser.window.getSelection();
-					sel.removeAllRanges();
-					sel.addRange(range);
-				}
-				html.onkeydown = function(e: js.html.KeyboardEvent) {
-					if (e.keyCode == 13) {
-						html.blur();
-					}
-					e.stopPropagation();
-				}
-				html.oninput = function(e) {
-					if (!wasEdited) {
-						shaderEditor.beforeChange();
-						wasEdited = true;
-					}
-				}
-				html.onkeyup = function(e: js.html.KeyboardEvent) {
-					e.stopPropagation();
-				}
-				html.onmousedown = function(e: js.html.PointerEvent) {
-					e.stopPropagation();
-				}
-				html.onmousemove = function(e: js.html.PointerEvent) {
-					e.stopPropagation();
-				}
-				html.onmouseup = function(e: js.html.PointerEvent) {
-					e.stopPropagation();
-				}
-
-				html.onblur = function() {
-					if (js.Browser.window.getSelection != null) {js.Browser.window.getSelection().removeAllRanges();}
-					comment.comment = html.innerText;
-					if (wasEdited) {
-						shaderEditor.afterChange();
-						wasEdited = false;
-					}
-				}
+				var editable = new hide.comp.ContentEditable(commentTitle);
+				editable.value = comment.comment;
+				editable.onChange = function(v: String) {
+					shaderEditor.beforeChange();
+					comment.comment = v;
+					shaderEditor.afterChange();
+				};
 			}
 			else {
 				editor.editor.text(element, 7, HEADER_HEIGHT-6, className).addClass("title-box");

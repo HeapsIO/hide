@@ -52,8 +52,8 @@ class Curve extends Prefab {
 	@:s public var previewKeys : CurveKeys = [];
 
 	@:s public var blendMode : CurveBlendMode = None;
-	@:s public var blendFactor : Float = 0;
 	@:s public var loop : Bool = false;
+	@:s public var blendVariable : String = null;
 
 	public var maxTime : Float = 5000.;
 	public var duration(get, never): Float;
@@ -198,15 +198,21 @@ class Curve extends Prefab {
 		return ret;
 	}
 
-	public function getVal(time: Float) : Float {
-		if (blendMode == CurveBlendMode.Blend) {
-			var c1 = Std.downcast(this.children[0], Curve);
-			var c2 = Std.downcast(this.children[1], Curve);
-			var a = c1.getVal(time);
-			var b = c2.getVal(time);
-			return a + (b - a) * blendFactor;
+	public function makeVal() : Value {
+		switch(blendMode) {
+			case None:
+				return VCurve(this);
+			case Blend:
+				return VBlend(Std.downcast(this.children[0], Curve).makeVal(), Std.downcast(this.children[1], Curve).makeVal(), blendVariable);
+			case RandomBlend:
+				return VCurve(this);
+			default:
+				throw "what";
 		}
+		throw "unrechable";
+	}
 
+	public function getVal(time: Float) : Float {
 		switch(keys.length) {
 			case 0: return 0;
 			case 1: return keys[0].value;
@@ -327,19 +333,54 @@ class Curve extends Prefab {
 	override function edit( ctx : EditContext ) {
 		super.edit(ctx);
 
-		ctx.properties.add(new hide.Element('
+		var props = new hide.Element('
 		<div class="group" name="Parameters">
 			<dl>
 				<dt>Loop curve</dt><dd><input type="checkbox" field="loop"/></dd>
 				<dt>Blend Mode</dt><dd>
-					<select class="blendmode-selector" field="blendMode">
+					<select class="blendmode-selector" id="blendMode">
 						<option value="0">None</option>
 						<option value="1">Blend curve</option>
 						<option value="2">Random between two curves</option>
 					</select>
 				</dd>
+				<div id="parameter">
+					<dt>Parameter</dt><dd>
+					<select field="blendVariable"></select>
+					</dd>
+				</div>
 			</dl>
-		</div>'), this, function(pname) {
+		</div>');
+
+		var blendModeSelect = props.find('#blendMode');
+
+		var refreshBlend = function() {
+			var parameter = props.find('#parameter');
+			var selecta = props.find('[field="blendVariable"]');
+			if (blendMode != Blend) {
+				parameter.hide();
+			}
+			else {
+				parameter.show();
+				selecta.empty();
+				var root = Std.downcast(getRoot(false), hrt.prefab.fx.FX);
+				for (p in root.parameters) {
+					selecta.append(new hide.Element('<option value="${p.name}">${p.name}</option>'));
+				}
+			}
+		}
+
+		refreshBlend();
+
+		blendModeSelect.change((_) -> {
+			var val = blendModeSelect.val();
+			blendMode = cast Std.parseInt(val);
+			refreshBlend();
+			ctx.onChange(this, "blendMode");
+		});
+
+		ctx.properties.add(props, this, function(pname) {
+			refreshBlend();
 			ctx.onChange(this, pname);
 		});
 
@@ -417,9 +458,6 @@ class Curve extends Prefab {
 			if (c == null)
 				return VConst(defVal);
 
-			if (c.blendMode == CurveBlendMode.Blend)
-				return VBlendCurve(c, blendFactor);
-
 			if (scale != 1.0)
 				return VCurveScale(c, scale);
 
@@ -448,10 +486,10 @@ class Curve extends Prefab {
 
 		if(h != null || s != null || l != null) {
 			return VHsl(
-				h != null ? VCurve(h) : VConst(0.0),
-				s != null ? VCurve(s) : VConst(1.0),
-				l != null ? VCurve(l) : VConst(1.0),
-				a != null ? VCurve(a) : VConst(1.0));
+				h != null ? h.makeVal() : VConst(0.0),
+				s != null ? s.makeVal() : VConst(1.0),
+				l != null ? l.makeVal() : VConst(1.0),
+				a != null ? a.makeVal() : VConst(1.0));
 		}
 
 		if(a != null && r == null && g == null && b == null)
@@ -461,10 +499,10 @@ class Curve extends Prefab {
 			return VOne; // White by default
 
 		return VVector(
-			r != null ? VCurve(r) : VConst(1.0),
-			g != null ? VCurve(g) : VConst(1.0),
-			b != null ? VCurve(b) : VConst(1.0),
-			a != null ? VCurve(a) : VConst(1.0));
+			r != null ? r.makeVal() : VConst(1.0),
+			g != null ? g.makeVal() : VConst(1.0),
+			b != null ? b.makeVal() : VConst(1.0),
+			a != null ? a.makeVal() : VConst(1.0));
 	}
 
 	static var _ = Prefab.register("curve", Curve);

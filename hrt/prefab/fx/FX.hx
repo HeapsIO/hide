@@ -18,6 +18,7 @@ class FXAnimation extends h3d.scene.Object {
 	public var loop : Bool = false;
 	public var duration : Float;
 
+
 	/** Enable automatic culling based on `cullingRadius` and `cullingDistance`. Will override `culled` on every sync. **/
 	public var autoCull(default, set) = true;
 	public var cullingRadius : Float;
@@ -60,6 +61,7 @@ class FXAnimation extends h3d.scene.Object {
 		initConstraints(root != null ? root : def);
 
 		trails = findAll((p) -> Std.downcast(p, hrt.prefab.l3d.Trails.TrailObj));
+		setParameters(def.parameters);
 	}
 
 	public function reset() {
@@ -71,6 +73,13 @@ class FXAnimation extends h3d.scene.Object {
 				if(c != this)
 					c.reset();
 			}
+		}
+	}
+
+	public function setParameters(params: Array<Parameter>) {
+		evaluator.parameters.clear();
+		for (p in params) {
+			evaluator.parameters[p.name] = p.def;
 		}
 	}
 
@@ -162,6 +171,7 @@ class FXAnimation extends h3d.scene.Object {
 	public function setTime( time : Float, fullSync=true ) {
 		var dt = time - this.prevTime;
 		this.localTime = time;
+
 		if(fullSync) {
 			if(objAnims != null) {
 				for(anim in objAnims) {
@@ -329,8 +339,7 @@ class FXAnimation extends h3d.scene.Object {
 
 			if (c == null)
 				return def;
-
-			return c.blendMode == CurveBlendMode.Blend ? VBlendCurve(c, blendFactor) : VCurve(c);
+			return c.makeVal();
 		}
 
 		function makeVector(name: String, defVal: Float, uniform: Bool=true, scale: Float=1.0) : Value {
@@ -341,10 +350,7 @@ class FXAnimation extends h3d.scene.Object {
 			anyFound = true;
 
 			if(uniform && curves.length == 1 && curves[0].name == name) {
-				if (curves[0].blendMode == CurveBlendMode.Blend)
-					return VBlendCurve(curves[0], blendFactor);
-
-				return scale != 1.0 ? VCurveScale(curves[0], scale) : VCurve(curves[0]);
+				return scale != 1.0 ? VCurveScale(curves[0], scale) : curves[0].makeVal();
 			}
 
 			return Curve.getVectorValue(curves, defVal, scale, blendFactor);
@@ -446,6 +452,16 @@ class FXAnimation extends h3d.scene.Object {
 	}
 }
 
+enum abstract ParameterType(String) {
+	var TBlend;
+}
+typedef Parameter = {
+	var type: ParameterType;
+	var name: String;
+	var color: Int;
+	var def: Dynamic;
+};
+
 class FX extends Object3D implements BaseFX {
 
 	@:s public var duration : Float;
@@ -455,6 +471,11 @@ class FX extends Object3D implements BaseFX {
 	@:s public var markers : Array<{t: Float}> = [];
 	@:c public var blendFactor : Float;
 
+	@:s public var parameters : Array<Parameter>;
+
+	#if editor
+	static var identRegex = ~/^[A-Za-z_][A-Za-z0-9_]*$/;
+	#end
 
 	/*override function save(data : Dynamic) {
 		super.save(data);
@@ -524,12 +545,7 @@ class FX extends Object3D implements BaseFX {
 		fxanim.cullingRadius = cullingRadius;
 		fxanim.blendFactor = blendFactor;
 
-		// Populate the value among blend curves
-		var curves = this.flatten(Curve);
-		for (curve in curves) {
-			if (curve.blendMode == CurveBlendMode.Blend)
-				curve.blendFactor = blendFactor;
-		}
+		fxanim.setParameters(parameters);
 	}
 
 	function createInstance(parent: h3d.scene.Object) : FXAnimation {
@@ -556,6 +572,154 @@ class FX extends Object3D implements BaseFX {
 		ctx.properties.add(props, this, function(pname) {
 			ctx.onChange(this, pname);
 		});
+
+		var param = new hide.Element('
+			<div class="group flex-props fx-params" name="Parameters">
+				<dl id="params">
+				</dl>
+				<dl>
+				<dt></dt><dd><input type="button" value="Add Parameter" id="addParamButton"/></dd>
+				</dl>
+			</div>
+		'
+		);
+
+		function isParameterNameUnique(name: String) {
+			for (p in parameters) {
+				if (p.name == name) return false;
+			}
+			return true;
+		}
+
+		function rebuildParameters() {
+			var params = param.find("#params");
+			(params.get(0):Dynamic).replaceChildren();
+			if (parameters != null) {
+				for (i => p in parameters) {
+					var line = new hide.Element('<div class="hover-parent"/>');
+					line.appendTo(params);
+					var elem = new hide.Element('<dt class="flex"><div id="color"></div><span id="name" contenteditable class="fill"></span></dt>').appendTo(line);
+					var editable = new hide.comp.ContentEditable(null, elem.find("#name"));
+					editable.value = p.name;
+					editable.spellcheck = false;
+					editable.onChange = function(v: String) {
+						var error = false;
+						if (!identRegex.match(v)) {
+							hide.Ide.inst.quickMessage('Parameter name "$v" is not a valid identifier');
+							error = true;
+						}
+						else if (!isParameterNameUnique(v)) {
+							hide.Ide.inst.quickMessage('Parameter "$v" already exists');
+							error = true;
+						}
+						if (error) {
+							editable.value = p.name;
+							return;
+						}
+
+						var old = p.name;
+						var fn = function(isUndo: Bool) {
+							p.name = isUndo ? old : v;
+							editable.value = p.name;
+							ctx.onChange(this, "parameters");
+						}
+						ctx.properties.undo.change(Custom(fn));
+						fn(false);
+					};
+
+					var colorPicker = new hide.comp.ColorPicker.ColorBox(null, elem.find("#color"), true, false);
+					colorPicker.value = p.color;
+					colorPicker.element.width(8);
+					colorPicker.element.height(16);
+					var lastColor = p.color;
+					colorPicker.onChange = function(temp: Bool) {
+						if (temp) {
+							p.color = colorPicker.value;
+							ctx.onChange(this, "parameters");
+						}
+						else {
+							var old = lastColor;
+							var current = colorPicker.value;
+							var fn = function(isUndo : Bool) {
+								p.color = isUndo ? old : current;
+								colorPicker.value = p.color;
+							}
+							ctx.properties.undo.change(Custom(fn));
+							fn(false);
+						}
+					}
+
+					var dd = new hide.Element('<dd class="flex">').appendTo(line);
+					var range = new hide.comp.Range(dd, new hide.Element('<input min="0" max="1" type="range"/>'));
+					var btn = new hide.Element('<div class="tb-group small hover-reveal"><div class="button2"><div class="icon ico ico-times"></div></div></div>').appendTo(dd);
+					btn.find(".button2").get(0).onclick = function(e) {
+						var fn = function(isUndo: Bool) {
+							if (!isUndo) {
+								parameters.splice(i, 1);
+							}
+							else {
+								parameters.insert(i, p);
+							}
+							rebuildParameters();
+							ctx.onChange(this, "parameters");
+						}
+						ctx.properties.undo.change(Custom(fn));
+						fn(false);
+					}
+
+					range.value = p.def;
+					var lastDef = p.def;
+					range.onChange = function(temp: Bool) {
+						if (temp) {
+							p.def = range.value;
+							ctx.onChange(this, "parameters");
+						}
+						else {
+							var old = lastDef;
+							var current = range.value;
+							lastDef = current;
+							var fn = function(isUndo: Bool) {
+								p.def = isUndo ? old : current;
+								range.value = p.def;
+								ctx.onChange(this, "parameters");
+							}
+							ctx.properties.undo.change(Custom(fn));
+							fn(false);
+						}
+					}
+				}
+			}
+		}
+
+
+
+		param.find("#addParamButton").get(0).onclick = (_) -> {
+
+			var color = hrt.impl.ColorSpace.HSLtoiRGB(new h3d.Vector4((parameters.length * 0.618033988749895) % 1.0, 0.75, 0.5), null).toInt(false);
+			var paramName = "newParam";
+			var i = 0;
+			while (!isParameterNameUnique(paramName)) {
+				i ++;
+				paramName = 'newParam$i';
+			}
+			var newElem = {type: TBlend, name: paramName, color: color, def: 0.0};
+			var fn = function(isUndo: Bool) {
+				if (!isUndo) {
+					parameters.push(newElem);
+				} else {
+					parameters.pop();
+				}
+				ctx.onChange(this, "parameters");
+				rebuildParameters();
+			}
+			ctx.properties.undo.change(Custom(fn));
+			fn(false);
+		};
+
+		ctx.properties.add(param);
+
+		rebuildParameters();
+
 	}
 
 	override function getHideProps() : hide.prefab.HideProps {
