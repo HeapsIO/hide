@@ -381,7 +381,7 @@ class IconTree<T:{}> extends Component {
 					if( val != this.filter ) searchFilter(val);
 				}
 				var val = elt.val();
-				haxe.Timer.delay(filter, val.length == 1 ? 500 : 100);
+				haxe.Timer.delay(filter, Ide.inst.ideConfig.typingDebounceThreshold);
 			});
 			new Element("<i>").addClass("ico ico-times-circle").appendTo(searchBox).click(function(_) {
 				closeFilter();

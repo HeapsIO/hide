@@ -421,7 +421,10 @@ class FileTree extends FileView {
 		if( ext == null )
 			return false;
 		ide.openFile(fullPath);
-		tree.closeFilter();
+
+		if (Ide.inst.ideConfig.closeSearchOnFileOpen)
+			tree.closeFilter();
+
 		return true;
 	}
 

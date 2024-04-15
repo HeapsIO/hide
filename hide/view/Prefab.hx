@@ -339,6 +339,13 @@ class Prefab extends hide.view.FileView {
 		refreshViewModes();
 	}
 
+	override function onBeforeClose() {
+		if(Ide.inst.ideConfig.autoSavePrefab)
+			this.save();
+
+		return super.onBeforeClose();
+	}
+
 	function refreshColLayout() {
 		var config = ide.ideConfig;
 		if( config.sceneEditorLayout == null ) {

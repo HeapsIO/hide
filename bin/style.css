@@ -3124,3 +3124,62 @@ div.gradient-box {
   margin-top: 15px;
   margin-bottom: 15px;
 }
+.settings {
+  width: 100%;
+  height: 100%;
+}
+.settings .settings-header {
+  width: 100%;
+  height: 20px;
+  border-bottom: solid #000000 1px;
+}
+.settings .settings-body {
+  width: 100%;
+  height: 100%;
+  display: flex;
+}
+.settings .settings-body .categories {
+  width: 20%;
+  height: 100%;
+  padding-top: 10px;
+  border-right: solid #000000 1px;
+}
+.settings .settings-body .categories p {
+  padding: 1px 1px 1px 15px;
+  margin: 0;
+}
+.settings .settings-body .categories p:hover {
+  background-color: #4d4d4d;
+}
+.settings .settings-body .content {
+  height: 100%;
+  width: 100%;
+  padding: 5px 15px 15px 15px;
+}
+.settings .settings-body .content h1 {
+  margin-top: 0;
+}
+.settings .settings-body .content dl {
+  overflow-x: hidden;
+  margin: 0px;
+}
+.settings .settings-body .content dd,
+.settings .settings-body .content dt {
+  vertical-align: middle;
+  display: inline-block;
+  text-wrap: wrap;
+  word-break: break-word;
+  margin-top: 4px;
+}
+.settings .settings-body .content dd span,
+.settings .settings-body .content dt span {
+  display: inline-block;
+  width: 20px;
+}
+.settings .settings-body .content dt {
+  width: 300px;
+  color: #aaa;
+  user-select: none;
+  text-transform: capitalize;
+  font-weight: normal;
+}

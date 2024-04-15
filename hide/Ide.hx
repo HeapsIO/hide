@@ -1132,6 +1132,11 @@ class Ide extends hide.tools.IdeData {
 			#end
 		});
 
+		var settings = menu.find(".settings");
+		settings.find('.showSettings').click(function(_) {
+			open("hide.view.Settings", {});
+		});
+
 		window.menu = new hide.ui.Menu(menu).root;
 	}
 
