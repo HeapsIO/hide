@@ -66,6 +66,7 @@ class InstanceDef {
 	var startSpeed: Value;
 	var startWorldSpeed: Value;
 	var orbitSpeed: Value;
+	var orbitSpeedOverTime: Value;
 	var acceleration: Value;
 	var worldAcceleration: Value;
 	var localOffset: Value;
@@ -384,9 +385,15 @@ class ParticleInstance {
 		y += tmpSpeed.y * dt;
 		z += tmpSpeed.z * dt;
 
-		if(def.orbitSpeed != VZero) {
+		if(def.orbitSpeed != VZero || def.orbitSpeedOverTime != VZero) {
 			evaluator.getVector(idx, def.orbitSpeed, t, tmpLocalSpeed);
 			tmpMat.initRotation(tmpLocalSpeed.x * dt, tmpLocalSpeed.y * dt, tmpLocalSpeed.z * dt);
+
+			evaluator.getVector(idx, def.orbitSpeedOverTime, emitter.curTime, tmpLocalSpeed);
+			tmpMat2.initRotation(tmpLocalSpeed.x * dt, tmpLocalSpeed.y * dt, tmpLocalSpeed.z * dt);
+
+			tmpMat.multiply(tmpMat, tmpMat2);
+
 			// Rotate in emitter space and convert back to world space
 			var parentAbsPos = emitter.parentTransform;
 			var prevPos = getPosition();
@@ -1406,6 +1413,7 @@ class Emitter extends Object3D {
 		{ name: "instStartSpeed",      		t: PVec(3, -10, 10),  def: [0.,0.,0.], disp: "Start Speed",groupName: "Particle Movement"},
 		{ name: "instStartWorldSpeed", 		t: PVec(3, -10, 10),  def: [0.,0.,0.], disp: "Start World Speed",groupName: "Particle Movement"},
 		{ name: "instOrbitSpeed", 			t: PVec(3, -10, 10),  def: [0.,0.,0.], disp: "Orbit Speed", groupName: "Particle Movement"},
+		{ name: "instOrbitSpeedOverTime", 			t: PVec(3, -10, 10),  def: [0.,0.,0.], disp: "Orbit Speed over time", groupName: "Particle Movement"},
 		{ name: "instAcceleration",			t: PVec(3, -10, 10),  def: [0.,0.,0.], disp: "Acceleration", groupName: "Particle Movement"},
 		{ name: "instMaxVelocity",      			t: PFloat(0, 10.0),    def: 0.,         disp: "Max Velocity", groupName: "Limit Velocity"},
 		{ name: "instDampen",      			t: PFloat(0, 10.0),    def: 0.,         disp: "Dampen", groupName: "Limit Velocity"},
@@ -1661,6 +1669,7 @@ class Emitter extends Object3D {
 		d.startSpeed = makeParam(this, "instStartSpeed");
 		d.startWorldSpeed = makeParam(this, "instStartWorldSpeed");
 		d.orbitSpeed = makeParam(this, "instOrbitSpeed");
+		d.orbitSpeedOverTime = makeParam(this, "instOrbitSpeedOverTime");
 		d.acceleration = makeParam(this, "instAcceleration");
 		d.worldAcceleration = makeParam(this, "instWorldAcceleration");
 		d.localOffset = makeParam(this, "instOffset");
