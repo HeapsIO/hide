@@ -625,10 +625,12 @@ class HelpPopup extends hide.comp.Popup {
 
 class RenderPropsPopup extends Popup {
 	var editor:SceneEditor;
+	var view: hide.view.FileView;
 
 	public function new(?parent:Element, ?root:Element, view:hide.view.FileView, editor:SceneEditor, isSearchable = false, canChangeCurrRp = false) {
 		super(parent, root, isSearchable);
 		this.editor = editor;
+		this.view = view;
 
 		popup.addClass("settings-popup");
 		popup.css("max-width", "300px");
@@ -697,7 +699,7 @@ class RenderPropsPopup extends Popup {
 		popup.find("label").remove();
 		popup.find('input[type=radio]').remove();
 
-		var renderProps = hide.Ide.inst.currentConfig.get("scene.renderProps");
+		var renderProps = view.config.getLocal("scene.renderProps");
 		if (renderProps is Array) {
 			var a_renderProps = cast (renderProps, Array<Dynamic>);
 			var selectedRenderProps = editor.view.getDisplayState("renderProps");
