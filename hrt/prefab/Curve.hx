@@ -70,7 +70,7 @@ class Curve extends Prefab {
 
 	function get_duration() {
 		if (blendMode == Reference) {
-			return getRef().duration ?? 0.0;
+			return getRef()?.duration ?? 0.0;
 		}
 		if(keys.length == 0) return 0.0;
 		if (blendMode == CurveBlendMode.Blend || blendMode == CurveBlendMode.RandomBlend) {
@@ -91,6 +91,14 @@ class Curve extends Prefab {
 			addKey(0.0, 0.0);
 			addKey(1.0, 1.0);
 		}
+		#if editor
+		name = StringTools.replace(name, ".", ":");
+		if (Std.downcast(parent, Curve) != null) {
+			if (StringTools.startsWith(name, parent.name)) {
+				name = StringTools.replace(name, parent.name + ":", "");
+			}
+		}
+		#end
 	}
 
 	public override function copy(o:Prefab) {
@@ -173,6 +181,7 @@ class Curve extends Prefab {
 			return refCurve;
 		var root = getRoot(false);
 		refCurve = Std.downcast(root.locatePrefab(blendParam), Curve);
+		if (refCurve == this) refCurve = null;
 		return refCurve;
 	}
 
@@ -181,7 +190,7 @@ class Curve extends Prefab {
 			case None:
 				return VCurve(this);
 			case Blend:
-				return VBlend(Std.downcast(this.children[0], Curve).makeVal(), Std.downcast(this.children[1], Curve).makeVal(), blendParam);
+				return VBlend(Std.downcast(this.children[0], Curve)?.makeVal() ?? VConst(0.0), Std.downcast(this.children[1], Curve)?.makeVal() ?? VConst(0.0), blendParam);
 			case RandomBlend:
 				return VCurve(this);
 			case Reference:
@@ -375,6 +384,7 @@ class Curve extends Prefab {
 				var root = getRoot(false);
 				var flat = root.flatten(Curve);
 				for (p in flat) {
+					if (p == this) continue;
 					var path = p.getAbsPath();
 					selecta.append(new hide.Element('<option value="${path}">${path}</option>'));
 				}
@@ -398,6 +408,11 @@ class Curve extends Prefab {
 		ctx.properties.add(props, this, function(pname) {
 			if (pname == "blendParam") {
 				refCurve = null;
+				if (containsRefCycle()) {
+					hide.Ide.inst.quickMessage("Curve reference create a cycle");
+					blendParam = null;
+					refCurve = null;
+				}
 			}
 			refreshBlend();
 			ctx.onChange(this, pname);
@@ -413,6 +428,29 @@ class Curve extends Prefab {
 		return { icon : "paint-brush", name : "Curve" };
 	}
 	#end
+
+	function containsRefCycle(?visited: Map<Curve, Bool>) : Bool {
+		if (blendMode != Reference) return false;
+		var visited = visited?.copy() ?? [];
+		var cur = this;
+		while (cur != null) {
+			if (visited.get(cur) != null)
+			{
+				return true;
+			}
+			visited.set(cur, true);
+			if (cur.blendMode == Blend || cur.blendMode == RandomBlend) {
+				for (i in 0...2) {
+					var subCurve = Std.downcast(cur.children[i], Curve);
+					if (subCurve.containsRefCycle(visited)) {
+						return true;
+					}
+				}
+			}
+			cur = cur.getRef();
+		}
+		return false;
+	}
 
 	public static function getCurve(parent : Prefab, name: String, onlyEnabled=true) {
 		for(c in parent.children) {
@@ -468,10 +506,10 @@ class Curve extends Prefab {
 		inline function find(s) {
 			return findCurve(curves, s);
 		}
-		var x = find(".x");
-		var y = find(".y");
-		var z = find(".z");
-		var w = find(".w");
+		var x = find(":x");
+		var y = find(":y");
+		var z = find(":z");
+		var w = find(":w");
 
 		inline function curveOrVal(c: Curve, defVal: Float) : Value {
 			if (c == null)
@@ -496,13 +534,13 @@ class Curve extends Prefab {
 			return findCurve(curves, s);
 		}
 
-		var r = find(".r");
-		var g = find(".g");
-		var b = find(".b");
-		var a = find(".a");
-		var h = find(".h");
-		var s = find(".s");
-		var l = find(".l");
+		var r = find(":r");
+		var g = find(":g");
+		var b = find(":b");
+		var a = find(":a");
+		var h = find(":h");
+		var s = find(":s");
+		var l = find(":l");
 
 		if(h != null || s != null || l != null) {
 			return VHsl(

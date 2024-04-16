@@ -178,13 +178,14 @@ private class FXSceneEditor extends hide.comp.SceneEditor {
 				var paramName = asCurve.blendParam;
 				var color = 0xFFFFFF;
 				var missing = false;
+				var icon = "ico-random";
 				if (asCurve.blendMode == Blend) {
 					var fx = Std.downcast(this.parent.data, hrt.prefab.fx.FX);
 					if (fx == null) {
 						return;
 					}
 					var param = fx.parameters.find(function (p) {return p.name == paramName;});
-
+					missing = param == null;
 					color = param?.color;
 
 				}
@@ -193,12 +194,13 @@ private class FXSceneEditor extends hide.comp.SceneEditor {
 					if (ref == null) {
 						missing = true;
 					}
+					icon = "ico-link";
 				}
 
 				var colorCode = StringTools.hex(missing ? 0xFF0000 : color, 6);
 				var paramEl = el.find('>a>.fx-parameter');
 				if (paramEl.length == 0 ){
-					var v = new Element('<span class="fx-parameter"><i class="ico ico-link"></i><span class="fx-param-name"></span></span>');
+					var v = new Element('<span class="fx-parameter"><i class="ico $icon"></i><span class="fx-param-name"></span></span>');
 					el.find("a").first().append(v);
 					paramEl = v;
 				}
@@ -708,7 +710,14 @@ class FXEditor extends hide.view.FileView {
 						for (i in 0...2) {
 							var c = new Curve(null, null);
 							c.parent = curve;
-							c.name = '${curve.name}.${i}';
+							c.name = '$i';
+							if (i == 0) {
+								for (k in curve.keys) {
+									var newK = new hrt.prefab.Curve.CurveKey();
+									@:privateAccess newK.copyFromOther(k);
+									c.keys.push(newK);
+								}
+							}
 						}
 					}
 				}
