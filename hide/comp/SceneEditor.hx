@@ -1403,9 +1403,6 @@ class SceneEditor {
 			}
 		};
 
-		if (!camera2D)
-			resetCamera();
-
 		var settings = @:privateAccess view.getDisplayState("Camera");
 		var isGlobalSettings = Ide.inst.currentConfig.get("sceneeditor.camera.isglobalsettings", false);
 		if (isGlobalSettings) {

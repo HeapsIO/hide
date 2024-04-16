@@ -810,7 +810,13 @@ class Model extends FileView {
 		if ( displayJoints.isDown() )
 			sceneEditor.setJoints(true, null);
 
-		if (sceneEditor.view.getDisplayState("Camera") == null) {
+		// Adapt initial camera position to model
+		var camSettings = @:privateAccess sceneEditor.view.getDisplayState("Camera");
+		var isGlobalSettings = Ide.inst.currentConfig.get("sceneeditor.camera.isglobalsettings", false);
+		if (isGlobalSettings)
+			camSettings = Ide.inst.currentConfig.get("sceneeditor.camera.isglobalsettings", false);
+
+		if (camSettings == null) {
 			var bnds = new h3d.col.Bounds();
 			var centroid = new h3d.Vector();
 
