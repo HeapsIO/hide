@@ -55,6 +55,8 @@ class Curve extends Prefab {
 	@:s public var blendMode : CurveBlendMode = None;
 	@:s public var loop : Bool = false;
 	@:s public var blendParam : String = null;
+	@:s public var offset : Float = 0.0;
+	@:s public var scale : Float = 1.0;
 
 	public var maxTime : Float = 5000.;
 	public var duration(get, never): Float;
@@ -194,7 +196,14 @@ class Curve extends Prefab {
 			case RandomBlend:
 				return VCurve(this);
 			case Reference:
-				return getRef()?.makeVal() ?? VConst(0.0);
+				var val = getRef()?.makeVal();
+				if (val == null)
+					return VConst(0.0);
+				if (scale != 1.0)
+					val = VMult(val, VConst(scale));
+				if (offset != 0.0)
+					val = VAdd(val, VConst(offset));
+				return val;
 			default:
 				throw "invalid blendMode value";
 		}
@@ -351,6 +360,8 @@ class Curve extends Prefab {
 					<dt>Curve Path</dt><dd>
 					<select field="blendParam"></select>
 					</dd>
+					<dt>Offset</dt><dd><input type="range" min="0.0" max="1.0" field="offset"/></dd>
+					<dt>Scale</dt><dd><input type="range" min="0.0" max="1.0" field="scale"/></dd>
 				</div>
 			</dl>
 		</div>');
