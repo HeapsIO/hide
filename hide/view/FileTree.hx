@@ -232,18 +232,22 @@ class FileTree extends FileView {
 				if( isDir && !ide.confirm("Renaming a SVN directory, but 'svn' system command was not found. Continue ?") )
 					return false;
 			} else {
-				var cwd = Sys.getCwd();
-				Sys.setCwd(ide.resourceDir);
-				var code = Sys.command("svn",["rename",path,newPath]);
-				Sys.setCwd(cwd);
-				if( code == 0 )
-					wasRenamed = true;
-				else {
-					if( !ide.confirm("SVN rename failure, perform file rename ?") )
-						return false;
+				// Check if file is versioned before using svn rename
+				if (js.node.ChildProcess.spawnSync("svn",["info", ide.getPath(path)]).status == 0) {
+					var cwd = Sys.getCwd();
+					Sys.setCwd(ide.resourceDir);
+					var code = Sys.command("svn",["rename",path,newPath]);
+					Sys.setCwd(cwd);
+					if( code == 0 )
+						wasRenamed = true;
+					else {
+						if( !ide.confirm("SVN rename failure, perform file rename ?") )
+							return false;
+					}
 				}
 			}
 		}
+
 		if( !wasRenamed )
 			sys.FileSystem.rename(ide.getPath(path), ide.getPath(newPath));
 
