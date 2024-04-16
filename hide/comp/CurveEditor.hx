@@ -1509,7 +1509,20 @@ class CurveEditor extends hide.comp.Component {
 		}
 
 		for (curve in curves){
-			var color = '#${StringTools.hex(curve.color)}';
+			var colorInt = curve.color;
+			if (curve.blendMode == Blend) {
+				var root = curve.getRoot();
+				var params = Std.downcast(root, hrt.prefab.fx.FX)?.parameters;
+				if (params != null) {
+					for (p in params) {
+						if (p.name == curve.blendParam) {
+							colorInt = p.color;
+							break;
+						}
+					}
+				}
+			}
+			var color = '#${StringTools.hex(colorInt)}';
 			var curveStyle: Dynamic = { opacity : curve.selected ? 1 : 0.5, stroke : color, "stroke-width":'${curve.selected ? 2 : 1}px'};
 			var keyStyle: Dynamic = { opacity : curve.selected ? 1 : 0.5};
 			var eventStyle: Dynamic = { 'fill-opacity' : curve.selected ? 1 : 0.5};
