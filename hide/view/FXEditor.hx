@@ -818,7 +818,7 @@ class FXEditor extends hide.view.FileView {
 				this.curveEditor.xScale = xScale;
 			}
 
-			if(["visibility", "s", "l", "a"].indexOf(curve.name.split(".").pop()) >= 0) {
+			if(["visibility", "s", "l", "a"].indexOf(curve.name.split(":").pop()) >= 0) {
 				curve.minValue = 0;
 				curve.maxValue = 1;
 			}
@@ -1334,7 +1334,7 @@ class FXEditor extends hide.view.FileView {
 	function addTracks(element : PrefabElement, props : Array<PropTrackDef>, ?prefix: String) {
 		var added = [];
 		for(prop in props) {
-			var id = prefix != null ? prefix + "." + prop.name : prop.name;
+			var id = prefix != null ? prefix + ":" + prop.name : prop.name;
 			if(Curve.getCurve(element, id) != null)
 				continue;
 			var curve = new Curve(element,null);
@@ -1379,7 +1379,7 @@ class FXEditor extends hide.view.FileView {
 		function trackItem(name: String, props: Array<PropTrackDef>, ?prefix: String) : hide.comp.ContextMenu.ContextMenuItem {
 			var hasAllTracks = true;
 			for(p in props) {
-				if(getTrack(elt, prefix + "." + p.name) == null)
+				if(getTrack(elt, prefix + ":" + p.name) == null)
 					hasAllTracks = false;
 			}
 			return {

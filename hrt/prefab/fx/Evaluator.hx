@@ -17,6 +17,8 @@ class Evaluator {
 
 	public function setAllParameters(params: Array<hrt.prefab.fx.FX.Parameter>) {
 		parameters.clear();
+		if (params == null)
+			return;
 		for (p in params) {
 			parameters[p.name] = p.def;
 		}

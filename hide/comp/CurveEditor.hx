@@ -1315,7 +1315,7 @@ class CurveEditor extends hide.comp.Component {
 					var pts = [];
 
 					// Basic value of xScale is 200
-					var num : Int = Std.int(Math.min(5000, 500 * cast (xScale / 200.0)));
+					var num : Int = Std.int(Math.min(1200, 250 * cast (xScale / 200.0)));
 					pts.resize(num);
 					var v = curve.makeVal();
 					if (v == null) throw "wtf";

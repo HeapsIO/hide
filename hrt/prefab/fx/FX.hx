@@ -56,6 +56,11 @@ class FXAnimation extends h3d.scene.Object {
 		initEmitters(root);
 		hrt.prefab.fx.BaseFX.BaseFXTools.getShaderAnims(root, shaderAnims);
 		if(shaderAnims.length == 0) shaderAnims = null;
+		else {
+			for (a in shaderAnims) {
+				a.parameters = evaluator.parameters;
+			}
+		}
 		events = initEvents(root, events);
 		var root = hrt.prefab.fx.BaseFX.BaseFXTools.getFXRoot(def);
 		initConstraints(root != null ? root : def);
@@ -76,13 +81,16 @@ class FXAnimation extends h3d.scene.Object {
 		}
 	}
 
+	public function setParameter(name: String, value: Dynamic) {
+		evaluator.parameters[name] = value;
+	}
+
 	public function setParameters(params: Array<Parameter>) {
 		evaluator.parameters.clear();
+		if (params == null)
+			return;
 		for (p in params) {
 			evaluator.parameters[p.name] = p.def;
-		}
-		for (a in shaderAnims) {
-			a.setAllParameters(params);
 		}
 	}
 
@@ -474,7 +482,7 @@ class FX extends Object3D implements BaseFX {
 	@:s public var markers : Array<{t: Float}> = [];
 	@:c public var blendFactor : Float;
 
-	@:s public var parameters : Array<Parameter>;
+	@:s public var parameters : Array<Parameter> = [];
 
 	#if editor
 	static var identRegex = ~/^[A-Za-z_][A-Za-z0-9_]*$/;

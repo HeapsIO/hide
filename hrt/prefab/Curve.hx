@@ -91,8 +91,8 @@ class Curve extends Prefab {
 			addKey(0.0, 0.0);
 			addKey(1.0, 1.0);
 		}
-		#if editor
 		name = StringTools.replace(name, ".", ":");
+		#if editor
 		if (Std.downcast(parent, Curve) != null) {
 			if (StringTools.startsWith(name, parent.name)) {
 				name = StringTools.replace(name, parent.name + ":", "");
@@ -467,7 +467,7 @@ class Curve extends Prefab {
 		var ret = null;
 		for(c in parent.children) {
 			if(!c.enabled) continue;
-			var idx = c.name.indexOf(".");
+			var idx = c.name.indexOf(":");
 			var curvePrefix = (idx >= 0) ? c.name.substr(0, idx) : c.name;
 			if(curvePrefix != prefix)
 				continue;
@@ -482,7 +482,7 @@ class Curve extends Prefab {
 	public static function getGroups(curves: Array<Curve>) {
 		var groups : Array<{name: String, items: Array<Curve>}> = [];
 		for(c in curves) {
-			var prefix = c.name.split(".")[0];
+			var prefix = c.name.split(":")[0];
 			var g = groups.find(g -> g.name == prefix);
 			if(g == null) {
 				groups.push({
