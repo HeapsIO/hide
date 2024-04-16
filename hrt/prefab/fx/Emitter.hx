@@ -385,14 +385,13 @@ class ParticleInstance {
 		y += tmpSpeed.y * dt;
 		z += tmpSpeed.z * dt;
 
-		if(def.orbitSpeed != VZero || def.orbitSpeedOverTime != VZero) {
+		if(def.orbitSpeed != VZero) {
 			evaluator.getVector(idx, def.orbitSpeed, t, tmpLocalSpeed);
+
+			var factorOverTime = evaluator.getFloat(idx, def.orbitSpeedOverTime, emitter.curTime);
+			tmpLocalSpeed.scale3(factorOverTime);
+
 			tmpMat.initRotation(tmpLocalSpeed.x * dt, tmpLocalSpeed.y * dt, tmpLocalSpeed.z * dt);
-
-			evaluator.getVector(idx, def.orbitSpeedOverTime, emitter.curTime, tmpLocalSpeed);
-			tmpMat2.initRotation(tmpLocalSpeed.x * dt, tmpLocalSpeed.y * dt, tmpLocalSpeed.z * dt);
-
-			tmpMat.multiply(tmpMat, tmpMat2);
 
 			// Rotate in emitter space and convert back to world space
 			var parentAbsPos = emitter.parentTransform;
@@ -1413,7 +1412,7 @@ class Emitter extends Object3D {
 		{ name: "instStartSpeed",      		t: PVec(3, -10, 10),  def: [0.,0.,0.], disp: "Start Speed",groupName: "Particle Movement"},
 		{ name: "instStartWorldSpeed", 		t: PVec(3, -10, 10),  def: [0.,0.,0.], disp: "Start World Speed",groupName: "Particle Movement"},
 		{ name: "instOrbitSpeed", 			t: PVec(3, -10, 10),  def: [0.,0.,0.], disp: "Orbit Speed", groupName: "Particle Movement"},
-		{ name: "instOrbitSpeedOverTime", 			t: PVec(3, -10, 10),  def: [0.,0.,0.], disp: "Orbit Speed over time", groupName: "Particle Movement"},
+		{ name: "instOrbitSpeedOverTime", 			t: PFloat(0, 2.0),  def: 1., disp: "Orbit Speed over time", groupName: "Particle Movement"},
 		{ name: "instAcceleration",			t: PVec(3, -10, 10),  def: [0.,0.,0.], disp: "Acceleration", groupName: "Particle Movement"},
 		{ name: "instMaxVelocity",      			t: PFloat(0, 10.0),    def: 0.,         disp: "Max Velocity", groupName: "Limit Velocity"},
 		{ name: "instDampen",      			t: PFloat(0, 10.0),    def: 0.,         disp: "Dampen", groupName: "Limit Velocity"},
