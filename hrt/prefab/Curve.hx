@@ -31,6 +31,7 @@ enum abstract CurveBlendMode(Int) {
 	var None = 0;
 	var Blend = 1;
 	var RandomBlend = 2;
+	var Reference = 3;
 }
 
 @:build(hrt.prefab.Macros.buildSerializable())
@@ -65,7 +66,12 @@ class Curve extends Prefab {
 	public var lock : Bool = false;
 	public var selected : Bool = false;
 
+	var refCurve : Curve = null;
+
 	function get_duration() {
+		if (blendMode == Reference) {
+			return getRef().duration ?? 0.0;
+		}
 		if(keys.length == 0) return 0.0;
 		if (blendMode == CurveBlendMode.Blend || blendMode == CurveBlendMode.RandomBlend) {
 			var c1:Curve = cast this.children[0];
@@ -75,7 +81,7 @@ class Curve extends Prefab {
 		return keys[keys.length-1].time;
 	}
 
-	   public function new(parent, shared: ContextShared) {
+	public function new(parent, shared: ContextShared) {
 		super(parent, shared);
 	}
 
@@ -91,48 +97,9 @@ class Curve extends Prefab {
 		super.copy(o);
 	}
 
-	// public override function copy(o:Prefab) {
-	// 	super.copy(o);
-	// 	var p = Std.downcast(o, Curve);
-
-	// 	keys = p.keys;
-	// 	keys = [];
-	// 	if(o.keys != null) {
-	// 		for(k in (o.keys: Array<Dynamic>)) {
-	// 			var nk = new CurveKey();
-	// 			nk.time = k.time;
-	// 			nk.value = k.value;
-	// 			nk.mode = k.mode;
-	// 			if(k.prevHandle != null)
-	// 				nk.prevHandle = new CurveHandle(k.prevHandle.dt, k.prevHandle.dv);
-	// 			if(k.nextHandle != null)
-	// 				nk.nextHandle = new CurveHandle(k.nextHandle.dt, k.nextHandle.dv);
-	// 			keys.push(nk);
-	// 		}
-	// 	}
-	// 	if( keys.length == 0 ) {
-	// 		addKey(0.0, 0.0);
-	// 		addKey(1.0, 1.0);
-	// 	}
-	// }
-
-	// public override function save(to : Dynamic) {
-	// 	var to = super.save(to);
-	// 	var obj = to;
-	// 	var keysDat = [];
-	// 	for(k in keys) {
-	// 		var o = {
-	// 			time: k.time,
-	// 			value: k.value,
-	// 			mode: k.mode
-	// 		};
-	// 		if(k.prevHandle != null) Reflect.setField(o, "prevHandle", { dv: k.prevHandle.dv, dt: k.prevHandle.dt });
-	// 		if(k.nextHandle != null) Reflect.setField(o, "nextHandle", { dv: k.nextHandle.dv, dt: k.nextHandle.dt });
-	// 		keysDat.push(o);
-	// 	}
-	// 	obj.keys = keysDat;
-	// 	return to;
-	// }
+	override function makeInstance() {
+		refCurve = null;
+	}
 
 	static inline function bezier(c0: Float, c1:Float, c2:Float, c3: Float, t:Float) {
 		var u = 1 - t;
@@ -180,6 +147,9 @@ class Curve extends Prefab {
 	}
 
 	public function getBounds(bounds: h2d.col.Bounds = null) {
+		if (blendMode == Reference) {
+			return getRef()?.getBounds(bounds) ?? bounds ?? new h2d.col.Bounds();
+		}
 		var ret = bounds == null ? new h2d.col.Bounds() : bounds;
 
 		// We always want to show 0,0
@@ -198,6 +168,14 @@ class Curve extends Prefab {
 		return ret;
 	}
 
+	function getRef() : Null<Curve> {
+		if (refCurve != null)
+			return refCurve;
+		var root = getRoot(false);
+		refCurve = Std.downcast(root.locatePrefab(blendParam), Curve);
+		return refCurve;
+	}
+
 	public function makeVal() : Value {
 		switch(blendMode) {
 			case None:
@@ -206,13 +184,17 @@ class Curve extends Prefab {
 				return VBlend(Std.downcast(this.children[0], Curve).makeVal(), Std.downcast(this.children[1], Curve).makeVal(), blendParam);
 			case RandomBlend:
 				return VCurve(this);
+			case Reference:
+				return getRef()?.makeVal() ?? VConst(0.0);
 			default:
-				throw "what";
+				throw "invalid blendMode value";
 		}
-		throw "unrechable";
 	}
 
 	public function getVal(time: Float) : Float {
+		if (blendMode == Reference) {
+			throw "getVal shoudln't be called on curves with Reference mode";
+		}
 		switch(keys.length) {
 			case 0: return 0;
 			case 1: return keys[0].value;
@@ -278,6 +260,9 @@ class Curve extends Prefab {
 	}
 
 	public function getSum(time: Float) : Float {
+		if (blendMode == Reference) {
+			return getRef()?.getSum(time) ?? 0.0;
+		}
 		var duration = keys[keys.length-1].time;
 		if(loop && time > duration) {
 			var cycles = Math.floor(time / duration);
@@ -318,6 +303,9 @@ class Curve extends Prefab {
 	}
 
 	public function sample(numPts: Int) {
+		if (blendMode == Reference) {
+			return getRef()?.sample(numPts) ?? [];
+		}
 		var vals = [];
 
 		var duration = this.duration;
@@ -342,10 +330,16 @@ class Curve extends Prefab {
 						<option value="0">None</option>
 						<option value="1">Blend curve</option>
 						<option value="2">Random between two curves</option>
+						<option value="3">Curve Reference</option>
 					</select>
 				</dd>
 				<div id="parameter">
 					<dt>Parameter</dt><dd>
+					<select field="blendParam"></select>
+					</dd>
+				</div>
+				<div id="reference">
+					<dt>Curve Path</dt><dd>
 					<select field="blendParam"></select>
 					</dd>
 				</div>
@@ -356,11 +350,11 @@ class Curve extends Prefab {
 
 		var refreshBlend = function() {
 			var parameter = props.find('#parameter');
-			var selecta = props.find('[field="blendParam"]');
 			if (blendMode != Blend) {
 				parameter.hide();
 			}
 			else {
+				var selecta = parameter.find('[field="blendParam"]');
 				parameter.show();
 				selecta.empty();
 				var root = Std.downcast(getRoot(false), hrt.prefab.fx.FX);
@@ -369,18 +363,42 @@ class Curve extends Prefab {
 				}
 				selecta.val(blendParam);
 			}
+
+			var reference = props.find('#reference');
+			if (blendMode != Reference) {
+				reference.hide();
+			}
+			else {
+				var selecta = reference.find('[field="blendParam"]');
+				reference.show();
+				selecta.empty();
+				var root = getRoot(false);
+				var flat = root.flatten(Curve);
+				for (p in flat) {
+					var path = p.getAbsPath();
+					selecta.append(new hide.Element('<option value="${path}">${path}</option>'));
+				}
+				selecta.val(blendParam);
+			}
 		}
 
 		refreshBlend();
+
+
+
 		blendModeSelect.val(Std.string(blendMode));
 		blendModeSelect.change((_) -> {
 			var val = blendModeSelect.val();
 			blendMode = cast Std.parseInt(val);
+			blendParam = null;
 			refreshBlend();
 			ctx.onChange(this, "blendMode");
 		});
 
 		ctx.properties.add(props, this, function(pname) {
+			if (pname == "blendParam") {
+				refCurve = null;
+			}
 			refreshBlend();
 			ctx.onChange(this, pname);
 		});

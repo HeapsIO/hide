@@ -174,17 +174,29 @@ private class FXSceneEditor extends hide.comp.SceneEditor {
 
 		var asCurve = Std.downcast(p, Curve);
 		if (asCurve != null) {
-			if (asCurve.blendMode == Blend) {
+			if (asCurve.blendMode == Blend || asCurve.blendMode == Reference) {
 				var paramName = asCurve.blendParam;
-				var fx = Std.downcast(this.parent.data, hrt.prefab.fx.FX);
-				if (fx == null) {
-					return;
-				}
-				var param = fx.parameters.find(function (p) {return p.name == paramName;});
+				var color = 0xFFFFFF;
+				var missing = false;
+				if (asCurve.blendMode == Blend) {
+					var fx = Std.downcast(this.parent.data, hrt.prefab.fx.FX);
+					if (fx == null) {
+						return;
+					}
+					var param = fx.parameters.find(function (p) {return p.name == paramName;});
 
-				var color = param?.color ?? 0xFF0000;
-				var colorCode = StringTools.hex(color, 6);
-				var paramEl = el.find('.fx-parameter');
+					color = param?.color;
+
+				}
+				else {
+					var ref = (cast this.parent.data: hrt.prefab.Prefab).locatePrefab(asCurve.blendParam);
+					if (ref == null) {
+						missing = true;
+					}
+				}
+
+				var colorCode = StringTools.hex(missing ? 0xFF0000 : color, 6);
+				var paramEl = el.find('>a>.fx-parameter');
 				if (paramEl.length == 0 ){
 					var v = new Element('<span class="fx-parameter"><i class="ico ico-link"></i><span class="fx-param-name"></span></span>');
 					el.find("a").first().append(v);
@@ -193,7 +205,7 @@ private class FXSceneEditor extends hide.comp.SceneEditor {
 				var paramNameEl = paramEl.find(".fx-param-name");
 				paramNameEl.get(0).innerText = '$paramName';
 				paramEl.css("color", '#$colorCode');
-				paramEl.toggleClass("missing", param == null);
+				paramEl.toggleClass("missing", missing);
 			}
 			else {
 				el.find(".fx-parameter").remove();

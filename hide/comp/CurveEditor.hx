@@ -1552,7 +1552,7 @@ class CurveEditor extends hide.comp.Component {
 
 			// Blend curve are controlled with parent curve
 			// so we don't want to allow user to use keys on this.s
-			if (curve.blendMode != CurveBlendMode.Blend && curve.blendMode != CurveBlendMode.RandomBlend)
+			if (curve.blendMode == CurveBlendMode.None)
 				drawKeys(curve, keyStyle);
 		}
 

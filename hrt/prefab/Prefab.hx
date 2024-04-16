@@ -666,6 +666,30 @@ class Prefab {
 		return root;
 	}
 
+	/**
+		Finds a prefab by folowing a dot separated path like this one : `parent.child.grandchild`.
+		Returns null if the path is invalid or does not match any prefabs in the hierarchy
+	**/
+	function locatePrefab(path: String) : Null<Prefab> {
+		if (path == null)
+			return null;
+		var parts = path.split(".");
+		var p = this;
+		while (parts.length > 0 && p != null) {
+			var name = parts.shift();
+			var found = null;
+			for (o in p.children) {
+				if (o.name == name)
+				{
+					found = o;
+					break;
+				}
+			}
+			p = found;
+		}
+		return p;
+	}
+
 	function shouldBeInstanciated() : Bool {
 		if (!enabled) return false;
 
