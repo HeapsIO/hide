@@ -160,7 +160,6 @@ class BaseFXTools {
 					var base = 1.0;
 					if(Std.isOfType(prop, Float) || Std.isOfType(prop, Int))
 						base = cast prop;
-					trace(base);
 					var curve = Curve.getCurve(shaderElt, v.name);
 					var val = Value.VConst(base);
 					if(curve != null)
