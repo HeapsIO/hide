@@ -3170,7 +3170,7 @@ div.gradient-box {
   vertical-align: bottom;
   text-overflow: clip;
 }
-.fx-parameter.missing {
+.fx-parameter.missing .fx-param-name {
   text-decoration: line-through;
 }
 .settings {
