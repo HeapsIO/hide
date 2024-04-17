@@ -285,7 +285,7 @@ class Prefab extends hide.view.FileView {
 									</div>
 								</div>
 								<div class="hide-scenetree"></div>
-							<div>
+							</div>
 						</div>
 					</div>
 

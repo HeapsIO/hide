@@ -167,8 +167,8 @@ private class FXSceneEditor extends hide.comp.SceneEditor {
 
 
 
-	override function applyTreeStyle(p: PrefabElement, el: Element, ?pname: String) {
-		super.applyTreeStyle(p, el, pname);
+	override function applyTreeStyle(p: PrefabElement, el: Element, ?pname: String, ?tree: hide.comp.IconTree<PrefabElement>) {
+		super.applyTreeStyle(p, el, pname, tree);
 		if (el == null)
 			return;
 
@@ -378,6 +378,11 @@ class FXEditor extends hide.view.FileView {
 	override function save() {
 		if( !canSave() )
 			return;
+
+		// Save render props
+		if (Ide.inst.currentConfig.get("sceneeditor.renderprops.edit", false) && sceneEditor.renderPropsRoot != null)
+			sceneEditor.renderPropsRoot.save();
+
 		@:privateAccess var content = ide.toJSON(cast(data, hrt.prefab.Prefab).serialize());
 		var newSign = ide.makeSignature(content);
 		if(newSign != currentSign)
@@ -426,6 +431,15 @@ class FXEditor extends hide.view.FileView {
 								</div>
 							</div>
 							<div class="hide-scenetree"></div>
+							<div class="render-props-edition">
+								<div class="hide-toolbar">
+									<div class="toolbar-label">
+										<div class="icon ico ico-sun-o"></div>
+										Render props
+									</div>
+								</div>
+								<div class="hide-scenetree"></div>
+							</div>
 						</div>
 					</div>
 					<div class="tabs">
@@ -446,6 +460,7 @@ class FXEditor extends hide.view.FileView {
 		var tabs = new hide.comp.Tabs(null,element.find(".tabs"));
 		sceneEditor = new FXSceneEditor(this, cast(data, hrt.prefab.Prefab));
 		element.find(".hide-scenetree").first().append(sceneEditor.tree.element);
+		element.find(".render-props-edition").find('.hide-scenetree').append(sceneEditor.renderPropsTree.element);
 		element.find(".hide-scroll").first().append(sceneEditor.properties.element);
 		element.find(".heaps-scene").first().append(sceneEditor.scene.element);
 
@@ -525,11 +540,15 @@ class FXEditor extends hide.view.FileView {
 
 		currentVersion = undo.currentID;
 		sceneEditor.tree.element.addClass("small");
+		sceneEditor.renderPropsTree.element.addClass("small");
 
 		selectMin = 0.0;
 		selectMax = 0.0;
 		previewMin = 0.0;
 		previewMax = data.duration == 0 ? 5000 : data.duration;
+
+		var rpEditionvisible = Ide.inst.currentConfig.get("sceneeditor.renderprops.edit", false);
+		setRenderPropsEditionVisibility(rpEditionvisible);
 	}
 
 	function refreshLayout() {
@@ -542,6 +561,8 @@ class FXEditor extends hide.view.FileView {
 			refreshLayout();
 		if (tools != null)
 			tools.refreshToggles();
+
+		setRenderPropsEditionVisibility(Ide.inst.currentConfig.get("sceneeditor.renderprops.edit", false));
 	}
 	public function onSceneReady() {
 		light = sceneEditor.scene.s3d.find(function(o) return Std.downcast(o, h3d.scene.fwd.DirLight));
@@ -1748,6 +1769,17 @@ class FXEditor extends hide.view.FileView {
 			@:privateAccess this.curveEditor.currentTime = value;
 
 		return this.currentTime = value;
+	}
+
+	public function setRenderPropsEditionVisibility(visible : Bool) {
+		var renderPropsEditionEl = this.element.find('.render-props-edition');
+
+		if (!visible) {
+			renderPropsEditionEl.css({ display : 'none' });
+			return;
+		}
+
+		renderPropsEditionEl.css({ display : 'block' });
 	}
 
 	function get_currentTime():Float {
