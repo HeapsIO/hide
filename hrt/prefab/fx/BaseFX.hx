@@ -197,7 +197,7 @@ class BaseFXTools {
 			var perInstance = batch.instancedParams;
 			if ( perInstance == null ) {
 				perInstance = new hxsl.Cache.BatchInstanceParams([]);
-					batch.instancedParams = perInstance;
+				batch.instancedParams = perInstance;
 			}
 			perInstance.forcedPerInstance.push({
 				shader: shader.shader.data.name,
