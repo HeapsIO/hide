@@ -63,6 +63,14 @@ class Reference extends Object3D {
 	override function makeInstance() {
 		if( source == null )
 			return;
+		#if editor
+		if (hasCycle()) {
+			hide.Ide.inst.quickMessage('Reference $name to $source was creating a cycle. Removed');
+			source = null;
+			refInstance = null;
+		}
+		#end
+
 		var p = resolveRef();
 		var refLocal3d : h3d.scene.Object = null;
 
@@ -136,6 +144,31 @@ class Reference extends Object3D {
 
 	#if editor
 
+	public function hasCycle(?seenPaths: Map<String, Bool>) : Bool {
+		var oldEditMode = editMode;
+		editMode = false;
+		seenPaths = seenPaths?.copy() ?? [];
+		if (source != null) {
+			if (seenPaths.get(source) != null) {
+				editMode = oldEditMode;
+				return true;
+			}
+			seenPaths.set(source, true);
+			var ref = resolveRef();
+			if (ref != null) {
+				var allRefs = ref.flatten(Reference);
+				for (r in allRefs) {
+					if (r.hasCycle(seenPaths)){
+						editMode = oldEditMode;
+						return true;
+					}
+				}
+			}
+		}
+		editMode = oldEditMode;
+		return false;
+	}
+
 	override function makeInteractive() {
 		if( editMode )
 			return null;
@@ -161,6 +194,10 @@ class Reference extends Object3D {
 		var props = ctx.properties.add(element, this, function(pname) {
 			ctx.onChange(this, pname);
 			if(pname == "source" || pname == "editMode") {
+				if (hasCycle()) {
+					hide.Ide.inst.quickMessage('Reference to $source would create a cycle. Canceling.');
+					source = null;
+				}
 				refInstance = null;
 				updateProps();
 				if(!ctx.properties.isTempChange)
