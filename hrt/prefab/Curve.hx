@@ -88,6 +88,9 @@ class Curve extends Prefab {
 	}
 
 	public override function load(o:Dynamic) {
+		if (o.blendMode != null && !Std.isOfType(o.blendMode, Int)) {
+			o.blendMode = Std.parseInt(o.blendMode);
+		}
 		super.load(o);
 		if( keys.length == 0 ) {
 			addKey(0.0, 0.0);
