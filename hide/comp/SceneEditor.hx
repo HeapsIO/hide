@@ -652,8 +652,13 @@ class RenderPropsPopup extends Popup {
 		}
 
 		// Render props edition parameter for prefab, fx and model view
-		var view : Dynamic = Std.downcast(view, hide.view.Prefab)??Std.downcast(view, hide.view.Model)??Std.downcast(view, hide.view.FXEditor);
-		if (view != null) {
+		var tmpView : Dynamic = cast Std.downcast(view, hide.view.Prefab);
+		if (tmpView == null)
+			tmpView = cast Std.downcast(view, hide.view.Model);
+		if (tmpView == null)
+			tmpView = cast Std.downcast(view, hide.view.FXEditor);
+
+		if (tmpView != null) {
 			var rpEditionEl = new Element('<div><input type="checkbox" id="cb-rp-edition"/><label>Edit render props</label></div>').insertBefore(popup.children().first());
 			var cb = rpEditionEl.find('input');
 			cb.prop('checked', Ide.inst.currentConfig.get("sceneeditor.renderprops.edit", false));
@@ -661,7 +666,7 @@ class RenderPropsPopup extends Popup {
 				var v = cb.prop('checked');
 				Ide.inst.currentConfig.set("sceneeditor.renderprops.edit", v);
 
-				view.setRenderPropsEditionVisibility(v);
+				tmpView.setRenderPropsEditionVisibility(v);
 			});
 
 			rpEditionEl.find('label').css({ 'padding-left' : '8px' });
