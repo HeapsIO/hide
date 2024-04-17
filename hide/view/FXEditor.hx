@@ -380,10 +380,8 @@ class FXEditor extends hide.view.FileView {
 			return;
 
 		// Save render props
-		if (Ide.inst.currentConfig.get("sceneeditor.renderprops.edit", false) && sceneEditor.renderPropsRoot != null) {
+		if (Ide.inst.currentConfig.get("sceneeditor.renderprops.edit", false) && sceneEditor.renderPropsRoot != null)
 			sceneEditor.renderPropsRoot.save();
-			Ide.inst.quickMessage("Render props saved!");
-		}
 
 		@:privateAccess var content = ide.toJSON(cast(data, hrt.prefab.Prefab).serialize());
 		var newSign = ide.makeSignature(content);

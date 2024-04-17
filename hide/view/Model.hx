@@ -34,13 +34,12 @@ class Model extends FileView {
 	var highlightSelection : Bool = true;
 
 	override function save() {
-		// Save render props
-		if (Ide.inst.currentConfig.get("sceneeditor.renderprops.edit", false) && sceneEditor.renderPropsRoot != null) {
-			sceneEditor.renderPropsRoot.save();
-			Ide.inst.quickMessage("Render props saved!");
-		}
 
 		if(!modified) return;
+
+		// Save render props
+		if (Ide.inst.currentConfig.get("sceneeditor.renderprops.edit", false) && sceneEditor.renderPropsRoot != null)
+			sceneEditor.renderPropsRoot.save();
 
 		// Save current Anim data
 		if( currentAnimation != null ) {
@@ -677,8 +676,6 @@ class Model extends FileView {
 			if (this.light != null)
 				lightDirection = this.light.getLocalDirection();
 		}
-
-		undo.onChange = function() {};
 
 		if (obj != null) {
 			for (m in this.obj.getMeshes()) {
