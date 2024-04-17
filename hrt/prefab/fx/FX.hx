@@ -630,9 +630,21 @@ class FX extends Object3D implements BaseFX {
 
 						var old = p.name;
 						var fn = function(isUndo: Bool) {
-							p.name = isUndo ? old : v;
+							var from = isUndo ? v : old;
+							var to = isUndo ? old : v;
+							p.name = to;
+
+							// rename all curves that used this param as a blendParam
+							var curves = flatten(Curve);
+							for (c in curves) {
+								if (c.blendMode == Blend && c.blendParam == from) {
+									c.blendParam = to;
+								}
+							}
+
 							editable.value = p.name;
 							ctx.onChange(this, "parameters");
+							ctx.rebuildPrefab(this);
 						}
 						ctx.properties.undo.change(Custom(fn));
 						fn(false);
