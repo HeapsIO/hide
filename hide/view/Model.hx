@@ -34,7 +34,14 @@ class Model extends FileView {
 	var highlightSelection : Bool = true;
 
 	override function save() {
+		// Save render props
+		if (Ide.inst.currentConfig.get("sceneeditor.renderprops.edit", false) && sceneEditor.renderPropsRoot != null) {
+			sceneEditor.renderPropsRoot.save();
+			Ide.inst.quickMessage("Render props saved!");
+		}
+
 		if(!modified) return;
+
 		// Save current Anim data
 		if( currentAnimation != null ) {
 			var hideData = loadProps();
@@ -99,8 +106,14 @@ class Model extends FileView {
 					<div class="tabs">
 						<div class="tab expand" name="Model" icon="sitemap">
 							<div class="hide-block">
-							<input type="button" style="width:312px" value="Save render props"/>
-								<div class="hide-scene-tree hide-list">
+							<div class="render-props-edition">
+								<div class="hide-toolbar">
+									<div class="toolbar-label">
+										<div class="icon ico ico-sun-o"></div>
+										Render props
+									</div>
+								</div>
+								<div class="hide-scenetree"></div>
 								</div>
 							</div>
 							<div class="props hide-scroll">
@@ -140,27 +153,23 @@ class Model extends FileView {
 		});
 
 		element.find(".hide-scene-tree").first().append(sceneEditor.tree.element);
+		element.find(".render-props-edition").find('.hide-scenetree').append(sceneEditor.renderPropsTree.element);
 		element.find(".props").first().append(sceneEditor.properties.element);
 		element.find(".heaps-scene").first().append(sceneEditor.scene.element);
 		sceneEditor.view.keys.register("sceneeditor.focus", {name: "Focus Selection", category: "Scene"},
 			function() {if (lastSelectedObject != null) refreshSelectionHighlight(lastSelectedObject);});
 		sceneEditor.tree.element.addClass("small");
-		var e = element.find("input[value=\"Save render props\"]");
-		function callback(ev : js.jquery.Event) : Void {
-			if( !canSave() )
-				return;
-			var toSave = root.children[0];
-			@:privateAccess toSave.save();
+		sceneEditor.renderPropsTree.element.addClass("small");
 
-			save();
-		}
-
-		e.on("click", callback);
+		var rpEditionvisible = Ide.inst.currentConfig.get("sceneeditor.renderprops.edit", false);
+		setRenderPropsEditionVisibility(rpEditionvisible);
 	}
 
 	override function onActivate() {
 		if (tools != null)
 			tools.refreshToggles();
+
+		setRenderPropsEditionVisibility(Ide.inst.currentConfig.get("sceneeditor.renderprops.edit", false));
 	}
 
 	inline function get_scene() return sceneEditor.scene;
@@ -1133,6 +1142,17 @@ class Model extends FileView {
 		}
 		if( cameraMove != null )
 			cameraMove();
+	}
+
+	public function setRenderPropsEditionVisibility(visible : Bool) {
+		var renderPropsEditionEl = this.element.find('.render-props-edition');
+
+		if (!visible) {
+			renderPropsEditionEl.css({ display : 'none' });
+			return;
+		}
+
+		renderPropsEditionEl.css({ display : 'block' });
 	}
 
 	static var _ = FileTree.registerExtension(Model,["hmd","fbx"],{ icon : "cube" });
