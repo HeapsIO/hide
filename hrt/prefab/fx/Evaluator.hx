@@ -73,7 +73,7 @@ class Evaluator {
 				return getSum(a, time) + getSum(b, time);
 			case VMult(a, VConst(b)): return getSum(a, time) * b;
 			case VZero: return 0;
-			default: throw "Not implemented";
+			default: return 0.0;
 		}
 		return 0.0;
 	}
