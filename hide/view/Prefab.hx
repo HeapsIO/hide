@@ -72,8 +72,8 @@ class PrefabSceneEditor extends hide.comp.SceneEditor {
 		parent.onSceneReady();
 	}
 
-	override function applyTreeStyle(p: PrefabElement, el: Element, ?pname: String) {
-		super.applyTreeStyle(p, el, pname);
+	override function applyTreeStyle(p: PrefabElement, el: Element, ?pname: String, ?tree: hide.comp.IconTree<PrefabElement>) {
+		super.applyTreeStyle(p, el, pname, tree);
 		parent.applyTreeStyle(p, el, pname);
 	}
 
@@ -275,8 +275,17 @@ class Prefab extends hide.view.FileView {
 									<div class="icon ico ico-chevron-right"></div>
 								</div>
 							</div>
-
 							<div class="hide-scenetree"></div>
+
+							<div class="render-props-edition">
+								<div class="hide-toolbar">
+									<div class="toolbar-label">
+										<div class="icon ico ico-sun-o"></div>
+										Render props
+									</div>
+								</div>
+								<div class="hide-scenetree"></div>
+							<div>
 						</div>
 					</div>
 
@@ -306,6 +315,7 @@ class Prefab extends hide.view.FileView {
 
 		createEditor();
 		element.find(".hide-scenetree").first().append(sceneEditor.tree.element);
+		element.find(".render-props-edition").find('.hide-scenetree').append(sceneEditor.renderPropsTree.element);
 		element.find(".hide-scroll").first().append(properties.element);
 		element.find(".heaps-scene").first().append(scene.element);
 
@@ -315,6 +325,7 @@ class Prefab extends hide.view.FileView {
 		resizablePanel.onResize = () -> @:privateAccess if( scene.window != null) scene.window.checkResize();
 
 		sceneEditor.tree.element.addClass("small");
+		sceneEditor.renderPropsTree.element.addClass("small");
 
 		refreshColLayout();
 		element.find(".combine-btn").first().click((_) -> setCombine(true));
@@ -326,6 +337,9 @@ class Prefab extends hide.view.FileView {
 		element.find(".collapse-btn").click(function(e) {
 			sceneEditor.collapseTree();
 		});
+
+		var rpEditionvisible = Ide.inst.currentConfig.get("sceneeditor.renderprops.edit", false);
+		setRenderPropsEditionVisibility(rpEditionvisible);
 
 		keys.register("sceneeditor.toggleLayout", () -> {
 			if( element.find(".tree-column").first().css('display') == 'none' )
@@ -370,6 +384,8 @@ class Prefab extends hide.view.FileView {
 			refreshColLayout();
 		if (tools != null)
 			tools.refreshToggles();
+
+		setRenderPropsEditionVisibility(Ide.inst.currentConfig.get("sceneeditor.renderprops.edit", false));
 	}
 
 	public function hideColumns(?_) {
@@ -573,6 +589,10 @@ class Prefab extends hide.view.FileView {
 		if( !canSave() )
 			return;
 
+		// Save render props
+		if (Ide.inst.currentConfig.get("sceneeditor.renderprops.edit", false) && sceneEditor.renderPropsRoot != null)
+			sceneEditor.renderPropsRoot.save();
+
 		@:privateAccess var content = ide.toJSON(data.serialize());
 		var newSign = ide.makeSignature(content);
 		if(newSign != currentSign)
@@ -678,8 +698,7 @@ class Prefab extends hide.view.FileView {
 		return sceneEditor.onDragDrop(items, isDrop);
 	}
 
-	function applyGraphicsFilter(typeid: String, enable: Bool)
-	{
+	function applyGraphicsFilter(typeid: String, enable: Bool) {
 		saveDisplayState("graphicsFilters/" + typeid, enable);
 
 		var r : h3d.scene.Renderer = scene.s3d.renderer;
@@ -868,7 +887,16 @@ class Prefab extends hide.view.FileView {
 		}
 	}
 
+	public function setRenderPropsEditionVisibility(visible : Bool) {
+		var renderPropsEditionEl = this.element.find('.render-props-edition');
 
+		if (!visible) {
+			renderPropsEditionEl.css({ display : 'none' });
+			return;
+		}
+
+		renderPropsEditionEl.css({ display : 'block' });
+	}
 
 	function getDisplayColor(p: PrefabElement) : Null<Int> {
 		var typeId = p.getCdbType();
