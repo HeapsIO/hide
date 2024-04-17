@@ -34,7 +34,7 @@ class GPUEmitterObject extends h3d.scene.MeshBatch {
 
 	public function new(data, primitive, materials, ?parent) {
 		super(primitive, null, parent);
-		allowGpuUpdate = true;
+		this.meshBatchFlags.set(EnableGpuUpdate);
 		if ( materials != null )
 			this.materials = materials;
 		propsShader = new PropsShader();
@@ -91,7 +91,7 @@ class GPUEmitterObject extends h3d.scene.MeshBatch {
 					if ( computeUtils != null )
 						computeUtils.onUpdate(this, b, i);
 				}
-	
+
 				for ( s in simulationPass.getShaders() ) {
 					var computeUtils = Std.downcast(s, ComputeUtils);
 					if ( computeUtils != null )
@@ -127,13 +127,13 @@ class GPUEmitter extends Object3D {
 		return h3d.prim.Cube.defaultUnitCube();
 	}
 
-	@:s var maxCount : Int = 512; 
-	@:s var minLifeTime : Float = 0.5; 
+	@:s var maxCount : Int = 512;
+	@:s var minLifeTime : Float = 0.5;
 	@:s var maxLifeTime : Float = 5.0;
-	@:s var gravity : Float = 1.0; 
-	@:s var radius : Float = 1.0; 
-	@:s var startSpeed : Float = 1.0; 
-	@:s var infinite : Bool = false; 
+	@:s var gravity : Float = 1.0;
+	@:s var radius : Float = 1.0;
+	@:s var startSpeed : Float = 1.0;
+	@:s var infinite : Bool = false;
 
 	override function makeObject(parent3d : h3d.scene.Object) {
 		return new h3d.scene.Object(parent3d);
@@ -199,7 +199,7 @@ class GPUEmitter extends Object3D {
 		super.updateInstance(propName);
 		updateEmitters();
 	}
-		
+
 	#if editor
 	override function setSelected(b : Bool) {
 		return false;
@@ -209,7 +209,7 @@ class GPUEmitter extends Object3D {
 		return { icon : "asterisk",
 		name : "GPUEmitter",
 		allowParent : function(p) return p.to(FX) != null || p.findParent(FX) != null,
-		onChildUpdate : function(p : hrt.prefab.Prefab) return updateEmitters(), 
+		onChildUpdate : function(p : hrt.prefab.Prefab) return updateEmitters(),
 		};
 	}
 
