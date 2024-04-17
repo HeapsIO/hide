@@ -24,8 +24,6 @@ class FXAnimation extends h3d.scene.Object {
 	public var cullingRadius : Float;
 	public var cullingDistance = defaultCullingDistance;
 
-	public var blendFactor: Float;
-
 	public var objAnims: Array<ObjectAnimation>;
 	public var events: Array<hrt.prefab.fx.Event.EventInstance>;
 	public var emitters : Array<hrt.prefab.fx.Emitter.EmitterObject>;
@@ -364,7 +362,7 @@ class FXAnimation extends h3d.scene.Object {
 				return scale != 1.0 ? VMult(curves[0].makeVal(), VConst(scale)) : curves[0].makeVal();
 			}
 
-			return Curve.getVectorValue(curves, defVal, scale, blendFactor);
+			return Curve.getVectorValue(curves, defVal, scale);
 		}
 
 		function makeColor(name: String) {
@@ -480,7 +478,6 @@ class FX extends Object3D implements BaseFX {
 	@:c public var scriptCode : String;
 	@:s public var cullingRadius : Float;
 	@:s public var markers : Array<{t: Float}> = [];
-	@:c public var blendFactor : Float;
 
 	@:s public var parameters : Array<Parameter> = [];
 
@@ -498,7 +495,6 @@ class FX extends Object3D implements BaseFX {
 		super(parent, contextShared);
 		duration = 5.0;
 		cullingRadius = 3.0;
-		blendFactor = 1.0;
 	}
 
 	override function make( ?sh:hrt.prefab.Prefab.ContextMake) : Prefab  {
@@ -520,7 +516,6 @@ class FX extends Object3D implements BaseFX {
 		var fxanim = createInstance(parent3d);
 		fxanim.duration = duration;
 		fxanim.cullingRadius = cullingRadius;
-		fxanim.blendFactor = blendFactor;
 
 		var p = fxanim.parent;
 		while(p != null) {
@@ -554,7 +549,6 @@ class FX extends Object3D implements BaseFX {
 		var fxanim = Std.downcast(local3d, FXAnimation);
 		fxanim.duration = duration;
 		fxanim.cullingRadius = cullingRadius;
-		fxanim.blendFactor = blendFactor;
 
 		fxanim.setParameters(parameters);
 	}
@@ -577,7 +571,6 @@ class FX extends Object3D implements BaseFX {
 				<dl>
 					<dt>Duration</dt><dd><input type="number" value="0" field="duration"/></dd>
 					<dt>Culling radius</dt><dd><input type="number" field="cullingRadius"/></dd>
-					<dt>Blend factor</dt><dd><input type="range" field="blendFactor" min="0" max="1"/></dd>
 				</dl>
 			</div>');
 		ctx.properties.add(props, this, function(pname) {

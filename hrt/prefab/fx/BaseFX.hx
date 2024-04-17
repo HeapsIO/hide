@@ -113,7 +113,6 @@ interface BaseFX {
 	@:s public var startDelay : Float;
 	@:c public var scriptCode : String;
 	@:c public var cullingRadius : Float;
-	@:c public var blendFactor : Float;
 	@:s public var markers : Array<{t: Float}>;
 
 	#if editor

@@ -42,7 +42,6 @@ class Evaluator {
 					var a = c1.getVal(time);
 					var b = c2.getVal(time);
 
-					// Remap random from [-1,1]to [0,1] because blendFactor
 					// Should be in [0,1]
 					var rand = getRandom(pidx, ridx);
 					var min = -1;

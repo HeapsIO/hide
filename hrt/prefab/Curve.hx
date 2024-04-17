@@ -513,7 +513,7 @@ class Curve extends Prefab {
 		return curves.find(c -> StringTools.endsWith(c.name, suffix));
 	}
 
-	public static function getVectorValue(curves: Array<Curve>, defVal: Float=0.0, scale: Float=1.0, blendFactor: Float = 1.0, randomValue: Float = 0) : Value {
+	public static function getVectorValue(curves: Array<Curve>, defVal: Float=0.0, scale: Float=1.0, randomValue: Float = 0) : Value {
 		inline function find(s) {
 			return findCurve(curves, s);
 		}

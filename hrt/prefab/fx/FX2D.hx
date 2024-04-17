@@ -168,7 +168,6 @@ class FX2D extends Object2D implements BaseFX {
 	@:c public var scriptCode : String;
 	@:c public var cullingRadius : Float;
 	@:c public var markers : Array<{t: Float}> = [];
-	@:c public var blendFactor : Float;
 
 
 	@:s var loop : Bool = false;
@@ -204,7 +203,7 @@ class FX2D extends Object2D implements BaseFX {
 			if(uniform && curves.length == 1 && curves[0].name == name)
 				return scale != 1.0 ? VMult(curves[0].makeVal(), VConst(scale)) : curves[0].makeVal();
 
-			return Curve.getVectorValue(curves, defVal, scale, blendFactor);
+			return Curve.getVectorValue(curves, defVal, scale);
 		}
 
 		function makeColor(name: String) {
