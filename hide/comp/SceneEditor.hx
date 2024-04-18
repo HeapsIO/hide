@@ -955,7 +955,7 @@ class SceneEditor {
 				tree.editNode(selectedPrefabs[0]);
 		});
 
-		view.keys.register("sceneeditor.focus", {name: "Focus Selection", category: "Scene"}, () -> focusSelection);
+		view.keys.register("sceneeditor.focus", {name: "Focus Selection", category: "Scene"}, function() { focusSelection(tree); });
 		view.keys.register("sceneeditor.lasso", {name: "Lasso Select", category: "Scene"}, startLassoSelect);
 		view.keys.register("sceneeditor.hide", {name: "Hide Selection", category: "Scene"}, function() {
 			if (selectedPrefabs.length > 0) {
@@ -1711,6 +1711,7 @@ class SceneEditor {
 		var onRenameFunc = function(e, name) {
 			var oldName = e.name;
 			e.name = name;
+
 			undo.change(Field(e, "name", oldName), function() {
 				tree.refresh();
 				refreshScene();
