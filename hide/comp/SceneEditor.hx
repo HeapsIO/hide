@@ -3025,7 +3025,7 @@ class SceneEditor {
 				edit.onChange(e, 'props.$pname');
 				var e = Std.downcast(e, Object3D);
 				if( e != null ) {
-					e.addEditorUI(edit);
+					e.addEditorUI();
 				}
 			}
 		}
