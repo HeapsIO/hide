@@ -65,9 +65,9 @@ class Reference extends Object3D {
 			return;
 		#if editor
 		if (hasCycle()) {
-			hide.Ide.inst.quickMessage('Reference $name to $source was creating a cycle. Removed');
-			source = null;
+			hide.Ide.inst.quickError('Reference $name to $source was creating a cycle. Removed');
 			refInstance = null;
+			return;
 		}
 		#end
 
@@ -148,12 +148,14 @@ class Reference extends Object3D {
 		var oldEditMode = editMode;
 		editMode = false;
 		seenPaths = seenPaths?.copy() ?? [];
+		var curPath = this.shared.currentPath;
+		if (seenPaths.get(curPath) != null) {
+			editMode = oldEditMode;
+			return true;
+		}
+		seenPaths.set(curPath, true);
+
 		if (source != null) {
-			if (seenPaths.get(source) != null) {
-				editMode = oldEditMode;
-				return true;
-			}
-			seenPaths.set(source, true);
 			var ref = resolveRef();
 			if (ref != null) {
 				var allRefs = ref.flatten(Reference);
@@ -194,11 +196,13 @@ class Reference extends Object3D {
 		var props = ctx.properties.add(element, this, function(pname) {
 			ctx.onChange(this, pname);
 			if(pname == "source" || pname == "editMode") {
-				if (hasCycle()) {
-					hide.Ide.inst.quickMessage('Reference to $source would create a cycle. Canceling.');
-					source = null;
-				}
 				refInstance = null;
+				if (hasCycle()) {
+					hide.Ide.inst.quickError('Reference to $source would create a cycle. Canceling.');
+					ctx.properties.undo.undo();
+					@:privateAccess ctx.properties.undo.redoElts.pop();
+					return;
+				}
 				updateProps();
 				if(!ctx.properties.isTempChange)
 					ctx.rebuildPrefab(this);
