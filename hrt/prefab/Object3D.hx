@@ -80,7 +80,7 @@ class Object3D extends Prefab {
 		}
 
 		#if editor
-		this.addEditorUI();
+		// this.addEditorUI();
 		#end
 	}
 
