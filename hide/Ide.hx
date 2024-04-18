@@ -588,10 +588,16 @@ class Ide extends hide.tools.IdeData {
 		js.Browser.console.error(e);
 	}
 
-	public function quickError( e : Dynamic ) {
-		var e = new Element('<div class="globalErrorMessage">${StringTools.htmlEscape(Std.string(e))}</div>');
-		e.appendTo(window.window.document.body);
-		haxe.Timer.delay(() -> e.remove(), 5000);
+	public function quickError( msg : Dynamic, timeoutSeconds : Float = 5.0 ) {
+		var e = new Element('
+		<div class="message error">
+			<div class="icon ico ico-warning"></div>
+			<div class="text">${StringTools.htmlEscape(Std.string(msg))}</div>
+		</div>');
+
+		js.Browser.console.error(msg);
+
+		globalMessage(e, timeoutSeconds);
 	}
 
 	override function setProject( dir : String ) {
@@ -1268,17 +1274,42 @@ class Ide extends hide.tools.IdeData {
 			target.addChild(config, index);
 	}
 
-	public function quickMessage( text : String ) {
+	public function globalMessage(element: Element, timeoutSeconds : Float = 5.0) {
+		var body = new Element('body');
+		var messages = body.find("#message-container");
+		if (messages.length == 0) {
+			messages = new Element('<div id="message-container"></div>');
+			body.append(messages);
+		}
+
+		messages.append(element);
+		// envie de prendre le raccourci vers le rez de chaussée la
+
+		haxe.Timer.delay(() -> {
+			element.addClass("show");
+		}, 10);
+
+		if (timeoutSeconds > 0.0) {
+			haxe.Timer.delay(() -> {
+				element.get(0).ontransitionend = function(_){
+					element.remove();
+				};
+				element.removeClass("show");
+
+			}, Std.int(timeoutSeconds * 1000.0));
+		}
+	}
+
+	public function quickMessage( text : String, timeoutSeconds : Float = 5.0 ) {
 		var e = new Element('
-		<div class="quickMessage">
+		<div class="message">
 			<div class="icon ico ico-info-circle"></div>
 			<div class="text">${text}</div>
 		</div>');
 
-		e.appendTo(window.window.document.body);
-		e.css({'left':'${(this.window.width / 2.0) - e.width() / 2}px'});
+		js.Browser.console.log(text);
 
-		haxe.Timer.delay(() -> e.remove(), 5000);
+		globalMessage(e, timeoutSeconds);
 	}
 
 	public function message( text : String ) {
