@@ -1263,7 +1263,7 @@ class CurveEditor extends hide.comp.Component {
 				onChange(false);
 			}
 
-			var xel = popup.find(".x");
+			var xel = popup.find(":x");
 			xel.val(hxd.Math.fmt(key.time));
 			xel.change(function(e) {
 				var f = Std.parseFloat(xel.val());
@@ -1273,7 +1273,7 @@ class CurveEditor extends hide.comp.Component {
 					afterEdit();
 				}
 			});
-			var yel = popup.find(".y");
+			var yel = popup.find(":y");
 			yel.val(hxd.Math.fmt(key.value));
 			yel.change(function(e) {
 				var f = Std.parseFloat(yel.val());

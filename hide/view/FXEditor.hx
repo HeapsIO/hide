@@ -1113,10 +1113,10 @@ class FXEditor extends hide.view.FileView {
 					var c = section.curves[i];
 
 					var curveColor = hide.comp.CurveEditor.CURVE_COLORS[i];
-					if (StringTools.contains(c.name, ".x") || StringTools.contains(c.name, ".h")) curveColor = hide.comp.CurveEditor.CURVE_COLORS[0];
-					if (StringTools.contains(c.name, ".y") || StringTools.contains(c.name, ".s")) curveColor = hide.comp.CurveEditor.CURVE_COLORS[1];
-					if (StringTools.contains(c.name, ".z") || StringTools.contains(c.name, ".l")) curveColor = hide.comp.CurveEditor.CURVE_COLORS[2];
-					if (StringTools.contains(c.name, ".w") || StringTools.contains(c.name, ".a")) curveColor = hide.comp.CurveEditor.CURVE_COLORS[3];
+					if (StringTools.contains(c.name, ":x") || StringTools.contains(c.name, ":h")) curveColor = hide.comp.CurveEditor.CURVE_COLORS[0];
+					if (StringTools.contains(c.name, ":y") || StringTools.contains(c.name, ":s")) curveColor = hide.comp.CurveEditor.CURVE_COLORS[1];
+					if (StringTools.contains(c.name, ":z") || StringTools.contains(c.name, ":l")) curveColor = hide.comp.CurveEditor.CURVE_COLORS[2];
+					if (StringTools.contains(c.name, ":w") || StringTools.contains(c.name, ":a")) curveColor = hide.comp.CurveEditor.CURVE_COLORS[3];
 
 					// Assign same color to curve and curve's header
 					c.color = curveColor;

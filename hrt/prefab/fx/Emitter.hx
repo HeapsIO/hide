@@ -1598,7 +1598,7 @@ class Emitter extends Object3D {
 
 			function makeCompVal(baseProp: Null<Float>, defVal: Float, randProp: Null<Float>, pname: String, suffix: String) : Value {
 				var xVal = vVal(baseProp != null ? baseProp : defVal);
-				var randCurve = getCurve(pname + suffix + ".rand");
+				var randCurve = getCurve(pname + suffix + ":rand");
 				var randVal : Value = VZero;
 				if(randCurve != null)
 					randVal = VRandom(randIdx++, VMult(randCurve.makeVal(), VConst(randProp != null ? randProp : 1.0)));
@@ -1634,9 +1634,9 @@ class Emitter extends Object3D {
 							param.name, suffix);
 					}
 					var v : Value = VVector(
-						makeComp(0, ".x"),
-						makeComp(1, ".y"),
-						makeComp(2, ".z"));
+						makeComp(0, ":x"),
+						makeComp(1, ":y"),
+						makeComp(2, ":z"));
 					if(v.match(VVector(VZero, VZero, VZero)))
 						v = VZero;
 					else if(v.match(VVector(VOne, VOne, VOne)))
