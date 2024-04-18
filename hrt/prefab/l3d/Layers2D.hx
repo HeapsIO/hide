@@ -199,7 +199,10 @@ class Layers2D extends hrt.prefab.Object3D {
 				var path = new haxe.io.Path(shared.currentPath);
 				path.ext = "dat";
 				var fileName = "layer_" + l.name;
-				shared.saveTexture(fileName, pixels.toPNG(), path.toString() + "/" + this.name, "png");
+				var pathString = path.toString();
+				if ( pathString.charAt(pathString.length - 1) != "/" )
+					pathString = pathString + "/";
+				shared.saveTexture(fileName, pixels.toPNG(), pathString + this.name, "png");
 			}
 		}
 
