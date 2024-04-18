@@ -65,7 +65,7 @@ class Reference extends Object3D {
 			return;
 		#if editor
 		if (hasCycle()) {
-			hide.Ide.inst.quickError('Reference $name to $source was creating a cycle. Removed');
+			hide.Ide.inst.quickError('Reference ${getAbsPath()} to $source is creating a cycle. Please fix the reference.');
 			refInstance = null;
 			return;
 		}
@@ -205,7 +205,7 @@ class Reference extends Object3D {
 			if(pname == "source" || pname == "editMode") {
 				refInstance = null;
 				if (hasCycle()) {
-					hide.Ide.inst.quickError('Reference to $source would create a cycle. Canceling.');
+					hide.Ide.inst.quickError('Reference to $source would create a cycle. The reference change was aborted.');
 					ctx.properties.undo.undo();
 					@:privateAccess ctx.properties.undo.redoElts.pop();
 					return;

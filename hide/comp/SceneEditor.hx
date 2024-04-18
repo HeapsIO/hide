@@ -3256,6 +3256,12 @@ class SceneEditor {
 		if(hrt.prefab.Prefab.getPrefabType(path) != null) {
 			var ref = new hrt.prefab.Reference(parent, null);
 			ref.source = relative;
+			if (ref.hasCycle()) {
+				parent.children.remove(ref);
+				hide.Ide.inst.quickError('Reference to $relative is creating a cycle. The reference creation was aborted.');
+				return null;
+			}
+
 			prefab = ref;
 			prefab.name = new haxe.io.Path(relative).file;
 		}
@@ -3287,6 +3293,8 @@ class SceneEditor {
 		var elts: Array<PrefabElement> = [];
 		for(path in paths) {
 			var obj3d = createDroppedElement(path, parent);
+			if (obj3d == null)
+				continue;
 
 			obj3d.setTransform(localMat);
 			autoName(obj3d);
