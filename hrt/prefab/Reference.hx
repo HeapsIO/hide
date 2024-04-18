@@ -160,7 +160,12 @@ class Reference extends Object3D {
 		if (source != null) {
 			var ref = resolveRef();
 			if (ref != null) {
-				var allRefs = ref.flatten(Reference);
+				var root = ref;
+				if (Std.isOfType(root, hrt.prefab.fx.BaseFX)) {
+					root = hrt.prefab.fx.BaseFX.BaseFXTools.getFXRoot(root) ?? root;
+				}
+
+				var allRefs = root.flatten(Reference);
 				for (r in allRefs) {
 					if (r.hasCycle(seenPaths)){
 						editMode = oldEditMode;
