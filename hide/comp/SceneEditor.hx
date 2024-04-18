@@ -1713,7 +1713,7 @@ class SceneEditor {
 			e.name = name;
 
 			undo.change(Field(e, "name", oldName), function() {
-				tree.refresh();
+				tree.refresh(() -> refreshTree());
 				refreshScene();
 			});
 
