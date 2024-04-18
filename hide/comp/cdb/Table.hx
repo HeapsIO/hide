@@ -74,6 +74,11 @@ class Table extends Component {
 	}
 
 	public function close() {
+		// Close eventual cdb type edition before closing table
+		var children = element.children().find(".cdb-type-string");
+		if (children.length > 0)
+			children.first().trigger("click");
+
 		for( t in @:privateAccess editor.tables.copy() )
 			if( t.parent == this )
 				t.close();
