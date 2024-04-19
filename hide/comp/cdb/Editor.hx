@@ -272,12 +272,17 @@ class Editor extends Component {
 			return ~/[\u0300-\u036f]/g.map(t, (r) -> "");
 		}
 
-		var all = element.find("table.cdb-sheet > tbody > tr").not(".head");
+		var all = element.find("table.cdb-sheet > tbody > tr");
 		if( config.get("cdb.filterIgnoreSublist") )
-			all = element.find("> table.cdb-sheet > tbody > tr").not(".head");
+			all = element.find("> table.cdb-sheet > tbody > tr");
+
+		all.removeClass("filtered");
+
+		if (searchExp)
+			all = all.not(".head").not(".list").not("props"); // remove potential opened list or properties
+
 		var seps = all.filter(".separator");
 		var lines = all.not(".separator");
-		all.removeClass("filtered");
 
 		var parser = new hscript.Parser();
 		parser.allowMetadata = true;
@@ -331,14 +336,23 @@ class Editor extends Component {
 						interp.variables.set(f, v);
 					}
 
+					function addFilter() {
+						var lineEl = lines.eq(idx);
+						lineEl.addClass("filtered");
+
+						var nextTr = lineEl.next('tr');
+						if (nextTr.is(".props") || nextTr.is(".list"))
+							nextTr.addClass("filtered");
+					}
+
 					// Check if the current line is filtered or not
 					var filtered = true;
 					for (f in filters) {
 						var input = f.text;
-						var expr = try parser.parseString(input) catch( e : Dynamic ) { trace(e); continue; }
+						var expr = try parser.parseString(input) catch( e : Dynamic ) { addFilter(); continue; }
 						replaceRec(expr);
 
-						var res = try interp.execute(expr) catch( e : hscript.Expr.Error ) { continue; } // Catch errors that can be thrown if search input text is not interpretabled
+						var res = try interp.execute(expr) catch( e : hscript.Expr.Error ) { addFilter(); continue; } // Catch errors that can be thrown if search input text is not interpretabled
 						if (res) {
 							filtered = false;
 							break;
@@ -346,7 +360,7 @@ class Editor extends Component {
 					}
 
 					if (filtered)
-						lines.get(idx).classList.add("filtered");
+						addFilter();
 				}
 			}
 			else {
