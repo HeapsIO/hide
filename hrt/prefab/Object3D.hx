@@ -80,7 +80,7 @@ class Object3D extends Prefab {
 		}
 
 		#if editor
-		// this.addEditorUI();
+		this.addEditorUI();
 		#end
 	}
 
@@ -208,12 +208,12 @@ class Object3D extends Prefab {
 	}
 
 	public function addEditorUI() {
-		//return;
-		var objs = findAll(Object3D, true);
-		for( obj in objs ) {
-			var local3d : h3d.scene.Object = obj.local3d;
-			if( local3d != null && local3d.name != null && StringTools.startsWith(local3d.name,"$UI.") )
-				local3d.remove();
+		if (local3d != null) {
+			var objs = local3d.findAll((o) -> Std.downcast(o, h3d.scene.Object));
+			for (obj in objs) {
+				if (obj.name != null && StringTools.startsWith(obj.name,"$UI."))
+					obj.remove();
+			}
 		}
 
 		// add ranges
@@ -227,7 +227,7 @@ class Object3D extends Prefab {
 					var color = Std.parseInt(Reflect.field(ranges,key));
 					var value : Dynamic = hide.comp.cdb.DataFiles.resolveCDBValue(sheet,key, props);
 					if( value != null ) {
-					var mesh = new h3d.scene.Mesh(hrt.prefab.l3d.Spray.makePrimCircle(128, 0.99), local3d);
+						var mesh = new h3d.scene.Mesh(hrt.prefab.l3d.Spray.makePrimCircle(128, 0.99), local3d);
 						mesh.name = "$UI.RANGE";
 						mesh.ignoreCollide = true;
 						mesh.ignoreBounds = true;
