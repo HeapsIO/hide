@@ -77,6 +77,7 @@ class Light extends Object3D {
 	@:s public var cascadeNbr : Int = 1;
 	@:s public var cascadePow : Float = 2;
 	@:s public var firstCascadeSize : Float = 10;
+	@:s public var minPixelRatio : Float = 5.0;
 	@:s public var castingMaxDist : Float = 0.0;
 	@:s public var params : Array<CascadeParams> = [];
 	@:s public var debugShader : Bool = false;
@@ -214,6 +215,7 @@ class Light extends Object3D {
 						cs.cascade = cascadeNbr;
 						cs.pow = cascadePow;
 						cs.firstCascadeSize = firstCascadeSize;
+						cs.minPixelRatio = minPixelRatio * 0.01;
 						cs.debug = debugDisplay;
 						cs.castingMaxDist = castingMaxDist;
 						cs.debugShader = debugShader;
@@ -632,6 +634,7 @@ class Light extends Object3D {
 			'<div class="group" name="Cascades">
 				<dl>
 					<dt>Number</dt><dd><input type="range" field="cascadeNbr" step="1" min="1" max="4"/></dd>
+					<dt>Min pixel ratio [%]</dt><dd><input type="range" field="minPixelRatio" min="0" max="100"/></dd>
 					<dt>First cascade size</dt><dd><input type="range" field="firstCascadeSize" min="5" max="100"/></dd>
 					<dt>Range power</dt><dd><input type="range" field="cascadePow" min="0.1" max="10"/></dd>
 					<dt>Casting max dist</dt><dd><input type="range" field="castingMaxDist" min="-1" max="1000"/></dd>
