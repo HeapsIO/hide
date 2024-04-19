@@ -7,7 +7,9 @@ import hrt.prefab.fx.BaseFX.ShaderAnimation;
 import hrt.prefab.fx.Value;
 import hrt.prefab.fx.Evaluator;
 
+#if editor
 import hide.prefab.HideProps;
+#end
 
 using Lambda;
 

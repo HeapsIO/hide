@@ -3,7 +3,10 @@ package hrt.prefab;
 import h3d.scene.Mesh;
 import h3d.scene.Object;
 import h3d.mat.PbrMaterial;
+
+#if editor
 import hide.prefab.HideProps;
+#end
 
 class Material extends Prefab {
 

@@ -4,9 +4,9 @@ import h2d.col.Point;
 
 #if editor
 import hide.prefab.EditContext;
+import hide.prefab.HideProps;
 #end
 
-import hide.prefab.HideProps;
 
 
 
