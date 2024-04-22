@@ -757,25 +757,13 @@ class Model extends FileView {
 		});
 
 		var toolsDefs : Array<hide.comp.Toolbar.ToolDef> = [];
-		toolsDefs.push({id: "iconVisibility", title : "Toggle 3d icons visibility", icon : "image", type : Toggle((v) -> { hide.Ide.inst.show3DIcons = v; }), defaultValue: true });
-        toolsDefs.push({id: "iconVisibility-menu", title : "", icon: "", type : Popup((e) -> new hide.comp.SceneEditor.IconVisibilityPopup(null, e, sceneEditor))});
+
+		toolsDefs.push({id: "showViewportOverlays", title : "Viewport Overlays", icon : "eye", type : Toggle((v) -> { sceneEditor.updateViewportOverlays(); }) });
+		toolsDefs.push({id: "viewportoverlays-menu", title : "", icon: "", type : Popup((e) -> new hide.comp.SceneEditor.ViewportOverlaysPopup(null, e, sceneEditor))});
+
+		//toolsDefs.push({id: "iconVisibility", title : "Toggle 3d icons visibility", icon : "image", type : Toggle((v) -> { hide.Ide.inst.show3DIcons = v; }), defaultValue: true });
+        //toolsDefs.push({id: "iconVisibility-menu", title : "", icon: "", type : Popup((e) -> new hide.comp.SceneEditor.IconVisibilityPopup(null, e, sceneEditor))});
 		tools.makeToolbar(toolsDefs);
-
-		tools.addToggle("wireframeToggle", "connectdevelop", "Wireframe",(b) -> {
-			sceneEditor.setWireframe(b);
-		});
-		displayJoints = tools.addToggle("jointsToggle", "connectdevelop", "Joints",(b) -> {
-			sceneEditor.setJoints(b, selectedJoint);
-		});
-
-		tools.addToggle("show-outline","square-o", "Show selection Outline",(b) -> {
-			highlightSelection = b;
-			refreshSelectionHighlight(lastSelectedObject);
-		}, highlightSelection);
-
-		tools.addColor("Background color", function(v) {
-			scene.engine.backgroundColor = v;
-		}, scene.engine.backgroundColor);
 
 		tools.addSeparator();
 
@@ -812,9 +800,6 @@ class Model extends FileView {
 
 		sceneEditor.onResize = buildTimeline;
 		setAnimation(null);
-
-		if ( displayJoints.isDown() )
-			sceneEditor.setJoints(true, null);
 
 		// Adapt initial camera position to model
 		var camSettings = @:privateAccess sceneEditor.view.getDisplayState("Camera");
