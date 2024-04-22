@@ -269,7 +269,7 @@ class PropsEditor extends Component {
 				if( onChange != null ) onChange(@:privateAccess f.fname);
 				isTempChange = false;
 			};
-			var groupName = field.closest(".group").attr("name");
+			var groupName = f.element.closest(".group").attr("name");
 			if (groupName != null) {
 				groups.get(groupName).push(f);
 			}
@@ -547,7 +547,7 @@ class PropsField extends Component {
 			var arr = Std.downcast(current, Array);
 			var alpha = arr != null && arr.length == 4 || f.attr("alpha") == "true";
 			var picker = new hide.comp.ColorPicker.ColorBox(null, f, true, alpha, fname);
-
+			element = picker.element;
 			function updatePicker(val: Dynamic) {
 				if(arr != null) {
 					var v = h3d.Vector.fromArray(val);
