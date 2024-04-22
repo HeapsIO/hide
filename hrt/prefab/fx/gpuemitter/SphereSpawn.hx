@@ -3,35 +3,31 @@ package hrt.prefab.fx.gpuemitter;
 class SphereSpawnShader extends ComputeUtils {
 	override function onUpdate(emitter : GPUEmitter.GPUEmitterObject, buffer : h3d.Buffer, index : Int) {
 		super.onUpdate(emitter, buffer, index);
-		absPos.multiply3x4inline(@:privateAccess emitter.data.trs, emitter.getAbsPos());
 		randOffset = index;
 	}
 
 	static var SRC = {
-		@param var absPos : Mat4;
-		@param var radius : Float;
-		@param var startSpeed : Float;
+		@param var minRadius : Float;
+		@param var maxRadius : Float;
 		@param var randOffset : Int;
 
-		var speed : Vec3;
+		var emitNormal : Vec3;
 		var lifeTime : Float;
-		var modelView : Mat4;
+		var relativeTransform : Mat4;
 		function main() {
 			var rnd = random3d(vec2(global.time, computeVar.globalInvocation.x + randOffset));
-			var r = rnd.x * radius;
 			var theta = rnd.y * PI;
 			var phi = rnd.z * 2.0 * PI;
 			var dir = sphericalToCartesian(1.0, theta, phi);
-			speed = dir * r / radius * startSpeed;
-			var relPos = dir * r;
-			modelView = absPos * translationMatrix(relPos);
+			emitNormal = dir;
+			relativeTransform = translationMatrix(dir * mix(minRadius, maxRadius, rnd.x));
 		}
 	}
 }
 
 class SphereSpawn extends SpawnShader {
-	@:s var radius : Float = 1.0;
-	@:s var startSpeed : Float = 1.0;
+	@:s var minRadius : Float = 0.2;
+	@:s var maxRadius : Float = 1.0;
 
 	override function makeShader() {
 		return new SphereSpawnShader();
@@ -41,8 +37,8 @@ class SphereSpawn extends SpawnShader {
 		super.updateInstance(propName);
 
 		var sh = cast(shader, SphereSpawnShader);
-		sh.radius = radius;
-		sh.startSpeed = startSpeed;
+		sh.minRadius = minRadius;
+		sh.maxRadius = maxRadius;
 	}
 
 	#if editor
@@ -50,8 +46,8 @@ class SphereSpawn extends SpawnShader {
 		ctx.properties.add(new hide.Element('
 			<div class="group" name="Spawn">
 				<dl>
-					<dt>Radius</dt><dd><input type="range" min="0.1" max="10" field="radius"/></dd>
-					<dt>Start speed</dt><dd><input type="range" min="0.1" max="10" field="startSpeed"/></dd>
+					<dt>Min radius</dt><dd><input type="range" min="0.1" max="10" field="minRadius"/></dd>
+					<dt>Max radius</dt><dd><input type="range" min="0.1" max="10" field="maxRadius"/></dd>
 				</dl>
 			</div>
 			'), this, function(pname) {

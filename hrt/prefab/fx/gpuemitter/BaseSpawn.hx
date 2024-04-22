@@ -8,23 +8,32 @@ class BaseSpawn extends ComputeUtils {
 			speed : Vec3,
 			lifeTime : Float
 		}, MAX_INSTANCE_COUNT>;
+		@const var SPEED_NORMAL : Bool;
 		@param var minLifeTime : Float;
 		@param var maxLifeTime : Float;
+		@param var minStartSpeed : Float;
+		@param var maxStartSpeed : Float;
+		@param var absPos : Mat4;
 
-		var speed : Vec3;
 		var lifeTime : Float;
 		var modelView : Mat4;
+		var relativeTransform : Mat4;
+		var emitNormal : Vec3;
 		function __init__() {
-			speed = vec3(0.0);
+			emitNormal = vec3(0.0, 0.0, 1.0);
 			lifeTime = mix(minLifeTime, maxLifeTime, (global.time + computeVar.globalInvocation.x * 0.5123789) % 1.0);
-			modelView = translationMatrix(vec3(computeVar.globalInvocation.x / MAX_INSTANCE_COUNT, 0.0, 0.0));
+			relativeTransform = translationMatrix(vec3(0.0));
+			modelView = relativeTransform * absPos;
 		}
 
 		function main() {
 			var idx = computeVar.globalInvocation.x;
 			if ( batchBuffer[idx].lifeTime < 1e-7 ) {
 				batchBuffer[idx].modelView = modelView;
-				batchBuffer[idx].speed = speed;
+				var s = vec3(0.0, 0.0, 1.0);
+				if ( SPEED_NORMAL )
+					s = emitNormal;
+				batchBuffer[idx].speed = s * maxStartSpeed;
 				batchBuffer[idx].lifeTime = lifeTime;
 			}
 		}

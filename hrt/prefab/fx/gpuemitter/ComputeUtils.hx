@@ -7,6 +7,10 @@ class ComputeUtils extends hxsl.Shader {
 		@global var global : {
 			var time : Float;
 		};
+
+		@global var camera : {
+			var position : Vec3;
+		}
 		
 		function random(pos : Vec2) : Float {
 			return fract(sin(dot(pos, vec2(12.9898,78.233)))*43758.5453123);
@@ -28,6 +32,15 @@ class ComputeUtils extends hxsl.Shader {
 				vec4(1.0, 0.0, 0.0, pos.x),
 				vec4(0.0, 1.0, 0.0, pos.y),
 				vec4(0.0, 0.0, 1.0, pos.z),
+				vec4(0.0, 0.0, 0.0, 1.0)
+			);
+		}
+
+		function scaleMatrix(scale : Vec3) : Mat4 {
+			return mat4(
+				vec4(scale.x, 0.0, 0.0, 0.0),
+				vec4(0.0, scale.y, 0.0, 0.0),
+				vec4(0.0, 0.0, scale.z, 0.0),
 				vec4(0.0, 0.0, 0.0, 1.0)
 			);
 		}
@@ -74,6 +87,15 @@ class ComputeUtils extends hxsl.Shader {
 				);
 			}
 			return matrix;
+		}
+
+		function rotateMatrixZ(angle : Float) : Mat4 {
+			return mat4(
+				vec4(cos(angle), -sin(angle), 0.0, 0.0),
+				vec4(sin(angle), cos(angle), 0.0, 0.0),
+				vec4(0.0, 0.0, 1.0, 0.0),
+				vec4(0.0, 0.0, 0.0, 1.0)
+			);
 		}
 	}
 }

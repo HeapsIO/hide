@@ -1,25 +1,25 @@
 package hrt.prefab.fx.gpuemitter;
 
-class SwarmSimulationShader extends ComputeUtils {
+class OrbitSpeedSimulationShader extends ComputeUtils {
 	override function onUpdate(emitter : GPUEmitter.GPUEmitterObject, buffer : h3d.Buffer, index : Int) {
 		super.onUpdate(emitter, buffer, index);
-		primitiveTransform.load(@:privateAccess emitter.data.trs);
-		emitterCenter.load(emitter.getAbsPos().getPosition());
 	}
 
 	static var SRC = {
-		@param var primitiveTransform : Mat4;
-		@param var emitterCenter : Vec3;
+		@param var axis : Vec3;
 
 		var speed : Vec3;
 		var lifeTime : Float;
+		var prevModelView : Mat4;
 		var modelView : Mat4;
 		var dt : Float;
+
 		function main() {
 			var idx = computeVar.globalInvocation.x;
-			var radialDir = vec3(0.0) * modelView.mat3x4();
+			var prevPos = vec3(0.0) * prevModelView.mat3x4();
+			var radialDir = prevPos;
 			var radius = length(radialDir);
-			radialDir.z = 0.0;
+			radialDir = radialDir - radialDir.dot(axis) * axis;
 			radialDir = normalize(radialDir);
 			var spherical = cartesianToSpherical(radialDir);
 			var theta = spherical.y;
@@ -28,26 +28,27 @@ class SwarmSimulationShader extends ComputeUtils {
 
 			var dir = normalize(speed);
 
-			var pos = vec3(0.0) * modelView.mat3x4();
-			pos += dt * speed;
-			pos = normalize(pos) * radius;
-			modelView = primitiveTransform * alignMatrix(vec3(0.0, 0.0, 1.0), dir) * translationMatrix(pos);
+			var newPos = normalize(prevPos + dt * speed) * radius;
+			speed = (newPos - prevPos) / dt;
 		}
 	}
 }
 
-class SwarmSimulation extends SimulationShader {
-	@:s var radius : Float = 1.0;
-	@:s var startSpeed : Float = 1.0;
+class OrbitSpeedSimulation extends SimulationShader {
+	@:s var axisX : Float = 0.0;
+	@:s var axisY : Float = 0.0;
+	@:s var axisZ : Float = 1.0;
 
 	override function makeShader() {
-		return new SwarmSimulationShader();
+		return new OrbitSpeedSimulationShader();
 	}
 
 	override function updateInstance(?propName) {
 		super.updateInstance(propName);
 
-		var sh = cast(shader, SwarmSimulationShader);
+		var sh = cast(shader, OrbitSpeedSimulationShader);
+		sh.axis.set(axisX, axisY, axisZ);
+		sh.axis.normalize();
 	}
 
 	#if editor
@@ -55,6 +56,9 @@ class SwarmSimulation extends SimulationShader {
 		ctx.properties.add(new hide.Element('
 			<div class="group" name="Simulation">
 				<dl>
+					<dt>X</dt><dd><input type="range" min="-1" max="1" value="0" field="axisX"/></dd>
+					<dt>Y</dt><dd><input type="range" min="-1" max="1" value="0" field="axisY"/></dd>
+					<dt>Z</dt><dd><input type="range" min="-1" max="1" value="0" field="axisZ"/></dd>
 				</dl>
 			</div>
 			'), this, function(pname) {
@@ -63,5 +67,5 @@ class SwarmSimulation extends SimulationShader {
 	}
 	#end
 
-	static var _ = Prefab.register("swarmSimulation", SwarmSimulation);
+	static var _ = Prefab.register("orbitSpeedSimulation", OrbitSpeedSimulation);
 }

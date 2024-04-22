@@ -1,13 +1,40 @@
 package hrt.prefab.fx.gpuemitter;
 
-class PropsShader extends hxsl.Shader {
+enum Mode {
+	World;
+	Local;
+}
+
+enum Align {
+	FaceCam;
+	Speed;
+}
+
+enum SpeedMode {
+	Normal;
+	None;
+}
+
+class ParticleShader extends hxsl.Shader {
 	static var SRC = {
 		@perInstance @param var speed : Vec3;
 		@perInstance @param var lifeTime : Float;
 
+		@param var localTransform : Mat4;
+		@param var absPos : Mat4;
+
+		var relativePosition : Vec3;
+		var transformedPosition : Vec3;
+		function __init__vertex() {
+			transformedPosition = transformedPosition * absPos.mat3x4();
+		}
+
+		function vertex() {
+			relativePosition = relativePosition * localTransform.mat3x4();
+		}
+
 		var pixelColor : Vec4;
 		function fragment() {
-			// TODO build buffer with struct so DCE can't change buffer format.
 			pixelColor.rgb = packNormal(normalize(speed)).rgb * pixelColor.a * lifeTime;
 		}
 	}
@@ -22,24 +49,29 @@ typedef Data = {
 	var radius : Float;
 	var startSpeed : Float;
 	var trs : h3d.Matrix;
+	var mode : Mode;
+	var align : Align;
+	var speedMode : SpeedMode;
+	var maxStartSpeed : Float;
+	var minStartSpeed : Float;
 }
 
 @:allow(hrt.prefab.fx.GPUEmitter)
 class GPUEmitterObject extends h3d.scene.MeshBatch {
 	public var simulationPass : h3d.mat.Pass;
 	public var spawnPass : h3d.mat.Pass;
-
-	var data : Data;
-	var propsShader : PropsShader;
+	public var data : Data;
+	
+	var particleShader : ParticleShader;
 
 	public function new(data, primitive, materials, ?parent) {
 		super(primitive, null, parent);
 		this.meshBatchFlags.set(EnableGpuUpdate);
 		if ( materials != null )
 			this.materials = materials;
-		propsShader = new PropsShader();
+		particleShader = new ParticleShader();
 		for ( m in this.materials ) {
-			m.mainPass.addShader(propsShader);
+			m.mainPass.addShader(particleShader);
 			m.shadows = false;
 		}
 		this.data = data;
@@ -76,13 +108,38 @@ class GPUEmitterObject extends h3d.scene.MeshBatch {
 			baseSpawn.MAX_INSTANCE_COUNT = p.maxInstance;
 			baseSpawn.maxLifeTime = data.maxLifeTime;
 			baseSpawn.minLifeTime = data.minLifeTime;
+			baseSpawn.maxStartSpeed = data.maxStartSpeed;
+			baseSpawn.minStartSpeed = data.minStartSpeed;
+			switch ( data.speedMode ) {
+			case Normal:
+				baseSpawn.SPEED_NORMAL = true;
+			case None:
+				baseSpawn.SPEED_NORMAL = false;
+			}
 
 			var baseSimulation = simulationPass.getShader(BaseSimulation);
 			baseSimulation.INFINITE = data.infinite;
 			baseSimulation.dtParam = ctx.elapsedTime;
 			baseSimulation.MAX_INSTANCE_COUNT = p.maxInstance;
+			switch ( data.align ) {
+			case FaceCam:
+				baseSimulation.FACE_CAM = true;
+			case Speed:
+				baseSimulation.FACE_CAM = false;
+			}
+			baseSimulation.cameraUp.load(ctx.camera.getUp());
 
-			for ( i => b in p.buffers ) {
+			switch ( data.mode ) {
+			case World:
+				baseSpawn.absPos.load(getAbsPos());
+				particleShader.absPos.identity();
+			case Local:
+				baseSpawn.absPos.identity();
+				particleShader.absPos.load(getAbsPos());
+			}
+
+			var i = 0;
+			for ( b in p.buffers ) {
 				if ( b.isDisposed() )
 					continue;
 
@@ -107,6 +164,8 @@ class GPUEmitterObject extends h3d.scene.MeshBatch {
 
 				ctx.computeList(@:privateAccess simulationPass.shaders);
 				ctx.computeDispatch(instanceCount);
+
+				i += p.maxInstance;
 			}
 			p = p.next;
 		}
@@ -118,6 +177,7 @@ class GPUEmitterObject extends h3d.scene.MeshBatch {
 
 	override function emit(ctx : h3d.scene.RenderContext) {
 		dispatch(ctx);
+		particleShader.localTransform.load(data.trs);
 		super.emit(ctx);
 	}
 }
@@ -129,11 +189,17 @@ class GPUEmitter extends Object3D {
 
 	@:s var maxCount : Int = 512;
 	@:s var minLifeTime : Float = 0.5;
-	@:s var maxLifeTime : Float = 5.0;
-	@:s var gravity : Float = 1.0;
-	@:s var radius : Float = 1.0;
-	@:s var startSpeed : Float = 1.0;
-	@:s var infinite : Bool = false;
+	@:s var maxLifeTime : Float = 1.0;
+	@:s var minStartSpeed : Float = 0.5;
+	@:s var maxStartSpeed : Float = 1.0;
+	@:s var gravity : Float = 1.0; 
+	@:s var radius : Float = 1.0; 
+	@:s var startSpeed : Float = 1.0; 
+	@:s var infinite : Bool = false; 
+	@:s var faceCam : Bool = false;
+	@:s var mode : Mode = World;
+	@:s var align : Align = FaceCam;
+	@:s var speedMode : SpeedMode = Normal;
 
 	override function makeObject(parent3d : h3d.scene.Object) {
 		return new h3d.scene.Object(parent3d);
@@ -167,6 +233,12 @@ class GPUEmitter extends Object3D {
 				startSpeed : startSpeed,
 				trs : trs,
 				infinite : infinite,
+				faceCam : faceCam,
+				mode : mode,
+				align : align,
+				speedMode : speedMode,
+				minStartSpeed : minStartSpeed,
+				maxStartSpeed : maxStartSpeed,
 			}
 		}
 		for ( mesh in meshes ) {
@@ -222,6 +294,30 @@ class GPUEmitter extends Object3D {
 					<dt>Min life time</dt><dd><input type="range" min="0.1" max="10" field="minLifeTime"/></dd>
 					<dt>Max life time</dt><dd><input type="range" min="0.1" max="10" field="maxLifeTime"/></dd>
 					<dt>Infinite</dt><dd><input type="checkbox" field="infinite"/></dd>
+					<dt>Face cam</dt><dd><input type="checkbox" field="faceCam"/></dd>
+					<dt>Mode</dt>
+					<dd>
+						<select field="mode">
+							<option value="World">World</option>
+							<option value="Local">Local</option>
+						</select>
+					</dd>
+					<dt>Align</dt>
+					<dd>
+						<select field="align">
+							<option value="FaceCam">Face cam</option>
+							<option value="Speed">Speed</option>
+						</select>
+					</dd>
+					<dt>Speed</dt>
+					<dd>
+						<select field="speedMode">
+							<option value="Normal">Normal</option>
+							<option value="None">None</option>
+						</select>
+					</dd>
+					<dt>Min start speed</dt><dd><input type="range" min="0.1" max="10" field="minStartSpeed"/></dd>
+					<dt>Max start speed</dt><dd><input type="range" min="0.1" max="10" field="maxStartSpeed"/></dd>
 				</dl>
 			</div>
 			'), this, function(pname) {
