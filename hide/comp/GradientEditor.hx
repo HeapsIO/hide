@@ -110,6 +110,7 @@ class GradientEditor extends Popup {
     var stopMarquers : Array<Element>;
 
     var selectedStop : Element;
+    var selectNextRepaint : Int = -1;
     var stopEditor : Element;
     var stopLabel : Element;
 
@@ -317,7 +318,7 @@ class GradientEditor extends Popup {
         return !colorbox.isPickerOpen();
     }
 
-    public function selectStop(stop:Element) {
+    public function selectStop(stop:Element, repaint: Bool = true) {
         if (selectedStop != null) {
             selectedStop.removeClass("selected");
         }
@@ -325,7 +326,9 @@ class GradientEditor extends Popup {
         if (selectedStop != null) {
             selectedStop.addClass("selected");
         }
-        repaint();
+        if (repaint) {
+           this.repaint();
+        }
     }
 
     public function repaint() {
@@ -380,6 +383,14 @@ class GradientEditor extends Popup {
             }
         }
 
+        if (selectNextRepaint != -1) {
+            var elem = stopMarquers[selectNextRepaint];
+            if (elem != null) {
+                selectStop(elem, false);
+            }
+            selectNextRepaint = -1;
+        }
+
         var vector = new h3d.Vector4();
         for (i in 0...stopMarquers.length) {
             var marquer = stopMarquers[i];
@@ -392,13 +403,14 @@ class GradientEditor extends Popup {
             marquer.children(".fill").attr({fill: 'rgba(${vector.r*255.0}, ${vector.g*255.0}, ${vector.b*255.0}, ${vector.a})'});
         }
 
-        if (selectedStop != null) {
-            var id = stopMarquers.indexOf(selectedStop);
-            colorbox.value = innerValue.stops[id].color;
+        var selectedStopId = stopMarquers.indexOf(selectedStop);
+        if (selectedStopId != -1) {
+            colorbox.value = innerValue.stops[selectedStopId].color;
             stopEditor.removeClass("disabled");
-            stopLabel.text('Stop ${id+1} / ${stopMarquers.length}');
+            stopLabel.text('Stop ${selectedStopId+1} / ${stopMarquers.length}');
             colorbox.isPickerEnabled = true;
         } else {
+            selectStop(null, false);
             stopEditor.addClass("disabled");
             stopLabel.text('Stop');
             colorbox.value = 0x77777777;
@@ -425,10 +437,13 @@ class GradientEditor extends Popup {
 
     function addStop(pos : Float) {
         var color = Gradient.evalData(innerValue, pos);
-        innerValue.stops.push({position: pos, color:color.toColor()});
+        var newStop = {position: pos, color:color.toColor()};
+        innerValue.stops.push(newStop);
         innerValue.stops.sort((a, b) -> return if (a.position < b.position) -1
                                 else if (a.position > b.position) 1
                                 else 0);
+        var id = innerValue.stops.indexOf(newStop);
+        selectNextRepaint = id;
         onChange(false);
     }
 
