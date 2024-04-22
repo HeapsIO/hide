@@ -123,10 +123,10 @@ class Gizmo extends h3d.scene.Object {
 			}
 
 			var mat = o.getMaterials()[0];
-			mat.props = h3d.mat.MaterialSetup.current.getDefaults("overlay");
+			mat.props = h3d.mat.MaterialSetup.current.getDefaults("ui");
 			mat.mainPass.blend(SrcAlpha, OneMinusSrcAlpha);
 			mat.mainPass.depth(false, Always);
-			mat.mainPass.setPassName("overlay");
+			mat.mainPass.setPassName("ui");
 			var mesh = hit.getMeshes()[0];
 			var interactive = new h3d.scene.Interactive(mesh.primitive.getCollider(), o);
 			interactive.priority = 100;
