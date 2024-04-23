@@ -227,12 +227,16 @@ class Object3D extends Prefab {
 					var color = Std.parseInt(Reflect.field(ranges,key));
 					var value : Dynamic = hide.comp.cdb.DataFiles.resolveCDBValue(sheet,key, props);
 					if( value != null ) {
-						var mesh = new h3d.scene.Mesh(hrt.prefab.l3d.Spray.makePrimCircle(128, 0.99), local3d);
-						mesh.name = "$UI.RANGE";
+						var name = "$UI.RANGE" + key;
+						var mesh = Std.downcast(local3d.getObjectByName(name), h3d.scene.Mesh);
+						if (mesh == null) {
+							mesh = new h3d.scene.Mesh(hrt.prefab.l3d.Spray.makePrimCircle(128, 0.99), local3d);
+						}
+						mesh.name = name;
 						mesh.ignoreCollide = true;
 						mesh.ignoreBounds = true;
 						mesh.material.mainPass.culling = None;
-						mesh.material.name = "$UI.RANGE";
+						mesh.material.name = name;
 						mesh.setScale(value);
 						mesh.scaleZ = 0.1;
 						mesh.material.color.setColor(color|0xFF000000);
@@ -271,15 +275,12 @@ class Object3D extends Prefab {
 
 						if (shouldAddInt) {
 							var int = new h2d.Interactive(huds.maxWidth, huds.maxWidth, bmp);
+							var editorContext = Std.downcast(shared, hide.prefab.ContextShared);
+							if (editorContext != null)
+								@:privateAccess editorContext.editor.initInteractive(this, cast int);
 							int.propagateEvents = false;
 							int.x = bmp.tile.dx;
 							int.y = bmp.tile.dy;
-
-							int.onClick = function(e) {
-								var editorContext = Std.downcast(shared, hide.prefab.ContextShared);
-								if (editorContext != null)
-									editorContext.editor.selectElements([ this ]);
-							}
 						}
 
 						var maxWidth : Dynamic = huds.maxWidth;
