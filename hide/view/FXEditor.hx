@@ -399,10 +399,7 @@ class FXEditor extends hide.view.FileView {
 		var content = sys.io.File.getContent(getPath());
 		var json = haxe.Json.parse(content);
 
-		if (json.type == "fx2d") {
-			is2D = true;
-			sceneEditor.is2D = true;
-		}
+
 		data = cast(PrefabElement.createFromDynamic(json), hrt.prefab.fx.BaseFX);
 		currentSign = ide.makeSignature(content);
 
@@ -459,6 +456,12 @@ class FXEditor extends hide.view.FileView {
 		tools = new hide.comp.Toolbar(null,element.find(".tools-buttons"));
 		var tabs = new hide.comp.Tabs(null,element.find(".tabs"));
 		sceneEditor = new FXSceneEditor(this, cast(data, hrt.prefab.Prefab));
+
+		if (json.type == "fx2d") {
+			is2D = true;
+			sceneEditor.is2D = true;
+		}
+
 		element.find(".hide-scenetree").first().append(sceneEditor.tree.element);
 		element.find(".render-props-edition").find('.hide-scenetree').append(sceneEditor.renderPropsTree.element);
 		element.find(".hide-scroll").first().append(sceneEditor.properties.element);

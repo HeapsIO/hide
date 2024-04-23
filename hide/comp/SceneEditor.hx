@@ -1944,17 +1944,20 @@ class SceneEditor {
 		scene.s2d.defaultSmooth = true;
 		root2d.x = scene.s2d.width >> 1;
 		root2d.y = scene.s2d.height >> 1;
+
 		cameraController2D = makeCamController2D();
 		cameraController2D.onClick = cameraController.onClick;
-		var cam2d = @:privateAccess view.getDisplayState("Camera2D");
-		if( cam2d != null ) {
-			root2d.x = scene.s2d.width*0.5 + cam2d.x;
-			root2d.y = scene.s2d.height*0.5 + cam2d.y;
-			root2d.setScale(cam2d.z);
-		}
-		cameraController2D.loadFromScene();
-		if (camera2D)
+		
+		if (camera2D) {
+			var cam2d = @:privateAccess view.getDisplayState("Camera2D");
+			if( cam2d != null ) {
+				root2d.x = scene.s2d.width*0.5 + cam2d.x;
+				root2d.y = scene.s2d.height*0.5 + cam2d.y;
+				root2d.setScale(cam2d.z);
+			}
+			cameraController2D.loadFromScene();
 			resetCamera();
+		}
 
 		root2d.addChild(cameraController2D);
 		scene.setCurrent();
@@ -4042,7 +4045,9 @@ class SceneEditor {
 	function update(dt:Float) {
 		saveCam3D();
 
-		@:privateAccess view.saveDisplayState("Camera2D", { x : sceneData.shared.root2d.x - scene.s2d.width*0.5, y : sceneData.shared.root2d.y - scene.s2d.height*0.5, z : sceneData.shared.root2d.scaleX });
+		if (camera2D) {
+			@:privateAccess view.saveDisplayState("Camera2D", { x : sceneData.shared.root2d.x - scene.s2d.width*0.5, y : sceneData.shared.root2d.y - scene.s2d.height*0.5, z : sceneData.shared.root2d.scaleX });
+		}
 		if(gizmo != null) {
 			if(!gizmo.moving) {
 				moveGizmoToSelection();
