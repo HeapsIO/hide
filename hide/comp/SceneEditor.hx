@@ -1959,6 +1959,8 @@ class SceneEditor {
 			resetCamera();
 		}
 
+		set_camera2D(camera2D);
+
 		root2d.addChild(cameraController2D);
 		scene.setCurrent();
 		scene.onResize();
