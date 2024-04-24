@@ -17,8 +17,8 @@ class Cond extends ShaderNode {
 	override function getInputs() {
 		static var inputs : Array<ShaderNode.InputInfo> =
 			[
-				{name: "a", type: SgFloat(1)},
-				{name: "b", type: SgFloat(1)},
+				{name: "a", type: SgFloat(1), def: Const(0.0)},
+				{name: "b", type: SgFloat(1), def: Const(0.0)},
 			];
 		return inputs;
 	}

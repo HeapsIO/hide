@@ -17,8 +17,8 @@ class IfCondition extends ShaderNode {
 		static var inputs : Array<ShaderNode.InputInfo> =
 		[
 			{name: "condition", type: SgBool},
-			{name: "true", type: SgGeneric(0, ConstraintFloat)},
-			{name: "false", type: SgGeneric(0, ConstraintFloat)},
+			{name: "true", type: SgGeneric(0, ConstraintFloat), def: Const(1.0)},
+			{name: "false", type: SgGeneric(0, ConstraintFloat), def: Const(0.0)},
 		];
 		return inputs;
 	}
