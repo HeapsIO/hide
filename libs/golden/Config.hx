@@ -31,7 +31,7 @@ typedef Config = {
 	@:optional var content: Array<ItemConfig>;
 };
 
-@:enum abstract ItemType(String) {
+enum abstract ItemType(String) {
 	var Row = "row";
 	var Column = "column";
 	var Stack = "stack";

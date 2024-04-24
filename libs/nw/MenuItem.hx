@@ -1,6 +1,6 @@
 package nw;
 
-@:enum abstract MenuItemType(String) {
+enum abstract MenuItemType(String) {
 	var Normal = "normal";
 	var Checkbox = "checkbox";
 	var Separator = "separator";
