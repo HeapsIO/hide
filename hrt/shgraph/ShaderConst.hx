@@ -6,10 +6,6 @@ class ShaderConst extends ShaderNode {
 
 	@prop() public var name : String = "";
 
-	// override public function getOutputType(key : String) : Type {
-	// 	return getOutputTExpr(key).t;
-	// }
-
 	override function generate(ctx:NodeGenContext) {
 
 	}

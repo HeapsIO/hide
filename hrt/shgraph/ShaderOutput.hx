@@ -74,23 +74,6 @@ class ShaderOutput extends ShaderNode {
 		}
 	}
 
-	/*override public function saveProperties() : Dynamic {
-		if (this.variable == null) {
-			this.variable = ShaderNode.availableVariables[0];
-		}
-		var parameters : Dynamic = {
-			name: variable.name,
-			type: variable.type.getName(),
-		};
-		switch variable.type {
-			case TVec(size, t):
-				parameters.vecSize = size;
-				parameters.vecType = t.getName();
-			default:
-		}
-		return parameters;
-	}*/
-
 
 	#if editor
 	override public function getPropertiesHTML(width : Float) : Array<hide.Element> {
@@ -108,42 +91,9 @@ class ShaderOutput extends ShaderNode {
 		}
 		input.val(variable);
 
-		/*var maxIndex = indexOption;
-		input.append(new hide.Element('<option value="${maxIndex}">Other...</option>'));
-		var initialName : String = null;
-		var initialType : Type = null;
-		if( !selectingDefault ) {
-			input.val(maxIndex);
-			initialName = this.variable.name;
-			initialType = this.variable.type;
-		}*/
-
-		/*var customVarChooser = new CustomVarChooser(element, initialName, initialType, function(val) {
-			this.variable = val;
-		});
-
-		if( !selectingDefault )
-			customVarChooser.show();
-		else
-			customVarChooser.hide();*/
-
 		input.on("change", function(e) {
 			variable = input.val();
 			inputs = null;
-			/*var value = input.val();
-			if (value < ShaderNode.availableVariables.length) {
-				this.variable = ShaderNode.availableVariables[value];
-			} else if (value < maxIndex) {
-				this.variable = ShaderOutput.availableOutputs[value-ShaderNode.availableVariables.length];
-			}
-			if (value == maxIndex) {
-				customVarChooser.show();
-				if (customVarChooser.variable != null) {
-					this.variable = customVarChooser.variable;
-				}
-			} else {
-				customVarChooser.hide();
-			}*/
 		});
 
 		elements.push(element);

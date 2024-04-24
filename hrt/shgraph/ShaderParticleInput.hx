@@ -9,14 +9,6 @@ using hxsl.Ast;
 class ShaderParticleInputs extends ShaderNode {
 	@prop("Variable") public var variable : String = "life";
 
-	// override public function getOutput(key : String) : TVar {
-	// 	return variable;
-	// }
-
-	// override public function build(key : String) : TExpr {
-	// 	return null;
-	// }
-
 	public function new(variable = "life") {
 		this.variable = variable;
 	}

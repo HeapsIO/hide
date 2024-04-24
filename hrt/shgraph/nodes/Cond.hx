@@ -32,53 +32,8 @@ class Cond extends ShaderNode {
 		ctx.addPreview(expr);
 	}
 
-	// @input("Left") var leftVar = SType.Number;
-	// @input("Right") var rightVar = SType.Number;
-
 
 	@prop() var condition : Binop = OpEq;
-
-	// override public function checkValidityInput(key : String, type : ShaderType.SType) : Bool {
-
-	// 	if (key == "leftVar" && rightVar != null && !rightVar.isEmpty())
-	// 		return ShaderType.checkCompatibilities(type, ShaderType.getSType(rightVar.getType()));
-
-	// 	if (key == "rightVar" && leftVar != null && !leftVar.isEmpty())
-	// 		return ShaderType.checkCompatibilities(type, ShaderType.getSType(leftVar.getType()));
-
-	// 	return true;
-	// }
-
-	// override public function computeOutputs() {
-	// 	if (leftVar != null && !leftVar.isEmpty() && rightVar != null && !rightVar.isEmpty()) {
-	// 		var type = leftVar.getVar(rightVar.getType()).t;
-	// 		switch(type) {
-	// 			case TVec(s, t):
-	// 				removeOutput("output");
-	// 				throw ShaderException.t("Vector of bools is not supported", this.id); //addOutput("output", TVec(s, VBool));
-	// 			case TFloat:
-	// 				addOutput("output", TBool);
-	// 			default:
-	// 				removeOutput("output");
-	// 		}
-	// 	} else
-	// 		removeOutput("output");
-	// }
-
-	// override public function build(key : String) : TExpr {
-	// 	return {
-	// 			p : null,
-	// 			t : output.type,
-	// 			e : TBinop(OpAssign, {
-	// 					e: TVar(output),
-	// 					p: null,
-	// 					t: output.type
-	// 				}, {e: TBinop(this.condition,
-	// 						leftVar.getVar(rightVar.getType()),
-	// 						rightVar.getVar(leftVar.getType())),
-	// 					p: null, t: output.type })
-	// 		};
-	// }
 
 	static var availableConditions = [OpEq, OpNotEq, OpGt, OpGte, OpLt, OpLte, OpAnd, OpOr];
 	static var conditionStrings 	= ["==", "!=",    ">",  ">=",  "<",  "<=",  "AND", "OR"];
