@@ -165,16 +165,19 @@ class NodeGenContext {
 	}
 
 	public static function convertToType(targetType: hxsl.Ast.Type, sourceExpr: TExpr) : TExpr {
-		var sourceType = sourceExpr.t;
 
-		if (sourceType.equals(targetType))
+		if (sourceExpr.t.equals(targetType))
 			return sourceExpr;
 
-		var sourceSize = switch (sourceType) {
+		if (sourceExpr.t.match(TBool)) {
+			sourceExpr = makeIf(sourceExpr, makeFloat(1.0), makeFloat(0.0), null, TFloat);
+		}
+
+		var sourceSize = switch (sourceExpr.t) {
 			case TFloat: 1;
 			case TVec(size, VFloat): size;
 			default:
-				throw "Unsupported source type " + sourceType;
+				throw "Unsupported source type " + sourceExpr.t;
 		}
 
 		var targetSize = switch (targetType) {
