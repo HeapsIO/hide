@@ -103,7 +103,7 @@ class ModelLibraryCache {
 class ModelLibrary extends Prefab {
 
 	@:s var bakedMaterials : haxe.DynamicAccess<MaterialData>;
-	@:s var materialConfigs : Array<h3d.mat.PbrMaterial.PbrProps>;
+	@:s var materialConfigs : Array<h3d.mat.PbrMaterial.PbrProps> = [];
 	@:s var texturesCount : Int;
 
 	var optimizedMeshes : Array<h3d.scene.Mesh> = [];
@@ -517,13 +517,29 @@ class ModelLibrary extends Prefab {
 				matName = m.name;
 
 				var heapsMat = @:privateAccess lib.makeMaterial(lib.header.models[mid], mid, function(path:String) { return scene.loadTexture(sourcePath, path);});
-
+				var diffuseTexture = m.diffuseTexture;
+				var tshader = heapsMat.mainPass.getShader(h3d.shader.Texture);
+				if ( tshader != null )
+					diffuseTexture = tshader.texture.name;
+				var normalMap = m.normalMap;
+				var nmshader = heapsMat.mainPass.getShader(h3d.shader.NormalMap);
+				if ( nmshader != null )
+					normalMap = nmshader.texture.name;
+				var specularTexture = m.specularTexture;
+				var pshader = heapsMat.mainPass.getShader(h3d.shader.pbr.PropsTexture);
+				if ( pshader != null )
+					specularTexture = pshader.texture.name;
+				else {
+					var pshader = heapsMat.mainPass.getShader(h3d.shader.SpecularTexture);
+					if ( pshader != null )
+						specularTexture = pshader.texture.name;
+				}
 				if( textures.length == 0 ) {
-					hasNormal = m.normalMap != null;
-					hasSpec = m.specularTexture != null;
+					hasNormal = normalMap != null;
+					hasSpec = specularTexture != null;
 				}
 
-				var pos = loadTexture(sourcePath, m.diffuseTexture, hasNormal ? m.normalMap : null, hasSpec ? m.specularTexture : null);
+				var pos = loadTexture(sourcePath, diffuseTexture, hasNormal ? normalMap : null, hasSpec ? specularTexture : null);
 				if ( pos == null )
 					return null;
 				var matName = m.name;
@@ -556,11 +572,11 @@ class ModelLibrary extends Prefab {
 					};
 					bakedMaterials.set(key, bk);
 
-					if( !hasNormal && m.normalMap != null )
-						error(sourcePath+"("+m.name+") has normal map texture");
+					// if( !hasNormal && m.normalMap != null )
+					// 	error(sourcePath+"("+m.name+") has normal map texture");
 
-					if( !hasSpec && m.specularTexture != null )
-						error(sourcePath+"("+m.name+") has specular texture");
+					// if( !hasSpec && m.specularTexture != null )
+					// 	error(sourcePath+"("+m.name+") has specular texture");
 
 					hmd.materials.push(m2);
 					return bk;
