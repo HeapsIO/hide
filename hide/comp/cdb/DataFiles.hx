@@ -99,20 +99,25 @@ class DataFiles {
 			if (parent == null) {
 				for (rem in toRemove) {
 					var idxRemove = sheet.sheet.linesData.indexOf(rem);
-					sheet.sheet.linesData.remove(rem);
-					sheet.sheet.lines.remove(sheet.sheet.lines[idxRemove]);
 
-					var sepIdx = 0;
+					// Shift sperators
+					var sepIdx = sheet.sheet.separators.length;
 					for (idx => s in sheet.sheet.separators) {
-						if (s.index >= idxRemove) {
+						if (s.index > idxRemove) {
 							sepIdx = idx;
 							break;
 						}
+
 					}
 
-					// Shift sperators
-					for (idx in (sepIdx + 1)...sheet.sheet.separators.length)
+					for (idx in (sepIdx)...sheet.sheet.separators.length)
 						sheet.sheet.separators[idx].index--;
+
+					sheet.sheet.linesData.remove(rem);
+					sheet.sheet.lines.remove(sheet.sheet.lines[idxRemove]);
+
+					// Remove potentials un-used separators
+					removeSeparatorForPath(file, sheet);
 				}
 			}
 		}
@@ -255,6 +260,50 @@ class DataFiles {
 		var newSepIdx = addChildSeparator(newSep, -1);
 		newSep.index = newSepIdx == separators.length - 1 ? @:privateAccess sheet.sheet.lines.length : separators[newSepIdx + 1].index - 1;
 		return newSepIdx;
+	}
+
+	/*
+		Remove all non-used separators for this path
+	*/
+	static function removeSeparatorForPath(path: String, sheet: cdb.Sheet) {
+		var separators = @:privateAccess sheet.sheet.separators;
+		var lines = @:privateAccess sheet.sheet.lines;
+
+		function isSeparatorEmpty(sepIdx: Int) : Bool {
+			if (sepIdx == separators.length - 1)
+				return separators[sepIdx].index > lines.length - 1;
+
+			var next = null;
+
+			var idx = sepIdx + 1;
+			while (idx < separators.length) {
+				if (separators[idx].level <= separators[sepIdx].level) {
+					next = separators[idx];
+					break;
+				}
+
+				idx++;
+			}
+
+			if (next == null)
+				return separators[sepIdx].index > lines.length - 1;
+
+
+			return next.index <= separators[sepIdx].index;
+		}
+
+		var currentSepIdx = 0;
+
+		for (sIdx => s in separators) {
+			if (s.path == path) {
+				currentSepIdx = sIdx;
+				break;
+			}
+		}
+
+		var currentSep = separators[currentSepIdx];
+		if (isSeparatorEmpty(currentSepIdx))
+			separators.remove(currentSep);
 	}
 
 	#if (editor || cdb_datafiles)
