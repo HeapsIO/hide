@@ -207,7 +207,7 @@ class Box {
 
 				var shaderEditor : ShaderEditor = cast editor;
 
-				var editable = new hide.comp.ContentEditable(commentTitle);
+				var editable = new hide.comp.ContentEditable(null, commentTitle);
 				editable.value = comment.comment;
 				editable.onChange = function(v: String) {
 					shaderEditor.beforeChange();
