@@ -565,6 +565,50 @@ class Spline extends Object3D {
 		return result;
 	}
 
+	function getClosestPointOnSpline(p : h3d.col.Point, ?out: h3d.col.Point) : h3d.col.Point {
+		var out = out ?? new h3d.col.Point();
+
+		if( data == null )
+			computeSplineData();
+
+		var closestSq = hxd.Math.POSITIVE_INFINITY;
+
+		var c = p;
+
+		for (i in 0...data.samples.length-1) {
+			var a = data.samples[i].pos;
+			var b = data.samples[i+1].pos;
+			var d = inline new h3d.col.Point();
+			
+			var ab = inline b.sub(a);
+			var ca = inline c.sub(a);
+			var t = inline ca.dot(ab);
+
+			if (t <= 0.0) {
+				t = 0.0;
+				d.load(a);
+			} else {
+				var denom = ab.dot(ab);
+				if (t >= denom) {
+					t = 1.0;
+					d.load(b);
+				} else {
+					t /= denom;
+					d.load(inline a.add(inline ab.scaled(t)));
+				}
+			}
+
+			var cd = inline d.sub(c);
+			var lenSq = cd.lengthSq();
+			if (lenSq < closestSq) {
+				out.load(d);
+				closestSq = lenSq;
+			}
+		}
+
+		return out;
+	}
+
 	// Return the point on the curve between p1 and p2 at t, 0 <= t <= 1
 	inline function getPointBetween( t : Float, p1 : SplinePoint, p2 : SplinePoint ) : h3d.col.Point {
 		return switch (shape) {

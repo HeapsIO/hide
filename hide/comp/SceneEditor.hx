@@ -3786,13 +3786,12 @@ class SceneEditor {
 		var undoes = [];
 		var newElements = [];
 		var lastElem = elements[elements.length-1];
-		var lastIndex = lastElem.parent.children.indexOf(lastElem) + 1;
-		for(elt in elements) {
-			@:pirvateAccess var clone = hrt.prefab.Prefab.createFromDynamic(haxe.Json.parse(haxe.Json.stringify(elt.serialize())), elt.parent, elt.parent.shared);
-			var index = lastIndex+1;
-			elt.parent.children.remove(clone);
+		var lastIndex = lastElem.parent.children.indexOf(lastElem);
+		for(i => elt in elements) {
+			@:pirvateAccess var clone = hrt.prefab.Prefab.createFromDynamic(haxe.Json.parse(haxe.Json.stringify(elt.serialize())), null, elt.parent.shared);
+			var index = lastIndex+1+i;
 			elt.parent.children.insert(index, clone);
-
+			@:bypassAccessor clone.parent = elt.parent;
 			clone.shared.current2d = elt.parent.findFirstLocal2d();
 			clone.shared.current3d = elt.parent.findFirstLocal3d();
 			clone.make();
