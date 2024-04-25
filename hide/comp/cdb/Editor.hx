@@ -1056,9 +1056,10 @@ class Editor extends Component {
 	}
 
 	public static var inRefreshAll(default,null) : Bool;
-	public static function refreshAll( eraseUndo = false ) {
+	public static function refreshAll( eraseUndo = false, loadDataFiles = true) {
 		var editors : Array<Editor> = [for( e in new Element(".is-cdb-editor").elements() ) e.data("cdb")];
-		DataFiles.load();
+		if (loadDataFiles)
+			DataFiles.load();
 		inRefreshAll = true;
 		for( e in editors ) {
 			e.syncSheet(Ide.inst.database);
