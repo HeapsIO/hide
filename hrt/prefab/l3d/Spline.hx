@@ -66,6 +66,9 @@ class SplinePoint extends Object3D {
 	var spline(get, default) : Spline;
 	var obj : SplinePointObject;
 	var absPos : h3d.Matrix;
+	#if editor
+	var dirty = true;
+	#end
 
 	function get_spline() {
 		return parent.to(Spline);
@@ -122,16 +125,16 @@ class SplinePoint extends Object3D {
 	override function applyTransform() {
 		super.applyTransform();
 		#if editor
-			if (spline.editor != null)
-				@:privateAccess spline.computeSpline();
+		dirty = true;
+		@:privateAccess spline.computeSpline();
 		#end
 	}
 
 	override function updateInstance(?propName : String) {
 		super.updateInstance(propName);
-		absPos = null;
-
 		#if editor
+		dirty = true;
+
 			if( spline.editor != null ) {
 				spline.editor.setSelected(true);
 				spline.editor.update();
@@ -179,12 +182,22 @@ class SplinePoint extends Object3D {
 	#end
 
 	inline public function getPoint() : h3d.col.Point {
+		return getAbsPos(true).getPosition().toPoint();
+	}
+
+	override function getAbsPos(followRefs: Bool = false)  {
+		var dirty = #if editor dirty #else false #end;
 		if (absPos == null) {
 			absPos = new h3d.Matrix();
-			absPos.load(getAbsPos(true));
+			dirty = true;
 		}
-
-		return absPos.getPosition().toPoint();
+		if (dirty) {
+			absPos.load(super.getAbsPos(true));
+			#if editor
+			this.dirty = false;
+			#end
+		}
+		return absPos;
 	}
 
 	public function getTangent() : h3d.col.Point {
@@ -270,6 +283,7 @@ class Spline extends Object3D {
 
 	#if editor
 	public var editor : hide.prefab.SplineEditor;
+	public var loading : Bool = false;
 	#end
 	public var wasEdited = false;
 
@@ -325,8 +339,10 @@ class Spline extends Object3D {
 			editor.update(propName);
 		#end
 
+		#if editor loading = true; #end // Avoid calling computeSpline from inside splinePoint.updateInstance()
 		for (sp in points)
 			sp.updateInstance();
+		#if editor loading = false; #end
 
 		computeSpline();
 	}
@@ -623,6 +639,10 @@ class Spline extends Object3D {
 	}
 
 	public function computeSpline() {
+		#if editor
+		if (loading)
+			return;
+		#end
 		computeSplineData();
 		#if editor
 			generateSplineGraph();
