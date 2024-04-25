@@ -329,6 +329,10 @@ class Spline extends Object3D {
 		if( points.length == 0 )
 			new SplinePoint(this, null);
 
+		#if editor
+		lineGraphics = null;
+		#end
+
 		updateInstance();
 	}
 
