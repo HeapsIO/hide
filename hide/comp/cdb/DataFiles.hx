@@ -141,6 +141,18 @@ class DataFiles {
 			}
 		}
 
+		function findParentSep(sepIdx : Int) : cdb.Data.Separator {
+			var idx = sepIdx - 1;
+			while (idx > 0) {
+				if (separators[idx].level < separators[sepIdx].level)
+					return separators[idx];
+
+				idx--;
+			}
+
+			return null;
+		}
+
 		function addChildSeparator(sep: cdb.Data.Separator, parentSepIdx: Int) : Int {
 			// We might want to add it following the alphabetic order and not at the last position
 			for (idx in (parentSepIdx + 1)...separators.length) {
@@ -193,9 +205,10 @@ class DataFiles {
 				// Otherwise split the matching part of the separator
 
 				// Modify the most matching separator in a fully matching separator (remove the diff part of it)
+				var parentSep = findParentSep(matchingSepData.sepIdx);
 				var newPath = [ for(idx in 0...matchingSepData.level + 1) matchingSepPathSplit[idx]].join("/");
 				matchingSep.path = newPath;
-				matchingSep.title = StringTools.replace(newPath, "/", " > ");
+				matchingSep.title = StringTools.replace(parentSep != null ? newPath.substr(parentSep.path.length + 1) : newPath, "/", " > ");
 
 				// Create a new separator for the existings lines that were under the one we splitted
 				newPath = [ for(idx in (matchingSepData.level + 1)...matchingSepPathSplit.length) matchingSepPathSplit[idx] ].join("/");
