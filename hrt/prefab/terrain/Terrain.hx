@@ -46,6 +46,7 @@ class Terrain extends Object3D {
 	var editor : hide.prefab.terrain.TerrainEditor;
 	@:s public var showChecker = false;
 	@:s public var autoCreateTile = false;
+	@:s public var allowDisconnectedTiles = false;
 	@:s public var brushOpacity : Float = 1.0;
 	#end
 
