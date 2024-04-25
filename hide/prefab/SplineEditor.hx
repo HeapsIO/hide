@@ -248,9 +248,14 @@ class SplineEditor {
 			var dir = spd.tangent.toVector();
 			dir.transform3x3(invMatrix); // Don't take the translation
 			dir.scale(-1);
-			sp.rotationX = h3d.Matrix.lookAtX(dir).getFloats()[0];
-			sp.rotationY = h3d.Matrix.lookAtX(dir).getFloats()[1];
-			sp.rotationZ = h3d.Matrix.lookAtX(dir).getFloats()[2];
+			var m = h3d.Matrix.lookAtX(dir);
+			var euler = m.getEulerAngles();
+			sp.rotationX = hxd.Math.radToDeg(euler.x);
+			sp.rotationY = hxd.Math.radToDeg(euler.y);
+			sp.rotationZ = hxd.Math.radToDeg(euler.z);
+
+			trace(sp.rotationX, sp.rotationY, sp.rotationZ);
+
 		}
 		sp.scaleX = scale;
 		sp.scaleY = scale;
