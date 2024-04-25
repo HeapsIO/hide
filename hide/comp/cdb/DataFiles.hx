@@ -232,9 +232,16 @@ class DataFiles {
 			}
 		}
 
-		// Meaning that there is no matching separator and we need to create one
-		throw("Not implemented");
-		return 0;
+		// Meaning that there is no matching separator at all and we need to create one
+		var newSep : cdb.Data.Separator = {
+			title : StringTools.replace(path, "/", " > "),
+			level : 0,
+			path : path
+		};
+
+		var newSepIdx = addChildSeparator(newSep, -1);
+		newSep.index = newSepIdx == separators.length - 1 ? @:privateAccess sheet.sheet.lines.length : separators[newSepIdx + 1].index - 1;
+		return newSepIdx;
 	}
 
 	#if (editor || cdb_datafiles)
