@@ -263,11 +263,12 @@ class DataFiles {
 	}
 
 	/*
-		Remove all non-used separators for this path
+		Remove all separators that aren't used after modification of a file at this path
 	*/
-	static function removeSeparatorForPath(path: String, sheet: cdb.Sheet) {
+	static function removeSeparatorForPath(path: String, sheet: cdb.Sheet, deleteWithContent : Bool = false) {
 		var separators = @:privateAccess sheet.sheet.separators;
 		var lines = @:privateAccess sheet.sheet.lines;
+		var linesData = @:privateAccess sheet.sheet.linesData;
 
 		function isSeparatorEmpty(sepIdx: Int) : Bool {
 			if (sepIdx == separators.length - 1)
@@ -292,8 +293,20 @@ class DataFiles {
 			return next.index <= separators[sepIdx].index;
 		}
 
-		var currentSepIdx = 0;
+		function findParentSepIdx(sepIdx : Int) : Int {
+			var idx = sepIdx - 1;
+			while (idx > 0) {
+				if (separators[idx].level < separators[sepIdx].level)
+					return idx;
 
+				idx--;
+			}
+
+			return -1;
+		}
+
+		// Find current separator corresponding to this path
+		var currentSepIdx = 0;
 		for (sIdx => s in separators) {
 			if (s.path == path) {
 				currentSepIdx = sIdx;
@@ -301,9 +314,60 @@ class DataFiles {
 			}
 		}
 
-		var currentSep = separators[currentSepIdx];
-		if (isSeparatorEmpty(currentSepIdx))
-			separators.remove(currentSep);
+		// Delete content of the separator we want to remove (lines, separator etc)
+		if (deleteWithContent) {
+			var currentSep = separators[currentSepIdx];
+			var idx = currentSepIdx + 1;
+			var begin = currentSepIdx;
+			var end = currentSepIdx;
+			var lineBegin = separators[begin].index;
+			var lineEnd = separators[end].index + 1;
+			while (true) {
+				if (idx >= separators.length || separators[idx].level >= currentSep.level) {
+					lineEnd = idx >= separators.length ? lines.length : separators[idx].index;
+					break;
+				}
+
+				idx++;
+				end = idx;
+			}
+
+
+			var idx = end;
+			while (idx > begin) {
+				separators.remove(separators[idx]);
+				currentSepIdx--;
+				idx--;
+			}
+
+			var idx = lineEnd - 1;
+			while (idx >= lineBegin) {
+				lines.remove(lines[idx]);
+				linesData.remove(linesData[idx]);
+				idx--;
+			}
+
+			// Shift separators
+			var diff = (lineEnd + 1) - lineBegin;
+			for (sepIdx => s in separators) {
+				if (s != currentSep && sepIdx >= begin && sepIdx <= end)
+					s.index -= diff;
+			}
+		}
+
+		// Remove all empty separators (deletion is applied on parents too)
+		var parentSepIdx = currentSepIdx;
+		while (parentSepIdx != - 1) {
+			if (isSeparatorEmpty(parentSepIdx)) {
+				var tmp = findParentSepIdx(parentSepIdx);
+				separators.remove(separators[parentSepIdx]);
+				parentSepIdx = tmp;
+			}
+
+			break;
+		}
+
+		// Merge separator with parent if parent has exactly one separator
 	}
 
 	#if (editor || cdb_datafiles)
@@ -319,11 +383,42 @@ class DataFiles {
 
 			// Only reload data files that are concerned by this file modification
 			function reloadFile(path: String) {
+				if( !watching.exists(path) ) {
+					watching.set(path, true);
+					Ide.inst.fileWatcher.register(path, () -> onFileChanged(path), true);
+				}
+
 				var fullPath = Ide.inst.getPath(path);
 				if (sys.FileSystem.isDirectory(fullPath)) {
 					var files = sys.FileSystem.readDirectory(fullPath);
 					for (f in files)
 						reloadFile(path + "/" + f);
+
+					// If a file is deleted, this method is triggered with parent file, in that
+					// case we need to retrieve deleted file to remove it.
+					var deletedFiles : Array<String> = [];
+					for (p in DataFiles.watching.keys()) {
+						var abs = Ide.inst.getPath(p);
+
+						// Meaning this is a deleted file
+						if (StringTools.contains(abs, fullPath) && abs != fullPath && !sys.FileSystem.exists(abs)) {
+							watching.remove(p);
+
+							if (!sys.FileSystem.isDirectory(abs)) {
+								for( sheet in base.sheets ) {
+									if( sheet.props.dataFiles != null ) {
+										var dataFiles = sheet.props.dataFiles.split(";");
+										for (dataFile in dataFiles) {
+											var reg = new EReg("^"+dataFile.split(".").join("\\.").split("*").join(".*")+"$","");
+											if (reg.match(p))
+												DataFiles.removeSeparatorForPath(p, sheet, true);
+										}
+									}
+								}
+							}
+						}
+
+					}
 
 					return;
 				}
@@ -332,7 +427,6 @@ class DataFiles {
 					if( sheet.props.dataFiles != null ) {
 						var dataFiles = sheet.props.dataFiles.split(";");
 						for (dataFile in dataFiles) {
-							var s = sheet.separators;
 							var reg = new EReg("^"+dataFile.split(".").join("\\.").split("*").join(".*")+"$","");
 							if (reg.match(path))
 								DataFiles.loadFile(path, sheet);
