@@ -306,13 +306,16 @@ class DataFiles {
 		}
 
 		// Find current separator corresponding to this path
-		var currentSepIdx = 0;
+		var currentSepIdx = -1;
 		for (sIdx => s in separators) {
 			if (s.path == path) {
 				currentSepIdx = sIdx;
 				break;
 			}
 		}
+
+		if (currentSepIdx == -1)
+			return;
 
 		// Delete content of the separator we want to remove (lines, separator etc)
 		if (deleteWithContent) {
@@ -348,10 +351,9 @@ class DataFiles {
 			}
 
 			// Shift separators
-			var diff = (lineEnd + 1) - lineBegin;
-			for (sepIdx => s in separators) {
-				if (s != currentSep && sepIdx >= begin && sepIdx <= end)
-					s.index -= diff;
+			var diff = lineEnd - lineBegin;
+			for (sepIdx in (begin+1)...separators.length) {
+					separators[sepIdx].index -= diff;
 			}
 		}
 
@@ -403,6 +405,9 @@ class DataFiles {
 						// Meaning this is a deleted file
 						if (StringTools.contains(abs, fullPath) && abs != fullPath && !sys.FileSystem.exists(abs)) {
 							watching.remove(p);
+							var w = @:privateAccess Ide.inst.fileWatcher.getWatches(Ide.inst.getPath(p));
+							w.w?.close();
+							@:privateAccess Ide.inst.fileWatcher.watches.remove(p);
 
 							if (!sys.FileSystem.isDirectory(abs)) {
 								for( sheet in base.sheets ) {
