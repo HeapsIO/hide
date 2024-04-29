@@ -2222,7 +2222,7 @@ class SceneEditor {
 		inline function quantize(x: Float, step: Float) {
 			if(step > 0) {
 				x = Math.round(x / step) * step;
-				x = untyped parseFloat(x.toFixed(5)); // Snap to closest nicely displayed float :cold_sweat:
+				x = roundSmall(x);
 			}
 			return x;
 		}
@@ -3851,12 +3851,13 @@ class SceneEditor {
 		var obj3d = Std.downcast(elt, hrt.prefab.Object3D);
 		if(obj3d == null)
 			return;
-		if(mat != null)
-			obj3d.setTransform(mat);
+		if(mat != null) {
+			obj3d.loadTransform(makeTransform(mat));
+		}
 		else {
-			obj3d.x = position.x;
-			obj3d.y = position.y;
-			obj3d.z = position.z;
+			obj3d.x = roundSmall(position.x);
+			obj3d.y = roundSmall(position.y);
+			obj3d.z = roundSmall(position.z);
 		}
 		obj3d.updateInstance();
 	}
@@ -3935,18 +3936,25 @@ class SceneEditor {
 		refresh(effectFunc(false) ? Full : Partial);
 	}
 
+	function roundSmall(f: Float) {
+		var num = 10_000.0;
+		var r = hxd.Math.round(f * num) / num; 
+		// Avoid rounding floats that are too big
+		return hxd.Math.abs(r-f) < 2.0 / num ? r : f;
+	}
+
 	function makeTransform(mat: h3d.Matrix) {
 		var rot = mat.getEulerAngles();
-		var x = mat.tx;
-		var y = mat.ty;
-		var z = mat.tz;
+		var x = roundSmall(mat.tx);
+		var y = roundSmall(mat.ty);
+		var z = roundSmall(mat.tz);
 		var s = mat.getScale();
-		var scaleX = s.x;
-		var scaleY = s.y;
-		var scaleZ = s.z;
-		var rotationX = hxd.Math.radToDeg(rot.x);
-		var rotationY = hxd.Math.radToDeg(rot.y);
-		var rotationZ = hxd.Math.radToDeg(rot.z);
+		var scaleX = roundSmall(s.x);
+		var scaleY = roundSmall(s.y);
+		var scaleZ = roundSmall(s.z);
+		var rotationX = roundSmall(hxd.Math.radToDeg(rot.x));
+		var rotationY = roundSmall(hxd.Math.radToDeg(rot.y));
+		var rotationZ = roundSmall(hxd.Math.radToDeg(rot.z));
 		return { x : x, y : y, z : z, scaleX : scaleX, scaleY : scaleY, scaleZ : scaleZ, rotationX : rotationX, rotationY : rotationY, rotationZ : rotationZ };
 	}
 
