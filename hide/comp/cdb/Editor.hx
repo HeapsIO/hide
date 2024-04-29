@@ -1738,11 +1738,11 @@ class Editor extends Component {
 								return 'Invalid backwards move path "${back.join("/")}" (correct syntax : ../../columnName)';
 							}
 							if (cdbPath.length <= 0) {
-								return 'Backwards path "${back.join("/")}" goes outside of base table';
+								return 'Backwards path "${back.join("/")}" goes outside of base sheet';
 							}
 							var subSheet = base.getSheet(cdbPath.join("@"));
 							if (!subSheet.props.isProps) {
-								return 'Target path "${cdbPath.join(".")}" goes inside or outside another table';
+								return 'Target path "${cdbPath.join(".")}" goes inside or outside another sheet';
 							}
 							cdbPath.pop();
 						}
@@ -1754,14 +1754,14 @@ class Editor extends Component {
 								return 'Target sheet "${cdbPath.join(".")}" does not exist';
 							}
 							if (!subSheet.props.isProps) {
-								return 'Target path "${cdbPath.join(".")}" goes inside or outside another table';
+								return 'Target path "${cdbPath.join(".")}" goes inside or outside another sheet';
 							}
 						}
 	
 						var finalPath = cdbPath.join("@");
 						var targetSheet = base.getSheet(finalPath);
 						if (targetSheet != null) {
-							if (ide.confirm('Move sheet to "$finalPath" ?')) {
+							if (ide.confirm('Move column to "$finalPath" ?')) {
 								return moveColumn(targetSheet, sheet, c);
 							}
 							return 'Move canceled';
