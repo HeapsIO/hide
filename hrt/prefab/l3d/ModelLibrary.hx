@@ -63,6 +63,13 @@ class ModelLibShader extends hxsl.Shader {
 
 		var mipLevel : Float;
 
+		function unpackPBR(v : Vec4) : Vec4 {
+			metalness = v.r;
+			roughness = 1 - v.g * v.g;
+			occlusion = v.b;
+			// no emissive for now
+		}
+
 		function __init__vertex() {
 			if( hasNormal )
 				transformedTangent = vec4(input2.tangent * global.modelView.mat3(),input2.tangent.dot(input2.tangent) > 0.5 ? 1. : -1.);
@@ -82,10 +89,7 @@ class ModelLibShader extends hxsl.Shader {
 			}
 			if( hasPbr ) {
 				var v = singleTexture ? specular.getLod(calculatedUV, mipLevel) : speculars.getLod(vec3(calculatedUV, material), mipLevel);
-				metalness = v.r;
-				roughness = 1 - v.g * v.g;
-				occlusion = v.b;
-				// no emissive for now
+				unpackPBR(v);
 			}
 		}
 
@@ -749,7 +753,7 @@ class ModelLibrary extends Prefab {
 			cache.geomBounds = [for( g in @:privateAccess cache.hmdPrim.lib.header.geometries ) g.bounds];
 		@:privateAccess cache.hmdPrim.curMaterial = -1;
 		if ( cache.shader == null ) {
-			cache.shader = new ModelLibShader();
+			cache.shader = cast(h3d.mat.MaterialSetup.current, h3d.mat.PbrMaterialSetup).createModelLibShader();
 			cache.shader.mipStart = mipStart;
 			cache.shader.mipEnd = mipEnd;
 			cache.shader.mipPower = mipPower;
