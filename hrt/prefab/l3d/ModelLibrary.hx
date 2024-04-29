@@ -320,7 +320,6 @@ class ModelLibrary extends Prefab {
 		var normalMaps : Array<h3d.mat.BigTexture> = [];
 		var specMaps : Array<h3d.mat.BigTexture> = [];
 		var tmap = new Map();
-		var hasNormal = false, hasSpec = false;
 
 		function allocDefault(name,color,alpha=1) {
 			var tex = new h3d.mat.Texture(16,16);
@@ -539,7 +538,7 @@ class ModelLibrary extends Prefab {
 					hasSpec = specularTexture != null;
 				}
 
-				var pos = loadTexture(sourcePath, diffuseTexture, hasNormal ? normalMap : null, hasSpec ? specularTexture : null);
+				var pos = loadTexture(sourcePath, diffuseTexture, normalMap, specularTexture);
 				if ( pos == null )
 					return null;
 				var matName = m.name;
@@ -571,12 +570,6 @@ class ModelLibrary extends Prefab {
 						configIndex : matConfigIndex,
 					};
 					bakedMaterials.set(key, bk);
-
-					// if( !hasNormal && m.normalMap != null )
-					// 	error(sourcePath+"("+m.name+") has normal map texture");
-
-					// if( !hasSpec && m.specularTexture != null )
-					// 	error(sourcePath+"("+m.name+") has specular texture");
 
 					hmd.materials.push(m2);
 					return bk;
