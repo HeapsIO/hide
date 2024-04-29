@@ -1658,6 +1658,61 @@ class Editor extends Component {
 		var cats = ide.projectConfig.dbCategories;
 		return cats == null || props.categories == null || cats.filter(c -> props.categories.indexOf(c) >= 0).length > 0;
 	}
+	
+	public function moveColumn(targetSheet: cdb.Sheet, origSheet: cdb.Sheet, col: cdb.Data.Column) : String {
+		beginChanges(true);
+		var err = targetSheet.addColumn(col);
+		if (err == null) {
+
+			var commonSheet = origSheet;
+			var commonPath = origSheet.getPath().split("@");
+			while(true) {
+				if (commonPath.length <= 0) {
+					throw "missing parent table that is not props";
+				}
+				commonSheet = base.getSheet(commonPath.join("@"));
+
+				if (!commonSheet.props.isProps)
+					break;
+				commonPath.pop();
+			}
+
+			var origPath = origSheet.getPath().split("@");
+			origPath.splice(0, commonPath.length);
+			origPath.push(col.name);
+			var targetPath = targetSheet.getPath().split("@");
+			targetPath.splice(0, commonPath.length);
+
+			var lines = commonSheet.getLines();
+			for (i => line in lines) {
+				// read value from origPath
+				var value : Dynamic = line;
+				for (p in origPath) {
+					value = Reflect.field(value, p);
+					if (value == null)
+						break;
+				}
+
+				if (value != null) {
+					// Get or insert intermediates props value along targetPath
+					var target : Dynamic = line;
+					for (p in targetPath) {
+						var newTarget = Reflect.field(target, p);
+						if (newTarget == null) {
+							newTarget = {};
+							Reflect.setField(target, p, newTarget);
+						}
+						target = newTarget;
+					}
+					Reflect.setField(target, col.name, value);
+				}
+			}
+
+			origSheet.deleteColumn(col.name);
+		}
+		endChanges();
+		return err;
+	}
 
 	public function newColumn( sheet : cdb.Sheet, ?index : Int, ?onDone : cdb.Data.Column -> Void, ?col ) {
 		#if js
@@ -1668,8 +1723,58 @@ class Editor extends Component {
 				return;
 			beginChanges(true);
 			var err;
-			if( col != null )
+			if( col != null ) {
+				var newPath = c.name;
+				var back = newPath.split("/");
+				var finalPart = back.pop();
+				var path = finalPart.split(".");
+				c.name = path.pop();
 				err = base.updateColumn(sheet, col, c);
+				if (path.length > 0 || back.length > 0) {
+					function handleMoveTable() {
+						var cdbPath = sheet.getPath().split("@");
+						for(b in back) {
+							if (b != "..") {
+								return 'Invalid backwards move path "${back.join("/")}" (correct syntax : ../../columnName)';
+							}
+							if (cdbPath.length <= 0) {
+								return 'Backwards path "${back.join("/")}" goes outside of base table';
+							}
+							var subSheet = base.getSheet(cdbPath.join("@"));
+							if (!subSheet.props.isProps) {
+								return 'Target path "${cdbPath.join(".")}" goes inside or outside another table';
+							}
+							cdbPath.pop();
+						}
+	
+						for (p in path) {
+							cdbPath.push(p);
+							var subSheet = base.getSheet(cdbPath.join("@"));
+							if (subSheet == null) {
+								return 'Target sheet "${cdbPath.join(".")}" does not exist';
+							}
+							if (!subSheet.props.isProps) {
+								return 'Target path "${cdbPath.join(".")}" goes inside or outside another table';
+							}
+						}
+	
+						var finalPath = cdbPath.join("@");
+						var targetSheet = base.getSheet(finalPath);
+						if (targetSheet != null) {
+							if (ide.confirm('Move sheet to "$finalPath" ?')) {
+								return moveColumn(targetSheet, sheet, c);
+							}
+							return 'Move canceled';
+						}
+						else {
+							return 'Invalid move path "$newPath"';
+						}
+						return null;
+					}
+
+					err = handleMoveTable();
+				}
+			}
 			else
 				err = sheet.addColumn(c, index == null ? null : index + 1);
 			endChanges();
