@@ -533,10 +533,6 @@ class ModelLibrary extends Prefab {
 					if ( pshader != null )
 						specularTexture = pshader.texture.name;
 				}
-				if( textures.length == 0 ) {
-					hasNormal = normalMap != null;
-					hasSpec = specularTexture != null;
-				}
 
 				var pos = loadTexture(sourcePath, diffuseTexture, normalMap, specularTexture);
 				if ( pos == null )
