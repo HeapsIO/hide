@@ -179,7 +179,7 @@ class Light extends Object3D {
 		}
 
 		#if editor
-		icon = hrt.impl.EditorTools.create3DIcon(local3d, hide.Ide.inst.getHideResPath("icons/PointLight.png"), 0.5, Light);
+		icon = hrt.impl.EditorTools.create3DIcon(object, hide.Ide.inst.getHideResPath("icons/PointLight.png"), 0.5, Light);
 		#end
 
 		cookieTex = initTexture(cookiePath);
