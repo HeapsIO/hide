@@ -142,9 +142,6 @@ typedef Node = {
 	type : String,
 	?properties : Dynamic,
 	?instance : ShaderNode,
-	?outputs: Array<Node>,
-	?indegree : Int,
-	?generateId : Int, // Id used to index the node in the generate function
 };
 
 typedef Edge = {
@@ -669,7 +666,6 @@ class Graph {
 
 	public function generate(nodes : Array<Node>, edges : Array<Edge>) {
 		for (n in nodes) {
-			n.outputs = [];
 			var cl = std.Type.resolveClass(n.type);
 			if( cl == null ) throw "Missing shader node "+n.type;
 			n.instance = std.Type.createInstance(cl, []);
@@ -778,7 +774,6 @@ class Graph {
 	public function removeEdge(idNode, inputId, update = true) {
 		var node = this.nodes.get(idNode);
 		if (node.instance.connections[inputId] == null) return;
-		this.nodes.get(node.instance.connections[inputId].from.id).outputs.remove(node);
 
 		node.instance.connections[inputId] = null;
 	}
@@ -807,7 +802,6 @@ class Graph {
 
 		node.instance = std.Type.createInstance(nameClass, args);
 		node.instance.setId(current_node_id);
-		node.outputs = [];
 
 		this.nodes.set(node.id, node);
 		current_node_id++;
