@@ -2,12 +2,11 @@ package hrt.prefab.fx.gpuemitter;
 
 class BaseSpawn extends ComputeUtils {
 	static var SRC = {
-		@const(4096) var MAX_INSTANCE_COUNT : Int;
 		@param var batchBuffer : RWPartialBuffer<{
 			modelView : Mat4, 
 			speed : Vec3,
 			lifeTime : Float
-		}, MAX_INSTANCE_COUNT>;
+		}, 33554432>;
 		@const var SPEED_NORMAL : Bool;
 		@param var minLifeTime : Float;
 		@param var maxLifeTime : Float;

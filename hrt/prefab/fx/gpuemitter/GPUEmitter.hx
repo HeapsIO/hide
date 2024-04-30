@@ -1,8 +1,11 @@
 package hrt.prefab.fx.gpuemitter;
 
+import hrt.prefab.fx.gpuemitter.CubeSpawn.CubeSpawnShader;
+
 enum Mode {
 	World;
 	Local;
+	Camera;
 }
 
 enum Align {
@@ -50,6 +53,7 @@ typedef Data = {
 	var startSpeed : Float;
 	var trs : h3d.Matrix;
 	var mode : Mode;
+	var cameraModeDistance : Float;
 	var align : Align;
 	var speedMode : SpeedMode;
 	var maxStartSpeed : Float;
@@ -67,6 +71,7 @@ class GPUEmitterObject extends h3d.scene.MeshBatch {
 	public function new(data, primitive, materials, ?parent) {
 		super(primitive, null, parent);
 		this.meshBatchFlags.set(EnableGpuUpdate);
+		this.meshBatchFlags.set(EnableStorageBuffer);
 		if ( materials != null )
 			this.materials = materials;
 		particleShader = new ParticleShader();
@@ -89,13 +94,6 @@ class GPUEmitterObject extends h3d.scene.MeshBatch {
 		begin();
 		for ( i in 0...data.maxCount )
 			emitInstance();
-		var p = dataPasses;
-		trace("Max count is ", data.maxCount);
-		while ( p != null ) {
-			trace("Max instance is ", p.maxInstance);
-			trace(p.pass.name + " pass has estimated " + Math.ceil(data.maxCount / p.maxInstance) + " buffers");
-			p = p.next;
-		}
 	}
 
 	function dispatch(ctx : h3d.scene.RenderContext) {
@@ -105,7 +103,6 @@ class GPUEmitterObject extends h3d.scene.MeshBatch {
 		var p = dataPasses;
 		while ( p != null ) {
 			var baseSpawn = spawnPass.getShader(BaseSpawn);
-			baseSpawn.MAX_INSTANCE_COUNT = p.maxInstance;
 			baseSpawn.maxLifeTime = data.maxLifeTime;
 			baseSpawn.minLifeTime = data.minLifeTime;
 			baseSpawn.maxStartSpeed = data.maxStartSpeed;
@@ -120,7 +117,6 @@ class GPUEmitterObject extends h3d.scene.MeshBatch {
 			var baseSimulation = simulationPass.getShader(BaseSimulation);
 			baseSimulation.INFINITE = data.infinite;
 			baseSimulation.dtParam = ctx.elapsedTime;
-			baseSimulation.MAX_INSTANCE_COUNT = p.maxInstance;
 			switch ( data.align ) {
 			case FaceCam:
 				baseSimulation.FACE_CAM = true;
@@ -136,7 +132,31 @@ class GPUEmitterObject extends h3d.scene.MeshBatch {
 			case Local:
 				baseSpawn.absPos.identity();
 				particleShader.absPos.load(getAbsPos());
+			case Camera:
+				baseSpawn.absPos.identity();
+				particleShader.absPos.identity();
+				
+				var cam = ctx.camera.clone();
+				cam.zFar = data.cameraModeDistance;
+				cam.update();
+				var bounds = new h3d.col.Bounds();
+				bounds.addPoint(cam.unproject(-1, -1, 0.0).toPoint());
+				bounds.addPoint(cam.unproject(1, 1, 0.0).toPoint());
+				bounds.addPoint(cam.unproject(-1, -1, 1.0).toPoint());
+				bounds.addPoint(cam.unproject(1, 1, 1.0).toPoint());
+				baseSimulation.boundsPos.set(bounds.xMin, bounds.yMin, bounds.zMin);
+				baseSimulation.boundsSize.set(bounds.xSize, bounds.ySize, bounds.zSize);
+				particleShader.absPos.load(getAbsPos());
+
+				var cubeSpawn = spawnPass.getShader(CubeSpawnShader);
+				if ( cubeSpawn == null ) {
+					cubeSpawn = new CubeSpawnShader();
+					spawnPass.addShader(cubeSpawn);
+				}
+				cubeSpawn.boundsSize.set(bounds.xSize, bounds.ySize, bounds.zSize);
+				cubeSpawn.boundsSize.set(bounds.getCenter().x, bounds.getCenter().y, bounds.getCenter().z);
 			}
+			baseSimulation.CAMERA_BOUNDS = data.mode == Camera;
 
 			var i = 0;
 			for ( b in p.buffers ) {
@@ -198,6 +218,7 @@ class GPUEmitter extends Object3D {
 	@:s var infinite : Bool = false; 
 	@:s var faceCam : Bool = false;
 	@:s var mode : Mode = World;
+	@:s var cameraModeDistance : Float = 50.0;
 	@:s var align : Align = FaceCam;
 	@:s var speedMode : SpeedMode = Normal;
 
@@ -235,6 +256,7 @@ class GPUEmitter extends Object3D {
 				infinite : infinite,
 				faceCam : faceCam,
 				mode : mode,
+				cameraModeDistance : cameraModeDistance,
 				align : align,
 				speedMode : speedMode,
 				minStartSpeed : minStartSpeed,
@@ -259,13 +281,6 @@ class GPUEmitter extends Object3D {
 		}
 	}
 
-	override function makeChild(c : hrt.prefab.Prefab) {
-		#if !editor
-		if ( Std.isOfType(c, hrt.prefab.Object3D) )
-			return;
-		#end
-		super.makeChild(c);
-	}
 
 	override function updateInstance(?propName : String) {
 		super.updateInstance(propName);
@@ -300,8 +315,10 @@ class GPUEmitter extends Object3D {
 						<select field="mode">
 							<option value="World">World</option>
 							<option value="Local">Local</option>
+							<option value="Camera">Camera</option>
 						</select>
 					</dd>
+					<dt>Camera distance</dt><dd><input type="range" min="0" field="cameraModeDistance"/></dd>
 					<dt>Align</dt>
 					<dd>
 						<select field="align">

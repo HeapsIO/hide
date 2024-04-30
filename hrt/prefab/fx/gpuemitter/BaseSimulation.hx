@@ -2,18 +2,20 @@ package hrt.prefab.fx.gpuemitter;
 
 class BaseSimulation extends ComputeUtils {
 	static var SRC = {
-		@const(4096) var MAX_INSTANCE_COUNT : Int;
 		@param var batchBuffer : RWPartialBuffer<{
 			modelView : Mat4, 
 			speed : Vec3,
 			lifeTime : Float
-		}, MAX_INSTANCE_COUNT>;
+		}, 33554432>;
 
 		@const var INFINITE : Bool = false;
 		@const var FACE_CAM : Bool = false;
+		@const var CAMERA_BOUNDS : Bool = false;
 
 		@param var dtParam : Float;
 		@param var cameraUp : Vec3;
+		@param var boundsPos : Vec3;
+		@param var boundsSize : Vec3;
 
 		var dt : Float;
 		var speed : Vec3;
@@ -39,7 +41,10 @@ class BaseSimulation extends ComputeUtils {
 				} else {
 					align = rotateMatrixZ(computeVar.globalInvocation.x * 0.35487) * alignMatrix(vec3(0.0, 0.0, 1.0), normalize(speed));
 				}
-				modelView = align * translationMatrix(prevPos) * translationMatrix(speed * dt);
+				var newPos = prevPos + speed * dt;
+				if ( CAMERA_BOUNDS )
+					newPos = ((newPos - boundsPos) % boundsSize) + boundsPos;
+				modelView = align * translationMatrix(newPos);
 			}
 			var idx = computeVar.globalInvocation.x;
 			if ( !INFINITE )

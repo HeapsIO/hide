@@ -17,7 +17,13 @@ class ComputeSkin extends hxsl.Shader {
 }
 
 class MeshSpawnShader extends ComputeUtils {
-	public var mesh : h3d.scene.Mesh;
+	public var mesh(default, null) : h3d.scene.Mesh;
+	
+	public function attachTo(m : h3d.scene.Mesh) {
+		mesh = m;
+		vbuf = mesh.primitive.buffer;
+		SIZE = mesh.primitive.buffer.vertices;
+	}
 
 	override function onUpdate(emitter : GPUEmitter.GPUEmitterObject, buffer : h3d.Buffer, index : Int) {
 		super.onUpdate(emitter, buffer, index);
@@ -77,20 +83,36 @@ class MeshSpawn extends SpawnShader {
 	// 	}
 	// }
 
+	var mesh : h3d.scene.Mesh;
+	override function makeChild(c) {
+		if ( mesh != null )
+			return;
+		var object3D = Std.downcast(c, hrt.prefab.Object3D);
+		if ( object3D == null )
+			super.makeChild(c);
+		else
+			mesh = object3D.make().local3d.find(o -> Std.downcast(o, h3d.scene.Mesh));
+	}
+
+	override function postMakeInstance() {
+		var sh = cast(shader, MeshSpawnShader);
+		// var mesh = findFirstLocal3d().find(o -> Std.isOfType(o, GPUEmitter.GPUEmitterObject) ? null : Std.downcast(o, h3d.scene.Mesh));
+		if ( mesh == null ) {
+			var defaultPrim = new h3d.prim.Sphere();
+			defaultPrim.addUVs();
+			defaultPrim.addNormals();
+			mesh = new h3d.scene.Mesh(defaultPrim);
+		}
+		// Force primitive alloc
+		if ( mesh.primitive.buffer == null )
+			mesh.primitive.alloc(h3d.Engine.getCurrent());
+		sh.attachTo(mesh);
+	}
+
 	override function updateInstance(?propName) {
 		super.updateInstance(propName);
 
-		#if !editor
 		var sh = cast(shader, MeshSpawnShader);
-		var mesh = findFirstLocal3d().find(o -> Std.downcast(o, h3d.scene.Mesh));
-		if ( mesh != null )
-			sh.mesh = mesh;
-		// Force primitive alloc
-		if ( sh.mesh.primitive.buffer == null )
-			sh.mesh.primitive.alloc(h3d.Engine.getCurrent());
-		sh.vbuf = sh.mesh.primitive.buffer;
-		sh.SIZE = sh.mesh.primitive.buffer.vertices;
-		#end
 	}
 
 	#if editor
