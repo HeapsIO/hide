@@ -19,6 +19,9 @@ import hide.view.GraphInterface.Edge;
 
 enum EdgeState { None; FromInput; FromOutput; }
 
+typedef UndoFn = (isUndo : Bool) -> Void;
+typedef UndoBuffer = Array<UndoFn>;
+
 @:access(hide.view.shadereditor.Box)
 class Graph extends hide.comp.Component {
 	var heapsScene : JQuery;
@@ -68,6 +71,9 @@ class Graph extends hide.comp.Component {
 	var lastCurveX : Float = 0;
 	var lastCurveY : Float = 0;
 
+	var currentUndoBuffer : UndoBuffer = [];
+
+
 
 	var outputsToInputs : hrt.tools.OneToMany = new hrt.tools.OneToMany();
 	// Maps a packIO of an input to it's visual link in the graph
@@ -84,6 +90,32 @@ class Graph extends hide.comp.Component {
 			</div>
 		</div>'));
 		this.editor = editor;
+	}
+
+	public function addUndo(fn: UndoFn) {
+		currentUndoBuffer.push(fn);
+		fn(false);
+	}
+
+	public function commitUndo() {
+		if (currentUndoBuffer.length <= 0) {
+			return;
+		}
+		var buffer = currentUndoBuffer;
+		editor.getUndo().change(Custom(execUndo.bind(buffer)));
+		currentUndoBuffer = [];
+	}
+
+	public function execUndo(buffer: UndoBuffer, isUndo : Bool) {
+		if (isUndo) {
+			for (i in 0...buffer.length) {
+				buffer[buffer.length - i - 1](isUndo);
+			}
+		} else {
+			for (i in 0...buffer.length) {
+				buffer[i](isUndo);
+			}
+		}
 	}
 
 	public function onDisplay() {
@@ -259,6 +291,10 @@ class Graph extends hide.comp.Component {
 			e.stopPropagation();
 		});
 
+		addMenu.on("blur", function(e) {
+			closeAddMenu();
+		});
+
 		var results = addMenu.find("#results");
 		results.on("wheel", function(e) {
 			e.stopPropagation();
@@ -333,32 +369,41 @@ class Graph extends hide.comp.Component {
 			var posCursor = new Point(lX(ide.mouseX - 25), lY(ide.mouseY - 10));
 
 			var instance : IGraphNode = null; // For the lambda capture
+			var instance = nodes[key].onAdd();
+
+			var createLinkInput = edgeCreationInput;
+			var createLinkOutput = edgeCreationOutput;
+			var fromInput = createLinkInput != null;
+
+			instance = nodes[key].onAdd();
+
+			if (createLinkInput != null) {
+				createLinkOutput = packIO(instance.getId(), 0);
+			}
+			else if (createLinkOutput != null) {
+				createLinkInput = packIO(instance.getId(), 0);
+			}
+			if (createLinkInput != null) {
+				posCursor.set(lastCurveX, lastCurveY);
+			}
+			cleanupCreateEdge();
+
 			function exec(isUndo: Bool) {
 				if (!isUndo) {
-					instance = nodes[key].onAdd();
 					addBox(posCursor, instance);
-					if (edgeCreationInput != null) {
-						edgeCreationOutput = packIO(instance.getId(), 0);
+					if (createLinkInput != null && createLinkOutput != null) {
 						var box = boxes[instance.getId()];
-						var x = @:privateAccess box.width - Box.NODE_RADIUS;
+						var x = (fromInput ? @:privateAccess box.width : 0) - Box.NODE_RADIUS;
 						var y = box.getNodeHeight(0) - Box.NODE_RADIUS;
-						moveBox(boxes[instance.getId()], lastCurveX - x, lastCurveY - y);
+						moveBox(boxes[instance.getId()], posCursor.x - x, posCursor.y - y);
+						opEdge(createLinkOutput, createLinkInput, true)(false);
 					}
-					else if (edgeCreationOutput != null) {
-						edgeCreationInput = packIO(instance.getId(), 0);
-						var box = boxes[instance.getId()];
-						var x = 0 - Box.NODE_RADIUS;
-						var y = box.getNodeHeight(0) - Box.NODE_RADIUS;
-						moveBox(boxes[instance.getId()], lastCurveX - x, lastCurveY - y);
-					}
-					finalizeUserCreateEdge(false);
 				} else {
 					removeBox(boxes[instance.getId()]);
 				}
 			}
-
-			exec(false);
-			editor.getUndo().change(Custom(exec));
+			addUndo(exec);
+			commitUndo();
 			closeAddMenu();
 		}
 
@@ -594,38 +639,46 @@ class Graph extends hide.comp.Component {
 		return {nodeFromId: output.nodeId, outputFromId: output.ioId, nodeToId: input.nodeId, inputToId: input.ioId};
 	}
 
-	function finalizeUserCreateEdge(recordUndo: Bool = true) {
-		if (edgeCreationOutput != null && edgeCreationInput != null) {
-			var edge = edgeFromPack(edgeCreationOutput, edgeCreationInput);
-			var previousFrom : Null<Int> = outputsToInputs.getLeft(edgeCreationInput);
-			var prevEdge = null;
-			if (previousFrom != null) {
-				prevEdge = edgeFromPack(previousFrom, edgeCreationInput);
-			}
-
-			if (editor.canAddEdge(edge)) {
-				function exec(isUndo : Bool) : Bool {
-					if (!isUndo) {
-						if (prevEdge != null)
-							removeEdge(prevEdge);
-						createEdge(edge);
-					}
-					else {
-						removeEdge(edge);
-						if (prevEdge != null) {
-							createEdge(prevEdge);
-						}
-					}
-					return true;
-				}
-	
-				exec(false);
-				if (recordUndo)
-					editor.getUndo().change(Custom(exec));
-			}
-
-
+	function opEdge(output: Int, input: Int, doAdd: Bool) : UndoFn {
+		var edge = edgeFromPack(output, input);
+		var previousFrom : Null<Int> = outputsToInputs.getLeft(input);
+		var prevEdge = null;
+		if (previousFrom != null && doAdd) {
+			prevEdge = edgeFromPack(previousFrom, edgeCreationInput);
 		}
+
+		if (editor.canAddEdge(edge)) {
+			return function (isUndo : Bool) : Bool {
+				if (!doAdd) isUndo = !isUndo;
+				if (!isUndo) {
+					if (prevEdge != null)
+						removeEdge(prevEdge);
+					createEdge(edge);
+				}
+				else {
+					removeEdge(edge);
+					if (prevEdge != null) {
+						createEdge(prevEdge);
+					}
+				}
+				return true;
+			}
+		}
+		return null;
+	}
+
+	function finalizeUserCreateEdge() {
+		if (edgeCreationOutput != null && edgeCreationInput != null) {
+			var exec = opEdge(edgeCreationOutput, edgeCreationInput, true);
+			if (exec != null) {
+				addUndo(exec);
+			}
+			commitUndo();
+		}
+		cleanupCreateEdge();
+	}
+
+	function cleanupCreateEdge() {
 		edgeCreationOutput = null;
 		edgeCreationInput = null;
 		edgeCreationCurve?.remove();
@@ -634,7 +687,8 @@ class Graph extends hide.comp.Component {
 	}
 
 	static var tmpPoint = new h2d.col.Point();
-	function addBox(point: h2d.col.Point, node : IGraphNode) : Box {		
+	function addBox(point: h2d.col.Point, node : IGraphNode) : Box {
+		editor.addNode(node);
 		var box = new Box(this, editorMatrix, node);
 		box.setPosition(point.x, point.y);
 
@@ -718,7 +772,7 @@ class Graph extends hide.comp.Component {
 		box.dispose();
 		var id = box.node.getId();
 		boxes.remove(id);
-		editor.removeBox(id);
+		editor.removeNode(id);
 	}
 
 	inline static function packIO(id: Int, ioId: Int) {
@@ -947,24 +1001,39 @@ class Graph extends hide.comp.Component {
 			curve.addClass("draft");
 		else if (packedOutput != null && packedInput != null) {
 			curve.on("pointerdown", function(e) {
-				trace("pointerdown");
-				new hide.comp.ContextMenu([
-					{label: "Delete ?", click: function() {
-						var edge = edgeFromPack(packedOutput, packedInput);
-						function exec(isUndo: Bool) {
-							if (!isUndo) {
-								removeEdge(edge);
-							} else {
-								createEdge(edge);
+				
+				if (e.button == 0) {
+					addUndo(opEdge(packedOutput, packedInput, false));
+
+					heapsScene.get(0).setPointerCapture(e.pointerId);
+
+					edgeCreationOutput = packedOutput;
+					edgeCreationMode = FromOutput;
+
+					e.preventDefault();
+					e.stopPropagation();
+				}
+				else if (e.button == 2) {
+					new hide.comp.ContextMenu([
+						{label: "Delete ?", click: function() {
+							var edge = edgeFromPack(packedOutput, packedInput);
+							function exec(isUndo: Bool) {
+								if (!isUndo) {
+									removeEdge(edge);
+								} else {
+									createEdge(edge);
+								}
 							}
-						}
-						exec(false);
-						editor.getUndo().change(Custom(exec));
-						}
-					},
-				]);
-				e.preventDefault();
-				e.stopPropagation();
+							exec(false);
+							editor.getUndo().change(Custom(exec));
+							}
+						},
+					]);
+					e.preventDefault();
+					e.stopPropagation();
+				}
+
+
 			});
 		}
 

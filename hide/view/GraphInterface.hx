@@ -51,7 +51,8 @@ typedef AddNodeMenuEntry = {
     group: String,
 
     /**This function will be called when the user chooses to add a node from the add node menu
-        Your editor should register the node inside your graph structure, and then returns it's interface to the Graph
+        You should generate a unique ID for the new IGraphNode. Don't add the node to your graph datastructure yet,
+        the Graph editor will call addNode() with this node at the right time.
     **/
     onAdd: () -> IGraphNode,
 };
@@ -81,7 +82,8 @@ interface IGraphEditor {
     public function getEdges() : Array<Edge>;
     public function getAddNodesMenu() : Array<AddNodeMenuEntry>;
 
-    public function removeBox(id:Int) : Void;
+    public function addNode(node : IGraphNode) : Void;
+    public function removeNode(id:Int) : Void;
 
     /**Returns false if the edge can't be created because the input/output types don't match**/
     public function canAddEdge(edge : Edge) : Bool;

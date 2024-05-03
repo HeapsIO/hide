@@ -233,7 +233,10 @@ class ShaderEditor extends hide.view.FileView implements GraphInterface.IGraphEd
 		];
 	}
 
-	public function removeBox(id: Int) : Void {
+	public function addNode(node: IGraphNode) : Void {
+	}
+
+	public function removeNode(id: Int) : Void {
 
 	}
 
