@@ -745,7 +745,7 @@ class Prefab {
 
 		prefabInstance.load(data);
 
-		var children = Std.downcast(Reflect.field(data, "children"), Array);
+		var children : Array<Dynamic> = Reflect.field(data, "children");
 		if (children != null) {
 			for (child in children) {
 				createFromDynamic(child, prefabInstance);
