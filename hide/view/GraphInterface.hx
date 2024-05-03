@@ -1,11 +1,12 @@
-package hide.view.shadereditor;
+package hide.view;
 
 
 typedef GraphNodeInfo = {
     name: String,
     ?headerColor: Int,
     inputs: Array<NodeInput>,
-    outputs: Array<NodeInput>,
+    outputs: Array<NodeOutput>,
+    ?width: Int,
 
     /**If set, the node can show a preview pannel**/
     ?preview: {
@@ -15,6 +16,8 @@ typedef GraphNodeInfo = {
         /**If the preview takes over the whole node like in texture editing mode**/
         fullSize : Bool,
     },
+
+    ?noHeader: Bool,
 
     /**If set, the node will be treated as a comment**/
     ?comment : {
@@ -31,27 +34,28 @@ typedef NodeInput = {
     ?color: Int,
 
     /**If set, the input will have a input text box next to it when not connected**/
-    ?defaultparam: {
+    ?defaultParam: {
         get : () -> String,
         set : (String) -> Void
     },
-};
-
-typedef AddNodeMenuEntry = {
-    name: String,
-    description: String,
-    category: String,
-
-    /**This function will be called when the user chooses to add a node from the add node menu
-        Your editor should register the node, and then returns it's interface to the Graph  
-    **/
-    onAdd: () -> IGraphNode,
 };
 
 typedef NodeOutput = {
     name: String,
     ?color: Int,
 };
+
+typedef AddNodeMenuEntry = {
+    name: String,
+    description: String,
+    group: String,
+
+    /**This function will be called when the user chooses to add a node from the add node menu
+        Your editor should register the node inside your graph structure, and then returns it's interface to the Graph
+    **/
+    onAdd: () -> IGraphNode,
+};
+
 
 /**An edge between 2 nodes. the inputs/outpus id are based on the order of the inputs/ouputs returned by IGraphNode.getInfo()**/
 typedef Edge = {
@@ -79,7 +83,10 @@ interface IGraphEditor {
 
     public function removeBox(id:Int) : Void;
 
-    /**Returns false if the edge can't be created because of constraints**/
-    public function addEdge(edge : Edge) : Bool;
+    /**Returns false if the edge can't be created because the input/output types don't match**/
+    public function canAddEdge(edge : Edge) : Bool;
+
+    public function addEdge(edge : Edge) : Void;
     public function removeEdge(nodeToId: Int, inputToId : Int) : Void;
+    public function getUndo() : hide.ui.UndoHistory;
 }

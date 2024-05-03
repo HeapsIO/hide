@@ -2,7 +2,7 @@ package hide.view.shadereditor;
 
 import hide.comp.SVG;
 import js.jquery.JQuery;
-import hrt.shgraph.ShaderNode;
+import hide.view.GraphInterface;
 
 @:access(hide.view.Graph)
 class Box {
@@ -17,12 +17,10 @@ class Box {
 	static final samplerColor = "#600aff";
 	static final defaultColor = "#c8c8c8";
 
-	var nodeInstance : ShaderNode;
+	var node : IGraphNode;
+	var info : GraphNodeInfo;
 
-	var x : Float;
-	var y : Float;
-
-	var width : Int = 150;
+	var width : Int;
 	var height : Int;
 	var propsHeight : Int = 0;
 
@@ -37,54 +35,53 @@ class Box {
 	public var outputs : Array<JQuery> = [];
 
 	var hasHeader : Bool = true;
-	var hadToShowInputs : Bool = false;
 	var color : String;
 	var closePreviewBtn : JQuery;
+	var resizeSave = {x:0.0,y:0.0, w:0.0, h:0.0};
 
 	var element : JQuery;
 	var propertiesGroup : JQuery;
-	public var comment : hrt.shgraph.nodes.Comment = null;
 	static final resizeBorder : Int = 8;
 	static final halfResizeBorder : Int = resizeBorder >> 1;
 
-	public function new(editor : Graph, parent : JQuery, x : Float, y : Float, node : ShaderNode) {
-		this.nodeInstance = node;
+	public function new(editor : Graph, parent : JQuery, node : IGraphNode) {
+		this.node = node;
+		info = node.getInfo();
+		width = info.width ?? 150;
 
-		var metas = haxe.rtti.Meta.getType(Type.getClass(node));
-		if (metas.width != null) {
-			this.width = metas.width[0];
-		}
+		//var metas = haxe.rtti.Meta.getType(Type.getClass(node));
+		//if (metas.width != null) {
+		//	this.width = metas.width[0];
+		//}
 
-		if (Reflect.hasField(metas, "color")) {
-			color = Reflect.field(metas, "color");
-		}
-		var className = node.nameOverride ?? ((metas.name != null) ? metas.name[0] : "Undefined");
+		//if (Reflect.hasField(metas, "color")) {
+		//	color = Reflect.field(metas, "color");
+		//}
+		//var className = node.nameOverride ?? ((metas.name != null) ? metas.name[0] : "Undefined");
 
-		element = editor.editor.group(parent).addClass("box").addClass("not-selected");
-		element.attr("id", node.id);
-		setPosition(x, y);
+		element = editor.editorDisplay.group(parent).addClass("box").addClass("not-selected");
+		element.attr("id", node.getId());
 
-		comment = Std.downcast(node, hrt.shgraph.nodes.Comment);
-		if (comment != null) {
-			this.width = comment.width;
-			this.height = comment.height;
+		if (info.comment != null) {
+			info.comment.getSize(tmpPoint);
+			this.width = Std.int(tmpPoint.x);
+			this.height = Std.int(tmpPoint.y);
 			HEADER_HEIGHT = 34;
 			color = null;
 			this.element.addClass("comment");
 		}
 
-		if (Reflect.hasField(metas, "noheader")) {
+		if (info.noHeader) {
 			HEADER_HEIGHT = 0;
 			hasHeader = false;
 		}
 
-		// Debug: editor.editor.text(element, 2, -6, 'Node ${node.id}').addClass("node-id-indicator");
+		// Debug: editor.editorDisplay.text(element, 2, -6, 'Node ${node.id}').addClass("node-id-indicator");
 
 		// outline of box
-		editor.editor.rect(element, -1, -1, width+2, getHeight()+2).addClass("outline");
+		editor.editorDisplay.rect(element, -1, -1, width+2, getHeight()+2).addClass("outline");
 
-		if (comment != null) {
-			var shaderEditor : ShaderEditor = cast editor;
+		if (info.comment != null) {
 
 			function makeResizable(elt: js.html.Element, left: Bool, top: Bool, right: Bool, bottom: Bool) {
 				var pressed = false;
@@ -96,7 +93,9 @@ class Box {
 					e.preventDefault();
 					pressed = true;
 					elt.setPointerCapture(e.pointerId);
-					shaderEditor.beforeChange();
+
+					this.node.getPos(tmpPoint);
+					resizeSave = {x: tmpPoint.x, y:tmpPoint.y, w: this.width, h: this.height};
 				};
 
 				elt.onpointermove = function(e: js.html.PointerEvent) {
@@ -105,12 +104,13 @@ class Box {
 					e.stopPropagation();
 					e.preventDefault();
 
-					var clientRect = editor.editor.element.get(0).getBoundingClientRect();
+					var clientRect = editor.editorDisplay.element.get(0).getBoundingClientRect();
 
-					var x0 : Int = Std.int(this.x);
-					var y0 : Int = Std.int(this.y);
-					var x1 : Int = x0 + comment.width;
-					var y1 : Int = y0 + comment.height;
+					this.node.getPos(tmpPoint);
+					var x0 : Int = Std.int(tmpPoint.x);
+					var y0 : Int = Std.int(tmpPoint.y);
+					var x1 : Int = x0 + width;
+					var y1 : Int = y0 + height;
 
 					var mx : Int = Std.int(editor.lX(e.clientX));
 					var my : Int = Std.int(editor.lY(e.clientY));
@@ -132,14 +132,12 @@ class Box {
 						y1 = hxd.Math.imax(my, y0 + minDim);
 					}
 
-					this.x = x0;
-					this.y = y0;
-					comment.width = x1 - x0;
-					comment.height = y1 - y0;
+					setPosition(x0,y0);
 
-					setPosition(this.x,this.y);
-					this.width = comment.width;
-					this.height = comment.height;
+					this.width = x1 - x0;
+					this.height = y1 - y0;
+					tmpPoint.set(this.width, this.height);
+					info.comment.setSize(tmpPoint);
 					refreshBox();
 				}
 
@@ -149,47 +147,58 @@ class Box {
 					pressed = false;
 					e.stopPropagation();
 					e.preventDefault();
-					shaderEditor.afterChange();
+
+					var save = resizeSave;
+					
+					this.node.getPos(tmpPoint);
+					var current = {x: tmpPoint.x, y:tmpPoint.y, w: this.width, h: this.height};
+					function exec(undo : Bool) {
+						var toApply = undo ? save : current;
+						setPosition(toApply.x, toApply.y);
+						tmpPoint.set(toApply.w, toApply.h);
+						info.comment.setSize(tmpPoint);
+					}
+					editor.editor.getUndo().change(Custom(exec));
 					elt.releasePointerCapture(e.pointerId);
 				};
 			}
 
-			var elt = editor.editor.rect(element, 0,0,0,0).addClass("resize").get(0);
+			var elt = editor.editorDisplay.rect(element, 0,0,0,0).addClass("resize").get(0);
 			elt.style.cursor = "ns-resize";
 			elt.id = "resizeBot";
 			makeResizable(elt, false,false,false,true);
 
-			var elt = editor.editor.rect(element, 0,0,0,0).addClass("resize").get(0);
+			var elt = editor.editorDisplay.rect(element, 0,0,0,0).addClass("resize").get(0);
 			elt.style.cursor = "ns-resize";
 			elt.id = "resizeTop";
 			makeResizable(elt, false,true,false,false);
 
-			var elt = editor.editor.rect(element, 0,0,0,0).addClass("resize").get(0);
+			var elt = editor.editorDisplay.rect(element, 0,0,0,0).addClass("resize").get(0);
 			elt.style.cursor = "ew-resize";
 			elt.id = "resizeLeft";
 			makeResizable(elt, true,false,false,false);
 
-			var elt = editor.editor.rect(element, 0,0,0,0).addClass("resize").get(0);
+			var elt = editor.editorDisplay.rect(element, 0,0,0,0).addClass("resize").get(0);
 			elt.style.cursor = "ew-resize";
 			elt.id = "resizeRight";
 			makeResizable(elt, false,false,true,false);
 
-			var elt = editor.editor.rect(element, 0,0,0,0).addClass("resize").get(0);
+			var elt = editor.editorDisplay.rect(element, 0,0,0,0).addClass("resize").get(0);
 			elt.style.cursor = "nesw-resize";
 			elt.id = "resizeBotLeft";
 			makeResizable(elt, true,false,false,true);
 
-			var elt = editor.editor.rect(element, 0,0,0,0).addClass("resize").get(0);
+			var elt = editor.editorDisplay.rect(element, 0,0,0,0).addClass("resize").get(0);
 			elt.style.cursor = "nwse-resize";
 			elt.id = "resizeBotRight";
 			makeResizable(elt, false,false,true,true);
 
-			var elt = editor.editor.rect(element, 0,0,0,0).addClass("resize").get(0);
+			var elt = editor.editorDisplay.rect(element, 0,0,0,0).addClass("resize").get(0);
 			elt.style.cursor = "nwse-resize";
 			elt.id = "resizeTopLeft";
 			makeResizable(elt, true,true,false,false);
 
-			var elt = editor.editor.rect(element, 0,0,0,0).addClass("resize").get(0);
+			var elt = editor.editorDisplay.rect(element, 0,0,0,0).addClass("resize").get(0);
 			elt.style.cursor = "nesw-resize";
 			elt.id = "resizeTopRight";
 			makeResizable(elt, false,true,true,false);
@@ -198,84 +207,88 @@ class Box {
 		// header
 
 		if (hasHeader) {
-			var header = editor.editor.rect(element, 0, 0, this.width, HEADER_HEIGHT).addClass("head-box");
+			var header = editor.editorDisplay.rect(element, 0, 0, this.width, HEADER_HEIGHT).addClass("head-box");
 			if (color != null) header.css("fill", color);
-			if (comment != null) {
-				var fo = editor.editor.foreignObject(element, 7, 2, 0, HEADER_HEIGHT-4);
+			if (info.comment != null) {
+				var fo = editor.editorDisplay.foreignObject(element, 7, 2, 0, HEADER_HEIGHT-4);
 				fo.get(0).id = "commentTitle";
 				var commentTitle = new Element("<span contenteditable spellcheck='false'>Comment</span>").addClass("comment-title").appendTo(fo);
 
-				var shaderEditor : ShaderEditor = cast editor;
-
 				var editable = new hide.comp.ContentEditable(null, commentTitle);
-				editable.value = comment.comment;
+				editable.value = info.comment.getComment();
 				editable.onChange = function(v: String) {
-					shaderEditor.beforeChange();
-					comment.comment = v;
-					shaderEditor.afterChange();
+					var prev = info.comment.getComment();
+					function exec(undo : Bool) {
+						if(!undo) {
+							info.comment.setComment(v);
+						} else {
+							info.comment.setComment(prev);
+						}
+					}
+					editor.editor.getUndo().change(Custom(exec));
+					exec(false);
 				};
 			}
 			else {
-				editor.editor.text(element, 7, HEADER_HEIGHT-6, className).addClass("title-box");
+				editor.editorDisplay.text(element, 7, HEADER_HEIGHT-6, info.name).addClass("title-box");
 			}
 		}
 
-		if (Reflect.hasField(metas, "alwaysshowinputs")) {
-			hadToShowInputs = true;
-		}
 
-		propertiesGroup = editor.editor.group(element).addClass("properties-group");
+		propertiesGroup = editor.editorDisplay.group(element).addClass("properties-group");
 
 		// nodes div
-		var bg = editor.editor.rect(element, 0, HEADER_HEIGHT, this.width, 0).addClass("nodes");
+		var bg = editor.editorDisplay.rect(element, 0, HEADER_HEIGHT, this.width, 0).addClass("nodes");
 		if (!hasHeader && color != null) {
 			bg.css("fill", color);
 		}
 
-		if (node.canHavePreview()) {
-			closePreviewBtn = editor.editor.foreignObject(element, width / 2 - 16, 0, 32,32);
+		if (info.preview != null) {
+			closePreviewBtn = editor.editorDisplay.foreignObject(element, width / 2 - 16, 0, 32,32);
 			closePreviewBtn.append(new JQuery('<div class="close-preview"><span class="ico"></span></div>'));
 
 			refreshCloseIcon();
 			closePreviewBtn.on("click", (e) -> {
 				e.stopPropagation();
-				setPreviewVisibility(!node.showPreview);
+				setPreviewVisibility(!info.preview.getVisible());
 			});
 		}
 
 		refreshBox();
-		//editor.editor.line(element, width/2, HEADER_HEIGHT, width/2, 0, {display: "none"}).addClass("nodes-separator");
+		//editor.editorDisplay.line(element, width/2, HEADER_HEIGHT, width/2, 0, {display: "none"}).addClass("nodes-separator");
 	}
 
 	public function setPreviewVisibility(visible: Bool) {
-		nodeInstance.showPreview = visible;
-		refreshCloseIcon();
+		if (info.preview != null) {
+			info.preview.setVisible(visible);
+			refreshCloseIcon();
+		}
 	}
 
 	function refreshCloseIcon() {
 		if (closePreviewBtn == null)
 			return;
-		closePreviewBtn.find(".ico").toggleClass("ico-angle-down", !nodeInstance.showPreview);
-		closePreviewBtn.find(".ico").toggleClass("ico-angle-up", nodeInstance.showPreview);
+		var viz = info.preview.getVisible();
+		closePreviewBtn.find(".ico").toggleClass("ico-angle-down", !viz);
+		closePreviewBtn.find(".ico").toggleClass("ico-angle-up", viz);
 	}
 
-	public function addInput(editor : Graph, name : String, valueDefault : String = null, type : hrt.shgraph.ShaderGraph.SgType) {
-		var node = editor.editor.group(element).addClass("input-node-group");
+	public function addInput(editor : Graph, name : String, valueDefault : String = null, color : Int) {
+		var node = editor.editorDisplay.group(element).addClass("input-node-group");
 		var nodeHeight = HEADER_HEIGHT + NODE_MARGIN * (inputs.length+1) + NODE_RADIUS * inputs.length;
-		var style = {fill : ""}
-		style.fill = getTypeColor(type);
+		var style = {fill : '#${StringTools.hex(color, 6)}'};
 
-		var nodeCircle = editor.editor.circle(node, 0, nodeHeight, NODE_RADIUS, style).addClass("node input-node");
+		var nodeCircle = editor.editorDisplay.circle(node, 0, nodeHeight, NODE_RADIUS, style).addClass("node input-node");
 
 		var nameWidth = 0.0;
 		if (name.length > 0) {
-			var inputName = editor.editor.text(node, NODE_TITLE_PADDING, nodeHeight + 4, name).addClass("title-node");
+			var inputName = editor.editorDisplay.text(node, NODE_TITLE_PADDING, nodeHeight + 4, name).addClass("title-node");
 			var domName : js.html.svg.GraphicsElement = cast inputName.get()[0];
 			nameWidth = domName.getBBox().width;
 		}
 		if (valueDefault != null) {
 			var widthInput = width / 2 * 0.7;
-			var fObject = editor.editor.foreignObject(
+			var fObject = editor.editorDisplay.foreignObject(
 				node,
 				nameWidth + NODE_TITLE_PADDING + NODE_INPUT_PADDING,
 				nodeHeight - 9,
@@ -314,17 +327,16 @@ class Box {
 		}
 	}
 
-	public function addOutput(editor : Graph, name : String, ?type : hrt.shgraph.ShaderGraph.SgType) {
-		var node = editor.editor.group(element).addClass("output-node-group");
-		var nodeHeight = HEADER_HEIGHT + NODE_MARGIN * (outputs.length+1) + NODE_RADIUS * outputs.length;
-		var style = {fill : ""}
+	public function addOutput(editor : Graph, name : String, color : Int) {
+		var node = editor.editorDisplay.group(element).addClass("output-node-group");
+		var nodeHeight = getNodeHeight(outputs.length);
+		var style = {fill : '#${StringTools.hex(color, 6)}'};
 
-		style.fill = getTypeColor(type);
 
-		var nodeCircle = editor.editor.circle(node, width, nodeHeight, NODE_RADIUS, style).addClass("node output-node");
+		var nodeCircle = editor.editorDisplay.circle(node, width, nodeHeight, NODE_RADIUS, style).addClass("node output-node");
 
 		if (name.length > 0 && name != "output")
-			editor.editor.text(node, width - NODE_TITLE_PADDING - (name.length * 6.75), nodeHeight + 4, name).addClass("title-node");
+			editor.editorDisplay.text(node, width - NODE_TITLE_PADDING - (name.length * 6.75), nodeHeight + 4, name).addClass("title-node");
 
 		outputs.push(nodeCircle);
 
@@ -332,16 +344,14 @@ class Box {
 		return node;
 	}
 
-	public function generateProperties(editor : Graph, config:  hide.Config) {
-		var props = nodeInstance.getHTML(this.width, config);
+	public function getNodeHeight(id: Int) {
+		return HEADER_HEIGHT + NODE_MARGIN * (id+1) + NODE_RADIUS * (id);
+	}
+
+	public function generateProperties(editor : Graph) {
+		var props = node.getPropertiesHTML(this.width);
 
 		if (props.length == 0) return;
-
-		if (!hadToShowInputs && inputs.length <= 1 && outputs.length <= 1) {
-			element.find(".nodes").remove();
-			element.find(".input-node-group > .title-node").html("");
-			element.find(".output-node-group > .title-node").html("");
-		}
 
 		var children = propertiesGroup.children();
 		if (children.length > 0) {
@@ -351,16 +361,16 @@ class Box {
 		}
 
 		// create properties box
-		var bgParam = editor.editor.rect(propertiesGroup, 0, 0, this.width, 0).addClass("properties");
+		var bgParam = editor.editorDisplay.rect(propertiesGroup, 0, 0, this.width, 0).addClass("properties");
 		if (!hasHeader && color != null) bgParam.css("fill", color);
 		propsHeight = 0;
 
 		for (p in props) {
-			var prop = editor.editor.group(propertiesGroup).addClass("prop-group");
+			var prop = editor.editorDisplay.group(propertiesGroup).addClass("prop-group");
 			prop.attr("transform", 'translate(0, ${propsHeight})');
 
 			var propWidth = (p.width() > 0 ? p.width() : this.width);
-			var fObject = editor.editor.foreignObject(prop, (this.width - propWidth) / 2, 5, propWidth, p.height());
+			var fObject = editor.editorDisplay.foreignObject(prop, (this.width - propWidth) / 2, 5, propWidth, p.height());
 			p.appendTo(fObject);
 			propsHeight += Std.int(p.outerHeight()) + 1;
 		}
@@ -385,7 +395,7 @@ class Box {
 			element.find(".head-box").width(width);
 		}
 
-		if (comment != null) {
+		if (info.comment != null) {
 			var hB = halfResizeBorder;
 			var rB = resizeBorder;
 			element.find("#resizeBot").attr("x", hB).attr("y", height - hB).width(width - rB).height(rB);
@@ -402,8 +412,6 @@ class Box {
 		if (inputs.length >= 1 && outputs.length >= 1) {
 			element.find(".nodes-separator").attr("y2", HEADER_HEIGHT + nodesHeight);
 			element.find(".nodes-separator").show();
-		} else if (!hadToShowInputs) {
-			element.find(".nodes-separator").hide();
 		}
 
 		if (propertiesGroup != null) {
@@ -414,10 +422,11 @@ class Box {
 		closePreviewBtn?.attr("y",HEADER_HEIGHT + nodesHeight + propsHeight - 16);
 	}
 
+	public static var tmpPoint = new h2d.col.Point();
 	public function setPosition(x : Float, y : Float) {
-		this.x = x;
-		this.y = y;
 		element.attr({transform: 'translate(${x} ${y})'});
+		tmpPoint.set(x,y);
+		node.setPos(tmpPoint);
 	}
 
 	public function setSelected(b : Bool) {
@@ -435,34 +444,35 @@ class Box {
 			element.find(".title-box").html(str);
 		}
 	}
-	public function getId() {
-		return this.nodeInstance.id;
-	}
+
 	public function getInstance() {
-		return this.nodeInstance;
+		return this.node;
 	}
-	public function getX() {
-		return this.x;
-	}
-	public function getY() {
-		return this.y;
-	}
-	public function getWidth() {
-		return this.width;
-	}
+
 	public function getNodesHeight() {
 		var maxNb = Std.int(Math.max(inputs.length, outputs.length));
-		if ((!hadToShowInputs && maxNb <= 1 && propsHeight > 0) || comment != null) {
+		if (info.comment != null) {
 			return 0;
 		}
 		return NODE_MARGIN * (maxNb+1) + NODE_RADIUS * maxNb;
 	}
 	public function getHeight() {
-		if (comment != null) {
-			return comment.height;
+		if (info.comment != null) {
+			info.comment.getSize(tmpPoint);
+			return tmpPoint.y;
 		}
 		return HEADER_HEIGHT + getNodesHeight() + propsHeight;
 	}
+
+	inline public function getBounds() : {x: Float, y: Float, w: Float, h: Float} {
+		node.getPos(tmpPoint);
+		var x = tmpPoint.x;
+		var y = tmpPoint.y;
+		var w = this.width;
+		var h = getHeight();
+		return {x:x,y:y,w:w,h:h};
+	}
+
 	public function getElement() {
 		return element;
 	}

@@ -13,22 +13,22 @@ import hrt.shgraph.ShaderType;
 using Lambda;
 import hrt.shgraph.ShaderType.SType;
 
+import hide.view.GraphInterface.IGraphEditor;
+import hide.view.GraphInterface.IGraphNode;
+import hide.view.GraphInterface.Edge;
+
 enum EdgeState { None; FromInput; FromOutput; }
 
-typedef Edge = { from : Box, outputFrom : Int, to : Box, inputTo : Int, elt : JQuery };
-
 @:access(hide.view.shadereditor.Box)
-class Graph extends FileView {
-
-	var parent : JQuery;
-	var editor : SVG;
+class Graph extends hide.comp.Component {
+	var heapsScene : JQuery;
+	var editor : hide.view.GraphInterface.IGraphEditor;
+	var editorDisplay : SVG;
 	var editorMatrix : JQuery;
 	var statusBar : JQuery;
 	var statusClose : JQuery;
 
-
-	var listOfBoxes : Array<Box> = [];
-	var listOfEdges : Array<Edge> = [];
+	var boxes : Map<Int, Box> = [];
 
 	var transformMatrix : Array<Float> = [1, 0, 0, 1, 0, 0];
 	var isPanning : Bool = false;
@@ -41,8 +41,8 @@ class Graph extends FileView {
 	var timerUpdateView : Timer;
 
 	// used for selection
-	var listOfBoxesSelected : Array<Box> = [];
-	var listOfBoxesToMove : Array<Box> = [];
+	var boxesSelected : Map<Int, Bool> = [];
+	var boxesToMove : Map<Int, Bool> = [];
 	var undoSave : Any;
 	var recSelection : JQuery;
 	var startRecSelection : h2d.col.Point;
@@ -50,36 +50,48 @@ class Graph extends FileView {
 	var lastClickPan : h2d.col.Point;
 
 	// used to build edge
-	static var NODE_TRIGGER_NEAR = 2000.0;
-	var isCreatingLink : EdgeState = None;
-	var edgeStyle = {stroke : ""};
-	var startLinkBox : Box;
-	var endLinkBox : Box;
-	var startLinkNodeId : Int;
-	var endLinkNodeId : Int;
-	var currentLink : JQuery; // draft of edge
+	static final NODE_TRIGGER_NEAR = 2000.0;
+
+	var selectedNode : JQuery;
 
 	// used for deleting
-	var currentEdge : Edge;
 
 	// aaaaaa
 	var domain : hrt.shgraph.ShaderGraph.Domain;
 
-	override function onDisplay() {
-		element.html('
-			<div class="flex vertical" >
-				<div class="flex-elt graph-view" tabindex="0" >
-					<div class="heaps-scene" tabindex="1" >
-					</div>
-					<div id="rightPanel" class="tabs" >
-					</div>
+	var addMenu : JQuery;
+
+	var edgeCreationCurve : JQuery = null;
+	var edgeCreationOutput : Null<Int> = null;
+	var edgeCreationInput : Null<Int> = null;
+	var edgeCreationMode : EdgeState = None;
+	var lastCurveX : Float = 0;
+	var lastCurveY : Float = 0;
+
+
+	var outputsToInputs : hrt.tools.OneToMany = new hrt.tools.OneToMany();
+	// Maps a packIO of an input to it's visual link in the graph
+	var edges : Map<Int, JQuery> = [];
+
+	public function new(editor: hide.view.GraphInterface.IGraphEditor, parent: Element = null) {
+		super(parent, new Element('
+		<div class="flex vertical" >
+			<div class="flex-elt graph-view" tabindex="0" >
+				<div class="heaps-scene" tabindex="1" >
 				</div>
-			</div>');
-		parent = element.find(".heaps-scene");
-		editor = new SVG(parent);
-		editor.element.attr("id", "graph-root");
+				<div id="rightPanel" class="tabs" >
+				</div>
+			</div>
+		</div>'));
+		this.editor = editor;
+	}
+
+	public function onDisplay() {
+		heapsScene = element.find(".heaps-scene");
+		editorDisplay = new SVG(heapsScene);
+		editorDisplay.element.attr("id", "graph-root");
 		var status = new Element('<div id="status-bar" ><div id="close">-- close --</div><pre></pre></div>');
-		statusBar = status.appendTo(parent).find("pre");
+		statusBar = status.appendTo(heapsScene).find("pre");
 		statusClose = status.find("#close");
 		statusClose.hide();
 		statusClose.on("click", function(e) {
@@ -88,19 +100,24 @@ class Graph extends FileView {
 		});
 		statusBar.on("wheel", (e) -> { e.stopPropagation(); });
 
-		editorMatrix = editor.group(editor.element);
+		editorMatrix = editorDisplay.group(editorDisplay.element);
 
 		// rectangle Selection
-		parent.on("mousedown", function(e) {
+		var rawheaps = heapsScene.get(0);
+		rawheaps.addEventListener("pointerdown", function(e) {
 
 			if (e.button == 0) {
 				startRecSelection = new Point(lX(e.clientX), lY(e.clientY));
-				if (currentEdge != null) {
-					currentEdge.elt.removeClass("selected");
-					currentEdge = null;
-				}
+				// if (currentEdge != null) {
+				// 	currentEdge.elt.removeClass("selected");
+				// 	currentEdge = null;
+				// }
 
+				closeAddMenu();
 				clearSelectionBoxes();
+				finalizeUserCreateEdge();
+				rawheaps.setPointerCapture(e.pointerId);
+				e.stopPropagation();
 				return;
 			}
 			if (e.button == 1) {
@@ -108,9 +125,19 @@ class Graph extends FileView {
 				isPanning = true;
 				return;
 			}
+
+			if (e.button == 2) {
+				openAddMenu();
+				e.preventDefault();
+				e.stopPropagation();
+			}
 		});
 
-		parent.on("mousemove", function(e : js.jquery.Event) {
+		heapsScene.on("contextmenu", function(e) {
+			e.preventDefault();
+		});
+
+		heapsScene.on("pointermove", function(e : js.jquery.Event) {
 			e.preventDefault();
 			e.cancelBubble=true;
     		e.returnValue=false;
@@ -118,20 +145,33 @@ class Graph extends FileView {
 		});
 
 		var document = new Element(js.Browser.document);
-		document.on("mouseup", function(e) {
+		document.on("pointerup", function(e) {
 			if(timerUpdateView != null)
 				stopUpdateViewPosition();
 			if (e.button == 0) {
-
 				// Stop rectangle selection
+				if (edgeCreationInput != null || edgeCreationOutput != null) {
+					if (edgeCreationInput != null && edgeCreationOutput != null) {
+						finalizeUserCreateEdge();
+						e.stopPropagation();
+						return;
+					}
+					else {
+						openAddMenu();
+						e.stopPropagation();
+						return;
+					}
+				}
 				lastClickDrag = null;
 				startRecSelection = null;
 				if (recSelection != null) {
 					recSelection.remove();
 					recSelection = null;
-					for (b in listOfBoxes)
+					for (id => _ in boxes) {
+						var b = boxes.get(id);
 						if (b.selected)
-							listOfBoxesSelected.push(b);
+							boxesSelected.set(b.node.getId(), true);
+					}
 					return;
 				}
 
@@ -147,7 +187,7 @@ class Graph extends FileView {
 		});
 
 		// Zoom control
-		parent.on("wheel", function(e) {
+		heapsScene.on("wheel", function(e) {
 			if (e.originalEvent.deltaY < 0) {
 				zoom(1.1, e.clientX, e.clientY);
 			} else {
@@ -155,20 +195,245 @@ class Graph extends FileView {
 			}
 		});
 
-		listOfBoxes = [];
-		listOfEdges = [];
+		boxes = [];
+		outputsToInputs.clear();
 
 		updateMatrix();
+
+		var nodes = editor.getNodes();
+		for (node in nodes) {
+			node.getPos(tmpPoint);
+			addBox(tmpPoint, node);
+		}
+
+		var edges = editor.getEdges();
+	}
+
+	function openAddMenu(x : Int = 0, y : Int = 0) {
+
+		var boundsWidth = Std.parseInt(element.css("width"));
+		var boundsHeight = Std.parseInt(element.css("height"));
+
+		var posCursor = new IPoint(Std.int(ide.mouseX - heapsScene.offset().left) + x, Std.int(ide.mouseY - heapsScene.offset().top) + y);
+		if( posCursor.x < 0 )
+			posCursor.x = 0;
+		if( posCursor.y < 0)
+			posCursor.y = 0;
+
+		if (addMenu != null) {
+			var menuWidth = Std.parseInt(addMenu.css("width")) + 10;
+			var menuHeight = Std.parseInt(addMenu.css("height")) + 10;
+			if( posCursor.x + menuWidth > boundsWidth )
+				posCursor.x = boundsWidth - menuWidth;
+			if( posCursor.y + menuHeight > boundsHeight )
+				posCursor.y = boundsHeight - menuHeight;
+
+			var input = addMenu.find("#search-input");
+			input.val("");
+			addMenu.show();
+			input.focus();
+
+			addMenu.css("left", posCursor.x);
+			addMenu.css("top", posCursor.y);
+			for (c in addMenu.find("#results").children().elements()) {
+				c.show();
+			}
+			return;
+		}
+
+		addMenu = new Element('
+		<div id="add-menu">
+			<div class="search-container">
+				<div class="icon" >
+					<i class="ico ico-search"></i>
+				</div>
+				<div class="search-bar" >
+					<input type="text" id="search-input" autocomplete="off" >
+				</div>
+			</div>
+			<div id="results">
+			</div>
+		</div>').appendTo(heapsScene);
+
+		addMenu.on("pointerdown", function(e) {
+			e.stopPropagation();
+		});
+
+		var results = addMenu.find("#results");
+		results.on("wheel", function(e) {
+			e.stopPropagation();
+		});
+
+		var nodes = editor.getAddNodesMenu();
+		var prevGroup = null;
+		for (i => node in nodes) {
+			if (node.group != prevGroup) {
+				new Element('
+				<div class="group" >
+					<span> ${node.group} </span>
+				</div>').appendTo(results);
+				prevGroup = node.group;
+			}
+
+			new Element('
+				<div node="$i" >
+					<span> ${node.name} </span> <span> ${node.description} </span>
+				</div>').appendTo(results);
+		}
+
+		var menuWidth = Std.parseInt(addMenu.css("width")) + 10;
+		var menuHeight = Std.parseInt(addMenu.css("height")) + 10;
+		if( posCursor.x + menuWidth > boundsWidth )
+			posCursor.x = boundsWidth - menuWidth;
+		if( posCursor.y + menuHeight > boundsHeight )
+			posCursor.y = boundsHeight - menuHeight;
+		addMenu.css("left", posCursor.x);
+		addMenu.css("top", posCursor.y);
+
+		var input = addMenu.find("#search-input");
+		input.focus();
+		var divs = new Element("#results > div");
+		input.on("keydown", function(ev) {
+			if (ev.keyCode == 38 || ev.keyCode == 40) {
+				ev.stopPropagation();
+				ev.preventDefault();
+
+				if (this.selectedNode != null)
+					this.selectedNode.removeClass("selected");
+
+				var selector = "div[node]:not([style*='display: none'])";
+				var elt = this.selectedNode;
+
+				if (ev.keyCode == 38) {
+					do {
+						elt = elt.prev();
+					} while (elt.length > 0 && !elt.is(selector));
+				} else if (ev.keyCode == 40) {
+					do {
+						elt = elt.next();
+					} while (elt.length > 0 && !elt.is(selector));
+				}
+				if (elt.length == 1) {
+					this.selectedNode = elt;
+				}
+				if (this.selectedNode != null)
+					this.selectedNode.addClass("selected");
+
+				var offsetDiff = this.selectedNode.offset().top - results.offset().top;
+				if (offsetDiff > 225) {
+					results.scrollTop((offsetDiff-225)+results.scrollTop());
+				} else if (offsetDiff < 35) {
+					results.scrollTop(results.scrollTop()-(35-offsetDiff));
+				}
+			}
+		});
+
+		function doAdd() {
+			var key = Std.parseInt(this.selectedNode.attr("node"));
+			var posCursor = new Point(lX(ide.mouseX - 25), lY(ide.mouseY - 10));
+
+			var instance : IGraphNode = null; // For the lambda capture
+			function exec(isUndo: Bool) {
+				if (!isUndo) {
+					instance = nodes[key].onAdd();
+					addBox(posCursor, instance);
+					if (edgeCreationInput != null) {
+						edgeCreationOutput = packIO(instance.getId(), 0);
+						var box = boxes[instance.getId()];
+						var x = @:privateAccess box.width - Box.NODE_RADIUS;
+						var y = box.getNodeHeight(0) - Box.NODE_RADIUS;
+						moveBox(boxes[instance.getId()], lastCurveX - x, lastCurveY - y);
+					}
+					else if (edgeCreationOutput != null) {
+						edgeCreationInput = packIO(instance.getId(), 0);
+						var box = boxes[instance.getId()];
+						var x = 0 - Box.NODE_RADIUS;
+						var y = box.getNodeHeight(0) - Box.NODE_RADIUS;
+						moveBox(boxes[instance.getId()], lastCurveX - x, lastCurveY - y);
+					}
+					finalizeUserCreateEdge(false);
+				} else {
+					removeBox(boxes[instance.getId()]);
+				}
+			}
+
+			exec(false);
+			editor.getUndo().change(Custom(exec));
+			closeAddMenu();
+		}
+
+		input.on("keyup", function(ev) {
+			if (ev.keyCode == 38 || ev.keyCode == 40) {
+				return;
+			}
+
+			if (ev.keyCode == 13) {
+				doAdd();
+			} else {
+				if (this.selectedNode != null)
+					this.selectedNode.removeClass("selected");
+				var value = StringTools.trim(input.val());
+				var children = divs.elements();
+				var isFirst = true;
+				var lastGroup = null;
+				for (elt in children) {
+					if (elt.hasClass("group")) {
+						lastGroup = elt;
+						elt.hide();
+						continue;
+					}
+					if (value.length == 0 || elt.children().first().html().toLowerCase().indexOf(value.toLowerCase()) != -1) {
+						if (isFirst) {
+							this.selectedNode = elt;
+							isFirst = false;
+						}
+						elt.show();
+						if (lastGroup != null)
+							lastGroup.show();
+					} else {
+						elt.hide();
+					}
+				}
+				if (this.selectedNode != null)
+					this.selectedNode.addClass("selected");
+			}
+		});
+		divs.on("pointerover", function(ev) {
+			if (ev.currentTarget.classList.contains("group")) {
+				return;
+			}
+			if (this.selectedNode != null)
+				this.selectedNode.removeClass("selected");
+			this.selectedNode = new Element(ev.currentTarget); // Todo : not make this jquery
+			this.selectedNode.addClass("selected");
+		});
+		divs.on("pointerup", function(ev) {
+			if (ev.currentTarget.classList.contains("group")) {
+				return;
+			}
+
+			doAdd();
+			ev.stopPropagation();
+		});
+	}
+
+	function closeAddMenu() {
+		if (addMenu != null) {
+			addMenu.hide();
+			//heapsScene.focus();
+		}
 	}
 
 	function mouseMoveFunction(clientX : Int, clientY : Int) {
-		if (isCreatingLink != None) {
+		if (addMenu?.is(":visible"))
+			return;
+		if (edgeCreationInput != null || edgeCreationOutput != null) {
 			startUpdateViewPosition();
 			createLink(clientX, clientY);
 			return;
 		}
 		// Moving edge
-		if (currentEdge != null) {
+		/*if (currentEdge != null) {
 			var distOutput = distanceToElement(currentEdge.from.outputs[currentEdge.outputFrom], clientX, clientY);
 			var distInput = distanceToElement(currentEdge.to.inputs[currentEdge.inputTo], clientX, clientY);
 
@@ -179,7 +444,7 @@ class Graph extends FileView {
 			}
 			currentEdge = null;
 			return;
-		}
+		}*/
 		if (isPanning) {
 			pan(new Point(clientX - lastClickPan.x, clientY - lastClickPan.y));
 			lastClickPan.x = clientX;
@@ -205,9 +470,9 @@ class Graph extends FileView {
 			}
 
 			if (recSelection != null) recSelection.remove();
-			recSelection = editor.rect(editorMatrix, xMin, yMin, xMax - xMin, yMax - yMin).addClass("rect-selection");
+			recSelection = editorDisplay.rect(editorMatrix, xMin, yMin, xMax - xMin, yMax - yMin).addClass("rect-selection");
 
-			for (box in listOfBoxes) {
+			for (box in boxes) {
 				if (isInside(box, new Point(xMin, yMin), new Point(xMax, yMax))) {
 					box.setSelected(true);
 				} else {
@@ -218,14 +483,16 @@ class Graph extends FileView {
 		}
 
 		// Move selected boxes
-		if (listOfBoxesSelected.length > 0 && lastClickDrag != null) {
+		if (boxesSelected.iterator().hasNext() && lastClickDrag != null) {
 			startUpdateViewPosition();
 			var dx = (lX(clientX) - lastClickDrag.x);
 			var dy = (lY(clientY) - lastClickDrag.y);
 
 
-			for (b in listOfBoxesToMove) {
-				moveBox(b, b.getX() + dx, b.getY() + dy);
+			for (id => _  in boxesToMove) {
+				var b = boxes.get(id);
+				b.node.getPos(Box.tmpPoint);
+				moveBox(b, Box.tmpPoint.x + dx, Box.tmpPoint.y + dy);
 			}
 			lastClickDrag.x = lX(clientX);
 			lastClickDrag.y = lY(clientY);
@@ -238,19 +505,25 @@ class Graph extends FileView {
 	function moveBox(b: Box, x: Float, y: Float) {
 		b.setPosition(x, y);
 		updatePosition(b);
-		// move edges from and to this box
-		for (edge in listOfEdges) {
-			if (edge.from == b || edge.to == b) {
-				edge.elt.remove();
-				edgeStyle.stroke = edge.from.outputs[edge.outputFrom].css("fill");
-				edge.elt = createCurve( edge.from.outputs[edge.outputFrom], edge.to.inputs[edge.inputTo]);
 
-				edge.elt.on("mousedown", function(e) {
-					e.stopPropagation();
-					clearSelectionBoxes();
-					this.currentEdge = edge;
-					currentEdge.elt.addClass("selected");
-				});
+		var id = b.node.getId();
+		// move edges from and to this box
+		for (i => _ in b.info.inputs) {
+			var input = packIO(id, i);
+			var output = outputsToInputs.getLeft(input);
+			if (output != null) {
+				clearEdge(input);
+				var visual = createCurve(output, input);
+				edges.set(input, visual);
+			}
+		}
+
+		for (i => _ in b.info.outputs) {
+			var output = packIO(id, i);
+			for (input in outputsToInputs.iterRights(output)) {
+				clearEdge(input);
+				var visual = createCurve(output, input);
+				edges.set(input, visual);
 			}
 		}
 	}
@@ -258,33 +531,36 @@ class Graph extends FileView {
 	function beginMove(e: js.html.MouseEvent) {
 		lastClickDrag = new Point(lX(e.clientX), lY(e.clientY));
 
-		var boxesToMove : Map<Box, Bool> = [];
+		boxesToMove.clear();
 
-		for (b in listOfBoxesSelected) {
-			boxesToMove.set(b, true);
+		for (id => _ in boxesSelected) {
+			var b = boxes.get(id);
+			boxesToMove.set(id, true);
 
-			if (b.comment != null && !e.shiftKey) {
-				var min = inline new Point(b.getX(), b.getY());
-				var max = inline new Point(b.getX() + b.comment.width, b.getY() + b.comment.height);
+			if (b.info.comment != null && !e.shiftKey) {
+				var bounds = inline b.getBounds();
+				var min = inline new Point(bounds.x, bounds.y);
+				var max = inline new Point(bounds.x + bounds.w, bounds.y + bounds.h);
 
-				for (bb in listOfBoxes) {
+				for (bb in boxes) {
 					if (isFullyInside(bb, min, max)) {
-						boxesToMove.set(bb, true);
+						boxesToMove.set(bb.node.getId(), true);
 					}
 				}
 			}
 		}
 
-		listOfBoxesToMove = [for (k in boxesToMove.keys()) k];
 		undoSave = saveMovedBoxes();
 
-		trace(listOfBoxesToMove);
+		trace(boxesToMove);
 	}
 
 	function saveMovedBoxes() {
 		var save : Map<Int, {x: Float, y: Float}> = [];
-		for (b in listOfBoxesToMove) {
-			save.set(b.nodeInstance.id, {x:b.getX(), y: b.getY()});
+		for (id => _ in boxesToMove) {
+			var b = boxes[id];
+			b.node.getPos(Box.tmpPoint);
+			save.set(b.node.getId(), {x:Box.tmpPoint.x, y: Box.tmpPoint.y});
 		}
 		return save;
 	}
@@ -299,27 +575,71 @@ class Graph extends FileView {
 			var before : Map<Int, {x: Float, y: Float}> = undoSave;
 			var after : Map<Int, {x: Float, y: Float}> = saveMovedBoxes();
 
-			undo.change(Custom(function(undo) {
+			editor.getUndo().change(Custom(function(undo) {
 				var toApply = undo ? before : after;
 				for (id => pos in toApply) {
-					var box = listOfBoxes.find((e) -> e.nodeInstance.id == id);
-					moveBox(box, pos.x ,pos.y);
+					moveBox(boxes[id], pos.x ,pos.y);
 				}
 			}));
 			undoSave = null;
 		}
 
-		listOfBoxesToMove = [];
+		boxesToMove = [];
 	}
 
-	function addBox(p : Point, nodeClass : Class<ShaderNode>, node : ShaderNode) : Box {
+	static function edgeFromPack(output: Int, input: Int) : Edge {
+		var output = unpackIO(output);
+		var input = unpackIO(input);
 
-		var className = std.Type.getClassName(nodeClass);
-		className = className.substr(className.lastIndexOf(".") + 1);
+		return {nodeFromId: output.nodeId, outputFromId: output.ioId, nodeToId: input.nodeId, inputToId: input.ioId};
+	}
 
-		var box = new Box(this, editorMatrix, p.x, p.y, node);
+	function finalizeUserCreateEdge(recordUndo: Bool = true) {
+		if (edgeCreationOutput != null && edgeCreationInput != null) {
+			var edge = edgeFromPack(edgeCreationOutput, edgeCreationInput);
+			var previousFrom : Null<Int> = outputsToInputs.getLeft(edgeCreationInput);
+			var prevEdge = null;
+			if (previousFrom != null) {
+				prevEdge = edgeFromPack(previousFrom, edgeCreationInput);
+			}
+
+			if (editor.canAddEdge(edge)) {
+				function exec(isUndo : Bool) : Bool {
+					if (!isUndo) {
+						if (prevEdge != null)
+							removeEdge(prevEdge);
+						createEdge(edge);
+					}
+					else {
+						removeEdge(edge);
+						if (prevEdge != null) {
+							createEdge(prevEdge);
+						}
+					}
+					return true;
+				}
+	
+				exec(false);
+				if (recordUndo)
+					editor.getUndo().change(Custom(exec));
+			}
+
+
+		}
+		edgeCreationOutput = null;
+		edgeCreationInput = null;
+		edgeCreationCurve?.remove();
+		edgeCreationCurve = null;
+		edgeCreationMode = None;
+	}
+
+	static var tmpPoint = new h2d.col.Point();
+	function addBox(point: h2d.col.Point, node : IGraphNode) : Box {		
+		var box = new Box(this, editorMatrix, node);
+		box.setPosition(point.x, point.y);
+
 		var elt = box.getElement();
-		elt.get(0).onmousedown = function(e: js.html.MouseEvent) {
+		elt.get(0).onpointerdown = function(e: js.html.MouseEvent) {
 			if (e.button != 0)
 				return;
 			e.stopPropagation();
@@ -328,101 +648,145 @@ class Graph extends FileView {
 				if (!e.ctrlKey) {
 					// when not group selection and click on box not selected
 					clearSelectionBoxes();
-					listOfBoxesSelected = [box];
-				} else
-					listOfBoxesSelected.push(box);
+					boxesSelected.clear();
+				}
+				boxesSelected.set(box.node.getId(), true);
+
 				box.setSelected(true);
 			}
 			beginMove(e);
 		};
-		elt.mouseup(function(e) {
+		elt.get(0).onpointerup = function(e) {
 			if (e.button != 0)
 				return;
 			endMove();
-		});
-		listOfBoxes.push(box);
+		};
+		boxes.set(box.node.getId(), box);
 
-		for (inputId => input in box.getInstance().getInputs()) {
-			var defaultValue : String = null;
-			switch (input.def) {
-				case Const(defValue):
-					defaultValue= Reflect.getProperty(box.getInstance().defaults, '${input.name}');
-					if (defaultValue == null) {
-						defaultValue = '$defValue';
-					}
-				default:
-			}
-			var grNode = box.addInput(this, input.name, defaultValue, input.type);
+		for (inputId => input in box.info.inputs) {
+			var defaultValue : String = input.defaultParam?.get();
+			//defaultValue= Reflect.getProperty(box.getInstance().defaults, '${input.name}');
+
+			var grNode = box.addInput(this, input.name, defaultValue, input.color);
 			if (defaultValue != null) {
 				var fieldEditInput = grNode.find("input");
 				fieldEditInput.on("change", function(ev) {
+					var prevValue = Std.parseFloat(input.defaultParam.get()) ?? 0.0;
 					var tmpValue = Std.parseFloat(fieldEditInput.val());
 					if (Math.isNaN(tmpValue) ) {
 						fieldEditInput.addClass("error");
+						fieldEditInput.val(prevValue);
 					} else {
-						// Store the value as a string anyway
-						Reflect.setField(box.getInstance().defaults, '${input.name}', '$tmpValue');
-						fieldEditInput.val(tmpValue);
+						function exec(isUndo : Bool) {
+							var val = isUndo ? prevValue : tmpValue;
+							fieldEditInput.val(val);
+							input.defaultParam.set(Std.string(val));
+						}
+
 						fieldEditInput.removeClass("error");
+						exec(false);
+						editor.getUndo().change(Custom(exec));
 					}
 				});
 			}
 			grNode.find(".node").attr("field", inputId);
-			grNode.on("mousedown", function(e : js.jquery.Event) {
+			grNode.get(0).addEventListener("pointerdown", function(e) {
 				e.stopPropagation();
-				var node = grNode.find(".node");
-				if (node.attr("hasLink") != null) {
-					replaceEdge(FromOutput, node, e.clientX, e.clientY);
-					return;
-				}
-				isCreatingLink = FromInput;
-				startLinkNodeId = inputId;
-				startLinkBox = box;
-				edgeStyle.stroke = node.css("fill");
+				heapsScene.get(0).setPointerCapture(e.pointerId);
+				edgeCreationInput = packIO(box.node.getId(), inputId);
+				edgeCreationMode = FromInput;
 			});
 		}
-		for (outputId => info in box.getInstance().getOutputs()) {
-			var grNode = box.addOutput(this, info.name, info.type);
+		for (outputId => info in box.info.outputs) {
+			var grNode = box.addOutput(this, info.name, info.color);
 			grNode.find(".node").attr("field", outputId);
-			grNode.on("mousedown", function(e) {
+			grNode.get(0).addEventListener("pointerdown", function(e) {
 				e.stopPropagation();
-				var node = grNode.find(".node");
-				isCreatingLink = FromOutput;
-				startLinkNodeId = outputId;
-				startLinkBox = box;
-				edgeStyle.stroke = node.css("fill");
+				heapsScene.get(0).setPointerCapture(e.pointerId);
+				edgeCreationOutput = packIO(box.node.getId(), outputId);
+				edgeCreationMode = FromOutput;
 			});
 		}
 
-		box.generateProperties(this, config);
+		box.generateProperties(this);
 
 		return box;
 	}
 
-	function removeBox(box : Box, trackChanges = true) {
-		removeEdges(box);
+	function removeBox(box : Box) {
+		removeBoxEdges(box);
 		box.dispose();
-		listOfBoxes.remove(box);
+		var id = box.node.getId();
+		boxes.remove(id);
+		editor.removeBox(id);
 	}
 
-	function removeEdges(box : Box) {
-		var length = listOfEdges.length;
-		for (i in 0...length) {
-			var edge = listOfEdges[length-i-1];
-			if (edge.from == box || edge.to == box) {
-				removeEdge(edge); // remove edge from listOfEdges
+	inline static function packIO(id: Int, ioId: Int) {
+		return ioId << 24 | id;
+	}
+
+	inline static function unpackIO(io:Int) {
+		return {
+			nodeId: io & 0xFFFFFF,
+			ioId: io >> 24,
+		};
+	}
+
+	function clearEdge(id: Int) {
+		var e = edges.get(id);
+		if (e == null)
+			return;
+		e.remove();
+		edges.remove(id);
+		
+		var io = unpackIO(id);
+		var input = boxes[io.nodeId].inputs[io.ioId];
+		input.removeAttr("hasLink");
+		input.parent().removeClass("hasLink");
+	}
+
+	function removeBoxEdges(box : Box) {
+		var id = box.getInstance().getId();
+		for (i => _ in box.info.inputs) {
+			var pack = packIO(id, i);
+			if (outputsToInputs.removeRight(pack) != null) {
+				clearEdge(pack);
 			}
+		}
+
+		for (i => _ in box.info.outputs) {
+			var pack = packIO(id, i);
+			for (input in outputsToInputs.iterRights(pack)) {
+				clearEdge(input);
+			}
+			outputsToInputs.removeLeft(pack);
 		}
 	}
 
-	function removeEdge(edge : Edge) {
-		edge.elt.remove();
-		edge.to.inputs[edge.inputTo].removeAttr("hasLink");
-		edge.to.inputs[edge.inputTo].parent().removeClass("hasLink");
-		listOfEdges.remove(edge);
+	/** Asserts that editor.canAddEdge(edge) == true **/
+	function createEdge(edge : GraphInterface.Edge){
+		editor.addEdge(edge);
+		var output = packIO(edge.nodeFromId, edge.outputFromId);
+		var input = packIO(edge.nodeToId, edge.inputToId);
+		var prev = outputsToInputs.getLeft(input);
+		if(prev != null)
+			throw "No input should be present";
+		outputsToInputs.insert(output, input);
+
+		var visual = createCurve(output, input);
+		edges.set(input, visual);
+		return prev;
 	}
 
-	function replaceEdge(state : EdgeState, ?edge : Edge, ?node : JQuery, x : Int, y : Int) {
+	function removeEdge(edge : GraphInterface.Edge) {
+		var id = packIO(edge.nodeToId, edge.inputToId);
+		outputsToInputs.removeRight(id);
+		clearEdge(id);
+
+		editor.removeEdge(edge.nodeToId, edge.inputToId);
+	}
+
+	/*function replaceEdge(state : EdgeState, ?edge : Edge, ?node : JQuery, x : Int, y : Int) {
 		switch (state) {
 			case FromOutput:
 				for (e in listOfEdges) {
@@ -451,7 +815,7 @@ class Graph extends FileView {
 			default:
 				return;
 		}
-	}
+	}*/
 
 	function error(str : String, ?idBox : Int) {
 		statusBar.html(str);
@@ -472,7 +836,7 @@ class Graph extends FileView {
 		new Element(".box").removeClass("error");
 	}
 
-	function createEdgeInEditorGraph(edge) {
+	/*function createEdgeInEditorGraph(edge) {
 		listOfEdges.push(edge);
 		edge.to.inputs[edge.inputTo].attr("hasLink", "true");
 		edge.to.inputs[edge.inputTo].parent().addClass("hasLink");
@@ -483,7 +847,7 @@ class Graph extends FileView {
 			this.currentEdge = edge;
 			currentEdge.elt.addClass("selected");
 		});
-	}
+	}*/
 
 	function createLink(clientX : Int, clientY : Int) {
 
@@ -493,20 +857,20 @@ class Graph extends FileView {
 		// checking nearest box
 		var nearestBox = null;
 		var minDist = 999999999999999.0;
-		for (i in 0...listOfBoxes.length) {
-			if (listOfBoxes[i].comment != null)
+		for (i => b in boxes) {
+			if (b.info.comment != null)
 				continue;
-			var tmpDist = distanceToBox(listOfBoxes[i], clientX, clientY);
+			var tmpDist = distanceToBox(b, clientX, clientY);
 			if (tmpDist < minDist) {
 				minDist = tmpDist;
-				nearestBox = listOfBoxes[i];
+				nearestBox = b;
 			}
 		}
 		if (nearestBox == null)
 			return;
 
 		// checking nearest node in the nearest box
-		if (isCreatingLink == FromInput) {
+		if (edgeCreationMode == FromInput) {
 			for (id => o in nearestBox.outputs) {
 				var newMin = distanceToElement(o, clientX, clientY);
 				if (newMin < minDistNode) {
@@ -525,39 +889,41 @@ class Graph extends FileView {
 			}
 		}
 
+		var val = null;
 		if (minDistNode < NODE_TRIGGER_NEAR && nearestId >= 0) {
-			endLinkNodeId = nearestId;
-			endLinkBox = nearestBox;
+			val = packIO(nearestBox.node.getId(), nearestId);
+		}
+
+		if (edgeCreationMode == FromInput) {
+			edgeCreationOutput = val;
 		} else {
-			endLinkNodeId = -1;
-			endLinkBox = null;
-			minDistNode = null;
+			edgeCreationInput = val;
 		}
 
 		// create edge
-		if (currentLink != null) currentLink.remove();
-		if (isCreatingLink == FromInput) {
-			currentLink = createCurve(startLinkBox.inputs[startLinkNodeId], endLinkBox?.outputs[endLinkNodeId], minDistNode, clientX, clientY, true);
-		}
-		else {
-			currentLink = createCurve(startLinkBox.outputs[startLinkNodeId], endLinkBox?.inputs[endLinkNodeId], minDistNode, clientX, clientY, true);
-		}
+		if (edgeCreationCurve != null) edgeCreationCurve.remove();
+		edgeCreationCurve = createCurve(edgeCreationOutput, edgeCreationInput, minDistNode, clientX, clientY, true);
 	}
 
-	function createCurve(start : JQuery, end : JQuery, ?distance : Float, ?x : Float, ?y : Float, ?isDraft : Bool) {
-		var offsetEnd;
-		var offsetStart = start.offset();
-		if (end != null) {
-			offsetEnd = end.offset();
-		} else {
-			offsetEnd = { top : y, left : x };
+	function createCurve(packedOutput: Null<Int>, packedInput: Null<Int>, ?distance : Float, ?x : Float, ?y : Float, ?isDraft : Bool) {
+		var offsetEnd = {top : y ?? 0.0, left : x ?? 0.0};
+		if (packedInput != null) {
+			var input = unpackIO(packedInput);
+			var node = boxes[input.nodeId].inputs[input.ioId];
+			offsetEnd = node.offset();
+		}
+		var offsetStart = {top : y ?? 0.0, left : x ?? 0.0};
+		if (packedOutput != null) {
+			var output = unpackIO(packedOutput);
+			var node = boxes[output.nodeId].outputs[output.ioId];
+			offsetStart = node.offset();
 		}
 
-		if (isCreatingLink == FromInput) {
-			var tmp = offsetStart;
-			offsetStart = offsetEnd;
-			offsetEnd = tmp;
+		if (x != null && y != null) {
+			lastCurveX = lX(x);
+			lastCurveY = lY(y);
 		}
+
 		var startX = lX(offsetStart.left) + Box.NODE_RADIUS;
 		var startY = lY(offsetStart.top) + Box.NODE_RADIUS;
 		var diffDistanceY = offsetEnd.top - offsetStart.top;
@@ -567,28 +933,50 @@ class Graph extends FileView {
 		var valueCurveY = 1;
 		var maxDistanceY = 900;
 
-		var curve = editor.curve(null,
+		var curve = editorDisplay.curve(null,
 							startX,
 							startY,
 							lX(offsetEnd.left) + Box.NODE_RADIUS,
 							lY(offsetEnd.top) + Box.NODE_RADIUS,
 							startX + valueCurveX * (Math.min(maxDistanceY, diffDistanceY)/maxDistanceY),
 							startY + signCurveY * valueCurveY * (Math.min(maxDistanceY, diffDistanceY)/maxDistanceY),
-							edgeStyle)
+							{})
 							.addClass("edge");
 		editorMatrix.prepend(curve);
 		if (isDraft)
 			curve.addClass("draft");
+		else if (packedOutput != null && packedInput != null) {
+			curve.on("pointerdown", function(e) {
+				trace("pointerdown");
+				new hide.comp.ContextMenu([
+					{label: "Delete ?", click: function() {
+						var edge = edgeFromPack(packedOutput, packedInput);
+						function exec(isUndo: Bool) {
+							if (!isUndo) {
+								removeEdge(edge);
+							} else {
+								createEdge(edge);
+							}
+						}
+						exec(false);
+						editor.getUndo().change(Custom(exec));
+						}
+					},
+				]);
+				e.preventDefault();
+				e.stopPropagation();
+			});
+		}
 
 		return curve;
 	}
 
 	function clearSelectionBoxes() {
-		for(b in listOfBoxesSelected) b.setSelected(false);
-		listOfBoxesSelected = [];
-		if (this.currentEdge != null) {
-			currentEdge.elt.removeClass("selected");
+		for(id => _ in boxesSelected) {
+			var b = boxes.get(id);
+			b.setSelected(false);
 		}
+		boxesSelected = [];
 	}
 
 	function startUpdateViewPosition() {
@@ -596,7 +984,7 @@ class Graph extends FileView {
 			return;
 		timerUpdateView = new Timer(0);
 		timerUpdateView.run = function() {
-			var posCursor = new Point(ide.mouseX - parent.offset().left, ide.mouseY - parent.offset().top);
+			var posCursor = new Point(ide.mouseX - heapsScene.offset().left, ide.mouseY - heapsScene.offset().top);
 			var wasUpdated = false;
 			if (posCursor.x < BORDER_SIZE) {
 				pan(new Point((BORDER_SIZE - posCursor.x)*SPEED_BORDER_MOVE, 0));
@@ -606,12 +994,12 @@ class Graph extends FileView {
 				pan(new Point(0, (BORDER_SIZE - posCursor.y)*SPEED_BORDER_MOVE));
 				wasUpdated = true;
 			}
-			var rightBorder = parent.width() - BORDER_SIZE;
+			var rightBorder = heapsScene.width() - BORDER_SIZE;
 			if (posCursor.x > rightBorder) {
 				pan(new Point((rightBorder - posCursor.x)*SPEED_BORDER_MOVE, 0));
 				wasUpdated = true;
 			}
-			var botBorder = parent.height() - BORDER_SIZE;
+			var botBorder = heapsScene.height() - BORDER_SIZE;
 			if (posCursor.y > botBorder) {
 				pan(new Point(0, (botBorder - posCursor.y)*SPEED_BORDER_MOVE));
 				wasUpdated = true;
@@ -627,23 +1015,23 @@ class Graph extends FileView {
 		}
 	}
 
-	function getGraphDims(?boxes) {
-		if( boxes == null )
-			boxes = listOfBoxes;
-		if( boxes.length == 0 ) return null;
-		var xMin = boxes[0].getX();
-		var yMin = boxes[0].getY();
-		var xMax = xMin + boxes[0].getWidth();
-		var yMax = yMin + boxes[0].getHeight();
-		for (i in 1...boxes.length) {
-			var b = boxes[i];
-			xMin = Math.min(xMin, b.getX());
-			yMin = Math.min(yMin, b.getY());
-			xMax = Math.max(xMax, b.getX() + b.getWidth());
-			yMax = Math.max(yMax, b.getY() + b.getHeight());
+	function getGraphDims() {
+		if(!boxes.iterator().hasNext()) return {xMin : -1.0, yMin : -1.0, xMax : 1.0, yMax : 1.0, center : new IPoint(0,0)};
+		var xMin = 1000000.0;
+		var yMin = 1000000.0;
+		var xMax = -1000000.0;
+		var yMax = -1000000.0;
+		for (b in boxes) {
+			b.node.getPos(Box.tmpPoint);
+			var x = Box.tmpPoint.x;
+			var y = Box.tmpPoint.y;
+			xMin = Math.min(xMin, x);
+			yMin = Math.min(yMin, y);
+			xMax = Math.max(xMax, x + b.width);
+			yMax = Math.max(yMax, y + b.getHeight());
 		}
 		var center = new IPoint(Std.int(xMin + (xMax - xMin)/2), Std.int(yMin + (yMax - yMin)/2));
-		center.y += Std.int(editor.element.height()*CENTER_OFFSET_Y);
+		center.y += Std.int(editorDisplay.element.height()*CENTER_OFFSET_Y);
 		return {
 			xMin : xMin,
 			yMin : yMin,
@@ -654,18 +1042,18 @@ class Graph extends FileView {
 	}
 
 	function centerView() {
-		if (listOfBoxes.length == 0) return;
+		if (!boxes.iterator().hasNext()) return;
 		var dims = getGraphDims();
-		var scale = Math.min(1, Math.min((editor.element.width() - 50) / (dims.xMax - dims.xMin), (editor.element.height() - 50) / (dims.yMax - dims.yMin)));
+		var scale = Math.min(1, Math.min((editorDisplay.element.width() - 50) / (dims.xMax - dims.xMin), (editorDisplay.element.height() - 50) / (dims.yMax - dims.yMin)));
 
-		transformMatrix[4] = editor.element.width()/2 - dims.center.x;
-		transformMatrix[5] = editor.element.height()/2 - dims.center.y;
+		transformMatrix[4] = editorDisplay.element.width()/2 - dims.center.x;
+		transformMatrix[5] = editorDisplay.element.height()/2 - dims.center.y;
 
 		transformMatrix[0] = scale;
 		transformMatrix[3] = scale;
 
-		var x = editor.element.width()/2;
-		var y = editor.element.height()/2;
+		var x = editorDisplay.element.width()/2;
+		var y = editorDisplay.element.height()/2;
 
 		transformMatrix[4] = x - (x - transformMatrix[4]) * scale;
 		transformMatrix[5] = y - (y - transformMatrix[5]) * scale;
@@ -674,11 +1062,11 @@ class Graph extends FileView {
 	}
 
 	function clampView() {
-		if (listOfBoxes.length == 0) return;
+		if (boxes.iterator().hasNext()) return;
 		var dims = getGraphDims();
 
-		var width = editor.element.width();
-		var height = editor.element.height();
+		var width = editorDisplay.element.width();
+		var height = editorDisplay.element.height();
 		var scale = transformMatrix[0];
 
 		if( transformMatrix[4] + dims.xMin * scale > width )
@@ -703,8 +1091,8 @@ class Graph extends FileView {
 		transformMatrix[0] *= scale;
 		transformMatrix[3] *= scale;
 
-		x -= Std.int(editor.element.offset().left);
-		y -= Std.int(editor.element.offset().top);
+		x -= Std.int(editorDisplay.element.offset().left);
+		y -= Std.int(editorDisplay.element.offset().top);
 
 		transformMatrix[4] = x - (x - transformMatrix[4]) * scale;
 		transformMatrix[5] = y - (y - transformMatrix[5]) * scale;
@@ -722,31 +1110,34 @@ class Graph extends FileView {
 	}
 
 	function isVisible() : Bool {
-		return editor.element.is(":visible");
+		return editorDisplay.element.is(":visible");
 	}
 
 	// Useful method
 	function isInside(b : Box, min : Point, max : Point) {
-		if (max.x < b.getX() || min.x > b.getX() + b.getWidth())
+		var bounds = inline b.getBounds();
+		if (max.x < bounds.x || min.x > bounds.x + bounds.w)
 			return false;
-		if (max.y < b.getY() || min.y > b.getY() + b.getHeight())
+		if (max.y < bounds.y || min.y > bounds.y + bounds.h)
 			return false;
 
 		return true;
 	}
 
 	function isFullyInside(b: Box, min : Point, max : Point) {
-		if (min.x > b.getX() || max.x < b.getX() + b.getWidth())
+		var bounds = inline b.getBounds();
+		if (min.x > bounds.x || max.x < bounds.x + bounds.w)
 			return false;
-		if (min.y > b.getY() || max.y < b.getY() + b.getHeight())
+		if (min.y > bounds.y || max.y < bounds.y + bounds.h)
 			return false;
 
 		return true;
 	}
 
 	function distanceToBox(b : Box, x : Int, y : Int) {
-		var dx = Math.max(Math.abs(lX(x) - (b.getX() + (b.getWidth() / 2))) - b.getWidth() / 2, 0);
-		var dy = Math.max(Math.abs(lY(y) - (b.getY() + (b.getHeight() / 2))) - b.getHeight() / 2, 0);
+		var bounds = inline b.getBounds();
+		var dx = Math.max(Math.abs(lX(x) - (bounds.x + (bounds.w / 2))) - bounds.w / 2, 0);
+		var dy = Math.max(Math.abs(lY(y) - (bounds.y + (bounds.h / 2))) - bounds.h / 2, 0);
 		return dx * dx + dy * dy;
 	}
 	function distanceToElement(element : JQuery, x : Int, y : Int) {
@@ -766,12 +1157,12 @@ class Graph extends FileView {
 		return new Point(gX(x), gY(y));
 	}
 	function lX(x : Float) : Float {
-		var screenOffset = editor.element.offset();
+		var screenOffset = editorDisplay.element.offset();
 		x -= screenOffset.left;
 		return (x - transformMatrix[4])/transformMatrix[0];
 	}
 	function lY(y : Float) : Float {
-		var screenOffset = editor.element.offset();
+		var screenOffset = editorDisplay.element.offset();
 		y -= screenOffset.top;
 		return (y - transformMatrix[5])/transformMatrix[3];
 	}
