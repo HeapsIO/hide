@@ -204,7 +204,7 @@ class DomkitViewer extends h2d.Object {
 			var p = new domkit.CssParser();
 			p.variables = vars;
 			try {
-				p.parseSheet(r.entry.getText());
+				p.parseSheet(r.entry.getText(), r.name);
 			} catch( e : domkit.Error ) {
 				onError(e);
 			}
