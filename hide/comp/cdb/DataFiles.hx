@@ -311,26 +311,11 @@ class DataFiles {
 			if (sepIdx < 0 || sepIdx >= separators.length)
 				return children;
 
-			var previousLevel = separators[sepIdx].level;
-			var depth = 0;
 			for (idx in (sepIdx + 1)...separators.length) {
 				var s = separators[idx];
 
-				if (s.level <= separators[sepIdx].level)
-					return children;
-				else {
-					if (depth == 0)
-						children.push(idx);
-
-					if (s.level > previousLevel) {
-						previousLevel = s.level;
-						depth++;
-					}
-					else if (s.level < previousLevel) {
-						previousLevel = s.level;
-						depth--;
-					}
-				}
+				if (findParentSepIdx(idx) == sepIdx)
+					children.push(idx);
 			}
 
 			return children;
