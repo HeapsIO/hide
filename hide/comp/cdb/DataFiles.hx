@@ -20,7 +20,7 @@ class DataFiles {
 
 	static var changed : Bool;
 	static var skip : Int = 0;
-	static var watching : Map<String, Bool> = new Map();
+	static var watching : Map<String, Void -> Void > = new Map();
 
 	#if (editor || cdb_datafiles)
 	static var base(get,never) : cdb.Database;
@@ -435,8 +435,9 @@ class DataFiles {
 			// Only reload data files that are concerned by this file modification
 			function reloadFile(path: String) {
 				if( !watching.exists(path) ) {
-					watching.set(path, true);
-					Ide.inst.fileWatcher.register(path, () -> onFileChanged(path), true);
+					var fun = () -> onFileChanged(path);
+					watching.set(path, fun);
+					Ide.inst.fileWatcher.register(path, fun, true);
 				}
 
 				var fullPath = Ide.inst.getPath(path);
@@ -453,10 +454,8 @@ class DataFiles {
 
 						// Meaning this is a deleted file
 						if (StringTools.contains(abs, fullPath) && abs != fullPath && !sys.FileSystem.exists(abs)) {
+							Ide.inst.fileWatcher.unregister(p, watching.get(p));
 							watching.remove(p);
-							var w = @:privateAccess Ide.inst.fileWatcher.getWatches(Ide.inst.getPath(p));
-							w.w?.close();
-							@:privateAccess Ide.inst.fileWatcher.watches.remove(p);
 
 							if (!sys.FileSystem.isDirectory(abs)) {
 								for( sheet in base.sheets ) {
@@ -507,8 +506,9 @@ class DataFiles {
 	static function loadPrefab(file) {
 		var p = Ide.inst.loadPrefab(file);
 		if( !watching.exists(file) ) {
-			watching.set(file, true);
-			Ide.inst.fileWatcher.register(file, () -> onFileChanged(file));
+			var fun = () -> onFileChanged(file);
+			watching.set(file, fun);
+			Ide.inst.fileWatcher.register(file, fun);
 		}
 		return p;
 	}
@@ -609,8 +609,9 @@ class DataFiles {
 					return;
 				#if (editor || cdb_datafiles)
 				if( !watching.exists(path) ) {
-					watching.set(path, true);
-					Ide.inst.fileWatcher.register(path, () -> onFileChanged(path), true);
+					var fun = () -> onFileChanged(path);
+					watching.set(path, fun);
+					Ide.inst.fileWatcher.register(path, fun, true);
 				}
 				#end
 				var reg = new EReg("^"+part.split(".").join("\\.").split("*").join(".*")+"$","");
