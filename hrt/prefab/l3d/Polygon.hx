@@ -30,7 +30,7 @@ class Polygon extends Object3D {
 	public var editor : hide.prefab.PolygonEditor;
 	@:s public var gridSize:Float = 1;
 	public var cachedPrim : h3d.prim.Polygon;
-	public var hasDebugColor : Bool = true;
+	@:s public var hasDebugColor : Bool = true;
 	var prevScale = [1.0, 1.0];
 	#end
 
@@ -471,7 +471,10 @@ class Polygon extends Object3D {
 
 		ctx.properties.add( new hide.Element('
 			<div class="group" name="Params">
-				<dl><dt>Color</dt><dd><input type="color" alpha="true" field="color"/></dd> </dl>
+				<dl>
+					<dt>Debug</dt><dd><input type="checkbox" field="hasDebugColor"/></dd>
+					<dt>Color</dt><dd><input type="color" alpha="true" field="color"/></dd> 
+				</dl>
 			</div>'), this, function(pname) { ctx.onChange(this, pname); });
 
 		updateProps();
