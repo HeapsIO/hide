@@ -270,7 +270,7 @@ class DataFiles {
 		var lines = @:privateAccess sheet.sheet.lines;
 		var linesData = @:privateAccess sheet.sheet.linesData;
 
-		function isSeparatorEmpty(sepIdx: Int) : Bool {
+		function isSeparatorEmpty(sepIdx : Int) : Bool {
 			if (sepIdx == separators.length - 1)
 				return separators[sepIdx].index > lines.length - 1;
 
@@ -303,6 +303,37 @@ class DataFiles {
 			}
 
 			return -1;
+		}
+
+		function findChildrenSepIdx(sepIdx : Int) : Array<Int> {
+			var children = [];
+
+			if (sepIdx < 0 || sepIdx >= separators.length)
+				return children;
+
+			var previousLevel = separators[sepIdx].level;
+			var depth = 0;
+			for (idx in (sepIdx + 1)...separators.length) {
+				var s = separators[idx];
+
+				if (s.level <= separators[sepIdx].level)
+					return children;
+				else {
+					if (depth == 0)
+						children.push(idx);
+
+					if (s.level > previousLevel) {
+						previousLevel = s.level;
+						depth++;
+					}
+					else if (s.level < previousLevel) {
+						previousLevel = s.level;
+						depth--;
+					}
+				}
+			}
+
+			return children;
 		}
 
 		// Find current separator corresponding to this path
@@ -369,7 +400,17 @@ class DataFiles {
 			break;
 		}
 
-		// Merge separator with parent if parent has exactly one separator
+		// Merge separator with parent if parent has exactly one child separator
+		var childrenSep = findChildrenSepIdx(parentSepIdx);
+		if (childrenSep.length == 1) {
+			var childSep = separators[childrenSep[0]];
+			var parentSep = separators[parentSepIdx];
+
+			parentSep.path = childSep.path;
+			parentSep.title = parentSep.title + " > " + childSep.title;
+
+			separators.remove(childSep);
+		}
 	}
 
 	#if (editor || cdb_datafiles)
@@ -440,7 +481,17 @@ class DataFiles {
 				}
 			}
 
-			reloadFile(path);
+			// When deleting a file in hide (cf FileTree -> onDeleteFile()), each files are deleted
+			// one by one, and each might not trigger the onFileChanged method because of the delay.
+			// So we try to find the top level folder that still exists and reload it.
+			var f = path;
+			while (!sys.FileSystem.exists(Ide.inst.getPath(f)) && f != "") {
+				var arr = f.split("/");
+				arr.pop();
+				f = arr.join("/");
+			}
+
+			reloadFile(f);
 			Editor.refreshAll(true, false);
 		},0);
 	}
