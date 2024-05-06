@@ -201,6 +201,11 @@ class DataFiles {
 				var newPath = [ for(idx in (matchingSepData.level + 1)...pathSplit.length) pathSplit[idx]].join("/");
 				sep.path = matchingSep.path + "/" + newPath;
 				sep.title = StringTools.replace(newPath, "/", " > ");
+				if (sep.title.split(".").length >= 2) {
+					var tmp = sep.title.split(".");
+					tmp.pop();
+					sep.title = tmp.join("");
+				}
 
 				var idx = addChildSeparator(sep, matchingSepData.sepIdx);
 				sep.index = idx == separators.length - 1 ? @:privateAccess sheet.sheet.lines.length : separators[idx + 1].index - 1;
@@ -224,6 +229,12 @@ class DataFiles {
 					path : matchingSep.path + "/" + newPath
 				};
 
+				if (sep.title.split(".").length >= 2) {
+					var tmp = sep.title.split(".");
+					tmp.pop();
+					sep.title = tmp.join("");
+				}
+
 				separators.insert(matchingSepData.sepIdx + 1, sep);
 
 				// Shift levels of separators that were children of the one we splitted
@@ -244,6 +255,12 @@ class DataFiles {
 					path : matchingSep.path + "/" + newPath
 				};
 
+				if (newSep.title.split(".").length >= 2) {
+					var tmp = newSep.title.split(".");
+					tmp.pop();
+					newSep.title = tmp.join("");
+				}
+
 				var newSepIdx = addChildSeparator(newSep, matchingSepData.sepIdx);
 				newSep.index = newSepIdx == separators.length - 1 ? @:privateAccess sheet.sheet.lines.length : separators[newSepIdx + 1].index - 1;
 				return newSepIdx;
@@ -256,6 +273,12 @@ class DataFiles {
 			level : 0,
 			path : path
 		};
+
+		if (newSep.title.split(".").length >= 2) {
+			var tmp = newSep.title.split(".");
+			tmp.pop();
+			newSep.title = tmp.join("");
+		}
 
 		var newSepIdx = addChildSeparator(newSep, -1);
 		newSep.index = newSepIdx == separators.length - 1 ? @:privateAccess sheet.sheet.lines.length : separators[newSepIdx + 1].index - 1;
