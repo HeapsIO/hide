@@ -36,7 +36,6 @@ typedef ShadowSamplingPCF = {> ShadowSamplingMode,
 }
 
 typedef CascadeParams = {
-	var bias : Float;
 	var depthBias : Float;
 	var slopeBias : Float;
 }
@@ -77,7 +76,7 @@ class Light extends Object3D {
 	@:s public var cascadeNbr : Int = 1;
 	@:s public var cascadePow : Float = 2;
 	@:s public var firstCascadeSize : Float = 10;
-	@:s public var minPixelRatio : Float = 5.0;
+	@:s public var minPixelRatio : Float = 0.5;
 	@:s public var castingMaxDist : Float = 0.0;
 	@:s public var params : Array<CascadeParams> = [];
 	@:s public var debugShader : Bool = false;
@@ -222,7 +221,7 @@ class Light extends Object3D {
 						params.resize(cascadeNbr);
 						for ( i in 0...params.length )
 							if ( params[i] == null )
-								params[i] = { bias : 0.001, depthBias : 0.0, slopeBias : 0.0 };
+								params[i] = { depthBias : 1.0, slopeBias : 3.0 };
 						cs.params = params;
 						cs.highPrecision = highPrecision;
 					}
@@ -661,7 +660,6 @@ class Light extends Object3D {
 			var e = new hide.Element('
 			<div class="group" name="Params">
 				<dl>
-					<dt>Bias</dt><dd><input type="range" min="0" max="0.1" field="bias"/></dd>
 					<dt>DepthBias</dt><dd><input type="range" min="0" max="10" step="1" field="depthBias"/></dd>
 					<dt>SlopeBias</dt><dd><input type="range" min="0" max="10" step="0.1" field="slopeBias"/></dd>
 				</dl>
