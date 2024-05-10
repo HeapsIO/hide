@@ -625,24 +625,23 @@ class Table extends Component {
 
 	public function showSeparator( line : Line ) {
 		if( separators == null ) return;
-		var sepIndexes = [];
 
+		// Find which separators needs to be open to show this line
+		var sepIndexes = [];
 		for( i in 0...sheet.separators.length ) {
 			var s = sheet.separators[i];
-			if( s.index > line.index ) {
-				if (s.level == null)
-					break;
-
-				for (idx in s.level...sepIndexes.length)
-					sepIndexes.remove(sepIndexes[idx]);
-
+			if( s.index > line.index )
 				break;
-			}
+
 			if( s.level == null )
 				sepIndexes = [];
-			sepIndexes[s.level != null ? s.level : 0] = i;
+
+			var pos = s.level != null ? s.level : 0;
+			sepIndexes[pos] = i;
+			sepIndexes = sepIndexes.slice(0, pos + 1);
 		}
 
+		// Open concerned separators
 		for( sepIdx in sepIndexes ) {
 			var sep = separators[sepIdx];
 			if( sep != null && sep.hidden ) {
