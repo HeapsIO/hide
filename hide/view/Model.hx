@@ -367,6 +367,7 @@ class Model extends FileView {
 	}
 
 	var selectedJoint : String = null;
+	var selectedMesh : h3d.scene.Mesh = null;
 	var displayJoints = null;
 	function selectObject( obj : h3d.scene.Object ) {
 		if ( Std.isOfType(obj, h3d.scene.Skin.Joint) ) {
@@ -478,10 +479,12 @@ class Model extends FileView {
 		'),obj);
 
 		var mesh = Std.downcast(obj, h3d.scene.Mesh);
-		if (mesh != null) {
-			var hmd = Std.downcast(mesh.primitive, h3d.prim.HMDModel);
+		var hmd = Std.downcast(mesh.primitive, h3d.prim.HMDModel);
+		selectedMesh = mesh;
 
-			if (hmd != null && @:privateAccess hmd.blendshape != null) {
+		if (mesh != null && hmd != null) {
+			// Blendshapes edition
+			if (@:privateAccess hmd.blendshape != null) {
 				var blendShape = new Element('
 				<div class="group" name="Blend Shapes">
 					<dt>Index</dt><dd><input id="bs-index" type="range" min="0" max="${@:privateAccess hmd.blendshape.getBlendshapeCount() - 1}" step="1" field=""/></dd>
@@ -491,6 +494,58 @@ class Model extends FileView {
 				properties.add(blendShape, null, function(pname){
 					@:privateAccess hmd.blendshape.setBlendshapeAmount(blendShape.find("#bs-index").val(),blendShape.find("#bs-amount").val());
 				});
+			}
+
+			// LODs edition
+			if (@:privateAccess hmd.lodCount() > 0) {
+				var lodsEl = new Element('
+					<div class="group" name="LODs">
+						<dt>LOD Count</dt><dd>${hmd.lodCount()}</dd>
+						<dt>Force display LOD</dt>
+						<dd>
+							<select id="select-lods">
+								<option value="-1">None</option>
+								${[ for(idx in 0...hmd.lodCount()) '<option value="${idx}">LOD ${idx}</option>'].join("")}
+							<select>
+						</dd>
+						<div class="lods-line">
+							<div class="line"></div>
+							<div class="cursor">
+								<div class="cursor-line"></div>
+								<p class="ratio">100%</p>
+							</div>
+						</div>
+					</div>
+				');
+
+				properties.add(lodsEl, null, null);
+
+				var selectLod = lodsEl.find("select");
+				selectLod.on("change", function(){
+					hmd.forcedLod = Std.int(lodsEl.find("select").val());
+				});
+
+				function getLodPercent(idxLod: Int) {
+					var lodConfig = @:privateAccess h3d.prim.HMDModel.lodConfig;
+					var prev = idxLod == 0 ? 1 : lodConfig[idxLod - 1];
+
+					return (Math.abs(prev - lodConfig[idxLod])) * 100;
+				}
+
+				var lodsLine = lodsEl.find(".line");
+				var total = 100.;
+				for (idx in 0...hmd.lodCount()) {
+					lodsLine.append(new Element('
+					<div style="${idx != hmd.lodCount() - 1 ? 'width:${getLodPercent(idx)}%;' : 'flex:1'}">
+						<p>LOD&nbsp${idx}</p>
+						<p>${total}%</p>
+					</div>'));
+
+					total -= getLodPercent(idx);
+				}
+
+				var cursor = lodsEl.find(".cursor");
+				cursor.css({top: '${lodsLine.position().top + 11}px'});
 			}
 		}
 
@@ -1124,6 +1179,23 @@ class Model extends FileView {
 		}
 		if( cameraMove != null )
 			cameraMove();
+
+		if (selectedMesh != null) {
+
+			function round(number:Float, ?precision=2): Float
+			{
+				number *= Math.pow(10, precision);
+				return Math.round(number) / Math.pow(10, precision);
+			}
+
+			var screenRatio = @:privateAccess selectedMesh.curScreenRatio;
+			var line = sceneEditor.properties.element.find(".line");
+			var cursor = sceneEditor.properties.element.find(".cursor");
+			if (cursor.length > 0) {
+				cursor?.css({left: '${line.position().left + line.width() * hxd.Math.clamp((1 - screenRatio), 0, 1)}px'});
+				cursor?.find(".ratio").text('${round(hxd.Math.clamp(screenRatio * 100, 0, 100), 2)}%');
+			}
+		}
 	}
 
 	public function setRenderPropsEditionVisibility(visible : Bool) {

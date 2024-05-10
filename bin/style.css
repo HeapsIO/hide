@@ -3266,3 +3266,48 @@ div.gradient-box {
   text-transform: capitalize;
   font-weight: normal;
 }
+.lods-line {
+  display: flex;
+  overflow: hidden;
+}
+.lods-line .line {
+  height: 30px;
+  margin: 10px 2px 0px 2px;
+  background-color: #151515;
+  display: flex;
+  overflow: hidden;
+  padding: 1px;
+  width: 100%;
+}
+.lods-line .line div {
+  overflow: hidden;
+  height: 100%;
+}
+.lods-line .line div:nth-child(1n) {
+  background-color: #f3e179;
+}
+.lods-line .line div:nth-child(2n) {
+  background-color: #79f37b;
+}
+.lods-line .line div:nth-child(3n) {
+  background-color: #8979f3;
+}
+.lods-line .line div:nth-child(4n) {
+  background-color: #f379ad;
+}
+.lods-line .line p {
+  margin: 0 2px 0 2px;
+  color: black;
+}
+.lods-line .cursor {
+  position: absolute;
+}
+.lods-line .cursor .cursor-line {
+  background-color: #000000;
+  height: 32px;
+  width: 2px;
+}
+.lods-line .cursor p {
+  text-align: center;
+  margin-top: 2px;
+}

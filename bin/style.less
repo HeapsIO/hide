@@ -3754,3 +3754,60 @@ div.gradient-box {
 		}
 	}
 }
+
+// lod specific style in model viewer
+.lods-line {
+	display:flex;
+	overflow: hidden;
+
+	.line {
+		height: 30px;
+		margin: 10px 2px 0px 2px;
+		background-color: #151515;
+		display: flex;
+		overflow: hidden;
+		padding: 1px;
+		width: 100%;
+
+		div {
+			overflow: hidden;
+			height:100%
+		}
+
+		div:nth-child(1n) {
+			background-color: #f3e179;
+		}
+
+		div:nth-child(2n) {
+			background-color: #79f37b;
+		}
+
+		div:nth-child(3n) {
+			background-color: #8979f3;
+		}
+
+		div:nth-child(4n) {
+			background-color: #f379ad;
+		}
+
+		p {
+			margin: 0 2px 0 2px;
+			color: black;
+		}
+	}
+
+	.cursor {
+		position: absolute;
+
+		.cursor-line {
+			background-color: rgb(0, 0, 0);
+			height: 32px;
+			width: 2px;
+		}
+
+		p {
+			text-align: center;
+			margin-top: 2px;
+		}
+	}
+}
