@@ -1662,53 +1662,77 @@ class Editor extends Component {
 	public function moveColumn(targetSheet: cdb.Sheet, origSheet: cdb.Sheet, col: cdb.Data.Column) : String {
 		beginChanges(true);
 		var err = targetSheet.addColumn(col);
+
+		function createSubCols(targetSheet: cdb.Sheet, origSheet: cdb.Sheet, column: cdb.Data.Column) : String {
+			// Check to see if the column contains other columns
+			var subSheetPath = origSheet.getPath() + "@" + column.name;
+			var subSheet = base.getSheet(subSheetPath);
+			var subTargetPath = targetSheet.getPath() + "@" + column.name;
+			var subTarget = base.getSheet(subTargetPath);
+			if (subSheet != null) {
+				if (subTarget == null)
+					return 'original sheet $subSheetPath contains columns but target sheet $subTargetPath does not exist'; 
+				
+				for (c in subSheet.columns) {
+					var err = subTarget.addColumn(c);
+					if (err != null)
+						return err;
+					createSubCols(subTarget, subSheet, c);
+				}
+			}
+			return null;
+		}
+
 		if (err == null) {
-
-			var commonSheet = origSheet;
-			var commonPath = origSheet.getPath().split("@");
-			while(true) {
-				if (commonPath.length <= 0) {
-					throw "missing parent table that is not props";
-				}
-				commonSheet = base.getSheet(commonPath.join("@"));
-
-				if (!commonSheet.props.isProps)
-					break;
-				commonPath.pop();
-			}
-
-			var origPath = origSheet.getPath().split("@");
-			origPath.splice(0, commonPath.length);
-			origPath.push(col.name);
-			var targetPath = targetSheet.getPath().split("@");
-			targetPath.splice(0, commonPath.length);
-
-			var lines = commonSheet.getLines();
-			for (i => line in lines) {
-				// read value from origPath
-				var value : Dynamic = line;
-				for (p in origPath) {
-					value = Reflect.field(value, p);
-					if (value == null)
-						break;
-				}
-
-				if (value != null) {
-					// Get or insert intermediates props value along targetPath
-					var target : Dynamic = line;
-					for (p in targetPath) {
-						var newTarget = Reflect.field(target, p);
-						if (newTarget == null) {
-							newTarget = {};
-							Reflect.setField(target, p, newTarget);
-						}
-						target = newTarget;
+			var err = createSubCols(targetSheet, origSheet, col);
+			if (err == null) {
+				// Copy the data from the original column to the new one
+				var commonSheet = origSheet;
+				var commonPath = origSheet.getPath().split("@");
+				while(true) {
+					if (commonPath.length <= 0) {
+						throw "missing parent table that is not props";
 					}
-					Reflect.setField(target, col.name, value);
+					commonSheet = base.getSheet(commonPath.join("@"));
+	
+					if (!commonSheet.props.isProps)
+						break;
+					commonPath.pop();
 				}
+	
+				var origPath = origSheet.getPath().split("@");
+				origPath.splice(0, commonPath.length);
+				origPath.push(col.name);
+				var targetPath = targetSheet.getPath().split("@");
+				targetPath.splice(0, commonPath.length);
+	
+				var lines = commonSheet.getLines();
+				for (i => line in lines) {
+					// read value from origPath
+					var value : Dynamic = line;
+					for (p in origPath) {
+						value = Reflect.field(value, p);
+						if (value == null)
+							break;
+					}
+	
+					if (value != null) {
+						// Get or insert intermediates props value along targetPath
+						var target : Dynamic = line;
+						for (p in targetPath) {
+							var newTarget = Reflect.field(target, p);
+							if (newTarget == null) {
+								newTarget = {};
+								Reflect.setField(target, p, newTarget);
+							}
+							target = newTarget;
+						}
+						Reflect.setField(target, col.name, value);
+					}
+				}
+	
+				origSheet.deleteColumn(col.name);
 			}
-
-			origSheet.deleteColumn(col.name);
 		}
 		endChanges();
 		return err;
