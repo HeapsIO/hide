@@ -4,7 +4,7 @@ import hide.comp.SVG;
 import js.jquery.JQuery;
 import hide.view.GraphInterface;
 
-@:access(hide.view.Graph)
+@:access(hide.view.GraphEditor)
 class Box {
 
 	static final boolColor = "#cc0505";
@@ -44,7 +44,7 @@ class Box {
 	static final resizeBorder : Int = 8;
 	static final halfResizeBorder : Int = resizeBorder >> 1;
 
-	public function new(editor : Graph, parent : JQuery, node : IGraphNode) {
+	public function new(editor : GraphEditor, parent : JQuery, node : IGraphNode) {
 		this.node = node;
 		info = node.getInfo();
 		width = info.width ?? 150;
@@ -273,7 +273,7 @@ class Box {
 		closePreviewBtn.find(".ico").toggleClass("ico-angle-up", viz);
 	}
 
-	public function addInput(editor : Graph, name : String, valueDefault : String = null, color : Int) {
+	public function addInput(editor : GraphEditor, name : String, valueDefault : String = null, color : Int) {
 		var node = editor.editorDisplay.group(element).addClass("input-node-group");
 		var nodeHeight = HEADER_HEIGHT + NODE_MARGIN * (inputs.length+1) + NODE_RADIUS * inputs.length;
 		var style = {fill : '#${StringTools.hex(color, 6)}'};
@@ -327,7 +327,7 @@ class Box {
 		}
 	}
 
-	public function addOutput(editor : Graph, name : String, color : Int) {
+	public function addOutput(editor : GraphEditor, name : String, color : Int) {
 		var node = editor.editorDisplay.group(element).addClass("output-node-group");
 		var nodeHeight = getNodeHeight(outputs.length);
 		var style = {fill : '#${StringTools.hex(color, 6)}'};
@@ -348,7 +348,7 @@ class Box {
 		return HEADER_HEIGHT + NODE_MARGIN * (id+1) + NODE_RADIUS * (id);
 	}
 
-	public function generateProperties(editor : Graph) {
+	public function generateProperties(editor : GraphEditor) {
 		var props = node.getPropertiesHTML(this.width);
 
 		if (props.length == 0) return;

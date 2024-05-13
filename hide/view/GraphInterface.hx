@@ -54,7 +54,7 @@ typedef AddNodeMenuEntry = {
         You should generate a unique ID for the new IGraphNode. Don't add the node to your graph datastructure yet,
         the Graph editor will call addNode() with this node at the right time.
     **/
-    onAdd: () -> IGraphNode,
+    onConstructNode: () -> IGraphNode,
 };
 
 
@@ -78,8 +78,8 @@ interface IGraphNode {
 }
 
 interface IGraphEditor {
-    public function getNodes() : Array<IGraphNode>;
-    public function getEdges() : Array<Edge>;
+    public function getNodes() : Iterator<IGraphNode>;
+    public function getEdges() : Iterator<Edge>;
     public function getAddNodesMenu() : Array<AddNodeMenuEntry>;
 
     public function addNode(node : IGraphNode) : Void;

@@ -267,9 +267,9 @@ class NodeGenContext {
 	/**
 		API used by ShaderGraphGenContext
 	**/
-	function initForNode(node: ShaderGraph.Node, nodeInputExprs: Array<TExpr>) {
-		nodeInputInfo = node.instance.getInputs();
-		nodeOutputInfo = node.instance.getOutputs();
+	function initForNode(node: ShaderNode, nodeInputExprs: Array<TExpr>) {
+		nodeInputInfo = node.getInputs();
+		nodeOutputInfo = node.getOutputs();
 		this.node = node;
 		this.nodeInputExprs = nodeInputExprs;
 
@@ -297,7 +297,7 @@ class NodeGenContext {
 		}
 	}
 
-	var node : ShaderGraph.Node = null;
+	var node : ShaderNode = null;
 
 	var currentPreviewId: Int = -1;
 	var expressions: Array<TExpr> = [];

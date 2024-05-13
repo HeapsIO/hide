@@ -11,6 +11,10 @@ import hrt.shgraph.AstTools.*;
 import hrt.shgraph.ShaderGraph;
 import hrt.shgraph.SgHxslVar.ShaderDefInput;
 
+#if editor
+import hide.view.GraphInterface; 
+#end
+
 
 class AlphaPreview extends hxsl.Shader {
 	static var SRC = {
@@ -39,12 +43,82 @@ typedef AliasInfo = {?nameSearch: String, ?nameOverride : String, ?description :
 @:autoBuild(hrt.shgraph.Macros.autoRegisterNode())
 @:keepSub
 @:keep
-class ShaderNode {
+class ShaderNode 
+#if editor
+implements hide.view.GraphInterface.IGraphNode 
+#end
+{
 
 	public var id : Int;
+	public var x : Float;
+	public var y : Float;
 	public var showPreview : Bool = true;
 	@prop public var nameOverride : String;
 
+
+	#if editor
+	// IGraphNode Interface
+	public function getInfo() : GraphNodeInfo {
+		var metas = haxe.rtti.Meta.getType(HaxeType.getClass(this));
+		return {
+			name: nameOverride ?? (metas.name != null ? metas.name[0] : "undefined"),
+			inputs: [
+				for (i in getInputs()) {
+					{
+						name: i.name,
+						color: 0xFF0000,
+					}
+				}
+			],
+			outputs: [
+				for (o in getOutputs()) {
+					{
+						name: o.name,
+						color: 0xFF0000,
+					}
+				}
+			]
+		};
+	}
+
+	public function getId() : Int {
+		return id;
+	}
+
+	public function getPos(p : h2d.col.Point) : Void {
+		p.set(x,y);
+	}
+
+	public function setPos(p : h2d.col.Point) : Void {
+		x = p.x;
+		y = p.y;
+	}
+
+	public function getPropertiesHTML(width : Float) : Array<hide.Element> {
+		return [];
+	}
+	#end
+
+	public function serializeToDynamic() : Dynamic {
+		return {
+			x: x,
+			y: y,
+			id: id,
+			type: std.Type.getClassName(std.Type.getClass(this)),
+			properties: saveProperties(),
+		};
+	}
+
+	public static function createFromDynamic(data: Dynamic) : ShaderNode {
+		var type = std.Type.resolveClass(data.type);
+		var inst = std.Type.createInstance(type, []);
+		inst.x = data.x;
+		inst.y = data.y;
+		inst.id = data.id;
+		inst.connections = [];
+		inst.loadProperties(data.properties);
+		return inst;
+	}
 
 	public var defaults : Dynamic = {};
 
@@ -157,10 +231,6 @@ class ShaderNode {
 	final public function getHTML(width: Float, config: hide.Config) {
 		var props = getPropertiesHTML(width);
 		return props;
-	}
-
-	function getPropertiesHTML(width : Float) : Array<hide.Element> {
-		return [];
 	}
 
 	static public var registeredNodes = new Map<String, Class<ShaderNode>>();

@@ -202,35 +202,69 @@ class TestNode implements IGraphNode {
 }
 
 class ShaderEditor extends hide.view.FileView implements GraphInterface.IGraphEditor {
-	var graph : hide.view.Graph;
+	var graphEditor : hide.view.GraphEditor;
+	var shaderGraph : hrt.shgraph.ShaderGraph;
+	var currentGraph : hrt.shgraph.ShaderGraph.Graph;
 	
 	override function onDisplay() {
 		super.onDisplay();
-		if (graph != null)
-			graph.remove();
-		graph = new hide.view.Graph(this, this.element);
-		graph.onDisplay();
+ 		shaderGraph = cast hide.Ide.inst.loadPrefab(state.path, null,  true);
+		currentGraph = shaderGraph.getGraph(Fragment);
+
+		if (graphEditor != null)
+			graphEditor.remove();
+		graphEditor = new hide.view.GraphEditor(this, this.element);
+		graphEditor.onDisplay();
 	}
 
 	/** IGraphEditor interface **/
-	public function getNodes() : Array<IGraphNode> {
-		return [];
+	public function getNodes() : Iterator<IGraphNode> {
+		return currentGraph.getNodes().iterator();
 	}
 
-	public function getEdges() : Array<Edge> {
-		return [];
+	public function getEdges() : Iterator<Edge> {
+		var edges : Array<Edge> = [];
+		for (id => node in currentGraph.getNodes()) {
+			for (inputId => connection in node.connections) {
+				if (connection != null) {
+					edges.push(
+						{
+							nodeFromId: connection.from.getId(),
+							outputFromId: connection.outputId,
+							nodeToId: id,
+							inputToId: inputId,
+						});
+				}
+			}
+		}
+		return edges.iterator();
 	}
 
 	public function getAddNodesMenu() : Array<AddNodeMenuEntry> {
+		var entries : Array<AddNodeMenuEntry> = [];
+
 		var id = 0;
-		return [
-			{
-				name: "Test",
-				description: "Just a test",
-				group: "Test",
-				onAdd: () -> new TestNode(id++),
+		for (i => node in ShaderNode.registeredNodes) {
+			var metas = haxe.rtti.Meta.getType(node);
+			if (metas.group == null) {
+				continue;
 			}
-		];
+
+			entries.push(
+				{
+					name: metas.name != null ? metas.name[0] : "unknown",
+					group: metas.group[0],
+					description: metas.description != null ? metas.description[0] : "",
+					onConstructNode: () -> {
+						@:privateAccess var id = currentGraph.current_node_id++;
+						var inst = std.Type.createInstance(node, []);
+						inst.setId(id);
+						return inst;
+					},
+				}
+			);
+		}
+		return entries;
 	}
 
 	public function addNode(node: IGraphNode) : Void {

@@ -23,7 +23,7 @@ typedef UndoFn = (isUndo : Bool) -> Void;
 typedef UndoBuffer = Array<UndoFn>;
 
 @:access(hide.view.shadereditor.Box)
-class Graph extends hide.comp.Component {
+class GraphEditor extends hide.comp.Component {
 	var heapsScene : JQuery;
 	var editor : hide.view.GraphInterface.IGraphEditor;
 	var editorDisplay : SVG;
@@ -239,6 +239,9 @@ class Graph extends hide.comp.Component {
 		}
 
 		var edges = editor.getEdges();
+		for (edge in edges) {
+			createEdge(edge);
+		}
 	}
 
 	function openAddMenu(x : Int = 0, y : Int = 0) {
@@ -368,14 +371,12 @@ class Graph extends hide.comp.Component {
 			var key = Std.parseInt(this.selectedNode.attr("node"));
 			var posCursor = new Point(lX(ide.mouseX - 25), lY(ide.mouseY - 10));
 
-			var instance : IGraphNode = null; // For the lambda capture
-			var instance = nodes[key].onAdd();
+			var instance = nodes[key].onConstructNode();
 
 			var createLinkInput = edgeCreationInput;
 			var createLinkOutput = edgeCreationOutput;
 			var fromInput = createLinkInput != null;
 
-			instance = nodes[key].onAdd();
 
 			if (createLinkInput != null) {
 				createLinkOutput = packIO(instance.getId(), 0);
