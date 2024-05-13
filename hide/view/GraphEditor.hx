@@ -134,6 +134,10 @@ class GraphEditor extends hide.comp.Component {
 
 		editorMatrix = editorDisplay.group(editorDisplay.element);
 
+		var keys = new hide.ui.Keys(element);
+		keys.register("delete", deleteSelection);
+
+
 		// rectangle Selection
 		var rawheaps = heapsScene.get(0);
 		rawheaps.addEventListener("pointerdown", function(e) {
@@ -241,6 +245,58 @@ class GraphEditor extends hide.comp.Component {
 		var edges = editor.getEdges();
 		for (edge in edges) {
 			createEdge(edge);
+		}
+	}
+
+	function deleteSelection() {
+		cleanupCreateEdge();
+
+		if (boxesSelected.iterator().hasNext()) {
+			var selection = boxesSelected.copy();
+			var deletedNodes : Array<IGraphNode> = [];
+			var deletedEdges : Array<GraphInterface.Edge> = [];
+			var exec = function(isUndo : Bool) {
+				if (!isUndo) {
+					for (id => _ in selection) {
+						var box = boxes.get(id);
+						for (inputId => input in box.inputs) {
+							var packInput = packIO(id, inputId);
+							var packOutput = outputsToInputs.getLeft(packInput);
+							if (packOutput != null) {
+								var edge = edgeFromPack(packOutput, packInput);
+								deletedEdges.push(edge);
+								removeEdge(edge);
+							}
+						}
+						for (outputId => _ in box.outputs) {
+							var packOutput = packIO(id, outputId);
+							for (packInput in outputsToInputs.iterRights(packOutput)) {
+								var edge = edgeFromPack(packOutput, packInput);
+								deletedEdges.push(edge);
+								removeEdge(edge);
+							}
+						}
+					}
+
+					for (id => _ in selection) {
+						var box = boxes.get(id);
+						deletedNodes.push(box.node);
+						removeBox(box);
+					}
+				}
+				else {
+					for (node in deletedNodes) {
+						node.getPos(Box.tmpPoint);
+						addBox(Box.tmpPoint, node);
+					}
+					for (edge in deletedEdges) {
+						createEdge(edge);
+					}
+				}
+			}
+
+			addUndo(exec);
+			commitUndo();			
 		}
 	}
 

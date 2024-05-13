@@ -136,12 +136,12 @@ typedef ShaderNodeDef = {
 };
 
 typedef Edge = {
-	?outputNodeId : Int,
-	nameOutput : String, // Fallback if name has changed
-	?outputId : Int,
-	?inputNodeId : Int,
-	nameInput : String, // Fallback if name has changed
-	?inputId : Int,
+	outputNodeId : Int,
+	?nameOutput : String, // Fallback if name has changed
+	outputId : Int,
+	inputNodeId : Int,
+	?nameInput : String, // Fallback if name has changed
+	inputId : Int,
 };
 
 typedef Connection = {
@@ -671,6 +671,47 @@ class Graph {
 		for (e in edges) {
 			addEdge(e);
 		}
+	}
+
+	public function canAddEdge(edge : Edge) {
+		var node = this.nodes.get(edge.inputNodeId);
+		var output = this.nodes.get(edge.outputNodeId);
+
+		var inputs = node.getInputs();
+		var outputs = output.getOutputs();
+
+		var inputType = inputs[edge.inputId].type;
+		var outputType = outputs[edge.outputId].type;
+
+		if (!areTypesCompatible(inputType, outputType)) {
+			return false;
+		}
+
+		function hasCycle(node: ShaderNode, ?visited: Map<ShaderNode, Bool>) : Bool {
+			var visited = visited?.copy() ?? [];
+			if (visited.get(node) != null) {
+				return true;
+			}
+			visited.set(node, true);
+			for (id => conn in node.connections) {
+				if (conn != null) {
+					if (hasCycle(conn.from, visited))
+						return true;
+				}
+			}
+			return false;
+		}
+
+		var prev = node.connections[edge.inputId];
+		node.connections[edge.inputId] = {from: output, outputId: edge.outputId};
+
+		var res = hasCycle(node);
+		node.connections[edge.inputId] = prev;
+		
+		if (res)
+			return false;
+
+		return true;
 	}
 
 	public function addEdge(edge : Edge) {

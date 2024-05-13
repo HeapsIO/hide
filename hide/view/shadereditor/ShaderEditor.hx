@@ -268,14 +268,15 @@ class ShaderEditor extends hide.view.FileView implements GraphInterface.IGraphEd
 	}
 
 	public function addNode(node: IGraphNode) : Void {
+		currentGraph.addNode(cast node);
 	}
 
 	public function removeNode(id: Int) : Void {
-
+		currentGraph.removeNode(id);
 	}
 
 	public function canAddEdge(edge: Edge) : Bool {
-		return true;
+		return currentGraph.canAddEdge({outputNodeId: edge.nodeFromId, outputId: edge.outputFromId, inputNodeId: edge.nodeToId, inputId: edge.inputToId});
 	}
 
 	public function addEdge(edge: Edge) : Void {
@@ -285,8 +286,20 @@ class ShaderEditor extends hide.view.FileView implements GraphInterface.IGraphEd
 
 	}
 
+	public override function save() {
+		var content = shaderGraph.saveToText();
+		currentSign = ide.makeSignature(content);
+		sys.io.File.saveContent(getPath(), content);
+		super.save();
+	}
+
 	public function getUndo() : hide.ui.UndoHistory {
 		return undo;
+	}
+
+	override function getDefaultContent() {
+		var p = (new hrt.shgraph.ShaderGraph(null, null)).serialize();
+		return haxe.io.Bytes.ofString(ide.toJSON(p));
 	}
 	
 	static var _ = FileTree.registerExtension(ShaderEditor,["shgraph"],{ icon : "scribd", createNew: "Shader Graph" });
