@@ -69,7 +69,7 @@ implements hide.view.GraphInterface.IGraphNode
 						case Const(intialValue):
 							defaultParam = {
 								get: () -> Std.string(Reflect.getProperty(defaults, i.name) ?? intialValue),
-								set: (s:String) -> Reflect.setField(defaults, i.name, Std.parseFloat(s)),
+								set: setDefaultParam.bind(i.name),
 							};
 						default:
 					}
@@ -111,6 +111,13 @@ implements hide.view.GraphInterface.IGraphNode
 
 	public function getPropertiesHTML(width : Float) : Array<hide.Element> {
 		return [];
+	}
+
+	public var editor : hide.view.GraphEditor;
+
+	public function setDefaultParam(name: String, value: String) {
+		Reflect.setField(defaults, name, Std.parseFloat(value));
+		Std.downcast(editor.editor, hide.view.shadereditor.ShaderEditor)?.requestRecompile();
 	}
 	#end
 

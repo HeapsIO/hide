@@ -75,6 +75,8 @@ interface IGraphNode {
     public function setPos(p : h2d.col.Point) : Void;
 
     public function getPropertiesHTML(width : Float) : Array<hide.Element>;
+
+    public var editor : GraphEditor;
 }
 
 interface IGraphEditor {

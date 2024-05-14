@@ -37,6 +37,9 @@ class PreviewShaderBase extends hxsl.Shader {
 			var position : Vec2;
 		};
 
+		@global var global : {
+			var time : Float;
+		};
 
 		@global var camera : {
 			var viewProj : Mat4;
@@ -50,6 +53,9 @@ class PreviewShaderBase extends hxsl.Shader {
 		var fakeNormal : Vec3;
 		var depth : Float;
 
+		var particleRandom : Float;
+        var particleLifeTime : Float;
+        var particleLife : Float;
 
 		function __init__() {
 			depth = 0.0;
@@ -58,71 +64,19 @@ class PreviewShaderBase extends hxsl.Shader {
 			projectedPosition = vec4(input.position, 0.0, 0.0);
 			fakeNormal = vec3(0,0,-1);
 			transformedNormal = vec3(0,0,-1);
-		}
-
-
-	}
-}
-
-class PreviewShaderParticle extends hxsl.Shader {
-	static var SRC = {
-
-		@global var global : {
-			var time : Float;
-		};
-
-		var particleRandom : Float;
-        var particleLifeTime : Float;
-        var particleLife : Float;
-
-		function __init__() {
 			particleLife = mod(global.time, 1.0);
 			particleLifeTime = 1.0;
 			particleRandom = hash12(vec2(floor(global.time)));
 		}
 
 		function hash12(p: Vec2) : Float
-		{
-			p = sign(p)*(floor(abs(p))+floor(fract(abs(p))*1000.0)/1000.0);
-			var p3  = fract(vec3(p.xyx) * .1031);
-			p3 += dot(p3, p3.yzx + 33.33);
-			return fract((p3.x + p3.y) * p3.z);
-		}
+			{
+				p = sign(p)*(floor(abs(p))+floor(fract(abs(p))*1000.0)/1000.0);
+				var p3  = fract(vec3(p.xyx) * .1031);
+				p3 += dot(p3, p3.yzx + 33.33);
+				return fract((p3.x + p3.y) * p3.z);
+			}
 	}
-}
-
-
-class Preview extends h2d.Bitmap {
-
-	public var shaderDef(default, set) : hrt.prefab.Cache.ShaderDef;
-	public var shader : DynamicShader;
-
-	function rebuildShader() {
-		if (shader != null) {
-			removeShader(shader);
-		}
-		if (shaderDef == null)
-			return;
-		shader = new DynamicShader(shaderDef.shader);
-		addShader(shader);
-	}
-
-	function set_shaderDef(v: hrt.prefab.Cache.ShaderDef) {
-		shaderDef = v;
-		rebuildShader();
-		return v;
-	}
-
-	public function new(parent: h2d.Object) {
-		super(h2d.Tile.fromColor(0xFF00FF,1,1), parent);
-		this.blendMode = None;
-		var shaderBase = new PreviewShaderBase();
-		addShader(shaderBase);
-		addShader(new PreviewShaderParticle());
-		var props = new h3d.shader.pbr.PropsValues();
-		addShader(props);
-	}
-
 }
 
 typedef ClassRepoEntry =
@@ -164,21 +118,32 @@ class ShaderEditor extends hide.view.FileView implements GraphInterface.IGraphEd
 	var currentGraph : hrt.shgraph.ShaderGraph.Graph;
 
 	var compiledShader : hrt.prefab.Cache.ShaderDef;
+	var previewShaderBase : PreviewShaderBase;
 	var previewVar : hxsl.Ast.TVar;
+	var needRecompile : Bool = true;
 	
 	override function onDisplay() {
 		super.onDisplay();
  		shaderGraph = cast hide.Ide.inst.loadPrefab(state.path, null,  true);
 		currentGraph = shaderGraph.getGraph(Fragment);
+		previewShaderBase = new PreviewShaderBase();
 
 		if (graphEditor != null)
 			graphEditor.remove();
 		graphEditor = new hide.view.GraphEditor(config, this, this.element);
 		graphEditor.onDisplay();
 
+		graphEditor.onPreviewUpdate = onPreviewUpdate;
 		graphEditor.onNodePreviewUpdate = onNodePreviewUpdate;
 	}
 
+
+	public function onPreviewUpdate() {
+		if (needRecompile) {
+			compileShader();
+		}
+		return true;
+	}
 	var bitmapToShader : Map<h2d.Bitmap, hxsl.DynamicShader> = [];
 	public function onNodePreviewUpdate(node: IGraphNode, bitmap: h2d.Bitmap) {
 		if (compiledShader == null) {
@@ -192,6 +157,7 @@ class ShaderEditor extends hide.view.FileView implements GraphInterface.IGraphEd
 			}
 			shader = new DynamicShader(compiledShader.shader);
 			bitmapToShader.set(bitmap, shader);
+			bitmap.addShader(previewShaderBase);
 			bitmap.addShader(shader);
 		}
 		setParamValue(shader, previewVar, node.getId() + 1);
@@ -234,11 +200,15 @@ class ShaderEditor extends hide.view.FileView implements GraphInterface.IGraphEd
 				continue;
 			}
 
+			var group = metas.group != null ? metas.group[0] : "Other";
+			var name = metas.name != null ? metas.name[0] : "unknown";
+			var description = metas.description != null ? metas.description[0] : "";
+
 			entries.push(
 				{
-					name: metas.name != null ? metas.name[0] : "unknown",
-					group: metas.group[0],
-					description: metas.description != null ? metas.description[0] : "",
+					name: name,
+					group: group,
+					description: description,
 					onConstructNode: () -> {
 						@:privateAccess var id = currentGraph.current_node_id++;
 						var inst = std.Type.createInstance(node, []);
@@ -247,18 +217,35 @@ class ShaderEditor extends hide.view.FileView implements GraphInterface.IGraphEd
 					},
 				}
 			);
+
+			var aliases = std.Type.createEmptyInstance(node).getAliases(name, group, description) ?? [];
+			for (alias in aliases) {
+				entries.push(
+					{
+						name: alias.nameSearch ?? alias.nameOverride ?? name,
+						group: alias.group ?? group,
+						description: alias.description ?? description,
+						onConstructNode: () -> {
+							@:privateAccess var id = currentGraph.current_node_id++;
+							var inst = std.Type.createInstance(node, alias.args ?? []);
+							inst.setId(id);
+							return inst;
+						},
+					}
+				);
+			}
 		}
 		return entries;
 	}
 
 	public function addNode(node: IGraphNode) : Void {
 		currentGraph.addNode(cast node);
-		compileShader();
+		requestRecompile();
 	}
 
 	public function removeNode(id: Int) : Void {
 		currentGraph.removeNode(id);
-		compileShader();
+		requestRecompile();
 	}
 
 	public function canAddEdge(edge: Edge) : Bool {
@@ -268,13 +255,13 @@ class ShaderEditor extends hide.view.FileView implements GraphInterface.IGraphEd
 	public function addEdge(edge: Edge) : Void {
 		var input = currentGraph.getNode(edge.nodeToId);
 		input.connections[edge.inputToId] = {from: currentGraph.getNode(edge.nodeFromId), outputId: edge.outputFromId};
-		compileShader();
+		requestRecompile();
 	}
 
 	public function removeEdge(nodeToId: Int, inputToId: Int) : Void {
 		var input = currentGraph.getNode(nodeToId);
 		input.connections[inputToId] = null;
-		compileShader();
+		requestRecompile();
 	}
 
 	public override function save() {
@@ -293,11 +280,19 @@ class ShaderEditor extends hide.view.FileView implements GraphInterface.IGraphEd
 		return haxe.io.Bytes.ofString(ide.toJSON(p));
 	}
 
+	public function requestRecompile() {
+		needRecompile = true;
+	}
+
 	public function compileShader() {
+		needRecompile = false;
 		try {
+			var start = Timer.stamp();
 			compiledShader = shaderGraph.compile(Fragment);
 			bitmapToShader.clear();
 			previewVar = compiledShader.inits.find((e) -> e.variable.name == hrt.shgraph.Variables.previewSelectName).variable;
+			var end = Timer.stamp();
+			Ide.inst.quickMessage('shader recompiled in ${(end - start) / 1000.0} ms', 2.0);
 		} catch (err) {
 			Ide.inst.quickError(err);
 		}

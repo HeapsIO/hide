@@ -16,13 +16,14 @@ class ShaderGlobalInput extends ShaderNode {
 			{display: "Pixel Size", g: PixelSize},
 		];
 
-	public function new(idx: Int) {
-		variableIdx = idx;
+	public function new(idx: Null<Int>) {
+		variableIdx = idx ?? variableIdx;
 	}
 
 	var outputs : Array<ShaderNode.OutputInfo>;
 	override public function getOutputs() {
 		if (outputs == null) {
+			trace(globalInputs);
 			var global = globalInputs[variableIdx].g;
 			var info = Variables.Globals[global];
 			outputs = [{name: "output", type: ShaderGraph.typeToSgType(info.type)}];

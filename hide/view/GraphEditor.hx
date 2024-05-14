@@ -24,8 +24,8 @@ typedef UndoBuffer = Array<UndoFn>;
 
 @:access(hide.view.shadereditor.Box)
 class GraphEditor extends hide.comp.Component {
+	public var editor : hide.view.GraphInterface.IGraphEditor;
 	var heapsScene : JQuery;
-	var editor : hide.view.GraphInterface.IGraphEditor;
 	var editorDisplay : SVG;
 	var editorMatrix : JQuery;
 	var statusBar : JQuery;
@@ -848,6 +848,7 @@ class GraphEditor extends hide.comp.Component {
 
 	static var tmpPoint = new h2d.col.Point();
 	function addBox(point: h2d.col.Point, node : IGraphNode) : Box {
+		node.editor = this;
 		editor.addNode(node);
 		var box = new Box(this, editorMatrix, node);
 		box.setPosition(point.x, point.y);
@@ -902,6 +903,14 @@ class GraphEditor extends hide.comp.Component {
 						editor.getUndo().change(Custom(exec));
 					}
 				});
+				fieldEditInput.get(0).addEventListener("pointerdown", function(e) {
+					e.stopPropagation();
+					fieldEditInput.get(0).setPointerCapture(e.pointerId);
+				});
+
+				fieldEditInput.get(0).addEventListener("pointermove", function(e) {
+					e.stopPropagation();
+				});
 			}
 			grNode.find(".node").attr("field", inputId);
 			grNode.get(0).addEventListener("pointerdown", function(e) {
@@ -953,9 +962,6 @@ class GraphEditor extends hide.comp.Component {
 		edges.remove(id);
 		
 		var io = unpackIO(id);
-		var input = boxes[io.nodeId].inputs[io.ioId];
-		input.removeAttr("hasLink");
-		input.parent().removeClass("hasLink");
 	}
 
 	function removeBoxEdges(box : Box, ?undoBuffer : UndoBuffer) {
@@ -986,6 +992,11 @@ class GraphEditor extends hide.comp.Component {
 			throw "No input should be present";
 		outputsToInputs.insert(output, input);
 
+		var inputElem = boxes.get(edge.nodeToId).inputs[edge.inputToId];
+
+		inputElem.attr("hasLink", "true");
+		inputElem.parent().addClass("hasLink");
+
 		var visual = createCurve(output, input);
 		edges.set(input, visual);
 		return prev;
@@ -995,6 +1006,10 @@ class GraphEditor extends hide.comp.Component {
 		var id = packIO(edge.nodeToId, edge.inputToId);
 		outputsToInputs.removeRight(id);
 		clearEdge(id);
+
+		var input = boxes[edge.nodeToId].inputs[edge.inputToId];
+		input.removeAttr("hasLink");
+		input.parent().removeClass("hasLink");
 
 		editor.removeEdge(edge.nodeToId, edge.inputToId);
 	}
