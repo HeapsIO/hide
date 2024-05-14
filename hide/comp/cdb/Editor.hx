@@ -1056,9 +1056,10 @@ class Editor extends Component {
 	}
 
 	public static var inRefreshAll(default,null) : Bool;
-	public static function refreshAll( eraseUndo = false ) {
+	public static function refreshAll( eraseUndo = false, loadDataFiles = true) {
 		var editors : Array<Editor> = [for( e in new Element(".is-cdb-editor").elements() ) e.data("cdb")];
-		DataFiles.load();
+		if (loadDataFiles)
+			DataFiles.load();
 		inRefreshAll = true;
 		for( e in editors ) {
 			e.syncSheet(Ide.inst.database);
@@ -1658,7 +1659,7 @@ class Editor extends Component {
 		var cats = ide.projectConfig.dbCategories;
 		return cats == null || props.categories == null || cats.filter(c -> props.categories.indexOf(c) >= 0).length > 0;
 	}
-	
+
 	public function moveColumn(targetSheet: cdb.Sheet, origSheet: cdb.Sheet, col: cdb.Data.Column) : String {
 		beginChanges(true);
 		var err = targetSheet.addColumn(col);
@@ -1671,8 +1672,8 @@ class Editor extends Component {
 			var subTarget = base.getSheet(subTargetPath);
 			if (subSheet != null) {
 				if (subTarget == null)
-					return 'original sheet $subSheetPath contains columns but target sheet $subTargetPath does not exist'; 
-				
+					return 'original sheet $subSheetPath contains columns but target sheet $subTargetPath does not exist';
+
 				for (c in subSheet.columns) {
 					var err = subTarget.addColumn(c);
 					if (err != null)
@@ -1694,18 +1695,18 @@ class Editor extends Component {
 						throw "missing parent table that is not props";
 					}
 					commonSheet = base.getSheet(commonPath.join("@"));
-	
+
 					if (!commonSheet.props.isProps)
 						break;
 					commonPath.pop();
 				}
-	
+
 				var origPath = origSheet.getPath().split("@");
 				origPath.splice(0, commonPath.length);
 				origPath.push(col.name);
 				var targetPath = targetSheet.getPath().split("@");
 				targetPath.splice(0, commonPath.length);
-	
+
 				var lines = commonSheet.getLines();
 				for (i => line in lines) {
 					// read value from origPath
@@ -1715,7 +1716,7 @@ class Editor extends Component {
 						if (value == null)
 							break;
 					}
-	
+
 					if (value != null) {
 						// Get or insert intermediates props value along targetPath
 						var target : Dynamic = line;
@@ -1730,7 +1731,7 @@ class Editor extends Component {
 						Reflect.setField(target, col.name, value);
 					}
 				}
-	
+
 				origSheet.deleteColumn(col.name);
 			}
 		}
@@ -1770,7 +1771,7 @@ class Editor extends Component {
 							}
 							cdbPath.pop();
 						}
-	
+
 						for (p in path) {
 							cdbPath.push(p);
 							var subSheet = base.getSheet(cdbPath.join("@"));
@@ -1781,7 +1782,7 @@ class Editor extends Component {
 								return 'Target path "${cdbPath.join(".")}" goes inside or outside another sheet';
 							}
 						}
-	
+
 						var finalPath = cdbPath.join("@");
 						var targetSheet = base.getSheet(finalPath);
 						if (targetSheet != null) {
