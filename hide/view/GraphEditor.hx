@@ -251,52 +251,33 @@ class GraphEditor extends hide.comp.Component {
 	function deleteSelection() {
 		cleanupCreateEdge();
 
-		if (boxesSelected.iterator().hasNext()) {
-			var selection = boxesSelected.copy();
-			var deletedNodes : Array<IGraphNode> = [];
-			var deletedEdges : Array<GraphInterface.Edge> = [];
-			var exec = function(isUndo : Bool) {
-				if (!isUndo) {
-					for (id => _ in selection) {
-						var box = boxes.get(id);
-						for (inputId => input in box.inputs) {
-							var packInput = packIO(id, inputId);
-							var packOutput = outputsToInputs.getLeft(packInput);
-							if (packOutput != null) {
-								var edge = edgeFromPack(packOutput, packInput);
-								deletedEdges.push(edge);
-								removeEdge(edge);
-							}
-						}
-						for (outputId => _ in box.outputs) {
-							var packOutput = packIO(id, outputId);
-							for (packInput in outputsToInputs.iterRights(packOutput)) {
-								var edge = edgeFromPack(packOutput, packInput);
-								deletedEdges.push(edge);
-								removeEdge(edge);
-							}
-						}
-					}
+		currentUndoBuffer = [];
 
-					for (id => _ in selection) {
-						var box = boxes.get(id);
-						deletedNodes.push(box.node);
-						removeBox(box);
-					}
-				}
-				else {
-					for (node in deletedNodes) {
-						node.getPos(Box.tmpPoint);
-						addBox(Box.tmpPoint, node);
-					}
-					for (edge in deletedEdges) {
-						createEdge(edge);
-					}
-				}
+		if (boxesSelected.iterator().hasNext()) {
+
+			for (id => _ in boxesSelected) {
+				var box = boxes.get(id);
+				opSelect(id, false, currentUndoBuffer);
+				removeBoxEdges(box, currentUndoBuffer);
+				opBox(box.node, false, currentUndoBuffer);
 			}
 
-			addUndo(exec);
-			commitUndo();			
+			commitUndo();
+		}
+	}
+
+	function opSelect(id: Int, doSelect: Bool, undoBuffer: UndoBuffer) {
+		var exec = function(isUndo: Bool) {
+			if (!doSelect) isUndo = !isUndo;
+			if (!isUndo) {
+				boxesSelected.set(id, true);
+				var box = boxes[id];
+				box.setSelected(true);
+			} else {
+				boxesSelected.remove(id);
+				var box = boxes[id];
+				box.setSelected(false);
+			}
 		}
 	}
 
@@ -445,21 +426,16 @@ class GraphEditor extends hide.comp.Component {
 			}
 			cleanupCreateEdge();
 
-			function exec(isUndo: Bool) {
-				if (!isUndo) {
-					addBox(posCursor, instance);
-					if (createLinkInput != null && createLinkOutput != null) {
-						var box = boxes[instance.getId()];
-						var x = (fromInput ? @:privateAccess box.width : 0) - Box.NODE_RADIUS;
-						var y = box.getNodeHeight(0) - Box.NODE_RADIUS;
-						moveBox(boxes[instance.getId()], posCursor.x - x, posCursor.y - y);
-						opEdge(createLinkOutput, createLinkInput, true)(false);
-					}
-				} else {
-					removeBox(boxes[instance.getId()]);
-				}
+			instance.setPos(posCursor);
+			opBox(instance, true, currentUndoBuffer);
+			if (createLinkInput != null && createLinkOutput != null) {
+				var box = boxes[instance.getId()];
+				var x = (fromInput ? @:privateAccess box.width : 0) - Box.NODE_RADIUS;
+				var y = box.getNodeHeight(0) - Box.NODE_RADIUS;
+				moveBox(boxes[instance.getId()], posCursor.x - x, posCursor.y - y);
+				opEdge(createLinkOutput, createLinkInput, true, currentUndoBuffer);
 			}
-			addUndo(exec);
+
 			commitUndo();
 			closeAddMenu();
 		}
@@ -696,7 +672,39 @@ class GraphEditor extends hide.comp.Component {
 		return {nodeFromId: output.nodeId, outputFromId: output.ioId, nodeToId: input.nodeId, inputToId: input.ioId};
 	}
 
-	function opEdge(output: Int, input: Int, doAdd: Bool) : UndoFn {
+	function opBox(node: IGraphNode, doAdd: Bool, undoBuffer: UndoBuffer) : Void {
+		var exec = function(isUndo : Bool) : Void {
+			if (!doAdd) isUndo = !isUndo;
+			if (!isUndo) {
+				node.getPos(Box.tmpPoint);
+				addBox(Box.tmpPoint, node);
+			}
+			else {
+				var box = boxes.get(node.getId());
+
+				removeBox(box);
+
+				// Sanity check
+				for (i => _ in box.info.inputs) {
+					var inputIO = packIO(box.node.getId(), i);
+					var outputIO = outputsToInputs.getLeft(inputIO);
+					if (outputIO != null)
+						throw "box has remaining inputs, operation is not atomic";
+				}
+
+				for (i => _ in box.info.outputs) {
+					var outputIO = packIO(box.node.getId(), i);
+					for (inputIO in outputsToInputs.iterRights(outputIO)) {
+						throw "box has remaining outputs, operation is not atomic";
+					}
+				}
+			}
+		}
+		undoBuffer.push(exec);
+		exec(false);
+	}
+
+	function opEdge(output: Int, input: Int, doAdd: Bool, undoBuffer: UndoBuffer) : Void {
 		var edge = edgeFromPack(output, input);
 		var previousFrom : Null<Int> = outputsToInputs.getLeft(input);
 		var prevEdge = null;
@@ -705,7 +713,7 @@ class GraphEditor extends hide.comp.Component {
 		}
 
 		if (editor.canAddEdge(edge)) {
-			return function (isUndo : Bool) : Bool {
+			var exec = function (isUndo : Bool) : Void {
 				if (!doAdd) isUndo = !isUndo;
 				if (!isUndo) {
 					if (prevEdge != null)
@@ -718,18 +726,15 @@ class GraphEditor extends hide.comp.Component {
 						createEdge(prevEdge);
 					}
 				}
-				return true;
 			}
+			undoBuffer.push(exec);
+			exec(false);
 		}
-		return null;
 	}
 
 	function finalizeUserCreateEdge() {
 		if (edgeCreationOutput != null && edgeCreationInput != null) {
-			var exec = opEdge(edgeCreationOutput, edgeCreationInput, true);
-			if (exec != null) {
-				addUndo(exec);
-			}
+			opEdge(edgeCreationOutput, edgeCreationInput, true, currentUndoBuffer);
 			commitUndo();
 		}
 		cleanupCreateEdge();
@@ -825,7 +830,6 @@ class GraphEditor extends hide.comp.Component {
 	}
 
 	function removeBox(box : Box) {
-		removeBoxEdges(box);
 		box.dispose();
 		var id = box.node.getId();
 		boxes.remove(id);
@@ -856,21 +860,21 @@ class GraphEditor extends hide.comp.Component {
 		input.parent().removeClass("hasLink");
 	}
 
-	function removeBoxEdges(box : Box) {
+	function removeBoxEdges(box : Box, ?undoBuffer : UndoBuffer) {
 		var id = box.getInstance().getId();
 		for (i => _ in box.info.inputs) {
-			var pack = packIO(id, i);
-			if (outputsToInputs.removeRight(pack) != null) {
-				clearEdge(pack);
+			var inputIO = packIO(id, i);
+			var outputIO = outputsToInputs.getLeft(inputIO);
+			if (outputIO != null) {
+				opEdge(outputIO, inputIO, false, undoBuffer);
 			}
 		}
 
 		for (i => _ in box.info.outputs) {
-			var pack = packIO(id, i);
-			for (input in outputsToInputs.iterRights(pack)) {
-				clearEdge(input);
+			var outputIO = packIO(id, i);
+			for (inputIO in outputsToInputs.iterRights(outputIO)) {
+				opEdge(outputIO, inputIO, false, undoBuffer);
 			}
-			outputsToInputs.removeLeft(pack);
 		}
 	}
 
@@ -1060,7 +1064,7 @@ class GraphEditor extends hide.comp.Component {
 			curve.on("pointerdown", function(e) {
 				
 				if (e.button == 0) {
-					addUndo(opEdge(packedOutput, packedInput, false));
+					opEdge(packedOutput, packedInput, false, currentUndoBuffer);
 
 					heapsScene.get(0).setPointerCapture(e.pointerId);
 

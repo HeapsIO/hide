@@ -280,10 +280,13 @@ class ShaderEditor extends hide.view.FileView implements GraphInterface.IGraphEd
 	}
 
 	public function addEdge(edge: Edge) : Void {
+		var input = currentGraph.getNode(edge.nodeToId);
+		input.connections[edge.inputToId] = {from: currentGraph.getNode(edge.nodeFromId), outputId: edge.outputFromId};
 	}
 
 	public function removeEdge(nodeToId: Int, inputToId: Int) : Void {
-
+		var input = currentGraph.getNode(nodeToId);
+		input.connections[inputToId] = null;
 	}
 
 	public override function save() {
