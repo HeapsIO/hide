@@ -64,9 +64,19 @@ implements hide.view.GraphInterface.IGraphNode
 			name: nameOverride ?? (metas.name != null ? metas.name[0] : "undefined"),
 			inputs: [
 				for (i in getInputs()) {
+					var defaultParam = null;
+					switch (i.def) {
+						case Const(intialValue):
+							defaultParam = {
+								get: () -> Std.string(Reflect.getProperty(defaults, i.name) ?? intialValue),
+								set: (s:String) -> Reflect.setField(defaults, i.name, Std.parseFloat(s)),
+							};
+						default:
+					}
 					{
 						name: i.name,
 						color: 0xFF0000,
+						defaultParam: defaultParam,
 					}
 				}
 			],
@@ -77,7 +87,12 @@ implements hide.view.GraphInterface.IGraphNode
 						color: 0xFF0000,
 					}
 				}
-			]
+			],
+			preview: {
+				getVisible: () -> showPreview,
+				setVisible: (b:Bool) -> showPreview = b,
+				fullSize: false,
+			},
 		};
 	}
 

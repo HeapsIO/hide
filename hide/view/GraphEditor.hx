@@ -31,6 +31,11 @@ class GraphEditor extends hide.comp.Component {
 	var statusBar : JQuery;
 	var statusClose : JQuery;
 
+	public var config : hide.Config;
+
+
+	var previewsScene : hide.comp.Scene;
+
 	var boxes : Map<Int, Box> = [];
 
 	var transformMatrix : Array<Float> = [1, 0, 0, 1, 0, 0];
@@ -79,7 +84,7 @@ class GraphEditor extends hide.comp.Component {
 	// Maps a packIO of an input to it's visual link in the graph
 	var edges : Map<Int, JQuery> = [];
 
-	public function new(editor: hide.view.GraphInterface.IGraphEditor, parent: Element = null) {
+	public function new(config: hide.Config, editor: hide.view.GraphInterface.IGraphEditor, parent: Element = null) {
 		super(parent, new Element('
 		<div class="flex vertical" >
 			<div class="flex-elt graph-view" tabindex="0" >
@@ -89,6 +94,7 @@ class GraphEditor extends hide.comp.Component {
 				</div>
 			</div>
 		</div>'));
+		this.config = config;
 		this.editor = editor;
 	}
 
@@ -137,6 +143,11 @@ class GraphEditor extends hide.comp.Component {
 		var keys = new hide.ui.Keys(element);
 		keys.register("delete", deleteSelection);
 
+		var miniPreviews = new Element('<div class="mini-preview"></div>');
+		heapsScene.prepend(miniPreviews);
+		previewsScene = new hide.comp.Scene(config, null, miniPreviews);
+		previewsScene.onReady = onMiniPreviewReady;
+		previewsScene.onUpdate = onMiniPreviewUpdate;
 
 		// rectangle Selection
 		var rawheaps = heapsScene.get(0);
@@ -247,6 +258,93 @@ class GraphEditor extends hide.comp.Component {
 			createEdge(edge);
 		}
 	}
+
+	var boxToPreview : Map<Box, h2d.Bitmap>;
+	var miniPreviewInitTimeout = 0;
+	function onMiniPreviewReady() {
+		if (previewsScene.s2d == null) {
+			miniPreviewInitTimeout ++;
+			if (miniPreviewInitTimeout > 10)
+				throw "Couldn't initialize background previews";
+			haxe.Timer.delay(() -> onMiniPreviewReady, 100);
+			return;
+		}
+		var bg = new h2d.Flow(previewsScene.s2d);
+		bg.fillHeight = true;
+		bg.fillWidth = true;
+		bg.backgroundTile = h2d.Tile.fromColor(0x333333);
+		boxToPreview = [];
+
+		var identity : h3d.Matrix = new h3d.Matrix();
+		identity.identity();
+		@:privateAccess previewsScene.s2d.renderer.globals.set("camera.viewProj", identity);
+		@:privateAccess previewsScene.s2d.renderer.globals.set("camera.position", identity.getPosition());
+	}
+
+	/** If this function returns false, the preview update will be skipped**/
+	public dynamic function onPreviewUpdate() : Bool {
+		return true;
+	}
+
+	/** Called for each visible preview in the graph editor **/
+	public dynamic function onNodePreviewUpdate(node: IGraphNode, bitmap: h2d.Bitmap) : Void {
+
+	}
+
+	function onMiniPreviewUpdate(dt: Float) {
+		@:privateAccess
+		/*if (sceneEditor?.scene?.s3d?.renderer?.ctx?.time != null) {
+			sceneEditor.scene.s3d.renderer.ctx.time = previewsScene.s3d.renderer.ctx.time;
+		}*/
+
+		if (!onPreviewUpdate())
+			return;
+
+		var newBoxToPreview : Map<Box, h2d.Bitmap> = [];
+		for (box in boxes) {
+			if (box.info.preview == null) {
+				continue;
+			}
+			var preview = boxToPreview.get(box);
+			if (preview == null) {
+				var bmp = new h2d.Bitmap(h2d.Tile.fromColor(0xFF00FF,1,1), previewsScene.s2d);
+				bmp.blendMode = None;
+				preview = bmp;
+			} else {
+				boxToPreview.remove(box);
+			}
+			newBoxToPreview.set(box,preview);
+		}
+
+		for (preview in boxToPreview) {
+			preview.remove();
+		}
+		boxToPreview = newBoxToPreview;
+
+		var sceneW = editorDisplay.element.width();
+		var sceneH = editorDisplay.element.height();
+
+		for (box => preview in boxToPreview) {
+			preview.visible = box.info.preview.getVisible();
+			if (!preview.visible)
+				continue;
+
+			var pos = Box.tmpPoint;
+			box.node.getPos(pos);
+			preview.x = gX(pos.x);
+			preview.y = gY(pos.y + box.getHeight());
+			preview.scaleX = transformMatrix[0] * box.width;
+			preview.scaleY = transformMatrix[3] * box.width;
+
+			if (preview.x + preview.scaleX < 0 || preview.x > sceneW || preview.y + preview.scaleY < 0 || preview.y > sceneH) {
+				preview.visible = false;
+				continue;
+			}
+
+			onNodePreviewUpdate(box.node, preview);
+		}
+	}
+
 
 	function deleteSelection() {
 		cleanupCreateEdge();

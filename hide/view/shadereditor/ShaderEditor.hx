@@ -158,53 +158,13 @@ typedef ClassRepoEntry =
 	args: Array<Dynamic>
 };
 
-class TestNode implements IGraphNode {
-	var id : Int;
-	var x : Float = 0;
-	var y : Float = 0;
-	public function new(id: Int) {
-		this.id = id;
-	}
-	public function getInfo() : GraphNodeInfo {
-		return {
-			name: "Test",
-			inputs: [
-				{
-					name :"a",
-					color: 0xFF0000,
-				}
-			],
-			outputs: [
-				{
-					name: "out",
-					color: 0x00FF00,
-				}
-			]
-		}
-	}
-
-	public function getId() : Int {
-		return id;
-	}
-
-	public function getPos(pt: h2d.col.Point) : Void {
-		pt.set(x,y);
-	}
-
-	public function setPos(pt: h2d.col.Point) : Void {
-		x = pt.x;
-		y = pt.y;
-	}
-
-	public function getPropertiesHTML(w : Float) : Array<hide.Element> {
-		return [];
-	}
-}
-
 class ShaderEditor extends hide.view.FileView implements GraphInterface.IGraphEditor {
 	var graphEditor : hide.view.GraphEditor;
 	var shaderGraph : hrt.shgraph.ShaderGraph;
 	var currentGraph : hrt.shgraph.ShaderGraph.Graph;
+
+	var compiledShader : hrt.prefab.Cache.ShaderDef;
+	var previewVar : hxsl.Ast.TVar;
 	
 	override function onDisplay() {
 		super.onDisplay();
@@ -213,8 +173,32 @@ class ShaderEditor extends hide.view.FileView implements GraphInterface.IGraphEd
 
 		if (graphEditor != null)
 			graphEditor.remove();
-		graphEditor = new hide.view.GraphEditor(this, this.element);
+		graphEditor = new hide.view.GraphEditor(config, this, this.element);
 		graphEditor.onDisplay();
+
+		graphEditor.onNodePreviewUpdate = onNodePreviewUpdate;
+	}
+
+	var bitmapToShader : Map<h2d.Bitmap, hxsl.DynamicShader> = [];
+	public function onNodePreviewUpdate(node: IGraphNode, bitmap: h2d.Bitmap) {
+		if (compiledShader == null) {
+			bitmap.visible = false;
+			return;
+		}
+		var shader = bitmapToShader.get(bitmap);
+		if (shader == null) {
+			for (s in bitmap.getShaders()) {
+				bitmap.removeShader(s);
+			}
+			shader = new DynamicShader(compiledShader.shader);
+			bitmapToShader.set(bitmap, shader);
+			bitmap.addShader(shader);
+		}
+		setParamValue(shader, previewVar, node.getId() + 1);
+	}
+
+	function setParamValue(shader : DynamicShader, variable : hxsl.Ast.TVar, value : Dynamic) {
+		@:privateAccess ShaderGraph.setParamValue(shader, variable, value);
 	}
 
 	/** IGraphEditor interface **/
@@ -269,10 +253,12 @@ class ShaderEditor extends hide.view.FileView implements GraphInterface.IGraphEd
 
 	public function addNode(node: IGraphNode) : Void {
 		currentGraph.addNode(cast node);
+		compileShader();
 	}
 
 	public function removeNode(id: Int) : Void {
 		currentGraph.removeNode(id);
+		compileShader();
 	}
 
 	public function canAddEdge(edge: Edge) : Bool {
@@ -282,11 +268,13 @@ class ShaderEditor extends hide.view.FileView implements GraphInterface.IGraphEd
 	public function addEdge(edge: Edge) : Void {
 		var input = currentGraph.getNode(edge.nodeToId);
 		input.connections[edge.inputToId] = {from: currentGraph.getNode(edge.nodeFromId), outputId: edge.outputFromId};
+		compileShader();
 	}
 
 	public function removeEdge(nodeToId: Int, inputToId: Int) : Void {
 		var input = currentGraph.getNode(nodeToId);
 		input.connections[inputToId] = null;
+		compileShader();
 	}
 
 	public override function save() {
@@ -303,6 +291,16 @@ class ShaderEditor extends hide.view.FileView implements GraphInterface.IGraphEd
 	override function getDefaultContent() {
 		var p = (new hrt.shgraph.ShaderGraph(null, null)).serialize();
 		return haxe.io.Bytes.ofString(ide.toJSON(p));
+	}
+
+	public function compileShader() {
+		try {
+			compiledShader = shaderGraph.compile(Fragment);
+			bitmapToShader.clear();
+			previewVar = compiledShader.inits.find((e) -> e.variable.name == hrt.shgraph.Variables.previewSelectName).variable;
+		} catch (err) {
+			Ide.inst.quickError(err);
+		}
 	}
 	
 	static var _ = FileTree.registerExtension(ShaderEditor,["shgraph"],{ icon : "scribd", createNew: "Shader Graph" });
