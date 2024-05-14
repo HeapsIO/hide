@@ -21,6 +21,7 @@ enum EdgeState { None; FromInput; FromOutput; }
 
 typedef UndoFn = (isUndo : Bool) -> Void;
 typedef UndoBuffer = Array<UndoFn>;
+typedef SelectionUndoSave = {newSelections: Map<Int, Bool>, buffer: UndoBuffer};
 
 @:access(hide.view.shadereditor.Box)
 class GraphEditor extends hide.comp.Component {
@@ -34,7 +35,7 @@ class GraphEditor extends hide.comp.Component {
 	public var config : hide.Config;
 
 
-	var previewsScene : hide.comp.Scene;
+	public var previewsScene : hide.comp.Scene;
 
 	var boxes : Map<Int, Box> = [];
 
@@ -160,8 +161,11 @@ class GraphEditor extends hide.comp.Component {
 				// 	currentEdge = null;
 				// }
 
+				var save : SelectionUndoSave ={newSelections: new Map<Int, Bool>(), buffer: new UndoBuffer()}; 
+				undoSave = save;
+
 				closeAddMenu();
-				clearSelectionBoxes();
+				clearSelectionBoxesUndo(save.buffer);
 				finalizeUserCreateEdge();
 				rawheaps.setPointerCapture(e.pointerId);
 				e.stopPropagation();
@@ -214,11 +218,15 @@ class GraphEditor extends hide.comp.Component {
 				if (recSelection != null) {
 					recSelection.remove();
 					recSelection = null;
-					for (id => _ in boxes) {
-						var b = boxes.get(id);
-						if (b.selected)
-							boxesSelected.set(b.node.getId(), true);
+					
+					var save : SelectionUndoSave = undoSave;
+
+					for (id => _ in save.newSelections) {
+						opSelect(id, true, save.buffer);
 					}
+					currentUndoBuffer = save.buffer;
+					commitUndo();
+					undoSave = null;
 					return;
 				}
 
@@ -377,6 +385,8 @@ class GraphEditor extends hide.comp.Component {
 				box.setSelected(false);
 			}
 		}
+		undoBuffer.push(exec);
+		exec(false);
 	}
 
 	function openAddMenu(x : Int = 0, y : Int = 0) {
@@ -648,11 +658,15 @@ class GraphEditor extends hide.comp.Component {
 			if (recSelection != null) recSelection.remove();
 			recSelection = editorDisplay.rect(editorMatrix, xMin, yMin, xMax - xMin, yMax - yMin).addClass("rect-selection");
 
+			var save : SelectionUndoSave = undoSave;
+
 			for (box in boxes) {
 				if (isInside(box, new Point(xMin, yMin), new Point(xMax, yMax))) {
 					box.setSelected(true);
+					save.newSelections.set(box.node.getId(), true);
 				} else {
 					box.setSelected(false);
+					save.newSelections.remove(box.node.getId());
 				}
 			}
 			return;
@@ -750,14 +764,28 @@ class GraphEditor extends hide.comp.Component {
 		if (undoSave != null) {
 			var before : Map<Int, {x: Float, y: Float}> = undoSave;
 			var after : Map<Int, {x: Float, y: Float}> = saveMovedBoxes();
-
-			editor.getUndo().change(Custom(function(undo) {
-				var toApply = undo ? before : after;
-				for (id => pos in toApply) {
-					moveBox(boxes[id], pos.x ,pos.y);
+			
+			var hasChanged = false;
+			
+			for (id => dataBefore in before) {
+				var dataAfter = after.get(id);
+				if (dataAfter == null)
+					throw "what";
+				if (dataBefore.x != dataAfter.x || dataBefore.y != dataAfter.y) {
+					hasChanged = true;
+					break;
 				}
-			}));
-			undoSave = null;
+			}
+
+			if (hasChanged) {
+				editor.getUndo().change(Custom(function(undo) {
+					var toApply = undo ? before : after;
+					for (id => pos in toApply) {
+						moveBox(boxes[id], pos.x ,pos.y);
+					}
+				}));
+				undoSave = null;
+			}
 		}
 
 		boxesToMove = [];
@@ -862,12 +890,10 @@ class GraphEditor extends hide.comp.Component {
 			if (!box.selected) {
 				if (!e.ctrlKey) {
 					// when not group selection and click on box not selected
-					clearSelectionBoxes();
-					boxesSelected.clear();
+					clearSelectionBoxesUndo(currentUndoBuffer);
 				}
-				boxesSelected.set(box.node.getId(), true);
-
-				box.setSelected(true);
+				opSelect(box.node.getId(), true, currentUndoBuffer);
+				commitUndo();
 			}
 			beginMove(e);
 		};
@@ -1212,6 +1238,12 @@ class GraphEditor extends hide.comp.Component {
 		}
 
 		return curve;
+	}
+
+	function clearSelectionBoxesUndo(undoBuffer: UndoBuffer) {
+		for (id => _ in boxesSelected) {
+			opSelect(id, false, undoBuffer);
+		}
 	}
 
 	function clearSelectionBoxes() {

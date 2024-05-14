@@ -871,13 +871,19 @@ input[type=checkbox] {
 			border-bottom-right-radius: 4px;
 		}
 
+		&.button2.transparent {
+			opacity: 0.5;
+		}
+
 		&.button2:hover {
 			border-color: @color-border-hover;
 			background: @color-tool-bg-hover;
+			opacity: 1.0;
 		}
 
 		&.button2:active, &.button2[checked], &.menu:active {
 			background: @color-highlight-gray;
+			opacity: 1.0;
 		}
 
 		&.menu {
@@ -2150,6 +2156,28 @@ input[type=checkbox] {
 }
 
 /* Shader Editor */
+.shader-editor {
+	#preview {
+		z-index: 3;
+		position: absolute;
+
+		width: 300px;
+		height: 300px;
+
+		background-color: #111;
+		   border: 1px solid #444;
+
+		right: 290px;
+		bottom: 35px;
+
+		.hide-toolbar2 {
+			position: absolute;
+			right: 8px;
+			top: 8px;
+		}
+	}
+}
+
 .graph-view {
 	outline: none !important;
 
@@ -2458,21 +2486,9 @@ input[type=checkbox] {
 		}
 
 	}
+
 	.heaps-scene {
 		outline: none !important;
-		#preview {
-			z-index: 3;
-			position: absolute;
-
-			width: 300px;
-			height: 300px;
-
-			background-color: #111;
-   			border: 1px solid #444;
-
-			right: 290px;
-			bottom: 35px;
-		}
 		#status-bar {
 			z-index: 2;
 			position: absolute;

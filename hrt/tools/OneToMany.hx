@@ -6,7 +6,6 @@ typedef Right = Int;
 /**
     Represent a collection of One -> Many relationship, i.e Multiple `Right` elements can point to an unique `Left` element.
     For example, a Parent -> Children relationship can be modeled with this, or a Output -> Input in a shadergraph.
-    Insertions, removal, indexing and iteration are O(1)
 **/
 class OneToMany {
     var left : Map<Left, Map<Right, Bool>>;
@@ -65,9 +64,13 @@ class OneToMany {
     }
 
     public function iterRights(l: Left) : Iterator<Right> {
-        return left.get(l)?.keys() ?? {
+        var rights = left.get(l);
+        if (rights != null) {
+            return rights.keys();
+        }
+        return {
             next: () -> {
-                throw "null iterator";
+                return -1;
             },
             hasNext: () -> {
                 return false;

@@ -23,7 +23,6 @@ class ShaderGlobalInput extends ShaderNode {
 	var outputs : Array<ShaderNode.OutputInfo>;
 	override public function getOutputs() {
 		if (outputs == null) {
-			trace(globalInputs);
 			var global = globalInputs[variableIdx].g;
 			var info = Variables.Globals[global];
 			outputs = [{name: "output", type: ShaderGraph.typeToSgType(info.type)}];

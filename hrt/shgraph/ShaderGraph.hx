@@ -407,7 +407,7 @@ class ShaderGraph extends hrt.prefab.Prefab {
 		var inits : Array<{variable: TVar, value: Dynamic}>= [];
 
 		var shaderData : ShaderData = {
-			name: "",
+			name: this.shared.currentPath,
 			vars: [],
 			funs: [],
 		};

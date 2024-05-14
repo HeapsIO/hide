@@ -93,6 +93,7 @@ implements hide.view.GraphInterface.IGraphNode
 				setVisible: (b:Bool) -> showPreview = b,
 				fullSize: false,
 			},
+			width: metas.width != null ? metas.width[0] : null,
 		};
 	}
 
