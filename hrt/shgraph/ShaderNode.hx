@@ -118,6 +118,10 @@ implements hide.view.GraphInterface.IGraphNode
 
 	public function setDefaultParam(name: String, value: String) {
 		Reflect.setField(defaults, name, Std.parseFloat(value));
+		requestRecompile();
+	}
+
+	public function requestRecompile() {
 		Std.downcast(editor.editor, hide.view.shadereditor.ShaderEditor)?.requestRecompile();
 	}
 	#end

@@ -39,6 +39,7 @@ class PreviewShaderBase extends hxsl.Shader {
 
 		@global var global : {
 			var time : Float;
+			var pixelSize : Vec2;
 		};
 
 		@global var camera : {
@@ -138,12 +139,17 @@ class ShaderEditor extends hide.view.FileView implements GraphInterface.IGraphEd
 	var meshPreviewPrefab : hrt.prefab.Prefab;
 	var meshPreviewprefabWatch : hide.tools.FileWatcher.FileWatchEvent;
 
+	var parametersList : JQuery;
+	var draggedParamId : Int;
+	
+
 	var defaultLight : hrt.prefab.Light;
 
 	var queueReloadMesh = false;
 	
 	override function onDisplay() {
 		super.onDisplay();
+		element.html("");
 		loadSettings();
 		element.addClass("shader-editor");
  		shaderGraph = cast hide.Ide.inst.loadPrefab(state.path, null,  true);
@@ -155,11 +161,393 @@ class ShaderEditor extends hide.view.FileView implements GraphInterface.IGraphEd
 		graphEditor = new hide.view.GraphEditor(config, this, this.element);
 		graphEditor.onDisplay();
 
+		graphEditor.element.on("drop" ,function(e) {
+			var posCursor = new Point(graphEditor.lX(ide.mouseX - 25), graphEditor.lY(ide.mouseY - 10));
+			var inst = new ShaderParam();
+			@:privateAccess var id = currentGraph.current_node_id++;
+			inst.id = id;
+			inst.parameterId = draggedParamId;
+			inst.variable = shaderGraph.getParameter(inst.parameterId).variable;
+
+			graphEditor.opBox(inst, true, graphEditor.currentUndoBuffer);
+			graphEditor.commitUndo();
+			// var node = Std.downcast(currentGraph.addNode(posCursor.x, posCursor.y, ShaderParam, []), ShaderParam);
+			// node.parameterId = draggedParamId;
+			// var paramShader = shaderGraph.getParameter(draggedParamId);
+			// node.variable = paramShader.variable;
+			// node.setName(paramShader.name);
+			//setDisplayValue(node, paramShader.type, paramShader.defaultValue);
+			//addBox(posCursor, ShaderParam, node);
+		});
+
+		var rightPannel = new Element(
+			'<div id="rightPanel">
+				<span>Parameters</span>
+				<div class="tab expand" name="Scene" icon="sitemap">
+					<div class="hide-block" >
+						<div id="parametersList" class="hide-scene-tree hide-list">
+						</div>
+					</div>
+					<div class="options-block hide-block">
+						<input id="createParameter" type="button" value="Add parameter" />
+						<select id="domainSelection"></select>
+						<input id="launchCompileShader" type="button" value="Compile shader" />
+
+						<input id="saveShader" type="button" value="Save" />
+						<div>
+							<input id="changeModel" type="button" value="Change Model" />
+							<input id="removeModel" type="button" value="Remove Model" />
+						</div>
+						<input id="centerView" type="button" value="Center Graph" />
+						<div>
+							Display Compiled
+							<input id="displayHxsl" type="button" value="Hxsl" />
+							<input id="displayGlsl" type="button" value="Glsl" />
+							<input id="displayHlsl" type="button" value="Hlsl" />
+							<input id="display2" type="button" value="2" />
+						</div>
+						<input id="togglelight" type="button" value="Toggle Default Lights" />
+						<input id="refreshGraph" type="button" value="Refresh Shader Graph" />
+					</div>
+				</div>
+			</div>'
+		);
+
+		rightPannel.appendTo(element);
+
+		var newParamCtxMenu : Array<hide.comp.ContextMenu.ContextMenuItem> = [
+			{ label : "Number", click : () -> createParameter(TFloat) },
+			{ label : "Vec2", click : () -> createParameter(TVec(2, VFloat)) },
+			{ label : "Vec3", click : () -> createParameter(TVec(3, VFloat)) },
+			{ label : "Color", click : () -> createParameter(TVec(4, VFloat)) },
+			{ label : "Texture", click : () -> createParameter(TSampler(T2D,false)) },
+		];
+
+		rightPannel.find("#createParameter").on("click", function() {
+			new hide.comp.ContextMenu(newParamCtxMenu);
+		});
+
+		parametersList = rightPannel.find("#parametersList");
+		parametersList.on("contextmenu", function(e) {
+			e.preventDefault();
+			e.stopPropagation();
+			new hide.comp.ContextMenu([
+				{
+					label : "Add Parameter",
+					menu : newParamCtxMenu,
+				},
+			]);
+		});
+
+		for (k in shaderGraph.parametersKeys) {
+			var pElt = addParameter(shaderGraph.parametersAvailable.get(k), shaderGraph.parametersAvailable.get(k).defaultValue);
+		}
+
+		rightPannel.find("#display2").click((e) -> {
+			trace(hxsl.Printer.shaderToString(shaderGraph.compile(Fragment).shader.data, true));
+		});
+
+
 		graphEditor.onPreviewUpdate = onPreviewUpdate;
 		graphEditor.onNodePreviewUpdate = onNodePreviewUpdate;
 
 		initMeshPreview();
 	}
+
+	function createParameter(type : Type) {
+		//beforeChange();
+		var paramShaderID = shaderGraph.addParameter(type);
+		//afterChange();
+		var paramShader = shaderGraph.getParameter(paramShaderID);
+
+		var elt = addParameter(paramShader, null);
+		//updateParam(paramShaderID);
+
+		elt.find(".input-title").focus();
+	}
+
+	function moveParameter(parameter : Parameter, up : Bool) {
+		var parameterElt = parametersList.find("#param_" + parameter.id);
+		var parameterPrev = shaderGraph.parametersAvailable.get(shaderGraph.parametersKeys[shaderGraph.parametersKeys.indexOf(parameter.id) + (up? -1 : 1)]);
+		var parameterPrevElt = parametersList.find("#param_" + parameterPrev.id);
+		if (up)
+			parameterElt.insertBefore(parameterPrevElt);
+		else
+			parameterElt.insertAfter(parameterPrevElt);
+		shaderGraph.parametersKeys.remove(parameter.id);
+		shaderGraph.parametersKeys.insert(shaderGraph.parametersKeys.indexOf(parameterPrev.id) + (up? 0 : 1), parameter.id);
+		shaderGraph.checkParameterIndex();
+	}
+
+	// function updateParam(id : Int) {
+	// 	var param = shaderGraph.getParameter(id);
+	// 	setParamValueByName(currentShader, param.name, param.defaultValue);
+	// 	//previewParamDirty = true;
+	// }
+
+	function addParameter(parameter : Parameter, ?value : Dynamic) {
+
+		var elt = new Element('<div id="param_${parameter.id}" class="parameter" draggable="true" ></div>').appendTo(parametersList);
+		elt.on("click", function(e) {e.stopPropagation();});
+		elt.on("contextmenu", function(e) {
+			var elements = [];
+			e.stopPropagation();
+			var newCtxMenu : Array<hide.comp.ContextMenu.ContextMenuItem> = [
+				{ label : "Move up", click : () -> {
+					//beforeChange();
+					moveParameter(parameter, true);
+					//afterChange();
+				}, enabled: shaderGraph.parametersKeys.indexOf(parameter.id) > 0},
+				{ label : "Move down", click : () -> {
+					//beforeChange();
+					moveParameter(parameter, false);
+					//afterChange();
+				}, enabled: shaderGraph.parametersKeys.indexOf(parameter.id) < shaderGraph.parametersKeys.length-1}
+			];
+			new hide.comp.ContextMenu(newCtxMenu);
+			e.preventDefault();
+
+		});
+		var content = new Element('<div class="content" ></div>');
+		content.hide();
+		var defaultValue = new Element("<div><span>Default: </span></div>").appendTo(content);
+
+		var typeName = "";
+		switch(parameter.type) {
+			case TFloat:
+				var parentRange = new Element('<input type="range" min="-1" max="1" />').appendTo(defaultValue);
+				var range = new hide.comp.Range(null, parentRange);
+				var rangeInput = @:privateAccess range.f;
+				rangeInput.on("mousedown", function(e) {
+					elt.attr("draggable", "false");
+					//beforeChange();
+				});
+				rangeInput.on("mouseup", function(e) {
+					elt.attr("draggable", "true");
+					//afterChange();
+				});
+				if (value == null) value = 0;
+				range.value = value;
+				shaderGraph.setParameterDefaultValue(parameter.id, value);
+				range.onChange = function(moving) {
+					if (!shaderGraph.setParameterDefaultValue(parameter.id, range.value))
+						return;
+					//setBoxesParam(parameter.id);
+					//updateParam(parameter.id);
+				};
+				typeName = "Number";
+			case TVec(4, VFloat):
+				var parentPicker = new Element('<div style="width: 35px; height: 25px; display: inline-block;"></div>').appendTo(defaultValue);
+				var picker = new hide.comp.ColorPicker.ColorBox(null, parentPicker, true, true);
+
+
+				if (value == null)
+					value = [0, 0, 0, 1];
+				var start : h3d.Vector = h3d.Vector.fromArray(value);
+				shaderGraph.setParameterDefaultValue(parameter.id, value);
+				picker.value = start.toColor();
+				picker.onChange = function(move) {
+					var vecColor = h3d.Vector4.fromColor(picker.value);
+					if (!shaderGraph.setParameterDefaultValue(parameter.id, [vecColor.x, vecColor.y, vecColor.z, vecColor.w]))
+						return;
+					//setBoxesParam(parameter.id);
+					//updateParam(parameter.id);
+				};
+			case TVec(n, VFloat):
+				if (value == null)
+					value = [for (i in 0...n) 0.0];
+
+				shaderGraph.setParameterDefaultValue(parameter.id, value);
+				//var row = new Element('<div class="flex"/>').appendTo(defaultValue);
+
+				for( i in 0...n ) {
+					var parentRange = new Element('<input type="range" min="-1" max="1" />').appendTo(defaultValue);
+					var range = new hide.comp.Range(null, parentRange);
+					range.value = value[i];
+
+					var rangeInput = @:privateAccess range.f;
+					rangeInput.on("mousedown", function(e) {
+						elt.attr("draggable", "false");
+						//beforeChange();
+					});
+					rangeInput.on("mouseup", function(e) {
+						elt.attr("draggable", "true");
+						//afterChange();
+					});
+
+					range.onChange = function(move) {
+						value[i] = range.value;
+						if (!shaderGraph.setParameterDefaultValue(parameter.id, value))
+							return;
+						//setBoxesParam(parameter.id);
+						//updateParam(parameter.id);
+					};
+					//if(min == null) min = isColor ? 0.0 : -1.0;
+					//if(max == null)	max = 1.0;
+					//e.attr("min", "" + min);
+					//e.attr("max", "" + max);
+				}
+				typeName = "Vec" + n;
+			case TSampler(_):
+				var parentSampler = new Element('<input type="texturepath" field="sampler2d"/>').appendTo(defaultValue);
+
+				var tselect = new hide.comp.TextureChoice(null, parentSampler);
+				tselect.value = value;
+				tselect.onChange = function(undo: Bool) {
+					//beforeChange();
+					if (!shaderGraph.setParameterDefaultValue(parameter.id, tselect.value))
+						return;
+					//afterChange();
+					//setBoxesParam(parameter.id);
+					//updateParam(parameter.id);
+				}
+				typeName = "Texture";
+
+			default:
+		}
+
+		var header = new Element('<div class="header">
+									<div class="title">
+										<i class="ico ico-chevron-right" ></i>
+										<input class="input-title" type="input" value="${parameter.name}" />
+									</div>
+									<div class="type">
+										<span>${typeName}</span>
+									</div>
+								</div>');
+
+		var internal = new Element('<div><input type="checkbox" name="internal" id="internal"></input><label for="internal">Internal</label><div>').appendTo(content).find("#internal");
+		internal.prop("checked", parameter.internal ?? false);
+
+		internal.on('change', function(e) {
+			//beforeChange();
+			parameter.internal = internal.prop("checked");
+			//afterChange();
+		});
+
+		var perInstanceCb = new Element('<div><input type="checkbox" name="perinstance"/><label for="perinstance">Per instance</label><div>');
+		var shaderParams : Array<ShaderParam> = [];
+		// for (b in listOfBoxes) {
+		// 	var tmpShaderParam = Std.downcast(b.getInstance(), ShaderParam);
+		// 	if (tmpShaderParam != null && tmpShaderParam.parameterId == parameter.id) {
+		// 		shaderParams.push(tmpShaderParam);
+		// 		break;
+		// 	}
+		// }
+
+		var checkbox = perInstanceCb.find("input");
+		if (shaderParams.length > 0)
+			checkbox.prop("checked", shaderParams[0].perInstance);
+		checkbox.on("change", function() {
+			//beforeChange();
+			var checked : Bool = checkbox.prop("checked");
+			for (shaderParam in shaderParams)
+				shaderParam.perInstance = checked;
+			//afterChange();
+			requestRecompile();
+		});
+		perInstanceCb.appendTo(content);
+
+		header.appendTo(elt);
+		content.appendTo(elt);
+		var actionBtns = new Element('<div class="action-btns" ></div>').appendTo(content);
+		var deleteBtn = new Element('<input type="button" value="Delete" />');
+		/*deleteBtn.on("click", function() {
+			for (b in listOfBoxes) {
+				var shaderParam = Std.downcast(b.getInstance(), ShaderParam);
+				if (shaderParam != null && shaderParam.parameterId == parameter.id) {
+					error("This parameter is used in the graph.");
+					return;
+				}
+			}
+			beforeChange();
+			shaderGraph.removeParameter(parameter.id);
+			afterChange();
+			elt.remove();
+		});*/
+		deleteBtn.appendTo(actionBtns);
+
+
+
+		var inputTitle = elt.find(".input-title");
+		inputTitle.on("click", function(e) {
+			e.stopPropagation();
+		});
+		inputTitle.on("keydown", function(e) {
+			e.stopPropagation();
+		});
+		inputTitle.on("change", function(e) {
+			var newName = inputTitle.val();
+			// if (shaderGraph.setParameterTitle(parameter.id, newName)) {
+			// 	for (b in listOfBoxes) {
+			// 		var shaderParam = Std.downcast(b.getInstance(), ShaderParam);
+			// 		if (shaderParam != null && shaderParam.parameterId == parameter.id) {
+			// 			beforeChange();
+			// 			shaderParam.setName(newName);
+			// 			afterChange();
+			// 		}
+			// 	}
+			// }
+		});
+		inputTitle.on("focus", function() { inputTitle.select(); } );
+
+		// elt.find(".header").on("click", function() {
+		// 	toggleParameter(elt);
+		// });
+
+		elt.on("dragstart", function(e) {
+			draggedParamId = parameter.id;
+		});
+
+		inline function isAfter(e) {
+			return e.clientY > (elt.offset().top + elt.outerHeight() / 2.0);
+		}
+
+		elt.on("dragover", function(e : js.jquery.Event) {
+			var after = isAfter(e);
+			elt.toggleClass("hovertop", !after);
+			elt.toggleClass("hoverbot", after);
+			e.preventDefault();
+		});
+
+		elt.on("dragleave", function(e) {
+			elt.toggleClass("hovertop", false);
+			elt.toggleClass("hoverbot", false);
+		});
+
+		elt.on("dragenter", function(e) {
+			e.preventDefault();
+		});
+
+		elt.on("drop", function(e) {
+			elt.toggleClass("hovertop", false);
+			elt.toggleClass("hoverbot", false);
+			var other = shaderGraph.getParameter(draggedParamId);
+			var after = isAfter(e);
+			moveParameterTo(other, parameter, after);
+		});
+
+		return elt;
+	}
+
+	function moveParameterTo(paramA: Parameter, paramB: Parameter, after: Bool) {
+		if (paramA == paramB)
+			return;
+		var aElt = parametersList.find("#param_" + paramA.id);
+		var bElt = parametersList.find("#param_" + paramB.id);
+
+		if (!after) {
+			aElt.insertBefore(bElt);
+		} else {
+			aElt.insertAfter(bElt);
+		}
+
+		shaderGraph.parametersKeys.remove(paramA.id);
+		shaderGraph.parametersKeys.insert(shaderGraph.parametersKeys.indexOf(paramB.id)+ (after ? 1 : 0) , paramA.id);
+
+		shaderGraph.checkParameterIndex();
+	}
+
 
 	public function loadSettings() {
 		var save = haxe.Json.parse(getDisplayState("previewSettings") ?? "{}");
@@ -180,7 +568,7 @@ class ShaderEditor extends hide.view.FileView implements GraphInterface.IGraphEd
 		if (meshPreviewScene != null) {
 			meshPreviewScene.element.remove();
 		}
-		var container = new Element('<div id="preview"></div>').appendTo(element);
+		var container = new Element('<div id="preview"></div>').appendTo(graphEditor.element);
 		meshPreviewScene = new hide.comp.Scene(config, null, container);
 		meshPreviewScene.onReady = onMeshPreviewReady;
 		meshPreviewScene.onUpdate = onMeshPreviewUpdate;
@@ -392,6 +780,9 @@ class ShaderEditor extends hide.view.FileView implements GraphInterface.IGraphEd
 	}
 
 	public function replaceMeshShader(mesh: h3d.scene.Mesh, newShader: hxsl.DynamicShader) {
+		if (newShader == null)
+			return;
+
 		for (m in mesh.getMaterials()) {
 			var found = false;
 
@@ -439,6 +830,13 @@ class ShaderEditor extends hide.view.FileView implements GraphInterface.IGraphEd
 	public function onPreviewUpdate() {
 		if (needRecompile) {
 			compileShader();
+		}
+
+		@:privateAccess
+		{
+			var engine = graphEditor.previewsScene.engine;
+			var t = engine.getCurrentTarget();
+			graphEditor.previewsScene.s2d.ctx.globals.set("global.pixelSize", new h3d.Vector(2 / (t == null ? engine.width : t.width), 2 / (t == null ? engine.height : t.height)));	
 		}
 
 		@:privateAccess

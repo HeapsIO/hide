@@ -6,10 +6,12 @@ using hxsl.Ast;
 @width(120)
 @color("#d6d6d6")
 class ShaderParam extends ShaderNode {
-
-
 	@prop() public var parameterId : Int;
 	@prop() public var perInstance : Bool;
+
+	public function new() {
+		
+	}
 
 	override function getOutputs() : Array<ShaderNode.OutputInfo> {
 		var t = switch(variable.type) {

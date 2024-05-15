@@ -1934,6 +1934,10 @@ input[type=checkbox]:checked:after {
   visibility: visible;
 }
 /* Shader Editor */
+.shader-editor {
+  display: flex;
+  flex-direction: row;
+}
 .shader-editor #preview {
   z-index: 3;
   position: absolute;
@@ -1941,7 +1945,7 @@ input[type=checkbox]:checked:after {
   height: 300px;
   background-color: #111;
   border: 1px solid #444;
-  right: 290px;
+  right: 35px;
   bottom: 35px;
 }
 .shader-editor #preview .hide-toolbar2 {
@@ -1949,8 +1953,130 @@ input[type=checkbox]:checked:after {
   right: 8px;
   top: 8px;
 }
+.shader-editor .flex.vertical {
+  position: relative;
+}
+.shader-editor #rightPanel {
+  flex: 0;
+  min-width: 270px;
+  width: 280px;
+  padding-top: 10px;
+  border-left: 1px solid #444444;
+  background: #222222;
+  user-select: none;
+  height: 100%;
+}
+.shader-editor #rightPanel span {
+  margin-left: 5px;
+  font-size: 15px;
+  font-weight: bold;
+}
+.shader-editor #rightPanel .hide-block {
+  height: 600px;
+}
+.shader-editor #rightPanel .hide-block #parametersList {
+  height: 100%;
+}
+.shader-editor #rightPanel .hide-block #parametersList .parameter {
+  border: 1px solid;
+  margin: 5px;
+  background-color: #222;
+  position: relative;
+  /*.content {
+						background-color: #b3b3b3;
+						padding: 5px;
+						box-shadow: inset 0px 13px 6px -15px black;
+
+						div {
+							width: 100%;
+							height: 20px;
+
+							span {
+								float: left;
+								color: black;
+								font-size: 13px;
+								padding-right: 5px;
+								font-weight: normal;
+							}
+						}
+						.texture-preview {
+							background-repeat: no-repeat;
+							background-size: 20px 20px!important;
+							border: 2px #444444 solid;
+							width: 20px;
+						}
+						.action-btns {
+							input {
+								float: right;
+							}
+						}
+					}*/
+}
+.shader-editor #rightPanel .hide-block #parametersList .parameter.hovertop:before,
+.shader-editor #rightPanel .hide-block #parametersList .parameter.hoverbot:after {
+  display: block;
+  position: absolute;
+  z-index: 100;
+  margin: 0 auto;
+  width: 100%;
+  content: "";
+}
+.shader-editor #rightPanel .hide-block #parametersList .parameter:before {
+  border-top: 5px solid red;
+  top: -10px;
+}
+.shader-editor #rightPanel .hide-block #parametersList .parameter:after {
+  border-bottom: 5px solid red;
+  bottom: -10px;
+}
+.shader-editor #rightPanel .hide-block #parametersList .parameter .header {
+  background-color: #d6d6d6;
+  height: 20px;
+  padding: 5px;
+  color: black;
+  cursor: pointer;
+}
+.shader-editor #rightPanel .hide-block #parametersList .parameter .header .title {
+  float: left;
+}
+.shader-editor #rightPanel .hide-block #parametersList .parameter .header .title input {
+  width: 130px;
+}
+.shader-editor #rightPanel .hide-block #parametersList .parameter .header .type {
+  float: right;
+}
+.shader-editor #rightPanel .hide-block #parametersList .parameter .header .type span {
+  color: black;
+  font-style: italic;
+  font-size: 13px;
+  padding-right: 5px;
+}
+.shader-editor #rightPanel .hide-block #parametersList .parameter .content {
+  padding: 4px;
+}
+.shader-editor #rightPanel .hide-block #parametersList .parameter .content > div {
+  margin-top: 2px;
+}
+.shader-editor #rightPanel .hide-block #parametersList .parameter > span {
+  font-size: 12px;
+}
+.shader-editor #rightPanel .options-block {
+  height: max(250px, 25%);
+}
+.shader-editor #rightPanel .options-block > * {
+  display: block;
+  margin-bottom: 10px;
+  width: 100%;
+  text-align: center;
+  box-sizing: border-box;
+}
+.shader-editor #rightPanel .options-block > div {
+  border: 1px solid #666;
+  padding: 2px;
+}
 .graph-view {
   outline: none !important;
+  position: relative;
 }
 .graph-view .mini-preview {
   position: absolute;
@@ -1962,127 +2088,7 @@ input[type=checkbox]:checked:after {
   position: absolute;
   top: 0px;
   left: 0px;
-  z-index: 0;
-}
-.graph-view .tabs {
-  width: 280px;
-  padding-top: 10px;
-  border-left: 1px solid #444444;
-  z-index: 205;
-  background: #222222;
-  height: 100%;
-  user-select: none;
-}
-.graph-view .tabs span {
-  margin-left: 5px;
-  font-size: 15px;
-  font-weight: bold;
-}
-.graph-view .tabs .tab {
-  height: 100%;
-}
-.graph-view .tabs .tab .hide-block {
-  height: 600px;
-}
-.graph-view .tabs .tab .hide-block #parametersList {
-  height: 100%;
-}
-.graph-view .tabs .tab .hide-block #parametersList .parameter {
-  border: 1px solid;
-  margin: 5px;
-  background-color: #222;
-  position: relative;
-  /*.content {
-							background-color: #b3b3b3;
-							padding: 5px;
-							box-shadow: inset 0px 13px 6px -15px black;
-
-							div {
-								width: 100%;
-								height: 20px;
-
-								span {
-									float: left;
-									color: black;
-									font-size: 13px;
-									padding-right: 5px;
-									font-weight: normal;
-								}
-							}
-							.texture-preview {
-								background-repeat: no-repeat;
-								background-size: 20px 20px!important;
-								border: 2px #444444 solid;
-								width: 20px;
-							}
-							.action-btns {
-								input {
-									float: right;
-								}
-							}
-						}*/
-}
-.graph-view .tabs .tab .hide-block #parametersList .parameter.hovertop:before,
-.graph-view .tabs .tab .hide-block #parametersList .parameter.hoverbot:after {
-  display: block;
-  position: absolute;
-  z-index: 100;
-  margin: 0 auto;
-  width: 100%;
-  content: "";
-}
-.graph-view .tabs .tab .hide-block #parametersList .parameter:before {
-  border-top: 5px solid red;
-  top: -10px;
-}
-.graph-view .tabs .tab .hide-block #parametersList .parameter:after {
-  border-bottom: 5px solid red;
-  bottom: -10px;
-}
-.graph-view .tabs .tab .hide-block #parametersList .parameter .header {
-  background-color: #d6d6d6;
-  height: 20px;
-  padding: 5px;
-  color: black;
-  cursor: pointer;
-}
-.graph-view .tabs .tab .hide-block #parametersList .parameter .header .title {
-  float: left;
-}
-.graph-view .tabs .tab .hide-block #parametersList .parameter .header .title input {
-  width: 130px;
-}
-.graph-view .tabs .tab .hide-block #parametersList .parameter .header .type {
-  float: right;
-}
-.graph-view .tabs .tab .hide-block #parametersList .parameter .header .type span {
-  color: black;
-  font-style: italic;
-  font-size: 13px;
-  padding-right: 5px;
-}
-.graph-view .tabs .tab .hide-block #parametersList .parameter .content {
-  padding: 4px;
-}
-.graph-view .tabs .tab .hide-block #parametersList .parameter .content > div {
-  margin-top: 2px;
-}
-.graph-view .tabs .tab .hide-block #parametersList .parameter > span {
-  font-size: 12px;
-}
-.graph-view .tabs .tab .options-block {
-  height: max(250px, 25%);
-}
-.graph-view .tabs .tab .options-block > * {
-  display: block;
-  margin-bottom: 10px;
-  width: 100%;
-  text-align: center;
-  box-sizing: border-box;
-}
-.graph-view .tabs .tab .options-block > div {
-  border: 1px solid #666;
-  padding: 2px;
+  z-index: 1;
 }
 .graph-view #add-menu {
   position: absolute;

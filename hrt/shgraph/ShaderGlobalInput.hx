@@ -68,6 +68,7 @@ class ShaderGlobalInput extends ShaderNode {
 			var value = input.val();
 			outputs = null;
 			this.variableIdx = value;
+			requestRecompile();
 		});
 
 		elements.push(element);

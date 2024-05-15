@@ -2157,17 +2157,20 @@ input[type=checkbox] {
 
 /* Shader Editor */
 .shader-editor {
+	display: flex;
+	flex-direction: row;
+
 	#preview {
 		z-index: 3;
 		position: absolute;
-
+		
 		width: 300px;
 		height: 300px;
 
 		background-color: #111;
-		   border: 1px solid #444;
+		border: 1px solid #444;
 
-		right: 290px;
+		right: 35px;
 		bottom: 35px;
 
 		.hide-toolbar2 {
@@ -2176,10 +2179,153 @@ input[type=checkbox] {
 			top: 8px;
 		}
 	}
+
+	.flex.vertical {
+		position:relative;
+	}
+
+	#rightPanel {
+		flex: 0;
+		min-width: 270px;
+
+		width: 280px;
+		padding-top: 10px;
+		border-left: 1px solid #444444;
+    	background: #222222;
+		height: 100%;
+		user-select: none;
+
+		span { // title
+			margin-left: 5px;
+			font-size: 15px;
+			font-weight: bold;
+		}
+
+		height: 100%;
+		@options-height: max(250px, 25%);
+		.hide-block {
+			height: 600px;
+
+			#parametersList {
+				height: 100%;
+
+				.parameter {
+					border: 1px solid;
+					margin: 5px;
+					background-color: #222;
+					position: relative;
+
+					&.hovertop:before, &.hoverbot:after {
+						display: block;
+						position: absolute;
+						z-index: 100;
+						margin: 0 auto;
+						width: 100%;
+						content: "";
+					}
+
+					&:before {
+						border-top: 5px solid red;
+						top: -10px;
+					}
+
+					&:after {
+						border-bottom: 5px solid red;
+						bottom: -10px;
+					}
+
+
+					.header {
+						background-color: #d6d6d6;
+						height: 20px;
+						padding: 5px;
+						color: black;
+						cursor: pointer;
+
+						.title {
+							float: left;
+							input {
+								width: 130px;
+							}
+						}
+
+						.type {
+							float: right;
+
+							span {
+								color: black;
+								font-style: italic;
+								font-size: 13px;
+								padding-right: 5px;
+							}
+						}
+					}
+
+					.content {
+						padding: 4px;
+
+						>div {
+							margin-top: 2px;
+						}
+					}
+
+					/*.content {
+						background-color: #b3b3b3;
+						padding: 5px;
+						box-shadow: inset 0px 13px 6px -15px black;
+
+						div {
+							width: 100%;
+							height: 20px;
+
+							span {
+								float: left;
+								color: black;
+								font-size: 13px;
+								padding-right: 5px;
+								font-weight: normal;
+							}
+						}
+						.texture-preview {
+							background-repeat: no-repeat;
+							background-size: 20px 20px!important;
+							border: 2px #444444 solid;
+							width: 20px;
+						}
+						.action-btns {
+							input {
+								float: right;
+							}
+						}
+					}*/
+
+					& > span {
+						font-size: 12px;
+					}
+				}
+			}
+		}
+		.options-block {
+			height: @options-height;
+			& > * {
+				display: block;
+				margin-bottom: 10px;
+				width: 100%;
+				text-align: center;
+				box-sizing: border-box;
+			}
+
+			& > div {
+				border: 1px solid #666;
+				padding: 2px;
+			}
+		}
+	}
 }
 
 .graph-view {
 	outline: none !important;
+	position: relative;
 
 	.mini-preview {
 		position: absolute;
@@ -2192,148 +2338,9 @@ input[type=checkbox] {
 		position: absolute;
 		top: 0px;
 		left: 0px;
-		z-index: 0;
+		z-index: 1;
 	}
 
-	.tabs {
-		width: 280px;
-		padding-top: 10px;
-		border-left: 1px solid #444444;
-		z-index: @default-layer + 5;
-    	background: #222222;
-		height: 100%;
-		user-select: none;
-
-		span { // title
-			margin-left: 5px;
-			font-size: 15px;
-			font-weight: bold;
-		}
-
-
-
-		.tab {
-			height: 100%;
-			@options-height: max(250px, 25%);
-			.hide-block {
-				height: 600px;
-
-				#parametersList {
-					height: 100%;
-
-					.parameter {
-						border: 1px solid;
-						margin: 5px;
-						background-color: #222;
-						position: relative;
-
-						&.hovertop:before, &.hoverbot:after {
-							display: block;
-							position: absolute;
-							z-index: 100;
-							margin: 0 auto;
-							width: 100%;
-							content: "";
-						}
-
-						&:before {
-							border-top: 5px solid red;
-							top: -10px;
-						}
-
-						&:after {
-							border-bottom: 5px solid red;
-							bottom: -10px;
-						}
-
-
-						.header {
-							background-color: #d6d6d6;
-							height: 20px;
-							padding: 5px;
-							color: black;
-							cursor: pointer;
-
-							.title {
-								float: left;
-								input {
-									width: 130px;
-								}
-							}
-
-							.type {
-								float: right;
-
-								span {
-									color: black;
-									font-style: italic;
-									font-size: 13px;
-									padding-right: 5px;
-								}
-							}
-						}
-
-						.content {
-							padding: 4px;
-
-							>div {
-								margin-top: 2px;
-							}
-						}
-
-						/*.content {
-							background-color: #b3b3b3;
-							padding: 5px;
-							box-shadow: inset 0px 13px 6px -15px black;
-
-							div {
-								width: 100%;
-								height: 20px;
-
-								span {
-									float: left;
-									color: black;
-									font-size: 13px;
-									padding-right: 5px;
-									font-weight: normal;
-								}
-							}
-							.texture-preview {
-								background-repeat: no-repeat;
-								background-size: 20px 20px!important;
-								border: 2px #444444 solid;
-								width: 20px;
-							}
-							.action-btns {
-								input {
-									float: right;
-								}
-							}
-						}*/
-
-						& > span {
-							font-size: 12px;
-						}
-					}
-				}
-			}
-			.options-block {
-				height: @options-height;
-				& > * {
-					display: block;
-					margin-bottom: 10px;
-					width: 100%;
-					text-align: center;
-					box-sizing: border-box;
-				}
-
-				& > div {
-					border: 1px solid #666;
-					padding: 2px;
-				}
-			}
-		}
-	}
 	#add-menu {
 		position: absolute;
 		width: 400px;

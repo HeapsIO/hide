@@ -94,6 +94,7 @@ class ShaderOutput extends ShaderNode {
 		input.on("change", function(e) {
 			variable = input.val();
 			inputs = null;
+			requestRecompile();
 		});
 
 		elements.push(element);

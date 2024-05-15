@@ -29,9 +29,6 @@ class GraphEditor extends hide.comp.Component {
 	var heapsScene : JQuery;
 	var editorDisplay : SVG;
 	var editorMatrix : JQuery;
-	var statusBar : JQuery;
-	var statusClose : JQuery;
-
 	public var config : hide.Config;
 
 
@@ -77,7 +74,7 @@ class GraphEditor extends hide.comp.Component {
 	var lastCurveX : Float = 0;
 	var lastCurveY : Float = 0;
 
-	var currentUndoBuffer : UndoBuffer = [];
+	public var currentUndoBuffer : UndoBuffer = [];
 
 
 
@@ -90,8 +87,6 @@ class GraphEditor extends hide.comp.Component {
 		<div class="flex vertical" >
 			<div class="flex-elt graph-view" tabindex="0" >
 				<div class="heaps-scene" tabindex="1" >
-				</div>
-				<div id="rightPanel" class="tabs" >
 				</div>
 			</div>
 		</div>'));
@@ -129,15 +124,7 @@ class GraphEditor extends hide.comp.Component {
 		heapsScene = element.find(".heaps-scene");
 		editorDisplay = new SVG(heapsScene);
 		editorDisplay.element.attr("id", "graph-root");
-		var status = new Element('<div id="status-bar" ><div id="close">-- close --</div><pre></pre></div>');
-		statusBar = status.appendTo(heapsScene).find("pre");
-		statusClose = status.find("#close");
-		statusClose.hide();
-		statusClose.on("click", function(e) {
-			statusBar.html("");
-			statusClose.hide();
-		});
-		statusBar.on("wheel", (e) -> { e.stopPropagation(); });
+
 
 		editorMatrix = editorDisplay.group(editorDisplay.element);
 
@@ -218,7 +205,7 @@ class GraphEditor extends hide.comp.Component {
 				if (recSelection != null) {
 					recSelection.remove();
 					recSelection = null;
-					
+
 					var save : SelectionUndoSave = undoSave;
 
 					for (id => _ in save.newSelections) {
@@ -391,8 +378,9 @@ class GraphEditor extends hide.comp.Component {
 
 	function openAddMenu(x : Int = 0, y : Int = 0) {
 
-		var boundsWidth = Std.parseInt(element.css("width"));
-		var boundsHeight = Std.parseInt(element.css("height"));
+		var boundsWidth = Std.int(element.width());
+		var boundsHeight = Std.int(element.height());
+		trace(boundsHeight);
 
 		var posCursor = new IPoint(Std.int(ide.mouseX - heapsScene.offset().left) + x, Std.int(ide.mouseY - heapsScene.offset().top) + y);
 		if( posCursor.x < 0 )
@@ -415,6 +403,9 @@ class GraphEditor extends hide.comp.Component {
 
 			addMenu.css("left", posCursor.x);
 			addMenu.css("top", posCursor.y);
+
+			trace(posCursor);
+
 			for (c in addMenu.find("#results").children().elements()) {
 				c.show();
 			}
@@ -798,7 +789,7 @@ class GraphEditor extends hide.comp.Component {
 		return {nodeFromId: output.nodeId, outputFromId: output.ioId, nodeToId: input.nodeId, inputToId: input.ioId};
 	}
 
-	function opBox(node: IGraphNode, doAdd: Bool, undoBuffer: UndoBuffer) : Void {
+	public function opBox(node: IGraphNode, doAdd: Bool, undoBuffer: UndoBuffer) : Void {
 		var exec = function(isUndo : Bool) : Void {
 			if (!doAdd) isUndo = !isUndo;
 			if (!isUndo) {
@@ -1072,22 +1063,11 @@ class GraphEditor extends hide.comp.Component {
 	}*/
 
 	function error(str : String, ?idBox : Int) {
-		statusBar.html(str);
-		statusClose.show();
-		statusBar.addClass("error");
-
-		new Element(".box").removeClass("error");
-		if (idBox != null) {
-			var elt = new Element('#${idBox}');
-			elt.addClass("error");
-		}
+		Ide.inst.quickError(str);
 	}
 
 	function info(str : String) {
-		statusBar.html(str);
-		statusClose.show();
-		statusBar.removeClass("error");
-		new Element(".box").removeClass("error");
+		Ide.inst.quickMessage(str);
 	}
 
 	/*function createEdgeInEditorGraph(edge) {
@@ -1422,26 +1402,26 @@ class GraphEditor extends hide.comp.Component {
 		var dy = Math.max(Math.abs(y - (element.offset().top + element.height() / 2)) - element.height() / 2, 0);
 		return dx * dx + dy * dy;
 	}
-	function gX(x : Float) : Float {
+	public function gX(x : Float) : Float {
 		return x*transformMatrix[0] + transformMatrix[4];
 	}
-	function gY(y : Float) : Float {
+	public function gY(y : Float) : Float {
 		return y*transformMatrix[3] + transformMatrix[5];
 	}
-	function gPos(x : Float, y : Float) : Point {
+	public function gPos(x : Float, y : Float) : Point {
 		return new Point(gX(x), gY(y));
 	}
-	function lX(x : Float) : Float {
+	public function lX(x : Float) : Float {
 		var screenOffset = editorDisplay.element.offset();
 		x -= screenOffset.left;
 		return (x - transformMatrix[4])/transformMatrix[0];
 	}
-	function lY(y : Float) : Float {
+	public function lY(y : Float) : Float {
 		var screenOffset = editorDisplay.element.offset();
 		y -= screenOffset.top;
 		return (y - transformMatrix[5])/transformMatrix[3];
 	}
-	function lPos(x : Float, y : Float) : Point {
+	public function lPos(x : Float, y : Float) : Point {
 		return new Point(lX(x), lY(y));
 	}
 
