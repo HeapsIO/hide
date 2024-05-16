@@ -9,11 +9,14 @@ class ShaderParam extends ShaderNode {
 	@prop() public var parameterId : Int;
 	@prop() public var perInstance : Bool;
 
+	public var shaderGraph : ShaderGraph;
+
 	public function new() {
 		
 	}
 
 	override function getOutputs() : Array<ShaderNode.OutputInfo> {
+		var variable = getVariable();
 		var t = switch(variable.type) {
 			case TFloat:
 				SgFloat(1);
@@ -28,6 +31,7 @@ class ShaderParam extends ShaderNode {
 	}
 
 	override function generate(ctx: NodeGenContext) {
+		var variable = getVariable();
 		var v = ctx.getGlobalParam(variable.name, variable.type);
 
 		ctx.setOutput(0, v);
@@ -41,8 +45,9 @@ class ShaderParam extends ShaderNode {
 		}
 	}
 
-	public var variable : TVar;
-
+	function getVariable() : TVar {
+		return shaderGraph.getParameter(parameterId).variable;
+	}
 
 	override public function loadProperties(props : Dynamic) {
 		parameterId = Reflect.field(props, "parameterId");
@@ -71,7 +76,7 @@ class ShaderParam extends ShaderNode {
 	}
 	public function setDisplayValue(value : String) {
 		parameterDisplay = value;
-		switch (this.variable.type) {
+		switch (this.getVariable().type) {
 			case TFloat:
 				if (displayDiv != null)
 					displayDiv.html(value);
@@ -87,7 +92,7 @@ class ShaderParam extends ShaderNode {
 	override public function getPropertiesHTML(width : Float) : Array<hide.Element> {
 		var elements = super.getPropertiesHTML(width);
 		var height = 25;
-		switch (this.variable.type) {
+		switch (getVariable().type) {
 			case TFloat:
 				displayDiv = new hide.Element('<div class="float-preview" ></div>');
 				height += 20;

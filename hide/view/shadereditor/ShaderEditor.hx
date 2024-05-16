@@ -167,7 +167,7 @@ class ShaderEditor extends hide.view.FileView implements GraphInterface.IGraphEd
 			@:privateAccess var id = currentGraph.current_node_id++;
 			inst.id = id;
 			inst.parameterId = draggedParamId;
-			inst.variable = shaderGraph.getParameter(inst.parameterId).variable;
+			inst.shaderGraph = shaderGraph;
 
 			graphEditor.opBox(inst, true, graphEditor.currentUndoBuffer);
 			graphEditor.commitUndo();
@@ -279,11 +279,11 @@ class ShaderEditor extends hide.view.FileView implements GraphInterface.IGraphEd
 		shaderGraph.checkParameterIndex();
 	}
 
-	// function updateParam(id : Int) {
-	// 	var param = shaderGraph.getParameter(id);
-	// 	setParamValueByName(currentShader, param.name, param.defaultValue);
-	// 	//previewParamDirty = true;
-	// }
+	function updateParam(id : Int) {
+		var param = shaderGraph.getParameter(id);
+		var v = compiledShader.inits.find((i) -> i.variable.name == param.name).variable;
+		setParamValue(meshShader, v, param.defaultValue);
+	}
 
 	function addParameter(parameter : Parameter, ?value : Dynamic) {
 
@@ -333,7 +333,7 @@ class ShaderEditor extends hide.view.FileView implements GraphInterface.IGraphEd
 					if (!shaderGraph.setParameterDefaultValue(parameter.id, range.value))
 						return;
 					//setBoxesParam(parameter.id);
-					//updateParam(parameter.id);
+					updateParam(parameter.id);
 				};
 				typeName = "Number";
 			case TVec(4, VFloat):
@@ -351,7 +351,7 @@ class ShaderEditor extends hide.view.FileView implements GraphInterface.IGraphEd
 					if (!shaderGraph.setParameterDefaultValue(parameter.id, [vecColor.x, vecColor.y, vecColor.z, vecColor.w]))
 						return;
 					//setBoxesParam(parameter.id);
-					//updateParam(parameter.id);
+					updateParam(parameter.id);
 				};
 			case TVec(n, VFloat):
 				if (value == null)
@@ -380,7 +380,7 @@ class ShaderEditor extends hide.view.FileView implements GraphInterface.IGraphEd
 						if (!shaderGraph.setParameterDefaultValue(parameter.id, value))
 							return;
 						//setBoxesParam(parameter.id);
-						//updateParam(parameter.id);
+						updateParam(parameter.id);
 					};
 					//if(min == null) min = isColor ? 0.0 : -1.0;
 					//if(max == null)	max = 1.0;
@@ -491,9 +491,9 @@ class ShaderEditor extends hide.view.FileView implements GraphInterface.IGraphEd
 		});
 		inputTitle.on("focus", function() { inputTitle.select(); } );
 
-		// elt.find(".header").on("click", function() {
-		// 	toggleParameter(elt);
-		// });
+		elt.find(".header").on("click", function() {
+			toggleParameter(elt);
+		});
 
 		elt.on("dragstart", function(e) {
 			draggedParamId = parameter.id;
@@ -528,6 +528,32 @@ class ShaderEditor extends hide.view.FileView implements GraphInterface.IGraphEd
 		});
 
 		return elt;
+	}
+
+	function toggleParameter( elt : JQuery, ?b : Bool) {
+		if (b != null) {
+			if (b) {
+				elt.find(".content").show();
+				var icon = elt.find(".ico");
+				icon.removeClass("ico-chevron-right");
+				icon.addClass("ico-chevron-down");
+			} else {
+				elt.find(".content").hide();
+				var icon = elt.find(".ico");
+				icon.addClass("ico-chevron-right");
+				icon.removeClass("ico-chevron-down");
+			}
+		} else {
+			elt.find(".content").toggle();
+			var icon = elt.find(".ico");
+			if (icon.hasClass("ico-chevron-right")) {
+				icon.removeClass("ico-chevron-right");
+				icon.addClass("ico-chevron-down");
+			} else {
+				icon.addClass("ico-chevron-right");
+				icon.removeClass("ico-chevron-down");
+			}
+		}
 	}
 
 	function moveParameterTo(paramA: Parameter, paramB: Parameter, after: Bool) {
@@ -870,8 +896,12 @@ class ShaderEditor extends hide.view.FileView implements GraphInterface.IGraphEd
 		for (init in compiledShader.inits) {
 			if (init.variable == previewVar)
 				setParamValue(shader, previewVar, node.getId() + 1);
-			else
-				setParamValue(shader, init.variable, init.value);
+			else {
+				var param = shaderGraph.parametersAvailable.find((v) -> v.name == init.variable.name);
+				if (param !=null) {
+					setParamValue(shader, init.variable, param.defaultValue);
+				} 
+			}
 		}
 	}
 

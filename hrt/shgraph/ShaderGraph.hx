@@ -650,13 +650,8 @@ class Graph {
 	public function generate(nodes : Array<Dynamic>, edges : Array<Edge>) {
 		current_node_id = 0;
 		for (n in nodes) {
-			var node = ShaderNode.createFromDynamic(n);
+			var node = ShaderNode.createFromDynamic(n, parent);
 			this.nodes.set(node.id, node);
-			var shaderParam = Std.downcast(node, ShaderParam);
-			if (shaderParam != null) {
-				var paramShader = getParameter(shaderParam.parameterId);
-				shaderParam.variable = paramShader.variable;
-			}
 			current_node_id = hxd.Math.imax(current_node_id, node.id+1);
 		}
 

@@ -136,9 +136,13 @@ implements hide.view.GraphInterface.IGraphNode
 		};
 	}
 
-	public static function createFromDynamic(data: Dynamic) : ShaderNode {
+	public static function createFromDynamic(data: Dynamic, graph: ShaderGraph) : ShaderNode {
 		var type = std.Type.resolveClass(data.type);
 		var inst = std.Type.createInstance(type, []);
+		var shaderParam = Std.downcast(inst, ShaderParam);
+		if (shaderParam != null) {
+			shaderParam.shaderGraph = graph;
+		}
 		inst.x = data.x;
 		inst.y = data.y;
 		inst.id = data.id;
