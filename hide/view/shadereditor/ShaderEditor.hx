@@ -133,7 +133,7 @@ class ShaderEditor extends hide.view.FileView implements GraphInterface.IGraphEd
 	var meshPreviewScene : hide.comp.Scene;
 	var meshPreviewMeshes : Array<h3d.scene.Mesh> = [];
 	var meshPreviewRoot3d : h3d.scene.Object;
-	var meshShader : hxsl.DynamicShader;
+	var meshPreviewShader : hxsl.DynamicShader;
 	var meshPreviewCameraController : h3d.scene.CameraController;
 	var previewSettings : PreviewSettings;
 	var meshPreviewPrefab : hrt.prefab.Prefab;
@@ -168,6 +168,7 @@ class ShaderEditor extends hide.view.FileView implements GraphInterface.IGraphEd
 			inst.id = id;
 			inst.parameterId = draggedParamId;
 			inst.shaderGraph = shaderGraph;
+			inst.setPos(posCursor);
 
 			graphEditor.opBox(inst, true, graphEditor.currentUndoBuffer);
 			graphEditor.commitUndo();
@@ -280,9 +281,17 @@ class ShaderEditor extends hide.view.FileView implements GraphInterface.IGraphEd
 	}
 
 	function updateParam(id : Int) {
+		meshPreviewScene.setCurrent(); // needed for texture changes
+
 		var param = shaderGraph.getParameter(id);
-		var v = compiledShader.inits.find((i) -> i.variable.name == param.name).variable;
-		setParamValue(meshShader, v, param.defaultValue);
+		var init = compiledShader.inits.find((i) -> i.variable.name == param.name);
+		if (init != null) {
+			setParamValue(meshPreviewShader, init.variable, param.defaultValue);
+		} else {
+			// The init can be missing if the variable has been optimised away,
+			// so try a recompilation 
+			requestRecompile();
+		}
 	}
 
 	function addParameter(parameter : Parameter, ?value : Dynamic) {
@@ -399,7 +408,7 @@ class ShaderEditor extends hide.view.FileView implements GraphInterface.IGraphEd
 						return;
 					//afterChange();
 					//setBoxesParam(parameter.id);
-					//updateParam(parameter.id);
+					updateParam(parameter.id);
 				}
 				typeName = "Texture";
 
@@ -613,9 +622,9 @@ class ShaderEditor extends hide.view.FileView implements GraphInterface.IGraphEd
 				{label: "Prefab/FX ...", click: chooseMeshPreviewPrefab},
 				{label: "", isSeparator: true},
 				{label: "Render Settings", menu: [
-					{label: "Alpha Blend", click: () -> {previewSettings.alphaBlend = !previewSettings.alphaBlend; applyShaderMesh(); saveSettings();}, stayOpen: true, checked: previewSettings.alphaBlend},
-					{label: "Backface Cull", click: () -> {previewSettings.backfaceCulling = !previewSettings.backfaceCulling; applyShaderMesh(); saveSettings();}, stayOpen: true, checked: previewSettings.backfaceCulling},
-					{label: "Unlit", click: () -> {previewSettings.unlit = !previewSettings.unlit; applyShaderMesh(); saveSettings();}, stayOpen: true, checked: previewSettings.unlit},
+					{label: "Alpha Blend", click: () -> {previewSettings.alphaBlend = !previewSettings.alphaBlend; meshPreviewShader = null; saveSettings();}, stayOpen: true, checked: previewSettings.alphaBlend},
+					{label: "Backface Cull", click: () -> {previewSettings.backfaceCulling = !previewSettings.backfaceCulling; meshPreviewShader = null; saveSettings();}, stayOpen: true, checked: previewSettings.backfaceCulling},
+					{label: "Unlit", click: () -> {previewSettings.unlit = !previewSettings.unlit; meshPreviewShader = null; saveSettings();}, stayOpen: true, checked: previewSettings.unlit},
 				], enabled: meshPreviewPrefab == null}
 			]);
 		});
@@ -625,6 +634,21 @@ class ShaderEditor extends hide.view.FileView implements GraphInterface.IGraphEd
 		if (queueReloadMesh) {
 			queueReloadMesh = false;
 			loadMeshPreviewFromString(previewSettings.meshPath);
+		}
+		if (meshPreviewShader == null) {
+			checkCompileShader();
+			@:privateAccess meshPreviewScene.checkCurrent();
+			meshPreviewShader = new hxsl.DynamicShader(compiledShader.shader);
+	
+			for (init in compiledShader.inits) {
+				if (init.variable == previewVar)
+					setParamValue(meshPreviewShader, previewVar, 0);
+				else
+					setParamValue(meshPreviewShader, init.variable, init.value);
+			}
+			for (m in meshPreviewMeshes) {
+				replaceMeshShader(m, meshPreviewShader);
+			}
 		}
 	}
 
@@ -650,7 +674,7 @@ class ShaderEditor extends hide.view.FileView implements GraphInterface.IGraphEd
 		meshPreviewMeshes.resize(0);
 		meshPreviewMeshes.push(mesh);
 
-		applyShaderMesh();
+		meshPreviewShader = null;
 		resetPreviewCamera();
 	}
 
@@ -788,7 +812,7 @@ class ShaderEditor extends hide.view.FileView implements GraphInterface.IGraphEd
 
 		meshPreviewprefabWatch = Ide.inst.fileWatcher.register(str, () -> queueReloadMesh = true, false);
 
-		applyShaderMesh();
+		meshPreviewShader = null;
 		resetPreviewCamera();
 		previewSettings.meshPath = str;
 		saveSettings();
@@ -851,17 +875,9 @@ class ShaderEditor extends hide.view.FileView implements GraphInterface.IGraphEd
 		}
 	}
 
-	public function applyShaderMesh() {
-		for (m in meshPreviewMeshes) {
-			replaceMeshShader(m, meshShader);
-		}
-	}
-
 
 	public function onPreviewUpdate() {
-		if (needRecompile) {
-			compileShader();
-		}
+		checkCompileShader();
 
 		@:privateAccess
 		{
@@ -894,6 +910,7 @@ class ShaderEditor extends hide.view.FileView implements GraphInterface.IGraphEd
 			bitmap.addShader(shader);
 		}
 		for (init in compiledShader.inits) {
+			@:privateAccess graphEditor.previewsScene.checkCurrent();
 			if (init.variable == previewVar)
 				setParamValue(shader, previewVar, node.getId() + 1);
 			else {
@@ -1026,7 +1043,9 @@ class ShaderEditor extends hide.view.FileView implements GraphInterface.IGraphEd
 		needRecompile = true;
 	}
 
-	public function compileShader() {
+	public function checkCompileShader() {
+		if (!needRecompile)
+			return;
 		needRecompile = false;
 		try {
 			var start = Timer.stamp();
@@ -1036,15 +1055,7 @@ class ShaderEditor extends hide.view.FileView implements GraphInterface.IGraphEd
 			var end = Timer.stamp();
 			Ide.inst.quickMessage('shader recompiled in ${(end - start) * 1000.0} ms', 2.0);
 
-			meshShader = new hxsl.DynamicShader(compiledShader.shader);
-			for (init in compiledShader.inits) {
-				if (init.variable == previewVar)
-					setParamValue(meshShader, previewVar, 0);
-				else
-					setParamValue(meshShader, init.variable, init.value);
-			}
-
-			applyShaderMesh();
+			meshPreviewShader = null;
 		} catch (err) {
 			Ide.inst.quickError(err);
 		}
