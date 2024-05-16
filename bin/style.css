@@ -2026,7 +2026,7 @@ input[type=checkbox]:checked:after {
   top: -10px;
 }
 .shader-editor #rightPanel .hide-block #parametersList .parameter:after {
-  border-bottom: 5px solid red;
+  border-bottom: 5px solid purple;
   bottom: -10px;
 }
 .shader-editor #rightPanel .hide-block #parametersList .parameter .header {

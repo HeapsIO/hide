@@ -2,7 +2,7 @@ package hrt.shgraph;
 
 using hxsl.Ast;
 
-@noheader()
+@name("Parameter")
 @width(120)
 @color("#d6d6d6")
 class ShaderParam extends ShaderNode {
@@ -27,7 +27,7 @@ class ShaderParam extends ShaderNode {
 			default:
 				throw "Unhandled var type " + variable.type;
 		}
-		return [{name: "output", type: t}];
+		return [{name: variable.name, type: t}];
 	}
 
 	override function generate(ctx: NodeGenContext) {
@@ -62,58 +62,5 @@ class ShaderParam extends ShaderNode {
 
 		return parameters;
 	}
-
-	#if editor
-	private var parameterName : String;
-	private var eltName : hide.Element;
-
-	private var parameterDisplay : String;
-	private var displayDiv : hide.Element;
-	public function setName(s : String) {
-		parameterName = s;
-		if (eltName != null)
-			eltName.html(s);
-	}
-	public function setDisplayValue(value : String) {
-		parameterDisplay = value;
-		switch (this.getVariable().type) {
-			case TFloat:
-				if (displayDiv != null)
-					displayDiv.html(value);
-			case TSampler(_):
-				if (displayDiv != null)
-					displayDiv.css("background-image", 'url(${value})');
-			case TVec(4, VFloat):
-				if (displayDiv != null)
-					displayDiv.css("background-color", value);
-			default:
-		}
-	}
-	override public function getPropertiesHTML(width : Float) : Array<hide.Element> {
-		var elements = super.getPropertiesHTML(width);
-		var height = 25;
-		switch (getVariable().type) {
-			case TFloat:
-				displayDiv = new hide.Element('<div class="float-preview" ></div>');
-				height += 20;
-			case TSampler(_):
-				displayDiv = null;
-			case TVec(4, VFloat):
-				displayDiv = null;
-			default:
-				displayDiv = null;
-		}
-		var element = new hide.Element('<div style="width: 110px; height: ${height}px"></div>');
-		if (displayDiv != null) {
-			setDisplayValue(parameterDisplay);
-			displayDiv.appendTo(element);
-		}
-		eltName = new hide.Element('<div class="paramVisible" >${parameterName}</div>').appendTo(element);
-
-		elements.push(element);
-
-		return elements;
-	}
-	#end
 
 }

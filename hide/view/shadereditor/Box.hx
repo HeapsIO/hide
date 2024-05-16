@@ -71,7 +71,7 @@ class Box {
 			this.element.addClass("comment");
 		}
 
-		if (info.noHeader) {
+		if (info.noHeader ?? false) {
 			HEADER_HEIGHT = 0;
 			hasHeader = false;
 		}
@@ -336,7 +336,7 @@ class Box {
 		var nodeCircle = editor.editorDisplay.circle(node, width, nodeHeight, NODE_RADIUS, style).addClass("node output-node");
 
 		if (name.length > 0 && name != "output")
-			editor.editorDisplay.text(node, width - NODE_TITLE_PADDING - (name.length * 6.75), nodeHeight + 4, name).addClass("title-node");
+			editor.editorDisplay.text(node, width - NODE_TITLE_PADDING, nodeHeight + 4, name).addClass("title-node").attr("text-anchor", "end");
 
 		outputs.push(nodeCircle);
 

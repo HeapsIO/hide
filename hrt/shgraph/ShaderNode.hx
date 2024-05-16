@@ -94,6 +94,7 @@ implements hide.view.GraphInterface.IGraphNode
 				fullSize: false,
 			},
 			width: metas.width != null ? metas.width[0] : null,
+			noHeader: Reflect.hasField(metas, "noheader"),
 		};
 	}
 
