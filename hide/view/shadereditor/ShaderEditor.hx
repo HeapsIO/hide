@@ -783,17 +783,19 @@ class ShaderEditor extends hide.view.FileView implements GraphInterface.IGraphEd
 		if (newShader == null)
 			return;
 
+		@:privateAccess
 		for (m in mesh.getMaterials()) {
 			var found = false;
 
-			for (shader in m.mainPass.getShaders()) {
-				var dyn = Std.downcast(shader, hxsl.DynamicShader);
+			var curShaderList = m.mainPass.shaders;
+			while (curShaderList != null && curShaderList != m.mainPass.parentShaders) {
+				var dyn = Std.downcast(curShaderList.s, hxsl.DynamicShader);
 				
 				@:privateAccess
 				if (dyn != null) {
 					if (dyn.shader.data.name == newShader.shader.data.name) {
 						found = true;
-						dyn.shader = newShader.shader;
+						curShaderList.s = newShader;
 						m.mainPass.resetRendererFlags();
 						m.mainPass.selfShadersChanged = true;						
 					}
@@ -813,7 +815,10 @@ class ShaderEditor extends hide.view.FileView implements GraphInterface.IGraphEd
 						m.shadows = true;
 					}
 				}
+
+				curShaderList = curShaderList.next;
 			}
+
 			if (!found) {
 				m.mainPass.addShader(newShader);
 			}
@@ -862,7 +867,12 @@ class ShaderEditor extends hide.view.FileView implements GraphInterface.IGraphEd
 			bitmap.addShader(previewShaderBase);
 			bitmap.addShader(shader);
 		}
-		setParamValue(shader, previewVar, node.getId() + 1);
+		for (init in compiledShader.inits) {
+			if (init.variable == previewVar)
+				setParamValue(shader, previewVar, node.getId() + 1);
+			else
+				setParamValue(shader, init.variable, init.value);
+		}
 	}
 
 	function setParamValue(shader : DynamicShader, variable : hxsl.Ast.TVar, value : Dynamic) {
@@ -997,6 +1007,13 @@ class ShaderEditor extends hide.view.FileView implements GraphInterface.IGraphEd
 			Ide.inst.quickMessage('shader recompiled in ${(end - start) * 1000.0} ms', 2.0);
 
 			meshShader = new hxsl.DynamicShader(compiledShader.shader);
+			for (init in compiledShader.inits) {
+				if (init.variable == previewVar)
+					setParamValue(meshShader, previewVar, 0);
+				else
+					setParamValue(meshShader, init.variable, init.value);
+			}
+
 			applyShaderMesh();
 		} catch (err) {
 			Ide.inst.quickError(err);
