@@ -598,10 +598,8 @@ class ShaderGraph extends hrt.prefab.Prefab {
 	public function setParameterDefaultValue(id : Int, newDefaultValue : Dynamic) : Bool {
 		var p = parametersAvailable.get(id);
 		if (p != null) {
-			if (newDefaultValue != null) {
-				p.defaultValue = newDefaultValue;
-				return true;
-			}
+			p.defaultValue = newDefaultValue;
+			return true;
 		}
 		return false;
 	}

@@ -517,12 +517,32 @@ class ShaderEditor extends hide.view.FileView implements GraphInterface.IGraphEd
 				var parentSampler = new Element('<input type="texturepath" field="sampler2d"/>').appendTo(defaultValue);
 
 				var tselect = new hide.comp.TextureChoice(null, parentSampler);
+				parametersUpdate.set(parameter.id, (v:Dynamic) -> tselect.value = v);
+				var saveValue : String = null; 
 				tselect.value = value;
-				tselect.onChange = function(undo: Bool) {
-					//beforeChange();
-					if (!shaderGraph.setParameterDefaultValue(parameter.id, tselect.value))
+				tselect.onChange = function(notTmpChange: Bool) {
+					if (saveValue == null) {
+						saveValue = haxe.Json.stringify(shaderGraph.parametersAvailable.get(parameter.id).defaultValue);
+					}
+					var currentValue = haxe.Json.parse(haxe.Json.stringify(tselect.value));
+					if (notTmpChange) {
+						var prev = haxe.Json.parse(saveValue);
+						saveValue = null;
+						var curr = currentValue;
+						trace(prev);
+						trace(curr);
+						function exec(isUndo: Bool) {
+							var v = !isUndo ? curr : prev;
+							shaderGraph.setParameterDefaultValue(parameter.id, v);
+							parametersUpdate[parameter.id](v);
+							updateParam(parameter.id);
+						}
+						exec(false);
+						this.undo.change(Custom(exec));
 						return;
-					//afterChange();
+					}
+					if (!shaderGraph.setParameterDefaultValue(parameter.id, currentValue))
+						return;
 					//setBoxesParam(parameter.id);
 					updateParam(parameter.id);
 				}
