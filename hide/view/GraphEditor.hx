@@ -137,6 +137,7 @@ class GraphEditor extends hide.comp.Component {
 		keys.register("sceneeditor.focus", centerView);
 		keys.register("copy", copySelection);
 		keys.register("paste", paste);
+		keys.register("cut", cutSelection);
 
 		var miniPreviews = new Element('<div class="mini-preview"></div>');
 		heapsScene.prepend(miniPreviews);
@@ -1197,6 +1198,11 @@ class GraphEditor extends hide.comp.Component {
 			var str = haxe.Json.stringify(data);
 			Ide.inst.setClipboard(str);
 		}
+	}
+
+	function cutSelection() {
+		copySelection();
+		deleteSelection();
 	}
 
 	function paste() {
