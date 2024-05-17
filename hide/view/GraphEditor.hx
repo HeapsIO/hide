@@ -45,7 +45,6 @@ class GraphEditor extends hide.comp.Component {
 	static var BORDER_SIZE = 50;
 	static var SPEED_BORDER_MOVE = 0.05;
 	var timerUpdateView : Timer;
-
 	// used for selection
 	var boxesSelected : Map<Int, Bool> = [];
 	var boxesToMove : Map<Int, Bool> = [];
@@ -382,7 +381,7 @@ class GraphEditor extends hide.comp.Component {
 		var boundsHeight = Std.int(element.height());
 		trace(boundsHeight);
 
-		var posCursor = new IPoint(Std.int(ide.mouseX - heapsScene.offset().left) + x, Std.int(ide.mouseY - heapsScene.offset().top) + y);
+		var posCursor = new Point(Std.int(ide.mouseX - heapsScene.offset().left) + x, Std.int(ide.mouseY - heapsScene.offset().top) + y);
 		if( posCursor.x < 0 )
 			posCursor.x = 0;
 		if( posCursor.y < 0)
@@ -505,7 +504,7 @@ class GraphEditor extends hide.comp.Component {
 
 		function doAdd() {
 			var key = Std.parseInt(this.selectedNode.attr("node"));
-			var posCursor = new Point(lX(ide.mouseX - 25), lY(ide.mouseY - 10));
+			//var posCursor = new Point(lX(ide.mouseX - 25), lY(ide.mouseY - 10));
 
 			var instance = nodes[key].onConstructNode();
 
@@ -790,16 +789,25 @@ class GraphEditor extends hide.comp.Component {
 	}
 
 	public function opBox(node: IGraphNode, doAdd: Bool, undoBuffer: UndoBuffer) : Void {
+		var data = editor.serializeNode(node);
+
 		var exec = function(isUndo : Bool) : Void {
 			if (!doAdd) isUndo = !isUndo;
 			if (!isUndo) {
+				var node = editor.unserializeNode(data);
 				node.getPos(Box.tmpPoint);
 				addBox(Box.tmpPoint, node);
+				editor.addNode(node);
 			}
 			else {
-				var box = boxes.get(node.getId());
+				var id = node.getId();
+				var box = boxes.get(id);
 
-				removeBox(box);
+				box.dispose();
+				var id = box.node.getId();
+				boxes.remove(id);
+				
+				editor.removeNode(id);
 
 				// Sanity check
 				for (i => _ in box.info.inputs) {
@@ -868,7 +876,6 @@ class GraphEditor extends hide.comp.Component {
 	static var tmpPoint = new h2d.col.Point();
 	function addBox(point: h2d.col.Point, node : IGraphNode) : Box {
 		node.editor = this;
-		editor.addNode(node);
 		var box = new Box(this, editorMatrix, node);
 		box.setPosition(point.x, point.y);
 
@@ -951,13 +958,6 @@ class GraphEditor extends hide.comp.Component {
 		box.generateProperties(this);
 
 		return box;
-	}
-
-	function removeBox(box : Box) {
-		box.dispose();
-		var id = box.node.getId();
-		boxes.remove(id);
-		editor.removeNode(id);
 	}
 
 	inline static function packIO(id: Int, ioId: Int) {

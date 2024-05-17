@@ -69,7 +69,10 @@ typedef Edge = {
 interface IGraphNode {
     public function getInfo() : GraphNodeInfo;
 
-    /**Returns an unique ID that identifies this node**/
+    /**
+        Returns an unique ID that identifies this node.
+        The ID of a given node MUST NERVER change for the entire lifetime of the GraphEditor
+    **/
     public function getId() : Int;
     public function getPos(p : h2d.col.Point) : Void;
     public function setPos(p : h2d.col.Point) : Void;
@@ -86,6 +89,9 @@ interface IGraphEditor {
 
     public function addNode(node : IGraphNode) : Void;
     public function removeNode(id:Int) : Void;
+
+    public function serializeNode(node : IGraphNode) : Dynamic;
+    public function unserializeNode(data: Dynamic) : IGraphNode;
 
     /**Returns false if the edge can't be created because the input/output types don't match**/
     public function canAddEdge(edge : Edge) : Bool;

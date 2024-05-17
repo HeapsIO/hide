@@ -255,15 +255,28 @@ class ShaderEditor extends hide.view.FileView implements GraphInterface.IGraphEd
 	}
 
 	function createParameter(type : Type) {
-		//beforeChange();
-		var paramShaderID = shaderGraph.addParameter(type);
-		//afterChange();
-		var paramShader = shaderGraph.getParameter(paramShaderID);
+		@:privateAccess var paramShaderID : Int = shaderGraph.current_param_id++;
+		@:privateAccess
+		function exec(isUndo:Bool) {
+			if (!isUndo) {
+				var name = "Param_" + paramShaderID;
+				shaderGraph.parametersAvailable.set(paramShaderID, {id: paramShaderID, name : name, type : type, defaultValue : null, variable : shaderGraph.generateParameter(name, type), index : shaderGraph.parametersKeys.length});
+				shaderGraph.parametersKeys.push(paramShaderID);
 
-		var elt = addParameter(paramShader, null);
-		//updateParam(paramShaderID);
+				var paramShader = shaderGraph.getParameter(paramShaderID);
+				var elt = addParameter(paramShader, null);
+				elt.find(".input-title").focus();
+			} else {
+				shaderGraph.parametersAvailable.remove(paramShaderID);
+				shaderGraph.parametersKeys.remove(paramShaderID);
+				parametersUpdate.remove(paramShaderID);
+				shaderGraph.checkParameterIndex();
+				parametersList.find("#param_" + paramShaderID).remove();
+			}
+		}
 
-		elt.find(".input-title").focus();
+		exec(false);
+		undo.change(Custom(exec));
 	}
 
 	function moveParameter(parameter : Parameter, up : Bool) {
@@ -281,6 +294,8 @@ class ShaderEditor extends hide.view.FileView implements GraphInterface.IGraphEd
 			setParamValue(meshPreviewShader, init.variable, param.defaultValue);
 		}
 	}
+
+	var parametersUpdate : Map<Int, (Dynamic) -> Void> = [];
 
 	function addParameter(parameter : Parameter, ?value : Dynamic) {
 
@@ -327,6 +342,8 @@ class ShaderEditor extends hide.view.FileView implements GraphInterface.IGraphEd
 				});
 				if (value == null) value = 0;
 				range.value = value;
+
+				parametersUpdate.set(parameter.id, (v:Dynamic) -> range.value = v);
 				shaderGraph.setParameterDefaultValue(parameter.id, value);
 				
 				var saveValue : Null<Float> = null;
@@ -341,8 +358,8 @@ class ShaderEditor extends hide.view.FileView implements GraphInterface.IGraphEd
 						saveValue = null;
 						function exec(isUndo : Bool) {
 							var v = isUndo ? old : curr;
-							range.value = v;
-							shaderGraph.setParameterDefaultValue(parameter.id, v); 
+							shaderGraph.setParameterDefaultValue(parameter.id, v);
+							parametersUpdate[parameter.id](v);
 							updateParam(parameter.id);
 						}
 						exec(false);
@@ -365,6 +382,9 @@ class ShaderEditor extends hide.view.FileView implements GraphInterface.IGraphEd
 				var start : h3d.Vector = h3d.Vector.fromArray(value);
 				shaderGraph.setParameterDefaultValue(parameter.id, value);
 				picker.value = start.toColor();
+
+				parametersUpdate.set(parameter.id, (v:Dynamic) -> picker.value = v.toColor());
+
 				var saveValue : Null<h3d.Vector4> = null;
 				picker.onChange = function(move) {
 					if (saveValue == null) {
@@ -377,7 +397,7 @@ class ShaderEditor extends hide.view.FileView implements GraphInterface.IGraphEd
 						saveValue = null;
 						function exec(isUndo : Bool) {
 							var v = isUndo ? old : curr;
-							picker.value = v.toColor();
+							parametersUpdate[parameter.id](v);
 							shaderGraph.setParameterDefaultValue(parameter.id, [v.x, v.y, v.z, v.w]);
 							updateParam(parameter.id);
 						}
@@ -397,11 +417,17 @@ class ShaderEditor extends hide.view.FileView implements GraphInterface.IGraphEd
 					value = [for (i in 0...n) 0.0];
 
 				shaderGraph.setParameterDefaultValue(parameter.id, value);
+
 				//var row = new Element('<div class="flex"/>').appendTo(defaultValue);
+
+				var ranges : Array<hide.comp.Range> = [];
+
+				var saveValue : Array<Float> = null;
 
 				for( i in 0...n ) {
 					var parentRange = new Element('<input type="range" min="-1" max="1" />').appendTo(defaultValue);
 					var range = new hide.comp.Range(null, parentRange);
+					ranges.push(range);
 					range.value = value[i];
 
 					var rangeInput = @:privateAccess range.f;
@@ -415,6 +441,25 @@ class ShaderEditor extends hide.view.FileView implements GraphInterface.IGraphEd
 					});
 
 					range.onChange = function(move) {
+						if (saveValue == null) {
+							saveValue = (shaderGraph.getParameter(parameter.id).defaultValue:Array<Float>).copy();
+						}
+	
+						if (move == false) {
+							var old = saveValue;
+							var curr = [for (i in 0...n) ranges[i].value];
+							saveValue = null;
+							function exec(isUndo : Bool) {
+								var v = isUndo ? old : curr;
+								shaderGraph.setParameterDefaultValue(parameter.id, v);
+								parametersUpdate[parameter.id](v);
+								updateParam(parameter.id);
+							}
+							exec(false);
+							undo.change(Custom(exec));
+							return;
+						}
+
 						value[i] = range.value;
 						if (!shaderGraph.setParameterDefaultValue(parameter.id, value))
 							return;
@@ -426,6 +471,12 @@ class ShaderEditor extends hide.view.FileView implements GraphInterface.IGraphEd
 					//e.attr("min", "" + min);
 					//e.attr("max", "" + max);
 				}
+				parametersUpdate.set(parameter.id, (v:Dynamic) -> {
+					for (i in 0...n) {
+						ranges[i].value = v[i];
+					}
+				});
+
 				typeName = "Vec" + n;
 			case TSampler(_):
 				var parentSampler = new Element('<input type="texturepath" field="sampler2d"/>').appendTo(defaultValue);
@@ -507,6 +558,7 @@ class ShaderEditor extends hide.view.FileView implements GraphInterface.IGraphEd
 				if (!isUndo) {
 					shaderGraph.parametersAvailable.remove(parameter.id);
 					shaderGraph.parametersKeys.remove(parameter.id);
+					parametersUpdate.remove(parameter.id);
 					shaderGraph.checkParameterIndex();
 					elt.remove();
 				} else {
@@ -1027,6 +1079,14 @@ class ShaderEditor extends hide.view.FileView implements GraphInterface.IGraphEd
 			}
 		}
 		return edges.iterator();
+	}
+
+	public function serializeNode(node: IGraphNode) : Dynamic {
+		return (cast node:ShaderNode).serializeToDynamic();
+	}
+
+	public function unserializeNode(data : Dynamic) : IGraphNode {
+		return ShaderNode.createFromDynamic(data, shaderGraph);
 	}
 
 	public function getAddNodesMenu() : Array<AddNodeMenuEntry> {
