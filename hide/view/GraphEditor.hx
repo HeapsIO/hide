@@ -23,6 +23,11 @@ typedef UndoFn = (isUndo : Bool) -> Void;
 typedef UndoBuffer = Array<UndoFn>;
 typedef SelectionUndoSave = {newSelections: Map<Int, Bool>, buffer: UndoBuffer};
 
+typedef CopySelectionData = {
+	nodes: Array<{id: Int, serData: Dynamic}>,
+	edges: Array<Edge>,
+};
+
 @:access(hide.view.shadereditor.Box)
 class GraphEditor extends hide.comp.Component {
 	public var editor : hide.view.GraphInterface.IGraphEditor;
@@ -129,6 +134,9 @@ class GraphEditor extends hide.comp.Component {
 
 		var keys = new hide.ui.Keys(element);
 		keys.register("delete", deleteSelection);
+		keys.register("sceneeditor.focus", centerView);
+		keys.register("copy", copySelection);
+		keys.register("paste", paste);
 
 		var miniPreviews = new Element('<div class="mini-preview"></div>');
 		heapsScene.prepend(miniPreviews);
@@ -241,6 +249,28 @@ class GraphEditor extends hide.comp.Component {
 
 		updateMatrix();
 
+		reloadInternal();
+	}
+
+	var reloadQueued = false;
+	public function reload() {
+		reloadQueued = true;
+	}
+
+	function reloadInternal() {
+		reloadQueued = false;
+		boxesSelected.clear();
+		for (box in boxes) {
+			box.dispose();
+		}
+		boxes.clear();
+		outputsToInputs.clear();
+
+		for (e in edges) {
+			e.remove();
+		}
+		edges.clear();
+
 		var nodes = editor.getNodes();
 		for (node in nodes) {
 			node.getPos(tmpPoint);
@@ -290,6 +320,11 @@ class GraphEditor extends hide.comp.Component {
 		/*if (sceneEditor?.scene?.s3d?.renderer?.ctx?.time != null) {
 			sceneEditor.scene.s3d.renderer.ctx.time = previewsScene.s3d.renderer.ctx.time;
 		}*/
+
+		if (reloadQueued) {
+			reloadInternal();
+			return;
+		}
 
 		if (!onPreviewUpdate())
 			return;
@@ -794,7 +829,7 @@ class GraphEditor extends hide.comp.Component {
 		var exec = function(isUndo : Bool) : Void {
 			if (!doAdd) isUndo = !isUndo;
 			if (!isUndo) {
-				var node = editor.unserializeNode(data);
+				var node = editor.unserializeNode(data, false);
 				node.getPos(Box.tmpPoint);
 				addBox(Box.tmpPoint, node);
 				editor.addNode(node);
@@ -1139,6 +1174,86 @@ class GraphEditor extends hide.comp.Component {
 		edgeCreationCurve = createCurve(edgeCreationOutput, edgeCreationInput, minDistNode, clientX, clientY, true);
 	}
 
+	function copySelection() {
+		var data : CopySelectionData = {
+			nodes:  [],
+			edges: [],
+		};
+		for (nodeId => _ in boxesSelected) {
+			var box = boxes[nodeId];
+			data.nodes.push({id: nodeId, serData: editor.serializeNode(box.node)});
+			for (inputId => _ in box.info.inputs) {
+				var output = outputsToInputs.getLeft(packIO(nodeId, inputId));
+				if (output != null) {
+					var unpack = unpackIO(output);
+					if ( boxesSelected.get(unpack.nodeId) != null) {
+						data.edges.push({nodeFromId: unpack.nodeId, outputFromId: unpack.ioId, nodeToId: nodeId, inputToId: inputId});
+					}
+				}
+			}
+		}
+
+		if (!data.nodes.empty()) {
+			var str = haxe.Json.stringify(data);
+			Ide.inst.setClipboard(str);
+		}
+	}
+
+	function paste() {
+		var nodes : Array<IGraphNode> = [];
+		var idRemap : Map<Int, Int> = [];
+		var edges : Array<Edge> = [];
+		try {
+			var cb = Ide.inst.getClipboard();
+			var data : CopySelectionData = haxe.Json.parse(cb);
+			for (nodeInfo in data.nodes) {
+				var node = editor.unserializeNode(nodeInfo.serData, true);
+				nodes.push(node);
+				var newId = node.getId();
+				idRemap.set(nodeInfo.id, newId);
+			}
+			for (e in data.edges) {
+				edges.push({nodeFromId: e.nodeFromId, nodeToId: e.nodeToId, outputFromId: e.outputFromId, inputToId: e.inputToId});
+			}
+		}
+		catch (e) {
+			Ide.inst.quickError('Could not paste content of clipboard ($e)');
+			return;
+		}
+
+		if (nodes.length <= 0)
+			return;
+
+		// center of all the boxes
+		var offset = new h2d.col.Point(0,0);
+		var pt = Box.tmpPoint;
+		for (count => node in nodes) {
+			node.getPos(pt);
+			offset.set(offset.x + (pt.x - offset.x) / (count + 1),offset.y + (pt.y - offset.y) / (count + 1));
+		}
+
+
+		currentUndoBuffer = [];
+
+		for (node in nodes) {
+			node.getPos(pt);
+			pt -= offset;
+			pt.x += lX(ide.mouseX);
+			pt.y += lY(ide.mouseY);
+			node.setPos(pt);
+			opBox(node, true, currentUndoBuffer);
+			opSelect(node.getId(), true, currentUndoBuffer);
+		}
+
+		for (edge in edges) {
+			var newFromId = idRemap.get(edge.nodeFromId);
+			var newToId = idRemap.get(edge.nodeToId);
+			opEdge(packIO(newFromId, edge.outputFromId), packIO(newToId, edge.inputToId), true, currentUndoBuffer);
+		}
+
+		commitUndo();
+	}
+
 	function createCurve(packedOutput: Null<Int>, packedInput: Null<Int>, ?distance : Float, ?x : Float, ?y : Float, ?isDraft : Bool) {
 		var offsetEnd = {top : y ?? 0.0, left : x ?? 0.0};
 		if (packedInput != null) {
@@ -1296,7 +1411,7 @@ class GraphEditor extends hide.comp.Component {
 		};
 	}
 
-	function centerView() {
+	public function centerView() {
 		if (!boxes.iterator().hasNext()) return;
 		var dims = getGraphDims();
 		var scale = Math.min(1, Math.min((editorDisplay.element.width() - 50) / (dims.xMax - dims.xMin), (editorDisplay.element.height() - 50) / (dims.yMax - dims.yMin)));

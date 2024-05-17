@@ -91,7 +91,9 @@ interface IGraphEditor {
     public function removeNode(id:Int) : Void;
 
     public function serializeNode(node : IGraphNode) : Dynamic;
-    public function unserializeNode(data: Dynamic) : IGraphNode;
+
+    /**If newId is true, then the returned node must have a new unique id. This is used when duplicating nodes**/
+    public function unserializeNode(data: Dynamic, newId: Bool) : IGraphNode;
 
     /**Returns false if the edge can't be created because the input/output types don't match**/
     public function canAddEdge(edge : Edge) : Bool;

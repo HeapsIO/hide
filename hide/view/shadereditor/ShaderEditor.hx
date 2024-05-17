@@ -145,6 +145,8 @@ class ShaderEditor extends hide.view.FileView implements GraphInterface.IGraphEd
 	var defaultLight : hrt.prefab.Light;
 
 	var queueReloadMesh = false;
+
+	var domainSelection : JQuery;
 	
 	override function onDisplay() {
 		super.onDisplay();
@@ -191,13 +193,7 @@ class ShaderEditor extends hide.view.FileView implements GraphInterface.IGraphEd
 					<div class="options-block hide-block">
 						<input id="createParameter" type="button" value="Add parameter" />
 						<select id="domainSelection"></select>
-						<input id="launchCompileShader" type="button" value="Compile shader" />
 
-						<input id="saveShader" type="button" value="Save" />
-						<div>
-							<input id="changeModel" type="button" value="Change Model" />
-							<input id="removeModel" type="button" value="Remove Model" />
-						</div>
 						<input id="centerView" type="button" value="Center Graph" />
 						<div>
 							Display Compiled
@@ -212,6 +208,22 @@ class ShaderEditor extends hide.view.FileView implements GraphInterface.IGraphEd
 				</div>
 			</div>'
 		);
+
+		rightPannel.find("#centerView").click((e) -> graphEditor.centerView());
+
+		domainSelection = rightPannel.find("#domainSelection");
+		for (domain in haxe.EnumTools.getConstructors(hrt.shgraph.ShaderGraph.Domain)) {
+			domainSelection.append('<option value="$domain">$domain</option>');
+		};
+
+		domainSelection.val(haxe.EnumTools.EnumValueTools.getName(currentGraph.domain));
+
+		domainSelection.on("change", (e) -> {
+			var domainString : String = domainSelection.val();
+			var domain = haxe.EnumTools.createByName(hrt.shgraph.ShaderGraph.Domain, domainString);
+			setDomain(domain, true);
+		});
+
 
 		rightPannel.appendTo(element);
 
@@ -252,6 +264,26 @@ class ShaderEditor extends hide.view.FileView implements GraphInterface.IGraphEd
 		graphEditor.onNodePreviewUpdate = onNodePreviewUpdate;
 
 		initMeshPreview();
+	}
+
+	function setDomain(domain : hrt.shgraph.ShaderGraph.Domain, recordUndo : Bool) {
+		if (shaderGraph.getGraph(domain) == currentGraph)
+			return;
+		
+		var from = currentGraph.domain;
+		var to = domain;
+
+		function exec(isUndo : Bool) {
+			var curr = !isUndo ? to : from;
+			currentGraph = shaderGraph.getGraph(curr);
+			domainSelection.val(haxe.EnumTools.EnumValueTools.getName(curr));
+			graphEditor.reload();
+		}
+
+		exec(false);
+		if (recordUndo) {
+			undo.change(Custom(exec));
+		}
 	}
 
 	function createParameter(type : Type) {
@@ -1085,8 +1117,13 @@ class ShaderEditor extends hide.view.FileView implements GraphInterface.IGraphEd
 		return (cast node:ShaderNode).serializeToDynamic();
 	}
 
-	public function unserializeNode(data : Dynamic) : IGraphNode {
-		return ShaderNode.createFromDynamic(data, shaderGraph);
+	public function unserializeNode(data : Dynamic, newId : Bool) : IGraphNode {
+		var node = ShaderNode.createFromDynamic(data, shaderGraph);
+		if (newId) {
+			@:privateAccess var newId = currentGraph.current_node_id++;
+			node.setId(newId);
+		}
+		return node;
 	}
 
 	public function getAddNodesMenu() : Array<AddNodeMenuEntry> {
