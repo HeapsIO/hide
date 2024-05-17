@@ -75,7 +75,7 @@ implements hide.view.GraphInterface.IGraphNode
 					}
 					{
 						name: i.name,
-						color: 0xFF0000,
+						color: getTypeColor(i.type),
 						defaultParam: defaultParam,
 					}
 				}
@@ -84,7 +84,7 @@ implements hide.view.GraphInterface.IGraphNode
 				for (o in getOutputs()) {
 					{
 						name: o.name,
-						color: 0xFF0000,
+						color: getTypeColor(o.type),
 					}
 				}
 			],
@@ -96,6 +96,25 @@ implements hide.view.GraphInterface.IGraphNode
 			width: metas.width != null ? metas.width[0] : null,
 			noHeader: Reflect.hasField(metas, "noheader"),
 		};
+	}
+
+	static function getTypeColor(type: SgType) : Int {
+		return switch (type) {
+			case SgFloat(1):
+				0x00ff73;
+			case SgFloat(2):
+				0x5eff00;
+			case SgFloat(3):
+				0xeeff00;
+			case SgFloat(4):
+				0xfc6703;
+			case SgInt:
+				0x00ffea;
+			case SgSampler:
+				0x600aff;
+			default:
+				0xc8c8c8;
+		}
 	}
 
 	public function getId() : Int {

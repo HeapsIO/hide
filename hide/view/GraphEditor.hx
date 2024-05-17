@@ -43,7 +43,7 @@ class GraphEditor extends hide.comp.Component {
 
 	var transformMatrix : Array<Float> = [1, 0, 0, 1, 0, 0];
 	var isPanning : Bool = false;
-	static var MAX_ZOOM = 1.3;
+	static var MAX_ZOOM = 2.0;
 	static var CENTER_OFFSET_Y = 0.1; // percent of height
 
 	// used for moving when mouse is close to borders

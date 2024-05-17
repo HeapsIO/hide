@@ -2186,6 +2186,8 @@ input[type=checkbox] {
 
 	#rightPanel {
 		flex: 0;
+		display: flex;
+		flex-direction: column;
 		min-width: 270px;
 
 		width: 280px;
@@ -2200,12 +2202,14 @@ input[type=checkbox] {
 			font-size: 15px;
 			font-weight: bold;
 		}
+		>div {
+			flex: 1;
+		}
 
 		height: 100%;
 		@options-height: max(250px, 25%);
 		.hide-block {
-			height: 600px;
-
+			height: 100%;
 			#parametersList {
 				height: 100%;
 
@@ -2306,6 +2310,7 @@ input[type=checkbox] {
 			}
 		}
 		.options-block {
+			flex: 0;
 			height: @options-height;
 			& > * {
 				display: block;

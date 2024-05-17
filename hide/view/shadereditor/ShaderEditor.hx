@@ -126,6 +126,8 @@ class ShaderEditor extends hide.view.FileView implements GraphInterface.IGraphEd
 	var currentGraph : hrt.shgraph.ShaderGraph.Graph;
 
 	var compiledShader : hrt.prefab.Cache.ShaderDef;
+	var compiledShaderPreview : hrt.prefab.Cache.ShaderDef;
+
 	var previewShaderBase : PreviewShaderBase;
 	var previewVar : hxsl.Ast.TVar;
 	var needRecompile : Bool = true;
@@ -184,28 +186,23 @@ class ShaderEditor extends hide.view.FileView implements GraphInterface.IGraphEd
 
 		var rightPannel = new Element(
 			'<div id="rightPanel">
-				<span>Parameters</span>
-				<div class="tab expand" name="Scene" icon="sitemap">
+				<div>
+					<span>Parameters</span>
 					<div class="hide-block" >
 						<div id="parametersList" class="hide-scene-tree hide-list">
 						</div>
 					</div>
-					<div class="options-block hide-block">
-						<input id="createParameter" type="button" value="Add parameter" />
-						<select id="domainSelection"></select>
-
-						<input id="centerView" type="button" value="Center Graph" />
-						<div>
-							Display Compiled
-							<input id="displayHxsl" type="button" value="Hxsl" />
-							<input id="displayGlsl" type="button" value="Glsl" />
-							<input id="displayHlsl" type="button" value="Hlsl" />
-							<input id="display2" type="button" value="2" />
-						</div>
-						<input id="togglelight" type="button" value="Toggle Default Lights" />
-						<input id="refreshGraph" type="button" value="Refresh Shader Graph" />
-					</div>
 				</div>
+				<div class="options-block hide-block">
+					<input id="createParameter" type="button" value="Add parameter" />
+					<div>
+						Shader :
+						<select id="domainSelection"></select>
+					</div>
+					<input id="centerView" type="button" value="Center Graph" />
+					<input id="debugMenu" type="button" value="Debug Menu"/>
+				</div>
+				
 			</div>'
 		);
 
@@ -255,10 +252,15 @@ class ShaderEditor extends hide.view.FileView implements GraphInterface.IGraphEd
 			var pElt = addParameter(shaderGraph.parametersAvailable.get(k), shaderGraph.parametersAvailable.get(k).defaultValue);
 		}
 
-		rightPannel.find("#display2").click((e) -> {
-			trace(hxsl.Printer.shaderToString(shaderGraph.compile(Fragment).shader.data, true));
+		
+		rightPannel.find("#debugMenu").click((e) -> {
+			new hide.comp.ContextMenu([
+				{
+					label : "Print Shader code to Console",
+					click: () -> trace(hxsl.Printer.shaderToString(shaderGraph.compile(currentGraph.domain).shader.data, true))
+				}
+			]);
 		});
-
 
 		graphEditor.onPreviewUpdate = onPreviewUpdate;
 		graphEditor.onNodePreviewUpdate = onNodePreviewUpdate;
@@ -805,9 +807,6 @@ class ShaderEditor extends hide.view.FileView implements GraphInterface.IGraphEd
 			meshPreviewShader = new hxsl.DynamicShader(compiledShader.shader);
 	
 			for (init in compiledShader.inits) {
-				if (init.variable == previewVar)
-					setParamValue(meshPreviewShader, previewVar, 0);
-				else
 					setParamValue(meshPreviewShader, init.variable, init.value);
 			}
 			for (m in meshPreviewMeshes) {
@@ -1059,7 +1058,7 @@ class ShaderEditor extends hide.view.FileView implements GraphInterface.IGraphEd
 	}
 	var bitmapToShader : Map<h2d.Bitmap, hxsl.DynamicShader> = [];
 	public function onNodePreviewUpdate(node: IGraphNode, bitmap: h2d.Bitmap) {
-		if (compiledShader == null) {
+		if (compiledShaderPreview == null) {
 			bitmap.visible = false;
 			return;
 		}
@@ -1068,12 +1067,12 @@ class ShaderEditor extends hide.view.FileView implements GraphInterface.IGraphEd
 			for (s in bitmap.getShaders()) {
 				bitmap.removeShader(s);
 			}
-			shader = new DynamicShader(compiledShader.shader);
+			shader = new DynamicShader(compiledShaderPreview.shader);
 			bitmapToShader.set(bitmap, shader);
 			bitmap.addShader(previewShaderBase);
 			bitmap.addShader(shader);
 		}
-		for (init in compiledShader.inits) {
+		for (init in compiledShaderPreview.inits) {
 			@:privateAccess graphEditor.previewsScene.checkCurrent();
 			if (init.variable == previewVar)
 				setParamValue(shader, previewVar, node.getId() + 1);
@@ -1226,9 +1225,10 @@ class ShaderEditor extends hide.view.FileView implements GraphInterface.IGraphEd
 		needRecompile = false;
 		try {
 			var start = Timer.stamp();
-			compiledShader = shaderGraph.compile(Fragment);
+			compiledShader = shaderGraph.compile();
+			compiledShaderPreview = shaderGraph.compile(currentGraph.domain);
 			bitmapToShader.clear();
-			previewVar = compiledShader.inits.find((e) -> e.variable.name == hrt.shgraph.Variables.previewSelectName)?.variable;
+			previewVar = compiledShaderPreview.inits.find((e) -> e.variable.name == hrt.shgraph.Variables.previewSelectName)?.variable;
 			var end = Timer.stamp();
 			Ide.inst.quickMessage('shader recompiled in ${(end - start) * 1000.0} ms', 2.0);
 

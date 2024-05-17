@@ -1958,6 +1958,8 @@ input[type=checkbox]:checked:after {
 }
 .shader-editor #rightPanel {
   flex: 0;
+  display: flex;
+  flex-direction: column;
   min-width: 270px;
   width: 280px;
   padding-top: 10px;
@@ -1971,8 +1973,11 @@ input[type=checkbox]:checked:after {
   font-size: 15px;
   font-weight: bold;
 }
+.shader-editor #rightPanel > div {
+  flex: 1;
+}
 .shader-editor #rightPanel .hide-block {
-  height: 600px;
+  height: 100%;
 }
 .shader-editor #rightPanel .hide-block #parametersList {
   height: 100%;
@@ -2061,6 +2066,7 @@ input[type=checkbox]:checked:after {
   font-size: 12px;
 }
 .shader-editor #rightPanel .options-block {
+  flex: 0;
   height: max(250px, 25%);
 }
 .shader-editor #rightPanel .options-block > * {
