@@ -280,6 +280,7 @@ class ShaderEditor extends hide.view.FileView implements GraphInterface.IGraphEd
 			currentGraph = shaderGraph.getGraph(curr);
 			domainSelection.val(haxe.EnumTools.EnumValueTools.getName(curr));
 			graphEditor.reload();
+			graphEditor.centerView();
 		}
 
 		exec(false);

@@ -411,11 +411,14 @@ class GraphEditor extends hide.comp.Component {
 		exec(false);
 	}
 
+	static var lastOpenAddMenuPoint = new Point();
 	function openAddMenu(x : Int = 0, y : Int = 0) {
 
 		var boundsWidth = Std.int(element.width());
 		var boundsHeight = Std.int(element.height());
 		trace(boundsHeight);
+
+		lastOpenAddMenuPoint.set(lX(ide.mouseX), lY(ide.mouseY));
 
 		var posCursor = new Point(Std.int(ide.mouseX - heapsScene.offset().left) + x, Std.int(ide.mouseY - heapsScene.offset().top) + y);
 		if( posCursor.x < 0 )
@@ -555,18 +558,21 @@ class GraphEditor extends hide.comp.Component {
 			else if (createLinkOutput != null) {
 				createLinkInput = packIO(instance.getId(), 0);
 			}
+
+			var pos = new h2d.col.Point();
+			pos.load(lastOpenAddMenuPoint);
 			if (createLinkInput != null) {
-				posCursor.set(lastCurveX, lastCurveY);
+				pos.set(lastCurveX, lastCurveY);
 			}
 			cleanupCreateEdge();
 
-			instance.setPos(posCursor);
+			instance.setPos(pos);
 			opBox(instance, true, currentUndoBuffer);
 			if (createLinkInput != null && createLinkOutput != null) {
 				var box = boxes[instance.getId()];
 				var x = (fromInput ? @:privateAccess box.width : 0) - Box.NODE_RADIUS;
 				var y = box.getNodeHeight(0) - Box.NODE_RADIUS;
-				moveBox(boxes[instance.getId()], posCursor.x - x, posCursor.y - y);
+				moveBox(boxes[instance.getId()], pos.x - x, pos.y - y);
 				opEdge(createLinkOutput, createLinkInput, true, currentUndoBuffer);
 			}
 
