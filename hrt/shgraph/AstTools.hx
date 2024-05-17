@@ -19,7 +19,7 @@ class AstTools {
 				other
 			),
 			type,
-			pos ?? defPos,
+			pos ?? defPos
 		);
 	}
 
