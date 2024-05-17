@@ -356,12 +356,22 @@ class Spline extends Object3D {
 		if( data == null )
 			computeSplineData();
 
-		// The last point is not at the same distance, be aware of that case
 		t = hxd.Math.clamp(t);
-		var l = t * (data.samples.length - 1);
-		var s1 : Int = hxd.Math.floor(l);
-		var s2 : Int = hxd.Math.ceil(l);
-		s1 = hxd.Math.iclamp(s1, 0, data.samples.length - 1);
+		var s1 = 0;
+		var sa = 0;
+		var sb = data.samples.length-1;
+		if( t >= 1 ) 
+			s1 = sb;
+		else {
+			do {
+				s1 = Math.floor((sa+sb)/2);
+				if( data.samples[s1].t < t )
+					sa = s1+1;
+				else
+					sb = s1-1;
+			} while( !(data.samples[s1].t <= t && data.samples[s1+1].t > t) );
+		}
+		var s2 : Int = s1 + 1;
 		s2 = hxd.Math.iclamp(s2, 0, data.samples.length - 1);
 
 		if(pos == null)
@@ -382,7 +392,7 @@ class Spline extends Object3D {
 					tangent.load(data.samples[s1].tangent);
 			}
 			else {
-				var t = (l - s1) / segmentLength;
+				var t = (t - data.samples[s1].t) / (data.samples[s2].t - data.samples[s1].t);
 				pos.lerp(data.samples[s1].pos, data.samples[s2].pos, t);
 				if(tangent != null)
 					tangent.lerp(data.samples[s1].tangent, data.samples[s2].tangent, t);
@@ -547,37 +557,22 @@ class Spline extends Object3D {
 		return result;
 	}
 
-	// Return the closest point on the spline from p
-	function getClosestPoint( p : h3d.col.Point ) : SplinePointData {
-
-		if( data == null )
-			computeSplineData();
-
-		var minDist = -1.0;
-		var result : SplinePointData = null;
-		for( s in data.samples ) {
-			var dist = s.pos.distanceSq(p);
-			if( dist < minDist || minDist == -1 ) {
-				minDist = dist;
-				result = s;
-			}
-		}
-		return result;
-	}
-
-	function getClosestPointOnSpline(p : h3d.col.Point, ?out: h3d.col.Point) : h3d.col.Point {
-		var out = out ?? new h3d.col.Point();
-
+	inline function getClosestPointInfoOnSpline( p : h3d.col.Point, ?out: h3d.col.Point): Float {
 		if( data == null )
 			computeSplineData();
 
 		var closestSq = hxd.Math.POSITIVE_INFINITY;
 
+		var closestT = 0.;
+
 		var c = p;
 
 		for (i in 0...data.samples.length-1) {
-			var a = data.samples[i].pos;
-			var b = data.samples[i+1].pos;
+			var s1 = data.samples[i];
+			var s2 = data.samples[i+1];
+			var a = s1.pos;
+			var b = s2.pos;
+
 			var d = inline new h3d.col.Point();
 			
 			var ab = inline b.sub(a);
@@ -601,12 +596,42 @@ class Spline extends Object3D {
 			var cd = inline d.sub(c);
 			var lenSq = cd.lengthSq();
 			if (lenSq < closestSq) {
-				out.load(d);
 				closestSq = lenSq;
+				var tLength = s2.t - s1.t;
+				if(out != null)
+					out.load(d);
+				closestT = s1.t + t * tLength;
 			}
 		}
+		return closestT;
+	}
 
+	public function getPointProgressOnSpline( p : h3d.col.Point ): Float {
+		return getClosestPointInfoOnSpline(p);
+	}
+
+	function getClosestPointOnSpline(p : h3d.col.Point, ?out: h3d.col.Point) : h3d.col.Point {
+		var out = out ?? new h3d.col.Point();
+		getClosestPointInfoOnSpline(p, out);
 		return out;
+	}
+
+	// Return the closest point on the spline from p
+	function getClosestPoint( p : h3d.col.Point ) : SplinePointData {
+
+		if( data == null )
+			computeSplineData();
+
+		var minDist = -1.0;
+		var result : SplinePointData = null;
+		for( s in data.samples ) {
+			var dist = s.pos.distanceSq(p);
+			if( dist < minDist || minDist == -1 ) {
+				minDist = dist;
+				result = s;
+			}
+		}
+		return result;
 	}
 
 	// Return the point on the curve between p1 and p2 at t, 0 <= t <= 1
