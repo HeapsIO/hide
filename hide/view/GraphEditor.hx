@@ -124,6 +124,8 @@ class GraphEditor extends hide.comp.Component {
 		}
 	}
 
+
+
 	public function onDisplay() {
 		heapsScene = element.find(".heaps-scene");
 		editorDisplay = new SVG(heapsScene);
@@ -138,6 +140,9 @@ class GraphEditor extends hide.comp.Component {
 		keys.register("copy", copySelection);
 		keys.register("paste", paste);
 		keys.register("cut", cutSelection);
+		keys.register("shadergraph.hide", onHide);
+		keys.register("selectAll", selectAll);
+		keys.register("shadergraph.comment", commentFromSelection);
 
 		var miniPreviews = new Element('<div class="mini-preview"></div>');
 		heapsScene.prepend(miniPreviews);
@@ -156,7 +161,7 @@ class GraphEditor extends hide.comp.Component {
 				// 	currentEdge = null;
 				// }
 
-				var save : SelectionUndoSave ={newSelections: new Map<Int, Bool>(), buffer: new UndoBuffer()}; 
+				var save : SelectionUndoSave ={newSelections: new Map<Int, Bool>(), buffer: new UndoBuffer()};
 				undoSave = save;
 
 				closeAddMenu();
@@ -796,9 +801,9 @@ class GraphEditor extends hide.comp.Component {
 		if (undoSave != null) {
 			var before : Map<Int, {x: Float, y: Float}> = undoSave;
 			var after : Map<Int, {x: Float, y: Float}> = saveMovedBoxes();
-			
+
 			var hasChanged = false;
-			
+
 			for (id => dataBefore in before) {
 				var dataAfter = after.get(id);
 				if (dataAfter == null)
@@ -830,6 +835,83 @@ class GraphEditor extends hide.comp.Component {
 		return {nodeFromId: output.nodeId, outputFromId: output.ioId, nodeToId: input.nodeId, inputToId: input.ioId};
 	}
 
+	function selectAll() {
+		for (id => _ in boxes) {
+			opSelect(id, true, currentUndoBuffer);
+		}
+		commitUndo();
+	}
+
+
+	function commentFromSelection() {
+		if (boxesSelected.empty())
+			return;
+
+		var commentNode = editor.createCommentNode();
+		if (commentNode == null)
+			return;
+		var comment = commentNode.getInfo().comment;
+		if (comment == null)
+			throw "createCommentNode node is not a comment";
+
+		var bounds = inline new h2d.col.Bounds();
+		for (id => _ in boxesSelected) {
+			var box = boxes[id];
+
+			box.node.getPos(Box.tmpPoint);
+			bounds.addPos(Box.tmpPoint.x, Box.tmpPoint.y);
+			var previewHeight = (box.info.preview?.getVisible() ?? false) ? box.width : 0;
+			bounds.addPos(Box.tmpPoint.x + box.width, Box.tmpPoint.y + box.getHeight() + previewHeight);
+		}
+
+		var border = 10;
+		bounds.xMin -= border;
+		bounds.yMin -= border + 34;
+		bounds.xMax += border;
+		bounds.yMax += border;
+
+		Box.tmpPoint.set(bounds.xMin, bounds.yMin);
+		commentNode.setPos(Box.tmpPoint);
+		Box.tmpPoint.set(bounds.width, bounds.height);
+		comment.setSize(Box.tmpPoint);
+
+		opBox(commentNode, true, currentUndoBuffer);
+		commitUndo();
+	}
+
+	function onHide() {
+		if (boxesSelected.empty())
+			return;
+
+		var viz = false;
+		for (id => _ in boxesSelected) {
+			if (boxes[id].info.preview?.getVisible() == true ?? false) {
+				viz = true;
+				break;
+			}
+		}
+		for (id => _  in boxesSelected) {
+			var box = boxes.get(id);
+			if (box.info.preview == null)
+				continue;
+			opPreview(box, !viz, currentUndoBuffer);
+		}
+
+		commitUndo();
+	}
+
+	public function opPreview(box: Box, show: Bool, undoBuffer: UndoBuffer) : Void {
+		var prev = box.info.preview.getVisible();
+		if (prev == show)
+			return;
+		function exec(isUndo: Bool) {
+			var v = !isUndo ? show : prev;
+			box.info.preview.setVisible(v);
+		}
+		exec(false);
+		undoBuffer.push(exec);
+	}
+
 	public function opBox(node: IGraphNode, doAdd: Bool, undoBuffer: UndoBuffer) : Void {
 		var data = editor.serializeNode(node);
 
@@ -848,7 +930,7 @@ class GraphEditor extends hide.comp.Component {
 				box.dispose();
 				var id = box.node.getId();
 				boxes.remove(id);
-				
+
 				editor.removeNode(id);
 
 				// Sanity check
@@ -1019,7 +1101,7 @@ class GraphEditor extends hide.comp.Component {
 			return;
 		e.remove();
 		edges.remove(id);
-		
+
 		var io = unpackIO(id);
 	}
 
@@ -1308,7 +1390,7 @@ class GraphEditor extends hide.comp.Component {
 			curve.addClass("draft");
 		else if (packedOutput != null && packedInput != null) {
 			curve.on("pointerdown", function(e) {
-				
+
 				if (e.button == 0) {
 					opEdge(packedOutput, packedInput, false, currentUndoBuffer);
 

@@ -50,6 +50,13 @@ class PreviewCamController extends h3d.scene.Object {
 		pos += targetInterp;
 	}
 
+	public function set(r: Float, phi: Float, theta: Float, target: Vector) {
+		this.r = r;
+		this.phi = phi;
+		this.theta = theta;
+		this.target.load(target);
+	}
+
 	var pushing : Int = -1;
 	var ignoreNext : Bool = false;
 	function onEvent(e : hxd.Event) {
@@ -137,7 +144,7 @@ class PreviewCamController extends h3d.scene.Object {
 				}
 			default:
 		}
-		
+
 	}
 
 	function onCleanup() {
@@ -253,7 +260,7 @@ class ShaderEditor extends hide.view.FileView implements GraphInterface.IGraphEd
 	var meshPreviewMeshes : Array<h3d.scene.Mesh> = [];
 	var meshPreviewRoot3d : h3d.scene.Object;
 	var meshPreviewShader : hxsl.DynamicShader;
-	var meshPreviewCameraController : h3d.scene.CameraController;
+	var meshPreviewCameraController : PreviewCamController;
 	var previewSettings : PreviewSettings;
 	var meshPreviewPrefab : hrt.prefab.Prefab;
 	var meshPreviewprefabWatch : hide.tools.FileWatcher.FileWatchEvent;
@@ -268,7 +275,7 @@ class ShaderEditor extends hide.view.FileView implements GraphInterface.IGraphEd
 	var queueReloadMesh = false;
 
 	var domainSelection : JQuery;
-	
+
 	override function onDisplay() {
 		super.onDisplay();
 		element.html("");
@@ -321,7 +328,7 @@ class ShaderEditor extends hide.view.FileView implements GraphInterface.IGraphEd
 					<input id="centerView" type="button" value="Center Graph" />
 					<input id="debugMenu" type="button" value="Debug Menu"/>
 				</div>
-				
+
 			</div>'
 		);
 
@@ -371,7 +378,7 @@ class ShaderEditor extends hide.view.FileView implements GraphInterface.IGraphEd
 			var pElt = addParameter(shaderGraph.parametersAvailable.get(k), shaderGraph.parametersAvailable.get(k).defaultValue);
 		}
 
-		
+
 		rightPannel.find("#debugMenu").click((e) -> {
 			new hide.comp.ContextMenu([
 				{
@@ -390,7 +397,7 @@ class ShaderEditor extends hide.view.FileView implements GraphInterface.IGraphEd
 	function setDomain(domain : hrt.shgraph.ShaderGraph.Domain, recordUndo : Bool) {
 		if (shaderGraph.getGraph(domain) == currentGraph)
 			return;
-		
+
 		var from = currentGraph.domain;
 		var to = domain;
 
@@ -499,7 +506,7 @@ class ShaderEditor extends hide.view.FileView implements GraphInterface.IGraphEd
 
 				parametersUpdate.set(parameter.id, (v:Dynamic) -> range.value = v);
 				shaderGraph.setParameterDefaultValue(parameter.id, value);
-				
+
 				var saveValue : Null<Float> = null;
 				range.onChange = function(moving) {
 					if (saveValue == null) {
@@ -598,7 +605,7 @@ class ShaderEditor extends hide.view.FileView implements GraphInterface.IGraphEd
 						if (saveValue == null) {
 							saveValue = (shaderGraph.getParameter(parameter.id).defaultValue:Array<Float>).copy();
 						}
-	
+
 						if (move == false) {
 							var old = saveValue;
 							var curr = [for (i in 0...n) ranges[i].value];
@@ -637,7 +644,7 @@ class ShaderEditor extends hide.view.FileView implements GraphInterface.IGraphEd
 
 				var tselect = new hide.comp.TextureChoice(null, parentSampler);
 				parametersUpdate.set(parameter.id, (v:Dynamic) -> tselect.value = v);
-				var saveValue : String = null; 
+				var saveValue : String = null;
 				tselect.value = value;
 				tselect.onChange = function(notTmpChange: Bool) {
 					if (saveValue == null) {
@@ -739,7 +746,7 @@ class ShaderEditor extends hide.view.FileView implements GraphInterface.IGraphEd
 					shaderGraph.parametersAvailable.set(parameter.id, parameter);
 					shaderGraph.parametersKeys.insert(parameter.index, parameter.id);
 					shaderGraph.checkParameterIndex();
-					
+
 					updateParam(parameter.id);
 					addParameter(parameter, parameter.defaultValue);
 
@@ -880,7 +887,7 @@ class ShaderEditor extends hide.view.FileView implements GraphInterface.IGraphEd
 
 		trace('move ${paramA.name} by $offset');
 		trace(shaderGraph.parametersKeys);
-		
+
 		shaderGraph.checkParameterIndex();
 
 		for (id in shaderGraph.parametersKeys) {
@@ -955,7 +962,7 @@ class ShaderEditor extends hide.view.FileView implements GraphInterface.IGraphEd
 
 	public function openBackgroundColorMenu() {
 		var prev = element.find("#preview");
-		
+
 		var cp = new hide.comp.ColorPicker(false, null,element.find("#preview"));
 		@:privateAccess
 		{
@@ -984,11 +991,11 @@ class ShaderEditor extends hide.view.FileView implements GraphInterface.IGraphEd
 			}
 			previewSettings.bgColor = cp.value;
 		}
-		
+
 	}
 
 	public function onMeshPreviewUpdate(dt: Float) {
-		
+
 		if (queueReloadMesh) {
 			queueReloadMesh = false;
 			loadMeshPreviewFromString(previewSettings.meshPath);
@@ -997,7 +1004,7 @@ class ShaderEditor extends hide.view.FileView implements GraphInterface.IGraphEd
 			checkCompileShader();
 			@:privateAccess meshPreviewScene.checkCurrent();
 			meshPreviewShader = new hxsl.DynamicShader(compiledShader.shader);
-	
+
 			for (init in compiledShader.inits) {
 					setParamValue(meshPreviewShader, init.variable, init.value);
 			}
@@ -1084,6 +1091,7 @@ class ShaderEditor extends hide.view.FileView implements GraphInterface.IGraphEd
 		var m = new h3d.scene.Mesh(plane);
 		m.setScale(2.0);
 		m.material.mainPass.culling = None;
+		m.z += 0.001;
 		setMeshPreviewMesh(m);
 	}
 
@@ -1119,7 +1127,7 @@ class ShaderEditor extends hide.view.FileView implements GraphInterface.IGraphEd
 			bounds.add(b);
 		}
 		var sp = bounds.toSphere();
-		//meshPreviewCameraController.set(sp.r * 3.0, Math.PI / 4, Math.PI * 5 / 13, sp.getCenter());
+		meshPreviewCameraController.set(sp.r * 3.0, Math.PI / 4, Math.PI * 5 / 13, sp.getCenter());
 	}
 
 	public function loadMeshPreviewFromString(str: String) {
@@ -1159,7 +1167,7 @@ class ShaderEditor extends hide.view.FileView implements GraphInterface.IGraphEd
 
 	public function setMeshPreviewPrefab(str: String) {
 		cleanupPreview();
-		
+
 		try {
 			meshPreviewPrefab = Ide.inst.loadPrefab(str);
 		} catch (e) {
@@ -1211,9 +1219,7 @@ class ShaderEditor extends hide.view.FileView implements GraphInterface.IGraphEd
 			throw "meshPreviewScene not ready";
 
 		var moved = false;
-		new PreviewCamController(meshPreviewScene.s3d);
-		//meshPreviewCameraController = new h3d.scene.CameraController(meshPreviewScene.s3d);
-		//meshPreviewCameraController.loadFromCamera(false);
+		meshPreviewCameraController = new PreviewCamController(meshPreviewScene.s3d);
 		meshPreviewRoot3d = new h3d.scene.Object(meshPreviewScene.s3d);
 		loadMeshPreviewFromString(previewSettings.meshPath);
 		refreshRenderProps();
@@ -1230,14 +1236,14 @@ class ShaderEditor extends hide.view.FileView implements GraphInterface.IGraphEd
 			var curShaderList = m.mainPass.shaders;
 			while (curShaderList != null && curShaderList != m.mainPass.parentShaders) {
 				var dyn = Std.downcast(curShaderList.s, hxsl.DynamicShader);
-				
+
 				@:privateAccess
 				if (dyn != null) {
 					if (dyn.shader.data.name == newShader.shader.data.name) {
 						found = true;
 						curShaderList.s = newShader;
 						m.mainPass.resetRendererFlags();
-						m.mainPass.selfShadersChanged = true;						
+						m.mainPass.selfShadersChanged = true;
 					}
 				}
 
@@ -1273,7 +1279,7 @@ class ShaderEditor extends hide.view.FileView implements GraphInterface.IGraphEd
 		{
 			var engine = graphEditor.previewsScene.engine;
 			var t = engine.getCurrentTarget();
-			graphEditor.previewsScene.s2d.ctx.globals.set("global.pixelSize", new h3d.Vector(2 / (t == null ? engine.width : t.width), 2 / (t == null ? engine.height : t.height)));	
+			graphEditor.previewsScene.s2d.ctx.globals.set("global.pixelSize", new h3d.Vector(2 / (t == null ? engine.width : t.width), 2 / (t == null ? engine.height : t.height)));
 		}
 
 		@:privateAccess
@@ -1307,7 +1313,7 @@ class ShaderEditor extends hide.view.FileView implements GraphInterface.IGraphEd
 				var param = shaderGraph.parametersAvailable.find((v) -> v.name == init.variable.name);
 				if (param !=null) {
 					setParamValue(shader, init.variable, param.defaultValue);
-				} 
+				}
 			}
 		}
 	}
@@ -1349,6 +1355,13 @@ class ShaderEditor extends hide.view.FileView implements GraphInterface.IGraphEd
 			@:privateAccess var newId = currentGraph.current_node_id++;
 			node.setId(newId);
 		}
+		return node;
+	}
+
+	public function createCommentNode() : Null<IGraphNode> {
+		var node = new hrt.shgraph.nodes.Comment();
+		@:privateAccess var newId = currentGraph.current_node_id++;
+		node.setId(newId);
 		return node;
 	}
 
@@ -1463,6 +1476,6 @@ class ShaderEditor extends hide.view.FileView implements GraphInterface.IGraphEd
 			Ide.inst.quickError(err);
 		}
 	}
-	
+
 	static var _ = FileTree.registerExtension(ShaderEditor,["shgraph"],{ icon : "scribd", createNew: "Shader Graph" });
 }

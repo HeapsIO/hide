@@ -95,6 +95,10 @@ interface IGraphEditor {
     /**If newId is true, then the returned node must have a new unique id. This is used when duplicating nodes**/
     public function unserializeNode(data: Dynamic, newId: Bool) : IGraphNode;
 
+    /**Create a comment node. Return null if you don't have a comment node in your editor**/
+    public function createCommentNode() : Null<IGraphNode>;
+
+
     /**Returns false if the edge can't be created because the input/output types don't match**/
     public function canAddEdge(edge : Edge) : Bool;
 

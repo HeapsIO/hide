@@ -3,7 +3,7 @@ package hrt.shgraph.nodes;
 using hxsl.Ast;
 
 #if editor
-import hide.view.GraphInterface; 
+import hide.view.GraphInterface;
 #end
 
 @name("Comment")
@@ -18,6 +18,9 @@ class Comment extends ShaderNode {
 
 	override function canHavePreview():Bool {
 		return false;
+	}
+
+	public function new() {
 	}
 
 	#if editor
