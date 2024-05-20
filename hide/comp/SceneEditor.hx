@@ -172,6 +172,17 @@ class ViewportOverlaysPopup extends hide.comp.Popup {
 					var val = !ide.show3DIconsCategory.get(k);
 					ide.show3DIconsCategory.set(k, val);
 					js.Browser.window.localStorage.setItem(hrt.impl.EditorTools.iconVisibilityKey(k), val ? "true" : "false");
+
+					if (k.match(hrt.impl.EditorTools.IconCategory.Object3D)) {
+						for (p in editor.sceneData.all()) {
+							var obj3D = Std.downcast(p, Object3D);
+
+							if (obj3D != null) {
+								obj3D.removeEditorUI();
+								obj3D.addEditorUI();
+							}
+						}
+					}
 				});
 				allIcons.append(input);
 				allIcons.append(new Element('<label for="$k" class="left">$k</label>'));
@@ -1947,7 +1958,7 @@ class SceneEditor {
 
 		cameraController2D = makeCamController2D();
 		cameraController2D.onClick = cameraController.onClick;
-		
+
 		if (camera2D) {
 			var cam2d = @:privateAccess view.getDisplayState("Camera2D");
 			if( cam2d != null ) {
@@ -3938,7 +3949,7 @@ class SceneEditor {
 
 	function roundSmall(f: Float) {
 		var num = 10_000.0;
-		var r = hxd.Math.round(f * num) / num; 
+		var r = hxd.Math.round(f * num) / num;
 		// Avoid rounding floats that are too big
 		return hxd.Math.abs(r-f) < 2.0 / num ? r : f;
 	}

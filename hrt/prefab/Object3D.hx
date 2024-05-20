@@ -216,6 +216,9 @@ class Object3D extends Prefab {
 			}
 		}
 
+		if (!hide.Ide.inst.show3DIconsCategory.get(hrt.impl.EditorTools.IconCategory.Object3D))
+			return;
+
 		// add ranges
 		var sheet = getCdbType();
 		if( sheet != null ) {
@@ -303,6 +306,19 @@ class Object3D extends Prefab {
 				}
 			}
 		}
+	}
+
+	public function removeEditorUI() {
+		if (local3d != null) {
+			var objs = local3d.findAll((o) -> Std.downcast(o, h3d.scene.Object));
+			for (obj in objs) {
+				if (obj.name != null && StringTools.startsWith(obj.name,"$UI."))
+					obj.remove();
+			}
+		}
+
+		if (editorIcon != null)
+			editorIcon.removeChildren();
 	}
 
 	override function makeInteractive() : hxd.SceneEvents.Interactive {

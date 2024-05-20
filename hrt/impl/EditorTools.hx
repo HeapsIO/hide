@@ -61,6 +61,7 @@ class Editor2DIcon extends h2d.ObjectFollower {
 enum IconCategory {
 	Light;
 	Trails;
+	Object3D;
 	Audio;
 	Misc;
 }
