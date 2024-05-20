@@ -587,18 +587,16 @@ class Prefab {
 	public function edit(editContext : hide.prefab.EditContext) {
 	}
 
-	public function setEditor(sceneEditor: hide.comp.SceneEditor) {
-		if (sceneEditor == null)
-			throw "No editor for setEditor";
-
+	public function setEditor(sceneEditor: hide.comp.SceneEditor, scene: hide.comp.Scene) {
 		shared.editor = sceneEditor;
+		shared.scene = scene;
 
-		setEditorChildren(sceneEditor);
+		setEditorChildren(sceneEditor, scene);
 	}
 
-	function setEditorChildren(sceneEditor: hide.comp.SceneEditor) {
+	function setEditorChildren(sceneEditor: hide.comp.SceneEditor, scene: hide.comp.Scene) {
 		for (c in children) {
-			c.setEditorChildren(sceneEditor);
+			c.setEditorChildren(sceneEditor, scene);
 		}
 	}
 

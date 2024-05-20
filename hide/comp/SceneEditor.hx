@@ -1913,7 +1913,7 @@ class SceneEditor {
 	function createRenderProps(?parent: hrt.prefab.Prefab){
 		if (renderPropsRoot == null) {
 			renderPropsRoot = new hrt.prefab.Reference(parent, parent?.shared ?? new ContextShared());
-			renderPropsRoot.setEditor(this);
+			renderPropsRoot.setEditor(this, this.scene);
 
 			if (parent != null)
 				renderPropsRoot.parent = parent;
@@ -2014,7 +2014,7 @@ class SceneEditor {
 
 		@:privateAccess sceneData.setSharedRec(new ContextShared(root2d,root3d));
 		sceneData.shared.currentPath = view.state.path;
-		sceneData.setEditor(this);
+		sceneData.setEditor(this, this.scene);
 
 		sceneData.make();
 		var bgcol = scene.engine.backgroundColor;
@@ -2828,7 +2828,7 @@ class SceneEditor {
 
 		elt.shared.current3d = elt.parent.findFirstLocal3d();
 		elt.shared.current2d = elt.parent.findFirstLocal2d();
-		elt.setEditor(this);
+		elt.setEditor(this, this.scene);
 		elt.make();
 
 		for( p in elt.flatten() ) {

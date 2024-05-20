@@ -30,6 +30,121 @@ typedef SavedClipboard = {
 	edges : Array<{ fromIdx : Int, fromOutputId : Int, toIdx : Int, toInputId : Int }>,
 }
 
+class PreviewCamController extends h3d.scene.Object {
+	var target : Vector = new h3d.Vector();
+	var targetInterp : Vector = new h3d.Vector();
+	var pos : Vector = new h3d.Vector();
+
+	var phi : Float = 0.4;
+	var theta : Float = 0.4;
+	var r : Float = 4.0;
+
+	var phiInterp : Float = 0.4;
+	var thetaInterp : Float = 0.4;
+	var rInterp : Float = 4.0;
+
+	function computePos() {
+		pos.x = rInterp * hxd.Math.sin(thetaInterp) * hxd.Math.cos(phiInterp);
+		pos.y = rInterp * hxd.Math.sin(thetaInterp) * hxd.Math.sin(phiInterp);
+		pos.z = rInterp * hxd.Math.cos(thetaInterp);
+		pos += targetInterp;
+	}
+
+	var pushing : Int = -1;
+	var ignoreNext : Bool = false;
+	function onEvent(e : hxd.Event) {
+		trace("onEvent", e);
+		switch (e.kind) {
+			case EPush: {
+				if (pushing != -1)
+					return;
+				pushing = e.button;
+				var win = hxd.Window.getInstance();
+				ignoreNext = true;
+				win.mouseMode = Relative(onCapture, true);
+			}
+			case EWheel: {
+				r += e.wheelDelta;
+				r = hxd.Math.max(r, 0.0001);
+			}
+			case ERelease, EReleaseOutside:
+				if (pushing != e.button) {
+					return;
+				}
+				var win = hxd.Window.getInstance();
+				win.mouseMode = Absolute;
+				pushing = -1;
+			default:
+		}
+	}
+
+	function pan(dx, dy, dz = 0.) {
+		var v = new h3d.Vector(dx, dy, dz);
+		var cam = getScene().camera;
+		cam.update();
+		v.transform3x3(cam.getInverseView());
+		target = target.add(v);
+	}
+
+	override function sync(ctx: h3d.scene.RenderContext) {
+		var cam = getScene().camera;
+		if (cam == null)
+			return;
+
+
+		var dt = hxd.Math.min(1, 1 - Math.pow(0.6, ctx.elapsedTime * 60));
+		var dt2 = hxd.Math.min(1, 1 - Math.pow(0.4, ctx.elapsedTime * 60));
+
+		thetaInterp = hxd.Math.lerp(thetaInterp, theta, dt2);
+		phiInterp = hxd.Math.lerp(phiInterp, phi, dt2);
+		rInterp = hxd.Math.lerp(rInterp, r, dt);
+		targetInterp.lerp(targetInterp, target, dt);
+
+		computePos();
+
+		cam.target.load(targetInterp);
+		cam.pos.load(pos);
+	}
+
+	override function onAdd() {
+		getScene().addEventListener(onEvent);
+	}
+
+	override function onRemove() {
+		getScene().removeEventListener(onEvent);
+	}
+
+	function onCapture(e: hxd.Event) {
+		// For some reason sometimes the first
+		// input from a capture has extreme values.
+		// We just filter out all first events from a capture to mitigate this
+		if (ignoreNext) {
+			ignoreNext = false;
+			return;
+		}
+
+		switch (e.kind) {
+			case EMove:
+				switch (pushing) {
+					case 1:
+						pan(-e.relX * 0.01, e.relY * 0.01);
+					case 2:
+						var dx = e.relX;
+						var dy = e.relY;
+						phi += dx * 0.01;
+						theta -= dy * 0.01;
+						theta = hxd.Math.clamp(theta, 0, hxd.Math.PI);
+				}
+			default:
+		}
+		
+	}
+
+	function onCleanup() {
+		pushing = -1;
+	}
+}
+
 class PreviewShaderBase extends hxsl.Shader {
 	static var SRC = {
 
@@ -115,6 +230,8 @@ typedef ClassRepoEntry =
 
 class PreviewSettings {
 	public var meshPath : String = "Sphere";
+	public var bgColor : Int = 0;
+	public var renderPropsPath : String = null;
 	public var alphaBlend: Bool = false;
 	public var backfaceCulling : Bool = true;
 	public var unlit : Bool = false;
@@ -140,6 +257,8 @@ class ShaderEditor extends hide.view.FileView implements GraphInterface.IGraphEd
 	var previewSettings : PreviewSettings;
 	var meshPreviewPrefab : hrt.prefab.Prefab;
 	var meshPreviewprefabWatch : hide.tools.FileWatcher.FileWatchEvent;
+	var meshPreviewRenderProps : hrt.prefab.Prefab;
+	var meshPreviewRenderPropsRoot : h3d.scene.Object;
 
 	var parametersList : JQuery;
 	var draggedParamId : Int;
@@ -808,16 +927,68 @@ class ShaderEditor extends hide.view.FileView implements GraphInterface.IGraphEd
 				{label: "Mesh ...", click: chooseMeshPreviewFBX},
 				{label: "Prefab/FX ...", click: chooseMeshPreviewPrefab},
 				{label: "", isSeparator: true},
-				{label: "Render Settings", menu: [
+				{label: "Material Settings", menu: [
 					{label: "Alpha Blend", click: () -> {previewSettings.alphaBlend = !previewSettings.alphaBlend; meshPreviewShader = null; saveSettings();}, stayOpen: true, checked: previewSettings.alphaBlend},
 					{label: "Backface Cull", click: () -> {previewSettings.backfaceCulling = !previewSettings.backfaceCulling; meshPreviewShader = null; saveSettings();}, stayOpen: true, checked: previewSettings.backfaceCulling},
 					{label: "Unlit", click: () -> {previewSettings.unlit = !previewSettings.unlit; meshPreviewShader = null; saveSettings();}, stayOpen: true, checked: previewSettings.unlit},
-				], enabled: meshPreviewPrefab == null}
+				], enabled: meshPreviewPrefab == null},
+				{label: "Render Settings", menu: [
+					{label: "Background Color", click: openBackgroundColorMenu},
+					{label: "Render Props", click: selectRenderProps},
+				]}
 			]);
 		});
 	}
 
+	public function selectRenderProps() {
+		var basedir = haxe.io.Path.directory(previewSettings.renderPropsPath ?? "");
+		if (basedir == "" || !haxe.io.Path.isAbsolute(basedir)) {
+			haxe.io.Path.join([Ide.inst.resourceDir, basedir]);
+		}
+
+		Ide.inst.chooseFile(["prefab"], (path) -> {
+			previewSettings.renderPropsPath = path;
+			refreshRenderProps();
+			saveSettings();
+		}, true, basedir);
+	}
+
+	public function openBackgroundColorMenu() {
+		var prev = element.find("#preview");
+		
+		var cp = new hide.comp.ColorPicker(false, null,element.find("#preview"));
+		@:privateAccess
+		{
+			var offset = cp.popup.offset();
+			offset.top -= prev.get(0).offsetHeight;
+			cp.popup.offset(offset);
+		}
+
+		cp.value = previewSettings.bgColor;
+		var prev : Null<Int> = null;
+		cp.onChange = function(isDragging:Bool) {
+			if (prev == null) {
+				prev = cp.value;
+			}
+			if (!isDragging) {
+				var cur = cp.value;
+				var exec = function(isUndo: Bool) {
+					var v = !isUndo ? cur : prev;
+					cp.value = v;
+					previewSettings.bgColor = v;
+					saveSettings();
+				}
+				exec(false);
+				undo.change(Custom(exec));
+				return;
+			}
+			previewSettings.bgColor = cp.value;
+		}
+		
+	}
+
 	public function onMeshPreviewUpdate(dt: Float) {
+		
 		if (queueReloadMesh) {
 			queueReloadMesh = false;
 			loadMeshPreviewFromString(previewSettings.meshPath);
@@ -834,6 +1005,38 @@ class ShaderEditor extends hide.view.FileView implements GraphInterface.IGraphEd
 				replaceMeshShader(m, meshPreviewShader);
 			}
 		}
+		meshPreviewScene.engine.backgroundColor = previewSettings.bgColor;
+	}
+
+	public function refreshRenderProps() {
+		if (meshPreviewRenderProps != null) {
+			meshPreviewRenderProps.dispose();
+		}
+
+		if (meshPreviewRenderPropsRoot != null) {
+			meshPreviewRenderPropsRoot.remove();
+		}
+		meshPreviewRenderPropsRoot = new h3d.scene.Object(meshPreviewScene.s3d);
+		if (previewSettings.renderPropsPath == null)
+			return;
+		try {
+			meshPreviewRenderProps = Ide.inst.loadPrefab(previewSettings.renderPropsPath);
+		} catch(e) {
+			return;
+		}
+		var ctx = new hide.prefab.ContextShared(null, meshPreviewRenderPropsRoot);
+		ctx.scene = meshPreviewScene;
+		meshPreviewRenderProps.setSharedRec(ctx);
+		meshPreviewRenderProps.make();
+		var renderProps = meshPreviewRenderProps.getOpt(hrt.prefab.RenderProps);
+		if (renderProps != null)
+			renderProps.applyProps(meshPreviewScene.s3d.renderer);
+	}
+
+	public function dispose() {
+		cleanupPreview();
+		meshPreviewScene.dispose();
+
 	}
 
 	public function cleanupPreview() {
@@ -885,7 +1088,7 @@ class ShaderEditor extends hide.view.FileView implements GraphInterface.IGraphEd
 	}
 
 	public function chooseMeshPreviewFBX() {
-		var basedir = haxe.io.Path.directory(previewSettings.meshPath);
+		var basedir = haxe.io.Path.directory(previewSettings.meshPath ?? "");
 		if (basedir == "" || !haxe.io.Path.isAbsolute(basedir)) {
 			haxe.io.Path.join([Ide.inst.resourceDir, basedir]);
 		}
@@ -902,7 +1105,6 @@ class ShaderEditor extends hide.view.FileView implements GraphInterface.IGraphEd
 		if (basedir == "" || !haxe.io.Path.isAbsolute(basedir)) {
 			haxe.io.Path.join([Ide.inst.resourceDir, basedir]);
 		}
-		trace(basedir);
 		Ide.inst.chooseFile(["prefab", "fx"], (path : String) -> {
 			if (path == null)
 				return;
@@ -917,7 +1119,7 @@ class ShaderEditor extends hide.view.FileView implements GraphInterface.IGraphEd
 			bounds.add(b);
 		}
 		var sp = bounds.toSphere();
-		meshPreviewCameraController.set(sp.r * 3.0, Math.PI / 4, Math.PI * 5 / 13, sp.getCenter());
+		//meshPreviewCameraController.set(sp.r * 3.0, Math.PI / 4, Math.PI * 5 / 13, sp.getCenter());
 	}
 
 	public function loadMeshPreviewFromString(str: String) {
@@ -967,7 +1169,9 @@ class ShaderEditor extends hide.view.FileView implements GraphInterface.IGraphEd
 		}
 
 
-		meshPreviewPrefab.setSharedRec(new hide.prefab.ContextShared(null, meshPreviewRoot3d));
+		var ctx = new hide.prefab.ContextShared(null, meshPreviewRoot3d);
+		ctx.scene = meshPreviewScene;
+		meshPreviewPrefab.setSharedRec(ctx);
 		meshPreviewPrefab.make();
 		meshPreviewMeshes.resize(0);
 
@@ -1007,10 +1211,12 @@ class ShaderEditor extends hide.view.FileView implements GraphInterface.IGraphEd
 			throw "meshPreviewScene not ready";
 
 		var moved = false;
-		meshPreviewCameraController = new h3d.scene.CameraController(meshPreviewScene.s3d);
-		meshPreviewCameraController.loadFromCamera(false);
+		new PreviewCamController(meshPreviewScene.s3d);
+		//meshPreviewCameraController = new h3d.scene.CameraController(meshPreviewScene.s3d);
+		//meshPreviewCameraController.loadFromCamera(false);
 		meshPreviewRoot3d = new h3d.scene.Object(meshPreviewScene.s3d);
 		loadMeshPreviewFromString(previewSettings.meshPath);
+		refreshRenderProps();
 	}
 
 	public function replaceMeshShader(mesh: h3d.scene.Mesh, newShader: hxsl.DynamicShader) {
@@ -1251,7 +1457,6 @@ class ShaderEditor extends hide.view.FileView implements GraphInterface.IGraphEd
 			bitmapToShader.clear();
 			previewVar = compiledShaderPreview.inits.find((e) -> e.variable.name == hrt.shgraph.Variables.previewSelectName)?.variable;
 			var end = Timer.stamp();
-			Ide.inst.quickMessage('shader recompiled in ${(end - start) * 1000.0} ms', 2.0);
 
 			meshPreviewShader = null;
 		} catch (err) {
