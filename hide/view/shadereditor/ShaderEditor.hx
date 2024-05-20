@@ -1360,6 +1360,7 @@ class ShaderEditor extends hide.view.FileView implements GraphInterface.IGraphEd
 
 	public function createCommentNode() : Null<IGraphNode> {
 		var node = new hrt.shgraph.nodes.Comment();
+		node.comment = "Comment";
 		@:privateAccess var newId = currentGraph.current_node_id++;
 		node.setId(newId);
 		return node;
@@ -1412,6 +1413,7 @@ class ShaderEditor extends hide.view.FileView implements GraphInterface.IGraphEd
 		}
 		return entries;
 	}
+
 
 	public function addNode(node: IGraphNode) : Void {
 		currentGraph.addNode(cast node);

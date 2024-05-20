@@ -217,16 +217,8 @@ class Box {
 				var editable = new hide.comp.ContentEditable(null, commentTitle);
 				editable.value = info.comment.getComment();
 				editable.onChange = function(v: String) {
-					var prev = info.comment.getComment();
-					function exec(undo : Bool) {
-						if(!undo) {
-							info.comment.setComment(v);
-						} else {
-							info.comment.setComment(prev);
-						}
-					}
-					editor.editor.getUndo().change(Custom(exec));
-					exec(false);
+					editor.opComment(this, v, editor.currentUndoBuffer);
+					editor.commitUndo();
 				};
 			}
 			else {

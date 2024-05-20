@@ -279,8 +279,7 @@ class GraphEditor extends hide.comp.Component {
 
 		var nodes = editor.getNodes();
 		for (node in nodes) {
-			node.getPos(tmpPoint);
-			addBox(tmpPoint, node);
+			addBox(node);
 		}
 
 		var edges = editor.getEdges();
@@ -767,6 +766,7 @@ class GraphEditor extends hide.comp.Component {
 			if (b.info.comment != null && !e.shiftKey) {
 				var bounds = inline b.getBounds();
 				var min = inline new Point(bounds.x, bounds.y);
+				trace(min);
 				var max = inline new Point(bounds.x + bounds.w, bounds.y + bounds.h);
 
 				for (bb in boxes) {
@@ -778,7 +778,6 @@ class GraphEditor extends hide.comp.Component {
 		}
 
 		undoSave = saveMovedBoxes();
-
 		trace(boxesToMove);
 	}
 
@@ -859,6 +858,7 @@ class GraphEditor extends hide.comp.Component {
 			var box = boxes[id];
 
 			box.node.getPos(Box.tmpPoint);
+			trace(Box.tmpPoint);
 			bounds.addPos(Box.tmpPoint.x, Box.tmpPoint.y);
 			var previewHeight = (box.info.preview?.getVisible() ?? false) ? box.width : 0;
 			bounds.addPos(Box.tmpPoint.x + box.width, Box.tmpPoint.y + box.getHeight() + previewHeight);
@@ -869,6 +869,8 @@ class GraphEditor extends hide.comp.Component {
 		bounds.yMin -= border + 34;
 		bounds.xMax += border;
 		bounds.yMax += border;
+
+		trace(bounds.xMin, bounds.yMin);
 
 		Box.tmpPoint.set(bounds.xMin, bounds.yMin);
 		commentNode.setPos(Box.tmpPoint);
@@ -914,13 +916,14 @@ class GraphEditor extends hide.comp.Component {
 
 	public function opBox(node: IGraphNode, doAdd: Bool, undoBuffer: UndoBuffer) : Void {
 		var data = editor.serializeNode(node);
+		trace(data);
 
 		var exec = function(isUndo : Bool) : Void {
 			if (!doAdd) isUndo = !isUndo;
 			if (!isUndo) {
 				var node = editor.unserializeNode(data, false);
-				node.getPos(Box.tmpPoint);
-				addBox(Box.tmpPoint, node);
+				trace(Box.tmpPoint);
+				addBox(node);
 				editor.addNode(node);
 			}
 			else {
@@ -951,6 +954,23 @@ class GraphEditor extends hide.comp.Component {
 		}
 		undoBuffer.push(exec);
 		exec(false);
+	}
+
+	public function opComment(box: Box, newComment: String, undoBuffer: UndoBuffer) : Void {
+		var id = box.node.getId();
+		var prev = box.info.comment.getComment();
+		if (newComment == prev)
+			return;
+		function exec(isUndo : Bool) {
+			var box = boxes.get(id);
+			var v = !isUndo ? newComment : prev;
+			trace("opComment", v);
+
+			box.info.comment.setComment(v);
+			box.element.find(".comment-title").get(0).innerText = v;
+		}
+		exec(false);
+		undoBuffer.push(exec);
 	}
 
 	function opEdge(output: Int, input: Int, doAdd: Bool, undoBuffer: UndoBuffer) : Void {
@@ -998,10 +1018,11 @@ class GraphEditor extends hide.comp.Component {
 	}
 
 	static var tmpPoint = new h2d.col.Point();
-	function addBox(point: h2d.col.Point, node : IGraphNode) : Box {
+	function addBox(node : IGraphNode) : Box {
 		node.editor = this;
 		var box = new Box(this, editorMatrix, node);
-		box.setPosition(point.x, point.y);
+		node.getPos(Box.tmpPoint);
+		box.setPosition(Box.tmpPoint.x, Box.tmpPoint.y);
 
 		var elt = box.getElement();
 		elt.get(0).onpointerdown = function(e: js.html.MouseEvent) {
