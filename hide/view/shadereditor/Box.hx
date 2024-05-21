@@ -149,7 +149,7 @@ class Box {
 					e.preventDefault();
 
 					var save = resizeSave;
-					
+
 					this.node.getPos(tmpPoint);
 					var current = {x: tmpPoint.x, y:tmpPoint.y, w: this.width, h: this.height};
 					function exec(undo : Bool) {

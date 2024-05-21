@@ -192,6 +192,7 @@ class GraphEditor extends hide.comp.Component {
 			e.preventDefault();
 			e.cancelBubble=true;
     		e.returnValue=false;
+			trace("pointerMove capture");
 			mouseMoveFunction(e.clientX, e.clientY);
 		});
 
@@ -766,7 +767,6 @@ class GraphEditor extends hide.comp.Component {
 			if (b.info.comment != null && !e.shiftKey) {
 				var bounds = inline b.getBounds();
 				var min = inline new Point(bounds.x, bounds.y);
-				trace(min);
 				var max = inline new Point(bounds.x + bounds.w, bounds.y + bounds.h);
 
 				for (bb in boxes) {
@@ -778,7 +778,6 @@ class GraphEditor extends hide.comp.Component {
 		}
 
 		undoSave = saveMovedBoxes();
-		trace(boxesToMove);
 	}
 
 	function saveMovedBoxes() {
@@ -858,7 +857,6 @@ class GraphEditor extends hide.comp.Component {
 			var box = boxes[id];
 
 			box.node.getPos(Box.tmpPoint);
-			trace(Box.tmpPoint);
 			bounds.addPos(Box.tmpPoint.x, Box.tmpPoint.y);
 			var previewHeight = (box.info.preview?.getVisible() ?? false) ? box.width : 0;
 			bounds.addPos(Box.tmpPoint.x + box.width, Box.tmpPoint.y + box.getHeight() + previewHeight);
@@ -870,7 +868,6 @@ class GraphEditor extends hide.comp.Component {
 		bounds.xMax += border;
 		bounds.yMax += border;
 
-		trace(bounds.xMin, bounds.yMin);
 
 		Box.tmpPoint.set(bounds.xMin, bounds.yMin);
 		commentNode.setPos(Box.tmpPoint);
@@ -916,13 +913,11 @@ class GraphEditor extends hide.comp.Component {
 
 	public function opBox(node: IGraphNode, doAdd: Bool, undoBuffer: UndoBuffer) : Void {
 		var data = editor.serializeNode(node);
-		trace(data);
 
 		var exec = function(isUndo : Bool) : Void {
 			if (!doAdd) isUndo = !isUndo;
 			if (!isUndo) {
 				var node = editor.unserializeNode(data, false);
-				trace(Box.tmpPoint);
 				addBox(node);
 				editor.addNode(node);
 			}
@@ -964,7 +959,6 @@ class GraphEditor extends hide.comp.Component {
 		function exec(isUndo : Bool) {
 			var box = boxes.get(id);
 			var v = !isUndo ? newComment : prev;
-			trace("opComment", v);
 
 			box.info.comment.setComment(v);
 			box.element.find(".comment-title").get(0).innerText = v;
@@ -1004,8 +998,8 @@ class GraphEditor extends hide.comp.Component {
 	function finalizeUserCreateEdge() {
 		if (edgeCreationOutput != null && edgeCreationInput != null) {
 			opEdge(edgeCreationOutput, edgeCreationInput, true, currentUndoBuffer);
-			commitUndo();
 		}
+		commitUndo();
 		cleanupCreateEdge();
 	}
 
@@ -1061,10 +1055,14 @@ class GraphEditor extends hide.comp.Component {
 						fieldEditInput.addClass("error");
 						fieldEditInput.val(prevValue);
 					} else {
+						var id = box.node.getId();
 						function exec(isUndo : Bool) {
+							var box = boxes.get(id);
 							var val = isUndo ? prevValue : tmpValue;
-							fieldEditInput.val(val);
-							input.defaultParam.set(Std.string(val));
+							// 50 shades of curse
+							var input = box.inputs[inputId].parent().find("input");
+							input.val(val);
+							box.info.inputs[inputId].defaultParam.set(Std.string(val));
 						}
 
 						fieldEditInput.removeClass("error");
@@ -1268,9 +1266,12 @@ class GraphEditor extends hide.comp.Component {
 			}
 		}
 
+		trace(clientX, clientY);
 		var val = null;
 		if (minDistNode < NODE_TRIGGER_NEAR && nearestId >= 0) {
 			val = packIO(nearestBox.node.getId(), nearestId);
+			trace(minDistNode);
+			trace(haxe.CallStack.toString(haxe.CallStack.callStack()));
 		}
 
 		if (edgeCreationMode == FromInput) {
@@ -1426,16 +1427,9 @@ class GraphEditor extends hide.comp.Component {
 				else if (e.button == 2) {
 					new hide.comp.ContextMenu([
 						{label: "Delete ?", click: function() {
-							var edge = edgeFromPack(packedOutput, packedInput);
-							function exec(isUndo: Bool) {
-								if (!isUndo) {
-									removeEdge(edge);
-								} else {
-									createEdge(edge);
-								}
-							}
-							exec(false);
-							editor.getUndo().change(Custom(exec));
+								var edge = edgeFromPack(packedOutput, packedInput);
+								opEdge(packedOutput, packedInput, false, currentUndoBuffer);
+								commitUndo();
 							}
 						},
 					]);
@@ -1489,7 +1483,6 @@ class GraphEditor extends hide.comp.Component {
 				pan(new Point(0, (botBorder - posCursor.y)*SPEED_BORDER_MOVE));
 				wasUpdated = true;
 			}
-			mouseMoveFunction(ide.mouseX, ide.mouseY);
 		};
 	}
 
