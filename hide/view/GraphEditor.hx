@@ -1351,6 +1351,8 @@ class GraphEditor extends hide.comp.Component {
 
 		currentUndoBuffer = [];
 
+		clearSelectionBoxesUndo(currentUndoBuffer);
+
 		for (node in nodes) {
 			node.getPos(pt);
 			pt -= offset;
@@ -1366,6 +1368,7 @@ class GraphEditor extends hide.comp.Component {
 			var newToId = idRemap.get(edge.nodeToId);
 			opEdge(packIO(newFromId, edge.outputFromId), packIO(newToId, edge.inputToId), true, currentUndoBuffer);
 		}
+
 
 		commitUndo();
 	}
@@ -1391,6 +1394,8 @@ class GraphEditor extends hide.comp.Component {
 
 		var startX = lX(offsetStart.left) + Box.NODE_RADIUS;
 		var startY = lY(offsetStart.top) + Box.NODE_RADIUS;
+		var endX = lX(offsetEnd.left) + Box.NODE_RADIUS;
+		var endY = lY(offsetEnd.top) + Box.NODE_RADIUS;
 		var diffDistanceY = offsetEnd.top - offsetStart.top;
 		var signCurveY = ((diffDistanceY > 0) ? -1 : 1);
 		diffDistanceY = Math.abs(diffDistanceY);
@@ -1401,8 +1406,8 @@ class GraphEditor extends hide.comp.Component {
 		var curve = editorDisplay.curve(null,
 							startX,
 							startY,
-							lX(offsetEnd.left) + Box.NODE_RADIUS,
-							lY(offsetEnd.top) + Box.NODE_RADIUS,
+							endX,
+							endY,
 							startX + valueCurveX * (Math.min(maxDistanceY, diffDistanceY)/maxDistanceY),
 							startY + signCurveY * valueCurveY * (Math.min(maxDistanceY, diffDistanceY)/maxDistanceY),
 							{})
@@ -1418,8 +1423,16 @@ class GraphEditor extends hide.comp.Component {
 
 					heapsScene.get(0).setPointerCapture(e.pointerId);
 
-					edgeCreationOutput = packedOutput;
-					edgeCreationMode = FromOutput;
+					var mx = lX(e.clientX);
+					var my = lY(e.clientY);
+					if (hxd.Math.distance(mx - startX, my - startY, 0) < hxd.Math.distance(mx - endX, my - endY, 0)) {
+						edgeCreationInput = packedInput;
+						edgeCreationMode = FromInput;
+					} else {
+						edgeCreationOutput = packedOutput;
+						edgeCreationMode = FromOutput;
+					}
+
 
 					e.preventDefault();
 					e.stopPropagation();
@@ -1448,14 +1461,6 @@ class GraphEditor extends hide.comp.Component {
 		for (id => _ in boxesSelected) {
 			opSelect(id, false, undoBuffer);
 		}
-	}
-
-	function clearSelectionBoxes() {
-		for(id => _ in boxesSelected) {
-			var b = boxes.get(id);
-			b.setSelected(false);
-		}
-		boxesSelected = [];
 	}
 
 	function startUpdateViewPosition() {
