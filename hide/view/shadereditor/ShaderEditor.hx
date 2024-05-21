@@ -60,7 +60,6 @@ class PreviewCamController extends h3d.scene.Object {
 	var pushing : Int = -1;
 	var ignoreNext : Bool = false;
 	function onEvent(e : hxd.Event) {
-		trace("onEvent", e);
 		switch (e.kind) {
 			case EPush: {
 				if (pushing != -1)
@@ -655,8 +654,6 @@ class ShaderEditor extends hide.view.FileView implements GraphInterface.IGraphEd
 						var prev = haxe.Json.parse(saveValue);
 						saveValue = null;
 						var curr = currentValue;
-						trace(prev);
-						trace(curr);
 						function exec(isUndo: Bool) {
 							var v = !isUndo ? curr : prev;
 							shaderGraph.setParameterDefaultValue(parameter.id, v);
@@ -870,9 +867,6 @@ class ShaderEditor extends hide.view.FileView implements GraphInterface.IGraphEd
 	}
 
 	function moveParameterOffset(paramA: Parameter, offset: Int) {
-		trace("---");
-		trace(shaderGraph.parametersKeys);
-
 		var current = paramA.index;
 		var end = current + offset;
 		var dir = offset > 0 ? 1 : -1;
@@ -883,10 +877,6 @@ class ShaderEditor extends hide.view.FileView implements GraphInterface.IGraphEd
 			shaderGraph.parametersKeys[next] = tmp;
 			current = next;
 		}
-
-
-		trace('move ${paramA.name} by $offset');
-		trace(shaderGraph.parametersKeys);
 
 		shaderGraph.checkParameterIndex();
 
@@ -1100,7 +1090,6 @@ class ShaderEditor extends hide.view.FileView implements GraphInterface.IGraphEd
 		if (basedir == "" || !haxe.io.Path.isAbsolute(basedir)) {
 			haxe.io.Path.join([Ide.inst.resourceDir, basedir]);
 		}
-		trace(basedir);
 		Ide.inst.chooseFile(["fbx"], (path : String) -> {
 			if (path == null)
 				return;

@@ -143,6 +143,8 @@ class GraphEditor extends hide.comp.Component {
 		keys.register("shadergraph.hide", onHide);
 		keys.register("selectAll", selectAll);
 		keys.register("shadergraph.comment", commentFromSelection);
+		keys.register("duplicateInPlace", duplicateSelection);
+		keys.register("duplicate", duplicateSelection);
 
 		var miniPreviews = new Element('<div class="mini-preview"></div>');
 		heapsScene.prepend(miniPreviews);
@@ -192,7 +194,6 @@ class GraphEditor extends hide.comp.Component {
 			e.preventDefault();
 			e.cancelBubble=true;
     		e.returnValue=false;
-			trace("pointerMove capture");
 			mouseMoveFunction(e.clientX, e.clientY);
 		});
 
@@ -421,7 +422,6 @@ class GraphEditor extends hide.comp.Component {
 
 		var boundsWidth = Std.int(element.width());
 		var boundsHeight = Std.int(element.height());
-		trace(boundsHeight);
 
 		lastOpenAddMenuPoint.set(lX(ide.mouseX), lY(ide.mouseY));
 
@@ -446,8 +446,6 @@ class GraphEditor extends hide.comp.Component {
 
 			addMenu.css("left", posCursor.x);
 			addMenu.css("top", posCursor.y);
-
-			trace(posCursor);
 
 			for (c in addMenu.find("#results").children().elements()) {
 				c.show();
@@ -698,7 +696,14 @@ class GraphEditor extends hide.comp.Component {
 			var save : SelectionUndoSave = undoSave;
 
 			for (box in boxes) {
-				if (isInside(box, new Point(xMin, yMin), new Point(xMax, yMax))) {
+				var shouldSelect = isInside(box, new Point(xMin, yMin), new Point(xMax, yMax));
+				if (shouldSelect) {
+					if (box.info.comment != null) {
+						shouldSelect = isFullyInside(box, new Point(xMin, yMin), new Point(xMax, yMax));
+					}
+				}
+
+				if (shouldSelect) {
 					box.setSelected(true);
 					save.newSelections.set(box.node.getId(), true);
 				} else {
@@ -1266,12 +1271,9 @@ class GraphEditor extends hide.comp.Component {
 			}
 		}
 
-		trace(clientX, clientY);
 		var val = null;
 		if (minDistNode < NODE_TRIGGER_NEAR && nearestId >= 0) {
 			val = packIO(nearestBox.node.getId(), nearestId);
-			trace(minDistNode);
-			trace(haxe.CallStack.toString(haxe.CallStack.callStack()));
 		}
 
 		if (edgeCreationMode == FromInput) {
@@ -1285,7 +1287,7 @@ class GraphEditor extends hide.comp.Component {
 		edgeCreationCurve = createCurve(edgeCreationOutput, edgeCreationInput, minDistNode, clientX, clientY, true);
 	}
 
-	function copySelection() {
+	function serializeSelection() : String {
 		var data : CopySelectionData = {
 			nodes:  [],
 			edges: [],
@@ -1305,7 +1307,14 @@ class GraphEditor extends hide.comp.Component {
 		}
 
 		if (!data.nodes.empty()) {
-			var str = haxe.Json.stringify(data);
+			return haxe.Json.stringify(data);
+		}
+		return null;
+	}
+
+	function copySelection() {
+		var str = serializeSelection();
+		if (str != null) {
 			Ide.inst.setClipboard(str);
 		}
 	}
@@ -1313,6 +1322,63 @@ class GraphEditor extends hide.comp.Component {
 	function cutSelection() {
 		copySelection();
 		deleteSelection();
+	}
+
+	function duplicateSelection() {
+		var str = serializeSelection();
+		createFromString(str, currentUndoBuffer);
+		commitUndo();
+	}
+
+	function createFromString(str: String, undoBuffer: UndoBuffer) {
+		var nodes : Array<IGraphNode> = [];
+		var idRemap : Map<Int, Int> = [];
+		var edges : Array<Edge> = [];
+		try {
+			var data : CopySelectionData = haxe.Json.parse(str);
+			for (nodeInfo in data.nodes) {
+				var node = editor.unserializeNode(nodeInfo.serData, true);
+				nodes.push(node);
+				var newId = node.getId();
+				idRemap.set(nodeInfo.id, newId);
+			}
+			for (e in data.edges) {
+				edges.push({nodeFromId: e.nodeFromId, nodeToId: e.nodeToId, outputFromId: e.outputFromId, inputToId: e.inputToId});
+			}
+		}
+		catch (e) {
+			Ide.inst.quickError('Could not paste content of clipboard ($e) "$str"');
+			return;
+		}
+
+		if (nodes.length <= 0)
+			return;
+
+		// center of all the boxes
+		var offset = new h2d.col.Point(0,0);
+		var pt = Box.tmpPoint;
+		for (count => node in nodes) {
+			node.getPos(pt);
+			offset.set(offset.x + (pt.x - offset.x) / (count + 1),offset.y + (pt.y - offset.y) / (count + 1));
+		}
+
+		clearSelectionBoxesUndo(undoBuffer);
+
+		for (node in nodes) {
+			node.getPos(pt);
+			pt -= offset;
+			pt.x += lX(ide.mouseX);
+			pt.y += lY(ide.mouseY);
+			node.setPos(pt);
+			opBox(node, true, undoBuffer);
+			opSelect(node.getId(), true, undoBuffer);
+		}
+
+		for (edge in edges) {
+			var newFromId = idRemap.get(edge.nodeFromId);
+			var newToId = idRemap.get(edge.nodeToId);
+			opEdge(packIO(newFromId, edge.outputFromId), packIO(newToId, edge.inputToId), true, undoBuffer);
+		}
 	}
 
 	function paste() {
