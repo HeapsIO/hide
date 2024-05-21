@@ -1141,6 +1141,42 @@ class SceneEditor {
 		grid.setPosition(-1 * gridSize / 2, -1 * gridSize / 2, 0);
 	}
 
+	public function createGrid(origin : Vector, normal : h3d.Vector, gridSize : Float, gridStep : Float, color : Vector) : h3d.scene.Object {
+		var grid = new h3d.scene.Graphics(scene.s3d);
+		grid.scale(1);
+		grid.material.mainPass.setPassName("overlay");
+
+		var hsl = color.toColorHSL();
+
+        var mov = 0.1;
+
+        if (snapToggle) {
+            mov = 0.2;
+            hsl.y += (1.0-hsl.y) * 0.2;
+        }
+		if(hsl.z > 0.5) hsl.z -= mov;
+		else hsl.z += mov;
+
+		color.makeColor(hsl.x, hsl.y, hsl.z);
+
+		grid.lineStyle(1.0, color.toColor(), 1.0);
+		var start = -1 * gridSize / 2;
+		for(i in 0...(hxd.Math.floor(gridSize / gridStep) + 1)) {
+			grid.moveTo(0, start + (i * gridStep), start);
+			grid.lineTo(0, start + (i * gridStep), start + gridSize);
+
+			grid.moveTo(0, start, start + (i * gridStep));
+			grid.lineTo(0, start + gridSize, start + (i * gridStep));
+		}
+
+		grid.lineStyle(0);
+
+		grid.setPosition(origin.x, origin.y, origin.z);
+		grid.setDirection(normal * -1.0, new h3d.Vector(0, 0, 1));
+
+		return grid;
+	}
+
 	function updateStats() {
 		if( statusText.visible ) {
 			var memStats = scene.engine.mem.stats();
