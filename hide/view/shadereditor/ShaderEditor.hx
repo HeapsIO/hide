@@ -258,6 +258,7 @@ class PreviewSettings {
 	public var alphaBlend: Bool = false;
 	public var backfaceCulling : Bool = true;
 	public var unlit : Bool = false;
+	public var previewAlpha : Bool = false;
 	public function new() {};
 }
 class ShaderEditor extends hide.view.FileView implements GraphInterface.IGraphEditor {
@@ -343,6 +344,7 @@ class ShaderEditor extends hide.view.FileView implements GraphInterface.IGraphEd
 						Shader :
 						<select id="domainSelection"></select>
 					</div>
+					<div> Preview Alpha<input id="previewAlpha" type="checkbox" /></div>
 					<input id="centerView" type="button" value="Center Graph" />
 					<input id="debugMenu" type="button" value="Debug Menu"/>
 				</div>
@@ -365,6 +367,13 @@ class ShaderEditor extends hide.view.FileView implements GraphInterface.IGraphEd
 			setDomain(domain, true);
 		});
 
+		var previewAlpha = rightPannel.find("#previewAlpha");
+		previewAlpha.on("change", (e) -> {
+			previewSettings.previewAlpha = (cast previewAlpha[0]:Dynamic).checked;
+			saveSettings();
+			bitmapToShader.clear();
+		});
+		(cast previewAlpha[0]:Dynamic).checked = previewSettings.previewAlpha;
 
 		rightPannel.appendTo(element);
 
@@ -1312,7 +1321,8 @@ class ShaderEditor extends hide.view.FileView implements GraphInterface.IGraphEd
 			bitmapToShader.set(bitmap, shader);
 			bitmap.addShader(previewShaderBase);
 			bitmap.addShader(shader);
-			bitmap.addShader(previewShaderAlpha);
+			if (previewSettings.previewAlpha)
+				bitmap.addShader(previewShaderAlpha);
 		}
 		for (init in compiledShaderPreview.inits) {
 			@:privateAccess graphEditor.previewsScene.checkCurrent();
