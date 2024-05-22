@@ -193,16 +193,21 @@ class NodeGenContext {
 		if (delta > 0) {
 			var args = [];
 			if (sourceSize == 1) {
-				for (_ in 0...targetSize) {
-					args.push(sourceExpr);
+				for (i in 0...targetSize) {
+					if (i == 3) {
+						// Set alpha to 1.0 by default on upcasts casts
+						args.push(makeFloat(1.0));
+					}
+					else {
+						args.push(sourceExpr);
+					}
 				}
 			}
 			else {
-
 				args.push(sourceExpr);
 				for (i in 0...delta) {
 					// Set alpha to 1.0 by default on upcasts casts
-					var value = i == delta - 1 ? 1.0 : 0.0;
+					var value = ((sourceSize + i) == 3) ? 1.0 : 0.0;
 					args.push({e : TConst(CFloat(value)), p: sourceExpr.p, t: TFloat});
 				}
 			}
