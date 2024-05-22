@@ -136,12 +136,12 @@ typedef ShaderNodeDef = {
 };
 
 typedef Edge = {
-	outputNodeId : Int,
+	?outputNodeId : Int,
 	?nameOutput : String, // Fallback if name has changed
-	outputId : Int,
-	inputNodeId : Int,
+	?outputId : Int,
+	?inputNodeId : Int,
 	?nameInput : String, // Fallback if name has changed
-	inputId : Int,
+	?inputId : Int,
 };
 
 typedef Connection = {
@@ -700,7 +700,7 @@ class Graph {
 
 		var res = hasCycle(node);
 		node.connections[edge.inputId] = prev;
-		
+
 		if (res)
 			return false;
 
