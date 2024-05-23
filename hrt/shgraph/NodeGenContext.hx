@@ -194,13 +194,7 @@ class NodeGenContext {
 			var args = [];
 			if (sourceSize == 1) {
 				for (i in 0...targetSize) {
-					if (i == 3) {
-						// Set alpha to 1.0 by default on upcasts casts
-						args.push(makeFloat(1.0));
-					}
-					else {
-						args.push(sourceExpr);
-					}
+					args.push(sourceExpr);
 				}
 			}
 			else {
