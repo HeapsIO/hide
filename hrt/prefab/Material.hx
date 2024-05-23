@@ -122,8 +122,20 @@ class Material extends Prefab {
 			previewSphere = null;
 		}
 
-		// check if we are in a material library
-		if (this.parent?.parent == null) {
+		var isMatLib = true;
+		var cur = this.parent;
+		while(cur != null) {
+			var obj3d = Std.downcast(cur, Object3D);
+			if (obj3d != null) {
+				if (obj3d.local3d.numChildren > 0) {
+					isMatLib = false;
+					break;
+				}
+			}
+			cur = cur.parent;
+		}
+
+		if (isMatLib) {
 			var root = shared.root3d;
 
 			var sphere = new h3d.prim.Sphere(1., 64, 48);
@@ -137,8 +149,8 @@ class Material extends Prefab {
 			@:privateAccess m.material.name = "previewMat";
 			previewSphere = m;
 			root.addChild(previewSphere);
-
-			@:privateAccess var pos = this.parent.children.indexOf(this);
+			var flat = getRoot(false).flatten(Material);
+			@:privateAccess var pos = flat.indexOf(this);
 			previewSphere.x = ( pos - 1) * 5.0;
 		}
 		#end
