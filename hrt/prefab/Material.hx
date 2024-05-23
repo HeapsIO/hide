@@ -117,13 +117,14 @@ class Material extends Prefab {
 
 	override function makeInstance() {
 		#if editor
-		var mats = getMaterials();
+		if (previewSphere != null) {
+			previewSphere.remove();
+			previewSphere = null;
+		}
 
-		if ( mats == null || mats.length == 0 ) {
-			if (previewSphere != null)
-				throw "what";
-
-			var parent = findFirstLocal3d();
+		// check if we are in a material library
+		if (this.parent?.parent == null) {
+			var root = shared.root3d;
 
 			var sphere = new h3d.prim.Sphere(1., 64, 48);
 			sphere.addUVs();
@@ -135,16 +136,21 @@ class Material extends Prefab {
 			m.name = "previewSphereObjName";
 			@:privateAccess m.material.name = "previewMat";
 			previewSphere = m;
-			parent.addChild(previewSphere);
+			root.addChild(previewSphere);
 
-			var previewCount = findFirstLocal3d().getScene().findAll(o -> o.name == "previewSphereObjName" ? true : null).length;
-			previewSphere.x = ( previewCount - 1) * 5.0;
+			@:privateAccess var pos = this.parent.children.indexOf(this);
+			previewSphere.x = ( pos - 1) * 5.0;
 		}
 		#end
 
-
 		updateInstance();
 	}
+
+	#if editor
+	override function findFirstLocal3d() {
+		return previewSphere ?? super.findFirstLocal3d();
+	}
+	#end
 
 	override function updateInstance(?propName ) {
 		var local3d = findFirstLocal3d();
@@ -227,6 +233,14 @@ class Material extends Prefab {
 	}
 
 	#if editor
+	override function editorRemoveInstance() : Bool {
+		if (previewSphere != null) {
+			previewSphere.remove();
+			return true;
+		}
+		return false;
+	}
+
 	override function makeInteractive() : hxd.SceneEvents.Interactive {
 		if (previewSphere != null) {
 			var col = new h3d.col.Sphere(0,0,0,1.);
