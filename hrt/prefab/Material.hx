@@ -126,7 +126,7 @@ class Material extends Prefab {
 		var cur = this.parent;
 		while(cur != null) {
 			var obj3d = Std.downcast(cur, Object3D);
-			if (obj3d != null) {
+			if (obj3d != null && obj3d.local3d != null) {
 				if (obj3d.local3d.numChildren > 0) {
 					isMatLib = false;
 					break;
