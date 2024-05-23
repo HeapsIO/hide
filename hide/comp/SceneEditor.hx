@@ -1453,7 +1453,7 @@ class SceneEditor {
 		if (settings == null)
 			return;
 
-		var id = Std.parseInt(settings.camTypeIndex);
+		var id = Std.parseInt(settings.camTypeIndex) ?? 0;
         var newClass = CameraControllerEditor.controllersClasses[id];
         if (Type.getClass(cameraController) != newClass.cl)
             switchCamController(newClass.cl);
