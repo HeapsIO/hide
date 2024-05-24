@@ -122,18 +122,21 @@ class Material extends Prefab {
 			previewSphere = null;
 		}
 
-		var isMatLib = true;
-		var cur = this.parent;
-		while(cur != null) {
-			var obj3d = Std.downcast(cur, Object3D);
-			if (obj3d != null && obj3d.local3d != null) {
-				if (obj3d.local3d.numChildren > 0) {
-					isMatLib = false;
-					break;
+		var isMatLib = shared.editor != null && shared.parentPrefab == null;
+		if (isMatLib) {
+			var cur = this.parent;
+			while(cur != null) {
+				var obj3d = Std.downcast(cur, Object3D);
+				if (obj3d != null && obj3d.local3d != null) {
+					if (obj3d.local3d.numChildren > 0) {
+						isMatLib = false;
+						break;
+					}
 				}
+				cur = cur.parent;
 			}
-			cur = cur.parent;
 		}
+
 
 		if (isMatLib) {
 			var root = shared.root3d;
