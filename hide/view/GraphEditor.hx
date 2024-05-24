@@ -367,10 +367,12 @@ class GraphEditor extends hide.comp.Component {
 
 			preview.x = gX(box.x);
 			preview.y = gY(box.y + box.getHeight());
-			preview.scaleX = transformMatrix[0] * box.width / preview.tile.width;
-			preview.scaleY = transformMatrix[3] * box.width / preview.tile.height;
+			var lw = transformMatrix[0] * box.width;
+			var lh = transformMatrix[3] * box.width;
+			preview.scaleX = lw / preview.tile.width;
+			preview.scaleY = lh / preview.tile.height;
 
-			if (preview.x + preview.scaleX < 0 || preview.x > sceneW || preview.y + preview.scaleY < 0 || preview.y > sceneH) {
+			if (preview.x + lw < 0 || preview.x > sceneW || preview.y + lh < 0 || preview.y > sceneH) {
 				preview.visible = false;
 				continue;
 			}
