@@ -365,12 +365,10 @@ class GraphEditor extends hide.comp.Component {
 			if (!preview.visible)
 				continue;
 
-			var pos = Box.tmpPoint;
-			box.node.getPos(pos);
-			preview.x = gX(pos.x);
-			preview.y = gY(pos.y + box.getHeight());
-			preview.scaleX = transformMatrix[0] * box.width;
-			preview.scaleY = transformMatrix[3] * box.width;
+			preview.x = gX(box.x);
+			preview.y = gY(box.y + box.getHeight());
+			preview.scaleX = transformMatrix[0] * box.width / preview.tile.width;
+			preview.scaleY = transformMatrix[3] * box.width / preview.tile.height;
 
 			if (preview.x + preview.scaleX < 0 || preview.x > sceneW || preview.y + preview.scaleY < 0 || preview.y > sceneH) {
 				preview.visible = false;
@@ -398,6 +396,45 @@ class GraphEditor extends hide.comp.Component {
 
 			commitUndo();
 		}
+	}
+
+	function opMove(box: Box, x: Float, y: Float, undoBuffer: UndoBuffer) {
+		box.node.getPos(Box.tmpPoint);
+		var prevX = Box.tmpPoint.x;
+		var prevY = Box.tmpPoint.y;
+		if (prevX == x && prevY == y)
+			return;
+		var id = box.node.getId();
+		function exec(isUndo: Bool) {
+			var x = !isUndo ? x : prevX;
+			var y = !isUndo ? y : prevY;
+			var box = boxes[id];
+			Box.tmpPoint.set(x,y);
+			box.node.setPos(Box.tmpPoint);
+			moveBox(box, x, y);
+		}
+		exec(false);
+		undoBuffer.push(exec);
+	}
+
+	public function opResize(box: Box, w: Float, h: Float, undoBuffer: UndoBuffer) {
+		box.info.comment.getSize(Box.tmpPoint);
+		var id = box.node.getId();
+		var prevW = Box.tmpPoint.x;
+		var prevH = Box.tmpPoint.y;
+		function exec(isUndo : Bool) {
+			var box = boxes.get(id);
+			var vw = !isUndo ? w : prevW;
+			var vh = !isUndo ? h : prevH;
+			Box.tmpPoint.set(vw, vh);
+			box.info.comment.setSize(Box.tmpPoint);
+			box.width = Std.int(vw);
+			box.height = Std.int(vh);
+			box.refreshBox();
+		}
+
+		exec(false);
+		undoBuffer.push(exec);
 	}
 
 	function opSelect(id: Int, doSelect: Bool, undoBuffer: UndoBuffer) {
@@ -575,7 +612,7 @@ class GraphEditor extends hide.comp.Component {
 				var box = boxes[instance.getId()];
 				var x = (fromInput ? @:privateAccess box.width : 0) - Box.NODE_RADIUS;
 				var y = box.getNodeHeight(0) - Box.NODE_RADIUS;
-				moveBox(boxes[instance.getId()], pos.x - x, pos.y - y);
+				opMove(boxes[instance.getId()], pos.x - x, pos.y - y, currentUndoBuffer);
 				opEdge(createLinkOutput, createLinkInput, true, currentUndoBuffer);
 			}
 
@@ -723,8 +760,7 @@ class GraphEditor extends hide.comp.Component {
 
 			for (id => _  in boxesToMove) {
 				var b = boxes.get(id);
-				b.node.getPos(Box.tmpPoint);
-				moveBox(b, Box.tmpPoint.x + dx, Box.tmpPoint.y + dy);
+				moveBox(b, b.x + dx, b.y + dy);
 			}
 			lastClickDrag.x = lX(clientX);
 			lastClickDrag.y = lY(clientY);
@@ -781,8 +817,6 @@ class GraphEditor extends hide.comp.Component {
 				}
 			}
 		}
-
-		undoSave = saveMovedBoxes();
 	}
 
 	function saveMovedBoxes() {
@@ -801,33 +835,14 @@ class GraphEditor extends hide.comp.Component {
 
 		lastClickDrag = null;
 
-		if (undoSave != null) {
-			var before : Map<Int, {x: Float, y: Float}> = undoSave;
-			var after : Map<Int, {x: Float, y: Float}> = saveMovedBoxes();
-
-			var hasChanged = false;
-
-			for (id => dataBefore in before) {
-				var dataAfter = after.get(id);
-				if (dataAfter == null)
-					throw "what";
-				if (dataBefore.x != dataAfter.x || dataBefore.y != dataAfter.y) {
-					hasChanged = true;
-					break;
-				}
-			}
-
-			if (hasChanged) {
-				editor.getUndo().change(Custom(function(undo) {
-					var toApply = undo ? before : after;
-					for (id => pos in toApply) {
-						moveBox(boxes[id], pos.x ,pos.y);
-					}
-				}));
-				undoSave = null;
+		for (id => _ in boxesToMove) {
+			for (id => _ in boxesToMove) {
+				var b = boxes[id];
+				opMove(b, b.x, b.y, currentUndoBuffer);
 			}
 		}
 
+		commitUndo();
 		boxesToMove = [];
 	}
 
@@ -971,6 +986,8 @@ class GraphEditor extends hide.comp.Component {
 		exec(false);
 		undoBuffer.push(exec);
 	}
+
+
 
 	function opEdge(output: Int, input: Int, doAdd: Bool, undoBuffer: UndoBuffer) : Void {
 		var edge = edgeFromPack(output, input);

@@ -20,6 +20,8 @@ class Box {
 	var node : IGraphNode;
 	var info : GraphNodeInfo;
 
+	var x : Float;
+	var y : Float;
 	var width : Int;
 	var height : Int;
 	var propsHeight : Int = 0;
@@ -37,7 +39,6 @@ class Box {
 	var hasHeader : Bool = true;
 	var color : String;
 	var closePreviewBtn : JQuery;
-	var resizeSave = {x:0.0,y:0.0, w:0.0, h:0.0};
 
 	var element : JQuery;
 	var propertiesGroup : JQuery;
@@ -93,9 +94,6 @@ class Box {
 					e.preventDefault();
 					pressed = true;
 					elt.setPointerCapture(e.pointerId);
-
-					this.node.getPos(tmpPoint);
-					resizeSave = {x: tmpPoint.x, y:tmpPoint.y, w: this.width, h: this.height};
 				};
 
 				elt.onpointermove = function(e: js.html.PointerEvent) {
@@ -136,8 +134,6 @@ class Box {
 
 					this.width = x1 - x0;
 					this.height = y1 - y0;
-					tmpPoint.set(this.width, this.height);
-					info.comment.setSize(tmpPoint);
 					refreshBox();
 				}
 
@@ -148,18 +144,11 @@ class Box {
 					e.stopPropagation();
 					e.preventDefault();
 
-					var save = resizeSave;
-
 					this.node.getPos(tmpPoint);
 					var current = {x: tmpPoint.x, y:tmpPoint.y, w: this.width, h: this.height};
-					function exec(undo : Bool) {
-						var toApply = undo ? save : current;
-						setPosition(toApply.x, toApply.y);
-						tmpPoint.set(toApply.w, toApply.h);
-						info.comment.setSize(tmpPoint);
-					}
-					editor.editor.getUndo().change(Custom(exec));
-					elt.releasePointerCapture(e.pointerId);
+					editor.opMove(this, this.x, this.y, editor.currentUndoBuffer);
+					editor.opResize(this, this.width, this.height, editor.currentUndoBuffer);
+					editor.commitUndo();
 				};
 			}
 
@@ -417,8 +406,8 @@ class Box {
 	public static var tmpPoint = new h2d.col.Point();
 	public function setPosition(x : Float, y : Float) {
 		element.attr({transform: 'translate(${x} ${y})'});
-		tmpPoint.set(x,y);
-		node.setPos(tmpPoint);
+		this.x = x;
+		this.y = y;
 	}
 
 	public function setSelected(b : Bool) {
