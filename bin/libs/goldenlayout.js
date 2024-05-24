@@ -4399,12 +4399,14 @@ lm.utils.copy( lm.items.Stack.prototype, {
 
 	removeChild: function( contentItem, keepChild ) {
 		var index = lm.utils.indexOf( contentItem, this.contentItems );
+		var activeContentItem = this.header.parent.getActiveContentItem();
+		var activeIndex = lm.utils.indexOf( activeContentItem, this.contentItems );
 		lm.items.AbstractContentItem.prototype.removeChild.call( this, contentItem, keepChild );
 		this.header.removeTab( contentItem );
 
-		if( this.contentItems.length > 0 ) {
+		if( activeIndex === index ) {
 			this.setActiveContentItem( this.contentItems[ Math.max( index - 1, 0 ) ] );
-		} else {
+		} else if( this.contentItems.length <= 0 ) {
 			this._activeContentItem = null;
 		}
 
