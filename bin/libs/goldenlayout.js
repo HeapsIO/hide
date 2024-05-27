@@ -4404,9 +4404,9 @@ lm.utils.copy( lm.items.Stack.prototype, {
 		lm.items.AbstractContentItem.prototype.removeChild.call( this, contentItem, keepChild );
 		this.header.removeTab( contentItem );
 
-		if( activeIndex === index ) {
+		if( activeIndex === index && this.contentItems.length > 0 ) {
 			this.setActiveContentItem( this.contentItems[ Math.max( index - 1, 0 ) ] );
-		} else if( this.contentItems.length <= 0 ) {
+		} else {
 			this._activeContentItem = null;
 		}
 
