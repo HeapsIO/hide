@@ -3521,7 +3521,13 @@ class SceneEditor {
 			return;
         }
 
-		var elts = selectedPrefabs;
+		// Sort the selection to match the scene order
+		var elts : Array<hrt.prefab.Prefab> = [];
+		for (p in sceneData.flatten()) {
+			if (selectedPrefabs.contains(p))
+				elts.push(p);
+		}
+
 		var parent = elts[0].parent;
 		var parentMat = worldMat(parent);
 		var invParentMat = parentMat.clone();
@@ -3556,13 +3562,11 @@ class SceneEditor {
 		var effectFunc = reparentImpl(elts, group, 0);
 		undo.change(Custom(function(undo) {
 			if(undo) {
-				group.parent = null;
-				//context.shared.contexts.remove(group);
 				effectFunc(true);
+				group.parent = null;
 			}
 			else {
 				group.parent = parent;
-				//context.shared.contexts.set(group, groupCtx);
 				effectFunc(false);
 			}
 			if(undo)
@@ -4042,8 +4046,8 @@ class SceneEditor {
 				};
 			});
 		}
-		return function(undo) {
 
+		return function(undo) {
 			// Remove all the children from their parent before
 			// adding them back in. Makes the index of insert() correct
 			if (!undo) {
@@ -4051,6 +4055,7 @@ class SceneEditor {
 					elt.parent.children.remove(elt);
 				}
 			}
+
 			for(f in effects) {
 				f(undo);
 			}
@@ -4058,6 +4063,7 @@ class SceneEditor {
 			if (!removeInstance(toElt)) {
 				return true;
 			}
+
 			makePrefab(toElt);
 			return false;
 		}
