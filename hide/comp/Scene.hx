@@ -348,11 +348,14 @@ class Scene extends hide.comp.Component implements h3d.IDrawable {
 		return loadTexture("", t, onReady);
 	}
 
-	public function loadTexture( modelPath : String, texturePath : String, ?onReady : h3d.mat.Texture -> Void, async=false, ?uncompressed: Bool = false) {
+	public function loadTexture( modelPath : String, texturePath : String, ?onReady : h3d.mat.Texture -> Void,  ?onFail : Void -> Void, async=false, ?uncompressed: Bool = false) {
 		checkCurrent();
 		var path = resolvePath(modelPath, texturePath);
 		if( path == null ) {
-			ide.error("Could not load texture " + { modelPath : modelPath, texturePath : texturePath });
+			if (onFail != null)
+				onFail();
+			else
+				ide.error("Could not load texture " + { modelPath : modelPath, texturePath : texturePath });
 			return null;
 		}
 		var t = texCache.get(path);
@@ -362,14 +365,22 @@ class Scene extends hide.comp.Component implements h3d.IDrawable {
 		}
 		var relPath = StringTools.startsWith(path, ide.resourceDir) ? path.substr(ide.resourceDir.length+1) : path;
 
-		var res = try hxd.res.Loader.currentInstance.load(relPath) catch( e : hxd.res.NotFound ) {
+		function loadUncompressed() {
 			var bytes = sys.io.File.getBytes(path);
-			hxd.res.Any.fromBytes(path, bytes);
+			return hxd.res.Any.fromBytes(path, bytes);
+		}
+
+		var res = try hxd.res.Loader.currentInstance.load(relPath) catch( e ) {
+			if (e is hxd.res.NotFound)
+				ide.quickError('Resource not found, original texture is loaded instead');
+			else if (onFail != null)
+				onFail();
+
+			loadUncompressed();
 		};
 
 		if (uncompressed) {
-			var bytes = sys.io.File.getBytes(path);
-			res = hxd.res.Any.fromBytes(path, bytes);
+			loadUncompressed();
 		}
 
 		if( onReady == null ) onReady = function(_) {};
@@ -380,7 +391,10 @@ class Scene extends hide.comp.Component implements h3d.IDrawable {
 			t.setName( ide.makeRelative(path));
 			texCache.set(path, t);
 		} catch( error : Dynamic ) {
-			throw "Could not load texure " + texturePath + ":\n" + Std.string(error);
+			if (onFail != null)
+				onFail();
+			else
+				throw "Could not load texure " + texturePath + ":\n" + Std.string(error);
 		};
 		return t;
 	}

@@ -383,12 +383,13 @@ class Image extends FileView {
 		// have been changed
 		@:privateAccess fs.fileCache.remove(state.path);
 
+		var onFail = () -> Ide.inst.quickError('Can\'t load texture with this compression parameters, original texture is loaded instead!');
 		scene.onReady = function() {
 			scene.loadTexture(state.path, state.path, function(compressedTexture) {
 				scene.loadTexture(state.path, state.path, function(uncompressedTexture) {
 					onTexturesLoaded(compressedTexture, uncompressedTexture);
-				}, false, true);
-			}, false);
+				}, onFail, false, true);
+			}, onFail, false);
 		};
 	}
 
@@ -713,7 +714,12 @@ class Image extends FileView {
 			else
 				comp.params = { alpha:Std.parseInt(alpha.val()), format:format.val().toString(), mips:mips.is(':checked'), size:Std.parseInt(size.val()) };
 
-			comp.convert();
+			try {
+				comp.convert();
+			}
+			catch(e) {
+				Ide.inst.quickError('Can\'t load texture with this compression parameters, original texture is loaded instead!');
+			}
 		}
 		else {
 			tmpPath = state.path;
