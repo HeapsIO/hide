@@ -164,6 +164,7 @@ class Prefab {
 		if( sh.currentPath == null ) sh.currentPath = shared.currentPath;
 		#if editor
 		sh.editor = this.shared.editor;
+		sh.scene = this.shared.scene;
 		#end
 		return this.clone(sh).make(sh);
 	}
@@ -184,6 +185,7 @@ class Prefab {
 				sh = new hrt.prefab.ContextShared(this.shared.currentPath, true);
 				#if editor
 				sh.editor = shared.editor;
+				sh.scene = shared.scene;
 				#end
 			}
 		}
