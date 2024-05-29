@@ -1553,6 +1553,7 @@ class SceneEditor {
 		view.keys.register("sceneeditor.translationMode", gizmo.translationMode);
 		view.keys.register("sceneeditor.rotationMode", gizmo.rotationMode);
 		view.keys.register("sceneeditor.scalingMode", gizmo.scalingMode);
+		view.keys.register("sceneeditor.switchMode", gizmo.switchMode);
 
 		statusText = new h2d.Text(hxd.res.DefaultFont.get(), scene.s2d);
 		statusText = new h2d.Text(hxd.res.DefaultFont.get(), scene.s2d);
