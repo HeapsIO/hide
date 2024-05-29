@@ -104,5 +104,6 @@ interface IGraphEditor {
 
     public function addEdge(edge : Edge) : Void;
     public function removeEdge(nodeToId: Int, inputToId : Int) : Void;
+
     public function getUndo() : hide.ui.UndoHistory;
 }

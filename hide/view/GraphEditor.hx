@@ -145,6 +145,8 @@ class GraphEditor extends hide.comp.Component {
 		keys.register("shadergraph.comment", commentFromSelection);
 		keys.register("duplicateInPlace", duplicateSelection);
 		keys.register("duplicate", duplicateSelection);
+		keys.register("graph.openAddMenu", openAddMenu.bind(null,null));
+		keys.register("cancel", cancelAll);
 
 		var miniPreviews = new Element('<div class="mini-preview"></div>');
 		heapsScene.prepend(miniPreviews);
@@ -180,7 +182,13 @@ class GraphEditor extends hide.comp.Component {
 			}
 
 			if (e.button == 2) {
-				openAddMenu();
+				if (addMenu?.is(":visible") ?? false) {
+					closeAddMenu();
+					cleanupCreateEdge();
+				}
+				else {
+					openAddMenu();
+				}
 				e.preventDefault();
 				e.stopPropagation();
 			}
@@ -258,6 +266,11 @@ class GraphEditor extends hide.comp.Component {
 		updateMatrix();
 
 		reloadInternal();
+	}
+
+	public function cancelAll() {
+		closeAddMenu();
+		cleanupCreateEdge();
 	}
 
 	var reloadQueued = false;
@@ -549,6 +562,11 @@ class GraphEditor extends hide.comp.Component {
 		input.focus();
 		var divs = new Element("#results > div");
 		input.on("keydown", function(ev) {
+			if (ev.key == "Escape") {
+				cancelAll();
+				ev.stopPropagation();
+				ev.preventDefault();
+			}
 			if (ev.keyCode == 38 || ev.keyCode == 40) {
 				ev.stopPropagation();
 				ev.preventDefault();
@@ -680,7 +698,7 @@ class GraphEditor extends hide.comp.Component {
 	function closeAddMenu() {
 		if (addMenu != null) {
 			addMenu.hide();
-			//heapsScene.focus();
+			heapsScene.focus();
 		}
 	}
 
