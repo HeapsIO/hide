@@ -805,6 +805,7 @@ class ShaderEditor extends hide.view.FileView implements GraphInterface.IGraphEd
 
 			exec(false);
 			undo.change(Custom(exec));
+			inputTitle.blur();
 
 			// if (shaderGraph.setParameterTitle(parameter.id, newName)) {
 			// 	for (b in listOfBoxes) {
