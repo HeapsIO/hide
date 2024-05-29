@@ -1134,6 +1134,7 @@ class GraphEditor extends hide.comp.Component {
 			grNode.find(".node").attr("field", outputId);
 			grNode.get(0).addEventListener("pointerdown", function(e) {
 				e.stopPropagation();
+				cancelAll();
 				heapsScene.get(0).setPointerCapture(e.pointerId);
 				edgeCreationOutput = packIO(box.node.getId(), outputId);
 				edgeCreationMode = FromOutput;
