@@ -801,7 +801,6 @@ class ShaderEditor extends hide.view.FileView implements GraphInterface.IGraphEd
 			var exec = function(isUndo : Bool) {
 				var v = !isUndo ? newName : prevName;
 				shaderGraph.setParameterTitle(parameter.id, v);
-				for ()
 			}
 
 			exec(false);
