@@ -12,12 +12,14 @@ class Split extends ShaderNodeHxsl {
 		@sgoutput var r : Float;
 		@sgoutput var g : Float;
 		@sgoutput var b : Float;
+		@sgoutput var x : Float;
 		@sgoutput var a : Float;
 		function fragment() {
 			r = rgba.r;
 			g = rgba.g;
 			b = rgba.b;
 			a = rgba.a;
+			x = 0.5;
 		}
 	};
 

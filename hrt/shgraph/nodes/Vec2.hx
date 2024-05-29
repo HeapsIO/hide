@@ -8,6 +8,7 @@ using hxsl.Ast;
 @name("Vec2")
 @description("Create a vector of size 2 from 2 floats")
 @group("Channel")
+@width(80)
 class Vec2 extends ShaderNodeHxsl {
 
 	static var SRC = {

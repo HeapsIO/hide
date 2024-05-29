@@ -5,6 +5,12 @@
   font-weight: normal;
   font-style: normal;
 }
+@font-face {
+  font-family: 'Inter';
+  src: url('src/Inter-Light.ttf');
+  font-weight: lighter;
+  font-style: normal;
+}
 body {
   margin: 0;
   padding: 0;
@@ -2228,32 +2234,8 @@ input[type=checkbox]:checked:after {
 .graph-view .heaps-scene {
   outline: none !important;
 }
-.graph-view .heaps-scene #status-bar {
-  z-index: 2;
-  position: absolute;
-  width: 84%;
-  min-height: 20px;
-  background-color: #111;
-  border: 1px solid #444;
-  left: -1px;
-  bottom: -1px;
-  max-height: 60%;
-  overflow: auto;
-}
-.graph-view .heaps-scene #status-bar pre {
-  padding: 10px;
-  vertical-align: sub;
-}
-.graph-view .heaps-scene #status-bar pre.error {
-  color: #c74848;
-}
-.graph-view .heaps-scene #status-bar #close {
-  width: 100%;
-  text-align: center;
-  cursor: pointer;
-}
-.graph-view .heaps-scene svg g {
-  stroke: #202020;
+.graph-view .heaps-scene svg {
+  font-family: 'Inter';
 }
 .graph-view .heaps-scene svg g.selected .outline {
   stroke: #668fff;
@@ -2264,15 +2246,22 @@ input[type=checkbox]:checked:after {
 .graph-view .heaps-scene svg .outline {
   fill: none;
 }
+.graph-view .heaps-scene svg .background {
+  fill: #393939;
+}
+.graph-view .heaps-scene svg .separator {
+  stroke: #272727;
+  stroke-width: 1px;
+}
 .graph-view .heaps-scene svg .resize {
   fill: rgba(0, 0, 0, 0);
   stroke: none;
 }
 .graph-view .heaps-scene svg .comment .head-box {
   fill: rgba(80, 80, 80, 0.5);
-  stroke-width: 3;
 }
 .graph-view .heaps-scene svg .comment .outline {
+  stroke: rgba(80, 80, 80, 0.5);
   stroke-width: 3;
 }
 .graph-view .heaps-scene svg .comment-title {
@@ -2289,21 +2278,14 @@ input[type=checkbox]:checked:after {
 .graph-view .heaps-scene svg .comment-title br {
   display: none;
 }
-.graph-view .heaps-scene svg .head-box {
-  fill: #155358;
-}
 .graph-view .heaps-scene svg .title-box {
+  text-anchor: start;
   fill: #ffffff;
   stroke: none;
   user-select: none;
 }
 .graph-view .heaps-scene svg .title-box::selection {
   background: none;
-}
-.graph-view .heaps-scene svg .nodes,
-.graph-view .heaps-scene svg .properties {
-  fill: #737373;
-  opacity: 0.75;
 }
 .graph-view .heaps-scene svg .hasLink .input-field {
   display: none;

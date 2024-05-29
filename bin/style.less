@@ -8,6 +8,13 @@
 	font-style: normal;
 }
 
+@font-face {
+	font-family: 'Inter';
+	src: url('src/Inter-Light.ttf');
+	font-weight: lighter;
+	font-style: normal;
+}
+
 body {
 	margin : 0;
 	padding : 0;
@@ -2163,7 +2170,7 @@ input[type=checkbox] {
 	#preview {
 		z-index: 3;
 		position: absolute;
-		
+
 		width: 300px;
 		height: 300px;
 
@@ -2501,41 +2508,10 @@ input[type=checkbox] {
 
 	.heaps-scene {
 		outline: none !important;
-		#status-bar {
-			z-index: 2;
-			position: absolute;
-
-			width: 84%;
-			min-height: 20px;
-
-			background-color: #111;
-			border: 1px solid #444;
-
-			left: -1px;
-			bottom: -1px;
-			max-height: 60%;
-			overflow: auto;
-
-			pre {
-				padding: 10px;
-				vertical-align: sub;
-
-				&.error {
-					color: #c74848;
-				}
-			}
-
-			#close {
-				width: 100%;
-				text-align: center;
-				cursor: pointer;
-			}
-		}
 		svg {
 
+			font-family: 'Inter';
 			g {
-				stroke: #202020;
-
 				&.selected {
 					.outline {
 						stroke: #668fff;
@@ -2551,6 +2527,15 @@ input[type=checkbox] {
 				fill: none;
 			}
 
+			.background {
+				fill: #393939;
+			}
+
+			.separator {
+				stroke: #272727;
+				stroke-width: 1px;
+			}
+
 			.resize {
 				fill: rgba(0, 0, 0, 0.0);
 				stroke: none;
@@ -2559,10 +2544,11 @@ input[type=checkbox] {
 			.comment {
 				.head-box {
 					fill: rgba(80,80,80,0.5);
-					stroke-width: 3;
+					//stroke-width: 3;
 				}
 
 				.outline {
+					stroke: rgba(80,80,80,0.5);
 					stroke-width: 3;
 				}
 			}
@@ -2582,11 +2568,12 @@ input[type=checkbox] {
 				}
 			}
 
-			.head-box {
-				fill: #155358;
-			}
+			// .head-box {
+			// 	fill: #155358;
+			// }
 
 			.title-box {
+				text-anchor: start;
 				fill: #ffffff;
 				stroke: none;
 				user-select: none;
@@ -2595,10 +2582,10 @@ input[type=checkbox] {
 				}
 			}
 
-			.nodes, .properties {
-				fill: #737373;
-				opacity: 0.75;
-			}
+			// .nodes, .properties {
+			// 	fill: #737373;
+			// 	opacity: 0.75;
+			// }
 
 			.hasLink {
 				.input-field {

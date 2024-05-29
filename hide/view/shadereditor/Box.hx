@@ -79,10 +79,16 @@ class Box {
 
 		// Debug: editor.editorDisplay.text(element, 2, -6, 'Node ${node.id}').addClass("node-id-indicator");
 
-		// outline of box
+		if (info.comment == null) {
+			editor.editorDisplay.rect(element, 0,0,width, getHeight()).addClass("background");
+
+		}
 		editor.editorDisplay.rect(element, -1, -1, width+2, getHeight()+2).addClass("outline");
 
 		if (info.comment != null) {
+
+			editor.editorDisplay.rect(element, 0,0,width, HEADER_HEIGHT).addClass("head-box");
+
 
 			function makeResizable(elt: js.html.Element, left: Bool, top: Bool, right: Bool, bottom: Bool) {
 				var pressed = false;
@@ -191,38 +197,45 @@ class Box {
 			elt.style.cursor = "nesw-resize";
 			elt.id = "resizeTopRight";
 			makeResizable(elt, false,true,true,false);
+
+			var fo = editor.editorDisplay.foreignObject(element, 7, 2, 0, HEADER_HEIGHT-4);
+			fo.get(0).id = "commentTitle";
+			var commentTitle = new Element("<span contenteditable spellcheck='false'>Comment</span>").addClass("comment-title").appendTo(fo);
+
+			var editable = new hide.comp.ContentEditable(null, commentTitle);
+			editable.value = info.comment.getComment();
+			editable.onChange = function(v: String) {
+				editor.opComment(this, v, editor.currentUndoBuffer);
+				editor.commitUndo();
+			};
+
+			refreshBox();
+			return;
 		}
 
 		// header
 
 		if (hasHeader) {
-			var header = editor.editorDisplay.rect(element, 0, 0, this.width, HEADER_HEIGHT).addClass("head-box");
-			if (color != null) header.css("fill", color);
+			//var header = editor.editorDisplay.rect(element, 0, 0, this.width, HEADER_HEIGHT).addClass("head-box");
+			//if (color != null) header.css("fill", color);
 			if (info.comment != null) {
-				var fo = editor.editorDisplay.foreignObject(element, 7, 2, 0, HEADER_HEIGHT-4);
-				fo.get(0).id = "commentTitle";
-				var commentTitle = new Element("<span contenteditable spellcheck='false'>Comment</span>").addClass("comment-title").appendTo(fo);
 
-				var editable = new hide.comp.ContentEditable(null, commentTitle);
-				editable.value = info.comment.getComment();
-				editable.onChange = function(v: String) {
-					editor.opComment(this, v, editor.currentUndoBuffer);
-					editor.commitUndo();
-				};
 			}
 			else {
 				editor.editorDisplay.text(element, 7, HEADER_HEIGHT-6, info.name).addClass("title-box");
 			}
 		}
 
-
 		propertiesGroup = editor.editorDisplay.group(element).addClass("properties-group");
 
 		// nodes div
-		var bg = editor.editorDisplay.rect(element, 0, HEADER_HEIGHT, this.width, 0).addClass("nodes");
-		if (!hasHeader && color != null) {
-			bg.css("fill", color);
-		}
+
+		editor.editorDisplay.line(element, 0, HEADER_HEIGHT, width, HEADER_HEIGHT).addClass("separator");
+
+		// var bg = editor.editorDisplay.rect(element, 0, HEADER_HEIGHT, this.width, 0).addClass("nodes");
+		// if (!hasHeader && color != null) {
+		// 	bg.css("fill", color);
+		// }
 
 		if (info.preview != null) {
 			closePreviewBtn = editor.editorDisplay.foreignObject(element, width / 2 - 16, 0, 32,32);
@@ -256,7 +269,7 @@ class Box {
 
 	public function addInput(editor : GraphEditor, name : String, valueDefault : String = null, color : Int) {
 		var node = editor.editorDisplay.group(element).addClass("input-node-group");
-		var nodeHeight = HEADER_HEIGHT + NODE_MARGIN * (inputs.length+1) + NODE_RADIUS * inputs.length;
+		var nodeHeight = getNodeHeight(inputs.length);
 		var style = {fill : '#${StringTools.hex(color, 6)}'};
 
 		var nodeCircle = editor.editorDisplay.circle(node, 0, nodeHeight, NODE_RADIUS, style).addClass("node input-node");
@@ -326,7 +339,7 @@ class Box {
 	}
 
 	public function getNodeHeight(id: Int) {
-		return HEADER_HEIGHT + NODE_MARGIN * (id+1) + NODE_RADIUS * (id);
+		return NODE_MARGIN * (id+2) + NODE_RADIUS * (id);
 	}
 
 	public function generateProperties(editor : GraphEditor) {
@@ -342,8 +355,12 @@ class Box {
 		}
 
 		// create properties box
-		var bgParam = editor.editorDisplay.rect(propertiesGroup, 0, 0, this.width, 0).addClass("properties");
-		if (!hasHeader && color != null) bgParam.css("fill", color);
+		if (!collapseProperties()) {
+			editor.editorDisplay.line(propertiesGroup, 0, 0, this.width, 0).addClass("separator");
+		}
+
+		//var bgParam = editor.editorDisplay.rect(propertiesGroup, 0, 0, this.width, 0).addClass("properties");
+		//if (!hasHeader && color != null) bgParam.css("fill", color);
 		propsHeight = 0;
 
 		for (p in props) {
@@ -370,7 +387,8 @@ class Box {
 		var nodesHeight = getNodesHeight();
 		var height = getHeight();
 		element.find(".nodes").height(nodesHeight).width(width);
-		element.find(".outline").attr("height", height+2).width(width);
+		element.find(".background").attr("height", height).width(width);
+		element.find(".outline").attr("height", height+2).width(width+2);
 
 		if (hasHeader) {
 			element.find(".head-box").width(width);
@@ -391,16 +409,16 @@ class Box {
 		}
 
 		if (inputs.length >= 1 && outputs.length >= 1) {
-			element.find(".nodes-separator").attr("y2", HEADER_HEIGHT + nodesHeight);
+			element.find(".nodes-separator").attr("y2", nodesHeight);
 			element.find(".nodes-separator").show();
 		}
 
 		if (propertiesGroup != null) {
-			propertiesGroup.attr("transform", 'translate(0, ${HEADER_HEIGHT + nodesHeight})');
+			propertiesGroup.attr("transform", 'translate(0, ${collapseProperties() ? getNodeHeight(0) - 16 : nodesHeight})');
 			propertiesGroup.find(".properties").attr("height", propsHeight);
 		}
 
-		closePreviewBtn?.attr("y",HEADER_HEIGHT + nodesHeight + propsHeight - 16);
+		closePreviewBtn?.attr("y",nodesHeight + propsHeight - 16);
 	}
 
 	public static var tmpPoint = new h2d.col.Point();
@@ -430,19 +448,27 @@ class Box {
 		return this.node;
 	}
 
+	public function collapseProperties() {
+		return info.inputs.length <= 1 && info.outputs.length <= 1;
+	}
+
 	public function getNodesHeight() {
 		var maxNb = Std.int(Math.max(inputs.length, outputs.length));
 		if (info.comment != null) {
 			return 0;
 		}
-		return NODE_MARGIN * (maxNb+1) + NODE_RADIUS * maxNb;
+		return getNodeHeight(maxNb);
 	}
 	public function getHeight() {
 		if (info.comment != null) {
 			info.comment.getSize(tmpPoint);
 			return tmpPoint.y;
 		}
-		return HEADER_HEIGHT + getNodesHeight() + propsHeight;
+		var nodeHeight = getNodesHeight();
+		if (collapseProperties()) {
+			return hxd.Math.max(nodeHeight, propsHeight);
+		}
+		return nodeHeight + propsHeight;
 	}
 
 	inline public function getBounds() : {x: Float, y: Float, w: Float, h: Float} {
