@@ -816,6 +816,32 @@ class GraphEditor extends hide.comp.Component {
 		}
 	}
 
+	public function refreshBox(id: Int) {
+		var node = boxes.get(id).node;
+		removeBox(id);
+		addBox(node);
+		var b = boxes.get(id);
+
+		for (i => _ in b.info.inputs) {
+			var input = packIO(id, i);
+			var output = outputsToInputs.getLeft(input);
+			if (output != null) {
+				clearEdge(input);
+				var visual = createCurve(output, input);
+				edges.set(input, visual);
+			}
+		}
+
+		for (i => _ in b.info.outputs) {
+			var output = packIO(id, i);
+			for (input in outputsToInputs.iterRights(output)) {
+				clearEdge(input);
+				var visual = createCurve(output, input);
+				edges.set(input, visual);
+			}
+		}
+	}
+
 	function beginMove(e: js.html.MouseEvent) {
 		lastClickDrag = new Point(lX(e.clientX), lY(e.clientY));
 
@@ -964,11 +990,7 @@ class GraphEditor extends hide.comp.Component {
 			else {
 				var id = node.getId();
 				var box = boxes.get(id);
-
-				box.dispose();
-				var id = box.node.getId();
-				boxes.remove(id);
-
+				removeBox(id);
 				editor.removeNode(id);
 
 				// Sanity check
@@ -989,6 +1011,15 @@ class GraphEditor extends hide.comp.Component {
 		}
 		undoBuffer.push(exec);
 		exec(false);
+	}
+
+	// Only remove the visual of the box
+	function removeBox(id: Int) {
+		var box = boxes.get(id);
+
+		box.dispose();
+		var id = box.node.getId();
+		boxes.remove(id);
 	}
 
 	public function opComment(box: Box, newComment: String, undoBuffer: UndoBuffer) : Void {

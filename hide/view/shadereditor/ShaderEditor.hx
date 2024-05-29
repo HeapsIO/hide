@@ -807,6 +807,14 @@ class ShaderEditor extends hide.view.FileView implements GraphInterface.IGraphEd
 			undo.change(Custom(exec));
 			inputTitle.blur();
 
+			requestRecompile();
+
+			for (id => node in currentGraph.getNodes()) {
+				if (Std.downcast(node, ShaderParam) != null) {
+					graphEditor.refreshBox(id);
+				}
+			}
+
 			// if (shaderGraph.setParameterTitle(parameter.id, newName)) {
 			// 	for (b in listOfBoxes) {
 			// 		var shaderParam = Std.downcast(b.getInstance(), ShaderParam);
