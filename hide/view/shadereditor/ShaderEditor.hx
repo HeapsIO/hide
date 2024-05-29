@@ -797,6 +797,16 @@ class ShaderEditor extends hide.view.FileView implements GraphInterface.IGraphEd
 		});
 		inputTitle.on("change", function(e) {
 			var newName = inputTitle.val();
+			var prevName = parameter.name;
+			var exec = function(isUndo : Bool) {
+				var v = !isUndo ? newName : prevName;
+				shaderGraph.setParameterTitle(parameter.id, v);
+				for ()
+			}
+
+			exec(false);
+			undo.change(Custom(exec));
+
 			// if (shaderGraph.setParameterTitle(parameter.id, newName)) {
 			// 	for (b in listOfBoxes) {
 			// 		var shaderParam = Std.downcast(b.getInstance(), ShaderParam);
