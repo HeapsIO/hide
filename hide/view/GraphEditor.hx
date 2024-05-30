@@ -1102,11 +1102,12 @@ class GraphEditor extends hide.comp.Component {
 		elt.get(0).onpointerdown = function(e: js.html.PointerEvent) {
 			if (e.button != 0)
 				return;
-			if ((cast e.target: js.html.Element).closest("foreignObject") != null)
-			{
-				e.stopPropagation();
-				return;
-			}
+
+			// if ((cast e.target: js.html.Element).closest("foreignObject") != null && box.info.comment == null)
+			// {
+			// 	e.stopPropagation();
+			// 	return;
+			// }
 			e.stopPropagation();
 
 			if (!box.selected) {

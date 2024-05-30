@@ -244,10 +244,10 @@ class Box {
 			closePreviewBtn.append(new JQuery('<div class="close-preview"><span class="ico"></span></div>'));
 
 			refreshCloseIcon();
-			closePreviewBtn.on("click", (e) -> {
+			closePreviewBtn.get(0).addEventListener("click", (e) -> {
 				e.stopPropagation();
 				setPreviewVisibility(!info.preview.getVisible());
-			});
+			}, {capture: true});
 		}
 
 		refreshBox();
