@@ -121,7 +121,7 @@ class ScreenShaderGraph extends RendererFX {
 					val = new h3d.Vector();
 			case TSampler(_):
 				if( val != null )
-					val = hxd.res.Loader.currentInstance.load(val).toTexture();
+					val = hrt.impl.TextureType.Utils.getTextureFromValue(val);//hxd.res.Loader.currentInstance.load(val).toTexture();
 				else {
 					var childNoise = getOpt(hrt.prefab.l2d.NoiseGenerator, v.name);
 					if(childNoise != null)
@@ -184,7 +184,7 @@ class ScreenShaderGraph extends RendererFX {
 		case TBool:
 			PBool;
 		case TSampler(_):
-			PTexturePath;
+			PTexture;
 		case TVec(n, VFloat):
 			PVec(n);
 		default:
