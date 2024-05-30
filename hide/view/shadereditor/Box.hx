@@ -110,9 +110,8 @@ class Box {
 
 					var clientRect = editor.editorDisplay.element.get(0).getBoundingClientRect();
 
-					this.node.getPos(tmpPoint);
-					var x0 : Int = Std.int(tmpPoint.x);
-					var y0 : Int = Std.int(tmpPoint.y);
+					var x0 : Int = Std.int(x);
+					var y0 : Int = Std.int(y);
 					var x1 : Int = x0 + width;
 					var y1 : Int = y0 + height;
 
@@ -459,10 +458,9 @@ class Box {
 		}
 		return getNodeHeight(maxNb);
 	}
-	public function getHeight() {
+	public function getHeight() : Float {
 		if (info.comment != null) {
-			info.comment.getSize(tmpPoint);
-			return tmpPoint.y;
+			return height;
 		}
 		var nodeHeight = getNodesHeight();
 		if (collapseProperties()) {
