@@ -49,6 +49,26 @@ class SVG extends Component {
 		return make(parent, "path", {d : 'M ${x1} ${y1} Q ${xTurn} ${yTurn}, ${x1 + (x2-x1)/2} ${y1 + (y2-y1)/2}, T ${x2} ${y2}'}, style);
 	}
 
+	public function straightCurve(?parent: Element, x1: Float, y1: Float, x2: Float, y2: Float, advance: Float, round: Float, ?style:Dynamic) {
+
+		var dx = (x2 - advance) - (x1 + advance);
+		var dy = y2 - y1;
+		var len = hxd.Math.distance(dx, dy);
+
+		var diagXOffset = dx/len * advance * round;
+		var diagYOffset = dy/len * advance * round;
+
+		return make(parent, "path",
+			{d : '
+				M ${x1} ${y1}
+				L ${x1+advance * (1.0-round)} ${y1}
+				Q ${x1+advance} ${y1}, ${x1+advance+diagXOffset} ${y1+diagYOffset}
+				L ${x2-advance-diagXOffset} ${y2-diagYOffset}
+				Q ${x2-advance} ${y2}, ${x2-advance * (1.0-round)} ${y2}
+				L ${x2} ${y2}
+				'}, style);
+	}
+
 	public function foreignObject(?parent: Element, x:Float, y:Float, width:Float, height:Float, ?style:Dynamic) {
 		return make(parent, "foreignObject", {x:x, y:y, width:width, height:height}, style);
 	}

@@ -48,7 +48,10 @@ class Box {
 	public function new(editor : GraphEditor, parent : JQuery, node : IGraphNode) {
 		this.node = node;
 		info = node.getInfo();
+
+
 		width = info.width ?? 150;
+		width = Std.int(hxd.Math.ceil(width / NODE_MARGIN) * NODE_MARGIN);
 
 		//var metas = haxe.rtti.Meta.getType(Type.getClass(node));
 		//if (metas.width != null) {

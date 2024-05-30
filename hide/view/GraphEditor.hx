@@ -1554,13 +1554,13 @@ class GraphEditor extends hide.comp.Component {
 		var valueCurveY = 1;
 		var maxDistanceY = 900;
 
-		var curve = editorDisplay.curve(null,
+		var curve = editorDisplay.straightCurve(null,
 							startX,
 							startY,
 							endX,
 							endY,
-							startX + valueCurveX * (Math.min(maxDistanceY, diffDistanceY)/maxDistanceY),
-							startY + signCurveY * valueCurveY * (Math.min(maxDistanceY, diffDistanceY)/maxDistanceY),
+							18,
+							0.25,
 							{})
 							.addClass("edge");
 		editorMatrix.prepend(curve);
