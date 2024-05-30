@@ -2090,6 +2090,12 @@ input[type=checkbox]:checked:after {
   outline: none !important;
   position: relative;
 }
+.graph-view .hide-toolbar2 {
+  position: absolute;
+  top: 10px;
+  left: 10px;
+  z-index: 999;
+}
 .graph-view .mini-preview {
   position: absolute;
   top: 0px;

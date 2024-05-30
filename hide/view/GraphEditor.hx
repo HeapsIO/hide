@@ -77,6 +77,7 @@ class GraphEditor extends hide.comp.Component {
 	var edgeCreationMode : EdgeState = None;
 	var lastCurveX : Float = 0;
 	var lastCurveY : Float = 0;
+	var snapToGrid : Bool = true;
 
 	public var currentUndoBuffer : UndoBuffer = [];
 
@@ -202,7 +203,7 @@ class GraphEditor extends hide.comp.Component {
 			e.preventDefault();
 			e.cancelBubble=true;
     		e.returnValue=false;
-			mouseMoveFunction(e.clientX, e.clientY);
+			mouseMoveFunction(e);
 		});
 
 		var document = new Element(js.Browser.document);
@@ -262,9 +263,22 @@ class GraphEditor extends hide.comp.Component {
 		boxes = [];
 		outputsToInputs.clear();
 
+		var toolbar = new hide.comp.Toolbar(heapsScene);
+		toolbar.element.on("pointerdown", (e) -> e.stopPropagation());
+		toolbar.element.on("pointerup", (e) -> e.stopPropagation());
+		var toolsDefs = new Array<hide.comp.Toolbar.ToolDef>();
+
+		toolsDefs.push({id: "snapToGrid", title: "Snap to grid", icon: "magnet", type : Toggle(setSnapToGrid), defaultValue: true});
+		toolbar.makeToolbar(toolsDefs,config, keys);
+
+		toolbar.refreshToggles();
 		updateMatrix();
 
 		reloadInternal();
+	}
+
+	function setSnapToGrid(b: Bool) {
+		snapToGrid = b;
 	}
 
 	public function cancelAll() {
@@ -701,7 +715,10 @@ class GraphEditor extends hide.comp.Component {
 		}
 	}
 
-	function mouseMoveFunction(clientX : Int, clientY : Int) {
+	function mouseMoveFunction(e: js.jquery.Event) {
+		var clientX = e.clientX;
+		var clientY = e.clientY;
+
 		if (addMenu?.is(":visible"))
 			return;
 		if (edgeCreationInput != null || edgeCreationOutput != null) {
@@ -778,13 +795,14 @@ class GraphEditor extends hide.comp.Component {
 			if (dx == 0 && dy == 0)
 				return;
 
+			var snap = snapToGrid == !e.altKey;
 
 			for (id => _  in boxesToMove) {
 				var b = boxes.get(id);
 				b.node.getPos(Box.tmpPoint);
 
 				// Snap origin of move
-				if (true /*snap*/) {
+				if (snap) {
 					Box.tmpPoint.x = std.Math.round(Box.tmpPoint.x / Box.NODE_MARGIN) * Box.NODE_MARGIN;
 					Box.tmpPoint.y = std.Math.round(Box.tmpPoint.y / Box.NODE_MARGIN) * Box.NODE_MARGIN;
 				}
@@ -793,7 +811,7 @@ class GraphEditor extends hide.comp.Component {
 				var newY = Box.tmpPoint.y + dy;
 
 				// Snap movement
-				if (true /*snap*/) {
+				if (snap) {
 					newX = std.Math.round(newX / Box.NODE_MARGIN) * Box.NODE_MARGIN;
 					newY = std.Math.round(newY / Box.NODE_MARGIN) * Box.NODE_MARGIN;
 				}
