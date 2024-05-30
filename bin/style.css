@@ -2377,11 +2377,14 @@ input[type=checkbox]:checked:after {
   stroke-width: 2;
   stroke: #c8c8c8;
   fill: transparent;
+  pointer-events: stroke;
 }
-.graph-view .heaps-scene svg .edge:not(.draft):hover,
-.graph-view .heaps-scene svg .edge:not(.draft).selected {
-  stroke-width: 5;
-  stroke: #72b4ff;
+.graph-view .heaps-scene svg .edge.hitbox {
+  stroke-width: 10;
+  stroke: transparent;
+}
+.graph-view .heaps-scene svg .edge.hitbox:hover {
+  stroke: rgba(114, 180, 255, 0.5);
 }
 .graph-view .heaps-scene svg .rect-selection {
   stroke: rgba(0, 0, 255, 0.7);

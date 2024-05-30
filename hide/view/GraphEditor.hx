@@ -1558,20 +1558,29 @@ class GraphEditor extends hide.comp.Component {
 		var valueCurveY = 1;
 		var maxDistanceY = 900;
 
-		var curve = editorDisplay.straightCurve(null,
-							startX,
-							startY,
-							endX,
-							endY,
-							18,
-							0.25,
-							{})
-							.addClass("edge");
-		editorMatrix.prepend(curve);
-		if (isDraft)
-			curve.addClass("draft");
-		else if (packedOutput != null && packedInput != null) {
-			curve.on("pointerdown", function(e) {
+		var curves = editorDisplay.group(null);
+		editorMatrix.prepend(curves);
+
+		var curveViz = editorDisplay.straightCurve(curves,
+			startX,
+			startY,
+			endX,
+			endY,
+			18,
+			0.25,
+			{}).addClass("edge");
+
+		if (!isDraft && packedOutput != null && packedInput != null) {
+			var curveHitbox = editorDisplay.straightCurve(curves,
+				startX,
+				startY,
+				endX,
+				endY,
+				18,
+				0.25,
+				).addClass("edge").addClass("hitbox");
+
+			curveHitbox.on("pointerdown", function(e) {
 
 				if (e.button == 0) {
 					opEdge(packedOutput, packedInput, false, currentUndoBuffer);
@@ -1609,7 +1618,10 @@ class GraphEditor extends hide.comp.Component {
 			});
 		}
 
-		return curve;
+		if (isDraft)
+			curves.addClass("draft");
+
+		return curves;
 	}
 
 	function clearSelectionBoxesUndo(undoBuffer: UndoBuffer) {

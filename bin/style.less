@@ -2693,11 +2693,15 @@ input[type=checkbox] {
 				stroke-width: 2;
 				stroke: rgb(200, 200, 200);
 				fill: transparent;
-			}
+				pointer-events: stroke;
 
-			.edge:not(.draft):hover, .edge:not(.draft).selected {
-				stroke-width: 5;
-				stroke: rgb(114, 180, 255);
+				&.hitbox {
+					stroke-width: 10;
+					stroke: transparent;
+					&:hover {
+						stroke: rgba(114, 180, 255, 0.5);
+					}
+				}
 			}
 
 			.rect-selection {
