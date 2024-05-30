@@ -53,7 +53,8 @@ class SVG extends Component {
 
 		var dx = (x2 - advance) - (x1 + advance);
 		var dy = y2 - y1;
-		var len = hxd.Math.distance(dx, dy);
+		var len = hxd.Math.max(0.001, hxd.Math.distance(dx, dy));
+
 
 		var diagXOffset = dx/len * advance * round;
 		var diagYOffset = dy/len * advance * round;

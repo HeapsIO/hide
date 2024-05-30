@@ -2280,7 +2280,7 @@ input[type=checkbox]:checked:after {
 }
 .graph-view .heaps-scene svg .title-box {
   text-anchor: start;
-  fill: #ffffff;
+  fill: #c3c3c3;
   stroke: none;
   user-select: none;
 }
@@ -2309,7 +2309,7 @@ input[type=checkbox]:checked:after {
   fill: #5ca4ab;
 }
 .graph-view .heaps-scene svg .title-node {
-  fill: #ffffff;
+  fill: #c3c3c3;
   stroke: none;
   user-select: none;
 }

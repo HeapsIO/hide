@@ -705,7 +705,6 @@ class GraphEditor extends hide.comp.Component {
 		if (addMenu?.is(":visible"))
 			return;
 		if (edgeCreationInput != null || edgeCreationOutput != null) {
-			trace("");
 			startUpdateViewPosition();
 			createLink(clientX, clientY);
 			return;
@@ -731,7 +730,6 @@ class GraphEditor extends hide.comp.Component {
 		}
 		// Edit rectangle selection
 		if (startRecSelection != null) {
-			trace("");
 			startUpdateViewPosition();
 			var endRecSelection = new h2d.col.Point(lX(clientX), lY(clientY));
 			var xMin = startRecSelection.x;
@@ -1104,6 +1102,11 @@ class GraphEditor extends hide.comp.Component {
 		elt.get(0).onpointerdown = function(e: js.html.PointerEvent) {
 			if (e.button != 0)
 				return;
+			if ((cast e.target: js.html.Element).closest("foreignObject") != null)
+			{
+				e.stopPropagation();
+				return;
+			}
 			e.stopPropagation();
 
 			if (!box.selected) {
@@ -1114,13 +1117,13 @@ class GraphEditor extends hide.comp.Component {
 				opSelect(box.node.getId(), true, currentUndoBuffer);
 				commitUndo();
 			}
-			//elt.get(0).setPointerCapture(e.pointerId);
+			elt.get(0).setPointerCapture(e.pointerId);
 			beginMove(e);
 		};
 		elt.get(0).onpointerup = function(e: js.html.PointerEvent) {
 			if (e.button != 0)
 				return;
-			//elt.get(0).releasePointerCapture(e.pointerId);
+			elt.get(0).releasePointerCapture(e.pointerId);
 			endMove();
 		};
 		boxes.set(box.node.getId(), box);

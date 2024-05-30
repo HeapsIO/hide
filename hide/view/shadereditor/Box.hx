@@ -277,7 +277,7 @@ class Box {
 		var nodeCircle = editor.editorDisplay.circle(node, 0, nodeHeight, NODE_RADIUS, style).addClass("node input-node");
 
 		var nameWidth = 0.0;
-		if (name.length > 0) {
+		if (name.length > 0 && name != "input") {
 			var inputName = editor.editorDisplay.text(node, NODE_TITLE_PADDING, nodeHeight + 4, name).addClass("title-node");
 			var domName : js.html.svg.GraphicsElement = cast inputName.get()[0];
 			nameWidth = domName.getBBox().width;
