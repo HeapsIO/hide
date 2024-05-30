@@ -56,7 +56,7 @@ class GraphEditor extends hide.comp.Component {
 	var undoSave : Any;
 	var recSelection : JQuery;
 	var startRecSelection : h2d.col.Point;
-	var lastClickDrag : h2d.col.Point;
+	var startClickDrag : h2d.col.Point = new h2d.col.Point();
 	var lastClickPan : h2d.col.Point;
 
 	// used to build edge
@@ -223,7 +223,7 @@ class GraphEditor extends hide.comp.Component {
 						return;
 					}
 				}
-				lastClickDrag = null;
+				startClickDrag = null;
 				startRecSelection = null;
 				if (recSelection != null) {
 					recSelection.remove();
@@ -245,7 +245,6 @@ class GraphEditor extends hide.comp.Component {
 
 			// Stop panning
 			if (e.button == 1) {
-				lastClickDrag = null;
 				isPanning = false;
 				return;
 			}
@@ -706,6 +705,7 @@ class GraphEditor extends hide.comp.Component {
 		if (addMenu?.is(":visible"))
 			return;
 		if (edgeCreationInput != null || edgeCreationOutput != null) {
+			trace("");
 			startUpdateViewPosition();
 			createLink(clientX, clientY);
 			return;
@@ -731,6 +731,7 @@ class GraphEditor extends hide.comp.Component {
 		}
 		// Edit rectangle selection
 		if (startRecSelection != null) {
+			trace("");
 			startUpdateViewPosition();
 			var endRecSelection = new h2d.col.Point(lX(clientX), lY(clientY));
 			var xMin = startRecSelection.x;
@@ -772,27 +773,40 @@ class GraphEditor extends hide.comp.Component {
 		}
 
 		// Move selected boxes
-		if (boxesSelected.iterator().hasNext() && lastClickDrag != null) {
+		if (boxesSelected.iterator().hasNext() && startClickDrag != null) {
 			startUpdateViewPosition();
-			var dx = (lX(clientX) - lastClickDrag.x);
-			var dy = (lY(clientY) - lastClickDrag.y);
+			var dx = (lX(clientX) - startClickDrag.x);
+			var dy = (lY(clientY) - startClickDrag.y);
+			if (dx == 0 && dy == 0)
+				return;
 
 
 			for (id => _  in boxesToMove) {
 				var b = boxes.get(id);
-				moveBox(b, b.x + dx, b.y + dy);
+				b.node.getPos(Box.tmpPoint);
+
+				// Snap origin of move
+				if (true /*snap*/) {
+					Box.tmpPoint.x = std.Math.round(Box.tmpPoint.x / Box.NODE_MARGIN) * Box.NODE_MARGIN;
+					Box.tmpPoint.y = std.Math.round(Box.tmpPoint.y / Box.NODE_MARGIN) * Box.NODE_MARGIN;
+				}
+
+				var newX = Box.tmpPoint.x + dx;
+				var newY = Box.tmpPoint.y + dy;
+
+				// Snap movement
+				if (true /*snap*/) {
+					newX = std.Math.round(newX / Box.NODE_MARGIN) * Box.NODE_MARGIN;
+					newY = std.Math.round(newY / Box.NODE_MARGIN) * Box.NODE_MARGIN;
+				}
+				moveBox(b, newX, newY);
 			}
-			lastClickDrag.x = lX(clientX);
-			lastClickDrag.y = lY(clientY);
 			return;
 		}
 	}
 
-	dynamic function updatePosition(box : Box) { }
-
 	function moveBox(b: Box, x: Float, y: Float) {
 		b.setPosition(x, y);
-		updatePosition(b);
 
 		var id = b.node.getId();
 		// move edges from and to this box
@@ -843,8 +857,7 @@ class GraphEditor extends hide.comp.Component {
 	}
 
 	function beginMove(e: js.html.MouseEvent) {
-		lastClickDrag = new Point(lX(e.clientX), lY(e.clientY));
-
+		startClickDrag = new Point(lX(e.clientX), lY(e.clientY));
 		boxesToMove.clear();
 
 		for (id => _ in boxesSelected) {
@@ -876,11 +889,7 @@ class GraphEditor extends hide.comp.Component {
 	}
 
 	function endMove() {
-		if (lastClickDrag == null)
-			return;
-
-		lastClickDrag = null;
-
+		startClickDrag = null;
 		for (id => _ in boxesToMove) {
 			for (id => _ in boxesToMove) {
 				var b = boxes[id];
@@ -1092,7 +1101,7 @@ class GraphEditor extends hide.comp.Component {
 		box.setPosition(Box.tmpPoint.x, Box.tmpPoint.y);
 
 		var elt = box.getElement();
-		elt.get(0).onpointerdown = function(e: js.html.MouseEvent) {
+		elt.get(0).onpointerdown = function(e: js.html.PointerEvent) {
 			if (e.button != 0)
 				return;
 			e.stopPropagation();
@@ -1105,11 +1114,13 @@ class GraphEditor extends hide.comp.Component {
 				opSelect(box.node.getId(), true, currentUndoBuffer);
 				commitUndo();
 			}
+			//elt.get(0).setPointerCapture(e.pointerId);
 			beginMove(e);
 		};
-		elt.get(0).onpointerup = function(e) {
+		elt.get(0).onpointerup = function(e: js.html.PointerEvent) {
 			if (e.button != 0)
 				return;
+			//elt.get(0).releasePointerCapture(e.pointerId);
 			endMove();
 		};
 		boxes.set(box.node.getId(), box);

@@ -27,7 +27,7 @@ class Box {
 	var propsHeight : Int = 0;
 
 	public var HEADER_HEIGHT = 22;
-	@const var NODE_MARGIN = 17;
+	public static final NODE_MARGIN = 18;
 	public static var NODE_RADIUS = 5;
 	@const var NODE_TITLE_PADDING = 10;
 	@const var NODE_INPUT_PADDING = 3;
@@ -339,7 +339,7 @@ class Box {
 	}
 
 	public function getNodeHeight(id: Int) {
-		return NODE_MARGIN * (id+2) + NODE_RADIUS * (id);
+		return NODE_MARGIN * (id+2);
 	}
 
 	public function generateProperties(editor : GraphEditor) {
@@ -418,7 +418,7 @@ class Box {
 			propertiesGroup.find(".properties").attr("height", propsHeight);
 		}
 
-		closePreviewBtn?.attr("y",nodesHeight + propsHeight - 16);
+		closePreviewBtn?.attr("y", getHeight() - 12);
 	}
 
 	public static var tmpPoint = new h2d.col.Point();
