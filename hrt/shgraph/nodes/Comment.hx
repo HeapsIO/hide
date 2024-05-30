@@ -10,7 +10,7 @@ import hide.view.GraphInterface;
 @description("A box that allows you to comment your graph")
 @group("Comment")
 class Comment extends ShaderNode {
-	@prop() public var comment : String = "";
+	@prop() public var comment : String = "Comment";
 	@prop() public var width : Float = 200;
 	@prop() public var height : Float = 200;
 
