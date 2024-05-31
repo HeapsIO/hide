@@ -128,7 +128,12 @@ class NodeGenContext {
 					def = {v: v, defValue: defValue, __init__: null};
 					if (parent != null) {
 						var p = Variables.Globals[parent];
-						v.parent = globalVars.getOrPut(p.name, {v : {id : hxsl.Tools.allocVarId(), name: p.name, type: TStruct([]), kind: kind}, defValue: null, __init__: null}).v;
+						switch (p.varkind) {
+							case KVar(kind, _, _):
+								v.parent = globalVars.getOrPut(p.name, {v : {id : hxsl.Tools.allocVarId(), name: p.name, type: TStruct([]), kind: kind}, defValue: null, __init__: null}).v;
+							default:
+								throw "Parent var must be a KVar";
+						}
 						switch(v.parent.type) {
 							case TStruct(arr):
 								arr.push(v);

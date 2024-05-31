@@ -56,8 +56,8 @@ class Variables {
 
 		g[CalculatedUV] 		= {type: TVec(2, VFloat), 	name: "calculatedUV", varkind: KVar(Var)};
 
-		g[Time] 				= {type: TFloat, 	name: "time", 			varkind: KVar(Local, Global)};
-		g[PixelSize]			= {type: TVec(2, VFloat), 	name: "pixelSize", 		varkind: KVar(Local, Global)};
+		g[Time] 				= {type: TFloat, 	name: "time", 			varkind: KVar(Global, Global)};
+		g[PixelSize]			= {type: TVec(2, VFloat), 	name: "pixelSize", 		varkind: KVar(Global, Global)};
 		g[Global] 				= {type: TVoid, 	name: "global", 		varkind: KVar(Global)};
 
 		g[Input]			= {type: TVoid, name: "input", varkind: KVar(Input)};
