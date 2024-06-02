@@ -57,7 +57,9 @@ class FileWatcher {
 	}
 
 	public function ignorePrevChange( f : FileWatchEvent ) {
-		f.ignoreCheck = getSignature(f.path);
+		if (f != null) {
+			f.ignoreCheck = getSignature(f.path);
+		}
 	}
 
 	function getSignature( path : String ) : String {
