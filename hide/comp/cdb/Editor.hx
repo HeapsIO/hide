@@ -53,7 +53,7 @@ typedef SearchFilter = {
 @:allow(hide.comp.cdb)
 class Editor extends Component {
 
-	static var COMPARISON_EXPR_CHARS = ["!=", ">=", "<=", "=", "<", ">"];
+	static var COMPARISON_EXPR_CHARS = ["!=", ">=", "<=", "==", "<", ">"];
 	var base : cdb.Database;
 	var currentSheet : cdb.Sheet;
 	var existsCache : Map<String,{ t : Float, r : Bool }> = new Map();
@@ -158,7 +158,9 @@ class Editor extends Component {
 			}
 		});
 		keys.register("cdb.gotoReference", () -> gotoReference(cursor.getCell()));
-		keys.register("cdb.globalSeek", () -> new GlobalSeek(cdbTable.element, cdbTable));
+		keys.register("cdb.globalSeek", () -> new GlobalSeek(cdbTable.element, cdbTable, Sheets, currentSheet));
+		keys.register("cdb.sheetSeekIds", () -> new GlobalSeek(cdbTable.element, cdbTable, LocalIds, currentSheet));
+		keys.register("cdb.globalSeekIds", () -> new GlobalSeek(cdbTable.element, cdbTable, GlobalIds, currentSheet));
 
 		base = sheet.base;
 		if( cursor == null )
@@ -270,16 +272,38 @@ class Editor extends Component {
 			return ~/[\u0300-\u036f]/g.map(t, (r) -> "");
 		}
 
-		var all = element.find("table.cdb-sheet > tbody > tr").not(".head");
+		var all = element.find("table.cdb-sheet > tbody > tr");
 		if( config.get("cdb.filterIgnoreSublist") )
-			all = element.find("> table.cdb-sheet > tbody > tr").not(".head");
-		var seps = all.filter(".separator");
-		var lines = all.not(".separator");
+			all = element.find("> table.cdb-sheet > tbody > tr");
+
 		all.removeClass("filtered");
 
+		if (searchExp)
+			all = all.not(".head").not(".list").not("props"); // remove potential opened list or properties
+
+		var seps = all.filter(".separator");
+		var lines = all.not(".separator");
+
 		var parser = new hscript.Parser();
+		parser.allowMetadata = true;
 		parser.allowTypes = true;
+		parser.allowJSON = true;
+
 		var interp = new hscript.Interp();
+
+		var sheetNames = new Map();
+		for( s in this.base.sheets )
+			sheetNames.set(Formulas.getTypeName(s), s);
+
+		function replaceRec( e : hscript.Expr ) {
+			switch( e.e ) {
+			case EField({ e : EIdent(s) }, name) if( sheetNames.exists(s) ):
+				if( sheetNames.get(s).idCol != null )
+					e.e = EConst(CString(name)); // replace for faster eval
+			default:
+				hscript.Tools.iter(e, replaceRec);
+			}
+		}
 
 		if( filters.length > 0 ) {
 			if (searchHidden) {
@@ -301,25 +325,34 @@ class Editor extends Component {
 
 				for (idx => l in currentSheet.lines) {
 					// Register variables for the current line
-					interp.variables.clear();
-					interp.variables.set("this", @:privateAccess formulas.remap(l, this.currentSheet));
+					@:privateAccess interp.resetVariables();
+					@:privateAccess interp.initOps();
+					interp.variables.set("Math", Math);
 
+					// Register variables of sheets cdb
+					var vars = @:privateAccess formulas.remap(l, this.currentSheet);
+					for (f in Reflect.fields(vars)) {
+						var v = Reflect.getProperty(vars, f);
+						interp.variables.set(f, v);
+					}
+
+					function addFilter() {
+						var lineEl = lines.eq(idx);
+						lineEl.addClass("filtered");
+
+						var nextTr = lineEl.next('tr');
+						if (nextTr.is(".props") || nextTr.is(".list"))
+							nextTr.addClass("filtered");
+					}
+
+					// Check if the current line is filtered or not
 					var filtered = true;
 					for (f in filters) {
 						var input = f.text;
+						var expr = try parser.parseString(input) catch( e : Dynamic ) { addFilter(); continue; }
+						replaceRec(expr);
 
-						// Not working for now, should check with expression variables
-						// instead of contains() in input string
-						// // Manage input variable without 'this.'
-						// input = StringTools.replace(input, "this.", "");
-						// for (v in Reflect.fields(interp.variables.get("this"))) {
-						// 	if (StringTools.contains(input, v)) {
-						// 		input = StringTools.replace(input, v, "this." + v);
-						// 	}
-						// }
-
-						var expr = try parser.parseString(input) catch( e : Dynamic ) continue;
-						var res = try interp.execute(expr) catch(e : Dynamic ) { trace(e); continue;} // Catch errors that can be thrown if search input text is not interpretabled
+						var res = try interp.execute(expr) catch( e : hscript.Expr.Error ) { addFilter(); continue; } // Catch errors that can be thrown if search input text is not interpretabled
 						if (res) {
 							filtered = false;
 							break;
@@ -327,7 +360,7 @@ class Editor extends Component {
 					}
 
 					if (filtered)
-						lines.get(idx).classList.add("filtered");
+						addFilter();
 				}
 			}
 			else {
@@ -491,6 +524,10 @@ class Editor extends Component {
 
 	function onPaste() {
 		var text = ide.getClipboard();
+
+		if (this.cursor.table == null)
+			return;
+
 		var columns = cursor.table.columns;
 		var sheet = cursor.table.sheet;
 		var realSheet = cursor.table.getRealSheet();
@@ -1019,9 +1056,10 @@ class Editor extends Component {
 	}
 
 	public static var inRefreshAll(default,null) : Bool;
-	public static function refreshAll( eraseUndo = false ) {
+	public static function refreshAll( eraseUndo = false, loadDataFiles = true) {
 		var editors : Array<Editor> = [for( e in new Element(".is-cdb-editor").elements() ) e.data("cdb")];
-		DataFiles.load();
+		if (loadDataFiles)
+			DataFiles.load();
 		inRefreshAll = true;
 		for( e in editors ) {
 			e.syncSheet(Ide.inst.database);
@@ -1622,6 +1660,85 @@ class Editor extends Component {
 		return cats == null || props.categories == null || cats.filter(c -> props.categories.indexOf(c) >= 0).length > 0;
 	}
 
+	public function moveColumn(targetSheet: cdb.Sheet, origSheet: cdb.Sheet, col: cdb.Data.Column) : String {
+		beginChanges(true);
+		var err = targetSheet.addColumn(col);
+
+		function createSubCols(targetSheet: cdb.Sheet, origSheet: cdb.Sheet, column: cdb.Data.Column) : String {
+			// Check to see if the column contains other columns
+			var subSheetPath = origSheet.getPath() + "@" + column.name;
+			var subSheet = base.getSheet(subSheetPath);
+			var subTargetPath = targetSheet.getPath() + "@" + column.name;
+			var subTarget = base.getSheet(subTargetPath);
+			if (subSheet != null) {
+				if (subTarget == null)
+					return 'original sheet $subSheetPath contains columns but target sheet $subTargetPath does not exist';
+
+				for (c in subSheet.columns) {
+					var err = subTarget.addColumn(c);
+					if (err != null)
+						return err;
+					createSubCols(subTarget, subSheet, c);
+				}
+			}
+			return null;
+		}
+
+		if (err == null) {
+			var err = createSubCols(targetSheet, origSheet, col);
+			if (err == null) {
+				// Copy the data from the original column to the new one
+				var commonSheet = origSheet;
+				var commonPath = origSheet.getPath().split("@");
+				while(true) {
+					if (commonPath.length <= 0) {
+						throw "missing parent table that is not props";
+					}
+					commonSheet = base.getSheet(commonPath.join("@"));
+
+					if (!commonSheet.props.isProps)
+						break;
+					commonPath.pop();
+				}
+
+				var origPath = origSheet.getPath().split("@");
+				origPath.splice(0, commonPath.length);
+				origPath.push(col.name);
+				var targetPath = targetSheet.getPath().split("@");
+				targetPath.splice(0, commonPath.length);
+
+				var lines = commonSheet.getLines();
+				for (i => line in lines) {
+					// read value from origPath
+					var value : Dynamic = line;
+					for (p in origPath) {
+						value = Reflect.field(value, p);
+						if (value == null)
+							break;
+					}
+
+					if (value != null) {
+						// Get or insert intermediates props value along targetPath
+						var target : Dynamic = line;
+						for (p in targetPath) {
+							var newTarget = Reflect.field(target, p);
+							if (newTarget == null) {
+								newTarget = {};
+								Reflect.setField(target, p, newTarget);
+							}
+							target = newTarget;
+						}
+						Reflect.setField(target, col.name, value);
+					}
+				}
+
+				origSheet.deleteColumn(col.name);
+			}
+		}
+		endChanges();
+		return err;
+	}
+
 	public function newColumn( sheet : cdb.Sheet, ?index : Int, ?onDone : cdb.Data.Column -> Void, ?col ) {
 		#if js
 		var modal = new hide.comp.cdb.ModalColumnForm(this, sheet, col, element);
@@ -1631,8 +1748,58 @@ class Editor extends Component {
 				return;
 			beginChanges(true);
 			var err;
-			if( col != null )
+			if( col != null ) {
+				var newPath = c.name;
+				var back = newPath.split("/");
+				var finalPart = back.pop();
+				var path = finalPart.split(".");
+				c.name = path.pop();
 				err = base.updateColumn(sheet, col, c);
+				if (path.length > 0 || back.length > 0) {
+					function handleMoveTable() {
+						var cdbPath = sheet.getPath().split("@");
+						for(b in back) {
+							if (b != "..") {
+								return 'Invalid backwards move path "${back.join("/")}" (correct syntax : ../../columnName)';
+							}
+							if (cdbPath.length <= 0) {
+								return 'Backwards path "${back.join("/")}" goes outside of base sheet';
+							}
+							var subSheet = base.getSheet(cdbPath.join("@"));
+							if (!subSheet.props.isProps) {
+								return 'Target path "${cdbPath.join(".")}" goes inside or outside another sheet';
+							}
+							cdbPath.pop();
+						}
+
+						for (p in path) {
+							cdbPath.push(p);
+							var subSheet = base.getSheet(cdbPath.join("@"));
+							if (subSheet == null) {
+								return 'Target sheet "${cdbPath.join(".")}" does not exist';
+							}
+							if (!subSheet.props.isProps) {
+								return 'Target path "${cdbPath.join(".")}" goes inside or outside another sheet';
+							}
+						}
+
+						var finalPath = cdbPath.join("@");
+						var targetSheet = base.getSheet(finalPath);
+						if (targetSheet != null) {
+							if (ide.confirm('Move column to "$finalPath" ?')) {
+								return moveColumn(targetSheet, sheet, c);
+							}
+							return 'Move canceled';
+						}
+						else {
+							return 'Invalid move path "$newPath"';
+						}
+						return null;
+					}
+
+					err = handleMoveTable();
+				}
+			}
 			else
 				err = sheet.addColumn(c, index == null ? null : index + 1);
 			endChanges();

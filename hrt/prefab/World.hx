@@ -87,19 +87,6 @@ class World extends Object3D {
 			#if editor
 			for ( elt in p.flatten() )
 				@:privateAccess editor.makeInteractive(elt);
-			if ( editor != null ) {
-				var curEdit = editor.curEdit;
-				//var contexts = curEdit.rootContext.shared.contexts;
-				//contexts.set(p, context);
-				/*if ( context != null ) {
-					var pobj = context.shared.root3d;
-					var pobj2d = context.shared.root2d;
-					if ( context.local3d != pobj && context.local3d != null )
-						editor.curEdit.rootObjects.push(context.local3d);
-					if ( context.local2d != pobj2d && context.local2d != null )
-						editor.curEdit.rootObjects2D.push(context.local2d);
-				}*/
-			}
 			#end
 		}
 	}
@@ -234,33 +221,39 @@ class World extends Object3D {
 		var datDir = "res/" + datDir;
 		#end
 
-		var i = chunkData.length;
-		while ( i-- > 0 ) {
-			var data = chunkData[i];
-			var id = data.id;
-			if ( chunks.get(id) == null ) {
-				chunkData.remove(data);
-				var chunkDir = datDir + id;
-				var contentPath = chunkDir + "/content.prefab";
-				if ( sys.FileSystem.exists(contentPath) )
-					sys.FileSystem.deleteFile(contentPath);
-				if ( sys.FileSystem.exists(chunkDir) && sys.FileSystem.readDirectory(chunkDir).length == 0 )
-					sys.FileSystem.deleteDirectory(chunkDir);
+		// When saving CDB, the world won't have been loaded.
+		// We need to skip the next part in order to not clear the
+		// chunks of the level.
+		if (chunkPrefabs != null) {
+			var i = chunkData.length;
+			while ( i-- > 0 ) {
+				var data = chunkData[i];
+				var id = data.id;
+				if ( chunks.get(id) == null ) {
+					chunkData.remove(data);
+					var chunkDir = datDir + id;
+					var contentPath = chunkDir + "/content.prefab";
+					if ( sys.FileSystem.exists(contentPath) )
+						sys.FileSystem.deleteFile(contentPath);
+					if ( sys.FileSystem.exists(chunkDir) && sys.FileSystem.readDirectory(chunkDir).length == 0 )
+						sys.FileSystem.deleteDirectory(chunkDir);
+				}
+			}
+	
+			// TODO : optimize and flag chunks as dirty during edition if needed.
+			var first = true;
+			for ( id in chunks.keys() ) {
+				var data = chunks.get(id);
+				if(first && !sys.FileSystem.exists(datDir))
+					sys.FileSystem.createDirectory(datDir);
+				if ( !sys.FileSystem.exists(datDir + id) )
+					sys.FileSystem.createDirectory(datDir + id);
+				var content = haxe.Json.stringify(data, "\t");
+				sys.io.File.saveContent('${datDir}/${id}/content.prefab', content);
+				first = false;
 			}
 		}
 
-		// TODO : optimize and flag chunks as dirty during edition if needed.
-		var first = true;
-		for ( id in chunks.keys() ) {
-			var data = chunks.get(id);
-			if(first && !sys.FileSystem.exists(datDir))
-				sys.FileSystem.createDirectory(datDir);
-			if ( !sys.FileSystem.exists(datDir + id) )
-				sys.FileSystem.createDirectory(datDir + id);
-			var content = haxe.Json.stringify(data);
-			sys.io.File.saveContent('${datDir}/${id}/content.prefab', content);
-			first = false;
-		}
 
 		if ( sys.FileSystem.exists(datDir) && sys.FileSystem.readDirectory(datDir).length == 0 )
 			sys.FileSystem.deleteDirectory(datDir);
@@ -298,6 +291,7 @@ class World extends Object3D {
 			subdivPow : subdivPow,
 			maxDepth : depth,
 			onCreate : onCreateChunk,
+			root : null,
 		};
 		var worldObj = createObjectFromData(d);
 

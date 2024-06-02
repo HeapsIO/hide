@@ -164,6 +164,7 @@ class Prefab {
 		if( sh.currentPath == null ) sh.currentPath = shared.currentPath;
 		#if editor
 		sh.editor = this.shared.editor;
+		sh.scene = this.shared.scene;
 		#end
 		return this.clone(sh).make(sh);
 	}
@@ -184,6 +185,7 @@ class Prefab {
 				sh = new hrt.prefab.ContextShared(this.shared.currentPath, true);
 				#if editor
 				sh.editor = shared.editor;
+				sh.scene = shared.scene;
 				#end
 			}
 		}
@@ -199,8 +201,14 @@ class Prefab {
 
 		inst.copy(this);
 		if (withChildren) {
-			for (child in children) {
-				child.clone(inst, sh);
+			inst.children.resize(children.length);
+			for (idx => child in children) {
+				var cloneChild = child.clone(null, sh);
+
+				// "parent" setter pushes into children, but we don't want that
+				// as we have prealocated the array children
+				@:bypassAccessor cloneChild.parent = inst;
+				inst.children[idx] = cloneChild;
 			}
 		}
 
@@ -566,24 +574,31 @@ class Prefab {
 	}
 
 	/**
+		Called by the editor to remove the objects created by this prefab but not it's children.
+		Returns true if all the objects were succesfully removed, false otherwise (this will cause
+			a full rebuild of the scene )
+	**/
+	public function editorRemoveInstance() : Bool {
+		return false;
+	}
+
+	/**
 		Called when the hide editor wants to edit this Prefab.
 		Used to create the various editor interfaces
 	**/
 	public function edit(editContext : hide.prefab.EditContext) {
 	}
 
-	public function setEditor(sceneEditor: hide.comp.SceneEditor) {
-		if (sceneEditor == null)
-			throw "No editor for setEditor";
-
+	public function setEditor(sceneEditor: hide.comp.SceneEditor, scene: hide.comp.Scene) {
 		shared.editor = sceneEditor;
+		shared.scene = scene;
 
-		setEditorChildren(sceneEditor);
+		setEditorChildren(sceneEditor, scene);
 	}
 
-	function setEditorChildren(sceneEditor: hide.comp.SceneEditor) {
+	function setEditorChildren(sceneEditor: hide.comp.SceneEditor, scene: hide.comp.Scene) {
 		for (c in children) {
-			c.setEditorChildren(sceneEditor);
+			c.setEditorChildren(sceneEditor, scene);
 		}
 	}
 
@@ -651,11 +666,35 @@ class Prefab {
 		return root;
 	}
 
+	/**
+		Finds a prefab by folowing a dot separated path like this one : `parent.child.grandchild`.
+		Returns null if the path is invalid or does not match any prefabs in the hierarchy
+	**/
+	function locatePrefab(path: String) : Null<Prefab> {
+		if (path == null)
+			return null;
+		var parts = path.split(".");
+		var p = this;
+		while (parts.length > 0 && p != null) {
+			var name = parts.shift();
+			var found = null;
+			for (o in p.children) {
+				if (o.name == name)
+				{
+					found = o;
+					break;
+				}
+			}
+			p = found;
+		}
+		return p;
+	}
+
 	function shouldBeInstanciated() : Bool {
 		if (!enabled) return false;
 
 		#if editor
-		if (shared.parentPrefab != null && (editorOnly || inGameOnly))
+		if (shared.parentPrefab != null && inGameOnly)
 			return false;
 		#else
 		if (editorOnly)
@@ -706,7 +745,7 @@ class Prefab {
 
 		prefabInstance.load(data);
 
-		var children = Std.downcast(Reflect.field(data, "children"), Array);
+		var children : Array<Dynamic> = Reflect.field(data, "children");
 		if (children != null) {
 			for (child in children) {
 				createFromDynamic(child, prefabInstance);

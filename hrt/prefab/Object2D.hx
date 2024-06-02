@@ -107,6 +107,13 @@ class Object2D extends Prefab {
 		};
 	}
 
+	override function editorRemoveInstance() : Bool {
+		if (local2d != null) {
+			local2d.remove();
+		}
+		return true;
+	}
+
 	override function edit( ctx : hide.prefab.EditContext ) {
 		var props = new hide.Element('
 			<div class="group" name="Position">

@@ -7,7 +7,6 @@ class Domkit extends FileView {
 	var paramsEditor : hide.comp.ScriptEditor;
 	var prevSave : { css : String, dml : String, params : String };
 	var checker : hide.comp.DomkitEditor.DomkitChecker;
-	static var DEFAULT_PARAMS = "var params = {}";
 
 	override function onDisplay() {
 
@@ -60,32 +59,12 @@ class Domkit extends FileView {
 		</div>');
 
 		var content = sys.io.File.getContent(getPath());
-		var cssText = "";
-		var paramsText = DEFAULT_PARAMS;
-
-		content = StringTools.trim(content);
-
-		if( StringTools.startsWith(content,"<css>") ) {
-			var pos = content.indexOf("</css>");
-			cssText = StringTools.trim(content.substr(5, pos - 6));
-			content = content.substr(pos + 6);
-			content = StringTools.trim(content);
-		}
-
-		if( StringTools.startsWith(content,"<params>") ) {
-			var pos = content.indexOf("</params>");
-			paramsText = StringTools.trim(content.substr(8, pos - 9));
-			content = content.substr(pos + 9);
-			content = StringTools.trim(content);
-		}
-
-		var dmlText = content;
-
-		prevSave = { css : cssText, dml : dmlText, params : paramsText };
-		dmlEditor = new hide.comp.DomkitEditor(config, DML, dmlText, element.find(".dmlEditor"));
-		cssEditor = new hide.comp.DomkitEditor(config, Less, cssText, dmlEditor.checker, element.find(".cssEditor"));
+		var data = hrt.impl.DomkitViewer.parse(content);
+		prevSave = data;
+		dmlEditor = new hide.comp.DomkitEditor(config, DML, data.dml, element.find(".dmlEditor"));
+		cssEditor = new hide.comp.DomkitEditor(config, Less, data.css, dmlEditor.checker, element.find(".cssEditor"));
 		var checker = new hide.comp.DomkitEditor.DomkitChecker(config);
-		paramsEditor = new hide.comp.ScriptEditor(paramsText, checker, element.find(".paramsEditor"));
+		paramsEditor = new hide.comp.ScriptEditor(data.params, checker, element.find(".paramsEditor"));
 		cssEditor.onChanged = dmlEditor.onChanged = paramsEditor.onChanged = check;
 		cssEditor.onSave = dmlEditor.onSave = paramsEditor.onSave = save;
 
@@ -99,13 +78,9 @@ class Domkit extends FileView {
 		var allParams = new Map();
 		dmlEditor.checker.params = allParams;
 		var comp = dmlEditor.getComponent();
-		if( comp != null && comp.arguments.length > 0 ) {
-			@:privateAccess paramsEditor.checker.checker.setGlobal("defaultArgs", TAnon(comp.arguments.copy()));
-			for( a in comp.arguments )
-				allParams.set(a.name, a.t);
-		}
 		paramsEditor.doCheckScript();
-		var tparams = @:privateAccess paramsEditor.checker.checker.locals.get("params");
+		var checker = cast(paramsEditor.checker,hide.comp.DomkitEditor.DomkitChecker);
+		var tparams = try @:privateAccess checker.typeCode(paramsEditor.code,0) catch( e : hscript.Expr.Error ) null;
 		if( tparams == null ) tparams = TAnon([]);
 		switch( tparams ) {
 		case TAnon(fields):
@@ -151,15 +126,17 @@ class Domkit extends FileView {
 
 	override function save() {
 		super.save();
-		var cssText = trimSpaces(cssEditor.code);
-		var dmlText = trimSpaces(dmlEditor.code);
-		var paramsText = trimSpaces(paramsEditor.code);
-		var hasParams = paramsText != DEFAULT_PARAMS;
-		prevSave = { css : cssText, dml : dmlText, params : paramsText };
-		if( cssText != cssEditor.code ) cssEditor.setCode(cssText);
-		if( dmlText != dmlEditor.code ) dmlEditor.setCode(dmlText);
-		if( paramsText != paramsEditor.code ) paramsEditor.setCode(paramsText);
-		sys.io.File.saveContent(getPath(),('<css>\n$cssText\n</css>\n\n')+(hasParams?'<params>\n$paramsText\n</params>\n\n':'')+dmlText);
+		var data = {
+			css : trimSpaces(cssEditor.code),
+			dml : trimSpaces(dmlEditor.code),
+			params : trimSpaces(paramsEditor.code),
+		};
+		var str = hrt.impl.DomkitViewer.toStr(data);
+		prevSave = data;
+		if( data.css != cssEditor.code ) cssEditor.setCode(data.css);
+		if( data.dml != dmlEditor.code ) dmlEditor.setCode(data.dml);
+		if( data.params != paramsEditor.code ) paramsEditor.setCode(data.params);
+		sys.io.File.saveContent(getPath(),str);
 	}
 
 	override function getDefaultContent() {

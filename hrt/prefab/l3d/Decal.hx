@@ -26,6 +26,7 @@ class Decal extends Object3D {
 	@:s var centered : Bool = true;
 	@:s var autoAlpha : Bool = true;
 	@:c var blendMode : h2d.BlendMode = Alpha;
+	@:s var drawOrder : Int = 0;
 	@:s var normalFade : Bool = false;
 	@:s var normalFadeStart : Float = 0;
 	@:s var normalFadeEnd : Float = 1;
@@ -121,6 +122,7 @@ class Decal extends Object3D {
 		}
 
 		mesh.material.mainPass.setBlendMode(blendMode);
+		mesh.material.mainPass.layer = drawOrder;
 
 		inline function commonSetup(shader: h3d.shader.pbr.VolumeDecal.BaseDecal) {
 			shader.fadePower = fadePower;
@@ -201,12 +203,14 @@ class Decal extends Object3D {
 				var wire = new h3d.scene.Box(0xFFFFFFFF,obj);
 				wire.name = "_highlight";
 				wire.material.setDefaultProps("ui");
+				wire.material.mainPass.setPassName("debuggeom");
 				wire.ignoreCollide = true;
 				wire.material.shadows = false;
 				var wireCenter = new h3d.scene.Box(0xFFFF00, obj);
 				wireCenter.scaleZ = 0;
 				wireCenter.name = "_highlight";
 				wireCenter.material.setDefaultProps("ui");
+				wireCenter.material.mainPass.setPassName("debuggeom");
 				wireCenter.ignoreCollide = true;
 				wireCenter.material.shadows = false;
 				wireCenter.material.mainPass.depthTest = Always;
@@ -356,6 +360,8 @@ class Decal extends Object3D {
 
 			ctx.properties.add(materialLibrary, this);
 
+			var layers : Array< { name : String, value : Int }> = hide.Ide.inst.currentConfig.get("material.drawOrder", []);
+
 			var props = ctx.properties.add(new hide.Element('
 			<div class="decal">
 				<div class="group" name="Decal">
@@ -376,6 +382,14 @@ class Decal extends Object3D {
 							<option value="Add">Add</option>
 							<option value="Multiply">Multiply</option>
 						</select></dd>
+
+						<dt>Draw Order</dt>
+						<dd>
+							<select field="drawOrder">
+								<option value="" selected disabled hidden>Default</option>
+								${[for( i in 0...layers.length ) '<option value="${layers[i].value}">${layers[i].name}</option>'].join("")}
+							</select>
+						</dd>
 					</dl>
 				</div>
 				<div class="group" name="Fade">

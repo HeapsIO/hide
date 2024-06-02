@@ -4,6 +4,8 @@ import hrt.prefab.ContextShared;
 using hrt.prefab.Object3D; // GetLocal3D
 using hrt.prefab.Object2D; // GetLocal2D
 
+using Lambda;
+
 import hrt.prefab.Reference;
 import h3d.scene.Mesh;
 import h3d.col.FPoint;
@@ -46,6 +48,177 @@ enum SelectMode {
 		Don't refresh tree and don't undo command
 	**/
 	Nothing;
+}
+
+@:access(hide.comp.SceneEditor)
+class ViewportOverlaysPopup extends hide.comp.Popup {
+	var editor:SceneEditor;
+
+	public function new(?parent : Element, ?root: Element, editor: SceneEditor) {
+		super(parent, root);
+		this.editor = editor;
+
+		popup.append(new Element("<p>Viewport Overlays</p>"));
+		popup.addClass("settings-popup");
+		popup.css("max-width", "300px");
+
+		popup.append(new Element('
+			<h2>Guides</h2>
+			<div class="form-grid" id="guidesGroup"></div>
+			<h2>Selection</h2>
+			<div class="form-grid" id="selectionGroup"></div>
+			<h2>Debug</h2>
+			<div class="form-grid" id="debug"></div>
+			<h2>Icons</h2>
+			<div class="form-grid" id="showIconGroup"></div>
+			<div class="form-grid" id="allIcons"></div>
+		'));
+
+
+		function addButton(label: String, icon: String, key: String, cb: () -> Void) : Element {
+			var e = new Element('
+			<div class="tb-group small">
+				<div class="button2" id="$key">
+					<div class="icon ico ico-$icon"></div>
+				</div>
+			</div>
+			<label class="left">$label</label>');
+			var btn = e.find('#$key');
+			var store = 'sceneeditor.$key';
+			var v = ide.currentConfig.get(store, false);
+			btn.get(0).toggleAttribute("checked", v);
+
+			btn.click(function(e) {
+				if (e.button == 0) {
+					var v = !editor.ide.currentConfig.get(store);
+					editor.ide.currentConfig.set(store, v);
+					btn.get(0).toggleAttribute("checked", v);
+					cb();
+				}
+			});
+			return e;
+		}
+
+		{
+			var group = popup.find("#guidesGroup");
+			addButton("Grid", "th", "gridToggle", () -> editor.updateGrid()).appendTo(group);
+			addButton("Axis", "arrows", "axisToggle", () -> editor.updateBasis()).appendTo(group);
+			addButton("Joints", "share-alt", "jointsToggle", () -> editor.updateJointsVisibility()).appendTo(group);
+			addButton("Other", "question-circle", "showOtherGuides", () -> editor.updateOtherGuidesVisibility()).appendTo(group);
+
+			{
+				var key = "backgroundColor";
+				var e = new Element('
+				<div class="tb-group small">
+					<div class="button2" id="$key">
+					</div>
+				</div>
+				<label class="left">Background color</label>').appendTo(group);
+				var store = 'sceneeditor.$key';
+				var color = new hide.comp.ColorPicker.ColorBox(e.find('#$key'), null, true);
+				color.value = editor.ide.currentConfig.get(store);
+				color.element.height("100%");
+				color.element.width("100%");
+				color.onChange = function(move) {
+					editor.ide.currentConfig.set(store, color.value);
+					editor.updateBackgroundColor();
+				}
+
+				onShouldCloseOnClick = function(e) {
+					return !color.isPickerOpen();
+				}
+			}
+		}
+
+		{
+			var group = popup.find("#selectionGroup");
+			addButton("Gizmo", "arrows-alt", "showGizmo", () -> editor.updateGizmoVisibility()).appendTo(group);
+			addButton("Outline", "dot-circle-o", "showOutlines", () -> editor.updateOutlineVisibility()).appendTo(group);
+		}
+
+
+		{
+			var group = popup.find("#debug");
+			var btn = addButton("Scene Info", "info-circle", "sceneInformationToggle", () -> editor.updateStatusTextVisibility()).appendTo(group);
+			addButton("Wireframe", "connectdevelop", "wireframeToggle", () -> editor.updateWireframe()).appendTo(group);
+			addButton("Disable Scene Render", "eye-slash", "tog-scene-render", () -> {}).appendTo(group);
+
+			//btn.contextmenu(() -> {
+			//
+			//})
+		}
+
+
+		var allIcons = popup.find("#allIcons");
+		function refreshIconMenu() {
+			var visible = editor.ide.currentConfig.get("sceneeditor.iconVisibility");
+			if (visible) {
+				allIcons.show();
+			} else {
+				allIcons.hide();
+			}
+		}
+
+		{
+			var group = popup.find("#showIconGroup");
+			addButton("3D Icons", "image", "iconVisibility", () -> {refreshIconMenu(); editor.updateIconsVisibility();}).appendTo(group);
+
+			allIcons.css("margin-left", "3px");
+			for (k => v in ide.show3DIconsCategory) {
+				var input = new Element('<input type="checkbox" name="snap" id="$k" value="$k"/>');
+				if (v)
+					input.get(0).toggleAttribute("checked", true);
+				input.change((e) -> {
+					var val = !ide.show3DIconsCategory.get(k);
+					ide.show3DIconsCategory.set(k, val);
+					js.Browser.window.localStorage.setItem(hrt.impl.EditorTools.iconVisibilityKey(k), val ? "true" : "false");
+
+					if (k.match(hrt.impl.EditorTools.IconCategory.Object3D)) {
+						for (p in editor.sceneData.all()) {
+							var obj3D = Std.downcast(p, Object3D);
+
+							if (obj3D != null) {
+								obj3D.removeEditorUI();
+								obj3D.addEditorUI();
+							}
+						}
+					}
+				});
+				allIcons.append(input);
+				allIcons.append(new Element('<label for="$k" class="left">$k</label>'));
+			}
+		}
+
+
+		refreshIconMenu();
+
+
+
+		// <input type="checkbox" name"showAxis" id="showAxis"/><label for="showAxis" class="left">Axis</label>
+
+
+		// {
+		// 	var input = popup.find("#showGrid");
+		// 	input.get(0).toggleAttribute("checked", editor.showGrid);
+		// 	input.click(function(e){
+		// 		if (e.button == 0) {
+		// 			var v = !editor.ide.currentConfig.get("sceneeditor.gridToggle", false);
+		// 			editor.ide.currentConfig.set("sceneeditor.gridToggle", v);
+		// 			input.get(0).toggleAttribute("checked", v);
+		// 			editor.updateGrid();
+		// 		}
+		// 	});
+		// }
+
+		// {
+		// 	var input = popup.find("#showAxis");
+		// 	input.prop("checked", editor.showBasis);
+		// 	input.on("change", function(){
+		// 		editor.showBasis = input.prop("checked");
+		// 		editor.updateBasis();
+		// 	});
+		// }
+	}
 }
 
 class SnapSettingsPopup extends hide.comp.Popup {
@@ -463,10 +636,12 @@ class HelpPopup extends hide.comp.Popup {
 
 class RenderPropsPopup extends Popup {
 	var editor:SceneEditor;
+	var view: hide.view.FileView;
 
 	public function new(?parent:Element, ?root:Element, view:hide.view.FileView, editor:SceneEditor, isSearchable = false, canChangeCurrRp = false) {
 		super(parent, root, isSearchable);
 		this.editor = editor;
+		this.view = view;
 
 		popup.addClass("settings-popup");
 		popup.css("max-width", "300px");
@@ -487,6 +662,28 @@ class RenderPropsPopup extends Popup {
 			return;
 		}
 
+		// Render props edition parameter for prefab, fx and model view
+		var tmpView : Dynamic = cast Std.downcast(view, hide.view.Prefab);
+		if (tmpView == null)
+			tmpView = cast Std.downcast(view, hide.view.Model);
+		if (tmpView == null)
+			tmpView = cast Std.downcast(view, hide.view.FXEditor);
+
+		if (tmpView != null) {
+			var rpEditionEl = new Element('<div><input type="checkbox" id="cb-rp-edition"/><label>Edit render props</label></div>').insertBefore(popup.children().first());
+			var cb = rpEditionEl.find('input');
+			cb.prop('checked', Ide.inst.currentConfig.get("sceneeditor.renderprops.edit", false));
+			cb.on('change', function(){
+				var v = cb.prop('checked');
+				Ide.inst.currentConfig.set("sceneeditor.renderprops.edit", v);
+
+				tmpView.setRenderPropsEditionVisibility(v);
+			});
+
+			rpEditionEl.find('label').css({ 'padding-left' : '8px' });
+			rpEditionEl.css({ 'padding-bottom' : '5px' });
+		}
+
 		var renderProps = view.config.getLocal("scene.renderProps");
 
 		if (renderProps is String) {
@@ -501,7 +698,7 @@ class RenderPropsPopup extends Popup {
 		}
 
 		if (renderProps is Array) {
-			var a_renderProps = Std.downcast(renderProps, Array);
+			var a_renderProps = cast (renderProps, Array<Dynamic>);
 			var selectedRenderProps = editor.view.getDisplayState("renderProps");
 
 			for (idx in 0...a_renderProps.length) {
@@ -515,6 +712,7 @@ class RenderPropsPopup extends Popup {
 
 				input.change((e) -> {
 					editor.view.saveDisplayState("renderProps", rp);
+					editor.renderPropsRoot = null;
 					editor.refreshScene();
 					@:privateAccess editor.refreshTree();
 				});
@@ -532,12 +730,12 @@ class RenderPropsPopup extends Popup {
 		var search = searchBar.val();
 		var form_div = popup.find(".form-grid");
 
-		popup.find("label").remove();
-		popup.find('input[type=radio]').remove();
+		form_div.find("label").remove();
+		form_div.find('input[type=radio]').remove();
 
-		var renderProps = hide.Ide.inst.currentConfig.get("scene.renderProps");
+		var renderProps = view.config.getLocal("scene.renderProps");
 		if (renderProps is Array) {
-			var a_renderProps = Std.downcast(renderProps, Array);
+			var a_renderProps = cast (renderProps, Array<Dynamic>);
 			var selectedRenderProps = editor.view.getDisplayState("renderProps");
 
 			for (idx in 0...a_renderProps.length) {
@@ -632,6 +830,8 @@ class CustomEditor {
 class SceneEditor {
 
 	public var tree : hide.comp.IconTree<PrefabElement>;
+	public var renderPropsTree : hide.comp.IconTree<PrefabElement>; // Used to display render props edition with IconTree.
+
 	public var scene : hide.comp.Scene;
 	public var properties : hide.comp.PropsEditor;
 
@@ -660,14 +860,22 @@ class SceneEditor {
 	var basis : h3d.scene.Object;
 	public var showBasis = false;
 	static var customPivot : CustomPivot;
-	var interactives : Map<PrefabElement, hxd.SceneEvents.Interactive>;
-	var ide : hide.Ide;
+	var interactives : Map<PrefabElement, hxd.SceneEvents.Interactive> = [];
+	public var ide : hide.Ide;
 	public var event(default, null) : hxd.WaitEvent;
 	var hideList : Map<PrefabElement, Bool> = new Map();
 	public var selectedPrefabs : Array<PrefabElement> = [];
 
 	public var root2d : h2d.Object = null;
 	public var root3d : h3d.scene.Object = null;
+
+	public var showOverlays : Bool = true;
+	var grid : h3d.scene.Graphics;
+	public var gridStep : Float = 0.;
+	public var gridSize : Int;
+	public var showGrid = false;
+
+	var statusText : h2d.Text;
 
 	function getRootObjects3d() : Array<Object> {
 		var arr = [];
@@ -729,6 +937,10 @@ class SceneEditor {
 		tree.async = false;
 		tree.autoOpenNodes = false;
 
+		renderPropsTree = new hide.comp.IconTree();
+		renderPropsTree.async = false;
+		renderPropsTree.autoOpenNodes = false;
+
 		var sceneEl = new Element('<div class="heaps-scene"></div>');
 		scene = new hide.comp.Scene(view.config, null, sceneEl);
 		scene.editor = this;
@@ -754,7 +966,7 @@ class SceneEditor {
 				tree.editNode(selectedPrefabs[0]);
 		});
 
-		view.keys.register("sceneeditor.focus", {name: "Focus Selection", category: "Scene"}, focusSelection);
+		view.keys.register("sceneeditor.focus", {name: "Focus Selection", category: "Scene"}, function() { focusSelection(tree); });
 		view.keys.register("sceneeditor.lasso", {name: "Lasso Select", category: "Scene"}, startLassoSelect);
 		view.keys.register("sceneeditor.hide", {name: "Hide Selection", category: "Scene"}, function() {
 			if (selectedPrefabs.length > 0) {
@@ -802,10 +1014,186 @@ class SceneEditor {
 			}
 			customEditor = Type.createInstance(cl,[this]);
 		}
-
 	}
 
+	public function setViewportOverlaysVisibility(visible: Bool) {
+		ide.currentConfig.set("sceneeditor.showViewportOverlays", visible);
+		updateViewportOverlays();
+	}
 
+	function getOrInitConfig(key:String, def:Dynamic) : Dynamic {
+		var v = ide.currentConfig.get(key);
+		if (v == null) {
+			ide.currentConfig.set(key, def);
+			return def;
+		}
+		return v;
+	}
+	public function updateViewportOverlays() {
+		showOverlays = getOrInitConfig("sceneeditor.showViewportOverlays", true);
+
+
+		updateGrid();
+		updateBasis();
+		updateGizmoVisibility();
+		updateOutlineVisibility();
+		updateOtherGuidesVisibility();
+		updateJointsVisibility();
+		updateIconsVisibility();
+		updateStatusTextVisibility();
+		updateWireframe();
+		updateBackgroundColor();
+	}
+
+	public function updateBackgroundColor() {
+		var color = getOrInitConfig("sceneeditor.backgroundColor", 0x333333);
+		scene.engine.backgroundColor = color;
+		updateGrid();
+	}
+
+	public function updateStatusTextVisibility() {
+		statusText.visible = getOrInitConfig("sceneeditor.sceneInformationToggle", false) && showOverlays;
+	}
+
+	public function updateWireframe() {
+		var visible = getOrInitConfig("sceneeditor.wireframeToggle", false) && showOverlays;
+		setWireframe(visible);
+	}
+
+	public function updateJointsVisibility() {
+		var visible = getOrInitConfig("sceneeditor.jointsToggle", false) && showOverlays;
+		setJoints(visible, null);
+	}
+
+	public function updateGizmoVisibility() {
+		if (gizmo == null)
+			return;
+
+		moveGizmoToSelection();
+	}
+
+	public function updateIconsVisibility() {
+		var visible = getOrInitConfig("sceneeditor.iconVisibility", true) && showOverlays;
+		ide.show3DIcons = visible;
+	}
+
+	public function updateOtherGuidesVisibility() {
+		if (scene?.s3d?.renderer == null)
+			return;
+
+		var show = showOverlays && getOrInitConfig("sceneeditor.showOtherGuides", true);
+		scene.s3d.renderer.showEditorGuides = show;
+	}
+
+	public function updateOutlineVisibility() {
+		if (scene?.s3d?.renderer == null)
+			return;
+
+		var show = showOverlays && getOrInitConfig("sceneeditor.showOutlines", true);
+		scene.s3d.renderer.showEditorOutlines = show;
+	}
+
+	public function updateGrid() {
+		if(grid != null) {
+			grid.remove();
+			grid = null;
+		}
+
+		showGrid = getOrInitConfig("sceneeditor.gridToggle", false);
+		if(!showGrid || !showOverlays)
+			return;
+
+		grid = new h3d.scene.Graphics(scene.s3d);
+		grid.scale(1);
+		grid.material.mainPass.setPassName("overlay");
+
+        if (snapToggle) {
+    		gridStep = snapMoveStep;
+        }
+        else {
+            gridStep = ide.currentConfig.get("sceneeditor.gridStep");
+        }
+		gridSize = ide.currentConfig.get("sceneeditor.gridSize");
+
+		var col = h3d.Vector.fromColor(scene?.engine?.backgroundColor ?? 0);
+		var hsl = col.toColorHSL();
+
+        var mov = 0.1;
+
+        if (snapToggle) {
+            mov = 0.2;
+            hsl.y += (1.0-hsl.y) * 0.2;
+        }
+		if(hsl.z > 0.5) hsl.z -= mov;
+		else hsl.z += mov;
+
+		col.makeColor(hsl.x, hsl.y, hsl.z);
+
+		grid.lineStyle(1.0, col.toColor(), 1.0);
+		for(i in 0...(hxd.Math.floor(gridSize / gridStep) + 1)) {
+			grid.moveTo(i * gridStep, 0, 0);
+			grid.lineTo(i * gridStep, gridSize, 0);
+
+			grid.moveTo(0, i * gridStep, 0);
+			grid.lineTo(gridSize, i * gridStep, 0);
+		}
+		grid.lineStyle(0);
+		grid.setPosition(-1 * gridSize / 2, -1 * gridSize / 2, 0);
+	}
+
+	public function createGrid(origin : Vector, normal : h3d.Vector, gridSize : Float, gridStep : Float, color : Vector) : h3d.scene.Object {
+		var grid = new h3d.scene.Graphics(scene.s3d);
+		grid.scale(1);
+		grid.material.mainPass.setPassName("overlay");
+
+		var hsl = color.toColorHSL();
+
+        var mov = 0.1;
+
+        if (snapToggle) {
+            mov = 0.2;
+            hsl.y += (1.0-hsl.y) * 0.2;
+        }
+		if(hsl.z > 0.5) hsl.z -= mov;
+		else hsl.z += mov;
+
+		color.makeColor(hsl.x, hsl.y, hsl.z);
+
+		grid.lineStyle(1.0, color.toColor(), 1.0);
+		var start = -1 * gridSize / 2;
+		for(i in 0...(hxd.Math.floor(gridSize / gridStep) + 1)) {
+			grid.moveTo(0, start + (i * gridStep), start);
+			grid.lineTo(0, start + (i * gridStep), start + gridSize);
+
+			grid.moveTo(0, start, start + (i * gridStep));
+			grid.lineTo(0, start + gridSize, start + (i * gridStep));
+		}
+
+		grid.lineStyle(0);
+
+		grid.setPosition(origin.x, origin.y, origin.z);
+		grid.setDirection(normal * -1.0, new h3d.Vector(0, 0, 1));
+
+		return grid;
+	}
+
+	function updateStats() {
+		if( statusText.visible ) {
+			var memStats = scene.engine.mem.stats();
+			@:privateAccess
+			var lines : Array<String> = [
+				'Scene objects: ${scene.s3d.getObjectsCount()}',
+				'Interactives: ' + interactives.count(),
+				'Triangles: ${scene.engine.drawTriangles}',
+				'Buffers: ${memStats.bufferCount}',
+				'Textures: ${memStats.textureCount}',
+				'FPS: ${Math.round(scene.engine.realFps)}',
+				'Draw Calls: ${scene.engine.drawCalls}',
+			];
+			statusText.text = lines.join("\n");
+		}
+		haxe.Timer.delay(function() event.wait(0.5, updateStats), 0);
+	}
 
     public function getSnapStatus() : Bool {
         var ctrl = K.isDown(K.CTRL);
@@ -833,6 +1221,7 @@ class SceneEditor {
 	public function dispose() {
 		scene.dispose();
 		tree.dispose();
+		renderPropsTree.dispose();
 		clearWatches();
 	}
 
@@ -847,7 +1236,7 @@ class SceneEditor {
 		var models = sceneData.findAll(PrefabElement);
 		var toRebuild : Array<PrefabElement> = [];
 		for(m in models) {
-			if(m.shared.prefabSource == lib.resource.entry.path) {
+			if(Ide.inst.getPath(m.source) == Reflect.getProperty(lib.resource.entry, "originalPath")) {
 				if (toRebuild.indexOf(m) < 0) {
 					toRebuild.push(m);
 				}
@@ -894,7 +1283,10 @@ class SceneEditor {
 		return new hide.view.l3d.CameraController2D(root2d);
 	}
 
-	function focusSelection() {
+	function focusSelection(?tree: IconTree<PrefabElement>) {
+		if (tree == null)
+			tree = this.tree;
+
         focusObjects(getSelectedLocal3D());
 		var selected3d = getSelectedLocal3D();
 		for(obj in selectedPrefabs)
@@ -1004,30 +1396,86 @@ class SceneEditor {
 		return ret;
 	}
 
-	public function switchCamController(camClass : Class<CameraControllerBase>, force: Bool = false) {
-		if (cameraController != null) {
-			if (!force)
-				saveCam3D();
+	public function switchCamController(camClass : Class<CameraControllerBase>) {
+		// Temp save all cam parameters before re-applying them on the new instance
+		var settings = getCameraControllerSettings();
+
+		if (cameraController != null)
 			cameraController.remove();
-		}
 
 		cameraController = Type.createInstance(camClass, [scene.s3d, this]);
-		loadCam3D();
+
+		if (settings != null) {
+			for (i in 0...CameraControllerEditor.controllersClasses.length) {
+				if (CameraControllerEditor.controllersClasses[i].cl == camClass) {
+					Reflect.setProperty(settings, "camTypeIndex", i);
+					break;
+				}
+			}
+
+			applyCameraControllerSettings(settings);
+		}
 	}
 
-	public function loadSavedCameraController3D(force: Bool = false) {
-		var wantedClass : Class<CameraControllerBase> = CamController;
-		var cam = @:privateAccess view.getDisplayState("Camera");
-		if (cam != null && cam.camTypeIndex != null) {
-			if (cam.camTypeIndex >=0 && cam.camTypeIndex < CameraControllerEditor.controllersClasses.length) {
-				wantedClass = CameraControllerEditor.controllersClasses[cam.camTypeIndex].cl;
+	function getCameraControllerSettings() : Dynamic {
+		var cam = scene.s3d.camera;
+		if (cam == null)
+			return null;
+
+		var settings = {
+			x : cam.pos.x,
+			y : cam.pos.y,
+			z : cam.pos.z,
+			tx : cam.target.x,
+			ty : cam.target.y,
+			tz : cam.target.z,
+			ux : cam.up.x,
+			uy : cam.up.y,
+			uz : cam.up.z
+		};
+
+		for (i in 0...CameraControllerEditor.controllersClasses.length) {
+			if (CameraControllerEditor.controllersClasses[i].cl == Type.getClass(cameraController)) {
+				Reflect.setProperty(settings, "camTypeIndex", i);
+				break;
 			}
 		}
 
-		switchCamController(wantedClass, force);
+		cameraController.saveSettings(settings);
+
+		return settings;
+	}
+
+	function applyCameraControllerSettings(settings : Dynamic) {
+		if (!camera2D)
+			resetCamera();
+
+		if (settings == null)
+			return;
+
+		var id = Std.parseInt(settings.camTypeIndex) ?? 0;
+        var newClass = CameraControllerEditor.controllersClasses[id];
+        if (Type.getClass(cameraController) != newClass.cl)
+            switchCamController(newClass.cl);
+
+		scene.s3d.camera.pos.set(settings.x, settings.y, settings.z);
+		scene.s3d.camera.target.set(settings.tx, settings.ty, settings.tz);
+
+		if (settings.ux == null) {
+			scene.s3d.camera.up.set(0,0,1);
+		}
+		else {
+			scene.s3d.camera.up.set(settings.ux,settings.uy,settings.uz);
+		}
+
+		cameraController.loadSettings(settings);
+		cameraController.loadFromCamera();
 	}
 
 	public function loadCam3D() {
+		if (cameraController == null)
+			cameraController = Type.createInstance(CamController, [scene.s3d, this]);
+
 		cameraController.onClick = function(e) {
 			switch( e.button ) {
 			case K.MOUSE_RIGHT:
@@ -1037,62 +1485,30 @@ class SceneEditor {
 			}
 		};
 
-		if (!camera2D)
-			resetCamera();
-
-
-		var cam = @:privateAccess view.getDisplayState("Camera");
-		if( cam != null ) {
-			scene.s3d.camera.pos.set(cam.x, cam.y, cam.z);
-			scene.s3d.camera.target.set(cam.tx, cam.ty, cam.tz);
-
-			if (cam.ux == null) {
-				scene.s3d.camera.up.set(0,0,1);
-			}
-			else {
-				scene.s3d.camera.up.set(cam.ux,cam.uy,cam.uz);
-			}
-			cameraController.loadSettings(cam);
+		var settings = @:privateAccess view.getDisplayState("Camera");
+		var isGlobalSettings = Ide.inst.currentConfig.get("sceneeditor.camera.isglobalsettings", false);
+		if (isGlobalSettings) {
+			settings = haxe.Json.parse(js.Browser.window.localStorage.getItem("Global/Camera"));
 		}
-		cameraController.loadFromCamera();
+
+		applyCameraControllerSettings(settings);
 	}
 
 	public function saveCam3D() {
 		var cam = scene.s3d.camera;
 		if (cam == null)
 			return;
-		var toSave : Dynamic = @:privateAccess view.getDisplayState("Camera");
-		if (toSave == null)
-			toSave = {};
 
-		toSave.x = cam.pos.x;
-		toSave.y = cam.pos.y;
-		toSave.z = cam.pos.z;
-		toSave.tx = cam.target.x;
-		toSave.ty = cam.target.y;
-		toSave.tz = cam.target.z;
-		toSave.ux = cam.up.x;
-		toSave.uy = cam.up.y;
-		toSave.uz = cam.up.z;
+		var settings = getCameraControllerSettings();
+		cameraController.saveSettings(settings);
 
-		for (i in 0...CameraControllerEditor.controllersClasses.length) {
-			if (CameraControllerEditor.controllersClasses[i].cl == Type.getClass(cameraController)) {
-				toSave.camTypeIndex = i;
-				break;
-			}
+		var isGlobalSettings = Ide.inst.currentConfig.get("sceneeditor.camera.isglobalsettings", false);
+		if (isGlobalSettings) {
+			js.Browser.window.localStorage.setItem("Global/Camera", haxe.Json.stringify(settings));
 		}
-
-		cameraController.saveSettings(toSave);
-
-		/*var cc = Std.downcast(cameraController, hide.view.CameraController.CamController);
-		if (cc!=null) {
-			var toSave = { x : cam.pos.x, y : cam.pos.y, z : cam.pos.z, tx : cam.target.x, ty : cam.target.y, tz : cam.target.z,
-				isFps : cc.isFps,
-				isOrtho : cc.isOrtho,
-				camSpeed : cc.camSpeed,
-				fov : cc.wantedFOV,
-			};*/
-		@:privateAccess view.saveDisplayState("Camera", toSave);
+		else {
+			@:privateAccess view.saveDisplayState("Camera", settings);
+		}
 	}
 
     function loadSnapSettings() {
@@ -1131,11 +1547,18 @@ class SceneEditor {
 	function onSceneReady() {
 
 		tree.saveDisplayKey = view.saveDisplayKey + '/tree';
+		renderPropsTree.saveDisplayKey = view.saveDisplayKey + '/renderPropsTree';
 
 		gizmo = new hrt.tools.Gizmo(scene.s3d, scene.s2d);
 		view.keys.register("sceneeditor.translationMode", gizmo.translationMode);
 		view.keys.register("sceneeditor.rotationMode", gizmo.rotationMode);
 		view.keys.register("sceneeditor.scalingMode", gizmo.scalingMode);
+		view.keys.register("sceneeditor.switchMode", gizmo.switchMode);
+
+		statusText = new h2d.Text(hxd.res.DefaultFont.get(), scene.s2d);
+		statusText = new h2d.Text(hxd.res.DefaultFont.get(), scene.s2d);
+		statusText.setPosition(5, 5);
+		updateStats();
 
 		gizmo2d = new hide.view.l3d.Gizmo2D();
 		scene.s2d.add(gizmo2d, 1); // over local3d
@@ -1179,7 +1602,7 @@ class SceneEditor {
 
 		basis.visible = true;
 
-		loadSavedCameraController3D();
+		loadCam3D();
 		loadSnapSettings();
 
 		scene.onUpdate = update;
@@ -1207,8 +1630,8 @@ class SceneEditor {
 			};
 			return r;
 		}
-		tree.get = function(o:PrefabElement) {
-			var objs = o == null ? sceneData.children : Lambda.array(o);
+
+		var getFunc = function(objs: Array<hrt.prefab.Prefab>, o:PrefabElement) {
 			if( o != null && o.getHideProps().hideChildren != null ) {
 				var hideChildren = o.getHideProps().hideChildren;
 				var visibleObjs = [];
@@ -1227,6 +1650,25 @@ class SceneEditor {
 			var out = [for( o in objs ) makeItem(o)];
 			return out;
 		};
+
+		tree.get = function(o:PrefabElement) {
+			var objs = o == null ? sceneData.children : Lambda.array(o);
+			return getFunc(objs, o);
+		};
+
+		renderPropsTree.get = function(o:PrefabElement) {
+			var objs : Array<hrt.prefab.Prefab> = [];
+			if (o == null) {
+				if (this.renderPropsRoot != null) {
+					objs = [ this.renderPropsRoot ];
+				}
+			}
+			else
+				objs = Lambda.array(o);
+
+			return getFunc(objs, o);
+		};
+
 		function ctxMenu(tree, e) {
 			e.preventDefault();
 			var current = tree.getCurrentOver();
@@ -1255,10 +1697,10 @@ class SceneEditor {
 
 			if( isObj ) {
 				menuItems = menuItems.concat([
-					{ label : "Show in editor" , checked : !isHidden(current), stayOpen : true, click : function() setVisible(selectedPrefabs, isHidden(current)), keys : view.config.get("key.sceneeditor.hide") },
+					{ label : "Show in editor" , checked : !isHidden(current), stayOpen : true, click : function() setVisible(selectedPrefabs, isHidden(current), tree), keys : view.config.get("key.sceneeditor.hide") },
 					{ label : "Locked", checked : current.locked, stayOpen : true, click : function() {
 						current.locked = !current.locked;
-						setLock(selectedPrefabs, current.locked);
+						setLock(selectedPrefabs, current.locked, tree);
 					} },
 					{ label : "Select all", click : selectAll, keys : view.config.get("key.selectAll") },
 					{ label : "Select children", enabled : current != null, click : function() selectElements(current.flatten()) },
@@ -1285,33 +1727,79 @@ class SceneEditor {
 			menuItems.push({ isSeparator : true, label : "" });
 			new hide.comp.ContextMenu(menuItems.concat(actionItems));
 		};
+
 		tree.element.parent().contextmenu(ctxMenu.bind(tree));
 		tree.allowRename = true;
 		tree.init();
+
+		renderPropsTree.element.parent().contextmenu(ctxMenu.bind(renderPropsTree));
+		renderPropsTree.allowRename = true;
+		renderPropsTree.init();
+
 		tree.onClick = function(e, _) {
 			selectElements(tree.getSelection(), NoTree);
+			renderPropsTree.setSelection([]);
 		}
+
+		renderPropsTree.onClick = function(e, _) {
+			selectElements(renderPropsTree.getSelection(), NoTree);
+			tree.setSelection([]);
+		}
+
 		tree.onDblClick = function(e) {
-			focusSelection();
+			focusSelection(tree);
 			return true;
 		}
-		tree.onRename = function(e, name) {
+
+		renderPropsTree.onDblClick = function(e) {
+			focusSelection(renderPropsTree);
+			return true;
+		}
+
+		var onRenameFunc = function(e, name) {
 			var oldName = e.name;
 			e.name = name;
+
 			undo.change(Field(e, "name", oldName), function() {
-				tree.refresh();
+				tree.refresh(() -> refreshTree());
 				refreshScene();
 			});
+
+			// When renaming a material, we want to rename every references in .props files
+			// of it, if it is a part of a material library
+			var prefabView = Std.downcast(view, hide.view.Prefab);
+			var mat = Std.downcast(e, hrt.prefab.Material);
+			if (prefabView != null && @:privateAccess prefabView.matLibPath != null && mat != null) {
+
+				var found = false;
+				for (entry in @:privateAccess prefabView.renameMatsHistory) {
+					if (entry.prefab == mat) {
+						entry.newName = name;
+						found = true;
+						break;
+					}
+				}
+
+				if (!found)
+					@:privateAccess prefabView.renameMatsHistory.push({ previousName: oldName, newName: name, prefab: e });
+			}
+
 			refreshScene();
 			return true;
 		};
+
+		tree.onRename = onRenameFunc;
+		renderPropsTree.onRename = onRenameFunc;
+
 		tree.onAllowMove = function(e, to) return checkAllowParent({prefabClass : Type.getClass(e), inf : e.getHideProps()}, to);
+		renderPropsTree.onAllowMove = function(e, to) return checkAllowParent({prefabClass : Type.getClass(e), inf : e.getHideProps()}, to);
 
 		// Batch tree.onMove, which is called for every node moved, causing problems with undo and refresh
 		{
 			var movetimer : haxe.Timer = null;
 			var moved = [];
-			tree.onMove = function(e, to, idx) {
+
+			var onMoveFunc = function(e, to, idx) {
 				if(movetimer != null) {
 					movetimer.stop();
 				}
@@ -1321,12 +1809,19 @@ class SceneEditor {
 					movetimer = null;
 					moved = [];
 				}, 50);
-			}
+			};
+
+			tree.onMove = onMoveFunc;
+			renderPropsTree.onMove = onMoveFunc;
 		}
+
 		tree.applyStyle = function(p, el) applyTreeStyle(p, el);
+		renderPropsTree.applyStyle = function(p, el) applyTreeStyle(p, el, renderPropsTree);
 		selectElements([]);
 		refresh();
 		this.camera2D = camera2D;
+
+		updateViewportOverlays();
 	}
 
 	function checkAllowParent(prefabInf:hrt.prefab.Prefab.PrefabInfo, prefabParent : PrefabElement) : Bool {
@@ -1363,6 +1858,19 @@ class SceneEditor {
 				if(!Std.isOfType(el, Element)) continue;
 				applyTreeStyle(elt, el);
 			}
+			if(callb != null) callb();
+		});
+
+		renderPropsTree.refresh(function() {
+			if(renderPropsRoot != null) {
+				var all = renderPropsRoot.flatten(PrefabElement);
+				for(elt in all) {
+					var el = renderPropsTree.getElement(elt);
+					if(!Std.isOfType(el, Element)) continue;
+					applyTreeStyle(elt, el, renderPropsTree);
+				}
+			}
+
 			if(callb != null) callb();
 		});
 	}
@@ -1404,39 +1912,42 @@ class SceneEditor {
 	}
 
 	function createRenderProps(?parent: hrt.prefab.Prefab){
-		renderPropsRoot = new hrt.prefab.Reference(parent, parent?.shared ?? new ContextShared());
-		renderPropsRoot.setEditor(this);
+		if (renderPropsRoot == null) {
+			renderPropsRoot = new hrt.prefab.Reference(parent, parent?.shared ?? new ContextShared());
+			renderPropsRoot.setEditor(this, this.scene);
 
-		if (parent != null)
-			renderPropsRoot.parent = parent;
+			if (parent != null)
+				renderPropsRoot.parent = parent;
 
-		renderPropsRoot.name = "Render Props";
-		@:privateAccess renderPropsRoot.editMode = true;
+			renderPropsRoot.name = "Render Props";
+			@:privateAccess renderPropsRoot.editMode = true;
 
-		var renderProps = view.config.getLocal("scene.renderProps");
+			var renderProps = view.config.getLocal("scene.renderProps");
 
-		if (renderProps is String) {
-			renderPropsRoot.source = cast renderProps;
-		}
-
-		if (renderProps is Array) {
-			var a_renderProps = Std.downcast(renderProps, Array);
-			var savedRenderProp = @:privateAccess view.getDisplayState("renderProps");
-
-			// Check if the saved render prop hasn't been deleted from json
-			var isRenderPropAvailable = false;
-			for (idx in 0...a_renderProps.length) {
-				if (savedRenderProp != null && a_renderProps[idx].value == savedRenderProp.value)
-					isRenderPropAvailable = true;
+			if (renderProps is String) {
+				renderPropsRoot.source = cast renderProps;
 			}
 
-			renderPropsRoot.source = view.config.getLocal("scene.renderProps")[0].value;
-			if (savedRenderProp != null && isRenderPropAvailable)
-				renderPropsRoot.source = savedRenderProp.value;
+			if (renderProps is Array) {
+				var a_renderProps = cast (renderProps, Array<Dynamic>);
+				var savedRenderProp = @:privateAccess view.getDisplayState("renderProps");
+
+				// Check if the saved render prop hasn't been deleted from json
+				var isRenderPropAvailable = false;
+				for (idx in 0...a_renderProps.length) {
+					if (savedRenderProp != null && a_renderProps[idx].value == savedRenderProp.value)
+						isRenderPropAvailable = true;
+				}
+
+				renderPropsRoot.source = view.config.getLocal("scene.renderProps")[0].value;
+				if (savedRenderProp != null && isRenderPropAvailable)
+					renderPropsRoot.source = savedRenderProp.value;
+			}
 		}
 
 		@:privateAccess renderPropsRoot.shared.root2d = renderPropsRoot.shared.current2d = root2d;
 		@:privateAccess renderPropsRoot.shared.root3d = renderPropsRoot.shared.current3d = root3d;
+
 		renderPropsRoot.make();
 
 		/*var lights = renderPropsRoot.getAll(hrt.prefab.Light, true);
@@ -1459,7 +1970,6 @@ class SceneEditor {
 	}
 
 	public function refreshScene() {
-
 		clearWatches();
 
 		if (root2d != null) root2d.remove();
@@ -1467,6 +1977,8 @@ class SceneEditor {
 
 		if (sceneData != null)
 			sceneData.dispose();
+
+		hrt.impl.Gradient.purgeEditorCache();
 
 		root3d = new h3d.scene.Object();
 		root3d.name = "root3d";
@@ -1480,19 +1992,22 @@ class SceneEditor {
 		scene.s2d.defaultSmooth = true;
 		root2d.x = scene.s2d.width >> 1;
 		root2d.y = scene.s2d.height >> 1;
+
 		cameraController2D = makeCamController2D();
 		cameraController2D.onClick = cameraController.onClick;
-		var cam2d = @:privateAccess view.getDisplayState("Camera2D");
-		if( cam2d != null ) {
-			root2d.x = scene.s2d.width*0.5 + cam2d.x;
-			root2d.y = scene.s2d.height*0.5 + cam2d.y;
-			root2d.setScale(cam2d.z);
-		}
-		cameraController2D.loadFromScene();
-		if (camera2D)
+
+		if (camera2D) {
+			var cam2d = @:privateAccess view.getDisplayState("Camera2D");
+			if( cam2d != null ) {
+				root2d.x = scene.s2d.width*0.5 + cam2d.x;
+				root2d.y = scene.s2d.height*0.5 + cam2d.y;
+				root2d.setScale(cam2d.z);
+			}
+			cameraController2D.loadFromScene();
 			resetCamera();
+		}
 
-
+		set_camera2D(camera2D);
 
 		root2d.addChild(cameraController2D);
 		scene.setCurrent();
@@ -1500,7 +2015,7 @@ class SceneEditor {
 
 		@:privateAccess sceneData.setSharedRec(new ContextShared(root2d,root3d));
 		sceneData.shared.currentPath = view.state.path;
-		sceneData.setEditor(this);
+		sceneData.setEditor(this, this.scene);
 
 		sceneData.make();
 		var bgcol = scene.engine.backgroundColor;
@@ -1513,12 +2028,14 @@ class SceneEditor {
 			applySceneStyle(elt);
 
 		// Find latest existing render props in scene
-			var renderProps : Array<hrt.prefab.RenderProps> = cast getAllWithRefs(sceneData,hrt.prefab.RenderProps);
-		for( r in renderProps )
+		var renderProps : Array<hrt.prefab.RenderProps> = cast getAllWithRefs(sceneData, hrt.prefab.RenderProps);
+		for( r in renderProps ) {
 			if( @:privateAccess r.isDefault ) {
 				lastRenderProps = r;
 				break;
 			}
+		}
+
 		var worlds = getAllWithRefs(sceneData, hrt.prefab.World);
 		for ( w in worlds )
 			w.editor = this;
@@ -1743,8 +2260,6 @@ class SceneEditor {
 		}
 	}
 
-	public dynamic function updateGrid() {
-	}
 
 	function setupGizmo() {
 		if(selectedPrefabs == null) return;
@@ -1755,7 +2270,7 @@ class SceneEditor {
 		inline function quantize(x: Float, step: Float) {
 			if(step > 0) {
 				x = Math.round(x / step) * step;
-				x = untyped parseFloat(x.toFixed(5)); // Snap to closest nicely displayed float :cold_sweat:
+				x = roundSmall(x);
 			}
 			return x;
 		}
@@ -1968,10 +2483,16 @@ class SceneEditor {
 
 	public function updateBasis() {
 		if (basis == null) return;
+		showBasis = getOrInitConfig("sceneeditor.axisToggle", true);
 		if (selectedPrefabs != null && selectedPrefabs.length == 1) {
-			basis.visible = showBasis;
+			basis.visible = showBasis && showOverlays;
 			var rootObj = selectedPrefabs[0].getLocal3d();
-			var pos = getPivot([]);
+			if (rootObj == null) {
+				basis.visible = false;
+				return;
+			}
+
+			var pos = getPivot([rootObj]);
 			basis.setPosition(pos.x, pos.y, pos.z);
 			var obj = getRootObjects3d()[0];
 			var mat = worldMat(obj);
@@ -2005,7 +2526,7 @@ class SceneEditor {
 		var roots = getRootObjects3d();
 		if(roots.length > 0) {
 			var pos = getPivot(roots);
-			gizmo.visible = showGizmo;
+			gizmo.visible = showGizmo && getOrInitConfig("sceneeditor.showGizmo", true) && showOverlays;
 			gizmo.setPosition(pos.x, pos.y, pos.z);
 
 			if(roots.length >= 1 && (localTransform || K.isDown(K.ALT) || gizmo.editMode == Scaling)) {
@@ -2024,7 +2545,7 @@ class SceneEditor {
 		var root2d = getRootObjects2d();
 		if( root2d.length > 0 && !gizmo.visible ) {
 			var pos = getPivot2D(root2d);
-			gizmo2d.visible = showGizmo;
+			gizmo2d.visible = showGizmo && getOrInitConfig("sceneeditor.showGizmo", true) && showOverlays;
 			gizmo2d.setPosition(pos.getCenter().x, pos.getCenter().y);
 			gizmo2d.setSize(pos.width, pos.height);
 		} else {
@@ -2159,14 +2680,19 @@ class SceneEditor {
 		if(p != sceneData) {
 			var el = tree.getElement(p);
 			if( el != null && el.toggleClass != null ) applyTreeStyle(p, el, pname);
+
+			var el = renderPropsTree.getElement(p);
+			if( el != null && el.toggleClass != null ) applyTreeStyle(p, el, pname, renderPropsTree);
 		}
 
 		applySceneStyle(p);
 	}
 
-	public function applyTreeStyle(p: PrefabElement, el: Element, ?pname: String) {
+	public function applyTreeStyle(p: PrefabElement, el: Element, ?pname: String, ?tree: IconTree<PrefabElement>) {
 		if( el == null )
 			return;
+		if (tree == null)
+			tree = this.tree;
 		var obj3d  = p.to(Object3D);
 		el.toggleClass("disabled", !p.enabled);
 		var aEl = el.find("a").first();
@@ -2196,9 +2722,9 @@ class SceneEditor {
 				visTog = new Element('<i class="ico ico-eye visibility-toggle" title = "Hide (${view.config.get("key.sceneeditor.hide")})"/>').insertAfter(el.find("a.jstree-anchor").first());
 				visTog.click(function(e) {
 					if(selectedPrefabs.indexOf(obj3d) >= 0)
-						setVisible(selectedPrefabs, isHidden(obj3d));
+						setVisible(selectedPrefabs, isHidden(obj3d), tree);
 					else
-						setVisible([obj3d], isHidden(obj3d));
+						setVisible([obj3d], isHidden(obj3d), tree);
 
 					e.preventDefault();
 					e.stopPropagation();
@@ -2213,9 +2739,9 @@ class SceneEditor {
 				lockTog = new Element('<i class="ico ico-lock lock-toggle"/>').insertAfter(el.find("a.jstree-anchor").first());
 				lockTog.click(function(e) {
 					if(selectedPrefabs.indexOf(obj3d) >= 0)
-						setLock(selectedPrefabs, !obj3d.locked);
+						setLock(selectedPrefabs, !obj3d.locked, tree);
 					else
-						setLock([obj3d], !obj3d.locked);
+						setLock([obj3d], !obj3d.locked, tree);
 
 					e.preventDefault();
 					e.stopPropagation();
@@ -2259,7 +2785,7 @@ class SceneEditor {
 	}
 
 	public function getObject(elt: PrefabElement) {
-		return elt.getLocal3d();
+		return elt.getLocal3d() ?? root3d;
 	}
 
 	public function getSelfObject(elt: PrefabElement) {
@@ -2273,19 +2799,37 @@ class SceneEditor {
 	}
 
 	function removeInstance(elt : PrefabElement) {
-		elt.parent.children.remove(elt);
+		var allRemoved = true;
+		function recRemove(e:PrefabElement) {
+			for (c in e.children) {
+				recRemove(c);
+			}
 
-		elt.getLocal3d()?.remove();
-		elt.getLocal2d()?.remove();
-		elt.dispose();
+			var int = interactives.get(e);
+			if(int != null) {
+				var i3d = Std.downcast(int, h3d.scene.Interactive);
+				if( i3d != null ) i3d.remove() else cast(int,h2d.Interactive).remove();
+				interactives.remove(e);
+			}
+			if (!e.editorRemoveInstance())
+				allRemoved = false;
+			e.dispose();
+		}
+
+		recRemove(elt);
+		return allRemoved;
 	}
 
 	function makePrefab(elt: PrefabElement) {
+		if (elt == sceneData) {
+			refreshScene();
+			return;
+		}
 		scene.setCurrent();
 
 		elt.shared.current3d = elt.parent.findFirstLocal3d();
 		elt.shared.current2d = elt.parent.findFirstLocal2d();
-		elt.setEditor(this);
+		elt.setEditor(this, this.scene);
 		elt.make();
 
 		for( p in elt.flatten() ) {
@@ -2329,7 +2873,8 @@ class SceneEditor {
 			if(undo) {
 				selectElements([], NoHistory);
 				for (e in elts) {
-					removeInstance(e);
+					if(!removeInstance(e))
+						fullRefresh = true;
 					e.parent.children.remove(e);
 				}
 				refresh(fullRefresh ? Full : Partial);
@@ -2423,17 +2968,17 @@ class SceneEditor {
 			undo.change(Custom(function(undo) {
 				if (undo) {
 					unserializeProps(fields, currentData);
-					//edit.onChange(edit.elements[0], "props");
-					//edit.rebuildProperties();
+					curEdit.onChange(curEdit.elements[0], "props");
+					curEdit.rebuildProperties();
 				} else {
 					unserializeProps(fields, pasteData);
-					//edit.onChange(edit.elements[0], "props");
-					//edit.rebuildProperties();
+					curEdit.onChange(curEdit.elements[0], "props");
+					curEdit.rebuildProperties();
 				}
 			}));
 
-			//edit.onChange(edit.elements[0], "props");
-			//edit.rebuildProperties();
+			curEdit.onChange(curEdit.elements[0], "props");
+			curEdit.rebuildProperties();
 		}
 	}
 
@@ -2533,7 +3078,7 @@ class SceneEditor {
 				edit.onChange(e, 'props.$pname');
 				var e = Std.downcast(e, Object3D);
 				if( e != null ) {
-					e.addEditorUI(edit);
+					e.addEditorUI();
 				}
 			}
 		}
@@ -2709,7 +3254,7 @@ class SceneEditor {
 			cameraController2D.initFromScene();
 		} else {
 			scene.s3d.camera.zNear = scene.s3d.camera.zFar = 0;
-			scene.s3d.camera.fovY = 25; // reset to default fov
+			scene.s3d.camera.fovY = 60; // reset to default fov
 			scene.resetCamera(distanceFactor);
 			cameraController.lockZPlanes = scene.s3d.camera.zNear != 0;
 			cameraController.loadFromCamera();
@@ -2764,6 +3309,12 @@ class SceneEditor {
 		if(hrt.prefab.Prefab.getPrefabType(path) != null) {
 			var ref = new hrt.prefab.Reference(parent, null);
 			ref.source = relative;
+			if (ref.hasCycle()) {
+				parent.children.remove(ref);
+				hide.Ide.inst.quickError('Reference to $relative is creating a cycle. The reference creation was aborted.');
+				return null;
+			}
+
 			prefab = ref;
 			prefab.name = new haxe.io.Path(relative).file;
 		}
@@ -2795,6 +3346,8 @@ class SceneEditor {
 		var elts: Array<PrefabElement> = [];
 		for(path in paths) {
 			var obj3d = createDroppedElement(path, parent);
+			if (obj3d == null)
+				continue;
 
 			obj3d.setTransform(localMat);
 			autoName(obj3d);
@@ -2810,7 +3363,8 @@ class SceneEditor {
 			if( undo ) {
 				var fullRefresh = false;
 				for(e in elts) {
-					removeInstance(e);
+					if(!removeInstance(e))
+						fullRefresh = true;
 					parent.children.remove(e);
 				}
 				refresh(fullRefresh ? Full : Partial);
@@ -2968,7 +3522,13 @@ class SceneEditor {
 			return;
         }
 
-		var elts = selectedPrefabs;
+		// Sort the selection to match the scene order
+		var elts : Array<hrt.prefab.Prefab> = [];
+		for (p in sceneData.flatten()) {
+			if (selectedPrefabs.contains(p))
+				elts.push(p);
+		}
+
 		var parent = elts[0].parent;
 		var parentMat = worldMat(parent);
 		var invParentMat = parentMat.clone();
@@ -3003,13 +3563,11 @@ class SceneEditor {
 		var effectFunc = reparentImpl(elts, group, 0);
 		undo.change(Custom(function(undo) {
 			if(undo) {
-				group.parent = null;
-				//context.shared.contexts.remove(group);
 				effectFunc(true);
+				group.parent = null;
 			}
 			else {
 				group.parent = parent;
-				//context.shared.contexts.set(group, groupCtx);
 				effectFunc(false);
 			}
 			if(undo)
@@ -3196,7 +3754,10 @@ class SceneEditor {
 		@:privateAccess view.saveDisplayState("hideList", state);
 	}
 
-	public function setVisible(elements : Array<PrefabElement>, visible: Bool) {
+	public function setVisible(elements : Array<PrefabElement>, visible: Bool, ?tree:IconTree<PrefabElement>) {
+		if (tree == null)
+			tree = this.tree;
+
 		for(o in elements) {
 			for(c in o.flatten(Object3D)) {
 				if( visible )
@@ -3204,14 +3765,16 @@ class SceneEditor {
 				else
 					hideList.set(o, true);
 				var el = tree.getElement(c);
-				if( el != null ) applyTreeStyle(c, el);
+				if( el != null ) applyTreeStyle(c, el, tree);
 				applySceneStyle(c);
 			}
 		}
 		saveDisplayState();
 	}
 
-	public function setLock(elements : Array<PrefabElement>, locked: Bool, enableUndo : Bool = true) {
+	public function setLock(elements : Array<PrefabElement>, locked: Bool, enableUndo : Bool = true, ?tree: IconTree<PrefabElement>) {
+		if (tree == null)
+			tree = this.tree;
 		var prev = [for( o in elements ) o.locked];
 		for(o in elements) {
 			o.locked = locked;
@@ -3219,7 +3782,7 @@ class SceneEditor {
 				var el = tree.getElement(c);
 				if (el is Bool)
 					continue;
-				applyTreeStyle(c, el);
+				applyTreeStyle(c, el, tree);
 				applySceneStyle(c);
 				toggleInteractive(c,!isLocked(c));
 			}
@@ -3275,13 +3838,12 @@ class SceneEditor {
 		var undoes = [];
 		var newElements = [];
 		var lastElem = elements[elements.length-1];
-		var lastIndex = lastElem.parent.children.indexOf(lastElem) + 1;
-		for(elt in elements) {
-			@:pirvateAccess var clone = hrt.prefab.Prefab.createFromDynamic(haxe.Json.parse(haxe.Json.stringify(elt.serialize())), elt.parent, elt.parent.shared);
-			var index = lastIndex+1;
-			elt.parent.children.remove(clone);
+		var lastIndex = lastElem.parent.children.indexOf(lastElem);
+		for(i => elt in elements) {
+			@:pirvateAccess var clone = hrt.prefab.Prefab.createFromDynamic(haxe.Json.parse(haxe.Json.stringify(elt.serialize())), null, elt.parent.shared);
+			var index = lastIndex+1+i;
 			elt.parent.children.insert(index, clone);
-
+			@:bypassAccessor clone.parent = elt.parent;
 			clone.shared.current2d = elt.parent.findFirstLocal2d();
 			clone.shared.current3d = elt.parent.findFirstLocal3d();
 			clone.make();
@@ -3289,7 +3851,10 @@ class SceneEditor {
 			autoName(clone);
 			newElements.push(clone);
 
-			refreshInteractive(clone);
+			var all = clone.flatten();
+			for (p in all) {
+				refreshInteractive(p);
+			}
 
 			undoes.push(function(undo) {
 				if(undo) elt.parent.children.remove(clone);
@@ -3316,7 +3881,10 @@ class SceneEditor {
 			var fullRefresh = false;
 			if(undo) {
 				for(elt in newElements) {
-					removeInstance(elt);
+					if(!removeInstance(elt)) {
+						fullRefresh = true;
+						break;
+					}
 				}
 			}
 
@@ -3335,12 +3903,13 @@ class SceneEditor {
 		var obj3d = Std.downcast(elt, hrt.prefab.Object3D);
 		if(obj3d == null)
 			return;
-		if(mat != null)
-			obj3d.setTransform(mat);
+		if(mat != null) {
+			obj3d.loadTransform(makeTransform(mat));
+		}
 		else {
-			obj3d.x = position.x;
-			obj3d.y = position.y;
-			obj3d.z = position.z;
+			obj3d.x = roundSmall(position.x);
+			obj3d.y = roundSmall(position.y);
+			obj3d.z = roundSmall(position.z);
 		}
 		obj3d.updateInstance();
 	}
@@ -3351,12 +3920,14 @@ class SceneEditor {
 		// 	e.parent = null;
 		// }
 
-		var fullRefresh = true;
+		var fullRefresh = false;
 		var undoes = [];
 		for(elt in elts) {
 			var parent = elt.parent;
 			var index = elt.parent.children.indexOf(elt);
-			removeInstance(elt);
+			if(!removeInstance(elt))
+				fullRefresh = true;
+			parent.children.remove(elt);
 
 			undoes.unshift(function(undo) {
 				if(undo) elt.parent.children.insert(index, elt);
@@ -3390,37 +3961,58 @@ class SceneEditor {
 	function reparentElement(e : Array<PrefabElement>, to : PrefabElement, index : Int) {
 		if( to == null )
 			to = sceneData;
+		if (e.length == 0)
+			return;
 
 		var ref = Std.downcast(to, Reference);
 		@:privateAccess if( ref != null && ref.editMode ) to = ref.refInstance;
 
-		var effectFunc = reparentImpl(e, to, index);
+		// Sort node based on where they appear in the scene tree
+		var flat = sceneData.flatten();
+		var prefabIndex : Map<hrt.prefab.Prefab, Int> = [];
+		for (i => p in flat) {
+			prefabIndex.set(p,i);
+		}
+
+		e.sort(function (a: hrt.prefab.Prefab, b: hrt.prefab.Prefab) : Int {
+			return Reflect.compare(prefabIndex.get(a), prefabIndex.get(b));
+		});
+
+		// jstree index on onMove seems to be where the last item
+		// of the selection should end, so we correct that
+		var targetIndex = index - e.length + 1;
+		var effectFunc = reparentImpl(e, to, targetIndex);
 		undo.change(Custom(function(undo) {
 			refresh(effectFunc(undo) ? Full : Partial);
 		}));
 		refresh(effectFunc(false) ? Full : Partial);
 	}
 
+	function roundSmall(f: Float) {
+		var num = 10_000.0;
+		var r = hxd.Math.round(f * num) / num;
+		// Avoid rounding floats that are too big
+		return hxd.Math.abs(r-f) < 2.0 / num ? r : f;
+	}
+
 	function makeTransform(mat: h3d.Matrix) {
 		var rot = mat.getEulerAngles();
-		var x = mat.tx;
-		var y = mat.ty;
-		var z = mat.tz;
+		var x = roundSmall(mat.tx);
+		var y = roundSmall(mat.ty);
+		var z = roundSmall(mat.tz);
 		var s = mat.getScale();
-		var scaleX = s.x;
-		var scaleY = s.y;
-		var scaleZ = s.z;
-		var rotationX = hxd.Math.radToDeg(rot.x);
-		var rotationY = hxd.Math.radToDeg(rot.y);
-		var rotationZ = hxd.Math.radToDeg(rot.z);
+		var scaleX = roundSmall(s.x);
+		var scaleY = roundSmall(s.y);
+		var scaleZ = roundSmall(s.z);
+		var rotationX = roundSmall(hxd.Math.radToDeg(rot.x));
+		var rotationY = roundSmall(hxd.Math.radToDeg(rot.y));
+		var rotationZ = roundSmall(hxd.Math.radToDeg(rot.z));
 		return { x : x, y : y, z : z, scaleX : scaleX, scaleY : scaleY, scaleZ : scaleZ, rotationX : rotationX, rotationY : rotationY, rotationZ : rotationZ };
 	}
 
 	function reparentImpl(elts : Array<PrefabElement>, toElt: PrefabElement, index: Int) : Bool -> Bool {
 		var effects = [];
-		var fullRefresh = false;
-		var toRefresh : Array<PrefabElement> = null;
-		for(elt in elts) {
+		for(i => elt in elts) {
 			var prev = elt.parent;
 			var prevIndex = prev.children.indexOf(elt);
 
@@ -3433,46 +4025,48 @@ class SceneEditor {
 				var mat = worldMat(obj);
 				var parentMat = worldMat(toObj);
 				parentMat.invert();
-				prevState = obj3d.saveTransform();
 				mat.multiply(mat, parentMat);
+				prevState = obj3d.saveTransform();
 				newState = makeTransform(mat);
 			}
 
 			effects.push(function(undo) {
+				removeInstance(elt);
 				if( undo ) {
-					removeInstance(elt);
 					elt.parent = prev;
 					prev.children.remove(elt);
 					prev.children.insert(prevIndex, elt);
 					if(obj3d != null && prevState != null)
 						obj3d.loadTransform(prevState);
 				} else {
-					removeInstance(elt);
-					elt.parent = toElt;
-					toElt.children.remove(elt);
-					toElt.children.insert(index, elt);
+					@:bypassAccessor elt.parent = toElt;
+					elt.shared = toElt.shared;
+					toElt.children.insert(index + i, elt);
 					if(obj3d != null && newState != null)
 						obj3d.loadTransform(newState);
 				};
-				toRefresh.pushUnique(elt);
-				toRefresh.pushUnique(toElt);
-				return true;
 			});
 		}
+
 		return function(undo) {
-			var refresh = false;
-			toRefresh = [];
-			for(f in effects) {
-				if(f(undo))
-					refresh = true;
-			}
-			if(!refresh) {
-				for(elt in toRefresh) {
-					removeInstance(elt);
-					makePrefab(elt);
+			// Remove all the children from their parent before
+			// adding them back in. Makes the index of insert() correct
+			if (!undo) {
+				for (elt in elts) {
+					elt.parent.children.remove(elt);
 				}
 			}
-			return refresh;
+
+			for(f in effects) {
+				f(undo);
+			}
+
+			if (!removeInstance(toElt)) {
+				return true;
+			}
+
+			makePrefab(toElt);
+			return false;
 		}
 	}
 
@@ -3482,7 +4076,7 @@ class SceneEditor {
 		if( p.type == "volumetricLightmap" || p.type == "light" )
 			uniqueName = true;
 
-		if( !uniqueName && sys.FileSystem.exists(getDataPath(p.name)) )
+		if( !uniqueName && p.name != null && p.name.length > 0 && sys.FileSystem.exists(getDataPath(p.name)) )
 			uniqueName = true;
 
 		var prefix = null;
@@ -3514,7 +4108,9 @@ class SceneEditor {
 	function update(dt:Float) {
 		saveCam3D();
 
-		@:privateAccess view.saveDisplayState("Camera2D", { x : sceneData.shared.root2d.x - scene.s2d.width*0.5, y : sceneData.shared.root2d.y - scene.s2d.height*0.5, z : sceneData.shared.root2d.scaleX });
+		if (camera2D) {
+			@:privateAccess view.saveDisplayState("Camera2D", { x : sceneData.shared.root2d.x - scene.s2d.width*0.5, y : sceneData.shared.root2d.y - scene.s2d.height*0.5, z : sceneData.shared.root2d.scaleX });
+		}
 		if(gizmo != null) {
 			if(!gizmo.moving) {
 				moveGizmoToSelection();
@@ -3569,8 +4165,6 @@ class SceneEditor {
 		}
 		for( ptype in allRegs.keys() ) {
 			var pinf = allRegs.get(ptype);
-			if (ptype == "UiDisplay")
-				trace("break");
 
 			if (!checkAllowParent(pinf, parent)) continue;
 			if(ptype == "shader") {
@@ -3624,8 +4218,6 @@ class SceneEditor {
 			label : label != null ? label : prefabInfo.inf.name,
 			click : function() {
 				function make(?sourcePath) {
-					if (ptype == "UiDisplay")
-						trace("Break");
 					var p = Type.createInstance(prefabInfo.prefabClass, [parent]);
 					//p.proto = new hrt.prefab.ProtoPrefab(p, sourcePath);
 					if(sourcePath != null)
@@ -3827,27 +4419,30 @@ class SceneEditor {
 		return groundPrefabsCache.copy();
 	}
 
-	public function projectToGround(ray: h3d.col.Ray, ?paintOn : hrt.prefab.Prefab ) {
+	public function projectToGround(ray: h3d.col.Ray, ?paintOn : hrt.prefab.Prefab, ignoreTerrain: Bool = false) {
 		var minDist = -1.;
 
-		for( elt in (paintOn == null ? getGroundPrefabs() : [paintOn]) ) {
-			var obj = Std.downcast(elt, Object3D);
-			if( obj == null ) continue;
+		if (!ignoreTerrain) {
+			for( elt in (paintOn == null ? getGroundPrefabs() : [paintOn]) ) {
+				var obj = Std.downcast(elt, Object3D);
+				if( obj == null ) continue;
 
-			var local3d = obj.findFirstLocal3d();
-			var lray = ray.clone();
-			lray.transform(local3d.getInvPos());
-			var dist = obj.localRayIntersection(lray);
-			if( dist > 0 ) {
-				var pt = lray.getPoint(dist);
-				pt.transform(local3d.getAbsPos());
-				var dist = pt.sub(ray.getPos()).length();
-				if( minDist < 0 || dist < minDist )
-					minDist = dist;
+				var local3d = obj.findFirstLocal3d();
+				var lray = ray.clone();
+				lray.transform(local3d.getInvPos());
+				var dist = obj.localRayIntersection(lray);
+				if( dist > 0 ) {
+					var pt = lray.getPoint(dist);
+					pt.transform(local3d.getAbsPos());
+					var dist = pt.sub(ray.getPos()).length();
+					if( minDist < 0 || dist < minDist )
+						minDist = dist;
+				}
 			}
+			if( minDist >= 0 )
+				return minDist;
 		}
-		if( minDist >= 0 )
-			return minDist;
+
 
 		var zPlane = h3d.col.Plane.Z(0);
 		var pt = ray.intersect(zPlane);
@@ -3861,19 +4456,19 @@ class SceneEditor {
 		return minDist;
 	}
 
-	public function screenDistToGround(sx : Float, sy : Float, ?paintOn : hrt.prefab.Prefab) : Null<Float> {
+	public function screenDistToGround(sx : Float, sy : Float, ?paintOn : hrt.prefab.Prefab, ignoreTerrain: Bool = false) : Null<Float> {
 		var camera = scene.s3d.camera;
 		var ray = camera.rayFromScreen(sx, sy);
-		var dist = projectToGround(ray, paintOn);
+		var dist = projectToGround(ray, paintOn, ignoreTerrain);
 		if( dist >= 0 )
 			return dist + camera.zNear;
 		return null;
 	}
 
-	public function screenToGround(sx: Float, sy: Float, ?paintOn : hrt.prefab.Prefab ) {
+	public function screenToGround(sx: Float, sy: Float, ?paintOn : hrt.prefab.Prefab, ignoreTerrain: Bool = false) {
 		var camera = scene.s3d.camera;
 		var ray = camera.rayFromScreen(sx, sy);
-		var dist = projectToGround(ray, paintOn);
+		var dist = projectToGround(ray, paintOn, ignoreTerrain);
 		if(dist >= 0) {
 			return ray.getPoint(dist);
 		}

@@ -112,6 +112,10 @@ class Toolbar extends Component {
 		if( (saveToggleState && Ide.inst.currentConfig.get('sceneeditor.${id}', def)) || (!saveToggleState && def) )
 			tog();
 
+		if (saveToggleState) {
+			onToggle(Ide.inst.currentConfig.get('sceneeditor.${id}', def));
+		}
+
 		return {
 			id : id,
 			element : e,

@@ -378,9 +378,6 @@
 .cdb .cdb-sheet tr.props > td > div.cdb-large {
   max-width: 1000px;
 }
-.cdb .cdb-sheet tr.props > td > div.cdb-large .cdb-sheet {
-  min-width: 800px;
-}
 .cdb .cdb-sheet tr.props .cdb-sheet {
   width: auto;
   min-width: 400px;

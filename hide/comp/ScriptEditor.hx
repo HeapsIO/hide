@@ -376,7 +376,7 @@ class ScriptChecker {
 #if !hl
 class ScriptEditor extends CodeEditor {
 
-	var checker : ScriptChecker;
+	public var checker(default,null) : ScriptChecker;
 	var checkTypes : Bool;
 
 	public function new( script : String, ?checker : ScriptChecker, ?parent : Element, ?root : Element, ?lang = "javascript" ) {

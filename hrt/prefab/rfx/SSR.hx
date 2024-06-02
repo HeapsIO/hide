@@ -153,7 +153,7 @@ class SSR extends RendererFX {
 		ssrPass = new h3d.pass.ScreenFx(new SSRShader());
 	}
 
-	override function end( r : h3d.scene.Renderer, step : h3d.impl.RendererFX.Step ) {
+	override function begin( r : h3d.scene.Renderer, step : h3d.impl.RendererFX.Step ) {
 		if( step == Forward ) {
 			r.mark("SSR");
 

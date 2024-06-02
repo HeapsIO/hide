@@ -11,6 +11,8 @@ class SplineMoverObject extends h3d.scene.Object {
 	var debugViz : h3d.scene.Mesh = null;
 	#end
 
+	static var targetAbsPos = new h3d.Matrix();
+	static var tmpMat = new h3d.Matrix();
 
 	override public function new(?parent : h3d.scene.Object, prefab : SplineMover) {
 		super(parent);
@@ -44,12 +46,16 @@ class SplineMoverObject extends h3d.scene.Object {
 		var pt = state.point;
 
 		for (c in movables) {
-			if (c.follow == null) {
-				// We attach the object to this parent because moveAlongSpline already includes the transform of
-				// this spline
-				c.follow = this.parent;
-			}
-			c.setPosition(pt.x, pt.y, pt.z);
+			c.getTransform(targetAbsPos);
+			targetAbsPos.identity();
+			targetAbsPos.setPosition(pt.toVector());
+
+			this.getAbsPos().getInverse(tmpMat);
+			tmpMat.multiply(targetAbsPos, tmpMat);
+			targetAbsPos.load(tmpMat);
+
+			c.setPosition(targetAbsPos.getPosition().x, targetAbsPos.getPosition().y, targetAbsPos.getPosition().z);
+			if( prefab.orientTangent ) c.setDirection(state.tangent);
 		}
 	}
 }
@@ -57,6 +63,7 @@ class SplineMoverObject extends h3d.scene.Object {
 class SplineMover extends Spline {
 
 	@:s public var speed = 1.0;
+	@:s public var orientTangent = false;
 	#if editor
 	@:s public var showDebug : Bool = true;
 	#end
@@ -93,6 +100,7 @@ class SplineMover extends Spline {
 		<div class="group" name="Mover">
 			<dl>
 				<dt>Speed</dt><dd><input type="range" min="-100" max="100" field="speed"/></dd>
+				<dt>Orient To Tangent</dt><dd><input type="checkbox" field="orientTangent"/></dd>
 				<dt>Show Debug</dt><dd><input type="checkbox" field="showDebug"/></dd>
 			</dl>
 		</div>'), this, function(pname) { ctx.onChange(this, pname); });

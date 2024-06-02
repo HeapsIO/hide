@@ -11,6 +11,11 @@ class DynamicShader extends Shader {
 		super(parent, shared);
 	}
 
+	override function copy(other:Prefab) {
+		super.copy(other);
+		var shaderDef = Std.downcast(other, DynamicShader)?.getShaderDefinition();
+	}
+
 	override function setShaderParam(shader:hxsl.Shader, v:hxsl.Ast.TVar, value:Dynamic) {
 		if( isInstance && !isShadergraph ) {
 			super.setShaderParam(shader,v,value);
@@ -76,7 +81,7 @@ class DynamicShader extends Shader {
 				var shgraph = Std.downcast(hxd.res.Loader.currentInstance.load(source).toPrefab().load(), hrt.shgraph.ShaderGraph);
 				if (shgraph == null)
 					throw source + " is not a valid shadergraph";
-				shaderDef = shgraph.compile2(null);
+				shaderDef = shgraph.compile(null);
 			}
 			else if( isInstance && !isShadergraph ) {
 				shaderClass = loadShaderClass();
@@ -114,8 +119,28 @@ class DynamicShader extends Shader {
 	}
 
 	#if editor
-	override function edit( ectx ) {
+	override function edit( ectx : hide.prefab.EditContext ) {
+
+		if (StringTools.endsWith(source, ".shgraph")) {
+			var element = new hide.Element('
+			<div class="group" name="Source">
+			<dl>
+				<dt>Path</dt><dd><input type="fileselect" extensions="shgraph" field="source"/></dd>
+			</dl>
+			</div>');
+
+			ectx.properties.add(element, this, function(pname) {
+				ectx.onChange(this, pname);
+				if (pname == "source") {
+					shaderDef = null;
+					if(!ectx.properties.isTempChange)
+						ectx.rebuildPrefab(this);
+				}
+			});
+		}
+
 		super.edit(ectx);
+
 		if( (isInstance && !isShadergraph) || loadShaderClass(true) != null ) {
 			ectx.properties.add(hide.comp.PropsEditor.makePropsList([{
 				name : "isInstance",

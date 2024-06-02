@@ -86,6 +86,8 @@ class SplineEditor {
 	var gizmos : Array<hrt.tools.Gizmo> = [];
 	var newSplinePointViewer : NewSplinePointViewer;
 
+	var grid : h3d.scene.Object;
+
 	public function new( prefab : Spline, undo : hide.ui.UndoHistory ){
 		this.prefab = prefab;
 		this.undo = undo;
@@ -143,7 +145,7 @@ class SplineEditor {
 		if( !prefab.loop && (closestPt.next == null || closestPt.prev == null) ) {
 			var camera = @:privateAccess prefab.local3d.getScene().camera;
 			var ray = camera.rayFromScreen(mouseX, mouseY);
-			var normal = closestPt.next == null ? closestPt.prev.getAbsPos().up().toPoint() : closestPt.next.getAbsPos().up().toPoint();
+			var normal = getClosestPlanNormal();
 			var point = closestPt.next == null ? closestPt.prev.getAbsPos().getPosition().toPoint() : closestPt.next.getAbsPos().getPosition().toPoint();
 			var plane = h3d.col.Plane.fromNormalPoint(normal, point);
 			var pt = ray.intersect(plane);
@@ -151,6 +153,33 @@ class SplineEditor {
 		}
 		else
 			return closestPt;
+	}
+
+	/**
+		Used to get the normal of the plan that is the more parallel to the viewport
+	**/
+	function getClosestPlanNormal() {
+		var camera = @:privateAccess prefab.local3d.getScene().camera;
+		var x = new h3d.Vector(1,0,0);
+		var y = new h3d.Vector(0,1,0);
+		var z = new h3d.Vector(0,0,1);
+
+		var normal = x;
+		var dot = Math.abs(camera.getForward().dot(x));
+
+		var tmpDot = Math.abs(camera.getForward().dot(y));
+		if (tmpDot > dot) {
+			normal = y;
+			dot = tmpDot;
+		}
+
+		tmpDot = Math.abs(camera.getForward().dot(z));
+		if (tmpDot > dot) {
+			normal = z;
+			dot = tmpDot;
+		}
+
+		return normal;
 	}
 
 	function getClosestPointFromMouse( mouseX : Float, mouseY : Float) : SplinePointData {
@@ -248,9 +277,14 @@ class SplineEditor {
 			var dir = spd.tangent.toVector();
 			dir.transform3x3(invMatrix); // Don't take the translation
 			dir.scale(-1);
-			sp.rotationX = h3d.Matrix.lookAtX(dir).getFloats()[0];
-			sp.rotationY = h3d.Matrix.lookAtX(dir).getFloats()[1];
-			sp.rotationZ = h3d.Matrix.lookAtX(dir).getFloats()[2];
+			var m = h3d.Matrix.lookAtX(dir);
+			var euler = m.getEulerAngles();
+			sp.rotationX = hxd.Math.radToDeg(euler.x);
+			sp.rotationY = hxd.Math.radToDeg(euler.y);
+			sp.rotationZ = hxd.Math.radToDeg(euler.z);
+
+			trace(sp.rotationX, sp.rotationY, sp.rotationZ);
+
 		}
 		sp.scaleX = scale;
 		sp.scaleY = scale;
@@ -326,7 +360,7 @@ class SplineEditor {
 
 			gizmo.onStartMove = function(mode) {
 
-				var sceneObj = prefab.local3d;
+				var sceneObj = sp.local3d;
 				var obj3d = sp.to(hrt.prefab.Object3D);
 				var pivotPt = sceneObj.getAbsPos().getPosition();
 				var pivot = new h3d.Matrix();
@@ -514,11 +548,26 @@ class SplineEditor {
 						newSplinePointViewer.visible = true;
 
 						var npt = getNewPointPosition(s2d.mouseX, s2d.mouseY);
+
+						if (grid != null) {
+							grid.remove();
+							grid = null;
+						}
+
+						var normal = getClosestPlanNormal();
+						var closest = getClosestPointFromMouse(s2d.mouseX, s2d.mouseY);
+						grid = editContext.scene.editor.createGrid(closest.pos , normal, 200, 1, normal * 0.2);
+
 						newSplinePointViewer.update(npt);
 					}
 					else {
 						if( newSplinePointViewer != null )
 							newSplinePointViewer.visible = false;
+
+						if (grid != null) {
+							grid.remove();
+							grid = null;
+						}
 					}
 
 					if( K.isDown( K.SHIFT ) ) {

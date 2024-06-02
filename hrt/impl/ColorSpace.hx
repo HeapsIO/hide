@@ -30,6 +30,11 @@ class Color {
 			withAlpha ? (rgb >> 24) & 0xFF : 255
 		);
 	}
+
+	inline public function toInt(includeAlpha: Bool) : Int {
+		return if (!includeAlpha) (r << 16) + (g << 8) + b
+		else (r << 16) + (g << 8) + (b << 0) + (a << 24);
+	}
 }
 
 class ColorSpace {

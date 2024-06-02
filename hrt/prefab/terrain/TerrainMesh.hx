@@ -259,23 +259,50 @@ class TerrainMesh extends h3d.scene.Object {
 		return result == null ? createTile(tileX, tileY) : result;
 	}
 
-	public function getTiles( x : Float, y : Float, range : Float, ?create = false ) : Array<Tile> {
+	public function getTiles( x : Float, y : Float, range : Float, ?create = false, ?disconectedTiles = false ) : Array<Tile> {
 		var pos = toLocalPos(x, y);
 		if( create != null && create ) {
 			var maxTileX = Math.floor((pos.x + range)/ tileSize.x);
 			var minTileX = Math.floor((pos.x - range)/ tileSize.x);
 			var maxTileY = Math.floor((pos.y + range)/ tileSize.y);
 			var minTileY = Math.floor((pos.y - range)/ tileSize.y);
-			for( x in minTileX ... maxTileX + 1) {
-				for( y in minTileY...maxTileY + 1) {
-					var t = createTile(x, y);
-					#if editor
-					t.material.mainPass.stencil = new h3d.mat.Stencil();
-					t.material.mainPass.stencil.setFunc(Always, 0x01, 0x01, 0x01);
-					t.material.mainPass.stencil.setOp(Keep, Keep, Replace);
-					#end
+			var shouldCreate = disconectedTiles;
+			if (!shouldCreate && tiles.length == 0) {
+				// allow tile cration arount origin
+				shouldCreate = maxTileX >= 0 && minTileX<=0 && maxTileY>=0 && minTileY<=0;  
+			}
+			
+			// check if borders contains a tile
+			if (!shouldCreate) {
+				for (x in minTileX...maxTileX+1)
+				{
+					shouldCreate = getTile(x, maxTileY+1) != null || getTile(x, minTileY-1) != null;
+					if (shouldCreate)
+						break;
 				}
 			}
+			if (!shouldCreate) {
+				for (y in minTileY...maxTileY+1)
+				{
+					shouldCreate = getTile(maxTileX+1, y) != null || getTile(minTileX - 1, y) != null;
+					if (shouldCreate)
+						break;
+				}
+			}
+
+			if (shouldCreate) {
+				for( x in minTileX ... maxTileX + 1) {
+					for( y in minTileY...maxTileY + 1) {
+						var t = createTile(x, y);
+						#if editor
+						t.material.mainPass.stencil = new h3d.mat.Stencil();
+						t.material.mainPass.stencil.setFunc(Always, 0x01, 0x01, 0x01);
+						t.material.mainPass.stencil.setOp(Keep, Keep, Replace);
+						#end
+					}
+				}
+			}
+
 		}
 		var result : Array<Tile> = [];
 		for( tile in tiles)

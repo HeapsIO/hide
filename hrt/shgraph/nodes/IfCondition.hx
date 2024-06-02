@@ -8,72 +8,34 @@ import hrt.shgraph.AstTools.*;
 @group("Condition")
 class IfCondition extends ShaderNode {
 
-	// @input("Condition") var condition = SType.Bool;
-	// @input("True") var trueVar = SType.Variant;
-	// @input("False") var falseVar = SType.Variant;
-
-	override public function getShaderDef(domain: ShaderGraph.Domain, getNewIdFn : () -> Int, ?inputTypes: Array<Type>) : ShaderGraph.ShaderNodeDef {
-
-		var condition : TVar = {name : "condition", id: getNewIdFn(), type: TBool, kind: Local, qualifiers: []};
-
-		var vTrue : TVar = {name : "true", id: getNewIdFn(), type: TFloat, kind: Local, qualifiers: []};
-		var vFalse : TVar = {name : "false", id: getNewIdFn(), type: TFloat, kind: Local, qualifiers: []};
-
-		var out : TVar = {name : "out", id: getNewIdFn(), type: TFloat, kind: Local, qualifiers: []};
-
-		var expr = makeIf(makeVar(condition), makeAssign(makeVar(out), makeVar(vTrue)), makeAssign(makeVar(out), makeVar(vFalse)));
-
-		return {
-			expr: expr,
-			inVars: [
-				{v:condition, internal: false, isDynamic: false, defVal: ConstBool(false)},
-				{v:vTrue, internal: false, defVal: Const(0.0), isDynamic: true}, {v:vFalse, internal: false, defVal: Const(0.0), isDynamic: true}],
-			outVars:[{v:out, internal: false, isDynamic: true}],
-			inits: [],
-			externVars: []
-		};
+	override function getOutputs() {
+		static var output : Array<ShaderNode.OutputInfo> = [{name: "output", type: SgGeneric(0, ConstraintFloat)}];
+		return output;
 	}
 
+	override function getInputs() {
+		static var inputs : Array<ShaderNode.InputInfo> =
+		[
+			{name: "condition", type: SgBool},
+			{name: "true", type: SgGeneric(0, ConstraintFloat), def: Const(1.0)},
+			{name: "false", type: SgGeneric(0, ConstraintFloat), def: Const(0.0)},
+		];
+		return inputs;
+	}
 
+	override function generate(ctx: NodeGenContext) {
+		var cond = ctx.getInput(0, ConstBool(true));
+		var vTrue = ctx.getInput(1, Const(1.0));
+		var vFalse = ctx.getInput(2, Const(0.0));
 
-	// override public function checkValidityInput(key : String, type : ShaderType.SType) : Bool {
+		var outType = ctx.getType(SgGeneric(0, ConstraintFloat));
 
-	// 	if (key == "trueVar" && falseVar != null && !falseVar.isEmpty())
-	// 		return ShaderType.checkCompatibilities(type, ShaderType.getSType(falseVar.getType()));
+		var test = makeIf(cond, vTrue, vFalse, null, outType);
 
-	// 	if (key == "falseVar" && trueVar != null && !trueVar.isEmpty())
-	// 		return ShaderType.checkCompatibilities(type, ShaderType.getSType(trueVar.getType()));
-
-	// 	return true;
-	// }
-
-	// override public function computeOutputs() {
-	// 	if (trueVar != null && !trueVar.isEmpty() && falseVar != null && !falseVar.isEmpty())
-	// 		addOutput("output", trueVar.getVar(falseVar.getType()).t);
-	// 	else if (trueVar != null && !trueVar.isEmpty())
-	// 		addOutput("output", trueVar.getType());
-	// 	else if (falseVar != null && !falseVar.isEmpty())
-	// 		addOutput("output", falseVar.getType());
-	// 	else
-	// 		removeOutput("output");
-	// }
-
-	// // override public function build(key : String) : TExpr {
-	// // 	return {
-	// // 		p : null,
-	// // 		t: output.type,
-	// // 		e : TBinop(OpAssign, {
-	// // 				e: TVar(output),
-	// // 				p: null,
-	// // 				t: output.type
-	// // 			}, {
-	// // 			e: TIf( condition.getVar(),
-	// // 					trueVar.getVar(falseVar.getType()),
-	// // 					falseVar.getVar(trueVar.getType())),
-	// // 			p: null,
-	// // 			t: output.type
-	// // 		})
-	// // 	};
-	// // }
-
+		var v : TVar = {name: "output", id: Tools.allocVarId(), type: outType, kind: Local};
+		var tmpvar = makeVarDecl(v, test);
+		ctx.addExpr(tmpvar);
+		ctx.setOutput(0, makeVar(v));
+		ctx.addPreview(makeVar(v));
+	}
 }

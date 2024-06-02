@@ -121,7 +121,10 @@ class CdbTable extends hide.ui.View<{}> {
 			}
 
 		}
-		haxe.Timer.delay(editor.focus,1);
+		haxe.Timer.delay(function() {
+			editor.focus();
+			editor.cursor.update();
+		}, 1);
 		/*for (i in 0...coords.length) {
 			var c = coords[i];
 			editor.cursor.set(curTable, c.column, c.line);

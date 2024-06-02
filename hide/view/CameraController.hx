@@ -17,10 +17,13 @@ class CameraControllerBase extends h3d.scene.CameraController {
 	public var zNear = 0.1;
 	public var zFar = 10000.0;
 
+	public var snapToGround = true;
+
 	public function loadFOVFromCamera() {
 		var scene = if( scene == null ) getScene() else scene;
 		var cam = scene.camera;
 		zNear = cam.zNear;
+
 		zFar = cam.zFar;
 		wantedFOV = cam.fovY;
 	}
@@ -39,6 +42,7 @@ class CameraControllerBase extends h3d.scene.CameraController {
 
 		zNear = data.zNear != null ? data.zNear : zNear;
 		zFar = data.zFar != null ? data.zFar : zFar;
+		snapToGround = data.snapToGround ?? snapToGround;
 	}
 
 	public function saveSettings(data : Dynamic) : Void {
@@ -46,6 +50,7 @@ class CameraControllerBase extends h3d.scene.CameraController {
 		data.camSpeed = camSpeed;
 		data.zNear = zNear;
 		data.zFar = zFar;
+		data.snapToGround = snapToGround;
 	}
 
 	function offset(pt:h3d.Vector) {
@@ -101,8 +106,8 @@ class OrthoController extends CameraControllerBase {
 				var selection = se.getSelection();
 				var angle = hxd.Math.abs(Math.PI/2 - phi);
 				if( selection.length == 0 && angle > groundSnapAngle ) {
-					var visGround = se.screenToGround(se.scene.s2d.width / 2, se.scene.s2d.height / 2);
-					var dist = se.screenDistToGround(se.scene.s2d.width / 2, se.scene.s2d.height / 2);
+					var visGround = se.screenToGround(se.scene.s2d.width / 2, se.scene.s2d.height / 2, !snapToGround);
+					var dist = se.screenDistToGround(se.scene.s2d.width / 2, se.scene.s2d.height / 2, !snapToGround);
 					if( dist != null ) {
 						set(dist, null, null, visGround);
 					}
@@ -141,8 +146,8 @@ class OrthoController extends CameraControllerBase {
 						}
 						else {
 							var se = sceneEditor;
-							var fromPt = se.screenToGround(startPush.x, startPush.y);
-							var toPt = se.screenToGround(startPush.x+e.relX-pushX, startPush.y+e.relY-pushY);
+							var fromPt = se.screenToGround(startPush.x, startPush.y, !snapToGround);
+							var toPt = se.screenToGround(startPush.x+e.relX-pushX, startPush.y+e.relY-pushY, !snapToGround);
 							if(fromPt == null || toPt == null)
 								return;
 							var delta = toPt.sub(fromPt).toVector();
@@ -213,8 +218,6 @@ class OrthoController extends CameraControllerBase {
 		ctx.elapsedTime = hxd.Timer.dt;
 		super.sync(ctx);
 		ctx.elapsedTime = old;
-
-        trace(orthoZoom, curPos.x, cam.m, cam.getInverseViewProj());
 	}
 }
 
@@ -270,8 +273,8 @@ class FPSController extends CameraControllerBase {
 						var angle = hxd.Math.abs(Math.PI/2 - phi);
 
 						var se = sceneEditor;
-						var fromPt = se.screenToGround(startPush.x, startPush.y);
-						var toPt = se.screenToGround(startPush.x+e.relX-pushX, startPush.y+e.relY-pushY);
+						var fromPt = se.screenToGround(startPush.x, startPush.y, !snapToGround);
+						var toPt = se.screenToGround(startPush.x+e.relX-pushX, startPush.y+e.relY-pushY, !snapToGround);
 						if(fromPt == null || toPt == null)
 							return;
 						var delta = toPt.sub(fromPt).toVector();
@@ -382,8 +385,8 @@ class CamController extends CameraControllerBase {
 				var selection = se.getSelection();
 				var angle = hxd.Math.abs(Math.PI/2 - phi);
 				if( selection.length == 0 && angle > groundSnapAngle ) {
-					var visGround = se.screenToGround(se.scene.s2d.width / 2, se.scene.s2d.height / 2);
-					var dist = se.screenDistToGround(se.scene.s2d.width / 2, se.scene.s2d.height / 2);
+					var visGround = se.screenToGround(se.scene.s2d.width / 2, se.scene.s2d.height / 2, !snapToGround);
+					var dist = se.screenDistToGround(se.scene.s2d.width / 2, se.scene.s2d.height / 2, !snapToGround);
 					if( dist != null ) {
 						set(dist, null, null, visGround);
 					}
@@ -419,8 +422,8 @@ class CamController extends CameraControllerBase {
 						}
 						else {
 							var se = sceneEditor;
-							var fromPt = se.screenToGround(startPush.x, startPush.y);
-							var toPt = se.screenToGround(startPush.x+e.relX-pushX, startPush.y+e.relY-pushY);
+							var fromPt = se.screenToGround(startPush.x, startPush.y, !snapToGround);
+							var toPt = se.screenToGround(startPush.x+e.relX-pushX, startPush.y+e.relY-pushY, !snapToGround);
 							if(fromPt == null || toPt == null)
 								return;
 							var delta = toPt.sub(fromPt).toVector();
@@ -664,8 +667,8 @@ class FlightController extends CameraControllerBase {
 						var angle = hxd.Math.abs(Math.PI/2 - phi);
 
 						var se = sceneEditor;
-						var fromPt = se.screenToGround(startPush.x, startPush.y);
-						var toPt = se.screenToGround(startPush.x+e.relX-pushX, startPush.y+e.relY-pushY);
+						var fromPt = se.screenToGround(startPush.x, startPush.y, !snapToGround);
+						var toPt = se.screenToGround(startPush.x+e.relX-pushX, startPush.y+e.relY-pushY, !snapToGround);
 						if(fromPt == null || toPt == null)
 							return;
 						var delta = toPt.sub(fromPt).toVector();

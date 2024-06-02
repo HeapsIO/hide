@@ -82,6 +82,9 @@ class TrailObj extends h3d.scene.Mesh {
 	var bounds : h3d.col.Bounds;
 	var prefab : Trails;
 
+	var xOffset : Float = 0;
+	var yOffset : Float = 0;
+	var zOffset : Float = 0;
 
 	public var timeScale : Float = 1.0;
 
@@ -224,6 +227,16 @@ class TrailObj extends h3d.scene.Mesh {
 
 	override function onRemove() {
 		super.onRemove();
+		var p = parent;
+		var fxAnim : Array<hrt.prefab.fx.FX.FXAnimation> = [];
+		while ( p != null ) {
+			var fx = Std.downcast(p, hrt.prefab.fx.FX.FXAnimation);
+			if ( fx != null )
+				fxAnim.push(fx);
+			p = p.parent;
+		}
+		for ( fx in fxAnim )
+			fx.trails.remove(this);
 		dprim.dispose();
 	}
 
@@ -499,6 +512,30 @@ class TrailObj extends h3d.scene.Mesh {
 	}
 
 	public function update(dt: Float) {
+		// Recompute some values of those were based on previous s3d positions
+		var sceneAbs = getScene().absPos.getPosition();
+		if (xOffset != sceneAbs.x || yOffset != sceneAbs.y || zOffset != sceneAbs.z) {
+			for (i in 0...numTrails) {
+				var trail = trails[i];
+				var cur = trail.firstPoint;
+
+				while (cur != null) {
+					cur.x = cur.x - xOffset + sceneAbs.x;
+					cur.y = cur.y - yOffset + sceneAbs.y;
+					cur.z = cur.z - zOffset + sceneAbs.z;
+
+					cur = cur.next;
+				}
+			}
+
+			prev_x = prev_x - xOffset + sceneAbs.x;
+			prev_y = prev_y - yOffset + sceneAbs.y;
+			prev_z = prev_z - zOffset + sceneAbs.z;
+
+			xOffset = sceneAbs.x;
+			yOffset = sceneAbs.y;
+			zOffset = sceneAbs.z;
+		}
 
 		var numObj = 0;
 		for (child in children) {

@@ -5,11 +5,72 @@
   font-weight: normal;
   font-style: normal;
 }
+@font-face {
+  font-family: 'Inter';
+  src: url('res/Inter-Medium.ttf');
+  font-weight: normal;
+  font-style: normal;
+}
 body {
   margin: 0;
   padding: 0;
   background-color: black;
   user-select: none;
+}
+#message-container {
+  pointer-events: none;
+  z-index: 9999;
+  position: fixed;
+  left: 0;
+  right: 0;
+  top: 0;
+  bottom: 0;
+  display: flex;
+  flex-direction: column;
+  justify-content: end;
+  align-content: center;
+  align-items: center;
+  padding-bottom: 8px;
+}
+#message-container .message {
+  transition: all 1s;
+  margin-top: 0px;
+  display: flex;
+  overflow: hidden;
+  outline: 1px solid;
+  outline-color: #68686800;
+  border-radius: 5px;
+  flex-shrink: 1;
+  max-height: 0px;
+}
+#message-container .message .icon {
+  outline: 0px solid #686868;
+  border-radius: 4px 0px 0px 4px;
+  padding: 5px 5px 3px 5px;
+  background: #666666;
+}
+#message-container .message .text {
+  outline: 0px solid #686868;
+  border-radius: 0px 4px 4px 0px;
+  background: #222222;
+  padding: 3px 10px 3px 3px;
+}
+#message-container .message.show {
+  outline-color: #686868;
+  margin-top: 4px;
+  max-height: 26px;
+  transition: all 1s;
+}
+#message-container .message.error {
+  background-color: #39221d;
+}
+#message-container .message.error .text,
+#message-container .message.error .icon {
+  outline-color: #b64f37;
+  color: #fefefe;
+}
+#message-container .message.error .icon {
+  background: #b64f37;
 }
 .globalErrorMessage {
   position: absolute;
@@ -231,6 +292,10 @@ body .select2-container--default .select2-results__option--highlighted[aria-sele
 .hide-dropdown > .dropdown-cont .options .dropdown-option p {
   display: inline-block;
   margin: 0;
+}
+.hide-dropdown > .dropdown-cont .options .dropdown-option p.option-context {
+  margin-right: 5px;
+  color: #555;
 }
 .hide-dropdown > .dropdown-cont .options .dropdown-option.current-value {
   background-color: #444;
@@ -704,11 +769,10 @@ input[type=checkbox]:checked:after {
   align-items: center;
   margin-top: 2px;
   margin-bottom: 2px;
+  column-gap: 4px;
 }
 .tb-group {
   display: inline-flex;
-  margin-left: 2px;
-  margin-right: 2px;
 }
 .tb-group.small > * {
   height: 18px;
@@ -759,14 +823,19 @@ input[type=checkbox]:checked:after {
   border-top-right-radius: 4px;
   border-bottom-right-radius: 4px;
 }
+.tb-group > *.button2.transparent {
+  opacity: 0.5;
+}
 .tb-group > *.button2:hover {
   border-color: #3d3d3d;
   background: #656565;
+  opacity: 1;
 }
 .tb-group > *.button2:active,
 .tb-group > *.button2[checked],
 .tb-group > *.menu:active {
   background: #969696;
+  opacity: 1;
 }
 .tb-group > *.menu {
   background: #282828;
@@ -1078,7 +1147,8 @@ input[type=checkbox]:checked:after {
 .hide-properties dt {
   vertical-align: middle;
   display: inline-block;
-  overflow-x: hidden;
+  text-wrap: wrap;
+  word-break: break-word;
   margin-top: 4px;
 }
 .hide-properties dd span,
@@ -1870,8 +1940,161 @@ input[type=checkbox]:checked:after {
   visibility: visible;
 }
 /* Shader Editor */
+.shader-editor {
+  display: flex;
+  flex-direction: row;
+}
+.shader-editor #preview {
+  z-index: 3;
+  position: absolute;
+  width: 300px;
+  height: 300px;
+  background-color: #111;
+  border: 1px solid #444;
+  right: 35px;
+  bottom: 35px;
+}
+.shader-editor #preview .hide-toolbar2 {
+  position: absolute;
+  right: 8px;
+  top: 8px;
+}
+.shader-editor .flex.vertical {
+  position: relative;
+}
+.shader-editor #rightPanel {
+  flex: 0;
+  display: flex;
+  flex-direction: column;
+  min-width: 270px;
+  width: 280px;
+  padding-top: 10px;
+  border-left: 1px solid #444444;
+  background: #222222;
+  user-select: none;
+  height: 100%;
+}
+.shader-editor #rightPanel span {
+  margin-left: 5px;
+  font-size: 15px;
+  font-weight: bold;
+}
+.shader-editor #rightPanel > div {
+  flex: 1;
+}
+.shader-editor #rightPanel .hide-block {
+  height: 100%;
+}
+.shader-editor #rightPanel .hide-block #parametersList {
+  height: 100%;
+}
+.shader-editor #rightPanel .hide-block #parametersList .parameter {
+  border: 1px solid;
+  margin: 5px;
+  background-color: #222;
+  position: relative;
+  /*.content {
+						background-color: #b3b3b3;
+						padding: 5px;
+						box-shadow: inset 0px 13px 6px -15px black;
+
+						div {
+							width: 100%;
+							height: 20px;
+
+							span {
+								float: left;
+								color: black;
+								font-size: 13px;
+								padding-right: 5px;
+								font-weight: normal;
+							}
+						}
+						.texture-preview {
+							background-repeat: no-repeat;
+							background-size: 20px 20px!important;
+							border: 2px #444444 solid;
+							width: 20px;
+						}
+						.action-btns {
+							input {
+								float: right;
+							}
+						}
+					}*/
+}
+.shader-editor #rightPanel .hide-block #parametersList .parameter.hovertop:before,
+.shader-editor #rightPanel .hide-block #parametersList .parameter.hoverbot:after {
+  display: block;
+  position: absolute;
+  z-index: 100;
+  margin: 0 auto;
+  width: 100%;
+  content: "";
+}
+.shader-editor #rightPanel .hide-block #parametersList .parameter:before {
+  border-top: 5px solid red;
+  top: -10px;
+}
+.shader-editor #rightPanel .hide-block #parametersList .parameter:after {
+  border-bottom: 5px solid purple;
+  bottom: -10px;
+}
+.shader-editor #rightPanel .hide-block #parametersList .parameter .header {
+  background-color: #d6d6d6;
+  height: 20px;
+  padding: 5px;
+  color: black;
+  cursor: pointer;
+}
+.shader-editor #rightPanel .hide-block #parametersList .parameter .header .title {
+  float: left;
+}
+.shader-editor #rightPanel .hide-block #parametersList .parameter .header .title input {
+  width: 130px;
+}
+.shader-editor #rightPanel .hide-block #parametersList .parameter .header .type {
+  float: right;
+}
+.shader-editor #rightPanel .hide-block #parametersList .parameter .header .type span {
+  color: black;
+  font-style: italic;
+  font-size: 13px;
+  padding-right: 5px;
+}
+.shader-editor #rightPanel .hide-block #parametersList .parameter .content {
+  padding: 4px;
+}
+.shader-editor #rightPanel .hide-block #parametersList .parameter .content > div {
+  margin-top: 2px;
+}
+.shader-editor #rightPanel .hide-block #parametersList .parameter > span {
+  font-size: 12px;
+}
+.shader-editor #rightPanel .options-block {
+  flex: 0;
+  height: max(250px, 25%);
+}
+.shader-editor #rightPanel .options-block > * {
+  display: block;
+  margin-bottom: 10px;
+  width: 100%;
+  text-align: center;
+  box-sizing: border-box;
+}
+.shader-editor #rightPanel .options-block > div {
+  border: 1px solid #666;
+  padding: 2px;
+}
 .graph-view {
   outline: none !important;
+  position: relative;
+}
+.graph-view .hide-toolbar2 {
+  position: absolute;
+  top: 10px;
+  left: 10px;
+  z-index: 999;
 }
 .graph-view .mini-preview {
   position: absolute;
@@ -1883,127 +2106,7 @@ input[type=checkbox]:checked:after {
   position: absolute;
   top: 0px;
   left: 0px;
-  z-index: 0;
-}
-.graph-view .tabs {
-  width: 280px;
-  padding-top: 10px;
-  border-left: 1px solid #444444;
-  z-index: 205;
-  background: #222222;
-  height: 100%;
-  user-select: none;
-}
-.graph-view .tabs span {
-  margin-left: 5px;
-  font-size: 15px;
-  font-weight: bold;
-}
-.graph-view .tabs .tab {
-  height: 100%;
-}
-.graph-view .tabs .tab .hide-block {
-  height: 600px;
-}
-.graph-view .tabs .tab .hide-block #parametersList {
-  height: 100%;
-}
-.graph-view .tabs .tab .hide-block #parametersList .parameter {
-  border: 1px solid;
-  margin: 5px;
-  background-color: #222;
-  position: relative;
-  /*.content {
-							background-color: #b3b3b3;
-							padding: 5px;
-							box-shadow: inset 0px 13px 6px -15px black;
-
-							div {
-								width: 100%;
-								height: 20px;
-
-								span {
-									float: left;
-									color: black;
-									font-size: 13px;
-									padding-right: 5px;
-									font-weight: normal;
-								}
-							}
-							.texture-preview {
-								background-repeat: no-repeat;
-								background-size: 20px 20px!important;
-								border: 2px #444444 solid;
-								width: 20px;
-							}
-							.action-btns {
-								input {
-									float: right;
-								}
-							}
-						}*/
-}
-.graph-view .tabs .tab .hide-block #parametersList .parameter.hovertop:before,
-.graph-view .tabs .tab .hide-block #parametersList .parameter.hoverbot:after {
-  display: block;
-  position: absolute;
-  z-index: 100;
-  margin: 0 auto;
-  width: 100%;
-  content: "";
-}
-.graph-view .tabs .tab .hide-block #parametersList .parameter:before {
-  border-top: 5px solid red;
-  top: -10px;
-}
-.graph-view .tabs .tab .hide-block #parametersList .parameter:after {
-  border-bottom: 5px solid red;
-  bottom: -10px;
-}
-.graph-view .tabs .tab .hide-block #parametersList .parameter .header {
-  background-color: #d6d6d6;
-  height: 20px;
-  padding: 5px;
-  color: black;
-  cursor: pointer;
-}
-.graph-view .tabs .tab .hide-block #parametersList .parameter .header .title {
-  float: left;
-}
-.graph-view .tabs .tab .hide-block #parametersList .parameter .header .title input {
-  width: 130px;
-}
-.graph-view .tabs .tab .hide-block #parametersList .parameter .header .type {
-  float: right;
-}
-.graph-view .tabs .tab .hide-block #parametersList .parameter .header .type span {
-  color: black;
-  font-style: italic;
-  font-size: 13px;
-  padding-right: 5px;
-}
-.graph-view .tabs .tab .hide-block #parametersList .parameter .content {
-  padding: 4px;
-}
-.graph-view .tabs .tab .hide-block #parametersList .parameter .content > div {
-  margin-top: 2px;
-}
-.graph-view .tabs .tab .hide-block #parametersList .parameter > span {
-  font-size: 12px;
-}
-.graph-view .tabs .tab .options-block {
-  height: max(250px, 25%);
-}
-.graph-view .tabs .tab .options-block > * {
-  display: block;
-  margin-bottom: 10px;
-  width: 100%;
-  text-align: center;
-  box-sizing: border-box;
-}
-.graph-view .tabs .tab .options-block > div {
-  border: 1px solid #666;
-  padding: 2px;
+  z-index: 1;
 }
 .graph-view #add-menu {
   position: absolute;
@@ -2137,42 +2240,8 @@ input[type=checkbox]:checked:after {
 .graph-view .heaps-scene {
   outline: none !important;
 }
-.graph-view .heaps-scene #preview {
-  z-index: 3;
-  position: absolute;
-  width: 300px;
-  height: 300px;
-  background-color: #111;
-  border: 1px solid #444;
-  right: 290px;
-  bottom: 35px;
-}
-.graph-view .heaps-scene #status-bar {
-  z-index: 2;
-  position: absolute;
-  width: 84%;
-  min-height: 20px;
-  background-color: #111;
-  border: 1px solid #444;
-  left: -1px;
-  bottom: -1px;
-  max-height: 60%;
-  overflow: auto;
-}
-.graph-view .heaps-scene #status-bar pre {
-  padding: 10px;
-  vertical-align: sub;
-}
-.graph-view .heaps-scene #status-bar pre.error {
-  color: #c74848;
-}
-.graph-view .heaps-scene #status-bar #close {
-  width: 100%;
-  text-align: center;
-  cursor: pointer;
-}
-.graph-view .heaps-scene svg g {
-  stroke: #202020;
+.graph-view .heaps-scene svg {
+  font-family: 'Inter';
 }
 .graph-view .heaps-scene svg g.selected .outline {
   stroke: #668fff;
@@ -2183,21 +2252,46 @@ input[type=checkbox]:checked:after {
 .graph-view .heaps-scene svg .outline {
   fill: none;
 }
-.graph-view .heaps-scene svg .head-box {
-  fill: #155358;
+.graph-view .heaps-scene svg .background {
+  fill: #393939;
+}
+.graph-view .heaps-scene svg .separator {
+  stroke: #272727;
+  stroke-width: 1px;
+}
+.graph-view .heaps-scene svg .resize {
+  fill: rgba(0, 0, 0, 0);
+  stroke: none;
+}
+.graph-view .heaps-scene svg .comment .head-box {
+  fill: rgba(80, 80, 80, 0.5);
+}
+.graph-view .heaps-scene svg .comment .outline {
+  stroke: rgba(80, 80, 80, 0.5);
+  stroke-width: 3;
+}
+.graph-view .heaps-scene svg .comment-title {
+  display: inline-block;
+  max-width: calc(100% - 30px);
+  min-width: 20px;
+  height: 100%;
+  font-size: 2em;
+  background: rgba(0, 0, 0, 0);
+  border: none;
+  overflow-x: hidden;
+  text-wrap: nowrap;
+}
+.graph-view .heaps-scene svg .comment-title br {
+  display: none;
 }
 .graph-view .heaps-scene svg .title-box {
-  fill: #ffffff;
+  text-anchor: start;
+  fill: #c3c3c3;
   stroke: none;
   user-select: none;
 }
 .graph-view .heaps-scene svg .title-box::selection {
   background: none;
-}
-.graph-view .heaps-scene svg .nodes,
-.graph-view .heaps-scene svg .properties {
-  fill: #737373;
-  opacity: 0.75;
 }
 .graph-view .heaps-scene svg .hasLink .input-field {
   display: none;
@@ -2221,7 +2315,7 @@ input[type=checkbox]:checked:after {
   fill: #5ca4ab;
 }
 .graph-view .heaps-scene svg .title-node {
-  fill: #ffffff;
+  fill: #c3c3c3;
   stroke: none;
   user-select: none;
 }
@@ -2289,11 +2383,14 @@ input[type=checkbox]:checked:after {
   stroke-width: 2;
   stroke: #c8c8c8;
   fill: transparent;
+  pointer-events: stroke;
 }
-.graph-view .heaps-scene svg .edge:not(.draft):hover,
-.graph-view .heaps-scene svg .edge:not(.draft).selected {
-  stroke-width: 5;
-  stroke: #72b4ff;
+.graph-view .heaps-scene svg .edge.hitbox {
+  stroke-width: 10;
+  stroke: transparent;
+}
+.graph-view .heaps-scene svg .edge.hitbox:hover {
+  stroke: rgba(114, 180, 255, 0.5);
 }
 .graph-view .heaps-scene svg .rect-selection {
   stroke: rgba(0, 0, 255, 0.7);
@@ -2648,6 +2745,13 @@ div.popup:focus {
   margin-bottom: 0;
   text-align: center;
 }
+.settings-popup h2 {
+  margin-top: 0.5em;
+  margin-bottom: 0;
+  text-align: left;
+  font-size: 1em;
+  font-weight: normal;
+}
 .settings-popup select {
   width: auto;
   width: fit-content;
@@ -2897,4 +3001,326 @@ div.gradient-box {
 .domkitEditor .separator {
   width: 20;
   background: #111;
+}
+.profiler {
+  width: 100%;
+  height: 100%;
+  display: flex;
+}
+.profiler .left-panel {
+  height: 100%;
+  width: 80%;
+  display: flex;
+  background-color: #303030;
+  flex-direction: column;
+}
+.profiler .left-panel .tree-map {
+  background-color: #4c00ff;
+  width: 100%;
+  flex-grow: 1;
+}
+.profiler .left-panel table {
+  overflow-y: scroll;
+}
+.profiler .left-panel table thead {
+  position: sticky;
+  top: 0;
+  background-color: #151515;
+}
+.profiler .left-panel table thead td {
+  font-weight: bold;
+}
+.profiler .left-panel table thead .sort-count,
+.profiler .left-panel table thead .sort-size {
+  cursor: pointer;
+}
+.profiler .left-panel table tr:hover {
+  background-color: #272727;
+}
+.profiler .left-panel table tr:focus {
+  background-color: #2c5d87;
+}
+.profiler .left-panel table thead tr:hover {
+  background-color: #151515;
+}
+.profiler .left-panel table td:last-child {
+  width: 100%;
+}
+.profiler .left-panel table td:nth-child(3) {
+  width: 70%;
+  max-width: 700px;
+}
+.profiler .left-panel table td {
+  padding: 3px 30px 3px 1px;
+  overflow: hidden;
+  white-space: nowrap;
+}
+.profiler .left-panel table td .folder {
+  cursor: pointer;
+  margin-right: 10px;
+  margin-left: 5px;
+  font-size: 12pt;
+  text-align: center;
+  vertical-align: text-top;
+}
+.profiler .left-panel table td .outer-gauge {
+  background-color: #535353;
+  width: 100%;
+  height: 15px;
+}
+.profiler .left-panel table td .inner-gauge {
+  background-color: #d6d6d6;
+  height: 15px;
+}
+.profiler .left-panel table td .icon {
+  padding-left: 10px;
+}
+.profiler .left-panel table .inspect-row td {
+  width: 100px;
+}
+.profiler .right-panel {
+  height: 100%;
+  width: 20%;
+  padding: 10px;
+}
+.profiler .right-panel dl {
+  overflow-x: hidden;
+  margin: 0px;
+}
+.profiler .right-panel dt {
+  width: 80px;
+  text-align: right;
+  font-size: 11px;
+  color: #aaa;
+  user-select: none;
+  text-transform: capitalize;
+  cursor: pointer;
+  font-weight: normal;
+  vertical-align: middle;
+  display: inline-block;
+  text-wrap: wrap;
+  word-break: break-word;
+  margin-top: 4px;
+}
+.profiler .right-panel dd {
+  position: relative;
+  width: 200px;
+  margin-left: 10px;
+  vertical-align: middle;
+  display: inline-block;
+  text-wrap: wrap;
+  word-break: break-word;
+  margin-top: 4px;
+}
+.profiler .right-panel .outer-gauge {
+  background-color: #535353;
+  width: 100%;
+  height: 20px;
+}
+.profiler .right-panel .inner-gauge {
+  background-color: #d6d6d6;
+  height: 20px;
+}
+.profiler .right-panel h4,
+.profiler .right-panel h5 {
+  margin-bottom: 2px;
+}
+.profiler .right-panel h5 {
+  margin-top: 2px;
+}
+.profiler .right-panel hr {
+  margin-top: 25px;
+  border-top: 1px, solid, #666666;
+}
+.profiler .right-panel .title {
+  text-align: center;
+  font-size: 9pt;
+  background-color: #151515;
+  margin-bottom: 5px;
+  margin-top: 5px;
+  vertical-align: middle;
+}
+.profiler .right-panel .drop-zone {
+  background-color: #111111;
+  border-style: dashed;
+  border-width: 5px;
+  height: 100px;
+  padding-top: 20px;
+}
+.profiler .right-panel .drop-zone .icon {
+  text-align: center;
+  font-size: 30pt;
+  margin: 0;
+  font-weight: bold;
+  pointer-events: none;
+}
+.profiler .right-panel .drop-zone .label {
+  text-align: center;
+  pointer-events: none;
+}
+@keyframes zoomIn {
+  from {
+    transform: scale(0);
+  }
+  to {
+    transform: scale(1);
+  }
+}
+.profiler .right-panel .files-input #process-btn {
+  width: 100%;
+  margin-top: 15px;
+  margin-bottom: 15px;
+}
+.hover-parent .hover-reveal {
+  visibility: hidden;
+}
+.hover-parent:hover {
+  background-color: rgba(255, 255, 255, 0.05);
+}
+.hover-parent:hover .hover-reveal {
+  visibility: visible;
+}
+.flex-props input {
+  min-width: 0 !important;
+  width: 100% !important;
+  min-height: 0 !important;
+  overflow: hidden;
+  flex: 1;
+}
+.flex-props .hide-range {
+  display: flex;
+  flex: 1;
+}
+.flex-props .hide-range [type="range"] {
+  flex: 3;
+}
+.flex-props .flex {
+  display: inline-flex;
+}
+.flex-props .fill {
+  flex: 1;
+}
+.fx-params dt {
+  text-transform: none;
+}
+/* parameter name that appear near curves and other prefabs in the fx editor*/
+.fx-parameter {
+  font-size: 0.8em;
+  margin-left: 1em;
+}
+.fx-parameter .fx-param-name {
+  margin-left: 0.3em;
+  max-width: 100px;
+  direction: rtl;
+  display: inline-block;
+  overflow: hidden;
+  vertical-align: bottom;
+  text-overflow: clip;
+}
+.fx-parameter.missing .fx-param-name {
+  text-decoration: line-through;
+}
+.settings {
+  width: 100%;
+  height: 100%;
+}
+.settings .settings-header {
+  width: 100%;
+  height: 20px;
+  border-bottom: solid #000000 1px;
+}
+.settings .settings-body {
+  width: 100%;
+  height: 100%;
+  display: flex;
+}
+.settings .settings-body .categories {
+  width: 20%;
+  height: 100%;
+  padding-top: 10px;
+  border-right: solid #000000 1px;
+}
+.settings .settings-body .categories p {
+  padding: 1px 1px 1px 15px;
+  margin: 0;
+}
+.settings .settings-body .categories p:hover {
+  background-color: #4d4d4d;
+}
+.settings .settings-body .content {
+  height: 100%;
+  width: 100%;
+  padding: 5px 15px 15px 15px;
+}
+.settings .settings-body .content h1 {
+  margin-top: 0;
+}
+.settings .settings-body .content dl {
+  overflow-x: hidden;
+  margin: 0px;
+}
+.settings .settings-body .content dd,
+.settings .settings-body .content dt {
+  vertical-align: middle;
+  display: inline-block;
+  text-wrap: wrap;
+  word-break: break-word;
+  margin-top: 4px;
+}
+.settings .settings-body .content dd span,
+.settings .settings-body .content dt span {
+  display: inline-block;
+  width: 20px;
+}
+.settings .settings-body .content dt {
+  width: 300px;
+  color: #aaa;
+  user-select: none;
+  text-transform: capitalize;
+  font-weight: normal;
+}
+.lods-line {
+  display: flex;
+  overflow: hidden;
+}
+.lods-line .line {
+  height: 30px;
+  margin: 10px 2px 0px 2px;
+  background-color: #151515;
+  display: flex;
+  overflow: hidden;
+  padding: 1px;
+  width: 100%;
+}
+.lods-line .line div {
+  overflow: hidden;
+  height: 100%;
+}
+.lods-line .line div:nth-child(1n) {
+  background-color: #f3e179;
+}
+.lods-line .line div:nth-child(2n) {
+  background-color: #79f37b;
+}
+.lods-line .line div:nth-child(3n) {
+  background-color: #8979f3;
+}
+.lods-line .line div:nth-child(4n) {
+  background-color: #f379ad;
+}
+.lods-line .line p {
+  margin: 0 2px 0 2px;
+  color: black;
+}
+.lods-line .cursor {
+  position: absolute;
+}
+.lods-line .cursor .cursor-line {
+  background-color: #000000;
+  height: 32px;
+  width: 2px;
+}
+.lods-line .cursor p {
+  text-align: center;
+  margin-top: 2px;
 }

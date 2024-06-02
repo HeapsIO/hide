@@ -5,6 +5,7 @@
 -lib castle
 -lib hx3compat
 -lib domkit
+-lib hashlink
 -D js-classic
 -D js-unflatten
 -D hscriptPos

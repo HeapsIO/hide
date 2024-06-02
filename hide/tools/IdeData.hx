@@ -16,12 +16,19 @@ class IdeData {
 
 	var pakFile : hxd.fmt.pak.FileSystem;
 
-	var config : {
+	public var config : {
 		global : Config,
 		project : Config,
 		user : Config,
 		current : Config,
 	};
+
+	// Default settings for HideGlobalConfig since we can't init values in a typedef
+	public var defaultIdeConfig : Map<String, Dynamic> = [
+		"closeSearchOnFileOpen" => false,
+		"typingDebounceThreshold" => 300,
+		"autoSavePrefab" => false
+	];
 
 	public var ideConfig(get, never) : hide.Config.HideGlobalConfig;
 	public var projectConfig(get, never) : hide.Config.HideProjectConfig;
@@ -29,9 +36,13 @@ class IdeData {
 	public function new() {
 	}
 
-	function get_ideConfig() return cast config.global.source.hide;
+	function get_ideConfig() {
+		applyDefaultValues();
+		return cast config.global.source.hide;
+	}
 	function get_projectConfig() return cast config.user.source.hide;
 	function get_currentConfig() return config.user;
+
 	function get_projectDir() return ideConfig.currentProject.split("\\").join("/");
 	function get_resourceDir() return projectDir+"/res";
 
@@ -247,4 +258,19 @@ class IdeData {
 		sys.io.File.saveContent(getPath(file), toJSON(content));
 	}
 
+	public function applyDefaultValues() {
+		var ideConfig = config.global.source.hide;
+		for (field => value in defaultIdeConfig) {
+			if (!Reflect.hasField(ideConfig, field))
+				Reflect.setProperty(ideConfig, field, value);
+		}
+	}
+
+	public function removeDefaultValues() {
+		var ideConfig = config.global.source.hide;
+		for (field => value in defaultIdeConfig) {
+			if (Reflect.getProperty(ideConfig, field) == value)
+				Reflect.deleteField(ideConfig, field);
+		}
+	}
 }

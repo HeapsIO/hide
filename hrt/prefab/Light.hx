@@ -36,7 +36,6 @@ typedef ShadowSamplingPCF = {> ShadowSamplingMode,
 }
 
 typedef CascadeParams = {
-	var bias : Float;
 	var depthBias : Float;
 	var slopeBias : Float;
 }
@@ -77,9 +76,11 @@ class Light extends Object3D {
 	@:s public var cascadeNbr : Int = 1;
 	@:s public var cascadePow : Float = 2;
 	@:s public var firstCascadeSize : Float = 10;
+	@:s public var minPixelRatio : Float = 0.5;
 	@:s public var castingMaxDist : Float = 0.0;
 	@:s public var params : Array<CascadeParams> = [];
 	@:s public var debugShader : Bool = false;
+	@:s public var highPrecision : Bool = false;
 
 	// Debug
 	@:s public var debugDisplay : Bool = true;
@@ -134,7 +135,9 @@ class Light extends Object3D {
 
 	override function applyTransform() {
 		//super.applyTransform(o); // Disable scaling
-		applyTransformToObject(local3d);
+
+		if (local3d != null)
+			applyTransformToObject(local3d);
 	}
 
 	public function applyTransformToObject( o : h3d.scene.Object ) {
@@ -175,7 +178,7 @@ class Light extends Object3D {
 		}
 
 		#if editor
-		icon = hrt.impl.EditorTools.create3DIcon(local3d, hide.Ide.inst.getHideResPath("icons/PointLight.png"), 0.5, Light);
+		icon = hrt.impl.EditorTools.create3DIcon(object, hide.Ide.inst.getHideResPath("icons/PointLight.png"), 0.5, Light);
 		#end
 
 		cookieTex = initTexture(cookiePath);
@@ -183,19 +186,11 @@ class Light extends Object3D {
 		return object;
 	}
 
-	/*#if editor
-	override function removeInstance(ctx:Context):Bool {
-		var icon = Std.downcast(ctx.custom, hrt.impl.EditorTools.EditorIcon);
-		if (icon != null) {
-			icon.remove();
-			ctx.custom = null;
-		}
-		return super.removeInstance(ctx);
-	}
-	#end*/
-
 	override function updateInstance(?propName : String ) {
 		super.updateInstance(propName);
+
+		if (local3d == null)
+			return;
 
 		var color = color | 0xff000000;
 		var pbrLight = Std.downcast(local3d, h3d.scene.pbr.Light);
@@ -219,14 +214,16 @@ class Light extends Object3D {
 						cs.cascade = cascadeNbr;
 						cs.pow = cascadePow;
 						cs.firstCascadeSize = firstCascadeSize;
+						cs.minPixelRatio = minPixelRatio * 0.01;
 						cs.debug = debugDisplay;
 						cs.castingMaxDist = castingMaxDist;
 						cs.debugShader = debugShader;
 						params.resize(cascadeNbr);
 						for ( i in 0...params.length )
 							if ( params[i] == null )
-								params[i] = { bias : 0.001, depthBias : 0.0, slopeBias : 0.0 };
+								params[i] = { depthBias : 1.0, slopeBias : 3.0 };
 						cs.params = params;
+						cs.highPrecision = highPrecision;
 					}
 				}
 			case Spot:
@@ -461,10 +458,17 @@ class Light extends Object3D {
 	#if editor
 
 	override function setSelected(b : Bool ) {
-		var sel = local3d.getObjectByName("__selection");
+		var sel = local3d?.getObjectByName("__selection");
 		if( sel != null ) sel.visible = b;
 		updateInstance();
 		return true;
+	}
+
+	override function editorRemoveInstance() : Bool {
+		if (icon != null) {
+			icon.remove();
+		}
+		return super.editorRemoveInstance();
 	}
 
 	override function edit( ctx : hide.prefab.EditContext ) {
@@ -629,6 +633,7 @@ class Light extends Object3D {
 			'<div class="group" name="Cascades">
 				<dl>
 					<dt>Number</dt><dd><input type="range" field="cascadeNbr" step="1" min="1" max="4"/></dd>
+					<dt>Min pixel ratio [%]</dt><dd><input type="range" field="minPixelRatio" min="0" max="100"/></dd>
 					<dt>First cascade size</dt><dd><input type="range" field="firstCascadeSize" min="5" max="100"/></dd>
 					<dt>Range power</dt><dd><input type="range" field="cascadePow" min="0.1" max="10"/></dd>
 					<dt>Casting max dist</dt><dd><input type="range" field="castingMaxDist" min="-1" max="1000"/></dd>
@@ -636,6 +641,7 @@ class Light extends Object3D {
 						<ul id="params"></ul>
 					</dl>
 					<dt>Debug shader</dt><dd><input type="checkbox" field="debugShader"/></dd>
+					<dt>High precision</dt><dd><input type="checkbox" field="highPrecision"/></dd>
 				</dl>
 			</div>'
 		);
@@ -654,7 +660,6 @@ class Light extends Object3D {
 			var e = new hide.Element('
 			<div class="group" name="Params">
 				<dl>
-					<dt>Bias</dt><dd><input type="range" min="0" max="0.1" field="bias"/></dd>
 					<dt>DepthBias</dt><dd><input type="range" min="0" max="10" step="1" field="depthBias"/></dd>
 					<dt>SlopeBias</dt><dd><input type="range" min="0" max="10" step="0.1" field="slopeBias"/></dd>
 				</dl>

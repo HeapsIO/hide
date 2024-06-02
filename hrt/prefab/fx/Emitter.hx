@@ -7,7 +7,9 @@ import hrt.prefab.fx.BaseFX.ShaderAnimation;
 import hrt.prefab.fx.Value;
 import hrt.prefab.fx.Evaluator;
 
+#if editor
 import hide.prefab.HideProps;
+#end
 
 using Lambda;
 
@@ -66,6 +68,7 @@ class InstanceDef {
 	var startSpeed: Value;
 	var startWorldSpeed: Value;
 	var orbitSpeed: Value;
+	var orbitSpeedOverTime: Value;
 	var acceleration: Value;
 	var worldAcceleration: Value;
 	var localOffset: Value;
@@ -386,7 +389,12 @@ class ParticleInstance {
 
 		if(def.orbitSpeed != VZero) {
 			evaluator.getVector(idx, def.orbitSpeed, t, tmpLocalSpeed);
+
+			var factorOverTime = evaluator.getFloat(idx, def.orbitSpeedOverTime, emitter.curTime);
+			tmpLocalSpeed.scale3(factorOverTime);
+
 			tmpMat.initRotation(tmpLocalSpeed.x * dt, tmpLocalSpeed.y * dt, tmpLocalSpeed.z * dt);
+
 			// Rotate in emitter space and convert back to world space
 			var parentAbsPos = emitter.parentTransform;
 			var prevPos = getPosition();
@@ -457,6 +465,7 @@ class EmitterObject extends h3d.scene.Object {
 	public var lifeTimeRand = 0.0;
 	public var speedFactor = 1.0;
 	public var warmUpTime = 0.0;
+	public var delay = 0.0;
 	// EMIT PARAMS
 	public var emitOrientation : Orientation = Forward;
 	public var simulationSpace : SimulationSpace = Local;
@@ -470,9 +479,9 @@ class EmitterObject extends h3d.scene.Object {
 	public var emitRateMax : Value;
 	public var emitRateChangeDelay : Float = 1.0;
 	public var emitRateChangeDelayStart : Float = 0.0;
-	public var emitRateCurrent : Null<Float>;
-	public var emitRatePrevious : Null<Float>;
-	public var emitRateTarget : Null<Float>;
+	public var emitRateCurrent : Float = Math.NaN;
+	public var emitRatePrevious : Float = Math.NaN;
+	public var emitRateTarget : Float = Math.NaN;
 	public var emitScale : Float = 1.0;
 	public var maxCount = 20;
 	public var enableSort = true;
@@ -489,6 +498,7 @@ class EmitterObject extends h3d.scene.Object {
 	public var frameDivisionY : Int = 1;
 	public var animationSpeed : Float = 1;
 	public var animationLoop : Bool = true;
+	public var animationUseSourceUVs : Bool = true;
 	public var animationBlendBetweenFrames : Bool = true;
 
 	// ALIGNMENT
@@ -561,7 +571,7 @@ class EmitterObject extends h3d.scene.Object {
 			var empty3d = new h3d.scene.Object();
 			var clone = particleTemplate.clone(new hrt.prefab.ContextShared(empty3d));
 			#if editor
-			clone.setEditor(prefab.shared.editor);
+			clone.setEditor(prefab.shared.editor, prefab.shared.scene);
 			#end
 			@:privateAccess clone.makeInstance();
 			var loc3d = Object3D.getLocal3d(clone);
@@ -642,6 +652,7 @@ class EmitterObject extends h3d.scene.Object {
 			if( frameCount > 1 && spriteSheet != null ) {
 				var tex = hxd.res.Loader.currentInstance.load(spriteSheet).toTexture();
 				animatedTextureShader = new h3d.shader.AnimatedTexture(tex, frameDivisionX, frameDivisionY, frameCount, frameCount * animationSpeed / lifeTime);
+				animatedTextureShader.useSourceUVs = animationUseSourceUVs;
 				animatedTextureShader.startTime = startTime;
 				animatedTextureShader.loop = animationLoop;
 				animatedTextureShader.blendBetweenFrames = animationBlendBetweenFrames;
@@ -817,8 +828,8 @@ class EmitterObject extends h3d.scene.Object {
 			var scene = relativeScenePosition ? getScene() : null;
 
 			if (trailsTemplate != null && trails == null) {
-				trailsTemplate.make();
-				trails = cast trailsTemplate.local3d;
+				var made = trailsTemplate.make(this);
+				trails = cast made.local3d;
 				trails.autoTrackPosition = false;
 			}
 
@@ -1011,14 +1022,14 @@ class EmitterObject extends h3d.scene.Object {
 					var min = evaluator.getFloat(emitRateMin, curTime);
 					var max = evaluator.getFloat(emitRateMax, curTime);
 
-					var unInitiliazed = emitRateCurrent == Math.NaN || emitRateCurrent == null;
+					var unInitiliazed = Math.isNaN(emitRateCurrent);
 					var needNewValue = curTime - emitRateChangeDelayStart >= emitRateChangeDelay || curTime - emitRateChangeDelayStart < 0;
 					if (unInitiliazed || needNewValue) {
 						emitRateChangeDelayStart = curTime;
 						emitRatePrevious = emitRateTarget;
 						emitRateTarget = random.rand() * (max-min) + min;
 
-						if (emitRatePrevious == Math.NaN || emitRatePrevious == null)
+						if ( Math.isNaN(emitRatePrevious) )
 							emitRatePrevious = random.rand() * (max-min) + min;
 					}
 
@@ -1216,10 +1227,8 @@ class EmitterObject extends h3d.scene.Object {
 					if( subEmitterTemplates != null ) {
 
 						for (subEmitterTemplate in subEmitterTemplates) {
-							var subEmitterInstance : Emitter = @:privateAccess subEmitterTemplate.make(new ContextShared());
+							var subEmitterInstance : Emitter = @:privateAccess subEmitterTemplate.make(this);
 						    var emitter : EmitterObject = cast subEmitterInstance.local3d;
-							var pos = p.absPos.getPosition();
-							emitter.setPosition(pos.x, pos.y, pos.z);
 							emitter.isSubEmitter = true;
 							emitter.parentEmitter = this;
 							if(subEmitters == null)
@@ -1293,6 +1302,8 @@ class EmitterObject extends h3d.scene.Object {
 			updateMeshBatch();  // Make sure mesh batch is reset even when no tick is called()
 		}
 
+		time = Math.max(0, time - delay * speedFactor);
+
 		var catchupTime = time - curTime;
 
 		#if !editor  // Limit catchup time to avoid spikes when showing long running FX
@@ -1349,6 +1360,7 @@ class Emitter extends Object3D {
 		{ name: "lifeTimeRand", t: PFloat(0, 1), def: 0.0, groupName : "Properties" },
 		{ name: "speedFactor", disp: "Speed Factor", t: PFloat(0, 1), def: 1.0, groupName : "Properties" },
 		{ name: "warmUpTime", disp: "Warm Up", t: PFloat(0, 1), def: 0.0, groupName : "Properties" },
+		{ name: "delay", disp: "Delay", t: PFloat(0, 10), def: 0.0, groupName : "Properties" },
 		{ name: "seedGroup", t: PInt(0, 100), def: 0, groupName : "Properties", disp: "Seed"},
 		{ name: "alignMode", t: PEnum(AlignMode), def: AlignMode.None, disp: "Mode", groupName : "Properties" },
 		{ name: "alignLockAxis", t: PEnum(AlignLockAxis), def: AlignLockAxis.ScreenZ, disp: "Lock Axis", groupName : "Properties" },
@@ -1386,6 +1398,7 @@ class Emitter extends Object3D {
 		{ name: "frameDivisionY", t: PInt(1), def: 1, groupName : "Sprite Sheet Animation", disp: "Divisions Y" },
 		{ name: "animationSpeed", t: PFloat(0, 2.0), def: 1.0, groupName : "Sprite Sheet Animation", disp: "Speed" },
 		{ name: "animationLoop", t: PBool, def: true, groupName : "Sprite Sheet Animation", disp: "Loop" },
+		{ name: "animationUseSourceUV", t: PBool, def: true, groupName : "Sprite Sheet Animation", disp: "Use Source UV" },
 		{ name: "animationBlendBetweenFrames", t: PBool, def: true, groupName : "Sprite Sheet Animation", disp: "Blend frames" },
 
 		// COLLISION
@@ -1401,6 +1414,7 @@ class Emitter extends Object3D {
 		{ name: "instStartSpeed",      		t: PVec(3, -10, 10),  def: [0.,0.,0.], disp: "Start Speed",groupName: "Particle Movement"},
 		{ name: "instStartWorldSpeed", 		t: PVec(3, -10, 10),  def: [0.,0.,0.], disp: "Start World Speed",groupName: "Particle Movement"},
 		{ name: "instOrbitSpeed", 			t: PVec(3, -10, 10),  def: [0.,0.,0.], disp: "Orbit Speed", groupName: "Particle Movement"},
+		{ name: "instOrbitSpeedOverTime", 			t: PFloat(0, 2.0),  def: 1., disp: "Orbit Speed over time", groupName: "Particle Movement"},
 		{ name: "instAcceleration",			t: PVec(3, -10, 10),  def: [0.,0.,0.], disp: "Acceleration", groupName: "Particle Movement"},
 		{ name: "instMaxVelocity",      			t: PFloat(0, 10.0),    def: 0.,         disp: "Max Velocity", groupName: "Limit Velocity"},
 		{ name: "instDampen",      			t: PFloat(0, 10.0),    def: 0.,         disp: "Dampen", groupName: "Limit Velocity"},
@@ -1412,14 +1426,18 @@ class Emitter extends Object3D {
 		{ name: "instOffset",     			t: PVec(3, -10, 10),  def: [0.,0.,0.], disp: "Offset", groupName: "Particle Transform"},
 	];
 
-	public static var PARAMS : Array<ParamDef> = {
-		var a = emitterParams.copy();
+
+	public static var PARAMS : Map<String, ParamDef> = {
+		var map = new Map();
+		for(e in emitterParams) {
+			map.set(e.name, e);
+		}
 		for(i in instanceParams) {
 			i.instance = true;
 			i.animate = true;
-			a.push(i);
+			map.set(i.name, i);
 		}
-		a;
+		map;
 	};
 
 	override function save() {
@@ -1487,7 +1505,7 @@ class Emitter extends Object3D {
 	}
 
 	function getParamVal(name: String, rand: Bool=false) : Dynamic {
-		var param = PARAMS.find(p -> p.name == name);
+		var param = PARAMS.get(name);
 		if(param == null)
 			return Reflect.field(props, name);
 		var isVector = switch(param.t) {
@@ -1506,9 +1524,8 @@ class Emitter extends Object3D {
 	}
 
 	function resetParam(param: ParamDef) {
-		var a = Std.downcast(param.def, Array);
-		if(a != null)
-			Reflect.setField(props, param.name, a.copy());
+		if(param.def is Array)
+			Reflect.setField(props, param.name, cast(param.def, Array<Dynamic>).copy());
 		else
 			Reflect.setField(props, param.name, param.def);
 	}
@@ -1543,16 +1560,9 @@ class Emitter extends Object3D {
 				if(b == VOne) return a;
 				switch a {
 					case VConst(va):
-						switch b {
-							case VConst(vb): return VConst(va * vb);
-							case VCurve(cb): return VCurveScale(cb, va);
-							default:
-						}
+						return VMult(a, b);
 					case VCurve(ca):
-						switch b {
-							case VConst(vb): return VCurveScale(ca, vb);
-							default:
-						}
+						return VMult(a, b);
 					case VRandomScale(ri,rscale):
 						switch b {
 							case VCurve(vb): return VAddRandCurve(0, ri, rscale, vb);
@@ -1590,10 +1600,10 @@ class Emitter extends Object3D {
 
 			function makeCompVal(baseProp: Null<Float>, defVal: Float, randProp: Null<Float>, pname: String, suffix: String) : Value {
 				var xVal = vVal(baseProp != null ? baseProp : defVal);
-				var randCurve = getCurve(pname + suffix + ".rand");
+				var randCurve = getCurve(pname + suffix + ":rand");
 				var randVal : Value = VZero;
 				if(randCurve != null)
-					randVal = VRandom(randIdx++, VCurveScale(randCurve, randProp != null ? randProp : 1.0));
+					randVal = VRandom(randIdx++, VMult(randCurve.makeVal(), VConst(randProp != null ? randProp : 1.0)));
 				else if(randProp != null && randProp != 0.0)
 					randVal = VRandomScale(randIdx++, randProp);
 
@@ -1604,9 +1614,9 @@ class Emitter extends Object3D {
 					}
 					else {
 						if (pname.indexOf("Rotation") >= 0 || pname.indexOf("Offset") >= 0)
-							return vAdd(vAdd(xVal, randVal), VCurve(xCurve));
+							return vAdd(vAdd(xVal, randVal), xCurve.makeVal());
 						else
-							return vMult(vAdd(xVal, randVal), VCurve(xCurve));
+							return vMult(vAdd(xVal, randVal), xCurve.makeVal());
 					}
 				}
 				else
@@ -1615,7 +1625,7 @@ class Emitter extends Object3D {
 
 			var baseProp: Dynamic = Reflect.field(props, name);
 			var randProp: Dynamic = Reflect.field(props, randProp(name));
-			var param = PARAMS.find(p -> p.name == name);
+			var param = PARAMS.get(name);
 			switch(param.t) {
 				case PVec(_):
 					inline function makeComp(idx, suffix) {
@@ -1626,9 +1636,9 @@ class Emitter extends Object3D {
 							param.name, suffix);
 					}
 					var v : Value = VVector(
-						makeComp(0, ".x"),
-						makeComp(1, ".y"),
-						makeComp(2, ".z"));
+						makeComp(0, ":x"),
+						makeComp(1, ":y"),
+						makeComp(2, ":z"));
 					if(v.match(VVector(VZero, VZero, VZero)))
 						v = VZero;
 					else if(v.match(VVector(VOne, VOne, VOne)))
@@ -1653,6 +1663,7 @@ class Emitter extends Object3D {
 		d.startSpeed = makeParam(this, "instStartSpeed");
 		d.startWorldSpeed = makeParam(this, "instStartWorldSpeed");
 		d.orbitSpeed = makeParam(this, "instOrbitSpeed");
+		d.orbitSpeedOverTime = makeParam(this, "instOrbitSpeedOverTime");
 		d.acceleration = makeParam(this, "instAcceleration");
 		d.worldAcceleration = makeParam(this, "instWorldAcceleration");
 		d.localOffset = makeParam(this, "instOffset");
@@ -1681,6 +1692,7 @@ class Emitter extends Object3D {
 		emitterObj.lifeTimeRand 		= 	getParamVal("lifeTimeRand");
 		emitterObj.speedFactor 			= 	getParamVal("speedFactor");
 		emitterObj.warmUpTime 			= 	getParamVal("warmUpTime");
+		emitterObj.delay 				= 	getParamVal("delay");
 		// EMIT PARAMS
 		emitterObj.emitType 			= 	getParamVal("emitType");
 		emitterObj.burstCount 			= 	getParamVal("burstCount");
@@ -1748,6 +1760,10 @@ class Emitter extends Object3D {
 	}
 
 	#if editor
+	override function editorRemoveInstance() : Bool {
+		return false; // Emitter removal is buggy
+	}
+
 	override function edit( ctx : hide.prefab.EditContext ) {
 		super.edit(ctx);
 

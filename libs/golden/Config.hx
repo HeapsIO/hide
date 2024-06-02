@@ -4,6 +4,7 @@ typedef Config = {
 	@:optional var settings: {
 		@:optional var hasHeaders : Bool;
 		@:optional var constrainDragToContainer : Bool;
+		@:optional var constrainDragToHeader : Bool;
 		@:optional var reorderEnabled : Bool;
 		@:optional var selectionEnabled : Bool;
 		@:optional var popoutWholeStack : Bool;
@@ -30,7 +31,7 @@ typedef Config = {
 	@:optional var content: Array<ItemConfig>;
 };
 
-@:enum abstract ItemType(String) {
+enum abstract ItemType(String) {
 	var Row = "row";
 	var Column = "column";
 	var Stack = "stack";

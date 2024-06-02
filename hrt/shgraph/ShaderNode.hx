@@ -1,10 +1,20 @@
 package hrt.shgraph;
 
+import Type as HaxeType;
 using hxsl.Ast;
 
 import h3d.scene.Mesh;
 
 using Lambda;
+using hrt.shgraph.Utils;
+import hrt.shgraph.AstTools.*;
+import hrt.shgraph.ShaderGraph;
+import hrt.shgraph.SgHxslVar.ShaderDefInput;
+
+#if editor
+import hide.view.GraphInterface; 
+#end
+
 
 class AlphaPreview extends hxsl.Shader {
 	static var SRC = {
@@ -26,158 +36,195 @@ class AlphaPreview extends hxsl.Shader {
 	}
 }
 
+typedef InputInfo = {name: String, type: SgType, ?def: ShaderDefInput};
+typedef OutputInfo = {name: String, type: SgType};
 typedef VariableDecl = {v: TVar, display: String, ?vertexOnly: Bool};
-typedef AliasInfo = {?name : String, ?description : String, ?args : Array<Dynamic>};
+typedef AliasInfo = {?nameSearch: String, ?nameOverride : String, ?description : String, ?args : Array<Dynamic>, ?group: String};
 @:autoBuild(hrt.shgraph.Macros.autoRegisterNode())
 @:keepSub
 @:keep
-class ShaderNode {
+class ShaderNode 
+#if editor
+implements hide.view.GraphInterface.IGraphNode 
+#end
+{
 
 	public var id : Int;
+	public var x : Float;
+	public var y : Float;
 	public var showPreview : Bool = true;
+	@prop public var nameOverride : String;
+
+
+	#if editor
+	// IGraphNode Interface
+	public function getInfo() : GraphNodeInfo {
+		var metas = haxe.rtti.Meta.getType(HaxeType.getClass(this));
+		return {
+			name: nameOverride ?? (metas.name != null ? metas.name[0] : "undefined"),
+			inputs: [
+				for (i in getInputs()) {
+					var defaultParam = null;
+					switch (i.def) {
+						case Const(intialValue):
+							defaultParam = {
+								get: () -> Std.string(Reflect.getProperty(defaults, i.name) ?? intialValue),
+								set: setDefaultParam.bind(i.name),
+							};
+						default:
+					}
+					{
+						name: i.name,
+						color: getTypeColor(i.type),
+						defaultParam: defaultParam,
+					}
+				}
+			],
+			outputs: [
+				for (o in getOutputs()) {
+					{
+						name: o.name,
+						color: getTypeColor(o.type),
+					}
+				}
+			],
+			preview: {
+				getVisible: () -> showPreview,
+				setVisible: (b:Bool) -> showPreview = b,
+				fullSize: false,
+			},
+			width: metas.width != null ? metas.width[0] : null,
+			noHeader: Reflect.hasField(metas, "noheader"),
+		};
+	}
+
+	static function getTypeColor(type: SgType) : Int {
+		return switch (type) {
+			case SgFloat(1):
+				0x00ff73;
+			case SgFloat(2):
+				0x5eff00;
+			case SgFloat(3):
+				0xeeff00;
+			case SgFloat(4):
+				0xfc6703;
+			case SgInt:
+				0x00ffea;
+			case SgSampler:
+				0x600aff;
+			default:
+				0xc8c8c8;
+		}
+	}
+
+	public function getId() : Int {
+		return id;
+	}
+
+	public function getPos(p : h2d.col.Point) : Void {
+		p.set(x,y);
+	}
+
+	public function setPos(p : h2d.col.Point) : Void {
+		x = p.x;
+		y = p.y;
+	}
+
+	public function getPropertiesHTML(width : Float) : Array<hide.Element> {
+		return [];
+	}
+
+	public var editor : hide.view.GraphEditor;
+
+	public function setDefaultParam(name: String, value: String) {
+		Reflect.setField(defaults, name, Std.parseFloat(value));
+		requestRecompile();
+	}
+
+	public function requestRecompile() {
+		Std.downcast(editor.editor, hide.view.shadereditor.ShaderEditor)?.requestRecompile();
+	}
+	#end
+
+	public function serializeToDynamic() : Dynamic {
+		return {
+			x: x,
+			y: y,
+			id: id,
+			type: std.Type.getClassName(std.Type.getClass(this)),
+			properties: saveProperties(),
+		};
+	}
+
+	public static function createFromDynamic(data: Dynamic, graph: ShaderGraph) : ShaderNode {
+		var type = std.Type.resolveClass(data.type);
+		var inst = std.Type.createInstance(type, []);
+		var shaderParam = Std.downcast(inst, ShaderParam);
+		if (shaderParam != null) {
+			shaderParam.shaderGraph = graph;
+		}
+		inst.x = data.x;
+		inst.y = data.y;
+		inst.id = data.id;
+		inst.connections = [];
+		inst.loadProperties(data.properties);
+		return inst;
+	}
 
 	public var defaults : Dynamic = {};
 
-	public static function registerAliases(name: String, description: String) : Array<AliasInfo> {
-		return null;
+	/**
+		Declare all the inputs this node uses
+	**/
+	public function getInputs() : Array<InputInfo> {
+		return [];
 	}
 
-	public function getAliases(name: String, group: String, description: String) : Null<Array<AliasInfo>> {
-		return null;
+	/**
+		Declare all the outputs this node uses
+	**/
+	public function getOutputs() : Array<OutputInfo> {
+		return [];
 	}
 
-	static var availableVariables = [
-					{
-						parent: null,
-						id: 0,
-						kind: Global,
-						name: "_sg_out_color",
-						type: TVec(3, VFloat)
-					},
-					{
-						parent: null,
-						id: 0,
-						kind: Global,
-						name: "_sg_out_alpha",
-						type: TFloat
-					},
-				];
-
-
-	public function getShaderDef(domain: ShaderGraph.Domain, getNewIdFn : () -> Int, ?inputTypes: Array<Type>) : ShaderGraph.ShaderNodeDef {
-		throw "getShaderDef is not defined for class " + std.Type.getClassName(std.Type.getClass(this));
-		return {expr: null, inVars: [], outVars: [], inits: [], externVars: []};
+	/**
+		Generate the hxsl expressions and outputs of the node
+	**/
+	public function generate(ctx: NodeGenContext) : Void {
+		throw "generate is not defined for class " + std.Type.getClassName(std.Type.getClass(this));
 	}
 
-	public var connections : Map<String, ShaderGraph.Connection> = [];
+	function getDef(name: String, def: Float) {
+		var defaultValue = Reflect.getProperty(defaults, name);
+		if (defaultValue != null) {
+			def = Std.parseFloat(defaultValue) ?? def;
+		}
+		return def;
+	}
 
-	public var outputCompiled : Map<String, Bool> = []; // todo: put with outputs variable
+	public function getAliases(name: String, group: String, description: String) : Array<AliasInfo> {
+		var cl = HaxeType.getClass(this);
+		var meta = haxe.rtti.Meta.getType(cl);
+		var aliases : Array<AliasInfo> = [];
 
-	// TODO(ces) : caching
-	public function getOutputs2(domain: ShaderGraph.Domain, ?inputTypes: Array<Type>) : Map<String, {v: TVar, index: Int}> {
-		var def = getShaderDef(domain, () -> 0);
-		var map : Map<String, {v: TVar, index: Int}> = [];
-		var count = 0;
-		for (i => tvar in def.outVars) {
-			if (!tvar.internal) {
-				map.set(tvar.v.name, {v: tvar.v, index: count});
-				count += 1;
+		if (meta.alias != null) {
+			for (a in meta.alias) {
+				aliases.push({nameOverride: '$a'});
 			}
 		}
-		return map;
+		return aliases;
 	}
-
-	// TODO(ces) : caching
-	public function getInputs2(domain: ShaderGraph.Domain) : Map<String, {v: TVar, ?def: hrt.shgraph.ShaderGraph.ShaderDefInput, index: Int}> {
-		var def = getShaderDef(domain, () -> 0);
-		var map : Map<String, {v: TVar, ?def: hrt.shgraph.ShaderGraph.ShaderDefInput, index: Int}> = [];
-		var count = 0;
-		for (tvar in def.inVars) {
-			if (!tvar.internal) {
-				map.set(tvar.v.name, {v: tvar.v, def: tvar.defVal, index: count});
-				count += 1;
-			}
-		}
-		return map;
-	}
-
+	public var connections : Array<ShaderGraph.Connection> = [];
 
 	public function setId(id : Int) {
 		this.id = id;
 	}
 
-
-	function addOutput(key : String, t : Type) {
-		/*outputs.set(key, { parent: null,
-			id: 0,
-			kind: Local,
-			name: "output_" + id + "_" + key,
-			type: t
-		});*/
-	}
-
-	function removeOutput(key : String) {
-		/*outputs.remove(key);*/
-	}
-
-	function addOutputTvar(tVar : TVar) {
-		/*outputs.set(tVar.name, tVar);*/
-	}
-
-	public function computeOutputs() : Void {}
-
-	// public function getOutput(key : String) : TVar {
-	// 	return outputs.get(key);
-	// }
-
-	// public function getOutputType(key : String) : Type {
-	// 	var output = getOutput(key);
-	// 	if (output == null)
-	// 		return null;
-	// 	return output.type;
-	// }
-
-	// public function getOutputTExpr(key : String) : TExpr {
-	// 	var o = getOutput(key);
-	// 	if (o == null)
-	// 		return null;
-	// 	return {
-	// 		e: TVar(o),
-	// 		p: null,
-	// 		t: o.type
-	// 	};
-	// }
-
-	public function build(key : String) : TExpr {
-		throw "Build function not implemented";
-	}
-
-	public function checkTypeAndCompatibilyInput(key : String, type : hxsl.Ast.Type) : Bool {
-		/*var infoKey = getInputs2()[key].type;
-		if (infoKey != null && !(ShaderType.checkConversion(type, infoKey))) {
-			return false;
-		}
-		return checkValidityInput(key, type);*/
-		return true;
-	}
-
-	public function checkValidityInput(key : String, type : hxsl.Ast.Type) : Bool {
-		return true;
-	}
-
-
-
-	// public function getOutputInfoKeys() : Array<String> {
-	// 	return [];
-	// }
-
-	// public function getOutputInfo(key : String) : OutputInfo {
-	// 	return null;
-	// }
-
 	public function loadProperties(props : Dynamic) {
 		var fields = Reflect.fields(props);
 		showPreview = props.showPreview ?? true;
+		nameOverride = props.nameOverride;
+
 		for (f in fields) {
 			if (f == "defaults") {
 				defaults = Reflect.field(props, f);
@@ -225,6 +272,7 @@ class ShaderNode {
 			Reflect.setField(parameters, "defaults", defaults);
 		}
 
+		parameters.nameOverride = nameOverride;
 		parameters.showPreview = showPreview;
 
 		return parameters;
@@ -234,10 +282,6 @@ class ShaderNode {
 	final public function getHTML(width: Float, config: hide.Config) {
 		var props = getPropertiesHTML(width);
 		return props;
-	}
-
-	function getPropertiesHTML(width : Float) : Array<hide.Element> {
-		return [];
 	}
 
 	static public var registeredNodes = new Map<String, Class<ShaderNode>>();

@@ -1,7 +1,6 @@
 package monaco;
 
-@:enum
-abstract KeyCode(Int) from Int to Int {
+enum abstract KeyCode(Int) from Int to Int {
 	var Unknown = 0;
 	var Backspace = 1;
 	var Tab = 2;

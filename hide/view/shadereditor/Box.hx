@@ -2,30 +2,32 @@ package hide.view.shadereditor;
 
 import hide.comp.SVG;
 import js.jquery.JQuery;
-import hrt.shgraph.ShaderNode;
+import hide.view.GraphInterface;
+
+@:access(hide.view.GraphEditor)
 class Box {
 
-	var boolColor = "#cc0505";
-	var numberColor = "#00ffea";
-	var floatColor = "#00ff73";
-	var intColor = "#00ffea";
-	var vec2Color = "#5eff00";
-	var vec3Color = "#eeff00";
-	var vec4Color = "#fc6703";
-	var samplerColor = "#600aff";
-	var defaultColor = "#c8c8c8";
+	static final boolColor = "#cc0505";
+	static final numberColor = "#00ffea";
+	static final floatColor = "#00ff73";
+	static final intColor = "#00ffea";
+	static final vec2Color = "#5eff00";
+	static final vec3Color = "#eeff00";
+	static final vec4Color = "#fc6703";
+	static final samplerColor = "#600aff";
+	static final defaultColor = "#c8c8c8";
 
-	var nodeInstance : ShaderNode;
+	var node : IGraphNode;
+	var info : GraphNodeInfo;
 
 	var x : Float;
 	var y : Float;
-
-	var width : Int = 150;
+	var width : Int;
 	var height : Int;
 	var propsHeight : Int = 0;
 
-	var HEADER_HEIGHT = 22;
-	@const var NODE_MARGIN = 17;
+	public var HEADER_HEIGHT = 22;
+	public static final NODE_MARGIN = 18;
 	public static var NODE_RADIUS = 5;
 	@const var NODE_TITLE_PADDING = 10;
 	@const var NODE_INPUT_PADDING = 3;
@@ -35,122 +37,254 @@ class Box {
 	public var outputs : Array<JQuery> = [];
 
 	var hasHeader : Bool = true;
-	var hadToShowInputs : Bool = false;
 	var color : String;
 	var closePreviewBtn : JQuery;
 
 	var element : JQuery;
 	var propertiesGroup : JQuery;
+	static final resizeBorder : Int = 8;
+	static final halfResizeBorder : Int = resizeBorder >> 1;
 
-	public function new(editor : SVG, parent : JQuery, x : Float, y : Float, node : ShaderNode) {
-		this.nodeInstance = node;
+	public function new(editor : GraphEditor, parent : JQuery, node : IGraphNode) {
+		this.node = node;
+		info = node.getInfo();
 
-		var metas = haxe.rtti.Meta.getType(Type.getClass(node));
-		if (metas.width != null) {
-			this.width = metas.width[0];
+
+		width = info.width ?? 150;
+		width = Std.int(hxd.Math.ceil(width / NODE_MARGIN) * NODE_MARGIN);
+
+		//var metas = haxe.rtti.Meta.getType(Type.getClass(node));
+		//if (metas.width != null) {
+		//	this.width = metas.width[0];
+		//}
+
+		//if (Reflect.hasField(metas, "color")) {
+		//	color = Reflect.field(metas, "color");
+		//}
+		//var className = node.nameOverride ?? ((metas.name != null) ? metas.name[0] : "Undefined");
+
+		element = editor.editorDisplay.group(parent).addClass("box").addClass("not-selected");
+		element.attr("id", node.getId());
+
+		if (info.comment != null) {
+			info.comment.getSize(tmpPoint);
+			this.width = Std.int(tmpPoint.x);
+			this.height = Std.int(tmpPoint.y);
+			HEADER_HEIGHT = 34;
+			color = null;
+			this.element.addClass("comment");
 		}
-		if (Reflect.hasField(metas, "color")) {
-			color = Reflect.field(metas, "color");
-		}
-		var className = (metas.name != null) ? metas.name[0] : "Undefined";
 
-		element = editor.group(parent).addClass("box").addClass("not-selected");
-		element.attr("id", node.id);
-		setPosition(x, y);
-
-		if (Reflect.hasField(metas, "noheader")) {
+		if (info.noHeader ?? false) {
 			HEADER_HEIGHT = 0;
 			hasHeader = false;
 		}
 
-		// Debug: editor.text(element, 2, -6, 'Node ${node.id}').addClass("node-id-indicator");
+		// Debug: editor.editorDisplay.text(element, 2, -6, 'Node ${node.id}').addClass("node-id-indicator");
 
-		// outline of box
-		editor.rect(element, -1, -1, width+2, getHeight()+2).addClass("outline");
+		if (info.comment == null) {
+			editor.editorDisplay.rect(element, 0,0,width, getHeight()).addClass("background");
+
+		}
+		editor.editorDisplay.rect(element, -1, -1, width+2, getHeight()+2).addClass("outline");
+
+		if (info.comment != null) {
+
+			editor.editorDisplay.rect(element, 0,0,width, HEADER_HEIGHT).addClass("head-box");
+
+
+			function makeResizable(elt: js.html.Element, left: Bool, top: Bool, right: Bool, bottom: Bool) {
+				var pressed = false;
+
+				elt.onpointerdown = function(e: js.html.PointerEvent) {
+					if (e.button != 0)
+						return;
+					e.stopPropagation();
+					e.preventDefault();
+					pressed = true;
+					elt.setPointerCapture(e.pointerId);
+				};
+
+				elt.onpointermove = function(e: js.html.PointerEvent) {
+					if (!pressed)
+						return;
+					e.stopPropagation();
+					e.preventDefault();
+
+					var clientRect = editor.editorDisplay.element.get(0).getBoundingClientRect();
+
+					var x0 : Int = Std.int(x);
+					var y0 : Int = Std.int(y);
+					var x1 : Int = x0 + width;
+					var y1 : Int = y0 + height;
+
+					var mx : Int = Std.int(editor.lX(e.clientX));
+					var my : Int = Std.int(editor.lY(e.clientY));
+
+					var minDim = 10;
+					if (left) {
+						x0 = hxd.Math.imin(mx, x1 - minDim);
+					}
+
+					if (top) {
+						y0 = hxd.Math.imin(my, y1 - minDim);
+					}
+
+					if (right) {
+						x1 = hxd.Math.imax(mx, x0 + minDim);
+					}
+
+					if (bottom) {
+						y1 = hxd.Math.imax(my, y0 + minDim);
+					}
+
+					setPosition(x0,y0);
+
+					this.width = x1 - x0;
+					this.height = y1 - y0;
+					refreshBox();
+				}
+
+				elt.onpointerup = function (e: js.html.PointerEvent) {
+					if (!pressed)
+						return;
+					pressed = false;
+					e.stopPropagation();
+					e.preventDefault();
+
+					this.node.getPos(tmpPoint);
+					var current = {x: tmpPoint.x, y:tmpPoint.y, w: this.width, h: this.height};
+					editor.opMove(this, this.x, this.y, editor.currentUndoBuffer);
+					editor.opResize(this, this.width, this.height, editor.currentUndoBuffer);
+					editor.commitUndo();
+				};
+			}
+
+			var elt = editor.editorDisplay.rect(element, 0,0,0,0).addClass("resize").get(0);
+			elt.style.cursor = "ns-resize";
+			elt.id = "resizeBot";
+			makeResizable(elt, false,false,false,true);
+
+			var elt = editor.editorDisplay.rect(element, 0,0,0,0).addClass("resize").get(0);
+			elt.style.cursor = "ns-resize";
+			elt.id = "resizeTop";
+			makeResizable(elt, false,true,false,false);
+
+			var elt = editor.editorDisplay.rect(element, 0,0,0,0).addClass("resize").get(0);
+			elt.style.cursor = "ew-resize";
+			elt.id = "resizeLeft";
+			makeResizable(elt, true,false,false,false);
+
+			var elt = editor.editorDisplay.rect(element, 0,0,0,0).addClass("resize").get(0);
+			elt.style.cursor = "ew-resize";
+			elt.id = "resizeRight";
+			makeResizable(elt, false,false,true,false);
+
+			var elt = editor.editorDisplay.rect(element, 0,0,0,0).addClass("resize").get(0);
+			elt.style.cursor = "nesw-resize";
+			elt.id = "resizeBotLeft";
+			makeResizable(elt, true,false,false,true);
+
+			var elt = editor.editorDisplay.rect(element, 0,0,0,0).addClass("resize").get(0);
+			elt.style.cursor = "nwse-resize";
+			elt.id = "resizeBotRight";
+			makeResizable(elt, false,false,true,true);
+
+			var elt = editor.editorDisplay.rect(element, 0,0,0,0).addClass("resize").get(0);
+			elt.style.cursor = "nwse-resize";
+			elt.id = "resizeTopLeft";
+			makeResizable(elt, true,true,false,false);
+
+			var elt = editor.editorDisplay.rect(element, 0,0,0,0).addClass("resize").get(0);
+			elt.style.cursor = "nesw-resize";
+			elt.id = "resizeTopRight";
+			makeResizable(elt, false,true,true,false);
+
+			var fo = editor.editorDisplay.foreignObject(element, 7, 2, 0, HEADER_HEIGHT-4);
+			fo.get(0).id = "commentTitle";
+			var commentTitle = new Element("<span contenteditable spellcheck='false'>Comment</span>").addClass("comment-title").appendTo(fo);
+
+			var editable = new hide.comp.ContentEditable(null, commentTitle);
+			editable.value = info.comment.getComment();
+			editable.onChange = function(v: String) {
+				editor.opComment(this, v, editor.currentUndoBuffer);
+				editor.commitUndo();
+			};
+
+			refreshBox();
+			return;
+		}
 
 		// header
 
 		if (hasHeader) {
-			var header = editor.rect(element, 0, 0, this.width, HEADER_HEIGHT).addClass("head-box");
-			if (color != null) header.css("fill", color);
-			editor.text(element, 7, HEADER_HEIGHT-6, className).addClass("title-box");
+			//var header = editor.editorDisplay.rect(element, 0, 0, this.width, HEADER_HEIGHT).addClass("head-box");
+			//if (color != null) header.css("fill", color);
+			if (info.comment != null) {
+
+			}
+			else {
+				editor.editorDisplay.text(element, 7, HEADER_HEIGHT-6, info.name).addClass("title-box");
+			}
 		}
 
-		if (Reflect.hasField(metas, "alwaysshowinputs")) {
-			hadToShowInputs = true;
-		}
-
-		propertiesGroup = editor.group(element).addClass("properties-group");
+		propertiesGroup = editor.editorDisplay.group(element).addClass("properties-group");
 
 		// nodes div
-		var bg = editor.rect(element, 0, HEADER_HEIGHT, this.width, 0).addClass("nodes");
-		if (!hasHeader && color != null) {
-			bg.css("fill", color);
-		}
 
-		if (node.canHavePreview()) {
-			closePreviewBtn = editor.foreignObject(element, width / 2 - 16, 0, 32,32);
+		editor.editorDisplay.line(element, 0, HEADER_HEIGHT, width, HEADER_HEIGHT).addClass("separator");
+
+		// var bg = editor.editorDisplay.rect(element, 0, HEADER_HEIGHT, this.width, 0).addClass("nodes");
+		// if (!hasHeader && color != null) {
+		// 	bg.css("fill", color);
+		// }
+
+		if (info.preview != null) {
+			closePreviewBtn = editor.editorDisplay.foreignObject(element, width / 2 - 16, 0, 32,32);
 			closePreviewBtn.append(new JQuery('<div class="close-preview"><span class="ico"></span></div>'));
 
 			refreshCloseIcon();
-			closePreviewBtn.on("click", (e) -> {
+			closePreviewBtn.get(0).addEventListener("click", (e) -> {
 				e.stopPropagation();
-				setPreviewVisibility(!node.showPreview);
-			});
+				setPreviewVisibility(!info.preview.getVisible());
+			}, {capture: true});
 		}
-		//editor.line(element, width/2, HEADER_HEIGHT, width/2, 0, {display: "none"}).addClass("nodes-separator");
+
+		refreshBox();
+		//editor.editorDisplay.line(element, width/2, HEADER_HEIGHT, width/2, 0, {display: "none"}).addClass("nodes-separator");
 	}
 
 	public function setPreviewVisibility(visible: Bool) {
-		nodeInstance.showPreview = visible;
-		refreshCloseIcon();
+		if (info.preview != null) {
+			info.preview.setVisible(visible);
+			refreshCloseIcon();
+		}
 	}
 
 	function refreshCloseIcon() {
 		if (closePreviewBtn == null)
 			return;
-		closePreviewBtn.find(".ico").toggleClass("ico-angle-down", !nodeInstance.showPreview);
-		closePreviewBtn.find(".ico").toggleClass("ico-angle-up", nodeInstance.showPreview);
+		var viz = info.preview.getVisible();
+		closePreviewBtn.find(".ico").toggleClass("ico-angle-down", !viz);
+		closePreviewBtn.find(".ico").toggleClass("ico-angle-up", viz);
 	}
 
-	public function addInput(editor : SVG, name : String, valueDefault : String = null, type : hxsl.Ast.Type) {
-		var node = editor.group(element).addClass("input-node-group");
-		var nodeHeight = HEADER_HEIGHT + NODE_MARGIN * (inputs.length+1) + NODE_RADIUS * inputs.length;
-		var style = {fill : ""}
-		style.fill = defaultColor;
+	public function addInput(editor : GraphEditor, name : String, valueDefault : String = null, color : Int) {
+		var node = editor.editorDisplay.group(element).addClass("input-node-group");
+		var nodeHeight = getNodeHeight(inputs.length);
+		var style = {fill : '#${StringTools.hex(color, 6)}'};
 
-		if (type != null) {
-			switch (type) {
-				case TBool:
-					style.fill = boolColor;
-				case TFloat:
-					style.fill = floatColor;
-				case TVec(size, _):
-					switch (size) {
-						case 2:
-							style.fill = vec2Color;
-						case 3:
-							style.fill = vec3Color;
-						case 4:
-							style.fill = vec4Color;
-					}
-				case TSampler(_):
-					style.fill = samplerColor;
-				default:
-			}
-		}
-
-		var nodeCircle = editor.circle(node, 0, nodeHeight, NODE_RADIUS, style).addClass("node input-node");
+		var nodeCircle = editor.editorDisplay.circle(node, 0, nodeHeight, NODE_RADIUS, style).addClass("node input-node");
 
 		var nameWidth = 0.0;
-		if (name.length > 0) {
-			var inputName = editor.text(node, NODE_TITLE_PADDING, nodeHeight + 4, name).addClass("title-node");
+		if (name.length > 0 && name != "input") {
+			var inputName = editor.editorDisplay.text(node, NODE_TITLE_PADDING, nodeHeight + 4, name).addClass("title-node");
 			var domName : js.html.svg.GraphicsElement = cast inputName.get()[0];
 			nameWidth = domName.getBBox().width;
 		}
 		if (valueDefault != null) {
 			var widthInput = width / 2 * 0.7;
-			var fObject = editor.foreignObject(
+			var fObject = editor.editorDisplay.foreignObject(
 				node,
 				nameWidth + NODE_TITLE_PADDING + NODE_INPUT_PADDING,
 				nodeHeight - 9,
@@ -163,59 +297,57 @@ class Box {
 		}
 
 		inputs.push(nodeCircle);
-		refreshHeight();
+		refreshBox();
 
 		return node;
 	}
 
-	public function addOutput(editor : SVG, name : String, ?type : hxsl.Ast.Type) {
-		var node = editor.group(element).addClass("output-node-group");
-		var nodeHeight = HEADER_HEIGHT + NODE_MARGIN * (outputs.length+1) + NODE_RADIUS * outputs.length;
-		var style = {fill : ""}
-
-		style.fill = defaultColor;
-		if (type != null) {
-			switch (type) {
-				case TBool:
-					style.fill = boolColor;
-				case TInt:
-					style.fill = intColor;
-				case TFloat:
-					style.fill = floatColor;
-				case TVec(size, t):
-					if (size == 2)
-						style.fill = vec2Color;
-					else if (size == 3)
-						style.fill = vec3Color;
-					else if (size == 4)
-						style.fill = vec4Color;
-				case TSampler(_):
-					style.fill = samplerColor;
-				default:
-			}
+	public static function getTypeColor(type : hrt.shgraph.ShaderGraph.SgType) {
+		return switch (type) {
+			case SgBool:
+				boolColor;
+			case SgInt:
+				intColor;
+			case SgFloat(1):
+				floatColor;
+			case SgFloat(2):
+				vec2Color;
+			case SgFloat(3):
+				vec3Color;
+			case SgFloat(_):
+				vec4Color;
+			case SgGeneric(_, _):
+				vec4Color;
+			case SgSampler:
+				samplerColor;
 		}
+	}
 
-		var nodeCircle = editor.circle(node, width, nodeHeight, NODE_RADIUS, style).addClass("node output-node");
+	public function addOutput(editor : GraphEditor, name : String, color : Int) {
+		var node = editor.editorDisplay.group(element).addClass("output-node-group");
+		var nodeHeight = getNodeHeight(outputs.length);
+		var style = {fill : '#${StringTools.hex(color, 6)}'};
+
+
+		var nodeCircle = editor.editorDisplay.circle(node, width, nodeHeight, NODE_RADIUS, style).addClass("node output-node");
 
 		if (name.length > 0 && name != "output")
-			editor.text(node, width - NODE_TITLE_PADDING - (name.length * 6.75), nodeHeight + 4, name).addClass("title-node");
+			editor.editorDisplay.text(node, width - NODE_TITLE_PADDING, nodeHeight + 4, name).addClass("title-node").attr("text-anchor", "end");
 
 		outputs.push(nodeCircle);
 
-		refreshHeight();
+		refreshBox();
 		return node;
 	}
 
-	public function generateProperties(editor : SVG, config:  hide.Config) {
-		var props = nodeInstance.getHTML(this.width, config);
+	public function getNodeHeight(id: Int) {
+		return NODE_MARGIN * (id+2);
+	}
+
+	public function generateProperties(editor : GraphEditor) {
+		var props = node.getPropertiesHTML(this.width);
 
 		if (props.length == 0) return;
-
-		if (!hadToShowInputs && inputs.length <= 1 && outputs.length <= 1) {
-			element.find(".nodes").remove();
-			element.find(".input-node-group > .title-node").html("");
-			element.find(".output-node-group > .title-node").html("");
-		}
 
 		var children = propertiesGroup.children();
 		if (children.length > 0) {
@@ -225,52 +357,77 @@ class Box {
 		}
 
 		// create properties box
-		var bgParam = editor.rect(propertiesGroup, 0, 0, this.width, 0).addClass("properties");
-		if (!hasHeader && color != null) bgParam.css("fill", color);
+		if (!collapseProperties()) {
+			editor.editorDisplay.line(propertiesGroup, 0, 0, this.width, 0).addClass("separator");
+		}
+
+		//var bgParam = editor.editorDisplay.rect(propertiesGroup, 0, 0, this.width, 0).addClass("properties");
+		//if (!hasHeader && color != null) bgParam.css("fill", color);
 		propsHeight = 0;
 
 		for (p in props) {
-			var prop = editor.group(propertiesGroup).addClass("prop-group");
+			var prop = editor.editorDisplay.group(propertiesGroup).addClass("prop-group");
 			prop.attr("transform", 'translate(0, ${propsHeight})');
 
 			var propWidth = (p.width() > 0 ? p.width() : this.width);
-			var fObject = editor.foreignObject(prop, (this.width - propWidth) / 2, 5, propWidth, p.height());
+			var fObject = editor.editorDisplay.foreignObject(prop, (this.width - propWidth) / 2, 5, propWidth, p.height());
 			p.appendTo(fObject);
 			propsHeight += Std.int(p.outerHeight()) + 1;
 		}
 
 		propsHeight += 10;
 
-		refreshHeight();
+		refreshBox();
 	}
 
 	public function dispose() {
 		element.remove();
 	}
 
-	function refreshHeight() {
-		var height = getNodesHeight();
-		element.find(".nodes").height(height);
-		element.find(".outline").attr("height", getHeight()+2);
+	function refreshBox() {
+		var width = width;
+		var nodesHeight = getNodesHeight();
+		var height = getHeight();
+		element.find(".nodes").height(nodesHeight).width(width);
+		element.find(".background").attr("height", height).width(width);
+		element.find(".outline").attr("height", height+2).width(width+2);
+
+		if (hasHeader) {
+			element.find(".head-box").width(width);
+		}
+
+		if (info.comment != null) {
+			var hB = halfResizeBorder;
+			var rB = resizeBorder;
+			element.find("#resizeBot").attr("x", hB).attr("y", height - hB).width(width - rB).height(rB);
+			element.find("#resizeTop").attr("x", hB).attr("y", - hB).width(width - rB).height(rB);
+			element.find("#resizeLeft").attr("x", -hB).attr("y", hB).width(rB).height(height-rB);
+			element.find("#resizeRight").attr("x", width-hB).attr("y", hB).width(rB).height(height-rB);
+			element.find("#resizeBotLeft").attr("x", -hB).attr("y", height-hB).width(rB).height(rB);
+			element.find("#resizeBotRight").attr("x", width-hB).attr("y", height-hB).width(rB).height(rB);
+			element.find("#resizeTopLeft").attr("x", -hB).attr("y", -hB).width(rB).height(rB);
+			element.find("#resizeTopRight").attr("x", width-hB).attr("y", -hB).width(rB).height(rB);
+			element.find("#commentTitle").attr("width", width - 2);
+		}
+
 		if (inputs.length >= 1 && outputs.length >= 1) {
-			element.find(".nodes-separator").attr("y2", HEADER_HEIGHT + height);
+			element.find(".nodes-separator").attr("y2", nodesHeight);
 			element.find(".nodes-separator").show();
-		} else if (!hadToShowInputs) {
-			element.find(".nodes-separator").hide();
 		}
 
 		if (propertiesGroup != null) {
-			propertiesGroup.attr("transform", 'translate(0, ${HEADER_HEIGHT + height})');
+			propertiesGroup.attr("transform", 'translate(0, ${collapseProperties() ? getNodeHeight(0) - 16 : nodesHeight})');
 			propertiesGroup.find(".properties").attr("height", propsHeight);
 		}
 
-		closePreviewBtn?.attr("y",HEADER_HEIGHT + height + propsHeight - 16);
+		closePreviewBtn?.attr("y", getHeight() - 12);
 	}
 
+	public static var tmpPoint = new h2d.col.Point();
 	public function setPosition(x : Float, y : Float) {
+		element.attr({transform: 'translate(${x} ${y})'});
 		this.x = x;
 		this.y = y;
-		element.attr({transform: 'translate(${x} ${y})'});
 	}
 
 	public function setSelected(b : Bool) {
@@ -288,31 +445,42 @@ class Box {
 			element.find(".title-box").html(str);
 		}
 	}
-	public function getId() {
-		return this.nodeInstance.id;
-	}
+
 	public function getInstance() {
-		return this.nodeInstance;
+		return this.node;
 	}
-	public function getX() {
-		return this.x;
+
+	public function collapseProperties() {
+		return info.inputs.length <= 1 && info.outputs.length <= 1;
 	}
-	public function getY() {
-		return this.y;
-	}
-	public function getWidth() {
-		return this.width;
-	}
+
 	public function getNodesHeight() {
 		var maxNb = Std.int(Math.max(inputs.length, outputs.length));
-		if (!hadToShowInputs && maxNb <= 1 && propsHeight > 0) {
+		if (info.comment != null) {
 			return 0;
 		}
-		return NODE_MARGIN * (maxNb+1) + NODE_RADIUS * maxNb;
+		return getNodeHeight(maxNb);
 	}
-	public function getHeight() {
-		return HEADER_HEIGHT + getNodesHeight() + propsHeight;
+	public function getHeight() : Float {
+		if (info.comment != null) {
+			return height;
+		}
+		var nodeHeight = getNodesHeight();
+		if (collapseProperties()) {
+			return hxd.Math.max(nodeHeight, propsHeight);
+		}
+		return nodeHeight + propsHeight;
 	}
+
+	inline public function getBounds() : {x: Float, y: Float, w: Float, h: Float} {
+		node.getPos(tmpPoint);
+		var x = tmpPoint.x;
+		var y = tmpPoint.y;
+		var w = this.width;
+		var h = getHeight();
+		return {x:x,y:y,w:w,h:h};
+	}
+
 	public function getElement() {
 		return element;
 	}

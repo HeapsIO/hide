@@ -10,6 +10,8 @@ import hrt.prefab.Prefab as PrefabElement;
 import hrt.prefab.Object3D;
 import hide.comp.cdb.DataFiles;
 
+
+
 class FiltersPopup extends hide.comp.Popup {
 	var editor:Prefab;
 	public function new(?parent:Element, ?root:Element, editor:Prefab, filters:Map<String, Bool>, type:String) {
@@ -70,8 +72,8 @@ class PrefabSceneEditor extends hide.comp.SceneEditor {
 		parent.onSceneReady();
 	}
 
-	override function applyTreeStyle(p: PrefabElement, el: Element, ?pname: String) {
-		super.applyTreeStyle(p, el, pname);
+	override function applyTreeStyle(p: PrefabElement, el: Element, ?pname: String, ?tree: hide.comp.IconTree<PrefabElement>) {
+		super.applyTreeStyle(p, el, pname, tree);
 		parent.applyTreeStyle(p, el, pname);
 	}
 
@@ -189,11 +191,8 @@ class Prefab extends hide.view.FileView {
 
 	var resizablePanel : hide.comp.ResizablePanel;
 
-	var grid : h3d.scene.Graphics;
 
-	var gridStep : Float = 0.;
-	var gridSize : Int;
-	var showGrid = false;
+
 
 	// autoSync
 	var autoSync : Bool;
@@ -202,14 +201,31 @@ class Prefab extends hide.view.FileView {
 	var sceneFilters : Map<String, Bool>;
 	var graphicsFilters : Map<String, Bool>;
 	var viewModes : Map<String, Bool>;
-	var statusText : h2d.Text;
 	var posToolTip : h2d.Text;
+	var matLibPath : String;
+	var renameMatsHistory : Array<Dynamic>;
 
 	var scene(get, null):  hide.comp.Scene;
 	function get_scene() return sceneEditor.scene;
 	public var properties(get, null):  hide.comp.PropsEditor;
 	function get_properties() return sceneEditor.properties;
 
+
+	override function new(state) {
+		super(state);
+
+		var config = hide.Config.loadForFile(ide, ide.getPath(state.path));
+		var matLibs : Array<Dynamic> = config.get("materialLibraries");
+		if (matLibs != null) {
+			for (lib in matLibs) {
+				if (state.path == lib.path) {
+					matLibPath = lib.path;
+					renameMatsHistory = [];
+					break;
+				}
+			}
+		}
+	}
 
 	function createData() {
 		data = new hrt.prefab.Prefab(null, null);
@@ -259,8 +275,17 @@ class Prefab extends hide.view.FileView {
 									<div class="icon ico ico-chevron-right"></div>
 								</div>
 							</div>
-
 							<div class="hide-scenetree"></div>
+
+							<div class="render-props-edition">
+								<div class="hide-toolbar">
+									<div class="toolbar-label">
+										<div class="icon ico ico-sun-o"></div>
+										Render props
+									</div>
+								</div>
+								<div class="hide-scenetree"></div>
+							</div>
 						</div>
 					</div>
 
@@ -290,6 +315,7 @@ class Prefab extends hide.view.FileView {
 
 		createEditor();
 		element.find(".hide-scenetree").first().append(sceneEditor.tree.element);
+		element.find(".render-props-edition").find('.hide-scenetree').append(sceneEditor.renderPropsTree.element);
 		element.find(".hide-scroll").first().append(properties.element);
 		element.find(".heaps-scene").first().append(scene.element);
 
@@ -299,6 +325,7 @@ class Prefab extends hide.view.FileView {
 		resizablePanel.onResize = () -> @:privateAccess if( scene.window != null) scene.window.checkResize();
 
 		sceneEditor.tree.element.addClass("small");
+		sceneEditor.renderPropsTree.element.addClass("small");
 
 		refreshColLayout();
 		element.find(".combine-btn").first().click((_) -> setCombine(true));
@@ -311,6 +338,9 @@ class Prefab extends hide.view.FileView {
 			sceneEditor.collapseTree();
 		});
 
+		var rpEditionvisible = Ide.inst.currentConfig.get("sceneeditor.renderprops.edit", false);
+		setRenderPropsEditionVisibility(rpEditionvisible);
+
 		keys.register("sceneeditor.toggleLayout", () -> {
 			if( element.find(".tree-column").first().css('display') == 'none' )
 				showColumns();
@@ -321,6 +351,13 @@ class Prefab extends hide.view.FileView {
 		refreshSceneFilters();
 		refreshGraphicsFilters();
 		refreshViewModes();
+	}
+
+	override function onBeforeClose() {
+		if(Ide.inst.ideConfig.autoSavePrefab)
+			this.save();
+
+		return super.onBeforeClose();
 	}
 
 	function refreshColLayout() {
@@ -347,6 +384,8 @@ class Prefab extends hide.view.FileView {
 			refreshColLayout();
 		if (tools != null)
 			tools.refreshToggles();
+
+		setRenderPropsEditionVisibility(Ide.inst.currentConfig.get("sceneeditor.renderprops.edit", false));
 	}
 
 	public function hideColumns(?_) {
@@ -393,15 +432,8 @@ class Prefab extends hide.view.FileView {
 		refreshGraphicsFilters();
 		refreshViewModes();
 		tools.saveDisplayKey = "Prefab/toolbar";
-		statusText = new h2d.Text(hxd.res.DefaultFont.get(), scene.s2d);
-		statusText = new h2d.Text(hxd.res.DefaultFont.get(), scene.s2d);
-		statusText.setPosition(5, 5);
-		statusText.visible = false;
 
 		/*gridStep = @:privateAccess sceneEditor.gizmo.moveStep;*/
-		sceneEditor.updateGrid = function() {
-			updateGrid();
-		};
 		var toolsDefs = new Array<hide.comp.Toolbar.ToolDef>();
 
 		toolsDefs.push({id: "perspectiveCamera", title : "Perspective camera", icon : "video-camera", type : Button(() -> resetCamera(false)) });
@@ -430,68 +462,48 @@ class Prefab extends hide.view.FileView {
 
 		toolsDefs.push({id: "", title : "", icon : "", type : Separator});
 
-		toolsDefs.push({id: "gridToggle", title : "Toggle grid", icon : "th", type : Toggle((v) -> { showGrid = v; updateGrid(); }) });
-		toolsDefs.push({id: "axisToggle", title : "Toggle model axis", icon : "cube", type : Toggle((v) -> { sceneEditor.showBasis = v; sceneEditor.updateBasis(); }) });
-		toolsDefs.push({id: "mainGizmos", title : "Hide main gizmos", icon : "eye-slash", type : Toggle((v) -> { @:privateAccess sceneEditor.gizmo.toggleGizmosVisiblity(!v); }) });
-		toolsDefs.push({id: "iconVisibility", title : "Toggle 3d icons visibility", icon : "image", type : Toggle((v) -> { hide.Ide.inst.show3DIcons = v; }), defaultValue: true });
-		toolsDefs.push({id: "iconVisibility-menu", title : "", icon: "", type : Popup((e) -> new hide.comp.SceneEditor.IconVisibilityPopup(null, e, sceneEditor))});
+		toolsDefs.push({id: "showViewportOverlays", title : "Viewport Overlays", icon : "eye", type : Toggle((v) -> { sceneEditor.updateViewportOverlays(); }) });
+		toolsDefs.push({id: "viewportoverlays-menu", title : "", icon: "", type : Popup((e) -> new hide.comp.SceneEditor.ViewportOverlaysPopup(null, e, sceneEditor))});
 
 		var texContent : Element = null;
-		toolsDefs.push({id: "sceneInformationToggle", title : "Scene information", icon : "info-circle", type : Toggle((b) -> statusText.visible = b), rightClick: () -> {
-			if( texContent != null ) {
-				texContent.remove();
-				texContent = null;
-			}
-			new hide.comp.ContextMenu([
-				{
-					label : "Show Texture Details",
-					click : function() {
-						var memStats = scene.engine.mem.stats();
-						var texs = @:privateAccess scene.engine.mem.textures;
-						var list = [for(t in texs) {
-							n: '${t.width}x${t.height}  ${t.format}  ${t.name}',
-							size: t.width * t.height
-						}];
-						list.sort((a, b) -> Reflect.compare(b.size, a.size));
-						var content = new Element('<div tabindex="1" class="overlay-info"><h2>Scene info</h2><pre></pre></div>');
-						new Element(element[0].ownerDocument.body).append(content);
-						var pre = content.find("pre");
-						pre.text([for(l in list) l.n].join("\n"));
-						texContent = content;
-						content.blur(function(_) {
-							content.remove();
-							texContent = null;
-						});
-					}
-				}
-			]);
-		}});
-		toolsDefs.push({id: "autoSyncToggle", title : "Auto synchronize", icon : "refresh", type : Toggle((b) -> autoSync = b)});
-		toolsDefs.push({
-			id: "wireframeToggle",
-			title: "Wireframe",
-			icon: "connectdevelop",
-			type: Toggle((b) -> { sceneEditor.setWireframe(b); }),
-		});
-
-		toolsDefs.push({
-			id: "jointsToggle",
-			title: "Joints",
-			icon: "share-alt",
-			type: Toggle((b) -> { sceneEditor.setJoints(b, null); }),
-		});
-		toolsDefs.push({id: "backgroundColor", title : "Background Color", type : Color(function(v) {
-			scene.engine.backgroundColor = v;
-			updateGrid();
-		})});
+		// toolsDefs.push({id: "sceneInformationToggle", title : "Scene information", icon : "info-circle", type : Toggle((b) -> statusText.visible = b), rightClick: () -> {
+		// 	if( texContent != null ) {
+		// 		texContent.remove();
+		// 		texContent = null;
+		// 	}
+		// 	new hide.comp.ContextMenu([
+		// 		{
+		// 			label : "Show Texture Details",
+		// 			click : function() {
+		// 				var memStats = scene.engine.mem.stats();
+		// 				var texs = @:privateAccess scene.engine.mem.textures;
+		// 				var list = [for(t in texs) {
+		// 					n: '${t.width}x${t.height}  ${t.format}  ${t.name}',
+		// 					size: t.width * t.height
+		// 				}];
+		// 				list.sort((a, b) -> Reflect.compare(b.size, a.size));
+		// 				var content = new Element('<div tabindex="1" class="overlay-info"><h2>Scene info</h2><pre></pre></div>');
+		// 				new Element(element[0].ownerDocument.body).append(content);
+		// 				var pre = content.find("pre");
+		// 				pre.text([for(l in list) l.n].join("\n"));
+		// 				texContent = content;
+		// 				content.blur(function(_) {
+		// 					content.remove();
+		// 					texContent = null;
+		// 				});
+		// 			}
+		// 		}
+		// 	]);
+		// }});
 
 		toolsDefs.push({id: "", title : "", icon : "", type : Separator});
+
+		toolsDefs.push({id: "autoSyncToggle", title : "Auto synchronize", icon : "refresh", type : Toggle((b) -> autoSync = b)});
+
+		toolsDefs.push({id: "", title : "", icon : "", type : Separator});
+
 
         toolsDefs.push({id: "help", title : "help", icon: "question", type : Popup((e) -> new hide.comp.SceneEditor.HelpPopup(null, e, sceneEditor))});
-
-		toolsDefs.push({id: "", title : "", icon : "", type : Separator});
-
-		toolsDefs.push({id: "tog-scene-render", title : "Disable/Enable scene render" , icon: "eye-slash", type : Toggle((b) -> {})});
 
 		toolsDefs.push({id: "", title : "", icon : "", type : Separator});
 
@@ -544,8 +556,6 @@ class Prefab extends hide.view.FileView {
 		gizmo.onChangeMode = onSetGizmoMode;
 		onSetGizmoMode(gizmo.editMode);
 
-		updateStats();
-		updateGrid();
 		initGraphicsFilters();
 
 		initSceneFilters();
@@ -553,24 +563,6 @@ class Prefab extends hide.view.FileView {
 			initGraphicsFilters();
 			initSceneFilters();
 		}
-	}
-
-	function updateStats() {
-		if( statusText.visible ) {
-			var memStats = scene.engine.mem.stats();
-			@:privateAccess
-			var lines : Array<String> = [
-				'Scene objects: ${scene.s3d.getObjectsCount()}',
-				'Interactives: ' + sceneEditor.interactives.count(),
-				'Triangles: ${scene.engine.drawTriangles}',
-				'Buffers: ${memStats.bufferCount}',
-				'Textures: ${memStats.textureCount}',
-				'FPS: ${Math.round(scene.engine.realFps)}',
-				'Draw Calls: ${scene.engine.drawCalls}',
-			];
-			statusText.text = lines.join("\n");
-		}
-		haxe.Timer.delay(function() sceneEditor.event.wait(0.5, updateStats), 0);
 	}
 
 	function resetCamera( top : Bool ) {
@@ -597,6 +589,10 @@ class Prefab extends hide.view.FileView {
 		if( !canSave() )
 			return;
 
+		// Save render props
+		if (Ide.inst.currentConfig.get("sceneeditor.renderprops.edit", false) && sceneEditor.renderPropsRoot != null)
+			sceneEditor.renderPropsRoot.save();
+
 		@:privateAccess var content = ide.toJSON(data.serialize());
 		var newSign = ide.makeSignature(content);
 		if(newSign != currentSign)
@@ -604,53 +600,76 @@ class Prefab extends hide.view.FileView {
 		currentSign = newSign;
 		sys.io.File.saveContent(getPath(), content);
 		super.save();
+
+		if (renameMatsHistory != null) {
+			for (entry in renameMatsHistory)
+				saveMatLibsRenames(entry.previousName, entry.newName, entry.prefab);
+
+			renameMatsHistory = [];
+		}
 	}
 
-	function updateGrid() {
-		if(grid != null) {
-			grid.remove();
-			grid = null;
+	function saveMatLibsRenames(oldName : String, newName : String, prefab : hrt.prefab.Prefab) {
+		function renameContent(content:Dynamic) {
+			var visited = new Array<Dynamic>();
+
+			function renamePath(p: String) {
+				if( p == null )
+					return null;
+
+				var pos = p.indexOf(oldName);
+				if (pos < 0)
+					return p;
+
+				if( p == newName )
+					return p;
+
+				if ((pos == 0 || p.charAt(pos -1) == '/') && (pos + oldName.length >= p.length || p.charAt(pos + oldName.length) == '/'))
+					p = StringTools.replace(p, oldName, newName);
+
+				return p;
+			}
+
+			function renameObj(obj:Dynamic) : Dynamic {
+				switch( Type.typeof(obj) ) {
+					case TObject:
+						if( visited.indexOf(obj) >= 0 ) return null;
+						visited.push(obj);
+						if (Reflect.hasField(obj, "__ref") && Reflect.getProperty(obj, "__ref") != matLibPath)
+							return null;
+						for( f in Reflect.fields(obj) ) {
+							var v : Dynamic = Reflect.field(obj, f);
+							v = renameObj(v);
+							if( v != null ) Reflect.setField(obj, f, v);
+						}
+					case TClass(Array):
+						if( visited.indexOf(obj) >= 0 ) return null;
+						visited.push(obj);
+						var arr : Array<Dynamic> = obj;
+						for( i in 0...arr.length ) {
+							var v : Dynamic = arr[i];
+							v = renameObj(v);
+							if( v != null ) arr[i] = v;
+						}
+					case TClass(String):
+						return renamePath(obj);
+
+					default:
+				}
+
+				return null;
+			}
+
+			for( f in Reflect.fields(content) ) {
+				var v = renameObj(Reflect.field(content,f));
+				if( v != null ) Reflect.setField(content,f,v);
+			}
 		}
 
-		if(!showGrid)
-			return;
-
-		grid = new h3d.scene.Graphics(scene.s3d);
-		grid.scale(1);
-		grid.material.mainPass.setPassName("debuggeom");
-
-        if (sceneEditor.snapToggle) {
-    		gridStep = sceneEditor.snapMoveStep;
-        }
-        else {
-            gridStep = ide.currentConfig.get("sceneeditor.gridStep");
-        }
-		gridSize = ide.currentConfig.get("sceneeditor.gridSize");
-
-		var col = h3d.Vector.fromColor(scene.engine.backgroundColor);
-		var hsl = col.toColorHSL();
-
-        var mov = 0.1;
-
-        if (sceneEditor.snapToggle) {
-            mov = 0.2;
-            hsl.y += (1.0-hsl.y) * 0.2;
-        }
-		if(hsl.z > 0.5) hsl.z -= mov;
-		else hsl.z += mov;
-
-		col.makeColor(hsl.x, hsl.y, hsl.z);
-
-		grid.lineStyle(1.0, col.toColor(), 1.0);
-		for(i in 0...(hxd.Math.floor(gridSize / gridStep) + 1)) {
-			grid.moveTo(i * gridStep, 0, 0);
-			grid.lineTo(i * gridStep, gridSize, 0);
-
-			grid.moveTo(0, i * gridStep, 0);
-			grid.lineTo(gridSize, i * gridStep, 0);
-		}
-		grid.lineStyle(0);
-		grid.setPosition(-1 * gridSize / 2, -1 * gridSize / 2, 0);
+		ide.filterProps(function(content:Dynamic) {
+			renameContent(content);
+			return true;
+		});
 	}
 
 	function onUpdate(dt:Float) {
@@ -679,8 +698,7 @@ class Prefab extends hide.view.FileView {
 		return sceneEditor.onDragDrop(items, isDrop);
 	}
 
-	function applyGraphicsFilter(typeid: String, enable: Bool)
-	{
+	function applyGraphicsFilter(typeid: String, enable: Bool) {
 		saveDisplayState("graphicsFilters/" + typeid, enable);
 
 		var r : h3d.scene.Renderer = scene.s3d.renderer;
@@ -839,7 +857,7 @@ class Prefab extends hide.view.FileView {
 	function applySceneStyle(p: PrefabElement) {
 		var prefabView = Std.downcast(p, hrt.prefab.Prefab); // don't use "to" (Reference)
 		if( prefabView != null && prefabView.parent == null ) {
-			updateGrid();
+			sceneEditor.updateGrid();
 			return;
 		}
 
@@ -869,7 +887,16 @@ class Prefab extends hide.view.FileView {
 		}
 	}
 
+	public function setRenderPropsEditionVisibility(visible : Bool) {
+		var renderPropsEditionEl = this.element.find('.render-props-edition');
 
+		if (!visible) {
+			renderPropsEditionEl.css({ display : 'none' });
+			return;
+		}
+
+		renderPropsEditionEl.css({ display : 'block' });
+	}
 
 	function getDisplayColor(p: PrefabElement) : Null<Int> {
 		var typeId = p.getCdbType();

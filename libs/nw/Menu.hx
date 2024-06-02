@@ -1,6 +1,6 @@
 package nw;
 
-@:enum abstract MenuType(String) {
+enum abstract MenuType(String) {
 	var Menubar = "menubar";
 	var ContextMenu = "contextmenu";
 }

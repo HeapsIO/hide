@@ -33,11 +33,11 @@ class Reference extends Object3D {
 	}
 
 	#if editor
-	override function setEditorChildren(sceneEditor:hide.comp.SceneEditor) {
-		super.setEditorChildren(sceneEditor);
+	override function setEditorChildren(sceneEditor:hide.comp.SceneEditor, scene: hide.comp.Scene) {
+		super.setEditorChildren(sceneEditor, scene);
 
 		if (refInstance != null) {
-			refInstance.setEditor(sceneEditor);
+			refInstance.setEditor(sceneEditor, scene);
 		}
 	}
 	#end
@@ -47,20 +47,43 @@ class Reference extends Object3D {
 			return null;
 		if (refInstance != null)
 			return refInstance;
-		return hxd.res.Loader.currentInstance.load(source).to(hrt.prefab.Resource).load().clone();
+		#if editor
+		try {
+		#end
+			var refInstance = hxd.res.Loader.currentInstance.load(source).to(hrt.prefab.Resource).load().clone();
+			refInstance.shared.parentPrefab = this;
+			return refInstance;
+		#if editor
+		} catch (_) {
+			return null;
+		}
+		#end
 	}
 
 	override function makeInstance() {
 		if( source == null )
 			return;
+		#if editor
+		if (hasCycle()) {
+			hide.Ide.inst.quickError('Reference ${getAbsPath()} to $source is creating a cycle. Please fix the reference.');
+			refInstance = null;
+			return;
+		}
+		#end
+
 		var p = resolveRef();
 		var refLocal3d : h3d.scene.Object = null;
 
-		if (p.to(Object3D) != null) {
+		if (Std.downcast(p, Object3D) != null) {
 			refLocal3d = shared.current3d;
 		} else {
 			super.makeInstance();
 			refLocal3d = local3d;
+		}
+
+		if (p == null) {
+			refInstance = null;
+			return;
 		}
 
 		var sh = p.shared;
@@ -69,6 +92,7 @@ class Reference extends Object3D {
 
 		#if editor
 		sh.editor = this.shared.editor;
+		sh.scene = this.shared.scene;
 		#end
 		sh.parentPrefab = this;
 		sh.customMake = this.shared.customMake;
@@ -121,6 +145,40 @@ class Reference extends Object3D {
 
 	#if editor
 
+	public function hasCycle(?seenPaths: Map<String, Bool>) : Bool {
+		if (editorOnly)
+			return false;
+		var oldEditMode = editMode;
+		editMode = false;
+		seenPaths = seenPaths?.copy() ?? [];
+		var curPath = this.shared.currentPath;
+		if (seenPaths.get(curPath) != null) {
+			editMode = oldEditMode;
+			return true;
+		}
+		seenPaths.set(curPath, true);
+
+		if (source != null) {
+			var ref = resolveRef();
+			if (ref != null) {
+				var root = ref;
+				if (Std.isOfType(root, hrt.prefab.fx.BaseFX)) {
+					root = hrt.prefab.fx.BaseFX.BaseFXTools.getFXRoot(root) ?? root;
+				}
+
+				var allRefs = root.flatten(Reference);
+				for (r in allRefs) {
+					if (r.hasCycle(seenPaths)){
+						editMode = oldEditMode;
+						return true;
+					}
+				}
+			}
+		}
+		editMode = oldEditMode;
+		return false;
+	}
+
 	override function makeInteractive() {
 		if( editMode )
 			return null;
@@ -147,6 +205,12 @@ class Reference extends Object3D {
 			ctx.onChange(this, pname);
 			if(pname == "source" || pname == "editMode") {
 				refInstance = null;
+				if (hasCycle()) {
+					hide.Ide.inst.quickError('Reference to $source would create a cycle. The reference change was aborted.');
+					ctx.properties.undo.undo();
+					@:privateAccess ctx.properties.undo.redoElts.pop();
+					return;
+				}
 				updateProps();
 				if(!ctx.properties.isTempChange)
 					ctx.rebuildPrefab(this);

@@ -389,7 +389,9 @@ class PrefabSpray extends Spray {
 		sceneEditor.properties.element.find("#repeatPrefab").prop("checked", CONFIG.dontRepeatItem);
 	}
 
-
+	override function flatten<T:Prefab>( ?cl : Class<T>, ?arr: Array<T> ) : Array<T> {
+		return flattenSpray(cl, arr);
+	}
 
 	override function addSourcePath(path : String) {
 		var source = { path: path, isRef : true };

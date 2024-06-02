@@ -2,6 +2,7 @@ package hrt.prefab.fx;
 
 class Evaluator {
 	var randValues : Array<Float>;
+	public var parameters: Map<String, Float> = [];
 	var stride : Int;
 
 	public function new(?randValues: Array<Float>, stride: Int=0) {
@@ -14,6 +15,15 @@ class Evaluator {
 		return randValues[i];
 	}
 
+	public function setAllParameters(params: Array<hrt.prefab.fx.FX.Parameter>) {
+		parameters.clear();
+		if (params == null)
+			return;
+		for (p in params) {
+			parameters[p.name] = p.def;
+		}
+	}
+
 	public function getFloat(pidx: Int=0, val: Value, time: Float) : Float {
 		if(val == null)
 			return 0.0;
@@ -21,9 +31,10 @@ class Evaluator {
 			case VZero: return 0.0;
 			case VOne: return 1.0;
 			case VConst(v): return v;
-			case VCurve(c): return c.getVal(time);
-			case VBlendCurve(c, factor):
-				return c.getVal(time);
+			case VBlend(a,b,v):
+				var blend = parameters[v] ?? 0.0;
+				return hxd.Math.lerp(getFloat(pidx, a, time), getFloat(pidx, b, time), blend);
+			case VCurve(c):  return c.getVal(time);
 			case VRandomBetweenCurves(ridx, c):
 				{
 					var c1 = Std.downcast(c.children[0], Curve);
@@ -31,7 +42,6 @@ class Evaluator {
 					var a = c1.getVal(time);
 					var b = c2.getVal(time);
 
-					// Remap random from [-1,1]to [0,1] because blendFactor
 					// Should be in [0,1]
 					var rand = getRandom(pidx, ridx);
 					var min = -1;
@@ -39,7 +49,6 @@ class Evaluator {
 					var remappedRand = (rand - min) / (max - min);
 					return a + (b - a) * remappedRand;
 				}
-			case VCurveScale(c, scale): return c.getVal(time) * scale;
 			case VRandom(ridx, scale):
 				return getRandom(pidx, ridx) * getFloat(pidx, scale, time);
 			case VRandomScale(ridx, scale):
@@ -59,13 +68,12 @@ class Evaluator {
 		switch(val) {
 			case VOne: return time;
 			case VConst(v): return v * time;
-			case VCurveScale(c, scale): return c.getSum(time) * scale;
 			case VCurve(c): return c.getSum(time);
 			case VAdd(a, b):
 				return getSum(a, time) + getSum(b, time);
-			case VMult(a, b):
-			case VZero:
-			default: throw "Not implemented";
+			case VMult(a, VConst(b)), VMult(VConst(b), a): return getSum(a, time) * b;
+			case VZero: return 0;
+			default: throw "not implemented";
 		}
 		return 0.0;
 	}

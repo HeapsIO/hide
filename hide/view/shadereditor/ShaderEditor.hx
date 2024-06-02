@@ -16,6 +16,8 @@ import h2d.col.IPoint;
 import hide.view.shadereditor.Box;
 import hrt.shgraph.ShaderGraph;
 import hrt.shgraph.ShaderNode;
+import hide.view.GraphInterface;
+
 
 typedef NodeInfo = { name : String, description : String, key : String };
 
@@ -25,7 +27,128 @@ typedef SavedClipboard = {
 		nodeType : Class<ShaderNode>,
 		props : Dynamic,
 	}>,
-	edges : Array<{ fromIdx : Int, fromName : String, toIdx : Int, toName : String }>,
+	edges : Array<{ fromIdx : Int, fromOutputId : Int, toIdx : Int, toInputId : Int }>,
+}
+
+class PreviewCamController extends h3d.scene.Object {
+	var target : Vector = new h3d.Vector();
+	var targetInterp : Vector = new h3d.Vector();
+	var pos : Vector = new h3d.Vector();
+
+	var phi : Float = 0.4;
+	var theta : Float = 0.4;
+	var r : Float = 4.0;
+
+	var phiInterp : Float = 0.4;
+	var thetaInterp : Float = 0.4;
+	var rInterp : Float = 4.0;
+
+	function computePos() {
+		pos.x = rInterp * hxd.Math.sin(thetaInterp) * hxd.Math.cos(phiInterp);
+		pos.y = rInterp * hxd.Math.sin(thetaInterp) * hxd.Math.sin(phiInterp);
+		pos.z = rInterp * hxd.Math.cos(thetaInterp);
+		pos += targetInterp;
+	}
+
+	public function set(r: Float, phi: Float, theta: Float, target: Vector) {
+		this.r = r;
+		this.phi = phi;
+		this.theta = theta;
+		this.target.load(target);
+	}
+
+	var pushing : Int = -1;
+	var ignoreNext : Bool = false;
+	function onEvent(e : hxd.Event) {
+		switch (e.kind) {
+			case EPush: {
+				if (pushing != -1)
+					return;
+				pushing = e.button;
+				var win = hxd.Window.getInstance();
+				ignoreNext = true;
+				win.mouseMode = Relative(onCapture, true);
+			}
+			case EWheel: {
+				r += e.wheelDelta;
+				r = hxd.Math.max(r, 0.0001);
+			}
+			case ERelease, EReleaseOutside:
+				if (pushing != e.button) {
+					return;
+				}
+				var win = hxd.Window.getInstance();
+				win.mouseMode = Absolute;
+				pushing = -1;
+			default:
+		}
+	}
+
+	function pan(dx, dy, dz = 0.) {
+		var v = new h3d.Vector(dx, dy, dz);
+		var cam = getScene().camera;
+		cam.update();
+		v.transform3x3(cam.getInverseView());
+		target = target.add(v);
+	}
+
+	override function sync(ctx: h3d.scene.RenderContext) {
+		var cam = getScene().camera;
+		if (cam == null)
+			return;
+
+
+		var dt = hxd.Math.min(1, 1 - Math.pow(0.6, ctx.elapsedTime * 60));
+		var dt2 = hxd.Math.min(1, 1 - Math.pow(0.4, ctx.elapsedTime * 60));
+
+		thetaInterp = hxd.Math.lerp(thetaInterp, theta, dt2);
+		phiInterp = hxd.Math.lerp(phiInterp, phi, dt2);
+		rInterp = hxd.Math.lerp(rInterp, r, dt);
+		targetInterp.lerp(targetInterp, target, dt);
+
+		computePos();
+
+		cam.target.load(targetInterp);
+		cam.pos.load(pos);
+	}
+
+	override function onAdd() {
+		getScene().addEventListener(onEvent);
+	}
+
+	override function onRemove() {
+		getScene().removeEventListener(onEvent);
+	}
+
+	function onCapture(e: hxd.Event) {
+		// For some reason sometimes the first
+		// input from a capture has extreme values.
+		// We just filter out all first events from a capture to mitigate this
+		if (ignoreNext) {
+			ignoreNext = false;
+			return;
+		}
+
+		switch (e.kind) {
+			case EMove:
+				switch (pushing) {
+					case 1:
+						pan(-e.relX * 0.01, e.relY * 0.01);
+					case 2:
+						var dx = e.relX;
+						var dy = e.relY;
+						phi += dx * 0.01;
+						theta -= dy * 0.01;
+						theta = hxd.Math.clamp(theta, 0, hxd.Math.PI);
+				}
+			default:
+		}
+
+	}
+
+	function onCleanup() {
+		pushing = -1;
+	}
 }
 
 class PreviewShaderBase extends hxsl.Shader {
@@ -35,6 +158,10 @@ class PreviewShaderBase extends hxsl.Shader {
 			var position : Vec2;
 		};
 
+		@global var global : {
+			var time : Float;
+			var pixelSize : Vec2;
+		};
 
 		@global var camera : {
 			var viewProj : Mat4;
@@ -48,6 +175,9 @@ class PreviewShaderBase extends hxsl.Shader {
 		var fakeNormal : Vec3;
 		var depth : Float;
 
+		var particleRandom : Float;
+        var particleLifeTime : Float;
+        var particleLife : Float;
 
 		function __init__() {
 			depth = 0.0;
@@ -56,283 +186,196 @@ class PreviewShaderBase extends hxsl.Shader {
 			projectedPosition = vec4(input.position, 0.0, 0.0);
 			fakeNormal = vec3(0,0,-1);
 			transformedNormal = vec3(0,0,-1);
-
-
-		}
-
-
-	}
-}
-
-class PreviewShaderParticle extends hxsl.Shader {
-	static var SRC = {
-
-		@global var global : {
-			var time : Float;
-		};
-
-		var particleRandom : Float;
-        var particleLifeTime : Float;
-        var particleLife : Float;
-
-		function __init__() {
 			particleLife = mod(global.time, 1.0);
 			particleLifeTime = 1.0;
 			particleRandom = hash12(vec2(floor(global.time)));
 		}
 
 		function hash12(p: Vec2) : Float
-		{
-			p = sign(p)*(floor(abs(p))+floor(fract(abs(p))*1000.0)/1000.0);
-			var p3  = fract(vec3(p.xyx) * .1031);
-			p3 += dot(p3, p3.yzx + 33.33);
-			return fract((p3.x + p3.y) * p3.z);
+			{
+				p = sign(p)*(floor(abs(p))+floor(fract(abs(p))*1000.0)/1000.0);
+				var p3  = fract(vec3(p.xyx) * .1031);
+				p3 += dot(p3, p3.yzx + 33.33);
+				return fract((p3.x + p3.y) * p3.z);
+			}
+	}
+}
+
+class PreviewShaderAlpha extends hxsl.Shader {
+	static var SRC = {
+		@input var input : {
+			var uv : Vec2;
+		};
+
+		var pixelColor : Vec4;
+
+		function fragment() {
+			var cb = floor(mod(input.uv * 10.0, vec2(2.0)));
+			var check = mod(cb.x + cb.y, 2.0);
+			var color = check >= 1.0 ? vec3(0.22) : vec3(0.44);
+			pixelColor.rgb = mix(color, pixelColor.rgb, pixelColor.a);
 		}
 	}
 }
 
+typedef ClassRepoEntry =
+{
+	/**
+		Class of the node
+	**/
+	cl: Class<ShaderNode>,
 
-class Preview extends h2d.Bitmap {
+	/**
+		Group where the node is in the search
+	**/
+	group: String,
 
-	public var shaderDef(default, set) : hrt.prefab.Cache.ShaderDef;
-	public var shader : DynamicShader;
+	/**
+		Displayed name in the seach box
+	**/
+	nameSearch: String,
 
-	function rebuildShader() {
-		if (shader != null) {
-			removeShader(shader);
-		}
-		if (shaderDef == null)
-			return;
-		shader = new DynamicShader(shaderDef.shader);
-		addShader(shader);
-	}
+	/**
+		Description of the node in the search box
+	**/
+	description: String,
 
-	function set_shaderDef(v: hrt.prefab.Cache.ShaderDef) {
-		shaderDef = v;
-		rebuildShader();
-		return v;
-	}
+	/**
+		Custom name for the node that will be created
+	**/
+	?nameOverride: String,
 
-	public function new(parent: h2d.Object) {
-		super(h2d.Tile.fromColor(0xFF00FF,1,1), parent);
-		this.blendMode = None;
-		var shaderBase = new PreviewShaderBase();
-		addShader(shaderBase);
-		addShader(new PreviewShaderParticle());
-		var props = new h3d.shader.pbr.PropsValues();
-		addShader(props);
-	}
+	/**
+		Arguments passed to the constructor when the node is created
+	**/
+	args: Array<Dynamic>
+};
 
+class PreviewSettings {
+	public var meshPath : String = "Sphere";
+	public var bgColor : Int = 0;
+	public var renderPropsPath : String = null;
+	public var alphaBlend: Bool = false;
+	public var backfaceCulling : Bool = true;
+	public var unlit : Bool = false;
+	public var previewAlpha : Bool = false;
+	public function new() {};
 }
+class ShaderEditor extends hide.view.FileView implements GraphInterface.IGraphEditor {
+	var graphEditor : hide.view.GraphEditor;
+	var shaderGraph : hrt.shgraph.ShaderGraph;
+	var currentGraph : hrt.shgraph.ShaderGraph.Graph;
 
-class ShaderEditor extends hide.view.Graph {
+	var compiledShader : hrt.prefab.Cache.ShaderDef;
+	var compiledShaderPreview : hrt.prefab.Cache.ShaderDef;
+
+	var previewShaderBase : PreviewShaderBase;
+	var previewShaderAlpha : PreviewShaderAlpha;
+	var previewVar : hxsl.Ast.TVar;
+	var needRecompile : Bool = true;
+
+	var meshPreviewScene : hide.comp.Scene;
+	var meshPreviewMeshes : Array<h3d.scene.Mesh> = [];
+	var meshPreviewRoot3d : h3d.scene.Object;
+	var meshPreviewShader : hxsl.DynamicShader;
+	var meshPreviewCameraController : PreviewCamController;
+	var previewSettings : PreviewSettings;
+	var meshPreviewPrefab : hrt.prefab.Prefab;
+	var meshPreviewprefabWatch : hide.tools.FileWatcher.FileWatchEvent;
+	var meshPreviewRenderProps : hrt.prefab.Prefab;
+	var meshPreviewRenderPropsRoot : h3d.scene.Object;
 
 	var parametersList : JQuery;
-	var domainSelection : JQuery;
-
 	var draggedParamId : Int;
 
-	var addMenu : JQuery;
-	var selectedNode : JQuery;
-	var classRepository : Array<{cl: Class<ShaderNode>, group: String, name: String, description: String, args: Array<Dynamic>}>;
-
-	var previewsScene : hide.comp.Scene;
-	var previewParamDirty : Bool = true;
-	var currentShaderPreviewsDef : hrt.prefab.Cache.ShaderDef;
-
-	// used to preview
-	var sceneEditor : SceneEditor;
 	var defaultLight : hrt.prefab.Light;
-	var lightsAreOn = true;
 
-	var root : hrt.prefab.Prefab;
-	var obj : h3d.scene.Object;
-	var prefabObj : hrt.prefab.Prefab;
-	var shaderGraph : ShaderGraph;
-	var currentGraph : Graph;
+	var queueReloadMesh = false;
 
-	var lastSnapshot : haxe.Json;
-
-	var timerCompileShader : Timer;
-	var COMPILE_SHADER_DEBOUNCE : Int = 100;
-	var VIEW_VISIBLE_CHECK_TIMER : Int = 500;
-	var currentShader : DynamicShader;
-	var currentShaderDefMainPreview : hrt.prefab.Cache.ShaderDef;
-
-
-
-	static var clipboard : SavedClipboard = null;
-	static var lastCopyEditor : ShaderEditor = null;
+	var domainSelection : JQuery;
 
 	override function onDisplay() {
 		super.onDisplay();
+		element.html("");
+		loadSettings();
+		element.addClass("shader-editor");
+ 		shaderGraph = cast hide.Ide.inst.loadPrefab(state.path, null,  true);
+		currentGraph = shaderGraph.getGraph(Fragment);
+		previewShaderBase = new PreviewShaderBase();
+		previewShaderAlpha = new PreviewShaderAlpha();
 
-		shaderGraph = cast hide.Ide.inst.loadPrefab(state.path, null,  true);
+		if (graphEditor != null)
+			graphEditor.remove();
+		graphEditor = new hide.view.GraphEditor(config, this, this.element);
+		graphEditor.onDisplay();
 
-		domain = Fragment;
+		graphEditor.element.on("drop" ,function(e) {
+			var posCursor = new Point(graphEditor.lX(ide.mouseX - 25), graphEditor.lY(ide.mouseY - 10));
+			var inst = new ShaderParam();
+			@:privateAccess var id = currentGraph.current_node_id++;
+			inst.id = id;
+			inst.parameterId = draggedParamId;
+			inst.shaderGraph = shaderGraph;
+			inst.setPos(posCursor);
 
-		addMenu = null;
-
-		element.find("#rightPanel").html('
-						<span>Parameters</span>
-						<div class="tab expand" name="Scene" icon="sitemap">
-							<div class="hide-block" >
-								<div id="parametersList" class="hide-scene-tree hide-list">
-								</div>
-							</div>
-							<div class="options-block hide-block">
-								<input id="createParameter" type="button" value="Add parameter" />
-								<select id="domainSelection"></select>
-								<input id="launchCompileShader" type="button" value="Compile shader" />
-
-								<input id="saveShader" type="button" value="Save" />
-								<div>
-									<input id="changeModel" type="button" value="Change Model" />
-									<input id="removeModel" type="button" value="Remove Model" />
-								</div>
-								<input id="centerView" type="button" value="Center Graph" />
-								<div>
-									Display Compiled
-									<input id="displayHxsl" type="button" value="Hxsl" />
-									<input id="displayGlsl" type="button" value="Glsl" />
-									<input id="displayHlsl" type="button" value="Hlsl" />
-									<input id="display2" type="button" value="2" />
-
-								</div>
-								<input id="togglelight" type="button" value="Toggle Default Lights" />
-								<input id="refreshGraph" type="button" value="Refresh Shader Graph" />
-							</div>
-						</div>)');
-		parent.on("drop", function(e) {
-			var posCursor = new Point(lX(ide.mouseX - 25), lY(ide.mouseY - 10));
-			var node = Std.downcast(currentGraph.addNode(posCursor.x, posCursor.y, ShaderParam, []), ShaderParam);
-			node.parameterId = draggedParamId;
-			var paramShader = shaderGraph.getParameter(draggedParamId);
-			node.variable = paramShader.variable;
-			node.setName(paramShader.name);
-			setDisplayValue(node, paramShader.type, paramShader.defaultValue);
-			node.computeOutputs();
-			addBox(posCursor, ShaderParam, node);
+			graphEditor.opBox(inst, true, graphEditor.currentUndoBuffer);
+			graphEditor.commitUndo();
+			// var node = Std.downcast(currentGraph.addNode(posCursor.x, posCursor.y, ShaderParam, []), ShaderParam);
+			// node.parameterId = draggedParamId;
+			// var paramShader = shaderGraph.getParameter(draggedParamId);
+			// node.variable = paramShader.variable;
+			// node.setName(paramShader.name);
+			//setDisplayValue(node, paramShader.type, paramShader.defaultValue);
+			//addBox(posCursor, ShaderParam, node);
 		});
 
-		var parentScene = element.find(".heaps-scene");
-		var miniPreviews = new Element('<div class="mini-preview"></div>');
-		parentScene.prepend(miniPreviews);
-		previewsScene = new hide.comp.Scene(config, null, miniPreviews);
-		previewsScene.onReady = onMiniPreviewReady;
-		previewsScene.onUpdate = onMiniPreviewUpdate;
+		var rightPannel = new Element(
+			'<div id="rightPanel">
+				<div>
+					<span>Parameters</span>
+					<div class="hide-block" >
+						<div id="parametersList" class="hide-scene-tree hide-list">
+						</div>
+					</div>
+				</div>
+				<div class="options-block hide-block">
+					<input id="createParameter" type="button" value="Add parameter" />
+					<div>
+						Shader :
+						<select id="domainSelection"></select>
+					</div>
+					<div> Preview Alpha<input id="previewAlpha" type="checkbox" /></div>
+					<input id="centerView" type="button" value="Center Graph" />
+					<input id="debugMenu" type="button" value="Debug Menu"/>
+				</div>
 
+			</div>'
+		);
 
-		var preview = new Element('<div id="preview" ></div>');
-		preview.on("mousedown", function(e) { e.stopPropagation(); });
-		preview.on("wheel", function(e) { e.stopPropagation(); });
-		parent.append(preview);
+		rightPannel.find("#centerView").click((e) -> graphEditor.centerView());
 
-		var savedLightState = getDisplayState("useDefaultLights");
-		if( savedLightState != null ) {
-			lightsAreOn = savedLightState;
-		} else {
-			lightsAreOn == true;
-		}
-
-		domainSelection = element.find("#domainSelection");
+		domainSelection = rightPannel.find("#domainSelection");
 		for (domain in haxe.EnumTools.getConstructors(hrt.shgraph.ShaderGraph.Domain)) {
 			domainSelection.append('<option value="$domain">$domain</option>');
 		};
 
-		domainSelection.val(haxe.EnumTools.EnumValueTools.getName(domain));
+		domainSelection.val(haxe.EnumTools.EnumValueTools.getName(currentGraph.domain));
 
 		domainSelection.on("change", (e) -> {
 			var domainString : String = domainSelection.val();
 			var domain = haxe.EnumTools.createByName(hrt.shgraph.ShaderGraph.Domain, domainString);
-			setDomain(domain);
+			setDomain(domain, true);
 		});
 
-		var def = new hrt.prefab.Prefab(null, null);
-		new hrt.prefab.RenderProps(def, null).name = "renderer";
-		defaultLight = new hrt.prefab.Light(def, null);
-		defaultLight.name = "sunLight";
-		defaultLight.kind = Directional;
-		defaultLight.power = 1.5;
-		var q = new h3d.Quat();
-		q.initDirection(new h3d.Vector(-1,-1.5,-3));
-		var a = q.toEuler();
-		defaultLight.rotationX = Math.round(a.x * 180 / Math.PI);
-		defaultLight.rotationY = Math.round(a.y * 180 / Math.PI);
-		defaultLight.rotationZ = Math.round(a.z * 180 / Math.PI);
-		defaultLight.shadows.mode = Dynamic;
-		defaultLight.shadows.size = 1024;
-		defaultLight.enabled = lightsAreOn;
-		root = def;
-
-		sceneEditor = new hide.comp.SceneEditor(this, root);
-		sceneEditor.editorDisplay = false;
-		sceneEditor.onRefresh = onRefresh;
-		sceneEditor.onUpdate = function(dt : Float) {};
-		sceneEditor.objectAreSelectable = false;
-		sceneEditor.view.keys = new hide.ui.Keys(null); // Remove SceneEditor Shortcuts
-
-		editorMatrix = editor.group(editor.element);
-
-		element.on("mousedown", function(e) {
-			closeAddMenu();
+		var previewAlpha = rightPannel.find("#previewAlpha");
+		previewAlpha.on("change", (e) -> {
+			previewSettings.previewAlpha = (cast previewAlpha[0]:Dynamic).checked;
+			saveSettings();
+			bitmapToShader.clear();
 		});
+		(cast previewAlpha[0]:Dynamic).checked = previewSettings.previewAlpha;
 
-		parent.on("mouseup", function(e) {
-			if (e.button == 0) {
-				// Stop link creation
-				if (isCreatingLink != None) {
-					if (startLinkBox != null && endLinkBox != null && createEdgeInShaderGraph()) {
-						cleanupLinkCreation();
-					} else {
-						openAddMenu();
-					}
-
-					return;
-				}
-				return;
-			}
-		});
-
-		element.on("keydown", function(e) {
-			if (e.ctrlKey && e.keyCode == 83) {
-				save();
-				return;
-			}
-		});
-		element.on("keyup", function(e) {
-			if (e.keyCode == 32) {
-				if (addMenu == null || !addMenu.is(":visible"))
-					openAddMenu(-40, -70);
-			}
-		});
-
-		function reloadFullView() {
-			var shouldRebuild = true;
-			if( modified )
-				shouldRebuild = ide.confirm("Reload without saving?");
-			if( shouldRebuild ) {
-				rebuild();
-				modified = false;
-			}
-		}
-
-		keys = new hide.ui.Keys(element);
-		keys.register("undo", function() undo.undo());
-		keys.register("redo", function() undo.redo());
-		keys.register("delete", deleteSelection);
-		keys.register("duplicate", duplicateSelection);
-		keys.register("copy", onCopy);
-		keys.register("shadergraph.hide", onHide);
-		keys.register("paste", onPaste);
-		keys.register("sceneeditor.focus", centerView);
-		keys.register("view.refresh", reloadFullView);
-
-		parent.on("contextmenu", function(e) {
-			e.preventDefault();
-			openAddMenu();
-			return false;
-		});
+		rightPannel.appendTo(element);
 
 		var newParamCtxMenu : Array<hide.comp.ContextMenu.ContextMenuItem> = [
 			{ label : "Number", click : () -> createParameter(TFloat) },
@@ -342,7 +385,11 @@ class ShaderEditor extends hide.view.Graph {
 			{ label : "Texture", click : () -> createParameter(TSampler(T2D,false)) },
 		];
 
-		parametersList = element.find("#parametersList");
+		rightPannel.find("#createParameter").on("click", function() {
+			new hide.comp.ContextMenu(newParamCtxMenu);
+		});
+
+		parametersList = rightPannel.find("#parametersList");
 		parametersList.on("contextmenu", function(e) {
 			e.preventDefault();
 			e.stopPropagation();
@@ -354,407 +401,89 @@ class ShaderEditor extends hide.view.Graph {
 			]);
 		});
 
-		element.find("#createParameter").on("click", function() {
-			new hide.comp.ContextMenu(newParamCtxMenu);
-		});
-
-		element.find("#launchCompileShader").on("click", function() {
-			launchCompileShader();
-		});
-
-		element.find("#saveShader").on("click", function() {
-			save();
-		});
-
-		element.find("#changeModel").on("click", function() {
-			ide.chooseFile(["fbx", "l3d", "prefab"], function(path) {
-				sceneEditor.scene.setCurrent();
-				if( prefabObj != null ) {
-					sceneEditor.deleteElements([prefabObj], false, false);
-					prefabObj = null;
-				}
-				else {
-					sceneEditor.scene.s3d.removeChild(obj);
-				}
-				loadPreviewPrefab(path);
-				saveDisplayState("customModel", path);
-				if( prefabObj == null )
-					sceneEditor.scene.s3d.addChild(obj);
-				sceneEditor.resetCamera(1.05);
-				launchCompileShader();
-			});
-		});
-
-		element.find("#removeModel").on("click", resetPreviewDefault);
-
-		element.find("#centerView").on("click", function() {
-			centerView();
-		})
-			.prop("title", 'Center on full graph (${config.get("key.sceneeditor.focus")})');
-
-		element.find("#togglelight").on("click", toggleDefaultLight);
-
-		element.find("#refreshGraph").on("click", reloadFullView)
-			.prop("title", 'Refresh the Shader (${config.get("key.view.refresh")})');
-
-		element.find("#displayHxsl").on("click", () -> displayCompiled("hxsl"));
-		element.find("#displayGlsl").on("click", () -> displayCompiled("glsl"));
-		element.find("#displayHlsl").on("click", () -> displayCompiled("hlsl"));
-
-		element.find("#display2").on("click", () -> {@:privateAccess info(hxsl.Printer.shaderToString(shaderGraph.compile2(domain).shader.data, true));});
-
-
-		editorMatrix.on("click", "input, select", function(ev) {
-			beforeChange();
-		});
-
-		editorMatrix.on("change", "input, select", function(ev) {
-			try {
-				var idBox = ev.target.closest(".box").id;
-				//shaderGraph.nodeUpdated(idBox);
-				afterChange();
-				launchCompileShader();
-			} catch (e : Dynamic) {
-				if (Std.isOfType(e, ShaderException)) {
-					error(e.msg, e.idBox);
-				}
-			}
-		});
-
-		addMenu = null;
-
-		classRepository = [];
-
-		for (node in ShaderNode.registeredNodes) {
-			var metas = haxe.rtti.Meta.getType(node);
-			if (metas.group == null) {
-				continue;
-			}
-			var group = metas.group != null ? metas.group[0] : "Other";
-			var name = metas.name != null ? metas.name[0] : "unknown";
-			var description = metas.description != null ? metas.description[0] : "";
-
-
-			classRepository.push({name : name, group : group, description: description, args: [], cl: node});
-
-			var inst = std.Type.createEmptyInstance(node);
-			var aliases = inst.getAliases(name, group, description);
-			if (aliases != null) {
-				for (alias in aliases) {
-					classRepository.push({name : alias.name ?? name, description: alias.description ?? description, args: alias.args ?? [], cl: node, group: group});
-				}
-			}
-		}
-
-		var libPaths : Array<String> = config.get("shadergraph.libfolders", ["shaders"]);
-		for( lpath in libPaths ) {
-			var basePath = ide.getPath(lpath);
-			if( !sys.FileSystem.exists(basePath) || !sys.FileSystem.isDirectory(basePath) )
-				continue;
-			for( c in sys.FileSystem.readDirectory(basePath) ) {
-				var relPath = ide.makeRelative(basePath + "/" + c);
-				if(
-					this.state.path.toLowerCase() != relPath.toLowerCase()
-					&& haxe.io.Path.extension(relPath).toLowerCase() == "shgraph"
-				) {
-					var group = 'SubGraph from $lpath';
-
-					var fileName = new haxe.io.Path(relPath).file;
-
-					classRepository.push({name: fileName, description: "", args: [relPath], cl: SubGraph, group: group});
-				}
-			}
-		}
-
-		classRepository.sort((a,b) -> {
-			if (a.group == b.group) {
-				return Reflect.compare(a.name, b.name);
-			}
-			return Reflect.compare(a.group, b.group);
-		});
-
-		new Element("svg").ready(function(e) {
-			refreshShaderGraph();
-			if (isVisible()) {
-				centerView();
-			}
-		});
-	}
-
-	function cleanupLinkCreation() {
-		startLinkBox = endLinkBox = null;
-		startLinkGrNode = endLinkNode = null;
-		isCreatingLink = None;
-		clearAvailableNodes();
-
-		if (currentLink != null) currentLink.remove();
-		currentLink = null;
-	}
-
-	override function save() {
-		var content = shaderGraph.saveToText();
-		currentSign = ide.makeSignature(content);
-		sys.io.File.saveContent(getPath(), content);
-		super.save();
-		info("Shader saved");
-	}
-
-	function loadPreviewPrefab(path : String) {
-		if( path == null )
-			return;
-		prefabObj = null;
-		var ext = haxe.io.Path.extension(path).toLowerCase();
-		var relative = ide.makeRelative(path);
-		if( ext == "fbx" )
-			obj = sceneEditor.scene.loadModel(path, true);
-		else if( hrt.prefab.Prefab.getPrefabType(relative) != null ) {
-			var ref = new hrt.prefab.Reference(root, null);
-			ref.source = relative;
-			sceneEditor.addElements([ref], false, true, false);
-			prefabObj = ref;
-			obj = sceneEditor.getObject(prefabObj);
-		}
-	}
-
-	function resetPreviewDefault() {
-		sceneEditor.scene.setCurrent();
-		if( prefabObj != null ) {
-			sceneEditor.deleteElements([prefabObj], false, false);
-			prefabObj = null;
-		}
-		else {
-			sceneEditor.scene.s3d.removeChild(obj);
-		}
-		removeDisplayState("customModel");
-
-		var sp = new h3d.prim.Sphere(1, 128, 128);
-		sp.addNormals();
-		sp.addUVs();
-		sp.addTangents();
-		obj = new h3d.scene.Mesh(sp);
-		sceneEditor.scene.s3d.addChild(obj);
-		sceneEditor.resetCamera(1.05);
-		launchCompileShader();
-	}
-
-	function onRefresh() {
-		if (sceneEditor.scene.s3d == null)
-			throw "Scene 3d is not ready yet";
-		var saveCustomModel = getDisplayState("customModel");
-		if (saveCustomModel != null)
-			loadPreviewPrefab(saveCustomModel);
-		else {
-			// obj = sceneEditor.scene.loadModel("res/PrimitiveShapes/Sphere.fbx", true);
-			var sp = new h3d.prim.Sphere(1, 128, 128);
-			sp.addNormals();
-			sp.addUVs();
-			var mesh = new h3d.scene.Mesh(sp);
-			obj = mesh;
-		}
-		for (m in obj.getMaterials()) {
-			var sh = new PreviewShaderParticle();
-			m.mainPass.addShader(sh);
-		}
-		if( prefabObj == null )
-			sceneEditor.scene.s3d.addChild(obj);
-		sceneEditor.resetCamera(1.05);
-
-		element.find("#preview").first().append(sceneEditor.scene.element);
-
-		if (isVisible()) {
-			launchCompileShader();
-		} else {
-			var timer = new Timer(VIEW_VISIBLE_CHECK_TIMER);
-			timer.run = function() {
-				if (isVisible()) {
-					centerView();
-					generateEdges();
-					launchCompileShader();
-					timer.stop();
-				}
-			}
-		}
-		@:privateAccess
-		if( sceneEditor.scene.window != null )
-			sceneEditor.scene.window.checkResize();
-	}
-
-	function toggleDefaultLight() {
-		if( lightsAreOn ) {
-			lightsAreOn = false;
-			defaultLight.enabled = lightsAreOn;
-			sceneEditor.deleteElements([defaultLight], true, false);
-		} else {
-			lightsAreOn = true;
-			defaultLight.enabled = lightsAreOn;
-			sceneEditor.addElements([defaultLight], true, false);
-		}
-		saveDisplayState("useDefaultLights", lightsAreOn);
-	}
-
-	function setDomain(domain: hrt.shgraph.ShaderGraph.Domain) {
-		this.domain = domain;
-		refreshShaderGraph(true);
-	}
-
-	function refreshShaderGraph(readyEvent : Bool = true) {
-		listOfBoxes = [];
-		listOfEdges = [];
-
-		currentGraph = shaderGraph.getGraph(domain);
-
-		var saveToggleParams = new Map<Int, Bool>();
-		for (pElt in parametersList.find(".parameter").elements()) {
-			saveToggleParams.set(Std.parseInt(pElt.get()[0].id.split("_")[1]), pElt.find(".content").css("display") != "none");
-		}
-		parametersList.empty();
-		editorMatrix.empty();
-
-		updateMatrix();
-
-		for (node in currentGraph.getNodes()) {
-			var paramNode = Std.downcast(node.instance, ShaderParam);
-			if (paramNode != null) {
-				var paramShader = shaderGraph.getParameter(paramNode.parameterId);
-				paramNode.setName(paramShader.name);
-				setDisplayValue(paramNode, paramShader.type, paramShader.defaultValue);
-				//shaderGraph.nodeUpdated(paramNode.id);
-				addBox(new Point(node.x, node.y), ShaderParam, paramNode);
-			} else {
-				addBox(new Point(node.x, node.y), std.Type.getClass(node.instance), node.instance);
-			}
-			var subGraphNode = Std.downcast(node.instance, SubGraph);
-			if( subGraphNode != null ) {
-				var found = false;
-				for( el in watches ) {
-					if( el.path == subGraphNode.pathShaderGraph ) {
-						found = true;
-						break;
-					}
-				}
-				if( !found )
-					watch(subGraphNode.pathShaderGraph, rebuild, { keepOnRebuild: false });
-			}
-		}
-
-		if (readyEvent) {
-			new Element(".nodes").ready(function(e) {
-				if (isVisible()) {
-					generateEdges();
-				}
-			});
-		} else {
-			generateEdges();
-		}
-
-
 		for (k in shaderGraph.parametersKeys) {
 			var pElt = addParameter(shaderGraph.parametersAvailable.get(k), shaderGraph.parametersAvailable.get(k).defaultValue);
-			if (saveToggleParams.get(shaderGraph.parametersAvailable.get(k).id)) {
-				toggleParameter(pElt, true);
-			}
 		}
 
-		launchCompileShader();
-	}
 
-	function generateEdgesFromBox(box : Box) {
-
-		for (b in listOfBoxes) {
-			for (inputName => connection in b.getInstance().connections) {
-				if (connection.from.id == box.getId()) {
-					var nodeFrom = box.getElement().find('[field=${connection.fromName}]');
-					var nodeTo = b.getElement().find('[field=${inputName}]');
-					edgeStyle.stroke = nodeFrom.css("fill");
-					createEdgeInEditorGraph({from: box, nodeFrom: nodeFrom, to : b, nodeTo: nodeTo, elt : createCurve(nodeFrom, nodeTo) });
+		rightPannel.find("#debugMenu").click((e) -> {
+			new hide.comp.ContextMenu([
+				{
+					label : "Print Shader code to Console",
+					click: () -> trace(hxsl.Printer.shaderToString(shaderGraph.compile(currentGraph.domain).shader.data, true))
 				}
+			]);
+		});
 
-			}
+		graphEditor.onPreviewUpdate = onPreviewUpdate;
+		graphEditor.onNodePreviewUpdate = onNodePreviewUpdate;
+
+		initMeshPreview();
+	}
+
+	function setDomain(domain : hrt.shgraph.ShaderGraph.Domain, recordUndo : Bool) {
+		if (shaderGraph.getGraph(domain) == currentGraph)
+			return;
+
+		var from = currentGraph.domain;
+		var to = domain;
+
+		function exec(isUndo : Bool) {
+			var curr = !isUndo ? to : from;
+			currentGraph = shaderGraph.getGraph(curr);
+			domainSelection.val(haxe.EnumTools.EnumValueTools.getName(curr));
+			graphEditor.reload();
+			graphEditor.centerView();
+		}
+
+		exec(false);
+		if (recordUndo) {
+			undo.change(Custom(exec));
 		}
 	}
 
-	function generateEdgesToBox(box : Box) {
-		for (inputName => connection in box.getInstance().connections) {
-			var fromBox : Box = null;
-			for (boxFrom in listOfBoxes) {
-				if (boxFrom.getId() == connection.from.id) {
-					fromBox = boxFrom;
-					break;
-				}
-			}
-			var nodeFrom = fromBox.getElement().find('[field=${connection.fromName}]');
-			var nodeTo = box.getElement().find('[field=${inputName}]');
-			edgeStyle.stroke = nodeFrom.css("fill");
-			createEdgeInEditorGraph({from: fromBox, nodeFrom: nodeFrom, to : box, nodeTo: nodeTo, elt : createCurve(nodeFrom, nodeTo) });
-		}
-	}
+	function createParameter(type : Type) {
+		@:privateAccess var paramShaderID : Int = shaderGraph.current_param_id++;
+		@:privateAccess
+		function exec(isUndo:Bool) {
+			if (!isUndo) {
+				var name = "Param_" + paramShaderID;
+				shaderGraph.parametersAvailable.set(paramShaderID, {id: paramShaderID, name : name, type : type, defaultValue : null, variable : shaderGraph.generateParameter(name, type), index : shaderGraph.parametersKeys.length});
+				shaderGraph.parametersKeys.push(paramShaderID);
 
-	function generateEdges() {
-		for (box in listOfBoxes) {
-			generateEdgesToBox(box);
+				var paramShader = shaderGraph.getParameter(paramShaderID);
+				var elt = addParameter(paramShader, null);
+				elt.find(".input-title").focus();
+			} else {
+				shaderGraph.parametersAvailable.remove(paramShaderID);
+				shaderGraph.parametersKeys.remove(paramShaderID);
+				parametersUpdate.remove(paramShaderID);
+				shaderGraph.checkParameterIndex();
+				parametersList.find("#param_" + paramShaderID).remove();
+			}
 		}
-	}
 
-	function refreshBox(box : Box) {
-		var length = listOfEdges.length;
-		for (i in 0...length) {
-			var edge = listOfEdges[length-i-1];
-			if (edge.from == box || edge.to == box) {
-				super.removeEdge(edge);
-			}
-		}
-		var indexInputStartLink = -1;
-		if (startLinkBox == box) {
-			var nodeInputJQuery = startLinkGrNode.find(".node");
-			for (i in 0...box.inputs.length) {
-				if (box.inputs[i].is(nodeInputJQuery)) {
-					indexInputStartLink = i;
-					break;
-				}
-			}
-		}
-		var newBox : Box = addBox(new Point(box.getX(), box.getY()), std.Type.getClass(box.getInstance()), box.getInstance());
-		box.dispose();
-		listOfBoxes.remove(box);
-		generateEdgesToBox(newBox);
-		generateEdgesFromBox(newBox);
-		if (indexInputStartLink >= 0) {
-			startLinkBox = newBox;
-			startLinkGrNode = newBox.inputs[indexInputStartLink].parent();
-		}
-		return newBox;
+		exec(false);
+		undo.change(Custom(exec));
 	}
 
 	function moveParameter(parameter : Parameter, up : Bool) {
 		var parameterElt = parametersList.find("#param_" + parameter.id);
 		var parameterPrev = shaderGraph.parametersAvailable.get(shaderGraph.parametersKeys[shaderGraph.parametersKeys.indexOf(parameter.id) + (up? -1 : 1)]);
-		var parameterPrevElt = parametersList.find("#param_" + parameterPrev.id);
-		if (up)
-			parameterElt.insertBefore(parameterPrevElt);
-		else
-			parameterElt.insertAfter(parameterPrevElt);
-		shaderGraph.parametersKeys.remove(parameter.id);
-		shaderGraph.parametersKeys.insert(shaderGraph.parametersKeys.indexOf(parameterPrev.id) + (up? 0 : 1), parameter.id);
-		shaderGraph.checkParameterIndex();
+		execMoveParameterTo(parameter, parameterPrev, !up);
 	}
 
-	function moveParameterTo(paramA: Parameter, paramB: Parameter, after: Bool) {
-		if (paramA == paramB)
-			return;
-		var aElt = parametersList.find("#param_" + paramA.id);
-		var bElt = parametersList.find("#param_" + paramB.id);
+	function updateParam(id : Int) {
+		meshPreviewScene.setCurrent(); // needed for texture changes
 
-		if (!after) {
-			aElt.insertBefore(bElt);
-		} else {
-			aElt.insertAfter(bElt);
+		var param = shaderGraph.getParameter(id);
+		var init = compiledShader.inits.find((i) -> i.variable.name == param.name);
+		if (init != null) {
+			setParamValue(meshPreviewShader, init.variable, param.defaultValue);
 		}
-
-		shaderGraph.parametersKeys.remove(paramA.id);
-		shaderGraph.parametersKeys.insert(shaderGraph.parametersKeys.indexOf(paramB.id)+ (after ? 1 : 0) , paramA.id);
-
-		shaderGraph.checkParameterIndex();
 	}
+
+	var parametersUpdate : Map<Int, (Dynamic) -> Void> = [];
 
 	function addParameter(parameter : Parameter, ?value : Dynamic) {
 
@@ -765,14 +494,14 @@ class ShaderEditor extends hide.view.Graph {
 			e.stopPropagation();
 			var newCtxMenu : Array<hide.comp.ContextMenu.ContextMenuItem> = [
 				{ label : "Move up", click : () -> {
-					beforeChange();
+					//beforeChange();
 					moveParameter(parameter, true);
-					afterChange();
+					//afterChange();
 				}, enabled: shaderGraph.parametersKeys.indexOf(parameter.id) > 0},
 				{ label : "Move down", click : () -> {
-					beforeChange();
+					//beforeChange();
 					moveParameter(parameter, false);
-					afterChange();
+					//afterChange();
 				}, enabled: shaderGraph.parametersKeys.indexOf(parameter.id) < shaderGraph.parametersKeys.length-1}
 			];
 			new hide.comp.ContextMenu(newCtxMenu);
@@ -789,21 +518,45 @@ class ShaderEditor extends hide.view.Graph {
 				var parentRange = new Element('<input type="range" min="-1" max="1" />').appendTo(defaultValue);
 				var range = new hide.comp.Range(null, parentRange);
 				var rangeInput = @:privateAccess range.f;
+
+				var save : Null<Float> = null;
 				rangeInput.on("mousedown", function(e) {
 					elt.attr("draggable", "false");
-					beforeChange();
+					//beforeChange();
 				});
 				rangeInput.on("mouseup", function(e) {
 					elt.attr("draggable", "true");
-					afterChange();
+					//afterChange();
 				});
 				if (value == null) value = 0;
 				range.value = value;
+
+				parametersUpdate.set(parameter.id, (v:Dynamic) -> range.value = v);
 				shaderGraph.setParameterDefaultValue(parameter.id, value);
+
+				var saveValue : Null<Float> = null;
 				range.onChange = function(moving) {
+					if (saveValue == null) {
+						saveValue = shaderGraph.getParameter(parameter.id).defaultValue;
+					}
+
+					if (moving == false) {
+						var old = saveValue;
+						var curr = range.value;
+						saveValue = null;
+						function exec(isUndo : Bool) {
+							var v = isUndo ? old : curr;
+							shaderGraph.setParameterDefaultValue(parameter.id, v);
+							parametersUpdate[parameter.id](v);
+							updateParam(parameter.id);
+						}
+						exec(false);
+						undo.change(Custom(exec));
+						return;
+					}
+
 					if (!shaderGraph.setParameterDefaultValue(parameter.id, range.value))
 						return;
-					setBoxesParam(parameter.id);
 					updateParam(parameter.id);
 				};
 				typeName = "Number";
@@ -817,46 +570,88 @@ class ShaderEditor extends hide.view.Graph {
 				var start : h3d.Vector = h3d.Vector.fromArray(value);
 				shaderGraph.setParameterDefaultValue(parameter.id, value);
 				picker.value = start.toColor();
+
+				parametersUpdate.set(parameter.id, (v:Dynamic) -> picker.value = v.toColor());
+
+				var saveValue : Null<h3d.Vector4> = null;
 				picker.onChange = function(move) {
+					if (saveValue == null) {
+						saveValue = new h3d.Vector4();
+						saveValue.load(h3d.Vector4.fromArray(shaderGraph.getParameter(parameter.id).defaultValue));
+					}
+					if (!move) {
+						var curr = h3d.Vector4.fromColor(picker.value);
+						var old = saveValue;
+						saveValue = null;
+						function exec(isUndo : Bool) {
+							var v = isUndo ? old : curr;
+							parametersUpdate[parameter.id](v);
+							shaderGraph.setParameterDefaultValue(parameter.id, [v.x, v.y, v.z, v.w]);
+							updateParam(parameter.id);
+						}
+						exec(false);
+						undo.change(Custom(exec));
+						return;
+					}
 					var vecColor = h3d.Vector4.fromColor(picker.value);
 					if (!shaderGraph.setParameterDefaultValue(parameter.id, [vecColor.x, vecColor.y, vecColor.z, vecColor.w]))
 						return;
-					setBoxesParam(parameter.id);
+					//setBoxesParam(parameter.id);
 					updateParam(parameter.id);
 				};
-				/*picker.element.on("dragstart.spectrum", function() {
-					beforeChange();
-				});
-				picker.element.on("dragstop.spectrum", function() {
-					afterChange();
-				});*/
+				typeName = "Color";
 			case TVec(n, VFloat):
 				if (value == null)
 					value = [for (i in 0...n) 0.0];
 
 				shaderGraph.setParameterDefaultValue(parameter.id, value);
+
 				//var row = new Element('<div class="flex"/>').appendTo(defaultValue);
+
+				var ranges : Array<hide.comp.Range> = [];
+
+				var saveValue : Array<Float> = null;
 
 				for( i in 0...n ) {
 					var parentRange = new Element('<input type="range" min="-1" max="1" />').appendTo(defaultValue);
 					var range = new hide.comp.Range(null, parentRange);
+					ranges.push(range);
 					range.value = value[i];
 
 					var rangeInput = @:privateAccess range.f;
 					rangeInput.on("mousedown", function(e) {
 						elt.attr("draggable", "false");
-						beforeChange();
+						//beforeChange();
 					});
 					rangeInput.on("mouseup", function(e) {
 						elt.attr("draggable", "true");
-						afterChange();
+						//afterChange();
 					});
 
 					range.onChange = function(move) {
+						if (saveValue == null) {
+							saveValue = (shaderGraph.getParameter(parameter.id).defaultValue:Array<Float>).copy();
+						}
+
+						if (move == false) {
+							var old = saveValue;
+							var curr = [for (i in 0...n) ranges[i].value];
+							saveValue = null;
+							function exec(isUndo : Bool) {
+								var v = isUndo ? old : curr;
+								shaderGraph.setParameterDefaultValue(parameter.id, v);
+								parametersUpdate[parameter.id](v);
+								updateParam(parameter.id);
+							}
+							exec(false);
+							undo.change(Custom(exec));
+							return;
+						}
+
 						value[i] = range.value;
 						if (!shaderGraph.setParameterDefaultValue(parameter.id, value))
 							return;
-						setBoxesParam(parameter.id);
+						//setBoxesParam(parameter.id);
 						updateParam(parameter.id);
 					};
 					//if(min == null) min = isColor ? 0.0 : -1.0;
@@ -864,18 +659,42 @@ class ShaderEditor extends hide.view.Graph {
 					//e.attr("min", "" + min);
 					//e.attr("max", "" + max);
 				}
+				parametersUpdate.set(parameter.id, (v:Dynamic) -> {
+					for (i in 0...n) {
+						ranges[i].value = v[i];
+					}
+				});
+
 				typeName = "Vec" + n;
 			case TSampler(_):
 				var parentSampler = new Element('<input type="texturepath" field="sampler2d"/>').appendTo(defaultValue);
 
 				var tselect = new hide.comp.TextureChoice(null, parentSampler);
+				parametersUpdate.set(parameter.id, (v:Dynamic) -> tselect.value = v);
+				var saveValue : String = null;
 				tselect.value = value;
-				tselect.onChange = function(undo: Bool) {
-					beforeChange();
-					if (!shaderGraph.setParameterDefaultValue(parameter.id, tselect.value))
+				tselect.onChange = function(notTmpChange: Bool) {
+					if (saveValue == null) {
+						saveValue = haxe.Json.stringify(shaderGraph.parametersAvailable.get(parameter.id).defaultValue);
+					}
+					var currentValue = haxe.Json.parse(haxe.Json.stringify(tselect.value));
+					if (notTmpChange) {
+						var prev = haxe.Json.parse(saveValue);
+						saveValue = null;
+						var curr = currentValue;
+						function exec(isUndo: Bool) {
+							var v = !isUndo ? curr : prev;
+							shaderGraph.setParameterDefaultValue(parameter.id, v);
+							parametersUpdate[parameter.id](v);
+							updateParam(parameter.id);
+						}
+						exec(false);
+						this.undo.change(Custom(exec));
 						return;
-					afterChange();
-					setBoxesParam(parameter.id);
+					}
+					if (!shaderGraph.setParameterDefaultValue(parameter.id, currentValue))
+						return;
+					//setBoxesParam(parameter.id);
 					updateParam(parameter.id);
 				}
 				typeName = "Texture";
@@ -897,31 +716,31 @@ class ShaderEditor extends hide.view.Graph {
 		internal.prop("checked", parameter.internal ?? false);
 
 		internal.on('change', function(e) {
-			beforeChange();
+			//beforeChange();
 			parameter.internal = internal.prop("checked");
-			afterChange();
+			//afterChange();
 		});
 
 		var perInstanceCb = new Element('<div><input type="checkbox" name="perinstance"/><label for="perinstance">Per instance</label><div>');
 		var shaderParams : Array<ShaderParam> = [];
-		for (b in listOfBoxes) {
-			var tmpShaderParam = Std.downcast(b.getInstance(), ShaderParam);
-			if (tmpShaderParam != null && tmpShaderParam.parameterId == parameter.id) {
-				shaderParams.push(tmpShaderParam);
-				break;
-			}
-		}
+		// for (b in listOfBoxes) {
+		// 	var tmpShaderParam = Std.downcast(b.getInstance(), ShaderParam);
+		// 	if (tmpShaderParam != null && tmpShaderParam.parameterId == parameter.id) {
+		// 		shaderParams.push(tmpShaderParam);
+		// 		break;
+		// 	}
+		// }
 
 		var checkbox = perInstanceCb.find("input");
 		if (shaderParams.length > 0)
 			checkbox.prop("checked", shaderParams[0].perInstance);
 		checkbox.on("change", function() {
-			beforeChange();
+			//beforeChange();
 			var checked : Bool = checkbox.prop("checked");
 			for (shaderParam in shaderParams)
 				shaderParam.perInstance = checked;
-			afterChange();
-			compileShader();
+			//afterChange();
+			requestRecompile();
 		});
 		perInstanceCb.appendTo(content);
 
@@ -930,17 +749,40 @@ class ShaderEditor extends hide.view.Graph {
 		var actionBtns = new Element('<div class="action-btns" ></div>').appendTo(content);
 		var deleteBtn = new Element('<input type="button" value="Delete" />');
 		deleteBtn.on("click", function() {
-			for (b in listOfBoxes) {
-				var shaderParam = Std.downcast(b.getInstance(), ShaderParam);
-				if (shaderParam != null && shaderParam.parameterId == parameter.id) {
-					error("This parameter is used in the graph.");
-					return;
+			@:privateAccess
+			for (graph in shaderGraph.graphs) {
+				for (node in graph.getNodes()) {
+					var shaderParam = Std.downcast(node, ShaderParam);
+					if (shaderParam != null && shaderParam.parameterId == parameter.id) {
+						Ide.inst.quickError("This parameter is used in the graph.");
+						return;
+					}
 				}
 			}
-			beforeChange();
-			shaderGraph.removeParameter(parameter.id);
-			afterChange();
-			elt.remove();
+
+			function exec(isUndo : Bool) {
+				if (!isUndo) {
+					shaderGraph.parametersAvailable.remove(parameter.id);
+					shaderGraph.parametersKeys.remove(parameter.id);
+					parametersUpdate.remove(parameter.id);
+					shaderGraph.checkParameterIndex();
+					elt.remove();
+				} else {
+					shaderGraph.parametersAvailable.set(parameter.id, parameter);
+					shaderGraph.parametersKeys.insert(parameter.index, parameter.id);
+					shaderGraph.checkParameterIndex();
+
+					updateParam(parameter.id);
+					addParameter(parameter, parameter.defaultValue);
+
+					for (id in shaderGraph.parametersKeys) {
+						var newElt = parametersList.find("#param_" + id);
+						parametersList.append(newElt);
+					}
+				}
+			}
+			exec(false);
+			undo.change(Custom(exec));
 		});
 		deleteBtn.appendTo(actionBtns);
 
@@ -955,16 +797,34 @@ class ShaderEditor extends hide.view.Graph {
 		});
 		inputTitle.on("change", function(e) {
 			var newName = inputTitle.val();
-			if (shaderGraph.setParameterTitle(parameter.id, newName)) {
-				for (b in listOfBoxes) {
-					var shaderParam = Std.downcast(b.getInstance(), ShaderParam);
-					if (shaderParam != null && shaderParam.parameterId == parameter.id) {
-						beforeChange();
-						shaderParam.setName(newName);
-						afterChange();
-					}
+			var prevName = parameter.name;
+			var exec = function(isUndo : Bool) {
+				var v = !isUndo ? newName : prevName;
+				shaderGraph.setParameterTitle(parameter.id, v);
+			}
+
+			exec(false);
+			undo.change(Custom(exec));
+			inputTitle.blur();
+
+			requestRecompile();
+
+			for (id => node in currentGraph.getNodes()) {
+				if (Std.downcast(node, ShaderParam) != null) {
+					graphEditor.refreshBox(id);
 				}
 			}
+
+			// if (shaderGraph.setParameterTitle(parameter.id, newName)) {
+			// 	for (b in listOfBoxes) {
+			// 		var shaderParam = Std.downcast(b.getInstance(), ShaderParam);
+			// 		if (shaderParam != null && shaderParam.parameterId == parameter.id) {
+			// 			beforeChange();
+			// 			shaderParam.setName(newName);
+			// 			afterChange();
+			// 		}
+			// 	}
+			// }
 		});
 		inputTitle.on("focus", function() { inputTitle.select(); } );
 
@@ -1001,43 +861,10 @@ class ShaderEditor extends hide.view.Graph {
 			elt.toggleClass("hoverbot", false);
 			var other = shaderGraph.getParameter(draggedParamId);
 			var after = isAfter(e);
-			moveParameterTo(other, parameter, after);
+			execMoveParameterTo(other, parameter, after);
 		});
 
 		return elt;
-	}
-
-	function setBoxesParam(id : Int) {
-		var param = shaderGraph.getParameter(id);
-		for (b in listOfBoxes) {
-			var shaderParam = Std.downcast(b.getInstance(), ShaderParam);
-			if (shaderParam != null && shaderParam.parameterId == id) {
-				setDisplayValue(shaderParam, param.type, param.defaultValue);
-				b.generateProperties(editor, config);
-			}
-		}
-	}
-
-	function setDisplayValue(node : ShaderParam, type : Type, defaultValue : Dynamic) {
-		switch (type) {
-			case TSampler(_):
-				if (defaultValue != null && defaultValue.length > 0)
-					node.setDisplayValue('file://${ide.getPath(defaultValue)}');
-			case TVec(4, VFloat):
-				if (defaultValue != null && defaultValue.length > 0) {
-					var vec = Vector.fromArray(defaultValue);
-					var hexa = StringTools.hex(vec.toColor(),8);
-					var hexaFormatted = "";
-					if (hexa.length == 8) {
-						hexaFormatted = hexa.substr(2, 6) + hexa.substr(0, 2);
-					} else {
-						hexaFormatted = hexa;
-					}
-					node.setDisplayValue('#${hexaFormatted}');
-				}
-			default:
-				node.setDisplayValue(defaultValue);
-		}
 	}
 
 	function toggleParameter( elt : JQuery, ?b : Bool) {
@@ -1066,156 +893,464 @@ class ShaderEditor extends hide.view.Graph {
 		}
 	}
 
-	function createParameter(type : Type) {
-		beforeChange();
-		var paramShaderID = shaderGraph.addParameter(type);
-		afterChange();
-		var paramShader = shaderGraph.getParameter(paramShaderID);
+	function execMoveParameterTo(paramA: Parameter, paramB: Parameter, after: Bool) {
+		var oldIndex = paramA.index;
+		var newIndex = paramB.index;
+		var delta = newIndex - oldIndex;
+		if (delta == 0)
+			return;
 
-		var elt = addParameter(paramShader, null);
-		updateParam(paramShaderID);
+		if (after && delta < 0)
+			delta += 1;
+		if (!after && delta > 0)
+			delta -= 1;
 
-		elt.find(".input-title").focus();
-	}
-
-	function launchCompileShader() {
-		if (timerCompileShader != null) {
-			timerCompileShader.stop();
+		function exec(isUndo: Bool) {
+			moveParameterOffset(paramA, isUndo ? -delta : delta);
 		}
-		timerCompileShader = new Timer(COMPILE_SHADER_DEBOUNCE);
-		timerCompileShader.run = function() {
-			if (obj != null) {
-				previewsScene.setCurrent();
-				timerCompileShader.stop();
-				compileShader();
-			}
-		};
+		exec(false);
+		undo.change(Custom(exec));
 	}
 
-	function displayCompiled(type : String) {
-		var text = "\n";
+	function moveParameterOffset(paramA: Parameter, offset: Int) {
+		var current = paramA.index;
+		var end = current + offset;
+		var dir = offset > 0 ? 1 : -1;
+		while(current != end) {
+			var next = current + dir;
+			var tmp = shaderGraph.parametersKeys[current];
+			shaderGraph.parametersKeys[current] = shaderGraph.parametersKeys[next];
+			shaderGraph.parametersKeys[next] = tmp;
+			current = next;
+		}
 
-		var def = shaderGraph.compile2(null);
+		shaderGraph.checkParameterIndex();
 
-		if( def != null) {
-			text += switch( type ) {
-				case "hxsl": hxsl.Printer.shaderToString(def.shader.data);
-				case "glsl": hxsl.GlslOut.compile(def.shader.data);
-				case "hlsl": new hxsl.HlslOut().run(def.shader.data);
-				default: "";
+		for (id in shaderGraph.parametersKeys) {
+			var elt = parametersList.find("#param_" + id);
+			parametersList.append(elt);
+		}
+	}
+
+
+	public function loadSettings() {
+		var save = haxe.Json.parse(getDisplayState("previewSettings") ?? "{}");
+		previewSettings = new PreviewSettings();
+		for (f in Reflect.fields(previewSettings)) {
+			var v = Reflect.field(save, f);
+			if (v != null) {
+				Reflect.setField(previewSettings, f, v);
 			}
 		}
-		info(text);
-		trace('Compiled shader:$text');
 	}
 
-	function compileShader() {
-		var newShader : DynamicShader = null;
+	public function saveSettings() {
+		saveDisplayState("previewSettings", haxe.Json.stringify(previewSettings));
+	}
+
+	public function initMeshPreview() {
+		if (meshPreviewScene != null) {
+			meshPreviewScene.element.remove();
+		}
+		var container = new Element('<div id="preview"></div>').appendTo(graphEditor.element);
+		meshPreviewScene = new hide.comp.Scene(config, null, container);
+		meshPreviewScene.onReady = onMeshPreviewReady;
+		meshPreviewScene.onUpdate = onMeshPreviewUpdate;
+
+		var toolbar = new Element('<div class="hide-toolbar2"></div>').appendTo(container);
+		var group = new Element('<div class="tb-group"></div>').appendTo(toolbar);
+		var menu = new Element('<div class="button2 transparent" title="More options"><div class="ico ico-navicon"></div></div>');
+		menu.appendTo(group);
+		menu.click((e) -> {
+			var menu = new hide.comp.ContextMenu([
+				{label: "Reset Camera", click: resetPreviewCamera},
+				{label: "", isSeparator: true},
+				{label: "Sphere", click: setMeshPreviewSphere},
+				{label: "Plane", click: setMeshPreviewPlane},
+				{label: "Mesh ...", click: chooseMeshPreviewFBX},
+				{label: "Prefab/FX ...", click: chooseMeshPreviewPrefab},
+				{label: "", isSeparator: true},
+				{label: "Material Settings", menu: [
+					{label: "Alpha Blend", click: () -> {previewSettings.alphaBlend = !previewSettings.alphaBlend; meshPreviewShader = null; saveSettings();}, stayOpen: true, checked: previewSettings.alphaBlend},
+					{label: "Backface Cull", click: () -> {previewSettings.backfaceCulling = !previewSettings.backfaceCulling; meshPreviewShader = null; saveSettings();}, stayOpen: true, checked: previewSettings.backfaceCulling},
+					{label: "Unlit", click: () -> {previewSettings.unlit = !previewSettings.unlit; meshPreviewShader = null; saveSettings();}, stayOpen: true, checked: previewSettings.unlit},
+				], enabled: meshPreviewPrefab == null},
+				{label: "Render Settings", menu: [
+					{label: "Background Color", click: openBackgroundColorMenu},
+					{label: "Render Props", click: selectRenderProps},
+				]}
+			]);
+		});
+	}
+
+	public function selectRenderProps() {
+		var basedir = haxe.io.Path.directory(previewSettings.renderPropsPath ?? "");
+		if (basedir == "" || !haxe.io.Path.isAbsolute(basedir)) {
+			haxe.io.Path.join([Ide.inst.resourceDir, basedir]);
+		}
+
+		Ide.inst.chooseFile(["prefab"], (path) -> {
+			previewSettings.renderPropsPath = path;
+			refreshRenderProps();
+			saveSettings();
+		}, true, basedir);
+	}
+
+	public function openBackgroundColorMenu() {
+		var prev = element.find("#preview");
+
+		var cp = new hide.comp.ColorPicker(false, null,element.find("#preview"));
+		@:privateAccess
+		{
+			var offset = cp.popup.offset();
+			offset.top -= prev.get(0).offsetHeight;
+			cp.popup.offset(offset);
+		}
+
+		cp.value = previewSettings.bgColor;
+		var prev : Null<Int> = null;
+		cp.onChange = function(isDragging:Bool) {
+			if (prev == null) {
+				prev = cp.value;
+			}
+			if (!isDragging) {
+				var cur = cp.value;
+				var exec = function(isUndo: Bool) {
+					var v = !isUndo ? cur : prev;
+					cp.value = v;
+					previewSettings.bgColor = v;
+					saveSettings();
+				}
+				exec(false);
+				undo.change(Custom(exec));
+				return;
+			}
+			previewSettings.bgColor = cp.value;
+		}
+
+	}
+
+	public function onMeshPreviewUpdate(dt: Float) {
+
+		if (queueReloadMesh) {
+			queueReloadMesh = false;
+			loadMeshPreviewFromString(previewSettings.meshPath);
+		}
+		if (meshPreviewShader == null) {
+			checkCompileShader();
+			@:privateAccess meshPreviewScene.checkCurrent();
+			meshPreviewShader = new hxsl.DynamicShader(compiledShader.shader);
+
+			for (init in compiledShader.inits) {
+					setParamValue(meshPreviewShader, init.variable, init.value);
+			}
+			for (m in meshPreviewMeshes) {
+				replaceMeshShader(m, meshPreviewShader);
+			}
+		}
+		meshPreviewScene.engine.backgroundColor = previewSettings.bgColor;
+	}
+
+	public function refreshRenderProps() {
+		if (meshPreviewRenderProps != null) {
+			meshPreviewRenderProps.dispose();
+		}
+
+		if (meshPreviewRenderPropsRoot != null) {
+			meshPreviewRenderPropsRoot.remove();
+		}
+		meshPreviewRenderPropsRoot = new h3d.scene.Object(meshPreviewScene.s3d);
+		if (previewSettings.renderPropsPath == null)
+			return;
 		try {
-			sceneEditor.scene.setCurrent();
-			var timeStart = Date.now().getTime();
+			meshPreviewRenderProps = Ide.inst.loadPrefab(previewSettings.renderPropsPath);
+		} catch(e) {
+			return;
+		}
+		var ctx = new hide.prefab.ContextShared(null, meshPreviewRenderPropsRoot);
+		ctx.scene = meshPreviewScene;
+		meshPreviewRenderProps.setSharedRec(ctx);
+		meshPreviewRenderProps.make();
+		var renderProps = meshPreviewRenderProps.getOpt(hrt.prefab.RenderProps);
+		if (renderProps != null)
+			renderProps.applyProps(meshPreviewScene.s3d.renderer);
+	}
 
-			if (currentShader != null)
-				for (m in obj.getMaterials())
-					m.mainPass.removeShader(currentShader);
+	public function dispose() {
+		cleanupPreview();
+		meshPreviewScene.dispose();
 
-			var shaderGraphDef = shaderGraph.compile2(null);
-			newShader = new hxsl.DynamicShader(shaderGraphDef.shader);
-			for (init in shaderGraphDef.inits) {
-				setParamValue(newShader, init.variable, init.value);
+	}
+
+	public function cleanupPreview() {
+		if (meshPreviewPrefab != null) {
+			meshPreviewPrefab.dispose();
+			meshPreviewPrefab = null;
+			if (meshPreviewprefabWatch != null) {
+				Ide.inst.fileWatcher.unregister(meshPreviewprefabWatch.path, meshPreviewprefabWatch.fun);
+				meshPreviewprefabWatch = null;
 			}
-			for (m in obj.getMaterials()) {
+		}
+		for (mesh in meshPreviewMeshes)
+			mesh.remove();
+
+		meshPreviewRoot3d.removeChildren();
+	}
+
+	public function setMeshPreviewMesh(mesh: h3d.scene.Mesh) {
+		cleanupPreview();
+
+		meshPreviewRoot3d.addChild(mesh);
+		meshPreviewMeshes.resize(0);
+		meshPreviewMeshes.push(mesh);
+
+		meshPreviewShader = null;
+		resetPreviewCamera();
+	}
+
+	public function setMeshPreviewSphere() {
+		previewSettings.meshPath = "Sphere";
+		saveSettings();
+
+		var sp = new h3d.prim.Sphere(1, 128, 128);
+		sp.addNormals();
+		sp.addUVs();
+		sp.addTangents();
+		setMeshPreviewMesh(new h3d.scene.Mesh(sp));
+	}
+
+	public function setMeshPreviewPlane() {
+		previewSettings.meshPath = "Plane";
+		saveSettings();
+
+		var plane = hrt.prefab.l3d.Polygon.createPrimitive(Quad(4));
+		var m = new h3d.scene.Mesh(plane);
+		m.setScale(2.0);
+		m.material.mainPass.culling = None;
+		m.z += 0.001;
+		setMeshPreviewMesh(m);
+	}
+
+	public function chooseMeshPreviewFBX() {
+		var basedir = haxe.io.Path.directory(previewSettings.meshPath ?? "");
+		if (basedir == "" || !haxe.io.Path.isAbsolute(basedir)) {
+			haxe.io.Path.join([Ide.inst.resourceDir, basedir]);
+		}
+		Ide.inst.chooseFile(["fbx"], (path : String) -> {
+			if (path == null)
+				return;
+			setMeshPreviewFBX(path);
+		}, false, basedir);
+	}
+
+	public function chooseMeshPreviewPrefab() {
+		var basedir = haxe.io.Path.directory(previewSettings.meshPath);
+		if (basedir == "" || !haxe.io.Path.isAbsolute(basedir)) {
+			haxe.io.Path.join([Ide.inst.resourceDir, basedir]);
+		}
+		Ide.inst.chooseFile(["prefab", "fx"], (path : String) -> {
+			if (path == null)
+				return;
+			setMeshPreviewPrefab(path);
+		}, false, basedir);
+	}
+
+	public function resetPreviewCamera() {
+		var bounds = new h3d.col.Bounds();
+		for (mesh in meshPreviewMeshes) {
+			var b = mesh.getBounds();
+			bounds.add(b);
+		}
+		var sp = bounds.toSphere();
+		meshPreviewCameraController.set(sp.r * 3.0, Math.PI / 4, Math.PI * 5 / 13, sp.getCenter());
+	}
+
+	public function loadMeshPreviewFromString(str: String) {
+		switch (str){
+			case "Sphere":
+				setMeshPreviewSphere();
+			case "Plane":
+				setMeshPreviewPlane();
+			default: {
+				if (StringTools.endsWith(str, ".fbx")) {
+					setMeshPreviewFBX(str);
+				}
+				else if (StringTools.endsWith(str, ".fx") || StringTools.endsWith(str, ".prefab")) {
+					setMeshPreviewPrefab(str);
+				}
+				else {
+					setMeshPreviewSphere();
+				}
+			}
+		}
+	}
+
+	public function setMeshPreviewFBX(str: String) {
+		var model : h3d.scene.Mesh = null;
+		try {
+			model = Std.downcast(meshPreviewScene.loadModel(str, false, true), h3d.scene.Mesh);
+		} catch (e) {
+			Ide.inst.quickError('Could not load mesh $str, error : $e');
+			setMeshPreviewSphere();
+			return;
+		}
+
+		setMeshPreviewMesh(model);
+		previewSettings.meshPath = str;
+		saveSettings();
+	}
+
+	public function setMeshPreviewPrefab(str: String) {
+		cleanupPreview();
+
+		try {
+			meshPreviewPrefab = Ide.inst.loadPrefab(str);
+		} catch (e) {
+			Ide.inst.quickError('Could not load mesh $str, error : $e');
+			setMeshPreviewSphere();
+			return;
+		}
+
+
+		var ctx = new hide.prefab.ContextShared(null, meshPreviewRoot3d);
+		ctx.scene = meshPreviewScene;
+		meshPreviewPrefab.setSharedRec(ctx);
+		meshPreviewPrefab.make();
+		meshPreviewMeshes.resize(0);
+
+		var meshes = meshPreviewRoot3d.findAll((f) -> Std.downcast(f, h3d.scene.Mesh));
+		for (mesh in meshes) {
+			var mats = mesh.getMaterials();
+			for (mat in mats) {
+				for (shader in mat.mainPass.getShaders()) {
+					var dyn = Std.downcast(shader, DynamicShader);
+					if (dyn != null) {
+						@:privateAccess
+						if (dyn.shader.data.name == this.state.path) {
+							meshPreviewMeshes.push(mesh);
+							break;
+						}
+					}
+				}
+			}
+		}
+
+		if (meshPreviewMeshes.length <= 0) {
+			Ide.inst.quickError('Prefab/FX $str does not contains this shadergraph');
+			setMeshPreviewSphere();
+			return;
+		}
+
+		meshPreviewprefabWatch = Ide.inst.fileWatcher.register(str, () -> queueReloadMesh = true, false);
+
+		meshPreviewShader = null;
+		resetPreviewCamera();
+		previewSettings.meshPath = str;
+		saveSettings();
+	}
+
+	public function onMeshPreviewReady() {
+		if (meshPreviewScene.s3d == null)
+			throw "meshPreviewScene not ready";
+
+		var moved = false;
+		meshPreviewCameraController = new PreviewCamController(meshPreviewScene.s3d);
+		meshPreviewRoot3d = new h3d.scene.Object(meshPreviewScene.s3d);
+		loadMeshPreviewFromString(previewSettings.meshPath);
+		refreshRenderProps();
+	}
+
+	public function replaceMeshShader(mesh: h3d.scene.Mesh, newShader: hxsl.DynamicShader) {
+		if (newShader == null)
+			return;
+
+		@:privateAccess
+		for (m in mesh.getMaterials()) {
+			var found = false;
+
+			var curShaderList = m.mainPass.shaders;
+			while (curShaderList != null && curShaderList != m.mainPass.parentShaders) {
+				var dyn = Std.downcast(curShaderList.s, hxsl.DynamicShader);
+
+				@:privateAccess
+				if (dyn != null) {
+					if (dyn.shader.data.name == newShader.shader.data.name) {
+						found = true;
+						curShaderList.s = newShader;
+						m.mainPass.resetRendererFlags();
+						m.mainPass.selfShadersChanged = true;
+					}
+				}
+
+				// Only override renderer settings if we are not previewing a prefab
+				// (because prefabs can have their own material settings)
+				if (meshPreviewPrefab == null) {
+					m.blendMode = previewSettings.alphaBlend ? Alpha : None;
+					m.mainPass.culling = previewSettings.backfaceCulling ? Back : None;
+					if (previewSettings.unlit) {
+						m.mainPass.setPassName("afterTonemapping");
+						m.shadows = false;
+					}
+					else {
+						m.mainPass.setPassName("default");
+						m.shadows = true;
+					}
+				}
+
+				curShaderList = curShaderList.next;
+			}
+
+			if (!found) {
 				m.mainPass.addShader(newShader);
 			}
-			sceneEditor.scene.render(sceneEditor.scene.engine);
-			currentShader = newShader;
-			currentShaderDefMainPreview = shaderGraphDef;//{shader: shaderGraphDef, inits:[]};
-
-			previewParamDirty = true;
-
-			info('Shader compiled in  ${Date.now().getTime() - timeStart}ms');
-
-		} catch (e : Dynamic) {
-			if (Std.isOfType(e, String)) {
-				var str : String = e;
-				trace(str);
-				if (str.split(":")[0] == "An error occurred compiling the shaders") {
-					var strSplitted = str.split("(output_");
-					if (strSplitted.length >= 2) {
-						var idBox = strSplitted[1].split("_")[0];
-						var idBoxParsed = Std.parseInt(idBox);
-						if (Std.string(idBoxParsed) == idBox) {
-							error("Compilation of shader failed > Invalid inputs", idBoxParsed);
-						} else {
-							error("Compilation of shader failed > " + str);
-						}
-					} else {
-						var nameOutput = str.split("(")[1].split(" =")[0];
-						var errorSent = false;
-						for (b in listOfBoxes) {
-							var shaderOutput = Std.downcast(b.getInstance(), hrt.shgraph.ShaderOutput);
-							if (shaderOutput != null) {
-								var v = shaderOutput.getVariable();
-								if (v.name == nameOutput) {
-									error("Compilation of shader failed > Invalid inputs", shaderOutput.id);
-									errorSent = true;
-									break;
-								}
-							}
-							if (!errorSent) {
-								error("Compilation of shader failed > " + str);
-							}
-						}
-					}
-					if (newShader != null)
-						for (m in obj.getMaterials())
-							m.mainPass.removeShader(newShader);
-					if (currentShader != null) {
-						for (m in obj.getMaterials()) {
-							m.mainPass.addShader(currentShader);
-						}
-					}
-					return;
-				}
-			} else if (Std.isOfType(e, ShaderException)) {
-				error(e.msg, e.idBox);
-				return;
-			}
-			error("Compilation of shader failed > " + e);
-			trace(e.stack);
-			if (newShader != null)
-				for (m in obj.getMaterials())
-					m.mainPass.removeShader(newShader);
-			if (currentShader != null) {
-				for (m in obj.getMaterials()) {
-					m.mainPass.addShader(currentShader);
-				}
-			}
-		}
-
-		currentShaderPreviewsDef = shaderGraph.compile2(domain);
-	}
-
-	function updateParam(id : Int) {
-		sceneEditor.scene.setCurrent();
-		var param = shaderGraph.getParameter(id);
-		setParamValueByName(currentShader, param.name, param.defaultValue);
-		previewParamDirty = true;
-		for (b in listOfBoxes) {
-			// TODO
-			// var previewBox = b.getInstance();//Std.downcast(b.getInstance(), hrt.shgraph.nodes.Preview);
-			// if (previewBox != null) {
-			// 	previewBox.setParamValueByName(param.variable.name, param.defaultValue);
-			// }
 		}
 	}
 
-	function setParamValueByName(shader : DynamicShader, varName : String, value : Dynamic) {
-		if (currentShaderDefMainPreview == null) return;
-		for (init in currentShaderDefMainPreview.inits) {
-			if (init.variable.name == varName) {
-				setParamValue(shader, init.variable, value);
-				return;
+
+	public function onPreviewUpdate() {
+		checkCompileShader();
+
+		@:privateAccess
+		{
+			var engine = graphEditor.previewsScene.engine;
+			var t = engine.getCurrentTarget();
+			graphEditor.previewsScene.s2d.ctx.globals.set("global.pixelSize", new h3d.Vector(2 / (t == null ? engine.width : t.width), 2 / (t == null ? engine.height : t.height)));
+		}
+
+		@:privateAccess
+		if (meshPreviewScene.s3d != null) {
+			meshPreviewScene.s3d.renderer.ctx.time = graphEditor.previewsScene.s3d.renderer.ctx.time;
+		}
+
+		return true;
+	}
+	var bitmapToShader : Map<h2d.Bitmap, hxsl.DynamicShader> = [];
+	public function onNodePreviewUpdate(node: IGraphNode, bitmap: h2d.Bitmap) {
+		if (compiledShaderPreview == null) {
+			bitmap.visible = false;
+			return;
+		}
+		var shader = bitmapToShader.get(bitmap);
+		if (shader == null) {
+			for (s in bitmap.getShaders()) {
+				bitmap.removeShader(s);
+			}
+			shader = new DynamicShader(compiledShaderPreview.shader);
+			bitmapToShader.set(bitmap, shader);
+			bitmap.addShader(previewShaderBase);
+			bitmap.addShader(shader);
+			if (previewSettings.previewAlpha)
+				bitmap.addShader(previewShaderAlpha);
+		}
+		for (init in compiledShaderPreview.inits) {
+			@:privateAccess graphEditor.previewsScene.checkCurrent();
+			if (init.variable == previewVar)
+				setParamValue(shader, previewVar, node.getId() + 1);
+			else {
+				var param = shaderGraph.parametersAvailable.find((v) -> v.name == init.variable.name);
+				if (param !=null) {
+					setParamValue(shader, init.variable, param.defaultValue);
+				}
 			}
 		}
 	}
@@ -1224,654 +1359,134 @@ class ShaderEditor extends hide.view.Graph {
 		@:privateAccess ShaderGraph.setParamValue(shader, variable, value);
 	}
 
-	var boxToPreview : Map<Box, Preview>;
-	var timeout = 0;
-	function onMiniPreviewReady() {
-		if (previewsScene.s2d == null) {
-			timeout ++;
-			if (timeout > 10)
-				throw "Couldn't initialize background previews";
-			haxe.Timer.delay(() -> onMiniPreviewReady, 100);
-			return;
-		}
-		var bg = new h2d.Flow(previewsScene.s2d);
-		bg.fillHeight = true;
-		bg.fillWidth = true;
-		bg.backgroundTile = h2d.Tile.fromColor(0x333333);
-		boxToPreview = [];
-
-		var identity : h3d.Matrix = new h3d.Matrix();
-		identity.identity();
-		@:privateAccess previewsScene.s2d.renderer.globals.set("camera.viewProj", identity);
-		@:privateAccess previewsScene.s2d.renderer.globals.set("camera.position", identity.getPosition());
+	/** IGraphEditor interface **/
+	public function getNodes() : Iterator<IGraphNode> {
+		return currentGraph.getNodes().iterator();
 	}
 
-	function onMiniPreviewUpdate(dt: Float) {
-
-		@:privateAccess
-		if (sceneEditor?.scene?.s3d?.renderer?.ctx?.time != null) {
-			sceneEditor.scene.s3d.renderer.ctx.time = previewsScene.s3d.renderer.ctx.time;
-		}
-
-
-		var newBoxToPreview : Map<Box, Preview> = [];
-		for (box in listOfBoxes) {
-			var preview = boxToPreview.get(box);
-			if (preview == null) {
-				var bmp = new Preview(previewsScene.s2d);
-				bmp.shaderDef = currentShaderPreviewsDef;
-				preview = bmp;
-			} else {
-				boxToPreview.remove(box);
+	public function getEdges() : Iterator<Edge> {
+		var edges : Array<Edge> = [];
+		for (id => node in currentGraph.getNodes()) {
+			for (inputId => connection in node.connections) {
+				if (connection != null) {
+					edges.push(
+						{
+							nodeFromId: connection.from.getId(),
+							outputFromId: connection.outputId,
+							nodeToId: id,
+							inputToId: inputId,
+						});
+				}
 			}
-			newBoxToPreview.set(box,preview);
 		}
+		return edges.iterator();
+	}
 
-		for (preview in boxToPreview) {
-			preview.remove();
-		}
-		boxToPreview = newBoxToPreview;
+	public function serializeNode(node: IGraphNode) : Dynamic {
+		return (cast node:ShaderNode).serializeToDynamic();
+	}
 
-		var updateShaderParams = false;
-		if (previewParamDirty) {
-			updateShaderParams = true;
-			previewParamDirty = false;
+	public function unserializeNode(data : Dynamic, newId : Bool) : IGraphNode {
+		var node = ShaderNode.createFromDynamic(data, shaderGraph);
+		if (newId) {
+			@:privateAccess var newId = currentGraph.current_node_id++;
+			node.setId(newId);
 		}
+		return node;
+	}
 
-		var select = null;
-		if (currentShaderPreviewsDef != null) {
-			select = currentShaderPreviewsDef.inits.find((e) -> e.variable.name == "__sg_PREVIEW_output_select");
-		}
-		for (box => preview in boxToPreview) {
-			preview.visible = box.getInstance().shouldShowPreview();
-			if (!preview.visible)
+	public function createCommentNode() : Null<IGraphNode> {
+		var node = new hrt.shgraph.nodes.Comment();
+		node.comment = "Comment";
+		@:privateAccess var newId = currentGraph.current_node_id++;
+		node.setId(newId);
+		return node;
+	}
+
+	public function getAddNodesMenu() : Array<AddNodeMenuEntry> {
+		var entries : Array<AddNodeMenuEntry> = [];
+
+		var id = 0;
+		for (i => node in ShaderNode.registeredNodes) {
+			var metas = haxe.rtti.Meta.getType(node);
+			if (metas.group == null) {
 				continue;
-			if (preview.shaderDef != currentShaderPreviewsDef) {
-				preview.shaderDef = currentShaderPreviewsDef;
-			}
-			if (preview.shader != null && updateShaderParams) {
-				for (init in currentShaderPreviewsDef.inits) {
-					if (init == select) {
-						setParamValue(preview.shader, init.variable, box.getId() + 1);
-					}
-					else {
-						var param = shaderGraph.parametersAvailable.find((v) -> v.name == init.variable.name);
-						if (param != null) {
-							setParamValue(preview.shader, init.variable,  param.defaultValue);
-						}
-						else {
-						}
-					}
-				}
-			}
-			preview.x = gX(box.getX());
-			preview.y = gY(box.getY() + box.getHeight());
-			preview.scaleX = transformMatrix[0] * box.getWidth();
-			preview.scaleY = transformMatrix[3] * box.getWidth();
-
-		}
-	}
-
-	function initSpecifics(node : Null<ShaderNode>) {
-		if( node == null )
-			return;
-	}
-
-	function addNode(p : Point, nodeClass : Class<ShaderNode>, args : Array<Dynamic>) {
-		beforeChange();
-
-		var node = currentGraph.addNode(p.x, p.y, nodeClass, args);
-
-		initSpecifics(node);
-
-		var box = addBox(p, nodeClass, node);
-
-		if (isCreatingLink != None) {
-			if (startLinkBox != null) {
-				endLinkBox = box;
-				var node = isCreatingLink == FromInput ? box.outputs[0] : box.inputs[0];
-				if (node != null) {
-					endLinkNode = node;
-					createEdgeInShaderGraph();
-				}
-			}
-			else if (endLinkBox != null) {
-				startLinkBox = box;
-				var node = box.outputs[0];
-				if (node != null) {
-					startLinkGrNode = node;
-					createEdgeInShaderGraph();
-				}
-			}
-		}
-
-		afterChange();
-
-		return node;
-	}
-
-	function addSubGraph(p : Point, path : String) {
-		var node : SubGraph = cast addNode(p, SubGraph, [path]);
-		// node.loadGraphShader();
-		return node;
-	}
-
-	function createEdgeInShaderGraph() : Bool {
-		var startLinkNode = startLinkGrNode.find(".node");
-		if (isCreatingLink == FromInput) {
-			var tmpBox = startLinkBox;
-			startLinkBox = endLinkBox;
-			endLinkBox = tmpBox;
-
-			var tmpNode = startLinkNode;
-			startLinkNode = endLinkNode;
-			endLinkNode = tmpNode;
-		}
-
-		var newEdge = { from: startLinkBox, nodeFrom : startLinkNode, to : endLinkBox, nodeTo : endLinkNode, elt : currentLink };
-		if (endLinkNode.attr("hasLink") != null) {
-			for (edge in listOfEdges) {
-				if (edge.nodeTo.is(endLinkNode)) {
-					super.removeEdge(edge);
-					removeShaderGraphEdge(edge);
-					break;
-				}
-			}
-		}
-		try {
-			beforeChange();
-			if (currentGraph.addEdge({ outputNodeId: startLinkBox.getId(), nameOutput: startLinkNode.attr("field"), inputNodeId: endLinkBox.getId(), nameInput: endLinkNode.attr("field") })) {
-				afterChange();
-				createEdgeInEditorGraph(newEdge);
-				currentLink.removeClass("draft");
-				currentLink = null;
-				launchCompileShader();
-				refreshBox(endLinkBox);
-				return true;
-			} else {
-				error("This edge creates a cycle.");
-				return false;
-			}
-		} catch (e : Dynamic) {
-			if (Std.isOfType(e, ShaderException)) {
-				error(e.msg, e.idBox);
-			}
-			return false;
-		}
-	}
-
-	function openAddMenu(?x : Int, ?y : Int) {
-		if (x == null) x = 0;
-		if (y == null) y = 0;
-
-		var boundsWidth = Std.parseInt(element.css("width"));
-		var boundsHeight = Std.parseInt(element.css("height"));
-
-		var posCursor = new IPoint(Std.int(ide.mouseX - parent.offset().left) + x, Std.int(ide.mouseY - parent.offset().top) + y);
-		if( posCursor.x < 0 )
-			posCursor.x = 0;
-		if( posCursor.y < 0)
-			posCursor.y = 0;
-
-		if (addMenu != null) {
-			var menuWidth = Std.parseInt(addMenu.css("width")) + 10;
-			var menuHeight = Std.parseInt(addMenu.css("height")) + 10;
-			if( posCursor.x + menuWidth > boundsWidth )
-				posCursor.x = boundsWidth - menuWidth;
-			if( posCursor.y + menuHeight > boundsHeight )
-				posCursor.y = boundsHeight - menuHeight;
-
-			var input = addMenu.find("#search-input");
-			input.val("");
-			addMenu.show();
-			input.focus();
-
-			addMenu.css("left", posCursor.x);
-			addMenu.css("top", posCursor.y);
-			for (c in addMenu.find("#results").children().elements()) {
-				c.show();
-			}
-			return;
-		}
-
-		addMenu = new Element('
-		<div id="add-menu">
-			<div class="search-container">
-				<div class="icon" >
-					<i class="ico ico-search"></i>
-				</div>
-				<div class="search-bar" >
-					<input type="text" id="search-input" autocomplete="off" >
-				</div>
-			</div>
-			<div id="results">
-			</div>
-		</div>').appendTo(parent);
-
-		addMenu.on("mousedown", function(e) {
-			e.stopPropagation();
-		});
-
-		var results = addMenu.find("#results");
-		results.on("wheel", function(e) {
-			e.stopPropagation();
-		});
-
-		var prevGroup = null;
-		for (i => node in classRepository) {
-			if (node.group != prevGroup) {
-				new Element('
-				<div class="group" >
-					<span> ${node.group} </span>
-				</div>').appendTo(results);
-				prevGroup = node.group;
 			}
 
-			new Element('
-				<div node="$i" >
-					<span> ${node.name} </span> <span> ${node.description} </span>
-				</div>').appendTo(results);
-		}
+			var group = metas.group != null ? metas.group[0] : "Other";
+			var name = metas.name != null ? metas.name[0] : "unknown";
+			var description = metas.description != null ? metas.description[0] : "";
 
-		var menuWidth = Std.parseInt(addMenu.css("width")) + 10;
-		var menuHeight = Std.parseInt(addMenu.css("height")) + 10;
-		if( posCursor.x + menuWidth > boundsWidth )
-			posCursor.x = boundsWidth - menuWidth;
-		if( posCursor.y + menuHeight > boundsHeight )
-			posCursor.y = boundsHeight - menuHeight;
-		addMenu.css("left", posCursor.x);
-		addMenu.css("top", posCursor.y);
-
-		var input = addMenu.find("#search-input");
-		input.focus();
-		var divs = new Element("#results > div");
-		input.on("keydown", function(ev) {
-			if (ev.keyCode == 38 || ev.keyCode == 40) {
-				ev.stopPropagation();
-				ev.preventDefault();
-
-				if (this.selectedNode != null)
-					this.selectedNode.removeClass("selected");
-
-				var selector = "div[node]:not([style*='display: none'])";
-				var elt = this.selectedNode;
-
-				if (ev.keyCode == 38) {
-					do {
-						elt = elt.prev();
-					} while (elt.length > 0 && !elt.is(selector));
-				} else if (ev.keyCode == 40) {
-					do {
-						elt = elt.next();
-					} while (elt.length > 0 && !elt.is(selector));
-				}
-				if (elt.length == 1) {
-					this.selectedNode = elt;
-				}
-				if (this.selectedNode != null)
-					this.selectedNode.addClass("selected");
-
-				var offsetDiff = this.selectedNode.offset().top - results.offset().top;
-				if (offsetDiff > 225) {
-					results.scrollTop((offsetDiff-225)+results.scrollTop());
-				} else if (offsetDiff < 35) {
-					results.scrollTop(results.scrollTop()-(35-offsetDiff));
-				}
-			}
-		});
-		input.on("keyup", function(ev) {
-			if (ev.keyCode == 38 || ev.keyCode == 40) {
-				return;
-			}
-
-			if (ev.keyCode == 13) {
-				var key = Std.parseInt(this.selectedNode.attr("node"));
-				var posCursor = new Point(lX(ide.mouseX - 25), lY(ide.mouseY - 10));
-
-				var node = classRepository[key];
-				addNode(posCursor, node.cl, node.args);
-				closeAddMenu();
-				refreshShaderGraph();
-
-				/*if( key.toLowerCase().indexOf(".shgraph") != -1 ) {
-					addSubGraph(posCursor, key);
-					closeAddMenu();
-					refreshShaderGraph();
-				} else {
-					addNode(posCursor, ShaderNode.registeredNodes[key], []);
-					closeAddMenu();
-				}*/
-			} else {
-				if (this.selectedNode != null)
-					this.selectedNode.removeClass("selected");
-				var value = StringTools.trim(input.val());
-				var children = divs.elements();
-				var isFirst = true;
-				var lastGroup = null;
-				for (elt in children) {
-					if (elt.hasClass("group")) {
-						lastGroup = elt;
-						elt.hide();
-						continue;
-					}
-					if (value.length == 0 || elt.children().first().html().toLowerCase().indexOf(value.toLowerCase()) != -1) {
-						if (isFirst) {
-							this.selectedNode = elt;
-							isFirst = false;
-						}
-						elt.show();
-						if (lastGroup != null)
-							lastGroup.show();
-					} else {
-						elt.hide();
-					}
-				}
-				if (this.selectedNode != null)
-					this.selectedNode.addClass("selected");
-			}
-		});
-		divs.mouseover(function(ev) {
-			if (ev.getThis().hasClass("group")) {
-				return;
-			}
-			if (this.selectedNode != null)
-				this.selectedNode.removeClass("selected");
-			this.selectedNode = ev.getThis();
-			this.selectedNode.addClass("selected");
-		});
-		divs.mouseup(function(ev) {
-			if (ev.getThis().hasClass("group")) {
-				return;
-			}
-
-			var key = Std.parseInt(this.selectedNode.attr("node"));
-			var posCursor = new Point(lX(ide.mouseX - 25), lY(ide.mouseY - 10));
-
-			var node = classRepository[key];
-			addNode(posCursor, node.cl, node.args);
-			closeAddMenu();
-			refreshShaderGraph();
-		});
-	}
-
-	function closeAddMenu() {
-		if (addMenu != null) {
-			addMenu.hide();
-			parent.focus();
-			cleanupLinkCreation();
-		}
-	}
-
-	function beforeChange() {
-		lastSnapshot = haxe.Json.parse(shaderGraph.saveToText());
-	}
-
-	function afterChange() {
-		var newVal = haxe.Json.parse(shaderGraph.saveToText());
-		var oldVal = lastSnapshot;
-		undo.change(Custom(function(undo) {
-			if (undo)
-				shaderGraph.load(oldVal);
-			else
-				shaderGraph.load(newVal);
-			refreshShaderGraph(false);
-		}));
-	}
-
-	function removeShaderGraphEdge(edge : Graph.Edge) {
-		currentGraph.removeEdge(edge.to.getId(), edge.nodeTo.attr("field"));
-	}
-
-	function removeEdgeSubGraphUpdate(edge : Graph.Edge) {
-		var subGraph = Std.downcast(edge.to.getInstance(), hrt.shgraph.nodes.SubGraph);
-		if (subGraph != null) {
-			var field = "";
-			if (isCreatingLink == FromInput) {
-				field = edge.nodeTo.attr("field");
-			} else {
-				field = edge.nodeFrom.attr("field");
-			}
-			var newBox = refreshBox(edge.to);
-			// subGraph.loadGraphShader();
-
-			clearAvailableNodes();
-			if (isCreatingLink == FromInput) {
-				setAvailableOutputNodes(newBox, field);
-			} else {
-				setAvailableInputNodes(edge.from, field);
-			}
-		}
-	}
-
-	// Graph methods
-
-	override function addBox(p : Point, nodeClass : Class<ShaderNode>, node : ShaderNode) : Box {
-		var box = super.addBox(p, nodeClass, node);
-
-		if (nodeClass == ShaderParam) {
-			var paramId = Std.downcast(node, ShaderParam).parameterId;
-			box.getElement().on("dblclick", function(e) {
-				var parametersElements = parametersList.find(".parameter");
-				for (elt in parametersElements.elements()) {
-					toggleParameter(elt, false);
-				}
-				var elt = parametersList.find("#param_" + paramId);
-				if (elt != null && elt.length > 0)
-					toggleParameter(elt, true);
-				var offsetScroll = elt.offset().top - parametersList.offset().top;
-				if (offsetScroll < 0 || offsetScroll + elt.height() > parametersList.height()) {
-					parametersList.scrollTop(parametersList.scrollTop() + offsetScroll);
-				}
-			});
-		} else if (nodeClass == SubGraph) {
-			var subGraphNode = Std.downcast(node, SubGraph);
-			if (subGraphNode.pathShaderGraph != null) {
-				var filename = subGraphNode.pathShaderGraph.split("/").pop();
-				box.setTitle("SubGraph: " + filename.split(".")[0]);
-			}
-		}
-
-		return box;
-	}
-
-	function saveSelection(?boxes) : SavedClipboard {
-		if( boxes == null )
-			boxes = listOfBoxesSelected;
-		if( boxes.length == 0 )
-			return null;
-		var dims = getGraphDims(boxes);
-		var baseX = dims.xMin;
-		var baseY = dims.yMin;
-		var box = boxes[0];
-		var nodes = [
-			for( b in boxes )
+			entries.push(
 				{
-					pos : new Point(b.getX() - baseX, b.getY() - baseY),
-					nodeType : std.Type.getClass(b.getInstance()),
-					props : b.getInstance().saveProperties(),
+					name: name,
+					group: group,
+					description: description,
+					onConstructNode: () -> {
+						@:privateAccess var id = currentGraph.current_node_id++;
+						var inst = std.Type.createInstance(node, []);
+						inst.setId(id);
+						return inst;
+					},
 				}
-		];
+			);
 
-		var edges : Array<{ fromIdx : Int, fromName : String, toIdx : Int, toName : String }> = [];
-
-		for( edge in listOfEdges ) {
-			for( fromIdx in 0...boxes.length ) {
-				if( boxes[fromIdx] == edge.from ) {
-					for( toIdx in 0...boxes.length ) {
-						if( boxes[toIdx] == edge.to ) {
-							edges.push({
-								fromIdx : fromIdx,
-								fromName : edge.nodeFrom.attr("field"),
-								toIdx : toIdx,
-								toName : edge.nodeTo.attr("field"),
-							});
-						}
+			var aliases = std.Type.createEmptyInstance(node).getAliases(name, group, description) ?? [];
+			for (alias in aliases) {
+				entries.push(
+					{
+						name: alias.nameSearch ?? alias.nameOverride ?? name,
+						group: alias.group ?? group,
+						description: alias.description ?? description,
+						onConstructNode: () -> {
+							@:privateAccess var id = currentGraph.current_node_id++;
+							var inst = std.Type.createInstance(node, alias.args ?? []);
+							inst.setId(id);
+							return inst;
+						},
 					}
-				}
+				);
 			}
 		}
-
-		return {
-			nodes : nodes,
-			edges : edges,
-		};
+		return entries;
 	}
 
-	function loadClipboard(offset : Point, val : SavedClipboard, selectNew = true) {
-		if( val == null )
-			return;
-		if( offset == null )
-			offset = new Point(0, 0);
-		var instancedBoxes : Array<Null<Box>> = [];
-		for( n in val.nodes ) {
-			if( n.nodeType == ShaderParam && lastCopyEditor != this ) {
-				instancedBoxes.push(null);
-				continue;
-			}
-			var node = currentGraph.addNode(offset.x + n.pos.x, offset.y + n.pos.y, n.nodeType, []);
-			node.loadProperties(n.props);
-			initSpecifics(node);
-			var shaderParam = Std.downcast(node, ShaderParam);
-			if( shaderParam != null ) {
-				var paramShader = currentGraph.getParameter(shaderParam.parameterId);
-				if( paramShader == null ) {
-					currentGraph.removeNode(node.id);
-					instancedBoxes.push(null);
-					continue;
-				}
-				shaderParam.variable = paramShader.variable;
-				shaderParam.setName(paramShader.name);
-				setDisplayValue(shaderParam, paramShader.type, paramShader.defaultValue);
-				shaderParam.computeOutputs();
-			}
-			var box = addBox(offset.add(n.pos), n.nodeType, node);
-			instancedBoxes.push(box);
-		}
-		for( edge in val.edges ) {
-			if( instancedBoxes[edge.fromIdx] == null || instancedBoxes[edge.toIdx] == null )
-				continue;
-			var toCreate = {
-				outputNodeId: instancedBoxes[edge.fromIdx].getId(),
-				nameOutput: edge.fromName,
-				inputNodeId: instancedBoxes[edge.toIdx].getId(),
-				nameInput: edge.toName,
-			}
-			if( !currentGraph.addEdge(toCreate) ) {
-				error("A pasted edge creates a cycle");
-			}
-		}
-		var newBoxes = [ for( box in instancedBoxes ) if( box != null ) refreshBox(box) ];
-		if( selectNew ) {
-			clearSelectionBoxes();
-			for( box in newBoxes ) {
-				box.setSelected(true);
-			}
-			listOfBoxesSelected = newBoxes;
-		}
+
+	public function addNode(node: IGraphNode) : Void {
+		currentGraph.addNode(cast node);
+		requestRecompile();
 	}
 
-	function duplicateSelection() {
-		if (listOfBoxesSelected.length <= 0)
-			return;
-		var vals = saveSelection(listOfBoxesSelected);
-		var dims = getGraphDims(listOfBoxesSelected);
-		var offset = new Point(dims.xMin + 30, dims.yMin + 30);
-		lastCopyEditor = this;
-		beforeChange();
-		loadClipboard(offset, vals);
-		afterChange();
+	public function removeNode(id: Int) : Void {
+		currentGraph.removeNode(id);
+		requestRecompile();
 	}
 
-	function onCopy() {
-		clipboard = saveSelection(listOfBoxesSelected);
-		lastCopyEditor = this;
-		ide.setClipboard(haxe.Json.stringify(clipboard));
+	public function canAddEdge(edge: Edge) : Bool {
+		return currentGraph.canAddEdge({outputNodeId: edge.nodeFromId, outputId: edge.outputFromId, inputNodeId: edge.nodeToId, inputId: edge.inputToId});
 	}
 
-	function onPaste() {
-		var jsonClipboard = haxe.Json.stringify(clipboard);
-		if( jsonClipboard != ide.getClipboard() || lastCopyEditor == null)
-			return;
-		var posOffset = new Point(lX(ide.mouseX - 40), lY(ide.mouseY - 20));
-		beforeChange();
-		loadClipboard(posOffset, clipboard);
-		afterChange();
+	public function addEdge(edge: Edge) : Void {
+		var input = currentGraph.getNode(edge.nodeToId);
+		input.connections[edge.inputToId] = {from: currentGraph.getNode(edge.nodeFromId), outputId: edge.outputFromId};
+		requestRecompile();
 	}
 
-	function onHide() {
-		if (listOfBoxesSelected.length <= 0)
-			return;
-
-		beforeChange();
-
-		var visiblity = !listOfBoxesSelected[0].getInstance().showPreview;
-		for (box in listOfBoxesSelected) {
-			box.setPreviewVisibility(visiblity);
-		}
-		afterChange();
+	public function removeEdge(nodeToId: Int, inputToId: Int) : Void {
+		var input = currentGraph.getNode(nodeToId);
+		input.connections[inputToId] = null;
+		requestRecompile();
 	}
 
-	function deleteSelection() {
-		if (currentEdge != null) {
-			removeEdge(currentEdge);
-		}
-		if (listOfBoxesSelected.length > 0) {
-			beforeChange();
-			for (b in listOfBoxesSelected) {
-				removeBox(b, false);
-			}
-			afterChange();
-			clearSelectionBoxes();
-		}
+	public override function save() {
+		var content = shaderGraph.saveToText();
+		currentSign = ide.makeSignature(content);
+		sys.io.File.saveContent(getPath(), content);
+		super.save();
 	}
 
-	override function removeBox(box : Box, trackChanges = true) {
-		if( trackChanges )
-			beforeChange();
-		var isSubShader = Std.isOfType(box.getInstance(), SubGraph);
-		var length = listOfEdges.length;
-		for (i in 0...length) {
-			var edge = listOfEdges[length-i-1];
-			if (edge.from == box || edge.to == box) {
-				super.removeEdge(edge);
-				removeShaderGraphEdge(edge);
-				if (!isSubShader) removeEdgeSubGraphUpdate(edge);
-			}
-		}
-		currentGraph.removeNode(box.getId());
-		if( trackChanges )
-			afterChange();
-		box.dispose();
-		listOfBoxes.remove(box);
-		launchCompileShader();
-	}
-
-	override function removeEdge(edge : Graph.Edge) {
-		super.removeEdge(edge);
-		beforeChange();
-		removeShaderGraphEdge(edge);
-		afterChange();
-		removeEdgeSubGraphUpdate(edge);
-		launchCompileShader();
-		refreshBox(edge.to);
-	}
-
-	override function updatePosition(box : Box) {
-		var previewBox = Std.downcast(box.getInstance(), hrt.shgraph.nodes.Preview);
-		/*if (previewBox != null){
-			previewBox.onMove(gX(box.getX()), gY(box.getY()), transformMatrix[0]);
-		}*/
-		currentGraph.setPosition(box.getId(), box.getX(), box.getY());
-	}
-
-	override function updateMatrix() {
-		super.updateMatrix();
-		for (b in listOfBoxes) {
-			/*var previewBox = Std.downcast(b.getInstance(), hrt.shgraph.nodes.Preview);
-			if (previewBox != null){
-				previewBox.onMove(gX(b.getX()), gY(b.getY()), transformMatrix[0]);
-			}*/
-		}
+	public function getUndo() : hide.ui.UndoHistory {
+		return undo;
 	}
 
 	override function getDefaultContent() {
@@ -1879,25 +1494,27 @@ class ShaderEditor extends hide.view.Graph {
 		return haxe.io.Bytes.ofString(ide.toJSON(p));
 	}
 
-	override function onDragDrop(items : Array<String>, isDrop : Bool) {
-		var valid = false;
-		var offset = 0;
-		for (i in items) {
-			if (i.indexOf("shgraph") != -1 && i != state.path) {
-				if (isDrop) {
-					var posCursor = new Point(lX(ide.mouseX - 25 + offset), lY(ide.mouseY - 10 + offset));
-					addSubGraph(posCursor, i);
-					offset += 25;
-				}
-				valid = true;
-			}
+	public function requestRecompile() {
+		needRecompile = true;
+	}
+
+	public function checkCompileShader() {
+		if (!needRecompile)
+			return;
+		needRecompile = false;
+		try {
+			var start = Timer.stamp();
+			compiledShader = shaderGraph.compile();
+			compiledShaderPreview = shaderGraph.compile(currentGraph.domain);
+			bitmapToShader.clear();
+			previewVar = compiledShaderPreview.inits.find((e) -> e.variable.name == hrt.shgraph.Variables.previewSelectName)?.variable;
+			var end = Timer.stamp();
+
+			meshPreviewShader = null;
+		} catch (err) {
+			Ide.inst.quickError(err);
 		}
-		if (valid && isDrop) {
-			refreshShaderGraph();
-		}
-		return valid;
 	}
 
 	static var _ = FileTree.registerExtension(ShaderEditor,["shgraph"],{ icon : "scribd", createNew: "Shader Graph" });
-
 }

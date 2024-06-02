@@ -143,11 +143,36 @@ class PropsEditor extends Component {
 		return prop.charAt(0).toUpperCase() + prop.substr(1);
 	}
 
+	public static function getCategory(p: PropDef) {
+		if (p.name != null) {
+			return p.name.split("_")[0];
+		}
+		return null;
+	}
+
 	public static function makePropsList(props : Array<PropDef>) : Element {
 		var e = new Element('<dl>');
-		for( p in props ) {
-			new Element('<dt>${p.disp != null ? p.disp : upperCase(p.name)}</dt>').appendTo(e);
-			var def = new Element('<dd>').appendTo(e);
+		var currentParent = e;
+		var currentCategory = null;
+		for(i => p in props ) {
+			var name = p.disp != null ? p.disp : upperCase(p.name);
+
+			name = StringTools.replace(name, "_", " ");
+			var finalName = new StringBuf();
+			var prevWasSpace = true;
+			for (i => n in StringTools.keyValueIterator(name)) {
+				var c = StringTools.fastCodeAt(name, i);
+				if (c >= 65 && c <= 90 && !prevWasSpace) {
+					finalName.addChar(8203); // Zero width space;
+				}
+				prevWasSpace = c == 32;
+				finalName.addChar(c);
+			}
+
+			name = finalName.toString();
+
+			new Element('<dt>$name</dt>').appendTo(currentParent);
+			var def = new Element('<dd>').appendTo(currentParent);
 			makePropEl(p, def);
 		}
 		return e;
@@ -213,6 +238,9 @@ class PropsEditor extends Component {
 			var key = (s.length == 0 ? "" : StringTools.trim(s.children("h1").text()) + "/") + name;
 			if( getDisplayState("group:" + key) != false && !g.hasClass("closed") )
 				g.addClass("open");
+
+			var groupName = g.attr("name");
+			groups.set(groupName, []);
 		}
 
 		e.find(".group").not(".open").children(".content").hide();
@@ -232,17 +260,19 @@ class PropsEditor extends Component {
 			e.getThis().closest(".group").find(">.title").val(e.getThis().val());
 		});
 
-		var groupFields = [];
 		// init input reflection
-		for( f in e.find("[field]").elements() ) {
-			var f = new PropsField(this, f, context);
+		for( field in e.find("[field]").elements() ) {
+			var f = new PropsField(this, field, context);
 			f.onChange = function(undo) {
 				isTempChange = f.isTempChange;
 				lastChange = haxe.Timer.stamp();
 				if( onChange != null ) onChange(@:privateAccess f.fname);
 				isTempChange = false;
 			};
-			groupFields.push(f);
+			var groupName = f.element.closest(".group").attr("name");
+			if (groupName != null) {
+				groups.get(groupName).push(f);
+			}
 			fields.push(f);
 			// Init reset buttons
 			var def = f.element.attr("value");
@@ -261,9 +291,6 @@ class PropsEditor extends Component {
 				});
 			}
 		}
-
-		var groupName = e.find(".group").attr("name");
-		groups.set(groupName, groupFields);
 
 		return e;
 	}
@@ -520,7 +547,7 @@ class PropsField extends Component {
 			var arr = Std.downcast(current, Array);
 			var alpha = arr != null && arr.length == 4 || f.attr("alpha") == "true";
 			var picker = new hide.comp.ColorPicker.ColorBox(null, f, true, alpha, fname);
-
+			element = picker.element;
 			function updatePicker(val: Dynamic) {
 				if(arr != null) {
 					var v = h3d.Vector.fromArray(val);

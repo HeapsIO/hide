@@ -1,5 +1,10 @@
 package hide;
 
+class IdeCache {
+	public var getTextureCache : Map<String, h3d.mat.Texture> = [];
+
+	public function new() {};
+}
 @:expose
 class Ide extends hide.tools.IdeData {
 
@@ -338,7 +343,8 @@ class Ide extends hide.tools.IdeData {
 			content: state.state.content,
 			settings: {
 				// Default to false
-				reorderEnabled : config.user.get('layout.reorderEnabled') == true,
+				reorderEnabled : config.user.get('layout.reorderEnabled', true) == true,
+				constrainDragToHeader : config.user.get('layout.constrainDragToHeader', true) == true,
 				showPopoutIcon : config.user.get('layout.showPopoutIcon') == true,
 				showMaximiseIcon : config.user.get('layout.showMaximiseIcon') == true
 			}
@@ -517,14 +523,17 @@ class Ide extends hide.tools.IdeData {
 		if (fullPath == null)
 			return null;
 
+
 		var engine = h3d.Engine.getCurrent();
-		var cache : Map<String, h3d.mat.Texture> = @:privateAccess engine.resCache.get(textureCacheKey);
+		var cache : IdeCache = cast @:privateAccess engine.resCache.get(IdeCache);
 		if(cache == null) {
-			cache = new Map();
-			@:privateAccess engine.resCache.set(textureCacheKey, cache);
+			cache = new IdeCache();
+			@:privateAccess engine.resCache.set(IdeCache, cache);
 		}
 
-		var tex = cache[fullPath];
+		var texCache = cache.getTextureCache;
+
+		var tex = texCache[fullPath];
 		if (tex != null)
 			return tex;
 
@@ -532,7 +541,7 @@ class Ide extends hide.tools.IdeData {
 		var res = hxd.res.Any.fromBytes(fullPath, data);
 		tex = res.toImage().toTexture();
 
-		cache.set(fullPath, tex);
+		texCache.set(fullPath, tex);
 		return tex;
 	}
 
@@ -579,10 +588,16 @@ class Ide extends hide.tools.IdeData {
 		js.Browser.console.error(e);
 	}
 
-	public function quickError( e : Dynamic ) {
-		var e = new Element('<div class="globalErrorMessage">${StringTools.htmlEscape(Std.string(e))}</div>');
-		e.appendTo(window.window.document.body);
-		haxe.Timer.delay(() -> e.remove(), 5000);
+	public function quickError( msg : Dynamic, timeoutSeconds : Float = 5.0 ) {
+		var e = new Element('
+		<div class="message error">
+			<div class="icon ico ico-warning"></div>
+			<div class="text">${StringTools.htmlEscape(Std.string(msg))}</div>
+		</div>');
+
+		js.Browser.console.error(msg);
+
+		globalMessage(e, timeoutSeconds);
 	}
 
 	override function setProject( dir : String ) {
@@ -643,6 +658,10 @@ class Ide extends hide.tools.IdeData {
 				}
 			}
 			h3d.mat.MaterialSetup.current = render;
+
+			var lods = config.current.get("lods.screenRatio");
+			if (lods != null)
+				h3d.prim.HMDModel.loadLodConfig(lods);
 
 			initMenu();
 			initLayout();
@@ -1113,7 +1132,29 @@ class Ide extends hide.tools.IdeData {
 			config.global.save();
 		});
 
+		// profilers
+		var profilers = menu.find(".analysis");
+		profilers.find(".memprof").click(function(_) {
+			#if (hashlink >= "1.15.0")
+			open("hide.view.Profiler",{});
+			#else
+			quickMessage("Profiler not available. Please update hashlink to version 1.15.0 or later.");
+			#end
+		});
+
+		var settings = menu.find(".settings");
+		settings.find('.showSettings').click(function(_) {
+			open("hide.view.Settings", {});
+		});
+
 		window.menu = new hide.ui.Menu(menu).root;
+	}
+
+	public function showFileInResources(path: String) {
+		var filetree = getViews(hide.view.FileTree)[0];
+		if( filetree != null ) {
+			filetree.revealNode(path);
+		}
 	}
 
 	public static function showFileInExplorer(path : String) {
@@ -1235,6 +1276,44 @@ class Ide extends hide.tools.IdeData {
 			target.addChild(config);
 		else
 			target.addChild(config, index);
+	}
+
+	public function globalMessage(element: Element, timeoutSeconds : Float = 5.0) {
+		var body = new Element('body');
+		var messages = body.find("#message-container");
+		if (messages.length == 0) {
+			messages = new Element('<div id="message-container"></div>');
+			body.append(messages);
+		}
+
+		messages.append(element);
+		// envie de prendre le raccourci vers le rez de chaussée la
+
+		haxe.Timer.delay(() -> {
+			element.addClass("show");
+		}, 10);
+
+		if (timeoutSeconds > 0.0) {
+			haxe.Timer.delay(() -> {
+				element.get(0).ontransitionend = function(_){
+					element.remove();
+				};
+				element.removeClass("show");
+
+			}, Std.int(timeoutSeconds * 1000.0));
+		}
+	}
+
+	public function quickMessage( text : String, timeoutSeconds : Float = 5.0 ) {
+		var e = new Element('
+		<div class="message">
+			<div class="icon ico ico-info-circle"></div>
+			<div class="text">${text}</div>
+		</div>');
+
+		js.Browser.console.log(text);
+
+		globalMessage(e, timeoutSeconds);
 	}
 
 	public function message( text : String ) {

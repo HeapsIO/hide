@@ -2,8 +2,10 @@ package hrt.prefab;
 
 import hrt.impl.Gradient;
 import hrt.impl.TextureType;
-import hide.prefab.HideProps;
 
+#if editor
+import hide.prefab.HideProps;
+#end
 class Shader extends Prefab {
 
 	@:s var targetMaterial : String;
@@ -251,8 +253,7 @@ class Shader extends Prefab {
 		return {
 			icon : "cog",
 			name : name,
-			fileSource : cl == hrt.prefab.DynamicShader ? ["hx"] : null,
-			allowParent : function(p) return p.to(Object2D) != null || p.to(Object3D) != null || p.to(Material) != null
+			fileSource : cl == hrt.prefab.DynamicShader ? ["hx"] : null
 		};
 	}
 

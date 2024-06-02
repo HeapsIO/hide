@@ -493,6 +493,7 @@ class CurveEditor extends hide.comp.Component {
 	public var lockViewY = false;
 	public var lockKeyX = false;
 	public var maxLength = 0.0;
+	public var evaluator : hrt.prefab.fx.Evaluator;
 
 	public var components : Array<CurveEditorComponent> = [];
 	public var componentsGroup : Element;
@@ -541,6 +542,8 @@ class CurveEditor extends hide.comp.Component {
 		componentsGroup = svg.group(root, "components");
 		tlGroup = svg.group(root, "tlgroup");
 		markersGroup = svg.group(root, "markers").css({'pointer-events':'none'});
+
+		evaluator = new hrt.prefab.fx.Evaluator([]);
 
 		var sMin = 0.0;
 		var sMax = 0.0;
@@ -1177,6 +1180,14 @@ class CurveEditor extends hide.comp.Component {
 		svg.line(markersGroup, xt(this.currentTime), svg.element.height(), xt(this.currentTime), labelHeight / 2.0, { stroke:'#426dae', 'stroke-width':'2px' });
 		drawLabel(markersGroup, xt(this.currentTime), labelHeight / 2.0 + (tlHeight - labelHeight) / 2.0, labelWidth, labelHeight, { fill:'#426dae', stroke: '#426dae', 'stroke-width':'5px', 'stroke-linejoin':'round'});
 		svg.text(markersGroup, xt(this.currentTime), 14, '${rounderCurrTime}', { 'fill':'#e7ecf5', 'text-anchor':'middle', 'font':'10px sans-serif'});
+
+
+		function drawMaker(x: Float) {
+			svg.line(markersGroup, xt(x), svg.element.height(), xt(x), labelHeight / 2.0, { stroke: '#260f00', 'stroke-width' : '2px'});
+		}
+
+		drawMaker(0);
+
 	}
 
 	public function refreshOverlay(?duration: Float) {
@@ -1309,8 +1320,17 @@ class CurveEditor extends hide.comp.Component {
 					svg.make(curveGroup, "path", {d: lines.join("")});
 				}
 				else {
+					var pts = [];
+
 					// Basic value of xScale is 200
-					var pts = curve.sample(cast Math.min(5000, 500 * cast (xScale / 200.0)));
+					var num : Int = Std.int(Math.min(5000, 500 * cast (xScale / 200.0)));
+					pts.resize(num);
+					var v = curve.makeVal();
+					if (v == null) throw "wtf";
+					var duration = curve.duration;
+					for (i in 0...num) {
+						pts[i] = evaluator.getFloat(v, duration * i/(num-1));
+					}
 					var poly = [];
 
 					for(i in 0...pts.length) {
@@ -1497,7 +1517,20 @@ class CurveEditor extends hide.comp.Component {
 		}
 
 		for (curve in curves){
-			var color = '#${StringTools.hex(curve.color)}';
+			var colorInt = curve.color;
+			if (curve.blendMode == Blend) {
+				var root = curve.getRoot();
+				var params = Std.downcast(root, hrt.prefab.fx.FX)?.parameters;
+				if (params != null) {
+					for (p in params) {
+						if (p.name == curve.blendParam) {
+							colorInt = p.color;
+							break;
+						}
+					}
+				}
+			}
+			var color = '#${StringTools.hex(colorInt)}';
 			var curveStyle: Dynamic = { opacity : curve.selected ? 1 : 0.5, stroke : color, "stroke-width":'${curve.selected ? 2 : 1}px'};
 			var keyStyle: Dynamic = { opacity : curve.selected ? 1 : 0.5};
 			var eventStyle: Dynamic = { 'fill-opacity' : curve.selected ? 1 : 0.5};
@@ -1527,7 +1560,7 @@ class CurveEditor extends hide.comp.Component {
 
 			// Blend curve are controlled with parent curve
 			// so we don't want to allow user to use keys on this.s
-			if (curve.blendMode != CurveBlendMode.Blend && curve.blendMode != CurveBlendMode.RandomBlend)
+			if (curve.blendMode == CurveBlendMode.None)
 				drawKeys(curve, keyStyle);
 		}
 

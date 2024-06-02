@@ -34,7 +34,13 @@ class Model extends FileView {
 	var highlightSelection : Bool = true;
 
 	override function save() {
+
 		if(!modified) return;
+
+		// Save render props
+		if (Ide.inst.currentConfig.get("sceneeditor.renderprops.edit", false) && sceneEditor.renderPropsRoot != null)
+			sceneEditor.renderPropsRoot.save();
+
 		// Save current Anim data
 		if( currentAnimation != null ) {
 			var hideData = loadProps();
@@ -99,8 +105,14 @@ class Model extends FileView {
 					<div class="tabs">
 						<div class="tab expand" name="Model" icon="sitemap">
 							<div class="hide-block">
-							<input type="button" style="width:312px" value="Save render props"/>
-								<div class="hide-scene-tree hide-list">
+							<div class="render-props-edition">
+								<div class="hide-toolbar">
+									<div class="toolbar-label">
+										<div class="icon ico ico-sun-o"></div>
+										Render props
+									</div>
+								</div>
+								<div class="hide-scenetree"></div>
 								</div>
 							</div>
 							<div class="props hide-scroll">
@@ -140,27 +152,23 @@ class Model extends FileView {
 		});
 
 		element.find(".hide-scene-tree").first().append(sceneEditor.tree.element);
+		element.find(".render-props-edition").find('.hide-scenetree').append(sceneEditor.renderPropsTree.element);
 		element.find(".props").first().append(sceneEditor.properties.element);
 		element.find(".heaps-scene").first().append(sceneEditor.scene.element);
 		sceneEditor.view.keys.register("sceneeditor.focus", {name: "Focus Selection", category: "Scene"},
 			function() {if (lastSelectedObject != null) refreshSelectionHighlight(lastSelectedObject);});
 		sceneEditor.tree.element.addClass("small");
-		var e = element.find("input[value=\"Save render props\"]");
-		function callback(ev : js.jquery.Event) : Void {
-			if( !canSave() )
-				return;
-			var toSave = root.children[0];
-			@:privateAccess toSave.save();
+		sceneEditor.renderPropsTree.element.addClass("small");
 
-			save();
-		}
-
-		e.on("click", callback);
+		var rpEditionvisible = Ide.inst.currentConfig.get("sceneeditor.renderprops.edit", false);
+		setRenderPropsEditionVisibility(rpEditionvisible);
 	}
 
 	override function onActivate() {
 		if (tools != null)
 			tools.refreshToggles();
+
+		setRenderPropsEditionVisibility(Ide.inst.currentConfig.get("sceneeditor.renderprops.edit", false));
 	}
 
 	inline function get_scene() return sceneEditor.scene;
@@ -339,6 +347,7 @@ class Model extends FileView {
 				Reflect.deleteField((m.props:Dynamic), "__refMode");
 			}
 			h3d.mat.MaterialSetup.current.saveMaterialProps(m, defaultProps);
+			Ide.inst.quickMessage('Properties for mat (${m.name}) had been saved');
 		};
 		saveButton.click(saveCallback);
 		properties.add(matLibrary, m);
@@ -358,6 +367,7 @@ class Model extends FileView {
 	}
 
 	var selectedJoint : String = null;
+	var selectedMesh : h3d.scene.Mesh = null;
 	var displayJoints = null;
 	function selectObject( obj : h3d.scene.Object ) {
 		if ( Std.isOfType(obj, h3d.scene.Skin.Joint) ) {
@@ -469,19 +479,73 @@ class Model extends FileView {
 		'),obj);
 
 		var mesh = Std.downcast(obj, h3d.scene.Mesh);
-		if (mesh != null) {
-			var hmd = Std.downcast(mesh.primitive, h3d.prim.HMDModel);
+		var hmd = Std.downcast(mesh.primitive, h3d.prim.HMDModel);
+		selectedMesh = mesh;
 
-			if (hmd != null && @:privateAccess hmd.blendshape != null) {
+		if (mesh != null && hmd != null) {
+			// Blendshapes edition
+			if (@:privateAccess hmd.blendshape != null) {
 				var blendShape = new Element('
 				<div class="group" name="Blend Shapes">
-					<dt>Index</dt><dd><input id="bs-index" type="range" min="0" max="3" step="1" field=""/></dd>
+					<dt>Index</dt><dd><input id="bs-index" type="range" min="0" max="${@:privateAccess hmd.blendshape.getBlendshapeCount() - 1}" step="1" field=""/></dd>
 					<dt>Amount</dt><dd><input id="bs-amount" type="range" min="0" max="1" field=""/></dd>
 				</div>');
 
 				properties.add(blendShape, null, function(pname){
 					@:privateAccess hmd.blendshape.setBlendshapeAmount(blendShape.find("#bs-index").val(),blendShape.find("#bs-amount").val());
 				});
+			}
+
+			// LODs edition
+			if (@:privateAccess hmd.lodCount() > 0) {
+				var lodsEl = new Element('
+					<div class="group" name="LODs">
+						<dt>LOD Count</dt><dd>${hmd.lodCount()}</dd>
+						<dt>Force display LOD</dt>
+						<dd>
+							<select id="select-lods">
+								<option value="-1">None</option>
+								${[ for(idx in 0...hmd.lodCount()) '<option value="${idx}">LOD ${idx}</option>'].join("")}
+							<select>
+						</dd>
+						<div class="lods-line">
+							<div class="line"></div>
+							<div class="cursor">
+								<div class="cursor-line"></div>
+								<p class="ratio">100%</p>
+							</div>
+						</div>
+					</div>
+				');
+
+				properties.add(lodsEl, null, null);
+
+				var selectLod = lodsEl.find("select");
+				selectLod.on("change", function(){
+					hmd.forcedLod = Std.int(lodsEl.find("select").val());
+				});
+
+				function getLodPercent(idxLod: Int) {
+					var lodConfig = @:privateAccess h3d.prim.HMDModel.lodConfig;
+					var prev = idxLod == 0 ? 1 : lodConfig[idxLod - 1];
+
+					return (Math.abs(prev - lodConfig[idxLod])) * 100;
+				}
+
+				var lodsLine = lodsEl.find(".line");
+				var total = 100.;
+				for (idx in 0...hmd.lodCount()) {
+					lodsLine.append(new Element('
+					<div style="${idx != hmd.lodCount() - 1 ? 'width:${getLodPercent(idx)}%;' : 'flex:1'}">
+						<p>LOD&nbsp${idx}</p>
+						<p>${total}%</p>
+					</div>'));
+
+					total -= getLodPercent(idx);
+				}
+
+				var cursor = lodsEl.find(".cursor");
+				cursor.css({top: '${lodsLine.position().top + 11}px'});
 			}
 		}
 
@@ -610,7 +674,7 @@ class Model extends FileView {
 	function onRefresh() {
 		this.saveDisplayKey = "Model:" + state.path;
 
-		sceneEditor.loadSavedCameraController3D(true);
+		sceneEditor.loadCam3D();
 
 		// Remove current instancied render props
 		sceneEditor.root3d.removeChildren();
@@ -667,8 +731,6 @@ class Model extends FileView {
 			if (this.light != null)
 				lightDirection = this.light.getLocalDirection();
 		}
-
-		undo.onChange = function() {};
 
 		if (obj != null) {
 			for (m in this.obj.getMeshes()) {
@@ -750,25 +812,13 @@ class Model extends FileView {
 		});
 
 		var toolsDefs : Array<hide.comp.Toolbar.ToolDef> = [];
-		toolsDefs.push({id: "iconVisibility", title : "Toggle 3d icons visibility", icon : "image", type : Toggle((v) -> { hide.Ide.inst.show3DIcons = v; }), defaultValue: true });
-        toolsDefs.push({id: "iconVisibility-menu", title : "", icon: "", type : Popup((e) -> new hide.comp.SceneEditor.IconVisibilityPopup(null, e, sceneEditor))});
+
+		toolsDefs.push({id: "showViewportOverlays", title : "Viewport Overlays", icon : "eye", type : Toggle((v) -> { sceneEditor.updateViewportOverlays(); }) });
+		toolsDefs.push({id: "viewportoverlays-menu", title : "", icon: "", type : Popup((e) -> new hide.comp.SceneEditor.ViewportOverlaysPopup(null, e, sceneEditor))});
+
+		//toolsDefs.push({id: "iconVisibility", title : "Toggle 3d icons visibility", icon : "image", type : Toggle((v) -> { hide.Ide.inst.show3DIcons = v; }), defaultValue: true });
+        //toolsDefs.push({id: "iconVisibility-menu", title : "", icon: "", type : Popup((e) -> new hide.comp.SceneEditor.IconVisibilityPopup(null, e, sceneEditor))});
 		tools.makeToolbar(toolsDefs);
-
-		tools.addToggle("wireframeToggle", "connectdevelop", "Wireframe",(b) -> {
-			sceneEditor.setWireframe(b);
-		});
-		displayJoints = tools.addToggle("jointsToggle", "connectdevelop", "Joints",(b) -> {
-			sceneEditor.setJoints(b, selectedJoint);
-		});
-
-		tools.addToggle("show-outline","square-o", "Show selection Outline",(b) -> {
-			highlightSelection = b;
-			refreshSelectionHighlight(lastSelectedObject);
-		}, highlightSelection);
-
-		tools.addColor("Background color", function(v) {
-			scene.engine.backgroundColor = v;
-		}, scene.engine.backgroundColor);
 
 		tools.addSeparator();
 
@@ -806,10 +856,13 @@ class Model extends FileView {
 		sceneEditor.onResize = buildTimeline;
 		setAnimation(null);
 
-		if ( displayJoints.isDown() )
-			sceneEditor.setJoints(true, null);
+		// Adapt initial camera position to model
+		var camSettings = @:privateAccess sceneEditor.view.getDisplayState("Camera");
+		var isGlobalSettings = Ide.inst.currentConfig.get("sceneeditor.camera.isglobalsettings", false);
+		if (isGlobalSettings)
+			camSettings = Ide.inst.currentConfig.get("sceneeditor.camera.isglobalsettings", false);
 
-		if (sceneEditor.view.getDisplayState("Camera") == null) {
+		if (camSettings == null) {
 			var bnds = new h3d.col.Bounds();
 			var centroid = new h3d.Vector();
 
@@ -1126,6 +1179,34 @@ class Model extends FileView {
 		}
 		if( cameraMove != null )
 			cameraMove();
+
+		if (selectedMesh != null) {
+
+			function round(number:Float, ?precision=2): Float
+			{
+				number *= Math.pow(10, precision);
+				return Math.round(number) / Math.pow(10, precision);
+			}
+
+			var screenRatio = @:privateAccess selectedMesh.curScreenRatio;
+			var line = sceneEditor.properties.element.find(".line");
+			var cursor = sceneEditor.properties.element.find(".cursor");
+			if (cursor.length > 0) {
+				cursor?.css({left: '${line.position().left + line.width() * hxd.Math.clamp((1 - screenRatio), 0, 1)}px'});
+				cursor?.find(".ratio").text('${round(hxd.Math.clamp(screenRatio * 100, 0, 100), 2)}%');
+			}
+		}
+	}
+
+	public function setRenderPropsEditionVisibility(visible : Bool) {
+		var renderPropsEditionEl = this.element.find('.render-props-edition');
+
+		if (!visible) {
+			renderPropsEditionEl.css({ display : 'none' });
+			return;
+		}
+
+		renderPropsEditionEl.css({ display : 'block' });
 	}
 
 	static var _ = FileTree.registerExtension(Model,["hmd","fbx"],{ icon : "cube" });

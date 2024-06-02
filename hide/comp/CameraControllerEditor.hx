@@ -96,11 +96,20 @@ class CameraControllerEditor extends Popup {
                 var newClass = controllersClasses[id];
                 if (Type.getClass(editor.cameraController) != newClass.cl) {
                     editor.switchCamController(newClass.cl);
+                    editor.saveCam3D();
                     refresh();
                 }
                 refresh();
             });
         }
+
+		{
+            var dd = new Element("<label for='snapToGround'>").text("Snap To Ground").appendTo(form_div);
+            var cb = new Element("<input id='snapToGround' type='checkbox'>").prop("checked", editor.cameraController.snapToGround).appendTo(form_div);
+			cb.on("change", function(_) {
+				editor.cameraController.snapToGround = cb.prop("checked");
+			});
+		}
 
         {
             var dd = new Element("<label for='cam-speed'>").text("Fly Speed").appendTo(form_div);

@@ -23,7 +23,7 @@ class EditContext {
 		while( parent != null ) {
 			var pr = parent.getHideProps();
 			if( pr.onChildUpdate != null ) pr.onChildUpdate(p);
-				parent = parent.parent;
+			parent = parent.parent;
 		}
 	}
 

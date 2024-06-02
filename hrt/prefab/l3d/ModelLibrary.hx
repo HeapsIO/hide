@@ -63,6 +63,13 @@ class ModelLibShader extends hxsl.Shader {
 
 		var mipLevel : Float;
 
+		function unpackPBR(v : Vec4) : Vec4 {
+			metalness = v.r;
+			roughness = 1 - v.g * v.g;
+			occlusion = v.b;
+			// no emissive for now
+		}
+
 		function __init__vertex() {
 			if( hasNormal )
 				transformedTangent = vec4(input2.tangent * global.modelView.mat3(),input2.tangent.dot(input2.tangent) > 0.5 ? 1. : -1.);
@@ -82,10 +89,7 @@ class ModelLibShader extends hxsl.Shader {
 			}
 			if( hasPbr ) {
 				var v = singleTexture ? specular.getLod(calculatedUV, mipLevel) : speculars.getLod(vec3(calculatedUV, material), mipLevel);
-				metalness = v.r;
-				roughness = 1 - v.g * v.g;
-				occlusion = v.b;
-				// no emissive for now
+				unpackPBR(v);
 			}
 		}
 
@@ -103,7 +107,7 @@ class ModelLibraryCache {
 class ModelLibrary extends Prefab {
 
 	@:s var bakedMaterials : haxe.DynamicAccess<MaterialData>;
-	@:s var materialConfigs : Array<h3d.mat.PbrMaterial.PbrProps>;
+	@:s var materialConfigs : Array<h3d.mat.PbrMaterial.PbrProps> = [];
 	@:s var texturesCount : Int;
 
 	var optimizedMeshes : Array<h3d.scene.Mesh> = [];
@@ -312,6 +316,7 @@ class ModelLibrary extends Prefab {
 		hmd.materials = [];
 		hmd.models = [];
 		hmd.animations = [];
+		hmd.shapes = [];
 		var models = new Map();
 		var dataOut = new haxe.io.BytesBuffer();
 
@@ -319,7 +324,6 @@ class ModelLibrary extends Prefab {
 		var normalMaps : Array<h3d.mat.BigTexture> = [];
 		var specMaps : Array<h3d.mat.BigTexture> = [];
 		var tmap = new Map();
-		var hasNormal = false, hasSpec = false;
 
 		function allocDefault(name,color,alpha=1) {
 			var tex = new h3d.mat.Texture(16,16);
@@ -516,13 +520,25 @@ class ModelLibrary extends Prefab {
 				matName = m.name;
 
 				var heapsMat = @:privateAccess lib.makeMaterial(lib.header.models[mid], mid, function(path:String) { return scene.loadTexture(sourcePath, path);});
-
-				if( textures.length == 0 ) {
-					hasNormal = m.normalMap != null;
-					hasSpec = m.specularTexture != null;
+				var diffuseTexture = m.diffuseTexture;
+				var tshader = heapsMat.mainPass.getShader(h3d.shader.Texture);
+				if ( tshader != null )
+					diffuseTexture = tshader.texture.name;
+				var normalMap = m.normalMap;
+				var nmshader = heapsMat.mainPass.getShader(h3d.shader.NormalMap);
+				if ( nmshader != null )
+					normalMap = nmshader.texture.name;
+				var specularTexture = m.specularTexture;
+				var pshader = heapsMat.mainPass.getShader(h3d.shader.pbr.PropsTexture);
+				if ( pshader != null )
+					specularTexture = pshader.texture.name;
+				else {
+					var pshader = heapsMat.mainPass.getShader(h3d.shader.SpecularTexture);
+					if ( pshader != null )
+						specularTexture = pshader.texture.name;
 				}
 
-				var pos = loadTexture(sourcePath, m.diffuseTexture, hasNormal ? m.normalMap : null, hasSpec ? m.specularTexture : null);
+				var pos = loadTexture(sourcePath, diffuseTexture, normalMap, specularTexture);
 				if ( pos == null )
 					return null;
 				var matName = m.name;
@@ -554,12 +570,6 @@ class ModelLibrary extends Prefab {
 						configIndex : matConfigIndex,
 					};
 					bakedMaterials.set(key, bk);
-
-					if( !hasNormal && m.normalMap != null )
-						error(sourcePath+"("+m.name+") has normal map texture");
-
-					if( !hasSpec && m.specularTexture != null )
-						error(sourcePath+"("+m.name+") has specular texture");
 
 					hmd.materials.push(m2);
 					return bk;
@@ -743,7 +753,7 @@ class ModelLibrary extends Prefab {
 			cache.geomBounds = [for( g in @:privateAccess cache.hmdPrim.lib.header.geometries ) g.bounds];
 		@:privateAccess cache.hmdPrim.curMaterial = -1;
 		if ( cache.shader == null ) {
-			cache.shader = new ModelLibShader();
+			cache.shader = cast(h3d.mat.MaterialSetup.current, h3d.mat.PbrMaterialSetup).createModelLibShader();
 			cache.shader.mipStart = mipStart;
 			cache.shader.mipEnd = mipEnd;
 			cache.shader.mipPower = mipPower;

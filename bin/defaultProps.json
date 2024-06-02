@@ -66,6 +66,8 @@
 	"key.cdb.moveAhead" : "Alt-Right",
 
 	"key.cdb.globalSeek" : "Ctrl-P",
+	"key.cdb.sheetSeekIds" : "Ctrl-O",
+	"key.cdb.globalSeekIds" : "Ctrl-Shift-O",
 
 	// Scene editor config
 	"key.sceneeditor.focus": "F",
@@ -84,8 +86,12 @@
 	"key.sceneeditor.rotationMode": "E",
 	"key.sceneeditor.scalingMode": "R",
 	"key.sceneeditor.toggleSnap": "X",
+	"key.sceneeditor.switchMode" : "Space",
 
 	"key.shadergraph.hide" : "H",
+	"key.shadergraph.comment" : "C",
+	"key.graph.openAddMenu" : "Space",
+
 
 
 	// cdb config

@@ -26,7 +26,8 @@ class FileView extends hide.ui.View<{ path : String }> {
 				@:privateAccess if( e.file == null ) e = null;
 
 				fs.convert.run(e);
-				onFileChanged(!sys.FileSystem.exists(ide.getPath(state.path)));
+				
+				onFileChanged(!exists(fs));
 			}, { checkDelete : true, keepOnRebuild : true });
 	}
 
@@ -34,7 +35,7 @@ class FileView extends hide.ui.View<{ path : String }> {
 		var path = getPath();
 		if( path != null ) {
 			saveDisplayKey = Type.getClassName(Type.getClass(this)) + ":" + path.split("\\").join("/");
-			if( !sys.FileSystem.exists(path) ) {
+			if( !sys.FileSystem.exists(path) || !exists(Std.downcast(hxd.res.Loader.currentInstance.fs, hxd.fs.LocalFileSystem))) {
 				element.html('${state.path} no longer exists');
 				return;
 			}
@@ -42,6 +43,20 @@ class FileView extends hide.ui.View<{ path : String }> {
 
 		this.modified = false;
 		super.onRebuild();
+	}
+	
+	function exists(fs : hxd.fs.LocalFileSystem) {
+		if (state.path == '')
+			return true;
+		
+		// We want to check if the file still exist (it could still exists but not with the same case !)
+		var absPath = Ide.inst.getPath(state.path);
+		var baseDir = new haxe.io.Path(absPath).dir;
+
+		fs.removePathFromCache(Ide.inst.getPath(absPath));
+		@:privateAccess fs.directoryCache.remove(baseDir);
+
+		@:privateAccess return fs.checkPath(absPath);
 	}
 
 	function makeSign() {
@@ -202,10 +217,7 @@ class FileView extends hide.ui.View<{ path : String }> {
 				{ label : "Copy Path", enabled : hasPath, click : function() { ide.setClipboard(state.path); } },
 				{ label : "Open in Explorer", enabled : hasPath, click : function() { Ide.showFileInExplorer(getPath()); } },
 				{ label : "Open in Resources", enabled : hasPath, click : function() {
-					var filetree = ide.getViews(FileTree)[0];
-					if( filetree != null ) {
-						filetree.revealNode(state.path);
-					}
+					ide.showFileInResources(state.path);
 				}},
 				{ label : null, isSeparator : true },
 			];

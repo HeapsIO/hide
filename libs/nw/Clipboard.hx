@@ -1,6 +1,6 @@
 package nw;
 
-@:enum abstract ClipboardType(String) {
+enum abstract ClipboardType(String) {
 	var Text = "text";
 	var Png = "png";
 	var Jpeg = "jpeg";

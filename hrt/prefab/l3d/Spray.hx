@@ -567,6 +567,11 @@ class Spray extends Object3D {
 		}
 	}
 
+	override function editorRemoveInstance() : Bool {
+		removeInteractiveBrush();
+		return super.editorRemoveInstance();
+	}
+
 	override function makeObject(parent3d: h3d.scene.Object ) : h3d.scene.Object {
 		return new SprayObject(this, parent3d);
 	}
@@ -620,7 +625,7 @@ class Spray extends Object3D {
 		return primitive;
 	}
 
-	override function flatten<T:Prefab>( ?cl : Class<T>, ?arr: Array<T> ) : Array<T> {
+	public function flattenSpray<T:Prefab>( ?cl : Class<T>, ?arr: Array<T> ) : Array<T> {
 		if(arr == null)
 			arr = [];
 		if( cl == null )

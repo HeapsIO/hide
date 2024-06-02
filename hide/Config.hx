@@ -14,7 +14,14 @@ typedef HideGlobalConfig = {
 	var windowPos : { x : Int, y : Int, w : Int, h : Int, max : Bool };
 
 	@:optional var sceneEditorLayout : { colsVisible : Bool, colsCombined : Bool };
-}
+
+	// General
+	var autoSavePrefab : Bool;
+
+	// Search
+	var closeSearchOnFileOpen : Bool;
+	var typingDebounceThreshold : Int;
+};
 
 typedef HideProjectConfig = {
 	var layouts : Array<{ name : String, state : LayoutState }>;
@@ -24,9 +31,7 @@ typedef HideProjectConfig = {
 };
 
 typedef ConfigDef = {
-
 	var hide : {};
-
 };
 
 class Config {
@@ -59,6 +64,7 @@ class Config {
 	}
 
 	public function save() {
+		ide.removeDefaultValues();
 		sync();
 		if( path == null ) throw "Cannot save properties (unknown path)";
 		var fullPath = ide.getPath(path);

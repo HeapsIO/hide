@@ -9,75 +9,31 @@ import hrt.shgraph.AstTools.*;
 @group("Condition")
 class Cond extends ShaderNode {
 
-	override public function getShaderDef(domain: ShaderGraph.Domain, getNewIdFn : () -> Int, ?inputTypes: Array<Type>) : ShaderGraph.ShaderNodeDef {
-
-		var a : TVar = {name : "a", id: getNewIdFn(), type: TFloat, kind: Local, qualifiers: []};
-		var b : TVar = {name : "b", id: getNewIdFn(), type: TFloat, kind: Local, qualifiers: []};
-
-		var out : TVar = {name: "out", id: getNewIdFn(), type: TBool, kind: Local, qualifiers: []};
-
-		var cond = makeExpr(TBinop(condition, makeVar(a), makeVar(b)), TBool);
-		var expr = makeAssign(makeVar(out), cond);
-		return {
-			expr: expr,
-			inVars: [{v:a, internal: false, defVal: Const(0.0), isDynamic: false}, {v:b, internal: false, defVal: Const(0.0), isDynamic: false}],
-			outVars:[{v:out, internal: false, isDynamic: false}],
-			inits: [],
-			externVars: []
-		};
-	};
-
-	override function canHavePreview():Bool {
-		return false;
+	override function getOutputs() {
+		static var output : Array<ShaderNode.OutputInfo> = [{name: "output", type: SgBool}];
+		return output;
 	}
 
-	// @input("Left") var leftVar = SType.Number;
-	// @input("Right") var rightVar = SType.Number;
+	override function getInputs() {
+		static var inputs : Array<ShaderNode.InputInfo> =
+			[
+				{name: "a", type: SgFloat(1), def: Const(0.0)},
+				{name: "b", type: SgFloat(1), def: Const(0.0)},
+			];
+		return inputs;
+	}
+
+	override function generate(ctx: NodeGenContext) {
+		var a = ctx.getInput(0, Const(0.0));
+		var b = ctx.getInput(1, Const(0.0));
+
+		var expr = makeExpr(TBinop(condition, a, b), TBool);
+		ctx.setOutput(0, expr);
+		ctx.addPreview(expr);
+	}
 
 
 	@prop() var condition : Binop = OpEq;
-
-	// override public function checkValidityInput(key : String, type : ShaderType.SType) : Bool {
-
-	// 	if (key == "leftVar" && rightVar != null && !rightVar.isEmpty())
-	// 		return ShaderType.checkCompatibilities(type, ShaderType.getSType(rightVar.getType()));
-
-	// 	if (key == "rightVar" && leftVar != null && !leftVar.isEmpty())
-	// 		return ShaderType.checkCompatibilities(type, ShaderType.getSType(leftVar.getType()));
-
-	// 	return true;
-	// }
-
-	// override public function computeOutputs() {
-	// 	if (leftVar != null && !leftVar.isEmpty() && rightVar != null && !rightVar.isEmpty()) {
-	// 		var type = leftVar.getVar(rightVar.getType()).t;
-	// 		switch(type) {
-	// 			case TVec(s, t):
-	// 				removeOutput("output");
-	// 				throw ShaderException.t("Vector of bools is not supported", this.id); //addOutput("output", TVec(s, VBool));
-	// 			case TFloat:
-	// 				addOutput("output", TBool);
-	// 			default:
-	// 				removeOutput("output");
-	// 		}
-	// 	} else
-	// 		removeOutput("output");
-	// }
-
-	// override public function build(key : String) : TExpr {
-	// 	return {
-	// 			p : null,
-	// 			t : output.type,
-	// 			e : TBinop(OpAssign, {
-	// 					e: TVar(output),
-	// 					p: null,
-	// 					t: output.type
-	// 				}, {e: TBinop(this.condition,
-	// 						leftVar.getVar(rightVar.getType()),
-	// 						rightVar.getVar(leftVar.getType())),
-	// 					p: null, t: output.type })
-	// 		};
-	// }
 
 	static var availableConditions = [OpEq, OpNotEq, OpGt, OpGte, OpLt, OpLte, OpAnd, OpOr];
 	static var conditionStrings 	= ["==", "!=",    ">",  ">=",  "<",  "<=",  "AND", "OR"];

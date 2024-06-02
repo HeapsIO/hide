@@ -54,7 +54,7 @@ class Camera extends Object3D {
 		if( g == null ) {
 			g = new h3d.scene.Graphics(local3d);
 			g.name = "frustumDebug";
-			g.material.mainPass.setPassName("overlay");
+			g.material.mainPass.setPassName("debuggeom");
 			g.ignoreBounds = true;
 		}
 
@@ -157,11 +157,13 @@ class Camera extends Object3D {
 		var front = transform.front();
 		var ray = h3d.col.Ray.fromValues(transform.getPosition().x, transform.getPosition().y, transform.getPosition().z, front.x, front.y, front.z);
 
-		// this does not change camera rotation but allows for better navigation in editor
-		var plane = h3d.col.Plane.Z();
-		var pt = ray.intersect(plane);
-		if( pt != null && pt.sub(c.pos.toPoint()).length() > 1 )
-			c.target = pt.toVector();
+		if (ray.lz < 0) {
+			// get ray distance from Z plane
+			var d = (-ray.pz / ray.lz);
+			if (d > 1 && d < 10000.0) {
+				c.target.load(ray.getPoint(d));
+			}
+		}
 
 		c.fovY = fovY;
 		c.zFar = zFar;
@@ -281,25 +283,7 @@ class Camera extends Object3D {
 					}
 				}
 				ctx.makeChanges(this, function() {
-					var transform = new h3d.Matrix();
-					transform.identity();
-					var q = new h3d.Quat();
-					q.initDirection(cam.target.sub(cam.pos));
-					var angles = q.toEuler();
-					transform.rotate(angles.x, angles.y, angles.z);
-					transform.translate(cam.pos.x, cam.pos.y, cam.pos.z);
-
-					var parent = findParent(hrt.prefab.Object3D);
-					if ( parent != null ) {
-						var invPos = new h3d.Matrix();
-						invPos._44 = 0;
-						invPos.inverse3x4(parent.getAbsPos());
-						transform.multiply(transform, invPos);
-					}
-					setTransform(transform);
-					this.zFar = cam.zFar;
-					this.zNear = cam.zNear;
-					this.fovY = cam.fovY;
+					copyCam(cam);
 
 					// Rollback to previous preview value for scene camera
 					cam.load(beforePreviewCam);
@@ -335,25 +319,7 @@ class Camera extends Object3D {
 		props.find(".copy").click(function(e) {
 			var cam = ctx.scene.s3d.camera;
 			ctx.makeChanges(this, function() {
-				var transform = new h3d.Matrix();
-				transform.identity();
-				var q = new h3d.Quat();
-				q.initDirection(cam.target.sub(cam.pos));
-				var angles = q.toEuler();
-				transform.rotate(angles.x, angles.y, angles.z);
-				transform.translate(cam.pos.x, cam.pos.y, cam.pos.z);
-
-				var parent = findParent(hrt.prefab.Object3D);
-				if ( parent != null ) {
-					var invPos = new h3d.Matrix();
-					invPos._44 = 0;
-					invPos.inverse3x4(parent.getAbsPos());
-					transform.multiply(transform, invPos);
-				}
-				setTransform(transform);
-				this.zFar = cam.zFar;
-				this.zNear = cam.zNear;
-				this.fovY = cam.fovY;
+				copyCam(cam);
 			});
 		});
 
@@ -368,6 +334,26 @@ class Camera extends Object3D {
 		props.find(".reset").click(function(e) {
 			ctx.scene.editor.resetCamera();
 		});
+	}
+
+	function copyCam(cam: h3d.Camera) {
+		var transform = new h3d.Matrix();
+		h3d.Matrix.lookAtX(cam.target.sub(cam.pos), cam.up, transform);
+		transform.tx = cam.pos.x;
+		transform.ty = cam.pos.y;
+		transform.tz = cam.pos.z;
+
+		var parent = findParent(hrt.prefab.Object3D);
+		if ( parent != null ) {
+			var invPos = new h3d.Matrix();
+			invPos._44 = 0;
+			invPos.inverse3x4(parent.getAbsPos());
+			transform.multiply(transform, invPos);
+		}
+		setTransform(transform);
+		this.zFar = cam.zFar;
+		this.zNear = cam.zNear;
+		this.fovY = cam.fovY;
 	}
 
 	override function getHideProps() : hide.prefab.HideProps {

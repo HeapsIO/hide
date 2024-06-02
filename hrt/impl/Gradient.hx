@@ -20,8 +20,14 @@ typedef GradientData = {
     var colorMode: Int;
 };
 
-class Gradient {
+#if editor
+typedef EditorCacheData = {
+	var oldHash : Int;
+	var tex : Texture;
+};
+#end
 
+class Gradient {
 
     public var data : GradientData = {
         stops: new Array<ColorStop>(),
@@ -122,6 +128,7 @@ class Gradient {
         return evalData(data, position, outVector);
     }
 
+	#if !editor
     static function getCache() : Map<Int32, h3d.mat.Texture> {
 		var engine = h3d.Engine.getCurrent();
 		var cache : Map<Int32, h3d.mat.Texture> = @:privateAccess engine.resCache.get(Gradient);
@@ -131,6 +138,29 @@ class Gradient {
 		}
         return cache;
     }
+	#end
+
+	#if editor
+	public static function getEditorCache() : Map<{}, EditorCacheData> {
+		var engine = h3d.Engine.getCurrent();
+		var cache : Map<{}, EditorCacheData> = @:privateAccess engine.resCache.get(Gradient);
+		if(cache == null) {
+			cache = new Map<{}, EditorCacheData>();
+			@:privateAccess engine.resCache.set(Gradient, cache);
+		}
+        return cache;
+	}
+
+	public static function purgeEditorCache() {
+		var cache = getEditorCache();
+		for (c in cache) {
+			if (c.tex != null) {
+				c.tex.dispose();
+			}
+		}
+		cache.clear();
+	}
+	#end
 
     public static function hashCombine(hash : Int32, newValue : Int32) : Int32 {
         return hash ^ (newValue * 0x01000193);
@@ -154,8 +184,9 @@ class Gradient {
     }
 
     public static function textureFromData(data : GradientData) : h3d.mat.Texture {
-        var hash = getDataHash(data);
 
+        var hash = getDataHash(data);
+		#if !editor
 
         var cache = getCache();
         var entry = cache.get(hash);
@@ -163,6 +194,19 @@ class Gradient {
         {
             return entry;
         }
+		#else
+		var cache = getEditorCache();
+		var entry = cache.get(data);
+		if (entry != null)
+		{
+			if (entry.oldHash == hash) {
+				return entry.tex;
+			}
+			else {
+				entry.tex.dispose();
+			}
+		}
+		#end
 
         #if !release
         var oldHash = Gradient.getDataHash(data);
@@ -181,7 +225,7 @@ class Gradient {
 
             var vec = new Vector4();
             for (x in 0...data.resolution) {
-                evalData(data, x / data.resolution, vec);
+                evalData(data, x / (data.resolution-1), vec);
                 pixels.setPixelF(x * xScale,x*yScale, vec);
             }
             return pixels;
@@ -195,6 +239,8 @@ class Gradient {
 
 		#if !editor
         cache.set(hash, texture);
+		#else
+		cache.set(data, {oldHash: hash, tex: texture});
 		#end
 
         return texture;

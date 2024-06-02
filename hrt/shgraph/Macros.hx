@@ -29,28 +29,24 @@ class Macros {
 
 							// expr.map()
 
-							var inVars : Array<String> = [];
-							var outVars : Array<String> = [];
-							var constVars : Array<String> = [];
-							var defValues : Array<String> = [];
-							var dynamicValues : Array<String> = [];
+							var varmap : Map<String, hrt.shgraph.SgHxslVar> = [];
 
 							function iter(e: haxe.macro.Expr) : Void {
 								switch(e.expr) {
 									case EMeta(meta, subexpr):
 										switch (meta.name) {
 											case "sginput":
-												var defValue = null;
+												var defValue : hrt.shgraph.SgHxslVar.ShaderDefInput = null;
 												if (meta.params != null && meta.params.length > 0) {
 													switch (meta.params[0].expr) {
 														case EConst(v):
 															switch(v) {
 																case CIdent(name):
-																	defValue = name;
+																	defValue = Var(name);
 																case CString(val):
-																	defValue = val;
+																	defValue = Var(val);
 																case CFloat(val), CInt(val):
-																	defValue = '$val';
+																	defValue = Const(Std.parseFloat(val));
 																default:
 																	throw "sginput default param must be an identifier or a integer";
 															}
@@ -63,18 +59,14 @@ class Macros {
 												switch(subexpr.expr) {
 													case EVars(vars):
 														for (v in vars) {
-																inVars.push(v.name);
-																defValues.push(defValue);
-
+																var isDynamic = false;
 																switch (v.type) {
-																	case TPath(p): {
-																		if (p.name == "Dynamic") {
-																			dynamicValues.push(v.name);
-																			p.name = "Vec4"; // Convert dynamic value back to vec4 as a hack
-																		}
-																	}
+																	case TPath(p) if (p.name == "Dynamic"):
+																		isDynamic = true;
+																		p.name = "Vec4"; // Convert dynamic value back to vec4 as a hack
 																	default:
 																}
+																varmap.set(v.name, SgInput(isDynamic, defValue));
 															}
 															e.expr = subexpr.expr;
 													default:
@@ -84,16 +76,15 @@ class Macros {
 												switch(subexpr.expr) {
 													case EVars(vars):
 														for (v in vars) {
-															outVars.push(v.name);
+															var isDynamic = false;
 															switch (v.type) {
-																case TPath(p): {
-																	if (p.name == "Dynamic") {
-																		dynamicValues.push(v.name);
-																		p.name = "Vec4"; // Convert dynamic value back to vec4 as a hack
-																	}
-																}
+																case TPath(p) if (p.name == "Dynamic"):
+																	isDynamic = true;
+																	p.name = "Vec4"; // Convert dynamic value back to vec4 as a hack
 																default:
 															}
+
+															varmap.set(v.name, SgOutput(isDynamic));
 														}
 														e.expr = subexpr.expr;
 													default:
@@ -103,7 +94,7 @@ class Macros {
 												switch(subexpr.expr) {
 													case EVars(vars):
 														for (v in vars) {
-															constVars.push(v.name);
+															varmap.set(v.name, SgConst);
 														}
 														e.expr = subexpr.expr;
 													default:
@@ -130,7 +121,8 @@ class Macros {
 							var shader = check.check(name, shader);
 							//trace(shader);
 							//Printer.check(shader);
-							var str = Context.defined("display") ? "" : hxsl.Serializer.run(shader);
+							var serializer = new hxsl.Serializer();
+							var str = Context.defined("display") ? "" : serializer.serialize(shader);
 							f.kind = FVar(null, { expr : EConst(CString(str)), pos : pos } );
 							f.meta.push({
 								name : ":keep",
@@ -151,11 +143,28 @@ class Macros {
 								};
 							}
 
-							fields.push(makeField("_inVars", inVars));
-							fields.push(makeField("_outVars", outVars));
-							fields.push(makeField("_defValues", defValues));
-							fields.push(makeField("_dynamicValues", dynamicValues));
-							fields.push(makeField("_constVars", constVars));
+							var finalMap : Map<Int, hrt.shgraph.SgHxslVar> = [];
+
+							for (v in shader.vars) {
+								var info = varmap.get(v.name);
+								if (info != null) {
+									var serId = @:privateAccess serializer.idMap.get(v.id);
+									finalMap.set(serId, info);
+								}
+							}
+
+							fields.push(
+							{
+								name: "_variablesInfos",
+								access: [APublic, AStatic],
+								kind: FVar(macro : Map<Int, hrt.shgraph.SgHxslVar>, macro $v{finalMap}),
+								pos: f.pos,
+								meta: [{
+										name : ":keep",
+										pos : pos,}
+								],
+							}
+							);
 
 
 						} catch( e : hxsl.Ast.Error ) {

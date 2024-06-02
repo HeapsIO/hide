@@ -42,6 +42,8 @@ class TerrainEditor {
 	public var currentSurface : hrt.prefab.terrain.Surface;
 	public var textureType = ["_Albedo", "_Normal", "_MetallicGlossAO"];
 	public var autoCreateTile = false;
+	public var allowDisconnectedTiles = false;
+
 	public var editContext : hide.prefab.EditContext;
 
 	// Debug
@@ -80,6 +82,7 @@ class TerrainEditor {
 		this.undo = undo;
 		renderMode = terrainPrefab.showChecker ? Checker : PBR;
 		autoCreateTile = terrainPrefab.autoCreateTile;
+		allowDisconnectedTiles = terrainPrefab.allowDisconnectedTiles;
 
 		brushPreview = new hide.prefab.terrain.Brush.BrushPreview(terrainPrefab.terrain);
 
@@ -110,6 +113,7 @@ class TerrainEditor {
 			terrainPrefab.terrain.updateSurfaceParams();
 
 		autoCreateTile = terrainPrefab.autoCreateTile;
+		allowDisconnectedTiles = terrainPrefab.allowDisconnectedTiles;
 		brushPreview.opacity = terrainPrefab.brushOpacity;
 
 		if( propName == "editor.renderMode" ) updateRender();
@@ -702,7 +706,7 @@ class TerrainEditor {
 		var brushWorldPos = uvTexPixels == null ? pos : getBrushWorldPosFromTex(pos);
 		if( brushWorldPos == null ) return;
 		var c = terrainPrefab.terrain.tiles.length;
-		var tiles = terrainPrefab.terrain.getTiles(brushWorldPos.x, brushWorldPos.y, currentBrush.size / 2.0, autoCreateTile);
+		var tiles = terrainPrefab.terrain.getTiles(brushWorldPos.x, brushWorldPos.y, currentBrush.size / 2.0, autoCreateTile, allowDisconnectedTiles);
 		if( c != terrainPrefab.terrain.tiles.length ) {
 			renderTerrainUV();
 			brushWorldPos = getBrushWorldPosFromTex(pos);
@@ -738,7 +742,7 @@ class TerrainEditor {
 		var brushWorldPos = uvTexPixels == null ? pos : getBrushWorldPosFromTex(pos);
 		if( brushWorldPos == null ) return;
 		var c = terrainPrefab.terrain.tiles.length;
-		var tiles = terrainPrefab.terrain.getTiles(brushWorldPos.x, brushWorldPos.y, currentBrush.size / 2.0, autoCreateTile);
+		var tiles = terrainPrefab.terrain.getTiles(brushWorldPos.x, brushWorldPos.y, currentBrush.size / 2.0, autoCreateTile, allowDisconnectedTiles);
 		if( c != terrainPrefab.terrain.tiles.length ) {
 			renderTerrainUV();
 			brushWorldPos = getBrushWorldPosFromTex(pos);
@@ -997,7 +1001,10 @@ class TerrainEditor {
 
 	inline function setRange( name, value, ctx : EditContext ) {
 		var field = Lambda.find(ctx.properties.fields, f->f.fname==name);
-		if(field != null) @:privateAccess field.range.value = value;
+		@:privateAccess if(field != null) {
+			field.current = value;
+			field.range.value = value;
+		}
 	}
 
 	function refreshSurfaces( props : hide.Element, ctx : EditContext ) {
@@ -1071,7 +1078,8 @@ class TerrainEditor {
 			var img = new Element('<div class="terrain-brushModeIcon"></div>');
 			img.css("background-image", 'url("file://${ctx.ide.getPath("${HIDE}/res/" + brushIcons[i])}")');
 			elem.prepend(img);
-			elem.click(function(_) {
+
+			var select = function(_) {
 				editContext.scene.setCurrent();
 				var l = props.find(".terrain-brushModeIcon");
 				for( e in l ) {
@@ -1083,8 +1091,12 @@ class TerrainEditor {
 				var desc = props.find(".terrain-brushModeDescription");
 				desc.empty();
 				desc.append(brushDescription[i]);
+			};
 
-			});
+			elem.click(select);
+			if (currentBrush.brushMode.mode.equals(brushMode[i])) {
+				select(null);
+			}
 			brushModeContainer.append(elem);
 		}
 	}
@@ -1096,6 +1108,7 @@ class TerrainEditor {
 			<i> Please select a tool </i>
 		</div>
 		<dt>AutoCreate</dt><dd><input type="checkbox" field="autoCreateTile"/></dd>
+		<dt title="Allow tiles to be created without being connected to another tile">Disconnect</dt><dd><input type="checkbox" field="allowDisconnectedTiles"/></dd>
 		<dt>Accumulate</dt><dd><input type="checkbox" field="editor.currentBrush.brushMode.accumulate"/></dd>
 	</div>';
 
