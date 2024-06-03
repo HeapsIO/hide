@@ -2086,6 +2086,85 @@ input[type=checkbox]:checked:after {
   border: 1px solid #666;
   padding: 2px;
 }
+/* Substance Editor */
+.substance-editor {
+  display: flex;
+  flex-direction: row;
+}
+.substance-editor .flex.vertical {
+  position: relative;
+}
+.substance-editor #right-panel {
+  flex: 0;
+  display: flex;
+  flex-direction: column;
+  min-width: 270px;
+  width: 280px;
+  border-left: 1px solid #444444;
+  background: #222222;
+  height: 100%;
+  user-select: none;
+}
+.substance-editor #right-panel .group .header {
+  display: flex;
+  background-color: #444444;
+  padding: 5px;
+}
+.substance-editor #right-panel .group .header:hover {
+  background-color: #666666;
+}
+.substance-editor #right-panel .group .header .title {
+  text-transform: uppercase;
+  font-weight: bold;
+  margin-left: 7px;
+  font-family: Verdana, serif;
+  font-size: 9pt;
+  color: #aaa;
+}
+.substance-editor #right-panel .group .content {
+  display: block;
+  padding: 10px 20px 10px 20px;
+}
+.substance-editor #right-panel .group .content .title {
+  font-weight: bold;
+  font-family: Verdana, serif;
+  font-size: 9pt;
+  color: #aaa;
+  margin: 0 0 5px 0;
+}
+.substance-editor #right-panel .group .content .fields {
+  display: grid;
+  grid-template-columns: auto auto;
+  gap: 5px 5px;
+  padding-bottom: 10px;
+  border-bottom: 1px solid;
+  margin-bottom: 10px;
+  border-color: #373737;
+}
+.substance-editor #right-panel .group .content .fields.grid-3 {
+  grid-template-columns: auto auto 2%;
+}
+.substance-editor #right-panel .group .content .fields .reset {
+  padding-top: 3px;
+}
+.substance-editor #right-panel .group .content .fields .reset:hover {
+  color: #ffffff;
+}
+.substance-editor #tex-preview {
+  z-index: 3;
+  position: absolute;
+  width: 300px;
+  height: 300px;
+  background-color: #111;
+  border: 1px solid #444;
+  right: 35px;
+  bottom: 35px;
+}
+.substance-editor #tex-preview .hide-toolbar2 {
+  position: absolute;
+  right: 8px;
+  top: 8px;
+}
 .graph-view {
   outline: none !important;
   position: relative;

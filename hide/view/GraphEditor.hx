@@ -28,6 +28,23 @@ typedef CopySelectionData = {
 	edges: Array<Edge>,
 };
 
+class PreviewShaderAlpha extends hxsl.Shader {
+	static var SRC = {
+		@input var input : {
+			var uv : Vec2;
+		};
+
+		var pixelColor : Vec4;
+
+		function fragment() {
+			var cb = floor(mod(input.uv * 10.0, vec2(2.0)));
+			var check = mod(cb.x + cb.y, 2.0);
+			var color = check >= 1.0 ? vec3(0.22) : vec3(0.44);
+			pixelColor.rgb = mix(color, pixelColor.rgb, pixelColor.a);
+		}
+	}
+}
+
 @:access(hide.view.shadereditor.Box)
 class GraphEditor extends hide.comp.Component {
 	public var editor : hide.view.GraphInterface.IGraphEditor;
@@ -348,6 +365,10 @@ class GraphEditor extends hide.comp.Component {
 
 	}
 
+	public dynamic function onSelectionChanged(selectedNodes: Array<IGraphNode>) {
+
+	}
+
 	function onMiniPreviewUpdate(dt: Float) {
 		@:privateAccess
 		/*if (sceneEditor?.scene?.s3d?.renderer?.ctx?.time != null) {
@@ -432,7 +453,7 @@ class GraphEditor extends hide.comp.Component {
 		var prevY = Box.tmpPoint.y;
 		if (prevX == x && prevY == y)
 			return;
-		var id = box.node.getId();
+		var id = box.node.id;
 		function exec(isUndo: Bool) {
 			var x = !isUndo ? x : prevX;
 			var y = !isUndo ? y : prevY;
@@ -447,7 +468,7 @@ class GraphEditor extends hide.comp.Component {
 
 	public function opResize(box: Box, w: Float, h: Float, undoBuffer: UndoBuffer) {
 		box.info.comment.getSize(Box.tmpPoint);
-		var id = box.node.getId();
+		var id = box.node.id;
 		var prevW = Box.tmpPoint.x;
 		var prevH = Box.tmpPoint.y;
 		function exec(isUndo : Bool) {
@@ -477,6 +498,9 @@ class GraphEditor extends hide.comp.Component {
 				var box = boxes[id];
 				box.setSelected(false);
 			}
+
+			var selectedNodes = [for (k in boxesSelected.keys()) boxes.get(k).node];
+			onSelectionChanged(selectedNodes);
 		}
 		undoBuffer.push(exec);
 		exec(false);
@@ -546,20 +570,20 @@ class GraphEditor extends hide.comp.Component {
 		});
 
 		var nodes = editor.getAddNodesMenu();
-		var prevGroup = null;
+		var prevGroups : Map<String, Element> = [];
 		for (i => node in nodes) {
-			if (node.group != prevGroup) {
-				new Element('
+			if (prevGroups.get(node.group) == null) {
+				var groupEl = new Element('
 				<div class="group" >
 					<span> ${node.group} </span>
 				</div>').appendTo(results);
-				prevGroup = node.group;
+				prevGroups.set(node.group, groupEl);
 			}
 
 			new Element('
 				<div node="$i" >
 					<span> ${node.name} </span> <span> ${node.description} </span>
-				</div>').appendTo(results);
+				</div>').insertAfter(prevGroups.get(node.group));
 		}
 
 		var menuWidth = Std.parseInt(addMenu.css("width")) + 10;
@@ -626,10 +650,10 @@ class GraphEditor extends hide.comp.Component {
 
 
 			if (createLinkInput != null) {
-				createLinkOutput = packIO(instance.getId(), 0);
+				createLinkOutput = packIO(instance.id, 0);
 			}
 			else if (createLinkOutput != null) {
-				createLinkInput = packIO(instance.getId(), 0);
+				createLinkInput = packIO(instance.id, 0);
 			}
 
 			var pos = new h2d.col.Point();
@@ -642,10 +666,10 @@ class GraphEditor extends hide.comp.Component {
 			instance.setPos(pos);
 			opBox(instance, true, currentUndoBuffer);
 			if (createLinkInput != null && createLinkOutput != null) {
-				var box = boxes[instance.getId()];
+				var box = boxes[instance.id];
 				var x = (fromInput ? @:privateAccess box.width : 0) - Box.NODE_RADIUS;
 				var y = box.getNodeHeight(0) - Box.NODE_RADIUS;
-				opMove(boxes[instance.getId()], pos.x - x, pos.y - y, currentUndoBuffer);
+				opMove(boxes[instance.id], pos.x - x, pos.y - y, currentUndoBuffer);
 				opEdge(createLinkOutput, createLinkInput, true, currentUndoBuffer);
 			}
 
@@ -778,10 +802,10 @@ class GraphEditor extends hide.comp.Component {
 
 				if (shouldSelect) {
 					box.setSelected(true);
-					save.newSelections.set(box.node.getId(), true);
+					save.newSelections.set(box.node.id, true);
 				} else {
 					box.setSelected(false);
-					save.newSelections.remove(box.node.getId());
+					save.newSelections.remove(box.node.id);
 				}
 			}
 			return;
@@ -824,7 +848,7 @@ class GraphEditor extends hide.comp.Component {
 	function moveBox(b: Box, x: Float, y: Float) {
 		b.setPosition(x, y);
 
-		var id = b.node.getId();
+		var id = b.node.id;
 		// move edges from and to this box
 		for (i => _ in b.info.inputs) {
 			var input = packIO(id, i);
@@ -887,7 +911,7 @@ class GraphEditor extends hide.comp.Component {
 
 				for (bb in boxes) {
 					if (isFullyInside(bb, min, max)) {
-						boxesToMove.set(bb.node.getId(), true);
+						boxesToMove.set(bb.node.id, true);
 					}
 				}
 			}
@@ -899,7 +923,7 @@ class GraphEditor extends hide.comp.Component {
 		for (id => _ in boxesToMove) {
 			var b = boxes[id];
 			b.node.getPos(Box.tmpPoint);
-			save.set(b.node.getId(), {x:Box.tmpPoint.x, y: Box.tmpPoint.y});
+			save.set(b.node.id, {x:Box.tmpPoint.x, y: Box.tmpPoint.y});
 		}
 		return save;
 	}
@@ -1013,21 +1037,22 @@ class GraphEditor extends hide.comp.Component {
 				editor.addNode(node);
 			}
 			else {
-				var id = node.getId();
+				var id = node.id;
 				var box = boxes.get(id);
+
 				removeBox(id);
 				editor.removeNode(id);
 
 				// Sanity check
 				for (i => _ in box.info.inputs) {
-					var inputIO = packIO(box.node.getId(), i);
+					var inputIO = packIO(box.node.id, i);
 					var outputIO = outputsToInputs.getLeft(inputIO);
 					if (outputIO != null)
 						throw "box has remaining inputs, operation is not atomic";
 				}
 
 				for (i => _ in box.info.outputs) {
-					var outputIO = packIO(box.node.getId(), i);
+					var outputIO = packIO(box.node.id, i);
 					for (inputIO in outputsToInputs.iterRights(outputIO)) {
 						throw "box has remaining outputs, operation is not atomic";
 					}
@@ -1043,12 +1068,12 @@ class GraphEditor extends hide.comp.Component {
 		var box = boxes.get(id);
 
 		box.dispose();
-		var id = box.node.getId();
+		var id = box.node.id;
 		boxes.remove(id);
 	}
 
 	public function opComment(box: Box, newComment: String, undoBuffer: UndoBuffer) : Void {
-		var id = box.node.getId();
+		var id = box.node.id;
 		var prev = box.info.comment.getComment();
 		if (newComment == prev)
 			return;
@@ -1133,7 +1158,7 @@ class GraphEditor extends hide.comp.Component {
 					// when not group selection and click on box not selected
 					clearSelectionBoxesUndo(currentUndoBuffer);
 				}
-				opSelect(box.node.getId(), true, currentUndoBuffer);
+				opSelect(box.node.id, true, currentUndoBuffer);
 				commitUndo();
 			}
 			elt.get(0).setPointerCapture(e.pointerId);
@@ -1145,7 +1170,7 @@ class GraphEditor extends hide.comp.Component {
 			elt.get(0).releasePointerCapture(e.pointerId);
 			endMove();
 		};
-		boxes.set(box.node.getId(), box);
+		boxes.set(box.node.id, box);
 
 		for (inputId => input in box.info.inputs) {
 			var defaultValue : String = input.defaultParam?.get();
@@ -1161,7 +1186,7 @@ class GraphEditor extends hide.comp.Component {
 						fieldEditInput.addClass("error");
 						fieldEditInput.val(prevValue);
 					} else {
-						var id = box.node.getId();
+						var id = box.node.id;
 						function exec(isUndo : Bool) {
 							var box = boxes.get(id);
 							var val = isUndo ? prevValue : tmpValue;
@@ -1191,7 +1216,7 @@ class GraphEditor extends hide.comp.Component {
 					e.stopPropagation();
 					cancelAll();
 					heapsScene.get(0).setPointerCapture(e.pointerId);
-					edgeCreationInput = packIO(box.node.getId(), inputId);
+					edgeCreationInput = packIO(box.node.id, inputId);
 					edgeCreationMode = FromInput;
 				}
 			});
@@ -1204,7 +1229,7 @@ class GraphEditor extends hide.comp.Component {
 					e.stopPropagation();
 					cancelAll();
 					heapsScene.get(0).setPointerCapture(e.pointerId);
-					edgeCreationOutput = packIO(box.node.getId(), outputId);
+					edgeCreationOutput = packIO(box.node.id, outputId);
 					edgeCreationMode = FromOutput;
 				}
 			});
@@ -1237,7 +1262,7 @@ class GraphEditor extends hide.comp.Component {
 	}
 
 	function removeBoxEdges(box : Box, ?undoBuffer : UndoBuffer) {
-		var id = box.getInstance().getId();
+		var id = box.getInstance().id;
 		for (i => _ in box.info.inputs) {
 			var inputIO = packIO(id, i);
 			var outputIO = outputsToInputs.getLeft(inputIO);
@@ -1380,7 +1405,7 @@ class GraphEditor extends hide.comp.Component {
 
 		var val = null;
 		if (minDistNode < NODE_TRIGGER_NEAR && nearestId >= 0) {
-			val = packIO(nearestBox.node.getId(), nearestId);
+			val = packIO(nearestBox.node.id, nearestId);
 		}
 
 		if (edgeCreationMode == FromInput) {
@@ -1446,7 +1471,7 @@ class GraphEditor extends hide.comp.Component {
 			for (nodeInfo in data.nodes) {
 				var node = editor.unserializeNode(nodeInfo.serData, true);
 				nodes.push(node);
-				var newId = node.getId();
+				var newId = node.id;
 				idRemap.set(nodeInfo.id, newId);
 			}
 			for (e in data.edges) {
@@ -1478,7 +1503,7 @@ class GraphEditor extends hide.comp.Component {
 			pt.y += lY(ide.mouseY);
 			node.setPos(pt);
 			opBox(node, true, undoBuffer);
-			opSelect(node.getId(), true, undoBuffer);
+			opSelect(node.id, true, undoBuffer);
 		}
 
 		for (edge in edges) {
@@ -1498,7 +1523,7 @@ class GraphEditor extends hide.comp.Component {
 			for (nodeInfo in data.nodes) {
 				var node = editor.unserializeNode(nodeInfo.serData, true);
 				nodes.push(node);
-				var newId = node.getId();
+				var newId = node.id;
 				idRemap.set(nodeInfo.id, newId);
 			}
 			for (e in data.edges) {
@@ -1533,7 +1558,7 @@ class GraphEditor extends hide.comp.Component {
 			pt.y += lY(ide.mouseY);
 			node.setPos(pt);
 			opBox(node, true, currentUndoBuffer);
-			opSelect(node.getId(), true, currentUndoBuffer);
+			opSelect(node.id, true, currentUndoBuffer);
 		}
 
 		for (edge in edges) {

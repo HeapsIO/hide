@@ -201,23 +201,6 @@ class PreviewShaderBase extends hxsl.Shader {
 	}
 }
 
-class PreviewShaderAlpha extends hxsl.Shader {
-	static var SRC = {
-		@input var input : {
-			var uv : Vec2;
-		};
-
-		var pixelColor : Vec4;
-
-		function fragment() {
-			var cb = floor(mod(input.uv * 10.0, vec2(2.0)));
-			var check = mod(cb.x + cb.y, 2.0);
-			var color = check >= 1.0 ? vec3(0.22) : vec3(0.44);
-			pixelColor.rgb = mix(color, pixelColor.rgb, pixelColor.a);
-		}
-	}
-}
-
 typedef ClassRepoEntry =
 {
 	/**
@@ -270,7 +253,7 @@ class ShaderEditor extends hide.view.FileView implements GraphInterface.IGraphEd
 	var compiledShaderPreview : hrt.prefab.Cache.ShaderDef;
 
 	var previewShaderBase : PreviewShaderBase;
-	var previewShaderAlpha : PreviewShaderAlpha;
+	var previewShaderAlpha : GraphEditor.PreviewShaderAlpha;
 	var previewVar : hxsl.Ast.TVar;
 	var needRecompile : Bool = true;
 
@@ -302,7 +285,7 @@ class ShaderEditor extends hide.view.FileView implements GraphInterface.IGraphEd
  		shaderGraph = cast hide.Ide.inst.loadPrefab(state.path, null,  true);
 		currentGraph = shaderGraph.getGraph(Fragment);
 		previewShaderBase = new PreviewShaderBase();
-		previewShaderAlpha = new PreviewShaderAlpha();
+		previewShaderAlpha = new GraphEditor.PreviewShaderAlpha();
 
 		if (graphEditor != null)
 			graphEditor.remove();
@@ -1345,7 +1328,7 @@ class ShaderEditor extends hide.view.FileView implements GraphInterface.IGraphEd
 		for (init in compiledShaderPreview.inits) {
 			@:privateAccess graphEditor.previewsScene.checkCurrent();
 			if (init.variable == previewVar)
-				setParamValue(shader, previewVar, node.getId() + 1);
+				setParamValue(shader, previewVar, node.id + 1);
 			else {
 				var param = shaderGraph.parametersAvailable.find((v) -> v.name == init.variable.name);
 				if (param !=null) {

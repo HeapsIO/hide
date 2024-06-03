@@ -2335,6 +2335,105 @@ input[type=checkbox] {
 	}
 }
 
+/* Substance Editor */
+.substance-editor {
+	display: flex;
+	flex-direction: row;
+
+	.flex.vertical {
+		position:relative;
+	}
+
+	#right-panel {
+		flex: 0;
+		display: flex;
+		flex-direction: column;
+		min-width: 270px;
+
+		width: 280px;
+		border-left: 1px solid #444444;
+    	background: #222222;
+		height: 100%;
+		user-select: none;
+
+		.group {
+			.header {
+				display: flex;
+				background-color: #444444;
+				padding: 5px;
+
+				&:hover {
+					background-color: #666666;
+				}
+
+				.title {
+					text-transform: uppercase;
+					font-weight: bold;
+					margin-left: 7px;
+					font-family: Verdana, serif;
+					font-size: 9pt;
+					color: #aaa;
+				}
+			}
+
+			.content {
+				display: block;
+				padding: 10px 20px 10px 20px;
+
+				.title {
+					font-weight: bold;
+					font-family: Verdana, serif;
+					font-size: 9pt;
+					color: #aaa;
+					margin: 0 0 5px 0;
+				}
+
+				.fields {
+					display: grid;
+					grid-template-columns: auto auto;
+					gap: 5px 5px;
+					padding-bottom: 10px;
+					border-bottom: 1px solid;
+					margin-bottom: 10px;
+					border-color: #373737;
+
+					&.grid-3 {
+						grid-template-columns: auto auto 2%;
+					}
+
+					.reset {
+						&:hover {
+							color: #ffffff;
+						}
+
+						padding-top: 3px;
+					}
+				}
+			}
+		}
+	}
+
+	#tex-preview {
+		z-index: 3;
+		position: absolute;
+
+		width: 300px;
+		height: 300px;
+
+		background-color: #111;
+		border: 1px solid #444;
+
+		right: 35px;
+		bottom: 35px;
+
+		.hide-toolbar2 {
+			position: absolute;
+			right: 8px;
+			top: 8px;
+		}
+	}
+}
+
 .graph-view {
 	outline: none !important;
 	position: relative;

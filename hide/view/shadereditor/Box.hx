@@ -64,7 +64,7 @@ class Box {
 		//var className = node.nameOverride ?? ((metas.name != null) ? metas.name[0] : "Undefined");
 
 		element = editor.editorDisplay.group(parent).addClass("box").addClass("not-selected");
-		element.attr("id", node.getId());
+		element.attr("id", node.id);
 
 		if (info.comment != null) {
 			info.comment.getSize(tmpPoint);

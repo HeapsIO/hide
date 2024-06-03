@@ -67,19 +67,18 @@ typedef Edge = {
 };
 
 interface IGraphNode {
-    public function getInfo() : GraphNodeInfo;
-
-    /**
-        Returns an unique ID that identifies this node.
-        The ID of a given node MUST NERVER change for the entire lifetime of the GraphEditor
+     /**
+        Unique identifier for this node. The ID of a given node MUST NERVER change for the entire lifetime of the GraphEditor
     **/
-    public function getId() : Int;
+    public var id : Int;
+    public var x : Float;
+    public var y : Float;
+    public var editor : GraphEditor;
+
+    public function getInfo() : GraphNodeInfo;
     public function getPos(p : h2d.col.Point) : Void;
     public function setPos(p : h2d.col.Point) : Void;
-
     public function getPropertiesHTML(width : Float) : Array<hide.Element>;
-
-    public var editor : GraphEditor;
 }
 
 interface IGraphEditor {
