@@ -159,6 +159,8 @@ class FileTree extends FileView {
 			]);
 		});
 		tree.onDblClick = onOpenFile;
+		tree.onAllowMove = onAllowMove;
+		tree.onMove = doMove;
 		tree.init();
 	}
 
@@ -364,6 +366,16 @@ class FileTree extends FileView {
 		}
 
 		return true;
+	}
+
+	function onAllowMove(e: String, to : String) {
+		var destAbsPath = Ide.inst.getPath(to);
+		return sys.FileSystem.isDirectory(destAbsPath);
+	}
+
+	function doMove(e : String, to : String, index : Int) {
+		var dest = "/" + to + "/" + e.split("/").pop();
+		doRename(e, dest);
 	}
 
 	function onExploreFile( path : String ) {
