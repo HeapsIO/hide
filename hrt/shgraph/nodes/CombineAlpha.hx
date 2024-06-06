@@ -11,7 +11,7 @@ using hxsl.Ast;
 class CombineAlpha extends ShaderNodeHxsl {
 
 	static var SRC = {
-		@sginput var rgb : Vec3;
+		@sginput(0.0) var rgb : Vec3;
 		@sginput(1.0) var a : Float;
 		@sgoutput var output : Vec4;
 

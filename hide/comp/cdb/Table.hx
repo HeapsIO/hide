@@ -215,7 +215,10 @@ class Table extends Component {
 				if (e.dataTransfer.dropEffect == "none") return false;
 				var pickedLine = getPickedLine(e);
 				if (pickedLine != null) {
-					editor.moveLine(line, pickedLine.index - line.index, true);
+					if(SheetView.isView(sheet))
+						SheetView.moveLine(editor, line, pickedLine.index - line.index, true);
+					else
+						editor.moveLine(line, pickedLine.index - line.index, true);
 					return true;
 				}
 
@@ -307,7 +310,11 @@ class Table extends Component {
 		} else if( sheet.lines.length == 0 && canInsert() ) {
 			var l = J('<tr><td colspan="${columns.length + 1}"><input type="button" value="Insert Line"/></td></tr>');
 			l.find("input").click(function(_) {
-				editor.insertLine(this);
+				var isView = SheetView.isView(sheet);
+				if (isView)
+					SheetView.insertLine(editor, null, this);
+				else
+					editor.insertLine(this);
 				editor.cursor.set(this);
 			});
 			element.append(l);
@@ -765,8 +772,10 @@ class Table extends Component {
 			sel.val("");
 			editor.element.focus();
 			if( v == "$new" ) {
-				editor.newColumn(sheet, null, function(c) {
+				var originalSheet = SheetView.getOriginalSheet(sheet);
+				editor.newColumn(originalSheet, null, function(c) {
 					if( c.opt ) insertProperty(c.name);
+					SheetView.reloadSheet(sheet.realSheet);
 				});
 				return;
 			}
@@ -775,13 +784,18 @@ class Table extends Component {
 	}
 
 	function insertProperty( p : String ) {
+		var isView = SheetView.isView(sheet);
 		var props = sheet.lines[0];
-		for( c in sheet.columns )
+		for( c in SheetView.getOriginalSheet(sheet).columns )
 			if( c.name == p ) {
 				var val = editor.base.getDefault(c, true, sheet);
 				editor.beginChanges();
-				Reflect.setField(props, c.name, val);
+				Reflect.setField(isView ? SheetView.getOriginalObject(lines.length > 0 ? lines[0] : null, this) : props, c.name, val);
 				editor.endChanges();
+				if (SheetView.isView(sheet)) {
+					SheetView.reloadSheet(sheet);
+					editor.refresh();
+				}
 				refresh();
 				for( l in lines )
 					if( l.cells[0].column == c ) {

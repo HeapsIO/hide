@@ -135,29 +135,17 @@ typedef ShaderNodeDef = {
 	?functions: Array<TFunction>,
 };
 
-typedef Node = {
-	x : Float,
-	y : Float,
-	id : Int,
-	type : String,
-	?properties : Dynamic,
-	?instance : ShaderNode,
-	?outputs: Array<Node>,
-	?indegree : Int,
-	?generateId : Int, // Id used to index the node in the generate function
-};
-
 typedef Edge = {
 	?outputNodeId : Int,
-	nameOutput : String, // Fallback if name has changed
+	?nameOutput : String, // Fallback if name has changed
 	?outputId : Int,
 	?inputNodeId : Int,
-	nameInput : String, // Fallback if name has changed
+	?nameInput : String, // Fallback if name has changed
 	?inputId : Int,
 };
 
 typedef Connection = {
-	from : Node,
+	from : ShaderNode,
 	outputId : Int,
 };
 
@@ -174,14 +162,6 @@ typedef Parameter = {
 enum Domain {
 	Vertex;
 	Fragment;
-}
-
-
-typedef GenNodeInfo = {
-	outputToInputMap: Map<String, Array<{node: Node, inputName: String}>>,
-	inputTypes: Array<Type>,
-	?outputs: Map<String, TVar>,
-	?def: ShaderGraph.ShaderNodeDef,
 }
 
 @:structInit @:publicFields
@@ -206,7 +186,7 @@ class ShaderGraphGenContext {
 	var nodes : Array<{
 		var outputs: Array<Array<{to: Int, input: Int}>>;
 		var inputs : Array<TExpr>;
-		var node : Node;
+		var node : ShaderNode;
 	}>;
 
 	var inputNodes : Array<Int> = [];
@@ -230,7 +210,7 @@ class ShaderGraphGenContext {
 			var node = nodes[nodeId];
 			genContext.initForNode(node.node, node.inputs);
 
-			node.node.instance.generate(genContext);
+			node.node.generate(genContext);
 
 			for (outputId => expr in genContext.outputs) {
 				if (expr == null) throw "null expr for output " + outputId;
@@ -283,7 +263,7 @@ class ShaderGraphGenContext {
 
 		for (id => node in nodes) {
 			if (node == null) continue;
-			var inst = node.node.instance;
+			var inst = node.node;
 			var empty = true;
 			var inputs = inst.getInputs();
 
@@ -293,7 +273,7 @@ class ShaderGraphGenContext {
 				if (connection == null)
 					continue;
 				empty = false;
-				var nodeOutputs = connection.from.instance.getOutputs();
+				var nodeOutputs = connection.from.getOutputs();
 				var outputs = nodes[connection.from.id].outputs;
 				if (outputs == null) {
 					outputs = [];
@@ -427,7 +407,7 @@ class ShaderGraph extends hrt.prefab.Prefab {
 		var inits : Array<{variable: TVar, value: Dynamic}>= [];
 
 		var shaderData : ShaderData = {
-			name: "",
+			name: this.shared.currentPath,
 			vars: [],
 			funs: [],
 		};
@@ -618,10 +598,8 @@ class ShaderGraph extends hrt.prefab.Prefab {
 	public function setParameterDefaultValue(id : Int, newDefaultValue : Dynamic) : Bool {
 		var p = parametersAvailable.get(id);
 		if (p != null) {
-			if (newDefaultValue != null) {
-				p.defaultValue = newDefaultValue;
-				return true;
-			}
+			p.defaultValue = newDefaultValue;
+			return true;
 		}
 		return false;
 	}
@@ -650,7 +628,7 @@ class Graph {
 	var cachedGen : ShaderNodeDef = null;
 	var allParamDefaultValue = [];
 	var current_node_id = 0;
-	var nodes : Map<Int, Node> = [];
+	var nodes : Map<Int, ShaderNode> = [];
 
 	public var parent : ShaderGraph = null;
 
@@ -667,24 +645,13 @@ class Graph {
 		generate(Reflect.getProperty(json, "nodes"), Reflect.getProperty(json, "edges"));
 	}
 
-	public function generate(nodes : Array<Node>, edges : Array<Edge>) {
+	public function generate(nodes : Array<Dynamic>, edges : Array<Edge>) {
+		current_node_id = 0;
 		for (n in nodes) {
-			n.outputs = [];
-			var cl = std.Type.resolveClass(n.type);
-			if( cl == null ) throw "Missing shader node "+n.type;
-			n.instance = std.Type.createInstance(cl, []);
-			n.instance.setId(n.id);
-			n.instance.loadProperties(n.properties);
-			this.nodes.set(n.id, n);
-
-			var shaderParam = Std.downcast(n.instance, ShaderParam);
-			if (shaderParam != null) {
-				var paramShader = getParameter(shaderParam.parameterId);
-				shaderParam.variable = paramShader.variable;
-			}
+			var node = ShaderNode.createFromDynamic(n, parent);
+			this.nodes.set(node.id, node);
+			current_node_id = hxd.Math.imax(current_node_id, node.id+1);
 		}
-		if (nodes[nodes.length-1] != null)
-			this.current_node_id = nodes[nodes.length-1].id+1;
 
 		// Migration patch
 		for (e in edges) {
@@ -699,13 +666,53 @@ class Graph {
 		}
 	}
 
+	public function canAddEdge(edge : Edge) {
+		var node = this.nodes.get(edge.inputNodeId);
+		var output = this.nodes.get(edge.outputNodeId);
+
+		var inputs = node.getInputs();
+		var outputs = output.getOutputs();
+
+		var inputType = inputs[edge.inputId].type;
+		var outputType = outputs[edge.outputId].type;
+
+		if (!areTypesCompatible(inputType, outputType)) {
+			return false;
+		}
+
+		function hasCycle(node: ShaderNode, ?visited: Map<ShaderNode, Bool>) : Bool {
+			var visited = visited?.copy() ?? [];
+			if (visited.get(node) != null) {
+				return true;
+			}
+			visited.set(node, true);
+			for (id => conn in node.connections) {
+				if (conn != null) {
+					if (hasCycle(conn.from, visited))
+						return true;
+				}
+			}
+			return false;
+		}
+
+		var prev = node.connections[edge.inputId];
+		node.connections[edge.inputId] = {from: output, outputId: edge.outputId};
+
+		var res = hasCycle(node);
+		node.connections[edge.inputId] = prev;
+
+		if (res)
+			return false;
+
+		return true;
+	}
+
 	public function addEdge(edge : Edge) {
 		var node = this.nodes.get(edge.inputNodeId);
 		var output = this.nodes.get(edge.outputNodeId);
 
-		var inputs = node.instance.getInputs();
-		var outputs = output.instance.getOutputs();
-
+		var inputs = node.getInputs();
+		var outputs = output.getOutputs();
 
 		var outputId = edge.outputId;
 		var inputId = edge.inputId;
@@ -736,7 +743,7 @@ class Graph {
 			}
 		}
 
-		node.instance.connections[inputId] = {from: output, outputId: outputId};
+		node.connections[inputId] = {from: output, outputId: outputId};
 
 		#if editor
 		if (hasCycle()){
@@ -759,6 +766,10 @@ class Graph {
 		return true;
 	}
 
+	public function addNode(shNode : ShaderNode) {
+		this.nodes.set(shNode.id, shNode);
+	}
+
 	public function areTypesCompatible(input: SgType, output: SgType) : Bool {
 		return switch (input) {
 			case SgFloat(_):
@@ -777,10 +788,9 @@ class Graph {
 
 	public function removeEdge(idNode, inputId, update = true) {
 		var node = this.nodes.get(idNode);
-		if (node.instance.connections[inputId] == null) return;
-		this.nodes.get(node.instance.connections[inputId].from.id).outputs.remove(node);
+		if (node.connections[inputId] == null) return;
 
-		node.instance.connections[inputId] = null;
+		node.connections[inputId] = null;
 	}
 
 	public function setPosition(idNode : Int, x : Float, y : Float) {
@@ -801,20 +811,6 @@ class Graph {
 		return parent.getParameter(id);
 	}
 
-
-	public function addNode(x : Float, y : Float, nameClass : Class<ShaderNode>, args: Array<Dynamic>) {
-		var node : Node = { x : x, y : y, id : current_node_id, type: std.Type.getClassName(nameClass) };
-
-		node.instance = std.Type.createInstance(nameClass, args);
-		node.instance.setId(current_node_id);
-		node.outputs = [];
-
-		this.nodes.set(node.id, node);
-		current_node_id++;
-
-		return node.instance;
-	}
-
 	public function hasCycle() : Bool {
 		var ctx = new ShaderGraphGenContext(this, false);
 		@:privateAccess ctx.initNodes();
@@ -829,15 +825,15 @@ class Graph {
 	public function saveToDynamic() : Dynamic {
 		var edgesJson : Array<Edge> = [];
 		for (n in nodes) {
-			for (inputId => connection in n.instance.connections) {
+			for (inputId => connection in n.connections) {
 				if (connection == null) continue;
 				var outputId = connection.outputId;
-				edgesJson.push({ outputNodeId: connection.from.id, nameOutput: connection.from.instance.getOutputs()[outputId].name, inputNodeId: n.id, nameInput: n.instance.getInputs()[inputId].name, inputId: inputId, outputId: outputId });
+				edgesJson.push({ outputNodeId: connection.from.id, nameOutput: connection.from.getOutputs()[outputId].name, inputNodeId: n.id, nameInput: n.getInputs()[inputId].name, inputId: inputId, outputId: outputId });
 			}
 		}
 		var json = {
 			nodes: [
-				for (n in nodes) { x : Std.int(n.x), y : Std.int(n.y), id: n.id, type: n.type, properties : n.instance.saveProperties() }
+				for (n in nodes) n.serializeToDynamic(),
 			],
 			edges: edgesJson
 		};

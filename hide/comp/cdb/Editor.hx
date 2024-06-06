@@ -41,8 +41,14 @@ typedef EditorColumnProps = {
 	var ?categories : Array<String>;
 }
 
+typedef ViewProps = {
+	var originalSheet : String;
+	var sepIndexes : Array<Int>;
+}
+
 typedef EditorSheetProps = {
 	var ?categories : Array<String>;
+	var ?view : ViewProps;
 }
 
 typedef SearchFilter = {
@@ -170,6 +176,10 @@ class Editor extends Component {
 		if( displayMode == null ) displayMode = Table;
 		DataFiles.load();
 		if( currentValue == null ) currentValue = api.copy();
+
+		if (getSheetProps(sheet).view != null)
+			SheetView.reloadSheet(sheet);
+
 		refresh();
 	}
 
@@ -805,6 +815,28 @@ class Editor extends Component {
 
 	public function changeObject( line : Line, column : cdb.Data.Column, value : Dynamic ) {
 		beginChanges();
+
+		// If we are changing value of a view, apply the changes on original sheet instead
+		if(SheetView.isView(line.table.sheet)) {
+			var originalSheet = SheetView.getOriginalSheet(line.table.sheet);
+			var obj = SheetView.getOriginalObject(line);
+
+			var prev = Reflect.field(obj, column.name);
+			if( value == null ) {
+				formulas.setForValue(obj, originalSheet, column, null);
+			} else {
+				Reflect.setField(obj, column.name, value);
+				formulas.removeFromValue(obj, column);
+			}
+
+			originalSheet.realSheet.updateValue(column, line.index, prev);
+			line.evaluate(); // propagate
+			endChanges();
+			SheetView.reloadSheet(line.table.sheet);
+			refresh();
+			return;
+		}
+
 		var prev = Reflect.field(line.obj, column.name);
 		if( value == null ) {
 			formulas.setForValue(line.obj, line.table.sheet, column, null);
@@ -925,6 +957,13 @@ class Editor extends Component {
 	static var runningHooks = false;
 	static var queuedCommand: Void -> Void = null;
 	function save() {
+		// Unload views before saving (we don't want to save their datas since they are loaded
+		// when user select them)
+		for (sheet in base.sheets) {
+			if (SheetView.isView(sheet))
+				SheetView.unloadSheet(sheet);
+		}
+
 		api.save();
 
 		function hookEnd() {
@@ -962,6 +1001,9 @@ class Editor extends Component {
 				}
 			}
 		}
+
+		if (base.sheets.contains(currentSheet) && SheetView.isView(currentSheet))
+			SheetView.loadSheet(currentSheet);
 	}
 
 
@@ -1743,18 +1785,20 @@ class Editor extends Component {
 		#if js
 		var modal = new hide.comp.cdb.ModalColumnForm(this, sheet, col, element);
 		modal.setCallback(function() {
+			var s = SheetView.isView(sheet) ? SheetView.getOriginalSheet(sheet) : sheet;
 			var c = modal.getColumn(col);
 			if (c == null)
 				return;
 			beginChanges(true);
 			var err;
 			if( col != null ) {
+				var orginalCol = s.columns[sheet.columns.indexOf(col)];
 				var newPath = c.name;
 				var back = newPath.split("/");
 				var finalPart = back.pop();
 				var path = finalPart.split(".");
 				c.name = path.pop();
-				err = base.updateColumn(sheet, col, c);
+				err = base.updateColumn(s, orginalCol, c);
 				if (path.length > 0 || back.length > 0) {
 					function handleMoveTable() {
 						var cdbPath = sheet.getPath().split("@");
@@ -1800,8 +1844,9 @@ class Editor extends Component {
 					err = handleMoveTable();
 				}
 			}
-			else
-				err = sheet.addColumn(c, index == null ? null : index + 1);
+			else {
+				err = s.addColumn(c, index == null ? null : index + 1);
+			}
 			endChanges();
 			if (err != null) {
 				modal.error(err);
@@ -1967,8 +2012,11 @@ class Editor extends Component {
 				nextVisibleColumnIndex(table, indexColumn, Left) > -1), click : function () {
 				beginChanges();
 				var nextIndex = nextVisibleColumnIndex(table, indexColumn, Left);
-				sheet.columns.remove(col);
-				sheet.columns.insert(nextIndex, col);
+
+				var s = SheetView.getOriginalSheet(sheet);
+				var colToMove = s.columns[indexColumn];
+				s.columns.remove(colToMove);
+				s.columns.insert(nextIndex, colToMove);
 				if (cursor.x == indexColumn)
 					cursor.set(cursor.table, nextIndex, cursor.y);
 				else if (cursor.x == nextIndex)
@@ -1980,8 +2028,11 @@ class Editor extends Component {
 				nextVisibleColumnIndex(table, indexColumn, Right) < sheet.columns.length), click : function () {
 				beginChanges();
 				var nextIndex = nextVisibleColumnIndex(table, indexColumn, Right);
-				sheet.columns.remove(col);
-				sheet.columns.insert(nextIndex, col);
+
+				var s = SheetView.getOriginalSheet(sheet);
+				var colToMove = s.columns[indexColumn];
+				s.columns.remove(colToMove);
+				s.columns.insert(nextIndex, colToMove);
 				if (cursor.x == indexColumn)
 					cursor.set(cursor.table, nextIndex, cursor.y);
 				else if (cursor.x == nextIndex)
@@ -1998,7 +2049,10 @@ class Editor extends Component {
 						changeObject(cell.line, col, base.getDefault(col,sheet));
 					} else {
 						beginChanges(true);
-						sheet.deleteColumn(col.name);
+						if (SheetView.isView(sheet))
+							SheetView.getOriginalSheet(sheet).deleteColumn(col.name);
+						else
+							sheet.deleteColumn(col.name);
 					}
 					endChanges();
 					refresh();
@@ -2202,26 +2256,58 @@ class Editor extends Component {
 			{
 				label : "Move Up",
 				enabled:  (firstLine.index > 0 || sepIndex >= 0),
-				click : isSelectedLine ? moveLines.bind(selection, -1) : () -> moveLine(line, -1),
+				click : function() {
+					if (SheetView.isView(sheet)) {
+						SheetView.moveLine(this, line, -1);
+						return;
+					}
+
+					if (isSelectedLine)
+						moveLines.bind(selection, -1)
+					else
+						moveLine(line, -1);
+				},
 			},
 			{
 				label : "Move Down",
 				enabled:  (lastLine.index < sheet.lines.length - 1),
-				click : isSelectedLine ? moveLines.bind(selection, 1) : () -> moveLine(line, 1),
+				click : function() {
+					if (SheetView.isView(sheet)) {
+						SheetView.moveLine(this, line, 1);
+						return;
+					}
+
+					if (isSelectedLine)
+						moveLines.bind(selection, 1)
+					else
+						moveLine(line, 1);
+				},
 			},
-			{ label : "Move to Group", enabled : moveSubmenu.length > 0, menu : moveSubmenu },
+			{ label : "Move to Group", enabled : moveSubmenu.length > 0 && !SheetView.isView(sheet), menu : moveSubmenu },
 			{ label : "", isSeparator : true },
 			{ label : "Insert", click : function() {
-				insertLine(line.table,line.index);
+				var isView = SheetView.isView(line.table.sheet);
+				if (isView)
+					SheetView.insertLine(this, line);
+				else
+					insertLine(line.table,line.index);
 				cursor.set(line.table, -1, line.index + 1);
 				focus();
 			}, keys : config.get("key.cdb.insertLine") },
 			{ label : "Duplicate", click : function() {
-				duplicateLine(line.table,line.index);
+				if (SheetView.isView(sheet))
+					SheetView.duplicateLine(this, line);
+				else
+					duplicateLine(line.table,line.index);
 				cursor.set(line.table, -1, line.index + 1);
 				focus();
 			}, keys : config.get("key.duplicate") },
 			{ label : "Delete", click : function() {
+				if (SheetView.isView(sheet)) {
+					SheetView.deleteLine(this, line);
+					return;
+				}
+
 				var id = line.getId();
 				if( id != null && id.length > 0) {
 					var refs = getReferences(id, sheet);
@@ -2231,12 +2317,15 @@ class Editor extends Component {
 							return;
 					}
 				}
+
 				beginChanges();
 				sheet.deleteLine(line.index);
 				endChanges();
 				refreshAll();
 			} },
-			{ label : "Separator", enabled : !sheet.props.hide, checked : sepIndex >= 0, click : function() {
+		];
+		if (!SheetView.isView(sheet)) {
+			menu.push({ label : "Separator", enabled : !sheet.props.hide, checked : sepIndex >= 0, click : function() {
 				beginChanges();
 				if( sepIndex >= 0 ) {
 					sheet.separators.splice(sepIndex, 1);
@@ -2256,8 +2345,8 @@ class Editor extends Component {
 				}
 				endChanges();
 				refresh();
-			} }
-		];
+			}});
+		}
 		if( hasLocText ) {
 			menu.push({ label : "", isSeparator : true });
 			menu.push({
@@ -2344,7 +2433,7 @@ class Editor extends Component {
 		return menu;
 	}
 
-	public function createDBSheet( ?index : Int ) {
+	public function createDBSheet( ?index : Int) {
 		var value = ide.ask("Sheet name");
 		if( value == "" || value == null ) return null;
 		var s = ide.database.createSheet(value, index);
@@ -2355,6 +2444,40 @@ class Editor extends Component {
 		ide.saveDatabase();
 		refreshAll();
 		return s;
+	}
+
+	public function createView( originalSheet : cdb.Sheet, viewSheet : cdb.Sheet, ?index : Int) {
+		#if js
+		var modal = new hide.comp.cdb.SheetView.SheetViewModal(this, originalSheet, viewSheet, element);
+		modal.setCallback(function() {
+			beginChanges(true);
+
+			var editForm = viewSheet != null;
+			if (!editForm) {
+				viewSheet = ide.database.createSheet(modal.getSheetName(), index);
+				if (viewSheet == null) {
+					ide.error("Name already exists");
+					return;
+				}
+
+				viewSheet.props.editor = {
+					categories : getSheetProps(originalSheet).categories?.copy(),
+					view : { originalSheet: modal.getOriginalSheet().name, sepIndexes: modal.getCheckedSeparators() }
+				};
+			}
+			else {
+				var props = getSheetProps(viewSheet);
+				props.view.sepIndexes = modal.getCheckedSeparators();
+				SheetView.unloadSheet(viewSheet);
+			}
+
+			endChanges();
+
+			SheetView.loadSheet(viewSheet);
+			modal.closeModal();
+			refresh();
+		});
+		#end
 	}
 
 	public function popupSheet( withMacro = true, ?sheet : cdb.Sheet, ?onChange : Void -> Void ) {
@@ -2382,6 +2505,7 @@ class Editor extends Component {
 					endChanges();
 					onChange();
 				}},
+				{ label : '${getSheetProps(sheet).view == null ? "Create View" : "Edit View"}', click : function() { createView(getSheetProps(sheet).view != null ? null : sheet, getSheetProps(sheet).view != null ? sheet : null , index+1); } },
 				{ label : "Categories", menu: categoriesMenu(getSheetProps(sheet).categories, function(cats) {
 					beginChanges();
 					var props = getSheetProps(sheet);

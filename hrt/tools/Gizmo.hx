@@ -255,6 +255,17 @@ class Gizmo extends h3d.scene.Object {
 		onChangeMode(editMode);
 	}
 
+	public function switchMode() {
+		switch (editMode) {
+			case Translation:
+				rotationMode();
+			case Rotation:
+				scalingMode();
+			case Scaling:
+				translationMode();
+		}
+	}
+
 	public function startMove(mode: TransformMode, ?duplicating=false) {
 		if (mode == Scale || (axisScale && (mode == MoveX || mode == MoveY || mode == MoveZ)))
 			mouseLock = true;

@@ -29,7 +29,7 @@ class Instance extends Object3D {
 						sh.parentPrefab = this;
 						sh.customMake = this.shared.customMake;
 						#if editor
-						ref.setEditor(shared.editor);
+						ref.setEditor(shared.editor, shared.scene);
 						#end
 
 						instance = ref.make(sh);

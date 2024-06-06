@@ -78,6 +78,7 @@ class Light extends Object3D {
 	@:s public var firstCascadeSize : Float = 10;
 	@:s public var minPixelRatio : Float = 0.5;
 	@:s public var castingMaxDist : Float = 0.0;
+	@:s public var transitionFraction : Float = 0.15;
 	@:s public var params : Array<CascadeParams> = [];
 	@:s public var debugShader : Bool = false;
 	@:s public var highPrecision : Bool = false;
@@ -217,6 +218,7 @@ class Light extends Object3D {
 						cs.minPixelRatio = minPixelRatio * 0.01;
 						cs.debug = debugDisplay;
 						cs.castingMaxDist = castingMaxDist;
+						cs.transitionFraction = transitionFraction;
 						cs.debugShader = debugShader;
 						params.resize(cascadeNbr);
 						for ( i in 0...params.length )
@@ -637,6 +639,7 @@ class Light extends Object3D {
 					<dt>First cascade size</dt><dd><input type="range" field="firstCascadeSize" min="5" max="100"/></dd>
 					<dt>Range power</dt><dd><input type="range" field="cascadePow" min="0.1" max="10"/></dd>
 					<dt>Casting max dist</dt><dd><input type="range" field="castingMaxDist" min="-1" max="1000"/></dd>
+					<dt>Transition fraction</dt><dd><input type="range" field="transitionFraction" min="0.0" max="0.3"/></dd>
 					<dl>
 						<ul id="params"></ul>
 					</dl>

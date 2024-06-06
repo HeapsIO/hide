@@ -128,7 +128,12 @@ class NodeGenContext {
 					def = {v: v, defValue: defValue, __init__: null};
 					if (parent != null) {
 						var p = Variables.Globals[parent];
-						v.parent = globalVars.getOrPut(p.name, {v : {id : hxsl.Tools.allocVarId(), name: p.name, type: TStruct([]), kind: kind}, defValue: null, __init__: null}).v;
+						switch (p.varkind) {
+							case KVar(kind, _, _):
+								v.parent = globalVars.getOrPut(p.name, {v : {id : hxsl.Tools.allocVarId(), name: p.name, type: TStruct([]), kind: kind}, defValue: null, __init__: null}).v;
+							default:
+								throw "Parent var must be a KVar";
+						}
 						switch(v.parent.type) {
 							case TStruct(arr):
 								arr.push(v);
@@ -193,16 +198,15 @@ class NodeGenContext {
 		if (delta > 0) {
 			var args = [];
 			if (sourceSize == 1) {
-				for (_ in 0...targetSize) {
+				for (i in 0...targetSize) {
 					args.push(sourceExpr);
 				}
 			}
 			else {
-
 				args.push(sourceExpr);
 				for (i in 0...delta) {
 					// Set alpha to 1.0 by default on upcasts casts
-					var value = i == delta - 1 ? 1.0 : 0.0;
+					var value = ((sourceSize + i) == 3) ? 1.0 : 0.0;
 					args.push({e : TConst(CFloat(value)), p: sourceExpr.p, t: TFloat});
 				}
 			}
@@ -267,9 +271,9 @@ class NodeGenContext {
 	/**
 		API used by ShaderGraphGenContext
 	**/
-	function initForNode(node: ShaderGraph.Node, nodeInputExprs: Array<TExpr>) {
-		nodeInputInfo = node.instance.getInputs();
-		nodeOutputInfo = node.instance.getOutputs();
+	function initForNode(node: ShaderNode, nodeInputExprs: Array<TExpr>) {
+		nodeInputInfo = node.getInputs();
+		nodeOutputInfo = node.getOutputs();
 		this.node = node;
 		this.nodeInputExprs = nodeInputExprs;
 
@@ -297,7 +301,7 @@ class NodeGenContext {
 		}
 	}
 
-	var node : ShaderGraph.Node = null;
+	var node : ShaderNode = null;
 
 	var currentPreviewId: Int = -1;
 	var expressions: Array<TExpr> = [];

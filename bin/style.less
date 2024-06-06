@@ -8,6 +8,13 @@
 	font-style: normal;
 }
 
+@font-face {
+	font-family: 'Inter';
+	src: url('res/Inter-Medium.ttf');
+	font-weight: normal;
+	font-style: normal;
+}
+
 body {
 	margin : 0;
 	padding : 0;
@@ -871,13 +878,19 @@ input[type=checkbox] {
 			border-bottom-right-radius: 4px;
 		}
 
+		&.button2.transparent {
+			opacity: 0.5;
+		}
+
 		&.button2:hover {
 			border-color: @color-border-hover;
 			background: @color-tool-bg-hover;
+			opacity: 1.0;
 		}
 
 		&.button2:active, &.button2[checked], &.menu:active {
 			background: @color-highlight-gray;
+			opacity: 1.0;
 		}
 
 		&.menu {
@@ -2150,8 +2163,287 @@ input[type=checkbox] {
 }
 
 /* Shader Editor */
+.shader-editor {
+	display: flex;
+	flex-direction: row;
+
+	#preview {
+		z-index: 3;
+		position: absolute;
+
+		width: 300px;
+		height: 300px;
+
+		background-color: #111;
+		border: 1px solid #444;
+
+		right: 35px;
+		bottom: 35px;
+
+		.hide-toolbar2 {
+			position: absolute;
+			right: 8px;
+			top: 8px;
+		}
+	}
+
+	.flex.vertical {
+		position:relative;
+	}
+
+	#rightPanel {
+		flex: 0;
+		display: flex;
+		flex-direction: column;
+		min-width: 270px;
+
+		width: 280px;
+		padding-top: 10px;
+		border-left: 1px solid #444444;
+    	background: #222222;
+		height: 100%;
+		user-select: none;
+
+		span { // title
+			margin-left: 5px;
+			font-size: 15px;
+			font-weight: bold;
+		}
+		>div {
+			flex: 1;
+		}
+
+		height: 100%;
+		@options-height: max(250px, 25%);
+		.hide-block {
+			height: 100%;
+			#parametersList {
+				height: 100%;
+
+				.parameter {
+					border: 1px solid;
+					margin: 5px;
+					background-color: #222;
+					position: relative;
+
+					&.hovertop:before, &.hoverbot:after {
+						display: block;
+						position: absolute;
+						z-index: 100;
+						margin: 0 auto;
+						width: 100%;
+						content: "";
+					}
+
+					&:before {
+						border-top: 5px solid red;
+						top: -10px;
+					}
+
+					&:after {
+						border-bottom: 5px solid purple;
+						bottom: -10px;
+					}
+
+
+					.header {
+						background-color: #d6d6d6;
+						height: 20px;
+						padding: 5px;
+						color: black;
+						cursor: pointer;
+
+						.title {
+							float: left;
+							input {
+								width: 130px;
+							}
+						}
+
+						.type {
+							float: right;
+
+							span {
+								color: black;
+								font-style: italic;
+								font-size: 13px;
+								padding-right: 5px;
+							}
+						}
+					}
+
+					.content {
+						padding: 4px;
+
+						>div {
+							margin-top: 2px;
+						}
+					}
+
+					/*.content {
+						background-color: #b3b3b3;
+						padding: 5px;
+						box-shadow: inset 0px 13px 6px -15px black;
+
+						div {
+							width: 100%;
+							height: 20px;
+
+							span {
+								float: left;
+								color: black;
+								font-size: 13px;
+								padding-right: 5px;
+								font-weight: normal;
+							}
+						}
+						.texture-preview {
+							background-repeat: no-repeat;
+							background-size: 20px 20px!important;
+							border: 2px #444444 solid;
+							width: 20px;
+						}
+						.action-btns {
+							input {
+								float: right;
+							}
+						}
+					}*/
+
+					& > span {
+						font-size: 12px;
+					}
+				}
+			}
+		}
+		.options-block {
+			flex: 0;
+			height: @options-height;
+			& > * {
+				display: block;
+				margin-bottom: 10px;
+				width: 100%;
+				text-align: center;
+				box-sizing: border-box;
+			}
+
+			& > div {
+				border: 1px solid #666;
+				padding: 2px;
+			}
+		}
+	}
+}
+
+/* Substance Editor */
+.substance-editor {
+	display: flex;
+	flex-direction: row;
+
+	.flex.vertical {
+		position:relative;
+	}
+
+	#right-panel {
+		flex: 0;
+		display: flex;
+		flex-direction: column;
+		min-width: 270px;
+
+		width: 280px;
+		border-left: 1px solid #444444;
+    	background: #222222;
+		height: 100%;
+		user-select: none;
+
+		.group {
+			.header {
+				display: flex;
+				background-color: #444444;
+				padding: 5px;
+
+				&:hover {
+					background-color: #666666;
+				}
+
+				.title {
+					text-transform: uppercase;
+					font-weight: bold;
+					margin-left: 7px;
+					font-family: Verdana, serif;
+					font-size: 9pt;
+					color: #aaa;
+				}
+			}
+
+			.content {
+				display: block;
+				padding: 10px 20px 10px 20px;
+
+				.title {
+					font-weight: bold;
+					font-family: Verdana, serif;
+					font-size: 9pt;
+					color: #aaa;
+					margin: 0 0 5px 0;
+				}
+
+				.fields {
+					display: grid;
+					grid-template-columns: auto auto;
+					gap: 5px 5px;
+					padding-bottom: 10px;
+					border-bottom: 1px solid;
+					margin-bottom: 10px;
+					border-color: #373737;
+
+					&.grid-3 {
+						grid-template-columns: auto auto 2%;
+					}
+
+					.reset {
+						&:hover {
+							color: #ffffff;
+						}
+
+						padding-top: 3px;
+					}
+				}
+			}
+		}
+	}
+
+	#tex-preview {
+		z-index: 3;
+		position: absolute;
+
+		width: 300px;
+		height: 300px;
+
+		background-color: #111;
+		border: 1px solid #444;
+
+		right: 35px;
+		bottom: 35px;
+
+		.hide-toolbar2 {
+			position: absolute;
+			right: 8px;
+			top: 8px;
+		}
+	}
+}
+
 .graph-view {
 	outline: none !important;
+	position: relative;
+
+	.hide-toolbar2 {
+		position: absolute;
+		top: 10px;
+		left: 10px;
+		z-index: 999;
+	}
 
 	.mini-preview {
 		position: absolute;
@@ -2164,148 +2456,9 @@ input[type=checkbox] {
 		position: absolute;
 		top: 0px;
 		left: 0px;
-		z-index: 0;
+		z-index: 1;
 	}
 
-	.tabs {
-		width: 280px;
-		padding-top: 10px;
-		border-left: 1px solid #444444;
-		z-index: @default-layer + 5;
-    	background: #222222;
-		height: 100%;
-		user-select: none;
-
-		span { // title
-			margin-left: 5px;
-			font-size: 15px;
-			font-weight: bold;
-		}
-
-
-
-		.tab {
-			height: 100%;
-			@options-height: max(250px, 25%);
-			.hide-block {
-				height: 600px;
-
-				#parametersList {
-					height: 100%;
-
-					.parameter {
-						border: 1px solid;
-						margin: 5px;
-						background-color: #222;
-						position: relative;
-
-						&.hovertop:before, &.hoverbot:after {
-							display: block;
-							position: absolute;
-							z-index: 100;
-							margin: 0 auto;
-							width: 100%;
-							content: "";
-						}
-
-						&:before {
-							border-top: 5px solid red;
-							top: -10px;
-						}
-
-						&:after {
-							border-bottom: 5px solid red;
-							bottom: -10px;
-						}
-
-
-						.header {
-							background-color: #d6d6d6;
-							height: 20px;
-							padding: 5px;
-							color: black;
-							cursor: pointer;
-
-							.title {
-								float: left;
-								input {
-									width: 130px;
-								}
-							}
-
-							.type {
-								float: right;
-
-								span {
-									color: black;
-									font-style: italic;
-									font-size: 13px;
-									padding-right: 5px;
-								}
-							}
-						}
-
-						.content {
-							padding: 4px;
-
-							>div {
-								margin-top: 2px;
-							}
-						}
-
-						/*.content {
-							background-color: #b3b3b3;
-							padding: 5px;
-							box-shadow: inset 0px 13px 6px -15px black;
-
-							div {
-								width: 100%;
-								height: 20px;
-
-								span {
-									float: left;
-									color: black;
-									font-size: 13px;
-									padding-right: 5px;
-									font-weight: normal;
-								}
-							}
-							.texture-preview {
-								background-repeat: no-repeat;
-								background-size: 20px 20px!important;
-								border: 2px #444444 solid;
-								width: 20px;
-							}
-							.action-btns {
-								input {
-									float: right;
-								}
-							}
-						}*/
-
-						& > span {
-							font-size: 12px;
-						}
-					}
-				}
-			}
-			.options-block {
-				height: @options-height;
-				& > * {
-					display: block;
-					margin-bottom: 10px;
-					width: 100%;
-					text-align: center;
-					box-sizing: border-box;
-				}
-
-				& > div {
-					border: 1px solid #666;
-					padding: 2px;
-				}
-			}
-		}
-	}
 	#add-menu {
 		position: absolute;
 		width: 400px;
@@ -2458,56 +2611,13 @@ input[type=checkbox] {
 		}
 
 	}
+
 	.heaps-scene {
 		outline: none !important;
-		#preview {
-			z-index: 3;
-			position: absolute;
-
-			width: 300px;
-			height: 300px;
-
-			background-color: #111;
-   			border: 1px solid #444;
-
-			right: 290px;
-			bottom: 35px;
-		}
-		#status-bar {
-			z-index: 2;
-			position: absolute;
-
-			width: 84%;
-			min-height: 20px;
-
-			background-color: #111;
-			border: 1px solid #444;
-
-			left: -1px;
-			bottom: -1px;
-			max-height: 60%;
-			overflow: auto;
-
-			pre {
-				padding: 10px;
-				vertical-align: sub;
-
-				&.error {
-					color: #c74848;
-				}
-			}
-
-			#close {
-				width: 100%;
-				text-align: center;
-				cursor: pointer;
-			}
-		}
 		svg {
 
+			font-family: 'Inter';
 			g {
-				stroke: #202020;
-
 				&.selected {
 					.outline {
 						stroke: #668fff;
@@ -2523,6 +2633,15 @@ input[type=checkbox] {
 				fill: none;
 			}
 
+			.background {
+				fill: #393939;
+			}
+
+			.separator {
+				stroke: #272727;
+				stroke-width: 1px;
+			}
+
 			.resize {
 				fill: rgba(0, 0, 0, 0.0);
 				stroke: none;
@@ -2531,10 +2650,11 @@ input[type=checkbox] {
 			.comment {
 				.head-box {
 					fill: rgba(80,80,80,0.5);
-					stroke-width: 3;
+					//stroke-width: 3;
 				}
 
 				.outline {
+					stroke: rgba(80,80,80,0.5);
 					stroke-width: 3;
 				}
 			}
@@ -2554,12 +2674,13 @@ input[type=checkbox] {
 				}
 			}
 
-			.head-box {
-				fill: #155358;
-			}
+			// .head-box {
+			// 	fill: #155358;
+			// }
 
 			.title-box {
-				fill: #ffffff;
+				text-anchor: start;
+				fill: #c3c3c3;
 				stroke: none;
 				user-select: none;
 				&::selection {
@@ -2567,10 +2688,10 @@ input[type=checkbox] {
 				}
 			}
 
-			.nodes, .properties {
-				fill: #737373;
-				opacity: 0.75;
-			}
+			// .nodes, .properties {
+			// 	fill: #737373;
+			// 	opacity: 0.75;
+			// }
 
 			.hasLink {
 				.input-field {
@@ -2600,7 +2721,7 @@ input[type=checkbox] {
 			}
 
 			.title-node {
-				fill: #ffffff;
+				fill: #c3c3c3;
 				stroke: none;
 				user-select: none;
 				&::selection {
@@ -2678,11 +2799,15 @@ input[type=checkbox] {
 				stroke-width: 2;
 				stroke: rgb(200, 200, 200);
 				fill: transparent;
-			}
+				pointer-events: stroke;
 
-			.edge:not(.draft):hover, .edge:not(.draft).selected {
-				stroke-width: 5;
-				stroke: rgb(114, 180, 255);
+				&.hitbox {
+					stroke-width: 10;
+					stroke: transparent;
+					&:hover {
+						stroke: rgba(114, 180, 255, 0.5);
+					}
+				}
 			}
 
 			.rect-selection {

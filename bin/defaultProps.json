@@ -86,9 +86,11 @@
 	"key.sceneeditor.rotationMode": "E",
 	"key.sceneeditor.scalingMode": "R",
 	"key.sceneeditor.toggleSnap": "X",
+	"key.sceneeditor.switchMode" : "Space",
 
 	"key.shadergraph.hide" : "H",
 	"key.shadergraph.comment" : "C",
+	"key.graph.openAddMenu" : "Space",
 
 
 

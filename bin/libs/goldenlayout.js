@@ -4399,14 +4399,20 @@ lm.utils.copy( lm.items.Stack.prototype, {
 
 	removeChild: function( contentItem, keepChild ) {
 		var index = lm.utils.indexOf( contentItem, this.contentItems );
+		var curIndex = lm.utils.indexOf( this._activeContentItem, this.contentItems );
 		lm.items.AbstractContentItem.prototype.removeChild.call( this, contentItem, keepChild );
 		this.header.removeTab( contentItem );
 
 		if( this.contentItems.length > 0 ) {
-			this.setActiveContentItem( this.contentItems[ Math.max( index - 1, 0 ) ] );
+			var indexToFocus = index > curIndex ? curIndex : curIndex - 1;
+			if (curIndex == index)
+				indexToFocus = Math.max( index - 1, 0 );
+
+			this.setActiveContentItem( this.contentItems[ indexToFocus ] );
 		} else {
 			this._activeContentItem = null;
 		}
+
 
 		this._$validateClosability();
 		this.emitBubblingEvent( 'stateChanged' );

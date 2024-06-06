@@ -1260,9 +1260,17 @@ class Cell {
 
 		switch( column.type ) {
 		case TId:
+			var isView = SheetView.isView(table.sheet);
+			var lineObj = isView ? SheetView.getOriginalObject(line) : line.obj;
+
 			if (isUniqueID(newValue, true)) {
-				editor.changeID(line.obj, newValue, column, table);
+				editor.changeID(lineObj, newValue, column, table);
 				currentValue = newValue;
+
+				if (isView) {
+					SheetView.reloadSheet(table.sheet);
+					editor.refresh();
+				}
 			}
 			focus();
 		case TString if( column.kind == Script || column.kind == Localizable ):

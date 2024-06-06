@@ -33,11 +33,11 @@ class Reference extends Object3D {
 	}
 
 	#if editor
-	override function setEditorChildren(sceneEditor:hide.comp.SceneEditor) {
-		super.setEditorChildren(sceneEditor);
+	override function setEditorChildren(sceneEditor:hide.comp.SceneEditor, scene: hide.comp.Scene) {
+		super.setEditorChildren(sceneEditor, scene);
 
 		if (refInstance != null) {
-			refInstance.setEditor(sceneEditor);
+			refInstance.setEditor(sceneEditor, scene);
 		}
 	}
 	#end
@@ -92,6 +92,7 @@ class Reference extends Object3D {
 
 		#if editor
 		sh.editor = this.shared.editor;
+		sh.scene = this.shared.scene;
 		#end
 		sh.parentPrefab = this;
 		sh.customMake = this.shared.customMake;

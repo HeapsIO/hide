@@ -164,6 +164,7 @@ class Prefab {
 		if( sh.currentPath == null ) sh.currentPath = shared.currentPath;
 		#if editor
 		sh.editor = this.shared.editor;
+		sh.scene = this.shared.scene;
 		#end
 		return this.clone(sh).make(sh);
 	}
@@ -184,6 +185,7 @@ class Prefab {
 				sh = new hrt.prefab.ContextShared(this.shared.currentPath, true);
 				#if editor
 				sh.editor = shared.editor;
+				sh.scene = shared.scene;
 				#end
 			}
 		}
@@ -587,18 +589,16 @@ class Prefab {
 	public function edit(editContext : hide.prefab.EditContext) {
 	}
 
-	public function setEditor(sceneEditor: hide.comp.SceneEditor) {
-		if (sceneEditor == null)
-			throw "No editor for setEditor";
-
+	public function setEditor(sceneEditor: hide.comp.SceneEditor, scene: hide.comp.Scene) {
 		shared.editor = sceneEditor;
+		shared.scene = scene;
 
-		setEditorChildren(sceneEditor);
+		setEditorChildren(sceneEditor, scene);
 	}
 
-	function setEditorChildren(sceneEditor: hide.comp.SceneEditor) {
+	function setEditorChildren(sceneEditor: hide.comp.SceneEditor, scene: hide.comp.Scene) {
 		for (c in children) {
-			c.setEditorChildren(sceneEditor);
+			c.setEditorChildren(sceneEditor, scene);
 		}
 	}
 

@@ -16,5 +16,4 @@ class Add extends Operation {
 			output = a + b;
 		}
 	}
-
 }

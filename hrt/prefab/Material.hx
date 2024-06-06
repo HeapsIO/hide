@@ -115,12 +115,61 @@ class Material extends Prefab {
 			mat.mainPass.setPassName(mainPassName);
 	}
 
+	override function makeInstance() {
+		#if editor
+		if (previewSphere != null) {
+			previewSphere.remove();
+			previewSphere = null;
+		}
+
+		var isMatLib = shared.editor != null && shared.parentPrefab == null;
+		if (isMatLib) {
+			var flat = getRoot().flatten(Prefab);
+			for (f in flat) {
+				var cl = Type.getClass(f);
+				if (cl != hrt.prefab.Object3D && cl != hrt.prefab.Prefab && Std.downcast(f, hrt.prefab.Material) == null) {
+					isMatLib = false;
+					break;
+				}
+			}
+		}
+
+
+		if (isMatLib) {
+			var root = shared.root3d;
+
+			var sphere = new h3d.prim.Sphere(1., 64, 48);
+			sphere.addUVs();
+			sphere.addNormals();
+			sphere.addTangents();
+			sphere.colors = sphere.points;
+
+			var m = new h3d.scene.Mesh(sphere);
+			m.name = "previewSphereObjName";
+			@:privateAccess m.material.name = "previewMat";
+			previewSphere = m;
+			root.addChild(previewSphere);
+			var flat = getRoot(false).flatten(Material);
+			@:privateAccess var pos = flat.indexOf(this);
+			previewSphere.x = ( pos - 1) * 5.0;
+		}
+		#end
+
+		updateInstance();
+	}
+
+	#if editor
+	override function findFirstLocal3d() {
+		return previewSphere ?? super.findFirstLocal3d();
+	}
+	#end
+
 	override function updateInstance(?propName ) {
 		var local3d = findFirstLocal3d();
 		if( local3d == null )
 			return;
 
-		var mats = getMaterials();
+		var mats = getMaterials(true);
 
 		if (this.refMatLib != null && this.refMatLib != "") {
 			// We want to save some infos to reapply them after loading datas from the choosen mat
@@ -153,40 +202,11 @@ class Material extends Prefab {
 
 		var props = renderProps();
 
-		#if editor
-		if ( mats == null || mats.length == 0 ) {
-			if (previewSphere != null)
-				previewSphere.remove();
-
-			var parent = findFirstLocal3d();
-
-			var sphere = new h3d.prim.Sphere(1., 64, 48);
-			sphere.addUVs();
-			sphere.addNormals();
-			sphere.addTangents();
-			sphere.colors = sphere.points;
-
-			var m = new h3d.scene.Mesh(sphere);
-			m.name = "previewSphereObjName";
-			@:privateAccess m.material.name = "previewMat";
-			previewSphere = m;
-			parent.addChild(previewSphere);
-
-			var previewCount = findFirstLocal3d().getScene().findAll(o -> o.name == "previewSphereObjName" ? true : null).length;
-			previewSphere.x = ( previewCount - 1) * 5.0;
-
-			mats = [ @:privateAccess m.material ];
-		}
-		#end
 		function loadTextureCb( path : String ) : h3d.mat.Texture {
 			return shared.loadTexture(path, false);
 		}
 		for( m in mats )
 			update(m, props, loadTextureCb);
-	}
-
-	override function makeInstance() {
-		updateInstance();
 	}
 
 	function applyOverrides() {
@@ -225,6 +245,23 @@ class Material extends Prefab {
 	}
 
 	#if editor
+	override function editorRemoveInstance() : Bool {
+		if (previewSphere != null) {
+			previewSphere.remove();
+			return true;
+		}
+		return false;
+	}
+
+	override function makeInteractive() : hxd.SceneEvents.Interactive {
+		if (previewSphere != null) {
+			var col = new h3d.col.Sphere(0,0,0,1.);
+			var int = new h3d.scene.Interactive(col, previewSphere);
+			return int;
+		}
+		return null;
+	}
+
 	override function edit( ctx : hide.prefab.EditContext ) {
 		super.edit(ctx);
 

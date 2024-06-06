@@ -11,6 +11,10 @@ import hrt.shgraph.AstTools.*;
 import hrt.shgraph.ShaderGraph;
 import hrt.shgraph.SgHxslVar.ShaderDefInput;
 
+#if editor
+import hide.view.GraphInterface; 
+#end
+
 
 class AlphaPreview extends hxsl.Shader {
 	static var SRC = {
@@ -39,12 +43,133 @@ typedef AliasInfo = {?nameSearch: String, ?nameOverride : String, ?description :
 @:autoBuild(hrt.shgraph.Macros.autoRegisterNode())
 @:keepSub
 @:keep
-class ShaderNode {
+class ShaderNode 
+#if editor
+implements hide.view.GraphInterface.IGraphNode 
+#end
+{
 
 	public var id : Int;
+	public var x : Float;
+	public var y : Float;
 	public var showPreview : Bool = true;
 	@prop public var nameOverride : String;
 
+
+	#if editor
+	// IGraphNode Interface
+	public function getInfo() : GraphNodeInfo {
+		var metas = haxe.rtti.Meta.getType(HaxeType.getClass(this));
+		return {
+			name: nameOverride ?? (metas.name != null ? metas.name[0] : "undefined"),
+			inputs: [
+				for (i in getInputs()) {
+					var defaultParam = null;
+					switch (i.def) {
+						case Const(intialValue):
+							defaultParam = {
+								get: () -> Std.string(Reflect.getProperty(defaults, i.name) ?? intialValue),
+								set: setDefaultParam.bind(i.name),
+							};
+						default:
+					}
+					{
+						name: i.name,
+						color: getTypeColor(i.type),
+						defaultParam: defaultParam,
+					}
+				}
+			],
+			outputs: [
+				for (o in getOutputs()) {
+					{
+						name: o.name,
+						color: getTypeColor(o.type),
+					}
+				}
+			],
+			preview: {
+				getVisible: () -> showPreview,
+				setVisible: (b:Bool) -> showPreview = b,
+				fullSize: false,
+			},
+			width: metas.width != null ? metas.width[0] : null,
+			noHeader: Reflect.hasField(metas, "noheader"),
+		};
+	}
+
+	static function getTypeColor(type: SgType) : Int {
+		return switch (type) {
+			case SgFloat(1):
+				0x00ff73;
+			case SgFloat(2):
+				0x5eff00;
+			case SgFloat(3):
+				0xeeff00;
+			case SgFloat(4):
+				0xfc6703;
+			case SgInt:
+				0x00ffea;
+			case SgSampler:
+				0x600aff;
+			default:
+				0xc8c8c8;
+		}
+	}
+
+	public function getId() : Int {
+		return id;
+	}
+
+	public function getPos(p : h2d.col.Point) : Void {
+		p.set(x,y);
+	}
+
+	public function setPos(p : h2d.col.Point) : Void {
+		x = p.x;
+		y = p.y;
+	}
+
+	public function getPropertiesHTML(width : Float) : Array<hide.Element> {
+		return [];
+	}
+
+	public var editor : hide.view.GraphEditor;
+
+	public function setDefaultParam(name: String, value: String) {
+		Reflect.setField(defaults, name, Std.parseFloat(value));
+		requestRecompile();
+	}
+
+	public function requestRecompile() {
+		Std.downcast(editor.editor, hide.view.shadereditor.ShaderEditor)?.requestRecompile();
+	}
+	#end
+
+	public function serializeToDynamic() : Dynamic {
+		return {
+			x: x,
+			y: y,
+			id: id,
+			type: std.Type.getClassName(std.Type.getClass(this)),
+			properties: saveProperties(),
+		};
+	}
+
+	public static function createFromDynamic(data: Dynamic, graph: ShaderGraph) : ShaderNode {
+		var type = std.Type.resolveClass(data.type);
+		var inst = std.Type.createInstance(type, []);
+		var shaderParam = Std.downcast(inst, ShaderParam);
+		if (shaderParam != null) {
+			shaderParam.shaderGraph = graph;
+		}
+		inst.x = data.x;
+		inst.y = data.y;
+		inst.id = data.id;
+		inst.connections = [];
+		inst.loadProperties(data.properties);
+		return inst;
+	}
 
 	public var defaults : Dynamic = {};
 
@@ -157,10 +282,6 @@ class ShaderNode {
 	final public function getHTML(width: Float, config: hide.Config) {
 		var props = getPropertiesHTML(width);
 		return props;
-	}
-
-	function getPropertiesHTML(width : Float) : Array<hide.Element> {
-		return [];
 	}
 
 	static public var registeredNodes = new Map<String, Class<ShaderNode>>();

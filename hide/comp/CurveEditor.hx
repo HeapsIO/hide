@@ -1180,6 +1180,14 @@ class CurveEditor extends hide.comp.Component {
 		svg.line(markersGroup, xt(this.currentTime), svg.element.height(), xt(this.currentTime), labelHeight / 2.0, { stroke:'#426dae', 'stroke-width':'2px' });
 		drawLabel(markersGroup, xt(this.currentTime), labelHeight / 2.0 + (tlHeight - labelHeight) / 2.0, labelWidth, labelHeight, { fill:'#426dae', stroke: '#426dae', 'stroke-width':'5px', 'stroke-linejoin':'round'});
 		svg.text(markersGroup, xt(this.currentTime), 14, '${rounderCurrTime}', { 'fill':'#e7ecf5', 'text-anchor':'middle', 'font':'10px sans-serif'});
+
+
+		function drawMaker(x: Float) {
+			svg.line(markersGroup, xt(x), svg.element.height(), xt(x), labelHeight / 2.0, { stroke: '#260f00', 'stroke-width' : '2px'});
+		}
+
+		drawMaker(0);
+
 	}
 
 	public function refreshOverlay(?duration: Float) {

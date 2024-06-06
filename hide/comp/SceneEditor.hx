@@ -1453,7 +1453,7 @@ class SceneEditor {
 		if (settings == null)
 			return;
 
-		var id = Std.parseInt(settings.camTypeIndex);
+		var id = Std.parseInt(settings.camTypeIndex) ?? 0;
         var newClass = CameraControllerEditor.controllersClasses[id];
         if (Type.getClass(cameraController) != newClass.cl)
             switchCamController(newClass.cl);
@@ -1553,6 +1553,7 @@ class SceneEditor {
 		view.keys.register("sceneeditor.translationMode", gizmo.translationMode);
 		view.keys.register("sceneeditor.rotationMode", gizmo.rotationMode);
 		view.keys.register("sceneeditor.scalingMode", gizmo.scalingMode);
+		view.keys.register("sceneeditor.switchMode", gizmo.switchMode);
 
 		statusText = new h2d.Text(hxd.res.DefaultFont.get(), scene.s2d);
 		statusText = new h2d.Text(hxd.res.DefaultFont.get(), scene.s2d);
@@ -1913,7 +1914,7 @@ class SceneEditor {
 	function createRenderProps(?parent: hrt.prefab.Prefab){
 		if (renderPropsRoot == null) {
 			renderPropsRoot = new hrt.prefab.Reference(parent, parent?.shared ?? new ContextShared());
-			renderPropsRoot.setEditor(this);
+			renderPropsRoot.setEditor(this, this.scene);
 
 			if (parent != null)
 				renderPropsRoot.parent = parent;
@@ -2014,7 +2015,7 @@ class SceneEditor {
 
 		@:privateAccess sceneData.setSharedRec(new ContextShared(root2d,root3d));
 		sceneData.shared.currentPath = view.state.path;
-		sceneData.setEditor(this);
+		sceneData.setEditor(this, this.scene);
 
 		sceneData.make();
 		var bgcol = scene.engine.backgroundColor;
@@ -2828,7 +2829,7 @@ class SceneEditor {
 
 		elt.shared.current3d = elt.parent.findFirstLocal3d();
 		elt.shared.current2d = elt.parent.findFirstLocal2d();
-		elt.setEditor(this);
+		elt.setEditor(this, this.scene);
 		elt.make();
 
 		for( p in elt.flatten() ) {
@@ -3521,7 +3522,13 @@ class SceneEditor {
 			return;
         }
 
-		var elts = selectedPrefabs;
+		// Sort the selection to match the scene order
+		var elts : Array<hrt.prefab.Prefab> = [];
+		for (p in sceneData.flatten()) {
+			if (selectedPrefabs.contains(p))
+				elts.push(p);
+		}
+
 		var parent = elts[0].parent;
 		var parentMat = worldMat(parent);
 		var invParentMat = parentMat.clone();
@@ -3556,13 +3563,11 @@ class SceneEditor {
 		var effectFunc = reparentImpl(elts, group, 0);
 		undo.change(Custom(function(undo) {
 			if(undo) {
-				group.parent = null;
-				//context.shared.contexts.remove(group);
 				effectFunc(true);
+				group.parent = null;
 			}
 			else {
 				group.parent = parent;
-				//context.shared.contexts.set(group, groupCtx);
 				effectFunc(false);
 			}
 			if(undo)
@@ -4042,8 +4047,8 @@ class SceneEditor {
 				};
 			});
 		}
-		return function(undo) {
 
+		return function(undo) {
 			// Remove all the children from their parent before
 			// adding them back in. Makes the index of insert() correct
 			if (!undo) {
@@ -4051,6 +4056,7 @@ class SceneEditor {
 					elt.parent.children.remove(elt);
 				}
 			}
+
 			for(f in effects) {
 				f(undo);
 			}
@@ -4058,6 +4064,7 @@ class SceneEditor {
 			if (!removeInstance(toElt)) {
 				return true;
 			}
+
 			makePrefab(toElt);
 			return false;
 		}

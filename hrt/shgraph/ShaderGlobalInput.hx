@@ -16,8 +16,8 @@ class ShaderGlobalInput extends ShaderNode {
 			{display: "Pixel Size", g: PixelSize},
 		];
 
-	public function new(idx: Int) {
-		variableIdx = idx;
+	public function new(idx: Null<Int>) {
+		variableIdx = idx ?? variableIdx;
 	}
 
 	var outputs : Array<ShaderNode.OutputInfo>;
@@ -68,6 +68,7 @@ class ShaderGlobalInput extends ShaderNode {
 			var value = input.val();
 			outputs = null;
 			this.variableIdx = value;
+			requestRecompile();
 		});
 
 		elements.push(element);

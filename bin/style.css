@@ -5,6 +5,12 @@
   font-weight: normal;
   font-style: normal;
 }
+@font-face {
+  font-family: 'Inter';
+  src: url('res/Inter-Medium.ttf');
+  font-weight: normal;
+  font-style: normal;
+}
 body {
   margin: 0;
   padding: 0;
@@ -817,14 +823,19 @@ input[type=checkbox]:checked:after {
   border-top-right-radius: 4px;
   border-bottom-right-radius: 4px;
 }
+.tb-group > *.button2.transparent {
+  opacity: 0.5;
+}
 .tb-group > *.button2:hover {
   border-color: #3d3d3d;
   background: #656565;
+  opacity: 1;
 }
 .tb-group > *.button2:active,
 .tb-group > *.button2[checked],
 .tb-group > *.menu:active {
   background: #969696;
+  opacity: 1;
 }
 .tb-group > *.menu {
   background: #282828;
@@ -1929,8 +1940,240 @@ input[type=checkbox]:checked:after {
   visibility: visible;
 }
 /* Shader Editor */
+.shader-editor {
+  display: flex;
+  flex-direction: row;
+}
+.shader-editor #preview {
+  z-index: 3;
+  position: absolute;
+  width: 300px;
+  height: 300px;
+  background-color: #111;
+  border: 1px solid #444;
+  right: 35px;
+  bottom: 35px;
+}
+.shader-editor #preview .hide-toolbar2 {
+  position: absolute;
+  right: 8px;
+  top: 8px;
+}
+.shader-editor .flex.vertical {
+  position: relative;
+}
+.shader-editor #rightPanel {
+  flex: 0;
+  display: flex;
+  flex-direction: column;
+  min-width: 270px;
+  width: 280px;
+  padding-top: 10px;
+  border-left: 1px solid #444444;
+  background: #222222;
+  user-select: none;
+  height: 100%;
+}
+.shader-editor #rightPanel span {
+  margin-left: 5px;
+  font-size: 15px;
+  font-weight: bold;
+}
+.shader-editor #rightPanel > div {
+  flex: 1;
+}
+.shader-editor #rightPanel .hide-block {
+  height: 100%;
+}
+.shader-editor #rightPanel .hide-block #parametersList {
+  height: 100%;
+}
+.shader-editor #rightPanel .hide-block #parametersList .parameter {
+  border: 1px solid;
+  margin: 5px;
+  background-color: #222;
+  position: relative;
+  /*.content {
+						background-color: #b3b3b3;
+						padding: 5px;
+						box-shadow: inset 0px 13px 6px -15px black;
+
+						div {
+							width: 100%;
+							height: 20px;
+
+							span {
+								float: left;
+								color: black;
+								font-size: 13px;
+								padding-right: 5px;
+								font-weight: normal;
+							}
+						}
+						.texture-preview {
+							background-repeat: no-repeat;
+							background-size: 20px 20px!important;
+							border: 2px #444444 solid;
+							width: 20px;
+						}
+						.action-btns {
+							input {
+								float: right;
+							}
+						}
+					}*/
+}
+.shader-editor #rightPanel .hide-block #parametersList .parameter.hovertop:before,
+.shader-editor #rightPanel .hide-block #parametersList .parameter.hoverbot:after {
+  display: block;
+  position: absolute;
+  z-index: 100;
+  margin: 0 auto;
+  width: 100%;
+  content: "";
+}
+.shader-editor #rightPanel .hide-block #parametersList .parameter:before {
+  border-top: 5px solid red;
+  top: -10px;
+}
+.shader-editor #rightPanel .hide-block #parametersList .parameter:after {
+  border-bottom: 5px solid purple;
+  bottom: -10px;
+}
+.shader-editor #rightPanel .hide-block #parametersList .parameter .header {
+  background-color: #d6d6d6;
+  height: 20px;
+  padding: 5px;
+  color: black;
+  cursor: pointer;
+}
+.shader-editor #rightPanel .hide-block #parametersList .parameter .header .title {
+  float: left;
+}
+.shader-editor #rightPanel .hide-block #parametersList .parameter .header .title input {
+  width: 130px;
+}
+.shader-editor #rightPanel .hide-block #parametersList .parameter .header .type {
+  float: right;
+}
+.shader-editor #rightPanel .hide-block #parametersList .parameter .header .type span {
+  color: black;
+  font-style: italic;
+  font-size: 13px;
+  padding-right: 5px;
+}
+.shader-editor #rightPanel .hide-block #parametersList .parameter .content {
+  padding: 4px;
+}
+.shader-editor #rightPanel .hide-block #parametersList .parameter .content > div {
+  margin-top: 2px;
+}
+.shader-editor #rightPanel .hide-block #parametersList .parameter > span {
+  font-size: 12px;
+}
+.shader-editor #rightPanel .options-block {
+  flex: 0;
+  height: max(250px, 25%);
+}
+.shader-editor #rightPanel .options-block > * {
+  display: block;
+  margin-bottom: 10px;
+  width: 100%;
+  text-align: center;
+  box-sizing: border-box;
+}
+.shader-editor #rightPanel .options-block > div {
+  border: 1px solid #666;
+  padding: 2px;
+}
+/* Substance Editor */
+.substance-editor {
+  display: flex;
+  flex-direction: row;
+}
+.substance-editor .flex.vertical {
+  position: relative;
+}
+.substance-editor #right-panel {
+  flex: 0;
+  display: flex;
+  flex-direction: column;
+  min-width: 270px;
+  width: 280px;
+  border-left: 1px solid #444444;
+  background: #222222;
+  height: 100%;
+  user-select: none;
+}
+.substance-editor #right-panel .group .header {
+  display: flex;
+  background-color: #444444;
+  padding: 5px;
+}
+.substance-editor #right-panel .group .header:hover {
+  background-color: #666666;
+}
+.substance-editor #right-panel .group .header .title {
+  text-transform: uppercase;
+  font-weight: bold;
+  margin-left: 7px;
+  font-family: Verdana, serif;
+  font-size: 9pt;
+  color: #aaa;
+}
+.substance-editor #right-panel .group .content {
+  display: block;
+  padding: 10px 20px 10px 20px;
+}
+.substance-editor #right-panel .group .content .title {
+  font-weight: bold;
+  font-family: Verdana, serif;
+  font-size: 9pt;
+  color: #aaa;
+  margin: 0 0 5px 0;
+}
+.substance-editor #right-panel .group .content .fields {
+  display: grid;
+  grid-template-columns: auto auto;
+  gap: 5px 5px;
+  padding-bottom: 10px;
+  border-bottom: 1px solid;
+  margin-bottom: 10px;
+  border-color: #373737;
+}
+.substance-editor #right-panel .group .content .fields.grid-3 {
+  grid-template-columns: auto auto 2%;
+}
+.substance-editor #right-panel .group .content .fields .reset {
+  padding-top: 3px;
+}
+.substance-editor #right-panel .group .content .fields .reset:hover {
+  color: #ffffff;
+}
+.substance-editor #tex-preview {
+  z-index: 3;
+  position: absolute;
+  width: 300px;
+  height: 300px;
+  background-color: #111;
+  border: 1px solid #444;
+  right: 35px;
+  bottom: 35px;
+}
+.substance-editor #tex-preview .hide-toolbar2 {
+  position: absolute;
+  right: 8px;
+  top: 8px;
+}
 .graph-view {
   outline: none !important;
+  position: relative;
+}
+.graph-view .hide-toolbar2 {
+  position: absolute;
+  top: 10px;
+  left: 10px;
+  z-index: 999;
 }
 .graph-view .mini-preview {
   position: absolute;
@@ -1942,127 +2185,7 @@ input[type=checkbox]:checked:after {
   position: absolute;
   top: 0px;
   left: 0px;
-  z-index: 0;
-}
-.graph-view .tabs {
-  width: 280px;
-  padding-top: 10px;
-  border-left: 1px solid #444444;
-  z-index: 205;
-  background: #222222;
-  height: 100%;
-  user-select: none;
-}
-.graph-view .tabs span {
-  margin-left: 5px;
-  font-size: 15px;
-  font-weight: bold;
-}
-.graph-view .tabs .tab {
-  height: 100%;
-}
-.graph-view .tabs .tab .hide-block {
-  height: 600px;
-}
-.graph-view .tabs .tab .hide-block #parametersList {
-  height: 100%;
-}
-.graph-view .tabs .tab .hide-block #parametersList .parameter {
-  border: 1px solid;
-  margin: 5px;
-  background-color: #222;
-  position: relative;
-  /*.content {
-							background-color: #b3b3b3;
-							padding: 5px;
-							box-shadow: inset 0px 13px 6px -15px black;
-
-							div {
-								width: 100%;
-								height: 20px;
-
-								span {
-									float: left;
-									color: black;
-									font-size: 13px;
-									padding-right: 5px;
-									font-weight: normal;
-								}
-							}
-							.texture-preview {
-								background-repeat: no-repeat;
-								background-size: 20px 20px!important;
-								border: 2px #444444 solid;
-								width: 20px;
-							}
-							.action-btns {
-								input {
-									float: right;
-								}
-							}
-						}*/
-}
-.graph-view .tabs .tab .hide-block #parametersList .parameter.hovertop:before,
-.graph-view .tabs .tab .hide-block #parametersList .parameter.hoverbot:after {
-  display: block;
-  position: absolute;
-  z-index: 100;
-  margin: 0 auto;
-  width: 100%;
-  content: "";
-}
-.graph-view .tabs .tab .hide-block #parametersList .parameter:before {
-  border-top: 5px solid red;
-  top: -10px;
-}
-.graph-view .tabs .tab .hide-block #parametersList .parameter:after {
-  border-bottom: 5px solid red;
-  bottom: -10px;
-}
-.graph-view .tabs .tab .hide-block #parametersList .parameter .header {
-  background-color: #d6d6d6;
-  height: 20px;
-  padding: 5px;
-  color: black;
-  cursor: pointer;
-}
-.graph-view .tabs .tab .hide-block #parametersList .parameter .header .title {
-  float: left;
-}
-.graph-view .tabs .tab .hide-block #parametersList .parameter .header .title input {
-  width: 130px;
-}
-.graph-view .tabs .tab .hide-block #parametersList .parameter .header .type {
-  float: right;
-}
-.graph-view .tabs .tab .hide-block #parametersList .parameter .header .type span {
-  color: black;
-  font-style: italic;
-  font-size: 13px;
-  padding-right: 5px;
-}
-.graph-view .tabs .tab .hide-block #parametersList .parameter .content {
-  padding: 4px;
-}
-.graph-view .tabs .tab .hide-block #parametersList .parameter .content > div {
-  margin-top: 2px;
-}
-.graph-view .tabs .tab .hide-block #parametersList .parameter > span {
-  font-size: 12px;
-}
-.graph-view .tabs .tab .options-block {
-  height: max(250px, 25%);
-}
-.graph-view .tabs .tab .options-block > * {
-  display: block;
-  margin-bottom: 10px;
-  width: 100%;
-  text-align: center;
-  box-sizing: border-box;
-}
-.graph-view .tabs .tab .options-block > div {
-  border: 1px solid #666;
-  padding: 2px;
+  z-index: 1;
 }
 .graph-view #add-menu {
   position: absolute;
@@ -2196,42 +2319,8 @@ input[type=checkbox]:checked:after {
 .graph-view .heaps-scene {
   outline: none !important;
 }
-.graph-view .heaps-scene #preview {
-  z-index: 3;
-  position: absolute;
-  width: 300px;
-  height: 300px;
-  background-color: #111;
-  border: 1px solid #444;
-  right: 290px;
-  bottom: 35px;
-}
-.graph-view .heaps-scene #status-bar {
-  z-index: 2;
-  position: absolute;
-  width: 84%;
-  min-height: 20px;
-  background-color: #111;
-  border: 1px solid #444;
-  left: -1px;
-  bottom: -1px;
-  max-height: 60%;
-  overflow: auto;
-}
-.graph-view .heaps-scene #status-bar pre {
-  padding: 10px;
-  vertical-align: sub;
-}
-.graph-view .heaps-scene #status-bar pre.error {
-  color: #c74848;
-}
-.graph-view .heaps-scene #status-bar #close {
-  width: 100%;
-  text-align: center;
-  cursor: pointer;
-}
-.graph-view .heaps-scene svg g {
-  stroke: #202020;
+.graph-view .heaps-scene svg {
+  font-family: 'Inter';
 }
 .graph-view .heaps-scene svg g.selected .outline {
   stroke: #668fff;
@@ -2242,15 +2331,22 @@ input[type=checkbox]:checked:after {
 .graph-view .heaps-scene svg .outline {
   fill: none;
 }
+.graph-view .heaps-scene svg .background {
+  fill: #393939;
+}
+.graph-view .heaps-scene svg .separator {
+  stroke: #272727;
+  stroke-width: 1px;
+}
 .graph-view .heaps-scene svg .resize {
   fill: rgba(0, 0, 0, 0);
   stroke: none;
 }
 .graph-view .heaps-scene svg .comment .head-box {
   fill: rgba(80, 80, 80, 0.5);
-  stroke-width: 3;
 }
 .graph-view .heaps-scene svg .comment .outline {
+  stroke: rgba(80, 80, 80, 0.5);
   stroke-width: 3;
 }
 .graph-view .heaps-scene svg .comment-title {
@@ -2267,21 +2363,14 @@ input[type=checkbox]:checked:after {
 .graph-view .heaps-scene svg .comment-title br {
   display: none;
 }
-.graph-view .heaps-scene svg .head-box {
-  fill: #155358;
-}
 .graph-view .heaps-scene svg .title-box {
-  fill: #ffffff;
+  text-anchor: start;
+  fill: #c3c3c3;
   stroke: none;
   user-select: none;
 }
 .graph-view .heaps-scene svg .title-box::selection {
   background: none;
-}
-.graph-view .heaps-scene svg .nodes,
-.graph-view .heaps-scene svg .properties {
-  fill: #737373;
-  opacity: 0.75;
 }
 .graph-view .heaps-scene svg .hasLink .input-field {
   display: none;
@@ -2305,7 +2394,7 @@ input[type=checkbox]:checked:after {
   fill: #5ca4ab;
 }
 .graph-view .heaps-scene svg .title-node {
-  fill: #ffffff;
+  fill: #c3c3c3;
   stroke: none;
   user-select: none;
 }
@@ -2373,11 +2462,14 @@ input[type=checkbox]:checked:after {
   stroke-width: 2;
   stroke: #c8c8c8;
   fill: transparent;
+  pointer-events: stroke;
 }
-.graph-view .heaps-scene svg .edge:not(.draft):hover,
-.graph-view .heaps-scene svg .edge:not(.draft).selected {
-  stroke-width: 5;
-  stroke: #72b4ff;
+.graph-view .heaps-scene svg .edge.hitbox {
+  stroke-width: 10;
+  stroke: transparent;
+}
+.graph-view .heaps-scene svg .edge.hitbox:hover {
+  stroke: rgba(114, 180, 255, 0.5);
 }
 .graph-view .heaps-scene svg .rect-selection {
   stroke: rgba(0, 0, 255, 0.7);
