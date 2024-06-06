@@ -1,4 +1,4 @@
-package hrt.sbsgraph.nodes;
+package hrt.texgraph.nodes;
 
 class MultiplyShader extends h3d.shader.ScreenShader {
     static var SRC = {
@@ -15,7 +15,7 @@ class MultiplyShader extends h3d.shader.ScreenShader {
 @description("The output is the result of the inputs multiplied")
 @width(80)
 @group("Operation")
-class Multiply extends SubstanceNode {
+class Multiply extends TexNode {
 	var inputs = [
 		{ name : "input1", type: h3d.mat.Texture },
 		{ name : "input2", type: h3d.mat.Texture },

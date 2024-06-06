@@ -1,14 +1,14 @@
-package hide.view.substanceeditor;
+package hide.view.textureeditor;
 
-import hrt.sbsgraph.SubstanceNode;
+import hrt.texgraph.TexNode;
 import hide.view.GraphInterface;
 
-class SubstanceEditor extends hide.view.FileView implements GraphInterface.IGraphEditor {
+class TextureEditor extends hide.view.FileView implements GraphInterface.IGraphEditor {
 	public static var DEFAULT_PREVIEW_COLOR = 16716947;
 	public static var DEFAULT_PREVIEW_SIZE = 2048;
 
 	var graphEditor : hide.view.GraphEditor;
-	var substanceGraph : hrt.sbsgraph.SubstanceGraph;
+	var textureGraph : hrt.texgraph.TexGraph;
 
 	// Preview
 	var previewScene : hide.comp.Scene;
@@ -20,13 +20,13 @@ class SubstanceEditor extends hide.view.FileView implements GraphInterface.IGrap
 	var generationRequested : Bool = true;
 	var previewRefreshRequested : Bool = true;
 
-	var selectedNodes : Array<SubstanceNode>;
+	var selectedNodes : Array<TexNode>;
 
 	override function onDisplay() {
 		super.onDisplay();
 		element.html("");
-		element.addClass("substance-editor");
-		substanceGraph = cast hide.Ide.inst.loadPrefab(state.path, null,  true);
+		element.addClass("texture-editor");
+		textureGraph = cast hide.Ide.inst.loadPrefab(state.path, null,  true);
 		previewShaderAlpha = new GraphEditor.PreviewShaderAlpha();
 
 		if (graphEditor != null)
@@ -81,7 +81,7 @@ class SubstanceEditor extends hide.view.FileView implements GraphInterface.IGrap
 
 			resetEl.on("click", function() {
 				Reflect.deleteField(this.selectedNodes[0].overrides, fieldName);
-				Reflect.setField(this.selectedNodes[0], fieldName, Reflect.field(this.substanceGraph, fieldName));
+				Reflect.setField(this.selectedNodes[0], fieldName, Reflect.field(this.textureGraph, fieldName));
 				resetEl.css({ visibility : "hidden", "pointers-event" : "none"});
 				updateParameters(this.selectedNodes[0]);
 				generate();
@@ -148,12 +148,12 @@ class SubstanceEditor extends hide.view.FileView implements GraphInterface.IGrap
 	}
 
 	override function getDefaultContent() : haxe.io.Bytes {
-		var p = (new hrt.sbsgraph.SubstanceGraph(null, null)).serialize();
+		var p = (new hrt.texgraph.TexGraph(null, null)).serialize();
 		return haxe.io.Bytes.ofString(ide.toJSON(p));
 	}
 
 	override function save() {
-		var content = substanceGraph.saveToText();
+		var content = textureGraph.saveToText();
 		currentSign = ide.makeSignature(content);
 		sys.io.File.saveContent(getPath(), content);
 		super.save();
@@ -165,7 +165,7 @@ class SubstanceEditor extends hide.view.FileView implements GraphInterface.IGrap
 
 		camController = new hide.view.l3d.CameraController2D(previewScene.s2d);
 
-		var tile = h2d.Tile.fromColor(SubstanceEditor.DEFAULT_PREVIEW_COLOR);
+		var tile = h2d.Tile.fromColor(TextureEditor.DEFAULT_PREVIEW_COLOR);
 		previewBitmap = new h2d.Bitmap(tile, previewScene.s2d);
 
 		centerPreviewCamera();
@@ -177,18 +177,18 @@ class SubstanceEditor extends hide.view.FileView implements GraphInterface.IGrap
 
 		previewRefreshRequested = false;
 
-		var outputNodes = substanceGraph.getOutputNodes();
+		var outputNodes = textureGraph.getOutputNodes();
 		if (outputNodes == null || outputNodes.length <= 0)
 			return;
 
-		var outputs = substanceGraph.cachedOutputs.get(outputNodes[0].id);
+		var outputs = textureGraph.cachedOutputs.get(outputNodes[0].id);
 		if (outputs == null || outputs.length <= 0 || outputs[0] == null || previewBitmap == null)
 			return;
 
 		try {
 			var tex = Std.downcast(outputs[0], h3d.mat.Texture);
 			var pixels = tex.capturePixels();
-			var outputTexture = new h3d.mat.Texture(tex.width, tex.height, substanceGraph.outputFormat);
+			var outputTexture = new h3d.mat.Texture(tex.width, tex.height, textureGraph.outputFormat);
 			outputTexture.uploadPixels(pixels);
 			previewBitmap.tile = h2d.Tile.fromTexture(outputTexture);
 
@@ -221,8 +221,8 @@ class SubstanceEditor extends hide.view.FileView implements GraphInterface.IGrap
 			initializedPreviews.set(bitmap, true);
 		}
 
-		if (substanceGraph.cachedOutputs != null) {
-			var outputs = substanceGraph.cachedOutputs.get(node.id);
+		if (textureGraph.cachedOutputs != null) {
+			var outputs = textureGraph.cachedOutputs.get(node.id);
 
 			if (outputs == null || outputs.length <= 0)
 				return;
@@ -258,12 +258,12 @@ class SubstanceEditor extends hide.view.FileView implements GraphInterface.IGrap
 	}
 
 	public function getNodes():Iterator<IGraphNode> {
-		return substanceGraph.nodes.iterator();
+		return textureGraph.nodes.iterator();
 	}
 
 	public function getEdges():Iterator<Edge> {
 		var edges : Array<Edge> = [];
-		for (id => node in substanceGraph.nodes) {
+		for (id => node in textureGraph.nodes) {
 			for (inputId => connection in node.connections) {
 				if (connection != null) {
 					edges.push(
@@ -282,7 +282,7 @@ class SubstanceEditor extends hide.view.FileView implements GraphInterface.IGrap
 	public function getAddNodesMenu():Array<AddNodeMenuEntry> {
 		var entries : Array<AddNodeMenuEntry> = [];
 		var id = 0;
-		for (i => node in hrt.sbsgraph.SubstanceNode.registeredNodes) {
+		for (i => node in hrt.texgraph.TexNode.registeredNodes) {
 			var metas = haxe.rtti.Meta.getType(node);
 			if (metas.group == null) {
 				continue;
@@ -298,7 +298,7 @@ class SubstanceEditor extends hide.view.FileView implements GraphInterface.IGrap
 					group: group,
 					description: description,
 					onConstructNode: () -> {
-						@:privateAccess var id = hrt.sbsgraph.SubstanceGraph.CURRENT_NODE_ID++;
+						@:privateAccess var id = hrt.texgraph.TexGraph.CURRENT_NODE_ID++;
 						var inst = std.Type.createInstance(node, []);
 						inst.id = id;
 						return inst;
@@ -311,48 +311,48 @@ class SubstanceEditor extends hide.view.FileView implements GraphInterface.IGrap
 	}
 
 	public function addNode(node: IGraphNode) {
-		substanceGraph.addNode(cast node);
+		textureGraph.addNode(cast node);
 		generate();
 	}
 
 	public function removeNode(id:Int) {
-		substanceGraph.removeNode(id);
+		textureGraph.removeNode(id);
 		generate();
 	}
 
 	public function serializeNode(node: IGraphNode):Dynamic {
-		return (cast node:SubstanceNode).serializeToDynamic();
+		return (cast node:TexNode).serializeToDynamic();
 	}
 
 	public function unserializeNode(data:Dynamic, newId:Bool): IGraphNode {
-		var node = SubstanceNode.createFromDynamic(data, substanceGraph);
+		var node = TexNode.createFromDynamic(data, textureGraph);
 		if (newId) {
-			@:privateAccess var newId = hrt.sbsgraph.SubstanceGraph.CURRENT_NODE_ID++;
+			@:privateAccess var newId = hrt.texgraph.TexGraph.CURRENT_NODE_ID++;
 			node.id = newId;
 		}
 		return node;
 	}
 
 	public function createCommentNode():Null<IGraphNode> {
-		var node = new hrt.sbsgraph.nodes.Comment();
+		var node = new hrt.texgraph.nodes.Comment();
 		node.comment = "Comment";
-		@:privateAccess var newId = hrt.sbsgraph.SubstanceGraph.CURRENT_NODE_ID++;
+		@:privateAccess var newId = hrt.texgraph.TexGraph.CURRENT_NODE_ID++;
 		node.id = newId;
 		return node;
 	}
 
 	public function canAddEdge(edge: Edge):Bool {
-		return substanceGraph.canAddEdge({ outputNodeId: edge.nodeFromId, outputId: edge.outputFromId, inputNodeId: edge.nodeToId, inputId: edge.inputToId });
+		return textureGraph.canAddEdge({ outputNodeId: edge.nodeFromId, outputId: edge.outputFromId, inputNodeId: edge.nodeToId, inputId: edge.inputToId });
 	}
 
 	public function addEdge(edge: Edge) {
-		var input = substanceGraph.nodes.get(edge.nodeToId);
-		input.connections[edge.inputToId] = {from: substanceGraph.nodes.get(edge.nodeFromId), outputId: edge.outputFromId};
+		var input = textureGraph.nodes.get(edge.nodeToId);
+		input.connections[edge.inputToId] = {from: textureGraph.nodes.get(edge.nodeFromId), outputId: edge.outputFromId};
 		generate();
 	}
 
 	public function removeEdge(nodeToId:Int, inputToId:Int) {
-		var input = substanceGraph.nodes.get(nodeToId);
+		var input = textureGraph.nodes.get(nodeToId);
 		input.connections[inputToId] = null;
 		generate();
 	}
@@ -375,7 +375,7 @@ class SubstanceEditor extends hide.view.FileView implements GraphInterface.IGrap
 			return;
 
 		generationRequested = false;
-		substanceGraph.generate();
+		textureGraph.generate();
 
 		refreshPreview();
 	}
@@ -384,13 +384,13 @@ class SubstanceEditor extends hide.view.FileView implements GraphInterface.IGrap
 		var tile = previewBitmap.tile;
 
 		var ratio = tile.width > tile.height ? tile.width / tile.height : tile.width / tile.height;
-		previewBitmap.width = tile.width > tile.height ? SubstanceEditor.DEFAULT_PREVIEW_SIZE : SubstanceEditor.DEFAULT_PREVIEW_SIZE * ratio;
-		previewBitmap.height = tile.height > tile.width ? SubstanceEditor.DEFAULT_PREVIEW_SIZE  : SubstanceEditor.DEFAULT_PREVIEW_SIZE * ratio;
+		previewBitmap.width = tile.width > tile.height ? TextureEditor.DEFAULT_PREVIEW_SIZE : TextureEditor.DEFAULT_PREVIEW_SIZE * ratio;
+		previewBitmap.height = tile.height > tile.width ? TextureEditor.DEFAULT_PREVIEW_SIZE  : TextureEditor.DEFAULT_PREVIEW_SIZE * ratio;
 
 		@:privateAccess camController.targetPos.set(previewBitmap.height / 2, previewBitmap.width / 2, (1 / previewBitmap.width) * 300);
 	}
 
-	function updateParameters(node: SubstanceNode) {
+	function updateParameters(node: TexNode) {
 		function updateResetButtonVisibility(el : Element, fieldName : String) {
 			var resetEl = el.next(".reset");
 			if (node == null)
@@ -404,12 +404,12 @@ class SubstanceEditor extends hide.view.FileView implements GraphInterface.IGrap
 		}
 
 		var outputWidth = element.find("#output-width");
-		outputWidth.val(node == null ? substanceGraph.outputWidth : node.outputWidth);
+		outputWidth.val(node == null ? textureGraph.outputWidth : node.outputWidth);
 		outputWidth.off();
 		outputWidth.on("change", function() {
 			var v = Std.parseInt(outputWidth.val());
 			if (node == null) {
-				substanceGraph.outputWidth = v;
+				textureGraph.outputWidth = v;
 			}
 			else {
 				node.outputWidth = v;
@@ -421,12 +421,12 @@ class SubstanceEditor extends hide.view.FileView implements GraphInterface.IGrap
 		updateResetButtonVisibility(outputWidth, "outputWidth");
 
 		var outputHeight = element.find("#output-height");
-		outputHeight.val(node == null ? substanceGraph.outputHeight : node.outputHeight);
+		outputHeight.val(node == null ? textureGraph.outputHeight : node.outputHeight);
 		outputHeight.off();
 		outputHeight.on("change", function() {
 			var v = Std.parseInt(outputHeight.val());
 			if (node == null) {
-				substanceGraph.outputHeight = v;
+				textureGraph.outputHeight = v;
 			}
 			else {
 				node.outputHeight = v;
@@ -438,12 +438,12 @@ class SubstanceEditor extends hide.view.FileView implements GraphInterface.IGrap
 		updateResetButtonVisibility(outputHeight, "outputHeight");
 
 		var outputFormat = element.find("#output-format");
-		outputFormat.val(node == null ? substanceGraph.outputFormat.getIndex() : node.outputFormat.getIndex());
+		outputFormat.val(node == null ? textureGraph.outputFormat.getIndex() : node.outputFormat.getIndex());
 		outputFormat.off();
 		outputFormat.on("change", function() {
 			var v = hxd.PixelFormat.createByIndex(Std.parseInt(outputFormat.val()));
 			if (node == null) {
-				substanceGraph.outputFormat = v;
+				textureGraph.outputFormat = v;
 			}
 			else {
 				node.outputFormat = v;
@@ -455,5 +455,5 @@ class SubstanceEditor extends hide.view.FileView implements GraphInterface.IGrap
 		updateResetButtonVisibility(outputFormat, "outputFormat");
 	}
 
-	static var _ = FileTree.registerExtension(SubstanceEditor, ["sbsgraph"], { icon : "scribd", createNew: "Substance Graph" });
+	static var _ = FileTree.registerExtension(TextureEditor, ["texgraph"], { icon : "scribd", createNew: "Texture Graph" });
 }

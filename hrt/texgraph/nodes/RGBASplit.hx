@@ -1,4 +1,4 @@
-package hrt.sbsgraph.nodes;
+package hrt.texgraph.nodes;
 
 class RGBASplitShader extends h3d.shader.ScreenShader {
     static var SRC = {
@@ -26,7 +26,7 @@ class RGBASplitShader extends h3d.shader.ScreenShader {
 @description("Separate a RGBA image entry in 4 grayscale images")
 @width(100)
 @group("Channel")
-class RGBASplit extends SubstanceNode {
+class RGBASplit extends TexNode {
 	var inputs = [
 		{ name : "RGBA", type: h3d.mat.Texture }
 	];

@@ -1,4 +1,4 @@
-package hrt.sbsgraph;
+package hrt.texgraph;
 
 typedef Edge = {
 	?inputNodeId : Int,
@@ -10,15 +10,15 @@ typedef Edge = {
 };
 
 typedef Connection = {
-	from : SubstanceNode,
+	from : TexNode,
 	outputId : Int,
 };
 
-class SubstanceGraph extends hrt.prefab.Prefab {
+class TexGraph extends hrt.prefab.Prefab {
 	public static var CURRENT_NODE_ID = 0;
 
 	public var cachedOutputs : Map<Int, Array<h3d.mat.Texture>> = [];
-	public var nodes : Map<Int, SubstanceNode> = [];
+	public var nodes : Map<Int, TexNode> = [];
 
 	// Base parameters that can be overrided by nodes
 	@:s public var outputHeight = 256;
@@ -41,7 +41,7 @@ class SubstanceGraph extends hrt.prefab.Prefab {
 
 		var nodesJson : Array<Dynamic> = Reflect.getProperty(graphJson, "nodes");
 		for (n in nodesJson) {
-			var node = SubstanceNode.createFromDynamic(n, this);
+			var node = TexNode.createFromDynamic(n, this);
 			this.nodes.set(node.id, node);
 			CURRENT_NODE_ID = hxd.Math.imax(CURRENT_NODE_ID, node.id+1);
 		}
@@ -53,7 +53,7 @@ class SubstanceGraph extends hrt.prefab.Prefab {
 	}
 
 	override function copy(other: hrt.prefab.Prefab) : Void {
-		throw "Substance graph is not meant to be put in a prefab tree. Use a dynamic shader that references this shadergraph instead";
+		throw "Texture graph is not meant to be put in a prefab tree. Use a dynamic shader that references this shadergraph instead";
 	}
 
 	public function saveToDynamic() : Dynamic {
@@ -189,18 +189,18 @@ class SubstanceGraph extends hrt.prefab.Prefab {
 		return true;
 	}
 
-	public function addNode(sbsNode : SubstanceNode) {
-		this.nodes.set(sbsNode.id, sbsNode);
+	public function addNode(texNode : TexNode) {
+		this.nodes.set(texNode.id, texNode);
 	}
 
 	public function removeNode(idNode : Int) {
 		this.nodes.remove(idNode);
 	}
 
-	public function getOutputNodes() : Array<hrt.sbsgraph.nodes.SubstanceOutput> {
-		var outputNodes : Array<hrt.sbsgraph.nodes.SubstanceOutput> = [];
+	public function getOutputNodes() : Array<hrt.texgraph.nodes.TexOutput> {
+		var outputNodes : Array<hrt.texgraph.nodes.TexOutput> = [];
 		for (n in nodes) {
-			if (Std.downcast(n, hrt.sbsgraph.nodes.SubstanceOutput) != null)
+			if (Std.downcast(n, hrt.texgraph.nodes.TexOutput) != null)
 				outputNodes.push(cast n);
 		}
 
@@ -215,7 +215,7 @@ class SubstanceGraph extends hrt.prefab.Prefab {
 
 		cachedOutputs = [];
 
-		function generateNode(node : SubstanceNode) {
+		function generateNode(node : TexNode) {
 			for (c in node.connections) {
 				if (c != null && cachedOutputs.get(c.from.id) == null)
 					generateNode(c.from);
@@ -247,5 +247,5 @@ class SubstanceGraph extends hrt.prefab.Prefab {
 		return outputs;
 	}
 
-	static var _ = hrt.prefab.Prefab.register("sbsgraph", SubstanceGraph, "sbsgraph");
+	static var _ = hrt.prefab.Prefab.register("texgraph", TexGraph, "texgraph");
 }

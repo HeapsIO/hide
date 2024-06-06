@@ -1,4 +1,4 @@
-package hrt.sbsgraph.nodes;
+package hrt.texgraph.nodes;
 
 class BnWSpotsNoiseShader extends h3d.shader.ScreenShader {
     static var SRC = {
@@ -39,7 +39,7 @@ class BnWSpotsNoiseShader extends h3d.shader.ScreenShader {
 @description("Black and white spots noise texture")
 @width(120)
 @group("Texture generation")
-class BnWSpotsNoise extends SubstanceNode {
+class BnWSpotsNoise extends TexNode {
 	var inputs = [];
 	var outputs = [
 		{ name : "output", type: h3d.mat.Texture }
@@ -80,7 +80,7 @@ class BnWSpotsNoise extends SubstanceNode {
 		seedEl.val(seed);
 		seedEl.on("change", function(e) {
 			this.seed = Std.parseFloat(seedEl.val());
-			var substanceEditor = Std.downcast(editor.editor, hide.view.substanceeditor.SubstanceEditor);
+			var substanceEditor = Std.downcast(editor.editor, hide.view.textureeditor.TextureEditor);
 			substanceEditor.generate();
 		});
 
@@ -88,7 +88,7 @@ class BnWSpotsNoise extends SubstanceNode {
 		scaleEl.val(scale);
 		scaleEl.on("change", function(e) {
 			this.scale = Std.parseFloat(scaleEl.val());
-			var substanceEditor = Std.downcast(editor.editor, hide.view.substanceeditor.SubstanceEditor);
+			var substanceEditor = Std.downcast(editor.editor, hide.view.textureeditor.TextureEditor);
 			substanceEditor.generate();
 		});
 

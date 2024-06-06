@@ -1,11 +1,11 @@
-package hrt.sbsgraph.nodes;
+package hrt.texgraph.nodes;
 
 @name("Outputs")
 @description("Parameters outputs")
 @width(80)
 @group("Output")
 @color("#A90707")
-class SubstanceOutput extends SubstanceNode {
+class TexOutput extends TexNode {
 	@prop public var label : String = "base-color";
 
 	var inputs = [
@@ -31,7 +31,7 @@ class SubstanceOutput extends SubstanceNode {
 		labelEl.val(label);
 		labelEl.on("change", function(e) {
 			this.label = labelEl.val();
-			var substanceEditor = Std.downcast(editor.editor, hide.view.substanceeditor.SubstanceEditor);
+			var substanceEditor = Std.downcast(editor.editor, hide.view.textureeditor.TextureEditor);
 			substanceEditor.generate();
 		});
 

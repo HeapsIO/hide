@@ -1,4 +1,4 @@
-package hrt.sbsgraph.nodes;
+package hrt.texgraph.nodes;
 
 class WhiteNoiseShader extends h3d.shader.ScreenShader {
     static var SRC = {
@@ -20,7 +20,7 @@ class WhiteNoiseShader extends h3d.shader.ScreenShader {
 @description("White noise texture")
 @width(100)
 @group("Texture generation")
-class WhiteNoise extends SubstanceNode {
+class WhiteNoise extends TexNode {
 	var inputs = [];
 	var outputs = [
 		{ name : "output", type: h3d.mat.Texture }
@@ -57,7 +57,7 @@ class WhiteNoise extends SubstanceNode {
 		seedEl.val(seed);
 		seedEl.on("change", function(e) {
 			this.seed = Std.parseFloat(seedEl.val());
-			var substanceEditor = Std.downcast(editor.editor, hide.view.substanceeditor.SubstanceEditor);
+			var substanceEditor = Std.downcast(editor.editor, hide.view.textureeditor.TextureEditor);
 			substanceEditor.generate();
 		});
 

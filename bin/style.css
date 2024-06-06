@@ -2086,15 +2086,15 @@ input[type=checkbox]:checked:after {
   border: 1px solid #666;
   padding: 2px;
 }
-/* Substance Editor */
-.substance-editor {
+/* Texture Editor */
+.texture-editor {
   display: flex;
   flex-direction: row;
 }
-.substance-editor .flex.vertical {
+.texture-editor .flex.vertical {
   position: relative;
 }
-.substance-editor #right-panel {
+.texture-editor #right-panel {
   flex: 0;
   display: flex;
   flex-direction: column;
@@ -2105,15 +2105,15 @@ input[type=checkbox]:checked:after {
   height: 100%;
   user-select: none;
 }
-.substance-editor #right-panel .group .header {
+.texture-editor #right-panel .group .header {
   display: flex;
   background-color: #444444;
   padding: 5px;
 }
-.substance-editor #right-panel .group .header:hover {
+.texture-editor #right-panel .group .header:hover {
   background-color: #666666;
 }
-.substance-editor #right-panel .group .header .title {
+.texture-editor #right-panel .group .header .title {
   text-transform: uppercase;
   font-weight: bold;
   margin-left: 7px;
@@ -2121,18 +2121,18 @@ input[type=checkbox]:checked:after {
   font-size: 9pt;
   color: #aaa;
 }
-.substance-editor #right-panel .group .content {
+.texture-editor #right-panel .group .content {
   display: block;
   padding: 10px 20px 10px 20px;
 }
-.substance-editor #right-panel .group .content .title {
+.texture-editor #right-panel .group .content .title {
   font-weight: bold;
   font-family: Verdana, serif;
   font-size: 9pt;
   color: #aaa;
   margin: 0 0 5px 0;
 }
-.substance-editor #right-panel .group .content .fields {
+.texture-editor #right-panel .group .content .fields {
   display: grid;
   grid-template-columns: auto auto;
   gap: 5px 5px;
@@ -2141,16 +2141,16 @@ input[type=checkbox]:checked:after {
   margin-bottom: 10px;
   border-color: #373737;
 }
-.substance-editor #right-panel .group .content .fields.grid-3 {
+.texture-editor #right-panel .group .content .fields.grid-3 {
   grid-template-columns: auto auto 2%;
 }
-.substance-editor #right-panel .group .content .fields .reset {
+.texture-editor #right-panel .group .content .fields .reset {
   padding-top: 3px;
 }
-.substance-editor #right-panel .group .content .fields .reset:hover {
+.texture-editor #right-panel .group .content .fields .reset:hover {
   color: #ffffff;
 }
-.substance-editor #tex-preview {
+.texture-editor #tex-preview {
   z-index: 3;
   position: absolute;
   width: 300px;
@@ -2160,7 +2160,7 @@ input[type=checkbox]:checked:after {
   right: 35px;
   bottom: 35px;
 }
-.substance-editor #tex-preview .hide-toolbar2 {
+.texture-editor #tex-preview .hide-toolbar2 {
   position: absolute;
   right: 8px;
   top: 8px;

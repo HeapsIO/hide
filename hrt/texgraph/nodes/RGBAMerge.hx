@@ -1,4 +1,4 @@
-package hrt.sbsgraph.nodes;
+package hrt.texgraph.nodes;
 
 class RGBAMergeShader extends h3d.shader.ScreenShader {
     static var SRC = {
@@ -20,7 +20,7 @@ class RGBAMergeShader extends h3d.shader.ScreenShader {
 @description("Merge 4 grayscale images entry in a RGBA image")
 @width(100)
 @group("Channel")
-class RGBAMerge extends SubstanceNode {
+class RGBAMerge extends TexNode {
 	var inputs = [
 		{ name : "R", type: h3d.mat.Texture },
 		{ name : "G", type: h3d.mat.Texture },

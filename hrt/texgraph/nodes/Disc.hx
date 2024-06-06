@@ -1,10 +1,10 @@
-package hrt.sbsgraph.nodes;
+package hrt.texgraph.nodes;
 
 @name("Disc")
 @description("Basic disc texture")
 @width(80)
 @group("Texture generation")
-class Disc extends SubstanceNode {
+class Disc extends TexNode {
 	var inputs = [];
 	var outputs = [
 		{ name : "output", type: h3d.mat.Texture }

@@ -1,7 +1,7 @@
-package hrt.sbsgraph;
+package hrt.texgraph;
 
 import Type as HaxeType;
-import hrt.sbsgraph.SubstanceGraph;
+import hrt.texgraph.TexGraph;
 #if editor
 import hide.view.GraphInterface;
 #end
@@ -10,18 +10,18 @@ using Lambda;
 
 typedef AliasInfo = { ?nameSearch: String, ?nameOverride : String, ?description : String, ?args : Array<Dynamic>, ?group: String };
 
-@:autoBuild(hrt.sbsgraph.Macros.autoRegisterNode())
+@:autoBuild(hrt.texgraph.Macros.autoRegisterNode())
 @:keepSub
 @:keep
-class SubstanceNode
+class TexNode
 #if editor
 implements hide.view.GraphInterface.IGraphNode
 #end
 {
-	public static var registeredNodes = new Map<String, Class<SubstanceNode>>();
+	public static var registeredNodes = new Map<String, Class<TexNode>>();
 
 	public var id : Int;
-	public var connections : Array<SubstanceGraph.Connection> = [];
+	public var connections : Array<TexGraph.Connection> = [];
 	public var defaults : Dynamic = {};
 	#if editor
 	public var editor : hide.view.GraphEditor;
@@ -38,7 +38,7 @@ implements hide.view.GraphInterface.IGraphNode
 	public var outputFormat = hxd.PixelFormat.RGBA;
 
 
-	static public function register(key : String, cl : Class<SubstanceNode>) : Bool {
+	static public function register(key : String, cl : Class<TexNode>) : Bool {
 		registeredNodes.set(key, cl);
 		return true;
 	}
@@ -52,7 +52,7 @@ implements hide.view.GraphInterface.IGraphNode
 				for (i in getInputs()) {
 					{
 						name: i.name,
-						color: SubstanceNode.getTypeColor(i.type),
+						color: TexNode.getTypeColor(i.type),
 					}
 				}
 			],
@@ -60,7 +60,7 @@ implements hide.view.GraphInterface.IGraphNode
 				for (o in getOutputs()) {
 					{
 						name: o.name,
-						color: SubstanceNode.getTypeColor(o.type),
+						color: TexNode.getTypeColor(o.type),
 					}
 				}
 			],
@@ -88,7 +88,7 @@ implements hide.view.GraphInterface.IGraphNode
 	}
 	#end
 
-	public static function createFromDynamic(data: Dynamic, graph: SubstanceGraph) : SubstanceNode {
+	public static function createFromDynamic(data: Dynamic, graph: TexGraph) : TexNode {
 		var type = std.Type.resolveClass(data.type);
 		var inst = std.Type.createInstance(type, []);
 		inst.x = data.x;

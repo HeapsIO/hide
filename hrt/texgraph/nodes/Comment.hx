@@ -1,4 +1,4 @@
-package hrt.sbsgraph.nodes;
+package hrt.texgraph.nodes;
 
 #if editor
 import hide.view.GraphInterface;
@@ -7,7 +7,7 @@ import hide.view.GraphInterface;
 @name("Comment")
 @description("A box that allows you to comment your graph")
 @group("Comment")
-class Comment extends SubstanceNode {
+class Comment extends TexNode {
 	@prop() public var comment : String = "Comment";
 	@prop() public var width : Float = 200;
 	@prop() public var height : Float = 200;
