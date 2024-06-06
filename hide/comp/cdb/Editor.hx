@@ -2476,6 +2476,7 @@ class Editor extends Component {
 			SheetView.loadSheet(viewSheet);
 			modal.closeModal();
 			refresh();
+			show(viewSheet);
 		});
 		#end
 	}
