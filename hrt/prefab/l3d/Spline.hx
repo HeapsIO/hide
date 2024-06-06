@@ -225,6 +225,9 @@ class SplinePoint extends Object3D {
 	}
 
 	public function setViewerVisible(visible : Bool) {
+		if (pointViewer == null)
+			return;
+
 		pointViewer.visible = visible;
 		indexText.visible = visible;
 		controlPointsViewer.visible = visible;
@@ -360,7 +363,7 @@ class Spline extends Object3D {
 		var s1 = 0;
 		var sa = 0;
 		var sb = data.samples.length-1;
-		if( t >= 1 ) 
+		if( t >= 1 )
 			s1 = sb;
 		else {
 			do {
@@ -574,7 +577,7 @@ class Spline extends Object3D {
 			var b = s2.pos;
 
 			var d = inline new h3d.col.Point();
-			
+
 			var ab = inline b.sub(a);
 			var ca = inline c.sub(a);
 			var t = inline ca.dot(ab);
@@ -731,7 +734,7 @@ class Spline extends Object3D {
 	override function setSelected(b : Bool ) {
 		super.setSelected(b);
 
-		if( editor != null )
+		if( editor != null && this.enabled)
 			editor.setSelected(b);
 
 		return true;

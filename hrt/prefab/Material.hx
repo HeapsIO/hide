@@ -127,7 +127,7 @@ class Material extends Prefab {
 			var flat = getRoot().flatten(Prefab);
 			for (f in flat) {
 				var cl = Type.getClass(f);
-				if (cl != hrt.prefab.Object3D && cl != hrt.prefab.Prefab && Std.downcast(f, hrt.prefab.Material) == null) {
+				if (cl != hrt.prefab.Object3D && cl != hrt.prefab.Prefab && Std.downcast(f, hrt.prefab.Material) == null && Std.downcast(f, Shader) == null) {
 					isMatLib = false;
 					break;
 				}

@@ -1762,7 +1762,6 @@ class SceneEditor {
 
 			undo.change(Field(e, "name", oldName), function() {
 				tree.refresh(() -> refreshTree());
-				refreshScene();
 			});
 
 			// When renaming a material, we want to rename every references in .props files
@@ -1784,7 +1783,6 @@ class SceneEditor {
 					@:privateAccess prefabView.renameMatsHistory.push({ previousName: oldName, newName: name, prefab: e });
 			}
 
-			refreshScene();
 			return true;
 		};
 
@@ -3141,26 +3139,19 @@ class SceneEditor {
 				model.name = "";
 				autoName(model);
 				changedModels.push(model);
+				model.getLocal3d().remove();
+				model.make();
 			}
 		}
 		undo.change(Custom(function(u) {
-			if(u) {
-				for (model in changedModels) {
-					model.source = oldPath;
-					model.name = "";
-					autoName(model);
-				}
+			for (model in changedModels) {
+				model.source = u ? oldPath : path;
+				model.name = "";
+				autoName(model);
+				model.getLocal3d().remove();
+				model.make();
 			}
-			else {
-				for (model in changedModels) {
-					model.source = path;
-					model.name = "";
-					autoName(model);
-				}
-			}
-			refresh();
 		}));
-		refresh();
 	}
 
 	public dynamic function onSelectionChanged(elts : Array<PrefabElement>, ?mode : SelectMode = Default) {};
