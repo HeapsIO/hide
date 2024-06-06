@@ -508,6 +508,7 @@ class Model extends FileView {
 								${[ for(idx in 0...hmd.lodCount()) '<option value="${idx}">LOD ${idx}</option>'].join("")}
 							<select>
 						</dd>
+						<dt>LOD Vertexes</dt><dd id="vertexes-count">-</dd>
 						<div class="lods-line">
 							<div class="line"></div>
 							<div class="cursor">
@@ -523,6 +524,15 @@ class Model extends FileView {
 				var selectLod = lodsEl.find("select");
 				selectLod.on("change", function(){
 					hmd.forcedLod = Std.int(lodsEl.find("select").val());
+
+					var lodsCountEl = lodsEl.find("#vertexes-count");
+					if (hmd.forcedLod >= 0) {
+						var lodVertexesCount = @:privateAccess hmd.lods[hmd.forcedLod].vertexCount;
+						lodsCountEl.text(lodVertexesCount);
+					}
+					else {
+						lodsCountEl.text('-');
+					}
 				});
 
 				function getLodPercent(idxLod: Int) {
