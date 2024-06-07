@@ -28,9 +28,12 @@ class World extends Object3D {
 	// Runtime map containing loaded prefabs.
 	var chunkPrefabs : Map<String, Array<hrt.prefab.Object3D>>;
 
+	function log2(v : Float) {
+		return Math.log(v) / Math.log(2.0);
+	}
 	public var depth(get, null) : Int;
 	public function get_depth() {
-		return Math.ceil(Math.log(size / chunkSize) / Math.log(2.0));
+		return Math.ceil(log2(size / chunkSize));
 	}
 	var datDir : String;
 
@@ -176,8 +179,13 @@ class World extends Object3D {
 		return null;
 	}
 
-	function getObjectLevel(p : hrt.prefab.Object3D) {
-		return 0;
+	function getObjectLevel(dimension : Float) : Int {
+		return hxd.Math.imax(0, Math.ceil(log2(dimension / chunkSize)));
+	}
+
+	function getPrefabLevel(object3D : hrt.prefab.Object3D) : Int {
+		var local3d = cast(object3D.clone(), hrt.prefab.Object3D).make().local3d;
+		return getObjectLevel(local3d.getBounds().dimension());
 	}
 
 	override function serialize() : Dynamic {
@@ -193,7 +201,7 @@ class World extends Object3D {
 					if ( object3D == null )
 						throw "TODO : stream prefab that are not 3D objects";
 					object3D = cast(object3D.clone(null, null), hrt.prefab.Object3D);
-					var data = getChunkData(getObjectLevel(object3D), object3D.x, object3D.y);
+					var data = getChunkData(getPrefabLevel(object3D), object3D.x, object3D.y);
 					// prefab positions are stored relative to the chunk parent.
 					// it's arbitrary but some work has to be done as the make occurs with the chunk as parent.
 					var trs = object3D.getTransform();
