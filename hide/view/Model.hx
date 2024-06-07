@@ -743,7 +743,7 @@ class Model extends FileView {
 
 		if (obj != null) {
 			for (m in this.obj.getMeshes()) {
-				if(!m.primitive.buffer.isDisposed())
+				if(m.primitive.buffer != null && !m.primitive.buffer.isDisposed())
 					m.primitive.buffer.dispose();
 			}
 
