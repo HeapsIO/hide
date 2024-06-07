@@ -372,10 +372,9 @@ class Model extends FileView {
 	function selectObject( obj : h3d.scene.Object ) {
 		if ( Std.isOfType(obj, h3d.scene.Skin.Joint) ) {
 			selectedJoint = obj.name;
-			if ( displayJoints.isDown() )
+			if ( @:privateAccess sceneEditor.jointsGraphics != null )
 				sceneEditor.setJoints(true, selectedJoint);
-		}
-		else
+		} else
 			selectedJoint = null;
 
 		var properties = sceneEditor.properties;
@@ -479,7 +478,7 @@ class Model extends FileView {
 		'),obj);
 
 		var mesh = Std.downcast(obj, h3d.scene.Mesh);
-		var hmd = Std.downcast(mesh.primitive, h3d.prim.HMDModel);
+		var hmd = mesh != null ? Std.downcast(mesh.primitive, h3d.prim.HMDModel) : null;
 		selectedMesh = mesh;
 
 		if (mesh != null && hmd != null) {
