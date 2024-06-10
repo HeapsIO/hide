@@ -100,8 +100,8 @@ private class FXSceneEditor extends hide.comp.SceneEditor {
 
 			var text : Array<String> = [
 				'Particles: $totalParts',
-				'Particles CPU time: $emitterTime',
-				'Trails CPU time: $trailTime',
+				'Particles CPU time: ${FXEditor.floatToStringPrecision(emitterTime*1000.0, 2)} ms',
+				'Trails CPU time: ${FXEditor.floatToStringPrecision(trailTime * 1000.0, 2)} ms',
 			];
 			statusText.text += "\n" + text.join("\n");
 		}
