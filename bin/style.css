@@ -1963,36 +1963,40 @@ input[type=checkbox]:checked:after {
   position: relative;
 }
 .shader-editor #rightPanel {
-  flex: 0;
+  box-sizing: border-box;
   display: flex;
   flex-direction: column;
   min-width: 270px;
-  width: 280px;
   padding-top: 10px;
   border-left: 1px solid #444444;
   background: #222222;
-  user-select: none;
   height: 100%;
+  user-select: none;
 }
 .shader-editor #rightPanel span {
   margin-left: 5px;
   font-size: 15px;
   font-weight: bold;
 }
-.shader-editor #rightPanel > div {
-  flex: 1;
+.shader-editor #rightPanel .flexible {
+  min-height: 0;
 }
 .shader-editor #rightPanel .hide-block {
-  height: 100%;
+  flex: 1;
+  display: flex;
+  flex-direction: column;
 }
 .shader-editor #rightPanel .hide-block #parametersList {
-  height: 100%;
+  padding: 2px;
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  overflow-y: auto;
+  gap: 3px;
 }
 .shader-editor #rightPanel .hide-block #parametersList .parameter {
   border: 1px solid;
-  margin: 5px;
   background-color: #222;
-  position: relative;
   /*.content {
 						background-color: #b3b3b3;
 						padding: 5px;
@@ -2073,7 +2077,6 @@ input[type=checkbox]:checked:after {
 }
 .shader-editor #rightPanel .options-block {
   flex: 0;
-  height: max(250px, 25%);
 }
 .shader-editor #rightPanel .options-block > * {
   display: block;

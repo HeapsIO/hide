@@ -160,7 +160,6 @@ class PreviewShaderBase extends hxsl.Shader {
 
 		@global var global : {
 			var time : Float;
-			var pixelSize : Vec2;
 		};
 
 		@global var camera : {
@@ -314,11 +313,10 @@ class ShaderEditor extends hide.view.FileView implements GraphInterface.IGraphEd
 
 		var rightPannel = new Element(
 			'<div id="rightPanel">
-				<div>
+				<div class="hide-block flexible" >
 					<span>Parameters</span>
-					<div class="hide-block" >
-						<div id="parametersList" class="hide-scene-tree hide-list">
-						</div>
+
+					<div id="parametersList" class="hide-scene-tree hide-list">
 					</div>
 				</div>
 				<div class="options-block hide-block">
@@ -394,7 +392,15 @@ class ShaderEditor extends hide.view.FileView implements GraphInterface.IGraphEd
 				{
 					label : "Print Shader code to Console",
 					click: () -> trace(hxsl.Printer.shaderToString(shaderGraph.compile(currentGraph.domain).shader.data, true))
-				}
+				},
+				// {
+				// 	label : "Print linked Shader code",
+				// 	click: () -> trace(
+				// 		meshPreviewScene.engine.setCurrent();
+
+				// 		meshPreviewMeshes[0].getMaterials()[0].mainPass.getShaders()
+				// 	)
+				// }
 			]);
 		});
 

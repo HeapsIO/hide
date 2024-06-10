@@ -343,10 +343,13 @@ class GraphEditor extends hide.comp.Component {
 			haxe.Timer.delay(() -> onMiniPreviewReady, 100);
 			return;
 		}
-		var bg = new h2d.Flow(previewsScene.s2d);
-		bg.fillHeight = true;
-		bg.fillWidth = true;
-		bg.backgroundTile = h2d.Tile.fromColor(0x202020);
+
+		previewsScene.engine.backgroundColor = 0x202020;
+
+		// var bg = new h2d.Flow(previewsScene.s2d);
+		// bg.fillHeight = true;
+		// bg.fillWidth = true;
+		// bg.backgroundTile = h2d.Tile.fromColor(0x202020);
 		boxToPreview = [];
 
 		var identity : h3d.Matrix = new h3d.Matrix();
@@ -844,6 +847,7 @@ class GraphEditor extends hide.comp.Component {
 			return;
 		}
 	}
+
 
 	function moveBox(b: Box, x: Float, y: Float) {
 		b.setPosition(x, y);
@@ -1501,6 +1505,10 @@ class GraphEditor extends hide.comp.Component {
 			pt -= offset;
 			pt.x += lX(ide.mouseX);
 			pt.y += lY(ide.mouseY);
+			// if (snapToGrid == !e.altKey) {
+			// 	newX = std.Math.round(newX / Box.NODE_MARGIN) * Box.NODE_MARGIN;
+			// 	newY = std.Math.round(newY / Box.NODE_MARGIN) * Box.NODE_MARGIN;
+			// }
 			node.setPos(pt);
 			opBox(node, true, undoBuffer);
 			opSelect(node.id, true, undoBuffer);

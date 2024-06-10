@@ -2192,12 +2192,11 @@ input[type=checkbox] {
 	}
 
 	#rightPanel {
-		flex: 0;
+		box-sizing: border-box;
 		display: flex;
 		flex-direction: column;
 		min-width: 270px;
 
-		width: 280px;
 		padding-top: 10px;
 		border-left: 1px solid #444444;
     	background: #222222;
@@ -2209,22 +2208,27 @@ input[type=checkbox] {
 			font-size: 15px;
 			font-weight: bold;
 		}
-		>div {
-			flex: 1;
+
+		.flexible {
+			min-height: 0;
 		}
 
-		height: 100%;
-		@options-height: max(250px, 25%);
 		.hide-block {
-			height: 100%;
+			flex: 1;
+			display: flex;
+			flex-direction: column;
+
 			#parametersList {
-				height: 100%;
+				padding: 2px;
+				flex: 1;
+				display: flex;
+				flex-direction: column;
+				overflow-y: auto;
+				gap: 3px;
 
 				.parameter {
 					border: 1px solid;
-					margin: 5px;
 					background-color: #222;
-					position: relative;
 
 					&.hovertop:before, &.hoverbot:after {
 						display: block;
@@ -2318,7 +2322,6 @@ input[type=checkbox] {
 		}
 		.options-block {
 			flex: 0;
-			height: @options-height;
 			& > * {
 				display: block;
 				margin-bottom: 10px;
