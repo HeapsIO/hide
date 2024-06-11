@@ -8,11 +8,6 @@ class VolumetricLightingShader extends h3d.shader.pbr.DefaultForward {
 			var time : Float;
 		}
 
-		@global var camera : {
-			var position : Vec3;
-			var inverseViewProj : Mat4;
-		}
-
 		@param var invViewProj : Mat4;
 
 		@param var noiseTurmoil : Float;
