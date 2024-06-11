@@ -3,6 +3,7 @@ package hrt.shgraph;
 using hxsl.Ast;
 using Lambda;
 using hrt.shgraph.Utils;
+using hrt.tools.MapUtils;
 import hrt.shgraph.AstTools.*;
 import hrt.shgraph.ShaderGraph;
 import hrt.shgraph.ShaderNode;

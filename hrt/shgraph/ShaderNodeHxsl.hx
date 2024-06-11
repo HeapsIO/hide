@@ -3,6 +3,8 @@ package hrt.shgraph;
 import hxsl.Ast.TExpr;
 using hxsl.Ast;
 using hrt.shgraph.Utils;
+using hrt.tools.MapUtils;
+
 using Lambda;
 
 typedef CacheEntry = {expr: TExpr, inputs: Array<ShaderNode.InputInfo>, outputs: Array<ShaderNode.OutputInfo>, idInputOrder: Map<Int, Int>, idOutputOrder: Map<Int,Int>};
