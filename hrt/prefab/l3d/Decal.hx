@@ -1,7 +1,5 @@
 package hrt.prefab.l3d;
 
-// NOTE(ces) : Not Tested
-
 enum abstract DecalMode(String) {
 	var Default;
 	var BeforeTonemapping;
@@ -26,7 +24,7 @@ class Decal extends Object3D {
 	@:s var centered : Bool = true;
 	@:s var autoAlpha : Bool = true;
 	@:c var blendMode : h2d.BlendMode = Alpha;
-	@:s var drawOrder : Int = 0;
+	@:s var drawOrder : String;
 	@:s var normalFade : Bool = false;
 	@:s var normalFadeStart : Float = 0;
 	@:s var normalFadeEnd : Float = 1;
@@ -122,7 +120,7 @@ class Decal extends Object3D {
 		}
 
 		mesh.material.mainPass.setBlendMode(blendMode);
-		mesh.material.mainPass.layer = drawOrder;
+		mesh.material.mainPass.layer = Std.parseInt(drawOrder);
 
 		inline function commonSetup(shader: h3d.shader.pbr.VolumeDecal.BaseDecal) {
 			shader.fadePower = fadePower;
