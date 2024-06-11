@@ -172,7 +172,6 @@ class VolumetricLighting extends RendererFX {
 	@:s public var endDistance : Float = 200.0;
 	@:s public var distanceOpacity : Float = 1.0;
 	@:s public var ditheringIntensity : Float = 1.0;
-	@:s public var ditheringNoise : String;
 
 	@:s public var noiseScale : Float = 1.0;
 	@:s public var noiseLacunarity : Float = 2.0;
@@ -214,9 +213,10 @@ class VolumetricLighting extends RendererFX {
 			vshader.steps = steps;
 			vshader.invViewProj = r.ctx.camera.getInverseViewProj();
 			vshader.color.load(h3d.Vector.fromColor(color));
-			var noise = ditheringNoise != null ? hxd.res.Loader.currentInstance.load(ditheringNoise).toTexture() : h3d.mat.Texture.fromColor(0);
-			noise.wrap = Repeat;
-			vshader.ditheringNoise = noise;
+			if ( vshader.ditheringNoise == null ) {
+				vshader.ditheringNoise = hxd.res.Embed.getResource("hrt/prefab/rfx/blueNoise.png").toImage().toTexture();
+				vshader.ditheringNoise.wrap = Repeat;
+			}
 			vshader.targetSize.set(tex.width, tex.height);
 			vshader.ditheringSize.set(vshader.ditheringNoise.width, vshader.ditheringNoise.height);
 			vshader.ditheringIntensity = ditheringIntensity;
@@ -321,7 +321,6 @@ class VolumetricLighting extends RendererFX {
 					<dt><font color=#FF0000>Steps</font></dt><dd><input type="range" step="1" min="0" max="255" field="steps"/></dd>
 					<dt><font color=#FF0000>Texture size</font></dt><dd><input type="range" min="0" max="1" field="textureSize"/></dd>
 					<dt>Blur</dt><dd><input type="range" step="1" min="0" max="100" field="blur"/></dd>
-					<dt>Blue noise</dt><dd><input type="texturepath" field="ditheringNoise"/></dd>
 					<dt>Dithering intensity</dt><dd><input type="range" min="0" max="1" field="ditheringIntensity"/></dd>
 				</dl>
 			</div>
