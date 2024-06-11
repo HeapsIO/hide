@@ -42,15 +42,9 @@ class VolumetricLightingShader extends h3d.shader.pbr.DefaultForward {
 		@param var fogTop : Float;
 		@param var fogHeightFalloff : Float;
 		@param var fogEnvPower : Float;
+		@param var fogUseEnvColor : Float;
 
 		var calculatedUV : Vec2;
-		function getPosition() : Vec3 {
-			var depth = depthMap.get(calculatedUV).r;
-			var uv2 = uvToScreen(calculatedUV);
-			var temp = vec4(uv2, depth, 1) * invViewProj;
-			var originWS = temp.xyz / temp.w;
-			return originWS;
-		}
 
 		function noise( pos : Vec3 ) : Float {
 			var i = floor(pos);
@@ -99,20 +93,35 @@ class VolumetricLightingShader extends h3d.shader.pbr.DefaultForward {
 		}
 
 		function indirectLighting() : Vec3 {
-			return irrDiffuse.getLod(vec3(0.5), 0.0).rgb * irrPower * fogEnvPower;
+			return envColor * irrPower * fogEnvPower;
 		}
 
 		function directLighting(lightColor : Vec3, lightDirection : Vec3) : Vec3 {
 			return lightColor;
 		}
 
+		function densityAt(pos : Vec3) : Float {
+			var hNorm = smoothstep(0.0, 1.0, (pos.z - fogBottom) / (fogTop - fogBottom));
+			return exp(-hNorm * fogHeightFalloff) * (1.0 - hNorm);
+		}
+
+		var camDir : Vec3;
+		var envColor : Vec3;
 		function fragment() {
 			metalness = 0.0;
 			emissive = 0.0;
 			albedoGamma = vec3(0.0);
-			var wPos = getPosition();
+
+			var depth = depthMap.get(calculatedUV).r;
+			var uv2 = uvToScreen(calculatedUV);
+			var temp = vec4(uv2, depth, 1) * invViewProj;
+			var wPos = temp.xyz / temp.w;
+
 			var cameraDistance = length(wPos - camera.position);
-			var camDir = normalize(wPos - camera.position);
+			if ( depth >= 1.0 )
+				cameraDistance = endDistance;
+			camDir = normalize(wPos - camera.position);
+			envColor = irrDiffuse.getLod(camDir, 0.0).rgb;
 			view = -camDir;
 
 			if ( cameraDistance < startDistance )
@@ -123,24 +132,25 @@ class VolumetricLightingShader extends h3d.shader.pbr.DefaultForward {
 			var stepSize = 1.0 / float(steps) * length(endPos - startPos) / (endDistance - startDistance);
 			var dithering = ditheringNoise.getLod(calculatedUV * targetSize / ditheringSize, 0.0).r;
 			dithering = dithering * ditheringIntensity;
-			pixelColor.rgb = vec3(0.0);
 			var totalScattered = vec3(0.0);
 			var opticalDepth = 0.0;
+			pixelColor = vec4(1.0);
 			for ( i in 0...steps ) {
 				transformedPosition = mix(startPos, endPos, (float(i) + dithering) / float(steps));
 
-				var hNorm = smoothstep(0.0, 1.0, (transformedPosition.z - fogBottom) / (fogTop - fogBottom));
-				var density = noiseAt(transformedPosition) * exp(-hNorm * fogHeightFalloff) * (1.0 - hNorm);
+				var density = noiseAt(transformedPosition) * densityAt(transformedPosition);
 				density *= stepSize;
 
 				var l = evaluateLighting();
 				var transmittance = l * exp(-opticalDepth);
 				var d = density * (1.0 - exp(-length(transmittance)));
 				opticalDepth += d * fogDensity;
-				opacity += d * fogDensity * (1.0 - opacity); 
+				opacity += d * fogDensity * (1.0 - opacity);
 				totalScattered += density * transmittance;
+				if ( opacity > 0.99 )
+					break;
 			}
-			pixelColor.rgb = totalScattered;
+			pixelColor.rgb = totalScattered * color * mix(vec3(1.0), saturate(envColor), fogUseEnvColor);
 			pixelColor.a = distanceOpacity * opacity;
 		}
 	};
@@ -176,6 +186,7 @@ class VolumetricLighting extends RendererFX {
 	@:s public var fogEnvPower : Float = 1.0;
 	@:s public var fogBottom : Float = 0.0;
 	@:s public var fogTop : Float = 200.0;
+	@:s public var fogUseEnvColor : Float = 0.0;
 
 	var noiseTex : h3d.mat.Texture;
 
@@ -220,6 +231,7 @@ class VolumetricLighting extends RendererFX {
 			vshader.fogDensity = fogDensity;
 			vshader.fogBottom = fogBottom;
 			vshader.fogTop = fogTop;
+			vshader.fogUseEnvColor = fogUseEnvColor;
 			vshader.fogHeightFalloff = fogHeightFalloff;
 			pass.pass.setBlendMode(Alpha);
 			pass.render();
@@ -230,12 +242,12 @@ class VolumetricLighting extends RendererFX {
 			blurPass.apply(r.ctx, tex);
 
 			var b : h3d.mat.BlendMode = switch ( blend ) {
-			case None: None; 
-			case Alpha: Alpha; 
-			case Add: Add; 
-			case AlphaAdd: AlphaAdd; 
-			case Multiply: Multiply; 
-			case AlphaMultiply: AlphaMultiply; 
+			case None: None;
+			case Alpha: Alpha;
+			case Add: Add;
+			case AlphaAdd: AlphaAdd;
+			case Multiply: Multiply;
+			case AlphaMultiply: AlphaMultiply;
 			}
 			h3d.pass.Copy.run(tex, h3d.Engine.getCurrent().getCurrentTarget(), b);
 		}
@@ -290,6 +302,8 @@ class VolumetricLighting extends RendererFX {
 					<dt>Top [m]</dt><dd><input type="range" min="0" max="1000" field="fogTop"/></dd>
 					<dt>Height falloff</dt><dd><input type="range" min="0" max="3" field="fogHeightFalloff"/></dd>
 					<dt>Env power</dt><dd><input type="range" min="0" max="2" field="fogEnvPower"/></dd>
+					<dt>Use env color</dt><dd><input type="range" min="0" max="1" field="fogUseEnvColor"/></dd>
+					<dt>Color</dt><dd><input type="color" field="color"/></dd>
 				</dl>
 			</div>
 			<div class="group" name="Noise">
