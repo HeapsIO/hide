@@ -94,7 +94,6 @@ class Decal extends Object3D {
 			var refMatName = this.refMatLib.substring(this.refMatLib.lastIndexOf("/") + 1);
 
 			var prefabLib = hxd.res.Loader.currentInstance.load(refMatLibPath).toPrefab().load();
-			var mat : Material = null;
 			for(c in prefabLib.children) {
 				if (c.name != refMatName)
 					continue;
@@ -360,7 +359,7 @@ class Decal extends Object3D {
 
 			var layers : Array< { name : String, value : Int }> = hide.Ide.inst.currentConfig.get("material.drawOrder", []);
 
-			var props = ctx.properties.add(new hide.Element('
+			ctx.properties.add(new hide.Element('
 			<div class="decal">
 				<div class="group" name="Decal">
 					<dl>

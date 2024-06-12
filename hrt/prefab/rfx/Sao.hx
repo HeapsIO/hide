@@ -1,5 +1,20 @@
 package hrt.prefab.rfx;
 @:access(h3d.scene.Renderer)
+
+class SaoMerge extends h3d.shader.ScreenShader {
+
+	static var SRC = {
+		@param var screenOcclusion : Sampler2D;
+		@param var materialOcclusionIntensity : Float;
+		@ignore @param var materialOcclusion : Channel;
+		
+		function fragment() {
+			pixelColor.rgb = screenOcclusion.get(calculatedUV).xxx;
+			pixelColor.rgb *= mix(1.0, materialOcclusion.get(calculatedUV).x, materialOcclusionIntensity);
+		}
+	}
+}
+
 class Sao extends RendererFX {
 
 	@:s public var size : Float = 1;
@@ -20,6 +35,7 @@ class Sao extends RendererFX {
 	var sao : h3d.pass.ScalableAO;
 	var saoBlur = new h3d.pass.Blur();
 	var saoCopy = new h3d.pass.Copy();
+	var saoMergePass = new h3d.pass.ScreenFx(new SaoMerge());
 	var saoTex : h3d.mat.Texture;
 
 	function new(parent, shared: ContextShared) {
@@ -60,9 +76,6 @@ class Sao extends RendererFX {
 			sao.shader.depthTextureChannel = depth.channel;
 			sao.shader.normalTextureChannel = normal.channel;
 			sao.shader.useWorldUV = useWorldUV;
-			sao.shader.microOcclusion = occlu.texture;
-			sao.shader.microOcclusionChannel = occlu.channel;
-			sao.shader.microOcclusionIntensity = microIntensity;
 			sao.shader.noiseScale.set(noiseScale, noiseScale);
 			if( noiseTexturePath != null )
 				sao.shader.noiseTexture = loadNoiseTexture(noiseTexturePath, Repeat);
@@ -78,8 +91,17 @@ class Sao extends RendererFX {
 			saoBlur.quality = blurQuality;
 			saoBlur.apply(ctx, saoTex);
 
+			var saoMerge = r.allocTarget("saoMerge",false, 1.0);
+			ctx.engine.pushTarget(saoMerge);
+			saoMergePass.shader.materialOcclusionIntensity = microIntensity;
+			saoMergePass.shader.materialOcclusionChannel = occlu.channel;
+			saoMergePass.shader.materialOcclusion = occlu.texture;
+			saoMergePass.shader.screenOcclusion = saoTex;
+			saoMergePass.render();
+			ctx.engine.popTarget();
+
 			saoCopy.pass.setColorChannel(occlu.channel);
-			saoCopy.apply(saoTex, occlu.texture);
+			saoCopy.apply(saoMerge, occlu.texture);
 		}
 	}
 
