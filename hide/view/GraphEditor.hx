@@ -346,10 +346,10 @@ class GraphEditor extends hide.comp.Component {
 
 		previewsScene.engine.backgroundColor = 0x202020;
 
-		// var bg = new h2d.Flow(previewsScene.s2d);
-		// bg.fillHeight = true;
-		// bg.fillWidth = true;
-		// bg.backgroundTile = h2d.Tile.fromColor(0x202020);
+		var bg = new h2d.Flow(previewsScene.s2d);
+		bg.fillHeight = true;
+		bg.fillWidth = true;
+		bg.backgroundTile = h2d.Tile.fromColor(0x202020);
 		boxToPreview = [];
 
 		var identity : h3d.Matrix = new h3d.Matrix();
@@ -1150,11 +1150,11 @@ class GraphEditor extends hide.comp.Component {
 			if (e.button != 0)
 				return;
 
-			// if ((cast e.target: js.html.Element).closest("foreignObject") != null && box.info.comment == null)
-			// {
-			// 	e.stopPropagation();
-			// 	return;
-			// }
+			if ((cast e.target: js.html.Element).closest("foreignObject") != null && box.info.comment == null)
+			{
+				e.stopPropagation();
+				return;
+			}
 			e.stopPropagation();
 
 			if (!box.selected) {
@@ -1171,6 +1171,11 @@ class GraphEditor extends hide.comp.Component {
 		elt.get(0).onpointerup = function(e: js.html.PointerEvent) {
 			if (e.button != 0)
 				return;
+			if ((cast e.target: js.html.Element).closest("foreignObject") != null && box.info.comment == null)
+			{
+				e.stopPropagation();
+				return;
+			}
 			elt.get(0).releasePointerCapture(e.pointerId);
 			endMove();
 		};
