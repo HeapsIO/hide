@@ -22,9 +22,6 @@ class Fresnel extends ShaderNodeHxsl {
 		@sgconst var ALPHA_ADD : Int = 0;
 		@sgconst var REVERSE : Int = 0;
 
-		@global var camera : {
-			var position : Vec3;
-		};
 
 		@sginput var color : Vec3;
 		@sginput(0.2) var bias : Float;
@@ -32,12 +29,15 @@ class Fresnel extends ShaderNodeHxsl {
 		@sginput(1.0) var power : Float;
 		@sginput(1.0) var totalAlpha : Float;
 		@sginput(1.0) var fresnalAlpha : Float;
+		@sginput("position") var cameraPosition : Vec3;
+
+
 		@sgoutput var output : Vec4;
 
 		function fragment() {
 			output = rgba;
 
-			var cameraDir = (worldPosition - camera.position).normalize();
+			var cameraDir = (worldPosition - cameraPosition).normalize();
 			var fresnel = 0.0;
 
 			if(REVERSE == 1)

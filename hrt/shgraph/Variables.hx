@@ -30,6 +30,9 @@ enum abstract Global(Int) to Int {
 	var PreviewSelect;
 	var PreviewColor;
 
+	var Camera;
+	var CameraPosition;
+
 	// Particles
 	var ParticleLife;
 	var ParticleLifeTime;
@@ -87,7 +90,8 @@ class Variables {
 		g[ParticleLifeTime]		= {type: TFloat, name: "particleLifeTime", varkind: KVar(Local)};
 		g[ParticleRandom] 		= {type: TFloat, name: "particleRandom", varkind: KVar(Local)};
 
-
+		g[Camera] = {type: TVoid, name: "camera", varkind: KVar(Local)};
+		g[CameraPosition] = {type: TVec(3, VFloat), name: "position", varkind: KVar(Local, Camera)};
 
 		g;
 	};
