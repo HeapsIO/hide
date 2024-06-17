@@ -2506,7 +2506,6 @@ class Editor extends Component {
 					endChanges();
 					onChange();
 				}},
-				{ label : '${getSheetProps(sheet).view == null ? "Create View" : "Edit View"}', click : function() { createView(getSheetProps(sheet).view != null ? null : sheet, getSheetProps(sheet).view != null ? sheet : null , index+1); } },
 				{ label : "Categories", menu: categoriesMenu(getSheetProps(sheet).categories, function(cats) {
 					beginChanges();
 					var props = getSheetProps(sheet);
@@ -2518,6 +2517,12 @@ class Editor extends Component {
 				{ label : "", isSeparator: true },
 
 			]);
+		}
+		if ( sheet.props.dataFiles == null ) {
+			content.push({
+				label : '${getSheetProps(sheet).view == null ? "Create View" : "Edit View"}',
+				click : function() { createView(getSheetProps(sheet).view != null ? null : sheet, getSheetProps(sheet).view != null ? sheet : null , index+1); }
+			});
 		}
 		if( sheet.props.dataFiles == null )
 			content = content.concat([
