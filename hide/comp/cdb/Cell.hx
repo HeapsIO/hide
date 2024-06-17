@@ -152,9 +152,31 @@ class Cell {
 				editor.endChanges();
 				refresh();
 			}
-			var forms : Array<hide.comp.ContextMenu.ContextMenuItem>;
+			var forms : Array<hide.comp.ContextMenu.ContextMenuItem> = [];
 			var current = editor.formulas.get(this);
-			forms = [for( f in editor.formulas.getList(table.sheet) ) { label : f.name, click : () -> if( f == current ) setF(null) else setF(f), checked : f == current }];
+
+			var isView = SheetView.isView(table.sheet);
+			var s = isView ? SheetView.getOriginalSheet(table.sheet) : table.sheet;
+			for (f in  editor.formulas.getList(s)) {
+				var el = {
+					label : f.name,
+					click : function() {
+						if( f == current )
+							setF(null)
+						else
+							setF(f);
+
+						if(isView) {
+							SheetView.reloadSheet(table.sheet);
+							editor.refresh();
+						}
+					},
+					checked : f == current,
+				};
+
+				forms.push(el);
+			}
+
 			#if !hl
 			forms.push({ label : "New...", click : () -> editor.formulas.createNew(this, setF) });
 			#end

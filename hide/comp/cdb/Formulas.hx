@@ -215,9 +215,13 @@ class Formulas {
 	}
 
 	public function get( c : Cell ) : Null<Formula> {
-		var tmap = fmap.get(c.table.sheet.name);
+		var isView = SheetView.isView(c.table.sheet);
+		var s = isView ? SheetView.getOriginalSheet(c.table.sheet) : c.table.sheet;
+		var tmap = fmap.get(s.name);
 		if( tmap == null )
 			return null;
+
+		var lineObj = isView ? SheetView.getOriginalObject(c.line) : c.line.obj;
 		var f = Reflect.field(c.line.obj, c.column.name+"__f");
 		if( f == null && c.column.editor != null ) {
 			f = (c.column.editor:Editor.EditorColumnProps).formula;
@@ -227,6 +231,12 @@ class Formulas {
 	}
 
 	public function set( c : Cell, f : Formula ) {
+		// var isView = SheetView.isView(c.table.sheet);
+		// if (isView) {
+		// 	var s = SheetView.getOriginalSheet(c.table.getRealSheet());
+		// 	setForValue(SheetView.getOriginalObject(c.line), s, s.columns[c.columnIndex], f == null ? null : f.name);
+		// }
+
 		setForValue(c.line.obj, c.table.getRealSheet(), c.column, f == null ? null : f.name);
 	}
 
