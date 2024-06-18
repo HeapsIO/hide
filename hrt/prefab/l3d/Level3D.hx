@@ -12,5 +12,5 @@ class Level3D extends Object3D
 	}
 	#end
 
-	public static var _ = Prefab.register("level3d", Level3D);
+	public static var _ = Prefab.register("level3d", Level3D, "l3d");
 }
