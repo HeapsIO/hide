@@ -3361,11 +3361,11 @@ div.gradient-box {
   text-transform: capitalize;
   font-weight: normal;
 }
-.lods-line {
+.lods .lods-line {
   display: flex;
   overflow: hidden;
 }
-.lods-line .line {
+.lods .lods-line .line {
   height: 30px;
   margin: 10px 2px 0px 2px;
   background-color: #151515;
@@ -3374,35 +3374,50 @@ div.gradient-box {
   padding: 1px;
   width: 100%;
 }
-.lods-line .line div {
+.lods .lods-line .line div {
   overflow: hidden;
   height: 100%;
 }
-.lods-line .line div:nth-child(1n) {
+.lods .lods-line .line div:nth-child(1n) {
   background-color: #f3e179;
 }
-.lods-line .line div:nth-child(2n) {
+.lods .lods-line .line div:nth-child(2n) {
   background-color: #79f37b;
 }
-.lods-line .line div:nth-child(3n) {
+.lods .lods-line .line div:nth-child(3n) {
   background-color: #8979f3;
 }
-.lods-line .line div:nth-child(4n) {
+.lods .lods-line .line div:nth-child(4n) {
   background-color: #f379ad;
 }
-.lods-line .line p {
+.lods .lods-line .line .crop {
+  height: 100%;
+  cursor: w-resize;
+  width: 2px;
+  background-color: #151515;
+}
+.lods .lods-line .line p {
   margin: 0 2px 0 2px;
   color: black;
 }
-.lods-line .cursor {
+.lods .lods-line .cursor {
   position: absolute;
+  pointer-events: none;
 }
-.lods-line .cursor .cursor-line {
+.lods .lods-line .cursor .cursor-line {
   background-color: #000000;
   height: 32px;
   width: 2px;
 }
-.lods-line .cursor p {
+.lods .lods-line .cursor p {
   text-align: center;
+  margin-top: 2px;
+}
+.lods #buttons {
+  width: 100%;
+  margin-top: 25px;
+}
+.lods #buttons input {
+  width: 100%;
   margin-top: 2px;
 }

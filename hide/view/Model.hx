@@ -41,6 +41,15 @@ class Model extends FileView {
 		if (Ide.inst.currentConfig.get("sceneeditor.renderprops.edit", false) && sceneEditor.renderPropsRoot != null)
 			sceneEditor.renderPropsRoot.save();
 
+		for (o in obj.findAll(o -> Std.downcast(o, h3d.scene.Mesh))) {
+
+			var hmd = Std.downcast(o.primitive, h3d.prim.HMDModel);
+			if (hmd == null)
+				continue;
+
+			h3d.prim.ModelDatabase.current.saveModelProps(o.name, hmd);
+		}
+
 		// Save current Anim data
 		if( currentAnimation != null ) {
 			var hideData = loadProps();
@@ -150,6 +159,9 @@ class Model extends FileView {
 			skipNextChange = true;
 			modified = false;
 		});
+
+		sceneEditor.view.keys.register("undo", function() undo.undo());
+		sceneEditor.view.keys.register("redo", function() undo.redo());
 
 		element.find(".hide-scene-tree").first().append(sceneEditor.tree.element);
 		element.find(".render-props-edition").find('.hide-scenetree').append(sceneEditor.renderPropsTree.element);
@@ -498,7 +510,7 @@ class Model extends FileView {
 			// LODs edition
 			if (@:privateAccess hmd.lodCount() > 0) {
 				var lodsEl = new Element('
-					<div class="group" name="LODs">
+					<div class="group lods" name="LODs">
 						<dt>LOD Count</dt><dd>${hmd.lodCount()}</dd>
 						<dt>Force display LOD</dt>
 						<dd>
@@ -515,10 +527,78 @@ class Model extends FileView {
 								<p class="ratio">100%</p>
 							</div>
 						</div>
+						<div id="buttons">
+							<input type="button" value="Reset defaults" id="reset-lods"/>
+						</div>
 					</div>
 				');
-
 				properties.add(lodsEl, null, null);
+
+				function getLodRatio(idxLod: Int) {
+					var lodConfig = hmd.getLodConfig();
+					var prev = idxLod == 0 ? 1 : lodConfig[idxLod - 1];
+
+					return (Math.abs(prev - lodConfig[idxLod]));
+				}
+
+				function getLodPercent(idxLod: Int) {
+					return getLodRatio(idxLod) * 100;
+				}
+
+				function getLodInvertedCumulativePercent(idxLod : Int) {
+					var total = 100.;
+					for (idx in 0...hmd.lodCount()) {
+						if (idxLod == idx)
+							break;
+
+						total -= getLodPercent(idx);
+					}
+
+					total *= 100;
+					total = Math.round(total) / 100.;
+					return total;
+				}
+
+				function startDrag(onMove: js.jquery.Event->Void, onStop: js.jquery.Event->Void) {
+					var el = new Element(element[0].ownerDocument.body);
+					el.on("mousemove.lods", onMove);
+					el.on("mouseup.lods", function(e: js.jquery.Event) {
+						el.off("mousemove.lods");
+						el.off("mouseup.lods");
+						e.preventDefault();
+						e.stopPropagation();
+						onStop(e);
+					});
+				}
+
+				function refreshLodLine() {
+					var areas = lodsEl.find(".area");
+					var idx = 0;
+					for (area in areas) {
+						var areaEl = new Element(area);
+						areaEl.css({ width : '${getLodPercent(idx)}%' });
+						areaEl.find('#percent').text('${getLodInvertedCumulativePercent(idx)}%');
+						idx++;
+					}
+				}
+
+				var resetLod = lodsEl.find('#reset-lods');
+				resetLod.on("click", function() {
+					var prevConfig = @:privateAccess hmd.lodConfig?.copy();
+					@:privateAccess hmd.lodConfig = null;
+					Ide.inst.quickMessage('Lod config reset for object : ${obj.name}');
+					refreshLodLine();
+
+					undo.change(Custom(function(undo) {
+						if (undo) {
+							@:privateAccess hmd.lodConfig = prevConfig;
+						} else {
+							@:privateAccess hmd.lodConfig = null;
+						}
+
+						refreshLodLine();
+					}));
+				});
 
 				var selectLod = lodsEl.find("select");
 				selectLod.on("change", function(){
@@ -534,23 +614,63 @@ class Model extends FileView {
 					}
 				});
 
-				function getLodPercent(idxLod: Int) {
-					var lodConfig = @:privateAccess h3d.prim.HMDModel.lodConfig;
-					var prev = idxLod == 0 ? 1 : lodConfig[idxLod - 1];
-
-					return (Math.abs(prev - lodConfig[idxLod])) * 100;
-				}
-
 				var lodsLine = lodsEl.find(".line");
-				var total = 100.;
 				for (idx in 0...hmd.lodCount()) {
-					lodsLine.append(new Element('
-					<div style="${idx != hmd.lodCount() - 1 ? 'width:${getLodPercent(idx)}%;' : 'flex:1'}">
+					var areaEl = new Element('
+					<div class="area" style="${idx != hmd.lodCount() - 1 ? 'width:${getLodPercent(idx)}%;' : 'flex:1;'}">
 						<p>LOD&nbsp${idx}</p>
-						<p>${total}%</p>
-					</div>'));
+						<p id="percent">${getLodInvertedCumulativePercent(idx)}%</p>
+					</div>');
+					lodsLine.append(areaEl);
 
-					total -= getLodPercent(idx);
+					var widthHandle = 10;
+					areaEl.on("mousemove", function(e:js.jquery.Event) {
+						if ((e.offsetX <= widthHandle && idx != 0) || (areaEl.width() - e.offsetX) <= widthHandle && idx != hmd.lodCount() - 1)
+							areaEl.css({ cursor : 'w-resize' });
+						else
+							areaEl.css({ cursor : 'default' });
+					});
+
+					areaEl.on("mousedown", function(e:js.jquery.Event) {
+						var firstHandle = e.offsetX <= widthHandle && idx != 0;
+						var secondHandle = areaEl.width() - e.offsetX <= widthHandle && idx != hmd.lodCount() - 1;
+
+						if (firstHandle || secondHandle) {
+							var resizedAreaEl = secondHandle ? areaEl : areaEl.prev();
+							var compensingAreaEl = resizedAreaEl.next();
+							var startPos = e.clientX;
+							var resizedAreaStartWidth = resizedAreaEl.width();
+							var compensingAreaStartWidth = compensingAreaEl.width();
+
+							var currIdx = secondHandle ? idx : idx - 1;
+							var resizedAreaLod = getLodRatio(currIdx);
+
+							var prevConfig = @:privateAccess hmd.lodConfig?.copy();
+							var newConfig = hmd.getLodConfig()?.copy();
+
+							startDrag(function(e) {
+								var newWidth = hxd.Math.clamp(resizedAreaStartWidth - (startPos - e.clientX), 0, resizedAreaStartWidth + compensingAreaStartWidth);
+								compensingAreaEl.width(compensingAreaStartWidth + (resizedAreaStartWidth - newWidth));
+								resizedAreaEl.width(newWidth);
+
+								var prev = currIdx == 0 ? 1 : newConfig[currIdx - 1];
+								newConfig[currIdx] = prev - (newWidth * resizedAreaLod) / resizedAreaStartWidth;
+								@:privateAccess hmd.lodConfig = newConfig;
+
+								refreshLodLine();
+							}, function(e) {
+								undo.change(Custom(function(undo) {
+									if (undo) {
+										@:privateAccess hmd.lodConfig = prevConfig;
+									} else {
+										@:privateAccess hmd.lodConfig = newConfig;
+									}
+
+									refreshLodLine();
+								}));
+							});
+						}
+					});
 				}
 
 				var cursor = lodsEl.find(".cursor");

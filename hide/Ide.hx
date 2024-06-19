@@ -660,7 +660,7 @@ class Ide extends hide.tools.IdeData {
 
 			var lods = config.current.get("lods.screenRatio");
 			if (lods != null)
-				h3d.prim.HMDModel.loadLodConfig(lods);
+				@:privateAccess h3d.prim.ModelDatabase.defaultLodConfig = lods;
 
 			initMenu();
 			initLayout();
