@@ -21,9 +21,7 @@ class VolumetricLightingShader extends h3d.shader.pbr.DefaultForward {
 		@param var depthMap : Sampler2D;
 
 		@param var steps : Int;
-		@param var color : Vec3;
 		@param var startDistance : Float;
-		@param var endDistance : Float;
 		@param var distanceOpacity : Float;
 
 		@param var ditheringNoise : Sampler2D;
@@ -31,13 +29,20 @@ class VolumetricLightingShader extends h3d.shader.pbr.DefaultForward {
 		@param var targetSize : Vec2;
 		@param var ditheringIntensity : Float;
 
-
+		@param var color : Vec3;
 		@param var fogDensity : Float;
+		@param var fogUseNoise : Float;
 		@param var fogBottom : Float;
 		@param var fogTop : Float;
 		@param var fogHeightFalloff : Float;
 		@param var fogEnvPower : Float;
 		@param var fogUseEnvColor : Float;
+
+		@param var secondFogDensity : Float;
+		@param var secondFogUseNoise : Float;
+		@param var secondFogBottom : Float;
+		@param var secondFogTop : Float;
+		@param var secondFogHeightFalloff : Float;
 
 		var calculatedUV : Vec2;
 
@@ -95,9 +100,17 @@ class VolumetricLightingShader extends h3d.shader.pbr.DefaultForward {
 			return lightColor;
 		}
 
-		function densityAt(pos : Vec3) : Float {
+		function fogAt(pos : Vec3) : Float {
+			var n = noiseAt(pos);
 			var hNorm = smoothstep(0.0, 1.0, (pos.z - fogBottom) / (fogTop - fogBottom));
-			return exp(-hNorm * fogHeightFalloff) * (1.0 - hNorm);
+			var firstFog = exp(-hNorm * fogHeightFalloff) * (1.0 - hNorm) * fogDensity;
+
+			var secondHNorm = smoothstep(0.0, 1.0, (pos.z - secondFogBottom) / (secondFogTop - secondFogBottom));
+			var secondFog = exp(-secondHNorm * secondFogHeightFalloff) * (1.0 - secondHNorm) * secondFogDensity;
+			firstFog *= mix(1.0, n, fogUseNoise);
+			secondFog *= mix(1.0, n, secondFogUseNoise);
+
+			return max(firstFog, secondFog);
 		}
 
 		var camDir : Vec3;
@@ -113,8 +126,8 @@ class VolumetricLightingShader extends h3d.shader.pbr.DefaultForward {
 			var wPos = temp.xyz / temp.w;
 
 			var cameraDistance = length(wPos - camera.position);
-			if ( depth >= 1.0 )
-				cameraDistance = endDistance;
+			// if ( depth >= 1.0 )
+			// 	cameraDistance = endDistance;
 			camDir = normalize(wPos - camera.position);
 			envColor = irrDiffuse.getLod(camDir, 0.0).rgb;
 			view = -camDir;
@@ -122,9 +135,9 @@ class VolumetricLightingShader extends h3d.shader.pbr.DefaultForward {
 			if ( cameraDistance < startDistance )
 				discard;
 			var startPos = camera.position + camDir * startDistance;
-			var endPos = camera.position + camDir * min(cameraDistance, endDistance);
+			var endPos = camera.position + camDir * cameraDistance;
 			var opacity = 0.0;
-			var stepSize = 1.0 / float(steps) * length(endPos - startPos) / (endDistance - startDistance);
+			var stepSize = 1.0 / float(steps);
 			var dithering = ditheringNoise.getLod(calculatedUV * targetSize / ditheringSize, 0.0).r;
 			dithering = dithering * ditheringIntensity;
 			var totalScattered = vec3(0.0);
@@ -133,20 +146,21 @@ class VolumetricLightingShader extends h3d.shader.pbr.DefaultForward {
 			for ( i in 0...steps ) {
 				transformedPosition = mix(startPos, endPos, (float(i) + dithering) / float(steps));
 
-				var density = noiseAt(transformedPosition) * densityAt(transformedPosition);
-				density *= stepSize;
+				var fog = fogAt(transformedPosition);
+				fog *= stepSize;
 
 				var l = evaluateLighting();
 				var transmittance = l * exp(-opticalDepth);
-				var d = density * (1.0 - exp(-length(transmittance)));
-				opticalDepth += d * fogDensity;
-				opacity += d * fogDensity * (1.0 - opacity);
-				totalScattered += density * transmittance;
+				var d = fog * (1.0 - exp(-length(transmittance)));
+				opticalDepth += d;
+				opacity += d * (1.0 - opacity);
+				totalScattered += d * transmittance;
+				
 				if ( opacity > 0.99 )
 					break;
 			}
-			pixelColor.rgb = totalScattered * color * mix(vec3(1.0), saturate(envColor), fogUseEnvColor);
-			pixelColor.a = distanceOpacity * opacity;
+			pixelColor.rgb = totalScattered * mix(color, saturate(envColor), fogUseEnvColor);
+			pixelColor.a = saturate(distanceOpacity * opacity);
 		}
 	};
 }
@@ -163,8 +177,6 @@ class VolumetricLighting extends RendererFX {
 	@:s public var steps : Int = 10;
 	@:s public var textureSize : Float = 0.5;
 	@:s public var blur : Float = 0.0;
-	@:s public var startDistance : Float = 0.0;
-	@:s public var endDistance : Float = 200.0;
 	@:s public var distanceOpacity : Float = 1.0;
 	@:s public var ditheringIntensity : Float = 1.0;
 
@@ -176,11 +188,18 @@ class VolumetricLighting extends RendererFX {
 	@:s public var noiseOctave : Int = 1;
 
 	@:s public var fogDensity : Float = 1.0;
+	@:s public var fogUseNoise : Float = 1.0;
 	@:s public var fogHeightFalloff : Float = 1.0;
 	@:s public var fogEnvPower : Float = 1.0;
 	@:s public var fogBottom : Float = 0.0;
 	@:s public var fogTop : Float = 200.0;
 	@:s public var fogUseEnvColor : Float = 0.0;
+
+	@:s public var secondFogUseNoise : Float = 1.0;
+	@:s public var secondFogDensity : Float = 0.0;
+	@:s public var secondFogHeightFalloff : Float = 5.0;
+	@:s public var secondFogBottom : Float = 0.0;
+	@:s public var secondFogTop : Float = 50.0;
 
 	var noiseTex : h3d.mat.Texture;
 
@@ -202,12 +221,9 @@ class VolumetricLighting extends RendererFX {
 			var ls = cast(r.getLightSystem(), h3d.scene.pbr.LightSystem);
 			ls.lightBuffer.setBuffers(vshader);
 			vshader.depthMap = @:privateAccess r.textures.depth;
-			vshader.startDistance = startDistance;
-			vshader.endDistance = endDistance;
 			vshader.distanceOpacity = distanceOpacity;
 			vshader.steps = steps;
 			vshader.invViewProj = r.ctx.camera.getInverseViewProj();
-			vshader.color.load(h3d.Vector.fromColor(color));
 			if ( vshader.ditheringNoise == null ) {
 				vshader.ditheringNoise = hxd.res.Embed.getResource("hrt/prefab/rfx/blueNoise.png").toImage().toTexture();
 				vshader.ditheringNoise.wrap = Repeat;
@@ -223,11 +239,20 @@ class VolumetricLighting extends RendererFX {
 			vshader.noisePersistence = noisePersistence;
 			vshader.noiseLacunarity = noiseLacunarity;
 			vshader.fogEnvPower = fogEnvPower;
+
+			vshader.color.load(h3d.Vector.fromColor(color));
 			vshader.fogDensity = fogDensity;
+			vshader.fogUseNoise = fogUseNoise;
 			vshader.fogBottom = fogBottom;
 			vshader.fogTop = fogTop;
 			vshader.fogUseEnvColor = fogUseEnvColor;
 			vshader.fogHeightFalloff = fogHeightFalloff;
+
+			vshader.secondFogDensity = secondFogDensity;
+			vshader.secondFogUseNoise = secondFogUseNoise;
+			vshader.secondFogBottom = secondFogBottom;
+			vshader.secondFogTop = secondFogTop;
+			vshader.secondFogHeightFalloff = secondFogHeightFalloff;
 			pass.pass.setBlendMode(Alpha);
 			pass.render();
 
@@ -289,16 +314,24 @@ class VolumetricLighting extends RendererFX {
 							<option value="AlphaMultiply">AlphaMultiply</option>
 						</select>
 					</dd>
-					<dt>Start distance</dt><dd><input type="range" min="0" field="startDistance"/></dd>
-					<dt>End distance</dt><dd><input type="range" min="0" field="endDistance"/></dd>
 					<dt>Distance opacity</dt><dd><input type="range" min="0" max="1" field="distanceOpacity"/></dd>
-					<dt>Density</dt><dd><input type="range" min="0" max="2" field="fogDensity"/></dd>
-					<dt>Bottom [m]</dt><dd><input type="range" min="0" max="1000" field="fogBottom"/></dd>
-					<dt>Top [m]</dt><dd><input type="range" min="0" max="1000" field="fogTop"/></dd>
-					<dt>Height falloff</dt><dd><input type="range" min="0" max="3" field="fogHeightFalloff"/></dd>
 					<dt>Env power</dt><dd><input type="range" min="0" max="2" field="fogEnvPower"/></dd>
 					<dt>Use env color</dt><dd><input type="range" min="0" max="1" field="fogUseEnvColor"/></dd>
 					<dt>Color</dt><dd><input type="color" field="color"/></dd>
+					<dt>Density</dt><dd><input type="range" min="0" max="2" field="fogDensity"/></dd>
+					<dt>Use noise</dt><dd><input type="range" min="0" max="1" field="fogUseNoise"/></dd>
+					<dt>Bottom [m]</dt><dd><input type="range" min="0" max="1000" field="fogBottom"/></dd>
+					<dt>Top [m]</dt><dd><input type="range" min="0" max="1000" field="fogTop"/></dd>
+					<dt>Height falloff</dt><dd><input type="range" min="0" max="3" field="fogHeightFalloff"/></dd>
+				</dl>
+			</div>
+			<div class="group" name="Second fog">
+				<dl>
+					<dt>Density</dt><dd><input type="range" min="0" max="2" field="secondFogDensity"/></dd>
+					<dt>Use noise</dt><dd><input type="range" min="0" max="1" field="secondFogUseNoise"/></dd>
+					<dt>Bottom [m]</dt><dd><input type="range" min="0" max="1000" field="secondFogBottom"/></dd>
+					<dt>Top [m]</dt><dd><input type="range" min="0" max="1000" field="secondFogTop"/></dd>
+					<dt>Height falloff</dt><dd><input type="range" min="0" max="3" field="secondFogHeightFalloff"/></dd>
 				</dl>
 			</div>
 			<div class="group" name="Noise">
