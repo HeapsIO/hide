@@ -658,10 +658,6 @@ class Ide extends hide.tools.IdeData {
 			}
 			h3d.mat.MaterialSetup.current = render;
 
-			var lods = config.current.get("lods.screenRatio");
-			if (lods != null)
-				@:privateAccess h3d.prim.ModelDatabase.defaultLodConfig = lods;
-
 			initMenu();
 			initLayout();
 		});
