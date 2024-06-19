@@ -112,7 +112,7 @@ class VolumetricLightingShader extends h3d.shader.pbr.DefaultForward {
 			firstFog *= mix(1.0, n, fogUseNoise);
 			secondFog *= mix(1.0, n, secondFogUseNoise);
 
-			useSecondColor = secondFog / max(firstFog, secondFog);
+			useSecondColor = saturate(secondFog / max(firstFog, secondFog));
 			return max(firstFog, secondFog);
 		}
 
