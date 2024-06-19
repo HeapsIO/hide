@@ -571,7 +571,15 @@ class Light extends Object3D {
 		var shadowGroup = new hide.Element('
 			<div class="group" name="Shadows">
 				<dl>
-					<dt>Mode</dt><dd><select field="mode"></select></dd>
+					<dt>Mode</dt>
+					<dd>
+						<select field="mode">
+							<option value="None">None</option>
+							<option value="Static">Static</option>
+							<option value="Mixed">Mixed</option>
+							<option value="Dynamic">Dynamic (Moving light)</option>
+						</select>
+					</dd>
 					<dt>Size</dt>
 					<dd>
 						<select field="size" type="number">
