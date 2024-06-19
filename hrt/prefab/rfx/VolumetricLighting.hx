@@ -38,6 +38,7 @@ class VolumetricLightingShader extends h3d.shader.pbr.DefaultForward {
 		@param var fogEnvPower : Float;
 		@param var fogUseEnvColor : Float;
 
+		@param var secondFogColor : Vec3;
 		@param var secondFogDensity : Float;
 		@param var secondFogUseNoise : Float;
 		@param var secondFogBottom : Float;
@@ -100,6 +101,7 @@ class VolumetricLightingShader extends h3d.shader.pbr.DefaultForward {
 			return lightColor;
 		}
 
+		var useSecondColor : Float;
 		function fogAt(pos : Vec3) : Float {
 			var n = noiseAt(pos);
 			var hNorm = smoothstep(0.0, 1.0, (pos.z - fogBottom) / (fogTop - fogBottom));
@@ -110,6 +112,7 @@ class VolumetricLightingShader extends h3d.shader.pbr.DefaultForward {
 			firstFog *= mix(1.0, n, fogUseNoise);
 			secondFog *= mix(1.0, n, secondFogUseNoise);
 
+			useSecondColor = secondFog / max(firstFog, secondFog);
 			return max(firstFog, secondFog);
 		}
 
@@ -154,12 +157,12 @@ class VolumetricLightingShader extends h3d.shader.pbr.DefaultForward {
 				var d = fog * (1.0 - exp(-length(transmittance)));
 				opticalDepth += d;
 				opacity += d * (1.0 - opacity);
-				totalScattered += d * transmittance;
+				totalScattered += d * transmittance * mix(mix(color, secondFogColor, useSecondColor), saturate(envColor), fogUseEnvColor);
 				
 				if ( opacity > 0.99 )
 					break;
 			}
-			pixelColor.rgb = totalScattered * mix(color, saturate(envColor), fogUseEnvColor);
+			pixelColor.rgb = totalScattered;
 			pixelColor.a = saturate(distanceOpacity * opacity);
 		}
 	};
@@ -195,6 +198,7 @@ class VolumetricLighting extends RendererFX {
 	@:s public var fogTop : Float = 200.0;
 	@:s public var fogUseEnvColor : Float = 0.0;
 
+	@:s public var secondFogColor : Int = 0xFFFFFF;
 	@:s public var secondFogUseNoise : Float = 1.0;
 	@:s public var secondFogDensity : Float = 0.0;
 	@:s public var secondFogHeightFalloff : Float = 5.0;
@@ -248,6 +252,7 @@ class VolumetricLighting extends RendererFX {
 			vshader.fogUseEnvColor = fogUseEnvColor;
 			vshader.fogHeightFalloff = fogHeightFalloff;
 
+			vshader.secondFogColor.load(h3d.Vector.fromColor(secondFogColor));
 			vshader.secondFogDensity = secondFogDensity;
 			vshader.secondFogUseNoise = secondFogUseNoise;
 			vshader.secondFogBottom = secondFogBottom;
@@ -327,6 +332,7 @@ class VolumetricLighting extends RendererFX {
 			</div>
 			<div class="group" name="Second fog">
 				<dl>
+					<dt>Color</dt><dd><input type="color" field="secondFogColor"/></dd>
 					<dt>Density</dt><dd><input type="range" min="0" max="2" field="secondFogDensity"/></dd>
 					<dt>Use noise</dt><dd><input type="range" min="0" max="1" field="secondFogUseNoise"/></dd>
 					<dt>Bottom [m]</dt><dd><input type="range" min="0" max="1000" field="secondFogBottom"/></dd>
