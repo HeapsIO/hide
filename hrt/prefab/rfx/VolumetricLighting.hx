@@ -22,6 +22,7 @@ class VolumetricLightingShader extends h3d.shader.pbr.DefaultForward {
 
 		@param var steps : Int;
 		@param var startDistance : Float;
+		@param var endDistance : Float;
 		@param var distanceOpacity : Float;
 
 		@param var ditheringNoise : Sampler2D;
@@ -129,8 +130,8 @@ class VolumetricLightingShader extends h3d.shader.pbr.DefaultForward {
 			var wPos = temp.xyz / temp.w;
 
 			var cameraDistance = length(wPos - camera.position);
-			// if ( depth >= 1.0 )
-			// 	cameraDistance = endDistance;
+			if ( depth >= 1.0 )
+				cameraDistance = endDistance;
 			camDir = normalize(wPos - camera.position);
 			envColor = irrDiffuse.getLod(camDir, 0.0).rgb;
 			view = -camDir;
@@ -140,7 +141,7 @@ class VolumetricLightingShader extends h3d.shader.pbr.DefaultForward {
 			var startPos = camera.position + camDir * startDistance;
 			var endPos = camera.position + camDir * cameraDistance;
 			var opacity = 0.0;
-			var stepSize = 1.0 / float(steps);
+			var stepSize = saturate(length(endPos - startPos) / (endDistance - startDistance)) / float(steps);
 			var dithering = ditheringNoise.getLod(calculatedUV * targetSize / ditheringSize, 0.0).r;
 			dithering = dithering * ditheringIntensity;
 			var totalScattered = vec3(0.0);
@@ -158,7 +159,7 @@ class VolumetricLightingShader extends h3d.shader.pbr.DefaultForward {
 				opticalDepth += d;
 				opacity += d * (1.0 - opacity);
 				totalScattered += d * transmittance * mix(mix(color, secondFogColor, useSecondColor), saturate(envColor), fogUseEnvColor);
-				
+
 				if ( opacity > 0.99 )
 					break;
 			}
@@ -180,6 +181,8 @@ class VolumetricLighting extends RendererFX {
 	@:s public var steps : Int = 10;
 	@:s public var textureSize : Float = 0.5;
 	@:s public var blur : Float = 0.0;
+	@:s public var startDistance : Float = 0.0;
+	@:s public var endDistance : Float = 200.0;
 	@:s public var distanceOpacity : Float = 1.0;
 	@:s public var ditheringIntensity : Float = 1.0;
 
@@ -225,6 +228,8 @@ class VolumetricLighting extends RendererFX {
 			var ls = cast(r.getLightSystem(), h3d.scene.pbr.LightSystem);
 			ls.lightBuffer.setBuffers(vshader);
 			vshader.depthMap = @:privateAccess r.textures.depth;
+			vshader.startDistance = startDistance;
+			vshader.endDistance = endDistance;
 			vshader.distanceOpacity = distanceOpacity;
 			vshader.steps = steps;
 			vshader.invViewProj = r.ctx.camera.getInverseViewProj();
@@ -319,6 +324,8 @@ class VolumetricLighting extends RendererFX {
 							<option value="AlphaMultiply">AlphaMultiply</option>
 						</select>
 					</dd>
+					<dt>Start distance</dt><dd><input type="range" min="0" field="startDistance"/></dd>
+					<dt>End distance</dt><dd><input type="range" min="0" field="endDistance"/></dd>
 					<dt>Distance opacity</dt><dd><input type="range" min="0" max="1" field="distanceOpacity"/></dd>
 					<dt>Env power</dt><dd><input type="range" min="0" max="2" field="fogEnvPower"/></dd>
 					<dt>Use env color</dt><dd><input type="range" min="0" max="1" field="fogUseEnvColor"/></dd>
