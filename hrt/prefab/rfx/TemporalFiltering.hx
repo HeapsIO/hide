@@ -7,13 +7,13 @@ class TemporalFilteringShader extends h3d.shader.ScreenShader {
 		@const var VARIANCE_CLIPPING : Bool;
 		@const var YCOCG : Bool;
 		@const var UNJITTER : Bool;
+		@const var CATMULL_ROM : Bool;
+		@const var VELOCITY : Bool;
 
+		@param var velocityBuffer : Sampler2D;
 		@param var prevFrame : Sampler2D;
 		@param var curFrame : Sampler2D;
-		@param var resolution : Vec2;
 		@param var amount : Float;
-		@param var jitterUV : Vec2;
-		@param var prevJitterUV : Vec2;
 
 		@param var prevCamMat : Mat4;
 		@param var cameraInverseViewProj : Mat4;
@@ -23,6 +23,8 @@ class TemporalFilteringShader extends h3d.shader.ScreenShader {
 		@param var depthTexture : Sampler2D;
 
 		@const var KEEP_SKY_ALPHA : Bool;
+
+		var isSky : Bool;
 
 		function rgb2ycocg( rgb : Vec3 ) : Vec3 {
 			if( YCOCG ) {
@@ -48,29 +50,71 @@ class TemporalFilteringShader extends h3d.shader.ScreenShader {
 				return ycocg;
 		}
 
-		function clipToAABB( cOld : Vec3, cNew : Vec3, centre : Vec3, halfSize : Vec3 ) : Vec3 {
-			var a = abs(cOld - centre);
-			if( a.r <= halfSize.r && a.g <= halfSize.g && a.b <= halfSize.b ) {
-				return cOld;
-			}
-			else {
-				var dir = (cNew - cOld);
-				var near = centre - sign(dir) * halfSize;
-				var tAll = (near - cOld) / dir;
-				var t = 1.0;
-				if( tAll.x >= 0.0 && tAll.x < t ) t = tAll.x;
-				if( tAll.y >= 0.0 && tAll.y < t ) t = tAll.y;
-				if( tAll.z >= 0.0 && tAll.z < t ) t = tAll.z;
+		function clipAABB( aabb_min : Vec3, aabb_max : Vec3, p : Vec4, q : Vec4) : Vec4	{
+			// note: only clips towards aabb center (but fast!)
+			var p_clip = 0.5 * (aabb_max + aabb_min);
+			var e_clip = 0.5 * (aabb_max - aabb_min) + 0.00000001;
 
-				if( t >= 1.0 ) {
-					return cOld;
-				}
-				else
-					return cOld + dir * t;
+			var v_clip = q - vec4(p_clip, p.w);
+			var v_unit = v_clip.xyz / e_clip;
+			var a_unit = abs(v_unit);
+			var ma_unit = max(max(a_unit.x, a_unit.y), a_unit.z);
+
+			if (ma_unit > 1.0)
+			{
+				return vec4(p_clip, p.w) + v_clip / ma_unit;
+			}
+			else
+			{
+				return q;// point inside aabb
 			}
 		}
 
-		var isSky : Bool;
+		// Reduce blurriness from billinear filter
+		// https://gist.github.com/TheRealMJP/c83b8c0f46b63f3a88a5986f4fa982b1
+		// https://vec3.ca/bicubic-filtering-in-fewer-taps/
+		function sampleCatmullRom( tex : Sampler2D, uv : Vec2 ) : Vec4 {
+			var texSize = tex.textureSize();
+
+			var samplePos = uv * texSize;
+			var texPos1 = floor(samplePos - 0.5) + 0.5;
+
+			var f = samplePos - texPos1;
+
+			var w0 = f * (-0.5 + f * (1.0 - 0.5 * f));
+			var w1 = 1.0 + f * f * (-2.5 + 1.5 * f);
+			var w2 = f * (0.5 + f * (2.0 - 1.5 * f));
+			var w3 = f * f * (-0.5 + 0.5 * f);
+
+			// Work out weighting factors and sampling offsets that will let us use bilinear filtering to
+			// simultaneously evaluate the middle 2 samples from the 4x4 grid.
+			var w12 = w1 + w2;
+			var offset12 = w2 / (w1 + w2);
+
+			// Compute the final UV coordinates we'll use for sampling the texture
+			var texPos0 = texPos1 - 1;
+			var texPos3 = texPos1 + 2;
+			var texPos12 = texPos1 + offset12;
+
+			texPos0 /= texSize;
+			texPos3 /= texSize;
+			texPos12 /= texSize;
+
+			var result = vec4(0.0);
+			result += tex.getLod(vec2(texPos0.x, texPos0.y), 0.0) * w0.x * w0.y;
+			result += tex.getLod(vec2(texPos12.x, texPos0.y), 0.0) * w12.x * w0.y;
+			result += tex.getLod(vec2(texPos3.x, texPos0.y), 0.0) * w3.x * w0.y;
+
+			result += tex.getLod(vec2(texPos0.x, texPos12.y), 0.0) * w0.x * w12.y;
+			result += tex.getLod(vec2(texPos12.x, texPos12.y), 0.0) * w12.x * w12.y;
+			result += tex.getLod(vec2(texPos3.x, texPos12.y), 0.0) * w3.x * w12.y;
+
+			result += tex.getLod(vec2(texPos0.x, texPos3.y), 0.0) * w0.x * w3.y;
+			result += tex.getLod(vec2(texPos12.x, texPos3.y), 0.0) * w12.x * w3.y;
+			result += tex.getLod(vec2(texPos3.x, texPos3.y), 0.0) * w3.x * w3.y;
+
+			return vec4(result.rgb, result.a);
+		}
 
 		function getPixelPosition( uv : Vec2 ) : Vec3 {
 			var d = PACKED_DEPTH ? unpack(depthTexture.get(uv)) : depthChannel.get(uv).r;
@@ -81,34 +125,60 @@ class TemporalFilteringShader extends h3d.shader.ScreenShader {
 		}
 
 		function fragment() {
-			var unJitteredUV = calculatedUV;
-			if( UNJITTER )
-				unJitteredUV -= jitterUV * 0.5;
+			var curSample = curFrame.get(calculatedUV);
+			var curColor = rgb2ycocg(curSample.rgb);
 
-			var curPos = getPixelPosition(calculatedUV);
-			var prevPos = vec4(curPos, 1.0) * prevCamMat;
-			prevPos.xyz /= prevPos.w;
+			var prevUV : Vec2;
 
-			var curSample = curFrame.get(unJitteredUV); 
-			var curColor = curSample.rgb;
-			var prevUV = screenToUv(prevPos.xy);
-			var prevColor = prevFrame.get(prevUV).rgb;
-
-			// Neighborhood clipping [MALAN 2012][KARIS 2014]
-			if( VARIANCE_CLIPPING ) {
-				var offsets : Array<Vec2, 4> = [ vec2(-1.0,0.0), vec2(1.0,0.0), vec2(0.0,-1.0), vec2(0.0, 1.0) ];
-				var m1 = rgb2ycocg(curColor);
-				var m2 = m1 * m1;
-				for( i in 0 ... 4 ) {
-					var c = rgb2ycocg(curFrame.getLod(unJitteredUV + (offsets[i] / resolution), 0).rgb);
-					m1 += c;
-					m2 += c * c;
-				}
-				m1 /= 5.0;
-				m2 = sqrt(m2 / 5.0 - m1 * m1);
-				prevColor = max(vec3(0.0), ycocg2rgb(clipToAABB(rgb2ycocg(prevColor), rgb2ycocg(curColor), m1, m2)));
+			if ( VELOCITY ) {
+				var velocity = velocityBuffer.get(calculatedUV).xy;
+				prevUV = calculatedUV + velocity;
+				isSky = (PACKED_DEPTH ? unpack(depthTexture.get(calculatedUV)) : depthChannel.get(calculatedUV).r) == 1.0;
 			}
-			pixelColor.rgb = isSky ? curColor : mix(curColor, prevColor, amount);
+			else {
+				var curPos = getPixelPosition(calculatedUV);
+				var prevPos = vec4(curPos, 1.0) * prevCamMat;
+				prevPos.xyz /= prevPos.w;
+				prevUV = screenToUv(prevPos.xy);
+			}
+
+			var prevSample = max((CATMULL_ROM) ? sampleCatmullRom(prevFrame, prevUV) : prevFrame.getLod(prevUV, 0), 0.0);
+			var prevColor = rgb2ycocg(prevSample.rgb);
+
+			if ( VARIANCE_CLIPPING ) {
+				var invResolution = 1 / curFrame.textureSize();
+
+				var lt = rgb2ycocg(curFrame.getLod(calculatedUV + (vec2(-1.0,  1.0 ) * invResolution ), 0).rgb);
+				var ct = rgb2ycocg(curFrame.getLod(calculatedUV + (vec2( 0.0,  1.0 ) * invResolution ), 0).rgb);
+				var rt = rgb2ycocg(curFrame.getLod(calculatedUV + (vec2( 1.0,  1.0 ) * invResolution ), 0).rgb);
+				var lc = rgb2ycocg(curFrame.getLod(calculatedUV + (vec2(-1.0,  0.0 ) * invResolution ), 0).rgb);
+				var rc = rgb2ycocg(curFrame.getLod(calculatedUV + (vec2( 1.0,  0.0 ) * invResolution ), 0).rgb);
+				var lb = rgb2ycocg(curFrame.getLod(calculatedUV + (vec2(-1.0, -1.0 ) * invResolution ), 0).rgb);
+				var cb = rgb2ycocg(curFrame.getLod(calculatedUV + (vec2( 0.0, -1.0 ) * invResolution ), 0).rgb);
+				var rb = rgb2ycocg(curFrame.getLod(calculatedUV + (vec2( 1.0, -1.0 ) * invResolution ), 0).rgb);
+
+				var neighborMin = min(lt, min(ct, min(rt, min(lc, min(curColor, min(rc, min(lb, min(cb, rb))))))));
+				var neighborMax = max(lt, max(ct, max(rt, max(lc, max(curColor, max(rc, max(lb, max(cb, rb))))))));
+				var neighborAvg = (lt + ct + rt + lc + curColor + rc + lb + cb + rb) / 9.0;
+
+				var neighborMin2 = min(min(min(min(lc, curColor), ct), rc), cb);
+				var neighborMax2 = max(max(max(max(lc, curColor), ct), rc), cb);
+				var neighborAvg2 = (lc + curColor + ct + rc + cb ) / 5.0;
+
+				neighborMin = (neighborMin + neighborMin2 ) * 0.5;
+				neighborMax = (neighborMax + neighborMax2 ) * 0.5;
+				neighborAvg = (neighborAvg + neighborAvg2 ) * 0.5;
+
+				prevColor = clipAABB(neighborMin, neighborMax, vec4(neighborAvg, 1), vec4(prevColor, 1)).xyz;
+			}
+
+			var blendFactor = amount;
+
+			if ( ( prevUV.x > 1.0 || prevUV.x < 0.0 || prevUV.y > 1.0 || prevUV.y < 0.0 ) || isSky )
+				blendFactor = 0.0;
+
+			pixelColor.rgb = ycocg2rgb(mix(curColor, prevColor, blendFactor));
+
 			if ( KEEP_SKY_ALPHA )
 				pixelColor.a = isSky ? curSample.a : 1.0;
 			else
@@ -123,7 +193,8 @@ class TemporalFiltering extends hrt.prefab.rfx.RendererFX {
 	@:s public var amount : Float;
 	@:s public var varianceClipping : Bool = true;
 	@:s public var ycocg : Bool = true;
-	@:s public var unjitter : Bool = true;
+	@:s public var catmullRom : Bool = true;
+	@:s public var velocity : Bool = false;
 	@:s public var jitterPattern : FrustumJitter.Pattern = Still;
 	@:s public var jitterScale : Float = 1;
 	@:s public var renderMode : String = "AfterTonemapping";
@@ -143,6 +214,10 @@ class TemporalFiltering extends hrt.prefab.rfx.RendererFX {
 		return tmp;
 	}
 
+	override function start( r:h3d.scene.Renderer) {
+		r.ctx.computeVelocity = velocity;
+	}
+
 	override function begin( r:h3d.scene.Renderer, step:h3d.impl.RendererFX.Step ) {
 		if( step == MainDraw ) {
 			var ctx = r.ctx;
@@ -152,17 +227,17 @@ class TemporalFiltering extends hrt.prefab.rfx.RendererFX {
 			frustumJitter.patternScale = jitterScale;
 			frustumJitter.update();
 
-			// Translation Matrix for Jittering
-			jitterMat.identity();
-			jitterMat.translate(frustumJitter.curSample.x / ctx.engine.width, frustumJitter.curSample.y / ctx.engine.height);
-
-			s.prevJitterUV.set(-frustumJitter.prevSample.x / ctx.engine.width, frustumJitter.prevSample.y / ctx.engine.height);
-			s.jitterUV.set(-frustumJitter.curSample.x / ctx.engine.width, frustumJitter.curSample.y / ctx.engine.height);
+			var prevJitterOffsetX = -frustumJitter.prevSample.x / ctx.engine.width;
+			var prevJitterOffsetY = frustumJitter.prevSample.y / ctx.engine.height;
+			var jitterOffsetX = -frustumJitter.curSample.x / ctx.engine.width;
+			var jitterOffsetY = frustumJitter.curSample.y / ctx.engine.height;
 
 			curMatNoJitter.load(ctx.camera.m);
-			curMatJittered.load(getMatrixJittered(ctx.camera));
-			ctx.camera.m.load(curMatJittered);
-			@:privateAccess ctx.camera.needInv = true;
+			ctx.camera.jitterOffsetX = jitterOffsetX;
+			ctx.camera.jitterOffsetY = jitterOffsetY;
+			ctx.camera.update();
+			curMatJittered.load(ctx.camera.m);
+			@:privateAccess ctx.cameraJitterOffsets.set( jitterOffsetX, jitterOffsetY, prevJitterOffsetX, prevJitterOffsetY );
 			s.cameraInverseViewProj.initInverse(curMatNoJitter);
 		}
 
@@ -193,7 +268,9 @@ class TemporalFiltering extends hrt.prefab.rfx.RendererFX {
 
 			var s = pass.shader;
 			s.curFrame = curFrame;
+			s.curFrame.filter = Linear;
 			s.prevFrame = prevFrame;
+			s.prevFrame.filter = Linear;
 			s.amount = amount;
 
 			s.PACKED_DEPTH = depthMap.packed != null && depthMap.packed == true;
@@ -205,18 +282,26 @@ class TemporalFiltering extends hrt.prefab.rfx.RendererFX {
 				s.depthChannelChannel = depthMap.channel == null ? hxsl.Channel.R : depthMap.channel;
 			}
 
-			s.resolution.set(output.width, output.height);
 			s.VARIANCE_CLIPPING = varianceClipping;
 			s.YCOCG = ycocg;
-			s.UNJITTER = unjitter;
+			s.CATMULL_ROM = catmullRom;
+			s.VARIANCE_CLIPPING = varianceClipping;
+			if ( velocity ) {
+				s.velocityBuffer = ctx.getGlobal("velocity");
+				s.velocityBuffer.filter = Nearest;
+				s.VELOCITY = velocity;
+			}
 
 			s.KEEP_SKY_ALPHA = keepSkyAlpha;
 
-			r.setTarget(output);
+			r.setTarget(output, NotBound);
 			pass.render();
 
 			h3d.pass.Copy.run(output, prevFrame);
 			s.prevCamMat.load(curMatNoJitter);
+
+			ctx.camera.jitterOffsetX = 0;
+			ctx.camera.jitterOffsetY = 0;
 
 			// Remove Jitter for effects post TAA
 			r.ctx.camera.update();
@@ -230,7 +315,8 @@ class TemporalFiltering extends hrt.prefab.rfx.RendererFX {
 				<dt>Amount</dt><dd><input type="range" min="0" max="1" field="amount"/></dd>
 				<dt>Variance Clipping</dt><dd><input type="checkbox" field="varianceClipping"/></dd>
 				<dt>Ycocg</dt><dd><input type="checkbox" field="ycocg"/></dd>
-				<dt>Unjitter</dt><dd><input type="checkbox" field="unjitter"/></dd>
+				<dt>CatmullRom</dt><dd><input type="checkbox" field="catmullRom"/></dd>
+				<dt>Velocity</dt><dd><input type="checkbox" field="velocity"/></dd>
 				<div class="group" name="Jitter">
 					<dt>Pattern</dt>
 						<dd>
