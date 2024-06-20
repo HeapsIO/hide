@@ -1760,15 +1760,23 @@ class SceneEditor {
 			var oldName = e.name;
 			e.name = name;
 
-			undo.change(Field(e, "name", oldName), function() {
-				tree.refresh(() -> refreshTree());
-			});
-
 			// When renaming a material, we want to rename every references in .props files
 			// of it, if it is a part of a material library
 			var prefabView = Std.downcast(view, hide.view.Prefab);
 			var mat = Std.downcast(e, hrt.prefab.Material);
 			if (prefabView != null && @:privateAccess prefabView.matLibPath != null && mat != null) {
+				// We do not allow several materials with the same name in mat libs
+				// since they are referenced by their name
+				var matWithNewName = 0;
+				for (m in sceneData.flatten(hrt.prefab.Material)) {
+					if (m.parent == sceneData.getRoot() && m.name == name) {
+						matWithNewName++;
+						if (matWithNewName > 1) {
+							Ide.inst.quickError("Materials with same names aren\'t allowed in a material library!");
+							return false;
+						}
+					}
+				}
 
 				var found = false;
 				for (entry in @:privateAccess prefabView.renameMatsHistory) {
@@ -1782,6 +1790,10 @@ class SceneEditor {
 				if (!found)
 					@:privateAccess prefabView.renameMatsHistory.push({ previousName: oldName, newName: name, prefab: e });
 			}
+
+			undo.change(Field(e, "name", oldName), function() {
+				tree.refresh(() -> refreshTree());
+			});
 
 			return true;
 		};
@@ -4061,14 +4073,19 @@ class SceneEditor {
 		}
 	}
 
-	function autoName(p : PrefabElement ) {
-
+	function autoName(p : PrefabElement) {
 		var uniqueName = false;
+
 		if( p.type == "volumetricLightmap" || p.type == "light" )
 			uniqueName = true;
 
 		if( !uniqueName && p.name != null && p.name.length > 0 && sys.FileSystem.exists(getDataPath(p.name)) )
 			uniqueName = true;
+
+		var mat = Std.downcast(p, hrt.prefab.Material);
+		var prefabView = Std.downcast(view, hide.view.Prefab);
+		var isMatLib = prefabView != null && @:privateAccess prefabView.matLibPath != null && @:privateAccess prefabView.matLibPath != "";
+		uniqueName = !uniqueName && mat != null && mat.parent == sceneData.getRoot() && isMatLib;
 
 		var prefix = null;
 		if(p.name != null && p.name.length > 0) {
