@@ -4,6 +4,9 @@ class RendererFX extends Prefab implements h3d.impl.RendererFX {
 
 	@:s var enableInEditor = true;
 
+	public function start( r : h3d.scene.Renderer ) {
+	}
+
 	public function begin( r : h3d.scene.Renderer, step : h3d.impl.RendererFX.Step ) {
 	}
 
