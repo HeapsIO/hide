@@ -17,10 +17,8 @@ class Keys {
 
 	public function popDisable() {
 		disabledStack--;
-		if (disabledStack < 0) {
-			trace("Missmatched push/pop disable !!!!");
+		if (disabledStack < 0)
 			disabledStack = 0;
-		}
 	}
 
 	public function new( parent : Element ) {
