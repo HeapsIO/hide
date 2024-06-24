@@ -14,6 +14,7 @@ class ShaderGlobalInput extends ShaderNode {
 		[
 			{display: "Time", g: Time},
 			{display: "Pixel Size", g: PixelSize},
+			{display: "Camera Global Position", g: CameraPosition},
 		];
 
 	public function new(idx: Null<Int>) {
