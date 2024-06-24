@@ -15,7 +15,7 @@ class Remap extends Operation {
 
 		@sgoutput var output : Dynamic;
 		function fragment() {
-			output = outMin + (outMax - outMin) * (input - inMin) / (inMax - inMin);
+			output = outMin + (outMax - outMin) * (input - inMin) / max(inMax - inMin, 1e-5);
 		}
 	}
 }
