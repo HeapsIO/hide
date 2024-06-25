@@ -6,7 +6,6 @@ class TemporalFilteringShader extends h3d.shader.ScreenShader {
 
 		@const var VARIANCE_CLIPPING : Bool;
 		@const var YCOCG : Bool;
-		@const var UNJITTER : Bool;
 		@const var CATMULL_ROM : Bool;
 		@const var VELOCITY : Bool;
 
