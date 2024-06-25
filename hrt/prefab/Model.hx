@@ -93,6 +93,10 @@ class Model extends Object3D {
     var polys3D = null;
     var boundingSphere = null;
     override function localRayIntersection(ray : h3d.col.Ray ) : Float {
+		// can happen if the mesh is inside an emitter
+		if (local3d == null)
+			return -1.;
+
         if( polys3D == null ) {
             polys3D = [];
             var bounds = local3d.getBounds();
@@ -105,7 +109,7 @@ class Model extends Object3D {
             }
         }
 
-        if( boundingSphere.rayIntersection(ray,false) < 0 )
+        if( boundingSphere == null || boundingSphere.rayIntersection(ray,false) < 0 )
             return -1.;
 
         var minD = -1.;
