@@ -302,11 +302,15 @@ class Model extends FileView {
 				var matName = mat.mat.name;
 				hide.Ide.inst.openFile(Reflect.field(mat, "path"), null, (view) -> {
 					var prefabView : hide.view.Prefab.Prefab = cast view;
+
 					haxe.Timer.delay(function() {
-						for (p in @:privateAccess prefabView.data.flatten(hrt.prefab.Prefab)) {
-							if (p.name == matName) {
+						for (p in @:privateAccess prefabView.data.flatten(hrt.prefab.Material)) {
+							if (p != null && p.name == matName) {
 								prefabView.sceneEditor.selectElements([p]);
-								@:privateAccess prefabView.sceneEditor.focusObjects([Std.downcast(p, hrt.prefab.Material).previewSphere]);
+								@:privateAccess
+								if (p.previewSphere != null) {
+									prefabView.sceneEditor.focusObjects([p.previewSphere]);
+								}
 							}
 						}
 					}, 500);
