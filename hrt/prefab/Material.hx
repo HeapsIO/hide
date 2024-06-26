@@ -257,6 +257,8 @@ class Material extends Prefab {
 		if (previewSphere != null) {
 			var col = new h3d.col.Sphere(0,0,0,1.);
 			var int = new h3d.scene.Interactive(col, previewSphere);
+			int.propagateEvents = true;
+			int.enableRightButton = true;
 			return int;
 		}
 		return null;
