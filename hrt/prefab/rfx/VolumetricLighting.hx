@@ -102,6 +102,17 @@ class VolumetricLightingShader extends h3d.shader.pbr.DefaultForward {
 			return lightColor;
 		}
 
+		function pointLightIntensity( delta : Vec3, size : Float, invRange4 : Float ) : Float {
+			var dist = delta.dot(delta);
+			var falloff = saturate(1 - dist*dist * invRange4);
+			if( size > 0 ) {
+				dist = (dist.sqrt() - size).max(0.);
+				dist *= dist;
+			}
+			falloff *= falloff;
+			return falloff * falloff * exp(-fog * dist);
+		}
+
 		var useSecondColor : Float;
 		function fogAt(pos : Vec3) : Float {
 			var n = noiseAt(pos);
@@ -119,6 +130,7 @@ class VolumetricLightingShader extends h3d.shader.pbr.DefaultForward {
 
 		var camDir : Vec3;
 		var envColor : Vec3;
+		var fog : Float;
 		function fragment() {
 			metalness = 0.0;
 			emissive = 0.0;
@@ -127,44 +139,35 @@ class VolumetricLightingShader extends h3d.shader.pbr.DefaultForward {
 			var depth = depthMap.get(calculatedUV).r;
 			var uv2 = uvToScreen(calculatedUV);
 			var temp = vec4(uv2, depth, 1) * invViewProj;
-			var wPos = temp.xyz / temp.w;
+			var endPos = temp.xyz / temp.w;
 
-			var cameraDistance = length(wPos - camera.position);
+			var cameraDistance = length(endPos - camera.position);
 			if ( depth >= 1.0 )
 				cameraDistance = endDistance;
-			camDir = normalize(wPos - camera.position);
+			camDir = normalize(endPos - camera.position);
 			envColor = irrDiffuse.getLod(camDir, 0.0).rgb;
 			view = -camDir;
 
 			if ( cameraDistance < startDistance )
 				discard;
 			var startPos = camera.position + camDir * startDistance;
-			var endPos = camera.position + camDir * cameraDistance;
 			var opacity = 0.0;
-			var stepSize = saturate(length(endPos - startPos) / (endDistance - startDistance)) / float(steps);
+			var stepSize = length(endPos - startPos) / float(steps);
 			var dithering = ditheringNoise.getLod(calculatedUV * targetSize / ditheringSize, 0.0).r;
 			dithering = dithering * ditheringIntensity;
 			var totalScattered = vec3(0.0);
 			var opticalDepth = 0.0;
 			pixelColor = vec4(1.0);
+			var totalScattered = vec3(0.0);
+			var transmittance = 1.0;
 			for ( i in 0...steps ) {
 				transformedPosition = mix(startPos, endPos, (float(i) + dithering) / float(steps));
-
-				var fog = fogAt(transformedPosition);
-				fog *= stepSize;
-
-				var l = evaluateLighting();
-				var transmittance = l * exp(-opticalDepth);
-				var d = fog * (1.0 - exp(-length(transmittance)));
-				opticalDepth += d;
-				opacity += d * (1.0 - opacity);
-				totalScattered += d * transmittance * mix(mix(color, secondFogColor, useSecondColor), saturate(envColor), fogUseEnvColor);
-
-				if ( opacity > 0.99 )
-					break;
+				fog = fogAt(transformedPosition);
+				totalScattered += fog * stepSize * transmittance * evaluateLighting() * mix(mix(color, secondFogColor, useSecondColor), saturate(envColor), fogUseEnvColor);
+				transmittance *= exp(-fog * stepSize);
 			}
 			pixelColor.rgb = totalScattered;
-			pixelColor.a = saturate(distanceOpacity * opacity);
+			pixelColor.a = saturate(distanceOpacity * (1.0 - transmittance));
 		}
 	};
 }
@@ -250,7 +253,7 @@ class VolumetricLighting extends RendererFX {
 			vshader.fogEnvPower = fogEnvPower;
 
 			vshader.color.load(h3d.Vector.fromColor(color));
-			vshader.fogDensity = fogDensity;
+			vshader.fogDensity = fogDensity * 0.002;
 			vshader.fogUseNoise = fogUseNoise;
 			vshader.fogBottom = fogBottom;
 			vshader.fogTop = fogTop;
@@ -258,7 +261,7 @@ class VolumetricLighting extends RendererFX {
 			vshader.fogHeightFalloff = fogHeightFalloff;
 
 			vshader.secondFogColor.load(h3d.Vector.fromColor(secondFogColor));
-			vshader.secondFogDensity = secondFogDensity;
+			vshader.secondFogDensity = secondFogDensity * 0.002;
 			vshader.secondFogUseNoise = secondFogUseNoise;
 			vshader.secondFogBottom = secondFogBottom;
 			vshader.secondFogTop = secondFogTop;
