@@ -2046,10 +2046,6 @@ class SceneEditor {
 			}
 		}
 
-		var worlds = getAllWithRefs(sceneData, hrt.prefab.World);
-		for ( w in worlds )
-			w.editor = this;
-
 		if( lastRenderProps == null )
 			lastRenderProps = renderProps[0];
 
@@ -2844,10 +2840,6 @@ class SceneEditor {
 
 		for( p in elt.flatten() ) {
 			makeInteractive(p);
-			if ( p.type == "world" ) {
-				var world = Std.downcast(p, hrt.prefab.World);
-				world.editor = this;
-			}
 		}
 		//scene.init(ctx.local3d);
 	}
