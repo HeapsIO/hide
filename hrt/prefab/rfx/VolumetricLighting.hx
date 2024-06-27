@@ -128,6 +128,11 @@ class VolumetricLightingShader extends h3d.shader.pbr.DefaultForward {
 			return max(firstFog, secondFog);
 		}
 
+		function getDistBlend(dist: Float) : Float {
+			var dfactor = smoothstep(0, 1, dist / endDistance);
+			return dfactor * dfactor;
+		}
+
 		var camDir : Vec3;
 		var envColor : Vec3;
 		var fog : Float;
@@ -151,23 +156,30 @@ class VolumetricLightingShader extends h3d.shader.pbr.DefaultForward {
 			if ( cameraDistance < startDistance )
 				discard;
 			var startPos = camera.position + camDir * startDistance;
-			var opacity = 0.0;
 			var stepSize = length(endPos - startPos) / float(steps);
-			var dithering = ditheringNoise.getLod(calculatedUV * targetSize / ditheringSize, 0.0).r;
-			dithering = dithering * ditheringIntensity;
+			var dithering = ditheringNoise.getLod(calculatedUV * targetSize / ditheringSize, 0.0).r * stepSize * ditheringIntensity;
+			startPos += dithering;
+			var opacity = 0.0;
 			var totalScattered = vec3(0.0);
 			var opticalDepth = 0.0;
 			pixelColor = vec4(1.0);
-			var totalScattered = vec3(0.0);
-			var transmittance = 1.0;
+			var colorAcc = vec4(0.0);
+			var curDist = 0.0;
 			for ( i in 0...steps ) {
-				transformedPosition = mix(startPos, endPos, (float(i) + dithering) / float(steps));
+				if ( colorAcc.a > 0.99 )
+					break;
+				transformedPosition = startPos + camDir * curDist;
 				fog = fogAt(transformedPosition);
-				totalScattered += fog * stepSize * transmittance * evaluateLighting() * mix(mix(color, secondFogColor, useSecondColor), saturate(envColor), fogUseEnvColor);
-				transmittance *= exp(-fog * stepSize);
+				var stepColor = evaluateLighting() * mix(mix(color, secondFogColor, useSecondColor), saturate(envColor), fogUseEnvColor);
+
+				var stepColor = vec4(stepColor * fog, fog);
+
+				colorAcc += stepColor * (1.0 - colorAcc.a) * getDistBlend(curDist) * stepSize;
+
+				curDist += stepSize;
 			}
-			pixelColor.rgb = totalScattered;
-			pixelColor.a = saturate(distanceOpacity * (1.0 - transmittance));
+			pixelColor.rgb = colorAcc.rgb /= (0.001 + colorAcc.a);
+			pixelColor.a = saturate(distanceOpacity * colorAcc.a);
 		}
 	};
 }
