@@ -51,10 +51,14 @@ class ContextShared {
 		throw e;
 	}
 
-	public function loadDir(p : String, ?dir : String ) : Array<hxd.res.Any> {
+	public function getFolderDatPath() {
 		var datPath = new haxe.io.Path(currentPath);
 		datPath.ext = "dat";
-		var path = datPath.toString() + "/" + p;
+		return datPath.toString() + "/";
+	}
+
+	public function loadDir(p : String, ?dir : String ) : Array<hxd.res.Any> {
+		var path = getFolderDatPath() + p;
 		if(dir != null) path += "/" + dir;
 		return try hxd.res.Loader.currentInstance.dir(path) catch( e : hxd.res.NotFound ) null;
 	}
@@ -64,9 +68,7 @@ class ContextShared {
 	}
 
 	public function getPrefabDatPath(file : String, ext : String, prefab : String ) {
-		var datPath = new haxe.io.Path(currentPath);
-		datPath.ext = "dat";
-		var path = new haxe.io.Path(datPath.toString() + "/" + prefab + "/" + file);
+		var path = new haxe.io.Path(getFolderDatPath() + prefab + "/" + file);
 		path.ext = ext;
 		return path.toString();
 	}
