@@ -722,9 +722,9 @@ class Image extends FileView {
 			comp.originalFilename = name;
 
 			if (useAlpha.is(':checked'))
-				comp.params = { format:format.val().toString(), mips:mips.is(':checked'), size:Std.parseInt(size.val()) };
-			else
 				comp.params = { alpha:Std.parseInt(alpha.val()), format:format.val().toString(), mips:mips.is(':checked'), size:Std.parseInt(size.val()) };
+			else
+				comp.params = { format:format.val().toString(), mips:mips.is(':checked'), size:Std.parseInt(size.val()) };
 
 			try {
 				comp.convert();
