@@ -601,12 +601,12 @@ class Prefab extends hide.view.FileView {
 		sys.io.File.saveContent(getPath(), content);
 		super.save();
 
-		if (renameMatsHistory != null) {
-			for (entry in renameMatsHistory)
-				saveMatLibsRenames(entry.previousName, entry.newName, entry.prefab);
+		// if (renameMatsHistory != null) {
+		// 	for (entry in renameMatsHistory)
+		// 		saveMatLibsRenames(entry.previousName, entry.newName, entry.prefab);
 
-			renameMatsHistory = [];
-		}
+		// 	renameMatsHistory = [];
+		// }
 	}
 
 	function saveMatLibsRenames(oldName : String, newName : String, prefab : hrt.prefab.Prefab) {
