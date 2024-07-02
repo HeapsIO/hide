@@ -432,6 +432,13 @@ class Model extends FileView {
 
 		var transform = obj.defaultTransform;
 
+		var mesh = Std.downcast(obj, h3d.scene.Mesh);
+		var vertexFormat = '';
+		if ( mesh != null ) {
+			for ( i in mesh.primitive.buffer.format.getInputs() )
+				vertexFormat += ' ' + i.name;
+			vertexFormat = '<dt>Vertex format</dt><dd>$vertexFormat</dd>';
+		}
 		var e = properties.add(new Element('
 			<div class="group" name="Properties">
 				<dl>
@@ -450,15 +457,14 @@ class Model extends FileView {
 					<dt>Bones</dt><dd>$bonesCount</dd>
 					<dt>Vertexes</dt><dd>$vertexCount</dd>
 					<dt>Triangles</dt><dd>$triangleCount</dd>
-					' + if (transform != null) {
-						var bounds = obj.getBounds();
+					' + vertexFormat +
+					if (transform != null) {
 						var size : h3d.col.Point = roundVec(obj.getBounds().getSize());
 
 						size.x = hxd.Math.max(0, size.x);
 						size.y = hxd.Math.max(0, size.y);
 						size.z = hxd.Math.max(0, size.z);
 
-						var mesh = Std.downcast(obj, h3d.scene.Mesh);
 						var meshSize : h3d.col.Point = null;
 						if (mesh != null) {
 							var bounds = mesh.primitive.getBounds().clone();
