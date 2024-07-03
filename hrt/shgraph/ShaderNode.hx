@@ -12,7 +12,7 @@ import hrt.shgraph.ShaderGraph;
 import hrt.shgraph.SgHxslVar.ShaderDefInput;
 
 #if editor
-import hide.view.GraphInterface; 
+import hide.view.GraphInterface;
 #end
 
 
@@ -43,9 +43,9 @@ typedef AliasInfo = {?nameSearch: String, ?nameOverride : String, ?description :
 @:autoBuild(hrt.shgraph.Macros.autoRegisterNode())
 @:keepSub
 @:keep
-class ShaderNode 
+class ShaderNode
 #if editor
-implements hide.view.GraphInterface.IGraphNode 
+implements hide.view.GraphInterface.IGraphNode
 #end
 {
 
@@ -195,7 +195,12 @@ implements hide.view.GraphInterface.IGraphNode
 	}
 
 	function getDef(name: String, def: Float) {
-		return Reflect.getProperty(defaults, name) ?? def;
+		var value : Any = Reflect.getProperty(defaults, name);
+		if ( value == null )
+			return def;
+		if ( Std.isOfType(value, String) )
+			return Std.parseFloat(value) ?? def;
+		return cast(value, Float);
 	}
 
 	public function getAliases(name: String, group: String, description: String) : Array<AliasInfo> {
