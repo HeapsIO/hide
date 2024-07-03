@@ -11,6 +11,7 @@ common.hxml
 --macro include("hxd.earcut")
 --macro include("hrt.prefab")
 --macro include("hrt.prefab")
+--macro include("hrt.shgraph")
 --macro include("hrt.shgraph.nodes")
 --macro include("hide.view")
 -dce no
