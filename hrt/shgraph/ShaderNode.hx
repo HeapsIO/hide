@@ -195,11 +195,7 @@ implements hide.view.GraphInterface.IGraphNode
 	}
 
 	function getDef(name: String, def: Float) {
-		var defaultValue = Reflect.getProperty(defaults, name);
-		if (defaultValue != null) {
-			def = Std.parseFloat(defaultValue) ?? def;
-		}
-		return def;
+		return Reflect.getProperty(defaults, name) ?? def;
 	}
 
 	public function getAliases(name: String, group: String, description: String) : Array<AliasInfo> {
