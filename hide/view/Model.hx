@@ -382,6 +382,7 @@ class Model extends FileView {
 		e.find(".save").click(saveCallback);
 	}
 
+	static var lodPow : Float = 0.3;
 	var selectedJoint : String = null;
 	var selectedMesh : h3d.scene.Mesh = null;
 	var displayJoints = null;
@@ -544,29 +545,23 @@ class Model extends FileView {
 				');
 				properties.add(lodsEl, null, null);
 
-				function getLodRatio(idxLod: Int) {
+				function getLodRatioFromIdx(idx : Int) {
 					var lodConfig = hmd.getLodConfig();
-					var prev = idxLod == 0 ? 1 : lodConfig[idxLod - 1];
-
-					return (Math.abs(prev - lodConfig[idxLod]));
+					if (idx == 0) return 1.;
+					if (idx >= hmd.getLodConfig().length) return 0.;
+					return lodConfig[idx - 1];
 				}
 
-				function getLodPercent(idxLod: Int) {
-					return getLodRatio(idxLod) * 100;
+				function getLodRatioFromPx(px : Float) {
+					var ratio = 1 - (px / lodsEl.find(".line").width());
+					return Math.pow(ratio, 1.0 / lodPow);
 				}
 
-				function getLodInvertedCumulativePercent(idxLod : Int) {
-					var total = 100.;
-					for (idx in 0...hmd.lodCount()) {
-						if (idxLod == idx)
-							break;
+				function getLodRatioPowedFromIdx(idx : Int) {
+					var lodConfig = hmd.getLodConfig();
+					var prev = idx == 0 ? 1 : hxd.Math.pow(lodConfig[idx - 1] , lodPow);
 
-						total -= getLodPercent(idx);
-					}
-
-					total *= 100;
-					total = Math.round(total) / 100.;
-					return total;
+					return (Math.abs(prev - hxd.Math.pow(lodConfig[idx], lodPow)));
 				}
 
 				function startDrag(onMove: js.jquery.Event->Void, onStop: js.jquery.Event->Void) {
@@ -583,11 +578,14 @@ class Model extends FileView {
 
 				function refreshLodLine() {
 					var areas = lodsEl.find(".area");
+					var lineEl = lodsEl.find(".line");
 					var idx = 0;
 					for (area in areas) {
 						var areaEl = new Element(area);
-						areaEl.css({ width : '${getLodPercent(idx)}%' });
-						areaEl.find('#percent').text('${getLodInvertedCumulativePercent(idx)}%');
+						areaEl.css({ width : '${lineEl.width() * getLodRatioPowedFromIdx(idx)}px' });
+
+						var roundedRatio = Std.int(Math.pow(getLodRatioFromIdx(idx), lodPow) * 10000.) / 100.;
+						areaEl.find('#percent').text('${roundedRatio}%');
 						idx++;
 					}
 				}
@@ -627,11 +625,16 @@ class Model extends FileView {
 				var lodsLine = lodsEl.find(".line");
 				for (idx in 0...hmd.lodCount()) {
 					var areaEl = new Element('
-					<div class="area" style="${idx != hmd.lodCount() - 1 ? 'width:${getLodPercent(idx)}%;' : 'flex:1;'}">
+					<div class="area">
 						<p>LOD&nbsp${idx}</p>
-						<p id="percent">${getLodInvertedCumulativePercent(idx)}%</p>
+						<p id="percent">-%</p>
 					</div>');
+
+					if (idx == hmd.lodCount() - 1)
+						areaEl.css({ flex : 1 });
+
 					lodsLine.append(areaEl);
+					refreshLodLine();
 
 					var widthHandle = 10;
 					areaEl.on("mousemove", function(e:js.jquery.Event) {
@@ -646,29 +649,19 @@ class Model extends FileView {
 						var secondHandle = areaEl.width() - e.offsetX <= widthHandle && idx != hmd.lodCount() - 1;
 
 						if (firstHandle || secondHandle) {
-							var resizedAreaEl = secondHandle ? areaEl : areaEl.prev();
-							var compensingAreaEl = resizedAreaEl.next();
-							var startPos = e.clientX;
-							var resizedAreaStartWidth = resizedAreaEl.width();
-							var compensingAreaStartWidth = compensingAreaEl.width();
-
 							var currIdx = secondHandle ? idx : idx - 1;
-							var resizedAreaLod = getLodRatio(currIdx);
-
 							var prevConfig = @:privateAccess hmd.lodConfig?.copy();
 							var newConfig = hmd.getLodConfig()?.copy();
+							var limits = [ getLodRatioFromIdx(currIdx + 2),  getLodRatioFromIdx(currIdx)];
 
 							startDrag(function(e) {
-								var newWidth = hxd.Math.clamp(resizedAreaStartWidth - (startPos - e.clientX), 0, resizedAreaStartWidth + compensingAreaStartWidth);
-								compensingAreaEl.width(compensingAreaStartWidth + (resizedAreaStartWidth - newWidth));
-								resizedAreaEl.width(newWidth);
-
-								var prev = currIdx == 0 ? 1 : newConfig[currIdx - 1];
-								newConfig[currIdx] = prev - (newWidth * resizedAreaLod) / resizedAreaStartWidth;
+								var newRatio = getLodRatioFromPx(e.screenX - lodsLine.offset().left);
+								newRatio = hxd.Math.clamp(newRatio, limits[0], limits[1]);
+								newConfig[currIdx] = newRatio;
 								@:privateAccess hmd.lodConfig = newConfig;
-
 								refreshLodLine();
 							}, function(e) {
+
 								undo.change(Custom(function(undo) {
 									if (undo) {
 										@:privateAccess hmd.lodConfig = prevConfig;
@@ -1331,8 +1324,8 @@ class Model extends FileView {
 			var line = sceneEditor.properties.element.find(".line");
 			var cursor = sceneEditor.properties.element.find(".cursor");
 			if (cursor.length > 0) {
-				cursor?.css({left: '${line.position().left + line.width() * hxd.Math.clamp((1 - screenRatio), 0, 1)}px'});
-				cursor?.find(".ratio").text('${round(hxd.Math.clamp(screenRatio * 100, 0, 100), 2)}%');
+				cursor?.css({left: '${line.position().left + line.width() * hxd.Math.clamp((1 - hxd.Math.pow(screenRatio, lodPow)), 0, 1)}px'});
+				cursor?.find(".ratio").text('${round(hxd.Math.clamp(hxd.Math.pow(screenRatio, lodPow) * 100, 0, 100), 2)}%');
 			}
 		}
 	}
