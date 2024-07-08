@@ -553,6 +553,9 @@ class FX extends Object3D implements BaseFX {
 			var renderer = scene.renderer;
 			for (p in this.flatten(hrt.prefab.rfx.RendererFX)) {
 				var rfx : hrt.prefab.rfx.RendererFX = cast p;
+				if (@:privateAccess rfx.instance == null)
+					continue;
+
 				renderer.effects.push(@:privateAccess rfx.instance);
 				effects.push(rfx);
 			}
