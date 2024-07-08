@@ -177,6 +177,11 @@ class PreviewShaderBase extends hxsl.Shader {
 		var particleRandom : Float;
         var particleLifeTime : Float;
         var particleLife : Float;
+		var emissive : Float;
+		var metalness : Float;
+		var roughness : Float;
+		var occlusion : Float;
+
 
 		function __init__() {
 			depth = 0.0;
@@ -188,6 +193,10 @@ class PreviewShaderBase extends hxsl.Shader {
 			particleLife = mod(global.time, 1.0);
 			particleLifeTime = 1.0;
 			particleRandom = hash12(vec2(floor(global.time)));
+			emissive = 0.0;
+			metalness = 0.0;
+			roughness = 0.0;
+			occlusion = 0.0;
 		}
 
 		function hash12(p: Vec2) : Float
