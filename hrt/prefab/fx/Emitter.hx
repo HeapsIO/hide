@@ -82,7 +82,6 @@ class InstanceDef {
 	public function new() { }
 }
 
-typedef ShaderAnims = Array<ShaderAnimation>;
 typedef PartArray = #if (hl_ver >= version("1.14.0")) hl.CArray<ParticleInstance> #else Array<ParticleInstance> #end;
 typedef Single = #if (hl_ver >= version("1.13.0")) hl.F32 #else Float #end;
 
@@ -436,7 +435,7 @@ class EmitterObject extends h3d.scene.Object {
 	public var particlesCount : Int;
 	public var listHead : ParticleInstance;
 	public var batch : h3d.scene.MeshBatch;
-	public var shaderAnims : ShaderAnims;
+	public var customAnims : Array<BaseFX.CustomAnimation>;
 
 	public var isSubEmitter : Bool = false;
 	public var relativeScenePosition : Bool = false;
@@ -628,7 +627,7 @@ class EmitterObject extends h3d.scene.Object {
 			}
 
 			// Setup shaders
-			shaderAnims = [];
+			customAnims = [];
 			var shaders = emitterPrefab.findAll(hrt.prefab.Shader);
 			for( shader in shaders ) {
 				// Remove shaders that are not directly parented to this emitter
@@ -641,7 +640,7 @@ class EmitterObject extends h3d.scene.Object {
 					makeShaderInstance(shader);
 					//shCtx.local3d = null; // Prevent shader.iterMaterials from adding our objet to the list incorectly
 					// TODO(ces) : It looks like particles anims are broken
-					hrt.prefab.fx.BaseFX.BaseFXTools.getShaderAnims(shader, shaderAnims, batch);
+					hrt.prefab.fx.BaseFX.BaseFXTools.getCustomAnimations(shader, customAnims, batch);
 				//var shader = Std.downcast(shCtx.custom, hxsl.Shader);
 				}
 
@@ -1168,7 +1167,7 @@ class EmitterObject extends h3d.scene.Object {
 				return;
 			inline tmpMat.load(p.absPos.toMatrix());
 			batch.worldPosition = tmpMat;
-			for( anim in shaderAnims ) {
+			for( anim in customAnims ) {
 				var t = hxd.Math.clamp(p.life / p.lifeTime, 0.0, 1.0);
 				anim.setTime(t);
 			}

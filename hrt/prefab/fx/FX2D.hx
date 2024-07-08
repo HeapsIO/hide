@@ -19,7 +19,7 @@ class FX2DAnimation extends h2d.Object {
 
 	public var loop : Bool;
 	public var objects: Array<ObjectAnimation> = [];
-	public var shaderAnims : Array<ShaderAnimation> = [];
+	public var customAnims : Array<BaseFX.CustomAnimation> = [];
 	public var emitters : Array<hrt.prefab.l2d.Particle2D.Particles>;
 	public var events: Array<hrt.prefab.fx.Event.EventInstance>;
 
@@ -128,9 +128,10 @@ class FX2DAnimation extends h2d.Object {
 			}
 		}
 
-		for(anim in shaderAnims) {
-			anim.setTime(time);
-		}
+		if(customAnims != null)
+			for(anim in customAnims)
+				anim.setTime(time);
+
 		if (emitters != null) {
 			for(em in emitters) {
 				if(em.visible)
@@ -264,7 +265,7 @@ class FX2D extends Object2D implements BaseFX {
 		var fxanim : FX2DAnimation = cast local2d;
 		fxanim.init(this);
 		getObjAnimations(this, fxanim.objects);
-		hrt.prefab.fx.BaseFX.BaseFXTools.getShaderAnims(this, fxanim.shaderAnims);
+		hrt.prefab.fx.BaseFX.BaseFXTools.getCustomAnimations(this, fxanim.customAnims);
 	}
 
 	override function makeObject(parent2d: h2d.Object) : h2d.Object {

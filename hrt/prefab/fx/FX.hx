@@ -28,8 +28,9 @@ class FXAnimation extends h3d.scene.Object {
 	public var events: Array<hrt.prefab.fx.Event.EventInstance>;
 	public var emitters : Array<hrt.prefab.fx.Emitter.EmitterObject>;
 	public var trails : Array<hrt.prefab.l3d.Trails.TrailObj>;
-	public var shaderAnims : Array<ShaderAnimation> = [];
+	public var customAnims : Array<BaseFX.CustomAnimation> = [];
 	public var constraints : Array<hrt.prefab.l3d.Constraint>;
+	public var effects : Array<hrt.prefab.rfx.RendererFX>;
 
 	var evaluator : Evaluator;
 	var parentFX : FXAnimation;
@@ -52,10 +53,10 @@ class FXAnimation extends h3d.scene.Object {
 			root = def;
 		initObjAnimations(root);
 		initEmitters(root);
-		hrt.prefab.fx.BaseFX.BaseFXTools.getShaderAnims(root, shaderAnims);
-		if(shaderAnims.length == 0) shaderAnims = null;
+		hrt.prefab.fx.BaseFX.BaseFXTools.getCustomAnimations(root, customAnims, null);
+		if(customAnims.length == 0) customAnims = null;
 		else {
-			for (a in shaderAnims) {
+			for (a in customAnims) {
 				a.parameters = evaluator.parameters;
 			}
 		}
@@ -294,8 +295,13 @@ class FXAnimation extends h3d.scene.Object {
 				}
 			}
 
-			if(shaderAnims != null)
-				for(anim in shaderAnims)
+			if (effects != null) {
+				for (e in effects)
+					@:privateAccess e.updateInstance();
+			}
+
+			if(customAnims != null)
+				for(anim in customAnims)
 					anim.setTime(time);
 
 			if(emitters != null) {
@@ -540,7 +546,20 @@ class FX extends Object3D implements BaseFX {
 
 	override function postMakeInstance() {
 		var root = hrt.prefab.fx.BaseFX.BaseFXTools.getFXRoot(this);
+		var effects : Array<hrt.prefab.rfx.RendererFX> = [];
+
+		var scene = this.local3d.getScene();
+		if (scene != null) {
+			var renderer = scene.renderer;
+			for (p in this.flatten(hrt.prefab.rfx.RendererFX)) {
+				var rfx : hrt.prefab.rfx.RendererFX = cast p;
+				renderer.effects.push(@:privateAccess rfx.instance);
+				effects.push(rfx);
+			}
+		}
+
 		var fxAnim : FXAnimation = cast local3d;
+		fxAnim.effects = effects.copy();
 		fxAnim.init(this, root);
 	}
 

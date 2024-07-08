@@ -244,12 +244,6 @@ private class FXSceneEditor extends hide.comp.SceneEditor {
 				}
 				menu.push(item);
 			}
-			if(current != null) {
-				menu.push({
-					label: "Animation",
-					menu: parent.getNewTrackMenu(current)
-				});
-			}
 		} else {
 			for(name in ["Group", "Polygon", "Model", "Shader", "Emitter", "Trails"]) {
 				var item = allTypes.find(i -> i.label == name);
@@ -260,12 +254,6 @@ private class FXSceneEditor extends hide.comp.SceneEditor {
 					continue;
 				}
 				menu.push(item);
-			}
-			if(current != null) {
-				menu.push({
-					label: "Animation",
-					menu: parent.getNewTrackMenu(current)
-				});
 			}
 
 			menu.push({
@@ -287,8 +275,16 @@ private class FXSceneEditor extends hide.comp.SceneEditor {
 					}, "Unlit")
 				]
 			});
-			menu.sort(function(l1,l2) return Reflect.compare(l1.label,l2.label));
 		}
+
+		if(current != null) {
+			menu.push({
+				label: "Animation",
+				menu: parent.getNewTrackMenu(current)
+			});
+		}
+
+		menu.sort(function(l1,l2) return Reflect.compare(l1.label,l2.label));
 
 		var events = allTypes.filter(i -> StringTools.endsWith(i.label, "Event"));
 		if(events.length > 0) {
@@ -1395,6 +1391,7 @@ class FXEditor extends hide.view.FileView {
 		var obj3dElt = Std.downcast(elt, hrt.prefab.Object3D);
 		var obj2dElt = Std.downcast(elt, hrt.prefab.Object2D);
 		var shaderElt = Std.downcast(elt, hrt.prefab.Shader);
+		var rfxElt = Std.downcast(elt, hrt.prefab.rfx.RendererFX);
 		var emitterElt = Std.downcast(elt, hrt.prefab.fx.Emitter);
 
 		var particle2dElt = Std.downcast(elt, hrt.prefab.l2d.Particle2D);
@@ -1515,6 +1512,15 @@ class FXEditor extends hide.view.FileView {
 				}
 				if(item != null)
 					menuItems.push(item);
+			}
+		}
+		if (rfxElt != null) {
+			var serializedProps = rfxElt.getSerializableProps();
+			for (f in serializedProps) {
+				if (!(Reflect.field(rfxElt, f.name) is Float) || hasTrack(f.name))
+					continue;
+
+				menuItems.push(trackItem(f.name, [{name : ${f.name}}]));
 			}
 		}
 		function addParam(param : hrt.prefab.fx.Emitter.ParamDef, prefix: String) {

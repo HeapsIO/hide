@@ -20,13 +20,34 @@ enum AdditionalProperies {
 
 typedef ShaderParams = Array<ShaderParam>;
 
-class ShaderAnimation extends Evaluator {
+/*
+	Basic class used to animate custom properties with curves
+	in FX.
+*/
+class CustomAnimation extends Evaluator {
+	public function setTime(time: Float) {
+		throw "This method should overrided!";
+	}
+}
+
+class RendererFXAnimation extends CustomAnimation {
+	public var params : Array<{field : hrt.prefab.Prefab.PrefabField, value : Value}>;
+	public var rfx : hrt.prefab.rfx.RendererFX;
+
+	override public function setTime(time: Float) {
+		for(param in params) {
+			Reflect.setField(rfx, param.field.name, getFloat(param.value, time));
+		}
+	}
+}
+
+class ShaderAnimation extends CustomAnimation {
 	public var params : ShaderParams;
 	public var shader : hxsl.Shader;
 	var vector4 = new h3d.Vector4();
 	var vector = new h3d.Vector();
 
-	public function setTime(time: Float) {
+	override public function setTime(time: Float) {
 		for(param in params) {
 			var v = param.def;
 			var val : Dynamic;
@@ -176,44 +197,79 @@ class BaseFXTools {
 		return ret;
 	}
 
+	public static function makeRendererFXParams(rfxElt: hrt.prefab.rfx.RendererFX) {
+		var serializedProps : Array<hrt.prefab.Prefab.PrefabField> = @:privateAccess Prefab.getSerializablePropsForClass(Type.getClass(cast rfxElt));
+		var ret : Array<{field : hrt.prefab.Prefab.PrefabField, value : Value}> = null;
+		for (f in serializedProps) {
+			if (!(Reflect.field(rfxElt, f.name) is Float))
+				continue;
+
+			var curves = Curve.getCurves(rfxElt, f.name);
+			if(curves == null || curves.length == 0)
+				continue;
+
+			var base = 1.0;
+			var curve = Curve.getCurve(rfxElt, f.name);
+			var val = Value.VConst(base);
+			if(curve != null)
+				val = Value.VMult(curve.makeVal(), VConst(base));
+			if(ret == null) ret = [];
+			ret.push({
+				field : f,
+				value : val
+			});
+		}
+
+		return ret;
+	}
+
 	static var emptyParams : Array<String> = [];
-	public static function getShaderAnims(elt: PrefabElement, anims: Array<ShaderAnimation>, ?batch: h3d.scene.MeshBatch) {
+	public static function getCustomAnimations(elt: PrefabElement, anims: Array<CustomAnimation>, ?batch: h3d.scene.MeshBatch) {
 		// Init all animations recursively except Emitter ones (called in Emitter)
 		if(Std.downcast(elt, hrt.prefab.fx.Emitter) == null) {
 			for(c in elt.children) {
-				getShaderAnims(c, anims, batch);
+				getCustomAnimations(c, anims, batch);
 			}
 		}
 
 		var shader = elt.to(hrt.prefab.Shader);
-		if(shader == null || shader.shader == null)
-			return;
+		if (shader != null && shader.shader != null) {
+			var params = makeShaderParams(shader);
+			var shader = shader.shader;
 
-		var params = makeShaderParams(shader);
-
-		var shader = shader.shader;
-
-		if(useAutoPerInstance && batch != null) @:privateAccess {
-			var perInstance = batch.instancedParams;
-			if ( perInstance == null ) {
-				perInstance = new hxsl.Cache.BatchInstanceParams([]);
-				batch.instancedParams = perInstance;
+			if(useAutoPerInstance && batch != null) @:privateAccess {
+				var perInstance = batch.instancedParams;
+				if ( perInstance == null ) {
+					perInstance = new hxsl.Cache.BatchInstanceParams([]);
+					batch.instancedParams = perInstance;
+				}
+				perInstance.forcedPerInstance.push({
+					shader: shader.shader.data.name,
+					params: params == null ? emptyParams : params.map(p -> p.def.name)
+				});
 			}
-			perInstance.forcedPerInstance.push({
-				shader: shader.shader.data.name,
-				params: params == null ? emptyParams : params.map(p -> p.def.name)
-			});
+
+			if(params != null) {
+				var anim = Std.isOfType(shader,hxsl.DynamicShader) ? new ShaderDynAnimation() : new ShaderAnimation();
+				anim.shader = shader;
+				anim.params = params;
+				anims.push(anim);
+			}
+
+			if(batch != null) {
+				batch.material.mainPass.addShader(shader);
+			}
 		}
 
-		if(params != null) {
-			var anim = Std.isOfType(shader,hxsl.DynamicShader) ? new ShaderDynAnimation() : new ShaderAnimation();
-			anim.shader = shader;
-			anim.params = params;
-			anims.push(anim);
-		}
-
-		if(batch != null) {
-			batch.material.mainPass.addShader(shader);
+		var rendererFX = elt.to(hrt.prefab.rfx.RendererFX);
+		if (rendererFX != null) {
+			var params = makeRendererFXParams(rendererFX);
+			if (params != null) {
+				var anim = new RendererFXAnimation();
+				anim.params = params;
+				anim.rfx = @:privateAccess rendererFX.instance;
+				anims.push(anim);
+			}
 		}
 	}
 
