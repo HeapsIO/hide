@@ -2840,6 +2840,7 @@ class SceneEditor {
 
 		for( p in elt.flatten() ) {
 			makeInteractive(p);
+			applySceneStyle(p);
 		}
 		//scene.init(ctx.local3d);
 	}
@@ -4061,6 +4062,7 @@ class SceneEditor {
 			}
 
 			makePrefab(toElt);
+			applySceneStyle(toElt);
 			return false;
 		}
 	}
