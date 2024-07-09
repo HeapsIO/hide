@@ -1520,7 +1520,7 @@ class FXEditor extends hide.view.FileView {
 				if (!(Reflect.field(rfxElt, f.name) is Float) || hasTrack(f.name))
 					continue;
 
-				menuItems.push(trackItem(f.name, [{name : ${f.name}}]));
+				menuItems.push(trackItem(f.name, [{name : f.name}]));
 			}
 		}
 		function addParam(param : hrt.prefab.fx.Emitter.ParamDef, prefix: String) {
