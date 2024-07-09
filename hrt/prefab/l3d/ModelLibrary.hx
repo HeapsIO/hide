@@ -122,8 +122,26 @@ class ModelLibrary extends Prefab {
 	@:s var mipStart : Float;
 	@:s var mipPower : Float;
 	@:s var mipLevels : Int = 1;
+	@:s var compress : Bool = true;
 
+	public var debug = false;
+	public var clear = false;
+	var cache : ModelLibraryCache;
+	var errors = [];
     final reg = ~/[0-9]+/g;
+
+	public function new(prefab, shared) {
+		super(prefab, shared);
+		cache = new ModelLibraryCache();
+	}
+
+	#if !editor
+	override function clone(?parent:Prefab = null, ?sh: ContextShared = null, withChildren : Bool = true) : Prefab {
+		var clone : ModelLibrary = cast super.clone(parent, sh, withChildren);
+		clone.cache = cache;
+		return clone;
+	}
+	#end
 
 	override public function dispose() {
 		super.dispose();
@@ -131,184 +149,36 @@ class ModelLibrary extends Prefab {
 		batches = [];
 	}
 
-	var cache : ModelLibraryCache;
-	public function new(prefab, shared) {
-		super(prefab, shared);
-		cache = new ModelLibraryCache();
-	}
-
-	#if editor
-
-	@:s var compress : Bool = true;
-
-	var errors = [];
-
-	override function edit(ectx:hide.prefab.EditContext) {
-
-		ectx.properties.add(new hide.Element('
-		<div class="group" name="Params">
-			<dl>
-				<dt>Miplevels</dt><dd><input type="range" step="1" field="mipLevels"/></dd>
-				<dt>Distance start</dt><dd><input type="range" field="mipStart"/></dd>
-				<dt>Distance end</dt><dd><input type="range" field="mipEnd"/></dd>
-				<dt>Power</dt><dd><input type="range" field="mipPower"/></dd>
-			</dl>
-		</div>'), this, function(pname) {
-			ectx.onChange(this, pname);
-		});
-
-		var bt = new hide.Element('<div align="center"><input type="button" value="Build"/></div>');
-		bt.find("input").click(function(e) {
-			ectx.makeChanges(this, function() {
-				errors = [];
-				rebuildData(ectx.scene);
-				if ( compress )
-					compression(ectx.scene);
-
-				var ide = hide.Ide.inst;
-				ide.setProgress();
-				if( errors.length > 0 )
-					ide.error(errors.join("\n"));
-			});
-		});
-		ectx.properties.add(bt);
-
-		ectx.properties.add(new hide.Element('
-		<div class="group" name="Compression">
-			<dl>
-				<dt>Compress During Build</dt><dd><input type="checkbox" field="compress"/></dd>
-			</dl>
-		</div>'), this, function(pname) {
-			ectx.onChange(this, pname);
-		});
-
-		var bt = new hide.Element('<div align="center"><input type="button" value="CompressOnly"/></div>');
-		bt.find("input").click(function(e) {
-			ectx.makeChanges(this, function() {
-				errors = [];
-				compression(ectx.scene);
-
-				var ide = hide.Ide.inst;
-				ide.setProgress();
-				if( errors.length > 0 )
-					ide.error(errors.join("\n"));
-			});
-		});
-		ectx.properties.add(bt);
-
-		var listMaterials = new hide.Element('
-		<div class="group" name="Ignored materials"><ul id="ignoreMatList"></ul></div>');
-		ectx.properties.add(listMaterials);
-		for( i in 0...ignoredMaterials.length ) {
-			var e = new hide.Element('<li style="position:relative">
-				<input type="text" field="name"/>
-				<a href="#">[-]</a>
-			</li>');
-			e.find("a").click(function(_) {
-				ignoredMaterials.splice(i, 1);
-				ectx.rebuildProperties();
-			});
-			e.appendTo(listMaterials);
-			ectx.properties.build(e, ignoredMaterials[i], (pname) -> {
-				updateInstance(pname);
-			});
-		}
-		var add = new hide.Element('<li><p><a href="#">[+]</a></p></li>');
-		add.appendTo(listMaterials);
-		add.find("a").click(function(_) {
-			ignoredMaterials.push({name:""});
-			ectx.rebuildProperties();
-		});
-
-		var listPrefabs = new hide.Element('
-		<div class="group" name="Ignored prefabs"><ul id="ignorePrefabList"></ul></div>');
-		ectx.properties.add(listPrefabs);
-		for( i in 0...ignoredPrefabs.length ) {
-			var e = new hide.Element('<li style="position:relative">
-				<input type="text" field="name"/>
-				<a href="#">[-]</a>
-			</li>');
-			e.find("[field=name]");
-			e.find("a").click(function(_) {
-				ignoredPrefabs.splice(i, 1);
-				ectx.rebuildProperties();
-			});
-			e.appendTo(listPrefabs);
-			ectx.properties.build(e, ignoredPrefabs[i], (pname) -> {
-				updateInstance(pname);
-			});
-		}
-		var add = new hide.Element('<li><p><a href="#">[+]</a></p></li>');
-		add.appendTo(listPrefabs);
-		add.find("a").click(function(_) {
-			ignoredPrefabs.push({name:null});
-			ectx.rebuildProperties();
-		});
-
-		var listObjectNames = new hide.Element('
-		<div class="group" name="Ignored object names"><ul id="ignoreObjectNames"></ul></div>');
-		ectx.properties.add(listObjectNames);
-		for( i in 0...ignoredObjectNames.length ) {
-			var e = new hide.Element('<li style="position:relative">
-				<input type="text" field="name"/>
-				<a href="#">[-]</a>
-			</li>');
-			e.find("a").click(function(_) {
-				ignoredObjectNames.splice(i, 1);
-				ectx.rebuildProperties();
-			});
-			e.appendTo(listObjectNames);
-			ectx.properties.build(e, ignoredObjectNames[i], (pname) -> {
-				updateInstance(pname);
-			});
-		}
-		var add = new hide.Element('<li><p><a href="#">[+]</a></p></li>');
-		add.appendTo(listObjectNames);
-		add.find("a").click(function(_) {
-			ignoredObjectNames.push({name:""});
-			ectx.rebuildProperties();
-		});
-
-		var listpreserveObjectNames = new hide.Element('
-		<div class="group" name="Preserve object names"><ul id="preserveObjectNames"></ul></div>');
-		ectx.properties.add(listpreserveObjectNames);
-		for( i in 0...preserveObjectNames.length ) {
-			var e = new hide.Element('<li style="position:relative">
-				<input type="text" field="name"/>
-				<a href="#">[-]</a>
-			</li>');
-			e.find("a").click(function(_) {
-				preserveObjectNames.splice(i, 1);
-				ectx.rebuildProperties();
-			});
-			e.appendTo(listpreserveObjectNames);
-			ectx.properties.build(e, preserveObjectNames[i], (pname) -> {
-				updateInstance(pname);
-			});
-		}
-		var add = new hide.Element('<li><p><a href="#">[+]</a></p></li>');
-		add.appendTo(listpreserveObjectNames);
-		add.find("a").click(function(_) {
-			preserveObjectNames.push({name:""});
-			ectx.rebuildProperties();
-		});
-	}
-
-	override function getHideProps() : hide.prefab.HideProps {
-		return { icon : "square", name : "Model Library" };
-	}
-
 	function update( text : String ) {
+		#if editor
 		hide.Ide.inst.setProgress(text);
+		#else
+		trace(text);
+		#end
 	}
 
-	function rebuildData(scene : hide.comp.Scene ) {
+	function loadTexture(sourcePath : String, texPath : String) {
+		#if editor
+		return shared.scene.loadTexture(sourcePath, texPath);
+		#else
+		return hxd.res.Loader.currentInstance.load(sourcePath + "/" + texPath).toTexture();
+		#end
+	}
+
+	function pushError(err : String) {
+		#if editor
+		hide.Ide.inst.error(err);
+		#else
+		trace(err);
+		#end
+	}
+
+	function rebuildData() {
 
 		bakedMaterials = {};
 		materialConfigs = [];
 
 		var btSize = 4096;
-		var ide = hide.Ide.inst;
 
 		var hmd = new Data();
 		hmd.version = Data.CURRENT_VERSION;
@@ -318,14 +188,14 @@ class ModelLibrary extends Prefab {
 		hmd.animations = [];
 		hmd.shapes = [];
 		var models = new Map();
-		var dataOut = new haxe.io.BytesBuffer();
+		var dataOut = new haxe.io.BytesOutput();
 
 		var textures : Array<h3d.mat.BigTexture> = [];
 		var normalMaps : Array<h3d.mat.BigTexture> = [];
 		var specMaps : Array<h3d.mat.BigTexture> = [];
 		var tmap = new Map();
 
-		function allocDefault(name,color,alpha=1) {
+		inline function allocDefault(name,color,alpha=1) {
 			var tex = new h3d.mat.Texture(16,16);
 			tex.setName(name);
 			tex.clear(color,alpha);
@@ -339,25 +209,31 @@ class ModelLibrary extends Prefab {
 
 		var matName = "???";
 
-		function error( text : String ) {
+		inline function error( text : String ) {
 			errors.push(text);
 		}
 
-		function loadTexture( sourcePath, texPath, normalMap, specMap ) {
-
+		function packTexture( sourcePath, texPath, normalMap, specMap ) {
+			inline function getPath(p : String) {
+				#if editor
+				return hide.Ide.inst.getPath(p);
+				#else
+				return p;
+				#end
+			}
 			var t = null;
 			if ( texPath == null )
 				return null;
-			var tmp = scene.loadTexture(sourcePath, texPath);
+			var tmp = loadTexture(sourcePath, texPath);
 
-			var ntex = normalMap == null ? null : scene.loadTexture(sourcePath, normalMap);
-			var stex = specMap == null ? null : scene.loadTexture(sourcePath, specMap);
+			var ntex = normalMap == null ? null : loadTexture(sourcePath, normalMap);
+			var stex = specMap == null ? null : loadTexture(sourcePath, specMap);
 			var key = texPath+"/"+(ntex==null?"nonorm":ntex.name)+(stex==null?"nospec":stex.name);
 			t = tmap.get(key);
 			if( t != null )
 				return t;
 			update("Packing "+key);
-			var realTex = hxd.res.Any.fromBytes(tmp.name, tmp == whiteDefault.tex ? whiteDefault.bytes : sys.io.File.getBytes(ide.getPath(tmp.name))).toImage();
+			var realTex = hxd.res.Any.fromBytes(tmp.name, tmp == whiteDefault.tex ? whiteDefault.bytes : sys.io.File.getBytes(getPath(tmp.name))).toImage();
 			for ( mipLevel in 0...mipLevels ) {
 				var texture = realTex.toTexture();
 				var size = hxd.Math.imax(texture.width >> mipLevel, 1 << (mipLevels - mipLevel - 1));
@@ -410,7 +286,7 @@ class ModelLibrary extends Prefab {
 						else
 							tex = normalDefault.tex;
 					}
-					var texBytes = if( tex == normalDefault.tex ) normalDefault.bytes else if( tex == specDefault.tex ) specDefault.bytes else sys.io.File.getBytes(ide.getPath(tex.name));
+					var texBytes = if( tex == normalDefault.tex ) normalDefault.bytes else if( tex == specDefault.tex ) specDefault.bytes else sys.io.File.getBytes(getPath(tex.name));
 					var realTex = hxd.res.Any.fromBytes(tex.name, texBytes).toImage();
 					var inf2 = realTex.getInfo();
 					if( inf2.width != inf.width || inf2.height != inf.height ) {
@@ -519,7 +395,7 @@ class ModelLibrary extends Prefab {
 				m2.blendMode = m.blendMode;
 				matName = m.name;
 
-				var heapsMat = @:privateAccess lib.makeMaterial(lib.header.models[mid], mid, function(path:String) { return scene.loadTexture(sourcePath, path);});
+				var heapsMat = @:privateAccess lib.makeMaterial(lib.header.models[mid], mid, function(path:String) { return loadTexture(sourcePath, path);});
 				var diffuseTexture = m.diffuseTexture;
 				var tshader = heapsMat.mainPass.getShader(h3d.shader.Texture);
 				if ( tshader != null )
@@ -538,7 +414,7 @@ class ModelLibrary extends Prefab {
 						specularTexture = pshader.texture.name;
 				}
 
-				var pos = loadTexture(sourcePath, diffuseTexture, normalMap, specularTexture);
+				var pos = packTexture(sourcePath, diffuseTexture, normalMap, specularTexture);
 				if ( pos == null )
 					return null;
 				var matName = m.name;
@@ -645,18 +521,62 @@ class ModelLibrary extends Prefab {
 
 		modelRoot.materials = [for( i in 0...hmd.materials.length ) i];
 		geomAll.vertexFormat = geomAll.vertexFormat.append("uv",DVec2);
+
+		var highPrecFormat = geomAll.vertexFormat;
+		var fs = Std.downcast(hxd.res.Loader.currentInstance.fs, hxd.fs.LocalFileSystem);
+		if ( fs != null ) {
+			var dirPath = shared.currentPath.split(".prefab")[0];
+			var config = @:privateAccess fs.convert.getConvertRule(dirPath+".fbx");
+			var lowp = Reflect.field(config.cmd.params, "lowp");
+			if ( lowp != null ) {
+				var lowpInputs = [];
+				for ( i in geomAll.vertexFormat.getInputs() ) {
+					var precStr = Reflect.field(lowp, hxd.fmt.fbx.HMDOut.remapPrecision(i.name));
+					var prec = hxd.BufferFormat.Precision.F32;
+					if ( precStr != null ) {
+						prec = switch ( precStr ) {
+						case "f32": F32;
+						case "f16": F16;
+						case "u8": U8;
+						case "s8": S8;
+						default: throw "unsupported precision";
+						}
+					}
+					lowpInputs.push(new hxd.BufferFormat.BufferInput(i.name, i.type, prec));
+				}
+				geomAll.vertexFormat = hxd.BufferFormat.make(lowpInputs);
+			}
+		}
+
 		geomAll.vertexCount = currentVertex;
 		geomAll.vertexPosition = dataOut.length;
 		if( geomAll.vertexFormat.stride < 3 ) {
-			ide.error("No model found in data");
+			pushError("No model found in data");
 			return;
 		}
+
 		for( inf in dataToStore ) {
 			var g = inf.g;
 			g.vertexPosition = dataOut.length;
-			var buf = inf.lib.getBuffers(inf.origin, geomAll.vertexFormat, [for( v in geomAll.vertexFormat.getInputs() ) new h3d.Vector4(0,0,0,0)]);
-			for( i in 0...geomAll.vertexFormat.stride * inf.origin.vertexCount )
-				dataOut.addFloat(buf.vertexes[i]);
+			var buf = inf.lib.getBuffers(inf.origin, highPrecFormat, [for( _ in highPrecFormat.getInputs() ) new h3d.Vector4(0,0,0,0)]);
+			if ( !geomAll.vertexFormat.hasLowPrecision ) {
+				for( i in 0...geomAll.vertexFormat.stride * inf.origin.vertexCount )
+					hxd.fmt.fbx.HMDOut.writeFloat(dataOut, buf.vertexes[i]);
+			} else {
+				var mapping = [];
+				for ( i in geomAll.vertexFormat.getInputs() )
+					mapping.push({size : i.type.getSize(), prec : i.precision});
+				for ( i in 0...inf.origin.vertexCount ) {
+					var  p = 0;
+					for ( m in mapping ) {
+						for ( _ in 0...m.size ) {
+							hxd.fmt.fbx.HMDOut.writePrec(dataOut, buf.vertexes[i * geomAll.vertexFormat.stride + p], m.prec);
+							p++;
+						}
+						hxd.fmt.fbx.HMDOut.flushPrec(dataOut, m.prec, m.size);
+					}
+				}
+			}
 		}
 
 		geomAll.indexPosition = dataOut.length;
@@ -668,12 +588,10 @@ class ModelLibrary extends Prefab {
 			var write16 = geomAll.vertexCount <= 0x10000;
 			for( i in 0...inf.origin.indexCount ) {
 				var idx = read16 ? inf.data.getUInt16(dataPos + (i<<1)) : inf.data.getInt32(dataPos + (i<<2));
-				if( write16 ) {
-					var v = idx + inf.offset;
-					dataOut.addByte(v&0xFF);
-					dataOut.addByte(v>>8);
-				} else
-					dataOut.addInt32(idx + inf.offset);
+				if( write16 )
+					dataOut.writeUInt16(idx + inf.offset);
+				else
+					dataOut.writeInt32(idx + inf.offset);
 			}
 		}
 
@@ -685,7 +603,7 @@ class ModelLibrary extends Prefab {
 		shared.savePrefabDat("model","hmd",name,bytes);
 
 		texturesCount = textures.length;
-		function make(textures:Array<h3d.mat.BigTexture>, name : String ) {
+		inline function makeTex(textures:Array<h3d.mat.BigTexture>, name : String ) {
 			var all = [];
 			for( i in 0...textures.length ) {
 				var t = textures[i];
@@ -698,49 +616,12 @@ class ModelLibrary extends Prefab {
 			}
 			shared.savePrefabDat(name,"dds",this.name, hxd.Pixels.toDDSLayers(all));
 		}
-		make(textures,"texture");
-		make(normalMaps,"normal");
-		make(specMaps,"specular");
+		makeTex(textures,"texture");
+		makeTex(normalMaps,"normal");
+		makeTex(specMaps,"specular");
 	}
 
-	function compression(scene : hide.comp.Scene ) {
-		var convert = new hxd.fs.Convert.CompressIMG("png,tga,jpg,jpeg,dds,envd,envs","dds");
-		convert.params = {format: "BC3"};
-		var path = new haxe.io.Path(Std.downcast(hxd.res.Loader.currentInstance.fs, hxd.fs.LocalFileSystem).baseDir+shared.currentPath);
-		path.ext = "dat";
-		var datDir = path.toString() + "/modelLib/";
-		convert.dstPath = datDir;
-		if ( !hxd.res.Loader.currentInstance.exists(convert.dstPath) )
-			sys.FileSystem.createDirectory(convert.dstPath);
-		function convertFile(name:String) {
-			update("Compress "+name);
-			var filename =  name + ".dds";
-			convert.srcPath = datDir + filename;
-			convert.originalFilename = filename;
-			convert.srcBytes = hxd.File.getBytes(convert.srcPath);
-			convert.convert();
-			var success = false;
-			for ( fmt in ["BC1", "BC3", "dds_BC1", "dds_BC3"] ) {
-				try {
-					sys.FileSystem.rename(datDir + name + "_" + fmt + ".dds", convert.srcPath);
-					success = true;
-				} catch (e :Dynamic) {}
-			}
-			if ( !success )
-				throw "Failed to replace compressed texture in " + datDir + " to " + convert.srcPath;
-		}
-		convertFile("texture");
-		convertFile("normal");
-		convertFile("specular");
-	}
-
-	#else
-
-	// var shared : hrt.prefab.ContextShared;
-
-	public var debug = false;
-	public var clear = false;
-
+	#if !editor
 	override function make(?sh:hrt.prefab.Prefab.ContextMake) : hrt.prefab.Prefab {
 		// don't load/build children
 		if (cache.wasMade)
@@ -779,18 +660,7 @@ class ModelLibrary extends Prefab {
 		}
 		return this;
 	}
-
-	override function clone(?parent:Prefab = null, ?sh: ContextShared = null, withChildren : Bool = true) : Prefab {
-		var clone : ModelLibrary = cast super.clone(parent, sh, withChildren);
-		clone.cache = cache;
-		return clone;
-	}
-
-
-	// public function dispose() {
-	// 	optimizedMeshes = [];
-	// 	batches = [];
-	// }
+	#end
 
 	var killAlpha = new h3d.shader.KillAlpha(0.5);
 	var curSubMeshes : SubMeshes = null;
@@ -963,6 +833,192 @@ class ModelLibrary extends Prefab {
 		batch.emitInstance();
 	}
 
+	#if editor
+	function compression(scene : hide.comp.Scene ) {
+		var convert = new hxd.fs.Convert.CompressIMG("png,tga,jpg,jpeg,dds,envd,envs","dds");
+		convert.params = {format: "BC3"};
+		var path = new haxe.io.Path(Std.downcast(hxd.res.Loader.currentInstance.fs, hxd.fs.LocalFileSystem).baseDir+shared.currentPath);
+		path.ext = "dat";
+		var datDir = path.toString() + "/modelLib/";
+		convert.dstPath = datDir;
+		if ( !hxd.res.Loader.currentInstance.exists(convert.dstPath) )
+			sys.FileSystem.createDirectory(convert.dstPath);
+		function convertFile(name:String) {
+			update("Compress "+name);
+			var filename =  name + ".dds";
+			convert.srcPath = datDir + filename;
+			convert.originalFilename = filename;
+			convert.srcBytes = hxd.File.getBytes(convert.srcPath);
+			convert.convert();
+			var success = false;
+			for ( fmt in ["BC1", "BC3", "dds_BC1", "dds_BC3"] ) {
+				try {
+					sys.FileSystem.rename(datDir + name + "_" + fmt + ".dds", convert.srcPath);
+					success = true;
+				} catch (e :Dynamic) {}
+			}
+			if ( !success )
+				throw "Failed to replace compressed texture in " + datDir + " to " + convert.srcPath;
+		}
+		convertFile("texture");
+		convertFile("normal");
+		convertFile("specular");
+	}
+
+	override function edit(ectx:hide.prefab.EditContext) {
+
+		ectx.properties.add(new hide.Element('
+		<div class="group" name="Params">
+			<dl>
+				<dt>Miplevels</dt><dd><input type="range" step="1" field="mipLevels"/></dd>
+				<dt>Distance start</dt><dd><input type="range" field="mipStart"/></dd>
+				<dt>Distance end</dt><dd><input type="range" field="mipEnd"/></dd>
+				<dt>Power</dt><dd><input type="range" field="mipPower"/></dd>
+			</dl>
+		</div>'), this, function(pname) {
+			ectx.onChange(this, pname);
+		});
+
+		var bt = new hide.Element('<div align="center"><input type="button" value="Build"/></div>');
+		bt.find("input").click(function(e) {
+			ectx.makeChanges(this, function() {
+				errors = [];
+				rebuildData();
+				if ( compress )
+					compression(ectx.scene);
+
+				var ide = hide.Ide.inst;
+				ide.setProgress();
+				if( errors.length > 0 )
+					ide.error(errors.join("\n"));
+			});
+		});
+		ectx.properties.add(bt);
+
+		ectx.properties.add(new hide.Element('
+		<div class="group" name="Compression">
+			<dl>
+				<dt>Compress During Build</dt><dd><input type="checkbox" field="compress"/></dd>
+			</dl>
+		</div>'), this, function(pname) {
+			ectx.onChange(this, pname);
+		});
+
+		var bt = new hide.Element('<div align="center"><input type="button" value="CompressOnly"/></div>');
+		bt.find("input").click(function(e) {
+			ectx.makeChanges(this, function() {
+				errors = [];
+				compression(ectx.scene);
+
+				var ide = hide.Ide.inst;
+				ide.setProgress();
+				if( errors.length > 0 )
+					ide.error(errors.join("\n"));
+			});
+		});
+		ectx.properties.add(bt);
+
+		var listMaterials = new hide.Element('
+		<div class="group" name="Ignored materials"><ul id="ignoreMatList"></ul></div>');
+		ectx.properties.add(listMaterials);
+		for( i in 0...ignoredMaterials.length ) {
+			var e = new hide.Element('<li style="position:relative">
+				<input type="text" field="name"/>
+				<a href="#">[-]</a>
+			</li>');
+			e.find("a").click(function(_) {
+				ignoredMaterials.splice(i, 1);
+				ectx.rebuildProperties();
+			});
+			e.appendTo(listMaterials);
+			ectx.properties.build(e, ignoredMaterials[i], (pname) -> {
+				updateInstance(pname);
+			});
+		}
+		var add = new hide.Element('<li><p><a href="#">[+]</a></p></li>');
+		add.appendTo(listMaterials);
+		add.find("a").click(function(_) {
+			ignoredMaterials.push({name:""});
+			ectx.rebuildProperties();
+		});
+
+		var listPrefabs = new hide.Element('
+		<div class="group" name="Ignored prefabs"><ul id="ignorePrefabList"></ul></div>');
+		ectx.properties.add(listPrefabs);
+		for( i in 0...ignoredPrefabs.length ) {
+			var e = new hide.Element('<li style="position:relative">
+				<input type="text" field="name"/>
+				<a href="#">[-]</a>
+			</li>');
+			e.find("[field=name]");
+			e.find("a").click(function(_) {
+				ignoredPrefabs.splice(i, 1);
+				ectx.rebuildProperties();
+			});
+			e.appendTo(listPrefabs);
+			ectx.properties.build(e, ignoredPrefabs[i], (pname) -> {
+				updateInstance(pname);
+			});
+		}
+		var add = new hide.Element('<li><p><a href="#">[+]</a></p></li>');
+		add.appendTo(listPrefabs);
+		add.find("a").click(function(_) {
+			ignoredPrefabs.push({name:null});
+			ectx.rebuildProperties();
+		});
+
+		var listObjectNames = new hide.Element('
+		<div class="group" name="Ignored object names"><ul id="ignoreObjectNames"></ul></div>');
+		ectx.properties.add(listObjectNames);
+		for( i in 0...ignoredObjectNames.length ) {
+			var e = new hide.Element('<li style="position:relative">
+				<input type="text" field="name"/>
+				<a href="#">[-]</a>
+			</li>');
+			e.find("a").click(function(_) {
+				ignoredObjectNames.splice(i, 1);
+				ectx.rebuildProperties();
+			});
+			e.appendTo(listObjectNames);
+			ectx.properties.build(e, ignoredObjectNames[i], (pname) -> {
+				updateInstance(pname);
+			});
+		}
+		var add = new hide.Element('<li><p><a href="#">[+]</a></p></li>');
+		add.appendTo(listObjectNames);
+		add.find("a").click(function(_) {
+			ignoredObjectNames.push({name:""});
+			ectx.rebuildProperties();
+		});
+
+		var listpreserveObjectNames = new hide.Element('
+		<div class="group" name="Preserve object names"><ul id="preserveObjectNames"></ul></div>');
+		ectx.properties.add(listpreserveObjectNames);
+		for( i in 0...preserveObjectNames.length ) {
+			var e = new hide.Element('<li style="position:relative">
+				<input type="text" field="name"/>
+				<a href="#">[-]</a>
+			</li>');
+			e.find("a").click(function(_) {
+				preserveObjectNames.splice(i, 1);
+				ectx.rebuildProperties();
+			});
+			e.appendTo(listpreserveObjectNames);
+			ectx.properties.build(e, preserveObjectNames[i], (pname) -> {
+				updateInstance(pname);
+			});
+		}
+		var add = new hide.Element('<li><p><a href="#">[+]</a></p></li>');
+		add.appendTo(listpreserveObjectNames);
+		add.find("a").click(function(_) {
+			preserveObjectNames.push({name:""});
+			ectx.rebuildProperties();
+		});
+	}
+
+	override function getHideProps() : hide.prefab.HideProps {
+		return { icon : "square", name : "Model Library" };
+	}
 	#end
 
 	static var _ = Prefab.register("modelLib", ModelLibrary);
