@@ -348,14 +348,11 @@ class Scene extends hide.comp.Component implements h3d.IDrawable {
 		return loadTexture("", t, onReady);
 	}
 
-	public function loadTexture( modelPath : String, texturePath : String, ?onReady : h3d.mat.Texture -> Void,  ?onFail : Void -> Void, async=false, ?uncompressed: Bool = false) {
+	public function loadTexture( modelPath : String, texturePath : String, ?onReady : h3d.mat.Texture -> Void, async=false, ?uncompressed: Bool = false) {
 		checkCurrent();
 		var path = resolvePath(modelPath, texturePath);
 		if( path == null ) {
-			if (onFail != null)
-				onFail();
-			else
-				ide.error("Could not load texture " + { modelPath : modelPath, texturePath : texturePath });
+			ide.quickError("Could not load texture " + { modelPath : modelPath, texturePath : texturePath });
 			return null;
 		}
 		var t = texCache.get(path);
@@ -371,17 +368,12 @@ class Scene extends hide.comp.Component implements h3d.IDrawable {
 		}
 
 		var res = try hxd.res.Loader.currentInstance.load(relPath) catch( e ) {
-			if (e is hxd.res.NotFound)
-				ide.quickError('Resource not found, original texture is loaded instead');
-			else if (onFail != null)
-				onFail();
-
-			loadUncompressed();
+			ide.quickError("Could not load texture " + { modelPath : modelPath, texturePath : texturePath });
+			return null;
 		};
 
-		if (uncompressed) {
+		if (uncompressed)
 			loadUncompressed();
-		}
 
 		if( onReady == null ) onReady = function(_) {};
 		try {
@@ -391,10 +383,8 @@ class Scene extends hide.comp.Component implements h3d.IDrawable {
 			t.setName( ide.makeRelative(path));
 			texCache.set(path, t);
 		} catch( error : Dynamic ) {
-			if (onFail != null)
-				onFail();
-			else
-				throw "Could not load texure " + texturePath + ":\n" + Std.string(error);
+			ide.quickError("Could not load texure " + texturePath + ":\n" + Std.string(error));
+			return null;
 		};
 		return t;
 	}

@@ -393,8 +393,8 @@ class Image extends FileView {
 			scene.loadTexture(state.path, state.path, function(compressedTexture) {
 				scene.loadTexture(state.path, state.path, function(uncompressedTexture) {
 					onTexturesLoaded(compressedTexture, uncompressedTexture);
-				}, onError, false, true);
-			}, onError, false);
+				}, false, true);
+			}, false);
 		};
 	}
 
