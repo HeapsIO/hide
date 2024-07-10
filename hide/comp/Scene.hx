@@ -367,9 +367,8 @@ class Scene extends hide.comp.Component implements h3d.IDrawable {
 			return hxd.res.Any.fromBytes(path, bytes);
 		}
 
-		var res = try hxd.res.Loader.currentInstance.load(relPath) catch( e ) {
-			ide.quickError("Could not load texture " + { modelPath : modelPath, texturePath : texturePath });
-			return null;
+		var res = try hxd.res.Loader.currentInstance.load(relPath) catch( e : hxd.res.NotFound ) {
+			loadUncompressed();
 		};
 
 		if (uncompressed)
