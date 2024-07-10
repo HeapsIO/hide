@@ -325,20 +325,23 @@ class Object3D extends Prefab {
 		if(local3d == null)
 			return null;
 
-		var meshes = [];
-		function rec(p : Prefab) {
-			var o = Std.downcast(p, Object3D);
-			if (!p.locked) {
-				if (o != null)
-					meshes = meshes.concat(o.getObjects(h3d.scene.Mesh));
-
-				for (c in p.children)
-					rec(c);
-			}
-		}
-
+		var meshes = getObjects(h3d.scene.Mesh);
 		var ref = Std.downcast(this, Reference);
-		rec(ref != null ? ref.refInstance : this);
+		if (ref != null) {
+			meshes = [];
+			function rec(p : Prefab) {
+				var o = Std.downcast(p, Object3D);
+				if (!p.locked) {
+					if (o != null)
+						meshes = meshes.concat(o.getObjects(h3d.scene.Mesh));
+
+					for (c in p.children)
+						rec(c);
+				}
+			}
+
+			rec(ref.refInstance);
+		}
 
 		var mesh = Std.downcast(local3d, h3d.scene.Mesh);
 		if (mesh != null ) {
