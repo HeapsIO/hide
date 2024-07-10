@@ -25,7 +25,7 @@ class Polygon extends Object3D {
 	@:c public var shape(default, null) : Shape = Quad(0);
 	@:c public var points : h2d.col.Polygon;
 	@:s public var color : Int = 0xFFFFFFFF;
-	
+
 	#if editor
 	public var editor : hide.prefab.PolygonEditor;
 	@:s public var gridSize:Float = 1;
@@ -67,7 +67,9 @@ class Polygon extends Object3D {
 	override function updateInstance(?propName : String) {
 		super.updateInstance(propName);
 		var mesh : h3d.scene.Mesh = cast local3d;
-		mesh.primitive = makePrimitive();
+		if (mesh != null) {
+			mesh.primitive = makePrimitive();
+		}
 		#if editor
 		setColor(color);
 		if(editor != null)
@@ -315,7 +317,7 @@ class Polygon extends Object3D {
 	override function edit( ctx : EditContext ) {
 		super.edit(ctx);
 		createEditor(ctx);
-		
+
 		var prevKind : Shape = this.shape;
 		var viewModel = {
 			kind: shape.getName(),
@@ -473,7 +475,7 @@ class Polygon extends Object3D {
 			<div class="group" name="Params">
 				<dl>
 					<dt>Debug</dt><dd><input type="checkbox" field="hasDebugColor"/></dd>
-					<dt>Color</dt><dd><input type="color" alpha="true" field="color"/></dd> 
+					<dt>Color</dt><dd><input type="color" alpha="true" field="color"/></dd>
 				</dl>
 			</div>'), this, function(pname) { ctx.onChange(this, pname); });
 

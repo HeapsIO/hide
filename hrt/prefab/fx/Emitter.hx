@@ -1221,13 +1221,15 @@ class EmitterObject extends h3d.scene.Object {
 			var p = particles[i];
 			if(p.life > p.lifeTime) {
 				if (p.trail == null || p.trail.generation != p.trailGeneration) {
-					i = disposeInstance(i);
 					// SUB EMITTER
 					if( subEmitterTemplates != null ) {
 
 						for (subEmitterTemplate in subEmitterTemplates) {
 							var subEmitterInstance : Emitter = @:privateAccess subEmitterTemplate.make(this);
 						    var emitter : EmitterObject = cast subEmitterInstance.local3d;
+							p.updateAbsPos(this);
+							var pos = p.absPos.getPosition();
+							emitter.setPosition(pos.x, pos.y, pos.z);
 							emitter.isSubEmitter = true;
 							emitter.parentEmitter = this;
 							if(subEmitters == null)
@@ -1235,6 +1237,8 @@ class EmitterObject extends h3d.scene.Object {
 							subEmitters.push(emitter);
 						}
 					}
+
+					i = disposeInstance(i);
 				} else {
 					prev = p;
 					++i;
@@ -1443,8 +1447,6 @@ class Emitter extends Object3D {
 		var data = super.save();
 		data.props = Reflect.copy(props);
 		for(param in PARAMS) {
-			if (param.name == "randomGradient")
-				trace("break");
 			var f : Dynamic = Reflect.field(props, param.name);
 			if(f != null && haxe.Json.stringify(f) != haxe.Json.stringify(param.def)) {
 				var val : Dynamic = f;
@@ -1532,6 +1534,12 @@ class Emitter extends Object3D {
 	override function updateInstance(?propName : String ) {
 		super.updateInstance(propName);
 		var emitterObj = Std.downcast(local3d, EmitterObject);
+
+		// if we are in a subEmitter
+		if (emitterObj == null) {
+			parent.updateInstance();
+			return;
+		}
 
 		var randIdx = 0;
 		var template : Object3D = cast children.find(
