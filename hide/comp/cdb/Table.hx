@@ -337,30 +337,37 @@ class Table extends Component {
 	}
 
 	function makeSeparatorTree( ?root ) {
-		var curLevel = 0;
-		var cur : SepTree = { sep : null, index : -1, subs : [], parent : null };
+		var parent : SepTree = { sep : null, index : -1, subs : [], parent : null };
+		var prev = parent;
+		var prevLevel = -1;
+
 		var stack = [];
-		var select = cur;
+		var select = parent;
+
 		for( index => s in sheet.separators ) {
 			var lv = s.level;
 			if( lv == null ) lv = 0;
-			if( lv < curLevel ) {
-				for( i in lv...curLevel )
-					if (stack.length > 0)
-						cur = stack.pop();
-			}
-			var next = { sep : s, index : index, subs : [], parent : cur };
-			if( s == root ) select = next;
-			if( lv > curLevel ) {
-				stack.push(cur);
 
-				if (cur.subs.length > 0)
-					cur = cur.subs[cur.subs.length - 1];
+			if( prevLevel > lv ) {
+				for (idx in 0...(prevLevel - lv))
+					stack.pop();
+
+				parent = stack[stack.length - 1];
 			}
 
-			cur.subs.push(next);
-			curLevel = lv;
+			if( prevLevel < lv ) {
+				stack.push(prev);
+				parent = prev;
+			}
+
+			var sep = { sep : s, index : index, subs : [], parent : parent };
+			parent.subs.push(sep);
+			prevLevel = lv;
+			prev = sep;
+
+			if( s == root ) select = sep;
 		}
+
 		return select;
 	}
 
