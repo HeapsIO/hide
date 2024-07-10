@@ -362,7 +362,7 @@ class Object3D extends Prefab {
 
 			// invisible objects are ignored collision wise
 			var p : h3d.scene.Object = mesh;
-			while( p != local3d ) {
+			while( p != null && p != local3d ) {
 				if( !p.visible ) break;
 				p = p.parent;
 			}
