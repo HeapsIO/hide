@@ -1225,7 +1225,7 @@ class EmitterObject extends h3d.scene.Object {
 					if( subEmitterTemplates != null ) {
 
 						for (subEmitterTemplate in subEmitterTemplates) {
-							var subEmitterInstance : Emitter = @:privateAccess subEmitterTemplate.make(this);
+							var subEmitterInstance : Emitter = @:privateAccess subEmitterTemplate.make(this.getScene());
 						    var emitter : EmitterObject = cast subEmitterInstance.local3d;
 							p.updateAbsPos(this);
 							var pos = p.absPos.getPosition();
