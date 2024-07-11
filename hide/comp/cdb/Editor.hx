@@ -752,6 +752,13 @@ class Editor extends Component {
 		var sel = cursor.getSelection();
 		if( sel == null )
 			return;
+
+		deleteLines(sel.y1, sel.y2);
+	}
+
+	function deleteLines(y0 : Int, y1 : Int) {
+		if (y0 > y1) return;
+
 		var hasChanges = false;
 		var sheet = cursor.table.sheet;
 
@@ -766,38 +773,26 @@ class Editor extends Component {
 				}
 			}
 		}
+
 		beginChanges();
 		if( cursor.x < 0 ) {
 			// delete lines
-			var y = sel.y2;
+			var y = y1;
 			if( !cursor.table.canInsert() ) {
 				endChanges();
 				return;
 			}
-			while( y >= sel.y1 ) {
+
+			while( y >= y0 ) {
 				var line = cursor.table.lines[y];
 				sheet.deleteLine(line.index);
 				hasChanges = true;
 				y--;
 			}
-			cursor.set(cursor.table, -1, sel.y1, null, false);
-		} else {
-			// delete cells
-			for( y in sel.y1...sel.y2+1 ) {
-				var line = cursor.table.lines[y];
-				for( x in sel.x1...sel.x2+1 ) {
-					var c = line.columns[x];
-					if( !line.cells[x].canEdit() )
-						continue;
-					var old = Reflect.field(line.obj, c.name);
-					var def = base.getDefault(c,false,sheet);
-					if( old == def )
-						continue;
-					changeObject(line,c,def);
-					hasChanges = true;
-				}
-			}
+
+			cursor.set(cursor.table, -1, y0, null, false);
 		}
+
 		endChanges();
 		if( hasChanges )
 			refreshAll();
@@ -2222,19 +2217,8 @@ class Editor extends Component {
 				focus();
 			}, keys : config.get("key.duplicate") },
 			{ label : "Delete", click : function() {
-				var id = line.getId();
-				if( id != null && id.length > 0) {
-					var refs = getReferences(id, sheet);
-					if( refs.length > 0 ) {
-						var message = [for (r in refs) r.str].join("\n");
-						if( !ide.confirm('$id is referenced elswhere. Are you sure you want to delete?\n$message') )
-							return;
-					}
-				}
-				beginChanges();
-				sheet.deleteLine(line.index);
-				endChanges();
-				refreshAll();
+				var sel = cursor.getSelection();
+				deleteLines(sel.y1, sel.y2);
 			} },
 			{ label : "Separator", enabled : !sheet.props.hide, checked : sepIndex >= 0, click : function() {
 				beginChanges();
