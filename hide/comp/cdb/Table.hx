@@ -375,6 +375,11 @@ class Table extends Component {
 		return getDisplayState("sep/"+sheet.separators[index].title) == false;
 	}
 
+	function setSepHidden(sep : Separator, hidden : Bool) {
+		sep.hidden = hidden;
+		saveDisplayState("sep/"+sheet.separators[sep.index].title, !hidden);
+	}
+
 	public function expandLine(line: Int) {
 		var sepIndex = -1;
 		for( i in 0...sheet.separators.length ) {
@@ -429,7 +434,7 @@ class Table extends Component {
 
 		var syncLevel : Int = -1;
 		function sync() {
-			data.hidden = title == null ? false : isSepHidden(sindex);
+			setSepHidden(data, title == null ? false : isSepHidden(sindex));
 			toggle.toggle(title != null);
 			toggle.text(data.hidden ? "🡆" : "🡇");
 			content.text(title == null ? "" : title+(data.hidden ? " ("+getLines().length+")" : ""));
@@ -581,7 +586,6 @@ class Table extends Component {
 			});
 		});
 
-		sync();
 		var level = curLevel - 1;
 		while( level >= 0 ) {
 			for( i in 0...sindex ) {
@@ -589,18 +593,19 @@ class Table extends Component {
 				if( s.title != null && (s.level == null || s.level == level) ) {
 					if( isSepHidden(sindex - 1 - i) ) {
 						sep.hide();
-						data.hidden = true;
+						setSepHidden(data, true);
 					}
 					break;
 				}
 			}
 			level--;
 		}
+
+		sync();
 		toggle.dblclick(function(e) e.stopPropagation());
 		toggle.click(function(e) {
-			data.hidden = !data.hidden;
+			setSepHidden(data, !data.hidden);
 			var hidden = data.hidden;
-			saveDisplayState("sep/"+title, !hidden);
 			sync();
 
 			for( l in getLines( hidden ? null : sindex ) ) {
