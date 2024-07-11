@@ -1189,9 +1189,9 @@ class Editor extends Component {
 				}
 
 				var spaces = "[ \\n\\t]";
-				var prevChars = ",\\(:=\\?\\[";
+				var prevChars = ",\\(:=\\?\\[|";
 				var postChars = ",\\):;\\?\\]&|";
-				var regexp = new EReg('((case$spaces+)|[$prevChars])$spaces*$id$spaces*[$postChars]',"");
+				var regexp = new EReg('((case$spaces+)|[$prevChars])$spaces*$id$spaces*[$postChars]*.*',"");
 				var regall = new EReg("\\b"+id+"\\b", "");
 				for (file in codeFileCache) {
 
