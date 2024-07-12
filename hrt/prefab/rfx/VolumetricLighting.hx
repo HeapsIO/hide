@@ -37,7 +37,7 @@ class VolumetricLightingShader extends h3d.shader.pbr.DefaultForward {
 		@param var fogTop : Float;
 		@param var fogHeightFalloff : Float;
 		@param var fogEnvPower : Float;
-		@param var fogUseEnvColor : Float;
+		@param var fogEnvColorMult : Float;
 
 		@param var secondFogColor : Vec3;
 		@param var secondFogDensity : Float;
@@ -128,6 +128,13 @@ class VolumetricLightingShader extends h3d.shader.pbr.DefaultForward {
 			return max(firstFog, secondFog);
 		}
 
+		function getWPos() : Vec3 {
+			var depth = depthMap.get(calculatedUV).r;
+			var uv2 = uvToScreen(calculatedUV);
+			var temp = vec4(uv2, depth, 1) * invViewProj;
+			return temp.xyz / temp.w;
+		}
+
 		function getDistBlend(dist: Float) : Float {
 			var dfactor = smoothstep(0, 1, dist / endDistance);
 			return dfactor * dfactor;
@@ -140,22 +147,20 @@ class VolumetricLightingShader extends h3d.shader.pbr.DefaultForward {
 			metalness = 0.0;
 			emissive = 0.0;
 			albedoGamma = vec3(0.0);
+			useSecondColor = 0.0;
 
-			var depth = depthMap.get(calculatedUV).r;
-			var uv2 = uvToScreen(calculatedUV);
-			var temp = vec4(uv2, depth, 1) * invViewProj;
-			var endPos = temp.xyz / temp.w;
+			var endPos = getWPos();
 
-			var cameraDistance = length(endPos - camera.position);
-			if ( depth >= 1.0 )
-				cameraDistance = endDistance;
 			camDir = normalize(endPos - camera.position);
+			var startPos = camera.position + camDir * startDistance;
+			var cameraDistance = length(endPos - startPos);
+			if ( dot(camDir, endPos - startPos) < 0.0 )
+				discard;
+			endPos = startPos + camDir * cameraDistance;
+
 			envColor = irrDiffuse.getLod(camDir, 0.0).rgb;
 			view = -camDir;
 
-			if ( cameraDistance < startDistance )
-				discard;
-			var startPos = camera.position + camDir * startDistance;
 			var stepSize = length(endPos - startPos) / float(steps);
 			var dithering = ditheringNoise.getLod(calculatedUV * targetSize / ditheringSize, 0.0).r * stepSize * ditheringIntensity;
 			startPos += dithering;
@@ -170,7 +175,8 @@ class VolumetricLightingShader extends h3d.shader.pbr.DefaultForward {
 					break;
 				transformedPosition = startPos + camDir * curDist;
 				fog = fogAt(transformedPosition);
-				var stepColor = evaluateLighting() * mix(mix(color, secondFogColor, useSecondColor), saturate(envColor), fogUseEnvColor);
+				var fColor = mix(color, secondFogColor, useSecondColor);
+				var stepColor = evaluateLighting() * fColor * mix(vec3(1.0), saturate(envColor), fogEnvColorMult);
 
 				var stepColor = vec4(stepColor * fog, fog);
 
@@ -194,7 +200,6 @@ class VolumetricLighting extends RendererFX {
 	@:s public var blend : h3d.mat.PbrMaterial.PbrBlend = Alpha;
 	@:s public var color : Int = 0xFFFFFF;
 	@:s public var steps : Int = 10;
-	@:s public var textureSize : Float = 0.5;
 	@:s public var blur : Float = 0.0;
 	@:s public var startDistance : Float = 0.0;
 	@:s public var endDistance : Float = 200.0;
@@ -214,7 +219,7 @@ class VolumetricLighting extends RendererFX {
 	@:s public var fogEnvPower : Float = 1.0;
 	@:s public var fogBottom : Float = 0.0;
 	@:s public var fogTop : Float = 200.0;
-	@:s public var fogUseEnvColor : Float = 0.0;
+	@:s public var fogEnvColorMult : Float = 0.0;
 
 	@:s public var secondFogColor : Int = 0xFFFFFF;
 	@:s public var secondFogUseNoise : Float = 1.0;
@@ -233,7 +238,7 @@ class VolumetricLighting extends RendererFX {
 			if ( noiseTex == null )
 				noiseTex = makeNoiseTex();
 
-			var tex = r.allocTarget("volumetricLighting", false, textureSize, RGBA16F);
+			var tex = r.allocTarget("volumetricLighting", false, 0.5, RGBA16F);
 			tex.clear(0, 0.0);
 			r.ctx.engine.pushTarget(tex);
 
@@ -269,7 +274,7 @@ class VolumetricLighting extends RendererFX {
 			vshader.fogUseNoise = fogUseNoise;
 			vshader.fogBottom = fogBottom;
 			vshader.fogTop = fogTop;
-			vshader.fogUseEnvColor = fogUseEnvColor;
+			vshader.fogEnvColorMult = fogEnvColorMult;
 			vshader.fogHeightFalloff = fogHeightFalloff;
 
 			vshader.secondFogColor.load(h3d.Vector.fromColor(secondFogColor));
@@ -343,7 +348,7 @@ class VolumetricLighting extends RendererFX {
 					<dt>End distance</dt><dd><input type="range" min="0" field="endDistance"/></dd>
 					<dt>Distance opacity</dt><dd><input type="range" min="0" max="1" field="distanceOpacity"/></dd>
 					<dt>Env power</dt><dd><input type="range" min="0" max="2" field="fogEnvPower"/></dd>
-					<dt>Use env color</dt><dd><input type="range" min="0" max="1" field="fogUseEnvColor"/></dd>
+					<dt>Env color mult</dt><dd><input type="range" min="0" max="1" field="fogEnvColorMult"/></dd>
 					<dt>Color</dt><dd><input type="color" field="color"/></dd>
 					<dt>Density</dt><dd><input type="range" min="0" max="2" field="fogDensity"/></dd>
 					<dt>Use noise</dt><dd><input type="range" min="0" max="1" field="fogUseNoise"/></dd>
@@ -375,7 +380,6 @@ class VolumetricLighting extends RendererFX {
 			<div class="group" name="Rendering">
 				<dl>
 					<dt><font color=#FF0000>Steps</font></dt><dd><input type="range" step="1" min="0" max="255" field="steps"/></dd>
-					<dt><font color=#FF0000>Texture size</font></dt><dd><input type="range" min="0" max="1" field="textureSize"/></dd>
 					<dt>Blur</dt><dd><input type="range" step="1" min="0" max="100" field="blur"/></dd>
 					<dt>Dithering intensity</dt><dd><input type="range" min="0" max="1" field="ditheringIntensity"/></dd>
 				</dl>
