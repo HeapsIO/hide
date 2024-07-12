@@ -753,12 +753,10 @@ class Editor extends Component {
 		if( sel == null )
 			return;
 
-		deleteLines(sel.y1, sel.y2);
+		delete(sel.x1, sel.x2, sel.y1, sel.y2);
 	}
 
-	function deleteLines(y0 : Int, y1 : Int) {
-		if (y0 > y1) return;
-
+	function delete(x1 : Int, x2 : Int, y1 : Int, y2 : Int) {
 		var hasChanges = false;
 		var sheet = cursor.table.sheet;
 
@@ -777,20 +775,37 @@ class Editor extends Component {
 		beginChanges();
 		if( cursor.x < 0 ) {
 			// delete lines
-			var y = y1;
+			var y = y2;
 			if( !cursor.table.canInsert() ) {
 				endChanges();
 				return;
 			}
 
-			while( y >= y0 ) {
+			while( y >= y1 ) {
 				var line = cursor.table.lines[y];
 				sheet.deleteLine(line.index);
 				hasChanges = true;
 				y--;
 			}
 
-			cursor.set(cursor.table, -1, y0, null, false);
+			cursor.set(cursor.table, -1, y1, null, false);
+		}
+		else {
+			// delete cells
+			for( y in y1...y2+1 ) {
+				var line = cursor.table.lines[y];
+				for( x in x1...x2+1 ) {
+					var c = line.columns[x];
+					if( !line.cells[x].canEdit() )
+						continue;
+					var old = Reflect.field(line.obj, c.name);
+					var def = base.getDefault(c,false,sheet);
+					if( old == def )
+						continue;
+					changeObject(line,c,def);
+					hasChanges = true;
+				}
+			}
 		}
 
 		endChanges();
@@ -2218,7 +2233,7 @@ class Editor extends Component {
 			}, keys : config.get("key.duplicate") },
 			{ label : "Delete", click : function() {
 				var sel = cursor.getSelection();
-				deleteLines(sel.y1, sel.y2);
+				delete(sel.x1, sel.x2, sel.y1, sel.y2);
 			} },
 			{ label : "Separator", enabled : !sheet.props.hide, checked : sepIndex >= 0, click : function() {
 				beginChanges();
