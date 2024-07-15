@@ -499,7 +499,7 @@ class DataFiles {
 			}
 
 			reloadFile(f);
-			Editor.refreshAll(true, false);
+			Editor.refreshAll(false, false);
 		},0);
 	}
 
