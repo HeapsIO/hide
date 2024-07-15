@@ -1265,8 +1265,21 @@ class Model extends FileView {
 									dragInter.stopCapture();
 									buildTimeline();
 									buildEventPanel();
-									if( curFrame != startFrame )
-										modified = true;
+									if( curFrame != startFrame ) {
+										undo.change(Custom(function(undo) {
+											if(undo) {
+												events[curFrame].remove(event);
+												events[startFrame].push(event);
+											}
+											else {
+												events[curFrame].push(event);
+												events[startFrame].remove(event);
+											}
+
+											buildTimeline();
+											buildEventPanel();
+										}));
+									}
 								case EMove:
 									var newFrame = Math.round(( (curPos + (e.relX - 2.5) * dragIcon.scaleX ) / W ) * obj.currentAnimation.frameCount);
 									if( newFrame >= 0 && newFrame <= obj.currentAnimation.frameCount ) {
