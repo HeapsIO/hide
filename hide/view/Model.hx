@@ -548,7 +548,7 @@ class Model extends FileView {
 				function getLodRatioFromIdx(idx : Int) {
 					var lodConfig = hmd.getLodConfig();
 					if (idx == 0) return 1.;
-					if (idx >= hmd.getLodConfig().length) return 0.;
+					if (idx >= hmd.lodCount()) return 0.;
 					return lodConfig[idx - 1];
 				}
 
