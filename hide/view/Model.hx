@@ -1172,18 +1172,38 @@ class Model extends FileView {
 				});
 			case 1:
 				var deleteEvent = function(s:String, f:Int){
-					obj.currentAnimation.events[f].remove(s);
-					if(obj.currentAnimation.events[f].length == 0)
-						obj.currentAnimation.events[f] = null;
+					obj.currentAnimation.removeEvent(f, s);
 					buildTimeline();
 					buildEventPanel();
-					modified = true;
+
+					undo.change(Custom(function(undo) {
+						if(undo) {
+							obj.currentAnimation.addEvent(f, s);
+						}
+						else {
+							obj.currentAnimation.removeEvent(f, s);
+						}
+
+						buildTimeline();
+						buildEventPanel();
+					}));
 				}
 				var addEvent = function(s:String, f:Int){
 					obj.currentAnimation.addEvent(f, s);
 					buildTimeline();
 					buildEventPanel();
-					modified = true;
+
+					undo.change(Custom(function(undo) {
+						if(undo) {
+							obj.currentAnimation.removeEvent(f, s);
+						}
+						else {
+							obj.currentAnimation.addEvent(f, s);
+						}
+
+						buildTimeline();
+						buildEventPanel();
+					}));
 				}
 				var frame = Math.round((e.relX / W) * obj.currentAnimation.frameCount);
 				var menuItems : Array<hide.comp.ContextMenu.ContextMenuItem> = [
@@ -1220,15 +1240,38 @@ class Model extends FileView {
 						sceneEditor.view.keys.pushDisable();
 						e.propagate = false;
 					}
-					tf.onFocusLost = function(e){
-						events[i][j] = tf.text;
-						if( tf.text == "" ) {
+					tf.onFocusLost = function(e) {
+						var newName = tf.text;
+						var oldName = events[i][j];
+						events[i][j] = newName;
+						if( newName == "" ) {
 							events[i].splice(j,1);
 							if( events[i].length == 0 ) events[i] = null;
 						}
 						buildTimeline();
 						buildEventPanel();
-						modified = true;
+
+						undo.change(Custom(function(undo) {
+							if(undo) {
+								if (events[i] == null)
+									events[i] = [oldName];
+								else if (events[i][j] != newName)
+									events[i].insert(j, oldName);
+								else
+									events[i][j] = oldName;
+							}
+							else {
+								events[i][j] = newName;
+								if( newName == "" ) {
+									events[i].splice(j,1);
+									if( events[i].length == 0 ) events[i] = null;
+								}
+							}
+
+							buildTimeline();
+							buildEventPanel();
+						}));
+
 						sceneEditor.view.keys.popDisable();
 					}
 					tf.text = event;
