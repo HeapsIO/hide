@@ -3,16 +3,19 @@ common.hxml
 -D prefab2
 -js bin/hide.js
 -main hide.Ide
+--macro hide.tools.Macros.includeShaderSources()
 --macro include("h3d.shader")
 --macro include("h3d.anim")
+--macro include("h3d.prim")
+--macro include("h3d.scene")
+--macro include("h3d.pass")
 --macro include("h2d.col")
 --macro include("hxd.poly2tri")
 --macro include("hxd.clipper")
 --macro include("hxd.earcut")
---macro include("hrt.prefab")
---macro include("hrt.shgraph")
---macro include("hrt.shgraph.nodes")
 --macro include("hide.view")
+--macro include("hide.prefab")
+--macro include("hrt")
 -dce no
 -debug
 #-D shader_debug_dump

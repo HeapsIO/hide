@@ -7,13 +7,6 @@ using haxe.macro.ExprTools;
 
 class Macros {
 
-	public static macro function include( packages : Array<String> ) {
-		includeShaderSources();
-		for( p in packages )
-			haxe.macro.Compiler.include(p);
-		return macro null;
-	}
-
 	#if macro
 
 	static function includeShaderSources() {
