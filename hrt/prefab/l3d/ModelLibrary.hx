@@ -161,7 +161,7 @@ class ModelLibrary extends Prefab {
 		#if editor
 		return shared.scene.loadTexture(sourcePath, texPath);
 		#else
-		return hxd.res.Loader.currentInstance.load(sourcePath + "/" + texPath).toTexture();
+		return hxd.res.Loader.currentInstance.load(texPath).toTexture();
 		#end
 	}
 
@@ -173,7 +173,7 @@ class ModelLibrary extends Prefab {
 		#end
 	}
 
-	function rebuildData() {
+	public function rebuildData() {
 
 		bakedMaterials = {};
 		materialConfigs = [];
@@ -218,7 +218,7 @@ class ModelLibrary extends Prefab {
 				#if editor
 				return hide.Ide.inst.getPath(p);
 				#else
-				return p;
+				return "res/" + p;
 				#end
 			}
 			var t = null;
@@ -627,9 +627,14 @@ class ModelLibrary extends Prefab {
 		if (cache.wasMade)
 			return this;
 
+		if ( cache.hmdPrim == null ) {
+			try {
+				cache.hmdPrim = Std.downcast(shared.loadModel(shared.getPrefabDatPath("model","hmd",this.name)).toMesh().primitive, h3d.prim.HMDModel);
+			} catch ( e : Dynamic ) {
+				return this;
+			}
+		}
 		cache.wasMade = true;
-		if ( cache.hmdPrim == null )
-			cache.hmdPrim = Std.downcast(shared.loadModel(shared.getPrefabDatPath("model","hmd",this.name)).toMesh().primitive, h3d.prim.HMDModel);
 		if ( cache.geomBounds == null )
 			cache.geomBounds = [for( g in @:privateAccess cache.hmdPrim.lib.header.geometries ) g.bounds];
 		@:privateAccess cache.hmdPrim.curMaterial = -1;
