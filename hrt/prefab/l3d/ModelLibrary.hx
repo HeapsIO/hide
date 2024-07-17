@@ -838,13 +838,12 @@ class ModelLibrary extends Prefab {
 		batch.emitInstance();
 	}
 
-	#if editor
-	function compression(scene : hide.comp.Scene ) {
+	public function compression() {
 		var convert = new hxd.fs.Convert.CompressIMG("png,tga,jpg,jpeg,dds,envd,envs","dds");
 		convert.params = {format: "BC3"};
 		var path = new haxe.io.Path(Std.downcast(hxd.res.Loader.currentInstance.fs, hxd.fs.LocalFileSystem).baseDir+shared.currentPath);
 		path.ext = "dat";
-		var datDir = path.toString() + "/modelLib/";
+		var datDir = path.toString() + '/${name}/';
 		convert.dstPath = datDir;
 		if ( !hxd.res.Loader.currentInstance.exists(convert.dstPath) )
 			sys.FileSystem.createDirectory(convert.dstPath);
@@ -858,8 +857,12 @@ class ModelLibrary extends Prefab {
 			var success = false;
 			for ( fmt in ["BC1", "BC3", "dds_BC1", "dds_BC3"] ) {
 				try {
-					sys.FileSystem.rename(datDir + name + "_" + fmt + ".dds", convert.srcPath);
+					var compressedTex = datDir + name + "_" + fmt + ".dds";
+					if ( sys.FileSystem.exists(compressedTex) )
+						sys.FileSystem.deleteFile(convert.srcPath);
+					sys.FileSystem.rename(compressedTex, convert.srcPath);
 					success = true;
+					break;
 				} catch (e :Dynamic) {}
 			}
 			if ( !success )
@@ -870,6 +873,7 @@ class ModelLibrary extends Prefab {
 		convertFile("specular");
 	}
 
+	#if editor
 	override function edit(ectx:hide.prefab.EditContext) {
 
 		ectx.properties.add(new hide.Element('
@@ -890,7 +894,7 @@ class ModelLibrary extends Prefab {
 				errors = [];
 				rebuildData();
 				if ( compress )
-					compression(ectx.scene);
+					compression();
 
 				var ide = hide.Ide.inst;
 				ide.setProgress();
@@ -913,7 +917,7 @@ class ModelLibrary extends Prefab {
 		bt.find("input").click(function(e) {
 			ectx.makeChanges(this, function() {
 				errors = [];
-				compression(ectx.scene);
+				compression();
 
 				var ide = hide.Ide.inst;
 				ide.setProgress();
