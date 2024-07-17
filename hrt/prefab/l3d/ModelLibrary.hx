@@ -709,7 +709,7 @@ class ModelLibrary extends Prefab {
 			for( m in meshes.meshes ) {
 				var bk = m.mat;
 				var batch = meshBatches[bk.configIndex + indexOffset];
-				emit(m, batch);
+				emit(m.mat, batch, m.mesh.getAbsPos());
 			}
 			indexOffset += materialConfigs.length;
 		}
@@ -830,8 +830,7 @@ class ModelLibrary extends Prefab {
 			b.culled = true;
 	}
 
-	public function emit(m : MaterialMesh, batch : h3d.scene.MeshBatch, emitCountTip = -1) {
-		var bk = m.mat;
+	public function emit(bk : MaterialData, batch : h3d.scene.MeshBatch, ?absPos : h3d.Matrix, emitCountTip = -1) {
 		cache.shader.delta = 1.0 / 4096 / bk.uvSX;
 		cache.shader.uvTransform.set(bk.uvX, bk.uvY, bk.uvSX, bk.uvSY);
 		cache.shader.material = bk.texId;
@@ -842,7 +841,8 @@ class ModelLibrary extends Prefab {
 		batch.primitiveSubPart.indexCount = bk.indexCount;
 		batch.primitiveSubPart.indexStart = bk.indexStart;
 		batch.primitiveSubPart.bounds = cache.geomBounds[bk.geomId];
-		batch.worldPosition = m.mesh.getAbsPos();
+		if ( absPos != null )
+			batch.worldPosition = absPos;
 		batch.emitInstance();
 	}
 
