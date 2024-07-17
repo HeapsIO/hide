@@ -671,7 +671,7 @@ class Light extends Object3D {
 			var e = new hide.Element('
 			<div class="group" name="Params">
 				<dl>
-					<dt>DepthBias</dt><dd><input type="range" min="0" max="10" step="1" field="depthBias"/></dd>
+					<dt>DepthBias</dt><dd><input type="range" min="0" max="10" step="0.1" field="depthBias"/></dd>
 					<dt>SlopeBias</dt><dd><input type="range" min="0" max="10" step="0.1" field="slopeBias"/></dd>
 				</dl>
 			</div>
