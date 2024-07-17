@@ -74,7 +74,37 @@ class ContextShared {
 	}
 
 	public function savePrefabDat(file : String, ext : String, prefab : String, bytes : haxe.io.Bytes ) {
-		throw "Not implemented";
+		var datDir = getFolderDatPath();
+		var instanceDir = datDir + "/" + prefab;
+
+		var prefix = "res/";
+		if(!sys.FileSystem.isDirectory(prefix+datDir))
+			sys.FileSystem.createDirectory(prefix+datDir);
+		if(!sys.FileSystem.isDirectory(prefix+instanceDir))
+			sys.FileSystem.createDirectory(prefix+instanceDir);
+
+		var path = new haxe.io.Path("");
+		path.dir = instanceDir;
+		path.file = file;
+		path.ext = ext;
+		var file = prefix+path.toString();
+
+		if( bytes == null ){
+			try sys.FileSystem.deleteFile(file) catch( e : Dynamic ) {};
+			var p = prefix+instanceDir;
+			if(sys.FileSystem.isDirectory(p)){
+				var dir = sys.FileSystem.readDirectory(p);
+				if(dir.length == 0) sys.FileSystem.deleteDirectory(p);
+			}
+			var p = prefix+datDir;
+			if(sys.FileSystem.isDirectory(p)){
+				var dir = sys.FileSystem.readDirectory(p);
+				if(dir.length == 0) sys.FileSystem.deleteDirectory(p);
+			}
+			return;
+		}else{
+			sys.io.File.saveBytes(file, bytes);
+		}
 	}
 
 	public function loadShader( path : String ) : Cache.ShaderDef {
