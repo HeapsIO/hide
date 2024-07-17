@@ -723,8 +723,17 @@ class ModelLibrary extends Prefab {
 			clearOptimized(obj);
 	}
 
+	public function getPrim() {
+		return cache.hmdPrim;
+	}
+
 	public function createMeshBatch(parent : h3d.scene.Object, isStatic : Bool, ?bounds : h3d.col.Bounds, ?props : h3d.mat.PbrMaterial.PbrProps) {
 		var batch = new h3d.scene.MeshBatch(cache.hmdPrim, h3d.mat.Material.create(), parent);
+		setupMeshBatch(batch, isStatic, bounds, props);
+		return batch;
+	}
+
+	public function setupMeshBatch(batch : h3d.scene.MeshBatch, isStatic : Bool, ?bounds : h3d.col.Bounds, ?props : h3d.mat.PbrMaterial.PbrProps) {
 		if ( isStatic ) {
 			batch.material.staticShadows = true;
 			batch.fixedPosition = true;
@@ -738,7 +747,6 @@ class ModelLibrary extends Prefab {
 			if ( (batch.material.props:PbrProps).alphaKill && batch.material.textureShader == null )
 				batch.material.mainPass.addShader(killAlpha);
 		}
-		return batch;
 	}
 
 	function optimizeRec( obj : h3d.scene.Object, out : Array<SubMeshes> ) {
