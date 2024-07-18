@@ -7,6 +7,7 @@ class CubeSpawnShader extends ComputeUtils {
 	}
 
 	static var SRC = {
+		@param var boundsMin : Vec3;
 		@param var boundsSize : Vec3;
 		@param var randOffset : Int;
 
@@ -14,9 +15,8 @@ class CubeSpawnShader extends ComputeUtils {
 		var lifeTime : Float;
 		var relativeTransform : Mat4;
 		function main() {
-			var rnd = random3d(vec2(global.time, computeVar.globalInvocation.x + randOffset));
-			rnd = rnd - 0.5;
-			relativeTransform = translationMatrix(rnd * boundsSize);
+			var rnd = random3d(vec2(global.time, global.time * computeVar.globalInvocation.x + randOffset));
+			relativeTransform = translationMatrix(rnd * boundsSize + boundsMin);
 		}
 	}
 }

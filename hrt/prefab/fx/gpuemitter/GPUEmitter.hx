@@ -65,11 +65,20 @@ class GPUEmitterObject extends h3d.scene.MeshBatch {
 	public var simulationPass : h3d.mat.Pass;
 	public var spawnPass : h3d.mat.Pass;
 	public var data : Data;
-	
+	public var fxAnim : hrt.prefab.fx.FX.FXAnimation;
+
 	var particleShader : ParticleShader;
 
 	public function new(data, primitive, materials, ?parent) {
 		super(primitive, null, parent);
+		fxAnim = null;
+		var p = parent;
+		while ( p != null ) {
+			fxAnim = Std.downcast(p, hrt.prefab.fx.FX.FXAnimation);
+			if ( fxAnim != null )
+				break;
+			p = p.parent;
+		}
 		this.meshBatchFlags.set(EnableGpuUpdate);
 		this.meshBatchFlags.set(EnableStorageBuffer);
 		if ( materials != null )
@@ -136,14 +145,14 @@ class GPUEmitterObject extends h3d.scene.MeshBatch {
 				baseSpawn.absPos.identity();
 				particleShader.absPos.identity();
 				
-				var cam = ctx.camera.clone();
-				cam.zFar = data.cameraModeDistance;
-				cam.update();
-				var bounds = new h3d.col.Bounds();
-				bounds.addPoint(cam.unproject(-1, -1, 0.0).toPoint());
-				bounds.addPoint(cam.unproject(1, 1, 0.0).toPoint());
-				bounds.addPoint(cam.unproject(-1, -1, 1.0).toPoint());
-				bounds.addPoint(cam.unproject(1, 1, 1.0).toPoint());
+				var camPos = ctx.camera.pos;
+				var d = data.cameraModeDistance * 0.5;
+				var bounds = h3d.col.Bounds.fromValues(camPos.x - d,
+					camPos.y - d,
+					camPos.z - d,
+					2.0 * d,
+					2.0 * d,
+					2.0 * d);
 				baseSimulation.boundsPos.set(bounds.xMin, bounds.yMin, bounds.zMin);
 				baseSimulation.boundsSize.set(bounds.xSize, bounds.ySize, bounds.zSize);
 				particleShader.absPos.load(getAbsPos());
@@ -153,8 +162,14 @@ class GPUEmitterObject extends h3d.scene.MeshBatch {
 					cubeSpawn = new CubeSpawnShader();
 					spawnPass.addShader(cubeSpawn);
 				}
+				cubeSpawn.boundsMin.set(bounds.xMin, bounds.yMin, bounds.zMin);
 				cubeSpawn.boundsSize.set(bounds.xSize, bounds.ySize, bounds.zSize);
-				cubeSpawn.boundsSize.set(bounds.getCenter().x, bounds.getCenter().y, bounds.getCenter().z);
+			}
+			switch (data.mode) {
+			case Camera:
+				fxAnim.autoCull = false;
+			default:
+				fxAnim.autoCull = true;
 			}
 			baseSimulation.CAMERA_BOUNDS = data.mode == Camera;
 
