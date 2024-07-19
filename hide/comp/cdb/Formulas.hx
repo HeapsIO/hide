@@ -156,9 +156,13 @@ class Formulas {
 		for( s in editor.base.sheets )
 			sheetNames.set(getTypeName(s), s);
 
+		var changed = false;
 		var refs : Array<SheetAccess> = [];
 		function replaceRec( e : hscript.Expr ) {
 			switch( e.e ) {
+			case EField({ e : EIdent(s) }, name) if ( s == "Sheets" ):
+				e.e = EIdent(name);
+				changed = true;
 			case EField({ e : EIdent(s) }, name) if( sheetNames.exists(s) ):
 				if( name == "all" || name == "resolve" ) {
 					var found = false;
@@ -173,7 +177,12 @@ class Formulas {
 				hscript.Tools.iter(e, replaceRec);
 			}
 		}
+
 		replaceRec(expr);
+		while(changed) {
+			changed = false;
+			replaceRec(expr);
+		}
 
 		formulas = [];
 		fmap = new Map();
@@ -356,6 +365,7 @@ class FormulasView extends hide.view.Script {
 		var carray = switch( _tarray ) { case TInst(c,_): c; default: throw "assert"; }
 		function tarray(t) return TInst(carray,[t]);
 
+		var sfields : Array<{name : String, t : TType, opt : Bool}> = [];
 		var cdefs = new Map();
 		for( s in ide.database.sheets ) {
 			var cdef : CClass = {
@@ -377,9 +387,12 @@ class FormulasView extends hide.view.Script {
 					opt : false,
 				}
 			];
+
+			sfields.push({name: cdef.name, t : TAnon(afields), opt : false});
 			check.checker.setGlobal(cdef.name, TAnon(afields));
 		}
 
+		check.checker.setGlobal("Sheets", TAnon(sfields));
 		var tenum = TInst(check.checker.types.defineClass("EnumValue"),[]);
 		for( s in ide.database.sheets ) {
 			var cdef = cdefs.get(s.name);
