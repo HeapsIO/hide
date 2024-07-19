@@ -29,8 +29,7 @@ class ModelLibShader extends hxsl.Shader {
 		@:import h3d.shader.BaseMesh;
 
 		@param @perInstance var uvTransform : Vec4;
-		@param @perInstance var material : Float;
-		@param @perInstance var delta : Float;
+		@param @perInstance var libraryParams : Vec4;
 
 		@const var singleTexture : Bool;
 		@const var hasNormal : Bool;
@@ -77,18 +76,18 @@ class ModelLibShader extends hxsl.Shader {
 		}
 
 		function __init__fragment() {
-			calculatedUV = clamp(input2.uv.fract(), delta, 1.0 - delta);
+			calculatedUV = clamp(input2.uv.fract(), libraryParams.y, 1.0 - libraryParams.y);
 			calculatedUV = calculatedUV * uvTransform.zw + uvTransform.xy;
-			pixelColor = singleTexture ? texture.getLod(calculatedUV, mipLevel) : textures.getLod(vec3(calculatedUV, material), mipLevel);
+			pixelColor = singleTexture ? texture.getLod(calculatedUV, mipLevel) : textures.getLod(vec3(calculatedUV, libraryParams.x), mipLevel);
 			if( hasNormal ) {
 				var n = transformedNormal;
-				var nf = unpackNormal(singleTexture ? normalMap.getLod(calculatedUV, mipLevel) : normalMaps.getLod(vec3(calculatedUV, material), mipLevel));
+				var nf = unpackNormal(singleTexture ? normalMap.getLod(calculatedUV, mipLevel) : normalMaps.getLod(vec3(calculatedUV, libraryParams.x), mipLevel));
 				var tanX = transformedTangent.xyz.normalize();
 				var tanY = n.cross(tanX) * -transformedTangent.w;
 				transformedNormal = (nf.x * tanX + nf.y * tanY + nf.z * n).normalize();
 			}
 			if( hasPbr ) {
-				var v = singleTexture ? specular.getLod(calculatedUV, mipLevel) : speculars.getLod(vec3(calculatedUV, material), mipLevel);
+				var v = singleTexture ? specular.getLod(calculatedUV, mipLevel) : speculars.getLod(vec3(calculatedUV, libraryParams.x), mipLevel);
 				unpackPBR(v);
 			}
 		}
@@ -127,6 +126,7 @@ class ModelLibrary extends Prefab {
 	public var debug = false;
 	public var clear = false;
 	var cache : ModelLibraryCache;
+	var btSize = 4096;
 	var errors = [];
     final reg = ~/[0-9]+/g;
 
@@ -177,8 +177,6 @@ class ModelLibrary extends Prefab {
 
 		bakedMaterials = {};
 		materialConfigs = [];
-
-		var btSize = 4096;
 
 		var hmd = new Data();
 		hmd.version = Data.CURRENT_VERSION;
@@ -831,9 +829,8 @@ class ModelLibrary extends Prefab {
 	}
 
 	public function emit(bk : MaterialData, batch : h3d.scene.MeshBatch, ?absPos : h3d.Matrix, emitCountTip = -1) {
-		cache.shader.delta = 1.0 / 4096 / bk.uvSX;
 		cache.shader.uvTransform.set(bk.uvX, bk.uvY, bk.uvSX, bk.uvSY);
-		cache.shader.material = bk.texId;
+		cache.shader.libraryParams.set(bk.texId, 1.0 / btSize / bk.uvSX, 0.0, 0.0);
 		if ( batch.primitiveSubPart == null ) {
 			batch.primitiveSubPart = new h3d.scene.MeshBatch.MeshBatchPart();
 			batch.begin(emitCountTip);
