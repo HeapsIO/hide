@@ -171,7 +171,7 @@ class Camera extends Object3D {
 	}
 
 	function applyRFX() {
-		if (local3d.getScene() == null) return;
+		if (local3d == null || local3d.getScene() == null) return;
 		var renderer = local3d.getScene().renderer;
 		if (renderer == null) return;
 		if (preview) {
