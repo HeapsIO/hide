@@ -223,9 +223,13 @@ class Material extends Prefab {
 		}
 
 		for (o in overrides) {
-			if (o.pname.indexOf("/") > 0) {
+			if (!Reflect.hasField(o, "pname"))
+				throw "Overriden property should have a name";
 
-				var pname = o.pname.substring(o.pname.indexOf("/") + 1);
+			var pname : String = o.pname;
+			if (pname.indexOf("/") > 0) {
+
+				pname = pname.substring(pname.indexOf("/") + 1);
 				var v = o.value;
 
 				if (v == "__toremove") {
@@ -236,7 +240,7 @@ class Material extends Prefab {
 				}
 			}
 			else {
-				Reflect.setProperty(this, o.pname, o.value);
+				Reflect.setProperty(this, pname, o.value);
 			}
 		}
 
