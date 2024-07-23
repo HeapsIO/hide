@@ -404,6 +404,11 @@ class ShaderGraph extends hrt.prefab.Prefab {
 	}
 
 	public function compile(?previewDomain: Domain) : hrt.prefab.Cache.ShaderDef {
+		#if !editor
+		if ( cachedDef != null )
+			return cachedDef;
+		#end
+
 		var inits : Array<{variable: TVar, value: Dynamic}>= [];
 
 		var shaderData : ShaderData = {
@@ -489,7 +494,8 @@ class ShaderGraph extends hrt.prefab.Prefab {
 		@:privateAccess shared.data = shaderData;
 		@:privateAccess shared.initialize();
 
-		return {shader : shared, inits: inits};
+		cachedDef = {shader : shared, inits: inits}
+		return cachedDef;
 	}
 
 	public function makeShaderInstance() : hxsl.DynamicShader {
