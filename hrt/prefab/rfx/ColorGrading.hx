@@ -95,7 +95,9 @@ class ColorGrading extends RendererFX {
 			ctx.ide.chooseFileSave("defaultLUT.png", saveTexture);
 		});
 
-		ctx.properties.add(e, this);
+		ctx.properties.add(e, this, function(pname) {
+			ctx.onChange(this, pname);
+		});
 	}
 	#end
 
