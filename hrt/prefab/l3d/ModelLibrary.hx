@@ -6,6 +6,8 @@ typedef MaterialData = {
 	var indexStart : Int;
 	var indexCount : Int;
 	var geomId : Int;
+	var lodIndexStart : Array<Int>;
+	var lodIndexCount : Array<Int>;
 	var texId : Int;
 	var uvX : Float;
 	var uvY : Float;
@@ -426,28 +428,30 @@ class ModelLibrary extends Prefab {
 					if ( haxe.Json.stringify((heapsMat.props:PbrProps)) == haxe.Json.stringify(materialConfigs[i]) ) {
 							matConfigIndex = i;
 							break;
-						}
 					}
-					if ( matConfigIndex < 0 ) {
-						materialConfigs.push((heapsMat.props:PbrProps));
-						matConfigIndex = materialConfigs.length - 1;
-					}
-					bk = {
-						indexStart : 0,
-						indexCount : 0,
-						geomId : 0,
-						texId : hxd.Math.floor(pos.tex.id / mipLevels),
-						uvX : pos.pos.du,
-						uvY : pos.pos.dv,
-						uvSX : pos.pos.su,
-						uvSY : pos.pos.sv,
-						configIndex : matConfigIndex,
-					};
-					bakedMaterials.set(key, bk);
-
-					hmd.materials.push(m2);
-					return bk;
 				}
+				if ( matConfigIndex < 0 ) {
+					materialConfigs.push((heapsMat.props:PbrProps));
+					matConfigIndex = materialConfigs.length - 1;
+				}
+				bk = {
+					indexStart : 0,
+					indexCount : 0,
+					geomId : 0,
+					lodIndexStart : [],
+					lodIndexCount : [],
+					texId : hxd.Math.floor(pos.tex.id / mipLevels),
+					uvX : pos.pos.du,
+					uvY : pos.pos.dv,
+					uvSX : pos.pos.su,
+					uvSY : pos.pos.sv,
+					configIndex : matConfigIndex,
+				};
+				bakedMaterials.set(key, bk);
+
+				hmd.materials.push(m2);
+				return bk;
+			}
 
 			var offsetGeom = hmd.geometries.length;
 			var offsetModels = hmd.models.length;
@@ -482,6 +486,10 @@ class ModelLibrary extends Prefab {
 
 			var root = true;
 			for( m in lib.header.models ) {
+				var lodInfos = lib.getLODInfos(m);
+				if ( lodInfos.lodLevel > 0 )
+					continue;
+
 				var ignoreModel = false;
 				var m2 = new Model();
 				m2.name = m.name;
@@ -506,6 +514,22 @@ class ModelLibrary extends Prefab {
 							mat.geomId = m2.geometry;
 							mat.indexCount = lib.header.geometries[m.geometry].indexCounts[index];
 							mat.indexStart = indexStarts[m2.geometry][index];
+
+							if ( lodInfos.lodLevel == 0 ) {
+								var lods = lib.findLODs(lodInfos.modelName);
+								mat.lodIndexCount = [];
+								mat.lodIndexStart = [];
+								mat.lodIndexCount.resize(lods.length);
+								mat.lodIndexStart.resize(lods.length);
+								for ( i => lod in lods ) {
+									mat.lodIndexCount[i] = lod.indexCounts[index];
+									var geometry = lib.header.geometries.indexOf(lod);
+									if ( geometry < 0 )
+										throw "Geometry not found";
+									mat.lodIndexStart[i] = indexStarts[geometry + offsetGeom][index];
+								}
+							}
+
 							m2.materials.push(hmd.materials.length - 1);
 						}
 					}
@@ -707,7 +731,7 @@ class ModelLibrary extends Prefab {
 			for( m in meshes.meshes ) {
 				var bk = m.mat;
 				var batch = meshBatches[bk.configIndex + indexOffset];
-				emit(m.mat, batch, m.mesh.getAbsPos());
+				emit(m, batch, m.mesh.getAbsPos());
 			}
 			indexOffset += materialConfigs.length;
 		}
@@ -828,16 +852,19 @@ class ModelLibrary extends Prefab {
 			b.culled = true;
 	}
 
-	public function emit(bk : MaterialData, batch : h3d.scene.MeshBatch, ?absPos : h3d.Matrix, emitCountTip = -1) {
-		cache.shader.uvTransform.set(bk.uvX, bk.uvY, bk.uvSX, bk.uvSY);
-		cache.shader.libraryParams.set(bk.texId, 1.0 / btSize / bk.uvSX, 0.0, 0.0);
+	public function emit(bk : MaterialMesh, batch : h3d.scene.MeshBatch, ?absPos : h3d.Matrix, emitCountTip = -1, ?flags : haxe.EnumFlags<h3d.scene.MeshBatch.MeshBatchFlag> ) {
+		cache.shader.uvTransform.set(bk.mat.uvX, bk.mat.uvY, bk.mat.uvSX, bk.mat.uvSY);
+		cache.shader.libraryParams.set(bk.mat.texId, 1.0 / btSize / bk.mat.uvSX, 0.0, 0.0);
 		if ( batch.primitiveSubPart == null ) {
 			batch.primitiveSubPart = new h3d.scene.MeshBatch.MeshBatchPart();
-			batch.begin(emitCountTip);
+			batch.begin(emitCountTip, flags);
 		}
-		batch.primitiveSubPart.indexCount = bk.indexCount;
-		batch.primitiveSubPart.indexStart = bk.indexStart;
-		batch.primitiveSubPart.bounds = cache.geomBounds[bk.geomId];
+		batch.primitiveSubPart.indexCount = bk.mat.indexCount;
+		batch.primitiveSubPart.indexStart = bk.mat.indexStart;
+		batch.primitiveSubPart.lodIndexCount = bk.mat.lodIndexCount;
+		batch.primitiveSubPart.lodIndexStart = bk.mat.lodIndexStart;
+		batch.primitiveSubPart.lodConfig = cast( bk.mesh.primitive, h3d.prim.HMDModel ).getLodConfig();
+		batch.primitiveSubPart.bounds = cache.geomBounds[bk.mat.geomId];
 		if ( absPos != null )
 			batch.worldPosition = absPos;
 		batch.emitInstance();
