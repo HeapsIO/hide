@@ -414,6 +414,23 @@ class ModelLibrary extends Prefab {
 						specularTexture = pshader.texture.name;
 				}
 
+				// Shader list id do not depend on normal or pbr textures as its defined in modelLibShader.
+				if ( normalMap == null )
+					heapsMat.normalMap = whiteDefault.tex;
+				if ( specularTexture == null )
+					heapsMat.specularTexture = whiteDefault.tex;
+				var shaderList = @:privateAccess heapsMat.mainPass.getShadersRec();
+				var s = shaderList;
+				while ( s != null ) {
+					s.s.updateConstants(null);
+					s = s.next;
+				}
+				var shaderListId = hxsl.Cache.get().link(shaderList, Default);
+				if ( normalMap == null )
+					heapsMat.normalMap = null;
+				if ( specularTexture == null )
+					heapsMat.specularTexture = null;
+
 				var pos = packTexture(sourcePath, diffuseTexture, normalMap, specularTexture);
 				if ( pos == null )
 					return null;
@@ -425,7 +442,7 @@ class ModelLibrary extends Prefab {
 					return bk;
 				var matConfigIndex = -1;
 				for ( i in 0...materialConfigs.length ) {
-					if ( haxe.Json.stringify((heapsMat.props:PbrProps)) == haxe.Json.stringify(materialConfigs[i]) ) {
+					if ( '${haxe.Json.stringify((heapsMat.props:PbrProps))}_${shaderListId}' == '${haxe.Json.stringify(materialConfigs[i])}_${shaderListId}' ) {
 							matConfigIndex = i;
 							break;
 					}
