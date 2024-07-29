@@ -505,7 +505,19 @@ class Cell {
 				].join(", ")})';
 			}
 
-			var str ='<div class="cdb-gradient"><div class="alpha-bg"></div><div style="background: $fill" class="inner-gradient"/></div>';
+			var str ='<div class="cdb-gradient"><div class="alpha-bg"></div><div style="background: $fill" class="inner-gradient"></div></div>';
+
+			// uncomment to test generate functionality
+
+			var gradient : cdb.Types.Gradient = value;
+			var colors = gradient.generate(32);
+			str += '
+				<div style="display:flex; width:100%; height: 20px">
+					${[ for (c in colors)
+						'<div style="width:100%; height: 100%; background: ${colorToCss(c)};"></div>'
+					].join("\n")}
+				</div>
+			';
 
 			html(str);
 		}
@@ -1231,8 +1243,8 @@ class Cell {
 			gradientEditor.onClose = function() {
 				var grad : cdb.Types.Gradient = {colors: [], positions: []};
 				for (i => stop in gradientEditor.value.stops) {
-					grad.colors[i] = stop.color;
-					grad.positions[i] = stop.position;
+					grad.data.colors[i] = stop.color;
+					grad.data.positions[i] = stop.position;
 				}
 
 				setValue(grad);
