@@ -410,7 +410,7 @@ class FormulasView extends hide.view.Script {
 				case TBool: TBool;
 				case TDynamic: TDynamic;
 				case TRef(other): TInst(cdefs.get(other),[]);
-				case TCustom(_), TImage, TLayer(_), TTileLayer, TTilePos: null;
+				case TCustom(_), TImage, TLayer(_), TTileLayer, TTilePos, TGradient: null;
 				case TList, TProperties:
 					var t = TInst(cdefs.get(s.name+"@"+c.name),[]);
 					c.type == TList ? @:privateAccess check.checker.types.getType("Array",[t]) : t;

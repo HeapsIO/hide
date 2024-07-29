@@ -488,7 +488,28 @@ class Cell {
 			var str = Std.string(v).split("\n").join(" ").split("\t").join("");
 			if( str.length > 50 ) str = str.substr(0, 47) + "...";
 			val(str);
+		case TGradient:
+			if (value.colors == null || value.positions == null || value.colors.length == 0 || value.colors.length != value.positions.length)
+				return val('#INVALID GRADIENT `${haxe.Json.stringify(value)}`');
+			var fill = "";
+			function colorToCss(c: Int) {
+				var c = h3d.Vector4.fromColor(c);
+				return 'rgba(${c.r*255.0}, ${c.g*255.0}, ${c.b*255.0}, ${c.a})';
+			}
+
+			if (value.colors.length == 1) {
+				fill = colorToCss(value.colors[0]);
+			} else {
+				fill = 'linear-gradient( 0.25turn, ${[
+					for (i in 0...value.colors.length) '${colorToCss(value.colors[i])} ${value.positions[i] * 100}%'
+				].join(", ")})';
+			}
+
+			var str ='<div class="cdb-gradient"><div class="alpha-bg"></div><div style="background: $fill" class="inner-gradient"/></div>';
+
+			html(str);
 		}
+
 	}
 
 	#if js
@@ -1192,6 +1213,35 @@ class Cell {
 			// no edit
 		case TImage:
 			// deprecated
+		case TGradient:
+			#if js
+			var e = new Element(elementHtml);
+			e.addClass("edit");
+			var gradientEditor = new GradientEditor(null,e , false);
+
+			var gradient = hrt.impl.Gradient.getDefaultGradientData();
+			if (value != null && value.colors != null && value.colors.length >= 1) {
+				gradient.stops.clear();
+				for (i in 0...value.colors.length) {
+					gradient.stops[i] = {color: value.colors[i], position: value.positions[i]};
+				}
+			}
+
+			gradientEditor.value = gradient;
+			gradientEditor.onClose = function() {
+				var grad : cdb.Types.Gradient = {colors: [], positions: []};
+				for (i => stop in gradientEditor.value.stops) {
+					grad.colors[i] = stop.color;
+					grad.positions[i] = stop.position;
+				}
+
+				setValue(grad);
+				e.removeClass("edit");
+				closeEdit();
+				refresh();
+				focus();
+			}
+			#end
 		}
 	}
 
