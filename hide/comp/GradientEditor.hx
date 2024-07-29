@@ -123,7 +123,7 @@ class GradientEditor extends Popup {
     var keys : hide.ui.Keys;
 
     public dynamic function onChange(isDragging : Bool) {
-
+        set_value(innerValue);
     }
 
     function set_value(value: GradientData) {
@@ -137,7 +137,7 @@ class GradientEditor extends Popup {
         return innerValue;
     }
 
-    public function new(?parent : Element, ?root : Element) {
+    public function new(?parent : Element, ?root : Element, editGradientSettings: Bool = true) {
         super(parent, root);
 
         popup.addClass("gradient-editor");
@@ -302,6 +302,10 @@ class GradientEditor extends Popup {
         new Element("<div>").appendTo(detailsDiv)
         .append(new Element("<label for='colorMode'>").text("Color Space").attr("title", "Change the color space to use when interpolating the stops of the gradient."))
         .append(colorMode);
+
+        if (!editGradientSettings) {
+            detailsSection.hide();
+        }
 
         reflow();
         fixInputSelect();

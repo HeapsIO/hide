@@ -56,6 +56,7 @@ class ModalColumnForm extends Modal {
 				<option value="dynamic">Dynamic</option>
 				<option value="layer">Data Layer</option>
 				<option value="tilelayer">Tile Layer</option>
+				<option value="gradient">Gradient</option>
 				<option value="custom">Custom Type</option>
 				</select>
 				</tr>
@@ -367,6 +368,8 @@ class ModalColumnForm extends Modal {
 			TTilePos;
 		case "tilelayer":
 			TTileLayer;
+		case "gradient":
+			TGradient;
 		case "dynamic":
 			TDynamic;
 		case "properties":
