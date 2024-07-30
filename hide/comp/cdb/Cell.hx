@@ -509,15 +509,15 @@ class Cell {
 
 			// uncomment to test generate functionality
 
-			var gradient : cdb.Types.Gradient = value;
-			var colors = gradient.generate(32);
-			str += '
-				<div style="display:flex; width:100%; height: 20px">
-					${[ for (c in colors)
-						'<div style="width:100%; height: 100%; background: ${colorToCss(c)};"></div>'
-					].join("\n")}
-				</div>
-			';
+			// var gradient : cdb.Types.Gradient = value;
+			// var colors = gradient.generate(32);
+			// str += '
+			// 	<div style="display:flex; width:100%; height: 20px">
+			// 		${[ for (c in colors)
+			// 			'<div style="width:100%; height: 100%; background: ${colorToCss(c)};"></div>'
+			// 		].join("\n")}
+			// 	</div>
+			// ';
 
 			html(str);
 		}
