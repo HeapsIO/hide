@@ -4411,7 +4411,16 @@ class SceneEditor {
 				return all;
 			}
 			var all = getAll(sceneData);
-			var grounds = [for( p in all ) if( p.getHideProps().isGround || (p.name != null && p.name.toLowerCase() == "ground") ) p];
+			var grounds = [for( p in all ) if( p.getHideProps().isGround || (p.name != null && p.name.toLowerCase() == "ground")) p];
+			grounds = grounds.filter((p) -> {
+				while(p != null) {
+					if (Std.downcast(p, Object3D)?.visible == false) {
+						return false;
+					}
+					p = p.parent ?? p.shared.parentPrefab;
+				}
+				return true;
+			});
 			var results = [];
 			for( g in grounds )
 				results = results.concat(getAll(g));
