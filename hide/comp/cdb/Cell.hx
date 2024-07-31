@@ -553,11 +553,31 @@ class Cell {
 				}
 			}
 
+			var debugData = '';
+			var debugCurveApi = false;
+			if (debugCurveApi)
+			{
+				var bake = curve.bake(128);
+				for (i in 0...16) {
+					var t = bounds.xMin + (i/16 * bounds.width);
+					var v = bake.eval(t);
+
+					debugData += '<circle cx="$t" cy="$v" r="0.02" fill="red"/>';
+
+					v = prefab.getVal(t);
+					debugData += '<circle cx="$t" cy="$v" r="0.015" fill="white"/>';
+
+					v = curve.eval(t);
+					debugData += '<circle cx="$t" cy="$v" r="0.01" fill="green"/>';
+				}
+			}
+
 			var svg = '
 				<svg class="cdb-curve" preserveAspectRatio="none" viewBox="${bounds.xMin} ${bounds.yMin} ${bounds.width} ${bounds.height}">
 				<path d="M ${bounds.xMin} 0 H ${bounds.xMax}" class="x-axis"/>
 				<path d="M 0 ${bounds.yMin} V ${bounds.yMax}" class="y-axis"/>
 				<path d="$data" class="curve"/>
+				$debugData
 				</svg>
 			';
 
