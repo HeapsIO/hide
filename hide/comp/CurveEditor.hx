@@ -472,6 +472,17 @@ class OverviewEditor extends Component implements CurveEditorComponent
 	public function afterChange() {}
 }
 
+class CurvePopup extends hide.comp.Popup {
+	public var editor : CurveEditor;
+	public function new(?parent : Element, ?root: Element, undo: hide.ui.UndoHistory) {
+		super(parent, root);
+		popup.addClass("curve-editor-popup");
+		reflow();
+
+		editor = new CurveEditor(undo, popup, false);
+	}
+}
+
 class CurveEditor extends hide.comp.Component {
 
 	public static var CURVE_COLORS: Array<Int> = [

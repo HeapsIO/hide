@@ -357,6 +357,28 @@
 .cdb .cdb-sheet .flagValues label:hover {
   background-color: #262d35;
 }
+.cdb .cdb-sheet td.t_curve {
+  width: 100%;
+  height: 100%;
+}
+.cdb .cdb-sheet td.t_curve .cdb-curve {
+  transform: scaleY(-1);
+  height: 50px;
+  width: 100%;
+}
+.cdb .cdb-sheet td.t_curve .cdb-curve path {
+  fill: transparent;
+  stroke-width: 0.5px;
+  shape-rendering: geometricPrecision;
+  vector-effect: non-scaling-stroke;
+}
+.cdb .cdb-sheet td.t_curve .cdb-curve .x-axis,
+.cdb .cdb-sheet td.t_curve .cdb-curve .y-axis {
+  stroke: #AAA;
+}
+.cdb .cdb-sheet td.t_curve .cdb-curve .curve {
+  stroke: white;
+}
 .cdb .cdb-sheet td.t_gradient {
   width: 100%;
   height: 100%;
