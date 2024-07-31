@@ -119,6 +119,63 @@ class Curve extends Prefab {
 		return u * u * u * c0 + c1 * 3 * t * u * u + c2 * 3 * t * t * u + t * t * t * c3;
 	}
 
+	public function initFromCDB(curve: cdb.Types.Curve) {
+		keys = [];
+		var nbPoints = Std.int(curve.data.length / 6);
+		for (pointIdx in 0...nbPoints) {
+			var x = curve.data[pointIdx * 6 + 0];
+			var y = curve.data[pointIdx * 6 + 1];
+			var prevHandleX = curve.data[pointIdx * 6 + 2];
+			var prevHandleY = curve.data[pointIdx * 6 + 3];
+			var nextHandleX = curve.data[pointIdx * 6 + 4];
+			var nextHandleY = curve.data[pointIdx * 6 + 5];
+
+			var mode : hrt.prefab.Curve.CurveKeyMode = Free;
+
+			if (Math.isNaN(prevHandleX) || prevHandleX == cdb.Types.Curve.HandleData) {
+				mode = cast Std.int(prevHandleY);
+			}
+			else {
+				var pt1 = inline new h2d.col.Point(prevHandleX, prevHandleY);
+				var pt2 = inline new h2d.col.Point(nextHandleX, nextHandleY);
+				pt1.normalize();
+				pt2.normalize();
+				var dot = pt1.dot(pt2);
+				if (Math.abs(dot + 1.0) < 0.01) {
+					mode = Aligned;
+				}
+			}
+
+			var key = addKey(x, y, mode);
+			if (mode == Free || mode == Aligned) {
+				key.prevHandle = new hrt.prefab.Curve.CurveHandle(Math.isFinite(prevHandleX) ? prevHandleX : 0.0, Math.isFinite(prevHandleY) ? prevHandleY : 0.0);
+				key.nextHandle = new hrt.prefab.Curve.CurveHandle(Math.isFinite(nextHandleX) ? nextHandleX : 0.0, Math.isFinite(nextHandleY) ? nextHandleY : 0.0);
+			}
+		}
+	}
+
+	public function toCDB() : cdb.Types.Curve {
+		var data : Array<Float>= [];
+		for (key in keys) {
+			data.push(key.time);
+			data.push(key.value);
+
+			switch(key.mode) {
+				case Free, Aligned:
+					data.push(key.prevHandle?.dt ?? 0.0);
+					data.push(key.prevHandle?.dv ?? 0.0);
+					data.push(key.nextHandle?.dt ?? 0.0);
+					data.push(key.nextHandle?.dv ?? 0.0);
+				case Constant, Linear:
+					data.push(cdb.Types.Curve.HandleData);
+					data.push((cast key.mode:Int));
+					data.push(cdb.Types.Curve.HandleData);
+					data.push(cdb.Types.Curve.HandleData);
+			}
+		}
+		return cast data;
+	}
+
 	public function findKey(time: Float, tolerance: Float) {
 		var minDist = tolerance;
 		var closest = null;

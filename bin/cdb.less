@@ -397,6 +397,30 @@
 			}
 		}
 
+		td.t_curve {
+			width: 100%;
+			height: 100%;
+
+			.cdb-curve {
+				transform: scaleY(-1);
+				height:50px;
+				width:100%;
+				path {
+					fill: transparent;
+					stroke-width: 0.5px;
+					shape-rendering: geometricPrecision;
+					vector-effect: non-scaling-stroke;
+				}
+
+				.x-axis, .y-axis {
+					stroke: #AAA;
+				}
+				.curve {
+					stroke: white;
+				}
+			}
+		}
+
 		td.t_gradient {
 			width: 100%;
 			height: 100%;

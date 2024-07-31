@@ -520,6 +520,68 @@ class Cell {
 			// ';
 
 			html(str);
+		case TCurve:
+			var curve = new cdb.Types.Curve(cast (value ?? []));
+			var nbPoints = curve.data.length;
+			if (nbPoints % 6 != 0)
+				return val('#INVALID CURVE DATA ($nbPoints not a multiple of 6)');
+
+			nbPoints = Std.int(nbPoints / 6);
+			var data = "";
+
+			var prefab = new hrt.prefab.Curve(null, null);
+			var curve = new cdb.Types.Curve(cast value);
+			prefab.initFromCDB(curve);
+
+			var data = "";
+			var bounds = prefab.getBounds();
+			if (prefab.keys.length > 0) {
+				data += 'M ${bounds.xMin} ${prefab.keys[0].value} H ${prefab.keys[0].time}';
+
+				for (i in 1...prefab.keys.length) {
+					data += ' ';
+					var prev = prefab.keys[i-1];
+					var next = prefab.keys[i];
+					switch (prev.mode) {
+						case Linear:
+							data += 'L ${next.time} ${next.value}';
+						case Constant:
+							data += 'H ${next.time} V ${next.value}';
+						case Aligned, Free:
+							data += 'C ${prev.time + prev.nextHandle.dt} ${prev.value + prev.nextHandle.dv}, ${next.time + next.prevHandle?.dt ?? 0} ${next.value + next.prevHandle?.dv ?? 0}, ${next.time} ${next.value}';
+					}
+				}
+			}
+
+			var debugData = '';
+			var debugCurveApi = false;
+			if (debugCurveApi)
+			{
+				var bake = curve.bake(128);
+				for (i in 0...16) {
+					var t = bounds.xMin + (i/16 * bounds.width);
+					var v = bake.eval(t);
+
+					debugData += '<circle cx="$t" cy="$v" r="0.02" fill="red"/>';
+
+					v = prefab.getVal(t);
+					debugData += '<circle cx="$t" cy="$v" r="0.015" fill="white"/>';
+
+					v = curve.eval(t);
+					debugData += '<circle cx="$t" cy="$v" r="0.01" fill="green"/>';
+				}
+			}
+
+			var svg = '
+				<svg class="cdb-curve" preserveAspectRatio="none" viewBox="${bounds.xMin} ${bounds.yMin} ${bounds.width} ${bounds.height}">
+				<path d="M ${bounds.xMin} 0 H ${bounds.xMax}" class="x-axis"/>
+				<path d="M 0 ${bounds.yMin} V ${bounds.yMax}" class="y-axis"/>
+				<path d="$data" class="curve"/>
+				$debugData
+				</svg>
+			';
+
+			return html(svg);
 		}
 
 	}
@@ -1254,6 +1316,27 @@ class Cell {
 				focus();
 			}
 			#end
+		case TCurve:
+			var e = new Element(elementHtml);
+			e.addClass("edit");
+			var curveEditor = new hide.comp.CurveEditor.CurvePopup(null, e, editor.undo);
+
+			var prefabCurve = new hrt.prefab.Curve(null, null);
+			var linear : Float = cast hrt.prefab.Curve.CurveKeyMode.Linear;
+			var curve = new cdb.Types.Curve(cast (value ?? [0.0,0.0,cdb.Types.Curve.HandleData,linear,cdb.Types.Curve.HandleData,cdb.Types.Curve.HandleData, 1.0,1.0,cdb.Types.Curve.HandleData,linear,cdb.Types.Curve.HandleData,cdb.Types.Curve.HandleData]));
+			prefabCurve.initFromCDB(curve);
+
+			prefabCurve.selected = true;
+			curveEditor.editor.curves = [prefabCurve];
+
+
+			curveEditor.onClose =() -> {
+				setValue(prefabCurve.toCDB());
+				e.removeClass("edit");
+				closeEdit();
+				refresh();
+				focus();
+			};
 		}
 	}
 
