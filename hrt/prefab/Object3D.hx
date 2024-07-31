@@ -340,7 +340,8 @@ class Object3D extends Prefab {
 				}
 			}
 
-			rec(ref.refInstance);
+			if ( ref.refInstance != null )
+				rec(ref.refInstance);
 		}
 
 		var mesh = Std.downcast(local3d, h3d.scene.Mesh);
