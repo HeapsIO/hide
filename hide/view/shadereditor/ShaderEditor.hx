@@ -399,21 +399,13 @@ class ShaderEditor extends hide.view.FileView implements GraphInterface.IGraphEd
 		rightPannel.find("#debugMenu").click((e) -> {
 			new hide.comp.ContextMenu([
 				{
-					label : "Print Shader code to Console",
+					label : "Print Preview Shader code to Console",
 					click: () -> trace(hxsl.Printer.shaderToString(shaderGraph.compile(currentGraph.domain).shader.data, true))
 				},
 				{
-					label : "Print Shader code to Console",
+					label : "Print Complete Shader code to Console",
 					click: () -> trace(hxsl.Printer.shaderToString(shaderGraph.compile(null).shader.data, true))
 				},
-				// {
-				// 	label : "Print linked Shader code",
-				// 	click: () -> trace(
-				// 		meshPreviewScene.engine.setCurrent();
-
-				// 		meshPreviewMeshes[0].getMaterials()[0].mainPass.getShaders()
-				// 	)
-				// }
 			]);
 		});
 

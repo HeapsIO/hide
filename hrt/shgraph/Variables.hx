@@ -48,7 +48,7 @@ enum VariableKind {
 	KSwizzle(global: Global, swiz: Array<hxsl.Ast.Component>);
 }
 
-typedef GlobalInfo = {type: hxsl.Ast.Type, name: String, varkind: VariableKind};
+typedef GlobalInfo = {type: hxsl.Ast.Type, name: String, varkind: VariableKind, ?_fullNameCache: String};
 class Variables {
 	public static var previewSelectName = "previewSelect_SG";
 
@@ -96,11 +96,26 @@ class Variables {
 		g;
 	};
 
+	public static function getFullPath(g: GlobalInfo) : String {
+		if (g._fullNameCache != null)
+			return g._fullNameCache;
+		var path = g.name;
+		switch (g.varkind) {
+			case KVar(_, parent, _):
+				if (parent != null)
+					path = getFullPath(Globals[cast parent]) + "." + path;
+			case KSwizzle(_, _):
+				// we do nothing for swizzles as they are temporary local variables
+		}
+		g._fullNameCache = path;
+		return path;
+	}
+
 	public static function getGlobalNameMap() {
 		static var GlobalNameMap : Map<String, Global>;
 		if (GlobalNameMap == null)
 			GlobalNameMap = [
-				for (id => g in Globals) if (g != null) g.name => (cast id:Global)
+				for (id => g in Globals) if (g != null) getFullPath(g) => (cast id:Global)
 			];
 		return GlobalNameMap;
 	}

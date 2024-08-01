@@ -29,7 +29,7 @@ class Fresnel extends ShaderNodeHxsl {
 		@sginput(1.0) var power : Float;
 		@sginput(1.0) var totalAlpha : Float;
 		@sginput(1.0) var fresnalAlpha : Float;
-		@sginput("position") var cameraPosition : Vec3;
+		@sginput("camera.position") var cameraPosition : Vec3;
 
 
 		@sgoutput var output : Vec4;

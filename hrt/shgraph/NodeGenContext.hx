@@ -16,8 +16,16 @@ class NodeGenContextSubGraph extends NodeGenContext {
 
 	override function getGlobalInput(id: Variables.Global) : TExpr {
 		var global = Variables.Globals[id];
-		var info = globalInVars.getOrPut(global.name, {type: global.type, id: inputCount++});
+		var info = globalInVars.getOrPut(Variables.getFullPath(global), {type: global.type, id: inputCount++});
 		return parentCtx?.nodeInputExprs[info.id] ?? parentCtx?.getGlobalInput(id) ?? super.getGlobalInput(id);
+	}
+
+	override function getGlobalTVar(tvar: TVar) : TExpr {
+		if (parentCtx != null) {
+			return parentCtx.getGlobalTVar(tvar);
+		} else {
+			return super.getGlobalTVar(tvar);
+		}
 	}
 
 	override  function setGlobalOutput(id: Variables.Global, expr: TExpr) : Void {
@@ -25,7 +33,7 @@ class NodeGenContextSubGraph extends NodeGenContext {
 		if (outputCount == 0 && parentCtx != null) {
 			parentCtx.addPreview(expr);
 		}
-		var info = globalOutVars.getOrPut(global.name, {type: global.type, id: outputCount ++});
+		var info = globalOutVars.getOrPut(Variables.getFullPath(global), {type: global.type, id: outputCount ++});
 		if (parentCtx != null) {
 			parentCtx.setOutput(info.id, expr);
 		} else {
@@ -88,6 +96,10 @@ class NodeGenContext {
 		}
 	}
 
+	public function getGlobalTVar(tvar: TVar) : TExpr {
+		return makeVar(getOrAllocateFromTVar(tvar));
+	}
+
 	public function setGlobalOutput(id: Variables.Global, expr: TExpr) : Void {
 		var global = Variables.Globals[id];
 		switch (global.varkind) {
@@ -109,6 +121,34 @@ class NodeGenContext {
 		expressions.push(makeAssign(v, expr));
 	}
 
+	function getOrAllocateFromTVar(tvar: TVar) : TVar {
+		var fullName = AstTools.getFullName(tvar);
+		var def = globalVars.get(fullName);
+		if (def != null) {
+			return def.v;
+		}
+
+		var type = tvar.type;
+		switch (type) {
+			case TStruct(_):
+				type = TStruct([]);
+			default:
+		}
+
+		var v : TVar = {id: hxsl.Tools.allocVarId(), name: tvar.name, type: type, kind: tvar.kind};
+		def = {v:v, defValue: null, __init__: null};
+		if (tvar.parent != null) {
+			v.parent = getOrAllocateFromTVar(tvar.parent);
+			switch(v.parent.type) {
+				case TStruct(arr):
+					arr.push(v);
+				default: throw "parent must be a TStruct";
+			}
+		}
+		globalVars.set(fullName, def);
+		return def.v;
+	}
+
 	function getOrAllocateGlobal(id: Variables.Global) : TVar {
 		// Remap id for certains variables
 		switch (id) {
@@ -118,12 +158,12 @@ class NodeGenContext {
 		}
 
 		var global = Variables.Globals[id];
-		var def : ShaderGraph.ExternVarDef = globalVars.get(global.name);
 
 		switch (global.varkind)
 		{
 			case KVar(kind, parent, defValue):
-				var def : ShaderGraph.ExternVarDef = globalVars.get(global.name);
+				var fullName = Variables.getFullPath(global);
+				var def : ShaderGraph.ExternVarDef = globalVars.get(fullName);
 				if (def == null) {
 					var v : TVar = {id: hxsl.Tools.allocVarId(), name: global.name, type: global.type, kind: kind};
 					def = {v: v, defValue: defValue, __init__: null};
@@ -131,7 +171,7 @@ class NodeGenContext {
 						var p = Variables.Globals[parent];
 						switch (p.varkind) {
 							case KVar(kind, _, _):
-								v.parent = globalVars.getOrPut(p.name, {v : {id : hxsl.Tools.allocVarId(), name: p.name, type: TStruct([]), kind: kind}, defValue: null, __init__: null}).v;
+								v.parent = globalVars.getOrPut(Variables.getFullPath(p), {v : {id : hxsl.Tools.allocVarId(), name: p.name, type: TStruct([]), kind: kind}, defValue: null, __init__: null}).v;
 							default:
 								throw "Parent var must be a KVar";
 						}
@@ -150,7 +190,7 @@ class NodeGenContext {
 							def.__init__ = expr;
 						default:
 					}
-					globalVars.set(global.name, def);
+					globalVars.set(fullName, def);
 				}
 				return def.v;
 			default: throw "id must be a global Var";

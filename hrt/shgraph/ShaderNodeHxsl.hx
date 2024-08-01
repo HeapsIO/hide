@@ -179,16 +179,12 @@ class ShaderNodeHxsl extends ShaderNode {
 							var expr = ctx.getGlobalInput(id);
 							replacement = expr;//{e: TVar(tvar), p: e.p, t: e.t};
 						case null:
-							var tvar = varsRemap.getOrPut(v.id,
-							{
-								name: v.name,
-								id: hxsl.Tools.allocVarId(),
-								type: v.type,
-								kind: v.kind,
-								parent: v.parent,
-								qualifiers: v.qualifiers,
-							});
-							replacement = {e: TVar(tvar), p: e.p, t: e.t};
+							var tvar = varsRemap.get(v.id);
+							if (tvar != null) {
+								replacement = {e: TVar(tvar), p: e.p, t: e.t};
+							} else {
+								replacement = ctx.getGlobalTVar(v);
+							}
 					}
 					if (replacement == null) {
 						genFailure = true;

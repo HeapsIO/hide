@@ -84,4 +84,11 @@ class AstTools {
 	public inline static function makeGlobalCall(global: TGlobal, args: Array<TExpr>, retType: Type) : TExpr {
 		return makeExpr(TCall(makeExpr(TGlobal(global), TVoid), args), retType);
 	}
+
+	public static function getFullName(tvar: TVar) : String {
+		var name = tvar.name;
+		if (tvar.parent != null)
+			name = getFullName(tvar.parent) + "." + name;
+		return name;
+	}
 }
