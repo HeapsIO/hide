@@ -170,7 +170,7 @@ ExternVarDef {
 	var v: TVar;
 	var defValue: Dynamic;
 	var __init__: TExpr;
-	@:optional var paramIndex: Int;
+	var paramIndex: Null<Int> = null;
 }
 
 @:access(hrt.shgraph.Graph)
