@@ -548,7 +548,7 @@ class Cell {
 						case Constant:
 							data += 'H ${next.time} V ${next.value}';
 						case Aligned, Free:
-							data += 'C ${prev.time + prev.nextHandle.dt} ${prev.value + prev.nextHandle.dv}, ${next.time + next.prevHandle?.dt ?? 0} ${next.value + next.prevHandle?.dv ?? 0}, ${next.time} ${next.value}';
+							data += 'C ${prev.time + prev.nextHandle.dt} ${prev.value + prev.nextHandle.dv}, ${next.time + (next.prevHandle?.dt ?? 0.0)} ${next.value + (next.prevHandle?.dv ?? 0.0)}, ${next.time} ${next.value}';
 					}
 				}
 			}
