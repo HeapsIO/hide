@@ -466,13 +466,7 @@ class ShaderGraph extends hrt.prefab.Prefab {
 			if (previewDomain != null && v.paramIndex == null) {
 				var fullName = AstTools.getFullName(v.v);
 				if (Variables.getGlobalNameMap().get(fullName) == null) {
-					var parent = v.v.parent;
-					switch(parent.type) {
-						case TStruct(arr):
-							arr.remove(v.v);
-						default: throw "parent must be a TStruct";
-					}
-					v.v.parent = null;
+					AstTools.removeFromParent(v.v);
 					v.v.name =  StringTools.replace(fullName, ".", "_") + "_SG";
 					v.v.kind = Local;
 
@@ -496,11 +490,16 @@ class ShaderGraph extends hrt.prefab.Prefab {
 								AstTools.makeVec([0.0,0.0,1.0,0.0]),
 								AstTools.makeVec([0.0,0.0,0.0,1.0]),
 							], TMat4);
+						case TChannel(_), TSampler(T2D, false):
+							v.v.name = "blackChannel";
+							v.v.kind = Global;
+							null;
 						default:
 							throw 'Can not default initialize global vaiable $fullName in preview shader (type ${v.v.type})';
 					}
 
-					v.__init__ = AstTools.makeAssign(AstTools.makeVar(v.v), expr);
+					if (expr != null)
+						v.__init__ = AstTools.makeAssign(AstTools.makeVar(v.v), expr);
 				}
 			}
 

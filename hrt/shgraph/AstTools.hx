@@ -91,4 +91,19 @@ class AstTools {
 			name = getFullName(tvar.parent) + "." + name;
 		return name;
 	}
+
+	public static function removeFromParent(tvar: TVar) : Void {
+		var parent = tvar.parent;
+		if (parent != null) {
+			switch(parent.type) {
+				case TStruct(arr):
+					arr.remove(tvar);
+					if (arr.length == 0) {
+						removeFromParent(parent);
+					}
+				default: throw "parent must be a TStruct";
+			}
+		}
+		tvar.parent = null;
+	}
 }

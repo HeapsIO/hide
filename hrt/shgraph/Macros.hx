@@ -101,18 +101,6 @@ class Macros {
 														throw "sgconst must be used with variables only";
 												}
 											default:
-												switch(subexpr.expr) {
-													case EVars(vars):
-														for (v in vars) {
-															if(Variables.getGlobalNameMap().exists(v.name)) {
-																varmap.set(v.name, SgGlobal);
-															}
-															else {
-																Context.error('Unknown global variable ${v.name}', expr.pos);
-															}
-														}
-													default:
-												}
 										}
 									default:
 								}

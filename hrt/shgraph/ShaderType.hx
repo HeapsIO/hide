@@ -1,7 +1,5 @@
 package hrt.shgraph;
 
-import hxsl.Ast.Type;
-
 enum SType {
 	/** Bool **/
 	Bool;

@@ -6,7 +6,6 @@ import h3d.Vector;
 import hrt.shgraph.ShaderParam;
 import hrt.shgraph.ShaderException;
 import haxe.Timer;
-using hxsl.Ast.Type;
 using Lambda;
 
 import hide.comp.SceneEditor;
@@ -18,6 +17,7 @@ import hrt.shgraph.ShaderGraph;
 import hrt.shgraph.ShaderNode;
 import hide.view.GraphInterface;
 
+typedef HxslType = hxsl.Ast.Type;
 
 typedef NodeInfo = { name : String, description : String, key : String };
 
@@ -368,11 +368,11 @@ class ShaderEditor extends hide.view.FileView implements GraphInterface.IGraphEd
 		rightPannel.appendTo(element);
 
 		var newParamCtxMenu : Array<hide.comp.ContextMenu.ContextMenuItem> = [
-			{ label : "Number", click : () -> createParameter(TFloat) },
-			{ label : "Vec2", click : () -> createParameter(TVec(2, VFloat)) },
-			{ label : "Vec3", click : () -> createParameter(TVec(3, VFloat)) },
-			{ label : "Color", click : () -> createParameter(TVec(4, VFloat)) },
-			{ label : "Texture", click : () -> createParameter(TSampler(T2D,false)) },
+			{ label : "Number", click : () -> createParameter(HxslType.TFloat) },
+			{ label : "Vec2", click : () -> createParameter(HxslType.TVec(2, VFloat)) },
+			{ label : "Vec3", click : () -> createParameter(HxslType.TVec(3, VFloat)) },
+			{ label : "Color", click : () -> createParameter(HxslType.TVec(4, VFloat)) },
+			{ label : "Texture", click : () -> createParameter(HxslType.TSampler(T2D,false)) },
 		];
 
 		rightPannel.find("#createParameter").on("click", function() {
@@ -436,7 +436,7 @@ class ShaderEditor extends hide.view.FileView implements GraphInterface.IGraphEd
 		}
 	}
 
-	function createParameter(type : Type) {
+	function createParameter(type : HxslType) {
 		@:privateAccess var paramShaderID : Int = shaderGraph.current_param_id++;
 		@:privateAccess
 		function exec(isUndo:Bool) {
@@ -1309,6 +1309,7 @@ class ShaderEditor extends hide.view.FileView implements GraphInterface.IGraphEd
 			var engine = graphEditor.previewsScene.engine;
 			var t = engine.getCurrentTarget();
 			graphEditor.previewsScene.s2d.ctx.globals.set("global.pixelSize", new h3d.Vector(2 / (t == null ? engine.width : t.width), 2 / (t == null ? engine.height : t.height)));
+			graphEditor.previewsScene.s2d.ctx.globals.set("blackChannel", h3d.mat.Texture.fromColor(0));
 		}
 
 		@:privateAccess

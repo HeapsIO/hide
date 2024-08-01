@@ -10,5 +10,4 @@ enum SgHxslVar {
 	SgInput(isDynamic: Bool, defaultValue: ShaderDefInput);
 	SgConst;
 	SgOutput(isDynamic: Bool);
-	SgGlobal;
 }
