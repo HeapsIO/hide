@@ -127,15 +127,17 @@ class Object3D extends Prefab {
 	}
 
 	public function getAbsPos( followRefs : Bool = false ) {
-		var p = parent;
+		inline function getParent( p ) {
+			var parent = p.parent;
+			if( parent == null && followRefs )
+				parent = p.shared.parentPrefab;
+			return parent;
+		}
+		var p = getParent(this);
 		while( p != null ) {
 			var obj = p.to(Object3D);
 			if( obj == null ) {
-				if( p.parent == null && followRefs ) {
-					p = p.shared.parentPrefab;
-					continue;
-				}
-				p = p.parent;
+				p = getParent(p);
 				continue;
 			}
 			var m = getTransform();
