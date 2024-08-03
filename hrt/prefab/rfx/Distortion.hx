@@ -24,9 +24,10 @@ class Distortion extends RendererFX {
 			r.mark("Distortion");
 			var distortionMap = r.allocTarget("distortion", true, 1.0, RG16F);
 			r.ctx.setGlobal("distortion", distortionMap);
-			r.setTarget(distortionMap);
+			r.ctx.engine.pushTarget(distortionMap);
 			r.clear(0);
 			r.draw("distortion");
+			r.ctx.engine.popTarget();
 
 			tonemap.amount = amount;
 			tonemap.distortionMap = distortionMap;
