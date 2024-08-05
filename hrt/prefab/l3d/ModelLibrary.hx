@@ -295,6 +295,12 @@ class ModelLibrary extends Prefab {
 			}
 		}
 
+		var sourceDir = source.substring( 0, source.lastIndexOf("/") );
+		var matPropsPath = sourceDir + "/materials.props";
+		if ( sys.FileSystem.exists(matPropsPath) )
+			if ( sys.FileSystem.stat(matPropsPath).mtime.getTime() > time )
+				return false;
+
 		for ( m in lib.header.materials ) {
 			var mat = h3d.mat.MaterialSetup.current.createMaterial();
 			mat.name = m.name;
@@ -305,8 +311,13 @@ class ModelLibrary extends Prefab {
 
 			if( (props:Dynamic).__ref != null ) {
 				try {
-					var lib = hxd.res.Loader.currentInstance.load((props:Dynamic).__ref).toPrefab();
-					var m = lib.load().getOpt(hrt.prefab.Material, (props:Dynamic).name);
+					var lib = hxd.res.Loader.currentInstance.load((props:Dynamic).__ref).toPrefab().load();
+
+					var libPath = getSystemPath(lib.shared.prefabSource);
+					if ( sys.FileSystem.stat(libPath).mtime.getTime() > time )
+						return false;
+
+					var m = lib.getOpt(hrt.prefab.Material, (props:Dynamic).name);
 					if( m.diffuseMap != null )
 						if ( isTextureNew(m.diffuseMap, time) )
 							return true;
@@ -334,7 +345,7 @@ class ModelLibrary extends Prefab {
 		return false;
 	}
 
-	static inline function getSystemPath( path : String ) : String {		
+	static inline function getSystemPath( path : String ) : String {
 		#if editor
 		return hide.Ide.inst.getPath(path);
 		#else
@@ -342,11 +353,10 @@ class ModelLibrary extends Prefab {
 		#end
 	}
 
-	public function isUpToDate() : Bool {
+	public function isUpToDate( ?paths : Array<String> ) : Bool {
 		var source = shared.prefabSource;
 		if ( source == null )
 			return false;
-
 
 		var filePath = getSystemPath(source);
 		if ( !sys.FileSystem.exists(filePath) )
@@ -356,6 +366,24 @@ class ModelLibrary extends Prefab {
 		var time = fileStat.mtime.getTime();
 
 		var models = findAll(hrt.prefab.Model);
+
+		if ( paths != null ) {
+			if ( paths.length != models.length )
+				return false;
+
+			for ( path in paths ) {
+				var found = false;
+				for ( m in models ) {
+					if ( m.source == path ) {
+						found = true;
+						break;
+					}
+				}
+				if ( !found )
+					return false;
+			}
+		}
+
 		for ( m in models)
 			if ( isModelNew(m, time) )
 				return false;
