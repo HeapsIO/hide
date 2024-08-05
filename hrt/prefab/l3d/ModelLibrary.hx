@@ -13,7 +13,6 @@ typedef MaterialData = {
 	var uvY : Float;
 	var uvSX : Float;
 	var uvSY : Float;
-	var configIndex : Int;
 }
 
 typedef MaterialMesh = {
@@ -23,6 +22,107 @@ typedef MaterialMesh = {
 typedef SubMeshes = {
 	meshes : Array<MaterialMesh>,
 	name : String,
+}
+
+typedef CreateMeshBatchFunc = ( library : hrt.prefab.l3d.ModelLibrary, parent : h3d.scene.Object, isStatic : Bool, ?bounds : h3d.col.Bounds, ?props : h3d.mat.PbrMaterial.PbrProps, ?material : h3d.mat.Material) -> h3d.scene.MeshBatch;
+
+class MeshEmitter {
+
+	var libraryInstance : ModelLibraryInstance;
+	var materials : Array<MaterialData>;
+	var batches : Array<Int>;
+	var mesh : h3d.scene.Mesh;
+
+	function new(libraryInstance : ModelLibraryInstance, batches : Array<Int>, materials : Array<MaterialData>, mesh : h3d.scene.Mesh ) {
+		this.libraryInstance = libraryInstance;
+		this.batches = batches;
+		this.materials = materials;
+		this.mesh = mesh;
+	}
+
+	public function emit( absPos : h3d.Matrix, emitCountTip : Int = -1 ) {
+		for ( i => mat in materials ) {
+			var batch = @:privateAccess libraryInstance.getBatch(batches[i]);
+			libraryInstance.library.emit({ mat : mat, mesh : mesh }, batch, absPos, emitCountTip, batch.meshBatchFlags);
+		}
+	}
+
+}
+
+class ModelLibraryInstance {
+	public var library : ModelLibrary;
+	var batchCache: Array<h3d.scene.MeshBatch>;
+	var batchLookup : Map<String, Int>;
+
+	var materialCache : Map<h3d.mat.Material, Int>;
+
+	function new(library : ModelLibrary) {
+		this.library = library;
+		batchCache = [];
+		batchLookup = new Map<String, Int>();
+	}
+
+	function getBatch( id : Int ) {
+		return batchCache[id];
+	}
+
+	public function applyShader( s : hxsl.Shader ) {
+		for ( batch in batchCache ) {
+			if ( batch.material.mainPass.getShader( Type.getClass(s) ) != null )
+				batch.material.mainPass.removeShader(s);
+			batch.material.mainPass.addShader(s);
+		}
+	}
+
+	public function createMeshEmitter( mesh : h3d.scene.Mesh, parent : h3d.scene.Object, ?createMeshBatch : CreateMeshBatchFunc, appendToKey : String = "" ) : MeshEmitter {
+		var batches : Array<Int> = [];
+		var materials = [];
+
+		for ( material in mesh.getMaterials(false) ) {
+			var materialClone = cast(material.clone(), h3d.mat.Material);
+
+			var props = h3d.mat.MaterialSetup.current.loadMaterialProps(material);
+			var prefab = null;
+			if ( props != null ) {
+				var ref = (props:Dynamic).__ref;
+				if ( ref != null ) {
+					prefab = hxd.res.Loader.currentInstance.load(ref).toPrefab();
+					hxd.fmt.hmd.Library.setupMaterialLibrary(path -> hxd.res.Loader.currentInstance.load(path).toTexture(),
+					materialClone, prefab, (props:Dynamic).name);
+				}
+			}
+
+			var shaderKey = "";
+			var props = (material.props : PbrProps);
+			var libMat = prefab != null ? prefab.load().getOpt(hrt.prefab.Material, (props:Dynamic).name) : null;
+			if ( libMat != null )
+				for ( c in libMat.children )
+					shaderKey = haxe.Json.stringify(@:privateAccess c.serialize());
+			var key = haxe.Json.stringify(props) + shaderKey + appendToKey;
+
+			var batchID = batchLookup.get(key);
+			if ( batchID == null ) {
+				batchID = batchCache.length;
+				var batch = createMeshBatch == null ? library.createMeshBatch(parent, false, null, props, materialClone) : createMeshBatch(library, parent, false, null, props, materialClone);
+				if ( batch == null )
+					continue;
+				batchLookup.set(key, batchID);
+				batchCache.push(batch);
+			}
+
+			batches.push( batchID );
+			materials.push( library.getBakedMat(material, cast(mesh.primitive, h3d.prim.HMDModel), mesh.name) );
+		}
+
+		return @:privateAccess new MeshEmitter(this, batches, materials, mesh);
+	}
+
+	public function remove() {
+		for ( b in batchCache )
+			b.remove();
+		batchLookup.clear();
+		batchCache.resize(0);
+	}
 }
 
 class ModelLibShader extends hxsl.Shader {
@@ -72,6 +172,7 @@ class ModelLibShader extends hxsl.Shader {
 		}
 
 		function __init__vertex() {
+			previousTransformedPosition = transformedPosition;
 			if( hasNormal )
 				transformedTangent = vec4(input2.tangent * global.modelView.mat3(),input2.tangent.dot(input2.tangent) > 0.5 ? 1. : -1.);
 			mipLevel = pow(saturate((projectedPosition.z - mipStart) / (mipEnd - mipStart)), mipPower) * mipNumber;
@@ -108,11 +209,7 @@ class ModelLibraryCache {
 class ModelLibrary extends Prefab {
 
 	@:s var bakedMaterials : haxe.DynamicAccess<MaterialData>;
-	@:s var materialConfigs : Array<h3d.mat.PbrMaterial.PbrProps> = [];
 	@:s var texturesCount : Int;
-
-	var optimizedMeshes : Array<h3d.scene.Mesh> = [];
-	var batches : Array<h3d.scene.MeshBatch> = [];
 
 	@:s var ignoredMaterials : Array<{name:String}> = [];
 	@:s var ignoredPrefabs : Array<{name:String}> = [];
@@ -125,12 +222,12 @@ class ModelLibrary extends Prefab {
 	@:s var mipLevels : Int = 1;
 	@:s var compress : Bool = true;
 
-	public var debug = false;
-	public var clear = false;
 	var cache : ModelLibraryCache;
 	var btSize = 4096;
 	var errors = [];
     final reg = ~/[0-9]+/g;
+
+	var killAlpha = new h3d.shader.KillAlpha(0.5);
 
 	public function new(prefab, shared) {
 		super(prefab, shared);
@@ -145,10 +242,8 @@ class ModelLibrary extends Prefab {
 	}
 	#end
 
-	override public function dispose() {
-		super.dispose();
-		optimizedMeshes = [];
-		batches = [];
+	public function createLibraryInstance() : ModelLibraryInstance {
+		return @:privateAccess new ModelLibraryInstance(this);
 	}
 
 	function update( text : String ) {
@@ -175,10 +270,102 @@ class ModelLibrary extends Prefab {
 		#end
 	}
 
+	function isTextureNew( name : String, time : Float ) : Bool {
+		var filePath = getSystemPath(name);
+		if ( !sys.FileSystem.exists(filePath) )
+			return false;
+		return sys.FileSystem.stat(filePath).mtime.getTime() > time ;
+	}
+
+	function isModelNew( model : hrt.prefab.Model, time : Float ) : Bool {
+		var source = getSystemPath(model.source);
+		if ( !sys.FileSystem.exists(source) )
+			return false;
+
+		if ( sys.FileSystem.stat(source).mtime.getTime() > time )
+			return true;
+
+		var shared = new hrt.prefab.ContextShared();
+		var lib = null;
+		for( m in shared.loadModel(model.source).getMeshes() ) {
+			var m = Std.downcast(m.primitive, h3d.prim.HMDModel);
+			if( m != null ) {
+				lib = @:privateAccess m.lib;
+				break;
+			}
+		}
+
+		for ( m in lib.header.materials ) {
+			var mat = h3d.mat.MaterialSetup.current.createMaterial();
+			mat.name = m.name;
+			mat.model = lib.resource;
+			var props = h3d.mat.MaterialSetup.current.loadMaterialProps(mat);
+			if( props == null )
+				continue;
+
+			if( (props:Dynamic).__ref != null ) {
+				try {
+					var lib = hxd.res.Loader.currentInstance.load((props:Dynamic).__ref).toPrefab();
+					var m = lib.load().getOpt(hrt.prefab.Material, (props:Dynamic).name);
+					if( m.diffuseMap != null )
+						if ( isTextureNew(m.diffuseMap, time) )
+							return true;
+					if( m.specularMap != null )
+						if ( isTextureNew(m.specularMap, time) )
+							return true;
+					if( m.normalMap != null )
+						if ( isTextureNew(m.normalMap, time) )
+							return true;
+					continue;
+				} catch( e : Dynamic ) { continue; }
+			}
+
+			if( m.diffuseTexture != null )
+				if ( isTextureNew(m.diffuseTexture, time) )
+					return true;
+			if( m.specularTexture != null )
+				if ( isTextureNew(m.specularTexture, time) )
+					return true;
+			if( m.normalMap != null )
+				if ( isTextureNew(m.normalMap, time) )
+					return true;
+		}
+
+		return false;
+	}
+
+	static inline function getSystemPath( path : String ) : String {		
+		#if editor
+		return hide.Ide.inst.getPath(path);
+		#else
+		return "res/" + path;
+		#end
+	}
+
+	public function isUpToDate() : Bool {
+		var source = shared.prefabSource;
+		if ( source == null )
+			return false;
+
+
+		var filePath = getSystemPath(source);
+		if ( !sys.FileSystem.exists(filePath) )
+			return false;
+
+		var fileStat = sys.FileSystem.stat(filePath);
+		var time = fileStat.mtime.getTime();
+
+		var models = findAll(hrt.prefab.Model);
+		for ( m in models)
+			if ( isModelNew(m, time) )
+				return false;
+
+		return true;
+	}
+
 	public function rebuildData() {
 
 		bakedMaterials = {};
-		materialConfigs = [];
 
 		var hmd = new Data();
 		hmd.version = Data.CURRENT_VERSION;
@@ -414,23 +601,6 @@ class ModelLibrary extends Prefab {
 						specularTexture = pshader.texture.name;
 				}
 
-				// Shader list id do not depend on normal or pbr textures as its defined in modelLibShader.
-				if ( normalMap == null )
-					heapsMat.normalMap = whiteDefault.tex;
-				if ( specularTexture == null )
-					heapsMat.specularTexture = whiteDefault.tex;
-				var shaderList = @:privateAccess heapsMat.mainPass.getShadersRec();
-				var s = shaderList;
-				while ( s != null ) {
-					s.s.updateConstants(null);
-					s = s.next;
-				}
-				var shaderListId = hxsl.Cache.get().link(shaderList, Default);
-				if ( normalMap == null )
-					heapsMat.normalMap = null;
-				if ( specularTexture == null )
-					heapsMat.specularTexture = null;
-
 				var pos = packTexture(sourcePath, diffuseTexture, normalMap, specularTexture);
 				if ( pos == null )
 					return null;
@@ -440,17 +610,6 @@ class ModelLibrary extends Prefab {
 				var bk = bakedMaterials.get(key);
 				if ( bk != null )
 					return bk;
-				var matConfigIndex = -1;
-				for ( i in 0...materialConfigs.length ) {
-					if ( '${haxe.Json.stringify((heapsMat.props:PbrProps))}_${shaderListId}' == '${haxe.Json.stringify(materialConfigs[i])}_${shaderListId}' ) {
-							matConfigIndex = i;
-							break;
-					}
-				}
-				if ( matConfigIndex < 0 ) {
-					materialConfigs.push((heapsMat.props:PbrProps));
-					matConfigIndex = materialConfigs.length - 1;
-				}
 				bk = {
 					indexStart : 0,
 					indexCount : 0,
@@ -461,8 +620,7 @@ class ModelLibrary extends Prefab {
 					uvX : pos.pos.du,
 					uvY : pos.pos.dv,
 					uvSX : pos.pos.su,
-					uvSY : pos.pos.sv,
-					configIndex : matConfigIndex,
+					uvSY : pos.pos.sv
 				};
 				bakedMaterials.set(key, bk);
 
@@ -660,6 +818,32 @@ class ModelLibrary extends Prefab {
 		makeTex(specMaps,"specular");
 	}
 
+	public function saveLibrary( ?filePath : String ) {
+		var path = ( filePath != null ) ? filePath : shared.prefabSource;
+		if ( path == null )
+			throw "There is no destination path for saving the model library";
+
+		var root = new hrt.prefab.Prefab(null, null);
+		parent = root;
+		sys.io.File.saveContent(getSystemPath(path), haxe.Json.stringify(@:privateAccess root.serialize(), "\t"));
+	}
+
+	public static function createLibrary( dir : String, name : String, paths : Array<String> ) {
+		var systemDir = getSystemPath(dir);
+		if ( !sys.FileSystem.exists(systemDir) )
+			sys.FileSystem.createDirectory(systemDir);
+		var modelLib = new hrt.prefab.l3d.ModelLibrary(null, null);
+		modelLib.name = "Library";
+		var pathes = [];
+		for ( path in paths ) {
+			var model = new hrt.prefab.Model(modelLib, null);
+			var p = new haxe.io.Path(path);
+			model.name = p.file;
+			model.source = path;
+		}
+		modelLib.saveLibrary(dir + name);
+	}
+
 	#if !editor
 	override function make(?sh:hrt.prefab.Prefab.ContextMake) : hrt.prefab.Prefab {
 		// don't load/build children
@@ -706,73 +890,36 @@ class ModelLibrary extends Prefab {
 	}
 	#end
 
-	var killAlpha = new h3d.shader.KillAlpha(0.5);
-	var curSubMeshes : SubMeshes = null;
-	public function optimize( obj : h3d.scene.Object, isStatic = true ) {
-		if( bakedMaterials == null )
-			throw "Model library was not built or saved";
-		if( !cache.wasMade )
-			throw "Please call make() on modelLibrary first";
-
-		var meshBatches = [for (i in 0...materialConfigs.length * (preserveObjectNames.length + 1)) null];
-		for( c in obj ) {
-			var ms = Std.downcast(c, h3d.scene.MeshBatch);
-			if( ms != null && ms.name.indexOf("modelLibrary") == 0 ) {
-				var index = ms.name.split("_")[1];
-				if ( meshBatches[Std.parseInt(index)] == null )
-					meshBatches[Std.parseInt(index)] = ms;
-			}
-		}
-
-		var subMeshes : Array<SubMeshes> = [{meshes : [], name : ""}];
-		for ( name in preserveObjectNames ) {
-			subMeshes.push({meshes : [], name : name.name});
-		}
-		var bounds = obj.getBounds();
-		curSubMeshes = subMeshes[0];
-		optimizeRec(obj, subMeshes);
-		var indexOffset = 0;
-		for ( meshes in subMeshes ) {
-			var namedObject = new h3d.scene.Object(obj);
-			namedObject.name = meshes.name;
-			meshes.meshes.sort(function(m1,m2) return m1.mat.indexStart - m2.mat.indexStart);
-			for ( m in meshes.meshes ) {
-				var bk = m.mat;
-				if ( meshBatches[bk.configIndex + indexOffset] == null) {
-					var batch = createMeshBatch(namedObject, isStatic, bounds, materialConfigs[bk.configIndex]);
-					batch.name += "_"+(bk.configIndex + indexOffset);
-					if ( debug ) batches.push(batch);
-					meshBatches[bk.configIndex + indexOffset] = batch;
-				}
-			}
-			for( m in meshes.meshes ) {
-				var bk = m.mat;
-				var batch = meshBatches[bk.configIndex + indexOffset];
-				emit(m, batch, m.mesh.getAbsPos());
-			}
-			indexOffset += materialConfigs.length;
-		}
-
-		for (batch in meshBatches ) {
-			if ( batch != null ) {
-				batch.primitiveSubPart = null;
-			}
-		}
-		if ( !debug && clear )
-			clearOptimized(obj);
-	}
-
 	public function getPrim() {
 		return cache.hmdPrim;
 	}
 
-	public function createMeshBatch(parent : h3d.scene.Object, isStatic : Bool, ?bounds : h3d.col.Bounds, ?props : h3d.mat.PbrMaterial.PbrProps) {
+	public function createMeshBatch(parent : h3d.scene.Object, isStatic : Bool, ?bounds : h3d.col.Bounds, ?props : h3d.mat.PbrMaterial.PbrProps, ?material : h3d.mat.Material) {
 		var batch = new h3d.scene.MeshBatch(cache.hmdPrim, h3d.mat.Material.create(), parent);
-		setupMeshBatch(batch, isStatic, bounds, props);
+		setupMeshBatch(batch, isStatic, bounds, props, material);
 		return batch;
 	}
 
-	public function setupMeshBatch(batch : h3d.scene.MeshBatch, isStatic : Bool, ?bounds : h3d.col.Bounds, ?props : h3d.mat.PbrMaterial.PbrProps) {
+
+	var forbiddenShaderTypes : Array<Class<hxsl.Shader>> = [h3d.shader.pbr.PropsTexture, h3d.shader.Texture, h3d.shader.NormalMap];
+	function isForbiddenShader(s) : Bool {
+		for ( type in forbiddenShaderTypes )
+			if ( Std.isOfType(s, type ) )
+				return true;
+		return false;
+	}
+
+	public function setupMeshBatch(batch : h3d.scene.MeshBatch, isStatic : Bool, ?bounds : h3d.col.Bounds, ?props : h3d.mat.PbrMaterial.PbrProps, ?material : h3d.mat.Material ) {
+
+		if ( material != null ) {
+			for ( s in material.mainPass.getShaders())
+				if ( !isForbiddenShader(s) && batch.material.mainPass.getShader(Type.getClass(s)) == null )
+					batch.material.mainPass.addShader(s.clone());
+			for ( s in @:privateAccess material.mainPass.selfShaders )
+				if ( !isForbiddenShader(s) && batch.material.mainPass.getShader(Type.getClass(s)) == null )
+					@:privateAccess batch.material.mainPass.addSelfShader(s.clone());
+		}
+
 		if ( isStatic ) {
 			batch.material.staticShadows = true;
 			batch.fixedPosition = true;
@@ -788,54 +935,6 @@ class ModelLibrary extends Prefab {
 		}
 	}
 
-	function optimizeRec( obj : h3d.scene.Object, out : Array<SubMeshes> ) {
-		if( !obj.visible )
-			return;
-		for ( n in ignoredObjectNames ) {
-			if ( n.name == obj.name )
-				return;
-		}
-		var prevSubMeshes = curSubMeshes;
-		for ( name in preserveObjectNames ) {
-			if ( obj.name != null && obj.name == name.name ) {
-				curSubMeshes = out.filter(s -> s.name == name.name)[0];
-				break;
-			}
-		}
-		var mesh = Std.downcast(obj, h3d.scene.Mesh);
-		if( mesh != null ) {
-			for ( shader in ignoredPrefabs) {
-				var cl : Class<hxsl.Shader> = cast Type.resolveClass(shader.name);
-				if( cl != null ) {
-					for ( p in mesh.material.getPasses() ) {
-						if ( p.getShader(cl) != null )
-							return;
-					}
-				}
-			}
-			var prim = Std.downcast(mesh.primitive, h3d.prim.HMDModel);
-			if( prim != null ) {
-				var mat = mesh.getMaterials(false);
-				mesh.culled = true;
-				for ( m in mat ) {
-					var bk = getBakedMat(m, prim, mesh.name);
-					if( bk == null ) {
-						mesh.culled = false;
-						while( curSubMeshes.meshes.length > 0 && curSubMeshes.meshes[curSubMeshes.meshes.length-1].mesh == mesh )
-							curSubMeshes.meshes.pop();
-						break;
-					}
-					curSubMeshes.meshes.push({ mat : bk, mesh : mesh });
-				}
-				if ( mesh.culled && debug )
-					optimizedMeshes.push(mesh);
-			}
-		}
-		for( o in obj )
-			optimizeRec(o, out);
-		curSubMeshes = prevSubMeshes;
-	}
-
 	public function getBakedMat(mat : h3d.mat.Material, prim : h3d.prim.HMDModel, meshName : String) {
 		var matName = mat.name;
 		matName = reg.replace(matName,'');
@@ -844,29 +943,6 @@ class ModelLibrary extends Prefab {
 		if ( bk == null )
 			bk = bakedMaterials.get(@:privateAccess prim.lib.resource.entry.path + "_" + matName);
 		return bk;
-	}
-
-	function clearOptimized(obj: h3d.scene.Object) {
-		for ( c in @:privateAccess obj.children.copy() ) {
-			clearOptimized(c);
-		}
-		if ( @:privateAccess obj.children.length == 0 && ((Std.isOfType(obj, h3d.scene.Mesh) && obj.culled) || Type.getClass(obj) == h3d.scene.Object) )
-			obj.remove();
-	}
-
-	function toggle() {
-		enabled = !enabled;
-		for (m in optimizedMeshes)
-			m.culled = enabled;
-		for (b in batches)
-			b.culled = !enabled;
-	}
-
-	function hideAll() {
-		for (m in optimizedMeshes)
-			m.culled = true;
-		for (b in batches)
-			b.culled = true;
 	}
 
 	public function emit(bk : MaterialMesh, batch : h3d.scene.MeshBatch, ?absPos : h3d.Matrix, emitCountTip = -1, ?flags : haxe.EnumFlags<h3d.scene.MeshBatch.MeshBatchFlag> ) {
