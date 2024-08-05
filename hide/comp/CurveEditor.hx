@@ -1316,7 +1316,6 @@ class CurveEditor extends hide.comp.Component {
 					// Basic value of xScale is 200
 					var min = xOffset;
 					var max = min + width / xScale;
-					trace(min, max);
 
 					var num : Int = Std.int(hxd.Math.clamp(500 * cast (xScale / 200.0), width, 5000));
 					pts.resize(num);
