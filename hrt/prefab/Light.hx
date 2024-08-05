@@ -463,6 +463,8 @@ class Light extends Object3D {
 		var sel = local3d?.getObjectByName("__selection");
 		if( sel != null ) sel.visible = b;
 		updateInstance();
+		if (!b && local3d != null)
+			local3d.visible = this.visible && !shared.editor.isHidden(this);
 		return true;
 	}
 
