@@ -5,6 +5,7 @@ typedef PrefabField = {
 	var hasSetter : Bool;
 	var meta : PrefabMeta;
 	var defaultValue : Dynamic;
+	var type : Macros.PrefabFieldType;
 }
 
 typedef PrefabMeta = {
