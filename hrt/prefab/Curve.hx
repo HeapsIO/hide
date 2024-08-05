@@ -269,6 +269,30 @@ class Curve extends Prefab {
 		}
 	}
 
+	inline function findT(cur: CurveKey, next: CurveKey, time: Float) : {minT: Float, maxT: Float} {
+		inline function sampleTime(t) {
+			return bezier(
+				cur.time,
+				cur.time + (cur.nextHandle != null ? cur.nextHandle.dt : 0.),
+				next.time + (next.prevHandle != null ? next.prevHandle.dt : 0.),
+				next.time, t);
+		}
+
+		var minT = 0.;
+		var maxT = 1.;
+		var maxDelta = 1./ 25.;
+
+		while( maxT - minT > maxDelta ) {
+			var t = (maxT + minT) * 0.5;
+			var x = sampleTime(t);
+			if( x > time )
+				maxT = t;
+			else
+				minT = t;
+		}
+		return {minT: minT, maxT: maxT};
+	}
+
 	public function getVal(time: Float) : Float {
 		if (blendMode == Reference) {
 			throw "getVal shoudln't be called on curves with Reference mode";
@@ -297,9 +321,9 @@ class Curve extends Prefab {
 		if(next == null || cur.mode == Constant)
 			return cur.value;
 
-		var minT = 0.;
-		var maxT = 1.;
-		var maxDelta = 1./ 25.;
+		var T = findT(cur, next, time);
+		var minT = T.minT;
+		var maxT = T.maxT;
 
 		inline function sampleTime(t) {
 			return bezier(
@@ -309,6 +333,11 @@ class Curve extends Prefab {
 				next.time, t);
 		}
 
+		var x0 = sampleTime(minT);
+		var x1 = sampleTime(maxT);
+		var dx = x1 - x0;
+		var xfactor = dx == 0 ? 0.5 : (time - x0) / dx;
+
 		inline function sampleVal(t) {
 			return bezier(
 				cur.value,
@@ -316,20 +345,6 @@ class Curve extends Prefab {
 				next.value + (next.prevHandle != null ? next.prevHandle.dv : 0.),
 				next.value, t);
 		}
-
-		while( maxT - minT > maxDelta ) {
-			var t = (maxT + minT) * 0.5;
-			var x = sampleTime(t);
-			if( x > time )
-				maxT = t;
-			else
-				minT = t;
-		}
-
-		var x0 = sampleTime(minT);
-		var x1 = sampleTime(maxT);
-		var dx = x1 - x0;
-		var xfactor = dx == 0 ? 0.5 : (time - x0) / dx;
 
 		var y0 = sampleVal(minT);
 		var y1 = sampleVal(maxT);
@@ -497,6 +512,135 @@ class Curve extends Prefab {
 
 	override function getHideProps() : HideProps {
 		return { icon : "paint-brush", name : "Curve" };
+	}
+
+	// Returns the visual representation of this curve as an svg path `d` data
+	public function getSvgString() : String {
+		var data = "";
+		var bounds = this.getBounds();
+		if (this.keys.length > 0) {
+			data += 'M ${bounds.xMin} ${this.keys[0].value} H ${this.keys[0].time}';
+
+			for (i in 1...this.keys.length) {
+				data += ' ';
+				var prev = this.keys[i-1];
+				var next = this.keys[i];
+				switch (prev.mode) {
+					case Linear:
+						data += 'L ${next.time} ${next.value}';
+					case Constant:
+						data += 'H ${next.time} V ${next.value}';
+					case Aligned, Free:
+						{
+							var prevDt = prev.nextHandle?.dt ?? 0.0;
+							var prevDv = prev.nextHandle?.dv ?? 0.0;
+							var nextDt = next.prevHandle?.dt ?? 0.0;
+							var nextDv = next.prevHandle?.dv ?? 0.0;
+
+							var c0 = prev.time;
+							var c1 = prev.time + prevDt;
+							var c2 = next.time + nextDt;
+							var c3 = next.time;
+
+							// solve bezier(c0,c1,c2,c2, x) = bezier(c0,c1,c2,c2, 0.5) for x
+							final sqrt3 = hxd.Math.sqrt(3);
+							var r0: Float;
+							var r1: Float;
+
+							var midt = bezier(c0,c1,c2,c3, 0.5);
+							if (midt < c0) {
+								// solve bezier(c0,c1,c2,c2, x) = c0 for x;
+								var div = 2*c3-6*c2+6*c1-2*c0;
+								var fact = sqrt3*hxd.Math.sqrt((4*c0-4*c1)*c3+3*c2*c2-6*c0*c2+4*c0*c1-c0*c0);
+								r0 = -(fact+3*c2-6*c1+3*c0)/div;
+								r1 = (fact-3*c2+6*c1-3*c0)/div;
+							}
+							else if (midt > c3) {
+								// solve bezier(c0,c1,c2,c2, x) = c3 for x;
+								var div = 2*c3-6*c2+6*c1-2*c0;
+								var fact = sqrt3*hxd.Math.sqrt(-c3*c3+(4*c2-6*c1+4*c0)*c3-4*c0*c2+3*c1*c1);
+								r0 = -((fact+c3-3*c1+2*c0)/(div));
+								r1 = (fact-c3+3*c1-2*c0)/(div);
+							}
+							else {
+								// solve bezier(c0,c1,c2,c2, x) = 0.5 for x;
+								r0 = -((sqrt3*hxd.Math.sqrt(-c3*c3+(2*c2-14*c1+14*c0)*c3+15*c2*c2+(-(18*c1)-14*c0)*c2+15*c1*c1+2*c0*c1-c0*c0)+c3+3*c2-9*c1+5*c0)/(4*c3-12*c2+12*c1-4*c0));
+								r1 = (sqrt3*hxd.Math.sqrt(-c3*c3+(2*c2-14*c1+14*c0)*c3+15*c2*c2+(-(18*c1)-14*c0)*c2+15*c1*c1+2*c0*c1-c0*c0)-c3-3*c2+9*c1-5*c0)/(4*c3-12*c2+12*c1-4*c0);
+							}
+
+							if (r0 > r1) {
+								var tmp = r1;
+								r1 = r0;
+								r0 = tmp;
+							}
+
+							if (r1 > 1.0) {
+								r1 = r0;
+								r0 = 0.0;
+							}
+							if (r0 < 0.0) {
+								r0 = r1;
+								r1 = 1.0;
+							}
+
+							inline function check(a) {
+								return (Math.isNaN(a) || a < 0 || a > 1);
+							}
+
+							if (check(r0) && check(r1)) {
+								data += 'C ${prev.time + prevDt} ${prev.value + prevDv}, ${next.time + nextDt} ${next.value + nextDv}, ${next.time} ${next.value}';
+							}
+							else {
+
+								if (std.Math.isNaN(r0)) {
+									r0 = 0.0;
+								}
+								if (std.Math.isNaN(r1)) {
+									r1 = 1.0;
+								}
+
+								r0 = hxd.Math.clamp(r0, 0.0, 1.0);
+
+								r1 = hxd.Math.clamp(r1, 0.0, 1.0);
+
+								inline function b(t) {
+									bezier(c0,c1,c2,c3, t);
+								}
+
+								// split the curve in two if its loops on itself
+								inline function sample(c0 : Float, c1: Float, c2: Float, c3:Float, t: Float) : {startHandle: Float, value: Float, inValue: Float, outValue: Float, endHandle: Float} {
+
+									var a = c0 + (c1-c0) * t;
+									var b = c1 + (c2-c1) * t;
+									var c = c2 + (c3-c2) * t;
+									var d = a + (b-a) * t;
+									var e = b + (c-b) * t;
+									var x = d + (e-d) * t;
+
+									return {startHandle: a, value:x, inValue: d, outValue: e, endHandle: c};
+								}
+
+								var p0x = sample(c0, c1, c2, c3, r0);
+								var p1x = sample(c0, c1, c2, c3, r1);
+
+								var p0y = sample(prev.value, prev.value+prevDv, next.value + nextDv, next.value, r0);
+								var p1y = sample(prev.value, prev.value+prevDv, next.value + nextDv, next.value, r1);
+
+								if (r0 > 0.0) {
+									data += 'C ${p0x.startHandle} ${p0y.startHandle}, ${p0x.inValue} ${p0y.inValue}, ${p0x.value} ${p0y.value} ';
+								}
+
+								data += 'L ${hxd.Math.clamp(p1x.value, prev.time, next.time)} ${p1y.value}';
+
+								if (r1 < 1.0) {
+									data += ' C ${p1x.outValue} ${p1y.outValue}, ${p1x.endHandle} ${p1y.endHandle}, ${next.time} ${next.value}';
+								}
+							}
+						}
+				}
+			}
+		}
+		return data;
 	}
 	#end
 

@@ -533,25 +533,8 @@ class Cell {
 			var curve = new cdb.Types.Curve(cast value);
 			prefab.initFromCDB(curve);
 
-			var data = "";
 			var bounds = prefab.getBounds();
-			if (prefab.keys.length > 0) {
-				data += 'M ${bounds.xMin} ${prefab.keys[0].value} H ${prefab.keys[0].time}';
-
-				for (i in 1...prefab.keys.length) {
-					data += ' ';
-					var prev = prefab.keys[i-1];
-					var next = prefab.keys[i];
-					switch (prev.mode) {
-						case Linear:
-							data += 'L ${next.time} ${next.value}';
-						case Constant:
-							data += 'H ${next.time} V ${next.value}';
-						case Aligned, Free:
-							data += 'C ${prev.time + prev.nextHandle.dt} ${prev.value + prev.nextHandle.dv}, ${next.time + (next.prevHandle?.dt ?? 0.0)} ${next.value + (next.prevHandle?.dv ?? 0.0)}, ${next.time} ${next.value}';
-					}
-				}
-			}
+			var data = prefab.getSvgString();
 
 			var debugData = '';
 			var debugCurveApi = false;

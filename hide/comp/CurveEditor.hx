@@ -1310,31 +1310,15 @@ class CurveEditor extends hide.comp.Component {
 		function drawCurve(curve : Curve, ?style: Dynamic) {
 			// Draw curve
 			if(curve.keys.length > 0) {
-				var keys = curve.keys;
-				if(false) {  // Bezier draw, faster but less accurate
-					var lines = ['M ${xScale*(keys[0].time)},${-yScale*(keys[0].value)}'];
-					for(ik in 1...keys.length) {
-						var prev = keys[ik-1];
-						var cur = keys[ik];
-						if(prev.mode == Constant) {
-							lines.push('L ${xScale*(prev.time)} ${-yScale*(prev.value)}
-							L ${xScale*(cur.time)} ${-yScale*(prev.value)}
-							L ${xScale*(cur.time)} ${-yScale*(cur.value)}');
-						}
-						else {
-							lines.push('C
-								${xScale*(prev.time + (prev.nextHandle != null ? prev.nextHandle.dt : 0.))},${-yScale*(prev.value + (prev.nextHandle != null ? prev.nextHandle.dv : 0.))}
-								${xScale*(cur.time + (cur.prevHandle != null ? cur.prevHandle.dt : 0.))}, ${-yScale*(cur.value + (cur.prevHandle != null ? cur.prevHandle.dv : 0.))}
-								${xScale*(cur.time)}, ${-yScale*(cur.value)} ');
-						}
-					}
-					svg.make(curveGroup, "path", {d: lines.join("")});
-				}
-				else {
+				{
 					var pts = [];
 
 					// Basic value of xScale is 200
-					var num : Int = Std.int(Math.min(5000, 500 * cast (xScale / 200.0)));
+					var min = xOffset;
+					var max = min + width / xScale;
+					trace(min, max);
+
+					var num : Int = Std.int(hxd.Math.clamp(500 * cast (xScale / 200.0), width, 5000));
 					pts.resize(num);
 					var v = curve.makeVal();
 					if (v == null) throw "wtf";
@@ -1350,7 +1334,7 @@ class CurveEditor extends hide.comp.Component {
 						poly.push(new h2d.col.Point(x, y));
 					}
 
-					svg.polygon(curveGroup, poly, style);
+					svg.polygon(curveGroup, poly);
 				}
 			}
 		}
