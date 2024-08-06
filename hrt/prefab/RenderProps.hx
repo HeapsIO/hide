@@ -62,7 +62,8 @@ class RenderProps extends Object3D {
 			return false;
 		renderer.props = props;
 		for(fx in renderer.effects)
-			fx.dispose();
+			if ( fx != null )
+				fx.dispose();
 
 		renderer.effects = [];
 		for (v in findAll(hrt.prefab.rfx.RendererFX, true)) {
