@@ -216,6 +216,8 @@ class ModelLibrary extends Prefab {
 	@:s var ignoredObjectNames : Array<{name:String}> = [];
 	@:s var preserveObjectNames : Array<{name:String}> = [];
 
+	@:s var meshConvertRule : String = "";
+
 	@:s var mipEnd : Float;
 	@:s var mipStart : Float;
 	@:s var mipPower : Float;
@@ -383,6 +385,12 @@ class ModelLibrary extends Prefab {
 					return false;
 			}
 		}
+
+		var fs = Std.downcast(hxd.res.Loader.currentInstance.fs, hxd.fs.LocalFileSystem);
+		var dirPath = shared.currentPath.split(".prefab")[0];
+		var config = haxe.Json.stringify(@:privateAccess fs.convert.getConvertRule(dirPath+".fbx"));
+		if ( config != meshConvertRule )
+			return false;
 
 		for ( m in models)
 			if ( isModelNew(m, time) )
@@ -752,6 +760,7 @@ class ModelLibrary extends Prefab {
 		if ( fs != null ) {
 			var dirPath = shared.currentPath.split(".prefab")[0];
 			var config = @:privateAccess fs.convert.getConvertRule(dirPath+".fbx");
+			meshConvertRule = haxe.Json.stringify(config);
 			var lowp = Reflect.field(config.cmd.params, "lowp");
 			if ( lowp != null ) {
 				var lowpInputs = [];
