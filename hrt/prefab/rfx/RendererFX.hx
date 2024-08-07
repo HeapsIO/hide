@@ -48,7 +48,7 @@ class RendererFX extends Prefab implements h3d.impl.RendererFX {
 
 	override function dispose() {
 		if (this.instance != null) {
-			var scene = this.instance.shared.root3d.getScene();
+			var scene = this.instance.shared.root3d?.getScene();
 
 			if(scene != null)
 				scene.renderer.effects.remove(this.instance);
