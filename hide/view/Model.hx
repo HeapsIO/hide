@@ -32,6 +32,8 @@ class Model extends FileView {
 	var lastSelectedObject : h3d.scene.Object = null;
 
 	var highlightSelection : Bool = true;
+	var shader = new h3d.shader.FixedColor(0xffffff);
+	var shader2 = new h3d.shader.FixedColor(0xff8000);
 
 	override function save() {
 
@@ -189,6 +191,8 @@ class Model extends FileView {
 	function selectMaterial( m : h3d.mat.Material ) {
 		refreshSelectionHighlight(null);
 
+		highlightMaterial(m);
+		
 		var properties = sceneEditor.properties;
 		properties.clear();
 
@@ -726,22 +730,24 @@ class Model extends FileView {
 
 		materials = selectedObj.getMaterials();
 
-		var shader = new h3d.shader.FixedColor(0xffffff);
-		var shader2 = new h3d.shader.FixedColor(0xff8000);
 		for( m in materials ) {
 			if( m.name != null && StringTools.startsWith(m.name,"$UI.") )
 				continue;
-			var p = m.allocPass("highlight");
-			p.culling = None;
-			p.depthWrite = false;
-			p.depthTest = LessEqual;
-			p.addShader(shader);
-			var p = m.allocPass("highlightBack");
-			p.culling = None;
-			p.depthWrite = false;
-			p.depthTest = Always;
-			p.addShader(shader2);
+			highlightMaterial(m);
 		}
+	}
+
+	function highlightMaterial(m : h3d.mat.Material) {
+		var p = m.allocPass("highlight");
+		p.culling = None;
+		p.depthWrite = false;
+		p.depthTest = LessEqual;
+		p.addShader(shader);
+		var p = m.allocPass("highlightBack");
+		p.culling = None;
+		p.depthWrite = false;
+		p.depthTest = Always;
+		p.addShader(shader2);
 	}
 
 	function getNamedObjects( ?exclude : h3d.scene.Object ) {
