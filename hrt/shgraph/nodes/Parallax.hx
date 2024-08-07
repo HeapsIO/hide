@@ -29,7 +29,7 @@ class Parallax extends ShaderNodeHxsl {
 			var tanY = normalize(transformedNormal.cross(tanX));
 			var viewNS = vec3(viewWS.dot(tanX), viewWS.dot(tanY), viewWS.dot(transformedNormal)).normalize();
 
-			output = viewNS.xy * range;
+			output = -viewNS.xy * range;
 		}
 	};
 
