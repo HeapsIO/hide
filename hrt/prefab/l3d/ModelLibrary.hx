@@ -316,32 +316,46 @@ class ModelLibrary extends Prefab {
 					var lib = hxd.res.Loader.currentInstance.load((props:Dynamic).__ref).toPrefab().load();
 
 					var libPath = getSystemPath(lib.shared.prefabSource);
-					if ( sys.FileSystem.stat(libPath).mtime.getTime() > time )
-						return false;
+					if ( sys.FileSystem.stat(libPath).mtime.getTime() > time ) {
+						trace("ModelLibrary is not up to date : " + libPath + " is new or has been modified");
+						return true;
+					}
 
 					var m = lib.getOpt(hrt.prefab.Material, (props:Dynamic).name);
 					if( m.diffuseMap != null )
-						if ( isTextureNew(m.diffuseMap, time) )
+						if ( isTextureNew(m.diffuseMap, time) ) {
+							trace("ModelLibrary is not up to date : " + m.diffuseMap + " is new or has been modified");
 							return true;
+						}
 					if( m.specularMap != null )
-						if ( isTextureNew(m.specularMap, time) )
+						if ( isTextureNew(m.specularMap, time) ) {
+							trace("ModelLibrary is not up to date : " + m.specularMap + " is new or has been modified");
 							return true;
+						}
 					if( m.normalMap != null )
-						if ( isTextureNew(m.normalMap, time) )
+						if ( isTextureNew(m.normalMap, time) ) {
+							trace("ModelLibrary is not up to date : " + m.normalMap + " is new or has been modified");
 							return true;
+						}
 					continue;
 				} catch( e : Dynamic ) { continue; }
 			}
 
 			if( m.diffuseTexture != null )
-				if ( isTextureNew(m.diffuseTexture, time) )
+				if ( isTextureNew(m.diffuseTexture, time) ) {
+					trace("ModelLibrary is not up to date : " + m.diffuseTexture + " is new or has been modified");
 					return true;
+				}
 			if( m.specularTexture != null )
-				if ( isTextureNew(m.specularTexture, time) )
+				if ( isTextureNew(m.specularTexture, time) ) {
+					trace("ModelLibrary is not up to date : " + m.specularTexture + " is new or has been modified");
 					return true;
+				}
 			if( m.normalMap != null )
-				if ( isTextureNew(m.normalMap, time) )
+				if ( isTextureNew(m.normalMap, time) ) {
+					trace("ModelLibrary is not up to date : " + m.normalMap + " is new or has been modified");
 					return true;
+				}
 		}
 
 		return false;
@@ -361,8 +375,11 @@ class ModelLibrary extends Prefab {
 			return false;
 
 		var filePath = getSystemPath(source);
-		if ( !sys.FileSystem.exists(filePath) )
+		if ( !sys.FileSystem.exists(filePath) ) {
+			trace("ModelLibrary does not exist");
 			return false;
+		}
+
 
 		var fileStat = sys.FileSystem.stat(filePath);
 		var time = fileStat.mtime.getTime();
@@ -370,8 +387,10 @@ class ModelLibrary extends Prefab {
 		var models = findAll(hrt.prefab.Model);
 
 		if ( paths != null ) {
-			if ( paths.length != models.length )
+			if ( paths.length != models.length ) {
+				trace("ModelLibrary is not up to date : The model count does not match");
 				return false;
+			}
 
 			for ( path in paths ) {
 				var found = false;
@@ -381,20 +400,26 @@ class ModelLibrary extends Prefab {
 						break;
 					}
 				}
-				if ( !found )
+				if ( !found ) {
+					trace("ModelLibrary is not up to date : " + path + " has not been found");
 					return false;
+				}
 			}
 		}
 
 		var fs = Std.downcast(hxd.res.Loader.currentInstance.fs, hxd.fs.LocalFileSystem);
 		var dirPath = shared.currentPath.split(".prefab")[0];
 		var config = haxe.Json.stringify(@:privateAccess fs.convert.getConvertRule(dirPath+".fbx"));
-		if ( config != meshConvertRule )
+		if ( config != meshConvertRule ) {
+			trace("ModelLibrary is not up to date : Convert rule for mesh does not match");
 			return false;
+		}
 
 		for ( m in models)
-			if ( isModelNew(m, time) )
+			if ( isModelNew(m, time) ) {
+				trace("ModelLibrary is not up to date : " + m.source + " is new or has been modified");
 				return false;
+			}
 
 		return true;
 	}
