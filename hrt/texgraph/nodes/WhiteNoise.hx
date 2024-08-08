@@ -30,7 +30,7 @@ class WhiteNoise extends TexNode {
 
 	override function apply(vars : Dynamic) : Array<h3d.mat.Texture> {
 		var engine = h3d.Engine.getCurrent();
-		var out = new h3d.mat.Texture(outputWidth, outputHeight, null, outputFormat);
+		var out = createTexture();
 
 		var shader = new WhiteNoiseShader();
 		shader.tex = out;

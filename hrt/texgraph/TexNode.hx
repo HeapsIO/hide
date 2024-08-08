@@ -38,6 +38,16 @@ implements hide.view.GraphInterface.IGraphNode
 	public var outputFormat = hxd.PixelFormat.RGBA;
 
 
+	var ctx(get, null) : h3d.impl.RenderContext;
+	function get_ctx() {
+		#if editor
+		var s2d = editor.previewsScene.s2d;
+		return @:privateAccess s2d.ctx;
+		#else
+		return null;
+		#end
+	}
+
 	static public function register(key : String, cl : Class<TexNode>) : Bool {
 		registeredNodes.set(key, cl);
 		return true;
@@ -211,7 +221,8 @@ implements hide.view.GraphInterface.IGraphNode
 	}
 
 	function createTexture() : h3d.mat.Texture {
-		var tex = new h3d.mat.Texture(outputWidth, outputHeight, null, outputFormat);
+		var tex = new h3d.mat.Texture(outputWidth, outputHeight, [Target], outputFormat);
+		tex.clear(0);
 		return tex;
 	}
 }
