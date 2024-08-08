@@ -3455,61 +3455,13 @@ class SceneEditor {
 	}
 
 	function exportSelection(?params : Dynamic) {
-		function clean( obj : Object ) : Object {
-			if (Std.downcast(obj, h3d.scene.Interactive) != null)
-				return null;
-
-			var o = new Object();
-			var multiMat = Std.downcast(obj, h3d.scene.MultiMaterial);
-			if (multiMat != null)
-				o = new h3d.scene.MultiMaterial(multiMat.primitive, multiMat.materials);
-			else {
-				var m = Std.downcast(obj, Mesh);
-				if (m != null)
-					o = new Mesh(m.primitive, m.material);
-			}
-
-			o.x = obj.x;
-			o.y = obj.y;
-			o.z = obj.z;
-			o.scaleX = obj.scaleX;
-			o.scaleY = obj.scaleY;
-			o.scaleZ = obj.scaleZ;
-			@:privateAccess o.qRot.load(@:privateAccess obj.qRot);
-			o.name = obj.name;
-			o.follow = obj.follow;
-			o.followPositionOnly = obj.followPositionOnly;
-			o.visible = obj.visible;
-			if( obj.defaultTransform != null )
-				o.defaultTransform = obj.defaultTransform.clone();
-			for( c in @:privateAccess obj.children ) {
-				var c2 = clean(c);
-				if (c2 == null)
-					continue;
-				@:privateAccess c2.parent = o;
-				@:privateAccess o.children.push(c2);
-			}
-
-			return o;
-		}
-
-		// Clean a bit the object hierarchy to remove non-needed objects
-		// (Interactibles for example)
-		var roots = new Array<Object>();
-		for (o in @:privateAccess curEdit.rootObjects) {
-			var t = clean(o);
-			if (t != null)
-				roots.push(t);
-		}
-
 		// Handle the export of selection into a fbx file
 		Ide.inst.chooseFileSave("Export.fbx", function(filePath) {
-			if (filePath != null) {
-				var out = new haxe.io.BytesOutput();
-				new hxd.fmt.fbx.Writer(out).write(roots, params);
-				sys.io.File.saveBytes(Ide.inst.getPath(filePath), out.getBytes());
-				Ide.inst.message('Successfully exported object at path : ${filePath}');
-			}
+			new hxd.fmt.fbx.Writer(null).export(
+				@:privateAccess curEdit.rootObjects,
+				Ide.inst.getPath(filePath),
+				() -> Ide.inst.message('Successfully exported object at path : ${filePath}'),
+				params);
 		});
 	}
 
