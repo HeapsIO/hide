@@ -198,7 +198,7 @@ class BaseFXTools {
 	}
 
 	public static function makeRendererFXParams(rfxElt: hrt.prefab.rfx.RendererFX) {
-		var serializedProps : Array<Dynamic> = @:privateAccess Prefab.getSerializablePropsForClass(Type.getClass(cast rfxElt));
+		var serializedProps : Array<Dynamic> = @:privateAccess Prefab.getSerializablePropsForClass(Type.getClass(cast rfxElt)).copy();
 		var ret : Array<{field : hrt.prefab.Prefab.PrefabField, value : Value}> = null;
 		for (f in serializedProps) {
 			if (!(Reflect.field(rfxElt, f.name) is Float))

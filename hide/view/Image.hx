@@ -294,35 +294,32 @@ class Image extends FileView {
 
 		var resetCompression = element.find(".reset-compression");
 		resetCompression.on("click", function(_) {
-			if (!sys.FileSystem.exists(propsFilePath))
-				ide.message('The file ${propsFilePath} does not exist !');
+			if (sys.FileSystem.exists(propsFilePath)) {
+				var rulesObj = haxe.Json.parse(sys.io.File.getContent(propsFilePath));
 
-			var rulesObj = haxe.Json.parse(sys.io.File.getContent(propsFilePath));
+				var fsConvertObj = Reflect.getProperty(rulesObj, "fs.convert");
+				if (fsConvertObj != null && Reflect.getProperty(fsConvertObj, state.path) != null) {
+					if(!ide.confirm('Do you really want to remove ${state.path} from ${propsFilePath} ?'))
+						return;
 
-			var fsConvertObj = Reflect.getProperty(rulesObj, "fs.convert");
-			if (fsConvertObj == null || Reflect.getProperty(fsConvertObj, state.path) == null)
-				ide.message('The file ${propsFilePath} does not contain compression rule for ${state.path} !');
-			else {
-				if(!ide.confirm('Do you really want to remove ${state.path} from ${propsFilePath} ?'))
-					return;
+					Reflect.deleteField(fsConvertObj, state.path);
 
-				Reflect.deleteField(fsConvertObj, state.path);
+					if (Reflect.fields(fsConvertObj).length == 0)
+						Reflect.deleteField(rulesObj, "fs.convert");
 
-				if (Reflect.fields(fsConvertObj).length == 0)
-					Reflect.deleteField(rulesObj, "fs.convert");
-
-				if (Reflect.fields(rulesObj).length == 0) {
-					sys.FileSystem.deleteFile(propsFilePath);
-					updateImageCompressionInfos();
-					replaceImage(ide.getPath(state.path));
-					return;
+					if (Reflect.fields(rulesObj).length == 0) {
+						sys.FileSystem.deleteFile(propsFilePath);
+						updateImageCompressionInfos();
+						replaceImage(ide.getPath(state.path));
+						return;
+					}
 				}
-			}
 
-			var bytes = new haxe.io.BytesOutput();
-			var data = haxe.Json.stringify(rulesObj, "\t");
-			bytes.writeString(data);
-			hxd.File.saveBytes(propsFilePath, bytes.getBytes());
+				var bytes = new haxe.io.BytesOutput();
+				var data = haxe.Json.stringify(rulesObj, "\t");
+				bytes.writeString(data);
+				hxd.File.saveBytes(propsFilePath, bytes.getBytes());
+			}
 
 			updateImageCompressionInfos();
 			replaceImage(ide.getPath(state.path));
