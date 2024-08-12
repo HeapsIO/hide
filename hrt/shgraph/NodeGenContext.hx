@@ -135,7 +135,7 @@ class NodeGenContext {
 			default:
 		}
 
-		var v : TVar = {id: hxsl.Tools.allocVarId(), name: tvar.name, type: type, kind: tvar.kind};
+		var v : TVar = {id: hxsl.Tools.allocVarId(), name: tvar.name, type: type, kind: tvar.kind, qualifiers: tvar.qualifiers};
 		def = {v:v, defValue: null, __init__: null};
 		if (tvar.parent != null) {
 			v.parent = getOrAllocateFromTVar(tvar.parent);
