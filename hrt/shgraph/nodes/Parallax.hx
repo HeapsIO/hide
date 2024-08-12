@@ -14,7 +14,7 @@ class Parallax extends ShaderNodeHxsl {
 		@sgoutput var output : Vec2;
 		
 		@global var global : {
-			var modelView : Mat4;
+			@perObject var modelView : Mat4;
 		};
 
 		@input var input : {
