@@ -1,9 +1,6 @@
 package hrt.prefab.fx.gpuemitter;
 
 class TurbulenceSimulationShader extends ComputeUtils {
-	override function onUpdate(emitter : GPUEmitter.GPUEmitterObject, buffer : h3d.Buffer, index : Int) {
-		super.onUpdate(emitter, buffer, index);
-	}
 
 	static var SRC = {
 		@param var intensity : Float;

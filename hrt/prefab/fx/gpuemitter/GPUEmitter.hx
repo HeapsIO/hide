@@ -20,9 +20,6 @@ enum SpeedMode {
 
 class ParticleShader extends hxsl.Shader {
 	static var SRC = {
-		@perInstance @param var speed : Vec3;
-		@perInstance @param var lifeTime : Float;
-
 		@param var localTransform : Mat4;
 		@param var absPos : Mat4;
 
@@ -34,11 +31,6 @@ class ParticleShader extends hxsl.Shader {
 
 		function vertex() {
 			relativePosition = relativePosition * localTransform.mat3x4();
-		}
-
-		var pixelColor : Vec4;
-		function fragment() {
-			pixelColor.rgb = packNormal(normalize(speed)).rgb * pixelColor.a * lifeTime;
 		}
 	}
 }
@@ -60,12 +52,19 @@ typedef Data = {
 	var minStartSpeed : Float;
 }
 
+typedef ParticleBuffer = {
+	var buffer : h3d.Buffer;
+	var next : ParticleBuffer;
+}
+
 @:allow(hrt.prefab.fx.GPUEmitter)
 class GPUEmitterObject extends h3d.scene.MeshBatch {
 	public var simulationPass : h3d.mat.Pass;
 	public var spawnPass : h3d.mat.Pass;
 	public var data : Data;
 	public var fxAnim : hrt.prefab.fx.FX.FXAnimation;
+
+	var particleBuffers : ParticleBuffer; 
 
 	var particleShader : ParticleShader;
 
@@ -105,11 +104,31 @@ class GPUEmitterObject extends h3d.scene.MeshBatch {
 			emitInstance();
 	}
 
+	override function flush(ctx : h3d.scene.RenderContext) {
+		super.flush(ctx);
+
+		var alloc = hxd.impl.Allocator.get();
+		if ( particleBuffers == null )
+			particleBuffers = { buffer : null, next : null};
+		var particleBuffer = particleBuffers;
+		var p = dataPasses;
+		while ( p != null ) {
+			if ( particleBuffer.buffer == null )
+				particleBuffer.buffer = alloc.allocBuffer(instanceCount, hxd.BufferFormat.VEC4_DATA, UniformReadWrite);
+			p = p.next;
+			if ( p != null && particleBuffer.next == null ) {
+				particleBuffer.next = { buffer : null, next : null};
+			}
+			particleBuffer = particleBuffer.next;
+		}
+	}
+
 	function dispatch(ctx : h3d.scene.RenderContext) {
 		#if editor
 		return;
 		#end
 		var p = dataPasses;
+		var particleBuffer = particleBuffers;
 		while ( p != null ) {
 			var baseSpawn = spawnPass.getShader(BaseSpawn);
 			baseSpawn.maxLifeTime = data.maxLifeTime;
@@ -191,8 +210,10 @@ class GPUEmitterObject extends h3d.scene.MeshBatch {
 				}
 
 				baseSpawn.batchBuffer = b;
+				baseSpawn.particleBuffer = particleBuffer.buffer;
 
 				baseSimulation.batchBuffer = b;
+				baseSimulation.particleBuffer = particleBuffer.buffer;
 
 				ctx.computeList(@:privateAccess spawnPass.shaders);
 				ctx.computeDispatch(instanceCount);
@@ -203,17 +224,24 @@ class GPUEmitterObject extends h3d.scene.MeshBatch {
 				i += p.maxInstance;
 			}
 			p = p.next;
+			particleBuffer = particleBuffer.next;
 		}
-	}
-
-	override function sync(ctx : h3d.scene.RenderContext) {
-		super.sync(ctx);
 	}
 
 	override function emit(ctx : h3d.scene.RenderContext) {
 		dispatch(ctx);
 		particleShader.localTransform.load(data.trs);
 		super.emit(ctx);
+	}
+
+	override function cleanPasses() {
+		super.cleanPasses();
+		var b = particleBuffers;
+		while ( b != null ) {
+			b.buffer.dispose();
+			b = b.next;
+		}
+		particleBuffers = null;
 	}
 }
 

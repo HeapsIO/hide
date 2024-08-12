@@ -4,9 +4,9 @@ class BaseSpawn extends ComputeUtils {
 	static var SRC = {
 		@param var batchBuffer : RWPartialBuffer<{
 			modelView : Mat4, 
-			speed : Vec3,
-			lifeTime : Float
-		}, 33554432>;
+		}>;
+		@param var particleBuffer : RWBuffer<Vec4>;
+
 		@const var SPEED_NORMAL : Bool;
 		@param var minLifeTime : Float;
 		@param var maxLifeTime : Float;
@@ -27,13 +27,13 @@ class BaseSpawn extends ComputeUtils {
 
 		function main() {
 			var idx = computeVar.globalInvocation.x;
-			if ( batchBuffer[idx].lifeTime < 1e-7 ) {
+			if ( particleBuffer[idx].w < 1e-7 ) {
 				batchBuffer[idx].modelView = modelView;
 				var s = vec3(0.0, 0.0, 1.0);
 				if ( SPEED_NORMAL )
 					s = emitNormal;
-				batchBuffer[idx].speed = s * maxStartSpeed;
-				batchBuffer[idx].lifeTime = lifeTime;
+				particleBuffer[idx].xyz = s * maxStartSpeed;
+				particleBuffer[idx].w = lifeTime;
 			}
 		}
 	}

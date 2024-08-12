@@ -638,10 +638,7 @@ class EmitterObject extends h3d.scene.Object {
 				if (this.emitterPrefab == p) {
 					if( !shader.enabled ) continue;
 					makeShaderInstance(shader);
-					//shCtx.local3d = null; // Prevent shader.iterMaterials from adding our objet to the list incorectly
-					// TODO(ces) : It looks like particles anims are broken
 					hrt.prefab.fx.BaseFX.BaseFXTools.getCustomAnimations(shader, customAnims, batch);
-				//var shader = Std.downcast(shCtx.custom, hxsl.Shader);
 				}
 
 			}

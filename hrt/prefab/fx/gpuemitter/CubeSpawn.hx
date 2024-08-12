@@ -15,7 +15,7 @@ class CubeSpawnShader extends ComputeUtils {
 		var lifeTime : Float;
 		var relativeTransform : Mat4;
 		function main() {
-			var rnd = random3d(vec2(global.time, global.time * computeVar.globalInvocation.x + randOffset));
+			var rnd = randomNoise3d(vec2(global.time, global.time * computeVar.globalInvocation.x + randOffset));
 			relativeTransform = translationMatrix(rnd * boundsSize + boundsMin);
 		}
 	}

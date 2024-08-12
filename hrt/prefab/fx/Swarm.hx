@@ -152,9 +152,6 @@ class SwarmObject extends h3d.scene.Object {
 				if (this.prefab == p) {
 					if( !shader.enabled ) continue;
 					makeShaderInstance(shader);
-
-					//shCtx.local3d = null; // Prevent shader.iterMaterials from adding our objet to the list incorectly
-
 					hrt.prefab.fx.BaseFX.BaseFXTools.getCustomAnimations(shader, customAnims, batch);
 				}
 			}

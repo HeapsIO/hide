@@ -41,20 +41,35 @@ class ComputeUtils extends hxsl.Shader {
 			var position : Vec3;
 		}
 		
-		function random(pos : Vec2) : Float {
+		function randomNoise(pos : Vec2) : Float {
 			return blueNoiseSampler.get(pos).r;
 		}
 
-		function random2d(pos : Vec2) : Vec2 {
+		function randomNoise2d(pos : Vec2) : Vec2 {
 			return blueNoiseSampler.get(pos).rg;
 		}
 
-		function random3d(pos : Vec2) : Vec3 {
+		function randomNoise3d(pos : Vec2) : Vec3 {
 			return blueNoiseSampler.get(pos).rgb;
 		}
 
-		function random4d(pos : Vec2) : Vec4 {
+		function randomNoise4d(pos : Vec2) : Vec4 {
 			return blueNoiseSampler.get(pos);
+		}
+
+		function random(pos : Vec2) : Float {
+			return fract(sin(dot(pos, vec2(12.9898,78.233)))*43758.5453123);
+		}
+
+		function random2d(pos : Vec2) : Vec2 {
+			return vec2(fract(sin(dot(pos, vec2(12.9898,78.233)))*43758.5453123),
+						fract(sin(dot(pos, vec2(1572.9898,132.237)))*157468.33458));
+		}
+
+		function random3d(pos : Vec2) : Vec3 {
+			return vec3(fract(sin(dot(pos, vec2(12.9898,78.233)))*43758.5453123),
+						fract(sin(dot(pos, vec2(1572.9898,132.237)))*157468.33458),
+						fract(sin(dot(pos, vec2(14.5757,59.147)))*43756.281));
 		}
 
 		function translationMatrix(pos : Vec3) : Mat4 {
