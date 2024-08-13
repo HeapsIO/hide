@@ -181,7 +181,9 @@ class Dropdown extends Component {
 			o.toggleClass("highlighted", i == highlightIndex);
 			i++;
 		}
-		untyped optionsCont.children().get(highlightIndex).scrollIntoViewIfNeeded();
+		if (highlightIndex != null) {
+			untyped optionsCont.children().get(highlightIndex).scrollIntoViewIfNeeded();
+		}
 	}
 
 	function getMatchingScore( text : String, filter : String ) {
