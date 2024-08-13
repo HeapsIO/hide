@@ -40,6 +40,7 @@
 	"key.search" : "Ctrl-F",
 	"key.rename" : "F2",
 	"key.selectAll" : "Ctrl-A",
+	"key.selectInvert" : "Ctrl-I",
 	"key.playPause" : "Space",
 
 	// view keys

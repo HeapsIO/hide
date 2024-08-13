@@ -956,6 +956,8 @@ class SceneEditor {
 		view.keys.register("paste", {name: "Paste", category: "Edit"}, onPaste);
 		view.keys.register("cancel", {name: "De-select", category: "Scene"}, deselect);
 		view.keys.register("selectAll", {name: "Select All", category: "Scene"}, selectAll);
+		view.keys.register("selectInvert", {name: "Invert Selection", category: "Scene"}, selectInvert);
+
 		view.keys.register("duplicate", {name: "Duplicate", category: "Scene"}, duplicate.bind(true));
 		view.keys.register("duplicateInPlace", {name: "Duplicate in place", category: "Scene"}, duplicate.bind(false));
 		view.keys.register("group", {name: "Group Selection", category: "Scene"}, groupSelection);
@@ -3619,6 +3621,12 @@ class SceneEditor {
 
 	public function selectAll() {
 		selectElements(getAllSelectable3D());
+	}
+
+	public function selectInvert() {
+		var all = sceneData.flatten();
+		all = all.filter((prefab) -> !selectedPrefabs.contains(prefab));
+		selectElements(all);
 	}
 
 	public function deselect() {
