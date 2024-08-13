@@ -151,6 +151,9 @@ class View<T> extends hide.comp.Component {
 			if( container.parent.parent.config == null ) return;
 			haxe.Timer.delay(onActivate,0);
 		});
+		container.on("hide", function(_) {
+			onHide();
+		});
 		container.getElement().keydown(function(e) {
 			processKeyEvent(e);
 		});
@@ -209,6 +212,9 @@ class View<T> extends hide.comp.Component {
 
 	function onDisplay() {
 		element.text(viewClass+(state == null ? "" : " "+state));
+	}
+
+	function onHide() {
 	}
 
 	public function onResize() {

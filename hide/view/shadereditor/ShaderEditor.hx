@@ -285,8 +285,18 @@ class ShaderEditor extends hide.view.FileView implements GraphInterface.IGraphEd
 
 	var domainSelection : JQuery;
 
+	var isDisplayed = false;
+	var isLoaded = false;
+
 	override function onDisplay() {
 		super.onDisplay();
+		isDisplayed = true;
+		reloadView();
+	}
+
+	function reloadView() {
+		isLoaded = true;
+
 		element.html("");
 		loadSettings();
 		element.addClass("shader-editor");
@@ -299,6 +309,8 @@ class ShaderEditor extends hide.view.FileView implements GraphInterface.IGraphEd
 			graphEditor.remove();
 		graphEditor = new hide.view.GraphEditor(config, this, this.element);
 		graphEditor.onDisplay();
+
+		graphEditor.centerView();
 
 		graphEditor.element.on("drop" ,function(e) {
 			var posCursor = new Point(graphEditor.lX(ide.mouseX - 25), graphEditor.lY(ide.mouseY - 10));
@@ -413,6 +425,31 @@ class ShaderEditor extends hide.view.FileView implements GraphInterface.IGraphEd
 		graphEditor.onNodePreviewUpdate = onNodePreviewUpdate;
 
 		initMeshPreview();
+	}
+
+	override function onActivate() {
+		super.onActivate();
+		if (!isLoaded && isDisplayed) {
+			var save = graphEditor.saveView();
+			reloadView();
+			graphEditor.loadView(save);
+		}
+	}
+
+	override function onHide() {
+		super.onHide();
+		if (isLoaded) {
+			meshPreviewScene.dispose();
+			graphEditor.previewsScene.dispose();
+			isLoaded = false;
+		}
+	}
+
+	override function onBeforeClose() {
+		isLoaded = false;
+		trace("on before close");
+
+		return true;
 	}
 
 	function setDomain(domain : hrt.shgraph.ShaderGraph.Domain, recordUndo : Bool) {
@@ -943,6 +980,7 @@ class ShaderEditor extends hide.view.FileView implements GraphInterface.IGraphEd
 	}
 
 	public function initMeshPreview() {
+		trace("Init mesh preview");
 		if (meshPreviewScene != null) {
 			meshPreviewScene.element.remove();
 		}

@@ -1767,6 +1767,15 @@ class GraphEditor extends hide.comp.Component {
 		updateMatrix();
 	}
 
+	public function saveView() : String {
+		return haxe.Json.stringify(transformMatrix);
+	}
+
+	public function loadView(saved: String) {
+		transformMatrix = haxe.Json.parse(saved);
+		updateMatrix();
+	}
+
 	function clampView() {
 		if (boxes.iterator().hasNext()) return;
 		var dims = getGraphDims();

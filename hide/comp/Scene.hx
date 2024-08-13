@@ -49,11 +49,17 @@ class Scene extends hide.comp.Component implements h3d.IDrawable {
 			c();
 		cleanup = [];
 		ide.unregisterUpdate(sync);
-		@:privateAccess s2d.window.removeResizeEvent(s2d.checkResize);
-		engine.dispose();
-		@:privateAccess engine.driver = null;
-		untyped canvas.__scene = null;
-		canvas = null;
+		if (s2d != null) {
+			@:privateAccess s2d.window.removeResizeEvent(s2d.checkResize);
+		}
+		if (engine != null && engine.driver != null) {
+			engine.dispose();
+			@:privateAccess engine.driver = null;
+		}
+		if (canvas != null) {
+			untyped canvas.__scene = null;
+			canvas = null;
+		}
 		if( h3d.Engine.getCurrent() == engine ) @:privateAccess h3d.Engine.CURRENT = null;
 		untyped js.Browser.window.$_ = null; // jquery can sometimes leak s2d
 		@:privateAccess haxe.NativeStackTrace.lastError = null; // possible leak there
