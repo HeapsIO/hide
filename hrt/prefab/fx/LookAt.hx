@@ -21,6 +21,23 @@ class LookAtObject extends h3d.scene.Object {
 		super.syncRec(ctx);
 	}
 
+	var guard: Int = 0;
+	override function syncPos() {
+		if (guard != 0)
+			return;
+		guard++;
+
+		if( parent != null ) parent.syncPos();
+		if( posChanged ) {
+			posChanged = false;
+			calcAbsPos();
+			for( c in children )
+				c.posChanged = true;
+		}
+
+		guard--;
+	}
+
 	override function calcAbsPos() {
 		if(target != null)
 			lookAtPos = target.getAbsPos().getPosition();
