@@ -752,7 +752,7 @@ class ModelLibrary extends Prefab {
 							mat.indexStart = indexStarts[m2.geometry][index];
 
 							if ( lodInfos.lodLevel == 0 ) {
-								var lods = lib.findLODs(lodInfos.modelName);
+								var lods = lib.findLODs( lodInfos.modelName, m.materials.length );
 								mat.lodIndexCount = [];
 								mat.lodIndexStart = [];
 								mat.lodIndexCount.resize(lods.length);
