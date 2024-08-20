@@ -502,7 +502,7 @@ class PropsField extends Component {
 
 			var multiRange = new hide.comp.MultiRange(parentDiv, f, subfields.length, [for (subfield in subfields) name + " " + subfield]);
 			var a = getAccess();
-			multiRange.value = [for (subfield in subfields) Reflect.getProperty(a.obj, a.name+subfield)];
+			multiRange.value = Reflect.getProperty(a.obj, a.name);
 			current = multiRange.value;
 			currentSave = (cast current : Array<Float>).copy();
 			multiRange.onChange = function(isTemporary : Bool) {
@@ -511,8 +511,7 @@ class PropsField extends Component {
 					var a = f.getAccess();
 					f.current = val;
 					f.currentSave = val.copy();
-					for (i => subfield in subfields)
-						Reflect.setProperty(a.obj, a.name+subfield, val[i]);
+					Reflect.setProperty(a.obj, a.name, val);
 					if (refreshComp)
 						multiRange.value = val;
 					f.onChange(undo);
@@ -538,8 +537,7 @@ class PropsField extends Component {
 					var a = getAccess();
 					var val = multiRange.value;
 					current = val;
-					for (i => subfield in subfields)
-						Reflect.setProperty(a.obj, a.name+subfield, val[i]);
+					Reflect.setProperty(a.obj, a.name, val);
 					onChange(false);
 				}
 			};

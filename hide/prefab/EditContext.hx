@@ -6,6 +6,9 @@ class EditContext {
 
 	#if editor
 
+	/**
+		list of functions to call in the sceneEditor `update()`
+	**/
 	var updates : Array<Float->Void> = [];
 
 	public var ide(get,never) : hide.Ide;

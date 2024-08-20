@@ -3112,7 +3112,14 @@ class SceneEditor {
 			p = p.parent;
 		}*/
 		// rootCtx might not be == context depending on references
-		var edit = new SceneEditorContext(elts, this);
+		var edit : SceneEditorContext = null;
+		if (elts.length > 1) {
+			edit = new hide.prefab.MultiEditContext(elts, this);
+		}
+		else {
+			edit = new SceneEditorContext(elts, this);
+		}
+
 		edit.rootPrefab = sceneData;
 		edit.properties = properties;
 		edit.scene = scene;
@@ -3173,7 +3180,17 @@ class SceneEditor {
 			}
 			properties.clear();
 			if( elts.length > 0 ) {
-				fillProps(edit, elts[0]);
+				if (elts.length > 1) {
+					var cl = hrt.tools.ClassUtils.getCommonClass(elts, hrt.prefab.Prefab);
+					trace(Type.getClassName(cl));
+
+					var dummyPrefab = Type.createInstance(cl, [null, new ContextShared()]);
+					fillProps(edit, dummyPrefab);
+				}
+				else
+				{
+					fillProps(edit, elts[0]);
+				}
 				addGroupCopyPaste();
 			}
 
