@@ -1707,17 +1707,15 @@ class SceneEditor {
 					{ label : "Select all", click : selectAll, keys : view.config.get("key.selectAll") },
 					{ label : "Select children", enabled : current != null, click : function() selectElements(current.flatten()) },
 				]);
-				if( !isRef ) {
-					var exportMenu = new Array<hide.comp.ContextMenu.ContextMenuItem>();
-					exportMenu.push({ label : "Export (default)", enabled : curEdit != null && canExportSelection(), click : function() exportSelection({forward:"0", forwardSign:"1", up:"2", upSign:"1"}), keys : null });
-					exportMenu.push({ label : "Export (-X Forward, Z Up)", enabled : curEdit != null && canExportSelection(), click : function() exportSelection({forward:"0", forwardSign:"-1", up:"2", upSign:"1"}), keys : null });
+				var exportMenu = new Array<hide.comp.ContextMenu.ContextMenuItem>();
+				exportMenu.push({ label : "Export (default)", enabled : curEdit != null && canExportSelection(), click : function() exportSelection({forward:"0", forwardSign:"1", up:"2", upSign:"1"}), keys : null });
+				exportMenu.push({ label : "Export (-X Forward, Z Up)", enabled : curEdit != null && canExportSelection(), click : function() exportSelection({forward:"0", forwardSign:"-1", up:"2", upSign:"1"}), keys : null });
 
-					actionItems = actionItems.concat([
-						{ label : "Isolate", click : function() isolate(selectedPrefabs), keys : view.config.get("key.sceneeditor.isolate") },
-						{ label : "Group", enabled : selectedPrefabs != null && canGroupSelection(), click : groupSelection, keys : view.config.get("key.group") },
-						{ label : "Export", enabled : curEdit != null && canExportSelection(), menu : exportMenu },
-					]);
-				}
+				actionItems = actionItems.concat([
+					{ label : "Isolate", click : function() isolate(selectedPrefabs), keys : view.config.get("key.sceneeditor.isolate") },
+					{ label : "Group", enabled : selectedPrefabs != null && canGroupSelection(), click : groupSelection, keys : view.config.get("key.group") },
+					{ label : "Export", enabled : curEdit != null && canExportSelection(), menu : exportMenu },
+				]);
 			}
 
 			if( current != null ) {
@@ -3460,7 +3458,7 @@ class SceneEditor {
 		// Handle the export of selection into a fbx file
 		Ide.inst.chooseFileSave("Export.fbx", function(filePath) {
 			new hxd.fmt.fbx.Writer(null).export(
-				@:privateAccess curEdit.rootObjects,
+				[for (p in curEdit.elements) p.getLocal3d()],
 				Ide.inst.getPath(filePath),
 				() -> Ide.inst.message('Successfully exported object at path : ${filePath}'),
 				params);
