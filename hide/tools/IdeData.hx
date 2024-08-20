@@ -180,7 +180,8 @@ class IdeData {
 		hide.comp.cdb.DataFiles.save(function() {
 			if( databaseDiff != null ) {
 				sys.io.File.saveContent(getPath(databaseDiff), toJSON(new cdb.DiffFile().make(originDataBase,database)));
-				fileWatcher.ignorePrevChange(dbWatcher);
+				if ( dbWatcher != null )
+					fileWatcher.ignorePrevChange(dbWatcher);
 			} else {
 				if( !sys.FileSystem.exists(getPath(databaseFile)) && fileExists(databaseFile) ) {
 					// was loaded from pak, cancel changes
@@ -190,7 +191,8 @@ class IdeData {
 				}
 				lastDBContent = database.save();
 				sys.io.File.saveContent(getPath(databaseFile), lastDBContent);
-				fileWatcher.ignorePrevChange(dbWatcher);
+				if ( dbWatcher != null )
+					fileWatcher.ignorePrevChange(dbWatcher);
 			}
 		}, forcePrefabs);
 	}
