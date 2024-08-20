@@ -556,6 +556,7 @@ class PropsField extends Component {
 			}
 			updatePicker(current);
 			picker.onChange = function(move) {
+				isTempChange = move;
 				if(!move) {
 					undo(function() {
 						var f = resolveField();

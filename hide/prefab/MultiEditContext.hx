@@ -68,6 +68,8 @@ class MultiEditContext extends hide.comp.SceneEditor.SceneEditorContext {
                     } else {
                         Reflect.setProperty(prefab, propName, oldValue);
                     }
+                    trace(isUndo ? "undo" : "redo", propName, newValue);
+
                     refreshPrefab(prefab, propName);
                 }
                 exec(false);
