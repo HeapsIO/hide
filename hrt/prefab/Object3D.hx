@@ -13,7 +13,7 @@ class Object3D extends Prefab {
 	@:s public var scaleY : Float = 1.0;
 	@:s public var scaleZ : Float = 1.0;
 
-	public var scaleArray(get, set) : Array<Float>;
+	var scaleArray(get, set) : Array<Float>;
 
 	@:s public var rotationX : Float = 0.0;
 	@:s public var rotationY : Float = 0.0;

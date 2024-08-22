@@ -176,17 +176,17 @@ class Text extends Object2D {
 		leftAlign.on("click", function(e) {
 			align = 0;
 			updateDisabled();
-			updateInstance("align");
+			ctx.onChange(this, "align");
 		});
 		middleAlign.on("click", function(e) {
 			align = 1;
 			updateDisabled();
-			updateInstance("align");
+			ctx.onChange(this, "align");
 		});
 		rightAlign.on("click", function(e) {
 			align = 2;
 			updateDisabled();
-			updateInstance("align");
+			ctx.onChange(this, "align");
 		});
 		updateDisabled();
 

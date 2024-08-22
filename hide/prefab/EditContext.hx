@@ -19,7 +19,6 @@ class EditContext {
 	function get_ide() return hide.Ide.inst;
 
 	public function onChange(p : Prefab, propName : String) {
-
 		p.updateInstance(propName);
 
 		var parent = p.parent;

@@ -5,6 +5,7 @@ using hrt.prefab.Object3D; // GetLocal3D
 using hrt.prefab.Object2D; // GetLocal2D
 
 using Lambda;
+using hrt.tools.MapUtils;
 
 import hrt.prefab.Reference;
 import h3d.scene.Mesh;
@@ -2910,7 +2911,7 @@ class SceneEditor {
 		for (field in fields) {
 			@:privateAccess var accesses = field.getAccesses();
 			for (a in accesses) {
-				var v = Reflect.getProperty(a.obj, a.name);
+				var v = Reflect.getProperty(a.objs[0], a.name);
 				var json = haxe.Json.stringify(v);
 				out.push('${a.name}:$json');
 			}
@@ -2952,7 +2953,9 @@ class SceneEditor {
 				@:privateAccess var accesses = field.getAccesses();
 				for (a in accesses) {
 					if (map.exists(a.name)) {
-						Reflect.setProperty(a.obj, a.name, map.get(a.name));
+						for (obj in a.objs) {
+							Reflect.setProperty(obj, a.name, map.get(a.name));
+						}
 						field.onChange(false);
 					}
 				}
@@ -3005,7 +3008,25 @@ class SceneEditor {
 		});
 		properties.element.append(pasteButton);
 
+
+		var multi = Std.downcast(edit, hide.prefab.MultiEditContext);
+		if (multi != null) {
+			for (prefab in multi.elements) {
+				var multiProps = new hide.prefab.MultiEditContext.MultiPropsEditor(null, null, null);
+				multiProps.currentEditContext = multi;
+				multi.properties = multiProps;
+				prefab.edit(multi);
+				for (hash => context in multiProps.hashToContext) {
+					var contextes = properties.hashToContextes.getOrPut(hash, []);
+					contextes.push(context);
+				}
+			}
+			multi.properties = properties;
+		}
+
 		e.edit(edit);
+
+
 
 		var typeName = e.getCdbType();
 		if( typeName == null && e.props != null )
@@ -3181,11 +3202,24 @@ class SceneEditor {
 			properties.clear();
 			if( elts.length > 0 ) {
 				if (elts.length > 1) {
-					var cl = hrt.tools.ClassUtils.getCommonClass(elts, hrt.prefab.Prefab);
-					trace(Type.getClassName(cl));
+					var commonClass = hrt.tools.ClassUtils.getCommonClass(elts, hrt.prefab.Prefab);
+					trace(Type.getClassName(commonClass));
 
-					var dummyPrefab = Type.createInstance(cl, [null, new ContextShared()]);
-					fillProps(edit, dummyPrefab);
+					var proxyPrefab = Type.createInstance(commonClass, [null, new ContextShared()]);
+
+					// Copy all properties that are equals between all the selected instances
+					for (prop in proxyPrefab.getSerializableProps()) {
+						for (i => prefab in elts) {
+							if (i == 0) {
+								Reflect.setProperty(proxyPrefab, prop.name, Reflect.getProperty(prefab, prop.name));
+							}
+							else if (Reflect.getProperty(proxyPrefab, prop.name) != Reflect.getProperty(prefab, prop.name)) {
+								Reflect.setProperty(proxyPrefab, prop.name, prop.defaultValue);
+								break;
+							}
+						}
+					}
+					fillProps(edit, proxyPrefab);
 				}
 				else
 				{
