@@ -31,9 +31,9 @@ class TrailHead {
 }
 
 enum TrailOrientation {
-	ECamera;
-	EUp(x : Float, y : Float, z : Float);
-	EBasis(m : h3d.Matrix);
+	Camera;
+	WorldUp;
+	Basis(m : h3d.Matrix);
 }
 
 enum UVMode {
@@ -267,7 +267,7 @@ class TrailObj extends h3d.scene.Mesh {
 
 	var statusText : h2d.Text;
 
-	public function addPoint(t : TrailHead, x : Float, y : Float, z : Float, orient : TrailOrientation, w : Float) {
+	public function addPoint(t : TrailHead, x : Float, y : Float, z : Float, w : Float) {
 		var ux : Float =  0.0;
 		var uy : Float = 0.0;
 		var uz : Float = 0.0;
@@ -275,8 +275,8 @@ class TrailObj extends h3d.scene.Mesh {
 		var ny : Float = 0.0;
 		var nz : Float = 0.0;
 
-		switch (orient) {
-			case ECamera: {
+		switch (prefab.orientation) {
+			case Camera: {
 				var cam = getScene().camera.pos;
 				var target = getScene().camera.target;
 
@@ -300,12 +300,12 @@ class TrailObj extends h3d.scene.Mesh {
 				uy = vcamy * len;
 				uz = vcamz * len;
 			}
-			case EUp(x,y,z): {
-				ux = x;
-				uy = y;
-				uz = z;
+			case WorldUp: {
+				ux = 0;
+				uy = 0;
+				uz = 1;
 			}
-			case EBasis(m): {
+			case Basis(m): {
 				var up = m.up();
 				ux = up.x;
 				uy = up.y;
@@ -565,7 +565,7 @@ class TrailObj extends h3d.scene.Mesh {
 			var c = child;
 			var t = trails[childObjCount];
 			var pos = c.getAbsPos();
-			addPoint(t, pos.tx, pos.ty, pos.tz, ECamera, 1.0);
+			addPoint(t, pos.tx, pos.ty, pos.tz, 1.0);
 			childObjCount ++;
 		}
 
@@ -589,7 +589,7 @@ class TrailObj extends h3d.scene.Mesh {
 			}
 
 			if (shouldAddPoint) {
-				addPoint(trails[0], x,y,z, ECamera, 1);
+				addPoint(trails[0], x,y,z, 1);
 				//addPoint(0, x,y,z, EUp(0,0,1), 1);
 				//addPoint(0, x,y,z, EBasis(absPos), 1);
 			}
@@ -838,6 +838,7 @@ class Trails extends Object3D {
 	@:s public var startWidth : Float = 1.0;
 	@:s public var endWidth : Float = 0.0;
 	@:s public var lifetime : Float = 1.0;
+	@:s public var orientation : TrailOrientation = TrailOrientation.Camera;
 
 	@:s public var minSpeed : Float = 10.0;
 	@:s public var maxSpeed : Float = 1000.0;
@@ -863,8 +864,6 @@ class Trails extends Object3D {
 		return tr;
 	}
 
-
-
 	override function makeObject(parent3d: h3d.scene.Object) : h3d.scene.Object {
 		return create(parent3d, numTrails);
 	}
@@ -879,7 +878,7 @@ class Trails extends Object3D {
 	override public function edit(ctx:hide.prefab.EditContext) {
 		super.edit(ctx);
 
-		var trailObj : TrailObj= cast local3d;
+		var trailObj : TrailObj = cast local3d;
 		var props = ctx.properties.add(new hide.Element('
 		<div class="group" name="Trail Properties">
 			<dl>
@@ -888,6 +887,7 @@ class Trails extends Object3D {
 				<dt>Width End</dt><dd><input type="range" field="endWidth" min="0" max="10"/></dd>
 				<dt>Min Speed</dt><dd><input type="range" field="minSpeed" min="0" max="1000"/></dd>
 				<dt>Max Speed</dt><dd><input type="range" field="maxSpeed" min="0" max="1000"/></dd>
+				<dt>Orientation</dt><dd><select field="orientation"/></dd>
 			</dl>
 		</div>
 
@@ -895,7 +895,7 @@ class Trails extends Object3D {
 		<dl>
 			<dt>UV Mode</dt><dd><select field="uvMode"></select></dd>
 			<dt>UV Repeat</dt><dd><select field="uvRepeat"></select></dd>
-			<dt>UV Scale</dt><dd><input type="range" field="uvStretch" min="0" max="5" title="Hey look at me i\'m a comment"/></dd>
+			<dt>UV Scale</dt><dd><input type="range" field="uvStretch" min="0" max="5"/></dd>
 		</dl>
 	</div>
 		'),this, function(name:String) {
@@ -911,7 +911,6 @@ class Trails extends Object3D {
 				trailObj.updateParams();
 			}
 		});
-		//ctx.properties.addMaterial( trail.material, props.find("[name=Material] > .content"), function(_) data = trail.save());
 	}
 
 	#end
