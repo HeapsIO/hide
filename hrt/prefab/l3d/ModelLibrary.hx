@@ -409,8 +409,8 @@ class ModelLibrary extends Prefab {
 
 		var fs = Std.downcast(hxd.res.Loader.currentInstance.fs, hxd.fs.LocalFileSystem);
 		var dirPath = shared.currentPath.split(".prefab")[0];
-		var config = haxe.Json.stringify(@:privateAccess fs.convert.getConvertRule(dirPath+".fbx"));
-		if ( config != meshConvertRule ) {
+		var config = @:privateAccess fs.convert.getConvertRule(dirPath+".fbx");
+		if ( config.cmd.paramsStr != meshConvertRule ) {
 			trace("ModelLibrary is not up to date : Convert rule for mesh does not match");
 			return false;
 		}
@@ -785,7 +785,7 @@ class ModelLibrary extends Prefab {
 		if ( fs != null ) {
 			var dirPath = shared.currentPath.split(".prefab")[0];
 			var config = @:privateAccess fs.convert.getConvertRule(dirPath+".fbx");
-			meshConvertRule = haxe.Json.stringify(config);
+			meshConvertRule = config.cmd.paramsStr;
 			var lowp = Reflect.field(config.cmd.params, "lowp");
 			if ( lowp != null ) {
 				var lowpInputs = [];
