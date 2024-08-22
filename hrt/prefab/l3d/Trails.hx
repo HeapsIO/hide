@@ -32,7 +32,7 @@ class TrailHead {
 
 enum TrailOrientation {
 	Camera;
-	WorldUp;
+	Up(x : Float, y : Float, z : Float);
 	Basis(m : h3d.Matrix);
 }
 
@@ -300,10 +300,10 @@ class TrailObj extends h3d.scene.Mesh {
 				uy = vcamy * len;
 				uz = vcamz * len;
 			}
-			case WorldUp: {
-				ux = 0;
-				uy = 0;
-				uz = 1;
+			case Up(x, y, z): {
+				ux = x;
+				uy = y;
+				uz = z;
 			}
 			case Basis(m): {
 				var up = m.up();
@@ -838,7 +838,7 @@ class Trails extends Object3D {
 	@:s public var startWidth : Float = 1.0;
 	@:s public var endWidth : Float = 0.0;
 	@:s public var lifetime : Float = 1.0;
-	@:s public var orientation : TrailOrientation = TrailOrientation.Camera;
+	@:c public var orientation : TrailOrientation = TrailOrientation.Camera;
 
 	@:s public var minSpeed : Float = 10.0;
 	@:s public var maxSpeed : Float = 1000.0;
@@ -854,6 +854,37 @@ class Trails extends Object3D {
 	function new(parent, shared) {
 		super(parent, shared);
 		name = "Trails";
+	}
+
+	override function load(data : Dynamic) : Void {
+		super.load(data);
+
+		if (data.orientation == 1) {
+			this.orientation = TrailOrientation.createByIndex(data.orientation, [ data.orientationUpAxisX, data.orientationUpAxisY, data.orientationUpAxisZ ]);
+		}
+		else
+			this.orientation = TrailOrientation.createByIndex(data.orientation);
+	}
+
+	override function copy(data: Prefab) : Void {
+		super.copy(data);
+	}
+
+	override function save() : Dynamic {
+		var obj = super.save();
+
+		switch (this.orientation) {
+			case Up(x, y, z):
+				obj.orientation = this.orientation.getIndex();
+				obj.orientationUpAxisX = x;
+				obj.orientationUpAxisY = y;
+				obj.orientationUpAxisZ = z;
+			default:
+				obj.orientation = this.orientation.getIndex();
+
+		}
+
+		return obj;
 	}
 
 	public function create( ?parent : h3d.scene.Object, ?numTrails : Int ) {
@@ -881,13 +912,12 @@ class Trails extends Object3D {
 		var trailObj : TrailObj = cast local3d;
 		var props = ctx.properties.add(new hide.Element('
 		<div class="group" name="Trail Properties">
-			<dl>
+			<dl id="trail-properties">
 				<dt>Lifetime</dt><dd><input type="range" field="lifetime" min="0" max="1"/></dd>
 				<dt>Width Start</dt><dd><input type="range" field="startWidth" min="0" max="10"/></dd>
 				<dt>Width End</dt><dd><input type="range" field="endWidth" min="0" max="10"/></dd>
 				<dt>Min Speed</dt><dd><input type="range" field="minSpeed" min="0" max="1000"/></dd>
 				<dt>Max Speed</dt><dd><input type="range" field="maxSpeed" min="0" max="1000"/></dd>
-				<dt>Orientation</dt><dd><select field="orientation"/></dd>
 			</dl>
 		</div>
 
@@ -911,6 +941,63 @@ class Trails extends Object3D {
 				trailObj.updateParams();
 			}
 		});
+
+		var orientationEl = new hide.Element('<dt>Orient</dt><dd>
+			<select>
+				<option value=0>Camera</option>
+				<option value=1>Custom Up</option>
+			</select>
+			<div id="up-axis">
+				<input id="x" type="number"/><input id="y" type="number"/><input id="z" type="number"/>
+			</div>
+			</dd>');
+
+		orientationEl.appendTo(props.find("#trail-properties"));
+
+		var select = orientationEl.find("select");
+		var upAxisEl = orientationEl.find("#up-axis");
+
+		function updateOrientSelect() {
+			switch (this.orientation) {
+				case Up(x, y, z):
+					select.val(this.orientation.getIndex());
+					upAxisEl.css({ display:'flex' });
+					upAxisEl.find("#x").val(x);
+					upAxisEl.find("#y").val(y);
+					upAxisEl.find("#z").val(z);
+				default:
+					select.val(this.orientation.getIndex());
+					upAxisEl.css({ display:'none' });
+			}
+		}
+
+		function onOrientChange() {
+			var newValue = select.val();
+			var oldValue = this.orientation.getIndex();
+
+			function exec(undo:Bool) {
+				var v = undo ? oldValue : newValue;
+				if (v == 1) {
+					var x = upAxisEl.find("#x").val();
+					var y = upAxisEl.find("#y").val();
+					var z = upAxisEl.find("#z").val();
+					this.orientation = TrailOrientation.createByIndex(1, [x == '' ? 0 : x, y == '' ? 0 : y, z == '' ? 0 : z]);
+				}
+				else {
+					this.orientation = TrailOrientation.createByIndex(v);
+				}
+				updateOrientSelect();
+			}
+
+			exec(false);
+			@:privateAccess ctx.scene.editor.undo.change(Custom(exec));
+		}
+
+		updateOrientSelect();
+		select.on("change", onOrientChange);
+		upAxisEl.find("#x").on("change", onOrientChange);
+		upAxisEl.find("#y").on("change", onOrientChange);
+		upAxisEl.find("#z").on("change", onOrientChange);
 	}
 
 	#end

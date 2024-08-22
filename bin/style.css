@@ -1278,6 +1278,12 @@ input[type=checkbox]:checked:after {
 .hide-properties .cdb-large .btn-cdb-large {
   opacity: 1;
 }
+.hide-properties #up-axis {
+  display: flex;
+}
+.hide-properties #up-axis input {
+  width: 100%;
+}
 /* Image Viewer */
 .image-properties {
   height: 100%;
