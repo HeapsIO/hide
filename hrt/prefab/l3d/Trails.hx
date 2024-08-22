@@ -859,7 +859,10 @@ class Trails extends Object3D {
 	override function load(data : Dynamic) : Void {
 		super.load(data);
 
-		if (data.orientation == 1) {
+		if (data.orientation == null)
+			return;
+
+		if (data?.orientation == 1) {
 			this.orientation = TrailOrientation.createByIndex(data.orientation, [ data.orientationUpAxisX, data.orientationUpAxisY, data.orientationUpAxisZ ]);
 		}
 		else
@@ -874,6 +877,7 @@ class Trails extends Object3D {
 		var obj = super.save();
 
 		switch (this.orientation) {
+			case Camera:
 			case Up(x, y, z):
 				obj.orientation = this.orientation.getIndex();
 				obj.orientationUpAxisX = x;
