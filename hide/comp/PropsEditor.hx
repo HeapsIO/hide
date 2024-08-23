@@ -308,6 +308,10 @@ class PropsEditor extends Component {
 		return e;
 	}
 
+	/**
+		Returns a string that tries to be unique for each call of properties.add or properties.build
+		inside a prefab.edit function.
+	**/
 	static function getBuildLocationHash() : String {
 		var callStack = haxe.CallStack.callStack();
 		var len = callStack.length;
