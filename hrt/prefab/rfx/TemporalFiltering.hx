@@ -350,7 +350,9 @@ class TemporalFiltering extends hrt.prefab.rfx.RendererFX {
 					<dt>Keep sky alpha</dt><dd><input type="checkbox" field="keepSkyAlpha"/></dd>
 				</div>
 			</dl>
-		'),this);
+		'),this, function(pname) {
+			ctx.onChange(this,pname);
+		});
 	}
 	#end
 
