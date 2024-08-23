@@ -291,7 +291,7 @@ class GraphEditor extends hide.comp.Component {
 		toolbar.refreshToggles();
 		updateMatrix();
 
-		reloadInternal();
+		haxe.Timer.delay(reloadInternal, 100);
 	}
 
 	function setSnapToGrid(b: Bool) {
@@ -1750,6 +1750,7 @@ class GraphEditor extends hide.comp.Component {
 	public function centerView() {
 		if (!boxes.iterator().hasNext()) return;
 		var dims = getGraphDims();
+		trace(editorDisplay.element.width(), editorDisplay.element.height());
 		var scale = Math.min(1, Math.min((editorDisplay.element.width() - 50) / (dims.xMax - dims.xMin), (editorDisplay.element.height() - 50) / (dims.yMax - dims.yMin)));
 
 		transformMatrix[4] = editorDisplay.element.width()/2 - dims.center.x;

@@ -310,7 +310,9 @@ class ShaderEditor extends hide.view.FileView implements GraphInterface.IGraphEd
 		graphEditor = new hide.view.GraphEditor(config, this, this.element);
 		graphEditor.onDisplay();
 
-		graphEditor.centerView();
+		haxe.Timer.delay(() -> {
+			graphEditor.centerView();
+		}, 50);
 
 		graphEditor.element.on("drop" ,function(e) {
 			var posCursor = new Point(graphEditor.lX(ide.mouseX - 25), graphEditor.lY(ide.mouseY - 10));
