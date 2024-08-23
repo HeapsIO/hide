@@ -28,6 +28,7 @@ class TerrainMesh extends h3d.scene.Object {
 	public var parallaxMaxStep : Int;
 	public var heightBlendStrength : Float;
 	public var blendSharpness : Float;
+	public var generateMipMaps : Bool;
 
 	// Data
 	var tiles : Array<Tile> = [];
@@ -98,25 +99,48 @@ class TerrainMesh extends h3d.scene.Object {
 			if( surfaces[i].albedo != null ) surfaceSize = hxd.Math.ceil(hxd.Math.max(surfaces[i].albedo.width, surfaceSize));
 
 		if(surfaceArray != null) surfaceArray.dispose();
-		surfaceArray = new Surface.SurfaceArray(surfaces.length, surfaceSize);
+		surfaceArray = new Surface.SurfaceArray(surfaces.length, surfaceSize, generateMipMaps);
+		var mipLevels = 1;
+		if ( generateMipMaps ) {
+			if ( !hxd.Math.isPOT(surfaceSize) )
+				throw "Terrain mip map generation needs power-of-two-sized textures";
+			mipLevels = 1;
+			while( surfaceSize > 1 << (mipLevels - 1) )
+				mipLevels++;
+		}
+		function toLayer(from, to, i) {
+			if ( from == null )
+				return;
+			h3d.pass.Copy.run(from, to, null, null, i);
+			if ( generateMipMaps ) {
+				var engine = h3d.Engine.getCurrent();
+				var copyPass = new h3d.pass.Copy();
+				for ( m in 1...mipLevels) {
+					engine.pushTarget(to, i, m);
+					copyPass.shader.texture = from;
+					copyPass.render();
+					engine.popTarget();
+				}
+			}
+		}
 		for( i in 0 ... surfaces.length ) {
-			if( surfaces[i].albedo != null ) h3d.pass.Copy.run(surfaces[i].albedo, surfaceArray.albedo, null, null, i);
-			if( surfaces[i].normal != null ) h3d.pass.Copy.run(surfaces[i].normal, surfaceArray.normal, null, null, i);
-			if( surfaces[i].pbr != null ) h3d.pass.Copy.run(surfaces[i].pbr, surfaceArray.pbr, null, null, i);
+			toLayer(surfaces[i].albedo, surfaceArray.albedo, i);
+			toLayer(surfaces[i].normal, surfaceArray.normal, i);
+			toLayer(surfaces[i].pbr, surfaceArray.pbr, i);
 		}
 
 		// OnContextLost support
 		surfaceArray.albedo.realloc = function() {
 			for( i in 0 ... surfaceArray.surfaceCount )
-				h3d.pass.Copy.run(surfaces[i].albedo, surfaceArray.albedo, null, null, i);
+				toLayer(surfaces[i].albedo, surfaceArray.albedo, i);
 		}
 		surfaceArray.normal.realloc = function() {
 			for( i in 0 ... surfaceArray.surfaceCount )
-				h3d.pass.Copy.run(surfaces[i].normal, surfaceArray.normal, null, null, i);
+				toLayer(surfaces[i].normal, surfaceArray.normal, i);
 		}
 		surfaceArray.pbr.realloc = function() {
 			for( i in 0 ... surfaceArray.surfaceCount )
-				h3d.pass.Copy.run(surfaces[i].pbr, surfaceArray.pbr, null, null, i);
+				toLayer(surfaces[i].pbr, surfaceArray.pbr, i);
 		}
 
 		updateSurfaceParams();

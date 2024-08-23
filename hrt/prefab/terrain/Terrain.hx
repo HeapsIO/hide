@@ -39,6 +39,8 @@ class Terrain extends Object3D {
 	@:c var surfaceSize = 0;
 	// Utility
 	@:c var tmpSurfacesProps : Array<SurfaceProps> = [];
+	@:s var generateMipMaps : Bool = false;
+
 	var modified = false;
 
 	#if editor
@@ -495,6 +497,7 @@ class Terrain extends Object3D {
 		terrain.parallaxMaxStep = parallaxMaxStep;
 		terrain.heightBlendStrength = heightBlendStrength;
 		terrain.blendSharpness = blendSharpness;
+		terrain.generateMipMaps = generateMipMaps;
 		terrain.name = "terrain";
 		return terrain;
 	}
@@ -513,6 +516,7 @@ class Terrain extends Object3D {
 		terrain.parallaxMaxStep = parallaxMaxStep;
 		terrain.heightBlendStrength = heightBlendStrength;
 		terrain.blendSharpness = blendSharpness;
+		terrain.generateMipMaps = generateMipMaps;
 		terrain.showChecker = showChecker;
 
 		if( propName == "castShadows" ) {
@@ -553,6 +557,7 @@ class Terrain extends Object3D {
 				<dt>Cast Shadows</dt><dd><input type="checkbox" field="castShadows"/></dd>
 				<dt>Height Blend</dt><dd><input type="range" min="0" max="1" field="heightBlendStrength"/></dd>
 				<dt>Sharpness</dt><dd><input type="range" min="0" max="1" field="blendSharpness"/></dd>
+				<dt>Mip maps<br/></dt><dd><input type="checkbox" field="generateMipMaps"/></dd>
 			</dl></div>
 			<div class="group" name="Parallax"><dl>
 				<dt>Amount</dt><dd><input type="range" min="0" max="1" field="parallaxAmount"/></dd>

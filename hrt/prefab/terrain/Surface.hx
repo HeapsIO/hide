@@ -39,12 +39,17 @@ class SurfaceArray {
 	public var params : Array<h3d.Vector4> = [];
 	public var secondParams : Array<h3d.Vector4> = [];
 
-	public function new( count, res ) {
+	public function new( count, res, mipMaps = false ) {
 		surfaceCount = count;
+		var flags : Array<h3d.mat.Data.TextureFlags> = [Target];
+		if ( mipMaps ) {
+			flags.push(ManualMipMapGen);
+			flags.push(MipMapped);
+		}
 		if( count > 0 && res > 0 ) {
-			albedo = new h3d.mat.TextureArray(res, res, count, [Target], RGBA);
-			normal = new h3d.mat.TextureArray(res, res, count, [Target], RGBA);
-			pbr = new h3d.mat.TextureArray(res, res, count, [Target], RGBA);
+			albedo = new h3d.mat.TextureArray(res, res, count, flags, RGBA);
+			normal = new h3d.mat.TextureArray(res, res, count, flags, RGBA);
+			pbr = new h3d.mat.TextureArray(res, res, count, flags, RGBA);
 			albedo.wrap = Repeat;
 			albedo.preventAutoDispose();
 			normal.wrap = Repeat;
