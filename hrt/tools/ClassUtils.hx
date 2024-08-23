@@ -9,6 +9,7 @@ class ClassUtils {
             if (cl == baseClass)
                 break;
             cl = Type.getSuperClass(cl);
+            
         }
         return classes;
     }

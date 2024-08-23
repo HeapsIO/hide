@@ -2911,7 +2911,7 @@ class SceneEditor {
 		for (field in fields) {
 			@:privateAccess var accesses = field.getAccesses();
 			for (a in accesses) {
-				var v = Reflect.getProperty(a.objs[0], a.name);
+				var v = Reflect.getProperty(a.obj, a.name);
 				var json = haxe.Json.stringify(v);
 				out.push('${a.name}:$json');
 			}
@@ -2953,9 +2953,7 @@ class SceneEditor {
 				@:privateAccess var accesses = field.getAccesses();
 				for (a in accesses) {
 					if (map.exists(a.name)) {
-						for (obj in a.objs) {
-							Reflect.setProperty(obj, a.name, map.get(a.name));
-						}
+						Reflect.setProperty(a.obj, a.name, map.get(a.name));
 						field.onChange(false);
 					}
 				}
@@ -2993,7 +2991,7 @@ class SceneEditor {
 		ide.setClipboard(serializeProps(fields));
 	}
 
-	function fillProps(edit : SceneEditorContext, e : PrefabElement ) {
+	function fillProps(edit : SceneEditorContext, e : PrefabElement, others: Array<PrefabElement> ) {
 		properties.element.append(new Element('<h1 class="prefab-name">${e.getHideProps().name}</h1>'));
 
 		var copyButton = new Element('<div class="hide-button" title="Copy all properties">').append(new Element('<div class="icon ico ico-copy">'));
@@ -3008,25 +3006,19 @@ class SceneEditor {
 		});
 		properties.element.append(pasteButton);
 
+		edit.properties.multiPropsEditor.clear();
 
-		var multi = Std.downcast(edit, hide.prefab.MultiEditContext);
-		if (multi != null) {
-			for (prefab in multi.elements) {
-				var multiProps = new hide.prefab.MultiEditContext.MultiPropsEditor(null, null, null);
-				multiProps.currentEditContext = multi;
-				multi.properties = multiProps;
-				prefab.edit(multi);
-				for (hash => context in multiProps.hashToContext) {
-					var contextes = properties.hashToContextes.getOrPut(hash, []);
-					contextes.push(context);
-				}
+		if (others != null) {
+			for (prefab in others) {
+				var multiProps = new hide.comp.PropsEditor(null, null, new Element("<div>"));
+				edit.properties.multiPropsEditor.push(multiProps);
+				var ctx = new SceneEditorContext([prefab], this);
+				ctx.properties = multiProps;
+				prefab.edit(ctx);
 			}
-			multi.properties = properties;
 		}
 
 		e.edit(edit);
-
-
 
 		var typeName = e.getCdbType();
 		if( typeName == null && e.props != null )
@@ -3133,13 +3125,7 @@ class SceneEditor {
 			p = p.parent;
 		}*/
 		// rootCtx might not be == context depending on references
-		var edit : SceneEditorContext = null;
-		if (elts.length > 1) {
-			edit = new hide.prefab.MultiEditContext(elts, this);
-		}
-		else {
-			edit = new SceneEditorContext(elts, this);
-		}
+		var edit : SceneEditorContext = new SceneEditorContext(elts, this);
 
 		edit.rootPrefab = sceneData;
 		edit.properties = properties;
@@ -3151,7 +3137,7 @@ class SceneEditor {
 		scene.setCurrent();
 		var edit = makeEditContext([e]);
 		properties.clear();
-		fillProps(edit, e);
+		fillProps(edit, e, null);
 		addGroupCopyPaste();
 	}
 
@@ -3221,11 +3207,11 @@ class SceneEditor {
 					// 		}
 					// 	}
 					// }
-					fillProps(edit, proxyPrefab);
+					fillProps(edit, proxyPrefab, elts);
 				}
 				else
 				{
-					fillProps(edit, elts[0]);
+					fillProps(edit, elts[0], null);
 				}
 				addGroupCopyPaste();
 			}

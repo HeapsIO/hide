@@ -3,17 +3,14 @@ import hide.comp.GradientEditor.GradientBox;
 import hrt.impl.TextureType.Utils;
 import hrt.prefab.Props;
 
-using hrt.tools.MapUtils;
-
-
 class PropsEditor extends Component {
 
 	public var undo : hide.ui.UndoHistory;
 	public var lastChange : Float = 0.;
 	public var fields(default, null) : Array<PropsField>;
 	public var groups(default, null) : Map<String, Array<PropsField>>;
-	public var currentEditContext : hide.prefab.EditContext = null;
-	public var hashToContextes : Map<String, Array<{context: Dynamic, onChange: String -> Void}>>;
+
+	public var multiPropsEditor : Array<PropsEditor> = [];
 
 	public var isTempChange = false;
 
@@ -29,7 +26,6 @@ class PropsEditor extends Component {
 		element.empty();
 		fields = [];
 		groups = new Map();
-		hashToContextes = [];
 	}
 
 	public function onDragDrop( items : Array<String>, isDrop : Bool ) : Bool {
@@ -195,12 +191,7 @@ class PropsEditor extends Component {
 	}
 
 	public function build( e : Element, ?context : Dynamic, ?onChange : String -> Void ) {
-        var hash = getBuildLocationHash();
-		var contextes = hashToContextes.getOrPut(hash, []);
-		contextes.push({context: context, onChange: onChange});
 		e = e.wrap("<div></div>").parent(); // necessary to have find working on top level element
-
-
 
 		e.find("input[type=checkbox]").wrap("<div class='checkbox-wrapper'></div>");
 		e.find("input[type=range]").not("[step]").attr({step: "any", tabindex:"-1"});
@@ -271,15 +262,29 @@ class PropsEditor extends Component {
 
 		// init input reflection
 		for( field in e.find("[field]").elements() ) {
-			var f = new PropsField(this, field, hash);
+			var f = new PropsField(this, field, context);
 			f.onChange = function(undo) {
 				isTempChange = f.isTempChange;
 				lastChange = haxe.Timer.stamp();
-				for (context in contextes) {
-					if (context.onChange != null) {
-						context.onChange(@:privateAccess f.fname);
+
+				if (multiPropsEditor.length > 0) {
+					var querry = '[field=${@:privateAccess f.fname}]';
+					var index = element.find(querry).index();
+					for (otherPropsEditor in multiPropsEditor) {
+						if (!undo) {
+							var otherField = otherPropsEditor.element.find(querry).get(index);
+							if (otherField == null) {
+								continue;
+							}
+							var propField : PropsField = cast Reflect.getProperty(otherField, "propsField");
+							if (propField != null) {
+								propField.propagateValueChange(f.getFieldValue());
+							}
+						}
+
 					}
 				}
+				if( onChange != null ) onChange(@:privateAccess f.fname);
 				isTempChange = false;
 			};
 			var groupName = f.element.closest(".group").attr("name");
@@ -308,60 +313,6 @@ class PropsEditor extends Component {
 		return e;
 	}
 
-	/**
-		Returns a string that tries to be unique for each call of properties.add or properties.build
-		inside a prefab.edit function.
-	**/
-	static function getBuildLocationHash() : String {
-		var callStack = haxe.CallStack.callStack();
-		var len = callStack.length;
-
-		var lastEditIndex = 0;
-		for (idx in 0...len) {
-			var i = idx;
-			var stackItem = callStack[i];
-			switch (stackItem) {
-				case FilePos(subStack, file, line, column):
-					switch(subStack) {
-						case Method(_, "edit"):
-							lastEditIndex = i;
-							break;
-						case Method(_, _):
-							// do nothing
-						case null:
-						default:
-							throw "unkown";
-					}
-				default:
-					throw "unkown";
-			}
-		}
-
-		var hash = "";
-		for (idx in 0...lastEditIndex) {
-			var i = lastEditIndex - idx;
-			var stackItem = callStack[i];
-			switch (stackItem) {
-				case FilePos(subStack, file, line, column):
-					switch(subStack) {
-						case Method(_, name) :
-							switch (name) {
-								case "add" | "build":
-									break;
-								default:
-							}
-							hash += '$name:$line:$column,';
-						case null:
-							hash += 'null:$line:$column,';
-						default:
-					}
-				default:
-					throw "unknown";
-			}
-		}
-		return hash;
-	}
-
 	public static function wrapDt(dt : Element, defValue : String, onClick : (e : js.jquery.Event) -> Void) {
 		var tooltip = 'Click to reset ($defValue)\nCtrl+Click to round';
 		var button = dt.wrapInner('<input type="button" tabindex="-1" value="${upperCase(dt.text())}" title="$tooltip"/>');
@@ -376,13 +327,13 @@ class PropsField extends Component {
 	public var fname : String;
 	var isTempChange : Bool;
 	var props : PropsEditor;
-	var locationHash : String;
-	var currents : Array<Dynamic>;
-	var currentSave : Array<Dynamic>;
+	var context : Dynamic;
+	var current : Dynamic;
+	var currentSave : Dynamic;
 
 	var enumValue : Enum<Dynamic>;
 	var tempChange : Bool;
-	var beforeTempChange : Array<Dynamic>;
+	var beforeTempChange : { value : Dynamic };
 	var tchoice : hide.comp.TextureChoice;
 	var gradient : GradientBox;
 	var multiRange : MultiRange;
@@ -391,145 +342,149 @@ class PropsField extends Component {
 	var viewRoot : Element;
 	var range : hide.comp.Range;
 
+	// function that set the value of field then call the regular code on it. Used to make the multi prefab edit work
+	var propagateValueChange : (value: Dynamic) -> Void = null;
+
 	var subfields : Array<String>;
 
-	public function new(props, el, hash) {
+	public function new(props, el, context) {
 		super(null,el);
-		locationHash = hash;
 		viewRoot = element.closest(".lm_content");
 		this.props = props;
+		this.context = context;
 		var f = element;
 		Reflect.setField(f[0],"propsField", this);
 		fname = f.attr("field");
-		currents = getFieldValues();
+		current = getFieldValue();
 		switch( f.attr("type") ) {
 		case "checkbox":
-			f.prop("checked", currents[0]);
+			f.prop("checked", current);
 			f.mousedown(function(e) e.stopPropagation());
+
 			f.change(function(_) {
 				undo(function() {
 					var f = resolveField();
-					f.currents = getFieldValues();
-					f.element.prop("checked", f.currents[0]);
+					f.current = getFieldValue();
+					f.element.prop("checked", f.current);
 					f.onChange(true);
 				});
-				currents = valToValues(f.prop("checked"));
-				setFieldValues(currents);
+				current = f.prop("checked");
+				setFieldValue(current);
 				onChange(false);
 			});
 			return;
 		case "texture":
 			tselect = new hide.comp.TextureSelect(null,f);
-			tselect.value = currents[0];
+			tselect.value = current;
 			tselect.onChange = function() {
 				undo(function() {
 					var f = resolveField();
-					f.currents = getFieldValues();
-					f.tselect.value = f.currents[0];
+					f.current = getFieldValue();
+					f.tselect.value = f.current;
 					f.onChange(true);
 				});
-				currents = valToValues(tselect.value);
-				setFieldValues(currents);
+				current = tselect.value;
+				setFieldValue(current);
 				onChange(false);
 			}
 			return;
 		case "texturepath":
 			tselect = new hide.comp.TextureSelect(null,f);
-			tselect.path = currents[0];
+			tselect.path = current;
 			tselect.onChange = function() {
 				undo(function() {
 					var f = resolveField();
-					f.currents = getFieldValues();
-					f.tselect.path = f.currents[0];
+					f.current = getFieldValue();
+					f.tselect.path = f.current;
 					f.onChange(true);
 				});
-				currents = valToValues(tselect.path);
-				setFieldValues(currents);
+				current = tselect.path;
+				setFieldValue(current);
 				onChange(false);
 			}
 			return;
 		case "texturechoice":
 			tchoice = new TextureChoice(null, f);
-			tchoice.value = currents[0];
-			currentSave = [for (current in currents) Utils.copyTextureData(current)];
+			tchoice.value = current;
+			currentSave = Utils.copyTextureData(current);
 
 			tchoice.onChange = function(shouldUndo : Bool) {
 
 				if (shouldUndo) {
-					var setVals = function(vals, undo) {
+					var setVal = function(val, undo) {
 						var f = resolveField();
-						f.currents = vals;
-						f.currentSave = [for (current in vals) Utils.copyTextureData(current)];
-						f.tchoice.value = vals[0];
-						setFieldValues(vals);
+						f.current = val;
+						f.currentSave = Utils.copyTextureData(val);
+						f.tchoice.value = val;
+						setFieldValue(val);
 						f.onChange(undo);
 					}
 
-					var oldVal = [for (current in currentSave) Utils.copyTextureData(current)];
-					var newVal = valToValues(Utils.copyTextureData(tchoice.value));
+					var oldVal = Utils.copyTextureData(currentSave);
+					var newVal = Utils.copyTextureData(tchoice.value);
 
 					props.undo.change(Custom(function(undo) {
 						if (undo) {
-							setVals(oldVal, true);
+							setVal(oldVal, true);
 						} else {
-							setVals(newVal, false);
+							setVal(newVal, false);
 						}
 					}));
 
-					setVals(valToValues(tchoice.value), false);
+					setVal(tchoice.value, false);
 				} else {
-					currents = valToValues(Utils.copyTextureData(tchoice.value));
-					setFieldValues(currents);
+					current = tchoice.value;
+					setFieldValue(current);
 					onChange(false);
 				}
 			}
 			return;
 		case "gradient":
 			gradient = new GradientBox(null, f);
-			gradient.value = currents[0];
-			currentSave = [for (grad in currents) Utils.copyTextureData(grad)];
+			gradient.value = current;
+			currentSave = Utils.copyTextureData(current);
 
 			gradient.onChange = function(shouldUndo : Bool) {
 				if (shouldUndo) {
-					var setVals = function(vals, undo) {
+					var setVal = function(val, undo) {
 						var f = resolveField();
-						f.currents = vals;
-						f.currentSave = [for (grad in vals) Utils.copyTextureData(grad)];
-						f.gradient.value = vals[0];
-						setFieldValues(vals);
+						f.current = val;
+						f.currentSave = Utils.copyTextureData(val);
+						f.gradient.value = val;
+						setFieldValue(val);
 						f.onChange(undo);
 					}
 
-					var oldVal = [for (grad in currentSave) Utils.copyTextureData(grad)];
-					var newVal = valToValues(Utils.copyTextureData(gradient.value));
+					var oldVal = Utils.copyTextureData(currentSave);
+					var newVal = Utils.copyTextureData(gradient.value);
 
 					props.undo.change(Custom(function(undo) {
 						if (undo) {
-							setVals(oldVal, true);
+							setVal(oldVal, true);
 						} else {
-							setVals(newVal, false);
+							setVal(newVal, false);
 						}
 					}));
 
-					setVals(valToValues(gradient.value), false);
+					setVal(gradient.value, false);
 				} else {
-					currents = valToValues(gradient.value);
-					setFieldValues(currents);
+					current = gradient.value;
+					setFieldValue(current);
 					onChange(false);
 				}
 			}
 		case "model":
 			fselect = new hide.comp.FileSelect(["hmd", "fbx"], null, f);
-			fselect.path = currents[0];
+			fselect.path = current;
 			fselect.onChange = function() {
 				undo(function() {
 					var f = resolveField();
-					f.currents = getFieldValues();
-					f.fselect.path = f.currents[0];
+					f.current = getFieldValue();
+					f.fselect.path = f.current;
 					f.onChange(true);
 				});
-				currents = valToValues(fselect.path);
-				setFieldValues(currents);
+				current = fselect.path;
+				setFieldValue(current);
 				onChange(false);
 			};
 			return;
@@ -537,23 +492,28 @@ class PropsField extends Component {
 			var exts = f.attr("extensions");
 			if( exts == null ) exts = "*";
 			fselect = new hide.comp.FileSelect(exts.split(" "), null, f);
-			fselect.path = currents[0];
+			fselect.path = current;
 			fselect.onChange = function() {
 				undo(function() {
 					var f = resolveField();
-					f.currents = getFieldValues();
-					f.fselect.path = f.currents[0];
+					f.current = getFieldValue();
+					f.fselect.path = f.current;
 					f.onChange(true);
 				});
-				currents = valToValues(fselect.path);
-				setFieldValues(currents);
+				current = fselect.path;
+				setFieldValue(current);
 				onChange(false);
 			};
 			return;
 		case "range":
 			range = new hide.comp.Range(null,f);
-			if(!Math.isNaN(currents[0]))
-				range.value = currents[0];
+			if(!Math.isNaN(current))
+				range.value = current;
+
+			propagateValueChange = function(value: Dynamic) {
+				range.value = value;
+				range.onChange(false);
+			}
 			range.onChange = function(temp) {
 				tempChange = temp;
 				setVal(range.value);
@@ -569,46 +529,47 @@ class PropsField extends Component {
 
 			var multiRange = new hide.comp.MultiRange(parentDiv, f, subfields.length, [for (subfield in subfields) name + " " + subfield]);
 			var a = getAccess();
-			currents = getFieldValues();
-			multiRange.value = currents[0];
-
-			currentSave = [for (c in currents)(cast c:Array<Float>).copy()];
+			multiRange.value = Reflect.getProperty(a.obj, a.name);
+			current = multiRange.value;
+			currentSave = (cast current : Array<Float>).copy();
 			multiRange.onChange = function(isTemporary : Bool) {
-				var setVals = function(vals : Array<Array<Float>>, undo, refreshComp) {
+				var setVal = function(val : Array<Float>, undo, refreshComp) {
 					var f = resolveField();
 					var a = f.getAccess();
-					setFieldValues(vals);
-					f.currents = getFieldValues();
-					f.currentSave = [for (c in f.currents) (cast c:Array<Float>).copy()];
+					f.current = val;
+					f.currentSave = val.copy();
+					Reflect.setProperty(a.obj, a.name, val);
 					if (refreshComp)
-						multiRange.value = vals[0];
+						multiRange.value = val;
 					f.onChange(undo);
 				};
 
 				if (!isTemporary) {
-					var arr : Array<Array<Float>> = cast currentSave;
+					var arr : Array<Float> = cast currentSave;
 					var oldVal = arr.copy();
 					var newVal = multiRange.value.copy();
 
 					props.undo.change(Custom(function(undo) {
 						if (undo) {
-							setVals(oldVal, true, true);
+							trace("Undo", oldVal, newVal);
+							setVal(oldVal, true, true);
 						} else {
-							setVals(cast valToValues(newVal), false, true);
+							trace("Redo", newVal);
+							setVal(newVal, false, true);
 						}
 					}));
-					setVals(cast valToValues(multiRange.value), false, false);
+					setVal(multiRange.value, false, false);
 				}
 				else {
 					var a = getAccess();
 					var val = multiRange.value;
-					currents = valToValues(val);
-					setFieldValues(currents);
+					current = val;
+					Reflect.setProperty(a.obj, a.name, val);
 					onChange(false);
 				}
 			};
 		case "color":
-			var arr = Std.downcast(currents[0], Array);
+			var arr = Std.downcast(current, Array);
 			var alpha = arr != null && arr.length == 4 || f.attr("alpha") == "true";
 			var picker = new hide.comp.ColorPicker.ColorBox(null, f, true, alpha, fname);
 			element = picker.element;
@@ -620,14 +581,14 @@ class PropsField extends Component {
 				else if(!Math.isNaN(val))
 					picker.value = val;
 			}
-			updatePicker(currents[0]);
+			updatePicker(current);
 			picker.onChange = function(move) {
 				isTempChange = move;
 				if(!move) {
 					undo(function() {
 						var f = resolveField();
-						f.currents = getFieldValues();
-						updatePicker(f.currents[0]);
+						f.current = getFieldValue();
+						updatePicker(f.current);
 						f.onChange(true);
 					});
 				}
@@ -641,8 +602,8 @@ class PropsField extends Component {
 					}
 					else picker.value;
 				if(!move)
-					currents = valToValues(newVal);
-				setFieldValues(valToValues(newVal));
+					current = newVal;
+				setFieldValue(newVal);
 				onChange(false);
 			};
 			return;
@@ -650,7 +611,7 @@ class PropsField extends Component {
 			return;
 		default:
 			if( f.is("select") ) {
-				enumValue = Type.getEnum(currents[0]);
+				enumValue = Type.getEnum(current);
 				if( enumValue != null && f.find("option").length == 0 ) {
 					var meta = haxe.rtti.Meta.getFields(enumValue);
 					for( c in enumValue.getConstructors() ) {
@@ -675,11 +636,16 @@ class PropsField extends Component {
 				}
 			}
 
+			propagateValueChange = function(value: Dynamic) {
+				f.val(value);
+				f.change();
+			}
+
 			if( enumValue != null ) {
-				var cst = Type.enumConstructor(currents[0]);
+				var cst = Type.enumConstructor(current);
 				f.val(cst);
 			} else
-				f.val(currents[0]);
+				f.val(current);
 			f.keyup(function(e) {
 				if( e.keyCode == 13 ) {
 					f.blur();
@@ -705,38 +671,29 @@ class PropsField extends Component {
 				if( f.is("select") )
 					f.blur();
 
-
 				setVal(newVal);
 			});
 		}
 	}
 
-	public function valToValues(val: Dynamic) : Array<Dynamic> {
-		return [for (_ in getContextes()) val];
-	}
-
-	function getContextes() {
-		return props.hashToContextes.get(locationHash);
-	}
-
-	function getAccess() : { objs : Array<Dynamic>, index : Int, name : String } {
-		var objs : Array<Dynamic> = [for (c in getContextes()) c.context];
+	function getAccess() : { obj : Dynamic, index : Int, name : String } {
+		var obj : Dynamic = context;
 		var path = fname.split(".");
 		var field = path.pop();
 		for( p in path ) {
 			var index = Std.parseInt(p);
 			if( index != null )
-				objs = [for (obj in objs) obj[index]];
+				obj = obj[index];
 			else
-				objs = [for (obj in objs) Reflect.getProperty(obj, p)];
+				obj = Reflect.getProperty(obj, p);
 		}
 		var index = Std.parseInt(field);
 		if( index != null )
-			return { objs : objs, index : index, name : null };
-		return { objs : objs, index : -1, name : field };
+			return { obj : obj, index : index, name : null };
+		return { obj : obj, index : -1, name : field };
 	}
 
-	function getAccesses() : Array<{ objs : Array<Dynamic>, index : Int, name : String }> {
+	function getAccesses() : Array<{ obj : Dynamic, index : Int, name : String }> {
 		if (subfields == null)
 			return [getAccess()];
 		return [
@@ -749,97 +706,57 @@ class PropsField extends Component {
 	}
 
 
-	function getFieldValues() : Array<Dynamic> {
+	function getFieldValue() {
 		var a = getAccess();
 		if( a.name != null )
-			return [for (obj in a.objs) Reflect.getProperty(obj, a.name)];
-		return [for (obj in a.objs) obj[a.index]];
+			return Reflect.getProperty(a.obj, a.name);
+		return a.obj[a.index];
 	}
 
-	// function setFieldValue( value : Dynamic ) {
-	// 	var a = getAccess();
-
-	// 	if (a.objs == null)
-	// 		return;
-
-	// 	if( a.name != null ) {
-	// 		for (obj in a.objs) {
-	// 			Reflect.setProperty(obj, a.name, value);
-	// 		}
-	// 	}
-	// 	else {
-	// 		for (obj in a.objs) {
-	// 			obj[a.index] = value;
-	// 		}
-	// 	}
-	// }
-
-	function setFieldValues(values : Array<Dynamic>) {
+	function setFieldValue( value : Dynamic ) {
 		var a = getAccess();
 
-		if (a.objs == null)
+		if (a.obj == null)
 			return;
 
-		if( a.name != null ) {
-			for (i => obj in a.objs) {
-				Reflect.setProperty(obj, a.name, values[i]);
-			}
-		}
-		else {
-			for (i => obj in a.objs) {
-				obj[a.index] = values[i];
-			}
-		}
+		if( a.name != null )
+			Reflect.setProperty(a.obj, a.name, value);
+		else
+			a.obj[a.index] = value;
 	}
 
 	function undo( f : Void -> Void ) {
 		var a = getAccess();
-		var undo = new hide.ui.UndoHistory();
-		for (i => obj in a.objs) {
-			if( a.name != null ) {
-				undo.change(Field(obj, a.name, currents[i]));
-			}
-			else {
-				undo.change(Array(obj, a.index, currents[i]));
-			}
-		}
-
-		var exec = function(isUndo: Bool) {
-			if (isUndo) {
-				while(undo.undo()) {};
-			} else {
-				while(undo.redo()) {};
-			}
-			f();
-		}
-
-		props.undo.change(Custom(exec));
+		if( a.name != null )
+			props.undo.change(Field(a.obj, a.name, current), f);
+		else
+			props.undo.change(Array(a.obj, a.index, current), f);
 	}
 
 	function setVal(v) {
-		if( currents[0] == v ) {
+		if( current == v ) {
 			// delay history save until last change
 			if( tempChange || beforeTempChange == null )
 				return;
-			currents = beforeTempChange;
+			current = beforeTempChange.value;
 			beforeTempChange = null;
 		}
 		isTempChange = tempChange;
 		if( tempChange ) {
 			tempChange = false;
-			if( beforeTempChange == null ) beforeTempChange = haxe.Json.parse(haxe.Json.stringify(currents));
+			if( beforeTempChange == null ) beforeTempChange = { value : current };
 		} else {
 			undo(function() {
 				var f = resolveField();
-				var v = getFieldValues();
-				f.currents = v;
-				f.element.val(v[0]);
-				f.element.parent().find("input[type=text]").val(v[0]);
+				var v = getFieldValue();
+				f.current = v;
+				f.element.val(v);
+				f.element.parent().find("input[type=text]").val(v);
 				f.onChange(true);
 			});
 		}
-		currents = valToValues(v);
-		setFieldValues(valToValues(v));
+		current = v;
+		setFieldValue(v);
 		onChange(false);
 	}
 
@@ -854,7 +771,7 @@ class PropsField extends Component {
 
 		for( f in viewRoot.find("[field]") ) {
 			var p : PropsField = Reflect.field(f, "propsField");
-			if( p != null && p.locationHash == locationHash && p.fname == fname )
+			if( p != null && p.context == context && p.fname == fname )
 				return p;
 		}
 

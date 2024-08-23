@@ -1002,7 +1002,7 @@ class TerrainEditor {
 	inline function setRange( name, value, ctx : EditContext ) {
 		var field = Lambda.find(ctx.properties.fields, f->f.fname==name);
 		@:privateAccess if(field != null) {
-			field.currents = field.valToValues(value);
+			field.current = value;
 			field.range.value = value;
 		}
 	}
