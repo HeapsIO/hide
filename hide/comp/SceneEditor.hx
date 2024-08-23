@@ -3207,18 +3207,20 @@ class SceneEditor {
 
 					var proxyPrefab = Type.createInstance(commonClass, [null, new ContextShared()]);
 
+					proxyPrefab.load(haxe.Json.parse(haxe.Json.stringify(elts[0].save())));
+
 					// Copy all properties that are equals between all the selected instances
-					for (prop in proxyPrefab.getSerializableProps()) {
-						for (i => prefab in elts) {
-							if (i == 0) {
-								Reflect.setProperty(proxyPrefab, prop.name, Reflect.getProperty(prefab, prop.name));
-							}
-							else if (Reflect.getProperty(proxyPrefab, prop.name) != Reflect.getProperty(prefab, prop.name)) {
-								Reflect.setProperty(proxyPrefab, prop.name, prop.defaultValue);
-								break;
-							}
-						}
-					}
+					// for (prop in proxyPrefab.getSerializableProps()) {
+					// 	for (i => prefab in elts) {
+					// 		if (i == 0) {
+					// 			Reflect.setProperty(proxyPrefab, prop.name, Reflect.getProperty(prefab, prop.name));
+					// 		}
+					// 		else if (Reflect.getProperty(proxyPrefab, prop.name) != Reflect.getProperty(prefab, prop.name)) {
+					// 			Reflect.setProperty(proxyPrefab, prop.name, prop.defaultValue);
+					// 			break;
+					// 		}
+					// 	}
+					// }
 					fillProps(edit, proxyPrefab);
 				}
 				else

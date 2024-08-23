@@ -2,6 +2,9 @@ package hide.prefab;
 
 using hrt.tools.MapUtils;
 
+/**
+    This class is used to create a fake editor for use in multi prefab edit contextes.
+**/
 class MultiEditContext extends hide.comp.SceneEditor.SceneEditorContext {
     #if editor
 
@@ -21,6 +24,8 @@ class MultiEditContext extends hide.comp.SceneEditor.SceneEditorContext {
             parent = parent.parent;
         }
     }
+
+
 
     override function onChange(p: hrt.prefab.Prefab, propName: String) {
         // no super
@@ -109,6 +114,10 @@ class MultiPropsEditor extends hide.comp.PropsEditor {
     override function add(e : Element, ?context : Dynamic, ?onChange : String -> Void) : Element {
         // we do not call super because we are completely overriding the add() behavior
         return build(element, context, onChange);
+    }
+
+    override function addMaterial( m : h3d.mat.Material, ?parent : Element, ?onChange ) {
+        // we disable addMaterial in the hidden editors
     }
 
     override function build(e: Element, ?context: Dynamic, ?onChange: String -> Void) {

@@ -328,6 +328,7 @@ class PropsEditor extends Component {
 							break;
 						case Method(_, _):
 							// do nothing
+						case null:
 						default:
 							throw "unkown";
 					}
@@ -350,6 +351,8 @@ class PropsEditor extends Component {
 								default:
 							}
 							hash += '$name:$line:$column,';
+						case null:
+							hash += 'null:$line:$column,';
 						default:
 					}
 				default:
