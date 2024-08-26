@@ -74,7 +74,7 @@ class CameraControllerEditor extends Popup {
             };
         }
 
-        {
+        if (Std.isOfType(editor.cameraController, CamController)) {
             var dd = new Element("<label for='zoom'>").text("Min Zoom Distance").appendTo(form_div);
             var range = new Range(form_div, new Element("<input id='zoom' type='range' min='0' max='10'>"));
             range.value = editor.cameraController.minDistance;
@@ -106,9 +106,9 @@ class CameraControllerEditor extends Popup {
                 if (Type.getClass(editor.cameraController) != newClass.cl) {
                     editor.switchCamController(newClass.cl);
                     editor.saveCam3D();
+                    create();
                     refresh();
                 }
-                refresh();
             });
         }
 
