@@ -308,7 +308,9 @@ class PropsEditor extends Component {
 				f.undoHistory = null;
 				multiPropFields((f) -> f.undoHistory = null);
 
-				if( onChange != null ) onChange(@:privateAccess f.fname);
+				if (multiPropsEditor.length == 0 && onChange != null)
+					onChange(@:privateAccess f.fname);
+
 				if (!undo) {
 					if (!isTempChange) {
 						if (tempUndo == null)
@@ -585,6 +587,7 @@ class PropsField extends Component {
 						multiRange.value = val;
 					f.onChange(undo);
 				};
+				this.isTempChange = isTemporary;
 
 				if (!isTemporary) {
 					var arr : Array<Float> = cast currentSave;
@@ -680,10 +683,9 @@ class PropsField extends Component {
 			}
 
 			propagateValueChange = function(value: Dynamic, isTemp: Bool) {
-				if (!isTemp) {
-					f.val(value);
-					f.change();
-				}
+				tempChange = isTemp;
+				f.val(value);
+				f.change();
 			}
 
 			if( enumValue != null ) {
@@ -704,7 +706,6 @@ class PropsField extends Component {
 				f.change();
 			});
 			f.change(function(e) {
-
 				var newVal : Dynamic = f.val();
 
 				if( f.is("[type=number]") )
