@@ -13,11 +13,7 @@ class TextureChoice extends Component {
     public function new(?parent : Element,?root : Element) {
         var e = new Element("<div class='texture-choice'>");
         if (root != null) {
-            var old = root.get(0);
-            var our = e.get(0);
-            for (i in 0...old.attributes.length) {
-                our.attributes.setNamedItem(cast old.attributes.item(i).cloneNode());
-            }
+            JsTools.copyAttributes(e, root);
             root.replaceWith(e);
         }
         super(parent, e);

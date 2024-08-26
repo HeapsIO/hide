@@ -265,7 +265,7 @@ class PropsEditor extends Component {
 		for( field in e.find("[field]").elements() ) {
 			var f = new PropsField(this, field, context);
 
-			var querry = '[field=${@:privateAccess f.fname}]';
+			var querry = '[field="${@:privateAccess f.fname}"]';
 
 			function multiPropFields(cb: (field:PropsField) -> Void) {
 				if (multiPropsEditor.length > 0) {
@@ -620,7 +620,9 @@ class PropsField extends Component {
 			var parentDiv = f.parent().parent();
 			parentDiv.empty();
 
-			var multiRange = new hide.comp.MultiRange(parentDiv, f, subfields.length, [for (subfield in subfields) name + " " + subfield]);
+			multiRange = new hide.comp.MultiRange(parentDiv, f, subfields.length, [for (subfield in subfields) name + " " + subfield]);
+			Reflect.setField(multiRange.element[0],"propsField", this);
+
 			var a = getAccess();
 			multiRange.value = Reflect.getProperty(a.obj, a.name);
 			current = multiRange.value;
