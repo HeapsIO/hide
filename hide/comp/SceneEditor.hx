@@ -3008,19 +3008,41 @@ class SceneEditor {
 
 		edit.properties.multiPropsEditor.clear();
 
-		if (others != null) {
-			for (prefab in others) {
-				var multiProps = new hide.comp.PropsEditor(null, null, new Element("<div>"));
-				multiProps.isShadowEditor = true;
-				edit.properties.multiPropsEditor.push(multiProps);
-				var ctx = new SceneEditorContext([prefab], this);
-				ctx.properties = multiProps;
-				ctx.scene = this.scene;
-				prefab.edit(ctx);
-			}
+		if (Type.getClass(e) == hrt.prefab.Prefab && others != null) {
+			properties.add(new hide.Element('<p>The selected prefabs are too different to be multi edited</p>'));
+			return;
 		}
 
-		e.edit(edit);
+		try {
+			if (others != null) {
+				for (prefab in others) {
+					var multiProps = new hide.comp.PropsEditor(null, null, new Element("<div>"));
+					multiProps.isShadowEditor = true;
+					edit.properties.multiPropsEditor.push(multiProps);
+					var ctx = new SceneEditorContext([prefab], this);
+					ctx.properties = multiProps;
+					ctx.scene = this.scene;
+					prefab.edit(ctx);
+				}
+			}
+			e.edit(edit);
+		} catch (e) {
+			if (others != null) {
+				// Multi edit non intrusive error
+				properties.clear();
+				var msg = e.toString();
+				msg = StringTools.replace(msg, '\n', '</br>');
+				var selection = [for (o in others) Type.getClassName(Type.getClass(o))].join(", ");
+				var stack = e.stack.toString();
+				stack = ~/\(chrome-extension:.*\)/g.replace(stack, "");
+				stack = StringTools.replace(stack, '\n', '</br>');
+				properties.add(new hide.Element('<p>Multi edit error</p><p>Selection : $selection</p><p>$msg</p><p>$stack</p>'));
+				return;
+			}
+			throw e;
+		}
+
+
 
 		var typeName = e.getCdbType();
 		if( typeName == null && e.props != null )

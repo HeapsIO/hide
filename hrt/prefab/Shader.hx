@@ -95,6 +95,8 @@ class Shader extends Prefab {
 	}
 
 	function iterMaterials(callb) {
+		if (parent == null)
+			return;
 		var parent = parent;
 
 		if( Std.isOfType(parent, Material) ) {

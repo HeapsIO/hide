@@ -267,7 +267,7 @@ class PropsEditor extends Component {
 
 			var querry = '[field=${@:privateAccess f.fname}]';
 
-			inline function multiPropFields(cb: (field:PropsField) -> Void) {
+			function multiPropFields(cb: (field:PropsField) -> Void) {
 				if (multiPropsEditor.length > 0) {
 					var index = element.find(querry).index();
 					for (otherPropsEditor in multiPropsEditor) {
@@ -463,17 +463,20 @@ class PropsField extends Component {
 			return;
 		case "texturechoice":
 			tchoice = new TextureChoice(null, f);
+			Reflect.setField(tchoice.element[0],"propsField", this);
+
 			tchoice.value = current;
 			currentSave = Utils.copyTextureData(current);
 
 			propagateValueChange = (value, isTemp) -> {
 				var f = resolveField();
+				isTempChange = isTemp;
 				f.tchoice.value = value;
-				f.tchoice.onChange(true);
+				f.tchoice.onChange(!isTemp);
 			};
 
 			tchoice.onChange = function(shouldUndo : Bool) {
-				isTempChange = false;
+				isTempChange = !shouldUndo;
 
 				if (shouldUndo) {
 					var setVal = function(val, undo) {
@@ -507,6 +510,8 @@ class PropsField extends Component {
 			return;
 		case "gradient":
 			gradient = new GradientBox(null, f);
+			Reflect.setField(gradient.element[0],"propsField", this);
+
 			gradient.value = current;
 			currentSave = Utils.copyTextureData(current);
 
@@ -670,6 +675,8 @@ class PropsField extends Component {
 			var alpha = arr != null && arr.length == 4 || f.attr("alpha") == "true";
 			var picker = new hide.comp.ColorPicker.ColorBox(null, f, true, alpha, fname);
 			element = picker.element;
+			Reflect.setField(element[0],"propsField", this);
+
 			function updatePicker(val: Dynamic) {
 				if(arr != null) {
 					var v = h3d.Vector.fromArray(val);
