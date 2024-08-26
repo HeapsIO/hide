@@ -404,8 +404,9 @@ class PropsField extends Component {
 			f.mousedown(function(e) e.stopPropagation());
 
 			propagateValueChange = (value : Dynamic, isTemp: Bool) -> {
-				f.prop("checked", value);
-				f.change();
+				var f = resolveField();
+				f.element.prop("checked", value);
+				f.element.change();
 			}
 
 			f.change(function(_) {
@@ -422,6 +423,11 @@ class PropsField extends Component {
 			return;
 		case "texture":
 			tselect = new hide.comp.TextureSelect(null,f);
+			propagateValueChange = (value, isTemp) -> {
+				var f = resolveField();
+				f.tselect.value = value;
+				f.tselect.onChange();
+			};
 			tselect.value = current;
 			tselect.onChange = function() {
 				undo(function() {
@@ -438,6 +444,11 @@ class PropsField extends Component {
 		case "texturepath":
 			tselect = new hide.comp.TextureSelect(null,f);
 			tselect.path = current;
+			propagateValueChange = (value, isTemp) -> {
+				var f = resolveField();
+				f.tselect.path = value;
+				f.tselect.onChange();
+			};
 			tselect.onChange = function() {
 				undo(function() {
 					var f = resolveField();
@@ -455,7 +466,14 @@ class PropsField extends Component {
 			tchoice.value = current;
 			currentSave = Utils.copyTextureData(current);
 
+			propagateValueChange = (value, isTemp) -> {
+				var f = resolveField();
+				f.tchoice.value = value;
+				f.tchoice.onChange(true);
+			};
+
 			tchoice.onChange = function(shouldUndo : Bool) {
+				isTempChange = false;
 
 				if (shouldUndo) {
 					var setVal = function(val, undo) {
@@ -492,6 +510,12 @@ class PropsField extends Component {
 			gradient.value = current;
 			currentSave = Utils.copyTextureData(current);
 
+			propagateValueChange = (value, isTemp) -> {
+				var f = resolveField();
+				f.gradient.value = value;
+				f.gradient.onChange(isTemp);
+			};
+
 			gradient.onChange = function(shouldUndo : Bool) {
 				if (shouldUndo) {
 					var setVal = function(val, undo) {
@@ -525,6 +549,13 @@ class PropsField extends Component {
 		case "model":
 			fselect = new hide.comp.FileSelect(["hmd", "fbx"], null, f);
 			fselect.path = current;
+
+			propagateValueChange = (value, isTemp) -> {
+				var f = resolveField();
+				f.fselect.path = value;
+				f.fselect.onChange();
+			};
+
 			fselect.onChange = function() {
 				undo(function() {
 					var f = resolveField();
@@ -542,6 +573,13 @@ class PropsField extends Component {
 			if( exts == null ) exts = "*";
 			fselect = new hide.comp.FileSelect(exts.split(" "), null, f);
 			fselect.path = current;
+
+			propagateValueChange = (value, isTemp) -> {
+				var f = resolveField();
+				f.fselect.path = value;
+				f.fselect.onChange();
+			};
+
 			fselect.onChange = function() {
 				undo(function() {
 					var f = resolveField();
@@ -560,8 +598,9 @@ class PropsField extends Component {
 				range.value = current;
 
 			propagateValueChange = function(value: Dynamic, isTemp: Bool) {
-				range.value = value;
-				range.onChange(isTemp);
+				var f = resolveField();
+				f.range.value = value;
+				f.range.onChange(isTemp);
 			}
 			range.onChange = function(temp) {
 				tempChange = temp;
@@ -581,6 +620,13 @@ class PropsField extends Component {
 			multiRange.value = Reflect.getProperty(a.obj, a.name);
 			current = multiRange.value;
 			currentSave = (cast current : Array<Float>).copy();
+
+			propagateValueChange = (value, isTemp) -> {
+				var f = resolveField();
+				f.multiRange.value = value;
+				f.multiRange.onChange(isTemp);
+			};
+
 			multiRange.onChange = function(isTemporary : Bool) {
 				var setVal = function(val : Array<Float>, undo, refreshComp) {
 					var f = resolveField();
@@ -633,6 +679,13 @@ class PropsField extends Component {
 					picker.value = val;
 			}
 			updatePicker(current);
+
+			propagateValueChange = (value, isTemp) -> {
+				var f = resolveField();
+				updatePicker(value);
+				picker.onChange(isTemp);
+			};
+
 			picker.onChange = function(move) {
 				isTempChange = move;
 				if(!move) {
@@ -688,9 +741,10 @@ class PropsField extends Component {
 			}
 
 			propagateValueChange = function(value: Dynamic, isTemp: Bool) {
-				tempChange = isTemp;
-				f.val(value);
-				f.change();
+				var f = resolveField();
+				f.tempChange = isTemp;
+				f.element.val(value);
+				f.element.change();
 			}
 
 			if( enumValue != null ) {
