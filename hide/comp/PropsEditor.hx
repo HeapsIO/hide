@@ -403,6 +403,11 @@ class PropsField extends Component {
 			f.prop("checked", current);
 			f.mousedown(function(e) e.stopPropagation());
 
+			propagateValueChange = (value : Dynamic, isTemp: Bool) -> {
+				f.prop("checked", value);
+				f.change();
+			}
+
 			f.change(function(_) {
 				undo(function() {
 					var f = resolveField();

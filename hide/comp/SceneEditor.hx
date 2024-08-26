@@ -3015,6 +3015,7 @@ class SceneEditor {
 				edit.properties.multiPropsEditor.push(multiProps);
 				var ctx = new SceneEditorContext([prefab], this);
 				ctx.properties = multiProps;
+				ctx.scene = this.scene;
 				prefab.edit(ctx);
 			}
 		}
