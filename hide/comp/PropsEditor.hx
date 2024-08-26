@@ -13,6 +13,7 @@ class PropsEditor extends Component {
 	public var multiPropsEditor : Array<PropsEditor> = [];
 
 	public var isTempChange = false;
+	public var isShadowEditor = false;
 
 	public function new(?undo,?parent,?el) {
 		super(parent,el);
@@ -263,28 +264,65 @@ class PropsEditor extends Component {
 		// init input reflection
 		for( field in e.find("[field]").elements() ) {
 			var f = new PropsField(this, field, context);
+
+			var querry = '[field=${@:privateAccess f.fname}]';
+
+			inline function multiPropFields(cb: (field:PropsField) -> Void) {
+				if (multiPropsEditor.length > 0) {
+					var index = element.find(querry).index();
+					for (otherPropsEditor in multiPropsEditor) {
+						var otherField = otherPropsEditor.element.find(querry).get(index);
+						if (otherField == null) {
+							continue;
+						}
+						var propField : PropsField = cast Reflect.getProperty(otherField, "propsField");
+						if (propField != null) {
+							cb(propField);
+						}
+					}
+				}
+			}
+
+
+			if (!isShadowEditor) {
+				f.onBeforeUndo = function() {
+					var undo = new hide.ui.UndoHistory();
+					f.undoHistory = undo;
+					multiPropFields((f) -> f.undoHistory = undo);
+				}
+			}
+
 			f.onChange = function(undo) {
 				isTempChange = f.isTempChange;
 				lastChange = haxe.Timer.stamp();
 
 				if (multiPropsEditor.length > 0) {
-					var querry = '[field=${@:privateAccess f.fname}]';
 					var index = element.find(querry).index();
-					for (otherPropsEditor in multiPropsEditor) {
-						if (!undo) {
-							var otherField = otherPropsEditor.element.find(querry).get(index);
-							if (otherField == null) {
-								continue;
-							}
-							var propField : PropsField = cast Reflect.getProperty(otherField, "propsField");
-							if (propField != null) {
-								propField.propagateValueChange(f.getFieldValue());
-							}
-						}
-
+					if (!undo) {
+						multiPropFields((propField) -> {
+							propField.propagateValueChange(f.getFieldValue(), isTempChange);
+						});
 					}
 				}
+				var tempUndo = f.undoHistory;
+				f.undoHistory = null;
+				multiPropFields((f) -> f.undoHistory = null);
+
 				if( onChange != null ) onChange(@:privateAccess f.fname);
+				if (!undo) {
+					if (!isTempChange) {
+						if (tempUndo == null)
+							throw "what";
+						this.undo.change(Custom((isUndo : Bool) -> {
+							if (isUndo) {
+								while(tempUndo.undo()) {};
+							} else {
+								while(tempUndo.redo()) {};
+							}
+						}));
+					}
+				}
+
 				isTempChange = false;
 			};
 			var groupName = f.element.closest(".group").attr("name");
@@ -325,6 +363,7 @@ class PropsEditor extends Component {
 @:allow(hide.comp.PropsEditor)
 class PropsField extends Component {
 	public var fname : String;
+	var undoHistory : hide.ui.UndoHistory;
 	var isTempChange : Bool;
 	var props : PropsEditor;
 	var context : Dynamic;
@@ -343,7 +382,8 @@ class PropsField extends Component {
 	var range : hide.comp.Range;
 
 	// function that set the value of field then call the regular code on it. Used to make the multi prefab edit work
-	var propagateValueChange : (value: Dynamic) -> Void = null;
+	var propagateValueChange : (value: Dynamic, isTemp: Bool) -> Void = null;
+	public dynamic function onBeforeUndo() : Void {};
 
 	var subfields : Array<String>;
 
@@ -423,7 +463,8 @@ class PropsField extends Component {
 					var oldVal = Utils.copyTextureData(currentSave);
 					var newVal = Utils.copyTextureData(tchoice.value);
 
-					props.undo.change(Custom(function(undo) {
+					onBeforeUndo();
+					undoHistory.change(Custom(function(undo) {
 						if (undo) {
 							setVal(oldVal, true);
 						} else {
@@ -458,7 +499,8 @@ class PropsField extends Component {
 					var oldVal = Utils.copyTextureData(currentSave);
 					var newVal = Utils.copyTextureData(gradient.value);
 
-					props.undo.change(Custom(function(undo) {
+					onBeforeUndo();
+					undoHistory.change(Custom(function(undo) {
 						if (undo) {
 							setVal(oldVal, true);
 						} else {
@@ -510,9 +552,9 @@ class PropsField extends Component {
 			if(!Math.isNaN(current))
 				range.value = current;
 
-			propagateValueChange = function(value: Dynamic) {
+			propagateValueChange = function(value: Dynamic, isTemp: Bool) {
 				range.value = value;
-				range.onChange(false);
+				range.onChange(isTemp);
 			}
 			range.onChange = function(temp) {
 				tempChange = temp;
@@ -549,7 +591,8 @@ class PropsField extends Component {
 					var oldVal = arr.copy();
 					var newVal = multiRange.value.copy();
 
-					props.undo.change(Custom(function(undo) {
+					onBeforeUndo();
+					undoHistory.change(Custom(function(undo) {
 						if (undo) {
 							trace("Undo", oldVal, newVal);
 							setVal(oldVal, true, true);
@@ -636,9 +679,11 @@ class PropsField extends Component {
 				}
 			}
 
-			propagateValueChange = function(value: Dynamic) {
-				f.val(value);
-				f.change();
+			propagateValueChange = function(value: Dynamic, isTemp: Bool) {
+				if (!isTemp) {
+					f.val(value);
+					f.change();
+				}
 			}
 
 			if( enumValue != null ) {
@@ -726,11 +771,13 @@ class PropsField extends Component {
 	}
 
 	function undo( f : Void -> Void ) {
+		onBeforeUndo();
+
 		var a = getAccess();
 		if( a.name != null )
-			props.undo.change(Field(a.obj, a.name, current), f);
+			undoHistory.change(Field(a.obj, a.name, current), f);
 		else
-			props.undo.change(Array(a.obj, a.index, current), f);
+			undoHistory.change(Array(a.obj, a.index, current), f);
 	}
 
 	function setVal(v) {

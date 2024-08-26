@@ -3011,6 +3011,7 @@ class SceneEditor {
 		if (others != null) {
 			for (prefab in others) {
 				var multiProps = new hide.comp.PropsEditor(null, null, new Element("<div>"));
+				multiProps.isShadowEditor = true;
 				edit.properties.multiPropsEditor.push(multiProps);
 				var ctx = new SceneEditorContext([prefab], this);
 				ctx.properties = multiProps;
