@@ -174,9 +174,6 @@ class TexGraph extends hrt.prefab.Prefab {
 		var inputs = node.getInputs();
 		var outputs = output.getOutputs();
 
-		var inputType = inputs[edge.inputId].type;
-		var outputType = outputs[edge.outputId].type;
-
 		// Temp add edge to check for cycle, remove it after
 		var prev = node.connections[edge.inputId];
 		node.connections[edge.inputId] = {from: output, outputId: edge.outputId};
