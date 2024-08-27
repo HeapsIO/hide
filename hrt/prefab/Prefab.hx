@@ -584,6 +584,14 @@ class Prefab {
 	}
 
 	/**
+		Called by the editor when a child of this object gets build or rebuilded.
+		If this function returns true, this prefab will get rebuild as well.
+	**/
+	public function onEditorChildRebuild(child: Prefab) : Bool {
+		return false;
+	}
+
+	/**
 		Called when the hide editor wants to edit this Prefab.
 		Used to create the various editor interfaces
 	**/

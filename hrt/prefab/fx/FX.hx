@@ -581,6 +581,13 @@ class FX extends Object3D implements BaseFX {
 
 	#if editor
 
+	override function onEditorChildRebuild(prefab: Prefab) {
+		if (Std.is(prefab, Emitter)) {
+			return true;
+		}
+		return false;
+	}
+
 	public function refreshObjectAnims() : Void {
 		var fxanim = Std.downcast(local3d, FXAnimation);
 		fxanim.objAnims = null;

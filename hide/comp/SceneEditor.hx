@@ -1984,6 +1984,8 @@ class SceneEditor {
 	public function refreshScene() {
 		clearWatches();
 
+		trace(haxe.CallStack.toString(haxe.CallStack.callStack()));
+
 		if (root2d != null) root2d.remove();
 		if (root3d != null) root3d.remove();
 
@@ -3572,7 +3574,8 @@ class SceneEditor {
 			else
 				refresh(()->selectElements([group],NoHistory));
 		}));
-		refresh(effectFunc(false) ? Full : Partial, () -> selectElements([group],NoHistory));
+		effectFunc(false);
+		//refresh( ? Full : Partial, () -> selectElements([group],NoHistory));
 	}
 
 	function onCopy() {
@@ -3984,11 +3987,11 @@ class SceneEditor {
 		// jstree index on onMove seems to be where the last item
 		// of the selection should end, so we correct that
 		var targetIndex = index - e.length + 1;
-		var effectFunc = reparentImpl(e, to, targetIndex);
+		var exec = reparentImpl(e, to, targetIndex);
 		undo.change(Custom(function(undo) {
-			refresh(effectFunc(undo) ? Full : Partial);
+			exec(undo);
 		}));
-		refresh(effectFunc(false) ? Full : Partial);
+		exec(false);
 	}
 
 	function roundSmall(f: Float) {
@@ -4013,7 +4016,7 @@ class SceneEditor {
 		return { x : x, y : y, z : z, scaleX : scaleX, scaleY : scaleY, scaleZ : scaleZ, rotationX : rotationX, rotationY : rotationY, rotationZ : rotationZ };
 	}
 
-	function reparentImpl(elts : Array<PrefabElement>, toElt: PrefabElement, index: Int) : Bool -> Bool {
+	function reparentOld(elts : Array<PrefabElement>, toElt: PrefabElement, index: Int) : Bool -> Bool {
 		var effects = [];
 		for(i => elt in elts) {
 			var prev = elt.parent;
@@ -4065,13 +4068,144 @@ class SceneEditor {
 			}
 
 			if (!removeInstance(toElt)) {
-				return true;
+				throw "No";
 			}
 
 			makePrefab(toElt);
 			applySceneStyle(toElt);
 			return false;
 		}
+	}
+
+	function reparentImpl(prefabs: Array<PrefabElement>, toPrefab: PrefabElement, index: Int) : Bool -> Void {
+		var effects = [];
+		for(i => prefab in prefabs) {
+			var prevParent = prefab.parent;
+			var prevIndex = prevParent.children.indexOf(prefab);
+
+			var obj3d = prefab.to(Object3D);
+			var preserveTransform = Std.isOfType(toPrefab, hrt.prefab.fx.Emitter) || Std.isOfType(prevParent, hrt.prefab.fx.Emitter);
+			var toObj = getObject(toPrefab);
+			var obj = getObject(prefab);
+			var prevTransform = null;
+			var newTransform = null;
+			if(obj3d != null && toObj != null && obj != null && !preserveTransform) {
+				var mat = worldMat(obj);
+				var parentMat = worldMat(toObj);
+				parentMat.invert();
+				mat.multiply(mat, parentMat);
+				prevTransform = obj3d.saveTransform();
+				newTransform = makeTransform(mat);
+			}
+
+			effects.push(function(undo) {
+				if( undo ) {
+					prefab.parent = prevParent;
+					if(toPrefab.onEditorChildRebuild(prefab))
+						queueRebuild(toPrefab);
+
+					prevParent.children.remove(prefab);
+					prevParent.children.insert(prevIndex, prefab);
+
+					var props = prevParent.getHideProps();
+					if (props.onChildListChanged != null) props.onChildListChanged();
+
+					if(obj3d != null && prevTransform != null)
+						obj3d.loadTransform(prevTransform);
+				} else {
+					@:bypassAccessor prefab.parent = toPrefab;
+					if(prevParent.onEditorChildRebuild(prefab))
+						queueRebuild(prevParent);
+					prefab.shared = toPrefab.shared;
+					toPrefab.children.insert(index + i, prefab);
+					if(obj3d != null && newTransform != null)
+						obj3d.loadTransform(newTransform);
+				};
+			});
+		}
+
+		function exec(undo: Bool) {
+
+			beginRebuild();
+
+			for (prefab in prefabs) {
+				prefab.parent.children.remove(prefab);
+			}
+
+			for (effect in effects) {
+				effect(undo);
+			}
+
+			for (prefab in prefabs) {
+				queueRebuild(prefab);
+			}
+
+			endRebuild();
+		}
+
+		return exec;
+	}
+
+	var rebuildQueue : Map<PrefabElement, Bool> = [];
+	function queueRebuild(prefab: PrefabElement) {
+		var instant = false;
+		if (rebuildQueue == null) {
+			beginRebuild();
+			instant = true;
+		}
+
+		function cleanup() {
+			if (instant) {
+				endRebuild();
+			}
+		}
+
+		var parent = prefab.parent;
+		while (parent != null) {
+			if (parent.onEditorChildRebuild(prefab)) {
+				queueRebuild(parent);
+				cleanup();
+				return;
+			}
+			parent = parent.parent;
+		}
+
+		rebuildQueue.set(prefab, true);
+		cleanup();
+	}
+
+
+
+	function beginRebuild() {
+		rebuildQueue.clear();
+	}
+
+	function endRebuild() {
+		for (prefab => _ in rebuildQueue) {
+			var parent = prefab.parent;
+			var skip = false;
+
+			// don't rebuild this prefab if it's parent will get rebuild anyways
+			while(parent != null) {
+				if (rebuildQueue.exists(parent)) {
+					skip = true;
+					break;
+				}
+				parent = parent.parent;
+			}
+
+			if (skip == true)
+				continue;
+
+			rebuild(prefab);
+			refreshProps();
+		}
+	}
+
+	function rebuild(prefab: PrefabElement) {
+		prefab.editorRemoveInstance();
+		makePrefab(prefab);
+		refreshInteractive(prefab);
 	}
 
 	function autoName(p : PrefabElement) {
