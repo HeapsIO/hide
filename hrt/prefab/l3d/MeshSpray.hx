@@ -251,6 +251,8 @@ class MeshSprayObject extends Spray.SprayObject {
 		var batch = blookup.get(m.primitive);
 		if( batch == null ) {
 			batch = new h3d.scene.MeshBatch(cast(m.primitive,h3d.prim.MeshPrimitive), m.material, this);
+			batch.fixedPosition = true;
+			batch.cullingCollider = @:privateAccess batch.instanced.bounds;
 			var multi = Std.downcast(m, h3d.scene.MultiMaterial);
 			if( multi != null ) batch.materials = multi.materials;
 			batch.alwaysSyncAnimation = true;
@@ -277,6 +279,7 @@ class MeshSprayObject extends Spray.SprayObject {
 			return;
 		getBounds(); // force absBos calculus on children
 		for( b in batches ) {
+			b.flags.set(FFixedPositionSynced, false);
 			if( updateShaders ) b.shadersChanged = true;
 			b.begin();
 		}
