@@ -3213,10 +3213,8 @@ class SceneEditor {
 			if( elts.length > 0 ) {
 				if (elts.length > 1) {
 					var commonClass = hrt.tools.ClassUtils.getCommonClass(elts, hrt.prefab.Prefab);
-					trace(Type.getClassName(commonClass));
 
 					var proxyPrefab = Type.createInstance(commonClass, [null, new ContextShared()]);
-
 					proxyPrefab.load(haxe.Json.parse(haxe.Json.stringify(elts[0].save())));
 					fillProps(edit, proxyPrefab, elts);
 				}
