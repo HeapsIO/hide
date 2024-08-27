@@ -1086,6 +1086,11 @@ class ShaderEditor extends hide.view.FileView implements GraphInterface.IGraphEd
 	}
 
 	public function refreshRenderProps() {
+		var pbrRenderer = Std.downcast(meshPreviewScene.s3d.renderer, h3d.scene.pbr.Renderer);
+		if ( pbrRenderer != null ) {
+			pbrRenderer.env = h3d.scene.pbr.Environment.getDefault();
+		}
+		
 		if (meshPreviewRenderProps != null) {
 			meshPreviewRenderProps.dispose();
 		}
