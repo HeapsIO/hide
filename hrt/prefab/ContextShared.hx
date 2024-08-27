@@ -26,7 +26,7 @@ class ContextShared {
 	// Never modify this in the middle of a instanciate without restoring it after
 	public var current2d : h2d.Object = null;
 
-	// Parent prefab if the object if it was created as a reference
+	// Parent prefab of the object if it was created as a reference
 	public var parentPrefab : Prefab = null;
 
 	/**

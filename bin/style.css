@@ -2528,6 +2528,10 @@ body.hide-subview .lm_close_tab,
 body.hide-subview .lm_controls {
   display: none;
 }
+.lm_header .lm_tabdropdown_list .lm_tab .lm_title {
+  width: unset;
+  max-width: 500px;
+}
 /* JSTree fixes */
 .jstree {
   background: transparent !important;

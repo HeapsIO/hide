@@ -2349,16 +2349,16 @@ class SceneEditor {
                         obj3d.z = snap(quantize(newMat.tz, posQuant), snapMoveStep);
                     }
                     else { // Don't snap translation if the primary action wasn't a translation (i.e. Rotation around a pivot)
-					obj3d.x = quantize(newMat.tx, posQuant);
-					obj3d.y = quantize(newMat.ty, posQuant);
-					obj3d.z = quantize(newMat.tz, posQuant);
-							}
+						obj3d.x = quantize(newMat.tx, posQuant);
+						obj3d.y = quantize(newMat.ty, posQuant);
+						obj3d.z = quantize(newMat.tz, posQuant);
+					}
 
                     if (rot != null) {
                         obj3d.rotationX = quantize(M.radToDeg(euler.x), rotQuant);
                         obj3d.rotationY = quantize(M.radToDeg(euler.y), rotQuant);
                         obj3d.rotationZ = quantize(M.radToDeg(euler.z), rotQuant);
-						}
+					}
 
 					if(scale != null) {
 						var s = newMat.getScale();
