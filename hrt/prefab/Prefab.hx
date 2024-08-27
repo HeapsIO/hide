@@ -93,6 +93,11 @@ class Prefab {
 	@:s public var props : Any = null;
 
 	/**
+		Tells if the prefab will create an instance when used in reference. Also apply to this prefab children.
+	**/
+	@:s public var inReference : Bool = true;
+
+	/**
 		The parent of the prefab in the tree view
 	**/
 	public var parent(default, set) : Prefab;
@@ -694,6 +699,8 @@ class Prefab {
 	function shouldBeInstanciated() : Bool {
 		if (!enabled) return false;
 
+		if ( !inReference && shared.parentPrefab != null )
+			return false;
 		#if editor
 		if (inGameOnly)
 			return false;
