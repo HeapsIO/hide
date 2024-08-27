@@ -12,8 +12,10 @@ class TextureChoice extends Component {
 
     public function new(?parent : Element,?root : Element) {
         var e = new Element("<div class='texture-choice'>");
-        if (root != null)
+        if (root != null) {
+            JsTools.copyAttributes(e, root);
             root.replaceWith(e);
+        }
         super(parent, e);
 
         rebuildUi();
@@ -30,7 +32,7 @@ class TextureChoice extends Component {
             case TextureType.path: {
                 // Small fix for the texture preview
                 var wrapper = new Element("<div>").css({position: "relative"}).appendTo(element);
-            
+
                 var select = new hide.comp.TextureSelect(wrapper,null);
                 select.element.width("auto");
                 select.path = innerValue;
@@ -67,7 +69,7 @@ class TextureChoice extends Component {
         btn.click(function(e) {
             new hide.comp.ContextMenu([
                 { label : "Change to Texturepath", click : function() changeTextureType(TextureType.path), enabled: Utils.getTextureType(innerValue) != TextureType.path},
-                { label : "Change to Gradient", click : function() changeTextureType(TextureType.gradient), enabled: Utils.getTextureType(innerValue) != TextureType.gradient},                
+                { label : "Change to Gradient", click : function() changeTextureType(TextureType.gradient), enabled: Utils.getTextureType(innerValue) != TextureType.gradient},
             ]);
         });
     }

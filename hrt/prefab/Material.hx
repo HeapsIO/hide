@@ -588,10 +588,13 @@ class Material extends Prefab {
 					<dt>Name</dt><dd><select><option value="any">Any</option></select>
 				</dl> ');
 		var select = dropDownMaterials.find("select");
-		var materialList = findFirstLocal3d().getMaterials();
-		for( m in materialList )
-			if( m.name != null && m.name != "" )
-				new hide.Element('<option>').attr("value", m.name).text(m.name).appendTo(select);
+		var materialList = findFirstLocal3d()?.getMaterials();
+		if (materialList != null) {
+			for( m in materialList )
+				if( m.name != null && m.name != "" )
+					new hide.Element('<option>').attr("value", m.name).text(m.name).appendTo(select);
+		}
+
 
 		select.change(function(_) {
 			var previous = materialName;

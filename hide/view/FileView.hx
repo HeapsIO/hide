@@ -26,7 +26,7 @@ class FileView extends hide.ui.View<{ path : String }> {
 				@:privateAccess if( e.file == null ) e = null;
 
 				fs.convert.run(e);
-				
+
 				onFileChanged(!exists(fs));
 			}, { checkDelete : true, keepOnRebuild : true });
 	}
@@ -44,11 +44,11 @@ class FileView extends hide.ui.View<{ path : String }> {
 		this.modified = false;
 		super.onRebuild();
 	}
-	
+
 	function exists(fs : hxd.fs.LocalFileSystem) {
 		if (state.path == '')
 			return true;
-		
+
 		// We want to check if the file still exist (it could still exists but not with the same case !)
 		var absPath = Ide.inst.getPath(state.path);
 		var baseDir = new haxe.io.Path(absPath).dir;

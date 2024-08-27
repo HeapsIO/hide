@@ -5,6 +5,7 @@ using hrt.prefab.Object3D; // GetLocal3D
 using hrt.prefab.Object2D; // GetLocal2D
 
 using Lambda;
+using hrt.tools.MapUtils;
 
 import hrt.prefab.Reference;
 import h3d.scene.Mesh;
@@ -2952,8 +2953,8 @@ class SceneEditor {
 				@:privateAccess var accesses = field.getAccesses();
 				for (a in accesses) {
 					if (map.exists(a.name)) {
-						Reflect.setProperty(a.obj, a.name, map.get(a.name));
-						field.onChange(false);
+						@:privateAccess field.propagateValueChange(map.get(a.name), true);
+						field.onChange(true);
 					}
 				}
 			}
@@ -2990,7 +2991,7 @@ class SceneEditor {
 		ide.setClipboard(serializeProps(fields));
 	}
 
-	function fillProps(edit : SceneEditorContext, e : PrefabElement ) {
+	function fillProps(edit : SceneEditorContext, e : PrefabElement, others: Array<PrefabElement> ) {
 		properties.element.append(new Element('<h1 class="prefab-name">${e.getHideProps().name}</h1>'));
 
 		var copyButton = new Element('<div class="hide-button" title="Copy all properties">').append(new Element('<div class="icon ico ico-copy">'));
@@ -3005,7 +3006,43 @@ class SceneEditor {
 		});
 		properties.element.append(pasteButton);
 
-		e.edit(edit);
+		edit.properties.multiPropsEditor.clear();
+
+		if (Type.getClass(e) == hrt.prefab.Prefab && others != null) {
+			properties.add(new hide.Element('<p>The selected prefabs are too different to be multi edited</p>'));
+			return;
+		}
+
+		try {
+			if (others != null) {
+				for (prefab in others) {
+					var multiProps = new hide.comp.PropsEditor(null, null, new Element("<div>"));
+					multiProps.isShadowEditor = true;
+					edit.properties.multiPropsEditor.push(multiProps);
+					var ctx = new SceneEditorContext([prefab], this);
+					ctx.properties = multiProps;
+					ctx.scene = this.scene;
+					prefab.edit(ctx);
+				}
+			}
+			e.edit(edit);
+		} catch (e) {
+			if (others != null) {
+				// Multi edit non intrusive error
+				properties.clear();
+				var msg = e.toString();
+				msg = StringTools.replace(msg, '\n', '</br>');
+				var selection = [for (o in others) Type.getClassName(Type.getClass(o))].join(", ");
+				var stack = e.stack.toString();
+				stack = ~/\(chrome-extension:.*\)/g.replace(stack, "");
+				stack = StringTools.replace(stack, '\n', '</br>');
+				properties.add(new hide.Element('<p>Multi edit error</p><p>Selection : $selection</p><p>$msg</p><p>$stack</p>'));
+				return;
+			}
+			throw e;
+		}
+
+
 
 		var typeName = e.getCdbType();
 		if( typeName == null && e.props != null )
@@ -3112,7 +3149,8 @@ class SceneEditor {
 			p = p.parent;
 		}*/
 		// rootCtx might not be == context depending on references
-		var edit = new SceneEditorContext(elts, this);
+		var edit : SceneEditorContext = new SceneEditorContext(elts, this);
+
 		edit.rootPrefab = sceneData;
 		edit.properties = properties;
 		edit.scene = scene;
@@ -3123,7 +3161,7 @@ class SceneEditor {
 		scene.setCurrent();
 		var edit = makeEditContext([e]);
 		properties.clear();
-		fillProps(edit, e);
+		fillProps(edit, e, null);
 		addGroupCopyPaste();
 	}
 
@@ -3173,7 +3211,19 @@ class SceneEditor {
 			}
 			properties.clear();
 			if( elts.length > 0 ) {
-				fillProps(edit, elts[0]);
+				if (elts.length > 1) {
+					var commonClass = hrt.tools.ClassUtils.getCommonClass(elts, hrt.prefab.Prefab);
+					trace(Type.getClassName(commonClass));
+
+					var proxyPrefab = Type.createInstance(commonClass, [null, new ContextShared()]);
+
+					proxyPrefab.load(haxe.Json.parse(haxe.Json.stringify(elts[0].save())));
+					fillProps(edit, proxyPrefab, elts);
+				}
+				else
+				{
+					fillProps(edit, elts[0], null);
+				}
 				addGroupCopyPaste();
 			}
 

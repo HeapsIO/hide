@@ -13,6 +13,8 @@ class Object3D extends Prefab {
 	@:s public var scaleY : Float = 1.0;
 	@:s public var scaleZ : Float = 1.0;
 
+	var scaleArray(get, set) : Array<Float>;
+
 	@:s public var rotationX : Float = 0.0;
 	@:s public var rotationY : Float = 0.0;
 	@:s public var rotationZ : Float = 0.0;
@@ -22,6 +24,17 @@ class Object3D extends Prefab {
 	#if editor
 	public var editorIcon : h2d.ObjectFollower;
 	#end
+
+	public inline function get_scaleArray() : Array<Float> {
+		return [scaleX, scaleY, scaleZ];
+	}
+
+	public inline function set_scaleArray(newScale: Array<Float>) : Array<Float> {
+		scaleX = newScale[0];
+		scaleY = newScale[1];
+		scaleZ = newScale[2];
+		return newScale;
+	}
 
 	public static inline function getLocal3d(prefab: Prefab) : h3d.scene.Object {
 		var obj3d = Std.downcast(prefab, Object3D);
@@ -451,7 +464,7 @@ class Object3D extends Prefab {
 					<dt>X</dt><dd><input type="range" min="-10" max="10" value="0" field="x"/></dd>
 					<dt>Y</dt><dd><input type="range" min="-10" max="10" value="0" field="y"/></dd>
 					<dt>Z</dt><dd><input type="range" min="-10" max="10" value="0" field="z"/></dd>
-					<dt>Scale</dt><dd><input type="multi-range" min="0" max="5" value="0" field="scale" data-subfields="X,Y,Z"/></dd>
+					<dt>Scale</dt><dd><input type="multi-range" min="0" max="5" value="0" field="scaleArray" data-subfields="X,Y,Z"/></dd>
 					<dt>Rotation X</dt><dd><input type="range" min="-180" max="180" value="0" field="rotationX" /></dd>
 					<dt>Rotation Y</dt><dd><input type="range" min="-180" max="180" value="0" field="rotationY" /></dd>
 					<dt>Rotation Z</dt><dd><input type="range" min="-180" max="180" value="0" field="rotationZ" /></dd>

@@ -9,11 +9,23 @@ class Object2D extends Prefab {
 	@:s @:range(0,400) public var y : Float = 0.;
 	@:s public var scaleX : Float = 1.;
 	@:s public var scaleY : Float = 1.;
+
+	var scaleArray(get, set) : Array<Float>;
+
 	@:s public var rotation : Float = 0.;
 
 	@:s public var visible : Bool = true;
 	@:s public var blendMode : h2d.BlendMode = None;
 
+	public inline function get_scaleArray() : Array<Float> {
+		return [scaleX, scaleY];
+	}
+
+	public inline function set_scaleArray(array: Array<Float>) : Array<Float> {
+		scaleX = array[0];
+		scaleY = array[1];
+		return array;
+	}
 
 	public static inline function getLocal2d(prefab: Prefab) : h2d.Object {
 		var obj2d = Std.downcast(prefab, Object2D);
@@ -120,7 +132,7 @@ class Object2D extends Prefab {
 				<dl>
 					<dt>X</dt><dd><input type="range" min="-100" max="100" value="0" field="x"/></dd>
 					<dt>Y</dt><dd><input type="range" min="-100" max="100" value="0" field="y"/></dd>
-					<dt>Scale</dt><dd><input type="multi-range" min="0" max="5" value="0" field="scale" data-subfields="X,Y"/></dd>
+					<dt>Scale</dt><dd><input type="multi-range" min="0" max="5" value="0" field="scaleArray" data-subfields="X,Y"/></dd>
 					<dt>Rotation</dt><dd><input type="range" min="-180" max="180" value="0" field="rotation" /></dd>
 				</dl>
 			</div>

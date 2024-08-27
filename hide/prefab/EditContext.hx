@@ -6,6 +6,9 @@ class EditContext {
 
 	#if editor
 
+	/**
+		list of functions to call in the sceneEditor `update()`
+	**/
 	var updates : Array<Float->Void> = [];
 
 	public var ide(get,never) : hide.Ide;
@@ -16,7 +19,6 @@ class EditContext {
 	function get_ide() return hide.Ide.inst;
 
 	public function onChange(p : Prefab, propName : String) {
-
 		p.updateInstance(propName);
 
 		var parent = p.parent;

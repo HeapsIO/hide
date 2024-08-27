@@ -14,7 +14,7 @@ class MultiRange extends Component {
     static final uniformLockKey = "multiRangeUniformLock";
 
     function set_value(v : Array<Float>) {
-        if (v.length != numValues) 
+        if (v.length != numValues)
             throw "assert";
         current = v;
         repaint();
@@ -67,6 +67,8 @@ class MultiRange extends Component {
 
         var flex = new Element("<div>").css("position", "relative").css("width", "110%").appendTo(parent);
         flex.css("display", "flex");
+		hide.comp.JsTools.copyAttributes(flex, root);
+        element = flex;
 
         var ds = getDisplayState(uniformLockKey + ":" + labels[0]);
 
