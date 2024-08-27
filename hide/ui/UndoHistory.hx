@@ -43,6 +43,16 @@ class UndoHistory {
 		return handleElement(h, undoElts);
 	}
 
+	public function toElement() : HistoryElement {
+		return Custom((isUndo : Bool) -> {
+			if (isUndo) {
+				while(undo()) {};
+			} else {
+				while(redo()) {};
+			}
+		});
+	}
+
 	public function handleElement( e : Elt, other : Array<Elt> ) {
 		if( e == null ) return false;
 		switch( e.h ) {

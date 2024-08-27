@@ -2953,8 +2953,8 @@ class SceneEditor {
 				@:privateAccess var accesses = field.getAccesses();
 				for (a in accesses) {
 					if (map.exists(a.name)) {
-						Reflect.setProperty(a.obj, a.name, map.get(a.name));
-						field.onChange(false);
+						@:privateAccess field.propagateValueChange(map.get(a.name), true);
+						field.onChange(true);
 					}
 				}
 			}
@@ -3218,19 +3218,6 @@ class SceneEditor {
 					var proxyPrefab = Type.createInstance(commonClass, [null, new ContextShared()]);
 
 					proxyPrefab.load(haxe.Json.parse(haxe.Json.stringify(elts[0].save())));
-
-					// Copy all properties that are equals between all the selected instances
-					// for (prop in proxyPrefab.getSerializableProps()) {
-					// 	for (i => prefab in elts) {
-					// 		if (i == 0) {
-					// 			Reflect.setProperty(proxyPrefab, prop.name, Reflect.getProperty(prefab, prop.name));
-					// 		}
-					// 		else if (Reflect.getProperty(proxyPrefab, prop.name) != Reflect.getProperty(prefab, prop.name)) {
-					// 			Reflect.setProperty(proxyPrefab, prop.name, prop.defaultValue);
-					// 			break;
-					// 		}
-					// 	}
-					// }
 					fillProps(edit, proxyPrefab, elts);
 				}
 				else
