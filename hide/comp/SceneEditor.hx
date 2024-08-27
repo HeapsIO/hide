@@ -4101,8 +4101,7 @@ class SceneEditor {
 			effects.push(function(undo) {
 				if( undo ) {
 					prefab.parent = prevParent;
-					if(toPrefab.onEditorChildRebuild(prefab))
-						queueRebuild(toPrefab);
+					checkWantRebuild(toPrefab, prefab);
 
 					prevParent.children.remove(prefab);
 					prevParent.children.insert(prevIndex, prefab);
@@ -4114,8 +4113,8 @@ class SceneEditor {
 						obj3d.loadTransform(prevTransform);
 				} else {
 					@:bypassAccessor prefab.parent = toPrefab;
-					if(prevParent.onEditorChildRebuild(prefab))
-						queueRebuild(prevParent);
+					checkWantRebuild(prevParent, prefab);
+
 					prefab.shared = toPrefab.shared;
 					toPrefab.children.insert(index + i, prefab);
 					if(obj3d != null && newTransform != null)
@@ -4146,38 +4145,37 @@ class SceneEditor {
 		return exec;
 	}
 
+	function checkWantRebuild(target: PrefabElement, original: PrefabElement) {
+		if (target == null) return;
+		if (target.onEditorChildRebuild(original)) {
+			queueRebuild(target);
+			return;
+		}
+		checkWantRebuild(target.parent, original);
+	}
+
 	var rebuildQueue : Map<PrefabElement, Bool> = [];
 	function queueRebuild(prefab: PrefabElement) {
+		if (rebuildQueue != null && rebuildQueue.exists(prefab))
+			return;
+
 		var instant = false;
 		if (rebuildQueue == null) {
 			beginRebuild();
 			instant = true;
 		}
 
-		function cleanup() {
-			if (instant) {
-				endRebuild();
-			}
-		}
-
 		var parent = prefab.parent;
-		while (parent != null) {
-			if (parent.onEditorChildRebuild(prefab)) {
-				queueRebuild(parent);
-				cleanup();
-				return;
-			}
-			parent = parent.parent;
-		}
+		checkWantRebuild(parent, prefab);
 
 		rebuildQueue.set(prefab, true);
-		cleanup();
+		if (instant) {
+			endRebuild();
+		}
 	}
 
-
-
 	function beginRebuild() {
-		rebuildQueue.clear();
+		rebuildQueue = [];
 	}
 
 	function endRebuild() {
@@ -4198,8 +4196,10 @@ class SceneEditor {
 				continue;
 
 			rebuild(prefab);
-			refreshProps();
 		}
+		refreshTree(() -> selectElements(selectedPrefabs, NoHistory));
+
+		rebuildQueue = [];
 	}
 
 	function rebuild(prefab: PrefabElement) {
