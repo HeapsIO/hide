@@ -1192,6 +1192,7 @@ class SceneEditor {
 				'Textures: ${memStats.textureCount}',
 				'FPS: ${Math.round(scene.engine.realFps)}',
 				'Draw Calls: ${scene.engine.drawCalls}',
+				'V Ram: ${Std.int(memStats.totalMemory / (1024 * 1024))} Mb',
 			];
 			statusText.text = lines.join("\n");
 		}
