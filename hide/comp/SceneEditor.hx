@@ -2808,7 +2808,7 @@ class SceneEditor {
 		return null;*/
 	}
 
-	function removeInstance(elt : PrefabElement) {
+	function removeInstance(elt : PrefabElement) : Void {
 		var allRemoved = true;
 		function recRemove(e:PrefabElement) {
 			for (c in e.children) {
@@ -2821,13 +2821,12 @@ class SceneEditor {
 				if( i3d != null ) i3d.remove() else cast(int,h2d.Interactive).remove();
 				interactives.remove(e);
 			}
-			if (!e.editorRemoveInstance())
-				allRemoved = false;
+			e.editorRemoveInstance();
 			e.dispose();
 		}
-
+		var parent = elt.parent;
 		recRemove(elt);
-		return allRemoved;
+		checkWantRebuild(parent, elt);
 	}
 
 	function makePrefab(elt: PrefabElement) {
@@ -2880,8 +2879,7 @@ class SceneEditor {
 			if(undo) {
 				selectElements([], NoHistory);
 				for (e in elts) {
-					if(!removeInstance(e))
-						fullRefresh = true;
+					removeInstance(e);
 					e.parent.children.remove(e);
 				}
 				refresh(fullRefresh ? Full : Partial);
@@ -3410,8 +3408,7 @@ class SceneEditor {
 			if( undo ) {
 				var fullRefresh = false;
 				for(e in elts) {
-					if(!removeInstance(e))
-						fullRefresh = true;
+					removeInstance(e);
 					parent.children.remove(e);
 				}
 				refresh(fullRefresh ? Full : Partial);
@@ -3887,10 +3884,7 @@ class SceneEditor {
 			var fullRefresh = false;
 			if(undo) {
 				for(elt in newElements) {
-					if(!removeInstance(elt)) {
-						fullRefresh = true;
-						break;
-					}
+					removeInstance(elt);
 				}
 			}
 
@@ -3928,38 +3922,32 @@ class SceneEditor {
 
 		var fullRefresh = false;
 		var undoes = [];
+		beginRebuild();
 		for(elt in elts) {
 			var parent = elt.parent;
 			var index = elt.parent.children.indexOf(elt);
-			if(!removeInstance(elt))
-				fullRefresh = true;
+			removeInstance(elt);
 			parent.children.remove(elt);
+			refreshTree(() -> selectElements(selectedPrefabs, NoHistory));
 
 			undoes.unshift(function(undo) {
 				if(undo) elt.parent.children.insert(index, elt);
 				else elt.parent.children.remove(elt);
 			});
 		}
-
-		function refreshFunc(then) {
-			refresh(fullRefresh ? Full : Partial, then);
-			if( !fullRefresh ) refreshParents(elts);
-		}
-
-		if (doRefresh)
-			refreshFunc(then != null ? then : () -> selectElements([],NoHistory));
+		endRebuild();
 
 		if (enableUndo) {
 			undo.change(Custom(function(undo) {
-				if(!undo && !fullRefresh)
+				beginRebuild();
+				if(!undo)
 					for(e in elts) removeInstance(e);
 
 				for(u in undoes) u(undo);
 
 				if(undo)
-					for(e in elts) makePrefab(e);
-
-				refreshFunc(then != null ? then : selectElements.bind(undo ? elts : [],NoHistory));
+					for(e in elts) rebuild(e);
+				endRebuild();
 			}));
 		}
 	}
@@ -4067,9 +4055,7 @@ class SceneEditor {
 				f(undo);
 			}
 
-			if (!removeInstance(toElt)) {
-				throw "No";
-			}
+			removeInstance(toElt);
 
 			makePrefab(toElt);
 			applySceneStyle(toElt);
