@@ -1,37 +1,9 @@
 package hrt.prefab.l3d;
 
-import h3d.Vector;
-import hxd.Key as K;
-
 typedef Source = {
 	var path: String;
 	var isRef: Bool;
 }
-
-#if !editor
-
-class SprayObject extends h3d.scene.Object {
-}
-
-class Spray extends Object3D {
-
-	@:s var sources : Array<{ path : String }> = [];
-
-	override function makeObject(parent3d: h3d.scene.Object ) : h3d.scene.Object {
-		var spray = new SprayObject(parent3d);
-		return spray;
-	}
-
-	override function makeInstance() {
-		super.makeInstance();
-		children.sort(function(c1, c2) {
-			return Std.isOfType(c1, Object3D) ? -1 : 1;
-		});
-
-	}
-}
-
-#else
 
 typedef Set = {
 	var name: String;
@@ -61,7 +33,6 @@ typedef SprayConfig = {
 	var tiltAmount : Float;
 }
 
-
 @:access(hrt.prefab.l3d.MeshSpray)
 class SprayObject extends h3d.scene.Object {
 
@@ -72,6 +43,7 @@ class SprayObject extends h3d.scene.Object {
 		super(parent);
 	}
 
+	#if editor
 
 	public function redraw(updateShaders=false) {
 		getBounds(); // force absBos calculus on children
@@ -81,9 +53,28 @@ class SprayObject extends h3d.scene.Object {
 		}
 	}
 
+	#end
 }
 
 class Spray extends Object3D {
+
+	override function makeObject(parent3d: h3d.scene.Object ) : h3d.scene.Object {
+		return new SprayObject(this, parent3d);
+	}
+
+	#if !editor
+
+	@:s var sources : Array<{ path : String }> = [];
+
+	override function makeInstance() {
+		super.makeInstance();
+		children.sort(function(c1, c2) {
+			return Std.isOfType(c1, Object3D) ? -1 : 1;
+		});
+
+	}
+
+	#else
 
 	@:s var sources : Array<Source> = []; // specific set for this spray
 	@:s var defaultConfig: SprayConfig;
@@ -124,6 +115,21 @@ class Spray extends Object3D {
 	var lastSpray : Float = 0;
 	var lastItemPos : h3d.col.Point;
 	var invParent : h3d.Matrix;
+
+	var wasEdited = false;
+	var previewItems : Array<hrt.prefab.Prefab> = [];
+	var sprayedItems : Array<hrt.prefab.Prefab> = [];
+	var selectElement : hide.Element;
+
+	override function applyTransform() {
+		super.applyTransform();
+		cast(local3d, SprayObject).redraw();
+	}
+
+	override function editorRemoveInstance() : Bool {
+		removeInteractiveBrush();
+		return super.editorRemoveInstance();
+	}
 
 	function clearPreview() {
 		// prevent saving preview
@@ -204,11 +210,6 @@ class Spray extends Object3D {
 		return { mz : mz, rotX : rotX, rotY : rotY, rotZ : rotZ };
 	}
 
-	var wasEdited = false;
-	var previewItems : Array<hrt.prefab.Prefab> = [];
-	var sprayedItems : Array<hrt.prefab.Prefab> = [];
-	var selectElement : hide.Element;
-
 	function createInteractiveBrush(ectx : hide.prefab.EditContext) {
 		if (!enabled) return;
 		var s2d = shared.root2d.getScene();
@@ -221,10 +222,10 @@ class Spray extends Object3D {
 		};
 
 		interactive.onKeyUp = function(e) {
-			if (e.keyCode == K.R) {
+			if (e.keyCode == hxd.Key.R) {
 				lastItemId = -1;
 				if (lastSpray < Date.now().getTime() - 100) {
-					if( !K.isDown( K.SHIFT) ) {
+					if( !hxd.Key.isDown( hxd.Key.SHIFT) ) {
 						clearPreview();
 						var worldPos = ectx.screenToGround(s2d.mouseX, s2d.mouseY);
 						previewItemsAround(ectx, worldPos);
@@ -233,7 +234,7 @@ class Spray extends Object3D {
 					lastItemPos = null;
 				}
 			}
-			if (e.keyCode == K.Q) {
+			if (e.keyCode == hxd.Key.Q) {
 				e.propagate = false;
 				currentConfig.rotation -= 10;
 				currentConfig.rotation = currentConfig.rotation % 360;
@@ -242,7 +243,7 @@ class Spray extends Object3D {
 				previewItemsAround(ectx, worldPos);
 			}
 
-			if (e.keyCode == K.D) {
+			if (e.keyCode == hxd.Key.D) {
 				e.propagate = false;
 				currentConfig.rotation += 10;
 				currentConfig.rotation = currentConfig.rotation % 360;
@@ -256,7 +257,7 @@ class Spray extends Object3D {
 			e.propagate = false;
 			sprayEnable = true;
 			var worldPos = ectx.screenToGround(s2d.mouseX, s2d.mouseY);
-			if( K.isDown( K.SHIFT) )
+			if( hxd.Key.isDown( hxd.Key.SHIFT) )
 				removeItemsAround(worldPos);
 			else {
 				lastItemPos = worldPos.clone();
@@ -287,7 +288,7 @@ class Spray extends Object3D {
 		interactive.onMove = function(e) {
 			var worldPos = ectx.screenToGround(s2d.mouseX, s2d.mouseY);
 
-			var shiftPressed = K.isDown( K.SHIFT);
+			var shiftPressed = hxd.Key.isDown( hxd.Key.SHIFT);
 
 			if( worldPos == null ) {
 				clearBrushes();
@@ -302,7 +303,7 @@ class Spray extends Object3D {
 					previewItemsAround(ectx, worldPos);
 				}
 
-				if( K.isDown( K.MOUSE_LEFT) ) {
+				if( hxd.Key.isDown( hxd.Key.MOUSE_LEFT) ) {
 					e.propagate = false;
 
 					if (sprayEnable) {
@@ -477,7 +478,7 @@ class Spray extends Object3D {
 				localMat.scale(currentScale, currentScale, currentScale);
 
 				position.z = ectx.positionToGroundZ(position.x, position.y) + CONFIG.zOffset;
-				localMat.setPosition(new Vector(hxd.Math.fmt(position.x), hxd.Math.fmt(position.y), position.z));
+				localMat.setPosition(new h3d.Vector(hxd.Math.fmt(position.x), hxd.Math.fmt(position.y), position.z));
 				localMat.multiply(localMat, invParent);
 
 				newPrefab.setTransform(localMat);
@@ -567,21 +568,6 @@ class Spray extends Object3D {
 		}
 	}
 
-	override function editorRemoveInstance() : Bool {
-		removeInteractiveBrush();
-		return super.editorRemoveInstance();
-	}
-
-	override function makeObject(parent3d: h3d.scene.Object ) : h3d.scene.Object {
-		return new SprayObject(this, parent3d);
-	}
-
-	override function applyTransform() {
-		super.applyTransform();
-		cast(local3d, SprayObject).redraw();
-	}
-
-
 	static public function makePrimCircle(segments: Int, inner : Float = 0, rings : Int = 0) {
 		var points = [];
 		var uvs = [];
@@ -638,6 +624,5 @@ class Spray extends Object3D {
 		return arr;
 	}
 
+	#end
 }
-
-#end

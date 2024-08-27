@@ -1,20 +1,8 @@
 package hrt.prefab.l3d;
-import hrt.prefab.l3d.Spray;
-#if !editor
 
 class PrefabSpray extends Spray {
 
-	static var _ = Prefab.register("prefabSpray", PrefabSpray);
-
-}
-
-#else
-
-import h3d.Vector;
-import hxd.Key as K;
-
-class PrefabSpray extends Spray {
-
+	#if editor
 
 	var PREFAB_SPRAY_CONFIG_FILE = "prefabSprayProps.json";
 	var PREFAB_SPRAY_CONFIG_PATH(get, null) : String;
@@ -399,8 +387,8 @@ class PrefabSpray extends Spray {
 			currentSources.push(source);
 	}
 
+	#end
+
 	static var _ = Prefab.register("prefabSpray", PrefabSpray);
 
 }
-
-#end
