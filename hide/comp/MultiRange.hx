@@ -67,7 +67,8 @@ class MultiRange extends Component {
 
         var flex = new Element("<div>").css("position", "relative").css("width", "110%").appendTo(parent);
         flex.css("display", "flex");
-		hide.comp.JsTools.copyAttributes(flex, root);
+        if (root != null)
+		    hide.comp.JsTools.copyAttributes(flex, root);
         element = flex;
 
         var ds = getDisplayState(uniformLockKey + ":" + labels[0]);

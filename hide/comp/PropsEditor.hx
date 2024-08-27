@@ -313,8 +313,9 @@ class PropsEditor extends Component {
 
 				if (!undo) {
 					if (!isTempChange) {
-						if (tempUndo == null)
-							throw "what";
+						if (tempUndo == null) {
+							throw "missing undo data";
+						}
 						this.undo.change(Custom((isUndo : Bool) -> {
 							if (isUndo) {
 								while(tempUndo.undo()) {};

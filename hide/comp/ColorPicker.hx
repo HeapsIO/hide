@@ -47,7 +47,8 @@ class ColorBox extends Component {
 
 	public function new(?parent : Element, ?root : Element, inIsPickerEnabled:Bool, canEditAlpha:Bool = false, ?fieldName : String) {
 		var e = new Element("<div>").addClass("color-box").width("32px").height("24px").addClass("checkerboard-bg");
-		hide.comp.JsTools.copyAttributes(e, root);
+		if (root != null)
+			hide.comp.JsTools.copyAttributes(e, root);
 
 		if (root != null) root.replaceWith(e) else root = e;
 		super(parent, e);
