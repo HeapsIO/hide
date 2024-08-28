@@ -338,8 +338,9 @@ class Spray extends Object3D {
 	function removeInteractiveBrush() {
 		if( interactive != null ) interactive.remove();
 		clearPreview();
-		if (wasEdited)
-			sceneEditor.refresh(Partial, () -> { });
+		if (wasEdited) {
+			//sceneEditor.queueRebuild(this);
+		}
 		wasEdited = false;
 		clearBrushes();
 	}

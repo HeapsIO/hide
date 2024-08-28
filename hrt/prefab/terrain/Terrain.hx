@@ -603,7 +603,7 @@ class Terrain extends Object3D {
 			terrain.refreshAllGrids();
 			terrain.refreshAllTex();
 			if( editor != null ) {
-				editor.refresh();
+				shared.editor.queueRebuild(this);
 				@:privateAccess editor.blendEdges(terrain.tiles);
 			}
 			modified = true;

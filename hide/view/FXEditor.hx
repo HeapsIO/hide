@@ -746,12 +746,12 @@ class FXEditor extends hide.view.FileView {
 				}
 			}
 
-			sceneEditor.refresh();
+			sceneEditor.queueRebuild(@:privateAccess sceneEditor.sceneData);
 			rebuildAnimPanel();
 		}
 
 		if (pname == "blendParam") {
-			sceneEditor.refresh();
+			sceneEditor.queueRebuild(@:privateAccess sceneEditor.sceneData);
 			rebuildAnimPanel();
 		}
 
@@ -1379,11 +1379,10 @@ class FXEditor extends hide.view.FileView {
 				else
 					element.children.push(c);
 			}
-			sceneEditor.refresh();
+			sceneEditor.queueRebuild(@:privateAccess sceneEditor.sceneData);
 		}));
-		sceneEditor.refresh(function() {
-			sceneEditor.selectElements([element]);
-		});
+		sceneEditor.queueRebuild(@:privateAccess sceneEditor.sceneData);
+		sceneEditor.selectElements([element]);
 		return added;
 	}
 

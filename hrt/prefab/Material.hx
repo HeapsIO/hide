@@ -254,6 +254,8 @@ class Material extends Prefab {
 			previewSphere.remove();
 			return true;
 		}
+		// temporary untill we find a proper way to remove a material
+		shared.editor.queueRebuild(parent);
 		return false;
 	}
 
@@ -604,11 +606,11 @@ class Material extends Prefab {
 				materialName = undo ? previous : actual;
 				ctx.onChange(this, null);
 				ctx.rebuildProperties();
-				ctx.scene.editor.refresh();
+				ctx.scene.editor.queueRebuild(this);
 			}));
 			ctx.onChange(this, null);
 			ctx.rebuildProperties();
-			ctx.scene.editor.refresh();
+			ctx.scene.editor.queueRebuild(this);
 
 			var fx = findParent(hrt.prefab.fx.FX);
 			if(fx != null)

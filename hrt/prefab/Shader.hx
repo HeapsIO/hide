@@ -158,6 +158,11 @@ class Shader extends Prefab {
 
 	#if editor
 
+	override function editorRemoveInstance() : Bool {
+		shared.editor.queueRebuild(parent);
+		return true;
+	}
+
 	function getEditProps(shaderDef: hxsl.SharedShader) : Array<hrt.prefab.Props.PropDef> {
 		var props = [];
 		for(v in shaderDef.data.vars) {

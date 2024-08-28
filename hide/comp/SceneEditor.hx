@@ -363,10 +363,7 @@ class SceneEditorContext extends hide.prefab.EditContext {
 	}
 
 	override function rebuildPrefab( p : hrt.prefab.Prefab, ?sceneOnly : Bool) {
-		if(sceneOnly)
-			editor.refreshScene();
-		else
-			editor.refresh();
+		editor.queueRebuild(p);
 	}
 
 	public function cleanup() {
@@ -812,7 +809,8 @@ class CustomEditor {
 	}
 
 	function refresh( ?callb: Void->Void ) {
-		editor.refresh(Full, callb);
+		editor.queueRebuild(editor.sceneData);
+		//editor.refresh(Full, callb);
 	}
 
 	function show( elt : hide.Element ) {
@@ -2830,14 +2828,10 @@ class SceneEditor {
 	}
 
 	function makePrefab(elt: PrefabElement) {
-		if (elt == sceneData) {
-			refreshScene();
-			return;
-		}
 		scene.setCurrent();
 
-		elt.shared.current3d = elt.parent.findFirstLocal3d();
-		elt.shared.current2d = elt.parent.findFirstLocal2d();
+		elt.shared.current3d = elt.parent?.findFirstLocal3d() ?? root3d;
+		elt.shared.current2d = elt.parent?.findFirstLocal2d() ?? root2d;
 		elt.setEditor(this, this.scene);
 		elt.make();
 
@@ -3928,7 +3922,9 @@ class SceneEditor {
 			var index = elt.parent.children.indexOf(elt);
 			removeInstance(elt);
 			parent.children.remove(elt);
-			refreshTree(() -> selectElements(selectedPrefabs, NoHistory));
+			if (doRefresh) {
+				refreshTree(() -> selectElements(selectedPrefabs, NoHistory));
+			}
 
 			undoes.unshift(function(undo) {
 				if(undo) elt.parent.children.insert(index, elt);
@@ -3948,6 +3944,9 @@ class SceneEditor {
 				if(undo)
 					for(e in elts) rebuild(e);
 				endRebuild();
+				if (doRefresh) {
+					refreshTree(() -> selectElements(selectedPrefabs, NoHistory));
+				}
 			}));
 		}
 	}
@@ -4126,6 +4125,8 @@ class SceneEditor {
 			}
 
 			endRebuild();
+
+			refreshTree(() -> selectElements(selectedPrefabs, NoHistory));
 		}
 
 		return exec;
@@ -4133,15 +4134,20 @@ class SceneEditor {
 
 	function checkWantRebuild(target: PrefabElement, original: PrefabElement) {
 		if (target == null) return;
-		if (target.onEditorChildRebuild(original)) {
-			queueRebuild(target);
-			return;
+		var wantRebuild = target.onEditorTreeChanged(original);
+		switch(wantRebuild) {
+			case Skip:
+				checkWantRebuild(target.parent, original);
+			case Rebuild:
+				queueRebuild(target);
+			case Notify(callback):
+				rebuildQueue.set(target, wantRebuild);
+				checkWantRebuild(target.parent, original);
 		}
-		checkWantRebuild(target.parent, original);
 	}
 
-	var rebuildQueue : Map<PrefabElement, Bool> = [];
-	function queueRebuild(prefab: PrefabElement) {
+	var rebuildQueue : Map<PrefabElement, hrt.prefab.Prefab.TreeChangedResult> = [];
+	public function queueRebuild(prefab: PrefabElement) {
 		if (rebuildQueue != null && rebuildQueue.exists(prefab))
 			return;
 
@@ -4154,7 +4160,7 @@ class SceneEditor {
 		var parent = prefab.parent;
 		checkWantRebuild(parent, prefab);
 
-		rebuildQueue.set(prefab, true);
+		rebuildQueue.set(prefab, Rebuild);
 		if (instant) {
 			endRebuild();
 		}
@@ -4165,27 +4171,38 @@ class SceneEditor {
 	}
 
 	function endRebuild() {
-		for (prefab => _ in rebuildQueue) {
-			var parent = prefab.parent;
-			var skip = false;
+		var notifyList : Array<Void -> Void> = [];
 
-			// don't rebuild this prefab if it's parent will get rebuild anyways
-			while(parent != null) {
-				if (rebuildQueue.exists(parent)) {
-					skip = true;
-					break;
-				}
-				parent = parent.parent;
+		for (prefab => want in rebuildQueue) {
+			switch (want) {
+				case Skip:
+					continue;
+				case Notify(callback):
+					notifyList.push(callback);
+				case Rebuild:
+					var parent = prefab.parent;
+					var skip = false;
+
+					// don't rebuild this prefab if it's parent will get rebuild anyways
+					while(parent != null) {
+						if (rebuildQueue.get(parent) == Rebuild) {
+							skip = true;
+							break;
+						}
+						parent = parent.parent;
+					}
+
+					if (skip == true)
+						continue;
+
+					rebuild(prefab);
 			}
-
-			if (skip == true)
-				continue;
-
-			rebuild(prefab);
 		}
-		refreshTree(() -> selectElements(selectedPrefabs, NoHistory));
 
-		rebuildQueue = [];
+		for (callback in notifyList) {
+			callback();
+		}
+		rebuildQueue = null;
 	}
 
 	function rebuild(prefab: PrefabElement) {

@@ -1768,8 +1768,8 @@ class Emitter extends Object3D {
 		return false; // Emitter removal is buggy
 	}*/
 
-	override function onEditorChildRebuild(child: Prefab) {
-		return true;
+	override function onEditorTreeChanged(child: Prefab) : hrt.prefab.Prefab.TreeChangedResult {
+		return Rebuild;
 	}
 
 	override function edit( ctx : hide.prefab.EditContext ) {

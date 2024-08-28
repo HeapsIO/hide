@@ -720,12 +720,12 @@ class PolygonEditor {
 
 				refreshPolygon();
 				refreshInteractive();
-				ctx.scene.editor.refresh();
+				ctx.scene.editor.queueRebuild(polygonPrefab);
 			}));
 
 			refreshPolygon();
 			refreshInteractive();
-			ctx.scene.editor.refresh();
+			ctx.scene.editor.queueRebuild(polygonPrefab);
 		});
 
 		props.find(".snap").click(function(_) {
@@ -775,7 +775,7 @@ class PolygonEditor {
 
 			refreshPolygon();
 			refreshInteractive();
-			ctx.scene.editor.refresh();
+			ctx.scene.editor.queueRebuild(polygonPrefab);
 
 			undo.change(Custom(function(undo) {
 				var undoDelta = deltaChildSpace.clone();
@@ -826,7 +826,8 @@ class PolygonEditor {
 
 				refreshPolygon();
 				refreshInteractive();
-				ctx.scene.editor.refresh();
+							ctx.scene.editor.queueRebuild(polygonPrefab);
+
 			}));
 		});
 
