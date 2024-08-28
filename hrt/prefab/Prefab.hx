@@ -584,11 +584,8 @@ class Prefab {
 
 	/**
 		Called by the editor to remove the objects created by this prefab but not it's children.
-		Returns true if all the objects were succesfully removed, false otherwise (this will cause
-			a full rebuild of the scene )
 	**/
-	public function editorRemoveInstance() : Bool {
-		return false;
+	public function editorRemoveInstance() : Void {
 	}
 
 	/**

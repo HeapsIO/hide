@@ -148,13 +148,11 @@ class Instance extends Object3D {
 		return path;
 	}
 
-	override function editorRemoveInstance() : Bool {
-		if (!super.editorRemoveInstance())
-			return false;
+	override function editorRemoveInstance() : Void {
 		if (icon != null) {
 			icon.remove();
 		}
-		return true;
+		super.editorRemoveInstance();
 	}
 
 	override function getHideProps() : hide.prefab.HideProps {
