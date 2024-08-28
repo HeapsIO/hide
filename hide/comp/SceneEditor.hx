@@ -810,6 +810,7 @@ class CustomEditor {
 
 	function refresh( ?callb: Void->Void ) {
 		editor.queueRebuild(editor.sceneData);
+		editor.queueRebuildCallback(callb);
 		//editor.refresh(Full, callb);
 	}
 
@@ -1828,7 +1829,7 @@ class SceneEditor {
 		tree.applyStyle = function(p, el) applyTreeStyle(p, el);
 		renderPropsTree.applyStyle = function(p, el) applyTreeStyle(p, el, renderPropsTree);
 		selectElements([]);
-		refresh();
+		refreshScene();
 		this.camera2D = camera2D;
 
 		updateViewportOverlays();
@@ -1850,11 +1851,6 @@ class SceneEditor {
 			return true;
 		return false;
 	};
-
-	public function refresh( ?mode: RefreshMode, ?callb: Void->Void) {
-		if(mode == null || mode == Full) refreshScene();
-		refreshTree(callb);
-	}
 
 	public function collapseTree() {
 		tree.collapseAll();
@@ -2056,6 +2052,8 @@ class SceneEditor {
 		else {
 			createRenderProps();
 		}
+
+		refreshTree();
 
 		onRefresh();
 	}
@@ -2828,65 +2826,47 @@ class SceneEditor {
 	}
 
 	function makePrefab(elt: PrefabElement) {
-		scene.setCurrent();
-
-		elt.shared.current3d = elt.parent?.findFirstLocal3d() ?? root3d;
-		elt.shared.current2d = elt.parent?.findFirstLocal2d() ?? root2d;
-		elt.setEditor(this, this.scene);
-		elt.make();
-
-		for( p in elt.flatten() ) {
-			makeInteractive(p);
-			applySceneStyle(p);
-		}
-		//scene.init(ctx.local3d);
-	}
-
-
-	function refreshParents( elts : Array<PrefabElement> ) {
-		var parents = new Map();
-		for( e in elts ) {
-			if( e.parent == null ) throw e+" is missing parent";
-			parents.set(e.parent, true);
-		}
-		for( p in parents.keys() ) {
-			var h = p.getHideProps();
-			if( h.onChildListChanged != null ) h.onChildListChanged();
-		}
-		if( lastRenderProps != null && elts.contains(lastRenderProps) )
-			lastRenderProps.applyProps(scene.s3d.renderer);
+		queueRebuild(elt);
 	}
 
 	public function addElements(elts : Array<PrefabElement>, selectObj : Bool = true, doRefresh : Bool = true, enableUndo = true) {
+		beginRebuild();
 		for (e in elts) {
 			makePrefab(e);
 		}
 		if (doRefresh) {
-			refresh(Partial, if (selectObj) () -> selectElements(elts, NoHistory) else null);
-			refreshParents(elts);
+			refreshTree(if (selectObj) () -> selectElements(elts, NoHistory) else null);
 		}
+		endRebuild();
+
 		if( !enableUndo )
 			return;
 
-		undo.change(Custom(function(undo) {
+		function exec(undo) {
 			var fullRefresh = false;
 			if(undo) {
-				selectElements([], NoHistory);
+				beginRebuild();
 				for (e in elts) {
 					removeInstance(e);
 					e.parent.children.remove(e);
 				}
-				refresh(fullRefresh ? Full : Partial);
+				endRebuild();
+				refreshTree(() -> selectElements([], NoHistory));
 			}
 			else {
+				beginRebuild();
 				for (e in elts) {
 					e.parent.children.push(e);
 					makePrefab(e);
 				}
-				refresh(Partial, () -> selectElements(elts,NoHistory));
-				refreshParents(elts);
+				endRebuild();
+				refreshTree(if (selectObj) () -> selectElements(elts, NoHistory) else null);
 			}
-		}));
+		}
+
+		if (enableUndo) {
+			undo.change(Custom(exec));
+		}
 	}
 
 	function makeCdbProps( e : PrefabElement, type : cdb.Sheet ) {
@@ -3396,23 +3376,28 @@ class SceneEditor {
 
 		for(e in elts)
 			makePrefab(e);
-		refresh(Partial, () -> selectElements(elts));
+
+		refreshTree(() -> selectElements(elts));
 
 		undo.change(Custom(function(undo) {
 			if( undo ) {
 				var fullRefresh = false;
+				beginRebuild();
 				for(e in elts) {
 					removeInstance(e);
 					parent.children.remove(e);
 				}
-				refresh(fullRefresh ? Full : Partial);
+				endRebuild();
+				refreshTree();
 			}
 			else {
+				beginRebuild();
 				for(e in elts) {
 					parent.children.push(e);
 					makePrefab(e);
 				}
-				refresh(Partial);
+				endRebuild();
+				refreshTree();
 			}
 		}));
 	}
@@ -3561,9 +3546,9 @@ class SceneEditor {
 				effectFunc(false);
 			}
 			if(undo)
-				refresh(()->selectElements([],NoHistory));
+				refreshTree(()->selectElements([],NoHistory));
 			else
-				refresh(()->selectElements([group],NoHistory));
+				refreshTree(()->selectElements([group],NoHistory));
 		}));
 		effectFunc(false);
 		//refresh( ? Full : Partial, () -> selectElements([group],NoHistory));
@@ -3860,7 +3845,7 @@ class SceneEditor {
 		}
 
 		refreshTree(function() {
-			selectElements(newElements);
+			selectElements(newElements, NoHistory);
 			tree.setSelection(newElements);
 			if(thenMove && selectedPrefabs.length > 0) {
 				gizmo.startMove(MoveXY, true);
@@ -3872,24 +3857,28 @@ class SceneEditor {
 		});
 		gizmo.translationMode();
 
+		var prevSelection = selectedPrefabs.copy();
 		undo.change(Custom(function(undo) {
-			selectElements([], NoHistory);
 
 			var fullRefresh = false;
 			if(undo) {
+				beginRebuild();
 				for(elt in newElements) {
 					removeInstance(elt);
 				}
+				endRebuild();
 			}
 
 			for(u in undoes) u(undo);
 
 			if(!undo) {
+				beginRebuild();
 				for(elt in newElements)
 					makePrefab(elt);
+				endRebuild();
 			}
 
-			refresh(fullRefresh ? Full : Partial);
+			refreshTree(() -> selectElements(undo ? prevSelection : newElements, NoHistory));
 		}));
 	}
 
@@ -3922,9 +3911,7 @@ class SceneEditor {
 			var index = elt.parent.children.indexOf(elt);
 			removeInstance(elt);
 			parent.children.remove(elt);
-			if (doRefresh) {
-				refreshTree(() -> selectElements(selectedPrefabs, NoHistory));
-			}
+
 
 			undoes.unshift(function(undo) {
 				if(undo) elt.parent.children.insert(index, elt);
@@ -3932,6 +3919,10 @@ class SceneEditor {
 			});
 		}
 		endRebuild();
+
+		if (doRefresh) {
+			refreshTree(() -> selectElements([], NoHistory));
+		}
 
 		if (enableUndo) {
 			undo.change(Custom(function(undo) {
@@ -3945,7 +3936,7 @@ class SceneEditor {
 					for(e in elts) rebuild(e);
 				endRebuild();
 				if (doRefresh) {
-					refreshTree(() -> selectElements(selectedPrefabs, NoHistory));
+					refreshTree(() -> selectElements(undo ? elts : [], NoHistory));
 				}
 			}));
 		}
@@ -4003,65 +3994,6 @@ class SceneEditor {
 		return { x : x, y : y, z : z, scaleX : scaleX, scaleY : scaleY, scaleZ : scaleZ, rotationX : rotationX, rotationY : rotationY, rotationZ : rotationZ };
 	}
 
-	function reparentOld(elts : Array<PrefabElement>, toElt: PrefabElement, index: Int) : Bool -> Bool {
-		var effects = [];
-		for(i => elt in elts) {
-			var prev = elt.parent;
-			var prevIndex = prev.children.indexOf(elt);
-
-			var obj3d = elt.to(Object3D);
-			var preserveTransform = Std.isOfType(toElt, hrt.prefab.fx.Emitter) || Std.isOfType(prev, hrt.prefab.fx.Emitter);
-			var toObj = getObject(toElt);
-			var obj = getObject(elt);
-			var prevState = null, newState = null;
-			if(obj3d != null && toObj != null && obj != null && !preserveTransform) {
-				var mat = worldMat(obj);
-				var parentMat = worldMat(toObj);
-				parentMat.invert();
-				mat.multiply(mat, parentMat);
-				prevState = obj3d.saveTransform();
-				newState = makeTransform(mat);
-			}
-
-			effects.push(function(undo) {
-				removeInstance(elt);
-				if( undo ) {
-					elt.parent = prev;
-					prev.children.remove(elt);
-					prev.children.insert(prevIndex, elt);
-					if(obj3d != null && prevState != null)
-						obj3d.loadTransform(prevState);
-				} else {
-					@:bypassAccessor elt.parent = toElt;
-					elt.shared = toElt.shared;
-					toElt.children.insert(index + i, elt);
-					if(obj3d != null && newState != null)
-						obj3d.loadTransform(newState);
-				};
-			});
-		}
-
-		return function(undo) {
-			// Remove all the children from their parent before
-			// adding them back in. Makes the index of insert() correct
-			if (!undo) {
-				for (elt in elts) {
-					elt.parent.children.remove(elt);
-				}
-			}
-
-			for(f in effects) {
-				f(undo);
-			}
-
-			removeInstance(toElt);
-
-			makePrefab(toElt);
-			applySceneStyle(toElt);
-			return false;
-		}
-	}
-
 	function reparentImpl(prefabs: Array<PrefabElement>, toPrefab: PrefabElement, index: Int) : Bool -> Void {
 		var effects = [];
 		for(i => prefab in prefabs) {
@@ -4091,9 +4023,6 @@ class SceneEditor {
 					prevParent.children.remove(prefab);
 					prevParent.children.insert(prevIndex, prefab);
 
-					var props = prevParent.getHideProps();
-					if (props.onChildListChanged != null) props.onChildListChanged();
-
 					if(obj3d != null && prevTransform != null)
 						obj3d.loadTransform(prevTransform);
 				} else {
@@ -4109,7 +4038,6 @@ class SceneEditor {
 		}
 
 		function exec(undo: Bool) {
-
 			beginRebuild();
 
 			for (prefab in prefabs) {
@@ -4147,6 +4075,8 @@ class SceneEditor {
 	}
 
 	var rebuildQueue : Map<PrefabElement, hrt.prefab.Prefab.TreeChangedResult> = [];
+	var rebuildEndCallbacks : Array<Void -> Void> = null;
+	/** Indicate that this prefab neet do be rebuild**/
 	public function queueRebuild(prefab: PrefabElement) {
 		if (rebuildQueue != null && rebuildQueue.exists(prefab))
 			return;
@@ -4166,19 +4096,30 @@ class SceneEditor {
 		}
 	}
 
+	/** Register a callback that will be called once all the prefabs in this begin/endRebuild pair have been rebuild**/
+	public function queueRebuildCallback(callback: Void -> Void) {
+		if (rebuildEndCallbacks != null) {
+			rebuildEndCallbacks.push(callback);
+		}
+		else {
+			callback();
+		}
+	}
+
 	function beginRebuild() {
 		rebuildQueue = [];
+		rebuildEndCallbacks = [];
 	}
 
 	function endRebuild() {
-		var notifyList : Array<Void -> Void> = [];
+		var rebuildEndCallbacks : Array<Void -> Void> = [];
 
 		for (prefab => want in rebuildQueue) {
 			switch (want) {
 				case Skip:
 					continue;
 				case Notify(callback):
-					notifyList.push(callback);
+					rebuildEndCallbacks.push(callback);
 				case Rebuild:
 					var parent = prefab.parent;
 					var skip = false;
@@ -4199,16 +4140,27 @@ class SceneEditor {
 			}
 		}
 
-		for (callback in notifyList) {
+		for (callback in rebuildEndCallbacks) {
 			callback();
 		}
 		rebuildQueue = null;
+		rebuildEndCallbacks = null;
 	}
 
 	function rebuild(prefab: PrefabElement) {
+		scene.setCurrent();
+
 		prefab.editorRemoveInstance();
-		makePrefab(prefab);
-		refreshInteractive(prefab);
+
+		prefab.shared.current3d = prefab.parent?.findFirstLocal3d() ?? root3d;
+		prefab.shared.current2d = prefab.parent?.findFirstLocal2d() ?? root2d;
+		prefab.setEditor(this, this.scene);
+		prefab.make();
+
+		for( p in prefab.flatten() ) {
+			makeInteractive(p);
+			applySceneStyle(p);
+		}
 	}
 
 	function autoName(p : PrefabElement) {

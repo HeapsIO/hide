@@ -57,11 +57,6 @@ class PrefabSceneEditor extends hide.comp.SceneEditor {
 		this.localTransform = false; // TODO: Expose option
 	}
 
-	override function refresh(?mode, ?callback) {
-		parent.onRefresh();
-		super.refresh(mode, callback);
-	}
-
 	override function update(dt) {
 		super.update(dt);
 		parent.onUpdate(dt);

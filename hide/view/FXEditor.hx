@@ -158,15 +158,6 @@ private class FXSceneEditor extends hide.comp.SceneEditor {
 		parent.onSelect(elts);
 	}
 
-	override function refresh(?mode: hide.comp.SceneEditor.RefreshMode, ?callb:Void->Void) {
-		// Always refresh scene
-		refreshScene();
-		refreshTree(callb);
-		parent.onRefreshScene();
-	}
-
-
-
 	override function applyTreeStyle(p: PrefabElement, el: Element, ?pname: String, ?tree: hide.comp.IconTree<PrefabElement>) {
 		super.applyTreeStyle(p, el, pname, tree);
 		if (el == null)
