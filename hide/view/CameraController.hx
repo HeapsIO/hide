@@ -291,8 +291,6 @@ class FPSController extends CameraControllerBase {
 	}
 
 	function lookAround(dtheta : Float, dphi : Float) {
-		var cam = getScene().camera;
-
 		var tx = targetOffset.x + distance * Math.cos(theta) * Math.sin(phi) ;
 		var ty = targetOffset.y + distance * Math.sin(theta) * Math.sin(phi);
 		var tz = targetOffset.z + distance * Math.cos(phi);
@@ -315,13 +313,17 @@ class FPSController extends CameraControllerBase {
 			mov.x += 1;
 		if( K.isDown(K.DOWN) || K.isDown(K.S) )
 			mov.x -= 1;
-		if( K.isDown(K.LEFT) || K.isDown(K.Q) || K.isDown(K.A) )
+		if( K.isDown(K.LEFT) || K.isDown(K.Q) )
 			mov.y -= 1;
 		if( K.isDown(K.RIGHT) || K.isDown(K.D) )
 			mov.y += 1;
+		if ( K.isDown(K.A) )
+			mov.z += 1;
+		if ( K.isDown(K.E) )
+			mov.z -= 1;
 
-		mov.set(-mov.y, 0, -mov.x);
-		if( mov.x == 0 && mov.z == 0 )
+		mov.set(-mov.y, -mov.z, -mov.x);
+		if( mov.x == 0 && mov.y == 0 && mov.z == 0 )
 			return;
 		mov.transform3x3(getScene().camera.getInverseView());
 		var moveSpeed = Ide.inst.currentConfig.get("sceneeditor.camera.moveSpeed", 1.5) * camSpeed;
