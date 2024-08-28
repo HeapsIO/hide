@@ -585,13 +585,7 @@ class Cell {
 		code = code.split("\n").join("<br/>");
 		code = code.split("\t").join("&nbsp;&nbsp;&nbsp;&nbsp;");
 		// typecheck
-		var chk = new ScriptEditor.ScriptChecker(editor.config, "cdb."+getDocumentName()+(c == this.column ? "" : "."+ c.name),
-			[
-				"cdb."+table.sheet.name => line.obj,
-				"cdb.objID" => objID,
-				"cdb.groupID" => line.getGroupID(),
-			]
-		);
+		var chk = new ScriptEditor.ScriptChecker(editor.config, "cdb."+getDocumentName()+(c == this.column ? "" : "."+ c.name),line.getConstants(objID));
 		var cache = chk.getCache(ecode);
 		var error : Null<Bool> = cache.get(cache.signature);
 		if( error == null ) {

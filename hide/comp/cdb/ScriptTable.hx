@@ -52,11 +52,7 @@ class ScriptTable extends SubTable {
 			// let pass Ctrl+S if ObjEditor (allow save script)
 			if( e.keyCode != "S".code || !Std.isOfType(editor, ObjEditor) ) e.stopPropagation();
 		});
-		var checker = new ScriptEditor.ScriptChecker(editor.config,"cdb."+cell.getDocumentName(),[
-			"cdb."+cell.table.sheet.name => cell.line.obj,
-			"cdb.objID" => ids.join(":"),
-			"cdb.groupID" => cell.line.getGroupID(),
-		]);
+		var checker = new ScriptEditor.ScriptChecker(editor.config,"cdb."+cell.getDocumentName(),cell.line.getConstants(ids.join(":")));
 		script = new ScriptEditor(cell.value, checker, div);
 		script.onSave = function() {
 			saveValue();

@@ -79,6 +79,21 @@ class Line extends Component {
 		return null;
 	}
 
+	public function getConstants( objId ) {
+		var consts = [
+			"cdb.objID" => objId,
+			"cdb.groupID" => getGroupID(),
+		];
+		var t = table;
+		var line = this;
+		while( t != null ) {
+			consts.set("cdb."+t.sheet.name.split("@").join("."), line.obj);
+			line = Std.downcast(t, SubTable)?.cell?.line;
+			t = t.parent;
+		}
+		return consts;
+	}
+
 	public function evaluate() {
 		for( c in cells )
 			@:privateAccess c.evaluate();
