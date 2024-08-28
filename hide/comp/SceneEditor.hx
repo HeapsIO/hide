@@ -3898,12 +3898,6 @@ class SceneEditor {
 	}
 
 	public function deleteElements(elts : Array<PrefabElement>, ?then: Void->Void, doRefresh : Bool = true, enableUndo : Bool = true) {
-		// for (e in elts) {
-		// 	removeInstance(e);
-		// 	e.parent = null;
-		// }
-
-		var fullRefresh = false;
 		var undoes = [];
 		beginRebuild();
 		for(elt in elts) {
