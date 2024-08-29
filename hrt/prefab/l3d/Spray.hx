@@ -126,6 +126,7 @@ class Spray extends Object3D {
 		cast(local3d, SprayObject).redraw();
 	}
 
+
 	override function editorRemoveInstance() : Void {
 		removeInteractiveBrush();
 	}

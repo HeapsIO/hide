@@ -3820,16 +3820,16 @@ class SceneEditor {
 		var newElements = [];
 		var lastElem = elements[elements.length-1];
 		var lastIndex = lastElem.parent.children.indexOf(lastElem);
+		beginRebuild();
 		for(i => elt in elements) {
 			@:pirvateAccess var clone = hrt.prefab.Prefab.createFromDynamic(haxe.Json.parse(haxe.Json.stringify(elt.serialize())), null, elt.parent.shared);
 			var index = lastIndex+1+i;
 			elt.parent.children.insert(index, clone);
 			@:bypassAccessor clone.parent = elt.parent;
-			clone.shared.current2d = elt.parent.findFirstLocal2d();
-			clone.shared.current3d = elt.parent.findFirstLocal3d();
-			clone.make();
-
 			autoName(clone);
+
+			queueRebuild(clone);
+
 			newElements.push(clone);
 
 			var all = clone.flatten();
@@ -3842,6 +3842,7 @@ class SceneEditor {
 				else elt.parent.children.insert(index, clone);
 			});
 		}
+		endRebuild();
 
 		refreshTree(function() {
 			selectElements(newElements, NoHistory);
