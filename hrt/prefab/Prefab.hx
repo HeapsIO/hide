@@ -35,6 +35,14 @@ abstract ContextMake(ContextShared) from ContextShared to ContextShared {
 	}
 }
 
+#if editor
+enum TreeChangedResult {
+	Skip; /**Don't rebuild this prefab**/
+	Rebuild; /** Force rebuild this prefab **/
+	Notify(callback: Void -> Void); /**Call the callback once all the prefab that wanted rebuild have been rebuild. Call order betwteen multiple Notify are not guaranteed. Only one callback will be called by prefab in the tree**/
+}
+#end
+
 @:allow(hide)
 @:keepSub
 @:autoBuild(hrt.prefab.Macros.buildPrefab())
@@ -576,11 +584,15 @@ class Prefab {
 
 	/**
 		Called by the editor to remove the objects created by this prefab but not it's children.
-		Returns true if all the objects were succesfully removed, false otherwise (this will cause
-			a full rebuild of the scene )
 	**/
-	public function editorRemoveInstance() : Bool {
-		return false;
+	public function editorRemoveInstance() : Void {
+	}
+
+	/**
+		Called by the editor when a child of this object gets added, rebuild or removed.
+	**/
+	public function onEditorTreeChanged(child: Prefab) : TreeChangedResult {
+		return Skip;
 	}
 
 	/**

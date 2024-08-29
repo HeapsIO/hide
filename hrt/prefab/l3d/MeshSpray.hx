@@ -676,7 +676,7 @@ class MeshSpray extends Spray {
 						}
 						elt.val(newPath);
 						elt.html(extractItemName(newPath));
-						sceneEditor.refresh();
+						sceneEditor.queueRebuild(this);
 						undo.change(Custom(function(undo) {
 							if(undo) {
 								removeSourcePath(newPath);
@@ -689,7 +689,7 @@ class MeshSpray extends Spray {
 								}
 								elt.val(path);
 								elt.html(extractItemName(path));
-								sceneEditor.refresh();
+								sceneEditor.queueRebuild(this);
 							}
 							else {
 								removeSourcePath(elt.val());
@@ -702,7 +702,7 @@ class MeshSpray extends Spray {
 								}
 								elt.val(newPath);
 								elt.html(extractItemName(newPath));
-								sceneEditor.refresh();
+								sceneEditor.queueRebuild(this);
 							}
 						}));
 					}) },

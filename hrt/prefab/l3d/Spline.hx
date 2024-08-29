@@ -151,11 +151,9 @@ class SplinePoint extends Object3D {
 
 	#if editor
 
-	override function editorRemoveInstance() : Bool {
-		haxe.Timer.delay(() -> { // wait for next frame, need the point to be removed from children to recompute spline accurately
-			@:privateAccess spline.computeSpline();
-		}, 0);
-		return super.editorRemoveInstance();
+	override function editorRemoveInstance() : Void {
+		shared.editor.queueRebuildCallback(() -> @:privateAccess spline.computeSpline());
+		super.editorRemoveInstance();
 	}
 
 	public function computeName() {

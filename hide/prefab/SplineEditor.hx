@@ -422,7 +422,7 @@ class SplineEditor {
 							obj3d.applyTransform();
 							prefab.updateInstance();
 							showViewers();
-							@:privateAccess editContext.scene.editor.refresh(Partial);
+							@:privateAccess editContext.scene.editor.refreshTree();
 							showViewers();
 							createGizmos();
 						}
@@ -481,7 +481,7 @@ class SplineEditor {
 								editContext.scene.editor.deleteElements([sp], () -> {}, false, false);
 								for (sp in prefab.points)
 									sp.computeName();
-								@:privateAccess editContext.scene.editor.refresh(Partial);
+								@:privateAccess editContext.scene.editor.refreshTree();
 								prefab.updateInstance();
 								showViewers();
 								createGizmos();
@@ -502,7 +502,7 @@ class SplineEditor {
 						editContext.scene.editor.deleteElements([sp], () -> {}, false, false);
 						for (sp in prefab.points)
 							sp.computeName();
-						@:privateAccess editContext.scene.editor.refresh(Partial);
+						@:privateAccess editContext.scene.editor.refreshTree();
 
 						prefab.updateInstance();
 						showViewers();
@@ -520,7 +520,7 @@ class SplineEditor {
 								editContext.scene.editor.deleteElements([sp], () -> {}, false, false);
 								for (sp in prefab.points)
 									sp.computeName();
-								@:privateAccess editContext.scene.editor.refresh(Partial);
+								@:privateAccess editContext.scene.editor.refreshTree();
 								prefab.updateInstance();
 								showViewers();
 								createGizmos();
@@ -613,7 +613,7 @@ class SplineEditor {
 				sp.rotationZ += hxd.Math.degToRad(180);
 				sp.computeName();
 			}
-			@:privateAccess editContext.scene.editor.refresh(Partial);
+			@:privateAccess editContext.scene.editor.refreshTree();
 
 			undo.change(Custom(function(undo) {
 				prefab.children.reverse();
@@ -621,7 +621,7 @@ class SplineEditor {
 					sp.rotationZ += hxd.Math.degToRad(180);
 					sp.computeName();
 				}
-				@:privateAccess editContext.scene.editor.refresh(Partial);
+				@:privateAccess editContext.scene.editor.refreshTree();
 			}));
 			ctx.onChange(prefab, null);
 			removeGizmos();

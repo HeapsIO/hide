@@ -32,10 +32,6 @@ class FXEditContext extends hide.prefab.EditContext {
 		super.onChange(p, propName);
 		parent.onPrefabChange(p, propName);
 	}
-
-	override function rebuildPrefab(p : hrt.prefab.Prefab, ?sceneOnly) {
-		parent.sceneEditor.refreshScene();
-	}
 }
 
 @:access(hide.view.FXEditor)
@@ -157,15 +153,6 @@ private class FXSceneEditor extends hide.comp.SceneEditor {
 		super.selectElements(elts, mode);
 		parent.onSelect(elts);
 	}
-
-	override function refresh(?mode: hide.comp.SceneEditor.RefreshMode, ?callb:Void->Void) {
-		// Always refresh scene
-		refreshScene();
-		refreshTree(callb);
-		parent.onRefreshScene();
-	}
-
-
 
 	override function applyTreeStyle(p: PrefabElement, el: Element, ?pname: String, ?tree: hide.comp.IconTree<PrefabElement>) {
 		super.applyTreeStyle(p, el, pname, tree);
@@ -746,12 +733,12 @@ class FXEditor extends hide.view.FileView {
 				}
 			}
 
-			sceneEditor.refresh();
+			sceneEditor.queueRebuild(@:privateAccess sceneEditor.sceneData);
 			rebuildAnimPanel();
 		}
 
 		if (pname == "blendParam") {
-			sceneEditor.refresh();
+			sceneEditor.queueRebuild(@:privateAccess sceneEditor.sceneData);
 			rebuildAnimPanel();
 		}
 
@@ -779,13 +766,6 @@ class FXEditor extends hide.view.FileView {
 				this.curveEditor.refreshGraph();
 			}
 		}
-
-	}
-
-	function onRefreshScene() {
-		var renderProps = cast(data, hrt.prefab.Prefab).find(hrt.prefab.RenderProps);
-		if(renderProps != null)
-			renderProps.applyProps(scene.s3d.renderer);
 	}
 
 	override function onDragDrop(items : Array<String>, isDrop : Bool) {
@@ -1379,11 +1359,10 @@ class FXEditor extends hide.view.FileView {
 				else
 					element.children.push(c);
 			}
-			sceneEditor.refresh();
+			sceneEditor.queueRebuild(@:privateAccess sceneEditor.sceneData);
 		}));
-		sceneEditor.refresh(function() {
-			sceneEditor.selectElements([element]);
-		});
+		sceneEditor.queueRebuild(@:privateAccess sceneEditor.sceneData);
+		sceneEditor.selectElements([element]);
 		return added;
 	}
 
@@ -1732,8 +1711,6 @@ class FXEditor extends hide.view.FileView {
 			if(currentTime >= previewMax) {
 				currentTime = previewMin;
 
-				//if(data.scriptCode != null && data.scriptCode.length > 0)
-					//sceneEditor.refreshScene(); // This allow to reset the scene when values are modified causes edition issues, solves
 				for(f in allFx)
 					f.setRandSeed(Std.random(0xFFFFFF));
 			}

@@ -449,12 +449,12 @@ class Object3D extends Prefab {
 		return int;
 	}
 
-	override function editorRemoveInstance() : Bool {
+	override function editorRemoveInstance() : Void {
 		if (local3d != null)
 			local3d.remove();
 		if (editorIcon != null)
 			editorIcon.remove();
-		return true;
+		super.editorRemoveInstance();
 	}
 
 	override function edit( ctx : hide.prefab.EditContext ) {

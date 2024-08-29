@@ -581,6 +581,10 @@ class FX extends Object3D implements BaseFX {
 
 	#if editor
 
+	override function onEditorTreeChanged(child: Prefab) : hrt.prefab.Prefab.TreeChangedResult {
+		return Rebuild;
+	}
+
 	public function refreshObjectAnims() : Void {
 		var fxanim = Std.downcast(local3d, FXAnimation);
 		fxanim.objAnims = null;

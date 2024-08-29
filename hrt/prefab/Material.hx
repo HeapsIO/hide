@@ -249,12 +249,15 @@ class Material extends Prefab {
 	}
 
 	#if editor
-	override function editorRemoveInstance() : Bool {
+	override function editorRemoveInstance() : Void {
 		if (previewSphere != null) {
 			previewSphere.remove();
-			return true;
 		}
-		return false;
+		else {
+			// temporary untill we find a proper way to remove a material
+			shared.editor.queueRebuild(parent);
+		}
+		super.editorRemoveInstance();
 	}
 
 	override function makeInteractive() : hxd.SceneEvents.Interactive {
@@ -604,11 +607,11 @@ class Material extends Prefab {
 				materialName = undo ? previous : actual;
 				ctx.onChange(this, null);
 				ctx.rebuildProperties();
-				ctx.scene.editor.refresh();
+				ctx.scene.editor.queueRebuild(this);
 			}));
 			ctx.onChange(this, null);
 			ctx.rebuildProperties();
-			ctx.scene.editor.refresh();
+			ctx.scene.editor.queueRebuild(this);
 
 			var fx = findParent(hrt.prefab.fx.FX);
 			if(fx != null)
