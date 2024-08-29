@@ -126,9 +126,8 @@ class Spray extends Object3D {
 		cast(local3d, SprayObject).redraw();
 	}
 
-	override function editorRemoveInstance() : Bool {
+	override function editorRemoveInstance() : Void {
 		removeInteractiveBrush();
-		return super.editorRemoveInstance();
 	}
 
 	function clearPreview() {
@@ -568,21 +567,6 @@ class Spray extends Object3D {
 			g.z = originZ + 0.025;
 		}
 	}
-
-	override function editorRemoveInstance() : Void {
-		removeInteractiveBrush();
-		super.editorRemoveInstance();
-	}
-
-	override function makeObject(parent3d: h3d.scene.Object ) : h3d.scene.Object {
-		return new SprayObject(this, parent3d);
-	}
-
-	override function applyTransform() {
-		super.applyTransform();
-		cast(local3d, SprayObject).redraw();
-	}
-
 
 	static public function makePrimCircle(segments: Int, inner : Float = 0, rings : Int = 0) {
 		var points = [];
