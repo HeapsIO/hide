@@ -3666,11 +3666,13 @@ class SceneEditor {
 	public function setEnabled(elements : Array<PrefabElement>, enable: Bool) {
 		var old = [for(e in elements) e.enabled];
 		function apply(on) {
+			beginRebuild();
 			for(i in 0...elements.length) {
 				elements[i].enabled = on ? enable : old[i];
 				onPrefabChange(elements[i]);
+				queueRebuild(elements[i]);
 			}
-			refreshScene();
+			endRebuild();
 		}
 		apply(true);
 		undo.change(Custom(function(undo) {
@@ -4146,10 +4148,12 @@ class SceneEditor {
 
 		prefab.editorRemoveInstance();
 
-		prefab.shared.current3d = prefab.parent?.findFirstLocal3d() ?? root3d;
-		prefab.shared.current2d = prefab.parent?.findFirstLocal2d() ?? root2d;
-		prefab.setEditor(this, this.scene);
-		prefab.make();
+		if (prefab.enabled) {
+			prefab.shared.current3d = prefab.parent?.findFirstLocal3d() ?? root3d;
+			prefab.shared.current2d = prefab.parent?.findFirstLocal2d() ?? root2d;
+			prefab.setEditor(this, this.scene);
+			prefab.make();
+		}
 
 		for( p in prefab.flatten() ) {
 			makeInteractive(p);
