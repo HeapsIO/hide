@@ -2676,12 +2676,6 @@ class SceneEditor {
 	}
 
 	public function onPrefabChange(p: PrefabElement, ?pname: String) {
-		// TODO : implement
-		/*var model = p.to(hrt.prefab.Model);
-		if(model != null && pname == "source") {
-			refreshScene();
-			return;
-		}*/
 
 		if(p != sceneData) {
 			var el = tree.getElement(p);
@@ -3686,11 +3680,13 @@ class SceneEditor {
 	public function setEditorOnly(elements : Array<PrefabElement>, enable: Bool) {
 		var old = [for(e in elements) e.editorOnly];
 		function apply(on) {
+			beginRebuild();
 			for(i in 0...elements.length) {
 				elements[i].editorOnly = on ? enable : old[i];
 				onPrefabChange(elements[i]);
+				queueRebuild(elements[i]);
 			}
-			refreshScene();
+			endRebuild();
 		}
 		apply(true);
 		undo.change(Custom(function(undo) {
@@ -3704,11 +3700,13 @@ class SceneEditor {
 	public function setInGameOnly(elements : Array<PrefabElement>, enable: Bool) {
 		var old = [for(e in elements) e.inGameOnly];
 		function apply(on) {
+			beginRebuild();
 			for(i in 0...elements.length) {
 				elements[i].inGameOnly = on ? enable : old[i];
 				onPrefabChange(elements[i]);
+				queueRebuild(elements[i]);
 			}
-			refreshScene();
+			endRebuild();
 		}
 		apply(true);
 		undo.change(Custom(function(undo) {
@@ -3777,7 +3775,6 @@ class SceneEditor {
 					elements[i].locked = redo ? locked : prev[i];
 			}), function() {
 				tree.refresh();
-				refreshScene();
 			});
 		}
 
@@ -4148,7 +4145,7 @@ class SceneEditor {
 
 		prefab.editorRemoveInstance();
 
-		if (prefab.enabled) {
+		if (prefab.enabled && !prefab.inGameOnly) {
 			prefab.shared.current3d = prefab.parent?.findFirstLocal3d() ?? root3d;
 			prefab.shared.current2d = prefab.parent?.findFirstLocal2d() ?? root2d;
 			prefab.setEditor(this, this.scene);

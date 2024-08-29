@@ -141,7 +141,7 @@ class Model extends Object3D {
 			if( pname == "retargetIgnore" && ctx.properties.isTempChange ) return;
 
 			if (pname == "source")
-				ctx.scene.editor.refreshScene();
+				ctx.scene.editor.queueRebuild(this);
 
 			ctx.onChange(this, pname);
 		});

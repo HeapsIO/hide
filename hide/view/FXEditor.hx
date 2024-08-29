@@ -32,10 +32,6 @@ class FXEditContext extends hide.prefab.EditContext {
 		super.onChange(p, propName);
 		parent.onPrefabChange(p, propName);
 	}
-
-	override function rebuildPrefab(p : hrt.prefab.Prefab, ?sceneOnly) {
-		parent.sceneEditor.refreshScene();
-	}
 }
 
 @:access(hide.view.FXEditor)
@@ -770,13 +766,6 @@ class FXEditor extends hide.view.FileView {
 				this.curveEditor.refreshGraph();
 			}
 		}
-
-	}
-
-	function onRefreshScene() {
-		var renderProps = cast(data, hrt.prefab.Prefab).find(hrt.prefab.RenderProps);
-		if(renderProps != null)
-			renderProps.applyProps(scene.s3d.renderer);
 	}
 
 	override function onDragDrop(items : Array<String>, isDrop : Bool) {
@@ -1722,8 +1711,6 @@ class FXEditor extends hide.view.FileView {
 			if(currentTime >= previewMax) {
 				currentTime = previewMin;
 
-				//if(data.scriptCode != null && data.scriptCode.length > 0)
-					//sceneEditor.refreshScene(); // This allow to reset the scene when values are modified causes edition issues, solves
 				for(f in allFx)
 					f.setRandSeed(Std.random(0xFFFFFF));
 			}
