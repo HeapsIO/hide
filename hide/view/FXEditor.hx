@@ -1725,6 +1725,57 @@ class FXEditor extends hide.view.FileView {
 		for(fx in allFx)
 			fx.setTime(currentTime - fx.startDelay);
 
+		// Fix anim events :
+		// we force play the first or last frame of the nearset
+		// anim event for each prefab that has anim events in the FX
+		// if we are not in the middle of playing an animation
+		@:privateAccess
+		for (fx in allFx) {
+			var time = fx.localTime;
+			if (fx.objAnims == null)
+				continue;
+
+			for (anim in fx.objAnims) {
+				if (anim.events == null)
+					continue;
+
+				var minTime = hxd.Math.POSITIVE_INFINITY;
+				var nearest : hrt.prefab.fx.Event.EventInstance = null;
+				var jumpTo = 0.0;
+				for (instance in anim.events) {
+					var event = Std.downcast(instance.evt, hrt.prefab.fx.AnimEvent);
+					if (event == null)
+						continue;
+					var firstFrame = event.time;
+					var toFirstFrame = firstFrame - time;
+					if (toFirstFrame >= 0 && toFirstFrame < minTime) {
+						nearest = instance;
+						minTime = toFirstFrame;
+						jumpTo = 0.0001;
+					}
+
+					var anim = event.animation != null ? event.shared.loadAnimation(event.animation) : null;
+					var duration = event.duration > 0 ? event.duration : (anim?.getDuration() ?? 0.0);
+					var lastFrame = event.time + duration;
+					var toLastFrame = time - lastFrame;
+					if (toLastFrame >= 0 && toLastFrame < minTime) {
+						nearest = instance;
+						minTime = toLastFrame;
+						jumpTo = duration-0.0001;
+					}
+
+					// We are currently playing this animation, exit
+					if (toFirstFrame < 0 && toLastFrame < 0) {
+						nearest = null;
+						break;
+					}
+				}
+				if (nearest != null) {
+					nearest.setTime(jumpTo);
+				}
+			}
+		}
+
 		var cam = scene.s3d.camera;
 		if( light != null ) {
 			var angle = Math.atan2(cam.target.y - cam.pos.y, cam.target.x - cam.pos.x);
