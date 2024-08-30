@@ -2799,7 +2799,6 @@ class SceneEditor {
 	}
 
 	function removeInstance(elt : PrefabElement) : Void {
-		var allRemoved = true;
 		function recRemove(e:PrefabElement) {
 			for (c in e.children) {
 				recRemove(c);
@@ -3906,7 +3905,6 @@ class SceneEditor {
 			removeInstance(elt);
 			parent.children.remove(elt);
 
-
 			undoes.unshift(function(undo) {
 				if(undo) elt.parent.children.insert(index, elt);
 				else elt.parent.children.remove(elt);
@@ -4144,7 +4142,9 @@ class SceneEditor {
 
 		prefab.editorRemoveInstance();
 
-		if (prefab.enabled && !prefab.inGameOnly) {
+		var enabled = prefab.enabled && !prefab.inGameOnly;
+		var actuallyInWorld = prefab == sceneData || (prefab.parent != null && prefab.parent.has(prefab));
+		if (enabled && actuallyInWorld) {
 			prefab.shared.current3d = prefab.parent?.findFirstLocal3d() ?? root3d;
 			prefab.shared.current2d = prefab.parent?.findFirstLocal2d() ?? root2d;
 			prefab.setEditor(this, this.scene);
