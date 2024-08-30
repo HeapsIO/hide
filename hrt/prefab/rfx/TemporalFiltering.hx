@@ -239,19 +239,10 @@ class TemporalFiltering extends hrt.prefab.rfx.RendererFX {
 			@:privateAccess ctx.cameraJitterOffsets.set( jitterOffsetX, jitterOffsetY, prevJitterOffsetX, prevJitterOffsetY );
 			s.cameraInverseViewProj.initInverse(curMatNoJitter);
 		}
-
-		if( step == Shadows ) {
-			r.ctx.camera.m.load(curMatNoJitter);
-			return;
-		}
 	}
 
 	override function end( r:h3d.scene.Renderer, step:h3d.impl.RendererFX.Step ) {
 		var ctx = r.ctx;
-		if ( step == Shadows ) {
-			ctx.camera.m.load(curMatJittered);
-			return;
-		}
 
 		if( ( step == AfterTonemapping && renderMode == "AfterTonemapping") || (step == BeforeTonemapping && renderMode == "BeforeTonemapping" ) ) {
 			r.mark("TemporalFiltering");
