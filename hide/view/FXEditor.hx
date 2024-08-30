@@ -302,6 +302,11 @@ private class FXSceneEditor extends hide.comp.SceneEditor {
 	override function getAvailableTags(p:PrefabElement) {
 		return cast ide.currentConfig.get("fx.tags");
 	}
+
+	override function endRebuild() {
+		super.endRebuild();
+		parent.rebuildAnimPanel();
+	}
 }
 
 class FXEditor extends hide.view.FileView {
@@ -1360,9 +1365,10 @@ class FXEditor extends hide.view.FileView {
 					element.children.push(c);
 			}
 			sceneEditor.queueRebuild(@:privateAccess sceneEditor.sceneData);
+			sceneEditor.queueRebuildCallback(() -> @:privateAccess sceneEditor.refreshTree(() -> sceneEditor.selectElements(!undo ? [for (a in added) a] : [])));
 		}));
 		sceneEditor.queueRebuild(@:privateAccess sceneEditor.sceneData);
-		sceneEditor.selectElements([element]);
+		sceneEditor.queueRebuildCallback(() -> @:privateAccess sceneEditor.refreshTree(() -> sceneEditor.selectElements([for (a in added) a])));
 		return added;
 	}
 

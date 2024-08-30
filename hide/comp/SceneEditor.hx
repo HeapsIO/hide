@@ -4068,7 +4068,7 @@ class SceneEditor {
 		}
 	}
 
-	var rebuildQueue : Map<PrefabElement, hrt.prefab.Prefab.TreeChangedResult> = [];
+	var rebuildQueue : Map<PrefabElement, hrt.prefab.Prefab.TreeChangedResult> = null;
 	var rebuildEndCallbacks : Array<Void -> Void> = null;
 	/** Indicate that this prefab neet do be rebuild**/
 	public function queueRebuild(prefab: PrefabElement) {
@@ -4106,8 +4106,6 @@ class SceneEditor {
 	}
 
 	function endRebuild() {
-		var rebuildEndCallbacks : Array<Void -> Void> = [];
-
 		for (prefab => want in rebuildQueue) {
 			switch (want) {
 				case Skip:
