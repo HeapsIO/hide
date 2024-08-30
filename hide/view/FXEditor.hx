@@ -1365,10 +1365,10 @@ class FXEditor extends hide.view.FileView {
 					element.children.push(c);
 			}
 			sceneEditor.queueRebuild(@:privateAccess sceneEditor.sceneData);
-			sceneEditor.queueRebuildCallback(() -> @:privateAccess sceneEditor.refreshTree(() -> sceneEditor.selectElements(!undo ? [for (a in added) a] : [])));
+			sceneEditor.queueRebuildCallback(() -> @:privateAccess sceneEditor.refreshTree(() -> sceneEditor.selectElements(!undo ? [for (a in added) a] : [], NoHistory)));
 		}));
 		sceneEditor.queueRebuild(@:privateAccess sceneEditor.sceneData);
-		sceneEditor.queueRebuildCallback(() -> @:privateAccess sceneEditor.refreshTree(() -> sceneEditor.selectElements([for (a in added) a])));
+		sceneEditor.queueRebuildCallback(() -> @:privateAccess sceneEditor.refreshTree(() -> sceneEditor.selectElements([for (a in added) a], NoHistory)));
 		return added;
 	}
 
