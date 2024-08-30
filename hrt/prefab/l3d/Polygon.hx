@@ -64,6 +64,11 @@ class Polygon extends Object3D {
 		this.points = p.points;
 	}
 
+	public function setShape(newShape: Shape) {
+		shape = newShape;
+		points = [];
+	}
+
 	override function updateInstance(?propName : String) {
 		super.updateInstance(propName);
 		var mesh : h3d.scene.Mesh = cast local3d;
