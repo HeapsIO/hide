@@ -3367,10 +3367,12 @@ class SceneEditor {
 
 		}
 
+		beginRebuild();
 		for(e in elts)
-			makePrefab(e);
+			queueRebuild(e);
+		endRebuild();
 
-		refreshTree(() -> selectElements(elts));
+		refreshTree(() -> selectElements(elts, NoHistory));
 
 		undo.change(Custom(function(undo) {
 			if( undo ) {
@@ -3381,7 +3383,7 @@ class SceneEditor {
 					parent.children.remove(e);
 				}
 				endRebuild();
-				refreshTree();
+				refreshTree(() -> selectElements([], NoHistory));
 			}
 			else {
 				beginRebuild();
@@ -3390,7 +3392,7 @@ class SceneEditor {
 					makePrefab(e);
 				}
 				endRebuild();
-				refreshTree();
+				refreshTree(() -> selectElements(elts, NoHistory));
 			}
 		}));
 	}
