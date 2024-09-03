@@ -424,9 +424,9 @@ class OverviewEditor extends Component implements CurveEditorComponent
 							key.time += dx / xScale;
 							if(@:privateAccess this.curveEditor.lockKeyX || e.shiftKey)
 								key.time -= deltaX / xScale;
-
-							@:privateAccess this.curveEditor.fixKey(key);
 						}
+
+						@:privateAccess this.curveEditor.fixKeys(cast selectedKeys);
 
 						for(evt in selectedEvents) {
 							evt.event.time += dx / xScale;

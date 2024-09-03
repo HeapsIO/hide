@@ -81,6 +81,11 @@ class ModalColumnForm extends Modal {
 					</select>
 				</tr>
 
+				<tr>
+					<td>Default Value
+					<td id=defaultValue>
+				</tr>
+
 				<tr class="kind">
 					<td>Kind
 					<td>
@@ -184,10 +189,33 @@ class ModalColumnForm extends Modal {
 		}
 
 		var types = form.find("[name=type]");
+		var req = form.find("[name=req]");
+		var defaultValueEl = form.find("#defaultValue");
+		function updateDefaultValueField() {
+			defaultValueEl.empty();
+			var hide = !req.is(':checked');
+			if (req.is(':checked')) {
+				switch (types.val()) {
+					case "float", "int":
+						new Element('<input name="defaultValue" type="number"/>').appendTo(defaultValueEl);
+					case "bool":
+						new Element('<input name="defaultValue" type="checkbox"/>').appendTo(defaultValueEl);
+					case "string":
+						new Element('<input name="defaultValue" />').appendTo(defaultValueEl);
+					default:
+						hide = true;
+				}
+			}
+
+			defaultValueEl.parent().css({display: hide ? 'none' : 'table-row'});
+		}
+
 		function changeFieldType() {
 			form.find("table").attr("class","").toggleClass("t_"+types.val());
+			updateDefaultValueField();
 		}
 		types.change(function(_) changeFieldType());
+		req.change(function(_) updateDefaultValueField());
 		changeFieldType();
 
 		var ctypes = form.find("[name=ctype]");
@@ -226,6 +254,7 @@ class ModalColumnForm extends Modal {
 				form.find("[name=doc]").val(column.documentation);
 				form.find(".doc").removeClass("hide");
 			}
+			updateDefaultValueField();
 			switch( column.type ) {
 			case TEnum(values), TFlags(values):
 				form.find("#values")[0].innerText = values.join("\n");
@@ -237,7 +266,11 @@ class ModalColumnForm extends Modal {
 			case TInt, TFloat:
 				form.find("[name=formula]").val( p.formula == null ? "" : p.formula );
 				form.find("[name=export]").prop( "checked", !p.ignoreExport );
+				form.find("[name=defaultValue]").val( column.defaultValue );
+			case TBool:
+				form.find("[name=defaultValue]").prop('checked', column.defaultValue );
 			default:
+				form.find("[name=defaultValue]").val( column.defaultValue );
 			}
 		} else {
 			form.addClass("create");
@@ -401,7 +434,23 @@ class ModalColumnForm extends Modal {
 			props.formula = form.find("[name=formula]").val();
 			if( props.formula == "" ) props.formula = null;
 			props.ignoreExport = props.formula != null && !form.find("[name=export]").is(":checked") ? true : null;
+			var defV = form.find("[name=defaultValue]").val();
+			if (defV != null && defV != '')
+				c.defaultValue = Std.parseFloat(defV);
+			else
+				Reflect.deleteField(c, "defaultValue");
+		case TBool:
+			var defV = form.find("[name=defaultValue]").is(':checked');
+			if (defV != null && defV)
+				c.defaultValue = true;
+			else
+				Reflect.deleteField(c, "defaultValue");
 		default:
+			var defV = form.find("[name=defaultValue]").val();
+			if (defV != null && defV != '')
+				c.defaultValue = defV;
+			else
+				Reflect.deleteField(c, "defaultValue");
 		}
 		if( t == TId && v.scope != "" ) c.scope = Std.parseInt(v.scope);
 		if( v.doc != "" ) c.documentation = v.doc;
@@ -419,5 +468,4 @@ class ModalColumnForm extends Modal {
 	public function error(str : String) {
 		contentModal.find("#errorModal").html(str);
 	}
-
 }
