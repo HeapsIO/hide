@@ -364,6 +364,7 @@ class SceneEditorContext extends hide.prefab.EditContext {
 
 	override function rebuildPrefab( p : hrt.prefab.Prefab, ?sceneOnly : Bool) {
 		editor.queueRebuild(p);
+		editor.refreshTree();
 	}
 
 	public function cleanup() {
@@ -1864,6 +1865,9 @@ class SceneEditor {
 				if(!Std.isOfType(el, Element)) continue;
 				applyTreeStyle(elt, el);
 			}
+
+			tree.setSelection(selectedPrefabs);
+
 			if(callb != null) callb();
 		});
 
