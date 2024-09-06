@@ -162,24 +162,21 @@ class Gradient {
 	}
 	#end
 
-    public static function hashCombine(hash : Int32, newValue : Int32) : Int32 {
-        return hash ^ (newValue * 0x01000193);
-    }
-
     public static function getDataHash(data : GradientData) : Int32 {
-        var hash = hashCombine(0, data.resolution);
-        hash = hashCombine(hash, data.isVertical ? 0 : 1);
+
+        var hash = hxd.Rand.hash(data.resolution);
+        hash = hxd.Rand.hash(data.isVertical ? 0 : 1, hash);
 
         // Vieux hack nul
-        hash = hashCombine(hash, (data.interpolation:String).charCodeAt(0));
-        hash = hashCombine(hash, (data.interpolation:String).charCodeAt(1));
+        hash = hxd.Rand.hash((data.interpolation:String).charCodeAt(0), hash);
+        hash = hxd.Rand.hash((data.interpolation:String).charCodeAt(1), hash);
 
-        hash = hashCombine(hash, data.colorMode);
+        hash = hxd.Rand.hash(data.colorMode, hash);
 
         for (stop in data.stops) {
-            hash = hashCombine(hash, stop.color);
-            hash = hashCombine(hash, Std.int(stop.position * 214748357));
-        };
+            hash =  hxd.Rand.hash(stop.color, hash);
+            hash = hxd.Rand.hash(Std.int(stop.position * 0x7FFFFFFF), hash);
+        }
         return hash;
     }
 
