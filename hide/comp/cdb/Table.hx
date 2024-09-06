@@ -60,6 +60,10 @@ class Table extends Component {
 		previewDrop.hide();
 	}
 
+	public function setCursor() {
+		editor.cursor.set(this);
+	}
+
 	public function getRealSheet() {
 		return sheet.realSheet;
 	}
@@ -849,7 +853,7 @@ class Table extends Component {
 		}
 		var sub = make == null ? new SubTable(editor, cell) : make();
 		sub.show(immediate);
-		editor.cursor.set(sub);
+		sub.setCursor();
 	}
 
 	public function refreshList( cell : Cell, ?make : Void -> SubTable ) {

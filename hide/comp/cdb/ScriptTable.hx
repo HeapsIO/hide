@@ -24,6 +24,10 @@ class ScriptTable extends SubTable {
 		super.close();
 	}
 
+	override function setCursor() {
+		script.focus();
+	}
+
 	function saveValue() {
 		var code = [for( line in script.code.split("\r\n").join("\n").split("\n") ) StringTools.rtrim(line)].join("\n");
 		cell.setValue(code);
