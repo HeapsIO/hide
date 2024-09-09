@@ -75,13 +75,6 @@ class Object3D extends Prefab {
 
 	/* Override makeObject instead of this */
 	override function makeInstance() : Void {
-		// Sometime the previous local3d could linger if the prefab was manually
-		// removed then added back. This can have some side effects for some prefabs
-		if (local3d != null) {
-			local3d.remove();
-			local3d = null;
-		}
-
 		local3d = makeObject(shared.current3d);
 		if( local3d != null )
 			local3d.name = name;
