@@ -1982,8 +1982,6 @@ class SceneEditor {
 	public function refreshScene() {
 		clearWatches();
 
-		trace(haxe.CallStack.toString(haxe.CallStack.callStack()));
-
 		if (root2d != null) root2d.remove();
 		if (root3d != null) root3d.remove();
 
