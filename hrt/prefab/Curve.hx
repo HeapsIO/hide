@@ -432,6 +432,7 @@ class Curve extends Prefab {
 			blendParam = null;
 			refreshBlend();
 			ctx.onChange(this, "blendMode");
+			ctx.rebuildPrefab(this);
 		});
 
 		ctx.properties.add(props, this, function(pname) {
