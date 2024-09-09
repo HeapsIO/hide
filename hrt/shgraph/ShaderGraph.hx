@@ -507,7 +507,12 @@ class ShaderGraph extends hrt.prefab.Prefab {
 				shaderData.vars.push(v.v);
 			}
 			if (v.defValue != null) {
-				inits.push({variable:v.v, value:v.defValue});
+				switch(v.v.kind) {
+					case Param:
+						inits.push({variable:v.v, value:v.defValue});
+					default:
+						throw "unsupported default value for variable kind";
+				}
 			}
 			if (v.__init__ != null) {
 				__init__exprs.push(v.__init__);

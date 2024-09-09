@@ -41,6 +41,8 @@ enum abstract Global(Int) to Int {
 	// Internal Shadergraph vars
 	var SGPixelColor;
 	var SGPixelAlpha;
+
+	var EmitterPosition;
 }
 
 enum VariableKind {
@@ -48,7 +50,7 @@ enum VariableKind {
 	KSwizzle(global: Global, swiz: Array<hxsl.Ast.Component>);
 }
 
-typedef GlobalInfo = {type: hxsl.Ast.Type, name: String, varkind: VariableKind, ?_fullNameCache: String};
+typedef GlobalInfo = {type: hxsl.Ast.Type, name: String, varkind: VariableKind, ?__init__: TExpr, ?_fullNameCache: String};
 class Variables {
 	public static var previewSelectName = "previewSelect_SG";
 
@@ -92,6 +94,8 @@ class Variables {
 
 		g[Camera] = {type: TVoid, name: "camera", varkind: KVar(Local)};
 		g[CameraPosition] = {type: TVec(3, VFloat), name: "position", varkind: KVar(Local, Camera)};
+
+		g[EmitterPosition] = {type: TVec(3, VFloat), name: "emitterPosition", varkind: KVar(Local, null), __init__: AstTools.makeVec([0.0,0.0,0.0])};
 
 		g;
 	};

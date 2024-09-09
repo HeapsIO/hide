@@ -1302,6 +1302,9 @@ class EmitterObject extends h3d.scene.Object {
 			updateMeshBatch();  // Make sure mesh batch is reset even when no tick is called()
 		}
 
+		var abs = this.getAbsPos();
+		baseEmitterShader.emitPosition.set(abs.tx, abs.ty, abs.tz);
+
 		time = Math.max(0, time - delay * speedFactor);
 
 		var catchupTime = time - curTime;

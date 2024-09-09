@@ -166,7 +166,11 @@ class NodeGenContext {
 				var def : ShaderGraph.ExternVarDef = globalVars.get(fullName);
 				if (def == null) {
 					var v : TVar = {id: hxsl.Tools.allocVarId(), name: global.name, type: global.type, kind: kind};
-					def = {v: v, defValue: defValue, __init__: null};
+					var __init__ = null;
+					if (global.__init__ != null) {
+						__init__ = AstTools.makeAssign(AstTools.makeVar(v), global.__init__);
+					}
+					def = {v: v, defValue: defValue, __init__: __init__};
 					if (parent != null) {
 						var p = Variables.Globals[parent];
 						switch (p.varkind) {

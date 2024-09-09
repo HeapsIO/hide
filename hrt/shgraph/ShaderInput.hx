@@ -77,8 +77,11 @@ class ShaderInput extends ShaderNode {
 		"relativePosition" => {display: "Position (Object Space)", k: IGlobal(RelativePosition)},
 		"transformedPosition" => {display: "Position (World Space)", k: IGlobal(TransformedPosition)},
 		"projectedPosition" => {display: "Position (View Space)", k: IGlobal(ProjectedPosition)},
+		"emitterPosition" => {display: "Emitter Position (World Space)", k: IGlobal(EmitterPosition)},
+
 		"normal" => {display: "Normal (Object Space)", k: IGlobal(Normal)},
 		"transformedNormal" => {display: "Normal (World Space)", k: IGlobal(TransformedNormal)},
+
 
 		"depth" => {display: "Depth", k: IGlobal(Depth)},
 		"metalness" => {display: "Metalness", k: IGlobal(Metalness)},
