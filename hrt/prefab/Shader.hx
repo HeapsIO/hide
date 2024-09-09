@@ -222,8 +222,9 @@ class Shader extends Prefab {
 
 			// Notify change to FX in case param is used by curves
 			var fx = findParent(hrt.prefab.fx.FX);
-			if(fx != null)
-				ectx.rebuildPrefab(fx, true);
+			if(fx != null) {
+				shared.editor.queueRebuild(fx);
+			}
 		});
 	}
 
