@@ -4363,6 +4363,7 @@ class SceneEditor {
 		hrt.shader.ParticleColorRandom,
 		hrt.shader.MaskColorAlpha,
 		hrt.shader.Spinner,
+		hrt.shader.SDF,
 		hrt.shader.FireShader,
 		hrt.shader.MeshWave,
 		hrt.shader.TextureRotate,

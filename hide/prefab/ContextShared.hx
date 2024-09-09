@@ -19,6 +19,7 @@ class ContextShared extends hrt.prefab.ContextShared.ContextSharedBase {
 	}
 
 	override function loadModel( path : String ) {
+		scene.setCurrent();
 		return scene.loadModel(path);
 	}
 

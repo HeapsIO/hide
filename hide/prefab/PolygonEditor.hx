@@ -227,9 +227,8 @@ class PolygonEditor {
 		if(!polygonPrefab.points.isClockwise())
 			polygonPrefab.points.reverse();  // Ensure poly is always clockwise
 
-		var polyPrim = polygonPrefab.generateCustomPolygon();
-		var mesh : h3d.scene.Mesh = cast getContext().local3d;
-		mesh.primitive = polyPrim;
+		@:privateAccess getContext().refreshGraphics();
+
 		refreshEditorDisplay(withProps);
 	}
 
