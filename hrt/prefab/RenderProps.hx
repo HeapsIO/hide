@@ -82,7 +82,7 @@ class RenderProps extends Object3D {
 				for (fxAnim in fxAnims) {
 					if (fxAnim.effects == null)
 						continue;
-					for (e in fxAnim?.effects)
+					for (e in fxAnim.effects)
 						renderer.effects.push(cast @:privateAccess e.instance);
 				}
 			}
