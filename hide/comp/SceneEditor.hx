@@ -3778,6 +3778,7 @@ class SceneEditor {
 					elements[i].locked = redo ? locked : prev[i];
 			}), function() {
 				tree.refresh();
+				queueRebuild(sceneData);
 			});
 		}
 
