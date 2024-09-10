@@ -106,55 +106,7 @@ class Terrain extends Object3D {
 	}
 
 	override function localRayIntersection(ray:h3d.col.Ray):Float {
-		if( ray.lz > 0 )
-			return -1; // only from top
-		if( ray.lx == 0 && ray.ly == 0 ) {
-			var z = terrain.getLocalHeight(ray.px, ray.py);
-			if( z == null || z > ray.pz ) return -1;
-			return ray.pz - z;
-		}
-
-		var b = new h3d.col.Bounds();
-		for( t in terrain.tiles ) {
-			var cb = t.getCachedBounds();
-			if( cb != null )
-				b.add(cb);
-			else {
-				b.addPos(t.x, t.y, -10000);
-				b.addPos(t.x + terrain.cellSize.x * terrain.cellCount.x, t.y + terrain.cellSize.y * terrain.cellCount.y, 10000);
-			}
-		}
-
-		var dist = b.rayIntersection(ray, false);
-		if( dist < 0 ) {
-			// Check if we start IN the collision
-			if (!b.contains(ray.getPoint(0)))
-				return -1;
-			dist = 0;
-		}
-		var pt = ray.getPoint(dist);
-		var m = this.vertexPerMeter;
-		var prevH = terrain.getLocalHeight(pt.x, pt.y);
-		while( true ) {
-			pt.x += ray.lx * m;
-			pt.y += ray.ly * m;
-			pt.z += ray.lz * m;
-
-			if( !b.contains(pt) )
-				break;
-			var h = terrain.getLocalHeight(pt.x, pt.y);
-
-			if( pt.z < h ) {
-				var k = 1 - (prevH - (pt.z - ray.lz * m)) / (ray.lz * m - (h - prevH));
-				pt.x -= k * ray.lx * m;
-				pt.y -= k * ray.ly * m;
-				pt.z -= k * ray.lz * m;
-
-				return pt.sub(ray.getPos()).length();
-			}
-			prevH = h;
-		}
-		return -1;
+		return terrain.localRayIntersection(ray);
 	}
 
 	function loadTiles() {
@@ -488,6 +440,7 @@ class Terrain extends Object3D {
 	override function makeObject(parent3d:h3d.scene.Object) : h3d.scene.Object {
 		this.terrain = createTerrain(parent3d);
 		terrain.tileSize = new h2d.col.Point(tileSizeX, tileSizeY);
+		terrain.vertexPerMeter = vertexPerMeter;
 		terrain.cellCount = new h2d.col.IPoint(Math.ceil(tileSizeX * vertexPerMeter), Math.ceil(tileSizeY * vertexPerMeter) );
 		terrain.cellSize = new h2d.col.Point(tileSizeX / terrain.cellCount.x, tileSizeY / terrain.cellCount.y );
 		terrain.heightMapResolution = new h2d.col.IPoint(terrain.cellCount.x + 1, terrain.cellCount.y + 1);

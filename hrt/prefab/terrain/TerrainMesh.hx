@@ -11,6 +11,7 @@ class TerrainMesh extends h3d.scene.Object {
 	public var tileSize : h2d.col.Point;
 	public var cellSize : h2d.col.Point;
 	public var cellCount : h2d.col.IPoint;
+	public var vertexPerMeter : Float;
 
 	public var heightMapResolution : h2d.col.IPoint;
 	public var weightMapResolution : h2d.col.IPoint;
@@ -341,5 +342,57 @@ class TerrainMesh extends h3d.scene.Object {
 		tmpPt.set(x, y);
 		globalToLocal(tmpPt);
 		return tmpPt;
+	}
+
+	public function localRayIntersection(ray:h3d.col.Ray) : Float {
+		if( ray.lz > 0 )
+			return -1; // only from top
+		if( ray.lx == 0 && ray.ly == 0 ) {
+			var z = getLocalHeight(ray.px, ray.py);
+			if( z == null || z > ray.pz ) return -1;
+			return ray.pz - z;
+		}
+
+		var b = new h3d.col.Bounds();
+		for( t in tiles ) {
+			var cb = t.getCachedBounds();
+			if( cb != null )
+				b.add(cb);
+			else {
+				b.addPos(t.x, t.y, -10000);
+				b.addPos(t.x + cellSize.x * cellCount.x, t.y + cellSize.y * cellCount.y, 10000);
+			}
+		}
+
+		var dist = b.rayIntersection(ray, false);
+		if( dist < 0 ) {
+			// Check if we start IN the collision
+			if (!b.contains(ray.getPoint(0)))
+				return -1;
+			dist = 0;
+		}
+		var pt = ray.getPoint(dist);
+		var m = vertexPerMeter;
+		var prevH = getLocalHeight(pt.x, pt.y);
+		while( true ) {
+			pt.x += ray.lx * m;
+			pt.y += ray.ly * m;
+			pt.z += ray.lz * m;
+
+			if( !b.contains(pt) )
+				break;
+			var h = getLocalHeight(pt.x, pt.y);
+
+			if( pt.z < h ) {
+				var k = 1 - (prevH - (pt.z - ray.lz * m)) / (ray.lz * m - (h - prevH));
+				pt.x -= k * ray.lx * m;
+				pt.y -= k * ray.ly * m;
+				pt.z -= k * ray.lz * m;
+
+				return pt.sub(ray.getPos()).length();
+			}
+			prevH = h;
+		}
+		return -1;
 	}
 }
