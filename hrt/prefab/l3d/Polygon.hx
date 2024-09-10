@@ -80,7 +80,7 @@ class Polygon extends Object3D {
 		if(editor != null)
 			editor.update(propName);
 		#else
-		mesh.material.color.setColor(color);
+			mesh.material.color.setColor(color);
 		#end
 	}
 
@@ -251,12 +251,12 @@ class Polygon extends Object3D {
 	}
 
 	override function makeObject(parent3d: h3d.scene.Object) : h3d.scene.Object {
-		var primitive = makePrimitive();
-		var mesh = new h3d.scene.Mesh(primitive, parent3d);
-		mesh.material.props = h3d.mat.MaterialSetup.current.getDefaults("overlay");
-		mesh.material.blendMode = Alpha;
-		mesh.material.mainPass.culling = None;
-		return mesh;
+			var primitive = makePrimitive();
+			var mesh = new h3d.scene.Mesh(primitive, parent3d);
+			mesh.material.props = h3d.mat.MaterialSetup.current.getDefaults("overlay");
+			mesh.material.blendMode = Alpha;
+			mesh.material.mainPass.culling = None;
+			return mesh;
 	}
 
 	#if editor
@@ -495,4 +495,213 @@ class Polygon extends Object3D {
 	#end
 
 	static var _ = Prefab.register("polygon", Polygon);
+}
+
+class GenSDF extends hxsl.Shader {
+	var SRC = {
+		var calculatedUV : Vec2;
+		@param var points : Array<Vec4,256>;
+		@param var len: Int = 0;
+		var pixelColor : Vec4;
+
+		function sdPolygon() : Float
+		{
+			var d = dot(calculatedUV-points[0].xy,calculatedUV-points[0].xy);
+			var s = 1.0;
+			var j = len-1;
+			for(i in 0...len)
+			{
+				var e = points[j].xy - points[i].xy;
+				var w =    calculatedUV - points[i].xy;
+				var b = w - e*clamp( dot(w,e)/dot(e,e), 0.0, 1.0 );
+				d = min( d, dot(b,b) );
+
+				var cond = (calculatedUV.y>=points[i].y ? 1 : 0) + (calculatedUV.y<points[j].y ? 1 : 0) + (e.x*w.y>e.y*w.x ? 1 : 0);
+				if (cond == 3 || cond == 0) s*=-1.0;
+				j = i;
+			}
+			return s*sqrt(d);
+		}
+
+		function fragment() {
+			pixelColor = vec4((-sdPolygon() * 8.0 + 0.5));
+			pixelColor.a = 1.0;
+		}
+	}
+}
+
+@:access(hrt.prefab.l3d.ProjectedDisplay)
+@:access(hrt.prefab.l3d.Polygon)
+class WorldProjectedCollider extends h3d.col.Collider {
+	var polygon : Polygon;
+	var groundCollide : (ray: h3d.col.Ray) -> Float;
+
+
+	public function new(polygon: Polygon, groundCollide : (ray: h3d.col.Ray) -> Float) {
+		this.polygon = polygon;
+		this.groundCollide = groundCollide;
+	}
+
+	function rayIntersection(ray: h3d.col.Ray, bestMatch : Bool) : Float {
+		var groundCollision = groundCollide(ray);
+		if (groundCollision < 0.0)
+			return -1.0;
+
+		var pos = ray.getPoint(groundCollision);
+
+		if (contains(pos))
+			return groundCollision - 0.01;
+
+		return -1;
+	}
+
+	function contains(pos: h3d.Vector) : Bool {
+		var inv = polygon.local3d.getInvPos();
+		pos = pos.transformed(inv);
+
+		return polygon.points.contains(new h2d.col.Point(pos.x, pos.y));
+	}
+
+	function inFrustum(f : h3d.col.Frustum, ?localMatrix : h3d.Matrix) : Bool {
+		throw "implement";
+	}
+
+	function inSphere(s : h3d.col.Sphere) : Bool {
+		throw "implement";
+	}
+
+	function dimension() : Float {
+		return Std.downcast(polygon.local3d, ProjectedDisplay).decal.scaleX;
+	}
+
+	#if !macro
+	function makeDebugObj() {
+		return null;
+	}
+	#end
+}
+
+@:access(hrt.prefab.l3d.Polygon)
+class ProjectedDisplay extends h3d.scene.Object {
+	var polygon : Polygon;
+	var texture : h3d.mat.Texture;
+
+	var decal : h3d.scene.pbr.Decal;
+	var sdf : hrt.shader.SDF;
+	final texWidth = 128;
+
+	public function new(polygon: Polygon, parent: h3d.scene.Object) {
+		super(parent);
+		this.polygon = polygon;
+
+		var decalPrefab = new hrt.prefab.l3d.Decal(null, null);
+		@:privateAccess decalPrefab.renderMode = AfterTonemapping;
+		@:privateAccess decalPrefab.blendMode = Alpha;
+		var r = decalPrefab.make(new ContextShared(null, null, this));
+		decal = Std.downcast(r.local3d, h3d.scene.pbr.Decal);
+		decal.ignoreCollide = true;
+
+		var e = h3d.Engine.getCurrent();
+		sdf = new hrt.shader.SDF();
+		texture = new h3d.mat.Texture(texWidth,texWidth, [Target], R8);
+		texture.realloc = () -> {
+			e.setCurrent();
+			regenerate();
+		}
+		sdf.sampler = texture;
+		sdf.pxRange = 8.0;
+		decal.material.mainPass.addShader(sdf);
+	}
+
+	#if editor
+	var prevEngine : h3d.Engine;
+	#end
+
+	override function sync(ctx) {
+		if (dirty) {
+			#if editor
+			prevEngine = h3d.Engine.getCurrent();
+			haxe.Timer.delay(regenerateImpl, 0); // for some reason 2d texture generation is bugged during the sync in hide
+			#else
+			regenerateImpl();
+			#end
+		}
+		super.sync(ctx);
+	}
+
+	var dirty = false;
+	function regenerate() {
+		dirty = true;
+	}
+
+	function regenerateImpl() {
+		dirty = false;
+		#if editor
+		if (prevEngine != h3d.Engine.getCurrent()) {
+			return;
+		}
+		#end
+		var points = polygon.points.points;
+
+		if (points == null)
+			return;
+
+		sdf.bgColor.setColor(polygon.color);
+		sdf.bgColor.a = 0.0;
+		sdf.fgColor.setColor(polygon.color);
+		sdf.fgColor.a *= 0.75;
+
+		var bounds = new h2d.col.Bounds();
+		for (point in points) {
+			bounds.addPoint(point);
+		}
+
+		var min, max;
+		if (bounds.width > bounds.height) {
+			min = bounds.xMin;
+			max = bounds.xMax;
+		} else {
+			min = bounds.yMin;
+			max = bounds.yMax;
+		}
+
+		decal.scaleX = max - min;
+		decal.scaleY = max - min;
+		decal.scaleZ = 100.0;
+		var center = bounds.getCenter();
+		decal.setPosition(center.x, center.y, 0);
+
+		var center = bounds.getCenter();
+
+		// Perpendicular point for segment [i, i+1]
+		var perps : Array<h2d.col.Point> = [];
+
+		function localToTexCoord(point: h2d.col.Point) {
+			point = point.clone();
+			point = point - center;
+			var scale = 1.0 / (max - min);
+			point *= scale;
+			point.x += 0.5;
+			point.y += 0.5;
+			//point = point * texWidth;
+			return point;
+		}
+
+		var shader = new GenSDF();
+		for (i in 0...256) {
+			var pt = new h3d.Vector4();
+			shader.points[i] = pt;
+			if (i < points.length) {
+				var local = localToTexCoord(points[i]);
+				pt.set(local.x, local.y, 0,0);
+			}
+		}
+		shader.len = points.length;
+
+		var bitmap = new h2d.Bitmap(h2d.Tile.fromColor(0xFF00FF, 1, 1));
+		bitmap.scale(texWidth);
+		bitmap.addShader(shader);
+
+		bitmap.drawTo(texture);
+	}
 }
