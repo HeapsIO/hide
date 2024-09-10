@@ -79,9 +79,12 @@ class RenderProps extends Object3D {
 			var scene = shared.root3d.getScene();
 			if (scene != null) {
 				var fxAnims = scene.findAll(f -> Std.downcast(f, hrt.prefab.fx.FX.FXAnimation));
-				for (fxAnim in fxAnims)
-					for (e in fxAnim.effects)
+				for (fxAnim in fxAnims) {
+					if (fxAnim.effects == null)
+						continue;
+					for (e in fxAnim?.effects)
 						renderer.effects.push(cast @:privateAccess e.instance);
+				}
 			}
 		}
 
