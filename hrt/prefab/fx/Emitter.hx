@@ -1255,7 +1255,7 @@ class EmitterObject extends h3d.scene.Object {
 				++i;
 
 				if (trails != null) {
-					trails.addPoint(p.trail, p.absPos._41, p.absPos._42, p.absPos._43, 1.0);
+					trails.addPoint(p.trail, p.absPos._41, p.absPos._42, p.absPos._43);
 				}
 			}
 		}
