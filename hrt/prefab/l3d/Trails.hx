@@ -553,19 +553,27 @@ class TrailObj extends h3d.scene.Mesh {
 		var count = 0;
 		numVertsIndices = 0;
 
+		var baseScale = new h3d.Vector(1, 1, 1);
+		if ( prefab.useScale ) {
+			var scale = absPos.getScale();
+			baseScale.x = scale.x;
+			baseScale.y = scale.y;
+			baseScale.z = scale.z;
+		}
+
 		inline function addEdge( p : h3d.Vector, u : Float, w : Float, binormal : h3d.Vector ) {
-			buffer[count++] = p.x + binormal.x * w;
-			buffer[count++] = p.y + binormal.y * w;
-			buffer[count++] = p.z + binormal.z * w;
+			buffer[count++] = p.x + binormal.x * w * baseScale.x;
+			buffer[count++] = p.y + binormal.y * w * baseScale.y;
+			buffer[count++] = p.z + binormal.z * w * baseScale.z;
 			buffer[count++] = ux;
 			buffer[count++] = uy;
 			buffer[count++] = uz;
 			buffer[count++] = u;
 			buffer[count++] = 0;
 
-			buffer[count++] = p.x + (binormal.x * -w);
-			buffer[count++] = p.y + (binormal.y * -w);
-			buffer[count++] = p.z + (binormal.z * -w);
+			buffer[count++] = p.x + (binormal.x * -w * baseScale.x);
+			buffer[count++] = p.y + (binormal.y * -w * baseScale.y);
+			buffer[count++] = p.z + (binormal.z * -w * baseScale.z);
 			buffer[count++] = ux;
 			buffer[count++] = uy;
 			buffer[count++] = uz;
@@ -713,6 +721,7 @@ class Trails extends Object3D {
 	@:s public var endWidth : Float = 0.0;
 	@:s public var lifetime : Float = 1.0;
 	@:c public var orientation : TrailOrientation = TrailOrientation.Camera;
+	@:s public var useScale : Bool = false;
 
 	@:s public var minSpeed : Float = 10.0;
 	@:s public var maxSpeed : Float = 1000.0;
@@ -810,6 +819,7 @@ class Trails extends Object3D {
 				<dt>Width End</dt><dd><input type="range" field="endWidth" min="0" max="10"/></dd>
 				<dt>Min Speed</dt><dd><input type="range" field="minSpeed" min="0" max="1000"/></dd>
 				<dt>Max Speed</dt><dd><input type="range" field="maxSpeed" min="0" max="1000"/></dd>
+				<dt>Use scale</dt><dd><input type="checkbox" field="useScale" /></dd>
 			</dl>
 		</div>
 
