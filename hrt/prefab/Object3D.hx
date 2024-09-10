@@ -271,9 +271,10 @@ class Object3D extends Prefab {
 				if( t != null && (t.file != null || Std.isOfType(t,String)) ) {
 				var obj = editorIcon;
 				if( obj == null || obj.follow != local3d ) {
-					editorIcon = obj = new h2d.ObjectFollower(local3d, shared.root2d);
+						editorIcon = obj = new h2d.ObjectFollower(local3d, shared.root2d);
 						obj.horizontalAlign = Middle;
 						obj.followVisibility = true;
+						obj.autoRemove = true;
 					}
 					if( t.file != null ) {
 						var t : cdb.Types.TilePos = t;
