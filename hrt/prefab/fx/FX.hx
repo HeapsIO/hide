@@ -71,6 +71,17 @@ class FXAnimation extends h3d.scene.Object {
 
 		trails = findAll((p) -> Std.downcast(p, hrt.prefab.l3d.Trails.TrailObj));
 		setParameters(def.parameters);
+
+		var effects : Array<hrt.prefab.rfx.RendererFX> = [];
+		for (p in def.flatten(hrt.prefab.rfx.RendererFX)) {
+			var rfx : hrt.prefab.rfx.RendererFX = cast p;
+			if (@:privateAccess rfx.instance == null)
+				continue;
+
+			if (this.effects == null)
+				this.effects = [];
+			this.effects.push(rfx);
+		}
 	}
 
 	public function reset() {
@@ -142,6 +153,20 @@ class FXAnimation extends h3d.scene.Object {
 
 		var fullSync = ctx.visibleFlag || alwaysSyncAnimation || firstSync;
 		var finishedPlaying = false;
+
+		if (firstSync) {
+			var scene = getScene();
+			if (scene != null && effects != null) {
+				var renderer = scene.renderer;
+				for (rfx in effects) {
+					if (@:privateAccess rfx.instance == null)
+						continue;
+
+					renderer.effects.push(@:privateAccess rfx.instance);
+				}
+			}
+		}
+
 		if(playSpeed > 0 || firstSync) {
 			// This is done in syncRec() to make sure time and events are updated regarless of culling state,
 			// so we restore FX in correct state when unculled
@@ -549,28 +574,6 @@ class FX extends Object3D implements BaseFX {
 		return fxanim;
 	}
 
-	override function postMakeInstance() {
-		var root = hrt.prefab.fx.BaseFX.BaseFXTools.getFXRoot(this);
-		var effects : Array<hrt.prefab.rfx.RendererFX> = [];
-
-		var scene = this.local3d.getScene();
-		if (scene != null) {
-			var renderer = scene.renderer;
-			for (p in this.flatten(hrt.prefab.rfx.RendererFX)) {
-				var rfx : hrt.prefab.rfx.RendererFX = cast p;
-				if (@:privateAccess rfx.instance == null)
-					continue;
-
-				renderer.effects.push(@:privateAccess rfx.instance);
-				effects.push(rfx);
-			}
-		}
-
-		var fxAnim : FXAnimation = cast local3d;
-		fxAnim.effects = effects.copy();
-		fxAnim.init(this, root);
-	}
-
 	override function updateInstance(?propName : String ) {
 		super.updateInstance(null);
 		var fxanim = Std.downcast(local3d, FXAnimation);
@@ -578,6 +581,15 @@ class FX extends Object3D implements BaseFX {
 		fxanim.cullingRadius = cullingRadius;
 
 		fxanim.setParameters(parameters);
+	}
+
+	public override function postMakeInstance() {
+		var root = hrt.prefab.fx.BaseFX.BaseFXTools.getFXRoot(this);
+		var fxAnim = Std.downcast(local3d, FXAnimation);
+		if (fxAnim == null)
+			return;
+
+		fxAnim.init(this, root);
 	}
 
 	function createInstance(parent: h3d.scene.Object) : FXAnimation {
