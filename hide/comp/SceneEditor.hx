@@ -2368,6 +2368,8 @@ class SceneEditor {
 						obj3d.scaleZ = quantize(s.z, scaleQuant);
 					}
 					obj3d.applyTransform();
+					if ( curEdit != null )
+						curEdit.onChange(obj3d, null);
 				}
 			}
 
@@ -2390,8 +2392,11 @@ class SceneEditor {
 						refreshProps();
 					}
 
-					for(o in objects3d)
+					for(o in objects3d) {
+						if ( curEdit != null )
+							curEdit.onChange(o, null);
 						o.updateInstance();
+					}
 				}));
 
 				for(o in objects3d)
