@@ -16,6 +16,10 @@ class Settings extends hide.ui.View<{}> {
 		search.add("Typing debounce threshold (ms)", new Element('<input type="number"/>'), Ide.inst.ideConfig.typingDebounceThreshold, (v) -> Ide.inst.ideConfig.typingDebounceThreshold = v);
 		search.add("Close search on file opening", new Element('<input type="checkbox"/>'), Ide.inst.ideConfig.closeSearchOnFileOpen, (v) -> Ide.inst.ideConfig.closeSearchOnFileOpen = v);
 		categories.push(search);
+
+		var performance = new Categorie("Performance");
+		performance.add("Track gpu alloc", new Element('<input type="checkbox"/>'), Ide.inst.ideConfig.trackGpuAlloc, (v) -> Ide.inst.ideConfig.trackGpuAlloc = v);
+		categories.push(performance);
 	}
 
 	override function onDisplay() {

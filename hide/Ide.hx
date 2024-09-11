@@ -1127,14 +1127,18 @@ class Ide extends hide.tools.IdeData {
 			config.global.save();
 		});
 
-		// profilers
-		var profilers = menu.find(".analysis");
-		profilers.find(".memprof").click(function(_) {
+		// analysis
+		var analysis = menu.find(".analysis");
+		analysis.find(".memprof").click(function(_) {
 			#if (hashlink >= "1.15.0")
 			open("hide.view.Profiler",{});
 			#else
 			quickMessage("Profiler not available. Please update hashlink to version 1.15.0 or later.");
 			#end
+		});
+		analysis.find(".gpudump").click(function(_) {
+			var path = hide.tools.MemDump.gpudump();
+			quickMessage('Gpu mem dumped at ${path}.');
 		});
 
 		var settings = menu.find(".settings");

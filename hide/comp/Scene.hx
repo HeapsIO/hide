@@ -83,6 +83,7 @@ class Scene extends hide.comp.Component implements h3d.IDrawable {
 		window = @:privateAccess new hxd.Window(canvas);
 		window.propagateKeyEvents = true;
 		window.setCurrent();
+		h3d.impl.MemoryManager.enableTrackAlloc(Ide.inst.ideConfig.trackGpuAlloc);
 		engine = @:privateAccess new h3d.Engine();
 		@:privateAccess engine.resCache.set(Scene, this);
 		engine.backgroundColor = 0xFF111111;
