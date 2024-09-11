@@ -59,8 +59,6 @@ class MeshSprayObject extends Spray.SprayObject {
 	}
 
 	override public function redraw(updateShaders=false) {
-		if ( editChildren )
-			return;
 		getBounds(); // force absBos calculus on children
 		for( b in batches ) {
 			b.flags.set(FFixedPositionSynced, false);
@@ -617,7 +615,11 @@ class MeshSpray extends Spray {
 	}
 
 	override function getHideProps() : hide.prefab.HideProps {
-		return { icon : "paint-brush", name : "MeshSpray", hideChildren : p -> return (!editChildren && Std.isOfType(p, Model)) };
+		return { icon : "paint-brush",
+			name : "MeshSpray",
+			hideChildren : p -> return (!editChildren && Std.isOfType(p, Model)),
+			onChildUpdate: p -> cast(local3d, MeshSprayObject).redraw(),
+		};
 	}
 
 	override function edit( ectx : hide.prefab.EditContext ) {

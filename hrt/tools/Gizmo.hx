@@ -179,31 +179,6 @@ class Gizmo extends h3d.scene.Object {
 		setup("yScale", GIZMO_COLORS.y, MoveY);
 		setup("zScale", GIZMO_COLORS.z, MoveZ);
 
-		/*xFollow = new h2d.ObjectFollower(this, root2d);
-		yFollow = new h2d.ObjectFollower(this, root2d);
-		zFollow = new h2d.ObjectFollower(this, root2d);
-
-		xLabel = new h2d.Text(hxd.res.DefaultFont.get(), xFollow);
-		xLabel.text = "X";
-		xLabel.textColor = GIZMO_COLORS.x;
-		xLabel.textAlign = Center;
-		xLabel.dropShadow = { dx : 0.5, dy : 0.5, color : 0x202020, alpha : 1.0 };
-		xLabel.setScale(1.2);
-
-		yLabel = new h2d.Text(hxd.res.DefaultFont.get(), yFollow);
-		yLabel.text = "Y";
-		yLabel.textColor = GIZMO_COLORS.y;
-		yLabel.textAlign = Center;
-		yLabel.dropShadow = { dx : 0.5, dy : 0.5, color : 0x202020, alpha : 1.0 };
-		yLabel.setScale(1.2);
-
-		zLabel = new h2d.Text(hxd.res.DefaultFont.get(), zFollow);
-		zLabel.text = "Z";
-		zLabel.textColor = GIZMO_COLORS.z;
-		zLabel.textAlign = Center;
-		zLabel.dropShadow = { dx : 0.5, dy : 0.5, color : 0x202020, alpha : 1.0 };
-		zLabel.setScale(1.2);*/
-
 		translationMode();
 	}
 
