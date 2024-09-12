@@ -51,7 +51,10 @@ class Scene extends hide.comp.Component implements h3d.IDrawable {
 		ide.unregisterUpdate(sync);
 		if (s2d != null) {
 			@:privateAccess s2d.window.removeResizeEvent(s2d.checkResize);
+			s2d.dispose();
 		}
+		if ( s3d != null )
+			s3d.dispose();
 		if (engine != null && engine.driver != null) {
 			engine.dispose();
 			@:privateAccess engine.driver = null;
