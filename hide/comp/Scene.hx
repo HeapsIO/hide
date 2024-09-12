@@ -66,7 +66,8 @@ class Scene extends hide.comp.Component implements h3d.IDrawable {
 		if( h3d.Engine.getCurrent() == engine ) @:privateAccess h3d.Engine.CURRENT = null;
 		untyped js.Browser.window.$_ = null; // jquery can sometimes leak s2d
 		@:privateAccess haxe.NativeStackTrace.lastError = null; // possible leak there
-		window.dispose();
+		if ( window != null )
+			window.dispose();
 	}
 
 	public function addListener(f) {
