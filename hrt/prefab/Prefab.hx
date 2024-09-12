@@ -133,7 +133,7 @@ class Prefab {
 		}
 		parent = p;
 		if( parent != null ) {
-			this.shared = parent.shared;
+			setSharedRec(parent.shared);
 			parent.children.push(this);
 		}
 		else {

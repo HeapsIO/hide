@@ -704,4 +704,9 @@ class ProjectedDisplay extends h3d.scene.Object {
 
 		bitmap.drawTo(texture);
 	}
+
+	override function onRemove() {
+		texture?.dispose();
+		super.onRemove();
+	}
 }
