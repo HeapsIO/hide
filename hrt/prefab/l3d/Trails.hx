@@ -746,7 +746,10 @@ class Trails extends Object3D {
 			return;
 
 		if (data?.orientation == 1) {
-			this.orientation = TrailOrientation.createByIndex(data.orientation, [ data.orientationUpAxisX, data.orientationUpAxisY, data.orientationUpAxisZ ]);
+			if( Std.isOfType(data.orientationUpAxisX, String) )
+				this.orientation = TrailOrientation.createByIndex(data.orientation, [ Std.parseFloat(data.orientationUpAxisX), Std.parseFloat(data.orientationUpAxisY), Std.parseFloat(data.orientationUpAxisZ) ]);
+			else
+				this.orientation = TrailOrientation.createByIndex(data.orientation, [ data.orientationUpAxisX, data.orientationUpAxisY, data.orientationUpAxisZ ]);
 		}
 		else
 			this.orientation = TrailOrientation.createByIndex(data.orientation);
