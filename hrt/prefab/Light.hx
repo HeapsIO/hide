@@ -274,156 +274,6 @@ class Light extends Object3D {
 		}
 
 		#if editor
-		var debugPoint = local3d.find(c -> if(c.name == "_debugPoint") c else null);
-		var debugDir = local3d.find(c -> if(c.name == "_debugDir") c else null);
-		var debugSpot = local3d.find(c -> if(c.name == "_debugSpot") c else null);
-		var debugCapsule = local3d.find(c -> if(c.name == "_debugCapsule") c else null);
-		var sel : h3d.scene.Object = null;
-
-		switch(kind){
-
-			case Point:
-
-				if(debugDir != null) debugDir.remove();
-				if(debugSpot != null) debugSpot.remove();
-				if(debugCapsule != null) debugCapsule.remove();
-
-				var rangeSphere : h3d.scene.Sphere;
-
-				if(debugPoint == null) {
-					debugPoint = new h3d.scene.Object(local3d);
-					debugPoint.name = "_debugPoint";
-
-					rangeSphere = new h3d.scene.Sphere(0xffffff, 1, true, debugPoint);
-					rangeSphere.visible = false;
-					rangeSphere.ignoreBounds = true;
-					rangeSphere.ignoreCollide = true;
-					rangeSphere.material.mainPass.setPassName("overlay");
-					rangeSphere.material.shadows = false;
-
-					var sizeSphere = new h3d.scene.Sphere(0xffff00, 1, true, rangeSphere);
-					sizeSphere.visible = true;
-					sizeSphere.ignoreBounds = true;
-					sizeSphere.ignoreCollide = true;
-					sizeSphere.material.mainPass.setPassName("overlay");
-					sizeSphere.material.shadows = false;
-				}
-				else {
-					rangeSphere = cast debugPoint.getChildAt(0);
-				}
-
-				rangeSphere.material.color.setColor(color);
-				cast(rangeSphere.getChildAt(0), h3d.scene.Sphere).setScale(size / range);
-				sel = rangeSphere;
-
-			case Directional :
-
-				if(debugPoint != null) debugPoint.remove();
-				if(debugSpot != null) debugSpot.remove();
-				if(debugCapsule != null) debugCapsule.remove();
-
-				if(debugDir == null) {
-					debugDir = new h3d.scene.Object(local3d);
-					debugDir.name = "_debugDir";
-
-
-
-					var g = new h3d.scene.Graphics(debugDir);
-					g.lineStyle(1, 0xffffff);
-					g.moveTo(0,0,0);
-					g.lineTo(10,0,0);
-					g.ignoreBounds = true;
-					g.ignoreCollide = true;
-					g.visible = false;
-					g.material.mainPass.setPassName("overlay");
-					sel = g;
-				}
-				else {
-					sel = debugDir.getChildAt(0);
-				}
-
-
-			case Spot:
-
-				if(debugDir != null) debugDir.remove();
-				if(debugPoint != null) debugPoint.remove();
-				if(debugCapsule != null) debugCapsule.remove();
-
-				if(debugSpot == null) {
-					debugSpot = new h3d.scene.Object(local3d);
-					debugSpot.name = "_debugSpot";
-
-					var g = new h3d.scene.Graphics(debugSpot);
-					g.lineStyle(1, this.color);
-					g.moveTo(0,0,0); g.lineTo(1, 1, 1);
-					g.moveTo(0,0,0); g.lineTo(1, -1, 1);
-					g.moveTo(0,0,0); g.lineTo(1, 1, -1);
-					g.moveTo(0,0,0); g.lineTo(1, -1, -1);
-					g.lineTo(1, 1, -1);
-					g.lineTo(1, 1, 1);
-					g.lineTo(1, -1, 1);
-					g.lineTo(1, -1, -1);
-
-					g.ignoreBounds = true;
-					g.ignoreCollide = true;
-					g.visible = false;
-					g.material.mainPass.setPassName("overlay");
-					sel = g;
-				}
-				else{
-					var g : h3d.scene.Graphics = Std.downcast(debugSpot.getChildAt(0), h3d.scene.Graphics);
-					g.clear();
-					g.lineStyle(1, this.color);
-					g.moveTo(0,0,0); g.lineTo(1, 1, 1);
-					g.moveTo(0,0,0); g.lineTo(1, -1, 1);
-					g.moveTo(0,0,0); g.lineTo(1, 1, -1);
-					g.moveTo(0,0,0); g.lineTo(1, -1, -1);
-					g.lineTo(1, 1, -1);
-					g.lineTo(1, 1, 1);
-					g.lineTo(1, -1, 1);
-					g.lineTo(1, -1, -1);
-
-					sel = g;
-				}
-
-			case Capsule:
-
-				if(debugDir != null) debugDir.remove();
-				if(debugPoint != null) debugPoint.remove();
-				if(debugSpot != null) debugSpot.remove();
-
-				var rangeCapsule : h3d.scene.Capsule;
-
-				if(debugCapsule == null) {
-					debugCapsule = new h3d.scene.Object(local3d);
-					debugCapsule.name = "_debugCapsule";
-
-					rangeCapsule = new h3d.scene.Capsule(0xffffff, 1, true, debugCapsule);
-					rangeCapsule.visible = false;
-					rangeCapsule.ignoreBounds = true;
-					rangeCapsule.ignoreCollide = true;
-					rangeCapsule.material.mainPass.setPassName("overlay");
-					rangeCapsule.material.shadows = false;
-
-					var sizeCapsule = new h3d.scene.Capsule(0xffff00, 1, true, rangeCapsule);
-					sizeCapsule.visible = true;
-					sizeCapsule.ignoreBounds = true;
-					sizeCapsule.ignoreCollide = true;
-					sizeCapsule.material.mainPass.setPassName("overlay");
-					sizeCapsule.material.shadows = false;
-				}
-				else {
-					rangeCapsule = cast(debugCapsule.getChildAt(0));
-				}
-
-				rangeCapsule.length = length / range;
-				var sizeCapsule = cast(rangeCapsule.getChildAt(0), h3d.scene.Capsule);
-				sizeCapsule.radius = size / range;
-				sizeCapsule.length = length / range;
-				sel = rangeCapsule;
-
-		}
-
 
 		if (icon != null) {
 			icon.color = h3d.Vector4.fromColor(color);
@@ -440,6 +290,159 @@ class Light extends Object3D {
 					icon.texture = ide.getTexture(ide.getHideResPath("icons/CapsuleLight.png"));
 			}
 		}
+		
+		refreshDebug();
+
+		// no "Mixed" in editor
+		if( light != null && light.shadows.mode == Mixed ) light.shadows.mode = Dynamic;
+		#end
+	}
+
+	#if editor
+
+	function refreshDebug() {
+		var debugPoint = local3d.find(c -> if(c.name == "_debugPoint") c else null);
+		var debugDir = local3d.find(c -> if(c.name == "_debugDir") c else null);
+		var debugSpot = local3d.find(c -> if(c.name == "_debugSpot") c else null);
+		var debugCapsule = local3d.find(c -> if(c.name == "_debugCapsule") c else null);
+		var sel : h3d.scene.Object = null;
+
+		switch(kind){
+		case Point:
+			if(debugDir != null) debugDir.remove();
+			if(debugSpot != null) debugSpot.remove();
+			if(debugCapsule != null) debugCapsule.remove();
+
+			var rangeSphere : h3d.scene.Sphere;
+
+			if(debugPoint == null) {
+				debugPoint = new h3d.scene.Object(local3d);
+				debugPoint.name = "_debugPoint";
+
+				rangeSphere = new h3d.scene.Sphere(0xffffff, 1, true, debugPoint);
+				rangeSphere.visible = false;
+				rangeSphere.ignoreBounds = true;
+				rangeSphere.ignoreCollide = true;
+				rangeSphere.material.mainPass.setPassName("overlay");
+				rangeSphere.material.shadows = false;
+
+				var sizeSphere = new h3d.scene.Sphere(0xffff00, 1, true, rangeSphere);
+				sizeSphere.visible = true;
+				sizeSphere.ignoreBounds = true;
+				sizeSphere.ignoreCollide = true;
+				sizeSphere.material.mainPass.setPassName("overlay");
+				sizeSphere.material.shadows = false;
+			}
+			else {
+				rangeSphere = cast debugPoint.getChildAt(0);
+			}
+
+			rangeSphere.material.color.setColor(color);
+			cast(rangeSphere.getChildAt(0), h3d.scene.Sphere).setScale(size / range);
+			sel = rangeSphere;
+
+		case Directional :
+			if(debugPoint != null) debugPoint.remove();
+			if(debugSpot != null) debugSpot.remove();
+			if(debugCapsule != null) debugCapsule.remove();
+
+			if(debugDir == null) {
+				debugDir = new h3d.scene.Object(local3d);
+				debugDir.name = "_debugDir";
+
+
+
+				var g = new h3d.scene.Graphics(debugDir);
+				g.lineStyle(1, 0xffffff);
+				g.moveTo(0,0,0);
+				g.lineTo(10,0,0);
+				g.ignoreBounds = true;
+				g.ignoreCollide = true;
+				g.visible = false;
+				g.material.mainPass.setPassName("overlay");
+				sel = g;
+			}
+			else {
+				sel = debugDir.getChildAt(0);
+			}
+
+		case Spot:
+			if(debugDir != null) debugDir.remove();
+			if(debugPoint != null) debugPoint.remove();
+			if(debugCapsule != null) debugCapsule.remove();
+
+			if(debugSpot == null) {
+				debugSpot = new h3d.scene.Object(local3d);
+				debugSpot.name = "_debugSpot";
+
+				var g = new h3d.scene.Graphics(debugSpot);
+				g.lineStyle(1, this.color);
+				g.moveTo(0,0,0); g.lineTo(1, 1, 1);
+				g.moveTo(0,0,0); g.lineTo(1, -1, 1);
+				g.moveTo(0,0,0); g.lineTo(1, 1, -1);
+				g.moveTo(0,0,0); g.lineTo(1, -1, -1);
+				g.lineTo(1, 1, -1);
+				g.lineTo(1, 1, 1);
+				g.lineTo(1, -1, 1);
+				g.lineTo(1, -1, -1);
+
+				g.ignoreBounds = true;
+				g.ignoreCollide = true;
+				g.visible = false;
+				g.material.mainPass.setPassName("overlay");
+				sel = g;
+			}
+			else{
+				var g : h3d.scene.Graphics = Std.downcast(debugSpot.getChildAt(0), h3d.scene.Graphics);
+				g.clear();
+				g.lineStyle(1, this.color);
+				g.moveTo(0,0,0); g.lineTo(1, 1, 1);
+				g.moveTo(0,0,0); g.lineTo(1, -1, 1);
+				g.moveTo(0,0,0); g.lineTo(1, 1, -1);
+				g.moveTo(0,0,0); g.lineTo(1, -1, -1);
+				g.lineTo(1, 1, -1);
+				g.lineTo(1, 1, 1);
+				g.lineTo(1, -1, 1);
+				g.lineTo(1, -1, -1);
+
+				sel = g;
+			}
+
+		case Capsule:
+			if(debugDir != null) debugDir.remove();
+			if(debugPoint != null) debugPoint.remove();
+			if(debugSpot != null) debugSpot.remove();
+
+			var rangeCapsule : h3d.scene.Capsule;
+
+			if(debugCapsule == null) {
+				debugCapsule = new h3d.scene.Object(local3d);
+				debugCapsule.name = "_debugCapsule";
+
+				rangeCapsule = new h3d.scene.Capsule(0xffffff, 1, true, debugCapsule);
+				rangeCapsule.visible = false;
+				rangeCapsule.ignoreBounds = true;
+				rangeCapsule.ignoreCollide = true;
+				rangeCapsule.material.mainPass.setPassName("overlay");
+				rangeCapsule.material.shadows = false;
+
+				var sizeCapsule = new h3d.scene.Capsule(0xffff00, 1, true, rangeCapsule);
+				sizeCapsule.visible = true;
+				sizeCapsule.ignoreBounds = true;
+				sizeCapsule.ignoreCollide = true;
+				sizeCapsule.material.mainPass.setPassName("overlay");
+				sizeCapsule.material.shadows = false;
+			}
+			else {
+				rangeCapsule = cast(debugCapsule.getChildAt(0));
+			}
+
+			rangeCapsule.length = length / range;
+			var sizeCapsule = cast(rangeCapsule.getChildAt(0), h3d.scene.Capsule);
+			sizeCapsule.radius = size / range;
+			sizeCapsule.length = length / range;
+			sel = rangeCapsule;
+		}
 
 		var isSelected = false;
 		if(sel != null){
@@ -450,19 +453,12 @@ class Light extends Object3D {
 			if( debugCapsule != null ) debugCapsule.visible = (isSelected || shared.editorDisplay);
 			sel.name = "__selection";
 		}
-
-		// no "Mixed" in editor
-		if( light != null && light.shadows.mode == Mixed ) light.shadows.mode = Dynamic;
-
-		#end
 	}
-
-	#if editor
 
 	override function setSelected(b : Bool ) {
 		var sel = local3d?.getObjectByName("__selection");
 		if( sel != null ) sel.visible = b;
-		updateInstance();
+		refreshDebug();
 		if (!b && local3d != null)
 			local3d.visible = this.visible && !shared.editor.isHidden(this);
 		return true;
