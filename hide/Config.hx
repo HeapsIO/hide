@@ -17,11 +17,14 @@ typedef HideGlobalConfig = {
 
 	// General
 	var autoSavePrefab : Bool;
-	var trackGpuAlloc : Bool;
 
 	// Search
 	var closeSearchOnFileOpen : Bool;
 	var typingDebounceThreshold : Int;
+
+	// Performance
+	var trackGpuAlloc : Bool;
+	var cullingDistanceFactor : Float;
 };
 
 typedef HideProjectConfig = {

@@ -27,7 +27,9 @@ class IdeData {
 	public var defaultIdeConfig : Map<String, Dynamic> = [
 		"closeSearchOnFileOpen" => false,
 		"typingDebounceThreshold" => 300,
-		"autoSavePrefab" => false
+		"autoSavePrefab" => false,
+		"trackGpuAlloc" => false,
+		"cullingDistanceFactor" => 100,
 	];
 
 	public var ideConfig(get, never) : hide.Config.HideGlobalConfig;

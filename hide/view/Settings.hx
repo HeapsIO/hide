@@ -19,6 +19,7 @@ class Settings extends hide.ui.View<{}> {
 
 		var performance = new Categorie("Performance");
 		performance.add("Track gpu alloc", new Element('<input type="checkbox"/>'), Ide.inst.ideConfig.trackGpuAlloc, (v) -> Ide.inst.ideConfig.trackGpuAlloc = v);
+		performance.add("Culling distance factor", new Element('<input type="number"/>'), Ide.inst.ideConfig.cullingDistanceFactor, (v) -> Ide.inst.ideConfig.cullingDistanceFactor = v);
 		categories.push(performance);
 	}
 
