@@ -153,7 +153,7 @@
 	// l3d config
 	"sceneeditor.colors": {
 	},
-	"sceneeditor.filterTypes": ["terrain", "model", "polygon", "box", "instance", "light", "meshSpray"],
+	"sceneeditor.filterTypes": ["terrain", "heightmap", "model", "polygon", "box", "instance", "light", "meshSpray", "advancedDecal"],
 	"sceneeditor.tags": [ { "id": "tag", "color": "#802000" } ],
 	"sceneeditor.camera.moveSpeed": 1.5,
 	"sceneeditor.gridSize": 100,
