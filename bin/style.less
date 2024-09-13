@@ -634,44 +634,8 @@ input[type=checkbox] {
 }
 
 @tileselect-cursor-border: 1px;
-.hide-tileselect {
-	display: inline-block;
-	background-color : #111;
-	border : 1px solid #666;
-	text-align: left;
-	overflow: hidden;
-	.dim-edit {
-		margin-left: 2px;
-		margin-right: 2px;
-	}
-	.flex-scroll {
-		height: 600px;
-		width: 800px;
-		display: flex;
-		flex-direction: column;
-		.scroll {
-			flex-grow: 1;
-			overflow : auto;
-			.tile {
-				background-color: #202;
-				position: relative;
-				margin-right: @tileselect-cursor-border;
-				margin-bottom: @tileselect-cursor-border;
-				.valueDisp {
-					position: absolute;
-					background-color: rgba(0,80,128,0.3);
-					border:1px solid rgba(128,128,128,0.5);
-					pointer-events:none;
-				}
-				.cursor {
-					position: absolute;
-					border : @tileselect-cursor-border solid #fff;
-					pointer-events:none;
-				}
-			}
-		}
-	}
-}
+
+
 
 .hide-range {
 
@@ -3977,4 +3941,125 @@ div.gradient-box {
 .curve-editor-popup {
 	width: 600px;
 	height: 400px;
+}
+
+hide-popover {
+	resize: both;
+	max-height: 90vh;
+	max-width: 90vw;
+	min-width: 100px;
+	min-height: 100px;
+	border: none;
+	padding: 0;
+
+	display: flex;
+	flex-direction: column;
+
+	title-bar {
+		padding: 2px;
+		background-color: #000000;
+		display: flex;
+		height: 20px;
+
+		#title {
+			flex-grow: 1;
+			flex-shrink: 0;
+			color: @color-text;
+		}
+
+		flex: 0 0;
+
+		button {
+			background: none;
+			border: none;
+			display: inline-flex;
+			align-items: center;
+			justify-content: center;
+			height: 16px;
+			width: 16px;
+			padding: 1px;
+			i {
+				font-size: 8px;
+				color: @color-text;
+
+			}
+		}
+	}
+
+	hide-content {
+		flex: 1 1;
+		min-height: 0; // Allow the inner element to shrink, used to make the inner content scrollable
+		padding: 0;
+	}
+}
+
+.hide-tileselect {
+	min-height: 0;
+	width: 100%;
+	height: 100%;
+	display: flex;
+	overflow: hidden;
+	flex-direction: column;
+
+	&:focus {
+		outline: none;
+	}
+
+	tile-settings {
+		display: flex;
+		align-items: center;
+		gap: 1em;
+    	background: #222222;
+		color: @color-text;
+		min-height: 24px;
+		padding: 2px;
+
+		overflow: hidden;
+		flex-shrink: 0;
+
+		> * {
+			flex-shrink: 0;
+		}
+
+		input.file {
+			flex-grow: 1;
+			max-width: 300px;
+		}
+
+		.dim-edit {
+			> input {
+				width: 32px;
+			}
+		}
+	}
+
+	tile-picker {
+		flex: 1 1;
+
+		&::-webkit-scrollbar {
+			width: 10px;
+			height: 10px;
+		}
+
+		background: url(data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAACAAAAAgCAYAAABzenr0AAAAAXNSR0IArs4c6QAAAE5JREFUWIVjnL12+38GCoCBnisl2hmYKNJNBTDqgFEHjDpg1AGjDhh1wKgDGE/f/kNRe+DCpd0UOWDAQ2DUAaMOGHXAqANGHTDqgFEHAAAO3QneZHM9AwAAAABJRU5ErkJggg==);
+
+		overflow: auto;
+		image-display {
+			display: block;
+			position: relative;
+			margin-right: @tileselect-cursor-border;
+			margin-bottom: @tileselect-cursor-border;
+			.valueDisp {
+				position: absolute;
+				background-color: rgba(0,80,128,0.3);
+				border:1px solid rgba(128,128,128,0.5);
+				pointer-events:none;
+			}
+			.cursor {
+				position: absolute;
+				border : @tileselect-cursor-border solid #fff;
+				pointer-events:none;
+			}
+		}
+	}
 }

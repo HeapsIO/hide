@@ -570,44 +570,6 @@ input[type=checkbox]:checked:after {
 .hide-scenetree .jstree-container-ul {
   max-width: 300px;
 }
-.hide-tileselect {
-  display: inline-block;
-  background-color: #111;
-  border: 1px solid #666;
-  text-align: left;
-  overflow: hidden;
-}
-.hide-tileselect .dim-edit {
-  margin-left: 2px;
-  margin-right: 2px;
-}
-.hide-tileselect .flex-scroll {
-  height: 600px;
-  width: 800px;
-  display: flex;
-  flex-direction: column;
-}
-.hide-tileselect .flex-scroll .scroll {
-  flex-grow: 1;
-  overflow: auto;
-}
-.hide-tileselect .flex-scroll .scroll .tile {
-  background-color: #202;
-  position: relative;
-  margin-right: 1px;
-  margin-bottom: 1px;
-}
-.hide-tileselect .flex-scroll .scroll .tile .valueDisp {
-  position: absolute;
-  background-color: rgba(0, 80, 128, 0.3);
-  border: 1px solid rgba(128, 128, 128, 0.5);
-  pointer-events: none;
-}
-.hide-tileselect .flex-scroll .scroll .tile .cursor {
-  position: absolute;
-  border: 1px solid #fff;
-  pointer-events: none;
-}
 .hide-range {
   display: inline-block;
 }
@@ -3434,4 +3396,104 @@ div.gradient-box {
 .curve-editor-popup {
   width: 600px;
   height: 400px;
+}
+hide-popover {
+  resize: both;
+  max-height: 90vh;
+  max-width: 90vw;
+  min-width: 100px;
+  min-height: 100px;
+  border: none;
+  padding: 0;
+  display: flex;
+  flex-direction: column;
+}
+hide-popover title-bar {
+  padding: 2px;
+  background-color: #000000;
+  display: flex;
+  height: 20px;
+  flex: 0 0;
+}
+hide-popover title-bar #title {
+  flex-grow: 1;
+  flex-shrink: 0;
+  color: #e5e5e5;
+}
+hide-popover title-bar button {
+  background: none;
+  border: none;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  height: 16px;
+  width: 16px;
+  padding: 1px;
+}
+hide-popover title-bar button i {
+  font-size: 8px;
+  color: #e5e5e5;
+}
+hide-popover hide-content {
+  flex: 1 1;
+  min-height: 0;
+  padding: 0;
+}
+.hide-tileselect {
+  min-height: 0;
+  width: 100%;
+  height: 100%;
+  display: flex;
+  overflow: hidden;
+  flex-direction: column;
+}
+.hide-tileselect:focus {
+  outline: none;
+}
+.hide-tileselect tile-settings {
+  display: flex;
+  align-items: center;
+  gap: 1em;
+  background: #222222;
+  color: #e5e5e5;
+  min-height: 24px;
+  padding: 2px;
+  overflow: hidden;
+  flex-shrink: 0;
+}
+.hide-tileselect tile-settings > * {
+  flex-shrink: 0;
+}
+.hide-tileselect tile-settings input.file {
+  flex-grow: 1;
+  max-width: 300px;
+}
+.hide-tileselect tile-settings .dim-edit > input {
+  width: 32px;
+}
+.hide-tileselect tile-picker {
+  flex: 1 1;
+  background: url(data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAACAAAAAgCAYAAABzenr0AAAAAXNSR0IArs4c6QAAAE5JREFUWIVjnL12+38GCoCBnisl2hmYKNJNBTDqgFEHjDpg1AGjDhh1wKgDGE/f/kNRe+DCpd0UOWDAQ2DUAaMOGHXAqANGHTDqgFEHAAAO3QneZHM9AwAAAABJRU5ErkJggg==);
+  overflow: auto;
+}
+.hide-tileselect tile-picker::-webkit-scrollbar {
+  width: 10px;
+  height: 10px;
+}
+.hide-tileselect tile-picker image-display {
+  display: block;
+  position: relative;
+  margin-right: 1px;
+  margin-bottom: 1px;
+}
+.hide-tileselect tile-picker image-display .valueDisp {
+  position: absolute;
+  background-color: rgba(0, 80, 128, 0.3);
+  border: 1px solid rgba(128, 128, 128, 0.5);
+  pointer-events: none;
+}
+.hide-tileselect tile-picker image-display .cursor {
+  position: absolute;
+  border: 1px solid #fff;
+  pointer-events: none;
 }

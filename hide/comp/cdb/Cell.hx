@@ -1165,8 +1165,9 @@ class Cell {
 				closeEdit();
 			});
 		case TTilePos:
-			var modal = new hide.comp.Modal(new Element(elementHtml));
-			modal.modalClick = function(_) closeEdit();
+			var modal = new hide.comp.Modal.Modal2(new Element(elementHtml), "Tile Picker", "tile-picker");
+			//var modal = new hide.comp.Modal(new Element(elementHtml));
+			//modal.modalClick = function(_) closeEdit();
 
 			inline function usesSquareBase(t : cdb.Types.TilePos) {
 				return t.size != 1

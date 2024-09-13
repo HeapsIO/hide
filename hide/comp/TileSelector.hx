@@ -117,9 +117,9 @@ class TileSelector extends Component {
 			}
 		});
 
-		var tool = new Toolbar(element);
+		var settings = new Element("<tile-settings></tile-settings>").appendTo(element);
 		if( allowFileChange ) {
-			var tex = new hide.comp.TextureSelect(tool.element);
+			var tex = new hide.comp.TextureSelect(settings);
 			tex.path = file;
 			tex.onChange = function() this.file = tex.path;
 		}
@@ -130,7 +130,7 @@ class TileSelector extends Component {
 			- Values in ratio (1/2 - it will take half of the image size)';
 
 			var widthEdit = new Element('<span class="dim-edit">Width:<input type="text" title="$tooltipText" value="${size.width}">px</span>')
-				.appendTo(tool.element);
+				.appendTo(settings);
 			widthEdit.find("input").on("blur", (e:js.jquery.Event) -> {
 				this.size.width = setSizeEdit(e.getThis(), this.size.width, imageWidth);
 				widthEdit.find("input").val(this.size.width);
@@ -139,7 +139,7 @@ class TileSelector extends Component {
 					widthEdit.find("input").blur();
 			});
 			var heightEdit = new Element('<span class="dim-edit">Height:<input type="text" title="$tooltipText" value="${size.height}">px</span>')
-				.appendTo(tool.element);
+				.appendTo(settings);
 			heightEdit.find("input").on("blur", (e:js.jquery.Event) -> {
 				this.size.height = setSizeEdit(e.getThis(), this.size.height, imageHeight);
 				heightEdit.find("input").val(this.size.height);
@@ -151,13 +151,13 @@ class TileSelector extends Component {
 			widthEdit.find("input").on("blur", updateCursor);
 			heightEdit.find("input").on("blur", updateCursor);
 		}
-		if( tool.element.children().length == 0 )
-			tool.remove();
+		if( settings.children().length == 0 ) {
+			settings.remove();
+		}
 
 		var url = ide.getUnCachedUrl(file);
-		var scroll = new Element("<div class='flex-scroll'><div class='scroll'>").appendTo(element).find(".scroll");
-		image = new Element('<div class="tile" style="background-image:url(\'$url\')"></div>').appendTo(scroll);
-
+		var container = new Element("<tile-picker></tile-picker>").appendTo(element);
+		image = new Element('<image-display style="background-image:url(\'$url\')"></image-display>').appendTo(container);
 		valueDisp = new Element('<div class="valueDisp">').appendTo(image);
 		cursor = new Element('<div class="cursor">').appendTo(image);
 		cursorPos = { x : -1, y : -1, x2 : -1, y2 : -1, dragSelect : false };
@@ -171,7 +171,7 @@ class TileSelector extends Component {
 			zoom = Math.floor(hxd.Math.min(800 / imageWidth, 580 / imageHeight));
 			if( zoom <= 0 ) zoom = 1;
 
-			scroll.on("mousewheel", function(e:js.jquery.Event) {
+			image.on("mousewheel", function(e:js.jquery.Event) {
 				if( untyped e.originalEvent.wheelDelta > 0 )
 					zoom++;
 				else if( zoom > 1 )
@@ -180,7 +180,7 @@ class TileSelector extends Component {
 				e.preventDefault();
 			});
 
-			scroll.parent().on("mousedown", function(e) {
+			image.parent().on("mousedown", function(e) {
 				if( e.button == 2 ) {
 					movePos.dragScrolling = true;
 					movePos.x = e.pageX;
