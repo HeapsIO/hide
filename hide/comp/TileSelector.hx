@@ -22,6 +22,8 @@ class TileSelector extends Component {
 	var imageElt : js.html.ImageElement;
 	var modal : Element;
 	var container : Element;
+	var zoomSelector : Element;
+	final maxZoom = 4;
 
 	function get_zoom() {
 		return Math.pow(2, zoomLevel);
@@ -29,7 +31,14 @@ class TileSelector extends Component {
 
 	function set_zoomLevel(v : Int) : Int {
 		zoomLevel = v;
+		if (zoomLevel < -maxZoom) {
+			zoomLevel = -maxZoom;
+		}
+		if (zoomLevel > maxZoom) {
+			zoomLevel = maxZoom;
+		}
 		saveDisplayState("zoomLevel", zoomLevel);
+		zoomSelector.val(zoomLevel);
 		return zoomLevel;
 	}
 
@@ -166,6 +175,20 @@ class TileSelector extends Component {
 			widthEdit.find("input").on("blur", updateCursor);
 			heightEdit.find("input").on("blur", updateCursor);
 		}
+
+		var zoomElem = new Element("<div>Zoom:</div>").appendTo(settings);
+		zoomSelector = new Element("<select></select>").appendTo(zoomElem);
+		for (i in -maxZoom...(maxZoom+1)) {
+			var dispVal = Math.floor(Math.pow(2, i) * 100);
+			var option = new Element('<option value=$i>$dispVal%</option>').appendTo(zoomSelector);
+		}
+		zoomSelector.change((e) -> {
+			var val = zoomSelector.val();
+			var v = Std.parseInt(val);
+			zoomLevel = v;
+			rescale();
+		});
+
 		if( settings.children().length == 0 ) {
 			settings.remove();
 		}
