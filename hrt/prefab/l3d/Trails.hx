@@ -103,7 +103,6 @@ class TrailObj extends h3d.scene.Mesh {
 	public function set_numTrails(new_value : Int) : Int {
 		if (numTrails != new_value) {
 			numTrails = new_value;
-			subTrailChildIndices.resize(new_value);
 			allocBuffers();
 			if (dprim != null)
 				dprim.alloc(null);
@@ -387,7 +386,7 @@ class TrailObj extends h3d.scene.Mesh {
 		lastUpdateDuration = haxe.Timer.stamp() - t;
 	}
 
-	function updateTrail( t : TrailHead, dt : Float, x : Float, y : Float, z : Float) {
+	public function updateTrail( t : TrailHead, dt : Float, x : Float, y : Float, z : Float) {
 		var cur = t.firstPoint;
 		if ( cur == null )
 			return;
@@ -427,7 +426,7 @@ class TrailObj extends h3d.scene.Mesh {
 
 		var lastX = lastPointAlive.x;
 		var lastY = lastPointAlive.y;
-		var lastZ = lastPointAlive.z;		
+		var lastZ = lastPointAlive.z;
 
 		var xDelta = ( lastX - dyingPoint.x );
 		var yDelta = ( lastY - dyingPoint.y );
@@ -507,16 +506,17 @@ class TrailObj extends h3d.scene.Mesh {
 		for ( i => child in children) {
 			if (Std.downcast(child, TrailsSubTailObj) == null)
 				continue;
-			subTrailChildIndices[numObj] = i; 
+			subTrailChildIndices[numObj] = i;
 			numObj++;
 		}
 
 		if (numObj > 0) {
+			subTrailChildIndices.resize(numObj);
 			autoTrackPosition = false;
 			numTrails = numObj;
 			updateSubTrails(dt);
 		} else {
-			autoTrackPosition = true;
+			subTrailChildIndices = null;
 			numTrails = 1;
 			syncPos();
 			calcAbsPos();
@@ -531,17 +531,15 @@ class TrailObj extends h3d.scene.Mesh {
 			return;
 		cooldown = 1.0 / maxFramerate;
 
-		if (autoTrackPosition)
-			addPoint(trails[0], absPos.tx, absPos.ty, absPos.tz);
-		else {
+		if ( numObj > 0) {
 			for (i => childIndex in subTrailChildIndices) {
 				var c = children[childIndex];
 				var t = trails[i];
 				var pos = c.getAbsPos();
 				addPoint(t, pos.tx, pos.ty, pos.tz);
 			}
-		}
-
+		} else if (autoTrackPosition)
+			addPoint(trails[0], absPos.tx, absPos.ty, absPos.tz);
 	}
 
 	override function emit(ctx) {
@@ -606,8 +604,8 @@ class TrailObj extends h3d.scene.Mesh {
 
 			var cur = trail.firstPoint;
 			var totalLen = trail.totalLength;
-			
-			var absPos = autoTrackPosition ? this.absPos : children[subTrailChildIndices[i]].absPos;
+
+			var absPos = subTrailChildIndices == null ? this.absPos : children[subTrailChildIndices[i]].absPos;
 			var curToHead = new h3d.Vector(absPos.tx - cur.x, absPos.ty - cur.y, absPos.tz - cur.z);
 			var curToHeadSq = curToHead.lengthSq();
 
@@ -626,11 +624,11 @@ class TrailObj extends h3d.scene.Mesh {
 				tmpHead.lifetime = prefab.lifetime;
 				tmpHead.len = Math.sqrt(curToHeadSq);
 				tmpHead.speed = cur.speed;
-				
+
 				totalLen += tmpHead.len;
 				cur = tmpHead;
 			}
-			
+
 			if (cur.next == null )
 				continue;
 

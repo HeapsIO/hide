@@ -1255,7 +1255,11 @@ class EmitterObject extends h3d.scene.Object {
 				++i;
 
 				if (trails != null) {
-					trails.addPoint(p.trail, p.absPos._41, p.absPos._42, p.absPos._43);
+					trails.updateTrail(p.trail, dt, p.absPos._41, p.absPos._42, p.absPos._43);
+					if ( @:privateAccess trails.cooldown < 0 ) {
+						@:privateAccess trails.cooldown = 1 / hrt.prefab.l3d.Trails.TrailObj.maxFramerate;
+						trails.addPoint(p.trail, p.absPos._41, p.absPos._42, p.absPos._43);
+					}
 				}
 			}
 		}
