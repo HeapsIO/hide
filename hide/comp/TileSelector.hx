@@ -18,12 +18,18 @@ class TileSelector extends Component {
 	var imageWidth : Int;
 	var imageHeight : Int;
 	var zoom(get, never) : Float;
-	var zoomLevel : Int;
+	var zoomLevel(default, set) : Int;
 	var imageElt : js.html.ImageElement;
 	var modal : Element;
 
 	function get_zoom() {
 		return Math.pow(2, zoomLevel);
+	}
+
+	function set_zoomLevel(v : Int) : Int {
+		zoomLevel = v;
+		saveDisplayState("zoomLevel", zoomLevel);
+		return zoomLevel;
 	}
 
 	public function new(file,size,?parent,?el) {
@@ -36,6 +42,7 @@ class TileSelector extends Component {
 
 	function set_file(file) {
 		this.file = file;
+		this.saveDisplayKey = 'tile-select/$file';
 		rebuild();
 		return file;
 	}
@@ -175,7 +182,8 @@ class TileSelector extends Component {
 			if( imageElt != i ) return;
 			imageWidth = i.width;
 			imageHeight = i.height;
-			zoomLevel = Math.floor(Math.log(hxd.Math.min(800 / imageWidth, 580 / imageHeight))/Math.log(2));
+
+			zoomLevel = getDisplayState("zoomLevel") ?? Math.floor(Math.log(hxd.Math.min(800 / imageWidth, 580 / imageHeight))/Math.log(2));
 
 			container.on("mousewheel", function(e:js.jquery.Event) {
 				if( untyped e.originalEvent.wheelDelta > 0 )
