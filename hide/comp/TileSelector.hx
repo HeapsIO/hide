@@ -21,6 +21,7 @@ class TileSelector extends Component {
 	var zoomLevel(default, set) : Int;
 	var imageElt : js.html.ImageElement;
 	var modal : Element;
+	var container : Element;
 
 	function get_zoom() {
 		return Math.pow(2, zoomLevel);
@@ -170,7 +171,7 @@ class TileSelector extends Component {
 		}
 
 		var url = ide.getUnCachedUrl(file);
-		var container = new Element("<tile-picker></tile-picker>").appendTo(element);
+		container = new Element("<tile-picker></tile-picker>").appendTo(element);
 		image = new Element('<image-display style="background-image:url(\'$url\')"></image-display>').appendTo(container);
 		valueDisp = new Element('<div class="valueDisp">').appendTo(image);
 		cursor = new Element('<div class="cursor">').appendTo(image);
@@ -186,12 +187,14 @@ class TileSelector extends Component {
 			zoomLevel = getDisplayState("zoomLevel") ?? Math.floor(Math.log(hxd.Math.min(800 / imageWidth, 580 / imageHeight))/Math.log(2));
 
 			container.on("mousewheel", function(e:js.jquery.Event) {
-				if( untyped e.originalEvent.wheelDelta > 0 )
-					zoomLevel++;
-				else
-					zoomLevel--;
-				rescale();
-				e.preventDefault();
+				if (e.ctrlKey) {
+					if( untyped e.originalEvent.wheelDelta > 0 )
+						zoomLevel++;
+					else
+						zoomLevel--;
+					rescale();
+					e.preventDefault();
+				}
 			});
 
 			image.parent().on("mousedown", function(e) {
@@ -279,8 +282,20 @@ class TileSelector extends Component {
 				e.stopPropagation();
 			});
 			rescale();
+
+			focusSelection();
 		};
 		i.src = url;
+	}
+
+	function focusSelection() {
+		var w = container.width();
+		var h = container.height();
+		var pos = valueDisp.position();
+		pos.top += valueDisp.width() / 2.0;
+		pos.left += valueDisp.height() / 2.0;
+		container.scrollTop(pos.top - h/2.0);
+		container.scrollLeft(pos.left - w/2.0);
 	}
 
 	function setSizeEdit(element:Element, sizeValue:Int, maxValue:Int):Int {
