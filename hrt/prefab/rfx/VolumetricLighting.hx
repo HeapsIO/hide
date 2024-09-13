@@ -311,6 +311,7 @@ class VolumetricLighting extends RendererFX {
 			upsamplingPass.shader.source = tex;
 			upsamplingPass.shader.sourceDepth = halfDepth;
 			upsamplingPass.shader.destDepth = r.textures.depth;
+			upsamplingPass.shader.inverseProj = r.ctx.camera.getInverseProj();
 			upsamplingPass.render();
 		}
 	}
