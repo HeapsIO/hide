@@ -92,10 +92,11 @@ class Modal2 extends Component {
 	}
 
 	public function close() {
+		beforeToggle({newState: 'closed'}); // for some reason hidePopover does not trigger beforeToggle/toggle. Maybe a bug with nwjs
 		untyped element.get(0).hidePopover();
+		toggle({newState: 'closed'});
 	}
 
-	dynamic function onClose() {
-		trace("close");
+	dynamic public function onClose() {
 	}
 }

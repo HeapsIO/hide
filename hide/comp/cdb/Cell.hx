@@ -1256,10 +1256,13 @@ class Cell {
 					pos = ts.value;
 					setVal();
 				}
-				closeEdit();
+				modal.close();
+			};
+
+			modal.onClose = function() {
 				refresh();
 				focus();
-			};
+			}
 			#end
 		case TLayer(_), TTileLayer:
 			// no edit

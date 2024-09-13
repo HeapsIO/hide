@@ -17,9 +17,14 @@ class TileSelector extends Component {
 	var image : Element;
 	var imageWidth : Int;
 	var imageHeight : Int;
-	var zoom : Float;
+	var zoom(get, never) : Float;
+	var zoomLevel : Int;
 	var imageElt : js.html.ImageElement;
 	var modal : Element;
+
+	function get_zoom() {
+		return Math.pow(2, zoomLevel);
+	}
 
 	public function new(file,size,?parent,?el) {
 		super(parent,el);
@@ -89,8 +94,10 @@ class TileSelector extends Component {
 	}
 
 	function rescale() {
-		image.height(imageHeight*zoom).width(imageWidth*zoom);
-		image.css("background-size",(imageWidth*zoom)+"px "+(imageHeight*zoom)+"px");
+		var h = zoom * imageHeight;
+		var w = zoom * imageWidth;
+		image.height(h).width(w);
+		image.css("background-size",(w)+"px "+(h)+"px");
 		updateCursor();
 	}
 
@@ -168,14 +175,13 @@ class TileSelector extends Component {
 			if( imageElt != i ) return;
 			imageWidth = i.width;
 			imageHeight = i.height;
-			zoom = Math.floor(hxd.Math.min(800 / imageWidth, 580 / imageHeight));
-			if( zoom <= 0 ) zoom = 1;
+			zoomLevel = Math.floor(Math.log(hxd.Math.min(800 / imageWidth, 580 / imageHeight))/Math.log(2));
 
-			image.on("mousewheel", function(e:js.jquery.Event) {
+			container.on("mousewheel", function(e:js.jquery.Event) {
 				if( untyped e.originalEvent.wheelDelta > 0 )
-					zoom++;
-				else if( zoom > 1 )
-					zoom--;
+					zoomLevel++;
+				else
+					zoomLevel--;
 				rescale();
 				e.preventDefault();
 			});
@@ -202,7 +208,9 @@ class TileSelector extends Component {
 			image.on("mousemove", function(e:js.jquery.Event) {
 				if( movePos.dragScrolling )
 					return;
-				var k = { w: size.width * zoom, h: size.height * zoom };
+				var pow = Math.pow(2, zoomLevel);
+
+				var k = { w: size.width * pow, h: size.height * pow };
 				var x = Math.floor(e.offsetX / k.w);
 				var y = Math.floor(e.offsetY / k.h);
 				if( (x+1) * size.width > i.width ) x--;
