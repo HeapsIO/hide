@@ -194,6 +194,8 @@ class VolumetricLightingShader extends h3d.shader.pbr.DefaultForward {
 class VolumetricLighting extends RendererFX {
 
 	var pass = new h3d.pass.ScreenFx(new h3d.shader.ScreenShader());
+	var upsamplingPass = new h3d.pass.ScreenFx(new h3d.shader.DepthAwareUpsampling());
+
 	var blurPass = new h3d.pass.Blur();
 	var vshader = new VolumetricLightingShader();
 
@@ -288,7 +290,12 @@ class VolumetricLighting extends RendererFX {
 
 			r.ctx.engine.popTarget();
 
+			var halfDepth = r.allocTarget("halfDepth", false, 0.5, r.textures.depth.format);
+			h3d.pass.Copy.run(r.textures.depth, halfDepth);
+
 			blurPass.radius = blur;
+			blurPass.shader.isDepthDependant = true;
+			blurPass.shader.depthTexture = halfDepth;
 			blurPass.apply(r.ctx, tex);
 
 			var b : h3d.mat.BlendMode = switch ( blend ) {
@@ -299,7 +306,12 @@ class VolumetricLighting extends RendererFX {
 			case Multiply: Multiply;
 			case AlphaMultiply: AlphaMultiply;
 			}
-			h3d.pass.Copy.run(tex, h3d.Engine.getCurrent().getCurrentTarget(), b);
+
+			upsamplingPass.pass.setBlendMode(b);
+			upsamplingPass.shader.source = tex;
+			upsamplingPass.shader.sourceDepth = halfDepth;
+			upsamplingPass.shader.destDepth = r.textures.depth;
+			upsamplingPass.render();
 		}
 	}
 
