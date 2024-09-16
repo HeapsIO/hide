@@ -167,6 +167,8 @@ class FXAnimation extends h3d.scene.Object {
 			}
 		}
 
+		var needIncrement = false;
+		var curTime = localTime;
 		if(playSpeed > 0 || firstSync) {
 			// This is done in syncRec() to make sure time and events are updated regarless of culling state,
 			// so we restore FX in correct state when unculled
@@ -178,16 +180,8 @@ class FXAnimation extends h3d.scene.Object {
 				setTime(t, fullSync);
 			}
 			else {
-				var curTime = localTime;
 				setTime(curTime, fullSync);
-				localTime += ctx.elapsedTime * playSpeed;
-				if( loop && duration > 0 ) {
-					localTime = (localTime % duration);
-				}
-				if( duration > 0 && curTime < duration && localTime >= duration) {
-					localTime = duration;
-					finishedPlaying = true;
-				}
+				needIncrement = true;
 			}
 		}
 
@@ -197,6 +191,16 @@ class FXAnimation extends h3d.scene.Object {
 
 		if(fullSync)
 			super.syncRec(ctx);
+		if (needIncrement) {
+			localTime += ctx.elapsedTime * playSpeed;
+			if( loop && duration > 0 ) {
+				localTime = (localTime % duration);
+			}
+			if( duration > 0 && curTime < duration && localTime >= duration) {
+				localTime = duration;
+				finishedPlaying = true;
+			}
+		}
 
 		if( finishedPlaying && onEnd != null )
 			onEnd();  // Delay until after syncRec, to avoid calling syncRec on children
