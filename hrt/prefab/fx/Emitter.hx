@@ -18,6 +18,11 @@ enum SimulationSpace {
 	World;
 }
 
+enum ParticleScaling {
+	Parent;
+	None;
+}
+
 enum AlignMode {
 	None;
 	Screen;
@@ -235,16 +240,28 @@ class ParticleInstance {
 		var absPos = tmpMat;
 		var localMat = tmpMat2;
 
+		var sx = scaleX;
+		var sy = scaleY;
+		var sz = scaleZ;
+
+		if (emitter.particleScaling == None && emitter.simulationSpace == Local) {
+			var invScale = inline emitter.parent.getAbsPos().getScale();
+			sx = sx/invScale.x;
+			sy = sy/invScale.y;
+			sz = sz/invScale.z;
+		}
+
+
 		inline qRot.toMatrix(absPos);
-		absPos._11 *= scaleX;
-		absPos._12 *= scaleX;
-		absPos._13 *= scaleX;
-		absPos._21 *= scaleY;
-		absPos._22 *= scaleY;
-		absPos._23 *= scaleY;
-		absPos._31 *= scaleZ;
-		absPos._32 *= scaleZ;
-		absPos._33 *= scaleZ;
+		absPos._11 *= sx;
+		absPos._12 *= sx;
+		absPos._13 *= sx;
+		absPos._21 *= sy;
+		absPos._22 *= sy;
+		absPos._23 *= sy;
+		absPos._31 *= sz;
+		absPos._32 *= sz;
+		absPos._33 *= sz;
 		absPos._41 = x;
 		absPos._42 = y;
 		absPos._43 = z;
@@ -260,6 +277,7 @@ class ParticleInstance {
 		scaleVec.scale3(evaluator.getFloat(idx, def.scale, t));
 		scaleVec.scale3(evaluator.getFloat(idx, def.scaleOverTime, emitter.curTime));
 		localMat.initScale(scaleVec.x, scaleVec.y, scaleVec.z);
+
 
 		// ROTATION
 		if(def.rotation != VZero) {
@@ -468,6 +486,7 @@ class EmitterObject extends h3d.scene.Object {
 	// EMIT PARAMS
 	public var emitOrientation : Orientation = Forward;
 	public var simulationSpace : SimulationSpace = Local;
+	public var particleScaling : ParticleScaling = Parent;
 	public var emitType : EmitType = Infinity;
 	public var burstCount : Int = 1;
 	public var burstParticleCount : Int = 5;
@@ -935,7 +954,13 @@ class EmitterObject extends h3d.scene.Object {
 						part.qRot.loadQuat(tmpQuat);
 						tmpQuat.toMatrix(tmpMat2);
 						part.emitOrientation.load(tmpMat2);
-						part.setScale(worldScale.x, worldScale.y, worldScale.z);
+
+						if (particleScaling == None) {
+							var invScale = inline parent.getAbsPos().getScale();
+							part.setScale(worldScale.x/invScale.x, worldScale.y/invScale.y, worldScale.z/invScale.z);
+						} else {
+							part.setScale(worldScale.x, worldScale.y, worldScale.z);
+						}
 				}
 				var frameCount = frameCount == 0 ? frameDivisionX * frameDivisionY : frameCount;
 				if(animationLoop)
@@ -1372,6 +1397,7 @@ class Emitter extends Object3D {
 		{ name: "alignMode", t: PEnum(AlignMode), def: AlignMode.None, disp: "Mode", groupName : "Properties" },
 		{ name: "alignLockAxis", t: PEnum(AlignLockAxis), def: AlignLockAxis.ScreenZ, disp: "Lock Axis", groupName : "Properties" },
 		{ name: "simulationSpace", t: PEnum(SimulationSpace), def: SimulationSpace.Local, disp: "Simulation Space", groupName : "Properties" },
+		{ name: "particleScaling", t: PEnum(ParticleScaling), def: ParticleScaling.Parent, disp: "Scaling", groupName : "Properties" },
 		{ name: "enableSort", t: PBool, def: true, disp: "Enable Sort", groupName : "Properties"},
 
 		// EMIT PARAMS
@@ -1475,7 +1501,15 @@ class Emitter extends Object3D {
 				var val : Dynamic = Reflect.field(obj.props, param.name);
 				switch(param.t) {
 					case PEnum(en):
-						val = Type.createEnum(en, val);
+						#if editor
+						try {
+						#end
+							val = Type.createEnum(en, val);
+						#if editor
+						} catch (e) {
+							val = param.def;
+						};
+						#end
 					default:
 				}
 				Reflect.setField(props, param.name, val);
@@ -1711,6 +1745,7 @@ class Emitter extends Object3D {
 		emitterObj.burstParticleCount 	= 	getParamVal("burstParticleCount");
 		emitterObj.emitDuration 		= 	getParamVal("emitDuration");
 		emitterObj.simulationSpace 		= 	getParamVal("simulationSpace");
+		emitterObj.particleScaling		= 	getParamVal("particleScaling");
 		emitterObj.emitOrientation 		= 	getParamVal("emitOrientation");
 		emitterObj.maxCount 			= 	getParamVal("maxCount");
 		emitterObj.enableSort 			= 	getParamVal("enableSort");
