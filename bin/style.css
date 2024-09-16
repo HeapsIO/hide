@@ -3473,7 +3473,7 @@ hide-popover hide-content {
 }
 .hide-tileselect tile-picker {
   flex: 1 1;
-  background: url(data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAACAAAAAgCAYAAABzenr0AAAAAXNSR0IArs4c6QAAAE5JREFUWIVjnL12+38GCoCBnisl2hmYKNJNBTDqgFEHjDpg1AGjDhh1wKgDGE/f/kNRe+DCpd0UOWDAQ2DUAaMOGHXAqANGHTDqgFEHAAAO3QneZHM9AwAAAABJRU5ErkJggg==);
+  background-color: #202;
   overflow: auto;
 }
 .hide-tileselect tile-picker::-webkit-scrollbar {
