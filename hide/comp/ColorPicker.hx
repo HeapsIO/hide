@@ -57,7 +57,7 @@ class ColorBox extends Component {
 
 		element.click(function(e) {
 			if (picker == null && isPickerEnabled) {
-				picker = new ColorPicker(canEditAlpha, null, this.element);
+				picker = new ColorPicker(canEditAlpha, this.element);
 				picker.value = workValue;
 				picker.onChange = function(isDragging) {
 					workValue = picker.value;
@@ -72,7 +72,7 @@ class ColorBox extends Component {
 
 				onPickerOpen();
 			} else if (picker != null) {
-				picker.close();
+				//picker.close();
 			}
 		});
 
@@ -169,20 +169,20 @@ class ColorPicker extends Popup {
 
 	}
 
-	public function new( ?canEditAlpha : Bool = false, ?parent : Element, ?root : Element ) {
-		if( root == null ) root = new Element("<div>").addClass("input-color");
-		super(parent,root);
+	public function new( ?canEditAlpha : Bool = false, ?parent : Element) {
+		//if( root == null ) root = new Element("<div>").addClass("input-color");
+		super(parent);
 		this.canEditAlpha = canEditAlpha;
 
 
-		popup.addClass("color-picker");
+		element.addClass("color-picker");
 
 		valueToARGB = ColorSpace.HSVtoiRGB;
 		ARGBToValue = ColorSpace.iRGBtoHSV;
 
 		initSliders();
 
-		new Element("<hr>").appendTo(popup);
+		new Element("<hr>").appendTo(element);
 
 		initInfobar();
 
@@ -192,7 +192,7 @@ class ColorPicker extends Popup {
 
 	function initInfobar() {
 		var infoBar = new Element("<div>").addClass("info-bar");
-		popup.append(infoBar);
+		element.append(infoBar);
 
 		preview = new ColorBox(infoBar, null, false, canEditAlpha);
 		preview.element.width(64);
@@ -253,7 +253,7 @@ class ColorPicker extends Popup {
 
 	function initSliders() {
 		{
-			primarySliders = new SliderGroup(popup, canEditAlpha, ColorSpace.colorModes[1]);
+			primarySliders = new SliderGroup(element, canEditAlpha, ColorSpace.colorModes[1]);
 
 			primarySliders.onChange = function(isDragging : Bool) {
 				workValue = primarySliders.value;
@@ -324,10 +324,10 @@ class ColorPicker extends Popup {
 			}
 		}
 
-		new Element("<hr>").appendTo(popup);
+		new Element("<hr>").appendTo(element);
 
 		{
-			secondarySliders = new SliderGroup(popup, canEditAlpha, ColorSpace.colorModes[0]);
+			secondarySliders = new SliderGroup(element, canEditAlpha, ColorSpace.colorModes[0]);
 
 			secondarySliders.onChange = function(isDragging : Bool) {
 				workValue = secondarySliders.value;

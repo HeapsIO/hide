@@ -1033,12 +1033,12 @@ class ShaderEditor extends hide.view.FileView implements GraphInterface.IGraphEd
 	public function openBackgroundColorMenu() {
 		var prev = element.find("#preview");
 
-		var cp = new hide.comp.ColorPicker(false, null,element.find("#preview"));
+		var cp = new hide.comp.ColorPicker(false, element.find("#preview"));
 		@:privateAccess
 		{
-			var offset = cp.popup.offset();
+			var offset = cp.element.offset();
 			offset.top -= prev.get(0).offsetHeight;
-			cp.popup.offset(offset);
+			cp.element.offset(offset);
 		}
 
 		cp.value = previewSettings.bgColor;
@@ -1090,7 +1090,7 @@ class ShaderEditor extends hide.view.FileView implements GraphInterface.IGraphEd
 		if ( pbrRenderer != null ) {
 			pbrRenderer.env = h3d.scene.pbr.Environment.getDefault();
 		}
-		
+
 		if (meshPreviewRenderProps != null) {
 			meshPreviewRenderProps.dispose();
 		}

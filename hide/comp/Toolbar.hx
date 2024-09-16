@@ -213,7 +213,7 @@ class Toolbar extends Component {
 				}
 			}
 			else {
-				p.close();
+				//p.close();
 			}
 		});
 	}

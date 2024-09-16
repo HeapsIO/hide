@@ -19,11 +19,11 @@ class CameraControllerEditor extends Popup {
         {name: "Fly/6DOF", cl: FlightController},
     ];
 
-    public function new(editor: SceneEditor, ?parent : Element, ?root : Element) {
-        super(parent, root);
+    public function new(editor: SceneEditor, ?parent : Element) {
+        super(parent);
         this.editor = editor;
-        popup.addClass("settings-popup");
-        popup.append(new Element("<p>").text("Camera settings"));
+        element.addClass("settings-popup");
+        element.append(new Element("<p>").text("Camera settings"));
         /*popup.width("400px");*/
 
         create();
@@ -52,7 +52,7 @@ class CameraControllerEditor extends Popup {
 
     function create() {
         if (form_div == null)
-            form_div = new Element("<div>").addClass("form-grid").appendTo(popup);
+            form_div = new Element("<div>").addClass("form-grid").appendTo(element);
         form_div.empty();
 
         {

@@ -483,8 +483,8 @@ class FXEditor extends hide.view.FileView {
 		var p : hide.comp.Popup = null;
 		helpButton.click(function(e) {
 			if (p == null) {
-				p = new hide.comp.SceneEditor.HelpPopup(null, helpButton, sceneEditor, tlKeys);
-				@:privateAccess p.popup.css({'position':'absolute', 'left':'30px','top':'800px'});
+				p = new hide.comp.SceneEditor.HelpPopup(helpButton, sceneEditor, tlKeys);
+				@:privateAccess p.element.css({'position':'absolute', 'left':'30px','top':'800px'});
 				//p = open(el);
 				p.onClose = function() {
 					p = null;
@@ -578,7 +578,7 @@ class FXEditor extends hide.view.FileView {
 
 		var toolsDefs = new Array<hide.comp.Toolbar.ToolDef>();
 		toolsDefs.push({id: "perspectiveCamera", title : "Perspective camera", icon : "video-camera", type : Button(() -> sceneEditor.resetCamera()) });
-		toolsDefs.push({id: "camSettings", title : "Camera Settings", icon : "camera", type : Popup((e : hide.Element) -> new hide.comp.CameraControllerEditor(sceneEditor, null,e)) });
+		toolsDefs.push({id: "camSettings", title : "Camera Settings", icon : "camera", type : Popup((e : hide.Element) -> new hide.comp.CameraControllerEditor(sceneEditor, e)) });
 
 		toolsDefs.push({id: "", title : "", icon : "", type : Separator});
 
@@ -589,7 +589,7 @@ class FXEditor extends hide.view.FileView {
 		toolsDefs.push({id: "", title : "", icon : "", type : Separator});
 
 		toolsDefs.push({id: "toggleSnap", title : "Snap Toggle", icon: "magnet", type : Toggle((v) -> {sceneEditor.snapToggle = v; sceneEditor.updateGrid();})});
-		toolsDefs.push({id: "snap-menu", title : "", icon: "", type : Popup((e) -> new hide.comp.SceneEditor.SnapSettingsPopup(null, e, sceneEditor))});
+		toolsDefs.push({id: "snap-menu", title : "", icon: "", type : Popup((e) -> new hide.comp.SceneEditor.SnapSettingsPopup(e, sceneEditor))});
 
 		toolsDefs.push({id: "", title : "", icon : "", type : Separator});
 
@@ -598,7 +598,7 @@ class FXEditor extends hide.view.FileView {
 		toolsDefs.push({id: "", title : "", icon : "", type : Separator});
 
 		toolsDefs.push({id: "showViewportOverlays", title : "Viewport Overlays", icon : "eye", type : Toggle((v) -> { sceneEditor.updateViewportOverlays(); }) });
-		toolsDefs.push({id: "viewportoverlays-menu", title : "", icon: "", type : Popup((e) -> new hide.comp.SceneEditor.ViewportOverlaysPopup(null, e, sceneEditor))});
+		toolsDefs.push({id: "viewportoverlays-menu", title : "", icon: "", type : Popup((e) -> new hide.comp.SceneEditor.ViewportOverlaysPopup(e, sceneEditor))});
 
 
 		toolsDefs.push({id: "", title : "", icon : "", type : Separator});
@@ -638,11 +638,11 @@ class FXEditor extends hide.view.FileView {
 
 		tools.addSeparator();
 
-		tools.addPopup(null, "View Modes", (e) -> new hide.comp.SceneEditor.ViewModePopup(null, e, Std.downcast(@:privateAccess scene.s3d.renderer, h3d.scene.pbr.Renderer), sceneEditor), null);
+		tools.addPopup(null, "View Modes", (e) -> new hide.comp.SceneEditor.ViewModePopup(e, Std.downcast(@:privateAccess scene.s3d.renderer, h3d.scene.pbr.Renderer), sceneEditor), null);
 
 		tools.addSeparator();
 
-		tools.addPopup(null, "Render Props", (e) -> new hide.comp.SceneEditor.RenderPropsPopup(null, e, this, sceneEditor, true), null);
+		tools.addPopup(null, "Render Props", (e) -> new hide.comp.SceneEditor.RenderPropsPopup(e, this, sceneEditor, true), null);
 
 
 		tools.addSeparator();
