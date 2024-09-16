@@ -305,7 +305,6 @@ private class FXSceneEditor extends hide.comp.SceneEditor {
 
 	override function endRebuild() {
 		super.endRebuild();
-		parent.rebuildAnimPanel();
 	}
 }
 

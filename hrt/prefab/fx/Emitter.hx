@@ -2121,8 +2121,12 @@ class Emitter extends Object3D {
 		return debugShape;
 	}
 
+	function onChildUpdate(p: Prefab) {
+		shared.editor.queueRebuild(this);
+	}
+
 	override function getHideProps() : HideProps {
-		return { icon : "asterisk", name : "Emitter", allowParent : function(p) return p.to(FX) != null || p.findParent(FX) != null };
+		return { icon : "asterisk", name : "Emitter", allowParent : function(p) return p.to(FX) != null || p.findParent(FX) != null, onChildUpdate: onChildUpdate};
 	}
 	#end
 
