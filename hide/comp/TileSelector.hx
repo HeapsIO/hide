@@ -23,6 +23,8 @@ class TileSelector extends Component {
 	var modal : Element;
 	var container : Element;
 	var zoomSelector : Element;
+
+	var bgColor(default, set) : Int = 0xFF110022;
 	final maxZoom = 4;
 
 	function get_zoom() {
@@ -41,6 +43,18 @@ class TileSelector extends Component {
 		zoomSelector.val(zoomLevel);
 		return zoomLevel;
 	}
+
+	function set_bgColor(v: Int) : Int {
+		bgColor = v;
+		if (container != null) {
+			var vec = new h3d.Vector4();
+			vec.setColor(bgColor);
+			container.css("backgroundColor", 'rgba(${vec.r*255}, ${vec.g*255}, ${vec.b*255}, ${vec.a})');
+		}
+		saveDisplayState("bgColor", zoomLevel);
+		return bgColor;
+	}
+
 
 	public function new(file,size,?parent,?el) {
 		super(parent,el);
@@ -189,12 +203,19 @@ class TileSelector extends Component {
 			rescale();
 		});
 
+		var backgroundSelector = new hide.comp.ColorPicker.ColorBox(settings, true, true);
+		backgroundSelector.value = bgColor;
+		backgroundSelector.onChange = (isDragging: Bool) -> {
+			bgColor = backgroundSelector.value;
+		}
+
 		if( settings.children().length == 0 ) {
 			settings.remove();
 		}
 
 		var url = ide.getUnCachedUrl(file);
-		container = new Element("<tile-picker></tile-picker>").appendTo(element);
+		var tilePicker = new Element("<tile-picker></tile-picker>").appendTo(element);
+		container = new Element("<background-container></background-container>").appendTo(tilePicker);
 		image = new Element('<image-display style="background-image:url(\'$url\')"></image-display>').appendTo(container);
 		valueDisp = new Element('<div class="valueDisp">').appendTo(image);
 		cursor = new Element('<div class="cursor">').appendTo(image);
@@ -309,6 +330,8 @@ class TileSelector extends Component {
 			focusSelection();
 		};
 		i.src = url;
+
+		set_bgColor(bgColor);
 	}
 
 	function focusSelection() {

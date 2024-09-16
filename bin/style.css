@@ -3475,26 +3475,32 @@ hide-popover hide-content {
 }
 .hide-tileselect tile-picker {
   flex: 1 1;
-  background-color: #202;
+  background: url(data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAACAAAAAgCAYAAABzenr0AAAAAXNSR0IArs4c6QAAAE5JREFUWIVjnL12+38GCoCBnisl2hmYKNJNBTDqgFEHjDpg1AGjDhh1wKgDGE/f/kNRe+DCpd0UOWDAQ2DUAaMOGHXAqANGHTDqgFEHAAAO3QneZHM9AwAAAABJRU5ErkJggg==);
   overflow: auto;
 }
 .hide-tileselect tile-picker::-webkit-scrollbar {
   width: 10px;
   height: 10px;
 }
-.hide-tileselect tile-picker image-display {
+.hide-tileselect tile-picker background-container {
+  width: 100%;
+  height: 100%;
+  display: block;
+  padding: 0;
+}
+.hide-tileselect tile-picker background-container image-display {
   display: block;
   position: relative;
   margin-right: 1px;
   margin-bottom: 1px;
 }
-.hide-tileselect tile-picker image-display .valueDisp {
+.hide-tileselect tile-picker background-container image-display .valueDisp {
   position: absolute;
   background-color: rgba(0, 80, 128, 0.3);
   border: 1px solid rgba(128, 128, 128, 0.5);
   pointer-events: none;
 }
-.hide-tileselect tile-picker image-display .cursor {
+.hide-tileselect tile-picker background-container image-display .cursor {
   position: absolute;
   border: 1px solid #fff;
   pointer-events: none;

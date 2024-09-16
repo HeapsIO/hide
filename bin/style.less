@@ -4045,25 +4045,31 @@ hide-popover {
 			height: 10px;
 		}
 
-		//background: url(data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAACAAAAAgCAYAAABzenr0AAAAAXNSR0IArs4c6QAAAE5JREFUWIVjnL12+38GCoCBnisl2hmYKNJNBTDqgFEHjDpg1AGjDhh1wKgDGE/f/kNRe+DCpd0UOWDAQ2DUAaMOGHXAqANGHTDqgFEHAAAO3QneZHM9AwAAAABJRU5ErkJggg==);
-		background-color: #202;
+		background: url(data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAACAAAAAgCAYAAABzenr0AAAAAXNSR0IArs4c6QAAAE5JREFUWIVjnL12+38GCoCBnisl2hmYKNJNBTDqgFEHjDpg1AGjDhh1wKgDGE/f/kNRe+DCpd0UOWDAQ2DUAaMOGHXAqANGHTDqgFEHAAAO3QneZHM9AwAAAABJRU5ErkJggg==);
 
 		overflow: auto;
-		image-display {
+
+		background-container {
+			width: 100%;
+			height: 100%;
 			display: block;
-			position: relative;
-			margin-right: @tileselect-cursor-border;
-			margin-bottom: @tileselect-cursor-border;
-			.valueDisp {
-				position: absolute;
-				background-color: rgba(0,80,128,0.3);
-				border:1px solid rgba(128,128,128,0.5);
-				pointer-events:none;
-			}
-			.cursor {
-				position: absolute;
-				border : @tileselect-cursor-border solid #fff;
-				pointer-events:none;
+			padding: 0;
+			image-display {
+				display: block;
+				position: relative;
+				margin-right: @tileselect-cursor-border;
+				margin-bottom: @tileselect-cursor-border;
+				.valueDisp {
+					position: absolute;
+					background-color: rgba(0,80,128,0.3);
+					border:1px solid rgba(128,128,128,0.5);
+					pointer-events:none;
+				}
+				.cursor {
+					position: absolute;
+					border : @tileselect-cursor-border solid #fff;
+					pointer-events:none;
+				}
 			}
 		}
 	}
