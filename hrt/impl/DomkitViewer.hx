@@ -114,13 +114,15 @@ class SourceComponent extends domkit.Component<h2d.Object, h2d.Object> {
 		parent = cast @:privateAccess viewer.resolveComponent(parentName);
 	}
 
-	function makeComp(args:Array<Dynamic>, parent) {
+	function makeComp(args:Array<Dynamic>, parent) : h2d.Object {
 		if( isRec ) {
 			isRec = false;
 			var p = this.parent;
 			while( p is SourceComponent )
 				p = p.parent;
-			return p.make(args, parent);
+			var obj : h2d.Object = p.make(args, parent);
+			if( obj.dom != null ) @:privateAccess obj.dom.component = this;
+			return obj;
 		}
 		isRec = true;
 		return @:privateAccess viewer.createComponent(res, parent, args);

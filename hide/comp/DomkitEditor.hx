@@ -324,7 +324,7 @@ class DomkitChecker extends ScriptEditor.ScriptChecker {
 			case Node(null):
 				for( c in expr.children )
 					switch( c.kind ) {
-					case Node(n) if( n == name ): node = c;
+					case Node(n) if( n.split(":")[0] == name ): node = c;
 					default:
 					}
 			default:
