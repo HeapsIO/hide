@@ -101,6 +101,37 @@ class ScriptChecker {
 		}
 	}
 
+	function resolveApis( path : String ) {
+		var config : GlobalsDef = config.get("script.api");
+		if( config == null ) return [];
+		var arr = [];
+		var obj = constants.get(path);
+		for( f in config.keys() ) {
+			var pattern = f;
+			if( !StringTools.startsWith(pattern, path) )
+				continue;
+			var r = ~/\[([A-Za-z0-9_\.]+)=([^\]]+?)\]$/;
+			var ok = true;
+			while( r.match(pattern) ) {
+				var req = r.matched(2);
+				var val : Dynamic = obj;
+				var fields = r.matched(1);
+				for( f in fields.split(".") )
+					val = Reflect.field(val, f);
+				if( fields == "group" )
+					val = constants.get("cdb.groupID");
+				if( Std.string(val) != req ) {
+					pattern = null;
+					break;
+				}
+				pattern = r.matchedLeft();
+			}
+			if( pattern == path )
+				arr.push(config.get(f));
+		}
+		return arr;
+	}
+
 	function init() {
 		if( initDone ) return;
 		initDone = true;
@@ -110,15 +141,8 @@ class ScriptChecker {
 		while( parts.length > 0 ) {
 			var path = parts.join(".");
 			parts.pop();
-			var config = config.get("script.api");
-			if( config == null ) continue;
-			var api = (config : GlobalsDef).get(path);
-			if( api == null ) {
-				path = ~/\[group=[^\]]+?\]/g.replace(path,"");
-				api = (config : GlobalsDef).get(path);
-			}
-			if( api != null )
-				apis.unshift(api);
+			for( a in resolveApis(path) )
+				apis.unshift(a);
 		}
 
 		var cdbPack : String = config.get("script.cdbPackage");
