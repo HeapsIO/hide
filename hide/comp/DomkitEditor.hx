@@ -71,7 +71,7 @@ class DomkitChecker extends ScriptEditor.ScriptChecker {
 					ide.error("Couldn't find custom domkit parser "+name);
 					continue;
 				}
-				dcfg.push(std.Type.createInstance(cl,[]));
+				parsers.push(std.Type.createInstance(cl,[]));
 			}
 		}
 		initComponents();
@@ -264,6 +264,7 @@ class DomkitChecker extends ScriptEditor.ScriptChecker {
 					if( pl == null ) {
 						pl = [];
 						properties.set(name, pl);
+						domkit.Property.get(name); // force create, prevent warning if used in css
 					}
 					var dup = false;
 					for( p2 in pl )
