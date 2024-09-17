@@ -868,6 +868,7 @@ class SceneEditor {
 	public var event(default, null) : hxd.WaitEvent;
 	var hideList : Map<PrefabElement, Bool> = new Map();
 	public var selectedPrefabs : Array<PrefabElement> = [];
+	public var selectedParents : Map<PrefabElement, Bool> = [];
 
 	public var root2d : h2d.Object = null;
 	public var root3d : h3d.scene.Object = null;
@@ -2719,6 +2720,8 @@ class SceneEditor {
 			el.find("ul").first().css("background", "");
 		}
 
+		el.toggleClass("childSelected", selectedParents.exists(p));
+
 		if(obj3d != null) {
 			el.toggleClass("disabled", !p.enabled || !obj3d.visible);
 			el.toggleClass("hidden", isHidden(obj3d));
@@ -3183,6 +3186,26 @@ class SceneEditor {
 				curEdit.cleanup();
 			var edit = makeEditContext(elts);
 			selectedPrefabs = elts;
+			var old = selectedParents.copy();
+			selectedParents.clear();
+			for (parent => _ in old) {
+				var el : Dynamic = tree.getElement(parent);
+				if (el != null && el != false)
+					applyTreeStyle(parent, el);
+			}
+
+			for (prefab in selectedPrefabs) {
+				var parent = prefab.parent;
+				while (parent != null) {
+					selectedParents.set(parent, true);
+
+					var el : Dynamic = tree.getElement(parent);
+					if (el != null && el != false)
+						applyTreeStyle(parent, el);
+					parent = parent.parent;
+				}
+			}
+
 			if (elts.length == 0 || (customPivot != null && customPivot.elt != selectedPrefabs[0])) {
 				customPivot = null;
 			}
@@ -3204,6 +3227,8 @@ class SceneEditor {
 
 			switch( mode ) {
 			case Default, NoHistory:
+				for (e in elts)
+					tree.revealNode(e);
 				tree.setSelection(elts);
 			case Nothing, NoTree:
 			}
