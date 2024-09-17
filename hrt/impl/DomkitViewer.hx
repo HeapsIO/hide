@@ -223,8 +223,10 @@ class DomkitViewer extends h2d.Object {
 		for( c in cssResources )
 			style.unload(c);
 		cssResources = new Map();
-		for( c in loadedComponents )
+		for( c in loadedComponents ) {
 			@:privateAccess domkit.Component.COMPONENTS.remove(c.name);
+			@:privateAccess domkit.CssStyle.CssData.COMPONENTS.remove(c);
+		}
 		loadedComponents = [];
 	}
 
@@ -407,10 +409,16 @@ class DomkitViewer extends h2d.Object {
 					if( parent == null )
 						throw new domkit.Error("Unknown parent component "+parts[1], e.pmin + name.length, e.pmin + name.length + parts[1].length + 1);
 				}
-				if( parent == null && c == null )
+				if( parent == null && (c == null || loadedComponents.indexOf(cast c) >= 0) )
 					parent = domkit.Component.get("flow");
 				if( c == null || (parent != null && c.parent != parent) ) {
-					c = new domkit.Component(name,parent.make,parent);
+					c = new domkit.Component(name,function(args,p) {
+						var obj = c.parent.make(args,p);
+						if( obj.dom != null )
+							obj.dom.component = c;
+						return obj;
+					},parent);
+					domkit.CssStyle.CssData.registerComponent(c);
 					@:privateAccess c.argsNames = [];
 					loadedComponents.push(cast c);
 				}
@@ -428,7 +436,7 @@ class DomkitViewer extends h2d.Object {
 				}
 				v;
 			}];
-			if( isRoot && e.arguments.length == 0 ) {
+			if( isRoot && e.arguments.length == 0 && @:privateAccess c.argsNames != null ) {
 				for( a in @:privateAccess c.argsNames ) {
 					var v : Dynamic = interp.variables.get(a);
 					args.push(v);
