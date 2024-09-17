@@ -151,13 +151,13 @@ class FX2DAnimation extends h2d.Object {
 		if( visible && playSpeed > 0 ) {
 			var curTime = localTime;
 			setTime(curTime);
+			super.sync(ctx);
 			localTime += ctx.elapsedTime * playSpeed;
 			if( duration > 0 && curTime < duration && localTime >= duration) {
 				localTime = duration;
 				if( onEnd != null )
 					onEnd();
 			}
-			super.sync(ctx);
 		}
 	}
 }
