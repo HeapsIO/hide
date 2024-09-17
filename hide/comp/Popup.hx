@@ -28,6 +28,8 @@ class Popup extends Component {
 
 		element.attr("popover", "").addClass("popup");
 
+		element[0].addEventListener("dblclick", (e) -> {e.stopPropagation();});
+
 		this.isSearchable = isSearchable;
 
 		if (isSearchable) {
