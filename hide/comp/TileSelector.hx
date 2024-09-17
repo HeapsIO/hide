@@ -230,7 +230,7 @@ class TileSelector extends Component {
 
 			zoomLevel = getDisplayState("zoomLevel") ?? Math.floor(Math.log(hxd.Math.min(800 / imageWidth, 580 / imageHeight))/Math.log(2));
 
-			container.on("mousewheel", function(e:js.jquery.Event) {
+			tilePicker.on("mousewheel", function(e:js.jquery.Event) {
 				if (e.ctrlKey) {
 					if( untyped e.originalEvent.wheelDelta > 0 )
 						zoomLevel++;
@@ -241,26 +241,26 @@ class TileSelector extends Component {
 				}
 			});
 
-			image.parent().on("mousedown", function(e) {
+			modal.on("pointerdown", function(e) {
 				if( e.button == 2 ) {
+					modal.get(0).setPointerCapture(e.pointerId);
 					movePos.dragScrolling = true;
-					movePos.x = e.pageX;
-					movePos.y = e.pageY;
+
+					movePos.x = tilePicker[0].scrollLeft - e.pageX;
+					movePos.y = tilePicker[0].scrollTop - e.pageY;
 				}
 			});
 
-			modal.on("mousemove", function(e) {
+			modal.on("pointermove", function(e) {
 				if( movePos.dragScrolling ) {
-					var dx = e.pageX - movePos.x;
-					var dy = e.pageY - movePos.y;
+					var dx = e.pageX + movePos.x;
+					var dy = e.pageY + movePos.y;
 
-					element.find(".scroll")[0].scrollBy(-dx,-dy);
-					movePos.x = e.pageX;
-					movePos.y = e.pageY;
+					tilePicker[0].scrollTo(dx,dy);
 				}
 			});
 
-			image.on("mousemove", function(e:js.jquery.Event) {
+			image.on("pointermove", function(e:js.jquery.Event) {
 				if( movePos.dragScrolling )
 					return;
 				var pow = Math.pow(2, zoomLevel);
@@ -280,7 +280,7 @@ class TileSelector extends Component {
 				}
 				updateCursor();
 			});
-			image.on("mousedown", function(e:js.jquery.Event) {
+			image.on("pointerdown", function(e:js.jquery.Event) {
 				if( movePos.dragScrolling )
 					return;
 				var k = { w: size.width * zoom, h: size.height * zoom };
@@ -294,11 +294,11 @@ class TileSelector extends Component {
 				if( e.button == 0 && allowRectSelect )
 					cursorPos.dragSelect = true;
 			});
-			modal.on("mouseup", function(e) {
+			modal.on("pointerup", function(e) {
 				movePos.dragScrolling = false;
 				cursorPos.dragSelect = false;
 			});
-			image.on("mouseup", function(e:js.jquery.Event) {
+			image.on("pointerup", function(e:js.jquery.Event) {
 				e.preventDefault();
 				movePos.dragScrolling = false;
 				cursorPos.dragSelect = false;
@@ -320,6 +320,7 @@ class TileSelector extends Component {
 				}
 				onChange(false);
 				e.stopPropagation();
+				trace("image pointerup");
 			});
 			modal.on("contextmenu", function(e) {
 				e.preventDefault();
