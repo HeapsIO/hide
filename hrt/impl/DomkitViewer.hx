@@ -145,6 +145,7 @@ class DomkitViewer extends h2d.Object {
 	var rootObject : h2d.Object;
 	var componentsPaths : Array<String> = [];
 	var createRootArgs : Array<Dynamic>;
+	var evaluatedParams : Dynamic;
 	var loadedComponents : Array<domkit.Component<h2d.Object, h2d.Object>> = [];
 
 	public function new( style : h2d.domkit.Style, res : hxd.res.Resource, ?parent ) {
@@ -295,7 +296,23 @@ class DomkitViewer extends h2d.Object {
 
 		var root = new h2d.Flow();
 		root.dom = domkit.Properties.create("flow",root,{ "class" : "debugRoot", layout : "stack", "content-align" : "middle middle", "fill-width" : "true", "fill-height" : "true" });
-		createComponent(resource, root, null);
+		var obj = createComponent(resource, root, null);
+
+		if( evaluatedParams != null ) {
+			var classes : Array<String> = Std.downcast(evaluatedParams.classes,Array);
+			if( classes != null ) {
+				var checks = new h2d.Flow(root);
+				checks.dom = domkit.Properties.create("flow",checks,{ "class" : "debugClasses", "position" : "absolute", "align" : "middle top", "margin-top" : "5" });
+				for( cl in classes ) {
+					var c = new h2d.CheckBox(checks);
+					c.dom = domkit.Properties.create("flow",c);
+					c.text = cl;
+					c.onChange = function() {
+						obj.dom.toggleClass(cl, c.selected);
+					};
+				}
+			}
+		}
 
 		if( current != null ) {
 			current.remove();
@@ -327,6 +344,7 @@ class DomkitViewer extends h2d.Object {
 			}
 			comp = addRec(expr, parent, true);
 			interp = prev;
+			evaluatedParams = vparams;
 		} catch( e : domkit.Error ) {
 			interp = prev;
 			onError(e);
