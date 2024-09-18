@@ -30,7 +30,8 @@ class Unknown extends Prefab {
 
 	override function save() {
 		var to : Dynamic = {};
-		to.name = name;
+		if (name != "")
+			to.name = name;
 		for (f in Reflect.fields(data)) {
 			Reflect.setField(to, f, copyValue(Reflect.getProperty(data, f)));
 		}

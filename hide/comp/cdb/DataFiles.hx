@@ -40,6 +40,8 @@ class DataFiles {
 		var levelID = file.split("/").pop().split(".").shift();
 		levelID = levelID.charAt(0).toUpperCase()+levelID.substr(1);
 
+		var allMap : Map<String, Array<hrt.prefab.Prefab>> = [];
+
 		function loadRec( p : hrt.prefab.Prefab, parent : hrt.prefab.Prefab, toRemove : Array<DataProps> ) {
 			// Initiliaze to remove list with the full list of lines data.
 			if (parent == null) {
@@ -57,12 +59,14 @@ class DataFiles {
 					origin : haxe.Json.stringify(p.props)
 				};
 
-				if( parent != null ) {
-					for( c in parent.children ) {
-						if( c == p ) break;
-						if( c.name == p.name ) dprops.index++;
-					}
+				// deduplicate prefabs that have the same absPath
+				var all = allMap.get(dprops.path);
+				if (all == null) {
+					all = getPrefabsByPath(p.getRoot(), dprops.path);
+					allMap.set(dprops.path, all);
 				}
+
+				dprops.index = all.indexOf(p);
 
 				if( sheet.idCol != null && Reflect.field(p.props,sheet.idCol.name) == "" )
 					Reflect.setField(p.props,sheet.idCol.name,levelID+"_"+p.name+(dprops.index == 0 ? "" : ""+dprops.index));
@@ -552,6 +556,9 @@ class DataFiles {
 			var content = null;
 			var levelID = file.split("/").pop().split(".").shift();
 			levelID = levelID.charAt(0).toUpperCase()+levelID.substr(1);
+
+			var allMap : Map<String, Array<hrt.prefab.Prefab>> = [];
+
 			function loadRec( p : hrt.prefab.Prefab, parent : hrt.prefab.Prefab ) {
 				if( p.getCdbType() == sheetName ) {
 					var dprops : DataProps = {
@@ -560,12 +567,16 @@ class DataFiles {
 						index : 0,
 						origin : haxe.Json.stringify(p.props),
 					};
-					if( parent != null ) {
-						for( c in parent.children ) {
-							if( c == p ) break;
-							if( c.name == p.name ) dprops.index++;
-						}
+
+					// deduplicate prefabs that have the same absPath
+					var all = allMap.get(dprops.path);
+					if (all == null) {
+						all = getPrefabsByPath(p.getRoot(), dprops.path);
+						allMap.set(dprops.path, all);
 					}
+
+					dprops.index = all.indexOf(p);
+
 					if( sheet.idCol != null && Reflect.field(p.props,sheet.idCol.name) == "" )
 						Reflect.setField(p.props,sheet.idCol.name,levelID+"_"+p.name+(dprops.index == 0 ? "" : ""+dprops.index));
 					if( content == null ) {

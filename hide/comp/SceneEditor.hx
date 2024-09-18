@@ -1761,7 +1761,7 @@ class SceneEditor {
 			return true;
 		}
 
-		var onRenameFunc = function(e, name) {
+		var onRenameFunc = function(e : hrt.prefab.Prefab, name) {
 			var oldName = e.name;
 			e.name = name;
 
