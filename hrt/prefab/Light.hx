@@ -301,6 +301,8 @@ class Light extends Object3D {
 	#if editor
 
 	function refreshDebug() {
+		if ( local3d == null )
+			return;
 		var debugPoint = local3d.find(c -> if(c.name == "_debugPoint") c else null);
 		var debugDir = local3d.find(c -> if(c.name == "_debugDir") c else null);
 		var debugSpot = local3d.find(c -> if(c.name == "_debugSpot") c else null);
