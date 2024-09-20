@@ -223,11 +223,13 @@ class ModelLibrary extends Prefab {
 	@:s var mipPower : Float;
 	@:s var mipLevels : Int = 1;
 	@:s var compress : Bool = true;
+	@:s var version : Int = 0;
+
+	public static inline var CURRENT_VERSION = 1;
 
 	var cache : ModelLibraryCache;
 	var btSize = 4096;
 	var errors = [];
-    final reg = ~/[0-9]+/g;
 
 	var killAlpha = new h3d.shader.KillAlpha(0.5);
 
@@ -370,6 +372,11 @@ class ModelLibrary extends Prefab {
 	}
 
 	public function isUpToDate( ?paths : Array<String> ) : Bool {
+		if ( version != CURRENT_VERSION ) {
+			trace("ModelLibrary is not up to date : version does not match");
+			return false;
+		}
+
 		var source = shared.prefabSource;
 		if ( source == null )
 			return false;
@@ -379,7 +386,6 @@ class ModelLibrary extends Prefab {
 			trace("ModelLibrary does not exist");
 			return false;
 		}
-
 
 		var fileStat = sys.FileSystem.stat(filePath);
 		var time = fileStat.mtime.getTime();
@@ -666,7 +672,6 @@ class ModelLibrary extends Prefab {
 				if ( pos == null )
 					return null;
 				var matName = m.name;
-				matName = reg.replace(matName, '');
 				var key = lib.resource.entry.path + (modelName != "root" ? "_" + modelName : "") + "_" + matName;
 				var bk = bakedMaterials.get(key);
 				if ( bk != null )
@@ -878,6 +883,8 @@ class ModelLibrary extends Prefab {
 		makeTex(textures,"texture");
 		makeTex(normalMaps,"normal");
 		makeTex(specMaps,"specular");
+
+		version = CURRENT_VERSION;
 	}
 
 	public function saveLibrary( ?filePath : String ) {
@@ -999,7 +1006,6 @@ class ModelLibrary extends Prefab {
 
 	public function getBakedMat(mat : h3d.mat.Material, prim : h3d.prim.HMDModel, meshName : String) {
 		var matName = mat.name;
-		matName = reg.replace(matName,'');
 		// TODO : optimize string add.
 		var bk = bakedMaterials.get(@:privateAccess prim.lib.resource.entry.path + "_" + meshName + "_" + matName);
 		if ( bk == null )
