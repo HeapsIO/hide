@@ -406,7 +406,21 @@ class TrailObj extends h3d.scene.Mesh {
 
 		t.totalLength = totalLength;
 
-		if ( lastPointAlive == null || lastPointAlive.next == null )
+		if ( lastPointAlive == null ) {
+			if ( t.firstPoint != null ) {
+				var dyingPoint = t.firstPoint;
+				while (dyingPoint != null) {
+					var n = dyingPoint.next;
+					disposePoint(dyingPoint);
+					t.numPoints--;
+					dyingPoint = n;
+				}
+				t.firstPoint = null;
+			}
+			return;
+		}
+
+		if ( lastPointAlive.next == null )
 			return;
 
 		var dyingPoint = lastPointAlive.next;
