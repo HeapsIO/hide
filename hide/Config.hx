@@ -74,8 +74,13 @@ class Config {
 		var fullPath = ide.getPath(path);
 		if( Reflect.fields(source).length == 0 )
 			try sys.FileSystem.deleteFile(fullPath) catch( e : Dynamic ) {};
-		else
+		else {
+			var directory = haxe.io.Path.directory(fullPath);
+			if( !sys.FileSystem.exists(directory) ) {
+				sys.FileSystem.createDirectory(directory);
+			}
 			sys.io.File.saveContent(fullPath, ide.toJSON(source));
+		}
 	}
 
 	public function sync() {
