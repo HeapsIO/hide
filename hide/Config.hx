@@ -157,7 +157,7 @@ class Config {
 			Sys.exit(-1);
 		}
 
-		var userGlobals = loadConfig(new Config(defaults), hidePath + "/props.json");
+		var userGlobals = loadConfig(new Config(defaults), Ide.inst.userStatePath + "/props.json");
 
 		if( userGlobals.source.hide == null )
 			userGlobals.source.hide = {
