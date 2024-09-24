@@ -127,6 +127,7 @@ class FileTree extends FileView {
 				{ label : "Collapse", click : tree.collapseAll },
 				{ label : "", isSeparator: true },
 				{ label : "Copy Path", enabled : current != null, click : function() { ide.setClipboard(current); } },
+				{ label : "Copy Absolute Path", enabled : current != null, click : function() { ide.setClipboard(Ide.inst.getPath(current)); } },
 				{ label : "Open in Explorer", enabled : current != null, click : function() { onExploreFile(current); } },
 				{ label : "", isSeparator: true },
 				{ label : "Clone", enabled : current != null, click : function() {

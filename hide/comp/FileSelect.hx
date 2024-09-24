@@ -29,6 +29,7 @@ class FileSelect extends Component {
 				{ label : "View", enabled : fpath != null, click : function() ide.openFile(fpath) },
 				{ label : "Clear", enabled : path != null, click : function() { path = null; onChange(); } },
 				{ label : "Copy Path", enabled : path != null, click : function() ide.setClipboard(path) },
+				{ label : "Copy Absolute Path", enabled : fpath != null, click : function() { ide.setClipboard(fpath); } },
 				{ label : "Paste Path", click : function() {
 					path = ide.getClipboard();
 					onChange();
