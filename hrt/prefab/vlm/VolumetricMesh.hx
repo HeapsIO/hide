@@ -36,7 +36,8 @@ class VolumetricMesh extends h3d.scene.Mesh {
 		material.castShadows = false;
 		material.shadows = false;
 		material.mainPass.stencil = new h3d.mat.Stencil();
-		material.mainPass.stencil.setFunc(NotEqual, 0x80, 0x80, 0x80);
+		var stencilValue = h3d.scene.pbr.Renderer.LIGHTMAP_STENCIL;
+		material.mainPass.stencil.setFunc(NotEqual, stencilValue, stencilValue, stencilValue);
 		material.mainPass.stencil.setOp(Keep, Keep, Replace);
 		probeCount = new h3d.col.IPoint();
 		voxelSize = new h3d.Vector(1,1,1);
