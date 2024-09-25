@@ -68,7 +68,7 @@ class Cell {
 			elementHtml.addEventListener("click", function(_) edit());
 		default:
 			if( canEdit() )
-				elementHtml.addEventListener("dblclick", function(_) if (!blockEdit()) edit());
+				elementHtml.addEventListener("dblclick", function(_) edit());
 			else
 				root.classList.add("t_readonly");
 		}
@@ -775,12 +775,9 @@ class Cell {
 		return StringTools.replace(str, "\u00A0", " ");
 	}
 
-	// kept available until we're confident in the new system
-	var useSelect2 = false;
 	public function edit() {
 		if( !canEdit() )
 			return;
-		//useSelect2 = this.editor.config.get("cdb.useSelect2") || (Std.isOfType(editor, ObjEditor) && editor.element.parent().hasClass("detached"));
 		inEdit = true;
 
 		switch( column.type ) {
@@ -898,195 +895,113 @@ class Cell {
 			elementHtml.innerHTML = null;
 			elementHtml.classList.add("edit");
 			#if js
-			if (!useSelect2) {
-				var isLocal = sdat.idCol.scope != null;
-				var elts: Array<hide.comp.Dropdown.Choice>;
-				function makeClasses(o: cdb.Sheet.SheetIndex) {
-					var ret = [];
-					for( c in sdat.columns ) {
-						switch( c.type ) {
-							case TId | TBool:
-								ret.push("r_" + c.name + "_" + Reflect.field(o.obj, c.name));
-							case TEnum( values ):
-								ret.push("r_" + c.name + "_" + values[Reflect.field(o.obj, c.name)]);
-							case TFlags( values ):
-							default:
-						}
+			var isLocal = sdat.idCol.scope != null;
+			var elts: Array<hide.comp.Dropdown.Choice>;
+			function makeClasses(o: cdb.Sheet.SheetIndex) {
+				var ret = [];
+				for( c in sdat.columns ) {
+					switch( c.type ) {
+						case TId | TBool:
+							ret.push("r_" + c.name + "_" + Reflect.field(o.obj, c.name));
+						case TEnum( values ):
+							ret.push("r_" + c.name + "_" + values[Reflect.field(o.obj, c.name)]);
+						case TFlags( values ):
+						default:
 					}
-					return ret;
 				}
-				if( isLocal ) {
-					var scope = refScope(sdat,table.getRealSheet(),line.obj,[]);
-					var prefix = table.makeId(scope, sdat.idCol.scope, null)+":";
-					elts = [ for( d in sdat.all ) if( StringTools.startsWith(d.id,prefix) ) {
-						id : d.id.split(":").pop(),
-						ico : d.ico,
-						text : d.disp,
-						classes : makeClasses(d),
-					}];
-				} else {
-					elts = [ for( d in sdat.all ) {
-						id : d.id,
-						ico : d.ico,
-						text : d.disp,
-						classes : makeClasses(d),
-					}];
-				}
-				if( column.opt || currentValue == null || currentValue == "" ) {
-					elts.unshift({
-						id : null,
-						ico : null,
-						text : "--- None ---",
-					});
-				}
-				function makeIcon(c: hide.comp.Dropdown.Choice) {
-					if (sdat.props.displayIcon == null)
-						return null;
-					if (c.ico == null)
-						return new Element("<div style='display:inline-block;width:16px'/>");
-					return new Element(tileHtml(c.ico, true).str);
-				}
-				var d = new Dropdown(new Element(elementHtml), elts, currentValue, makeIcon, true);
-				dropdown = d.element[0];
-				d.onSelect = function(v) {
-					setValue(v);
-				}
-				d.onClose = function() {
-					dropdown = null;
-					closeEdit();
-				}
-				d.filterInput.keydown(function(e) {
-					switch( e.keyCode ) {
-					case K.LEFT, K.RIGHT:
-						d.filterInput.blur();
-						return;
-					case K.TAB:
-						d.filterInput.blur();
-						editor.cursor.move(e.shiftKey? -1:1, 0, false, false, true);
-						var c = editor.cursor.getCell();
-						if( c != this && !c.blockEdit() ) c.edit();
-						e.preventDefault();
-					default:
-					}
-					e.stopPropagation();
-				});
-
-			} else {
-				var s = new Element("<select>");
-				var isLocal = sdat.idCol.scope != null;
-				var elts;
-				if( isLocal ) {
-					var scope = refScope(sdat,table.getRealSheet(),line.obj,[]);
-					var prefix = table.makeId(scope, sdat.idCol.scope, null)+":";
-					elts = [for( d in sdat.all ) if( StringTools.startsWith(d.id,prefix) ) { id : d.id.split(":").pop(), ico : d.ico, text : d.disp }];
-				} else
-					elts = [for( d in sdat.all ) { id : d.id, ico : d.ico, text : d.disp }];
-				if( column.opt || currentValue == null || currentValue == "" )
-					elts.unshift( { id : "~", ico : null, text : "--- None ---" } );
-				elementHtml.appendChild(s[0]);
-
-				var props : Dynamic = { data : elts };
-				if( sdat.props.displayIcon != null ) {
-					function buildElement(i) {
-						var text = StringTools.htmlEscape(i.text);
-						return new Element("<div>"+(i.ico == null ? "<div style='display:inline-block;width:16px'/>" : tileHtml(i.ico,true).str) + " " + text+"</div>");
-					}
-					props.templateResult = props.templateSelection = buildElement;
-				}
-				(untyped s.select2)(props);
-				(untyped s.select2)("val", currentValue == null ? "" : currentValue);
-				(untyped s.select2)("open");
-
-				var sel2 = s.data("select2");
-				sel2.$dropdown.find("input").on("keydown", function(e) {
-					e.stopPropagation();
-				});
-
-				s.change(function(e) {
-					var val = s.val();
-					if( val == "~" ) val = null;
-					setValue(val);
-					sel2.close();
-					closeEdit();
-				});
-				s.on("select2:close", function(_) closeEdit());
+				return ret;
 			}
+			if( isLocal ) {
+				var scope = refScope(sdat,table.getRealSheet(),line.obj,[]);
+				var prefix = table.makeId(scope, sdat.idCol.scope, null)+":";
+				elts = [ for( d in sdat.all ) if( StringTools.startsWith(d.id,prefix) ) {
+					id : d.id.split(":").pop(),
+					ico : d.ico,
+					text : d.disp,
+					classes : makeClasses(d),
+				}];
+			} else {
+				elts = [ for( d in sdat.all ) {
+					id : d.id,
+					ico : d.ico,
+					text : d.disp,
+					classes : makeClasses(d),
+				}];
+			}
+			if( column.opt || currentValue == null || currentValue == "" ) {
+				elts.unshift({
+					id : null,
+					ico : null,
+					text : "--- None ---",
+				});
+			}
+			function makeIcon(c: hide.comp.Dropdown.Choice) {
+				if (sdat.props.displayIcon == null)
+					return null;
+				if (c.ico == null)
+					return new Element("<div style='display:inline-block;width:16px'/>");
+				return new Element(tileHtml(c.ico, true).str);
+			}
+			var d = new Dropdown(new Element(elementHtml), elts, currentValue, makeIcon, true);
+			dropdown = d.element[0];
+			d.onSelect = function(v) {
+				setValue(v);
+			}
+			d.onClose = function() {
+				dropdown = null;
+				closeEdit();
+			}
+			d.filterInput.keydown(function(e) {
+				switch( e.keyCode ) {
+				case K.LEFT, K.RIGHT:
+					d.filterInput.blur();
+					return;
+				case K.TAB:
+					d.filterInput.blur();
+					editor.cursor.move(e.shiftKey? -1:1, 0, false, false, true);
+					var c = editor.cursor.getCell();
+					if( c != this ) c.edit();
+					e.preventDefault();
+				default:
+				}
+				e.stopPropagation();
+			});
 			#end
 		case TEnum(values):
 			elementHtml.innerHTML = null;
 			elementHtml.classList.add("edit");
 			#if js
-			if (!useSelect2) {
-				var elts : Array<hide.comp.Dropdown.Choice> = [for( i in 0...values.length ){
-					id : "" + i,
-					text : values[i],
-					doc : getEnumValueDoc(values[i]),
-				}];
-				if( column.opt )
-					elts.unshift( { id : "-1", text : "--- None ---" } );
-				var d = new Dropdown(new Element(elementHtml), elts, "" + currentValue, true);
-				d.onSelect = function(v) {
-					var val = Std.parseInt(v);
-					if( val < 0 ) val = null;
-					setValue(val);
-				}
-				d.onClose = function() {
-					closeEdit();
-				}
-				d.filterInput.keydown(function(e) {
-					switch( e.keyCode ) {
-					case K.LEFT, K.RIGHT:
-						d.filterInput.blur();
-						return;
-					case K.TAB:
-						d.filterInput.blur();
-						editor.cursor.move(e.shiftKey? -1:1, 0, false, false, true);
-						var c = editor.cursor.getCell();
-						if( c != this && !c.blockEdit() ) c.edit();
-						e.preventDefault();
-					default:
-					}
-					e.stopPropagation();
-				});
-
-			} else { // TODO fix comp.Dropdown for detached cdb panel (in the prefab editor)
-					// so this can finally be removed
-				var s = new Element("<select>");
-				var elts = [for( i in 0...values.length ){ id : ""+i, ico : null, text : values[i] }];
-				if( column.opt )
-					elts.unshift( { id : "-1", ico : null, text : "--- None ---" } );
-				elementHtml.appendChild(s[0]);
-
-				var props : Dynamic = { data : elts };
-				(untyped s.select2)(props);
-				(untyped s.select2)("val", currentValue == null ? "" : currentValue);
-				(untyped s.select2)("open");
-				var sel2 = s.data("select2");
-
-				s.change(function(e) {
-					var val = Std.parseInt(s.val());
-					if( val < 0 ) val = null;
-					setValue(val);
-					sel2.close();
-					closeEdit();
-				});
-				new Element("input.select2-search__field").keydown(function(e) {
-					switch( e.keyCode ) {
-					case K.LEFT, K.RIGHT:
-						s.blur();
-						return;
-					case K.TAB:
-						s.blur();
-						editor.cursor.move(e.shiftKey? -1:1, 0, false, false, true);
-						var c = editor.cursor.getCell();
-						if( c != this && !c.blockEdit() ) c.edit();
-						e.preventDefault();
-					default:
-					}
-					e.stopPropagation();
-				});
-				s.on("select2:close", function(_) closeEdit());
+			var elts : Array<hide.comp.Dropdown.Choice> = [for( i in 0...values.length ){
+				id : "" + i,
+				text : values[i],
+				doc : getEnumValueDoc(values[i]),
+			}];
+			if( column.opt )
+				elts.unshift( { id : "-1", text : "--- None ---" } );
+			var d = new Dropdown(new Element(elementHtml), elts, "" + currentValue, true);
+			d.onSelect = function(v) {
+				var val = Std.parseInt(v);
+				if( val < 0 ) val = null;
+				setValue(val);
 			}
+			d.onClose = function() {
+				closeEdit();
+			}
+			d.filterInput.keydown(function(e) {
+				switch( e.keyCode ) {
+				case K.LEFT, K.RIGHT:
+					d.filterInput.blur();
+					return;
+				case K.TAB:
+					d.filterInput.blur();
+					editor.cursor.move(e.shiftKey? -1:1, 0, false, false, true);
+					var c = editor.cursor.getCell();
+					if( c != this ) c.edit();
+					e.preventDefault();
+				default:
+				}
+				e.stopPropagation();
+			});
 			#end
 		case TCustom(typeName):
 			{
@@ -1418,10 +1333,6 @@ class Cell {
 		default:
 			setValue(newValue);
 		}
-	}
-
-	public function blockEdit() {
-		return useSelect2 && inEdit && (column.type.match(TRef(_)) || column.type.match(TEnum(_)));
 	}
 
 	public function setValue( value : Dynamic ) {

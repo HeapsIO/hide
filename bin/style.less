@@ -166,7 +166,7 @@ ul, li {
 	list-style : none;
 }
 
-body, td, th, li, p, a, input, select, textarea, body .select2-dropdown {
+body, td, th, li, p, a, input, select, textarea {
 	font-family : Verdana, serif;
 	font-size : 9pt;
 	color: #aaa;
@@ -217,7 +217,7 @@ select {
 	}
 }
 
-select, input, textarea, .hide-dropdown >.dropdown-cont, body .select2-dropdown {
+select, input, textarea, .hide-dropdown >.dropdown-cont {
 	background-color: rgb(34,34,34);
 	border : 1px solid #444;
 	&:focus {
@@ -225,36 +225,6 @@ select, input, textarea, .hide-dropdown >.dropdown-cont, body .select2-dropdown 
 	}
 	&:hover {
 		border-color : #888;
-	}
-}
-
-body .select2-container--default {
-	.select2-selection--single {
-		background-color: rgb(34,34,34);
-		border : none;
-		height: auto;
-		.select2-selection__rendered {
-			padding-left: 2px;
-			color: #aaa;
-			line-height: inherit;
-		}
-		.select2-selection__arrow {
-			display: none;
-		}
-	}
-	.select2-results__option[aria-selected=true] {
-		background-color: #444;
-	}
-	.select2-results__option--highlighted[aria-selected] {
-		background-color: #5897fb;
-	}
-}
-
-.select2-results__option > div {
-	display : flex;
-	align-items: center;
-	div.tile {
-		margin-right : 5px;
 	}
 }
 
