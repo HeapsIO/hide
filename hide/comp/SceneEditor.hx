@@ -1798,10 +1798,10 @@ class SceneEditor {
 
 			undo.change(Field(e, "name", oldName), function() {
 				tree.refresh(() -> refreshTree());
-				e.getLocal3d()?.name = e.name;
+				e.updateInstance("name");
 			});
 
-			e.getLocal3d()?.name = e.name;
+			e.updateInstance("name");
 
 			return true;
 		};
