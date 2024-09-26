@@ -1798,7 +1798,10 @@ class SceneEditor {
 
 			undo.change(Field(e, "name", oldName), function() {
 				tree.refresh(() -> refreshTree());
+				e.getLocal3d()?.name = e.name;
 			});
+
+			e.getLocal3d()?.name = e.name;
 
 			return true;
 		};
@@ -2348,7 +2351,7 @@ class SceneEditor {
 							// newMat.prependScale(Math.max(0, previousScale.x  + scale.x), Math.max(0, previousScale.y + scale.y), Math.max(0, previousScale.z + scale.z));
 						}
 					}
-					
+
 					var obj3d = objects3d[i];
 					var euler = newMat.getEulerAngles();
                     if (translate != null && translate.length() > 0.0001 && snapForceOnGrid) {

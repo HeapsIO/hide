@@ -6,25 +6,30 @@ class Constraint extends Prefab {
 	@:s public var target(default,null) : String;
 	@:s public var positionOnly(default,null) : Bool;
 
-	public function apply( root : h3d.scene.Object ) {
+	public function apply( root : h3d.scene.Object ) : Bool {
 		if (object == null || target == null)
-			return null;
+			return true;
 		var srcObj = root.getObjectByName(object.split(".").pop());
 		var targetObj = root.getObjectByName(target.split(".").pop());
 		if( srcObj != null && targetObj != null ){
+			#if editor
+			var p = targetObj;
+			while(p != null) {
+				if (p == srcObj) {
+					target = null;
+					return false;
+				}
+				p = p.follow ?? p.parent;
+			}
+			#end
 			srcObj.follow = targetObj;
 			srcObj.followPositionOnly = positionOnly;
 		}
-		return srcObj;
+		return true;
 	}
 
 	override function makeInstance() {
-		var srcObj = locateObject(object);
-		var targetObj = locateObject(target);
-		if( srcObj != null && targetObj != null ){
-			srcObj.follow = targetObj;
-			srcObj.followPositionOnly = positionOnly;
-		}
+		apply(shared.root3d);
 	}
 
 	#if editor
@@ -42,7 +47,10 @@ class Constraint extends Prefab {
 			</dl>
 		'),this, function(_) {
 			if( curObj != null ) curObj.follow = null;
-			apply(shared.root3d);
+			if (!apply(shared.root3d)) {
+				hide.Ide.inst.quickError("Loop detected in constraints");
+				ctx.rebuildProperties();
+			}
 			curObj = getRoot().locateObject(object);
 		});
 
