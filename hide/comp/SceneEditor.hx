@@ -2328,23 +2328,27 @@ class SceneEditor {
 					if(snapToGround && mode == MoveXY) {
 						newMat.tz = getZ(newMat.tx, newMat.ty);
 					}
-					var obj3d = sceneObjs[i];
-					var parentMat = obj3d.parent.getAbsPos().clone();
-					if(obj3d.follow != null) {
-						if(obj3d.followPositionOnly)
-							parentMat.setPosition(obj3d.follow.getAbsPos().getPosition());
-						else
-							parentMat = obj3d.follow.getAbsPos().clone();
+
+					var obj = sceneObjs[i];
+					if ( obj != null ) {
+						var parentMat = obj.parent.getAbsPos().clone();
+						if(obj.follow != null) {
+							if(obj.followPositionOnly)
+								parentMat.setPosition(obj.follow.getAbsPos().getPosition());
+							else
+								parentMat = obj.follow.getAbsPos().clone();
+						}
+						var invParent = parentMat;
+						invParent.invert();
+						newMat.multiply(newMat, invParent);
+						if(scale != null) {
+							newMat.prependScale(scale.x, scale.y, scale.z);
+							// var previousScale = newMat.getScale();
+							// newMat.prependScale(1 / previousScale.x, 1 / previousScale.y, 1 / previousScale.z);
+							// newMat.prependScale(Math.max(0, previousScale.x  + scale.x), Math.max(0, previousScale.y + scale.y), Math.max(0, previousScale.z + scale.z));
+						}
 					}
-					var invParent = parentMat;
-					invParent.invert();
-					newMat.multiply(newMat, invParent);
-					if(scale != null) {
-						newMat.prependScale(scale.x, scale.y, scale.z);
-						// var previousScale = newMat.getScale();
-						// newMat.prependScale(1 / previousScale.x, 1 / previousScale.y, 1 / previousScale.z);
-						// newMat.prependScale(Math.max(0, previousScale.x  + scale.x), Math.max(0, previousScale.y + scale.y), Math.max(0, previousScale.z + scale.z));
-					}
+					
 					var obj3d = objects3d[i];
 					var euler = newMat.getEulerAngles();
                     if (translate != null && translate.length() > 0.0001 && snapForceOnGrid) {
@@ -4755,6 +4759,8 @@ class SceneEditor {
 		}
 		var pos = new h3d.col.Point();
 		for(o in objects) {
+			if ( o == null )
+				continue;
 			pos = pos.add(o.getAbsPos().getPosition().toPoint());
 		}
 		pos.scale(1.0 / objects.length);
