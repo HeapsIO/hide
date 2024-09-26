@@ -97,7 +97,7 @@ class ModelLibraryInstance {
 			var libMat = prefab != null ? prefab.load().getOpt(hrt.prefab.Material, (props:Dynamic).name) : null;
 			if ( libMat != null )
 				for ( c in libMat.children )
-					shaderKey = haxe.Json.stringify(@:privateAccess c.serialize());
+					shaderKey += haxe.Json.stringify(@:privateAccess c.serialize());
 			var key = haxe.Json.stringify(props) + shaderKey + appendToKey;
 
 			var batchID = batchLookup.get(key);
