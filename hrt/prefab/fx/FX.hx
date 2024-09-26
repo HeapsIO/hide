@@ -255,6 +255,8 @@ class FXAnimation extends h3d.scene.Object {
 						var leafObjects = anim.elt.findAll(Object3D, o -> o.children == null || o.children.length == 0);
 
 						for (o in leafObjects) {
+							if (o.local3d == null)
+								continue;
 							var baseMat = o.getTransform();
 
 							tempMat.identity();
