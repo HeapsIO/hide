@@ -466,6 +466,13 @@ class ViewModePopup extends hide.comp.Popup {
 				display : Pbr,
 				debug : Normal
 			},
+		},
+		{
+			name : "Displacement",
+			inf : {
+				display : Debug,
+				debug : Albedo
+			},
 		}
 	];
 	var renderer:h3d.scene.pbr.Renderer;
@@ -487,9 +494,17 @@ class ViewModePopup extends hide.comp.Popup {
 		var slides = @:privateAccess renderer.slides;
 		for (v in viewFilter) {
 			var typeid = v.name;
-			var on = renderer.displayMode == v.inf.display && (renderer.displayMode == Debug ? slides.shader.mode == v.inf.debug : true && v.name != "UVChecker");
+			var on = renderer.displayMode == v.inf.display;
+			switch ( renderer.displayMode) {
+			case Debug:
+				on = on && slides.shader.mode == v.inf.debug;
+			default:
+				on = on && v.name != "UVChecker" && v.name != "Displacement";
+			}
 
 			if (v.name == "UVChecker" && isUvChecker())
+				on = true;
+			if(  v.name == "Displacement" && isDisplacementDisplay() )
 				on = true;
 
 			var input = new Element('<input type="radio" name="filter" id="$typeid" value="$typeid"/>');
@@ -519,32 +534,48 @@ class ViewModePopup extends hide.comp.Popup {
 				slides.shader.mode = v.inf.debug;
 			}
 
-			function checkUV(obj: Object, addShader = true) {
+			var s3d = @:privateAccess editor.scene.s3d;
+
+			var isUvChecker = v.name == "UVChecker" && input.is(":checked");
+			function checkUV(obj: Object) {
 				var mesh = Std.downcast(obj, Mesh);
 
 				if (mesh != null && mesh.primitive != null && mesh.primitive.buffer != null &&
 					!mesh.primitive.buffer.isDisposed() &&
 					mesh.primitive.buffer.format != null &&
 					mesh.primitive.buffer.format.getInput("uv") != null) {
-					 for (mat in mesh.getMaterials(null, false)) {
-							if (addShader) {
+					for (mat in mesh.getMaterials(null, false)) {
+						if (isUvChecker) {
 							if (mat.mainPass.getShader(h3d.shader.Checker) == null)
 								mat.mainPass.addShader(new h3d.shader.Checker());
-						}
-						else {
-							var s = mat.mainPass.getShader(h3d.shader.Checker);
-							if (s != null)
-								mat.mainPass.removeShader(s);
+						} else {
+						var s = mat.mainPass.getShader(h3d.shader.Checker);
+						if (s != null)
+							mat.mainPass.removeShader(s);
 						}
 					}
 				}
-
 				for (idx in 0...obj.numChildren)
-					checkUV(obj.getChildAt(idx), addShader);
+					checkUV(obj.getChildAt(idx));
 			}
+			checkUV(s3d);
+			
 
-			var isUvChecker = v.name == "UVChecker" && input.is(":checked");
-			@:privateAccess checkUV(editor.scene.s3d, isUvChecker);
+			var isDisplacementDisplay = v.name == "Displacement" && input.is(":checked");
+			for ( m in s3d.getMeshes() ) {
+				for ( mat in m.getMaterials(false) ) {
+					if ( mat.specularTexture == null )
+						continue;
+					var s = mat.mainPass.getShader(h3d.shader.DisplacementDisplay);
+					if ( s != null )
+						mat.mainPass.removeShader(s);
+					if ( isDisplacementDisplay ) {
+						var s = new h3d.shader.DisplacementDisplay();
+						s.tex = mat.specularTexture;
+						@:privateAccess mat.mainPass.addSelfShader(s);
+					}
+				}
+			}
 	}
 
 	public function isUvChecker() {
@@ -568,6 +599,17 @@ class ViewModePopup extends hide.comp.Popup {
 			}
 
 		@:privateAccess return hasCheckUV(editor.scene.s3d);
+	}
+
+	public function isDisplacementDisplay() {
+		var hasShader = false;
+		for ( m in editor.scene.s3d.getMaterials() ) {
+			if ( m.mainPass.getShader(h3d.shader.DisplacementDisplay) != null ) {
+				hasShader = true;
+				return true;
+			}
+		}
+		return false;
 	}
 }
 
