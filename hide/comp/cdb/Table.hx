@@ -105,6 +105,10 @@ class Table extends Component {
 		}
 	}
 
+	public function refreshCellValue() {
+
+	}
+
 	function setupTableElement() {
 		cloneTableHead();
 		#if js
@@ -797,6 +801,7 @@ class Table extends Component {
 				var val = editor.base.getDefault(c, true, sheet);
 				editor.beginChanges();
 				Reflect.setField(props, c.name, val);
+				refreshCellValue();
 				editor.endChanges();
 				refresh();
 				for( l in lines )

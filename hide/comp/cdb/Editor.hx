@@ -784,6 +784,7 @@ class Editor extends Component {
 			while( y >= y1 ) {
 				var line = cursor.table.lines[y];
 				sheet.deleteLine(line.index);
+				cursor.table.refreshCellValue();
 				hasChanges = true;
 				y--;
 			}
@@ -804,6 +805,7 @@ class Editor extends Component {
 						continue;
 					changeObject(line,c,def);
 					hasChanges = true;
+					cursor.table.refreshCellValue();
 				}
 			}
 		}
@@ -1869,6 +1871,7 @@ class Editor extends Component {
 		}
 		beginChanges();
 		table.sheet.newLine(index);
+		table.refreshCellValue();
 		endChanges();
 		table.refresh();
 	}
@@ -1939,6 +1942,7 @@ class Editor extends Component {
 		var srcObj = table.sheet.lines[index];
 		beginChanges();
 		var obj = table.sheet.newLine(index);
+		table.refreshCellValue();
 		for(colId => c in table.columns ) {
 			var val = Reflect.field(srcObj, c.name);
 			if( val != null ) {
@@ -2006,6 +2010,7 @@ class Editor extends Component {
 					if( table.displayMode == Properties ) {
 						beginChanges();
 						changeObject(cell.line, col, base.getDefault(col,sheet));
+						cursor.table.refreshCellValue();
 					} else {
 						beginChanges(true);
 						sheet.deleteColumn(col.name);
@@ -2061,6 +2066,7 @@ class Editor extends Component {
 					return;
 				beginChanges(true);
 				table.sheet.deleteColumn(col.name);
+				cursor.table.refreshCellValue();
 				endChanges();
 				refresh();
 			}});

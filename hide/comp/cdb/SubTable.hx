@@ -67,6 +67,30 @@ class SubTable extends Table {
 		return cell.table.sheet.getSub(cell.column);
 	}
 
+	override function refreshCellValue() {
+		if (cell.column.opt == true) {
+			var doSet = true;
+			var value : Dynamic = null;
+			switch( cell.column.type ) {
+				case TList:
+					value = sheet.lines;
+					doSet = value != null && value.length > 0;
+				case TProperties:
+					value = sheet.lines[0];
+					doSet = value != null && Reflect.fields(value).length > 0;
+				default:
+					throw "assert";
+			}
+			if (doSet) {
+				Reflect.setField(cell.line.obj, cell.column.name, value);
+			} else {
+				Reflect.deleteField(cell.line.obj, cell.column.name);
+			}
+		}
+		parent.refreshCellValue();
+		super.refreshCellValue();
+	}
+
 	function makeSubSheet() {
 		var sheet = cell.table.sheet;
 		var c = cell.column;
@@ -78,7 +102,8 @@ class SubTable extends Table {
 			var value = cell.value;
 			if( value == null ) {
 				value = [];
-				Reflect.setField(cell.line.obj, cell.column.name, value);
+				if (!cell.column.opt)
+					Reflect.setField(cell.line.obj, cell.column.name, value);
 				// do not save for now
 			}
 			value;
@@ -86,7 +111,8 @@ class SubTable extends Table {
 			var value = cell.value;
 			if( value == null ) {
 				value = {};
-				Reflect.setField(cell.line.obj, cell.column.name, value);
+				if (!cell.column.opt)
+					Reflect.setField(cell.line.obj, cell.column.name, value);
 				// do not save for now
 			}
 			var lines = [for( f in psheet.columns ) value];
@@ -130,17 +156,11 @@ class SubTable extends Table {
 	override function dispose() {
 		super.dispose();
 		insertedTR.remove();
-		if( cell.column.opt ) {
-			var isEmpty = switch( cell.column.type ) {
-			case TList: sheet.lines.length == 0;
-			case TProperties: Reflect.fields(sheet.lines[0]).length == 0;
-			default: false;
-			}
-			if( isEmpty ) {
-				// not a change to really undo, perform direct change
-				Reflect.deleteField(cell.line.obj, cell.column.name);
-				editor.save();
-			}
+		var prev = Reflect.getProperty(cell.line.obj, cell.column.name);
+		refreshCellValue();
+		var after = Reflect.getProperty(cell.line.obj, cell.column.name);
+		if (prev != after) {
+			editor.save();
 		}
 		cell.refresh();
 	}
