@@ -802,6 +802,7 @@ class Trails extends Object3D {
 	}
 
 	override function updateInstance(?props: String) {
+		super.updateInstance(props);
 		var trailObj : TrailObj = cast local3d;
 		if ( props == "uvRepeat")
 			trailObj.updateShader();
