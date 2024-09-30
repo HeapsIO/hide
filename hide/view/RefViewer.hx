@@ -13,7 +13,7 @@ class RefViewer extends hide.ui.View<Data> {
 		// onDisplay would clear the results
 		if (initialized == false)
 			showRefs([]);
-	}
+		}
 
 	public function showRefs(refs: Data, description: String = "Number of references") {
 		element.html("");

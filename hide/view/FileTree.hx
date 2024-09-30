@@ -255,105 +255,31 @@ class FileTree extends FileView {
 			sys.FileSystem.rename(ide.getPath(path), ide.getPath(newPath));
 
 		var changed = false;
-		function filter(p:String) {
+		function filter(ctx: hide.Ide.FilterPathContext) {
+			var p = ctx.valueCurrent;
 			if( p == null )
-				return null;
+				return;
 			if( p == path ) {
-				changed = true;
-				return newPath;
+				ctx.change(newPath);
+				return;
 			}
 			if( p == "/"+path ) {
-				changed = true;
-				return "/"+newPath;
+				ctx.change(newPath);
+				return;
 			}
 			if( isDir ) {
 				if( StringTools.startsWith(p,path+"/") ) {
-					changed = true;
-					return newPath + p.substr(path.length);
+					ctx.change(newPath + p.substr(path.length));
+					return;
 				}
 				if( StringTools.startsWith(p,"/"+path+"/") ) {
-					changed = true;
-					return "/"+newPath + p.substr(path.length+1);
-				}
-			}
-			return p;
-		}
-
-		function filterContent(content:Dynamic) {
-			var visited = new Array<Dynamic>();
-			function browseRec(obj:Dynamic) : Dynamic {
-				switch( Type.typeof(obj) ) {
-				case TObject:
-					if( visited.indexOf(obj) >= 0 ) return null;
-					visited.push(obj);
-					for( f in Reflect.fields(obj) ) {
-						var v : Dynamic = Reflect.field(obj, f);
-						v = browseRec(v);
-						if( v != null ) Reflect.setField(obj, f, v);
-					}
-				case TClass(Array):
-					if( visited.indexOf(obj) >= 0 ) return null;
-					visited.push(obj);
-					var arr : Array<Dynamic> = obj;
-					for( i in 0...arr.length ) {
-						var v : Dynamic = arr[i];
-						v = browseRec(v);
-						if( v != null ) arr[i] = v;
-					}
-				case TClass(String):
-					return filter(obj);
-				default:
-				}
-				return null;
-			}
-			for( f in Reflect.fields(content) ) {
-				var v = browseRec(Reflect.field(content,f));
-				if( v != null ) Reflect.setField(content,f,v);
-			}
-		}
-		ide.filterPrefabs(function(p:hrt.prefab.Prefab) {
-			changed = false;
-			p.source = filter(p.source);
-			var h = p.getHideProps();
-			if( h.onResourceRenamed != null )
-				h.onResourceRenamed(filter);
-			else {
-				filterContent(p);
-			}
-			return changed;
-		});
-
-		ide.filterProps(function(content:Dynamic) {
-			changed = false;
-			filterContent(content);
-			return changed;
-		});
-
-		changed = false;
-		var tmpSheets = [];
-		for( sheet in ide.database.sheets ) {
-			if( sheet.props.dataFiles != null && sheet.lines == null ) {
-				// we already updated prefabs, no need to load data files
-				tmpSheets.push(sheet);
-				@:privateAccess sheet.sheet.lines = [];
-			}
-			for( c in sheet.columns ) {
-				switch( c.type ) {
-				case TFile:
-					for( o in sheet.getLines() ) {
-						var v : Dynamic = filter(Reflect.field(o, c.name));
-						if( v != null ) Reflect.setField(o, c.name, v);
-					}
-				default:
+					ctx.change("/"+newPath + p.substr(path.length+1));
+					return;
 				}
 			}
 		}
-		if( changed ) {
-			ide.saveDatabase();
-			hide.comp.cdb.Editor.refreshAll(true);
-		}
-		for( sheet in tmpSheets )
-			@:privateAccess sheet.sheet.lines = null;
+
+		ide.filterPaths(filter);
 
 		var dataDir = new haxe.io.Path(path);
 		if( dataDir.ext != "dat" ) {

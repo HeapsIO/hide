@@ -661,7 +661,7 @@ class Prefab extends hide.view.FileView {
 			}
 		}
 
-		ide.filterProps(function(content:Dynamic) {
+		ide.filterProps(function(content:Dynamic, path: String) {
 			renameContent(content);
 			return true;
 		});

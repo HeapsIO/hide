@@ -807,7 +807,104 @@ class Ide extends hide.tools.IdeData {
 
 	}
 
-	public function filterPrefabs( callb : hrt.prefab.Prefab -> Bool ) {
+	/**
+		Iterate throught all the strings in the project that could contain a path, replacing
+		the value by what `callb` returns. The callb must call `changed()` if it changed the path.
+	**/
+	public function filterPaths(callb: (ctx : FilterPathContext) -> Void) {
+		var context = new FilterPathContext(callb);
+
+		var adaptedFilter = function(obj: String) {
+			return context.filter(obj);
+		}
+
+		function filterContent(content:Dynamic) {
+			var visited = new Map<Dynamic, Bool>();
+			function browseRec(obj:Dynamic) : Dynamic {
+				switch( Type.typeof(obj) ) {
+				case TObject:
+					if( visited.exists(obj)) return null;
+					visited.set(obj, true);
+					for( f in Reflect.fields(obj) ) {
+						var v : Dynamic = Reflect.field(obj, f);
+						v = browseRec(v);
+						if( v != null ) Reflect.setField(obj, f, v);
+					}
+				case TClass(Array):
+					if( visited.exists(obj)) return null;
+					visited.set(obj, true);
+					var arr : Array<Dynamic> = obj;
+					for( i in 0...arr.length ) {
+						var v : Dynamic = arr[i];
+						v = browseRec(v);
+						if( v != null ) arr[i] = v;
+					}
+				case TClass(String):
+					return context.filter(content);
+				default:
+				}
+				return null;
+			}
+			for( f in Reflect.fields(content) ) {
+				if (f == "children")
+					continue;
+				var v = browseRec(Reflect.field(content,f));
+				if( v != null ) Reflect.setField(content,f,v);
+			}
+		}
+
+		filterPrefabs(function(p:hrt.prefab.Prefab, path: String) {
+			context.changed = false;
+			context.contextPath = path;
+			context.openFunc = () -> openFile(context.contextPath);
+			p.source = context.filter(p.source);
+			var h = p.getHideProps();
+			if( h.onResourceRenamed != null )
+				h.onResourceRenamed(adaptedFilter);
+			else {
+				filterContent(p);
+			}
+			return context.changed;
+		});
+
+		filterProps(function(content:Dynamic, path: String) {
+			context.changed = false;
+			context.contextPath = path;
+			context.openFunc = Ide.showFileInExplorer.bind(path);
+			filterContent(content);
+			return context.changed;
+		});
+
+		context.changed = false;
+		var tmpSheets = [];
+		for( sheet in database.sheets ) {
+			if( sheet.props.dataFiles != null && sheet.lines == null ) {
+				// we already updated prefabs, no need to load data files
+				tmpSheets.push(sheet);
+				@:privateAccess sheet.sheet.lines = [];
+			}
+			context.contextPath = 'cdb:${sheet.getPath()}';
+			context.openFunc = () -> {throw "Todo";};
+			for( c in sheet.columns ) {
+				switch( c.type ) {
+				case TFile:
+					for( o in sheet.getLines() ) {
+						var v : Dynamic = context.filter(Reflect.field(o, c.name));
+						if( v != null ) Reflect.setField(o, c.name, v);
+					}
+				default:
+				}
+			}
+		}
+		if( context.changed ) {
+			saveDatabase();
+			hide.comp.cdb.Editor.refreshAll(true);
+		}
+		for( sheet in tmpSheets )
+			@:privateAccess sheet.sheet.lines = null;
+	}
+
+	public function filterPrefabs( callb : (hrt.prefab.Prefab, path: String) -> Bool) {
 		var exts = Lambda.array({iterator : @:privateAccess hrt.prefab.Prefab.extensionRegistry.keys });
 		exts.push("prefab");
 		var todo = [];
@@ -817,7 +914,7 @@ class Ide extends hide.tools.IdeData {
 			var prefab = loadPrefab(path);
 			var changed = false;
 			function filterRec(p) {
-				if( callb(p) ) changed = true;
+				if( callb(p, path) ) changed = true;
 				for( ps in p.children )
 					filterRec(ps);
 			}
@@ -829,14 +926,14 @@ class Ide extends hide.tools.IdeData {
 			t();
 	}
 
-	public function filterProps( callb : Dynamic -> Bool ) {
+	public function filterProps( callb : (data: Dynamic, path: String) -> Bool ) {
 		var exts = ["props", "json"];
 		var todo = [];
 		browseFiles(function(path) {
 			var ext = path.split(".").pop();
 			if( exts.indexOf(ext) < 0 ) return;
 			var content = parseJSON(sys.io.File.getContent(getPath(path)));
-			var changed = callb(content);
+			var changed = callb(content, path);
 			if( !changed ) return;
 			todo.push(function() sys.io.File.saveContent(getPath(path), toJSON(content)));
 		});
@@ -1361,4 +1458,32 @@ class CustomLoader extends hxd.res.Loader {
 		return i;
 	}
 
+}
+
+@:allow(hide.Ide)
+class FilterPathContext {
+	public var valueCurrent: String;
+	var valueChanged: String;
+
+	public var contextPath: String;
+	public var openFunc: () -> Void;
+
+	public var filterFn: (FilterPathContext) -> Void;
+
+	var changed = false;
+	public function new(filterFn: (FilterPathContext) -> Void) {
+		this.filterFn = filterFn;
+	};
+
+	public function change(newValue) : Void {
+		changed = true;
+		valueChanged = newValue;
+	}
+
+	public function filter(valueCurrent: String) {
+		this.valueCurrent = valueCurrent;
+		valueChanged = null;
+		filterFn(this);
+		return valueChanged;
+	}
 }
