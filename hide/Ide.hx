@@ -854,7 +854,7 @@ class Ide extends hide.tools.IdeData {
 						if( v != null ) arr[i] = v;
 					}
 				case TClass(String):
-					return context.filter(content);
+					return context.filter(obj);
 				default:
 				}
 				return null;
