@@ -953,6 +953,17 @@ class Ide extends hide.tools.IdeData {
 						var v : Dynamic = context.filter(path);
 						if( v != null ) Reflect.setField(obj.path[obj.path.length - 1], c.name, v);
 					}
+				case TTilePos:
+					var sheets = cdb.Sheet.getSheetPath(sheet, c.name);
+					for( obj in sheet.getObjects() ) {
+						currentSheet = sheet;
+						currentColumn = c.name;
+						currentObject = obj;
+
+						var t : cdb.Types.TilePos = Reflect.field(obj.path[obj.path.length - 1], c.name);
+						var v : Dynamic = context.filter(t.file);
+						if (v != null) Reflect.setField(t, 'file', v);
+					}
 				default:
 				}
 			}
