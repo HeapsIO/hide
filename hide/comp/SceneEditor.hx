@@ -559,7 +559,7 @@ class ViewModePopup extends hide.comp.Popup {
 					checkUV(obj.getChildAt(idx));
 			}
 			checkUV(s3d);
-			
+
 
 			var isDisplacementDisplay = v.name == "Displacement" && input.is(":checked");
 			for ( m in s3d.getMeshes() ) {
@@ -1890,7 +1890,7 @@ class SceneEditor {
 		tree.applyStyle = function(p, el) applyTreeStyle(p, el);
 		renderPropsTree.applyStyle = function(p, el) applyTreeStyle(p, el, renderPropsTree);
 
-		//selectElements([]);
+		selectElements([]);
 		refreshScene();
 		this.camera2D = camera2D;
 
