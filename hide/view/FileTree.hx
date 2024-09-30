@@ -129,6 +129,7 @@ class FileTree extends FileView {
 				{ label : "Copy Path", enabled : current != null, click : function() { ide.setClipboard(current); } },
 				{ label : "Copy Absolute Path", enabled : current != null, click : function() { ide.setClipboard(Ide.inst.getPath(current)); } },
 				{ label : "Open in Explorer", enabled : current != null, click : function() { onExploreFile(current); } },
+				{ label : "Find References", enabled : current != null, click : onFindPathRef.bind(current)},
 				{ label : "", isSeparator: true },
 				{ label : "Clone", enabled : current != null, click : function() {
 						try {
@@ -185,6 +186,10 @@ class FileTree extends FileView {
 		var ret = onRenameRec(path, name);
 		if( isDir ) ide.fileWatcher.resume();
 		return ret;
+	}
+
+	function onFindPathRef(path: String) {
+		ide.findPathRefs(path);
 	}
 
 	function onRenameRec(path:String, name:String) {

@@ -802,9 +802,23 @@ class Ide extends hide.tools.IdeData {
 		}).appendTo(window.window.document.body).click();
 
 		// remove comments
+	}
 
+	public function findPathRefs(path: String) {
+		var refs : Array<{str: String, ?goto: () -> Void}> = [];
 
+		function filter(ctx: FilterPathContext) {
+			if (ctx.valueCurrent == path) {
+				refs.push(ctx.getRef());
+			}
+		}
 
+		filterPaths(filter);
+
+		open("hide.view.RefViewer", null, function(view) {
+			var refViewer : hide.view.RefViewer = cast view;
+			refViewer.showRefs(refs, 'Number of references to "$path"');
+		});
 	}
 
 	/**
@@ -853,44 +867,75 @@ class Ide extends hide.tools.IdeData {
 			}
 		}
 
-		filterPrefabs(function(p:hrt.prefab.Prefab, path: String) {
-			context.changed = false;
-			context.contextPath = path;
-			context.openFunc = () -> openFile(context.contextPath);
-			p.source = context.filter(p.source);
-			var h = p.getHideProps();
-			if( h.onResourceRenamed != null )
-				h.onResourceRenamed(adaptedFilter);
-			else {
-				filterContent(p);
-			}
-			return context.changed;
-		});
+		{
+			var currentPath : String = null;
+			context.getRef = () -> {
+				var p = currentPath; // Make capture
+				return {str: p, goto: () -> openFile(getPath(p))};
+			};
 
-		filterProps(function(content:Dynamic, path: String) {
-			context.changed = false;
-			context.contextPath = path;
-			context.openFunc = Ide.showFileInExplorer.bind(path);
-			filterContent(content);
-			return context.changed;
-		});
+			filterPrefabs(function(p:hrt.prefab.Prefab, path: String) {
+				context.changed = false;
+				currentPath = path;
+				p.source = context.filter(p.source);
+				var h = p.getHideProps();
+				if( h.onResourceRenamed != null )
+					h.onResourceRenamed(adaptedFilter);
+				else {
+					filterContent(p);
+				}
+				return context.changed;
+			});
+		}
+
+		{
+			var currentPath : String = null;
+			context.getRef = () -> {
+				var p = currentPath;
+				return {str: p, goto : Ide.showFileInExplorer.bind(getPath(p))};
+			}
+
+			filterProps(function(content:Dynamic, path: String) {
+				context.changed = false;
+				currentPath = path;
+				filterContent(content);
+				return context.changed;
+			});
+		}
+
 
 		context.changed = false;
 		var tmpSheets = [];
+
+		var currentSheet : cdb.Sheet = null;
+		var currentColumn : String = null;
+		var currentObject : Dynamic = null;
+		context.getRef = () -> {
+			var cs = currentSheet;
+			var cc = currentColumn;
+			var sheets = cdb.Sheet.getSheetPath(cs, cc);
+
+			var path = hide.comp.cdb.Editor.splitPath({s: sheets, o: currentObject});
+			return {str: sheets[0].s.name+"."+path.pathNames.join("."), goto: hide.comp.cdb.Editor.openReference2.bind(sheets[0].s, path.pathParts)};
+		};
+
 		for( sheet in database.sheets ) {
 			if( sheet.props.dataFiles != null && sheet.lines == null ) {
 				// we already updated prefabs, no need to load data files
 				tmpSheets.push(sheet);
 				@:privateAccess sheet.sheet.lines = [];
 			}
-			context.contextPath = 'cdb:${sheet.getPath()}';
-			context.openFunc = () -> {throw "Todo";};
 			for( c in sheet.columns ) {
 				switch( c.type ) {
 				case TFile:
-					for( o in sheet.getLines() ) {
-						var v : Dynamic = context.filter(Reflect.field(o, c.name));
-						if( v != null ) Reflect.setField(o, c.name, v);
+					var sheets = cdb.Sheet.getSheetPath(sheet, c.name);
+					for( obj in sheet.getObjects() ) {
+						currentSheet = sheet;
+						currentColumn = c.name;
+						currentObject = obj;
+						var path = Reflect.field(obj.path[obj.path.length - 1], c.name);
+						var v : Dynamic = context.filter(path);
+						if( v != null ) Reflect.setField(obj.path[obj.path.length - 1], c.name, v);
 					}
 				default:
 				}
@@ -1465,9 +1510,6 @@ class FilterPathContext {
 	public var valueCurrent: String;
 	var valueChanged: String;
 
-	public var contextPath: String;
-	public var openFunc: () -> Void;
-
 	public var filterFn: (FilterPathContext) -> Void;
 
 	var changed = false;
@@ -1486,4 +1528,6 @@ class FilterPathContext {
 		filterFn(this);
 		return valueChanged;
 	}
+
+	public var getRef : () -> {str: String, ?goto: () -> Void};
 }
