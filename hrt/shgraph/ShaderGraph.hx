@@ -716,7 +716,7 @@ class Graph {
 		}
 
 		for (e in edges) {
-			addEdge(e);
+			addEdge(e, false);
 		}
 	}
 
@@ -761,7 +761,7 @@ class Graph {
 		return true;
 	}
 
-	public function addEdge(edge : Edge) {
+	public function addEdge(edge : Edge, checkCycles: Bool = true) {
 		var node = this.nodes.get(edge.inputNodeId);
 		var output = this.nodes.get(edge.outputNodeId);
 
@@ -800,7 +800,7 @@ class Graph {
 		node.connections[inputId] = {from: output, outputId: outputId};
 
 		#if editor
-		if (hasCycle()){
+		if (checkCycles && hasCycle()){
 			removeEdge(edge.inputNodeId, inputId, false);
 			return false;
 		}
