@@ -186,9 +186,6 @@ class Prefab extends hide.view.FileView {
 
 	var resizablePanel : hide.comp.ResizablePanel;
 
-
-
-
 	// autoSync
 	var autoSync : Bool;
 	var currentVersion : Int = 0;
@@ -226,8 +223,26 @@ class Prefab extends hide.view.FileView {
 		data = new hrt.prefab.Prefab(null, null);
 	}
 
+	var sceneReadyDelayed : Array<() -> Void> = [];
+
+	/**
+		Call a function when the sceneEditor is properly initialized
+	**/
+	public function delaySceneEditor(callback : () -> Void) {
+		if (sceneEditor != null) {
+			sceneEditor.delayReady(callback);
+		}
+		else {
+			sceneReadyDelayed.push(callback);
+		}
+	}
+
 	function createEditor() {
 		sceneEditor = new PrefabSceneEditor(this, data);
+		for (callback in sceneReadyDelayed) {
+			sceneEditor.delayReady(callback);
+		}
+		sceneReadyDelayed.empty();
 	}
 
 	override function onDisplay() {

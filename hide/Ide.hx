@@ -815,7 +815,7 @@ class Ide extends hide.tools.IdeData {
 
 		filterPaths(filter);
 
-		open("hide.view.RefViewer", null, function(view) {
+		open("hide.view.RefViewer", null, null, function(view) {
 			var refViewer : hide.view.RefViewer = cast view;
 			refViewer.showRefs(refs, 'Number of references to "$path"');
 		});
@@ -869,14 +869,30 @@ class Ide extends hide.tools.IdeData {
 
 		{
 			var currentPath : String = null;
+			var currentPrefab: hrt.prefab.Prefab = null;
 			context.getRef = () -> {
-				var p = currentPath; // Make capture
-				return {str: p, goto: () -> openFile(getPath(p))};
+				var p = currentPath; // needed capture
+				var cp = currentPrefab; // needed capture
+				return {str: '$p:${cp.getAbsPath()}', goto: () -> openFile(getPath(p), null, (view) -> {
+					var pref = Std.downcast(view, hide.view.Prefab);
+					if (pref != null) {
+						pref.delaySceneEditor(() -> {
+							pref.sceneEditor.selectElementsIndirect([cp]);
+						});
+					}
+					else {
+						var fx = Std.downcast(view, hide.view.FXEditor);
+						fx.delaySceneEditor(() -> {
+							@:privateAccess fx.sceneEditor.selectElementsIndirect([cp]);
+						});
+					}
+				})};
 			};
 
 			filterPrefabs(function(p:hrt.prefab.Prefab, path: String) {
 				context.changed = false;
 				currentPath = path;
+				currentPrefab = p;
 				p.source = context.filter(p.source);
 				var h = p.getHideProps();
 				if( h.onResourceRenamed != null )

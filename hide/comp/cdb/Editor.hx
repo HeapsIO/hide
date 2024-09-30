@@ -1433,7 +1433,7 @@ class Editor extends Component {
 	}
 
 	public static function openReference2(rootSheet : cdb.Sheet, path: Path) {
-		hide.Ide.inst.open("hide.view.CdbTable", {}, function(view) Std.downcast(view,hide.view.CdbTable).goto2(rootSheet,path));
+		hide.Ide.inst.open("hide.view.CdbTable", {}, null, function(view) Std.downcast(view,hide.view.CdbTable).goto2(rootSheet,path));
 	}
 
 	function openReference( s : cdb.Sheet, line : Int, column : Int, ?scriptLine: Int ) {

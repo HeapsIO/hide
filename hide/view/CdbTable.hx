@@ -25,11 +25,16 @@ class CdbTable extends hide.ui.View<{}> {
 	}
 
 	public function goto2(rootSheet : cdb.Sheet, path: hide.comp.cdb.Editor.Path) {
-
-
 		var sheets = [for( s in getSheets() ) s.name];
 		var index = sheets.indexOf(rootSheet.name);
 		if( index < 0 ) return;
+
+		// Tabs can be null if the sheet is opened but hasn't had time to properly initilalize, so we delay the call to this function
+		if (tabs == null) {
+			haxe.Timer.delay(() -> goto2(rootSheet, path), 50);
+			return;
+		}
+
 		if (tabs.currentTab.get(0) != tabContents[index].parent().get(0)) {
 			@:privateAccess editor.currentFilters = [];
 			tabs.currentTab = tabContents[index].parent();

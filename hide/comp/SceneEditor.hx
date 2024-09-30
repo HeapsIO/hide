@@ -880,6 +880,7 @@ class SceneEditor {
 	public var scene : hide.comp.Scene;
 	public var properties : hide.comp.PropsEditor;
 
+
 	//public var context(default,null) : hrt.prefab.Context;
 	public var curEdit(default, null) : SceneEditorContext;
 	public var snapToGround = false;
@@ -922,6 +923,8 @@ class SceneEditor {
 	public var showGrid = false;
 
 	var statusText : h2d.Text;
+	var ready = false;
+	var readyDelayed : Array<() -> Void> = [];
 
 	function getRootObjects3d() : Array<Object> {
 		var arr = [];
@@ -969,6 +972,7 @@ class SceneEditor {
 	public var lastFocusObjects : Array<Object> = [];
 
 	public function new(view, data) {
+		ready = false;
 		ide = hide.Ide.inst;
 		this.view = view;
 		this.sceneData = data;
@@ -1139,6 +1143,15 @@ class SceneEditor {
 
 		var show = showOverlays && getOrInitConfig("sceneeditor.showOutlines", true);
 		scene.s3d.renderer.showEditorOutlines = show;
+	}
+
+	public function delayReady(callback: () -> Void) {
+		if (ready) {
+			callback();
+		}
+		else {
+			readyDelayed.push(callback);
+		}
 	}
 
 	public function updateGrid() {
@@ -1594,7 +1607,6 @@ class SceneEditor {
     }
 
 	function onSceneReady() {
-
 		tree.saveDisplayKey = view.saveDisplayKey + '/tree';
 		renderPropsTree.saveDisplayKey = view.saveDisplayKey + '/renderPropsTree';
 
@@ -1877,11 +1889,18 @@ class SceneEditor {
 
 		tree.applyStyle = function(p, el) applyTreeStyle(p, el);
 		renderPropsTree.applyStyle = function(p, el) applyTreeStyle(p, el, renderPropsTree);
-		selectElements([]);
+
+		//selectElements([]);
 		refreshScene();
 		this.camera2D = camera2D;
 
 		updateViewportOverlays();
+
+		ready = true;
+		for (callback in readyDelayed) {
+			callback();
+		}
+		readyDelayed.empty();
 	}
 
 	function checkAllowParent(prefabInf:hrt.prefab.Prefab.PrefabInfo, prefabParent : PrefabElement) : Bool {
@@ -3325,6 +3344,21 @@ class SceneEditor {
 		}
 
 		impl(elts,mode);
+	}
+
+	/**
+		Select prefabs that are in a clone of sceneData
+	**/
+	public function selectElementsIndirect(elts : Array<PrefabElement>, ?mode : SelectMode = Default) {
+		var toSelect : Array<PrefabElement> = [];
+		var flat = sceneData.flatten();
+		for (elt in elts) {
+			var idx = elt.getRoot().flatten().indexOf(elt);
+			var found = flat[idx];
+			if (found != null)
+				toSelect.push(found);
+		}
+		selectElements(toSelect, mode);
 	}
 
 	function hasBeenRemoved( e : hrt.prefab.Prefab ) {

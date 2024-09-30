@@ -311,6 +311,7 @@ private class FXSceneEditor extends hide.comp.SceneEditor {
 class FXEditor extends hide.view.FileView {
 
 	var sceneEditor : FXSceneEditor;
+	public var selectOnLoad : Array<hrt.prefab.Prefab> = null;
 	var data : hrt.prefab.fx.BaseFX;
 	var is2D : Bool = false;
 
@@ -444,6 +445,11 @@ class FXEditor extends hide.view.FileView {
 		var tabs = new hide.comp.Tabs(null,element.find(".tabs"));
 		sceneEditor = new FXSceneEditor(this, cast(data, hrt.prefab.Prefab));
 
+		for (callback in sceneReadyDelayed) {
+			sceneEditor.delayReady(callback);
+		}
+		sceneReadyDelayed.empty();
+
 		if (json.type == "fx2d") {
 			is2D = true;
 			sceneEditor.is2D = true;
@@ -539,6 +545,20 @@ class FXEditor extends hide.view.FileView {
 
 		var rpEditionvisible = Ide.inst.currentConfig.get("sceneeditor.renderprops.edit", false);
 		setRenderPropsEditionVisibility(rpEditionvisible);
+	}
+
+	var sceneReadyDelayed : Array<() -> Void> = [];
+
+	/**
+		Call a function when the sceneEditor is properly initialized
+	**/
+	public function delaySceneEditor(callback : () -> Void) {
+		if (sceneEditor != null) {
+			sceneEditor.delayReady(callback);
+		}
+		else {
+			sceneReadyDelayed.push(callback);
+		}
 	}
 
 	function refreshLayout() {
