@@ -960,9 +960,11 @@ class Ide extends hide.tools.IdeData {
 						currentColumn = c.name;
 						currentObject = obj;
 
-						var t : cdb.Types.TilePos = Reflect.field(obj.path[obj.path.length - 1], c.name);
-						var v : Dynamic = context.filter(t.file);
-						if (v != null) Reflect.setField(t, 'file', v);
+						var tilePos : cdb.Types.TilePos = Reflect.field(obj.path[obj.path.length - 1], c.name);
+						if (tilePos != null) {
+							var v : Dynamic = context.filter(tilePos.file);
+							if (v != null) Reflect.setField(tilePos, 'file', v);
+						}
 					}
 				default:
 				}
