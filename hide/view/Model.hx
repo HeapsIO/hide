@@ -615,15 +615,6 @@ class Model extends FileView {
 				var selectLod = lodsEl.find("select");
 				selectLod.on("change", function(){
 					hmd.forcedLod = Std.int(lodsEl.find("select").val());
-
-					var lodsCountEl = lodsEl.find("#vertexes-count");
-					if (hmd.forcedLod >= 0) {
-						var lodVertexesCount = @:privateAccess hmd.lods[hmd.forcedLod].vertexCount;
-						lodsCountEl.text(lodVertexesCount);
-					}
-					else {
-						lodsCountEl.text('-');
-					}
 				});
 
 				var lodsLine = lodsEl.find(".line");
@@ -1389,6 +1380,15 @@ class Model extends FileView {
 				cursor?.css({left: '${line.position().left + line.width() * hxd.Math.clamp((1 - hxd.Math.pow(screenRatio, lodPow)), 0, 1)}px'});
 				cursor?.find(".ratio").text('${round(hxd.Math.clamp(hxd.Math.pow(screenRatio, lodPow) * 100, 0, 100), 2)}%');
 			}
+
+			var hmd = selectedMesh != null ? Std.downcast(selectedMesh.primitive, h3d.prim.HMDModel) : null;
+			if ( hmd != null ) {
+				var lodsCountEl = sceneEditor.properties.element.find("#vertexes-count");
+				var curLod = hmd.forcedLod >= 0 ? hmd.forcedLod : hmd.screenRatioToLod(@:privateAccess selectedMesh.curScreenRatio);
+				var lodVertexesCount = @:privateAccess hmd.lods[curLod].vertexCount;
+				lodsCountEl.text(lodVertexesCount);
+			}
+			
 		}
 	}
 
