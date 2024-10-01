@@ -25,13 +25,15 @@ class SSRShader extends h3d.shader.ScreenShader {
 		@const var batchSample : Bool;
 		@const var CHECK_ANGLE : Bool;
 
+		var screenDepth : Float;
+
 		function reflectedRay(ray : Vec3, normal : Vec3) : Vec3 {
 			return ray - 2.0 * dot(ray, normal) * normal;
 		}
 
 		function getViewPos(uv:Vec2):Vec4 {
-			var depth = depthMap.getLod(uv, 0).r;
-			var ruv = vec4(uvToScreen(uv), depth, 1);
+			screenDepth = depthMap.getLod(uv, 0).r;
+			var ruv = vec4(uvToScreen(uv), screenDepth, 1);
 			var vpos = ruv * cameraInverseProj;
 			return vpos / vpos.w;
 		};
@@ -80,7 +82,7 @@ class SSRShader extends h3d.shader.ScreenShader {
 					var viewDistance = positionFrom.z + reflectedRay.z * viewStepLength;
 					var depth = viewDistance - positionTo.z;
 
-					if (depth >= 0.0 && depth < thickness) {
+					if ( depth >= 0.0 && depth < thickness && screenDepth < 1 ) {
 						hit = 1;
 						break;
 					}
@@ -99,7 +101,7 @@ class SSRShader extends h3d.shader.ScreenShader {
 						var viewStepLength = distance(positionTo.xy, positionFrom.xy);
 						var viewDistance = positionFrom.z + reflectedRay.z * viewStepLength;
 						var depth = viewDistance - positionTo.z;
-						results[i] = depth >= 0.0 && depth < thickness;
+						results[i] = depth >= 0.0 && depth < thickness && screenDepth < 1;
 						frag += increment;
 						uv = frag / texSize;
 					}
