@@ -23,6 +23,7 @@ class SSRShader extends h3d.shader.ScreenShader {
 		@param var rayMarchingResolution : Float;
 
 		@const var batchSample : Bool;
+		@const var CHECK_ANGLE : Bool;
 
 		function reflectedRay(ray : Vec3, normal : Vec3) : Vec3 {
 			return ray - 2.0 * dot(ray, normal) * normal;
@@ -120,9 +121,11 @@ class SSRShader extends h3d.shader.ScreenShader {
 			if (hit != 1)
 				discard;
 
-			var reflectionNormal = normalMap.get(uv).rgb;
-			if (dot(reflectionNormal, normal) > minCosAngle || reflectionNormal.dot(reflectionNormal) <= 0)
-				discard;
+			if ( CHECK_ANGLE ) {
+				var reflectionNormal = normalMap.get(uv).rgb;
+				if (dot(reflectionNormal, normal) > minCosAngle || reflectionNormal.dot(reflectionNormal) <= 0)
+					discard;
+			}
 
 			var fragmentColor = hdrMap.get(uv).rgb;
 			pixelColor = saturate(vec4(fragmentColor * colorMul, intensity * roughnessFactor));
@@ -171,6 +174,8 @@ class SSR extends RendererFX {
 			ssrShader.intensity = intensity;
 			ssrShader.thickness = thickness;
 			ssrShader.maxRoughness = maxRoughness;
+			if ( minAngle == 0 )
+				ssrShader.CHECK_ANGLE = false;
 			ssrShader.minCosAngle = Math.cos(hxd.Math.degToRad(minAngle));
 			ssrShader.rayMarchingResolution = rayMarchingResolution;
 			var resRescale = 1.0;
