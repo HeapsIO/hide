@@ -41,7 +41,6 @@ class Color extends ShaderConst {
 			g = vec.y;
 			b = vec.z;
 			a = vec.w;
-			element.find("input").trigger("change");
 		};
 
 		elements.push(element);
