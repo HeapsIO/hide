@@ -74,7 +74,6 @@ class Sampler extends ShaderNodeHxsl {
 	override public function getPropertiesHTML(width : Float) : Array<hide.Element> {
 		var elements = super.getPropertiesHTML(width);
 
-
 		{
 			var element = new hide.Element('<div style="width: ${width * 0.8}px; height: 40px"></div>');
 			element.append('<span>Wrap</span>');
@@ -122,6 +121,7 @@ class Sampler extends ShaderNodeHxsl {
 			input.on("change", function(e) {
 				var value = input.val();
 				this.filter = filters[value];
+				requestRecompile();
 			});
 
 			elements.push(element);

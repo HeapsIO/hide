@@ -41,6 +41,7 @@ class Color extends ShaderConst {
 			g = vec.y;
 			b = vec.z;
 			a = vec.w;
+			requestRecompile();
 		};
 
 		elements.push(element);

@@ -2110,7 +2110,7 @@ input[type=checkbox]:checked:after {
   outline: none !important;
   position: relative;
 }
-.graph-view .hide-toolbar2 {
+.graph-view .heaps-scene > .hide-toolbar2 {
   position: absolute;
   top: 10px;
   left: 10px;
