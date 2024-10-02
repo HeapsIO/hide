@@ -51,8 +51,6 @@ class Material extends Prefab {
 		var cur = h3d.mat.MaterialSetup.current;
 		var setupName = cur.name;
 
-		applyOverrides();
-
 		var r = Reflect.field(props, setupName);
 		if(r == null) {
 			r = cur.getDefaults();
@@ -62,8 +60,10 @@ class Material extends Prefab {
 		return r;
 	}
 
-	public function getMaterials(includePreviewMats : Bool = false) {
-		var mats = findFirstLocal3d().getMaterials();
+	public function getMaterials(local3d: h3d.scene.Object = null, includePreviewMats : Bool = false) {
+		if (local3d == null)
+			local3d = findFirstLocal3d();
+		var mats = local3d.getMaterials();
 
 		#if editor
 		if (this.previewSphere != null)
@@ -91,7 +91,7 @@ class Material extends Prefab {
 		return mat == null ? mats : [mat];
 	}
 
-	function update(mat : h3d.mat.Material, props, loadTexture : String -> h3d.mat.Texture) {
+	function update(mat : h3d.mat.Material, propsToApply: Dynamic, loadTexture : String -> h3d.mat.Texture) {
 		if(color != null)
 			mat.color.setColor(h3d.Vector.fromArray(color).toColor());
 
@@ -109,7 +109,7 @@ class Material extends Prefab {
 		if( getTex("diffuseMap") != null ) mat.texture = getTex("diffuseMap");
 		if( getTex("normalMap") != null ) mat.normalMap = getTex("normalMap");
 		if( getTex("specularMap") != null ) mat.specularTexture = getTex("specularMap");
-		mat.props = props;
+		mat.props = propsToApply;
 
 		if(mainPassName != null && mainPassName.length > 0 )
 			mat.mainPass.setPassName(mainPassName);
@@ -164,62 +164,55 @@ class Material extends Prefab {
 	}
 	#end
 
+	function applyTo(local3d: h3d.scene.Object, propsToApply : Dynamic, shared: hrt.prefab.ContextShared) {
+		var mats = getMaterials(local3d, true);
+
+		function loadTextureCb( path : String ) : h3d.mat.Texture {
+			return shared.loadTexture(path, false);
+		}
+		for( m in mats )
+			update(m, propsToApply, loadTextureCb);
+	}
+
 	override function updateInstance(?propName ) {
 		var local3d = findFirstLocal3d();
 		if( local3d == null )
 			return;
 
-		var mats = getMaterials(true);
+		var currMat = this;
 
 		if (this.refMatLib != null && this.refMatLib != "") {
 			// We want to save some infos to reapply them after loading datas from the choosen mat
-			var previousRefMatLib = this.refMatLib;
-			var previousName = this.name;
-			var previousMatName = this.materialName;
-			var previousOverrides = this.overrides.copy();
 
 			var refMatLibPath = this.refMatLib.substring(0, this.refMatLib.lastIndexOf("/"));
 			var refMatName = this.refMatLib.substring(this.refMatLib.lastIndexOf("/") + 1);
 
 			var prefabLib = hxd.res.Loader.currentInstance.load(refMatLibPath).toPrefab().load();
 
-			for(c in prefabLib.children) {
-				if (c.name != refMatName)
+			var mats = prefabLib.flatten(Material);
+			for(mat in mats) {
+				if (mat.name != refMatName)
 					continue;
-
-				this.load(c);
-
-				// Reapply some infos that we don't want to be modified by the load of the new mat
-				this.refMatLib = previousRefMatLib;
-				this.name = previousName;
-				this.materialName = previousMatName;
-				this.overrides = previousOverrides;
-
-				applyOverrides();
+				currMat = mat;
 				break;
 			}
 		}
 
-		var props = renderProps();
+		var propsToApply = currMat.renderProps();
+		propsToApply = applyOverrides(propsToApply);
 
-		function loadTextureCb( path : String ) : h3d.mat.Texture {
-			return shared.loadTexture(path, false);
-		}
-		for( m in mats )
-			update(m, props, loadTextureCb);
+		currMat.applyTo(local3d, propsToApply, shared);
 	}
 
-	function applyOverrides() {
+	function applyOverrides(targetProps: Dynamic) {
 		if (this.overrides == null || this.overrides.length == 0)
-			return;
+			return targetProps;
 
 		// We want to break the reference between props of the current material and props of the material we loaded
 		var newProps = {};
-		var newMaterialSetupObj = {};
 
-		var materialSetupObj = Reflect.getProperty(this.props, h3d.mat.MaterialSetup.current.name);
-		for (f in Reflect.fields(materialSetupObj)) {
-			Reflect.setField(newMaterialSetupObj, f, Reflect.field(materialSetupObj, f));
+		for (f in Reflect.fields(targetProps)) {
+			Reflect.setField(newProps, f, Reflect.field(targetProps, f));
 		}
 
 		for (o in overrides) {
@@ -233,19 +226,18 @@ class Material extends Prefab {
 				var v = o.value;
 
 				if (v == "__toremove") {
-					Reflect.deleteField(newMaterialSetupObj, pname);
+					Reflect.deleteField(newProps, pname);
 				}
 				else {
-					Reflect.setProperty(newMaterialSetupObj, pname, o.value);
+					Reflect.setProperty(newProps, pname, o.value);
 				}
 			}
 			else {
-				Reflect.setProperty(this, pname, o.value);
+				Reflect.setProperty(newProps, pname, o.value);
 			}
 		}
 
-		Reflect.setProperty(newProps, h3d.mat.MaterialSetup.current.name, newMaterialSetupObj);
-		this.props = newProps;
+		return newProps;
 	}
 
 	#if editor
@@ -333,12 +325,9 @@ class Material extends Prefab {
 		}
 
 		function updateMat() {
-			var previousMat = this.serialize();
+			var previousMatLib = refMatLib;
 			var mat = ctx.scene.findMat(materials, matSelect.val());
 			if ( mat != null ) {
-				var previousName = this.name;
-				this.load(Reflect.field(mat, "mat"));
-				this.name = previousName;
 				this.refMatLib = Reflect.field(mat, "path") + "/" + Reflect.field(mat, "mat").name;
 				updateInstance();
 				ctx.rebuildProperties();
@@ -346,21 +335,10 @@ class Material extends Prefab {
 				this.refMatLib = "";
 			}
 
-			var newMat = this.serialize();
-
-			ctx.properties.undo.change(Custom(function(undo) {
-				if( undo ) {
-					this.load(previousMat);
-				}
-				else {
-					this.load(newMat);
-				}
-
-				updateLibSelect();
-				updateMatSelect();
+			ctx.properties.undo.change(Field(this, "refMatLib", previousMatLib), function() {
 				ctx.rebuildProperties();
 				updateInstance();
-			}));
+			});
 		}
 
 		updateMatSelect();
