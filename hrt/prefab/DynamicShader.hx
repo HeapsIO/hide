@@ -78,10 +78,16 @@ class DynamicShader extends Shader {
 			fixSourcePath();
 			if (StringTools.endsWith(source, ".shgraph")) {
 				isShadergraph = true;
-				var shgraph = Std.downcast(hxd.res.Loader.currentInstance.load(source).toPrefab().load(), hrt.shgraph.ShaderGraph);
+				var res = hxd.res.Loader.currentInstance.load(source);
+				var shgraph = Std.downcast(res.toPrefab().load(), hrt.shgraph.ShaderGraph);
 				if (shgraph == null)
 					throw source + " is not a valid shadergraph";
 				shaderDef = shgraph.compile(null);
+				#if !editor
+				res.watch( function() {
+					@:privateAccess hxd.res.Loader.currentInstance.cache.remove(source);
+				});
+				#end
 			}
 			else if( isInstance && !isShadergraph ) {
 				shaderClass = loadShaderClass();
