@@ -79,7 +79,7 @@ class SubTable extends Table {
 					value = sheet.lines[0];
 					doSet = value != null && Reflect.fields(value).length > 0;
 				default:
-					throw "assert";
+					return;
 			}
 			if (doSet) {
 				Reflect.setField(cell.line.obj, cell.column.name, value);
