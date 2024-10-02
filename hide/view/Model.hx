@@ -307,7 +307,7 @@ class Model extends FileView {
 				hide.Ide.inst.openFile(Reflect.field(mat, "path"), null, (view) -> {
 					var prefabView : hide.view.Prefab.Prefab = cast view;
 
-					haxe.Timer.delay(function() {
+					prefabView.delaySceneEditor(function() {
 						for (p in @:privateAccess prefabView.data.flatten(hrt.prefab.Material)) {
 							if (p != null && p.name == matName) {
 								prefabView.sceneEditor.selectElements([p]);
@@ -317,7 +317,7 @@ class Model extends FileView {
 								}
 							}
 						}
-					}, 500);
+					});
 				});
 			}
 			else if (libSelect != null) {
