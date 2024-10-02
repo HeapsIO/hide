@@ -650,7 +650,7 @@ class Model extends FileView {
 							var limits = [ getLodRatioFromIdx(currIdx + 2),  getLodRatioFromIdx(currIdx)];
 
 							startDrag(function(e) {
-								var newRatio = getLodRatioFromPx(e.screenX - lodsLine.offset().left);
+								var newRatio = getLodRatioFromPx(e.clientX - lodsLine.offset().left);
 								newRatio = hxd.Math.clamp(newRatio, limits[0], limits[1]);
 								newConfig[currIdx] = newRatio;
 								@:privateAccess hmd.lodConfig = newConfig;
@@ -1388,7 +1388,7 @@ class Model extends FileView {
 				var lodVertexesCount = @:privateAccess hmd.lods[curLod].vertexCount;
 				lodsCountEl.text(lodVertexesCount);
 			}
-			
+
 		}
 	}
 
