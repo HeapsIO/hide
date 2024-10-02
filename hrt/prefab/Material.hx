@@ -328,7 +328,6 @@ class Material extends Prefab {
 			var previousMatLib = refMatLib;
 			var mat = ctx.scene.findMat(materials, matSelect.val());
 			if ( mat != null ) {
-				var previousName = this.name;
 				this.refMatLib = Reflect.field(mat, "path") + "/" + Reflect.field(mat, "mat").name;
 				updateInstance();
 				ctx.rebuildProperties();
