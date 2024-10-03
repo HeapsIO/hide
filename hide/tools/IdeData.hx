@@ -6,6 +6,7 @@ class IdeData {
 	public var projectDir(get,never) : String;
 	public var resourceDir(get,never) : String;
 	public var appPath(get, null): String;
+	public var userStatePath(get, null): String;
 	public var database : cdb.Database = new cdb.Database();
 	public var fileWatcher : hide.tools.FileWatcher;
 
@@ -109,6 +110,21 @@ class IdeData {
 			fatalError("Hide application path was not found");
 		}
 		return appPath = hidePath;
+	}
+
+	function get_userStatePath() {
+		var appPath = appPath;
+		if( sys.FileSystem.exists(appPath + "/props.json") ) {
+			return appPath;
+		}
+		if( Sys.systemName() ==  "Linux" ) {
+			var statePath = Sys.getEnv("XDG_STATE_HOME");
+			if( statePath == null ) {
+				statePath = Sys.getEnv("HOME") + "/.local/state";
+			}
+			return statePath + "/hide";
+		}
+		return appPath;
 	}
 
 	public function makeRelative( path : String ) {

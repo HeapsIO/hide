@@ -74,8 +74,13 @@ class Config {
 		var fullPath = ide.getPath(path);
 		if( Reflect.fields(source).length == 0 )
 			try sys.FileSystem.deleteFile(fullPath) catch( e : Dynamic ) {};
-		else
+		else {
+			var directory = haxe.io.Path.directory(fullPath);
+			if( !sys.FileSystem.exists(directory) ) {
+				sys.FileSystem.createDirectory(directory);
+			}
 			sys.io.File.saveContent(fullPath, ide.toJSON(source));
+		}
 	}
 
 	public function sync() {
@@ -157,7 +162,7 @@ class Config {
 			Sys.exit(-1);
 		}
 
-		var userGlobals = loadConfig(new Config(defaults), hidePath + "/props.json");
+		var userGlobals = loadConfig(new Config(defaults), Ide.inst.userStatePath + "/props.json");
 
 		if( userGlobals.source.hide == null )
 			userGlobals.source.hide = {
