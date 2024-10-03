@@ -76,7 +76,7 @@ class Light extends Object3D {
 	@:s public var cascadeNbr : Int = 1;
 	@:s public var cascadePow : Float = 2;
 	@:s public var firstCascadeSize : Float = 10;
-	@:s public var minPixelRatio : Float = 0.5;
+	@:s public var minPixelSize : Int = 1;
 	@:s public var castingMaxDist : Float = 0.0;
 	@:s public var transitionFraction : Float = 0.15;
 	@:s public var params : Array<CascadeParams> = [];
@@ -215,7 +215,7 @@ class Light extends Object3D {
 						cs.cascade = cascadeNbr;
 						cs.pow = cascadePow;
 						cs.firstCascadeSize = firstCascadeSize;
-						cs.minPixelRatio = minPixelRatio * 0.01;
+						cs.minPixelSize = minPixelSize;
 						cs.debug = debugDisplay;
 						cs.castingMaxDist = castingMaxDist;
 						cs.transitionFraction = transitionFraction;
@@ -290,7 +290,7 @@ class Light extends Object3D {
 					icon.texture = ide.getTexture(ide.getHideResPath("icons/CapsuleLight.png"));
 			}
 		}
-		
+
 		refreshDebug();
 
 		// no "Mixed" in editor
@@ -643,7 +643,7 @@ class Light extends Object3D {
 			'<div class="group" name="Cascades">
 				<dl>
 					<dt>Number</dt><dd><input type="range" field="cascadeNbr" step="1" min="1" max="4"/></dd>
-					<dt>Min pixel ratio [%]</dt><dd><input type="range" field="minPixelRatio" min="0" max="100"/></dd>
+					<dt>Min pixel size</dt><dd><input type="range" step="1" field="minPixelSize" min="0" max="100"/></dd>
 					<dt>First cascade size</dt><dd><input type="range" field="firstCascadeSize" min="5" max="100"/></dd>
 					<dt>Range power</dt><dd><input type="range" field="cascadePow" min="0.1" max="10"/></dd>
 					<dt>Casting max dist</dt><dd><input type="range" field="castingMaxDist" min="-1" max="1000"/></dd>
