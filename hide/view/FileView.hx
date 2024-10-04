@@ -220,6 +220,7 @@ class FileView extends hide.ui.View<{ path : String }> {
 				{ label : "Open in Resources", enabled : hasPath, click : function() {
 					ide.showFileInResources(state.path);
 				}},
+				{ label : "Find References", enabled : hasPath, click : () -> Ide.inst.findPathRefs(state.path)},
 				{ label : null, isSeparator : true },
 			];
 		}
