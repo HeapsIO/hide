@@ -40,13 +40,13 @@ class MeshEmitter {
 		this.mesh = mesh;
 	}
 
-	public function emit( absPos : h3d.Matrix, emitCountTip : Int = -1 ) {
+	public function emit( absPos : h3d.Matrix, emitCountTip : Int = -1, ?cb : h3d.scene.MeshBatch -> Void ) {
 		for ( i => mat in materials ) {
 			var batch = @:privateAccess libraryInstance.getBatch(batches[i]);
 			libraryInstance.library.emit({ mat : mat, mesh : mesh }, batch, absPos, emitCountTip, batch.meshBatchFlags);
+			cb(batch);
 		}
 	}
-
 }
 
 class ModelLibraryInstance {
@@ -79,7 +79,8 @@ class ModelLibraryInstance {
 		var materials = [];
 
 		for ( material in mesh.getMaterials(false) ) {
-			var materialClone = cast(material.clone(), h3d.mat.Material);
+			var materialClone = h3d.mat.MaterialSetup.current.createMaterial();
+			material.clone(materialClone);
 
 			var props = h3d.mat.MaterialSetup.current.loadMaterialProps(material);
 			var prefab = null;
