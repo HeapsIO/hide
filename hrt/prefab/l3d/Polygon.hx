@@ -595,7 +595,8 @@ class ProjectedDisplay extends h3d.scene.Object {
 		this.polygon = polygon;
 
 		var decalPrefab = new hrt.prefab.l3d.Decal(null, null);
-		@:privateAccess decalPrefab.renderMode = AfterTonemapping;
+
+		@:privateAccess decalPrefab.renderMode = Terrain;
 		@:privateAccess decalPrefab.blendMode = Alpha;
 		var r = decalPrefab.make(new ContextShared(null, null, this));
 		decal = Std.downcast(r.local3d, h3d.scene.pbr.Decal);
@@ -611,6 +612,9 @@ class ProjectedDisplay extends h3d.scene.Object {
 		sdf.sampler = texture;
 		sdf.pxRange = 8.0;
 		decal.material.mainPass.addShader(sdf);
+
+		var shader = decal.material.mainPass.getShader(h3d.shader.pbr.VolumeDecal.DecalPBR);
+		shader.USE_ALBEDO = true;
 	}
 
 	#if editor
@@ -649,7 +653,7 @@ class ProjectedDisplay extends h3d.scene.Object {
 		sdf.bgColor.setColor(polygon.color);
 		sdf.bgColor.a = 0.0;
 		sdf.fgColor.setColor(polygon.color);
-		sdf.fgColor.a *= 0.75;
+		sdf.fgColor.a *= .5;
 
 		var bounds = new h2d.col.Bounds();
 		for (point in points) {
