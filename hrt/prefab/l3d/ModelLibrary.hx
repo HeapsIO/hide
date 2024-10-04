@@ -44,7 +44,8 @@ class MeshEmitter {
 		for ( i => mat in materials ) {
 			var batch = @:privateAccess libraryInstance.getBatch(batches[i]);
 			libraryInstance.library.emit({ mat : mat, mesh : mesh }, batch, absPos, emitCountTip, batch.meshBatchFlags);
-			cb(batch);
+			if ( cb != null )
+				cb(batch);
 		}
 	}
 }
