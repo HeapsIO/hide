@@ -711,6 +711,7 @@ class ModelLibrary extends Prefab {
 				g2.vertexFormat = g.vertexFormat;
 				g2.indexCounts = [];
 				g2.bounds = g.bounds;
+				geomAll.bounds.add(g2.bounds);
 				hmd.geometries.push(g2);
 
 				dataToStore.push({ g : g2, origin : g, lib : lib, data : libData, offset : currentVertex });
