@@ -1741,8 +1741,11 @@ class FXEditor extends hide.view.FileView {
 			}
 		}
 
-		for(fx in allFx)
+		for(fx in allFx) {
+			@:privateAccess if (fx.parentFX != null)
+				continue;
 			fx.setTime(currentTime - fx.startDelay);
+		}
 
 		// Fix anim events :
 		// we force play the first or last frame of the nearset
