@@ -186,10 +186,12 @@ class Formulas {
 
 		formulas = [];
 		fmap = new Map();
-		var interp = new hscript.Interp();
-		interp.variables.set("Math", Math);
+		var o : Dynamic = { Math : Math };
 		for( r in refs )
-			interp.variables.set(r.name, r);
+			Reflect.setField(o,r.name, r);
+		var interp = new hscript.JsInterp();
+		interp.ctx = o;
+		interp.properties = ["all" => true];
 
 		try interp.execute(expr) catch( e : hscript.Expr.Error ) {
 			ide.error(formulasFile+": "+e.toString());
