@@ -47,6 +47,7 @@ class VolumetricLightingShader extends h3d.shader.pbr.DefaultForward {
 		@param var secondFogHeightFalloff : Float;
 
 		var calculatedUV : Vec2;
+		var depthInvDimensions : Vec2;
 
 		function noise( pos : Vec3 ) : Float {
 			var i = floor(pos);
@@ -129,7 +130,8 @@ class VolumetricLightingShader extends h3d.shader.pbr.DefaultForward {
 		}
 
 		function getWPos() : Vec3 {
-			var depth = depthMap.get(calculatedUV).r;
+			var pixels = fragCoord.xy;
+			var depth = depthMap.get( pixels * depthInvDimensions ).r;
 			var uv2 = uvToScreen(calculatedUV);
 			var temp = vec4(uv2, depth, 1) * invViewProj;
 			return temp.xyz / temp.w;
@@ -149,6 +151,7 @@ class VolumetricLightingShader extends h3d.shader.pbr.DefaultForward {
 			albedoGamma = vec3(0.0);
 			useSecondColor = 0.0;
 
+			depthInvDimensions = 1.0 / depthMap.size();
 			var endPos = getWPos();
 
 			camDir = normalize(endPos - camera.position);
@@ -194,6 +197,7 @@ class VolumetricLightingShader extends h3d.shader.pbr.DefaultForward {
 class VolumetricLighting extends RendererFX {
 
 	var pass = new h3d.pass.ScreenFx(new h3d.shader.ScreenShader());
+	var halfingDepthPass = new h3d.pass.ScreenFx(new h3d.shader.CheckerboardDepth() );
 	var upsamplingPass = new h3d.pass.ScreenFx(new h3d.shader.DepthAwareUpsampling());
 
 	var blurPass = new h3d.pass.Blur();
@@ -240,6 +244,17 @@ class VolumetricLighting extends RendererFX {
 			if ( noiseTex == null )
 				noiseTex = makeNoiseTex();
 
+			var prevFilter = r.textures.depth.filter;
+			r.textures.depth.filter = Nearest;
+
+			var halfDepth = r.allocTarget("halfDepth", false, 0.5, r.textures.depth.format);
+			halfDepth.filter = Nearest;
+			r.ctx.engine.pushTarget(halfDepth);
+			halfingDepthPass.shader.source = r.textures.depth;
+			halfingDepthPass.shader.texRatio = 2.0;
+			halfingDepthPass.render();
+			r.ctx.engine.popTarget();
+
 			var tex = r.allocTarget("volumetricLighting", false, 0.5, RGBA16F);
 			tex.clear(0, 0.0);
 			r.ctx.engine.pushTarget(tex);
@@ -249,7 +264,7 @@ class VolumetricLighting extends RendererFX {
 				pass.addShader(vshader);
 			var ls = cast(r.getLightSystem(), h3d.scene.pbr.LightSystem);
 			ls.lightBuffer.setBuffers(vshader);
-			vshader.depthMap = @:privateAccess r.textures.depth;
+			vshader.depthMap = halfDepth;
 			vshader.startDistance = startDistance;
 			vshader.endDistance = endDistance;
 			vshader.distanceOpacity = distanceOpacity;
@@ -290,12 +305,13 @@ class VolumetricLighting extends RendererFX {
 
 			r.ctx.engine.popTarget();
 
-			var halfDepth = r.allocTarget("halfDepth", false, 0.5, r.textures.depth.format);
-			h3d.pass.Copy.run(r.textures.depth, halfDepth);
+			var inverseProj = r.ctx.camera.getInverseProj();
 
 			blurPass.radius = blur;
 			blurPass.shader.isDepthDependant = true;
 			blurPass.shader.depthTexture = halfDepth;
+			blurPass.shader.inverseProj = inverseProj;
+			blurPass.shader.depthThreshold = 10;
 			blurPass.apply(r.ctx, tex);
 
 			var b : h3d.mat.BlendMode = switch ( blend ) {
@@ -311,8 +327,10 @@ class VolumetricLighting extends RendererFX {
 			upsamplingPass.shader.source = tex;
 			upsamplingPass.shader.sourceDepth = halfDepth;
 			upsamplingPass.shader.destDepth = r.textures.depth;
-			upsamplingPass.shader.inverseProj = r.ctx.camera.getInverseProj();
+			upsamplingPass.shader.inverseProj = inverseProj;
 			upsamplingPass.render();
+
+			r.textures.depth.filter = prevFilter;
 		}
 	}
 
