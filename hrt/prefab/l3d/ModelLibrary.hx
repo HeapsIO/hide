@@ -174,6 +174,8 @@ class ModelLibShader extends hxsl.Shader {
 		}
 
 		function __init__vertex() {
+			calculatedUV = clamp(input2.uv.fract(), libraryParams.y, 1.0 - libraryParams.y);
+			calculatedUV = calculatedUV * uvTransform.zw + uvTransform.xy;
 			previousTransformedPosition = transformedPosition;
 			if( hasNormal )
 				transformedTangent = vec4(input2.tangent * global.modelView.mat3(),input2.tangent.dot(input2.tangent) > 0.5 ? 1. : -1.);
@@ -181,9 +183,7 @@ class ModelLibShader extends hxsl.Shader {
 		}
 
 		function __init__fragment() {
-			calculatedUV = clamp(input2.uv.fract(), libraryParams.y, 1.0 - libraryParams.y);
-			calculatedUV = calculatedUV * uvTransform.zw + uvTransform.xy;
-			pixelColor = singleTexture ? texture.getLod(calculatedUV, mipLevel) : textures.getLod(vec3(calculatedUV, libraryParams.x), mipLevel);
+			pixelColor = singleTexture ? texture.getLod(calculatedUV, 0.0) : textures.getLod(vec3(calculatedUV, libraryParams.x), 0.0);
 			if( hasNormal ) {
 				var n = transformedNormal;
 				var nf = unpackNormal(singleTexture ? normalMap.getLod(calculatedUV, mipLevel) : normalMaps.getLod(vec3(calculatedUV, libraryParams.x), mipLevel));
