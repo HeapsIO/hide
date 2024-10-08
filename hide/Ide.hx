@@ -1555,7 +1555,7 @@ class FilterPathContext {
 		this.valueCurrent = valueCurrent;
 		valueChanged = null;
 		filterFn(this);
-		return valueChanged;
+		return changed ? valueChanged : valueCurrent;
 	}
 
 	public var getRef : () -> {str: String, ?goto: () -> Void};
