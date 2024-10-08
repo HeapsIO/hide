@@ -445,12 +445,25 @@ class Editor extends Component {
 			}
 			schema = [for( x in sel.x1...sel.x2+1 ) cursor.table.columns[x]];
 		}
-		clipboard = {
-			data : data,
-			text : Std.string([for( o in data ) cursor.table.sheet.objToString(o,true)]),
-			schema : schema,
-		};
-		ide.setClipboard(clipboard.text);
+
+		// In case we only have one value, just copy the cell value
+		if (data.length == 1 && Reflect.fields(data[0]).length == 1) {
+			var colName = Reflect.fields(data[0])[0];
+			var col = cursor.table.columns.find((c) -> c.name == colName);
+			if (col == null)
+				throw "unknown column";
+			var str = cursor.table.sheet.colToString(col, Reflect.field(data[0], colName) ,true);
+			ide.setClipboard(str);
+		}
+		// copy many values at once
+		else {
+			clipboard = {
+				data : data,
+				text : Std.string([for( o in data ) cursor.table.sheet.objToString(o,true)]),
+				schema : schema,
+			};
+			ide.setClipboard(clipboard.text);
+		}
 	}
 
 	function stringToCol(str : String) : Null<Int> {
