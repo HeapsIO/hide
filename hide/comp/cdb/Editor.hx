@@ -452,7 +452,7 @@ class Editor extends Component {
 			var col = cursor.table.columns.find((c) -> c.name == colName);
 			if (col == null)
 				throw "unknown column";
-			var str = cursor.table.sheet.colToString(col, Reflect.field(data[0], colName) ,true);
+			var str = cursor.table.sheet.colToString(col, Reflect.field(data[0], colName), false);
 			ide.setClipboard(str);
 		}
 		// copy many values at once
