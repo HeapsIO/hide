@@ -387,6 +387,7 @@ enum RefreshMode {
 }
 
 typedef CustomPivot = { elt : PrefabElement, mesh : Mesh, locPos : Vector };
+typedef TagInfo = {id: String, color: String};
 
 class ViewModePopup extends hide.comp.Popup {
 	static var viewFilter : Array<{name: String, inf: {display: DisplayMode, debug: DebugMode}}> = [
@@ -1384,15 +1385,15 @@ class SceneEditor {
 		lastFocusObjects = objs;
 	}
 
-	function getAvailableTags(p: PrefabElement) : Array<{id: String, color: String}>{
+	function getAvailableTags() : Array<TagInfo>{
 		return null;
 	}
 
-	public function getTag(p: PrefabElement) {
+	public function getTag(p: PrefabElement) : TagInfo {
 		if(p.props != null) {
 			var tagId = Reflect.field(p.props, "tag");
 			if(tagId != null) {
-				var tags = getAvailableTags(p);
+				var tags = getAvailableTags();
 				if(tags != null)
 					return Lambda.find(tags, t -> t.id == tagId);
 			}
@@ -1437,21 +1438,33 @@ class SceneEditor {
 		}
 	}
 
-	function getTagMenu(p: PrefabElement) : Array<hide.comp.ContextMenu.ContextMenuItem> {
-		var tags = getAvailableTags(p);
+	function getTagMenu(prefabs: Array<PrefabElement>) : Array<hide.comp.ContextMenu.ContextMenuItem> {
+		var tags = getAvailableTags();
 		if(tags == null) return null;
 		var ret = [];
 		for(tag in tags) {
 			var style = 'background-color: ${tag.color};';
+			var checked = false;
+			for (p in prefabs) {
+				if (getTag(p) == tag)
+					checked = true;
+			}
 			ret.push({
 				label: '<span class="tag-disp-expand"><span class="tag-disp" style="$style">${tag.id}</span></span>',
 				click: function () {
-					if(getTag(p) == tag)
-						setTag(p, null);
-					else
-						setTag(p, tag.id);
+					for (p in prefabs) {
+						if(checked) {
+							setTag(p, null);
+						}
+						else {
+							setTag(p, tag.id);
+						}
+						applySceneStyle(p);
+					}
+					checked = !checked;
+
 				},
-				checked: getTag(p) == tag,
+				checked: checked,
 				stayOpen: true,
 			});
 		}
@@ -1778,7 +1791,7 @@ class SceneEditor {
 			}
 
 			if( current != null ) {
-				var menu = getTagMenu(current);
+				var menu = getTagMenu(selectedPrefabs);
 				if(menu != null)
 					menuItems.push({ label : "Tag", menu: menu });
 			}

@@ -299,7 +299,7 @@ private class FXSceneEditor extends hide.comp.SceneEditor {
 		return menu;
 	}
 
-	override function getAvailableTags(p:PrefabElement) {
+	override function getAvailableTags() {
 		return cast ide.currentConfig.get("fx.tags");
 	}
 

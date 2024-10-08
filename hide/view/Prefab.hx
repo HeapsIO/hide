@@ -168,7 +168,7 @@ class PrefabSceneEditor extends hide.comp.SceneEditor {
 		return newItems;
 	}
 
-	override function getAvailableTags(p:PrefabElement) {
+	override function getAvailableTags() {
 		return cast ide.currentConfig.get("sceneeditor.tags");
 	}
 }
@@ -734,8 +734,11 @@ class Prefab extends hide.view.FileView {
 			all = data.findAll(hrt.prefab.Prefab, true);
 		else
 			all = data.flatten(hrt.prefab.Prefab);
+
+		var tag = StringTools.replace(typeid, "tag:", "");
+		tag = tag != typeid ? tag : null;
 		for(p in all) {
-			if(p.type == typeid || p.getCdbType() == typeid) {
+			if(p.type == typeid || p.getCdbType() == typeid || (tag != null && (p.props:Dynamic)?.tag == tag)) {
 				sceneEditor.applySceneStyle(p);
 			}
 		}
@@ -879,6 +882,12 @@ class Prefab extends hide.view.FileView {
 				if(cdbType != null && sceneFilters.get(cdbType) == false)
 					visible = false;
 			}
+			if (visible) {
+				if ((p.props:Dynamic)?.tag != null) {
+					visible = sceneFilters.get('tag:${(p.props:Dynamic).tag}') != false;
+				}
+			}
+
 			if (obj3d.local3d != null) {
 				obj3d.local3d.visible = visible;
 			}
