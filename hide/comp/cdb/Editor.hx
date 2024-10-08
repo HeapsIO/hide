@@ -1197,6 +1197,11 @@ class Editor extends Component {
 						if( sys.FileSystem.exists(path) && sys.FileSystem.isDirectory(path) )
 							lookupRec(path);
 					}
+
+					var formulasPath = ide.getPath("formulas.hx");
+					if (sys.FileSystem.exists(formulasPath)) {
+						codeFileCache.push({path: formulasPath, data: sys.io.File.getContent(formulasPath)});
+					}
 				}
 
 				var spaces = "[ \\n\\t]";
@@ -1204,6 +1209,12 @@ class Editor extends Component {
 				var postChars = ",\\):;\\?\\]&|";
 				var regexp = new EReg('((case$spaces+)|[$prevChars])$spaces*$id$spaces*[$postChars]*.*',"");
 				var regall = new EReg("\\b"+id+"\\b", "");
+
+				var tableName = sheet.name;
+				var first = tableName.substr(0,1);
+				var caseInsentive = '[${first.toLowerCase()}${first.toUpperCase()}]${tableName.substr(1)}';
+				var regResolve = new EReg('${caseInsentive}\\.resolve\\(\\s*"$id"\\s*\\)', "");
+
 				for (file in codeFileCache) {
 
 					var fpath = file.path;
@@ -1211,7 +1222,7 @@ class Editor extends Component {
 					if( content.indexOf(id) < 0 ) continue;
 					for( line => str in content.split("\n") ) {
 						if( regall.match(str) ) {
-							if( !regexp.match(str) ) {
+							if( !regexp.match(str) && !regResolve.match(str) ) {
 								var str2 = str.split(id+".").join("").split("."+id).join("").split(id+"(").join("").split(id+"<").join("");
 								if( regall.match(str2) ) trace("Skip "+str);
 								continue;
