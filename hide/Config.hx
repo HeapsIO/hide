@@ -96,7 +96,14 @@ class Config {
 
 	function mergeRec( dst : Dynamic, src : Dynamic ) {
 		for( f in Reflect.fields(src) ) {
+			var append = false;
+
 			var v : Dynamic = Reflect.field(src,f);
+			if (StringTools.endsWith(f, "+")) {
+				append = true;
+				f = f.substr(0, f.length-1);
+			}
+
 			var t : Dynamic = Reflect.field(dst, f);
 			if( Type.typeof(v) == TObject ) {
 				if( t == null ) {
@@ -106,8 +113,16 @@ class Config {
 				mergeRec(t, v);
 			} else if( v == null )
 				Reflect.deleteField(dst, f);
-			else
-				Reflect.setField(dst,f,v);
+			else {
+				if (append && Type.typeof(v).match(TClass(Array))) {
+					var arr : Array<Dynamic> = cast t ?? [];
+					arr = arr.concat(cast v);
+					Reflect.setField(dst, f, arr);
+
+				} else {
+					Reflect.setField(dst,f,v);
+				}
+			}
 		}
 	}
 
