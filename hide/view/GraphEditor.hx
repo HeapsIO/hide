@@ -1585,8 +1585,8 @@ class GraphEditor extends hide.comp.Component {
 	}
 
 	function createCurve(packedOutput: Null<Int>, packedInput: Null<Int>, ?distance : Float, ?x : Float, ?y : Float, ?isDraft : Bool) {
-		x = x ?? 0;
-		y = y ?? 0;
+		x = x ?? 0.0;
+		y = y ?? 0.0;
 		var startX = lX(x);
 		var startY = lY(y);
 		var endX = lX(x);
