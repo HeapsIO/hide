@@ -252,6 +252,13 @@ class Material extends Prefab {
 		super.editorRemoveInstance();
 	}
 
+	override function onEditorTreeChanged(prefab: hrt.prefab.Prefab) : hrt.prefab.Prefab.TreeChangedResult {
+		if (previewSphere != null) {
+			return Rebuild;
+		}
+		return Skip;
+	}
+
 	override function makeInteractive() : hxd.SceneEvents.Interactive {
 		if (previewSphere != null) {
 			var col = new h3d.col.Sphere(0,0,0,1.);
