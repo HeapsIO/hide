@@ -1011,6 +1011,8 @@ class SceneEditor {
 
 		view.keys.register("duplicate", {name: "Duplicate", category: "Scene"}, duplicate.bind(true));
 		view.keys.register("duplicateInPlace", {name: "Duplicate in place", category: "Scene"}, duplicate.bind(false));
+		view.keys.register("debugSceneRefresh", {name: "Refresh debug scene", category: "Scene"}, () -> {ide.quickMessage("Debug : rebuild(sceneData)"); queueRebuild(sceneData);});
+
 		view.keys.register("group", {name: "Group Selection", category: "Scene"}, groupSelection);
 		view.keys.register("delete", {name: "Delete", category: "Scene"}, () -> deleteElements(selectedPrefabs));
 		view.keys.register("search", {name: "Search", category: "Scene"}, function() tree.openFilter());
@@ -2054,8 +2056,9 @@ class SceneEditor {
 
 		if( @:privateAccess renderPropsRoot.refInstance != null ) {
 			var renderProps = @:privateAccess renderPropsRoot.refInstance.getOpt(hrt.prefab.RenderProps, true);
-			if( renderProps != null )
+			if( renderProps != null ) {
 				renderProps.applyProps(scene.s3d.renderer);
+			}
 		}
 	}
 
@@ -2107,47 +2110,36 @@ class SceneEditor {
 		sceneData.shared.currentPath = view.state.path;
 		sceneData.setEditor(this, this.scene);
 
-		sceneData.make();
 		var bgcol = scene.engine.backgroundColor;
 		scene.init();
 		scene.engine.backgroundColor = bgcol;
-		refreshInteractives();
+
+		rebuild(sceneData);
 
 		var all = sceneData.all();
 		for(elt in all)
 			applySceneStyle(elt);
-
-		// Find latest existing render props in scene
-		var renderProps : Array<hrt.prefab.RenderProps> = cast getAllWithRefs(sceneData, hrt.prefab.RenderProps);
-		for( r in renderProps ) {
-			if( @:privateAccess r.isDefault ) {
-				lastRenderProps = r;
-				break;
-			}
-		}
-
-		if( lastRenderProps == null )
-			lastRenderProps = renderProps[0];
-
-		if (lastRenderProps != null)
-			lastRenderProps.applyProps(scene.s3d.renderer);
-		else {
-			createRenderProps();
-		}
 
 		refreshTree();
 
 		onRefresh();
 	}
 
-	function getAllWithRefs<T:PrefabElement>( p : PrefabElement, cl : Class<T>, ?arr : Array<T> ) : Array<T> {
+	function getAllWithRefs<T:PrefabElement>( p : PrefabElement, cl : Class<T>, ?arr : Array<T>, forceLoad: Bool = false ) : Array<T> {
 		if( arr == null ) arr = [];
 		var v = p.to(cl);
 		if( v != null ) arr.push(v);
 		for( c in p.children )
 			getAllWithRefs(c, cl, arr);
 		var ref = p.to(Reference);
-		@:privateAccess if( ref != null && ref.refInstance != null ) getAllWithRefs(ref.refInstance, cl, arr);
+
+		@:privateAccess
+		if (ref != null && ref.enabled) {
+			if (forceLoad) {
+				ref.resolveRef();
+			}
+			if (ref.refInstance != null) getAllWithRefs(ref.refInstance, cl, arr, forceLoad);
+		}
 		return arr;
 	}
 
@@ -4223,6 +4215,12 @@ class SceneEditor {
 				rebuildQueue.set(target, wantRebuild);
 				checkWantRebuild(target.parent, original);
 		}
+
+		if (target == sceneData) {
+			var renderProps = original.find(hrt.prefab.RenderProps, null, true);
+			if (renderProps != null)
+				queueRebuild(target);
+		}
 	}
 
 	var rebuildQueue : Map<PrefabElement, hrt.prefab.Prefab.TreeChangedResult> = null;
@@ -4300,6 +4298,11 @@ class SceneEditor {
 		scene.setCurrent();
 
 		prefab.editorRemoveInstance();
+		if (prefab == sceneData) {
+			for (c in prefab) {
+				c.editorRemoveInstance();
+			}
+		}
 
 		var enabled = prefab.enabled && !prefab.inGameOnly;
 		var actuallyInWorld = prefab == sceneData || (prefab.parent != null && prefab.parent.has(prefab));
@@ -4313,6 +4316,43 @@ class SceneEditor {
 		for( p in prefab.flatten() ) {
 			makeInteractive(p);
 			applySceneStyle(p);
+		}
+
+		if (prefab == sceneData) {
+			var previousRenderProps = lastRenderProps;
+
+			var newRenderProps = null;
+			var renderProps : Array<hrt.prefab.RenderProps> = cast getAllWithRefs(sceneData, hrt.prefab.RenderProps);
+			for( r in renderProps ) {
+				if( @:privateAccess r.isDefault ) {
+					newRenderProps = r;
+					break;
+				}
+			}
+
+			if( newRenderProps == null )
+				newRenderProps = renderProps[0];
+
+			if (newRenderProps != previousRenderProps) {
+				previousRenderProps?.editorRemoveInstance();
+				scene.s3d.renderer.props = scene.s3d.renderer.getDefaultProps();
+				lastRenderProps = newRenderProps;
+				if (lastRenderProps != null) {
+					if (renderPropsRoot != null) {
+						renderPropsRoot.editorRemoveInstance();
+						renderPropsRoot = null;
+					}
+
+					lastRenderProps.applyProps(scene.s3d.renderer);
+				} else {
+					createRenderProps();
+				}
+			}
+			else {
+				if (renderPropsRoot == null) {
+					createRenderProps();
+				}
+			}
 		}
 	}
 
