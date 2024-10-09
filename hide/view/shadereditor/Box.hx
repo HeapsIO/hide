@@ -29,6 +29,7 @@ class Box {
 	public var HEADER_HEIGHT = 22;
 	public static final NODE_MARGIN = 18;
 	public static var NODE_RADIUS = 5;
+	public static var NODE_HITBOX_RADIUS = NODE_RADIUS * 2;
 	@const var NODE_TITLE_PADDING = 10;
 	@const var NODE_INPUT_PADDING = 3;
 	public var selected : Bool = false;
@@ -274,7 +275,9 @@ class Box {
 		var nodeHeight = getNodeHeight(inputs.length);
 		var style = {fill : '#${StringTools.hex(color, 6)}'};
 
-		var nodeCircle = editor.editorDisplay.circle(node, 0, nodeHeight, NODE_RADIUS, style).addClass("node input-node");
+		var nodeCircle = editor.editorDisplay.group(node, "node input-node").attr({transform : 'translate(0, $nodeHeight)'});
+		var circle = editor.editorDisplay.circle(nodeCircle, 0, 0, NODE_RADIUS, style).addClass("node-visible");
+		var hitbox = editor.editorDisplay.circle(nodeCircle, 0, 0, NODE_HITBOX_RADIUS).addClass("hitbox");
 
 		var nameWidth = 0.0;
 		if (name.length > 0 && name != "input") {
@@ -328,8 +331,9 @@ class Box {
 		var nodeHeight = getNodeHeight(outputs.length);
 		var style = {fill : '#${StringTools.hex(color, 6)}'};
 
-
-		var nodeCircle = editor.editorDisplay.circle(node, width, nodeHeight, NODE_RADIUS, style).addClass("node output-node");
+		var nodeCircle = editor.editorDisplay.group(node, "node output-node").attr({transform : 'translate($width, $nodeHeight)'});
+		var circle = editor.editorDisplay.circle(nodeCircle, 0, 0, NODE_RADIUS, style).addClass("node-visible");
+		var hitbox = editor.editorDisplay.circle(nodeCircle, 0, 0, NODE_HITBOX_RADIUS).addClass("hitbox");
 
 		if (name.length > 0 && name != "output")
 			editor.editorDisplay.text(node, width - NODE_TITLE_PADDING, nodeHeight + 4, name).addClass("title-node").attr("text-anchor", "end");

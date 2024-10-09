@@ -2656,11 +2656,18 @@ input[type=checkbox] {
 
 			.input-node, .output-node {
 				fill: rgb(200, 200, 200);
-				stroke-width: 13px;
-				stroke-opacity: 0;
+				//stroke-width: 13px;
+				//stroke-opacity: 0;
 
 				&.nodeMatch {
 					fill: #5ca4ab;
+				}
+
+				.hitbox {
+					fill: transparent;
+					&:hover {
+						fill: rgba(114, 180, 255, 0.5);
+					}
 				}
 			}
 

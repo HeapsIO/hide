@@ -670,8 +670,8 @@ class GraphEditor extends hide.comp.Component {
 			opBox(instance, true, currentUndoBuffer);
 			if (createLinkInput != null && createLinkOutput != null) {
 				var box = boxes[instance.id];
-				var x = (fromInput ? @:privateAccess box.width : 0) - Box.NODE_RADIUS;
-				var y = box.getNodeHeight(0) - Box.NODE_RADIUS;
+				var x = (fromInput ? @:privateAccess box.width : 0) - Box.NODE_HITBOX_RADIUS;
+				var y = box.getNodeHeight(0) - Box.NODE_HITBOX_RADIUS;
 				opMove(boxes[instance.id], pos.x - x, pos.y - y, currentUndoBuffer);
 				opEdge(createLinkOutput, createLinkInput, true, currentUndoBuffer);
 			}
@@ -1585,17 +1585,27 @@ class GraphEditor extends hide.comp.Component {
 	}
 
 	function createCurve(packedOutput: Null<Int>, packedInput: Null<Int>, ?distance : Float, ?x : Float, ?y : Float, ?isDraft : Bool) {
-		var offsetEnd = {top : y ?? 0.0, left : x ?? 0.0};
+		x = x ?? 0;
+		y = y ?? 0;
+		var startX = lX(x);
+		var startY = lY(y);
+		var endX = lX(x);
+		var endY = lY(y);
+
 		if (packedInput != null) {
 			var input = unpackIO(packedInput);
 			var node = boxes[input.nodeId].inputs[input.ioId];
-			offsetEnd = node.offset();
+			var offsetEnd = node.offset();
+			endX = lX(offsetEnd.left) + Box.NODE_HITBOX_RADIUS;
+			endY = lY(offsetEnd.top) + Box.NODE_HITBOX_RADIUS;
+
 		}
-		var offsetStart = {top : y ?? 0.0, left : x ?? 0.0};
 		if (packedOutput != null) {
 			var output = unpackIO(packedOutput);
 			var node = boxes[output.nodeId].outputs[output.ioId];
-			offsetStart = node.offset();
+			var offsetStart = node.offset();
+			startX = lX(offsetStart.left) + Box.NODE_HITBOX_RADIUS;
+			startY = lY(offsetStart.top) + Box.NODE_HITBOX_RADIUS;
 		}
 
 		if (x != null && y != null) {
@@ -1603,11 +1613,7 @@ class GraphEditor extends hide.comp.Component {
 			lastCurveY = lY(y);
 		}
 
-		var startX = lX(offsetStart.left) + Box.NODE_RADIUS;
-		var startY = lY(offsetStart.top) + Box.NODE_RADIUS;
-		var endX = lX(offsetEnd.left) + Box.NODE_RADIUS;
-		var endY = lY(offsetEnd.top) + Box.NODE_RADIUS;
-		var diffDistanceY = offsetEnd.top - offsetStart.top;
+		var diffDistanceY = endY - startY;
 		var signCurveY = ((diffDistanceY > 0) ? -1 : 1);
 		diffDistanceY = Math.abs(diffDistanceY);
 		var valueCurveX = 100;
@@ -1859,8 +1865,9 @@ class GraphEditor extends hide.comp.Component {
 	function distanceToElement(element : JQuery, x : Int, y : Int) {
 		if (element == null)
 			return NODE_TRIGGER_NEAR+1;
-		var dx = Math.max(Math.abs(x - (element.offset().left + element.width() / 2)) - element.width() / 2, 0);
-		var dy = Math.max(Math.abs(y - (element.offset().top + element.height() / 2)) - element.height() / 2, 0);
+		var rect = element.get(0).getBoundingClientRect();
+		var dx = x - (rect.left + rect.width / 2);
+		var dy = y - (rect.top + rect.height / 2);
 		return dx * dx + dy * dy;
 	}
 	public function gX(x : Float) : Float {

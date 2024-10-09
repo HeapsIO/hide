@@ -2327,12 +2327,18 @@ input[type=checkbox]:checked:after {
 .graph-view .heaps-scene svg .input-node,
 .graph-view .heaps-scene svg .output-node {
   fill: #c8c8c8;
-  stroke-width: 13px;
-  stroke-opacity: 0;
 }
 .graph-view .heaps-scene svg .input-node.nodeMatch,
 .graph-view .heaps-scene svg .output-node.nodeMatch {
   fill: #5ca4ab;
+}
+.graph-view .heaps-scene svg .input-node .hitbox,
+.graph-view .heaps-scene svg .output-node .hitbox {
+  fill: transparent;
+}
+.graph-view .heaps-scene svg .input-node .hitbox:hover,
+.graph-view .heaps-scene svg .output-node .hitbox:hover {
+  fill: rgba(114, 180, 255, 0.5);
 }
 .graph-view .heaps-scene svg .title-node {
   fill: #c3c3c3;
