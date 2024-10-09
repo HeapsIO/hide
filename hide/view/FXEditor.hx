@@ -103,14 +103,14 @@ private class FXSceneEditor extends hide.comp.SceneEditor {
 		}
 	}
 
-	override function createDroppedElement(path:String, parent:PrefabElement):hrt.prefab.Object3D {
+	override function createDroppedElement(path:String, parent:PrefabElement): Array<hrt.prefab.Prefab> {
 		var type = hrt.prefab.Prefab.getPrefabType(path);
 		if(type == "fx") {
 			var relative = ide.makeRelative(path);
 			var ref = new hrt.prefab.fx.SubFX(parent, null);
 			ref.source = relative;
 			ref.name = new haxe.io.Path(relative).file;
-			return ref;
+			return [ref];
 		}
 		return super.createDroppedElement(path, parent);
 	}

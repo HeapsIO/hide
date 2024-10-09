@@ -3443,12 +3443,34 @@ class SceneEditor {
 		return true;
 	}
 
-	function createDroppedElement(path: String, parent: PrefabElement) : hrt.prefab.Object3D {
-		var prefab : hrt.prefab.Object3D = null;
+	function createDroppedElement(path: String, parent: PrefabElement) : Array<hrt.prefab.Prefab> {
+		var prefab : hrt.prefab.Prefab = null;
 		var relative = ide.makeRelative(path);
 
+		var ptype = hrt.prefab.Prefab.getPrefabType(path);
+		if (ptype == "shgraph") {
+			var parents : Map<hrt.prefab.Prefab, Bool> = [];
+			for (parent in selectedPrefabs) {
+				var p = parent;
+				while (p != null && Std.downcast(p, Object3D) == null && Std.downcast(p, Object2D) == null) {
+					p = p.parent;
+				}
+				parents.set(p, true);
+			}
 
-		if(hrt.prefab.Prefab.getPrefabType(path) != null) {
+			var prefabs : Array<hrt.prefab.Prefab> = [];
+			if (parents.iterator().hasNext() == false) {
+				ide.quickMessage("Please select (valid) prefabs that should recieve the shadergraph before dragging the shadergraph into the scene");
+			}
+			for (parent => _ in parents) {
+				var shgraph = new hrt.prefab.DynamicShader(parent, null);
+				shgraph.source = relative;
+				shgraph.name = new haxe.io.Path(relative).file;
+				prefabs.push(shgraph);
+			}
+			return prefabs;
+		}
+		else if(ptype != null) {
 			var ref = new hrt.prefab.Reference(parent, null);
 			ref.source = relative;
 			if (ref.hasCycle()) {
@@ -3470,11 +3492,12 @@ class SceneEditor {
 			model.source = relative;
 			prefab = model;
 		}
-		return prefab;
+		return [prefab];
 	}
 
 	function dropElements(paths: Array<String>, parent: PrefabElement) {
 		scene.setCurrent();
+
 		var localMat = h3d.Matrix.I();
 		if(scene.hasFocus()) {
 			localMat = getPickTransform(parent);
@@ -3487,14 +3510,18 @@ class SceneEditor {
 
 		var elts: Array<PrefabElement> = [];
 		for(path in paths) {
-			var obj3d = createDroppedElement(path, parent);
-			if (obj3d == null)
-				continue;
-
-			obj3d.setTransform(localMat);
-			autoName(obj3d);
-			elts.push(obj3d);
-
+			var prefabs = createDroppedElement(path, parent);
+			for (prefab in prefabs) {
+				if (prefab == null) {
+					continue;
+				}
+				var obj3d= Std.downcast(prefab, Object3D);
+				if (obj3d != null) {
+					obj3d.setTransform(localMat);
+				}
+				autoName(prefab);
+				elts.push(prefab);
+			}
 		}
 
 		beginRebuild();
@@ -3506,11 +3533,10 @@ class SceneEditor {
 
 		undo.change(Custom(function(undo) {
 			if( undo ) {
-				var fullRefresh = false;
 				beginRebuild();
 				for(e in elts) {
 					removeInstance(e);
-					parent.children.remove(e);
+					e.parent.children.remove(e);
 				}
 				endRebuild();
 				refreshTree(() -> selectElements([], NoHistory));
@@ -3518,7 +3544,7 @@ class SceneEditor {
 			else {
 				beginRebuild();
 				for(e in elts) {
-					parent.children.push(e);
+					e.parent.children.push(e);
 					makePrefab(e);
 				}
 				endRebuild();
