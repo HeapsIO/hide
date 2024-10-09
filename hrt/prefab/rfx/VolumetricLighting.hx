@@ -166,7 +166,7 @@ class VolumetricLightingShader extends h3d.shader.pbr.DefaultForward {
 
 			var stepSize = length(endPos - startPos) / float(steps);
 			var dithering = ditheringNoise.getLod(calculatedUV * targetSize / ditheringSize, 0.0).r * stepSize * ditheringIntensity;
-			startPos += dithering;
+			startPos += dithering * camDir;
 			var opacity = 0.0;
 			var totalScattered = vec3(0.0);
 			var opticalDepth = 0.0;
