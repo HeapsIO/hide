@@ -824,70 +824,8 @@ class Macros {
 						PrefabFieldType.PInt;
 					case "Bool":
 						PrefabFieldType.PBool;
-					// case "Map", "haxe.ds.Map":
-					// 	var tk = getPropType(pl[0],conds);
-					// 	var tv = getPropType(pl[1],conds);
-					// 	if( tk == null || tv == null )
-					// 		return null;
-					// 	PMap(tk, tv);
-					// case "haxe.ds.Vector":
-					// 	var tk = getPropType(pl[0],conds);
-					// 	if( tk == null )
-					// 		return null;
-					// 	PVector(tk);
-					// case "hxbit.VectorProxy":
-					// 	var t = getPropType(pl[0],conds);
-					// 	if( t == null )
-					// 		return null;
-					// 	isProxy = true;
-					// 	PVector(t);
-					// case "hxbit.ArrayProxy", "hxbit.ArrayProxy2":
-					// 	var t = getPropType(pl[0],conds);
-					// 	if( t == null )
-					// 		return null;
-					// 	isProxy = true;
-					// 	PArray(t);
-					// case "hxbit.MapProxy", "hxbit.MapProxy2":
-					// 	var k = getPropType(pl[0],conds);
-					// 	var v = getPropType(pl[1],conds);
-					// 	if( k == null || v == null ) return null;
-					// 	isProxy = true;
-					// 	PMap(k, v);
-					// case "hxbit.EnumFlagsProxy":
-					// 	var e = getPropType(pl[0],conds);
-					// 	if( e == null ) return null;
-					// 	isProxy = true;
-					// 	PFlags(e);
-					// case "haxe.EnumFlags":
-					// 	var e = getPropType(pl[0],conds);
-					// 	if( e == null ) return null;
-					// 	PFlags(e);
-					// case "Null":
-					// 	var p = getPropType(pl[0],conds);
-					// 	if( p != null && !isNullable(p) )
-					// 		p = { d : PNull(p), t : TPath( { pack : [], name : "Null", params : [TPType(p.t)] } ) };
-					// 	return p;
 					case name:
 						PrefabFieldType.PUnknown;
-					// 	var t2 = Context.followWithAbstracts(t, true);
-					// 	switch( t2 ) {
-					// 	case TAbstract(a2, _) if( a2.toString() == name ):
-					// 		return null;
-					// 	default:
-					// 	}
-					// 	var ainf = a.get(), isCDB = false;
-					// 	if( ainf.meta.has(":cdb") ) {
-					// 		if( conds.has(PreventCDB) ) {
-					// 			Context.warning("Unsupported CDB type, store the id-kind or use @:allowCDB ", Context.currentPos());
-					// 			return null;
-					// 		}
-					// 		isCDB = true;
-					// 		isMutable = false;
-					// 	} else if( ainf.meta.has(":noProxy") )
-					// 		isMutable = false;
-					// 	var pt = getPropType(t2,conds);
-					// 	if( pt == null ) return null;
-					// 	isCDB ? PAliasCDB(pt) : PAlias(pt);
 				}
 			case TEnum(e,_):
 				var e = e.get();
@@ -897,18 +835,6 @@ class Macros {
 				PrefabFieldType.PDynamic;
 			case TAnonymous(a):
 				PrefabFieldType.PUnknown;
-				// var a = a.get();
-				// var fields = [];
-				// isMutable = false;
-				// for( f in a.fields ) {
-				// 	if( f.meta.has(":noSerialize") )
-				// 		continue;
-				// 	var ft = getPropField(f.type, f.meta.get(), conds);
-				// 	if( ft == null ) return null;
-				// 	fields.push( { name : f.name, type : ft, opt : f.meta.has(":optional") } );
-				// 	if( !(f.isFinal || ft.noSync) || needProxy(ft) ) isMutable = true;
-				// }
-				// a.fields.length == 0 ? PDynamic : PObj(fields);
 			case TInst(c, pl):
 				switch( c.toString() ) {
 					case "String":
@@ -917,65 +843,9 @@ class Macros {
 						var at = getPrefabFieldType(pl[0]);
 						if( at == null ) return null;
 						PrefabFieldType.PArray(at);
-					// case "haxe.ds.IntMap":
-						// 	var vt = getPrefabFieldType(pl[0],conds);
-						// 	if( vt == null ) return null;
-						// 	PMap({ t : macro : Int, d : PInt }, vt);
-					// case "haxe.ds.StringMap":
-						// 	var vt = getPrefabFieldType(pl[0],conds);
-						// 	if( vt == null ) return null;
-						// 	PMap({ t : macro : String, d : PString }, vt);
-					// case "haxe.io.Bytes":
-						// 	PBytes;
-					// case name if( StringTools.startsWith(name, "hxbit.ObjProxy_") ):
-						// 	var fields = c.get().fields.get();
-						// 	for( f in fields )
-						// 		if( f.name == "__value" ) {
-						// 			var t = getPropType(f.type,conds);
-						// 			if( t == null ) return t;
-						// 			t.isProxy = true;
-						// 			return t;
-						// 		}
-						// 	throw "assert";
 					default:
 						PrefabFieldType.PUnknown;
-						// if( isSerializable(c) ) {
-						// 	var c = c.get();
-						// 	var path = getNativePath(c);
-						// 	c.isInterface ? PSerInterface(path) : PSerializable(path);
-						// } else if( isCustomSerializable(c) )
-						// 	PCustom;
-						// else if( isStructSerializable(c) ) {
-						// 	var c = c.get();
-						// 	var path = getNativePath(c);
-						// 	var fields = [];
-						// 	for( f in c.fields.get() ) {
-						// 		if( !f.meta.has(":s") ) continue;
-						// 		var t = getPropField(f.type, f.meta.get(), conds);
-						// 		if( t == null )
-						// 			return null;
-						// 		fields.push({ name : f.name, type : t });
-						// 	}
-						// 	if( c.meta.has(":isProxy") )
-						// 		isProxy = true;
-						// 	PStruct(path, fields);
-						// } else
-						// 	return null;
 				}
-
-				// case TType(td, pl):
-				// 	switch( td.toString() ) {
-				// 	case "Null":
-				// 		var p = getPropType(pl[0],conds);
-				// 		if( p != null && !isNullable(p) )
-				// 			p = { d : PNull(p), t : TPath( { pack : [], name : "Null", params : [TPType(p.t)] } ) };
-				// 		return p;
-				// 	default:
-				// 		var p = getPropType(Context.follow(t, true),conds);
-				// 		if( p != null )
-				// 			p.t = t.toComplexType(); // more general, still identical
-				// 		return p;
-				// 	}
 				default:
 					return null;
 			}
