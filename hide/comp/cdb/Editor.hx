@@ -452,18 +452,28 @@ class Editor extends Component {
 			var col = cursor.table.columns.find((c) -> c.name == colName);
 			if (col == null)
 				throw "unknown column";
-			var str = cursor.table.sheet.colToString(col, Reflect.field(data[0], colName), false);
-			ide.setClipboard(str);
+
+			// if we are a property or a list, fallback to the default case
+			if (col.type != TProperties && col.type != TList) {
+				var str = cursor.table.sheet.colToString(col, Reflect.field(data[0], colName), false);
+
+				clipboard = {
+					data : data,
+					text : str,
+					schema : schema,
+				};
+
+				ide.setClipboard(str);
+				return;
+			}
 		}
 		// copy many values at once
-		else {
-			clipboard = {
-				data : data,
-				text : Std.string([for( o in data ) cursor.table.sheet.objToString(o,true)]),
-				schema : schema,
-			};
-			ide.setClipboard(clipboard.text);
-		}
+		clipboard = {
+			data : data,
+			text : Std.string([for( o in data ) cursor.table.sheet.objToString(o,true)]),
+			schema : schema,
+		};
+		ide.setClipboard(clipboard.text);
 	}
 
 	function stringToCol(str : String) : Null<Int> {
