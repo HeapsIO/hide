@@ -96,7 +96,7 @@ class Formulas {
 					if( fname == null ) continue;
 					if( omapped == null )
 						omapped = remap(o, s);
-					var v = try forms.get(fname).call(omapped) catch( e : Dynamic ) Math.NaN;
+					var v = try forms.get(fname).call(omapped) catch( e : Dynamic ) { js.Browser.console.log(e); Math.NaN; }
 					if( v == null && c.opt )
 						Reflect.deleteField(o, c.name);
 					else {
