@@ -180,6 +180,18 @@ class Gradient {
         return hash;
     }
 
+    public static function textureFromCDB( g : cdb.Types.Gradient, size : Int ) {
+        if( g == null ) return null;
+        var d : GradientData = {
+            stops : [for( i in 0...g.data.colors.length ) { position : g.data.positions[i], color : g.data.colors[i] }],
+            resolution : size,
+            isVertical : false,
+            interpolation: Linear,
+            colorMode: 0,
+        };
+        return textureFromData(d);
+    }
+
     public static function textureFromData(data : GradientData) : h3d.mat.Texture {
 
         var hash = getDataHash(data);
