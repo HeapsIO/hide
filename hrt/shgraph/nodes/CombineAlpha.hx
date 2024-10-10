@@ -8,6 +8,7 @@ using hxsl.Ast;
 @name("Combine Alpha")
 @description("Create a vector of size 4 from a RGB and an Alpha float")
 @group("Channel")
+@width(100)
 class CombineAlpha extends ShaderNodeHxsl {
 
 	static var SRC = {

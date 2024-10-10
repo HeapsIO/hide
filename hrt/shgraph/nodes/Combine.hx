@@ -8,6 +8,7 @@ using hxsl.Ast;
 @name("Combine")
 @description("Create a vector of size 4 from 4 floats")
 @group("Channel")
+@width(80)
 class Combine extends ShaderNodeHxsl {
 
 	static var SRC = {

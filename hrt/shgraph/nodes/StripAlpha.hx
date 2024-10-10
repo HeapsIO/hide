@@ -5,6 +5,7 @@ using hxsl.Ast;
 @name("Strip Alpha")
 @description("Separate the rgb and a components of an rgba vector")
 @group("Channel")
+@width(100)
 class StripAlpha extends ShaderNodeHxsl {
 
 	static var SRC = {
