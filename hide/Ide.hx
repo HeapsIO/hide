@@ -741,6 +741,17 @@ class Ide extends hide.tools.IdeData {
 		js.Browser.location.reload();
 	}
 
+	public function getCDBContent<T>( sheetName : String ) : Array<T> {
+		for( s in database.sheets )
+			if( s.name == sheetName ) {
+				var s = Reflect.copy(@:privateAccess s.realSheet.sheet);
+				s.lines = [for( l in s.lines ) Reflect.copy(l)];
+				@:privateAccess cdb.Types.Index.initLines(s);
+				return cast s.lines;
+			}
+		return null;
+	}
+
 	public function getUnCachedUrl( path : String ) {
 		return "file://" + getPath(path) + "?t=" + fileWatcher.getVersion(path);
 	}
