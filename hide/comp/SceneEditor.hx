@@ -3435,56 +3435,67 @@ class SceneEditor {
 		return true;
 	}
 
-	function createDroppedElement(path: String, parent: PrefabElement) : Array<hrt.prefab.Prefab> {
+	function createDroppedElement(path: String, defaultParent: PrefabElement) : hrt.prefab.Prefab {
 		var prefab : hrt.prefab.Prefab = null;
 		var relative = ide.makeRelative(path);
 
 		var ptype = hrt.prefab.Prefab.getPrefabType(path);
-		if (ptype == "shgraph") {
-			var parents : Map<hrt.prefab.Prefab, Bool> = [];
-			for (parent in selectedPrefabs) {
-				var p = parent;
-				while (p != null && Std.downcast(p, Object3D) == null && Std.downcast(p, Object2D) == null) {
-					p = p.parent;
-				}
-				parents.set(p, true);
-			}
-
-			var prefabs : Array<hrt.prefab.Prefab> = [];
-			if (parents.iterator().hasNext() == false) {
-				ide.quickMessage("Please select (valid) prefabs that should recieve the shadergraph before dragging the shadergraph into the scene");
-			}
-			for (parent => _ in parents) {
-				var shgraph = new hrt.prefab.DynamicShader(parent, null);
-				shgraph.source = relative;
-				shgraph.name = new haxe.io.Path(relative).file;
-				prefabs.push(shgraph);
-			}
-			return prefabs;
+		var hover = tree.getCurrentHover();
+		var parent = hover ?? defaultParent;
+		var index = 0;
+		if (parent == defaultParent) {
+			index = defaultParent.children.length;
 		}
-		else if(ptype != null) {
-			var ref = new hrt.prefab.Reference(parent, null);
-			ref.source = relative;
-			if (ref.hasCycle()) {
-				parent.children.remove(ref);
-				hide.Ide.inst.quickError('Reference to $relative is creating a cycle. The reference creation was aborted.');
+		if (ptype == "shgraph") {
+			var p = parent;
+			while (p != null && Std.downcast(p, Object3D) == null && Std.downcast(p, Object2D) == null && Std.downcast(p, hrt.prefab.Material) == null) {
+				index = (p.parent?.children.indexOf(p) ?? 0 ) + 1;
+				p = p.parent;
+			}
+			parent = p;
+			if (parent == null) {
+				ide.quickError("Please drop the shadergraph on a valid parent in the scene tree");
 				return null;
 			}
+
+			var shgraph = new hrt.prefab.DynamicShader(null, null);
+			shgraph.source = relative;
+			shgraph.name = new haxe.io.Path(relative).file;
+			prefab = shgraph;
+		}
+		else if(ptype != null) {
+			var ref = new hrt.prefab.Reference(null, null);
+			ref.source = relative;
 
 			prefab = ref;
 			prefab.name = new haxe.io.Path(relative).file;
 		}
 		else if(haxe.io.Path.extension(path).toLowerCase() == "json") {
-			prefab = new hrt.prefab.l3d.Particles3D(parent, null);
+			prefab = new hrt.prefab.l3d.Particles3D(null, null);
 			prefab.source = relative;
 			prefab.name = new haxe.io.Path(relative).file;
 		}
 		else {
-			var model = new hrt.prefab.Model(parent, null);
+			var model = new hrt.prefab.Model(null, null);
 			model.source = relative;
 			prefab = model;
 		}
-		return [prefab];
+
+		if (prefab == null)
+			return null;
+
+		prefab.parent = parent;
+		parent.children.remove(prefab);
+		parent.children.insert(index, prefab);
+
+		var ref = Std.downcast(prefab, Reference);
+		if (ref != null && (ref.hasCycle() || ref.source == @:privateAccess view.state.path) ) {
+			parent.children.remove(ref);
+			hide.Ide.inst.quickError('Reference to $relative is creating a cycle. The reference creation was aborted.');
+			return null;
+		}
+
+		return prefab;
 	}
 
 	function dropElements(paths: Array<String>, parent: PrefabElement) {
@@ -3502,18 +3513,16 @@ class SceneEditor {
 
 		var elts: Array<PrefabElement> = [];
 		for(path in paths) {
-			var prefabs = createDroppedElement(path, parent);
-			for (prefab in prefabs) {
-				if (prefab == null) {
-					continue;
-				}
-				var obj3d= Std.downcast(prefab, Object3D);
-				if (obj3d != null) {
-					obj3d.setTransform(localMat);
-				}
-				autoName(prefab);
-				elts.push(prefab);
+			var prefab = createDroppedElement(path, parent);
+			if (prefab == null) {
+				return;
 			}
+			var obj3d= Std.downcast(prefab, Object3D);
+			if (obj3d != null) {
+				obj3d.setTransform(localMat);
+			}
+			autoName(prefab);
+			elts.push(prefab);
 		}
 
 		beginRebuild();

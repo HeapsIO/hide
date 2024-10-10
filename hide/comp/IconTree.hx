@@ -276,6 +276,22 @@ class IconTree<T:{}> extends Component {
 		return i == null ? null : getValue(i);
 	}
 
+	public function getCurrentHover() : Null<T> {
+		var elem = element.get(0).querySelectorAll(".jstree-anchor");
+		var id = null;
+		for (e in elem) {
+			if (untyped e.matches(":hover")) {
+				id = untyped e.id;
+				break;
+			}
+		}
+		if( id == null )
+			return null;
+		var trueId = StringTools.replace(id, "_anchor", "");
+		var i = map.get(trueId);
+		return i == null ? null : getValue(i);
+	}
+
 	public function setSelection( objects : Array<T> ) {
 		(element:Dynamic).jstree('deselect_all');
 		var ids = [for( o in objects ) { var v = getRev(o); if( v != null ) v.id; }];
