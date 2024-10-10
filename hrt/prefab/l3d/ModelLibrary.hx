@@ -138,6 +138,7 @@ class ModelLibShader extends hxsl.Shader {
 		@const var singleTexture : Bool;
 		@const var hasNormal : Bool;
 		@const var hasPbr : Bool;
+		@const var AUTO_LOD : Bool;
 
 		@param var texture : Sampler2D;
 		@param var normalMap : Sampler2D;
@@ -186,17 +187,31 @@ class ModelLibShader extends hxsl.Shader {
 			calculatedUV = calculatedUV * uvTransform.zw + uvTransform.xy;
 		}
 
+		function getTexture(sampler : Sampler2D, uv : Vec2) : Vec4 {
+			if ( AUTO_LOD )
+				return sampler.get(uv);
+			else
+				return sampler.getLod(uv, mipLevel);
+		}
+
+		function getTextureArray(sampler : Sampler2DArray, uv : Vec3) : Vec4 {
+			if ( AUTO_LOD )
+				return sampler.get(uv);
+			else
+				return sampler.getLod(uv, mipLevel);
+		}
+
 		function __init__fragment() {
-			pixelColor = singleTexture ? texture.getLod(calculatedUV, 0.0) : textures.getLod(vec3(calculatedUV, libraryParams.x), 0.0);
+			pixelColor = singleTexture ? getTexture(texture, calculatedUV) : getTextureArray(textures, vec3(calculatedUV, libraryParams.x));
 			if( hasNormal ) {
 				var n = transformedNormal;
-				var nf = unpackNormal(singleTexture ? normalMap.getLod(calculatedUV, mipLevel) : normalMaps.getLod(vec3(calculatedUV, libraryParams.x), mipLevel));
+				var nf = unpackNormal(singleTexture ? getTexture(normalMap, calculatedUV) : getTextureArray(normalMaps, vec3(calculatedUV, libraryParams.x)));
 				var tanX = transformedTangent.xyz.normalize();
 				var tanY = n.cross(tanX) * -transformedTangent.w;
 				transformedNormal = (nf.x * tanX + nf.y * tanY + nf.z * n).normalize();
 			}
 			if( hasPbr ) {
-				var v = singleTexture ? specular.getLod(calculatedUV, mipLevel) : speculars.getLod(vec3(calculatedUV, libraryParams.x), mipLevel);
+				var v = singleTexture ? getTexture(specular, calculatedUV) : getTextureArray(speculars, vec3(calculatedUV, libraryParams.x));
 				unpackPBR(v);
 			}
 		}
@@ -230,11 +245,12 @@ class ModelLibrary extends Prefab {
 	@:s var mipLevels : Int = 1;
 	@:s var compress : Bool = true;
 	@:s var version : Int = 0;
+	@:s var atlasResolution = 4096;
+	@:s var autoLod : Bool = false;
 
 	public static inline var CURRENT_VERSION = 1;
 
 	var cache : ModelLibraryCache;
-	var btSize = 4096;
 	var errors = [];
 
 	var killAlpha = new h3d.shader.KillAlpha(0.5);
@@ -515,7 +531,7 @@ class ModelLibrary extends Prefab {
 					}
 				}
 				if( pos == null ) {
-					var b = new h3d.mat.BigTexture(textures.length, btSize >> mipLevel, 0);
+					var b = new h3d.mat.BigTexture(textures.length, atlasResolution >> mipLevel, 0);
 					textures.push(b);
 					pos = b.add(mipLevelImage);
 					posTex = b;
@@ -530,7 +546,7 @@ class ModelLibrary extends Prefab {
 				function packSub(textures:Array<h3d.mat.BigTexture>, tex : h3d.mat.Texture, isSpec ) {
 					var t = textures[posTex.id];
 					if( t == null ) {
-						t = new h3d.mat.BigTexture(textures.length, btSize >> mipLevel, isSpec ? 0xFFFFFF : 0xFF8080FF);
+						t = new h3d.mat.BigTexture(textures.length, atlasResolution >> mipLevel, isSpec ? 0xFFFFFF : 0xFF8080FF);
 						textures[posTex.id] = t;
 					}
 					var inf = realTex.getInfo();
@@ -943,6 +959,7 @@ class ModelLibrary extends Prefab {
 			cache.shader.mipEnd = mipEnd;
 			cache.shader.mipPower = mipPower;
 			cache.shader.mipNumber = mipLevels;
+			cache.shader.AUTO_LOD = autoLod;
 			var tex = shared.loadTexture(shared.getPrefabDatPath("texture","dds",this.name));
 			var tnormal = try shared.loadTexture(shared.getPrefabDatPath("normal","dds",this.name)) catch( e : hxd.res.NotFound ) null;
 			var tspec = try shared.loadTexture(shared.getPrefabDatPath("specular","dds",this.name)) catch( e : hxd.res.NotFound ) null;
@@ -1022,7 +1039,7 @@ class ModelLibrary extends Prefab {
 
 	public function emit(bk : MaterialMesh, batch : h3d.scene.MeshBatch, ?absPos : h3d.Matrix, emitCountTip = -1, ?flags : haxe.EnumFlags<h3d.scene.MeshBatch.MeshBatchFlag> ) {
 		cache.shader.uvTransform.set(bk.mat.uvX, bk.mat.uvY, bk.mat.uvSX, bk.mat.uvSY);
-		cache.shader.libraryParams.set(bk.mat.texId, 1.0 / btSize / bk.mat.uvSX, 0.0, 0.0);
+		cache.shader.libraryParams.set(bk.mat.texId, 1.0 / atlasResolution / bk.mat.uvSX, 0.0, 0.0);
 		if ( batch.primitiveSubPart == null ) {
 			batch.primitiveSubPart = new h3d.scene.MeshBatch.MeshBatchPart();
 			batch.begin(emitCountTip, flags);
@@ -1079,6 +1096,7 @@ class ModelLibrary extends Prefab {
 		ectx.properties.add(new hide.Element('
 		<div class="group" name="Params">
 			<dl>
+				<dt>Auto texture lod</dt><dd><input type="checkbox" field="autoLod"/></dd>
 				<dt>Miplevels</dt><dd><input type="range" step="1" field="mipLevels"/></dd>
 				<dt>Distance start</dt><dd><input type="range" field="mipStart"/></dd>
 				<dt>Distance end</dt><dd><input type="range" field="mipEnd"/></dd>
