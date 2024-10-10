@@ -14,6 +14,7 @@ common.hxml
 --macro include("hxd.earcut")
 --macro include("hide.view")
 --macro include("hide.prefab")
+--macro include("hide.tools")
 --macro include("hrt")
 -dce no
 -debug
