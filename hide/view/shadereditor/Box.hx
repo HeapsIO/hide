@@ -286,17 +286,18 @@ class Box {
 			nameWidth = domName.getBBox().width;
 		}
 		if (valueDefault != null) {
-			var widthInput = width / 2 * 0.7;
+			var widthInput = 35;
 			var fObject = editor.editorDisplay.foreignObject(
 				node,
-				nameWidth + NODE_TITLE_PADDING + NODE_INPUT_PADDING,
-				nodeHeight - 9,
+				- (widthInput + NODE_INPUT_PADDING + NODE_RADIUS),
+				nodeHeight - 8,
 				widthInput,
-				20
+				16
 			).addClass("input-field");
-			new Element('<input type="text" style="width: ${widthInput - 7}px" value="${valueDefault}" />')
+			var container = new Element('<div>').addClass("container").appendTo(fObject);
+			new Element('<input type="text" value="${valueDefault}" />')
 				.mousedown((e) -> e.stopPropagation())
-				.appendTo(fObject);
+				.appendTo(container);
 		}
 
 		inputs.push(nodeCircle);

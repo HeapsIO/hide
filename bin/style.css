@@ -7,9 +7,19 @@
 }
 @font-face {
   font-family: 'Inter';
-  src: url('res/Inter-Medium.ttf');
+  src: url('res/InterVariable.woff2') format("woff2");
   font-weight: normal;
   font-style: normal;
+  font-weight: 100 900;
+  font-display: swap;
+}
+@font-face {
+  font-family: 'Inter';
+  src: url('res/InterVariable-Italic.woff2') format("woff2");
+  font-weight: normal;
+  font-style: italic;
+  font-weight: 100 900;
+  font-display: swap;
 }
 body {
   margin: 0;
@@ -1882,6 +1892,9 @@ input[type=checkbox]:checked:after {
   display: flex;
   flex-direction: row;
 }
+.shader-editor * {
+  font-family: "Inter";
+}
 .shader-editor #preview {
   z-index: 3;
   position: absolute;
@@ -1930,11 +1943,14 @@ input[type=checkbox]:checked:after {
   display: flex;
   flex-direction: column;
   overflow-y: auto;
-  gap: 3px;
+  gap: 1px;
+  box-sizing: border-box;
+  width: 100%;
 }
 .shader-editor #rightPanel .hide-block #parametersList .parameter {
-  border: 1px solid;
+  border: 1px solid #272727;
   background-color: #222;
+  position: relative;
   /*.content {
 						background-color: #b3b3b3;
 						padding: 5px;
@@ -1965,6 +1981,9 @@ input[type=checkbox]:checked:after {
 						}
 					}*/
 }
+.shader-editor #rightPanel .hide-block #parametersList .parameter .hide-range {
+  display: block;
+}
 .shader-editor #rightPanel .hide-block #parametersList .parameter.hovertop:before,
 .shader-editor #rightPanel .hide-block #parametersList .parameter.hoverbot:after {
   display: block;
@@ -1975,32 +1994,46 @@ input[type=checkbox]:checked:after {
   content: "";
 }
 .shader-editor #rightPanel .hide-block #parametersList .parameter:before {
-  border-top: 5px solid red;
-  top: -10px;
+  border-top: 10px solid rgba(114, 180, 255, 0.75);
+  top: 0px;
+  pointer-events: none;
 }
 .shader-editor #rightPanel .hide-block #parametersList .parameter:after {
-  border-bottom: 5px solid purple;
-  bottom: -10px;
+  border-bottom: 10px solid rgba(114, 180, 255, 0.75);
+  bottom: 0px;
+  pointer-events: none;
 }
 .shader-editor #rightPanel .hide-block #parametersList .parameter .header {
-  background-color: #d6d6d6;
+  display: flex;
+  align-items: center;
+  line-height: 0px;
+  background-color: #393939;
   height: 20px;
-  padding: 5px;
-  color: black;
+  padding: 1px;
+  color: #c3c3c3;
   cursor: pointer;
 }
-.shader-editor #rightPanel .hide-block #parametersList .parameter .header .title {
-  float: left;
+.shader-editor #rightPanel .hide-block #parametersList .parameter .header .ico {
+  font-size: 8pt;
+  width: 16px;
+  text-align: center;
 }
-.shader-editor #rightPanel .hide-block #parametersList .parameter .header .title input {
-  width: 130px;
+.shader-editor #rightPanel .hide-block #parametersList .parameter .header .input-title {
+  flex: 1 0 130px;
+  background: none;
+  border: none;
+  width: 100%;
+  padding: 0;
+  margin: 0;
+}
+.shader-editor #rightPanel .hide-block #parametersList .parameter .header .input-title:hover {
+  background-color: rgba(114, 180, 255, 0.5);
 }
 .shader-editor #rightPanel .hide-block #parametersList .parameter .header .type {
-  float: right;
-}
-.shader-editor #rightPanel .hide-block #parametersList .parameter .header .type span {
-  color: black;
+  flex-grow: 1;
+  text-align: right;
   font-style: italic;
+  font-weight: 300;
   font-size: 13px;
   padding-right: 5px;
 }
@@ -2024,7 +2057,7 @@ input[type=checkbox]:checked:after {
   box-sizing: border-box;
 }
 .shader-editor #rightPanel .options-block > div {
-  border: 1px solid #666;
+  border: 1px solid #444;
   padding: 2px;
 }
 /* Texture Editor */
@@ -2263,6 +2296,24 @@ input[type=checkbox]:checked:after {
 .graph-view .heaps-scene svg {
   font-family: 'Inter';
 }
+.graph-view .heaps-scene svg foreignObject .container {
+  padding: 1px;
+}
+.graph-view .heaps-scene svg foreignObject .container input {
+  display: block;
+  box-sizing: border-box;
+  font-size: 8pt;
+  font-family: 'Inter';
+  padding: 0px 2px 0px 2px;
+  text-align: right;
+  border: none;
+  outline: 1px solid #393939;
+  width: 100%;
+  height: 100%;
+}
+.graph-view .heaps-scene svg foreignObject .container input:hover {
+  outline-color: rgba(114, 180, 255, 0.5);
+}
 .graph-view .heaps-scene svg g.selected .outline {
   stroke: #668fff;
 }
@@ -2426,6 +2477,9 @@ input[type=checkbox]:checked:after {
   fill: #ffffff;
   stroke: none;
   font-size: 8px;
+}
+.graph-view .heaps-scene #add-menu {
+  font-family: 'Inter';
 }
 .graph-view .paramVisible {
   color: black!important;

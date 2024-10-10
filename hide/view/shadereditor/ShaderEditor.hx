@@ -736,12 +736,10 @@ class ShaderEditor extends hide.view.FileView implements GraphInterface.IGraphEd
 		}
 
 		var header = new Element('<div class="header">
-									<div class="title">
-										<i class="ico ico-chevron-right" ></i>
-										<input class="input-title" type="input" value="${parameter.name}" />
-									</div>
+									<i class="ico ico-angle-right" ></i>
+									<input class="input-title" type="input" value="${parameter.name}" />
 									<div class="type">
-										<span>${typeName}</span>
+										${typeName}
 									</div>
 								</div>');
 
@@ -901,29 +899,16 @@ class ShaderEditor extends hide.view.FileView implements GraphInterface.IGraphEd
 	}
 
 	function toggleParameter( elt : JQuery, ?b : Bool) {
-		if (b != null) {
-			if (b) {
-				elt.find(".content").show();
-				var icon = elt.find(".ico");
-				icon.removeClass("ico-chevron-right");
-				icon.addClass("ico-chevron-down");
-			} else {
-				elt.find(".content").hide();
-				var icon = elt.find(".ico");
-				icon.addClass("ico-chevron-right");
-				icon.removeClass("ico-chevron-down");
-			}
-		} else {
-			elt.find(".content").toggle();
-			var icon = elt.find(".ico");
-			if (icon.hasClass("ico-chevron-right")) {
-				icon.removeClass("ico-chevron-right");
-				icon.addClass("ico-chevron-down");
-			} else {
-				icon.addClass("ico-chevron-right");
-				icon.removeClass("ico-chevron-down");
-			}
+		var icon = elt.find(".ico");
+		if (b == null) {
+			b = !icon.hasClass("fa-rotate-90");
 		}
+		if (b)
+			elt.find(".content").show();
+		else
+			elt.find(".content").hide();
+
+		icon.toggleClass("fa-rotate-90", b);
 	}
 
 	function execMoveParameterTo(paramA: Parameter, paramB: Parameter, after: Bool) {

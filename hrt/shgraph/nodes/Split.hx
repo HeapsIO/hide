@@ -5,6 +5,7 @@ using hxsl.Ast;
 @name("Split")
 @description("Split all components of a vector into floats")
 @group("Channel")
+@width(80)
 class Split extends ShaderNodeHxsl {
 
 	static var SRC = {

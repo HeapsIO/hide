@@ -10,9 +10,20 @@
 
 @font-face {
 	font-family: 'Inter';
-	src: url('res/Inter-Medium.ttf');
+	src: url('res/InterVariable.woff2') format("woff2");
 	font-weight: normal;
 	font-style: normal;
+	font-weight: 100 900;
+	font-display: swap;
+}
+
+@font-face {
+	font-family: 'Inter';
+	src: url('res/InterVariable-Italic.woff2') format("woff2");
+	font-weight: normal;
+	font-style: italic;
+	font-weight: 100 900;
+	font-display: swap;
 }
 
 body {
@@ -2105,8 +2116,13 @@ input[type=checkbox] {
 
 /* Shader Editor */
 .shader-editor {
+
 	display: flex;
 	flex-direction: row;
+
+	* {
+		font-family: "Inter";
+	}
 
 	#preview {
 		z-index: 3;
@@ -2165,11 +2181,18 @@ input[type=checkbox] {
 				display: flex;
 				flex-direction: column;
 				overflow-y: auto;
-				gap: 3px;
+				gap: 1px;
+				box-sizing: border-box;
+				width: 100%;
 
 				.parameter {
-					border: 1px solid;
+					border: 1px solid #272727;
 					background-color: #222;
+					position: relative;
+
+					.hide-range {
+						display: block;
+					}
 
 					&.hovertop:before, &.hoverbot:after {
 						display: block;
@@ -2181,39 +2204,54 @@ input[type=checkbox] {
 					}
 
 					&:before {
-						border-top: 5px solid red;
-						top: -10px;
+						border-top: 10px solid rgba(114, 180, 255, 0.75);
+						top: 0px;
+						pointer-events: none;
 					}
 
 					&:after {
-						border-bottom: 5px solid purple;
-						bottom: -10px;
+						border-bottom: 10px solid rgba(114, 180, 255, 0.75);
+						bottom: 0px;
+						pointer-events: none;
 					}
 
 
 					.header {
-						background-color: #d6d6d6;
+						display: flex;
+						align-items: center;
+						line-height: 0px;
+						background-color: #393939;
 						height: 20px;
-						padding: 5px;
-						color: black;
+						padding: 1px;
+						color: #c3c3c3;
 						cursor: pointer;
 
-						.title {
-							float: left;
-							input {
-								width: 130px;
+						.ico {
+							font-size: 8pt;
+							width: 16px;
+							text-align: center;
+						}
+
+						.input-title {
+							flex: 1 0 130px;
+							background: none;
+							border: none;
+							width: 100%;
+							padding: 0;
+							margin: 0;
+							&:hover {
+								background-color: rgba(114, 180, 255, 0.5);
 							}
 						}
 
 						.type {
-							float: right;
+							flex-grow: 1;
+							text-align: right;
 
-							span {
-								color: black;
-								font-style: italic;
-								font-size: 13px;
-								padding-right: 5px;
-							}
+							font-style: italic;
+							font-weight: 300;
+							font-size: 13px;
+							padding-right: 5px;
 						}
 					}
 
@@ -2272,7 +2310,7 @@ input[type=checkbox] {
 			}
 
 			& > div {
-				border: 1px solid #666;
+				border: 1px solid #444;
 				padding: 2px;
 			}
 		}
@@ -2561,6 +2599,33 @@ input[type=checkbox] {
 		svg {
 
 			font-family: 'Inter';
+
+			foreignObject {
+
+				.container {
+					padding: 1px;
+
+					input {
+						display: block;
+						box-sizing: border-box;
+						font-size: 8pt;
+						font-family: 'Inter';
+						padding: 0px 2px 0px 2px;
+						text-align: right;
+						border: none;
+						outline: 1px solid #393939;
+						width: 100%;
+						height: 100%;
+
+						&:hover {
+							outline-color: rgba(114, 180, 255, 0.5);
+						}
+					}
+				}
+
+
+			}
+
 			g {
 				&.selected {
 					.outline {
@@ -2771,6 +2836,10 @@ input[type=checkbox] {
 				stroke: none;
 				font-size: 8px;
 			}
+		}
+
+		#add-menu {
+			font-family: 'Inter';
 		}
 	}
 	.paramVisible {
