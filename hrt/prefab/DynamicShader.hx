@@ -135,14 +135,6 @@ class DynamicShader extends Shader {
 			</dl>
 			</div>');
 
-			if (StringTools.endsWith(source, ".shgraph")) {
-				var res = hxd.res.Loader.currentInstance.load(source);
-				var shgraph = Std.downcast(res.toPrefab().load(), hrt.shgraph.ShaderGraph);
-				if (shgraph == null) {
-					element.append(new hide.Element('<p>The given shadergraph is corrupted</p>'));
-				}
-			}
-
 			ectx.properties.add(element, this, function(pname) {
 				ectx.onChange(this, pname);
 				if (pname == "source") {
@@ -151,6 +143,28 @@ class DynamicShader extends Shader {
 						ectx.rebuildPrefab(this);
 				}
 			});
+
+			if (StringTools.endsWith(source, ".shgraph")) {
+				var res = hxd.res.Loader.currentInstance.load(source);
+				var shgraph = Std.downcast(res.toPrefab().load(), hrt.shgraph.ShaderGraph);
+				if (shgraph == null) {
+					element.append(new hide.Element('<p>The given shadergraph is corrupted</p>'));
+				}
+
+				var field : hide.comp.PropsEditor.PropsField = cast (element.find("[field=source]")[0]:Dynamic).propsField;
+				@:privateAccess field.fselect.onView = () -> {
+					var path = field.fselect.getFullPath();
+					hide.Ide.inst.openFile(path, null, (v) -> {
+						var sheditor : hide.view.shadereditor.ShaderEditor = cast v;
+						var renderProps = shared.editor.renderPropsRoot?.source;
+						sheditor.setPrefabAndRenderDelayed(shared.currentPath,renderProps);
+					});
+				}
+			}
+
+
+
+
 		}
 
 		super.edit(ectx);

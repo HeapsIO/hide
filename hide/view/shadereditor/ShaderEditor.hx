@@ -277,6 +277,8 @@ class ShaderEditor extends hide.view.FileView implements GraphInterface.IGraphEd
 	var meshPreviewRenderPropsRoot : h3d.scene.Object;
 
 	var parametersList : JQuery;
+
+	var previewElem : Element;
 	var draggedParamId : Int;
 
 	var defaultLight : hrt.prefab.Light;
@@ -427,6 +429,39 @@ class ShaderEditor extends hide.view.FileView implements GraphInterface.IGraphEd
 		graphEditor.onNodePreviewUpdate = onNodePreviewUpdate;
 
 		initMeshPreview();
+	}
+
+	override function onDragDrop(items : Array<String>, isDrop : Bool) {
+
+		if (previewElem.get(0).matches(":hover")) {
+			for (item in items) {
+				if (StringTools.endsWith(item, ".prefab") || StringTools.endsWith(item, ".fx")) {
+					var renderProp = config.getLocal("scene.renderProps");
+					var renderProps : Array<String> = renderProp is String ? [renderProp] : cast renderProp;
+					if (renderProps.contains(item)) {
+						if (isDrop) {
+							previewSettings.renderPropsPath = item;
+							refreshRenderProps();
+						}
+						return true;
+					}
+					else {
+						if (isDrop) {
+							setMeshPreviewPrefab(item);
+						}
+						return true;
+					}
+				}
+				else if (StringTools.endsWith(item, ".fbx")) {
+					if (isDrop) {
+						setMeshPreviewFBX(item);
+					}
+					return true;
+				}
+			}
+		}
+
+		return false;
 	}
 
 	override function onActivate() {
@@ -971,12 +1006,12 @@ class ShaderEditor extends hide.view.FileView implements GraphInterface.IGraphEd
 		if (meshPreviewScene != null) {
 			meshPreviewScene.element.remove();
 		}
-		var container = new Element('<div id="preview"></div>').appendTo(graphEditor.element);
-		meshPreviewScene = new hide.comp.Scene(config, null, container);
+		previewElem = new Element('<div id="preview"></div>').appendTo(graphEditor.element);
+		meshPreviewScene = new hide.comp.Scene(config, null, previewElem);
 		meshPreviewScene.onReady = onMeshPreviewReady;
 		meshPreviewScene.onUpdate = onMeshPreviewUpdate;
 
-		var toolbar = new Element('<div class="hide-toolbar2"></div>').appendTo(container);
+		var toolbar = new Element('<div class="hide-toolbar2"></div>').appendTo(previewElem);
 		var group = new Element('<div class="tb-group"></div>').appendTo(toolbar);
 		var menu = new Element('<div class="button2 transparent" title="More options"><div class="ico ico-navicon"></div></div>');
 		menu.appendTo(group);
@@ -997,9 +1032,25 @@ class ShaderEditor extends hide.view.FileView implements GraphInterface.IGraphEd
 				{label: "Render Settings", menu: [
 					{label: "Background Color", click: openBackgroundColorMenu},
 					{label: "Render Props", click: selectRenderProps},
+					{label: "Clear Render Props", click: clearRenderProps},
+
 				]}
 			]);
 		});
+	}
+
+	public function setPrefabAndRenderDelayed(prefab: String, renderProps: String) {
+		if (previewSettings == null)
+			loadSettings();
+		previewSettings.meshPath = prefab;
+		previewSettings.renderPropsPath = renderProps;
+		saveSettings();
+	}
+
+	public function clearRenderProps() {
+		previewSettings.renderPropsPath = null;
+		refreshRenderProps();
+		saveSettings();
 	}
 
 	public function selectRenderProps() {
@@ -1068,6 +1119,11 @@ class ShaderEditor extends hide.view.FileView implements GraphInterface.IGraphEd
 			}
 		}
 		meshPreviewScene.engine.backgroundColor = previewSettings.bgColor;
+
+		var anims = meshPreviewRoot3d.findAll((f) -> Std.downcast(f, hrt.prefab.fx.FX.FXAnimation));
+		for (anim in anims) {
+			@:privateAccess anim.setTime(meshPreviewScene.s3d.renderer.ctx.time % anim.duration, true);
+		}
 	}
 
 	public function refreshRenderProps() {
@@ -1095,7 +1151,7 @@ class ShaderEditor extends hide.view.FileView implements GraphInterface.IGraphEd
 		ctx.scene = meshPreviewScene;
 		meshPreviewRenderProps.setSharedRec(ctx);
 		meshPreviewRenderProps.make();
-		var renderProps = meshPreviewRenderProps.getOpt(hrt.prefab.RenderProps);
+		var renderProps = meshPreviewRenderProps.getOpt(hrt.prefab.RenderProps, true);
 		if (renderProps != null)
 			renderProps.applyProps(meshPreviewScene.s3d.renderer);
 	}
@@ -1180,11 +1236,7 @@ class ShaderEditor extends hide.view.FileView implements GraphInterface.IGraphEd
 	}
 
 	public function resetPreviewCamera() {
-		var bounds = new h3d.col.Bounds();
-		for (mesh in meshPreviewMeshes) {
-			var b = mesh.getBounds();
-			bounds.add(b);
-		}
+		var bounds = meshPreviewRoot3d.getBounds();
 		var sp = bounds.toSphere();
 		meshPreviewCameraController.set(sp.r * 3.0, Math.PI / 4, Math.PI * 5 / 13, sp.getCenter());
 	}
@@ -1226,6 +1278,7 @@ class ShaderEditor extends hide.view.FileView implements GraphInterface.IGraphEd
 
 	public function setMeshPreviewPrefab(str: String) {
 		cleanupPreview();
+		meshPreviewScene.setCurrent();
 
 		try {
 			meshPreviewPrefab = Ide.inst.loadPrefab(str);
@@ -1280,6 +1333,7 @@ class ShaderEditor extends hide.view.FileView implements GraphInterface.IGraphEd
 		var moved = false;
 		meshPreviewCameraController = new PreviewCamController(meshPreviewScene.s3d);
 		meshPreviewRoot3d = new h3d.scene.Object(meshPreviewScene.s3d);
+
 		loadMeshPreviewFromString(previewSettings.meshPath);
 		refreshRenderProps();
 	}
@@ -1345,11 +1399,6 @@ class ShaderEditor extends hide.view.FileView implements GraphInterface.IGraphEd
 		@:privateAccess
 		if (meshPreviewScene.s3d != null) {
 			meshPreviewScene.s3d.renderer.ctx.time = graphEditor.previewsScene.s3d.renderer.ctx.time;
-
-			var anims = meshPreviewRoot3d.findAll((f) -> Std.downcast(f, hrt.prefab.fx.FX.FXAnimation));
-			for (anim in anims) {
-				anim.setTime(meshPreviewScene.s3d.renderer.ctx.time % anim.duration, true);
-			}
 		}
 
 		return true;

@@ -26,7 +26,7 @@ class FileSelect extends Component {
 			e.preventDefault();
 			var fpath = getFullPath();
 			new ContextMenu([
-				{ label : "View", enabled : fpath != null, click : function() ide.openFile(fpath) },
+				{ label : "View", enabled : fpath != null, click : function() onView() },
 				{ label : "Clear", enabled : path != null, click : function() { path = null; onChange(); } },
 				{ label : "Copy Path", enabled : path != null, click : function() ide.setClipboard(path) },
 				{ label : "Copy Absolute Path", enabled : fpath != null, click : function() { ide.setClipboard(fpath); } },
@@ -58,6 +58,10 @@ class FileSelect extends Component {
 		root.on("drop", function(e) {
 			root.removeClass("dragover");
 		});
+	}
+
+	public dynamic function onView() {
+		ide.openFile(getFullPath());
 	}
 
 	public function onDragDrop( items : Array<String>, isDrop : Bool ) : Bool {
