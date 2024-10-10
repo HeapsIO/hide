@@ -81,7 +81,7 @@ class DynamicShader extends Shader {
 				var res = hxd.res.Loader.currentInstance.load(source);
 				var shgraph = Std.downcast(res.toPrefab().load(), hrt.shgraph.ShaderGraph);
 				if (shgraph == null)
-					throw source + " is not a valid shadergraph";
+					return;
 				shaderDef = shgraph.compile(null);
 				#if !editor
 				res.watch( function() {
@@ -134,6 +134,14 @@ class DynamicShader extends Shader {
 				<dt>Path</dt><dd><input type="fileselect" extensions="shgraph" field="source"/></dd>
 			</dl>
 			</div>');
+
+			if (StringTools.endsWith(source, ".shgraph")) {
+				var res = hxd.res.Loader.currentInstance.load(source);
+				var shgraph = Std.downcast(res.toPrefab().load(), hrt.shgraph.ShaderGraph);
+				if (shgraph == null) {
+					element.append(new hide.Element('<p>The given shadergraph is corrupted</p>'));
+				}
+			}
 
 			ectx.properties.add(element, this, function(pname) {
 				ectx.onChange(this, pname);
