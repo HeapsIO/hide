@@ -208,12 +208,11 @@ class Gradient {
 		var entry = cache.get(data);
 		if (entry != null)
 		{
-			if (entry.oldHash == hash) {
-				return entry.tex;
-			}
-			else {
-				entry.tex.dispose();
-			}
+            if (entry.oldHash != hash) {
+                entry.oldHash = hash;
+                entry.tex.realloc();
+            }
+            return entry.tex;
 		}
 		#end
 
@@ -224,9 +223,16 @@ class Gradient {
             #if !release
             var newHash = Gradient.getDataHash(data);
 
+            var cache = getEditorCache();
+            var entry = cache.get(data);
+            if (entry != null) {
+                if (entry.oldHash != newHash) {
+                    throw "gradient data has changed between first generation and realloc";
+                }
+            }
+
             // If this ever become an issue because we need this feature, we just need to deep copy 'data'
             // and use this copy in the genPixels function. But at this moment we consider that it's a bug
-            if(newHash != oldHash) throw "gradient data has changed between first generation and realloc";
             #end
             var xScale = data.isVertical ? 0 : 1;
             var yScale = 1 - xScale;
