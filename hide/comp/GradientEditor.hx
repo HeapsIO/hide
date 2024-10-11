@@ -82,9 +82,20 @@ class GradientBox extends Component {
                 {
                     label: "Paste", click: function() {
                         try {
-                            var data = haxe.Json.parse(ide.getClipboard());
-                            value = data;
-                            onChange(false);
+                            var text = ide.getClipboard();
+                            var data = haxe.Json.parse(text);
+                            if (Reflect.hasField(data, "stops")) {
+                                value = data;
+                                onChange(false);
+                            } else {
+                                var cdbGradient : cdb.Types.Gradient = cast data;
+                                var tmpValue = Gradient.getDefaultGradientData();
+                                for (i in 0...cdbGradient.data.colors.length) {
+                                    tmpValue.stops[i] = {color: cdbGradient.data.colors[i], position: cdbGradient.data.positions[i]};
+                                }
+                                value = tmpValue;
+                                onChange(false);
+                            }
                         } catch(_) {
 
                         }

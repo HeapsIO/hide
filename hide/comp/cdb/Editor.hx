@@ -455,7 +455,14 @@ class Editor extends Component {
 
 			// if we are a property or a list, fallback to the default case
 			if (col.type != TProperties && col.type != TList) {
-				var str = cursor.table.sheet.colToString(col, Reflect.field(data[0], colName), false);
+				var escape = switch(col.type) {
+					case TGradient, TCurve:
+						true;
+					default:
+						false;
+				};
+
+				var str = cursor.table.sheet.colToString(col, Reflect.field(data[0], colName), escape);
 
 				clipboard = {
 					data : data,
@@ -597,6 +604,25 @@ class Editor extends Component {
 					return value;
 				case TColor:
 					return stringToCol(text);
+				case TGradient:
+					try {
+						var json = haxe.Json.parse(text);
+						var grad : cdb.Types.Gradient = {colors: [], positions: []};
+						if (Reflect.hasField(json, "stops")) {
+							for (i => stop in (json.stops: Array<Dynamic>)) {
+								grad.data.colors[i] = stop.color;
+								grad.data.positions[i] = stop.position;
+							}
+						}
+						else if (Reflect.hasField(json, "colors") && Reflect.hasField(json, "positions")) {
+							grad.data.colors = json.colors;
+							grad.data.positions = json.positions;
+						}
+
+						return grad;
+					} catch (_) {
+						return null;
+					}
 				default:
 				}
 				return null;
