@@ -399,10 +399,18 @@ class Table extends Component {
 			return;
 		var subs = element.find("tr.separator");
 		var t = makeSeparatorTree(sheet.separators[sepIndex]);
+
+		// We need to open the separators starting from the first parent, else the columns get duplicated
+		var reverseParentList = [];
+
 		while( t.parent != null ) {
+			reverseParentList.unshift(t);
+			t = t.parent;
+		}
+
+		for (t in reverseParentList) {
 			if( isSepHidden(t.index) )
 				new Element(subs.get(t.index)).find("a.toggle").click();
-			t = t.parent;
 		}
 	}
 
