@@ -31,6 +31,7 @@ class TrailHead {
 enum TrailOrientation {
 	Camera;
 	Up(x : Float, y : Float, z : Float);
+	Right(x : Float, y : Float, z : Float);
 }
 
 enum UVMode {
@@ -99,6 +100,8 @@ class TrailObj extends h3d.scene.Mesh {
 	var subTrailChildIndices : Array<Int> = [];
 
 	static var tmpHead = new TrailPoint();
+	static var tmpNormal = new h3d.Vector();
+	static var tmpBinormal = new h3d.Vector();
 
 	public function set_numTrails(new_value : Int) : Int {
 		if (numTrails != new_value) {
@@ -243,7 +246,7 @@ class TrailObj extends h3d.scene.Mesh {
 		shader.uvRepeat = prefab.uvRepeat.getIndex();
 	}
 
-	var ux : Float =  0.0;
+	var ux : Float = 0.0;
 	var uy : Float = 0.0;
 	var uz : Float = 0.0;
 
@@ -272,7 +275,7 @@ class TrailObj extends h3d.scene.Mesh {
 				uy = vcamy * len;
 				uz = vcamz * len;
 			}
-			case Up(x, y, z): {
+			case Up(x, y, z), Right(x, y ,z): {
 				ux = x;
 				uy = y;
 				uz = z;
@@ -573,13 +576,13 @@ class TrailObj extends h3d.scene.Mesh {
 			baseScale.z = scale.z;
 		}
 
-		inline function addEdge( p : h3d.Vector, u : Float, w : Float, binormal : h3d.Vector ) {
+		inline function addEdge( p : h3d.Vector, u : Float, w : Float, normal : h3d.Vector, binormal : h3d.Vector ) {
 			buffer[count++] = p.x + binormal.x * w * baseScale.x;
 			buffer[count++] = p.y + binormal.y * w * baseScale.y;
 			buffer[count++] = p.z + binormal.z * w * baseScale.z;
-			buffer[count++] = ux;
-			buffer[count++] = uy;
-			buffer[count++] = uz;
+			buffer[count++] = normal.x;
+			buffer[count++] = normal.y;
+			buffer[count++] = normal.z;
 			buffer[count++] = u;
 			buffer[count++] = 0;
 
@@ -608,8 +611,12 @@ class TrailObj extends h3d.scene.Mesh {
 		}
 
 		var segmentIndex = 0;
-		var normal = new h3d.Vector(ux, uy, uz);
-		normal.normalize();
+
+		var orientRight = prefab.orientation.match(Right(_,_,_));
+		var customAxis = ( orientRight ) ? tmpBinormal : tmpNormal;
+		var computedAxis = ( orientRight ) ? tmpNormal : tmpBinormal;
+		customAxis.set(ux, uy, uz);
+		customAxis.normalize();
 
 		for (i in 0...numTrails) {
 			var trail = trails[i];
@@ -660,11 +667,11 @@ class TrailObj extends h3d.scene.Mesh {
 				}
 
 				var tangent = new h3d.Vector(cur.tx, cur.ty, cur.tz);
-				var binormal = normal.cross(tangent);
-				binormal.normalize();
+				computedAxis.load( customAxis.cross(tangent) );
+				computedAxis.normalize();
 
 				var p = new h3d.Vector(cur.x, cur.y, cur.z);
-				addEdge(p, u, cur.w, binormal);
+				addEdge( p, u, cur.w, tmpNormal, tmpBinormal );
 
 				if ( cur.next != null && cur.speed < prefab.maxSpeed && cur.speed > prefab.minSpeed )
 					addSegment( segmentIndex );
@@ -757,7 +764,7 @@ class Trails extends Object3D {
 		if (data.orientation == null)
 			return;
 
-		if (data?.orientation == 1) {
+		if (data?.orientation >= 1) {
 			if( Std.isOfType(data.orientationUpAxisX, String) )
 				this.orientation = TrailOrientation.createByIndex(data.orientation, [ Std.parseFloat(data.orientationUpAxisX), Std.parseFloat(data.orientationUpAxisY), Std.parseFloat(data.orientationUpAxisZ) ]);
 			else
@@ -776,7 +783,7 @@ class Trails extends Object3D {
 
 		switch (this.orientation) {
 			case Camera:
-			case Up(x, y, z):
+			case Up(x, y, z), Right(x, y, z):
 				obj.orientation = this.orientation.getIndex();
 				obj.orientationUpAxisX = x;
 				obj.orientationUpAxisY = y;
@@ -854,6 +861,7 @@ class Trails extends Object3D {
 			<select>
 				<option value=0>Camera</option>
 				<option value=1>Custom Up</option>
+				<option value=2>Custom Right</option>
 			</select>
 			<div id="up-axis">
 				<input id="x" type="number"/><input id="y" type="number"/><input id="z" type="number"/>
@@ -867,7 +875,7 @@ class Trails extends Object3D {
 
 		function updateOrientSelect() {
 			switch (this.orientation) {
-				case Up(x, y, z):
+				case Up(x, y, z), Right(x, y, z):
 					select.val(this.orientation.getIndex());
 					upAxisEl.css({ display:'flex' });
 					upAxisEl.find("#x").val(x);
@@ -885,11 +893,11 @@ class Trails extends Object3D {
 
 			function exec(undo:Bool) {
 				var v = undo ? oldValue : newValue;
-				if (v == 1) {
+				if (v >= 1) {
 					var x = Std.parseFloat(upAxisEl.find("#x").val());
 					var y = Std.parseFloat(upAxisEl.find("#y").val());
 					var z = Std.parseFloat(upAxisEl.find("#z").val());
-					this.orientation = TrailOrientation.createByIndex(1, [ Math.isNaN(x) ? 0 : x, Math.isNaN(y) ? 0 : y, Math.isNaN(z) ? 0 : z]);
+					this.orientation = TrailOrientation.createByIndex(v, [ Math.isNaN(x) ? 0 : x, Math.isNaN(y) ? 0 : y, Math.isNaN(z) ? 0 : z]);
 				}
 				else {
 					this.orientation = TrailOrientation.createByIndex(v);
