@@ -489,19 +489,19 @@ class Cell {
 			if( str.length > 50 ) str = str.substr(0, 47) + "...";
 			val(str);
 		case TGradient:
-			if (value.colors == null || value.positions == null || value.colors.length == 0 || value.colors.length != value.positions.length)
-				return val('#INVALID GRADIENT `${haxe.Json.stringify(value)}`');
+			if (v.colors == null || v.positions == null || v.colors.length == 0 || v.colors.length != v.positions.length)
+				return val('#INVALID GRADIENT `${haxe.Json.stringify(v)}`');
 			var fill = "";
 			function colorToCss(c: Int) {
 				var c = h3d.Vector4.fromColor(c);
 				return 'rgba(${c.r*255.0}, ${c.g*255.0}, ${c.b*255.0}, ${c.a})';
 			}
 
-			if (value.colors.length == 1) {
-				fill = colorToCss(value.colors[0]);
+			if (v.colors.length == 1) {
+				fill = colorToCss(v.colors[0]);
 			} else {
 				fill = 'linear-gradient( 0.25turn, ${[
-					for (i in 0...value.colors.length) '${colorToCss(value.colors[i])} ${value.positions[i] * 100}%'
+					for (i in 0...v.colors.length) '${colorToCss(v.colors[i])} ${v.positions[i] * 100}%'
 				].join(", ")})';
 			}
 
@@ -521,7 +521,7 @@ class Cell {
 
 			html(str);
 		case TCurve:
-			var curve = new cdb.Types.Curve(cast (value ?? []));
+			var curve = new cdb.Types.Curve(cast (v ?? []));
 			var nbPoints = curve.data.length;
 			if (nbPoints % 6 != 0)
 				return val('#INVALID CURVE DATA ($nbPoints not a multiple of 6)');
@@ -530,7 +530,6 @@ class Cell {
 			var data = "";
 
 			var prefab = new hrt.prefab.Curve(null, null);
-			var curve = new cdb.Types.Curve(cast value);
 			prefab.initFromCDB(curve);
 
 			var bounds = prefab.getBounds();
