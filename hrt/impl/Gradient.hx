@@ -216,11 +216,8 @@ class Gradient {
 		}
 		#end
 
-        #if !release
-        var oldHash = Gradient.getDataHash(data);
-        #end
         function genPixels() {
-            #if !release
+            #if editor
             var newHash = Gradient.getDataHash(data);
 
             var cache = getEditorCache();
