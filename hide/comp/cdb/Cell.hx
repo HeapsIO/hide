@@ -103,7 +103,16 @@ class Cell {
 		function displayError(msg:String) {
 			ide.quickError(msg);
 		}
-		var newV : Float = try editor.formulas.evalBlock(() -> f.call(line.obj))
+		var rootLine = line;
+		while(true) {
+			var t = Std.downcast(rootLine.table, SubTable);
+			if( t == null ) break;
+			rootLine = t.cell.line;
+		}
+		var newV : Float = try editor.formulas.evalBlock(() -> {
+			var obj = @:privateAccess editor.formulas.remap(rootLine.obj, table.sheet);
+			f.call(obj);
+		})
 		catch( e : hscript.Expr.Error ) { displayError(e.toString()); Math.NaN; }
 		catch( e : Dynamic ) { displayError(Std.string(e)); Math.NaN; }
 		if( newV != currentValue ) {
