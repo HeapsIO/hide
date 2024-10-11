@@ -2303,7 +2303,7 @@ class SceneEditor {
 			var newObj2d = Std.downcast(newElt, Object2D);
 			if( newObj2d != null ) {
 				var pt = new h2d.col.Point(scene.s2d.mouseX, scene.s2d.mouseY);
-				var l2d = parentEl.getLocal2d();
+				var l2d = getObject2d(parentEl);
 				l2d.globalToLocal(pt);
 				newObj2d.x = pt.x;
 				newObj2d.y = pt.y;
@@ -2871,6 +2871,10 @@ class SceneEditor {
 
 	public function getObject(elt: PrefabElement) {
 		return elt.getLocal3d() ?? root3d;
+	}
+
+	public function getObject2d(elt: PrefabElement) {
+		return elt.getLocal2d() ?? root2d;
 	}
 
 	public function getSelfObject(elt: PrefabElement) {
