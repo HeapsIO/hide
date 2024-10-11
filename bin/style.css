@@ -1125,6 +1125,9 @@ input[type=checkbox]:checked:after {
 .hide-properties input.small {
   width: 170px;
 }
+.hide-properties input[type=number].small {
+  width: 35px;
+}
 .hide-properties input[type=checkbox] {
   width: 13px;
 }
