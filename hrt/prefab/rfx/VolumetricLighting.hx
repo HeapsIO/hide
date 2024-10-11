@@ -244,13 +244,15 @@ class VolumetricLighting extends RendererFX {
 			if ( noiseTex == null )
 				noiseTex = makeNoiseTex();
 
-			var prevFilter = r.textures.depth.filter;
-			r.textures.depth.filter = Nearest;
+			var depth = r.textures.albedo.depthBuffer;
 
-			var halfDepth = r.allocTarget("halfDepth", false, 0.5, r.textures.depth.format);
+			var prevFilter = depth.filter;
+			depth.filter = Nearest;
+
+			var halfDepth = r.allocTarget("halfDepth", false, 0.5, depth.format);
 			halfDepth.filter = Nearest;
 			r.ctx.engine.pushTarget(halfDepth);
-			halfingDepthPass.shader.source = r.textures.depth;
+			halfingDepthPass.shader.source = depth;
 			halfingDepthPass.shader.texRatio = 2.0;
 			halfingDepthPass.render();
 			r.ctx.engine.popTarget();
@@ -326,11 +328,11 @@ class VolumetricLighting extends RendererFX {
 			upsamplingPass.pass.setBlendMode(b);
 			upsamplingPass.shader.source = tex;
 			upsamplingPass.shader.sourceDepth = halfDepth;
-			upsamplingPass.shader.destDepth = r.textures.depth;
+			upsamplingPass.shader.destDepth = depth;
 			upsamplingPass.shader.inverseProj = inverseProj;
 			upsamplingPass.render();
 
-			r.textures.depth.filter = prevFilter;
+			depth.filter = prevFilter;
 		}
 	}
 
