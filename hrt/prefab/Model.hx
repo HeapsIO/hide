@@ -90,6 +90,15 @@ class Model extends Object3D {
 		boundingSphere = null;
 	}
 
+	override function onEditorTreeChanged(child:Prefab):hrt.prefab.Prefab.TreeChangedResult {
+
+		// Correctly handle changes in hierachy in case the model has a default transform
+		if (Std.downcast(child, Object3D) != null) {
+			return Rebuild;
+		}
+		return super.onEditorTreeChanged(child);
+	}
+
     var polys3D = null;
     var boundingSphere = null;
     override function localRayIntersection(ray : h3d.col.Ray ) : Float {
