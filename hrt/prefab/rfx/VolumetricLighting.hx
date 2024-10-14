@@ -249,7 +249,7 @@ class VolumetricLighting extends RendererFX {
 			var prevFilter = depth.filter;
 			depth.filter = Nearest;
 
-			var halfDepth = r.allocTarget("halfDepth", false, 0.5, depth.format);
+			var halfDepth = r.allocTarget("halfDepth", false, 0.5, R32F);
 			halfDepth.filter = Nearest;
 			r.ctx.engine.pushTarget(halfDepth);
 			halfingDepthPass.shader.source = depth;
