@@ -24,6 +24,15 @@ class CdbTable extends hide.ui.View<{}> {
 		view = cast this.config.get("cdb.view");
 	}
 
+	override function destroy() {
+		if (editor != null) {
+			@:privateAccess editor.gradientEditor?.cleanupPreview();
+			editor.gradientEditor.remove();
+			editor.gradientEditor = null;
+		}
+		super.destroy();
+	}
+
 	public function goto2(rootSheet : cdb.Sheet, path: hide.comp.cdb.Editor.Path) {
 		var sheets = [for( s in getSheets() ) s.name];
 		var index = sheets.indexOf(rootSheet.name);

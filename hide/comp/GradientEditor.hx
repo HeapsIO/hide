@@ -11,6 +11,7 @@ import js.html.SelectElement;
 import js.html.PointerEvent;
 import h3d.Vector;
 import js.html.CanvasElement;
+using hide.tools.Extensions;
 
 class GradientBox extends Component {
     public var value(get, set) : GradientData;
@@ -130,6 +131,17 @@ class GradientEditor extends Popup {
     var interpolation : Element;
     var colorMode : Element;
 
+    var previewDiv : Element;
+    var previewScene : hide.comp.Scene = null;
+    var previewRoot2d : h2d.Object;
+    var previewRoot3d : h3d.scene.Object;
+    var previewPrefab : hrt.prefab.Prefab = null;
+    var previewSettings : PreviewSettings = null;
+    var previewBaseData: Dynamic = null;
+    var previewNeedRebuild : Bool = false;
+    var previewCurrentPath: String = null; // The path that this gradient editor is currently updating
+
+	public var keepPreviewAlive : Bool = false;
 
     var keys : hide.ui.Keys;
 
@@ -152,6 +164,8 @@ class GradientEditor extends Popup {
         super(parent);
 
         element.addClass("gradient-editor");
+
+        var firstGrid = new Element("<div>").appendTo(element);
 
         // Allows the popup to become focusable,
         // allowing the handling of keyboard events
@@ -178,7 +192,7 @@ class GradientEditor extends Popup {
             }
         });
 
-        gradientView = new GradientView(element);
+        gradientView = new GradientView(firstGrid);
         gradientView.element.height(90).width(256);
 
         var elem = gradientView.element.get(0);
@@ -214,7 +228,7 @@ class GradientEditor extends Popup {
         </filter>
         </defs>');
 
-        var editor = new Element("<div>").addClass("editor").appendTo(element);
+        var editor = new Element("<div>").addClass("editor").appendTo(firstGrid);
         stopEditor = new Element("<div>").addClass("stop-editor").appendTo(editor);
 
         stopLabel = new Element("<p>").appendTo(stopEditor);
@@ -326,6 +340,9 @@ class GradientEditor extends Popup {
         if(colorbox.isPickerOpen()) {
             colorbox.picker.close();
         }
+        if (!keepPreviewAlive) {
+            cleanupPreview();
+        }
         super.close();
     }
 
@@ -436,6 +453,22 @@ class GradientEditor extends Popup {
         isVerticalCheckbox.val('${innerValue.isVertical ? 1 : 0}');
         interpolation.val(innerValue.interpolation);
         colorMode.val('${innerValue.colorMode}');
+
+        if (previewCurrentPath != null) {
+            var customOverrides : Array<DataOverride> = [];
+            if (previewSettings.overrides != null) {
+                for (over in previewSettings.overrides) {
+                    if (over.cdbPath == previewCurrentPath) {
+                        customOverrides.push({
+                            cdbPath: "",
+                            targetPath: over.targetPath,
+                            type: "gradient",
+                        });
+                    }
+                }
+                updateOverrides(customOverrides, innerValue);
+            }
+        }
     }
 
     function removeStop(element : Element) {
@@ -484,6 +517,233 @@ class GradientEditor extends Popup {
             stopMarquers[i] = arr[i].marquer;
         }
     }
+
+    public function setPreview(previewSettings: PreviewSettings, baseData: Dynamic, currentPath: String) {
+        previewCurrentPath = currentPath;
+        if (previewDiv == null) {
+            initPreview();
+        }
+        setPreviewInternal(previewSettings, baseData);
+    }
+
+    function setPreviewInternal(newPreviewSettings: PreviewSettings, baseData: Dynamic) {
+        previewSettings = haxe.Json.parse(haxe.Json.stringify(newPreviewSettings));
+        this.previewBaseData = baseData;
+        if (previewScene?.s3d == null)
+            return;
+
+        previewRoot3d?.removeChildren();
+        previewRoot2d?.removeChildren();
+
+
+        @:privateAccess
+        {
+            previewScene.s3d.renderer.props = previewScene.s3d.renderer.getDefaultProps();
+
+            for(fx in previewScene.s3d.renderer.effects)
+                if ( fx != null )
+                    fx.dispose();
+            previewScene.s3d.renderer.effects = [];
+            var pbr = Std.downcast(previewScene.s3d.renderer, h3d.scene.pbr.Renderer);
+            pbr?.env = h3d.scene.pbr.Environment.getDefault();
+            previewScene.s3d.renderer.refreshProps();
+        }
+
+        previewRoot3d = previewRoot3d ?? new h3d.scene.Object(previewScene.s3d);
+        previewRoot2d = previewRoot2d ?? new h2d.Object(previewScene.s2d);
+
+        try {
+            if (StringTools.startsWith(previewSettings.prefab, "cdb@")) {
+                var namePath = StringTools.replace(previewSettings.prefab, "cdb@", "").split(".");
+                var currentProps = getObjectPathRec(namePath, baseData, true);
+                previewSettings.prefab = currentProps;
+            }
+            var res = hxd.res.Loader.currentInstance.load(previewSettings.prefab);
+            res.watch(() -> previewNeedRebuild = true);
+            var prefab = res.toPrefab().load();
+            prefab.shared.scene = previewScene;
+            var shared = new hrt.prefab.ContextShared(previewSettings.prefab, previewRoot2d, previewRoot3d);
+            previewPrefab = prefab.make(shared);
+
+
+            if (previewSettings.renderProps != null) {
+                var renderPropsPrefab = hxd.res.Loader.currentInstance.load(previewSettings.renderProps).toPrefab().load();
+                var shared = new hrt.prefab.ContextShared(previewSettings.renderProps, previewRoot2d, previewRoot3d);
+                renderPropsPrefab.shared.scene = previewScene;
+                renderPropsPrefab = renderPropsPrefab.make(shared);
+                var renderProps = @:privateAccess renderPropsPrefab.getOpt(hrt.prefab.RenderProps, true);
+			    if( renderProps != null ) {
+                    renderProps.applyProps(previewScene.s3d.renderer);
+                }
+            }
+        } catch(e) {
+            ide.error("Couln't load preview " + previewSettings.prefab + ", " + e.toString());
+            cleanupPreview();
+            return;
+        }
+
+        // Clenup scene if no prefab were created
+        // This allow the camera controllers to not update on envents
+        // if there is no prefab from the given scene
+        if (previewRoot3d.numChildren == 0) {
+            previewRoot3d.remove();
+            previewRoot3d = null;
+        }
+        if (previewRoot2d.numChildren == 0) {
+            previewRoot2d.remove();
+            previewRoot2d = null;
+        }
+        updateOverrides(this.previewSettings.overrides, this.previewBaseData);
+        previewNeedRebuild = false;
+    }
+
+    function updateOverrides(overrides: Array<DataOverride>, source: Dynamic) {
+        if (this.previewPrefab == null)
+            return;
+        previewScene.setCurrent();
+
+        var prefabToRefresh : Map<hrt.prefab.Prefab, Bool> = [];
+
+        for (dataOverride in overrides) {
+            var sourcePath = dataOverride.cdbPath;
+            var paths = sourcePath.split(".");
+            var current = source;
+            while(paths.length > 0) {
+                var name = paths.shift();
+                if (name.length <= 0)
+                    continue;
+                current = Reflect.getProperty(current, name);
+            }
+            var value : Dynamic = current;
+
+            var paths = dataOverride.targetPath.split(".");
+            var prefabPath = paths.shift().split("/");
+            var propPath = paths;
+
+            var errMessage = "Invalid prefab path " + dataOverride.targetPath + "( correct syntax : 'parent/child/subChild.prop.gradientProperty')";
+
+            var currentPrefabs = [previewPrefab];
+
+
+            while(prefabPath.length > 0) {
+                var nextCurrent = [];
+                var searchName = prefabPath.shift();
+
+                for (prefab in currentPrefabs) {
+                    if (searchName == "*") {
+                        nextCurrent = nextCurrent.concat(prefab.children);
+                    }
+                    else if (searchName == "**") {
+                        nextCurrent = nextCurrent.concat(prefab.flatten());
+                    }
+                    else {
+                        for (child in prefab) {
+                            if (child.name == searchName) {
+                                nextCurrent.push(child);
+                            }
+                        }
+                    }
+                }
+                currentPrefabs = nextCurrent;
+            }
+
+            for (prefab in currentPrefabs) {
+                prefabToRefresh.set(prefab, true);
+                var currentProps = getObjectPathRec(propPath, prefab, false);
+
+                if (value != null) {
+                    switch (dataOverride.type) {
+                        case null:
+                            Reflect.setField(currentProps, propPath[0], value);
+                        case "gradient":
+
+                            // convert from cdb to prefab gradient
+                            if (Reflect.hasField(value, "colors")) {
+                                var cdbGradient = value;
+                                var gradient = hrt.impl.Gradient.getDefaultGradientData();
+                                if (cdbGradient != null && cdbGradient.colors != null && cdbGradient.colors.length >= 1) {
+                                    gradient.stops.clear();
+                                    for (i in 0...cdbGradient.colors.length) {
+                                        gradient.stops[i] = {color: cdbGradient.colors[i], position: cdbGradient.positions[i]};
+                                    }
+                                }
+                                value = gradient;
+                            }
+                            Reflect.setField(currentProps, propPath[0], {type: hrt.impl.TextureType.gradient, data: value});
+                        case "tile":
+                            Reflect.setField(currentProps, "src", value.file);
+                            Reflect.setField(currentProps, "size", value.size);
+                            Reflect.setField(currentProps, "posX", value.x);
+                            Reflect.setField(currentProps, "posY", value.y);
+                            Reflect.setField(currentProps, "sizeX", value.width ?? 1);
+                            Reflect.setField(currentProps, "sizeY", value.height ?? 1);
+                    }
+                }
+            }
+        }
+
+        for (refresh => _ in prefabToRefresh) {
+            refresh.updateInstance();
+        }
+    }
+
+    // modifies path in place
+    static function getObjectPathRec(path: Array<String>, obj: Dynamic, includeLast: Bool) {
+        var obj : Dynamic = obj;
+        while (path.length > (includeLast ? 0 : 1) && obj != null) {
+            var prev = obj;
+            var key = path.shift();
+            obj = Reflect.getProperty(obj, key);
+            if (obj == null) {
+                obj = {}
+                Reflect.setProperty(prev, key, obj);
+            }
+        }
+        return obj;
+    }
+
+    function initPreview() {
+        previewDiv = new Element('<div id="preview">').appendTo(element);
+        previewScene = new hide.comp.Scene(ide.config.current, previewDiv, null);
+        previewScene.autoDisposeOutOfDocument = !keepPreviewAlive;
+        previewScene.onReady = onPreviewReady;
+        previewScene.onUpdate = onPreviewUpdate;
+    }
+
+    public function cleanupPreview() {
+        if (previewScene != null) {
+            previewScene.dispose();
+        }
+        if (previewDiv != null) {
+            previewDiv.remove();
+        }
+        previewScene = null;
+        previewDiv = null;
+        previewSettings = null;
+        previewPrefab = null;
+        previewCurrentPath = null;
+    }
+
+    function onPreviewReady() {
+        setPreviewInternal(this.previewSettings, this.previewBaseData);
+
+        previewScene.s2d.camera.anchorX = 0.5;
+        previewScene.s2d.camera.anchorY = 0.5;
+        previewScene.s2d.camera.viewportWidth = 256;
+        previewScene.s2d.camera.viewportHeight = 256;
+
+        new hide.comp.Scene.PreviewCamController(previewScene.s3d);
+        new hide.comp.Scene.Preview2DCamController(previewScene.s2d);
+
+
+    }
+
+    function onPreviewUpdate(dt: Float) {
+        if (previewNeedRebuild) {
+            setPreviewInternal(this.previewSettings, this.previewBaseData);
+        }
+    }
+
 }
 
 // Displays a GradientData inside a canvas
@@ -531,3 +791,12 @@ class GradientView extends Component {
         canvas.height = 1;
     }
 }
+
+typedef DataOverride = {cdbPath: String, targetPath: String, type: String};
+
+typedef PreviewSettings = {
+    cdbPaths: Array<String>, // table.column names to match to apply the preview setting
+    prefab: String, // prefab path or `cdb@column_with_the_path`
+    ?renderProps: String, // render props for the preview
+    ?overrides: Array<DataOverride>, // Overrides to load with the prefab data
+};

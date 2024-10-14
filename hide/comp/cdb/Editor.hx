@@ -83,6 +83,8 @@ class Editor extends Component {
 	public var cursorIndex : Int = 0;
 	public var formulas : Formulas;
 
+	public var gradientEditor: GradientEditor;
+
 	public function new(config, api, ?cdbTable) {
 		super(null,null);
 		this.api = api;

@@ -8,6 +8,7 @@ import js.Browser;
 class Popup extends Component {
 	var timer : haxe.Timer;
 	var isSearchable:Bool;
+	public var anchor : Element;
 
 	function onMouseDown(e : js.html.MouseEvent) {
 		originalTarget = e.target;
@@ -57,10 +58,26 @@ class Popup extends Component {
         reflow();
 	}
 
+	public function open() {
+		untyped element.get(0).showPopover();
+		element.show();
+		element.get(0).addEventListener("toggle", onToggle);
+		element.parent()?.get(0)?.addEventListener("scroll", onScroll);
+        reflow();
+	}
+
+	public function onScroll(e: js.html.MouseScrollEvent) {
+		reflow();
+	}
+
 	function onToggle(e: Dynamic) {
 		if (e.newState == "closed") {
 			timer.stop();
-			element.remove();
+			element.parent()?.get(0)?.removeEventListener("scroll", onScroll);
+			if (anchor == null) {
+				element.remove();
+			}
+			element.hide();
 			onClose();
 		}
 	}
@@ -81,14 +98,15 @@ class Popup extends Component {
 	}
 
 	function reflow() {
-		var offset = element.parent().offset();
+		var refElement = if (anchor != null) anchor else element.parent();
+		var offset = refElement.offset();
 		var popupHeight = element.get(0).offsetHeight;
 		var popupWidth = element.get(0).offsetWidth;
 
 		var clientHeight = Browser.document.documentElement.clientHeight;
 		var clientWidth = Browser.document.documentElement.clientWidth;
 
-		offset.top += element.parent().get(0).offsetHeight;
+		offset.top += refElement.get(0).offsetHeight;
 		offset.top = Math.min(offset.top,  clientHeight - popupHeight - 32);
 
 		//offset.left += element.get(0).offsetWidth;

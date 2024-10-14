@@ -2968,6 +2968,7 @@ div.gradient-box {
 .gradient-editor {
   background-color: #282829;
   border: 1px solid #333333;
+  display: flex;
 }
 .gradient-editor .color-box {
   border: 3px solid #333333;
@@ -2992,6 +2993,10 @@ div.gradient-box {
 }
 .gradient-editor summary:focus {
   outline: none;
+}
+.gradient-editor #preview {
+  width: 256px;
+  height: 256px;
 }
 .gradient-container {
   height: 100%;

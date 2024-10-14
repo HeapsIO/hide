@@ -1195,7 +1195,12 @@ class Cell {
 			#if js
 			var e = new Element(elementHtml);
 			e.addClass("edit");
-			var gradientEditor = new GradientEditor(e , false);
+			if (editor.gradientEditor == null) {
+				editor.gradientEditor = new GradientEditor(editor.element.parents(".hide-scroll").first(), false);
+				editor.gradientEditor.keepPreviewAlive = true;
+			}
+			editor.gradientEditor.anchor = e;
+			editor.gradientEditor.open();
 
 			var gradient = hrt.impl.Gradient.getDefaultGradientData();
 			if (value != null && value.colors != null && value.colors.length >= 1) {
@@ -1205,10 +1210,10 @@ class Cell {
 				}
 			}
 
-			gradientEditor.value = gradient;
-			gradientEditor.onClose = function() {
+			editor.gradientEditor.value = gradient;
+			editor.gradientEditor.onClose = function() {
 				var grad : cdb.Types.Gradient = {colors: [], positions: []};
-				for (i => stop in gradientEditor.value.stops) {
+				for (i => stop in editor.gradientEditor.value.stops) {
 					grad.data.colors[i] = stop.color;
 					grad.data.positions[i] = stop.position;
 				}
@@ -1219,6 +1224,30 @@ class Cell {
 				refresh();
 				focus();
 			}
+
+			var customPreviews : Array<hide.comp.GradientEditor.PreviewSettings> = editor.config.get("cdb.gradientCustomPreviews");
+			var paths = table.sheet.name.split("@");
+			paths.push(column.name);
+			var path = paths.join(".");
+
+			var previewSettings = null;
+			for (config in customPreviews) {
+				for (cdbPath in config.cdbPaths) {
+					if (cdbPath == path) {
+						previewSettings = config;
+						break;
+					}
+				}
+			}
+
+			if (previewSettings != null) {
+				editor.gradientEditor.setPreview(previewSettings, line.obj, column.name);
+			}
+			else {
+				editor.gradientEditor.cleanupPreview();
+			}
+
+
 			#end
 		case TCurve:
 			var e = new Element(elementHtml);

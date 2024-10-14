@@ -30,127 +30,6 @@ typedef SavedClipboard = {
 	edges : Array<{ fromIdx : Int, fromOutputId : Int, toIdx : Int, toInputId : Int }>,
 }
 
-class PreviewCamController extends h3d.scene.Object {
-	var target : Vector = new h3d.Vector();
-	var targetInterp : Vector = new h3d.Vector();
-	var pos : Vector = new h3d.Vector();
-
-	var phi : Float = 0.4;
-	var theta : Float = 0.4;
-	var r : Float = 4.0;
-
-	var phiInterp : Float = 0.4;
-	var thetaInterp : Float = 0.4;
-	var rInterp : Float = 4.0;
-
-	function computePos() {
-		pos.x = rInterp * hxd.Math.sin(thetaInterp) * hxd.Math.cos(phiInterp);
-		pos.y = rInterp * hxd.Math.sin(thetaInterp) * hxd.Math.sin(phiInterp);
-		pos.z = rInterp * hxd.Math.cos(thetaInterp);
-		pos += targetInterp;
-	}
-
-	public function set(r: Float, phi: Float, theta: Float, target: Vector) {
-		this.r = r;
-		this.phi = phi;
-		this.theta = theta;
-		this.target.load(target);
-	}
-
-	var pushing : Int = -1;
-	var ignoreNext : Bool = false;
-	function onEvent(e : hxd.Event) {
-		switch (e.kind) {
-			case EPush: {
-				if (pushing != -1)
-					return;
-				pushing = e.button;
-				var win = hxd.Window.getInstance();
-				ignoreNext = true;
-				win.mouseMode = Relative(onCapture, true);
-			}
-			case EWheel: {
-				r += e.wheelDelta;
-				r = hxd.Math.max(r, 0.0001);
-			}
-			case ERelease, EReleaseOutside:
-				if (pushing != e.button) {
-					return;
-				}
-				var win = hxd.Window.getInstance();
-				win.mouseMode = Absolute;
-				pushing = -1;
-			default:
-		}
-	}
-
-	function pan(dx, dy, dz = 0.) {
-		var v = new h3d.Vector(dx, dy, dz);
-		var cam = getScene().camera;
-		cam.update();
-		v.transform3x3(cam.getInverseView());
-		target = target.add(v);
-	}
-
-	override function sync(ctx: h3d.scene.RenderContext) {
-		var cam = getScene().camera;
-		if (cam == null)
-			return;
-
-
-		var dt = hxd.Math.min(1, 1 - Math.pow(0.6, ctx.elapsedTime * 60));
-		var dt2 = hxd.Math.min(1, 1 - Math.pow(0.4, ctx.elapsedTime * 60));
-
-		thetaInterp = hxd.Math.lerp(thetaInterp, theta, dt2);
-		phiInterp = hxd.Math.lerp(phiInterp, phi, dt2);
-		rInterp = hxd.Math.lerp(rInterp, r, dt);
-		targetInterp.lerp(targetInterp, target, dt);
-
-		computePos();
-
-		cam.target.load(targetInterp);
-		cam.pos.load(pos);
-	}
-
-	override function onAdd() {
-		getScene().addEventListener(onEvent);
-	}
-
-	override function onRemove() {
-		getScene().removeEventListener(onEvent);
-	}
-
-	function onCapture(e: hxd.Event) {
-		// For some reason sometimes the first
-		// input from a capture has extreme values.
-		// We just filter out all first events from a capture to mitigate this
-		if (ignoreNext) {
-			ignoreNext = false;
-			return;
-		}
-
-		switch (e.kind) {
-			case EMove:
-				switch (pushing) {
-					case 1:
-						pan(-e.relX * 0.01, e.relY * 0.01);
-					case 2:
-						var dx = e.relX;
-						var dy = e.relY;
-						phi += dx * 0.01;
-						theta -= dy * 0.01;
-						theta = hxd.Math.clamp(theta, 0, hxd.Math.PI);
-				}
-			default:
-		}
-
-	}
-
-	function onCleanup() {
-		pushing = -1;
-	}
-}
-
 class PreviewShaderBase extends hxsl.Shader {
 	static var SRC = {
 
@@ -269,7 +148,7 @@ class ShaderEditor extends hide.view.FileView implements GraphInterface.IGraphEd
 	var meshPreviewMeshes : Array<h3d.scene.Mesh> = [];
 	var meshPreviewRoot3d : h3d.scene.Object;
 	var meshPreviewShader : hxsl.DynamicShader;
-	var meshPreviewCameraController : PreviewCamController;
+	var meshPreviewCameraController : hide.comp.Scene.PreviewCamController;
 	var previewSettings : PreviewSettings;
 	var meshPreviewPrefab : hrt.prefab.Prefab;
 	var meshPreviewprefabWatch : hide.tools.FileWatcher.FileWatchEvent;
@@ -1331,7 +1210,7 @@ class ShaderEditor extends hide.view.FileView implements GraphInterface.IGraphEd
 			throw "meshPreviewScene not ready";
 
 		var moved = false;
-		meshPreviewCameraController = new PreviewCamController(meshPreviewScene.s3d);
+		meshPreviewCameraController = new hide.comp.Scene.PreviewCamController(meshPreviewScene.s3d);
 		meshPreviewRoot3d = new h3d.scene.Object(meshPreviewScene.s3d);
 
 		loadMeshPreviewFromString(previewSettings.meshPath);
