@@ -1207,17 +1207,22 @@ class Cell {
 
 			editor.gradientEditor.value = gradient;
 			editor.gradientEditor.onClose = function() {
-				var grad : cdb.Types.Gradient = {colors: [], positions: []};
-				for (i => stop in editor.gradientEditor.value.stops) {
-					grad.data.colors[i] = stop.color;
-					grad.data.positions[i] = stop.position;
+				if (editor.gradientEditor != null) {
+					var grad : cdb.Types.Gradient = {colors: [], positions: []};
+
+					for (i => stop in editor.gradientEditor.value.stops) {
+						grad.data.colors[i] = stop.color;
+						grad.data.positions[i] = stop.position;
+					}
+
+					setValue(grad);
+					e.removeClass("edit");
+					closeEdit();
+					refresh();
+					focus();
 				}
 
-				setValue(grad);
-				e.removeClass("edit");
-				closeEdit();
-				refresh();
-				focus();
+
 			}
 
 			var customPreviews : Array<hide.comp.GradientEditor.PreviewSettings> = editor.config.get("cdb.gradientCustomPreviews");
@@ -1235,8 +1240,12 @@ class Cell {
 				}
 			}
 
+			paths.shift();
+			// fix path to be relative to current table for preview
+			var path = paths.join(".");
+
 			if (previewSettings != null) {
-				editor.gradientEditor.setPreview(previewSettings, line.obj, column.name);
+				editor.gradientEditor.setPreview(previewSettings, line.getRootLine().obj, path);
 			}
 			else {
 				editor.gradientEditor.cleanupPreview();

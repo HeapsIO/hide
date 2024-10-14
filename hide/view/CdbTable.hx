@@ -25,8 +25,8 @@ class CdbTable extends hide.ui.View<{}> {
 	}
 
 	override function destroy() {
-		if (editor != null) {
-			@:privateAccess editor.gradientEditor?.cleanupPreview();
+		if (editor != null && editor.gradientEditor != null) {
+			@:privateAccess editor.gradientEditor.cleanupPreview();
 			editor.gradientEditor.remove();
 			editor.gradientEditor = null;
 		}
