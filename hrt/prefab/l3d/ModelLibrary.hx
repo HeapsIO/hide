@@ -248,7 +248,7 @@ class ModelLibrary extends Prefab {
 	@:s var atlasResolution = 4096;
 	@:s var autoLod : Bool = false;
 
-	public static inline var CURRENT_VERSION = 1;
+	public static inline var CURRENT_VERSION = 2;
 
 	var cache : ModelLibraryCache;
 	var errors = [];
@@ -596,7 +596,6 @@ class ModelLibrary extends Prefab {
 		var dataToStore = [];
 
 		var geomAll = new Geometry();
-		var hasTangents = false;
 		geomAll.bounds = new h3d.col.Bounds();
 		geomAll.bounds.addPos(0,0,0);
 		geomAll.indexCounts = [];
@@ -722,10 +721,11 @@ class ModelLibrary extends Prefab {
 
 			for( g in lib.header.geometries ) {
 
-				if( !hasTangents && g.vertexFormat.hasInput("tangent") ) {
-					hasTangents = true;
+				if( !geomAll.vertexFormat.hasInput("tangent") && g.vertexFormat.hasInput("tangent") )
 					geomAll.vertexFormat = geomAll.vertexFormat.append("tangent",DVec3);
-				}
+
+				if( !geomAll.vertexFormat.hasInput("color") && g.vertexFormat.hasInput("color") )
+					geomAll.vertexFormat = geomAll.vertexFormat.append("color",g.vertexFormat.getInput("color").type);
 
 				var g2 = new Geometry();
 				g2.props = g.props;
