@@ -545,7 +545,9 @@ class GradientEditor extends Popup {
                     fx.dispose();
             previewScene.s3d.renderer.effects = [];
             var pbr = Std.downcast(previewScene.s3d.renderer, h3d.scene.pbr.Renderer);
-            pbr?.env = h3d.scene.pbr.Environment.getDefault();
+            if (pbr != null) {
+                pbr.env = h3d.scene.pbr.Environment.getDefault();
+            }
             previewScene.s3d.renderer.refreshProps();
         }
 
