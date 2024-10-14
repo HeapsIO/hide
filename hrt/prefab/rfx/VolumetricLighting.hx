@@ -325,12 +325,14 @@ class VolumetricLighting extends RendererFX {
 			case AlphaMultiply: AlphaMultiply;
 			}
 
+			r.ctx.engine.pushTarget(r.textures.hdr, 0, 0, NotBound);
 			upsamplingPass.pass.setBlendMode(b);
 			upsamplingPass.shader.source = tex;
 			upsamplingPass.shader.sourceDepth = halfDepth;
 			upsamplingPass.shader.destDepth = depth;
 			upsamplingPass.shader.inverseProj = inverseProj;
 			upsamplingPass.render();
+			r.ctx.engine.popTarget();
 
 			depth.filter = prevFilter;
 		}
