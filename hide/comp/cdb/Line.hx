@@ -61,12 +61,8 @@ class Line extends Component {
 	}
 
 	public function getGroupID() {
-		var t = table;
-		var line = this;
-		while( t.parent != null ) {
-			line = Std.downcast(t, SubTable).cell.line;
-			t = t.parent;
-		}
+		var line = getRootLine();
+		var t = line.table;
 		for( i in 0...t.sheet.separators.length ) {
 			var sep = t.sheet.separators[t.sheet.separators.length - 1 - i];
 			if( sep.index <= line.index ) {
@@ -77,6 +73,16 @@ class Line extends Component {
 			}
 		}
 		return null;
+	}
+
+	public function getRootLine() {
+		var line = this;
+		var t = table;
+		while( t.parent != null ) {
+			line = Std.downcast(t, SubTable).cell.line;
+			t = t.parent;
+		}
+		return line;
 	}
 
 	public function getConstants( objId ) {

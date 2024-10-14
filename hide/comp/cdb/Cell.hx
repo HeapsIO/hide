@@ -103,14 +103,9 @@ class Cell {
 		function displayError(msg:String) {
 			ide.quickError(msg);
 		}
-		var rootLine = line;
-		while(true) {
-			var t = Std.downcast(rootLine.table, SubTable);
-			if( t == null ) break;
-			rootLine = t.cell.line;
-		}
+		var rootLine = line.getRootLine();
 		var newV : Float = try editor.formulas.evalBlock(() -> {
-			var obj = @:privateAccess editor.formulas.remap(rootLine.obj, table.sheet);
+			var obj = @:privateAccess editor.formulas.remap(rootLine.obj, rootLine.table.sheet);
 			f.call(obj);
 		})
 		catch( e : hscript.Expr.Error ) { displayError(e.toString()); Math.NaN; }
