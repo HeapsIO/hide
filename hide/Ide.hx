@@ -1017,10 +1017,12 @@ class Ide extends hide.tools.IdeData {
 		browseFiles(function(path) {
 			var ext = path.split(".").pop();
 			if( exts.indexOf(ext) < 0 ) return;
-			var content = parseJSON(sys.io.File.getContent(getPath(path)));
-			var changed = callb(content, path);
-			if( !changed ) return;
-			todo.push(function() sys.io.File.saveContent(getPath(path), toJSON(content)));
+			try {
+				var content = parseJSON(sys.io.File.getContent(getPath(path)));
+				var changed = callb(content, path);
+				if( !changed ) return;
+				todo.push(function() sys.io.File.saveContent(getPath(path), toJSON(content)));
+			} catch (e) {};
 		});
 		for( t in todo )
 			t();
