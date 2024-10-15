@@ -135,7 +135,7 @@ class Macros {
 	}
 
 	public static function enumOrNullByName<T>(e:Enum<T>, constr:String, ?params:Array<Dynamic>, ?defValue:T):T {
-		var value = try {
+		var value = if (constr == null) null else try {
 			haxe.EnumTools.createByName(e, constr, params);
 		} catch (_) {
 			null;
