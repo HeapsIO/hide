@@ -28,6 +28,9 @@ class SSRShader extends h3d.shader.ScreenShader {
 		@const var batchSample : Bool;
 		@const var CHECK_ANGLE : Bool;
 
+		@param var vignettingRadius : Float;
+		@param var vignettingSoftness : Float;
+
 		var screenDepth : Float;
 
 		function reflectedRay(ray : Vec3, normal : Vec3) : Vec3 {
@@ -149,8 +152,12 @@ class SSRShader extends h3d.shader.ScreenShader {
 					discard;
 			}
 
+			var screenPos = uvToScreen(calculatedUV);
+			var dist = length(screenPos);
+			var vignetting = 1.0 - smoothstep(vignettingRadius-vignettingSoftness, vignettingRadius, dist);
+
 			var fragmentColor = hdrMap.get(uv).rgb;
-			pixelColor = saturate(vec4(fragmentColor * colorMul, intensity * roughnessFactor));
+			pixelColor = saturate(vec4(fragmentColor * colorMul, intensity * roughnessFactor * vignetting));
 		}
 	}
 }
@@ -172,6 +179,8 @@ class SSR extends RendererFX {
 	@:s public var rayMarchingResolution : Float = 0.5;
 	@:s public var support4K : Bool = false;
 	@:s public var batchSample : Bool = true;
+	@:s public var vignettingRadius : Float = 0.1;
+	@:s public var vignettingSmoothness : Float = 0.1;
 
 	function new(parent, shared) {
 		super(parent, shared);
@@ -211,6 +220,9 @@ class SSR extends RendererFX {
 			ssrShader.cameraInverseProj = r.ctx.camera.getInverseProj();
 			ssrShader.cameraPos = r.ctx.camera.pos;
 
+			ssrShader.vignettingRadius = vignettingRadius;
+			ssrShader.vignettingSoftness = vignettingSmoothness;
+
 			ssrShader.frustum = r.ctx.getCameraFrustumBuffer();
 
 			ssr = r.allocTarget("ssr", false, textureSize / resRescale, hdrMap.format);
@@ -241,6 +253,8 @@ class SSR extends RendererFX {
 				<dt>Texture size</dt><dd><input type="range" min="0" max="1" field="textureSize"/></dd>
 				<dt>Support 4K</dt><dd><input type="checkbox" field="support4K"/></dd>
 				<dt>Fast sample</dt><dd><input type="checkbox" field="batchSample"/></dd>
+				<dt>Vignetting radius</dt><dd><input type="range" min="0" max="1" field="vignettingRadius"/></dd>
+				<dt>Vignetting smoothness</dt><dd><input type="range" min="0" max="1" field="vignettingSmoothness"/></dd>
 			</dl>
 		</div>
 		'),this);
