@@ -888,7 +888,7 @@ class SceneEditor {
 
     public var snapToggle = false;
     public var snapMoveStep = 1.0;
-    public var snapRotateStep = 30.0;
+    public var snapRotateStep = 15.0;
     public var snapScaleStep = 1.0;
     public var snapForceOnGrid = false;
 
