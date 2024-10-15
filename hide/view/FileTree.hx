@@ -297,6 +297,93 @@ class FileTree extends FileView {
 			}
 		}
 
+		// update Materials.props if an FBX is moved/renamed
+		var newSysPath = new haxe.io.Path(name);
+		var oldSysPath = new haxe.io.Path(path);
+		if (newSysPath.dir == null) {
+			newSysPath.dir = oldSysPath.dir;
+		}
+		if (newSysPath.ext.toLowerCase() == "fbx" && oldSysPath.ext.toLowerCase() == "fbx") {
+			function remLeadingSlash(s:String) {
+				if(StringTools.startsWith(s,"/")) {
+					return s.length > 1 ? s.substr(1) : "";
+				}
+				return s;
+			}
+
+			var oldMatPropsPath = ide.getPath(remLeadingSlash((oldSysPath.dir ?? "") + "/materials.props"));
+
+			if (sys.FileSystem.exists(oldMatPropsPath)) {
+				var newMatPropsPath = ide.getPath(remLeadingSlash((newSysPath.dir ?? "") + "/materials.props"));
+
+				var oldMatProps = haxe.Json.parse(sys.io.File.getContent(oldMatPropsPath));
+
+				var newMatProps : Dynamic =
+					if (sys.FileSystem.exists(newMatPropsPath))
+						haxe.Json.parse(sys.io.File.getContent(newMatPropsPath))
+					else {};
+
+				var oldNameExt = oldSysPath.file + "." + oldSysPath.ext;
+				var newNameExt = newSysPath.file + "." + newSysPath.ext;
+				function moveRec(originalData: Dynamic, oldData:Dynamic, newData: Dynamic) {
+
+					for (field in Reflect.fields(originalData)) {
+						if (StringTools.endsWith(field, oldNameExt)) {
+							var innerData = Reflect.getProperty(originalData, field);
+							var newField = StringTools.replace(field, oldNameExt, newNameExt);
+							Reflect.setProperty(newData, newField, innerData);
+							Reflect.deleteField(oldData, field);
+						}
+						else {
+							var originalInner = Reflect.getProperty(originalData, field);
+							if (Type.typeof(originalInner) != TObject)
+								continue;
+
+							var oldInner = Reflect.getProperty(oldData, field);
+							var newInner = Reflect.getProperty(newData, field) ?? {};
+							moveRec(originalInner, oldInner, newInner);
+
+							// Avoid creating empty fields
+							if (Reflect.fields(newInner).length > 0) {
+								Reflect.setProperty(newData, field, newInner);
+							}
+
+							// Cleanup removed fields in old props
+							if (Reflect.fields(oldInner).length == 0) {
+								Reflect.deleteField(oldData, field);
+							}
+						}
+					}
+				}
+
+				var sourceData = oldMatProps;
+				var oldDataToSave = oldMatPropsPath == newMatPropsPath ? newMatProps : haxe.Json.parse(haxe.Json.stringify(oldMatProps));
+
+				moveRec(oldMatProps, oldDataToSave, newMatProps);
+				sys.io.File.saveContent(newMatPropsPath, haxe.Json.stringify(newMatProps, null, "\t"));
+
+				if (oldMatPropsPath != newMatPropsPath) {
+					if (Reflect.fields(oldMatProps).length > 0) {
+						sys.io.File.saveContent(oldMatPropsPath, haxe.Json.stringify(oldDataToSave, null, "\t"));
+					} else {
+						sys.FileSystem.deleteFile(oldMatPropsPath);
+					}
+				}
+
+				// Clear caches
+				@:privateAccess
+				{
+					if (h3d.mat.MaterialSetup.current != null) {
+						h3d.mat.MaterialSetup.current.database.db.remove(ide.makeRelative(oldMatPropsPath));
+						h3d.mat.MaterialSetup.current.database.db.remove(ide.makeRelative(newMatPropsPath));
+					}
+					hxd.res.Loader.currentInstance.cache.remove(ide.makeRelative(oldMatPropsPath));
+					hxd.res.Loader.currentInstance.cache.remove(ide.makeRelative(newMatPropsPath));
+				}
+			}
+
+		}
+
 		return true;
 	}
 
