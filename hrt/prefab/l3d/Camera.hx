@@ -175,17 +175,15 @@ class Camera extends Object3D {
 		var renderer = local3d.getScene().renderer;
 		if (renderer == null) return;
 		if (preview) {
-
 			for ( effect in findAll(hrt.prefab.rfx.RendererFX) ) {
-				var prevEffect = renderer.getEffect(hrt.prefab.rfx.RendererFX);
-				if ( prevEffect != null )
-					renderer.effects.remove(prevEffect);
+				renderer.effects.remove(effect);
 				renderer.effects.push( effect );
 			}
 		}
 		else {
-			for ( effect in findAll(hrt.prefab.rfx.RendererFX) )
+			for ( effect in findAll(hrt.prefab.rfx.RendererFX) ) {
 				renderer.effects.remove( effect );
+			}
 		}
 	}
 
@@ -262,9 +260,7 @@ class Camera extends Object3D {
 				updateInstance();
 				applyTo(cam);
 				for ( effect in findAll(hrt.prefab.rfx.RendererFX) ) {
-					var prevEffect = @:privateAccess renderer.getEffect(hrt.prefab.rfx.RendererFX);
-					if ( prevEffect != null )
-						renderer.effects.remove(prevEffect);
+					renderer.effects.remove(effect);
 					renderer.effects.push( effect );
 				}
 				ctx.scene.editor.cameraController.lockZPlanes = true;
@@ -274,8 +270,9 @@ class Camera extends Object3D {
 				renderer.effects.push(border);
 			}
 			else {
-				for ( effect in findAll(hrt.prefab.rfx.RendererFX) )
+				for ( effect in findAll(hrt.prefab.rfx.RendererFX) ) {
 					renderer.effects.remove( effect );
+				}
 				for ( effect in renderer.effects ) {
 					if ( Std.isOfType(effect, hrt.prefab.rfx.Border) ) {
 						renderer.effects.remove(effect);
