@@ -246,7 +246,11 @@ class Gradient {
 
         var texture = Texture.fromPixels(genPixels(), RGBA);
         texture.realloc = function() {
-            texture.uploadPixels(genPixels());
+            var pixels = genPixels();
+            if (pixels.width != texture.width || pixels.height != texture.height) {
+                texture.resize(pixels.width, pixels.height);
+            }
+            texture.uploadPixels(pixels);
         }
 
 		#if !editor
