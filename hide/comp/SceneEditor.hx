@@ -4371,7 +4371,7 @@ class SceneEditor {
 				}
 			}
 			else {
-				if (renderPropsRoot == null) {
+				if (newRenderProps == null && renderPropsRoot == null) {
 					createRenderProps();
 				}
 			}
