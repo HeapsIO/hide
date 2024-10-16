@@ -701,8 +701,15 @@ class RenderPropsPopup extends Popup {
 		if (lastRenderProps == null)
 			lastRenderProps = currentRenderProps[0];
 
+		var fullPath = "";
+		var cur : hrt.prefab.Prefab = lastRenderProps;
+		while (cur != null) {
+			fullPath = lastRenderProps.getAbsPath() + "";
+			cur = cur.shared.parentPrefab;
+		}
+
 		if (lastRenderProps != null && !canChangeCurrRp) {
-			form_div.append(new Element('<p>A render props (${lastRenderProps.name}) is already existing in scene.</p>'));
+			form_div.append(new Element('<p>A render props (${fullPath}) is already existing in scene.</p>'));
 			return;
 		}
 
@@ -4243,6 +4250,9 @@ class SceneEditor {
 	var rebuildEndCallbacks : Array<Void -> Void> = null;
 	/** Indicate that this prefab neet do be rebuild**/
 	public function queueRebuild(prefab: PrefabElement) {
+		if (rebuildStack > 0)
+			return;
+
 		if (rebuildQueue != null && rebuildQueue.exists(prefab))
 			return;
 
@@ -4318,7 +4328,9 @@ class SceneEditor {
 		rebuildEndCallbacks = null;
 	}
 
+	var rebuildStack = 0;
 	function rebuild(prefab: PrefabElement) {
+		rebuildStack ++;
 		scene.setCurrent();
 
 		removeInstance(prefab, false);
@@ -4376,6 +4388,7 @@ class SceneEditor {
 				}
 			}
 		}
+		rebuildStack --;
 	}
 
 	function autoName(p : PrefabElement) {

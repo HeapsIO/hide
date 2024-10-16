@@ -151,11 +151,6 @@ class SplinePoint extends Object3D {
 
 	#if editor
 
-	override function editorRemoveInstanceObjects() : Void {
-		shared.editor.queueRebuildCallback(() -> @:privateAccess spline.computeSpline());
-		super.editorRemoveInstanceObjects();
-	}
-
 	public function computeName() {
 		if( local3d == null ) return;
 		var index = spline.points.indexOf(this);
