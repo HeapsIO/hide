@@ -111,6 +111,7 @@ class Reference extends Object3D {
 		}
 	}
 
+
 	override public function find<T:Prefab>(?cl: Class<T>, ?filter : T -> Bool, followRefs : Bool = false ) : Null<T> {
 		var res = super.find(cl, filter, followRefs);
 		if (res == null && followRefs ) {
@@ -144,6 +145,13 @@ class Reference extends Object3D {
 	}
 
 	#if editor
+
+	override public function editorRemoveObjects() : Void {
+		if (refInstance != null) {
+			refInstance.editorRemoveObjects();
+		}
+		super.editorRemoveObjects();
+	}
 
 	public function hasCycle(?seenPaths: Map<String, Bool>) : Bool {
 		if (editorOnly)

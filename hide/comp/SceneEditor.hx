@@ -2899,13 +2899,15 @@ class SceneEditor {
 				if( i3d != null ) i3d.remove() else cast(int,h2d.Interactive).remove();
 				interactives.remove(e);
 			}
-			e.editorRemoveInstanceObjects();
-			e.dispose();
 		}
+
 		var parent = elt.parent;
+
 		recRemove(elt);
+		elt.editorRemoveObjects();
+
 		if (checkRebuild)
-		checkWantRebuild(parent, elt);
+			checkWantRebuild(parent, elt);
 	}
 
 	function makePrefab(elt: PrefabElement) {
@@ -4319,7 +4321,7 @@ class SceneEditor {
 	function rebuild(prefab: PrefabElement) {
 		scene.setCurrent();
 
-		prefab.editorRemoveObjects();
+		removeInstance(prefab, false);
 
 		var enabled = prefab.enabled && !prefab.inGameOnly;
 		var actuallyInWorld = prefab == sceneData || (prefab.parent != null && prefab.parent.has(prefab));
@@ -4353,12 +4355,13 @@ class SceneEditor {
 				newRenderProps = renderProps[0];
 
 			if (newRenderProps != previousRenderProps) {
-				previousRenderProps?.editorRemoveObjects();
+				if (previousRenderProps != null)
+					removeInstance(previousRenderProps);
 				scene.s3d.renderer.props = scene.s3d.renderer.getDefaultProps();
 				lastRenderProps = newRenderProps;
 				if (lastRenderProps != null) {
 					if (renderPropsRoot != null) {
-						renderPropsRoot.editorRemoveObjects();
+						removeInstance(renderPropsRoot);
 						renderPropsRoot = null;
 					}
 
