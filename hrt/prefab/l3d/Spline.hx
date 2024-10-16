@@ -337,7 +337,9 @@ class Spline extends Object3D {
 	}
 
 	override function postMakeInstance() : Void {
+		#if editor
 		loading = false;
+		#end
 		updateInstance();
 	}
 
