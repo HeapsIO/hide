@@ -151,6 +151,11 @@ class SplinePoint extends Object3D {
 
 	#if editor
 
+	override function editorRemoveInstanceObjects() : Void {
+		shared.editor.queueRebuild(spline);
+		super.editorRemoveInstanceObjects();
+	}
+
 	public function computeName() {
 		if( local3d == null ) return;
 		var index = spline.points.indexOf(this);
@@ -327,12 +332,20 @@ class Spline extends Object3D {
 
 		#if editor
 		lineGraphics = null;
+		loading = true;
 		#end
+	}
 
+	override function postMakeInstance() : Void {
+		loading = false;
 		updateInstance();
 	}
 
 	override function updateInstance(?propName : String ) {
+		#if editor
+		if (loading)
+			return;
+		#end
 		super.updateInstance(propName);
 		#if editor
 		if( editor != null )
