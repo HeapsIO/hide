@@ -80,7 +80,17 @@ class RenderProps extends Object3D {
 			if (scene != null) {
 				var fxAnims = scene.findAll(f -> Std.downcast(f, hrt.prefab.fx.FX.FXAnimation));
 				for (fxAnim in fxAnims) {
-					if (fxAnim.effects == null)
+					var visible = true;
+					var p : h3d.scene.Object = fxAnim;
+					while (p != null) {
+						if (!p.visible) {
+							visible = false;
+							break;
+						}
+						p = p.parent;
+					}
+
+					if (fxAnim.effects == null || visible == false)
 						continue;
 					for (e in fxAnim.effects)
 						renderer.effects.push(cast @:privateAccess e.instance);
