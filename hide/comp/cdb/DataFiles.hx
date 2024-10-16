@@ -679,6 +679,8 @@ class DataFiles {
 	public static function getPrefabsByPath(prefab: hrt.prefab.Prefab, path : String ) : Array<hrt.prefab.Prefab> {
 		function rec(prefab: hrt.prefab.Prefab, parts : Array<String>, index : Int, out : Array<hrt.prefab.Prefab> ) {
 			var name = parts[index++];
+			if (name == hrt.prefab.Prefab.emptyNameReplacement)
+				name = "";
 			if( name == null ) {
 				out.push(prefab);
 				return;

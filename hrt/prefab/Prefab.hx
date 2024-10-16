@@ -58,6 +58,7 @@ class Prefab {
 		The name of the prefab in the tree view
 	**/
 	@:s public var name : String = "";
+	public static var emptyNameReplacement = "$no_name";
 
 	/**
 		The associated source file (an image, a 3D model, etc.) if the prefab type needs it.
@@ -492,6 +493,8 @@ class Prefab {
 		if(parent == null)
 			return "";
 		var path = name ?? "";
+		if (path == "")
+			path = hrt.prefab.Prefab.emptyNameReplacement;
 		if(unique) {
 			var suffix = 0;
 			for(i in 0...parent.children.length) {
