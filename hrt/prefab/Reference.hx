@@ -212,6 +212,7 @@ class Reference extends Object3D {
 		var props = ctx.properties.add(element, this, function(pname) {
 			ctx.onChange(this, pname);
 			if(pname == "source" || pname == "editMode") {
+				editorRemoveObjects();
 				refInstance = null;
 				if (hasCycle()) {
 					hide.Ide.inst.quickError('Reference to $source would create a cycle. The reference change was aborted.');
