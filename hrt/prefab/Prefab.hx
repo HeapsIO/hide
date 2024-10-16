@@ -578,9 +578,21 @@ class Prefab {
 	}
 
 	/**
+		Called by the editor to remove the object created by this prefab tree
+	**/
+	function editorRemoveObjects() : Void {
+		for (child in children) {
+			child.editorRemoveObjects();
+		}
+		editorRemoveInstanceObjects();
+		dispose();
+	}
+
+
+	/**
 		Called by the editor to remove the objects created by this prefab but not it's children.
 	**/
-	public function editorRemoveInstance() : Void {
+	function editorRemoveInstanceObjects() : Void {
 	}
 
 	/**

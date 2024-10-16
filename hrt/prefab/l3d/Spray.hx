@@ -127,8 +127,9 @@ class Spray extends Object3D {
 	}
 
 
-	override function editorRemoveInstance() : Void {
+	override function editorRemoveInstanceObjects() : Void {
 		removeInteractiveBrush();
+		super.editorRemoveInstanceObjects();
 	}
 
 	function clearPreview() {

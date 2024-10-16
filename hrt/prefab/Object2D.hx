@@ -119,11 +119,11 @@ class Object2D extends Prefab {
 		};
 	}
 
-	override function editorRemoveInstance() : Void {
+	override function editorRemoveInstanceObjects() : Void {
 		if (local2d != null) {
 			local2d.remove();
 		}
-		super.editorRemoveInstance();
+		super.editorRemoveInstanceObjects();
 	}
 
 	override function edit( ctx : hide.prefab.EditContext ) {

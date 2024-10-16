@@ -466,11 +466,11 @@ class Light extends Object3D {
 		return true;
 	}
 
-	override function editorRemoveInstance() : Void {
+	override function editorRemoveInstanceObjects() : Void {
 		if (icon != null) {
 			icon.remove();
 		}
-		super.editorRemoveInstance();
+		super.editorRemoveInstanceObjects();
 	}
 
 	override function edit( ctx : hide.prefab.EditContext ) {

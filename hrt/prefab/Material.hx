@@ -241,7 +241,7 @@ class Material extends Prefab {
 	}
 
 	#if editor
-	override function editorRemoveInstance() : Void {
+	override function editorRemoveInstanceObjects() : Void {
 		if (previewSphere != null) {
 			previewSphere.remove();
 		}
@@ -249,7 +249,7 @@ class Material extends Prefab {
 			// temporary untill we find a proper way to remove a material
 			shared.editor.queueRebuild(parent);
 		}
-		super.editorRemoveInstance();
+		super.editorRemoveInstanceObjects();
 	}
 
 	override function onEditorTreeChanged(prefab: hrt.prefab.Prefab) : hrt.prefab.Prefab.TreeChangedResult {

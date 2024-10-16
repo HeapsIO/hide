@@ -2887,7 +2887,7 @@ class SceneEditor {
 		return null;*/
 	}
 
-	function removeInstance(elt : PrefabElement) : Void {
+	function removeInstance(elt : PrefabElement, checkRebuild: Bool = true) : Void {
 		function recRemove(e:PrefabElement) {
 			for (c in e.children) {
 				recRemove(c);
@@ -2899,11 +2899,12 @@ class SceneEditor {
 				if( i3d != null ) i3d.remove() else cast(int,h2d.Interactive).remove();
 				interactives.remove(e);
 			}
-			e.editorRemoveInstance();
+			e.editorRemoveInstanceObjects();
 			e.dispose();
 		}
 		var parent = elt.parent;
 		recRemove(elt);
+		if (checkRebuild)
 		checkWantRebuild(parent, elt);
 	}
 
@@ -4290,7 +4291,15 @@ class SceneEditor {
 							skip = true;
 							break;
 						}
-						parent = parent.parent;
+
+						var next = parent.parent ?? parent.shared.parentPrefab;
+						if (next == null)
+							break;
+
+						if (!next.children.contains(parent) && Std.downcast(next, Reference)?.refInstance != parent) {
+							skip = true;
+						}
+						parent = next;
 					}
 
 					if (skip == true)
@@ -4310,18 +4319,15 @@ class SceneEditor {
 	function rebuild(prefab: PrefabElement) {
 		scene.setCurrent();
 
-		prefab.editorRemoveInstance();
-		if (prefab == sceneData) {
-			for (c in prefab) {
-				c.editorRemoveInstance();
-			}
-		}
+		prefab.editorRemoveObjects();
 
 		var enabled = prefab.enabled && !prefab.inGameOnly;
 		var actuallyInWorld = prefab == sceneData || (prefab.parent != null && prefab.parent.has(prefab));
 		if (enabled && actuallyInWorld) {
 			prefab.shared.current3d = prefab.parent?.findFirstLocal3d() ?? root3d;
 			prefab.shared.current2d = prefab.parent?.findFirstLocal2d() ?? root2d;
+			if (prefab.shared.current3d.getScene() == null)
+				throw "current3d is not in scene";
 			prefab.setEditor(this, this.scene);
 			prefab.make();
 		}
@@ -4347,12 +4353,12 @@ class SceneEditor {
 				newRenderProps = renderProps[0];
 
 			if (newRenderProps != previousRenderProps) {
-				previousRenderProps?.editorRemoveInstance();
+				previousRenderProps?.editorRemoveObjects();
 				scene.s3d.renderer.props = scene.s3d.renderer.getDefaultProps();
 				lastRenderProps = newRenderProps;
 				if (lastRenderProps != null) {
 					if (renderPropsRoot != null) {
-						renderPropsRoot.editorRemoveInstance();
+						renderPropsRoot.editorRemoveObjects();
 						renderPropsRoot = null;
 					}
 
