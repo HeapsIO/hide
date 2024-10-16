@@ -455,6 +455,8 @@ class Object3D extends Prefab {
 			local3d.remove();
 		if (editorIcon != null)
 			editorIcon.remove();
+		local3d = null;
+		editorIcon = null;
 		super.editorRemoveInstanceObjects();
 	}
 

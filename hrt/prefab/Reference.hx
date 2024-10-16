@@ -212,8 +212,10 @@ class Reference extends Object3D {
 		var props = ctx.properties.add(element, this, function(pname) {
 			ctx.onChange(this, pname);
 			if(pname == "source" || pname == "editMode") {
-				editorRemoveObjects();
-				refInstance = null;
+				if (pname == "source") {
+					editorRemoveObjects();
+					refInstance = null;
+				}
 				if (hasCycle()) {
 					hide.Ide.inst.quickError('Reference to $source would create a cycle. The reference change was aborted.');
 					ctx.properties.undo.undo();
@@ -221,8 +223,14 @@ class Reference extends Object3D {
 					return;
 				}
 				updateProps();
-				if(!ctx.properties.isTempChange)
-					ctx.rebuildPrefab(this);
+				if(!ctx.properties.isTempChange) {
+					if (pname == "source") {
+						ctx.rebuildPrefab(this);
+					}
+					else {
+						@:privateAccess shared.editor.refreshTree();
+					}
+				}
 			}
 		});
 
