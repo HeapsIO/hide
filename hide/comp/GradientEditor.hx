@@ -661,6 +661,7 @@ class GradientEditor extends Popup {
 
             for (prefab in currentPrefabs) {
                 prefabToRefresh.set(prefab, true);
+                var propPath = propPath.copy();
                 var currentProps = getObjectPathRec(propPath, prefab, false);
 
                 if (value != null) {
