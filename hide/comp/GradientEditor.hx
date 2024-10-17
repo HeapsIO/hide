@@ -141,6 +141,9 @@ class GradientEditor extends Popup {
     var previewNeedRebuild : Bool = false;
     var previewCurrentPath: String = null; // The path that this gradient editor is currently updating
 
+    var checkboardId : String;
+    var shadowId : String;
+
 	public var keepPreviewAlive : Bool = false;
 
     var keys : hide.ui.Keys;
@@ -159,6 +162,8 @@ class GradientEditor extends Popup {
     function get_value() {
         return innerValue;
     }
+
+    static var uid = 0;
 
     public function new(?parent : Element, editGradientSettings: Bool = true) {
         super(parent);
@@ -215,15 +220,20 @@ class GradientEditor extends Popup {
         stopsSvg.element.attr({viewBox: '0.0 0.0 1.0 1.0'});
         stopsSvg.element.attr({preserveAspectRatio:"xMidYMid slice"});
 
+        checkboardId = 'gradientEditor-checkBoard-$uid';
+        shadowId = 'gradientEditor-shadow-$uid';
+
+        uid++;
+
         stopsSvg.element.html('
         <defs>
-        <pattern id="checkboard-bg" width="0.5" height="0.5" patternContentUnits="objectBoundingBox">
+        <pattern id="$checkboardId" width="0.5" height="0.5" patternContentUnits="objectBoundingBox">
         <rect x="0" y="0" width="1" height="1" fill="#777"/>
         <rect x="0" y="0" width=".25" height=".25" fill="#aaa"/>
         <rect x="0.25" y="0.25" width=".25" height=".25" fill="#aaa"/>
         </pattern>
 
-        <filter id="shadow" color-interpolation-filters="sRGB" y="-40%" x="-40%" height="180%" width="180%">
+        <filter id="$shadowId" color-interpolation-filters="sRGB" y="-40%" x="-40%" height="180%" width="180%">
         <feDropShadow dx="0.005" dy="0.005" stdDeviation="0.007" flood-opacity="0.5"/>
         </filter>
         </defs>');
@@ -370,9 +380,9 @@ class GradientEditor extends Popup {
         }
 
         for (i in stopMarquers.length...innerValue.stops.length) {
-            var group = stopsSvg.group(stopsSvg.element).addClass("gradient-stop");
+            var group = stopsSvg.group(stopsSvg.element).addClass("gradient-stop").css("filter", 'url(#$shadowId)');
             stopsSvg.circle(group, 0, 0, 0.05, {}).addClass("outline");
-            stopsSvg.circle(group, 0, 0, 0.05, {}).addClass("checkboard");
+            stopsSvg.circle(group, 0, 0, 0.05, {}).addClass("checkboard").css("fill", 'url(#$checkboardId)');
             stopsSvg.circle(group, 0, 0, 0.05, {}).addClass("fill");
 
             stopMarquers.push(group);

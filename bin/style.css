@@ -3014,9 +3014,6 @@ div.gradient-box {
   stroke: white;
   stroke-width: 1px;
 }
-.gradient-container svg .gradient-stop {
-  filter: url(#shadow);
-}
 .gradient-container svg .gradient-stop .outline {
   stroke-width: 0.015;
   stroke: white;
@@ -3033,9 +3030,6 @@ div.gradient-box {
 .gradient-container svg .gradient-stop .fill {
   stroke: black;
   stroke-width: 0.005;
-}
-.gradient-container svg .gradient-stop .checkboard {
-  fill: url(#checkboard-bg);
 }
 .gradient-preview {
   width: 100%;
