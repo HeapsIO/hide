@@ -518,11 +518,14 @@ class PropsField extends Component {
 
 			propagateValueChange = (value, isTemp) -> {
 				var f = resolveField();
+				isTempChange = isTemp;
 				f.gradient.value = value;
 				f.gradient.onChange(isTemp);
 			};
 
-			gradient.onChange = function(shouldUndo : Bool) {
+			gradient.onChange = function(temp : Bool) {
+				isTempChange = temp;
+				var shouldUndo = !temp;
 				if (shouldUndo) {
 					var setVal = function(val, undo) {
 						var f = resolveField();
@@ -549,7 +552,8 @@ class PropsField extends Component {
 				} else {
 					current = gradient.value;
 					setFieldValue(current);
-					onChange(false);
+					var f = resolveField();
+					f.onChange(false);
 				}
 			}
 		case "model":
