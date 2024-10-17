@@ -701,15 +701,18 @@ class RenderPropsPopup extends Popup {
 		if (lastRenderProps == null)
 			lastRenderProps = currentRenderProps[0];
 
-		var fullPath = "";
+		var fullPath = [];
 		var cur : hrt.prefab.Prefab = lastRenderProps;
+		var renderPropsSource = lastRenderProps.shared.parentPrefab?.source ?? "inline";
+		renderPropsSource = StringTools.replace(renderPropsSource, "/", "<wbr>/<wbr>");
 		while (cur != null) {
-			fullPath = lastRenderProps.getAbsPath() + "";
+			fullPath.unshift(cur.getAbsPath());
 			cur = cur.shared.parentPrefab;
 		}
+		var fullPath = fullPath.join("<wbr>&gt;<wbr>");
 
 		if (lastRenderProps != null && !canChangeCurrRp) {
-			form_div.append(new Element('<p>A render props (${fullPath}) is already existing in scene.</p>'));
+			form_div.append(new Element('<p>A render props (<code>$renderPropsSource</code> in <code>${fullPath}</code>) is already existing in scene.</p>'));
 			return;
 		}
 
