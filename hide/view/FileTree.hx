@@ -105,56 +105,61 @@ class FileTree extends FileView {
 		tree.onRename = doRename;
 
 		element.contextmenu(function(e) {
-			var current = tree.getCurrentOver();
-			if( current != null )
-				tree.setSelection([current]);
+			var over = tree.getCurrentOver();
+			if( over != null && !tree.getSelection().contains(over))
+				tree.setSelection([over]);
+			var selection = tree.getSelection();
 			e.preventDefault();
 			var allowedNew : Array<String> = config.get("filetree.allowednew");
 			function allowed( ext : String ) return allowedNew.indexOf(ext) >= 0 || allowedNew.indexOf("*") >= 0;
 			var newMenu = [for( e in EXTENSIONS ) if( e.options.createNew != null && Lambda.exists(e.extensions, allowed) ) {
 				label : e.options.createNew,
-				click : createNew.bind(current, e),
+				click : createNew.bind(selection[0], e),
 				icon : e.options.icon,
 			}];
 			if( allowed("dir") )
 				newMenu.unshift({
 					label : "Directory",
-					click : createNew.bind(current, { options : { createNew : "Directory" }, extensions : null, component : null }),
+					click : createNew.bind(selection[0], { options : { createNew : "Directory" }, extensions : null, component : null }),
 					icon : "folder",
 				});
 			new hide.comp.ContextMenu([
-				{ label : "New..", menu:newMenu },
+				{ label : "New...", menu:newMenu },
 				{ label : "Collapse", click : tree.collapseAll },
 				{ label : "", isSeparator: true },
-				{ label : "Copy Path", enabled : current != null, click : function() { ide.setClipboard(current); } },
-				{ label : "Copy Absolute Path", enabled : current != null, click : function() { ide.setClipboard(Ide.inst.getPath(current)); } },
-				{ label : "Open in Explorer", enabled : current != null, click : function() { onExploreFile(current); } },
-				{ label : "Find References", enabled : current != null, click : onFindPathRef.bind(current)},
+				{ label : "Copy Path", enabled : selection.length == 1, click : function() { ide.setClipboard(selection[0]); } },
+				{ label : "Copy Absolute Path", enabled : selection.length == 1, click : function() { ide.setClipboard(Ide.inst.getPath(selection[0])); } },
+				{ label : "Open in Explorer", enabled : selection.length == 1, click : function() { onExploreFile(selection[0]); } },
+				{ label : "Find References", enabled : selection.length == 1, click : onFindPathRef.bind(selection[0])},
 				{ label : "", isSeparator: true },
-				{ label : "Clone", enabled : current != null, click : function() {
+				{ label : "Clone", enabled : selection.length == 1, click : function() {
 						try {
-							if (onCloneFile(current)) {
+							if (onCloneFile(selection[0])) {
 								tree.refresh();
 							}
 						} catch (e : Dynamic) {
 							js.Browser.window.alert(e);
 						}
 					} },
-				{ label : "Rename", enabled : current != null, click : function() {
+				{ label : "Rename", enabled : selection.length == 1, click : function() {
 					try {
-						onRenameFile(current);
+						onRenameFile(selection[0]);
 					} catch (e : Dynamic) {
 						js.Browser.window.alert(e);
 					}
 					} },
-				{ label : "Move", enabled : current != null, click : function() {
+				{ label : "Move", enabled : selection.length > 0, click : function() {
 					ide.chooseDirectory(function(dir) {
-						doRename(current, "/"+dir+"/"+current.split("/").pop());
+						for (current in selection) {
+							doRename(current, "/"+dir+"/"+current.split("/").pop());
+						}
 					});
 				}},
-				{ label : "Delete", enabled : current != null, click : function() {
-					if( js.Browser.window.confirm("Delete " + current + "?") ) {
-						onDeleteFile(current);
+				{ label : "Delete", enabled : selection.length > 0, click : function() {
+					if( js.Browser.window.confirm("Delete " + selection.join(", ") + "?") ) {
+						for (current in selection) {
+							onDeleteFile(current);
+						}
 						tree.refresh();
 					}
 				}},
