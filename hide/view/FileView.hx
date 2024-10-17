@@ -25,7 +25,11 @@ class FileView extends hide.ui.View<{ path : String }> {
 				@:privateAccess e = new hxd.fs.LocalFileSystem.LocalEntry(fs, state.path.split("/").pop(), state.path, f);
 				@:privateAccess if( e.file == null ) e = null;
 
-				fs.convert.run(e);
+				try {
+					fs.convert.run(e);
+				} catch ( e : Dynamic ) {
+					return;
+				}
 
 				onFileChanged(!exists(fs));
 			}, { checkDelete : true, keepOnRebuild : true });
