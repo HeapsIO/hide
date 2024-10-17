@@ -13,7 +13,6 @@ class DynamicShader extends Shader {
 
 	override function copy(other:Prefab) {
 		super.copy(other);
-		var shaderDef = Std.downcast(other, DynamicShader)?.getShaderDefinition();
 	}
 
 	override function setShaderParam(shader:hxsl.Shader, v:hxsl.Ast.TVar, value:Dynamic) {
@@ -111,7 +110,12 @@ class DynamicShader extends Shader {
 			// TODO: Where to init prefab default values?
 			for( v in shaderDef.inits ) {
 				if(!Reflect.hasField(props, v.variable.name)) {
-					Reflect.setField(props, v.variable.name, v.value);
+					var value = v.value;
+					#if editor
+					// deep copy gradients
+					value = haxe.Json.parse(hide.Ide.inst.toJSON(value));
+					#end
+					Reflect.setField(props, v.variable.name, value);
 				}
 			}
 			for(v in shaderDef.shader.data.vars) {

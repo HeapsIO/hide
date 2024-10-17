@@ -3728,7 +3728,7 @@ class SceneEditor {
 			ser.push(prefab.serialize());
 		}
 
-		view.setClipboard(haxe.Json.stringify(ser), "prefab", {source : view.state.path});
+		view.setClipboard(Ide.inst.toJSON(ser), "prefab", {source : view.state.path});
 	}
 
 	function getDataPath( prefabName : String, ?sourceFile : String ) {
@@ -3995,7 +3995,7 @@ class SceneEditor {
 		var lastIndex = lastElem.parent.children.indexOf(lastElem);
 		beginRebuild();
 		for(i => elt in elements) {
-			@:pirvateAccess var clone = hrt.prefab.Prefab.createFromDynamic(haxe.Json.parse(haxe.Json.stringify(elt.serialize())), null, elt.parent.shared);
+			@:pirvateAccess var clone = hrt.prefab.Prefab.createFromDynamic(haxe.Json.parse(Ide.inst.toJSON(elt.serialize())), null, elt.parent.shared);
 			var index = lastIndex+1+i;
 			elt.parent.children.insert(index, clone);
 			@:bypassAccessor clone.parent = elt.parent;

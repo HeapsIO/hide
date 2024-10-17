@@ -22,7 +22,6 @@ typedef GradientData = {
 
 #if editor
 typedef EditorCacheData = {
-	var oldHash : Int;
 	var tex : Texture;
 };
 #end
@@ -193,44 +192,7 @@ class Gradient {
     }
 
     public static function textureFromData(data : GradientData) : h3d.mat.Texture {
-
-        var hash = getDataHash(data);
-		#if !editor
-
-        var cache = getCache();
-        var entry = cache.get(hash);
-        if (entry != null)
-        {
-            return entry;
-        }
-		#else
-		var cache = getEditorCache();
-		var entry = cache.get(data);
-		if (entry != null)
-		{
-            if (entry.oldHash != hash) {
-                entry.oldHash = hash;
-                entry.tex.realloc();
-            }
-            return entry.tex;
-		}
-		#end
-
         function genPixels() {
-            #if editor
-            var newHash = Gradient.getDataHash(data);
-
-            var cache = getEditorCache();
-            var entry = cache.get(data);
-            if (entry != null) {
-                if (entry.oldHash != newHash) {
-                    throw "gradient data has changed between first generation and realloc";
-                }
-            }
-
-            // If this ever become an issue because we need this feature, we just need to deep copy 'data'
-            // and use this copy in the genPixels function. But at this moment we consider that it's a bug
-            #end
             var xScale = data.isVertical ? 0 : 1;
             var yScale = 1 - xScale;
             var pixels = hxd.Pixels.alloc(data.resolution * xScale + 1 * yScale,1 * xScale + data.resolution * yScale, ARGB);
@@ -244,19 +206,40 @@ class Gradient {
         }
 
 
-        var texture = Texture.fromPixels(genPixels(), RGBA);
-        texture.realloc = function() {
+        #if !editor
+        var hash = getDataHash(data);
+
+        var cache = getCache();
+        var entry = cache.get(hash);
+        if (entry != null)
+        {
+            return entry;
+        }
+		#else
+
+		var cache = getEditorCache();
+		var entry = cache.get(data);
+		if (entry != null)
+		{
+            var texture = entry.tex;
             var pixels = genPixels();
             if (pixels.width != texture.width || pixels.height != texture.height) {
                 texture.resize(pixels.width, pixels.height);
             }
             texture.uploadPixels(pixels);
+            return texture;
+		}
+		#end
+
+        var texture = Texture.fromPixels(genPixels(), RGBA);
+        texture.realloc = function() {
+            texture.uploadPixels(genPixels());
         }
 
 		#if !editor
         cache.set(hash, texture);
 		#else
-		cache.set(data, {oldHash: hash, tex: texture});
+		cache.set(data, {tex: texture});
 		#end
 
         return texture;
