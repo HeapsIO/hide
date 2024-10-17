@@ -228,6 +228,7 @@ class Reference extends Object3D {
 						ctx.rebuildPrefab(this);
 					}
 					else {
+						shared.editor.refreshInteractive(this);
 						@:privateAccess shared.editor.refreshTree();
 					}
 				}
