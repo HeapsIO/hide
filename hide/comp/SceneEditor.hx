@@ -703,7 +703,7 @@ class RenderPropsPopup extends Popup {
 
 		var fullPath = [];
 		var cur : hrt.prefab.Prefab = lastRenderProps;
-		var renderPropsSource = lastRenderProps.shared.parentPrefab?.source ?? "inline";
+		var renderPropsSource = lastRenderProps?.shared.parentPrefab?.source ?? "inline";
 		renderPropsSource = StringTools.replace(renderPropsSource, "/", "<wbr>/<wbr>");
 		while (cur != null) {
 			fullPath.unshift(cur.getAbsPath());
