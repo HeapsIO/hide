@@ -22,6 +22,7 @@ class Material extends Prefab {
 
 	#if editor
 	var previewSphere : h3d.scene.Object;
+	var gradientFollower : GradientFollower;
 	#end
 
 	public function new(parent, shared: ContextShared) {
@@ -127,7 +128,7 @@ class Material extends Prefab {
 			var flat = getRoot().flatten(Prefab);
 			for (f in flat) {
 				var cl = Type.getClass(f);
-				if (cl != hrt.prefab.Object3D && cl != hrt.prefab.Prefab && Std.downcast(f, hrt.prefab.Material) == null && Std.downcast(f, Shader) == null) {
+				if (cl != hrt.prefab.Object3D && cl != hrt.prefab.Prefab && Std.downcast(f, hrt.prefab.Material) == null && Std.downcast(f, Shader) == null && Std.downcast(f, hrt.prefab.l2d.Gradient) == null) {
 					isMatLib = false;
 					break;
 				}
@@ -157,6 +158,40 @@ class Material extends Prefab {
 
 		updateInstance();
 	}
+
+	#if editor
+	override function makeChild(c:Prefab) : Void {
+		if (shared.customMake == null) {
+			if (previewSphere != null && Std.downcast(c, hrt.prefab.l2d.Gradient) != null) {
+				if (gradientFollower == null) {
+					gradientFollower = new GradientFollower(previewSphere, shared.current2d);
+					gradientFollower.depthMask = true;
+					gradientFollower.offsetZ -= 1.5;
+					gradientFollower.perspectiveScale = 4.0;
+				}
+				var old2d = shared.current2d;
+
+				var numGrads = 0;
+				for (child in children) {
+					if (child == c)
+						break;
+					if (Std.downcast(child, hrt.prefab.l2d.Gradient) != null)
+						numGrads ++;
+				}
+				shared.current2d = new h2d.Object(gradientFollower);
+				shared.current2d.y += numGrads * 66;
+				c.make(shared);
+				shared.current2d = old2d;
+				return;
+			}
+
+			c.make(shared);
+		}
+		else if (c.shouldBeInstanciated()) {
+			shared.customMake(c);
+		}
+	}
+	#end
 
 	#if editor
 	override function findFirstLocal3d() {
@@ -242,8 +277,14 @@ class Material extends Prefab {
 
 	#if editor
 	override function editorRemoveInstanceObjects() : Void {
+		if (gradientFollower != null) {
+			gradientFollower.remove();
+			gradientFollower = null;
+		}
+
 		if (previewSphere != null) {
 			previewSphere.remove();
+			previewSphere = null;
 		}
 		else {
 			// temporary untill we find a proper way to remove a material
@@ -747,3 +788,28 @@ class Material extends Prefab {
 
 	static var _ = Prefab.register("material", Material);
 }
+
+#if editor
+class GradientFollower extends h2d.ObjectFollower {
+	public var perspectiveScale : Float = 1.0;
+
+	override function followObject() {
+		super.followObject();
+
+		if (follow == null)
+			return;
+
+		var absPos = follow.getAbsPos();
+		var pos = new h3d.Vector();
+		pos.set(absPos._41 + offsetX, absPos._42 + offsetY, absPos._43 + offsetZ);
+
+		var scene = @:privateAccess follow.getScene();
+		if (scene == null)
+			return;
+
+		var dToCam = scene.camera.pos.distance(pos);
+		var scale = 1.0/perspectiveScale * dToCam * Math.tan(scene.camera.fovY * 0.5 * Math.PI / 180.0);
+		setScale(1.0/scale);
+	}
+}
+#end
