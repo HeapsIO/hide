@@ -5,7 +5,7 @@ class BaseSpawn extends ComputeUtils {
 		@param var batchBuffer : RWPartialBuffer<{
 			modelView : Mat4, 
 		}>;
-		@param var particleBuffer : RWBuffer<{ speed : Vec3, lifeTime : Float }>;
+		@param var particleBuffer : RWPartialBuffer<{ speed : Vec3, lifeTime : Float }>;
 
 		@const var SPEED_NORMAL : Bool;
 		@param var minLifeTime : Float;

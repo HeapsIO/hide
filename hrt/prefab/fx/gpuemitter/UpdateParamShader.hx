@@ -5,7 +5,7 @@ class UpdateParamShader extends hxsl.Shader {
 
 		@param var batchBuffer : RWBuffer<Float>;
 
-		@param var particleBuffer : RWBuffer<{ speed : Vec3, lifeTime : Float }>;
+		@param var particleBuffer : RWPartialBuffer<{ speed : Vec3, lifeTime : Float }>;
 
 		@param var paramTexture : Sampler2D;
 		@param var stride : Int;
