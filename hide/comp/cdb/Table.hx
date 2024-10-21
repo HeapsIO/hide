@@ -539,7 +539,14 @@ class Table extends Component {
 
 				}},
 				{ label : "Collapse Others", click : function() {
-					element.find("tr.separator").not(".sep-hidden").not(sep).find("a.toggle").click();
+					var directParents = [];
+					var t = makeSeparatorTree(sepInfo);
+					while (t != null && t.index >= 0) {
+						directParents.push(t.index);
+						t = t.parent;
+					}
+					var selector = element.find("tr.separator").not(".sep-hidden").not((_, e) -> directParents.contains(Std.parseInt(e.getAttribute("sindex"))));
+					selector.find("a.toggle").click();
 					if (sep.hasClass("sep-hidden"))
 						sep.find("a.toggle").click();
 				}},
