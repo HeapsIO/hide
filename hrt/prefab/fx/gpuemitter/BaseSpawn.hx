@@ -12,6 +12,7 @@ class BaseSpawn extends ComputeUtils {
 		@param var maxLifeTime : Float;
 		@param var minStartSpeed : Float;
 		@param var maxStartSpeed : Float;
+		@param var rate : Float;
 		@param var absPos : Mat4;
 
 		var lifeTime : Float;
@@ -27,7 +28,7 @@ class BaseSpawn extends ComputeUtils {
 
 		function main() {
 			var idx = computeVar.globalInvocation.x;
-			if ( particleBuffer[idx].lifeTime < 1e-7 ) {
+			if ( particleBuffer[idx].lifeTime < 0.0 ) {
 				batchBuffer[idx].modelView = modelView;
 				var s = vec3(0.0, 0.0, 1.0);
 				if ( SPEED_NORMAL )

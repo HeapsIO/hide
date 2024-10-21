@@ -37,6 +37,7 @@ class ParticleShader extends hxsl.Shader {
 
 typedef Data = {
 	var maxCount : Int;
+	var rate : Int;
 	var infinite : Bool;
 	var maxLifeTime : Float;
 	var minLifeTime : Float;
@@ -118,11 +119,28 @@ class GPUEmitterObject extends h3d.scene.MeshBatch {
 			{ name : "speed", type : DVec3 },
 			{ name : "lifeTime", type : DFloat },
 			{ name : "lifeRatio", type : DFloat },
-			{ name : "padding", type : DVec3 },
+			{ name : "random", type : DFloat },
+			{ name : "padding", type : DVec2 },
 		]);
 		while ( p != null ) {
-			if ( particleBuffer.buffer == null )
-				particleBuffer.buffer = alloc.allocBuffer(instanceCount, particleBufferFormat, UniformReadWrite);
+			if ( particleBuffer.buffer == null ) {
+				var stride = 4 * 2;
+				var floats = alloc.allocFloats(instanceCount * stride);
+				for ( i in 0...instanceCount ) {
+					// speed
+					// floats[i * stride] = 0.0;
+					// floats[i * stride + 1] = 0.0;
+					// floats[i * stride + 2] = 0.0;
+					floats[i * stride + 3] = -1000.0; // lifeTime warmup
+					var l = hxd.Math.random() * (data.maxLifeTime - data.minLifeTime) + data.minLifeTime;
+					floats[i * stride + 4] = 1.0 / l; // lifeRatio
+					floats[i * stride + 5] = hxd.Math.random(); // random
+					// padding
+					floats[i * stride + 6] = 0.0;
+					floats[i * stride + 7] = 0.0;
+				}
+				particleBuffer.buffer = alloc.ofFloats(floats, particleBufferFormat, UniformReadWrite);
+			}
 			p = p.next;
 			if ( p != null && particleBuffer.next == null ) {
 				particleBuffer.next = { buffer : null, next : null};
@@ -332,10 +350,12 @@ class GPUEmitterObject extends h3d.scene.MeshBatch {
 
 @:access(hrt.prefab.fx.gpuemitter.GPUEmitterObject)
 class GPUEmitter extends Object3D {
+
 	static function getDefaultPrimitive() {
 		return h3d.prim.Cube.defaultUnitCube();
 	}
 
+	@:s var rate : Int = 0;
 	@:s var maxCount : Int = 512;
 	@:s var minLifeTime : Float = 0.5;
 	@:s var maxLifeTime : Float = 1.0;
@@ -375,6 +395,7 @@ class GPUEmitter extends Object3D {
 		}
 		inline function getData(trs : h3d.Matrix) {
 			return {
+				rate : rate,
 				maxCount : maxCount,
 				minLifeTime : minLifeTime,
 				maxLifeTime : maxLifeTime,
@@ -448,6 +469,7 @@ class GPUEmitter extends Object3D {
 		ctx.properties.add(new hide.Element('
 			<div class="group" name="Emitter">
 				<dl>
+					<dt>Rate</dt><dd><input type="range" step="1" min="1" max="8192" field="rate"/></dd>
 					<dt>Max count</dt><dd><input type="range" step="1" min="1" max="8192" field="maxCount"/></dd>
 					<dt>Min life time</dt><dd><input type="range" min="0.1" max="10" field="minLifeTime"/></dd>
 					<dt>Max life time</dt><dd><input type="range" min="0.1" max="10" field="maxLifeTime"/></dd>
