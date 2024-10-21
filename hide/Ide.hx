@@ -45,6 +45,8 @@ class Ide extends hide.tools.IdeData {
 
 	static var firstInit = true;
 
+	var customMenus : Array<nw.MenuItem> = [];
+
 	function new() {
 		super();
 		initPad();
@@ -685,6 +687,12 @@ class Ide extends hide.tools.IdeData {
 		return false;
 	}
 
+	public function injectCss(data: String) {
+		var head = new Element("head");
+		var style = new Element("<style>").appendTo(head);
+		style.text(data);
+	}
+
 	function loadPlugin( file : String, callb : Void -> Void, ?forceType : String ) {
 		file = getPath(file);
 		var wait = scripts.get(file);
@@ -1061,6 +1069,10 @@ class Ide extends hide.tools.IdeData {
 		js.node.ChildProcess.exec(c, function(e:js.node.ChildProcess.ChildProcessExecError,_,_) callb(e == null ? null : e.message));
 	}
 
+	public function addCustomMenu(item: nw.MenuItem) {
+		customMenus.push(item);
+	}
+
 	public function initMenu() {
 
 		if( subView != null ) return;
@@ -1335,7 +1347,12 @@ class Ide extends hide.tools.IdeData {
 			open("hide.view.settings.ProjectSettings", {});
 		});
 
-		window.menu = new hide.ui.Menu(menu).root;
+		var finalMenu = new hide.ui.Menu(menu).root;
+		for (custom in customMenus) {
+			finalMenu.append(custom);
+		}
+
+		window.menu = finalMenu;
 	}
 
 	public function showFileInResources(path: String) {
