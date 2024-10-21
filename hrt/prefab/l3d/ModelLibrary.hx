@@ -501,7 +501,6 @@ class ModelLibrary extends Prefab {
 			if ( texPath == null )
 				return null;
 			var tmp = loadTexture(sourcePath, texPath);
-
 			var ntex = normalMap == null ? null : loadTexture(sourcePath, normalMap);
 			var stex = specMap == null ? null : loadTexture(sourcePath, specMap);
 			var key = texPath+"/"+(ntex==null?"nonorm":ntex.name)+(stex==null?"nospec":stex.name);
@@ -517,6 +516,7 @@ class ModelLibrary extends Prefab {
 				h3d.pass.Copy.run(texture, resizedTex);
 				var texBytes = resizedTex.capturePixels().toDDS();
 				resizedTex.dispose();
+				texture.dispose();
 				var mipLevelImage = hxd.res.Any.fromBytes(tmp.name+"_"+mipLevel, texBytes).toImage();
 
 				var pos = null, posTex = null;
@@ -580,6 +580,7 @@ class ModelLibrary extends Prefab {
 					h3d.pass.Copy.run(texture, resizedTex);
 					var texBytes = resizedTex.capturePixels().toDDS();
 					resizedTex.dispose();
+					texture.dispose();
 					var submiplevelImage = hxd.res.Any.fromBytes(tmp.name+"_"+mipLevel, texBytes).toImage();
 					t.add(submiplevelImage);
 				}
@@ -589,6 +590,10 @@ class ModelLibrary extends Prefab {
 
 			}
 			tmap.set(key, t);
+
+			tmp.dispose();
+			ntex.dispose();
+			stex.dispose();
 			return t;
 		}
 
