@@ -120,7 +120,7 @@ class GPUEmitterObject extends h3d.scene.MeshBatch {
 		var p = dataPasses;
 		var particleBufferFormat = hxd.BufferFormat.make([
 			{ name : "speed", type : DVec3 },
-			{ name : "lifeTime", type : DVec4 }]
+			{ name : "lifeTime", type : DFloat }]
 		);
 		while ( p != null ) {
 			if ( particleBuffer.buffer == null )
