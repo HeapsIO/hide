@@ -61,8 +61,13 @@ typedef ParticleBuffer = {
 class GPUEmitterObject extends h3d.scene.MeshBatch {
 	public var simulationPass : h3d.mat.Pass;
 	public var spawnPass : h3d.mat.Pass;
+	public var updateParamPass : h3d.mat.Pass;
 	public var data : Data;
 	public var fxAnim : hrt.prefab.fx.FX.FXAnimation;
+
+	var customAnimations : Array<hrt.prefab.fx.BaseFX.CustomAnimation> = [];
+	var shaderParams : Array<{ param : hrt.prefab.fx.BaseFX.ShaderParam, shader : UpdateParamShader }> = [];
+	var paramTexture : h3d.mat.Texture;
 
 	var particleBuffers : ParticleBuffer; 
 
@@ -95,6 +100,7 @@ class GPUEmitterObject extends h3d.scene.MeshBatch {
 
 		simulationPass = new h3d.mat.Pass("simulation");
 		simulationPass.addShader(new BaseSimulation());
+
 		init();
 	}
 
@@ -119,14 +125,65 @@ class GPUEmitterObject extends h3d.scene.MeshBatch {
 			if ( p != null && particleBuffer.next == null ) {
 				particleBuffer.next = { buffer : null, next : null};
 			}
+
 			particleBuffer = particleBuffer.next;
 		}
+	}
+
+	public function bakeAnimations() {
+		if ( paramTexture != null )
+			paramTexture.dispose();
+
+		var prec = 255;
+		var data : Array<{param : hrt.prefab.fx.BaseFX.ShaderParam, values : Array<Dynamic>}> = [];
+		for ( anim in customAnimations ) {
+			var shaderAnimation = Std.downcast(anim, hrt.prefab.fx.BaseFX.ShaderAnimation);
+			if ( shaderAnimation == null )
+				continue;
+			for ( p in shaderAnimation.params ) {
+				var values = [];
+				for ( i in 0...prec ) {
+					shaderAnimation.setTime(i / prec);
+					values.push(shaderAnimation.shader.getParamValue(p.idx));
+				}
+				data.push({param : p, values : values});
+				if ( updateParamPass == null )
+					updateParamPass = new h3d.mat.Pass("paramUpdate");
+				var shader = new UpdateParamShader();
+				updateParamPass.addShader(shader);
+				shaderParams.push({ param : p, shader : shader });
+			}
+		}
+
+		if ( data.length > 0 ) {
+			paramTexture = new h3d.mat.Texture(prec, data.length, null, RGBA32F);
+			var pxls = hxd.Pixels.alloc(prec, data.length, RGBA32F);
+			for ( row => d in data ) {
+				if ( Std.isOfType(d.values[0], h3d.Vector4.Vector4Impl) ) {
+					for ( i in 0...prec )
+						pxls.setPixelF(i, row, d.values[i]);
+				} else if ( Std.isOfType(d.values[0], h3d.Vector.VectorImpl) ) {
+					for ( i in 0...prec ) {
+						pxls.setPixelF(i, row, cast(d.values[i], h3d.Vector.VectorImpl).toVector4());
+					}
+				} else {
+					for ( i in 0...prec )
+						pxls.setPixelF(i, row, new h3d.Vector4(d.values[i]));
+				}
+			}
+			paramTexture.uploadPixels(pxls);
+		}
+	}
+
+	function createUpdateParamShader() {
+		return { shader : null, params : null, size : null };
 	}
 
 	function dispatch(ctx : h3d.scene.RenderContext) {
 		#if editor
 		return;
 		#end
+
 		var p = dataPasses;
 		var particleBuffer = particleBuffers;
 		while ( p != null ) {
@@ -221,6 +278,26 @@ class GPUEmitterObject extends h3d.scene.MeshBatch {
 				ctx.computeList(@:privateAccess simulationPass.shaders);
 				ctx.computeDispatch(instanceCount);
 
+				for ( row => p in shaderParams ) {
+					p.shader.paramTexture = paramTexture;
+					p.shader.batchBuffer = b;
+					p.shader.particleBuffer = particleBuffer.buffer;
+					p.shader.stride = b.format.stride;
+					p.shader.row = row;
+					var pos = 0;
+					for ( i in b.format.getInputs() ) {
+						if ( i.name == p.param.def.name )
+							break;
+						pos += i.type.getSize();
+					}
+					p.shader.pos = pos;
+				}
+				if ( updateParamPass != null ) {
+					ctx.computeList(@:privateAccess updateParamPass.shaders);
+					ctx.computeDispatch(instanceCount);
+				}
+				
+
 				i += p.maxInstance;
 			}
 			p = p.next;
@@ -243,8 +320,16 @@ class GPUEmitterObject extends h3d.scene.MeshBatch {
 		}
 		particleBuffers = null;
 	}
+
+	override function onRemove() {
+		super.onRemove();
+
+		if ( paramTexture != null )
+			paramTexture.dispose();
+	}
 }
 
+@:access(hrt.prefab.fx.gpuemitter.GPUEmitterObject)
 class GPUEmitter extends Object3D {
 	static function getDefaultPrimitive() {
 		return h3d.prim.Cube.defaultUnitCube();
@@ -324,6 +409,20 @@ class GPUEmitter extends Object3D {
 		}
 	}
 
+	override function postMakeInstance() {
+		super.postMakeInstance();
+
+		var obj = local3d.find(o -> Std.downcast(o, GPUEmitterObject));
+		if ( obj != null ) {
+			obj.customAnimations = [];
+			var shaders = findAll(hrt.prefab.Shader);
+			for ( shader in shaders ) {
+				if( !shader.enabled ) continue;
+				hrt.prefab.fx.BaseFX.BaseFXTools.getCustomAnimations(shader, obj.customAnimations, obj.find(o -> Std.downcast(o, h3d.scene.MeshBatch)));
+			}
+			obj.bakeAnimations();
+		}
+	}
 
 	override function updateInstance(?propName : String) {
 		super.updateInstance(propName);
