@@ -48,6 +48,8 @@ class Material extends Prefab {
 		return obj;
 	}
 
+	public dynamic function filter(m : h3d.mat.Material) return true;
+
 	function renderProps() {
 		var cur = h3d.mat.MaterialSetup.current;
 		var setupName = cur.name;
@@ -65,6 +67,7 @@ class Material extends Prefab {
 		if (local3d == null)
 			local3d = findFirstLocal3d();
 		var mats = local3d.getMaterials();
+		mats = mats.filter(m -> filter(m));
 
 		#if editor
 		if (this.previewSphere != null)
