@@ -148,6 +148,9 @@ class Reference extends Object3D {
 
 	override public function editorRemoveObjects() : Void {
 		if (refInstance != null) {
+			for (child in refInstance.flatten()) {
+				shared.editor.removeInteractive(child);
+			}
 			refInstance.editorRemoveObjects();
 		}
 		super.editorRemoveObjects();
@@ -228,6 +231,12 @@ class Reference extends Object3D {
 						ctx.rebuildPrefab(this);
 					}
 					else {
+						if (refInstance != null) {
+							for (child in refInstance.flatten()) {
+								shared.editor.removeInteractive(child);
+							}
+						}
+
 						shared.editor.refreshInteractive(this);
 						@:privateAccess shared.editor.refreshTree();
 					}

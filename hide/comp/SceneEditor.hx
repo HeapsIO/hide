@@ -2333,13 +2333,17 @@ class SceneEditor {
 	}
 
 	public function refreshInteractive(elt : PrefabElement) {
+		removeInteractive(elt);
+		makeInteractive(elt);
+	}
+
+	public function removeInteractive(elt: PrefabElement) {
 		var int = interactives.get(elt);
 		if(int != null) {
 			var i3d = Std.downcast(int, h3d.scene.Interactive);
 			if( i3d != null ) i3d.remove() else cast(int,h2d.Interactive).remove();
 			interactives.remove(elt);
 		}
-		makeInteractive(elt);
 	}
 
 	function refreshInteractives() {
