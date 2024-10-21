@@ -292,10 +292,8 @@ class TrailObj extends h3d.scene.Mesh {
 			(y - prev.y) * (y - prev.y) +
 			(z - prev.z) * (z - prev.z);
 			len = Math.sqrt(lenSq);
-			if ( len < 0.0001 ) {
-				prev.lifetime = prefab.lifetime;
+			if ( len < 0.0001 )
 				return;
-			}
 		}
 
 		var point = allocPoint();
@@ -396,7 +394,7 @@ class TrailObj extends h3d.scene.Mesh {
 
 		var lastPointAlive : TrailPoint = null;
 		var totalLength = 0.0;
-		while ( cur != null ) {
+		do {
 			cur.lifetime -= dt;
 			var t = 1.0 - cur.lifetime / prefab.lifetime;
 			cur.w = hxd.Math.lerp(prefab.startWidth, prefab.endWidth, t);
@@ -405,7 +403,7 @@ class TrailObj extends h3d.scene.Mesh {
 				lastPointAlive = cur;
 			}
 			cur = cur.next;
-		}
+		} while ( cur != null );
 
 		t.totalLength = totalLength;
 
