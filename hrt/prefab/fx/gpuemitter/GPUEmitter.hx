@@ -101,10 +101,6 @@ class GPUEmitterObject extends h3d.scene.MeshBatch {
 		simulationPass = new h3d.mat.Pass("simulation");
 		simulationPass.addShader(new BaseSimulation());
 
-		init();
-	}
-
-	public function init() {
 		begin();
 		for ( _ in 0...data.maxCount )
 			emitInstance();
@@ -121,6 +117,8 @@ class GPUEmitterObject extends h3d.scene.MeshBatch {
 		var particleBufferFormat = hxd.BufferFormat.make([
 			{ name : "speed", type : DVec3 },
 			{ name : "lifeTime", type : DFloat },
+			{ name : "lifeRatio", type : DFloat },
+			{ name : "padding", type : DVec3 },
 		]);
 		while ( p != null ) {
 			if ( particleBuffer.buffer == null )

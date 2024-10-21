@@ -5,7 +5,7 @@ class BaseSpawn extends ComputeUtils {
 		@param var batchBuffer : RWPartialBuffer<{
 			modelView : Mat4, 
 		}>;
-		@param var particleBuffer : RWPartialBuffer<{ speed : Vec3, lifeTime : Float }>;
+		@param var particleBuffer : RWPartialBuffer<{ speed : Vec3, lifeTime : Float, lifeRatio : Float }>;
 
 		@const var SPEED_NORMAL : Bool;
 		@param var minLifeTime : Float;
@@ -34,6 +34,8 @@ class BaseSpawn extends ComputeUtils {
 					s = emitNormal;
 				particleBuffer[idx].speed = s * maxStartSpeed;
 				particleBuffer[idx].lifeTime = lifeTime;
+				// Keep in memory duration of particle to normalize curve update.
+				particleBuffer[idx].lifeRatio = 1.0 / lifeTime;
 			}
 		}
 	}
