@@ -83,7 +83,6 @@ class GraphEditor extends hide.comp.Component {
 
 	// used for deleting
 
-	// aaaaaa
 	var domain : hrt.shgraph.ShaderGraph.Domain;
 
 	var addMenu : JQuery;
