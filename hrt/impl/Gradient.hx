@@ -179,6 +179,7 @@ class Gradient {
         return hash;
     }
 
+    #if castle
     public static function textureFromCDB( g : cdb.Types.Gradient, size : Int ) {
         if( g == null ) return null;
         var d : GradientData = {
@@ -190,6 +191,7 @@ class Gradient {
         };
         return textureFromData(d);
     }
+    #end
 
     public static function textureFromData(data : GradientData) : h3d.mat.Texture {
         function genPixels() {
