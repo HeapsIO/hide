@@ -106,7 +106,7 @@ class GPUEmitterObject extends h3d.scene.MeshBatch {
 
 	public function init() {
 		begin();
-		for ( i in 0...data.maxCount )
+		for ( _ in 0...data.maxCount )
 			emitInstance();
 	}
 
@@ -118,9 +118,13 @@ class GPUEmitterObject extends h3d.scene.MeshBatch {
 			particleBuffers = { buffer : null, next : null};
 		var particleBuffer = particleBuffers;
 		var p = dataPasses;
+		var particleBufferFormat = hxd.BufferFormat.make([
+			{ name : "speed", type : DVec3 },
+			{ name : "lifeTime", type : DVec4 }]
+		);
 		while ( p != null ) {
 			if ( particleBuffer.buffer == null )
-				particleBuffer.buffer = alloc.allocBuffer(instanceCount, hxd.BufferFormat.VEC4_DATA, UniformReadWrite);
+				particleBuffer.buffer = alloc.allocBuffer(instanceCount, particleBufferFormat, UniformReadWrite);
 			p = p.next;
 			if ( p != null && particleBuffer.next == null ) {
 				particleBuffer.next = { buffer : null, next : null};
@@ -296,7 +300,6 @@ class GPUEmitterObject extends h3d.scene.MeshBatch {
 					ctx.computeList(@:privateAccess updateParamPass.shaders);
 					ctx.computeDispatch(instanceCount);
 				}
-				
 
 				i += p.maxInstance;
 			}
