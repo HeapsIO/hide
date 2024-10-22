@@ -8,6 +8,8 @@ import hide.prefab.HideProps;
 #end
 class Shader extends Prefab {
 
+	static final PASS_SELECT = "$PASS_SELECT";
+
 	@:s var targetMaterial : String;
 	@:s var recursiveApply = true;
 
@@ -83,7 +85,10 @@ class Shader extends Prefab {
 	}
 
 	function applyShader( obj : h3d.scene.Object, material : h3d.mat.Material, shader : hxsl.Shader ) {
-		material.mainPass.addShader(shader);
+		if ( material.name == PASS_SELECT )
+			@:privateAccess material.mainPass.addSelfShader(shader);
+		else
+			material.mainPass.addShader(shader);
 	}
 
 	function removeShader( obj : h3d.scene.Object, material : h3d.mat.Material, shader : hxsl.Shader ) {
@@ -103,6 +108,14 @@ class Shader extends Prefab {
 			var material : Material = cast parent;
 			for( m in material.getMaterials(true) )
 					callb(null, m);
+		} else if ( Std.isOfType(parent, MaterialSelector) ) {
+			var materialSelector = cast(parent, MaterialSelector);
+			var passSelect = h3d.mat.MaterialSetup.current.createMaterial();
+			passSelect.name = PASS_SELECT;
+			for ( p in materialSelector.getPasses() ) {
+				@:privateAccess passSelect.passes = p;
+				callb(null, passSelect);
+			}
 		} else {
 			var objs = [];
 			function pushUnique(obj : h3d.scene.Object ) {
