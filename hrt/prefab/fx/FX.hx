@@ -650,7 +650,7 @@ class FX extends Object3D implements BaseFX {
 				continue;
 			obj3d.local3d = target.object;
 			for ( s in obj3d.findAll(Shader) )
-				s.apply();
+				s.apply3d();
 		}
 
 		var fxAnim : FXAnimation = cast local3d;

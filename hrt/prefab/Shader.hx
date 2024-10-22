@@ -151,7 +151,16 @@ class Shader extends Prefab {
 		super.dispose();
 	}
 
-	public function apply() {
+	public function apply3d() {
+		if( shared.current3d != null )
+			iterMaterials(function(obj,mat) if(checkMaterial(mat)) applyShader(obj, mat, shader));
+	}
+
+	override function makeInstance() {
+		var shader = makeShader();
+		if( shader == null )
+			return;
+
 		if( shared.current2d != null ) {
 			var drawable = Std.downcast(shared.current2d, h2d.Drawable);
 			if (drawable != null) {
@@ -165,17 +174,9 @@ class Shader extends Prefab {
 				}
 			}
 		}
-		
+		// can't use apply3d(), macros?
 		if( shared.current3d != null )
 			iterMaterials(function(obj,mat) if(checkMaterial(mat)) applyShader(obj, mat, shader));
-	}
-
-	override function makeInstance() {
-		var shader = makeShader();
-		if( shader == null )
-			return;
-
-		apply();
 		this.shader = shader;
 		updateInstance();
 	}
