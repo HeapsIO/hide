@@ -592,8 +592,10 @@ class ModelLibrary extends Prefab {
 			tmap.set(key, t);
 
 			tmp.dispose();
-			ntex.dispose();
-			stex.dispose();
+			if( ntex != null )
+				ntex.dispose();
+			if( stex != null )
+				stex.dispose();
 			return t;
 		}
 
