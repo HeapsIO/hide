@@ -111,9 +111,9 @@ class Shader extends Prefab {
 		} else if ( Std.isOfType(parent, MaterialSelector) ) {
 			var materialSelector = cast(parent, MaterialSelector);
 			var passSelect = h3d.mat.MaterialSetup.current.createMaterial();
-			passSelect.name = PASS_SELECT;
 			for ( p in materialSelector.getPasses() ) {
-				@:privateAccess passSelect.passes = p;
+				passSelect.name = p.all ? "" : PASS_SELECT;
+				@:privateAccess passSelect.passes = p.pass;
 				callb(null, passSelect);
 			}
 		} else {

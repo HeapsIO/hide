@@ -4,24 +4,35 @@ typedef MaterialSelection = {
 	passName : String,
 }
 
+typedef SelectedPass = {
+	pass : h3d.mat.Pass,
+	all : Bool,
+}
+
 class MaterialSelector extends hrt.prefab.Prefab {
 
-	@:s public var selections : Array<MaterialSelection> = []; 
+	@:s public var selections : Array<MaterialSelection> = [{
+		passName : "all",
+	}]; 
 
-	public function getPasses(local3d: h3d.scene.Object = null) : Array<h3d.mat.Pass> {
+	public function getPasses(local3d: h3d.scene.Object = null) : Array<SelectedPass> {
 		if (local3d == null)
 			local3d = findFirstLocal3d();
 		var mats = local3d.getMaterials();
 		var passes = [];
+		var selectionSorted = selections.copy();
+		selectionSorted.sort((s1, s2) -> s1.passName == "all" ? return 1 : -1);
 		for ( m in mats ) {
 			for ( selection in selections ) {
-				if ( selection.passName == "all" || selection.passName == "mainPass" ) {
-					passes.push(m.mainPass);
+				if ( selection.passName == "all" ) {
+					passes.push({pass : m.mainPass, all : true});
 					break;
+				} else if ( selection.passName == "mainPass" ) {
+					passes.push({pass : m.mainPass, all : false });
 				} else {
 					var p = m.getPass(selection.passName);
 					if ( p != null )
-						passes.push(p);
+						passes.push({pass : p, all : false });
 				}
 			}
 		}
