@@ -33,6 +33,7 @@ class MaterialSelector extends hrt.prefab.Prefab {
 		return {
 			icon : "cog",
 			name : "Material Selector",
+			allowChildren: function(t) return true,
 		};
 	}
 
