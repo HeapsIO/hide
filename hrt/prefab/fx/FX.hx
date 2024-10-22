@@ -542,12 +542,6 @@ class FX extends Object3D implements BaseFX {
 	static var identRegex = ~/^[A-Za-z_][A-Za-z0-9_]*$/;
 	#end
 
-	/*override function save(data : Dynamic) {
-		super.save(data);
-		data.cullingRadius = cullingRadius;
-		if( scriptCode != "" ) data.scriptCode = scriptCode;
-	}*/
-
 	public function new(parent:Prefab, contextShared: ContextShared) {
 		super(parent, contextShared);
 		duration = 5.0;
@@ -561,9 +555,10 @@ class FX extends Object3D implements BaseFX {
 				if ( shadersRoot == null )
 					continue;
 				var newRoot = new hrt.prefab.Object3D(null, sh);
-				for ( c in shadersRoot.children )
-					if ( Std.isOfType(c, Shader) )
+				for ( c in shadersRoot.children ) {
+					if ( Std.isOfType(c, Shader) || Std.isOfType(c, Material) || Std.isOfType(c, MaterialSelector) )
 						c.parent = newRoot;
+				}
 				newRoot.name = shadersRoot.name;
 				newRoot.parent = shadersRoot.parent;
 				shadersRoot.parent = null;
@@ -650,7 +645,12 @@ class FX extends Object3D implements BaseFX {
 			var shadersRoot = find(Prefab, p -> target.name == p.name);
 			if ( shadersRoot == null )
 				continue;
-			applyShadersToTarget(shadersRoot, target.object);
+			var obj3d = Std.downcast(shadersRoot, Object3D);
+			if ( obj3d == null )
+				continue;
+			obj3d.local3d = target.object;
+			for ( s in obj3d.findAll(Shader) )
+				s.apply();
 		}
 
 		var fxAnim : FXAnimation = cast local3d;
@@ -661,26 +661,11 @@ class FX extends Object3D implements BaseFX {
 				var shadersRoot = find(Prefab, p -> target.name == p.name);
 				if ( shadersRoot == null )
 					continue;
-				removeShadersFromTarget(shadersRoot, target.object);
+				for ( s in shadersRoot.findAll(Shader) )
+					s.dispose();
 			}
 		}
 	}
-
-	function applyShadersToTarget( source : Prefab, target : h3d.scene.Object ) {
-		var shaders = source.findAll(Shader);
-        var mats = target.getMaterials();
-        for ( m in mats )
-            for ( s in shaders)
-                m.mainPass.addShader(s.shader);
-	}
-
-    function removeShadersFromTarget( source : Prefab, target : h3d.scene.Object ) {
-        var shaders = source.findAll(Shader);
-        var mats = target.getMaterials();
-        for ( m in mats )
-            for ( s in shaders)
-                m.mainPass.removeShader(s.shader);
-    }
 
 	#if editor
 
