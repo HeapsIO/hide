@@ -55,6 +55,7 @@ typedef Data = {
 
 typedef ParticleBuffer = {
 	var buffer : h3d.Buffer;
+	var atomic : h3d.Buffer;
 	var next : ParticleBuffer;
 }
 
@@ -71,8 +72,9 @@ class GPUEmitterObject extends h3d.scene.MeshBatch {
 	var paramTexture : h3d.mat.Texture;
 
 	var particleBuffers : ParticleBuffer; 
-
 	var particleShader : ParticleShader;
+
+	var rateAccumulation : Float = 0.0;
 
 	public function new(data, primitive, materials, ?parent) {
 		super(primitive, null, parent);
@@ -112,7 +114,7 @@ class GPUEmitterObject extends h3d.scene.MeshBatch {
 
 		var alloc = hxd.impl.Allocator.get();
 		if ( particleBuffers == null )
-			particleBuffers = { buffer : null, next : null};
+			particleBuffers = { buffer : null, atomic : null, next : null};
 		var particleBuffer = particleBuffers;
 		var p = dataPasses;
 		var particleBufferFormat = hxd.BufferFormat.make([
@@ -140,10 +142,11 @@ class GPUEmitterObject extends h3d.scene.MeshBatch {
 					floats[i * stride + 7] = 0.0;
 				}
 				particleBuffer.buffer = alloc.ofFloats(floats, particleBufferFormat, UniformReadWrite);
+				particleBuffer.atomic = alloc.allocBuffer( 1, hxd.BufferFormat.VEC4_DATA, UniformReadWrite );
 			}
 			p = p.next;
 			if ( p != null && particleBuffer.next == null ) {
-				particleBuffer.next = { buffer : null, next : null};
+				particleBuffer.next = { buffer : null, atomic : null, next : null};
 			}
 
 			particleBuffer = particleBuffer.next;
@@ -207,11 +210,33 @@ class GPUEmitterObject extends h3d.scene.MeshBatch {
 		var p = dataPasses;
 		var particleBuffer = particleBuffers;
 		while ( p != null ) {
+			if ( countBytes == null ) {
+				countBytes = haxe.io.Bytes.alloc(4*4);
+				countBytes.setInt32(0, 0);
+				countBytes.setInt32(1, 0);
+				countBytes.setInt32(2, 0);
+				countBytes.setInt32(3, 0);
+			}
+			particleBuffer.atomic.uploadBytes(countBytes, 0, 1);
+
 			var baseSpawn = spawnPass.getShader(BaseSpawn);
 			baseSpawn.maxLifeTime = data.maxLifeTime;
 			baseSpawn.minLifeTime = data.minLifeTime;
 			baseSpawn.maxStartSpeed = data.maxStartSpeed;
 			baseSpawn.minStartSpeed = data.minStartSpeed;
+			if ( data.rate > 0 ) {
+				var r = data.rate * ctx.elapsedTime;
+				baseSpawn.rate = Math.floor(r);
+				if ( baseSpawn.rate == 0 ) {
+					baseSpawn.rate = Math.floor(rateAccumulation);
+					if ( baseSpawn.rate == 0 )
+						rateAccumulation += r;
+					else
+						rateAccumulation = 0.0;
+				} else
+					rateAccumulation = 0.0;
+			} else
+				baseSpawn.rate = instanceCount;
 			switch ( data.speedMode ) {
 			case Normal:
 				baseSpawn.SPEED_NORMAL = true;
@@ -288,6 +313,7 @@ class GPUEmitterObject extends h3d.scene.MeshBatch {
 
 				baseSpawn.batchBuffer = b;
 				baseSpawn.particleBuffer = particleBuffer.buffer;
+				baseSpawn.atomic = particleBuffer.atomic;
 
 				baseSimulation.batchBuffer = b;
 				baseSimulation.particleBuffer = particleBuffer.buffer;
@@ -335,6 +361,7 @@ class GPUEmitterObject extends h3d.scene.MeshBatch {
 		var b = particleBuffers;
 		while ( b != null ) {
 			b.buffer.dispose();
+			b.atomic.dispose();
 			b = b.next;
 		}
 		particleBuffers = null;
