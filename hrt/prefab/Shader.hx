@@ -133,8 +133,7 @@ class Shader extends Prefab {
 				for( c in parent.children )
 					for( o in shared.getObjects(c, h3d.scene.Object) )
 						pushUnique(o);
-			} else
-			{
+			} else {
 				var obj3d = Std.downcast(parent,hrt.prefab.Object3D);
 				if (obj3d != null)
 					objs = obj3d.getObjects(h3d.scene.Object);
@@ -145,10 +144,14 @@ class Shader extends Prefab {
 		}
 	}
 
-	override function makeInstance() {
-		var shader = makeShader();
-		if( shader == null )
-			return;
+	override function dispose() {
+		if( shared.current3d != null )
+			iterMaterials(function(obj,mat) if(checkMaterial(mat)) removeShader(obj, mat, shader));
+
+		super.dispose();
+	}
+
+	public function apply() {
 		if( shared.current2d != null ) {
 			var drawable = Std.downcast(shared.current2d, h2d.Drawable);
 			if (drawable != null) {
@@ -162,9 +165,17 @@ class Shader extends Prefab {
 				}
 			}
 		}
-
+		
 		if( shared.current3d != null )
 			iterMaterials(function(obj,mat) if(checkMaterial(mat)) applyShader(obj, mat, shader));
+	}
+
+	override function makeInstance() {
+		var shader = makeShader();
+		if( shader == null )
+			return;
+
+		apply();
 		this.shader = shader;
 		updateInstance();
 	}
