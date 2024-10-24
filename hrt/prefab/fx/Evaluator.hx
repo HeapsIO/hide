@@ -73,6 +73,9 @@ class Evaluator {
 				return getSum(a, time) + getSum(b, time);
 			case VMult(a, VConst(b)), VMult(VConst(b), a): return getSum(a, time) * b;
 			case VZero: return 0;
+			case VBlend(a,b,v):
+				var blend = parameters[v] ?? 0.0;
+				return hxd.Math.lerp(getSum(a, time), getSum(b, time), blend);
 			default: throw "not implemented";
 		}
 		return 0.0;
