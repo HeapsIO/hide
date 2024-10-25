@@ -123,6 +123,11 @@ class NodeGenContext {
 
 	function getOrAllocateFromTVar(tvar: TVar) : TVar {
 		var fullName = AstTools.getFullName(tvar);
+
+		// special case handling for normal because it gets replaced in the preview shader
+		if (fullName == "input.normal")
+			return getOrAllocateGlobal(Normal);
+
 		var def = globalVars.get(fullName);
 		if (def != null) {
 			return def.v;
