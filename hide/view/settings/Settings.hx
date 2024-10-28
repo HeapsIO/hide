@@ -75,8 +75,6 @@ class Settings extends hide.ui.View<{}> {
 		content.append(c.element);
 	}
 
-
-	settings.register("oeoeoe", [Array<zae])
 	function getCategorie(name : String) {
 		var res = null;
 		for (c in categories) {
