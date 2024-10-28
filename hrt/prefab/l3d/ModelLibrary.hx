@@ -536,6 +536,11 @@ class ModelLibrary extends Prefab {
 					pos = b.add(mipLevelImage);
 					posTex = b;
 				}
+				inline function atlasError(path : String, image : hxd.res.Image) {
+					throw 'Could not atlas ${sourcePath}. ${image.getInfo().width}x${image.getInfo().height} does not fit atlas size ${atlasResolution}x${atlasResolution}';
+				}
+				if ( pos == null )
+					atlasError(sourcePath, mipLevelImage);
 				if ( mipLevel == 0) {
 					t = {
 						pos : pos,
@@ -582,7 +587,8 @@ class ModelLibrary extends Prefab {
 					resizedTex.dispose();
 					texture.dispose();
 					var submiplevelImage = hxd.res.Any.fromBytes(tmp.name+"_"+mipLevel, texBytes).toImage();
-					t.add(submiplevelImage);
+					if ( t.add(submiplevelImage) == null )
+						atlasError(isSpec ? specMap : normalMap, realTex);
 				}
 
 				packSub(normalMaps, ntex, false);
