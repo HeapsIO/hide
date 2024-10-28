@@ -373,6 +373,9 @@ class TrailObj extends h3d.scene.Mesh {
 		updateShader();
 
 		cooldown = 0.0;
+
+		ignoreCollide = true;
+		ignoreBounds = true;
 	}
 
 	var lastUpdateDuration = 0.0;
