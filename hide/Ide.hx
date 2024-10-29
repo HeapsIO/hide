@@ -808,7 +808,12 @@ class Ide extends hide.tools.IdeData {
 		e.change(function(ev) {
 			var dir = ev.getThis().val();
 			if( dir == "" && !allowNull ) return;
-			onSelect(dir == "" ? null : (isAbsolute ? dir : makeRelative(dir)));
+			try {
+				onSelect(dir == "" ? null : (isAbsolute ? dir : makeRelative(dir)));
+			} catch (err:haxe.Exception) {
+				e.remove();
+				throw err;
+			}
 			e.remove();
 		}).appendTo(window.window.document.body).click();
 
