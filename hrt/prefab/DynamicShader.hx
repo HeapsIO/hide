@@ -2,21 +2,15 @@ package hrt.prefab;
 
 class DynamicShader extends Shader {
 
-	var shaderDef : hrt.prefab.Cache.ShaderDef;
-	var shaderClass : Class<hxsl.Shader>;
+	@:c var shaderDef : {> hrt.prefab.Cache.ShaderDef, ?sclass : Class<hxsl.Shader>, ?isShaderGraph : Bool } = { shader : null, inits : null };
 	@:s var isInstance : Bool = false;
-	var isShadergraph : Bool = false;
 
 	public function new(parent,  shared: ContextShared) {
 		super(parent, shared);
 	}
 
-	override function copy(other:Prefab) {
-		super.copy(other);
-	}
-
 	override function setShaderParam(shader:hxsl.Shader, v:hxsl.Ast.TVar, value:Dynamic) {
-		if( isInstance && !isShadergraph ) {
+		if( isInstance && !shaderDef.isShaderGraph ) {
 			super.setShaderParam(shader,v,value);
 			return;
 		}
@@ -24,16 +18,16 @@ class DynamicShader extends Shader {
 	}
 
 	override function getShaderDefinition():hxsl.SharedShader {
-		if( shaderDef == null)
+		if( shaderDef.shader == null)
 			loadShaderDef();
-		return shaderDef == null ? null : shaderDef.shader;
+		return shaderDef.shader;
 	}
 
 	override function makeShader() {
 		if( getShaderDefinition() == null )
 			return null;
-		if( isInstance && !isShadergraph)
-			shader = Type.createInstance(shaderClass,[]);
+		if( isInstance && !shaderDef.isShaderGraph )
+			shader = Type.createInstance(shaderDef.sclass,[]);
 		else {
 			var dshader = new hxsl.DynamicShader(shaderDef.shader);
 			for( v in shaderDef.inits ) {
@@ -73,40 +67,45 @@ class DynamicShader extends Shader {
 	}
 
 	public function loadShaderDef() {
-		if(shaderDef == null) {
+		if(shaderDef.shader == null) {
 			fixSourcePath();
 			if (StringTools.endsWith(source, ".shgraph")) {
-				isShadergraph = true;
+				shaderDef.isShaderGraph = true;
 				var res = hxd.res.Loader.currentInstance.load(source);
 				var shgraph = Std.downcast(res.toPrefab().load(), hrt.shgraph.ShaderGraph);
 				if (shgraph == null)
 					return;
-				shaderDef = shgraph.compile(null);
+				var sh = shgraph.compile(null);
+				shaderDef.shader = sh.shader;
+				shaderDef.inits = sh.inits;
 				#if !editor
 				res.watch( function() {
 					@:privateAccess hxd.res.Loader.currentInstance.cache.remove(source);
 				});
 				#end
 			}
-			else if( isInstance && !isShadergraph ) {
-				shaderClass = loadShaderClass();
-				var shared : hxsl.SharedShader = (shaderClass:Dynamic)._SHADER;
+			else if( isInstance && !shaderDef.isShaderGraph ) {
+				shaderDef.sclass = loadShaderClass();
+				var shared : hxsl.SharedShader = (shaderDef.sclass:Dynamic)._SHADER;
 				if( shared == null ) {
-					@:privateAccess Type.createEmptyInstance(shaderClass).initialize();
-					shared = (shaderClass:Dynamic)._SHADER;
+					@:privateAccess Type.createEmptyInstance(shaderDef.sclass).initialize();
+					shared = (shaderDef.sclass:Dynamic)._SHADER;
 				}
-				shaderDef = { shader : shared, inits : [] };
+				shaderDef.shader = shared;
+				shaderDef.inits = [];
 			} else {
 				var path = source;
 				if(StringTools.endsWith(path, ".hx")) path = path.substr(0, -3);
-				shaderDef = shared.loadShader(path);
+				var sh = shared.loadShader(path);
+				shaderDef.shader = sh.shader;
+				shaderDef.inits = sh.inits;
 			}
 		}
-		if(shaderDef == null)
+		if(shaderDef.shader == null)
 			return;
 
 		var forceInit = #if editor true #else false #end;
-		if (forceInit || isShadergraph) {
+		if (forceInit || shaderDef.isShaderGraph) {
 			// TODO: Where to init prefab default values?
 			for( v in shaderDef.inits ) {
 				if(!Reflect.hasField(props, v.variable.name)) {
@@ -173,7 +172,7 @@ class DynamicShader extends Shader {
 
 		super.edit(ectx);
 
-		if( (isInstance && !isShadergraph) || loadShaderClass(true) != null ) {
+		if( (isInstance && !isShadergraph) || loadshaderDef.sclass(true) != null ) {
 			ectx.properties.add(hide.comp.PropsEditor.makePropsList([{
 				name : "isInstance",
 				t : PBool,
