@@ -229,15 +229,19 @@ class ParticleInstance {
 	}
 
 	function updateAbsPos(emitter: EmitterObject) {
-		var qRot = qRot.toQuat();
+		var absPos = tmpMat;
 
 		switch( emitter.alignMode ) {
 			case Screen|Axis:
-				qRot.load(emitter.screenQuat);
+				if ( emitter.followRotation ) {
+					inline qRot.toQuat().toMatrix(absPos);
+					absPos.multiply(emitter.screenRot, absPos);
+				} else
+					absPos.load(emitter.screenRot);
 			default:
+				inline qRot.toQuat().toMatrix(absPos);
 		}
 
-		var absPos = tmpMat;
 		var localMat = tmpMat2;
 
 		var sx = scaleX;
@@ -251,8 +255,6 @@ class ParticleInstance {
 			sz = sz/invScale.z;
 		}
 
-
-		inline qRot.toMatrix(absPos);
 		absPos._11 *= sx;
 		absPos._12 *= sx;
 		absPos._13 *= sx;
@@ -503,6 +505,7 @@ class EmitterObject extends h3d.scene.Object {
 	public var emitScale : Float = 1.0;
 	public var maxCount = 20;
 	public var enableSort = true;
+	public var followRotation = false;
 	// EMIT SHAPE
 	public var emitShape : EmitShape = Cylinder;
 	public var emitAngle : Float = 0.0;
@@ -534,7 +537,7 @@ class EmitterObject extends h3d.scene.Object {
 	public var randomGradient : GradientData;
 
 	public var invTransform = new h3d.Matrix();
-	public var screenQuat = new h3d.Quat();
+	public var screenRot = new h3d.Matrix();
 	public var worldScale = new h3d.Vector(1,1,1);
 
 	public dynamic function postParticleUpdate(particle: ParticleInstance, dt: Float) {
@@ -1125,46 +1128,59 @@ class EmitterObject extends h3d.scene.Object {
 				tmpMat.multiply(tmpMat, tmpMat2);
 			}
 
-			screenQuat.initRotateMatrix(tmpMat);
-			tmpQuat.initRotateAxis(1,0,0,Math.PI);  // Flip Y axis so Y is pointing down
-			screenQuat.multiply(screenQuat, tmpQuat);
+			screenRot.initRotationAxis( new h3d.Vector(1,0,0),Math.PI);  // Flip Y axis so Y is pointing down
+			screenRot.multiply(screenRot, tmpMat);
 		}
 		else if(alignMode == Axis) {
 			var lockAxis = new h3d.Vector();
-			var frontAxis = new h3d.Vector(1, 0, 0);
+			var rightAxis = new h3d.Vector();
+			var upAxis = new h3d.Vector();
 			switch alignLockAxis {
-				case X: lockAxis.set(1, 0, 0);
-				case Y: lockAxis.set(0, 1, 0);
-				case Z: lockAxis.set(0, 0, 1);
+				case X:
+					lockAxis.set(1, 0, 0);
+					rightAxis.set(0, 1, 0);
+					upAxis.set(0, 0, 1);
+				case Y:
+					lockAxis.set(0, 1, 0);
+					rightAxis.set(0, 0, 1);
+					upAxis.set(1, 0, 0);
+				case Z:
+					lockAxis.set(0, 0, 1);
+					rightAxis.set(1, 0, 0);
+					upAxis.set(0, 1, 0);
 				case ScreenZ:
 					lockAxis.set(0, 0, 1);
-					frontAxis.set(0, 1, 0);
+					rightAxis.set(0, 1, 0);
+					upAxis.set(-1, 0, 0);
 			}
 			var lookAtPos = tmpVec;
 			lookAtPos.load(getScene().camera.pos);
 
-			var invParent = parent.getInvPos();
-			lookAtPos.transform(invParent);
-			var deltaVec = new h3d.Vector(lookAtPos.x - x, lookAtPos.y - y, lookAtPos.z - z);
-
-			var invParentQ = tmpQuat;
-			invParentQ.initRotateMatrix(invParent);
-
-			var targetOnPlane = h3d.col.Plane.fromNormalPoint(lockAxis.toPoint(), new h3d.col.Point()).project(deltaVec.toPoint()).toVector();
-			targetOnPlane.normalize();
-			var angle = hxd.Math.acos(frontAxis.dot(targetOnPlane));
-
-			var cross = frontAxis.cross(deltaVec);
-			if(lockAxis.dot(cross) < 0)
-				angle = -angle;
-
-			screenQuat.initRotateAxis(lockAxis.x, lockAxis.y, lockAxis.z, angle);
-			screenQuat.normalize();
-			if(alignLockAxis == ScreenZ) {
-				tmpQuat.initRotateAxis(1,0,0,-Math.PI/2);
-				screenQuat.multiply(screenQuat, tmpQuat);
+			if ( followRotation ) {
+				var invAbsPos = getInvPos();
+				lookAtPos.transform(invAbsPos);
+			} else {
+				var invParent = parent.getInvPos();
+				lookAtPos.transform(invParent);
+				lookAtPos.x -= x;
+				lookAtPos.y -= y;
+				lookAtPos.z -= z;
 			}
 
+			lookAtPos.x *= lockAxis.x != 0.0 ? 0.0 : 1.0;
+			lookAtPos.y *= lockAxis.y != 0.0 ? 0.0 : 1.0;
+			lookAtPos.z *= lockAxis.z != 0.0 ? 0.0 : 1.0;
+			lookAtPos.normalize();
+
+			var angle = hxd.Math.acos(rightAxis.dot(lookAtPos));
+			if(upAxis.dot(lookAtPos) < 0)
+				angle = -angle;
+
+			screenRot.initRotationAxis(lockAxis, angle);
+			if(alignLockAxis == ScreenZ) {
+				tmpMat.initRotationAxis(new h3d.Vector(1.0, 0.0, 0.0),-Math.PI/2);
+				screenRot.multiply(tmpMat, screenRot);
+			}
 		}
 	}
 
@@ -1398,6 +1414,7 @@ class Emitter extends Object3D {
 		{ name: "alignLockAxis", t: PEnum(AlignLockAxis), def: AlignLockAxis.ScreenZ, disp: "Lock Axis", groupName : "Properties" },
 		{ name: "simulationSpace", t: PEnum(SimulationSpace), def: SimulationSpace.Local, disp: "Simulation Space", groupName : "Properties" },
 		{ name: "particleScaling", t: PEnum(ParticleScaling), def: ParticleScaling.Parent, disp: "Scaling", groupName : "Properties" },
+		{ name: "followRotation", t: PBool, def: false, disp: "Follow rotation", groupName : "Properties" },
 		{ name: "enableSort", t: PBool, def: true, disp: "Enable Sort", groupName : "Properties"},
 
 		// EMIT PARAMS
@@ -1754,6 +1771,7 @@ class Emitter extends Object3D {
 		emitterObj.emitRateMax 			= 	makeParam(this, "emitRateMax");
 		emitterObj.emitRateChangeDelay 	= 	getParamVal("emitRateChangeDelay");
 		emitterObj.emitShape 			= 	getParamVal("emitShape");
+		emitterObj.followRotation 		= 	getParamVal("followRotation");
 		// EMIT SHAPE
 		emitterObj.emitAngle 			= 	getParamVal("emitAngle");
 		emitterObj.emitRad1 			= 	getParamVal("emitRad1");
