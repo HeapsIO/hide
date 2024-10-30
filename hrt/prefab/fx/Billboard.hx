@@ -32,8 +32,6 @@ class BillboardObject extends h3d.scene.Object {
 		fwd.load(camera.target.sub(camera.pos));
 		fwd.normalize();
 
-		var curFwd = getLocalDirection();
-		curFwd.normalize();
 		if (LockX)
 			fwd.x = initFwd.x;
 		if (LockY)
