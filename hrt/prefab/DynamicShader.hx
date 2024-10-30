@@ -172,7 +172,7 @@ class DynamicShader extends Shader {
 
 		super.edit(ectx);
 
-		if( (isInstance && !isShadergraph) || loadshaderDef.sclass(true) != null ) {
+		if( (isInstance && !shaderDef.isShaderGraph) || loadShaderClass(true) != null ) {
 			ectx.properties.add(hide.comp.PropsEditor.makePropsList([{
 				name : "isInstance",
 				t : PBool,
