@@ -174,7 +174,9 @@ class Ide extends hide.tools.IdeData {
 		var body = window.window.document.body;
 		window.on("focus", function() {
 			// handle cancel on type=file
-			haxe.Timer.delay(function() new Element(body).find("input[type=file]").change().remove(), 200);
+			new Element(body).find("input[type=file]").each((_, element) -> {
+				haxe.Timer.delay(() -> new Element(element).change(), 100);
+			});
 
 			if(fileExists(databaseFile) && getFileText(databaseFile) != lastDBContent) {
 				if(js.Browser.window.confirm(databaseFile + " has changed outside of Hide. Do you want to reload?")) {
@@ -783,8 +785,8 @@ class Ide extends hide.tools.IdeData {
 		var e = new Element('<input type="file" style="visibility:hidden" value="" nwworkingdir="$path" accept="${[for( e in exts ) "."+e].join(",")}"/>');
 		e.change(function(_) {
 			var file = e.val();
-			if( file == "" && !allowNull ) return;
 			e.remove();
+			if( file == "" && !allowNull ) return;
 			onSelect(file == "" ? null : makeRelative(file));
 		}).appendTo(window.window.document.body).click();
 	}
@@ -797,8 +799,8 @@ class Ide extends hide.tools.IdeData {
 		var e = new Element('<input type="file" style="visibility:hidden" value="" nwworkingdir="$path" nwsaveas="$file"/>');
 		e.change(function(_) {
 			var file = e.val();
-			if( file == "" && !allowNull ) return;
 			e.remove();
+			if( file == "" && !allowNull ) return;
 			onSelect(file == "" ? null : makeRelative(file));
 		}).appendTo(window.window.document.body).click();
 	}
@@ -807,14 +809,9 @@ class Ide extends hide.tools.IdeData {
 		var e = new Element('<input type="file" style="visibility:hidden" value="" nwdirectory/>');
 		e.change(function(ev) {
 			var dir = ev.getThis().val();
-			if( dir == "" && !allowNull ) return;
-			try {
-				onSelect(dir == "" ? null : (isAbsolute ? dir : makeRelative(dir)));
-			} catch (err:haxe.Exception) {
-				e.remove();
-				throw err;
-			}
 			e.remove();
+			if( dir == "" && !allowNull ) return;
+			onSelect(dir == "" ? null : (isAbsolute ? dir : makeRelative(dir)));
 		}).appendTo(window.window.document.body).click();
 
 		// remove comments
