@@ -772,57 +772,68 @@ class Ide extends hide.tools.IdeData {
 	}
 
 	public function chooseFiles( exts : Array<String>, onSelect : Array<String> -> Void, allowNull=false ) {
-		var e = new Element('<input type="file" style="visibility:hidden" value="" accept="${[for( e in exts ) "."+e].join(",")}" multiple="multiple"/>');
-		e.change(function(_) {
-			var files = [for( f in (""+e.val()).split(";") ) f];
-			if( files.length == 1 && files[0] == "" ) files.pop();
-			var files = [for( f in files ) makeRelative(f)];
-			e.remove();
-			onSelect(files);
-		}).appendTo(window.window.document.body).click();
+		// Delay dialog creation so the "focus" event is flushed (we need that to detect if the user cancelled the file dialog)
+		haxe.Timer.delay(() -> {
+			var e = new Element('<input type="file" style="visibility:hidden" value="" accept="${[for( e in exts ) "."+e].join(",")}" multiple="multiple"/>');
+			e.change(function(_) {
+				var files = [for( f in (""+e.val()).split(";") ) f];
+				if( files.length == 1 && files[0] == "" ) files.pop();
+				trace(files);
+				var files = [for( f in files ) makeRelative(f)];
+				e.remove();
+				onSelect(files);
+			}).appendTo(window.window.document.body).click();
+		}, 100);
 	}
 
 	public function chooseFile( exts : Array<String>, onSelect : Null<String> -> Void, allowNull = false, workingdir:String = null) {
-		var path = "";
-		if (workingdir != null && workingdir != "#MISSING") {
-			var pathArray = getPath(workingdir).split("/");
-			var c = isWindows ? "\\" : "/";
-			path = pathArray.join(c);
-		}
+		// Delay dialog creation so the "focus" event is flushed (we need that to detect if the user cancelled the file dialog)
+		haxe.Timer.delay(() -> {
+			var path = "";
+			if (workingdir != null && workingdir != "#MISSING") {
+				var pathArray = getPath(workingdir).split("/");
+				var c = isWindows ? "\\" : "/";
+				path = pathArray.join(c);
+			}
 
-		var e = new Element('<input type="file" style="visibility:hidden" value="" nwworkingdir="$path" accept="${[for( e in exts ) "."+e].join(",")}"/>');
-		e.change(function(_) {
-			var file = e.val();
-			e.remove();
-			if( file == "" && !allowNull ) return;
-			onSelect(file == "" ? null : makeRelative(file));
-		}).appendTo(window.window.document.body).click();
+			var e = new Element('<input type="file" style="visibility:hidden" value="" nwworkingdir="$path" accept="${[for( e in exts ) "."+e].join(",")}"/>');
+			e.change(function(_) {
+				var file = e.val();
+				e.remove();
+				if( file == "" && !allowNull ) return;
+				onSelect(file == "" ? null : makeRelative(file));
+			}).appendTo(window.window.document.body).click();
+		}, 100);
 	}
 
 	public function chooseFileSave( defaultPath : String, onSelect : String -> Void, allowNull=false ) {
-		var path = getPath(defaultPath).split("/");
-		var file = path.pop();
-		var c = isWindows ? "\\" : "/";
-		var path = path.join(c);
-		var e = new Element('<input type="file" style="visibility:hidden" value="" nwworkingdir="$path" nwsaveas="$file"/>');
-		e.change(function(_) {
-			var file = e.val();
-			e.remove();
-			if( file == "" && !allowNull ) return;
-			onSelect(file == "" ? null : makeRelative(file));
-		}).appendTo(window.window.document.body).click();
+		// Delay dialog creation so the "focus" event is flushed (we need that to detect if the user cancelled the file dialog)
+		haxe.Timer.delay(() -> {
+			var path = getPath(defaultPath).split("/");
+			var file = path.pop();
+			var c = isWindows ? "\\" : "/";
+			var path = path.join(c);
+			var e = new Element('<input type="file" style="visibility:hidden" value="" nwworkingdir="$path" nwsaveas="$file"/>');
+			e.change(function(_) {
+				var file = e.val();
+				e.remove();
+				if( file == "" && !allowNull ) return;
+				onSelect(file == "" ? null : makeRelative(file));
+			}).appendTo(window.window.document.body).click();
+		}, 100);
 	}
 
 	public function chooseDirectory( onSelect : String -> Void, ?isAbsolute = false, allowNull=false ) {
-		var e = new Element('<input type="file" style="visibility:hidden" value="" nwdirectory/>');
-		e.change(function(ev) {
-			var dir = ev.getThis().val();
-			e.remove();
-			if( dir == "" && !allowNull ) return;
-			onSelect(dir == "" ? null : (isAbsolute ? dir : makeRelative(dir)));
-		}).appendTo(window.window.document.body).click();
-
-		// remove comments
+		// Delay dialog creation so the "focus" event is flushed (we need that to detect if the user cancelled the file dialog)
+		haxe.Timer.delay(() -> {
+			var e = new Element('<input type="file" style="visibility:hidden" value="" nwdirectory/>');
+			e.change(function(ev) {
+				var dir = ev.getThis().val();
+				e.remove();
+				if( dir == "" && !allowNull ) return;
+				onSelect(dir == "" ? null : (isAbsolute ? dir : makeRelative(dir)));
+			}).appendTo(window.window.document.body).click();
+		}, 100);
 	}
 
 	public function findPathRefs(path: String) {
