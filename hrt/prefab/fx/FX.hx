@@ -102,6 +102,14 @@ class FXAnimation extends h3d.scene.Object {
 		evaluator.parameters[name] = value;
 	}
 
+	public function getParameter(name: String) {
+		return evaluator.parameters[name];
+	}
+
+	public function getParameters() {
+		return evaluator.parameters.keys();
+	}
+
 	public function setParameters(params: Array<Parameter>) {
 		evaluator.parameters.clear();
 		if (params == null)
