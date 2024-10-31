@@ -47,6 +47,8 @@ class Ide extends hide.tools.IdeData {
 
 	var customMenus : Array<nw.MenuItem> = [];
 
+	var filePickerElement : hide.Element;
+
 	function new() {
 		super();
 		initPad();
@@ -176,9 +178,14 @@ class Ide extends hide.tools.IdeData {
 		var body = window.window.document.body;
 		window.on("focus", function() {
 			// handle cancel on type=file
-			new Element(body).find("input[type=file]").each((_, element) -> {
-				haxe.Timer.delay(() -> new Element(element).change(), 100);
-			});
+
+			if (filePickerElement != null && filePickerElement.data("allownull") != null) {
+				haxe.Timer.delay(() -> {
+					if (filePickerElement != null) {
+						filePickerElement.change();
+					}
+				}, 100);
+			}
 
 			if(fileExists(databaseFile) && getFileText(databaseFile) != lastDBContent) {
 				if(js.Browser.window.confirm(databaseFile + " has changed outside of Hide. Do you want to reload?")) {
@@ -771,69 +778,90 @@ class Ide extends hide.tools.IdeData {
 		chooseFile(IMG_EXTS, onSelect, allowNull);
 	}
 
-	public function chooseFiles( exts : Array<String>, onSelect : Array<String> -> Void, allowNull=false ) {
-		// Delay dialog creation so the "focus" event is flushed (we need that to detect if the user cancelled the file dialog)
-		haxe.Timer.delay(() -> {
-			var e = new Element('<input type="file" style="visibility:hidden" value="" accept="${[for( e in exts ) "."+e].join(",")}" multiple="multiple"/>');
-			e.change(function(_) {
-				var files = [for( f in (""+e.val()).split(";") ) f];
-				if( files.length == 1 && files[0] == "" ) files.pop();
-				trace(files);
-				var files = [for( f in files ) makeRelative(f)];
-				e.remove();
-				onSelect(files);
-			}).appendTo(window.window.document.body).click();
-		}, 100);
-	}
+	public function chooseFileOptions(onSelect: Null<Array<String>> -> Void, options: {
+		?exts : Array<String>,
+		?workingDir: String,
+		?onlyDirectory: Bool,
+		?saveAs: String,
+		?isAbsolute: Bool,
+		?allowNull: Bool,
+		?multiple: Bool,
+	} = null) {
+		options = options ?? {};
 
-	public function chooseFile( exts : Array<String>, onSelect : Null<String> -> Void, allowNull = false, workingdir:String = null) {
-		// Delay dialog creation so the "focus" event is flushed (we need that to detect if the user cancelled the file dialog)
-		haxe.Timer.delay(() -> {
+		function callback() {
 			var path = "";
-			if (workingdir != null && workingdir != "#MISSING") {
-				var pathArray = getPath(workingdir).split("/");
+			if (options.workingDir != null && options.workingDir != "#MISSING") {
+				var pathArray = getPath(options.workingDir).split("/");
 				var c = isWindows ? "\\" : "/";
 				path = pathArray.join(c);
 			}
 
-			var e = new Element('<input type="file" style="visibility:hidden" value="" nwworkingdir="$path" accept="${[for( e in exts ) "."+e].join(",")}"/>');
-			e.change(function(_) {
-				var file = e.val();
-				e.remove();
-				if( file == "" && !allowNull ) return;
-				onSelect(file == "" ? null : makeRelative(file));
-			}).appendTo(window.window.document.body).click();
-		}, 100);
+			if (filePickerElement != null)
+				filePickerElement.remove();
+
+			var args : Array<String> = [];
+
+			if (options.allowNull == true)
+				args.push("data-allownull='true'");
+			if (options.saveAs != null)
+				args.push('nwsaveas="${options.saveAs}"');
+			if (options.exts != null)
+				args.push('accept="${[for( e in options.exts ) "."+e].join(",")}"');
+			if (options.onlyDirectory == true)
+				args.push("nwdirectory");
+			if (options.multiple == true)
+				args.push('multiple="multiple"');
+
+			var argsString = args.join(" ");
+
+			var buildString = '<input type="file" style="visibility:hidden" value="" $argsString/>';
+
+			filePickerElement = new Element(buildString).appendTo(window.window.document.body);
+
+			filePickerElement.change(function(_) {
+				var file = filePickerElement.val();
+				filePickerElement.remove();
+				filePickerElement = null;
+				if( file == "" && !options.allowNull ) return;
+				if (file == "") {
+					onSelect(null);
+				} else {
+					var files = file.split(";");
+					if (options.isAbsolute != true) {
+						for (i => file in files) {
+							files[i] = makeRelative(file);
+						}
+					}
+					onSelect(files);
+				}
+			});
+
+			filePickerElement.click();
+		}
+
+		if (options.allowNull) {
+			haxe.Timer.delay(callback, 100);
+		}
+		else {
+			callback();
+		}
+	}
+
+	public function chooseFiles( exts : Array<String>, onSelect : Array<String> -> Void, allowNull=false ) {
+		chooseFileOptions(onSelect, {exts: exts, allowNull: allowNull, multiple: true});
+	}
+
+	public function chooseFile( exts : Array<String>, onSelect : Null<String> -> Void, allowNull = false, workingdir:String = null) {
+		chooseFileOptions((files) -> onSelect(files != null ? files.pop() : null), {exts: exts, allowNull: allowNull, workingDir: workingdir});
 	}
 
 	public function chooseFileSave( defaultPath : String, onSelect : String -> Void, allowNull=false ) {
-		// Delay dialog creation so the "focus" event is flushed (we need that to detect if the user cancelled the file dialog)
-		haxe.Timer.delay(() -> {
-			var path = getPath(defaultPath).split("/");
-			var file = path.pop();
-			var c = isWindows ? "\\" : "/";
-			var path = path.join(c);
-			var e = new Element('<input type="file" style="visibility:hidden" value="" nwworkingdir="$path" nwsaveas="$file"/>');
-			e.change(function(_) {
-				var file = e.val();
-				e.remove();
-				if( file == "" && !allowNull ) return;
-				onSelect(file == "" ? null : makeRelative(file));
-			}).appendTo(window.window.document.body).click();
-		}, 100);
+		chooseFileOptions((files) -> onSelect(files != null ? files.pop() : null),{saveAs: defaultPath,allowNull: allowNull,});
 	}
 
 	public function chooseDirectory( onSelect : String -> Void, ?isAbsolute = false, allowNull=false ) {
-		// Delay dialog creation so the "focus" event is flushed (we need that to detect if the user cancelled the file dialog)
-		haxe.Timer.delay(() -> {
-			var e = new Element('<input type="file" style="visibility:hidden" value="" nwdirectory/>');
-			e.change(function(ev) {
-				var dir = ev.getThis().val();
-				e.remove();
-				if( dir == "" && !allowNull ) return;
-				onSelect(dir == "" ? null : (isAbsolute ? dir : makeRelative(dir)));
-			}).appendTo(window.window.document.body).click();
-		}, 100);
+		chooseFileOptions((files) -> onSelect(files != null ? files.pop() : null),{isAbsolute: isAbsolute,onlyDirectory: true,allowNull: allowNull,});
 	}
 
 	public function findPathRefs(path: String) {
