@@ -251,12 +251,12 @@ class Polygon extends Object3D {
 	}
 
 	override function makeObject(parent3d: h3d.scene.Object) : h3d.scene.Object {
-			var primitive = makePrimitive();
-			var mesh = new h3d.scene.Mesh(primitive, parent3d);
-			mesh.material.props = h3d.mat.MaterialSetup.current.getDefaults("overlay");
-			mesh.material.blendMode = Alpha;
-			mesh.material.mainPass.culling = None;
-			return mesh;
+		var primitive = makePrimitive();
+		var mesh = new h3d.scene.Mesh(primitive, parent3d);
+		mesh.material.props = h3d.mat.MaterialSetup.current.getDefaults("overlay");
+		mesh.material.blendMode = Alpha;
+		mesh.material.mainPass.culling = None;
+		return mesh;
 	}
 
 	#if editor
@@ -282,7 +282,6 @@ class Polygon extends Object3D {
 			polyPrim.addNormals();
 			polyPrim.addUVs();
 			polyPrim.addTangents() ;
-			polyPrim.alloc(h3d.Engine.getCurrent());
 		}
 		#if editor
 		clearCustomPolygonCache();
