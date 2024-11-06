@@ -767,6 +767,9 @@ class ModelLibrary extends Prefab {
 				if ( lodInfos.lodLevel > 0 )
 					continue;
 
+				var lods = null;
+				if ( lodInfos.lodLevel == 0 )
+					lods = lib.findLODs( lodInfos.modelName, m );
 				var ignoreModel = false;
 				var m2 = new Model();
 				m2.name = m.name;
@@ -793,14 +796,14 @@ class ModelLibrary extends Prefab {
 							mat.indexStart = indexStarts[m2.geometry][index];
 
 							if ( lodInfos.lodLevel == 0 ) {
-								var lods = lib.findLODs( lodInfos.modelName, m.materials.length );
 								mat.lodIndexCount = [];
 								mat.lodIndexStart = [];
 								mat.lodIndexCount.resize(lods.length);
 								mat.lodIndexStart.resize(lods.length);
 								for ( i => lod in lods ) {
-									mat.lodIndexCount[i] = lod.indexCounts[index];
-									var geometry = lib.header.geometries.indexOf(lod);
+									var geom = lib.header.geometries[lod.geometry];
+									mat.lodIndexCount[i] = geom.indexCounts[index];
+									var geometry = lib.header.geometries.indexOf(geom);
 									if ( geometry < 0 )
 										throw "Geometry not found";
 									mat.lodIndexStart[i] = indexStarts[geometry + offsetGeom][index];
