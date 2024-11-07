@@ -23,6 +23,7 @@ class TileSelector extends Component {
 	var modal : Element;
 	var container : Element;
 	var zoomSelector : Element;
+	var tilePicker : Element;
 
 	var bgColor(default, set) : Int = 0xFF110022;
 	final maxZoom = 4;
@@ -39,7 +40,10 @@ class TileSelector extends Component {
 		if (zoomLevel > maxZoom) {
 			zoomLevel = maxZoom;
 		}
-		saveDisplayState("zoomLevel", zoomLevel);
+		if (zoomLevel != getDefaultZoomLevel())
+			saveDisplayState("zoomLevel", zoomLevel);
+		else
+			removeDisplayState("zoomLevel");
 		zoomSelector.val(zoomLevel);
 		return zoomLevel;
 	}
@@ -49,7 +53,7 @@ class TileSelector extends Component {
 		if (container != null) {
 			var vec = new h3d.Vector4();
 			vec.setColor(bgColor);
-			container.css("backgroundColor", 'rgba(${vec.r*255}, ${vec.g*255}, ${vec.b*255}, ${vec.a})');
+			tilePicker.css("background", 'rgba(${vec.r*255}, ${vec.g*255}, ${vec.b*255}, ${vec.a})');
 		}
 		saveDisplayState("bgColor", zoomLevel);
 		return bgColor;
@@ -130,6 +134,11 @@ class TileSelector extends Component {
 		image.height(h).width(w);
 		image.css("background-size",(w)+"px "+(h)+"px");
 		updateCursor();
+	}
+
+	function getDefaultZoomLevel() : Int {
+		var rect = modal.get(0).getBoundingClientRect();
+		return Math.round(Math.log(hxd.Math.max(rect.width / imageWidth, rect.height / imageHeight))/Math.log(2));
 	}
 
 	function rebuild() {
@@ -214,9 +223,9 @@ class TileSelector extends Component {
 		}
 
 		var url = ide.getUnCachedUrl(file);
-		var tilePicker = new Element("<tile-picker></tile-picker>").appendTo(element);
-		container = new Element("<background-container></background-container>").appendTo(tilePicker);
-		image = new Element('<image-display style="background-image:url(\'$url\')"></image-display>').appendTo(container);
+		container = new Element("<background-container></background-container>").appendTo(element);
+		tilePicker = new Element("<tile-picker></tile-picker>").appendTo(container);
+		image = new Element('<image-display style="background-image:url(\'$url\')"></image-display>').appendTo(tilePicker);
 		valueDisp = new Element('<div class="valueDisp">').appendTo(image);
 		cursor = new Element('<div class="cursor">').appendTo(image);
 		cursorPos = { x : -1, y : -1, x2 : -1, y2 : -1, dragSelect : false };
@@ -228,7 +237,7 @@ class TileSelector extends Component {
 			imageWidth = i.width;
 			imageHeight = i.height;
 
-			zoomLevel = getDisplayState("zoomLevel") ?? Math.floor(Math.log(hxd.Math.min(800 / imageWidth, 580 / imageHeight))/Math.log(2));
+			zoomLevel = getDisplayState("zoomLevel") ?? getDefaultZoomLevel();
 
 			tilePicker.on("mousewheel", function(e:js.jquery.Event) {
 				if (e.ctrlKey) {

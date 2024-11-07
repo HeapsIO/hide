@@ -4095,23 +4095,31 @@ hide-popover {
 		}
 	}
 
-	tile-picker {
-		flex: 1 1;
+	background-container {
+		align-self: stretch;
+		display: block;
+		padding: 0;
+		flex-grow: 1;
+		flex-shrink: 1;
 
-		&::-webkit-scrollbar {
-			width: 10px;
-			height: 10px;
-		}
 
-		background: url(data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAACAAAAAgCAYAAABzenr0AAAAAXNSR0IArs4c6QAAAE5JREFUWIVjnL12+38GCoCBnisl2hmYKNJNBTDqgFEHjDpg1AGjDhh1wKgDGE/f/kNRe+DCpd0UOWDAQ2DUAaMOGHXAqANGHTDqgFEHAAAO3QneZHM9AwAAAABJRU5ErkJggg==);
+		min-width: 0;
+		min-height: 0;
 
-		overflow: auto;
-
-		background-container {
+		tile-picker {
 			width: 100%;
 			height: 100%;
 			display: block;
 			padding: 0;
+
+			&::-webkit-scrollbar {
+				width: 10px;
+				height: 10px;
+			}
+
+
+			overflow: auto;
+
 			image-display {
 				display: block;
 				position: relative;
@@ -4130,7 +4138,10 @@ hide-popover {
 				}
 			}
 		}
+
+		background: url(data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAACAAAAAgCAYAAABzenr0AAAAAXNSR0IArs4c6QAAAE5JREFUWIVjnL12+38GCoCBnisl2hmYKNJNBTDqgFEHjDpg1AGjDhh1wKgDGE/f/kNRe+DCpd0UOWDAQ2DUAaMOGHXAqANGHTDqgFEHAAAO3QneZHM9AwAAAABJRU5ErkJggg==);
 	}
+
 }
 
 .context-menu2 {
