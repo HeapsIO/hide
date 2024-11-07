@@ -26,6 +26,7 @@ class Polygon extends Object3D {
 	@:c public var points : h2d.col.Polygon;
 	@:s public var color : Int = 0xFFFFFFFF;
 
+	var cachedCollider : h3d.col.Collider;
 	#if editor
 	public var editor : hide.prefab.PolygonEditor;
 	@:s public var gridSize:Float = 1;
@@ -95,7 +96,7 @@ class Polygon extends Object3D {
 	}
 
 	public function makePrimitive() {
-
+		cachedCollider = null;
 		if(shape == Custom) {
 			#if editor
 			if(cachedPrim != null) return cachedPrim;
@@ -115,9 +116,11 @@ class Polygon extends Object3D {
 	}
 
 	override function localRayIntersection(ray:h3d.col.Ray):Float {
-		var prim = makePrimitive();
-		var col = prim.getCollider();
-		return col.rayIntersection(ray, true);
+		if ( cachedCollider == null ) {
+			var prim = makePrimitive();
+			cachedCollider = prim.getCollider();
+		}
+		return cachedCollider.rayIntersection(ray, true);
 	}
 
 	public function getPolygonBounds() : h2d.col.Polygon {
