@@ -3546,11 +3546,14 @@ hide-popover hide-content {
   --offset-y: 0;
   background-color: #222222;
   border-radius: 5px;
-  box-shadow: 1px 1px 2px rgba(0, 0, 0, 0.5);
+  box-shadow: 0 1px 6px 1px rgba(0, 0, 0, 0.75);
   border: solid 1px #444444;
   color: #aaaaaa;
   font-family: system-ui, Verdana, Geneva, Tahoma, sans-serif;
   font-size: 12px;
+}
+.context-menu2:focus {
+  outline: none;
 }
 .context-menu2:popover-open {
   position: absolute;
@@ -3559,6 +3562,7 @@ hide-popover hide-content {
   flex-direction: column;
   align-items: stretch;
   min-width: 150px;
+  max-width: 300px;
   bottom: 5px;
   right: 5px;
   margin: 0;
@@ -3571,6 +3575,9 @@ hide-popover hide-content {
   font-family: Verdana, Geneva, Tahoma, sans-serif;
   width: 100%;
   box-sizing: border-box;
+}
+.context-menu2 input:focus {
+  outline: none;
 }
 .context-menu2 menu {
   max-height: 500px;
@@ -3596,6 +3603,9 @@ hide-popover hide-content {
   border: 0;
   height: 1px;
   background-image: linear-gradient(to right, rgba(44, 44, 44, 0), #646464, rgba(44, 44, 44));
+}
+.context-menu2 menu:not(:has(:hover, .highlight)) .open {
+  background-color: #555555;
 }
 .context-menu2 menu li {
   text-align: left;
@@ -3648,4 +3658,8 @@ hide-popover hide-content {
 }
 .context-menu2 menu hr {
   width: 100%;
+}
+.tag-disp {
+  color: white;
+  mix-blend-mode: difference;
 }

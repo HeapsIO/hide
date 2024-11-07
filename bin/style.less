@@ -4138,12 +4138,16 @@ hide-popover {
 	--offset-y: 0;
 	background-color: #222222;
 	border-radius: 5px;
-	box-shadow: 1px 1px 2px rgba(0,0,0,0.5);
+	box-shadow: 0 1px 6px 1px rgba(0, 0, 0, 0.75);
 
 	border: solid 1px #444444;
 	color: #aaaaaa;
 	font-family: system-ui, Verdana, Geneva, Tahoma, sans-serif;
 	font-size: 12px;
+
+	&:focus {
+		outline: none;
+	}
 
 	&:popover-open {
 		position: absolute;
@@ -4152,6 +4156,8 @@ hide-popover {
 		flex-direction: column;
 		align-items: stretch;
 		min-width: 150px;
+
+		max-width: 300px;
 		bottom: 5px;
 		right: 5px;
 		margin: 0;
@@ -4166,6 +4172,10 @@ hide-popover {
 		font-family: Verdana, Geneva, Tahoma, sans-serif;
 		width: 100%;
 		box-sizing: border-box;
+
+		&:focus {
+			outline: none;
+		}
 	}
 
 	menu {
@@ -4195,6 +4205,11 @@ hide-popover {
 			height: 1px;
 			background-image: linear-gradient(to right, rgba(44,44,44,0), rgb(100, 100, 100), rgba(44,44,44));
 		}
+
+		&:not(:has(:hover, .highlight)) .open {
+			background-color: #555555;
+		}
+
 		li {
 			text-align: left;
 			--level: 0;
@@ -4202,6 +4217,7 @@ hide-popover {
 			padding-left: calc(0.2em + var(--level) * 0.5em);
 			display: flex;
 			align-items: baseline;
+
 			gap: 4px;
 			&:hover, &.highlight {
 				background-color: #555555;
@@ -4252,4 +4268,9 @@ hide-popover {
 			width: 100%;
 		}
 	}
+}
+
+.tag-disp {
+	color: white;
+    mix-blend-mode: difference;
 }

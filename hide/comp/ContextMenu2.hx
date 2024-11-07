@@ -204,10 +204,7 @@ class ContextMenu2 {
 
             seachBar.style.display = "block";
 
-            if (currentSubmenu != null) {
-                currentSubmenu.close();
-                currentSubmenu = null;
-            }
+            closeSubmenu();
 
             var filterLower = filter.toLowerCase();
 
@@ -235,16 +232,16 @@ class ContextMenu2 {
             submenuStack.push(filteredItems.iterator());
 
             // avoid double separators in a row
-            var lastWasSeparator = false;
+            var lastSeparator : js.html.Element = null;
             while (submenuStack.length > 0) {
                 var top = submenuStack[submenuStack.length-1];
                 if (!top.hasNext()) {
                     submenuStack.pop();
 
-                    if (submenuStack.length > 0 && !lastWasSeparator) {
+                    if (submenuStack.length > 0 && lastSeparator == null) {
                         var hr = js.Browser.document.createHRElement();
                         menu.appendChild(hr);
-                        lastWasSeparator = true;
+                        lastSeparator = hr;
                     }
 
                     continue;
@@ -257,7 +254,7 @@ class ContextMenu2 {
                     li.style.setProperty("--level", '${submenuStack.length-1}');
                     li.innerText = item.label;
                     li.classList.add("submenu-inline-header");
-                    lastWasSeparator = false;
+                    lastSeparator = null;
                     submenuStack.push(item.menu.iterator());
                 }
                 else {
@@ -267,11 +264,15 @@ class ContextMenu2 {
                     if (item.enabled == null || item.enabled == true) {
                         flatItems.push({menuItem: item, elem: li, index: flatItems.length});
                     }
-                    lastWasSeparator = false;
+                    lastSeparator = null;
                 }
             }
             selected = -1;
             updateSelection(0);
+
+            if (lastSeparator != null) {
+                lastSeparator.remove();
+            }
         }
     }
 
@@ -309,12 +310,12 @@ class ContextMenu2 {
         refreshCheck();
 
         var span = js.Browser.document.createSpanElement();
-        span.textContent = menuItem.label;
+        span.innerHTML = menuItem.label;
         li.appendChild(span);
 
         if (menuItem.keys != null) {
             var span = js.Browser.document.createSpanElement();
-            span.innerText = menuItem.keys;
+            span.innerHTML = menuItem.keys;
             span.classList.add("shortcut");
             li.appendChild(span);
         }
@@ -325,6 +326,10 @@ class ContextMenu2 {
             span.classList.add("fa");
             span.classList.add("fa-caret-right");
             li.appendChild(span);
+
+            if (menuItem.menu.length <= 0) {
+                menuItem.enabled = false;
+            }
         }
 
         if (menuItem.enabled ?? true) {
@@ -340,10 +345,7 @@ class ContextMenu2 {
                     popupTimer.stop();
                 }
                 popupTimer = haxe.Timer.delay(() -> {
-                    if (currentSubmenu != null) {
-                        currentSubmenu.close();
-                        currentSubmenu = null;
-                    }
+                    closeSubmenu();
                     currentSubmenuItemId = menuItem.menu != null ? id : -1;
                     refreshSubmenu();
                 }, openDelayMs);
@@ -357,10 +359,7 @@ class ContextMenu2 {
                     if (popupTimer != null) {
                         popupTimer.stop();
                     }
-                    if (currentSubmenu != null) {
-                        currentSubmenu.close();
-                        currentSubmenu = null;
-                    }
+                    closeSubmenu();
                     currentSubmenuItemId = id;
                     refreshSubmenu();
                     return;
@@ -416,14 +415,27 @@ class ContextMenu2 {
         }
     }
 
+    function closeSubmenu() {
+        if (currentSubmenu != null) {
+            var element = menu.children[currentSubmenuItemId];
+            if (element != null) {
+                element.classList.remove("open");
+            }
+            currentSubmenu.close();
+            currentSubmenu = null;
+            currentSubmenuItemId = -1;
+        }
+    }
+
     function refreshSubmenu() {
         if (currentSubmenu != null) {
             return;
         }
         if (currentSubmenuItemId >= 0) {
             var element = menu.children[currentSubmenuItemId];
+            element.classList.add("open");
             var rect = element.getBoundingClientRect();
-            currentSubmenu = new ContextMenu2(this.rootElement, this, {x: rect.right, y: rect.top}, items[currentSubmenuItemId].menu, false);
+            currentSubmenu = new ContextMenu2(rootElement, this, {x: rect.right, y: rect.top}, items[currentSubmenuItemId].menu, false);
         }
     }
 }

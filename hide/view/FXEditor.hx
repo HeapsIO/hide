@@ -285,12 +285,14 @@ private class FXSceneEditor extends hide.comp.SceneEditor {
 
 		menu.push({label: null, isSeparator: true});
 
-		splitMenu(menu, "Shader", shaderItems);
+		//splitMenu(menu, "Shader", shaderItems);
+		menu.push({label: "Shader", menu: shaderItems});
+
 
 		menu.push({label: null, isSeparator: true});
 
-		splitMenu(menu, "Other", allTypes);
-
+		//splitMenu(menu, "Other", allTypes);
+		menu.push({label: "Other", menu: allTypes});
 
 		menu.unshift({
 			label : "Recents",
