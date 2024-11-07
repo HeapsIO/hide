@@ -9,6 +9,9 @@ class Model extends Object3D {
 
 	public function new(parent, shared: ContextShared) {
 		super(parent, shared);
+		#if editor
+		useAutoCollide = true;
+		#end
 	}
 
 	override function save() : Dynamic {
@@ -84,12 +87,6 @@ class Model extends Object3D {
 
 	#if editor
 
-	override function updateInstance(?propName : String ) {
-		super.updateInstance(propName);
-		polys3D = null;
-		boundingSphere = null;
-	}
-
 	override function onEditorTreeChanged(child:Prefab):hrt.prefab.Prefab.TreeChangedResult {
 
 		// Correctly handle changes in hierachy in case the model has a default transform
@@ -98,40 +95,6 @@ class Model extends Object3D {
 		}
 		return super.onEditorTreeChanged(child);
 	}
-
-    var polys3D = null;
-    var boundingSphere = null;
-    override function localRayIntersection(ray : h3d.col.Ray ) : Float {
-		// can happen if the mesh is inside an emitter
-		if (local3d == null)
-			return -1.;
-
-        if( polys3D == null ) {
-            polys3D = [];
-            var bounds = local3d.getBounds();
-			bounds.transform(local3d.getAbsPos().getInverse());
-            boundingSphere = bounds.toSphere();
-            for( m in getObjects(h3d.scene.Mesh) ) {
-                var p = cast(m.primitive, h3d.prim.HMDModel);
-               	var col = cast(cast(p.getCollider(), h3d.col.Collider.OptimizedCollider).b, h3d.col.PolygonBuffer);
-                polys3D.push({ col : col, mat : m.getRelPos(local3d).getInverse() });
-            }
-        }
-
-        if( boundingSphere == null || boundingSphere.rayIntersection(ray,false) < 0 )
-            return -1.;
-
-        var minD = -1.;
-        for( p in polys3D ) {
-            var ray2 = ray.clone();
-            ray2.transform(p.mat);
-            var d = p.col.rayIntersection(ray2, true);
-            if( d > 0 && (d < minD || minD == -1)  )
-                minD = d;
-        }
-
-        return minD;
-    }
 
 	override function edit( ctx : hide.prefab.EditContext ) {
 		super.edit(ctx);

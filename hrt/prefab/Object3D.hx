@@ -94,6 +94,8 @@ class Object3D extends Prefab {
 
 		#if editor
 		this.addEditorUI();
+		polys3D = null;
+		boundingSphere = null;
 		#end
 	}
 
@@ -123,9 +125,47 @@ class Object3D extends Prefab {
 		return m;
 	}
 
-	public function localRayIntersection(ray : h3d.col.Ray ) : Float {
+	#if editor
+    var polys3D = null;
+    var boundingSphere = null;
+	var useAutoCollide = false;
+	#end
+
+    public function localRayIntersection(ray : h3d.col.Ray ) : Float {
+		#if editor
+		// can happen if the mesh is inside an emitter
+		if (local3d == null || !useAutoCollide)
+			return -1.;
+
+        if( polys3D == null ) {
+            polys3D = [];
+            var bounds = local3d.getBounds();
+			bounds.transform(local3d.getAbsPos().getInverse());
+            boundingSphere = bounds.toSphere();
+            for( m in getObjects(h3d.scene.Mesh) ) {
+                var p = cast(m.primitive, h3d.prim.HMDModel);
+               	var col = cast(cast(p.getCollider(), h3d.col.Collider.OptimizedCollider).b, h3d.col.PolygonBuffer);
+                polys3D.push({ col : col, mat : m.getRelPos(local3d).getInverse() });
+            }
+        }
+
+        if( boundingSphere == null || boundingSphere.rayIntersection(ray,false) < 0 )
+            return -1.;
+
+        var minD = -1.;
+        for( p in polys3D ) {
+            var ray2 = ray.clone();
+            ray2.transform(p.mat);
+            var d = p.col.rayIntersection(ray2, true);
+            if( d > 0 && (d < minD || minD == -1)  )
+                minD = d;
+        }
+
+        return minD;
+		#else
 		return -1;
-	}
+		#end
+    }
 
 	public function loadTransform(t) {
 		x = t.x;
