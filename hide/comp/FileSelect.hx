@@ -25,8 +25,7 @@ class FileSelect extends Component {
 		function contextMenu(e) {
 			e.preventDefault();
 			var fpath = getFullPath();
-			new ContextMenu([
-				{ label : "View", enabled : fpath != null, click : function() onView() },
+			ContextMenu2.fromEvent(cast e, [				{ label : "View", enabled : fpath != null, click : function() onView() },
 				{ label : "Clear", enabled : path != null, click : function() { path = null; onChange(); } },
 				{ label : "Copy Path", enabled : path != null, click : function() ide.setClipboard(path) },
 				{ label : "Copy Absolute Path", enabled : fpath != null, click : function() { ide.setClipboard(fpath); } },
@@ -40,7 +39,6 @@ class FileSelect extends Component {
 				{ label : "Open in Resources", enabled : path != null, click : function() {
 					ide.showFileInResources(path);
 				}},
-
 			]);
 			return false;
 		}

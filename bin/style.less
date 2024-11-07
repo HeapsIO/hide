@@ -4132,3 +4132,124 @@ hide-popover {
 		}
 	}
 }
+
+.context-menu2 {
+	--offset-x: 4;
+	--offset-y: 0;
+	background-color: #222222;
+	border-radius: 5px;
+	box-shadow: 1px 1px 2px rgba(0,0,0,0.5);
+
+	border: solid 1px #444444;
+	color: #aaaaaa;
+	font-family: system-ui, Verdana, Geneva, Tahoma, sans-serif;
+	font-size: 12px;
+
+	&:popover-open {
+		position: absolute;
+		inset: unset;
+		display: flex;
+		flex-direction: column;
+		align-items: stretch;
+		min-width: 150px;
+		bottom: 5px;
+		right: 5px;
+		margin: 0;
+	}
+
+	input {
+		background-color: #444;
+		border: 1px solid #666;
+		border-radius: 2px;
+
+		color: #aaaaaa;
+		font-family: Verdana, Geneva, Tahoma, sans-serif;
+		width: 100%;
+		box-sizing: border-box;
+	}
+
+	menu {
+		max-height: 500px;
+		overflow-y: auto;
+
+		&::-webkit-scrollbar {
+			width: 4px;
+		}
+		&::-webkit-scrollbar-track {
+			background: transparent;
+		}
+		&::-webkit-scrollbar-thumb {
+			background-color: rgba(155, 155, 155, 0.75);
+			border-radius: 20px;
+			border: transparent;
+		}
+
+		margin: 0px;
+		padding: 0px;
+
+		* {
+			box-sizing: border-box;
+		}
+		hr {
+			border: 0;
+			height: 1px;
+			background-image: linear-gradient(to right, rgba(44,44,44,0), rgb(100, 100, 100), rgba(44,44,44));
+		}
+		li {
+			text-align: left;
+			--level: 0;
+			padding: calc(0.2em);
+			padding-left: calc(0.2em + var(--level) * 0.5em);
+			display: flex;
+			align-items: baseline;
+			gap: 4px;
+			&:hover, &.highlight {
+				background-color: #555555;
+			}
+
+			user-select: none;
+			span {
+				flex-grow: 1;
+			}
+			.arrow, .fa, .icon, .shortcut {
+				flex-grow: 0;
+			}
+
+			.icon {
+				display: flex;
+				justify-content: center;
+				flex-basis: 1.5em;
+			}
+
+			.shortcut {
+				color: #888;
+				font-size: 0.8em;
+			}
+
+			&.submenu-inline-header {
+				color: gray;
+				background-color: #222222;
+				font-style: italic;
+
+				position: sticky;
+				height: 20px;
+				top: calc(20px * var(--level));
+
+				&:hover {
+					background-color: unset;
+				}
+			}
+
+			&.disabled {
+				color: #666;
+				&:hover {
+					background-color: unset;
+				}
+			}
+		}
+
+		hr {
+			width: 100%;
+		}
+	}
+}
