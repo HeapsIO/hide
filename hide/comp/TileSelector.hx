@@ -55,7 +55,7 @@ class TileSelector extends Component {
 			vec.setColor(bgColor);
 			tilePicker.css("background", 'rgba(${vec.r*255}, ${vec.g*255}, ${vec.b*255}, ${vec.a})');
 		}
-		saveDisplayState("bgColor", zoomLevel);
+		saveDisplayState("bgColor", bgColor);
 		return bgColor;
 	}
 
@@ -211,6 +211,8 @@ class TileSelector extends Component {
 			zoomLevel = v;
 			rescale();
 		});
+
+		bgColor = getDisplayState("bgColor") ?? bgColor;
 
 		var backgroundSelector = new hide.comp.ColorPicker.ColorBox(settings, true, true);
 		backgroundSelector.value = bgColor;
