@@ -42,7 +42,14 @@ class ContextMenu2 {
         this.parentMenu = parentMenu;
         originalPos = absPos;
 
-        var nearest = parentMenu != null ? parentElement : (cast parentElement:js.html.Element).closest("[popover]") ?? js.Browser.document.body;
+        var nearest : js.html.Element = if (parentMenu != null) {
+                parentElement;
+            } else if (parentElement != null) {
+                parentElement.closest("[popover]") ?? js.Browser.document.body;
+            } else {
+                js.Browser.document.body;
+            };
+
         rootElement = js.Browser.document.createDivElement();
         rootElement.setAttribute("tabindex", "0");
         nearest.appendChild(rootElement);
@@ -395,7 +402,7 @@ class ContextMenu2 {
         else {
             selected = newIndex;
             flatItems[selected].elem.classList.add("highlight");
-            flatItems[selected].elem.scrollIntoView({block: NEAREST});
+            flatItems[selected].elem.scrollIntoView({block: cast "nearest"});
         }
     }
 
