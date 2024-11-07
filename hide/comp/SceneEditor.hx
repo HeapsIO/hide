@@ -1566,7 +1566,7 @@ class SceneEditor {
 		cameraController.onClick = function(e) {
 			switch( e.button ) {
 			case K.MOUSE_RIGHT:
-				selectNewObject();
+				selectNewObject(e);
 			case K.MOUSE_LEFT:
 				selectElements([]);
 			}
@@ -2198,7 +2198,7 @@ class SceneEditor {
 			if(e.button == K.MOUSE_RIGHT) {
 				var dist = hxd.Math.distance(scene.s2d.mouseX - lastPush[0], scene.s2d.mouseY - lastPush[1]);
 				if( dist > 5 ) return;
-				selectNewObject();
+				selectNewObject(e);
 				e.propagate = false;
 				return;
 			}
@@ -2273,7 +2273,7 @@ class SceneEditor {
 		interactives.set(elt,cast int);
 	}
 
-	function selectNewObject() {
+	function selectNewObject(e:hxd.Event) {
 		if( !objectAreSelectable )
 			return;
 		var parentEl = sceneData;
@@ -2329,7 +2329,7 @@ class SceneEditor {
 				keys : view.config.get("key.sceneeditor.gatherToMouse"),
 			},
 		];
-		new hide.comp.ContextMenu(menuItems);
+		hide.comp.ContextMenu2.createFromPoint(ide.mouseX, ide.mouseY, menuItems);
 	}
 
 	public function refreshInteractive(elt : PrefabElement) {
