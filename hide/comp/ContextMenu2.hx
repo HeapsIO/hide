@@ -37,6 +37,10 @@ class ContextMenu2 {
         return new ContextMenu2(cast e.target, null, {x: e.clientX, y: e.clientY}, items, true);
     }
 
+    public static function createFromPoint(x: Float, y: Float , items: Array<MenuItem>) {
+        return new ContextMenu2(null, null, {x:x, y:y}, items, true);
+    }
+
     function new(parentElement: js.html.Element, parentMenu: ContextMenu2, absPos: {x: Float, y: Float}, items: Array<MenuItem>, wantSearch: Bool) {
         this.items = items;
         this.parentMenu = parentMenu;
@@ -318,6 +322,7 @@ class ContextMenu2 {
 
         var span = js.Browser.document.createSpanElement();
         span.innerHTML = menuItem.label;
+        span.classList.add("label");
         li.appendChild(span);
 
         if (menuItem.keys != null) {

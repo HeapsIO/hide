@@ -4172,7 +4172,7 @@ hide-popover {
 		align-items: stretch;
 		min-width: 150px;
 
-		max-width: 300px;
+		max-width: 400px;
 		bottom: 5px;
 		right: 5px;
 		margin: 0;
@@ -4194,7 +4194,7 @@ hide-popover {
 	}
 
 	menu {
-		max-height: 500px;
+		max-height: min(500px, 90vh);
 		overflow-y: auto;
 
 		&::-webkit-scrollbar {
@@ -4239,17 +4239,21 @@ hide-popover {
 			}
 
 			user-select: none;
-			span {
+
+			.label {
 				flex-grow: 1;
+				padding-right: 1em;
 			}
+
 			.arrow, .fa, .icon, .shortcut {
 				flex-grow: 0;
+				flex-shrink: 0;
 			}
 
 			.icon {
 				display: flex;
 				justify-content: center;
-				flex-basis: 1.5em;
+				width: 1.5em;
 			}
 
 			.shortcut {

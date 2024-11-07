@@ -3571,7 +3571,7 @@ hide-popover hide-content {
   flex-direction: column;
   align-items: stretch;
   min-width: 150px;
-  max-width: 300px;
+  max-width: 400px;
   bottom: 5px;
   right: 5px;
   margin: 0;
@@ -3589,7 +3589,7 @@ hide-popover hide-content {
   outline: none;
 }
 .context-menu2 menu {
-  max-height: 500px;
+  max-height: min(500px, 90vh);
   overflow-y: auto;
   margin: 0px;
   padding: 0px;
@@ -3630,19 +3630,21 @@ hide-popover hide-content {
 .context-menu2 menu li.highlight {
   background-color: #555555;
 }
-.context-menu2 menu li span {
+.context-menu2 menu li .label {
   flex-grow: 1;
+  padding-right: 1em;
 }
 .context-menu2 menu li .arrow,
 .context-menu2 menu li .fa,
 .context-menu2 menu li .icon,
 .context-menu2 menu li .shortcut {
   flex-grow: 0;
+  flex-shrink: 0;
 }
 .context-menu2 menu li .icon {
   display: flex;
   justify-content: center;
-  flex-basis: 1.5em;
+  width: 1.5em;
 }
 .context-menu2 menu li .shortcut {
   color: #888;
