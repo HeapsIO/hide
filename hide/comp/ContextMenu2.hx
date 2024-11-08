@@ -108,6 +108,7 @@ class ContextMenu2 {
     }
 
     function refreshPos() {
+        // Make sure the menu never goes out of bounds
         var rect = rootElement.getBoundingClientRect();
         var y = originalPos.y + Std.parseInt(js.Browser.window.getComputedStyle(rootElement).getPropertyValue("--offset-y"));
         var x = originalPos.x + Std.parseInt(js.Browser.window.getComputedStyle(rootElement).getPropertyValue("--offset-x"));
@@ -123,7 +124,13 @@ class ContextMenu2 {
         if (x + rect.width > js.Browser.window.innerWidth) {
             if (parentMenu != null) {
                 x = parentMenu.rootElement.getBoundingClientRect().left - rect.width;
+            } else {
+                // put the menu to the left of the cursor if there is no parent menu
+                x = originalPos.x - rect.width;
             }
+        }
+        if (x < 0) {
+            x = 0;
         }
         rootElement.style.left = '${x}px';
         rootElement.style.top = '${y}px';
