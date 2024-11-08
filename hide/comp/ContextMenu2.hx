@@ -43,6 +43,14 @@ typedef MenuOptions = {
         Set this to true if you have no icons/checkmarks in your menu and you want to hide the padding on the left of the entries names
     **/
     ?noIcons: Bool,
+
+    /**
+        If this set, it will be used to place the element if it goes offscreen like so
+
+               | - placementWidth - |
+        | --- your context menu --- |  <--
+    **/
+    ?placementWidth: Int
 }
 
 class ContextMenu2 {
@@ -92,6 +100,7 @@ class ContextMenu2 {
         if (options.autoWidth) {
             options.widthOverride = Std.int(rect.width);
         }
+        options.placementWidth = options.placementWidth ?? Std.int(rect.width);
         return new ContextMenu2(element, null, {x: rect.left, y:rect.bottom}, items, options);
     }
 
@@ -198,11 +207,15 @@ class ContextMenu2 {
             } else {
                 // put the menu to the left of the cursor if there is no parent menu
                 x = originalPos.x - rect.width;
+                if (options.placementWidth != null) {
+                    x += options.placementWidth;
+                }
             }
         }
         if (x < 0) {
             x = 0;
         }
+
         rootElement.style.left = '${x}px';
         rootElement.style.top = '${y}px';
     }
