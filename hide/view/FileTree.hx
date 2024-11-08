@@ -123,7 +123,7 @@ class FileTree extends FileView {
 					click : createNew.bind(selection[0], { options : { createNew : "Directory" }, extensions : null, component : null }),
 					icon : "folder",
 				});
-			new hide.comp.ContextMenu([
+			hide.comp.ContextMenu2.fromEvent(cast e, [
 				{ label : "New...", menu:newMenu },
 				{ label : "Collapse", click : tree.collapseAll },
 				{ label : "", isSeparator: true },

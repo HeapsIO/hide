@@ -162,9 +162,11 @@ class View<T> extends hide.comp.Component {
 			container.tab.onClose = function() {
 				return onBeforeClose();
 			};
-			container.tab.element.contextmenu(function(e) {
+			container.tab.element.contextmenu(function(e: js.jquery.Event) {
 				var menu = buildTabMenu();
-				if( menu.length > 0 ) new hide.comp.ContextMenu(menu);
+				if( menu.length > 0 ) {
+					hide.comp.ContextMenu2.fromEvent(cast e, menu);
+				}
 				e.preventDefault();
 			});
 		});
@@ -273,7 +275,7 @@ class View<T> extends hide.comp.Component {
 		containerView.__view = null;
 	}
 
-	function buildTabMenu() : Array<hide.comp.ContextMenu.ContextMenuItem> {
+	function buildTabMenu() : Array<hide.comp.ContextMenu2.MenuItem> {
 		if( @:privateAccess ide.subView != null )
 			return [];
 		return [

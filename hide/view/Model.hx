@@ -1040,7 +1040,7 @@ class Model extends FileView {
 
 	override function buildTabMenu() {
 		var menu = super.buildTabMenu();
-		var arr : Array<hide.comp.ContextMenu.ContextMenuItem> = [
+		var arr : Array<hide.comp.ContextMenu2.MenuItem> = [
 			{ label : null, isSeparator : true },
 			{ label : "Export", click : function() {
 				ide.chooseFileSave(this.getPath().substr(0,-4)+"_dump.txt", function(file) {

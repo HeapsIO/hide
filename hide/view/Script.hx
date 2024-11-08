@@ -13,7 +13,7 @@ class Script extends FileView {
 		return new hide.comp.ScriptEditor.ScriptChecker(config,"hx");
 	}
 
-	override function buildTabMenu():Array<hide.comp.ContextMenu.ContextMenuItem> {
+	override function buildTabMenu():Array<hide.comp.ContextMenu2.MenuItem> {
 		var arr = super.buildTabMenu();
 		if( lang == "xml" ) {
 			arr.push({ label : "Count Words", click : function() {
