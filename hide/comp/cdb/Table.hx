@@ -166,12 +166,10 @@ class Table extends Component {
 		var cols = J("<thead>").addClass("head");
 		var start = J("<th>").addClass("start").appendTo(cols);
 		if (!Std.isOfType(this, SubTable) && sheet.props.dataFiles == null) {
-			start.mousedown(function(e) {
-				if( e.which == 3 ) {
-					editor.popupSheet(false, sheet);
-					e.preventDefault();
-					return;
-				}
+			start.contextmenu(function(e) {
+				editor.popupSheet(false, sheet);
+				e.preventDefault();
+				return;
 			});
 		}
 		lines = [for( index in 0...sheet.lines.length ) {
@@ -179,12 +177,10 @@ class Table extends Component {
 			var head = J("<td>").addClass("start").text("" + index);
 			head.appendTo(l);
 			var line = new Line(this, columns, index, l);
-			head.mousedown(function(e) {
-				if( e.which == 3 ) {
-					editor.popupLine(line);
-					e.preventDefault();
-					return;
-				}
+			head.contextmenu(function(e) {
+				editor.popupLine(line);
+				e.preventDefault();
+				return;
 			});
 			l.click(function(e) {
 				if( e.which == 3 ) {

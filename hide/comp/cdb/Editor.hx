@@ -2222,7 +2222,7 @@ class Editor extends Component {
 				break;
 			}
 
-		var moveSubmenu : Array<hide.comp.ContextMenu.ContextMenuItem> = [];
+		var moveSubmenu : Array<hide.comp.ContextMenu2.MenuItem> = [];
 		for( sepIndex => sep in sheet.separators ) {
 			if( sep.title == null )
 				continue;
@@ -2275,7 +2275,7 @@ class Editor extends Component {
 		if( sheet.parent == null )
 			checkRec(sheet);
 
-		var menu : Array<hide.comp.ContextMenu.ContextMenuItem> = [
+		var menu : Array<hide.comp.ContextMenu2.MenuItem> = [
 			{
 				label : "Move Up",
 				enabled:  (firstLine.index > 0 || sepIndex >= 0),
@@ -2340,7 +2340,7 @@ class Editor extends Component {
 				},
 			});
 		}
-		new hide.comp.ContextMenu(menu);
+		hide.comp.ContextMenu2.createFromPoint(ide.mouseX, ide.mouseY, menu);
 	}
 
 	function rename( sheet : cdb.Sheet, name : String ) {
@@ -2430,7 +2430,7 @@ class Editor extends Component {
 		if( onChange == null ) onChange = function() {}
 		var index = base.sheets.indexOf(sheet);
 
-		var content : Array<ContextMenu.ContextMenuItem> = [];
+		var content : Array<ContextMenu2.MenuItem> = [];
 		if (withMacro) {
 			content = content.concat([
 				{ label : "Add Sheet", click : function() { beginChanges(); var db = createDBSheet(index+1); endChanges(); if( db != null ) onChange(); } },
@@ -2516,7 +2516,7 @@ class Editor extends Component {
 					refresh();
 				}
 			});
-		new ContextMenu(content);
+		ContextMenu2.createFromPoint(ide.mouseX, ide.mouseY, content);
 	}
 
 	public function close() {
