@@ -285,17 +285,18 @@ class ContextMenu2 {
 
             var filterLower = filter.toLowerCase();
 
-            function filterElements(items: Array<MenuItem>) : Array<MenuItem> {
+            function filterElements(items: Array<MenuItem>, parentMatch: Bool) : Array<MenuItem> {
                 var filteredItems : Array<MenuItem> = [];
                 for (id => item in items) {
+                    var match = parentMatch || (item.label != null && StringTools.contains(item.label.toLowerCase(), filterLower));
                     if (item.menu != null) {
-                        var subItems = filterElements(item.menu);
+                        var subItems = filterElements(item.menu, match);
                         if (subItems.length > 0) {
                             filteredItems.push({label: item.label, menu: subItems});
                         }
                     }
                     else {
-                        if (item.label != null && StringTools.contains(item.label.toLowerCase(), filterLower)) {
+                        if (match) {
                             filteredItems.push(item);
                         }
                     }
@@ -303,7 +304,7 @@ class ContextMenu2 {
                 return filteredItems;
             }
 
-            filteredItems = filterElements(items);
+            filteredItems = filterElements(items, false);
 
             var submenuStack : Array<Iterator<MenuItem>> = [];
             submenuStack.push(filteredItems.iterator());
