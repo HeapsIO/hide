@@ -1809,7 +1809,7 @@ class SceneEditor {
 			}
 
 			menuItems.push({ isSeparator : true, label : "" });
-			hide.comp.ContextMenu2.fromEvent(cast e, cast menuItems.concat(actionItems));
+			hide.comp.ContextMenu2.createFromEvent(cast e, cast menuItems.concat(actionItems));
 		};
 
 		tree.element.parent().contextmenu(ctxMenu.bind(tree));

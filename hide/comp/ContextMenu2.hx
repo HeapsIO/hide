@@ -35,6 +35,11 @@ typedef MenuOptions = {
     ?widthOverride: Int, // if set, force the width of the first menu
 
     /**
+        Used to automaticaly widthOverride based on context (see createDropdown)
+    **/
+    ?autoWidth: Bool,
+
+    /**
         Set this to true if you have no icons/checkmarks in your menu and you want to hide the padding on the left of the entries names
     **/
     ?noIcons: Bool,
@@ -64,18 +69,29 @@ class ContextMenu2 {
     var popupTimer: haxe.Timer;
     final openDelayMs = 250;
 
-    public static function fromEvent(e: js.html.MouseEvent, items: Array<MenuItem>, options: MenuOptions = null) {
+    /**
+        Create a context menu from a js event. If you have a jQuery event, just `cast` it
+    **/
+    public static function createFromEvent(e: js.html.MouseEvent, items: Array<MenuItem>, options: MenuOptions = null) {
         return new ContextMenu2(cast e.target, null, {x: e.clientX, y: e.clientY}, items, options ?? {});
     }
 
+    /**
+        Create a context menu at the given x, y position in browser coordinates
+    **/
     public static function createFromPoint(x: Float, y: Float , items: Array<MenuItem>, options: MenuOptions = null) {
         return new ContextMenu2(null, null, {x:x, y:y}, items, options ?? {});
     }
 
+    /**
+        Create a context menu under the given element. Will make the dropdown menu have the width of the element if option.autoWidth is set
+    **/
     public static function createDropdown(element: js.html.Element, items: Array<MenuItem>, options: MenuOptions = null) {
-        var rect = element.getBoundingClientRect();
         options = options ?? {};
-        options.widthOverride = options.widthOverride ?? Std.int(rect.width);
+        var rect = element.getBoundingClientRect();
+        if (options.autoWidth) {
+            options.widthOverride = Std.int(rect.width);
+        }
         return new ContextMenu2(element, null, {x: rect.left, y:rect.bottom}, items, options);
     }
 

@@ -295,7 +295,7 @@ class Configurator extends RendererFX {
 				values.set(v.name, ref.v);
 			});
 			def.find("dt").contextmenu(function(e) {
-				hide.comp.ContextMenu2.fromEvent(cast e, [
+				hide.comp.ContextMenu2.createFromEvent(cast e, [
 					{ label : "Set Default", click : () -> v.defValue = ref.v },
 					{ label : "Remove", click : () -> {
 						vars.remove(v);
