@@ -32,9 +32,9 @@ class Select extends Component {
 		}
 
 		element.toggleClass("file", true);
-		element.contextmenu(function(e) {
+		element.contextmenu(function(e: js.jquery.Event) {
 			e.preventDefault();
-			onContextmenu();
+			onContextmenu(e);
 			return false;
 		});
 		element.mousedown(function(e) {
@@ -49,7 +49,7 @@ class Select extends Component {
 		});
 	}
 
-	public dynamic function onContextmenu() {
+	public dynamic function onContextmenu(e: js.jquery.Event) {
 		var options = [
 			{ label : "Copy", click : () -> ide.setClipboard(value)},
 			{ label : "Paste", click : () -> change(ide.getClipboard())},
@@ -57,7 +57,7 @@ class Select extends Component {
 		if (isClearable) {
 			options.unshift({ label : "Clear", click : () -> change("")});
 		}
-		new hide.comp.ContextMenu(options);
+		ContextMenu2.createFromEvent(cast e, options);
 	}
 
 	function change(newId : String) {

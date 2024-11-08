@@ -3203,7 +3203,7 @@ class SceneEditor {
 			var header = properties.element.find('.group[name="$groupName"]').find(".title");
 			header.contextmenu( function(e) {
 				e.preventDefault();
-				new hide.comp.ContextMenu([{label: "Copy", click: function() {
+				ContextMenu2.createFromEvent(cast e, [{label: "Copy", click: function() {
 					copyFields(groupFields);
 				}},
 				{label: "Paste", click: function() {

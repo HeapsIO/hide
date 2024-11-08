@@ -44,9 +44,9 @@ class Range extends Component {
 		else
 			current = 0;
 
-		function contextMenu(e) {
+		element.contextmenu((e) -> {
 			e.preventDefault();
-			new ContextMenu([
+			ContextMenu2.createFromEvent(cast e, [
 				{ label : "Reset", click : reset },
 				{ label : "sep", isSeparator: true},
 				{ label : "Copy", click : copy},
@@ -54,10 +54,7 @@ class Range extends Component {
 				{ label : "sep", isSeparator: true},
 				{ label : "Cancel", click : function() {} },
 			]);
-			return false;
-		}
-
-		element.contextmenu(contextMenu);
+		});
 
 		f.on("input", function(_) {
 			var v = Math.round(Std.parseFloat(f.val()) * 100 * scale) / 100;

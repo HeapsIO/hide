@@ -71,12 +71,12 @@ class GradientBox extends Component {
 
         function contextMenu(e : js.jquery.Event) {
             e.preventDefault();
-            new ContextMenu([
+            ContextMenu2.createFromEvent(cast e, [
                 {label: "Reset", click: function() {
                     value = Gradient.getDefaultGradientData();
                     onChange(false);
                 }},
-                {label:"sep", isSeparator: true},
+                {isSeparator: true},
                 {label: "Copy", click: function() {
                     ide.setClipboard(haxe.Json.stringify(value));
                 }},

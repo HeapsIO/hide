@@ -138,7 +138,7 @@ class MultiRange extends Component {
 
         linkButton.contextmenu(function(e) {
             e.preventDefault();
-            new ContextMenu([
+            ContextMenu2.createFromEvent(cast e, [
 				{ label : "Reset All", click : reset },
 				{ label : "Round All", click : round },
 				{ label : "sep", isSeparator: true},
@@ -147,7 +147,6 @@ class MultiRange extends Component {
 				{ label : "sep", isSeparator: true},
 				{ label : "Cancel", click : function() {} },
 			]);
-            return false;
         });
 
         root.remove();
