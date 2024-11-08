@@ -50,7 +50,10 @@ typedef MenuOptions = {
                | - placementWidth - |
         | --- your context menu --- |  <--
     **/
-    ?placementWidth: Int
+    ?placementWidth: Int,
+
+    ?placementHeight: Int,
+
 }
 
 class ContextMenu2 {
@@ -101,6 +104,7 @@ class ContextMenu2 {
             options.widthOverride = Std.int(rect.width);
         }
         options.placementWidth = options.placementWidth ?? Std.int(rect.width);
+        options.placementHeight = options.placementHeight ?? -Std.int(rect.height);
         return new ContextMenu2(element, null, {x: rect.left, y:rect.bottom}, items, options);
     }
 
@@ -195,7 +199,15 @@ class ContextMenu2 {
 
 
         if (y + rect.height > js.Browser.window.innerHeight) {
-            y = js.Browser.window.innerHeight - rect.height;
+            if (parentMenu != null) {
+                y = js.Browser.window.innerHeight - rect.height;
+            } else {
+                y = originalPos.y - rect.height;
+                if (options.placementHeight != null) {
+                    y += options.placementHeight;
+                }
+            }
+
         }
         if (y < 0) {
             y = 0;
