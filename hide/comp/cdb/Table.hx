@@ -265,12 +265,10 @@ class Table extends Component {
 			}
 			if( sheet.props.displayColumn == c.name )
 				col.addClass("display");
-			col.mousedown(function(e) {
-				if( e.which == 3 ) {
-					editor.popupColumn(this, c);
-					e.preventDefault();
-					return;
-				}
+			col.contextmenu(function(e) {
+				editor.popupColumn(this, c);
+				e.preventDefault();
+				return;
 			});
 			col.dblclick(function(_) {
 				if( editor.view == null ) editor.editColumn(getRealSheet(), c);
@@ -763,13 +761,10 @@ class Table extends Component {
 			var cell = new Cell(td.get(0), line, c);
 			lines.push(line);
 
-			th.mousedown(function(e) {
-				if( e.which == 3 ) {
-					editor.popupColumn(this, c, cell);
-					editor.cursor.clickCell(cell, false);
-					e.preventDefault();
-					return;
-				}
+			th.contextmenu(function(e) {
+				editor.popupColumn(this, c, cell);
+				editor.cursor.clickCell(cell, false);
+				e.preventDefault();
 			});
 		}
 

@@ -75,7 +75,8 @@ class EventsEditor extends Component implements CurveEditorComponent
 
 				e.preventDefault();
 				e.stopPropagation();
-				new hide.comp.ContextMenu([
+
+				hide.comp.ContextMenu2.fromEvent(cast e,[
 					{
 						label: "Delete", click: function() {
 							events.remove(event);

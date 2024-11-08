@@ -2030,7 +2030,7 @@ class Editor extends Component {
 			return;
 		var sheet = table.getRealSheet();
 		var indexColumn = sheet.columns.indexOf(col);
-		var menu : Array<hide.comp.ContextMenu.ContextMenuItem> = [
+		var menu : Array<hide.comp.ContextMenu2.MenuItem> = [
 			{ label : "Edit", click : function () editColumn(sheet, col) },
 			{
 				label : "Add Column",
@@ -2132,7 +2132,7 @@ class Editor extends Component {
 				refresh();
 			}});
 		}
-		new hide.comp.ContextMenu(menu);
+		hide.comp.ContextMenu2.createFromPoint(ide.mouseX, ide.mouseY, menu);
 	}
 
 	function nextVisibleColumnIndex( table : Table, index : Int, dir : Direction){
@@ -2376,7 +2376,7 @@ class Editor extends Component {
 	}
 
 	function categoriesMenu(categories: Array<String>, setFunc : Array<String> -> Void) {
-		var menu : Array<ContextMenu.ContextMenuItem> = [{ label : "Set...", click : function() {
+		var menu : Array<ContextMenu2.MenuItem> = [{ label : "Set...", click : function() {
 			var wstr = "";
 			if(categories != null)
 				wstr = categories.join(",");

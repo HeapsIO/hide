@@ -1231,14 +1231,17 @@ class Cell {
 			var path = paths.join(".");
 
 			var previewSettings = null;
-			for (config in customPreviews) {
-				for (cdbPath in config.cdbPaths) {
-					if (cdbPath == path) {
-						previewSettings = config;
-						break;
+			if (customPreviews != null) {
+				for (config in customPreviews) {
+					for (cdbPath in config.cdbPaths) {
+						if (cdbPath == path) {
+							previewSettings = config;
+							break;
+						}
 					}
 				}
 			}
+
 
 			paths.shift();
 			// fix path to be relative to current table for preview
