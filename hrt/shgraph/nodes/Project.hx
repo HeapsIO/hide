@@ -4,7 +4,7 @@ package hrt.shgraph.nodes;
 @name("Project")
 @description("Project the given world space vector into view space")
 @width(100)
-@group("Operation")
+@group("Math")
 class Project extends Operation {
 
 	static var SRC = {

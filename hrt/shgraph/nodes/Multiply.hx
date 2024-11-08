@@ -5,7 +5,7 @@ using hxsl.Ast;
 @name("Multiply")
 @description("The output is the result of A * B")
 @width(80)
-@group("Operation")
+@group("Math")
 class Multiply extends ShaderNodeHxsl {
 
 	static var SRC = {

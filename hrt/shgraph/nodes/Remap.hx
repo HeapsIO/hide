@@ -3,7 +3,7 @@ package hrt.shgraph.nodes;
 @name("Remap")
 @description("Remap value in range [inMin, inMax] to range [outMin, outMax]")
 @width(100)
-@group("Operation")
+@group("Math")
 class Remap extends Operation {
 
 	static var SRC = {

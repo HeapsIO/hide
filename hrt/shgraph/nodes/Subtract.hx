@@ -5,7 +5,7 @@ using hxsl.Ast;
 @name("Subtract")
 @description("The output is the result of A - B")
 @width(80)
-@group("Operation")
+@group("Math")
 class Subtract extends ShaderNodeHxsl {
 
 	static var SRC = {

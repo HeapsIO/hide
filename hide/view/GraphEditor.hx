@@ -11,6 +11,7 @@ import hide.view.shadereditor.Box;
 import hrt.shgraph.ShaderNode;
 import hrt.shgraph.ShaderType;
 using Lambda;
+using hrt.tools.MapUtils;
 import hrt.shgraph.ShaderType.SType;
 
 import hide.view.GraphInterface.IGraphEditor;
@@ -97,6 +98,8 @@ class GraphEditor extends hide.comp.Component {
 
 	public var currentUndoBuffer : UndoBuffer = [];
 
+	var contextMenu : hide.comp.ContextMenu2 = null;
+
 
 
 	var outputsToInputs : hrt.tools.OneToMany = new hrt.tools.OneToMany();
@@ -144,6 +147,8 @@ class GraphEditor extends hide.comp.Component {
 
 
 	public function onDisplay() {
+		saveDisplayKey = "hideGraphEditor";
+
 		heapsScene = element.find(".heaps-scene");
 		editorDisplay = new SVG(heapsScene);
 		editorDisplay.element.attr("id", "graph-root");
@@ -162,7 +167,7 @@ class GraphEditor extends hide.comp.Component {
 		keys.register("shadergraph.comment", commentFromSelection);
 		keys.register("duplicateInPlace", duplicateSelection);
 		keys.register("duplicate", duplicateSelection);
-		keys.register("graph.openAddMenu", openAddMenu.bind(null,null));
+		keys.register("graph.openAddMenu", openAddMenu2);
 		keys.register("cancel", cancelAll);
 
 		var miniPreviews = new Element('<div class="mini-preview"></div>');
@@ -198,20 +203,21 @@ class GraphEditor extends hide.comp.Component {
 				return;
 			}
 
-			if (e.button == 2) {
-				if (addMenu?.is(":visible") ?? false) {
-					closeAddMenu();
-					cleanupCreateEdge();
-				}
-				else {
-					openAddMenu();
-				}
-				e.preventDefault();
-				e.stopPropagation();
-			}
+			// if (e.button == 2) {
+			// 	if (addMenu?.is(":visible") ?? false) {
+			// 		closeAddMenu();
+			// 		cleanupCreateEdge();
+			// 	}
+			// 	else {
+			// 		openAddMenu2();
+			// 	}
+			// 	e.preventDefault();
+			// 	e.stopPropagation();
+			// }
 		});
 
 		heapsScene.on("contextmenu", function(e) {
+			openAddMenu2();
 			e.preventDefault();
 		});
 
@@ -235,7 +241,7 @@ class GraphEditor extends hide.comp.Component {
 						return;
 					}
 					else {
-						openAddMenu();
+						openAddMenu2();
 						e.stopPropagation();
 						return;
 					}
@@ -509,6 +515,82 @@ class GraphEditor extends hide.comp.Component {
 	}
 
 	static var lastOpenAddMenuPoint = new Point();
+
+	function openAddMenu2() {
+		if (getDisplayState("useOldAddMenu") != null) {
+			openAddMenu();
+			return;
+		}
+
+		if (contextMenu != null)
+			return;
+		lastOpenAddMenuPoint.set(lX(ide.mouseX), lY(ide.mouseY));
+
+		var nodes = editor.getAddNodesMenu();
+
+		var groups: Map<String, Array<hide.view.GraphInterface.AddNodeMenuEntry>> = [];
+
+		for (node in nodes) {
+			groups.getOrPut(node.group, []).push(node);
+		}
+
+		function doAdd(onConstructNode : () -> IGraphNode) {
+			//var key = Std.parseInt(this.selectedNode.attr("node"));
+			var posCursor = new Point(lX(ide.mouseX - 25), lY(ide.mouseY - 10));
+
+			var instance = onConstructNode();
+
+			var createLinkInput = edgeCreationInput;
+			var createLinkOutput = edgeCreationOutput;
+			var fromInput = createLinkInput != null;
+
+
+			if (createLinkInput != null) {
+				createLinkOutput = packIO(instance.id, 0);
+			}
+			else if (createLinkOutput != null) {
+				createLinkInput = packIO(instance.id, 0);
+			}
+
+			var pos = new h2d.col.Point();
+			pos.load(lastOpenAddMenuPoint);
+			if (createLinkInput != null) {
+				pos.set(lastCurveX, lastCurveY);
+			}
+			cleanupCreateEdge();
+
+			instance.setPos(pos);
+			opBox(instance, true, currentUndoBuffer);
+			if (createLinkInput != null && createLinkOutput != null) {
+				var box = boxes[instance.id];
+				var x = (fromInput ? @:privateAccess box.width : 0) - Box.NODE_HITBOX_RADIUS;
+				var y = box.getNodeHeight(0) - Box.NODE_HITBOX_RADIUS;
+				opMove(boxes[instance.id], pos.x - x, pos.y - y, currentUndoBuffer);
+				opEdge(createLinkOutput, createLinkInput, true, currentUndoBuffer);
+			}
+
+			commitUndo();
+			closeAddMenu();
+		}
+
+		var menu : Array<hide.comp.ContextMenu2.MenuItem> = [];
+		for (group => entries in groups) {
+			var submenu: Array<hide.comp.ContextMenu2.MenuItem> = [];
+			for (entry in entries) {
+				submenu.push({label: entry.name, click: doAdd.bind(entry.onConstructNode), tooltip: entry.description});
+			}
+			menu.push({
+				label: group,
+				menu: submenu,
+			});
+		}
+
+		contextMenu = hide.comp.ContextMenu2.createFromPoint(ide.mouseX, ide.mouseY, menu, {search: Visible, noIcons: true});
+		contextMenu.onClose = () -> {
+			contextMenu = null;
+		};
+	}
+
 	function openAddMenu(x : Int = 0, y : Int = 0) {
 
 		var boundsWidth = Std.int(element.width());

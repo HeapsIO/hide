@@ -9,7 +9,7 @@ enum InputKind {
 
 @name("Inputs")
 @description("Shader inputs of Heaps, it's dynamic")
-@group("Property")
+@group("Input")
 @color("#0e8826")
 class ShaderInput extends ShaderNode {
 	@prop("Variable") public var variable : String = "pixelColor";

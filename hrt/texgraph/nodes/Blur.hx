@@ -3,7 +3,7 @@ package hrt.texgraph.nodes;
 @name("Blur")
 @description("Blur texture")
 @width(100)
-@group("Operation")
+@group("Math")
 class Blur extends TexNode {
 	var inputs = [
 		{ name : "input1", type: h3d.mat.Texture }

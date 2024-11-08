@@ -4,7 +4,7 @@ using hxsl.Ast;
 
 @name("Global")
 @description("Global Inputs")
-@group("Property")
+@group("Input")
 @color("#0e8826")
 class ShaderGlobalInput extends ShaderNode {
 

@@ -14,7 +14,7 @@ class MultiplyShader extends h3d.shader.ScreenShader {
 @name("Multiply")
 @description("The output is the result of the inputs multiplied")
 @width(80)
-@group("Operation")
+@group("Math")
 class Multiply extends TexNode {
 	var inputs = [
 		{ name : "input1", type: h3d.mat.Texture },

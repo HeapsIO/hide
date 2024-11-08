@@ -4178,18 +4178,35 @@ hide-popover {
 		margin: 0;
 	}
 
-	input {
+	.search-bar {
+
 		background-color: #444;
 		border: 1px solid #666;
 		border-radius: 2px;
-
-		color: #aaaaaa;
-		font-family: Verdana, Geneva, Tahoma, sans-serif;
-		width: 100%;
 		box-sizing: border-box;
+		position: relative;
 
-		&:focus {
-			outline: none;
+		input {
+			color: #aaaaaa;
+			font-family: Verdana, Geneva, Tahoma, sans-serif;
+			width: 100%;
+			box-sizing: border-box;
+
+			border: none;
+			margin: none;
+
+			&:focus {
+				outline: none;
+			}
+		}
+
+		&:after {
+			color: #aaaaaa;
+			content: "\f002";
+			font-family: "FontAwesome";
+			position: absolute;
+			right: 6px;
+			top: 2px;
 		}
 	}
 
@@ -4228,10 +4245,15 @@ hide-popover {
 		li {
 			text-align: left;
 			--level: 0;
+			--base-padding: 0.2em;
 			padding: calc(0.2em);
-			padding-left: calc(0.2em + var(--level) * 0.5em);
+			padding-left: calc(var(--base-padding) + var(--level) * 0.5em);
 			display: flex;
 			align-items: baseline;
+
+			&:not(:has(.icon)) {
+				--base-padding: 0.5em;
+			}
 
 			gap: 4px;
 			&:hover, &.highlight {
@@ -4253,7 +4275,7 @@ hide-popover {
 			.icon {
 				display: flex;
 				justify-content: center;
-				width: 1.5em;
+				width: 1.4em;
 			}
 
 			.shortcut {

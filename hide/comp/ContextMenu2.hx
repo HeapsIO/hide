@@ -10,12 +10,43 @@ typedef MenuItem = {
     ?icon: String,
     ?keys: String,
     ?checked: Bool,
+    ?tooltip: String
+}
+
+enum SearchMode {
+    /**
+        No search bar or search functionality
+    **/
+    None;
+
+    /**
+        Search bar is hidden, is shown when the user starts typing anything
+    **/
+    Hidden;
+
+    /**
+        Search bar is always visible
+    **/
+    Visible;
+}
+
+typedef MenuOptions = {
+    ?search: SearchMode, // default to Hidden for top level context menus
+    ?widthOverride: Int, // if set, force the width of the first menu
+
+    /**
+        Set this to true if you have no icons/checkmarks in your menu and you want to hide the padding on the left of the entries names
+    **/
+    ?noIcons: Bool,
 }
 
 class ContextMenu2 {
     var rootElement : js.html.Element;
     var menu : js.html.MenuElement;
-    var seachBar : js.html.InputElement;
+    var searchInput : js.html.InputElement;
+    var searchBar : js.html.DivElement;
+
+    var options: MenuOptions;
 
     var items: Array<MenuItem> = [];
 
@@ -33,18 +64,30 @@ class ContextMenu2 {
     var popupTimer: haxe.Timer;
     final openDelayMs = 250;
 
-    public static function fromEvent(e: js.html.MouseEvent, items: Array<MenuItem>) {
-        return new ContextMenu2(cast e.target, null, {x: e.clientX, y: e.clientY}, items, true);
+    public static function fromEvent(e: js.html.MouseEvent, items: Array<MenuItem>, options: MenuOptions = null) {
+        return new ContextMenu2(cast e.target, null, {x: e.clientX, y: e.clientY}, items, options ?? {});
     }
 
-    public static function createFromPoint(x: Float, y: Float , items: Array<MenuItem>) {
-        return new ContextMenu2(null, null, {x:x, y:y}, items, true);
+    public static function createFromPoint(x: Float, y: Float , items: Array<MenuItem>, options: MenuOptions = null) {
+        return new ContextMenu2(null, null, {x:x, y:y}, items, options ?? {});
     }
 
-    function new(parentElement: js.html.Element, parentMenu: ContextMenu2, absPos: {x: Float, y: Float}, items: Array<MenuItem>, wantSearch: Bool) {
+    public static function createDropdown(element: js.html.Element, items: Array<MenuItem>, options: MenuOptions = null) {
+        var rect = element.getBoundingClientRect();
+        options = options ?? {};
+        options.widthOverride = options.widthOverride ?? Std.int(rect.width);
+        return new ContextMenu2(element, null, {x: rect.left, y:rect.bottom}, items, options);
+    }
+
+    function new(parentElement: js.html.Element, parentMenu: ContextMenu2, absPos: {x: Float, y: Float}, items: Array<MenuItem>, options: MenuOptions) {
         this.items = items;
         this.parentMenu = parentMenu;
         originalPos = absPos;
+
+        // Default options values
+        options.search = options.search ?? Hidden;
+
+        this.options = options;
 
         var nearest : js.html.Element = if (parentMenu != null) {
                 parentElement;
@@ -59,27 +102,34 @@ class ContextMenu2 {
         nearest.appendChild(rootElement);
 
         rootElement.classList.add("context-menu2");
+        if (options.widthOverride != null)
+            rootElement.style.width = '${options.widthOverride}px';
         untyped rootElement.popover = parentMenu != null ? "manual" : "auto";
         rootElement.style.left = '${0}px';
         rootElement.style.top = '${0}px';
         untyped rootElement.showPopover();
 
         menu = js.Browser.document.createMenuElement();
-        if (wantSearch) {
-            seachBar = js.Browser.document.createInputElement();
-            seachBar.type = "text";
-            seachBar.onkeyup = (e:js.html.KeyboardEvent) -> {
-                if (filter != seachBar.value) {
-                    filter = seachBar.value;
+        if (options.search != None) {
+            searchBar = js.Browser.document.createDivElement();
+            rootElement.appendChild(searchBar);
+            searchBar.classList.add("search-bar");
+
+            searchInput = js.Browser.document.createInputElement();
+            searchInput.type = "text";
+            searchInput.placeholder = "Search ...";
+            searchInput.onkeyup = (e:js.html.KeyboardEvent) -> {
+                if (filter != searchInput.value) {
+                    filter = searchInput.value;
                     refreshMenu();
                 }
             }
 
-            seachBar.onblur = (e) -> {
+            searchInput.onblur = (e) -> {
                 rootElement.focus();
             }
 
-            rootElement.appendChild(seachBar);
+            searchBar.appendChild(searchInput);
         }
         rootElement.appendChild(menu);
 
@@ -94,15 +144,20 @@ class ContextMenu2 {
 
         if (parentMenu == null) {
             rootElement.addEventListener("keydown", onGlobalKeyDown);
-            rootElement.focus();
+            if (options.search == Visible) {
+                searchInput.focus();
+            }
+            else {
+                rootElement.focus();
+            }
         }
     }
 
     function onGlobalKeyDown(e:js.html.KeyboardEvent) {
         if (!handleMovementKeys(e)) {
-            if (seachBar != null) {
-                seachBar.style.display = "block";
-                seachBar.focus();
+            if (searchBar != null) {
+                searchBar.style.display = "block";
+                searchInput.focus();
             }
         }
     }
@@ -185,6 +240,10 @@ class ContextMenu2 {
         return false;
     }
 
+    public dynamic function onClose() {
+
+    }
+
     function refreshMenu() {
         if (popupTimer != null) {
             popupTimer.stop();
@@ -197,8 +256,8 @@ class ContextMenu2 {
             flatItems = [];
             selected = -1;
 
-            if (seachBar != null) {
-                seachBar.style.display = "none";
+            if (searchBar != null && options.search == Hidden) {
+                searchBar.style.display = "none";
             }
 
             filteredItems = null;
@@ -220,7 +279,7 @@ class ContextMenu2 {
             filteredItems = [];
             flatItems = [];
 
-            seachBar.style.display = "block";
+            searchBar.style.display = "block";
 
             closeSubmenu();
 
@@ -309,16 +368,23 @@ class ContextMenu2 {
     function createItem(menuItem: MenuItem, id: Int) : js.html.Element {
         var li = js.Browser.document.createLIElement();
 
-        var icon = js.Browser.document.createSpanElement();
-        li.appendChild(icon);
-        icon.classList.add("icon");
-        if (menuItem.icon != null) {
-            icon.classList.add("fa");
-            icon.classList.add('fa-${menuItem.icon}');
+        var icon = null;
+        if (options.noIcons == null || options.noIcons == false) {
+            icon = js.Browser.document.createSpanElement();
+            li.appendChild(icon);
+            icon.classList.add("icon");
+            if (menuItem.icon != null) {
+                icon.classList.add("fa");
+                icon.classList.add('fa-${menuItem.icon}');
+            }
+        }
+
+        if (menuItem.tooltip != null) {
+            li.title = menuItem.tooltip;
         }
 
         function refreshCheck() {
-            if (menuItem.checked != null) {
+            if (icon != null && menuItem.checked != null) {
                 icon.classList.add("fa");
                 icon.classList.toggle("fa-check-square", menuItem.checked);
                 icon.classList.toggle("fa-square-o", !menuItem.checked);
@@ -432,6 +498,8 @@ class ContextMenu2 {
         if (parentMenu == null) {
             rootElement.removeEventListener("keydown", onGlobalKeyDown);
         }
+
+        onClose();
     }
 
     function closeSubmenu() {
@@ -454,7 +522,7 @@ class ContextMenu2 {
             var element = menu.children[currentSubmenuItemId];
             element.classList.add("open");
             var rect = element.getBoundingClientRect();
-            currentSubmenu = new ContextMenu2(rootElement, this, {x: rect.right, y: rect.top}, items[currentSubmenuItemId].menu, false);
+            currentSubmenu = new ContextMenu2(rootElement, this, {x: rect.right, y: rect.top}, items[currentSubmenuItemId].menu, {search: None, noIcons: options.noIcons});
         }
     }
 }

@@ -230,6 +230,8 @@ class ShaderEditor extends hide.view.FileView implements GraphInterface.IGraphEd
 						<select id="domainSelection"></select>
 					</div>
 					<div> Preview Alpha<input id="previewAlpha" type="checkbox" /></div>
+					<div> Use old add menu<input id="oldAddMenu" type="checkbox" /></div>
+
 					<input id="centerView" type="button" value="Center Graph" />
 					<input id="debugMenu" type="button" value="Debug Menu"/>
 				</div>
@@ -259,6 +261,16 @@ class ShaderEditor extends hide.view.FileView implements GraphInterface.IGraphEd
 			bitmapToShader.clear();
 		});
 		(cast previewAlpha[0]:Dynamic).checked = previewSettings.previewAlpha;
+
+		var oldAddMenu = rightPannel.find("#oldAddMenu");
+		oldAddMenu.on("change", (e) -> {
+			if (untyped oldAddMenu.get(0).checked) {
+				graphEditor.saveDisplayState("useOldAddMenu", true);
+			} else {
+				graphEditor.removeDisplayState("useOldAddMenu");
+			}
+		});
+		untyped oldAddMenu.get(0).checked = graphEditor.getDisplayState("useOldAddMenu") != null;
 
 		rightPannel.appendTo(element);
 

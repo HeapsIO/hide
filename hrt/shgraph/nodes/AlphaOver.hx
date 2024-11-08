@@ -1,9 +1,9 @@
 package hrt.shgraph.nodes;
 
 @name("Alpha Over")
-@description("Output is A if A.")
+@description("Blends between A and B based on A alpha * opacity")
 @width(100)
-@group("Operation")
+@group("Channel")
 class AlphaOver extends Operation {
 
 	static var SRC = {

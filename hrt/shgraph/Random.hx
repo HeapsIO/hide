@@ -1,6 +1,6 @@
 package hrt.shgraph;
 
-@name("Random")
+@name("Math")
 @description("[CURRENTLY BROKEN] Generate a random value between min and max using the given seed")
 @group("Channel")
 class Random extends ShaderNodeHxsl {

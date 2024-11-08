@@ -5,7 +5,7 @@ using hxsl.Ast;
 @name("Add")
 @description("The output is the result of A + B")
 @width(80)
-@group("Operation")
+@group("Math")
 class Add extends Operation {
 
 	static var SRC = {

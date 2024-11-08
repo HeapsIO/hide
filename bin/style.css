@@ -3576,17 +3576,31 @@ hide-popover hide-content {
   right: 5px;
   margin: 0;
 }
-.context-menu2 input {
+.context-menu2 .search-bar {
   background-color: #444;
   border: 1px solid #666;
   border-radius: 2px;
+  box-sizing: border-box;
+  position: relative;
+}
+.context-menu2 .search-bar input {
   color: #aaaaaa;
   font-family: Verdana, Geneva, Tahoma, sans-serif;
   width: 100%;
   box-sizing: border-box;
+  border: none;
+  margin: none;
 }
-.context-menu2 input:focus {
+.context-menu2 .search-bar input:focus {
   outline: none;
+}
+.context-menu2 .search-bar:after {
+  color: #aaaaaa;
+  content: "\f002";
+  font-family: "FontAwesome";
+  position: absolute;
+  right: 6px;
+  top: 2px;
 }
 .context-menu2 menu {
   max-height: min(500px, 90vh);
@@ -3619,12 +3633,16 @@ hide-popover hide-content {
 .context-menu2 menu li {
   text-align: left;
   --level: 0;
+  --base-padding: 0.2em;
   padding: calc(0.2em);
-  padding-left: calc(0.2em + var(--level) * 0.5em);
+  padding-left: calc(var(--base-padding) + var(--level) * 0.5em);
   display: flex;
   align-items: baseline;
   gap: 4px;
   user-select: none;
+}
+.context-menu2 menu li:not(:has(.icon)) {
+  --base-padding: 0.5em;
 }
 .context-menu2 menu li:hover,
 .context-menu2 menu li.highlight {
@@ -3644,7 +3662,7 @@ hide-popover hide-content {
 .context-menu2 menu li .icon {
   display: flex;
   justify-content: center;
-  width: 1.5em;
+  width: 1.4em;
 }
 .context-menu2 menu li .shortcut {
   color: #888;

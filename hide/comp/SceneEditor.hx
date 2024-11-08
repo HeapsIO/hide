@@ -1809,7 +1809,7 @@ class SceneEditor {
 			}
 
 			menuItems.push({ isSeparator : true, label : "" });
-			hide.comp.ContextMenu2.fromEvent(cast e, menuItems.concat(actionItems));
+			hide.comp.ContextMenu2.fromEvent(cast e, cast menuItems.concat(actionItems));
 		};
 
 		tree.element.parent().contextmenu(ctxMenu.bind(tree));
@@ -2329,7 +2329,7 @@ class SceneEditor {
 				keys : view.config.get("key.sceneeditor.gatherToMouse"),
 			},
 		];
-		hide.comp.ContextMenu2.createFromPoint(ide.mouseX, ide.mouseY, menuItems);
+		hide.comp.ContextMenu2.createFromPoint(ide.mouseX, ide.mouseY, cast menuItems);
 	}
 
 	public function refreshInteractive(elt : PrefabElement) {

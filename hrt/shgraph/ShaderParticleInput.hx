@@ -4,7 +4,7 @@ using hxsl.Ast;
 
 @name("Particle Inputs")
 @description("Particle specific shader inputs")
-@group("Property")
+@group("Input")
 @color("#0e8826")
 class ShaderParticleInputs extends ShaderNode {
 	@prop("Variable") public var variable : String = "life";
