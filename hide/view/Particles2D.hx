@@ -160,7 +160,7 @@ class Particles2D extends FileView {
 			</div>
 		');
 
-		e.find("h1").contextmenu(function(ev) {
+		e.find("h1").contextmenu(function(ev: js.jquery.Event) {
 			var groups = @:privateAccess parts.groups;
 			var index = groups.indexOf(g);
 			function moveIndex(d:Int,history=true) {
@@ -170,7 +170,7 @@ class Particles2D extends FileView {
 				if( history ) undo.change(Custom(function(undo) moveIndex(undo ? -d : d,false)));
 				initProperties();
 			}
-			new hide.comp.ContextMenu([
+			hide.comp.ContextMenu2.createFromEvent(cast ev, [
 				{ label : "Enable", checked : g.enable, click : function() {
 					g.enable = !g.enable;
 					e.find("[field=enable]").prop("checked", g.enable);

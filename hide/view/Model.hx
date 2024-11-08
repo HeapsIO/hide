@@ -1167,7 +1167,11 @@ class Model extends FileView {
 					default:
 					}
 				});
-			case 1:
+			}
+		}
+
+		int.onClick = (e:hxd.Event) -> {
+			if (e.button == 1) {
 				var deleteEvent = function(s:String, f:Int){
 					obj.currentAnimation.removeEvent(f, s);
 					buildTimeline();
@@ -1203,14 +1207,14 @@ class Model extends FileView {
 					}));
 				}
 				var frame = Math.round((e.relX / W) * obj.currentAnimation.frameCount);
-				var menuItems : Array<hide.comp.ContextMenu.ContextMenuItem> = [
+				var menuItems : Array<hide.comp.ContextMenu2.MenuItem> = [
 					{ label : "New", click: function(){ addEvent("NewEvent", frame); }},
 				];
 				if(obj.currentAnimation.events != null && obj.currentAnimation.events[frame] != null){
 					for(e in obj.currentAnimation.events[frame])
 						menuItems.push({ label : "Delete " + e, click: function(){ deleteEvent(e, frame); }});
 				}
-				new hide.comp.ContextMenu(menuItems);
+				hide.comp.ContextMenu2.createFromPoint(ide.mouseX, ide.mouseY, menuItems);
 			}
 		}
 

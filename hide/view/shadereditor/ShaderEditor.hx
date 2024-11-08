@@ -274,7 +274,7 @@ class ShaderEditor extends hide.view.FileView implements GraphInterface.IGraphEd
 
 		rightPannel.appendTo(element);
 
-		var newParamCtxMenu : Array<hide.comp.ContextMenu.ContextMenuItem> = [
+		var newParamCtxMenu : Array<hide.comp.ContextMenu2.MenuItem> = [
 			{ label : "Number", click : () -> createParameter(HxslType.TFloat) },
 			{ label : "Vec2", click : () -> createParameter(HxslType.TVec(2, VFloat)) },
 			{ label : "Vec3", click : () -> createParameter(HxslType.TVec(3, VFloat)) },
@@ -282,15 +282,16 @@ class ShaderEditor extends hide.view.FileView implements GraphInterface.IGraphEd
 			{ label : "Texture", click : () -> createParameter(HxslType.TSampler(T2D,false)) },
 		];
 
-		rightPannel.find("#createParameter").on("click", function() {
-			new hide.comp.ContextMenu(newParamCtxMenu);
+		var createParameter = rightPannel.find("#createParameter");
+		createParameter.on("click", function() {
+			hide.comp.ContextMenu2.createDropdown(createParameter.get(0), newParamCtxMenu);
 		});
 
 		parametersList = rightPannel.find("#parametersList");
 		parametersList.on("contextmenu", function(e) {
 			e.preventDefault();
 			e.stopPropagation();
-			new hide.comp.ContextMenu([
+			hide.comp.ContextMenu2.createFromEvent(cast e, [
 				{
 					label : "Add Parameter",
 					menu : newParamCtxMenu,
@@ -304,7 +305,7 @@ class ShaderEditor extends hide.view.FileView implements GraphInterface.IGraphEd
 
 
 		rightPannel.find("#debugMenu").click((e) -> {
-			new hide.comp.ContextMenu([
+			hide.comp.ContextMenu2.createDropdown(rightPannel.find("#debugMenu").get(0), [
 				{
 					label : "Print Preview Shader code to Console",
 					click: () -> trace(hxsl.Printer.shaderToString(shaderGraph.compile(currentGraph.domain).shader.data, true))
@@ -451,7 +452,7 @@ class ShaderEditor extends hide.view.FileView implements GraphInterface.IGraphEd
 		elt.on("contextmenu", function(e) {
 			var elements = [];
 			e.stopPropagation();
-			var newCtxMenu : Array<hide.comp.ContextMenu.ContextMenuItem> = [
+			var newCtxMenu : Array<hide.comp.ContextMenu2.MenuItem> = [
 				{ label : "Move up", click : () -> {
 					//beforeChange();
 					moveParameter(parameter, true);
@@ -463,7 +464,7 @@ class ShaderEditor extends hide.view.FileView implements GraphInterface.IGraphEd
 					//afterChange();
 				}, enabled: shaderGraph.parametersKeys.indexOf(parameter.id) < shaderGraph.parametersKeys.length-1}
 			];
-			new hide.comp.ContextMenu(newCtxMenu);
+			hide.comp.ContextMenu2.createFromEvent(cast e, newCtxMenu);
 			e.preventDefault();
 
 		});
