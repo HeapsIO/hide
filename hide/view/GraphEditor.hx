@@ -1744,21 +1744,20 @@ class GraphEditor extends hide.comp.Component {
 					e.preventDefault();
 					e.stopPropagation();
 				}
-				else if (e.button == 2) {
-					new hide.comp.ContextMenu([
-						{label: "Delete ?", click: function() {
-								var edge = edgeFromPack(packedOutput, packedInput);
-								opEdge(packedOutput, packedInput, false, currentUndoBuffer);
-								commitUndo();
-							}
-						},
-					]);
-					e.preventDefault();
-					e.stopPropagation();
-				}
-
-
 			});
+
+			curveHitbox.get(0).oncontextmenu = function(e: js.html.MouseEvent) {
+				hide.comp.ContextMenu2.createFromEvent(e, [
+					{label: "Delete ?", click: function() {
+							var edge = edgeFromPack(packedOutput, packedInput);
+							opEdge(packedOutput, packedInput, false, currentUndoBuffer);
+							commitUndo();
+						}
+					},
+				]);
+				e.preventDefault();
+				e.stopPropagation();
+			}
 		}
 
 		if (isDraft)

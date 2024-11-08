@@ -491,7 +491,7 @@ class Table extends Component {
 				showRec(makeSeparatorTree(sepInfo));
 			}
 
-			var opts : Array<hide.comp.ContextMenu.ContextMenuItem> = [
+			var opts : Array<hide.comp.ContextMenu2.MenuItem> = [
 
 				{ label : "Expand", click : function() expand(true) },
 				{ label : "Collapse", click : function() expand(false) },
@@ -561,7 +561,7 @@ class Table extends Component {
 					},
 				});
 			#end
-			new hide.comp.ContextMenu(opts);
+			hide.comp.ContextMenu2.createFromPoint(ide.mouseX, ide.mouseY, opts);
 		});
 
 		sep.dblclick(function(e) {
