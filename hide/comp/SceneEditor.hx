@@ -4269,12 +4269,6 @@ class SceneEditor {
 			instant = true;
 		}
 
-		// if we are in a ref, rebuild the ref instead at the moment
-		if (prefab?.shared?.parentPrefab != null) {
-			queueRebuild(prefab?.shared?.parentPrefab);
-			return;
-		}
-
 		var parent = prefab.parent;
 		checkWantRebuild(parent, prefab);
 
@@ -4351,8 +4345,8 @@ class SceneEditor {
 		var enabled = prefab.enabled && !prefab.inGameOnly;
 		var actuallyInWorld = prefab == sceneData || (prefab.parent != null && prefab.parent.has(prefab));
 		if (enabled && actuallyInWorld) {
-			prefab.shared.current3d = prefab.parent?.findFirstLocal3d() ?? root3d;
-			prefab.shared.current2d = prefab.parent?.findFirstLocal2d() ?? root2d;
+			prefab.shared.current3d = prefab.parent?.findFirstLocal3d(true) ?? root3d;
+			prefab.shared.current2d = prefab.parent?.findFirstLocal2d(true) ?? root2d;
 			if (prefab.shared.current3d.getScene() == null)
 				throw "current3d is not in scene";
 			prefab.setEditor(this, this.scene);
