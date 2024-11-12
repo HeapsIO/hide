@@ -23,6 +23,7 @@ class VolumetricLightingShader extends h3d.shader.pbr.DefaultForward {
 		@param var steps : Int;
 		@param var startDistance : Float;
 		@param var endDistance : Float;
+		@param var maxCamDist : Float = 0.0;
 		@param var distanceOpacity : Float;
 
 		@param var ditheringNoise : Sampler2D;
@@ -60,43 +61,52 @@ class VolumetricLightingShader extends h3d.shader.pbr.DefaultForward {
 
 		function noiseAt( pos : Vec3 ) : Float {
 			var amount = 0.;
-			var p = pos * 0.1 * noiseScale;
-			var t = global.time * noiseTurmoil;
-			amount += noise(p - t * vec3(0, 0, 1));
-			var tot = 1.;
-			var k = noisePersistence;
-			p *= noiseLacunarity;
-			if ( noiseOctave >= 2 ) {
-				amount += noise(p + t * vec3(0, 0, -0.6)) * k;
-				k *= noisePersistence;
+			if ( noiseOctave > 0 ) {
+				var p = pos * 0.1 * noiseScale;
+				var t = global.time * noiseTurmoil;
+				amount += noise(p - t * vec3(0, 0, 1));
+				var tot = 1.;
+				var k = noisePersistence;
 				p *= noiseLacunarity;
-				tot += k;
-			}
-			if ( noiseOctave >= 3 ) {
-				amount += noise(p + t * vec3(-0.9, 0, 1.1)) * k;
-				k *= noisePersistence;
-				p *= noiseLacunarity;
-				tot += k;
-			}
-			if ( noiseOctave >= 4 ) {
-				amount += noise(p + t * vec3(0.8, 0.95,-1.2)) * k;
-				k *= noisePersistence;
-				p *= noiseLacunarity;
-				tot += k;
-			}
+				if ( noiseOctave >= 2 ) {
+					amount += noise(p + t * vec3(0, 0, -0.6)) * k;
+					k *= noisePersistence;
+					p *= noiseLacunarity;
+					tot += k;
+				}
+				if ( noiseOctave >= 3 ) {
+					amount += noise(p + t * vec3(-0.9, 0, 1.1)) * k;
+					k *= noisePersistence;
+					p *= noiseLacunarity;
+					tot += k;
+				}
+				if ( noiseOctave >= 4 ) {
+					amount += noise(p + t * vec3(0.8, 0.95,-1.2)) * k;
+					k *= noisePersistence;
+					p *= noiseLacunarity;
+					tot += k;
+				}
 
-			if ( noiseOctave >= 5 ) {
-				amount += noise(p + t * vec3(0,-0.84,-1.3)) * k;
-				tot += k;
-				p *= noiseLacunarity;
-				k *= noisePersistence;
-				tot += k;
+				if ( noiseOctave >= 5 ) {
+					amount += noise(p + t * vec3(0,-0.84,-1.3)) * k;
+					tot += k;
+					p *= noiseLacunarity;
+					k *= noisePersistence;
+					tot += k;
+				}
+				amount = pow(amount / tot, noiseSharpness);
+			} else {
+				amount = 1.0;
 			}
-			return pow(amount / tot, noiseSharpness);
+			return amount;
 		}
 
 		function indirectLighting() : Vec3 {
 			return envColor * irrPower * fogEnvPower;
+		}
+
+		function getFogColor() : Vec3 {
+			return mix(color, secondFogColor, useSecondColor);
 		}
 
 		function directLighting(lightColor : Vec3, lightDirection : Vec3) : Vec3 {
@@ -159,9 +169,11 @@ class VolumetricLightingShader extends h3d.shader.pbr.DefaultForward {
 			var cameraDistance = length(endPos - startPos);
 			if ( dot(camDir, endPos - startPos) < 0.0 )
 				discard;
+			if ( maxCamDist > 0.0 )
+				cameraDistance = min(cameraDistance, maxCamDist);
 			endPos = startPos + camDir * cameraDistance;
 
-			envColor = irrDiffuse.getLod(camDir, 0.0).rgb;
+			envColor = irrDiffuse.getLod(-camDir, 0.0).rgb;
 			view = -camDir;
 
 			var stepSize = length(endPos - startPos) / float(steps);
@@ -178,7 +190,7 @@ class VolumetricLightingShader extends h3d.shader.pbr.DefaultForward {
 					break;
 				transformedPosition = startPos + camDir * curDist;
 				fog = fogAt(transformedPosition);
-				var fColor = mix(color, secondFogColor, useSecondColor);
+				var fColor = getFogColor();
 				var stepColor = evaluateLighting() * fColor * mix(vec3(1.0), saturate(envColor), fogEnvColorMult);
 
 				var stepColor = vec4(stepColor * fog, fog);
@@ -187,7 +199,7 @@ class VolumetricLightingShader extends h3d.shader.pbr.DefaultForward {
 
 				curDist += stepSize;
 			}
-			pixelColor.rgb = colorAcc.rgb /= (0.001 + colorAcc.a);
+			pixelColor.rgb = colorAcc.rgb / (0.001 + colorAcc.a);
 			pixelColor.a = saturate(distanceOpacity * colorAcc.a);
 		}
 	};
@@ -404,7 +416,7 @@ class VolumetricLighting extends RendererFX {
 			</div>
 			<div class="group" name="Noise">
 				<dl>
-					<dt><font color=#FF0000>Octaves</font></dt><dd><input type="range" step="1" min="1" max="4" field="noiseOctave"/></dd>
+					<dt><font color=#FF0000>Octaves</font></dt><dd><input type="range" step="1" min="0" max="4" field="noiseOctave"/></dd>
 					<dt>Scale</dt><dd><input type="range" min="0" max="100" field="noiseScale"/></dd>
 					<dt>Turmoil</dt><dd><input type="range" min="0" max="100" field="noiseTurmoil"/></dd>
 					<dt>Persistence</dt><dd><input type="range" min="0" max="1" field="noisePersistence"/></dd>
