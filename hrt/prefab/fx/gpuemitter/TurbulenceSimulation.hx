@@ -24,7 +24,7 @@ class TurbulenceSimulationShader extends ComputeUtils {
 			f = f*f*(3.0-2.0*f);
 			var uv = (i.xy+vec2(37.0,239.0)*i.z) + f.xy;
 			var rg = noiseTex.getLod( (uv+0.5) / 256.0, 0 ).yx;
-			return mix( rg.x, rg.y, f.z );
+			return 2.0 * mix( rg.x, rg.y, f.z ) - 1.0;
 		}
 
 		function noiseAt( pos : Vec3 ) : Float {
@@ -51,7 +51,7 @@ class TurbulenceSimulationShader extends ComputeUtils {
 				pos *= lacunarity;
 				k *= persistence;
 			}
-			return amount / tot * 2.0 - 1.0;
+			return amount / tot;
 		}
 
 		function main() {
@@ -85,7 +85,9 @@ class TurbulenceSimulation extends SimulationShader {
 	override function updateInstance(?propName) {
 		super.updateInstance(propName);
 
-		if ( noiseTex == null ) {
+		if ( noiseTex == null || noiseTex.isDisposed() ) {
+			if ( noiseTex == null )
+				noiseTex = new h3d.mat.Texture(256, 256);
 			var rands : Array<Int> = [];
 			var rand = new hxd.Rand(0);
 			for(_ in 0...256 * 256)
@@ -101,7 +103,6 @@ class TurbulenceSimulation extends SimulationShader {
 					pix.bytes.set(off+3, 255);
 				}
 			}
-			noiseTex = new h3d.mat.Texture(256, 256);
 			noiseTex.uploadPixels(pix);
 			noiseTex.wrap = Repeat;
 		}

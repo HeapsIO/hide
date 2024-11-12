@@ -71,7 +71,7 @@ class GPUEmitterObject extends h3d.scene.MeshBatch {
 	var shaderParams : Array<{ param : hrt.prefab.fx.BaseFX.ShaderParam, shader : UpdateParamShader }> = [];
 	var paramTexture : h3d.mat.Texture;
 
-	var particleBuffers : ParticleBuffer; 
+	var particleBuffers : ParticleBuffer;
 	var particleShader : ParticleShader;
 
 	var rateAccumulation : Float = 0.0;
@@ -265,18 +265,17 @@ class GPUEmitterObject extends h3d.scene.MeshBatch {
 			case Camera:
 				baseSpawn.absPos.identity();
 				particleShader.absPos.identity();
-				
+
 				var camPos = ctx.camera.pos;
-				var d = data.cameraModeDistance * 0.5;
-				var bounds = h3d.col.Bounds.fromValues(camPos.x - d,
-					camPos.y - d,
-					camPos.z - d,
-					2.0 * d,
-					2.0 * d,
-					2.0 * d);
+				var d = data.cameraModeDistance;
+				var bounds = h3d.col.Bounds.fromValues(camPos.x - d * 0.5,
+					camPos.y - d * 0.5,
+					camPos.z - d * 0.5,
+					d,
+					d,
+					d);
 				baseSimulation.boundsPos.set(bounds.xMin, bounds.yMin, bounds.zMin);
 				baseSimulation.boundsSize.set(bounds.xSize, bounds.ySize, bounds.zSize);
-				particleShader.absPos.load(getAbsPos());
 
 				var cubeSpawn = spawnPass.getShader(CubeSpawnShader);
 				if ( cubeSpawn == null ) {
@@ -388,11 +387,10 @@ class GPUEmitter extends Object3D {
 	@:s var maxLifeTime : Float = 1.0;
 	@:s var minStartSpeed : Float = 0.5;
 	@:s var maxStartSpeed : Float = 1.0;
-	@:s var gravity : Float = 1.0; 
-	@:s var radius : Float = 1.0; 
-	@:s var startSpeed : Float = 1.0; 
-	@:s var infinite : Bool = false; 
-	@:s var faceCam : Bool = false;
+	@:s var gravity : Float = 1.0;
+	@:s var radius : Float = 1.0;
+	@:s var startSpeed : Float = 1.0;
+	@:s var infinite : Bool = false;
 	@:s var mode : Mode = World;
 	@:s var cameraModeDistance : Float = 50.0;
 	@:s var align : Align = FaceCam;
@@ -400,6 +398,12 @@ class GPUEmitter extends Object3D {
 
 	override function makeObject(parent3d : h3d.scene.Object) {
 		return new h3d.scene.Object(parent3d);
+	}
+
+	override function makeChild(c : hrt.prefab.Prefab) {
+		if ( Std.isOfType(c, hrt.prefab.Object3D) )
+			return;
+		super.makeChild(c);
 	}
 
 	function updateEmitters() {
@@ -410,6 +414,7 @@ class GPUEmitter extends Object3D {
 			emitter.remove();
 
 		var meshes = [];
+		meshes = local3d.findAll(o -> Std.downcast(o, h3d.scene.Mesh));
 		for ( c in children ) {
 			if ( !Std.isOfType(c, Object3D) )
 				continue;
@@ -431,7 +436,6 @@ class GPUEmitter extends Object3D {
 				startSpeed : startSpeed,
 				trs : trs,
 				infinite : infinite,
-				faceCam : faceCam,
 				mode : mode,
 				cameraModeDistance : cameraModeDistance,
 				align : align,
@@ -458,9 +462,7 @@ class GPUEmitter extends Object3D {
 		}
 	}
 
-	override function postMakeInstance() {
-		super.postMakeInstance();
-
+	function bakeAnimations() {
 		var obj = local3d.find(o -> Std.downcast(o, GPUEmitterObject));
 		if ( obj != null ) {
 			obj.customAnimations = [];
@@ -471,6 +473,12 @@ class GPUEmitter extends Object3D {
 			}
 			obj.bakeAnimations();
 		}
+	}
+
+	override function postMakeInstance() {
+		super.postMakeInstance();
+
+		bakeAnimations();
 	}
 
 	override function updateInstance(?propName : String) {
@@ -501,7 +509,6 @@ class GPUEmitter extends Object3D {
 					<dt>Min life time</dt><dd><input type="range" min="0.1" max="10" field="minLifeTime"/></dd>
 					<dt>Max life time</dt><dd><input type="range" min="0.1" max="10" field="maxLifeTime"/></dd>
 					<dt>Infinite</dt><dd><input type="checkbox" field="infinite"/></dd>
-					<dt>Face cam</dt><dd><input type="checkbox" field="faceCam"/></dd>
 					<dt>Mode</dt>
 					<dd>
 						<select field="mode">

@@ -1,37 +1,10 @@
 package hrt.prefab.fx.gpuemitter;
 
 class ComputeUtils extends hxsl.Shader {
-	static var blueNoise : h3d.mat.Texture;
-
-	public function new() {
-		super();
-
-		if ( blueNoise == null ) {
-			blueNoise = new h3d.mat.Texture(256, 256, [NoAlloc], RGBA);
-			blueNoise.realloc = function() {
-				var rand = new hxd.Rand(0);
-				var pix = hxd.Pixels.alloc(256, 256, RGBA);
-				for ( i in 0...256 ) {
-					for ( j in 0...256 ) {
-						var color = rand.random(256);
-						color = color | (rand.random(256) << 8);
-						color = color | (rand.random(256) << 16);
-						color = color | (rand.random(256) << 24);
-						pix.setPixel(i, j, color);
-					}
-				}
-				blueNoise.uploadPixels(pix);
-			}
-			blueNoise.wrap = Repeat;
-			blueNoise.filter = Nearest;
-		}
-		blueNoiseSampler = blueNoise;
-	}
 
 	public function onUpdate(emitter : GPUEmitter.GPUEmitterObject, buffer : h3d.Buffer, index : Int) {}
 
 	static var SRC = {
-		@param var blueNoiseSampler : Sampler2D;
 
 		@global var global : {
 			var time : Float;
@@ -41,22 +14,6 @@ class ComputeUtils extends hxsl.Shader {
 			var position : Vec3;
 		}
 		
-		function randomNoise(pos : Vec2) : Float {
-			return blueNoiseSampler.get(pos).r;
-		}
-
-		function randomNoise2d(pos : Vec2) : Vec2 {
-			return blueNoiseSampler.get(pos).rg;
-		}
-
-		function randomNoise3d(pos : Vec2) : Vec3 {
-			return blueNoiseSampler.get(pos).rgb;
-		}
-
-		function randomNoise4d(pos : Vec2) : Vec4 {
-			return blueNoiseSampler.get(pos);
-		}
-
 		function random(pos : Vec2) : Float {
 			return fract(sin(dot(pos, vec2(12.9898,78.233)))*43758.5453123);
 		}
@@ -69,7 +26,7 @@ class ComputeUtils extends hxsl.Shader {
 		function random3d(pos : Vec2) : Vec3 {
 			return vec3(fract(sin(dot(pos, vec2(12.9898,78.233)))*43758.5453123),
 						fract(sin(dot(pos, vec2(1572.9898,132.237)))*157468.33458),
-						fract(sin(dot(pos, vec2(14.5757,59.147)))*43756.281));
+						fract(sin(dot(pos, vec2(14.5757,59.147)))*4756.281));
 		}
 
 		function translationMatrix(pos : Vec3) : Mat4 {

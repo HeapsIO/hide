@@ -5,7 +5,12 @@ class BaseSimulation extends ComputeUtils {
 		@param var batchBuffer : RWPartialBuffer<{
 			modelView : Mat4, 
 		}>;
-		@param var particleBuffer : RWPartialBuffer<{ speed : Vec3, lifeTime : Float }>;
+		@param var particleBuffer : RWPartialBuffer<{
+			speed : Vec3,
+			lifeTime : Float,
+			lifeRatio : Float,
+			random : Float,
+		}>;
 
 		@const var INFINITE : Bool = false;
 		@const var FACE_CAM : Bool = false;
@@ -19,6 +24,7 @@ class BaseSimulation extends ComputeUtils {
 		var dt : Float;
 		var speed : Vec3;
 		var lifeTime : Float;
+		var particleRandom : Float;
 		var modelView : Mat4;
 		var instanceID : Int;
 		var prevModelView : Mat4;
@@ -28,6 +34,7 @@ class BaseSimulation extends ComputeUtils {
 			speed = particleBuffer[computeVar.globalInvocation.x].speed;
 			lifeTime = particleBuffer[computeVar.globalInvocation.x].lifeTime;
 			prevModelView = batchBuffer[computeVar.globalInvocation.x].modelView;
+			particleRandom = particleBuffer[computeVar.globalInvocation.x].random;
 		}
 
 		function main() {

@@ -1,21 +1,17 @@
 package hrt.prefab.fx.gpuemitter;
 
 class CubeSpawnShader extends ComputeUtils {
-	override function onUpdate(emitter : GPUEmitter.GPUEmitterObject, buffer : h3d.Buffer, index : Int) {
-		super.onUpdate(emitter, buffer, index);
-		randOffset = index;
-	}
 
 	static var SRC = {
 		@param var boundsMin : Vec3;
 		@param var boundsSize : Vec3;
-		@param var randOffset : Int;
 
 		var emitNormal : Vec3;
 		var lifeTime : Float;
+		var particleRandom : Float;
 		var relativeTransform : Mat4;
 		function main() {
-			var rnd = randomNoise3d(vec2(global.time, global.time * computeVar.globalInvocation.x + randOffset));
+			var rnd = random3d(vec2(global.time + particleRandom, particleRandom * 100.0));
 			relativeTransform = translationMatrix(rnd * boundsSize + boundsMin);
 		}
 	}

@@ -3,10 +3,13 @@ package hrt.prefab.fx.gpuemitter;
 class OrbitSpeedSimulationShader extends ComputeUtils {
 	override function onUpdate(emitter : GPUEmitter.GPUEmitterObject, buffer : h3d.Buffer, index : Int) {
 		super.onUpdate(emitter, buffer, index);
+
+		center.load(emitter.getAbsPos().getPosition());
 	}
 
 	static var SRC = {
 		@param var axis : Vec3;
+		@param var center : Vec3;
 
 		var speed : Vec3;
 		var lifeTime : Float;
@@ -17,16 +20,14 @@ class OrbitSpeedSimulationShader extends ComputeUtils {
 		function main() {
 			var idx = computeVar.globalInvocation.x;
 			var prevPos = vec3(0.0) * prevModelView.mat3x4();
-			var radialDir = prevPos;
+			var radialDir = prevPos - center;
 			var radius = length(radialDir);
 			radialDir = radialDir - radialDir.dot(axis) * axis;
 			radialDir = normalize(radialDir);
 			var spherical = cartesianToSpherical(radialDir);
 			var theta = spherical.y;
 			var phi = spherical.z + PI * 0.5;
-			speed = vec3(sin(theta) * cos(phi), sin(theta) * sin(phi), cos(theta));
-
-			var dir = normalize(speed);
+			speed = vec3(sin(theta) * cos(phi), sin(theta) * sin(phi), cos(theta)) / radius;
 
 			var newPos = normalize(prevPos + dt * speed) * radius;
 			speed = (newPos - prevPos) / dt;

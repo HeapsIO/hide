@@ -5,7 +5,12 @@ class BaseSpawn extends ComputeUtils {
 		@param var batchBuffer : RWPartialBuffer<{
 			modelView : Mat4, 
 		}>;
-		@param var particleBuffer : RWPartialBuffer<{ speed : Vec3, lifeTime : Float, lifeRatio : Float }>;
+		@param var particleBuffer : RWPartialBuffer<{
+			speed : Vec3,
+			lifeTime : Float,
+			lifeRatio : Float,
+			random : Float,
+		}>;
 		@param var atomic : RWBuffer<Int>;
 
 		@const var SPEED_NORMAL : Bool;
@@ -17,12 +22,14 @@ class BaseSpawn extends ComputeUtils {
 		@param var absPos : Mat4;
 
 		var lifeTime : Float;
+		var particleRandom : Float;
 		var modelView : Mat4;
 		var relativeTransform : Mat4;
 		var emitNormal : Vec3;
 		function __init__() {
 			emitNormal = vec3(0.0, 0.0, 1.0);
-			lifeTime = mix(minLifeTime, maxLifeTime, (global.time + computeVar.globalInvocation.x * 0.5123789) % 1.0);
+			particleRandom = particleBuffer[computeVar.globalInvocation.x].random;
+			lifeTime = mix(minLifeTime, maxLifeTime, (global.time + particleRandom) % 1.0);
 			relativeTransform = translationMatrix(vec3(0.0));
 			modelView = relativeTransform * absPos;
 		}
