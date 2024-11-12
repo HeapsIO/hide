@@ -4269,6 +4269,12 @@ class SceneEditor {
 			instant = true;
 		}
 
+		// if we are in a ref, rebuild the ref instead at the moment
+		if (prefab?.shared?.parentPrefab != null) {
+			queueRebuild(prefab?.shared?.parentPrefab);
+			return;
+		}
+
 		var parent = prefab.parent;
 		checkWantRebuild(parent, prefab);
 
@@ -4301,7 +4307,7 @@ class SceneEditor {
 				case Notify(callback):
 					rebuildEndCallbacks.push(callback);
 				case Rebuild:
-					var parent = prefab.parent;
+					var parent = prefab.parent ?? prefab.shared.parentPrefab;
 					var skip = false;
 
 					// don't rebuild this prefab if it's parent will get rebuild anyways
