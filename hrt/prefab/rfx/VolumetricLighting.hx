@@ -215,6 +215,7 @@ class VolumetricLighting extends RendererFX {
 	var blurPass = new h3d.pass.Blur();
 	var vshader = new VolumetricLightingShader();
 
+	@:s public var AFTER_FX : Bool = false;
 	@:s public var blend : h3d.mat.PbrMaterial.PbrBlend = Alpha;
 	@:s public var color : Int = 0xFFFFFF;
 	@:s public var steps : Int = 10;
@@ -248,7 +249,7 @@ class VolumetricLighting extends RendererFX {
 
 	var noiseTex : h3d.mat.Texture;
 
-	override function end(r:h3d.scene.Renderer, step:h3d.impl.RendererFX.Step) {
+	function execute(r : h3d.scene.Renderer, step : h3d.impl.RendererFX.Step) {
 		if( step == BeforeTonemapping ) {
 			var r = cast(r, h3d.scene.pbr.Renderer);
 			r.mark("VolumetricLighting");
@@ -350,6 +351,16 @@ class VolumetricLighting extends RendererFX {
 		}
 	}
 
+	override function begin(r:h3d.scene.Renderer, step:h3d.impl.RendererFX.Step) {
+		if ( !AFTER_FX )
+			execute(r, step);
+	}
+	
+	override function end(r:h3d.scene.Renderer, step:h3d.impl.RendererFX.Step) {
+		if ( AFTER_FX )
+			execute(r, step); 
+	}
+
 	function makeNoiseTex() : h3d.mat.Texture {
 		var rands : Array<Int> = [];
 		var rand = new hxd.Rand(0);
@@ -391,6 +402,8 @@ class VolumetricLighting extends RendererFX {
 							<option value="AlphaMultiply">AlphaMultiply</option>
 						</select>
 					</dd>
+					<dt>After fx</dt><dd><input type="checkbox" field="AFTER_FX"/></dd>
+					<dt>Begin</dt><dd><input type="range" min="0" field="startDistance"/></dd>
 					<dt>Start distance</dt><dd><input type="range" min="0" field="startDistance"/></dd>
 					<dt>End distance</dt><dd><input type="range" min="0" field="endDistance"/></dd>
 					<dt>Distance opacity</dt><dd><input type="range" min="0" max="1" field="distanceOpacity"/></dd>
