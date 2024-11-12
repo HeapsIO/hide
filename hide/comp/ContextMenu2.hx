@@ -77,6 +77,8 @@ class ContextMenu2 {
     var flatItems : Array<{menuItem: MenuItem, elem: js.html.Element, index: Int}> = [];
     var selected = 0;
 
+    var autoCleanupTimer: haxe.Timer;
+
     var popupTimer: haxe.Timer;
     final openDelayMs = 250;
 
@@ -179,6 +181,15 @@ class ContextMenu2 {
             else {
                 rootElement.focus();
             }
+        }
+
+        if (parentMenu == null && parentElement != null) {
+            autoCleanupTimer = new haxe.Timer(10);
+            autoCleanupTimer.run = () -> {
+                if (parentElement.closest("body") == null) {
+                    close();
+                }
+            };
         }
     }
 
@@ -530,6 +541,10 @@ class ContextMenu2 {
         rootElement.remove();
         if (currentSubmenu != null) {
             currentSubmenu.close();
+        }
+        if (autoCleanupTimer != null) {
+            autoCleanupTimer.stop();
+            autoCleanupTimer = null;
         }
         if (parentMenu != null) {
             if (parentMenu.currentSubmenu != this)
