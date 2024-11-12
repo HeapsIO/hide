@@ -328,16 +328,16 @@ class Prefab {
 	/**
 		Find the first h2d.Object in this hierarchy, in either this or it's parents
 	**/
-	public function findFirstLocal2d() : h2d.Object {
-		var o2d = findParent(Object2D, (p) -> p.local2d != null, true);
+	public function findFirstLocal2d(followRefs: Bool = false) : h2d.Object {
+		var o2d = findParent(Object2D, (p) -> p.local2d != null, true, followRefs);
 		return o2d != null ? o2d.local2d : shared.root2d;
 	}
 
 	/**
 		Find the first h3d.scene.Object in this hierarchy, in either this or it's parents
 	**/
-	public function findFirstLocal3d() : h3d.scene.Object {
-		var o3d = findParent(Object3D, (p) -> p.local3d != null, true);
+	public function findFirstLocal3d(followRefs: Bool = false) : h3d.scene.Object {
+		var o3d = findParent(Object3D, (p) -> p.local3d != null, true, followRefs);
 		return o3d != null ? o3d.local3d : shared.root3d;
 	}
 
@@ -464,7 +464,7 @@ class Prefab {
 		Find the first prefab in this prefab parent chain that matches the given class `cl`, and optionally the given `filter`.
 		If `includeSelf` is true, then this prefab is checked as well.
 	**/
-	public function findParent<T:Prefab>(?cl:Class<T> ,?filter : (p:T) -> Bool, includeSelf:Bool = false) : Null<T> {
+	public function findParent<T:Prefab>(?cl:Class<T> ,?filter : (p:T) -> Bool, includeSelf:Bool = false, followRefs:Bool = false) : Null<T> {
 		var current = includeSelf ? this : this.parent;
 		while(current != null) {
 			var asCl = cl != null ? Std.downcast(current, cl) : cast current;
@@ -472,7 +472,11 @@ class Prefab {
 				if (filter == null || filter(asCl))
 					return asCl;
 			}
-			current = current.parent;
+			var next = current.parent;
+			if (next == null && followRefs) {
+				next = current.shared.parentPrefab;
+			}
+			current = next;
 		}
 		return null;
 	}

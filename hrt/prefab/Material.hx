@@ -197,8 +197,8 @@ class Material extends Prefab {
 	#end
 
 	#if editor
-	override function findFirstLocal3d() {
-		return previewSphere ?? super.findFirstLocal3d();
+	override function findFirstLocal3d(followRefs: Bool = false) {
+		return previewSphere ?? super.findFirstLocal3d(followRefs);
 	}
 	#end
 
