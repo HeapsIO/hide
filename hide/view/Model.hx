@@ -1040,7 +1040,7 @@ class Model extends FileView {
 
 	override function buildTabMenu() {
 		var menu = super.buildTabMenu();
-		var arr : Array<hide.comp.ContextMenu2.MenuItem> = [
+		var arr : Array<hide.comp.ContextMenu.MenuItem> = [
 			{ label : null, isSeparator : true },
 			{ label : "Export", click : function() {
 				ide.chooseFileSave(this.getPath().substr(0,-4)+"_dump.txt", function(file) {
@@ -1207,14 +1207,14 @@ class Model extends FileView {
 					}));
 				}
 				var frame = Math.round((e.relX / W) * obj.currentAnimation.frameCount);
-				var menuItems : Array<hide.comp.ContextMenu2.MenuItem> = [
+				var menuItems : Array<hide.comp.ContextMenu.MenuItem> = [
 					{ label : "New", click: function(){ addEvent("NewEvent", frame); }},
 				];
 				if(obj.currentAnimation.events != null && obj.currentAnimation.events[frame] != null){
 					for(e in obj.currentAnimation.events[frame])
 						menuItems.push({ label : "Delete " + e, click: function(){ deleteEvent(e, frame); }});
 				}
-				hide.comp.ContextMenu2.createFromPoint(ide.mouseX, ide.mouseY, menuItems);
+				hide.comp.ContextMenu.createFromPoint(ide.mouseX, ide.mouseY, menuItems);
 			}
 		}
 

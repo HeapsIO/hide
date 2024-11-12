@@ -98,7 +98,7 @@ class GraphEditor extends hide.comp.Component {
 
 	public var currentUndoBuffer : UndoBuffer = [];
 
-	var contextMenu : hide.comp.ContextMenu2 = null;
+	var contextMenu : hide.comp.ContextMenu = null;
 
 
 
@@ -573,9 +573,9 @@ class GraphEditor extends hide.comp.Component {
 			closeAddMenu();
 		}
 
-		var menu : Array<hide.comp.ContextMenu2.MenuItem> = [];
+		var menu : Array<hide.comp.ContextMenu.MenuItem> = [];
 		for (group => entries in groups) {
-			var submenu: Array<hide.comp.ContextMenu2.MenuItem> = [];
+			var submenu: Array<hide.comp.ContextMenu.MenuItem> = [];
 			for (entry in entries) {
 				submenu.push({label: entry.name, click: doAdd.bind(entry.onConstructNode), tooltip: entry.description});
 			}
@@ -585,7 +585,7 @@ class GraphEditor extends hide.comp.Component {
 			});
 		}
 
-		contextMenu = hide.comp.ContextMenu2.createFromPoint(ide.mouseX, ide.mouseY, menu, {search: Visible, noIcons: true});
+		contextMenu = hide.comp.ContextMenu.createFromPoint(ide.mouseX, ide.mouseY, menu, {search: Visible, noIcons: true});
 		contextMenu.onClose = () -> {
 			contextMenu = null;
 		};
@@ -1747,7 +1747,7 @@ class GraphEditor extends hide.comp.Component {
 			});
 
 			curveHitbox.get(0).oncontextmenu = function(e: js.html.MouseEvent) {
-				hide.comp.ContextMenu2.createFromEvent(e, [
+				hide.comp.ContextMenu.createFromEvent(e, [
 					{label: "Delete ?", click: function() {
 							var edge = edgeFromPack(packedOutput, packedInput);
 							opEdge(packedOutput, packedInput, false, currentUndoBuffer);

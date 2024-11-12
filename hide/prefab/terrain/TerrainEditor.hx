@@ -1031,13 +1031,13 @@ class TerrainEditor {
 			var surfaceElem = new Element('<div class=" surface"><span class="tooltiptext">$label</span></div>').prepend(img);
 			surfaceElem.contextmenu(function(e) {
 				e.preventDefault();
-				var cmi :Array< hide.comp.ContextMenu2.MenuItem> = [];
-				var delete : hide.comp.ContextMenu2.MenuItem = {label : "Delete"};
+				var cmi :Array< hide.comp.ContextMenu.MenuItem> = [];
+				var delete : hide.comp.ContextMenu.MenuItem = {label : "Delete"};
 				delete.click = function(){
 					removeSurface(i, function(){refreshSurfaces(props, ctx);});
 				};
 				cmi.push(delete);
-				hide.comp.ContextMenu2.createFromEvent(cast e, cmi);
+				hide.comp.ContextMenu.createFromEvent(cast e, cmi);
 			});
 			surfaceElem.click(function(e){
 				editContext.scene.setCurrent();

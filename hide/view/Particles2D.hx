@@ -170,7 +170,7 @@ class Particles2D extends FileView {
 				if( history ) undo.change(Custom(function(undo) moveIndex(undo ? -d : d,false)));
 				initProperties();
 			}
-			hide.comp.ContextMenu2.createFromEvent(cast ev, [
+			hide.comp.ContextMenu.createFromEvent(cast ev, [
 				{ label : "Enable", checked : g.enable, click : function() {
 					g.enable = !g.enable;
 					e.find("[field=enable]").prop("checked", g.enable);

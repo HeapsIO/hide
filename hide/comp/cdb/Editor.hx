@@ -2030,7 +2030,7 @@ class Editor extends Component {
 			return;
 		var sheet = table.getRealSheet();
 		var indexColumn = sheet.columns.indexOf(col);
-		var menu : Array<hide.comp.ContextMenu2.MenuItem> = [
+		var menu : Array<hide.comp.ContextMenu.MenuItem> = [
 			{ label : "Edit", click : function () editColumn(sheet, col) },
 			{
 				label : "Add Column",
@@ -2132,7 +2132,7 @@ class Editor extends Component {
 				refresh();
 			}});
 		}
-		hide.comp.ContextMenu2.createFromPoint(ide.mouseX, ide.mouseY, menu);
+		hide.comp.ContextMenu.createFromPoint(ide.mouseX, ide.mouseY, menu);
 	}
 
 	function nextVisibleColumnIndex( table : Table, index : Int, dir : Direction){
@@ -2222,7 +2222,7 @@ class Editor extends Component {
 				break;
 			}
 
-		var moveSubmenu : Array<hide.comp.ContextMenu2.MenuItem> = [];
+		var moveSubmenu : Array<hide.comp.ContextMenu.MenuItem> = [];
 		for( sepIndex => sep in sheet.separators ) {
 			if( sep.title == null )
 				continue;
@@ -2275,7 +2275,7 @@ class Editor extends Component {
 		if( sheet.parent == null )
 			checkRec(sheet);
 
-		var menu : Array<hide.comp.ContextMenu2.MenuItem> = [
+		var menu : Array<hide.comp.ContextMenu.MenuItem> = [
 			{
 				label : "Move Up",
 				enabled:  (firstLine.index > 0 || sepIndex >= 0),
@@ -2340,7 +2340,7 @@ class Editor extends Component {
 				},
 			});
 		}
-		hide.comp.ContextMenu2.createFromPoint(ide.mouseX, ide.mouseY, menu);
+		hide.comp.ContextMenu.createFromPoint(ide.mouseX, ide.mouseY, menu);
 	}
 
 	function rename( sheet : cdb.Sheet, name : String ) {
@@ -2376,7 +2376,7 @@ class Editor extends Component {
 	}
 
 	function categoriesMenu(categories: Array<String>, setFunc : Array<String> -> Void) {
-		var menu : Array<ContextMenu2.MenuItem> = [{ label : "Set...", click : function() {
+		var menu : Array<ContextMenu.MenuItem> = [{ label : "Set...", click : function() {
 			var wstr = "";
 			if(categories != null)
 				wstr = categories.join(",");
@@ -2430,7 +2430,7 @@ class Editor extends Component {
 		if( onChange == null ) onChange = function() {}
 		var index = base.sheets.indexOf(sheet);
 
-		var content : Array<ContextMenu2.MenuItem> = [];
+		var content : Array<ContextMenu.MenuItem> = [];
 		if (withMacro) {
 			content = content.concat([
 				{ label : "Add Sheet", click : function() { beginChanges(); var db = createDBSheet(index+1); endChanges(); if( db != null ) onChange(); } },
@@ -2516,7 +2516,7 @@ class Editor extends Component {
 					refresh();
 				}
 			});
-		ContextMenu2.createFromPoint(ide.mouseX, ide.mouseY, content);
+		ContextMenu.createFromPoint(ide.mouseX, ide.mouseY, content);
 	}
 
 	public function close() {

@@ -25,7 +25,7 @@ class FileSelect extends Component {
 		function contextMenu(e) {
 			e.preventDefault();
 			var fpath = getFullPath();
-			ContextMenu2.createFromEvent(cast e, [				{ label : "View", enabled : fpath != null, click : function() onView() },
+			ContextMenu.createFromEvent(cast e, [				{ label : "View", enabled : fpath != null, click : function() onView() },
 				{ label : "Clear", enabled : path != null, click : function() { path = null; onChange(); } },
 				{ label : "Copy Path", enabled : path != null, click : function() ide.setClipboard(path) },
 				{ label : "Copy Absolute Path", enabled : fpath != null, click : function() { ide.setClipboard(fpath); } },

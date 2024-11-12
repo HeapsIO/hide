@@ -64,7 +64,7 @@ class PrefabSpray extends Spray {
 			var elt = new hide.Element('<option value="$path">${extractItemName(path)}</option>');
 			elt.contextmenu(function(e) {
 				e.preventDefault();
-				hide.comp.ContextMenu2.createFromEvent(cast e, [
+				hide.comp.ContextMenu.createFromEvent(cast e, [
 					{ label : "Swap Prefab", click : function() hide.Ide.inst.chooseFile(["prefab", "l3d"] , function (newPath) {
 						removeSourcePath(elt.val());
 						addSourcePath(newPath);

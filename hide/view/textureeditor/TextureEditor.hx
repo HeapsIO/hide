@@ -137,7 +137,7 @@ class TextureEditor extends hide.view.FileView implements GraphInterface.IGraphE
 		var menu = new Element('<div class="button2 transparent" title="More options"><div class="ico ico-navicon"></div></div>');
 		menu.appendTo(group);
 		menu.click((e) -> {
-			hide.comp.ContextMenu2.createDropdown(menu.get(0), [
+			hide.comp.ContextMenu.createDropdown(menu.get(0), [
 				{ label: "Center preview", click: centerPreviewCamera }
 			]);
 		});

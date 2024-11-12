@@ -71,7 +71,7 @@ class GradientBox extends Component {
 
         function contextMenu(e : js.jquery.Event) {
             e.preventDefault();
-            ContextMenu2.createFromEvent(cast e, [
+            ContextMenu.createFromEvent(cast e, [
                 {label: "Reset", click: function() {
                     value = Gradient.getDefaultGradientData();
                     onChange(false);

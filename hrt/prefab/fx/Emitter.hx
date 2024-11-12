@@ -1981,7 +1981,7 @@ class Emitter extends Object3D {
 						hide.comp.PropsEditor.makePropEl(p, dd);
 						dt.contextmenu(function(e) {
 							e.preventDefault();
-							hide.comp.ContextMenu2.createFromEvent(cast e, [
+							hide.comp.ContextMenu.createFromEvent(cast e, [
 								{ label : "Reset", click : function() {
 									addUndo(p.name);
 									resetParam(p);
@@ -2020,7 +2020,7 @@ class Emitter extends Object3D {
 							def: randDef}, dd);
 						dt.contextmenu(function(e) {
 							e.preventDefault();
-							hide.comp.ContextMenu2.createFromEvent(cast e, [
+							hide.comp.ContextMenu.createFromEvent(cast e, [
 								{ label : "Reset", click : function() {
 									addUndo(randProp(p.name));
 									Reflect.setField(this.props, randProp(p.name), randDef);

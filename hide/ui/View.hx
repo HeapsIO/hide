@@ -165,7 +165,7 @@ class View<T> extends hide.comp.Component {
 			container.tab.element.contextmenu(function(e: js.jquery.Event) {
 				var menu = buildTabMenu();
 				if( menu.length > 0 ) {
-					hide.comp.ContextMenu2.createFromEvent(cast e, menu);
+					hide.comp.ContextMenu.createFromEvent(cast e, menu);
 				}
 				e.preventDefault();
 			});
@@ -275,7 +275,7 @@ class View<T> extends hide.comp.Component {
 		containerView.__view = null;
 	}
 
-	function buildTabMenu() : Array<hide.comp.ContextMenu2.MenuItem> {
+	function buildTabMenu() : Array<hide.comp.ContextMenu.MenuItem> {
 		if( @:privateAccess ide.subView != null )
 			return [];
 		return [

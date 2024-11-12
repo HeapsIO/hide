@@ -138,7 +138,7 @@ class MultiRange extends Component {
 
         linkButton.contextmenu(function(e) {
             e.preventDefault();
-            ContextMenu2.createFromEvent(cast e, [
+            ContextMenu.createFromEvent(cast e, [
 				{ label : "Reset All", click : reset },
 				{ label : "Round All", click : round },
 				{ label : "sep", isSeparator: true},

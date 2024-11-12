@@ -46,7 +46,7 @@ class Range extends Component {
 
 		element.contextmenu((e) -> {
 			e.preventDefault();
-			ContextMenu2.createFromEvent(cast e, [
+			ContextMenu.createFromEvent(cast e, [
 				{ label : "Reset", click : reset },
 				{ label : "sep", isSeparator: true},
 				{ label : "Copy", click : copy},

@@ -274,7 +274,7 @@ class ShaderEditor extends hide.view.FileView implements GraphInterface.IGraphEd
 
 		rightPannel.appendTo(element);
 
-		var newParamCtxMenu : Array<hide.comp.ContextMenu2.MenuItem> = [
+		var newParamCtxMenu : Array<hide.comp.ContextMenu.MenuItem> = [
 			{ label : "Number", click : () -> createParameter(HxslType.TFloat) },
 			{ label : "Vec2", click : () -> createParameter(HxslType.TVec(2, VFloat)) },
 			{ label : "Vec3", click : () -> createParameter(HxslType.TVec(3, VFloat)) },
@@ -284,14 +284,14 @@ class ShaderEditor extends hide.view.FileView implements GraphInterface.IGraphEd
 
 		var createParameter = rightPannel.find("#createParameter");
 		createParameter.on("click", function() {
-			hide.comp.ContextMenu2.createDropdown(createParameter.get(0), newParamCtxMenu);
+			hide.comp.ContextMenu.createDropdown(createParameter.get(0), newParamCtxMenu);
 		});
 
 		parametersList = rightPannel.find("#parametersList");
 		parametersList.on("contextmenu", function(e) {
 			e.preventDefault();
 			e.stopPropagation();
-			hide.comp.ContextMenu2.createFromEvent(cast e, [
+			hide.comp.ContextMenu.createFromEvent(cast e, [
 				{
 					label : "Add Parameter",
 					menu : newParamCtxMenu,
@@ -305,7 +305,7 @@ class ShaderEditor extends hide.view.FileView implements GraphInterface.IGraphEd
 
 
 		rightPannel.find("#debugMenu").click((e) -> {
-			hide.comp.ContextMenu2.createDropdown(rightPannel.find("#debugMenu").get(0), [
+			hide.comp.ContextMenu.createDropdown(rightPannel.find("#debugMenu").get(0), [
 				{
 					label : "Print Preview Shader code to Console",
 					click: () -> trace(hxsl.Printer.shaderToString(shaderGraph.compile(currentGraph.domain).shader.data, true))
@@ -452,7 +452,7 @@ class ShaderEditor extends hide.view.FileView implements GraphInterface.IGraphEd
 		elt.on("contextmenu", function(e) {
 			var elements = [];
 			e.stopPropagation();
-			var newCtxMenu : Array<hide.comp.ContextMenu2.MenuItem> = [
+			var newCtxMenu : Array<hide.comp.ContextMenu.MenuItem> = [
 				{ label : "Move up", click : () -> {
 					//beforeChange();
 					moveParameter(parameter, true);
@@ -464,7 +464,7 @@ class ShaderEditor extends hide.view.FileView implements GraphInterface.IGraphEd
 					//afterChange();
 				}, enabled: shaderGraph.parametersKeys.indexOf(parameter.id) < shaderGraph.parametersKeys.length-1}
 			];
-			hide.comp.ContextMenu2.createFromEvent(cast e, newCtxMenu);
+			hide.comp.ContextMenu.createFromEvent(cast e, newCtxMenu);
 			e.preventDefault();
 
 		});
@@ -908,7 +908,7 @@ class ShaderEditor extends hide.view.FileView implements GraphInterface.IGraphEd
 		var menu = new Element('<div class="button2 transparent" title="More options"><div class="ico ico-navicon"></div></div>');
 		menu.appendTo(group);
 		menu.click((e) -> {
-			hide.comp.ContextMenu2.createDropdown(menu.get(0), [
+			hide.comp.ContextMenu.createDropdown(menu.get(0), [
 				{label: "Reset Camera", click: resetPreviewCamera},
 				{label: "", isSeparator: true},
 				{label: "Sphere", click: setMeshPreviewSphere},

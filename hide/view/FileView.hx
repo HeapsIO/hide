@@ -204,8 +204,8 @@ class FileView extends hide.ui.View<{ path : String }> {
 
 	override function buildTabMenu() {
 		var hasPath = state.path != null && state.path != "";
-		var reloadItem : hide.comp.ContextMenu2.MenuItem = { label : "Reload", click : function() rebuild() };
-		var arr : Array<hide.comp.ContextMenu2.MenuItem>;
+		var reloadItem : hide.comp.ContextMenu.MenuItem = { label : "Reload", click : function() rebuild() };
+		var arr : Array<hide.comp.ContextMenu.MenuItem>;
 		if( !hasPath && !canSave() ) {
 			arr = [
 				reloadItem,

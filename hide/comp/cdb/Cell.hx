@@ -118,7 +118,7 @@ class Cell {
 	}
 
 	function showMenu() {
-		var menu : Array<hide.comp.ContextMenu2.MenuItem> = null;
+		var menu : Array<hide.comp.ContextMenu.MenuItem> = null;
 		switch( column.type ) {
 		case TId:
 			if( value != null && value != "" )
@@ -156,7 +156,7 @@ class Cell {
 				editor.endChanges();
 				refresh();
 			}
-			var forms : Array<hide.comp.ContextMenu2.MenuItem>;
+			var forms : Array<hide.comp.ContextMenu.MenuItem>;
 			var current = editor.formulas.get(this);
 			forms = [for( f in editor.formulas.getList(table.sheet) ) { label : f.name, click : () -> if( f == current ) setF(null) else setF(f), checked : f == current }];
 			#if !hl
@@ -169,7 +169,7 @@ class Cell {
 		}
 		if( menu != null ) {
 			focus();
-			ContextMenu2.createFromPoint(ide.mouseX, ide.mouseY, menu);
+			ContextMenu.createFromPoint(ide.mouseX, ide.mouseY, menu);
 		}
 	}
 

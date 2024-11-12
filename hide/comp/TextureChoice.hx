@@ -67,7 +67,7 @@ class TextureChoice extends Component {
         var btn = new Element("<div class='hide-button change-button' title='Actions ...'>").appendTo(element);
         new Element("<div class='icon ico ico-ellipsis-h'>").appendTo(btn);
         btn.click(function(e) {
-            ContextMenu2.createDropdown(btn.get(0), [
+            ContextMenu.createDropdown(btn.get(0), [
                 { label : "Change to Texturepath", click : function() changeTextureType(TextureType.path), enabled: Utils.getTextureType(innerValue) != TextureType.path},
                 { label : "Change to Gradient", click : function() changeTextureType(TextureType.gradient), enabled: Utils.getTextureType(innerValue) != TextureType.gradient},
             ]);

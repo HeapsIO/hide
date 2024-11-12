@@ -5,7 +5,7 @@ enum ToolType {
 	Toggle(toggle: Bool->Void);
 	Range(onChange: Float->Void);
 	Color(onChange: Int -> Void);
-	Menu(items: Array<hide.comp.ContextMenu2.MenuItem>);
+	Menu(items: Array<hide.comp.ContextMenu.MenuItem>);
 	Popup(click: hide.Element -> hide.comp.Popup);
 	Separator;
 }
@@ -37,7 +37,7 @@ typedef ToolSelect<T> = {
 
 typedef ToolMenu<T> = {
 	var element : Element;
-	function setContent( elements : Array<hide.comp.ContextMenu2.MenuItem> ) : Void;
+	function setContent( elements : Array<hide.comp.ContextMenu.MenuItem> ) : Void;
 	dynamic function onSelect( v : T ) : Void;
 }
 
@@ -179,7 +179,7 @@ class Toolbar extends Component {
         if (label != null && label.length > 0) {
             menu.append(new Element('<span class="label">${label==null ? "" : label}</span>'));
         }
-		var menuItems : Array<hide.comp.ContextMenu2.MenuItem> = [];
+		var menuItems : Array<hide.comp.ContextMenu.MenuItem> = [];
 		var tool : ToolMenu<T> = {
 			element : menu,
 			setContent : function(c) {
@@ -189,7 +189,7 @@ class Toolbar extends Component {
 		};
 		menu.get(0).onclick = function(ev : js.html.MouseEvent) : Void {
 			if( ev.button == 0 ){
-				hide.comp.ContextMenu2.createDropdown(menu.get(0), menuItems);
+				hide.comp.ContextMenu.createDropdown(menu.get(0), menuItems);
 			}
 		};
 		menu.appendTo(curGroup);

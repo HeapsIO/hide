@@ -57,7 +57,7 @@ class Select extends Component {
 		if (isClearable) {
 			options.unshift({ label : "Clear", click : () -> change("")});
 		}
-		ContextMenu2.createFromEvent(cast e, options);
+		ContextMenu.createFromEvent(cast e, options);
 	}
 
 	function change(newId : String) {
