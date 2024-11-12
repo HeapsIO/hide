@@ -138,7 +138,7 @@ class Particles3D extends Object3D {
 						if( history ) undo(function(undo) moveIndex(undo ? -d : d,false));
 						ectx.rebuildProperties();
 					}
-					new hide.comp.ContextMenu([
+					hide.comp.ContextMenu2.createFromEvent(cast ev,[
 						{ label : "Enable", checked : g.enable, click : function() { g.enable = !g.enable; e.find("[field=enable]").prop("checked", g.enable); } },
 						{ label : "Copy", click : function() ectx.ide.setClipboard(g.save()) },
 						{ label : "Paste", enabled : ectx.ide.getClipboard() != null, click : function() {

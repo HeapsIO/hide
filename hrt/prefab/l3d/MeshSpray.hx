@@ -290,7 +290,7 @@ class MeshSpray extends Spray {
 	}
 
 	#else
-	
+
 	@:s var editChildren = false;
 
 	var binaryChanged : Bool = false;
@@ -666,7 +666,7 @@ class MeshSpray extends Spray {
 			var elt = new hide.Element('<option value="$path">${extractItemName(path)}</option>');
 			elt.contextmenu(function(e) {
 				e.preventDefault();
-				new hide.comp.ContextMenu([
+				hide.comp.ContextMenu2.createFromEvent(cast e,[
 					{ label : "Swap Model", click : function() hide.Ide.inst.chooseFile(["fbx", "l3d"] , function (newPath) {
 						removeSourcePath(elt.val());
 						addSourcePath(newPath);

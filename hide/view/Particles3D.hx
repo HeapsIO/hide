@@ -127,7 +127,7 @@ class Particles3D extends FileView {
 				if( history ) undo.change(Custom(function(undo) moveIndex(undo ? -d : d,false)));
 				initProperties();
 			}
-			new hide.comp.ContextMenu([
+			hide.comp.ContextMenu2.createFromEvent(cast ev, [
 				{ label : "Enable", checked : g.enable, click : function() { g.enable = !g.enable; e.find("[field=enable]").prop("checked", g.enable); } },
 				{ label : "Copy", click : function() setClipboard(g.save()) },
 				{ label : "Paste", enabled : hasClipboard(), click : function() {

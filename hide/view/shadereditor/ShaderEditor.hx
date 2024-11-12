@@ -908,7 +908,7 @@ class ShaderEditor extends hide.view.FileView implements GraphInterface.IGraphEd
 		var menu = new Element('<div class="button2 transparent" title="More options"><div class="ico ico-navicon"></div></div>');
 		menu.appendTo(group);
 		menu.click((e) -> {
-			var menu = new hide.comp.ContextMenu([
+			hide.comp.ContextMenu2.createDropdown(menu.get(0), [
 				{label: "Reset Camera", click: resetPreviewCamera},
 				{label: "", isSeparator: true},
 				{label: "Sphere", click: setMeshPreviewSphere},
