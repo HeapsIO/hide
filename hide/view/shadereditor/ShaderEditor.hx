@@ -447,12 +447,24 @@ class ShaderEditor extends hide.view.FileView implements GraphInterface.IGraphEd
 
 	function addParameter(parameter : Parameter, ?value : Dynamic) {
 
-		var elt = new Element('<div id="param_${parameter.id}" class="parameter" draggable="true" ></div>').appendTo(parametersList);
+		var elt = new Element('<div id="param_${parameter.id}" class="parameter" draggable="true"></div>').appendTo(parametersList);
 		elt.on("click", function(e) {e.stopPropagation();});
 		elt.on("contextmenu", function(e) {
 			var elements = [];
 			e.stopPropagation();
 			var newCtxMenu : Array<hide.comp.ContextMenu.MenuItem> = [
+				{ label: "Select Nodes", click : () -> {
+					var list : Array<IGraphNode> = [];
+					for (node in currentGraph.getNodes()) {
+						var param = Std.downcast(node, ShaderParam);
+						if (param != null && param.parameterId == parameter.id) {
+							list.push(param);
+						}
+					}
+					graphEditor.setSelection(list);
+					graphEditor.centerSelection();
+				}},
+				{ isSeparator: true},
 				{ label : "Move up", click : () -> {
 					//beforeChange();
 					moveParameter(parameter, true);
@@ -887,6 +899,17 @@ class ShaderEditor extends hide.view.FileView implements GraphInterface.IGraphEd
 				Reflect.setField(previewSettings, f, v);
 			}
 		}
+	}
+
+	public function revealParameter(id: Int) : Void {
+		var param = parametersList.find("#param_" + id);
+		parametersList.children().not(param).each((_, elt) -> toggleParameter(new JQuery(elt), false));
+		toggleParameter(param, true);
+		param.get(0).onanimationend = (e) -> {
+			param.removeClass("reveal");
+		};
+		param.removeClass("reveal");
+		param.addClass("reveal");
 	}
 
 	public function saveSettings() {

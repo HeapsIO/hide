@@ -1984,6 +1984,30 @@ input[type=checkbox]:checked:after {
 						}
 					}*/
 }
+.shader-editor #rightPanel .hide-block #parametersList .parameter.reveal {
+  outline: 2px solid;
+  animation-duration: 0.75s;
+  animation-name: focus-show;
+  outline-color: transparent;
+  outline-offset: -2px;
+  z-index: 1;
+}
+@keyframes focus-show {
+  0%,
+  25%,
+  50%,
+  75% {
+    outline-color: #43578f;
+  }
+  12%,
+  37%,
+  62% {
+    outline-color: #7b8cb9;
+  }
+  100% {
+    outline-color: rgba(67, 87, 143, 0);
+  }
+}
 .shader-editor #rightPanel .hide-block #parametersList .parameter .hide-range {
   display: block;
 }
@@ -2322,6 +2346,9 @@ input[type=checkbox]:checked:after {
 }
 .graph-view .heaps-scene svg g.error .outline {
   stroke: #ff6666;
+}
+.graph-view .heaps-scene svg g.box {
+  pointer-events: all;
 }
 .graph-view .heaps-scene svg .outline {
   fill: none;

@@ -2194,6 +2194,29 @@ input[type=checkbox] {
 					background-color: #222;
 					position: relative;
 
+					&.reveal {
+						outline: 2px solid;
+						animation-duration: 0.75s;
+						animation-name: focus-show;
+						outline-color: transparent;
+						outline-offset: -2px;
+						z-index: 1;
+					}
+
+					@keyframes focus-show {
+						0%, 25%, 50%, 75% {
+							outline-color: rgba(67, 87, 143, 1.0);
+						}
+
+						12%, 37%, 62% {
+							outline-color: rgb(123, 140, 185);
+						}
+
+						100% {
+							outline-color: rgba(67, 87, 143, 0.0);
+						}
+					}
+
 					.hide-range {
 						display: block;
 					}
@@ -2641,7 +2664,12 @@ input[type=checkbox] {
 						stroke: #ff6666;
 					}
 				}
+
+				&.box {
+					pointer-events: all;
+				}
 			}
+
 			.outline {
 				fill: none;
 			}

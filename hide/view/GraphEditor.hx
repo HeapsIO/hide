@@ -144,8 +144,6 @@ class GraphEditor extends hide.comp.Component {
 		}
 	}
 
-
-
 	public function onDisplay() {
 		saveDisplayKey = "hideGraphEditor";
 
@@ -1040,6 +1038,37 @@ class GraphEditor extends hide.comp.Component {
 		commitUndo();
 	}
 
+	public function setSelection(nodes: Array<IGraphNode>) {
+		clearSelectionBoxesUndo(currentUndoBuffer);
+
+		for (node in nodes) {
+			opSelect(node.id, true, currentUndoBuffer);
+		}
+
+		commitUndo();
+	}
+
+	public function centerSelection() {
+		if (!boxesSelected.iterator().hasNext()) {
+			centerView();
+			return;
+		}
+		var centerX = 0.0;
+		var centerY = 0.0;
+		var count = 0;
+		for (id => _ in boxesSelected) {
+			var box = boxes.get(id);
+			centerX += box.x + box.info.width / 2.0;
+			centerY += box.y + box.height / 2.0;
+			count ++;
+		}
+
+		transformMatrix[4] = - (centerX / count) * transformMatrix[0] + editorDisplay.element.width()/2;
+		transformMatrix[5] = - (centerY / count) * transformMatrix[3] + editorDisplay.element.height()/2;
+		clampView();
+		updateMatrix();
+	}
+
 
 	function commentFromSelection() {
 		if (boxesSelected.empty())
@@ -1260,6 +1289,14 @@ class GraphEditor extends hide.comp.Component {
 			elt.get(0).releasePointerCapture(e.pointerId);
 			endMove();
 		};
+
+		elt.get(0).oncontextmenu = function(e: js.html.MouseEvent) {
+			e.preventDefault();
+			e.stopPropagation();
+			if (box.info.contextMenu != null) {
+				box.info.contextMenu(e);
+			}
+		}
 		boxes.set(box.node.id, box);
 
 		for (inputId => input in box.info.inputs) {

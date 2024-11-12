@@ -12,7 +12,7 @@ class ShaderParam extends ShaderNode {
 	public var shaderGraph : ShaderGraph;
 
 	public function new() {
-		
+
 	}
 
 	override function getOutputs() : Array<ShaderNode.OutputInfo> {
@@ -63,4 +63,18 @@ class ShaderParam extends ShaderNode {
 		return parameters;
 	}
 
+	#if editor
+	override function getInfo():hide.view.GraphInterface.GraphNodeInfo {
+		var info = super.getInfo();
+
+		info.contextMenu = (e: js.html.MouseEvent) -> {
+			hide.comp.ContextMenu.createFromEvent(e, [
+				{label: "Show in Parameters list", click: () -> {
+					(cast editor.editor: hide.view.shadereditor.ShaderEditor).revealParameter(parameterId);
+				}},
+			]);
+		}
+		return info;
+	}
+	#end
 }

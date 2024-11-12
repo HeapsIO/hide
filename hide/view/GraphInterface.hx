@@ -25,7 +25,12 @@ typedef GraphNodeInfo = {
         setComment : (String) -> Void,
         getSize : (s: h2d.col.Point) -> Void,
         setSize : (s: h2d.col.Point) -> Void,
-    }
+    },
+
+    /**
+        If set, a custom context menu will be created when the user right clicks the box
+    **/
+    ?contextMenu : (e: js.html.MouseEvent) -> Void,
 };
 
 typedef NodeInput = {
