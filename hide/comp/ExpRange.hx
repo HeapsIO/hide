@@ -2,6 +2,8 @@ package hide.comp;
 
 
 class ExpRange extends Range {
+	var inputGuard: Bool = false;
+
 	public function setMinMax(min: Float, max: Float) {
 		originMin = Math.log(min) / Math.log(scale);
 		originMax = Math.log(max) / Math.log(scale);
@@ -12,6 +14,7 @@ class ExpRange extends Range {
 		curMin = originMin;
 		curMax = originMax;
 	}
+
 
     public function new(?parent:Element,?root:Element) {
         super(parent, root);
@@ -37,11 +40,21 @@ class ExpRange extends Range {
 			]);
 		});
 
+		f.off("input");
 		f.on("input", function(_) {
 			var v = Math.round(Std.parseFloat(f.val()) * 100) / 100;
 			setInner(v,true);
-            refresh();
+            //refresh();
+			inputView.val(roundValue());
 			onChange(true);
+		});
+
+		f.change(function(e) {
+			var v = Math.round(Std.parseFloat(f.val()) * 100) / 100;
+			setInner(v,false);
+            refresh();
+			//inputView.val(roundValue());
+			onChange(false);
 		});
 
 		inputView.keyup(function(e) {
@@ -52,7 +65,9 @@ class ExpRange extends Range {
 			}
 			var v = Std.parseFloat(inputView.val());
 			if( Math.isNaN(v) ) return;
+			inputGuard = true;
             set_value(v);
+			inputGuard = false;
 			onChange(true);
 		});
 		inputView.change(function(e) {
@@ -63,17 +78,15 @@ class ExpRange extends Range {
 		});
 
         refresh();
+	}
 
-		f.change(function(e) {
-			var v = Math.round(Std.parseFloat(f.val()) * 100) / 100;
-			setInner(v,false);
-            refresh();
-			onChange(false);
-		});
+	function roundValue() : Float {
+		return Math.round(get_value() * 100)/ 100;
 	}
 
     function refresh() {
-		inputView.val(get_value());
+		if (!inputGuard)
+			inputView.val(roundValue());
 		f.val(current);
     }
 
@@ -85,7 +98,7 @@ class ExpRange extends Range {
 	}
 
 	override function get_value() {
-		var val = Math.pow(scale, hxd.Math.round(current * 10.0) / 10.0);
+		var val = Math.pow(scale, current);
 		return val;
 	}
 
