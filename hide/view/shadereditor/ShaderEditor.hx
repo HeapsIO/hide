@@ -129,6 +129,9 @@ class PreviewSettings {
 	public var backfaceCulling : Bool = true;
 	public var unlit : Bool = false;
 	public var previewAlpha : Bool = false;
+
+	public var width : Int = 300;
+	public var height : Int = 300;
 	public function new() {};
 }
 class ShaderEditor extends hide.view.FileView implements GraphInterface.IGraphEditor {
@@ -258,7 +261,7 @@ class ShaderEditor extends hide.view.FileView implements GraphInterface.IGraphEd
 		var previewAlpha = rightPannel.find("#previewAlpha");
 		previewAlpha.on("change", (e) -> {
 			previewSettings.previewAlpha = (cast previewAlpha[0]:Dynamic).checked;
-			saveSettings();
+			savePreviewSettings();
 			bitmapToShader.clear();
 		});
 		(cast previewAlpha[0]:Dynamic).checked = previewSettings.previewAlpha;
@@ -913,7 +916,7 @@ class ShaderEditor extends hide.view.FileView implements GraphInterface.IGraphEd
 		param.addClass("reveal");
 	}
 
-	public function saveSettings() {
+	public function savePreviewSettings() {
 		saveDisplayState("previewSettings", haxe.Json.stringify(previewSettings));
 	}
 
@@ -923,9 +926,64 @@ class ShaderEditor extends hide.view.FileView implements GraphInterface.IGraphEd
 			meshPreviewScene.element.remove();
 		}
 		previewElem = new Element('<div id="preview"></div>').appendTo(graphEditor.element);
-		meshPreviewScene = new hide.comp.Scene(config, null, previewElem);
+		var sceneContainer = new Element('<div class="scene-container"></div>').appendTo(previewElem);
+
+		previewElem.width(previewSettings.width);
+		previewElem.height(previewSettings.height);
+		meshPreviewScene = new hide.comp.Scene(config, null, sceneContainer);
 		meshPreviewScene.onReady = onMeshPreviewReady;
 		meshPreviewScene.onUpdate = onMeshPreviewUpdate;
+
+		var resizeUp = new Element('<div class="resize-handle up">').appendTo(previewElem);
+		var resizeLeft = new Element('<div class="resize-handle left">').appendTo(previewElem);
+		var resizeUpLeft = new Element('<div class="resize-handle up-left">').appendTo(previewElem);
+
+		function configureDrag(elt: js.html.Element, left: Bool, up: Bool) {
+			var pressed = false;
+
+			elt.onpointerdown = function(e: js.html.PointerEvent) {
+				if (e.button != 0)
+					return;
+				e.stopPropagation();
+				e.preventDefault();
+				pressed = true;
+				elt.setPointerCapture(e.pointerId);
+			};
+
+			elt.onpointermove = function(e: js.html.PointerEvent) {
+				if (!pressed)
+					return;
+				e.stopPropagation();
+				e.preventDefault();
+
+				var prev = previewElem.get(0);
+				var rect = prev.getBoundingClientRect();
+
+				if (left)
+					prev.style.width = rect.right - e.clientX + "px";
+				if (up)
+					prev.style.height = rect.bottom - e.clientY + "px";
+			}
+
+			elt.onpointerup = function (e: js.html.PointerEvent) {
+				if (!pressed)
+					return;
+				pressed = false;
+				e.stopPropagation();
+				e.preventDefault();
+
+				var prev = previewElem.get(0);
+				var rect = prev.getBoundingClientRect();
+				previewSettings.width = Std.int(rect.width);
+				previewSettings.height = Std.int(rect.height);
+				savePreviewSettings();
+			};
+		}
+
+		configureDrag(resizeUp.get(0), false, true);
+		configureDrag(resizeLeft.get(0), true, false);
+		configureDrag(resizeUpLeft.get(0), true, true);
+
 
 		var toolbar = new Element('<div class="hide-toolbar2"></div>').appendTo(previewElem);
 		var group = new Element('<div class="tb-group"></div>').appendTo(toolbar);
@@ -942,9 +1000,9 @@ class ShaderEditor extends hide.view.FileView implements GraphInterface.IGraphEd
 				{label: "Prefab/FX ...", click: chooseMeshPreviewPrefab},
 				{label: "", isSeparator: true},
 				{label: "Material Settings", menu: [
-					{label: "Alpha Blend", click: () -> {previewSettings.alphaBlend = !previewSettings.alphaBlend; meshPreviewShader = null; saveSettings();}, stayOpen: true, checked: previewSettings.alphaBlend},
-					{label: "Backface Cull", click: () -> {previewSettings.backfaceCulling = !previewSettings.backfaceCulling; meshPreviewShader = null; saveSettings();}, stayOpen: true, checked: previewSettings.backfaceCulling},
-					{label: "Unlit", click: () -> {previewSettings.unlit = !previewSettings.unlit; meshPreviewShader = null; saveSettings();}, stayOpen: true, checked: previewSettings.unlit},
+					{label: "Alpha Blend", click: () -> {previewSettings.alphaBlend = !previewSettings.alphaBlend; meshPreviewShader = null; savePreviewSettings();}, stayOpen: true, checked: previewSettings.alphaBlend},
+					{label: "Backface Cull", click: () -> {previewSettings.backfaceCulling = !previewSettings.backfaceCulling; meshPreviewShader = null; savePreviewSettings();}, stayOpen: true, checked: previewSettings.backfaceCulling},
+					{label: "Unlit", click: () -> {previewSettings.unlit = !previewSettings.unlit; meshPreviewShader = null; savePreviewSettings();}, stayOpen: true, checked: previewSettings.unlit},
 				], enabled: meshPreviewPrefab == null},
 				{label: "Render Settings", menu: [
 					{label: "Background Color", click: openBackgroundColorMenu},
@@ -961,13 +1019,13 @@ class ShaderEditor extends hide.view.FileView implements GraphInterface.IGraphEd
 			loadSettings();
 		previewSettings.meshPath = prefab;
 		previewSettings.renderPropsPath = renderProps;
-		saveSettings();
+		savePreviewSettings();
 	}
 
 	public function clearRenderProps() {
 		previewSettings.renderPropsPath = null;
 		refreshRenderProps();
-		saveSettings();
+		savePreviewSettings();
 	}
 
 	public function selectRenderProps() {
@@ -979,7 +1037,7 @@ class ShaderEditor extends hide.view.FileView implements GraphInterface.IGraphEd
 		Ide.inst.chooseFile(["prefab"], (path) -> {
 			previewSettings.renderPropsPath = path;
 			refreshRenderProps();
-			saveSettings();
+			savePreviewSettings();
 		}, true, basedir);
 	}
 
@@ -1006,7 +1064,7 @@ class ShaderEditor extends hide.view.FileView implements GraphInterface.IGraphEd
 					var v = !isUndo ? cur : prev;
 					cp.value = v;
 					previewSettings.bgColor = v;
-					saveSettings();
+					savePreviewSettings();
 				}
 				exec(false);
 				undo.change(Custom(exec));
@@ -1121,7 +1179,7 @@ class ShaderEditor extends hide.view.FileView implements GraphInterface.IGraphEd
 
 	public function setMeshPreviewSphere() {
 		previewSettings.meshPath = "Sphere";
-		saveSettings();
+		savePreviewSettings();
 
 		var sp = new h3d.prim.Sphere(1, 128, 128);
 		sp.addNormals();
@@ -1132,7 +1190,7 @@ class ShaderEditor extends hide.view.FileView implements GraphInterface.IGraphEd
 
 	public function setMeshPreviewPlane() {
 		previewSettings.meshPath = "Plane";
-		saveSettings();
+		savePreviewSettings();
 
 		var plane = hrt.prefab.l3d.Polygon.createPrimitive(Quad(4));
 		var m = new h3d.scene.Mesh(plane);
@@ -1145,7 +1203,7 @@ class ShaderEditor extends hide.view.FileView implements GraphInterface.IGraphEd
 	public function setMeshPreviewScreenFX() {
 		cleanupPreview();
 		previewSettings.meshPath = "ScreenFX";
-		saveSettings();
+		savePreviewSettings();
 
 		var shared = new hide.prefab.ContextShared(null, meshPreviewRoot3d);
 		var root = new hrt.prefab.fx.FX(null, shared);
@@ -1221,7 +1279,7 @@ class ShaderEditor extends hide.view.FileView implements GraphInterface.IGraphEd
 
 		setMeshPreviewMesh(model);
 		previewSettings.meshPath = str;
-		saveSettings();
+		savePreviewSettings();
 	}
 
 	public function setMeshPreviewPrefab(str: String) {
@@ -1271,7 +1329,7 @@ class ShaderEditor extends hide.view.FileView implements GraphInterface.IGraphEd
 		meshPreviewShader = null;
 		resetPreviewCamera();
 		previewSettings.meshPath = str;
-		saveSettings();
+		savePreviewSettings();
 	}
 
 	public function onMeshPreviewReady() {
