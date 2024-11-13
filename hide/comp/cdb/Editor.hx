@@ -808,7 +808,7 @@ class Editor extends Component {
 	}
 
 	function delete(x1 : Int, x2 : Int, y1 : Int, y2 : Int) {
-		var hasChanges = false;
+		var modifiedTables = [];
 		var sheet = cursor.table.sheet;
 
 		if (cursor.getCell() == null || cursor.getCell().column.type == TId) {
@@ -836,7 +836,7 @@ class Editor extends Component {
 				var line = cursor.table.lines[y];
 				sheet.deleteLine(line.index);
 				cursor.table.refreshCellValue();
-				hasChanges = true;
+				modifiedTables.pushUnique(cursor.table);
 				y--;
 			}
 
@@ -855,15 +855,15 @@ class Editor extends Component {
 					if( old == def )
 						continue;
 					changeObject(line,c,def);
-					hasChanges = true;
 					cursor.table.refreshCellValue();
+					modifiedTables.pushUnique(cursor.table);
 				}
 			}
 		}
 
 		endChanges();
-		if( hasChanges )
-			refreshAll();
+		for (t in modifiedTables)
+			t.refresh();
 	}
 
 	public function changeObject( line : Line, column : cdb.Data.Column, value : Dynamic ) {
