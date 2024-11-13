@@ -146,6 +146,7 @@ class ShaderEditor extends hide.view.FileView implements GraphInterface.IGraphEd
 
 	var meshPreviewScene : hide.comp.Scene;
 	var meshPreviewMeshes : Array<h3d.scene.Mesh> = [];
+	var meshPreviewScreenFX : Array<hrt.prefab.rfx.ScreenShaderGraph> = [];
 	var meshPreviewRoot3d : h3d.scene.Object;
 	var meshPreviewShader : hxsl.DynamicShader;
 	var meshPreviewCameraController : hide.comp.Scene.PreviewCamController;
@@ -936,6 +937,7 @@ class ShaderEditor extends hide.view.FileView implements GraphInterface.IGraphEd
 				{label: "", isSeparator: true},
 				{label: "Sphere", click: setMeshPreviewSphere},
 				{label: "Plane", click: setMeshPreviewPlane},
+				{label: "Screen FX", click: setMeshPreviewScreenFX},
 				{label: "Mesh ...", click: chooseMeshPreviewFBX},
 				{label: "Prefab/FX ...", click: chooseMeshPreviewPrefab},
 				{label: "", isSeparator: true},
@@ -1027,10 +1029,23 @@ class ShaderEditor extends hide.view.FileView implements GraphInterface.IGraphEd
 			meshPreviewShader = new hxsl.DynamicShader(compiledShader.shader);
 
 			for (init in compiledShader.inits) {
-					setParamValue(meshPreviewShader, init.variable, init.value);
+				setParamValue(meshPreviewShader, init.variable, init.value);
 			}
 			for (m in meshPreviewMeshes) {
 				replaceMeshShader(m, meshPreviewShader);
+			}
+
+			for (fx in meshPreviewScreenFX) {
+				@:privateAccess fx.shaderPass.removeShader(fx.shader);
+
+				@:privateAccess fx.shaderDef = compiledShader;
+				@:privateAccess fx.shader = meshPreviewShader;
+
+				for (v in compiledShader.inits) {
+					Reflect.setField(fx.props, v.variable.name, v.value);
+				}
+
+				@:privateAccess fx.shaderPass.addShader(fx.shader);
 			}
 		}
 		meshPreviewScene.engine.backgroundColor = previewSettings.bgColor;
@@ -1090,6 +1105,7 @@ class ShaderEditor extends hide.view.FileView implements GraphInterface.IGraphEd
 			mesh.remove();
 
 		meshPreviewRoot3d.removeChildren();
+		meshPreviewScreenFX.resize(0);
 	}
 
 	public function setMeshPreviewMesh(mesh: h3d.scene.Mesh) {
@@ -1124,6 +1140,21 @@ class ShaderEditor extends hide.view.FileView implements GraphInterface.IGraphEd
 		m.material.mainPass.culling = None;
 		m.z += 0.001;
 		setMeshPreviewMesh(m);
+	}
+
+	public function setMeshPreviewScreenFX() {
+		cleanupPreview();
+		previewSettings.meshPath = "ScreenFX";
+		saveSettings();
+
+		var shared = new hide.prefab.ContextShared(null, meshPreviewRoot3d);
+		var root = new hrt.prefab.fx.FX(null, shared);
+		var screenFX = new hrt.prefab.rfx.ScreenShaderGraph(root, shared);
+		@:privateAccess screenFX.shaderGraph = this.shaderGraph;
+		root.make();
+
+		meshPreviewScreenFX.push(screenFX);
+		meshPreviewShader = null;
 	}
 
 	public function chooseMeshPreviewFBX() {
@@ -1162,6 +1193,8 @@ class ShaderEditor extends hide.view.FileView implements GraphInterface.IGraphEd
 				setMeshPreviewSphere();
 			case "Plane":
 				setMeshPreviewPlane();
+			case "ScreenFX":
+				setMeshPreviewScreenFX();
 			default: {
 				if (StringTools.endsWith(str, ".fbx")) {
 					setMeshPreviewFBX(str);
@@ -1351,6 +1384,10 @@ class ShaderEditor extends hide.view.FileView implements GraphInterface.IGraphEd
 
 	function setParamValue(shader : DynamicShader, variable : hxsl.Ast.TVar, value : Dynamic) {
 		@:privateAccess ShaderGraph.setParamValue(shader, variable, value);
+
+		for (fx in meshPreviewScreenFX) {
+			Reflect.setField(fx.props, variable.name, value);
+		}
 	}
 
 	/** IGraphEditor interface **/
