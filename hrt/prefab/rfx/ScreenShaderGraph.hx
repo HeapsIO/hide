@@ -3,17 +3,6 @@ package hrt.prefab.rfx;
 import hrt.prefab.rfx.RendererFX;
 import hxd.Math;
 
-private class GraphShader extends h3d.shader.ScreenShader {
-
-	static var SRC = {
-		@param var source : Sampler2D;
-
-		function fragment() {
-			pixelColor = source.get(calculatedUV);
-		}
-	}
-}
-
 enum abstract ScreenShaderGraphMode(String) {
 	var BeforeTonemapping;
 	var AfterTonemapping;
@@ -21,12 +10,13 @@ enum abstract ScreenShaderGraphMode(String) {
 @:access(h3d.scene.Renderer)
 class ScreenShaderGraph extends RendererFX {
 
-	var shaderPass = new h3d.pass.ScreenFx(new GraphShader());
+	var shaderPass = new h3d.pass.ScreenFx(new h3d.shader.ScreenShader());
 	var shaderGraph : hrt.shgraph.ShaderGraph;
 	var shaderDef : hrt.prefab.Cache.ShaderDef;
 	var shader : hxsl.DynamicShader;
 
 	@:s public var renderMode : ScreenShaderGraphMode;
+	@:s public var blend : h3d.mat.PbrMaterial.PbrBlend = None;
 
 	function new(parent, shared: ContextShared) {
 		super(parent, shared);
@@ -35,33 +25,24 @@ class ScreenShaderGraph extends RendererFX {
 
 	override function end(r:h3d.scene.Renderer, step:h3d.impl.RendererFX.Step) {
 		if( !checkEnabled() ) return;
+		shaderPass.pass.setBlendMode(switch ( blend ) {
+			case None: None;
+			case Alpha: Alpha;
+			case Add: Add;
+			case AlphaAdd: AlphaAdd;
+			case Multiply: Multiply;
+			case AlphaMultiply: AlphaMultiply;
+		});
 		if( step == AfterTonemapping && renderMode == AfterTonemapping) {
 			r.mark("ScreenShaderGraph");
 			if (shader != null) {
-				var ctx = r.ctx;
-				var target = r.allocTarget("ppTarget", false);
-				shaderPass.shader.source = ctx.getGlobal("ldrMap");
-
-				ctx.engine.pushTarget(target);
 				shaderPass.render();
-				ctx.engine.popTarget();
-
-				ctx.setGlobal("ldrMap", target);
-				r.setTarget(target);
 			}
 		}
 		if( step == BeforeTonemapping && renderMode == BeforeTonemapping) {
 			r.mark("ScreenShaderGraph");
 			if (shader != null) {
-				var ctx = r.ctx;
-				var target = r.allocTarget("ppTarget", false, 1.0, RGBA16F);
-				shaderPass.shader.source = ctx.getGlobal("hdrMap");
-
-				ctx.engine.pushTarget(target);
 				shaderPass.render();
-				ctx.engine.popTarget();
-
-				r.copy(target, ctx.getGlobal("hdrMap"));
 			}
 		}
 	}
@@ -100,10 +81,6 @@ class ScreenShaderGraph extends RendererFX {
 	}
 
 	function syncShaderVars() {
-		// if (shaderDef == null)
-		// 	loadShaderDef();
-		// if (shader == null)
-		// 	makeShader();
 		for(v in shaderDef.shader.data.vars) {
 			if(v.kind != Param)
 				continue;
@@ -202,6 +179,17 @@ class ScreenShaderGraph extends RendererFX {
 					<option value="BeforeTonemapping">Before Tonemapping</option>
 					<option value="AfterTonemapping">After Tonemapping</option>
 				</select></dd>
+				<dt>Blend mode</dt>
+				<dd>
+					<select field="blend">
+						<option value="None">None</option>
+						<option value="Alpha">Alpha</option>
+						<option value="Add">Add</option>
+						<option value="AlphaAdd">AlphaAdd</option>
+						<option value="Multiply">Multiply</option>
+						<option value="AlphaMultiply">AlphaMultiply</option>
+					</select>
+				</dd>
 				<dt>Reference</dt><dd><input type="fileselect" extensions="shgraph" field="source"/></dd>
 			</dl>
 			</div>');
