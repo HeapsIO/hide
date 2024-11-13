@@ -420,7 +420,7 @@ class ModalColumnForm extends Modal {
 		};
 		if( v.req != "on" ) c.opt = true;
 		if( v.display != "0" ) c.display = cast Std.parseInt(v.display);
-		c.kind = null;
+		c.kind = js.Lib.undefined;
 		switch( v.kind ) {
 		case "localizable": c.kind = Localizable;
 		case "script": c.kind = Script;
