@@ -3,6 +3,20 @@ package hrt.prefab.rfx;
 import hrt.prefab.rfx.RendererFX;
 import hxd.Math;
 
+private class GraphShader extends h3d.shader.ScreenShader {
+
+	static var SRC = {
+		@const var USE_PREV_TARGET : Bool = false;
+		
+		@param var source : Sampler2D;
+
+		function fragment() {
+			if ( USE_PREV_TARGET )
+				pixelColor = source.get(calculatedUV);
+		}
+	}
+}
+
 enum abstract ScreenShaderGraphMode(String) {
 	var BeforeTonemapping;
 	var AfterTonemapping;
@@ -10,13 +24,14 @@ enum abstract ScreenShaderGraphMode(String) {
 @:access(h3d.scene.Renderer)
 class ScreenShaderGraph extends RendererFX {
 
-	var shaderPass = new h3d.pass.ScreenFx(new h3d.shader.ScreenShader());
+	var shaderPass = new h3d.pass.ScreenFx(new GraphShader());
 	var shaderGraph : hrt.shgraph.ShaderGraph;
 	var shaderDef : hrt.prefab.Cache.ShaderDef;
 	var shader : hxsl.DynamicShader;
 
 	@:s public var renderMode : ScreenShaderGraphMode;
 	@:s public var blend : h3d.mat.PbrMaterial.PbrBlend = None;
+	@:s public var usePrevTarget : Bool = false;
 
 	function new(parent, shared: ContextShared) {
 		super(parent, shared);
@@ -36,13 +51,40 @@ class ScreenShaderGraph extends RendererFX {
 		if( step == AfterTonemapping && renderMode == AfterTonemapping) {
 			r.mark("ScreenShaderGraph");
 			if (shader != null) {
-				shaderPass.render();
+				shaderPass.shader.USE_PREV_TARGET = usePrevTarget;
+				if ( usePrevTarget ) {
+					var ctx = r.ctx;
+					var target = r.allocTarget("ppTarget", false);
+					shaderPass.shader.source = ctx.getGlobal("ldrMap");
+	
+					ctx.engine.pushTarget(target);
+					shaderPass.render();
+					ctx.engine.popTarget();
+	
+					ctx.setGlobal("ldrMap", target);
+					r.setTarget(target);
+				} else {
+					shaderPass.render();
+				}
 			}
 		}
 		if( step == BeforeTonemapping && renderMode == BeforeTonemapping) {
 			r.mark("ScreenShaderGraph");
 			if (shader != null) {
-				shaderPass.render();
+				shaderPass.shader.USE_PREV_TARGET = usePrevTarget;
+				if ( usePrevTarget ) {
+					var ctx = r.ctx;
+					var target = r.allocTarget("ppTarget", false, 1.0, RGBA16F);
+					shaderPass.shader.source = ctx.getGlobal("hdrMap");
+
+					ctx.engine.pushTarget(target);
+					shaderPass.render();
+					ctx.engine.popTarget();
+
+					r.copy(target, ctx.getGlobal("hdrMap"));
+				} else {
+					shaderPass.render();
+				}
 			}
 		}
 	}
@@ -191,6 +233,7 @@ class ScreenShaderGraph extends RendererFX {
 					</select>
 				</dd>
 				<dt>Reference</dt><dd><input type="fileselect" extensions="shgraph" field="source"/></dd>
+				<dt>Prev target as input</dt><dd><input type="checkbox" field="usePrevTarget"/></dd>
 			</dl>
 			</div>');
 
