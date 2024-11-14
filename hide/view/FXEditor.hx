@@ -1497,10 +1497,11 @@ class FXEditor extends hide.view.FileView {
 			});
 			menuItems.push(trackItem("Visibility", [{name: "visibility"}]));
 		}
-		if(shaderElt != null) {
-			var shader = shaderElt.makeShader();
-			var inEmitter = shaderElt.findParent(hrt.prefab.fx.Emitter) != null;
-			var params = shader == null ? [] : @:privateAccess shader.shader.data.vars.filter(v -> v.kind == Param);
+
+		function makeShaderTracks(shader: hxsl.Shader) {
+			if (shader == null)
+				return;
+			var params = @:privateAccess shader.shader.data.vars.filter(v -> v.kind == Param);
 			for(param in params) {
 				if (param.qualifiers?.contains(Ignore) ?? false)
 					continue;
@@ -1527,14 +1528,13 @@ class FXEditor extends hide.view.FileView {
 					menuItems.push(item);
 			}
 		}
+
+		if(shaderElt != null) {
+			makeShaderTracks(shaderElt.makeShader());
+		}
 		if (rfxElt != null) {
 			if (screenShaderGraph != null) {
-				for (f in Reflect.fields(screenShaderGraph.props)) {
-					if (!(Reflect.field(screenShaderGraph.props, f) is Float) || hasTrack(f))
-						continue;
-
-					menuItems.push(trackItem(f, [{name: f}]));
-				}
+				@:privateAccess makeShaderTracks(screenShaderGraph.shader ?? screenShaderGraph.makeShader());
 			}
 			else {
 				var serializedProps = rfxElt.getSerializableProps();

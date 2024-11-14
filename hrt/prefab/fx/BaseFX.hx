@@ -42,12 +42,38 @@ class RendererFXAnimation extends CustomAnimation {
 }
 
 class ScreenShaderGraphFXAnimation extends CustomAnimation {
-	public var params : Array<{field : hrt.prefab.Prefab.PrefabField, value : Value}>;
-	public var rfx : hrt.prefab.rfx.RendererFX;
+	public var params : Array<{name : String, type: hxsl.Ast.Type, value : Value}>;
+	public var rfx : hrt.prefab.rfx.ScreenShaderGraph;
 
+	static var vector4 = new h3d.Vector4();
 	override public function setTime(time: Float) {
 		for(param in params) {
-			Reflect.setField(rfx.props, param.field.name, getFloat(param.value, time));
+			switch(param.type) {
+				case TFloat:
+					Reflect.setField(rfx.props, param.name, getFloat(param.value, time));
+				case TVec(4, VFloat):
+					getVector(param.value, time, vector4);
+					Reflect.setProperty(rfx.props, param.name, vector4.toColor());
+				case TVec(n, VFloat):
+					getVector(param.value, time, vector4);
+					var arr = Reflect.getProperty(rfx.props, param.name);
+					if (arr == null) {
+						arr = [];
+						Reflect.setField(rfx.props, param.name, arr);
+					}
+					if (!(arr is Array))
+						throw "unsupported";
+					if (n > 0)
+						arr[0] = vector4.x;
+					if (n > 1)
+						arr[1] = vector4.y;
+					if (n > 2)
+						arr[2] = vector4.z;
+					if (n > 3)
+						arr[3] = vector4.w;
+				default:
+					throw "unsupported";
+			}
 		}
 	}
 }
@@ -155,8 +181,7 @@ interface BaseFX {
 class BaseFXTools {
 	public static var useAutoPerInstance = true;
 
-	public static function makeShaderParams(shaderElt: hrt.prefab.Shader) {
-		var shaderDef = shaderElt.getShaderDefinition();
+	public static function makeShaderParams(basePrefab: hrt.prefab.Prefab, shaderDef: hxsl.SharedShader) {
 		if(shaderDef == null)
 			return null;
 
@@ -169,11 +194,11 @@ class BaseFXTools {
 
 			paramCount++;
 
-			var prop = Reflect.field(shaderElt.props, v.name);
+			var prop = Reflect.field(basePrefab.props, v.name);
 			if(prop == null)
 				prop = hrt.prefab.DynamicShader.getDefault(v.type);
 
-			var curves = Curve.getCurves(shaderElt, v.name);
+			var curves = Curve.getCurves(basePrefab, v.name);
 			if(curves == null || curves.length == 0)
 				continue;
 
@@ -192,7 +217,7 @@ class BaseFXTools {
 					var base = 1.0;
 					if(Std.isOfType(prop, Float) || Std.isOfType(prop, Int))
 						base = cast prop;
-					var curve = Curve.getCurve(shaderElt, v.name);
+					var curve = Curve.getCurve(basePrefab, v.name);
 					var val = Value.VConst(base);
 					if(curve != null)
 						val = Value.VMult(curve.makeVal(), VConst(base));
@@ -200,7 +225,7 @@ class BaseFXTools {
 					ret.push({
 						idx: paramCount - 1,
 						def: v,
-						value: val
+						value: val,
 					});
 			}
 		}
@@ -234,31 +259,6 @@ class BaseFXTools {
 		return ret;
 	}
 
-	public static function makeScreenShaderGraphFXParams(rfxElt: hrt.prefab.rfx.ScreenShaderGraph) {
-		var params : Array<{field : hrt.prefab.Prefab.PrefabField, value : Value}> = null;
-		for (f in Reflect.fields(rfxElt.props)) {
-			if (!Reflect.field(rfxElt.props, f) is Float)
-				continue;
-
-			var curves = Curve.getCurves(rfxElt, f);
-			if (curves == null || curves.length == 0)
-				continue;
-
-			var base = 1.0;
-			var curve = Curve.getCurve(rfxElt, f);
-			var val = Value.VConst(base);
-			if(curve != null)
-				val = Value.VMult(curve.makeVal(), VConst(base));
-			if(params == null) params = [];
-			params.push({
-				field : {name: f, hasSetter: false, meta: {}, defaultValue: base, type: PFloat },
-				value : val
-			});
-		}
-
-		return params;
-	}
-
 	static var emptyParams : Array<String> = [];
 	public static function getCustomAnimations(elt: PrefabElement, anims: Array<CustomAnimation>, ?batch: h3d.scene.MeshBatch) {
 		// Init all animations recursively except Emitter ones (called in Emitter)
@@ -270,7 +270,7 @@ class BaseFXTools {
 
 		var shader = elt.to(hrt.prefab.Shader);
 		if (shader != null && shader.shader != null) {
-			var params = makeShaderParams(shader);
+			var params = makeShaderParams(shader, shader.getShaderDefinition());
 			var shader = shader.shader;
 
 			if(useAutoPerInstance && batch != null) @:privateAccess {
@@ -301,11 +301,13 @@ class BaseFXTools {
 		if (rendererFX != null) {
 			var screenShaderGraph = elt.to(hrt.prefab.rfx.ScreenShaderGraph);
 			if (screenShaderGraph != null) {
-				var params = makeScreenShaderGraphFXParams(screenShaderGraph);
+				var params = makeShaderParams(screenShaderGraph, screenShaderGraph.getShaderDefinition());
 				if (params != null) {
 					var anim = new ScreenShaderGraphFXAnimation();
-					anim.params = params;
-					anim.rfx = @:privateAccess screenShaderGraph.instance;
+					anim.params = [for (param in params)
+						{ name: param.def.name, type:param.def.type, value: param.value}
+					];
+					anim.rfx = cast @:privateAccess screenShaderGraph.instance;
 					anims.push(anim);
 				}
 			}

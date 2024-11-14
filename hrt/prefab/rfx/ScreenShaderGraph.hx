@@ -7,7 +7,7 @@ private class GraphShader extends h3d.shader.ScreenShader {
 
 	static var SRC = {
 		@const var USE_PREV_TARGET : Bool = false;
-		
+
 		@param var source : Sampler2D;
 
 		function fragment() {
@@ -40,6 +40,8 @@ class ScreenShaderGraph extends RendererFX {
 
 	override function end(r:h3d.scene.Renderer, step:h3d.impl.RendererFX.Step) {
 		if( !checkEnabled() ) return;
+		syncShaderVars();
+
 		shaderPass.pass.setBlendMode(switch ( blend ) {
 			case None: None;
 			case Alpha: Alpha;
@@ -56,11 +58,11 @@ class ScreenShaderGraph extends RendererFX {
 					var ctx = r.ctx;
 					var target = r.allocTarget("ppTarget", false);
 					shaderPass.shader.source = ctx.getGlobal("ldrMap");
-	
+
 					ctx.engine.pushTarget(target);
 					shaderPass.render();
 					ctx.engine.popTarget();
-	
+
 					ctx.setGlobal("ldrMap", target);
 					r.setTarget(target);
 				} else {
@@ -112,7 +114,7 @@ class ScreenShaderGraph extends RendererFX {
 		updateInstance();
 	}
 
-	function getShaderDefinition():hxsl.SharedShader {
+	public function getShaderDefinition(): hxsl.SharedShader {
 		if( shaderDef == null )
 			loadShaderDef();
 		return shaderDef == null ? null : shaderDef.shader;

@@ -21,6 +21,9 @@ class RendererFX extends Prefab implements h3d.impl.RendererFX {
 
 	override public function make( ?sh:hrt.prefab.Prefab.ContextMake ) : Prefab {
 		instance = cast this.clone();
+		// unlink this.props and instance.props for ScreenShaderGraph
+		// because props is cloned by ref
+		instance.props = {};
 
 		if (!shouldBeInstanciated())
 			return this;
@@ -36,13 +39,15 @@ class RendererFX extends Prefab implements h3d.impl.RendererFX {
 
 	override function updateInstance(?propName : String) {
 		if (instance != null) {
-			if (propName != null) {
+			if (propName != null && propName != "props") {
 				Reflect.setField(instance, propName, Reflect.field(this, propName));
 				return;
 			}
 
-			for (f in Reflect.fields(this))
-				Reflect.setField(instance, f, Reflect.field(this, f));
+			for (f in Reflect.fields(this)) {
+				if (f != "props")
+					Reflect.setField(instance, f, Reflect.field(this, f));
+			}
 		}
 	}
 
