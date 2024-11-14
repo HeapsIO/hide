@@ -14,6 +14,7 @@ typedef MenuItem = {
 }
 
 // for retrocompat with the old menu system
+@:deprecated("Use MenuItem instead")
 typedef ContextMenuItem = hide.comp.ContextMenu.MenuItem;
 
 

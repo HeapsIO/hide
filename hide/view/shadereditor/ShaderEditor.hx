@@ -130,6 +130,7 @@ class PreviewSettings {
 	public var unlit : Bool = false;
 	public var previewAlpha : Bool = false;
 
+	public var screenFXBlend : h3d.mat.PbrMaterial.PbrBlend = Alpha;
 	public var width : Int = 300;
 	public var height : Int = 300;
 	public function new() {};
@@ -989,26 +990,53 @@ class ShaderEditor extends hide.view.FileView implements GraphInterface.IGraphEd
 		var group = new Element('<div class="tb-group"></div>').appendTo(toolbar);
 		var menu = new Element('<div class="button2 transparent" title="More options"><div class="ico ico-navicon"></div></div>');
 		menu.appendTo(group);
+
+		function getScreenFXBlend(blend: h3d.mat.PbrMaterial.PbrBlend) : hide.comp.ContextMenu.MenuItem {
+			return {label: cast blend, click: () -> {
+					previewSettings.screenFXBlend = blend;
+
+					for (fx in meshPreviewScreenFX) {
+						fx.blend = blend;
+					}
+
+					savePreviewSettings();
+				},
+				checked: meshPreviewScreenFX[0]?.blend == blend
+			}
+		};
+
+		var blends: Array<h3d.mat.PbrMaterial.PbrBlend> = [
+			None,
+			Alpha,
+			Add,
+			AlphaAdd,
+			Multiply,
+			AlphaMultiply,
+		];
+
 		menu.click((e) -> {
 			hide.comp.ContextMenu.createDropdown(menu.get(0), [
 				{label: "Reset Camera", click: resetPreviewCamera},
-				{label: "", isSeparator: true},
+				{label: "Reset Preview Size", click: resetPreviewSize},
+				{isSeparator: true},
 				{label: "Sphere", click: setMeshPreviewSphere},
 				{label: "Plane", click: setMeshPreviewPlane},
 				{label: "Screen FX", click: setMeshPreviewScreenFX},
 				{label: "Mesh ...", click: chooseMeshPreviewFBX},
 				{label: "Prefab/FX ...", click: chooseMeshPreviewPrefab},
-				{label: "", isSeparator: true},
+				{isSeparator: true},
 				{label: "Material Settings", menu: [
 					{label: "Alpha Blend", click: () -> {previewSettings.alphaBlend = !previewSettings.alphaBlend; meshPreviewShader = null; savePreviewSettings();}, stayOpen: true, checked: previewSettings.alphaBlend},
 					{label: "Backface Cull", click: () -> {previewSettings.backfaceCulling = !previewSettings.backfaceCulling; meshPreviewShader = null; savePreviewSettings();}, stayOpen: true, checked: previewSettings.backfaceCulling},
 					{label: "Unlit", click: () -> {previewSettings.unlit = !previewSettings.unlit; meshPreviewShader = null; savePreviewSettings();}, stayOpen: true, checked: previewSettings.unlit},
 				], enabled: meshPreviewPrefab == null},
+				{label: "Screen FX Blend", enabled: meshPreviewPrefab == null && meshPreviewScreenFX.length > 0, menu: [
+					for (blend in blends) getScreenFXBlend(blend)
+				]},
 				{label: "Render Settings", menu: [
 					{label: "Background Color", click: openBackgroundColorMenu},
 					{label: "Render Props", click: selectRenderProps},
 					{label: "Clear Render Props", click: clearRenderProps},
-
 				]}
 			]);
 		});
@@ -1162,8 +1190,12 @@ class ShaderEditor extends hide.view.FileView implements GraphInterface.IGraphEd
 		for (mesh in meshPreviewMeshes)
 			mesh.remove();
 
-		meshPreviewRoot3d.removeChildren();
+		for (fx in meshPreviewScreenFX) {
+			fx.editorRemoveObjects();
+		}
 		meshPreviewScreenFX.resize(0);
+
+		meshPreviewRoot3d.removeChildren();
 	}
 
 	public function setMeshPreviewMesh(mesh: h3d.scene.Mesh) {
@@ -1203,7 +1235,6 @@ class ShaderEditor extends hide.view.FileView implements GraphInterface.IGraphEd
 	public function setMeshPreviewScreenFX() {
 		cleanupPreview();
 		previewSettings.meshPath = "ScreenFX";
-		savePreviewSettings();
 
 		var shared = new hide.prefab.ContextShared(null, meshPreviewRoot3d);
 		var root = new hrt.prefab.fx.FX(null, shared);
@@ -1213,6 +1244,11 @@ class ShaderEditor extends hide.view.FileView implements GraphInterface.IGraphEd
 
 		meshPreviewScreenFX.push(screenFX);
 		meshPreviewShader = null;
+
+		for (fx in meshPreviewScreenFX) {
+			fx.blend = previewSettings.screenFXBlend;
+		}
+		savePreviewSettings();
 	}
 
 	public function chooseMeshPreviewFBX() {
@@ -1243,6 +1279,17 @@ class ShaderEditor extends hide.view.FileView implements GraphInterface.IGraphEd
 		var bounds = meshPreviewRoot3d.getBounds();
 		var sp = bounds.toSphere();
 		meshPreviewCameraController.set(sp.r * 3.0, Math.PI / 4, Math.PI * 5 / 13, sp.getCenter());
+	}
+
+	public function resetPreviewSize() {
+		var def = new PreviewSettings();
+		previewSettings.width = def.width;
+		previewSettings.height = def.height;
+
+		previewElem.width(previewSettings.width);
+		previewElem.height(previewSettings.height);
+
+		savePreviewSettings();
 	}
 
 	public function loadMeshPreviewFromString(str: String) {
@@ -1318,7 +1365,9 @@ class ShaderEditor extends hide.view.FileView implements GraphInterface.IGraphEd
 			}
 		}
 
-		if (meshPreviewMeshes.length <= 0) {
+		meshPreviewScreenFX = meshPreviewPrefab.findAll(hrt.prefab.rfx.ScreenShaderGraph, (p) -> p.source == this.state.path);
+
+		if (meshPreviewMeshes.length <= 0 && meshPreviewScreenFX.length <= 0) {
 			Ide.inst.quickError('Prefab/FX $str does not contains this shadergraph');
 			setMeshPreviewSphere();
 			return;
