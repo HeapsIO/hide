@@ -1403,6 +1403,8 @@ class FXEditor extends hide.view.FileView {
 		var obj2dElt = Std.downcast(elt, hrt.prefab.Object2D);
 		var shaderElt = Std.downcast(elt, hrt.prefab.Shader);
 		var rfxElt = Std.downcast(elt, hrt.prefab.rfx.RendererFX);
+		var screenShaderGraph = Std.downcast(elt, hrt.prefab.rfx.ScreenShaderGraph);
+
 		var emitterElt = Std.downcast(elt, hrt.prefab.fx.Emitter);
 
 		var particle2dElt = Std.downcast(elt, hrt.prefab.l2d.Particle2D);
@@ -1526,12 +1528,22 @@ class FXEditor extends hide.view.FileView {
 			}
 		}
 		if (rfxElt != null) {
-			var serializedProps = rfxElt.getSerializableProps();
-			for (f in serializedProps) {
-				if (!(Reflect.field(rfxElt, f.name) is Float) || hasTrack(f.name))
-					continue;
+			if (screenShaderGraph != null) {
+				for (f in Reflect.fields(screenShaderGraph.props)) {
+					if (!(Reflect.field(screenShaderGraph.props, f) is Float) || hasTrack(f))
+						continue;
 
-				menuItems.push(trackItem(f.name, [{name : f.name}]));
+					menuItems.push(trackItem(f, [{name: f}]));
+				}
+			}
+			else {
+				var serializedProps = rfxElt.getSerializableProps();
+				for (f in serializedProps) {
+					if (!(Reflect.field(rfxElt, f.name) is Float) || hasTrack(f.name))
+						continue;
+
+					menuItems.push(trackItem(f.name, [{name : f.name}]));
+				}
 			}
 		}
 		function addParam(param : hrt.prefab.fx.Emitter.ParamDef, prefix: String) {

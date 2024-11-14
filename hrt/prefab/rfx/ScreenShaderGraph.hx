@@ -168,6 +168,11 @@ class ScreenShaderGraph extends RendererFX {
 
 	override function updateInstance(?propName : String ) {
 		super.updateInstance(propName);
+		if (instance != null) {
+			for (f in Reflect.fields(props)) {
+				Reflect.setField(instance.props, f, Reflect.field(this.props, f));
+			}
+		}
 		var p = resolveRef();
 		if(p == null)
 			return;

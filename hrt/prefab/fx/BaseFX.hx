@@ -41,6 +41,17 @@ class RendererFXAnimation extends CustomAnimation {
 	}
 }
 
+class ScreenShaderGraphFXAnimation extends CustomAnimation {
+	public var params : Array<{field : hrt.prefab.Prefab.PrefabField, value : Value}>;
+	public var rfx : hrt.prefab.rfx.RendererFX;
+
+	override public function setTime(time: Float) {
+		for(param in params) {
+			Reflect.setField(rfx.props, param.field.name, getFloat(param.value, time));
+		}
+	}
+}
+
 class ShaderAnimation extends CustomAnimation {
 	public var params : ShaderParams;
 	public var shader : hxsl.Shader;
@@ -223,6 +234,31 @@ class BaseFXTools {
 		return ret;
 	}
 
+	public static function makeScreenShaderGraphFXParams(rfxElt: hrt.prefab.rfx.ScreenShaderGraph) {
+		var params : Array<{field : hrt.prefab.Prefab.PrefabField, value : Value}> = null;
+		for (f in Reflect.fields(rfxElt.props)) {
+			if (!Reflect.field(rfxElt.props, f) is Float)
+				continue;
+
+			var curves = Curve.getCurves(rfxElt, f);
+			if (curves == null || curves.length == 0)
+				continue;
+
+			var base = 1.0;
+			var curve = Curve.getCurve(rfxElt, f);
+			var val = Value.VConst(base);
+			if(curve != null)
+				val = Value.VMult(curve.makeVal(), VConst(base));
+			if(params == null) params = [];
+			params.push({
+				field : {name: f, hasSetter: false, meta: {}, defaultValue: base, type: PFloat },
+				value : val
+			});
+		}
+
+		return params;
+	}
+
 	static var emptyParams : Array<String> = [];
 	public static function getCustomAnimations(elt: PrefabElement, anims: Array<CustomAnimation>, ?batch: h3d.scene.MeshBatch) {
 		// Init all animations recursively except Emitter ones (called in Emitter)
@@ -263,12 +299,24 @@ class BaseFXTools {
 
 		var rendererFX = elt.to(hrt.prefab.rfx.RendererFX);
 		if (rendererFX != null) {
-			var params = makeRendererFXParams(rendererFX);
-			if (params != null) {
-				var anim = new RendererFXAnimation();
-				anim.params = params;
-				anim.rfx = @:privateAccess rendererFX.instance;
-				anims.push(anim);
+			var screenShaderGraph = elt.to(hrt.prefab.rfx.ScreenShaderGraph);
+			if (screenShaderGraph != null) {
+				var params = makeScreenShaderGraphFXParams(screenShaderGraph);
+				if (params != null) {
+					var anim = new ScreenShaderGraphFXAnimation();
+					anim.params = params;
+					anim.rfx = @:privateAccess screenShaderGraph.instance;
+					anims.push(anim);
+				}
+			}
+			else {
+				var params = makeRendererFXParams(rendererFX);
+				if (params != null) {
+					var anim = new RendererFXAnimation();
+					anim.params = params;
+					anim.rfx = @:privateAccess rendererFX.instance;
+					anims.push(anim);
+				}
 			}
 		}
 	}
