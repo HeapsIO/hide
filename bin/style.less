@@ -4394,3 +4394,86 @@ hide-popover {
 	color: white;
     mix-blend-mode: difference;
 }
+
+.cdb2 {
+	padding: 15px;
+	display: flex;
+	flex-direction: column;
+	width: 100%;
+	height: 100%;
+
+	&, * {
+		box-sizing: border-box;
+	}
+
+	.custom-scroll-wrapper {
+		flex-grow: 0;
+		flex-shrink: 1;
+		align-self: stretch;
+		width: 100%;
+		min-height: 0;
+		position: relative;
+
+		.stream-table {
+			width: 100%;
+			height: 100%;
+			display: grid;
+			grid-template-columns: 1fr 1fr;
+			overflow-y: scroll;
+			position: relative;
+
+			&::-webkit-scrollbar {
+				display: none;
+			}
+
+			min-width: 0;
+
+			> thead, > tbody {
+				grid-column: 1 / -1;
+				display: grid;
+				grid-template-columns: subgrid;
+
+				> tr {
+					display: grid;
+					grid-template-columns: subgrid;
+					grid-column: 1/ -1;
+
+					td {
+						min-width: 0;
+					}
+				}
+			}
+		}
+
+		.custom-scrollbar {
+			position: absolute;
+			right: 3px;
+			top: 3px;
+			bottom: 3px;
+			width: 8px;
+
+			background-color: rgba(127,127,127,0.25);
+			border-radius: 2px;
+
+			&:hover {
+				background-color: rgba(127,127,127,0.50);
+			}
+
+			.cursor {
+				background-color: rgba(200,200,200,0.50);
+
+				position: absolute;
+				height: 25px;
+				width: 6px;
+				border-radius: 4px;
+				left: 1px;
+				top: 50px;
+
+				&:hover {
+					background-color: rgba(200,200,200,1.0);
+				}
+			}
+		}
+	}
+}
+

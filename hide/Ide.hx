@@ -1223,6 +1223,9 @@ class Ide extends hide.tools.IdeData {
 		db.find(".dbView").click(function(_) {
 			open("hide.view.CdbTable",{});
 		});
+		db.find(".dbView2").click(function(_) {
+			open("hide.view.CdbTable2",{});
+		});
 		db.find(".dbCompress").prop("checked",database.compress).click(function(_) {
 			database.compress = !database.compress;
 			saveDatabase();
