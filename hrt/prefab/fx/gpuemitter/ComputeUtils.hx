@@ -13,7 +13,7 @@ class ComputeUtils extends hxsl.Shader {
 		@global var camera : {
 			var position : Vec3;
 		}
-		
+
 		function random(pos : Vec2) : Float {
 			return fract(sin(dot(pos, vec2(12.9898,78.233)))*43758.5453123);
 		}
@@ -51,7 +51,7 @@ class ComputeUtils extends hxsl.Shader {
 			var sTheta = sin(theta);
 			return vec3(radius * sTheta * cos(phi), radius * sTheta * sin(phi), radius * cos(theta));
 		}
-		
+
 		function cartesianToSpherical(pos : Vec3) : Vec3 {
 			var radius = length(pos);
 			var dir = pos / radius;
@@ -89,6 +89,24 @@ class ComputeUtils extends hxsl.Shader {
 				);
 			}
 			return matrix;
+		}
+
+		function rotateMatrixX(angle : Float) : Mat4 {
+			return mat4(
+				vec4(1.0, 0.0, 0.0, 0.0),
+				vec4(0.0, cos(angle), -sin(angle), 0.0),
+				vec4(0.0, sin(angle), cos(angle), 0.0),
+				vec4(0.0, 0.0, 0.0, 1.0)
+			);
+		}
+
+		function rotateMatrixY(angle : Float) : Mat4 {
+			return mat4(
+				vec4(cos(angle), 0.0, -sin(angle), 0.0),
+				vec4(0.0, 1.0, 0.0, 0.0),
+				vec4(sin(angle), 0.0, cos(angle), 0.0),
+				vec4(0.0, 0.0, 0.0, 1.0)
+			);
 		}
 
 		function rotateMatrixZ(angle : Float) : Mat4 {

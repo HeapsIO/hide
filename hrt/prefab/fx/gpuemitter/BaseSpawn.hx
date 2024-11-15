@@ -13,6 +13,8 @@ class BaseSpawn extends ComputeUtils {
 		}>;
 		@param var atomic : RWBuffer<Int>;
 
+		@const var FORCED : Bool = false;
+		@const var INFINITE : Bool = false;
 		@const var SPEED_NORMAL : Bool;
 		@param var minLifeTime : Float;
 		@param var maxLifeTime : Float;
@@ -36,9 +38,9 @@ class BaseSpawn extends ComputeUtils {
 
 		function main() {
 			var idx = computeVar.globalInvocation.x;
-			if ( particleBuffer[idx].lifeTime < 0.0 ) {
+			if ( FORCED || (!INFINITE && particleBuffer[idx].lifeTime < 0.0) ) {
 				var c = atomicAdd(atomic, 0, 1);
-				if ( c < rate ) {
+				if ( FORCED || (!INFINITE && c < rate) ) {
 					batchBuffer[idx].modelView = modelView;
 					var s = vec3(0.0, 0.0, 1.0);
 					if ( SPEED_NORMAL )

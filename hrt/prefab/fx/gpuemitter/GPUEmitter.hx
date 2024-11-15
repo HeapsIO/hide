@@ -41,8 +41,8 @@ typedef Data = {
 	var infinite : Bool;
 	var maxLifeTime : Float;
 	var minLifeTime : Float;
-	var gravity : Float;
-	var radius : Float;
+	var maxSize : Float;
+	var minSize : Float;
 	var startSpeed : Float;
 	var trs : h3d.Matrix;
 	var mode : Mode;
@@ -75,6 +75,7 @@ class GPUEmitterObject extends h3d.scene.MeshBatch {
 	var particleShader : ParticleShader;
 
 	var rateAccumulation : Float = 0.0;
+	var firstDispatch : Bool = true;
 
 	public function new(data, primitive, materials, ?parent) {
 		super(primitive, null, parent);
@@ -138,8 +139,8 @@ class GPUEmitterObject extends h3d.scene.MeshBatch {
 					floats[i * stride + 4] = 1.0 / l; // lifeRatio
 					floats[i * stride + 5] = hxd.Math.random(); // random
 					// padding
-					floats[i * stride + 6] = 0.0;
-					floats[i * stride + 7] = 0.0;
+					// floats[i * stride + 6] = 0.0;
+					// floats[i * stride + 7] = 0.0;
 				}
 				particleBuffer.buffer = alloc.ofFloats(floats, particleBufferFormat, UniformReadWrite);
 				particleBuffer.atomic = alloc.allocBuffer( 1, hxd.BufferFormat.VEC4_DATA, UniformReadWrite );
@@ -224,6 +225,8 @@ class GPUEmitterObject extends h3d.scene.MeshBatch {
 			baseSpawn.minLifeTime = data.minLifeTime;
 			baseSpawn.maxStartSpeed = data.maxStartSpeed;
 			baseSpawn.minStartSpeed = data.minStartSpeed;
+			baseSpawn.FORCED = data.infinite && firstDispatch;
+			baseSpawn.INFINITE = data.infinite;
 			if ( data.rate > 0 ) {
 				var r = data.rate * ctx.elapsedTime;
 				baseSpawn.rate = Math.floor(r);
@@ -245,8 +248,9 @@ class GPUEmitterObject extends h3d.scene.MeshBatch {
 			}
 
 			var baseSimulation = simulationPass.getShader(BaseSimulation);
-			baseSimulation.INFINITE = data.infinite;
 			baseSimulation.dtParam = ctx.elapsedTime;
+			baseSimulation.maxSize = data.maxSize;
+			baseSimulation.minSize = data.minSize;
 			switch ( data.align ) {
 			case FaceCam:
 				baseSimulation.FACE_CAM = true;
@@ -347,6 +351,7 @@ class GPUEmitterObject extends h3d.scene.MeshBatch {
 			p = p.next;
 			particleBuffer = particleBuffer.next;
 		}
+		firstDispatch = false;
 	}
 
 	override function emit(ctx : h3d.scene.RenderContext) {
@@ -387,8 +392,8 @@ class GPUEmitter extends Object3D {
 	@:s var maxLifeTime : Float = 1.0;
 	@:s var minStartSpeed : Float = 0.5;
 	@:s var maxStartSpeed : Float = 1.0;
-	@:s var gravity : Float = 1.0;
-	@:s var radius : Float = 1.0;
+	@:s var minSize : Float = 0.5;
+	@:s var maxSize : Float = 1.5;
 	@:s var startSpeed : Float = 1.0;
 	@:s var infinite : Bool = false;
 	@:s var mode : Mode = World;
@@ -401,8 +406,10 @@ class GPUEmitter extends Object3D {
 	}
 
 	override function makeChild(c : hrt.prefab.Prefab) {
+		#if !editor
 		if ( Std.isOfType(c, hrt.prefab.Object3D) )
 			return;
+		#end
 		super.makeChild(c);
 	}
 
@@ -431,8 +438,8 @@ class GPUEmitter extends Object3D {
 				maxCount : maxCount,
 				minLifeTime : minLifeTime,
 				maxLifeTime : maxLifeTime,
-				gravity : gravity,
-				radius : radius,
+				minSize : minSize,
+				maxSize : maxSize,
 				startSpeed : startSpeed,
 				trs : trs,
 				infinite : infinite,
@@ -508,6 +515,8 @@ class GPUEmitter extends Object3D {
 					<dt>Max count</dt><dd><input type="range" step="1" min="1" max="8192" field="maxCount"/></dd>
 					<dt>Min life time</dt><dd><input type="range" min="0.1" max="10" field="minLifeTime"/></dd>
 					<dt>Max life time</dt><dd><input type="range" min="0.1" max="10" field="maxLifeTime"/></dd>
+					<dt>Min size</dt><dd><input type="range" min="0.1" max="10" field="minSize"/></dd>
+					<dt>Max size</dt><dd><input type="range" min="0.1" max="10" field="maxSize"/></dd>
 					<dt>Infinite</dt><dd><input type="checkbox" field="infinite"/></dd>
 					<dt>Mode</dt>
 					<dd>

@@ -3,7 +3,7 @@ package hrt.prefab.fx.gpuemitter;
 class BaseSimulation extends ComputeUtils {
 	static var SRC = {
 		@param var batchBuffer : RWPartialBuffer<{
-			modelView : Mat4, 
+			modelView : Mat4,
 		}>;
 		@param var particleBuffer : RWPartialBuffer<{
 			speed : Vec3,
@@ -12,7 +12,6 @@ class BaseSimulation extends ComputeUtils {
 			random : Float,
 		}>;
 
-		@const var INFINITE : Bool = false;
 		@const var FACE_CAM : Bool = false;
 		@const var CAMERA_BOUNDS : Bool = false;
 
@@ -20,6 +19,8 @@ class BaseSimulation extends ComputeUtils {
 		@param var cameraUp : Vec3;
 		@param var boundsPos : Vec3;
 		@param var boundsSize : Vec3;
+		@param var minSize : Float;
+		@param var maxSize : Float;
 
 		var dt : Float;
 		var speed : Vec3;
@@ -29,12 +30,14 @@ class BaseSimulation extends ComputeUtils {
 		var instanceID : Int;
 		var prevModelView : Mat4;
 		var prevSpeed : Vec3;
+		var relativeTransform : Mat4;
 		function __init__() {
 			dt = dtParam;
 			speed = particleBuffer[computeVar.globalInvocation.x].speed;
 			lifeTime = particleBuffer[computeVar.globalInvocation.x].lifeTime;
 			prevModelView = batchBuffer[computeVar.globalInvocation.x].modelView;
 			particleRandom = particleBuffer[computeVar.globalInvocation.x].random;
+			relativeTransform = scaleMatrix(vec3(particleRandom * (maxSize - minSize) + minSize));
 		}
 
 		function main() {
@@ -48,10 +51,9 @@ class BaseSimulation extends ComputeUtils {
 			var newPos = prevPos + speed * dt;
 			if ( CAMERA_BOUNDS )
 				newPos = ((newPos - boundsPos) % boundsSize) + boundsPos;
-			modelView = align * translationMatrix(newPos);
+			modelView = relativeTransform * align * translationMatrix(newPos);
 			var idx = computeVar.globalInvocation.x;
-			if ( !INFINITE )
-				particleBuffer[idx].lifeTime = lifeTime - dt;
+			particleBuffer[idx].lifeTime = lifeTime - dt;
 			particleBuffer[idx].speed = speed;
 			batchBuffer[idx].modelView = modelView;
 		}

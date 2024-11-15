@@ -13,16 +13,29 @@ class MeshSpawnShader extends ComputeUtils {
 		
 		vertexCount = hxd.Math.imin(128, originalBuffer.vertices);
 		vertexCount = originalBuffer.vertices;
+
 		var skip = Math.floor(originalBuffer.vertices / vertexCount);
 
 		var alloc = hxd.impl.Allocator.get();
-		vbuf = alloc.allocBuffer(vertexCount, hxd.BufferFormat.make([
-			{ name : "position", type : DVec3 },
-			{ name : "normal", type : DVec3 },
-		]), UniformReadWrite);
+		var fmt = if ( Std.isOfType(m, h3d.scene.Skin) ) {
+			hxd.BufferFormat.make([
+				{ name : "position", type : DVec3 },
+				{ name : "padding", type : DFloat },
+				{ name : "normal", type : DVec3 },
+				{ name : "padding2", type : DFloat },
+				{ name : "weights", type : DVec3 },
+				{ name : "indexes", type : DBytes4 },
+			]);
+		} else {
+			hxd.BufferFormat.make([
+				{ name : "position", type : DVec3 },
+				{ name : "normal", type : DVec3 },
+			]);
+		}
+		vbuf = alloc.allocBuffer(vertexCount, fmt, UniformReadWrite);
 
 		var floatBuffer = alloc.allocFloats(vertexCount * vbuf.format.stride);
-		var buffers = cast(mesh.primitive, h3d.prim.HMDModel).getDataBuffers(vbuf.format);
+		var buffers = cast(mesh.primitive, h3d.prim.HMDModel).getDataBuffers(vbuf.format, [for ( i in 0...5) new h3d.Vector4()]);
 		for ( i in 0...vertexCount ) {
 			for ( j in 0...vbuf.format.stride ) {
 				floatBuffer[i * vbuf.format.stride + j] = buffers.vertexes.get(i * skip * vbuf.format.stride + j);
@@ -38,27 +51,45 @@ class MeshSpawnShader extends ComputeUtils {
 		parentInvert.invert();
 		parentInvert.multiply3x4inline(mesh.getAbsPos(), parentInvert);
 		emitter.setTransform(parentInvert);
+
+		var skinShader = mesh.material.mainPass.getShader(h3d.shader.SkinBase);
+		bonesMatrixes = skinShader.bonesMatrixes;
+		MaxBones = skinShader.MaxBones;
 	}
 
 	static var SRC = {
+		@const var MaxBones : Int;
+
 		@param var vertexCount : Int;
-		@param var vbuf : RWPartialBuffer<{ position : Vec3,
+		@param var vbuf : RWPartialBuffer<{
+			position : Vec3,
+			padding : Float,
 			normal : Vec3,
-			// weights : Vec3,
-			// indexes : Bytes4
+			padding2 : Float,
+			weights : Vec3,
+			indexes : Bytes4
 		}>;
-		// @param var bonesMatrixes : Array<Mat3x4,MaxBones>;
-		@param var modelTransform : Mat4;
+		@param var bonesMatrixes : Array<Mat3x4,MaxBones>;
 
 		var emitNormal : Vec3;
 		var lifeTime : Float;
 		var relativeTransform : Mat4;
-		var relativePosition : Vec3;
 		function main() {
 			var idx = computeVar.globalInvocation.x;
 			var vertexId = idx % vertexCount;
-			emitNormal = vbuf[vertexId].normal;
-			relativePosition = vbuf[vertexId].position;
+			var vertexData = vbuf[vertexId];
+			emitNormal = vertexData.normal;
+			var relativePosition = vertexData.position;
+
+			relativePosition =
+				(relativePosition * bonesMatrixes[int(vertexData.indexes.x)]) * vertexData.weights.x +
+				(relativePosition * bonesMatrixes[int(vertexData.indexes.y)]) * vertexData.weights.y +
+				(relativePosition * bonesMatrixes[int(vertexData.indexes.z)]) * vertexData.weights.z;
+			// transformedNormal = 
+			// 	(vertexData.normal * mat3(bonesMatrixes[int(vertexData.indexes.x)])) * vertexData.weights.x +
+			// 	(vertexData.normal * mat3(bonesMatrixes[int(vertexData.indexes.y)])) * vertexData.weights.y +
+			// 	(vertexData.normal * mat3(bonesMatrixes[int(vertexData.indexes.z)])) * vertexData.weights.z;
+				
 			relativeTransform = translationMatrix(relativePosition);
 		}
 	}
