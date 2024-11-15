@@ -727,6 +727,11 @@ class Graph {
 		var inputs = node.getInputs();
 		var outputs = output.getOutputs();
 
+		if (edge.inputId >= inputs.length)
+			return false;
+		if (edge.outputId >= outputs.length)
+			return false;
+
 		var inputType = inputs[edge.inputId].type;
 		var outputType = outputs[edge.outputId].type;
 
