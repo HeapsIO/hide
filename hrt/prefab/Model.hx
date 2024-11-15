@@ -162,7 +162,11 @@ class Model extends Object3D {
 	override function getHideProps() : hide.prefab.HideProps {
 		return {
 			icon : "cube", name : "Model", fileSource : ["fbx","hmd"],
-			allowChildren : function(t) return Prefab.isOfType(t,Object3D) || Prefab.isOfType(t,Material) || Prefab.isOfType(t,Shader) || Prefab.isOfType(t, hrt.prefab.fx.AnimEvent),
+			allowChildren : function(t) return Prefab.isOfType(t,Object3D) || 
+				Prefab.isOfType(t,Material) ||
+				Prefab.isOfType(t,MaterialSelector) ||
+				Prefab.isOfType(t,Shader) ||
+				Prefab.isOfType(t, hrt.prefab.fx.AnimEvent),
 			onResourceRenamed : function(f) animation = f(animation),
 		};
 	}
