@@ -92,8 +92,7 @@ class Shader extends Prefab {
 	}
 
 	function removeShader( obj : h3d.scene.Object, material : h3d.mat.Material, shader : hxsl.Shader ) {
-		for ( p in material.getPasses() )
-			p.removeShader(shader);
+		material.mainPass.removeShader(shader);
 	}
 
 	function checkMaterial(mat: h3d.mat.Material) {
