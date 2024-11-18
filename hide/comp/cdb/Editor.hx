@@ -862,6 +862,7 @@ class Editor extends Component {
 		}
 
 		endChanges();
+		cursor.table.getRealSheet().sync();
 		for (t in modifiedTables)
 			t.refresh();
 	}
