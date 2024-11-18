@@ -137,7 +137,7 @@ class TileSelector extends Component {
 	}
 
 	function getDefaultZoomLevel() : Int {
-		var rect = modal.get(0).getBoundingClientRect();
+		var rect = tilePicker.get(0).getBoundingClientRect();
 		return Math.round(Math.log(hxd.Math.max(rect.width / imageWidth, rect.height / imageHeight))/Math.log(2));
 	}
 
