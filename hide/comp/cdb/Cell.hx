@@ -1087,6 +1087,13 @@ class Cell {
 			//var modal = new hide.comp.Modal(new Element(elementHtml));
 			//modal.modalClick = function(_) closeEdit();
 
+			var modalHtml = modal.element.get(0);
+
+			modalHtml.addEventListener("keydown", (e: js.html.KeyboardEvent) -> {
+				// Block all keyboard events from reaching the editor
+				e.stopPropagation();
+			});
+
 			inline function usesSquareBase(t : cdb.Types.TilePos) {
 				return t.size != 1
 					|| t.x / t.width != Math.floor(t.x / t.width)
