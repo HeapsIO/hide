@@ -74,7 +74,6 @@ class FXAnimation extends h3d.scene.Object {
 		trails = findAll((p) -> Std.downcast(p, hrt.prefab.l3d.Trails.TrailObj));
 		setParameters(def.parameters);
 
-		var effects : Array<hrt.prefab.rfx.RendererFX> = [];
 		for (p in def.flatten(hrt.prefab.rfx.RendererFX)) {
 			var rfx : hrt.prefab.rfx.RendererFX = cast p;
 			if (@:privateAccess rfx.instance == null)
@@ -165,9 +164,8 @@ class FXAnimation extends h3d.scene.Object {
 		var finishedPlaying = false;
 
 		if (firstSync) {
-			var scene = getScene();
-			if (scene != null && effects != null) {
-				var renderer = scene.renderer;
+			if (ctx.scene != null && effects != null) {
+				var renderer = ctx.scene.renderer;
 				for (rfx in effects) {
 					if (@:privateAccess rfx.instance == null)
 						continue;
@@ -515,6 +513,17 @@ class FXAnimation extends h3d.scene.Object {
 	override function onRemove() {
 		if ( onRemoveFun != null)
 			onRemoveFun();
+		if ( effects != null ) {
+			var scene = getScene();
+			if ( scene != null ) {
+				for (rfx in effects) {
+					if (@:privateAccess rfx.instance == null)
+						continue;
+					scene.renderer.effects.remove(@:privateAccess rfx.instance);
+				}
+			}
+		}
+
 		super.onRemove();
 	}
 }
