@@ -790,13 +790,6 @@ class Ide extends hide.tools.IdeData {
 		options = options ?? {};
 
 		function callback() {
-			var path = "";
-			if (options.workingDir != null && options.workingDir != "#MISSING") {
-				var pathArray = getPath(options.workingDir).split("/");
-				var c = isWindows ? "\\" : "/";
-				path = pathArray.join(c);
-			}
-
 			if (filePickerElement != null)
 				filePickerElement.remove();
 
@@ -812,6 +805,12 @@ class Ide extends hide.tools.IdeData {
 				args.push("nwdirectory");
 			if (options.multiple == true)
 				args.push('multiple="multiple"');
+			if (options.workingDir != null && options.workingDir != "#MISSING") {
+				var pathArray = getPath(options.workingDir).split("/");
+				var c = isWindows ? "\\" : "/";
+				var workingDirPath = pathArray.join(c);
+				args.push('nwworkingdir="$workingDirPath"');
+			}
 
 			var argsString = args.join(" ");
 
