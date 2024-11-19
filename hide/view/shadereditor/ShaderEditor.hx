@@ -1018,8 +1018,15 @@ class ShaderEditor extends hide.view.FileView implements GraphInterface.IGraphEd
 		];
 
 
+		var screenFXMenu: Array<hide.comp.ContextMenu.MenuItem> = [
+			{label: "Use Prev Target", click: () -> setPreviewScreenFXUsePrevTarget(!previewSettings.screenFXusePrevTarget), checked: previewSettings.screenFXusePrevTarget},
+			{isSeparator: true},
+		];
 
-		// for (blend in blends) getScreenFXBlend(blend)
+		for (blend in blends) {
+			screenFXMenu.push(getScreenFXBlend(blend));
+		}
+
 		menu.click((e) -> {
 			hide.comp.ContextMenu.createDropdown(menu.get(0), [
 				{label: "Reset Camera", click: resetPreviewCamera},
@@ -1036,10 +1043,7 @@ class ShaderEditor extends hide.view.FileView implements GraphInterface.IGraphEd
 					{label: "Backface Cull", click: () -> {previewSettings.backfaceCulling = !previewSettings.backfaceCulling; meshPreviewShader = null; savePreviewSettings();}, stayOpen: true, checked: previewSettings.backfaceCulling},
 					{label: "Unlit", click: () -> {previewSettings.unlit = !previewSettings.unlit; meshPreviewShader = null; savePreviewSettings();}, stayOpen: true, checked: previewSettings.unlit},
 				], enabled: meshPreviewPrefab == null},
-				{label: "Screen FX", enabled: meshPreviewPrefab == null && meshPreviewScreenFX.length > 0, menu: [
-					{label: "Use Prev Target", click: () -> setPreviewScreenFXUsePrevTarget(!previewSettings.screenFXusePrevTarget), checked: previewSettings.screenFXusePrevTarget},
-					{isSeparator: true},
-				]},
+				{label: "Screen FX", enabled: meshPreviewPrefab == null && meshPreviewScreenFX.length > 0, menu: screenFXMenu},
 				{label: "Render Settings", menu: [
 					{label: "Background Color", click: openBackgroundColorMenu},
 					{label: "Render Props", click: selectRenderProps},
