@@ -834,9 +834,11 @@ class Editor extends Component {
 
 			while( y >= y1 ) {
 				var line = cursor.table.lines[y];
-				sheet.deleteLine(line.index);
-				cursor.table.refreshCellValue();
-				modifiedTables.pushUnique(cursor.table);
+				if(!cursor.table.lines[y].element.hasClass("filtered")) {
+					sheet.deleteLine(line.index);
+					cursor.table.refreshCellValue();
+					modifiedTables.pushUnique(cursor.table);
+				}
 				y--;
 			}
 
@@ -846,6 +848,8 @@ class Editor extends Component {
 			// delete cells
 			for( y in y1...y2+1 ) {
 				var line = cursor.table.lines[y];
+				if (line.element.hasClass("filtered"))
+					continue;
 				for( x in x1...x2+1 ) {
 					var c = line.columns[x];
 					if( !line.cells[x].canEdit() )
