@@ -865,6 +865,7 @@ class Editor extends Component {
 		cursor.table.getRealSheet().sync();
 		for (t in modifiedTables)
 			t.refresh();
+		updateFilter();
 	}
 
 	public function changeObject( line : Line, column : cdb.Data.Column, value : Dynamic ) {
