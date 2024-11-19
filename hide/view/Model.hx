@@ -439,7 +439,7 @@ class Model extends FileView {
 
 		var mesh = Std.downcast(obj, h3d.scene.Mesh);
 		var vertexFormat = '';
-		if ( mesh != null ) {
+		if ( mesh != null && mesh.primitive.buffer != null ) {
 			for ( i in mesh.primitive.buffer.format.getInputs() )
 				vertexFormat += ' ' + i.name;
 			vertexFormat = '<dt>Vertex format</dt><dd>$vertexFormat</dd>';
