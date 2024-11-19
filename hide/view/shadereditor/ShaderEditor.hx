@@ -39,6 +39,7 @@ class PreviewShaderBase extends hxsl.Shader {
 
 		@global var global : {
 			var time : Float;
+			var screenShaderInput : Sampler2D;
 		};
 
 		@global var camera : {
@@ -130,6 +131,8 @@ class PreviewSettings {
 	public var unlit : Bool = false;
 	public var previewAlpha : Bool = false;
 
+
+	public var screenFXusePrevTarget : Bool = false;
 	public var screenFXBlend : h3d.mat.PbrMaterial.PbrBlend = Alpha;
 	public var width : Int = 300;
 	public var height : Int = 300;
@@ -992,7 +995,7 @@ class ShaderEditor extends hide.view.FileView implements GraphInterface.IGraphEd
 		menu.appendTo(group);
 
 		function getScreenFXBlend(blend: h3d.mat.PbrMaterial.PbrBlend) : hide.comp.ContextMenu.MenuItem {
-			return {label: cast blend, click: () -> {
+			return {label: "Blend " + cast blend, click: () -> {
 					previewSettings.screenFXBlend = blend;
 
 					for (fx in meshPreviewScreenFX) {
@@ -1014,6 +1017,9 @@ class ShaderEditor extends hide.view.FileView implements GraphInterface.IGraphEd
 			AlphaMultiply,
 		];
 
+
+
+		// for (blend in blends) getScreenFXBlend(blend)
 		menu.click((e) -> {
 			hide.comp.ContextMenu.createDropdown(menu.get(0), [
 				{label: "Reset Camera", click: resetPreviewCamera},
@@ -1030,8 +1036,9 @@ class ShaderEditor extends hide.view.FileView implements GraphInterface.IGraphEd
 					{label: "Backface Cull", click: () -> {previewSettings.backfaceCulling = !previewSettings.backfaceCulling; meshPreviewShader = null; savePreviewSettings();}, stayOpen: true, checked: previewSettings.backfaceCulling},
 					{label: "Unlit", click: () -> {previewSettings.unlit = !previewSettings.unlit; meshPreviewShader = null; savePreviewSettings();}, stayOpen: true, checked: previewSettings.unlit},
 				], enabled: meshPreviewPrefab == null},
-				{label: "Screen FX Blend", enabled: meshPreviewPrefab == null && meshPreviewScreenFX.length > 0, menu: [
-					for (blend in blends) getScreenFXBlend(blend)
+				{label: "Screen FX", enabled: meshPreviewPrefab == null && meshPreviewScreenFX.length > 0, menu: [
+					{label: "Use Prev Target", click: () -> setPreviewScreenFXUsePrevTarget(!previewSettings.screenFXusePrevTarget), checked: previewSettings.screenFXusePrevTarget},
+					{isSeparator: true},
 				]},
 				{label: "Render Settings", menu: [
 					{label: "Background Color", click: openBackgroundColorMenu},
@@ -1040,6 +1047,15 @@ class ShaderEditor extends hide.view.FileView implements GraphInterface.IGraphEd
 				]}
 			]);
 		});
+	}
+
+	public function setPreviewScreenFXUsePrevTarget(value: Bool) {
+		previewSettings.screenFXusePrevTarget = value;
+		for (fx in meshPreviewScreenFX) {
+			fx.usePrevTarget = value;
+		}
+
+		savePreviewSettings();
 	}
 
 	public function setPrefabAndRenderDelayed(prefab: String, renderProps: String) {
@@ -1246,6 +1262,7 @@ class ShaderEditor extends hide.view.FileView implements GraphInterface.IGraphEd
 		meshPreviewShader = null;
 
 		for (fx in meshPreviewScreenFX) {
+			fx.usePrevTarget = previewSettings.screenFXusePrevTarget;
 			fx.blend = previewSettings.screenFXBlend;
 		}
 		savePreviewSettings();
@@ -1449,6 +1466,8 @@ class ShaderEditor extends hide.view.FileView implements GraphInterface.IGraphEd
 			var t = engine.getCurrentTarget();
 			graphEditor.previewsScene.s2d.ctx.globals.set("global.pixelSize", new h3d.Vector(2 / (t == null ? engine.width : t.width), 2 / (t == null ? engine.height : t.height)));
 			graphEditor.previewsScene.s2d.ctx.globals.set("blackChannel", h3d.mat.Texture.fromColor(0));
+			graphEditor.previewsScene.s2d.ctx.globals.set("global.screenShaderInput", h3d.mat.Texture.fromColor(0xFF00FF));
+
 		}
 
 		@:privateAccess

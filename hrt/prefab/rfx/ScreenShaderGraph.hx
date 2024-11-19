@@ -8,11 +8,13 @@ private class GraphShader extends h3d.shader.ScreenShader {
 	static var SRC = {
 		@const var USE_PREV_TARGET : Bool = false;
 
-		@param var source : Sampler2D;
+		@global var global : {
+			var screenShaderInput : Sampler2D;
+		}
 
 		function fragment() {
 			if ( USE_PREV_TARGET )
-				pixelColor = source.get(calculatedUV);
+				pixelColor = global.screenShaderInput.get(calculatedUV);
 		}
 	}
 }
@@ -54,10 +56,11 @@ class ScreenShaderGraph extends RendererFX {
 			r.mark("ScreenShaderGraph");
 			if (shader != null) {
 				shaderPass.shader.USE_PREV_TARGET = usePrevTarget;
-				if ( usePrevTarget ) {
+				if ( usePrevTarget) {
 					var ctx = r.ctx;
 					var target = r.allocTarget("ppTarget", false);
-					shaderPass.shader.source = ctx.getGlobal("ldrMap");
+					r.ctx.setGlobal("global.screenShaderInput", ctx.getGlobal("ldrMap"));
+					// shaderPass.shader.source = ctx.getGlobal("ldrMap");
 
 					ctx.engine.pushTarget(target);
 					shaderPass.render();
@@ -77,7 +80,7 @@ class ScreenShaderGraph extends RendererFX {
 				if ( usePrevTarget ) {
 					var ctx = r.ctx;
 					var target = r.allocTarget("ppTarget", false, 1.0, RGBA16F);
-					shaderPass.shader.source = ctx.getGlobal("hdrMap");
+					r.ctx.setGlobal("global.screenShaderInput", ctx.getGlobal("ldrMap"));
 
 					ctx.engine.pushTarget(target);
 					shaderPass.render();

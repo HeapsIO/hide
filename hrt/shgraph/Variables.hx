@@ -43,6 +43,8 @@ enum abstract Global(Int) to Int {
 	var SGPixelAlpha;
 
 	var EmitterPosition;
+
+	var SourceTexture;
 }
 
 enum VariableKind {
@@ -96,6 +98,8 @@ class Variables {
 		g[CameraPosition] = {type: TVec(3, VFloat), name: "position", varkind: KVar(Local, Camera)};
 
 		g[EmitterPosition] = {type: TVec(3, VFloat), name: "emitterPosition", varkind: KVar(Local, null), __init__: AstTools.makeVec([0.0,0.0,0.0])};
+
+		g[SourceTexture] = {type: TSampler(T2D, false), name: "screenShaderInput", varkind: KVar(Global, Global)};
 
 		g;
 	};

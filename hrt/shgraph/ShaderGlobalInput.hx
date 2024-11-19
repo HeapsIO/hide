@@ -15,6 +15,7 @@ class ShaderGlobalInput extends ShaderNode {
 			{display: "Time", g: Time},
 			{display: "Pixel Size", g: PixelSize},
 			{display: "Camera Global Position", g: CameraPosition},
+			{display: "Screen shader source", g: SourceTexture},
 		];
 
 	public function new(idx: Null<Int>) {
@@ -32,11 +33,25 @@ class ShaderGlobalInput extends ShaderNode {
 	}
 
 	override function generate(ctx: NodeGenContext) {
-		var input = ctx.getGlobalInput(globalInputs[variableIdx].g);
+		var v = ctx.getGlobalInput(globalInputs[variableIdx].g);
 
-		ctx.setOutput(0, input);
-		ctx.addPreview(input);
+		ctx.setOutput(0, v);
+		if (v.t.match(TSampler(_,_))) {
+			var uv = ctx.getGlobalInput(CalculatedUV);
+			var sample = AstTools.makeGlobalCall(Texture, [v, uv], TVec(4, VFloat));
+			ctx.addPreview(sample);
+		}
+		else {
+			ctx.addPreview(v);
+		}
 	}
+
+	// override function generate(ctx: NodeGenContext) {
+	// 	var input = ctx.getGlobalInput(globalInputs[variableIdx].g);
+
+	// 	ctx.setOutput(0, input);
+	// 	ctx.addPreview(input);
+	// }
 
 	override public function getAliases(name: String, group: String, description: String) {
 		var aliases = super.getAliases(name, group, description);
