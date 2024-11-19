@@ -40,6 +40,8 @@ class Ide extends hide.tools.IdeData {
 	var scripts : Map<String,Array<Void->Void>> = new Map();
 	var hasReloaded = false;
 
+	var statusBar : hide.Element;
+
 	public var show3DIcons = true;
 	public var show3DIconsCategory : Map<hrt.impl.EditorTools.IconCategory, Bool> = new Map();
 
@@ -262,6 +264,8 @@ class Ide extends hide.tools.IdeData {
 		});
 
 		hrt.impl.EditorTools.setupIconCategories();
+
+		statusBar = new Element('<div id="statusBar"></div>').appendTo(body);
 	}
 
 	public function getViews<K,T:hide.ui.View<K>>( cl : Class<T> ) {
@@ -845,6 +849,14 @@ class Ide extends hide.tools.IdeData {
 		else {
 			callback();
 		}
+	}
+
+	/**
+		Adds an element to the ide status bar
+	**/
+	public function addStatusIcon(e: hide.Element) {
+		var wrapper = new hide.Element('<div class="statusbar-icon"></div>').appendTo(statusBar);
+		wrapper.append(e);
 	}
 
 	public function chooseFiles( exts : Array<String>, onSelect : Array<String> -> Void, allowNull=false ) {
