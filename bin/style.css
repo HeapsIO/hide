@@ -2396,14 +2396,25 @@ input[type=checkbox]:checked:after {
 .graph-view .heaps-scene svg foreignObject .container input:hover {
   outline-color: rgba(114, 180, 255, 0.5);
 }
-.graph-view .heaps-scene svg g.selected .outline {
-  stroke: #668fff;
-}
-.graph-view .heaps-scene svg g.error .outline {
-  stroke: #ff6666;
-}
 .graph-view .heaps-scene svg g.box {
   pointer-events: all;
+}
+.graph-view .heaps-scene svg g.box.comment {
+  pointer-events: none;
+}
+.graph-view .heaps-scene svg g.box.comment .head-box {
+  fill: rgba(80, 80, 80, 0.5);
+  pointer-events: all;
+}
+.graph-view .heaps-scene svg g.box.comment .resize {
+  pointer-events: all;
+}
+.graph-view .heaps-scene svg g.box.comment .outline {
+  stroke: rgba(80, 80, 80, 0.5);
+  stroke-width: 3;
+}
+.graph-view .heaps-scene svg g.box.selected .outline {
+  stroke: #668fff;
 }
 .graph-view .heaps-scene svg .outline {
   fill: none;
@@ -2418,13 +2429,6 @@ input[type=checkbox]:checked:after {
 .graph-view .heaps-scene svg .resize {
   fill: rgba(0, 0, 0, 0);
   stroke: none;
-}
-.graph-view .heaps-scene svg .comment .head-box {
-  fill: rgba(80, 80, 80, 0.5);
-}
-.graph-view .heaps-scene svg .comment .outline {
-  stroke: rgba(80, 80, 80, 0.5);
-  stroke-width: 3;
 }
 .graph-view .heaps-scene svg .comment-title {
   display: inline-block;

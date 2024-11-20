@@ -2722,19 +2722,33 @@ input[type=checkbox] {
 			}
 
 			g {
-				&.selected {
-					.outline {
-						stroke: #668fff;
-					}
-				}
-				&.error {
-					.outline {
-						stroke: #ff6666;
-					}
-				}
-
 				&.box {
 					pointer-events: all;
+
+					&.comment {
+						.head-box {
+							fill: rgba(80,80,80,0.5);
+							//stroke-width: 3;
+							pointer-events: all;
+						}
+
+						.resize {
+							pointer-events: all;
+						}
+
+						.outline {
+							stroke: rgba(80,80,80,0.5);
+							stroke-width: 3;
+						}
+
+						pointer-events: none;
+					}
+
+					&.selected {
+						.outline {
+							stroke: #668fff;
+						}
+					}
 				}
 			}
 
@@ -2754,18 +2768,6 @@ input[type=checkbox] {
 			.resize {
 				fill: rgba(0, 0, 0, 0.0);
 				stroke: none;
-			}
-
-			.comment {
-				.head-box {
-					fill: rgba(80,80,80,0.5);
-					//stroke-width: 3;
-				}
-
-				.outline {
-					stroke: rgba(80,80,80,0.5);
-					stroke-width: 3;
-				}
 			}
 
 			.comment-title {

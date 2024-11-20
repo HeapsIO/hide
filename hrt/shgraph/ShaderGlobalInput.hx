@@ -46,13 +46,6 @@ class ShaderGlobalInput extends ShaderNode {
 		}
 	}
 
-	// override function generate(ctx: NodeGenContext) {
-	// 	var input = ctx.getGlobalInput(globalInputs[variableIdx].g);
-
-	// 	ctx.setOutput(0, input);
-	// 	ctx.addPreview(input);
-	// }
-
 	override public function getAliases(name: String, group: String, description: String) {
 		var aliases = super.getAliases(name, group, description);
 		for (i => input in globalInputs) {
