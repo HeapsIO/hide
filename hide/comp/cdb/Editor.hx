@@ -322,21 +322,16 @@ class Editor extends Component {
 			if (searchExp) {
 				this.formulas.evaluateAll(this.currentSheet.realSheet);
 
-				if (@:privateAccess formulas.currentMap == null)
-					@:privateAccess formulas.currentMap = new Map();
-
 				for (idx => l in currentSheet.lines) {
-					// Register variables for the current line
 					@:privateAccess interp.resetVariables();
 					@:privateAccess interp.initOps();
+
 					interp.variables.set("Math", Math);
 
-					// Register variables of sheets cdb
-					var vars = @:privateAccess formulas.remap(l, this.currentSheet);
-					for (f in Reflect.fields(vars)) {
-						var v = Reflect.getProperty(vars, f);
-						interp.variables.set(f, v);
-					}
+					// Need deep copy here, not ideal but works
+					var cloned = haxe.Json.parse(haxe.Json.stringify(l));
+					for (f in Reflect.fields(cloned))
+						interp.variables.set(f, Reflect.getProperty(cloned, f));
 
 					function addFilter() {
 						var lineEl = lines.eq(idx);
