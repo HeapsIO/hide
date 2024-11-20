@@ -173,6 +173,7 @@ class GraphEditor extends hide.comp.Component {
 		previewsScene = new hide.comp.Scene(config, null, miniPreviews);
 		previewsScene.onReady = onMiniPreviewReady;
 		previewsScene.onUpdate = onMiniPreviewUpdate;
+		previewsScene.enableNewErrorSystem = true;
 
 		// rectangle Selection
 		var rawheaps = heapsScene.get(0);

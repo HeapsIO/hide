@@ -24,6 +24,8 @@ class Scene extends hide.comp.Component implements h3d.IDrawable {
 	public var visible(default, null) : Bool = true;
 	public var editor : hide.comp.SceneEditor;
 	public var autoDisposeOutOfDocument : Bool = true;
+
+	public var errorMessageBox : Element;
 	var unFocusedTime = 0.;
 
 	public static var cache : h3d.prim.ModelCache = new h3d.prim.ModelCache();
@@ -41,6 +43,11 @@ class Scene extends hide.comp.Component implements h3d.IDrawable {
 			e.preventDefault();
 			return false;
 		};
+
+		errorMessageBox = new Element('<div class="error-message"></div>');
+		errorMessageBox.appendTo(element);
+		clearErrorMessage();
+
 		untyped canvas.__scene = this;
 		haxe.Timer.delay(delayedInit,0); // wait canvas added to window
 	}
@@ -131,6 +138,23 @@ class Scene extends hide.comp.Component implements h3d.IDrawable {
 		return engine.height;
 	}
 
+
+	public var enableNewErrorSystem = false;
+	var errorMessageTimer : haxe.Timer;
+	var errorThisFrame: Bool = false;
+
+	function setErrorMessage(s: String) {
+		js.Browser.console.error(s);
+		errorMessageBox.html(s);
+		errorMessageBox.css("visibility", "visible");
+		errorThisFrame = true;
+	}
+
+	function clearErrorMessage() {
+		errorMessageBox.html("");
+		errorMessageBox.css("visibility", "collapse");
+	}
+
 	public function init( ?root : h3d.scene.Object ) {
 		var autoHide : Array<String> = config.get("scene.autoHide");
 		function initRec( obj : h3d.scene.Object ) {
@@ -162,31 +186,51 @@ class Scene extends hide.comp.Component implements h3d.IDrawable {
 	}
 
 	function sync() {
-		if( new Element(canvas).parents("html").length == 0) {
-			if (autoDisposeOutOfDocument) {
-				dispose();
+		errorThisFrame = false;
+		try {
+			if( new Element(canvas).parents("html").length == 0) {
+				if (autoDisposeOutOfDocument) {
+					dispose();
+				}
+				return;
 			}
-			return;
+			if( !visible || pendingCount > 0)
+				return;
+			var dt = hxd.Timer.tmod * speed / 60;
+			if( !Ide.inst.isFocused ) {
+				// refresh at 1FPS
+				unFocusedTime += dt;
+				if( unFocusedTime < 1 ) return;
+				unFocusedTime -= 1;
+				dt = 1;
+			} else
+				unFocusedTime = 0;
+			setCurrent();
+			sevents.checkEvents();
+			s2d.setElapsedTime(dt);
+			s3d.setElapsedTime(dt);
+			for( f in listeners )
+				f(dt);
+			onUpdate(dt);
+			engine.render(this);
 		}
-		if( !visible || pendingCount > 0)
-			return;
-		var dt = hxd.Timer.tmod * speed / 60;
-		if( !Ide.inst.isFocused ) {
-			// refresh at 1FPS
-			unFocusedTime += dt;
-			if( unFocusedTime < 1 ) return;
-			unFocusedTime -= 1;
-			dt = 1;
-		} else
-			unFocusedTime = 0;
-		setCurrent();
-		sevents.checkEvents();
-		s2d.setElapsedTime(dt);
-		s3d.setElapsedTime(dt);
-		for( f in listeners )
-			f(dt);
-		onUpdate(dt);
-		engine.render(this);
+		catch (e:haxe.Exception) {
+			var e = errorHandler(e);
+			if (e != null) {
+				throw e;
+			}
+		}
+
+		if (!errorThisFrame) {
+			clearErrorMessage();
+		}
+	}
+
+	public dynamic function errorHandler(e:haxe.Exception) : Null<haxe.Exception> {
+		if (!enableNewErrorSystem)
+			return e;
+		setErrorMessage(e.toString());
+		return null;
 	}
 
 	var loadQueue : Array<Void->Void> = [];

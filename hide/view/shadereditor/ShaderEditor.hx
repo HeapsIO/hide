@@ -937,6 +937,7 @@ class ShaderEditor extends hide.view.FileView implements GraphInterface.IGraphEd
 		meshPreviewScene = new hide.comp.Scene(config, null, sceneContainer);
 		meshPreviewScene.onReady = onMeshPreviewReady;
 		meshPreviewScene.onUpdate = onMeshPreviewUpdate;
+		meshPreviewScene.enableNewErrorSystem = true;
 
 		var resizeUp = new Element('<div class="resize-handle up">').appendTo(previewElem);
 		var resizeLeft = new Element('<div class="resize-handle left">').appendTo(previewElem);

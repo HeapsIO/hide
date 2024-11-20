@@ -60,11 +60,12 @@ class ScreenShaderGraph extends RendererFX {
 					var ctx = r.ctx;
 					var target = r.allocTarget("ppTarget", false);
 					r.ctx.setGlobal("global.screenShaderInput", ctx.getGlobal("ldrMap"));
-					// shaderPass.shader.source = ctx.getGlobal("ldrMap");
 
 					ctx.engine.pushTarget(target);
 					shaderPass.render();
 					ctx.engine.popTarget();
+
+					r.ctx.setGlobal("global.screenShaderInput", null);
 
 					ctx.setGlobal("ldrMap", target);
 					r.setTarget(target);
@@ -85,6 +86,8 @@ class ScreenShaderGraph extends RendererFX {
 					ctx.engine.pushTarget(target);
 					shaderPass.render();
 					ctx.engine.popTarget();
+
+					r.ctx.setGlobal("global.screenShaderInput", null);
 
 					r.copy(target, ctx.getGlobal("hdrMap"));
 				} else {

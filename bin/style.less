@@ -457,6 +457,23 @@ input[type=checkbox] {
 	width:100%;
 	height:100%;
 	position:relative;
+
+	> .error-message {
+		background-color: #ff5555;
+		box-shadow: 1px -1px 3px rgba(0,0,0,0.5);
+		color: black;
+		position: absolute;
+		z-index: 777;
+		bottom: 0px;
+		left: 0px;
+		right: 0px;
+		padding-top: 1em;
+		padding-bottom: 1em;
+		text-align: center;
+
+		font-weight: bold;
+		font-family: 'Inter';
+	}
 }
 
 .hide-scene {
