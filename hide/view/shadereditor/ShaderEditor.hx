@@ -376,8 +376,8 @@ class ShaderEditor extends hide.view.FileView implements GraphInterface.IGraphEd
 	override function onHide() {
 		super.onHide();
 		if (isLoaded) {
-			meshPreviewScene.dispose();
-			graphEditor.previewsScene.dispose();
+			meshPreviewScene?.dispose();
+			graphEditor.previewsScene?.dispose();
 			isLoaded = false;
 		}
 	}
@@ -1419,9 +1419,10 @@ class ShaderEditor extends hide.view.FileView implements GraphInterface.IGraphEd
 		if (newShader == null)
 			return;
 
+		var found = false;
+
 		@:privateAccess
 		for (m in mesh.getMaterials()) {
-			var found = false;
 
 			var curShaderList = m.mainPass.shaders;
 			while (curShaderList != null && curShaderList != m.mainPass.parentShaders) {
@@ -1454,8 +1455,10 @@ class ShaderEditor extends hide.view.FileView implements GraphInterface.IGraphEd
 
 				curShaderList = curShaderList.next;
 			}
+		}
 
-			if (!found) {
+		if (!found) {
+			for (m in mesh.getMaterials()) {
 				m.mainPass.addShader(newShader);
 			}
 		}
@@ -1476,7 +1479,7 @@ class ShaderEditor extends hide.view.FileView implements GraphInterface.IGraphEd
 		}
 
 		@:privateAccess
-		if (meshPreviewScene.s3d != null) {
+		if (meshPreviewScene != null && meshPreviewScene.s3d != null) {
 			meshPreviewScene.s3d.renderer.ctx.time = graphEditor.previewsScene.s3d.renderer.ctx.time;
 		}
 
