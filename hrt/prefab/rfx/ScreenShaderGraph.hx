@@ -81,7 +81,7 @@ class ScreenShaderGraph extends RendererFX {
 				if ( usePrevTarget ) {
 					var ctx = r.ctx;
 					var target = r.allocTarget("ppTarget", false, 1.0, RGBA16F);
-					r.ctx.setGlobal("global.screenShaderInput", ctx.getGlobal("ldrMap"));
+					r.ctx.setGlobal("global.screenShaderInput", ctx.getGlobal("hdrMap"));
 
 					ctx.engine.pushTarget(target);
 					shaderPass.render();
