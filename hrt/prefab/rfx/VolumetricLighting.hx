@@ -220,6 +220,7 @@ class VolumetricLighting extends RendererFX {
 	@:s public var color : Int = 0xFFFFFF;
 	@:s public var steps : Int = 10;
 	@:s public var blur : Float = 0.0;
+	@:s public var blurDepthThreshold : Float = 10.0;
 	@:s public var startDistance : Float = 0.0;
 	@:s public var endDistance : Float = 200.0;
 	@:s public var distanceOpacity : Float = 1.0;
@@ -326,7 +327,7 @@ class VolumetricLighting extends RendererFX {
 			blurPass.shader.isDepthDependant = true;
 			blurPass.shader.depthTexture = halfDepth;
 			blurPass.shader.inverseProj = inverseProj;
-			blurPass.shader.depthThreshold = 10;
+			blurPass.shader.depthThreshold = blurDepthThreshold;
 			blurPass.apply(r.ctx, tex);
 
 			var b : h3d.mat.BlendMode = switch ( blend ) {
@@ -355,10 +356,10 @@ class VolumetricLighting extends RendererFX {
 		if ( !AFTER_FX )
 			execute(r, step);
 	}
-	
+
 	override function end(r:h3d.scene.Renderer, step:h3d.impl.RendererFX.Step) {
 		if ( AFTER_FX )
-			execute(r, step); 
+			execute(r, step);
 	}
 
 	function makeNoiseTex() : h3d.mat.Texture {
@@ -441,6 +442,7 @@ class VolumetricLighting extends RendererFX {
 				<dl>
 					<dt><font color=#FF0000>Steps</font></dt><dd><input type="range" step="1" min="0" max="255" field="steps"/></dd>
 					<dt>Blur</dt><dd><input type="range" step="1" min="0" max="100" field="blur"/></dd>
+					<dt>Blur depth threshold</dt><dd><input type="range" field="blurDepthThreshold"/></dd>
 					<dt>Dithering intensity</dt><dd><input type="range" min="0" max="1" field="ditheringIntensity"/></dd>
 				</dl>
 			</div>
