@@ -321,8 +321,6 @@ class FXEditor extends hide.view.FileView {
 	var treePanel : hide.comp.ResizablePanel;
 	var animPanel : hide.comp.ResizablePanel;
 	var leftAnimPanel : hide.comp.ResizablePanel;
-	var light : h3d.scene.fwd.DirLight;
-	var lightDirection = new h3d.Vector( 1, 2, -4 );
 
 	var scene(get, null):  hide.comp.Scene;
 	function get_scene() return sceneEditor.scene;
@@ -577,13 +575,6 @@ class FXEditor extends hide.view.FileView {
 		setRenderPropsEditionVisibility(Ide.inst.currentConfig.get("sceneeditor.renderprops.edit", false));
 	}
 	public function onSceneReady() {
-		light = sceneEditor.scene.s3d.find(function(o) return Std.downcast(o, h3d.scene.fwd.DirLight));
-		if( light == null ) {
-			light = new h3d.scene.fwd.DirLight(scene.s3d);
-			light.enableSpecular = true;
-		} else
-			light = null;
-
 		var axis = new h3d.scene.Graphics(scene.s3d);
 		axis.z = 0.001;
 		axis.lineStyle(2,0xFF0000); axis.lineTo(1,0,0);
@@ -629,30 +620,6 @@ class FXEditor extends hide.view.FileView {
 
 		tools.makeToolbar(toolsDefs, config, keys);
 
-		function renderProps() {
-			properties.clear();
-			var renderer = scene.s3d.renderer;
-			var group = new Element('<div class="group" name="Renderer"></div>');
-			renderer.editProps().appendTo(group);
-			properties.add(group, renderer.props, function(_) {
-				renderer.refreshProps();
-				if( !properties.isTempChange ) renderProps();
-			});
-			var lprops = {
-				power : Math.sqrt(light.color.r),
-				enable: true
-			};
-			var group = new Element('<div class="group" name="Light">
-				<dl>
-				<dt>Power</dt><dd><input type="range" min="0" max="4" field="power"/></dd>
-				</dl>
-			</div>');
-			properties.add(group, lprops, function(_) {
-				var p = lprops.power * lprops.power;
-				light.color.set(p, p, p);
-			});
-		}
-		tools.addButton("gears", "Renderer Properties", renderProps);
 		tools.addToggle("refresh", "refresh", "Auto synchronize", function(b) {
 			autoSync = b;
 		});
@@ -1818,14 +1785,6 @@ class FXEditor extends hide.view.FileView {
 		}
 
 		var cam = scene.s3d.camera;
-		if( light != null ) {
-			var angle = Math.atan2(cam.target.y - cam.pos.y, cam.target.x - cam.pos.x);
-			light.setDirection(new h3d.Vector(
-				Math.cos(angle) * lightDirection.x - Math.sin(angle) * lightDirection.y,
-				Math.sin(angle) * lightDirection.x + Math.cos(angle) * lightDirection.y,
-				lightDirection.z
-			));
-		}
 		if( autoSync && (currentVersion != undo.currentID || lastSyncChange != properties.lastChange) ) {
 			save();
 			lastSyncChange = properties.lastChange;

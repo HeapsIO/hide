@@ -4373,10 +4373,11 @@ class SceneEditor {
 			if( newRenderProps == null )
 				newRenderProps = renderProps[0];
 
+			scene.s3d.renderer.props = scene.s3d.renderer.getDefaultProps();
+
 			if (newRenderProps != previousRenderProps) {
 				if (previousRenderProps != null)
 					removeInstance(previousRenderProps);
-				scene.s3d.renderer.props = scene.s3d.renderer.getDefaultProps();
 				lastRenderProps = newRenderProps;
 				if (lastRenderProps != null) {
 					if (renderPropsRoot != null) {
