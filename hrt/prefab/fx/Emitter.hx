@@ -1334,6 +1334,8 @@ class EmitterObject extends h3d.scene.Object {
 
 	public function setTime(time: Float) {
 		time = time * speedFactor + warmUpTime;
+		time = Math.max(0, time - delay * speedFactor);
+
 		if(hxd.Math.abs(time - curTime) < 1e-6) {  // Time imprecisions can occur during accumulation
 			updateAlignment();
 			for(i in 0...numInstances)
@@ -1350,7 +1352,6 @@ class EmitterObject extends h3d.scene.Object {
 		var abs = this.getAbsPos();
 		baseEmitterShader.emitPosition.set(abs.tx, abs.ty, abs.tz);
 
-		time = Math.max(0, time - delay * speedFactor);
 
 		var catchupTime = time - curTime;
 
@@ -1842,6 +1843,15 @@ class Emitter extends Object3D {
 
 		function onChange(?pname: String) {
 			ctx.onChange(this, pname);
+
+			if (pname == "warmUpTime") {
+				var props : Dynamic = cast props;
+				if (props.warmUpTime < 0) {
+					props.warmUpTime = 0;
+					hide.Ide.inst.quickError("Warm up time can no longer be negative. Use the Delay property instead");
+					refresh();
+				}
+			}
 
 			if(["emitShape",
 				"alignMode",
