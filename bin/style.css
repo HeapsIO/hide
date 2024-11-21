@@ -3794,3 +3794,14 @@ hide-popover hide-content {
   justify-content: center;
   font-size: 2em;
 }
+.points-inspector {
+  margin-top: 10px;
+}
+.points-inspector .buttons input {
+  width: 10px;
+}
+.points-inspector .container {
+  min-height: 10px;
+  padding: 5 0 5 0;
+  background: white;
+}
