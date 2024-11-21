@@ -434,6 +434,8 @@ input[type=checkbox]:checked:after {
   padding-top: 1em;
   padding-bottom: 1em;
   text-align: center;
+  max-height: 50%;
+  overflow-y: auto;
   font-weight: bold;
   font-family: 'Inter';
 }
