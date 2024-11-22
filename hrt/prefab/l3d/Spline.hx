@@ -15,37 +15,28 @@ enum SplineShape {
 }
 
 class SplinePoint {
-	public var m : h3d.Matrix; // Relative to the spline
+	public var pos : h3d.col.Point; // Relative to the spline
+	public var up : h3d.Vector; // Relative to the spline
 	public var tangentIn : h3d.Vector; // Relative to point
 	public var tangentOut : h3d.Vector; // Relative to point
 	public var length : Float = 0;
 	public var t : Float = 0;
 
-	public function new(?m : h3d.Matrix, ?tangentIn: h3d.Vector, ?tangentOut: h3d.Vector) {
-		if (m == null) {
-			this.m = new h3d.Matrix();
-			this.m.identity();
-		}
-		else {
-			this.m = m.clone();
-		}
-
+	public function new(?pos: h3d.col.Point, ?up: h3d.Vector, ?tangentIn: h3d.Vector, ?tangentOut: h3d.Vector) {
+		this.pos = (pos == null) ? new h3d.col.Point(0, 0, 0) : pos.clone();
+		this.up = (up == null) ? new h3d.col.Point(0, 0, 1) : up.clone();
 		this.tangentIn = (tangentIn == null) ? new h3d.Vector(-1, 0, 0) : tangentIn.clone();
 		this.tangentOut = (tangentOut == null) ? new h3d.Vector(1, 0, 0) : tangentOut.clone();
 	}
 
 	public function save() : Dynamic {
-		var pos = m.getPosition();
-		var rot = m.getEulerAngles();
-		var scale = m.getScale();
-
 		var obj = {
 			x: pos.x,
 			y: pos.y,
 			z: pos.z,
-			rotX: rot.x,
-			rotY: rot.y,
-			rotZ: rot.z,
+			upX: up.x,
+			upY: up.y,
+			upZ: up.z,
 			tIn: tangentIn,
 			tOut: tangentOut,
 			t: t,
@@ -56,13 +47,10 @@ class SplinePoint {
 	}
 
 	public function load(obj : Dynamic) {
-		m = new h3d.Matrix();
-		m.initRotation(obj.rotX, obj.rotY, obj.rotZ);
-		m.translate(obj.x, obj.y, obj.z);
-
+		pos = new h3d.col.Point(obj.x, obj.y, obj.z);
+		up = new h3d.col.Point(obj.upX, obj.upY, obj.upZ);
 		tangentIn = obj.tIn;
 		tangentOut = obj.tOut;
-
 		t = obj.t;
 		length = obj.length;
 	}
@@ -91,7 +79,7 @@ class Spline extends hrt.prefab.Object3D {
 	var tangentColor : Int = 0xFF000000;
 
 	// Spline edition
-	var handles : Map<h3d.scene.Graphics, { m : h3d.Matrix, type: HandleType }> = [];
+	var handles : Map<h3d.scene.Graphics, { pos : h3d.col.Point, type: HandleType }> = [];
 	var orphanHandles : Array<h3d.scene.Graphics> = [];
 
 	override function save() : Dynamic {
@@ -115,7 +103,7 @@ class Spline extends hrt.prefab.Object3D {
 			while (i >= 0) {
 				if (Reflect.field(children[i], "type") == OLD_CLASS_POINT) {
 					var sp = new SplinePoint();
-					sp.m.initTranslation(children[i].x, children[i].y, children[i].z);
+					sp.pos = new h3d.col.Point(children[i].x, children[i].y, children[i].z);
 
 					var m = new h3d.Matrix();
 					m.identity();
@@ -214,16 +202,16 @@ class Spline extends hrt.prefab.Object3D {
 
 		// End/Beginning of the curve, just return the point
 		if( s1 == s2 )
-			out.load(samples[s1].m.getPosition());
+			out.load(samples[s1].pos);
 
 		// Linear interpolation between the two samples
-		var segmentLength = samples[s1].m.getPosition().distance(samples[s2].m.getPosition());
+		var segmentLength = samples[s1].pos.distance(samples[s2].pos);
 		if (segmentLength == 0) {
-			out.load(samples[s1].m.getPosition());
+			out.load(samples[s1].pos);
 		}
 		else {
 			var t = (t - samples[s1].t) / (samples[s2].t - samples[s1].t);
-			out.lerp(samples[s1].m.getPosition(), samples[s2].m.getPosition(), t);
+			out.lerp(samples[s1].pos, samples[s2].pos, t);
 		}
 
 		return out;
@@ -239,8 +227,8 @@ class Spline extends hrt.prefab.Object3D {
 		for (i in 0...samples.length-1) {
 			var s1 = samples[i];
 			var s2 = samples[i+1];
-			var a = s1.m.getPosition();
-			var b = s2.m.getPosition();
+			var a = s1.pos;
+			var b = s2.pos;
 
 			var d = inline new h3d.col.Point();
 
@@ -295,20 +283,20 @@ class Spline extends hrt.prefab.Object3D {
 		this.updateInstance();
 	}
 
-	public function localToGlobal(point : h3d.Matrix) {
-		return point.multiplied(getAbsPos(true));
+	public function localToGlobal(point : h3d.col.Point) {
+		return point.transformed(getAbsPos(true));
 	}
 
-	public function globalToLocal(point : h3d.Matrix) {
-		return point.multiplied(getAbsPos(true).getInverse());
+	public function globalToLocal(point : h3d.col.Point) {
+		return point.transformed(getAbsPos(true).getInverse());
 	}
 
 	public function localToGlobalSplinePoint(sp : SplinePoint) {
 		if (sp == null)
 			return null;
 
-		var out = new SplinePoint(sp.m, sp.tangentIn, sp.tangentOut);
-		out.m = localToGlobal(out.m);
+		var out = new SplinePoint(sp.pos, sp.up, sp.tangentIn, sp.tangentOut);
+		out.pos = localToGlobal(out.pos);
 		return out;
 	}
 
@@ -366,10 +354,10 @@ class Spline extends hrt.prefab.Object3D {
 			}
 		}
 
-		function getGraphicsHandle(m: h3d.Matrix, type: HandleType) {
+		function getGraphicsHandle(pos: h3d.col.Point, type: HandleType) {
 			var g : h3d.scene.Graphics = null;
 			for (handle => obj in handles)
-				if (m == obj.m)
+				if (pos == obj.pos)
 					g = handle;
 
 			if (g == null) {
@@ -379,7 +367,7 @@ class Spline extends hrt.prefab.Object3D {
 				g.material.mainPass.setPassName("overlay");
 				g.material.mainPass.depth(false, LessEqual);
 				g.ignoreParentTransform = false;
-				handles.set(g, { m: m, type: type });
+				handles.set(g, { pos: pos, type: type });
 			}
 
 			g.clear();
@@ -397,9 +385,9 @@ class Spline extends hrt.prefab.Object3D {
 			return g;
 		}
 
-		var center = point.m.getPosition().clone();
+		var center = point.pos.clone();
 
-		var pointHandle = getGraphicsHandle(point.m, Point);
+		var pointHandle = getGraphicsHandle(point.pos, Point);
 		pointHandle.lineStyle(handlesThickness, pointColor);
 		pointHandle.moveTo(0, 0, 0);
 		pointHandle.lineTo(0, 0, 0.5);
@@ -426,38 +414,31 @@ class Spline extends hrt.prefab.Object3D {
 			i--;
 		}
 
-		pointHandle.setDirection( point.tangentOut.transformed3x3(point.m));
+		// pointHandle.setDirection( point.tangentOut.transformed3x3(point.m));
 		pointHandle.setPosition(center.x, center.y, center.z);
 
 		if (this.shape == SplineShape.Linear)
 			return;
 
-		function drawTangent(point : h3d.Matrix, tangent: h3d.Vector, graphics : h3d.scene.Graphics) {
-			var posPoint = point.getPosition();
-
-			var absTan = tangent.transformed(point);
-			var relTan = tangent;
-
+		function drawTangent(pos : h3d.col.Point, tangent: h3d.Vector, graphics : h3d.scene.Graphics) {
 			var g = getGraphics();
 			g.lineStyle(tangentThickness, tangentColor);
 			g.moveTo(0, 0, 0);
-			g.lineTo(relTan.x, relTan.y, relTan.z);
-			g.setPosition(posPoint.x, posPoint.y, posPoint.z);
+			g.lineTo(tangent.x, tangent.y, tangent.z);
+			g.setPosition(pos.x, pos.y, pos.z);
 
 			graphics.lineStyle(handlesThickness, pointColor);
 			drawCircle(new h3d.Vector(0,0,0), 0.2, graphics);
-			graphics.setPosition(absTan.x, absTan.y, absTan.z);
+
+			var abs = pos + tangent;
+			graphics.setPosition(abs.x, abs.y, abs.z);
 		}
 
-		var tIn = new h3d.Matrix();
-		tIn.initTranslation(point.tangentIn.x, point.tangentIn.y, point.tangentIn.z);
-		var tInGraphics = getGraphicsHandle(tIn, TangentIn(point));
-		drawTangent(point.m.clone(), point.tangentIn.clone(), tInGraphics);
+		var tInGraphics = getGraphicsHandle(point.tangentIn, TangentIn(point));
+		drawTangent(point.pos, point.tangentIn, tInGraphics);
 
-		var tOut = new h3d.Matrix();
-		tOut.initTranslation(point.tangentOut.x, point.tangentOut.y, point.tangentOut.z);
-		var tOutGraphics = getGraphicsHandle(tOut, TangentOut(point));
-		drawTangent(point.m.clone(), point.tangentOut.clone(), tOutGraphics);
+		var tOutGraphics = getGraphicsHandle(point.tangentOut, TangentOut(point));
+		drawTangent(point.pos, point.tangentOut, tOutGraphics);
 	}
 
 	public function clearHandles(onlyOrphans = false) {
@@ -501,7 +482,7 @@ class Spline extends hrt.prefab.Object3D {
 
 		if (shape == Linear) {
 			for (idx in 0...points.length - 1)
-				colliders.push(getOBCollider(points[idx].m.getPosition(), points[idx + 1].m.getPosition()));
+				colliders.push(getOBCollider(points[idx].pos, points[idx + 1].pos));
 		}
 		else {
 			var samplePerCollider = 4;
@@ -509,7 +490,7 @@ class Spline extends hrt.prefab.Object3D {
 			while (idx < samples.length) {
 				var p1 = samples[idx];
 				var p2 = idx + samplePerCollider < samples.length ? samples[idx + samplePerCollider] : samples[samples.length - 1];
-				colliders.push(getOBCollider(globalToLocal(p1.m).getPosition(), globalToLocal(p2.m).getPosition()));
+				colliders.push(getOBCollider(globalToLocal(p1.pos), globalToLocal(p2.pos)));
 				idx += samplePerCollider;
 			}
 		}
@@ -523,7 +504,7 @@ class Spline extends hrt.prefab.Object3D {
 		if( numPts <= 0 ) return;
 		if( points == null || points.length <= 1 ) return;
 
-		samples.push(localToGlobalSplinePoint(new SplinePoint(points[0].m, points[0].tangentIn, points[0].tangentOut)));
+		samples.push(localToGlobalSplinePoint(new SplinePoint(points[0].pos, points[0].up, points[0].tangentIn, points[0].tangentOut)));
 		var maxI = loop ? points.length : points.length - 1;
 		var curP = localToGlobalSplinePoint(points[0]);
 		var nextP = localToGlobalSplinePoint(points[1]);
@@ -532,9 +513,9 @@ class Spline extends hrt.prefab.Object3D {
 			for (i in 1...numPts-1) {
 				var t = stride * i;
 				var p = getPointBetween(t, curP, nextP);
-				if (p.distance(samples[samples.length - 1].m.getPosition()) >= 1./numPts) {
+				if (p.distance(samples[samples.length - 1].pos) >= 1./numPts) {
 					var newP = new SplinePoint();
-					newP.m.initTranslation(p.x, p.y, p.z);
+					newP.pos = p;
 					var tangent = getTangentBetween(t, curP, nextP);
 					newP.tangentIn = -1 * tangent;
 					newP.tangentOut = tangent;
@@ -543,7 +524,7 @@ class Spline extends hrt.prefab.Object3D {
 				t += stride;
 			}
 
-			samples.push(new SplinePoint(nextP.m, nextP.tangentIn, nextP.tangentOut));
+			samples.push(new SplinePoint(nextP.pos, nextP.up, nextP.tangentIn, nextP.tangentOut));
 
 			curP = localToGlobalSplinePoint(points[i]);
 			nextP = localToGlobalSplinePoint(points[(i + 1) % points.length]);
@@ -552,12 +533,12 @@ class Spline extends hrt.prefab.Object3D {
 		// Compute the average length of the spline
 		length = 0.0;
 		for( i in 0 ... samples.length - 1 )
-			length += samples[i].m.getPosition().distance(samples[i+1].m.getPosition());
+			length += samples[i].pos.distance(samples[i+1].pos);
 
 		var l = 0.0;
 		for( i in 0 ... samples.length - 1 ) {
 			samples[i].t = l/length;
-			l += samples[i].m.getPosition().distance(samples[i+1].m.getPosition());
+			l += samples[i].pos.distance(samples[i+1].pos);
 		}
 		samples[samples.length - 1].t = 1;
 	}
@@ -566,9 +547,9 @@ class Spline extends hrt.prefab.Object3D {
 	// -- Spline maths -- //
 	inline function getPointBetween( t : Float, p1 : SplinePoint, p2 : SplinePoint ) : h3d.col.Point {
 		return switch (shape) {
-			case Linear: getLinearBezierPoint( t, p1.m.getPosition(), p2.m.getPosition() );
-			case Quadratic: getQuadraticBezierPoint( t, p1.m.getPosition(), p1.tangentOut.transformed(p1.m), p2.m.getPosition() );
-			case Cubic: getCubicBezierPoint( t, p1.m.getPosition(), p1.tangentOut.transformed(p1.m), p2.tangentIn.transformed(p2.m), p2.m.getPosition() );
+			case Linear: getLinearBezierPoint( t, p1.pos, p2.pos );
+			case Quadratic: getQuadraticBezierPoint( t, p1.pos, p1.tangentOut + p1.pos, p2.pos );
+			case Cubic: getCubicBezierPoint( t, p1.pos, p1.tangentOut + p1.pos, p2.tangentIn + p2.pos, p2.pos );
 		}
 	}
 
@@ -589,9 +570,9 @@ class Spline extends hrt.prefab.Object3D {
 
 	inline function getTangentBetween( t : Float, p1 : SplinePoint, p2 : SplinePoint ) : h3d.col.Point {
 		return switch (shape) {
-			case Linear: getLinearBezierTangent( t, p1.m.getPosition(), p2.m.getPosition() );
-			case Quadratic: getQuadraticBezierTangent( t, p1.m.getPosition(), p1.tangentOut.clone().transformed(p1.m), p2.m.getPosition() );
-			case Cubic: getCubicBezierTangent( t, p1.m.getPosition(), p1.tangentOut.transformed(p1.m), p2.tangentIn.transformed(p2.m), p2.m.getPosition() );
+			case Linear: getLinearBezierTangent( t, p1.pos, p2.pos );
+			case Quadratic: getQuadraticBezierTangent( t, p1.pos, p1.tangentOut + p1.pos, p2.pos );
+			case Cubic: getCubicBezierTangent( t, p1.pos, p1.tangentOut + p1.pos, p2.tangentIn + p2.pos, p2.pos );
 		}
 	}
 
@@ -666,18 +647,18 @@ class Spline extends hrt.prefab.Object3D {
 		pointsEl.find("#add").first().click((e) -> {
 			var newP = new SplinePoint();
 			if (points.length > 0)
-				newP.m = points[points.length -1].m.clone();
+				newP.pos = points[points.length -1].pos;
 
-			newP.m.translate(1, 0, 0);
+			newP.pos += new h3d.col.Point(1, 0, 0);
 			this.addPoint(null, newP);
 		});
+
 		pointsEl.find("#remove").first().click((e) -> {
 			this.removePoint();
 		});
 
 		for (pIdx => p in this.points) {
-			var pos = points[pIdx].m.getPosition();
-			var rot = points[pIdx].m.getEulerAngles();
+			var pos = points[pIdx].pos;
 			var el = new hide.Element('<div class="point">
 				<div class="header">
 					<div class="icon ico ico-chevron-down"></div>
@@ -685,7 +666,6 @@ class Spline extends hrt.prefab.Object3D {
 				</div>
 				<div class="body">
 					<dt>Position</dt><dd><input class="pos-x" type="number" value="${pos.x}"/><input class="pos-y" type="number" value="${pos.y}"/><input type="number" class="pos-z" value="${pos.z}"/></dd>
-					<dt>Rotation</dt><dd><input type="number" value="${rot.x * 180.0 / hxd.Math.PI}"/><input type="number" value="${rot.y * 180.0 / hxd.Math.PI}"/><input type="number" value="${rot.z * 180.0 / hxd.Math.PI}"/></dd>
 				</div>
 			</div>').appendTo(pointsEl.find('.points-container'));
 
@@ -701,12 +681,12 @@ class Spline extends hrt.prefab.Object3D {
 			var py = el.find(".pos-y");
 			var pz = el.find(".pos-z");
 			function onPosChange(oldPos : h3d.Vector, newPos : h3d.Vector) {
-				points[pIdx].m.setPosition(newPos);
+				points[pIdx].pos.load(newPos);
 				this.updateInstance();
 				refreshHandles();
 				ctx.properties.undo.change(Custom(function(undo) {
 					var v = undo ? oldPos : newPos;
-					points[pIdx].m.setPosition(v);
+					points[pIdx].pos.load(v);
 					pos = v;
 					this.updateInstance();
 					refreshHandles();
