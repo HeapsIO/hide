@@ -2415,6 +2415,9 @@ input[type=checkbox]:checked:after {
   stroke: rgba(80, 80, 80, 0.5);
   stroke-width: 3;
 }
+.graph-view .heaps-scene svg g.box.comment foreignObject {
+  pointer-events: all;
+}
 .graph-view .heaps-scene svg g.box.selected .outline {
   stroke: #668fff;
 }
