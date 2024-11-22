@@ -46,9 +46,6 @@ class SplinePoint {
 			rotX: rot.x,
 			rotY: rot.y,
 			rotZ: rot.z,
-			scaleX: scale.x,
-			scaleY: scale.y,
-			scaleZ: scale.z,
 			tIn: tangentIn,
 			tOut: tangentOut,
 			t: t,
@@ -61,7 +58,6 @@ class SplinePoint {
 	public function load(obj : Dynamic) {
 		m = new h3d.Matrix();
 		m.initRotation(obj.rotX, obj.rotY, obj.rotZ);
-		m.scale(obj.scaleX, obj.scaleY, obj.scaleZ);
 		m.translate(obj.x, obj.y, obj.z);
 
 		tangentIn = obj.tIn;
@@ -233,7 +229,7 @@ class Spline extends hrt.prefab.Object3D {
 		return out;
 	}
 
-	inline public function getNearestPointOnSpline(p: h3d.col.Point) : Float {
+	inline public function getNearestPointProgressOnSpline(p: h3d.col.Point) : Float {
 		if (samples == null)
 			sample((this.shape == SplineShape.Linear) ? 1 : sampleResolution);
 
@@ -619,30 +615,53 @@ class Spline extends hrt.prefab.Object3D {
 	override function edit(ctx : hide.prefab.EditContext) {
 		super.edit(ctx);
 
+		function refreshHandles() {
+			clearHandles();
+			for (p in points)
+				drawHandle(p);
+		}
+
 		var props = new hide.Element('
 			<div class="group" name="Spline">
 				<dl>
 					<dt>Type</dt>
 					<dd>
-						<select id="type">
-							<option ${this.shape == SplineShape.Linear ? "selected" : ""} value="linear">Linear</option>
-							<option ${this.shape == SplineShape.Quadratic ? "selected" : ""} value="quadratic">Quadratic</option>
-							<option ${this.shape == SplineShape.Cubic ? "selected" : ""} value="cubic">Cubic</option>
+						<select id="shape">
+							<option ${this.shape == SplineShape.Linear ? "selected" : ""} value="0">Linear</option>
+							<option ${this.shape == SplineShape.Quadratic ? "selected" : ""} value="1">Quadratic</option>
+							<option ${this.shape == SplineShape.Cubic ? "selected" : ""} value="2">Cubic</option>
 						</select>
 					</dd>
 				</dl>
 			</div>
 		');
 
+		var selShape = props.find("#shape");
+		selShape.change((e) -> {
+			var oldV = this.shape;
+			var v = Std.parseInt(selShape.val());
+			var newV = haxe.EnumTools.createByIndex(SplineShape, v);
+			this.shape = newV;
+			this.updateInstance();
+			refreshHandles();
+			ctx.properties.undo.change(Custom(function(undo) {
+				this.shape = undo ? oldV : newV;
+				selShape.val(this.shape.getIndex());
+				this.updateInstance();
+				refreshHandles();
+			}));
+		});
+
+
 		var pointsEl = new hide.Element('
 		<div class="group points-inspector">
 			<div class="buttons">
-				<button type="button" id="add">Add</button>
-				<button type="button" id="remove">Remove</button>
+				<div class="icon ico ico-plus" id="add"></div>
+				<div class="icon ico ico-minus" id="remove"></div>
 			</div>
-			<div class="container">
+			<div class="points-container">
 			</div>
-		<div>').appendTo(props);
+		</div>').appendTo(props);
 
 		pointsEl.find("#add").first().click((e) -> {
 			var newP = new SplinePoint();
@@ -657,16 +676,70 @@ class Spline extends hrt.prefab.Object3D {
 		});
 
 		for (pIdx => p in this.points) {
-			new hide.Element('<p>Point [${pIdx}]</p>').appendTo(pointsEl.find('.container'));
+			var pos = points[pIdx].m.getPosition();
+			var rot = points[pIdx].m.getEulerAngles();
+			var el = new hide.Element('<div class="point">
+				<div class="header">
+					<div class="icon ico ico-chevron-down"></div>
+					<p>Point [${pIdx}]</p>
+				</div>
+				<div class="body">
+					<dt>Position</dt><dd><input class="pos-x" type="number" value="${pos.x}"/><input class="pos-y" type="number" value="${pos.y}"/><input type="number" class="pos-z" value="${pos.z}"/></dd>
+					<dt>Rotation</dt><dd><input type="number" value="${rot.x * 180.0 / hxd.Math.PI}"/><input type="number" value="${rot.y * 180.0 / hxd.Math.PI}"/><input type="number" value="${rot.z * 180.0 / hxd.Math.PI}"/></dd>
+				</div>
+			</div>').appendTo(pointsEl.find('.points-container'));
+
+			var foldBtn = el.find(".icon");
+			foldBtn.click((e) -> {
+				var folded = !el.hasClass('folded');
+				el.toggleClass("folded", folded);
+				foldBtn.toggleClass("ico-chevron-down", !folded);
+				foldBtn.toggleClass("ico-chevron-right", folded);
+			});
+
+			var px = el.find(".pos-x");
+			var py = el.find(".pos-y");
+			var pz = el.find(".pos-z");
+			function onPosChange(oldPos : h3d.Vector, newPos : h3d.Vector) {
+				points[pIdx].m.setPosition(newPos);
+				this.updateInstance();
+				refreshHandles();
+				ctx.properties.undo.change(Custom(function(undo) {
+					var v = undo ? oldPos : newPos;
+					points[pIdx].m.setPosition(v);
+					pos = v;
+					this.updateInstance();
+					refreshHandles();
+					px.val(v.x);
+					py.val(v.y);
+					pz.val(v.z);
+				}));
+			}
+
+			px.change((e) -> {
+				var newPos = pos.clone();
+				newPos.x = Std.parseFloat(px.val());
+				onPosChange(pos, newPos);
+				pos = newPos;
+			});
+
+			py.change((e) -> {
+				var newPos = pos.clone();
+				newPos.y = Std.parseFloat(py.val());
+				onPosChange(pos, newPos);
+				pos = newPos;
+			});
+
+			pz.change((e) -> {
+				var newPos = pos.clone();
+				newPos.z = Std.parseFloat(pz.val());
+				onPosChange(pos, newPos);
+				pos = newPos;
+			});
 		}
 
-		ctx.properties.add(props, this, function(pname) {
-			ctx.onChange(this, pname);
-		});
-
-		for (p in points) {
-			drawHandle(p);
-		}
+		ctx.properties.add(props, null, null);
+		refreshHandles();
 	}
 
 	override function getHideProps() : hide.prefab.HideProps {
