@@ -29,7 +29,9 @@ class MeshSpawnShader extends ComputeUtils {
 		} else {
 			hxd.BufferFormat.make([
 				{ name : "position", type : DVec3 },
+				{ name : "padding", type : DFloat },
 				{ name : "normal", type : DVec3 },
+				{ name : "padding2", type : DFloat },
 			]);
 		}
 		vbuf = alloc.allocBuffer(vertexCount, fmt, UniformReadWrite);
@@ -44,17 +46,22 @@ class MeshSpawnShader extends ComputeUtils {
 		vbuf.uploadFloats(floatBuffer, 0, vertexCount);
 	}
 
+	var tmpMat : h3d.Matrix = new h3d.Matrix();
 	override function onUpdate(emitter : GPUEmitter.GPUEmitterObject, buffer : h3d.Buffer, index : Int) {
 		super.onUpdate(emitter, buffer, index);
 		var parentInvert = new h3d.Matrix();
 		parentInvert.load(emitter.parent.getAbsPos());
 		parentInvert.invert();
-		parentInvert.multiply3x4inline(mesh.getAbsPos(), parentInvert);
+		tmpMat.load(mesh.getAbsPos());
+		if ( mesh.defaultTransform != null )
+			tmpMat.multiply3x4inline(mesh.getAbsPos(), mesh.defaultTransform.getInverse());
+		parentInvert.multiply3x4inline(tmpMat, parentInvert);
 		emitter.setTransform(parentInvert);
 
 		var skinShader = mesh.material.mainPass.getShader(h3d.shader.SkinBase);
 		bonesMatrixes = skinShader.bonesMatrixes;
 		MaxBones = skinShader.MaxBones;
+		defaultMatrix = mesh.getAbsPos();
 	}
 
 	static var SRC = {
@@ -70,7 +77,9 @@ class MeshSpawnShader extends ComputeUtils {
 			indexes : Bytes4
 		}>;
 		@param var bonesMatrixes : Array<Mat3x4,MaxBones>;
+		@param var defaultMatrix : Mat4;
 
+		var speed : Vec3;
 		var emitNormal : Vec3;
 		var lifeTime : Float;
 		var relativeTransform : Mat4;
@@ -78,19 +87,23 @@ class MeshSpawnShader extends ComputeUtils {
 			var idx = computeVar.globalInvocation.x;
 			var vertexId = idx % vertexCount;
 			var vertexData = vbuf[vertexId];
-			emitNormal = vertexData.normal;
+			speed = vec3(1.0);
 			var relativePosition = vertexData.position;
+			var relativeNormal = vertexData.normal;
+			
+			var weights = vertexData.weights;
+			weights = weights / (weights.x + weights.y + weights.z);
+			var transformedPosition = (relativePosition * bonesMatrixes[int(vertexData.indexes.x * 127.0)]) * weights.x +
+				(relativePosition * bonesMatrixes[int(vertexData.indexes.y * 127.0)]) * weights.y +
+				(relativePosition * bonesMatrixes[int(vertexData.indexes.z * 127.0)]) * weights.z;
 
-			relativePosition =
-				(relativePosition * bonesMatrixes[int(vertexData.indexes.x)]) * vertexData.weights.x +
-				(relativePosition * bonesMatrixes[int(vertexData.indexes.y)]) * vertexData.weights.y +
-				(relativePosition * bonesMatrixes[int(vertexData.indexes.z)]) * vertexData.weights.z;
-			// transformedNormal = 
-			// 	(vertexData.normal * mat3(bonesMatrixes[int(vertexData.indexes.x)])) * vertexData.weights.x +
-			// 	(vertexData.normal * mat3(bonesMatrixes[int(vertexData.indexes.y)])) * vertexData.weights.y +
-			// 	(vertexData.normal * mat3(bonesMatrixes[int(vertexData.indexes.z)])) * vertexData.weights.z;
-				
-			relativeTransform = translationMatrix(relativePosition);
+			var transformedNormal =
+				(vertexData.normal * mat3(bonesMatrixes[int(vertexData.indexes.x * 127.0)])) * vertexData.weights.x +
+				(vertexData.normal * mat3(bonesMatrixes[int(vertexData.indexes.y * 127.0)])) * vertexData.weights.y +
+				(vertexData.normal * mat3(bonesMatrixes[int(vertexData.indexes.z * 127.0)])) * vertexData.weights.z;
+			emitNormal = transformedNormal;
+			
+			relativeTransform = translationMatrix(transformedPosition);
 		}
 	}
 }

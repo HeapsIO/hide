@@ -104,10 +104,6 @@ class GPUEmitterObject extends h3d.scene.MeshBatch {
 
 		simulationPass = new h3d.mat.Pass("simulation");
 		simulationPass.addShader(new BaseSimulation());
-
-		begin();
-		for ( _ in 0...data.maxCount )
-			emitInstance();
 	}
 
 	override function flush(ctx : h3d.scene.RenderContext) {
@@ -197,6 +193,10 @@ class GPUEmitterObject extends h3d.scene.MeshBatch {
 			}
 			paramTexture.uploadPixels(pxls);
 		}
+
+		begin();
+		for ( _ in 0...this.data.maxCount )
+			emitInstance();
 	}
 
 	function createUpdateParamShader() {
@@ -332,7 +332,7 @@ class GPUEmitterObject extends h3d.scene.MeshBatch {
 					p.shader.batchBuffer = b;
 					p.shader.particleBuffer = particleBuffer.buffer;
 					p.shader.stride = b.format.stride;
-					p.shader.row = row;
+					p.shader.row = (row + 0.5) / shaderParams.length;
 					var pos = 0;
 					for ( i in b.format.getInputs() ) {
 						if ( i.name == p.param.def.name )
@@ -403,14 +403,6 @@ class GPUEmitter extends Object3D {
 
 	override function makeObject(parent3d : h3d.scene.Object) {
 		return new h3d.scene.Object(parent3d);
-	}
-
-	override function makeChild(c : hrt.prefab.Prefab) {
-		#if !editor
-		if ( Std.isOfType(c, hrt.prefab.Object3D) )
-			return;
-		#end
-		super.makeChild(c);
 	}
 
 	function updateEmitters() {
