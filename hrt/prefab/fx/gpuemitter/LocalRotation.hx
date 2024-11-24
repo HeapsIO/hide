@@ -7,13 +7,13 @@ class LocalRotationShader extends ComputeUtils {
 
 		var relativeTransform : Mat4;
 		var dt : Float;
-		var lifeTime : Float;
+		var life : Float;
 		var particleRandom : Float;
 		function main() {
 			var r = 2.0 * random3d(vec2(particleRandom)) - 1.0;
-			relativeTransform = rotateMatrixX(speedRotation * lifeTime * r.x) *
-				rotateMatrixY(speedRotation * lifeTime * r.y) *
-				rotateMatrixZ(speedRotation * lifeTime * r.z) *
+			relativeTransform = rotateMatrixX(speedRotation * life * r.x) *
+				rotateMatrixY(speedRotation * life * r.y) *
+				rotateMatrixZ(speedRotation * life * r.z) *
 				relativeTransform;
 		}
 	}

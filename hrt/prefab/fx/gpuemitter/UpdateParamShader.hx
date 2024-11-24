@@ -5,7 +5,7 @@ class UpdateParamShader extends hxsl.Shader {
 
 		@param var batchBuffer : RWBuffer<Float>;
 
-		@param var particleBuffer : RWPartialBuffer<{ lifeTime : Float, lifeRatio : Float }>;
+		@param var particleBuffer : RWPartialBuffer<{ life : Float, lifeTime : Float }>;
 
 		@param var paramTexture : Sampler2D;
 		@param var stride : Int;
@@ -15,7 +15,7 @@ class UpdateParamShader extends hxsl.Shader {
 
 		function main() {
 			var idx = computeVar.globalInvocation.x;
-			batchBuffer[idx * stride + pos] = paramTexture.get(vec2(1.0 - particleBuffer[idx].lifeTime * particleBuffer[idx].lifeRatio, row)).x;
+			batchBuffer[idx * stride + pos] = paramTexture.get(vec2(1.0 - particleBuffer[idx].life / particleBuffer[idx].lifeTime, row)).x;
 		}
 	}
 }

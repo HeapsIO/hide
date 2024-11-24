@@ -116,8 +116,8 @@ class GPUEmitterObject extends h3d.scene.MeshBatch {
 		var p = dataPasses;
 		var particleBufferFormat = hxd.BufferFormat.make([
 			{ name : "speed", type : DVec3 },
+			{ name : "life", type : DFloat },
 			{ name : "lifeTime", type : DFloat },
-			{ name : "lifeRatio", type : DFloat },
 			{ name : "random", type : DFloat },
 			{ name : "padding", type : DVec2 },
 		]);
@@ -130,9 +130,9 @@ class GPUEmitterObject extends h3d.scene.MeshBatch {
 					// floats[i * stride] = 0.0;
 					// floats[i * stride + 1] = 0.0;
 					// floats[i * stride + 2] = 0.0;
-					floats[i * stride + 3] = -1000.0; // lifeTime warmup
+					floats[i * stride + 3] = -1000.0; // life warmup
 					var l = hxd.Math.random() * (data.maxLifeTime - data.minLifeTime) + data.minLifeTime;
-					floats[i * stride + 4] = 1.0 / l; // lifeRatio
+					floats[i * stride + 4] = l; // lifeTime
 					floats[i * stride + 5] = hxd.Math.random(); // random
 					// padding
 					// floats[i * stride + 6] = 0.0;
