@@ -81,7 +81,6 @@ class MeshSpawnShader extends ComputeUtils {
 
 		var speed : Vec3;
 		var emitNormal : Vec3;
-		var lifeTime : Float;
 		var relativeTransform : Mat4;
 		function main() {
 			var idx = computeVar.globalInvocation.x;

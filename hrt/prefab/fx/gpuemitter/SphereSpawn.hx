@@ -12,7 +12,6 @@ class SphereSpawnShader extends ComputeUtils {
 		@param var randOffset : Int;
 
 		var emitNormal : Vec3;
-		var lifeTime : Float;
 		var relativeTransform : Mat4;
 		function main() {
 			var rnd = random3d(vec2(global.time, computeVar.globalInvocation.x + randOffset));
