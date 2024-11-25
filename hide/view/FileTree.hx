@@ -75,7 +75,7 @@ class FileTree extends FileView {
 		if( state.path == null ) return;
 
 		var panel = new Element("<div class='hide-scroll'>").appendTo(element);
-		tree = new hide.comp.IconTree(null,panel);
+		tree = new hide.comp.IconTree(panel,null);
 		tree.async = true;
 		tree.allowRename = true;
 		tree.saveDisplayKey = saveDisplayKey;

@@ -135,10 +135,8 @@ body {
 			background: #ff5555;
 			color : #191A21;
 			float: left;
-			font-family : Verdana, serif;
 			margin-left: 5px;
 			border: none;
-			font-family : Verdana, serif;
 			font-size : 9pt;
 		}
 
@@ -154,7 +152,7 @@ body {
 		}
 
 		p {
-			font-family : Verdana, serif;
+			font-family : Inter, serif;
 			margin: 0px;
 			padding-top: 5px;
 			padding-left: 5px;
@@ -178,7 +176,7 @@ ul, li {
 }
 
 body, td, th, li, p, a, input, select, textarea {
-	font-family : Verdana, serif;
+	font-family : Inter, serif;
 	font-size : 9pt;
 	color: #aaa;
 }
@@ -432,14 +430,22 @@ input[type=checkbox] {
 ::-webkit-scrollbar {
 	width: 5px;
 	height: 5px;
+	right: 5px;
 }
 
 ::-webkit-scrollbar-track {
 	background: #666;
+	border-radius: 20px;
+	margin: 5px;
 }
 
 ::-webkit-scrollbar-thumb {
 	background: #ddd;
+	border-radius: 100cqw;
+}
+
+::-webkit-scrollbar-corner {
+	visibility: hidden;
 }
 
 .checkbox-wrapper {
@@ -623,9 +629,11 @@ input[type=checkbox] {
 	max-width: 1000px;
 	overflow-y: auto;
 	min-height : 350px;
+	box-sizing: border-box;
+	margin-bottom: 1px;
+	border-radius: 3px;
 
 	.jstree {
-		min-width: 300px;
 		overflow-x: hidden;
 	}
 
@@ -824,7 +832,7 @@ input[type=checkbox] {
 		}
 
 		.label {
-			font-family : Verdana, serif;
+			font-family : Inter, serif;
 			display: inline-block;
 			margin-left: 6px;
 			margin-right: 6px;
@@ -2145,9 +2153,9 @@ input[type=checkbox] {
 	display: flex;
 	flex-direction: row;
 
-	* {
+	/** {
 		font-family: "Inter";
-	}
+	}*/
 
 	#preview {
 		z-index: 3;
@@ -2451,7 +2459,7 @@ input[type=checkbox] {
 					text-transform: uppercase;
 					font-weight: bold;
 					margin-left: 7px;
-					font-family: Verdana, serif;
+					font-family: Inter, serif;
 					font-size: 9pt;
 					color: #aaa;
 				}
@@ -2463,7 +2471,7 @@ input[type=checkbox] {
 
 				.title {
 					font-weight: bold;
-					font-family: Verdana, serif;
+					font-family: Inter, serif;
 					font-size: 9pt;
 					color: #aaa;
 					margin: 0 0 5px 0;
@@ -4263,7 +4271,7 @@ hide-popover {
 
 	border: solid 1px #444444;
 	color: #aaaaaa;
-	font-family: system-ui, Verdana, Geneva, Tahoma, sans-serif;
+	font-family: Inter, sans-serif;
 	font-size: 12px;
 
 	&:focus {
@@ -4294,7 +4302,7 @@ hide-popover {
 
 		input {
 			color: #aaaaaa;
-			font-family: Verdana, Geneva, Tahoma, sans-serif;
+			font-family: Inter, Geneva, Tahoma, sans-serif;
 			width: 100%;
 			box-sizing: border-box;
 
