@@ -501,9 +501,11 @@ class FXEditor extends hide.view.FileView {
 		});
 
 		refreshLayout();
-		element.resize(function(e) {
+
+		var resizeObserver = new hide.comp.ResizeObserver((_, _) -> {
 			rebuildAnimPanel();
 		});
+		resizeObserver.observe(fxPanel.get(0));
 		element.find(".collapse-btn").click(function(e) {
 			sceneEditor.collapseTree();
 		});

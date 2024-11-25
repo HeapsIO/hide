@@ -40,7 +40,10 @@ class Ide extends hide.tools.IdeData {
 	var scripts : Map<String,Array<Void->Void>> = new Map();
 	var hasReloaded = false;
 
+	var hideRoot : hide.Element;
 	var statusBar : hide.Element;
+	var goldenContainer : hide.Element;
+	var statusIcons : hide.Element;
 
 	public var show3DIcons = true;
 	public var show3DIconsCategory : Map<hrt.impl.EditorTools.IconCategory, Bool> = new Map();
@@ -265,7 +268,21 @@ class Ide extends hide.tools.IdeData {
 
 		hrt.impl.EditorTools.setupIconCategories();
 
-		statusBar = new Element('<div id="statusBar"></div>').appendTo(body);
+		if (hideRoot != null) {
+			hideRoot.remove();
+			hideRoot = null;
+		}
+		hideRoot = new Element('<div class="hide-root"></div>').appendTo(new Element("body"));
+
+		goldenContainer = new Element('<div class="golden-layout-root"></div>').appendTo(hideRoot);
+
+		statusBar = new Element('<div class="status-bar"></div>').appendTo(hideRoot);
+		statusIcons = new Element('<div id="status-icons"></div>').appendTo(statusBar);
+
+		var commitHash = getGitCommitHashAndDate();
+		if (commitHash.length > 0) {
+			new Element('<span class="build">hide $commitHash</span>').appendTo(statusBar);
+		}
 	}
 
 	public function getViews<K,T:hide.ui.View<K>>( cl : Class<T> ) {
@@ -375,7 +392,22 @@ class Ide extends hide.tools.IdeData {
 		}
 		for( i in config.content ) checkRec(i);
 
-		layout = new golden.Layout(config);
+		layout = new golden.Layout(config, goldenContainer.get(0));
+		var resizeTimer : haxe.Timer = null;
+		var observer = new hide.comp.ResizeObserver((elts, observer) -> {
+			if (resizeTimer != null) {
+				resizeTimer.stop();
+			}
+
+			resizeTimer = new haxe.Timer(20);
+			resizeTimer.run = () -> {
+				var rect = goldenContainer.get(0).getBoundingClientRect();
+				layout.updateSize(Std.int(rect.width), Std.int(rect.height));
+				resizeTimer.stop();
+				resizeTimer = null;
+			};
+			});
+		observer.observe(goldenContainer.get(0));
 
 		var initViews = [];
 		function initView(view:hide.ui.View<Dynamic>) {
@@ -568,15 +600,13 @@ class Ide extends hide.tools.IdeData {
 		if (!showErrors) {
 			if (errorWindow == null) {
 				errorWindow = new Element('
-				<div class="error-panel">
-					<div class="error-banner">
-						<button class="show-errors"><i class="icon ico ico-warning"></i>Show errors</button>
+					<span class="error-suppressed">
 						<button class="reload"><i class="icon ico ico-refresh"></i>Reload</button>
-						Warning : errors are currently suppressed in the editor. Your editor might be in an unstable state, please save and reload.
-					</div>
-					<div class="error-log hidden">
-					</div>
-				</div>');
+						Errors are currently suppressed in the editor. Please save your work and reload.
+					</span>
+				');
+
+				addStatusIcon(errorWindow);
 
 				var errorLog = errorWindow.find(".error-log");
 
@@ -592,8 +622,6 @@ class Ide extends hide.tools.IdeData {
 					else
 						errorLog.addClass("hidden");
 				});
-
-				errorWindow.appendTo(window.window.document.body);
 			}
 
 			errorWindow.find(".error-log").append(new Element('<p>${e}</p>'));
@@ -855,7 +883,7 @@ class Ide extends hide.tools.IdeData {
 		Adds an element to the ide status bar
 	**/
 	public function addStatusIcon(e: hide.Element) {
-		var wrapper = new hide.Element('<div class="statusbar-icon"></div>').appendTo(statusBar);
+		var wrapper = new hide.Element('<div class="statusbar-icon"></div>').appendTo(statusIcons);
 		wrapper.append(e);
 	}
 
@@ -1588,6 +1616,30 @@ class Ide extends hide.tools.IdeData {
 	static function main() {
 		h3d.impl.RenderContext.STRICT = false; // prevent errors with bad renderer
 		new Ide();
+	}
+
+
+	public static function getGitCommitHashAndDate():String {
+
+		// Check if there is changes in git. If thats the case, we are certainly on a dev machine
+		var out = "";
+		try {
+			out = js.node.ChildProcess.execSync('git status --porcelain=v1');
+		} catch (_) {
+			return "";
+		}
+
+		if (out.length > 0) {
+			return "dev";
+		}
+
+		try {
+			out = js.node.ChildProcess.execSync('git log --pretty=format:"%h(%cs)" -n 1');
+		} catch (_) {
+			return "";
+		}
+
+		return out;
 	}
 
 }

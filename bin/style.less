@@ -1058,6 +1058,7 @@ input[type=checkbox] {
 	}
 	.tab {
 		max-height: 100%;
+		width: 100%;
 		display: flex;
 		flex-direction: column;
 		position: absolute;
@@ -4421,25 +4422,85 @@ hide-popover {
     mix-blend-mode: difference;
 }
 
-#statusBar {
-	position: fixed;
-	bottom: 16px;
-	right: 16px;
 
-	z-index: 999;
 
+.hide-root {
 	display: flex;
+	flex-direction: column;
+	justify-content: stretch;
 
-	align-items: center;
+	box-sizing: border-box;
 
-	> .statusbar-icon {
-		height: 24px;
-		width: 24px;
+	height: 100vh;
+	width: 100vw;
+
+	> .golden-layout-root {
+		flex-grow: 1;
+		background-color: #000000;
+		min-height: 0;
+		min-width: 0;
+
+		overflow: clip;
+	}
+
+	> .status-bar {
+
+		padding-left: 4px;
+		padding-right: 4px;
+
+		height: 16px;
+		background-color: #202020;
+		border-top: 1px solid #333;
+		flex-shrink: 0;
 
 		display: flex;
-		align-items: center;
-		justify-content: center;
 
-		font-size: 2em;
+		font-family: 'Inter';
+
+
+		.build {
+			margin-left: auto;
+		}
+
+		#status-icons {
+			display: flex;
+			align-items: center;
+
+			gap: 4px;
+
+			> .icon {
+				height: 14px;
+				width: 14px;
+				display: flex;
+				align-items: center;
+				justify-content: center;
+				font-size: 1em;
+			}
+
+			button {
+				height: 14px;
+				font-size: 0.8em;
+				padding: 2px;
+				margin: 0px;
+				border: none;
+				outline: none;
+				border-radius: 2px;
+
+				background-color: #efefef;
+				&:hover {
+					background-color: #ddd;
+				}
+			}
+
+			.error-suppressed {
+				padding-left: 4px;
+				padding-right: 4px;
+				background-color: hsl(359deg, 68%, 71%);
+				color: black;
+				border-radius: 3px;
+			}
+		}
+
+
 	}
 }

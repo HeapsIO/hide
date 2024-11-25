@@ -980,6 +980,7 @@ input[type=checkbox]:checked:after {
 }
 .hide-tabs .tab {
   max-height: 100%;
+  width: 100%;
   display: flex;
   flex-direction: column;
   position: absolute;
@@ -3783,19 +3784,64 @@ hide-popover hide-content {
   color: white;
   mix-blend-mode: difference;
 }
-#statusBar {
-  position: fixed;
-  bottom: 16px;
-  right: 16px;
-  z-index: 999;
+.hide-root {
+  display: flex;
+  flex-direction: column;
+  justify-content: stretch;
+  box-sizing: border-box;
+  height: 100vh;
+  width: 100vw;
+}
+.hide-root > .golden-layout-root {
+  flex-grow: 1;
+  background-color: #000000;
+  min-height: 0;
+  min-width: 0;
+  overflow: clip;
+}
+.hide-root > .status-bar {
+  padding-left: 4px;
+  padding-right: 4px;
+  height: 16px;
+  background-color: #202020;
+  border-top: 1px solid #333;
+  flex-shrink: 0;
+  display: flex;
+  font-family: 'Inter';
+}
+.hide-root > .status-bar .build {
+  margin-left: auto;
+}
+.hide-root > .status-bar #status-icons {
   display: flex;
   align-items: center;
+  gap: 4px;
 }
-#statusBar > .statusbar-icon {
-  height: 24px;
-  width: 24px;
+.hide-root > .status-bar #status-icons > .icon {
+  height: 14px;
+  width: 14px;
   display: flex;
   align-items: center;
   justify-content: center;
-  font-size: 2em;
+  font-size: 1em;
+}
+.hide-root > .status-bar #status-icons button {
+  height: 14px;
+  font-size: 0.8em;
+  padding: 2px;
+  margin: 0px;
+  border: none;
+  outline: none;
+  border-radius: 2px;
+  background-color: #efefef;
+}
+.hide-root > .status-bar #status-icons button:hover {
+  background-color: #ddd;
+}
+.hide-root > .status-bar #status-icons .error-suppressed {
+  padding-left: 4px;
+  padding-right: 4px;
+  background-color: hsl(359, 68%, 71%);
+  color: black;
+  border-radius: 3px;
 }
