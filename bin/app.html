@@ -126,6 +126,8 @@
   var fs = require('fs');
   var timer = 0;
   var reloadWatcher=fs.watch(path, function(_,file) {
+	if (file == null)
+		return;
 	var ext = file.split(".").pop().toLowerCase();
 	if( ext != "js" && ext != "css" ) return;
 	if (timer != 0)
