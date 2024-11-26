@@ -11,6 +11,8 @@ class TriplanarParams extends ShaderNodeHxsl {
 
 	static var SRC = {
 		@sginput(2.0) var sharpness : Float;
+		@sginput(1.0) var tiling : Vec3;
+		@sginput(0.0) var offset : Vec3;
 		@sgconst var LOCAL : Int = 0;
 		@sgoutput var weight : Vec3;
 		@sgoutput var uvX : Vec2;
@@ -28,15 +30,17 @@ class TriplanarParams extends ShaderNodeHxsl {
 			if ( LOCAL == 0 ) {
 				weight = pow(abs(transformedNormal), vec3(sharpness));
 				weight = weight / (weight.x + weight.y + weight.z);
-				uvX = transformedPosition.zy;
-				uvY = transformedPosition.xz;
-				uvZ = transformedPosition.xy;
+				var tiledAndOffsetPos = transformedPosition.xyz * tiling + offset;
+				uvX = tiledAndOffsetPos.zy;
+				uvY = tiledAndOffsetPos.xz;
+				uvZ = tiledAndOffsetPos.xy;
 			} else {
 				weight = pow(abs(input.normal), vec3(sharpness));
 				weight = weight / (weight.x + weight.y + weight.z);
-				uvX = relativePosition.zy;
-				uvY = relativePosition.xz;
-				uvZ = relativePosition.xy;
+				var tiledAndOffsetPos = relativePosition.xyz * tiling + offset;
+				uvX = tiledAndOffsetPos.zy;
+				uvY = tiledAndOffsetPos.xz;
+				uvZ = tiledAndOffsetPos.xy;
 			}
 		}
 	};
