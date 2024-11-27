@@ -9,6 +9,8 @@ implements hide.view.GraphInterface.IGraphNode
     public var x : Float;
     public var y : Float;
 
+
+
     #if editor
 
     public var editor : hide.view.GraphEditor;

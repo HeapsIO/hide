@@ -4092,3 +4092,87 @@ hide-popover hide-content {
 .spline-editor .btn {
   margin-top: 5px;
 }
+:root {
+  --hover-highlight: rgba(114, 180, 255, 0.5);
+  --basic-shadow: 2px 2px 3px rgba(0, 0, 0, 0.75);
+  --basic-border: 1px solid #353535;
+  --basic-border-radius: 5px;
+  --bg-0: #000;
+  --bg-1: #111;
+  --bg-2: #222;
+}
+/** GenericGraphEditor**/
+graph-editor-root {
+  width: 100%;
+  height: 100%;
+  box-sizing: border-box;
+  display: flex;
+  justify-items: stretch;
+  align-items: stretch;
+}
+graph-editor-root graph-container {
+  display: flex;
+  flex: 1 1;
+  background-color: green;
+  position: relative;
+}
+graph-editor-root graph-container preview-container {
+  z-index: 1;
+  position: absolute;
+  min-width: 150px;
+  min-height: 150px;
+  right: 16px;
+  bottom: 16px;
+  height: 300px;
+  width: 300px;
+  border: var(--basic-border);
+  overflow: hidden;
+  border-radius: var(--basic-border-radius);
+  box-shadow: var(--basic-shadow);
+}
+graph-editor-root graph-container preview-container .resize-handle {
+  --size: 5px;
+  position: absolute;
+  background-color: transparent;
+}
+graph-editor-root graph-container preview-container .resize-handle:hover {
+  background-color: var(--hover-highlight);
+}
+graph-editor-root graph-container preview-container .resize-handle.up {
+  left: 0px;
+  right: 0px;
+  top: 0px;
+  height: var(--size);
+}
+graph-editor-root graph-container preview-container .resize-handle.up:hover {
+  cursor: n-resize;
+}
+graph-editor-root graph-container preview-container .resize-handle.up-left {
+  left: 0;
+  top: 0;
+  height: calc(var(--size) * 2);
+  width: calc(var(--size) * 2);
+}
+graph-editor-root graph-container preview-container .resize-handle.up-left:hover {
+  cursor: nw-resize;
+}
+graph-editor-root graph-container preview-container .resize-handle.left {
+  left: 0px;
+  top: 0px;
+  bottom: 0px;
+  width: var(--size);
+}
+graph-editor-root graph-container preview-container .resize-handle.left:hover {
+  cursor: e-resize;
+}
+graph-editor-root graph-container preview-container .hide-toolbar2 {
+  position: absolute;
+  top: 8px;
+  right: 8px;
+}
+graph-editor-root properties-container {
+  display: flex;
+  flex-basis: 300px;
+  border-left: var(--basic-border);
+  background-color: var(--bg-1);
+}
