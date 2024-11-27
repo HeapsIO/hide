@@ -18,7 +18,7 @@ class AnimGraphEditor extends GenericGraphEditor {
     }
 
     override function getNodes() : Iterator<IGraphNode> {
-        return [].iterator();
+        return animGraph.nodes.iterator();
     }
 
     override function getEdges():Iterator<Edge> {
