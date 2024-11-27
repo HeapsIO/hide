@@ -283,6 +283,8 @@ class Ide extends hide.tools.IdeData {
 		if (commitHash.length > 0) {
 			new Element('<span class="build">hide $commitHash</span>').appendTo(statusBar);
 		}
+
+		refreshFont();
 	}
 
 	public function getViews<K,T:hide.ui.View<K>>( cl : Class<T> ) {
@@ -1075,6 +1077,14 @@ class Ide extends hide.tools.IdeData {
 		}
 		for( sheet in tmpSheets )
 			@:privateAccess sheet.sheet.lines = null;
+	}
+
+	public function refreshFont() {
+		var font = ideConfig.useAlternateFont ? "Verdana" : "Inter";
+		var size = ideConfig.useAlternateFont ? "9pt" : "9.5pt";
+		js.Browser.document.documentElement.style.setProperty("--default-font", font);
+		js.Browser.document.documentElement.style.setProperty("--default-font-size", size);
+
 	}
 
 	public function filterPrefabs( callb : (hrt.prefab.Prefab, path: String) -> Bool) {

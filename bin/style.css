@@ -27,6 +27,9 @@ body {
   background-color: black;
   user-select: none;
 }
+.lm_header .lm_tab {
+  font-family: var(--default-font), Serif !important;
+}
 #message-container {
   pointer-events: none;
   z-index: 9999;
@@ -138,10 +141,15 @@ body {
   display: none;
 }
 .error-panel .error-log p {
-  font-family: Inter, serif;
+  font-family: var(--default-font), serif;
   margin: 0px;
   padding-top: 5px;
   padding-left: 5px;
+}
+:root {
+  --default-font: 'Inter';
+  --default-font-size: 10pt;
+  font-size: var(--default-font-size);
 }
 ul,
 li {
@@ -158,8 +166,8 @@ a,
 input,
 select,
 textarea {
-  font-family: Inter, serif;
-  font-size: 9pt;
+  font-family: var(--default-font), serif;
+  font-feature-settings: "ss02";
   color: #aaa;
 }
 a {
@@ -443,7 +451,7 @@ input[type=checkbox]:checked:after {
   max-height: 50%;
   overflow-y: auto;
   font-weight: bold;
-  font-family: 'Inter';
+  font-family: var(--default-font);
 }
 .hide-scene {
   position: absolute;
@@ -2184,7 +2192,7 @@ input[type=checkbox]:checked:after {
   text-transform: uppercase;
   font-weight: bold;
   margin-left: 7px;
-  font-family: Inter, serif;
+  font-family: var(--default-font), serif;
   font-size: 9pt;
   color: #aaa;
 }
@@ -2194,7 +2202,7 @@ input[type=checkbox]:checked:after {
 }
 .texture-editor #right-panel .group .content .title {
   font-weight: bold;
-  font-family: Inter, serif;
+  font-family: var(--default-font), serif;
   font-size: 9pt;
   color: #aaa;
   margin: 0 0 5px 0;
@@ -2387,7 +2395,7 @@ input[type=checkbox]:checked:after {
   outline: none !important;
 }
 .graph-view .heaps-scene svg {
-  font-family: 'Inter';
+  font-family: var(--default-font);
 }
 .graph-view .heaps-scene svg foreignObject .container {
   padding: 1px;
@@ -2396,7 +2404,7 @@ input[type=checkbox]:checked:after {
   display: block;
   box-sizing: border-box;
   font-size: 8pt;
-  font-family: 'Inter';
+  font-family: var(--default-font);
   padding: 0px 2px 0px 2px;
   text-align: right;
   border: none;
@@ -2582,7 +2590,7 @@ input[type=checkbox]:checked:after {
   font-size: 8px;
 }
 .graph-view .heaps-scene #add-menu {
-  font-family: 'Inter';
+  font-family: var(--default-font);
 }
 .graph-view .paramVisible {
   color: black!important;
@@ -2726,7 +2734,7 @@ body.hide-subview .lm_controls {
   font-size: 14px!important;
 }
 .jstree.small a {
-  font-size: 12px;
+  font-size: 1em;
 }
 .jstree.small .jstree-node {
   min-height: 18px;
@@ -3658,7 +3666,7 @@ hide-popover hide-content {
   box-shadow: 0 1px 6px 1px rgba(0, 0, 0, 0.75);
   border: solid 1px #444444;
   color: #aaaaaa;
-  font-family: Inter, sans-serif;
+  font-family: var(--default-font), sans-serif;
   font-size: 12px;
 }
 .context-menu2:focus {
@@ -3685,7 +3693,7 @@ hide-popover hide-content {
 }
 .context-menu2 .search-bar input {
   color: #aaaaaa;
-  font-family: Inter, Geneva, Tahoma, sans-serif;
+  font-family: var(--default-font), Geneva, Tahoma, sans-serif;
   width: 100%;
   box-sizing: border-box;
   border: none;
@@ -3815,7 +3823,7 @@ hide-popover hide-content {
   border-top: 1px solid #333;
   flex-shrink: 0;
   display: flex;
-  font-family: 'Inter';
+  font-family: var(--default-font);
 }
 .hide-root > .status-bar .build {
   margin-left: auto;

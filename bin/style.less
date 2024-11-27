@@ -33,6 +33,10 @@ body {
 	user-select:none;
 }
 
+.lm_header .lm_tab {
+	font-family: var(--default-font), Serif !important;
+}
+
 #message-container {
 	pointer-events: none;
 	z-index: 9999;
@@ -152,7 +156,7 @@ body {
 		}
 
 		p {
-			font-family : Inter, serif;
+			font-family : var(--default-font), serif;
 			margin: 0px;
 			padding-top: 5px;
 			padding-left: 5px;
@@ -169,6 +173,13 @@ body {
 
 //:focus { outline: none; }
 
+:root {
+	--default-font: 'Inter';
+	--default-font-size: 10pt;
+
+	font-size: var(--default-font-size);
+}
+
 ul, li {
 	margin : 0;
 	padding : 0;
@@ -176,8 +187,8 @@ ul, li {
 }
 
 body, td, th, li, p, a, input, select, textarea {
-	font-family : Inter, serif;
-	font-size : 9pt;
+	font-family : var(--default-font), serif;
+	font-feature-settings: "ss02";
 	color: #aaa;
 }
 
@@ -481,7 +492,7 @@ input[type=checkbox] {
 		overflow-y: auto;
 
 		font-weight: bold;
-		font-family: 'Inter';
+		font-family: var(--default-font);
 	}
 }
 
@@ -2459,7 +2470,7 @@ input[type=checkbox] {
 					text-transform: uppercase;
 					font-weight: bold;
 					margin-left: 7px;
-					font-family: Inter, serif;
+					font-family: var(--default-font), serif;
 					font-size: 9pt;
 					color: #aaa;
 				}
@@ -2471,7 +2482,7 @@ input[type=checkbox] {
 
 				.title {
 					font-weight: bold;
-					font-family: Inter, serif;
+					font-family: var(--default-font), serif;
 					font-size: 9pt;
 					color: #aaa;
 					margin: 0 0 5px 0;
@@ -2705,7 +2716,7 @@ input[type=checkbox] {
 		outline: none !important;
 		svg {
 
-			font-family: 'Inter';
+			font-family: var(--default-font);
 
 			foreignObject {
 
@@ -2716,7 +2727,7 @@ input[type=checkbox] {
 						display: block;
 						box-sizing: border-box;
 						font-size: 8pt;
-						font-family: 'Inter';
+						font-family: var(--default-font);
 						padding: 0px 2px 0px 2px;
 						text-align: right;
 						border: none;
@@ -2957,7 +2968,7 @@ input[type=checkbox] {
 		}
 
 		#add-menu {
-			font-family: 'Inter';
+			font-family: var(--default-font);
 		}
 	}
 	.paramVisible {
@@ -3124,7 +3135,7 @@ body.hide-subview {
 	@size: 18px;
 
 	a {
-		font-size: 12px;
+		font-size: 1em;
 	}
 
 	.jstree-node {
@@ -4271,7 +4282,7 @@ hide-popover {
 
 	border: solid 1px #444444;
 	color: #aaaaaa;
-	font-family: Inter, sans-serif;
+	font-family: var(--default-font), sans-serif;
 	font-size: 12px;
 
 	&:focus {
@@ -4302,7 +4313,7 @@ hide-popover {
 
 		input {
 			color: #aaaaaa;
-			font-family: Inter, Geneva, Tahoma, sans-serif;
+			font-family: var(--default-font), Geneva, Tahoma, sans-serif;
 			width: 100%;
 			box-sizing: border-box;
 
@@ -4463,7 +4474,7 @@ hide-popover {
 
 		display: flex;
 
-		font-family: 'Inter';
+		font-family: var(--default-font);
 
 
 		.build {

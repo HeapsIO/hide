@@ -7,6 +7,7 @@ typedef LayoutState = {
 
 typedef HideGlobalConfig = {
 	var autoSaveLayout : Null<Bool>;
+	var useAlternateFont : Null<Bool>;
 
 	var currentProject : String;
 	var recentProjects : Array<String>;
