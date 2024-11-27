@@ -119,6 +119,15 @@ class ModelLibraryInstance {
 		return @:privateAccess new MeshEmitter(this, batches, materials, mesh);
 	}
 
+	public function setParent( parent : h3d.scene.Object ) {
+		for ( b in batchCache ) {
+			if ( b.parent != null )
+				@:privateAccess b.parent.children.remove(b);
+			if ( parent != null )
+				parent.addChild(b);
+		}
+	}
+
 	public function remove() {
 		for ( b in batchCache )
 			b.remove();
