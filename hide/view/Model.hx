@@ -165,6 +165,10 @@ class Model extends FileView {
 		sceneEditor.view.keys.register("undo", function() undo.undo());
 		sceneEditor.view.keys.register("redo", function() undo.redo());
 
+		sceneEditor.view.keys.register("view.refresh", function() rebuild());
+		sceneEditor.view.keys.register("view.refreshApp", function() untyped chrome.runtime.reload());
+
+
 		element.find(".hide-scene-tree").first().append(sceneEditor.tree.element);
 		element.find(".render-props-edition").find('.hide-scenetree').append(sceneEditor.renderPropsTree.element);
 		element.find(".props").first().append(sceneEditor.properties.element);
