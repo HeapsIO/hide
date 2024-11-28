@@ -425,7 +425,9 @@ class Prefab {
 		Find a the first prefab in the tree with the given class that matches the optionnal `filter`.
 		Returns null if no matching prefab was found
 	**/
-	public function find<T:Prefab>(?cl: Class<T>, ?filter : T -> Bool, followRefs : Bool = false ) : Null<T> {
+	public function find<T:Prefab>(?cl: Class<T>, ?filter : T -> Bool, followRefs : Bool = false, includeDisabled: Bool = true) : Null<T> {
+		if (!includeDisabled && !enabled)
+			return null;
 		var asCl = cl != null ? Std.downcast(this, cl) : cast this;
 		if (asCl != null)
 			if (filter == null || filter(asCl))

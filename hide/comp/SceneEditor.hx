@@ -4247,7 +4247,7 @@ class SceneEditor {
 		}
 
 		if (target == sceneData) {
-			var renderProps = original.find(hrt.prefab.RenderProps, null, true);
+			var renderProps = original.find(hrt.prefab.RenderProps, null, true, false);
 			if (renderProps != null)
 				queueRebuild(target);
 		}
