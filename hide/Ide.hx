@@ -268,22 +268,6 @@ class Ide extends hide.tools.IdeData {
 
 		hrt.impl.EditorTools.setupIconCategories();
 
-		if (hideRoot != null) {
-			hideRoot.remove();
-			hideRoot = null;
-		}
-		hideRoot = new Element('<div class="hide-root"></div>').appendTo(new Element("body"));
-
-		goldenContainer = new Element('<div class="golden-layout-root"></div>').appendTo(hideRoot);
-
-		statusBar = new Element('<div class="status-bar"></div>').appendTo(hideRoot);
-		statusIcons = new Element('<div id="status-icons"></div>').appendTo(statusBar);
-
-		var commitHash = getGitCommitHashAndDate();
-		if (commitHash.length > 0) {
-			new Element('<span class="build">hide $commitHash</span>').appendTo(statusBar);
-		}
-
 		refreshFont();
 	}
 
@@ -393,6 +377,22 @@ class Ide extends hide.tools.IdeData {
 			if( i.content != null ) for( i in i.content ) checkRec(i);
 		}
 		for( i in config.content ) checkRec(i);
+
+		if (hideRoot != null) {
+			hideRoot.remove();
+			hideRoot = null;
+		}
+		hideRoot = new Element('<div class="hide-root"></div>').appendTo(new Element("body"));
+
+		goldenContainer = new Element('<div class="golden-layout-root"></div>').appendTo(hideRoot);
+
+		statusBar = new Element('<div class="status-bar"></div>').appendTo(hideRoot);
+		statusIcons = new Element('<div id="status-icons"></div>').appendTo(statusBar);
+
+		var commitHash = getGitCommitHashAndDate();
+		if (commitHash.length > 0) {
+			new Element('<span class="build">hide $commitHash</span>').appendTo(statusBar);
+		}
 
 		layout = new golden.Layout(config, goldenContainer.get(0));
 		var resizeTimer : haxe.Timer = null;

@@ -284,8 +284,19 @@ class Model extends FileView {
 		if ( props != null && props.__refMode != null )
 			mode.val((props:Dynamic).__refMode).select();
 
+
+		function setDefault() {
+			tex.show();
+			matEl.show();
+			def = true;
+			selectMaterial(m);
+		}
+
 		libSelect.change(function(_) {
 			updateMatSelect();
+
+			if (libSelect.val() == "")
+				setDefault();
 		});
 
 		matSelect.change(function(_) {
@@ -297,10 +308,7 @@ class Model extends FileView {
 				tex.hide();
 				matEl.hide();
 			} else {
-				tex.show();
-				matEl.show();
-				def = true;
-				selectMaterial(m);
+				setDefault();
 			}
 		});
 
