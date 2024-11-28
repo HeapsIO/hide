@@ -167,7 +167,7 @@ input,
 select,
 textarea {
   font-family: var(--default-font), serif;
-  font-feature-settings: "ss02";
+  font-feature-settings: "cv08", "cv05";
   color: #aaa;
 }
 a {
