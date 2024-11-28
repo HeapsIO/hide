@@ -1115,6 +1115,10 @@ input[type=checkbox]:checked:after {
 .hide-properties .section.open > h1:before {
   content: "\25bc  ";
 }
+.hide-properties .flex > input {
+  flex: 1 1;
+  min-width: 0;
+}
 .hide-properties dl {
   overflow-x: hidden;
   margin: 0px;
