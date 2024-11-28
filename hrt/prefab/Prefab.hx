@@ -647,7 +647,7 @@ class Prefab {
 	}
 
 	/**
-		Recursively copy this prefab and it's children into a dynamic object, containing
+		Recursively copy this prefab and its children into a dynamic object, containing
 		all the serializable properties and the type of the object
 	**/
 	function serialize() : Dynamic {
