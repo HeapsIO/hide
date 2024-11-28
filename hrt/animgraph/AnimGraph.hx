@@ -2,6 +2,7 @@ package hrt.animgraph;
 
 class AnimGraph extends hrt.prefab.Prefab {
     var nodes: Map<Int, Node> = [];
+    var nodeIdCount = 0;
 
     override function save() {
         var json = super.save();
@@ -20,6 +21,7 @@ class AnimGraph extends hrt.prefab.Prefab {
         for (nodeData in (json.nodes:Array<Dynamic>)) {
             var node = Node.createFromDynamic(nodeData);
             nodes.set(node.id, node);
+            nodeIdCount = hxd.Math.imax(node.id+1, nodeIdCount);
         }
     }
 

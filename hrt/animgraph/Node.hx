@@ -40,7 +40,11 @@ implements hide.view.GraphInterface.IGraphNode
     public var editor : hide.view.GraphEditor;
 
     public function getInfo() : hide.view.GraphInterface.GraphNodeInfo {
-        throw "need to implement getInfo";
+        return {
+            name: Type.getClassName(Type.getClass(this)),
+            inputs: [],
+            outputs: [],
+        }
     }
 
     public function getPos(p: h2d.col.Point) : Void {

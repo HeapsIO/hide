@@ -2,6 +2,7 @@ package hrt.animgraph;
 
 import haxe.macro.Context;
 import haxe.macro.Expr;
+using haxe.macro.Tools;
 
 class Macros {
     macro static public function build():Array<Field> {
@@ -15,7 +16,7 @@ class Macros {
         fields.push({
             name: "_build",
             access: [Access.AStatic],
-            kind : FieldType.FVar(macro:Bool, macro hrt.animGraph.Node.register($v{thisClass.name}, ${classPath.toFieldExpr()})),
+            kind : FieldType.FVar(macro:Bool, macro hrt.animgraph.Node.register($v{thisClass.name}, ${classPath.toFieldExpr()})),
             pos: Context.currentPos(),
         });
         #end
