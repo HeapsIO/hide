@@ -9,6 +9,7 @@ import hrt.prefab.fx.Evaluator;
 
 #if editor
 import hide.prefab.HideProps;
+using hrt.tools.GraphicsTools;
 #end
 
 using Lambda;
@@ -59,6 +60,11 @@ enum EmitType {
 	BurstDuration;
 }
 
+enum SubEmitterKind {
+	SpawnOnDeath;
+	Follow;
+}
+
 typedef ParamDef = {
 	> hrt.prefab.Props.PropDef,
 	?animate: Bool,
@@ -104,6 +110,8 @@ class ParticleInstance {
 
 	var trail : hrt.prefab.l3d.Trails.TrailHead;
 	var trailGeneration : Int = 0;
+
+	var subEmitters : Array<EmitterObject> = null;
 
 	#if (hl_ver >= version("1.13.0"))
 	@:packed var speedAccumulation(default, never) : SVector3;
@@ -155,6 +163,25 @@ class ParticleInstance {
 		next = p.next;
 		trail = p.trail;
 		trailGeneration = p.trailGeneration;
+		subEmitters = p.subEmitters;
+	}
+
+	function clear(transferSubemitters: EmitterObject = null) {
+		if (subEmitters != null) {
+			for (sub in subEmitters) {
+				if (transferSubemitters != null)
+				{
+					transferSubemitters.subEmitters = transferSubemitters.subEmitters ?? [];
+					transferSubemitters.subEmitters.push(sub);
+					sub.enable = false;
+				}
+				else {
+					sub.remove();
+				}
+			}
+			subEmitters = null;
+		}
+		idx = REMOVED_IDX;
 	}
 
 	function init(idx: Int, emitter: EmitterObject) {
@@ -441,6 +468,22 @@ class ParticleInstance {
 			inline qRot.initDirection(tmpSpeed);
 			this.qRot.loadQuat(qRot);
 		}
+
+		if (subEmitters != null) {
+			this.updateAbsPos(emitter);
+			for (sub in subEmitters) {
+				var abs = this.absPos.getPosition();
+				sub.setPosition(abs.x, abs.y, abs.z);
+				sub.tick(dt, true);
+
+				#if editor
+				if (emitter.debugGraphics.visible) {
+					emitter.debugGraphics.lineStyle(0,0xFF00FF);
+					emitter.debugGraphics.drawPointCross(sub.x, sub.y, sub.z, 0.05);
+				}
+				#end
+			}
+		}
 	}
 }
 
@@ -469,6 +512,10 @@ class EmitterObject extends h3d.scene.Object {
 	public var maxCatchupWindow = 0.5; // How many seconds max to simulate when catching up
 	#end
 
+	#if editor
+	public var debugGraphics: h3d.scene.Graphics;
+	#end
+
 	public var emitterPrefab : Emitter;
 
 	// RANDOM
@@ -477,6 +524,7 @@ class EmitterObject extends h3d.scene.Object {
 	public var particleTemplate : hrt.prefab.Object3D;
 	public var subEmitterTemplates : Array<Emitter>;
 	public var subEmitters : Array<EmitterObject>;
+	public var subEmitterKind : SubEmitterKind;
 	public var trails : hrt.prefab.l3d.Trails.TrailObj;
 	public var trailsTemplate : hrt.prefab.l3d.Trails;
 	// LIFE
@@ -565,6 +613,11 @@ class EmitterObject extends h3d.scene.Object {
 		super(parent);
 		randomSeed = Std.random(0xFFFFFF);
 		random = new hxd.Rand(randomSeed);
+
+		#if editor
+		debugGraphics = new h3d.scene.Graphics(this.getScene());
+		debugGraphics.material.mainPass.setPassName("afterTonemapping");
+		#end
 	}
 
 	function makeShaderInstance(prefab: hrt.prefab.Shader) {
@@ -575,6 +628,8 @@ class EmitterObject extends h3d.scene.Object {
 	}
 
 	function init(randSlots: Int, prefab: Emitter) {
+		reset();
+
 		this.emitterPrefab = prefab;
 		this.randSlots = randSlots;
 
@@ -692,8 +747,10 @@ class EmitterObject extends h3d.scene.Object {
 		particlesCount = maxCount;
 		randomValues = [for(i in 0...(maxCount * randSlots)) 0];
 		evaluator = new Evaluator(randomValues, randSlots);
-		reset();
 
+		for (i in 0...particlesCount) {
+			particles[i].idx = ParticleInstance.REMOVED_IDX;
+		}
 	}
 
 	override function onRemove() {
@@ -702,6 +759,14 @@ class EmitterObject extends h3d.scene.Object {
 				sub.remove();
 			}
 		}
+
+		for (i in 0...numInstances) {
+			particles[i].clear();
+		}
+
+		#if editor
+		debugGraphics.remove();
+		#end
 		super.onRemove();
 	}
 
@@ -721,8 +786,9 @@ class EmitterObject extends h3d.scene.Object {
 		}
 
 		if(particles != null) {
-			for(i in 0...particlesCount)
-				particles[i].idx = ParticleInstance.REMOVED_IDX;
+			for(i in 0...particlesCount) {
+				particles[i].clear();
+			}
 		}
 
 		if(subEmitters != null) {
@@ -789,6 +855,10 @@ class EmitterObject extends h3d.scene.Object {
 		var o = particles[idx];
 
 		if(o.idx == ParticleInstance.REMOVED_IDX) throw "!";
+
+		// Transfer remaining subemitter to this emitter array
+		o.clear(this);
+
 		var prev = o.prev;
 		var next = o.next;
 		if(prev != null) {
@@ -810,6 +880,7 @@ class EmitterObject extends h3d.scene.Object {
 			var swap = particles[numInstances];
 			o.load(swap);
 			swap.idx = ParticleInstance.REMOVED_IDX;
+			swap.subEmitters = null;
 			if(swap.prev != null)
 				swap.prev.next = o;
 			if(swap.next != null)
@@ -969,6 +1040,21 @@ class EmitterObject extends h3d.scene.Object {
 				if(animationLoop)
 					part.startFrame = random.random(frameCount);
 
+				if (subEmitterTemplates != null) {
+					for (template in subEmitterTemplates) {
+						if ((template.props:Dynamic).subEmitterKind != SubEmitterKind.Follow) {
+							continue;
+						}
+
+						var subEmitterInstance : Emitter = @:privateAccess template.make(this.getScene());
+						var emitter : EmitterObject = cast subEmitterInstance.local3d;
+						emitter.isSubEmitter = true;
+						emitter.parentEmitter = this;
+
+						part.subEmitters = part.subEmitters ?? [];
+						part.subEmitters.push(emitter);
+					}
+				}
 			}
 		}
 
@@ -1008,8 +1094,12 @@ class EmitterObject extends h3d.scene.Object {
 
 	function tick( dt : Float, full=true) {
 
+		#if debug
+		debugGraphics.clear();
+		#end
+
 		// Auto remove of sub emitters
-		if( !enable && particles == null && isSubEmitter ) {
+		if( !enable && (particles == null || numInstances <= 0) && isSubEmitter ) {
 			parentEmitter.subEmitters.remove(this);
 			remove();
 			return;
@@ -1018,6 +1108,12 @@ class EmitterObject extends h3d.scene.Object {
 		if(subEmitters != null) {
 			for( se in subEmitters ) {
 				se.tick(dt);
+				#if editor
+				if (debugGraphics.visible) {
+					debugGraphics.lineStyle(0,0x770077);
+					debugGraphics.drawPointCross(se.x, se.y, se.z, 0.05);
+				}
+				#end
 			}
 		}
 
@@ -1261,9 +1357,11 @@ class EmitterObject extends h3d.scene.Object {
 				if (p.trail == null || p.trail.generation != p.trailGeneration) {
 					// SUB EMITTER
 					if( subEmitterTemplates != null ) {
-
-						for (subEmitterTemplate in subEmitterTemplates) {
-							var subEmitterInstance : Emitter = @:privateAccess subEmitterTemplate.make(this.getScene());
+						for (template in subEmitterTemplates) {
+							if ((template.props:Dynamic).subEmitterKind != SubEmitterKind.SpawnOnDeath) {
+								continue;
+							}
+							var subEmitterInstance : Emitter = @:privateAccess template.make(this.getScene());
 						    var emitter : EmitterObject = cast subEmitterInstance.local3d;
 							p.updateAbsPos(this);
 							var pos = p.absPos.getPosition();
@@ -1275,7 +1373,6 @@ class EmitterObject extends h3d.scene.Object {
 							subEmitters.push(emitter);
 						}
 					}
-
 					i = disposeInstance(i);
 				} else {
 					prev = p;
@@ -1407,6 +1504,7 @@ class Emitter extends Object3D {
 		// PROPERTIES
 		{ name: "lifeTime", t: PFloat(0, 10), def: 1.0, groupName : "Properties" },
 		{ name: "lifeTimeRand", t: PFloat(0, 1), def: 0.0, groupName : "Properties" },
+		{ name: "subEmitterKind", disp: "Sub Kind", t: PEnum(SubEmitterKind), def: SubEmitterKind.SpawnOnDeath, groupName: "Properties"},
 		{ name: "speedFactor", disp: "Speed Factor", t: PFloat(0, 1), def: 1.0, groupName : "Properties" },
 		{ name: "warmUpTime", disp: "Warm Up", t: PFloat(0, 1), def: 0.0, groupName : "Properties" },
 		{ name: "delay", disp: "Delay", t: PFloat(0, 10), def: 0.0, groupName : "Properties" },
@@ -1456,6 +1554,9 @@ class Emitter extends Object3D {
 		{ name: "useCollision", t: PBool, def: false, groupName : "Ground Collision" },
 		{ name: "elasticity", t: PFloat(0, 1.0), disp: "Elasticity", def : 1.0, groupName : "Ground Collision" },
 		{ name: "killOnCollision", t: PFloat(0, 1.0), disp: "Kill On Collision", def : 0.0, groupName : "Ground Collision" },
+
+		// DEBUG
+		{ name: "viewDebug", disp: "Show Debug",t: PBool, def: false, groupName : "Debug"},
 	];
 
 	public static var instanceParams : Array<ParamDef> = [
@@ -1750,6 +1851,7 @@ class Emitter extends Object3D {
 
 		// RANDOM
 		emitterObj.seedGroup 			= 	getParamVal("seedGroup");
+		emitterObj.subEmitterKind		= 	getParamVal("subEmitterKind");
 		// LIFE
 		emitterObj.lifeTime 			= 	getParamVal("lifeTime");
 		emitterObj.lifeTimeRand 		= 	getParamVal("lifeTimeRand");
@@ -1800,6 +1902,11 @@ class Emitter extends Object3D {
 		emitterObj.randomColor1 		= 	getParamVal("randomColor1");
 		emitterObj.randomColor2 		= 	getParamVal("randomColor2");
 		emitterObj.randomGradient 		= 	getParamVal("randomGradient");
+
+		// DEBUG
+		#if editor
+		emitterObj.debugGraphics.visible = getParamVal("viewDebug");
+		#end
 
 
 
@@ -1880,6 +1987,11 @@ class Emitter extends Object3D {
 			case None | Screen | Speed:
 				removeParam("alignLockAxis");
 			default:
+		}
+
+		var isSub = findParent(Emitter) != null;
+		if (!isSub) {
+			removeParam("subEmitterKind");
 		}
 
 		var useCollision = getParamVal("useCollision");
