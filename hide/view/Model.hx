@@ -1397,6 +1397,8 @@ class Model extends FileView {
 	}
 
 	public function setRenderPropsEditionVisibility(visible : Bool) {
+		if (element == null)
+			return;
 		var renderPropsEditionEl = this.element.find('.render-props-edition');
 
 		if (!visible) {
