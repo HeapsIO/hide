@@ -68,6 +68,18 @@ class Spline extends hrt.prefab.Object3D {
 	@:c public var length: Float = 0.;
 	@:c public var shape : SplineShape = Linear;
 
+	#if editor
+	static var UPDATE_DELAY_MS = 5;
+
+	var selected = -1;
+	var splineUpdateRequested : Bool = false;
+	var interactive : h2d.Interactive;
+	var grid : h3d.scene.Graphics;
+	var mousePos : h3d.Vector;
+	var previewSpline : Spline;
+	var previewPoint : SplinePoint;
+	#end
+
 	// Spline display
 	@:s public var showSpline : Bool = true;
 	var graphics : h3d.scene.Graphics;
@@ -188,17 +200,22 @@ class Spline extends hrt.prefab.Object3D {
 		else {
 			do {
 				s1 = Math.floor((sa+sb)/2);
+				if (s1 == -1)
+					break;
 				if( samples[s1].t < t )
 					sa = s1+1;
 				else
 					sb = s1-1;
-			} while( !(samples[s1].t <= t && samples[s1+1].t > t) );
+			} while( !(samples[s1].t <= t && samples[s1+1].t >= t) );
 		}
 		var s2 : Int = s1 + 1;
 		s2 = hxd.Math.iclamp(s2, 0, samples.length - 1);
 
 		if (out == null)
 			out = new h3d.col.Point();
+
+		if (s1 == -1)
+			return null;
 
 		// End/Beginning of the curve, just return the point
 		if( s1 == s2 )
@@ -301,7 +318,7 @@ class Spline extends hrt.prefab.Object3D {
 	}
 
 	public function drawSpline() {
-		if( !showSpline ) {
+		if( !showSpline || points == null || points.length <= 1) {
 			if( graphics != null ) {
 				graphics.remove();
 				graphics = null;
@@ -596,12 +613,6 @@ class Spline extends hrt.prefab.Object3D {
 	override function edit(ctx : hide.prefab.EditContext) {
 		super.edit(ctx);
 
-		function refreshHandles() {
-			clearHandles();
-			for (p in points)
-				drawHandle(p);
-		}
-
 		var props = new hide.Element('
 			<div class="group" name="Spline">
 				<dl>
@@ -614,6 +625,14 @@ class Spline extends hrt.prefab.Object3D {
 						</select>
 					</dd>
 				</dl>
+				<div class="group points-inspector">
+					<div class="buttons">
+						<div class="icon ico ico-plus" id="add"></div>
+						<div class="icon ico ico-minus" id="remove"></div>
+					</div>
+					<div class="points-container">
+					</div>
+				</div>
 			</div>
 		');
 
@@ -633,41 +652,61 @@ class Spline extends hrt.prefab.Object3D {
 			}));
 		});
 
-
-		var pointsEl = new hide.Element('
-		<div class="group points-inspector">
-			<div class="buttons">
-				<div class="icon ico ico-plus" id="add"></div>
-				<div class="icon ico ico-minus" id="remove"></div>
-			</div>
-			<div class="points-container">
-			</div>
-		</div>').appendTo(props);
-
-		pointsEl.find("#add").first().click((e) -> {
+		props.find("#add").first().click((e) -> {
 			var newP = new SplinePoint();
 			if (points.length > 0)
 				newP.pos = points[points.length -1].pos;
 
 			newP.pos += new h3d.col.Point(1, 0, 0);
 			this.addPoint(null, newP);
+			refreshPointList(ctx);
+			updateSpline(this);
 		});
 
-		pointsEl.find("#remove").first().click((e) -> {
+		props.find("#remove").first().click((e) -> {
 			this.removePoint();
+			refreshPointList(ctx);
+			updateSpline(this);
 		});
+
+		ctx.properties.add(props, null, null);
+
+		refreshPointList(ctx);
+		createInteractive(ctx);
+	}
+
+	override function getHideProps() : hide.prefab.HideProps {
+		return { icon : "arrows-v", name : "Spline" };
+	}
+
+	override function setSelected(b: Bool) : Bool {
+		if (!b)
+			clearInteractive();
+
+		return b;
+	}
+
+	function refreshPointList(ctx: hide.prefab.EditContext) {
+		var pointsContainer = ctx.properties.element.find(".points-container");
+		pointsContainer.empty();
 
 		for (pIdx => p in this.points) {
 			var pos = points[pIdx].pos;
-			var el = new hide.Element('<div class="point">
+			var el = new hide.Element('<div class="point folded">
 				<div class="header">
-					<div class="icon ico ico-chevron-down"></div>
+					<div class="icon ico ico-chevron-right"></div>
 					<p>Point [${pIdx}]</p>
 				</div>
 				<div class="body">
 					<dt>Position</dt><dd><input class="pos-x" type="number" value="${pos.x}"/><input class="pos-y" type="number" value="${pos.y}"/><input type="number" class="pos-z" value="${pos.z}"/></dd>
 				</div>
-			</div>').appendTo(pointsEl.find('.points-container'));
+			</div>').appendTo(pointsContainer);
+
+			el.find(".header").click((e) -> {
+				pointsContainer.find('.point').toggleClass("selected", false);
+				el.toggleClass("selected", true);
+				selected = pIdx;
+			});
 
 			var foldBtn = el.find(".icon");
 			foldBtn.click((e) -> {
@@ -717,13 +756,297 @@ class Spline extends hrt.prefab.Object3D {
 				pos = newPos;
 			});
 		}
-
-		ctx.properties.add(props, null, null);
-		refreshHandles();
 	}
 
-	override function getHideProps() : hide.prefab.HideProps {
-		return { icon : "arrows-v", name : "Spline" };
+	function refreshHandles() {
+		clearHandles();
+		for (p in points)
+			drawHandle(p);
+	}
+
+	function createInteractive(ctx : hide.prefab.EditContext) {
+		var s2d = shared.root2d.getScene();
+		var s3d = shared.root3d.getScene();
+		var cam = s3d.camera;
+
+		clearInteractive();
+		for (p in points)
+			drawHandle(p);
+
+		interactive = new h2d.Interactive(s2d.width, s2d.height, s2d);
+		interactive.propagateEvents = true;
+		interactive.cancelEvents = false;
+
+		interactive.onKeyDown = function(e) {
+			if (e.keyCode == hxd.Key.ALT) {
+				if (previewPoint == null) {
+					previewSpline = cast this.clone(this.parent, this.shared).make();
+					previewPoint = new SplinePoint();
+					previewSpline.addPoint(null, previewPoint);
+
+					this.local3d.visible = false;
+					if (mousePos == null)
+						mousePos = new h3d.Vector(e.relX, e.relY);
+
+					var splinePos = local3d.getAbsPos().getPosition();
+					var engine = ctx.scene.engine;
+					var width = engine.width;
+					var height = engine.height;
+					function updatePreview() {
+						if (previewSpline == null)
+							return;
+
+						var nearestSample = getClosestSplinePointFromMouse(mousePos, cam);
+						var nearestSamplePos = nearestSample == null ? splinePos : nearestSample.pos;
+						var plane = h3d.col.Plane.fromNormalPoint(getCameraClosestEulerPlaneNormal(cam), nearestSamplePos);
+
+						var r = getRay(mousePos.x, mousePos.y, cam, s2d);
+						var worldMousePos = r.intersect(plane);
+
+						// Find nearest point on spline
+						var nearestSampleScreenPos = cam.projectInline(nearestSamplePos.x, nearestSamplePos.y, nearestSamplePos.z, width, height);
+						nearestSampleScreenPos.z = 0;
+						if (nearestSampleScreenPos.distance(mousePos) < 20) {
+							worldMousePos = nearestSamplePos; // If user's mouse is near the spline, snap the new point on spline
+						}
+						else {
+							var addToEnd = false;
+							if (points != null && points.length > 0) {
+								var startP = points[0];
+								var endP = points[points.length - 1];
+								addToEnd = localToGlobal(startP.pos).distanceSq(nearestSamplePos) > localToGlobal(endP.pos).distanceSq(nearestSamplePos);
+								var previousP = addToEnd ? endP : startP;
+								previousP = localToGlobalSplinePoint(previousP);
+							}
+
+							plane = h3d.col.Plane.fromNormalPoint(getCameraClosestEulerPlaneNormal(cam), worldMousePos);
+							drawGrid(nearestSamplePos, plane.getNormal(), cam, s3d);
+							previewSpline.points.remove(previewPoint);
+							previewSpline.addPoint(addToEnd ? previewSpline.points.length : 0, previewPoint);
+						}
+
+						worldMousePos = worldMousePos.transformed(getAbsPos(true).getInverse());
+						previewPoint.pos.load(worldMousePos);
+						updateSpline(previewSpline);
+					}
+
+					updatePreview();
+					@:privateAccess s3d.window.mouseMode = Relative(function(e) {
+						mousePos.x += e.relX;
+						mousePos.y += e.relY;
+						updatePreview();
+					}, false);
+				}
+
+				e.propagate = false;
+			}
+		}
+
+		interactive.onKeyUp = function(e) {
+			if (e.keyCode == hxd.Key.ALT && previewPoint != null) {
+				local3d.visible = true;
+				clearGrid();
+				clearPreviewSpline();
+				mousePos = null;
+				hxd.Window.getInstance().mouseMode = Absolute;
+			}
+		}
+
+		interactive.onClick = function(e) {
+			if (previewPoint != null) {
+				var p = previewPoint;
+				var pidx = previewSpline.points.indexOf(previewPoint);
+				addPoint(pidx, previewPoint);
+
+				ctx.properties.undo.change(Custom(function(undo) {
+					if (undo) {
+						removePoint(pidx);
+					}
+					else {
+						addPoint(pidx, p);
+					}
+
+					updateSpline(this);
+					refreshPointList(ctx);
+				}));
+
+				refreshPointList(ctx);
+				updateSpline(this);
+				clearPreviewSpline();
+			}
+
+			e.propagate = false;
+		}
+
+
+		function cancelEventPropagation(e : hxd.Event) {
+			if (previewPoint != null)
+				e.propagate = false;
+		}
+
+		interactive.onWheel = cancelEventPropagation;
+		interactive.onMove = cancelEventPropagation;
+	}
+
+	function clearInteractive() {
+		interactive.remove();
+		interactive = null;
+		clearHandles();
+	}
+
+	function updateSpline(splineToUpdate : Spline) {
+		if (splineToUpdate == null)
+			splineToUpdate = this;
+
+		if (splineUpdateRequested)
+			return;
+
+		splineUpdateRequested = true;
+		haxe.Timer.delay(() -> {
+			@:privateAccess splineToUpdate.updateInstance();
+			splineToUpdate.clearHandles();
+				for (p in splineToUpdate.points)
+					@:privateAccess splineToUpdate.drawHandle(p);
+			splineUpdateRequested = false;
+		}, UPDATE_DELAY_MS);
+	}
+
+	function clearPreviewSpline() {
+		previewSpline?.graphics?.clear();
+		previewSpline?.local3d.remove();
+		previewSpline?.parent.children.remove(previewSpline);
+		previewSpline = null;
+		previewPoint = null;
+	}
+
+	function drawGrid(center : h3d.col.Point, normal : h3d.Vector, cam : h3d.Camera, s3d : h3d.scene.Scene) {
+		var gridStep = 1;
+		var gridSize = 100;
+
+		if (grid == null) {
+			grid = new h3d.scene.Graphics(s3d);
+			grid.name = "gridGraphics";
+			grid.material.mainPass.setPassName("afterTonemapping");
+			grid.material.mainPass.depthWrite = false;
+			grid.material.mainPass.depthTest = LessEqual;
+			grid.ignoreParentTransform = false;
+		}
+
+		grid.lineStyle(0.5, 0xC5C5C5);
+		var start = -1 * gridSize / 2;
+		for(i in 0...(hxd.Math.floor(gridSize / gridStep) + 1)) {
+			grid.moveTo(0, start + (i * gridStep), start);
+			grid.lineTo(0, start + (i * gridStep), start + gridSize);
+
+			grid.moveTo(0, start, start + (i * gridStep));
+			grid.lineTo(0, start + gridSize, start + (i * gridStep));
+		}
+
+		// Draw the two axis of the plane
+		var colorX = 0xFF0000;
+		var colorY = 0x9DFF00;
+		var colorZ = 0x003CFF;
+
+		var vAxisColor = colorX;
+		var hAxisColor = colorX;
+
+		if (normal.x != 0) {
+			vAxisColor = colorZ;
+			hAxisColor = colorY;
+		}
+
+		if (normal.y != 0) {
+			vAxisColor = colorZ;
+			hAxisColor = colorX;
+		}
+
+		if (normal.z != 0) {
+			vAxisColor = colorX;
+			hAxisColor = colorY;
+		}
+
+		grid.lineStyle(1.5, hAxisColor);
+		grid.moveTo(0, start, 0);
+		grid.lineTo(0, -start, 0);
+
+		grid.lineStyle(1.5, vAxisColor);
+		grid.moveTo(0, 0, start);
+		grid.lineTo(0, 0, -start);
+
+		grid.setPosition(center.x, center.y, center.z);
+		grid.setDirection(normal * -1.0, new h3d.Vector(0, 0, 1));
+
+		grid.setScale(getScaleWithCam(grid.getAbsPos().getPosition(), 70, cam));
+	}
+
+	function clearGrid() {
+		grid?.clear();
+		grid?.remove();
+		grid = null;
+	}
+
+	function getScaleWithCam(origin : h3d.col.Point, ratio : Float, cam : h3d.Camera) {
+		var distToCam = cam.pos.sub(origin).length();
+		if (hxd.Math.isNaN(distToCam))
+			distToCam = 1000000000.0;
+		var objRatio = ratio / h3d.Engine.getCurrent().height;
+		var scale = objRatio * distToCam * Math.tan(cam.fovY * 0.5 * Math.PI / 180.0);
+		if (cam.orthoBounds != null)
+			scale = objRatio * (cam.orthoBounds.xSize) * 0.5;
+		return scale;
+	}
+
+	function getClosestSplinePointFromMouse(mousePos: h3d.Vector, cam : h3d.Camera) : SplinePoint {
+		if (samples == null)
+			return null;
+
+		var result : SplinePoint = null;
+		var minDist = -1.0;
+		var engine = h3d.Engine.getCurrent();
+		var height = engine.height;
+		var width =  engine.width;
+		for( sp in samples ) {
+			var screenPos = cam.projectInline(sp.pos.x, sp.pos.y, sp.pos.z, width, height);
+			screenPos.z = 0;
+			var dist = screenPos.distance(mousePos);
+			if( dist < minDist || minDist == -1 ) {
+				minDist = dist;
+				result = sp;
+			}
+		}
+		return result;
+	}
+
+	function getCameraClosestEulerPlaneNormal(cam : h3d.Camera) {
+		var x = new h3d.Vector(1,0,0);
+		var y = new h3d.Vector(0,1,0);
+		var z = new h3d.Vector(0,0,1);
+
+		var normal = x;
+		var forward = cam.getForward();
+		var dot = Math.abs(forward.dot(x));
+
+		var tmpDot = Math.abs(forward.dot(y));
+		if (tmpDot > dot) {
+			normal = y;
+			dot = tmpDot;
+		}
+
+		tmpDot = Math.abs(forward.dot(z));
+		if (tmpDot > dot) {
+			normal = z;
+			dot = tmpDot;
+		}
+
+		return normal;
+	}
+
+	function getRay(mx : Float, my : Float, cam : h3d.Camera, s2d : h2d.Scene) {
+		var screenPt = new h2d.col.Point( -1 + 2 * mousePos.x / s2d.width, 1 - 2 * mousePos.y / s2d.height);
+		var nearPt = cam.unproject(screenPt.x, screenPt.y, 0);
+		var farPt = cam.unproject(screenPt.x, screenPt.y, 1);
+		var rayDir = farPt.sub(nearPt).normalized();
+		return h3d.col.Ray.fromValues(nearPt.x, nearPt.y, nearPt.z, rayDir.x, rayDir.y, rayDir.z);
 	}
 	#end
 
