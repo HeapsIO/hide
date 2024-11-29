@@ -26,6 +26,142 @@ typedef SubMeshes = {
 
 typedef CreateMeshBatchFunc = ( library : hrt.prefab.l3d.ModelLibrary, parent : h3d.scene.Object, isStatic : Bool, ?bounds : h3d.col.Bounds, ?props : h3d.mat.PbrMaterial.PbrProps, ?material : h3d.mat.Material) -> h3d.scene.MeshBatch;
 
+class FileSignature {
+	public var path : String;
+	public var hash : String;
+	function new( path : String ) {
+		this.path = path;
+		var content = sys.io.File.getBytes(@:privateAccess ModelLibrary.getSystemPath(path));
+		this.hash = haxe.crypto.Sha1.make(content).toHex();
+	}
+}
+
+class MaterialSignature {
+	public var diffuseMapPath : String;
+	public var normalMapPath : String;
+	public var specularMapPath : String;
+	function new() {
+	}
+}
+
+class ModelSignature extends FileSignature {
+	public var materials : Array<MaterialSignature> = [];
+	function new( path : String ) {
+		super(path);
+	}
+}
+
+class ModelLibrarySignature {
+	var version : Int;
+	var rule : String;
+	var models : Array<ModelSignature> = [];
+	var textures : Array<FileSignature> = [];
+
+	function new() {
+	}
+
+	public function computeHash() {
+		var content = haxe.Json.stringify(this, "\t");
+		return haxe.crypto.Sha1.make(haxe.io.Bytes.ofString(content)).toHex();
+	}
+
+	public function save( path : String ) {
+		var content = haxe.Json.stringify(this, "\t");
+		sys.io.File.saveContent(@:privateAccess ModelLibrary.getSystemPath(path), content);
+	}
+
+	public static function load( path : String ) : ModelLibrarySignature {
+		var content = sys.io.File.getContent(@:privateAccess ModelLibrary.getSystemPath(path));
+		var dyn = try haxe.Json.parse(content) catch( e : Dynamic ) null;
+		if( dyn != null ) {
+			var sig = new ModelLibrarySignature();
+			sig.version = dyn.version;
+			sig.rule = dyn.rule;
+			sig.models = dyn.models;
+			sig.textures = dyn.textures;
+			return sig;
+		}
+		return null;
+	}
+
+	public static function fromModels( targetPath : String, modelPaths : Array<String> ) : ModelLibrarySignature {
+		var sig = new ModelLibrarySignature();
+		sig.version = ModelLibrary.CURRENT_VERSION;
+		var dirPath = targetPath.split(".prefab")[0];
+		sig.rule = getConvertRuleString(dirPath, "fbx");
+		var m = getModelsSignature(modelPaths);
+		sig.models = m.models;
+		sig.textures = m.textures;
+		return sig;
+	}
+
+	public static function fromLib( lib : ModelLibrary ) : ModelLibrarySignature {
+		var sig = new ModelLibrarySignature();
+		sig.version = ModelLibrary.CURRENT_VERSION;
+		sig.rule = @:privateAccess lib.meshConvertRule;
+		var modelPaths = [for( m in lib.findAll(hrt.prefab.Model, true) ) m.source];
+		var m = getModelsSignature(modelPaths);
+		sig.models = m.models;
+		sig.textures = m.textures;
+		return sig;
+	}
+
+	static function getConvertRuleString( path : String, ext : String) : String {
+		var fs = Std.downcast(hxd.res.Loader.currentInstance.fs, hxd.fs.LocalFileSystem);
+		var convRule = @:privateAccess fs.convert.getConvertRule(path+"."+ext);
+		return convRule.cmd.paramsStr;
+	}
+
+	static function getModelsSignature( modelPaths : Array<String> ) {
+		var models = [];
+		var textures = [];
+		var modelMap : Map<String, Bool> = [];
+		var textureMap : Map<String, Bool> = [];
+		for( path in modelPaths ) {
+			if( modelMap.exists(path) )
+				continue;
+			modelMap.set(path, true);
+			var modelsig = @:privateAccess new ModelSignature(path);
+			models.push(modelsig);
+			var lib = hxd.res.Loader.currentInstance.load(path).toModel().toHmd();
+			for( m in lib.header.materials ) {
+				var matsig = getMaterialSignature(lib, m);
+				modelsig.materials.push(matsig);
+				for( matpath in [matsig.diffuseMapPath, matsig.normalMapPath, matsig.specularMapPath] ) {
+					if( matpath != null && !textureMap.exists(matpath) ) {
+						textures.push(@:privateAccess new FileSignature(matpath));
+						textureMap.set(matpath, true);
+					}
+				}
+			}
+		}
+		return { models : models, textures : textures };
+	}
+
+	static function getMaterialSignature( lib : hxd.fmt.hmd.Library, m : hxd.fmt.hmd.Material ) : MaterialSignature {
+		var sig = @:privateAccess new MaterialSignature();
+		var mat = h3d.mat.MaterialSetup.current.createMaterial();
+		mat.name = m.name;
+		mat.model = lib.resource;
+		var props = h3d.mat.MaterialSetup.current.loadMaterialProps(mat);
+		if( props == null )
+			return null;
+		if( (props:Dynamic).__ref != null ) {
+			var lib = hxd.res.Loader.currentInstance.load((props:Dynamic).__ref).toPrefab().load();
+			var m = lib.getOpt(hrt.prefab.Material, (props:Dynamic).name);
+			sig.diffuseMapPath = m.diffuseMap;
+			sig.normalMapPath = m.normalMap;
+			sig.specularMapPath = m.specularMap;
+			return sig;
+		}
+		sig.diffuseMapPath = m.diffuseTexture;
+		sig.normalMapPath = m.normalMap;
+		sig.specularMapPath = m.specularTexture;
+		return sig;
+	}
+
+}
+
 class MeshEmitter {
 
 	var libraryInstance : ModelLibraryInstance;
@@ -247,6 +383,7 @@ class ModelLibrary extends Prefab {
 	@:s var version : Int = 0;
 	@:s var atlasResolution = 4096;
 	@:s var autoLod : Bool = false;
+	@:s var sighash : String = "";
 
 	public static inline var CURRENT_VERSION = 2;
 
@@ -296,95 +433,6 @@ class ModelLibrary extends Prefab {
 		#end
 	}
 
-	function isTextureNew( name : String, time : Float ) : Bool {
-		var filePath = getSystemPath(name);
-		if ( !sys.FileSystem.exists(filePath) )
-			return false;
-		return sys.FileSystem.stat(filePath).mtime.getTime() > time ;
-	}
-
-	function isModelNew( model : hrt.prefab.Model, time : Float ) : Bool {
-		var source = getSystemPath(model.source);
-		if ( !sys.FileSystem.exists(source) )
-			return false;
-
-		if ( sys.FileSystem.stat(source).mtime.getTime() > time )
-			return true;
-
-		var shared = new hrt.prefab.ContextShared();
-		var lib = null;
-		for( m in shared.loadModel(model.source).getMeshes() ) {
-			var m = Std.downcast(m.primitive, h3d.prim.HMDModel);
-			if( m != null ) {
-				lib = @:privateAccess m.lib;
-				break;
-			}
-		}
-
-		var sourceDir = source.substring( 0, source.lastIndexOf("/") );
-		var matPropsPath = sourceDir + "/materials.props";
-		if ( sys.FileSystem.exists(matPropsPath) )
-			if ( sys.FileSystem.stat(matPropsPath).mtime.getTime() > time )
-				return false;
-
-		for ( m in lib.header.materials ) {
-			var mat = h3d.mat.MaterialSetup.current.createMaterial();
-			mat.name = m.name;
-			mat.model = lib.resource;
-			var props = h3d.mat.MaterialSetup.current.loadMaterialProps(mat);
-			if( props == null )
-				continue;
-
-			if( (props:Dynamic).__ref != null ) {
-				try {
-					var lib = hxd.res.Loader.currentInstance.load((props:Dynamic).__ref).toPrefab().load();
-
-					var libPath = getSystemPath(lib.shared.prefabSource);
-					if ( sys.FileSystem.stat(libPath).mtime.getTime() > time ) {
-						trace("ModelLibrary is not up to date : " + libPath + " is new or has been modified");
-						return true;
-					}
-
-					var m = lib.getOpt(hrt.prefab.Material, (props:Dynamic).name);
-					if( m.diffuseMap != null )
-						if ( isTextureNew(m.diffuseMap, time) ) {
-							trace("ModelLibrary is not up to date : " + m.diffuseMap + " is new or has been modified");
-							return true;
-						}
-					if( m.specularMap != null )
-						if ( isTextureNew(m.specularMap, time) ) {
-							trace("ModelLibrary is not up to date : " + m.specularMap + " is new or has been modified");
-							return true;
-						}
-					if( m.normalMap != null )
-						if ( isTextureNew(m.normalMap, time) ) {
-							trace("ModelLibrary is not up to date : " + m.normalMap + " is new or has been modified");
-							return true;
-						}
-					continue;
-				} catch( e : Dynamic ) { continue; }
-			}
-
-			if( m.diffuseTexture != null )
-				if ( isTextureNew(m.diffuseTexture, time) ) {
-					trace("ModelLibrary is not up to date : " + m.diffuseTexture + " is new or has been modified");
-					return true;
-				}
-			if( m.specularTexture != null )
-				if ( isTextureNew(m.specularTexture, time) ) {
-					trace("ModelLibrary is not up to date : " + m.specularTexture + " is new or has been modified");
-					return true;
-				}
-			if( m.normalMap != null )
-				if ( isTextureNew(m.normalMap, time) ) {
-					trace("ModelLibrary is not up to date : " + m.normalMap + " is new or has been modified");
-					return true;
-				}
-		}
-
-		return false;
-	}
-
 	static inline function getSystemPath( path : String ) : String {
 		#if editor
 		return hide.Ide.inst.getPath(path);
@@ -409,45 +457,14 @@ class ModelLibrary extends Prefab {
 			return false;
 		}
 
-		var fileStat = sys.FileSystem.stat(filePath);
-		var time = fileStat.mtime.getTime();
-
-		var models = findAll(hrt.prefab.Model);
-
-		if ( paths != null ) {
-			if ( paths.length != models.length ) {
-				trace("ModelLibrary is not up to date : The model count does not match");
-				return false;
-			}
-
-			for ( path in paths ) {
-				var found = false;
-				for ( m in models ) {
-					if ( m.source == path ) {
-						found = true;
-						break;
-					}
-				}
-				if ( !found ) {
-					trace("ModelLibrary is not up to date : " + path + " has not been found");
-					return false;
-				}
-			}
-		}
-
-		var fs = Std.downcast(hxd.res.Loader.currentInstance.fs, hxd.fs.LocalFileSystem);
-		var dirPath = shared.currentPath.split(".prefab")[0];
-		var config = @:privateAccess fs.convert.getConvertRule(dirPath+".fbx");
-		if ( config.cmd.paramsStr != meshConvertRule ) {
-			trace("ModelLibrary is not up to date : Convert rule for mesh does not match");
+		var currentSig = if( paths != null )
+				ModelLibrarySignature.fromModels(filePath, paths)
+			else
+				ModelLibrarySignature.fromLib(this);
+		if( currentSig.computeHash() != sighash ) {
+			trace("ModelLibrary is not up to date : signature mismatch");
 			return false;
 		}
-
-		for ( m in models)
-			if ( isModelNew(m, time) ) {
-				trace("ModelLibrary is not up to date : " + m.source + " is new or has been modified");
-				return false;
-			}
 
 		return true;
 	}
@@ -924,6 +941,8 @@ class ModelLibrary extends Prefab {
 		makeTex(specMaps,"specular");
 
 		version = CURRENT_VERSION;
+		var sig = ModelLibrarySignature.fromLib(this);
+		sighash = sig.computeHash();
 	}
 
 	public function saveLibrary( ?filePath : String ) {
