@@ -885,8 +885,16 @@ class Ide extends hide.tools.IdeData {
 		Adds an element to the ide status bar
 	**/
 	public function addStatusIcon(e: hide.Element) {
-		var wrapper = new hide.Element('<div class="statusbar-icon"></div>').appendTo(statusIcons);
-		wrapper.append(e);
+		function wait() {
+			if( statusIcons == null ) {
+				haxe.Timer.delay(wait, 10);
+				return;
+			}
+
+			var wrapper = new hide.Element('<div class="statusbar-icon"></div>').appendTo(statusIcons);
+			wrapper.append(e);
+		}
+		wait();
 	}
 
 	public function chooseFiles( exts : Array<String>, onSelect : Array<String> -> Void, allowNull=false ) {
