@@ -848,7 +848,7 @@ class Ide extends hide.tools.IdeData {
 
 			var argsString = args.join(" ");
 
-			var buildString = '<input type="file" style="visibility:hidden" value="" $argsString/>';
+			var buildString = '<input type="file" style="visibility:hidden; position:fixed; top:0px;" value="" $argsString/>';
 
 			filePickerElement = new Element(buildString).appendTo(window.window.document.body);
 
