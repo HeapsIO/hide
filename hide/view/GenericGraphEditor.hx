@@ -8,6 +8,7 @@ class GenericGraphEditor extends hide.view.FileView implements IGraphEditor {
 
     var previewContainer : Element;
     var scenePreview : hide.comp.Scene;
+    var previewCamController : hide.comp.Scene.PreviewCamController;
 
     var editorRoot : Element;
     var graphContainer: Element;
@@ -125,7 +126,7 @@ class GenericGraphEditor extends hide.view.FileView implements IGraphEditor {
     }
 
     function onScenePreviewReady() {
-
+        previewCamController = new hide.comp.Scene.PreviewCamController(scenePreview.s3d);
     }
 
     function onScenePreviewUpdate(dt: Float) {

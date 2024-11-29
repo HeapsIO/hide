@@ -1,7 +1,7 @@
 package hrt.animgraph;
 @:access(hrt.animgraph.AnimGraphInstance)
 class AnimGraph extends hrt.prefab.Prefab {
-	public var instance(default, never) : AnimGraphInstance;
+	public var instance(default, null) : AnimGraphInstance;
 
 	var nodes: Map<Int, Node> = [];
 
@@ -21,7 +21,15 @@ class AnimGraph extends hrt.prefab.Prefab {
 	}
 
 	override function makeInstance() {
-		var instance = new AnimGraphInstance(this);
+		throw "don't make this";
+	}
+
+	/**
+		Get the animation "template" for this AnimGraph.
+		This anim should be instanciated using getInstance() after that (or use the h3d.scene.Object.playAnimation() function that does this for you)
+	**/
+	public function getAnimation() : AnimGraphInstance {
+		return instance ??= new AnimGraphInstance(this);
 	}
 
 	override function save() {

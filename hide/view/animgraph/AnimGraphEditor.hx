@@ -8,6 +8,7 @@ import hrt.animgraph.*;
 class AnimGraphEditor extends GenericGraphEditor {
 
     var animGraph : hrt.animgraph.AnimGraph;
+    var previewModel : h3d.scene.Object;
 
     override function reloadView() {
         animGraph = cast hide.Ide.inst.loadPrefab(state.path, null,  true);
@@ -23,6 +24,16 @@ class AnimGraphEditor extends GenericGraphEditor {
         currentSign = ide.makeSignature(content);
 		sys.io.File.saveContent(getPath(), content);
         super.save();
+    }
+
+    override function onScenePreviewReady() {
+        super.onScenePreviewReady();
+
+        previewModel = scenePreview.loadModel("character/Kobold01/Model.FBX");
+        scenePreview.s3d.addChild(previewModel);
+
+        var anim = hxd.res.Loader.currentInstance.load("character/Kobold01/Anim_attack01.FBX").toModel().toHmd().loadAnimation();
+        previewModel.playAnimation(anim);
     }
 
     override function getNodes() : Iterator<IGraphNode> {
