@@ -24,6 +24,13 @@
 
 
 <script>
+	var win = nw.Window.get();
+	win.on('close', function() {
+		nw.App.quit();
+	});
+</script>
+
+<script>
 	// fix for Sys.programPath
 	__filename = process.argv[0];
 </script>
