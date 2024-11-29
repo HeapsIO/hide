@@ -30,18 +30,32 @@ class AnimGraphEditor extends GenericGraphEditor {
     }
 
     override function getEdges():Iterator<Edge> {
-        return [].iterator();
+        var edges : Array<Edge> = [];
+        for (nodeToId => node in animGraph.nodes) {
+            for (inputToId => edge in node.inputEdges) {
+                if (edge == null)
+                    continue;
+                edges.push({
+                    nodeToId: nodeToId,
+                    inputToId: inputToId,
+                    nodeFromId: edge.nodeTarget,
+                    outputFromId: edge.nodeOutputIndex,
+                });
+            }
+        }
+        return edges.iterator();
     }
 
     override function getAddNodesMenu():Array<AddNodeMenuEntry> {
         var menu : Array<AddNodeMenuEntry> = [];
-        for (name => nodeClass in hrt.animgraph.Node.registeredNodes) {
+        for (nodeInternalName => type in hrt.animgraph.Node.registeredNodes) {
+            var info = Type.createEmptyInstance(type);
             var entry : AddNodeMenuEntry = {
-                name: name,
+                name: info.getDisplayName(),
                 description: "",
                 group: "Group",
                 onConstructNode: () -> {
-                    var node : Node = cast Type.createInstance(nodeClass, []);
+                    var node : Node = cast Type.createInstance(type, []);
                     animGraph.nodeIdCount ++;
                     node.id = animGraph.nodeIdCount;
                     return node;
@@ -57,6 +71,10 @@ class AnimGraphEditor extends GenericGraphEditor {
         animGraph.nodes.set(node.id, cast node);
     }
 
+    override function removeNode(id: Int) {
+        animGraph.nodes.remove(id);
+    }
+
     override function serializeNode(node : IGraphNode) : Dynamic {
         var animNode : hrt.animgraph.Node = cast node;
         return animNode.serializeToDynamic();
@@ -69,6 +87,23 @@ class AnimGraphEditor extends GenericGraphEditor {
             node.id = animGraph.nodeIdCount;
         }
         return node;
+    }
+
+    override function canAddEdge(edge : Edge) : Bool {
+        var input = animGraph.nodes.get(edge.nodeToId).getInputs()[edge.inputToId];
+        var output = animGraph.nodes.get(edge.nodeFromId).getOutputs()[edge.outputFromId];
+
+        return (Node.areOutputsCompatible(input.type, output.type));
+    }
+
+    override function addEdge(edge : Edge) : Void {
+        var inputNode = animGraph.nodes.get(edge.nodeToId);
+        inputNode.inputEdges[edge.inputToId] = {nodeTarget: edge.nodeFromId, nodeOutputIndex: edge.outputFromId};
+    }
+
+    override function removeEdge(nodeToId: Int, inputToId : Int) : Void {
+        var inputNode = animGraph.nodes.get(nodeToId);
+        inputNode.inputEdges[inputToId] = null;
     }
 
     static var _ = FileTree.registerExtension(AnimGraphEditor,["animgraph"],{ icon : "play-circle-o", createNew: "Anim Graph" });

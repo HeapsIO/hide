@@ -1,33 +1,46 @@
 package hrt.animgraph;
-
+@:access(hrt.animgraph.AnimGraphInstance)
 class AnimGraph extends hrt.prefab.Prefab {
-    var nodes: Map<Int, Node> = [];
-    var nodeIdCount = 0;
+	public var instance(default, never) : AnimGraphInstance;
 
-    override function save() {
-        var json = super.save();
+	var nodes: Map<Int, Node> = [];
 
-        json.nodes = [
-            for (node in nodes) node.serializeToDynamic()
-        ];
+	#if editor
+	var nodeIdCount = 0;
+	#end
 
-        return json;
-    }
+	override function load(json: Dynamic) {
+		super.load(json);
+		nodes = [];
 
-    override function load(json: Dynamic) {
-        super.load(json);
-        nodes = [];
+		for (nodeData in (json.nodes:Array<Dynamic>)) {
+			var node = Node.createFromDynamic(nodeData);
+			nodes.set(node.id, node);
+			nodeIdCount = hxd.Math.imax(node.id+1, nodeIdCount);
+		}
+	}
 
-        for (nodeData in (json.nodes:Array<Dynamic>)) {
-            var node = Node.createFromDynamic(nodeData);
-            nodes.set(node.id, node);
-            nodeIdCount = hxd.Math.imax(node.id+1, nodeIdCount);
-        }
-    }
+	override function makeInstance() {
+		var instance = new AnimGraphInstance(this);
+	}
 
-    override function copy(other: hrt.prefab.Prefab) {
-        throw "Should never be called";
-    }
+	override function save() {
+		var json = super.save();
 
-    static var _ = hrt.prefab.Prefab.register("animgraph", AnimGraph, "animgraph");
+		json.nodes = [
+			for (node in nodes) node.serializeToDynamic()
+		];
+
+		return json;
+	}
+
+	override function copy(other: hrt.prefab.Prefab) {
+		super.copy(other);
+		var other : AnimGraph = cast other;
+		other.nodes = [
+			for (id => node in this.nodes) id => Node.createFromDynamic(node.serializeToDynamic())
+		];
+	}
+
+	static var _ = hrt.prefab.Prefab.register("animgraph", AnimGraph, "animgraph");
 }
