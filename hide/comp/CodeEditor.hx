@@ -41,7 +41,9 @@ class CodeEditor extends Component {
 			lineNumbersMinChars: 3,
 			fontSize: "13px",
 			mouseWheelZoom: true,
-			scrollBeyondLastLine: false
+			scrollBeyondLastLine: false,
+			insertSpaces : false,
+			detectIndentation : false
 		});
 		var model = editor.getModel();
 		(model : Dynamic).__comp__ = this;
