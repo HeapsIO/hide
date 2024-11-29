@@ -126,6 +126,8 @@ class ModelLibrarySignature {
 			var lib = hxd.res.Loader.currentInstance.load(path).toModel().toHmd();
 			for( m in lib.header.materials ) {
 				var matsig = getMaterialSignature(lib, m);
+				if( matsig == null )
+					continue;
 				modelsig.materials.push(matsig);
 				for( matpath in [matsig.diffuseMapPath, matsig.normalMapPath, matsig.specularMapPath] ) {
 					if( matpath != null && !textureMap.exists(matpath) ) {
