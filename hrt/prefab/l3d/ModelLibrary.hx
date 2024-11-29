@@ -458,7 +458,7 @@ class ModelLibrary extends Prefab {
 		}
 
 		var currentSig = if( paths != null )
-				ModelLibrarySignature.fromModels(filePath, paths)
+				ModelLibrarySignature.fromModels(source, paths)
 			else
 				ModelLibrarySignature.fromLib(this);
 		if( currentSig.computeHash() != sighash ) {
