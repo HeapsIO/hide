@@ -106,8 +106,8 @@ class GPUEmitterObject extends h3d.scene.MeshBatch {
 		simulationPass.addShader(new BaseSimulation());
 	}
 
-	override function flush(ctx : h3d.scene.RenderContext) {
-		super.flush(ctx);
+	override function flush() {
+		super.flush();
 
 		var alloc = hxd.impl.Allocator.get();
 		if ( particleBuffers == null )
