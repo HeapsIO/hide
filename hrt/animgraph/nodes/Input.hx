@@ -13,13 +13,15 @@ class Input extends AnimNode {
 	var anim : h3d.anim.Animation;
 	var proxy : AnimProxy;
 
+	@:s var path : String = "character/Kobold01/Anim_attack01.FBX";
+
 	override function getSize():Int {
-		return Node.SIZE_SMALL;
+		return Node.SIZE_DEFAULT;
 	}
 
-	override function getBones():Map<String, Int> {
+	override function getBones(ctx: hrt.animgraph.nodes.AnimNode.GetBoneContext):Map<String, Int> {
 		proxy = new AnimProxy();
-		anim = hxd.res.Loader.currentInstance.load("character/Kobold01/Anim_attack01.FBX").toModel().toHmd().loadAnimation().createInstance(proxy);
+		anim = hxd.res.Loader.currentInstance.load(path).toModel().toHmd().loadAnimation().createInstance(proxy);
 
 		var map : Map<String, Int> = [];
 		for (id => obj in anim.getObjects()) {
@@ -40,5 +42,16 @@ class Input extends AnimNode {
 		if (!anim.isSync)
 			anim.sync();
 		matrix.load(anim.getObjects()[id].targetObject.defaultTransform);
+	}
+
+	override function getPropertiesHTML(width:Float):Array<hide.Element> {
+		var elts = super.getPropertiesHTML(width);
+		var input = new hide.Element('<input type="text" style="height:32px;">');
+		input.val(path);
+		input.on("change", (e) -> {
+			path = input.val();
+		});
+		elts.push(input);
+		return elts;
 	}
 }

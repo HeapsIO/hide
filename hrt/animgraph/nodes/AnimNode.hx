@@ -3,6 +3,14 @@ package hrt.animgraph.nodes;
 using hrt.tools.MapUtils;
 
 
+class GetBoneContext {
+	public function new() {
+
+	}
+
+	public var targetObject:h3d.scene.Object;
+}
+
 /**
 	An anim node outpus a animation that can be consumed as input parameter by other nodes
 **/
@@ -14,7 +22,7 @@ class AnimNode extends Node {
 		return boneId * numAnimInput + inputId;
 	}
 
-	public function getBones() : Map<String, Int> {
+	public function getBones(ctx: GetBoneContext) : Map<String, Int> {
 		// Default implementation for AnimNodes that takes multiple animation inputs and output one new animation
 		var inputs = getInputs();
 		numAnimInput = 0;
@@ -34,10 +42,16 @@ class AnimNode extends Node {
 			switch (input.type) {
 				case TAnimation:
 					var anim : AnimNode = cast Reflect.getProperty(this, input.name);
-					var animBones = anim.getBones();
+					var animBones = anim.getBones(ctx);
 					for (name => id in animBones) {
-						var ourBoneId = boneMap.getOrPut(name, currentBoneId++);
-						boneIdToAnimInputBone[getInputBoneId(ourBoneId, currentInputId)] = id;
+						var ourBoneId = boneMap.getOrPut(name, {
+							currentBoneId++;
+							for (i in 0...numAnimInput) {
+								boneIdToAnimInputBone[getInputBoneId(currentBoneId, i)] = -1;
+							}
+							currentBoneId;
+						});
+						boneIdToAnimInputBone[getInputBoneId(ourBoneId, currentInputId)] = id; // we offset the id by one to differientate the 0 from the uninitialized entires in the array
 					}
 					currentInputId ++;
 				default:

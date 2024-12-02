@@ -31,20 +31,24 @@ class AnimGraphInstance extends h3d.anim.Animation {
 		return inst;
 	}
 
-	public function getBones() : Map<String, Int> {
+	public function getBones(ctx : hrt.animgraph.nodes.AnimNode.GetBoneContext) : Map<String, Int> {
 		if (outputId == -1)
 			return null;
 
 		map(updateNodeInputs);
 
 		var finalNode : hrt.animgraph.nodes.Output = cast animGraph.nodes.get(outputId);
-		boneMap = finalNode.a.getBones();
+		boneMap = finalNode.a.getBones(ctx);
 		return boneMap;
 	}
 
 	override function bind(base:h3d.scene.Object) {
 		objects = [];
-		var bones = getBones();
+
+		var ctx = new hrt.animgraph.nodes.AnimNode.GetBoneContext();
+		ctx.targetObject = base;
+
+		var bones = getBones(ctx);
 		for (name => id in bones) {
 			objects.push(new AnimGraphAnimatedObject(name, id));
 		}
