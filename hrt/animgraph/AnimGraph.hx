@@ -45,8 +45,8 @@ class AnimGraph extends hrt.prefab.Prefab {
 	override function copy(other: hrt.prefab.Prefab) {
 		super.copy(other);
 		var other : AnimGraph = cast other;
-		other.nodes = [
-			for (id => node in this.nodes) id => Node.createFromDynamic(node.serializeToDynamic())
+		this.nodes = [
+			for (id => node in other.nodes) id => Node.createFromDynamic(node.serializeToDynamic())
 		];
 	}
 

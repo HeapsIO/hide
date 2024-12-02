@@ -15,12 +15,6 @@ typedef NodeOutputInfo = {
 }
 
 typedef NodeInputInfo = { > NodeOutputInfo, ?def : Dynamic };
-typedef NodeInfo = {
-	name: String,
-	inputs: Array<NodeInputInfo>,
-	outputs: Array<NodeOutputInfo>,
-	cl: Class<Node>,
-};
 
 #end
 @:build(hrt.animgraph.Macros.build(false))

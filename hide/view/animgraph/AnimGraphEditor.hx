@@ -13,6 +13,12 @@ class AnimGraphEditor extends GenericGraphEditor {
     override function reloadView() {
         animGraph = cast hide.Ide.inst.loadPrefab(state.path, null,  true);
         super.reloadView();
+
+        var testButton = new Element("<button>Test Bones</button>").appendTo(propertiesContainer);
+        testButton.click((_) -> {
+            var anim = animGraph.getAnimation();
+            previewModel.playAnimation(anim);
+        });
     }
 
     override function getDefaultContent() : haxe.io.Bytes {
@@ -32,8 +38,8 @@ class AnimGraphEditor extends GenericGraphEditor {
         previewModel = scenePreview.loadModel("character/Kobold01/Model.FBX");
         scenePreview.s3d.addChild(previewModel);
 
-        var anim = hxd.res.Loader.currentInstance.load("character/Kobold01/Anim_attack01.FBX").toModel().toHmd().loadAnimation();
-        previewModel.playAnimation(anim);
+        // var anim = hxd.res.Loader.currentInstance.load("character/Kobold01/Anim_attack01.FBX").toModel().toHmd().loadAnimation();
+        // previewModel.playAnimation(anim);
     }
 
     override function getNodes() : Iterator<IGraphNode> {

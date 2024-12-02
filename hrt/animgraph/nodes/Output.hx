@@ -5,14 +5,10 @@ package hrt.animgraph.nodes;
 **/
 class Output extends Node {
 
-	@:input var a: h3d.anim.Animation;
+	@:input var a: AnimNode;
 
 	override function tick(dt: Float) {
 		// update out using inputs
-	}
-
-	override function getDisplayName()  {
-		return "Final Pose";
 	}
 
 	override function getSize() : Int {

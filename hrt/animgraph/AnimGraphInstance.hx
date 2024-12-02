@@ -1,36 +1,126 @@
 package hrt.animgraph;
 
+class AnimGraphAnimatedObject extends h3d.anim.Animation.AnimatedObject {
+	public var id : Int;
+
+	public function new (name, id) {
+		super(name);
+		this.id = id;
+	}
+}
+
 @:access(hrt.animgraph.AnimGraph)
 @:access(hrt.animgraph.Node)
 class AnimGraphInstance extends h3d.anim.Animation {
 	var animGraph : AnimGraph;
 	var outputId : Int = -1;
+	var workMatrix = new h3d.Matrix();
+
+	var boneMap: Map<String, Int> = [];
 
 	function new(animGraph:AnimGraph) {
 		super(animGraph.name, 1000, 1/60.0);
 		this.animGraph = animGraph;
-		this.outputId = Lambda.find(animGraph.nodes, (node) -> Std.downcast(node, hrt.animgraph.nodes.Output) == null)?.id ?? -1;
+		this.outputId = Lambda.find(animGraph.nodes, (node) -> Std.downcast(node, hrt.animgraph.nodes.Output) != null)?.id ?? -1;
 	}
 
 	override function clone(?target: h3d.anim.Animation) : h3d.anim.Animation {
 		if (target != null) throw "Unexpected";
-		var inst = super.clone(new AnimGraphInstance(cast animGraph.clone()));
+		var newAnimGraph : AnimGraph = cast animGraph.clone();
+		var inst = super.clone(new AnimGraphInstance(newAnimGraph));
 		return inst;
 	}
 
-	override function update(dt:Float):Float {
-		var dt = super.update(dt);
+	public function getBones() : Map<String, Int> {
 		if (outputId == -1)
-			return;
+			return null;
+
+		map(updateNodeInputs);
+
+		var finalNode : hrt.animgraph.nodes.Output = cast animGraph.nodes.get(outputId);
+		boneMap = finalNode.a.getBones();
+		return boneMap;
+	}
+
+	override function bind(base:h3d.scene.Object) {
+		objects = [];
+		var bones = getBones();
+		for (name => id in bones) {
+			objects.push(new AnimGraphAnimatedObject(name, id));
+		}
+		super.bind(base);
+	}
+
+	override function sync(decompose : Bool = false ) {
+		if (decompose)
+			throw "decompose not handled yet";
+
+		var finalNode : hrt.animgraph.nodes.Output = cast animGraph.nodes.get(outputId);
+
+		for (obj in objects) {
+			var obj : AnimGraphAnimatedObject = cast obj;
+			workMatrix.identity();
+			finalNode.a.getBoneTransform(obj.id, workMatrix);
+			@:privateAccess
+			if (obj.targetSkin != null) {
+				var def = obj.targetSkin.getSkinData().allJoints[obj.targetJoint].defMat;
+
+				var targetMatrix = obj.targetSkin.currentRelPose[obj.targetJoint] ??= new h3d.Matrix();
+				targetMatrix.load(workMatrix);
+				targetMatrix._41 = def._41;
+				targetMatrix._42 = def._42;
+				targetMatrix._43 = def._43;
+
+				obj.targetSkin.jointsUpdated = true;
+			} else {
+				obj.targetObject.defaultTransform ??= new h3d.Matrix();
+				obj.targetObject.defaultTransform.load(workMatrix);
+			}
+		}
+	}
+
+	function updateNodeInputs(node: Node) : Void {
+		var inputs = node.getInputs();
+		for (inputId => edge in node.inputEdges) {
+			if (edge == null) continue;
+			var outputNode = animGraph.nodes.get(edge.nodeTarget);
+			var outputs = outputNode.getOutputs();
+			var output = outputs[edge.nodeOutputIndex];
+			switch (inputs[inputId].type) {
+				case TAnimation:
+					Reflect.setField(node, inputs[inputId].name, outputNode);
+				case TFloat:
+					Reflect.setField(node, inputs[inputId].name, Reflect.getProperty(outputNode, output.name));
+			}
+		}
+	}
+
+	function map(cb: (node:Node) -> Void) {
+		function rec (node: Node) {
+			cb(node);
+			for (inputId => edge in node.inputEdges) {
+				if (edge == null) continue;
+				var outputNode = animGraph.nodes.get(edge.nodeTarget);
+				rec(outputNode);
+			}
+		}
+		var finalNode = animGraph.nodes.get(outputId);
+		rec(finalNode);
+	}
+
+	override function update(dt:Float):Float {
+		var dt2 = super.update(dt);
+		if (outputId == -1)
+			return dt2;
 
 		for (node in animGraph.nodes) {
 			node.tickedThisFrame = false;
 		}
 
 		var finalNode : hrt.animgraph.nodes.Output = cast animGraph.nodes.get(outputId);
-		tickRec(finalNode);
+		tickRec(finalNode, dt);
 
-		return dt;
+		return dt2;
 	}
 
 	function tickRec(node: hrt.animgraph.Node, dt: Float) {
@@ -42,12 +132,10 @@ class AnimGraphInstance extends h3d.anim.Animation {
 			if (!outputNode.tickedThisFrame) {
 				tickRec(outputNode, dt);
 			}
-			var outputs = outputNode.getOutputs();
-			var output = outputs[edge.nodeOutputIndex];
-			Reflect.setField(node, inputs[inputId].name, Reflect.getField(outputNode, output.name));
 		}
 
-		node.tick();
+		updateNodeInputs(node);
+		node.tick(dt);
 		node.tickedThisFrame = true;
 	}
 }
