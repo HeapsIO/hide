@@ -19,6 +19,7 @@ class AnimGraphInstance extends h3d.anim.Animation {
 	var boneMap: Map<String, Int> = [];
 
 	function new(animGraph:AnimGraph) {
+		// Todo : Define a true length for the animation OR make so animations can have an undefined length
 		super(animGraph.name, 1000, 1/60.0);
 		this.animGraph = animGraph;
 		this.outputId = Lambda.find(animGraph.nodes, (node) -> Std.downcast(node, hrt.animgraph.nodes.Output) != null)?.id ?? -1;
