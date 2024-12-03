@@ -42,6 +42,8 @@ class AnimNode extends Node {
 			switch (input.type) {
 				case TAnimation:
 					var anim : AnimNode = cast Reflect.getProperty(this, input.name);
+					if (anim == null)
+						continue;
 					var animBones = anim.getBones(ctx);
 					for (name => id in animBones) {
 						var ourBoneId = boneMap.getOrPut(name, {

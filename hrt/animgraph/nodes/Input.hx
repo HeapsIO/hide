@@ -39,8 +39,10 @@ class Input extends AnimNode {
 	override function getBoneTransform(id: Int, matrix: h3d.Matrix) {
 		// todo : add sync outside the getBoneMatrix to avoid checks
 		@:privateAccess
-		if (!anim.isSync)
-			anim.sync();
+		if (!anim.isSync) {
+			anim.sync(true);
+			anim.isSync = true;
+		}
 		matrix.load(anim.getObjects()[id].targetObject.defaultTransform);
 	}
 

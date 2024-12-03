@@ -57,9 +57,6 @@ class AnimGraphInstance extends h3d.anim.Animation {
 	}
 
 	override function sync(decompose : Bool = false ) {
-		if (decompose)
-			throw "decompose not handled yet";
-
 		var finalNode : hrt.animgraph.nodes.Output = cast animGraph.nodes.get(outputId);
 
 		for (obj in objects) {
@@ -67,21 +64,31 @@ class AnimGraphInstance extends h3d.anim.Animation {
 			workMatrix.identity();
 			finalNode.a.getBoneTransform(obj.id, workMatrix);
 			@:privateAccess
-			if (obj.targetSkin != null) {
-				var def = obj.targetSkin.getSkinData().allJoints[obj.targetJoint].defMat;
 
-				var targetMatrix = obj.targetSkin.currentRelPose[obj.targetJoint] ??= new h3d.Matrix();
-				targetMatrix.load(workMatrix);
-				targetMatrix._41 = def._41;
-				targetMatrix._42 = def._42;
-				targetMatrix._43 = def._43;
-
+			var targetMatrix = if (obj.targetSkin != null) {
 				obj.targetSkin.jointsUpdated = true;
+				obj.targetSkin.currentRelPose[obj.targetJoint] ??= new h3d.Matrix();
 			} else {
 				obj.targetObject.defaultTransform ??= new h3d.Matrix();
-				obj.targetObject.defaultTransform.load(workMatrix);
+			}
+
+			if (!decompose) {
+				decomposeMatrix(workMatrix, targetMatrix);
+				if (obj.targetSkin != null) {
+					var def = obj.targetSkin.getSkinData().allJoints[obj.targetJoint].defMat;
+					targetMatrix._41 = def._41;
+					targetMatrix._42 = def._42;
+					targetMatrix._43 = def._43;
+				}
+			} else {
+				targetMatrix.load(workMatrix);
 			}
 		}
+	}
+
+	static function decomposeMatrix(inMatrix: h3d.Matrix, outMatrix: h3d.Matrix) {
+		var quat = inline new h3d.Quat(inMatrix._12, inMatrix._13, inMatrix._21, inMatrix._23);
+		inline quat.toMatrix(outMatrix);
 	}
 
 	function updateNodeInputs(node: Node) : Void {
