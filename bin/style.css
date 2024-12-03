@@ -3865,3 +3865,73 @@ hide-popover hide-content {
   color: black;
   border-radius: 3px;
 }
+.points-inspector {
+  width: 100%;
+  margin-top: 10px;
+}
+.points-inspector .content {
+  width: 100%;
+  display: flex;
+  flex-wrap: wrap;
+  flex-direction: row-reverse;
+}
+.points-inspector .content .buttons {
+  background: #222222;
+  border-radius: 5px 5px 0 0;
+  padding: 3px 10px 3px 10px;
+  cursor: pointer;
+}
+.points-inspector .content .buttons div {
+  margin: 0 2px 0 2px;
+}
+.points-inspector .content .buttons div:hover {
+  color: #535353;
+}
+.points-inspector .content .points-container {
+  min-height: 10px;
+  width: 100%;
+  border-radius: 5px 0 5px 5px;
+  background: #222222;
+  padding: 3px;
+}
+.points-inspector .content .points-container .point {
+  margin-bottom: 1px;
+}
+.points-inspector .content .points-container .point .header {
+  padding: 3px 0px 3px 8px;
+  background-color: #414141;
+  border-radius: 5px;
+  cursor: pointer;
+  display: flex;
+}
+.points-inspector .content .points-container .point .header .icon {
+  align-self: center;
+  margin-right: 5px;
+  cursor: pointer;
+}
+.points-inspector .content .points-container .point .header .icon:hover {
+  color: #ececec;
+}
+.points-inspector .content .points-container .point .header p {
+  margin: 0;
+}
+.points-inspector .content .points-container .point .header:hover {
+  background-color: #686868;
+}
+.points-inspector .content .points-container .point .body {
+  padding-bottom: 15px;
+  white-space: nowrap;
+}
+.points-inspector .content .points-container .point .body dd input {
+  width: 28%;
+  margin-right: 1px;
+}
+.points-inspector .content .points-container .point.folded .body {
+  display: none;
+}
+.points-inspector .content .points-container .point.selected .header {
+  background-color: #2c5d87;
+}
+.points-inspector .content .points-container .point.selected .body {
+  background-color: #4f657f;
+}

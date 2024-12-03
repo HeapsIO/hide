@@ -4528,3 +4528,98 @@ hide-popover {
 
 	}
 }
+
+.points-inspector {
+	@background-color : #222222;
+	@background-color-highlight : #535353;
+
+	width: 100%;
+	margin-top: 10px;
+
+	.content {
+		width: 100%;
+		display: flex;
+		flex-wrap: wrap;
+		flex-direction: row-reverse;
+
+		.buttons {
+			background: @background-color;
+			border-radius: 5px 5px 0 0;
+			padding: 3px 10px 3px 10px;
+			cursor: pointer;
+
+			div {
+				margin: 0 2px 0 2px;
+			}
+
+			div:hover {
+				color: @background-color-highlight;
+			}
+		}
+
+		.points-container {
+			min-height: 10px;
+			width: 100%;
+			border-radius: 5px 0 5px 5px;
+			background: @background-color;
+			padding: 3px;
+
+			.point {
+				margin-bottom: 1px;
+
+				.header {
+					padding: 3px 0px 3px 8px;
+					background-color: #414141;
+					border-radius: 5px;
+					cursor: pointer;
+					display: flex;
+
+					.icon {
+						align-self: center;
+						margin-right: 5px;
+						cursor: pointer;
+					}
+
+					.icon:hover {
+						color: #ececec;
+					}
+
+					p {
+						margin: 0;
+					}
+				}
+
+				.header:hover {
+					background-color: #686868;
+				}
+
+				.body {
+					padding-bottom: 15px;
+					white-space: nowrap;
+					dd {
+						input {
+							width: 28%;
+							margin-right: 1px;
+						}
+					}
+				}
+
+				&.folded {
+					.body {
+						display: none;
+					}
+				}
+
+				&.selected {
+					.header {
+						background-color: #2c5d87;
+					}
+
+					.body {
+						background-color: #4f657f;
+					}
+				}
+			}
+		}
+	}
+}
