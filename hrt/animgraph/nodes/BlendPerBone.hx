@@ -41,6 +41,9 @@ class BlendPerBone extends AnimNode {
 			if (animBoneId == -1)
 				continue;
 			var anim = animId == 0 ? a : b;
+			if (anim == null) {
+				continue;
+			}
 			anim.getBoneTransform(animBoneId, outMatrix);
 			break;
 		}
