@@ -49,8 +49,8 @@ class SplinePoint {
 	public function load(obj : Dynamic) {
 		pos = new h3d.col.Point(obj.x, obj.y, obj.z);
 		up = new h3d.col.Point(obj.upX, obj.upY, obj.upZ);
-		tangentIn = obj.tIn;
-		tangentOut = obj.tOut;
+		tangentIn = new h3d.Vector(obj.tIn.x, obj.tIn.y, obj.tIn.z);
+		tangentOut = new h3d.Vector(obj.tOut.x, obj.tOut.y, obj.tOut.z);
 		t = obj.t;
 		length = obj.length;
 	}
@@ -135,8 +135,10 @@ class Spline extends hrt.prefab.Object3D {
 				}
 				i--;
 			}
+
 			if (children.length == 0)
 				Reflect.deleteField(obj, "children");
+			points.reverse();
 		}
 
 		if (obj.points != null) {
