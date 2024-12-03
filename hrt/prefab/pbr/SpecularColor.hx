@@ -42,15 +42,15 @@ class SpecularColor extends Prefab {
 
 	override function updateInstance(?propName : String ) {
 		for( m in getMaterials() ) {
-			var sca = m.mainPass.getShader(hrt.shader.SpecularColorAlbedo);
+			var sca = m.mainPass.getShader(SpecularColorAlbedo);
 			if( sca != null ) {
 				// No params
 			}
-			var scf = m.mainPass.getShader(hrt.shader.SpecularColorFlat);
+			var scf = m.mainPass.getShader(SpecularColorFlat);
 			if( scf != null ) {
 				scf.specularColorValue = h3d.Vector.fromColor(specularColorCustomValue);
 			}
-			var sct = m.mainPass.getShader(hrt.shader.SpecularColorTexture);
+			var sct = m.mainPass.getShader(SpecularColorTexture);
 			if( sct != null ) {
 				sct.specularColorTexture = shared.loadTexture(specularColorPath);
 			}

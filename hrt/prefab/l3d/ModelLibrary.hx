@@ -140,7 +140,7 @@ class ModelLibrarySignature {
 		return { models : models, textures : textures };
 	}
 
-	static function getMaterialSignature( lib : hxd.fmt.hmd.Library, m : hxd.fmt.hmd.Material ) : MaterialSignature {
+	static function getMaterialSignature( lib : hxd.fmt.hmd.Library, m : hxd.fmt.hmd.Data.Material ) : MaterialSignature {
 		var sig = @:privateAccess new MaterialSignature();
 		var mat = h3d.mat.MaterialSetup.current.createMaterial();
 		mat.name = m.name;
