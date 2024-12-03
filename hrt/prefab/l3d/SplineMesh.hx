@@ -131,7 +131,7 @@ class SplineMesh extends hrt.prefab.Object3D {
 
 	function computeSplineMesh() {
 		var samples = spline.samples;
-		if ( samples.length < 2 )
+		if ( samples.length < 2 || local3d == null )
 			return;
 
 		var bounds = new h3d.col.Bounds();
