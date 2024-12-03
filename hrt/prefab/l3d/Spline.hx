@@ -71,6 +71,8 @@ class Spline extends hrt.prefab.Object3D {
 	#if editor
 	static var UPDATE_DELAY_MS = 5;
 
+	var editMode = false;
+
 	var selected = -1;
 	var splineUpdateRequested : Bool = false;
 	var interactive : h2d.Interactive;
@@ -78,6 +80,8 @@ class Spline extends hrt.prefab.Object3D {
 	var mousePos : h3d.Vector;
 	var previewSpline : Spline;
 	var previewPoint : SplinePoint;
+	var draggedObj : { pos: h3d.Vector, type: HandleType };
+	var prevPos : h3d.Vector;
 	#end
 
 	// Spline display
@@ -431,7 +435,7 @@ class Spline extends hrt.prefab.Object3D {
 			i--;
 		}
 
-		// pointHandle.setDirection( point.tangentOut.transformed3x3(point.m));
+		pointHandle.setDirection(point.tangentOut);
 		pointHandle.setPosition(center.x, center.y, center.z);
 
 		if (this.shape == SplineShape.Linear)
@@ -472,6 +476,7 @@ class Spline extends hrt.prefab.Object3D {
 		for (handle => obj in handles) {
 			handle.clear();
 			handles.remove(handle);
+			handle.remove();
 		}
 	}
 
@@ -625,6 +630,9 @@ class Spline extends hrt.prefab.Object3D {
 						</select>
 					</dd>
 				</dl>
+				<div align="center">
+					<input type="button" value="Edit Mode : Disabled" class="editModeButton" />
+				</div>
 				<div class="group points-inspector">
 					<div class="buttons">
 						<div class="icon ico ico-plus" id="add"></div>
@@ -635,6 +643,18 @@ class Spline extends hrt.prefab.Object3D {
 				</div>
 			</div>
 		');
+
+		var editModeButton = props.find(".editModeButton");
+		editModeButton.click(function(_) {
+			if (!enabled) return;
+			editMode = !editMode;
+			editModeButton.val(editMode ? "Edit Mode : Enabled" : "Edit Mode : Disabled");
+			editModeButton.toggleClass("editModeEnabled", editMode);
+			setSelected(true);
+			clearInteractive();
+			if(editMode)
+				createInteractive(ctx);
+		});
 
 		var selShape = props.find("#shape");
 		selShape.change((e) -> {
@@ -672,7 +692,6 @@ class Spline extends hrt.prefab.Object3D {
 		ctx.properties.add(props, null, null);
 
 		refreshPointList(ctx);
-		createInteractive(ctx);
 	}
 
 	override function getHideProps() : hide.prefab.HideProps {
@@ -817,6 +836,7 @@ class Spline extends hrt.prefab.Object3D {
 								addToEnd = localToGlobal(startP.pos).distanceSq(nearestSamplePos) > localToGlobal(endP.pos).distanceSq(nearestSamplePos);
 								var previousP = addToEnd ? endP : startP;
 								previousP = localToGlobalSplinePoint(previousP);
+								nearestSamplePos = previousP.pos;
 							}
 
 							plane = h3d.col.Plane.fromNormalPoint(getCameraClosestEulerPlaneNormal(cam), worldMousePos);
@@ -826,7 +846,7 @@ class Spline extends hrt.prefab.Object3D {
 						}
 
 						worldMousePos = worldMousePos.transformed(getAbsPos(true).getInverse());
-						previewPoint.pos.load(worldMousePos);
+						previewPoint.pos = worldMousePos;
 						updateSpline(previewSpline);
 					}
 
@@ -878,6 +898,82 @@ class Spline extends hrt.prefab.Object3D {
 			e.propagate = false;
 		}
 
+		interactive.onPush = function(e) {
+			var ray = getRay(e.relX, e.relY, cam, s2d);
+			for (handle => obj in handles) {
+				var b = handle.getBounds();
+				if (b.rayIntersection(ray, true) >= 0.0) {
+					mousePos = new h3d.Vector(e.relX, e.relY, 0);
+					var plane = h3d.col.Plane.fromNormalPoint(getCameraClosestEulerPlaneNormal(cam), handle.getAbsPos().getPosition());
+					draggedObj = obj;
+					prevPos = obj.pos.clone();
+					drawGrid(handle.getAbsPos().getPosition(), plane.getNormal(), cam, s3d);
+
+					@:privateAccess s3d.window.mouseMode = Relative(function(e) {
+						mousePos.x += e.relX;
+						mousePos.y += e.relY;
+
+						var r = getRay(mousePos.x, mousePos.y, cam, s2d);
+						var pos = r.intersect(plane);
+						switch (obj.type) {
+							case HandleType.Point:
+								var newPos = pos.transformed(getAbsPos(true).getInverse());
+								obj.pos.set(newPos.x, newPos.y, newPos.z);
+							case HandleType.TangentIn(p):
+								var globalToSpline = pos.transformed(getAbsPos(true).getInverse());
+								var newPos = globalToSpline - p.pos;
+								obj.pos.set(newPos.x, newPos.y, newPos.z);
+								p.tangentOut = newPos * -1.;
+							case HandleType.TangentOut(p):
+								var globalToSpline = pos.transformed(getAbsPos(true).getInverse());
+								var newPos = globalToSpline - p.pos;
+								obj.pos.set(newPos.x, newPos.y, newPos.z);
+								p.tangentIn = newPos * -1.;
+						}
+
+						updateSpline(this);
+					}, false);
+				}
+			}
+
+			e.propagate = false;
+		}
+
+		interactive.onRelease = function(e) {
+			if (draggedObj != null) {
+				clearGrid();
+				var oldPos = prevPos.clone();
+				var newPos = draggedObj.pos.clone();
+				var obj = draggedObj;
+				@:privateAccess s3d.window.mouseMode = Absolute;
+				draggedObj = null;
+
+				ctx.properties.undo.change(Custom(function(undo) {
+					if (undo) {
+						obj.pos.set(oldPos.x, oldPos.y, oldPos.z);
+						switch(obj.type) {
+							case HandleType.TangentIn(p):
+								p.tangentOut = oldPos * -1.;
+							case HandleType.TangentOut(p):
+								p.tangentIn = oldPos * -1.;
+							default:
+						}
+					}
+					else {
+						obj.pos.set(newPos.x, newPos.y, newPos.z);
+						switch(obj.type) {
+							case HandleType.TangentIn(p):
+								p.tangentOut = newPos * -1.;
+							case HandleType.TangentOut(p):
+								p.tangentIn = newPos * -1.;
+							default:
+						}
+					}
+
+					updateSpline(this);
+				}));
+			}
+		}
 
 		function cancelEventPropagation(e : hxd.Event) {
 			if (previewPoint != null)
@@ -923,6 +1019,7 @@ class Spline extends hrt.prefab.Object3D {
 		var gridStep = 1;
 		var gridSize = 100;
 
+		clearGrid();
 		if (grid == null) {
 			grid = new h3d.scene.Graphics(s3d);
 			grid.name = "gridGraphics";
@@ -1042,7 +1139,7 @@ class Spline extends hrt.prefab.Object3D {
 	}
 
 	function getRay(mx : Float, my : Float, cam : h3d.Camera, s2d : h2d.Scene) {
-		var screenPt = new h2d.col.Point( -1 + 2 * mousePos.x / s2d.width, 1 - 2 * mousePos.y / s2d.height);
+		var screenPt = new h2d.col.Point( -1 + 2 * mx / s2d.width, 1 - 2 * my / s2d.height);
 		var nearPt = cam.unproject(screenPt.x, screenPt.y, 0);
 		var farPt = cam.unproject(screenPt.x, screenPt.y, 1);
 		var rayDir = farPt.sub(nearPt).normalized();
