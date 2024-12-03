@@ -630,7 +630,7 @@ class Spline extends hrt.prefab.Object3D {
 		super.edit(ctx);
 
 		var props = new hide.Element('
-			<div class="group" name="Spline">
+			<div class="group" name="Spline" class="spline">
 				<dl>
 					<dt>Type</dt>
 					<dd>
@@ -641,6 +641,10 @@ class Spline extends hrt.prefab.Object3D {
 						</select>
 					</dd>
 				</dl>
+				<dl><dt>Loop</dt><dd><input type="checkbox" field="loop"/></dd></dl>
+				<dl><dt>Sample resolution</dt><dd><input type="range" field="sampleResolution" step="1"></dd></dl>
+			</div>
+			<div class="group spline-editor" name="Spline Editor">
 				<div align="center">
 					<input type="button" value="Edit Mode : Disabled" class="editModeButton" />
 				</div>

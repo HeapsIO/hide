@@ -2033,23 +2033,6 @@ input[type=checkbox] {
 	outline: 4px solid #5897fb;
 }
 
-// Spline editor
-.spline-editor{
-	.editModeButton{
-		margin: 10px;
-		outline: 4px solid #fd5151;
-	}
-	.editModeEnabled {
-		outline: 4px solid #5897fb;
-	}
-	.description{
-		margin: 5px;
-		background-color: #303030;
-		outline: 4px solid #4a4a4a;
-		padding : 2px;
-	}
-}
-
 /* Mesh Generator */
 .meshGenerator-thumbnail {
 	display: inline-block;
@@ -4529,94 +4512,97 @@ hide-popover {
 	}
 }
 
-.points-inspector {
-	@background-color : #222222;
-	@background-color-highlight : #535353;
+/* Spline inspector */
+.spline-editor {
+	.points-inspector {
+		@background-color : #222222;
+		@background-color-highlight : #535353;
 
-	width: 100%;
-	margin-top: 10px;
-
-	.content {
 		width: 100%;
-		display: flex;
-		flex-wrap: wrap;
-		flex-direction: row-reverse;
+		margin-top: 10px;
 
-		.buttons {
-			background: @background-color;
-			border-radius: 5px 5px 0 0;
-			padding: 3px 10px 3px 10px;
-			cursor: pointer;
-
-			div {
-				margin: 0 2px 0 2px;
-			}
-
-			div:hover {
-				color: @background-color-highlight;
-			}
-		}
-
-		.points-container {
-			min-height: 10px;
+		.content {
 			width: 100%;
-			border-radius: 5px 0 5px 5px;
-			background: @background-color;
-			padding: 3px;
+			display: flex;
+			flex-wrap: wrap;
+			flex-direction: row-reverse;
 
-			.point {
-				margin-bottom: 1px;
+			.buttons {
+				background: @background-color;
+				border-radius: 5px 5px 0 0;
+				padding: 3px 10px 3px 10px;
+				cursor: pointer;
 
-				.header {
-					padding: 3px 0px 3px 8px;
-					background-color: #414141;
-					border-radius: 5px;
-					cursor: pointer;
-					display: flex;
+				div {
+					margin: 0 2px 0 2px;
+				}
 
-					.icon {
-						align-self: center;
-						margin-right: 5px;
+				div:hover {
+					color: @background-color-highlight;
+				}
+			}
+
+			.points-container {
+				min-height: 10px;
+				width: 100%;
+				border-radius: 5px 0 5px 5px;
+				background: @background-color;
+				padding: 3px;
+
+				.point {
+					margin-bottom: 1px;
+
+					.header {
+						padding: 3px 0px 3px 8px;
+						background-color: #414141;
+						border-radius: 5px;
 						cursor: pointer;
-					}
+						display: flex;
 
-					.icon:hover {
-						color: #ececec;
-					}
+						.icon {
+							align-self: center;
+							margin-right: 5px;
+							cursor: pointer;
+						}
 
-					p {
-						margin: 0;
-					}
-				}
+						.icon:hover {
+							color: #ececec;
+						}
 
-				.header:hover {
-					background-color: #686868;
-				}
-
-				.body {
-					padding-bottom: 15px;
-					white-space: nowrap;
-					dd {
-						input {
-							width: 28%;
-							margin-right: 1px;
+						p {
+							margin: 0;
 						}
 					}
-				}
 
-				&.folded {
-					.body {
-						display: none;
-					}
-				}
-
-				&.selected {
-					.header {
-						background-color: #2c5d87;
+					.header:hover {
+						background-color: #686868;
 					}
 
 					.body {
-						background-color: #4f657f;
+						padding-bottom: 15px;
+						white-space: nowrap;
+						dd {
+							input {
+								width: 28%;
+								margin-right: 1px;
+							}
+						}
+					}
+
+					&.folded {
+						.body {
+							display: none;
+						}
+					}
+
+					&.selected {
+						.header {
+							background-color: #2c5d87;
+						}
+
+						.body {
+							background-color: #4f657f;
+						}
 					}
 				}
 			}
