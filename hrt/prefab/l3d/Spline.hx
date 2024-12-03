@@ -65,7 +65,6 @@ class Spline extends hrt.prefab.Object3D {
 
 	@:s public var loop : Bool = false;
 	@:s public var sampleResolution: Int = 16;
-	@:c public var length: Float = 0.;
 	@:c public var shape : SplineShape = Linear;
 
 	#if editor
@@ -280,6 +279,14 @@ class Spline extends hrt.prefab.Object3D {
 			}
 		}
 		return closestT;
+	}
+
+	public function getLength() {
+		if (samples == null)
+			sample( (this.shape == SplineShape.Linear) ? 1 : sampleResolution);
+		if (samples == null || samples.length == 0)
+			return 0.0;
+		return samples[samples.length - 1].length;
 	}
 
 
@@ -553,16 +560,18 @@ class Spline extends hrt.prefab.Object3D {
 		}
 
 		// Compute the average length of the spline
-		length = 0.0;
+		var length = 0.0;
 		for( i in 0 ... samples.length - 1 )
 			length += samples[i].pos.distance(samples[i+1].pos);
 
 		var l = 0.0;
 		for( i in 0 ... samples.length - 1 ) {
 			samples[i].t = l/length;
+			samples[i].length = length;
 			l += samples[i].pos.distance(samples[i+1].pos);
 		}
 		samples[samples.length - 1].t = 1;
+		samples[samples.length - 1].length = length;
 	}
 
 
