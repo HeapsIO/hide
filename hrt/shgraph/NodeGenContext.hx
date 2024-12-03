@@ -113,11 +113,11 @@ class NodeGenContext {
 	}
 
 	public function getGlobalParam(name: String, type: Type) : TExpr {
-		return makeVar(globalVars.getOrPut(name, {v: {id: hxsl.Tools.allocVarId(), name: name, type: type, kind: Param}, defValue:null, __init__: null}).v);
+		return makeVar(globalVars.getOrPut(name, {v: {id: hxsl.Ast.Tools.allocVarId(), name: name, type: type, kind: Param}, defValue:null, __init__: null}).v);
 	}
 
 	public function setGlobalCustomOutput(name: String, expr: TExpr) : Void {
-		var v = makeVar(globalVars.getOrPut(name, {v: {id: hxsl.Tools.allocVarId(), name: name, type: expr.t, kind: Param}, defValue:null, __init__: null}).v);
+		var v = makeVar(globalVars.getOrPut(name, {v: {id: hxsl.Ast.Tools.allocVarId(), name: name, type: expr.t, kind: Param}, defValue:null, __init__: null}).v);
 		expressions.push(makeAssign(v, expr));
 	}
 
@@ -140,7 +140,7 @@ class NodeGenContext {
 			default:
 		}
 
-		var v : TVar = {id: hxsl.Tools.allocVarId(), name: tvar.name, type: type, kind: tvar.kind, qualifiers: tvar.qualifiers};
+		var v : TVar = {id: hxsl.Ast.Tools.allocVarId(), name: tvar.name, type: type, kind: tvar.kind, qualifiers: tvar.qualifiers};
 		def = {v:v, defValue: null, __init__: null};
 		if (tvar.parent != null) {
 			v.parent = getOrAllocateFromTVar(tvar.parent);
@@ -170,7 +170,7 @@ class NodeGenContext {
 				var fullName = Variables.getFullPath(global);
 				var def : ShaderGraph.ExternVarDef = globalVars.get(fullName);
 				if (def == null) {
-					var v : TVar = {id: hxsl.Tools.allocVarId(), name: global.name, type: global.type, kind: kind};
+					var v : TVar = {id: hxsl.Ast.Tools.allocVarId(), name: global.name, type: global.type, kind: kind};
 					var __init__ = null;
 					if (global.__init__ != null) {
 						__init__ = AstTools.makeAssign(AstTools.makeVar(v), global.__init__);
@@ -180,7 +180,7 @@ class NodeGenContext {
 						var p = Variables.Globals[parent];
 						switch (p.varkind) {
 							case KVar(kind, _, _):
-								v.parent = globalVars.getOrPut(Variables.getFullPath(p), {v : {id : hxsl.Tools.allocVarId(), name: p.name, type: TStruct([]), kind: kind}, defValue: null, __init__: null}).v;
+								v.parent = globalVars.getOrPut(Variables.getFullPath(p), {v : {id : hxsl.Ast.Tools.allocVarId(), name: p.name, type: TStruct([]), kind: kind}, defValue: null, __init__: null}).v;
 							default:
 								throw "Parent var must be a KVar";
 						}

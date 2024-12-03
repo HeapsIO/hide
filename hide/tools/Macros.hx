@@ -26,11 +26,11 @@ class Macros {
 
 	public static function buildSaveLoad() {
 
-		inline function isSerialized( field : haxe.macro.Field ) : Bool {
+		inline function isSerialized( field : Field ) : Bool {
 			return Lambda.find(field.meta, m -> m.name == ":s") != null;
 		}
 
-		inline function isOpt( field : haxe.macro.Field ) : Bool {
+		inline function isOpt( field : Field ) : Bool {
 			return Lambda.find(field.meta, m -> m.name == ":opt") != null;
 		}
 

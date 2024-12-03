@@ -437,7 +437,7 @@ class ShaderGraph extends hrt.prefab.Prefab {
 
 			var funcVar : TVar = {
 				name : functionName,
-				id : hxsl.Tools.allocVarId(),
+				id : Tools.allocVarId(),
 				kind : Function,
 				type : TFun([{ ret : TVoid, args : [] }])
 			};
@@ -522,7 +522,7 @@ class ShaderGraph extends hrt.prefab.Prefab {
 		if (__init__exprs.length != 0) {
 			var funcVar : TVar = {
 				name : "__init__",
-				id : hxsl.Tools.allocVarId(),
+				id : Tools.allocVarId(),
 				kind : Function,
 				type : TFun([{ ret : TVoid, args : [] }])
 			};

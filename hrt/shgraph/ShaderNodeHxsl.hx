@@ -165,7 +165,7 @@ class ShaderNodeHxsl extends ShaderNode {
 
 							var outputVar : TVar= {
 								name: v.name,
-								id: hxsl.Tools.allocVarId(),
+								id: hxsl.Ast.Tools.allocVarId(),
 								type: t,
 								kind: v.kind,
 								parent: v.parent,
@@ -192,7 +192,7 @@ class ShaderNodeHxsl extends ShaderNode {
 					var tvar = varsRemap.getOrPut(v.id,
 						{
 							name: v.name,
-							id: hxsl.Tools.allocVarId(),
+							id: hxsl.Ast.Tools.allocVarId(),
 							type: v.type,
 							kind: v.kind,
 							parent: v.parent,
@@ -203,7 +203,7 @@ class ShaderNodeHxsl extends ShaderNode {
 					var tvar = varsRemap.getOrPut(v.id,
 						{
 							name: v.name,
-							id: hxsl.Tools.allocVarId(),
+							id: hxsl.Ast.Tools.allocVarId(),
 							type: v.type,
 							kind: v.kind,
 							parent: v.parent,

@@ -34,7 +34,7 @@ class SubGraph extends ShaderNode {
 		#else
 		var shader = cast hide.Ide.inst.loadPrefab(pathShaderGraph);
 		#end
-		var graph = shader.getGraph(hrt.shgraph.Domain.Fragment);
+		var graph = shader.getGraph(hrt.shgraph.ShaderGraph.Domain.Fragment);
 
 		var genCtx = new ShaderGraphGenContext(graph, false);
 		var nodeGenCtx = new NodeGenContext.NodeGenContextSubGraph(null);
@@ -56,7 +56,7 @@ class SubGraph extends ShaderNode {
 		#else
 		var shader = cast hide.Ide.inst.loadPrefab(pathShaderGraph);
 		#end
-		var graph = shader.getGraph(hrt.shgraph.Domain.Fragment);
+		var graph = shader.getGraph(hrt.shgraph.ShaderGraph.Domain.Fragment);
 
 		var genCtx = new ShaderGraphGenContext(graph, false);
 		var nodeGenCtx = new NodeGenContext.NodeGenContextSubGraph(null);
