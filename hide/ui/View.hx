@@ -139,10 +139,6 @@ class View<T> extends hide.comp.Component {
 		this.container = cont;
 		@:privateAccess ide.views.push(this);
 		syncTitle();
-		container.on("resize",function(_) {
-			container.getElement().find('*').trigger('resize');
-			onResize();
-		});
 		container.on("destroy",function(e) {
 			destroy();
 		});

@@ -104,14 +104,10 @@ class GPUEmitterObject extends h3d.scene.MeshBatch {
 
 		simulationPass = new h3d.mat.Pass("simulation");
 		simulationPass.addShader(new BaseSimulation());
-
-		begin();
-		for ( _ in 0...data.maxCount )
-			emitInstance();
 	}
 
-	override function flush(ctx : h3d.scene.RenderContext) {
-		super.flush(ctx);
+	override function flush() {
+		super.flush();
 
 		var alloc = hxd.impl.Allocator.get();
 		if ( particleBuffers == null )
@@ -120,8 +116,8 @@ class GPUEmitterObject extends h3d.scene.MeshBatch {
 		var p = dataPasses;
 		var particleBufferFormat = hxd.BufferFormat.make([
 			{ name : "speed", type : DVec3 },
+			{ name : "life", type : DFloat },
 			{ name : "lifeTime", type : DFloat },
-			{ name : "lifeRatio", type : DFloat },
 			{ name : "random", type : DFloat },
 			{ name : "padding", type : DVec2 },
 		]);
@@ -134,9 +130,9 @@ class GPUEmitterObject extends h3d.scene.MeshBatch {
 					// floats[i * stride] = 0.0;
 					// floats[i * stride + 1] = 0.0;
 					// floats[i * stride + 2] = 0.0;
-					floats[i * stride + 3] = -1000.0; // lifeTime warmup
+					floats[i * stride + 3] = -1000.0; // life warmup
 					var l = hxd.Math.random() * (data.maxLifeTime - data.minLifeTime) + data.minLifeTime;
-					floats[i * stride + 4] = 1.0 / l; // lifeRatio
+					floats[i * stride + 4] = l; // lifeTime
 					floats[i * stride + 5] = hxd.Math.random(); // random
 					// padding
 					// floats[i * stride + 6] = 0.0;
@@ -197,6 +193,10 @@ class GPUEmitterObject extends h3d.scene.MeshBatch {
 			}
 			paramTexture.uploadPixels(pxls);
 		}
+
+		begin();
+		for ( _ in 0...this.data.maxCount )
+			emitInstance();
 	}
 
 	function createUpdateParamShader() {
@@ -332,7 +332,7 @@ class GPUEmitterObject extends h3d.scene.MeshBatch {
 					p.shader.batchBuffer = b;
 					p.shader.particleBuffer = particleBuffer.buffer;
 					p.shader.stride = b.format.stride;
-					p.shader.row = row;
+					p.shader.row = (row + 0.5) / shaderParams.length;
 					var pos = 0;
 					for ( i in b.format.getInputs() ) {
 						if ( i.name == p.param.def.name )
@@ -403,14 +403,6 @@ class GPUEmitter extends Object3D {
 
 	override function makeObject(parent3d : h3d.scene.Object) {
 		return new h3d.scene.Object(parent3d);
-	}
-
-	override function makeChild(c : hrt.prefab.Prefab) {
-		#if !editor
-		if ( Std.isOfType(c, hrt.prefab.Object3D) )
-			return;
-		#end
-		super.makeChild(c);
 	}
 
 	function updateEmitters() {

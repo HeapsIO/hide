@@ -269,7 +269,7 @@ class BaseFXTools {
 		}
 
 		var shader = elt.to(hrt.prefab.Shader);
-		if (shader != null && shader.shader != null) {
+		if (shader != null && shader.shader != null && !Std.isOfType(shader.shader, hrt.prefab.fx.gpuemitter.ComputeUtils) ) {
 			var params = makeShaderParams(shader, shader.getShaderDefinition());
 			var shader = shader.shader;
 

@@ -284,8 +284,14 @@ class FXAnimation extends h3d.scene.Object {
 						}
 					}
 
-					if(anim.visibility != null)
-						anim.obj.visible = anim.elt.visible && evaluator.getFloat(anim.visibility, time) > 0.5;
+					if(anim.visibility != null) {
+						var visible = anim.elt.visible;
+						#if editor
+						var editor = anim.elt.shared.editor;
+						visible = visible && editor.isVisible(anim.elt);
+						#end
+						anim.obj.visible = visible && evaluator.getFloat(anim.visibility, time) > 0.5;
+					}
 
 					if(anim.color != null) {
 						switch(anim.color) {

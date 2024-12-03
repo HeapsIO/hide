@@ -145,7 +145,7 @@ class Scene extends hide.comp.Component implements h3d.IDrawable {
 
 	function setErrorMessage(s: String) {
 		js.Browser.console.error(s);
-		errorMessageBox.html(s);
+		errorMessageBox.html(StringTools.replace(s, "\n", "<br/>"));
 		errorMessageBox.css("visibility", "visible");
 		errorThisFrame = true;
 	}

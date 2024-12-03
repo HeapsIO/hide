@@ -6,6 +6,8 @@ class UserSettings extends Settings {
 
 		var general = new hide.view.settings.Settings.Categorie("General");
 		general.add("Auto-save prefabs before closing", new Element('<input type="checkbox"/>'), Ide.inst.ideConfig.autoSavePrefab, (v) -> Ide.inst.ideConfig.autoSavePrefab = v);
+		general.add("Use alternate font", new Element('<input type="checkbox"/>'), Ide.inst.ideConfig.useAlternateFont, (v) -> {Ide.inst.ideConfig.useAlternateFont = v; Ide.inst.refreshFont();});
+
 		categories.push(general);
 
 		var search = new hide.view.settings.Settings.Categorie("Search");

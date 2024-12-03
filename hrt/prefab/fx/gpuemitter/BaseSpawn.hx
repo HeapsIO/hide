@@ -7,8 +7,8 @@ class BaseSpawn extends ComputeUtils {
 		}>;
 		@param var particleBuffer : RWPartialBuffer<{
 			speed : Vec3,
+			life : Float,
 			lifeTime : Float,
-			lifeRatio : Float,
 			random : Float,
 		}>;
 		@param var atomic : RWBuffer<Int>;
@@ -23,7 +23,7 @@ class BaseSpawn extends ComputeUtils {
 		@param var rate : Int;
 		@param var absPos : Mat4;
 
-		var lifeTime : Float;
+		var life : Float;
 		var particleRandom : Float;
 		var modelView : Mat4;
 		var relativeTransform : Mat4;
@@ -31,14 +31,14 @@ class BaseSpawn extends ComputeUtils {
 		function __init__() {
 			emitNormal = vec3(0.0, 0.0, 1.0);
 			particleRandom = particleBuffer[computeVar.globalInvocation.x].random;
-			lifeTime = mix(minLifeTime, maxLifeTime, (global.time + particleRandom) % 1.0);
+			life = mix(minLifeTime, maxLifeTime, (global.time + particleRandom) % 1.0);
 			relativeTransform = translationMatrix(vec3(0.0));
 			modelView = relativeTransform * absPos;
 		}
 
 		function main() {
 			var idx = computeVar.globalInvocation.x;
-			if ( FORCED || (!INFINITE && particleBuffer[idx].lifeTime < 0.0) ) {
+			if ( FORCED || (!INFINITE && particleBuffer[idx].life < 0.0) ) {
 				var c = atomicAdd(atomic, 0, 1);
 				if ( FORCED || (!INFINITE && c < rate) ) {
 					batchBuffer[idx].modelView = modelView;
@@ -46,9 +46,9 @@ class BaseSpawn extends ComputeUtils {
 					if ( SPEED_NORMAL )
 						s = emitNormal;
 					particleBuffer[idx].speed = s * maxStartSpeed;
-					particleBuffer[idx].lifeTime = lifeTime;
+					particleBuffer[idx].life = life;
 					// Keep in memory duration of particle to normalize curve update.
-					particleBuffer[idx].lifeRatio = 1.0 / lifeTime;
+					particleBuffer[idx].lifeTime = life;
 				}
 			}
 		}

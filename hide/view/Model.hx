@@ -165,6 +165,10 @@ class Model extends FileView {
 		sceneEditor.view.keys.register("undo", function() undo.undo());
 		sceneEditor.view.keys.register("redo", function() undo.redo());
 
+		sceneEditor.view.keys.register("view.refresh", function() rebuild());
+		sceneEditor.view.keys.register("view.refreshApp", function() untyped chrome.runtime.reload());
+
+
 		element.find(".hide-scene-tree").first().append(sceneEditor.tree.element);
 		element.find(".render-props-edition").find('.hide-scenetree').append(sceneEditor.renderPropsTree.element);
 		element.find(".props").first().append(sceneEditor.properties.element);
@@ -280,8 +284,19 @@ class Model extends FileView {
 		if ( props != null && props.__refMode != null )
 			mode.val((props:Dynamic).__refMode).select();
 
+
+		function setDefault() {
+			tex.show();
+			matEl.show();
+			def = true;
+			selectMaterial(m);
+		}
+
 		libSelect.change(function(_) {
 			updateMatSelect();
+
+			if (libSelect.val() == "")
+				setDefault();
 		});
 
 		matSelect.change(function(_) {
@@ -293,10 +308,7 @@ class Model extends FileView {
 				tex.hide();
 				matEl.hide();
 			} else {
-				tex.show();
-				matEl.show();
-				def = true;
-				selectMaterial(m);
+				setDefault();
 			}
 		});
 
@@ -1397,6 +1409,8 @@ class Model extends FileView {
 	}
 
 	public function setRenderPropsEditionVisibility(visible : Bool) {
+		if (element == null)
+			return;
 		var renderPropsEditionEl = this.element.find('.render-props-edition');
 
 		if (!visible) {

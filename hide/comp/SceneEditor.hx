@@ -4247,7 +4247,7 @@ class SceneEditor {
 		}
 
 		if (target == sceneData) {
-			var renderProps = original.find(hrt.prefab.RenderProps, null, true);
+			var renderProps = original.find(hrt.prefab.RenderProps, null, true, false);
 			if (renderProps != null)
 				queueRebuild(target);
 		}
@@ -4373,10 +4373,11 @@ class SceneEditor {
 			if( newRenderProps == null )
 				newRenderProps = renderProps[0];
 
+			scene.s3d.renderer.props = scene.s3d.renderer.getDefaultProps();
+
 			if (newRenderProps != previousRenderProps) {
 				if (previousRenderProps != null)
 					removeInstance(previousRenderProps);
-				scene.s3d.renderer.props = scene.s3d.renderer.getDefaultProps();
 				lastRenderProps = newRenderProps;
 				if (lastRenderProps != null) {
 					if (renderPropsRoot != null) {

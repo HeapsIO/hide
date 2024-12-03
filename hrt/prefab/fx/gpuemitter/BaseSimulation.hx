@@ -7,8 +7,7 @@ class BaseSimulation extends ComputeUtils {
 		}>;
 		@param var particleBuffer : RWPartialBuffer<{
 			speed : Vec3,
-			lifeTime : Float,
-			lifeRatio : Float,
+			life : Float,
 			random : Float,
 		}>;
 
@@ -24,7 +23,7 @@ class BaseSimulation extends ComputeUtils {
 
 		var dt : Float;
 		var speed : Vec3;
-		var lifeTime : Float;
+		var life : Float;
 		var particleRandom : Float;
 		var modelView : Mat4;
 		var instanceID : Int;
@@ -34,7 +33,7 @@ class BaseSimulation extends ComputeUtils {
 		function __init__() {
 			dt = dtParam;
 			speed = particleBuffer[computeVar.globalInvocation.x].speed;
-			lifeTime = particleBuffer[computeVar.globalInvocation.x].lifeTime;
+			life = particleBuffer[computeVar.globalInvocation.x].life;
 			prevModelView = batchBuffer[computeVar.globalInvocation.x].modelView;
 			particleRandom = particleBuffer[computeVar.globalInvocation.x].random;
 			relativeTransform = scaleMatrix(vec3(particleRandom * (maxSize - minSize) + minSize));
@@ -53,7 +52,7 @@ class BaseSimulation extends ComputeUtils {
 				newPos = ((newPos - boundsPos) % boundsSize) + boundsPos;
 			modelView = relativeTransform * align * translationMatrix(newPos);
 			var idx = computeVar.globalInvocation.x;
-			particleBuffer[idx].lifeTime = lifeTime - dt;
+			particleBuffer[idx].life = life - dt;
 			particleBuffer[idx].speed = speed;
 			batchBuffer[idx].modelView = modelView;
 		}

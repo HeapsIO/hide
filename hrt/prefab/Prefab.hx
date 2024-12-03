@@ -175,7 +175,7 @@ class Prefab {
 	}
 
 	/**
-		Create a copy of the data this prefab and all of it's children (unless `withChildren` is `false`), without calling `make()` on them.
+		Create a copy of the data this prefab and all of its children (unless `withChildren` is `false`), without calling `make()` on them.
 		If `parent` is given, then `sh` will be set to `parent.shared`. If `parent` and `sh` is null, `sh` will be set to a new context shared will be created.
 		The `parent` and `sh` are then given to the clone constructor.
 	**/
@@ -317,7 +317,7 @@ class Prefab {
 	}
 
 	/**
-		Cleanup prefab specific ressources, and call dispose on it's children.
+		Cleanup prefab specific ressources, and call dispose on its children.
 	**/
 	public function dispose() {
 		for (child in children) {
@@ -326,7 +326,7 @@ class Prefab {
 	}
 
 	/**
-		Find the first h2d.Object in this hierarchy, in either this or it's parents
+		Find the first h2d.Object in this hierarchy, in either this or its parents
 	**/
 	public function findFirstLocal2d(followRefs: Bool = false) : h2d.Object {
 		var o2d = findParent(Object2D, (p) -> p.local2d != null, true, followRefs);
@@ -334,7 +334,7 @@ class Prefab {
 	}
 
 	/**
-		Find the first h3d.scene.Object in this hierarchy, in either this or it's parents
+		Find the first h3d.scene.Object in this hierarchy, in either this or its parents
 	**/
 	public function findFirstLocal3d(followRefs: Bool = false) : h3d.scene.Object {
 		var o3d = findParent(Object3D, (p) -> p.local3d != null, true, followRefs);
@@ -425,7 +425,9 @@ class Prefab {
 		Find a the first prefab in the tree with the given class that matches the optionnal `filter`.
 		Returns null if no matching prefab was found
 	**/
-	public function find<T:Prefab>(?cl: Class<T>, ?filter : T -> Bool, followRefs : Bool = false ) : Null<T> {
+	public function find<T:Prefab>(?cl: Class<T>, ?filter : T -> Bool, followRefs : Bool = false, includeDisabled: Bool = true) : Null<T> {
+		if (!includeDisabled && !enabled)
+			return null;
 		var asCl = cl != null ? Std.downcast(this, cl) : cast this;
 		if (asCl != null)
 			if (filter == null || filter(asCl))
@@ -597,7 +599,7 @@ class Prefab {
 
 
 	/**
-		Called by the editor to remove the objects created by this prefab but not it's children.
+		Called by the editor to remove the objects created by this prefab but not its children.
 	**/
 	function editorRemoveInstanceObjects() : Void {
 	}
@@ -647,7 +649,7 @@ class Prefab {
 	}
 
 	/**
-		Recursively copy this prefab and it's children into a dynamic object, containing
+		Recursively copy this prefab and its children into a dynamic object, containing
 		all the serializable properties and the type of the object
 	**/
 	function serialize() : Dynamic {
@@ -783,8 +785,8 @@ class Prefab {
 	}
 
 	/**
-		Return the first h3d.scene.Objects found in each of this prefab children.
-		If a children has no h3d.scene.Objects, it then search in it's children and so on.
+		Returns the first h3d.scene.Objects found in each of this prefab's children.
+		If a children has no h3d.scene.Objects, it then searches in its children and so on.
 	**/
 	static function getChildrenRoots( base : h3d.scene.Object, p : Prefab, out : Array<h3d.scene.Object> ) {
 		for( c in p.children ) {

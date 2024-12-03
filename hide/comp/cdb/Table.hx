@@ -26,6 +26,8 @@ class Table extends Component {
 
 	public var nestedIndex : Int = 0;
 
+	var resizeObserver : hide.comp.ResizeObserver;
+
 	public function new(editor, sheet, root, mode) {
 		super(null,root);
 		this.displayMode = mode;
@@ -318,7 +320,12 @@ class Table extends Component {
 		#if js
 		if( sheet.parent == null ) {
 			cols.ready(setupTableElement);
-			cols.on("resize", setupTableElement);
+
+			if (resizeObserver != null) {
+				resizeObserver.disconnect();
+			}
+			resizeObserver = new hide.comp.ResizeObserver((_,_) -> setupTableElement());
+			resizeObserver.observe(editor.element.parent().get(0));
 		}
 		#end
 	}

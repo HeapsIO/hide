@@ -13,7 +13,6 @@ class TurbulenceSimulationShader extends ComputeUtils {
 		@param var persistence : Float;
 
 		var speed : Vec3;
-		var lifeTime : Float;
 		var prevModelView : Mat4;
 		var modelView : Mat4;
 		var dt : Float;

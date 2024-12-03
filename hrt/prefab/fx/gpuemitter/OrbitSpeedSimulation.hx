@@ -12,7 +12,6 @@ class OrbitSpeedSimulationShader extends ComputeUtils {
 		@param var center : Vec3;
 
 		var speed : Vec3;
-		var lifeTime : Float;
 		var prevModelView : Mat4;
 		var modelView : Mat4;
 		var dt : Float;

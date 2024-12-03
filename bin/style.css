@@ -27,6 +27,9 @@ body {
   background-color: black;
   user-select: none;
 }
+.lm_header .lm_tab {
+  font-family: var(--default-font), Serif !important;
+}
 #message-container {
   pointer-events: none;
   z-index: 9999;
@@ -117,7 +120,6 @@ body {
   float: left;
   margin-left: 5px;
   border: none;
-  font-family: Verdana, serif;
   font-size: 9pt;
 }
 .error-panel .error-banner button i {
@@ -139,10 +141,15 @@ body {
   display: none;
 }
 .error-panel .error-log p {
-  font-family: Verdana, serif;
+  font-family: var(--default-font), serif;
   margin: 0px;
   padding-top: 5px;
   padding-left: 5px;
+}
+:root {
+  --default-font: 'Inter';
+  --default-font-size: 10pt;
+  font-size: var(--default-font-size);
 }
 ul,
 li {
@@ -159,8 +166,8 @@ a,
 input,
 select,
 textarea {
-  font-family: Verdana, serif;
-  font-size: 9pt;
+  font-family: var(--default-font), serif;
+  font-feature-settings: "cv08", "cv05";
   color: #aaa;
 }
 a {
@@ -401,12 +408,19 @@ input[type=checkbox]:checked:after {
 ::-webkit-scrollbar {
   width: 5px;
   height: 5px;
+  right: 5px;
 }
 ::-webkit-scrollbar-track {
   background: #666;
+  border-radius: 20px;
+  margin: 5px;
 }
 ::-webkit-scrollbar-thumb {
   background: #ddd;
+  border-radius: 100cqw;
+}
+::-webkit-scrollbar-corner {
+  visibility: hidden;
 }
 .checkbox-wrapper {
   display: inline-block;
@@ -434,8 +448,10 @@ input[type=checkbox]:checked:after {
   padding-top: 1em;
   padding-bottom: 1em;
   text-align: center;
+  max-height: 50%;
+  overflow-y: auto;
   font-weight: bold;
-  font-family: 'Inter';
+  font-family: var(--default-font);
 }
 .hide-scene {
   position: absolute;
@@ -557,9 +573,11 @@ input[type=checkbox]:checked:after {
   max-width: 1000px;
   overflow-y: auto;
   min-height: 350px;
+  box-sizing: border-box;
+  margin-bottom: 1px;
+  border-radius: 3px;
 }
 .hide-scenetree .jstree {
-  min-width: 300px;
   overflow-x: hidden;
 }
 .hide-scenetree .jstree-container-ul {
@@ -765,7 +783,7 @@ input[type=checkbox]:checked:after {
   text-shadow: 1px 1px 1px rgba(0, 0, 0, 0.45);
 }
 .tb-group > * .label {
-  font-family: Verdana, serif;
+  font-family: Inter, serif;
   display: inline-block;
   margin-left: 6px;
   margin-right: 6px;
@@ -978,6 +996,7 @@ input[type=checkbox]:checked:after {
 }
 .hide-tabs .tab {
   max-height: 100%;
+  width: 100%;
   display: flex;
   flex-direction: column;
   position: absolute;
@@ -1095,6 +1114,10 @@ input[type=checkbox]:checked:after {
 }
 .hide-properties .section.open > h1:before {
   content: "\25bc  ";
+}
+.hide-properties .flex > input {
+  flex: 1 1;
+  min-width: 0;
 }
 .hide-properties dl {
   overflow-x: hidden;
@@ -1909,9 +1932,9 @@ input[type=checkbox]:checked:after {
 .shader-editor {
   display: flex;
   flex-direction: row;
-}
-.shader-editor * {
-  font-family: "Inter";
+  /** {
+		font-family: "Inter";
+	}*/
 }
 .shader-editor #preview {
   z-index: 3;
@@ -2173,7 +2196,7 @@ input[type=checkbox]:checked:after {
   text-transform: uppercase;
   font-weight: bold;
   margin-left: 7px;
-  font-family: Verdana, serif;
+  font-family: var(--default-font), serif;
   font-size: 9pt;
   color: #aaa;
 }
@@ -2183,7 +2206,7 @@ input[type=checkbox]:checked:after {
 }
 .texture-editor #right-panel .group .content .title {
   font-weight: bold;
-  font-family: Verdana, serif;
+  font-family: var(--default-font), serif;
   font-size: 9pt;
   color: #aaa;
   margin: 0 0 5px 0;
@@ -2376,7 +2399,7 @@ input[type=checkbox]:checked:after {
   outline: none !important;
 }
 .graph-view .heaps-scene svg {
-  font-family: 'Inter';
+  font-family: var(--default-font);
 }
 .graph-view .heaps-scene svg foreignObject .container {
   padding: 1px;
@@ -2385,7 +2408,7 @@ input[type=checkbox]:checked:after {
   display: block;
   box-sizing: border-box;
   font-size: 8pt;
-  font-family: 'Inter';
+  font-family: var(--default-font);
   padding: 0px 2px 0px 2px;
   text-align: right;
   border: none;
@@ -2412,6 +2435,9 @@ input[type=checkbox]:checked:after {
 .graph-view .heaps-scene svg g.box.comment .outline {
   stroke: rgba(80, 80, 80, 0.5);
   stroke-width: 3;
+}
+.graph-view .heaps-scene svg g.box.comment foreignObject {
+  pointer-events: all;
 }
 .graph-view .heaps-scene svg g.box.selected .outline {
   stroke: #668fff;
@@ -2568,7 +2594,7 @@ input[type=checkbox]:checked:after {
   font-size: 8px;
 }
 .graph-view .heaps-scene #add-menu {
-  font-family: 'Inter';
+  font-family: var(--default-font);
 }
 .graph-view .paramVisible {
   color: black!important;
@@ -2712,7 +2738,7 @@ body.hide-subview .lm_controls {
   font-size: 14px!important;
 }
 .jstree.small a {
-  font-size: 12px;
+  font-size: 1em;
 }
 .jstree.small .jstree-node {
   min-height: 18px;
@@ -3644,7 +3670,7 @@ hide-popover hide-content {
   box-shadow: 0 1px 6px 1px rgba(0, 0, 0, 0.75);
   border: solid 1px #444444;
   color: #aaaaaa;
-  font-family: system-ui, Verdana, Geneva, Tahoma, sans-serif;
+  font-family: var(--default-font), sans-serif;
   font-size: 12px;
 }
 .context-menu2:focus {
@@ -3671,7 +3697,7 @@ hide-popover hide-content {
 }
 .context-menu2 .search-bar input {
   color: #aaaaaa;
-  font-family: Verdana, Geneva, Tahoma, sans-serif;
+  font-family: var(--default-font), Geneva, Tahoma, sans-serif;
   width: 100%;
   box-sizing: border-box;
   border: none;
@@ -3778,21 +3804,66 @@ hide-popover hide-content {
   color: white;
   mix-blend-mode: difference;
 }
-#statusBar {
-  position: fixed;
-  bottom: 16px;
-  right: 16px;
-  z-index: 999;
+.hide-root {
+  display: flex;
+  flex-direction: column;
+  justify-content: stretch;
+  box-sizing: border-box;
+  height: 100vh;
+  width: 100vw;
+}
+.hide-root > .golden-layout-root {
+  flex-grow: 1;
+  background-color: #000000;
+  min-height: 0;
+  min-width: 0;
+  overflow: clip;
+}
+.hide-root > .status-bar {
+  padding-left: 4px;
+  padding-right: 4px;
+  height: 16px;
+  background-color: #202020;
+  border-top: 1px solid #333;
+  flex-shrink: 0;
+  display: flex;
+  font-family: var(--default-font);
+}
+.hide-root > .status-bar .build {
+  margin-left: auto;
+}
+.hide-root > .status-bar #status-icons {
   display: flex;
   align-items: center;
+  gap: 4px;
 }
-#statusBar > .statusbar-icon {
-  height: 24px;
-  width: 24px;
+.hide-root > .status-bar #status-icons > .icon {
+  height: 14px;
+  width: 14px;
   display: flex;
   align-items: center;
   justify-content: center;
-  font-size: 2em;
+  font-size: 1em;
+}
+.hide-root > .status-bar #status-icons button {
+  height: 14px;
+  font-size: 0.8em;
+  padding: 2px;
+  margin: 0px;
+  border: none;
+  outline: none;
+  border-radius: 2px;
+  background-color: #efefef;
+}
+.hide-root > .status-bar #status-icons button:hover {
+  background-color: #ddd;
+}
+.hide-root > .status-bar #status-icons .error-suppressed {
+  padding-left: 4px;
+  padding-right: 4px;
+  background-color: hsl(359, 68%, 71%);
+  color: black;
+  border-radius: 3px;
 }
 .points-inspector {
   width: 100%;

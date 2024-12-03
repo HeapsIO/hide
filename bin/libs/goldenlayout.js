@@ -2527,7 +2527,7 @@ lm.utils.copy( lm.controls.Header.prototype, {
 		/**
 		 * Dropdown to show additional tabs.
 		 */
-		showTabDropdown = lm.utils.fnBind( this._showAdditionalTabsDropdown, this );
+		showTabDropdown = lm.utils.fnBind( this._toggleAdditionalTabsDropdownVisiblity, this );
 		tabDropdownLabel = this.layoutManager.config.labels.tabDropdown;
 		this.tabDropdownButton = new lm.controls.HeaderButton( this, tabDropdownLabel, 'lm_tabdropdown', showTabDropdown );
 		this.tabDropdownButton.element.hide();
@@ -2570,21 +2570,15 @@ lm.utils.copy( lm.controls.Header.prototype, {
 	},
 
 	/**
-	 * Shows drop down for additional tabs when there are too many to display.
+	 * Toggle visibility of the additional tabs's drop down for when there are too many to display.
 	 *
 	 * @returns {void}
 	 */
-	_showAdditionalTabsDropdown: function() {
-		this.tabDropdownContainer.show();
-	},
-
-	/**
-	 * Hides drop down for additional tabs when there are too many to display.
-	 *
-	 * @returns {void}
-	 */
-	_hideAdditionalTabsDropdown: function( e ) {
-		this.tabDropdownContainer.hide();
+	_toggleAdditionalTabsDropdownVisiblity: function() {
+		if (this.tabDropdownContainer.is(":visible"))
+			this.tabDropdownContainer.hide();
+		else
+			this.tabDropdownContainer.show();
 	},
 
 	/**

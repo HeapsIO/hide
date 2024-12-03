@@ -24,6 +24,13 @@
 
 
 <script>
+	var win = nw.Window.get();
+	win.on('close', function() {
+		nw.App.quit();
+	});
+</script>
+
+<script>
 	// fix for Sys.programPath
 	__filename = process.argv[0];
 </script>
@@ -124,13 +131,18 @@
 <script>
   var path = './';
   var fs = require('fs');
+  var timer = 0;
   var reloadWatcher=fs.watch(path, function(_,file) {
+	if (file == null)
+		return;
 	var ext = file.split(".").pop().toLowerCase();
 	if( ext != "js" && ext != "css" ) return;
-	reloadWatcher.close();
-	setTimeout(function() {
+	if (timer != 0)
+		clearTimeout(timer);
+	timer = setTimeout(function() {
+		reloadWatcher.close();
 		hide.Ide.inst.reload();
-	},2500);
+	}, 1000);
   });
 </script>
 

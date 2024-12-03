@@ -18,7 +18,6 @@ private typedef DataDef = {
 
 class DataFiles {
 
-	static var changed : Bool;
 	static var skip : Int = 0;
 	static var watching : Map<String, Void -> Void > = new Map();
 
@@ -431,10 +430,7 @@ class DataFiles {
 			skip--;
 			return;
 		}
-		changed = true;
 		haxe.Timer.delay(function() {
-			if( !changed ) return;
-			changed = false;
 
 			// Only reload data files that are concerned by this file modification
 			function reloadFile(path: String) {
@@ -503,9 +499,16 @@ class DataFiles {
 			}
 
 			reloadFile(f);
-			Editor.refreshAll(false, false);
+			if (delayedReload == null) {
+				delayedReload = haxe.Timer.delay(() -> {
+					Editor.refreshAll(false, false);
+					delayedReload = null;
+				},1);
+			}
 		},0);
 	}
+
+	static var delayedReload: haxe.Timer;
 
 	static function loadPrefab(file) {
 		var p = Ide.inst.loadPrefab(file);

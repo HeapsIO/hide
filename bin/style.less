@@ -33,6 +33,10 @@ body {
 	user-select:none;
 }
 
+.lm_header .lm_tab {
+	font-family: var(--default-font), Serif !important;
+}
+
 #message-container {
 	pointer-events: none;
 	z-index: 9999;
@@ -135,10 +139,8 @@ body {
 			background: #ff5555;
 			color : #191A21;
 			float: left;
-			font-family : Verdana, serif;
 			margin-left: 5px;
 			border: none;
-			font-family : Verdana, serif;
 			font-size : 9pt;
 		}
 
@@ -154,7 +156,7 @@ body {
 		}
 
 		p {
-			font-family : Verdana, serif;
+			font-family : var(--default-font), serif;
 			margin: 0px;
 			padding-top: 5px;
 			padding-left: 5px;
@@ -171,6 +173,13 @@ body {
 
 //:focus { outline: none; }
 
+:root {
+	--default-font: 'Inter';
+	--default-font-size: 10pt;
+
+	font-size: var(--default-font-size);
+}
+
 ul, li {
 	margin : 0;
 	padding : 0;
@@ -178,8 +187,8 @@ ul, li {
 }
 
 body, td, th, li, p, a, input, select, textarea {
-	font-family : Verdana, serif;
-	font-size : 9pt;
+	font-family : var(--default-font), serif;
+	font-feature-settings: "cv08", "cv05"; // Inter uppercase I and lowercase l disambiguation
 	color: #aaa;
 }
 
@@ -432,14 +441,22 @@ input[type=checkbox] {
 ::-webkit-scrollbar {
 	width: 5px;
 	height: 5px;
+	right: 5px;
 }
 
 ::-webkit-scrollbar-track {
 	background: #666;
+	border-radius: 20px;
+	margin: 5px;
 }
 
 ::-webkit-scrollbar-thumb {
 	background: #ddd;
+	border-radius: 100cqw;
+}
+
+::-webkit-scrollbar-corner {
+	visibility: hidden;
 }
 
 .checkbox-wrapper {
@@ -471,8 +488,11 @@ input[type=checkbox] {
 		padding-bottom: 1em;
 		text-align: center;
 
+		max-height: 50%;
+		overflow-y: auto;
+
 		font-weight: bold;
-		font-family: 'Inter';
+		font-family: var(--default-font);
 	}
 }
 
@@ -620,9 +640,11 @@ input[type=checkbox] {
 	max-width: 1000px;
 	overflow-y: auto;
 	min-height : 350px;
+	box-sizing: border-box;
+	margin-bottom: 1px;
+	border-radius: 3px;
 
 	.jstree {
-		min-width: 300px;
 		overflow-x: hidden;
 	}
 
@@ -821,7 +843,7 @@ input[type=checkbox] {
 		}
 
 		.label {
-			font-family : Verdana, serif;
+			font-family : Inter, serif;
 			display: inline-block;
 			margin-left: 6px;
 			margin-right: 6px;
@@ -1055,6 +1077,7 @@ input[type=checkbox] {
 	}
 	.tab {
 		max-height: 100%;
+		width: 100%;
 		display: flex;
 		flex-direction: column;
 		position: absolute;
@@ -1185,6 +1208,11 @@ input[type=checkbox] {
 
 	.section.open > h1:before {
 		content:"\25bc  ";
+	}
+
+	.flex > input {
+		flex: 1 1;
+		min-width: 0;
 	}
 
 	dl {
@@ -2141,9 +2169,9 @@ input[type=checkbox] {
 	display: flex;
 	flex-direction: row;
 
-	* {
+	/** {
 		font-family: "Inter";
-	}
+	}*/
 
 	#preview {
 		z-index: 3;
@@ -2447,7 +2475,7 @@ input[type=checkbox] {
 					text-transform: uppercase;
 					font-weight: bold;
 					margin-left: 7px;
-					font-family: Verdana, serif;
+					font-family: var(--default-font), serif;
 					font-size: 9pt;
 					color: #aaa;
 				}
@@ -2459,7 +2487,7 @@ input[type=checkbox] {
 
 				.title {
 					font-weight: bold;
-					font-family: Verdana, serif;
+					font-family: var(--default-font), serif;
 					font-size: 9pt;
 					color: #aaa;
 					margin: 0 0 5px 0;
@@ -2693,7 +2721,7 @@ input[type=checkbox] {
 		outline: none !important;
 		svg {
 
-			font-family: 'Inter';
+			font-family: var(--default-font);
 
 			foreignObject {
 
@@ -2704,7 +2732,7 @@ input[type=checkbox] {
 						display: block;
 						box-sizing: border-box;
 						font-size: 8pt;
-						font-family: 'Inter';
+						font-family: var(--default-font);
 						padding: 0px 2px 0px 2px;
 						text-align: right;
 						border: none;
@@ -2739,6 +2767,10 @@ input[type=checkbox] {
 						.outline {
 							stroke: rgba(80,80,80,0.5);
 							stroke-width: 3;
+						}
+
+						foreignObject {
+							pointer-events: all;
 						}
 
 						pointer-events: none;
@@ -2941,7 +2973,7 @@ input[type=checkbox] {
 		}
 
 		#add-menu {
-			font-family: 'Inter';
+			font-family: var(--default-font);
 		}
 	}
 	.paramVisible {
@@ -3108,7 +3140,7 @@ body.hide-subview {
 	@size: 18px;
 
 	a {
-		font-size: 12px;
+		font-size: 1em;
 	}
 
 	.jstree-node {
@@ -4255,7 +4287,7 @@ hide-popover {
 
 	border: solid 1px #444444;
 	color: #aaaaaa;
-	font-family: system-ui, Verdana, Geneva, Tahoma, sans-serif;
+	font-family: var(--default-font), sans-serif;
 	font-size: 12px;
 
 	&:focus {
@@ -4286,7 +4318,7 @@ hide-popover {
 
 		input {
 			color: #aaaaaa;
-			font-family: Verdana, Geneva, Tahoma, sans-serif;
+			font-family: var(--default-font), Geneva, Tahoma, sans-serif;
 			width: 100%;
 			box-sizing: border-box;
 
@@ -4414,26 +4446,86 @@ hide-popover {
     mix-blend-mode: difference;
 }
 
-#statusBar {
-	position: fixed;
-	bottom: 16px;
-	right: 16px;
 
-	z-index: 999;
 
+.hide-root {
 	display: flex;
+	flex-direction: column;
+	justify-content: stretch;
 
-	align-items: center;
+	box-sizing: border-box;
 
-	> .statusbar-icon {
-		height: 24px;
-		width: 24px;
+	height: 100vh;
+	width: 100vw;
+
+	> .golden-layout-root {
+		flex-grow: 1;
+		background-color: #000000;
+		min-height: 0;
+		min-width: 0;
+
+		overflow: clip;
+	}
+
+	> .status-bar {
+
+		padding-left: 4px;
+		padding-right: 4px;
+
+		height: 16px;
+		background-color: #202020;
+		border-top: 1px solid #333;
+		flex-shrink: 0;
 
 		display: flex;
-		align-items: center;
-		justify-content: center;
 
-		font-size: 2em;
+		font-family: var(--default-font);
+
+
+		.build {
+			margin-left: auto;
+		}
+
+		#status-icons {
+			display: flex;
+			align-items: center;
+
+			gap: 4px;
+
+			> .icon {
+				height: 14px;
+				width: 14px;
+				display: flex;
+				align-items: center;
+				justify-content: center;
+				font-size: 1em;
+			}
+
+			button {
+				height: 14px;
+				font-size: 0.8em;
+				padding: 2px;
+				margin: 0px;
+				border: none;
+				outline: none;
+				border-radius: 2px;
+
+				background-color: #efefef;
+				&:hover {
+					background-color: #ddd;
+				}
+			}
+
+			.error-suppressed {
+				padding-left: 4px;
+				padding-right: 4px;
+				background-color: hsl(359deg, 68%, 71%);
+				color: black;
+				border-radius: 3px;
+			}
+		}
+
+
 	}
 }
 
