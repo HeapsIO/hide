@@ -251,5 +251,5 @@ class SplineMesh extends hrt.prefab.Object3D {
 	}
 	#end
 
-	static var _ = hrt.prefab.Prefab.register("splineMesh_new", SplineMesh);
+	static var _ = hrt.prefab.Prefab.register("splineMesh", SplineMesh);
 }
