@@ -13,10 +13,26 @@ class AnimGraph extends hrt.prefab.Prefab {
 		super.load(json);
 		nodes = [];
 
+		var corruptedNodes : Map<Int,Bool> = [];
 		for (nodeData in (json.nodes:Array<Dynamic>)) {
-			var node = Node.createFromDynamic(nodeData);
-			nodes.set(node.id, node);
-			nodeIdCount = hxd.Math.imax(node.id+1, nodeIdCount);
+			try  {
+				var node = Node.createFromDynamic(nodeData);
+				nodes.set(node.id, node);
+				nodeIdCount = hxd.Math.imax(node.id+1, nodeIdCount);
+			} catch (e) {
+				corruptedNodes.set(nodeData.id, true);
+				hide.Ide.inst.quickError('Missing node type ${nodeData.type} from graph.');
+			}
+		}
+
+		for (node in nodes) {
+			var i = node.inputEdges.length-1;
+			while (i >= 0) {
+				if(corruptedNodes.get(node.inputEdges[i].nodeTarget) != null) {
+					node.inputEdges.splice(i, 1);
+				}
+				i-=1;
+			}
 		}
 	}
 
