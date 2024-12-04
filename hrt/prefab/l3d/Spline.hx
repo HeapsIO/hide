@@ -728,8 +728,9 @@ class Spline extends hrt.prefab.Object3D {
 			var pos = points[pIdx].pos;
 			var el = new hide.Element('<div class="point folded">
 				<div class="header">
-					<div class="icon ico ico-chevron-right"></div>
+					<div id="fold" class="icon ico ico-chevron-right"></div>
 					<p>Point [${pIdx}]</p>
+					<div id="remove" class="icon ico ico-close"></div>
 				</div>
 				<div class="body">
 					<dt>Position</dt><dd><input class="pos-x" type="number" value="${pos.x}"/><input class="pos-y" type="number" value="${pos.y}"/><input type="number" class="pos-z" value="${pos.z}"/></dd>
@@ -742,12 +743,33 @@ class Spline extends hrt.prefab.Object3D {
 				selected = pIdx;
 			});
 
-			var foldBtn = el.find(".icon");
+			var foldBtn = el.find("#fold");
 			foldBtn.click((e) -> {
 				var folded = !el.hasClass('folded');
 				el.toggleClass("folded", folded);
 				foldBtn.toggleClass("ico-chevron-down", !folded);
 				foldBtn.toggleClass("ico-chevron-right", folded);
+			});
+
+			var removeBtn = el.find("#remove");
+			removeBtn.click((e) -> {
+				var idxToRemove = pIdx;
+				var p = points[pIdx];
+				removePoint(idxToRemove);
+				this.updateInstance();
+				refreshHandles();
+				refreshPointList(ctx);
+				ctx.properties.undo.change(Custom(function(undo) {
+					if (undo) {
+						addPoint(idxToRemove, p);
+					}
+					else {
+						removePoint(idxToRemove);
+					}
+					this.updateInstance();
+					refreshHandles();
+					refreshPointList(ctx);
+				}));
 			});
 
 			var px = el.find(".pos-x");

@@ -3900,6 +3900,9 @@ hide-popover hide-content {
 .spline-editor .points-inspector .content .points-container .point .header .icon:hover {
   color: #ececec;
 }
+.spline-editor .points-inspector .content .points-container .point .header #remove {
+  margin-left: auto;
+}
 .spline-editor .points-inspector .content .points-container .point .header p {
   margin: 0;
 }
