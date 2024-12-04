@@ -704,7 +704,7 @@ class Spline extends hrt.prefab.Object3D {
 			updateSpline(this);
 		});
 
-		ctx.properties.add(props, null, null);
+		ctx.properties.add(props, this, function(pname) {ctx.onChange(this, pname); });
 
 		refreshPointList(ctx);
 	}
