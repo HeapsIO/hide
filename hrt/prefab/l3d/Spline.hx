@@ -816,6 +816,8 @@ class Spline extends hrt.prefab.Object3D {
 
 	function refreshHandles() {
 		clearHandles();
+		if (!editMode)
+			return;
 		for (p in points)
 			drawHandle(p);
 	}
