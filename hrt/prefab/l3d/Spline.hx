@@ -292,6 +292,28 @@ class Spline extends hrt.prefab.Object3D {
 		return samples[samples.length - 1].length;
 	}
 
+	public function recomputeTangents() {
+		for (idx in 1...points.length) {
+			var tan : h3d.Vector;
+			if (idx == points.length - 1) {
+				tan = (points[idx].pos - points[idx - 1].pos).normalized();
+				points[idx].tangentIn = tan * -1.;
+				points[idx].tangentOut = tan;
+				continue;
+			}
+
+			if (idx == 1) {
+				tan = (points[1].pos - points[0].pos).normalized();
+				points[0].tangentIn = tan * -1.;
+				points[0].tangentOut = tan;
+			}
+
+			tan = (points[idx + 1].pos - points[idx - 1].pos).normalized();
+			points[idx].tangentIn = tan * -1;
+			points[idx].tangentOut = tan;
+		}
+	}
+
 
 	public function addPoint(?idx : Int, ?point : SplinePoint) {
 		var newPoint = point;
@@ -657,8 +679,40 @@ class Spline extends hrt.prefab.Object3D {
 					<div class="points-container">
 					</div>
 				</div>
+				<div align="center">
+					<input type="button" value="Recompute Tangents" class="recompute" />
+				</div>
 			</div>
 		');
+
+		var recomputeTangent = props.find(".recompute");
+		recomputeTangent.click(function(_) {
+			var prevPoints = [ for (p in points) p.save() ];
+			recomputeTangents();
+			this.updateInstance();
+			refreshHandles();
+			var newPoints = [ for (p in points) p.save() ];
+			ctx.properties.undo.change(Custom(function(undo) {
+				if (undo) {
+					points = [];
+					for (obj in prevPoints) {
+						var p = new SplinePoint();
+						p.load(obj);
+						points.push(p);
+					}
+				}
+				else {
+					points = [];
+					for (obj in newPoints) {
+						var p = new SplinePoint();
+						p.load(obj);
+						points.push(p);
+					}
+				}
+				this.updateInstance();
+				refreshHandles();
+			}));
+		});
 
 		var editModeButton = props.find(".editModeButton");
 		editModeButton.click(function(_) {
@@ -711,6 +765,7 @@ class Spline extends hrt.prefab.Object3D {
 
 		return b;
 	}
+
 
 	function refreshPointList(ctx: hide.prefab.EditContext) {
 		var pointsContainer = ctx.properties.element.find(".points-container");

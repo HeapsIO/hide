@@ -153,7 +153,7 @@ class SplineMesh extends hrt.prefab.Object3D {
 				uv += curPos.distance(prevPos);
 				var tangent = samples[i].tangentOut.normalized();
 				var angle = hxd.Math.acos( tangent.dot(new h3d.Vector(1.0, 0.0, 0.0)) );
-				if ( tangent.dot(new h3d.Vector(0.0, 1.0, 0.0)) < 0.0)
+				if (tangent.dot(new h3d.Vector(0.0, 1.0, 0.0)) < 0.0)
 					angle *= -1.0;
 				var trs = new h3d.Matrix();
 				trs.initRotationAxis(new h3d.Vector(0.0, 0.0, 1.0), angle);
@@ -246,7 +246,7 @@ class SplineMesh extends hrt.prefab.Object3D {
 		return {
 			icon : "arrows-v",
 			name : "SplineMesh",
-			allowParent: (p) -> Std.isOfType(p, Spline) || p.parent == null
+			allowParent : (p) -> Std.isOfType(p, Spline) || p.parent == null
 		};
 	}
 	#end
