@@ -91,6 +91,7 @@ class Spline extends hrt.prefab.Object3D {
 	var tangentThickness : Int = 1;
 	var lineColor : Int = 0xFF000000;
 	var pointColor : Int = 0xFF69B4;
+	var selectedPointColor : Int = 0xFFBA08;
 	var tangentColor : Int = 0xFF000000;
 
 	// Spline edition
@@ -418,7 +419,7 @@ class Spline extends hrt.prefab.Object3D {
 		var center = point.pos.clone();
 
 		var pointHandle = getGraphicsHandle(point.pos, Point);
-		pointHandle.lineStyle(handlesThickness, pointColor);
+		pointHandle.lineStyle(handlesThickness, #if editor selected == points.indexOf(point) ? selectedPointColor : #end pointColor);
 		pointHandle.moveTo(0, 0, 0);
 		pointHandle.lineTo(0, 0, 0.5);
 
@@ -688,20 +689,11 @@ class Spline extends hrt.prefab.Object3D {
 		});
 
 		props.find("#add").first().click((e) -> {
-			var newP = new SplinePoint();
-			if (points.length > 0)
-				newP.pos = points[points.length -1].pos;
-
-			newP.pos += new h3d.col.Point(1, 0, 0);
-			this.addPoint(null, newP);
-			refreshPointList(ctx);
-			updateSpline(this);
+			editorAddPoint(ctx, selected == -1 ? points.length - 1 : selected + 1);
 		});
 
 		props.find("#remove").first().click((e) -> {
-			this.removePoint();
-			refreshPointList(ctx);
-			updateSpline(this);
+			editorRemovePoint(ctx, selected == -1 ? points.length - 1 : selected);
 		});
 
 		ctx.properties.add(props, this, function(pname) {ctx.onChange(this, pname); });
@@ -726,7 +718,7 @@ class Spline extends hrt.prefab.Object3D {
 
 		for (pIdx => p in this.points) {
 			var pos = points[pIdx].pos;
-			var el = new hide.Element('<div class="point folded">
+			var el = new hide.Element('<div class="point folded ${selected == pIdx ? "selected" : ""}">
 				<div class="header">
 					<div id="fold" class="icon ico ico-chevron-right"></div>
 					<p>Point [${pIdx}]</p>
@@ -741,6 +733,7 @@ class Spline extends hrt.prefab.Object3D {
 				pointsContainer.find('.point').toggleClass("selected", false);
 				el.toggleClass("selected", true);
 				selected = pIdx;
+				refreshHandles();
 			});
 
 			var foldBtn = el.find("#fold");
@@ -753,23 +746,7 @@ class Spline extends hrt.prefab.Object3D {
 
 			var removeBtn = el.find("#remove");
 			removeBtn.click((e) -> {
-				var idxToRemove = pIdx;
-				var p = points[pIdx];
-				removePoint(idxToRemove);
-				this.updateInstance();
-				refreshHandles();
-				refreshPointList(ctx);
-				ctx.properties.undo.change(Custom(function(undo) {
-					if (undo) {
-						addPoint(idxToRemove, p);
-					}
-					else {
-						removePoint(idxToRemove);
-					}
-					this.updateInstance();
-					refreshHandles();
-					refreshPointList(ctx);
-				}));
+				editorRemovePoint(ctx, pIdx);
 			});
 
 			var px = el.find(".pos-x");
@@ -812,6 +789,45 @@ class Spline extends hrt.prefab.Object3D {
 				pos = newPos;
 			});
 		}
+	}
+
+	function editorAddPoint(ctx: hide.prefab.EditContext, pIdx : Int) {
+		addPoint(pIdx);
+		this.updateInstance();
+		refreshHandles();
+		refreshPointList(ctx);
+		ctx.properties.undo.change(Custom(function(undo) {
+			if (undo) {
+				removePoint(pIdx);
+			}
+			else {
+				addPoint(pIdx);
+			}
+			this.updateInstance();
+			refreshHandles();
+			refreshPointList(ctx);
+		}));
+	}
+
+	function editorRemovePoint(ctx: hide.prefab.EditContext, pIdx : Int) {
+		var p = points[pIdx];
+		removePoint(pIdx);
+		this.updateInstance();
+		refreshHandles();
+		refreshPointList(ctx);
+		if (selected == pIdx)
+			selected = -1;
+		ctx.properties.undo.change(Custom(function(undo) {
+			if (undo) {
+				addPoint(pIdx, p);
+			}
+			else {
+				removePoint(pIdx);
+			}
+			this.updateInstance();
+			refreshHandles();
+			refreshPointList(ctx);
+		}));
 	}
 
 	function refreshHandles() {
