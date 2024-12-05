@@ -314,6 +314,24 @@ class Spline extends hrt.prefab.Object3D {
 		}
 	}
 
+	public function recenterSpline() {
+		var centroid = new h3d.col.Point();
+		for (p in points) {
+			centroid += p.pos;
+		}
+		centroid *= 1./points.length;
+
+		x += centroid.x;
+		y += centroid.y;
+		z += centroid.z;
+
+		for (p in points) {
+			p.pos.x -= centroid.x;
+			p.pos.y -= centroid.y;
+			p.pos.z -= centroid.z;
+		}
+	}
+
 
 	public function addPoint(?idx : Int, ?point : SplinePoint) {
 		var newPoint = point;
@@ -680,13 +698,25 @@ class Spline extends hrt.prefab.Object3D {
 					</div>
 				</div>
 				<div align="center">
-					<input type="button" value="Recompute Tangents" class="recompute" />
+					<input type="button" value="Recompute tangents" class="btn recompute" />
+					<input type="button" value="Recenter spline" class="btn recenter" />
 				</div>
 			</div>
 		');
 
-		var recomputeTangent = props.find(".recompute");
-		recomputeTangent.click(function(_) {
+		var editModeButton = props.find(".editModeButton");
+		props.find(".editModeButton").click(function(_) {
+			if (!enabled) return;
+			editMode = !editMode;
+			editModeButton.val(editMode ? "Edit Mode : Enabled" : "Edit Mode : Disabled");
+			editModeButton.toggleClass("editModeEnabled", editMode);
+			setSelected(true);
+			clearInteractive();
+			if(editMode)
+				createInteractive(ctx);
+		});
+
+		props.find(".recompute").click(function(_) {
 			var prevPoints = [ for (p in points) p.save() ];
 			recomputeTangents();
 			this.updateInstance();
@@ -714,16 +744,42 @@ class Spline extends hrt.prefab.Object3D {
 			}));
 		});
 
-		var editModeButton = props.find(".editModeButton");
-		editModeButton.click(function(_) {
-			if (!enabled) return;
-			editMode = !editMode;
-			editModeButton.val(editMode ? "Edit Mode : Enabled" : "Edit Mode : Disabled");
-			editModeButton.toggleClass("editModeEnabled", editMode);
-			setSelected(true);
-			clearInteractive();
-			if(editMode)
-				createInteractive(ctx);
+		props.find(".recenter").click(function(_) {
+			var prevPos = new h3d.col.Point(x, y, z);
+			var prevPoints = [ for (p in points) p.save() ];
+			recenterSpline();
+			this.updateInstance();
+			refreshHandles();
+			refreshPointList(ctx);
+			var newPos = new h3d.col.Point(x, y, z);
+			var newPoints = [ for (p in points) p.save() ];
+			ctx.properties.undo.change(Custom(function(undo) {
+				if (undo) {
+					points = [];
+					for (obj in prevPoints) {
+						var p = new SplinePoint();
+						p.load(obj);
+						points.push(p);
+					}
+					x = prevPos.x;
+					y = prevPos.y;
+					z = prevPos.z;
+				}
+				else {
+					points = [];
+					for (obj in newPoints) {
+						var p = new SplinePoint();
+						p.load(obj);
+						points.push(p);
+					}
+					x = newPos.x;
+					y = newPos.y;
+					z = newPos.z;
+				}
+				this.updateInstance();
+				refreshHandles();
+				refreshPointList(ctx);
+			}));
 		});
 
 		var selShape = props.find("#shape");

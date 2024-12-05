@@ -3926,3 +3926,6 @@ hide-popover hide-content {
 .spline-editor .points-inspector .content .points-container .point.selected .body {
   background-color: #4f657f;
 }
+.spline-editor .btn {
+  margin-top: 5px;
+}
