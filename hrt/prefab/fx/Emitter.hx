@@ -1547,7 +1547,7 @@ class Emitter extends Object3D {
 		{ name: "frameDivisionY", t: PInt(1), def: 1, groupName : "Sprite Sheet Animation", disp: "Divisions Y" },
 		{ name: "animationSpeed", t: PFloat(0, 2.0), def: 1.0, groupName : "Sprite Sheet Animation", disp: "Speed" },
 		{ name: "animationLoop", t: PBool, def: true, groupName : "Sprite Sheet Animation", disp: "Loop" },
-		{ name: "animationUseSourceUV", t: PBool, def: true, groupName : "Sprite Sheet Animation", disp: "Use Source UV" },
+		{ name: "animationUseSourceUVs", t: PBool, def: true, groupName : "Sprite Sheet Animation", disp: "Use Source UV" },
 		{ name: "animationBlendBetweenFrames", t: PBool, def: true, groupName : "Sprite Sheet Animation", disp: "Blend frames" },
 
 		// COLLISION
@@ -1890,6 +1890,7 @@ class Emitter extends Object3D {
 		emitterObj.frameDivisionY 		= 	getParamVal("frameDivisionY");
 		emitterObj.animationSpeed 		= 	getParamVal("animationSpeed");
 		emitterObj.animationLoop 		= 	getParamVal("animationLoop");
+		emitterObj.animationUseSourceUVs 			= 	getParamVal("animationUseSourceUVs");
 		emitterObj.animationBlendBetweenFrames 		= 	getParamVal("animationBlendBetweenFrames");
 
 		// COLLISION
