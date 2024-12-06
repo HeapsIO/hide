@@ -218,12 +218,14 @@ class ContextShared {
 		}
 	}
 
-	public function getObjects<T:h3d.scene.Object>( p : Prefab, c: Class<T> ) : Array<T> {
+	public function getObjects<T:h3d.scene.Object>( p : Prefab, c: Class<T>, ?filter : h3d.scene.Object -> Bool ) : Array<T> {
 		var root = p.to(Object3D)?.local3d;
 		if(root == null) return [];
 		var childObjs = getChildrenRoots(root, p, []);
 		var ret = [];
 		function rec(o : h3d.scene.Object) {
+			if ( filter != null && !filter(o) )
+				return;
 			var m = Std.downcast(o, c);
 			if(m != null) {
 				if(ret.contains(m))
