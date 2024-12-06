@@ -574,7 +574,7 @@ class FX extends Object3D implements BaseFX {
 	override function make( ?sh:hrt.prefab.Prefab.ContextMake) : Prefab  {
 		if ( shaderTargets != null) {
 			for ( target in shaderTargets ) {
-				var shadersRoot = find(Prefab, p -> target.name == p.name);
+				var shadersRoot = find(Prefab, p -> target.name == p.name && p.enabled);
 				if ( shadersRoot == null )
 					continue;
 				var newRoot = new hrt.prefab.Object3D(null, sh);
@@ -664,6 +664,8 @@ class FX extends Object3D implements BaseFX {
 	}
 
 	function applyShadersToTargets() {
+		var fxAnim : FXAnimation = cast local3d;
+
 		for ( target in shaderTargets ) {
 			if ( target.object == null )
 				continue;
@@ -674,11 +676,12 @@ class FX extends Object3D implements BaseFX {
 			if ( obj3d == null )
 				continue;
 			obj3d.local3d = target.object;
-			for ( s in obj3d.findAll(Shader) )
+			for ( s in obj3d.findAll(Shader) ) {
+				s.filterObj = o -> return o != fxAnim;
 				s.apply3d();
+			}
 		}
 
-		var fxAnim : FXAnimation = cast local3d;
 		fxAnim.onRemoveFun = function() {
 			for ( target in shaderTargets ) {
 				if ( target.object == null )
