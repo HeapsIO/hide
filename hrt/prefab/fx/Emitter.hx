@@ -628,8 +628,6 @@ class EmitterObject extends h3d.scene.Object {
 	}
 
 	function init(randSlots: Int, prefab: Emitter) {
-		reset();
-
 		this.emitterPrefab = prefab;
 		this.randSlots = randSlots;
 
@@ -743,14 +741,19 @@ class EmitterObject extends h3d.scene.Object {
 
 		}
 
+		// Dispose previous particles
+		if(particles != null) {
+			for(i in 0...particlesCount) {
+				particles[i].clear();
+			}
+		}
+
 		particles = #if (hl_ver >= version("1.14.0")) hl.CArray.alloc(ParticleInstance, maxCount) #else [for(i in 0...maxCount) new ParticleInstance()] #end;
 		particlesCount = maxCount;
 		randomValues = [for(i in 0...(maxCount * randSlots)) 0];
 		evaluator = new Evaluator(randomValues, randSlots);
 
-		for (i in 0...particlesCount) {
-			particles[i].idx = ParticleInstance.REMOVED_IDX;
-		}
+		reset();
 	}
 
 	override function onRemove() {
