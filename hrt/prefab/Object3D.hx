@@ -205,7 +205,7 @@ class Object3D extends Prefab {
 		Returns the list of all h3d.scene.Object created by this prefab (but not
 		the ones created by its children)
 	**/
-	public function getObjects<T:h3d.scene.Object>(c: Class<T>, filter : h3d.scene.Object -> Bool ) : Array<T> {
+	public function getObjects<T:h3d.scene.Object>(c: Class<T>, ?filter : h3d.scene.Object -> Bool ) : Array<T> {
 		var root = Object3D.getLocal3d(this);
 		if(root == null) return [];
 		var childObjs = Prefab.getChildrenRoots(root, this, []);
