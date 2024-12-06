@@ -402,6 +402,11 @@ class Spline extends hrt.prefab.Object3D {
 			b ? graphics.moveTo(point.x, point.y, point.z) : graphics.lineTo(point.x, point.y, point.z);
 			b = false;
 		}
+
+		if (loop) {
+			var point = points[0].pos;
+			graphics.lineTo(point.x, point.y, point.z);
+		}
 	}
 
 	public function drawHandle(point: SplinePoint) {
