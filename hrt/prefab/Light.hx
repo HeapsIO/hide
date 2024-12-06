@@ -194,7 +194,6 @@ class Light extends Object3D {
 			return;
 
 		var color = color | 0xff000000;
-		var pbrLight = Std.downcast(local3d, h3d.scene.pbr.Light);
 		var light = Std.downcast(local3d, h3d.scene.pbr.Light);
 
 		if( light != null ) { // PBR
@@ -247,26 +246,26 @@ class Light extends Object3D {
 				cl.zNear = hxd.Math.max(0.02, zNear);
 			default:
 			}
-			pbrLight.color.setColor(color);
-			pbrLight.power = power;
-			pbrLight.shadows.mode = shadows.mode;
-			pbrLight.shadows.size = shadows.size;
-			pbrLight.shadows.blur.radius = shadows.radius;
-			pbrLight.shadows.blur.quality = shadows.quality;
-			pbrLight.shadows.bias = shadows.bias * 0.1;
+			light.color.setColor(color);
+			light.power = power;
+			light.shadows.mode = shadows.mode;
+			light.shadows.size = shadows.size;
+			light.shadows.blur.radius = shadows.radius;
+			light.shadows.blur.quality = shadows.quality;
+			light.shadows.bias = shadows.bias * 0.1;
 
 			switch (shadows.samplingMode.kind) {
 				case None:
-					pbrLight.shadows.samplingKind = None;
+					light.shadows.samplingKind = None;
 				case PCF:
 					var sm : ShadowSamplingPCF = cast shadows.samplingMode;
-					pbrLight.shadows.pcfQuality = sm.quality;
-					pbrLight.shadows.pcfScale = sm.scale;
-					pbrLight.shadows.samplingKind = PCF;
+					light.shadows.pcfQuality = sm.quality;
+					light.shadows.pcfScale = sm.scale;
+					light.shadows.samplingKind = PCF;
 				case ESM:
 					var sm : ShadowSamplingESM = cast shadows.samplingMode;
-					pbrLight.shadows.power = sm.power;
-					pbrLight.shadows.samplingKind = ESM;
+					light.shadows.power = sm.power;
+					light.shadows.samplingKind = ESM;
 			}
 		}
 		else if( light != null ) { // FWD
