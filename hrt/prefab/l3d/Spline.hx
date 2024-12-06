@@ -758,6 +758,20 @@ class Spline extends hrt.prefab.Object3D {
 			refreshPointList(ctx);
 			var newPos = new h3d.col.Point(x, y, z);
 			var newPoints = [ for (p in points) p.save() ];
+
+			function replaceChildren(offset : h3d.Vector) {
+				for (c in children) {
+					var obj = Std.downcast(c, Object3D);
+					if (obj == null)
+						continue;
+					obj.x += offset.x;
+					obj.y += offset.y;
+					obj.z += offset.z;
+					obj.updateInstance();
+				}
+			}
+			replaceChildren(prevPos - newPos);
+
 			ctx.properties.undo.change(Custom(function(undo) {
 				if (undo) {
 					points = [];
@@ -769,6 +783,7 @@ class Spline extends hrt.prefab.Object3D {
 					x = prevPos.x;
 					y = prevPos.y;
 					z = prevPos.z;
+					replaceChildren(newPos - prevPos);
 				}
 				else {
 					points = [];
@@ -780,6 +795,7 @@ class Spline extends hrt.prefab.Object3D {
 					x = newPos.x;
 					y = newPos.y;
 					z = newPos.z;
+					replaceChildren(prevPos - newPos);
 				}
 				this.updateInstance();
 				refreshHandles();
