@@ -578,7 +578,9 @@ class FX extends Object3D implements BaseFX {
 				if ( shadersRoot == null )
 					continue;
 				var newRoot = new hrt.prefab.Object3D(null, sh);
-				for ( c in shadersRoot.children ) {
+				var i = shadersRoot.children.length;
+				while ( i-- > 0 ) {
+					var c = shadersRoot.children[i];
 					if ( Std.isOfType(c, Shader) || Std.isOfType(c, Material) || Std.isOfType(c, MaterialSelector) )
 						c.parent = newRoot;
 				}
