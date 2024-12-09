@@ -13,7 +13,7 @@ class AnimGraphAnimatedObject extends h3d.anim.Animation.AnimatedObject {
 @:access(hrt.animgraph.Node)
 class AnimGraphInstance extends h3d.anim.Animation {
 	var animGraph : AnimGraph;
-	var outputId : Int = -1;
+	var outputNode : hrt.animgraph.nodes.Output;
 	var workMatrix = new h3d.Matrix();
 
 	var boneMap: Map<String, Int> = [];
@@ -22,7 +22,7 @@ class AnimGraphInstance extends h3d.anim.Animation {
 		// Todo : Define a true length for the animation OR make so animations can have an undefined length
 		super(animGraph.name, 1000, 1/60.0);
 		this.animGraph = animGraph;
-		this.outputId = Lambda.find(animGraph.nodes, (node) -> Std.downcast(node, hrt.animgraph.nodes.Output) != null)?.id ?? -1;
+		outputNode = cast Lambda.find(animGraph.nodes, (node) -> Std.downcast(node, hrt.animgraph.nodes.Output) != null);
 	}
 
 	override function clone(?target: h3d.anim.Animation) : h3d.anim.Animation {
@@ -33,13 +33,12 @@ class AnimGraphInstance extends h3d.anim.Animation {
 	}
 
 	public function getBones(ctx : hrt.animgraph.nodes.AnimNode.GetBoneContext) : Map<String, Int> {
-		if (outputId == -1)
+		if (outputNode == null)
 			return null;
 
 		map(updateNodeInputs);
 
-		var finalNode : hrt.animgraph.nodes.Output = cast animGraph.nodes.get(outputId);
-		boneMap = finalNode.a.getBones(ctx);
+		boneMap = outputNode.a.getBones(ctx);
 		return boneMap;
 	}
 
@@ -57,12 +56,10 @@ class AnimGraphInstance extends h3d.anim.Animation {
 	}
 
 	override function sync(decompose : Bool = false ) {
-		var finalNode : hrt.animgraph.nodes.Output = cast animGraph.nodes.get(outputId);
-
 		for (obj in objects) {
 			var obj : AnimGraphAnimatedObject = cast obj;
 			workMatrix.identity();
-			finalNode.a.getBoneTransform(obj.id, workMatrix);
+			outputNode.a.getBoneTransform(obj.id, workMatrix);
 			@:privateAccess
 
 			var targetMatrix = if (obj.targetSkin != null) {
@@ -95,9 +92,9 @@ class AnimGraphInstance extends h3d.anim.Animation {
 		var inputs = node.getInputs();
 		for (inputId => edge in node.inputEdges) {
 			if (edge == null) continue;
-			var outputNode = animGraph.nodes.get(edge.nodeTarget);
+			var outputNode = edge.target;
 			var outputs = outputNode.getOutputs();
-			var output = outputs[edge.nodeOutputIndex];
+			var output = outputs[edge.outputIndex];
 			switch (inputs[inputId].type) {
 				case TAnimation:
 					Reflect.setField(node, inputs[inputId].name, outputNode);
@@ -112,25 +109,22 @@ class AnimGraphInstance extends h3d.anim.Animation {
 			cb(node);
 			for (inputId => edge in node.inputEdges) {
 				if (edge == null) continue;
-				var outputNode = animGraph.nodes.get(edge.nodeTarget);
-				rec(outputNode);
+				rec(edge.target);
 			}
 		}
-		var finalNode = animGraph.nodes.get(outputId);
-		rec(finalNode);
+		rec(outputNode);
 	}
 
 	override function update(dt:Float):Float {
 		var dt2 = super.update(dt);
-		if (outputId == -1)
+		if (outputNode == null)
 			return dt2;
 
 		for (node in animGraph.nodes) {
 			node.tickedThisFrame = false;
 		}
 
-		var finalNode : hrt.animgraph.nodes.Output = cast animGraph.nodes.get(outputId);
-		tickRec(finalNode, dt);
+		tickRec(outputNode, dt);
 
 		return dt2;
 	}
@@ -140,7 +134,7 @@ class AnimGraphInstance extends h3d.anim.Animation {
 
 		for (inputId => edge in node.inputEdges) {
 			if (edge == null) continue;
-			var outputNode = animGraph.nodes.get(edge.nodeTarget);
+			var outputNode = edge.target;
 			if (!outputNode.tickedThisFrame) {
 				tickRec(outputNode, dt);
 			}

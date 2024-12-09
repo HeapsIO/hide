@@ -1,6 +1,6 @@
 package hrt.animgraph;
 
-typedef Edge = {nodeTarget: Int, nodeOutputIndex: Int};
+typedef Edge = {target: Node, outputIndex: Int};
 
 #if editor
 
@@ -26,10 +26,9 @@ class Node
 implements hide.view.GraphInterface.IGraphNode
 #end
 {
-	@:s public var id : Int;
 	@:s public var x : Float;
 	@:s public var y : Float;
-	@:s public var inputEdges: Array<Edge> = [];
+	public var inputEdges: Array<Edge> = [];
 
 	var tickedThisFrame = false;
 
@@ -69,6 +68,9 @@ implements hide.view.GraphInterface.IGraphNode
 	}
 
 	#if editor
+
+	public var id : Int;
+	public static var __nodeUID : Int = 0;
 
 	public var editor : hide.view.GraphEditor;
 

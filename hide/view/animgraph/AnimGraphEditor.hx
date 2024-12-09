@@ -74,15 +74,15 @@ class AnimGraphEditor extends GenericGraphEditor {
 
     override function getEdges():Iterator<Edge> {
         var edges : Array<Edge> = [];
-        for (nodeToId => node in animGraph.nodes) {
+        for (node in animGraph.nodes) {
             for (inputToId => edge in node.inputEdges) {
                 if (edge == null)
                     continue;
                 edges.push({
-                    nodeToId: nodeToId,
+                    nodeToId: node.id,
                     inputToId: inputToId,
-                    nodeFromId: edge.nodeTarget,
-                    outputFromId: edge.nodeOutputIndex,
+                    nodeFromId: edge.target.id,
+                    outputFromId: edge.outputIndex,
                 });
             }
         }
@@ -113,11 +113,30 @@ class AnimGraphEditor extends GenericGraphEditor {
     }
 
     override function addNode(node: IGraphNode) {
-        animGraph.nodes.set(node.id, cast node);
+        animGraph.nodes.push(cast node);
     }
 
     override function removeNode(id: Int) {
-        animGraph.nodes.remove(id);
+        var removedNode = null;
+        for (pos => node in animGraph.nodes) {
+            if (node.id == id) {
+                removedNode = node;
+                animGraph.nodes.splice(pos, 1);
+                break;
+            }
+        }
+
+        // Sanity check, normally the graphEditor should remove the edges for us
+        // before calling removeNode
+        for (node in animGraph.nodes) {
+            for (input in node.inputEdges) {
+                if (input == null)
+                    continue;
+                if (input.target == removedNode) {
+                    throw "assert";
+                }
+            }
+        }
     }
 
     override function serializeNode(node : IGraphNode) : Dynamic {
@@ -135,19 +154,19 @@ class AnimGraphEditor extends GenericGraphEditor {
     }
 
     override function canAddEdge(edge : Edge) : Bool {
-        var input = animGraph.nodes.get(edge.nodeToId).getInputs()[edge.inputToId];
-        var output = animGraph.nodes.get(edge.nodeFromId).getOutputs()[edge.outputFromId];
+        var input = animGraph.getNodeByEditorId(edge.nodeToId).getInputs()[edge.inputToId];
+        var output = animGraph.getNodeByEditorId(edge.nodeFromId).getOutputs()[edge.outputFromId];
 
         return (Node.areOutputsCompatible(input.type, output.type));
     }
 
     override function addEdge(edge : Edge) : Void {
-        var inputNode = animGraph.nodes.get(edge.nodeToId);
-        inputNode.inputEdges[edge.inputToId] = {nodeTarget: edge.nodeFromId, nodeOutputIndex: edge.outputFromId};
+        var inputNode = animGraph.getNodeByEditorId(edge.nodeToId);
+        inputNode.inputEdges[edge.inputToId] = {target: animGraph.getNodeByEditorId(edge.nodeFromId), outputIndex: edge.outputFromId};
     }
 
     override function removeEdge(nodeToId: Int, inputToId : Int) : Void {
-        var inputNode = animGraph.nodes.get(nodeToId);
+        var inputNode = animGraph.getNodeByEditorId(nodeToId);
         inputNode.inputEdges[inputToId] = null;
     }
 
