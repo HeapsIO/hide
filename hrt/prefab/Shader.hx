@@ -284,10 +284,20 @@ class Shader extends Prefab {
 	override function getHideProps() : HideProps {
 		var cl = Type.getClass(this);
 		var name = Type.getClassName(cl).split(".").pop();
+		var inheritDynamicShader = false;
+		var thisClass : Class<Dynamic> = cl;
+		while (thisClass != null) {
+			if (thisClass == hrt.prefab.DynamicShader) {
+				inheritDynamicShader = true;
+				break;
+			}
+			thisClass = Type.getSuperClass(thisClass);
+		}
+
 		return {
 			icon : "cog",
 			name : name,
-			fileSource : cl == hrt.prefab.DynamicShader ? ["hx"] : null
+			fileSource : inheritDynamicShader ? ["hx"] : null
 		};
 	}
 
