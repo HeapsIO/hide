@@ -1,9 +1,13 @@
 package hrt.animgraph;
 
-typedef Parameter = {
-	name: String,
-	defaultValue: Float,
-};
+
+@:build(hrt.prefab.Macros.buildSerializable())
+class Parameter {
+	public function new() {};
+	@:s public var name: String = null;
+	@:s public var defaultValue: Float = 0.0;
+	public var runtimeValue = 0.0;
+}
 
 typedef SerializedEdge = {
 	input: Int,
@@ -11,6 +15,7 @@ typedef SerializedEdge = {
 	output: Int,
 	outputId: Int,
 };
+
 @:access(hrt.animgraph.AnimGraphInstance)
 class AnimGraph extends hrt.prefab.Prefab {
 	public var instance(default, null) : AnimGraphInstance;
@@ -38,6 +43,7 @@ class AnimGraph extends hrt.prefab.Prefab {
 		var json = super.save();
 
 		var nodeIdMapping : Map<{}, Int> = [];
+		var parametersIdMapping : Map<{}, Int> = [];
 
 		for (i => node in nodes) {
 			nodeIdMapping.set(node, i);
@@ -45,11 +51,17 @@ class AnimGraph extends hrt.prefab.Prefab {
 
 		var serializedNodes : Array<Dynamic> = [];
 		var serializedEdges : Array<SerializedEdge> = [];
+		var serializedParameters : Array<Parameter> = [];
+
+		for (id => parameter in parameters) {
+			var serializedParameter = @:privateAccess parameter.copyToDynamic({});
+			parametersIdMapping.set(parameter, id);
+			serializedParameters[id] = serializedParameter;
+		}
 
 		for (id => node in nodes) {
 			var nodeSer = node.serializeToDynamic();
 			serializedNodes.push(nodeSer);
-
 
 			for (inputId => input in node.inputEdges) {
 				if (input == null)
@@ -65,11 +77,16 @@ class AnimGraph extends hrt.prefab.Prefab {
 					outputId: input.outputIndex,
 				});
 			}
+
+			var param = Std.downcast(node, hrt.animgraph.nodes.FloatParameter);
+			if (param != null) {
+				nodeSer.parameter = parametersIdMapping.get(param.parameter);
+			}
 		}
 
 		json.nodes = serializedNodes;
 		json.edges = serializedEdges;
-		json.parameters = haxe.Json.parse(haxe.Json.stringify(parameters));
+		json.parameters = serializedParameters;
 
 		return json;
 	}
@@ -79,6 +96,17 @@ class AnimGraph extends hrt.prefab.Prefab {
 		nodes = [];
 		nodeIdCount = 0;
 
+		var unserializedParameters : Array<Parameter> = [];
+		if (json.parameters != null) {
+			for (parameter in (json.parameters:Array<Dynamic>)) {
+				var copyParameter = new Parameter();
+				@:privateAccess copyParameter.copyFromDynamic(parameter);
+				unserializedParameters.push(copyParameter);
+			}
+		}
+
+		parameters = unserializedParameters;
+
 		var unserializedNodes : Array<Node> = [];
 		if (json.nodes != null) {
 			for (nodeData in (json.nodes:Array<Dynamic>)) {
@@ -86,6 +114,11 @@ class AnimGraph extends hrt.prefab.Prefab {
 					var node = Node.createFromDynamic(nodeData);
 					node.id = nodeIdCount++;
 					unserializedNodes.push(node);
+
+					var param = Std.downcast(node, hrt.animgraph.nodes.FloatParameter);
+					if (param != null) {
+						param.parameter = parameters[nodeData.parameter];
+					}
 				} catch (e) {
 					unserializedNodes.push(null); // keep the serialization index in sync
 					#if editor
@@ -119,12 +152,6 @@ class AnimGraph extends hrt.prefab.Prefab {
 				this.nodes.push(node);
 			}
 		}
-
-		if (json.parameters != null) {
-			for (parameter in (json.parameters:Array<Dynamic>)) {
-				this.parameters.push(parameter);
-			}
-		}
 	}
 
 	override function copy(other: hrt.prefab.Prefab) {
@@ -132,11 +159,25 @@ class AnimGraph extends hrt.prefab.Prefab {
 		var other : AnimGraph = cast other;
 
 		var nodeCopy: Map<{}, Node> = [];
+		var parameterCopy: Map<{}, Parameter> = [];
 
-		for (id => node in other.nodes) {
+		for (parameter in other.parameters) {
+			var copy = new Parameter();
+			@:privateAccess copy.copyFromOther(parameter);
+			parameters.push(copy);
+			parameterCopy.set(parameter, copy);
+		}
+
+		for (node in other.nodes) {
 			var copy = Node.createFromDynamic(node.serializeToDynamic());
 			this.nodes.push(copy);
 			nodeCopy.set(node, copy);
+
+			var copyParam = Std.downcast(copy, hrt.animgraph.nodes.FloatParameter);
+			var nodeParam = Std.downcast(node, hrt.animgraph.nodes.FloatParameter);
+			if (copyParam != null) {
+				copyParam.parameter = parameterCopy.get(nodeParam.parameter);
+			}
 		}
 
 		// restore edges

@@ -17,12 +17,18 @@ class AnimGraphInstance extends h3d.anim.Animation {
 	var workMatrix = new h3d.Matrix();
 
 	var boneMap: Map<String, Int> = [];
+	public var parameterMap: Map<String, hrt.animgraph.AnimGraph.Parameter> = [];
 
 	function new(animGraph:AnimGraph) {
 		// Todo : Define a true length for the animation OR make so animations can have an undefined length
 		super(animGraph.name, 1000, 1/60.0);
 		this.animGraph = animGraph;
 		outputNode = cast Lambda.find(animGraph.nodes, (node) -> Std.downcast(node, hrt.animgraph.nodes.Output) != null);
+
+		for (param in animGraph.parameters) {
+			parameterMap.set(param.name, param);
+			param.runtimeValue = param.defaultValue;
+		}
 	}
 
 	override function clone(?target: h3d.anim.Animation) : h3d.anim.Animation {

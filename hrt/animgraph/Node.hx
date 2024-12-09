@@ -57,6 +57,7 @@ implements hide.view.GraphInterface.IGraphNode
 		return data;
 	}
 
+
 	static public function createFromDynamic(data: Dynamic) : Node {
 		var type = registeredNodes.get(data.type);
 		var inst = Std.downcast(std.Type.createInstance(type, []), Node);

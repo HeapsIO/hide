@@ -11,6 +11,7 @@ class AnimGraphEditor extends GenericGraphEditor {
     var previewModel : h3d.scene.Object;
 
     var parametersList : hide.Element;
+    var previewAnimation : AnimGraphInstance = null;
 
     override function reloadView() {
         animGraph = cast hide.Ide.inst.loadPrefab(state.path, null,  true);
@@ -29,8 +30,9 @@ class AnimGraphEditor extends GenericGraphEditor {
 
         var testButton = new Element("<button>Test Bones</button>").appendTo(propertiesContainer);
         testButton.click((_) -> {
-            var anim = animGraph.getAnimation();
-            previewModel.playAnimation(anim);
+            previewAnimation = animGraph.getAnimation();
+            previewModel.playAnimation(previewAnimation);
+            refreshPamamList();
         });
     }
 
@@ -44,6 +46,18 @@ class AnimGraphEditor extends GenericGraphEditor {
                     <div class="ico ico-reorder"></div>
                 </header>
             </graph-parameters>').appendTo(parametersList);
+
+            if (previewAnimation != null) {
+                var param = previewAnimation.parameterMap.get(param.name);
+                if (param != null) {
+                    var slider = new Element('<input type="range" min="0.0" max="1.0" step="0.01" value="${param.runtimeValue}"></input>');
+                    slider.change((e) -> {
+                        var value = Std.parseFloat(slider.val());
+                        param.runtimeValue = value;
+                    });
+                    paramElement.append(slider);
+                }
+            }
         }
     }
 
@@ -171,10 +185,9 @@ class AnimGraphEditor extends GenericGraphEditor {
     }
 
     function addParameter() {
-        var newParam : hrt.animgraph.AnimGraph.Parameter = {
-            name: "New Parameter",
-            defaultValue: 0.0,
-        };
+        var newParam = new hrt.animgraph.AnimGraph.Parameter();
+        newParam.name = "New Parameter";
+        newParam.defaultValue = 0.0;
 
         var disctictNameId = 0;
 
