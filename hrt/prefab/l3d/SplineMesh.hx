@@ -12,6 +12,31 @@ class SplineUV extends hxsl.Shader {
 	}
 }
 
+class SplineMeshObject extends h3d.scene.Mesh {
+	var spline : Spline;
+
+	override public function new(spline : Spline, primitive : h3d.prim.Primitive, parent : h3d.scene.Object) {
+		super(primitive, parent);
+		this.spline = spline;
+		material.mainPass.addShader(new SplineUV());
+	}
+
+	override function addBoundsRec( b : h3d.col.Bounds, relativeTo : h3d.Matrix ) {
+		super.addBoundsRec(b, relativeTo);
+		if( spline == null || primitive == null || flags.has(FIgnoreBounds) )
+			return;
+
+		if (spline.samples == null || spline.samples.length == 0)
+			@:privateAccess spline.sample( (spline.shape == hrt.prefab.l3d.Spline.SplineShape.Linear) ? 1 : spline.sampleResolution);
+
+		for (s in @:privateAccess spline.samples) {
+			var p = s.pos.transformed(spline.getAbsPos(true));
+			p = relativeTo != null ? p.transformed(relativeTo) : p;
+			b.addPoint(p);
+		}
+	}
+}
+
 class SplineMesh extends hrt.prefab.Object3D {
 
 	static var SPLINE_FMT = hxd.BufferFormat.make([{ name : "position", type : DVec3 }, { name : "normal", type : DVec3 },  { name : "uv", type : DVec2 }]);
@@ -33,16 +58,17 @@ class SplineMesh extends hrt.prefab.Object3D {
 	var meshMaterial : h3d.mat.Material = null;
 
 	override function makeObject(parent3d: h3d.scene.Object) : h3d.scene.Object {
-		var mesh = new h3d.scene.Mesh(null, parent3d);
-		mesh.material.mainPass.addShader(new SplineUV());
-		return mesh;
+		if (spline == null)
+			spline = findParent(Spline, null, false, true);
+		return new SplineMeshObject(spline, null, parent3d);
 	}
 
 	override function updateInstance(?propName : String ) {
 		super.updateInstance(propName);
 		disposeSplineMesh();
 
-		spline = findParent(Spline, null, false, true);
+		if (spline == null)
+			spline = findParent(Spline, null, false, true);
 		if ( spline == null || spline.samples == null )
 			computeDefaultSplineMesh();
 		else
@@ -108,7 +134,6 @@ class SplineMesh extends hrt.prefab.Object3D {
 				uv += hxd.Math.atan(stepAngle) * previewRadius;
 			}
 		}
-
 		var indexBuffer = new hxd.IndexBuffer();
 		for ( s in 0...count ) {
 			for ( i in 1...previewPointCount ) {
