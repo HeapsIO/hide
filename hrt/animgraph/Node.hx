@@ -99,6 +99,12 @@ implements hide.view.GraphInterface.IGraphNode
 		return "";
 	}
 
+	public function canCreateManually() : Bool {
+		// Note : we can't actually create a "Node" in the add menu, but the child of Node should be
+		// added to de addNodesMenu by default
+		return true;
+	}
+
 	// IGraphNode interface
 
 	public function getInfo() : hide.view.GraphInterface.GraphNodeInfo {

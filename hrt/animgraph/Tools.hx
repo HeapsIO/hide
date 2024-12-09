@@ -1,6 +1,8 @@
 package hrt.animgraph;
 
 class Tools {
+
+	@:haxe.warning("-WInlineOptimizedField")
 	static public function weightedBlend(inRotations: Array<h3d.Quat>, inReference: h3d.Quat, inWeights: Array<Float>, outRotation: h3d.Quat) {
 		outRotation.set(0,0,0,0);
 

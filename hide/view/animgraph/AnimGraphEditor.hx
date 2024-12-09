@@ -10,15 +10,41 @@ class AnimGraphEditor extends GenericGraphEditor {
     var animGraph : hrt.animgraph.AnimGraph;
     var previewModel : h3d.scene.Object;
 
+    var parametersList : hide.Element;
+
     override function reloadView() {
         animGraph = cast hide.Ide.inst.loadPrefab(state.path, null,  true);
         super.reloadView();
+
+        var parameters = new Element("<graph-parameters></graph-parameters>").appendTo(propertiesContainer);
+        new Element("<h1>Parameters</h1>").appendTo(parameters);
+        var addParameterBtn = new Element("<button>Add Parameter</button>").appendTo(parameters);
+
+        addParameterBtn.click((e) -> {
+            addParameter();
+        });
+        parametersList = new Element("<ul></ul>").appendTo(parameters);
+
+        refreshPamamList();
 
         var testButton = new Element("<button>Test Bones</button>").appendTo(propertiesContainer);
         testButton.click((_) -> {
             var anim = animGraph.getAnimation();
             previewModel.playAnimation(anim);
         });
+    }
+
+    function refreshPamamList() {
+        parametersList.html("");
+        for (param in animGraph.parameters) {
+            var paramElement = new Element('<graph-paramater>
+                <header>
+                    <div class="ico ico-chevron-right"></div>
+                    <input type="text" value="${param.name}"></input>
+                    <div class="ico ico-reorder"></div>
+                </header>
+            </graph-parameters>').appendTo(parametersList);
+        }
     }
 
     override function getDefaultContent() : haxe.io.Bytes {
@@ -67,6 +93,8 @@ class AnimGraphEditor extends GenericGraphEditor {
         var menu : Array<AddNodeMenuEntry> = [];
         for (nodeInternalName => type in hrt.animgraph.Node.registeredNodes) {
             var info = Type.createEmptyInstance(type);
+            if (!info.canCreateManually())
+                continue;
             var entry : AddNodeMenuEntry = {
                 name: info.getDisplayName(),
                 description: "",
@@ -121,6 +149,43 @@ class AnimGraphEditor extends GenericGraphEditor {
     override function removeEdge(nodeToId: Int, inputToId : Int) : Void {
         var inputNode = animGraph.nodes.get(nodeToId);
         inputNode.inputEdges[inputToId] = null;
+    }
+
+    function addParameter() {
+        var newParam : hrt.animgraph.AnimGraph.Parameter = {
+            name: "New Parameter",
+            defaultValue: 0.0,
+        };
+
+        var disctictNameId = 0;
+
+        while (true) {
+            var retry = false;
+            for (param in animGraph.parameters) {
+                if (newParam.name == param.name) {
+                    disctictNameId += 1;
+                    newParam.name = 'New Parameter ($disctictNameId)';
+                    retry = true;
+                    break;
+                }
+            }
+            if (retry)
+                continue;
+            break;
+        }
+
+        var index = animGraph.parameters.length;
+        function exec(isUndo: Bool) {
+            if (!isUndo) {
+                animGraph.parameters.insert(index, newParam);
+            } else {
+                animGraph.parameters.splice(index, 1);
+            }
+            refreshPamamList();
+        }
+
+        undo.change(Custom(exec));
+        exec(false);
     }
 
     static var _ = FileTree.registerExtension(AnimGraphEditor,["animgraph"],{ icon : "play-circle-o", createNew: "Anim Graph" });

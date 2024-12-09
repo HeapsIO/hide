@@ -1,9 +1,15 @@
 package hrt.animgraph;
+
+typedef Parameter = {
+	name: String,
+	defaultValue: Float,
+};
 @:access(hrt.animgraph.AnimGraphInstance)
 class AnimGraph extends hrt.prefab.Prefab {
 	public var instance(default, null) : AnimGraphInstance;
 
 	var nodes: Map<Int, Node> = [];
+	var parameters : Array<Parameter> = [];
 
 	#if editor
 	var nodeIdCount = 0;
@@ -14,16 +20,26 @@ class AnimGraph extends hrt.prefab.Prefab {
 		nodes = [];
 
 		var corruptedNodes : Map<Int,Bool> = [];
-		for (nodeData in (json.nodes:Array<Dynamic>)) {
-			try  {
-				var node = Node.createFromDynamic(nodeData);
-				nodes.set(node.id, node);
-				nodeIdCount = hxd.Math.imax(node.id+1, nodeIdCount);
-			} catch (e) {
-				corruptedNodes.set(nodeData.id, true);
-				hide.Ide.inst.quickError('Missing node type ${nodeData.type} from graph.');
+		if (json.nodes != null) {
+			for (nodeData in (json.nodes:Array<Dynamic>)) {
+				try  {
+					var node = Node.createFromDynamic(nodeData);
+					nodes.set(node.id, node);
+					nodeIdCount = hxd.Math.imax(node.id+1, nodeIdCount);
+				} catch (e) {
+					corruptedNodes.set(nodeData.id, true);
+					hide.Ide.inst.quickError('Missing node type ${nodeData.type} from graph.');
+				}
 			}
 		}
+
+
+		if (json.parameters != null) {
+			for (parameter in (json.parameters:Array<Dynamic>)) {
+				this.parameters.push(parameter);
+			}
+		}
+
 
 		for (node in nodes) {
 			var i = node.inputEdges.length-1;
@@ -55,6 +71,8 @@ class AnimGraph extends hrt.prefab.Prefab {
 			for (node in nodes) node.serializeToDynamic()
 		];
 
+		json.parameters = haxe.Json.parse(haxe.Json.stringify(parameters));
+
 		return json;
 	}
 
@@ -64,6 +82,8 @@ class AnimGraph extends hrt.prefab.Prefab {
 		this.nodes = [
 			for (id => node in other.nodes) id => Node.createFromDynamic(node.serializeToDynamic())
 		];
+
+		this.parameters = haxe.Json.parse(haxe.Json.stringify(other.parameters));
 	}
 
 	static var _ = hrt.prefab.Prefab.register("animgraph", AnimGraph, "animgraph");

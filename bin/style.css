@@ -4097,6 +4097,7 @@ hide-popover hide-content {
   --basic-shadow: 2px 2px 3px rgba(0, 0, 0, 0.75);
   --basic-border: 1px solid #353535;
   --basic-border-radius: 5px;
+  --basic-padding: 0.2em;
   --bg-0: #000;
   --bg-1: #111;
   --bg-2: #222;
@@ -4171,8 +4172,31 @@ graph-editor-root graph-container preview-container .hide-toolbar2 {
   right: 8px;
 }
 graph-editor-root properties-container {
+  padding: var(--basic-padding);
   display: flex;
+  flex-direction: column;
   flex-basis: 300px;
   border-left: var(--basic-border);
   background-color: var(--bg-1);
+}
+graph-editor-root properties-container graph-parameters {
+  display: flex;
+  flex-direction: column;
+  padding: var(--basic-padding);
+  border: var(--basic-border);
+  border-radius: var(--basic-border-radius);
+}
+graph-editor-root properties-container graph-parameters h1 {
+  font-size: 1.2em;
+}
+graph-editor-root properties-container graph-parameters ul {
+  padding: var(--basic-padding);
+  display: flex;
+  flex-direction: column;
+  list-style: none;
+  align-items: stretch;
+}
+graph-editor-root properties-container graph-parameters ul graph-parameter {
+  border: var(--basic-border);
+  border-radius: var(--basic-border-radius);
 }
