@@ -15,6 +15,8 @@ enum SplineShape {
 }
 
 class SplinePoint {
+	public static var DEFAULT_TAN_LENGTH = 3.0;
+
 	public var pos : h3d.col.Point; // Relative to the spline
 	public var up : h3d.Vector; // Relative to the spline
 	public var tangentIn : h3d.Vector; // Relative to point
@@ -25,8 +27,8 @@ class SplinePoint {
 	public function new(?pos: h3d.col.Point, ?up: h3d.Vector, ?tangentIn: h3d.Vector, ?tangentOut: h3d.Vector) {
 		this.pos = (pos == null) ? new h3d.col.Point(0, 0, 0) : pos.clone();
 		this.up = (up == null) ? new h3d.col.Point(0, 0, 1) : up.clone();
-		this.tangentIn = (tangentIn == null) ? new h3d.Vector(-1, 0, 0) : tangentIn.clone();
-		this.tangentOut = (tangentOut == null) ? new h3d.Vector(1, 0, 0) : tangentOut.clone();
+		this.tangentIn = (tangentIn == null) ? new h3d.Vector(-DEFAULT_TAN_LENGTH, 0, 0) : tangentIn.clone();
+		this.tangentOut = (tangentOut == null) ? new h3d.Vector(DEFAULT_TAN_LENGTH, 0, 0) : tangentOut.clone();
 	}
 
 	public function save() : Dynamic {
@@ -296,19 +298,19 @@ class Spline extends hrt.prefab.Object3D {
 		for (idx in 1...points.length) {
 			var tan : h3d.Vector;
 			if (idx == points.length - 1) {
-				tan = (points[idx].pos - points[idx - 1].pos).normalized();
+				tan = (points[idx].pos - points[idx - 1].pos).normalized() * SplinePoint.DEFAULT_TAN_LENGTH;
 				points[idx].tangentIn = tan * -1.;
 				points[idx].tangentOut = tan;
 				continue;
 			}
 
 			if (idx == 1) {
-				tan = (points[1].pos - points[0].pos).normalized();
+				tan = (points[1].pos - points[0].pos).normalized() * SplinePoint.DEFAULT_TAN_LENGTH;
 				points[0].tangentIn = tan * -1.;
 				points[0].tangentOut = tan;
 			}
 
-			tan = (points[idx + 1].pos - points[idx - 1].pos).normalized();
+			tan = (points[idx + 1].pos - points[idx - 1].pos).normalized() * SplinePoint.DEFAULT_TAN_LENGTH;
 			points[idx].tangentIn = tan * -1;
 			points[idx].tangentOut = tan;
 		}
