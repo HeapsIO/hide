@@ -35,6 +35,29 @@ class AnimGraphEditor extends GenericGraphEditor {
         testButton.click((_) -> {
             setPreview(null);
         });
+
+        graphEditor.element.get(0).addEventListener("dragover", (e: js.html.DragEvent) -> {
+            var paramIndex = Std.parseInt(e.dataTransfer.getData("index"));
+            if (paramIndex != null)
+                e.preventDefault(); // prevent default to allow drop
+        });
+
+        graphEditor.element.get(0).addEventListener("drop", (e: js.html.DragEvent) -> {
+            var paramIndex = Std.parseInt(e.dataTransfer.getData("index"));
+            if (paramIndex == null)
+                return;
+
+
+            var posCursor = new h2d.col.Point(graphEditor.lX(e.clientX - 25), graphEditor.lY(e.clientY - 10));
+			var inst = new hrt.animgraph.nodes.FloatParameter();
+			@:privateAccess var id = animGraph.nodeIdCount++;
+			inst.id = id;
+            inst.parameter = animGraph.parameters[paramIndex];
+			inst.setPos(posCursor);
+
+			graphEditor.opBox(inst, true, graphEditor.currentUndoBuffer);
+			graphEditor.commitUndo();
+        });
     }
 
     public function refreshAnimation() {
@@ -59,12 +82,12 @@ class AnimGraphEditor extends GenericGraphEditor {
 
     function refreshPamamList() {
         parametersList.html("");
-        for (param in animGraph.parameters) {
+        for (paramIndex => param in animGraph.parameters) {
             var paramElement = new Element('<graph-paramater>
                 <header>
                     <div class="ico ico-chevron-right"></div>
                     <input type="text" value="${param.name}"></input>
-                    <div class="ico ico-reorder"></div>
+                    <div class="reorder ico ico-reorder" draggable="true"></div>
                 </header>
             </graph-parameters>').appendTo(parametersList);
 
@@ -89,6 +112,14 @@ class AnimGraphEditor extends GenericGraphEditor {
                 exec(false);
                 undo.change(Custom(exec));
             });
+
+            var reorder = paramElement.find(".reorder");
+            reorder.get(0).ondragstart = (e: js.html.DragEvent) -> {
+                e.dataTransfer.setDragImage(paramElement.get(0), Std.int(paramElement.width()), 0);
+
+                e.dataTransfer.setData("index", '${paramIndex}');
+
+            }
 
             if (previewAnimation != null) {
                 var param = previewAnimation.parameterMap.get(param.name);
@@ -203,9 +234,13 @@ class AnimGraphEditor extends GenericGraphEditor {
     }
 
     override function serializeNode(node : IGraphNode) : Dynamic {
-        var animNode : hrt.animgraph.Node = cast node;
-        var ser = animNode.serializeToDynamic();
-        ser.id = animNode.id;
+        var node : hrt.animgraph.Node = cast node;
+        var ser = node.serializeToDynamic();
+        ser.id = node.id;
+        var param = Std.downcast(node, hrt.animgraph.nodes.FloatParameter);
+        if (param != null) {
+            ser.paramId = animGraph.parameters.indexOf(param.parameter);
+        }
         return ser;
     }
 
@@ -216,6 +251,11 @@ class AnimGraphEditor extends GenericGraphEditor {
             node.id = animGraph.nodeIdCount;
         } else {
             node.id = data.id;
+        }
+
+        var param = Std.downcast(node, hrt.animgraph.nodes.FloatParameter);
+        if (param != null) {
+            param.parameter = animGraph.parameters[data.paramId];
         }
         return node;
     }
