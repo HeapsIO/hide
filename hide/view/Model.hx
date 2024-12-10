@@ -2,6 +2,7 @@ package hide.view;
 import hxd.Key as K;
 
 class Model extends FileView {
+	static var KEY_ANIM_PLAYING = "AnimationPlaying";
 
 	var tools : hide.comp.Toolbar;
 	var obj : h3d.scene.Object;
@@ -910,7 +911,13 @@ class Model extends FileView {
 		tools.clear();
 		var anims = scene.listAnims(getPath());
 
+		var a = this.getDisplayState(KEY_ANIM_PLAYING);
 		if( anims.length > 0 ) {
+			var selIdx = 0;
+			for (aIdx => anim in anims) {
+				if (anim == a)
+					selIdx = aIdx + 1;
+			}
 			var sel = tools.addSelect("play-circle");
 			var content = [for( a in anims ) {
 				var label = scene.animationName(a);
@@ -918,6 +925,7 @@ class Model extends FileView {
 			}];
 			content.unshift({ label : "-- no anim --", value : null });
 			sel.setContent(content);
+			sel.element.find("select").val(""+selIdx);
 			sel.onSelect = function(file:String) {
 				if (scene.editor.view.modified && !js.Browser.window.confirm("Current animation has been modified, change animation without saving?"))
 				{
@@ -995,7 +1003,7 @@ class Model extends FileView {
 		initConsole();
 
 		sceneEditor.onResize = buildTimeline;
-		setAnimation(null);
+		setAnimation(a);
 
 		// Adapt initial camera position to model
 		var camSettings = @:privateAccess sceneEditor.view.getDisplayState("Camera");
@@ -1091,6 +1099,7 @@ class Model extends FileView {
 		if( file == null ) {
 			obj.stopAnimation();
 			currentAnimation = null;
+			this.removeDisplayState(KEY_ANIM_PLAYING);
 			return;
 		}
 		var anim = scene.loadAnimation(file);
@@ -1105,6 +1114,8 @@ class Model extends FileView {
 		buildTimeline();
 		buildEventPanel();
 		modified = false;
+
+		this.saveDisplayState(KEY_ANIM_PLAYING, file);
 	}
 
 	function buildEventPanel(){
@@ -1250,7 +1261,8 @@ class Model extends FileView {
 					var tf = new h2d.TextInput(hxd.res.DefaultFont.get(), timeline);
 					tf.backgroundColor = 0xFF0000;
 					tf.onClick = function(e) {
-						sceneEditor.view.keys.pushDisable();
+						if (!tf.hasFocus())
+							sceneEditor.view.keys.pushDisable();
 						e.propagate = false;
 					}
 					tf.onFocusLost = function(e) {
