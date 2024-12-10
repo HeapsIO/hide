@@ -4248,3 +4248,16 @@ graph-editor-root properties-container graph-parameters ul graph-parameter {
   border: var(--basic-border);
   border-radius: var(--basic-border-radius);
 }
+graph-editor-root properties-container graph-parameters ul graph-parameter header {
+  display: flex;
+  align-items: center;
+}
+graph-editor-root properties-container graph-parameters ul graph-parameter header .fill {
+  flex-grow: 1;
+}
+graph-editor-root properties-container graph-parameters ul graph-parameter.folded content {
+  display: none;
+}
+graph-editor-root properties-container graph-parameters ul graph-parameter.folded .ico-chevron-down {
+  transform: rotate(-90deg);
+}

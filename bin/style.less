@@ -5024,6 +5024,23 @@ graph-editor-root {
 				graph-parameter {
 					border: var(--basic-border);
 					border-radius: var(--basic-border-radius);
+
+					header {
+						display: flex;
+						align-items: center;
+
+						.fill {
+							flex-grow: 1;
+						}
+					}
+
+					&.folded content {
+						display: none;
+					}
+
+					&.folded .ico-chevron-down {
+						transform: rotate(-90deg);
+					}
 				}
 			}
 		}

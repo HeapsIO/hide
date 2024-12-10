@@ -83,13 +83,17 @@ class AnimGraphEditor extends GenericGraphEditor {
     function refreshPamamList() {
         parametersList.html("");
         for (paramIndex => param in animGraph.parameters) {
-            var paramElement = new Element('<graph-paramater>
+            var paramElement = new Element('<graph-parameter>
                 <header>
-                    <div class="ico ico-chevron-right"></div>
-                    <input type="text" value="${param.name}"></input>
+                    <div class="ico ico-chevron-down toggle-open"></div>
+                    <input type="text" value="${param.name}" class="fill"></input>
                     <div class="reorder ico ico-reorder" draggable="true"></div>
                 </header>
-            </graph-parameters>').appendTo(parametersList);
+            </graph-parameter>').appendTo(parametersList);
+
+            paramElement.toggleClass("folded", true);
+
+
 
             var name = paramElement.find("input");
             name.on("change", (e) -> {
@@ -113,6 +117,11 @@ class AnimGraphEditor extends GenericGraphEditor {
                 undo.change(Custom(exec));
             });
 
+            var toggleOpen = paramElement.find(".toggle-open");
+            toggleOpen.on("click", (e) -> {
+                paramElement.toggleClass("folded");
+            });
+
             var reorder = paramElement.find(".reorder");
             reorder.get(0).ondragstart = (e: js.html.DragEvent) -> {
                 e.dataTransfer.setDragImage(paramElement.get(0), Std.int(paramElement.width()), 0);
@@ -120,6 +129,8 @@ class AnimGraphEditor extends GenericGraphEditor {
                 e.dataTransfer.setData("index", '${paramIndex}');
 
             }
+
+            var content = new Element("<content></content>").appendTo(paramElement);
 
             if (previewAnimation != null) {
                 var param = previewAnimation.parameterMap.get(param.name);
@@ -134,7 +145,7 @@ class AnimGraphEditor extends GenericGraphEditor {
                         var value = Std.parseFloat(slider.val());
                         param.runtimeValue = value;
                     });
-                    paramElement.append(slider);
+                    content.append(slider);
                 }
             }
         }

@@ -46,4 +46,8 @@ class Blend extends AnimNode {
 		m1._42 = y;
 		m1._43 = z;
 	}
+
+	override function getSize():Int {
+		return Node.SIZE_SMALL;
+	}
 }
