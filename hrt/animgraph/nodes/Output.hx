@@ -14,4 +14,19 @@ class Output extends Node {
 	override function getSize() : Int {
 		return Node.SIZE_SMALL;
 	}
+
+	override function getInfo():hide.view.GraphInterface.GraphNodeInfo {
+		var info = super.getInfo();
+
+		var animGraphEditor : hide.view.animgraph.AnimGraphEditor = cast editor.editor;
+		info.playButton = {
+			getActive: () -> {
+				return @:privateAccess animGraphEditor.previewNode == null;
+			},
+			onClick: () -> {
+				animGraphEditor.setPreview(null);
+			}
+		};
+		return info;
+	}
 }

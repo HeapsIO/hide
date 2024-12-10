@@ -16,7 +16,7 @@ class Input extends AnimNode {
 	@:s var path : String = "character/Kobold01/Anim_attack01.FBX";
 
 	override function getSize():Int {
-		return Node.SIZE_DEFAULT;
+		return Node.SIZE_BIG;
 	}
 
 	override function getBones(ctx: hrt.animgraph.nodes.AnimNode.GetBoneContext):Map<String, Int> {
@@ -48,12 +48,17 @@ class Input extends AnimNode {
 
 	override function getPropertiesHTML(width:Float):Array<hide.Element> {
 		var elts = super.getPropertiesHTML(width);
-		var input = new hide.Element('<input type="text" style="height:32px;">');
-		input.val(path);
-		input.on("change", (e) -> {
-			path = input.val();
-		});
-		elts.push(input);
+
+		var wrapper = new hide.Element("<input-wrapper></input-wrapper>");
+		wrapper.height("20px");
+
+		var fileSelect = new hide.comp.FileSelect(["fbx"], wrapper);
+		fileSelect.path = path;
+		fileSelect.onChange = () -> {
+			path = fileSelect.path;
+		}
+		elts.push(wrapper);
+
 		return elts;
 	}
 }

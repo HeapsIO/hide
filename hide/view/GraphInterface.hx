@@ -18,8 +18,8 @@ typedef GraphNodeInfo = {
     },
 
     /**Adds a button to the header that can be used to set the current preview point in the graph**/
-    ?previewButton: {
-        getEnabled : () -> Bool,
+    ?playButton: {
+        getActive : () -> Bool,
         onClick: () -> Void,
     },
 

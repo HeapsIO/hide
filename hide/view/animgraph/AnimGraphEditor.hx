@@ -33,7 +33,7 @@ class AnimGraphEditor extends GenericGraphEditor {
 
         var testButton = new Element("<button>Test Bones</button>").appendTo(propertiesContainer);
         testButton.click((_) -> {
-            refreshAnimation();
+            setPreview(null);
         });
     }
 
@@ -47,11 +47,14 @@ class AnimGraphEditor extends GenericGraphEditor {
     public function setPreview(newPreview: hrt.animgraph.nodes.AnimNode) {
         previewNode = newPreview;
         refreshAnimation();
-        var index = animGraph.nodes.indexOf(newPreview);
-        if (index == -1)
-            throw "Invalid node";
-        previewAnimation.outputNode = cast previewAnimation.animGraph.nodes[index];
-        @:privateAccess previewAnimation.bind(previewAnimation.target);
+        if (previewNode != null) {
+            var index = animGraph.nodes.indexOf(newPreview);
+            if (index == -1)
+                throw "Invalid node";
+            previewAnimation.outputNode = cast previewAnimation.animGraph.nodes[index];
+            @:privateAccess previewAnimation.bind(previewAnimation.target);
+        }
+        graphEditor.refreshPreviewButtons();
     }
 
     function refreshPamamList() {

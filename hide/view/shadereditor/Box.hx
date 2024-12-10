@@ -219,13 +219,14 @@ class Box {
 			else {
 				editor.editorDisplay.text(element, 7, HEADER_HEIGHT-6, info.name).addClass("title-box");
 
-				if (info.previewButton != null) {
-					var cont = editor.editorDisplay.foreignObject(element, width - 24, 0, 24, 24);
-					setPreviewThisNode = new Element('<button class="preview-button" title="Preview this node"><button>').appendTo(cont);
+				if (info.playButton != null) {
+					var cont = editor.editorDisplay.foreignObject(element, width - 24, 0, HEADER_HEIGHT, HEADER_HEIGHT);
+					var container = new Element('<container></container>').appendTo(cont);
+					setPreviewThisNode = new Element('<button class="play-button" title="Preview this node"></button>').appendTo(container);
 					setPreviewThisNode.on("click", (e) -> {
-						info.previewButton.onClick();
+						info.playButton.onClick();
 					});
-					var setPreviewIcon = new Element('<div class="ico"></div>').appendTo(setPreviewThisNode);
+					var setPreviewIcon = new Element('<div class="ico ico-play"></div>').appendTo(setPreviewThisNode);
 				}
 			}
 		}
@@ -257,10 +258,9 @@ class Box {
 	}
 
 	public function refreshPreviewButton() {
-		if (setPreviewIcon != null) {
-			var status = info.previewButton.getEnabled();
-			setPreviewIcon.toggleClass("ico-eye", status);
-			setPreviewIcon.toggleClass("ico-eye-slash", !status);
+		if (setPreviewThisNode != null) {
+			var status = info.playButton.getActive();
+			setPreviewThisNode.toggleClass("active", status);
 		}
 	}
 

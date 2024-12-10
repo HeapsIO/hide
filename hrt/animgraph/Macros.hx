@@ -41,7 +41,7 @@ class Macros {
 
 		if (inheritAnimNode) {
 			outputs.push(macro {
-				name: "out",
+				name: "",
 				type: Node.OutputType.TAnimation,
 			});
 		}

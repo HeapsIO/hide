@@ -72,8 +72,8 @@ class AnimNode extends Node {
 		var info = super.getInfo();
 
 		var animGraphEditor : hide.view.animgraph.AnimGraphEditor = cast editor.editor;
-		info.previewButton = {
-			getEnabled: () -> {
+		info.playButton = {
+			getActive: () -> {
 				return this == @:privateAccess animGraphEditor.previewNode;
 			},
 			onClick: () -> {

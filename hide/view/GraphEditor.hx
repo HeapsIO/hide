@@ -1392,7 +1392,7 @@ class GraphEditor extends hide.comp.Component {
 		var io = unpackIO(id);
 	}
 
-	function refreshPreviewButtons() {
+	public function refreshPreviewButtons() {
 		for (box in boxes) {
 			box.refreshPreviewButton();
 		}

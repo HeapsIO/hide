@@ -75,6 +75,10 @@ implements hide.view.GraphInterface.IGraphNode
 
 	public var editor : hide.view.GraphEditor;
 
+	public function getAnimEditor() : hide.view.animgraph.AnimGraphEditor {
+		return cast editor.editor;
+	}
+
 
 	static final SIZE_SMALL = 70;
 	static final SIZE_DEFAULT = 150;
