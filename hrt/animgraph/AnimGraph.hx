@@ -155,45 +155,49 @@ class AnimGraph extends hrt.prefab.Prefab {
 	}
 
 	override function copy(other: hrt.prefab.Prefab) {
-		super.copy(other);
-		var other : AnimGraph = cast other;
+		load(other.save());
+		// super.copy(other);
+		// var other : AnimGraph = cast other;
 
-		var nodeCopy: Map<{}, Node> = [];
-		var parameterCopy: Map<{}, Parameter> = [];
+		// var nodeCopy: Map<{}, Node> = [];
+		// var parameterCopy: Map<{}, Parameter> = [];
 
-		for (parameter in other.parameters) {
-			var copy = new Parameter();
-			@:privateAccess copy.copyFromOther(parameter);
-			parameters.push(copy);
-			parameterCopy.set(parameter, copy);
-		}
+		// this.nodes = [];
+		// this.parameters = [];
 
-		for (node in other.nodes) {
-			var copy = Node.createFromDynamic(node.serializeToDynamic());
-			this.nodes.push(copy);
-			nodeCopy.set(node, copy);
+		// for (parameter in other.parameters) {
+		// 	var copy = new Parameter();
+		// 	@:privateAccess copy.copyFromOther(parameter);
+		// 	this.parameters.push(copy);
+		// 	parameterCopy.set(parameter, copy);
+		// }
 
-			var copyParam = Std.downcast(copy, hrt.animgraph.nodes.FloatParameter);
-			var nodeParam = Std.downcast(node, hrt.animgraph.nodes.FloatParameter);
-			if (copyParam != null) {
-				copyParam.parameter = parameterCopy.get(nodeParam.parameter);
-			}
-		}
+		// for (node in other.nodes) {
+		// 	var copy = Node.createFromDynamic(node.serializeToDynamic());
+		// 	this.nodes.push(copy);
+		// 	nodeCopy.set(node, copy);
 
-		// restore edges
-		for (node in other.nodes) {
-			var ours = nodeCopy.get(node);
-			for (id => edge in node.inputEdges) {
-				if (edge == null)
-					continue;
-				ours.inputEdges[id] = {
-					target: nodeCopy.get(edge.target),
-					outputIndex: edge.outputIndex,
-				};
-			}
-		}
+		// 	var copyParam = Std.downcast(copy, hrt.animgraph.nodes.FloatParameter);
+		// 	var nodeParam = Std.downcast(node, hrt.animgraph.nodes.FloatParameter);
+		// 	if (copyParam != null) {
+		// 		copyParam.parameter = parameterCopy.get(nodeParam.parameter);
+		// 	}
+		// }
 
-		this.parameters = haxe.Json.parse(haxe.Json.stringify(other.parameters));
+		// // restore edges
+		// for (node in other.nodes) {
+		// 	var ours = nodeCopy.get(node);
+		// 	for (id => edge in node.inputEdges) {
+		// 		if (edge == null)
+		// 			continue;
+		// 		ours.inputEdges[id] = {
+		// 			target: nodeCopy.get(edge.target),
+		// 			outputIndex: edge.outputIndex,
+		// 		};
+		// 	}
+		// }
+
+		// this.parameters = haxe.Json.parse(haxe.Json.stringify(other.parameters));
 	}
 
 	#if editor

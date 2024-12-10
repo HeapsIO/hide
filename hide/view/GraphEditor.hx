@@ -1298,6 +1298,9 @@ class GraphEditor extends hide.comp.Component {
 				box.info.contextMenu(e);
 			}
 		}
+		if (box.node.id == null) {
+			throw "null id";
+		}
 		boxes.set(box.node.id, box);
 
 		for (inputId => input in box.info.inputs) {

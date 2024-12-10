@@ -30,8 +30,9 @@ class AnimGraphEditor extends GenericGraphEditor {
 
         var testButton = new Element("<button>Test Bones</button>").appendTo(propertiesContainer);
         testButton.click((_) -> {
-            previewAnimation = animGraph.getAnimation();
-            previewModel.playAnimation(previewAnimation);
+            var anim = animGraph.getAnimation();
+            previewModel.playAnimation(anim);
+            previewAnimation = cast previewModel.currentAnimation;
             refreshPamamList();
         });
     }
@@ -51,6 +52,11 @@ class AnimGraphEditor extends GenericGraphEditor {
                 var param = previewAnimation.parameterMap.get(param.name);
                 if (param != null) {
                     var slider = new Element('<input type="range" min="0.0" max="1.0" step="0.01" value="${param.runtimeValue}"></input>');
+
+                    slider.on("input", (e) -> {
+                        var value = Std.parseFloat(slider.val());
+                        param.runtimeValue = value;
+                    });
                     slider.change((e) -> {
                         var value = Std.parseFloat(slider.val());
                         param.runtimeValue = value;
@@ -155,7 +161,9 @@ class AnimGraphEditor extends GenericGraphEditor {
 
     override function serializeNode(node : IGraphNode) : Dynamic {
         var animNode : hrt.animgraph.Node = cast node;
-        return animNode.serializeToDynamic();
+        var ser = animNode.serializeToDynamic();
+        ser.id = animNode.id;
+        return ser;
     }
 
     override function unserializeNode(data: Dynamic, newId: Bool) : IGraphNode {
@@ -163,6 +171,8 @@ class AnimGraphEditor extends GenericGraphEditor {
         if (newId) {
             animGraph.nodeIdCount ++;
             node.id = animGraph.nodeIdCount;
+        } else {
+            node.id = data.id;
         }
         return node;
     }

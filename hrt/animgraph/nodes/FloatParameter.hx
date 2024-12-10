@@ -7,4 +7,8 @@ class FloatParameter extends Node {
 	override function canCreateManually() : Bool {
 		return false;
 	}
+
+	override function tick(dt: Float) : Void {
+		value = parameter.runtimeValue;
+	}
 }
