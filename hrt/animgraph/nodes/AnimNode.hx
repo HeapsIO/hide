@@ -65,4 +65,22 @@ class AnimNode extends Node {
 
 	function getBoneTransform(boneId: Int, outMatrix: h3d.Matrix) : Void {
 	}
+
+	#if editor
+
+	override function getInfo():hide.view.GraphInterface.GraphNodeInfo {
+		var info = super.getInfo();
+
+		var animGraphEditor : hide.view.animgraph.AnimGraphEditor = cast editor.editor;
+		info.previewButton = {
+			getEnabled: () -> {
+				return this == @:privateAccess animGraphEditor.previewNode;
+			},
+			onClick: () -> {
+				animGraphEditor.setPreview(this);
+			}
+		};
+		return info;
+	}
+	#end
 }

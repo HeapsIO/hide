@@ -4,6 +4,7 @@ import hide.view.GraphInterface;
 import hrt.animgraph.*;
 
 @:access(hrt.animgraph.AnimGraph)
+@:access(hrt.animgraph.AnimGraphInstance)
 @:access(hrt.animgraph.Node)
 class AnimGraphEditor extends GenericGraphEditor {
 
@@ -12,6 +13,8 @@ class AnimGraphEditor extends GenericGraphEditor {
 
     var parametersList : hide.Element;
     var previewAnimation : AnimGraphInstance = null;
+
+    var previewNode : hrt.animgraph.nodes.AnimNode = null;
 
     override function reloadView() {
         animGraph = cast hide.Ide.inst.loadPrefab(state.path, null,  true);
@@ -30,11 +33,25 @@ class AnimGraphEditor extends GenericGraphEditor {
 
         var testButton = new Element("<button>Test Bones</button>").appendTo(propertiesContainer);
         testButton.click((_) -> {
-            var anim = animGraph.getAnimation();
-            previewModel.playAnimation(anim);
-            previewAnimation = cast previewModel.currentAnimation;
-            refreshPamamList();
+            refreshAnimation();
         });
+    }
+
+    public function refreshAnimation() {
+        var anim = animGraph.getAnimation();
+        previewModel.playAnimation(anim);
+        previewAnimation = cast previewModel.currentAnimation;
+        refreshPamamList();
+    }
+
+    public function setPreview(newPreview: hrt.animgraph.nodes.AnimNode) {
+        previewNode = newPreview;
+        refreshAnimation();
+        var index = animGraph.nodes.indexOf(newPreview);
+        if (index == -1)
+            throw "Invalid node";
+        previewAnimation.outputNode = cast previewAnimation.animGraph.nodes[index];
+        @:privateAccess previewAnimation.bind(previewAnimation.target);
     }
 
     function refreshPamamList() {
@@ -115,6 +132,7 @@ class AnimGraphEditor extends GenericGraphEditor {
             var info = Type.createEmptyInstance(type);
             if (!info.canCreateManually())
                 continue;
+
             var entry : AddNodeMenuEntry = {
                 name: info.getDisplayName(),
                 description: "",
@@ -124,7 +142,7 @@ class AnimGraphEditor extends GenericGraphEditor {
                     animGraph.nodeIdCount ++;
                     node.id = animGraph.nodeIdCount;
                     return node;
-                },
+                }
             };
 
             menu.push(entry);

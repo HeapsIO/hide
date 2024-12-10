@@ -35,7 +35,7 @@ class AnimGraph extends hrt.prefab.Prefab {
 		Get the animation "template" for this AnimGraph.
 		This anim should be instanciated using getInstance() after that (or use the h3d.scene.Object.playAnimation() function that does this for you)
 	**/
-	public function getAnimation() : AnimGraphInstance {
+	public function getAnimation(previewNode: Node = null) : AnimGraphInstance {
 		return instance ??= new AnimGraphInstance(this);
 	}
 

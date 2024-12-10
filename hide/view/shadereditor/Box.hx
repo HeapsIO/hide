@@ -43,6 +43,8 @@ class Box {
 
 	var element : JQuery;
 	var propertiesGroup : JQuery;
+	var setPreviewThisNode: JQuery;
+	var setPreviewIcon: JQuery;
 	static final resizeBorder : Int = 8;
 	static final halfResizeBorder : Int = resizeBorder >> 1;
 
@@ -53,16 +55,6 @@ class Box {
 
 		width = info.width ?? 150;
 		width = Std.int(hxd.Math.ceil(width / NODE_MARGIN) * NODE_MARGIN);
-
-		//var metas = haxe.rtti.Meta.getType(Type.getClass(node));
-		//if (metas.width != null) {
-		//	this.width = metas.width[0];
-		//}
-
-		//if (Reflect.hasField(metas, "color")) {
-		//	color = Reflect.field(metas, "color");
-		//}
-		//var className = node.nameOverride ?? ((metas.name != null) ? metas.name[0] : "Undefined");
 
 		element = editor.editorDisplay.group(parent).addClass("box").addClass("not-selected");
 		element.attr("id", node.id);
@@ -226,6 +218,15 @@ class Box {
 			}
 			else {
 				editor.editorDisplay.text(element, 7, HEADER_HEIGHT-6, info.name).addClass("title-box");
+
+				if (info.previewButton != null) {
+					var cont = editor.editorDisplay.foreignObject(element, width - 24, 0, 24, 24);
+					setPreviewThisNode = new Element('<button class="preview-button" title="Preview this node"><button>').appendTo(cont);
+					setPreviewThisNode.on("click", (e) -> {
+						info.previewButton.onClick();
+					});
+					var setPreviewIcon = new Element('<div class="ico"></div>').appendTo(setPreviewThisNode);
+				}
 			}
 		}
 
@@ -253,6 +254,14 @@ class Box {
 
 		refreshBox();
 		//editor.editorDisplay.line(element, width/2, HEADER_HEIGHT, width/2, 0, {display: "none"}).addClass("nodes-separator");
+	}
+
+	public function refreshPreviewButton() {
+		if (setPreviewIcon != null) {
+			var status = info.previewButton.getEnabled();
+			setPreviewIcon.toggleClass("ico-eye", status);
+			setPreviewIcon.toggleClass("ico-eye-slash", !status);
+		}
 	}
 
 	public function setPreviewVisibility(visible: Bool) {

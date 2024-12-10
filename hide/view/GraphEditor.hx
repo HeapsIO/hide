@@ -1392,6 +1392,12 @@ class GraphEditor extends hide.comp.Component {
 		var io = unpackIO(id);
 	}
 
+	function refreshPreviewButtons() {
+		for (box in boxes) {
+			box.refreshPreviewButton();
+		}
+	}
+
 	function removeBoxEdges(box : Box, ?undoBuffer : UndoBuffer) {
 		var id = box.getInstance().id;
 		for (i => _ in box.info.inputs) {

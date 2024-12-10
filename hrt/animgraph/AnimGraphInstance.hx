@@ -13,17 +13,25 @@ class AnimGraphAnimatedObject extends h3d.anim.Animation.AnimatedObject {
 @:access(hrt.animgraph.Node)
 class AnimGraphInstance extends h3d.anim.Animation {
 	var animGraph : AnimGraph;
-	var outputNode : hrt.animgraph.nodes.Output;
+	var outputNode : hrt.animgraph.nodes.AnimNode;
 	var workMatrix = new h3d.Matrix();
 
 	var boneMap: Map<String, Int> = [];
 	public var parameterMap: Map<String, hrt.animgraph.AnimGraph.Parameter> = [];
 
+	var target : h3d.scene.Object = null;
+
 	function new(animGraph:AnimGraph) {
 		// Todo : Define a true length for the animation OR make so animations can have an undefined length
 		super(animGraph.name, 1000, 1/60.0);
 		this.animGraph = animGraph;
-		outputNode = cast Lambda.find(animGraph.nodes, (node) -> Std.downcast(node, hrt.animgraph.nodes.Output) != null);
+
+
+		var output : hrt.animgraph.nodes.Output = cast Lambda.find(animGraph.nodes, (node) -> Std.downcast(node, hrt.animgraph.nodes.Output) != null);
+		if (output != null) {
+			map(output, updateNodeInputs);
+			outputNode = output.a;
+		}
 
 		for (param in animGraph.parameters) {
 			parameterMap.set(param.name, param);
@@ -42,30 +50,35 @@ class AnimGraphInstance extends h3d.anim.Animation {
 		if (outputNode == null)
 			return null;
 
-		map(updateNodeInputs);
+		map(outputNode, updateNodeInputs);
 
-		boneMap = outputNode.a.getBones(ctx);
+		boneMap = outputNode.getBones(ctx);
 		return boneMap;
 	}
 
 	override function bind(base:h3d.scene.Object) {
 		objects = [];
+		target = base;
 
 		var ctx = new hrt.animgraph.nodes.AnimNode.GetBoneContext();
 		ctx.targetObject = base;
 
 		var bones = getBones(ctx);
-		for (name => id in bones) {
-			objects.push(new AnimGraphAnimatedObject(name, id));
+		if (bones != null) {
+			for (name => id in bones) {
+				objects.push(new AnimGraphAnimatedObject(name, id));
+			}
 		}
 		super.bind(base);
 	}
 
 	override function sync(decompose : Bool = false ) {
+		if (outputNode == null)
+			return;
 		for (obj in objects) {
 			var obj : AnimGraphAnimatedObject = cast obj;
 			workMatrix.identity();
-			outputNode.a.getBoneTransform(obj.id, workMatrix);
+			outputNode.getBoneTransform(obj.id, workMatrix);
 			@:privateAccess
 
 			var targetMatrix = if (obj.targetSkin != null) {
@@ -110,7 +123,7 @@ class AnimGraphInstance extends h3d.anim.Animation {
 		}
 	}
 
-	function map(cb: (node:Node) -> Void) {
+	function map(root: Node, cb: (node:Node) -> Void) {
 		function rec (node: Node) {
 			cb(node);
 			for (inputId => edge in node.inputEdges) {
@@ -118,7 +131,7 @@ class AnimGraphInstance extends h3d.anim.Animation {
 				rec(edge.target);
 			}
 		}
-		rec(outputNode);
+		rec(root);
 	}
 
 	override function update(dt:Float):Float {
