@@ -11,4 +11,8 @@ class FloatParameter extends Node {
 	override function tick(dt: Float) : Void {
 		value = parameter.runtimeValue;
 	}
+
+	override function getOutputNameOverride(name: String) : String {
+		return parameter.name;
+	}
 }

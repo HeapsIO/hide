@@ -122,11 +122,15 @@ implements hide.view.GraphInterface.IGraphNode
 				color: getTypeColor(input.type),
 			}],
 			outputs: [for (output in getOutputs()) {
-				name: output.name,
+				name: getOutputNameOverride(output.name),
 				color: getTypeColor(output.type),
 			}],
 			width: getSize(),
 		}
+	}
+
+	public function getOutputNameOverride(name: String) : String {
+		return name;
 	}
 
 	public function getPropertiesHTML(width : Float) : Array<hide.Element> {

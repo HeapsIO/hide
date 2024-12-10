@@ -68,6 +68,28 @@ class AnimGraphEditor extends GenericGraphEditor {
                 </header>
             </graph-parameters>').appendTo(parametersList);
 
+            var name = paramElement.find("input");
+            name.on("change", (e) -> {
+                var prev = param.name;
+                var curr = name.val();
+
+                function exec(isUndo: Bool) {
+                    if (!isUndo) {
+                        param.name = curr;
+                    } else {
+                        param.name = prev;
+                    }
+                    name.val(param.name);
+                    var toRefresh = animGraph.nodes.filter((n) -> Std.downcast(n, hrt.animgraph.nodes.FloatParameter)?.parameter == param);
+                    for (node in toRefresh) {
+                        graphEditor.refreshBox(node.id);
+                    }
+                }
+
+                exec(false);
+                undo.change(Custom(exec));
+            });
+
             if (previewAnimation != null) {
                 var param = previewAnimation.parameterMap.get(param.name);
                 if (param != null) {
