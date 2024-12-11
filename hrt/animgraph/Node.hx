@@ -31,6 +31,8 @@ implements hide.view.GraphInterface.IGraphNode
 	@:s public var x : Float;
 	@:s public var y : Float;
 	public var inputEdges: Array<Edge> = [];
+	var animGraph : AnimGraph;
+
 
 	var tickedThisFrame = false;
 

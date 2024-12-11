@@ -22,13 +22,14 @@ class AnimGraphInstance extends h3d.anim.Animation {
 	var target : h3d.scene.Object = null;
 
 	var syncCtx = new hrt.animgraph.nodes.AnimNode.GetBoneTransformContext();
+	var defaultPoseNode = new hrt.animgraph.nodes.DefaultPose();
 
 	function new(animGraph:AnimGraph) {
 		// Todo : Define a true length for the animation OR make so animations can have an undefined length
 		super(animGraph.name, 1000, 1/60.0);
 		this.animGraph = animGraph;
 
-
+		defaultPoseNode = new hrt.animgraph.nodes.DefaultPose();
 		var output : hrt.animgraph.nodes.Output = cast Lambda.find(animGraph.nodes, (node) -> Std.downcast(node, hrt.animgraph.nodes.Output) != null);
 		if (output != null) {
 			map(output, updateNodeInputs);
@@ -114,15 +115,21 @@ class AnimGraphInstance extends h3d.anim.Animation {
 	function updateNodeInputs(node: Node) : Void {
 		var inputs = node.getInputs();
 		for (inputId => edge in node.inputEdges) {
-			if (edge == null) continue;
-			var outputNode = edge.target;
-			var outputs = outputNode.getOutputs();
-			var output = outputs[edge.outputIndex];
+			var outputNode = edge?.target;
+
 			switch (inputs[inputId].type) {
 				case TAnimation:
-					Reflect.setField(node, inputs[inputId].name, outputNode);
+					if (outputNode != null && Std.downcast(outputNode, hrt.animgraph.nodes.DefaultPose) == null /* use our default pose node instead of the one in the graph*/) {
+						Reflect.setField(node, inputs[inputId].name, outputNode);
+					} else {
+						Reflect.setField(node, inputs[inputId].name, defaultPoseNode);
+					}
 				case TFloat:
-					Reflect.setField(node, inputs[inputId].name, Reflect.getProperty(outputNode, output.name));
+					if (outputNode != null) {
+						var outputs = outputNode.getOutputs();
+						var output = outputs[edge.outputIndex];
+						Reflect.setField(node, inputs[inputId].name, Reflect.getProperty(outputNode, output.name));
+					}
 			}
 		}
 	}

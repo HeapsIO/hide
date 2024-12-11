@@ -12,7 +12,7 @@ class Blend extends AnimNode {
 			if (sourceBoneId != -1) {
 				a.getBoneTransform(sourceBoneId, tempMatrix, ctx);
 			} else {
-				tempMatrix = @:privateAccess h3d.anim.SmoothTransition.MZERO;
+				tempMatrix.load(ctx.getDefPose());
 			}
 		} else {
 			tempMatrix.load(ctx.getDefPose());
@@ -23,10 +23,8 @@ class Blend extends AnimNode {
 			if (sourceBoneId != -1) {
 				b.getBoneTransform(sourceBoneId, outMatrix, ctx);
 			} else {
-				outMatrix.load(@:privateAccess h3d.anim.SmoothTransition.MZERO);
+				outMatrix.load(ctx.getDefPose());
 			}
-		} else {
-			outMatrix.load(ctx.getDefPose());
 		}
 
 		var m1 = tempMatrix;
