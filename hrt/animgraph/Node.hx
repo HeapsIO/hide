@@ -26,7 +26,9 @@ class Node
 implements hide.view.GraphInterface.IGraphNode
 #end
 {
-	public function new() {};
+	public function new() {
+		inputEdges.resize(getInputs().length);
+	};
 
 	@:s public var x : Float;
 	@:s public var y : Float;
