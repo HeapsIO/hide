@@ -36,7 +36,7 @@ class Input extends AnimNode {
 		@:privateAccess anim.isSync = false;
 	}
 
-	override function getBoneTransform(id: Int, matrix: h3d.Matrix) {
+	override function getBoneTransform(id: Int, matrix: h3d.Matrix, ctx: AnimNode.GetBoneTransformContext) {
 		// todo : add sync outside the getBoneMatrix to avoid checks
 		@:privateAccess
 		if (!anim.isSync) {

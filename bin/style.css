@@ -4261,3 +4261,7 @@ graph-editor-root properties-container graph-parameters ul graph-parameter.folde
 graph-editor-root properties-container graph-parameters ul graph-parameter.folded .ico-chevron-down {
   transform: rotate(-90deg);
 }
+graph-editor-root properties-container graph-parameters ul graph-parameter .ico-chevron-down {
+  transition: transform 0.25s;
+  transform: rotate(0deg);
+}

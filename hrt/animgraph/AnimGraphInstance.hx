@@ -21,6 +21,8 @@ class AnimGraphInstance extends h3d.anim.Animation {
 
 	var target : h3d.scene.Object = null;
 
+	var syncCtx = new hrt.animgraph.nodes.AnimNode.GetBoneTransformContext();
+
 	function new(animGraph:AnimGraph) {
 		// Todo : Define a true length for the animation OR make so animations can have an undefined length
 		super(animGraph.name, 1000, 1/60.0);
@@ -78,9 +80,11 @@ class AnimGraphInstance extends h3d.anim.Animation {
 		for (obj in objects) {
 			var obj : AnimGraphAnimatedObject = cast obj;
 			workMatrix.identity();
-			outputNode.getBoneTransform(obj.id, workMatrix);
-			@:privateAccess
+			syncCtx.reset(obj);
 
+			outputNode.getBoneTransform(obj.id, workMatrix, syncCtx);
+
+			@:privateAccess
 			var targetMatrix = if (obj.targetSkin != null) {
 				obj.targetSkin.jointsUpdated = true;
 				obj.targetSkin.currentRelPose[obj.targetJoint] ??= new h3d.Matrix();

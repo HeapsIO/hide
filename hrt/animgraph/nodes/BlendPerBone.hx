@@ -34,7 +34,7 @@ class BlendPerBone extends AnimNode {
 		return map;
 	}
 
-	override function getBoneTransform(boneId: Int, outMatrix: h3d.Matrix) : Void {
+	override function getBoneTransform(boneId: Int, outMatrix: h3d.Matrix, ctx: AnimNode.GetBoneTransformContext) : Void {
 		for (animId in 0...2) {
 
 			var animBoneId = boneIdToAnimInputBone[getInputBoneId(boneId, animId)];
@@ -44,7 +44,7 @@ class BlendPerBone extends AnimNode {
 			if (anim == null) {
 				continue;
 			}
-			anim.getBoneTransform(animBoneId, outMatrix);
+			anim.getBoneTransform(animBoneId, outMatrix, ctx);
 			break;
 		}
 	}

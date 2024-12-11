@@ -11,6 +11,40 @@ class GetBoneContext {
 	public var targetObject:h3d.scene.Object;
 }
 
+class GetBoneTransformContext {
+	public function new() {
+
+	}
+
+	public function reset(target: hrt.animgraph.AnimGraphInstance.AnimGraphAnimatedObject) {
+		defMatrix = null;
+		targetObj = target;
+	}
+
+	var targetObj : hrt.animgraph.AnimGraphInstance.AnimGraphAnimatedObject;
+
+	static var tmpWorkMatrix = new h3d.Matrix();
+	var tmpDefMatrix = new h3d.Matrix();
+	var defMatrix : h3d.Matrix = null;
+
+	/**
+		In the decomposed format
+	**/
+	@:haxe.warning("-WInlineOptimizedField")
+	public function getDefPose() : h3d.Matrix {
+		if (defMatrix != null) return defMatrix;
+		var m = if (targetObj.targetSkin != null) {
+			targetObj.targetSkin.getSkinData().allJoints[targetObj.targetJoint].defMat;
+		} else {
+			targetObj.targetObject.defaultTransform;
+		}
+		Tools.splitMatrix(m, tmpWorkMatrix);
+
+		defMatrix = tmpDefMatrix;
+		return defMatrix;
+	}
+}
+
 /**
 	An anim node outpus a animation that can be consumed as input parameter by other nodes
 **/
@@ -42,8 +76,10 @@ class AnimNode extends Node {
 			switch (input.type) {
 				case TAnimation:
 					var anim : AnimNode = cast Reflect.getProperty(this, input.name);
-					if (anim == null)
+					if (anim == null) {
+						currentInputId ++;
 						continue;
+					}
 					var animBones = anim.getBones(ctx);
 					for (name => id in animBones) {
 						var ourBoneId = boneMap.getOrPut(name, {
@@ -53,7 +89,7 @@ class AnimNode extends Node {
 							}
 							currentBoneId;
 						});
-						boneIdToAnimInputBone[getInputBoneId(ourBoneId, currentInputId)] = id; // we offset the id by one to differientate the 0 from the uninitialized entires in the array
+						boneIdToAnimInputBone[getInputBoneId(ourBoneId, currentInputId)] = id;
 					}
 					currentInputId ++;
 				default:
@@ -63,7 +99,7 @@ class AnimNode extends Node {
 		return boneMap;
 	}
 
-	function getBoneTransform(boneId: Int, outMatrix: h3d.Matrix) : Void {
+	function getBoneTransform(boneId: Int, outMatrix: h3d.Matrix, ctx: GetBoneTransformContext) : Void {
 	}
 
 	#if editor

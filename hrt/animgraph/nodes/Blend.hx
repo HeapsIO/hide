@@ -6,22 +6,27 @@ class Blend extends AnimNode {
 	@:input var alpha : Float = 0.5;
 
 	var tempMatrix: h3d.Matrix = new h3d.Matrix();
-	override function getBoneTransform(boneId:Int, outMatrix:h3d.Matrix) {
+	override function getBoneTransform(boneId:Int, outMatrix:h3d.Matrix, ctx: AnimNode.GetBoneTransformContext) {
 		if (a != null) {
 			var sourceBoneId = boneIdToAnimInputBone[getInputBoneId(boneId, 0)];
 			if (sourceBoneId != -1) {
-				a.getBoneTransform(sourceBoneId, tempMatrix);
+				a.getBoneTransform(sourceBoneId, tempMatrix, ctx);
 			} else {
 				tempMatrix = @:privateAccess h3d.anim.SmoothTransition.MZERO;
 			}
+		} else {
+			tempMatrix.load(ctx.getDefPose());
 		}
+
 		if (b != null) {
 			var sourceBoneId = boneIdToAnimInputBone[getInputBoneId(boneId, 1)];
 			if (sourceBoneId != -1) {
-				b.getBoneTransform(sourceBoneId, outMatrix);
+				b.getBoneTransform(sourceBoneId, outMatrix, ctx);
 			} else {
 				outMatrix.load(@:privateAccess h3d.anim.SmoothTransition.MZERO);
 			}
+		} else {
+			outMatrix.load(ctx.getDefPose());
 		}
 
 		var m1 = tempMatrix;

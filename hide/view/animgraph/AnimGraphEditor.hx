@@ -60,18 +60,21 @@ class AnimGraphEditor extends GenericGraphEditor {
         });
     }
 
-    public function refreshAnimation() {
-        var anim = animGraph.getAnimation();
-        previewModel.playAnimation(anim);
-        previewAnimation = cast previewModel.currentAnimation;
-        refreshPamamList();
-    }
+    public function setPreview(newOutput: hrt.animgraph.nodes.AnimNode) {
+        previewNode = newOutput;
 
-    public function setPreview(newPreview: hrt.animgraph.nodes.AnimNode) {
-        previewNode = newPreview;
-        refreshAnimation();
+        // refresh animation
+        {
+            if (previewModel == null)
+                return;
+            var anim = animGraph.getAnimation();
+            previewModel.playAnimation(anim);
+            previewAnimation = cast previewModel.currentAnimation;
+            refreshPamamList();
+        }
+
         if (previewNode != null) {
-            var index = animGraph.nodes.indexOf(newPreview);
+            var index = animGraph.nodes.indexOf(newOutput);
             if (index == -1)
                 throw "Invalid node";
             previewAnimation.outputNode = cast previewAnimation.animGraph.nodes[index];
@@ -92,8 +95,6 @@ class AnimGraphEditor extends GenericGraphEditor {
             </graph-parameter>').appendTo(parametersList);
 
             paramElement.toggleClass("folded", true);
-
-
 
             var name = paramElement.find("input");
             name.on("change", (e) -> {
@@ -127,7 +128,6 @@ class AnimGraphEditor extends GenericGraphEditor {
                 e.dataTransfer.setDragImage(paramElement.get(0), Std.int(paramElement.width()), 0);
 
                 e.dataTransfer.setData("index", '${paramIndex}');
-
             }
 
             var content = new Element("<content></content>").appendTo(paramElement);
@@ -168,8 +168,7 @@ class AnimGraphEditor extends GenericGraphEditor {
         previewModel = scenePreview.loadModel("character/Kobold01/Model.FBX");
         scenePreview.s3d.addChild(previewModel);
 
-        // var anim = hxd.res.Loader.currentInstance.load("character/Kobold01/Anim_attack01.FBX").toModel().toHmd().loadAnimation();
-        // previewModel.playAnimation(anim);
+        setPreview(previewNode);
     }
 
     override function getNodes() : Iterator<IGraphNode> {
@@ -281,11 +280,15 @@ class AnimGraphEditor extends GenericGraphEditor {
     override function addEdge(edge : Edge) : Void {
         var inputNode = animGraph.getNodeByEditorId(edge.nodeToId);
         inputNode.inputEdges[edge.inputToId] = {target: animGraph.getNodeByEditorId(edge.nodeFromId), outputIndex: edge.outputFromId};
+
+        setPreview(previewNode);
     }
 
     override function removeEdge(nodeToId: Int, inputToId : Int) : Void {
         var inputNode = animGraph.getNodeByEditorId(nodeToId);
         inputNode.inputEdges[inputToId] = null;
+
+        setPreview(previewNode);
     }
 
     function addParameter() {
