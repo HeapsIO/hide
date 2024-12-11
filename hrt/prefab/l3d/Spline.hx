@@ -75,6 +75,8 @@ class Spline extends hrt.prefab.Object3D {
 	var editMode = false;
 
 	var selected = -1;
+	var opened = [];
+
 	var splineUpdateRequested : Bool = false;
 	var interactive : h2d.Interactive;
 	var grid : h3d.scene.Graphics;
@@ -852,7 +854,7 @@ class Spline extends hrt.prefab.Object3D {
 
 		for (pIdx => p in this.points) {
 			var pos = points[pIdx].pos;
-			var el = new hide.Element('<div class="point folded ${selected == pIdx ? "selected" : ""}">
+			var el = new hide.Element('<div class="point ${!opened.contains(pIdx) ? 'folded' : ''} ${selected == pIdx ? "selected" : ""}">
 				<div class="header">
 					<div id="fold" class="icon ico ico-chevron-right"></div>
 					<p>Point [${pIdx}]</p>
@@ -876,6 +878,11 @@ class Spline extends hrt.prefab.Object3D {
 				el.toggleClass("folded", folded);
 				foldBtn.toggleClass("ico-chevron-down", !folded);
 				foldBtn.toggleClass("ico-chevron-right", folded);
+
+				if (folded)
+					opened.remove(pIdx);
+				else if (!opened.contains(pIdx))
+					opened.push(pIdx);
 			});
 
 			var removeBtn = el.find("#remove");
@@ -1121,6 +1128,7 @@ class Spline extends hrt.prefab.Object3D {
 						}
 
 						updateSpline(this);
+						refreshPointList(ctx);
 					}, false);
 				}
 			}
