@@ -15,6 +15,11 @@ jobs:
     steps:
     - uses: actions/checkout@v2
     - uses: krdlab/setup-haxe@v1
+      with:
+        haxe-version: 4.3.6
+    - name: Print Haxe version
+      run: |
+        haxe --version
     - name: Build
       run: |
         haxelib git format https://github.com/HaxeFoundation/format
