@@ -892,6 +892,34 @@ input[type=checkbox] {
 			margin-left: 2px;
 			margin-right: 2px;
 		}
+
+		&.select {
+			@select-width: 250px;
+
+			>.icon {
+				padding-left: 3px;
+			}
+
+			.header {
+				display: inline-block;
+				background-color: @color-menu-bg;
+				border-radius: 2px;
+				min-width: @select-width;
+				padding: 2px;
+				margin: 5px;
+				cursor: pointer;
+
+				.label {
+					min-width: @select-width - 30px;
+				}
+			}
+
+			.dropdown {
+				position: absolute;
+				top: 30px;
+				left: 20px;
+			}
+		}
 	}
 
 }
