@@ -322,7 +322,12 @@ class DomkitViewer extends h2d.Object {
 			var classes : Array<String> = Std.downcast(evaluatedParams.classes,Array);
 			if( classes != null ) {
 				var checks = new h2d.Flow(root);
-				checks.dom = domkit.Properties.create("flow",checks,{ "class" : "debugClasses", "position" : "absolute", "align" : "middle top", "margin-top" : "5" });
+				checks.dom = domkit.Properties.create("flow",checks,{ "class" : "debugClasses" });
+				var p = root.getProperties(checks);
+				p.isAbsolute = true;
+				p.verticalAlign = Top;
+				p.horizontalAlign = Middle;
+				p.paddingTop = 5;
 				for( cl in classes ) {
 					var c = new h2d.CheckBox(checks);
 					c.dom = domkit.Properties.create("flow",c);
