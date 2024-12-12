@@ -29,9 +29,11 @@ class DataFiles {
 	#end
 
 	public static function load() {
-		for( sheet in base.sheets )
+		var cache = new Map<String, Array<String>>();
+		for( sheet in base.sheets ) {
 			if( sheet.props.dataFiles != null && sheet.lines == null )
-				loadSheet(sheet);
+				loadSheet(sheet, cache);
+		}
 	}
 
 	public static function loadFile( file : String, sheet : cdb.Sheet) @:privateAccess {
@@ -545,7 +547,7 @@ class DataFiles {
 		load();
 	}
 
-	static function loadSheet( sheet : cdb.Sheet ) {
+	static function loadSheet( sheet : cdb.Sheet, cache : Map<String, Array<String>> ) {
 		var sheetName = getTypeName(sheet);
 		var root : DataDef = {
 			name : null,
@@ -605,16 +607,19 @@ class DataFiles {
 			loadRec(p,null);
 		}
 
-		function gatherRec( basePath : Array<String>, curPath : Array<String>, i : Int ) {
+		function gatherRec( basePath : Array<String>, curPath : Array<String>, i : Int, cacheEntry : Array<String> ) {
 			var part = basePath[i++];
 			if( part == null ) {
 				var file = curPath.join("/");
-				if( sys.FileSystem.exists(getPath(file)) ) loadFile(file);
+				if( sys.FileSystem.exists(getPath(file)) ) {
+					cacheEntry.push(file);
+					loadFile(file);
+				}
 				return;
 			}
 			if( part.indexOf("*") < 0 ) {
 				curPath.push(part);
-				gatherRec(basePath,curPath,i);
+				gatherRec(basePath,curPath,i, cacheEntry);
 				curPath.pop();
 			} else {
 				var path = curPath.join("/");
@@ -635,21 +640,29 @@ class DataFiles {
 					if( !reg.match(f) ) {
 						if( sys.FileSystem.isDirectory(dir+"/"+f) ) {
 							curPath.push(f);
-							gatherRec(basePath,curPath,i-1);
+							gatherRec(basePath,curPath,i-1, cacheEntry);
 							curPath.pop();
 						}
 						continue;
 					}
 					curPath.push(f);
-					gatherRec(basePath,curPath,i);
+					gatherRec(basePath,curPath,i, cacheEntry);
 					curPath.pop();
 				}
 			}
 		}
 
-		for( dir in sheet.props.dataFiles.split(";") )
-			gatherRec(dir.split("/"),[],0);
+		for( dir in sheet.props.dataFiles.split(";") ) {
+			if (cache.exists(dir)) {
+				for (f in cache.get(dir))
+					loadFile(f);
+				continue;
+			}
 
+			var cacheEntry = [];
+			gatherRec(dir.split("/"),[],0,cacheEntry);
+			cache.set(dir, cacheEntry);
+		}
 
 		var lines : Array<Dynamic> = [];
 		var linesData : Array<DataProps> = [];
