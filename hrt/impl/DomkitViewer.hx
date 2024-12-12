@@ -237,6 +237,8 @@ class DomkitViewer extends h2d.Object {
 
 	override function onRemove() {
 		super.onRemove();
+		if( currentObj != null )
+			currentObj.remove();
 		for( r in variablesFiles )
 			r.watch(null);
 		style.cssParser.variables = baseVariables;
