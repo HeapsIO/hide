@@ -428,7 +428,7 @@ class DomkitViewer extends h2d.Object {
 		return null;
 	}
 
-	function compMake<T,R>( c : domkit.Component<T,R>, args : Array<Dynamic>, parent : T ) : R {
+	inline function compMake<T,R>( c : domkit.Component<T,R>, args : Array<Dynamic>, parent : T ) : R {
 		var f = compHooks.get(c.name);
 		if( f != null )
 			return cast f(args,cast parent);
