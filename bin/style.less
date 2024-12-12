@@ -5006,10 +5006,10 @@ graph-editor-root {
 		graph-parameters {
 			display: flex;
 			flex-direction: column;
-			padding: var(--basic-padding);
 
 			border: var(--basic-border);
 			border-radius: var(--basic-border-radius);
+			padding: var(--basic-padding);
 
 			h1 {
 				font-size: 1.2em;
@@ -5025,13 +5025,27 @@ graph-editor-root {
 					border: var(--basic-border);
 					border-radius: var(--basic-border-radius);
 
+
 					header {
 						display: flex;
 						align-items: center;
+						background-color: #202020;
+						padding: var(--basic-padding);
+
+						gap: 3px;
 
 						.fill {
 							flex-grow: 1;
 						}
+
+						input {
+							border-radius: var(--basic-border-radius);
+							border: var(--basic-border);
+						}
+					}
+
+					content {
+						padding: var(--basic-padding);
 					}
 
 					&.folded content {

@@ -80,6 +80,11 @@ class AnimGraphEditor extends GenericGraphEditor {
             previewAnimation.outputNode = cast previewAnimation.animGraph.nodes[index];
             @:privateAccess previewAnimation.bind(previewAnimation.target);
         }
+
+        // copy runtime parameters
+        for (index => param in animGraph.parameters) {
+            previewAnimation.animGraph.parameters[index].runtimeValue = param.runtimeValue;
+        }
         graphEditor.refreshPreviewButtons();
     }
 
@@ -136,20 +141,20 @@ class AnimGraphEditor extends GenericGraphEditor {
             var content = new Element("<content></content>").appendTo(paramElement);
 
             if (previewAnimation != null) {
-                var param = previewAnimation.parameterMap.get(param.name);
-                if (param != null) {
-                    var slider = new Element('<input type="range" min="0.0" max="1.0" step="0.01" value="${param.runtimeValue}"></input>');
+                var runtimeParam = previewAnimation.parameterMap.get(param.name);
+                var slider = new Element('<input type="range" min="0.0" max="1.0" step="0.01" value="${param.runtimeValue}"></input>');
 
-                    slider.on("input", (e) -> {
-                        var value = Std.parseFloat(slider.val());
-                        param.runtimeValue = value;
-                    });
-                    slider.change((e) -> {
-                        var value = Std.parseFloat(slider.val());
-                        param.runtimeValue = value;
-                    });
-                    content.append(slider);
-                }
+                slider.on("input", (e) -> {
+                    var value = Std.parseFloat(slider.val());
+                    param.runtimeValue = value;
+                    runtimeParam?.runtimeValue = value;
+                });
+                slider.change((e) -> {
+                    var value = Std.parseFloat(slider.val());
+                    param.runtimeValue = value;
+                    runtimeParam?.runtimeValue = value;
+                });
+                content.append(slider);
             }
         }
     }
