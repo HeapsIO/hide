@@ -428,11 +428,11 @@ class DomkitViewer extends h2d.Object {
 		return null;
 	}
 
-	function compMake( c : domkit.Component<Dynamic,Dynamic>, args : Array<Dynamic>, parent : h2d.Object ) : h2d.Object {
+	function compMake<T,R>( c : domkit.Component<T,R>, args : Array<Dynamic>, parent : T ) : R {
 		var f = compHooks.get(c.name);
 		if( f != null )
-			return f(args,parent);
-		return c.make(args, parent);
+			return cast f(args,cast parent);
+		return c.make(args, cast parent);
 	}
 
 	function addRec( e : domkit.MarkupParser.Markup, parent : h2d.Object, isRoot ) {
@@ -465,9 +465,9 @@ class DomkitViewer extends h2d.Object {
 					c = new domkit.Component(name,function(args,p) {
 						var obj = compMake(c.parent,args,p);
 						if( obj.dom != null )
-							@:privateAccess obj.dom.component = cast c;
+							@:privateAccess obj.dom.component = c;
 						return obj;
-					},cast parent);
+					},parent);
 					domkit.CssStyle.CssData.registerComponent(c);
 					@:privateAccess c.argsNames = [];
 					loadedComponents.push(cast c);
