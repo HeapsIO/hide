@@ -130,6 +130,17 @@ class SourceComponent extends domkit.Component<h2d.Object, h2d.Object> {
 
 }
 
+class DomkitBaseContext {
+
+	public function new() {
+	}
+
+	public function loadTile( url : String ) {
+		return hxd.res.Loader.currentInstance.load(url).toTile();
+	}
+
+}
+
 class DomkitViewer extends h2d.Object {
 
 	var resource : hxd.res.Resource;
@@ -154,6 +165,7 @@ class DomkitViewer extends h2d.Object {
 		this.resource = res;
 		res.watch(rebuild);
 		baseVariables = style.cssParser.variables.copy();
+		addContext(new DomkitBaseContext());
 		rebuildDelay();
 	}
 

@@ -68,6 +68,26 @@ class Domkit extends FileView {
 		cssEditor.onChanged = dmlEditor.onChanged = paramsEditor.onChanged = check;
 		cssEditor.onSave = dmlEditor.onSave = paramsEditor.onSave = save;
 
+		// define DomkitBaseContext functions
+		@:privateAccess paramsEditor.checker.init();
+		function defineGlobal(name,args:Array<{name:String,t:String,?opt:Bool}>,ret) {
+			var cur = checker.checker.getGlobals().get(name);
+			if( cur != null ) return;
+			var error = false;
+			function resolve(t:String) {
+				var t = checker.checker.types.resolve(t);
+				if( t == null ) error = true;
+				return t;
+			}
+			var types = [for( a in args ) resolve(a.t)];
+			var ret = resolve(ret);
+			if( error )
+				return;
+			checker.checker.setGlobal(name,TFun([for( i => a in args ) { name : a.name, t : types[i], opt : a.opt }],ret));
+		}
+		defineGlobal("loadTile",[{ name : "path", t : "String" }],"h2d.Tile");
+
+
 		// add a scene so the CssParser can resolve Tiles
 		var scene = element.find(".scene");
 		new hide.comp.Scene(config, scene, scene).onReady = function() check();
