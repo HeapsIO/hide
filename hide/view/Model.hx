@@ -536,7 +536,7 @@ class Model extends FileView {
 			}
 
 			// LODs edition
-			if (@:privateAccess hmd.lodCount() > 0) {
+			if (@:privateAccess hmd.lodCount() > 1) {
 				var lodsEl = new Element('
 					<div class="group lods" name="LODs">
 						<dt>LOD Count</dt><dd>${hmd.lodCount()}</dd>
@@ -565,7 +565,7 @@ class Model extends FileView {
 				function getLodRatioFromIdx(idx : Int) {
 					var lodConfig = hmd.getLodConfig();
 					if (idx == 0) return 1.;
-					if (idx >= hmd.lodCount()) return 0.;
+					if (idx >= hmd.lodCount() + 1) return 0.;
 					return lodConfig[idx - 1];
 				}
 
@@ -577,8 +577,8 @@ class Model extends FileView {
 				function getLodRatioPowedFromIdx(idx : Int) {
 					var lodConfig = hmd.getLodConfig();
 					var prev = idx == 0 ? 1 : hxd.Math.pow(lodConfig[idx - 1] , lodPow);
-
-					return (Math.abs(prev - hxd.Math.pow(lodConfig[idx], lodPow)));
+					var c = lodConfig[idx] == null ? 0 : lodConfig[idx];
+					return (Math.abs(prev - hxd.Math.pow(c, lodPow)));
 				}
 
 				function startDrag(onMove: js.jquery.Event->Void, onStop: js.jquery.Event->Void) {
@@ -631,14 +631,15 @@ class Model extends FileView {
 				});
 
 				var lodsLine = lodsEl.find(".line");
-				for (idx in 0...hmd.lodCount()) {
+				for (idx in 0...(hmd.lodCount() + 1)) {
+					var isCulledLod = idx == hmd.lodCount();
 					var areaEl = new Element('
 					<div class="area">
-						<p>LOD&nbsp${idx}</p>
+						<p>${isCulledLod ? 'Culled' : 'LOD&nbsp${idx}'}</p>
 						<p id="percent">-%</p>
 					</div>');
 
-					if (idx == hmd.lodCount() - 1)
+					if (isCulledLod)
 						areaEl.css({ flex : 1 });
 
 					lodsLine.append(areaEl);
@@ -646,7 +647,7 @@ class Model extends FileView {
 
 					var widthHandle = 10;
 					areaEl.on("mousemove", function(e:js.jquery.Event) {
-						if ((e.offsetX <= widthHandle && idx != 0) || (areaEl.width() - e.offsetX) <= widthHandle && idx != hmd.lodCount() - 1)
+						if ((e.offsetX <= widthHandle && idx != 0) || (areaEl.width() - e.offsetX) <= widthHandle && idx != hmd.lodCount())
 							areaEl.css({ cursor : 'w-resize' });
 						else
 							areaEl.css({ cursor : 'default' });
@@ -654,13 +655,13 @@ class Model extends FileView {
 
 					areaEl.on("mousedown", function(e:js.jquery.Event) {
 						var firstHandle = e.offsetX <= widthHandle && idx != 0;
-						var secondHandle = areaEl.width() - e.offsetX <= widthHandle && idx != hmd.lodCount() - 1;
+						var secondHandle = areaEl.width() - e.offsetX <= widthHandle && idx != hmd.lodCount();
 
 						if (firstHandle || secondHandle) {
 							var currIdx = secondHandle ? idx : idx - 1;
 							var prevConfig = @:privateAccess hmd.lodConfig?.copy();
 							var newConfig = hmd.getLodConfig()?.copy();
-							var limits = [ getLodRatioFromIdx(currIdx + 2),  getLodRatioFromIdx(currIdx)];
+							var limits = [ getLodRatioFromIdx(currIdx + 2), getLodRatioFromIdx(currIdx)];
 
 							startDrag(function(e) {
 								var newRatio = getLodRatioFromPx(e.clientX - lodsLine.offset().left);
