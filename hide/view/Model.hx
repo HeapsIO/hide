@@ -1262,7 +1262,7 @@ class Model extends FileView {
 					var tf = new h2d.TextInput(hxd.res.DefaultFont.get(), timeline);
 					tf.backgroundColor = 0xFF0000;
 					tf.onClick = function(e) {
-						if (!tf.hasFocus())
+						if (@:privateAccess sceneEditor.view.keys.disabledStack == 0)
 							sceneEditor.view.keys.pushDisable();
 						e.propagate = false;
 					}
