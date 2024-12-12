@@ -1050,7 +1050,11 @@ class Cell {
 			}, false, (currentValue == '') ? null : currentValue);
 			#end
 		case TFlags(values):
-			var div = new Element("<div>").addClass("flagValues");
+			elementHtml.innerHTML = null;
+
+			var modal = new hide.comp.Popup(new Element(elementHtml));
+			var div = modal.element;
+			div.addClass("flagValues");
 			div.click(function(e) e.stopPropagation()).dblclick(function(e) e.stopPropagation());
 			var view = table.view;
 			var mask = -1;
@@ -1074,14 +1078,11 @@ class Cell {
 					new Element('<i style="margin-left: 5px" class="ico ico-book"/>').appendTo(line);
 				}
 			}
-			elementHtml.innerHTML = null;
-			var modal = new Element("<div>").addClass("hide-modal");
-			elementHtml.appendChild(modal.get(0));
-			elementHtml.appendChild(div.get(0));
-			modal.click(function(e) {
+			modal.onClose = () -> {
 				setValue(val);
 				closeEdit();
-			});
+			};
+			@:privateAccess modal.reflow();
 		case TTilePos:
 			var modal = new hide.comp.Modal.Modal2(new Element(elementHtml), "Tile Picker", "tile-picker");
 			//var modal = new hide.comp.Modal(new Element(elementHtml));

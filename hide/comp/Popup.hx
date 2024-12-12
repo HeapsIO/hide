@@ -107,10 +107,10 @@ class Popup extends Component {
 		var clientWidth = Browser.document.documentElement.clientWidth;
 
 		offset.top += refElement.get(0).offsetHeight;
-		offset.top = Math.min(offset.top,  clientHeight - popupHeight - 32);
+		offset.top = Math.min(offset.top,  clientHeight - popupHeight - 16);
 
 		//offset.left += element.get(0).offsetWidth;
-		offset.left = Math.min(offset.left,  clientWidth - popupWidth - 32);
+		offset.left = Math.min(offset.left,  clientWidth - popupWidth - 16);
 
 		element.offset(offset);
 	}
