@@ -94,7 +94,8 @@ class AnimGraphEditor extends GenericGraphEditor {
                 </header>
             </graph-parameter>').appendTo(parametersList);
 
-            paramElement.toggleClass("folded", true);
+            var open : Bool = getDisplayState('param.${paramIndex}') ?? false;
+            paramElement.toggleClass("folded", open);
 
             var name = paramElement.find("input");
             name.on("change", (e) -> {
@@ -120,7 +121,9 @@ class AnimGraphEditor extends GenericGraphEditor {
 
             var toggleOpen = paramElement.find(".toggle-open");
             toggleOpen.on("click", (e) -> {
-                paramElement.toggleClass("folded");
+                open = !open;
+                saveDisplayState('param.${paramIndex}', open);
+                paramElement.toggleClass("folded", open);
             });
 
             var reorder = paramElement.find(".reorder");
