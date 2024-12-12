@@ -48,4 +48,56 @@ class BlendPerBone extends AnimNode {
 			break;
 		}
 	}
+
+	#if editor
+	override function getPropertiesHTML(width:Float):Array<hide.Element> {
+		var arr =  super.getPropertiesHTML(width);
+
+		var button = new hide.comp.Button({hasDropdown: true});
+		button.label = targetBone;
+
+		button.onClick = () -> {
+			var model = getAnimEditor().previewModel;
+			if (model == null)
+				return;
+
+			var skins = model.findAll((o) -> Std.downcast(o, h3d.scene.Skin));
+
+			var menu : Array<hide.comp.ContextMenu.MenuItem> = [];
+
+			function gatherJoints(joint: h3d.anim.Skin.Joint, arr: Array<hide.comp.ContextMenu.MenuItem>) {
+				var subList : Array<hide.comp.ContextMenu.MenuItem> = [];
+				for (sub in joint.subs) {
+					gatherJoints(sub, subList);
+				}
+				arr.push({
+					label: joint.name,
+					menu: subList.length > 0 ? subList : null,
+					click: () -> {targetBone = joint.name; getAnimEditor().refreshPreview(); editor.refreshBox(this.id);},
+				});
+			}
+
+			for (skin in skins) {
+				var item : hide.comp.ContextMenu.MenuItem = {label: skin.name};
+
+				var skinData =skin.getSkinData();
+				var sub : Array<hide.comp.ContextMenu.MenuItem> = [];
+				for (root in skinData.rootJoints) {
+					gatherJoints(root, sub);
+				}
+
+				menu.push({
+					label: skin.name,
+					menu: sub,
+				});
+			}
+
+			hide.comp.ContextMenu.createDropdown(button.element.get(0), menu);
+		};
+
+		button.element.height(16);
+		arr.push(button.element);
+		return arr;
+	}
+	#end
 }

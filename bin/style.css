@@ -3943,6 +3943,7 @@ hide-popover hide-content {
 .context-menu2 menu li {
   text-align: left;
   --level: 0;
+  --menu-level: 0;
   --base-padding: 0.2em;
   padding: calc(0.2em);
   padding-left: calc(var(--base-padding) + var(--level) * 0.5em);
@@ -4150,6 +4151,14 @@ hide-popover hide-content {
   --bg-1: #111;
   --bg-2: #222;
 }
+button-2 {
+  min-height: 16px;
+  display: flex;
+  border: var(--basic-border);
+  border-radius: var(--basic-border-radius);
+  padding: var(--basic-padding);
+  background-color: var(--bg-2);
+}
 /** GenericGraphEditor**/
 graph-editor-root {
   width: 100%;
@@ -4230,9 +4239,6 @@ graph-editor-root properties-container {
 graph-editor-root properties-container graph-parameters {
   display: flex;
   flex-direction: column;
-  border: var(--basic-border);
-  border-radius: var(--basic-border-radius);
-  padding: var(--basic-padding);
 }
 graph-editor-root properties-container graph-parameters h1 {
   font-size: 1.2em;
@@ -4243,6 +4249,7 @@ graph-editor-root properties-container graph-parameters > ul {
   flex-direction: column;
   list-style: none;
   align-items: stretch;
+  gap: 2px;
 }
 graph-editor-root properties-container graph-parameters > ul graph-parameter {
   display: flex;

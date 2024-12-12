@@ -9,7 +9,7 @@ import hrt.animgraph.*;
 class AnimGraphEditor extends GenericGraphEditor {
 
     var animGraph : hrt.animgraph.AnimGraph;
-    var previewModel : h3d.scene.Object;
+    public var previewModel : h3d.scene.Object;
 
     var parametersList : hide.Element;
     var previewAnimation : AnimGraphInstance = null;
@@ -58,6 +58,10 @@ class AnimGraphEditor extends GenericGraphEditor {
 			graphEditor.opBox(inst, true, graphEditor.currentUndoBuffer);
 			graphEditor.commitUndo();
         });
+    }
+
+    public function refreshPreview() {
+        setPreview(previewNode);
     }
 
     public function setPreview(newOutput: hrt.animgraph.nodes.AnimNode) {

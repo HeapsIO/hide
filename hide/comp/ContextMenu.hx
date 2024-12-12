@@ -285,12 +285,13 @@ class ContextMenu {
         else if (e.key == "Enter") {
             e.preventDefault();
             if (selected >= 0 && flatItems != null) {
-                if (flatItems[selected].menuItem.menu != null) {
+                if (flatItems[selected].menuItem.click != null) {
+                    flatItems[selected].menuItem.click();
+                }
+                else if (flatItems[selected].menuItem.menu != null) {
                     currentSubmenuItemId = flatItems[selected].index;
                     refreshSubmenu();
                     currentSubmenu.updateSelection(0);
-                } else {
-                    flatItems[selected].elem.click();
                 }
             }
             return true;
@@ -364,7 +365,7 @@ class ContextMenu {
                     if (item.menu != null) {
                         var subItems = filterElements(item.menu, match);
                         if (subItems.length > 0) {
-                            filteredItems.push({label: item.label, menu: subItems});
+                            filteredItems.push({label: item.label, menu: subItems, click: item.click});
                         }
                     }
                     else {
@@ -399,13 +400,30 @@ class ContextMenu {
 
                 var item = top.next();
                 if (item.menu != null) {
-                    var li = js.Browser.document.createLIElement();
-                    menu.appendChild(li);
-                    li.style.setProperty("--level", '${submenuStack.length-1}');
-                    li.innerText = item.label;
-                    li.classList.add("submenu-inline-header");
-                    lastSeparator = null;
-                    submenuStack.push(item.menu.iterator());
+                    if (item.click != null) {
+                        var newItem = {label: item.label, click: item.click, enabled: item.enabled};
+                        var li = createItem(newItem, flatItems.length);
+
+                        menu.appendChild(li);
+                        li.style.setProperty("--level", '${submenuStack.length-1}');
+                        if (item.enabled == null || item.enabled == true) {
+                            flatItems.push({menuItem: item, elem: li, index: flatItems.length});
+                        }
+                        lastSeparator = null;
+                        //li.classList.add("submenu-inline-header");
+
+                        submenuStack.push(item.menu.iterator());
+                    }
+                    else {
+                        var li = js.Browser.document.createLIElement();
+                        menu.appendChild(li);
+                        li.style.setProperty("--level", '${submenuStack.length-1}');
+                        li.style.setProperty("--menu-level", '${submenuStack.length}');
+                        li.innerText = item.label;
+                        li.classList.add("submenu-inline-header");
+                        lastSeparator = null;
+                        submenuStack.push(item.menu.iterator());
+                    }
                 }
                 else {
                     var li = createItem(item, flatItems.length);
@@ -424,6 +442,8 @@ class ContextMenu {
                 lastSeparator.remove();
             }
         }
+
+        refreshPos();
     }
 
     function close() {
@@ -562,7 +582,23 @@ class ContextMenu {
         else {
             selected = newIndex;
             flatItems[selected].elem.classList.add("highlight");
-            flatItems[selected].elem.scrollIntoView({block: cast "nearest"});
+
+            var pos = flatItems[selected].elem.offsetTop;
+            var itemHeight = flatItems[selected].elem.getBoundingClientRect().height;
+
+            var top = menu.scrollTop;
+            var bot = menu.scrollTop + menu.clientHeight;
+
+            trace(pos, top, bot);
+
+
+            if (pos < top + 60) {
+                menu.scrollTo(0, pos - 60);
+            }
+            else if (pos + itemHeight > bot) {
+                menu.scrollTo(0,pos - (bot - top));
+            }
+
         }
     }
 
