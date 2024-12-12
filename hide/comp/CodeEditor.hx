@@ -148,7 +148,9 @@ class CodeEditor extends Component {
 			{ range : range, options : { inlineClassName: "codeErrorContentLine", isWholeLine : true } },
 			{ range : range, options : { linesDecorationsClassName: "codeErrorLine", inlineClassName: "codeErrorContent" } }
 		]);
-		errorMessage.html([for( l in msg.split("\n") ) StringTools.htmlEscape(l)].join("<br/>"));
+		var errStr = '${[for( l in msg.split("\n") ) StringTools.htmlEscape(l)].join("<br/>")}';
+		errorMessage.html(errStr);
+		errorMessage.prop('title', errStr);
 		errorMessage.toggle(true);
 		var rect = errorMessage[0].getBoundingClientRect();
 		if( rect.bottom > js.Browser.window.innerHeight )
