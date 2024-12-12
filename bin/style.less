@@ -5015,13 +5015,17 @@ graph-editor-root {
 				font-size: 1.2em;
 			}
 
-			ul {
+			> ul {
 				padding: var(--basic-padding);
 				display: flex;
 				flex-direction: column;
 				list-style: none;
 				align-items: stretch;
 				graph-parameter {
+					display: flex;
+					flex-direction: column;
+					justify-items: stretch;
+
 					border: var(--basic-border);
 					border-radius: var(--basic-border-radius);
 
@@ -5045,7 +5049,31 @@ graph-editor-root {
 					}
 
 					content {
+						border-top: var(--basic-border);
 						padding: var(--basic-padding);
+
+						> ul {
+							padding: var(--basic-padding);
+							display: flex;
+							flex-direction: column;
+							list-style: none;
+							align-items: stretch;
+
+							display: grid;
+							column-gap: 10px;
+							grid-template-columns: 2fr 5fr;
+
+							li {
+								grid-column: 1 / -1;
+								display: grid;
+								grid-template-columns: subgrid;
+
+								dd {
+									margin: 0;
+									text-align: right;
+								}
+							}
+						}
 					}
 
 					&.folded content {

@@ -139,10 +139,11 @@ class AnimGraphEditor extends GenericGraphEditor {
             }
 
             var content = new Element("<content></content>").appendTo(paramElement);
-
+            var props = new Element("<ul>").appendTo(content);
             if (previewAnimation != null) {
                 var runtimeParam = previewAnimation.parameterMap.get(param.name);
-                var slider = new Element('<input type="range" min="0.0" max="1.0" step="0.01" value="${param.runtimeValue}"></input>');
+                var line = new Element("<li></li>").appendTo(props);
+                var slider = new Element('<li><dd>Test value</dd><input type="range" min="0.0" max="1.0" step="0.01" value="${param.runtimeValue}"></input></li>').appendTo(line).find("input");
 
                 slider.on("input", (e) -> {
                     var value = Std.parseFloat(slider.val());
@@ -154,7 +155,12 @@ class AnimGraphEditor extends GenericGraphEditor {
                     param.runtimeValue = value;
                     runtimeParam?.runtimeValue = value;
                 });
-                content.append(slider);
+
+                var line = new Element("<li></li>").appendTo(props);
+                var def = new Element('<dd>Default</dd><input type="range" min="0.0" max="1.0" step="0.01" value="${param.runtimeValue}"></input>').appendTo(line).find("input");
+
+                var line = new Element("<li></li>").appendTo(props);
+                var def = new Element('<dd>Default</dd><input type="range" min="0.0" max="1.0" step="0.01" value="${param.runtimeValue}"></input>').appendTo(line).find("input");
             }
         }
     }

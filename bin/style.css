@@ -4237,41 +4237,64 @@ graph-editor-root properties-container graph-parameters {
 graph-editor-root properties-container graph-parameters h1 {
   font-size: 1.2em;
 }
-graph-editor-root properties-container graph-parameters ul {
+graph-editor-root properties-container graph-parameters > ul {
   padding: var(--basic-padding);
   display: flex;
   flex-direction: column;
   list-style: none;
   align-items: stretch;
 }
-graph-editor-root properties-container graph-parameters ul graph-parameter {
+graph-editor-root properties-container graph-parameters > ul graph-parameter {
+  display: flex;
+  flex-direction: column;
+  justify-items: stretch;
   border: var(--basic-border);
   border-radius: var(--basic-border-radius);
 }
-graph-editor-root properties-container graph-parameters ul graph-parameter header {
+graph-editor-root properties-container graph-parameters > ul graph-parameter header {
   display: flex;
   align-items: center;
   background-color: #202020;
   padding: var(--basic-padding);
   gap: 3px;
 }
-graph-editor-root properties-container graph-parameters ul graph-parameter header .fill {
+graph-editor-root properties-container graph-parameters > ul graph-parameter header .fill {
   flex-grow: 1;
 }
-graph-editor-root properties-container graph-parameters ul graph-parameter header input {
+graph-editor-root properties-container graph-parameters > ul graph-parameter header input {
   border-radius: var(--basic-border-radius);
   border: var(--basic-border);
 }
-graph-editor-root properties-container graph-parameters ul graph-parameter content {
+graph-editor-root properties-container graph-parameters > ul graph-parameter content {
+  border-top: var(--basic-border);
   padding: var(--basic-padding);
 }
-graph-editor-root properties-container graph-parameters ul graph-parameter.folded content {
+graph-editor-root properties-container graph-parameters > ul graph-parameter content > ul {
+  padding: var(--basic-padding);
+  display: flex;
+  flex-direction: column;
+  list-style: none;
+  align-items: stretch;
+  display: grid;
+  column-gap: 10px;
+  grid-template-columns: 2fr 5fr;
+}
+graph-editor-root properties-container graph-parameters > ul graph-parameter content > ul li {
+  grid-column: 1 / -1;
+  display: grid;
+  grid-template-columns: subgrid;
+}
+graph-editor-root properties-container graph-parameters > ul graph-parameter content > ul li dd {
+  margin: 0;
+  text-align: right;
+}
+graph-editor-root properties-container graph-parameters > ul graph-parameter.folded content {
   display: none;
 }
-graph-editor-root properties-container graph-parameters ul graph-parameter.folded .ico-chevron-down {
+graph-editor-root properties-container graph-parameters > ul graph-parameter.folded .ico-chevron-down {
   transform: rotate(-90deg);
 }
-graph-editor-root properties-container graph-parameters ul graph-parameter .ico-chevron-down {
+graph-editor-root properties-container graph-parameters > ul graph-parameter .ico-chevron-down {
   transition: transform 0.25s;
   transform: rotate(0deg);
 }
