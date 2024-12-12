@@ -60,6 +60,11 @@ typedef MenuOptions = {
 
     ?placementHeight: Int,
 
+    /**
+        If true, the sub-menus will be inlined (like they are when the search is active)
+    **/
+    ?flat: Bool,
+
 }
 
 class ContextMenu {
@@ -325,7 +330,7 @@ class ContextMenu {
 
         menu.innerHTML = "";
 
-        if (filter == "") {
+        if (filter == "" && !options.flat) {
             flatItems = [];
             selected = -1;
 

@@ -53,7 +53,9 @@ class BlendPerBone extends AnimNode {
 	override function getPropertiesHTML(width:Float):Array<hide.Element> {
 		var arr =  super.getPropertiesHTML(width);
 
-		var button = new hide.comp.Button({hasDropdown: true});
+		var wrapper = new hide.Element("<div></div>");
+
+		var button = new hide.comp.Button(wrapper, {hasDropdown: true});
 		button.label = targetBone;
 
 		button.onClick = () -> {
@@ -92,11 +94,11 @@ class BlendPerBone extends AnimNode {
 				});
 			}
 
-			hide.comp.ContextMenu.createDropdown(button.element.get(0), menu);
+			hide.comp.ContextMenu.createDropdown(button.element.get(0), menu, {flat: true});
 		};
 
-		button.element.height(16);
-		arr.push(button.element);
+		wrapper.height(24);
+		arr.push(wrapper);
 		return arr;
 	}
 	#end
