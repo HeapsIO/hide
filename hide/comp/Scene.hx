@@ -36,7 +36,31 @@ class Scene extends hide.comp.Component implements h3d.IDrawable {
 		element.addClass("hide-scene-container");
 		canvas = cast new Element("<canvas class='hide-scene' style='width:100%;height:100%'/>").appendTo(element)[0];
 
-		canvas.addEventListener("mousemove",function(_) canvas.focus());
+		canvas.addEventListener("mousemove",function(_) {
+			switch(js.Browser.document.activeElement?.tagName) {
+				// Don't steal focus if we are curently editing an <input>
+				case "INPUT":
+					return;
+				default:
+					canvas.focus();
+			}
+		});
+
+		// Prevent mouse from disapearing when clicking on the canvas when it wasn't focused (when an input node was focused for example)
+		canvas.addEventListener("mousedown",function(e: js.html.MouseEvent) {
+			if(js.Browser.document.activeElement != canvas) {
+				canvas.focus();
+				e.preventDefault();
+			}
+		});
+
+		// Capture mouse during drags (usefull when dragging the gizmo around so it doesn't loose focus)
+		canvas.addEventListener("pointerdown", function(e: js.html.PointerEvent) {
+			if(js.Browser.document.activeElement == canvas) {
+				canvas.setPointerCapture(e.pointerId);
+			}
+		});
+
 		canvas.addEventListener("mouseleave",function(_) canvas.blur());
 		canvas.oncontextmenu = function(e){
 			e.stopPropagation();
