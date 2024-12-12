@@ -120,7 +120,7 @@ class SourceComponent extends domkit.Component<h2d.Object, h2d.Object> {
 			var p = this.parent;
 			while( p is SourceComponent )
 				p = p.parent;
-			var obj : h2d.Object = p.make(args, parent);
+			var obj : h2d.Object = @:privateAccess viewer.compMake(p, args, parent);
 			if( obj.dom != null ) @:privateAccess obj.dom.component = this;
 			return obj;
 		}
@@ -146,6 +146,7 @@ class DomkitViewer extends h2d.Object {
 	var resource : hxd.res.Resource;
 	var variablesFiles : Array<hxd.res.Resource> = [];
 	var current : h2d.Object;
+	var currentObj : h2d.Object;
 	var cssResources : Map<String,CssResource> = [];
 	var interp : DomkitInterp;
 	var style : h2d.domkit.Style;
@@ -158,6 +159,7 @@ class DomkitViewer extends h2d.Object {
 	var createRootArgs : Array<Dynamic>;
 	var evaluatedParams : Dynamic;
 	var loadedComponents : Array<domkit.Component<h2d.Object, h2d.Object>> = [];
+	var compHooks : Map<String,Array<Dynamic> -> h2d.Object -> h2d.Object> = [];
 
 	public function new( style : h2d.domkit.Style, res : hxd.res.Resource, ?parent ) {
 		super(parent);
@@ -189,6 +191,10 @@ class DomkitViewer extends h2d.Object {
 	public function addContext( ctx : Dynamic ) {
 		contexts.push(ctx);
 		rebuildDelay();
+	}
+
+	public function addComponentHook( name : String, make ) {
+		compHooks.set(name, make);
 	}
 
 	#if castle
@@ -326,6 +332,10 @@ class DomkitViewer extends h2d.Object {
 			}
 		}
 
+		if( currentObj != null ) {
+			currentObj.remove();
+			currentObj = null;
+		}
 		if( current != null ) {
 			current.remove();
 			style.removeObject(current);
@@ -333,6 +343,7 @@ class DomkitViewer extends h2d.Object {
 		addChild(root);
 		style.addObject(root);
 		current = root;
+		currentObj = obj;
 		for( c in cssResources )
 			c.watchCallb();
 	}
@@ -417,6 +428,13 @@ class DomkitViewer extends h2d.Object {
 		return null;
 	}
 
+	function compMake( c : domkit.Component<Dynamic,Dynamic>, args : Array<Dynamic>, parent : h2d.Object ) : h2d.Object {
+		var f = compHooks.get(c.name);
+		if( f != null )
+			return f(args,parent);
+		return c.make(args, parent);
+	}
+
 	function addRec( e : domkit.MarkupParser.Markup, parent : h2d.Object, isRoot ) {
 		var comp : h2d.Object = null;
 		switch( e.kind ) {
@@ -445,11 +463,11 @@ class DomkitViewer extends h2d.Object {
 					parent = domkit.Component.get("flow");
 				if( c == null || (parent != null && c.parent != parent) ) {
 					c = new domkit.Component(name,function(args,p) {
-						var obj = c.parent.make(args,p);
+						var obj = compMake(c.parent,args,p);
 						if( obj.dom != null )
-							obj.dom.component = c;
+							@:privateAccess obj.dom.component = cast c;
 						return obj;
-					},parent);
+					},cast parent);
 					domkit.CssStyle.CssData.registerComponent(c);
 					@:privateAccess c.argsNames = [];
 					loadedComponents.push(cast c);
@@ -523,7 +541,7 @@ class DomkitViewer extends h2d.Object {
 						addRec(c, obj, false);
 				};
 			}
-			var obj = c.make(args, parent.dom?.contentRoot);
+			var obj = compMake(c, args, parent.dom?.contentRoot);
 			var p = obj.dom;
 			if( p == null ) p = obj.dom = new domkit.Properties(obj, c);
 			p.initAttributes(attributes);
