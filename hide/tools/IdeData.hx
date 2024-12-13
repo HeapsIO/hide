@@ -195,6 +195,12 @@ class IdeData {
 	}
 
 	public function saveDatabase( ?forcePrefabs ) {
+		if( dbWatcher != null ) {
+			var b = fileWatcher.isChangePending(dbWatcher);
+			if( b ) {
+				throw "Save when database is changed outside of Hide and is waiting for reload.";
+			}
+		}
 		hide.comp.cdb.DataFiles.save(function() {
 			if( databaseDiff != null ) {
 				sys.io.File.saveContent(getPath(databaseDiff), toJSON(new cdb.DiffFile().make(originDataBase,database)));
