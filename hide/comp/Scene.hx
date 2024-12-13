@@ -57,7 +57,12 @@ class Scene extends hide.comp.Component implements h3d.IDrawable {
 		// Capture mouse during drags (usefull when dragging the gizmo around so it doesn't loose focus)
 		canvas.addEventListener("pointerdown", function(e: js.html.PointerEvent) {
 			if(js.Browser.document.activeElement == canvas) {
-				canvas.setPointerCapture(e.pointerId);
+				// Sometimes pointer capture fails
+				try {
+					canvas.setPointerCapture(e.pointerId);
+				} catch (e) {
+
+				}
 			}
 		});
 
