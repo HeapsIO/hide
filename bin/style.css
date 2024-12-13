@@ -3204,40 +3204,43 @@ div.gradient-box {
   top: 20px;
   width: 90%;
 }
-.domkitEditor tr,
-.domkitEditor td {
-  padding: 0;
-  margin: 0;
-  border: 0px;
-  border-collapse: collapse;
-}
-.domkitEditor table {
+.domkitEditor {
+  height: 100%;
   width: 100%;
+}
+.domkitEditor .editors {
+  display: flex;
+  height: 100%;
+}
+.domkitEditor .editors .panel {
+  height: 100%;
+}
+.domkitEditor .editors .panel.left {
+  width: 48%;
+}
+.domkitEditor .editors .panel.right {
+  padding-left: 10px;
+  flex-grow: 1;
+}
+.domkitEditor .editors .panel.right > .editor {
+  height: 100%;
+}
+.domkitEditor .editors .panel > .editor {
+  display: flex;
+  flex-direction: column;
+  height: 50%;
+}
+.domkitEditor .editors .panel > .editor > span {
+  font-size: 18px;
+  margin: 15px 0px 5px 10px;
+}
+.domkitEditor .editors .panel > .editor .codeeditor {
+  flex-grow: 1;
+  height: 5px;
 }
 .domkitEditor .scene {
   width: 1px;
   height: 1px;
-}
-.domkitEditor .cssEditor,
-.domkitEditor .dmlEditor,
-.domkitEditor .paramsEditor {
-  position: relative;
-  width: 50%;
-}
-.domkitEditor .cssEditor .codeeditor,
-.domkitEditor .dmlEditor .codeeditor,
-.domkitEditor .paramsEditor .codeeditor {
-  height: 600px;
-}
-.domkitEditor .cssEditor .codeeditor .codeErrorMessage,
-.domkitEditor .dmlEditor .codeeditor .codeErrorMessage,
-.domkitEditor .paramsEditor .codeeditor .codeErrorMessage {
-  top: 1px;
-  width: 90%;
-}
-.domkitEditor .separator {
-  width: 20;
-  background: #111;
 }
 .profiler {
   width: 100%;

@@ -3728,33 +3728,48 @@ div.gradient-box {
 }
 
 .domkitEditor {
-	tr, td {
-		padding : 0;
-		margin : 0;
-		border : 0px;
-		border-collapse: collapse;
-	}
-	table {
-		width : 100%;
-	}
-	.scene {
-		width : 1px;
-		height : 1px;
-	}
-	.cssEditor, .dmlEditor, .paramsEditor {
-		position: relative;
-		width : 50%;
-		.codeeditor {
-			height : 600px;
-			.codeErrorMessage {
-				top : 1px;
-				width : 90%;
+	height: 100%;		
+	width: 100%;
+
+	.editors {
+		display: flex;
+		height: 100%;
+		
+		.panel {
+			height: 100%;
+
+			&.left {
+				width: 48%;
+			}
+
+			&.right {
+				padding-left: 10px;
+				flex-grow: 1;
+				>.editor {
+					height: 100%;
+				}
+			}
+
+			>.editor {
+				display: flex;
+				flex-direction: column;
+				height: 50%;
+
+				>span {
+					font-size: 18px;
+					margin: 15px 0px 5px 10px;
+				}
+				.codeeditor {
+					flex-grow: 1;
+					height: 5px;
+				}
 			}
 		}
 	}
-	.separator {
-		width : 20;
-		background : #111;
+
+	.scene {
+		width : 1px;
+		height : 1px;
 	}
 }
 

@@ -66,6 +66,8 @@ class ResizablePanel extends hide.comp.Component {
 	}
 
 	public function setSize(?newSize : Int) {
+		onBeforeResize();
+		
 		var minSize = (layoutDirection == Horizontal? Std.parseInt(element.css("min-width")) : Std.parseInt(element.css("min-height")));
 		var maxSize = (layoutDirection == Horizontal? Std.parseInt(element.css("max-width")) : Std.parseInt(element.css("max-height")));
 		var clampedSize = 0;
@@ -73,14 +75,15 @@ class ResizablePanel extends hide.comp.Component {
 		else clampedSize = hxd.Math.iclamp(getDisplayState("size"), minSize, maxSize);
 		switch (layoutDirection) {
 			case Horizontal :
-				element.width(clampedSize);
+				element.width(clampedSize == null ? newSize : clampedSize);
 			case Vertical :
-				element.height(clampedSize);
+				element.height(clampedSize == null ? newSize : clampedSize);
 		}
-		if (newSize != null) saveDisplayState("size", clampedSize);
+		if (newSize != null) saveDisplayState("size", clampedSize == null ? newSize : clampedSize);
 
 		onResize(); //@:privateAccess if( scene.window != null) scene.window.checkResize();
 	}
 
+    public dynamic function onBeforeResize() {}
     public dynamic function onResize() {}
 }

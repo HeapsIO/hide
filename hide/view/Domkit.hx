@@ -12,49 +12,21 @@ class Domkit extends FileView {
 
 		element.html('
 		<div class="domkitEditor">
-			<table>
-				<tr class="title">
-					<td>
-						DML
-					</td>
-					<td class="separator">
-					&nbsp;
-					</td>
-					<td>
-						CSS
-					</td>
-				</tr>
-				<tr>
-					<td class="dmlEditor">
-					</td>
-					<td class="separator">
-					&nbsp;
-					</td>
-					<td class="cssEditor">
-					</td>
-				</tr>
-				<tr class="title>
-					<td>
-						Parameters
-					</td>
-					<td class="separator">
-					&nbsp;
-					</td>
-					<td>
-						&nbsp;
-					</td>
-				</tr>
-				<tr>
-					<td class="paramsEditor">
-					</td>
-					<td class="separator">
-					&nbsp;
-					</td>
-					<td>
-						&nbsp;
-					</td>
-				</tr>
-			</table>
+			<div class="editors">
+				<div class="left panel">
+					<div class="editor dmlEditor top">
+						<span>DML</span>
+					</div>
+					<div class="editor paramsEditor bot">
+						<span>Parameters</span>
+					</div>
+				</div>
+				<div class="right panel">
+					<div class="editor cssEditor top">
+						<span>CSS</span>
+					</div>
+				</div>
+			</div>
 			<div class="scene"></div>
 		</div>');
 
@@ -67,6 +39,27 @@ class Domkit extends FileView {
 		paramsEditor = new hide.comp.ScriptEditor(data.params, checker, element.find(".paramsEditor"));
 		cssEditor.onChanged = dmlEditor.onChanged = paramsEditor.onChanged = check;
 		cssEditor.onSave = dmlEditor.onSave = paramsEditor.onSave = save;
+
+		var editors = element.find('.editors');
+		var totalWidth = editors.width();
+		var totalHeight = editors.height();
+		var panelRight = element.find('.right');
+		var panelLeft = new hide.comp.ResizablePanel(hide.comp.ResizablePanel.LayoutDirection.Horizontal, element.find('.left'), After);
+		panelLeft.onBeforeResize = () -> {
+			panelRight.width(0);
+		};
+		panelLeft.onResize = () -> {
+			panelRight.width(totalWidth - panelLeft.element.width());
+		};
+
+		var panelTopLeft = new hide.comp.ResizablePanel(hide.comp.ResizablePanel.LayoutDirection.Vertical, element.find('.top'), After);
+		var panelBotLeft = element.find('.bot');
+		panelTopLeft.onBeforeResize = () -> {
+			panelBotLeft.height(0);
+		};
+		panelTopLeft.onResize = () -> {
+			panelBotLeft.height(totalHeight - panelTopLeft.element.height());
+		};
 
 		// define DomkitBaseContext functions
 		@:privateAccess paramsEditor.checker.init();
