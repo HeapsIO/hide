@@ -275,13 +275,6 @@ class ParticleInstance {
 		var sy = scaleY;
 		var sz = scaleZ;
 
-		if (emitter.particleScaling == None && emitter.simulationSpace == Local) {
-			var invScale = inline emitter.parent.getAbsPos().getScale();
-			sx = sx/invScale.x;
-			sy = sy/invScale.y;
-			sz = sz/invScale.z;
-		}
-
 		absPos._11 *= sx;
 		absPos._12 *= sx;
 		absPos._13 *= sx;
@@ -1006,6 +999,11 @@ class EmitterObject extends h3d.scene.Object {
 							tmpMat2.load(parent.getAbsPos());
 							tmpMat2.invert();
 							tmpMat.multiply(tmpMat, tmpMat2);
+							if (particleScaling == None) {
+								// Re-introduce parent scaling in the spawn position calculations
+								var parentScale = inline parent.getAbsPos().getScale();
+								tmpMat.prependScale(parentScale.x, parentScale.y, parentScale.z);
+							}
 						}
 
 						tmpOffset.transform(tmpMat);
@@ -1032,12 +1030,7 @@ class EmitterObject extends h3d.scene.Object {
 						tmpQuat.toMatrix(tmpMat2);
 						part.emitOrientation.load(tmpMat2);
 
-						if (particleScaling == None) {
-							var invScale = inline parent.getAbsPos().getScale();
-							part.setScale(worldScale.x/invScale.x, worldScale.y/invScale.y, worldScale.z/invScale.z);
-						} else {
-							part.setScale(worldScale.x, worldScale.y, worldScale.z);
-						}
+						part.setScale(worldScale.x, worldScale.y, worldScale.z);
 				}
 				var frameCount = frameCount == 0 ? frameDivisionX * frameDivisionY : frameCount;
 				if(animationLoop)
@@ -1124,7 +1117,12 @@ class EmitterObject extends h3d.scene.Object {
 			return;
 
 		if( parent != null ) {
-			worldScale.load(parent.getAbsPos().getScale());
+			if (particleScaling == None) {
+				worldScale.set(1.0,1.0,1.0);
+			}
+			else {
+				worldScale.load(parent.getAbsPos().getScale());
+			}
 			invTransform.load(parent.getInvPos());
 		}
 
@@ -1344,6 +1342,11 @@ class EmitterObject extends h3d.scene.Object {
 			case Local : parentTransform.load(parent.getAbsPos());
 			case World : parentTransform.load(getScene().getAbsPos());
 			// Optim: set to null if identity to skip multiply in particle updates
+		}
+
+		if (particleScaling == None) {
+			var scale = parentTransform.getScale();
+			parentTransform.scale(1.0/scale.x, 1.0/scale.y, 1.0/scale.z);
 		}
 
 		var prev : ParticleInstance = null;
