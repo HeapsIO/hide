@@ -1,7 +1,7 @@
 {
   "name": "monaco-editor",
-  "version": "0.46.0",
-  "vscodeRef": "31c37ee8f63491495ac49e43b8544550fbae4533",
+  "version": "0.52.2",
+  "vscodeRef": "a7d9e2c32d573e29e68975838196722ae9bb0f15",
   "private": false,
   "description": "A browser based code editor",
   "homepage": "https://github.com/microsoft/monaco-editor",
@@ -51,7 +51,7 @@
     "jsdom": "^19.0.0",
     "jsonc-parser": "^3.0.0",
     "mocha": "^9.2.0",
-    "monaco-editor-core": "0.46.0",
+    "monaco-editor-core": "0.52.2",
     "parcel": "^2.7.0",
     "pin-github-action": "^1.8.0",
     "playwright": "^1.32.2",
@@ -62,14 +62,14 @@
     "style-loader": "^3.3.1",
     "terser": "^5.14.2",
     "ts-node": "^10.6.0",
-    "typescript": "^5.0.2",
+    "typescript": "^5.4.5",
     "vite": "^3.2.8",
-    "vscode-css-languageservice": "5.4.1",
-    "vscode-html-languageservice": "4.2.4",
-    "vscode-json-languageservice": "4.2.1",
-    "vscode-languageserver-textdocument": "^1.0.4",
-    "vscode-languageserver-types": "3.16.0",
-    "vscode-uri": "3.0.3",
+    "vscode-css-languageservice": "6.2.14",
+    "vscode-html-languageservice": "5.2.0",
+    "vscode-json-languageservice": "5.3.11",
+    "vscode-languageserver-textdocument": "^1.0.11",
+    "vscode-languageserver-types": "3.17.5",
+    "vscode-uri": "3.0.8",
     "webpack": "^5.76.0",
     "yaserver": "^0.4.0"
   },
@@ -77,6 +77,6 @@
     "process": false,
     "buffer": false
   },
-  "vscodeCommitId": "31c37ee8f63491495ac49e43b8544550fbae4533",
-  "monacoCommitId": "21007360cad28648bdf46282a2592cb47c3a7a6f"
+  "vscodeCommitId": "a7d9e2c32d573e29e68975838196722ae9bb0f15",
+  "monacoCommitId": "404545bded1df6ffa41ea0af4e8ddb219018c6c1"
 }
