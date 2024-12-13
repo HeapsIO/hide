@@ -161,6 +161,11 @@ class Image extends FileView {
 				alpha.parent().css({"display":"none"});
 			else
 				alpha.parent().css({"display":"flex"});
+
+			if (format.val() == "none")
+				mips.parent().css({"display":"none"});
+			else
+				mips.parent().css({"display":"flex"});
 		});
 
 		useAlpha.on("change", function(_) {
@@ -235,6 +240,11 @@ class Image extends FileView {
 				alpha.parent().css({"display":"none"});
 			else
 				alpha.parent().css({"display":"flex"});
+
+			if (format.val() == "none")
+				mips.parent().css({"display":"none"});
+			else
+				mips.parent().css({"display":"flex"});
 
 			createPreviewTexture(format, useAlpha, alpha, mips, size);
 		});
@@ -628,6 +638,11 @@ class Image extends FileView {
 			alpha.parent().css({"display":"none"});
 		else
 			alpha.parent().css({"display":"flex"});
+
+		if (format.val() == "none")
+			mips.parent().css({"display":"none"});
+		else
+			mips.parent().css({"display":"flex"});
 
 		var strMaxSize = getTextureMaxSize();
 		size.val(convertRuleEmpty || Reflect.field(texConvRule.cmd.params, "size") == null ? strMaxSize : texConvRule.cmd.params.size);
