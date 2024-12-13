@@ -152,12 +152,16 @@ class AnimGraphEditor extends GenericGraphEditor {
                 slider.on("input", (e) -> {
                     var value = Std.parseFloat(slider.val());
                     param.runtimeValue = value;
-                    runtimeParam?.runtimeValue = value;
+                    if (runtimeParam != null) {
+                        runtimeParam.runtimeValue = value;
+                    }
                 });
                 slider.change((e) -> {
                     var value = Std.parseFloat(slider.val());
                     param.runtimeValue = value;
-                    runtimeParam?.runtimeValue = value;
+                    if (runtimeParam != null) {
+                        runtimeParam.runtimeValue = value;
+                    }
                 });
 
                 var line = new Element("<li></li>").appendTo(props);
