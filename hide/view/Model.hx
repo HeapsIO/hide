@@ -463,7 +463,14 @@ class Model extends FileView {
 					<dt>X</dt><dd><input field="x"/></dd>
 					<dt>Y</dt><dd><input field="y"/></dd>
 					<dt>Z</dt><dd><input field="z"/></dd>
-					<dt>Attach</dt><dd><select class="follow"><option value="">--- None ---</option></select></dd>
+					<dt>Attach</dt><dd><div class="follow">
+					<div class="select">
+						<div class="header">
+							<span class="label">-- None --</span>
+							<div class="icon ico ico-caret-right"></div>
+						</div>
+						<div class="dropdown"/>
+					</div></dd>
 				</dl>
 			</div>
 			<div class="group" name="Info">
@@ -691,16 +698,37 @@ class Model extends FileView {
 		}
 
 		var select = e.find(".follow");
+		var header = select.find(".header");
+		var dropdown = select.find(".dropdown");
+		function onFollowSelected(v : String) {
+			var name = v.split(".").pop();
+			obj.follow = this.obj.getObjectByName(name);
+			header.find('.label').text(name);
+		}
+
+		var items: Array<hide.comp.ContextMenu.MenuItem> = [{ label: "-- None --", click: () -> onFollowSelected("-- None --")}];
 		for( path in getNamedObjects(obj) ) {
 			var parts = path.split(".");
-			var opt = new Element("<option>").attr("value", path).html([for( p in 1...parts.length ) "&nbsp; "].join("") + parts.pop());
-			select.append(opt);
+			var name = parts[parts.length - 1];
+			var label = [for( p in 1...parts.length ) "&nbsp; "].join("") + parts.pop();
+			items.push({ label: label, click: () -> onFollowSelected(name) });
 		}
-		select.change(function(_) {
-			var name = select.val().split(".").pop();
-			obj.follow = this.obj.getObjectByName(name);
+		
+		header.click(function(_) {
+			var icon = header.find(".icon");
+			var visible = icon.hasClass('ico-caret-down');
+			visible = !visible;
+			icon.toggleClass("ico-caret-right", !visible);
+			icon.toggleClass("ico-caret-down", visible);
+			if (visible) {
+				var menu = hide.comp.ContextMenu.createDropdown(dropdown.get(0), items, { search: hide.comp.ContextMenu.SearchMode.Visible });
+				menu.onClose = () -> {
+					icon.toggleClass("ico-caret-right", true);
+					icon.toggleClass("ico-caret-down", false);
+				};
+			}
+			
 		});
-
 
 		refreshSelectionHighlight(obj);
 	}

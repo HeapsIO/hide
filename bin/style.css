@@ -1289,6 +1289,27 @@ input[type=checkbox]:checked:after {
 .hide-properties #up-axis input {
   width: 100%;
 }
+.hide-properties .select > .icon {
+  padding-left: 3px;
+}
+.hide-properties .select .header {
+  display: inline-block;
+  background-color: #282828;
+  border-radius: 2px;
+  border: solid 1px #444;
+  padding: 2px;
+  cursor: pointer;
+  width: 192px;
+}
+.hide-properties .select .header > span {
+  padding-left: 5px;
+  width: 90% !important;
+}
+.hide-properties .select .dropdown {
+  position: absolute;
+  top: 30px;
+  left: 200px;
+}
 /* Image Viewer */
 .image-properties {
   height: 100%;

@@ -1421,6 +1421,33 @@ input[type=checkbox] {
 			width:100%
 		}
 	}
+
+	.select {
+		>.icon {
+			padding-left: 3px;
+		}
+	
+		.header {
+			display: inline-block;
+			background-color: @color-menu-bg;
+			border-radius: 2px;
+			border: solid 1px #444;
+			padding: 2px;
+			cursor: pointer;
+			width: 192px;
+	
+			>span {
+				padding-left: 5px;
+				width: 90% !important;
+			}
+		}
+	
+		.dropdown {
+			position: absolute;
+			top: 30px;
+			left: 200px;
+		}
+	}
 }
 /* Image Viewer */
 @imgPanelWidht : 320px;
