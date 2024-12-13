@@ -539,7 +539,7 @@ class EmitterObject extends h3d.scene.Object {
 	public var particleScaling : ParticleScaling = Parent;
 	public var emitType : EmitType = Infinity;
 	public var burstCount : Int = 1;
-	public var burstParticleCount : Int = 5;
+	public var burstParticleCount : Value;
 	public var burstDelay : Float = 1.0;
 	public var emitDuration : Float = 1.0;
 	public var emitRate : Value;
@@ -556,7 +556,7 @@ class EmitterObject extends h3d.scene.Object {
 	public var followRotation = false;
 	// EMIT SHAPE
 	public var emitShape : EmitShape = Cylinder;
-	public var emitAngle : Float = 0.0;
+	public var emitAngle : Value;
 	public var emitRad1 : Float = 1.0;
 	public var emitRad2 : Float = 1.0;
 	public var emitSurface : Bool = false;
@@ -955,7 +955,7 @@ class EmitterObject extends h3d.scene.Object {
 					case Cylinder:
 						var z = random.rand();
 						var dx = 0.0, dy = 0.0;
-						var shapeAngle = hxd.Math.degToRad(emitAngle) / 2.0;
+						var shapeAngle = hxd.Math.degToRad(evaluator.getFloat(emitAngle, curTime)) / 2.0;
 						var a = random.srand(shapeAngle);
 						if(emitSurface) {
 							dx = Math.cos(a)*(emitRad2*z + emitRad1*(1.0-z));
@@ -983,7 +983,7 @@ class EmitterObject extends h3d.scene.Object {
 					case Cone:
 						tmpOffset.set(0, 0, 0);
 						var theta = random.rand() * Math.PI * 2;
-						var shapeAngle = hxd.Math.degToRad(emitAngle) / 2.0;
+						var shapeAngle = hxd.Math.degToRad(evaluator.getFloat(emitAngle, curTime)) / 2.0;
 						var phi = shapeAngle * random.rand();
 						tmpDir.x = Math.cos(phi) * scaleX;
 						tmpDir.y = Math.sin(phi) * Math.sin(theta) * scaleY;
@@ -1178,7 +1178,7 @@ class EmitterObject extends h3d.scene.Object {
 						var nextBurstTime = lastBurstTime + burstDelay;
 						var needBurst = nextBurstTime <= emitDuration && totalBurstCount < burstTarget;
 						while( needBurst ) {
-							var delta = hxd.Math.ceil(hxd.Math.min(maxCount - numInstances, burstParticleCount));
+							var delta = hxd.Math.ceil(hxd.Math.min(maxCount - numInstances, Std.int(evaluator.getFloat(burstParticleCount, curTime))));
 							doEmit(delta);
 							totalBurstCount++;
 							lastBurstTime += burstDelay;
@@ -1192,7 +1192,7 @@ class EmitterObject extends h3d.scene.Object {
 					if( burstDelay > 0 ) {
 						var burstTarget = hxd.Math.min(burstCount, 1 + hxd.Math.floor(curTime / burstDelay));
 						while( totalBurstCount < burstTarget ) {
-							var delta = hxd.Math.ceil(hxd.Math.min(maxCount - numInstances, burstParticleCount));
+							var delta = hxd.Math.ceil(hxd.Math.min(maxCount - numInstances, Std.int(evaluator.getFloat(burstParticleCount, curTime))));
 							doEmit(delta);
 							totalBurstCount++;
 						}
@@ -1528,11 +1528,11 @@ class Emitter extends Object3D {
 		{ name: "emitRateChangeDelay", t: PFloat(0.01, 5.0), def: 1.0, disp: "Rate Change Time", groupName : "Emit Params" },
 		{ name: "burstCount", t: PInt(1, 10), disp: "Count", def : 1, groupName : "Emit Params" },
 		{ name: "burstDelay", t: PFloat(0, 1.0), disp: "Delay", def : 1.0, groupName : "Emit Params" },
-		{ name: "burstParticleCount", t: PInt(1, 10), disp: "Particle Count", def : 1, groupName : "Emit Params" },
+		{ name: "burstParticleCount", t: PInt(1, 10), disp: "Particle Count", def : 1, groupName : "Emit Params", animate: true },
 		{ name: "maxCount", t: PInt(0, 100), def: 20, groupName : "Emit Params" },
 		// EMIT SHAPE
 		{ name: "emitShape", t: PEnum(EmitShape), def: EmitShape.Sphere, disp: "Shape", groupName : "Emit Shape" },
-		{ name: "emitAngle", t: PFloat(0, 360.0), def: 30.0, disp: "Angle", groupName : "Emit Shape" },
+		{ name: "emitAngle", t: PFloat(0, 360.0), def: 30.0, disp: "Angle", groupName : "Emit Shape", animate: true },
 		{ name: "emitRad1", t: PFloat(0, 1.0), def: 1.0, disp: "Radius 1", groupName : "Emit Shape" },
 		{ name: "emitRad2", t: PFloat(0, 1.0), def: 1.0, disp: "Radius 2", groupName : "Emit Shape" },
 		{ name: "emitSurface", t: PBool, def: false, disp: "Surface", groupName : "Emit Shape" },
@@ -1865,7 +1865,7 @@ class Emitter extends Object3D {
 		emitterObj.emitType 			= 	getParamVal("emitType");
 		emitterObj.burstCount 			= 	getParamVal("burstCount");
 		emitterObj.burstDelay 			= 	getParamVal("burstDelay");
-		emitterObj.burstParticleCount 	= 	getParamVal("burstParticleCount");
+		emitterObj.burstParticleCount 	= 	makeParam(this, "burstParticleCount");
 		emitterObj.emitDuration 		= 	getParamVal("emitDuration");
 		emitterObj.simulationSpace 		= 	getParamVal("simulationSpace");
 		emitterObj.particleScaling		= 	getParamVal("particleScaling");
@@ -1879,7 +1879,7 @@ class Emitter extends Object3D {
 		emitterObj.emitShape 			= 	getParamVal("emitShape");
 		emitterObj.followRotation 		= 	getParamVal("followRotation");
 		// EMIT SHAPE
-		emitterObj.emitAngle 			= 	getParamVal("emitAngle");
+		emitterObj.emitAngle 			= 	makeParam(this, "emitAngle");
 		emitterObj.emitRad1 			= 	getParamVal("emitRad1");
 		emitterObj.emitRad2 			= 	getParamVal("emitRad2");
 		emitterObj.emitSurface 			= 	getParamVal("emitSurface");
