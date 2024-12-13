@@ -142,6 +142,19 @@ class FileWatcher {
 		return w.version;
 	}
 
+	public function isChangePending( f : FileWatchEvent ) : Bool {
+		var w = watches.get(f.path);
+		if( w != null && w.changed ) {
+			if( f.ignoreCheck != null ) {
+				var sign = getSignature(w.path);
+				if( sign == f.ignoreCheck )
+					return false;
+			}
+			return true;
+		}
+		return false;
+	}
+
 	function cleanEvents() {
 		for( w in watches )
 			for( e in w.events.copy() )
