@@ -133,6 +133,7 @@ class BlendSpace2DNode extends AnimNode {
 						var dx = p2.x - p1.x;
 						var dy = p2.y - p1.y;
 						var k = ((curPos.x - p1.x) * dx + (curPos.y - p1.y) * dy) / (dx * dx + dy * dy);
+						k = hxd.Math.clamp(k, 0, 1);
 						var mx = dx * k + p1.x - curPos.x;
 						var my = dy * k + p1.y - curPos.y;
 						var dist2SegmentSq = mx * mx + my * my;
