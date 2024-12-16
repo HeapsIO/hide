@@ -104,6 +104,7 @@ class BlendSpace2DNode extends AnimNode {
 			var curPos = inline new h2d.col.Point(bsX, bsY);
 
 			// find the triangle our curPos resides in
+			var collided = false;
 			for (triIndex => tri in triangles) {
 				var colTri = inline new h2d.col.Triangle(inline new h2d.col.Point(tri[0].x, tri[0].y), inline new h2d.col.Point(tri[1].x, tri[1].y), inline new h2d.col.Point(tri[2].x, tri[2].y));
 				if (inline colTri.contains(curPos)) {
@@ -112,10 +113,12 @@ class BlendSpace2DNode extends AnimNode {
 					weights[0] = bary.x;
 					weights[1] = bary.y;
 					weights[2] = bary.z;
+					collided = true;
 					break;
 				}
 			}
 
+			var debugk = 0.0;
 			// We are outside all triangles, find the closest edge
 			if (currentTriangle == -1) {
 
@@ -124,18 +127,21 @@ class BlendSpace2DNode extends AnimNode {
 				for (triIndex => tri in triangles) {
 					for (i in 0...3) {
 						var i2 = (i+1) % 3;
-						var triSeg = inline new h2d.col.Line(inline new h2d.col.Point(tri[i].x, tri[i].y), inline new h2d.col.Point(tri[i2].x, tri[i2].y));
+						var p1 = tri[i];
+						var p2 = tri[i2];
 
-						var dx = triSeg.p2.x - triSeg.p1.x;
-						var dy = triSeg.p2.y - triSeg.p1.y;
-						var k = ((curPos.x - triSeg.p1.x) * dx + (curPos.y - triSeg.p1.y) * dy) / (dx * dx + dy * dy);
-						var mx = dx * k + triSeg.p1.x - curPos.x;
-						var my = dy * k + triSeg.p1.y - curPos.y;
+						var dx = p2.x - p1.x;
+						var dy = p2.y - p1.y;
+						var k = ((curPos.x - p1.x) * dx + (curPos.y - p1.y) * dy) / (dx * dx + dy * dy);
+						var mx = dx * k + p1.x - curPos.x;
+						var my = dy * k + p1.y - curPos.y;
 						var dist2SegmentSq = mx * mx + my * my;
 
 						if (dist2SegmentSq < closestDistanceSq) {
 							closestDistanceSq = dist2SegmentSq;
 							currentTriangle = triIndex;
+
+							debugk = k;
 
 							weights[i] = 1.0 - k;
 							weights[(i + 1) % 3] = k;
@@ -147,6 +153,9 @@ class BlendSpace2DNode extends AnimNode {
 
 			if (currentTriangle == -1)
 				throw "assert";
+
+
+			trace(bsX, bsY, weights, weights[0] + weights[1] + weights[2], currentTriangle, collided, debugk);
 		}
 
 		var blendedPos = inline new h3d.Vector();
