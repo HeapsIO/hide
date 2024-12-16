@@ -1748,6 +1748,8 @@ class Emitter extends Object3D {
 							case VCurve(vb): return VAddRandCurve(av, ri, rscale, vb);
 							default:
 						}
+					case VBlend(_,_,_):
+						return VMult(a, b);
 					default:
 				}
 				throw "Need optimization" + Std.string(a)+ " * " + Std.string(b);
