@@ -74,8 +74,21 @@ class Macros {
 						Context.error('Unsupported type for field ${f.name}', f.pos, 0);
 					}
 				}
+			case FProp(_,_,t,_): {
+				switch (t) {
+					case TPath(p):
+						if (p.name ==  "AnimNode") {
+							return macro hrt.animgraph.Node.OutputType.TAnimation;
+						} else if (p.name == "Float") {
+							return macro hrt.animgraph.Node.OutputType.TFloat;
+						}
+						Context.error('Unsupported type ${p}', f.pos, 0);
+					default:
+						Context.error('Unsupported type for field ${f.name}', f.pos, 0);
+					}
+				}
 			default:
-				Context.error("Must be a var", f.pos);
+				Context.error("Must be a var, found " + f.kind, f.pos);
 		}
 		return null;
 	}

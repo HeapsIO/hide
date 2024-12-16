@@ -120,15 +120,15 @@ class AnimGraphInstance extends h3d.anim.Animation {
 			switch (inputs[inputId].type) {
 				case TAnimation:
 					if (outputNode != null && Std.downcast(outputNode, hrt.animgraph.nodes.DefaultPose) == null /* use our default pose node instead of the one in the graph*/) {
-						Reflect.setField(node, inputs[inputId].name, outputNode);
+						Reflect.setProperty(node, inputs[inputId].name, outputNode);
 					} else {
-						Reflect.setField(node, inputs[inputId].name, defaultPoseNode);
+						Reflect.setProperty(node, inputs[inputId].name, defaultPoseNode);
 					}
 				case TFloat:
 					if (outputNode != null) {
 						var outputs = outputNode.getOutputs();
 						var output = outputs[edge.outputIndex];
-						Reflect.setField(node, inputs[inputId].name, Reflect.getProperty(outputNode, output.name));
+						Reflect.setProperty(node, inputs[inputId].name, Reflect.getProperty(outputNode, output.name));
 					}
 			}
 		}

@@ -17,6 +17,7 @@ class AnimGraphEditor extends GenericGraphEditor {
     var previewNode : hrt.animgraph.nodes.AnimNode = null;
 
     override function reloadView() {
+        previewNode = null;
         animGraph = cast hide.Ide.inst.loadPrefab(state.path, null,  true);
         super.reloadView();
 
@@ -187,7 +188,7 @@ class AnimGraphEditor extends GenericGraphEditor {
     override function onScenePreviewReady() {
         super.onScenePreviewReady();
 
-        previewModel = scenePreview.loadModel("character/Kobold01/Model.FBX");
+        previewModel = scenePreview.loadModel("Ogre/Ogre_Kobold.fbx");
         scenePreview.s3d.addChild(previewModel);
 
         setPreview(previewNode);

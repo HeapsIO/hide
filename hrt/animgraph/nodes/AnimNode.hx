@@ -23,7 +23,6 @@ class GetBoneTransformContext {
 
 	var targetObj : hrt.animgraph.AnimGraphInstance.AnimGraphAnimatedObject;
 
-	static var tmpWorkMatrix = new h3d.Matrix();
 	var tmpDefMatrix = new h3d.Matrix();
 	var defMatrix : h3d.Matrix = null;
 
@@ -38,7 +37,7 @@ class GetBoneTransformContext {
 		} else {
 			targetObj.targetObject.defaultTransform;
 		}
-		Tools.splitMatrix(m, tmpWorkMatrix);
+		Tools.splitMatrix(m, tmpDefMatrix);
 
 		defMatrix = tmpDefMatrix;
 		return defMatrix;

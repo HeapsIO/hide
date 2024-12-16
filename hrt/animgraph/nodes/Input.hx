@@ -25,7 +25,6 @@ class Input extends AnimNode {
 
 		var map : Map<String, Int> = [];
 		for (id => obj in anim.getObjects()) {
-			trace(obj.objectName, id);
 			map.set(obj.objectName, id);
 		}
 		return map;
