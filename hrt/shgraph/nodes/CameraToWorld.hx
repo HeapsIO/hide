@@ -2,10 +2,10 @@ package hrt.shgraph.nodes;
 
 using hxsl.Ast;
 
-@name("WorldToObject")
-@description("Transform a position from world space to object space")
+@name("CameraToWorld")
+@description("Transform a position from camera space to world space")
 @group("Property")
-class WorldToObject extends ShaderNodeHxsl {
+class CameraToWorld extends ShaderNodeHxsl {
 
 	@prop() var translate : Bool = false;
 
@@ -15,24 +15,15 @@ class WorldToObject extends ShaderNodeHxsl {
 
 		@sgconst var translate : Int;
 
-		@global var global : { @perObject var modelViewInverse : Mat4; };
+		@global var camera : { var inverseView : Mat4; };
 
 		function fragment() {
-			if ( translate == 1 )
-				output = input * global.modelViewInverse.mat3x4();
+			if (translate == 1)
+				output = input * camera.inverseView.mat3x4();
 			else
-				output = input * global.modelViewInverse.mat3();
+				output = input * camera.inverseView.mat3();
 		}
 	};
-
-	override function getConstValue(name: String) : Null<Int> {
-		switch (name) {
-			case "translate":
-				return translate ? 1 : 0;
-			default:
-				return null;
-		}
-	}
 
 	#if editor
 	override public function getPropertiesHTML(width : Float) : Array<hide.Element> {
