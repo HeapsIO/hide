@@ -4143,6 +4143,7 @@ hide-popover hide-content {
 }
 :root {
   --hover-highlight: rgba(114, 180, 255, 0.5);
+  --selection: rgba(114, 180, 255);
   --hover: #444;
   --basic-shadow: 2px 2px 3px rgba(0, 0, 0, 0.75);
   --sublte-shadow: 1px 1px 3px rgba(0, 0, 0, 0.33);
@@ -4362,7 +4363,7 @@ blend-space-2d-root main-panel graph-container svg .tri {
   fill: rgba(114, 180, 255, 0.226);
 }
 blend-space-2d-root main-panel graph-container svg .grid {
-  stroke: #666;
+  stroke: #444;
   stroke-dasharray: 4;
   stroke-width: 1;
 }
@@ -4370,6 +4371,12 @@ blend-space-2d-root main-panel graph-container svg .bs-point {
   fill: black;
   stroke: white;
   stroke-width: 2;
+}
+blend-space-2d-root main-panel graph-container svg .bs-point.hover {
+  stroke-width: 4;
+}
+blend-space-2d-root main-panel graph-container svg .bs-point.selected {
+  stroke: var(--selection);
 }
 blend-space-2d-root properties-container {
   padding: var(--basic-padding);

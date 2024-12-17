@@ -4898,6 +4898,7 @@ hide-popover {
 
 :root {
 	--hover-highlight: rgba(114, 180, 255, 0.5);
+	--selection: rgba(114, 180, 255);
 	--hover: #444;
 
 	--basic-shadow: 2px 2px 3px rgba(0,0,0,.75);
@@ -5174,7 +5175,7 @@ blend-space-2d-root {
 				}
 
 				.grid {
-					stroke: #666;
+					stroke: #444;
 					stroke-dasharray: 4;
 					stroke-width: 1;
 				}
@@ -5183,6 +5184,15 @@ blend-space-2d-root {
 					fill: black;
 					stroke: white;
 					stroke-width: 2;
+
+					&.hover {
+						stroke-width: 4;
+					}
+
+					&.selected {
+						stroke: var(--selection);
+					}
+
 				}
 			}
 		}

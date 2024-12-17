@@ -10,12 +10,17 @@ class BlendSpace2DEditor extends hide.view.FileView {
 
 	var scenePreview : hide.comp.Scene;
 	var previewCamController : hide.comp.Scene.PreviewCamController;
+	var propsEditor : hide.comp.PropsEditor;
 
 	var blendSpace2D: hrt.animgraph.BlendSpace2D;
 
 	var graph : hide.comp.SVG;
 
 	var graphPoints : Array<js.html.svg.GElement> = [];
+	var hoverPoint : Int = -1;
+	var selectedPoint : Int = -1;
+
+	var startMovePos : h2d.col.Point = null;
 
 	static final pointRadius = 8;
 	var subdivs = 5;
@@ -44,17 +49,14 @@ class BlendSpace2DEditor extends hide.view.FileView {
 				svg.onpointerdown = (e:js.html.PointerEvent) -> {
 					if (e.button != 0)
 						return;
-					var rect = svg.getBoundingClientRect();
-					var mouse = inline new h2d.col.Point((e.clientX - rect.x), e.clientY - rect.y);
 
-					for (id => point in blendSpace2D.points) {
-						var pt = inline new h2d.col.Point(point.x * rect.width, point.y * rect.height);
-						trace(mouse, pt);
-						if (mouse.distanceSq(pt) < pointRadius * pointRadius) {
-							movedPoint = id;
-							break;
-						}
+					movedPoint = hoverPoint;
+					if (selectedPoint != hoverPoint) {
+						selectedPoint = hoverPoint;
+						refreshGraph();
+						refreshPropertiesPannel();
 					}
+
 					if (movedPoint == -1)
 						return;
 
@@ -63,22 +65,39 @@ class BlendSpace2DEditor extends hide.view.FileView {
 				}
 
 				svg.onpointermove = (e:js.html.PointerEvent) -> {
-					if (movedPoint == -1)
-						return;
-
 					var rect = svg.getBoundingClientRect();
-					var mouse = inline new h2d.col.Point((e.clientX - rect.x)/rect.width, (e.clientY - rect.y)/rect.height);
 
-					blendSpace2D.points[movedPoint].x = hxd.Math.clamp(mouse.x);
-					blendSpace2D.points[movedPoint].y = hxd.Math.clamp(mouse.y);
+					if (movedPoint == -1) {
+						var mouse = inline new h2d.col.Point((e.clientX - rect.x), e.clientY - rect.y);
 
-					if (!e.altKey) {
-						// Snap to grid
-						blendSpace2D.points[movedPoint].x = hxd.Math.round(blendSpace2D.points[movedPoint].x * (subdivs+1)) / (subdivs+1);
-						blendSpace2D.points[movedPoint].y = hxd.Math.round(blendSpace2D.points[movedPoint].y * (subdivs+1)) / (subdivs+1);
+						hoverPoint = -1;
+						for (id => point in blendSpace2D.points) {
+							var pt = inline new h2d.col.Point(point.x * rect.width, point.y * rect.height);
+							if (mouse.distanceSq(pt) < pointRadius * pointRadius) {
+								hoverPoint = id;
+								break;
+							}
+						}
 					}
 
-					blendSpace2D.reTriangulate();
+					if (movedPoint != -1) {
+						if (startMovePos == null) {
+							startMovePos = new h2d.col.Point(blendSpace2D.points[movedPoint].x, blendSpace2D.points[movedPoint].y);
+						}
+
+						var mouse = inline new h2d.col.Point((e.clientX - rect.x)/rect.width, (e.clientY - rect.y)/rect.height);
+
+						blendSpace2D.points[movedPoint].x = hxd.Math.clamp(mouse.x);
+						blendSpace2D.points[movedPoint].y = hxd.Math.clamp(mouse.y);
+
+						if (!e.altKey) {
+							// Snap to grid
+							blendSpace2D.points[movedPoint].x = hxd.Math.round(blendSpace2D.points[movedPoint].x * (subdivs+1)) / (subdivs+1);
+							blendSpace2D.points[movedPoint].y = hxd.Math.round(blendSpace2D.points[movedPoint].y * (subdivs+1)) / (subdivs+1);
+						}
+
+						blendSpace2D.reTriangulate();
+					}
 
 					refreshGraph();
 				}
@@ -86,6 +105,29 @@ class BlendSpace2DEditor extends hide.view.FileView {
 				svg.onpointerup = (e:js.html.PointerEvent) -> {
 					if (movedPoint == -1)
 						return;
+
+					if (startMovePos != null) {
+						var ptId = movedPoint;
+						var saveX = blendSpace2D.points[ptId].x;
+						var saveY = blendSpace2D.points[ptId].y;
+						var old = startMovePos;
+						startMovePos = null;
+						function exec(isUndo: Bool) {
+							if (!isUndo) {
+								blendSpace2D.points[ptId].x = saveX;
+								blendSpace2D.points[ptId].y = saveY;
+							} else {
+								blendSpace2D.points[ptId].x = old.x;
+								blendSpace2D.points[ptId].y = old.y;
+							}
+
+							blendSpace2D.reTriangulate();
+							refreshGraph();
+						}
+
+						undo.change(Custom(exec));
+					}
+
 					movedPoint = -1;
 				}
 
@@ -100,8 +142,30 @@ class BlendSpace2DEditor extends hide.view.FileView {
 		}
 
 		propertiesContainer = new hide.Element("<properties-container></properties-container>").appendTo(root);
-
+		{
+			new Element("<h1>Parameters</h1>").appendTo(propertiesContainer);
+			propsEditor = new hide.comp.PropsEditor(undo, propertiesContainer);
+		}
 		refreshGraph();
+	}
+
+	function refreshPropertiesPannel() {
+		propsEditor.clear();
+		if (selectedPoint != null) {
+			propsEditor.add(new hide.Element('
+				<div class="group" name="Point">
+					<dl>
+						<dt>X</dt><input type="range" min="0.0" max="1.0" field="x"/>
+						<dt>Y</dt><input type="range" min="0.0" max="1.0" field="y"/>
+
+						<dt>Anim</dt><input type="fileselect" extensions="fbx" field="animPath"/>
+					</dl>
+				</div>
+			'), blendSpace2D.points[selectedPoint], (_) -> {
+				blendSpace2D.reTriangulate();
+				refreshGraph();
+			});
+		}
 	}
 
     function onScenePreviewReady() {
@@ -115,6 +179,13 @@ class BlendSpace2DEditor extends hide.view.FileView {
 	function createPoint() {
 
 	}
+
+	static var losange = [
+		new h2d.col.Point(-8, 0),
+		new h2d.col.Point(0, -8),
+		new h2d.col.Point(8, 0),
+		new h2d.col.Point(0, 8),
+	];
 
 	function refreshGraph() {
 		graph.element.html("");
@@ -144,9 +215,17 @@ class BlendSpace2DEditor extends hide.view.FileView {
 
 		for (id => point in blendSpace2D.points) {
 			var g = graph.group(graph.element);
-			var svgPoint = graph.circle(g, 0,0, 8).addClass("bs-point");
+			var svgPoint = graph.polygon2(g, losange).addClass("bs-point");
 
 			g.attr("transform", 'translate(${point.x * width}, ${point.y * height})');
+
+			if (id == hoverPoint) {
+				svgPoint.addClass("hover");
+			}
+
+			if (id == selectedPoint) {
+				svgPoint.addClass("selected");
+			}
 
 			var move = false;
 			var elem : js.html.svg.CircleElement = cast svgPoint.get(0);
