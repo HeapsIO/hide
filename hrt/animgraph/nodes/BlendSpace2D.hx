@@ -4,11 +4,14 @@ using hrt.tools.MapUtils;
 typedef BlendSpaceInstancePoint = {
 	x: Float,
 	y: Float,
-	?animation: h3d.anim.Animation, // Can be null if anim failed to load
-	?proxy: hrt.animgraph.nodes.Input.AnimProxy,
-	indexRemap: Array<Int>,
+	?animInfo: AnimInfo,
 }
 
+typedef AnimInfo = {
+	anim: h3d.anim.Animation,
+	proxy: hrt.animgraph.nodes.Input.AnimProxy,
+	indexRemap: Array<Int>,
+}
 
 @:access(hrt.animgraph.BlendSpace2D)
 class BlendSpace2DNode extends AnimNode {
@@ -34,6 +37,7 @@ class BlendSpace2DNode extends AnimNode {
 	var currentTriangle : Int = -1;
 	var weights : Array<Float> = [1.0,0.0,0.0];
 
+	var animInfos: Array<AnimInfo> = [];
 	var points : Array<BlendSpaceInstancePoint> = [];
 	var triangles : Array<Array<BlendSpaceInstancePoint>> = [];
 	var blendSpace : BlendSpace2D;
@@ -50,18 +54,33 @@ class BlendSpace2DNode extends AnimNode {
 			blendSpace = cast hxd.res.Loader.currentInstance.load(path).toPrefab().load();
 		}
 
+		// only one animation is created per anim path, so if multiple points use the same anim, only one instance is created
+		var animMap : Map<String, Int> = [];
+
 		for (blendSpacePoint in blendSpace.points) {
-			var point : BlendSpaceInstancePoint = {x: blendSpacePoint.x, y: blendSpacePoint.y, indexRemap: []};
+			var point : BlendSpaceInstancePoint = {x: blendSpacePoint.x, y: blendSpacePoint.y};
 			try
 			{
-				var animBase = hxd.res.Loader.currentInstance.load(blendSpacePoint.animPath).toModel().toHmd().loadAnimation();
-				point.proxy = new hrt.animgraph.nodes.Input.AnimProxy(null);
-				point.animation = animBase.createInstance(point.proxy);
+				var animIndex = animMap.getOrPut(blendSpacePoint.animPath, {
+					// Create a new animation
+					var index = animInfos.length;
+					var animBase = hxd.res.Loader.currentInstance.load(blendSpacePoint.animPath).toModel().toHmd().loadAnimation();
 
-				for (boneId => obj in point.animation.getObjects()) {
-					var ourId = boneMap.getOrPut(obj.objectName, curOurBoneId++);
-					point.indexRemap[ourId] = boneId;
-				}
+					var proxy = new hrt.animgraph.nodes.Input.AnimProxy(null);
+					var animInstance = animBase.createInstance(proxy);
+
+					var indexRemap = [];
+
+					for (boneId => obj in animInstance.getObjects()) {
+						var ourId = boneMap.getOrPut(obj.objectName, curOurBoneId++);
+						indexRemap[ourId] = boneId;
+					}
+
+					animInfos.push({anim: animInstance, proxy: proxy, indexRemap: indexRemap});
+					index;
+				});
+
+				point.animInfo = animInfos[animIndex];
 			} catch (e) {
 				trace('Couldn\'t load anim ${blendSpacePoint.animPath} : ${e.toString()}');
 			}
@@ -76,10 +95,10 @@ class BlendSpace2DNode extends AnimNode {
 			triangles.push(triangle);
 		}
 
-		for (point in points) {
+		for (info in animInfos) {
 			for (i in 0...curOurBoneId) {
-				if(point.indexRemap[i] == null) {
-					point.indexRemap[i] = -1;
+				if(info.indexRemap[i] == null) {
+					info.indexRemap[i] = -1;
 				}
 			}
 		}
@@ -90,11 +109,9 @@ class BlendSpace2DNode extends AnimNode {
 	override function tick(dt:Float) {
 		super.tick(dt);
 
-		for (point in points) {
-			if (point.animation == null)
-				continue;
-			point.animation.update(dt);
-			@:privateAccess point.animation.isSync = false;
+		for (animInfo in animInfos) {
+			animInfo.anim.update(dt);
+			@:privateAccess animInfo.anim.isSync = false;
 		}
 	}
 
@@ -168,15 +185,15 @@ class BlendSpace2DNode extends AnimNode {
 		refQuat.set(def._12, def._13, def._21, def._23);
 		for (ptIndex => point in triangle) {
 			@:privateAccess
-			if (!point.animation.isSync) {
-				point.animation.sync(true);
-				point.animation.isSync = true;
+			if (!point.animInfo.anim.isSync) {
+				point.animInfo.anim.sync(true);
+				point.animInfo.anim.isSync = true;
 			}
-			var boneIndex = point.indexRemap[boneId];
-			var matrix = if (boneIndex == -1 || point.animation == null) {
+			var boneIndex = point.animInfo.indexRemap[boneId];
+			var matrix = if (boneIndex == -1 || point.animInfo.anim == null) {
 				def;
 			} else {
-				point.animation.getObjects()[boneIndex].targetObject.defaultTransform;
+				point.animInfo.anim.getObjects()[boneIndex].targetObject.defaultTransform;
 			}
 
 			var w =  weights[ptIndex];
