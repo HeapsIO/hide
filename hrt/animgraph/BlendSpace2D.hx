@@ -16,6 +16,20 @@ class BlendSpace2D extends hrt.prefab.Prefab {
 		return instance ??= @:privateAccess new BlendSpace2DInstance(this);
 	}
 
+	function reTriangulate() {
+		triangles = [];
+
+		var h2dPoints : Array<h2d.col.Point> = [];
+		for (point in points) {
+			h2dPoints.push(new h2d.col.Point(point.x, point.y));
+		}
+
+		var triangulation = h2d.col.Delaunay.triangulate(h2dPoints);
+		for (triangle in triangulation) {
+			triangles.push([h2dPoints.indexOf(triangle.p1), h2dPoints.indexOf(triangle.p2), h2dPoints.indexOf(triangle.p3)]);
+		}
+	}
+
 	static var _ = hrt.prefab.Prefab.register("blendspace2d", BlendSpace2D, "blendspace2d");
 }
 

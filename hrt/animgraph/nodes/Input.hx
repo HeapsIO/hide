@@ -45,6 +45,7 @@ class Input extends AnimNode {
 		matrix.load(anim.getObjects()[id].targetObject.defaultTransform);
 	}
 
+	#if editor
 	override function getPropertiesHTML(width:Float):Array<hide.Element> {
 		var elts = super.getPropertiesHTML(width);
 
@@ -55,9 +56,11 @@ class Input extends AnimNode {
 		fileSelect.path = path;
 		fileSelect.onChange = () -> {
 			path = fileSelect.path;
+			getAnimEditor().refreshPreview();
 		}
 		elts.push(wrapper);
 
 		return elts;
 	}
+	#end
 }

@@ -4320,3 +4320,62 @@ graph-editor-root properties-container graph-parameters > ul graph-parameter .ic
   transition: transform 0.25s;
   transform: rotate(0deg);
 }
+/** Blendspace2dEditor **/
+blend-space-2d-root {
+  width: 100%;
+  height: 100%;
+  box-sizing: border-box;
+  display: flex;
+  flex-direction: row;
+  justify-items: stretch;
+  align-items: stretch;
+}
+blend-space-2d-root main-panel {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  justify-items: stretch;
+  align-items: stretch;
+}
+blend-space-2d-root main-panel preview-container {
+  background-color: blue;
+  flex: 1;
+}
+blend-space-2d-root main-panel preview-container .scene-preview {
+  width: 100%;
+  height: 100%;
+}
+blend-space-2d-root main-panel graph-container {
+  height: 40%;
+  background-color: var(--bg-1);
+  margin: 16px;
+}
+blend-space-2d-root main-panel graph-container svg {
+  width: 100%;
+  height: 100%;
+  box-sizing: border-box;
+  border: var(--basic-border);
+}
+blend-space-2d-root main-panel graph-container svg .tri {
+  stroke: #888;
+  stroke-width: 1;
+  fill: rgba(114, 180, 255, 0.226);
+}
+blend-space-2d-root main-panel graph-container svg .grid {
+  stroke: #666;
+  stroke-dasharray: 4;
+  stroke-width: 1;
+}
+blend-space-2d-root main-panel graph-container svg .bs-point {
+  fill: black;
+  stroke: white;
+  stroke-width: 2;
+}
+blend-space-2d-root properties-container {
+  padding: var(--basic-padding);
+  display: flex;
+  flex-direction: column;
+  flex-basis: 300px;
+  border-left: var(--basic-border);
+  background-color: var(--bg-1);
+}
