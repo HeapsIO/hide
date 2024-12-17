@@ -380,13 +380,37 @@ class Table extends Component {
 		return select;
 	}
 
+	function getSeparatorKey(index : Int) : String {
+		var key = sheet.separators[index].title;
+
+		function findPrevious(s : cdb.Data.Separator) : cdb.Data.Separator{
+			var idx = sheet.separators.indexOf(s) - 1;
+			var sepInfo = sheet.separators[idx + 1];
+			while(idx >= 0 && sheet.separators[idx].level >= sepInfo.level)
+				idx--;
+
+			if (idx != 0)
+				return sheet.separators[idx];
+
+			return null;
+		}
+
+		var prev = findPrevious(sheet.separators[index]);
+		while(prev != null) {
+			key = '${prev.title}/${key}';
+			prev = findPrevious(prev);
+		}
+
+		return 'seps/${key}';
+	}
+
 	function isSepHidden(index) {
-		return getDisplayState("sep/"+sheet.separators[index].title) == false;
+		return getDisplayState(getSeparatorKey(index)) == false;
 	}
 
 	function setSepHidden(sep : Separator, hidden : Bool) {
 		sep.hidden = hidden;
-		saveDisplayState("sep/"+sheet.separators[sep.index].title, !hidden);
+		saveDisplayState(getSeparatorKey(sep.index), !hidden);
 	}
 
 	public function expandLine(line: Int) {
@@ -463,6 +487,24 @@ class Table extends Component {
 				sep.addClass('seplevel-'+(syncLevel == def ? 0 : syncLevel));
 			}
 			sep.attr("level", syncLevel == def ? 0 : sepInfo.level);
+		}
+
+		sync();
+
+		// Separator hide itself if parent is hidden
+		var level = curLevel - 1;
+		while( level >= 0 ) {
+			for( i in 0...sindex ) {
+				var s = sheet.separators[sindex - 1 - i];
+				if( s.title != null && (s.level == null || s.level == level) ) {
+					if( isSepHidden(sindex - 1 - i) ) {
+						sep.hide();
+						setSepHidden(data, true);
+					}
+					break;
+				}
+			}
+			level--;
 		}
 
 		sep.contextmenu(function(e) {
@@ -610,23 +652,8 @@ class Table extends Component {
 			});
 		});
 
-		var level = curLevel - 1;
-		while( level >= 0 ) {
-			for( i in 0...sindex ) {
-				var s = sheet.separators[sindex - 1 - i];
-				if( s.title != null && (s.level == null || s.level == level) ) {
-					if( isSepHidden(sindex - 1 - i) ) {
-						sep.hide();
-						setSepHidden(data, true);
-					}
-					break;
-				}
-			}
-			level--;
-		}
-
-		sync();
 		toggle.dblclick(function(e) e.stopPropagation());
+
 		toggle.click(function(e) {
 			setSepHidden(data, !data.hidden);
 			var hidden = data.hidden;
@@ -656,6 +683,7 @@ class Table extends Component {
 
 			editor.updateFilter();
 		});
+
 		return data;
 	}
 
