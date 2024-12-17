@@ -241,8 +241,6 @@ class Model extends FileView {
 				<dt>Library</dt>
 				<dd>
 					<select class="lib">
-						<option value="">None</option>
-						${[for( i in 0...matLibs.length ) '<option value="${matLibs[i].name}" ${(selectedLib == matLibs[i].path) ? 'selected' : ''}>${matLibs[i].name}</option>'].join("")}
 					</select>
 				</dd>
 				<dt>Material</dt>
@@ -269,48 +267,93 @@ class Model extends FileView {
 		var libSelect = matLibrary.find(".lib");
 		var matSelect = matLibrary.find(".mat");
 
+		function updateBaseEdition() {
+			if (def) {
+				tex.show();
+				matEl.show();
+			}
+			else {
+				tex.hide();
+				matEl.hide();
+			}
+		}
+
 		function updateMatSelect() {
 			matSelect.empty();
 			new Element('<option value="">None</option>').appendTo(matSelect);
 
-			materials = scene.listMaterialFromLibrary(getPath(), libSelect.val());
-
-			for (idx in 0...materials.length) {
-				new Element('<option value="${materials[idx].path + "/" + materials[idx].mat.name}" ${(selectedMat == materials[idx].path + "/" + materials[idx].mat.name) ? 'selected' : ''}>${materials[idx].mat.name}</option>').appendTo(matSelect);
+			var libName = "";
+			for (matLib in matLibs) {
+				if (matLib.path == selectedLib)
+					libName = matLib.name;
 			}
+
+			materials = scene.listMaterialFromLibrary(getPath(), libName);
+
+			for (idx in 0...materials.length)
+				new Element('<option value="${materials[idx].path + "/" + materials[idx].mat.name}" ${(selectedMat == materials[idx].path + "/" + materials[idx].mat.name && !def) ? 'selected' : ''}>${materials[idx].mat.name}</option>').appendTo(matSelect);
 		}
 
+		function updateLibSelect() {
+			libSelect.empty();
+			new Element('<option value="">None</option>').appendTo(libSelect);
+
+			for (lib in matLibs)
+				new Element('<option value="${lib.name}" ${(selectedLib == lib.path && !def) ? 'selected' : ''}>${lib.name}</option>').appendTo(libSelect);
+		}
+
+		updateLibSelect();
 		updateMatSelect();
+		updateBaseEdition();
 
 		if ( props != null && props.__refMode != null )
 			mode.val((props:Dynamic).__refMode).select();
 
+		libSelect.change(function(e :js.jquery.Event) {
+			var prevV = selectedLib;
+			selectedLib = null;
+			for (matLib in matLibs) {
+				if (matLib.name == libSelect.val())
+					selectedLib = matLib.path;
+			}
+			var newV = selectedLib;
 
-		function setDefault() {
-			tex.show();
-			matEl.show();
-			def = true;
-			selectMaterial(m);
-		}
+			function exec(undo : Bool) {
+				selectedLib = undo ? prevV : newV;
+				def = selectedLib == "";
+				updateLibSelect();
+				updateMatSelect();
+				updateBaseEdition();
+			}
 
-		libSelect.change(function(_) {
-			updateMatSelect();
-
-			if (libSelect.val() == "")
-				setDefault();
+			exec(false);
+			undo.change(Custom(exec));
 		});
 
 		matSelect.change(function(_) {
-			var mat = Reflect.field(scene.findMat(materials, matSelect.val()), "mat");
-			if ( mat != null ) {
-				@:privateAccess mat.update(m, mat.renderProps(), function(path:String) {
-					return hxd.res.Loader.currentInstance.load(path).toTexture();
-				});
-				tex.hide();
-				matEl.hide();
-			} else {
-				setDefault();
+			var prevV = selectedMat;
+			selectedMat = matSelect.val();
+			var newV = selectedMat;
+
+			function exec(undo : Bool) {
+				selectedMat = undo ? prevV : newV;
+				var mat = Reflect.field(scene.findMat(materials, selectedMat), "mat");
+				if ( mat != null ) {
+					@:privateAccess mat.update(m, mat.renderProps(), function(path:String) {
+						return hxd.res.Loader.currentInstance.load(path).toTexture();
+					});
+					def = false;
+				} else {
+					def = true;
+				}
+
+				updateLibSelect();
+				updateMatSelect();
+				updateBaseEdition();
 			}
+
+			exec(false);
+			undo.change(Custom(exec));
 		});
 
 		matLibrary.find(".goTo").click(function(_) {
@@ -713,7 +756,7 @@ class Model extends FileView {
 			var label = [for( p in 1...parts.length ) "&nbsp; "].join("") + parts.pop();
 			items.push({ label: label, click: () -> onFollowSelected(name) });
 		}
-		
+
 		header.click(function(_) {
 			var icon = header.find(".icon");
 			var visible = icon.hasClass('ico-caret-down');
@@ -727,7 +770,7 @@ class Model extends FileView {
 					icon.toggleClass("ico-caret-down", false);
 				};
 			}
-			
+
 		});
 
 		refreshSelectionHighlight(obj);
