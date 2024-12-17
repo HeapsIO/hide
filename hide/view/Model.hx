@@ -1485,7 +1485,7 @@ class Model extends FileView {
 			if ( hmd != null ) {
 				var lodsCountEl = sceneEditor.properties.element.find("#vertexes-count");
 				var curLod = hmd.forcedLod >= 0 ? hmd.forcedLod : hmd.screenRatioToLod(@:privateAccess selectedMesh.curScreenRatio);
-				var lodVertexesCount = @:privateAccess hmd.lods[curLod].vertexCount;
+				var lodVertexesCount = @:privateAccess { ( curLod < hmd.lods.length ) ? hmd.lods[curLod].vertexCount : 0; };
 				lodsCountEl.text(lodVertexesCount);
 			}
 
