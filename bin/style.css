@@ -4367,6 +4367,10 @@ blend-space-2d-root main-panel graph-container svg .grid {
   stroke-dasharray: 4;
   stroke-width: 1;
 }
+blend-space-2d-root main-panel graph-container svg .grid-label {
+  fill: #AAA;
+  text-anchor: middle;
+}
 blend-space-2d-root main-panel graph-container svg .bs-point {
   fill: black;
   stroke: white;
@@ -4382,7 +4386,7 @@ blend-space-2d-root properties-container {
   padding: var(--basic-padding);
   display: flex;
   flex-direction: column;
-  flex-basis: 300px;
+  flex-basis: 320px;
   border-left: var(--basic-border);
   background-color: var(--bg-1);
 }

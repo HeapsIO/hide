@@ -9,6 +9,7 @@ typedef BlendSpacePoint = {
 class BlendSpace2D extends hrt.prefab.Prefab {
 	@:s var points : Array<BlendSpacePoint> = [];
 	@:s var triangles : Array<Array<Int>> = [];
+	@:s var refModel : String = null;
 
 	var instance : BlendSpace2DInstance;
 
