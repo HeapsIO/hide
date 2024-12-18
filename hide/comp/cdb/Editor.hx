@@ -1823,6 +1823,16 @@ class Editor extends Component {
 			beginChanges(true);
 			var err;
 			if( col != null ) {
+				base.mapType(function(t) {
+					return switch( t ) {
+					case TRef(o) if( o.indexOf(col.name) >= 0 ):
+						TRef(StringTools.replace(o, col.name, c.name));
+					case TLayer(o) if( o.indexOf(col.name) >= 0 ):
+						TLayer(StringTools.replace(o, col.name, c.name));
+					default:
+						t;
+					}
+				});
 				var newPath = c.name;
 				var back = newPath.split("/");
 				var finalPart = back.pop();
