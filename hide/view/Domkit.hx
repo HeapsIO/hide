@@ -52,7 +52,7 @@ class Domkit extends FileView {
 			panelRight.width(totalWidth - panelLeft.element.width());
 		};
 
-		var panelTopLeft = new hide.comp.ResizablePanel(hide.comp.ResizablePanel.LayoutDirection.Vertical, element.find('.top'), After);
+		var panelTopLeft = new hide.comp.ResizablePanel(hide.comp.ResizablePanel.LayoutDirection.Vertical, panelLeft.element.find('.top'), After);
 		var panelBotLeft = element.find('.bot');
 		panelTopLeft.onBeforeResize = () -> {
 			panelBotLeft.height(0);
