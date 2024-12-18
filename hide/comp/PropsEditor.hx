@@ -664,7 +664,7 @@ class PropsField extends Component {
 							setVal(oldVal, true, true);
 						} else {
 							trace("Redo", newVal);
-							setVal(newVal, false, true);
+							setVal(newVal, true, true);
 						}
 					}));
 					setVal(multiRange.value, false, false);
