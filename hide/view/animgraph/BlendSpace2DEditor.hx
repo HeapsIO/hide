@@ -168,6 +168,13 @@ class BlendSpace2DEditor extends hide.view.FileView {
 		}
 	}
 
+	override function save() {
+		var content = ide.toJSON(blendSpace2D.save());
+		currentSign = ide.makeSignature(content);
+		sys.io.File.saveContent(getPath(), content);
+		super.save();
+	}
+
     function onScenePreviewReady() {
         previewCamController = new hide.comp.Scene.PreviewCamController(scenePreview.s3d);
     }

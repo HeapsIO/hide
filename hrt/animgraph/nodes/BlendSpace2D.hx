@@ -48,11 +48,15 @@ class BlendSpace2DNode extends AnimNode {
 
 	override function getBones(ctx: hrt.animgraph.nodes.AnimNode.GetBoneContext):Map<String, Int> {
 		var boneMap : Map<String, Int> = [];
+		animInfos = [];
+		points = [];
+		triangles = [];
+
 		var curOurBoneId = 0;
 
 		if (blendSpace == null) {
 			blendSpace = cast hxd.res.Loader.currentInstance.load(path).toPrefab().load();
-		}
+					}
 
 		// only one animation is created per anim path, so if multiple points use the same anim, only one instance is created
 		var animMap : Map<String, Int> = [];
