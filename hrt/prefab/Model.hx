@@ -124,6 +124,7 @@ class Model extends Object3D {
 			var toAdd = undo ? new hrt.prefab.Model(null, toRemove.shared) : new hrt.prefab.Reference(null, toRemove.shared);
 			toAdd.source = toAddPath;
 			toAdd.name = toRemove.name;
+			toAdd.props = toRemove.props;
 			toAdd.setTransform(toRemove.getTransform());
 			parent.children.insert(idx, toAdd);
 			@:bypassAccessor toAdd.parent = parent;
