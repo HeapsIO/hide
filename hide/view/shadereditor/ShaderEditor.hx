@@ -441,14 +441,16 @@ class ShaderEditor extends hide.view.FileView implements GraphInterface.IGraphEd
 		execMoveParameterTo(parameter, parameterPrev, !up);
 	}
 
-	function updateParam(id : Int) {
+	function updateParam(id : Int) : Bool {
 		meshPreviewScene.setCurrent(); // needed for texture changes
 
 		var param = shaderGraph.getParameter(id);
 		var init = compiledShader.inits.find((i) -> i.variable.name == param.name);
 		if (init != null) {
 			setParamValue(meshPreviewShader, init.variable, param.defaultValue);
+			return true;
 		}
+		return false;
 	}
 
 	var parametersUpdate : Map<Int, (Dynamic) -> Void> = [];
@@ -666,7 +668,12 @@ class ShaderEditor extends hide.view.FileView implements GraphInterface.IGraphEd
 							var v = !isUndo ? curr : prev;
 							shaderGraph.setParameterDefaultValue(parameter.id, v);
 							parametersUpdate[parameter.id](v);
-							updateParam(parameter.id);
+
+							if (!updateParam(parameter.id)) {
+								// If the graph was initialised without the variable,
+								// we need to recompile it
+								requestRecompile();
+							}
 						}
 						exec(false);
 						this.undo.change(Custom(exec));
@@ -674,8 +681,11 @@ class ShaderEditor extends hide.view.FileView implements GraphInterface.IGraphEd
 					}
 					if (!shaderGraph.setParameterDefaultValue(parameter.id, currentValue))
 						return;
-					//setBoxesParam(parameter.id);
-					updateParam(parameter.id);
+					if (!updateParam(parameter.id)) {
+						// If the graph was initialised without the variable,
+						// we need to recompile it
+						requestRecompile();
+					}
 				}
 				typeName = "Texture";
 
