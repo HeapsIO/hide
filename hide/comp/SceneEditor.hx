@@ -4473,6 +4473,7 @@ class SceneEditor {
 		}
 		for( ptype in allRegs.keys() ) {
 			var pinf = allRegs.get(ptype);
+			if (pinf.inf.hideInAddMenu) continue;
 
 			if (!checkAllowParent(pinf, parent)) continue;
 			if(ptype == "shader") {

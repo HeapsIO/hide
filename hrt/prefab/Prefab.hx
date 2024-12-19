@@ -567,8 +567,8 @@ class Prefab {
 	/**
 		Allows to customize how the prefab object is displayed / handled within Hide
 	**/
-	public function getHideProps() : hide.prefab.HideProps {
-		return { icon : "question-circle", name : "Unknown" };
+	public function getHideProps() : Null<hide.prefab.HideProps> {
+		return { icon : "question-circle", name : Type.getClassName(Type.getClass(this)), hideInAddMenu: true };
 	}
 
 	/**
