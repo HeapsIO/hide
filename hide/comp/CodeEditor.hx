@@ -47,11 +47,17 @@ class CodeEditor extends Component {
 		});
 		var model = editor.getModel();
 		(model : Dynamic).__comp__ = this;
+		errorMessage = new Element('<div class="codeErrorMessage"></div>').appendTo(root).hide();
 		model.updateOptions({ insertSpaces:false, trimAutoWhitespace:true });
 		editor.onDidChangeModelContent(function() onChanged());
 		editor.onDidBlurEditorText(function() if( saveOnBlur ) onSave());
-		editor.addCommand(monaco.KeyCode.KEY_S | monaco.KeyMod.CtrlCmd, function() { saveBind(); });
-		errorMessage = new Element('<div class="codeErrorMessage"></div>').appendTo(root).hide();
+
+		// This is needed because from monaco editor v0.31.1 to current version, commands added are global and not per editor (this is a bug)
+		editor.onDidFocusEditorText(function() {
+			editor.addCommand(monaco.KeyCode.KEY_S | monaco.KeyMod.CtrlCmd, function() {
+				saveBind();
+			});
+		});
 	}
 
 	function saveBind() {
