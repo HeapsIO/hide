@@ -746,6 +746,17 @@ class EmitterObject extends h3d.scene.Object {
 		randomValues = [for(i in 0...(maxCount * randSlots)) 0];
 		evaluator = new Evaluator(randomValues, randSlots);
 
+		{
+			var p = parent;
+			while (p != null && Std.downcast(p, hrt.prefab.fx.FX.FXAnimation) == null) {
+				p = p.parent;
+			}
+			if (p != null) {
+				var fx : hrt.prefab.fx.FX.FXAnimation = cast p;
+				@:privateAccess evaluator.parameters = fx.evaluator.parameters;
+			}
+		}
+
 		reset();
 	}
 

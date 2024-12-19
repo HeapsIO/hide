@@ -63,9 +63,6 @@ class FXAnimation extends h3d.scene.Object {
 			}
 		}
 
-		for (emitter in this.findAll((f) -> Std.downcast(f, hrt.prefab.fx.Emitter.EmitterObject))) {
-			@:privateAccess emitter.evaluator.parameters = evaluator.parameters;
-		}
 
 		events = initEvents(root, events);
 		var root = hrt.prefab.fx.BaseFX.BaseFXTools.getFXRoot(def);
