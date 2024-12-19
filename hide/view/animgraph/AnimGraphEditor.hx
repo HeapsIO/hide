@@ -1,5 +1,5 @@
 package hide.view.animgraph;
-
+using Lambda;
 import hide.view.GraphInterface;
 import hrt.animgraph.*;
 
@@ -72,23 +72,15 @@ class AnimGraphEditor extends GenericGraphEditor {
         {
             if (previewModel == null)
                 return;
-            var anim = animGraph.getAnimation();
+            var anim = animGraph.getAnimation(previewNode);
             previewModel.playAnimation(anim);
             previewAnimation = cast previewModel.currentAnimation;
             refreshPamamList();
         }
 
-        if (previewNode != null) {
-            var index = animGraph.nodes.indexOf(newOutput);
-            if (index == -1)
-                throw "Invalid node";
-            previewAnimation.outputNode = cast previewAnimation.animGraph.nodes[index];
-            @:privateAccess previewAnimation.bind(previewAnimation.target);
-        }
-
         // copy runtime parameters
         for (index => param in animGraph.parameters) {
-            previewAnimation.animGraph.parameters[index].runtimeValue = param.runtimeValue;
+            animGraph.parameters[index].runtimeValue = param.runtimeValue;
         }
         graphEditor.refreshPreviewButtons();
     }

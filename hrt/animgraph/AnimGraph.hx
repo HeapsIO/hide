@@ -18,7 +18,6 @@ typedef SerializedEdge = {
 
 @:access(hrt.animgraph.AnimGraphInstance)
 class AnimGraph extends hrt.prefab.Prefab {
-	public var instance(default, null) : AnimGraphInstance;
 
 	var nodes: Array<Node> = [];
 	var parameters : Array<Parameter> = [];
@@ -35,8 +34,8 @@ class AnimGraph extends hrt.prefab.Prefab {
 		Get the animation "template" for this AnimGraph.
 		This anim should be instanciated using getInstance() after that (or use the h3d.scene.Object.playAnimation() function that does this for you)
 	**/
-	public function getAnimation(previewNode: Node = null) : AnimGraphInstance {
-		return instance ??= new AnimGraphInstance(this);
+	public function getAnimation(previewNode: hrt.animgraph.nodes.AnimNode = null) : AnimGraphInstance {
+		return AnimGraphInstance.fromAnimGraph(this, previewNode);
 	}
 
 	override function save() {

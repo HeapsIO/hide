@@ -1,5 +1,6 @@
 package hrt.animgraph;
-
+using Lambda;
+using hrt.tools.MapUtils;
 class AnimGraphAnimatedObject extends h3d.anim.Animation.AnimatedObject {
 	public var id : Int;
 
@@ -12,8 +13,7 @@ class AnimGraphAnimatedObject extends h3d.anim.Animation.AnimatedObject {
 @:access(hrt.animgraph.AnimGraph)
 @:access(hrt.animgraph.Node)
 class AnimGraphInstance extends h3d.anim.Animation {
-	var animGraph : AnimGraph;
-	var outputNode : hrt.animgraph.nodes.AnimNode;
+	var rootNode : hrt.animgraph.nodes.AnimNode;
 	var workMatrix = new h3d.Matrix();
 
 	var boneMap: Map<String, Int> = [];
@@ -24,38 +24,70 @@ class AnimGraphInstance extends h3d.anim.Animation {
 	var syncCtx = new hrt.animgraph.nodes.AnimNode.GetBoneTransformContext();
 	var defaultPoseNode = new hrt.animgraph.nodes.DefaultPose();
 
-	function new(animGraph:AnimGraph) {
-		// Todo : Define a true length for the animation OR make so animations can have an undefined length
-		super(animGraph.name, 1000, 1/60.0);
-		this.animGraph = animGraph;
+	static function fromAnimGraph(animGraph:AnimGraph, outputNode: hrt.animgraph.nodes.AnimNode = null) : AnimGraphInstance {
+		outputNode ??= cast animGraph.nodes.find((node) -> Std.downcast(node, hrt.animgraph.nodes.Output) != null);
+		if (outputNode == null)
+			throw "Animgraph has no output node";
 
-		defaultPoseNode = new hrt.animgraph.nodes.DefaultPose();
-		var output : hrt.animgraph.nodes.Output = cast Lambda.find(animGraph.nodes, (node) -> Std.downcast(node, hrt.animgraph.nodes.Output) != null);
-		if (output != null) {
-			map(output, updateNodeInputs);
-			outputNode = output.a;
-		}
+		var inst = new AnimGraphInstance(outputNode, animGraph.name, 1000, 1/60.0);
 
 		for (param in animGraph.parameters) {
-			parameterMap.set(param.name, param);
+			inst.parameterMap.set(param.name, param);
 			param.runtimeValue = param.defaultValue;
 		}
+
+		return inst;
+	}
+
+	function new(rootNode: hrt.animgraph.nodes.AnimNode, name: String, framesCount: Int, sampling: Float) {
+		// Todo : Define a true length for the animation OR make so animations can have an undefined length
+		super(name, framesCount, sampling);
+		this.rootNode = rootNode;
+
+		defaultPoseNode = new hrt.animgraph.nodes.DefaultPose();
 	}
 
 	override function clone(?target: h3d.anim.Animation) : h3d.anim.Animation {
 		if (target != null) throw "Unexpected";
-		var newAnimGraph : AnimGraph = cast animGraph.clone();
-		var inst = super.clone(new AnimGraphInstance(newAnimGraph));
+
+		var inst = new AnimGraphInstance(null, name, frameCount, sampling);
+		inst.rootNode = cast cloneRec(rootNode, inst);
+		super.clone(inst);
 		return inst;
 	}
 
+	static function cloneRec(node: hrt.animgraph.Node, inst: AnimGraphInstance) : hrt.animgraph.Node {
+		var cloned = hrt.animgraph.Node.createFromDynamic(node.serializeToDynamic());
+
+		var clonedParam = Std.downcast(cloned, hrt.animgraph.nodes.FloatParameter);
+		if (clonedParam != null) {
+			var nodeParam : hrt.animgraph.nodes.FloatParameter = cast node;
+			clonedParam.parameter = inst.parameterMap.getOrPut(nodeParam.parameter.name, {
+				var newParam = new hrt.animgraph.AnimGraph.Parameter();
+				@:privateAccess newParam.copyFromOther(nodeParam.parameter);
+				nodeParam.parameter.runtimeValue = nodeParam.parameter.defaultValue;
+				newParam;
+			});
+		}
+
+		for (id => edge in node.inputEdges) {
+			if (edge?.target != null) {
+				var targetClone = cloneRec(edge.target, inst);
+				cloned.inputEdges[id] = {target: targetClone, outputIndex: edge.outputIndex};
+			} else {
+				cloned.inputEdges[id] = null;
+			}
+		}
+		return cloned;
+	}
+
 	public function getBones(ctx : hrt.animgraph.nodes.AnimNode.GetBoneContext) : Map<String, Int> {
-		if (outputNode == null)
+		if (rootNode == null)
 			return null;
 
-		map(outputNode, updateNodeInputs);
+		map(rootNode, updateNodeInputs);
 
-		boneMap = outputNode.getBones(ctx);
+		boneMap = rootNode.getBones(ctx);
 		return boneMap;
 	}
 
@@ -76,14 +108,14 @@ class AnimGraphInstance extends h3d.anim.Animation {
 	}
 
 	override function sync(decompose : Bool = false ) {
-		if (outputNode == null)
+		if (rootNode == null)
 			return;
 		for (obj in objects) {
 			var obj : AnimGraphAnimatedObject = cast obj;
 			workMatrix.identity();
 			syncCtx.reset(obj);
 
-			outputNode.getBoneTransform(obj.id, workMatrix, syncCtx);
+			rootNode.getBoneTransform(obj.id, workMatrix, syncCtx);
 
 			@:privateAccess
 			var targetMatrix = if (obj.targetSkin != null) {
@@ -137,7 +169,7 @@ class AnimGraphInstance extends h3d.anim.Animation {
 	function map(root: Node, cb: (node:Node) -> Void) {
 		function rec (node: Node) {
 			cb(node);
-			for (inputId => edge in node.inputEdges) {
+			for (edge in node.inputEdges) {
 				if (edge == null) continue;
 				rec(edge.target);
 			}
@@ -147,22 +179,17 @@ class AnimGraphInstance extends h3d.anim.Animation {
 
 	override function update(dt:Float):Float {
 		var dt2 = super.update(dt);
-		if (outputNode == null)
+		if (rootNode == null)
 			return dt2;
 
-		for (node in animGraph.nodes) {
-			node.tickedThisFrame = false;
-		}
-
-		tickRec(outputNode, dt);
+		map(rootNode, (node) -> node.tickedThisFrame = false);
+		tickRec(rootNode, dt);
 
 		return dt2;
 	}
 
 	function tickRec(node: hrt.animgraph.Node, dt: Float) {
-		var inputs = node.getInputs();
-
-		for (inputId => edge in node.inputEdges) {
+		for (edge in node.inputEdges) {
 			if (edge == null) continue;
 			var outputNode = edge.target;
 			if (!outputNode.tickedThisFrame) {

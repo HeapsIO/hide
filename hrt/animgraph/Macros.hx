@@ -39,7 +39,7 @@ class Macros {
 			cl = cl.superClass?.t.get();
 		}
 
-		if (inheritAnimNode) {
+		if (inheritAnimNode && cl.name != "Output" /* Output don't have an anim output ironically */) {
 			outputs.push(macro {
 				name: "",
 				type: Node.OutputType.TAnimation,

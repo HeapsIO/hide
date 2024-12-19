@@ -3,7 +3,7 @@ package hrt.animgraph.nodes;
 /**
 	The result of this node can be used as an animation by other systems
 **/
-class Output extends Node {
+class Output extends AnimNode {
 
 	@:input var a: AnimNode;
 
@@ -28,5 +28,13 @@ class Output extends Node {
 			}
 		};
 		return info;
+	}
+
+	override function getBones(ctx:hrt.animgraph.nodes.AnimNode.GetBoneContext):Map<String, Int> {
+		return a.getBones(ctx);
+	}
+
+	override function getBoneTransform(boneId:Int, outMatrix:h3d.Matrix, ctx:hrt.animgraph.nodes.AnimNode.GetBoneTransformContext) {
+		return a.getBoneTransform(boneId, outMatrix, ctx);
 	}
 }
