@@ -76,6 +76,8 @@ class SVG extends Component {
 
 	public function polygon(?parent: Element, points: Array<h2d.col.Point>, ?style:Dynamic) {
 		// TODO: Use https://www.w3schools.com/graphics/svg_polygon.asp
+		if (points.length <= 0)
+			return make(parent, "path", style);
 		var lines = ['M${points[0].x},${points[0].y} '];
 		for(i in 1...points.length) {
 			lines.push('L${points[i].x},${points[i].y} ');
