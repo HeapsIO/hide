@@ -3245,32 +3245,6 @@ class SceneEditor {
 		return p.setSelected(b);
 	}
 
-	public function changeAllModels(source : hrt.prefab.Object3D, path : String) {
-		var all = sceneData.all();
-		var oldPath = source.source;
-		var changedModels = [];
-		for (child in all) {
-			var model = child.to(hrt.prefab.Object3D);
-			if (model != null && model.source == oldPath) {
-				model.source = path;
-				model.name = "";
-				autoName(model);
-				changedModels.push(model);
-				model.getLocal3d().remove();
-				model.make();
-			}
-		}
-		undo.change(Custom(function(u) {
-			for (model in changedModels) {
-				model.source = u ? oldPath : path;
-				model.name = "";
-				autoName(model);
-				model.getLocal3d().remove();
-				model.make();
-			}
-		}));
-	}
-
 	public dynamic function onSelectionChanged(elts : Array<PrefabElement>, ?mode : SelectMode = Default) {};
 
 	public function selectElements( elts : Array<PrefabElement>, ?mode : SelectMode = Default ) {

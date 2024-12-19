@@ -101,7 +101,7 @@ class Model extends Object3D {
 		var props = ctx.properties.add(new hide.Element('
 			<div class="group" name="Animation">
 				<dl>
-					<dt>Model</dt><dd><input type="model" field="source"/></dd>
+					<dt>Model</dt><dd id="source-select"></dd>
 					<dt/><dd><input type="button" value="Change All" id="changeAll"/></dd>
 					<dt>Animation</dt><dd><input id="anim" value="--- Choose ---"></dd>
 					<dt title="Don\'t save animation changes">Lock</dt><dd><input type="checkbox" field="lockAnimation"></dd>
@@ -112,15 +112,116 @@ class Model extends Object3D {
 		'),this, function(pname) {
 			if( pname == "retargetIgnore" && ctx.properties.isTempChange ) return;
 
-			if (pname == "source")
-				ctx.scene.editor.queueRebuild(this);
-
 			ctx.onChange(this, pname);
 		});
 
+		function change(toRemove : hrt.prefab.Object3D, toAddPath : String, undo : Bool) {
+			var parent = toRemove.parent;
+			var idx = parent.children.indexOf(toRemove);
+			parent.children.remove(toRemove);
+			toRemove.local3d.remove();
+
+			var toAdd = undo ? new hrt.prefab.Model(null, toRemove.shared) : new hrt.prefab.Reference(null, toRemove.shared);
+			toAdd.source = toAddPath;
+			toAdd.name = toRemove.name;
+			toAdd.setTransform(toRemove.getTransform());
+			parent.children.insert(idx, toAdd);
+			@:bypassAccessor toAdd.parent = parent;
+			@:privateAccess ctx.scene.editor.rebuild(toAdd);
+		}
+
+		function changeToReference(source : hrt.prefab.Object3D, path : String) {
+			var oldPath = source.source;
+			var parent = source.parent;
+			var idxToRemove = source.parent.children.indexOf(source);
+
+			function exec(undo : Bool) {
+				var toRemovePath = undo ? path : oldPath;
+				var toAddPath = undo ? oldPath : path;
+				var toRemove = undo ? Std.downcast(parent.children[idxToRemove], hrt.prefab.Reference) : Std.downcast(parent.children[idxToRemove], hrt.prefab.Object3D);
+				if (toRemove != null && toRemove.source == toRemovePath)
+					change(toRemove, toAddPath, undo);
+
+				@:privateAccess ctx.scene.editor.refreshTree();
+			}
+
+			exec(false);
+			@:privateAccess ctx.scene.editor.undo.change(Custom(exec));
+		}
+
+		function changeAllToReferences(source : hrt.prefab.Object3D, path : String) {
+			var oldPath = source.source;
+
+			function exec(undo : Bool) {
+				@:privateAccess var all = ctx.scene.editor.sceneData.all();
+				for (child in all) {
+					var toRemovePath = undo ? path : oldPath;
+					var toAddPath = undo ? oldPath : path;
+					var toRemove = undo ? Std.downcast(child, hrt.prefab.Reference) : Std.downcast(child, hrt.prefab.Object3D);
+					if (toRemove != null && toRemove.source == toRemovePath)
+						change(toRemove, toAddPath, undo);
+				}
+
+				@:privateAccess ctx.scene.editor.refreshTree();
+			}
+
+			exec(false);
+			@:privateAccess ctx.scene.editor.undo.change(Custom(exec));
+		}
+
+		function changeAllModels(source : hrt.prefab.Object3D, path : String) {
+			@:privateAccess var all = ctx.scene.editor.sceneData.all();
+			var oldPath = source.source;
+			var changedModels = [];
+			for (child in all) {
+				var model = child.to(hrt.prefab.Object3D);
+				if (model != null && model.source == oldPath) {
+					model.source = path;
+					model.name = "";
+					@:privateAccess ctx.scene.editor.autoName(model);
+					changedModels.push(model);
+					Object3D.getLocal3d(this).remove();
+					model.make();
+				}
+			}
+			@:privateAccess ctx.scene.editor.undo.change(Custom(function(u) {
+				for (model in changedModels) {
+					model.source = u ? oldPath : path;
+					model.name = "";
+					@:privateAccess ctx.scene.editor.autoName(model);
+					Object3D.getLocal3d(this).remove();
+					model.make();
+				}
+			}));
+		}
+
+		var sourceSelect = new hide.comp.FileSelect(["hmd", "fbx", "l3d", "prefab"], null, null);
+		sourceSelect.element.appendTo(ctx.properties.element.find('#source-select'));
+		sourceSelect.path = this.source;
+		sourceSelect.onChange = function() {
+			if (sourceSelect.path.lastIndexOf('.prefab') >= 0) {
+				changeToReference(this, sourceSelect.path);
+			}
+			else {
+				var oldS = this.source;
+				var newS = sourceSelect.path;
+				function exec(undo : Bool) {
+					var s = undo ? oldS : newS;
+					this.source = s;
+					sourceSelect.path = s;
+					ctx.scene.editor.queueRebuild(this);
+				}
+				exec(false);
+				ctx.properties.undo.change(Custom(exec));
+			}
+		};
+
 		var changeAllbtn = props.find("#changeAll");
-		changeAllbtn.on("click",function() hide.Ide.inst.chooseFile(["fbx", "l3d"] , function (path) {
-			ctx.scene.editor.changeAllModels(this, path);
+		changeAllbtn.on("click",function() hide.Ide.inst.chooseFile(["fbx", "l3d", "prefab"] , function (path) {
+			if (path.lastIndexOf('.prefab') >= 0)
+				changeAllToReferences(this, path);
+			else
+				changeAllModels(this, path);
 		}));
 
 
@@ -162,7 +263,7 @@ class Model extends Object3D {
 	override function getHideProps() : hide.prefab.HideProps {
 		return {
 			icon : "cube", name : "Model", fileSource : ["fbx","hmd"],
-			allowChildren : function(t) return Prefab.isOfType(t,Object3D) || 
+			allowChildren : function(t) return Prefab.isOfType(t,Object3D) ||
 				Prefab.isOfType(t,Material) ||
 				Prefab.isOfType(t,MaterialSelector) ||
 				Prefab.isOfType(t,Shader) ||
