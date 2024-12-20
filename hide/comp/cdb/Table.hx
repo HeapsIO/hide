@@ -386,8 +386,15 @@ class Table extends Component {
 		function findPrevious(s : cdb.Data.Separator) : cdb.Data.Separator{
 			var idx = sheet.separators.indexOf(s) - 1;
 			var sepInfo = sheet.separators[idx + 1];
-			while(idx >= 0 && sheet.separators[idx].level >= sepInfo.level)
+			while(idx >= 0) {
+				var l1 = sheet.separators[idx].level;
+				var l2 = sepInfo.level;
+				if (l1 == null) l1 = 0;
+				if (l2 == null) l2 = 0;
+				if (l2 > l1)
+					break;
 				idx--;
+			}
 
 			if (idx != 0)
 				return sheet.separators[idx];
