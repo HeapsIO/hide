@@ -1426,7 +1426,7 @@ input[type=checkbox] {
 		>.icon {
 			padding-left: 3px;
 		}
-	
+
 		.header {
 			display: inline-block;
 			background-color: @color-menu-bg;
@@ -1435,13 +1435,13 @@ input[type=checkbox] {
 			padding: 2px;
 			cursor: pointer;
 			width: 192px;
-	
+
 			>span {
 				padding-left: 5px;
 				width: 90% !important;
 			}
 		}
-	
+
 		.dropdown {
 			position: absolute;
 			top: 30px;
@@ -3276,6 +3276,8 @@ div.sp-container {
 /* Script Editor */
 
 .codeeditor {
+	position: relative;
+
 	.codeErrorLine {
 		background: #400;
 	}
@@ -3286,12 +3288,12 @@ div.sp-container {
 		text-decoration: underline dashed red;
 	}
 	.codeErrorMessage {
+		position: absolute;
+		bottom: 0;
+		right: 0;
 		background : rgba(80, 5, 5, 1);
 		color : red;
-		position: absolute;
-		bottom: 0px;
 		padding: 2px;
-		right : 13px;
 		border: 1px solid #A00;
 		max-height: 200px;
 		max-width: 400px;
@@ -3728,13 +3730,13 @@ div.gradient-box {
 }
 
 .domkitEditor {
-	height: 100%;		
+	height: 100%;
 	width: 100%;
 
 	.editors {
 		display: flex;
 		height: 100%;
-		
+
 		.panel {
 			height: 100%;
 

@@ -2850,6 +2850,9 @@ div.sp-container input:hover {
   width: 50%;
 }
 /* Script Editor */
+.codeeditor {
+  position: relative;
+}
 .codeeditor .codeErrorLine {
   background: #400;
 }
@@ -2860,12 +2863,12 @@ div.sp-container input:hover {
   text-decoration: underline dashed red;
 }
 .codeeditor .codeErrorMessage {
+  position: absolute;
+  bottom: 0;
+  right: 0;
   background: #500505;
   color: red;
-  position: absolute;
-  bottom: 0px;
   padding: 2px;
-  right: 13px;
   border: 1px solid #A00;
   max-height: 200px;
   max-width: 400px;
