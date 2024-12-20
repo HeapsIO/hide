@@ -496,6 +496,7 @@ class FXAnimation extends h3d.scene.Object {
 	}
 
 	public function resolveConstraints( caster : h3d.scene.Object ) {
+		if( constraints == null ) return;
 		for( co in constraints ) {
 			if( !co.enabled )
 		 		continue;
