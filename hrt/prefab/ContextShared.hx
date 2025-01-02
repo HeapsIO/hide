@@ -74,6 +74,9 @@ class ContextShared {
 	}
 
 	public function savePrefabDat(file : String, ext : String, prefab : String, bytes : haxe.io.Bytes ) {
+		#if js
+		throw "not implemented";
+		#else
 		var datDir = getFolderDatPath();
 		var instanceDir = datDir + "/" + prefab;
 
@@ -105,6 +108,7 @@ class ContextShared {
 		}else{
 			sys.io.File.saveBytes(file, bytes);
 		}
+		#end
 	}
 
 	public function loadShader( path : String ) : Cache.ShaderDef {
