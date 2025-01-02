@@ -1187,6 +1187,7 @@ class Ide extends hide.tools.IdeData {
 			}
 			new Element("<menu>").attr("label",v).appendTo(menu.find(".project .recents")).click(function(_){
 				setProject(v);
+				reload(); // Reload stylesheets
 			});
 		}
 		menu.find(".project .open").click(function(_) {
