@@ -140,7 +140,7 @@ class AnimGraphEditor extends GenericGraphEditor {
             if (previewAnimation != null) {
                 var runtimeParam = previewAnimation.parameterMap.get(param.name);
                 var line = new Element("<li></li>").appendTo(props);
-                var slider = new Element('<li><dd>Test value</dd><input type="range" min="0.0" max="1.0" step="0.01" value="${param.runtimeValue}"></input></li>').appendTo(line).find("input");
+                var slider = new Element('<li><dd>Preview</dd><input type="range" min="0.0" max="1.0" step="0.01" value="${param.runtimeValue}"></input></li>').appendTo(line).find("input");
 
                 slider.on("input", (e) -> {
                     var value = Std.parseFloat(slider.val());
@@ -156,9 +156,6 @@ class AnimGraphEditor extends GenericGraphEditor {
                         runtimeParam.runtimeValue = value;
                     }
                 });
-
-                var line = new Element("<li></li>").appendTo(props);
-                var def = new Element('<dd>Default</dd><input type="range" min="0.0" max="1.0" step="0.01" value="${param.runtimeValue}"></input>').appendTo(line).find("input");
 
                 var line = new Element("<li></li>").appendTo(props);
                 var def = new Element('<dd>Default</dd><input type="range" min="0.0" max="1.0" step="0.01" value="${param.runtimeValue}"></input>').appendTo(line).find("input");
