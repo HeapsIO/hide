@@ -4382,6 +4382,11 @@ blend-space-2d-root main-panel graph-container svg .bs-point.hover {
 blend-space-2d-root main-panel graph-container svg .bs-point.selected {
   stroke: var(--selection);
 }
+blend-space-2d-root main-panel graph-container svg .preview-axis {
+  fill: none;
+  stroke: #008a00;
+  stroke-width: 2;
+}
 blend-space-2d-root properties-container {
   padding: var(--basic-padding);
   display: flex;

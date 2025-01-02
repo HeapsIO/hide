@@ -24,6 +24,10 @@ class AnimGraphInstance extends h3d.anim.Animation {
 	var syncCtx = new hrt.animgraph.nodes.AnimNode.GetBoneTransformContext();
 	var defaultPoseNode = new hrt.animgraph.nodes.DefaultPose();
 
+	#if editor
+	var editorSkipClone : Bool = false;
+	#end
+
 	static function fromAnimGraph(animGraph:AnimGraph, outputNode: hrt.animgraph.nodes.AnimNode = null) : AnimGraphInstance {
 		outputNode ??= cast animGraph.nodes.find((node) -> Std.downcast(node, hrt.animgraph.nodes.Output) != null);
 		if (outputNode == null)
@@ -39,7 +43,7 @@ class AnimGraphInstance extends h3d.anim.Animation {
 		return inst;
 	}
 
-	function new(rootNode: hrt.animgraph.nodes.AnimNode, name: String, framesCount: Int, sampling: Float) {
+	public function new(rootNode: hrt.animgraph.nodes.AnimNode, name: String, framesCount: Int, sampling: Float) {
 		// Todo : Define a true length for the animation OR make so animations can have an undefined length
 		super(name, framesCount, sampling);
 		this.rootNode = rootNode;
@@ -48,6 +52,11 @@ class AnimGraphInstance extends h3d.anim.Animation {
 	}
 
 	override function clone(?target: h3d.anim.Animation) : h3d.anim.Animation {
+		#if editor
+		if (editorSkipClone) {
+			return this;
+		}
+		#end
 		if (target != null) throw "Unexpected";
 
 		var inst = new AnimGraphInstance(null, name, frameCount, sampling);

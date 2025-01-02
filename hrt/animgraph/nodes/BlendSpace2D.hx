@@ -14,7 +14,7 @@ typedef AnimInfo = {
 }
 
 @:access(hrt.animgraph.BlendSpace2D)
-class BlendSpace2DNode extends AnimNode {
+class BlendSpace2D extends AnimNode {
 	@:input var bsX(default, set): Float = 0.5;
 	@:input var bsY(default, set): Float = 0.5;
 
@@ -40,7 +40,7 @@ class BlendSpace2DNode extends AnimNode {
 	var animInfos: Array<AnimInfo> = [];
 	var points : Array<BlendSpaceInstancePoint> = [];
 	var triangles : Array<Array<BlendSpaceInstancePoint>> = [];
-	var blendSpace : BlendSpace2D;
+	var blendSpace : hrt.animgraph.BlendSpace2D;
 
 	var workQuat = new h3d.Quat();
 	var workQuats : Array<h3d.Quat> = [new h3d.Quat(), new h3d.Quat(), new h3d.Quat()];
@@ -51,12 +51,13 @@ class BlendSpace2DNode extends AnimNode {
 		animInfos = [];
 		points = [];
 		triangles = [];
+		currentTriangle = -1;
 
 		var curOurBoneId = 0;
 
 		if (blendSpace == null) {
 			blendSpace = cast hxd.res.Loader.currentInstance.load(path).toPrefab().load();
-					}
+		}
 
 		// only one animation is created per anim path, so if multiple points use the same anim, only one instance is created
 		var animMap : Map<String, Int> = [];
@@ -113,6 +114,7 @@ class BlendSpace2DNode extends AnimNode {
 	override function tick(dt:Float) {
 		super.tick(dt);
 
+		trace(bsX, bsY);
 		for (animInfo in animInfos) {
 			animInfo.anim.update(dt);
 			@:privateAccess animInfo.anim.isSync = false;

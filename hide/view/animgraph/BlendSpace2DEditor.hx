@@ -22,12 +22,14 @@ class BlendSpace2DEditor extends hide.view.FileView {
 	var hoverPoint : Int = -1;
 	var selectedPoint : Int = -1;
 
+	var previewAxis : h2d.col.Point = new h2d.col.Point();
+
 	var startMovePos : h2d.col.Point = null;
 
 	static final pointRadius = 8;
 	var subdivs = 5;
 
-	var animGraph : hrt.animgraph.AnimGraph;
+	var animPreview : hrt.animgraph.AnimGraphInstance;
 
 	inline function getPointPos(clientX : Float, clientY : Float, snap: Bool) : h2d.col.Point {
 		var x = hxd.Math.clamp(graphXToLocal(clientX));
@@ -61,25 +63,42 @@ class BlendSpace2DEditor extends hide.view.FileView {
 				//graph.circle(graph.element, 0, 0, 0.2, {fill: "blue"});
 
 				var movedPoint = -1;
+				var movingPreview = false;
 				var svg: js.html.svg.SVGElement = cast graph.element.get(0);
 
 				svg.onpointerdown = (e:js.html.PointerEvent) -> {
 					if (e.button != 0)
 						return;
 
-					movedPoint = hoverPoint;
-					if (selectedPoint != hoverPoint) {
-						setSelection(hoverPoint);
+					if (e.ctrlKey) {
+						movingPreview = true;
+						previewAxis.x = hxd.Math.clamp(graphXToLocal(e.clientX));
+						previewAxis.y = hxd.Math.clamp(graphYToLocal(e.clientY));
+						updatePreviewAxis();
 					}
 
-					if (movedPoint == -1)
-						return;
+					if (!movingPreview) {
+						movedPoint = hoverPoint;
+						if (selectedPoint != hoverPoint) {
+							setSelection(hoverPoint);
+						}
+
+						if (movedPoint == -1)
+							return;
+					}
 
 					svg.setPointerCapture(e.pointerId);
 					e.preventDefault();
 				}
 
 				svg.onpointermove = (e:js.html.PointerEvent) -> {
+					if (movingPreview) {
+						previewAxis.x = hxd.Math.clamp(graphXToLocal(e.clientX));
+						previewAxis.y = hxd.Math.clamp(graphYToLocal(e.clientY));
+						updatePreviewAxis();
+						return;
+					}
+
 					if (movedPoint == -1) {
 						var mouse = inline new h2d.col.Point(e.clientX - cachedRect.x, e.clientY - cachedRect.y);
 
@@ -109,13 +128,20 @@ class BlendSpace2DEditor extends hide.view.FileView {
 							blendSpace2D.points[movedPoint].y = hxd.Math.round(blendSpace2D.points[movedPoint].y * (subdivs+1)) / (subdivs+1);
 						}
 
-						blendSpace2D.reTriangulate();
+						blendSpace2D.triangulate();
+						refreshPreviewAnimation();
 					}
 
 					refreshGraph();
 				}
 
 				svg.onpointerup = (e:js.html.PointerEvent) -> {
+					if (movingPreview) {
+						movingPreview = false;
+						refreshPropertiesPannel();
+						return;
+					}
+
 					if (movedPoint == -1)
 						return;
 
@@ -134,9 +160,10 @@ class BlendSpace2DEditor extends hide.view.FileView {
 								blendSpace2D.points[ptId].y = old.y;
 							}
 
-							blendSpace2D.reTriangulate();
+							blendSpace2D.triangulate();
 							refreshGraph();
 							refreshPropertiesPannel();
+							refreshPreviewAnimation();
 						}
 
 						undo.change(Custom(exec));
@@ -180,6 +207,28 @@ class BlendSpace2DEditor extends hide.view.FileView {
 			previewModel = scenePreview.loadModel(blendSpace2D.refModel);
 			scenePreview.s3d.addChild(previewModel);
 		}
+
+		refreshPreviewAnimation();
+	}
+
+	function refreshPreviewAnimation() {
+		if (previewModel != null) {
+			if (animPreview == null) {
+				var blendSpaceNode = new hrt.animgraph.nodes.BlendSpace2D.BlendSpace2D();
+				@:privateAccess blendSpaceNode.blendSpace = blendSpace2D;
+				animPreview = new hrt.animgraph.AnimGraphInstance(blendSpaceNode, "", 1000, 1.0/60.0);
+				@:privateAccess animPreview.editorSkipClone = true;
+				cast previewModel.playAnimation(animPreview);
+			}
+			else @:privateAccess {
+				var root : hrt.animgraph.nodes.BlendSpace2D.BlendSpace2D = cast @:privateAccess animPreview.rootNode;
+				var old = root.points[0].animInfo.anim.frame;
+				animPreview.bind(previewModel);
+				for (point in root.points) {
+					point.animInfo.anim.setFrame(old);
+				}
+			}
+		}
 	}
 
 	function deleteSelection() {
@@ -195,7 +244,7 @@ class BlendSpace2DEditor extends hide.view.FileView {
 		propsEditor.add(new hide.Element('
 			<div class="group" name="Blend Space">
 				<dl>
-					<dt>Preview</dt><dd><input type="fileselect" extensions="fbx" field="animPath"/></dd>
+					<dt>Preview</dt><dd><input type="fileselect" extensions="fbx" field="refModel"/></dd>
 				</dl>
 			</div>
 		'), blendSpace2D, (_) -> {
@@ -214,10 +263,22 @@ class BlendSpace2DEditor extends hide.view.FileView {
 					</dl>
 				</div>
 			'), blendSpace2D.points[selectedPoint], (_) -> {
-				blendSpace2D.reTriangulate();
+				blendSpace2D.triangulate();
 				refreshGraph();
+				refreshPreviewAnimation();
 			});
 		}
+
+		propsEditor.add(new hide.Element('
+			<div class="group" name="Preview">
+					<dl>
+						<dt>X</dt><dd><input type="range" min="0.0" max="1.0" field="x"/></dd>
+						<dt>Y</dt><dd><input type="range" min="0.0" max="1.0" field="y"/></dd>
+					</dl>
+				</div>
+		'), previewAxis, (_) -> {
+			updatePreviewAxis();
+		});
 	}
 
 	override function save() {
@@ -260,7 +321,7 @@ class BlendSpace2DEditor extends hide.view.FileView {
 			} else {
 				blendSpace2D.points.insert(index, point);
 			}
-			blendSpace2D.reTriangulate();
+			blendSpace2D.triangulate();
 			refreshGraph();
 		}
 		exec(false);
@@ -280,7 +341,7 @@ class BlendSpace2DEditor extends hide.view.FileView {
 				if (select)
 					setSelection(prevSelection);
 			}
-			blendSpace2D.reTriangulate();
+			blendSpace2D.triangulate();
 			refreshGraph();
 		}
 		exec(false);
@@ -298,6 +359,15 @@ class BlendSpace2DEditor extends hide.view.FileView {
 	function setSelection(index: Int) {
 		selectedPoint = index;
 		refreshPropertiesPannel();
+		refreshGraph();
+	}
+
+	function updatePreviewAxis() {
+		if (animPreview != null) {
+			var root : hrt.animgraph.nodes.BlendSpace2D.BlendSpace2D = cast @:privateAccess animPreview.rootNode;
+			@:privateAccess root.bsX = previewAxis.x;
+			@:privateAccess root.bsY = previewAxis.y;
+		}
 		refreshGraph();
 	}
 
@@ -328,8 +398,6 @@ class BlendSpace2DEditor extends hide.view.FileView {
 	function refreshGraph() {
 		cachedRect = graph.element.get(0).getBoundingClientRect();
 		graph.element.html("");
-
-
 
 		graph.element.attr("viewBox", '0 0 ${cachedRect.width} ${cachedRect.height}');
 		//graph.element.attr("preserveAspectRatio", "XMidYMid meet");
@@ -377,6 +445,14 @@ class BlendSpace2DEditor extends hide.view.FileView {
 
 			var move = false;
 			var elem : js.html.svg.CircleElement = cast svgPoint.get(0);
+		}
+
+		{
+			var g = graph.group(graph.element);
+			g.attr("transform", 'translate(${localXToGraph(previewAxis.x)}, ${localYToGraph(previewAxis.y)})');
+			final size = 10;
+			graph.line(g, -size, -size, size, size).addClass("preview-axis");
+			graph.line(g, -size, size, size, -size).addClass("preview-axis");
 		}
 	}
 

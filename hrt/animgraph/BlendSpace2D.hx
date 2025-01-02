@@ -17,7 +17,7 @@ class BlendSpace2D extends hrt.prefab.Prefab {
 		return instance ??= @:privateAccess new BlendSpace2DInstance(this);
 	}
 
-	function reTriangulate() {
+	function triangulate() {
 		triangles = [];
 
 		var h2dPoints : Array<h2d.col.Point> = [];
