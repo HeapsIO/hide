@@ -459,7 +459,7 @@ class Scene extends hide.comp.Component implements h3d.IDrawable {
 		};
 
 		if (uncompressed)
-			loadUncompressed();
+			res = loadUncompressed();
 
 		if( onReady == null ) onReady = function(_) {};
 		try {

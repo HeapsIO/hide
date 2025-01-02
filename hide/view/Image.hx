@@ -353,7 +353,7 @@ class Image extends FileView {
 
 				applyShaderConfiguration();
 			}
-		}, this.viewMode.match(Compressed), null, false);
+		}, this.viewMode.match(Compressed), null, false, false);
 		tgCompressed.element.addClass("show-compressed");
 
 		var tgUncompressed = tools.addToggle("show-uncompressed","file-image-o", "Show uncompressed texture", "", function (e) {
@@ -370,7 +370,7 @@ class Image extends FileView {
 				applyShaderConfiguration();
 			}
 
-		}, this.viewMode.match(Uncompressed), null, false);
+		}, this.viewMode.match(Uncompressed), null, false, false);
 		tgUncompressed.element.addClass("show-uncompressed");
 
 		var tgComparison = tools.addToggle("show-comparison","arrows-h", "Show comparison between compressed and uncompressed texture", "", function (e) {
@@ -387,7 +387,7 @@ class Image extends FileView {
 				applyShaderConfiguration();
 			}
 
-		}, this.viewMode.match(Comparison), null, false);
+		}, this.viewMode.match(Comparison), null, false, false);
 		tgComparison.element.addClass("show-comparison");
 
 		tools.addSeparator();
@@ -789,7 +789,7 @@ class Image extends FileView {
 			var oldWidth = sliderBmp.getSize().width;
 			@:privateAccess sliderBmp.scaleX = (1 / (cam2d.curPos.z)) * 2;
 			var offset = sliderBmp.getSize().width - oldWidth;
-			sliderBmp.x -= offset / 4;
+			sliderBmp.x -= offset;
 		}
 
 		// todo : handle slider zoom for cam 3d

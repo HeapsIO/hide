@@ -84,13 +84,16 @@ class Toolbar extends Component {
 		return e;
 	}
 
-	public function addToggle( id: String, icon : String, ?title : String, ?label : String, ?onToggle : Bool -> Void, ?defValue = false, ?toggledIcon : String, saveToggleState = true) : ToolToggle {
+	public function addToggle( id: String, icon : String, ?title : String, ?label : String, ?onToggle : Bool -> Void, ?defValue = false, ?toggledIcon : String, saveToggleState : Bool = true, canBeUntoggled : Bool = true) : ToolToggle {
 		var e = new Element('<div class="button2" id="${id}" title="${title==null ? "" : title}"><div class="icon ico ico-$icon"/></div>');
 
 		if(label != null)
 			new Element('<label>$label</label>').appendTo(e);
 
 		function tog() {
+			if (!canBeUntoggled && e.get(0).hasAttribute("checked"))
+				return;
+
 			e.get(0).toggleAttribute("checked");
 			var checked = e.get(0).hasAttribute("checked");
 
