@@ -1785,8 +1785,7 @@ class SceneEditor {
 				menuItems = menuItems.concat([
 					{ label : "Show in editor" , checked : !isHidden(current), stayOpen : true, click : function() setVisible(selectedPrefabs, isHidden(current), tree), keys : view.config.get("key.sceneeditor.hide") },
 					{ label : "Locked", checked : current.locked, stayOpen : true, click : function() {
-						current.locked = !current.locked;
-						setLock(selectedPrefabs, current.locked, tree);
+						setLock(selectedPrefabs, !current.locked, tree);
 					} },
 					{ label : "Select all", click : selectAll, keys : view.config.get("key.selectAll") },
 					{ label : "Select children", enabled : current != null, click : function() selectElements(current.flatten()) },
@@ -3910,6 +3909,7 @@ class SceneEditor {
 	public function setLock(elements : Array<PrefabElement>, locked: Bool, enableUndo : Bool = true, ?tree: IconTree<PrefabElement>) {
 		if (tree == null)
 			tree = this.tree;
+		var elements = elements.copy();
 		var prev = [for( o in elements ) o.locked];
 		for(o in elements) {
 			o.locked = locked;
@@ -3923,13 +3923,15 @@ class SceneEditor {
 			}
 		}
 		if (enableUndo) {
-			undo.change(Custom(function(redo) {
+			undo.change(Custom(function(isUndo) {
 				for( i in 0...elements.length )
-					elements[i].locked = redo ? locked : prev[i];
-			}), function() {
-				tree.refresh();
+					elements[i].locked = !isUndo ? locked : prev[i];
 				queueRebuild(sceneData);
-			});
+				refreshTree();
+				saveDisplayState();
+				showGizmo = !isUndo ? !locked : locked;
+				moveGizmoToSelection();
+			}));
 		}
 
 		saveDisplayState();
