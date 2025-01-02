@@ -26,7 +26,13 @@ class Model extends Object3D {
 		#if editor
 		try {
 		#end
-			var obj = shared.loadModel(source);
+			var obj : h3d.scene.Object;
+			try {
+				obj = shared.loadModel(source);
+			} catch(e : hxd.res.NotFound) {
+				throw 'Could not load model $source needed in ${shared.currentPath} \n\n ${e}';
+			}
+
 			if(obj.defaultTransform != null && children.length > 0) {
 				obj.name = "root";
 				var root = new h3d.scene.Object();
