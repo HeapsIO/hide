@@ -18,7 +18,7 @@ class BlendSpace2D extends AnimNode {
 	@:input var bsX(default, set): Float = 0.5;
 	@:input var bsY(default, set): Float = 0.5;
 
-	@:s var path : String = "AnimGraph/blendSpaceOgreLocomotion.blendspace2d";
+	@:s var path : String = "";
 
 	var dirtyPos: Bool = true;
 
@@ -56,6 +56,8 @@ class BlendSpace2D extends AnimNode {
 		var curOurBoneId = 0;
 
 		if (blendSpace == null) {
+			if (!hxd.res.Loader.currentInstance.exists(path))
+				return boneMap;
 			blendSpace = cast hxd.res.Loader.currentInstance.load(path).toPrefab().load();
 		}
 
@@ -114,7 +116,6 @@ class BlendSpace2D extends AnimNode {
 	override function tick(dt:Float) {
 		super.tick(dt);
 
-		trace(bsX, bsY);
 		for (animInfo in animInfos) {
 			animInfo.anim.update(dt);
 			@:privateAccess animInfo.anim.isSync = false;
@@ -227,4 +228,34 @@ class BlendSpace2D extends AnimNode {
 		outMatrix._21 = workQuat.z;
 		outMatrix._23 = workQuat.w;
 	}
+
+	#if editor
+	override function getPropertiesHTML(width:Float):Array<hide.Element> {
+		var elts = super.getPropertiesHTML(width);
+
+		var wrapper = new hide.Element("<input-wrapper></input-wrapper>");
+		wrapper.height("20px");
+
+		var fileSelect = new hide.comp.FileSelect(["bs2d"], wrapper);
+		fileSelect.path = path;
+		fileSelect.onChange = () -> {
+			var prev = path;
+			var curr = fileSelect.path;
+			function exec(isUndo : Bool) {
+				path = !isUndo ? curr : prev;
+				fileSelect.path = path;
+				getAnimEditor().refreshPreview();
+			}
+			exec(false);
+			getAnimEditor().undo.change(Custom(exec));
+		}
+		elts.push(wrapper);
+		return elts;
+	}
+
+	override function getSize():Int {
+		return Node.SIZE_BIG;
+	}
+
+	#end
 }

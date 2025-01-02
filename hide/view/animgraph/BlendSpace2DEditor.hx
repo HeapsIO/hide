@@ -45,7 +45,10 @@ class BlendSpace2DEditor extends hide.view.FileView {
 	}
 
 	override function onRebuild() {
-		blendSpace2D = cast hide.Ide.inst.loadPrefab(state.path, null,  true);
+		blendSpace2D = Std.downcast(hide.Ide.inst.loadPrefab(state.path, null,  true), hrt.animgraph.BlendSpace2D);
+		if (blendSpace2D == null)
+			throw "Invalid blendSpace2D";
+
 		super.onRebuild();
 		element.html("");
 
@@ -456,5 +459,5 @@ class BlendSpace2DEditor extends hide.view.FileView {
 		}
 	}
 
-    static var _ = FileTree.registerExtension(BlendSpace2DEditor,["blendspace2d"],{ icon : "arrows-alt", createNew: "Blend Space 2D" });
+    static var _ = FileTree.registerExtension(BlendSpace2DEditor,["bs2d"],{ icon : "arrows-alt", createNew: "Blend Space 2D" });
 }

@@ -31,7 +31,7 @@ class BlendSpace2D extends hrt.prefab.Prefab {
 		}
 	}
 
-	static var _ = hrt.prefab.Prefab.register("blendspace2d", BlendSpace2D, "blendspace2d");
+	static var _ = hrt.prefab.Prefab.register("blendspace2d", BlendSpace2D, "bs2d");
 }
 
 typedef BlendSpaceInstancePoint = {

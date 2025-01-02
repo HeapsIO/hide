@@ -35,10 +35,10 @@ class AnimGraphInstance extends h3d.anim.Animation {
 
 		var inst = new AnimGraphInstance(outputNode, animGraph.name, 1000, 1/60.0);
 
-		for (param in animGraph.parameters) {
-			inst.parameterMap.set(param.name, param);
-			param.runtimeValue = param.defaultValue;
-		}
+		// for (param in animGraph.parameters) {
+		// 	inst.parameterMap.set(param.name, param);
+		// 	param.runtimeValue = param.defaultValue;
+		// }
 
 		return inst;
 	}
@@ -74,7 +74,7 @@ class AnimGraphInstance extends h3d.anim.Animation {
 			clonedParam.parameter = inst.parameterMap.getOrPut(nodeParam.parameter.name, {
 				var newParam = new hrt.animgraph.AnimGraph.Parameter();
 				@:privateAccess newParam.copyFromOther(nodeParam.parameter);
-				nodeParam.parameter.runtimeValue = nodeParam.parameter.defaultValue;
+				newParam.runtimeValue = nodeParam.parameter.defaultValue;
 				newParam;
 			});
 		}

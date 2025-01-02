@@ -101,6 +101,7 @@ class AnimGraph extends hrt.prefab.Prefab {
 				var copyParameter = new Parameter();
 				@:privateAccess copyParameter.copyFromDynamic(parameter);
 				unserializedParameters.push(copyParameter);
+				copyParameter.runtimeValue = copyParameter.defaultValue;
 			}
 		}
 

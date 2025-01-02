@@ -15,6 +15,7 @@ class AnimGraphEditor extends GenericGraphEditor {
     var previewAnimation : AnimGraphInstance = null;
 
     var previewNode : hrt.animgraph.nodes.AnimNode = null;
+    var queuedPreview : hrt.animgraph.nodes.AnimNode = null;
 
     override function reloadView() {
         previewNode = null;
@@ -66,12 +67,17 @@ class AnimGraphEditor extends GenericGraphEditor {
     }
 
     public function setPreview(newOutput: hrt.animgraph.nodes.AnimNode) {
+        queuedPreview = newOutput;
+    }
+
+    public function setPreviewInternal(newOutput: hrt.animgraph.nodes.AnimNode) {
         previewNode = newOutput;
 
         // refresh animation
         {
             if (previewModel == null)
                 return;
+
             var anim = animGraph.getAnimation(previewNode);
             previewModel.playAnimation(anim);
             previewAnimation = cast previewModel.currentAnimation;
@@ -79,9 +85,9 @@ class AnimGraphEditor extends GenericGraphEditor {
         }
 
         // copy runtime parameters
-        for (index => param in animGraph.parameters) {
-            animGraph.parameters[index].runtimeValue = param.runtimeValue;
-        }
+        // for (index => param in animGraph.parameters) {
+        //     previewAnimation.animGraph.parameters[index].runtimeValue = param.runtimeValue;
+        // }
         graphEditor.refreshPreviewButtons();
     }
 
@@ -139,8 +145,7 @@ class AnimGraphEditor extends GenericGraphEditor {
             var props = new Element("<ul>").appendTo(content);
             if (previewAnimation != null) {
                 var runtimeParam = previewAnimation.parameterMap.get(param.name);
-                var line = new Element("<li></li>").appendTo(props);
-                var slider = new Element('<li><dd>Preview</dd><input type="range" min="0.0" max="1.0" step="0.01" value="${param.runtimeValue}"></input></li>').appendTo(line).find("input");
+                var slider = new Element('<li><dd>Preview</dd><input type="range" min="0.0" max="1.0" step="0.01" value="${param.runtimeValue}"></input></li>').appendTo(props).find("input");
 
                 slider.on("input", (e) -> {
                     var value = Std.parseFloat(slider.val());
@@ -157,8 +162,22 @@ class AnimGraphEditor extends GenericGraphEditor {
                     }
                 });
 
-                var line = new Element("<li></li>").appendTo(props);
-                var def = new Element('<dd>Default</dd><input type="range" min="0.0" max="1.0" step="0.01" value="${param.runtimeValue}"></input>').appendTo(line).find("input");
+                var def = new Element('<li><dd>Default</dd><input type="range" min="0.0" max="1.0" step="0.01" value="${param.defaultValue}"></input></li>').appendTo(props).find("input");
+                var current = param.defaultValue;
+                def.change((e) -> {
+                    var newValue = Std.parseFloat(def.val());
+                    if (newValue != current) {
+                        var prev = current;
+                        var curr = newValue;
+                        var exec = function(isUndo: Bool) {
+                            var v = !isUndo ? curr : prev;
+                            def.val(v);
+                            param.defaultValue = v;
+                        }
+                        exec(false);
+                        undo.change(Custom(exec));
+                    }
+                });
             }
         }
     }
@@ -180,7 +199,7 @@ class AnimGraphEditor extends GenericGraphEditor {
         previewModel = scenePreview.loadModel("Ogre/Ogre_Kobold.fbx");
         scenePreview.s3d.addChild(previewModel);
 
-        setPreview(previewNode);
+        setPreview(cast animGraph.nodes.find((f) -> Std.downcast(f, hrt.animgraph.nodes.Output) != null));
     }
 
     override function getNodes() : Iterator<IGraphNode> {
@@ -301,6 +320,15 @@ class AnimGraphEditor extends GenericGraphEditor {
         inputNode.inputEdges[inputToId] = null;
 
         setPreview(previewNode);
+    }
+
+    override function onScenePreviewUpdate(dt:Float) {
+        super.onScenePreviewUpdate(dt);
+
+        if (queuedPreview != null) {
+            setPreviewInternal(queuedPreview);
+            queuedPreview = null;
+        }
     }
 
     function addParameter() {
