@@ -234,8 +234,10 @@ class Model extends FileView {
 			tex.hide();
 			matEl.hide();
 		}
-		if ( def )
-			def = false;
+		else {
+			def = true;
+		}
+
 		var matLibrary = new Element('
 			<div class="group" name="Material Library">
 				<dt>Library</dt>
@@ -320,7 +322,7 @@ class Model extends FileView {
 
 			function exec(undo : Bool) {
 				selectedLib = undo ? prevV : newV;
-				def = selectedLib == "";
+				def = selectedLib == "" || selectedLib == null;
 				updateLibSelect();
 				updateMatSelect();
 				updateBaseEdition();
