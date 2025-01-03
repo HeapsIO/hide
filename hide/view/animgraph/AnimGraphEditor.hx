@@ -79,10 +79,13 @@ class AnimGraphEditor extends GenericGraphEditor {
             refreshPamamList();
         }
 
-        // copy runtime parameters
-        // for (index => param in animGraph.parameters) {
-        //     previewAnimation.animGraph.parameters[index].runtimeValue = param.runtimeValue;
-        // }
+        //copy runtime parameters
+        for (index => param in animGraph.parameters) {
+            var animParam = @:privateAccess previewAnimation.parameterMap[param.name];
+            if (animParam != null) {
+                animParam.runtimeValue = param.runtimeValue;
+            }
+        }
         graphEditor.refreshPreviewButtons();
     }
 
