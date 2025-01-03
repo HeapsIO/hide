@@ -163,4 +163,33 @@ class Range extends Component {
 	public dynamic function onChange( tempChange : Bool ) {
 	}
 
+
+	/**
+		Automatically handle undo/redo, tracking automatically if a change is temporary or not.
+		get : a function that returns the current value you wanna change
+		set : a function that set the value you wanna change.
+	**/
+	public function setOnChangeUndo( undo: hide.ui.UndoHistory, get : () -> Float, set : (newValue: Float) -> Void) {
+		var save : Null<Float> = get();
+		onChange = (tempChange) -> {
+			if (!tempChange) {
+				var prev = save ?? get();
+				var curr = value;
+				function exec(isUndo) {
+					var newValue = !isUndo ? curr : prev;
+					value = newValue;
+					set(newValue);
+				}
+				exec(false);
+				undo.change(Custom(exec));
+				save = null;
+			}
+			else {
+				if (save == null) {
+					save = get();
+				}
+				set(value);
+			}
+		}
+	}
 }

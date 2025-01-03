@@ -4297,19 +4297,30 @@ graph-editor-root properties-container graph-parameters > ul graph-parameter con
   display: flex;
   flex-direction: column;
   list-style: none;
-  align-items: stretch;
   display: grid;
   column-gap: 10px;
+  row-gap: 1px;
   grid-template-columns: 2fr 5fr;
 }
 graph-editor-root properties-container graph-parameters > ul graph-parameter content > ul li {
   grid-column: 1 / -1;
   display: grid;
   grid-template-columns: subgrid;
+  align-items: center;
 }
 graph-editor-root properties-container graph-parameters > ul graph-parameter content > ul li dd {
   margin: 0;
   text-align: right;
+}
+graph-editor-root properties-container graph-parameters > ul graph-parameter content > ul li > .hide-range {
+  display: flex;
+}
+graph-editor-root properties-container graph-parameters > ul graph-parameter content > ul li > .hide-range input[type=range] {
+  flex-grow: 1;
+}
+graph-editor-root properties-container graph-parameters > ul graph-parameter content > ul li > .hide-range input[type=text] {
+  width: 0;
+  flex-basis: 44px;
 }
 graph-editor-root properties-container graph-parameters > ul graph-parameter.folded content {
   display: none;

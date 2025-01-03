@@ -5061,7 +5061,6 @@ graph-editor-root {
 					border: var(--basic-border);
 					border-radius: var(--basic-border-radius);
 
-
 					header {
 						display: flex;
 						align-items: center;
@@ -5089,20 +5088,32 @@ graph-editor-root {
 							display: flex;
 							flex-direction: column;
 							list-style: none;
-							align-items: stretch;
 
 							display: grid;
 							column-gap: 10px;
+							row-gap: 1px;
 							grid-template-columns: 2fr 5fr;
 
 							li {
 								grid-column: 1 / -1;
 								display: grid;
 								grid-template-columns: subgrid;
+								align-items: center;
 
 								dd {
 									margin: 0;
 									text-align: right;
+								}
+
+								>.hide-range {
+									display: flex;
+									input[type=range] {
+										flex-grow: 1;
+									}
+									input[type=text] {
+										width: 0;
+										flex-basis: 44px;
+									}
 								}
 							}
 						}

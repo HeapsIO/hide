@@ -33,11 +33,6 @@ class AnimGraphEditor extends GenericGraphEditor {
 
         refreshPamamList();
 
-        var testButton = new Element("<button>Test Bones</button>").appendTo(propertiesContainer);
-        testButton.click((_) -> {
-            setPreview(null);
-        });
-
         graphEditor.element.get(0).addEventListener("dragover", (e: js.html.DragEvent) -> {
             var paramIndex = Std.parseInt(e.dataTransfer.getData("index"));
             if (paramIndex != null)
@@ -144,40 +139,20 @@ class AnimGraphEditor extends GenericGraphEditor {
             var content = new Element("<content></content>").appendTo(paramElement);
             var props = new Element("<ul>").appendTo(content);
             if (previewAnimation != null) {
-                var runtimeParam = previewAnimation.parameterMap.get(param.name);
                 var slider = new Element('<li><dd>Preview</dd><input type="range" min="0.0" max="1.0" step="0.01" value="${param.runtimeValue}"></input></li>').appendTo(props).find("input");
+                var range = new hide.comp.Range(null,slider);
 
-                slider.on("input", (e) -> {
-                    var value = Std.parseFloat(slider.val());
-                    param.runtimeValue = value;
+                range.setOnChangeUndo(undo, () -> param.runtimeValue, (v:Float) -> {
+                    param.runtimeValue = v;
+                    var runtimeParam = previewAnimation.parameterMap.get(param.name);
                     if (runtimeParam != null) {
-                        runtimeParam.runtimeValue = value;
-                    }
-                });
-                slider.change((e) -> {
-                    var value = Std.parseFloat(slider.val());
-                    param.runtimeValue = value;
-                    if (runtimeParam != null) {
-                        runtimeParam.runtimeValue = value;
+                        runtimeParam.runtimeValue = param.runtimeValue;
                     }
                 });
 
                 var def = new Element('<li><dd>Default</dd><input type="range" min="0.0" max="1.0" step="0.01" value="${param.defaultValue}"></input></li>').appendTo(props).find("input");
-                var current = param.defaultValue;
-                def.change((e) -> {
-                    var newValue = Std.parseFloat(def.val());
-                    if (newValue != current) {
-                        var prev = current;
-                        var curr = newValue;
-                        var exec = function(isUndo: Bool) {
-                            var v = !isUndo ? curr : prev;
-                            def.val(v);
-                            param.defaultValue = v;
-                        }
-                        exec(false);
-                        undo.change(Custom(exec));
-                    }
-                });
+                var range = new hide.comp.Range(null,def);
+                range.setOnChangeUndo(undo, () -> param.defaultValue, (v:Float) -> param.defaultValue = v);
             }
         }
     }
