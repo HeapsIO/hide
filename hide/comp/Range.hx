@@ -64,6 +64,14 @@ class Range extends Component {
 			onChange(true);
 		});
 
+		inputView.keypress((e) -> {
+			e.stopPropagation(); // Prevent things like ctrl+Z from getting caught by hide while we are editting
+		});
+
+		inputView.keydown((e) -> {
+			e.stopPropagation(); // Prevent things like ctrl+Z from getting caught by hide while we are editting
+		});
+
 		inputView.keyup(function(e) {
 			if( e.keyCode == 13 || e.keyCode == 27 ) {
 				inputView.blur();
