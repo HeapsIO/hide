@@ -195,6 +195,7 @@ class DomkitViewer extends h2d.Object {
 	var evaluatedParams : Dynamic;
 	var loadedComponents : Array<domkit.Component<h2d.Object, h2d.Object>> = [];
 	var compHooks : Map<String,Array<Dynamic> -> h2d.Object -> h2d.Object> = [];
+	var definedClasses : Array<String> = [];
 
 	public function new( style : h2d.domkit.Style, res : hxd.res.Resource, ?parent ) {
 		super(parent);
@@ -336,14 +337,27 @@ class DomkitViewer extends h2d.Object {
 				p.verticalAlign = Top;
 				p.horizontalAlign = Middle;
 				p.paddingTop = 5;
+
+				for( c in definedClasses.copy() )
+					if( classes.indexOf(c) < 0 )
+						definedClasses.remove(c);
+
 				for( cl in classes ) {
 					var c = new h2d.CheckBox(checks);
 					c.dom = domkit.Properties.create("flow",c);
 					c.text = cl;
+					if( definedClasses.indexOf(cl) >= 0 )
+						c.selected = true;
 					c.onChange = function() {
 						obj.dom.toggleClass(cl, c.selected);
+						if( c.selected ) definedClasses.push(cl) else definedClasses.remove(cl);
+						if( Reflect.field(evaluatedParams,cl) != null )
+							rebuild();
 					};
 				}
+
+				for( c in definedClasses )
+					obj.dom.addClass(c);
 			}
 		}
 
@@ -378,7 +392,7 @@ class DomkitViewer extends h2d.Object {
 			var vparams : Dynamic = evalCode(eparams);
 			if( vparams != null ) {
 				for( f in Reflect.fields(vparams) )
-					interp.variables.set(f, Reflect.field(vparams,f));
+					interp.variables.set(f, definedClasses.indexOf(f) < 0 ? Reflect.field(vparams,f) : null);
 			}
 			comp = addRec(expr, parent, true);
 			interp = prev;
@@ -463,6 +477,7 @@ class DomkitViewer extends h2d.Object {
 					return null;
 			}
 			var c = domkit.Component.get(name, true);
+			var explicitParent = null;
 			// if we are top component, resolve our parent component
 			if( isRoot ) {
 				var parts = name.split(":");
@@ -471,6 +486,7 @@ class DomkitViewer extends h2d.Object {
 					name = parts[0];
 					c = domkit.Component.get(name, true);
 					parent = resolveComponent(parts[1]);
+					explicitParent = parent;
 					if( parent == null )
 						throw new domkit.Error("Unknown parent component "+parts[1], e.pmin + name.length, e.pmin + name.length + parts[1].length + 1);
 				}
@@ -556,14 +572,20 @@ class DomkitViewer extends h2d.Object {
 						addRec(c, obj, false);
 				};
 			}
-			var obj = compMake(c, args, parent.dom?.contentRoot);
-			var p = obj.dom;
+			var obj : Dynamic;
+			if( explicitParent != null && args.length == 0 ) {
+				// always create explicit parent component if specified (don't use class version)
+				obj = compMake(explicitParent, [], parent.dom?.contentRoot);
+				if( obj.dom != null ) obj.dom.component = c;
+			} else
+				obj = compMake(c, args, parent.dom?.contentRoot);
+			var p : domkit.Properties<Dynamic> = obj.dom;
 			if( p == null ) p = obj.dom = new domkit.Properties(obj, c);
 			p.initAttributes(attributes);
 			if( isRoot ) {
-				rootObject = cast p.obj;
+				rootObject = obj;
 				@:privateAccess c.createHook = null;
-				interp.variables.set("this", p.obj);
+				interp.variables.set("this", obj);
 			}
 			if( objId != null ) {
 				if( objIdArray ) {
@@ -637,7 +659,7 @@ class DomkitStyle extends h2d.domkit.Style {
 	}
 
 	override function loadData( r : hxd.res.Resource ) {
-		if( r.entry.extension != "domkit" )
+		if( r is CssResource || r.entry.extension != "domkit" )
 			return super.loadData(r);
 		var fullData = r.entry.getText();
 		var data = DomkitFile.parse(fullData);
