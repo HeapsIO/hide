@@ -4,10 +4,45 @@ package hrt.impl;
 #error "DomkitViewer requires --library hscript with -D hscriptPos"
 #end
 
-#if domkit
-import h2d.domkit.BaseComponents;
+#if (macro && domkit)
 
-typedef DomkitFileData = { css : String, params : String, dml : String };
+import haxe.macro.Expr;
+import haxe.macro.Context;
+
+class DomkitViewer {
+
+	public static function loadSource( path : String, pos : Position, fields : Array<Field> ) {
+		var fullPath = try Context.resolvePath(path+".domkit") catch( e : Dynamic ) return null;
+		if( fullPath == null )
+			return null;
+		var fullData = sys.io.File.getContent(fullPath);
+		var data = DomkitFile.parse(fullData);
+		var p = new domkit.MarkupParser();
+		var index = fullData.indexOf(data.dml);
+		try {
+			var m = p.parse(data.dml, fullPath, index);
+			switch( m.children[0].kind ) {
+			case Node(n) if( n.indexOf(":") >= 0 ): m.children[0].kind = Node(n.split(":")[0]);
+			default:
+			}
+			fields.push({
+				name : "__CSS",
+				access : [AStatic],
+				kind : FVar(null, macro hrt.impl.DomkitViewer.DomkitStyle.registerCSSSource($v{path})),
+				pos : pos,
+			});
+			return { dml : m, pos : Context.makePosition({ file : fullPath, min : index, max : index + data.dml.length }) };
+		} catch( e : domkit.Error ) {
+			Context.error(e.message, Context.makePosition({ file : fullPath, min : e.pmin, max : e.pmax }));
+			return null;
+		}
+	}
+
+}
+
+#elseif domkit
+
+import h2d.domkit.BaseComponents;
 
 class DomkitInterp extends hscript.Async.AsyncInterp {
 
@@ -80,7 +115,7 @@ class SourceComponent extends domkit.Component<h2d.Object, h2d.Object> {
 
 	function reload() {
 		var fullText = res.entry.getText();
-		var data = DomkitViewer.parse(fullText);
+		var data = DomkitFile.parse(fullText);
 		var p = new domkit.MarkupParser();
 		p.allowRawText = true;
 		var dml = p.parse(data.dml, res.entry.path, fullText.indexOf(data.dml));
@@ -271,33 +306,6 @@ class DomkitViewer extends h2d.Object {
 		return interp;
 	}
 
-	public static function parse( content : String ) : DomkitFileData {
-		var cssText = "";
-		var paramsText = "{}";
-
-		content = StringTools.trim(content);
-
-		if( StringTools.startsWith(content,"<css>") ) {
-			var pos = content.indexOf("</css>");
-			cssText = StringTools.trim(content.substr(5, pos - 6));
-			content = content.substr(pos + 6);
-			content = StringTools.trim(content);
-		}
-
-		if( StringTools.startsWith(content,"<params>") ) {
-			var pos = content.indexOf("</params>");
-			paramsText = StringTools.trim(content.substr(8, pos - 9));
-			content = content.substr(pos + 9);
-			content = StringTools.trim(content);
-		}
-
-		return {
-			css : cssText,
-			params : paramsText,
-			dml : content,
-		}
-	}
-
 	public static function toStr(data:DomkitFileData) {
 		var parts = ['<css>\n${data.css}\n</css>'];
 		if( data.params != '' && data.params != '{}' )
@@ -357,7 +365,7 @@ class DomkitViewer extends h2d.Object {
 
 	function createComponent( res : hxd.res.Resource, parent, args : Array<Dynamic> ) {
 		var fullText = res.entry.getText();
-		var data = parse(fullText);
+		var data = DomkitFile.parse(fullText);
 		var comp = null;
 		var prev = interp;
 		createRootArgs = args;
@@ -611,5 +619,72 @@ class DomkitViewer extends h2d.Object {
 		}
 		return comp;
 	}
+
 }
+
+
+class DomkitStyle extends h2d.domkit.Style {
+
+	public function new() {
+		super();
+	}
+
+	public function loadDefaults( globals : Array<hxd.res.Resource> ) {
+		for( r in globals )
+			load(r, true, true);
+		for( path in CSS_SOURCES )
+			load(hxd.res.Loader.currentInstance.load(path+".domkit"));
+	}
+
+	override function loadData( r : hxd.res.Resource ) {
+		if( r.entry.extension != "domkit" )
+			return super.loadData(r);
+		var fullData = r.entry.getText();
+		var data = DomkitFile.parse(fullData);
+		var cssIndex = fullData.indexOf(data.css);
+		var prefix = "\n";
+		while( prefix.length < cssIndex ) prefix += " ";
+		return prefix + data.css;
+	}
+
+	static var CSS_SOURCES = [];
+	public static function registerCSSSource( path : String ) {
+		CSS_SOURCES.push(path);
+		return true;
+	}
+}
+
 #end
+
+typedef DomkitFileData = { css : String, params : String, dml : String };
+
+class DomkitFile {
+
+	public static function parse( content : String ) : DomkitFileData {
+		var cssText = "";
+		var paramsText = "{}";
+
+		content = StringTools.trim(content);
+
+		if( StringTools.startsWith(content,"<css>") ) {
+			var pos = content.indexOf("</css>");
+			cssText = StringTools.trim(content.substr(5, pos - 6));
+			content = content.substr(pos + 6);
+			content = StringTools.trim(content);
+		}
+
+		if( StringTools.startsWith(content,"<params>") ) {
+			var pos = content.indexOf("</params>");
+			paramsText = StringTools.trim(content.substr(8, pos - 9));
+			content = content.substr(pos + 9);
+			content = StringTools.trim(content);
+		}
+
+		return {
+			css : cssText,
+			params : paramsText,
+			dml : content,
+		}
+	}
+
+}

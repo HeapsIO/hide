@@ -323,7 +323,7 @@ class DomkitChecker extends ScriptEditor.ScriptChecker {
 		for( d in dirs ) {
 			var path = d+"/"+name+".domkit";
 			var content = try sys.io.File.getContent(ide.getPath(path)) catch( e : Dynamic ) continue;
-			var data = hrt.impl.DomkitViewer.parse(content);
+			var data = hrt.impl.DomkitViewer.DomkitFile.parse(content);
 			var node = null, params = new Map();
 
 			var parser = new domkit.MarkupParser();

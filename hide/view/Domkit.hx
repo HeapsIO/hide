@@ -34,7 +34,7 @@ class Domkit extends FileView {
 		</div>');
 
 		var content = sys.io.File.getContent(getPath());
-		var data = hrt.impl.DomkitViewer.parse(content);
+		var data = hrt.impl.DomkitViewer.DomkitFile.parse(content);
 		prevSave = data;
 		dmlEditor = new hide.comp.DomkitEditor(config, DML, data.dml, element.find(".dmlEditor"));
 		cssEditor = new hide.comp.DomkitEditor(config, Less, data.css, dmlEditor.checker, element.find(".cssEditor"));
