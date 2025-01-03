@@ -104,6 +104,15 @@ class DomkitChecker extends ScriptEditor.ScriptChecker {
 		}
 	}
 
+	public function formatDML( code : String ) : String {
+		code = StringTools.trim(code);
+		code = [for( l in code.split("\n") ) StringTools.rtrim(l)].join("\n");
+		var parser = new domkit.MarkupParser();
+		parser.allowRawText = true;
+		var expr = parser.parse(code,"", 0);
+		return domkit.MarkupParser.markupToString(expr);
+	}
+
 	public function checkLess( cssCode : String ) {
 		var includes : Array<String> = config.get("less.includes", []);
 		var parser = new DomkitCssParser(this);
@@ -634,7 +643,7 @@ class DomkitChecker extends ScriptEditor.ScriptChecker {
 					checker.locals.set(n, prev);
 			}
 			default:
-				throw "assert";
+				domkitError("Invalid for block", e.pmin);
 			}
 		case Text(_):
 			// nothing

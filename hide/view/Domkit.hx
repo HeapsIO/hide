@@ -15,7 +15,10 @@ class Domkit extends FileView {
 			<div class="editors">
 				<div class="left panel">
 					<div class="editor dmlEditor top">
-						<span>DML</span>
+						<span>
+							DML
+							<input id="format" type="button" value="Format"/>
+						</span>
 					</div>
 					<div class="editor paramsEditor bot">
 						<span>Parameters</span>
@@ -80,6 +83,11 @@ class Domkit extends FileView {
 		}
 		defineGlobal("loadTile",[{ name : "path", t : "String" }],"h2d.Tile");
 
+
+		element.find("#format").click(function(_) {
+			var dml = dmlEditor.checker.formatDML(dmlEditor.code);
+			dmlEditor.setCode(dml);
+		});
 
 		// add a scene so the CssParser can resolve Tiles
 		var scene = element.find(".scene");
