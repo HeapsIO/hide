@@ -4916,7 +4916,9 @@ hide-popover {
 
 button-2 {
 	min-height: 16px;
+	min-width: 24px;
 	display: flex;
+	justify-content: stretch;
 	border: var(--basic-border);
 	border-radius: var(--basic-border-radius);
 	box-sizing: border-box;
@@ -5060,6 +5062,7 @@ graph-editor-root {
 
 					border: var(--basic-border);
 					border-radius: var(--basic-border-radius);
+					position: relative;
 
 					header {
 						display: flex;
@@ -5130,6 +5133,28 @@ graph-editor-root {
 					.ico-chevron-down {
 						transition: transform 0.25s;
 						transform: rotate(0deg);
+					}
+
+
+					&.hovertop:before, &.hoverbot:after {
+						display: block;
+						position: absolute;
+						z-index: 100;
+						margin: 0 auto;
+						width: 100%;
+						content: "";
+					}
+
+					&:before {
+						border-top: 10px solid rgba(114, 180, 255, 0.75);
+						top: 0px;
+						pointer-events: none;
+					}
+
+					&:after {
+						border-bottom: 10px solid rgba(114, 180, 255, 0.75);
+						bottom: 0px;
+						pointer-events: none;
 					}
 				}
 			}

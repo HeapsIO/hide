@@ -58,7 +58,8 @@ class AnimGraphEditor extends GenericGraphEditor {
     }
 
     public function refreshPreview() {
-        setPreview(previewNode);
+        if (previewNode != null)
+            setPreview(previewNode);
     }
 
     public function setPreview(newOutput: hrt.animgraph.nodes.AnimNode) {
@@ -94,9 +95,10 @@ class AnimGraphEditor extends GenericGraphEditor {
         for (paramIndex => param in animGraph.parameters) {
             var paramElement = new Element('<graph-parameter>
                 <header>
+                    <div class="reorder ico ico-reorder" draggable="true"></div>
                     <div class="ico ico-chevron-down toggle-open"></div>
                     <input type="text" value="${param.name}" class="fill"></input>
-                    <div class="reorder ico ico-reorder" draggable="true"></div>
+                    <button-2 class="menu"><div class="ico ico-ellipsis-v"/></button-2>
                 </header>
             </graph-parameter>').appendTo(parametersList);
 
@@ -125,6 +127,10 @@ class AnimGraphEditor extends GenericGraphEditor {
                 undo.change(Custom(exec));
             });
 
+            name.on("contextmenu", (e) -> {
+                e.stopPropagation();
+            });
+
             var toggleOpen = paramElement.find(".toggle-open");
             toggleOpen.on("click", (e) -> {
                 open = !open;
@@ -137,7 +143,46 @@ class AnimGraphEditor extends GenericGraphEditor {
                 e.dataTransfer.setDragImage(paramElement.get(0), Std.int(paramElement.width()), 0);
 
                 e.dataTransfer.setData("index", '${paramIndex}');
+                e.dataTransfer.dropEffect = "move";
+                trace("Dragstart", e.dataTransfer.getData("index"));
             }
+
+            inline function isAfter(e) {
+                return e.clientY > (paramElement.offset().top + paramElement.outerHeight() / 2.0);
+            }
+
+            paramElement.get(0).addEventListener("dragover", function(e : js.html.DragEvent) {
+                if (!e.dataTransfer.types.contains("index"))
+                    return;
+                var after = isAfter(e);
+                paramElement.toggleClass("hovertop", !after);
+                paramElement.toggleClass("hoverbot", after);
+                e.preventDefault();
+            });
+
+            paramElement.get(0).addEventListener("dragleave", function(e : js.html.DragEvent) {
+                if (!e.dataTransfer.types.contains("index"))
+                    return;
+                paramElement.toggleClass("hovertop", false);
+                paramElement.toggleClass("hoverbot", false);
+            });
+
+            paramElement.get(0).addEventListener("dragenter", function(e : js.html.DragEvent) {
+                if (!e.dataTransfer.types.contains("index"))
+                    return;
+                e.preventDefault();
+            });
+
+            paramElement.get(0).addEventListener("drop", function(e : js.html.DragEvent) {
+                var toMoveIndex = Std.parseInt(e.dataTransfer.getData("index"));
+                paramElement.toggleClass("hovertop", false);
+                paramElement.toggleClass("hoverbot", false);
+                if (paramIndex == null)
+                    return;
+                var after = isAfter(e);
+                execMoveParameterTo(toMoveIndex, paramIndex, after);
+            });
+
 
             var content = new Element("<content></content>").appendTo(paramElement);
             var props = new Element("<ul>").appendTo(content);
@@ -157,14 +202,68 @@ class AnimGraphEditor extends GenericGraphEditor {
                 var range = new hide.comp.Range(null,def);
                 range.setOnChangeUndo(undo, () -> param.defaultValue, (v:Float) -> param.defaultValue = v);
             }
+
+            paramElement.find("header").get(0).addEventListener("contextmenu", function (e : js.html.MouseEvent) {
+                e.preventDefault();
+                hide.comp.ContextMenu.createFromEvent(e, [
+                    {label: "Delete", click: () -> execRemoveParam(paramIndex)}
+                ]);
+            });
+
+            var menu = paramElement.find(".menu");
+            menu.on("click", (e) -> {
+                e.preventDefault();
+                hide.comp.ContextMenu.createDropdown(menu.get(0), [
+                    {label: "Delete", click: () -> execRemoveParam(paramIndex)}
+                ]);
+            });
         }
     }
+
+    function execRemoveParam(index: Int) {
+        var save = @:privateAccess animGraph.parameters[index].copyToDynamic({});
+        function exec(isUndo : Bool) {
+            if (!isUndo) {
+                animGraph.parameters.splice(index, 1);
+            } else {
+                var param = new hrt.animgraph.AnimGraph.Parameter();
+                @:privateAccess param.copyFromDynamic(save);
+                animGraph.parameters.insert(index, param);
+            }
+            refreshPamamList();
+        }
+        exec(false);
+        undo.change(Custom(exec));
+    }
+
+    function execMoveParameterTo(oldIndex: Int, newIndex: Int, after: Bool) {
+        if (!after) newIndex -= 1;
+		if (oldIndex == newIndex)
+			return;
+        if (newIndex < oldIndex) {
+            newIndex += 1;
+        }
+
+		function exec(isUndo: Bool) {
+            if (!isUndo) {
+                var param = animGraph.parameters.splice(oldIndex, 1)[0];
+                animGraph.parameters.insert(newIndex, param);
+            } else {
+                var param = animGraph.parameters.splice(newIndex, 1)[0];
+                animGraph.parameters.insert(oldIndex, param);
+            }
+            refreshPamamList();
+		}
+		exec(false);
+		undo.change(Custom(exec));
+	}
 
     override function getDefaultContent() : haxe.io.Bytes {
         @:privateAccess return haxe.io.Bytes.ofString(ide.toJSON(new hrt.animgraph.AnimGraph(null, null).serialize()));
     }
 
     override function save() {
+        js.Browser.document.activeElement.blur();
         var content = ide.toJSON(animGraph.save());
         currentSign = ide.makeSignature(content);
 		sys.io.File.saveContent(getPath(), content);
@@ -290,14 +389,14 @@ class AnimGraphEditor extends GenericGraphEditor {
         var inputNode = animGraph.getNodeByEditorId(edge.nodeToId);
         inputNode.inputEdges[edge.inputToId] = {target: animGraph.getNodeByEditorId(edge.nodeFromId), outputIndex: edge.outputFromId};
 
-        setPreview(previewNode);
+        refreshPreview();
     }
 
     override function removeEdge(nodeToId: Int, inputToId : Int) : Void {
         var inputNode = animGraph.getNodeByEditorId(nodeToId);
         inputNode.inputEdges[inputToId] = null;
 
-        setPreview(previewNode);
+        refreshPreview();
     }
 
     override function onScenePreviewUpdate(dt:Float) {

@@ -4156,7 +4156,9 @@ hide-popover hide-content {
 }
 button-2 {
   min-height: 16px;
+  min-width: 24px;
   display: flex;
+  justify-content: stretch;
   border: var(--basic-border);
   border-radius: var(--basic-border-radius);
   box-sizing: border-box;
@@ -4273,6 +4275,7 @@ graph-editor-root properties-container graph-parameters > ul graph-parameter {
   justify-items: stretch;
   border: var(--basic-border);
   border-radius: var(--basic-border-radius);
+  position: relative;
 }
 graph-editor-root properties-container graph-parameters > ul graph-parameter header {
   display: flex;
@@ -4331,6 +4334,25 @@ graph-editor-root properties-container graph-parameters > ul graph-parameter.fol
 graph-editor-root properties-container graph-parameters > ul graph-parameter .ico-chevron-down {
   transition: transform 0.25s;
   transform: rotate(0deg);
+}
+graph-editor-root properties-container graph-parameters > ul graph-parameter.hovertop:before,
+graph-editor-root properties-container graph-parameters > ul graph-parameter.hoverbot:after {
+  display: block;
+  position: absolute;
+  z-index: 100;
+  margin: 0 auto;
+  width: 100%;
+  content: "";
+}
+graph-editor-root properties-container graph-parameters > ul graph-parameter:before {
+  border-top: 10px solid rgba(114, 180, 255, 0.75);
+  top: 0px;
+  pointer-events: none;
+}
+graph-editor-root properties-container graph-parameters > ul graph-parameter:after {
+  border-bottom: 10px solid rgba(114, 180, 255, 0.75);
+  bottom: 0px;
+  pointer-events: none;
 }
 /** Blendspace2dEditor **/
 blend-space-2d-root {
