@@ -5,6 +5,7 @@ class FileSelect extends Component {
 	var extensions : Array<String>;
 	public var path(default, set) : String;
 	public var disabled(default, set) = false;
+	public var directory : Bool = false;
 
 	public function new(extensions,?parent,?root) {
 		if( root == null )
@@ -17,18 +18,17 @@ class FileSelect extends Component {
 			e.preventDefault();
 			if (disabled) return;
 			if( e.button == 0 ) {
-				if (extensions == null || extensions.length == 0) {
+				if (!directory) {
+					ide.chooseFile(extensions, function(path) {
+						this.path = path;
+						onChange();
+					}, false, path);
+				} else {
 					ide.chooseDirectory(function(path) {
 						this.path = path;
 						onChange();
-					}, false, false);
-					return;
+					}, false);
 				}
-
-				ide.chooseFile(extensions, function(path) {
-					this.path = path;
-					onChange();
-				}, false, path);
 			}
 		});
 
@@ -87,11 +87,19 @@ class FileSelect extends Component {
 	}
 
 	function pathIsValid( path : String ) : Bool {
-		return (
-			path != null
-			&& sys.FileSystem.exists(ide.getPath(path))
-			&& extensions.indexOf(path.split(".").pop().toLowerCase()) >= 0
-		);
+		if (!directory) {
+			return (
+				path != null
+				&& sys.FileSystem.exists(ide.getPath(path))
+				&& extensions.indexOf(path.split(".").pop().toLowerCase()) >= 0
+			);
+		} else {
+			return (
+				path != null
+				&& sys.FileSystem.exists(ide.getPath(path))
+				&& sys.FileSystem.isDirectory(path)
+			);
+		}
 	}
 
 
