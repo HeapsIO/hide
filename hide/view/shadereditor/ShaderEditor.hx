@@ -919,6 +919,10 @@ class ShaderEditor extends hide.view.FileView implements GraphInterface.IGraphEd
 		}
 	}
 
+	public function savePreviewSettings() {
+		saveDisplayState("previewSettings", haxe.Json.stringify(previewSettings));
+	}
+
 	public function revealParameter(id: Int) : Void {
 		var param = parametersList.find("#param_" + id);
 		parametersList.children().not(param).each((_, elt) -> toggleParameter(new JQuery(elt), false));
@@ -930,9 +934,7 @@ class ShaderEditor extends hide.view.FileView implements GraphInterface.IGraphEd
 		param.addClass("reveal");
 	}
 
-	public function savePreviewSettings() {
-		saveDisplayState("previewSettings", haxe.Json.stringify(previewSettings));
-	}
+
 
 	public function initMeshPreview() {
 		trace("Init mesh preview");

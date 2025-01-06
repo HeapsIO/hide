@@ -122,7 +122,9 @@ class GenericGraphEditor extends hide.view.FileView implements IGraphEditor {
         </div>').appendTo(previewContainer);
 		var menu = toolbar.find(".button2");
 
-
+        menu.get(0).onclick = (e: js.html.MouseEvent) -> {
+            hide.comp.ContextMenu.createDropdown(menu.get(0), getPreviewOptionsMenu());
+        }
     }
 
     public function previewFocusObject(obj: h3d.scene.Object) {
@@ -132,6 +134,10 @@ class GenericGraphEditor extends hide.view.FileView implements IGraphEditor {
 		var sp = bounds.toSphere();
 		previewCamController.set(sp.r * 3.0, Math.PI / 4, Math.PI * 5 / 13, sp.getCenter());
 	}
+
+    function getPreviewOptionsMenu() : Array<hide.comp.ContextMenu.MenuItem> {
+        return [];
+    }
 
     function onScenePreviewReady() {
         previewCamController = new hide.comp.Scene.PreviewCamController(scenePreview.s3d);

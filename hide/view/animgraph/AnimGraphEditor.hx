@@ -3,6 +3,12 @@ using Lambda;
 import hide.view.GraphInterface;
 import hrt.animgraph.*;
 
+class PreviewSettings {
+    public var modelPath: String = null;
+
+    public function new() {};
+}
+
 @:access(hrt.animgraph.AnimGraph)
 @:access(hrt.animgraph.AnimGraphInstance)
 @:access(hrt.animgraph.Node)
@@ -17,10 +23,36 @@ class AnimGraphEditor extends GenericGraphEditor {
     var previewNode : hrt.animgraph.nodes.AnimNode = null;
     var queuedPreview : hrt.animgraph.nodes.AnimNode = null;
 
+    var previewSettings : PreviewSettings = new PreviewSettings();
+
     override function reloadView() {
         previewNode = null;
         animGraph = cast hide.Ide.inst.loadPrefab(state.path, null,  true);
+
+        if (animGraph.animFolder == null) {
+            element.html("
+                <h1>Choose a folder containing the models to animate</h1>
+                <button-2></button-2>
+            ");
+
+            var button = new hide.comp.Button(null, element.find("button-2"), "Choose folder");
+            button.onClick = () -> {
+                ide.chooseDirectory((path) -> {
+                    if (path != null) {
+                        animGraph.animFolder = path;
+                        save();
+                        reloadView();
+                    }
+                });
+            }
+
+            return;
+        }
+
         super.reloadView();
+        loadPreviewSettings();
+
+
 
         var parameters = new Element("<graph-parameters></graph-parameters>").appendTo(propertiesContainer);
         new Element("<h1>Parameters</h1>").appendTo(parameters);
@@ -55,6 +87,55 @@ class AnimGraphEditor extends GenericGraphEditor {
 			graphEditor.opBox(inst, true, graphEditor.currentUndoBuffer);
 			graphEditor.commitUndo();
         });
+    }
+
+    function gatherAllPreviewModels() : Array<String> {
+        var paths = [];
+
+        function rec(dirPath: String) {
+            var files = sys.FileSystem.readDirectory(ide.getPath(dirPath));
+            for (path in files) {
+                if (sys.FileSystem.isDirectory(path)) {
+                    rec(dirPath + "/" + path);
+                } else {
+                    var filename = path.split("/").pop();
+                    var ext = filename.split(".").pop();
+
+                    if (ext == "prefab") {
+                        paths.push(dirPath + "/" + path);
+                    }
+                    if (ext == "fbx" && !StringTools.startsWith(filename, "Anim_")) {
+                        paths.push(dirPath + "/" + path);
+                    }
+                }
+            }
+        }
+
+        rec(animGraph.animFolder);
+        return paths;
+    }
+
+    override function getPreviewOptionsMenu() : Array<hide.comp.ContextMenu.MenuItem> {
+        var options = super.getPreviewOptionsMenu();
+
+        var models : Array<hide.comp.ContextMenu.MenuItem> = [];
+        var paths = gatherAllPreviewModels();
+        for (path in paths) {
+            var basePath = StringTools.replace(path, animGraph.animFolder + "/", "");
+            models.push({label: basePath, click: () -> {
+                previewSettings.modelPath = path;
+                savePreviewSettings();
+                reloadPreviewModel();
+            }});
+        }
+
+        options.push({label: "Set Model", menu: models});
+        return options;
+    }
+
+    public function setPreviewMesh(path: String) {
+
+        savePreviewSettings();
     }
 
     public function refreshPreview() {
@@ -273,11 +354,34 @@ class AnimGraphEditor extends GenericGraphEditor {
     override function onScenePreviewReady() {
         super.onScenePreviewReady();
 
-        previewModel = scenePreview.loadModel("Ogre/Ogre_Kobold.fbx");
-        scenePreview.s3d.addChild(previewModel);
+        reloadPreviewModel();
+    }
 
-        setPreview(cast animGraph.nodes.find((f) -> Std.downcast(f, hrt.animgraph.nodes.Output) != null));
-        resetPreviewCamera();
+    function reloadPreviewModel() {
+        if (previewModel != null) {
+            previewModel.remove();
+            previewModel = null;
+        }
+
+        if (previewSettings.modelPath == null)
+            return;
+        try {
+            if (StringTools.endsWith(previewSettings.modelPath, ".prefab")) {
+                throw "todo prefab loading";
+            } else if (StringTools.endsWith(previewSettings.modelPath, ".fbx")) {
+                previewModel =  scenePreview.loadModel(previewSettings.modelPath);
+                scenePreview.s3d.addChild(previewModel);
+                setPreview(cast animGraph.nodes.find((f) -> Std.downcast(f, hrt.animgraph.nodes.Output) != null));
+                resetPreviewCamera();
+            }
+            else {
+                throw "Unsupported model format";
+            }
+        } catch (e) {
+            previewSettings.modelPath = null;
+            ide.quickError("Couldn't load preview : " + e);
+            savePreviewSettings();
+        }
     }
 
     override function getNodes() : Iterator<IGraphNode> {
@@ -412,6 +516,21 @@ class AnimGraphEditor extends GenericGraphEditor {
     function resetPreviewCamera() {
         previewFocusObject(previewModel);
     }
+
+    public function loadPreviewSettings() {
+		var save = haxe.Json.parse(getDisplayState("previewSettings") ?? "{}");
+		previewSettings = new PreviewSettings();
+		for (f in Reflect.fields(previewSettings)) {
+			var v = Reflect.field(save, f);
+			if (v != null) {
+				Reflect.setField(previewSettings, f, v);
+			}
+		}
+	}
+
+	public function savePreviewSettings() {
+		saveDisplayState("previewSettings", haxe.Json.stringify(previewSettings));
+	}
 
     function addParameter() {
         var newParam = new hrt.animgraph.AnimGraph.Parameter();

@@ -19,6 +19,8 @@ typedef SerializedEdge = {
 @:access(hrt.animgraph.AnimGraphInstance)
 class AnimGraph extends hrt.prefab.Prefab {
 
+	@:s var animFolder : String; // The folder to use as a base for the animation selection/loading
+
 	var nodes: Array<Node> = [];
 	var parameters : Array<Parameter> = [];
 

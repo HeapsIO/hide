@@ -18,9 +18,16 @@ class Button extends hide.comp.Component {
 		return label;
 	}
 
-	public function new(parent: hide.Element = null, ?label: String, ?options: Options) {
+	public function new(parent: hide.Element = null, element: hide.Element = null, ?label: String, ?options: Options) {
 		options ??= {};
-		super(parent, new Element("<button-2></button-2>"));
+		if (element != null) {
+			if (element.get(0).nodeName != "BUTTON-2")
+				throw "button to wrap must be a <button-2> element";
+		} else {
+			element = new Element("<button-2></button-2>");
+		}
+
+		super(parent, element);
 		labelElem = new Element("<value></value>").appendTo(element);
 
 		this.label = label;
