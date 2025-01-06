@@ -25,6 +25,8 @@ class Scene extends hide.comp.Component implements h3d.IDrawable {
 	public var editor : hide.comp.SceneEditor;
 	public var autoDisposeOutOfDocument : Bool = true;
 
+	var currentRenderProps: hrt.prefab.Prefab;
+
 	public var errorMessageBox : Element;
 	var unFocusedTime = 0.;
 
@@ -551,6 +553,34 @@ class Scene extends hide.comp.Component implements h3d.IDrawable {
 
 		s3d.render(e);
 		s2d.render(e);
+	}
+
+	public function setRenderProps(path: String) {
+		var pbrRenderer = Std.downcast(s3d.renderer, h3d.scene.pbr.Renderer);
+		if ( pbrRenderer != null ) {
+			pbrRenderer.env = h3d.scene.pbr.Environment.getDefault();
+		}
+
+		if (currentRenderProps != null) {
+			currentRenderProps.shared.root3d.remove();
+			currentRenderProps.dispose();
+		}
+		currentRenderProps = null;
+
+		if (path == null)
+			return;
+		try {
+			currentRenderProps = Ide.inst.loadPrefab(path);
+		} catch(e) {
+			return;
+		}
+		var ctx = new hide.prefab.ContextShared(null, new h3d.scene.Object(s3d));
+		ctx.scene = this;
+		currentRenderProps.setSharedRec(ctx);
+		currentRenderProps.make();
+		var renderProps = currentRenderProps.getOpt(hrt.prefab.RenderProps, true);
+		if (renderProps != null)
+			renderProps.applyProps(s3d.renderer);
 	}
 
 	public dynamic function onUpdate(dt:Float) {

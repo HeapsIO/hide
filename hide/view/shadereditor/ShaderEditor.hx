@@ -1174,33 +1174,7 @@ class ShaderEditor extends hide.view.FileView implements GraphInterface.IGraphEd
 	}
 
 	public function refreshRenderProps() {
-		var pbrRenderer = Std.downcast(meshPreviewScene.s3d.renderer, h3d.scene.pbr.Renderer);
-		if ( pbrRenderer != null ) {
-			pbrRenderer.env = h3d.scene.pbr.Environment.getDefault();
-		}
-
-		if (meshPreviewRenderProps != null) {
-			meshPreviewRenderProps.dispose();
-		}
-
-		if (meshPreviewRenderPropsRoot != null) {
-			meshPreviewRenderPropsRoot.remove();
-		}
-		meshPreviewRenderPropsRoot = new h3d.scene.Object(meshPreviewScene.s3d);
-		if (previewSettings.renderPropsPath == null)
-			return;
-		try {
-			meshPreviewRenderProps = Ide.inst.loadPrefab(previewSettings.renderPropsPath);
-		} catch(e) {
-			return;
-		}
-		var ctx = new hide.prefab.ContextShared(null, meshPreviewRenderPropsRoot);
-		ctx.scene = meshPreviewScene;
-		meshPreviewRenderProps.setSharedRec(ctx);
-		meshPreviewRenderProps.make();
-		var renderProps = meshPreviewRenderProps.getOpt(hrt.prefab.RenderProps, true);
-		if (renderProps != null)
-			renderProps.applyProps(meshPreviewScene.s3d.renderer);
+		meshPreviewScene.setRenderProps(previewSettings.renderPropsPath);
 	}
 
 	public function dispose() {
