@@ -126,6 +126,13 @@ implements hide.view.GraphInterface.IGraphNode
 			inputs: [for (input in getInputs()) {
 				name: input.name,
 				color: getTypeColor(input.type),
+				defaultParam: input.type != TFloat ? null : {
+					get : () -> Std.string(Reflect.getProperty(this, input.name)),
+					set : (v: String) -> {
+						Reflect.setProperty(this, input.name, Std.parseFloat(v));
+						getAnimEditor().refreshPreview();
+					},
+				},
 			}],
 			outputs: [for (output in getOutputs()) {
 				name: getOutputNameOverride(output.name),

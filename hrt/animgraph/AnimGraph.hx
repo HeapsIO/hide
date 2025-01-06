@@ -77,9 +77,24 @@ class AnimGraph extends hrt.prefab.Prefab {
 				});
 			}
 
+			// Serialize unconected node inputs values (that can be changed in the editor)
+			for (i => inputInfo in node.getInputs()) {
+				if (node.inputEdges[i] != null)
+					continue;
+				var inputValue = Reflect.getProperty(node, inputInfo.name);
+				if (inputValue == inputInfo.def)
+					continue;
+				if (inputInfo.type == TFloat) {
+					Reflect.setField(nodeSer, inputInfo.name, inputValue);
+				}
+			}
+
 			var param = Std.downcast(node, hrt.animgraph.nodes.FloatParameter);
 			if (param != null) {
 				nodeSer.parameter = parametersIdMapping.get(param.parameter);
+				if (nodeSer.parameter == null) {
+					throw "save impossible";
+				}
 			}
 		}
 
@@ -114,6 +129,13 @@ class AnimGraph extends hrt.prefab.Prefab {
 					var node = Node.createFromDynamic(nodeData);
 					node.id = nodeIdCount++;
 					unserializedNodes.push(node);
+
+					for (inputInfo in node.getInputs()) {
+						var val = Reflect.getProperty(nodeData, inputInfo.name);
+						if (val != null) {
+							Reflect.setProperty(node, inputInfo.name, val);
+						}
+					}
 
 					var param = Std.downcast(node, hrt.animgraph.nodes.FloatParameter);
 					if (param != null) {

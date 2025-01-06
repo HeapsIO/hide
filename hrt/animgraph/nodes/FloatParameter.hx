@@ -13,6 +13,6 @@ class FloatParameter extends Node {
 	}
 
 	override function getOutputNameOverride(name: String) : String {
-		return parameter.name;
+		return parameter?.name ?? "undefined";
 	}
 }
