@@ -3472,6 +3472,12 @@ div.gradient-box {
   height: 20px;
   border-bottom: solid #000000 1px;
 }
+.settings .settings-header .search-bar {
+  margin: 2px 5px 0px 0px;
+  float: right;
+  width: 15%;
+  height: 16px;
+}
 .settings .settings-body {
   width: 100%;
   height: 100%;
@@ -3480,7 +3486,7 @@ div.gradient-box {
 .settings .settings-body .categories {
   width: 20%;
   height: 100%;
-  padding-top: 10px;
+  padding-top: 5px;
   border-right: solid #000000 1px;
 }
 .settings .settings-body .categories p {
@@ -3490,22 +3496,26 @@ div.gradient-box {
 .settings .settings-body .categories p:hover {
   background-color: #4d4d4d;
 }
+.settings .settings-body .categories .selected {
+  background-color: #2c5d87 !important;
+}
 .settings .settings-body .content {
   height: 100%;
   width: 100%;
-  padding: 5px 15px 15px 15px;
+  padding: 0px 15px 15px 10px;
 }
 .settings .settings-body .content h1 {
   margin-top: 0;
+  margin-bottom: 0;
 }
 .settings .settings-body .content dl {
+  display: flex;
   overflow-x: hidden;
   margin: 0px;
 }
 .settings .settings-body .content dd,
 .settings .settings-body .content dt {
   vertical-align: middle;
-  display: inline-block;
   text-wrap: wrap;
   word-break: break-word;
   margin-top: 4px;
@@ -3521,6 +3531,86 @@ div.gradient-box {
   user-select: none;
   text-transform: capitalize;
   font-weight: normal;
+}
+.settings .settings-body .content dd {
+  flex-grow: 1;
+}
+.project-settings {
+  width: 100%;
+  height: 100%;
+}
+.project-settings h1 {
+  margin: 5px 5px 5px 10px;
+}
+.project-settings .body {
+  width: 100%;
+  height: 100%;
+  display: flex;
+}
+.project-settings .body .left-panel {
+  flex: 0.5;
+  padding: 10px;
+}
+.project-settings .body .left-panel .filter-container {
+  display: flex;
+  margin-bottom: 10px;
+}
+.project-settings .body .left-panel .filter-container p {
+  margin: 0 5px 0 0;
+}
+.project-settings .body .left-panel .filter-container .filter {
+  flex: 1;
+}
+.project-settings .body .right-panel {
+  flex: 1;
+  padding: 10px;
+}
+.project-settings .body .array .rows {
+  min-height: 20px;
+  width: 100%;
+  background: #3f3f3f;
+  border-radius: 2px 2px 0px 2px;
+}
+.project-settings .body .array .rows .row {
+  display: flex;
+  flex-direction: row;
+  width: 100%;
+}
+.project-settings .body .array .rows .row .ico {
+  margin-left: 5px;
+  margin-right: 5px;
+  align-self: center;
+}
+.project-settings .body .array .rows .row input {
+  flex: 1;
+  border: 1px solid #666;
+  border-radius: 5px;
+  box-sizing: border-box;
+  margin: 2px;
+}
+.project-settings .body .array .rows .row:hover {
+  background: #5a5a5a;
+}
+.project-settings .body .array .rows .row.selected {
+  background: #2c5d87;
+}
+.project-settings .body .array .rows .row.filtered {
+  display: none;
+}
+.project-settings .body .array .buttons {
+  float: right;
+  padding: 5px 10px 5px 10px;
+  border-radius: 0px 0px 2px 2px;
+  background: #3f3f3f;
+}
+.project-settings .body .array .buttons .add-btn {
+  margin-right: 10px;
+}
+.project-settings .body .array .buttons div {
+  cursor: pointer;
+}
+.project-settings .body .array .buttons div:hover {
+  color: #e6e6e6;
 }
 .lods .lods-line {
   display: flex;

@@ -15,6 +15,14 @@ class FileSelect extends Component {
 		root.mousedown(function(e) {
 			e.preventDefault();
 			if( e.button == 0 ) {
+				if (extensions == null || extensions.length == 0) {
+					ide.chooseDirectory(function(path) {
+						this.path = path;
+						onChange();
+					}, false, false);
+					return;
+				}
+
 				ide.chooseFile(extensions, function(path) {
 					this.path = path;
 					onChange();

@@ -4052,6 +4052,13 @@ div.gradient-box {
 		width: 100%;
 		height: 20px;
 		border-bottom: solid #000000 1px;
+
+		.search-bar {
+			margin: 2px 5px 0px 0px;
+			float: right;
+			width: 15%;
+			height: 16px;
+		}
 	}
 
 	.settings-body {
@@ -4062,7 +4069,7 @@ div.gradient-box {
 		.categories {
 			width: 20%;
 			height: 100%;
-			padding-top: 10px;
+			padding-top: 5px;
 			border-right: solid #000000 1px;
 
 			p {
@@ -4073,25 +4080,30 @@ div.gradient-box {
 			p:hover {
 				background-color: #4d4d4d;
 			}
+
+			.selected {
+				background-color: @color-highlight !important;
+			}
 		}
 
 		.content {
 			height: 100%;
 			width: 100%;
-			padding: 5px 15px 15px 15px;
+			padding: 0px 15px 15px 10px;
 
 			h1 {
 				margin-top: 0;
+				margin-bottom: 0;
 			}
 
 			dl {
+				display:flex;
 				overflow-x:hidden;
 				margin:0px;
 			}
 
 			dd, dt {
 				vertical-align:middle;
-				display:inline-block;
 				text-wrap: wrap;
 				word-break: break-word;
 				margin-top:4px;
@@ -4108,6 +4120,108 @@ div.gradient-box {
 				user-select:none;
 				text-transform: capitalize;
 				font-weight: normal;
+			}
+
+			dd {
+				flex-grow: 1;
+			}
+		}
+	}
+}
+
+.project-settings {
+	width: 100%;
+	height: 100%;
+
+	h1 {
+		margin: 5px 5px 5px 10px;
+	}
+
+	.body {
+		width: 100%;
+		height:100%;
+		display: flex;
+
+		.left-panel {
+			flex: 0.5;
+			padding: 10px;
+
+			.filter-container {
+				display: flex;
+				margin-bottom: 10px;
+
+				p {
+					margin: 0 5px 0 0;
+				}
+
+				.filter {
+					flex : 1;
+				}
+			}
+		}
+
+		.right-panel {
+			flex: 1;
+			padding: 10px;
+		}
+
+		.array {
+			.rows {
+				min-height: 20px;
+				width: 100%;
+				background: #3f3f3f;
+				border-radius: 2px 2px 0px 2px;
+
+				.row {
+					display: flex;
+					flex-direction: row;
+					width: 100%;
+
+					.ico {
+						margin-left: 5px;
+						margin-right: 5px;
+						align-self : center;
+					}
+
+					input {
+						flex: 1;
+						border: 1px solid #666;
+						border-radius: 5px;
+						box-sizing: border-box;
+						margin: 2px;
+					}
+
+					&:hover {
+						background: #5a5a5a;
+					}
+
+					&.selected {
+						background: @color-highlight;
+					}
+
+					&.filtered {
+						display: none;
+					}
+				}
+			}
+
+			.buttons {
+				float: right;
+				padding: 5px 10px 5px 10px;
+				border-radius: 0px 0px 2px 2px;
+				background: #3f3f3f;
+
+				.add-btn {
+					margin-right: 10px;
+				}
+
+				div {
+					cursor: pointer;
+				}
+
+				div:hover {
+					color: #e6e6e6;
+				}
 			}
 		}
 	}
