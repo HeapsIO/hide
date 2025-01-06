@@ -68,13 +68,6 @@ class AnimGraphInstance extends h3d.anim.Animation {
 	static function cloneRec(node: hrt.animgraph.Node, inst: AnimGraphInstance) : hrt.animgraph.Node {
 		var cloned = hrt.animgraph.Node.createFromDynamic(node.serializeToDynamic());
 
-		for (inputInfo in node.getInputs()) {
-			var val = Reflect.getProperty(node, inputInfo.name);
-			if (val != null) {
-				Reflect.setProperty(cloned, inputInfo.name, val);
-			}
-		}
-
 		var clonedParam = Std.downcast(cloned, hrt.animgraph.nodes.FloatParameter);
 		if (clonedParam != null) {
 			var nodeParam : hrt.animgraph.nodes.FloatParameter = cast node;

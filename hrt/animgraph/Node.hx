@@ -60,6 +60,19 @@ implements hide.view.GraphInterface.IGraphNode
 		};
 
 		copyToDynamic(data);
+
+		// Serialize unconected node inputs values (that can be changed in the editor)
+		for (i => inputInfo in getInputs()) {
+			if (inputEdges[i] != null)
+				continue;
+			var inputValue = Reflect.getProperty(this, inputInfo.name);
+			if (inputValue == inputInfo.def)
+				continue;
+			if (inputInfo.type == TFloat) {
+				Reflect.setField(data, inputInfo.name, inputValue);
+			}
+		}
+
 		return data;
 	}
 
@@ -71,6 +84,14 @@ implements hide.view.GraphInterface.IGraphNode
 			throw 'Could\'t not create node form type ${data.type}';
 		}
 		inst.copyFromDynamic(data);
+
+		for (inputInfo in inst.getInputs()) {
+			var val = Reflect.getProperty(data, inputInfo.name);
+			if (val != null) {
+				Reflect.setProperty(inst, inputInfo.name, val);
+			}
+		}
+
 		return inst;
 	}
 
