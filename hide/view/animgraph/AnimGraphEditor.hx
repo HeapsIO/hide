@@ -277,6 +277,7 @@ class AnimGraphEditor extends GenericGraphEditor {
         scenePreview.s3d.addChild(previewModel);
 
         setPreview(cast animGraph.nodes.find((f) -> Std.downcast(f, hrt.animgraph.nodes.Output) != null));
+        resetPreviewCamera();
     }
 
     override function getNodes() : Iterator<IGraphNode> {
@@ -406,6 +407,10 @@ class AnimGraphEditor extends GenericGraphEditor {
             setPreviewInternal(queuedPreview);
             queuedPreview = null;
         }
+    }
+
+    function resetPreviewCamera() {
+        previewFocusObject(previewModel);
     }
 
     function addParameter() {

@@ -125,6 +125,14 @@ class GenericGraphEditor extends hide.view.FileView implements IGraphEditor {
 
     }
 
+    public function previewFocusObject(obj: h3d.scene.Object) {
+        if (previewCamController == null)
+            return;
+		var bounds = obj.getBounds();
+		var sp = bounds.toSphere();
+		previewCamController.set(sp.r * 3.0, Math.PI / 4, Math.PI * 5 / 13, sp.getCenter());
+	}
+
     function onScenePreviewReady() {
         previewCamController = new hide.comp.Scene.PreviewCamController(scenePreview.s3d);
     }
