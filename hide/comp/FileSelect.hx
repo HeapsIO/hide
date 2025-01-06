@@ -4,6 +4,7 @@ class FileSelect extends Component {
 
 	var extensions : Array<String>;
 	public var path(default, set) : String;
+	public var disabled(default, set) = false;
 
 	public function new(extensions,?parent,?root) {
 		if( root == null )
@@ -14,6 +15,7 @@ class FileSelect extends Component {
 		path = null;
 		root.mousedown(function(e) {
 			e.preventDefault();
+			if (disabled) return;
 			if( e.button == 0 ) {
 				if (extensions == null || extensions.length == 0) {
 					ide.chooseDirectory(function(path) {
@@ -34,10 +36,10 @@ class FileSelect extends Component {
 			e.preventDefault();
 			var fpath = getFullPath();
 			ContextMenu.createFromEvent(cast e, [				{ label : "View", enabled : fpath != null, click : function() onView() },
-				{ label : "Clear", enabled : path != null, click : function() { path = null; onChange(); } },
+				{ label : "Clear", enabled : path != null && !disabled, click : function() { path = null; onChange(); } },
 				{ label : "Copy Path", enabled : path != null, click : function() ide.setClipboard(path) },
 				{ label : "Copy Absolute Path", enabled : fpath != null, click : function() { ide.setClipboard(fpath); } },
-				{ label : "Paste Path", click : function() {
+				{ label : "Paste Path", enabled: !disabled, click : function() {
 					path = ide.getClipboard();
 					onChange();
 				}},
@@ -107,6 +109,11 @@ class FileSelect extends Component {
 		element.val(text);
 		element.attr("title", p == null ? "" : p);
 		return this.path = p;
+	}
+
+	function set_disabled(disabled : Bool) {
+		element.toggleClass("disabled", disabled);
+		return this.disabled = disabled;
 	}
 
 	public dynamic function onChange() {

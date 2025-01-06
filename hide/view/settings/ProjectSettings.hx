@@ -66,6 +66,15 @@ class ProjectSettings extends hide.ui.View<{}> {
 			</div>
 		</div>').appendTo(element.find(".left-panel"));
 
+		function absToRelPath(absPath : String) {
+			if (absPath == null)
+				return "";
+			var relPath = absPath.substr(absPath.indexOf(ide.resourceDir) + ide.resourceDir.length + 1);
+			if (relPath == "")
+				return "[ROOT]";
+			return relPath;
+		}
+
 		function updateOverrides() {
 			var rows = overridesEl.find(".rows");
 			rows.empty();
@@ -91,7 +100,9 @@ class ProjectSettings extends hide.ui.View<{}> {
 				});
 
 				var fileSelect = new hide.comp.FileSelect(null, row, null);
+				fileSelect.disabled = true;
 				fileSelect.path = s.folder;
+				fileSelect.element.val(absToRelPath(haxe.io.Path.normalize(fileSelect.path)));
 			}
 		}
 
@@ -130,22 +141,14 @@ class ProjectSettings extends hide.ui.View<{}> {
 	}
 
 	function inspect(s : LocalSetting) {
-		element.find(".right-panel").empty();
+		var rightPanel = element.find(".right-panel");
+		rightPanel.empty();
 
 		var obj = s.content;
 
 		function onChange(file : String, oldObj : Dynamic, newObj : Dynamic) {
 			sys.io.File.saveContent(file, haxe.Json.stringify(newObj, '\t'));
 			inspect(s);
-
-			undo.change(Custom(function(undo) {
-				// TODO
-				// var o = oldObj;
-				// var n = newObj;
-				// obj = undo ? o : n;
-				// sys.io.File.saveContent(settings[0].file, haxe.Json.stringify(obj, '\t'));
-				// onDisplay();
-			}));
 		}
 
 		// Material library
@@ -159,7 +162,7 @@ class ProjectSettings extends hide.ui.View<{}> {
 					<div class="remove-btn icon ico ico-minus"></div>
 				</div>
 			</div>
-		</div>').appendTo(element.find(".right-panel"));
+		</div>').appendTo(rightPanel);
 
 		if (matLibs != null) {
 			for (ml in matLibs) {
@@ -228,7 +231,7 @@ class ProjectSettings extends hide.ui.View<{}> {
 					<div class="remove-btn icon ico ico-minus"></div>
 				</div>
 			</div>
-		</div>').appendTo(element.find(".right-panel"));
+		</div>').appendTo(rightPanel);
 
 		renderPropsEl.find(".add-btn").click(function(e) {
 			if (renderProps == null) {

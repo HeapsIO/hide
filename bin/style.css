@@ -306,6 +306,9 @@ textarea:hover,
 input.file {
   cursor: pointer;
 }
+input.file.disabled {
+  cursor: default;
+}
 input.file.dragover {
   border-color: white;
   background-color: #141414;
@@ -3567,6 +3570,8 @@ div.gradient-box {
 }
 .project-settings .body .array .rows {
   min-height: 20px;
+  max-height: 750px;
+  overflow-y: scroll;
   width: 100%;
   background: #3f3f3f;
   border-radius: 2px 2px 0px 2px;

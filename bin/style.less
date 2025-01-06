@@ -332,6 +332,11 @@ select, input, textarea, .hide-dropdown >.dropdown-cont {
 
 input.file {
 	cursor : pointer;
+
+	&.disabled {
+		cursor : default;
+	}
+
 	&.dragover {
 		border-color : white;
 		background-color : rgb(20,20,20);
@@ -4168,6 +4173,8 @@ div.gradient-box {
 		.array {
 			.rows {
 				min-height: 20px;
+				max-height: 750px;
+				overflow-y: scroll;
 				width: 100%;
 				background: #3f3f3f;
 				border-radius: 2px 2px 0px 2px;
