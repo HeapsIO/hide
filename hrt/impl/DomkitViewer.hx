@@ -11,6 +11,27 @@ import haxe.macro.Context;
 
 class DomkitViewer {
 
+	static function codeCodains( code : haxe.macro.Expr, dynParams : Map<String,Bool> ) {
+		return switch( code.expr ) {
+		case EConst(CIdent(v)) if( dynParams.exists(v) ): true;
+		default: false;
+		}
+	}
+
+	static function removeDynParamsRec( m : domkit.MarkupParser.Markup, dynParams : Map<String,Bool> ) {
+		if( m.attributes != null ) {
+			for( a in m.attributes )
+				switch( a.value ) {
+				case Code(code) if( codeCodains(code,dynParams) ):
+					m.attributes.remove(a);
+				default:
+				}
+		}
+		if( m.children != null )
+			for( c in m.children )
+				removeDynParamsRec(c, dynParams);
+	}
+
 	public static function loadSource( path : String, pos : Position, fields : Array<Field> ) {
 		var fullPath = try Context.resolvePath(path+".domkit") catch( e : Dynamic ) return null;
 		if( fullPath == null )
@@ -25,6 +46,30 @@ class DomkitViewer {
 			case Node(n) if( n.indexOf(":") >= 0 ): m.children[0].kind = Node(n.split(":")[0]);
 			default:
 			}
+			var params = new hscript.Parser().parseString(data.params);
+			var dynParams = new Map();
+			var hasDynParam = false;
+			switch( params.e ) {
+			case EObject(fields):
+				for( f in fields )
+					if( f.name == "dynamicParams" ) {
+						switch( f.e.e ) {
+						case EArrayDecl(values):
+							for( v in values )
+								switch( v.e ) {
+								case EConst(CString(v)):
+									dynParams.set(v, true);
+									hasDynParam = true;
+								default:
+								}
+						default:
+						}
+					}
+			default:
+			}
+			if( hasDynParam )
+				removeDynParamsRec(m, dynParams);
+
 			fields.push({
 				name : "__CSS",
 				access : [AStatic],
