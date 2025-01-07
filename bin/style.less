@@ -3785,6 +3785,17 @@ div.gradient-box {
 	height: 100%;
 	display: flex;
 
+	.ico {
+		padding-left: 5px;
+		padding-right: 5px;
+		cursor: pointer;
+		color: lightgray;
+	}
+	.disable {
+		cursor: default;
+		color: gray;
+	}
+
 	.left-panel {
 		height: 100%;
 		width: 80%;
@@ -3792,14 +3803,35 @@ div.gradient-box {
 		background-color: #303030;
 		flex-direction: column;
 
-		.tree-map {
-			background-color: #4c00ff;
+		.hide-tabs {
+			height: 100%;
 			width: 100%;
-			flex-grow: 1;
+			#search-bar {
+				display: inline;
+				float: right;
+			}
+			.tab-content {
+				height: 100%;
+				width: 100%;
+				display: flex;
+				flex-direction: column;
+				padding-bottom: 25px;
+				box-sizing: border-box;
+				margin: 2px;
+				.hide-scroll {
+					overflow-x: hidden;
+				}
+			}
 		}
 
 		table {
 			overflow-y: scroll;
+			margin-top: 10px;
+			margin-bottom: 10px;
+
+			caption {
+				text-align: left;
+			}
 
 			thead {
 				position: sticky;
@@ -3809,9 +3841,14 @@ div.gradient-box {
 				td {
 					font-weight: bold;
 				}
+			}
 
-				.sort-count, .sort-size {
+			#actions {
+				padding-right: 3px;
+				.ico {
 					cursor: pointer;
+					pointer-events: auto;
+					color: lightgray;
 				}
 			}
 
@@ -3829,50 +3866,30 @@ div.gradient-box {
 				}
 			}
 
-			td:last-child {
+			td:nth-last-child(1) {
 				width: 100%;
-			}
-
-			td:nth-child(3) {
-				width: 70%;
 				max-width: 700px;
+				text-wrap: auto;
 			}
 
 			td {
 				padding: 3px 30px 3px 1px;
 				overflow: hidden;
 				white-space: nowrap;
-
-				.folder {
-					cursor: pointer;
-					margin-right: 10px;
-					margin-left: 5px;
-					font-size: 12pt;
-					text-align: center;
-					vertical-align: text-top;
-				}
-
-				.outer-gauge {
-					background-color: #535353;
-					width: 100%;
-					height: 15px;
-				}
-
-				.inner-gauge {
-					background-color: #d6d6d6;
-					height: 15px;
-				}
-
-				.icon {
-					padding-left:10px;
-				}
 			}
 
-			.inspect-row {
-				td {
-					width: 100px;
-				}
+			.arrow {
+				color: #4169E1;
 			}
+
+			.tid {
+				color: #C71585;
+			}
+
+			.roots {
+				color: #DAA520;
+			}
+
 		}
 	}
 
@@ -3880,61 +3897,59 @@ div.gradient-box {
 		height: 100%;
 		width: 20%;
 		padding: 10px;
-
-		dl {
-			overflow-x: hidden;
-			margin: 0px;
-		}
+		box-sizing: border-box;
+		overflow-x: hidden;
 
 		dt {
 			width: 80px;
-			text-align: right;
 			font-size: 11px;
 			color: #aaa;
 			user-select: none;
 			text-transform: capitalize;
-			cursor: pointer;
 			font-weight: normal;
-			vertical-align: middle;
+			vertical-align: top;
 			display: inline-block;
-			text-wrap: wrap;
-			word-break: break-word;
 			margin-top: 4px;
+			max-width: 100%;
 		}
 
 		dd {
 			position: relative;
-			width: 200px;
-			margin-left: 10px;
-			vertical-align: middle;
+			vertical-align: top;
 			display: inline-block;
 			text-wrap: wrap;
 			word-break: break-word;
-			margin-top: 4px;
+			margin-left: 0px;
+			padding-left: 10px;
+			padding-top: 4px;
+			width: 200px;
+			max-width: 100%;
+			box-sizing: border-box;
+
+			input {
+				max-width: 100%;
+				box-sizing: border-box;
+			}
 		}
 
 		.outer-gauge {
 			background-color: #535353;
 			width: 100%;
-			height: 20px;
+			height: 15px;
 		}
 
 		.inner-gauge {
 			background-color: #d6d6d6;
-			height: 20px;
+			height: 15px;
 		}
 
 		h4, h5 {
+			margin-top:2px;
 			margin-bottom: 2px;
 		}
 
 		h5 {
-			margin-top:2px;
-		}
-
-		hr {
-			margin-top: 25px;
-			border-top: 1px, solid, #666666;
+			word-wrap: break-word;
 		}
 
 		.title {
@@ -3952,14 +3967,6 @@ div.gradient-box {
 			border-width: 5px;
 			height: 100px;
 			padding-top: 20px;
-
-			.icon {
-				text-align: center;
-				font-size: 30pt;
-				margin: 0;
-				font-weight: bold;
-				pointer-events: none;
-			}
 
 			.label {
 				text-align: center;
@@ -3979,8 +3986,6 @@ div.gradient-box {
 		.files-input {
 			#process-btn {
 				width: 100%;
-				margin-top: 15px;
-				margin-bottom: 15px;
 			}
 		}
 	}
