@@ -54,27 +54,65 @@ class AnimGraphEditor extends GenericGraphEditor {
 
         refreshPamamList();
 
+        new AnimList(propertiesContainer, null, scenePreview.listAnims(animGraph.animFolder));
+
         graphEditor.element.get(0).addEventListener("dragover", (e: js.html.DragEvent) -> {
-            var paramIndex = Std.parseInt(e.dataTransfer.getData("index"));
-            if (paramIndex != null)
+            if (e.dataTransfer.types.contains("index"))
                 e.preventDefault(); // prevent default to allow drop
+
+            if (e.dataTransfer.types.contains(AnimList.dragEventKey))
+                e.preventDefault();
         });
 
         graphEditor.element.get(0).addEventListener("drop", (e: js.html.DragEvent) -> {
-            var paramIndex = Std.parseInt(e.dataTransfer.getData("index"));
-            if (paramIndex == null)
-                return;
-
-
             var posCursor = new h2d.col.Point(graphEditor.lX(e.clientX - 25), graphEditor.lY(e.clientY - 10));
-			var inst = new hrt.animgraph.nodes.FloatParameter();
-			@:privateAccess var id = animGraph.nodeIdCount++;
-			inst.id = id;
-            inst.parameter = animGraph.parameters[paramIndex];
-			inst.setPos(posCursor);
 
-			graphEditor.opBox(inst, true, graphEditor.currentUndoBuffer);
-			graphEditor.commitUndo();
+            // Handle drag from Parameters list
+
+
+            var paramIndex = Std.parseInt(e.dataTransfer.getData("index"));
+            if (paramIndex != null) {
+                e.preventDefault();
+                var inst = new hrt.animgraph.nodes.FloatParameter();
+                @:privateAccess var id = animGraph.nodeIdCount++;
+                inst.id = id;
+                inst.parameter = animGraph.parameters[paramIndex];
+                inst.setPos(posCursor);
+
+                graphEditor.opBox(inst, true, graphEditor.currentUndoBuffer);
+                graphEditor.commitUndo();
+                return;
+            }
+
+            // Handle drag from anim list
+            var path = e.dataTransfer.getData(AnimList.dragEventKey);
+            if (path.length > 0) {
+
+                if (StringTools.endsWith(path, ".fbx")) {
+                    e.preventDefault();
+                    var inst = new hrt.animgraph.nodes.Input();
+                    @:privateAccess var id = animGraph.nodeIdCount++;
+                    inst.id = id;
+                    inst.path = path;
+                    inst.setPos(posCursor);
+
+                    graphEditor.opBox(inst, true, graphEditor.currentUndoBuffer);
+                    graphEditor.commitUndo();
+                    return;
+                }
+                else if (StringTools.endsWith(path, ".bs2d")) {
+                    e.preventDefault();
+                    var inst = new hrt.animgraph.nodes.BlendSpace2D();
+                    @:privateAccess var id = animGraph.nodeIdCount++;
+                    inst.id = id;
+                    inst.path = path;
+                    inst.setPos(posCursor);
+
+                    graphEditor.opBox(inst, true, graphEditor.currentUndoBuffer);
+                    graphEditor.commitUndo();
+                    return;
+                }
+            }
         });
     }
 

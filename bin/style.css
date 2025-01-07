@@ -4261,6 +4261,7 @@ graph-editor-root properties-container {
 graph-editor-root properties-container graph-parameters {
   display: flex;
   flex-direction: column;
+  flex-grow: 1;
 }
 graph-editor-root properties-container graph-parameters h1 {
   font-size: 1.2em;
