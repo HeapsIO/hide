@@ -3,19 +3,12 @@ using Lambda;
 import hide.view.GraphInterface;
 import hrt.animgraph.*;
 
-class PreviewSettings {
-    public var modelPath: String = null;
-
-    public function new() {};
-}
-
 @:access(hrt.animgraph.AnimGraph)
 @:access(hrt.animgraph.AnimGraphInstance)
 @:access(hrt.animgraph.Node)
 class AnimGraphEditor extends GenericGraphEditor {
 
     var animGraph : hrt.animgraph.AnimGraph;
-    public var previewModel : h3d.scene.Object;
     public var previewPrefab : hrt.prefab.Prefab;
 
     var parametersList : hide.Element;
@@ -23,8 +16,6 @@ class AnimGraphEditor extends GenericGraphEditor {
 
     var previewNode : hrt.animgraph.nodes.AnimNode = null;
     var queuedPreview : hrt.animgraph.nodes.AnimNode = null;
-
-    var previewSettings : PreviewSettings = new PreviewSettings();
 
     override function reloadView() {
         previewNode = null;
@@ -51,9 +42,6 @@ class AnimGraphEditor extends GenericGraphEditor {
         }
 
         super.reloadView();
-        loadPreviewSettings();
-
-
 
         var parameters = new Element("<graph-parameters></graph-parameters>").appendTo(propertiesContainer);
         new Element("<h1>Parameters</h1>").appendTo(parameters);
@@ -88,10 +76,6 @@ class AnimGraphEditor extends GenericGraphEditor {
 			graphEditor.opBox(inst, true, graphEditor.currentUndoBuffer);
 			graphEditor.commitUndo();
         });
-
-        if (previewSettings.modelPath == null) {
-            previewSettings.modelPath = gatherAllPreviewModels(animGraph.animFolder)[0];
-        }
     }
 
     static public function gatherAllPreviewModels(basePath : String) : Array<String> {
@@ -128,19 +112,12 @@ class AnimGraphEditor extends GenericGraphEditor {
         for (path in paths) {
             var basePath = StringTools.replace(path, animGraph.animFolder + "/", "");
             models.push({label: basePath, click: () -> {
-                previewSettings.modelPath = path;
-                savePreviewSettings();
-                reloadPreviewModel();
+                scenePreview.setObjectPath(path);
             }});
         }
 
         options.push({label: "Set Model", menu: models});
         return options;
-    }
-
-    public function setPreviewMesh(path: String) {
-
-        savePreviewSettings();
     }
 
     public function refreshPreview() {
@@ -157,6 +134,7 @@ class AnimGraphEditor extends GenericGraphEditor {
 
         // refresh animation
         {
+            var previewModel = scenePreview.prefab?.find(hrt.prefab.Model, (f) -> StringTools.startsWith(f.source, animGraph.animFolder))?.local3d;
             if (previewModel == null)
                 return;
 
@@ -304,6 +282,10 @@ class AnimGraphEditor extends GenericGraphEditor {
                 ]);
             });
         }
+
+        scenePreview.onObjectLoaded = () -> {
+            setPreview(cast animGraph.nodes.find((f) -> Std.downcast(f, hrt.animgraph.nodes.Output) != null));
+        }
     }
 
     function execRemoveParam(index: Int) {
@@ -359,58 +341,10 @@ class AnimGraphEditor extends GenericGraphEditor {
     override function onScenePreviewReady() {
         super.onScenePreviewReady();
 
-        reloadPreviewModel();
-        resetPreviewCamera();
-    }
-
-    function reloadPreviewModel() {
-        if (previewModel != null) {
-            previewModel.remove();
-            previewModel = null;
+        if (scenePreview.getObjectPath() == null) {
+            scenePreview.setObjectPath(gatherAllPreviewModels(animGraph.animFolder)[0]);
         }
-
-        if (previewPrefab != null) {
-            previewPrefab.dispose();
-            previewPrefab.shared.root3d?.remove();
-            previewPrefab.shared.root2d?.remove();
-            previewPrefab = null;
-        }
-
-        if (previewSettings.modelPath == null)
-            return;
-
-        try {
-            if (StringTools.endsWith(previewSettings.modelPath, ".prefab")) {
-                try {
-                    previewPrefab = Ide.inst.loadPrefab(previewSettings.modelPath);
-                } catch (e) {
-                    throw 'Could not load mesh ${previewSettings.modelPath}, error : $e';
-                }
-                var ctx = new hide.prefab.ContextShared(null, new h3d.scene.Object(scenePreview.s3d));
-                ctx.scene = scenePreview;
-                previewPrefab.setSharedRec(ctx);
-                previewPrefab = previewPrefab.make();
-
-                previewModel = previewPrefab.find(hrt.prefab.Model, (m) -> StringTools.startsWith(m.source, animGraph.animFolder))?.local3d;
-                if (previewModel == null) {
-                    throw "Linked prefab doesn't contain any suitable model";
-                }
-            } else if (StringTools.endsWith(previewSettings.modelPath, ".fbx")) {
-                previewModel =  scenePreview.loadModel(previewSettings.modelPath);
-                scenePreview.s3d.addChild(previewModel);
-            }
-            else {
-                throw "Unsupported model format";
-            }
-        } catch (e) {
-            previewSettings.modelPath = null;
-            ide.quickError("Couldn't load preview : " + e);
-            savePreviewSettings();
-            reloadPreviewModel(); // cleanup
-            return;
-        }
-
-        setPreview(cast animGraph.nodes.find((f) -> Std.downcast(f, hrt.animgraph.nodes.Output) != null));
+        scenePreview.resetCamera();
     }
 
     override function getNodes() : Iterator<IGraphNode> {
@@ -541,25 +475,6 @@ class AnimGraphEditor extends GenericGraphEditor {
             queuedPreview = null;
         }
     }
-
-    function resetPreviewCamera() {
-        previewFocusObject(previewModel);
-    }
-
-    public function loadPreviewSettings() {
-		var save = haxe.Json.parse(getDisplayState("previewSettings") ?? "{}");
-		previewSettings = new PreviewSettings();
-		for (f in Reflect.fields(previewSettings)) {
-			var v = Reflect.field(save, f);
-			if (v != null) {
-				Reflect.setField(previewSettings, f, v);
-			}
-		}
-	}
-
-	public function savePreviewSettings() {
-		saveDisplayState("previewSettings", haxe.Json.stringify(previewSettings));
-	}
 
     function addParameter() {
         var newParam = new hrt.animgraph.AnimGraph.Parameter();

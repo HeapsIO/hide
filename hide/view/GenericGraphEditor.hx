@@ -7,8 +7,7 @@ class GenericGraphEditor extends hide.view.FileView implements IGraphEditor {
     var graphEditor : hide.view.GraphEditor;
 
     var previewContainer : Element;
-    var scenePreview : hide.comp.Scene;
-    var previewCamController : hide.comp.Scene.PreviewCamController;
+    var scenePreview : hide.comp.ScenePreview;
 
     var editorRoot : Element;
     var graphContainer: Element;
@@ -52,7 +51,7 @@ class GenericGraphEditor extends hide.view.FileView implements IGraphEditor {
         var height = getDisplayState("preview.width") ?? 300;
 
         // Scene init
-        scenePreview = new hide.comp.Scene(config, previewContainer, null);
+        scenePreview = new hide.comp.ScenePreview(config, previewContainer, null, saveDisplayKey + "/scenePreview");
         scenePreview.element.addClass("scene-preview");
 
         scenePreview.onReady = onScenePreviewReady;
@@ -127,20 +126,11 @@ class GenericGraphEditor extends hide.view.FileView implements IGraphEditor {
         }
     }
 
-    public function previewFocusObject(obj: h3d.scene.Object) {
-        if (previewCamController == null)
-            return;
-		var bounds = obj.getBounds();
-		var sp = bounds.toSphere();
-		previewCamController.set(sp.r * 3.0, Math.PI / 4, Math.PI * 5 / 13, sp.getCenter());
-	}
-
     function getPreviewOptionsMenu() : Array<hide.comp.ContextMenu.MenuItem> {
         return [];
     }
 
     function onScenePreviewReady() {
-        previewCamController = new hide.comp.Scene.PreviewCamController(scenePreview.s3d);
     }
 
     function onScenePreviewUpdate(dt: Float) {

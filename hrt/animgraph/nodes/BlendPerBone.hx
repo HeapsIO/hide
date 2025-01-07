@@ -59,7 +59,7 @@ class BlendPerBone extends AnimNode {
 		button.label = targetBone;
 
 		button.onClick = () -> {
-			var model = getAnimEditor().previewModel;
+			var model = @:privateAccess getAnimEditor().scenePreview.prefab.findFirstLocal3d();
 			if (model == null)
 				return;
 
