@@ -341,6 +341,7 @@ class Scene extends hide.comp.Component implements h3d.IDrawable {
 	}
 
 	public function listAnims( path : String ) {
+		var isDir = sys.FileSystem.isDirectory(ide.getPath(path));
 
 		var config = hide.Config.loadForFile(ide, path);
 
@@ -348,15 +349,20 @@ class Scene extends hide.comp.Component implements h3d.IDrawable {
 		if( dirs == null ) dirs = [];
 		dirs = [for( d in dirs ) ide.resourceDir + d];
 
-		var parts = path.split("/");
-		parts.pop();
-		dirs.unshift(ide.getPath(parts.join("/")));
 
+		var parts = path.split("/");
 		var anims = [];
 
-		var lib = loadHMD(path, false);
-		if( lib.header.animations.length > 0 )
-			anims.push(ide.getPath(path));
+		if (!isDir) {
+			parts.pop();
+			dirs.unshift(ide.getPath(parts.join("/")));
+
+			var lib = loadHMD(path, false);
+			if( lib.header.animations.length > 0 )
+				anims.push(ide.getPath(path));
+		} else {
+			dirs.unshift(path);
+		}
 
 		for( dir in dirs ) {
 			var dir = dir;
