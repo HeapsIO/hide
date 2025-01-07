@@ -3253,6 +3253,16 @@ div.gradient-box {
   height: 100%;
   display: flex;
 }
+.profiler .ico {
+  padding-left: 5px;
+  padding-right: 5px;
+  cursor: pointer;
+  color: lightgray;
+}
+.profiler .disable {
+  cursor: default;
+  color: gray;
+}
 .profiler .left-panel {
   height: 100%;
   width: 80%;
@@ -3260,13 +3270,33 @@ div.gradient-box {
   background-color: #303030;
   flex-direction: column;
 }
-.profiler .left-panel .tree-map {
-  background-color: #4c00ff;
+.profiler .left-panel .hide-tabs {
+  height: 100%;
   width: 100%;
-  flex-grow: 1;
+}
+.profiler .left-panel .hide-tabs #search-bar {
+  display: inline;
+  float: right;
+}
+.profiler .left-panel .hide-tabs .tab-content {
+  height: 100%;
+  width: 100%;
+  display: flex;
+  flex-direction: column;
+  padding-bottom: 25px;
+  box-sizing: border-box;
+  margin: 2px;
+}
+.profiler .left-panel .hide-tabs .tab-content .hide-scroll {
+  overflow-x: hidden;
 }
 .profiler .left-panel table {
   overflow-y: scroll;
+  margin-top: 10px;
+  margin-bottom: 10px;
+}
+.profiler .left-panel table caption {
+  text-align: left;
 }
 .profiler .left-panel table thead {
   position: sticky;
@@ -3276,9 +3306,13 @@ div.gradient-box {
 .profiler .left-panel table thead td {
   font-weight: bold;
 }
-.profiler .left-panel table thead .sort-count,
-.profiler .left-panel table thead .sort-size {
+.profiler .left-panel table #actions {
+  padding-right: 3px;
+}
+.profiler .left-panel table #actions .ico {
   cursor: pointer;
+  pointer-events: auto;
+  color: lightgray;
 }
 .profiler .left-panel table tr:hover {
   background-color: #272727;
@@ -3289,94 +3323,77 @@ div.gradient-box {
 .profiler .left-panel table thead tr:hover {
   background-color: #151515;
 }
-.profiler .left-panel table td:last-child {
+.profiler .left-panel table td:nth-last-child(1) {
   width: 100%;
-}
-.profiler .left-panel table td:nth-child(3) {
-  width: 70%;
   max-width: 700px;
+  text-wrap: auto;
 }
 .profiler .left-panel table td {
   padding: 3px 30px 3px 1px;
   overflow: hidden;
   white-space: nowrap;
 }
-.profiler .left-panel table td .folder {
-  cursor: pointer;
-  margin-right: 10px;
-  margin-left: 5px;
-  font-size: 12pt;
-  text-align: center;
-  vertical-align: text-top;
+.profiler .left-panel table .arrow {
+  color: #4169E1;
 }
-.profiler .left-panel table td .outer-gauge {
-  background-color: #535353;
-  width: 100%;
-  height: 15px;
+.profiler .left-panel table .tid {
+  color: #C71585;
 }
-.profiler .left-panel table td .inner-gauge {
-  background-color: #d6d6d6;
-  height: 15px;
-}
-.profiler .left-panel table td .icon {
-  padding-left: 10px;
-}
-.profiler .left-panel table .inspect-row td {
-  width: 100px;
+.profiler .left-panel table .roots {
+  color: #DAA520;
 }
 .profiler .right-panel {
   height: 100%;
   width: 20%;
   padding: 10px;
-}
-.profiler .right-panel dl {
+  box-sizing: border-box;
   overflow-x: hidden;
-  margin: 0px;
 }
 .profiler .right-panel dt {
   width: 80px;
-  text-align: right;
   font-size: 11px;
   color: #aaa;
   user-select: none;
   text-transform: capitalize;
-  cursor: pointer;
   font-weight: normal;
-  vertical-align: middle;
+  vertical-align: top;
   display: inline-block;
-  text-wrap: wrap;
-  word-break: break-word;
   margin-top: 4px;
+  max-width: 100%;
 }
 .profiler .right-panel dd {
   position: relative;
-  width: 200px;
-  margin-left: 10px;
-  vertical-align: middle;
+  vertical-align: top;
   display: inline-block;
   text-wrap: wrap;
   word-break: break-word;
-  margin-top: 4px;
+  margin-left: 0px;
+  padding-left: 10px;
+  padding-top: 4px;
+  width: 200px;
+  max-width: 100%;
+  box-sizing: border-box;
+}
+.profiler .right-panel dd input {
+  max-width: 100%;
+  box-sizing: border-box;
 }
 .profiler .right-panel .outer-gauge {
   background-color: #535353;
   width: 100%;
-  height: 20px;
+  height: 15px;
 }
 .profiler .right-panel .inner-gauge {
   background-color: #d6d6d6;
-  height: 20px;
+  height: 15px;
 }
 .profiler .right-panel h4,
 .profiler .right-panel h5 {
+  margin-top: 2px;
   margin-bottom: 2px;
 }
 .profiler .right-panel h5 {
-  margin-top: 2px;
-}
-.profiler .right-panel hr {
-  margin-top: 25px;
-  border-top: 1px, solid, #666666;
+  word-wrap: break-word;
 }
 .profiler .right-panel .title {
   text-align: center;
@@ -3393,13 +3410,6 @@ div.gradient-box {
   height: 100px;
   padding-top: 20px;
 }
-.profiler .right-panel .drop-zone .icon {
-  text-align: center;
-  font-size: 30pt;
-  margin: 0;
-  font-weight: bold;
-  pointer-events: none;
-}
 .profiler .right-panel .drop-zone .label {
   text-align: center;
   pointer-events: none;
@@ -3414,8 +3424,6 @@ div.gradient-box {
 }
 .profiler .right-panel .files-input #process-btn {
   width: 100%;
-  margin-top: 15px;
-  margin-bottom: 15px;
 }
 .hover-parent .hover-reveal {
   visibility: hidden;

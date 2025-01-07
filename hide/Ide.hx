@@ -1426,9 +1426,9 @@ class Ide extends hide.tools.IdeData {
 		var analysis = menu.find(".analysis");
 		analysis.find(".memprof").click(function(_) {
 			#if (hashlink >= "1.15.0")
-			open("hide.view.Profiler",{});
+			open("hide.view.MemProfiler",{});
 			#else
-			quickMessage("Profiler not available. Please update hashlink to version 1.15.0 or later.");
+			quickMessage("Memory Profiler not available. Please update hashlink to version 1.15.0 or later.");
 			#end
 		});
 		analysis.find(".gpudump").click(function(_) {

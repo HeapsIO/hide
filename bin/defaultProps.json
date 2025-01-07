@@ -95,6 +95,9 @@
 	"key.shadergraph.comment" : "C",
 	"key.graph.openAddMenu" : "Space",
 
+	// Memory profiler config
+	"key.memprof.inspectPrev" : "Alt-Left",
+	"key.memprof.inspectNext" : "Alt-Right",
 
 
 	// cdb config
