@@ -153,6 +153,7 @@ class Scene extends hide.comp.Component implements h3d.IDrawable {
 			sevents.addScene(s2d);
 			sevents.addScene(s3d);
 			@:privateAccess window.checkResize();
+			preOnReady();
 			onReady();
 			onResize();
 			sync();
@@ -179,6 +180,9 @@ class Scene extends hide.comp.Component implements h3d.IDrawable {
 		errorMessageBox.html(StringTools.replace(s, "\n", "<br/>"));
 		errorMessageBox.css("visibility", "visible");
 		errorThisFrame = true;
+	}
+
+	function preOnReady() {
 	}
 
 	function clearErrorMessage() {

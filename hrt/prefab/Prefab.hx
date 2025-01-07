@@ -168,8 +168,8 @@ class Prefab {
 		if( !sh.isInstance ) throw "assert";
 		if( sh.currentPath == null ) sh.currentPath = shared.currentPath;
 		#if editor
-		sh.editor = this.shared.editor;
-		sh.scene = this.shared.scene;
+		sh.editor ??= this.shared.editor;
+		sh.scene ??= this.shared.scene;
 		#end
 		return this.clone(sh).make(sh);
 	}

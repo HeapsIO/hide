@@ -1,5 +1,11 @@
 package hide.view.animgraph;
 
+class BlendSpacePreviewSettings {
+    public var modelPath: String = null;
+
+    public function new() {};
+}
+
 @:access(hrt.animgraph.BlendSpace2D)
 class BlendSpace2DEditor extends hide.view.FileView {
 	var root : hide.Element;
@@ -8,10 +14,9 @@ class BlendSpace2DEditor extends hide.view.FileView {
 	var propertiesContainer : hide.Element;
 	var mainPanel : hide.Element;
 
-	var scenePreview : hide.comp.Scene;
+	var scenePreview : hide.comp.ScenePreview;
 	var scenePreviewReady = false;
-	var previewModel : h3d.scene.Object;
-	var previewCamController : hide.comp.Scene.PreviewCamController;
+	var previewModel : h3d.scene.Object = null;
 	var propsEditor : hide.comp.PropsEditor;
 
 	var blendSpace2D: hrt.animgraph.BlendSpace2D;
@@ -25,6 +30,8 @@ class BlendSpace2DEditor extends hide.view.FileView {
 	var previewAxis : h2d.col.Point = new h2d.col.Point();
 
 	var startMovePos : h2d.col.Point = null;
+
+	var previewSettings : BlendSpacePreviewSettings;
 
 	static final pointRadius = 8;
 	var subdivs = 5;
@@ -44,12 +51,30 @@ class BlendSpace2DEditor extends hide.view.FileView {
 		return inline new h2d.col.Point(x, y);
 	}
 
-	override function onRebuild() {
+	override function onDisplay() {
 		blendSpace2D = Std.downcast(hide.Ide.inst.loadPrefab(state.path, null,  true), hrt.animgraph.BlendSpace2D);
 		if (blendSpace2D == null)
 			throw "Invalid blendSpace2D";
+		super.onDisplay();
+		if (blendSpace2D.animFolder == null) {
+            element.html("
+                <h1>Choose a folder containing the models to animate</h1>
+                <button-2></button-2>
+            ");
 
-		super.onRebuild();
+            var button = new hide.comp.Button(null, element.find("button-2"), "Choose folder");
+            button.onClick = () -> {
+                ide.chooseDirectory((path) -> {
+                    if (path != null) {
+                        blendSpace2D.animFolder = path;
+                        save();
+                        onDisplay();
+                    }
+                });
+            }
+			return;
+		}
+
 		element.html("");
 
 		root = new hide.Element("<blend-space-2d-root></blend-space-2d-root>").appendTo(element);
@@ -176,16 +201,57 @@ class BlendSpace2DEditor extends hide.view.FileView {
 					movedPoint = -1;
 				}
 
+				svg.oncontextmenu = (e:js.html.MouseEvent) -> {
+					e.preventDefault();
+
+					var options : Array<hide.comp.ContextMenu.MenuItem> = [];
+
+					if (hoverPoint > -1) {
+						var toDel = hoverPoint > -1 ? hoverPoint : selectedPoint;
+						options.push({
+							label: "Delete",
+							click: () -> {
+								deletePoint(toDel);
+							}
+						});
+					}
+					else {
+						selectedPoint = -1;
+						var x = e.clientX;
+						var y = e.clientY;
+						var ctrl = e.ctrlKey;
+
+						options.push({
+							label: "Add point",
+							click: () -> {
+								var pt = getPointPos(x, y, !ctrl);
+								addPoint({
+									x: pt.x,
+									y: pt.y,
+									animPath: "",
+								});
+							}
+						});
+
+					}
+
+					hide.comp.ContextMenu.createFromEvent(e, options);
+				}
+
+
 			}
 			panel.onResize = refreshGraph;
 
-			scenePreview = new hide.comp.Scene(config, previewContainer, null);
+			scenePreview = new hide.comp.ScenePreview(config, previewContainer, null, saveDisplayKey + "/preview");
 			scenePreviewReady = false;
-			previewModel = null;
 			scenePreview.element.addClass("scene-preview");
 
 			scenePreview.onReady = onScenePreviewReady;
 			scenePreview.onUpdate = onScenePreviewUpdate;
+			scenePreview.onObjectLoaded = () -> {
+				previewModel = scenePreview.prefab?.find(hrt.prefab.Model, (f) -> StringTools.startsWith(f.source, blendSpace2D.animFolder))?.local3d;
+				refreshPreviewAnimation();
+			}
 		}
 
 		propertiesContainer = new hide.Element("<properties-container></properties-container>").appendTo(root).addClass("hide-properties");
@@ -199,19 +265,9 @@ class BlendSpace2DEditor extends hide.view.FileView {
 		keys.register("delete", deleteSelection);
 	}
 
-	function reloadModel() {
-		if (!scenePreviewReady)
-			return;
-
-		if (previewModel != null) {
-			previewModel.remove();
-		}
-		if (blendSpace2D.refModel != null) {
-			previewModel = scenePreview.loadModel(blendSpace2D.refModel);
-			scenePreview.s3d.addChild(previewModel);
-		}
-
-		refreshPreviewAnimation();
+	override function getDefaultContent():haxe.io.Bytes {
+		var animgraph = (new hrt.animgraph.BlendSpace2D(null, null)).serialize();
+		return haxe.io.Bytes.ofString(ide.toJSON(animgraph));
 	}
 
 	function refreshPreviewAnimation() {
@@ -225,10 +281,14 @@ class BlendSpace2DEditor extends hide.view.FileView {
 			}
 			else @:privateAccess {
 				var root : hrt.animgraph.nodes.BlendSpace2D.BlendSpace2D = cast @:privateAccess animPreview.rootNode;
-				var old = root.points[0].animInfo.anim.frame;
+				var old = root.points[0]?.animInfo?.anim.frame;
 				animPreview.bind(previewModel);
-				for (point in root.points) {
-					point.animInfo.anim.setFrame(old);
+				if (old != null) {
+					for (point in root.points) {
+						if (point.animInfo != null) {
+							point.animInfo.anim.setFrame(old);
+						}
+					}
 				}
 			}
 		}
@@ -243,17 +303,6 @@ class BlendSpace2DEditor extends hide.view.FileView {
 
 	function refreshPropertiesPannel() {
 		propsEditor.clear();
-
-		propsEditor.add(new hide.Element('
-			<div class="group" name="Blend Space">
-				<dl>
-					<dt>Preview</dt><dd><input type="fileselect" extensions="fbx" field="refModel"/></dd>
-				</dl>
-			</div>
-		'), blendSpace2D, (_) -> {
-			reloadModel();
-		});
-
 
 		if (selectedPoint != -1) {
 			propsEditor.add(new hide.Element('
@@ -310,10 +359,12 @@ class BlendSpace2DEditor extends hide.view.FileView {
 	}
 
     function onScenePreviewReady() {
-        previewCamController = new hide.comp.Scene.PreviewCamController(scenePreview.s3d);
-
 		scenePreviewReady = true;
-		reloadModel();
+
+		if (scenePreview.getObjectPath() == null) {
+			var first = AnimGraphEditor.gatherAllPreviewModels(blendSpace2D.animFolder)[0];
+			scenePreview.setObjectPath(first);
+		}
     }
 
 	function deletePoint(index: Int) {

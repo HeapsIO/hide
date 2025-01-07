@@ -16,6 +16,7 @@ class AnimGraphEditor extends GenericGraphEditor {
 
     var animGraph : hrt.animgraph.AnimGraph;
     public var previewModel : h3d.scene.Object;
+    public var previewPrefab : hrt.prefab.Prefab;
 
     var parametersList : hide.Element;
     var previewAnimation : AnimGraphInstance = null;
@@ -87,13 +88,17 @@ class AnimGraphEditor extends GenericGraphEditor {
 			graphEditor.opBox(inst, true, graphEditor.currentUndoBuffer);
 			graphEditor.commitUndo();
         });
+
+        if (previewSettings.modelPath == null) {
+            previewSettings.modelPath = gatherAllPreviewModels(animGraph.animFolder)[0];
+        }
     }
 
-    function gatherAllPreviewModels() : Array<String> {
+    static public function gatherAllPreviewModels(basePath : String) : Array<String> {
         var paths = [];
 
         function rec(dirPath: String) {
-            var files = sys.FileSystem.readDirectory(ide.getPath(dirPath));
+            var files = sys.FileSystem.readDirectory(hide.Ide.inst.getPath(dirPath));
             for (path in files) {
                 if (sys.FileSystem.isDirectory(path)) {
                     rec(dirPath + "/" + path);
@@ -111,7 +116,7 @@ class AnimGraphEditor extends GenericGraphEditor {
             }
         }
 
-        rec(animGraph.animFolder);
+        rec(basePath);
         return paths;
     }
 
@@ -119,7 +124,7 @@ class AnimGraphEditor extends GenericGraphEditor {
         var options = super.getPreviewOptionsMenu();
 
         var models : Array<hide.comp.ContextMenu.MenuItem> = [];
-        var paths = gatherAllPreviewModels();
+        var paths = gatherAllPreviewModels(animGraph.animFolder);
         for (path in paths) {
             var basePath = StringTools.replace(path, animGraph.animFolder + "/", "");
             models.push({label: basePath, click: () -> {
@@ -355,6 +360,7 @@ class AnimGraphEditor extends GenericGraphEditor {
         super.onScenePreviewReady();
 
         reloadPreviewModel();
+        resetPreviewCamera();
     }
 
     function reloadPreviewModel() {
@@ -363,16 +369,35 @@ class AnimGraphEditor extends GenericGraphEditor {
             previewModel = null;
         }
 
+        if (previewPrefab != null) {
+            previewPrefab.dispose();
+            previewPrefab.shared.root3d?.remove();
+            previewPrefab.shared.root2d?.remove();
+            previewPrefab = null;
+        }
+
         if (previewSettings.modelPath == null)
             return;
+
         try {
             if (StringTools.endsWith(previewSettings.modelPath, ".prefab")) {
-                throw "todo prefab loading";
+                try {
+                    previewPrefab = Ide.inst.loadPrefab(previewSettings.modelPath);
+                } catch (e) {
+                    throw 'Could not load mesh ${previewSettings.modelPath}, error : $e';
+                }
+                var ctx = new hide.prefab.ContextShared(null, new h3d.scene.Object(scenePreview.s3d));
+                ctx.scene = scenePreview;
+                previewPrefab.setSharedRec(ctx);
+                previewPrefab = previewPrefab.make();
+
+                previewModel = previewPrefab.find(hrt.prefab.Model, (m) -> StringTools.startsWith(m.source, animGraph.animFolder))?.local3d;
+                if (previewModel == null) {
+                    throw "Linked prefab doesn't contain any suitable model";
+                }
             } else if (StringTools.endsWith(previewSettings.modelPath, ".fbx")) {
                 previewModel =  scenePreview.loadModel(previewSettings.modelPath);
                 scenePreview.s3d.addChild(previewModel);
-                setPreview(cast animGraph.nodes.find((f) -> Std.downcast(f, hrt.animgraph.nodes.Output) != null));
-                resetPreviewCamera();
             }
             else {
                 throw "Unsupported model format";
@@ -381,7 +406,11 @@ class AnimGraphEditor extends GenericGraphEditor {
             previewSettings.modelPath = null;
             ide.quickError("Couldn't load preview : " + e);
             savePreviewSettings();
+            reloadPreviewModel(); // cleanup
+            return;
         }
+
+        setPreview(cast animGraph.nodes.find((f) -> Std.downcast(f, hrt.animgraph.nodes.Output) != null));
     }
 
     override function getNodes() : Iterator<IGraphNode> {

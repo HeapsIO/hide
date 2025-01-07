@@ -4,7 +4,7 @@ using hrt.tools.MapUtils;
 typedef BlendSpaceInstancePoint = {
 	x: Float,
 	y: Float,
-	?animInfo: AnimInfo,
+	?animInfo: AnimInfo, // can be null if no animation could be loaded
 }
 
 typedef AnimInfo = {
@@ -66,31 +66,34 @@ class BlendSpace2D extends AnimNode {
 
 		for (blendSpacePoint in blendSpace.points) {
 			var point : BlendSpaceInstancePoint = {x: blendSpacePoint.x, y: blendSpacePoint.y};
-			try
-			{
-				var animIndex = animMap.getOrPut(blendSpacePoint.animPath, {
-					// Create a new animation
-					var index = animInfos.length;
-					var animBase = hxd.res.Loader.currentInstance.load(blendSpacePoint.animPath).toModel().toHmd().loadAnimation();
+			if (blendSpacePoint.animPath != null && blendSpacePoint.animPath.length > 0) {
+				try
+				{
+					var animIndex = animMap.getOrPut(blendSpacePoint.animPath, {
+						// Create a new animation
+						var index = animInfos.length;
+						var animBase = hxd.res.Loader.currentInstance.load(blendSpacePoint.animPath).toModel().toHmd().loadAnimation();
 
-					var proxy = new hrt.animgraph.nodes.Input.AnimProxy(null);
-					var animInstance = animBase.createInstance(proxy);
+						var proxy = new hrt.animgraph.nodes.Input.AnimProxy(null);
+						var animInstance = animBase.createInstance(proxy);
 
-					var indexRemap = [];
+						var indexRemap = [];
 
-					for (boneId => obj in animInstance.getObjects()) {
-						var ourId = boneMap.getOrPut(obj.objectName, curOurBoneId++);
-						indexRemap[ourId] = boneId;
-					}
+						for (boneId => obj in animInstance.getObjects()) {
+							var ourId = boneMap.getOrPut(obj.objectName, curOurBoneId++);
+							indexRemap[ourId] = boneId;
+						}
 
-					animInfos.push({anim: animInstance, proxy: proxy, indexRemap: indexRemap});
-					index;
-				});
+						animInfos.push({anim: animInstance, proxy: proxy, indexRemap: indexRemap});
+						index;
+					});
 
-				point.animInfo = animInfos[animIndex];
-			} catch (e) {
-				trace('Couldn\'t load anim ${blendSpacePoint.animPath} : ${e.toString()}');
+					point.animInfo = animInfos[animIndex];
+				} catch (e) {
+					trace('Couldn\'t load anim ${blendSpacePoint.animPath} : ${e.toString()}');
+				}
 			}
+
 			points.push(point);
 		}
 
@@ -124,6 +127,9 @@ class BlendSpace2D extends AnimNode {
 
 	@:haxe.warning("-WInlineOptimizedField")
 	override function getBoneTransform(boneId:Int, outMatrix:h3d.Matrix, ctx:hrt.animgraph.nodes.AnimNode.GetBoneTransformContext) {
+		if (triangles.length < 1)
+			return;
+
 		if (currentTriangle == -1) {
 			var curPos = inline new h2d.col.Point(bsX, bsY);
 
@@ -178,9 +184,6 @@ class BlendSpace2D extends AnimNode {
 
 			if (currentTriangle == -1)
 				throw "assert";
-
-
-			trace(bsX, bsY, weights, weights[0] + weights[1] + weights[2], currentTriangle, collided, debugk);
 		}
 
 		var blendedPos = inline new h3d.Vector();
@@ -191,22 +194,30 @@ class BlendSpace2D extends AnimNode {
 		var def = ctx.getDefPose();
 		refQuat.set(def._12, def._13, def._21, def._23);
 		for (ptIndex => point in triangle) {
-			@:privateAccess
-			if (!point.animInfo.anim.isSync) {
-				point.animInfo.anim.sync(true);
-				point.animInfo.anim.isSync = true;
-			}
-			var boneIndex = point.animInfo.indexRemap[boneId];
-			var matrix = if (boneIndex == -1 || point.animInfo.anim == null) {
-				def;
-			} else {
-				point.animInfo.anim.getObjects()[boneIndex].targetObject.defaultTransform;
-			}
-
 			var w =  weights[ptIndex];
 			if (w == 0) {
 				continue;
 			}
+
+			var matrix : h3d.Matrix;
+
+			if (point.animInfo == null) {
+				matrix = ctx.getDefPose();
+			}
+			else {
+				@:privateAccess
+				if (!point.animInfo.anim.isSync) {
+					point.animInfo.anim.sync(true);
+					point.animInfo.anim.isSync = true;
+				}
+				var boneIndex = point.animInfo.indexRemap[boneId];
+				matrix = if (boneIndex == -1 || point.animInfo.anim == null) {
+					def;
+				} else {
+					point.animInfo.anim.getObjects()[boneIndex].targetObject.defaultTransform;
+				}
+			}
+
 			blendedPos = inline blendedPos.add(inline new h3d.Vector(matrix.tx * w, matrix.ty * w, matrix.tz * w));
 			blendedScale = inline blendedScale.add(inline new h3d.Vector(matrix._11 * w, matrix._22 * w, matrix._33 * w));
 			workQuats[ptIndex].set(matrix._12, matrix._13, matrix._21, matrix._23);

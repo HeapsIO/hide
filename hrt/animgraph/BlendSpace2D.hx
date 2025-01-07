@@ -9,7 +9,7 @@ typedef BlendSpacePoint = {
 class BlendSpace2D extends hrt.prefab.Prefab {
 	@:s var points : Array<BlendSpacePoint> = [];
 	@:s var triangles : Array<Array<Int>> = [];
-	@:s var refModel : String = null;
+	@:s var animFolder : String = null; // The folder to use as a base for the animation selection/loading
 
 	var instance : BlendSpace2DInstance;
 
@@ -26,6 +26,9 @@ class BlendSpace2D extends hrt.prefab.Prefab {
 		}
 
 		var triangulation = h2d.col.Delaunay.triangulate(h2dPoints);
+		if (triangulation == null)
+			return;
+
 		for (triangle in triangulation) {
 			triangles.push([h2dPoints.indexOf(triangle.p1), h2dPoints.indexOf(triangle.p2), h2dPoints.indexOf(triangle.p3)]);
 		}
