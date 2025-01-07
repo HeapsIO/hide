@@ -70,6 +70,7 @@ class Formulas {
 	}
 
 	function reloadFile() {
+		ide.error("formulas reload");
 		load();
 		evaluateAll();
 		editor.save();

@@ -154,9 +154,9 @@ class Domkit extends FileView {
 		};
 		var str = hrt.impl.DomkitViewer.toStr(data);
 		prevSave = data;
-		if( data.css != cssEditor.code ) cssEditor.setCode(data.css);
-		if( data.dml != dmlEditor.code ) dmlEditor.setCode(data.dml);
-		if( data.params != paramsEditor.code ) paramsEditor.setCode(data.params);
+		if( data.css != cssEditor.code ) cssEditor.setCode(data.css, true);
+		if( data.dml != dmlEditor.code ) dmlEditor.setCode(data.dml, true);
+		if( data.params != paramsEditor.code ) paramsEditor.setCode(data.params, true);
 		sys.io.File.saveContent(getPath(),str);
 	}
 

@@ -114,7 +114,7 @@ class CodeEditor extends Component {
 		var newCode = [for( l in StringTools.trim(code).split("\n") ) StringTools.rtrim(l)].join("\n");
 		if( newCode != code ) {
 			var p = editor.getPosition();
-			setCode(newCode);
+			setCode(newCode, true);
 			editor.setPosition(p);
 		}
 	}
@@ -123,7 +123,13 @@ class CodeEditor extends Component {
 		return editor.getValue({preserveBOM:true});
 	}
 
-	public function setCode( code : String ) {
+	public function setCode( code : String, keepHistory : Bool = false ) {
+		if ( keepHistory ) {
+			editor.executeEdits('set_code', [{ identifier: 'delete', range: new monaco.Range(1, 1, 10000, 1), text: '', forceMoveMarkers: true }]);
+			editor.executeEdits('set_code', [{ identifier: 'insert', range: new monaco.Range(1, 1, 1, 1), text: code, forceMoveMarkers: true }]);
+			return;
+		}
+
 		editor.setValue(code);
 	}
 

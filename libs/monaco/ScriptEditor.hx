@@ -14,6 +14,7 @@ extern class ScriptEditor {
 	function getModel() : Model;
 	function deltaDecorations( old : Array<String>, newDeco : Array<ModelDeltaDecoration> ) : Array<String>;
 	function setValue( script : String ) : Void;
+	function executeEdits( source : String, edits : Array<Dynamic>, ?endCursorState : Array<Dynamic> ) : Void;
 	function updateOptions( options : Dynamic ) : Void;
 	function getPosition() : Position;
 	function setPosition( p : Position ) : Void;
