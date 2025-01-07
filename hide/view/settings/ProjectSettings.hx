@@ -122,7 +122,8 @@ class ProjectSettings extends hide.ui.View<{}> {
 					inspect(s);
 				});
 
-				var fileSelect = new hide.comp.FileSelect(null, row, null);
+				var fileSelect = new hide.comp.FileSelect([], row, null);
+				fileSelect.directory = true;
 				fileSelect.disabled = true;
 				fileSelect.path = s.folder;
 				fileSelect.element.val(absToRelPath(haxe.io.Path.normalize(fileSelect.path)));
