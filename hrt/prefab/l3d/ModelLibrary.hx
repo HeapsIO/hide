@@ -193,8 +193,6 @@ class ModelLibraryInstance {
 	var batchCache: Array<h3d.scene.MeshBatch>;
 	var batchLookup : Map<String, Int>;
 
-	var materialCache : Map<h3d.mat.Material, Int>;
-
 	function new(library : ModelLibrary) {
 		this.library = library;
 		batchCache = [];
@@ -782,13 +780,21 @@ class ModelLibrary extends Prefab {
 
 			var root = true;
 			for( m in lib.header.models ) {
-				var lodInfos = lib.getLODInfos(m);
-				if ( lodInfos.lodLevel > 0 )
-					continue;
+				var lods : Array<Model> = null;
+				var hasLod = m.lods != null;
+				if ( hasLod ) {
+					var isLod = m.name.indexOf("LOD0") < 0;
+					if ( isLod )
+						continue;
+					lods = [for ( lod in m.lods) lib.header.models[lod]];
+				} else {
+					var lodInfos = lib.getLODInfos(m);
+					if ( lodInfos.lodLevel > 0 )
+						continue;
 
-				var lods = null;
-				if ( lodInfos.lodLevel == 0 )
-					lods = lib.findLODs( lodInfos.modelName, m );
+					if ( lodInfos.lodLevel == 0 )
+						lods = lib.findLODs( lodInfos.modelName, m );
+				}
 				var ignoreModel = false;
 				var m2 = new Model();
 				m2.name = m.name;
@@ -797,6 +803,7 @@ class ModelLibrary extends Prefab {
 				m2.follow = m.follow;
 				m2.position = m.position;
 				m2.geometry = m.geometry < 0 ? -1 : m.geometry + offsetGeom;
+				m2.lods = hasLod ? [] : null;
 				if( m.materials != null ) {
 					m2.materials = [];
 					for( index => mid in m.materials ) {
@@ -814,7 +821,7 @@ class ModelLibrary extends Prefab {
 							mat.indexCount = lib.header.geometries[m.geometry].indexCounts[index];
 							mat.indexStart = indexStarts[m2.geometry][index];
 
-							if ( lodInfos.lodLevel == 0 ) {
+							if ( hasLod ) {
 								mat.lodIndexCount = [];
 								mat.lodIndexStart = [];
 								mat.lodIndexCount.resize(lods.length);
@@ -822,10 +829,7 @@ class ModelLibrary extends Prefab {
 								for ( i => lod in lods ) {
 									var geom = lib.header.geometries[lod.geometry];
 									mat.lodIndexCount[i] = geom.indexCounts[index];
-									var geometry = lib.header.geometries.indexOf(geom);
-									if ( geometry < 0 )
-										throw "Geometry not found";
-									mat.lodIndexStart[i] = indexStarts[geometry + offsetGeom][index];
+									mat.lodIndexStart[i] = indexStarts[lod.geometry + offsetGeom][index];
 								}
 							}
 
@@ -979,13 +983,9 @@ class ModelLibrary extends Prefab {
 		if (cache.wasMade)
 			return this;
 
-		if ( cache.hmdPrim == null ) {
-			try {
+		if ( cache.hmdPrim == null )
 				cache.hmdPrim = Std.downcast(shared.loadModel(shared.getPrefabDatPath("model","hmd",this.name)).toMesh().primitive, h3d.prim.HMDModel);
-			} catch ( e : Dynamic ) {
-				return this;
-			}
-		}
+
 		cache.wasMade = true;
 		if ( cache.geomBounds == null )
 			cache.geomBounds = [for( g in @:privateAccess cache.hmdPrim.lib.header.geometries ) g.bounds];
