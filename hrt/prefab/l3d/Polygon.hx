@@ -576,6 +576,11 @@ class WorldProjectedCollider extends h3d.col.Collider {
 		return Std.downcast(polygon.local3d, ProjectedDisplay).decal.scaleX;
 	}
 
+	public function closestPoint(p : h3d.col.Point) {
+		throw "implement";
+		return new h3d.col.Point();
+	}
+
 	#if !macro
 	function makeDebugObj() {
 		return null;
