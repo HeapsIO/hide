@@ -238,7 +238,21 @@ class BlendSpace2DEditor extends hide.view.FileView {
 					hide.comp.ContextMenu.createFromEvent(e, options);
 				}
 
+				svg.ondragover = (e:js.html.DragEvent) -> {
+					if (e.dataTransfer.types.contains(AnimList.dragEventKey)) {
+						e.preventDefault();
+					}
+				}
 
+				svg.ondrop = (e:js.html.DragEvent) -> {
+					if (e.dataTransfer.types.contains(AnimList.dragEventKey)) {
+						e.preventDefault();
+
+							var pos = getPointPos(e.clientX, e.clientY, true);
+							var newPoint = {x: pos.x, y: pos.y, animPath: e.dataTransfer.getData(AnimList.dragEventKey)};
+							addPoint(newPoint, true);
+					}
+				}
 			}
 			panel.onResize = refreshGraph;
 
@@ -254,10 +268,11 @@ class BlendSpace2DEditor extends hide.view.FileView {
 			}
 		}
 
-		propertiesContainer = new hide.Element("<properties-container></properties-container>").appendTo(root).addClass("hide-properties");
+		propertiesContainer = new hide.Element("<properties-container></properties-container>").appendTo(root);
 		{
-			new Element("<h1>Parameters</h1>").appendTo(propertiesContainer);
-			propsEditor = new hide.comp.PropsEditor(undo, propertiesContainer);
+			var paramContainer = new Element('<parameters-container></parameters-container>').appendTo(propertiesContainer).addClass("hide-properties");
+			new Element("<h1>Parameters</h1>").appendTo(paramContainer);
+			propsEditor = new hide.comp.PropsEditor(undo, paramContainer);
 			refreshPropertiesPannel();
 		}
 		refreshGraph();
@@ -365,6 +380,8 @@ class BlendSpace2DEditor extends hide.view.FileView {
 			var first = AnimGraphEditor.gatherAllPreviewModels(blendSpace2D.animFolder)[0];
 			scenePreview.setObjectPath(first);
 		}
+
+		var animList = new AnimList(propertiesContainer, null, scenePreview.listAnims(blendSpace2D.animFolder));
     }
 
 	function deletePoint(index: Int) {
@@ -388,14 +405,15 @@ class BlendSpace2DEditor extends hide.view.FileView {
 		function exec(isUndo: Bool) {
 			if (!isUndo) {
 				blendSpace2D.points.insert(index, point);
+				blendSpace2D.triangulate();
 				if (select)
 					setSelection(index);
 			} else {
 				blendSpace2D.points.splice(index, 1);
+				blendSpace2D.triangulate();
 				if (select)
 					setSelection(prevSelection);
 			}
-			blendSpace2D.triangulate();
 			refreshGraph();
 		}
 		exec(false);

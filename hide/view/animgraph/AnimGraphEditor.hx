@@ -208,7 +208,6 @@ class AnimGraphEditor extends GenericGraphEditor {
 
                 e.dataTransfer.setData("index", '${paramIndex}');
                 e.dataTransfer.dropEffect = "move";
-                trace("Dragstart", e.dataTransfer.getData("index"));
             }
 
             inline function isAfter(e) {

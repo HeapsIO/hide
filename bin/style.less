@@ -4537,6 +4537,38 @@ hide-popover {
 
 }
 
+.context-menu2 .search-bar, .fancy-search-bar{
+
+	background-color: #444;
+	border: 1px solid #666;
+	border-radius: 2px;
+	box-sizing: border-box;
+	position: relative;
+
+	input {
+		color: #aaaaaa;
+		font-family: var(--default-font), Geneva, Tahoma, sans-serif;
+		width: 100%;
+		box-sizing: border-box;
+
+		border: none;
+		margin: none;
+
+		&:focus {
+			outline: none;
+		}
+	}
+
+	&:after {
+		color: #aaaaaa;
+		content: "\f002";
+		font-family: "FontAwesome";
+		position: absolute;
+		right: 6px;
+		top: 2px;
+	}
+}
+
 .context-menu2 {
 	--offset-x: 4;
 	--offset-y: 0;
@@ -4565,38 +4597,6 @@ hide-popover {
 		bottom: 5px;
 		right: 5px;
 		margin: 0;
-	}
-
-	.search-bar {
-
-		background-color: #444;
-		border: 1px solid #666;
-		border-radius: 2px;
-		box-sizing: border-box;
-		position: relative;
-
-		input {
-			color: #aaaaaa;
-			font-family: var(--default-font), Geneva, Tahoma, sans-serif;
-			width: 100%;
-			box-sizing: border-box;
-
-			border: none;
-			margin: none;
-
-			&:focus {
-				outline: none;
-			}
-		}
-
-		&:after {
-			color: #aaaaaa;
-			content: "\f002";
-			font-family: "FontAwesome";
-			position: absolute;
-			right: 6px;
-			top: 2px;
-		}
 	}
 
 	menu {
@@ -5034,6 +5034,7 @@ graph-editor-root {
 		flex-direction: column;
 		flex-basis: 300px;
 
+
 		border-left: var(--basic-border);
 
 		background-color: var(--bg-1);
@@ -5250,11 +5251,46 @@ blend-space-2d-root {
 
 		display: flex;
 		flex-direction: column;
-		flex-basis: 320px;
+		width: 320px;
 
 		border-left: var(--basic-border);
 
 		background-color: var(--bg-1);
+
+		parameters-container {
+			flex-grow: 1;
+		}
 	}
 
+}
+
+.anim-list {
+	padding: var(--basic-padding);
+	border: var(--basic-border);
+	border-radius: var(--basic-border-radius);
+	height: 400px;
+	display: flex;
+	flex-direction: column;
+	h1 {
+		font-size: 1em;
+		padding: 0;
+		margin: 0;
+		font-weight: normal;
+	}
+
+	> ul {
+		flex-grow: 1;
+		overflow: auto;
+		width: 100%;
+		border: var(--basic-border);
+		border-radius: var(--basic-border-radius);
+		padding: var(--basic-padding);
+
+		> li {
+			&:hover {
+				background-color: var(--hover-highlight);
+			}
+			border-radius: var(--basic-border-radius);
+		}
+	}
 }

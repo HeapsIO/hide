@@ -3860,6 +3860,36 @@ hide-popover hide-content {
   border: 1px solid #fff;
   pointer-events: none;
 }
+.context-menu2 .search-bar,
+.fancy-search-bar {
+  background-color: #444;
+  border: 1px solid #666;
+  border-radius: 2px;
+  box-sizing: border-box;
+  position: relative;
+}
+.context-menu2 .search-bar input,
+.fancy-search-bar input {
+  color: #aaaaaa;
+  font-family: var(--default-font), Geneva, Tahoma, sans-serif;
+  width: 100%;
+  box-sizing: border-box;
+  border: none;
+  margin: none;
+}
+.context-menu2 .search-bar input:focus,
+.fancy-search-bar input:focus {
+  outline: none;
+}
+.context-menu2 .search-bar:after,
+.fancy-search-bar:after {
+  color: #aaaaaa;
+  content: "\f002";
+  font-family: "FontAwesome";
+  position: absolute;
+  right: 6px;
+  top: 2px;
+}
 .context-menu2 {
   --offset-x: 4;
   --offset-y: 0;
@@ -3885,32 +3915,6 @@ hide-popover hide-content {
   bottom: 5px;
   right: 5px;
   margin: 0;
-}
-.context-menu2 .search-bar {
-  background-color: #444;
-  border: 1px solid #666;
-  border-radius: 2px;
-  box-sizing: border-box;
-  position: relative;
-}
-.context-menu2 .search-bar input {
-  color: #aaaaaa;
-  font-family: var(--default-font), Geneva, Tahoma, sans-serif;
-  width: 100%;
-  box-sizing: border-box;
-  border: none;
-  margin: none;
-}
-.context-menu2 .search-bar input:focus {
-  outline: none;
-}
-.context-menu2 .search-bar:after {
-  color: #aaaaaa;
-  content: "\f002";
-  font-family: "FontAwesome";
-  position: absolute;
-  right: 6px;
-  top: 2px;
 }
 .context-menu2 menu {
   max-height: min(500px, 90vh);
@@ -4424,7 +4428,38 @@ blend-space-2d-root properties-container {
   padding: var(--basic-padding);
   display: flex;
   flex-direction: column;
-  flex-basis: 320px;
+  width: 320px;
   border-left: var(--basic-border);
   background-color: var(--bg-1);
+}
+blend-space-2d-root properties-container parameters-container {
+  flex-grow: 1;
+}
+.anim-list {
+  padding: var(--basic-padding);
+  border: var(--basic-border);
+  border-radius: var(--basic-border-radius);
+  height: 400px;
+  display: flex;
+  flex-direction: column;
+}
+.anim-list h1 {
+  font-size: 1em;
+  padding: 0;
+  margin: 0;
+  font-weight: normal;
+}
+.anim-list > ul {
+  flex-grow: 1;
+  overflow: auto;
+  width: 100%;
+  border: var(--basic-border);
+  border-radius: var(--basic-border-radius);
+  padding: var(--basic-padding);
+}
+.anim-list > ul > li {
+  border-radius: var(--basic-border-radius);
+}
+.anim-list > ul > li:hover {
+  background-color: var(--hover-highlight);
 }
