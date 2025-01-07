@@ -20,6 +20,7 @@ class ProjectSettings extends hide.ui.View<{}> {
 
 	var settings : Array<LocalSetting>;
 	var currentFilter = Filter.NONE;
+	var loading = false;
 
 	public function new( ?state ) {
 		super(state);
@@ -35,23 +36,31 @@ class ProjectSettings extends hide.ui.View<{}> {
 		keys.register("redo", function() undo.redo());
 
 		new Element('<div class="project-settings">
-			<h1>Project settings</h1>
-			<div class="loading">
-				<div class="ico ico-spinner fa-spin"></div>
-				<p>Loading settings ...</p>
-			</div>
+		<h1>Project settings</h1>
+		<div class="loading">
+		<div class="ico ico-spinner fa-spin"></div>
+		<p>Loading settings ...</p>
+		</div>
 		</div>').appendTo(element);
+		loading = true;
 	}
 
 	override function onActivate() {
 		super.onActivate();
+		load();
+	}
+
+	function load() {
+		if (!loading) {
+			haxe.Timer.delay(load, 100);
+			return;
+		}
 
 		if (settings != null)
 			return;
 
 		settings = [];
 		getPropsFiles(ide.projectDir);
-
 		element.empty();
 		var root = new Element('<div class="project-settings">
 			<h1>Project settings</h1>
@@ -235,7 +244,9 @@ class ProjectSettings extends hide.ui.View<{}> {
 		});
 
 		// Render props
-		var renderProps : Array<Dynamic> = Reflect.field(obj, RENDERPROPS_ENTRY);
+		var v = Reflect.field(obj, RENDERPROPS_ENTRY);
+		var renderProps : Array<Dynamic> = v is Array ? v : [{name: "", value:v}];
+		Reflect.setField(obj, RENDERPROPS_ENTRY, renderProps);
 		var renderPropsEl = new Element('<div>
 			<h2>Render props</h2>
 			<div class="array">
