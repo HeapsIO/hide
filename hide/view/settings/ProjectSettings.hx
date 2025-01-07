@@ -8,7 +8,6 @@ typedef LocalSetting = {
 
 enum Filter {
 	NONE;
-	LOD;
 	MATLIB;
 	RENDERPROPS;
 }
@@ -18,15 +17,13 @@ class ProjectSettings extends hide.ui.View<{}> {
 
 	public static var MATLIB_ENTRY = "materialLibraries";
 	public static var RENDERPROPS_ENTRY = "scene.renderProps";
-	public static var LOD_ENTRY = "lods.screenRatio";
 
 	var settings : Array<LocalSetting>;
 	var currentFilter = Filter.NONE;
 
 	public function new( ?state ) {
 		super(state);
-		settings = [];
-		getPropsFiles(ide.projectDir);
+		settings = null;
 	}
 
 	override function getTitle() {
@@ -37,6 +34,25 @@ class ProjectSettings extends hide.ui.View<{}> {
 		keys.register("undo", function() undo.undo());
 		keys.register("redo", function() undo.redo());
 
+		new Element('<div class="project-settings">
+			<h1>Project settings</h1>
+			<div class="loading">
+				<div class="ico ico-spinner fa-spin"></div>
+				<p>Loading settings ...</p>
+			</div>
+		</div>').appendTo(element);
+	}
+
+	override function onActivate() {
+		super.onActivate();
+
+		if (settings != null)
+			return;
+
+		settings = [];
+		getPropsFiles(ide.projectDir);
+
+		element.empty();
 		var root = new Element('<div class="project-settings">
 			<h1>Project settings</h1>
 			<div class="body">
@@ -46,9 +62,8 @@ class ProjectSettings extends hide.ui.View<{}> {
 						<p>Filter : </p>
 						<select class="filter">
 							<option value="0" selected>None</option>
-							<option value="1">LODs</option>
-							<option value="2">Material libraries</option>
-							<option value="3">Render props</option>
+							<option value="1">Material libraries</option>
+							<option value="2">Render props</option>
 						</select>
 					</div>
 				</div>
@@ -86,7 +101,6 @@ class ProjectSettings extends hide.ui.View<{}> {
 
 				var filtered = false;
 				if (!currentFilter.match(Filter.NONE)) {
-					filtered = filtered || currentFilter.match(Filter.LOD) && !Reflect.hasField(s.content, LOD_ENTRY);
 					filtered = filtered || currentFilter.match(Filter.MATLIB) && !Reflect.hasField(s.content, MATLIB_ENTRY);
 					filtered = filtered || currentFilter.match(Filter.RENDERPROPS) && !Reflect.hasField(s.content, RENDERPROPS_ENTRY);
 				}

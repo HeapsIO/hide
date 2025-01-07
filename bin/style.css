@@ -3545,6 +3545,14 @@ div.gradient-box {
 .project-settings h1 {
   margin: 5px 5px 5px 10px;
 }
+.project-settings .loading {
+  display: flex;
+  margin-left: 10px;
+}
+.project-settings .loading .ico {
+  margin-right: 5px;
+  align-self: center;
+}
 .project-settings .body {
   width: 100%;
   height: 100%;
