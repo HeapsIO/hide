@@ -246,7 +246,7 @@ class ProjectSettings extends hide.ui.View<{}> {
 
 		// Render props
 		var v = Reflect.field(obj, RENDERPROPS_ENTRY);
-		var renderProps : Array<Dynamic> = v is Array ? v : [{name: "", value:v}];
+		var renderProps : Array<Dynamic> = v is Array ? v : v != null ? [{name: "", value:v}] : null;
 		Reflect.setField(obj, RENDERPROPS_ENTRY, renderProps);
 		var renderPropsEl = new Element('<div>
 			<h2>Render props</h2>
