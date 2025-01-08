@@ -1454,7 +1454,10 @@ class Ide extends hide.tools.IdeData {
 
 	public function showFileInResources(path: String) {
 		var filetree = getViews(hide.view.FileTree)[0];
-		if( filetree != null ) {
+		if( filetree != null) {
+			if (@:privateAccess filetree.tree == null)
+				filetree.onDisplay();
+			filetree.activate();
 			filetree.revealNode(path);
 		}
 	}
