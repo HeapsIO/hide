@@ -13,12 +13,27 @@ class MaterialSelector extends hrt.prefab.Prefab {
 
 	@:s public var selections : Array<MaterialSelection> = [{
 		passName : "all",
-	}]; 
+	}];
+	public var filterObj : h3d.scene.Object -> Bool;
 
 	public function getPasses(local3d: h3d.scene.Object = null) : Array<SelectedPass> {
 		if (local3d == null)
 			local3d = findFirstLocal3d();
-		var mats = local3d.getMaterials();
+		var mats = [];
+		if ( filterObj == null )
+			mats = local3d.getMaterials();
+		else {
+			function recObj(o : h3d.scene.Object) {
+				mats.concat(o.getMaterials(false));
+				for ( c in @:privateAccess o.children ) {
+					if ( !filterObj(c) )
+						continue;
+					recObj(c);
+				}
+			}
+			recObj(local3d);
+		}
+
 		var passes = [];
 		var selectionSorted = selections.copy();
 		selectionSorted.sort((s1, s2) -> s1.passName == "all" ? return 1 : -1);
@@ -79,7 +94,7 @@ class MaterialSelector extends hrt.prefab.Prefab {
 		var add = new hide.Element('<li><p><a href="#">[+]</a></p></li>');
 		add.appendTo(list);
 		add.find("a").click(function(_) {
-			selections.push({ 
+			selections.push({
 				passName : "",
 			});
 			ctx.rebuildProperties();

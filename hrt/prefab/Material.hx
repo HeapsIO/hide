@@ -20,6 +20,8 @@ class Material extends Prefab {
 	@:s public var refMatLib : String;
 	@:s public var overrides : Array<Dynamic> = [];
 
+	public var filterObj : h3d.scene.Object -> Bool;
+
 	#if editor
 	var previewSphere : h3d.scene.Object;
 	var gradientFollower : GradientFollower;
@@ -66,8 +68,20 @@ class Material extends Prefab {
 	public function getMaterials(local3d: h3d.scene.Object = null, includePreviewMats : Bool = false) {
 		if (local3d == null)
 			local3d = findFirstLocal3d();
-		var mats = local3d.getMaterials();
-		mats = mats.filter(m -> filter(m));
+		var mats = [];
+		if ( filterObj == null )
+			mats = local3d.getMaterials();
+		else {
+			function recObj(o : h3d.scene.Object) {
+				mats.concat(o.getMaterials(false));
+				for ( c in @:privateAccess o.children ) {
+					if ( !filterObj(c) )
+						continue;
+					recObj(c);
+				}
+			}
+			recObj(local3d);
+		}
 
 		#if editor
 		if (this.previewSphere != null)

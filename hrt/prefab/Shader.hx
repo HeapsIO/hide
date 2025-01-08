@@ -107,16 +107,24 @@ class Shader extends Prefab {
 
 		if( Std.isOfType(parent, Material) ) {
 			var material : Material = cast parent;
+			var prevFilterObj = material.filterObj;
+			if ( filterObj != null )
+				material.filterObj = filterObj;
 			for( m in material.getMaterials(true) )
-					callb(null, m);
+				callb(null, m);
+			material.filterObj = prevFilterObj;
 		} else if ( Std.isOfType(parent, MaterialSelector) ) {
 			var materialSelector = cast(parent, MaterialSelector);
+			var prevFilterObj = materialSelector.filterObj;
+			if ( filterObj != null )
+				materialSelector.filterObj = filterObj;
 			var passSelect = h3d.mat.MaterialSetup.current.createMaterial();
 			for ( p in materialSelector.getPasses() ) {
 				passSelect.name = p.all ? "" : PASS_SELECT;
 				@:privateAccess passSelect.passes = p.pass;
 				callb(null, passSelect);
 			}
+			materialSelector.filterObj = prevFilterObj;
 		} else {
 			var objs = [];
 			function pushUnique(obj : h3d.scene.Object ) {
