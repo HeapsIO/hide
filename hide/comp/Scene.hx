@@ -340,7 +340,7 @@ class Scene extends hide.comp.Component implements h3d.IDrawable {
 		cleanup.push(function() { ide.fileWatcher.unregister( path, onChange ); });
 	}
 
-	public function listAnims( path : String ) {
+	public function listAnims( path : String, customFilter : (f:String) -> Bool = null ) {
 		var isDir = sys.FileSystem.isDirectory(ide.getPath(path));
 
 		var config = hide.Config.loadForFile(ide, path);
@@ -370,6 +370,8 @@ class Scene extends hide.comp.Component implements h3d.IDrawable {
 			for( f in try sys.FileSystem.readDirectory(dir) catch( e : Dynamic ) [] ) {
 				var file = f.toLowerCase();
 				if( StringTools.startsWith(f,"Anim_") && (StringTools.endsWith(file,".hmd") || StringTools.endsWith(file,".fbx")) )
+					anims.push(dir+"/"+f);
+				if (customFilter != null && customFilter(f))
 					anims.push(dir+"/"+f);
 			}
 		}

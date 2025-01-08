@@ -11,6 +11,13 @@ class Output extends AnimNode {
 		// update out using inputs
 	}
 
+	override function getInfo():hide.view.GraphInterface.GraphNodeInfo {
+		var info = super.getInfo();
+		info.dontAddRemove = true;
+		info.outputs = [];
+		return info;
+	}
+
 	override function getSize() : Int {
 		return Node.SIZE_SMALL;
 	}
@@ -21,5 +28,9 @@ class Output extends AnimNode {
 
 	override function getBoneTransform(boneId:Int, outMatrix:h3d.Matrix, ctx:hrt.animgraph.nodes.AnimNode.GetBoneTransformContext) {
 		return a.getBoneTransform(boneId, outMatrix, ctx);
+	}
+
+	override function canCreateManually():Bool {
+		return false;
 	}
 }

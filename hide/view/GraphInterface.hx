@@ -38,6 +38,10 @@ typedef GraphNodeInfo = {
     **/
     ?contextMenu : (e: js.html.MouseEvent) -> Void,
 
+    /**
+        If true, this node cannot be added, removed, or cloned. It must be created externaly. Used for things like fixed inputs or ouputs
+    **/
+    ?dontAddRemove: Bool,
 };
 
 typedef NodeInput = {

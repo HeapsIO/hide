@@ -52,26 +52,19 @@ class BlendSpace2DEditor extends hide.view.FileView {
 	}
 
 	override function onDisplay() {
+		previewModel = null;
+		animPreview = null;
 		blendSpace2D = Std.downcast(hide.Ide.inst.loadPrefab(state.path, null,  true), hrt.animgraph.BlendSpace2D);
 		if (blendSpace2D == null)
 			throw "Invalid blendSpace2D";
 		super.onDisplay();
 		if (blendSpace2D.animFolder == null) {
-            element.html("
-                <h1>Choose a folder containing the models to animate</h1>
-                <button-2></button-2>
-            ");
-
-            var button = new hide.comp.Button(null, element.find("button-2"), "Choose folder");
-            button.onClick = () -> {
-                ide.chooseDirectory((path) -> {
-                    if (path != null) {
-                        blendSpace2D.animFolder = path;
-                        save();
-                        onDisplay();
-                    }
-                });
-            }
+			element.html('');
+			element.append(AnimGraphEditor.createChooseFolderPrompt((path: String) -> {
+				blendSpace2D.animFolder = path;
+				save();
+				onDisplay();
+			}));
 			return;
 		}
 
@@ -266,6 +259,20 @@ class BlendSpace2DEditor extends hide.view.FileView {
 				previewModel = scenePreview.prefab?.find(hrt.prefab.Model, (f) -> StringTools.startsWith(f.source, blendSpace2D.animFolder))?.local3d;
 				refreshPreviewAnimation();
 			}
+
+			var toolbar = new Element('
+			<div class="hide-toolbar2">
+				<div class="tb-group">
+					<div class="button2 transparent" title="More options">
+						<div class="ico ico-navicon"></div>
+					</div>
+				</div>
+			</div>').appendTo(previewContainer);
+			var menu = toolbar.find(".button2");
+
+			menu.get(0).onclick = (e: js.html.MouseEvent) -> {
+				hide.comp.ContextMenu.createDropdown(menu.get(0), []);
+			}
 		}
 
 		propertiesContainer = new hide.Element("<properties-container></properties-container>").appendTo(root);
@@ -279,6 +286,20 @@ class BlendSpace2DEditor extends hide.view.FileView {
 
 		keys.register("delete", deleteSelection);
 	}
+
+    override function buildTabMenu():Array<hide.comp.ContextMenu.MenuItem> {
+        var menu = super.buildTabMenu();
+        menu.push({isSeparator: true});
+        menu.push({label: "Reset Model Folder", click: () -> {
+            if (ide.confirm("Warning, resetting the model folder could lead to incorrect animations. Are you sure you want to proceed ?")) {
+                blendSpace2D.animFolder = null;
+                save();
+                onDisplay();
+            }
+        }});
+
+        return menu;
+    }
 
 	override function getDefaultContent():haxe.io.Bytes {
 		var animgraph = (new hrt.animgraph.BlendSpace2D(null, null)).serialize();
@@ -382,6 +403,7 @@ class BlendSpace2DEditor extends hide.view.FileView {
 		}
 
 		var animList = new AnimList(propertiesContainer, null, scenePreview.listAnims(blendSpace2D.animFolder));
+		scenePreview.resetPreviewCamera();
     }
 
 	function deletePoint(index: Int) {

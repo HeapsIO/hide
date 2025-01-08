@@ -22,22 +22,12 @@ class AnimGraphEditor extends GenericGraphEditor {
         animGraph = cast hide.Ide.inst.loadPrefab(state.path, null,  true);
 
         if (animGraph.animFolder == null) {
-            element.html("
-                <h1>Choose a folder containing the models to animate</h1>
-                <button-2></button-2>
-            ");
-
-            var button = new hide.comp.Button(null, element.find("button-2"), "Choose folder");
-            button.onClick = () -> {
-                ide.chooseDirectory((path) -> {
-                    if (path != null) {
-                        animGraph.animFolder = path;
-                        save();
-                        reloadView();
-                    }
-                });
-            }
-
+            element.html('');
+            element.append(createChooseFolderPrompt((path: String) -> {
+                animGraph.animFolder = path;
+                save();
+                reloadView();
+            }));
             return;
         }
 
@@ -114,6 +104,45 @@ class AnimGraphEditor extends GenericGraphEditor {
                 }
             }
         });
+    }
+
+    public static function createChooseFolderPrompt(onSet: (path: String) -> Void) : Element {
+        var element = new Element("<center-content>
+                <div class='basic-border'>
+                    <h1>Choose a folder containing the models to animate</h1>
+                    <button-2></button-2>
+                <div>
+            </center-content>
+        ");
+
+        var button = new hide.comp.Button(null, element.find("button-2"), "Choose folder");
+        button.onClick = () -> {
+            hide.Ide.inst.chooseDirectory((path) -> {
+                if (path != null) {
+                    if (gatherAllPreviewModels(path).length <= 0) {
+                        hide.Ide.inst.quickError("Folder doesn't contain any valid model");
+                        return;
+                    }
+                    onSet(path);
+                }
+            });
+        }
+
+        return element;
+    }
+
+    override function buildTabMenu():Array<hide.comp.ContextMenu.MenuItem> {
+        var menu = super.buildTabMenu();
+        menu.push({isSeparator: true});
+        menu.push({label: "Reset Model Folder", click: () -> {
+            if (ide.confirm("Warning, resetting the model folder could lead to incorrect animations. Are you sure you want to proceed ?")) {
+                animGraph.animFolder = null;
+                save();
+                reloadView();
+            }
+        }});
+
+        return menu;
     }
 
     static public function gatherAllPreviewModels(basePath : String) : Array<String> {
@@ -364,7 +393,9 @@ class AnimGraphEditor extends GenericGraphEditor {
 	}
 
     override function getDefaultContent() : haxe.io.Bytes {
-        @:privateAccess return haxe.io.Bytes.ofString(ide.toJSON(new hrt.animgraph.AnimGraph(null, null).serialize()));
+        var inst = new hrt.animgraph.AnimGraph(null, null);
+        inst.nodes.push(new hrt.animgraph.nodes.Output());
+        @:privateAccess return haxe.io.Bytes.ofString(ide.toJSON(inst.serialize()));
     }
 
     override function save() {
@@ -381,7 +412,7 @@ class AnimGraphEditor extends GenericGraphEditor {
         if (scenePreview.getObjectPath() == null) {
             scenePreview.setObjectPath(gatherAllPreviewModels(animGraph.animFolder)[0]);
         }
-        scenePreview.resetCamera();
+        scenePreview.resetPreviewCamera();
     }
 
     override function getNodes() : Iterator<IGraphNode> {

@@ -34,6 +34,8 @@ class GenericGraphEditor extends hide.view.FileView implements IGraphEditor {
         initGraphEditor();
 
         initScenePreview();
+
+        graphEditor.centerView();
     }
 
     function initGraphEditor() {

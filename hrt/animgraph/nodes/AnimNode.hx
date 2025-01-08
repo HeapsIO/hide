@@ -106,13 +106,12 @@ class AnimNode extends Node {
 	override function getInfo():hide.view.GraphInterface.GraphNodeInfo {
 		var info = super.getInfo();
 
-		var animGraphEditor : hide.view.animgraph.AnimGraphEditor = cast editor.editor;
 		info.playButton = {
 			getActive: () -> {
-				return this == @:privateAccess animGraphEditor.previewNode;
+				return this == @:privateAccess getAnimEditor().previewNode;
 			},
 			onClick: () -> {
-				animGraphEditor.setPreview(this);
+				getAnimEditor().setPreview(this);
 			}
 		};
 		return info;
