@@ -24,7 +24,7 @@ class MaterialSelector extends hrt.prefab.Prefab {
 			mats = local3d.getMaterials();
 		else {
 			function recObj(o : h3d.scene.Object) {
-				mats.concat(o.getMaterials(false));
+				mats = mats.concat(o.getMaterials(false));
 				for ( c in @:privateAccess o.children ) {
 					if ( !filterObj(c) )
 						continue;
