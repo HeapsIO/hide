@@ -163,6 +163,16 @@ class FileTree extends FileView {
 						tree.refresh();
 					}
 				}},
+				{ label: "Replace Refs With", enabled: selection.length > 0, click : function() {
+					ide.chooseFile(["*"], (newPath: String) -> {
+						if(ide.confirm('Replace all refs of $selection with $newPath ? This action can not be undone')) {
+							for (oldPath in selection) {
+								replacePathInFiles(oldPath, newPath, false);
+							}
+							ide.message("Done");
+						}
+					});
+				}},
 			]);
 		});
 		tree.onDblClick = onOpenFile;
@@ -264,32 +274,7 @@ class FileTree extends FileView {
 		if( !wasRenamed )
 			sys.FileSystem.rename(ide.getPath(path), ide.getPath(newPath));
 
-		var changed = false;
-		function filter(ctx: hide.Ide.FilterPathContext) {
-			var p = ctx.valueCurrent;
-			if( p == null )
-				return;
-			if( p == path ) {
-				ctx.change(newPath);
-				return;
-			}
-			if( p == "/"+path ) {
-				ctx.change(newPath);
-				return;
-			}
-			if( isDir ) {
-				if( StringTools.startsWith(p,path+"/") ) {
-					ctx.change(newPath + p.substr(path.length));
-					return;
-				}
-				if( StringTools.startsWith(p,"/"+path+"/") ) {
-					ctx.change("/"+newPath + p.substr(path.length+1));
-					return;
-				}
-			}
-		}
-
-		ide.filterPaths(filter);
+		replacePathInFiles(path, newPath, isDir);
 
 		var dataDir = new haxe.io.Path(path);
 		if( dataDir.ext != "dat" ) {
@@ -390,6 +375,34 @@ class FileTree extends FileView {
 		}
 
 		return true;
+	}
+
+	function replacePathInFiles(oldPath: String, newPath: String, isDir: Bool = false) {
+		function filter(ctx: hide.Ide.FilterPathContext) {
+			var p = ctx.valueCurrent;
+			if( p == null )
+				return;
+			if( p == oldPath ) {
+				ctx.change(newPath);
+				return;
+			}
+			if( p == "/"+oldPath ) {
+				ctx.change(newPath);
+				return;
+			}
+			if( isDir ) {
+				if( StringTools.startsWith(p,oldPath+"/") ) {
+					ctx.change(newPath + p.substr(oldPath.length));
+					return;
+				}
+				if( StringTools.startsWith(p,"/"+oldPath+"/") ) {
+					ctx.change("/"+newPath + p.substr(oldPath.length+1));
+					return;
+				}
+			}
+		}
+
+		ide.filterPaths(filter);
 	}
 
 	function onAllowMove(e: String, to : String) {

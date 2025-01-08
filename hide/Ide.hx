@@ -1085,7 +1085,13 @@ class Ide extends hide.tools.IdeData {
 		}
 		for( sheet in tmpSheets )
 			@:privateAccess sheet.sheet.lines = null;
+
+		for (customFilter in customFilepathRefFilters) {
+			customFilter(context);
+		}
 	}
+
+	public var customFilepathRefFilters : Array<(ctx : FilterPathContext) -> Void> = [];
 
 	public function refreshFont() {
 		var font = ideConfig.useAlternateFont ? "Verdana" : "Inter";
