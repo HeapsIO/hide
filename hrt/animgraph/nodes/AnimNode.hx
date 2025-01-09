@@ -33,7 +33,7 @@ class GetBoneTransformContext {
 	public function getDefPose() : h3d.Matrix {
 		if (defMatrix != null) return defMatrix;
 		var m = if (targetObj.targetSkin != null) {
-			targetObj.targetSkin.getSkinData().allJoints[targetObj.targetJoint].defMat;
+			targetObj.targetSkin.getSkinData().allJoints[targetObj.targetJoint].defMat ?? @:privateAccess h3d.anim.SmoothTransition.MZERO;
 		} else {
 			targetObj.targetObject.defaultTransform ?? @:privateAccess h3d.anim.SmoothTransition.MZERO;
 		}

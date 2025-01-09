@@ -38,9 +38,6 @@ class Input extends AnimNode {
 		@:privateAccess
 
 		if (!anim.isSync) {
-			// anim.getObjects()[id].targetObject.defaultTransform._14 = ctx.getDefPose()._41;
-			// anim.getObjects()[id].targetObject.defaultTransform._24 = ctx.getDefPose()._42;
-			// anim.getObjects()[id].targetObject.defaultTransform._34 = ctx.getDefPose()._43;
 			anim.sync(true);
 			anim.isSync = true;
 		}

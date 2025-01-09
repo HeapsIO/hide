@@ -17,7 +17,7 @@ class AnimGraphInstance extends h3d.anim.Animation {
 	var workMatrix = new h3d.Matrix();
 
 	var boneMap: Map<String, Int> = [];
-	public var parameterMap: Map<String, hrt.animgraph.AnimGraph.Parameter> = [];
+	var parameterMap: Map<String, hrt.animgraph.AnimGraph.Parameter> = [];
 
 	var target : h3d.scene.Object = null;
 
@@ -49,6 +49,27 @@ class AnimGraphInstance extends h3d.anim.Animation {
 		this.rootNode = rootNode;
 
 		defaultPoseNode = new hrt.animgraph.nodes.DefaultPose();
+	}
+
+	public function setParam(name: String, value: Float) {
+		parameterMap.get(name)?.runtimeValue = value;
+	}
+
+	public function getParam(name: String) : Null<Float> {
+		return parameterMap.get(name);
+	}
+
+	public function resetParam(name: String) {
+		var param = parameterMap.get(name);
+		if (param != null) {
+			param.runtimeValue = param.defaultValue;
+		}
+	}
+
+	public function resetParams() {
+		for (p in parameterMap) {
+			p.runtimeValue = p.defaultValue;
+		}
 	}
 
 	override function clone(?target: h3d.anim.Animation) : h3d.anim.Animation {
@@ -140,9 +161,9 @@ class AnimGraphInstance extends h3d.anim.Animation {
 				decomposeMatrix(workMatrix, targetMatrix);
 				if (obj.targetSkin != null) {
 					var def = obj.targetSkin.getSkinData().allJoints[obj.targetJoint].defMat;
-					targetMatrix._41 = def._41;
-					targetMatrix._42 = def._42;
-					targetMatrix._43 = def._43;
+					// targetMatrix._41 = def._41;
+					// targetMatrix._42 = def._42;
+					// targetMatrix._43 = def._43;
 				}
 			} else {
 				targetMatrix.load(workMatrix);
@@ -153,6 +174,21 @@ class AnimGraphInstance extends h3d.anim.Animation {
 	static function decomposeMatrix(inMatrix: h3d.Matrix, outMatrix: h3d.Matrix) {
 		var quat = inline new h3d.Quat(inMatrix._12, inMatrix._13, inMatrix._21, inMatrix._23);
 		inline quat.toMatrix(outMatrix);
+
+		outMatrix._11 *= inMatrix._11;
+		outMatrix._12 *= inMatrix._11;
+		outMatrix._13 *= inMatrix._11;
+		outMatrix._21 *= inMatrix._22;
+		outMatrix._22 *= inMatrix._22;
+		outMatrix._23 *= inMatrix._22;
+		outMatrix._31 *= inMatrix._33;
+		outMatrix._32 *= inMatrix._33;
+		outMatrix._33 *= inMatrix._33;
+
+		outMatrix._41 = inMatrix._41;
+		outMatrix._42 = inMatrix._42;
+		outMatrix._43 = inMatrix._43;
+
 	}
 
 	function updateNodeInputs(node: Node) : Void {
