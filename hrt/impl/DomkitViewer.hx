@@ -33,9 +33,11 @@ class DomkitViewer {
 	}
 
 	public static function loadSource( path : String, pos : Position, fields : Array<Field> ) {
-		var fullPath = try Context.resolvePath(path+".domkit") catch( e : Dynamic ) return null;
+		path += ".domkit";
+		var fullPath = try Context.resolvePath(path) catch( e : Dynamic ) return null;
 		if( fullPath == null )
 			return null;
+		Context.registerModuleDependency(Context.getLocalModule(),fullPath);
 		var fullData = sys.io.File.getContent(fullPath);
 		var data = DomkitFile.parse(fullData);
 		var p = new domkit.MarkupParser();
@@ -112,6 +114,7 @@ class CssEntry extends hxd.fs.FileEntry {
 
 	public function new(path) {
 		this.nativePath = path;
+		this.name = path.split("/").pop();
 	}
 
 	override function getText() {
@@ -452,14 +455,16 @@ class DomkitViewer extends h2d.Object {
 			return null;
 		}
 		createRootArgs = null;
-		var css = cssResources.get(res.entry.path);
-		if( css == null ) {
-			css = new CssResource(res.entry.path);
-			css.cssEntry.text = "";
-			style.load(css);
-			cssResources.set(res.entry.path, css);
+		if( @:privateAccess DomkitStyle.CSS_SOURCES.indexOf(res.entry.path) < 0 ) {
+			var css = cssResources.get(res.entry.path);
+			if( css == null ) {
+				css = new CssResource(res.entry.path);
+				css.cssEntry.text = "";
+				style.load(css);
+				cssResources.set(res.entry.path, css);
+			}
+			css.cssEntry.text = data.css;
 		}
-		css.cssEntry.text = data.css;
 		return comp;
 	}
 
@@ -537,7 +542,7 @@ class DomkitViewer extends h2d.Object {
 				}
 				if( parent == null && (c == null || loadedComponents.indexOf(cast c) >= 0) )
 					parent = domkit.Component.get("flow");
-				if( c == null || (parent != null && c.parent != parent) ) {
+				if( c == null ) {
 					c = new domkit.Component(name,function(args,p) {
 						var obj = compMake(c.parent,args,p);
 						if( obj.dom != null )
@@ -700,7 +705,7 @@ class DomkitStyle extends h2d.domkit.Style {
 		for( r in globals )
 			load(r, true, true);
 		for( path in CSS_SOURCES )
-			load(hxd.res.Loader.currentInstance.load(path+".domkit"));
+			load(hxd.res.Loader.currentInstance.load(path));
 	}
 
 	override function loadData( r : hxd.res.Resource ) {
@@ -708,10 +713,7 @@ class DomkitStyle extends h2d.domkit.Style {
 			return super.loadData(r);
 		var fullData = r.entry.getText();
 		var data = DomkitFile.parse(fullData);
-		var cssIndex = fullData.indexOf(data.css);
-		var prefix = "\n";
-		while( prefix.length < cssIndex ) prefix += " ";
-		return prefix + data.css;
+		return data.css;
 	}
 
 	static var CSS_SOURCES = [];
