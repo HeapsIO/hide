@@ -10,7 +10,8 @@ typedef MenuItem = {
     ?icon: String,
     ?keys: String,
     ?checked: Bool,
-    ?tooltip: String
+    ?tooltip: String,
+    ?radio: () -> Bool, // Radio button instead of checked.
 }
 
 // for retrocompat with the old menu system
@@ -85,6 +86,7 @@ class ContextMenu {
     var autoCleanupTimer: haxe.Timer;
 
     var popupTimer: haxe.Timer;
+    var radioRefresh: Array<() -> Void> = [];
     final openDelayMs = 250;
 
     /**
@@ -464,6 +466,13 @@ class ContextMenu {
 
         refreshCheck();
 
+        if (icon != null && menuItem.radio != null) {
+            var status = menuItem.radio();
+            icon.classList.add("fa");
+            icon.classList.toggle("fa-dot-circle-o", status);
+            icon.classList.toggle("fa-circle-o", !status);
+        }
+
         var span = js.Browser.document.createSpanElement();
         span.innerHTML = menuItem.label;
         span.classList.add("label");
@@ -526,6 +535,8 @@ class ContextMenu {
                 }
                 if (!menuItem.stayOpen) {
                     closeAll();
+                } else {
+                    refreshMenu();
                 }
             }
         } else {
