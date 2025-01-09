@@ -291,7 +291,7 @@ class ContextMenu {
             e.preventDefault();
             if (selected >= 0 && flatItems != null) {
                 if (flatItems[selected].menuItem.click != null) {
-                    flatItems[selected].menuItem.click();
+                    flatItems[selected].elem.click();
                 }
                 else if (flatItems[selected].menuItem.menu != null) {
                     currentSubmenuItemId = flatItems[selected].index;
