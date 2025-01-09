@@ -34,16 +34,6 @@ class ScenePreview extends Scene {
 		menu.get(0).onclick = (e: js.html.MouseEvent) -> {
 			var items : Array<hide.comp.ContextMenu.MenuItem> = [];
 
-			var renderProps = listRenderProps();
-			var renderPropsMenu : Array<hide.comp.ContextMenu.MenuItem> = [];
-			for (prop in renderProps) {
-				renderPropsMenu.push({label: prop.name, click: () -> {
-					previewSettings.renderPropsPath = prop.value;
-					loadSavedRenderProps();
-				}, radio: () -> prop.value == previewSettings.renderPropsPath, stayOpen: true});
-			}
-			items.push({label: "Render Props", menu: renderPropsMenu});
-
 			var loadableMeshes = listLoadableMeshes();
 			if (loadableMeshes.length > 0) {
 				var loadableMeshesMenu : Array<hide.comp.ContextMenu.MenuItem> = [];
@@ -58,7 +48,18 @@ class ScenePreview extends Scene {
 					);
 				}
 				items.push({label: "Preview Mesh", menu: loadableMeshesMenu});
+			}
 
+			var renderProps = listRenderProps();
+			if (renderProps.length > 0) {
+				var renderPropsMenu : Array<hide.comp.ContextMenu.MenuItem> = [];
+				for (prop in renderProps) {
+					renderPropsMenu.push({label: prop.name, click: () -> {
+						previewSettings.renderPropsPath = prop.value;
+						loadSavedRenderProps();
+					}, radio: () -> prop.value == previewSettings.renderPropsPath, stayOpen: true});
+				}
+				items.push({label: "Render Props", menu: renderPropsMenu});
 			}
 
 			hide.comp.ContextMenu.createDropdown(menu.get(0), items);
@@ -134,10 +135,8 @@ class ScenePreview extends Scene {
 				rp = prop;
 			}
 		}
-
-		trace("renderprops", rp);
-		setRenderProps(rp.value);
-		previewSettings.renderPropsPath = rp.value;
+		setRenderProps(rp?.value);
+		previewSettings.renderPropsPath = rp?.value;
 		saveSettings();
 	}
 

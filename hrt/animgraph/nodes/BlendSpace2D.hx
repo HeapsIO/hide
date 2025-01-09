@@ -10,7 +10,7 @@ typedef BlendSpaceInstancePoint = {
 typedef AnimInfo = {
 	anim: h3d.anim.Animation,
 	proxy: hrt.animgraph.nodes.Input.AnimProxy,
-	indexRemap: Array<Int>,
+	indexRemap: Array<Null<Int>>,
 }
 
 @:access(hrt.animgraph.BlendSpace2D)
@@ -77,7 +77,7 @@ class BlendSpace2D extends AnimNode {
 						var proxy = new hrt.animgraph.nodes.Input.AnimProxy(null);
 						var animInstance = animBase.createInstance(proxy);
 
-						var indexRemap = [];
+						var indexRemap : Array<Null<Int>> = [];
 
 						for (boneId => obj in animInstance.getObjects()) {
 							var ourId = boneMap.getOrPut(obj.objectName, curOurBoneId++);
@@ -224,7 +224,6 @@ class BlendSpace2D extends AnimNode {
 		}
 
 		Tools.weightedBlend(workQuats, refQuat, weights, workQuat);
-
 
 		outMatrix.tx = blendedPos.x;
 		outMatrix.ty = blendedPos.y;

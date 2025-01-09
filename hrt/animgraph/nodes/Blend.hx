@@ -50,7 +50,9 @@ class Blend extends AnimNode {
 		m1._43 = z;
 	}
 
+	#if editor
 	override function getSize():Int {
 		return Node.SIZE_SMALL;
 	}
+	#end
 }

@@ -100,7 +100,6 @@ class Macros {
 			fields.push(a);
 		}
 
-		#if editor
 		var thisClass = Context.getLocalClass().get();
 		var classPath = thisClass.pack.copy();
 		classPath.push(thisClass.name);
@@ -178,6 +177,7 @@ class Macros {
 
 		var displayName = nodeName;
 
+		#if editor
 		if (!isRoot && fields.find(f -> f.name == "getDisplayName") == null) {
 			fields.push({
 				name: "getDisplayName",
@@ -190,6 +190,7 @@ class Macros {
 				pos: Context.currentPos(),
 			});
 		}
+		#end
 
 		if (doRegister) {
 
@@ -200,7 +201,6 @@ class Macros {
 				pos: Context.currentPos(),
 			});
 		}
-		#end
 		return fields;
 	}
 

@@ -11,6 +11,7 @@ class Output extends AnimNode {
 		// update out using inputs
 	}
 
+	#if editor
 	override function getInfo():hide.view.GraphInterface.GraphNodeInfo {
 		var info = super.getInfo();
 		info.dontAddRemove = true;
@@ -22,6 +23,11 @@ class Output extends AnimNode {
 		return Node.SIZE_SMALL;
 	}
 
+	override function canCreateManually():Bool {
+		return false;
+	}
+	#end
+
 	override function getBones(ctx:hrt.animgraph.nodes.AnimNode.GetBoneContext):Map<String, Int> {
 		return a.getBones(ctx);
 	}
@@ -30,7 +36,5 @@ class Output extends AnimNode {
 		return a.getBoneTransform(boneId, outMatrix, ctx);
 	}
 
-	override function canCreateManually():Bool {
-		return false;
-	}
+
 }

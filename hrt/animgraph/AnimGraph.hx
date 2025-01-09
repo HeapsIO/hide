@@ -24,9 +24,7 @@ class AnimGraph extends hrt.prefab.Prefab {
 	var nodes: Array<Node> = [];
 	var parameters : Array<Parameter> = [];
 
-	#if editor
 	var nodeIdCount = 0;
-	#end
 
 	override function makeInstance() {
 		throw "don't make this";
@@ -129,7 +127,7 @@ class AnimGraph extends hrt.prefab.Prefab {
 					#if editor
 					hide.Ide.inst.quickError('Missing node type ${nodeData.type} from graph.');
 					#else
-					throw 'Graph ${this.shared.path} contains unknown node ${nodeData.type}';
+					throw 'Graph ${this.shared.prefabSource} contains unknown node ${nodeData.type}';
 					#end
 				}
 			}
