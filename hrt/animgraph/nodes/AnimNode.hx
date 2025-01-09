@@ -35,7 +35,7 @@ class GetBoneTransformContext {
 		var m = if (targetObj.targetSkin != null) {
 			targetObj.targetSkin.getSkinData().allJoints[targetObj.targetJoint].defMat;
 		} else {
-			targetObj.targetObject.defaultTransform;
+			targetObj.targetObject.defaultTransform ?? @:privateAccess h3d.anim.SmoothTransition.MZERO;
 		}
 		Tools.splitMatrix(m, tmpDefMatrix);
 
