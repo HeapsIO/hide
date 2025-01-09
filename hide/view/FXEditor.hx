@@ -212,13 +212,13 @@ private class FXSceneEditor extends hide.comp.SceneEditor {
 			return ret;
 		}
 		var allTypes = super.getNewContextMenu(current, onMake, false);
+		var allTypesGrouped = super.getNewContextMenu(current, onMake, true);
 		var recents = getNewRecentContextMenu(current, onMake);
 
 		var menu = [];
-
-
-
 		var shaderItems : Array<hide.comp.ContextMenu.MenuItem> = [];
+		var spawnItems : Array<hide.comp.ContextMenu.MenuItem> = [];
+		var simulationItems : Array<hide.comp.ContextMenu.MenuItem> = [];
 
 		if (parent.is2D) {
 			for(name in ["Group 2D", "Bitmap", "Anim2D", "Atlas", "Particle2D", "Text", "Shader", "Shader Graph", "Placeholder"]) {
@@ -285,13 +285,17 @@ private class FXSceneEditor extends hide.comp.SceneEditor {
 
 		menu.push({label: null, isSeparator: true});
 
-		//splitMenu(menu, "Shader", shaderItems);
 		menu.push({label: "Shader", menu: shaderItems});
 
+		var spawn = allTypesGrouped.find(t -> t.label == "Spawn");
+		if ( spawn != null )
+			menu.push({label: "Spawn", menu: spawn.menu});
+		var simulation = allTypesGrouped.find(t-> t.label == "Simulation");
+		if ( simulation != null )
+			menu.push({label: "Simulation", menu: simulation.menu});
 
 		menu.push({label: null, isSeparator: true});
 
-		//splitMenu(menu, "Other", allTypes);
 		menu.push({label: "Other", menu: allTypes});
 
 		menu.unshift({

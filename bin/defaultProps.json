@@ -148,7 +148,12 @@
 	"sceneeditor.scalePrecision": 0.01,
 	"sceneeditor.rotatePrecision": 0.1,
 
-	"sceneeditor.newgroups" : ["2D|hrt.prefab.Object2D","3D|hrt.prefab.Object3D","RFX|hrt.prefab.rfx.RendererFX"],
+	"sceneeditor.newgroups" : ["2D|hrt.prefab.Object2D",
+		"3D|hrt.prefab.Object3D",
+		"RFX|hrt.prefab.rfx.RendererFX",
+		"Spawn|hrt.prefab.fx.gpuemitter.SpawnShader",
+		"Simulation|hrt.prefab.fx.gpuemitter.SimulationShader"
+	],
 	"sceneeditor.recentsize" : 6,
 
 	"sceneeditor.icons" : {},
