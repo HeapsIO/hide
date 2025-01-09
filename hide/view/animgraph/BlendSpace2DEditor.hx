@@ -250,6 +250,14 @@ class BlendSpace2DEditor extends hide.view.FileView {
 			panel.onResize = refreshGraph;
 
 			scenePreview = new hide.comp.ScenePreview(config, previewContainer, null, saveDisplayKey + "/preview");
+			scenePreview.listLoadableMeshes = () -> {
+				var ret : Array<{label: String, path: String}> = [];
+				var list = AnimGraphEditor.gatherAllPreviewModels(blendSpace2D.animFolder);
+				for (path in list) {
+					ret.push({label: StringTools.replace(path, blendSpace2D.animFolder + "/", ""), path: path});
+				}
+				return ret;
+			}
 			scenePreviewReady = false;
 			scenePreview.element.addClass("scene-preview");
 
@@ -258,20 +266,6 @@ class BlendSpace2DEditor extends hide.view.FileView {
 			scenePreview.onObjectLoaded = () -> {
 				previewModel = scenePreview.prefab?.find(hrt.prefab.Model, (f) -> StringTools.startsWith(f.source, blendSpace2D.animFolder))?.local3d;
 				refreshPreviewAnimation();
-			}
-
-			var toolbar = new Element('
-			<div class="hide-toolbar2">
-				<div class="tb-group">
-					<div class="button2 transparent" title="More options">
-						<div class="ico ico-navicon"></div>
-					</div>
-				</div>
-			</div>').appendTo(previewContainer);
-			var menu = toolbar.find(".button2");
-
-			menu.get(0).onclick = (e: js.html.MouseEvent) -> {
-				hide.comp.ContextMenu.createDropdown(menu.get(0), []);
 			}
 		}
 
@@ -318,7 +312,13 @@ class BlendSpace2DEditor extends hide.view.FileView {
 			else @:privateAccess {
 				var root : hrt.animgraph.nodes.BlendSpace2D.BlendSpace2D = cast @:privateAccess animPreview.rootNode;
 				var old = root.points[0]?.animInfo?.anim.frame;
-				animPreview.bind(previewModel);
+
+				// if the anim or the mesh changed between the last refreshPreviewAnimation
+				if (previewModel.currentAnimation == animPreview) {
+					animPreview.bind(previewModel);
+				} else {
+					previewModel.playAnimation(animPreview);
+				}
 				if (old != null) {
 					for (point in root.points) {
 						if (point.animInfo != null) {

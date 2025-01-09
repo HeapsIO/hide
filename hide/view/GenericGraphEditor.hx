@@ -111,21 +111,6 @@ class GenericGraphEditor extends hide.view.FileView implements IGraphEditor {
 
         previewContainer.width(width);
         previewContainer.height(height);
-
-        // Toolbar init
-        var toolbar = new Element('
-        <div class="hide-toolbar2">
-            <div class="tb-group">
-                <div class="button2 transparent" title="More options">
-                    <div class="ico ico-navicon"></div>
-                </div>
-            </div>
-        </div>').appendTo(previewContainer);
-		var menu = toolbar.find(".button2");
-
-        menu.get(0).onclick = (e: js.html.MouseEvent) -> {
-            hide.comp.ContextMenu.createDropdown(menu.get(0), getPreviewOptionsMenu());
-        }
     }
 
     function getPreviewOptionsMenu() : Array<hide.comp.ContextMenu.MenuItem> {

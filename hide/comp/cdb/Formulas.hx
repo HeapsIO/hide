@@ -70,7 +70,6 @@ class Formulas {
 	}
 
 	function reloadFile() {
-		throw "Non";
 		load();
 		evaluateAll();
 		editor.save();

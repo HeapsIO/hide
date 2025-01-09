@@ -104,6 +104,11 @@ class AnimGraphEditor extends GenericGraphEditor {
                 }
             }
         });
+
+        scenePreview.listLoadableMeshes = () -> {
+            return [ for (p in gatherAllPreviewModels(animGraph.animFolder)) {label: StringTools.replace(p, animGraph.animFolder + "/", ""), path: p} ];
+        }
+
     }
 
     public static function createChooseFolderPrompt(onSet: (path: String) -> Void) : Element {

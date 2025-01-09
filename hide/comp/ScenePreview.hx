@@ -20,6 +20,49 @@ class ScenePreview extends Scene {
 	public function new(config, parent, el, save: String) {
 		this.saveDisplayKey = save;
 		super(config, parent, el);
+
+		var toolbar = new Element('
+		<div class="hide-toolbar2">
+			<div class="tb-group">
+				<div class="button2 transparent" title="More options">
+					<div class="ico ico-navicon"></div>
+				</div>
+			</div>
+		</div>').appendTo(element);
+		var menu = toolbar.find(".button2");
+
+		menu.get(0).onclick = (e: js.html.MouseEvent) -> {
+			var items : Array<hide.comp.ContextMenu.MenuItem> = [];
+
+			var renderProps = listRenderProps();
+			var renderPropsMenu : Array<hide.comp.ContextMenu.MenuItem> = [];
+			for (prop in renderProps) {
+				renderPropsMenu.push({label: prop.name, click: () -> {
+					previewSettings.renderPropsPath = prop.value;
+					loadSavedRenderProps();
+				}, radio: () -> prop.value == previewSettings.renderPropsPath, stayOpen: true});
+			}
+			items.push({label: "Render Props", menu: renderPropsMenu});
+
+			var loadableMeshes = listLoadableMeshes();
+			if (loadableMeshes.length > 0) {
+				var loadableMeshesMenu : Array<hide.comp.ContextMenu.MenuItem> = [];
+				for (mesh in loadableMeshes) {
+					loadableMeshesMenu.push(
+						{
+							label: mesh.label,
+							click: setObjectPath.bind(mesh.path),
+							radio: ()-> mesh.path == previewSettings.modelPath,
+							stayOpen: true,
+						}
+					);
+				}
+				items.push({label: "Preview Mesh", menu: loadableMeshesMenu});
+
+			}
+
+			hide.comp.ContextMenu.createDropdown(menu.get(0), items);
+		}
 	}
 
 	/**
@@ -27,6 +70,10 @@ class ScenePreview extends Scene {
 	**/
 	public dynamic function onObjectLoaded() {
 
+	}
+
+	public dynamic function listLoadableMeshes() : Array<{label: String, path: String}> {
+		return [];
 	}
 
 	override function preOnReady() {
@@ -38,6 +85,14 @@ class ScenePreview extends Scene {
 		cameraController = new hide.comp.Scene.PreviewCamController(s3d);
 
 		reloadObject();
+
+		if (prefab == null) {
+			var loadableMeshes = listLoadableMeshes();
+			if (loadableMeshes.length > 0) {
+				previewSettings.modelPath = loadableMeshes[0].path;
+				reloadObject();
+			}
+		}
 	}
 
 	function saveSettings() {
