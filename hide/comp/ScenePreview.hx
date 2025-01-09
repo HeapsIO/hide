@@ -2,6 +2,7 @@ package hide.comp;
 
 class ScenePreviewSettings {
     public var modelPath: String = null;
+	public var renderPropsPath: String = null;
 
     public function new() {};
 }
@@ -32,6 +33,7 @@ class ScenePreview extends Scene {
 		super.preOnReady();
 
 		loadSettings();
+		loadSavedRenderProps();
 
 		cameraController = new hide.comp.Scene.PreviewCamController(s3d);
 
@@ -51,6 +53,37 @@ class ScenePreview extends Scene {
 				Reflect.setField(previewSettings, f, v);
 			}
 		}
+	}
+
+	function listRenderProps() : Array<{name: String, value: String}> {
+		var renderProps = config.getLocal("scene.renderProps");
+		var ret : Array<{name: String, value: String}> = [];
+
+		if (renderProps is String) {
+			ret.push({name: "default", value: renderProps});
+		} else if (renderProps is Array) {
+			var renderProps : Array<Dynamic> = cast renderProps;
+			for (renderProp in renderProps) {
+				ret.push({name: renderProp.name, value: renderProp.value});
+			}
+		}
+		return ret;
+	}
+
+	function loadSavedRenderProps() {
+		var path = null;
+		var renderProps = listRenderProps();
+		var rp = renderProps[0];
+		for (prop in renderProps) {
+			if (prop.value == previewSettings.renderPropsPath) {
+				rp = prop;
+			}
+		}
+
+		trace("renderprops", rp);
+		setRenderProps(rp.value);
+		previewSettings.renderPropsPath = rp.value;
+		saveSettings();
 	}
 
 	public function resetPreviewCamera() {

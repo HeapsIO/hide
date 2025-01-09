@@ -25,7 +25,7 @@ class Scene extends hide.comp.Component implements h3d.IDrawable {
 	public var editor : hide.comp.SceneEditor;
 	public var autoDisposeOutOfDocument : Bool = true;
 
-	var currentRenderProps: hrt.prefab.Prefab;
+	var currentRenderProps: hrt.prefab.Reference;
 
 	public var errorMessageBox : Element;
 	var unFocusedTime = 0.;
@@ -579,20 +579,24 @@ class Scene extends hide.comp.Component implements h3d.IDrawable {
 		}
 		currentRenderProps = null;
 
-		if (path == null)
-			return;
-		try {
-			currentRenderProps = Ide.inst.loadPrefab(path);
-		} catch(e) {
+		if (path == null) {
 			return;
 		}
-		var ctx = new hide.prefab.ContextShared(null, new h3d.scene.Object(s3d));
-		ctx.scene = this;
-		currentRenderProps.setSharedRec(ctx);
+		currentRenderProps = new hrt.prefab.Reference(null, new hide.prefab.ContextShared(null, new h3d.scene.Object(s3d)));
+		currentRenderProps.shared.scene = this;
+		currentRenderProps.source = path;
+
 		currentRenderProps.make();
-		var renderProps = currentRenderProps.getOpt(hrt.prefab.RenderProps, true);
-		if (renderProps != null)
-			renderProps.applyProps(s3d.renderer);
+
+		if (currentRenderProps.refInstance != null) {
+			var renderProps = currentRenderProps.refInstance.getOpt(hrt.prefab.RenderProps, true);
+			if (renderProps != null)
+				renderProps.applyProps(s3d.renderer);
+
+			for (light in currentRenderProps.refInstance.findAll(hrt.prefab.Light, true)) {
+				@:privateAccess light.icon.visible = false;
+			}
+		}
 	}
 
 	public dynamic function onUpdate(dt:Float) {
