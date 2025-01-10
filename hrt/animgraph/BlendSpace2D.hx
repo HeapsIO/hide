@@ -11,6 +11,11 @@ class BlendSpace2D extends hrt.prefab.Prefab {
 	@:s var triangles : Array<Array<Int>> = [];
 	@:s var animFolder : String = null; // The folder to use as a base for the animation selection/loading
 
+	@:s var minX = 0.0;
+	@:s var maxX = 1.0;
+	@:s var minY = 0.0;
+	@:s var maxY = 1.0;
+
 	var instance : BlendSpace2DInstance;
 
 	function getInstance() : BlendSpace2DInstance {
@@ -22,7 +27,14 @@ class BlendSpace2D extends hrt.prefab.Prefab {
 
 		var h2dPoints : Array<h2d.col.Point> = [];
 		for (point in points) {
-			h2dPoints.push(new h2d.col.Point(point.x, point.y));
+			// normalize x / y in range 0/1 so the triangulation is done in a square
+			// this avoid the triangulation failing to create triangles when one axis is far larger than the other
+
+			var x = (point.x - minX) / (maxX - minX);
+			var y = (point.y - minY) / (maxY - minY);
+
+
+			h2dPoints.push(new h2d.col.Point(x, y));
 		}
 
 		var triangulation = h2d.col.Delaunay.triangulate(h2dPoints);

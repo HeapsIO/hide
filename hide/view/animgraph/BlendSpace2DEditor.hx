@@ -39,13 +39,18 @@ class BlendSpace2DEditor extends hide.view.FileView {
 	var animPreview : hrt.animgraph.AnimGraphInstance;
 
 	inline function getPointPos(clientX : Float, clientY : Float, snap: Bool) : h2d.col.Point {
-		var x = hxd.Math.clamp(graphXToLocal(clientX));
-		var y = hxd.Math.clamp(graphYToLocal(clientY));
+		var x = hxd.Math.clamp(graphXToLocal(clientX), blendSpace2D.minX, blendSpace2D.maxX);
+		var y = hxd.Math.clamp(graphYToLocal(clientY), blendSpace2D.minY, blendSpace2D.maxY);
 
 		if (snap) {
 			// Snap to grid
-			x = hxd.Math.round(x * (subdivs+1)) / (subdivs+1);
-			y = hxd.Math.round(y * (subdivs+1)) / (subdivs+1);
+			var dx = (x - blendSpace2D.minX) / (blendSpace2D.maxX - blendSpace2D.minX);
+			dx = hxd.Math.round(dx * (subdivs+1)) / (subdivs+1);
+			x = hxd.Math.lerp(blendSpace2D.minX, blendSpace2D.maxX, dx);
+
+			var dy = (y - blendSpace2D.minY) / (blendSpace2D.maxY - blendSpace2D.minY);
+			dy = hxd.Math.round(dy * (subdivs+1)) / (subdivs+1);
+			y = hxd.Math.lerp(blendSpace2D.minY, blendSpace2D.maxY, dy);
 		}
 
 		return inline new h2d.col.Point(x, y);
@@ -93,8 +98,10 @@ class BlendSpace2DEditor extends hide.view.FileView {
 
 					if (e.ctrlKey) {
 						movingPreview = true;
-						previewAxis.x = hxd.Math.clamp(graphXToLocal(e.clientX));
-						previewAxis.y = hxd.Math.clamp(graphYToLocal(e.clientY));
+						var pt = getPointPos(e.clientX, e.clientY, false);
+
+						previewAxis.x = pt.x;
+						previewAxis.y = pt.y;
 						updatePreviewAxis();
 					}
 
@@ -114,8 +121,10 @@ class BlendSpace2DEditor extends hide.view.FileView {
 
 				svg.onpointermove = (e:js.html.PointerEvent) -> {
 					if (movingPreview) {
-						previewAxis.x = hxd.Math.clamp(graphXToLocal(e.clientX));
-						previewAxis.y = hxd.Math.clamp(graphYToLocal(e.clientY));
+						var pt = getPointPos(e.clientX, e.clientY, false);
+
+						previewAxis.x = pt.x;
+						previewAxis.y = pt.y;
 						updatePreviewAxis();
 						return;
 					}
@@ -140,14 +149,10 @@ class BlendSpace2DEditor extends hide.view.FileView {
 
 						var mouse = inline new h2d.col.Point(graphXToLocal(e.clientX), graphYToLocal(e.clientY));
 
-						blendSpace2D.points[movedPoint].x = hxd.Math.clamp(mouse.x);
-						blendSpace2D.points[movedPoint].y = hxd.Math.clamp(mouse.y);
+						var pt = getPointPos(e.clientX, e.clientY, !e.altKey);
 
-						if (!e.altKey) {
-							// Snap to grid
-							blendSpace2D.points[movedPoint].x = hxd.Math.round(blendSpace2D.points[movedPoint].x * (subdivs+1)) / (subdivs+1);
-							blendSpace2D.points[movedPoint].y = hxd.Math.round(blendSpace2D.points[movedPoint].y * (subdivs+1)) / (subdivs+1);
-						}
+						blendSpace2D.points[movedPoint].x = pt.x;
+						blendSpace2D.points[movedPoint].y = pt.y;
 
 						blendSpace2D.triangulate();
 						refreshPreviewAnimation();
@@ -340,6 +345,17 @@ class BlendSpace2DEditor extends hide.view.FileView {
 	function refreshPropertiesPannel() {
 		propsEditor.clear();
 
+		propsEditor.add(new hide.Element('
+		<div class="group" name="BlendSpace">
+			<dl>
+				<dt>Min/MaxX</dt><dd><input type="number" field="minX"/><input type="number" field="maxX"/></dd>
+				<dt>Min/MaxY</dt><dd><input type="number" field="minY"/><input type="number" field="maxY"/></dd>
+			</dl>
+		</div>
+		'), blendSpace2D, (_) -> {
+			refreshGraph();
+		});
+
 		if (selectedPoint != -1) {
 			propsEditor.add(new hide.Element('
 				<div class="group" name="Point">
@@ -474,19 +490,25 @@ class BlendSpace2DEditor extends hide.view.FileView {
 
 	var cachedRect : js.html.DOMRect;
 	function localXToGraph(x: Float) : Float {
-		return x * cachedRect.width;
+		if (blendSpace2D.maxX - blendSpace2D.minX == 0) return 0;
+		var t = (x - blendSpace2D.minX) / (blendSpace2D.maxX - blendSpace2D.minX);
+		return t * cachedRect.width;
 	}
 
 	function localYToGraph(y: Float) : Float {
-		return (1.0-y) * cachedRect.height;
+		if (blendSpace2D.maxY - blendSpace2D.minY == 0) return 0;
+		var t = (y - blendSpace2D.minY) / (blendSpace2D.maxY - blendSpace2D.minY);
+		return (1.0-t) * cachedRect.height;
 	}
 
 	function graphXToLocal(x: Float) : Float {
-		return (x - cachedRect.x) / cachedRect.width;
+		var t = (x - cachedRect.x) / cachedRect.width;
+		return hxd.Math.lerp(blendSpace2D.minX, blendSpace2D.maxX, t);
 	}
 
 	function graphYToLocal(y: Float) : Float {
-		return 1.0 - (y - cachedRect.y) / cachedRect.height;
+		var t = (y - cachedRect.y) / cachedRect.height;
+		return hxd.Math.lerp(blendSpace2D.minY, blendSpace2D.maxY, (1.0-t));
 	}
 
 	function refreshGraph() {
@@ -497,21 +519,31 @@ class BlendSpace2DEditor extends hide.view.FileView {
 		//graph.element.attr("preserveAspectRatio", "XMidYMid meet");
 
 		for (i in 1...subdivs+1) {
-			var posX = localXToGraph(i / (subdivs+1));
-			var posY = localYToGraph(i / (subdivs+1));
-			graph.line(graph.element, posX, localYToGraph(0), posX, localYToGraph(1.0)).addClass("grid");
-			graph.line(graph.element, localXToGraph(0), posY, localXToGraph(1.0), posY).addClass("grid");
+
+
+			var locX = hxd.Math.lerp(blendSpace2D.minX, blendSpace2D.maxX, i / (subdivs+1));
+			var locY = hxd.Math.lerp(blendSpace2D.minY, blendSpace2D.maxY, i / (subdivs+1));
+
+			var posX = localXToGraph(locX);
+			var posY = localYToGraph(locY);
+
+			graph.line(graph.element, posX, 0, posX, cachedRect.height).addClass("grid");
+			graph.line(graph.element, 0, posY, cachedRect.width, posY).addClass("grid");
 		}
 
 		for (i in 0...subdivs+2) {
 			var percent = i / (subdivs+1);
-			var posX = localXToGraph(i / (subdivs+1));
-			var posY = localYToGraph(i / (subdivs+1));
+			var locX = hxd.Math.lerp(blendSpace2D.minX, blendSpace2D.maxX, i / (subdivs+1));
+			var locY = hxd.Math.lerp(blendSpace2D.minY, blendSpace2D.maxY, i / (subdivs+1));
 
-			var partRounded = hxd.Math.round(percent * 100)/100;
+			var posX = localXToGraph(locX);
+			var posY = localYToGraph(locY);
 
-			graph.text(graph.element, localXToGraph(0) + 10, posY, '$partRounded').addClass("grid-label");
-			graph.text(graph.element, posX, localYToGraph(1) + 10, '$partRounded').addClass("grid-label");
+			var partRoundedX = hxd.Math.round(locX * 100)/100;
+			var partRoundedY = hxd.Math.round(locY * 100)/100;
+
+			graph.text(graph.element, 10, posY, '$partRoundedY').addClass("grid-label");
+			graph.text(graph.element, posX, cachedRect.height - 10, '$partRoundedX').addClass("grid-label");
 		}
 
 		var pts = [new h2d.col.Point(), new h2d.col.Point(), new h2d.col.Point()];
