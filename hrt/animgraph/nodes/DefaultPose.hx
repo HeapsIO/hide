@@ -33,7 +33,7 @@ class DefaultPose extends AnimNode {
 			var m = bone.skin != null ? bone.skin.getSkinData().allJoints[bone.joint].defMat : bone.object.defaultTransform;
 			if (m != null) {
 				bone.matDecomposed = new h3d.Matrix();
-				Tools.splitMatrix(m, bone.matDecomposed);
+				Tools.decomposeMatrix(m, bone.matDecomposed);
 			} else {
 				bone.matDecomposed = @:privateAccess h3d.anim.SmoothTransition.MZERO;
 			}

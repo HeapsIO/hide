@@ -35,11 +35,6 @@ class AnimGraphInstance extends h3d.anim.Animation {
 
 		var inst = new AnimGraphInstance(outputNode, animGraph.name, 1000, 1/60.0);
 
-		// for (param in animGraph.parameters) {
-		// 	inst.parameterMap.set(param.name, param);
-		// 	param.runtimeValue = param.defaultValue;
-		// }
-
 		return inst;
 	}
 
@@ -52,7 +47,10 @@ class AnimGraphInstance extends h3d.anim.Animation {
 	}
 
 	public function setParam(name: String, value: Float) {
-		parameterMap.get(name)?.runtimeValue = value;
+		var param = parameterMap.get(name);
+		if (param != null) {
+			param.runtimeValue = value;
+		}
 	}
 
 	public function getParam(name: String) : Null<Float> {
@@ -158,37 +156,14 @@ class AnimGraphInstance extends h3d.anim.Animation {
 			}
 
 			if (!decompose) {
-				decomposeMatrix(workMatrix, targetMatrix);
+				Tools.recomposeMatrix(workMatrix, targetMatrix);
 				if (obj.targetSkin != null) {
 					var def = obj.targetSkin.getSkinData().allJoints[obj.targetJoint].defMat;
-					// targetMatrix._41 = def._41;
-					// targetMatrix._42 = def._42;
-					// targetMatrix._43 = def._43;
 				}
 			} else {
 				targetMatrix.load(workMatrix);
 			}
 		}
-	}
-
-	static function decomposeMatrix(inMatrix: h3d.Matrix, outMatrix: h3d.Matrix) {
-		var quat = inline new h3d.Quat(inMatrix._12, inMatrix._13, inMatrix._21, inMatrix._23);
-		inline quat.toMatrix(outMatrix);
-
-		outMatrix._11 *= inMatrix._11;
-		outMatrix._12 *= inMatrix._11;
-		outMatrix._13 *= inMatrix._11;
-		outMatrix._21 *= inMatrix._22;
-		outMatrix._22 *= inMatrix._22;
-		outMatrix._23 *= inMatrix._22;
-		outMatrix._31 *= inMatrix._33;
-		outMatrix._32 *= inMatrix._33;
-		outMatrix._33 *= inMatrix._33;
-
-		outMatrix._41 = inMatrix._41;
-		outMatrix._42 = inMatrix._42;
-		outMatrix._43 = inMatrix._43;
-
 	}
 
 	function updateNodeInputs(node: Node) : Void {

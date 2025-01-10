@@ -1,9 +1,9 @@
 package hrt.animgraph;
 
 class Tools {
-	@:haxe.warning("-WInlineOptimizedField")
 
 	// from https://theorangeduck.com/page/quaternion-weighted-average
+	@:haxe.warning("-WInlineOptimizedField")
 	static public function weightedBlend(inRotations: Array<h3d.Quat>, inReference: h3d.Quat, inWeights: Array<Float>, outRotation: h3d.Quat) {
 		outRotation.set(0,0,0,0);
 
@@ -35,7 +35,12 @@ class Tools {
 
 
 	static var workMatrix = new h3d.Matrix();
-	static public function splitMatrix(inMatrix: h3d.Matrix, outMatrix: h3d.Matrix) {
+
+	/**
+		Decompose a 3d matrix so the rotation quaternion is stored in [m12,m13,m21,m23] instead of mixed with the scale
+	**/
+	@:haxe.warning("-WInlineOptimizedField")
+	static public function decomposeMatrix(inMatrix: h3d.Matrix, outMatrix: h3d.Matrix) {
 		workMatrix.load(inMatrix);
 		var scale = inline workMatrix.getScale();
 		workMatrix.prependScale(1.0/scale.x, 1.0/scale.y, 1.0/scale.z);
@@ -54,5 +59,28 @@ class Tools {
 		outMatrix.tx = inMatrix.tx;
 		outMatrix.ty = inMatrix.ty;
 		outMatrix.tz = inMatrix.tz;
+	}
+
+	/**
+		Transform a decomposed matrix into a normal one
+	**/
+	@:haxe.warning("-WInlineOptimizedField")
+	static public function recomposeMatrix(inMatrix: h3d.Matrix, outMatrix: h3d.Matrix) {
+		var quat = inline new h3d.Quat(inMatrix._12, inMatrix._13, inMatrix._21, inMatrix._23);
+		inline quat.toMatrix(outMatrix);
+
+		outMatrix._11 *= inMatrix._11;
+		outMatrix._12 *= inMatrix._11;
+		outMatrix._13 *= inMatrix._11;
+		outMatrix._21 *= inMatrix._22;
+		outMatrix._22 *= inMatrix._22;
+		outMatrix._23 *= inMatrix._22;
+		outMatrix._31 *= inMatrix._33;
+		outMatrix._32 *= inMatrix._33;
+		outMatrix._33 *= inMatrix._33;
+
+		outMatrix._41 = inMatrix._41;
+		outMatrix._42 = inMatrix._42;
+		outMatrix._43 = inMatrix._43;
 	}
 }

@@ -159,48 +159,6 @@ class AnimGraph extends hrt.prefab.Prefab {
 
 	override function copy(other: hrt.prefab.Prefab) {
 		load(other.save());
-		// super.copy(other);
-		// var other : AnimGraph = cast other;
-
-		// var nodeCopy: Map<{}, Node> = [];
-		// var parameterCopy: Map<{}, Parameter> = [];
-
-		// this.nodes = [];
-		// this.parameters = [];
-
-		// for (parameter in other.parameters) {
-		// 	var copy = new Parameter();
-		// 	@:privateAccess copy.copyFromOther(parameter);
-		// 	this.parameters.push(copy);
-		// 	parameterCopy.set(parameter, copy);
-		// }
-
-		// for (node in other.nodes) {
-		// 	var copy = Node.createFromDynamic(node.serializeToDynamic());
-		// 	this.nodes.push(copy);
-		// 	nodeCopy.set(node, copy);
-
-		// 	var copyParam = Std.downcast(copy, hrt.animgraph.nodes.FloatParameter);
-		// 	var nodeParam = Std.downcast(node, hrt.animgraph.nodes.FloatParameter);
-		// 	if (copyParam != null) {
-		// 		copyParam.parameter = parameterCopy.get(nodeParam.parameter);
-		// 	}
-		// }
-
-		// // restore edges
-		// for (node in other.nodes) {
-		// 	var ours = nodeCopy.get(node);
-		// 	for (id => edge in node.inputEdges) {
-		// 		if (edge == null)
-		// 			continue;
-		// 		ours.inputEdges[id] = {
-		// 			target: nodeCopy.get(edge.target),
-		// 			outputIndex: edge.outputIndex,
-		// 		};
-		// 	}
-		// }
-
-		// this.parameters = haxe.Json.parse(haxe.Json.stringify(other.parameters));
 	}
 
 	#if editor

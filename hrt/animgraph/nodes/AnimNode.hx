@@ -37,7 +37,7 @@ class GetBoneTransformContext {
 		} else {
 			targetObj.targetObject.defaultTransform ?? @:privateAccess h3d.anim.SmoothTransition.MZERO;
 		}
-		Tools.splitMatrix(m, tmpDefMatrix);
+		Tools.decomposeMatrix(m, tmpDefMatrix);
 
 		defMatrix = tmpDefMatrix;
 		return defMatrix;
