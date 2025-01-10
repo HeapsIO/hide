@@ -6,6 +6,8 @@ class MemProfiler extends hide.ui.View<{}> {
 	var hlPath = "";
 	var dumpPaths : Array<String> = [];
 	var currentFilter : hlmem.Memory.FilterMode = None;
+	public var defaultTableLines : Int = 5;
+	public var defaultLocateRoot : Bool = false;
 	public var showTid : Bool = false;
 
 	var statsView : Element;
@@ -192,14 +194,12 @@ class MemProfiler extends hide.ui.View<{}> {
 			if( val < 0 ) val = 0;
 			if( val > 100 ) val = 100;
 			tableSizeOpt.val(val);
-			if( inspectView != null )
-				inspectView.defaultTableLines = val;
+			defaultTableLines = val;
 		});
 
 		var locateRootOpt = element.find("#mem-locate-root");
 		locateRootOpt.on('change', function(e) {
-			if( inspectView != null )
-				inspectView.defaultLocateRoot = locateRootOpt.is(":checked");
+			defaultLocateRoot = locateRootOpt.is(":checked");
 		});
 
 		var showTidOpt = element.find("#mem-show-tid");
@@ -334,8 +334,6 @@ class MemProfiler extends hide.ui.View<{}> {
 		summaryView = new MemProfilerSummaryView(this);
 		summaryView.element.appendTo(content);
 		inspectView = new MemProfilerInspectView(this);
-		inspectView.defaultTableLines = Std.parseInt(element.find("#mem-table-size").val());
-		inspectView.defaultLocateRoot = element.find("#mem-locate-root").is(":checked");
 		inspectView.element.appendTo(content);
 	}
 
@@ -485,8 +483,6 @@ class MemProfilerSummaryView extends hide.comp.Component {
 
 class MemProfilerInspectView extends hide.comp.Component {
 	var profiler : MemProfiler;
-	public var defaultTableLines : Int = 5;
-	public var defaultLocateRoot : Bool = false;
 	public var ttype : hlmem.TType;
 	public var ttypeName : String;
 	var locateRootBtn : Element;
@@ -517,13 +513,13 @@ class MemProfilerInspectView extends hide.comp.Component {
 			</table>
 		').appendTo(element);
 		var data = mainMemory.locate(ttype);
-		var locateTable = new MemProfilerTable(profiler, "Locate", data, defaultTableLines);
+		var locateTable = new MemProfilerTable(profiler, "Locate", data, profiler.defaultTableLines);
 		locateTable.element.appendTo(element);
 		var data = mainMemory.parents(ttype);
-		var parentsTable = new MemProfilerTable(profiler, "Parents", data, defaultTableLines, true);
+		var parentsTable = new MemProfilerTable(profiler, "Parents", data, profiler.defaultTableLines, true);
 		parentsTable.element.appendTo(element);
 		var data = mainMemory.subs(ttype);
-		var subsTable = new MemProfilerTable(profiler, "Subs", data, defaultTableLines);
+		var subsTable = new MemProfilerTable(profiler, "Subs", data, profiler.defaultTableLines);
 		subsTable.element.appendTo(element);
 		locateRootTable = null;
 		locateRootBtn = new Element('<input type="button" value="Locate Root"/>').appendTo(element);
@@ -531,10 +527,10 @@ class MemProfilerInspectView extends hide.comp.Component {
 			if( locateRootTable != null ) return;
 			locateRootBtn.remove();
 			var data = mainMemory.locate(ttype, 10);
-			locateRootTable = new MemProfilerTable(profiler, "Locate 10", data, defaultTableLines);
+			locateRootTable = new MemProfilerTable(profiler, "Locate 10", data, profiler.defaultTableLines);
 			locateRootTable.element.appendTo(element);
 		});
-		if( defaultLocateRoot ) {
+		if( profiler.defaultLocateRoot ) {
 			haxe.Timer.delay(() -> locateRootBtn.click(), 0);
 		}
 	}
