@@ -41,13 +41,20 @@ class Blend extends AnimNode {
 		outMatrix._21 = q1.z;
 		outMatrix._23 = q1.w;
 
-		var x = m1._41 * alpha + m2._41 * (1-alpha);
-		var y = m1._42 * alpha + m2._42 * (1-alpha);
-		var z = m1._43 * alpha + m2._43 * (1-alpha);
+		var a = (1.0-alpha);
+		var b = (alpha);
 
-		m1._41 = x;
-		m1._42 = y;
-		m1._43 = z;
+		var x = m1._41 * a + m2._41 * b;
+		var y = m1._42 * a + m2._42 * b;
+		var z = m1._43 * a + m2._43 * b;
+
+		outMatrix._41 = x;
+		outMatrix._42 = y;
+		outMatrix._43 = z;
+
+		outMatrix._11 = m1._11 * a + m2._11 * b;
+		outMatrix._22 = m1._22 * a + m2._22 * b;
+		outMatrix._33 = m1._33 * a + m2._33 * b;
 	}
 
 	#if editor
