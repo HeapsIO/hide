@@ -483,6 +483,10 @@ class Prefab {
 		return null;
 	}
 
+	public inline function getTag() : Null<String> {
+		return (props:Dynamic)?.tag;
+	}
+
 	/**
 		Iterate over this children prefab
 	**/
