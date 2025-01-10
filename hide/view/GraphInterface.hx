@@ -17,6 +17,12 @@ typedef GraphNodeInfo = {
         fullSize : Bool,
     },
 
+    /**Adds a button to the header that can be used to set the current preview point in the graph**/
+    ?playButton: {
+        getActive : () -> Bool,
+        onClick: () -> Void,
+    },
+
     ?noHeader: Bool,
 
     /**If set, the node will be treated as a comment**/
@@ -31,6 +37,11 @@ typedef GraphNodeInfo = {
         If set, a custom context menu will be created when the user right clicks the box
     **/
     ?contextMenu : (e: js.html.MouseEvent) -> Void,
+
+    /**
+        If true, this node cannot be added, removed, or cloned. It must be created externaly. Used for things like fixed inputs or ouputs
+    **/
+    ?dontAddRemove: Bool,
 };
 
 typedef NodeInput = {

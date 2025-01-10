@@ -25,7 +25,7 @@ class Scene extends hide.comp.Component implements h3d.IDrawable {
 	public var editor : hide.comp.SceneEditor;
 	public var autoDisposeOutOfDocument : Bool = true;
 
-	var currentRenderProps: hrt.prefab.Prefab;
+	var currentRenderProps: hrt.prefab.Reference;
 
 	public var errorMessageBox : Element;
 	var unFocusedTime = 0.;
@@ -153,6 +153,7 @@ class Scene extends hide.comp.Component implements h3d.IDrawable {
 			sevents.addScene(s2d);
 			sevents.addScene(s3d);
 			@:privateAccess window.checkResize();
+			preOnReady();
 			onReady();
 			onResize();
 			sync();
@@ -179,6 +180,9 @@ class Scene extends hide.comp.Component implements h3d.IDrawable {
 		errorMessageBox.html(StringTools.replace(s, "\n", "<br/>"));
 		errorMessageBox.css("visibility", "visible");
 		errorThisFrame = true;
+	}
+
+	function preOnReady() {
 	}
 
 	function clearErrorMessage() {
@@ -336,7 +340,8 @@ class Scene extends hide.comp.Component implements h3d.IDrawable {
 		cleanup.push(function() { ide.fileWatcher.unregister( path, onChange ); });
 	}
 
-	public function listAnims( path : String ) {
+	public function listAnims( path : String, customFilter : (f:String) -> Bool = null ) {
+		var isDir = sys.FileSystem.isDirectory(ide.getPath(path));
 
 		var config = hide.Config.loadForFile(ide, path);
 
@@ -344,15 +349,20 @@ class Scene extends hide.comp.Component implements h3d.IDrawable {
 		if( dirs == null ) dirs = [];
 		dirs = [for( d in dirs ) ide.resourceDir + d];
 
-		var parts = path.split("/");
-		parts.pop();
-		dirs.unshift(ide.getPath(parts.join("/")));
 
+		var parts = path.split("/");
 		var anims = [];
 
-		var lib = loadHMD(path, false);
-		if( lib.header.animations.length > 0 )
-			anims.push(ide.getPath(path));
+		if (!isDir) {
+			parts.pop();
+			dirs.unshift(ide.getPath(parts.join("/")));
+
+			var lib = loadHMD(path, false);
+			if( lib.header.animations.length > 0 )
+				anims.push(ide.getPath(path));
+		} else {
+			dirs.unshift(path);
+		}
 
 		for( dir in dirs ) {
 			var dir = dir;
@@ -360,6 +370,8 @@ class Scene extends hide.comp.Component implements h3d.IDrawable {
 			for( f in try sys.FileSystem.readDirectory(dir) catch( e : Dynamic ) [] ) {
 				var file = f.toLowerCase();
 				if( StringTools.startsWith(f,"Anim_") && (StringTools.endsWith(file,".hmd") || StringTools.endsWith(file,".fbx")) )
+					anims.push(dir+"/"+f);
+				if (customFilter != null && customFilter(f))
 					anims.push(dir+"/"+f);
 			}
 		}
@@ -567,20 +579,24 @@ class Scene extends hide.comp.Component implements h3d.IDrawable {
 		}
 		currentRenderProps = null;
 
-		if (path == null)
-			return;
-		try {
-			currentRenderProps = Ide.inst.loadPrefab(path);
-		} catch(e) {
+		if (path == null) {
 			return;
 		}
-		var ctx = new hide.prefab.ContextShared(null, new h3d.scene.Object(s3d));
-		ctx.scene = this;
-		currentRenderProps.setSharedRec(ctx);
+		currentRenderProps = new hrt.prefab.Reference(null, new hide.prefab.ContextShared(null, new h3d.scene.Object(s3d)));
+		currentRenderProps.shared.scene = this;
+		currentRenderProps.source = path;
+
 		currentRenderProps.make();
-		var renderProps = currentRenderProps.getOpt(hrt.prefab.RenderProps, true);
-		if (renderProps != null)
-			renderProps.applyProps(s3d.renderer);
+
+		if (currentRenderProps.refInstance != null) {
+			var renderProps = currentRenderProps.refInstance.getOpt(hrt.prefab.RenderProps, true);
+			if (renderProps != null)
+				renderProps.applyProps(s3d.renderer);
+
+			for (light in currentRenderProps.refInstance.findAll(hrt.prefab.Light, true)) {
+				@:privateAccess light.icon.visible = false;
+			}
+		}
 	}
 
 	public dynamic function onUpdate(dt:Float) {

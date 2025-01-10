@@ -85,6 +85,18 @@ class SVG extends Component {
 		return make(parent, "path", {d: lines.join("")}, style);
 	}
 
+	/**
+		Use the polygon element instead of path
+	**/
+	public function polygon2(?parent: Element, points: Array<h2d.col.Point>, ?style:Dynamic) {
+		// https://developer.mozilla.org/en-US/docs/Web/SVG/Element/polygon
+		var lines : Array<String> = [];
+		for(i in 0...points.length) {
+			lines.push('${points[i].x},${points[i].y}');
+		}
+		return make(parent, "polygon", {points: lines.join(" ")}, style);
+	}
+
 	public function group(?parent: Element, ?className: String, ?attr: Dynamic) {
 		var g = make(parent, "g", attr);
 		if(className != null)

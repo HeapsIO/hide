@@ -335,6 +335,8 @@ class GraphEditor extends hide.comp.Component {
 		for (edge in edges) {
 			createEdge(edge);
 		}
+
+		centerView();
 	}
 
 	var boxToPreview : Map<Box, h2d.Bitmap>;
@@ -445,6 +447,8 @@ class GraphEditor extends hide.comp.Component {
 
 			for (id => _ in boxesSelected) {
 				var box = boxes.get(id);
+				if (box.info.dontAddRemove)
+					continue;
 				opSelect(id, false, currentUndoBuffer);
 				removeBoxEdges(box, currentUndoBuffer);
 				opBox(box.node, false, currentUndoBuffer);
@@ -538,6 +542,7 @@ class GraphEditor extends hide.comp.Component {
 			var posCursor = new Point(lX(ide.mouseX - 25), lY(ide.mouseY - 10));
 
 			var instance = onConstructNode();
+			instance.editor = this;
 
 			var createLinkInput = edgeCreationInput;
 			var createLinkOutput = edgeCreationOutput;
@@ -1143,6 +1148,8 @@ class GraphEditor extends hide.comp.Component {
 
 	public function opBox(node: IGraphNode, doAdd: Bool, undoBuffer: UndoBuffer) : Void {
 		var data = editor.serializeNode(node);
+		if (node.getInfo().dontAddRemove)
+			throw "OpBox can't be called on dontAddRemove nodes";
 
 		var exec = function(isUndo : Bool) : Void {
 			if (!doAdd) isUndo = !isUndo;
@@ -1298,6 +1305,9 @@ class GraphEditor extends hide.comp.Component {
 				box.info.contextMenu(e);
 			}
 		}
+		if (box.node.id == null) {
+			throw "null id";
+		}
 		boxes.set(box.node.id, box);
 
 		for (inputId => input in box.info.inputs) {
@@ -1387,6 +1397,12 @@ class GraphEditor extends hide.comp.Component {
 		edges.remove(id);
 
 		var io = unpackIO(id);
+	}
+
+	public function refreshPreviewButtons() {
+		for (box in boxes) {
+			box.refreshPreviewButton();
+		}
 	}
 
 	function removeBoxEdges(box : Box, ?undoBuffer : UndoBuffer) {
@@ -1552,14 +1568,22 @@ class GraphEditor extends hide.comp.Component {
 			nodes:  [],
 			edges: [],
 		};
+		var filteredSelection : Map<Int, Bool> = [];
 		for (nodeId => _ in boxesSelected) {
+			var box = boxes[nodeId];
+			if (box.info.dontAddRemove)
+				continue;
+			filteredSelection.set(nodeId, true);
+		}
+
+		for (nodeId => _ in filteredSelection) {
 			var box = boxes[nodeId];
 			data.nodes.push({id: nodeId, serData: editor.serializeNode(box.node)});
 			for (inputId => _ in box.info.inputs) {
 				var output = outputsToInputs.getLeft(packIO(nodeId, inputId));
 				if (output != null) {
 					var unpack = unpackIO(output);
-					if ( boxesSelected.get(unpack.nodeId) != null) {
+					if ( filteredSelection.get(unpack.nodeId) != null) {
 						data.edges.push({nodeFromId: unpack.nodeId, outputFromId: unpack.ioId, nodeToId: nodeId, inputToId: inputId});
 					}
 				}
@@ -1598,6 +1622,7 @@ class GraphEditor extends hide.comp.Component {
 			var data : CopySelectionData = haxe.Json.parse(str);
 			for (nodeInfo in data.nodes) {
 				var node = editor.unserializeNode(nodeInfo.serData, true);
+				node.editor = this;
 				nodes.push(node);
 				var newId = node.id;
 				idRemap.set(nodeInfo.id, newId);
@@ -1654,6 +1679,7 @@ class GraphEditor extends hide.comp.Component {
 			var data : CopySelectionData = haxe.Json.parse(cb);
 			for (nodeInfo in data.nodes) {
 				var node = editor.unserializeNode(nodeInfo.serData, true);
+				node.editor = this;
 				nodes.push(node);
 				var newId = node.id;
 				idRemap.set(nodeInfo.id, newId);
