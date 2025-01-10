@@ -56,7 +56,7 @@ class AnimGraphInstance extends h3d.anim.Animation {
 	}
 
 	public function getParam(name: String) : Null<Float> {
-		return parameterMap.get(name);
+		return parameterMap.get(name)?.runtimeValue;
 	}
 
 	public function resetParam(name: String) {
