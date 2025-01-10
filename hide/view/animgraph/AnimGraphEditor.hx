@@ -64,8 +64,8 @@ class AnimGraphEditor extends GenericGraphEditor {
             if (paramIndex != null) {
                 e.preventDefault();
                 var inst = new hrt.animgraph.nodes.FloatParameter();
-                @:privateAccess var id = animGraph.nodeIdCount++;
-                inst.id = id;
+                animGraph.nodeIdCount += 1;
+                inst.id = animGraph.nodeIdCount;
                 inst.parameter = animGraph.parameters[paramIndex];
                 inst.setPos(posCursor);
 
@@ -81,8 +81,8 @@ class AnimGraphEditor extends GenericGraphEditor {
                 if (StringTools.endsWith(path, ".fbx")) {
                     e.preventDefault();
                     var inst = new hrt.animgraph.nodes.Input();
-                    @:privateAccess var id = animGraph.nodeIdCount++;
-                    inst.id = id;
+                    animGraph.nodeIdCount += 1;
+                    inst.id = animGraph.nodeIdCount;
                     inst.path = path;
                     inst.setPos(posCursor);
 
@@ -93,8 +93,8 @@ class AnimGraphEditor extends GenericGraphEditor {
                 else if (StringTools.endsWith(path, ".bs2d")) {
                     e.preventDefault();
                     var inst = new hrt.animgraph.nodes.BlendSpace2D();
-                    @:privateAccess var id = animGraph.nodeIdCount++;
-                    inst.id = id;
+                    animGraph.nodeIdCount += 1;
+                    inst.id = animGraph.nodeIdCount;
                     inst.path = path;
                     inst.setPos(posCursor);
 
