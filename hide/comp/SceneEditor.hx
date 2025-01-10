@@ -1416,7 +1416,7 @@ class SceneEditor {
 	public function setTag(p: PrefabElement, tag: String) {
 		if(p.props == null)
 			p.props = {};
-		var prevVal = getTag(p);
+		var prevVal = (p.props:Dynamic)?.tag;
 		Reflect.setField(p.props, "tag", tag);
 		onPrefabChange(p, "tag");
 		undo.change(Field(p.props, "tag", prevVal), function() {
