@@ -1413,15 +1413,23 @@ class SceneEditor {
 		return null;
 	}
 
-	public function setTag(p: PrefabElement, tag: String) {
-		if(p.props == null)
-			p.props = {};
-		var prevVal = (p.props:Dynamic)?.tag;
-		Reflect.setField(p.props, "tag", tag);
-		onPrefabChange(p, "tag");
-		undo.change(Field(p.props, "tag", prevVal), function() {
-			onPrefabChange(p, "tag");
-		});
+	public function setTags(prefabs: Array<PrefabElement>, tag: String) {
+		var oldValues = [for (prefab in prefabs) (prefab.props:Dynamic)?.tag];
+
+		function exec(isUndo : Bool) {
+			for (i => prefab in prefabs) {
+				prefab.props ??= {};
+				if (!isUndo) {
+					(prefab.props:Dynamic).tag = tag;
+				}
+				else {
+					(prefab.props:Dynamic).tag = oldValues[i];
+				}
+				applySceneStyle(prefab);
+			}
+		}
+		exec(false);
+		undo.change(Custom(exec));
 	}
 
 	function splitMenu(menu : Array<hide.comp.ContextMenu.MenuItem>, name : String, entries : Array<hide.comp.ContextMenu.MenuItem>, len : Int = 30) {
@@ -1453,7 +1461,10 @@ class SceneEditor {
 	function getTagMenu(prefabs: Array<PrefabElement>) : Array<hide.comp.ContextMenu.MenuItem> {
 		var tags = getAvailableTags();
 		if(tags == null) return null;
+		tags = tags.copy();
 		var ret = [];
+		var noTag = {id: "-- none --", color: "rgba(0,0,0,0)"};
+		tags.unshift(noTag);
 		for(tag in tags) {
 			var style = 'background-color: ${tag.color};';
 			var checked = false;
@@ -1464,20 +1475,20 @@ class SceneEditor {
 			ret.push({
 				label: '<span class="tag-disp-expand"><span class="tag-disp" style="$style">${tag.id}</span></span>',
 				click: function () {
-					for (p in prefabs) {
-						if(checked) {
-							setTag(p, null);
-						}
-						else {
-							setTag(p, tag.id);
-						}
-						applySceneStyle(p);
+					if (tag == noTag) {
+						setTags(prefabs, null);
+					} else {
+						setTags(prefabs, tag.id);
 					}
-					checked = !checked;
-
 				},
-				checked: checked,
 				stayOpen: true,
+				radio: () -> {
+					for (p in prefabs) {
+						if ((p.props:Dynamic)?.tag == tag.id || ((p.props:Dynamic)?.tag == null && tag == noTag))
+							return true;
+					}
+					return false;
+				}
 			});
 		}
 		return ret;
