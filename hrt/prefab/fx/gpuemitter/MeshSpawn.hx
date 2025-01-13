@@ -3,14 +3,14 @@ package hrt.prefab.fx.gpuemitter;
 class MeshSpawnShader extends ComputeUtils {
 
 	public var mesh(default, null) : h3d.scene.Mesh;
-	
+
 	public function attachTo(m : h3d.scene.Mesh) {
 		if ( vbuf != null )
 			vbuf.dispose();
 		mesh = m;
-		
+
 		var originalBuffer = mesh.primitive.buffer;
-		
+
 		vertexCount = hxd.Math.imin(128, originalBuffer.vertices);
 		vertexCount = originalBuffer.vertices;
 
@@ -61,7 +61,7 @@ class MeshSpawnShader extends ComputeUtils {
 		var skinShader = mesh.material.mainPass.getShader(h3d.shader.SkinBase);
 		bonesMatrixes = skinShader.bonesMatrixes;
 		MaxBones = skinShader.MaxBones;
-		defaultMatrix = mesh.getAbsPos();
+		absPosInv = mesh.getAbsPos().getInverse();
 	}
 
 	static var SRC = {
@@ -76,8 +76,8 @@ class MeshSpawnShader extends ComputeUtils {
 			weights : Vec3,
 			indexes : Bytes4
 		}>;
+		@param var absPosInv : Mat3x4;
 		@param var bonesMatrixes : Array<Mat3x4,MaxBones>;
-		@param var defaultMatrix : Mat4;
 
 		var speed : Vec3;
 		var emitNormal : Vec3;
@@ -89,26 +89,25 @@ class MeshSpawnShader extends ComputeUtils {
 			speed = vec3(1.0);
 			var relativePosition = vertexData.position;
 			var relativeNormal = vertexData.normal;
-			
+
 			var weights = vertexData.weights;
-			weights = weights / (weights.x + weights.y + weights.z);
-			var transformedPosition = (relativePosition * bonesMatrixes[int(vertexData.indexes.x * 127.0)]) * weights.x +
-				(relativePosition * bonesMatrixes[int(vertexData.indexes.y * 127.0)]) * weights.y +
-				(relativePosition * bonesMatrixes[int(vertexData.indexes.z * 127.0)]) * weights.z;
+			var transformedPosition = (relativePosition * bonesMatrixes[int(vertexData.indexes.x * 127.0)] * absPosInv) * weights.x +
+				(relativePosition * bonesMatrixes[int(vertexData.indexes.y * 127.0)] * absPosInv) * weights.y +
+				(relativePosition * bonesMatrixes[int(vertexData.indexes.z * 127.0)] * absPosInv) * weights.z;
 
 			var transformedNormal =
-				(vertexData.normal * mat3(bonesMatrixes[int(vertexData.indexes.x * 127.0)])) * vertexData.weights.x +
-				(vertexData.normal * mat3(bonesMatrixes[int(vertexData.indexes.y * 127.0)])) * vertexData.weights.y +
-				(vertexData.normal * mat3(bonesMatrixes[int(vertexData.indexes.z * 127.0)])) * vertexData.weights.z;
+				(vertexData.normal * absPosInv.mat3() * mat3(bonesMatrixes[int(vertexData.indexes.x * 127.0)])) * vertexData.weights.x +
+				(vertexData.normal * absPosInv.mat3() * mat3(bonesMatrixes[int(vertexData.indexes.y * 127.0)])) * vertexData.weights.y +
+				(vertexData.normal * absPosInv.mat3() * mat3(bonesMatrixes[int(vertexData.indexes.z * 127.0)])) * vertexData.weights.z;
 			emitNormal = transformedNormal;
-			
+
 			relativeTransform = translationMatrix(transformedPosition);
 		}
 	}
 }
 
 class MeshSpawn extends SpawnShader {
-	
+
 	override function makeShader() {
 		return new MeshSpawnShader();
 	}

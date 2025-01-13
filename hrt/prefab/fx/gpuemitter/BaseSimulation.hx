@@ -26,7 +26,6 @@ class BaseSimulation extends ComputeUtils {
 		var life : Float;
 		var particleRandom : Float;
 		var modelView : Mat4;
-		var instanceID : Int;
 		var prevModelView : Mat4;
 		var prevSpeed : Vec3;
 		var relativeTransform : Mat4;
@@ -36,7 +35,7 @@ class BaseSimulation extends ComputeUtils {
 			life = particleBuffer[computeVar.globalInvocation.x].life;
 			prevModelView = batchBuffer[computeVar.globalInvocation.x].modelView;
 			particleRandom = particleBuffer[computeVar.globalInvocation.x].random;
-			relativeTransform = scaleMatrix(vec3(particleRandom * (maxSize - minSize) + minSize));
+			relativeTransform = scaleMatrix((life > 0.0 ? 1.0 : 0.0) * vec3(particleRandom * (maxSize - minSize) + minSize));
 		}
 
 		function main() {

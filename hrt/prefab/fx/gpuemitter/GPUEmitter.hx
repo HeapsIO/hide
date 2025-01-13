@@ -23,9 +23,24 @@ class ParticleShader extends hxsl.Shader {
 		@param var localTransform : Mat4;
 		@param var absPos : Mat4;
 
+		@param var particleBuffer : RWPartialBuffer<{
+			life : Float,
+			lifeTime : Float,
+			random : Float,
+		}>;
+
+		var particleLife : Float;
+		var particleLifeTime : Float;
+		var particleRandom : Float;
+
 		var relativePosition : Vec3;
 		var transformedPosition : Vec3;
 		function __init__vertex() {
+			{
+				particleLife = particleBuffer[instanceID].life;
+				particleLifeTime = particleBuffer[instanceID].lifeTime;
+				particleRandom = particleBuffer[instanceID].random;
+			}
 			transformedPosition = transformedPosition * absPos.mat3x4();
 		}
 
@@ -56,7 +71,6 @@ typedef Data = {
 typedef ParticleBuffer = {
 	var buffer : h3d.Buffer;
 	var atomic : h3d.Buffer;
-	var next : ParticleBuffer;
 }
 
 @:allow(hrt.prefab.fx.GPUEmitter)
@@ -71,7 +85,7 @@ class GPUEmitterObject extends h3d.scene.MeshBatch {
 	var shaderParams : Array<{ param : hrt.prefab.fx.BaseFX.ShaderParam, shader : UpdateParamShader }> = [];
 	var paramTexture : h3d.mat.Texture;
 
-	var particleBuffers : ParticleBuffer;
+	var particleBuffer : ParticleBuffer;
 	var particleShader : ParticleShader;
 
 	var rateAccumulation : Float = 0.0;
@@ -104,50 +118,6 @@ class GPUEmitterObject extends h3d.scene.MeshBatch {
 
 		simulationPass = new h3d.mat.Pass("simulation");
 		simulationPass.addShader(new BaseSimulation());
-	}
-
-	override function flush() {
-		super.flush();
-
-		var alloc = hxd.impl.Allocator.get();
-		if ( particleBuffers == null )
-			particleBuffers = { buffer : null, atomic : null, next : null};
-		var particleBuffer = particleBuffers;
-		var p = dataPasses;
-		var particleBufferFormat = hxd.BufferFormat.make([
-			{ name : "speed", type : DVec3 },
-			{ name : "life", type : DFloat },
-			{ name : "lifeTime", type : DFloat },
-			{ name : "random", type : DFloat },
-			{ name : "padding", type : DVec2 },
-		]);
-		while ( p != null ) {
-			if ( particleBuffer.buffer == null ) {
-				var stride = 4 * 2;
-				var floats = alloc.allocFloats(instanceCount * stride);
-				for ( i in 0...instanceCount ) {
-					// speed
-					// floats[i * stride] = 0.0;
-					// floats[i * stride + 1] = 0.0;
-					// floats[i * stride + 2] = 0.0;
-					floats[i * stride + 3] = -1000.0; // life warmup
-					var l = hxd.Math.random() * (data.maxLifeTime - data.minLifeTime) + data.minLifeTime;
-					floats[i * stride + 4] = l; // lifeTime
-					floats[i * stride + 5] = hxd.Math.random(); // random
-					// padding
-					// floats[i * stride + 6] = 0.0;
-					// floats[i * stride + 7] = 0.0;
-				}
-				particleBuffer.buffer = alloc.ofFloats(floats, particleBufferFormat, UniformReadWrite);
-				particleBuffer.atomic = alloc.allocBuffer( 1, hxd.BufferFormat.VEC4_DATA, UniformReadWrite );
-			}
-			p = p.next;
-			if ( p != null && particleBuffer.next == null ) {
-				particleBuffer.next = { buffer : null, atomic : null, next : null};
-			}
-
-			particleBuffer = particleBuffer.next;
-		}
 	}
 
 	public function bakeAnimations() {
@@ -193,9 +163,42 @@ class GPUEmitterObject extends h3d.scene.MeshBatch {
 			}
 			paramTexture.uploadPixels(pxls);
 		}
+	}
+
+	function init() {
+		var alloc = hxd.impl.Allocator.get();
+		var particleBufferFormat = hxd.BufferFormat.make([
+			{ name : "speed", type : DVec3 },
+			{ name : "life", type : DFloat },
+			{ name : "lifeTime", type : DFloat },
+			{ name : "random", type : DFloat },
+			{ name : "padding", type : DVec2 },
+		]);
+
+		if ( particleBuffer == null ) {
+			particleBuffer = { buffer : null, atomic : null };
+			var stride = particleBufferFormat.stride;
+			var floats = alloc.allocFloats(data.maxCount * stride);
+			for ( i in 0...data.maxCount ) {
+				// speed
+				// floats[i * stride] = 0.0;
+				// floats[i * stride + 1] = 0.0;
+				// floats[i * stride + 2] = 0.0;
+				floats[i * stride + 3] = 0.0; // life warmup
+				var l = hxd.Math.random() * (data.maxLifeTime - data.minLifeTime) + data.minLifeTime;
+				floats[i * stride + 4] = l; // lifeTime
+				floats[i * stride + 5] = hxd.Math.random(); // random
+				// padding
+				// floats[i * stride + 6] = 0.0;
+				// floats[i * stride + 7] = 0.0;
+			}
+			particleBuffer.buffer = alloc.ofFloats(floats, particleBufferFormat, UniformReadWrite);
+			particleBuffer.atomic = alloc.allocBuffer( 1, hxd.BufferFormat.VEC4_DATA, UniformReadWrite );
+			particleShader.particleBuffer = particleBuffer.buffer;
+		}
 
 		begin();
-		for ( _ in 0...this.data.maxCount )
+		for ( _ in 0...data.maxCount )
 			emitInstance();
 	}
 
@@ -209,17 +212,16 @@ class GPUEmitterObject extends h3d.scene.MeshBatch {
 		#end
 
 		var p = dataPasses;
-		var particleBuffer = particleBuffers;
-		while ( p != null ) {
-			if ( countBytes == null ) {
-				countBytes = haxe.io.Bytes.alloc(4*4);
-				countBytes.setInt32(0, 0);
-				countBytes.setInt32(1, 0);
-				countBytes.setInt32(2, 0);
-				countBytes.setInt32(3, 0);
-			}
-			particleBuffer.atomic.uploadBytes(countBytes, 0, 1);
+		if ( countBytes == null ) {
+			countBytes = haxe.io.Bytes.alloc(4*4);
+			countBytes.setInt32(0, 0);
+			countBytes.setInt32(1, 0);
+			countBytes.setInt32(2, 0);
+			countBytes.setInt32(3, 0);
+		}
+		particleBuffer.atomic.uploadBytes(countBytes, 0, 1);
 
+		while ( p != null ) {
 			var baseSpawn = spawnPass.getShader(BaseSpawn);
 			baseSpawn.maxLifeTime = data.maxLifeTime;
 			baseSpawn.minLifeTime = data.minLifeTime;
@@ -349,7 +351,6 @@ class GPUEmitterObject extends h3d.scene.MeshBatch {
 				i += p.maxInstance;
 			}
 			p = p.next;
-			particleBuffer = particleBuffer.next;
 		}
 		firstDispatch = false;
 	}
@@ -360,19 +361,14 @@ class GPUEmitterObject extends h3d.scene.MeshBatch {
 		super.emit(ctx);
 	}
 
-	override function cleanPasses() {
-		super.cleanPasses();
-		var b = particleBuffers;
-		while ( b != null ) {
-			b.buffer.dispose();
-			b.atomic.dispose();
-			b = b.next;
-		}
-		particleBuffers = null;
-	}
-
 	override function onRemove() {
 		super.onRemove();
+
+		if ( particleBuffer != null ) {
+			particleBuffer.buffer.dispose();
+			particleBuffer.atomic.dispose();
+		}
+		particleBuffer = null;
 
 		if ( paramTexture != null )
 			paramTexture.dispose();
@@ -405,24 +401,24 @@ class GPUEmitter extends Object3D {
 		return new h3d.scene.Object(parent3d);
 	}
 
-	function updateEmitters() {
+	function updateEmitters() : Array<{meshes : Array<h3d.scene.Mesh>, prefab : hrt.prefab.Prefab, emitters : Array<GPUEmitterObject>}> {
 		#if editor
-		return;
+		return [];
 		#end
 		for ( emitter in local3d.findAll(o -> Std.downcast(o, GPUEmitterObject)) )
 			emitter.remove();
 
-		var meshes = [];
-		meshes = local3d.findAll(o -> Std.downcast(o, h3d.scene.Mesh));
+		var templates = [];
 		for ( c in children ) {
-			if ( !Std.isOfType(c, Object3D) )
+			if ( Std.isOfType(c, hrt.prefab.Shader) )
 				continue;
 			var obj = new h3d.scene.Object();
-			c.make(new ContextShared(obj));
-			meshes = meshes.concat(obj.findAll(o -> Std.downcast(o, h3d.scene.Mesh)));
+			var cloned = c.make(new ContextShared(obj));
+			var clonedMeshes = obj.findAll(o -> Std.downcast(o, h3d.scene.Mesh));
+			templates.push({meshes : clonedMeshes, prefab : cloned, emitters : []});
 		}
 		inline function createEmitter(data, prim, materials) {
-			new GPUEmitterObject(data, prim, materials, local3d);
+			return new GPUEmitterObject(data, prim, materials, local3d);
 		}
 		inline function getData(trs : h3d.Matrix) {
 			return {
@@ -443,46 +439,57 @@ class GPUEmitter extends Object3D {
 				maxStartSpeed : maxStartSpeed,
 			}
 		}
-		for ( mesh in meshes ) {
-			var data = getData(mesh.getAbsPos().clone());
-			var multimat = Std.downcast(mesh, h3d.scene.MultiMaterial);
-			var materials : Array<h3d.mat.Material>;
-			if ( multimat == null )
-				materials = [mesh.material];
-			else
-				materials = multimat.materials;
-			createEmitter(getData(mesh.getAbsPos().clone()), cast(mesh.primitive, h3d.prim.MeshPrimitive), materials);
-			mesh.visible = false;
-			mesh.ignoreCollide = true;
-		}
-		if ( meshes.length == 0 ) {
-			var data = getData(h3d.Matrix.I());
-			createEmitter(data, getDefaultPrimitive(), null);
-		}
-	}
 
-	function bakeAnimations() {
-		var obj = local3d.find(o -> Std.downcast(o, GPUEmitterObject));
-		if ( obj != null ) {
-			obj.customAnimations = [];
-			var shaders = findAll(hrt.prefab.Shader);
-			for ( shader in shaders ) {
-				if( !shader.enabled ) continue;
-				hrt.prefab.fx.BaseFX.BaseFXTools.getCustomAnimations(shader, obj.customAnimations, obj.find(o -> Std.downcast(o, h3d.scene.MeshBatch)));
+		for ( t in templates ) {
+			for ( mesh in t.meshes ) {
+				var data = getData(mesh.getAbsPos().clone());
+				var multimat = Std.downcast(mesh, h3d.scene.MultiMaterial);
+				var materials : Array<h3d.mat.Material>;
+				if ( multimat == null )
+					materials = [mesh.material];
+				else
+					materials = multimat.materials;
+				var emitter = createEmitter(getData(mesh.getAbsPos().clone()), cast(mesh.primitive, h3d.prim.MeshPrimitive), materials);
+				t.emitters.push(emitter);
+				mesh.visible = false;
+				mesh.ignoreCollide = true;
 			}
-			obj.bakeAnimations();
+		}
+
+		// if ( templates.length == 0 ) {
+		//	templates.push({})
+		// }
+
+		return templates;
+	}
+
+	function init() {
+		var templates = updateEmitters();
+
+		for ( t in templates ) {
+			for ( emitter in t.emitters ) {
+				emitter.customAnimations = [];
+				var shaders = t.prefab.findAll(hrt.prefab.Shader);
+				for ( shader in shaders ) {
+					if( !shader.enabled ) continue;
+					hrt.prefab.fx.BaseFX.BaseFXTools.getCustomAnimations(shader, emitter.customAnimations, emitter.find(o -> Std.downcast(o, h3d.scene.MeshBatch)));
+				}
+				emitter.init();
+				emitter.bakeAnimations();
+			}
 		}
 	}
 
-	override function postMakeInstance() {
-		super.postMakeInstance();
-
-		bakeAnimations();
+	override function makeChild(c : hrt.prefab.Prefab) {
+		if ( !Std.isOfType(c, hrt.prefab.Shader) )
+			return;
+		super.makeChild(c);
 	}
 
 	override function updateInstance(?propName : String) {
 		super.updateInstance(propName);
-		updateEmitters();
+
+		init();
 	}
 
 	#if editor
