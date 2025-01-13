@@ -36,6 +36,7 @@ class BlendSpace2D extends AnimNode {
 
 	var currentTriangle : Int = -1;
 	var weights : Array<Float> = [1.0,0.0,0.0];
+	var currentAnimLenght = 1.0;
 
 	var animInfos: Array<AnimInfo> = [];
 	var points : Array<BlendSpaceInstancePoint> = [];
@@ -120,7 +121,9 @@ class BlendSpace2D extends AnimNode {
 		super.tick(dt);
 
 		for (animInfo in animInfos) {
-			animInfo.anim.update(dt);
+			// keep all the animations in sync
+			var scale = animInfo.anim.getDuration() / currentAnimLenght;
+			animInfo.anim.update(dt * scale);
 			@:privateAccess animInfo.anim.isSync = false;
 		}
 	}
@@ -184,6 +187,11 @@ class BlendSpace2D extends AnimNode {
 
 			if (currentTriangle == -1)
 				throw "assert";
+
+			currentAnimLenght = 0.0;
+			for (i => pt in triangles[currentTriangle]) {
+				currentAnimLenght += pt.animInfo.anim.getDuration() * weights[i];
+			}
 		}
 
 		var blendedPos = inline new h3d.Vector();
