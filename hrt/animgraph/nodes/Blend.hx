@@ -6,6 +6,8 @@ class Blend extends AnimNode {
 	@:input var alpha : Float = 0.5;
 
 	var tempMatrix: h3d.Matrix = new h3d.Matrix();
+
+	@:haxe.warning("-WInlineOptimizedField")
 	override function getBoneTransform(boneId:Int, outMatrix:h3d.Matrix, ctx: AnimNode.GetBoneTransformContext) {
 		if (a != null) {
 			var sourceBoneId = boneIdToAnimInputBone[getInputBoneId(boneId, 0)];
