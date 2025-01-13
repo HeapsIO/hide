@@ -1,10 +1,14 @@
 package hrt.animgraph;
 
-typedef BlendSpacePoint = {
-	x : Float,
-	y : Float,
-	animPath: String,
-};
+@:structInit
+@:build(hrt.prefab.Macros.buildSerializable())
+class BlendSpacePoint {
+	@:s public var x : Float = 0.0;
+	@:s public var y : Float = 0.0;
+	@:s public var speed: Float = 1.0;
+	@:s public var animPath: String = null;
+
+}
 
 class BlendSpace2D extends hrt.prefab.Prefab {
 	@:s var points : Array<BlendSpacePoint> = [];

@@ -223,11 +223,13 @@ class BlendSpace2DEditor extends hide.view.FileView {
 							label: "Add point",
 							click: () -> {
 								var pt = getPointPos(x, y, !ctrl);
-								addPoint({
+								var pt2 : hrt.animgraph.BlendSpace2D.BlendSpacePoint = {
 									x: pt.x,
 									y: pt.y,
+									speed: 1.0,
 									animPath: "",
-								});
+								};
+								addPoint(pt2);
 							}
 						});
 
@@ -247,8 +249,7 @@ class BlendSpace2DEditor extends hide.view.FileView {
 						e.preventDefault();
 
 							var pos = getPointPos(e.clientX, e.clientY, true);
-							var newPoint = {x: pos.x, y: pos.y, animPath: e.dataTransfer.getData(AnimList.dragEventKey)};
-							addPoint(newPoint, true);
+							addPoint({x: pos.x, y: pos.y, animPath: e.dataTransfer.getData(AnimList.dragEventKey)}, true);
 					}
 				}
 			}
@@ -362,7 +363,7 @@ class BlendSpace2DEditor extends hide.view.FileView {
 					<dl>
 						<dt>X</dt><dd><input type="range" min="0.0" max="1.0" field="x"/></dd>
 						<dt>Y</dt><dd><input type="range" min="0.0" max="1.0" field="y"/></dd>
-
+						<dt>Anim speed</dt><dd><input type="range" min="0.1" max="2.0" field="speed"/></dd>
 						<dt>Anim</dt><dd><input type="fileselect" extensions="fbx" field="animPath"/></dd>
 					</dl>
 				</div>
@@ -402,7 +403,7 @@ class BlendSpace2DEditor extends hide.view.FileView {
 		if (ide.mouseX >= rect.x && ide.mouseX <= rect.x + rect.width && ide.mouseY >= rect.y && ide.mouseY <= rect.y + rect.height) {
 			if (isDrop) {
 				var pos = getPointPos(ide.mouseX, ide.mouseY, true);
-				var newPoint = {x: pos.x, y: pos.y, animPath: items[0]};
+				var newPoint : hrt.animgraph.BlendSpace2D.BlendSpacePoint = {x: pos.x, y: pos.y, speed: 1.0, animPath: items[0]};
 				addPoint(newPoint, true);
 			}
 			return true;
@@ -453,6 +454,7 @@ class BlendSpace2DEditor extends hide.view.FileView {
 					setSelection(prevSelection);
 			}
 			refreshGraph();
+			refreshPreviewAnimation();
 		}
 		exec(false);
 		undo.change(Custom(exec));
