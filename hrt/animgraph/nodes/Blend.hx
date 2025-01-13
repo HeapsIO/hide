@@ -33,16 +33,16 @@ class Blend extends AnimNode {
 		var q1 = inline new h3d.Quat(m1._12, m1._13, m1._21, m1._23);
 		var q2 = inline new h3d.Quat(m2._12, m2._13, m2._21, m2._23);
 
-
-		inline q1.lerp(q1, q2, alpha, true);
+		var alphaClamped = hxd.Math.clamp(alpha);
+		inline q1.lerp(q1, q2, alphaClamped, true);
 		inline q1.normalize();
 		outMatrix._12 = q1.x;
 		outMatrix._13 = q1.y;
 		outMatrix._21 = q1.z;
 		outMatrix._23 = q1.w;
 
-		var a = (1.0-alpha);
-		var b = (alpha);
+		var a = (1.0-alphaClamped);
+		var b = (alphaClamped);
 
 		var x = m1._41 * a + m2._41 * b;
 		var y = m1._42 * a + m2._42 * b;

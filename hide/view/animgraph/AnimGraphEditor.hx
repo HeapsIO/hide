@@ -322,7 +322,7 @@ class AnimGraphEditor extends GenericGraphEditor {
             var content = new Element("<content></content>").appendTo(paramElement);
             var props = new Element("<ul>").appendTo(content);
             if (previewAnimation != null) {
-                var slider = new Element('<li><dd>Preview</dd><input type="range" min="0.0" max="1.0" step="0.01" value="${param.runtimeValue}"></input></li>').appendTo(props).find("input");
+                var slider = new Element('<li><dd>Preview</dd><input type="range" min="-1.0" max="1.0" step="0.01" value="${param.runtimeValue}"></input></li>').appendTo(props).find("input");
                 var range = new hide.comp.Range(null,slider);
 
                 range.setOnChangeUndo(undo, () -> param.runtimeValue, (v:Float) -> {
@@ -333,7 +333,7 @@ class AnimGraphEditor extends GenericGraphEditor {
                     }
                 });
 
-                var def = new Element('<li><dd>Default</dd><input type="range" min="0.0" max="1.0" step="0.01" value="${param.defaultValue}"></input></li>').appendTo(props).find("input");
+                var def = new Element('<li><dd>Default</dd><input type="range" min="-1.0" max="1.0" step="0.01" value="${param.defaultValue}"></input></li>').appendTo(props).find("input");
                 var range = new hide.comp.Range(null,def);
                 range.setOnChangeUndo(undo, () -> param.defaultValue, (v:Float) -> param.defaultValue = v);
             }
