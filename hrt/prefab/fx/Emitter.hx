@@ -1101,7 +1101,7 @@ class EmitterObject extends h3d.scene.Object {
 
 	function tick( dt : Float, full=true) {
 
-		#if debug
+		#if editor
 		debugGraphics.clear();
 		#end
 
