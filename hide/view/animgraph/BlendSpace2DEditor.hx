@@ -65,7 +65,7 @@ class BlendSpace2DEditor extends hide.view.FileView {
 		super.onDisplay();
 		if (blendSpace2D.animFolder == null) {
 			element.html('');
-			element.append(AnimGraphEditor.createChooseFolderPrompt((path: String) -> {
+			element.append(AnimGraphEditor.createChooseFolderPrompt(new haxe.io.Path(this.state.path).dir, (path: String) -> {
 				blendSpace2D.animFolder = path;
 				save();
 				onDisplay();

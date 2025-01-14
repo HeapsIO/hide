@@ -23,7 +23,7 @@ class AnimGraphEditor extends GenericGraphEditor {
 
         if (animGraph.animFolder == null) {
             element.html('');
-            element.append(createChooseFolderPrompt((path: String) -> {
+            element.append(createChooseFolderPrompt(new haxe.io.Path(this.state.path).dir, (path: String) -> {
                 animGraph.animFolder = path;
                 save();
                 reloadView();
@@ -111,10 +111,11 @@ class AnimGraphEditor extends GenericGraphEditor {
 
     }
 
-    public static function createChooseFolderPrompt(onSet: (path: String) -> Void) : Element {
+    public static function createChooseFolderPrompt(baseDir: String, onSet: (path: String) -> Void) : Element {
         var element = new Element("<center-content>
-                <div class='basic-border'>
+                <div class='basic-border' style='width: 600px'>
                     <h1>Choose a folder containing the models to animate</h1>
+                    <p>Note : For the editor to work with prefabs, the chosen folder must include the .fbx used by the prefabs in its hierarchy.</p>
                     <button-2></button-2>
                 <div>
             </center-content>
@@ -122,15 +123,22 @@ class AnimGraphEditor extends GenericGraphEditor {
 
         var button = new hide.comp.Button(null, element.find("button-2"), "Choose folder");
         button.onClick = () -> {
-            hide.Ide.inst.chooseDirectory((path) -> {
-                if (path != null) {
-                    if (gatherAllPreviewModels(path).length <= 0) {
+            hide.Ide.inst.chooseFileOptions((paths) -> {
+                if (paths != null) {
+                    if (gatherAllPreviewModels(paths[0]).length <= 0) {
                         hide.Ide.inst.quickError("Folder doesn't contain any valid model");
                         return;
                     }
-                    onSet(path);
+                    onSet(paths[0]);
                 }
-            });
+            },
+            {
+                workingDir: hide.Ide.inst.getPath(baseDir),
+                onlyDirectory: true,
+                allowNull: false,
+                multiple: false,
+            }
+            );
         }
 
         return element;
@@ -156,7 +164,7 @@ class AnimGraphEditor extends GenericGraphEditor {
         function rec(dirPath: String) {
             var files = sys.FileSystem.readDirectory(hide.Ide.inst.getPath(dirPath));
             for (path in files) {
-                if (sys.FileSystem.isDirectory(path)) {
+                if (sys.FileSystem.isDirectory(hide.Ide.inst.getPath(dirPath + "/" + path))) {
                     rec(dirPath + "/" + path);
                 } else {
                     var filename = path.split("/").pop();
@@ -207,8 +215,10 @@ class AnimGraphEditor extends GenericGraphEditor {
         // refresh animation
         {
             var previewModel = scenePreview.prefab?.find(hrt.prefab.Model, (f) -> StringTools.startsWith(f.source, animGraph.animFolder))?.local3d;
-            if (previewModel == null)
+            if (previewModel == null) {
+                ide.quickError("Couldn't setup preview animation : no suitable model in loaded prefab matches this animgraph folder");
                 return;
+            }
 
             var anim = animGraph.getAnimation(previewNode);
             previewModel.playAnimation(anim);
