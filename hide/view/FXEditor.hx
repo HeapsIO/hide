@@ -1554,7 +1554,7 @@ class FXEditor extends hide.view.FileView {
 			for(param in hrt.prefab.fx.Emitter.instanceParams) {
 				if(!param.animate)
 					continue;
-				addParam(param, "Instance ");
+				addParam(param, param.instance ? "Instance " : "");
 			}
 		}
 
