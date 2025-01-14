@@ -848,14 +848,27 @@ class FXEditor extends hide.view.FileView {
 			}
 			this.curveEditor.xOffset = xOffset;
 			this.curveEditor.xScale = xScale;
-			if(isInstanceCurve(curve) && curve.parent.to(hrt.prefab.fx.Emitter) == null || curve.name.indexOf("inst") >= 0)
-				curve.maxTime = curve.name.indexOf("OverTime") >= 0 ? 5000 : 1.0;
-				this.curveEditor.curves.push(curve);
-				this.curveEditor.onChange = function(anim) {
-					//refreshDopesheet();
-				}
 
-				rightPanel.on("mousewheel", function(e) {
+			var isInstance = isInstanceCurve(curve);
+			if (isInstance) {
+				var name = curve.name.split(":")[0];
+				var param = hrt.prefab.fx.Emitter.PARAMS[name];
+				if (param != null) {
+					isInstance = param.instance;
+				} else {
+					isInstance = false;
+				}
+			}
+
+			if(isInstance) {
+				curve.maxTime = curve.name.indexOf("OverTime") >= 0 ? 5000 : 1.0;
+			}
+			this.curveEditor.curves.push(curve);
+			this.curveEditor.onChange = function(anim) {
+				//refreshDopesheet();
+			}
+
+			rightPanel.on("mousewheel", function(e) {
 				var step = e.originalEvent.wheelDelta > 0 ? 1.0 : -1.0;
 				if(e.ctrlKey) {
 					var prevH = rightPanel.height();

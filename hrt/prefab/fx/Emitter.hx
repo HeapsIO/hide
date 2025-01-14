@@ -76,8 +76,6 @@ typedef ParamDef = {
 class InstanceDef {
 	var localSpeed: Value;
 	var worldSpeed: Value;
-	var startSpeed: Value;
-	var startWorldSpeed: Value;
 	var orbitSpeed: Value;
 	var orbitSpeedOverTime: Value;
 	var acceleration: Value;
@@ -334,11 +332,11 @@ class ParticleInstance {
 
 		if( life == 0 ) {
 			// START LOCAL SPEED
-			evaluator.getVector(idx, def.startSpeed, 0.0, tmpSpeedAccumulation);
+			evaluator.getVector(idx, emitter.startSpeed, emitter.curTime, tmpSpeedAccumulation);
 			tmpSpeedAccumulation.transform3x3(emitOrientation);
 			add(speedAccumulation, tmpSpeedAccumulation);
 			// START WORLD SPEED
-			evaluator.getVector(idx, def.startWorldSpeed, 0.0, tmpSpeedAccumulation);
+			evaluator.getVector(idx, emitter.startWorldSpeed, emitter.curTime, tmpSpeedAccumulation);
 			tmpSpeedAccumulation.transform3x3(emitter.invTransform);
 			add(speedAccumulation, tmpSpeedAccumulation);
 		}
@@ -547,6 +545,9 @@ class EmitterObject extends h3d.scene.Object {
 	public var maxCount = 20;
 	public var enableSort = true;
 	public var followRotation = false;
+	public var startSpeed: Value;
+	public var startWorldSpeed: Value;
+
 	// EMIT SHAPE
 	public var emitShape : EmitShape = Cylinder;
 	public var emitAngle : Value;
@@ -1580,8 +1581,11 @@ class Emitter extends Object3D {
 		{ name: "instWorldAcceleration",	t: PVec(3, -10, 10),  def: [0.,0.,0.], disp: "World Acceleration", groupName: "Particle Movement"},
 		{ name: "instSpeed",      			t: PVec(3, -10, 10),  def: [0.,0.,0.], disp: "Fixed Speed", groupName: "Particle Movement" },
 		{ name: "instWorldSpeed", 			t: PVec(3, -10, 10),  def: [0.,0.,0.], disp: "Fixed World Speed", groupName: "Particle Movement"},
-		{ name: "instStartSpeed",      		t: PVec(3, -10, 10),  def: [0.,0.,0.], disp: "Start Speed",groupName: "Particle Movement"},
-		{ name: "instStartWorldSpeed", 		t: PVec(3, -10, 10),  def: [0.,0.,0.], disp: "Start World Speed",groupName: "Particle Movement"},
+
+		// In instance param to avoid refactoring the param editor more, but this is no longer linked to the instances (hence the instance: false in the declaration)
+		{ name: "instStartSpeed",      		t: PVec(3, -10, 10),  def: [0.,0.,0.], disp: "Start Speed",			groupName: "Particle Movement", instance: false},
+		{ name: "instStartWorldSpeed", 		t: PVec(3, -10, 10),  def: [0.,0.,0.], disp: "Start World Speed",	groupName: "Particle Movement", instance: false},
+
 		{ name: "instOrbitSpeed", 			t: PVec(3, -10, 10),  def: [0.,0.,0.], disp: "Orbit Speed", groupName: "Particle Movement"},
 		{ name: "instOrbitSpeedOverTime", 			t: PFloat(0, 2.0),  def: 1., disp: "Orbit Speed over time", groupName: "Particle Movement"},
 		{ name: "instAcceleration",			t: PVec(3, -10, 10),  def: [0.,0.,0.], disp: "Acceleration", groupName: "Particle Movement"},
@@ -1602,7 +1606,7 @@ class Emitter extends Object3D {
 			map.set(e.name, e);
 		}
 		for(i in instanceParams) {
-			i.instance = true;
+			i.instance = i.instance ?? true;
 			i.animate = true;
 			map.set(i.name, i);
 		}
@@ -1840,8 +1844,6 @@ class Emitter extends Object3D {
 		var d = new InstanceDef();
 		d.localSpeed = makeParam(this, "instSpeed");
 		d.worldSpeed = makeParam(this, "instWorldSpeed");
-		d.startSpeed = makeParam(this, "instStartSpeed");
-		d.startWorldSpeed = makeParam(this, "instStartWorldSpeed");
 		d.orbitSpeed = makeParam(this, "instOrbitSpeed");
 		d.orbitSpeedOverTime = makeParam(this, "instOrbitSpeedOverTime");
 		d.acceleration = makeParam(this, "instAcceleration");
@@ -1919,6 +1921,10 @@ class Emitter extends Object3D {
 		emitterObj.randomColor1 		= 	getParamVal("randomColor1");
 		emitterObj.randomColor2 		= 	getParamVal("randomColor2");
 		emitterObj.randomGradient 		= 	getParamVal("randomGradient");
+
+		// PARTICLE MOVEMENT
+		emitterObj.startSpeed			=	makeParam(this, "instStartSpeed");
+		emitterObj.startWorldSpeed 		= 	makeParam(this, "instStartWorldSpeed");
 
 		// DEBUG
 		#if editor
