@@ -4,13 +4,13 @@ using hrt.tools.MapUtils;
 typedef BlendSpaceInstancePoint = {
 	x: Float,
 	y: Float,
+	speed: Float,
 	?animInfo: AnimInfo, // can be null if no animation could be loaded
 }
 
 typedef AnimInfo = {
 	anim: h3d.anim.Animation,
 	proxy: hrt.animgraph.nodes.Input.AnimProxy,
-	speed: Float,
 	indexRemap: Array<Null<Int>>,
 }
 
@@ -67,13 +67,11 @@ class BlendSpace2D extends AnimNode {
 		var animMap : Map<String, Int> = [];
 
 		for (blendSpacePoint in blendSpace.points) {
-			var speedInt = Math.round(blendSpacePoint.speed * 100.0);
-			var speed = speedInt / 100.0;
-			var point : BlendSpaceInstancePoint = {x: blendSpacePoint.x, y: blendSpacePoint.y};
+			var point : BlendSpaceInstancePoint = {x: blendSpacePoint.x, y: blendSpacePoint.y, speed: blendSpacePoint.speed};
 			if (blendSpacePoint.animPath != null && blendSpacePoint.animPath.length > 0) {
 				try
 				{
-					var animIndex = animMap.getOrPut('${blendSpacePoint.animPath}_$speedInt}', {
+					var animIndex = animMap.getOrPut(blendSpacePoint.animPath, {
 						// Create a new animation
 						var index = animInfos.length;
 						var animBase = hxd.res.Loader.currentInstance.load(blendSpacePoint.animPath).toModel().toHmd().loadAnimation();
@@ -88,7 +86,7 @@ class BlendSpace2D extends AnimNode {
 							indexRemap[ourId] = boneId;
 						}
 
-						animInfos.push({anim: animInstance, proxy: proxy, speed: speed, indexRemap: indexRemap});
+						animInfos.push({anim: animInstance, proxy: proxy, indexRemap: indexRemap});
 						index;
 					});
 
@@ -193,7 +191,7 @@ class BlendSpace2D extends AnimNode {
 
 			currentAnimLenght = 0.0;
 			for (i => pt in triangles[currentTriangle]) {
-				currentAnimLenght += pt.animInfo.anim.getDuration()/pt.animInfo.speed * weights[i];
+				currentAnimLenght += pt.animInfo.anim.getDuration()/pt.speed * weights[i];
 			}
 		}
 
