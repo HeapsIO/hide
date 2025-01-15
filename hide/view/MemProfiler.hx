@@ -498,10 +498,10 @@ class MemProfilerInspectView extends hide.comp.Component {
 		ttype = mainMemory.resolveType(tstr);
 		element.empty();
 		if( ttype == null ) {
-			new Element('<div><p>Cannot open type ${tstr}</p></div>').appendTo(element);
+			new Element('<div><p>Cannot open type ${StringTools.htmlEscape(tstr)}</p></div>').appendTo(element);
 			return;
 		}
-		var tstr = ttype.toString();
+		var tstr = ttype.toString() ?? "";
 		profiler.addHistory(tstr.length <= 20 ? tstr : "#" + ttype.tid);
 		ttypeName = StringTools.htmlEscape(tstr) + "#" + ttype.tid;
 		var ttypeStat = profiler.getTypeStat(ttype);
