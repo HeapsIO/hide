@@ -496,11 +496,51 @@ class Model extends FileView {
 		var transform = obj.defaultTransform;
 
 		var mesh = Std.downcast(obj, h3d.scene.Mesh);
+		var hmd = mesh != null ? Std.downcast(mesh.primitive, h3d.prim.HMDModel) : null;
 		var vertexFormat = '';
 		if ( mesh != null && mesh.primitive.buffer != null ) {
 			for ( i in mesh.primitive.buffer.format.getInputs() )
 				vertexFormat += ' ' + i.name;
 			vertexFormat = '<dt>Vertex format</dt><dd>$vertexFormat</dd>';
+		}
+		var colliderInfo = '';
+		if ( hmd != null && @:privateAccess hmd.colliderData != null ) {
+			var colliderVertex = 0;
+			var colliderTriangle = 0;
+			var col = hmd.getCollider();
+			function recCol(c : h3d.col.Collider) {
+				var optimized = Std.downcast(c, h3d.col.Collider.OptimizedCollider);
+				if ( optimized != null ) {
+					recCol(optimized.b);
+					return;
+				}
+				var list = Std.downcast(c, h3d.col.Collider.GroupCollider);
+				if ( list != null ) {
+					for ( l in list.colliders )
+						recCol(l);
+					return;
+				}
+				var polygonBuffer = Std.downcast(c, h3d.col.PolygonBuffer);
+				if ( polygonBuffer != null ) {
+					colliderTriangle += @:privateAccess polygonBuffer.triCount;
+					colliderVertex += @:privateAccess Std.int(polygonBuffer.buffer.length / 3);
+					return;
+				}
+				var polygon = Std.downcast(c, h3d.col.Polygon);
+				if ( polygon != null ) {
+					var t = @:privateAccess polygon.triPlanes;
+					while ( t != null ) {
+						colliderTriangle += 1;
+						colliderVertex += 3;
+						t = t.next;
+					}
+					return;
+				}
+			}
+			recCol(col);
+
+			colliderInfo += '<dt>Collider vertices</dt><dd>$colliderVertex</dd>';
+			colliderInfo += '<dt>Collider triangle</dt><dd>$colliderTriangle</dd>';
 		}
 		var e = properties.add(new Element('
 			<div class="group" name="Properties">
@@ -527,7 +567,7 @@ class Model extends FileView {
 					<dt>Bones</dt><dd>$bonesCount</dd>
 					<dt>Vertexes</dt><dd>$vertexCount</dd>
 					<dt>Triangles</dt><dd>$triangleCount</dd>
-					' + vertexFormat +
+					' + vertexFormat + colliderInfo +
 					if (transform != null) {
 						var size : h3d.col.Point = roundVec(obj.getBounds().getSize());
 
@@ -569,8 +609,6 @@ class Model extends FileView {
 			<br/>
 		'),obj);
 
-		var mesh = Std.downcast(obj, h3d.scene.Mesh);
-		var hmd = mesh != null ? Std.downcast(mesh.primitive, h3d.prim.HMDModel) : null;
 		selectedMesh = mesh;
 
 		if (mesh != null && hmd != null) {

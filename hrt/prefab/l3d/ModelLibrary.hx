@@ -798,7 +798,9 @@ class ModelLibrary extends Prefab {
 				var ignoreModel = false;
 				var m2 = new Model();
 				m2.name = m.name;
-				m2.props = m.props;
+				m2.props = m.props != null ? m.props.copy() : null;
+				if ( m2.props != null )
+					m2.props.remove(HasCollider);
 				m2.parent = m.parent < 0 ? 0 : m.parent + offsetModels;
 				m2.follow = m.follow;
 				m2.position = m.position;
@@ -984,7 +986,7 @@ class ModelLibrary extends Prefab {
 			return this;
 
 		if ( cache.hmdPrim == null )
-				cache.hmdPrim = Std.downcast(shared.loadModel(shared.getPrefabDatPath("model","hmd",this.name)).toMesh().primitive, h3d.prim.HMDModel);
+			cache.hmdPrim = Std.downcast(shared.loadModel(shared.getPrefabDatPath("model","hmd",this.name)).toMesh().primitive, h3d.prim.HMDModel);
 
 		cache.wasMade = true;
 		if ( cache.geomBounds == null )

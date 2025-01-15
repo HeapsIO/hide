@@ -105,6 +105,7 @@ class ViewportOverlaysPopup extends hide.comp.Popup {
 			addButton("Grid", "th", "gridToggle", () -> editor.updateGrid()).appendTo(group);
 			addButton("Axis", "arrows", "axisToggle", () -> editor.updateBasis()).appendTo(group);
 			addButton("Joints", "share-alt", "jointsToggle", () -> editor.updateJointsVisibility()).appendTo(group);
+			addButton("Colliders", "codepen", "colliderToggle", () -> editor.updateCollidersVisibility()).appendTo(group);
 			addButton("Other", "question-circle", "showOtherGuides", () -> editor.updateOtherGuidesVisibility()).appendTo(group);
 
 			{
@@ -1104,6 +1105,7 @@ class SceneEditor {
 		updateOutlineVisibility();
 		updateOtherGuidesVisibility();
 		updateJointsVisibility();
+		updateCollidersVisibility();
 		updateIconsVisibility();
 		updateStatusTextVisibility();
 		updateWireframe();
@@ -1128,6 +1130,11 @@ class SceneEditor {
 	public function updateJointsVisibility() {
 		var visible = getOrInitConfig("sceneeditor.jointsToggle", false) && showOverlays;
 		setJoints(visible, null);
+	}
+
+	public function updateCollidersVisibility() {
+		var visible = getOrInitConfig("sceneeditor.colliderToggle", false) && showOverlays;
+		setCollider(visible);
 	}
 
 	public function updateGizmoVisibility() {
@@ -2733,6 +2740,8 @@ class SceneEditor {
 		var engine = h3d.Engine.getCurrent();
 		if( engine.driver.hasFeature(Wireframe) ) {
 			for( m in scene.s3d.getMaterials() ) {
+				if ( m.name == "$collider" )
+					continue;
 				m.mainPass.wireframe = val;
 			}
 		}
@@ -2779,6 +2788,44 @@ class SceneEditor {
 					sk.showJoints = false;
 				}
 			}
+		}
+	}
+
+	var collider : h3d.scene.Object = null;
+	public function setCollider(showCollider = true) {
+		if( showCollider ) {
+			if( collider == null )
+				collider = new h3d.scene.Object(scene.s3d);
+			collider.removeChildren();
+			var meshes = scene.s3d.getMeshes();
+			meshes = meshes.filter(function (m : h3d.scene.Mesh) {
+				var p = m.parent;
+				while ( p != null ) {
+					if ( p == gizmo )
+						return false;
+					p = p.parent;
+				}
+				return true;
+			});
+			for ( m in meshes ) {
+				var prim = Std.downcast(m.primitive, h3d.prim.HMDModel);
+				if ( prim == null )
+					continue;
+				var col = m.getCollider();
+				if ( col == null )
+					continue;
+				var d = col.makeDebugObj();
+				for ( mat in d.getMaterials() ) {
+					mat.name = "$collider";
+					mat.mainPass.setPassName("debuggeom");
+					mat.shadows = false;
+					mat.mainPass.wireframe = true;
+				}
+				collider.addChild(d);
+			}
+		} else if( collider != null ) {
+			collider.remove();
+			collider = null;
 		}
 	}
 
