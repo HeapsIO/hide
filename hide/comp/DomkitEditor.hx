@@ -155,8 +155,14 @@ class DomkitChecker extends ScriptEditor.ScriptChecker {
 					setComp(comp);
 				}
 			}
-			for( s in r.style )
-				typeProperty(s.p.name, s.pmin, s.pmax, s.value, comp?.r);
+			for( s in r.style ) {
+				var value = s.value;
+				switch( s.value ) {
+				case VLabel("important", val): value = val;
+				default:
+				}
+				typeProperty(s.p.name, s.pmin, s.pmax, value, comp?.r);
+			}
 		}
 	}
 

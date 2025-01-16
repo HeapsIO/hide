@@ -605,7 +605,7 @@ class DomkitViewer extends h2d.Object {
 				}
 				switch( a.value ) {
 				case RawValue(v):
-					Reflect.setProperty(attributes,a.name,v);
+					Reflect.setField(attributes,a.name,v);
 				case Code(_):
 					// skip (init after)
 				}
@@ -650,17 +650,18 @@ class DomkitViewer extends h2d.Object {
 				}
 			}
 			for( a in e.attributes ) {
-				var h = p.component.getHandler(domkit.Property.get(a.name));
-				if( h == null ) {
-					// TODO : add warning
-					continue;
-				}
 				switch( a.value ) {
 				case RawValue(_):
 				case Code(code):
+					var h = p.component.getHandler(domkit.Property.get(a.name));
 					var v : Dynamic = evalCode(parseCode(code, a.pmin));
 					@:privateAccess p.initStyle(a.name, v);
-					h.apply(p.obj, v);
+					if( h == null ) {
+						// might be a class field
+						try Reflect.setProperty(obj, a.name, v) catch( e : Dynamic ) {}
+					} else {
+						h.apply(p.obj, v);
+					}
 				}
 			}
 			if( !childrenCreated ) {
