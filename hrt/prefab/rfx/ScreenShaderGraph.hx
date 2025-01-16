@@ -34,13 +34,14 @@ class ScreenShaderGraph extends RendererFX {
 	@:s public var renderMode : ScreenShaderGraphMode;
 	@:s public var blend : h3d.mat.PbrMaterial.PbrBlend = None;
 	@:s public var usePrevTarget : Bool = false;
+	@:s public var passBegin : Bool = false;
 
 	function new(parent, shared: ContextShared) {
 		super(parent, shared);
 		renderMode = AfterTonemapping;
 	}
 
-	override function end(r:h3d.scene.Renderer, step:h3d.impl.RendererFX.Step) {
+	function execute(r : h3d.scene.Renderer, step : h3d.impl.RendererFX.Step) {
 		if( !checkEnabled() ) return;
 		syncShaderVars();
 
@@ -95,6 +96,17 @@ class ScreenShaderGraph extends RendererFX {
 				}
 			}
 		}
+	}
+
+	override function begin(r:h3d.scene.Renderer, step:h3d.impl.RendererFX.Step) {
+		if ( passBegin )
+			execute(r, step);
+	}
+
+
+	override function end(r:h3d.scene.Renderer, step:h3d.impl.RendererFX.Step) {
+		if ( !passBegin )
+			execute(r, step);
 	}
 
 	public function loadShaderDef() {
@@ -257,6 +269,7 @@ class ScreenShaderGraph extends RendererFX {
 				</dd>
 				<dt>Reference</dt><dd><input type="fileselect" extensions="shgraph" field="source"/></dd>
 				<dt>Prev target as input</dt><dd><input type="checkbox" field="usePrevTarget"/></dd>
+				<dt>Pass begin</dt><dd><input type="checkbox" field="passBegin"/></dd>
 			</dl>
 			</div>');
 
