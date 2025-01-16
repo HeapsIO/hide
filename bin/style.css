@@ -4176,6 +4176,12 @@ button-2 {
 button-2:hover {
   background-color: var(--hover);
 }
+button-2 value {
+  flex-grow: 1;
+  overflow-x: hidden;
+  white-space: nowrap;
+  text-overflow: ellipsis;
+}
 button-2:active {
   box-shadow: inset var(--sublte-shadow);
 }
@@ -4450,6 +4456,54 @@ blend-space-2d-root properties-container {
 }
 blend-space-2d-root properties-container parameters-container {
   flex-grow: 1;
+}
+blend-space-2d-root properties-container .hide-properties {
+  padding: 1em;
+  display: flex;
+  flex-direction: column;
+  gap: 0.5em;
+}
+blend-space-2d-root properties-container .hide-properties input {
+  min-width: 0;
+  width: 0;
+}
+blend-space-2d-root properties-container .hide-properties dl {
+  display: grid;
+  grid-template-columns: 6em minmax(0, 1fr);
+  row-gap: 2px;
+  column-gap: 1em;
+  width: 100%;
+}
+blend-space-2d-root properties-container .hide-properties dl > div {
+  display: grid;
+  grid-column: 1 / -1;
+  grid-template-columns: subgrid;
+}
+blend-space-2d-root properties-container .hide-properties dl > div > dt {
+  width: unset;
+  text-align: right;
+}
+blend-space-2d-root properties-container .hide-properties dl > div > dd {
+  width: unset;
+  margin-left: 0;
+  display: flex;
+  justify-content: stretch;
+}
+blend-space-2d-root properties-container .hide-properties dl > div > dd > * {
+  flex: 1 1;
+}
+blend-space-2d-root properties-container .hide-properties dl > div .hide-range {
+  display: flex;
+}
+blend-space-2d-root properties-container .hide-properties dl > div .hide-range input[type="range"] {
+  min-width: 0;
+  width: 0;
+  flex: 1 1;
+}
+blend-space-2d-root properties-container .hide-properties dl > div .hide-range input[type="text"] {
+  min-width: 0;
+  width: 0;
+  flex: 0 0 4em;
 }
 .basic-border {
   padding: var(--basic-padding);

@@ -10,6 +10,8 @@ class AnimGraphAnimatedObject extends h3d.anim.Animation.AnimatedObject {
 	}
 }
 
+typedef AnimResolver = (instance: AnimGraphInstance, target: h3d.scene.Object, path: String ) -> Null<String>;
+
 @:access(hrt.animgraph.AnimGraph)
 @:access(hrt.animgraph.Node)
 class AnimGraphInstance extends h3d.anim.Animation {
@@ -24,26 +26,31 @@ class AnimGraphInstance extends h3d.anim.Animation {
 	var syncCtx = new hrt.animgraph.nodes.AnimNode.GetBoneTransformContext();
 	var defaultPoseNode = new hrt.animgraph.nodes.DefaultPose();
 
+	var resolver : AnimResolver = null;
+
 	#if editor
 	var editorSkipClone : Bool = false;
 	#end
 
-	static function fromAnimGraph(animGraph:AnimGraph, outputNode: hrt.animgraph.nodes.AnimNode = null) : AnimGraphInstance {
+	static function fromAnimGraph(animGraph:AnimGraph, outputNode: hrt.animgraph.nodes.AnimNode = null, resolver: AnimResolver) : AnimGraphInstance {
 		outputNode ??= cast animGraph.nodes.find((node) -> Std.downcast(node, hrt.animgraph.nodes.Output) != null);
 		if (outputNode == null)
 			throw "Animgraph has no output node";
 
-		var inst = new AnimGraphInstance(outputNode, animGraph.name, 1000, 1/60.0);
-
+		var inst = new AnimGraphInstance(outputNode, resolver, animGraph.name, 1000, 1/60.0);
 		return inst;
 	}
 
-	public function new(rootNode: hrt.animgraph.nodes.AnimNode, name: String, framesCount: Int, sampling: Float) {
+	public function new(rootNode: hrt.animgraph.nodes.AnimNode, resolver: AnimResolver = null, name: String, framesCount: Int, sampling: Float) {
 		// Todo : Define a true length for the animation OR make so animations can have an undefined length
 		super(name, framesCount, sampling);
 		this.rootNode = rootNode;
-
+		this.resolver = resolver ?? defaultResolver;
 		defaultPoseNode = new hrt.animgraph.nodes.DefaultPose();
+	}
+
+	static function defaultResolver(instance: AnimGraphInstance, target: h3d.scene.Object, path: String) : Null<String> {
+		return path;
 	}
 
 	public function setParam(name: String, value: Float) {
@@ -78,7 +85,7 @@ class AnimGraphInstance extends h3d.anim.Animation {
 		#end
 		if (target != null) throw "Unexpected";
 
-		var inst = new AnimGraphInstance(null, name, frameCount, sampling);
+		var inst = new AnimGraphInstance(null, resolver, name, frameCount, sampling);
 		inst.rootNode = cast cloneRec(rootNode, inst);
 		super.clone(inst);
 		return inst;
@@ -127,6 +134,7 @@ class AnimGraphInstance extends h3d.anim.Animation {
 
 		var ctx = new hrt.animgraph.nodes.AnimNode.GetBoneContext();
 		ctx.targetObject = base;
+		ctx.resolver = resolver.bind(this, base);
 
 		var bones = getBones(ctx);
 		if (bones != null) {
@@ -223,4 +231,9 @@ class AnimGraphInstance extends h3d.anim.Animation {
 		node.tick(dt);
 		node.tickedThisFrame = true;
 	}
+
+	/**
+		Set this function in your project to programaticaly return an animation path
+	**/
+	static var customAnimResolver : (instance: AnimGraphInstance, name: String) -> Null<String> = null;
 }

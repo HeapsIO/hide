@@ -277,7 +277,7 @@ class BlendSpace2DEditor extends hide.view.FileView {
 
 		propertiesContainer = new hide.Element("<properties-container></properties-container>").appendTo(root);
 		{
-			var paramContainer = new Element('<parameters-container></parameters-container>').appendTo(propertiesContainer).addClass("hide-properties");
+			var paramContainer = new Element('<parameters-container></parameters-container>').appendTo(propertiesContainer);
 			new Element("<h1>Parameters</h1>").appendTo(paramContainer);
 			propsEditor = new hide.comp.PropsEditor(undo, paramContainer);
 			refreshPropertiesPannel();
@@ -346,6 +346,7 @@ class BlendSpace2DEditor extends hide.view.FileView {
 	function refreshPropertiesPannel() {
 		propsEditor.clear();
 
+
 		propsEditor.add(new hide.Element('
 		<div class="group" name="BlendSpace">
 			<dl>
@@ -358,20 +359,43 @@ class BlendSpace2DEditor extends hide.view.FileView {
 		});
 
 		if (selectedPoint != -1) {
-			propsEditor.add(new hide.Element('
+			var editor = new hide.Element('
 				<div class="group" name="Point">
 					<dl>
 						<dt>X</dt><dd><input type="range" min="0.0" max="1.0" field="x"/></dd>
 						<dt>Y</dt><dd><input type="range" min="0.0" max="1.0" field="y"/></dd>
 						<dt>Anim speed</dt><dd><input type="range" min="0.1" max="2.0" field="speed"/></dd>
-						<dt>Anim</dt><dd><input type="fileselect" extensions="fbx" field="animPath"/></dd>
 					</dl>
 				</div>
-			'), blendSpace2D.points[selectedPoint], (_) -> {
+			');
+
+			propsEditor.add(editor, blendSpace2D.points[selectedPoint], (_) -> {
 				blendSpace2D.triangulate();
 				refreshGraph();
 				refreshPreviewAnimation();
 			});
+
+			var div = new Element("<div></div>").appendTo(editor.find("dl"));
+			new Element("<dt>Anim</dt>").appendTo(div);
+			var dd = new Element("<dd>").appendTo(div);
+			var button = new hide.comp.Button(dd, null, "", {hasDropdown: true});
+			button.label = blendSpace2D.points[selectedPoint].animPath;
+			button.onClick = () -> {
+				hide.comp.ContextMenu.createDropdown(button.element.get(0), [
+					{
+						label: "Choose File ...",
+						click: () -> {
+						ide.chooseFile(["fbx"], (path) -> {
+								var old = blendSpace2D.points[selectedPoint].animPath;
+								blendSpace2D.points[selectedPoint].animPath = path;
+								undo.change(Field(blendSpace2D.points[selectedPoint], "animPath", old), () -> {
+									button.label = blendSpace2D.points[selectedPoint].animPath;
+								});
+							}, true);
+						}
+					}
+				], {search: Visible, autoWidth: true});
+			};
 		}
 
 		propsEditor.add(new hide.Element('

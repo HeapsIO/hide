@@ -71,26 +71,30 @@ class BlendSpace2D extends AnimNode {
 			if (blendSpacePoint.animPath != null && blendSpacePoint.animPath.length > 0) {
 				try
 				{
-					var animIndex = animMap.getOrPut(blendSpacePoint.animPath, {
-						// Create a new animation
-						var index = animInfos.length;
-						var animBase = hxd.res.Loader.currentInstance.load(blendSpacePoint.animPath).toModel().toHmd().loadAnimation();
+					var path = ctx.resolver(blendSpacePoint.animPath);
+					if (path != null) {
+						var animIndex = animMap.getOrPut(path, {
+							// Create a new animation
+							var index = animInfos.length;
+							var animBase = hxd.res.Loader.currentInstance.load(path).toModel().toHmd().loadAnimation();
 
-						var proxy = new hrt.animgraph.nodes.Input.AnimProxy(null);
-						var animInstance = animBase.createInstance(proxy);
+							var proxy = new hrt.animgraph.nodes.Input.AnimProxy(null);
+							var animInstance = animBase.createInstance(proxy);
 
-						var indexRemap : Array<Null<Int>> = [];
+							var indexRemap : Array<Null<Int>> = [];
 
-						for (boneId => obj in animInstance.getObjects()) {
-							var ourId = boneMap.getOrPut(obj.objectName, curOurBoneId++);
-							indexRemap[ourId] = boneId;
-						}
+							for (boneId => obj in animInstance.getObjects()) {
+								var ourId = boneMap.getOrPut(obj.objectName, curOurBoneId++);
+								indexRemap[ourId] = boneId;
+							}
 
-						animInfos.push({anim: animInstance, proxy: proxy, indexRemap: indexRemap});
-						index;
-					});
+							animInfos.push({anim: animInstance, proxy: proxy, indexRemap: indexRemap});
+							index;
+						});
 
-					point.animInfo = animInfos[animIndex];
+						point.animInfo = animInfos[animIndex];
+					}
+
 				} catch (e) {
 					trace('Couldn\'t load anim ${blendSpacePoint.animPath} : ${e.toString()}');
 				}
