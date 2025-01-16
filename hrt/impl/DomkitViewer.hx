@@ -605,7 +605,7 @@ class DomkitViewer extends h2d.Object {
 				}
 				switch( a.value ) {
 				case RawValue(v):
-					Reflect.setField(attributes,a.name,v);
+					Reflect.setProperty(attributes,a.name,v);
 				case Code(_):
 					// skip (init after)
 				}
