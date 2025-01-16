@@ -293,7 +293,7 @@ class FileTree extends FileView {
 		if (newSysPath.dir == null) {
 			newSysPath.dir = oldSysPath.dir;
 		}
-		if (newSysPath.ext.toLowerCase() == "fbx" && oldSysPath.ext.toLowerCase() == "fbx") {
+		if (newSysPath.ext?.toLowerCase() == "fbx" && oldSysPath.ext?.toLowerCase() == "fbx") {
 			function remLeadingSlash(s:String) {
 				if(StringTools.startsWith(s,"/")) {
 					return s.length > 1 ? s.substr(1) : "";
