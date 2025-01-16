@@ -39,7 +39,7 @@ class FXAnimation extends h3d.scene.Object {
 	var randSeed : Int;
 	var firstSync = true;
 
-	var onRemoveFun = null;
+	var onRemoveFun : Void -> Void = null;
 
 	public function new(?parent) {
 		super(parent);
@@ -542,11 +542,6 @@ typedef Parameter = {
 	var def: Dynamic;
 };
 
-typedef ShaderTarget = {
-	name : String,
-	object : h3d.scene.Object
-};
-
 class FX extends Object3D implements BaseFX {
 
 	@:s public var duration : Float;
@@ -556,8 +551,6 @@ class FX extends Object3D implements BaseFX {
 	@:s public var markers : Array<{t: Float}> = [];
 
 	@:s public var parameters : Array<Parameter> = [];
-
-	var shaderTargets : Array<ShaderTarget> = null;
 
 	#if editor
 	static var identRegex = ~/^[A-Za-z_][A-Za-z0-9_]*$/;
@@ -570,24 +563,6 @@ class FX extends Object3D implements BaseFX {
 	}
 
 	override function make( ?sh:hrt.prefab.Prefab.ContextMake) : Prefab  {
-		if ( shaderTargets != null) {
-			for ( target in shaderTargets ) {
-				var shadersRoot = find(Prefab, p -> target.name == p.name && p.enabled);
-				if ( shadersRoot == null )
-					continue;
-				var newRoot = new hrt.prefab.Object3D(null, sh);
-				var i = shadersRoot.children.length;
-				while ( i-- > 0 ) {
-					var c = shadersRoot.children[i];
-					if ( Std.isOfType(c, Shader) || Std.isOfType(c, Material) || Std.isOfType(c, MaterialSelector) )
-						c.parent = newRoot;
-				}
-				newRoot.name = shadersRoot.name;
-				newRoot.parent = shadersRoot.parent;
-				shadersRoot.parent = null;
-			}
-		}
-
 		var fromRef = shared.parentPrefab != null;
 		var useFXRoot = #if editor fromRef #else true #end;
 		var root = hrt.prefab.fx.BaseFX.BaseFXTools.getFXRoot(this);
@@ -644,53 +619,10 @@ class FX extends Object3D implements BaseFX {
 			return;
 
 		fxAnim.init(this, root);
-
-		if ( shaderTargets != null )
-			applyShadersToTargets();
 	}
 
 	function createInstance(parent: h3d.scene.Object) : FXAnimation {
 		return new FXAnimation(parent);
-	}
-
-	public function setShaderTargets( targets : Array<ShaderTarget>) {
-		if ( !shared.isInstance )
-			throw "Shader targets must be set on an instance";
- 		shaderTargets = targets;
-		if ( local3d != null )
-			applyShadersToTargets();
-	}
-
-	function applyShadersToTargets() {
-		var fxAnim : FXAnimation = cast local3d;
-
-		for ( target in shaderTargets ) {
-			if ( target.object == null )
-				continue;
-			var shadersRoot = find(Prefab, p -> target.name == p.name);
-			if ( shadersRoot == null )
-				continue;
-			var obj3d = Std.downcast(shadersRoot, Object3D);
-			if ( obj3d == null )
-				continue;
-			obj3d.local3d = target.object;
-			for ( s in obj3d.findAll(Shader) ) {
-				s.filterObj = o -> return o != fxAnim;
-				s.apply3d();
-			}
-		}
-
-		fxAnim.onRemoveFun = function() {
-			for ( target in shaderTargets ) {
-				if ( target.object == null )
-					continue;
-				var shadersRoot = find(Prefab, p -> target.name == p.name);
-				if ( shadersRoot == null )
-					continue;
-				for ( s in shadersRoot.findAll(Shader) )
-					s.dispose();
-			}
-		}
 	}
 
 	#if editor
