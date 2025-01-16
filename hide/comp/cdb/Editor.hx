@@ -2516,13 +2516,16 @@ class Editor extends Component {
 					txt = StringTools.trim(txt);
 					beginChanges();
 					if( txt == "" ) {
-						Reflect.deleteField(sheet.props,"dataFile");
-						@:privateAccess sheet.sheet.lines = [];
+						sheet.props.dataFiles = js.Lib.undefined;
+						for( l in @:privateAccess sheet.sheet.lines )
+							Reflect.deleteField(l, "$cdbtype");
+						@:privateAccess sheet.sheet.linesData = js.Lib.undefined;
+						@:privateAccess sheet.sheet.separators = [];
 					} else {
 						sheet.props.dataFiles = txt;
 						@:privateAccess sheet.sheet.lines = null;
-						DataFiles.load();
 					}
+					DataFiles.load();
 					endChanges();
 					refresh();
 				}
