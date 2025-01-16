@@ -26,6 +26,7 @@ class ShaderTargetObj extends h3d.scene.Object {
 	}
 
 	override function onRemove() {
+		super.onRemove();
 		for ( s in shadersRoot.findAll(Shader) )
 			s.dispose();
 	}
