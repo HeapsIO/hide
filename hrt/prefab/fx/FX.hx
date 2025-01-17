@@ -531,7 +531,7 @@ class FXAnimation extends h3d.scene.Object {
 
 		if (shaderTargets != null)
 			for (st in shaderTargets)
-				st.onRemove();
+				st.remove();
 
 		super.onRemove();
 	}
