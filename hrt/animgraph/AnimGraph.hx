@@ -36,6 +36,9 @@ class AnimGraph extends hrt.prefab.Prefab {
 		This anim should be instanciated using getInstance() after that (or use the h3d.scene.Object.playAnimation() function that does this for you)
 	**/
 	public function getAnimation(previewNode: hrt.animgraph.nodes.AnimNode = null, resolver: hrt.animgraph.AnimGraphInstance.AnimResolver = null) : AnimGraphInstance {
+		if (resolver == null && customResolverProvider != null) {
+			resolver = customResolverProvider(this);
+		}
 		return AnimGraphInstance.fromAnimGraph(this, previewNode, resolver);
 	}
 
@@ -166,6 +169,20 @@ class AnimGraph extends hrt.prefab.Prefab {
 	public function getNodeByEditorId(id: Int) : Node {
 		return Lambda.find(nodes, (a) -> a.id == id);
 	}
+	#end
+
+	/**
+		Called by getAnimation when the given resolver is null. Allow the game to provide a custom animation resolver on a prefab by prefab basis.
+	**/
+	public static var customResolverProvider : (graph: AnimGraph) -> hrt.animgraph.AnimGraphInstance.AnimResolver;
+
+	#if editor
+	/**
+		Used to display a list of valid animation names to use with the animResolver feature
+	**/
+	public static var customAnimNameLister : (graph: AnimGraph) -> Array<String>;
+
+	public static var customEditorResolverProvider : (graph: AnimGraph) -> Array<{name: String, resolver: hrt.animgraph.AnimGraphInstance.AnimResolver}>;
 	#end
 
 	static var _ = hrt.prefab.Prefab.register("animgraph", AnimGraph, "animgraph");

@@ -38,6 +38,8 @@ class BlendSpace2DEditor extends hide.view.FileView {
 
 	var animPreview : hrt.animgraph.AnimGraphInstance;
 
+	var customProviderIndex = 0;
+
 	inline function getPointPos(clientX : Float, clientY : Float, snap: Bool) : h2d.col.Point {
 		var x = hxd.Math.clamp(graphXToLocal(clientX), blendSpace2D.minX, blendSpace2D.maxX);
 		var y = hxd.Math.clamp(graphYToLocal(clientY), blendSpace2D.minY, blendSpace2D.maxY);
@@ -238,7 +240,6 @@ class BlendSpace2DEditor extends hide.view.FileView {
 								addPoint(pt2);
 							}
 						});
-
 					}
 
 					hide.comp.ContextMenu.createFromEvent(e, options);
@@ -347,13 +348,29 @@ class BlendSpace2DEditor extends hide.view.FileView {
 			if (animPreview == null) {
 				var blendSpaceNode = new hrt.animgraph.nodes.BlendSpace2D.BlendSpace2D();
 				@:privateAccess blendSpaceNode.blendSpace = blendSpace2D;
-				animPreview = new hrt.animgraph.AnimGraphInstance(blendSpaceNode, "", 1000, 1.0/60.0);
+				var resolver = null;
+				if (hrt.animgraph.AnimGraph.customEditorResolverProvider != null) {
+					var resolvers = hrt.animgraph.AnimGraph.customEditorResolverProvider(_);
+					if (resolvers != null) {
+						resolver = resolvers[customProviderIndex]?.resolver;
+					}
+				}
+				animPreview = new hrt.animgraph.AnimGraphInstance(blendSpaceNode, resolver, "", 1000, 1.0/60.0);
 				@:privateAccess animPreview.editorSkipClone = true;
 				cast previewModel.playAnimation(animPreview);
 			}
 			else @:privateAccess {
 				var root : hrt.animgraph.nodes.BlendSpace2D.BlendSpace2D = cast @:privateAccess animPreview.rootNode;
 				var old = root.points[0]?.animInfo?.anim.frame;
+
+				var resolver = null;
+				if (hrt.animgraph.AnimGraph.customEditorResolverProvider != null) {
+					var resolvers = hrt.animgraph.AnimGraph.customEditorResolverProvider(_);
+					if (resolvers != null) {
+						resolver = resolvers[customProviderIndex]?.resolver;
+					}
+				}
+				animPreview.resolver = resolver;
 
 				// if the anim or the mesh changed between the last refreshPreviewAnimation
 				if (previewModel.currentAnimation == animPreview) {
@@ -381,7 +398,6 @@ class BlendSpace2DEditor extends hide.view.FileView {
 
 	function refreshPropertiesPannel() {
 		propsEditor.clear();
-
 
 		propsEditor.add(new hide.Element('
 		<div class="group" name="BlendSpace">
@@ -416,24 +432,41 @@ class BlendSpace2DEditor extends hide.view.FileView {
 			var dd = new Element("<dd>").appendTo(div);
 			var button = new hide.comp.Button(dd, null, "", {hasDropdown: true});
 			button.label = blendSpace2D.points[selectedPoint].animPath;
+
+			var items : Array<hide.comp.ContextMenu.MenuItem> = [];
+
+			function setPointPath(path: String) {
+				var old = blendSpace2D.points[selectedPoint].animPath;
+				blendSpace2D.points[selectedPoint].animPath = path;
+				undo.change(Field(blendSpace2D.points[selectedPoint], "animPath", old), () -> {
+					button.label = blendSpace2D.points[selectedPoint].animPath;
+					refreshPreviewAnimation();
+				});
+				button.label = blendSpace2D.points[selectedPoint].animPath;
+				refreshPreviewAnimation();
+			}
+
+			items.push({
+				label: "Choose File ...",
+				click: () -> {
+				ide.chooseFile(["fbx"], setPointPath, true);
+				}
+			});
+
+			if (hrt.animgraph.AnimGraph.customAnimNameLister != null) {
+				items.push({isSeparator: true});
+
+				var anims = hrt.animgraph.AnimGraph.customAnimNameLister(null);
+				for (anim in anims) {
+					items.push({
+						label: anim,
+						click: setPointPath.bind(anim),
+					});
+				}
+			}
+
 			button.onClick = () -> {
-				hide.comp.ContextMenu.createDropdown(button.element.get(0), [
-					{
-						label: "Choose File ...",
-						click: () -> {
-						ide.chooseFile(["fbx"], (path) -> {
-								var old = blendSpace2D.points[selectedPoint].animPath;
-								blendSpace2D.points[selectedPoint].animPath = path;
-								undo.change(Field(blendSpace2D.points[selectedPoint], "animPath", old), () -> {
-									button.label = blendSpace2D.points[selectedPoint].animPath;
-									refreshPreviewAnimation();
-								});
-								button.label = blendSpace2D.points[selectedPoint].animPath;
-								refreshPreviewAnimation();
-							}, true);
-						}
-					}
-				], {search: Visible, autoWidth: true});
+				hide.comp.ContextMenu.createDropdown(button.element.get(0), items, {search: Visible, autoWidth: true});
 			};
 
 			button.element.get(0).ondragover = (e:js.html.DragEvent) -> {
@@ -447,28 +480,61 @@ class BlendSpace2DEditor extends hide.view.FileView {
 					return;
 				e.preventDefault();
 
-				var old = blendSpace2D.points[selectedPoint].animPath;
-				blendSpace2D.points[selectedPoint].animPath = data;
-				undo.change(Field(blendSpace2D.points[selectedPoint], "animPath", old), () -> {
-					button.label = blendSpace2D.points[selectedPoint].animPath;
-					refreshPreviewAnimation();
-				});
-
-				button.label = blendSpace2D.points[selectedPoint].animPath;
-				refreshPreviewAnimation();
+				setPointPath(data);
 			};
 		}
 
-		propsEditor.add(new hide.Element('
-			<div class="group" name="Preview">
-					<dl>
-						<dt>X</dt><dd><input type="range" min="0.0" max="1.0" field="x"/></dd>
-						<dt>Y</dt><dd><input type="range" min="0.0" max="1.0" field="y"/></dd>
-					</dl>
-				</div>
-		'), previewAxis, (_) -> {
+		var preview = new hide.Element('
+		<div class="group" name="Preview">
+				<dl>
+					<dt>X</dt><dd><input type="range" min="0.0" max="1.0" field="x"/></dd>
+					<dt>Y</dt><dd><input type="range" min="0.0" max="1.0" field="y"/></dd>
+				</dl>
+			</div>
+		');
+
+		propsEditor.add(preview, previewAxis, (_) -> {
 			updatePreviewAxis();
 		});
+
+		if (hrt.animgraph.AnimGraph.customEditorResolverProvider != null)
+		{
+			var dl = preview.find("dl");
+			var div = new Element("<div></div>").appendTo(dl);
+			div.append(new Element("<dt>Anim Set</dt>"));
+
+			var providers = hrt.animgraph.AnimGraph.customEditorResolverProvider(_);
+
+			var button = new hide.comp.Button(div, null, null, {hasDropdown: true});
+			button.label = providers[customProviderIndex].name;
+
+			var options : Array<hide.comp.ContextMenu.MenuItem> = [];
+			for (i => provider in providers) {
+				options.push({
+					label: provider.name,
+					click: () -> {
+						var old = customProviderIndex;
+						function exec(isUndo: Bool) {
+							if (!isUndo) {
+								customProviderIndex = i;
+							} else {
+								customProviderIndex = old;
+							}
+							button.label = providers[customProviderIndex].name;
+							refreshPreviewAnimation();
+						}
+						exec(false);
+						undo.change(Custom(exec));
+					}
+				});
+			}
+
+			button.onClick = () -> {
+				hide.comp.ContextMenu.createDropdown(button.element.get(0), options, {search: Visible, autoWidth: true});
+			}
+		}
+
+
 	}
 
 	override function save() {
