@@ -9,6 +9,7 @@ class GetBoneContext {
 	}
 
 	public var targetObject:h3d.scene.Object;
+	public var resolver : (path: String) -> Null<String>;
 }
 
 class GetBoneTransformContext {

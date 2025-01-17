@@ -92,7 +92,10 @@ class BlendSpace2DEditor extends hide.view.FileView {
 				var movingPreview = false;
 				var svg: js.html.svg.SVGElement = cast graph.element.get(0);
 
-				svg.onpointerdown = (e:js.html.PointerEvent) -> {
+				// We use a div instead to catch the drag event instead of the svg because the svg getting repainted messes with the mouse cursor drag preview
+				var dragHandler = new Element("<drag-handler>").appendTo(graphContainer).get(0);
+
+				dragHandler.onpointerdown = (e:js.html.PointerEvent) -> {
 					if (e.button != 0)
 						return;
 
@@ -115,11 +118,14 @@ class BlendSpace2DEditor extends hide.view.FileView {
 							return;
 					}
 
-					svg.setPointerCapture(e.pointerId);
+					dragHandler.setPointerCapture(e.pointerId);
 					e.preventDefault();
 				}
 
-				svg.onpointermove = (e:js.html.PointerEvent) -> {
+
+
+
+				dragHandler.onpointermove = (e:js.html.PointerEvent) -> {
 					if (movingPreview) {
 						var pt = getPointPos(e.clientX, e.clientY, false);
 
@@ -161,7 +167,7 @@ class BlendSpace2DEditor extends hide.view.FileView {
 					refreshGraph();
 				}
 
-				svg.onpointerup = (e:js.html.PointerEvent) -> {
+				dragHandler.onpointerup = (e:js.html.PointerEvent) -> {
 					if (movingPreview) {
 						movingPreview = false;
 						refreshPropertiesPannel();
@@ -199,7 +205,7 @@ class BlendSpace2DEditor extends hide.view.FileView {
 					movedPoint = -1;
 				}
 
-				svg.oncontextmenu = (e:js.html.MouseEvent) -> {
+				dragHandler.oncontextmenu = (e:js.html.MouseEvent) -> {
 					e.preventDefault();
 
 					var options : Array<hide.comp.ContextMenu.MenuItem> = [];
@@ -238,18 +244,48 @@ class BlendSpace2DEditor extends hide.view.FileView {
 					hide.comp.ContextMenu.createFromEvent(e, options);
 				}
 
-				svg.ondragover = (e:js.html.DragEvent) -> {
+				dragHandler.ondragover = (e:js.html.DragEvent) -> {
 					if (e.dataTransfer.types.contains(AnimList.dragEventKey)) {
 						e.preventDefault();
+
+						var mouse = inline new h2d.col.Point(e.clientX - cachedRect.x, e.clientY - cachedRect.y);
+
+						hoverPoint = -1;
+						for (id => point in blendSpace2D.points) {
+							var pt = inline new h2d.col.Point(localXToGraph(point.x), localYToGraph(point.y));
+							if (mouse.distanceSq(pt) < pointRadius * pointRadius) {
+								hoverPoint = id;
+								break;
+							}
+						}
+
+						refreshGraph();
 					}
 				}
 
-				svg.ondrop = (e:js.html.DragEvent) -> {
+				dragHandler.ondrop = (e:js.html.DragEvent) -> {
 					if (e.dataTransfer.types.contains(AnimList.dragEventKey)) {
+
+						var path = e.dataTransfer.getData(AnimList.dragEventKey);
+						if (path.length <= 0)
+							return;
+
 						e.preventDefault();
 
-							var pos = getPointPos(e.clientX, e.clientY, true);
-							addPoint({x: pos.x, y: pos.y, animPath: e.dataTransfer.getData(AnimList.dragEventKey)}, true);
+						if (hoverPoint >= 0) {
+							var old = blendSpace2D.points[hoverPoint].animPath;
+							blendSpace2D.points[hoverPoint].animPath = path;
+							undo.change(Field(blendSpace2D.points[hoverPoint], "animPath", old), () -> {
+								refreshPropertiesPannel();
+								refreshPreviewAnimation();
+							});
+							refreshPropertiesPannel();
+							refreshPreviewAnimation();
+						}
+						else {
+							var pos = getPointPos(e.clientX, e.clientY, false);
+							addPoint({x: pos.x, y: pos.y, animPath: path}, true);
+						}
 					}
 				}
 			}
@@ -277,7 +313,7 @@ class BlendSpace2DEditor extends hide.view.FileView {
 
 		propertiesContainer = new hide.Element("<properties-container></properties-container>").appendTo(root);
 		{
-			var paramContainer = new Element('<parameters-container></parameters-container>').appendTo(propertiesContainer).addClass("hide-properties");
+			var paramContainer = new Element('<parameters-container></parameters-container>').appendTo(propertiesContainer);
 			new Element("<h1>Parameters</h1>").appendTo(paramContainer);
 			propsEditor = new hide.comp.PropsEditor(undo, paramContainer);
 			refreshPropertiesPannel();
@@ -346,6 +382,7 @@ class BlendSpace2DEditor extends hide.view.FileView {
 	function refreshPropertiesPannel() {
 		propsEditor.clear();
 
+
 		propsEditor.add(new hide.Element('
 		<div class="group" name="BlendSpace">
 			<dl>
@@ -358,20 +395,68 @@ class BlendSpace2DEditor extends hide.view.FileView {
 		});
 
 		if (selectedPoint != -1) {
-			propsEditor.add(new hide.Element('
+			var editor = new hide.Element('
 				<div class="group" name="Point">
 					<dl>
 						<dt>X</dt><dd><input type="range" min="0.0" max="1.0" field="x"/></dd>
 						<dt>Y</dt><dd><input type="range" min="0.0" max="1.0" field="y"/></dd>
 						<dt>Anim speed</dt><dd><input type="range" min="0.1" max="2.0" field="speed"/></dd>
-						<dt>Anim</dt><dd><input type="fileselect" extensions="fbx" field="animPath"/></dd>
 					</dl>
 				</div>
-			'), blendSpace2D.points[selectedPoint], (_) -> {
+			');
+
+			propsEditor.add(editor, blendSpace2D.points[selectedPoint], (_) -> {
 				blendSpace2D.triangulate();
 				refreshGraph();
 				refreshPreviewAnimation();
 			});
+
+			var div = new Element("<div></div>").appendTo(editor.find("dl"));
+			new Element("<dt>Anim</dt>").appendTo(div);
+			var dd = new Element("<dd>").appendTo(div);
+			var button = new hide.comp.Button(dd, null, "", {hasDropdown: true});
+			button.label = blendSpace2D.points[selectedPoint].animPath;
+			button.onClick = () -> {
+				hide.comp.ContextMenu.createDropdown(button.element.get(0), [
+					{
+						label: "Choose File ...",
+						click: () -> {
+						ide.chooseFile(["fbx"], (path) -> {
+								var old = blendSpace2D.points[selectedPoint].animPath;
+								blendSpace2D.points[selectedPoint].animPath = path;
+								undo.change(Field(blendSpace2D.points[selectedPoint], "animPath", old), () -> {
+									button.label = blendSpace2D.points[selectedPoint].animPath;
+									refreshPreviewAnimation();
+								});
+								button.label = blendSpace2D.points[selectedPoint].animPath;
+								refreshPreviewAnimation();
+							}, true);
+						}
+					}
+				], {search: Visible, autoWidth: true});
+			};
+
+			button.element.get(0).ondragover = (e:js.html.DragEvent) -> {
+				if (e.dataTransfer.types.contains(AnimList.dragEventKey))
+					e.preventDefault();
+			};
+
+			button.element.get(0).ondrop = (e:js.html.DragEvent) -> {
+				var data = e.dataTransfer.getData(AnimList.dragEventKey);
+				if (data.length == 0)
+					return;
+				e.preventDefault();
+
+				var old = blendSpace2D.points[selectedPoint].animPath;
+				blendSpace2D.points[selectedPoint].animPath = data;
+				undo.change(Field(blendSpace2D.points[selectedPoint], "animPath", old), () -> {
+					button.label = blendSpace2D.points[selectedPoint].animPath;
+					refreshPreviewAnimation();
+				});
+
+				button.label = blendSpace2D.points[selectedPoint].animPath;
+				refreshPreviewAnimation();
+			};
 		}
 
 		propsEditor.add(new hide.Element('
@@ -450,7 +535,7 @@ class BlendSpace2DEditor extends hide.view.FileView {
 			} else {
 				blendSpace2D.points.splice(index, 1);
 				blendSpace2D.triangulate();
-				if (select)
+				if (select || selectedPoint == index)
 					setSelection(prevSelection);
 			}
 			refreshGraph();

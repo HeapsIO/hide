@@ -4934,6 +4934,13 @@ button-2 {
 		background-color: var(--hover);
 	}
 
+	value {
+		flex-grow: 1;
+		overflow-x: hidden;
+		white-space: nowrap;
+		text-overflow: ellipsis;
+	}
+
 	&:active {
 		box-shadow: inset var(--sublte-shadow);
 	}
@@ -5212,6 +5219,8 @@ blend-space-2d-root {
 		graph-container {
 			height: 40%;
 
+			position: relative;
+
 			background-color: var(--bg-1);
 			margin: 16px;
 
@@ -5260,6 +5269,15 @@ blend-space-2d-root {
 					stroke-width: 2;
 				}
 			}
+
+			drag-handler {
+				z-index: 1;
+				position: absolute;
+				left: 0;
+				bottom: 0;
+				right: 0;
+				top: 0;
+			}
 		}
 	}
 
@@ -5277,6 +5295,66 @@ blend-space-2d-root {
 		parameters-container {
 			flex-grow: 1;
 		}
+
+		.hide-properties {
+			padding: 1em;
+			display: flex;
+			flex-direction: column;
+
+			gap: 0.5em;
+
+			input {
+				min-width: 0;
+				width: 0;
+			}
+
+			dl {
+				display: grid;
+				grid-template-columns: 6em minmax(0, 1fr);
+				row-gap: 1px;
+				column-gap: 0.5em;
+				width: 100%;
+
+				> div {
+					display: grid;
+					grid-column: 1 / -1;
+					grid-template-columns: subgrid;
+					align-items: center;
+					> dt {
+						width: unset;
+						text-align: right;
+					}
+
+					> dd {
+						width: unset;
+						margin-left: 0;
+
+						display: flex;
+						justify-content: stretch;
+
+						> * {
+							flex: 1 1;
+						}
+					}
+
+					.hide-range {
+						display: flex;
+						input[type="range"] {
+							min-width: 0;
+							width: 0;
+							flex: 1 1;
+						}
+
+						input[type="text"] {
+							min-width: 0;
+							width: 0;
+							flex: 0 0 4em;
+						}
+					}
+				}
+			}
+		}
+
 	}
 
 }

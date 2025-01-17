@@ -71,26 +71,30 @@ class BlendSpace2D extends AnimNode {
 			if (blendSpacePoint.animPath != null && blendSpacePoint.animPath.length > 0) {
 				try
 				{
-					var animIndex = animMap.getOrPut(blendSpacePoint.animPath, {
-						// Create a new animation
-						var index = animInfos.length;
-						var animBase = hxd.res.Loader.currentInstance.load(blendSpacePoint.animPath).toModel().toHmd().loadAnimation();
+					var path = ctx.resolver(blendSpacePoint.animPath);
+					if (path != null) {
+						var animIndex = animMap.getOrPut(path, {
+							// Create a new animation
+							var index = animInfos.length;
+							var animBase = hxd.res.Loader.currentInstance.load(path).toModel().toHmd().loadAnimation();
 
-						var proxy = new hrt.animgraph.nodes.Input.AnimProxy(null);
-						var animInstance = animBase.createInstance(proxy);
+							var proxy = new hrt.animgraph.nodes.Input.AnimProxy(null);
+							var animInstance = animBase.createInstance(proxy);
 
-						var indexRemap : Array<Null<Int>> = [];
+							var indexRemap : Array<Null<Int>> = [];
 
-						for (boneId => obj in animInstance.getObjects()) {
-							var ourId = boneMap.getOrPut(obj.objectName, curOurBoneId++);
-							indexRemap[ourId] = boneId;
-						}
+							for (boneId => obj in animInstance.getObjects()) {
+								var ourId = boneMap.getOrPut(obj.objectName, curOurBoneId++);
+								indexRemap[ourId] = boneId;
+							}
 
-						animInfos.push({anim: animInstance, proxy: proxy, indexRemap: indexRemap});
-						index;
-					});
+							animInfos.push({anim: animInstance, proxy: proxy, indexRemap: indexRemap});
+							index;
+						});
 
-					point.animInfo = animInfos[animIndex];
+						point.animInfo = animInfos[animIndex];
+					}
+
 				} catch (e) {
 					trace('Couldn\'t load anim ${blendSpacePoint.animPath} : ${e.toString()}');
 				}
@@ -121,11 +125,13 @@ class BlendSpace2D extends AnimNode {
 	override function tick(dt:Float) {
 		super.tick(dt);
 
-		for (animInfo in animInfos) {
-			// keep all the animations in sync
-			var scale = (animInfo.anim.getDuration()) / currentAnimLenght;
-			animInfo.anim.update(dt * scale);
-			@:privateAccess animInfo.anim.isSync = false;
+		if (currentAnimLenght > 0) {
+			for (animInfo in animInfos) {
+				// keep all the animations in sync
+				var scale = (animInfo.anim.getDuration()) / currentAnimLenght;
+				animInfo.anim.update(dt * scale);
+				@:privateAccess animInfo.anim.isSync = false;
+			}
 		}
 	}
 
@@ -190,8 +196,25 @@ class BlendSpace2D extends AnimNode {
 				throw "assert";
 
 			currentAnimLenght = 0.0;
+
+			// Compensate for null animations that don't have lenght
+			var nulls = 0;
+			var nullWeights: Float = 0;
 			for (i => pt in triangles[currentTriangle]) {
-				currentAnimLenght += pt.animInfo.anim.getDuration()/pt.speed * weights[i];
+				if (pt.animInfo == null) {
+					nulls ++;
+					nullWeights += weights[i];
+				}
+			}
+
+			if (nulls < 3) {
+				nullWeights /= (3 - nulls);
+			}
+
+			for (i => pt in triangles[currentTriangle]) {
+				if(pt.animInfo != null) {
+					currentAnimLenght += pt.animInfo.anim.getDuration()/pt.speed * weights[i] + nullWeights;
+				}
 			}
 		}
 
