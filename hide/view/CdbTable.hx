@@ -166,6 +166,13 @@ class CdbTable extends hide.ui.View<{}> {
 		var sheets = [for( s in getSheets() ) s.name];
 		var index = sheets.indexOf(s.name);
 		if( index < 0 ) return;
+
+		// Tabs can be null if the sheet is opened but hasn't had time to properly initilalize, so we delay the call to this function
+		if (tabs == null) {
+			haxe.Timer.delay(() -> goto(s, line, column, scriptLine), 50);
+			return;
+		}
+
 		@:privateAccess editor.currentFilters = [];
 		tabs.currentTab = tabContents[index].parent();
 		editor.setFilter(null);
