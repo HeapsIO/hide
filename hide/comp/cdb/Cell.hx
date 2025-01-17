@@ -310,14 +310,63 @@ class Cell {
 		return view == null || view.show == null || view.show.indexOf(column) >= 0;
 	}
 
+
+	public static function isIdScope( origin : cdb.Sheet, sheet : cdb.Sheet, ?scope ) {
+		if( origin.idCol == null ) return false;
+		if( scope == null ) scope = origin.idCol.scope;
+		return StringTools.startsWith(sheet.name,origin.name.split("@").slice(0,-scope).join("@"));
+	}
+
 	function refScope( targetSheet : cdb.Sheet, currentSheet : cdb.Sheet, obj : Dynamic, localScope : Array<{ s : cdb.Sheet, obj : Dynamic }> ) {
+
 		var targetDepth = targetSheet.name.split("@").length;
-		var scope = table.getScope().concat(localScope);
-		if( scope.length < targetDepth )
-			scope.push({ s : currentSheet, obj : obj });
-		while( scope.length >= targetDepth )
-			scope.pop();
-		return scope;
+		var fullScope;
+		if( !isIdScope(targetSheet,currentSheet) ) {
+			// look into other fields at same level for contextual references
+			var newScope = [];
+			var scope = targetSheet.idCol.scope;
+			while( scope > 0 ) {
+				var found = null;
+				for( c in currentSheet.columns ) {
+					switch( c.type ) {
+					case TRef(s):
+						var sheet = editor.base.getSheet(s);
+						if( isIdScope(targetSheet,sheet,scope) ) {
+							found = { col : c, sheet : sheet };
+							break;
+						}
+					default:
+					}
+				}
+				if( found == null )
+					return [];
+				scope--;
+				var refId = Reflect.field(obj, found.col.name);
+				if( refId == null )
+					return [];
+				newScope.unshift({ sheet : found.sheet, ref : refId });
+			}
+			var s0 = newScope.shift();
+			var obj = s0.sheet.index.get(s0.ref)?.obj;
+			if( obj == null )
+				return [];
+			fullScope = [{ obj : obj, s : s0.sheet }];
+			for( s in newScope ) {
+				var sub = Reflect.field(obj, s.sheet.getParent().c);
+				if( sub == null ) return [];
+				fullScope.push({ obj : sub, s : s.sheet });
+				obj = sub;
+			}
+			obj = fullScope[0].obj;
+			currentSheet = fullScope[0].s;
+		} else {
+			fullScope = table.getScope().concat(localScope);
+		}
+		if( fullScope.length < targetDepth )
+			fullScope.push({ s : currentSheet, obj : obj });
+		while( fullScope.length >= targetDepth )
+			fullScope.pop();
+		return fullScope;
 	}
 
 	function valueHtml( c : cdb.Data.Column, v : Dynamic, sheet : cdb.Sheet, obj : Dynamic, scope : Array<{ s : cdb.Sheet, obj : Dynamic }> ) : {str: String, containsHtml: Bool} {

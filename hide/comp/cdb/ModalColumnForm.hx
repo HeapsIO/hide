@@ -180,7 +180,22 @@ class ModalColumnForm extends Modal {
 		for( i in 0...base.sheets.length ) {
 			var s = base.sheets[i];
 			if( s.idCol == null ) continue;
-			if( s.idCol.scope != null && !StringTools.startsWith(sheet.name,s.name.split("@").slice(0,-s.idCol.scope).join("@")) ) continue;
+			if( s.idCol.scope != null ) {
+				var checkSheets = [sheet];
+				for( c in sheet.columns )
+					switch( c.type ) {
+					case TRef(s): checkSheets.push(base.getSheet(s));
+					default:
+					}
+				var found = false;
+				for( sscope in checkSheets )
+					if( Cell.isIdScope(s, sscope) ) {
+						found = true;
+						break;
+					}
+				if( !found )
+					continue;
+			}
 			options.push(new Element("<option>").attr("value", "" + i).text(s.name)); // .appendTo(sheets);
 		}
 		options.sort((e1, e2) -> e1.text() > e2.text() ? 1 : -1);
