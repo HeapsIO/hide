@@ -5219,6 +5219,8 @@ blend-space-2d-root {
 		graph-container {
 			height: 40%;
 
+			position: relative;
+
 			background-color: var(--bg-1);
 			margin: 16px;
 
@@ -5267,6 +5269,15 @@ blend-space-2d-root {
 					stroke-width: 2;
 				}
 			}
+
+			drag-handler {
+				z-index: 1;
+				position: absolute;
+				left: 0;
+				bottom: 0;
+				right: 0;
+				top: 0;
+			}
 		}
 	}
 
@@ -5300,14 +5311,15 @@ blend-space-2d-root {
 			dl {
 				display: grid;
 				grid-template-columns: 6em minmax(0, 1fr);
-				row-gap: 2px;
-				column-gap: 1em;
+				row-gap: 1px;
+				column-gap: 0.5em;
 				width: 100%;
 
 				> div {
 					display: grid;
 					grid-column: 1 / -1;
 					grid-template-columns: subgrid;
+					align-items: center;
 					> dt {
 						width: unset;
 						text-align: right;

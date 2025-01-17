@@ -4407,6 +4407,7 @@ blend-space-2d-root main-panel preview-container .hide-toolbar2 {
 }
 blend-space-2d-root main-panel graph-container {
   height: 40%;
+  position: relative;
   background-color: var(--bg-1);
   margin: 16px;
 }
@@ -4446,6 +4447,14 @@ blend-space-2d-root main-panel graph-container svg .preview-axis {
   stroke: #008a00;
   stroke-width: 2;
 }
+blend-space-2d-root main-panel graph-container drag-handler {
+  z-index: 1;
+  position: absolute;
+  left: 0;
+  bottom: 0;
+  right: 0;
+  top: 0;
+}
 blend-space-2d-root properties-container {
   padding: var(--basic-padding);
   display: flex;
@@ -4470,14 +4479,15 @@ blend-space-2d-root properties-container .hide-properties input {
 blend-space-2d-root properties-container .hide-properties dl {
   display: grid;
   grid-template-columns: 6em minmax(0, 1fr);
-  row-gap: 2px;
-  column-gap: 1em;
+  row-gap: 1px;
+  column-gap: 0.5em;
   width: 100%;
 }
 blend-space-2d-root properties-container .hide-properties dl > div {
   display: grid;
   grid-column: 1 / -1;
   grid-template-columns: subgrid;
+  align-items: center;
 }
 blend-space-2d-root properties-container .hide-properties dl > div > dt {
   width: unset;
