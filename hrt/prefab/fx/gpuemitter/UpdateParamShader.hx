@@ -15,7 +15,7 @@ class UpdateParamShader extends hxsl.Shader {
 
 		function main() {
 			var idx = computeVar.globalInvocation.x;
-			batchBuffer[idx * stride + pos] = paramTexture.get(vec2(1.0 - particleBuffer[idx].life / particleBuffer[idx].lifeTime, row)).x;
+			batchBuffer[idx * stride + pos] = paramTexture.getLod(vec2(1.0 - particleBuffer[idx].life / particleBuffer[idx].lifeTime, row), 0.0).x;
 		}
 	}
 }
