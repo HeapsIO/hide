@@ -83,14 +83,34 @@ class ShaderTarget extends Object3D {
 	override function edit( ctx : hide.prefab.EditContext ) {
 		super.edit(ctx);
 
+		var tags : Array<String> = hide.Ide.inst.currentConfig.get("fx.shaderTargetsTags");
+		if (tags == null)
+			tags = [];
 		var props = new hide.Element('
 			<div class="group" name="Shader Target">
 				<dl>
-					<dt>Tag</dt><dd><input type="text" field="tag"/></dd>
+					<dt>Tag</dt><dd id="tag-selector"></dd>
 					<dt>Priority</dt><dd><input type="number" min="0" max="10" value="0" field="priority"/></dd>
 				</dl>
 			</div>
 		');
+
+		var tagSelector = new hide.Element('<select>
+			<option value="">none</option>
+			${[for(t in tags) '<option value="$t" ${t == tag ? "selected" : ""}>$t</option>'].join("")}
+		</select>').appendTo(props.find("#tag-selector"));
+
+		tagSelector.change(function(e) {
+			var oldVal = this.tag;
+			this.tag = tagSelector.val();
+			var newVal = this.tag;
+
+			ctx.properties.undo.change(Custom(function(isUndo){
+				this.tag = isUndo ? oldVal : newVal;
+				tagSelector.val(this.tag);
+			}));
+		});
+
 		ctx.properties.add(props, this, function(pname) {
 			ctx.onChange(this, pname);
 		});
