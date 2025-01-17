@@ -31,6 +31,7 @@ class FXAnimation extends h3d.scene.Object {
 	public var customAnims : Array<BaseFX.CustomAnimation> = [];
 	public var constraints : Array<hrt.prefab.l3d.Constraint>;
 	public var effects : Array<hrt.prefab.rfx.RendererFX>;
+	public var shaderTargets : Array<hrt.prefab.fx.ShaderTarget.ShaderTargetObj>;
 
 	var evaluator : Evaluator;
 	var parentFX : FXAnimation;
@@ -38,8 +39,6 @@ class FXAnimation extends h3d.scene.Object {
 	var prevTime = -1.0;
 	var randSeed : Int;
 	var firstSync = true;
-
-	var onRemoveFun : Void -> Void = null;
 
 	public function new(?parent) {
 		super(parent);
@@ -53,6 +52,10 @@ class FXAnimation extends h3d.scene.Object {
 	function init(def: FX, ?root: PrefabElement) {
 		if(root == null)
 			root = def;
+
+		for (shaderTarget in def.flatten(hrt.prefab.fx.ShaderTarget))
+			shaderTarget.applyShaderTarget(def, shaderTarget.target);
+
 		initObjAnimations(root);
 		initEmitters(root);
 		hrt.prefab.fx.BaseFX.BaseFXTools.getCustomAnimations(root, customAnims, null);
@@ -515,8 +518,6 @@ class FXAnimation extends h3d.scene.Object {
 	}
 
 	override function onRemove() {
-		if ( onRemoveFun != null)
-			onRemoveFun();
 		if ( effects != null ) {
 			var scene = getScene();
 			if ( scene != null ) {
@@ -527,6 +528,10 @@ class FXAnimation extends h3d.scene.Object {
 				}
 			}
 		}
+
+		if (shaderTargets != null)
+			for (st in shaderTargets)
+				st.onRemove();
 
 		super.onRemove();
 	}
@@ -619,6 +624,11 @@ class FX extends Object3D implements BaseFX {
 			return;
 
 		fxAnim.init(this, root);
+	}
+
+	public function setTarget(target : h3d.scene.Object) {
+		for (shaderTarget in this.findAll(hrt.prefab.fx.ShaderTarget))
+			shaderTarget.target = target;
 	}
 
 	function createInstance(parent: h3d.scene.Object) : FXAnimation {

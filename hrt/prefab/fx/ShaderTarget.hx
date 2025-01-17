@@ -20,9 +20,9 @@ class ShaderTargetObj extends h3d.scene.Object {
 		if (fxAnim == null)
 			return;
 
-		@:privateAccess fxAnim.onRemoveFun = () -> {
-			this.remove();
-		}
+		if (fxAnim.shaderTargets == null)
+			fxAnim.shaderTargets = [];
+		fxAnim.shaderTargets.push(this);
 	}
 
 	override function onRemove() {
@@ -62,6 +62,8 @@ class ShaderTarget extends Object3D {
 	}
 
 	public function applyShaderTarget(fx : hrt.prefab.fx.FX, target : h3d.scene.Object) {
+		if (target == null)
+			return;
 		var o = new hrt.prefab.fx.ShaderTarget.ShaderTargetObj(target);
 		o.priority = this.priority;
 		o.tag = this.tag;
