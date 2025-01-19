@@ -14,7 +14,6 @@ class ScriptCache {
 
 	var content : Map<String,Bool> = [];
 	var configSign : String;
-	public var signature : String;
 
 	public function new(configSign:String) {
 		this.configSign = configSign;
@@ -42,14 +41,52 @@ class ScriptCache {
 		hide.Ide.inst.localStorage.setItem("script_cache_val", all.join(";"));
 	}
 
+	static var CONFIG_HASH = null;
+	static var LAST_API = null;
+	static var LAST_FILES = null;
+	static var CHECK_CACHE : ScriptCache;
+
+	static function hashString( str : String ) {
+		return haxe.crypto.Md5.encode(str);
+	}
+
+	public static function getCachedResult( config : hide.Config, documentName : String, constants : Map<String,Dynamic>, code : String ) : Bool {
+		var api = config.get("script.api");
+		var apiFiles : Array<String> = config.get("script.api.files");
+		if( api != LAST_API || apiFiles != LAST_FILES || CHECK_CACHE == null ) {
+			LAST_API = api;
+			LAST_FILES = apiFiles;
+			var hashes = [];
+			var ide = hide.Ide.inst;
+			for( f in apiFiles ) {
+				var path = ide.getPath(f);
+				hashes.push(path+":"+sys.FileSystem.stat(path).mtime.getTime());
+			}
+			hashes.push(haxe.Json.stringify(api));
+			var hash = hashString(hashes.join(","));
+			if( hash != CONFIG_HASH ) {
+				// CDB has a single configuration
+				CONFIG_HASH = hash;
+				CHECK_CACHE = new ScriptCache(hash);
+			}
+		}
+		var cache = CHECK_CACHE;
+		var signature = hashString(code+":"+documentName+":"+haxe.Json.stringify(constants));
+		var error : Null<Bool> = cache.get(signature);
+		if( error == null ) {
+			var chk = new ScriptChecker(config, documentName, constants);
+			error = chk.check(code) != null;
+			cache.set(signature, error);
+		}
+		return error;
+	}
+
 }
 
 class ScriptChecker {
 
 	static var TYPES_SAVE = new Map();
 	static var ERROR_SAVE = new Map();
-	static var CONFIG_HASH = null;
-	static var CHECK_CACHE : ScriptCache;
 	static var TYPE_CHECK_HOOKS : Array<ScriptChecker->Void> = [];
 	var ide : hide.Ide;
 	var apiFiles : Array<String>;
@@ -70,16 +107,11 @@ class ScriptChecker {
 		reload();
 	}
 
-	function hashString( str : String ) {
-		return haxe.crypto.Md5.encode(str);
-	}
-
 	public function reload() {
 		checker = new hscript.Checker();
 		checker.allowAsync = true;
 		initDone = false;
 
-		var hashes = [];
 		if( apiFiles != null && apiFiles.length >= 0 ) {
 			var types = TYPES_SAVE.get(apiFiles.join(";"));
 			if( types == null ) {
@@ -87,17 +119,12 @@ class ScriptChecker {
 				for( f in apiFiles ) {
 					var path = ide.getPath(f);
 					var content = try sys.io.File.getContent(path) catch( e : Dynamic ) { error(""+e); continue; };
-					hashes.push(path+":"+sys.FileSystem.stat(path).mtime.getTime());
 					types.addXmlApi(Xml.parse(content).firstElement());
 					ide.fileWatcher.register(f, reloadApi);
 				}
 				TYPES_SAVE.set(apiFiles.join(";"), types);
 			}
 			checker.types = types;
-		}
-		if( CONFIG_HASH == null ) {
-			hashes.push(haxe.Json.stringify(config.get("script.api")));
-			CONFIG_HASH = hashString(hashes.join(","));
 		}
 	}
 
@@ -346,13 +373,6 @@ class ScriptChecker {
 		}
 	}
 
-	public function getCache( code : String ) {
-		if( CHECK_CACHE == null )
-			CHECK_CACHE = new ScriptCache(CONFIG_HASH);
-		CHECK_CACHE.signature = hashString(code+":"+documentName+":"+haxe.Json.stringify(constants));
-		return CHECK_CACHE;
-	}
-
 	public function check( script : String, checkTypes = true ) {
 		var parser = makeParser();
 		try {
@@ -391,8 +411,6 @@ class ScriptChecker {
 
 	public static function reloadApi() {
 		TYPES_SAVE = new Map();
-		CONFIG_HASH = null;
-		CHECK_CACHE = null;
 	}
 
 }
