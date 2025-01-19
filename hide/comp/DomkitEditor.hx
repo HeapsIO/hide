@@ -60,8 +60,6 @@ class DomkitChecker extends ScriptEditor.ScriptChecker {
 
 	public function new(config) {
 		super(config,"domkit");
-		t_string = checker.types.resolve("String");
-
 		parsers = [new h2d.domkit.BaseComponents.CustomParser()];
 		var dcfg : Array<String> = config.get("domkit.parsers");
 		if( dcfg != null ) {
@@ -74,7 +72,14 @@ class DomkitChecker extends ScriptEditor.ScriptChecker {
 				parsers.push(std.Type.createInstance(cl,[]));
 			}
 		}
+	}
+
+	override function initTypes() {
+		if( !super.initTypes() )
+			return false;
+		t_string = checker.types.resolve("String");
 		initComponents();
+		return true;
 	}
 
 	public function checkDML( dmlCode : String, filePath : String, position = 0 ) {
