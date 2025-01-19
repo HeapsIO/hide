@@ -64,6 +64,17 @@ class Domkit extends FileView {
 			panelBotLeft.height(totalHeight - panelTopLeft.element.height());
 		};
 
+		element.find("#format").click(function(_) {
+			var dml = dmlEditor.checker.formatDML(dmlEditor.code);
+			dmlEditor.setCode(dml);
+		});
+
+		// add a scene so the CssParser can resolve Tiles
+		var scene = element.find(".scene");
+		new hide.comp.Scene(config, scene, scene).onReady = function() check();
+	}
+
+	function defineGlobals() {
 		// define DomkitBaseContext functions
 		@:privateAccess paramsEditor.checker.init();
 		function defineGlobal(name,args:Array<{name:String,t:String,?opt:Bool}>,ret) {
@@ -82,20 +93,11 @@ class Domkit extends FileView {
 			checker.checker.setGlobal(name,TFun([for( i => a in args ) { name : a.name, t : types[i], opt : a.opt }],ret));
 		}
 		defineGlobal("loadTile",[{ name : "path", t : "String" }],"h2d.Tile");
-
-
-		element.find("#format").click(function(_) {
-			var dml = dmlEditor.checker.formatDML(dmlEditor.code);
-			dmlEditor.setCode(dml);
-		});
-
-		// add a scene so the CssParser can resolve Tiles
-		var scene = element.find(".scene");
-		new hide.comp.Scene(config, scene, scene).onReady = function() check();
 	}
 
 	function check() {
 		modified = prevSave.css != cssEditor.code || prevSave.dml != dmlEditor.code || prevSave.params != paramsEditor.code;
+		defineGlobals(); // redefine if types have been reloaded
 		var allParams = new Map();
 		dmlEditor.checker.params = allParams;
 		var comp = dmlEditor.getComponent();
