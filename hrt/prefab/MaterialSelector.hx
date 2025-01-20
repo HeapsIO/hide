@@ -14,6 +14,7 @@ class MaterialSelector extends hrt.prefab.Prefab {
 	@:s public var selections : Array<MaterialSelection> = [{
 		passName : "all",
 	}];
+	@:s public var blendModesSelected : Array<String> = [];
 	public var filterObj : h3d.scene.Object -> Bool;
 
 	public function getPasses(local3d: h3d.scene.Object = null) : Array<SelectedPass> {
@@ -38,6 +39,12 @@ class MaterialSelector extends hrt.prefab.Prefab {
 		var selectionSorted = selections.copy();
 		selectionSorted.sort((s1, s2) -> s1.passName == "all" ? return 1 : -1);
 		for ( m in mats ) {
+			if (blendModesSelected.length > 0) {
+				if (blendModesSelected.contains(m.blendMode.getName()))
+					passes.push({pass : m.mainPass, all : true});
+				continue;
+			}
+
 			for ( selection in selections ) {
 				if ( selection.passName == "all" ) {
 					passes.push({pass : m.mainPass, all : true});
@@ -67,14 +74,42 @@ class MaterialSelector extends hrt.prefab.Prefab {
 		super.edit(ctx);
 
 		var e1 = new hide.Element('
-			<div class="group" name="Selections">
+			<div class="group" name="Material selector">
+				<div class="blend-selector-container"></div>
 				<ul id="selections"></ul>
 			</div>
 		');
-		ctx.properties.add(e1, function(propName) {
+		ctx.properties.add(e1, this, function(propName) {
 			ctx.onChange(this, propName);
 			ctx.rebuildPrefab(this);
 		});
+
+		var blendModeSelector = new hide.Element('<div class="blend-mode-selector">
+		</div>');
+		for (b in Type.allEnums(h3d.mat.BlendMode)) {
+			var el = new hide.Element('<div class="blend-mode">
+				<input type="checkbox" ${blendModesSelected != null && blendModesSelected.contains(b.getName()) ? 'checked' : ''}/>
+				<label>$b</label>
+			</div>').appendTo(blendModeSelector);
+
+			var cb = el.find("input");
+			cb.change(function(e) {
+				var newVal = cb.prop('checked');
+				function exec(undo : Bool) {
+					var val = undo ? !newVal : newVal;
+					cb.prop('checked', val);
+					if (val)
+						blendModesSelected.push(b.getName());
+					else
+						blendModesSelected.remove(b.getName());
+				}
+
+				exec(false);
+				ctx.properties.undo.change(Custom(exec));
+			});
+		}
+
+		blendModeSelector.appendTo(e1.find(".blend-selector-container"));
 
 		var list = e1.find("ul#selections");
 		for ( s in selections ) {

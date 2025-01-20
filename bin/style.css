@@ -4548,3 +4548,25 @@ blend-space-2d-root properties-container .hide-properties dl > div .hide-range i
 .anim-list > ul > li:hover {
   background-color: var(--hover-highlight);
 }
+.blend-selector-container {
+  width: 100%;
+}
+.blend-selector-container .blend-mode-selector {
+  overflow-y: scroll;
+  overflow-x: hidden;
+  background: #303030;
+  max-height: 150px;
+  padding: 3px;
+  margin: 5px;
+  border-radius: 3px;
+}
+.blend-selector-container .blend-mode-selector .blend-mode {
+  margin-top: 1px;
+  width: 100%;
+  padding: 5px;
+  border-radius: 3px;
+  background: #545454;
+}
+.blend-selector-container .blend-mode-selector .blend-mode input {
+  margin-right: 5px;
+}

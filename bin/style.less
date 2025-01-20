@@ -5395,3 +5395,29 @@ blend-space-2d-root {
 		}
 	}
 }
+
+.blend-selector-container {
+	width: 100%;
+
+	.blend-mode-selector {
+		overflow-y: scroll;
+		overflow-x: hidden;
+		background: @color-menu-bg-highlight;
+		max-height: 150px;
+		padding: 3px;
+		margin: 5px;
+		border-radius: 3px;
+
+		.blend-mode {
+			margin-top: 1px;
+			width: 100%;
+			padding: 5px;
+			border-radius: 3px;
+			background: @color-tool-bg;
+
+			input {
+				margin-right: 5px;
+			}
+		}
+	}
+}
