@@ -91,7 +91,23 @@ class ContextShared extends hrt.prefab.ContextShared.ContextSharedBase {
 			}
 			return;
 		}else{
-			sys.io.File.saveBytes(file, bytes);
+			final numRetries = 5;
+			var success = false;
+			var lastError = null;
+			for (i in 0...numRetries) {
+				try {
+					sys.io.File.saveBytes(file, bytes);
+					success = true;
+					break;
+				} catch (e) {
+					lastError = e;
+					Sys.sleep(0.1);
+					continue;
+				}
+			}
+			if (!success) {
+				throw lastError;
+			}
 		}
 	}
 
