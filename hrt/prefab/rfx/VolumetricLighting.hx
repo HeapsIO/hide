@@ -18,7 +18,7 @@ class VolumetricLightingShader extends h3d.shader.pbr.DefaultForward {
 		@param var noiseOctave : Int;
 		@param var noiseTex : Sampler2D;
 
-		@param var depthMap : Sampler2D;
+		@param var halfDepthMap : Sampler2D;
 
 		@param var steps : Int;
 		@param var startDistance : Float;
@@ -48,7 +48,6 @@ class VolumetricLightingShader extends h3d.shader.pbr.DefaultForward {
 		@param var secondFogHeightFalloff : Float;
 
 		var calculatedUV : Vec2;
-		var depthInvDimensions : Vec2;
 
 		function noise( pos : Vec3 ) : Float {
 			var i = floor(pos);
@@ -139,9 +138,7 @@ class VolumetricLightingShader extends h3d.shader.pbr.DefaultForward {
 			return max(firstFog, secondFog);
 		}
 
-		function getWPos() : Vec3 {
-			var pixels = fragCoord.xy;
-			var depth = depthMap.get( pixels * depthInvDimensions ).r;
+		function getWPos() : Vec3 {			var depth = halfDepthMap.get( fragCoord.xy / halfDepthMap.size() ).r;
 			var uv2 = uvToScreen(calculatedUV);
 			var temp = vec4(uv2, depth, 1) * invViewProj;
 			return temp.xyz / temp.w;
@@ -155,15 +152,13 @@ class VolumetricLightingShader extends h3d.shader.pbr.DefaultForward {
 		var camDir : Vec3;
 		var envColor : Vec3;
 		var fog : Float;
-		function fragment() {
+		function rayMarch() : Vec4 {
 			metalness = 0.0;
 			emissive = 0.0;
 			albedoGamma = vec3(0.0);
 			useSecondColor = 0.0;
 
-			depthInvDimensions = 1.0 / depthMap.size();
 			var endPos = getWPos();
-
 			camDir = normalize(endPos - camera.position);
 			var startPos = camera.position + camDir * startDistance;
 			var cameraDistance = length(endPos - startPos);
@@ -182,6 +177,7 @@ class VolumetricLightingShader extends h3d.shader.pbr.DefaultForward {
 			var opacity = 0.0;
 			var totalScattered = vec3(0.0);
 			var opticalDepth = 0.0;
+			var prevPixelColor = pixelColor;
 			pixelColor = vec4(1.0);
 			var colorAcc = vec4(0.0);
 			var curDist = 0.0;
@@ -199,10 +195,16 @@ class VolumetricLightingShader extends h3d.shader.pbr.DefaultForward {
 
 				curDist += stepSize;
 			}
-			pixelColor.rgb = colorAcc.rgb / (0.001 + colorAcc.a);
-			pixelColor.a = saturate(distanceOpacity * colorAcc.a);
+			var outColor = colorAcc.rgb / (0.001 + colorAcc.a);
+			var opacity = saturate(distanceOpacity * colorAcc.a);
+
+			return vec4(outColor, opacity);
 		}
-	};
+
+		function fragment() {
+			pixelColor = rayMarch();
+		}
+	}
 }
 
 @:access(h3d.scene.Renderer)
@@ -252,6 +254,9 @@ class VolumetricLighting extends RendererFX {
 
 	function execute(r : h3d.scene.Renderer, step : h3d.impl.RendererFX.Step) {
 		if( step == BeforeTonemapping ) {
+			if ( distanceOpacity <= 0.0 )
+				return;
+
 			var r = cast(r, h3d.scene.pbr.Renderer);
 			r.mark("VolumetricLighting");
 
@@ -280,7 +285,7 @@ class VolumetricLighting extends RendererFX {
 				pass.addShader(vshader);
 			var ls = cast(r.getLightSystem(), h3d.scene.pbr.LightSystem);
 			ls.lightBuffer.setBuffers(vshader);
-			vshader.depthMap = halfDepth;
+			vshader.halfDepthMap = halfDepth;
 			vshader.startDistance = startDistance;
 			vshader.endDistance = endDistance;
 			vshader.distanceOpacity = distanceOpacity;
