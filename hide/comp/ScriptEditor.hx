@@ -163,7 +163,7 @@ class ScriptChecker {
 	}
 
 	function initTypes() {
-		if( api != null && apiHash == api.apiHash )
+		if( api == null || apiHash == api.apiHash )
 			return false;
 		apiHash = api.apiHash;
 		checker = new hscript.Checker();
