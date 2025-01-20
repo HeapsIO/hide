@@ -444,21 +444,28 @@ class MeshSpray extends Spray {
 
 		var s2d = shared.root2d.getScene();
 
+		var isShiftPressed = false;
+		ectx.scene.editor.view.element.keydown(function(e) {
+			if (e.shiftKey)
+				isShiftPressed = true;
+		});
+		ectx.scene.editor.view.element.keyup(function(e) {
+			isShiftPressed = false;
+		});
+
 		interactive.onMove = function(e) {
 			var worldPos = ectx.screenToGround(s2d.mouseX, s2d.mouseY);
-
-			var shiftPressed = hxd.Key.isDown( hxd.Key.SHIFT);
 
 			if( worldPos == null ) {
 				clearBrushes();
 				return;
 			}
 
-			drawCircle(worldPos.x, worldPos.y, worldPos.z, (shiftPressed) ? currentConfig.deleteRadius : currentConfig.radius, 5, (shiftPressed) ? 9830400 : 38400);
+			drawCircle(worldPos.x, worldPos.y, worldPos.z, (isShiftPressed) ? currentConfig.deleteRadius : currentConfig.radius, 5, (isShiftPressed) ? 9830400 : 38400);
 
 			if (lastSpray < Date.now().getTime() - 100) {
 				clearPreview();
-				if( !shiftPressed ) {
+				if( !isShiftPressed ) {
 					previewItemsAround(ectx, worldPos);
 				}
 
@@ -467,7 +474,7 @@ class MeshSpray extends Spray {
 					binaryChanged = true;
 
 					if (sprayEnable) {
-						if( shiftPressed ) {
+						if( isShiftPressed ) {
 							removeItemsAround(worldPos);
 						} else {
 							if (currentConfig.density == 1) {
