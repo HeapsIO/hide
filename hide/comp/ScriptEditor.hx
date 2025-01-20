@@ -122,7 +122,7 @@ class ScriptCache {
 
 	public static function loadApiFiles( config : hide.Config ) {
 		var files = config.get("script.api.files");
-		if( files != LAST_API_FILES || LAST_API_TYPES == null ) {
+		if( files != null && (files != LAST_API_FILES || LAST_API_TYPES == null) ) {
 			var key = files.join(";");
 			var types = TYPES_SAVE.get(key);
 			if( types == null ) {
@@ -163,7 +163,7 @@ class ScriptChecker {
 	}
 
 	function initTypes() {
-		if( apiHash == api.apiHash )
+		if( api != null && apiHash == api.apiHash )
 			return false;
 		apiHash = api.apiHash;
 		checker = new hscript.Checker();
