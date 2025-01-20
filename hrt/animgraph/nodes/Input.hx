@@ -19,7 +19,7 @@ class Input extends AnimNode {
 
 	override function getBones(ctx: hrt.animgraph.nodes.AnimNode.GetBoneContext):Map<String, Int> {
 		proxy = new AnimProxy();
-		anim = hxd.res.Loader.currentInstance.load(path).toModel().toHmd().loadAnimation().createInstance(proxy);
+		anim = hxd.res.Loader.currentInstance.load(ctx.resolver(path)).toModel().toHmd().loadAnimation().createInstance(proxy);
 
 		var map : Map<String, Int> = [];
 		for (id => obj in anim.getObjects()) {

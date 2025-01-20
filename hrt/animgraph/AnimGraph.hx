@@ -16,6 +16,12 @@ typedef SerializedEdge = {
 	outputId: Int,
 };
 
+#if editor
+typedef EditorProviderContext = {
+	source: String,
+}
+#end
+
 
 @:access(hrt.animgraph.AnimGraphInstance)
 class AnimGraph extends hrt.prefab.Prefab {
@@ -180,9 +186,13 @@ class AnimGraph extends hrt.prefab.Prefab {
 	/**
 		Used to display a list of valid animation names to use with the animResolver feature
 	**/
-	public static var customAnimNameLister : (graph: AnimGraph) -> Array<String>;
+	public static var customAnimNameLister : (context: EditorProviderContext) -> Array<String>;
 
-	public static var customEditorResolverProvider : (graph: AnimGraph) -> Array<{name: String, resolver: hrt.animgraph.AnimGraphInstance.AnimResolver}>;
+	/**
+		Return a list of resolvers to use in the editor to preview various configurations.
+		name is the string that will be displayed in the Anim Set selection box in the editor
+	**/
+	public static var customEditorResolverProvider : (context: EditorProviderContext) -> Array<{name: String, resolver: hrt.animgraph.AnimGraphInstance.AnimResolver}>;
 	#end
 
 	static var _ = hrt.prefab.Prefab.register("animgraph", AnimGraph, "animgraph");

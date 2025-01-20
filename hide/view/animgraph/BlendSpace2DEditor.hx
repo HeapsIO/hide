@@ -430,58 +430,12 @@ class BlendSpace2DEditor extends hide.view.FileView {
 			var div = new Element("<div></div>").appendTo(editor.find("dl"));
 			new Element("<dt>Anim</dt>").appendTo(div);
 			var dd = new Element("<dd>").appendTo(div);
-			var button = new hide.comp.Button(dd, null, "", {hasDropdown: true});
-			button.label = blendSpace2D.points[selectedPoint].animPath;
 
-			var items : Array<hide.comp.ContextMenu.MenuItem> = [];
-
-			function setPointPath(path: String) {
-				var old = blendSpace2D.points[selectedPoint].animPath;
-				blendSpace2D.points[selectedPoint].animPath = path;
-				undo.change(Field(blendSpace2D.points[selectedPoint], "animPath", old), () -> {
-					button.label = blendSpace2D.points[selectedPoint].animPath;
-					refreshPreviewAnimation();
-				});
-				button.label = blendSpace2D.points[selectedPoint].animPath;
+			var selectedSave = selectedPoint;
+			new AnimPicker(dd, undo, () -> blendSpace2D.points[selectedSave].animPath, (s) -> {
+				blendSpace2D.points[selectedSave].animPath = s;
 				refreshPreviewAnimation();
-			}
-
-			items.push({
-				label: "Choose File ...",
-				click: () -> {
-				ide.chooseFile(["fbx"], setPointPath, true);
-				}
-			});
-
-			if (hrt.animgraph.AnimGraph.customAnimNameLister != null) {
-				items.push({isSeparator: true});
-
-				var anims = hrt.animgraph.AnimGraph.customAnimNameLister(null);
-				for (anim in anims) {
-					items.push({
-						label: anim,
-						click: setPointPath.bind(anim),
-					});
-				}
-			}
-
-			button.onClick = () -> {
-				hide.comp.ContextMenu.createDropdown(button.element.get(0), items, {search: Visible, autoWidth: true});
-			};
-
-			button.element.get(0).ondragover = (e:js.html.DragEvent) -> {
-				if (e.dataTransfer.types.contains(AnimList.dragEventKey))
-					e.preventDefault();
-			};
-
-			button.element.get(0).ondrop = (e:js.html.DragEvent) -> {
-				var data = e.dataTransfer.getData(AnimList.dragEventKey);
-				if (data.length == 0)
-					return;
-				e.preventDefault();
-
-				setPointPath(data);
-			};
+			}, hrt.animgraph.AnimGraph.customAnimNameLister);
 		}
 
 		var preview = new hide.Element('
