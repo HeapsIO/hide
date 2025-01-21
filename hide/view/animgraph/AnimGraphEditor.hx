@@ -230,9 +230,12 @@ class AnimGraphEditor extends GenericGraphEditor {
                 return;
             }
 
-            var providers = AnimGraph.customEditorResolverProvider(_);
-            var prov = providers != null ? providers[0] : null;
-            var anim = animGraph.getAnimation(previewNode, prov.resolver);
+            var resolver = null;
+            if (AnimGraph.customEditorResolverProvider != null) {
+                var providers = AnimGraph.customEditorResolverProvider(_);
+                resolver = providers != null ? providers[0].resolver : null;
+            }
+            var anim = animGraph.getAnimation(previewNode, resolver);
             previewModel.playAnimation(anim);
             previewAnimation = cast previewModel.currentAnimation;
             refreshPamamList();
