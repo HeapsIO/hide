@@ -187,7 +187,8 @@ class IconTree<T:{}> extends Component {
 			var old = waitRefresh;
 			waitRefresh = [];
 			if( searchBox != null ) {
-				element.append(searchBox);
+				searchBox = null;
+				openFilter(false);
 				searchFilter(this.filter);
 			}
 			for( f in old ) f();
@@ -375,10 +376,10 @@ class IconTree<T:{}> extends Component {
 		}
 	}
 
-	public function openFilter() {
+	public function openFilter(focus: Bool = true) {
 		if( async ) {
 			async = false;
-			refresh(openFilter);
+			refresh(openFilter.bind(focus));
 			return;
 		}
 		if( searchBox == null ) {
@@ -404,7 +405,9 @@ class IconTree<T:{}> extends Component {
 			});
 		}
 		searchBox.show();
-		searchBox.find("input").focus().select();
+		if (focus) {
+			searchBox.find("input").focus().select();
+		}
 	}
 
 
