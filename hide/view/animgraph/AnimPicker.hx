@@ -5,7 +5,7 @@ package hide.view.animgraph;
 class AnimPicker extends hide.comp.Component {
 	var button : hide.comp.Button;
 
-	public function new(parent = null, undo: hide.ui.UndoHistory, get: () -> String, set: (string: String) -> Void, lister: (ctx: hrt.animgraph.AnimGraph.EditorProviderContext) -> Array<String>) {
+	public function new(parent = null, undo: hide.ui.UndoHistory, get: () -> String, set: (string: String) -> Void) {
 		button = new hide.comp.Button(parent, null, "", {hasDropdown: true});
 		super(parent, button.element);
 
@@ -31,10 +31,10 @@ class AnimPicker extends hide.comp.Component {
 			}
 		});
 
-		if (lister != null) {
+		if (hrt.animgraph.AnimGraph.customAnimNameLister != null) {
 			items.push({isSeparator: true});
 
-			var anims = lister(null);
+			var anims = hrt.animgraph.AnimGraph.customAnimNameLister(null);
 			for (anim in anims) {
 				items.push({
 					label: anim,

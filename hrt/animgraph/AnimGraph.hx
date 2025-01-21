@@ -18,7 +18,7 @@ typedef SerializedEdge = {
 
 #if editor
 typedef EditorProviderContext = {
-	source: String,
+	animDirectory: String,
 }
 #end
 

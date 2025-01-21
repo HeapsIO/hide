@@ -44,7 +44,7 @@ class AnimGraphEditor extends GenericGraphEditor {
 
         refreshPamamList();
 
-        new AnimList(propertiesContainer, null, scenePreview.listAnims(animGraph.animFolder));
+        new AnimList(propertiesContainer, null, getAnims(scenePreview, animGraph.animFolder));
 
         graphEditor.element.get(0).addEventListener("dragover", (e: js.html.DragEvent) -> {
             if (e.dataTransfer.types.contains("index"))
@@ -77,8 +77,7 @@ class AnimGraphEditor extends GenericGraphEditor {
             // Handle drag from anim list
             var path = e.dataTransfer.getData(AnimList.dragEventKey);
             if (path.length > 0) {
-
-                if (StringTools.endsWith(path, ".fbx")) {
+                if (StringTools.endsWith(path, ".fbx") || !StringTools.contains(path,".")) {
                     e.preventDefault();
                     var inst = new hrt.animgraph.nodes.Input();
                     animGraph.nodeIdCount += 1;
@@ -109,6 +108,17 @@ class AnimGraphEditor extends GenericGraphEditor {
             return [ for (p in gatherAllPreviewModels(animGraph.animFolder)) {label: StringTools.replace(p, animGraph.animFolder + "/", ""), path: p} ];
         }
 
+    }
+
+    static public function getAnims(scene: hide.comp.Scene, animDirectory: String) : Array<String> {
+        var anims : Array<String> = [];
+
+        if (AnimGraph.customAnimNameLister != null) {
+            anims = anims.concat(AnimGraph.customAnimNameLister({animDirectory: animDirectory}));
+        }
+
+        anims = anims.concat(scene.listAnims(animDirectory));
+        return anims;
     }
 
     public static function createChooseFolderPrompt(baseDir: String, onSet: (path: String) -> Void) : Element {
@@ -220,7 +230,9 @@ class AnimGraphEditor extends GenericGraphEditor {
                 return;
             }
 
-            var anim = animGraph.getAnimation(previewNode);
+            var providers = AnimGraph.customEditorResolverProvider(_);
+            var prov = providers != null ? providers[0] : null;
+            var anim = animGraph.getAnimation(previewNode, prov.resolver);
             previewModel.playAnimation(anim);
             previewAnimation = cast previewModel.currentAnimation;
             refreshPamamList();

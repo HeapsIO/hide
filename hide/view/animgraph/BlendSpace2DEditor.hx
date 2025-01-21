@@ -1,9 +1,9 @@
 package hide.view.animgraph;
 
 class BlendSpacePreviewSettings {
-    public var modelPath: String = null;
+	public var modelPath: String = null;
 
-    public function new() {};
+	public function new() {};
 }
 
 @:access(hrt.animgraph.BlendSpace2D)
@@ -324,19 +324,19 @@ class BlendSpace2DEditor extends hide.view.FileView {
 		keys.register("delete", deleteSelection);
 	}
 
-    override function buildTabMenu():Array<hide.comp.ContextMenu.MenuItem> {
-        var menu = super.buildTabMenu();
-        menu.push({isSeparator: true});
-        menu.push({label: "Reset Model Folder", click: () -> {
-            if (ide.confirm("Warning, resetting the model folder could lead to incorrect animations. Are you sure you want to proceed ?")) {
-                blendSpace2D.animFolder = null;
-                save();
-                onDisplay();
-            }
-        }});
+	override function buildTabMenu():Array<hide.comp.ContextMenu.MenuItem> {
+		var menu = super.buildTabMenu();
+		menu.push({isSeparator: true});
+		menu.push({label: "Reset Model Folder", click: () -> {
+			if (ide.confirm("Warning, resetting the model folder could lead to incorrect animations. Are you sure you want to proceed ?")) {
+				blendSpace2D.animFolder = null;
+				save();
+				onDisplay();
+			}
+		}});
 
-        return menu;
-    }
+		return menu;
+	}
 
 	override function getDefaultContent():haxe.io.Bytes {
 		var animgraph = (new hrt.animgraph.BlendSpace2D(null, null)).serialize();
@@ -435,7 +435,7 @@ class BlendSpace2DEditor extends hide.view.FileView {
 			new AnimPicker(dd, undo, () -> blendSpace2D.points[selectedSave].animPath, (s) -> {
 				blendSpace2D.points[selectedSave].animPath = s;
 				refreshPreviewAnimation();
-			}, hrt.animgraph.AnimGraph.customAnimNameLister);
+			});
 		}
 
 		var preview = new hide.Element('
@@ -487,8 +487,6 @@ class BlendSpace2DEditor extends hide.view.FileView {
 				hide.comp.ContextMenu.createDropdown(button.element.get(0), options, {search: Visible, autoWidth: true});
 			}
 		}
-
-
 	}
 
 	override function save() {
@@ -516,7 +514,7 @@ class BlendSpace2DEditor extends hide.view.FileView {
 		return false;
 	}
 
-    function onScenePreviewReady() {
+	function onScenePreviewReady() {
 		scenePreviewReady = true;
 
 		if (scenePreview.getObjectPath() == null) {
@@ -524,9 +522,9 @@ class BlendSpace2DEditor extends hide.view.FileView {
 			scenePreview.setObjectPath(first);
 		}
 
-		var animList = new AnimList(propertiesContainer, null, scenePreview.listAnims(blendSpace2D.animFolder));
+		var animList = new AnimList(propertiesContainer, null, AnimGraphEditor.getAnims(scenePreview, blendSpace2D.animFolder));
 		scenePreview.resetPreviewCamera();
-    }
+	}
 
 	function deletePoint(index: Int) {
 		var point = blendSpace2D.points[index];
@@ -565,9 +563,9 @@ class BlendSpace2DEditor extends hide.view.FileView {
 		undo.change(Custom(exec));
 	}
 
-    function onScenePreviewUpdate(dt: Float) {
+	function onScenePreviewUpdate(dt: Float) {
 
-    }
+	}
 
 	function createPoint() {
 
@@ -689,5 +687,5 @@ class BlendSpace2DEditor extends hide.view.FileView {
 		}
 	}
 
-    static var _ = FileTree.registerExtension(BlendSpace2DEditor,["bs2d"],{ icon : "arrows-alt", createNew: "Blend Space 2D" });
+	static var _ = FileTree.registerExtension(BlendSpace2DEditor,["bs2d"],{ icon : "arrows-alt", createNew: "Blend Space 2D" });
 }

@@ -51,19 +51,10 @@ class Input extends AnimNode {
 		var wrapper = new hide.Element("<input-wrapper></input-wrapper>");
 		wrapper.height("20px");
 
-		var fileSelect = new hide.comp.FileSelect(["fbx"], wrapper);
-		fileSelect.path = path;
-		fileSelect.onChange = () -> {
-			var prev = path;
-			var curr = fileSelect.path;
-			function exec(isUndo : Bool) {
-				path = !isUndo ? curr : prev;
-				fileSelect.path = path;
-				getAnimEditor().refreshPreview();
-			}
-			exec(false);
-			getAnimEditor().undo.change(Custom(exec));
-		}
+		new hide.view.animgraph.AnimPicker(wrapper, getAnimEditor().undo, () -> path, (s) -> {
+			path = s;
+			getAnimEditor().refreshPreview();
+		});
 		elts.push(wrapper);
 
 		return elts;

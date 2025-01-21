@@ -347,7 +347,7 @@ class Scene extends hide.comp.Component implements h3d.IDrawable {
 
 		var dirs : Array<String> = config.get("hmd.animPaths");
 		if( dirs == null ) dirs = [];
-		dirs = [for( d in dirs ) ide.resourceDir + d];
+		dirs = [for( d in dirs ) haxe.io.Path.join([ide.resourceDir, d])];
 
 
 		var parts = path.split("/");
@@ -361,7 +361,7 @@ class Scene extends hide.comp.Component implements h3d.IDrawable {
 			if( lib.header.animations.length > 0 )
 				anims.push(ide.getPath(path));
 		} else {
-			dirs.unshift(path);
+			dirs.unshift(haxe.io.Path.join([ide.resourceDir, path]));
 		}
 
 		for( dir in dirs ) {

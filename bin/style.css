@@ -2465,6 +2465,9 @@ input[type=checkbox]:checked:after {
   padding-left: 8px;
   padding-right: 8px;
 }
+.graph-view .heaps-scene svg g.box foreignObject input-wrapper > * {
+  flex-grow: 1;
+}
 .graph-view .heaps-scene svg g.box foreignObject input-wrapper input {
   width: 100%;
   min-width: 0;
@@ -4537,7 +4540,6 @@ blend-space-2d-root properties-container .hide-properties dl > div .hide-range i
 .anim-list > ul {
   flex-grow: 1;
   overflow: auto;
-  width: 100%;
   border: var(--basic-border);
   border-radius: var(--basic-border-radius);
   padding: var(--basic-padding);
