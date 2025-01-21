@@ -451,42 +451,10 @@ class BlendSpace2DEditor extends hide.view.FileView {
 			updatePreviewAxis();
 		});
 
-		if (hrt.animgraph.AnimGraph.customEditorResolverProvider != null)
-		{
-			var dl = preview.find("dl");
-			var div = new Element("<div></div>").appendTo(dl);
-			div.append(new Element("<dt>Anim Set</dt>"));
-
-			var providers = hrt.animgraph.AnimGraph.customEditorResolverProvider(_);
-
-			var button = new hide.comp.Button(div, null, null, {hasDropdown: true});
-			button.label = providers[customProviderIndex].name;
-
-			var options : Array<hide.comp.ContextMenu.MenuItem> = [];
-			for (i => provider in providers) {
-				options.push({
-					label: provider.name,
-					click: () -> {
-						var old = customProviderIndex;
-						function exec(isUndo: Bool) {
-							if (!isUndo) {
-								customProviderIndex = i;
-							} else {
-								customProviderIndex = old;
-							}
-							button.label = providers[customProviderIndex].name;
-							refreshPreviewAnimation();
-						}
-						exec(false);
-						undo.change(Custom(exec));
-					}
-				});
-			}
-
-			button.onClick = () -> {
-				hide.comp.ContextMenu.createDropdown(button.element.get(0), options, {search: Visible, autoWidth: true});
-			}
-		}
+		AnimGraphEditor.addAnimSetSelector(preview.find("dl"), undo, () -> customProviderIndex, (i: Int) -> {
+			customProviderIndex = i;
+			refreshPreviewAnimation();
+		});
 	}
 
 	override function save() {

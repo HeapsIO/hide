@@ -17,6 +17,8 @@ class AnimGraphEditor extends GenericGraphEditor {
     var previewNode : hrt.animgraph.nodes.AnimNode = null;
     var queuedPreview : hrt.animgraph.nodes.AnimNode = null;
 
+    var customProviderIndex : Int = 0;
+
     override function reloadView() {
         previewNode = null;
         animGraph = cast hide.Ide.inst.loadPrefab(state.path, null,  true);
@@ -43,6 +45,13 @@ class AnimGraphEditor extends GenericGraphEditor {
         parametersList = new Element("<ul></ul>").appendTo(parameters);
 
         refreshPamamList();
+
+        var dl = new Element("<dl></dl>").appendTo(propertiesContainer);
+        addAnimSetSelector(dl, undo, () -> customProviderIndex, (i: Int) -> {
+			customProviderIndex = i;
+			refreshPreview();
+		});
+
 
         new AnimList(propertiesContainer, null, getAnims(scenePreview, animGraph.animFolder));
 
@@ -210,6 +219,43 @@ class AnimGraphEditor extends GenericGraphEditor {
         return options;
     }
 
+    static public function addAnimSetSelector(target: Element, undo: hide.ui.UndoHistory, getIndex: () -> Int, setIndex:(Int) -> Void) {
+        if (hrt.animgraph.AnimGraph.customEditorResolverProvider != null)
+        {
+            var div = new Element("<div></div>").appendTo(target);
+            div.append(new Element("<dt>Anim Set</dt>"));
+
+            var providers = hrt.animgraph.AnimGraph.customEditorResolverProvider(_);
+
+            var button = new hide.comp.Button(div, null, null, {hasDropdown: true});
+            button.label = providers[getIndex()].name;
+
+            var options : Array<hide.comp.ContextMenu.MenuItem> = [];
+            for (i => provider in providers) {
+                options.push({
+                    label: provider.name,
+                    click: () -> {
+                        var old = getIndex();
+                        function exec(isUndo: Bool) {
+                            if (!isUndo) {
+                                setIndex(i);
+                            } else {
+                                setIndex(old);
+                            }
+                            button.label = providers[getIndex()].name;
+                        }
+                        exec(false);
+                        undo.change(Custom(exec));
+                    }
+                });
+            }
+
+            button.onClick = () -> {
+                hide.comp.ContextMenu.createDropdown(button.element.get(0), options, {search: Visible, autoWidth: true});
+            }
+        }
+    }
+
     public function refreshPreview() {
         if (previewNode != null)
             setPreview(previewNode);
@@ -233,7 +279,7 @@ class AnimGraphEditor extends GenericGraphEditor {
             var resolver = null;
             if (AnimGraph.customEditorResolverProvider != null) {
                 var providers = AnimGraph.customEditorResolverProvider(_);
-                resolver = providers != null ? providers[0].resolver : null;
+                resolver = providers != null ? providers[customProviderIndex].resolver : null;
             }
             var anim = animGraph.getAnimation(previewNode, resolver);
             previewModel.playAnimation(anim);

@@ -4269,6 +4269,8 @@ graph-editor-root properties-container graph-parameters {
   display: flex;
   flex-direction: column;
   flex-grow: 1;
+  min-width: 0;
+  min-height: 0;
 }
 graph-editor-root properties-container graph-parameters h1 {
   font-size: 1.2em;
@@ -4279,6 +4281,7 @@ graph-editor-root properties-container graph-parameters > ul {
   flex-direction: column;
   list-style: none;
   align-items: stretch;
+  overflow-y: auto;
   gap: 2px;
 }
 graph-editor-root properties-container graph-parameters > ul graph-parameter {
@@ -4368,6 +4371,10 @@ graph-editor-root properties-container graph-parameters > ul graph-parameter:aft
   border-bottom: 10px solid rgba(114, 180, 255, 0.75);
   bottom: 0px;
   pointer-events: none;
+}
+graph-editor-root properties-container .anim-list {
+  flex-grow: 0;
+  flex-shrink: 0;
 }
 center-content {
   width: 100%;

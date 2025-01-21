@@ -5051,6 +5051,9 @@ graph-editor-root {
 			flex-direction: column;
 			flex-grow: 1;
 
+			min-width: 0;
+			min-height: 0;
+
 			h1 {
 				font-size: 1.2em;
 			}
@@ -5062,6 +5065,7 @@ graph-editor-root {
 				list-style: none;
 				align-items: stretch;
 
+				overflow-y: auto;
 				gap: 2px;
 				graph-parameter {
 					display: flex;
@@ -5170,6 +5174,12 @@ graph-editor-root {
 					}
 				}
 			}
+
+		}
+
+		.anim-list {
+			flex-grow: 0;
+			flex-shrink: 0;
 		}
 	}
 }
