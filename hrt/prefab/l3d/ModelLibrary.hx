@@ -219,25 +219,22 @@ class ModelLibraryInstance {
 			var materialClone = h3d.mat.MaterialSetup.current.createMaterial();
 			material.clone(materialClone);
 
+			var shaderKey = "";
 			var props = h3d.mat.MaterialSetup.current.loadMaterialProps(material);
-			var prefab = null;
 			if ( props != null ) {
 				var ref = (props:Dynamic).__ref;
 				if ( ref != null ) {
-					prefab = hxd.res.Loader.currentInstance.load(ref).toPrefab();
+					var prefab = hxd.res.Loader.currentInstance.load(ref).toPrefab();
 					hxd.fmt.hmd.Library.setupMaterialLibrary(path -> hxd.res.Loader.currentInstance.load(path).toTexture(),
 					materialClone, prefab, (props:Dynamic).name);
+					var libMat = prefab.load().getOpt(hrt.prefab.Material, (props:Dynamic).name);
+					for ( c in libMat.children )
+						shaderKey += haxe.Json.stringify(@:privateAccess c.serialize());
 				}
 			}
 
-			var shaderKey = "";
 			var props = (material.props : PbrProps);
-			var libMat = prefab != null ? prefab.load().getOpt(hrt.prefab.Material, (props:Dynamic).name) : null;
-			if ( libMat != null )
-				for ( c in libMat.children )
-					shaderKey += haxe.Json.stringify(@:privateAccess c.serialize());
 			var key = haxe.Json.stringify(props) + shaderKey + appendToKey;
-
 			var batchID = batchLookup.get(key);
 			if ( batchID == null ) {
 				batchID = batchCache.length;
@@ -1045,11 +1042,17 @@ class ModelLibrary extends Prefab {
 
 		if ( material != null ) {
 			for ( s in material.mainPass.getShaders())
-				if ( !isForbiddenShader(s) && batch.material.mainPass.getShader(Type.getClass(s)) == null )
-					batch.material.mainPass.addShader(s.clone());
+				if ( !isForbiddenShader(s) ) {
+					var shader = batch.material.mainPass.getShader(Type.getClass(s));
+					if ( shader == null || (s.toString() != shader.toString()))
+						batch.material.mainPass.addShader(s.clone());
+				}
 			for ( s in @:privateAccess material.mainPass.selfShaders )
-				if ( !isForbiddenShader(s) && batch.material.mainPass.getShader(Type.getClass(s)) == null )
-					@:privateAccess batch.material.mainPass.addSelfShader(s.clone());
+				if ( !isForbiddenShader(s) ) {
+					var shader = batch.material.mainPass.getShader(Type.getClass(s));
+					if ( shader == null || (s.toString() != shader.toString()))
+						@:privateAccess batch.material.mainPass.addSelfShader(s.clone());
+				}
 		}
 
 		if ( isStatic ) {
