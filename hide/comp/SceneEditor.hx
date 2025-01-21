@@ -2503,11 +2503,14 @@ class SceneEditor {
 						if ( curEdit != null )
 							curEdit.onChange(o, null);
 						o.updateInstance();
+						applySceneStyle(o);
 					}
 				}));
 
-				for(o in objects3d)
+				for(o in objects3d) {
 					o.updateInstance();
+					applySceneStyle(o);
+				}
 			}
 		}
 		gizmo2d.onStartMove = function(mode) {
