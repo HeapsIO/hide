@@ -64,6 +64,15 @@ class IconTree<T:{}> extends Component {
 	public dynamic function applyStyle( e : T, element : Element ) {
 	}
 
+	function applyStyleInternal(e: T, element: Element) {
+		try {
+			applyStyle(e, element);
+		}
+		catch (e) {
+
+		}
+	}
+
 	function getValue( c : IconTreeItem<T> ) {
 		if( c.value != null )
 			return c.value;
@@ -202,7 +211,7 @@ class IconTree<T:{}> extends Component {
 			for(li in lis) {
 				var item = map.get(li.id);
 				if(item != null)
-					applyStyle(getValue(item), new Element(li));
+					applyStyleInternal(getValue(item), new Element(li));
 			}
 		});
 		element.on('changed.jstree', function (e, data) {
@@ -216,20 +225,20 @@ class IconTree<T:{}> extends Component {
 			for(id in nodes) {
 				var item = getVal(id);
 				var el = getElement(item);
-				if( item != null && el != null ) applyStyle(item, el);
+				if( item != null && el != null ) applyStyleInternal(item, el);
 			}
 		});
 		element.on("rename_node.jstree", function(e, data) {
 			var item = getVal(data.node.id);
 			var el = getElement(item);
-			if( item != null && el != null ) applyStyle(item, el);
+			if( item != null && el != null ) applyStyleInternal(item, el);
 		});
 		element.on("after_open.jstree", function(event, data) {
 			var lis = new Element(event.target).find("li");
 			for(li in lis) {
 				var item = map.get(li.id);
 				if(item != null)
-					applyStyle(getValue(item), new Element(li));
+					applyStyleInternal(getValue(item), new Element(li));
 			}
 		});
 		element.keydown(function(e:js.jquery.Event) {
