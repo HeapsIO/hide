@@ -138,6 +138,7 @@ class IconTree<T:{}> extends Component {
 					}
 					return false;
 				},
+				worker : false,
 				data : function(obj, callb) {
 					if( !inInit && checkRemoved() )
 						return;
@@ -197,15 +198,21 @@ class IconTree<T:{}> extends Component {
 			onMove(getVal(e.node.id), e.parent == "#" ? null : getVal(e.parent), e.position);
 		});
 		element.on('ready.jstree', function () {
-			/* var lis = element.find("li");
+			var lis = element.find("li");
 			for(li in lis) {
 				var item = map.get(li.id);
 				if(item != null)
 					applyStyle(getValue(item), new Element(li));
-			} */
+			}
 		});
 		element.on('changed.jstree', function (e, data) {
 			var nodes: Array<Dynamic> = data.changed.deselected;
+
+			// desselect all is called when the tree is refreshed,
+			// so we highjack it to refresh the whole tree
+			if (data.action == "deselect_all") {
+				nodes = [for (i in element.find("li").toArray()) i.id];
+			}
 			for(id in nodes) {
 				var item = getVal(id);
 				var el = getElement(item);
