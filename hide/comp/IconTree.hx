@@ -147,7 +147,6 @@ class IconTree<T:{}> extends Component {
 					}
 					return false;
 				},
-				worker : false,
 				data : function(obj, callb) {
 					if( !inInit && checkRemoved() )
 						return;
