@@ -487,15 +487,20 @@ class FXAnimation extends h3d.scene.Object {
 	}
 
 	function initConstraints(elt : PrefabElement ){
-		if(!elt.enabled) return;
+		if(elt == null || @:privateAccess !elt.shouldBeInstanciated()) return;
 		var co = Std.downcast(elt, hrt.prefab.l3d.Constraint);
 		if(co != null) {
 			if(constraints == null) constraints = [];
 			constraints.push(co);
 		}
-		else
-			for(c in elt.children)
-				initConstraints(c);
+
+		var sub = Std.downcast(elt, SubFX);
+		if (sub != null) {
+			initConstraints(sub.refInstance);
+		}
+		for(c in elt.children) {
+			initConstraints(c);
+		}
 	}
 
 	public function resolveConstraints( caster : h3d.scene.Object ) {
