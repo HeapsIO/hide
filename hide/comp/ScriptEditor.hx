@@ -334,9 +334,11 @@ class ScriptChecker {
 		var path = name.split(".");
 		var sname = path.join("@");
 		var objPath = null;
+		var isOtherSheet = false;
 		if( path.length > 1 ) { // might be a scoped id
 			var objID = this.constants.get("cdb.objID");
 			objPath = objID == null ? [] : objID.split(":");
+			isOtherSheet = this.constants.get("cdb."+path[0]) == null;
 		}
 		for( s in ide.database.sheets ) {
 			if( s.name != sname ) continue;
@@ -359,8 +361,12 @@ class ScriptChecker {
 				var id = o.id;
 				if( id == null || id == "" ) continue;
 				if( refPath != null ) {
-					if( !StringTools.startsWith(id, refPath) ) continue;
-					id = id.substr(refPath.length);
+					if( isOtherSheet )
+						id = id.split(":").pop();
+					else {
+						if( !StringTools.startsWith(id, refPath) ) continue;
+						id = id.substr(refPath.length);
+					}
 				}
 				cl.fields.set(id, { name : id, params : [], canWrite : false, t : kind, isPublic: true, complete : true });
 			}
