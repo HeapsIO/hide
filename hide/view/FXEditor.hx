@@ -9,6 +9,8 @@ import hrt.prefab.Curve;
 import hrt.prefab.fx.Event;
 import hide.view.CameraController.CamController;
 
+using hrt.tools.MapUtils;
+
 typedef PropTrackDef = {
 	name: String,
 	?def: Float
@@ -1759,47 +1761,51 @@ class FXEditor extends hide.view.FileView {
 		@:privateAccess
 		for (fx in allFx) {
 			var time = fx.localTime;
-			if (fx.objAnims == null)
+
+			if (fx.events == null)
 				continue;
 
-			for (anim in fx.objAnims) {
-				if (anim.events == null)
+			var closest : Map<h3d.scene.Object, {instance: EventInstance, distance: Float, jumpTo: Float}> = [];
+
+			for (instance in fx.events) {
+				var event = Std.downcast(instance.evt, hrt.prefab.fx.AnimEvent);
+				if (event == null)
 					continue;
 
-				var minTime = hxd.Math.POSITIVE_INFINITY;
-				var nearest : hrt.prefab.fx.Event.EventInstance = null;
-				var jumpTo = 0.0;
-				for (instance in anim.events) {
-					var event = Std.downcast(instance.evt, hrt.prefab.fx.AnimEvent);
-					if (event == null)
-						continue;
-					var firstFrame = event.time;
-					var toFirstFrame = firstFrame - time;
-					if (toFirstFrame >= 0 && toFirstFrame < minTime) {
-						nearest = instance;
-						minTime = toFirstFrame;
-						jumpTo = 0.0001;
-					}
+				var previous = closest.getOrPut(event.findFirstLocal3d(), {instance: instance, distance: hxd.Math.POSITIVE_INFINITY, jumpTo: 0.0});
+				if (previous.distance == 0)
+					continue;
 
-					var anim = event.animation != null ? event.shared.loadAnimation(event.animation) : null;
-					var duration = event.duration > 0 ? event.duration : (anim?.getDuration() ?? 0.0);
-					var lastFrame = event.time + duration;
-					var toLastFrame = time - lastFrame;
-					if (toLastFrame >= 0 && toLastFrame < minTime) {
-						nearest = instance;
-						minTime = toLastFrame;
-						jumpTo = duration-0.0001;
-					}
+				var firstFrame = event.time;
+				var toFirstFrame = firstFrame - time;
+				if (toFirstFrame >= 0 && toFirstFrame < previous.distance) {
+					previous.instance = instance;
+					previous.distance = toFirstFrame;
+					previous.jumpTo = 0.0001;
+				}
 
-					// We are currently playing this animation, exit
-					if (toFirstFrame < 0 && toLastFrame < 0) {
-						nearest = null;
-						break;
-					}
+				var anim = event.animation != null ? event.shared.loadAnimation(event.animation) : null;
+				var duration = event.duration > 0 ? event.duration : (anim?.getDuration() ?? 0.0);
+				var lastFrame = event.time + duration;
+				var toLastFrame = time - lastFrame;
+				if (toLastFrame >= 0 && toLastFrame < previous.distance) {
+					previous.instance = instance;
+					previous.distance = toLastFrame;
+					previous.jumpTo = duration-0.0001;
 				}
-				if (nearest != null) {
-					nearest.setTime(jumpTo);
+
+				// We are currently playing this animation
+				if (toFirstFrame < 0 && toLastFrame < 0) {
+					previous.instance = null;
+					previous.distance = 0;
+					continue;
 				}
+			}
+
+			for (obj in closest) {
+				if (obj.instance == null) // can be null if we are in the middle of the animation
+					continue;
+				obj.instance.setTime(obj.jumpTo);
 			}
 		}
 

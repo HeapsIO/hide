@@ -154,7 +154,6 @@ typedef ObjectAnimation = {
 	?obj: h3d.scene.Object,
 	?elt2d: hrt.prefab.Object2D,
 	?obj2d: h2d.Object,
-	events: Array<hrt.prefab.fx.Event.EventInstance>,
 	?position: Value,
 	?localPosition: Value,
 	?scale: Value,

@@ -303,7 +303,6 @@ class FXAnimation extends h3d.scene.Object {
 									mat.color.load(evaluator.getVector(anim.color, time, tempVec));
 						}
 					}
-					Event.updateEvents(anim.events, time, prevTime);
 
 					if( anim.additionalProperies != null ) {
 						switch(anim.additionalProperies) {
@@ -371,13 +370,35 @@ class FXAnimation extends h3d.scene.Object {
 		this.prevTime = localTime;
 	}
 
-	function initEvents(elt: PrefabElement, ?out : Array<Event.EventInstance> ) {
-		var childEvents = [for(c in elt.children) if(c.enabled && c.to(Event) != null) c.to(Event)];
-		for(evt in childEvents) {
-			var eventObj = evt.prepare();
-			if(eventObj == null) continue;
-			if(out == null) out = [];
-			out.push(eventObj);
+	function initEvents(elt: PrefabElement, ?out : Array<Event.EventInstance> ) : Array<Event.EventInstance> {
+		if (elt == null || @:privateAccess !elt.shouldBeInstanciated())
+			return out;
+
+		var asEvent = elt.to(Event);
+		if (asEvent != null) {
+			var eventObj = asEvent.prepare();
+			if(eventObj != null) {
+				if(out == null) out = [];
+				out.push(eventObj);
+			}
+		}
+
+		var sub = Std.downcast(elt, SubFX);
+		if (sub != null) {
+			var eventLen = out?.length ?? 0;
+			out = initEvents(sub.refInstance, out);
+			Std.downcast(sub.refInstance.findFirstLocal3d(), FXAnimation).events = null;
+			if (out != null) {
+				// Offset the start time of the events that were added to our array in
+				// init events
+				for (i in eventLen...out.length) {
+					out[i].evt.time += sub.time;
+				}
+			}
+		}
+
+		for(child in elt.children) {
+			out = initEvents(child, out);
 		}
 		return out;
 	}
@@ -446,7 +467,6 @@ class FXAnimation extends h3d.scene.Object {
 		var anim : ObjectAnimation = {
 			elt: obj3d,
 			obj: local3d,
-			events: null,
 			position: makeVector("position", 0.0),
 			localPosition: makeVector("localPosition", 0.0),
 			scale: makeVector("scale", 1.0, true),
@@ -456,10 +476,6 @@ class FXAnimation extends h3d.scene.Object {
 			visibility: makeVal("visibility", null),
 			additionalProperies: ap,
 		};
-
-		anim.events = initEvents(elt);
-		if(anim.events != null)
-			anyFound = true;
 
 		if(anyFound) {
 			if(objAnims == null) objAnims = [];

@@ -61,16 +61,37 @@ class FX2DAnimation extends h2d.Object {
 		}
 	}
 
-	function initEvents(elt: PrefabElement) {
-		var childEvents = [for(c in elt.children) if(c.to(Event) != null) c.to(Event)];
-		var ret = null;
-		for(evt in childEvents) {
-			var eventObj = evt.prepare();
-			if(eventObj == null) continue;
-			if(ret == null) ret = [];
-			ret.push(eventObj);
+	function initEvents(elt: PrefabElement, ?out : Array<Event.EventInstance> ) : Array<Event.EventInstance> {
+		if (elt == null || @:privateAccess !elt.shouldBeInstanciated())
+			return out;
+
+		var asEvent = elt.to(Event);
+		if (asEvent != null) {
+			var eventObj = asEvent.prepare();
+			if(eventObj != null) {
+				if(out == null) out = [];
+				out.push(eventObj);
+			}
 		}
-		return ret;
+
+		var sub = Std.downcast(elt, SubFX);
+		if (sub != null) {
+			var eventLen = out?.length ?? 0;
+			out = initEvents(sub.refInstance, out);
+			Std.downcast(sub.refInstance.findFirstLocal2d(), FX2DAnimation).events = null;
+			if (out != null) {
+				// Offset the start time of the events that were added to our array in
+				// init events
+				for (i in eventLen...out.length) {
+					out[i].evt.time += sub.time;
+				}
+			}
+		}
+
+		for(child in elt.children) {
+			out = initEvents(child, out);
+		}
+		return out;
 	}
 
 
@@ -219,21 +240,12 @@ class FX2D extends Object2D implements BaseFX {
 		var anim : ObjectAnimation = {
 			elt2d: obj2d,
 			obj2d: obj2d.local2d,
-			events: null,
 			position: makeVector("position", 0.0),
 			scale: makeVector("scale", 1.0, true),
 			rotation: makeVector("rotation", 0.0, 360.0),
 			color: makeColor("color"),
 			visibility: makeVal("visibility", null),
 		};
-
-		for(evt in elt.findAll(Event)) {
-			var eventObj = evt.prepare();
-			if(eventObj == null) continue;
-			if(anim.events == null) anim.events = [];
-			anim.events.push(eventObj);
-			anyFound = true;
-		}
 
 		if (Std.isOfType(elt, hrt.prefab.l2d.Anim2D) || Std.isOfType(elt, hrt.prefab.l2d.Atlas))
 			anyFound = true;
