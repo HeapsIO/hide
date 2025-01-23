@@ -113,7 +113,7 @@ class RemoteConsolePanel extends hide.comp.Component {
 	var statusBarIcon : Element;
 	var statusIcon : Element;
 	var handler : RemoteCommandHandler;
-	var rcmd : hxd.net.RemoteConsole;
+	var rcmd : hrt.impl.RemoteConsole;
 	public function new( view : RemoteConsoleView, host : String, port : Int, commands : Array<String> ) {
 		super(null, null);
 		this.view = view;
@@ -150,7 +150,7 @@ class RemoteConsolePanel extends hide.comp.Component {
 		});
 
 		var connectHost = element.find("#connectHost");
-		connectHost.val(host ?? hxd.net.RemoteConsole.DEFAULT_HOST);
+		connectHost.val(host ?? hrt.impl.RemoteConsole.DEFAULT_HOST);
 		function checkHost() {
 			var host = connectHost.val();
 			js.node.Dns.lookup(host, function(err, address, family) {
@@ -170,11 +170,11 @@ class RemoteConsolePanel extends hide.comp.Component {
 		});
 
 		var connectPort = element.find("#connectPort");
-		connectPort.val(port ?? hxd.net.RemoteConsole.DEFAULT_PORT);
+		connectPort.val(port ?? hrt.impl.RemoteConsole.DEFAULT_PORT);
 		function checkPort() {
 			var port = Std.int(connectPort.val());
 			if( port < 0 )
-				port = isConnected() ? rcmd.port : hxd.net.RemoteConsole.DEFAULT_PORT;
+				port = isConnected() ? rcmd.port : hrt.impl.RemoteConsole.DEFAULT_PORT;
 			connectPort.val(port);
 		}
 		connectPort.keydown(function(e) {
@@ -188,7 +188,7 @@ class RemoteConsolePanel extends hide.comp.Component {
 			close();
 			var host = element.find("#connectHost").val();
 			var port = Std.parseInt(element.find("#connectPort").val());
-			rcmd = new hxd.net.RemoteConsole(port, host);
+			rcmd = new hrt.impl.RemoteConsole(port, host);
 			rcmd.log = (msg) -> log(msg);
 			rcmd.logError = (msg) -> log(msg, true);
 			rcmd.registerCommands(handler);
