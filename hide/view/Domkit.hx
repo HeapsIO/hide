@@ -40,6 +40,7 @@ class Domkit extends FileView {
 		cssEditor = new hide.comp.DomkitEditor(config, Less, data.css, dmlEditor.checker, element.find(".cssEditor"));
 		checker = new hide.comp.DomkitEditor.DomkitChecker(config);
 		paramsEditor = new hide.comp.ScriptEditor(data.params, checker, element.find(".paramsEditor"));
+		paramsEditor.saveOnBlur = false;
 		cssEditor.onChanged = dmlEditor.onChanged = paramsEditor.onChanged = check;
 		cssEditor.onSave = dmlEditor.onSave = paramsEditor.onSave = save;
 
