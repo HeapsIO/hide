@@ -391,6 +391,16 @@ class DomkitChecker extends ScriptEditor.ScriptChecker {
 		return parser.parseString(code, pos);
 	}
 
+	function parseType( tstr : String, pos : Int ) {
+		var parser = new hscript.Parser();
+		parser.allowTypes = true;
+		var expr = parser.parseString("(x:"+tstr+")", pos - 3 );
+		return switch( expr.e ) {
+		case ECheckType(_,t): @:privateAccess checker.makeType(t, expr);
+		default: throw "assert";
+		}
+	}
+
 	function typeCode( code : String, pos : Int ) : Type {
 		var e = parseCode(code, pos);
 		return @:privateAccess checker.typeExpr(e, Value);
@@ -519,19 +529,36 @@ class DomkitChecker extends ScriptEditor.ScriptChecker {
 		else {
 			c.arguments = [];
 			for( a in e.arguments ) {
+				var type = null;
 				var name = switch( a.value ) {
-				case Code(c) if( IDENT.match(c) ): c;
+				case Code(c) if( IDENT.match(c) ):
+					c;
+				case Code(c):
+					var parts = c.split(":");
+					var p0len = parts[0].length;
+					var name = StringTools.trim(parts.shift());
+					if( !IDENT.match(name) )
+						null;
+					else {
+						type = parseType(parts.join(":"),a.pmin + p0len);
+						name;
+					}
 				default:
+					null;
+				}
+				if( name == null ) {
 					domkitError("Invalid parameter", a.pmin, a.pmax);
 					continue;
 				}
-				var t = params.get(name);
-				if( t == null )
+				if( type == null )
+					type = params.get(name);
+				if( type == null )
 					domkitError("Unknown parameter type", a.pmin, a.pmax);
 				c.arguments.push({
 					name : name,
-					t : t,
+					t : type,
 				});
+				@:privateAccess checker.locals.set(name, type);
 			}
 		}
 		if( e.condition != null )
@@ -547,9 +574,11 @@ class DomkitChecker extends ScriptEditor.ScriptChecker {
 			for( c in e.children )
 				checkDMLRec(c,isRoot);
 		case Node(name) if( isRoot ):
+			var prev = @:privateAccess checker.locals.copy();
 			defineComponent(name, e, params);
 			for( c in e.children )
 				checkDMLRec(c);
+			@:privateAccess checker.locals = prev;
 		case Node(name):
 			var c = resolveComp(name);
 			if( c == null )
