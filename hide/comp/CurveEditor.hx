@@ -459,7 +459,7 @@ class OverviewEditor extends Component implements CurveEditorComponent
 
 		for (c in this.curveEditor.curves)
 			if (c.selected || this.curveEditor.curves.length == 1) {
-				var previousKeyVal = c.getVal(time);
+				var previousKeyVal = c.getVal(time, true);
 				c.addKey(time, previousKeyVal, c.keyMode);
 			}
 
@@ -1308,7 +1308,7 @@ class CurveEditor extends hide.comp.Component {
 			return popup;
 		}
 
-		function drawCurve(curve : Curve, ?style: Dynamic) {
+		function drawCurve(curve : Curve, ?style: Dynamic, bypassRemap: Bool = false) {
 			// Draw curve
 			if(curve.keys.length > 0) {
 				{
@@ -1320,12 +1320,20 @@ class CurveEditor extends hide.comp.Component {
 
 					var num : Int = Std.int(hxd.Math.clamp(500 * cast (xScale / 200.0), width, 5000));
 					pts.resize(num);
+					var oldRemap = curve.remapPath;
+					if (bypassRemap) {
+						curve.remapPath = null;
+						@:privateAccess curve.remapCurve = null;
+					}
 					var v = curve.makeVal();
 					if (v == null) throw "wtf";
 					var duration = curve.duration;
 					for (i in 0...num) {
 						pts[i] = evaluator.getFloat(v, duration * i/(num-1));
 					}
+
+					curve.remapPath = oldRemap;
+
 					var poly = [];
 
 					for(i in 0...pts.length) {
@@ -1334,7 +1342,7 @@ class CurveEditor extends hide.comp.Component {
 						poly.push(new h2d.col.Point(x, y));
 					}
 
-					svg.polygon(curveGroup, poly);
+					svg.polygon(curveGroup, poly, style);
 				}
 			}
 		}
@@ -1548,7 +1556,11 @@ class CurveEditor extends hide.comp.Component {
 				eventStyle = { 'fill-opacity' : 0};
 			}
 
-			drawCurve(curve, curveStyle);
+			drawCurve(curve, curveStyle, true);
+
+			if (curve.remapPath != null) {
+				drawCurve(curve, {opacity : 0.5, "stroke-width":'1px', "stroke-dasharray":"5, 3"}, false);
+			}
 
 			// Draw the area where random blend curves will be picked
 			drawBlendArea(curve);

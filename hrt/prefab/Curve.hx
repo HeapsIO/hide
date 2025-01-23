@@ -55,6 +55,8 @@ class Curve extends Prefab {
 	@:s public var blendMode : CurveBlendMode = None;
 	@:s public var loop : Bool = false;
 	@:s public var blendParam : String = null;
+	@:s public var remapPath : String = null;
+
 	@:s public var offset : Float = 0.0;
 	@:s public var scale : Float = 1.0;
 
@@ -69,6 +71,7 @@ class Curve extends Prefab {
 	public var selected : Bool = false;
 
 	var refCurve : Curve = null;
+	var remapCurve : Curve = null;
 
 	function get_duration() {
 		if (blendMode == Reference) {
@@ -190,6 +193,15 @@ class Curve extends Prefab {
 		return refCurve;
 	}
 
+	function getRemap() : Null<Curve> {
+		if (remapPath == null || remapCurve != null)
+			return remapCurve;
+		var root = getRoot(false);
+		remapCurve = Std.downcast(root.locatePrefab(remapPath), Curve);
+		if (remapCurve == this) remapCurve = null;
+		return remapCurve;
+	}
+
 	public function makeVal() : Value {
 		switch(blendMode) {
 			case None:
@@ -236,10 +248,15 @@ class Curve extends Prefab {
 		return {minT: minT, maxT: maxT};
 	}
 
-	public function getVal(time: Float) : Float {
+	public function getVal(time: Float, ignoreRemap: Bool = false) : Float {
 		if (blendMode == Reference) {
 			throw "getVal shoudln't be called on curves with Reference mode";
 		}
+
+		var remap = getRemap();
+		if (remap != null && !ignoreRemap)
+			time = remap.getVal(time);
+
 		switch(keys.length) {
 			case 0: return 0;
 			case 1: return keys[0].value;
@@ -338,7 +355,7 @@ class Curve extends Prefab {
 		return sum;
 	}
 
-	public function sample(numPts: Int) {
+	public function sample(numPts: Int, ignoreRemap: Bool = false) {
 		if (blendMode == Reference) {
 			return getRef()?.sample(numPts) ?? [];
 		}
@@ -347,7 +364,7 @@ class Curve extends Prefab {
 		var duration = this.duration;
 		for(i in 0...numPts) {
 			var v = 0.0;
-			v = getVal(duration * i/(numPts-1));
+			v = getVal(duration * i/(numPts-1), ignoreRemap);
 			vals.push(v);
 		}
 		return vals;
@@ -380,6 +397,11 @@ class Curve extends Prefab {
 					</dd>
 					<dt>Offset</dt><dd><input type="range" min="0.0" max="1.0" field="offset"/></dd>
 					<dt>Scale</dt><dd><input type="range" min="0.0" max="1.0" field="scale"/></dd>
+				</div>
+				<div id="remap">
+					<dt>Time Remap</dt><dd>
+						<select field="remapPath"></select>
+					</dd>
 				</div>
 			</dl>
 		</div>');
@@ -419,6 +441,19 @@ class Curve extends Prefab {
 				}
 				selecta.val(blendParam);
 			}
+
+			{
+				var select = props.find('[field=remapPath]');
+				select.empty();
+				var root = getRoot(false);
+				var flat = root.flatten(Curve);
+				for (p in flat) {
+					if (p == this) continue;
+					var path = p.getAbsPath();
+					select.append(new hide.Element('<option value="${path}">${path}</option>'));
+				}
+				select.val(remapPath);
+			}
 		}
 
 		refreshBlend();
@@ -443,6 +478,9 @@ class Curve extends Prefab {
 					blendParam = null;
 					refCurve = null;
 				}
+			}
+			if (pname == "remapPath") {
+				remapCurve = null;
 			}
 			refreshBlend();
 			ctx.onChange(this, pname);
