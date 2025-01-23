@@ -21,12 +21,12 @@ class RotateAboutAxis extends Operation {
 			if (unit == 1) {
 				rot = rot * 3.141592 / 180.0;
 			}
-            
+
             var s = sin(rot);
             var c = cos(rot);
             var oneMinusC = 1.0 - c;
 
-            axis = normalize(axis);
+           	var axis = normalize(axis);
 
             // https://docs.unity3d.com/Packages/com.unity.shadergraph@6.9/manual/Rotate-About-Axis-Node.html
             var rotationMatrix = mat3(
