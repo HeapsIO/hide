@@ -11,10 +11,11 @@ typedef SelectedPass = {
 
 class MaterialSelector extends hrt.prefab.Prefab {
 
+	@:s public var blendModeEnabled : Bool = false;
+	@:s public var blendModesSelected : Array<String> = [];
 	@:s public var selections : Array<MaterialSelection> = [{
 		passName : "all",
 	}];
-	@:s public var blendModesSelected : Array<String> = [];
 
 	public function getPasses(local3d: h3d.scene.Object = null, filterObj : (obj : h3d.scene.Object) -> Bool = null) : Array<SelectedPass> {
 		if (local3d == null)
@@ -38,7 +39,7 @@ class MaterialSelector extends hrt.prefab.Prefab {
 		var selectionSorted = selections.copy();
 		selectionSorted.sort((s1, s2) -> s1.passName == "all" ? return 1 : -1);
 		for ( m in mats ) {
-			if (blendModesSelected.length > 0) {
+			if (blendModesSelected.length > 0 && this.blendModeEnabled) {
 				if (blendModesSelected.contains(m.blendMode.getName()))
 					passes.push({pass : m.mainPass, all : true});
 				continue;
@@ -75,6 +76,9 @@ class MaterialSelector extends hrt.prefab.Prefab {
 		var e = new hide.Element('
 			<div class="group" name="Material selector">
 				<div class="group blend-mode-group" name="Blend mode">
+					<dl>
+						<dt>Enabled</dt><dd><input type="checkbox" field="blendModeEnabled"/></dd>
+					</dl>
 					<div class="blend-selector-container"></div>
 				</div>
 				<ul id="selections"></ul>
@@ -82,11 +86,17 @@ class MaterialSelector extends hrt.prefab.Prefab {
 		');
 
 		ctx.properties.add(e, this, function(propName) {
+			if (propName == "blendModeEnabled") {
+				var blendModeSelector = e.find(".blend-mode-selector");
+				blendModeSelector.toggleClass("enabled", this.blendModeEnabled);
+				blendModeSelector.find('input').prop('disabled', !this.blendModeEnabled);
+			}
+
 			ctx.onChange(this, propName);
 			ctx.rebuildPrefab(this);
 		});
 
-		var blendModeSelector = new hide.Element('<div class="blend-mode-selector">
+		var blendModeSelector = new hide.Element('<div class="blend-mode-selector ${this.blendModeEnabled ? 'enabled' : ''}">
 		</div>');
 		for (b in Type.allEnums(h3d.mat.BlendMode)) {
 			var el = new hide.Element('<div class="blend-mode">
@@ -109,6 +119,8 @@ class MaterialSelector extends hrt.prefab.Prefab {
 				exec(false);
 				ctx.properties.undo.change(Custom(exec));
 			});
+
+			cb.prop('disabled', !this.blendModeEnabled);
 		}
 
 		blendModeSelector.appendTo(e.find(".blend-selector-container"));

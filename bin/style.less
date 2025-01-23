@@ -1270,7 +1270,7 @@ input[type=checkbox] {
 	}
 
 	dt {
-		width:80px;
+		width: calc(80px - var(--level) * 2%);
 		text-align:right;
 		font-size:11px;
 		color:#aaa;
@@ -1326,7 +1326,7 @@ input[type=checkbox] {
 
 	dd {
 		position:relative;
-		width:200px;
+		width: calc(200px - var(--level) * 2%);
 		margin-left:10px;
 	}
 
@@ -5495,6 +5495,19 @@ blend-space-2d-root {
 
 			input {
 				margin-right: 5px;
+			}
+		}
+
+		&:not(.enabled) {
+			cursor: not-allowed !important;
+			filter: brightness(50%);
+
+			* {
+				cursor: not-allowed !important;
+			}
+
+			*::after {
+				cursor: not-allowed !important;
 			}
 		}
 	}

@@ -1162,7 +1162,7 @@ input[type=checkbox]:checked:after {
   width: 20px;
 }
 .hide-properties dt {
-  width: 80px;
+  width: calc(80px - var(--level) * 2%);
   text-align: right;
   font-size: 11px;
   color: #aaa;
@@ -1207,7 +1207,7 @@ input[type=checkbox]:checked:after {
 }
 .hide-properties dd {
   position: relative;
-  width: 200px;
+  width: calc(200px - var(--level) * 2%);
   margin-left: 10px;
 }
 .hide-properties .texture-preview {
@@ -4628,4 +4628,14 @@ blend-space-2d-root properties-container .hide-properties dl > div .hide-range i
 }
 .blend-selector-container .blend-mode-selector .blend-mode input {
   margin-right: 5px;
+}
+.blend-selector-container .blend-mode-selector:not(.enabled) {
+  cursor: not-allowed !important;
+  filter: brightness(50%);
+}
+.blend-selector-container .blend-mode-selector:not(.enabled) * {
+  cursor: not-allowed !important;
+}
+.blend-selector-container .blend-mode-selector:not(.enabled) *::after {
+  cursor: not-allowed !important;
 }
