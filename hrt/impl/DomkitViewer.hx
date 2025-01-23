@@ -205,16 +205,22 @@ class DomkitViewer extends h2d.Object {
 	var loadedComponents : Array<domkit.Component<h2d.Object, h2d.Object>> = [];
 	var compHooks : Map<String,Array<Dynamic> -> h2d.Object -> h2d.Object> = [];
 	var definedClasses : Array<String> = [];
-	var loadedResources : Array<hxd.res.Resource>;
+	var loadedResources : Array<{ r : hxd.res.Resource, wasLoaded : Bool }> = [];
 
 	public function new( style : DomkitStyle, res : hxd.res.Resource, ?parent ) {
 		super(parent);
 		this.style = style;
 		this.resource = res;
-		loadedResources = [res];
-		res.watch(rebuild);
+		loadComponents(res);
 		addContext(new DomkitBaseContext());
 		rebuildDelay();
+	}
+
+	function loadComponents( res : hxd.res.Resource ) {
+		var loaded = @:privateAccess style.resources.indexOf(res) >= 0;
+		loadedResources.push({ r : res, wasLoaded: loaded });
+		if( !loaded ) style.load(res);
+		res.watch(rebuild);
 	}
 
 	function rebuildDelay() {
@@ -264,8 +270,12 @@ class DomkitViewer extends h2d.Object {
 		if( currentObj != null )
 			currentObj.remove();
 		// force re-watch
-		for( r in loadedResources )
-			style.load(r);
+		for( r in loadedResources ) {
+			if( r.wasLoaded )
+				style.load(r.r);
+			else
+				style.unload(r.r);
+		}
 		for( c in loadedComponents ) {
 			@:privateAccess domkit.Component.COMPONENTS.remove(c.name);
 			@:privateAccess domkit.CssStyle.CssData.COMPONENTS.remove(c);
