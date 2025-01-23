@@ -14,7 +14,6 @@ class Shader extends Prefab {
 	@:s var recursiveApply = true;
 
 	public var shader : hxsl.Shader;
-	public var filterObj : h3d.scene.Object -> Bool;
 
 	function new(parent, sh: ContextShared) {
 		super(parent, sh);
@@ -100,31 +99,23 @@ class Shader extends Prefab {
 		return targetMaterial == null || targetMaterial == mat.name;
 	}
 
-	function iterMaterials(callb) {
+	function iterMaterials(callb, filterObj : (obj : h3d.scene.Object) -> Bool = null) {
 		if (parent == null)
 			return;
 		var parent = parent;
 
 		if( Std.isOfType(parent, Material) ) {
 			var material : Material = cast parent;
-			var prevFilterObj = material.filterObj;
-			if ( filterObj != null )
-				material.filterObj = filterObj;
-			for( m in material.getMaterials(true) )
+			for( m in material.getMaterials(true, filterObj) )
 				callb(null, m);
-			material.filterObj = prevFilterObj;
 		} else if ( Std.isOfType(parent, MaterialSelector) ) {
 			var materialSelector = cast(parent, MaterialSelector);
-			var prevFilterObj = materialSelector.filterObj;
-			if ( filterObj != null )
-				materialSelector.filterObj = filterObj;
 			var passSelect = h3d.mat.MaterialSetup.current.createMaterial();
-			for ( p in materialSelector.getPasses() ) {
+			for ( p in materialSelector.getPasses(null, filterObj) ) {
 				passSelect.name = p.all ? "" : PASS_SELECT;
 				@:privateAccess passSelect.passes = p.pass;
 				callb(null, passSelect);
 			}
-			materialSelector.filterObj = prevFilterObj;
 		} else {
 			var objs = [];
 			function pushUnique(obj : h3d.scene.Object ) {
@@ -156,13 +147,12 @@ class Shader extends Prefab {
 	override function dispose() {
 		if( shared.current3d != null )
 			iterMaterials(function(obj,mat) if(checkMaterial(mat)) removeShader(obj, mat, shader));
-		filterObj = null;
 		super.dispose();
 	}
 
-	public function apply3d() {
+	public function apply3d(filterObj : (obj : h3d.scene.Object) -> Bool = null) {
 		if( shared.current3d != null )
-			iterMaterials(function(obj,mat) if(checkMaterial(mat)) applyShader(obj, mat, shader));
+			iterMaterials(function(obj,mat) if(checkMaterial(mat)) applyShader(obj, mat, shader), filterObj);
 	}
 
 	override function makeInstance() {

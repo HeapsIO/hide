@@ -15,9 +15,8 @@ class MaterialSelector extends hrt.prefab.Prefab {
 		passName : "all",
 	}];
 	@:s public var blendModesSelected : Array<String> = [];
-	public var filterObj : h3d.scene.Object -> Bool;
 
-	public function getPasses(local3d: h3d.scene.Object = null) : Array<SelectedPass> {
+	public function getPasses(local3d: h3d.scene.Object = null, filterObj : (obj : h3d.scene.Object) -> Bool = null) : Array<SelectedPass> {
 		if (local3d == null)
 			local3d = findFirstLocal3d();
 		var mats = [];

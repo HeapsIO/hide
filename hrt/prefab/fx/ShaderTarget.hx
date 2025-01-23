@@ -6,15 +6,30 @@ class ShaderTargetObj extends h3d.scene.Object {
 	public var shadersRoot : hrt.prefab.Object3D;
 
 	public function apply(fx : hrt.prefab.fx.FX) {
+		function reparentChildren(obj : hrt.prefab.Object3D) {
+			var i = obj.children.length;
+			while ( i-- > 0 ) {
+				var c = obj.children[i];
+				if ( Std.isOfType(c, Shader) || Std.isOfType(c, Material) || Std.isOfType(c, MaterialSelector) )
+					c.parent = shadersRoot;
+			}
+		}
+
+		var children = shadersRoot.children.copy();
+		shadersRoot.children = [];
+		for (c in children) {
+			if (Std.isOfType(c, Object3D))
+				reparentChildren(cast c);
+		}
+
 		var fxAnim : hrt.prefab.fx.FX.FXAnimation = cast fx.local3d;
 		shadersRoot.local3d = parent;
 		for ( s in shadersRoot.findAll(Shader) ) {
-			s.filterObj = o -> return o != fxAnim;
 			if (s.shader == null) {
 				s.makeShader();
 				@:privateAccess s.updateInstance();
 			}
-			s.apply3d();
+			s.apply3d((o) -> return o != fxAnim);
 		}
 
 		if (fxAnim == null)
