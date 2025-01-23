@@ -1437,6 +1437,9 @@ class Ide extends hide.tools.IdeData {
 			quickMessage("Memory Profiler not available. Please update hashlink to version 1.15.0 or later.");
 			#end
 		});
+		analysis.find(".remoteconsole").click(function(_) {
+			open("hide.view.RemoteConsoleView",{});
+		});
 		analysis.find(".gpudump").click(function(_) {
 			var path = hide.tools.MemDump.gpudump();
 			quickMessage('Gpu mem dumped at ${path}.');
