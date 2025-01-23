@@ -5473,41 +5473,64 @@ blend-space-2d-root {
 		}
 	}
 }
+.array {
+	min-height: 5px;
+	overflow-y: scroll;
+	overflow-x: hidden;
+	background: @color-menu-bg-highlight;
+	max-height: 150px;
+	padding: 3px;
+	margin: 5px;
+	margin-bottom: 0px;
+	border-radius: 3px;
 
-.blend-selector-container {
-	width: 100%;
+	&.disabled {
+		filter: brightness(50%);
 
-	.blend-mode-selector {
-		overflow-y: scroll;
-		overflow-x: hidden;
-		background: @color-menu-bg-highlight;
-		max-height: 150px;
+		* , ::after {
+			cursor: not-allowed !important;
+		}
+	}
+
+	.line {
+		margin-top: 1px;
+		width: 100%;
 		padding: 3px;
-		margin: 5px;
 		border-radius: 3px;
+		background: @color-tool-bg;
 
-		.blend-mode {
-			margin-top: 1px;
-			width: 100%;
-			padding: 5px;
-			border-radius: 3px;
-			background: @color-tool-bg;
-
-			input {
-				margin-right: 5px;
-			}
+		input {
+			margin-right: 5px;
 		}
 
-		&:not(.enabled) {
-			cursor: not-allowed !important;
-			filter: brightness(50%);
+		input:not([type=checkbox]){
+			width: 85%;
+		}
 
-			* {
-				cursor: not-allowed !important;
+		.remove {
+			cursor: pointer;
+
+			&:hover {
+				filter: brightness(80%);
 			}
+		}
+	}
+}
 
-			*::after {
-				cursor: not-allowed !important;
+.array-sub-buttons {
+	display: flex;
+	justify-content: flex-end;
+
+	.add {
+		padding: 5px 10px 5px 10px;
+		background: @color-menu-bg-highlight;
+		border-radius: 0px 0px 3px 3px;
+		margin: 0 5px 0 5px;
+		cursor: pointer;
+
+		&:hover {
+			&::before {
+				filter: brightness(80%);
 			}
 		}
 	}

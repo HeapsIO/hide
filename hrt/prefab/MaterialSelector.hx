@@ -79,16 +79,15 @@ class MaterialSelector extends hrt.prefab.Prefab {
 					<dl>
 						<dt>Enabled</dt><dd><input type="checkbox" field="blendModeEnabled"/></dd>
 					</dl>
-					<div class="blend-selector-container"></div>
 				</div>
-				<ul id="selections"></ul>
+				<div class="group passes-group" name="Passes"></div>
 			</div>
 		');
 
 		ctx.properties.add(e, this, function(propName) {
 			if (propName == "blendModeEnabled") {
 				var blendModeSelector = e.find(".blend-mode-selector");
-				blendModeSelector.toggleClass("enabled", this.blendModeEnabled);
+				blendModeSelector.toggleClass("disabled", !this.blendModeEnabled);
 				blendModeSelector.find('input').prop('disabled', !this.blendModeEnabled);
 			}
 
@@ -96,10 +95,11 @@ class MaterialSelector extends hrt.prefab.Prefab {
 			ctx.rebuildPrefab(this);
 		});
 
-		var blendModeSelector = new hide.Element('<div class="blend-mode-selector ${this.blendModeEnabled ? 'enabled' : ''}">
+		// Blend mode selection
+		var blendModeSelector = new hide.Element('<div class="blend-mode-selector array ${!this.blendModeEnabled ? 'disabled' : ''}">
 		</div>');
 		for (b in Type.allEnums(h3d.mat.BlendMode)) {
-			var el = new hide.Element('<div class="blend-mode">
+			var el = new hide.Element('<div class="blend-mode line">
 				<input type="checkbox" ${blendModesSelected != null && blendModesSelected.contains(b.getName()) ? 'checked' : ''}/>
 				<label>$b</label>
 			</div>').appendTo(blendModeSelector);
@@ -122,38 +122,60 @@ class MaterialSelector extends hrt.prefab.Prefab {
 
 			cb.prop('disabled', !this.blendModeEnabled);
 		}
+		blendModeSelector.appendTo(e.find(".blend-mode-group").find('.content'));
 
-		blendModeSelector.appendTo(e.find(".blend-selector-container"));
-
-		var list = e.find("ul#selections");
-		for ( s in selections ) {
-			var es = new hide.Element('
-			<div class="group" name="Selection">
-				<dl>
-					<dt>Pass Name</dt><dd><input type="text" field="passName"/></dd>
-				</dl>
+		// Passes selection
+		var passesEl = new hide.Element('<div>
+			<div class="passes array"></div>
+			<div class="array-sub-buttons">
+				<div class="ico ico-plus add"></div>
 			</div>
-			');
-			es.appendTo(list);
-			ctx.properties.build(es, s, (pname) -> {
+		</div>');
+
+		passesEl.find(".add").click(function(e) {
+			var newP = { passName: "" };
+			function exec(undo : Bool) {
+				if (undo)
+					selections.remove(newP);
+				else
+					selections.push(newP);
+				ctx.rebuildProperties();
+				ctx.rebuildPrefab(this, true);
+			}
+
+			exec(false);
+			ctx.properties.undo.change(Custom(exec));
+		});
+
+		for ( s in selections ) {
+			var passEl = new hide.Element('<div class="line">
+				<input field="passName"/>
+				<div class="ico ico-remove remove"></div>
+			</div>');
+			passEl.appendTo(passesEl.find(".passes"));
+
+			passEl.find('.remove').click(function(e) {
+				var idx = selections.indexOf(s);
+				function exec(undo : Bool) {
+					if (undo)
+						selections.insert(idx, s);
+					else
+						selections.remove(s);
+
+					ctx.rebuildProperties();
+					ctx.rebuildPrefab(this, true);
+				}
+
+				exec(false);
+				ctx.properties.undo.change(Custom(exec));
+			});
+
+			ctx.properties.build(passEl, s, (pname) -> {
 				updateInstance("selections");
 				ctx.rebuildPrefab(this, true);
 			});
 		}
-		var add = new hide.Element('<li><p><a href="#">[+]</a></p></li>');
-		add.appendTo(list);
-		add.find("a").click(function(_) {
-			selections.push({
-				passName : "",
-			});
-			ctx.rebuildProperties();
-		});
-		var sub = new hide.Element('<li><p><a href="#">[-]</a></p></li>');
-		sub.appendTo(list);
-		sub.find("a").click(function(_) {
-			selections.pop();
-			ctx.rebuildProperties();
-		});
+		passesEl.appendTo(e.find('.passes-group').find('.content'));
 	}
 	#end
 
