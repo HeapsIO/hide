@@ -1356,9 +1356,15 @@ input[type=checkbox] {
 	}
 
 	.group {
+		--level: 0;
+		width: calc(100% - var(--level) * 5%);
+		margin: 0 auto;
+		margin-top: 5px;
+
 		>.title {
+			@color: calc(25 + (var(--level) * 3));
+			background-color : rgb(@color, @color, @color);
 			text-align : center;
-			background-color : #151515;
 			cursor:pointer;
 			user-select:none;
 			padding : 1px;
@@ -1380,10 +1386,10 @@ input[type=checkbox] {
 				left: 5px;
 			}
 		}
+
 		>.content {
 			margin-bottom : 5px;
 		}
-		margin-bottom : 5px;
 	}
 
 	.btn-list {

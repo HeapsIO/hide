@@ -1232,11 +1232,14 @@ input[type=checkbox]:checked:after {
   width: 30px;
 }
 .hide-properties .group {
-  margin-bottom: 5px;
+  --level: 0;
+  width: calc(100% - var(--level) * 5%);
+  margin: 0 auto;
+  margin-top: 5px;
 }
 .hide-properties .group > .title {
+  background-color: rgb(calc(25 + (var(--level) * 3)), calc(25 + (var(--level) * 3)), calc(25 + (var(--level) * 3)));
   text-align: center;
-  background-color: #151515;
   cursor: pointer;
   user-select: none;
   padding: 1px;

@@ -240,6 +240,15 @@ class PropsEditor extends Component {
 			if( getDisplayState("group:" + key) != false && !g.hasClass("closed") )
 				g.addClass("open");
 
+			var level = 0;
+			var previousGroup = g.parent().closest('.group');
+			while (previousGroup.length != 0) {
+				level++;
+				previousGroup = previousGroup.parent().closest('.group');
+				if (level > 5) break; // Prevent infinite loop
+			}
+			g.get(0).style.setProperty('--level', '$level');
+
 			var groupName = g.attr("name");
 			groups.set(groupName, []);
 		}

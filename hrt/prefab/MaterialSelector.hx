@@ -72,13 +72,16 @@ class MaterialSelector extends hrt.prefab.Prefab {
 	override function edit( ctx : hide.prefab.EditContext ) {
 		super.edit(ctx);
 
-		var e1 = new hide.Element('
+		var e = new hide.Element('
 			<div class="group" name="Material selector">
-				<div class="blend-selector-container"></div>
+				<div class="group blend-mode-group" name="Blend mode">
+					<div class="blend-selector-container"></div>
+				</div>
 				<ul id="selections"></ul>
 			</div>
 		');
-		ctx.properties.add(e1, this, function(propName) {
+
+		ctx.properties.add(e, this, function(propName) {
 			ctx.onChange(this, propName);
 			ctx.rebuildPrefab(this);
 		});
@@ -108,9 +111,9 @@ class MaterialSelector extends hrt.prefab.Prefab {
 			});
 		}
 
-		blendModeSelector.appendTo(e1.find(".blend-selector-container"));
+		blendModeSelector.appendTo(e.find(".blend-selector-container"));
 
-		var list = e1.find("ul#selections");
+		var list = e.find("ul#selections");
 		for ( s in selections ) {
 			var es = new hide.Element('
 			<div class="group" name="Selection">
