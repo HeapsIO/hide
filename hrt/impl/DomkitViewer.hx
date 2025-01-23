@@ -107,42 +107,6 @@ class DomkitInterp extends hscript.Async.AsyncInterp {
 
 }
 
-class CssEntry extends hxd.fs.FileEntry {
-
-	var nativePath : String;
-	public var text : String;
-
-	public function new(path) {
-		this.nativePath = path;
-		this.name = path.split("/").pop();
-	}
-
-	override function getText() {
-		return text;
-	}
-
-	override function get_path():String {
-		return nativePath;
-	}
-
-}
-
-class CssResource extends hxd.res.Resource {
-
-	public var cssEntry : CssEntry;
-	public var watchCallb : Void -> Void;
-
-	public function new(path) {
-		cssEntry = new CssEntry(path);
-		super(cssEntry);
-	}
-
-	override function watch( callb : Null<Void->Void> ) {
-		watchCallb = callb;
-	}
-
-}
-
 class SourceComponent extends domkit.Component<h2d.Object, h2d.Object> {
 
 	var res : hxd.res.Resource;
@@ -227,13 +191,10 @@ class DomkitBaseContext {
 class DomkitViewer extends h2d.Object {
 
 	var resource : hxd.res.Resource;
-	var variablesFiles : Array<hxd.res.Resource> = [];
+	var style : DomkitStyle;
 	var current : h2d.Object;
 	var currentObj : h2d.Object;
-	var cssResources : Map<String,CssResource> = [];
 	var interp : DomkitInterp;
-	var style : h2d.domkit.Style;
-	var baseVariables : Map<String,domkit.CssValue>;
 	var contexts : Array<Dynamic> = [];
 	var variables : Map<String,Dynamic> = [];
 	var rebuilding = false;
@@ -244,13 +205,14 @@ class DomkitViewer extends h2d.Object {
 	var loadedComponents : Array<domkit.Component<h2d.Object, h2d.Object>> = [];
 	var compHooks : Map<String,Array<Dynamic> -> h2d.Object -> h2d.Object> = [];
 	var definedClasses : Array<String> = [];
+	var loadedResources : Array<hxd.res.Resource>;
 
-	public function new( style : h2d.domkit.Style, res : hxd.res.Resource, ?parent ) {
+	public function new( style : DomkitStyle, res : hxd.res.Resource, ?parent ) {
 		super(parent);
 		this.style = style;
 		this.resource = res;
+		loadedResources = [res];
 		res.watch(rebuild);
-		baseVariables = style.cssParser.variables.copy();
 		addContext(new DomkitBaseContext());
 		rebuildDelay();
 	}
@@ -263,12 +225,6 @@ class DomkitViewer extends h2d.Object {
 
 	public function addComponentsPath( dir : String ) {
 		componentsPaths.push(dir);
-		rebuildDelay();
-	}
-
-	public function addVariables( res : hxd.res.Resource ) {
-		variablesFiles.push(res);
-		res.watch(rebuild);
 		rebuildDelay();
 	}
 
@@ -303,33 +259,13 @@ class DomkitViewer extends h2d.Object {
 	}
 	#end
 
-	function reloadVariables() {
-		var vars = baseVariables.copy();
-		for( r in variablesFiles ) {
-			var p = new domkit.CssParser();
-			p.variables = vars;
-			try {
-				p.parseSheet(r.entry.getText(), r.name);
-			} catch( e : domkit.Error ) {
-				onError(e);
-			}
-		}
-		style.cssParser.variables = vars;
-		for( c in cssResources )
-			c.watchCallb();
-	}
-
 	override function onRemove() {
 		super.onRemove();
 		if( currentObj != null )
 			currentObj.remove();
-		for( r in variablesFiles )
-			r.watch(null);
-		style.cssParser.variables = baseVariables;
-		resource.watch(null);
-		for( c in cssResources )
-			style.unload(c);
-		cssResources = new Map();
+		// force re-watch
+		for( r in loadedResources )
+			style.load(r);
 		for( c in loadedComponents ) {
 			@:privateAccess domkit.Component.COMPONENTS.remove(c.name);
 			@:privateAccess domkit.CssStyle.CssData.COMPONENTS.remove(c);
@@ -368,8 +304,6 @@ class DomkitViewer extends h2d.Object {
 			style.errors = [];
 			style.refreshErrors();
 		}
-
-		reloadVariables();
 
 		var root = new h2d.Flow();
 		root.dom = domkit.Properties.create("flow",root,{ "class" : "debugRoot", layout : "stack", "content-align" : "middle middle", "fill-width" : "true", "fill-height" : "true" });
@@ -421,8 +355,8 @@ class DomkitViewer extends h2d.Object {
 		style.addObject(root);
 		current = root;
 		currentObj = obj;
-		for( c in cssResources )
-			c.watchCallb();
+
+		@:privateAccess style.onChange(); // force trigger reload (css might have changed)
 	}
 
 	function createComponent( res : hxd.res.Resource, parent, args : Array<Dynamic> ) {
@@ -455,16 +389,6 @@ class DomkitViewer extends h2d.Object {
 			return null;
 		}
 		createRootArgs = null;
-		if( @:privateAccess DomkitStyle.CSS_SOURCES.indexOf(res.entry.path) < 0 ) {
-			var css = cssResources.get(res.entry.path);
-			if( css == null ) {
-				css = new CssResource(res.entry.path);
-				css.cssEntry.text = "";
-				style.load(css);
-				cssResources.set(res.entry.path, css);
-			}
-			css.cssEntry.text = data.css;
-		}
 		return comp;
 	}
 
@@ -710,7 +634,7 @@ class DomkitStyle extends h2d.domkit.Style {
 	}
 
 	override function loadData( r : hxd.res.Resource ) {
-		if( r is CssResource || r.entry.extension != "domkit" )
+		if( r.entry.extension != "domkit" )
 			return super.loadData(r);
 		var fullData = r.entry.getText();
 		var data = DomkitFile.parse(fullData);
