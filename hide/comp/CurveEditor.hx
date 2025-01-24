@@ -1606,6 +1606,8 @@ class CurveEditor extends hide.comp.Component {
 						for (param in fx.parameters) {
 							if (param.name == paramName) {
 								evaluator.parameters.set(paramName, param.def);
+								trace(yOffset, height, yScale);
+								svg.polylineRawArray(curveGroup, [param.def * xScale, (-yOffset), param.def * xScale, (-yOffset) + height * yScale], style);
 							}
 						}
 					}

@@ -263,7 +263,7 @@ class Curve extends Prefab {
 		return {minT: minT, maxT: maxT};
 	}
 
-	public function getVal(time: Float, ignoreRemap: Bool = false) : Float {
+	public function getVal(time: Float) : Float {
 		if (blendMode == Reference) {
 			throw "getVal shoudln't be called on curves with Reference mode";
 		}
@@ -366,7 +366,7 @@ class Curve extends Prefab {
 		return sum;
 	}
 
-	public function sample(numPts: Int, ignoreRemap: Bool = false) {
+	public function sample(numPts: Int) {
 		if (blendMode == Reference) {
 			return getRef()?.sample(numPts) ?? [];
 		}
@@ -375,7 +375,7 @@ class Curve extends Prefab {
 		var duration = this.duration;
 		for(i in 0...numPts) {
 			var v = 0.0;
-			v = getVal(duration * i/(numPts-1), ignoreRemap);
+			v = getVal(duration * i/(numPts-1));
 			vals.push(v);
 		}
 		return vals;
