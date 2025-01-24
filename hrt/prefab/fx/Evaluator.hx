@@ -35,6 +35,12 @@ class Evaluator {
 				var blend = parameters[v] ?? 0.0;
 				return hxd.Math.lerp(getFloat(pidx, a, time), getFloat(pidx, b, time), blend);
 			case VCurve(c):  return c.getVal(time);
+			case VParamRemap(a, param):
+				var time = parameters[param] ?? 0.0;
+				return getFloat(pidx, a, time);
+			case VValueRemap(a, remap):
+				var time = getFloat(pidx, remap, time);
+				return getFloat(pidx, a, time);
 			case VRandomBetweenCurves(ridx, c):
 				{
 					var c1 = Std.downcast(c.children[0], Curve);
@@ -71,6 +77,9 @@ class Evaluator {
 			case VCurve(c): return c.getSum(time);
 			case VAdd(a, b):
 				return getSum(a, time) + getSum(b, time);
+			case VParamRemap(a, param):
+				var blend = parameters[param] ?? 0.0;
+				return getSum(a, blend) * time;
 			case VMult(a, VConst(b)), VMult(VConst(b), a): return getSum(a, time) * b;
 			case VZero: return 0;
 			case VBlend(a,b,v):

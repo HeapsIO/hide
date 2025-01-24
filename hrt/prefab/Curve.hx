@@ -71,7 +71,6 @@ class Curve extends Prefab {
 	public var selected : Bool = false;
 
 	var refCurve : Curve = null;
-	var remapCurve : Curve = null;
 
 	function get_duration() {
 		if (blendMode == Reference) {
@@ -193,16 +192,32 @@ class Curve extends Prefab {
 		return refCurve;
 	}
 
-	function getRemap() : Null<Curve> {
-		if (remapPath == null || remapCurve != null)
-			return remapCurve;
-		var root = getRoot(false);
-		remapCurve = Std.downcast(root.locatePrefab(remapPath), Curve);
-		if (remapCurve == this) remapCurve = null;
-		return remapCurve;
+	public function getRemapParameter() : Null<String> {
+		if (remapPath == null)
+			return null;
+		var param = StringTools.replace(remapPath, "$param.", "");
+		if (param != remapPath)
+			return param;
+		return null;
 	}
 
-	public function makeVal() : Value {
+	public function makeVal(ignoreRemap: Bool = false) : Value {
+		if (!ignoreRemap) {
+			if (remapPath == null) {
+				return makeVal(true);
+			}
+			var val = makeVal(true);
+			var param = getRemapParameter();
+			if (param != null) {
+				return VParamRemap(val, param);
+			}
+			else {
+				var root = getRoot(false);
+				var remapCurve = Std.downcast(root.locatePrefab(remapPath), Curve);
+				return remapCurve != null ? VValueRemap(val, remapCurve.makeVal()) : val;
+			}
+		}
+
 		switch(blendMode) {
 			case None:
 				return VCurve(this);
@@ -252,10 +267,6 @@ class Curve extends Prefab {
 		if (blendMode == Reference) {
 			throw "getVal shoudln't be called on curves with Reference mode";
 		}
-
-		var remap = getRemap();
-		if (remap != null && !ignoreRemap)
-			time = remap.getVal(time);
 
 		switch(keys.length) {
 			case 0: return 0;
@@ -448,10 +459,15 @@ class Curve extends Prefab {
 				var root = getRoot(false);
 				select.append(new hide.Element('<option value="">None</option>'));
 				var flat = root.flatten(Curve);
+				for (param in Std.downcast(root, hrt.prefab.fx.FX).parameters) {
+					var path = "$param." + param.name;
+					select.append(new hide.Element('<option value="${path}">Param: ${param.name}</option>'));
+				}
+
 				for (p in flat) {
 					if (p == this) continue;
 					var path = p.getAbsPath();
-					select.append(new hide.Element('<option value="${path}">${path}</option>'));
+					select.append(new hide.Element('<option value="${path}">Curve: ${path}</option>'));
 				}
 				select.val(remapPath);
 			}
@@ -483,7 +499,6 @@ class Curve extends Prefab {
 			if (pname == "remapPath") {
 				if (remapPath == "")
 					remapPath = null;
-				remapCurve = null;
 			}
 			refreshBlend();
 			ctx.onChange(this, pname);

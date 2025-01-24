@@ -1598,14 +1598,18 @@ class CurveEditor extends hide.comp.Component {
 					if (pointBuffer.length != num*2)
 						pointBuffer.resize(num*2);
 
-					var oldRemap = curve.remapPath;
-					if (bypassRemap) {
-						curve.remapPath = null;
-						@:privateAccess curve.remapCurve = null;
+					var v = curve.makeVal(bypassRemap);
+					evaluator.parameters.clear();
+					var paramName = curve.getRemapParameter();
+					if (paramName != null) {
+						var fx = Std.downcast(curve.getRoot(false), hrt.prefab.fx.FX);
+						for (param in fx.parameters) {
+							if (param.name == paramName) {
+								evaluator.parameters.set(paramName, param.def);
+							}
+						}
 					}
-					var v = curve.makeVal();
 					if (v == null) throw "wtf";
-					var duration = curve.duration;
 
 					inline function getTime(i : Int) {
 						return hxd.Math.lerp(minTime, maxTime, i/(num-1));
@@ -1620,8 +1624,6 @@ class CurveEditor extends hide.comp.Component {
 						pointBuffer[i * 2] = x;
 						pointBuffer[i * 2 + 1] = y;
 					}
-
-					curve.remapPath = oldRemap;
 
 					svg.polylineRawArray(curveGroup, pointBuffer, style);
 				}
