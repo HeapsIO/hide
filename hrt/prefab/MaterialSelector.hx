@@ -1,21 +1,26 @@
 package hrt.prefab;
 
-typedef MaterialSelection = {
+enum Inclusion {
+	INCLUDE;
+	EXCLUDE;
+}
+
+typedef PassQuery = {
 	passName : String,
+	inclusion : Inclusion
 }
 
 typedef SelectedPass = {
 	pass : h3d.mat.Pass,
-	all : Bool,
+	all : Bool
 }
 
 class MaterialSelector extends hrt.prefab.Prefab {
+	public static var CONFIG_KEY = "materialSelector";
 
 	@:s public var blendModeEnabled : Bool = false;
 	@:s public var blendModesSelected : Array<String> = [];
-	@:s public var selections : Array<MaterialSelection> = [{
-		passName : "all",
-	}];
+	@:s public var selections : Array<PassQuery> = [ { passName : "all", inclusion : Inclusion.INCLUDE } ];
 
 	public function getPasses(local3d: h3d.scene.Object = null, filterObj : (obj : h3d.scene.Object) -> Bool = null) : Array<SelectedPass> {
 		if (local3d == null)
@@ -36,28 +41,44 @@ class MaterialSelector extends hrt.prefab.Prefab {
 		}
 
 		var passes = [];
-		var selectionSorted = selections.copy();
-		selectionSorted.sort((s1, s2) -> s1.passName == "all" ? return 1 : -1);
-		for ( m in mats ) {
-			if (blendModesSelected.length > 0 && this.blendModeEnabled) {
-				if (blendModesSelected.contains(m.blendMode.getName()))
-					passes.push({pass : m.mainPass, all : true});
-				continue;
-			}
-
-			for ( selection in selections ) {
-				if ( selection.passName == "all" ) {
-					passes.push({pass : m.mainPass, all : true});
-					break;
-				} else if ( selection.passName == "mainPass" ) {
-					passes.push({pass : m.mainPass, all : false });
-				} else {
-					var p = m.getPass(selection.passName);
-					if ( p != null )
-						passes.push({pass : p, all : false });
+		if (blendModesSelected.length > 0 && this.blendModeEnabled) {
+			for ( m in mats ) {
+				if (blendModesSelected.length > 0 && this.blendModeEnabled) {
+					if (blendModesSelected.contains(m.blendMode.getName()))
+						passes.push( { pass : m.mainPass, all : true } );
+					continue;
 				}
 			}
 		}
+		else {
+			var availablePasses = [];
+			for ( m in mats )
+				for (p in m.getPasses())
+					availablePasses.push(p);
+
+			var selectionSorted = selections.copy();
+			selectionSorted.sort((s1, s2) -> s1.inclusion.match(INCLUDE) ? -1 : 1);
+
+			for (s in selectionSorted) {
+				switch (s.inclusion) {
+					case Inclusion.INCLUDE:
+						if (s.passName == "all") {
+							for (p in availablePasses)
+								passes.push( { pass: p, all: false } );
+						}
+						else {
+							for (p in availablePasses)
+								if (p.name == s.passName)
+									passes.push( { pass: p, all: false } );
+						}
+					case Inclusion.EXCLUDE:
+						for (p in passes)
+							if (p.pass.name == s.passName)
+								passes.remove(p);
+				}
+			}
+		}
+
 		return passes;
 	}
 
@@ -133,7 +154,7 @@ class MaterialSelector extends hrt.prefab.Prefab {
 		</div>');
 
 		passesEl.find(".add").click(function(e) {
-			var newP = { passName: "" };
+			var newP = { passName: "all", inclusion: Inclusion.INCLUDE };
 			function exec(undo : Bool) {
 				if (undo)
 					selections.remove(newP);
@@ -147,12 +168,41 @@ class MaterialSelector extends hrt.prefab.Prefab {
 			ctx.properties.undo.change(Custom(exec));
 		});
 
+		var config : Array<{label: String, value: String}> = hide.Ide.inst.currentConfig.get(CONFIG_KEY);
 		for ( s in selections ) {
 			var passEl = new hide.Element('<div class="line">
-				<input field="passName"/>
+				<span class="inclusion" style="background:${s.inclusion.match(Inclusion.INCLUDE) ? 'green' : 'red'}">${s.inclusion.match(Inclusion.INCLUDE) ? 'U' : '/'}</span>
+				<div class="input"></div>
 				<div class="ico ico-remove remove"></div>
 			</div>');
 			passEl.appendTo(passesEl.find(".passes"));
+
+			var input : hide.Element;
+			if (config != null) {
+				input = new hide.Element('<select field="passName">
+					<option value="all"}>All</option>
+					${[for(c in config) '<option value="${c.value}">${c.label}</option>'].join("")}
+				</select>');
+			}
+			else {
+				input = new hide.Element('<input field="passName"/>');
+			}
+			input.appendTo(passEl.find(".input"));
+
+			passEl.find('.inclusion').click(function(e) {
+				var v = s.inclusion.match(Inclusion.INCLUDE) ? Inclusion.EXCLUDE : Inclusion.INCLUDE;
+				function exec(undo : Bool) {
+					var newV = v;
+					var oldV = v.match(Inclusion.INCLUDE) ? Inclusion.EXCLUDE : Inclusion.INCLUDE;
+					s.inclusion = undo ? oldV : newV;
+
+					ctx.rebuildProperties();
+					ctx.rebuildPrefab(this, true);
+				}
+
+				exec(false);
+				ctx.properties.undo.change(Custom(exec));
+			});
 
 			passEl.find('.remove').click(function(e) {
 				var idx = selections.indexOf(s);

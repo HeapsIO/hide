@@ -5497,21 +5497,42 @@ blend-space-2d-root {
 	}
 
 	.line {
+		display: flex;
+		align-items: center;
 		margin-top: 1px;
 		width: 100%;
 		padding: 3px;
 		border-radius: 3px;
 		background: @color-tool-bg;
 
+		.inclusion {
+			display: flex;
+			justify-content: center;
+			width: 10px;
+			margin: 0 5px 0 5px;
+			padding: 2px 6px 2px 6px;
+			background: red;
+			color: black;
+			font-weight: 900;
+			border-radius: 5px;
+
+			&:hover {
+				cursor: pointer;
+				filter: opacity(80%);
+			}
+		}
+
 		input {
 			margin-right: 5px;
 		}
 
 		input:not([type=checkbox]){
-			width: 85%;
+			flex: 1;
 		}
 
 		.remove {
+			margin: 0 5px 0 5px;
+			padding: 0 5px 0 5px;
 			cursor: pointer;
 
 			&:hover {

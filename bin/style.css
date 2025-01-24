@@ -4629,19 +4629,38 @@ blend-space-2d-root properties-container .hide-properties dl > div .hide-range i
   cursor: not-allowed !important;
 }
 .array .line {
+  display: flex;
+  align-items: center;
   margin-top: 1px;
   width: 100%;
   padding: 3px;
   border-radius: 3px;
   background: #545454;
 }
+.array .line .inclusion {
+  display: flex;
+  justify-content: center;
+  width: 10px;
+  margin: 0 5px 0 5px;
+  padding: 2px 6px 2px 6px;
+  background: red;
+  color: black;
+  font-weight: 900;
+  border-radius: 5px;
+}
+.array .line .inclusion:hover {
+  cursor: pointer;
+  filter: opacity(80%);
+}
 .array .line input {
   margin-right: 5px;
 }
 .array .line input:not([type=checkbox]) {
-  width: 85%;
+  flex: 1;
 }
 .array .line .remove {
+  margin: 0 5px 0 5px;
+  padding: 0 5px 0 5px;
   cursor: pointer;
 }
 .array .line .remove:hover {
