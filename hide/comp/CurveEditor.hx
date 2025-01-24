@@ -1426,7 +1426,7 @@ class CurveEditor extends hide.comp.Component {
 							var abskx = xt(key.time);
 							var absky = yt(key.value);
 							if(next && lx < abskx || !next && lx > abskx)
-								 lx = kx;
+								 lx = abskx;
 							var ndt = ixt(lx) - key.time;
 							var ndv = iyt(ly) - key.value;
 							handle.dt = ndt;
