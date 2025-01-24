@@ -4,55 +4,53 @@ package hrt.impl;
 	A simple socket-based local communication channel,
 	aim at communicate between 2 programs (e.g. Hide and a HL game).
 
-	Usage:
+	Usage in game:
 	```haxe
 	var rcmd = new hrt.impl.RemoteConsole();
 	// rcmd.log = (msg) -> logToUI(msg);
 	// rcmd.logError = (msg) -> logErrorToUI(msg);
 	rcmd.registerCommands(handler);
-	rcmd.connect(); // or rcmd.startServer()
-	rc.sendCommand("log", "Hello!", function(r) {});
+	rcmd.connect();
+	rcmd.sendCommand("log", "Hello!", function(r) {});
 	```
  */
-@:keep
-@:rtti
 class RemoteConsole {
 	public static var DEFAULT_HOST : String = "127.0.0.1";
 	public static var DEFAULT_PORT : Int = 40001;
+	public static var SILENT_CONNECT : Bool = true;
 
-	var UID : Int = 0;
 	public var host : String;
 	public var port : Int;
 	var sock : hxd.net.Socket;
-	var cSocks : Array<hxd.net.Socket>;
-	var waitReply : Map<Int, Dynamic->Void>;
+	var cSocks : Array<RemoteConsoleConnection>;
 
 	public function new( ?port : Int, ?host : String ) {
 		this.host = host ?? DEFAULT_HOST;
 		this.port = port ?? DEFAULT_PORT;
-		registerCommands(this);
 	}
 
-	public function startServer() {
+	public function startServer( ?onClient : RemoteConsoleConnection->Void ) {
 		close();
 		sock = new hxd.net.Socket();
 		sock.onError = function(msg) {
 			logError("Socket Error: " + msg);
 			close();
 		}
-		cSocks = [];
 		sock.bind(host, port, function(s) {
-			cSocks.push(s);
+			var connection = new RemoteConsoleConnection(this, s);
+			cSocks.push(connection);
 			s.onError = function(msg) {
-				logError("Client error: " + msg);
-				if( s != null )
-					s.close();
-				if( s != null && cSocks != null ) {
-					cSocks.remove(s);
+				connection.logError("Client error: " + msg);
+				connection.close();
+				if( cSocks != null ) {
+					cSocks.remove(connection);
 				}
+				connection = null;
 			}
-			s.onData = () -> handleOnData(s);
-			log("Client connected");
+			s.onData = () -> connection.handleOnData();
+			if( onClient != null )
+				onClient(connection);
+			connection.log("Client connected");
 		}, 1);
 		log('Server started at $host:$port');
 	}
@@ -61,18 +59,22 @@ class RemoteConsole {
 		close();
 		sock = new hxd.net.Socket();
 		sock.onError = function(msg) {
-			logError("Socket Error: " + msg);
+			if( !SILENT_CONNECT )
+				logError("Socket Error: " + msg);
 			close();
 			if( onConnected != null )
 				onConnected(false);
 		}
-		sock.onData = () -> handleOnData(sock);
+		var connection = new RemoteConsoleConnection(this, sock);
+		cSocks.push(connection);
+		sock.onData = () -> connection.handleOnData();
 		sock.connect(host, port, function() {
 			log("Connected to server");
 			if( onConnected != null )
 				onConnected(true);
 		});
-		log('Connecting to $host:$port');
+		if( !SILENT_CONNECT )
+			log('Connecting to $host:$port');
 	}
 
 	public function close() {
@@ -83,14 +85,63 @@ class RemoteConsole {
 		if( cSocks != null ) {
 			for( s in cSocks )
 				s.close();
-			cSocks = null;
 		}
-		UID = 0;
-		waitReply = [];
+		cSocks = [];
 	}
 
 	public function isConnected() {
 		return sock != null;
+	}
+
+	public dynamic function log( msg : String ) {
+		trace(msg);
+	}
+
+	public dynamic function logError( msg : String ) {
+		trace('[Error] $msg');
+	}
+
+	public function sendCommand( cmd : String, ?args : Dynamic, ?onResult : Dynamic -> Void ) {
+		if( cSocks.length == 0 ) {
+			// Ignore send when not really connected
+		} else if( cSocks.length == 1 ) {
+			cSocks[0].sendCommand(cmd, args, onResult);
+		} else {
+			logError("Send to multiple target not implemented");
+		}
+	}
+
+}
+
+@:keep
+@:rtti
+class RemoteConsoleConnection {
+
+	var UID : Int = 0;
+	var parent : RemoteConsole;
+	var sock : hxd.net.Socket;
+	var waitReply : Map<Int, Dynamic->Void> = [];
+
+	public function new( parent : RemoteConsole, s : hxd.net.Socket ) {
+		this.parent = parent;
+		this.sock = s;
+		registerCommands(this);
+	}
+
+	public function close() {
+		UID = 0;
+		waitReply = [];
+		if( sock != null )
+			sock.close();
+		sock = null;
+		onClose();
+	}
+
+	public function isConnected() {
+		return sock != null;
+	}
+
+	public dynamic function onClose() {
 	}
 
 	public dynamic function log( msg : String ) {
@@ -110,17 +161,11 @@ class RemoteConsole {
 	function sendData( cmd : String, args : Dynamic, id : Int ) {
 		var obj = { cmd : cmd, args : args, id : id};
 		var bytes = haxe.io.Bytes.ofString(haxe.Json.stringify(obj) + "\n");
-		if( cSocks != null ) {
-			for( cs in cSocks ) {
-				cs.out.writeBytes(bytes, 0, bytes.length);
-			}
-		} else {
-			sock.out.writeBytes(bytes, 0, bytes.length);
-		}
+		sock.out.writeBytes(bytes, 0, bytes.length);
 	}
 
-	function handleOnData( s : hxd.net.Socket ) {
-		var str = s.input.readLine().toString();
+	public function handleOnData() {
+		var str = sock.input.readLine().toString();
 		var obj = try { haxe.Json.parse(str); } catch (e) { logError("Parse error: " + e); null; };
 		if( obj == null || obj.id == null ) {
 			return;
@@ -235,6 +280,21 @@ class RemoteConsole {
 		return Sys.programPath();
 	}
 
+#if editor
+	@cmd function open( args : { file : String, line : Int, column : Int, cdbsheet : String } ) {
+		if( args == null )
+			return;
+		if( args.cdbsheet != null ) {
+			var sheet = hide.Ide.inst.database.getSheet(args.cdbsheet);
+			hide.Ide.inst.open("hide.view.CdbTable", {}, function(view) {
+				Std.downcast(view,hide.view.CdbTable).goto(sheet,args.line,args.column);
+			});
+		} else {
+			hide.Ide.inst.openFile(args.file);
+		}
+	}
+#end
+
 #if hl
 	@cmd function dump( args : { file : String } ) {
 		hl.Gc.major();
@@ -277,5 +337,6 @@ class RemoteConsole {
 			onDone(null);
 		}
 	}
+
 #end
 }

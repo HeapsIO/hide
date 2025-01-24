@@ -4,21 +4,20 @@ package hide.view;
 	props.json configuration (all champs are optional):
 	```json
 	"remoteconsole": {
-		"panels": [
-			{
-				"host": "127.0.0.2",
-				"port": 40002,
-				"commands": [
-					"dump"
-				]
-			}
+		"host": "127.0.0.2",
+		"port": 40002,
+		"commands": [
+			"dump",
+			"custom"
 		]
 	},
 	```
  */
 class RemoteConsoleView extends hide.ui.View<{}> {
+	static var rcmd : hrt.impl.RemoteConsole;
 	var panels : Array<RemoteConsolePanel>;
 	var panelsView : Element;
+	var logsView : Element;
 	var newPanelBtn : Element;
 	public var statusBarIcons : Element;
 
@@ -28,10 +27,38 @@ class RemoteConsoleView extends hide.ui.View<{}> {
 	}
 
 	override function onDisplay() {
+		var pconfig = config.get("remoteconsole");
+		var host = pconfig?.host ?? hrt.impl.RemoteConsole.DEFAULT_HOST;
+		var port = pconfig?.port ?? hrt.impl.RemoteConsole.DEFAULT_PORT;
 		new Element('
 		<div class="remoteconsole hide-scroll">
+			<div class="connect">
+				<input type="button" id="startServerBtn" value="Start Server"/>
+				<input type="button" id="stopServerBtn" value="Stop Server"/>
+				<label for="connectHost">Host IP</label>
+				<input type="text" id="connectHost" value="$host:$port" disabled/>
+				<div class="logs">
+				</div>
+			</div>
 		</div>').appendTo(element);
+		element.find("#startServerBtn").on('click', function(e) {
+			if( rcmd != null )
+				rcmd.close();
+			rcmd = new hrt.impl.RemoteConsole(port, host);
+			rcmd.log = (msg) -> log(msg);
+			rcmd.logError = (msg) -> log(msg, true);
+			rcmd.startServer(function(c) {
+				addPanel(c);
+			});
+		});
+		element.find("#stopServerBtn").on('click', function(e) {
+			if( rcmd != null )
+				rcmd.close();
+			log("Server stopped");
+		});
+
 		panelsView = element.find(".remoteconsole");
+		logsView = element.find(".logs");
 		statusBarIcons = new Element('<div></div>');
 		hide.Ide.inst.addStatusIcon(statusBarIcons);
 		addPanel();
@@ -61,9 +88,17 @@ class RemoteConsoleView extends hide.ui.View<{}> {
 		if( panelsView != null )
 			panelsView.remove();
 		panelsView = null;
+		logsView = null;
 		if( statusBarIcons != null )
 			statusBarIcons.remove();
 		statusBarIcons = null;
+	}
+
+	public function log( msg : String, error : Bool = false ) {
+		var el = new Element('<p>${StringTools.htmlEscape(msg)}</p>').appendTo(logsView);
+		if( error )
+			el.addClass("error");
+		logsView.scrollTop(logsView.get(0).scrollHeight);
 	}
 
 	function refreshNewPanelButton() {
@@ -78,12 +113,24 @@ class RemoteConsoleView extends hide.ui.View<{}> {
 		});
 	}
 
-	function addPanel() {
-		var pconfigs = config.get("remoteconsole")?.panels;
-		var pconfig = pconfigs != null ? pconfigs[panels.length] : null;
-		var panel = new RemoteConsolePanel(this, pconfig?.host, pconfig?.port, pconfig?.commands);
-		panel.element.appendTo(panelsView);
-		panels.push(panel);
+	function addPanel( ?c : hrt.impl.RemoteConsole.RemoteConsoleConnection ) {
+		var panel = null;
+		if( c != null ) {
+			// Find the first empty or disconnected panel
+			for( p in panels ) {
+				if( p.connection == null || p.connection == c || !p.connection.isConnected() ) {
+					p.connection = c;
+					panel = p;
+					break;
+				}
+			}
+		}
+		if( panel == null ) {
+			var pconfig = config.get("remoteconsole");
+			var panel = new RemoteConsolePanel(this, c, pconfig?.commands);
+			panel.element.appendTo(panelsView);
+			panels.push(panel);
+		}
 		refreshNewPanelButton();
 	}
 
@@ -110,27 +157,18 @@ class RemoteConsoleView extends hide.ui.View<{}> {
 
 class RemoteConsolePanel extends hide.comp.Component {
 	var view : RemoteConsoleView;
+	public var connection(default, set) : hrt.impl.RemoteConsole.RemoteConsoleConnection;
 	var statusBarIcon : Element;
 	var statusIcon : Element;
-	var handler : RemoteCommandHandler;
-	var rcmd : hrt.impl.RemoteConsole;
-	public function new( view : RemoteConsoleView, host : String, port : Int, commands : Array<String> ) {
+	public function new( view : RemoteConsoleView, connection : Null<hrt.impl.RemoteConsole.RemoteConsoleConnection>, commands : Null<Array<String>> ) {
 		super(null, null);
 		this.view = view;
-		this.handler = new RemoteCommandHandler();
+		this.connection = connection;
 		element = new Element('
 		<div class="remoteconsole-panel">
 			<div class="controls">
 				<div class="ico ico-dot-circle-o" id="statusIcon" style="color: darkgray; cursor:default;" title="Not connected"></div>
 				<div class="ico ico-close" id="closeBtn" title="Close panel"></div>
-			</div>
-			<div class="connect">
-				<input type="button" id="connectBtn" value="Connect"/>
-				<input type="button" id="disconnectBtn" value="Disconnect"/>
-				<label for="connectHost">Host</label>
-				<input type="text" id="connectHost"/>
-				<label for="connectPort">Port</label>
-				<input type="text" id="connectPort" type="number"/>
 			</div>
 			<div class="logs">
 			</div>
@@ -138,73 +176,27 @@ class RemoteConsolePanel extends hide.comp.Component {
 			</div>
 		</div>
 		');
-
 		this.statusBarIcon = new Element('
 			<div class="ico ico-dot-circle-o" style="color: darkgray; cursor:default;" title="[Remote Console] Not connected"></div>'
 		).appendTo(view.statusBarIcons);
 		this.statusIcon = element.find("#statusIcon");
-
 		element.find("#closeBtn").on('click', function(e) {
 			this.statusBarIcon.remove();
 			view.removePanel(this);
 		});
-
-		var connectHost = element.find("#connectHost");
-		connectHost.val(host ?? hrt.impl.RemoteConsole.DEFAULT_HOST);
-		function checkHost() {
-			var host = connectHost.val();
-			js.node.Dns.lookup(host, function(err, address, family) {
-				if( err != null ) {
-					log('Invalid host ($host): ${err.message}', true);
-					return;
-				}
-				log('Host resolved ($host): $address');
-				connectHost.val(address);
-			});
-		}
-		connectHost.keydown(function(e) {
-			if (e.key == 'Enter') checkHost();
-		});
-		connectHost.focusout(function(e) {
-			checkHost();
-		});
-
-		var connectPort = element.find("#connectPort");
-		connectPort.val(port ?? hrt.impl.RemoteConsole.DEFAULT_PORT);
-		function checkPort() {
-			var port = Std.int(connectPort.val());
-			if( port < 0 )
-				port = isConnected() ? rcmd.port : hrt.impl.RemoteConsole.DEFAULT_PORT;
-			connectPort.val(port);
-		}
-		connectPort.keydown(function(e) {
-			if (e.key == 'Enter') checkPort();
-		});
-		connectPort.focusout(function(e) {
-			checkPort();
-		});
-
-		element.find("#connectBtn").on('click', function(e) {
-			close();
-			var host = element.find("#connectHost").val();
-			var port = Std.parseInt(element.find("#connectPort").val());
-			rcmd = new hrt.impl.RemoteConsole(port, host);
-			rcmd.log = (msg) -> log(msg);
-			rcmd.logError = (msg) -> log(msg, true);
-			rcmd.registerCommands(handler);
-			rcmd.connect(function(b) {
-				refreshStatusIcon();
-			});
-		});
-
-		element.find("#disconnectBtn").on('click', function(e) {
-			close();
-			refreshStatusIcon();
-		});
-
 		var commandsList = commands ?? ["dump", "prof", "custom"];
 		for( name in commandsList )
 			addCommandElement(name);
+	}
+	function set_connection( c ) {
+		if( c != null ) {
+			c.onClose = () -> refreshStatusIcon();
+			c.log = (msg) -> log(msg);
+			c.logError = (msg) -> log(msg, true);
+		}
+		connection = c;
+		refreshStatusIcon();
+		return connection;
 	}
 	function addCommandElement( name : String ) {
 		var c = RemoteConsoleView.commandViews.get(name);
@@ -216,11 +208,13 @@ class RemoteConsolePanel extends hide.comp.Component {
 		comp.element.appendTo(element.find(".commands"));
 	}
 	function refreshStatusIcon() {
+		if( statusBarIcon == null || statusIcon == null )
+			return;
 		if( isConnected() ) {
 			statusBarIcon.css("color", "DarkGreen");
-			statusBarIcon.prop("title", "[Remote console] Connected to " + rcmd.host + ":" + rcmd.port);
+			statusBarIcon.prop("title", "[Remote console] Connected");
 			statusIcon.css("color", "DarkGreen");
-			statusIcon.prop("title", "Connected to " + rcmd.host + ":" + rcmd.port);
+			statusIcon.prop("title", "Connected");
 		} else {
 			statusBarIcon.css("color", "#c10000");
 			statusBarIcon.prop("title", "[Remote console] Disconnected");
@@ -229,14 +223,14 @@ class RemoteConsolePanel extends hide.comp.Component {
 		}
 	}
 	public function close() {
-		if( rcmd != null ) {
-			rcmd.close();
+		if( connection != null ) {
+			connection.close();
 			log("Disconnected");
 		}
-		rcmd = null;
+		connection = null;
 	}
 	public function isConnected() {
-		return rcmd != null && rcmd.isConnected();
+		return connection != null && connection.isConnected();
 	}
 	public function log( msg : String, error : Bool = false ) {
 		var logsView = element.find(".logs");
@@ -247,28 +241,9 @@ class RemoteConsolePanel extends hide.comp.Component {
 	}
 	public function sendCommand( cmd : String, ?args : Dynamic, ?onResult : Dynamic -> Void ) {
 		if( isConnected() )
-			rcmd.sendCommand(cmd, args, onResult);
+			connection.sendCommand(cmd, args, onResult);
 		else
 			log("sendCommand not available: no connection.", true);
-	}
-}
-
-@:keep
-@:rtti
-class RemoteCommandHandler {
-	public function new() {
-	}
-	@cmd function open( args : { file : String, line : Int, column : Int, cdbsheet : String } ) {
-		if( args == null )
-			return;
-		if( args.cdbsheet != null ) {
-			var sheet = hide.Ide.inst.database.getSheet(args.cdbsheet);
-			hide.Ide.inst.open("hide.view.CdbTable", {}, function(view) {
-				Std.downcast(view,hide.view.CdbTable).goto(sheet,args.line,args.column);
-			});
-		} else {
-			hide.Ide.inst.openFile(args.file);
-		}
 	}
 }
 
