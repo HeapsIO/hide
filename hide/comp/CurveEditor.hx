@@ -964,8 +964,10 @@ class CurveEditor extends hide.comp.Component {
 			setPan(xOffset, yOffset);
 			refreshTimeline();
 			refreshOverlay();
+			redrawCurves(false);
 			setComponentsPan();
 		}, function(e) {
+			refreshGraph();
 			saveView();
 		});
 	}
@@ -1217,7 +1219,7 @@ class CurveEditor extends hide.comp.Component {
 		svg.rect(overlayGroup, maxX, 0, svg.element.width(), svg.element.height(), { 'fill':'#000000', opacity:0.3});
 	}
 
-	public function refreshGraph(?anim: Bool = false, ?animKey: CurveKey) {
+	public function refreshGraph(?anim: Bool = false, ?animKey: CurveKey, lowQuality: Bool = false) {
 		if(curves == null)
 			return;
 
@@ -1308,44 +1310,8 @@ class CurveEditor extends hide.comp.Component {
 			return popup;
 		}
 
-		function drawCurve(curve : Curve, ?style: Dynamic, bypassRemap: Bool = false) {
-			// Draw curve
-			if(curve.keys.length > 0) {
-				{
-					var pts = [];
 
-					// Basic value of xScale is 200
-					var min = xOffset;
-					var max = min + width / xScale;
 
-					var num : Int = Std.int(hxd.Math.clamp(500 * cast (xScale / 200.0), width, 5000));
-					pts.resize(num);
-					var oldRemap = curve.remapPath;
-					if (bypassRemap) {
-						curve.remapPath = null;
-						@:privateAccess curve.remapCurve = null;
-					}
-					var v = curve.makeVal();
-					if (v == null) throw "wtf";
-					var duration = curve.duration;
-					for (i in 0...num) {
-						pts[i] = evaluator.getFloat(v, duration * i/(num-1));
-					}
-
-					curve.remapPath = oldRemap;
-
-					var poly = [];
-
-					for(i in 0...pts.length) {
-						var x = xScale * (curve.duration * i / (pts.length - 1));
-						var y = yScale * (-pts[i]);
-						poly.push(new h2d.col.Point(x, y));
-					}
-
-					svg.polygon(curveGroup, poly, style);
-				}
-			}
-		}
 
 		function drawKeys(curve : Curve, ?style: Dynamic) {
 			for(key in curve.previewKeys) {
@@ -1486,84 +1452,23 @@ class CurveEditor extends hide.comp.Component {
 			}
 		}
 
-		function drawBlendArea(curve : Curve, ?style: Dynamic) {
-			if (curve.blendMode == CurveBlendMode.RandomBlend) {
-				var c1: Curve = cast curve.children[0];
-				var c2: Curve = cast curve.children[1];
+		redrawCurves(lowQuality);
 
-				var sampleSize = 500 * cast (xScale / 200.0);
-				var poly = [];
+		for (curve in curves) {
 
-				var ptsC1 = c1.sample(sampleSize);
-				for(i in 0...ptsC1.length) {
-					var x = xScale * (c1.duration * i / (ptsC1.length - 1));
-					var y = yScale * (-ptsC1[i]);
-					poly.push(new h2d.col.Point(x, y));
-				}
-
-				var ptsC2 = c2.sample(sampleSize);
-
-				var idx = ptsC2.length-1;
-				while (idx >= 0) {
-					var x = xScale * (c2.duration * idx / (ptsC2.length - 1));
-					var y = yScale * (-ptsC2[idx]);
-					poly.push(new h2d.col.Point(x, y));
-					idx--;
-				}
-
-				var blendAreaStyle: Dynamic = { opacity : 0.1 , fill : '#FFFFFF', stroke : '#000000'};
-				if (c1.lock && c2.lock) blendAreaStyle = { opacity : 0.05 , fill : '#FFFFFF', stroke : '#000000'};
-				if (c1.hidden && c2.hidden) blendAreaStyle = { opacity : 0 , fill : '#FFFFFF', stroke : '#000000'};
-
-				svg.polygon(curveGroup, poly, blendAreaStyle).attr("pointer-events","none");
-			}
-		}
-
-		for (curve in curves){
-			var colorInt = curve.color;
-			if (curve.blendMode == Blend) {
-				var root = curve.getRoot();
-				var params = Std.downcast(root, hrt.prefab.fx.FX)?.parameters;
-				if (params != null) {
-					for (p in params) {
-						if (p.name == curve.blendParam) {
-							colorInt = p.color;
-							break;
-						}
-					}
-				}
-			}
-			var color = '#${StringTools.hex(colorInt)}';
-			var curveStyle: Dynamic = { opacity : curve.selected ? 1 : 0.5, stroke : color, "stroke-width":'${curve.selected ? 2 : 1}px'};
 			var keyStyle: Dynamic = { opacity : curve.selected ? 1 : 0.5};
-			var eventStyle: Dynamic = { 'fill-opacity' : curve.selected ? 1 : 0.5};
 
 			if (curve.lock) {
-				curveStyle = { opacity : curve.selected ? 1 : 0.5 , stroke : color, "stroke-width":'${curve.selected ? 2 : 1}px', "stroke-dasharray":"5, 3"};
 				keyStyle = { opacity : curve.selected ? 1 : 0.5, 'cursor':'default'};
-				eventStyle = { 'fill-opacity' : curve.selected ? 1 : 0.5};
 			}
 
 			if (curve.blendMode == CurveBlendMode.Blend) {
-				curveStyle = { opacity : curve.selected ? 1 : 0.5 , stroke : color, "stroke-width":'${curve.selected ? 2 : 1}px', "stroke-dasharray":"20,10,5,5,5,10"};
 				keyStyle = { opacity : curve.selected ? 1 : 0.5};
-				eventStyle = { 'fill-opacity' : curve.selected ? 1 : 0.5};
 			}
 
 			if (curve.hidden || curve.blendMode == CurveBlendMode.RandomBlend) {
-				curveStyle = { opacity : 0};
 				keyStyle = { opacity : 0};
-				eventStyle = { 'fill-opacity' : 0};
 			}
-
-			drawCurve(curve, curveStyle, true);
-
-			if (curve.remapPath != null) {
-				drawCurve(curve, {opacity : 0.5, "stroke-width":'1px', "stroke-dasharray":"5, 3"}, false);
-			}
-
-			// Draw the area where random blend curves will be picked
-			drawBlendArea(curve);
 
 			// Blend curve are controlled with parent curve
 			// so we don't want to allow user to use keys on this.s
@@ -1664,6 +1569,143 @@ class CurveEditor extends hide.comp.Component {
 		}
 
 		refreshComponents(anim);
+	}
+
+	public function redrawCurves(lowQuality: Bool = false) {
+		static var pointBuffer: Array<Float> = [];
+
+		var curveGroup = element.find(".curve");
+		curveGroup.empty();
+
+		function drawCurve(curve : Curve, ?style: Dynamic, bypassRemap: Bool = false, lowQuality = false) {
+			// Draw curve
+			if(curve.keys.length > 0) {
+				{
+
+
+					// Basic value of xScale is 200
+					var min = xOffset;
+					var max = min + width / xScale;
+
+					var minTime = xOffset;
+					var maxTime = minTime + width / xScale;
+
+					var num : Int = width;
+					if (lowQuality) {
+						num = num >> 4;
+					}
+
+					if (pointBuffer.length != num*2)
+						pointBuffer.resize(num*2);
+
+					var oldRemap = curve.remapPath;
+					if (bypassRemap) {
+						curve.remapPath = null;
+						@:privateAccess curve.remapCurve = null;
+					}
+					var v = curve.makeVal();
+					if (v == null) throw "wtf";
+					var duration = curve.duration;
+
+					inline function getTime(i : Int) {
+						return hxd.Math.lerp(minTime, maxTime, i/(num-1));
+					}
+					for (i in 0...num) {
+						var t = getTime(i);
+						var y = evaluator.getFloat(v, getTime(i));
+
+						var x = xScale * t;
+						var y = yScale * (-y);
+
+						pointBuffer[i * 2] = x;
+						pointBuffer[i * 2 + 1] = y;
+					}
+
+					curve.remapPath = oldRemap;
+
+					svg.polylineRawArray(curveGroup, pointBuffer, style);
+				}
+			}
+		}
+
+		function drawBlendArea(curve : Curve, ?style: Dynamic) {
+			if (curve.blendMode == CurveBlendMode.RandomBlend) {
+				var c1: Curve = cast curve.children[0];
+				var c2: Curve = cast curve.children[1];
+
+				var sampleSize = 500 * cast (xScale / 200.0);
+				var poly = [];
+
+				var ptsC1 = c1.sample(sampleSize);
+				for(i in 0...ptsC1.length) {
+					var x = xScale * (c1.duration * i / (ptsC1.length - 1));
+					var y = yScale * (-ptsC1[i]);
+					poly.push(new h2d.col.Point(x, y));
+				}
+
+				var ptsC2 = c2.sample(sampleSize);
+
+				var idx = ptsC2.length-1;
+				while (idx >= 0) {
+					var x = xScale * (c2.duration * idx / (ptsC2.length - 1));
+					var y = yScale * (-ptsC2[idx]);
+					poly.push(new h2d.col.Point(x, y));
+					idx--;
+				}
+
+				var blendAreaStyle: Dynamic = { opacity : 0.1 , fill : '#FFFFFF', stroke : '#000000'};
+				if (c1.lock && c2.lock) blendAreaStyle = { opacity : 0.05 , fill : '#FFFFFF', stroke : '#000000'};
+				if (c1.hidden && c2.hidden) blendAreaStyle = { opacity : 0 , fill : '#FFFFFF', stroke : '#000000'};
+
+				svg.polygon(curveGroup, poly, blendAreaStyle).attr("pointer-events","none");
+			}
+		}
+
+		for (curve in curves){
+			if (curve.hidden)
+				continue;
+
+			var colorInt = curve.color ?? hide.comp.CurveEditor.CURVE_COLORS[0];
+			if (curve.blendMode == Blend) {
+				var root = curve.getRoot();
+				var params = Std.downcast(root, hrt.prefab.fx.FX)?.parameters;
+				if (params != null) {
+					for (p in params) {
+						if (p.name == curve.blendParam) {
+							colorInt = p.color;
+							break;
+						}
+					}
+				}
+			}
+			var color = '#${StringTools.hex(colorInt)}';
+			var curveStyle: Dynamic = { opacity : curve.selected ? 1 : 0.5, stroke : color, "stroke-width":'${curve.selected ? 2 : 1}px'};
+			var eventStyle: Dynamic = { 'fill-opacity' : curve.selected ? 1 : 0.5};
+
+			if (curve.lock) {
+				curveStyle = { opacity : curve.selected ? 1 : 0.5 , stroke : color, "stroke-width":'${curve.selected ? 2 : 1}px', "stroke-dasharray":"5, 3"};
+				eventStyle = { 'fill-opacity' : curve.selected ? 1 : 0.5};
+			}
+
+			if (curve.blendMode == CurveBlendMode.Blend) {
+				curveStyle = { opacity : curve.selected ? 1 : 0.5 , stroke : color, "stroke-width":'${curve.selected ? 2 : 1}px', "stroke-dasharray":"20,10,5,5,5,10"};
+				eventStyle = { 'fill-opacity' : curve.selected ? 1 : 0.5};
+			}
+
+			if (curve.hidden || curve.blendMode == CurveBlendMode.RandomBlend) {
+				curveStyle = { opacity : 0};
+				eventStyle = { 'fill-opacity' : 0};
+			}
+
+			drawCurve(curve, curveStyle, true, lowQuality);
+
+			if (curve.remapPath != null) {
+				drawCurve(curve, {opacity : 0.5, "stroke-width":'1px', "stroke-dasharray":"5, 3", stroke : color}, false, lowQuality);
+			}
+
+			// Draw the area where random blend curves will be picked
+			drawBlendArea(curve);
+		}
 	}
 
 	public function onSelectionEnd(minT: Float, minV: Float, maxT: Float, maxV: Float) {

@@ -97,6 +97,28 @@ class SVG extends Component {
 		return make(parent, "polygon", {points: lines.join(" ")}, style);
 	}
 
+	/**
+		Use an array with i * 2 being x and i * 2+1 being y for the points
+	**/
+	public function polylineRawArray(parent: Element, points: Array<Float>, ?style:Dynamic) {
+		var polygon : js.html.svg.PolylineElement = cast js.Browser.document.createElementNS('http://www.w3.org/2000/svg',"polyline");
+		var svg : js.html.svg.SVGElement = cast element.get(0);
+
+		polygon.points.clear();
+		style.fill = "none";
+		new Element(polygon).css(style);
+
+		for (i in 0...points.length>>1) {
+			var pt = svg.createSVGPoint();
+			pt.x = points[i * 2];
+			pt.y = points[i * 2 + 1];
+			polygon.points.appendItem(pt);
+		}
+
+		if (parent != null)
+			parent.get(0).appendChild(polygon);
+	}
+
 	public function group(?parent: Element, ?className: String, ?attr: Dynamic) {
 		var g = make(parent, "g", attr);
 		if(className != null)
