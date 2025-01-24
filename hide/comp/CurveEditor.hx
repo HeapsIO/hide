@@ -1312,6 +1312,7 @@ class CurveEditor extends hide.comp.Component {
 				if(f != null) {
 					undo.change(Field(key, "time", key.time), afterEdit);
 					key.time = f;
+					fixKey(key);
 					afterEdit();
 				}
 			});
@@ -1322,6 +1323,7 @@ class CurveEditor extends hide.comp.Component {
 				if(f != null) {
 					undo.change(Field(key, "value", key.value), afterEdit);
 					key.value = f;
+					fixKey(key);
 					afterEdit();
 				}
 			});
