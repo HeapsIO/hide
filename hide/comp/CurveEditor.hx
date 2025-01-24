@@ -459,7 +459,7 @@ class OverviewEditor extends Component implements CurveEditorComponent
 
 		for (c in this.curveEditor.curves)
 			if (c.selected || this.curveEditor.curves.length == 1) {
-				var previousKeyVal = c.getVal(time, true);
+				var previousKeyVal = c.getVal(time);
 				c.addKey(time, previousKeyVal, c.keyMode);
 			}
 
