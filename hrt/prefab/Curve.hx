@@ -446,6 +446,7 @@ class Curve extends Prefab {
 				var select = props.find('[field=remapPath]');
 				select.empty();
 				var root = getRoot(false);
+				select.append(new hide.Element('<option value="">None</option>'));
 				var flat = root.flatten(Curve);
 				for (p in flat) {
 					if (p == this) continue;
@@ -480,6 +481,8 @@ class Curve extends Prefab {
 				}
 			}
 			if (pname == "remapPath") {
+				if (remapPath == "")
+					remapPath = null;
 				remapCurve = null;
 			}
 			refreshBlend();

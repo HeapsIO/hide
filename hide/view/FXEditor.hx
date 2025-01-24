@@ -691,7 +691,7 @@ class FXEditor extends hide.view.FileView {
 			}
 		}
 
-		if (pname == "blendMode") {
+		if (pname == "blendMode" || pname == "remapPath") {
 			var curve = Std.downcast(p, Curve);
 
 			function removeCurves() {
