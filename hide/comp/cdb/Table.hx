@@ -99,6 +99,15 @@ class Table extends Component {
 	public function refresh() {
 		element.empty();
 		columns = view == null || view.show == null ? sheet.columns : [for( c in sheet.columns ) if( view.show.indexOf(c.name) >= 0 ) c];
+		if( !editor.showGUIDs ) {
+			var cols = null;
+			for( c in columns )
+				if( c.type == TGuid && !c.opt ) {
+					if( cols == null ) cols = columns.copy();
+					cols.remove(c);
+				}
+			if( cols != null ) columns = cols;
+		}
 		switch( displayMode ) {
 		case Table:
 			refreshTable();

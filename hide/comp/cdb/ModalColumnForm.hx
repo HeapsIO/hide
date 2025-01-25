@@ -59,6 +59,7 @@ class ModalColumnForm extends Modal {
 				<option value="gradient">Gradient</option>
 				<option value="curve">Curve</option>
 				<option value="custom">Custom Type</option>
+				<option value="guid">GUID</option>
 				</select>
 				</tr>
 
@@ -425,6 +426,8 @@ class ModalColumnForm extends Modal {
 			TDynamic;
 		case "properties":
 			TProperties;
+		case "guid":
+			TGuid;
 		default:
 			return null;
 		}

@@ -305,11 +305,12 @@ class Cell {
 		return view;
 	}
 
-	function canViewSubColumn( sheet : cdb.Sheet, column : String ) {
+	function canViewSubColumn( sheet : cdb.Sheet, c : cdb.Data.Column ) {
 		var view = getSheetView(sheet);
-		return view == null || view.show == null || view.show.indexOf(column) >= 0;
+		if( c.type == TGuid && !c.opt && !editor.showGUIDs )
+			return false;
+		return view == null || view.show == null || view.show.indexOf(c.name) >= 0;
 	}
-
 
 	public static function isIdScope( origin : cdb.Sheet, sheet : cdb.Sheet, ?scope ) {
 		if( origin.idCol == null ) return false;
@@ -401,7 +402,7 @@ class Cell {
 			}
 		case TString if( c.kind == Script ):  // wrap content in div because td cannot have max-height
 			v == "" ? val(" ") : html('<div class="script">${colorizeScript(c,v, sheet.idCol == null ? null : Reflect.field(obj, sheet.idCol.name))}</div>');
-		case TString, TLayer(_):
+		case TString, TLayer(_), TGuid:
 			v == "" ? val(" ") : html(spacesToNBSP(StringTools.htmlEscape(v).split("\n").join("<br/>")));
 		case TRef(sname):
 			if( v == "" )
@@ -428,7 +429,7 @@ class Cell {
 				for( c in ps.columns ) {
 					if(c.type == TString && c.kind == Script)
 						continue;
-					if( !canViewSubColumn(ps, c.name) ) continue;
+					if( !canViewSubColumn(ps, c) ) continue;
 					var h = valueHtml(c, Reflect.field(v, c.name), ps, v, scope);
 					if( h.str != "" && h.str != " " )
 					{
@@ -458,7 +459,7 @@ class Cell {
 			for( c in ps.columns ) {
 				var pval = Reflect.field(v, c.name);
 				if( pval == null && c.opt ) continue;
-				if( !canViewSubColumn(ps, c.name) ) continue;
+				if( !canViewSubColumn(ps, c) ) continue;
 				out.push(c.name+" : "+valueHtml(c, pval, ps, v, scope).str);
 			}
 			scope.pop();
@@ -830,7 +831,7 @@ class Cell {
 		switch( column.type ) {
 		case TString if( column.kind == Script ):
 			open();
-		case TInt, TFloat, TString, TId, TDynamic:
+		case TInt, TFloat, TString, TId, TDynamic, TGuid:
 			var val = value;
 			if (column.display == Percent) {
 				val *= 100;

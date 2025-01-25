@@ -416,7 +416,7 @@ class FormulasView extends hide.view.Script {
 				case TList, TProperties:
 					var t = TInst(cdefs.get(s.name+"@"+c.name),[]);
 					c.type == TList ? @:privateAccess check.checker.types.getType("Array",[t]) : t;
-				case TString, TFile:
+				case TString, TFile, TGuid:
 					tstring;
 				}
 				if( t == null ) continue;

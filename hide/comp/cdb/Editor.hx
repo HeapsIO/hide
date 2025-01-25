@@ -82,6 +82,7 @@ class Editor extends Component {
 	public var cursorStates : Array<UndoState> = [];
 	public var cursorIndex : Int = 0;
 	public var formulas : Formulas;
+	public var showGUIDs = false;
 
 	public var gradientEditor: GradientEditor;
 
@@ -2124,9 +2125,23 @@ class Editor extends Component {
 			})});
 
 			switch(col.type) {
-			case TId | TString:
+			case TId | TString | TGuid:
 				menu.push({ label : "Sort", click: () -> table.sortBy(col), enabled : table.displayMode != AllProperties });
 			default:
+			}
+
+			var hasGUID = false;
+			for( s in base.sheets )
+				for( c in s.columns )
+					if( c.type == TGuid ) {
+						hasGUID = true;
+						break;
+					}
+			if( hasGUID ) {
+				menu.push({ label : "Display GUIDs", checked : showGUIDs, click : function() {
+					showGUIDs = !showGUIDs;
+					refresh();
+				} });
 			}
 		}
 
