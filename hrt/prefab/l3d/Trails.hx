@@ -672,8 +672,6 @@ class TrailObj extends h3d.scene.Mesh {
 				computedAxis.normalize();
 
 				var p = new h3d.Vector(cur.x, cur.y, cur.z);
-				if (cur.w < 0.1)
-					trace("break");
 				addEdge( p, u, cur.w, tmpNormal, tmpBinormal );
 
 				if ( cur.next != null && cur.speed < prefab.maxSpeed && cur.speed > prefab.minSpeed )
