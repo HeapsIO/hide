@@ -90,6 +90,7 @@ class DomkitViewer {
 #elseif domkit
 
 import h2d.domkit.BaseComponents;
+import domkit.MarkupParser.Markup;
 
 class DomkitInterp extends hscript.Async.AsyncInterp {
 
@@ -107,76 +108,6 @@ class DomkitInterp extends hscript.Async.AsyncInterp {
 
 }
 
-class SourceComponent extends domkit.Component<h2d.Object, h2d.Object> {
-
-	var res : hxd.res.Resource;
-	var viewer : DomkitViewer;
-	var isRec = false;
-
-	public function new(name, res, viewer) {
-		this.res = res;
-		this.viewer = viewer;
-		this.name = name;
-		res.watch(function() {
-			reload();
-			@:privateAccess viewer.rebuild();
-		});
-		reload();
-		super(name, makeComp, parent);
-	}
-
-	function reload() {
-		var fullText = res.entry.getText();
-		var data = DomkitFile.parse(fullText);
-		var p = new domkit.MarkupParser();
-		p.allowRawText = true;
-		var dml = p.parse(data.dml, res.entry.path, fullText.indexOf(data.dml));
-		switch( dml.kind ) {
-		case Node(null):
-			for( c in dml.children )
-				switch( c.kind ) {
-				case Node(n) if( n.split(":")[0] == name ):
-					dml = c;
-					break;
-				default:
-				}
-		default:
-		}
-		var parentName = "flow"; // todo : extract from source
-		switch( dml.kind ) {
-		case Node(n):
-			var p = n.split(":");
-			if( p.length > 1 )
-				parentName = p[1];
-		default:
-		}
-		argsNames = [];
-		if( dml.arguments != null ) {
-			for( e in dml.arguments )
-				switch( e.value ) {
-				case Code(n): argsNames.push(n);
-				default:
-				}
-		}
-		parent = cast @:privateAccess viewer.resolveComponent(parentName);
-	}
-
-	function makeComp(args:Array<Dynamic>, parent) : h2d.Object {
-		if( isRec ) {
-			isRec = false;
-			var p = this.parent;
-			while( p is SourceComponent )
-				p = p.parent;
-			var obj : h2d.Object = @:privateAccess viewer.compMake(p, args, parent);
-			if( obj.dom != null ) @:privateAccess obj.dom.component = this;
-			return obj;
-		}
-		isRec = true;
-		return @:privateAccess viewer.createComponent(res, parent, args);
-	}
-
-}
-
 class DomkitBaseContext {
 
 	public function new() {
@@ -188,35 +119,36 @@ class DomkitBaseContext {
 
 }
 
+private typedef CompMap = Map<String, Array<Dynamic> -> h2d.Object -> h2d.Object>;
+
 class DomkitViewer extends h2d.Object {
 
 	var resource : hxd.res.Resource;
 	var style : DomkitStyle;
 	var current : h2d.Object;
 	var currentObj : h2d.Object;
-	var interp : DomkitInterp;
 	var contexts : Array<Dynamic> = [];
 	var variables : Map<String,Dynamic> = [];
 	var rebuilding = false;
 	var rootObject : h2d.Object;
 	var componentsPaths : Array<String> = [];
-	var createRootArgs : Array<Dynamic>;
-	var evaluatedParams : Dynamic;
 	var loadedComponents : Array<domkit.Component<h2d.Object, h2d.Object>> = [];
-	var compHooks : Map<String,Array<Dynamic> -> h2d.Object -> h2d.Object> = [];
+	var compHooks : CompMap = [];
 	var definedClasses : Array<String> = [];
 	var loadedResources : Array<{ r : hxd.res.Resource, wasLoaded : Bool }> = [];
+
+	var tmpCompMap : CompMap;
 
 	public function new( style : DomkitStyle, res : hxd.res.Resource, ?parent ) {
 		super(parent);
 		this.style = style;
 		this.resource = res;
-		loadComponents(res);
+		loadResource(res);
 		addContext(new DomkitBaseContext());
 		rebuildDelay();
 	}
 
-	function loadComponents( res : hxd.res.Resource ) {
+	function loadResource( res : hxd.res.Resource ) {
 		var loaded = @:privateAccess style.resources.indexOf(res) >= 0;
 		loadedResources.push({ r : res, wasLoaded: loaded });
 		if( !loaded ) style.load(res);
@@ -283,10 +215,10 @@ class DomkitViewer extends h2d.Object {
 		loadedComponents = [];
 	}
 
-	public dynamic function onError( e : domkit.Error ) @:privateAccess {
-		var text = resource.entry.getText();
+	public dynamic function onError( res : hxd.res.Resource, e : domkit.Error ) @:privateAccess {
+		var text = res.entry.getText();
 		var line = text.substr(0, e.pmin).split("\n").length;
-		var err = resource.entry.path+":"+line+": "+e.message;
+		var err = res.entry.path+":"+line+": "+e.message;
 		style.errors.remove(err);
 		style.errors.push(err);
 		style.refreshErrors(getScene());
@@ -317,10 +249,17 @@ class DomkitViewer extends h2d.Object {
 
 		var root = new h2d.Flow();
 		root.dom = domkit.Properties.create("flow",root,{ "class" : "debugRoot", layout : "stack", "content-align" : "middle middle", "fill-width" : "true", "fill-height" : "true" });
-		var obj = createComponent(resource, root, null);
 
-		if( evaluatedParams != null ) {
-			var classes : Array<String> = Std.downcast(evaluatedParams.classes,Array);
+		tmpCompMap = compHooks.copy();
+		var inf = loadComponents(resource);
+
+		var obj : h2d.Object = null;
+		var mainComp = inf.comps[inf.comps.length - 1];
+		if( mainComp != null )
+			obj = mainComp([], root);
+
+		if( inf.params != null && obj != null ) {
+			var classes : Array<String> = Std.downcast(inf.params.classes,Array);
 			if( classes != null ) {
 				var checks = new h2d.Flow(root);
 				checks.dom = domkit.Properties.create("flow",checks,{ "class" : "debugClasses" });
@@ -343,7 +282,7 @@ class DomkitViewer extends h2d.Object {
 					c.onChange = function() {
 						obj.dom.toggleClass(cl, c.selected);
 						if( c.selected ) definedClasses.push(cl) else definedClasses.remove(cl);
-						if( Reflect.field(evaluatedParams,cl) != null )
+						if( Reflect.field(inf.params,cl) != null )
 							rebuild();
 					};
 				}
@@ -369,37 +308,72 @@ class DomkitViewer extends h2d.Object {
 		@:privateAccess style.onChange(); // force trigger reload (css might have changed)
 	}
 
-	function createComponent( res : hxd.res.Resource, parent, args : Array<Dynamic> ) {
+	inline function error(msg,pmin,pmax) {
+		throw new domkit.Error(msg, pmin, pmax);
+	}
+
+	function loadComponents( res : hxd.res.Resource ) {
 		var fullText = res.entry.getText();
 		var data = DomkitFile.parse(fullText);
-		var comp = null;
-		var prev = interp;
-		createRootArgs = args;
+		var inf = { comps : [], params : null };
 		try {
 			var parser = new domkit.MarkupParser();
 			parser.allowRawText = true;
 			var eparams = parseCode(data.params, fullText.indexOf(data.params));
 			var expr = parser.parse(data.dml,res.entry.path, fullText.indexOf(data.dml));
-			interp = makeInterp();
-			var vparams : Dynamic = evalCode(eparams);
+			var interp = makeInterp();
+			var vparams : Dynamic = evalCode(interp,eparams);
 			if( vparams != null ) {
-				for( f in Reflect.fields(vparams) )
-					interp.variables.set(f, definedClasses.indexOf(f) < 0 ? Reflect.field(vparams,f) : null);
+				for( f in Reflect.fields(vparams) ) {
+					var forceNull = res == resource && definedClasses.indexOf(f) >= 0;
+					interp.variables.set(f, forceNull ? null : Reflect.field(vparams,f));
+				}
 			}
-			comp = addRec(expr, parent, true);
-			interp = prev;
-			evaluatedParams = vparams;
+			for( m in expr.children ) {
+				switch( m.kind ) {
+				case Node(name):
+					var parts = name.split(":");
+					var name = parts[0];
+					if( tmpCompMap.exists(name) )
+						error("Duplicate component "+name, m.pmin, m.pmax);
+					var parentType = parts[1] ?? "flow";
+					var compParent = resolveComponent(parentType, m.pmin);
+					var comp = domkit.Component.get(name, true);
+					if( comp == null ) {
+						comp = new domkit.Component(name,null,compParent);
+						domkit.CssStyle.CssData.registerComponent(comp);
+						loadedComponents.push(cast comp);
+					}
+					var args = [];
+					if( m.arguments != null ) {
+						for( arg in m.arguments ) {
+							switch( arg.value ) {
+							case Code(code):
+								var code = parseCode(code.split(":")[0], arg.pmin);
+								switch( code.e ) {
+								case EIdent(a):
+									args.push(a);
+									continue;
+								default:
+								}
+							default:
+							}
+							error("Invalid argument decl", arg.pmin, arg.pmax);
+						}
+					}
+					var make = makeComponent.bind(res, m, comp, args, interp);
+					tmpCompMap.set(name, make);
+					inf.comps.push(make);
+				default:
+				}
+			}
+			inf.params = vparams;
 		} catch( e : domkit.Error ) {
-			interp = prev;
-			onError(e);
-			return null;
+			onError(res, e);
 		} catch( e : hscript.Expr.Error ) {
-			interp = prev;
-			onError(new domkit.Error(e.toString(), e.pmin, e.pmax));
-			return null;
+			onError(res, new domkit.Error(e.toString(), e.pmin, e.pmax));
 		}
-		createRootArgs = null;
-		return comp;
+		return inf;
 	}
 
 	function parseCode( codeStr : String, pos : Int ) {
@@ -411,7 +385,7 @@ class DomkitViewer extends h2d.Object {
 		}
 	}
 
-	function evalCode( e : hscript.Expr ) : Dynamic {
+	function evalCode( interp : hscript.Interp, e : hscript.Expr ) : Dynamic {
 		return @:privateAccess interp.expr(e);
 	}
 
@@ -428,96 +402,70 @@ class DomkitViewer extends h2d.Object {
 		}
 	}
 
-	function resolveComponent( name : String ) {
-		var c = domkit.Component.get(name, true);
-		if( c != null )
-			return c;
-		for( dir in componentsPaths ) {
-			var r = try hxd.res.Loader.currentInstance.load(dir+"/"+name+".domkit") catch( e : hxd.res.NotFound ) continue;
-			var c = new SourceComponent(name, r, this);
-			loadedComponents.push(c);
-			return c;
+	function makeComponent( res : hxd.res.Resource, m : Markup, comp : domkit.Component<Dynamic,Dynamic>, argNames : Array<String>, interp : DomkitInterp, args : Array<Dynamic>, parent : h2d.Object ) : h2d.Object {
+		var prev = interp.variables.copy();
+		var obj = null;
+		try {
+			var fmake = compHooks.get(comp.parent.name);
+			if( fmake == null ) fmake = comp.parent.make;
+			obj = fmake(args, parent);
+			if( obj.dom == null )
+				obj.dom = new domkit.Properties(obj, cast comp);
+			else
+				@:privateAccess obj.dom.component = cast comp;
+			if( args.length > 0 && argNames.length > 0 ) {
+				for( i => arg in argNames )
+					interp.variables.set(arg, args[i]);
+			}
+			for( c in m.children )
+				addRec(c, interp, obj);
+		} catch( e : domkit.Error ) {
+			onError(res, e);
+		} catch( e : hscript.Expr.Error ) {
+			onError(res, new domkit.Error(e.toString(), e.pmin, e.pmax));
 		}
-		return null;
+		interp.variables = prev;
+		return obj;
 	}
 
-	inline function compMake<T,R>( c : domkit.Component<T,R>, args : Array<Dynamic>, parent : T ) : R {
-		var f = compHooks.get(c.name);
-		if( f != null )
-			return cast f(args,cast parent);
-		return c.make(args, cast parent);
+	function resolveComponent( name : String, pmin : Int ) {
+		var comp = domkit.Component.get(name, true);
+		if( comp == null )
+			error("Unknown component "+name, pmin, pmin + name.length);
+		return comp;
 	}
 
-	function addRec( e : domkit.MarkupParser.Markup, parent : h2d.Object, isRoot ) {
-		var comp : h2d.Object = null;
+	function addRec( e : domkit.MarkupParser.Markup, interp : DomkitInterp, parent : h2d.Object ) {
 		switch( e.kind ) {
-		case Node(null):
-			for( c in e.children )
-				comp = addRec(c, parent, isRoot);
 		case Node(name):
 			if( e.condition != null ) {
 				var expr = parseCode(e.condition.cond, e.condition.pmin);
-				if( !evalCode(expr) )
-					return null;
+				if( !evalCode(interp, expr) )
+					return;
 			}
-			var c = domkit.Component.get(name, true);
-			var explicitParent = null;
-			// if we are top component, resolve our parent component
-			if( isRoot ) {
-				var parts = name.split(":");
-				var parent = null;
-				if( parts.length == 2 ) {
-					name = parts[0];
-					c = domkit.Component.get(name, true);
-					parent = resolveComponent(parts[1]);
-					explicitParent = parent;
-					if( parent == null )
-						throw new domkit.Error("Unknown parent component "+parts[1], e.pmin + name.length, e.pmin + name.length + parts[1].length + 1);
-				}
-				if( parent == null && (c == null || loadedComponents.indexOf(cast c) >= 0) )
-					parent = domkit.Component.get("flow");
-				if( c == null ) {
-					c = new domkit.Component(name,function(args,p) {
-						var obj = compMake(c.parent,args,p);
-						if( obj.dom != null )
-							@:privateAccess obj.dom.component = c;
-						return obj;
-					},parent);
-					domkit.CssStyle.CssData.registerComponent(c);
-					@:privateAccess c.argsNames = [];
-					loadedComponents.push(cast c);
-				}
-			} else if( c == null ) {
-				c = resolveComponent(name);
-			}
-			if( c == null )
-				throw new domkit.Error("Unknown component "+name, e.pmin, e.pmax);
+			var comp = resolveComponent(name, e.pmin+1);
 			var args = [for( a in e.arguments ) {
 				var v : Dynamic = switch( a.value ) {
 				case RawValue(v): v;
 				case Code(code):
 					var code = parseCode(code, a.pmin);
-					evalCode(code);
+					evalCode(interp, code);
 				}
 				v;
 			}];
-			if( isRoot && e.arguments.length == 0 && @:privateAccess c.argsNames != null ) {
-				for( a in @:privateAccess c.argsNames ) {
-					var v : Dynamic = interp.variables.get(a);
-					args.push(v);
-				}
-			}
-			if( createRootArgs != null ) {
-				args = createRootArgs;
-				createRootArgs = null;
-				for( i => a in @:privateAccess c.argsNames )
-					interp.variables.set(a, args[i]);
-			}
+			var parentObj = cast(parent.dom?.contentRoot,h2d.Object) ?? parent;
+			var make = tmpCompMap.get(comp.name);
+			var obj = make != null ? make(args, parentObj) : comp.make(args, parentObj);
+			if( obj == null )
+				return;
+			var p : domkit.Properties<Dynamic> = obj.dom;
+			if( p == null )
+				p = obj.dom = new domkit.Properties(obj, cast comp);
+
 			var attributes = {};
-			var objId = null, objIdArray = false;
 			for( a in e.attributes ) {
 				if( a.name == "id" ) {
-					objId = switch( a.value ) {
+					var objId = switch( a.value ) {
 					case RawValue("true"):
 						var name = null;
 						for( a in e.attributes )
@@ -527,7 +475,6 @@ class DomkitViewer extends h2d.Object {
 							}
 						name;
 					case RawValue(name) if( StringTools.endsWith(name,"[]") ):
-						objIdArray = true;
 						name.substr(0,name.length - 2);
 					case RawValue(name):
 						name;
@@ -544,51 +491,13 @@ class DomkitViewer extends h2d.Object {
 					// skip (init after)
 				}
 			}
-			var childrenCreated = false;
-			if( isRoot ) {
-				// only create parent structure, since we will create our own structure here
-				@:privateAccess c.createHook = function(obj) {
-					rootObject = obj;
-					interp.variables.set("this", obj);
-					// create children immediately as our post-init code might require some components to be init
-					childrenCreated = true;
-					for( c in e.children )
-						addRec(c, obj, false);
-				};
-			}
-			var obj : Dynamic;
-			if( explicitParent != null && args.length == 0 ) {
-				// always create explicit parent component if specified (don't use class version)
-				obj = compMake(explicitParent, [], parent.dom?.contentRoot);
-				if( obj.dom != null ) obj.dom.component = c;
-			} else
-				obj = compMake(c, args, parent.dom?.contentRoot);
-			var p : domkit.Properties<Dynamic> = obj.dom;
-			if( p == null ) p = obj.dom = new domkit.Properties(obj, c);
 			p.initAttributes(attributes);
-			if( isRoot ) {
-				rootObject = obj;
-				@:privateAccess c.createHook = null;
-				interp.variables.set("this", obj);
-			}
-			if( objId != null ) {
-				if( objIdArray ) {
-					var arr : Array<Dynamic> = try Reflect.getProperty(rootObject, objId) catch( e : Dynamic ) null;
-					if( arr == null ) {
-						arr = [];
-						try Reflect.setProperty(rootObject, objId, arr) catch( e : Dynamic ) {};
-					}
-					arr.push(p.obj);
-				} else {
-					try Reflect.setProperty(rootObject, objId, p.obj) catch( e : Dynamic ) {}
-				}
-			}
 			for( a in e.attributes ) {
 				switch( a.value ) {
 				case RawValue(_):
 				case Code(code):
-					var h = p.component.getHandler(domkit.Property.get(a.name));
-					var v : Dynamic = evalCode(parseCode(code, a.pmin));
+					var h = comp.getHandler(domkit.Property.get(a.name));
+					var v : Dynamic = evalCode(interp, parseCode(code, a.pmin));
 					@:privateAccess p.initStyle(a.name, v);
 					if( h == null ) {
 						// might be a class field
@@ -598,23 +507,19 @@ class DomkitViewer extends h2d.Object {
 					}
 				}
 			}
-			if( !childrenCreated ) {
-				for( c in e.children )
-					addRec(c, cast p.contentRoot, false);
-			}
-			comp = cast p.obj;
+			for( c in e.children )
+				addRec(c, interp, cast p.contentRoot);
 		case Text(text):
 			var tf = new h2d.HtmlText(hxd.res.DefaultFont.get(), parent);
 			tf.dom = domkit.Properties.create("html-text", tf);
 			tf.text = text;
-			comp = tf;
 		case For(cond):
 			var expr = parseCode("for"+cond+"{}", e.pmin);
 			switch( expr.e ) {
 			case EFor(n,it,_):
 				interp.executeLoop(n, it, function() {
 					for( c in e.children )
-						addRec(c, parent, false);
+						addRec(c, interp, parent);
 				});
 			default:
 				throw "assert";
@@ -624,7 +529,6 @@ class DomkitViewer extends h2d.Object {
 		case Macro(id):
 			throw new domkit.Error("Macro not supported", e.pmin);
 		}
-		return comp;
 	}
 
 }
