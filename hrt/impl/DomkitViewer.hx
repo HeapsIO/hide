@@ -33,6 +33,12 @@ class DomkitViewer {
 	}
 
 	public static function loadSource( path : String, pos : Position, fields : Array<Field> ) {
+		var name = path.split("/").pop();
+		var dotPos = name.lastIndexOf(".");
+		if( dotPos >= 0 ) {
+			path = path.substr(0, path.length - name.length + dotPos);
+			name = name.substr(dotPos+1);
+		}
 		path += ".domkit";
 		var fullPath = try Context.resolvePath(path) catch( e : Dynamic ) return null;
 		if( fullPath == null )
@@ -44,11 +50,22 @@ class DomkitViewer {
 		var index = fullData.indexOf(data.dml);
 		try {
 			var m = p.parse(data.dml, fullPath, index);
-			switch( m.children[0].kind ) {
-			case Node(n) if( n.indexOf(":") >= 0 ): m.children[0].kind = Node(n.split(":")[0]);
-			default:
+			for( c in m.children ) {
+				switch( c.kind ) {
+				case Node(n) if( n.indexOf(":") >= 0 ): c.kind = Node(n.split(":")[0]);
+				default:
+				}
+				if( c.arguments != null ) c.arguments = null;
 			}
-			var params = new hscript.Parser().parseString(data.params);
+			for( c in m.children ) {
+				switch( c.kind ) {
+				case Node(n) if( n == name ):
+					m.children = [c];
+					break;
+				default:
+				}
+			}
+			var params = new hscript.Parser().parseString(data.params, path);
 			var dynParams = new Map();
 			var hasDynParam = false;
 			switch( params.e ) {
@@ -83,6 +100,10 @@ class DomkitViewer {
 			Context.error(e.message, Context.makePosition({ file : fullPath, min : e.pmin, max : e.pmax }));
 			return null;
 		}
+	}
+
+	public static function init() {
+		domkit.Macros.onSourceLoad = loadSource;
 	}
 
 }
@@ -143,7 +164,6 @@ class DomkitViewer extends h2d.Object {
 		super(parent);
 		this.style = style;
 		this.resource = res;
-		loadResource(res);
 		addContext(new DomkitBaseContext());
 		rebuildDelay();
 	}
@@ -201,7 +221,11 @@ class DomkitViewer extends h2d.Object {
 		super.onRemove();
 		if( currentObj != null )
 			currentObj.remove();
-		// force re-watch
+		unload();
+	}
+
+	function unload() {
+		// force rewatch
 		for( r in loadedResources ) {
 			if( r.wasLoaded )
 				style.load(r.r);
@@ -212,6 +236,7 @@ class DomkitViewer extends h2d.Object {
 			@:privateAccess domkit.Component.COMPONENTS.remove(c.name);
 			@:privateAccess domkit.CssStyle.CssData.COMPONENTS.remove(c);
 		}
+		loadedResources = [];
 		loadedComponents = [];
 	}
 
@@ -250,7 +275,10 @@ class DomkitViewer extends h2d.Object {
 		var root = new h2d.Flow();
 		root.dom = domkit.Properties.create("flow",root,{ "class" : "debugRoot", layout : "stack", "content-align" : "middle middle", "fill-width" : "true", "fill-height" : "true" });
 
+		unload();
 		tmpCompMap = compHooks.copy();
+		loadResource(resource);
+
 		var inf = loadComponents(resource);
 
 		var obj : h2d.Object = null;
@@ -305,7 +333,12 @@ class DomkitViewer extends h2d.Object {
 		current = root;
 		currentObj = obj;
 
+		var errors = @:privateAccess style.errors.copy();
 		@:privateAccess style.onChange(); // force trigger reload (css might have changed)
+		if( errors.length > 0 ) {
+			@:privateAccess style.errors = errors.concat(style.errors);
+			@:privateAccess style.refreshErrors(getScene());
+		}
 	}
 
 	inline function error(msg,pmin,pmax) {
@@ -316,7 +349,7 @@ class DomkitViewer extends h2d.Object {
 		var fullText = res.entry.getText();
 		var data = DomkitFile.parse(fullText);
 		var inf = { comps : [], params : null };
-		try {
+		handleErrors(res, function() {
 			var parser = new domkit.MarkupParser();
 			parser.allowRawText = true;
 			var eparams = parseCode(data.params, fullText.indexOf(data.params));
@@ -368,21 +401,13 @@ class DomkitViewer extends h2d.Object {
 				}
 			}
 			inf.params = vparams;
-		} catch( e : domkit.Error ) {
-			onError(res, e);
-		} catch( e : hscript.Expr.Error ) {
-			onError(res, new domkit.Error(e.toString(), e.pmin, e.pmax));
-		}
+		});
 		return inf;
 	}
 
 	function parseCode( codeStr : String, pos : Int ) {
 		var parser = new hscript.Parser();
-		try {
-			return parser.parseString(codeStr);
-		} catch( e : hscript.Expr.Error ) {
-			throw new domkit.Error(e.toString(), e.pmin + pos, e.pmax + pos);
-		}
+		return parser.parseString(codeStr, "");
 	}
 
 	function evalCode( interp : hscript.Interp, e : hscript.Expr ) : Dynamic {
@@ -402,11 +427,25 @@ class DomkitViewer extends h2d.Object {
 		}
 	}
 
+	inline function handleErrors( res : hxd.res.Resource, callb ) {
+		try {
+			callb();
+		} catch( e : domkit.Error ) {
+			onError(res, e);
+		} catch( e : hscript.Expr.Error ) {
+			var p = e.toString().split(": ");
+			p.shift();
+			var msg = p.join(": ");
+			onError(res, new domkit.Error(msg, e.pmin, e.pmax));
+		}
+	}
+
 	function makeComponent( res : hxd.res.Resource, m : Markup, comp : domkit.Component<Dynamic,Dynamic>, argNames : Array<String>, interp : DomkitInterp, args : Array<Dynamic>, parent : h2d.Object ) : h2d.Object {
 		var prev = interp.variables.copy();
 		var obj = null;
-		try {
-			var fmake = compHooks.get(comp.parent.name);
+		handleErrors(res, function() {
+			var fmake = tmpCompMap.get(comp.parent.name);
+			if( fmake == null ) fmake = compHooks.get(comp.parent.name);
 			if( fmake == null ) fmake = comp.parent.make;
 			obj = fmake(args, parent);
 			if( obj.dom == null )
@@ -417,19 +456,28 @@ class DomkitViewer extends h2d.Object {
 				for( i => arg in argNames )
 					interp.variables.set(arg, args[i]);
 			}
-			for( c in m.children )
-				addRec(c, interp, obj);
-		} catch( e : domkit.Error ) {
-			onError(res, e);
-		} catch( e : hscript.Expr.Error ) {
-			onError(res, new domkit.Error(e.toString(), e.pmin, e.pmax));
-		}
+		});
+		for( c in m.children )
+			handleErrors(res, () -> addRec(c, interp, obj));
 		interp.variables = prev;
 		return obj;
 	}
 
 	function resolveComponent( name : String, pmin : Int ) {
 		var comp = domkit.Component.get(name, true);
+		if( comp == null ) {
+			for( path in componentsPaths ) {
+				var res = try hxd.res.Loader.currentInstance.load(path+"/"+name+".domkit") catch( e : hxd.res.NotFound ) continue;
+				loadResource(res);
+				loadComponents(res);
+				comp = domkit.Component.get(name, true);
+				if( comp == null ) {
+					error(res.entry.path+" does not define component "+name, pmin, pmin + name.length);
+					return null;
+				}
+				break;
+			}
+		}
 		if( comp == null )
 			error("Unknown component "+name, pmin, pmin + name.length);
 		return comp;
