@@ -39,6 +39,7 @@ class Domkit extends FileView {
 		dmlEditor = new hide.comp.DomkitEditor(config, DML, data.dml, element.find(".dmlEditor"));
 		cssEditor = new hide.comp.DomkitEditor(config, Less, data.css, dmlEditor.checker, element.find(".cssEditor"));
 		checker = new hide.comp.DomkitEditor.DomkitChecker(config);
+		dmlEditor.checker.checker.onTopDownEnum = checker.checker.onTopDownEnum;
 		paramsEditor = new hide.comp.ScriptEditor(data.params, checker, element.find(".paramsEditor"));
 		paramsEditor.saveOnBlur = false;
 		cssEditor.onChanged = dmlEditor.onChanged = paramsEditor.onChanged = check;
@@ -97,6 +98,7 @@ class Domkit extends FileView {
 	}
 
 	function check() {
+		checker.usedEnums = [];
 		modified = prevSave.css != cssEditor.code || prevSave.dml != dmlEditor.code || prevSave.params != paramsEditor.code;
 		defineGlobals(); // redefine if types have been reloaded
 		var allParams = new Map();
@@ -154,6 +156,7 @@ class Domkit extends FileView {
 			css : trimSpaces(cssEditor.code),
 			dml : trimSpaces(dmlEditor.code),
 			params : trimSpaces(paramsEditor.code),
+			enums : checker.usedEnums.length == 0 ? null : haxe.Json.stringify(checker.usedEnums),
 		};
 		var str = hrt.impl.DomkitViewer.toStr(data);
 		prevSave = data;

@@ -262,6 +262,8 @@ class DomkitViewer extends h2d.Object {
 		var parts = ['<css>\n${data.css}\n</css>'];
 		if( data.params != '' && data.params != '{}' )
 			parts.push('<params>\n${data.params}\n</params>');
+		if( data.enums != null )
+			parts.push('<enums>\n${data.enums}\n</enums>');
 		parts.push(data.dml);
 		return parts.join('\n\n');
 	}
@@ -355,6 +357,17 @@ class DomkitViewer extends h2d.Object {
 			var eparams = parseCode(data.params, fullText.indexOf(data.params));
 			var expr = parser.parse(data.dml,res.entry.path, fullText.indexOf(data.dml));
 			var interp = makeInterp();
+			if( data.enums != null ) {
+				var enums : Array<{ path : String, constrs : Array<String> }> = haxe.Json.parse(data.enums);
+				for( e in enums ) {
+					var en = Type.resolveEnum(e.path);
+					if( en == null ) continue;
+					for( c in e.constrs ) {
+						var f : Dynamic = try Type.createEnum(en, c) catch( e : Dynamic ) Reflect.makeVarArgs((args) -> Type.createEnum(en,c,args));
+						if( f != null && !interp.variables.exists(c) ) interp.variables.set(c, f);
+					}
+				}
+			}
 			var vparams : Dynamic = evalCode(interp,eparams);
 			if( vparams != null ) {
 				for( f in Reflect.fields(vparams) ) {
@@ -427,7 +440,7 @@ class DomkitViewer extends h2d.Object {
 		}
 	}
 
-	inline function handleErrors( res : hxd.res.Resource, callb ) {
+	function handleErrors( res : hxd.res.Resource, callb ) {
 		try {
 			callb();
 		} catch( e : domkit.Error ) {
@@ -612,7 +625,7 @@ class DomkitStyle extends h2d.domkit.Style {
 
 #end
 
-typedef DomkitFileData = { css : String, params : String, dml : String };
+typedef DomkitFileData = { css : String, params : String, dml : String, ?enums : String };
 
 class DomkitFile {
 
@@ -636,10 +649,19 @@ class DomkitFile {
 			content = StringTools.trim(content);
 		}
 
+		var enums = null;
+		if( StringTools.startsWith(content,"<enums>") ) {
+			var pos = content.indexOf("</enums>");
+			enums = StringTools.trim(content.substr(7, pos - 8));
+			content = content.substr(pos + 8);
+			content = StringTools.trim(content);
+		}
+
 		return {
 			css : cssText,
 			params : paramsText,
 			dml : content,
+			enums : enums,
 		}
 	}
 

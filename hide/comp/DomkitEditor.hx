@@ -53,6 +53,7 @@ class DomkitChecker extends ScriptEditor.ScriptChecker {
 	var t_string : Type;
 	var parsers : Array<domkit.CssValue.ValueParser>;
 	var lastVariables : Map<String, domkit.CssValue> = new Map();
+	public var usedEnums : Array<{ path : String, constrs : Array<String> }> = [];
 	public var params : Map<String, Type> = new Map();
 	public var components : Map<String, TypedComponent>;
 	public var properties : Map<String, Array<TypedProperty>>;
@@ -60,6 +61,7 @@ class DomkitChecker extends ScriptEditor.ScriptChecker {
 
 	public function new(config) {
 		super(config,"domkit");
+		checker.onTopDownEnum = onEnumUsed;
 		parsers = [new h2d.domkit.BaseComponents.CustomParser()];
 		var dcfg : Array<String> = config.get("domkit.parsers");
 		if( dcfg != null ) {
@@ -72,6 +74,20 @@ class DomkitChecker extends ScriptEditor.ScriptChecker {
 				parsers.push(std.Type.createInstance(cl,[]));
 			}
 		}
+	}
+
+	function onEnumUsed(e:hscript.Checker.CEnum,f:String) {
+		for( e2 in usedEnums )
+			if( e2.path == e.name ) {
+				if( e2.constrs.indexOf(f) < 0 ) {
+					e2.constrs.push(f);
+					e2.constrs.sort(Reflect.compare);
+				}
+				return true;
+			}
+		usedEnums.push({ path : e.name, constrs : [f] });
+		usedEnums.sort(function(e1,e2) return Reflect.compare(e1.path,e2.path));
+		return true;
 	}
 
 	override function initTypes() {
@@ -401,9 +417,9 @@ class DomkitChecker extends ScriptEditor.ScriptChecker {
 		}
 	}
 
-	function typeCode( code : String, pos : Int ) : Type {
+	function typeCode( code : String, pos : Int, ?et ) : Type {
 		var e = parseCode(code, pos);
-		return @:privateAccess checker.typeExpr(e, Value);
+		return @:privateAccess checker.typeExpr(e, et == null ? Value : WithType(et));
 	}
 
 	function unify( t1 : Type, t2 : Type, comp : TypedComponent, prop : String, pos : { pmin : Int, pmax : Int } ) {
@@ -589,7 +605,7 @@ class DomkitChecker extends ScriptEditor.ScriptChecker {
 					domkitError("Too many arguments (require "+[for( a in c.arguments ) a.name].join(",")+")",a.pmin,a.pmax);
 				var t = switch( a.value ) {
 				case RawValue(_): t_string;
-				case Code(code): typeCode(code, a.pmin);
+				case Code(code): typeCode(code, a.pmin, arg.t);
 				};
 				unify(t, arg.t, c, arg.name, a);
 			}
@@ -648,22 +664,22 @@ class DomkitChecker extends ScriptEditor.ScriptChecker {
 						domkitError(c.name+" does not have property "+a.name, a.pmin, a.pmax);
 					var pt = switch( a.value ) {
 					case RawValue(_): t_string;
-					case Code(code): typeCode(code, a.vmin);
+					case Code(code): typeCode(code, a.vmin, t);
 					}
-					unify(t, pt, c, a.name, a);
+					unify(pt, t, c, a.name, a);
 					continue;
 				}
 				switch( a.value ) {
 				case RawValue(str):
 					typeProperty(pname, a.vmin, a.pmax, new domkit.CssParser().parseValue(str), c);
 				case Code(code):
-					var t = typeCode(code, a.vmin);
+					var t = typeCode(code, a.vmin, p.type);
 					unify(t, p.type, c, pname, a);
 				}
 			}
 			if( e.condition != null ) {
 				var cond = e.condition;
-			 	var t = typeCode(cond.cond, cond.pmin);
+			 	var t = typeCode(cond.cond, cond.pmin, TBool);
 				unify(t, TBool, c, "if", cond);
 			}
 			for( c in e.children )
