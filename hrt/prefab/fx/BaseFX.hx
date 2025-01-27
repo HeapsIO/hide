@@ -194,7 +194,9 @@ class BaseFXTools {
 			paramCount++;
 
 			var prop = Reflect.field(basePrefab.props, v.name);
-			if(prop == null)
+			if (prop == null)
+				prop = Reflect.field(basePrefab, v.name);
+			if (prop == null)
 				prop = hrt.prefab.DynamicShader.getDefault(v.type);
 
 			var curves = Curve.getCurves(basePrefab, v.name);

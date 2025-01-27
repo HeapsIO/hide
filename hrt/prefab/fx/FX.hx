@@ -58,14 +58,7 @@ class FXAnimation extends h3d.scene.Object {
 
 		initObjAnimations(root);
 		initEmitters(root);
-		hrt.prefab.fx.BaseFX.BaseFXTools.getCustomAnimations(root, customAnims, null);
-		if(customAnims.length == 0) customAnims = null;
-		else {
-			for (a in customAnims) {
-				a.parameters = evaluator.parameters;
-			}
-		}
-
+		updateCustomAnims(root);
 
 		events = initEvents(root, events);
 		var root = hrt.prefab.fx.BaseFX.BaseFXTools.getFXRoot(def);
@@ -93,6 +86,16 @@ class FXAnimation extends h3d.scene.Object {
 			for(c in findAll(o -> Std.downcast(o, FXAnimation))) {
 				if(c != this)
 					c.reset();
+			}
+		}
+	}
+
+	public function updateCustomAnims(root : Prefab) {
+		hrt.prefab.fx.BaseFX.BaseFXTools.getCustomAnimations(root, customAnims, null);
+		if(customAnims.length == 0) customAnims = null;
+		else {
+			for (a in customAnims) {
+				a.parameters = evaluator.parameters;
 			}
 		}
 	}
