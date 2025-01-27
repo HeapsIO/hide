@@ -121,6 +121,10 @@ class NodeGenContext {
 		expressions.push(makeAssign(v, expr));
 	}
 
+	public function getLocalTVar(name: String, type: Type) : TVar {
+		return localVars.getOrPut(name, {id: hxsl.Ast.Tools.allocVarId(), name: name, type: type, kind: Local});
+	}
+
 	function getOrAllocateFromTVar(tvar: TVar) : TVar {
 		var fullName = AstTools.getFullName(tvar);
 
@@ -365,4 +369,5 @@ class NodeGenContext {
 
 	var nodeInputInfo : Array<InputInfo>;
 	var globalVars: Map<String, ShaderGraph.ExternVarDef> = [];
+	var localVars: Map<String, TVar> = [];
 }

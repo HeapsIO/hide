@@ -267,14 +267,24 @@ class ShaderGraphGenContext {
 			var empty = true;
 			var inputs = inst.getInputs();
 
+			// Add a dependency in the node topology between matchin Var Write and Var Read
+			// so the write is done before all the reads
+			if (Std.downcast(node.node, hrt.shgraph.nodes.VarRead) != null) {
+				var write = nodes.find((f) -> f != null && Std.downcast(f.node, hrt.shgraph.nodes.VarWrite) != null);
+				if (write != null) {
+					nodeTopology[write.node.id].to.push(id);
+					nodeTopology[id].incoming ++;
+					empty = false;
+				}
+			}
 
-			// Todo : store ID of input in connections instead of relying on the "name" at runtime
 			for (inputId => connection in inst.connections) {
 				if (connection == null)
 					continue;
 				empty = false;
 				var nodeOutputs = connection.from.getOutputs();
 				var outputs = nodes[connection.from.id].outputs;
+
 				if (outputs == null) {
 					outputs = [];
 					nodes[connection.from.id].outputs = [];
@@ -293,8 +303,6 @@ class ShaderGraphGenContext {
 				nodeTopology[connection.from.id].to.push(id);
 				nodeTopology[id].incoming ++;
 				totalEdges++;
-			}
-			for (inputId => input in inputs) {
 			}
 			if (empty) {
 				nodeToExplore.push(id);
