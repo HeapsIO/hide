@@ -4,8 +4,9 @@ class TemporalFilteringShader extends h3d.shader.ScreenShader {
 
 	static var SRC = {
 
+		@:import h3d.shader.ColorSpaces;
+
 		@const var VARIANCE_CLIPPING : Bool;
-		@const var YCOCG : Bool;
 		@const var CATMULL_ROM : Bool;
 		@const var VELOCITY : Bool;
 
@@ -24,30 +25,6 @@ class TemporalFilteringShader extends h3d.shader.ScreenShader {
 		@const var KEEP_SKY_ALPHA : Bool;
 
 		var isSky : Bool;
-
-		function rgb2ycocg( rgb : Vec3 ) : Vec3 {
-			if( YCOCG ) {
-				var co = rgb.r - rgb.b;
-				var t = rgb.b + co / 2.0;
-				var cg = rgb.g - t;
-				var y = t + cg / 2.0;
-				return vec3(y, co, cg);
-			}
-			else
-				return rgb;
-		}
-
-		function ycocg2rgb( ycocg : Vec3 ) : Vec3 {
-			if( YCOCG ) {
-				var t = ycocg.r - ycocg.b / 2.0;
-				var g = ycocg.b + t;
-				var b = t - ycocg.g / 2.0;
-				var r = ycocg.g + b;
-				return vec3(r, g, b);
-			}
-			else
-				return ycocg;
-		}
 
 		function clipAABB( aabb_min : Vec3, aabb_max : Vec3, p : Vec4, q : Vec4) : Vec4	{
 			// note: only clips towards aabb center (but fast!)
@@ -191,7 +168,6 @@ class TemporalFiltering extends hrt.prefab.rfx.RendererFX {
 
 	@:s public var amount : Float;
 	@:s public var varianceClipping : Bool = true;
-	@:s public var ycocg : Bool = true;
 	@:s public var catmullRom : Bool = true;
 	@:s public var velocity : Bool = false;
 	@:s public var jitterPattern : FrustumJitter.Pattern = Still;
@@ -273,7 +249,6 @@ class TemporalFiltering extends hrt.prefab.rfx.RendererFX {
 			}
 
 			s.VARIANCE_CLIPPING = varianceClipping;
-			s.YCOCG = ycocg;
 			s.CATMULL_ROM = catmullRom;
 			s.VARIANCE_CLIPPING = varianceClipping;
 			if ( velocity ) {
@@ -304,7 +279,6 @@ class TemporalFiltering extends hrt.prefab.rfx.RendererFX {
 			<dl>
 				<dt>Amount</dt><dd><input type="range" min="0" max="1" field="amount"/></dd>
 				<dt>Variance Clipping</dt><dd><input type="checkbox" field="varianceClipping"/></dd>
-				<dt>Ycocg</dt><dd><input type="checkbox" field="ycocg"/></dd>
 				<dt>CatmullRom</dt><dd><input type="checkbox" field="catmullRom"/></dd>
 				<dt>Velocity</dt><dd><input type="checkbox" field="velocity"/></dd>
 				<div class="group" name="Jitter">
