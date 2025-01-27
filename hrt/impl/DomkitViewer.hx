@@ -11,9 +11,11 @@ import haxe.macro.Context;
 
 class DomkitViewer {
 
-	static function codeCodains( code : haxe.macro.Expr, dynParams : Map<String,Bool> ) {
+	static function codeContains( code : haxe.macro.Expr, dynParams : Map<String,Bool> ) {
 		return switch( code.expr ) {
 		case EConst(CIdent(v)) if( dynParams.exists(v) ): true;
+		case EParenthesis(e): codeContains(e,dynParams);
+		case EBinop(_,e1,e2): codeContains(e1,dynParams) || codeContains(e2,dynParams);
 		default: false;
 		}
 	}
@@ -22,14 +24,21 @@ class DomkitViewer {
 		if( m.attributes != null ) {
 			for( a in m.attributes )
 				switch( a.value ) {
-				case Code(code) if( codeCodains(code,dynParams) ):
+				case Code(code) if( codeContains(code,dynParams) ):
 					m.attributes.remove(a);
 				default:
 				}
 		}
 		if( m.children != null )
-			for( c in m.children )
+			for( c in m.children.copy() ) {
 				removeDynParamsRec(c, dynParams);
+				if( c.kind == null ) m.children.remove(c);
+			}
+		switch( m.kind ) {
+		case For(cond) if( codeContains(cond,dynParams) ):
+			m.kind = null;
+		default:
+		}
 	}
 
 	public static function loadSource( path : String, pos : Position, fields : Array<Field> ) {
