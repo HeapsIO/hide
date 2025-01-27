@@ -789,6 +789,7 @@ class Ide extends hide.tools.IdeData {
 	public function reload() {
 		hasReloaded = true;
 		fileWatcher.dispose();
+		hide.view.RemoteConsoleView.onBeforeReload();
 		js.Browser.location.reload();
 	}
 

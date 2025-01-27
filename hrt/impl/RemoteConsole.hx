@@ -87,10 +87,14 @@ class RemoteConsole {
 				s.close();
 		}
 		cSocks = [];
+		onClose();
 	}
 
 	public function isConnected() {
 		return sock != null;
+	}
+
+	public dynamic function onClose() {
 	}
 
 	public dynamic function log( msg : String ) {
