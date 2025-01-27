@@ -857,8 +857,9 @@ class CurveEditor extends hide.comp.Component {
 			if(next != null && key.time > next.time)
 				key.time = next.time - 0.01;
 
-			if(c.minValue < c.maxValue)
-				key.value = hxd.Math.clamp(key.value, c.minValue, c.maxValue);
+			// disabled until some one need it
+			// if(c.minValue < c.maxValue)
+			// 	key.value = hxd.Math.clamp(key.value, c.minValue, c.maxValue);
 
 			if(false) {
 				// TODO: This sorta works but is annoying.
