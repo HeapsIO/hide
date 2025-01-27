@@ -269,13 +269,11 @@ class ShaderGraphGenContext {
 
 			// Add a dependency in the node topology between matchin Var Write and Var Read
 			// so the write is done before all the reads
-			if (Std.downcast(node.node, hrt.shgraph.nodes.VarRead) != null) {
-				var write = nodes.find((f) -> f != null && Std.downcast(f.node, hrt.shgraph.nodes.VarWrite) != null);
-				if (write != null) {
-					nodeTopology[write.node.id].to.push(id);
-					nodeTopology[id].incoming ++;
-					empty = false;
-				}
+			var write = graph.findLocalVarWrite(Std.downcast(node.node, hrt.shgraph.nodes.VarRead));
+			if (write != null) {
+				nodeTopology[write.id].to.push(id);
+				nodeTopology[id].incoming ++;
+				empty = false;
 			}
 
 			for (inputId => connection in inst.connections) {
@@ -759,6 +757,14 @@ class Graph {
 						return true;
 				}
 			}
+
+			var write = findLocalVarWrite(Std.downcast(node, hrt.shgraph.nodes.VarRead));
+			if (write != null) {
+				if (hasCycle(write, visited))
+					return true;
+			}
+
+
 			return false;
 		}
 
@@ -772,6 +778,12 @@ class Graph {
 			return false;
 
 		return true;
+	}
+
+	public function findLocalVarWrite(read: hrt.shgraph.nodes.VarRead) : Null<hrt.shgraph.nodes.VarWrite> {
+		if (read == null)
+			return null;
+		return cast nodes.find((f) -> Std.downcast(f, hrt.shgraph.nodes.VarWrite)?.varId == read.varId);
 	}
 
 	public function addEdge(edge : Edge, checkCycles: Bool = true) {
