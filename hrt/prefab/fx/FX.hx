@@ -91,8 +91,11 @@ class FXAnimation extends h3d.scene.Object {
 	}
 
 	public function updateCustomAnims(root : Prefab) {
+		if (customAnims == null)
+			customAnims = [];
 		hrt.prefab.fx.BaseFX.BaseFXTools.getCustomAnimations(root, customAnims, null);
-		if(customAnims.length == 0) customAnims = null;
+		if(customAnims.length == 0)
+			customAnims = null;
 		else {
 			for (a in customAnims) {
 				a.parameters = evaluator.parameters;
