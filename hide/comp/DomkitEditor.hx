@@ -327,13 +327,8 @@ class DomkitChecker extends ScriptEditor.ScriptChecker {
 						}
 					if( !dup )
 						pl.push(p);
-				} else {
-					switch( f.t ) {
-					case TFun(_):
-					default:
-						comp.vars.set(f.name, f.t);
-					}
-				}
+				} else if( f.canWrite )
+					comp.vars.set(f.name, f.t);
 			}
 			cdefs.push({ name : name, c : c });
 		}
