@@ -42,7 +42,7 @@ class DomkitViewer {
 	}
 
 	public static function loadSource( path : String, pos : Position, fields : Array<Field> ) {
-		var name = path.split("/").pop();
+		var name = path.split("/").pop().split("_").join("-");
 		var dotPos = name.lastIndexOf(".");
 		if( dotPos >= 0 ) {
 			path = path.substr(0, path.length - name.length + dotPos);
@@ -66,14 +66,21 @@ class DomkitViewer {
 				}
 				if( c.arguments != null ) c.arguments = null;
 			}
+			var found = null;
 			for( c in m.children ) {
 				switch( c.kind ) {
 				case Node(n) if( n == name ):
-					m.children = [c];
+					found = c;
 					break;
 				default:
 				}
 			}
+			if( found == null ) {
+				Context.error("Could not find definition for component '"+name+"'", Context.currentPos());
+				return null;
+			}
+			m.children = [found];
+
 			var params = new hscript.Parser().parseString(data.params, path);
 			var dynParams = new Map();
 			var hasDynParam = false;

@@ -167,7 +167,7 @@ class Domkit extends FileView {
 	}
 
 	override function getDefaultContent() {
-		var tag = getPath().split("/").pop().split(".").shift();
+		var tag = getPath().split("/").pop().split(".").shift().split("_").join("-");
 		return haxe.io.Bytes.ofString('<css>\n$tag {\n}\n</css>\n<$tag>\n</$tag>');
 	}
 
