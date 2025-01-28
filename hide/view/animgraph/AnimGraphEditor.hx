@@ -17,7 +17,7 @@ class AnimGraphEditor extends GenericGraphEditor {
     var animGraph : hrt.animgraph.AnimGraph;
     public var previewPrefab : hrt.prefab.Prefab;
 
-    var parametersList : hide.Element;
+    var parametersList : hide.comp.FancyArray<hrt.animgraph.AnimGraph.Parameter>;
     var previewAnimation : AnimGraphInstance = null;
 
     var previewNode : hrt.animgraph.nodes.AnimNode = null;
@@ -50,7 +50,52 @@ class AnimGraphEditor extends GenericGraphEditor {
         addParameterBtn.click((e) -> {
             addParameter();
         });
-        parametersList = new Element("<ul></ul>").appendTo(parameters);
+
+        parametersList = new hide.comp.FancyArray<hrt.animgraph.AnimGraph.Parameter>(parameters, "Parameters", saveDisplayKey);
+        parametersList.getItems = () -> animGraph.parameters;
+        parametersList.getItemName = (param) -> param.name;
+        parametersList.setItemName = (param, name) -> {
+            var prev = param.name;
+            param.name = name;
+            undo.change(Field(param, "name", prev), () ->  {
+                var toRefresh = animGraph.nodes.filter((n) -> Std.downcast(n, hrt.animgraph.nodes.FloatParameter)?.parameter == param);
+                for (node in toRefresh) {
+                    graphEditor.refreshBox(node.id);
+                }
+                parametersList.refresh();
+            });
+            var toRefresh = animGraph.nodes.filter((n) -> Std.downcast(n, hrt.animgraph.nodes.FloatParameter)?.parameter == param);
+            for (node in toRefresh) {
+                graphEditor.refreshBox(node.id);
+            }
+        }
+        parametersList.reorderItem = (oldIndex: Int, newIndex: Int) -> {
+            execMoveParameterTo(oldIndex, newIndex);
+        }
+        parametersList.removeItem = (index: Int) -> {
+            execRemoveParam(index);
+        }
+        parametersList.getItemContent = (param: hrt.animgraph.AnimGraph.Parameter) -> {
+            if (previewAnimation != null) {
+                var props = new Element("<ul>");
+                var slider = new Element('<li><dd>Preview</dd><input type="range" min="-1.0" max="1.0" step="0.01" value="${param.runtimeValue}"></input></li>').appendTo(props).find("input");
+                var range = new hide.comp.Range(null,slider);
+
+                range.setOnChangeUndo(undo, () -> param.runtimeValue, (v:Float) -> {
+                    param.runtimeValue = v;
+                    var runtimeParam = previewAnimation.parameterMap.get(param.name);
+                    if (runtimeParam != null) {
+                        runtimeParam.runtimeValue = param.runtimeValue;
+                    }
+                });
+
+                var def = new Element('<li><dd>Default</dd><input type="range" min="-1.0" max="1.0" step="0.01" value="${param.defaultValue}"></input></li>').appendTo(props).find("input");
+                var range = new hide.comp.Range(null,def);
+                range.setOnChangeUndo(undo, () -> param.defaultValue, (v:Float) -> param.defaultValue = v);
+                return props;
+            }
+            return null;
+        }
 
         refreshPamamList();
 
@@ -65,7 +110,7 @@ class AnimGraphEditor extends GenericGraphEditor {
         new AnimList(propertiesContainer, null, getAnims(scenePreview, {animDirectory: animGraph.animFolder, assetPath: state.path}));
 
         graphEditor.element.get(0).addEventListener("dragover", (e: js.html.DragEvent) -> {
-            if (e.dataTransfer.types.contains("index"))
+            if (e.dataTransfer.types.contains(parametersList.getDragKeyName()))
                 e.preventDefault(); // prevent default to allow drop
 
             if (e.dataTransfer.types.contains(AnimList.dragEventKey))
@@ -78,7 +123,7 @@ class AnimGraphEditor extends GenericGraphEditor {
             // Handle drag from Parameters list
 
 
-            var paramIndex = Std.parseInt(e.dataTransfer.getData("index"));
+            var paramIndex = Std.parseInt(e.dataTransfer.getData(parametersList.getDragKeyName()));
             if (paramIndex != null) {
                 e.preventDefault();
                 var inst = new hrt.animgraph.nodes.FloatParameter();
@@ -321,132 +366,132 @@ class AnimGraphEditor extends GenericGraphEditor {
     }
 
     function refreshPamamList() {
-        parametersList.html("");
-        for (paramIndex => param in animGraph.parameters) {
-            var paramElement = new Element('<graph-parameter>
-                <header>
-                    <div class="reorder ico ico-reorder" draggable="true"></div>
-                    <div class="ico ico-chevron-down toggle-open"></div>
-                    <input type="text" value="${param.name}" class="fill"></input>
-                    <button-2 class="menu"><div class="ico ico-ellipsis-v"/></button-2>
-                </header>
-            </graph-parameter>').appendTo(parametersList);
+        parametersList.refresh();
+        // for (paramIndex => param in animGraph.parameters) {
+        //     var paramElement = new Element('<graph-parameter>
+        //         <header>
+        //             <div class="reorder ico ico-reorder" draggable="true"></div>
+        //             <div class="ico ico-chevron-down toggle-open"></div>
+        //             <input type="text" value="${param.name}" class="fill"></input>
+        //             <button-2 class="menu"><div class="ico ico-ellipsis-v"/></button-2>
+        //         </header>
+        //     </graph-parameter>').appendTo(parametersList);
 
-            var open : Bool = getDisplayState('param.${paramIndex}') ?? false;
-            paramElement.toggleClass("folded", open);
+        //     var open : Bool = getDisplayState('param.${paramIndex}') ?? false;
+        //     paramElement.toggleClass("folded", open);
 
-            var name = paramElement.find("input");
-            name.on("change", (e) -> {
-                var prev = param.name;
-                var curr = name.val();
+        //     var name = paramElement.find("input");
+        //     name.on("change", (e) -> {
+        //         var prev = param.name;
+        //         var curr = name.val();
 
-                function exec(isUndo: Bool) {
-                    if (!isUndo) {
-                        param.name = curr;
-                    } else {
-                        param.name = prev;
-                    }
-                    name.val(param.name);
-                    var toRefresh = animGraph.nodes.filter((n) -> Std.downcast(n, hrt.animgraph.nodes.FloatParameter)?.parameter == param);
-                    for (node in toRefresh) {
-                        graphEditor.refreshBox(node.id);
-                    }
-                }
+        //         function exec(isUndo: Bool) {
+        //             if (!isUndo) {
+        //                 param.name = curr;
+        //             } else {
+        //                 param.name = prev;
+        //             }
+        //             name.val(param.name);
+        //             var toRefresh = animGraph.nodes.filter((n) -> Std.downcast(n, hrt.animgraph.nodes.FloatParameter)?.parameter == param);
+        //             for (node in toRefresh) {
+        //                 graphEditor.refreshBox(node.id);
+        //             }
+        //         }
 
-                exec(false);
-                undo.change(Custom(exec));
-            });
+        //         exec(false);
+        //         undo.change(Custom(exec));
+        //     });
 
-            name.on("contextmenu", (e) -> {
-                e.stopPropagation();
-            });
+        //     name.on("contextmenu", (e) -> {
+        //         e.stopPropagation();
+        //     });
 
-            var toggleOpen = paramElement.find(".toggle-open");
-            toggleOpen.on("click", (e) -> {
-                open = !open;
-                saveDisplayState('param.${paramIndex}', open);
-                paramElement.toggleClass("folded", open);
-            });
+        //     var toggleOpen = paramElement.find(".toggle-open");
+        //     toggleOpen.on("click", (e) -> {
+        //         open = !open;
+        //         saveDisplayState('param.${paramIndex}', open);
+        //         paramElement.toggleClass("folded", open);
+        //     });
 
-            var reorder = paramElement.find(".reorder");
-            reorder.get(0).ondragstart = (e: js.html.DragEvent) -> {
-                e.dataTransfer.setDragImage(paramElement.get(0), Std.int(paramElement.width()), 0);
+        //     var reorder = paramElement.find(".reorder");
+        //     reorder.get(0).ondragstart = (e: js.html.DragEvent) -> {
+        //         e.dataTransfer.setDragImage(paramElement.get(0), Std.int(paramElement.width()), 0);
 
-                e.dataTransfer.setData("index", '${paramIndex}');
-                e.dataTransfer.dropEffect = "move";
-            }
+        //         e.dataTransfer.setData(parametersList.getDragKeyName(), '${paramIndex}');
+        //         e.dataTransfer.dropEffect = "move";
+        //     }
 
-            inline function isAfter(e) {
-                return e.clientY > (paramElement.offset().top + paramElement.outerHeight() / 2.0);
-            }
+        //     inline function isAfter(e) {
+        //         return e.clientY > (paramElement.offset().top + paramElement.outerHeight() / 2.0);
+        //     }
 
-            paramElement.get(0).addEventListener("dragover", function(e : js.html.DragEvent) {
-                if (!e.dataTransfer.types.contains("index"))
-                    return;
-                var after = isAfter(e);
-                paramElement.toggleClass("hovertop", !after);
-                paramElement.toggleClass("hoverbot", after);
-                e.preventDefault();
-            });
+        //     paramElement.get(0).addEventListener("dragover", function(e : js.html.DragEvent) {
+        //         if (!e.dataTransfer.types.contains(parametersList.getDragKeyName()))
+        //             return;
+        //         var after = isAfter(e);
+        //         paramElement.toggleClass("hovertop", !after);
+        //         paramElement.toggleClass("hoverbot", after);
+        //         e.preventDefault();
+        //     });
 
-            paramElement.get(0).addEventListener("dragleave", function(e : js.html.DragEvent) {
-                if (!e.dataTransfer.types.contains("index"))
-                    return;
-                paramElement.toggleClass("hovertop", false);
-                paramElement.toggleClass("hoverbot", false);
-            });
+        //     paramElement.get(0).addEventListener("dragleave", function(e : js.html.DragEvent) {
+        //         if (!e.dataTransfer.types.contains(parametersList.getDragKeyName()))
+        //             return;
+        //         paramElement.toggleClass("hovertop", false);
+        //         paramElement.toggleClass("hoverbot", false);
+        //     });
 
-            paramElement.get(0).addEventListener("dragenter", function(e : js.html.DragEvent) {
-                if (!e.dataTransfer.types.contains("index"))
-                    return;
-                e.preventDefault();
-            });
+        //     paramElement.get(0).addEventListener("dragenter", function(e : js.html.DragEvent) {
+        //         if (!e.dataTransfer.types.contains(parametersList.getDragKeyName()))
+        //             return;
+        //         e.preventDefault();
+        //     });
 
-            paramElement.get(0).addEventListener("drop", function(e : js.html.DragEvent) {
-                var toMoveIndex = Std.parseInt(e.dataTransfer.getData("index"));
-                paramElement.toggleClass("hovertop", false);
-                paramElement.toggleClass("hoverbot", false);
-                if (paramIndex == null)
-                    return;
-                var after = isAfter(e);
-                execMoveParameterTo(toMoveIndex, paramIndex, after);
-            });
+        //     paramElement.get(0).addEventListener("drop", function(e : js.html.DragEvent) {
+        //         var toMoveIndex = Std.parseInt(e.dataTransfer.getData(parametersList.getDragKeyName()));
+        //         paramElement.toggleClass("hovertop", false);
+        //         paramElement.toggleClass("hoverbot", false);
+        //         if (paramIndex == null)
+        //             return;
+        //         var after = isAfter(e);
+        //         execMoveParameterTo(toMoveIndex, paramIndex, after);
+        //     });
 
 
-            var content = new Element("<content></content>").appendTo(paramElement);
-            var props = new Element("<ul>").appendTo(content);
-            if (previewAnimation != null) {
-                var slider = new Element('<li><dd>Preview</dd><input type="range" min="-1.0" max="1.0" step="0.01" value="${param.runtimeValue}"></input></li>').appendTo(props).find("input");
-                var range = new hide.comp.Range(null,slider);
+        //     var content = new Element("<content></content>").appendTo(paramElement);
+        //     var props = new Element("<ul>").appendTo(content);
+        //     if (previewAnimation != null) {
+        //         var slider = new Element('<li><dd>Preview</dd><input type="range" min="-1.0" max="1.0" step="0.01" value="${param.runtimeValue}"></input></li>').appendTo(props).find("input");
+        //         var range = new hide.comp.Range(null,slider);
 
-                range.setOnChangeUndo(undo, () -> param.runtimeValue, (v:Float) -> {
-                    param.runtimeValue = v;
-                    var runtimeParam = previewAnimation.parameterMap.get(param.name);
-                    if (runtimeParam != null) {
-                        runtimeParam.runtimeValue = param.runtimeValue;
-                    }
-                });
+        //         range.setOnChangeUndo(undo, () -> param.runtimeValue, (v:Float) -> {
+        //             param.runtimeValue = v;
+        //             var runtimeParam = previewAnimation.parameterMap.get(param.name);
+        //             if (runtimeParam != null) {
+        //                 runtimeParam.runtimeValue = param.runtimeValue;
+        //             }
+        //         });
 
-                var def = new Element('<li><dd>Default</dd><input type="range" min="-1.0" max="1.0" step="0.01" value="${param.defaultValue}"></input></li>').appendTo(props).find("input");
-                var range = new hide.comp.Range(null,def);
-                range.setOnChangeUndo(undo, () -> param.defaultValue, (v:Float) -> param.defaultValue = v);
-            }
+        //         var def = new Element('<li><dd>Default</dd><input type="range" min="-1.0" max="1.0" step="0.01" value="${param.defaultValue}"></input></li>').appendTo(props).find("input");
+        //         var range = new hide.comp.Range(null,def);
+        //         range.setOnChangeUndo(undo, () -> param.defaultValue, (v:Float) -> param.defaultValue = v);
+        //     }
 
-            paramElement.find("header").get(0).addEventListener("contextmenu", function (e : js.html.MouseEvent) {
-                e.preventDefault();
-                hide.comp.ContextMenu.createFromEvent(e, [
-                    {label: "Delete", click: () -> execRemoveParam(paramIndex)}
-                ]);
-            });
+        //     paramElement.find("header").get(0).addEventListener("contextmenu", function (e : js.html.MouseEvent) {
+        //         e.preventDefault();
+        //         hide.comp.ContextMenu.createFromEvent(e, [
+        //             {label: "Delete", click: () -> execRemoveParam(paramIndex)}
+        //         ]);
+        //     });
 
-            var menu = paramElement.find(".menu");
-            menu.on("click", (e) -> {
-                e.preventDefault();
-                hide.comp.ContextMenu.createDropdown(menu.get(0), [
-                    {label: "Delete", click: () -> execRemoveParam(paramIndex)}
-                ]);
-            });
-        }
+        //     var menu = paramElement.find(".menu");
+        //     menu.on("click", (e) -> {
+        //         e.preventDefault();
+        //         hide.comp.ContextMenu.createDropdown(menu.get(0), [
+        //             {label: "Delete", click: () -> execRemoveParam(paramIndex)}
+        //         ]);
+        //     });
+        // }
 
         scenePreview.onObjectLoaded = () -> {
             setPreview(cast animGraph.nodes.find((f) -> Std.downcast(f, hrt.animgraph.nodes.Output) != null));
@@ -469,14 +514,7 @@ class AnimGraphEditor extends GenericGraphEditor {
         undo.change(Custom(exec));
     }
 
-    function execMoveParameterTo(oldIndex: Int, newIndex: Int, after: Bool) {
-        if (!after) newIndex -= 1;
-		if (oldIndex == newIndex)
-			return;
-        if (newIndex < oldIndex) {
-            newIndex += 1;
-        }
-
+    function execMoveParameterTo(oldIndex: Int, newIndex: Int) {
 		function exec(isUndo: Bool) {
             if (!isUndo) {
                 var param = animGraph.parameters.splice(oldIndex, 1)[0];

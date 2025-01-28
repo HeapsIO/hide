@@ -4441,6 +4441,103 @@ graph-editor-root properties-container .anim-list {
   flex-grow: 0;
   flex-shrink: 0;
 }
+fancy-array {
+  padding: var(--basic-padding);
+  display: flex;
+  flex-direction: column;
+  list-style: none;
+  align-items: stretch;
+  overflow-y: auto;
+  gap: 2px;
+}
+fancy-array fancy-item {
+  display: flex;
+  flex-direction: column;
+  justify-items: stretch;
+  border: var(--basic-border);
+  border-radius: var(--basic-border-radius);
+  position: relative;
+}
+fancy-array fancy-item header {
+  display: flex;
+  align-items: center;
+  background-color: #202020;
+  padding: var(--basic-padding);
+  gap: 3px;
+}
+fancy-array fancy-item header .fill {
+  flex-grow: 1;
+}
+fancy-array fancy-item header input {
+  border-radius: var(--basic-border-radius);
+  border: var(--basic-border);
+}
+fancy-array fancy-item header .reorder {
+  padding: var(--basic-padding);
+}
+fancy-array fancy-item content {
+  border-top: var(--basic-border);
+  padding: var(--basic-padding);
+}
+fancy-array fancy-item content > ul {
+  padding: var(--basic-padding);
+  display: flex;
+  flex-direction: column;
+  list-style: none;
+  display: grid;
+  column-gap: 10px;
+  row-gap: 1px;
+  grid-template-columns: 2fr 5fr;
+}
+fancy-array fancy-item content > ul li {
+  grid-column: 1 / -1;
+  display: grid;
+  grid-template-columns: subgrid;
+  align-items: center;
+}
+fancy-array fancy-item content > ul li dd {
+  margin: 0;
+  text-align: right;
+}
+fancy-array fancy-item content > ul li > .hide-range {
+  display: flex;
+}
+fancy-array fancy-item content > ul li > .hide-range input[type=range] {
+  flex-grow: 1;
+}
+fancy-array fancy-item content > ul li > .hide-range input[type=text] {
+  width: 0;
+  flex-basis: 44px;
+}
+fancy-array fancy-item.folded content {
+  display: none;
+}
+fancy-array fancy-item.folded .ico-chevron-down {
+  transform: rotate(-90deg);
+}
+fancy-array fancy-item .ico-chevron-down {
+  transition: transform 0.25s;
+  transform: rotate(0deg);
+}
+fancy-array fancy-item.hovertop:before,
+fancy-array fancy-item.hoverbot:after {
+  display: block;
+  position: absolute;
+  z-index: 100;
+  margin: 0 auto;
+  width: 100%;
+  content: "";
+}
+fancy-array fancy-item:before {
+  border-top: 10px solid rgba(114, 180, 255, 0.75);
+  top: 0px;
+  pointer-events: none;
+}
+fancy-array fancy-item:after {
+  border-bottom: 10px solid rgba(114, 180, 255, 0.75);
+  bottom: 0px;
+  pointer-events: none;
+}
 center-content {
   width: 100%;
   height: 100%;
