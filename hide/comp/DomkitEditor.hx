@@ -53,6 +53,7 @@ class DomkitChecker extends ScriptEditor.ScriptChecker {
 	var t_string : Type;
 	var parsers : Array<domkit.CssValue.ValueParser>;
 	var lastVariables : Map<String, domkit.CssValue> = new Map();
+	var currentComponent : hscript.Checker.CClass;
 	public var usedEnums : Array<{ path : String, constrs : Array<String> }> = [];
 	public var params : Map<String, Type> = new Map();
 	public var components : Map<String, TypedComponent>;
@@ -111,15 +112,31 @@ class DomkitChecker extends ScriptEditor.ScriptChecker {
 		case Node(null) if( expr.children.length == 1 ): expr = expr.children[0];
 		default:
 		}
-		switch( expr.kind ) {
-		case Node(name) if( name != null ):
-			var comp = resolveComp(name.split(":")[0]);
-			if( comp != null && comp.classDef != null )
-				checker.setGlobal("this",TInst(comp.classDef,[]));
-		default:
-		}
 		try {
-			checkDMLRec(expr, true);
+			for( c in expr.children ) {
+				var prev = @:privateAccess checker.locals.copy();
+				var prevGlobals = @:privateAccess checker.globals.copy();
+
+				currentComponent = null;
+				switch( c.kind ) {
+				case Node(name):
+					var comp = resolveComp(name.split(":")[0]);
+					if( comp != null && comp.classDef != null ) {
+						currentComponent = comp.classDef;
+						checker.setGlobals(comp.classDef, true);
+						checker.setGlobal("this",TInst(comp.classDef,[]));
+					}
+					defineComponent(name, c, params);
+				default:
+					continue;
+				}
+				for( c in c.children )
+					checkDMLRec(c);
+				@:privateAccess {
+					checker.locals = prev;
+					checker.globals = prevGlobals;
+				}
+			}
 		} catch( e : hscript.Expr.Error ) {
 			throw new domkit.Error(e.toString(), e.pmin, e.pmax);
 		}
@@ -544,7 +561,7 @@ class DomkitChecker extends ScriptEditor.ScriptChecker {
 			c.arguments = parent == null ? [] : parent.arguments;
 		else {
 			c.arguments = [];
-			for( a in e.arguments ) {
+			for( i => a in e.arguments ) {
 				var type = null;
 				var name = switch( a.value ) {
 				case Code(c) if( IDENT.match(c) ):
@@ -566,6 +583,11 @@ class DomkitChecker extends ScriptEditor.ScriptChecker {
 					domkitError("Invalid parameter", a.pmin, a.pmax);
 					continue;
 				}
+				if( type == null && currentComponent != null ) {
+					var args = switch( currentComponent.constructor?.t ) { case null: null; case TFun(args,_): args; default: null; };
+					if( args != null && args[i].name == name )
+						type = args[i].t;
+				}
 				if( type == null )
 					type = params.get(name);
 				if( type == null )
@@ -584,17 +606,8 @@ class DomkitChecker extends ScriptEditor.ScriptChecker {
 		return c;
 	}
 
-	function checkDMLRec( e : domkit.MarkupParser.Markup, isRoot=false ) {
+	function checkDMLRec( e : domkit.MarkupParser.Markup ) {
 		switch( e.kind ) {
-		case Node(null):
-			for( c in e.children )
-				checkDMLRec(c,isRoot);
-		case Node(name) if( isRoot ):
-			var prev = @:privateAccess checker.locals.copy();
-			defineComponent(name, e, params);
-			for( c in e.children )
-				checkDMLRec(c);
-			@:privateAccess checker.locals = prev;
 		case Node(name):
 			var c = resolveComp(name);
 			if( c == null )

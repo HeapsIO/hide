@@ -394,10 +394,19 @@ class DomkitViewer extends h2d.Object {
 					var parentType = parts[1] ?? "flow";
 					var compParent = resolveComponent(parentType, m.pmin);
 					var comp = domkit.Component.get(name, true);
+					var inst : Dynamic = null;
 					if( comp == null ) {
 						comp = new domkit.Component(name,null,compParent);
 						domkit.CssStyle.CssData.registerComponent(comp);
 						loadedComponents.push(cast comp);
+					} else {
+						var compClass = @:privateAccess comp.classValue;
+						if( compClass != null ) {
+							inst = Type.createEmptyInstance(compClass);
+							interp.setContext(inst);
+							for( f in Reflect.fields(vparams) )
+								try Reflect.setProperty(inst, f, Reflect.field(vparams,f)) catch( e : Dynamic ) {}
+						}
 					}
 					var args = [];
 					if( m.arguments != null ) {
@@ -416,7 +425,7 @@ class DomkitViewer extends h2d.Object {
 							error("Invalid argument decl", arg.pmin, arg.pmax);
 						}
 					}
-					var make = makeComponent.bind(res, m, comp, args, interp);
+					var make = makeComponent.bind(res, m, comp, args, interp, inst);
 					tmpCompMap.set(name, make);
 					inf.comps.push(make);
 				default:
@@ -462,7 +471,7 @@ class DomkitViewer extends h2d.Object {
 		}
 	}
 
-	function makeComponent( res : hxd.res.Resource, m : Markup, comp : domkit.Component<Dynamic,Dynamic>, argNames : Array<String>, interp : DomkitInterp, args : Array<Dynamic>, parent : h2d.Object ) : h2d.Object {
+	function makeComponent( res : hxd.res.Resource, m : Markup, comp : domkit.Component<Dynamic,Dynamic>, argNames : Array<String>, interp : DomkitInterp, inst : Dynamic, args : Array<Dynamic>, parent : h2d.Object ) : h2d.Object {
 		var prev = interp.variables.copy();
 		var obj = null;
 		handleErrors(res, function() {
@@ -475,8 +484,10 @@ class DomkitViewer extends h2d.Object {
 			else
 				@:privateAccess obj.dom.component = cast comp;
 			if( args.length > 0 && argNames.length > 0 ) {
-				for( i => arg in argNames )
+				for( i => arg in argNames ) {
 					interp.variables.set(arg, args[i]);
+					if( inst != null ) try Reflect.setProperty(inst, arg, args[i]) catch( e : Dynamic ) {};
+				}
 			}
 		});
 		for( c in m.children )
