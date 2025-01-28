@@ -309,6 +309,12 @@ class Ide extends hide.tools.IdeData {
 	function get_isFocused() {
 		return js.Browser.document.hasFocus();
 	}
+	public function focus() {
+		window.focus();
+	}
+	public function blur() {
+		window.blur();
+	}
 
 	function onWindowChange() {
 		if( hasReloaded )

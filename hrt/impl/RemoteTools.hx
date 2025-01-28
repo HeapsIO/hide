@@ -67,4 +67,8 @@ class RemoteTools {
 		rc?.sendCommand("open", { file : file });
 	}
 
+	public static function openDomkit( file : String, ?line : Int, ?column : Int ) {
+		rc?.sendCommand("open", { file : file, line : line, column : column });
+	}
+
 }

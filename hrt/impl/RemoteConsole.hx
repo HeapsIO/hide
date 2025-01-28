@@ -290,12 +290,20 @@ class RemoteConsoleConnection {
 			return;
 		if( args.cdbsheet != null ) {
 			var sheet = hide.Ide.inst.database.getSheet(args.cdbsheet);
-			hide.Ide.inst.open("hide.view.CdbTable", {}, function(view) {
+			hide.Ide.inst.open("hide.view.CdbTable", {}, null, function(view) {
+				hide.Ide.inst.focus();
 				Std.downcast(view,hide.view.CdbTable).goto(sheet,args.line,args.column);
 			});
 		} else {
 			hide.Ide.inst.showFileInResources(args.file);
-			hide.Ide.inst.openFile(args.file);
+			hide.Ide.inst.openFile(args.file, null, function(view) {
+				hide.Ide.inst.focus();
+				var domkit = Std.downcast(view, hide.view.Domkit);
+				if (domkit != null && args.line != null) {
+					@:privateAccess domkit.cssEditor.focus();
+					@:privateAccess domkit.cssEditor.editor.setPosition({column: args.column, lineNumber: args.line+1});
+				}
+			});
 		}
 	}
 #end
