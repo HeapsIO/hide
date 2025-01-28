@@ -137,13 +137,19 @@
 	if (file == null)
 		return;
 	var ext = file.split(".").pop().toLowerCase();
-	if( ext != "js" && ext != "css" ) return;
-	if (timer != 0)
-		clearTimeout(timer);
-	timer = setTimeout(function() {
-		reloadWatcher.close();
-		hide.Ide.inst.reload();
-	}, 1000);
+	if( ext == "js")
+	{
+		if (timer != 0)
+			clearTimeout(timer);
+		timer = setTimeout(function() {
+			reloadWatcher.close();
+			hide.Ide.inst.reload();
+		}, 1000);
+	}
+
+	if (ext == "css") {
+		hide.Ide.inst.reloadCss();
+	};
   });
 </script>
 

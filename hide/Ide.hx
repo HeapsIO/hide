@@ -793,6 +793,14 @@ class Ide extends hide.tools.IdeData {
 		js.Browser.location.reload();
 	}
 
+	public function reloadCss() {
+		var css = new js.jquery.JQuery('link[type="text/css"]');
+		css.each(function(i, e) : Void {
+			var link : js.html.LinkElement = cast e;
+			link.href = link.href + "?" + haxe.Timer.stamp();
+		});
+	}
+
 	public function getCDBContent<T>( sheetName : String ) : Array<T> {
 		for( s in database.sheets )
 			if( s.name == sheetName ) {
