@@ -41,7 +41,6 @@ class RemoteConsole {
 			connections.push(connection);
 			s.onError = function(msg) {
 				connection.logError("Client error: " + msg);
-				connections.remove(connection);
 				connection.close();
 				connection = null;
 			}
@@ -61,7 +60,6 @@ class RemoteConsole {
 		sock.onError = function(msg) {
 			if( !SILENT_CONNECT )
 				logError("Socket Error: " + msg);
-			connections.remove(connection);
 			close();
 			if( onConnected != null )
 				onConnected(false);
@@ -137,6 +135,7 @@ class RemoteConsoleConnection {
 		if( sock != null )
 			sock.close();
 		sock = null;
+		parent.connections.remove(this);
 		onClose();
 	}
 
@@ -295,6 +294,7 @@ class RemoteConsoleConnection {
 				Std.downcast(view,hide.view.CdbTable).goto(sheet,args.line,args.column);
 			});
 		} else {
+			hide.Ide.inst.showFileInResources(args.file);
 			hide.Ide.inst.openFile(args.file);
 		}
 	}

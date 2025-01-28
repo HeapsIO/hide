@@ -48,6 +48,9 @@ class RemoteConsoleView extends hide.ui.View<{}> {
 			stopServer();
 		});
 		panelsView = element.find(".remoteconsole");
+		for( panel in panels ) {
+			panel.element.appendTo(panelsView);
+		}
 		if( rcmd != null ) {
 			for( c in rcmd.connections ) {
 				addPanel(c);
@@ -55,8 +58,6 @@ class RemoteConsoleView extends hide.ui.View<{}> {
 		}
 		if( panels.length <= 0 )
 			addPanel();
-		if( pconfig?.disableAutoStartServer != true )
-			haxe.Timer.delay(() -> startServer(port, host), 1);
 	}
 
 	override function onBeforeClose():Bool {
@@ -70,7 +71,7 @@ class RemoteConsoleView extends hide.ui.View<{}> {
 
 	function forceClear() {
 		for( p in panels ) {
-			p.close();
+			p.close(false);
 		}
 		panels = [];
 		if( panelsView != null )
@@ -115,7 +116,7 @@ class RemoteConsoleView extends hide.ui.View<{}> {
 	public function removePanel( p : RemoteConsolePanel ) {
 		panels.remove(p);
 		p.element.remove();
-		p.close();
+		p.close(true);
 	}
 
 	public static function refreshStatusIcon() {
@@ -166,7 +167,26 @@ class RemoteConsoleView extends hide.ui.View<{}> {
 		return null;
 	}
 
-	static var _ = hide.ui.View.register(RemoteConsoleView);
+	static var _ = init();
+	static function init() {
+		hide.ui.View.register(RemoteConsoleView);
+		function wait() {
+			if( Ide.inst?.config?.project == null ) {
+				haxe.Timer.delay(wait, 10);
+				return;
+			}
+			var config = Ide.inst.config.project;
+			var pconfig = config.get("remoteconsole");
+			if( pconfig != null && pconfig.disableAutoStartServer != true ) {
+				var host = pconfig.host ?? hrt.impl.RemoteConsole.DEFAULT_HOST;
+				var port = pconfig.port ?? hrt.impl.RemoteConsole.DEFAULT_PORT;
+				startServer(port, host);
+			}
+		}
+		// Needs to wait a little on reload, otherwise the port might still be occupied.
+		haxe.Timer.delay(wait, 100);
+		return 0;
+	}
 }
 
 class RemoteConsolePanel extends hide.comp.Component {
@@ -180,7 +200,7 @@ class RemoteConsolePanel extends hide.comp.Component {
 		<div class="remoteconsole-panel">
 			<div class="controls">
 				<div class="ico ico-dot-circle-o" id="statusIcon" style="cursor:default;"></div>
-				<div class="ico ico-close" id="closeBtn" title="Close panel"></div>
+				<div class="ico ico-close" id="closeBtn" title="Close panel and its connection"></div>
 			</div>
 			<div class="logs">
 			</div>
@@ -238,8 +258,8 @@ class RemoteConsolePanel extends hide.comp.Component {
 			statusIcon.prop("title", "Disconnected");
 		}
 	}
-	public function close() {
-		if( connection != null ) {
+	public function close( disconnect : Bool ) {
+		if( disconnect && connection != null ) {
 			connection.close();
 			log("Disconnected");
 		}
