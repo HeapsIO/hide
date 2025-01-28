@@ -104,6 +104,8 @@ class Domkit extends FileView {
 		var allParams = new Map();
 		dmlEditor.checker.params = allParams;
 		var comp = dmlEditor.getComponent();
+		if( comp != null && comp.classDef != null )
+			paramsEditor.checker.checker.setGlobals(comp.classDef, true);
 		paramsEditor.doCheckScript();
 		var checker = cast(paramsEditor.checker,hide.comp.DomkitEditor.DomkitChecker);
 		var tparams = try @:privateAccess checker.typeCode(paramsEditor.code,0) catch( e : hscript.Expr.Error ) null;

@@ -366,7 +366,7 @@ class DomkitViewer extends h2d.Object {
 	function loadComponents( res : hxd.res.Resource ) {
 		var fullText = res.entry.getText();
 		var data = DomkitFile.parse(fullText);
-		var inf = { comps : [], params : null };
+		var inf = { comps : [], params : (null:Dynamic) };
 		handleErrors(res, function() {
 			var parser = new domkit.MarkupParser();
 			parser.allowRawText = true;
@@ -384,13 +384,44 @@ class DomkitViewer extends h2d.Object {
 					}
 				}
 			}
-			var vparams : Dynamic = evalCode(interp,eparams);
-			if( vparams != null ) {
-				for( f in Reflect.fields(vparams) ) {
-					var forceNull = res == resource && definedClasses.indexOf(f) >= 0;
-					interp.variables.set(f, forceNull ? null : Reflect.field(vparams,f));
+			var mainComp = null;
+			for( i in 0...expr.children.length ) {
+				var m = expr.children[expr.children.length - i - 1];
+				switch( m.kind ) {
+				case Node(name):
+					var parts = name.split(":");
+					var name = parts[0];
+					mainComp = domkit.Component.get(name, true);
+					break;
+				default:
 				}
 			}
+
+			var prev = interp.variables.copy();
+			var mainInst : Dynamic = null;
+			if( mainComp != null ) {
+				var cl = @:privateAccess mainComp.classValue;
+				if( cl != null ) {
+					mainInst = Type.createEmptyInstance(cl);
+					interp.setContext(mainInst);
+				}
+			}
+			var vparams = switch( eparams.e ) {
+			case EObject(fl):
+				[for( f in fl ) {
+					var val : Dynamic = evalCode(interp,f.e);
+					var forceNull = res == resource && definedClasses.indexOf(f.name) >= 0;
+					if( forceNull ) val = null;
+					interp.variables.set(f.name, val);
+					if( mainInst != null ) try Reflect.setProperty(mainInst,f.name, val) catch( e : Dynamic ) {};
+					{ name : f.name, value : val };
+				}];
+			default: throw "assert";
+			}
+			interp.variables = prev;
+			for( f in vparams )
+				interp.variables.set(f.name, f.value);
+
 			for( m in expr.children ) {
 				switch( m.kind ) {
 				case Node(name):
@@ -411,8 +442,8 @@ class DomkitViewer extends h2d.Object {
 						if( compClass != null ) {
 							inst = Type.createEmptyInstance(compClass);
 							interp.setContext(inst);
-							for( f in Reflect.fields(vparams) )
-								try Reflect.setProperty(inst, f, Reflect.field(vparams,f)) catch( e : Dynamic ) {}
+							for( f in vparams )
+								try Reflect.setProperty(inst, f.name, f.value) catch( e : Dynamic ) {}
 						}
 					}
 					var args = [];
@@ -438,7 +469,9 @@ class DomkitViewer extends h2d.Object {
 				default:
 				}
 			}
-			inf.params = vparams;
+			inf.params = {};
+			for( v in vparams )
+				Reflect.setField(inf.params, v.name, v.value);
 		});
 		return inf;
 	}

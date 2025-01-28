@@ -108,10 +108,6 @@ class DomkitChecker extends ScriptEditor.ScriptChecker {
 		var parser = new domkit.MarkupParser();
 		parser.allowRawText = true;
 		var expr = parser.parse(dmlCode,filePath, position);
-		switch( expr.kind ) {
-		case Node(null) if( expr.children.length == 1 ): expr = expr.children[0];
-		default:
-		}
 		try {
 			for( c in expr.children ) {
 				var prev = @:privateAccess checker.locals.copy();
@@ -760,8 +756,11 @@ class DomkitEditor extends CodeEditor {
 	}
 
 	public function getComponent() {
-		var compReg = ~/<([A-Za-z0-9_]+)/;
-		if( !compReg.match(code) )
+		var compReg = ~/<\/([A-Za-z0-9_-]+)/;
+		var last = code.lastIndexOf("</");
+		if( last < 0 )
+			return null;
+		if( !compReg.match(code.substr(last)) )
 			return null;
 		var name = compReg.matched(1);
 		return checker.components.get(name);
