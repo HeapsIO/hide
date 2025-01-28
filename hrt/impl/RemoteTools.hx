@@ -10,8 +10,10 @@ class RemoteTools {
 	static var rc : hrt.impl.RemoteConsole;
 	static var mainEvent : haxe.MainLoop.MainEvent;
 	static var lastUpdate : Float;
+	static var onConnected : Bool -> Void;
 
-	public static function autoConnect() {
+	public static function autoConnect( ?onConnected : Bool -> Void ) {
+		RemoteTools.onConnected = onConnected;
 		if( rc != null )
 			return;
 		var configdyn : Dynamic = null;
@@ -37,6 +39,10 @@ class RemoteTools {
 		rc = null;
 	}
 
+	public static function isConnected() {
+		return rc != null && rc.isConnected();
+	}
+
 	static function update() {
 		if( rc == null || rc.isConnected() )
 			return;
@@ -44,7 +50,7 @@ class RemoteTools {
 		if( current - lastUpdate < RETRY_DELAY )
 			return;
 		lastUpdate = current;
-		rc.connect();
+		rc.connect(onConnected);
 	}
 
 	// ----- Commands -----
