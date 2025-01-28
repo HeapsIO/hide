@@ -22,7 +22,7 @@ class RemoteConsole {
 	public var host : String;
 	public var port : Int;
 	var sock : hxd.net.Socket;
-	var cSocks : Array<RemoteConsoleConnection>;
+	public var connections : Array<RemoteConsoleConnection>;
 
 	public function new( ?port : Int, ?host : String ) {
 		this.host = host ?? DEFAULT_HOST;
@@ -38,13 +38,11 @@ class RemoteConsole {
 		}
 		sock.bind(host, port, function(s) {
 			var connection = new RemoteConsoleConnection(this, s);
-			cSocks.push(connection);
+			connections.push(connection);
 			s.onError = function(msg) {
 				connection.logError("Client error: " + msg);
+				connections.remove(connection);
 				connection.close();
-				if( cSocks != null ) {
-					cSocks.remove(connection);
-				}
 				connection = null;
 			}
 			s.onData = () -> connection.handleOnData();
@@ -58,15 +56,16 @@ class RemoteConsole {
 	public function connect( ?onConnected : Bool -> Void ) {
 		close();
 		sock = new hxd.net.Socket();
+		var connection = new RemoteConsoleConnection(this, sock);
+		connections.push(connection);
 		sock.onError = function(msg) {
 			if( !SILENT_CONNECT )
 				logError("Socket Error: " + msg);
+			connections.remove(connection);
 			close();
 			if( onConnected != null )
 				onConnected(false);
 		}
-		var connection = new RemoteConsoleConnection(this, sock);
-		cSocks.push(connection);
 		sock.onData = () -> connection.handleOnData();
 		sock.connect(host, port, function() {
 			log("Connected to server");
@@ -82,11 +81,11 @@ class RemoteConsole {
 			sock.close();
 			sock = null;
 		}
-		if( cSocks != null ) {
-			for( s in cSocks )
+		if( connections != null ) {
+			for( s in connections )
 				s.close();
 		}
-		cSocks = [];
+		connections = [];
 		onClose();
 	}
 
@@ -106,10 +105,10 @@ class RemoteConsole {
 	}
 
 	public function sendCommand( cmd : String, ?args : Dynamic, ?onResult : Dynamic -> Void ) {
-		if( cSocks.length == 0 ) {
+		if( connections.length == 0 ) {
 			// Ignore send when not really connected
-		} else if( cSocks.length == 1 ) {
-			cSocks[0].sendCommand(cmd, args, onResult);
+		} else if( connections.length == 1 ) {
+			connections[0].sendCommand(cmd, args, onResult);
 		} else {
 			logError("Send to multiple target not implemented");
 		}
@@ -169,20 +168,22 @@ class RemoteConsoleConnection {
 	}
 
 	public function handleOnData() {
-		var str = sock.input.readLine().toString();
-		var obj = try { haxe.Json.parse(str); } catch (e) { logError("Parse error: " + e); null; };
-		if( obj == null || obj.id == null ) {
-			return;
-		}
-		var id : Int = obj.id;
-		if( id <= 0 ) {
-			var onResult = waitReply.get(-id);
-			waitReply.remove(-id);
-			if( onResult != null ) {
-				onResult(obj.args);
+		while( sock.input.available > 0 ) {
+			var str = sock.input.readLine().toString();
+			var obj = try { haxe.Json.parse(str); } catch (e) { logError("Parse error: " + e); null; };
+			if( obj == null || obj.id == null ) {
+				continue;
 			}
-		} else {
-			onCommand(obj.cmd, obj.args, (result) -> sendData(null, result, -id));
+			var id : Int = obj.id;
+			if( id <= 0 ) {
+				var onResult = waitReply.get(-id);
+				waitReply.remove(-id);
+				if( onResult != null ) {
+					onResult(obj.args);
+				}
+			} else {
+				onCommand(obj.cmd, obj.args, (result) -> sendData(null, result, -id));
+			}
 		}
 	}
 
