@@ -2869,12 +2869,14 @@ class SceneEditor {
 
 		el.toggleClass("childSelected", selectedParents.exists(p));
 
+		el.toggleClass("disabled", !p.enabled);
+		el.toggleClass("editorOnly", p.editorOnly);
+		el.toggleClass("inGameOnly", p.inGameOnly);
+		el.toggleClass("locked", p.locked);
+
 		if(obj3d != null) {
 			el.toggleClass("disabled", !p.enabled || !obj3d.visible);
 			el.toggleClass("hidden", isHidden(obj3d));
-			el.toggleClass("locked", p.locked);
-			el.toggleClass("editorOnly", p.editorOnly);
-			el.toggleClass("inGameOnly", p.inGameOnly);
 
 			var visTog = el.find(".visibility-toggle").first();
 			if(visTog.length == 0) {
