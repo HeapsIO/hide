@@ -793,11 +793,13 @@ class Ide extends hide.tools.IdeData {
 		js.Browser.location.reload();
 	}
 
-	public function reloadCss() {
+	public function reloadCss(path: String = null) {
 		var css = new js.jquery.JQuery('link[type="text/css"]');
 		css.each(function(i, e) : Void {
 			var link : js.html.LinkElement = cast e;
-			link.href = link.href + "?" + haxe.Timer.stamp();
+			if (path == null || StringTools.contains(link.href, path)) {
+				link.href = link.href + "?" + haxe.Timer.stamp();
+			}
 		});
 	}
 
