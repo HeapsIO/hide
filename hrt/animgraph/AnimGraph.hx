@@ -19,6 +19,7 @@ typedef SerializedEdge = {
 #if editor
 typedef EditorProviderContext = {
 	animDirectory: String,
+	assetPath: String,
 }
 #end
 

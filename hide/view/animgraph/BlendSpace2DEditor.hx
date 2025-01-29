@@ -490,7 +490,7 @@ class BlendSpace2DEditor extends hide.view.FileView {
 			scenePreview.setObjectPath(first);
 		}
 
-		var animList = new AnimList(propertiesContainer, null, AnimGraphEditor.getAnims(scenePreview, blendSpace2D.animFolder));
+		var animList = new AnimList(propertiesContainer, null, AnimGraphEditor.getAnims(scenePreview, {animDirectory: blendSpace2D.animFolder, assetPath: state.path}));
 		scenePreview.resetPreviewCamera();
 	}
 

@@ -53,7 +53,7 @@ class AnimGraphEditor extends GenericGraphEditor {
 		});
 
 
-        new AnimList(propertiesContainer, null, getAnims(scenePreview, animGraph.animFolder));
+        new AnimList(propertiesContainer, null, getAnims(scenePreview, {animDirectory: animGraph.animFolder, assetPath: state.path}));
 
         graphEditor.element.get(0).addEventListener("dragover", (e: js.html.DragEvent) -> {
             if (e.dataTransfer.types.contains("index"))
@@ -119,14 +119,14 @@ class AnimGraphEditor extends GenericGraphEditor {
 
     }
 
-    static public function getAnims(scene: hide.comp.Scene, animDirectory: String) : Array<String> {
+    static public function getAnims(scene: hide.comp.Scene, ctx: hrt.animgraph.AnimGraph.EditorProviderContext ) : Array<String> {
         var anims : Array<String> = [];
 
         if (AnimGraph.customAnimNameLister != null) {
-            anims = anims.concat(AnimGraph.customAnimNameLister({animDirectory: animDirectory}));
+            anims = anims.concat(AnimGraph.customAnimNameLister(ctx));
         }
 
-        anims = anims.concat(scene.listAnims(animDirectory));
+        anims = anims.concat(scene.listAnims(ctx.animDirectory));
         return anims;
     }
 
