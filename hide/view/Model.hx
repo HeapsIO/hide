@@ -38,7 +38,7 @@ class Model extends FileView {
 
 	override function save() {
 
-		if(!modified) return;
+		// if(!modified) return;
 
 		// Save render props
 		if (Ide.inst.currentConfig.get("sceneeditor.renderprops.edit", false) && sceneEditor.renderPropsRoot != null)
@@ -69,6 +69,20 @@ class Model extends FileView {
 			bytes.writeString(haxe.Json.stringify(hideData, "\t"));
 			hxd.File.saveBytes(getPropsPath(), bytes.getBytes());
 		}
+
+		// Save dynamic Bones
+		var skin = obj.find((o) -> Std.downcast(o, h3d.scene.Skin));
+		if (skin != null) {
+			var skinData = skin.getSkinData();
+			for (j in skinData.allJoints) {
+				var dynJoint = Std.downcast(j, h3d.anim.Skin.DynamicJoint);
+				if (dynJoint == null)
+					continue;
+
+				trace(dynJoint.name);
+			}
+		}
+
 		super.save();
 	}
 
@@ -606,10 +620,101 @@ class Model extends FileView {
 					} else '' +
 				'</dl>
 			</div>
-			<br/>
+
 		'),obj);
 
 		selectedMesh = mesh;
+
+		if (selectedJoint != null) {
+			var current = obj;
+			var skin = Std.downcast(current, h3d.scene.Skin);
+			while (skin == null && current != null) {
+				current = current.parent;
+				skin = Std.downcast(current, h3d.scene.Skin);
+			}
+
+			var skinData = skin.getSkinData();
+			var j = skinData.allJoints[0];
+			for (tmpJ in skinData.allJoints) {
+				if (tmpJ.name == selectedJoint)
+					j = tmpJ;
+			}
+
+			var dynJointEl = new Element('<div class="group" name="Dynamic bone">
+				<dt>Is Dynamic</dt><dd><input id="dynamic" type="checkbox"/></dd>
+				<dt>Damping</dt><dd><input id="damping" type="number" min="0" max="1"/></dd>
+				<dt>Resistance</dt><dd><input id="resistance" type="number" min="0" max="1"/></dd>
+				<dt>Stiffness</dt><dd><input id="stiffness" type="number" min="0" max="1"/></dd>
+				<dt>Slackness</dt><dd><input id="slackness" type="number" min="0" max="1"/></dd>
+			</div>');
+
+			var isDynEl = dynJointEl.find("#dynamic");
+			isDynEl.get(0).toggleAttribute('checked', Std.downcast(j, h3d.anim.Skin.DynamicJoint) != null);
+			isDynEl.change(function(e) {
+				var newV = isDynEl.is(':checked');
+				function setToDynamic(j : h3d.anim.Skin.Joint) {
+					var dynJ = new h3d.anim.Skin.DynamicJoint();
+					dynJ.index = j.index;
+					dynJ.name = j.name;
+					dynJ.bindIndex = j.bindIndex;
+					dynJ.splitIndex = j.splitIndex;
+					dynJ.defMat = j.defMat;
+					dynJ.transPos = j.transPos;
+					dynJ.parent = j.parent;
+					dynJ.follow = j.follow;
+					dynJ.subs = j.subs;
+					dynJ.worldPos = j.worldPos;
+					dynJ.offsets = j.offsets;
+					dynJ.offsetRay = j.offsetRay;
+					dynJ.retargetAnim = j.retargetAnim;
+					skinData.allJoints[j.index] = dynJ;
+
+					j.parent.subs.remove(j);
+					j.parent.subs.push(dynJ);
+
+					for (s in dynJ.subs)
+						setToDynamic(s);
+				}
+
+				if (newV) {
+					setToDynamic(j);
+					skin.setSkinData(skinData);
+				}
+			});
+
+			var dynJoin = Std.downcast(j, h3d.anim.Skin.DynamicJoint);
+			if (dynJoin != null) {
+				var damping = dynJointEl.find("#damping");
+				damping.val(dynJoin.damping);
+				damping.change(function(e) {
+					var newV = damping.val();
+					dynJoin.damping = newV;
+				});
+
+				var resistance = dynJointEl.find("#resistance");
+				resistance.val(dynJoin.resistance);
+				resistance.change(function(e) {
+					var newV = resistance.val();
+					dynJoin.resistance = newV;
+				});
+
+				var stiffness = dynJointEl.find("#stiffness");
+				stiffness.val(dynJoin.stiffness);
+				stiffness.change(function(e) {
+					var newV = stiffness.val();
+					dynJoin.stiffness = newV;
+				});
+
+				var slackness = dynJointEl.find("#slackness");
+				slackness.val(dynJoin.slackness);
+				slackness.change(function(e) {
+					var newV = slackness.val();
+					dynJoin.slackness = newV;
+				});
+			}
+
+			properties.add(dynJointEl, null, function(pname) {});
+		}
 
 		if (mesh != null && hmd != null) {
 			// Blendshapes edition
