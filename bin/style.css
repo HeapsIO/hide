@@ -4225,10 +4225,10 @@ hide-popover hide-content {
   --bg-0: #000;
   --bg-1: #111;
   --bg-2: #222;
+  --bg-3: #333;
 }
 button-2 {
   min-height: 16px;
-  min-width: 24px;
   display: flex;
   justify-content: center;
   align-items: center;
@@ -4252,6 +4252,14 @@ button-2 value {
 }
 button-2:active {
   box-shadow: inset var(--sublte-shadow);
+}
+button-2.no-border {
+  background-color: red;
+  border: none;
+  color: #777;
+}
+button-2.no-border:hover {
+  color: #AAA;
 }
 /** GenericGraphEditor**/
 graph-editor-root {
@@ -4340,146 +4348,71 @@ graph-editor-root properties-container graph-parameters {
 graph-editor-root properties-container graph-parameters h1 {
   font-size: 1.2em;
 }
-graph-editor-root properties-container graph-parameters > ul {
-  padding: var(--basic-padding);
-  display: flex;
-  flex-direction: column;
-  list-style: none;
-  align-items: stretch;
-  overflow-y: auto;
-  gap: 2px;
-}
-graph-editor-root properties-container graph-parameters > ul graph-parameter {
-  display: flex;
-  flex-direction: column;
-  justify-items: stretch;
-  border: var(--basic-border);
-  border-radius: var(--basic-border-radius);
-  position: relative;
-}
-graph-editor-root properties-container graph-parameters > ul graph-parameter header {
-  display: flex;
-  align-items: center;
-  background-color: #202020;
-  padding: var(--basic-padding);
-  gap: 3px;
-}
-graph-editor-root properties-container graph-parameters > ul graph-parameter header .fill {
-  flex-grow: 1;
-}
-graph-editor-root properties-container graph-parameters > ul graph-parameter header input {
-  border-radius: var(--basic-border-radius);
-  border: var(--basic-border);
-}
-graph-editor-root properties-container graph-parameters > ul graph-parameter header .reorder {
-  padding: var(--basic-padding);
-}
-graph-editor-root properties-container graph-parameters > ul graph-parameter content {
-  border-top: var(--basic-border);
-  padding: var(--basic-padding);
-}
-graph-editor-root properties-container graph-parameters > ul graph-parameter content > ul {
-  padding: var(--basic-padding);
-  display: flex;
-  flex-direction: column;
-  list-style: none;
-  display: grid;
-  column-gap: 10px;
-  row-gap: 1px;
-  grid-template-columns: 2fr 5fr;
-}
-graph-editor-root properties-container graph-parameters > ul graph-parameter content > ul li {
-  grid-column: 1 / -1;
-  display: grid;
-  grid-template-columns: subgrid;
-  align-items: center;
-}
-graph-editor-root properties-container graph-parameters > ul graph-parameter content > ul li dd {
-  margin: 0;
-  text-align: right;
-}
-graph-editor-root properties-container graph-parameters > ul graph-parameter content > ul li > .hide-range {
-  display: flex;
-}
-graph-editor-root properties-container graph-parameters > ul graph-parameter content > ul li > .hide-range input[type=range] {
-  flex-grow: 1;
-}
-graph-editor-root properties-container graph-parameters > ul graph-parameter content > ul li > .hide-range input[type=text] {
-  width: 0;
-  flex-basis: 44px;
-}
-graph-editor-root properties-container graph-parameters > ul graph-parameter.folded content {
-  display: none;
-}
-graph-editor-root properties-container graph-parameters > ul graph-parameter.folded .ico-chevron-down {
-  transform: rotate(-90deg);
-}
-graph-editor-root properties-container graph-parameters > ul graph-parameter .ico-chevron-down {
-  transition: transform 0.25s;
-  transform: rotate(0deg);
-}
-graph-editor-root properties-container graph-parameters > ul graph-parameter.hovertop:before,
-graph-editor-root properties-container graph-parameters > ul graph-parameter.hoverbot:after {
-  display: block;
-  position: absolute;
-  z-index: 100;
-  margin: 0 auto;
-  width: 100%;
-  content: "";
-}
-graph-editor-root properties-container graph-parameters > ul graph-parameter:before {
-  border-top: 10px solid rgba(114, 180, 255, 0.75);
-  top: 0px;
-  pointer-events: none;
-}
-graph-editor-root properties-container graph-parameters > ul graph-parameter:after {
-  border-bottom: 10px solid rgba(114, 180, 255, 0.75);
-  bottom: 0px;
-  pointer-events: none;
-}
 graph-editor-root properties-container .anim-list {
   flex-grow: 0;
   flex-shrink: 0;
 }
 fancy-array {
   padding: var(--basic-padding);
+  border-radius: var(--basic-border-radius);
   display: flex;
   flex-direction: column;
-  list-style: none;
   align-items: stretch;
+  background-color: var(--bg-2);
   overflow-y: auto;
-  gap: 2px;
 }
-fancy-array fancy-item {
+fancy-array * {
+  box-sizing: border-box;
+}
+fancy-array fancy-items {
+  display: flex;
+  flex-direction: column;
+  align-items: stretch;
+  background-color: var(--bg-3);
+  gap: 1px;
+}
+fancy-array fancy-items fancy-item {
   display: flex;
   flex-direction: column;
   justify-items: stretch;
-  border: var(--basic-border);
   border-radius: var(--basic-border-radius);
   position: relative;
+  background-color: var(--bg-3);
 }
-fancy-array fancy-item header {
+fancy-array fancy-items fancy-item header {
   display: flex;
   align-items: center;
-  background-color: #202020;
-  padding: var(--basic-padding);
+  background-color: var(--bg-2);
+  padding: calc(var(--basic-padding) * 2);
   gap: 3px;
 }
-fancy-array fancy-item header .fill {
+fancy-array fancy-items fancy-item header .fill {
   flex-grow: 1;
 }
-fancy-array fancy-item header input {
+fancy-array fancy-items fancy-item header input {
   border-radius: var(--basic-border-radius);
-  border: var(--basic-border);
+  background-color: var(--bg-3);
+  border: none;
 }
-fancy-array fancy-item header .reorder {
+fancy-array fancy-items fancy-item header input:focus {
+  outline: var(--basic-border);
+}
+fancy-array fancy-items fancy-item header .reorder {
   padding: var(--basic-padding);
 }
-fancy-array fancy-item content {
+fancy-array fancy-items fancy-item header .reorder,
+fancy-array fancy-items fancy-item header .toggle-open {
+  color: #777;
+}
+fancy-array fancy-items fancy-item header .reorder:hover,
+fancy-array fancy-items fancy-item header .toggle-open:hover {
+  color: #AAA;
+}
+fancy-array fancy-items fancy-item content {
   border-top: var(--basic-border);
   padding: var(--basic-padding);
 }
-fancy-array fancy-item content > ul {
+fancy-array fancy-items fancy-item content > ul {
   padding: var(--basic-padding);
   display: flex;
   flex-direction: column;
@@ -4489,38 +4422,38 @@ fancy-array fancy-item content > ul {
   row-gap: 1px;
   grid-template-columns: 2fr 5fr;
 }
-fancy-array fancy-item content > ul li {
+fancy-array fancy-items fancy-item content > ul li {
   grid-column: 1 / -1;
   display: grid;
   grid-template-columns: subgrid;
   align-items: center;
 }
-fancy-array fancy-item content > ul li dd {
+fancy-array fancy-items fancy-item content > ul li dd {
   margin: 0;
   text-align: right;
 }
-fancy-array fancy-item content > ul li > .hide-range {
+fancy-array fancy-items fancy-item content > ul li > .hide-range {
   display: flex;
 }
-fancy-array fancy-item content > ul li > .hide-range input[type=range] {
+fancy-array fancy-items fancy-item content > ul li > .hide-range input[type=range] {
   flex-grow: 1;
 }
-fancy-array fancy-item content > ul li > .hide-range input[type=text] {
+fancy-array fancy-items fancy-item content > ul li > .hide-range input[type=text] {
   width: 0;
   flex-basis: 44px;
 }
-fancy-array fancy-item.folded content {
+fancy-array fancy-items fancy-item.folded content {
   display: none;
 }
-fancy-array fancy-item.folded .ico-chevron-down {
+fancy-array fancy-items fancy-item.folded .ico-chevron-down {
   transform: rotate(-90deg);
 }
-fancy-array fancy-item .ico-chevron-down {
+fancy-array fancy-items fancy-item .ico-chevron-down {
   transition: transform 0.25s;
   transform: rotate(0deg);
 }
-fancy-array fancy-item.hovertop:before,
-fancy-array fancy-item.hoverbot:after {
+fancy-array fancy-items fancy-item.hovertop:before,
+fancy-array fancy-items fancy-item.hoverbot:after {
   display: block;
   position: absolute;
   z-index: 100;
@@ -4528,12 +4461,12 @@ fancy-array fancy-item.hoverbot:after {
   width: 100%;
   content: "";
 }
-fancy-array fancy-item:before {
+fancy-array fancy-items fancy-item:before {
   border-top: 10px solid rgba(114, 180, 255, 0.75);
   top: 0px;
   pointer-events: none;
 }
-fancy-array fancy-item:after {
+fancy-array fancy-items fancy-item:after {
   border-bottom: 10px solid rgba(114, 180, 255, 0.75);
   bottom: 0px;
   pointer-events: none;

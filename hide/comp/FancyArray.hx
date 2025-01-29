@@ -7,11 +7,14 @@ typedef FancyItemState = {
 class FancyArray<T> extends hide.comp.Component {
 	var itemState : Array<FancyItemState>;
 	var name : String;
+	var fancyItems: Element;
 
 	public function new(parent: Element = null, e: Element = null, name: String, displayKey: String) {
 		if (e == null)
 			e = new Element("<fancy-array></fancy-array>");
 		super(parent, e);
+
+		fancyItems = new Element("<fancy-items></fancy-items>").appendTo(element);
 
 		this.name = name;
 		saveDisplayKey = displayKey + "/" + name;
@@ -35,7 +38,7 @@ class FancyArray<T> extends hide.comp.Component {
 	}
 
 	public function refresh() : Void {
-		element.empty();
+		fancyItems.empty();
 		var items = getItems();
 
 		for (i => item in items) {
@@ -44,9 +47,9 @@ class FancyArray<T> extends hide.comp.Component {
 					<div class="reorder ico ico-reorder" draggable="true"></div>
 					<div class="ico ico-chevron-down toggle-open"></div>
 					<input type="text" value="${getItemName(item)}" class="fill"></input>
-					<button-2 class="menu"><div class="ico ico-ellipsis-v"/></button-2>
+					<button-2 class="menu no-border"><div class="ico ico-ellipsis-v"/></button-2>
 				</header>
-			</fancy-item>').appendTo(element);
+			</fancy-item>').appendTo(fancyItems);
 
 			itemState[i] ??= {};
 			var state = itemState[i];
