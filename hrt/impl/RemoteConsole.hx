@@ -27,6 +27,7 @@ class RemoteConsole {
 	public function new( ?port : Int, ?host : String ) {
 		this.host = host ?? DEFAULT_HOST;
 		this.port = port ?? DEFAULT_PORT;
+		this.connections = [];
 	}
 
 	public function startServer( ?onClient : RemoteConsoleConnection->Void ) {
