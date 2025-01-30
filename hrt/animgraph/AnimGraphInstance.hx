@@ -3,10 +3,12 @@ using Lambda;
 using hrt.tools.MapUtils;
 class AnimGraphAnimatedObject extends h3d.anim.Animation.AnimatedObject {
 	public var id : Int;
+	public var matrix : h3d.Matrix;
 
 	public function new (name, id) {
 		super(name);
 		this.id = id;
+		matrix = new h3d.Matrix();
 	}
 }
 
@@ -16,7 +18,6 @@ typedef AnimResolver = (instance: AnimGraphInstance, target: h3d.scene.Object, p
 @:access(hrt.animgraph.Node)
 class AnimGraphInstance extends h3d.anim.Animation {
 	var rootNode : hrt.animgraph.nodes.AnimNode;
-	var workMatrix = new h3d.Matrix();
 
 	var boneMap: Map<String, Int> = [];
 	var parameterMap: Map<String, hrt.animgraph.AnimGraph.Parameter> = [];
@@ -27,6 +28,8 @@ class AnimGraphInstance extends h3d.anim.Animation {
 	var defaultPoseNode = new hrt.animgraph.nodes.DefaultPose();
 
 	var resolver : AnimResolver = null;
+
+	var tmpMatrix : h3d.Matrix = new h3d.Matrix();
 
 	#if editor
 	var editorSkipClone : Bool = false;
@@ -150,26 +153,29 @@ class AnimGraphInstance extends h3d.anim.Animation {
 			return;
 		for (obj in objects) {
 			var obj : AnimGraphAnimatedObject = cast obj;
+			var workMatrix = obj.matrix;
 			workMatrix.identity();
 			syncCtx.reset(obj);
 
 			rootNode.getBoneTransform(obj.id, workMatrix, syncCtx);
 
+
+
+			if (!decompose) {
+				Tools.recomposeMatrix(workMatrix, tmpMatrix);
+				workMatrix.load(tmpMatrix);
+				// keep in case if we need the def matrix ???
+				// if (obj.targetSkin != null) {
+				// 	var def = obj.targetSkin.getSkinData().allJoints[obj.targetJoint].defMat;
+				// }
+			}
+
 			@:privateAccess
 			var targetMatrix = if (obj.targetSkin != null) {
 				obj.targetSkin.jointsUpdated = true;
-				obj.targetSkin.currentRelPose[obj.targetJoint] ??= new h3d.Matrix();
+				obj.targetSkin.currentRelPose[obj.targetJoint] = workMatrix;
 			} else {
-				obj.targetObject.defaultTransform ??= new h3d.Matrix();
-			}
-
-			if (!decompose) {
-				Tools.recomposeMatrix(workMatrix, targetMatrix);
-				if (obj.targetSkin != null) {
-					var def = obj.targetSkin.getSkinData().allJoints[obj.targetJoint].defMat;
-				}
-			} else {
-				targetMatrix.load(workMatrix);
+				obj.targetObject.defaultTransform = workMatrix;
 			}
 		}
 	}
