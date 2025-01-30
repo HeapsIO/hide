@@ -229,8 +229,6 @@ class BlendSpace2D extends AnimNode {
 				nullWeights /= (3 - nulls);
 			}
 
-			trace(nullWeights, weights);
-
 			for (i => pt in triangles[currentTriangle]) {
 				if(pt.animInfo != null && pt.animInfo.keepSync) {
 					var blendLength = pt.animInfo.anim.getDuration()/pt.speed * (weights[i] + nullWeights);
