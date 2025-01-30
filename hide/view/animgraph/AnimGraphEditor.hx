@@ -3,6 +3,12 @@ using Lambda;
 import hide.view.GraphInterface;
 import hrt.animgraph.*;
 
+@:structInit
+@:build(hrt.prefab.Macros.buildSerializable())
+class AnimGraphEditorPreviewState {
+    @:s public var providerIndex: Int = 0;
+}
+
 @:access(hrt.animgraph.AnimGraph)
 @:access(hrt.animgraph.AnimGraphInstance)
 @:access(hrt.animgraph.Node)
@@ -17,9 +23,11 @@ class AnimGraphEditor extends GenericGraphEditor {
     var previewNode : hrt.animgraph.nodes.AnimNode = null;
     var queuedPreview : hrt.animgraph.nodes.AnimNode = null;
 
-    var customProviderIndex : Int = 0;
+    var previewState: AnimGraphEditorPreviewState;
 
     override function reloadView() {
+        loadPreviewState();
+
         previewNode = null;
         animGraph = cast hide.Ide.inst.loadPrefab(state.path, null,  true);
 
@@ -47,8 +55,9 @@ class AnimGraphEditor extends GenericGraphEditor {
         refreshPamamList();
 
         var dl = new Element("<dl></dl>").appendTo(propertiesContainer);
-        addAnimSetSelector(dl, undo, () -> customProviderIndex, (i: Int) -> {
-			customProviderIndex = i;
+        addAnimSetSelector(dl, undo, () -> previewState.providerIndex, (i: Int) -> {
+			previewState.providerIndex = i;
+            savePreviewState();
 			refreshPreview();
 		});
 
@@ -177,6 +186,16 @@ class AnimGraphEditor extends GenericGraphEditor {
         return menu;
     }
 
+    public function loadPreviewState() : Void {
+        var settingsSer = haxe.Json.parse(getDisplayState("previewState") ?? "{}");
+        previewState = {};
+        @:privateAccess previewState.copyFromDynamic(settingsSer);
+    }
+
+    public function savePreviewState() : Void {
+        saveDisplayState("previewState", haxe.Json.stringify(@:privateAccess previewState.copyToDynamic({})));
+    }
+
     static public function gatherAllPreviewModels(basePath : String) : Array<String> {
         var paths = [];
 
@@ -279,7 +298,11 @@ class AnimGraphEditor extends GenericGraphEditor {
             var resolver = null;
             if (AnimGraph.customEditorResolverProvider != null) {
                 var providers = AnimGraph.customEditorResolverProvider(_);
-                resolver = providers != null ? providers[customProviderIndex].resolver : null;
+                if (providers != null && previewState.providerIndex > providers.length) {
+                    previewState.providerIndex = 0;
+                    savePreviewState();
+                }
+                resolver = providers != null ? providers[previewState.providerIndex]?.resolver : null;
             }
             var anim = animGraph.getAnimation(previewNode, resolver);
             previewModel.playAnimation(anim);

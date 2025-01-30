@@ -1,9 +1,9 @@
 package hide.view.animgraph;
 
-class BlendSpacePreviewSettings {
-	public var modelPath: String = null;
-
-	public function new() {};
+@:structInit
+@:build(hrt.prefab.Macros.buildSerializable())
+class BlendSpacePreviewState {
+    @:s public var providerIndex: Int = 0;
 }
 
 @:access(hrt.animgraph.BlendSpace2D)
@@ -29,16 +29,14 @@ class BlendSpace2DEditor extends hide.view.FileView {
 
 	var previewAxis : h2d.col.Point = new h2d.col.Point();
 
-	var startMovePos : h2d.col.Point = null;
+    var previewState: BlendSpacePreviewState;
 
-	var previewSettings : BlendSpacePreviewSettings;
+	var startMovePos : h2d.col.Point = null;
 
 	static final pointRadius = 8;
 	var subdivs = 5;
 
 	var animPreview : hrt.animgraph.AnimGraphInstance;
-
-	var customProviderIndex = 0;
 
 	inline function getPointPos(clientX : Float, clientY : Float, snap: Bool) : h2d.col.Point {
 		var x = hxd.Math.clamp(graphXToLocal(clientX), blendSpace2D.minX, blendSpace2D.maxX);
@@ -58,7 +56,20 @@ class BlendSpace2DEditor extends hide.view.FileView {
 		return inline new h2d.col.Point(x, y);
 	}
 
+    public function loadPreviewState() : Void {
+        var settingsSer = haxe.Json.parse(getDisplayState("previewState") ?? "{}");
+        previewState = {};
+        @:privateAccess previewState.copyFromDynamic(settingsSer);
+    }
+
+    public function savePreviewState() : Void {
+        saveDisplayState("previewState", haxe.Json.stringify(@:privateAccess previewState.copyToDynamic({})));
+    }
+
 	override function onDisplay() {
+
+		loadPreviewState();
+
 		previewModel = null;
 		animPreview = null;
 		blendSpace2D = Std.downcast(hide.Ide.inst.loadPrefab(state.path, null,  true), hrt.animgraph.BlendSpace2D);
@@ -352,7 +363,11 @@ class BlendSpace2DEditor extends hide.view.FileView {
 				if (hrt.animgraph.AnimGraph.customEditorResolverProvider != null) {
 					var resolvers = hrt.animgraph.AnimGraph.customEditorResolverProvider(_);
 					if (resolvers != null) {
-						resolver = resolvers[customProviderIndex]?.resolver;
+						if (previewState.providerIndex > resolvers.length) {
+							previewState.providerIndex = 0;
+							savePreviewState();
+						}
+						resolver = resolvers[previewState.providerIndex]?.resolver;
 					}
 				}
 				animPreview = new hrt.animgraph.AnimGraphInstance(blendSpaceNode, resolver, "", 1000, 1.0/60.0);
@@ -367,7 +382,7 @@ class BlendSpace2DEditor extends hide.view.FileView {
 				if (hrt.animgraph.AnimGraph.customEditorResolverProvider != null) {
 					var resolvers = hrt.animgraph.AnimGraph.customEditorResolverProvider(_);
 					if (resolvers != null) {
-						resolver = resolvers[customProviderIndex]?.resolver;
+						resolver = resolvers[previewState.providerIndex]?.resolver;
 					}
 				}
 				animPreview.resolver = resolver;
@@ -451,8 +466,9 @@ class BlendSpace2DEditor extends hide.view.FileView {
 			updatePreviewAxis();
 		});
 
-		AnimGraphEditor.addAnimSetSelector(preview.find("dl"), undo, () -> customProviderIndex, (i: Int) -> {
-			customProviderIndex = i;
+		AnimGraphEditor.addAnimSetSelector(preview.find("dl"), undo, () -> previewState.providerIndex, (i: Int) -> {
+			previewState.providerIndex = i;
+			savePreviewState();
 			refreshPreviewAnimation();
 		});
 	}
