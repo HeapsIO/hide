@@ -31,6 +31,7 @@ class Sao extends RendererFX {
 	@:s public var USE_FADE : Bool = false;
 	@:s public var fadeStart: Float = 100.0;
 	@:s public var fadeEnd: Float = 200.0;
+	@:s public var useScalableBias : Bool;
 
 	var sao : h3d.pass.ScalableAO;
 	var saoBlur = new h3d.pass.Blur();
@@ -84,6 +85,7 @@ class Sao extends RendererFX {
 			sao.shader.USE_FADE = USE_FADE;
 			sao.shader.fadeStart = fadeStart;
 			sao.shader.fadeEnd = fadeEnd;
+			sao.shader.USE_SCALABLE_BIAS = useScalableBias;
 			sao.apply(depth.texture,normal.texture,ctx.camera);
 			ctx.engine.popTarget();
 
@@ -113,6 +115,7 @@ class Sao extends RendererFX {
 				<dt>Intensity</dt><dd><input type="range" min="0" max="10" field="intensity"/></dd>
 				<dt>Radius</dt><dd><input type="range" min="0" max="10" field="radius"/></dd>
 				<dt>Bias</dt><dd><input type="range" min="0" max="0.5" field="bias"/></dd>
+				<dt>Use Scalable Bias</dt><dd><input type="checkbox" field="useScalableBias"/></dd>
 				<dt>Texture Size</dt><dd><input type="range" min="0" max="1" field="size"/></dd>
 				<dt>Samples</dt><dd><input type="range" min="3" max="127" field="samples" step="1"/></dd>
 				<dt>Materials occlusion</dt><dd><input type="range" min="0" max="1" field="microIntensity"/></dd>

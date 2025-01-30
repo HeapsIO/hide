@@ -53,6 +53,7 @@ class DomkitChecker extends ScriptEditor.ScriptChecker {
 	var t_string : Type;
 	var parsers : Array<domkit.CssValue.ValueParser>;
 	var lastVariables : Map<String, domkit.CssValue> = new Map();
+	var currentComponent : hscript.Checker.CClass;
 	public var usedEnums : Array<{ path : String, constrs : Array<String> }> = [];
 	public var params : Map<String, Type> = new Map();
 	public var components : Map<String, TypedComponent>;
@@ -107,19 +108,31 @@ class DomkitChecker extends ScriptEditor.ScriptChecker {
 		var parser = new domkit.MarkupParser();
 		parser.allowRawText = true;
 		var expr = parser.parse(dmlCode,filePath, position);
-		switch( expr.kind ) {
-		case Node(null) if( expr.children.length == 1 ): expr = expr.children[0];
-		default:
-		}
-		switch( expr.kind ) {
-		case Node(name) if( name != null ):
-			var comp = resolveComp(name.split(":")[0]);
-			if( comp != null && comp.classDef != null )
-				checker.setGlobal("this",TInst(comp.classDef,[]));
-		default:
-		}
 		try {
-			checkDMLRec(expr, true);
+			for( c in expr.children ) {
+				var prev = @:privateAccess checker.locals.copy();
+				var prevGlobals = @:privateAccess checker.globals.copy();
+
+				currentComponent = null;
+				switch( c.kind ) {
+				case Node(name):
+					var comp = resolveComp(name.split(":")[0]);
+					if( comp != null && comp.classDef != null ) {
+						currentComponent = comp.classDef;
+						checker.setGlobals(comp.classDef, true);
+						checker.setGlobal("this",TInst(comp.classDef,[]));
+					}
+					defineComponent(name, c, params);
+				default:
+					continue;
+				}
+				for( c in c.children )
+					checkDMLRec(c);
+				@:privateAccess {
+					checker.locals = prev;
+					checker.globals = prevGlobals;
+				}
+			}
 		} catch( e : hscript.Expr.Error ) {
 			throw new domkit.Error(e.toString(), e.pmin, e.pmax);
 		}
@@ -310,13 +323,8 @@ class DomkitChecker extends ScriptEditor.ScriptChecker {
 						}
 					if( !dup )
 						pl.push(p);
-				} else {
-					switch( f.t ) {
-					case TFun(_):
-					default:
-						comp.vars.set(f.name, f.t);
-					}
-				}
+				} else if( f.canWrite )
+					comp.vars.set(f.name, f.t);
 			}
 			cdefs.push({ name : name, c : c });
 		}
@@ -341,6 +349,13 @@ class DomkitChecker extends ScriptEditor.ScriptChecker {
 	}
 
 	function resolveComp( name : String ) : TypedComponent {
+
+		var rootComp = name;
+		var index = name.indexOf(".");
+		if( index >= 0 ) {
+			rootComp = name.substr(0, index);
+			name = name.substr(index+1);
+		}
 		var c = components.get(name);
 		if( c != null )
 			return c;
@@ -348,7 +363,7 @@ class DomkitChecker extends ScriptEditor.ScriptChecker {
 		var dirs : Array<String> = config.get("domkit.components");
 		if( dirs == null ) dirs = ["ui/comp"];
 		for( d in dirs ) {
-			var path = d+"/"+name+".domkit";
+			var path = d+"/"+rootComp.split("-").join("_")+".domkit";
 			var content = try sys.io.File.getContent(ide.getPath(path)) catch( e : Dynamic ) continue;
 			var data = hrt.impl.DomkitViewer.DomkitFile.parse(content);
 			var node = null, params = new Map();
@@ -544,7 +559,7 @@ class DomkitChecker extends ScriptEditor.ScriptChecker {
 			c.arguments = parent == null ? [] : parent.arguments;
 		else {
 			c.arguments = [];
-			for( a in e.arguments ) {
+			for( i => a in e.arguments ) {
 				var type = null;
 				var name = switch( a.value ) {
 				case Code(c) if( IDENT.match(c) ):
@@ -566,6 +581,11 @@ class DomkitChecker extends ScriptEditor.ScriptChecker {
 					domkitError("Invalid parameter", a.pmin, a.pmax);
 					continue;
 				}
+				if( type == null && currentComponent != null ) {
+					var args = switch( currentComponent.constructor?.t ) { case null: null; case TFun(args,_): args; default: null; };
+					if( args != null && args[i].name == name )
+						type = args[i].t;
+				}
 				if( type == null )
 					type = params.get(name);
 				if( type == null )
@@ -584,17 +604,8 @@ class DomkitChecker extends ScriptEditor.ScriptChecker {
 		return c;
 	}
 
-	function checkDMLRec( e : domkit.MarkupParser.Markup, isRoot=false ) {
+	function checkDMLRec( e : domkit.MarkupParser.Markup ) {
 		switch( e.kind ) {
-		case Node(null):
-			for( c in e.children )
-				checkDMLRec(c,isRoot);
-		case Node(name) if( isRoot ):
-			var prev = @:privateAccess checker.locals.copy();
-			defineComponent(name, e, params);
-			for( c in e.children )
-				checkDMLRec(c);
-			@:privateAccess checker.locals = prev;
 		case Node(name):
 			var c = resolveComp(name);
 			if( c == null )
@@ -752,8 +763,11 @@ class DomkitEditor extends CodeEditor {
 	}
 
 	public function getComponent() {
-		var compReg = ~/<([A-Za-z0-9_]+)/;
-		if( !compReg.match(code) )
+		var compReg = ~/<\/([A-Za-z0-9_-]+)/;
+		var last = code.lastIndexOf("</");
+		if( last < 0 )
+			return null;
+		if( !compReg.match(code.substr(last)) )
 			return null;
 		var name = compReg.matched(1);
 		return checker.components.get(name);

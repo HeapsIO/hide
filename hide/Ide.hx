@@ -309,6 +309,12 @@ class Ide extends hide.tools.IdeData {
 	function get_isFocused() {
 		return js.Browser.document.hasFocus();
 	}
+	public function focus() {
+		window.focus();
+	}
+	public function blur() {
+		window.blur();
+	}
 
 	function onWindowChange() {
 		if( hasReloaded )
@@ -791,6 +797,16 @@ class Ide extends hide.tools.IdeData {
 		fileWatcher.dispose();
 		hide.view.RemoteConsoleView.onBeforeReload();
 		js.Browser.location.reload();
+	}
+
+	public function reloadCss(path: String = null) {
+		var css = new js.jquery.JQuery('link[type="text/css"]');
+		css.each(function(i, e) : Void {
+			var link : js.html.LinkElement = cast e;
+			if (path == null || StringTools.contains(link.href, path)) {
+				link.href = link.href + "?" + haxe.Timer.stamp();
+			}
+		});
 	}
 
 	public function getCDBContent<T>( sheetName : String ) : Array<T> {

@@ -4,8 +4,9 @@ package hide.view;
 	props.json configuration (all champs are optional):
 	```json
 	"remoteconsole": {
-		"host": "127.0.0.2",
-		"port": 40002,
+		"host": "127.0.0.1",
+		"port": 40001,
+		"disableAutoStartServer": false,
 		"commands": [
 			"dump",
 			"custom"
@@ -16,16 +17,15 @@ package hide.view;
 class RemoteConsoleView extends hide.ui.View<{}> {
 	static var rcmd : hrt.impl.RemoteConsole;
 	static var statusBarIcon : Element;
+	static var inst : RemoteConsoleView;
 	var panels : Array<RemoteConsolePanel>;
 	var panelsView : Element;
-	var logsView : Element;
 	var newPanelBtn : Element;
 
 	public function new( ?state ) {
 		super(state);
 		panels = [];
-		if( statusBarIcon == null )
-			statusBarIcon = new Element('<div class="ico ico-dot-circle-o" style="color: darkgray; cursor:default;" title="[Remote Console]"></div>');
+		inst = this;
 	}
 
 	override function onDisplay() {
@@ -39,42 +39,28 @@ class RemoteConsoleView extends hide.ui.View<{}> {
 				<input type="button" id="stopServerBtn" value="Stop Server"/>
 				<label for="connectHost">Host IP</label>
 				<input type="text" id="connectHost" value="$host:$port" disabled/>
-				<div class="logs">
-				</div>
 			</div>
 		</div>').appendTo(element);
-		hide.Ide.inst.addStatusIcon(statusBarIcon);
 		element.find("#startServerBtn").on('click', function(e) {
-			if( rcmd != null )
-				rcmd.close();
-			rcmd = new hrt.impl.RemoteConsole(port, host);
-			rcmd.onClose = () -> refreshStatusIcon();
-			rcmd.log = (msg) -> log(msg);
-			rcmd.logError = (msg) -> log(msg, true);
-			rcmd.startServer(function(c) {
-				addPanel(c);
-			});
-			refreshStatusIcon();
+			startServer(port, host);
 		});
 		element.find("#stopServerBtn").on('click', function(e) {
-			if( rcmd != null )
-				rcmd.close();
-			log("Server stopped");
+			stopServer();
 		});
-
 		panelsView = element.find(".remoteconsole");
-		logsView = element.find(".logs");
-		addPanel();
+		for( panel in panels ) {
+			panel.element.appendTo(panelsView);
+		}
+		if( rcmd != null ) {
+			for( c in rcmd.connections ) {
+				addPanel(c);
+			}
+		}
+		if( panels.length <= 0 )
+			addPanel();
 	}
 
 	override function onBeforeClose():Bool {
-		var active = 0;
-		for( p in panels ) {
-			if( p.isConnected() )
-				active++;
-		}
-		if( active > 0 && !hide.Ide.inst.confirm('Close console ($active connection(s) will be closed)?') )
-			return false;
 		forceClear();
 		return super.onBeforeClose();
 	}
@@ -85,39 +71,13 @@ class RemoteConsoleView extends hide.ui.View<{}> {
 
 	function forceClear() {
 		for( p in panels ) {
-			p.close();
+			p.close(false);
 		}
 		panels = [];
 		if( panelsView != null )
 			panelsView.remove();
 		panelsView = null;
-		logsView = null;
-	}
-
-	public function log( msg : String, error : Bool = false ) {
-		var el = new Element('<p>${StringTools.htmlEscape(msg)}</p>').appendTo(logsView);
-		if( error )
-			el.addClass("error");
-		logsView.scrollTop(logsView.get(0).scrollHeight);
-	}
-
-	public function refreshStatusIcon() {
-		if( statusBarIcon == null || rcmd == null )
-			return;
-		if( rcmd.isConnected() ) {
-			statusBarIcon.css("color", "#009500");
-			statusBarIcon.prop("title", "[Remote Console] Server active");
-		} else {
-			statusBarIcon.css("color", "#c10000");
-			statusBarIcon.prop("title", "[Remote Console] Server stopped");
-		}
-		var active = 0;
-		for( p in panels ) {
-			if( p.isConnected() )
-				active++;
-		}
-		statusBarIcon.empty();
-		statusBarIcon.append(new Element('<span> $active</span>'));
+		inst = null;
 	}
 
 	function refreshNewPanelButton() {
@@ -154,19 +114,50 @@ class RemoteConsoleView extends hide.ui.View<{}> {
 	}
 
 	public function removePanel( p : RemoteConsolePanel ) {
-		if( p.isConnected() ) {
-			if( !hide.Ide.inst.confirm('Close console (connection will be closed)?') ) {
-				return;
-			}
-		}
 		panels.remove(p);
 		p.element.remove();
-		p.close();
+		p.close(true);
+	}
+
+	public static function refreshStatusIcon() {
+		if( statusBarIcon == null ) {
+			statusBarIcon = new Element('<div class="ico ico-dot-circle-o" style="cursor:default;"></div>');
+			hide.Ide.inst.addStatusIcon(statusBarIcon);
+		}
+		if( rcmd == null ) {
+			statusBarIcon.css("color", "darkgray");
+			statusBarIcon.prop("title", "[Remote Console] Server not started");
+		} else if( rcmd.isConnected() ) {
+			statusBarIcon.css("color", "#009500");
+			statusBarIcon.prop("title", "[Remote Console] Server active");
+		} else {
+			statusBarIcon.css("color", "#c10000");
+			statusBarIcon.prop("title", "[Remote Console] Server stopped");
+		}
+		statusBarIcon.empty();
+		statusBarIcon.append(new Element('<span> ${rcmd.connections.length}</span>'));
+	}
+
+	static function startServer( port, host ) {
+		if( rcmd != null && rcmd.isConnected() )
+			return;
+		rcmd = new hrt.impl.RemoteConsole(port, host);
+		rcmd.onClose = () -> refreshStatusIcon();
+		rcmd.startServer(function(c) {
+			if( inst != null )
+				inst.addPanel(c);
+			refreshStatusIcon();
+		});
+		refreshStatusIcon();
+	}
+
+	static function stopServer() {
+		if( rcmd != null )
+			rcmd.close();
 	}
 
 	public static function onBeforeReload() {
-		if( rcmd != null )
-			rcmd.close();
+		stopServer();
 	}
 
 	// allow hide-plugin to add/modify game-specific hide command control
@@ -176,7 +167,26 @@ class RemoteConsoleView extends hide.ui.View<{}> {
 		return null;
 	}
 
-	static var _ = hide.ui.View.register(RemoteConsoleView);
+	static var _ = init();
+	static function init() {
+		hide.ui.View.register(RemoteConsoleView);
+		function wait() {
+			if( Ide.inst?.config?.project == null ) {
+				haxe.Timer.delay(wait, 10);
+				return;
+			}
+			var config = Ide.inst.config.project;
+			var pconfig = config.get("remoteconsole");
+			if( pconfig != null && pconfig.disableAutoStartServer != true ) {
+				var host = pconfig.host ?? hrt.impl.RemoteConsole.DEFAULT_HOST;
+				var port = pconfig.port ?? hrt.impl.RemoteConsole.DEFAULT_PORT;
+				startServer(port, host);
+			}
+		}
+		// Needs to wait a little on reload, otherwise the port might still be occupied.
+		haxe.Timer.delay(wait, 100);
+		return 0;
+	}
 }
 
 class RemoteConsolePanel extends hide.comp.Component {
@@ -186,12 +196,11 @@ class RemoteConsolePanel extends hide.comp.Component {
 	public function new( view : RemoteConsoleView, connection : Null<hrt.impl.RemoteConsole.RemoteConsoleConnection>, commands : Null<Array<String>> ) {
 		super(null, null);
 		this.view = view;
-		this.connection = connection;
 		element = new Element('
 		<div class="remoteconsole-panel">
 			<div class="controls">
-				<div class="ico ico-dot-circle-o" id="statusIcon" style="color: darkgray; cursor:default;" title="Not connected"></div>
-				<div class="ico ico-close" id="closeBtn" title="Close panel"></div>
+				<div class="ico ico-dot-circle-o" id="statusIcon" style="cursor:default;"></div>
+				<div class="ico ico-close" id="closeBtn" title="Close panel and its connection"></div>
 			</div>
 			<div class="logs">
 			</div>
@@ -200,6 +209,7 @@ class RemoteConsolePanel extends hide.comp.Component {
 		</div>
 		');
 		this.statusIcon = element.find("#statusIcon");
+		this.connection = connection;
 		element.find("#closeBtn").on('click', function(e) {
 			view.removePanel(this);
 		});
@@ -208,10 +218,17 @@ class RemoteConsolePanel extends hide.comp.Component {
 			addCommandElement(name);
 	}
 	function set_connection( c ) {
+		if( connection == c )
+			return connection;
 		if( c != null ) {
 			c.onClose = () -> refreshStatusIcon();
 			c.log = (msg) -> log(msg);
 			c.logError = (msg) -> log(msg, true);
+		}
+		if( connection != null ) {
+			connection.onClose = () -> {};
+			connection.log = (msg) -> {};
+			connection.logError = (msg) -> {};
 		}
 		connection = c;
 		refreshStatusIcon();
@@ -227,10 +244,13 @@ class RemoteConsolePanel extends hide.comp.Component {
 		comp.element.appendTo(element.find(".commands"));
 	}
 	function refreshStatusIcon() {
-		view.refreshStatusIcon();
+		RemoteConsoleView.refreshStatusIcon();
 		if( statusIcon == null )
 			return;
-		if( isConnected() ) {
+		if( connection == null ) {
+			statusIcon.css("color", "darkgray");
+			statusIcon.prop("title", "Not connected");
+		} else if( connection.isConnected() ) {
 			statusIcon.css("color", "#009500");
 			statusIcon.prop("title", "Connected");
 		} else {
@@ -238,8 +258,8 @@ class RemoteConsolePanel extends hide.comp.Component {
 			statusIcon.prop("title", "Disconnected");
 		}
 	}
-	public function close() {
-		if( connection != null ) {
+	public function close( disconnect : Bool ) {
+		if( disconnect && connection != null ) {
 			connection.close();
 			log("Disconnected");
 		}
