@@ -40,8 +40,8 @@ class Resource extends hxd.res.Resource {
 		return animGraph;
 	}
 
-	public function loadAnim() : AnimGraphInstance {
-		return load().getAnimation();
+	public function loadAnim(resolver: hrt.animgraph.AnimGraphInstance.AnimResolver = null) : AnimGraphInstance {
+		return load().getAnimation(resolver);
 	}
 
 	public static var CACHE_VERSION = 0;
