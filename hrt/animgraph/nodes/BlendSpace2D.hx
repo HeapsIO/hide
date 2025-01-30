@@ -12,6 +12,8 @@ typedef AnimInfo = {
 	anim: h3d.anim.Animation,
 	proxy: hrt.animgraph.nodes.Input.AnimProxy,
 	indexRemap: Array<Null<Int>>,
+	keepSync: Bool,
+	selfSpeed: Float,
 }
 
 @:access(hrt.animgraph.BlendSpace2D)
@@ -73,7 +75,8 @@ class BlendSpace2D extends AnimNode {
 				{
 					var path = ctx.resolver(blendSpacePoint.animPath);
 					if (path != null) {
-						var animIndex = animMap.getOrPut(path, {
+
+						function makeAnim() : Int {
 							// Create a new animation
 							var index = animInfos.length;
 							var animBase = hxd.res.Loader.currentInstance.load(path).toModel().toHmd().loadAnimation();
@@ -88,9 +91,18 @@ class BlendSpace2D extends AnimNode {
 								indexRemap[ourId] = boneId;
 							}
 
-							animInfos.push({anim: animInstance, proxy: proxy, indexRemap: indexRemap});
-							index;
-						});
+							animInfos.push({anim: animInstance, proxy: proxy, indexRemap: indexRemap, selfSpeed: 1.0, keepSync: blendSpacePoint.keepSync});
+							return index;
+						}
+
+						var animIndex = if (blendSpacePoint.keepSync) {
+							animMap.getOrPut(path, makeAnim());
+						} else {
+							// All anims not kept in sync are unique, so we bypass the animMap
+							var i = makeAnim();
+							animInfos[i].selfSpeed = blendSpacePoint.speed;
+							i;
+						}
 
 						point.animInfo = animInfos[animIndex];
 					}
@@ -125,13 +137,19 @@ class BlendSpace2D extends AnimNode {
 	override function tick(dt:Float) {
 		super.tick(dt);
 
-		if (currentAnimLenght > 0) {
-			for (animInfo in animInfos) {
-				// keep all the animations in sync
-				var scale = (animInfo.anim.getDuration()) / currentAnimLenght;
-				animInfo.anim.update(dt * scale);
-				@:privateAccess animInfo.anim.isSync = false;
+		for (animInfo in animInfos) {
+			// keep all the animations in sync
+			var scale = animInfo.selfSpeed;
+
+			if (animInfo.keepSync) {
+				if (currentAnimLenght <= 0) {
+					continue;
+				}
+				scale *= (animInfo.anim.getDuration()) / currentAnimLenght;
 			}
+
+			animInfo.anim.update(dt * scale);
+			@:privateAccess animInfo.anim.isSync = false;
 		}
 	}
 
@@ -197,11 +215,11 @@ class BlendSpace2D extends AnimNode {
 
 			currentAnimLenght = 0.0;
 
-			// Compensate for null animations that don't have lenght
+			// Compensate for null animations that don't have length
 			var nulls = 0;
 			var nullWeights: Float = 0;
 			for (i => pt in triangles[currentTriangle]) {
-				if (pt.animInfo == null) {
+				if (pt.animInfo == null || !pt.animInfo.keepSync) {
 					nulls ++;
 					nullWeights += weights[i];
 				}
@@ -211,9 +229,12 @@ class BlendSpace2D extends AnimNode {
 				nullWeights /= (3 - nulls);
 			}
 
+			trace(nullWeights, weights);
+
 			for (i => pt in triangles[currentTriangle]) {
-				if(pt.animInfo != null) {
-					currentAnimLenght += pt.animInfo.anim.getDuration()/pt.speed * weights[i] + nullWeights;
+				if(pt.animInfo != null && pt.animInfo.keepSync) {
+					var blendLength = pt.animInfo.anim.getDuration()/pt.speed * (weights[i] + nullWeights);
+					currentAnimLenght += blendLength;
 				}
 			}
 		}

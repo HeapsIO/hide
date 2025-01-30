@@ -7,7 +7,7 @@ class BlendSpacePoint {
 	@:s public var y : Float = 0.0;
 	@:s public var speed: Float = 1.0;
 	@:s public var animPath: String = null;
-
+	@:s public var keepSync: Bool = true; // If true, the anim will be kept in sync with all the other anims in the graph marked as keepSync
 }
 
 class BlendSpace2D extends hrt.prefab.Prefab {
