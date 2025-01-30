@@ -2,6 +2,27 @@ package hrt.prefab.rfx;
 
 import hxd.Pixels;
 
+class ColorGradingFunc extends hxsl.Shader {
+	static var SRC = {
+		function getColorGrading(base : Vec3, lut : Sampler2D, size : Float) : Vec3 {
+			var innerWidth = size - 1.0;
+			var sliceSize = 1.0 / size;
+			var slicePixelSize = sliceSize / size;
+			var sliceInnerSize = slicePixelSize * innerWidth;
+			var blueSlice0 = min(floor(base.b * innerWidth), innerWidth);
+			var blueSlice1 = min(blueSlice0 + 1.0, innerWidth);
+			var xOffset = slicePixelSize * 0.5 + base.r * sliceInnerSize;
+			var yOffset = sliceSize * 0.5 + base.g * (1.0 - sliceSize);
+			var s0 = vec2(xOffset + (blueSlice0 * sliceSize), yOffset);
+			var s1 = vec2(xOffset + (blueSlice1 * sliceSize), yOffset);
+			var slice0Color = texture(lut, s0).rgb;
+			var slice1Color = texture(lut, s1).rgb;
+			var bOffset = mod(base.b * innerWidth, 1.0);
+			return mix(slice0Color, slice1Color, bOffset);
+		}
+	}
+}
+
 class ColorGradingTonemap extends hxsl.Shader {
 	static var SRC = {
 
@@ -11,22 +32,11 @@ class ColorGradingTonemap extends hxsl.Shader {
 		var hdrColor : Vec4;
 		var pixelColor : Vec4;
 
+		@:import ColorGradingFunc;
+
 		function fragment() {
-			var uv = pixelColor.rgb;
-			var innerWidth = size - 1.0;
-			var sliceSize = 1.0 / size;
-			var slicePixelSize = sliceSize / size;
-			var sliceInnerSize = slicePixelSize * innerWidth;
-			var blueSlice0 = min(floor(uv.b * innerWidth), innerWidth);
-			var blueSlice1 = min(blueSlice0 + 1.0, innerWidth);
-			var xOffset = slicePixelSize * 0.5 + uv.r * sliceInnerSize;
-			var yOffset = sliceSize * 0.5 + uv.g * (1.0 - sliceSize);
-			var s0 = vec2(xOffset + (blueSlice0 * sliceSize), yOffset);
-			var s1 = vec2(xOffset + (blueSlice1 * sliceSize), yOffset);
-			var slice0Color = texture(lut, s0).rgb;
-			var slice1Color = texture(lut, s1).rgb;
-			var bOffset = mod(uv.b * innerWidth, 1.0);
-			pixelColor.rgb = mix(pixelColor.rgb, mix(slice0Color, slice1Color, bOffset), intensity);
+			var colorGrading = getColorGrading(pixelColor.rgb, lut, size);
+			pixelColor.rgb = mix(pixelColor.rgb, colorGrading, intensity);
 		}
 	}
 }
