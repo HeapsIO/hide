@@ -41,6 +41,16 @@ class DomkitViewer {
 		}
 	}
 
+	static function clearImportNames( m : domkit.MarkupParser.Markup ) {
+		switch( m.kind ) {
+		case Node(n) if( n != null && n.indexOf(".") >= 0 ): m.kind = Node(n.split(".").pop()); // remove root.name
+		default:
+		}
+		if( m.children != null )
+			for( c in m.children )
+				clearImportNames(c);
+	}
+
 	public static function loadSource( path : String, pos : Position, fields : Array<Field> ) {
 		var name = path.split("/").pop().split("_").join("-");
 		var dotPos = name.lastIndexOf(".");
@@ -104,6 +114,7 @@ class DomkitViewer {
 			}
 			if( hasDynParam )
 				removeDynParamsRec(m, dynParams);
+			clearImportNames(m);
 
 			fields.push({
 				name : "__CSS",

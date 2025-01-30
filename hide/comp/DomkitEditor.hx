@@ -349,6 +349,13 @@ class DomkitChecker extends ScriptEditor.ScriptChecker {
 	}
 
 	function resolveComp( name : String ) : TypedComponent {
+
+		var rootComp = name;
+		var index = name.indexOf(".");
+		if( index >= 0 ) {
+			rootComp = name.substr(0, index);
+			name = name.substr(index+1);
+		}
 		var c = components.get(name);
 		if( c != null )
 			return c;
@@ -356,7 +363,7 @@ class DomkitChecker extends ScriptEditor.ScriptChecker {
 		var dirs : Array<String> = config.get("domkit.components");
 		if( dirs == null ) dirs = ["ui/comp"];
 		for( d in dirs ) {
-			var path = d+"/"+name+".domkit";
+			var path = d+"/"+rootComp.split("-").join("_")+".domkit";
 			var content = try sys.io.File.getContent(ide.getPath(path)) catch( e : Dynamic ) continue;
 			var data = hrt.impl.DomkitViewer.DomkitFile.parse(content);
 			var node = null, params = new Map();
