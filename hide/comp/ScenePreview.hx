@@ -156,6 +156,7 @@ class ScenePreview extends Scene {
 	**/
 	public function setObjectPath(path: String) {
 		previewSettings.modelPath = path;
+		saveSettings();
 		reloadObject();
 	}
 
