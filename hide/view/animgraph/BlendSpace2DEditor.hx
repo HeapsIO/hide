@@ -432,6 +432,7 @@ class BlendSpace2DEditor extends hide.view.FileView {
 						<dt>X</dt><dd><input type="range" min="0.0" max="1.0" field="x"/></dd>
 						<dt>Y</dt><dd><input type="range" min="0.0" max="1.0" field="y"/></dd>
 						<dt>Anim speed</dt><dd><input type="range" min="0.1" max="2.0" field="speed"/></dd>
+						<dt>Keep Sync</dt><dd><input type="checkbox" field="keepSync"/></dd>
 					</dl>
 				</div>
 			');
