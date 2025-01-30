@@ -432,7 +432,7 @@ class BlendSpace2DEditor extends hide.view.FileView {
 						<dt>X</dt><dd><input type="range" min="0.0" max="1.0" field="x"/></dd>
 						<dt>Y</dt><dd><input type="range" min="0.0" max="1.0" field="y"/></dd>
 						<dt>Anim speed</dt><dd><input type="range" min="0.1" max="2.0" field="speed"/></dd>
-						<dt>Keep Sync</dt><dd><input type="checkbox" field="keepSync"/></dd>
+						<dt title="If on, the anim position will be kept in sync will all the other animations. If unchecked, the anim will run independently of the other. Usefull for idle animations that are not the same length of the run ones">Keep Sync</dt><dd><input type="checkbox" field="keepSync"/></dd>
 					</dl>
 				</div>
 			');
