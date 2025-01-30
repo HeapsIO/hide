@@ -13,13 +13,18 @@ class Input extends AnimNode {
 	var anim : h3d.anim.Animation;
 	var proxy : AnimProxy;
 
-	@:s var path : String = "character/Kobold01/Anim_attack01.FBX";
-
-
+	@:s var path : String = "";
 
 	override function getBones(ctx: hrt.animgraph.nodes.AnimNode.GetBoneContext):Map<String, Int> {
 		proxy = new AnimProxy();
-		anim = hxd.res.Loader.currentInstance.load(ctx.resolver(path)).toModel().toHmd().loadAnimation().createInstance(proxy);
+		var pathToLoad = ctx.resolver(path);
+		if (pathToLoad == null)
+			return [];
+		try {
+			anim = hxd.res.Loader.currentInstance.load(pathToLoad).toModel().toHmd().loadAnimation().createInstance(proxy);
+		} catch (e) {
+			return [];
+		}
 
 		var map : Map<String, Int> = [];
 		for (id => obj in anim.getObjects()) {
@@ -29,14 +34,20 @@ class Input extends AnimNode {
 	}
 
 	override function tick(dt: Float) {
+		if (anim == null)
+			return;
 		anim.update(dt);
 		@:privateAccess anim.isSync = false;
 	}
 
 	override function getBoneTransform(id: Int, matrix: h3d.Matrix, ctx: AnimNode.GetBoneTransformContext) {
 		// todo : add sync outside the getBoneMatrix to avoid checks
-		@:privateAccess
+		if (anim == null) {
+			matrix.load(ctx.getDefPose());
+			return;
+		}
 
+		@:privateAccess
 		if (!anim.isSync) {
 			anim.sync(true);
 			anim.isSync = true;
