@@ -53,8 +53,11 @@ class FXAnimation extends h3d.scene.Object {
 		if(root == null)
 			root = def;
 
-		for (shaderTarget in def.flatten(hrt.prefab.fx.ShaderTarget))
+		for (shaderTarget in def.flatten(hrt.prefab.fx.ShaderTarget)) {
+			if (!shaderTarget.enabled)
+				continue;
 			shaderTarget.applyShaderTarget(def, shaderTarget.target);
+		}
 
 		initObjAnimations(root);
 		initEmitters(root);
