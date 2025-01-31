@@ -568,7 +568,6 @@ class BlendSpace2DEditor extends hide.view.FileView {
 			previewBlendPos.attr("transform", 'translate(${localXToGraph(rx)}, ${localYToGraph(ry)})');
 
 			queuedRequest = js.Browser.window.requestAnimationFrame(onRequestAnimationFrame);
-			trace(haxe.Timer.stamp());
 			return;
 		}
 		queuedRequest = -1;
