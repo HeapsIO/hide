@@ -635,7 +635,7 @@ class Model extends FileView {
 							<select id="select-lods">
 								<option value="-1">None</option>
 								${[ for(idx in 0...hmd.lodCount()) '<option value="${idx}">LOD ${idx}</option>'].join("")}
-							<select>
+							</select>
 						</dd>
 						<dt>LOD Vertexes</dt><dd id="vertexes-count">-</dd>
 						<div class="lods-line">
