@@ -8,6 +8,8 @@ class Domkit extends FileView {
 	var prevSave : { css : String, dml : String, params : String };
 	var checker : hide.comp.DomkitEditor.DomkitChecker;
 
+	var totalHeight = 0.;
+	var totalWidth = 0.;
 	override function onDisplay() {
 
 		element.html('
@@ -46,8 +48,8 @@ class Domkit extends FileView {
 		cssEditor.onSave = dmlEditor.onSave = paramsEditor.onSave = save;
 
 		var editors = element.find('.editors');
-		var totalWidth = editors.width();
-		var totalHeight = editors.height();
+		totalWidth = editors.width();
+		totalHeight = editors.height();
 		var panelRight = element.find('.right');
 		var panelLeft = new hide.comp.ResizablePanel(hide.comp.ResizablePanel.LayoutDirection.Horizontal, element.find('.left'), After);
 		panelLeft.onBeforeResize = () -> {
@@ -74,6 +76,12 @@ class Domkit extends FileView {
 		// add a scene so the CssParser can resolve Tiles
 		var scene = element.find(".scene");
 		new hide.comp.Scene(config, scene, scene).onReady = function() check();
+	}
+
+	override function onResize() {
+		var editors = element.find('.editors');
+		totalWidth = editors.width();
+		totalHeight = editors.height();
 	}
 
 	function defineGlobals() {
