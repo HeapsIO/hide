@@ -774,9 +774,6 @@ class Model extends FileView {
 						}
 					});
 				}
-
-				var cursor = lodsEl.find(".cursor");
-				cursor.css({top: '${lodsLine.position().top + 11}px'});
 			}
 		}
 
