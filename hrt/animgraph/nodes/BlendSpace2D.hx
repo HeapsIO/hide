@@ -31,6 +31,8 @@ class BlendSpace2D extends AnimNode {
 
 	var dirtyPos: Bool = true;
 
+	var prevAnimEventBind : h3d.anim.Animation;
+
 	function set_bsX(v: Float) : Float {
 		if (v != bsX)
 			currentTriangle = -1;
@@ -118,8 +120,8 @@ class BlendSpace2D extends AnimNode {
 						function makeAnim() : Int {
 							// Create a new animation
 							var index = animInfos.length;
-							var animBase = hxd.res.Loader.currentInstance.load(path).toModel().toHmd().loadAnimation();
-
+							var animModel = hxd.res.Loader.currentInstance.load(path).toModel();
+							var animBase = ctx.modelCache.loadAnimation(animModel);
 							var proxy = new hrt.animgraph.nodes.Input.AnimProxy(null);
 							var animInstance = animBase.createInstance(proxy);
 
@@ -272,6 +274,20 @@ class BlendSpace2D extends AnimNode {
 			if (currentTriangle == -1)
 				throw "assert";
 
+			var max = 0;
+			for (i in 1...3) {
+				if (weights[i] > weights[max]) {
+					max = i;
+				}
+			}
+
+			var strongestAnim = triangles[currentTriangle][max].animInfo?.anim;
+			if (prevAnimEventBind != strongestAnim) {
+				prevAnimEventBind?.onEvent = null;
+				strongestAnim?.onEvent = animEventHander;
+				prevAnimEventBind = strongestAnim;
+			}
+
 			currentAnimLenght = 0.0;
 
 			// Compensate for null animations that don't have length
@@ -347,6 +363,13 @@ class BlendSpace2D extends AnimNode {
 		outMatrix._13 = workQuat.y;
 		outMatrix._21 = workQuat.z;
 		outMatrix._23 = workQuat.w;
+	}
+
+	function animEventHander(name: String) {
+		trace("event", name);
+		if (onEvent != null) {
+			onEvent(name);
+		}
 	}
 
 	#if editor
