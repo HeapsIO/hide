@@ -38,7 +38,7 @@ class Model extends FileView {
 
 	override function save() {
 
-		// if(!modified) return;
+		if(!modified) return;
 
 		// Save render props
 		if (Ide.inst.currentConfig.get("sceneeditor.renderprops.edit", false) && sceneEditor.renderPropsRoot != null)
@@ -50,7 +50,15 @@ class Model extends FileView {
 			if (hmd == null)
 				continue;
 
-			h3d.prim.ModelDatabase.current.saveModelProps(o.name, hmd);
+			var input : h3d.prim.ModelDatabase.ModelDataInput = {
+				resourceDirectory : @:privateAccess hmd.lib.resource.entry.directory,
+				resourceName : @:privateAccess hmd.lib.resource.name,
+				objectName : o.name,
+				hmd : hmd,
+				skin : o.find((o) -> Std.downcast(o, h3d.scene.Skin))
+			}
+
+			h3d.prim.ModelDatabase.current.saveModelProps(input);
 		}
 
 		// Save current Anim data
@@ -68,19 +76,6 @@ class Model extends FileView {
 			var bytes = new haxe.io.BytesOutput();
 			bytes.writeString(haxe.Json.stringify(hideData, "\t"));
 			hxd.File.saveBytes(getPropsPath(), bytes.getBytes());
-		}
-
-		// Save dynamic Bones
-		var skin = obj.find((o) -> Std.downcast(o, h3d.scene.Skin));
-		if (skin != null) {
-			var skinData = skin.getSkinData();
-			for (j in skinData.allJoints) {
-				var dynJoint = Std.downcast(j, h3d.anim.Skin.DynamicJoint);
-				if (dynJoint == null)
-					continue;
-
-				trace(dynJoint.name);
-			}
 		}
 
 		super.save();
@@ -642,44 +637,65 @@ class Model extends FileView {
 
 			var dynJointEl = new Element('<div class="group" name="Dynamic bone">
 				<dt>Is Dynamic</dt><dd><input id="dynamic" type="checkbox"/></dd>
-				<dt>Damping</dt><dd><input id="damping" type="number" min="0" max="1"/></dd>
-				<dt>Resistance</dt><dd><input id="resistance" type="number" min="0" max="1"/></dd>
-				<dt>Stiffness</dt><dd><input id="stiffness" type="number" min="0" max="1"/></dd>
-				<dt>Slackness</dt><dd><input id="slackness" type="number" min="0" max="1"/></dd>
+				<div class="dynamic-edition">
+					<dt>Damping</dt><dd><input id="damping" type="number" step="0.1" min="0" max="1"/></dd>
+					<dt>Resistance</dt><dd><input id="resistance" type="number" step="0.1" min="0" max="1"/></dd>
+					<dt>Stiffness</dt><dd><input id="stiffness" type="number" step="0.1" min="0" max="1"/></dd>
+					<dt>Slackness</dt><dd><input id="slackness" type="number" step="0.1" min="0" max="1"/></dd>
+				</div>
 			</div>');
 
 			var isDynEl = dynJointEl.find("#dynamic");
 			isDynEl.get(0).toggleAttribute('checked', Std.downcast(j, h3d.anim.Skin.DynamicJoint) != null);
+			if (!isDynEl.is(':checked'))
+				dynJointEl.find(".dynamic-edition").hide();
 			isDynEl.change(function(e) {
-				var newV = isDynEl.is(':checked');
-				function setToDynamic(j : h3d.anim.Skin.Joint) {
-					var dynJ = new h3d.anim.Skin.DynamicJoint();
-					dynJ.index = j.index;
-					dynJ.name = j.name;
-					dynJ.bindIndex = j.bindIndex;
-					dynJ.splitIndex = j.splitIndex;
-					dynJ.defMat = j.defMat;
-					dynJ.transPos = j.transPos;
-					dynJ.parent = j.parent;
-					dynJ.follow = j.follow;
-					dynJ.subs = j.subs;
-					dynJ.worldPos = j.worldPos;
-					dynJ.offsets = j.offsets;
-					dynJ.offsetRay = j.offsetRay;
-					dynJ.retargetAnim = j.retargetAnim;
-					skinData.allJoints[j.index] = dynJ;
+				function toggleDynamicJoint(j : h3d.anim.Skin.Joint, isDynamic : Bool) {
+					var newJ = isDynamic ? new h3d.anim.Skin.DynamicJoint() : new h3d.anim.Skin.Joint();
+					newJ.index = j.index;
+					newJ.name = j.name;
+					newJ.bindIndex = j.bindIndex;
+					newJ.splitIndex = j.splitIndex;
+					newJ.defMat = j.defMat;
+					newJ.transPos = j.transPos;
+					newJ.parent = j.parent;
+					newJ.follow = j.follow;
+					newJ.subs = j.subs;
+					newJ.worldPos = j.worldPos;
+					newJ.offsets = j.offsets;
+					newJ.offsetRay = j.offsetRay;
+					newJ.retargetAnim = j.retargetAnim;
+					skinData.allJoints[j.index] = newJ;
 
-					j.parent.subs.remove(j);
-					j.parent.subs.push(dynJ);
+					j.parent?.subs.remove(j);
+					j.parent?.subs.push(newJ);
 
-					for (s in dynJ.subs)
-						setToDynamic(s);
+					if (!isDynamic) {
+						if (j.parent != null)
+							toggleDynamicJoint(j.parent, isDynamic);
+					}
+					else {
+						for (s in newJ.subs)
+							toggleDynamicJoint(s, isDynamic);
+					}
 				}
 
-				if (newV) {
-					setToDynamic(j);
+				var v = isDynEl.is(':checked');
+				var oldJoints = skinData.allJoints.copy();
+				toggleDynamicJoint(j, v);
+				skin.setSkinData(skinData);
+				var newJoints = skinData.allJoints.copy();
+
+				function exec(undo) {
+					var joints = undo ? oldJoints : newJoints;
+					for (j in skinData.allJoints)
+						skinData.allJoints[j.index] = joints[j.index];
 					skin.setSkinData(skinData);
+					selectObject(obj);
 				}
+
+				exec(false);
+				properties.undo.change(Custom(exec));
 			});
 
 			var dynJoin = Std.downcast(j, h3d.anim.Skin.DynamicJoint);
@@ -688,28 +704,60 @@ class Model extends FileView {
 				damping.val(dynJoin.damping);
 				damping.change(function(e) {
 					var newV = damping.val();
-					dynJoin.damping = newV;
+					var oldV = dynJoin.damping;
+					function exec(undo) {
+						var v = undo ? oldV : newV;
+						dynJoin.damping = v;
+						damping.val(v);
+					}
+
+					exec(false);
+					properties.undo.change(Custom(exec));
 				});
 
 				var resistance = dynJointEl.find("#resistance");
 				resistance.val(dynJoin.resistance);
 				resistance.change(function(e) {
 					var newV = resistance.val();
-					dynJoin.resistance = newV;
+					var oldV = dynJoin.resistance;
+					function exec(undo) {
+						var v = undo ? oldV : newV;
+						dynJoin.resistance = v;
+						resistance.val(v);
+					}
+
+					exec(false);
+					properties.undo.change(Custom(exec));
 				});
 
 				var stiffness = dynJointEl.find("#stiffness");
 				stiffness.val(dynJoin.stiffness);
 				stiffness.change(function(e) {
 					var newV = stiffness.val();
-					dynJoin.stiffness = newV;
+					var oldV = dynJoin.stiffness;
+					function exec(undo) {
+						var v = undo ? oldV : newV;
+						dynJoin.stiffness = v;
+						stiffness.val(v);
+					}
+
+					exec(false);
+					properties.undo.change(Custom(exec));
 				});
 
 				var slackness = dynJointEl.find("#slackness");
 				slackness.val(dynJoin.slackness);
 				slackness.change(function(e) {
 					var newV = slackness.val();
-					dynJoin.slackness = newV;
+					var oldV = dynJoin.slackness;
+					function exec(undo) {
+						var v = undo ? oldV : newV;
+						dynJoin.slackness = v;
+						slackness.val(v);
+					}
+
+					exec(false);
+					properties.undo.change(Custom(exec));
 				});
 			}
 
