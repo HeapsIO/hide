@@ -82,8 +82,13 @@ class CodeEditor extends Component {
 						if( r.insertText == null )
 							r.insertText = r.label;
 
-					res = res.concat(getKeyWordsCompletion());
 					return { suggestions : res };
+				}
+			});
+
+			monaco.Languages.registerCompletionItemProvider(lang, {
+				provideCompletionItems : function(model,position,_,_) {
+					return { suggestions : getKeyWordsCompletion() };
 				}
 			});
 		}
