@@ -57,7 +57,9 @@ class Vignetting extends RendererFX {
 				<dt>Radius</dt><dd><input type="range" min="0" max="1" field="radius"/></dd>
 				<dt>Softness</dt><dd><input type="range" min="0" max="1" field="softness"/></dd>
 			</dl>
-		'),this);
+		'),this, function(pname) {
+			ctx.onChange(this, pname);
+		});
 		super.edit(ctx);
 	}
 	#end
