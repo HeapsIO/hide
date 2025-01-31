@@ -4512,6 +4512,11 @@ blend-space-2d-root main-panel graph-container svg .preview-axis {
   stroke: #008a00;
   stroke-width: 2;
 }
+blend-space-2d-root main-panel graph-container svg .preview-axis-real {
+  fill: none;
+  stroke: #008a00;
+  stroke-width: 1;
+}
 blend-space-2d-root main-panel graph-container drag-handler {
   z-index: 1;
   position: absolute;

@@ -19,7 +19,13 @@ typedef AnimInfo = {
 @:access(hrt.animgraph.BlendSpace2D)
 class BlendSpace2D extends AnimNode {
 	@:input var bsX(default, set): Float = 0.5;
+	var realX : Float = 0.5;
+	var vX : Float = 0.0;
+
 	@:input var bsY(default, set): Float = 0.5;
+	var realY : Float = 0.5;
+	var vY : Float = 0.0;
+
 
 	@:s var path : String = "";
 
@@ -50,12 +56,38 @@ class BlendSpace2D extends AnimNode {
 	var workQuats : Array<h3d.Quat> = [new h3d.Quat(), new h3d.Quat(), new h3d.Quat()];
 	var refQuat = new h3d.Quat();
 
+
+	static function halfLifeToDamping(halfLife: Float) {
+    	return (4.0 * 0.69314718056) / (halfLife + 1e-5);
+	}
+
+	static function fastNegexp(x: Float) : Float
+	{
+    	return 1.0 / (1.0 + x + 0.48*x*x + 0.235*x*x*x);
+	}
+
+
+	inline static function criticalSpringDamper(x: Float, v: Float, xGloal: Float, vGoal: Float, halfLife: Float, dt: Float) : {x: Float, v: Float} {
+		final damping = halfLifeToDamping(halfLife);
+		final c = xGloal + (damping * vGoal) / (damping * damping ) / 4.0;
+		final half_damping = damping / 2.0;
+		final j0 = x - c;
+		final j1 = v + j0 * half_damping;
+		final eydt = fastNegexp(half_damping * dt);
+
+		return {x: eydt * (j0 + j1 * dt) + c, v: eydt *(v - j1*half_damping*dt)};
+	}
+
+
 	override function getBones(ctx: hrt.animgraph.nodes.AnimNode.GetBoneContext):Map<String, Int> {
 		var boneMap : Map<String, Int> = [];
 		animInfos = [];
 		points = [];
 		triangles = [];
 		currentTriangle = -1;
+
+		realX = bsX;
+		realY = bsY;
 
 		var curOurBoneId = 0;
 
@@ -137,6 +169,26 @@ class BlendSpace2D extends AnimNode {
 	override function tick(dt:Float) {
 		super.tick(dt);
 
+		if (blendSpace.smoothX > 0) {
+			var r = criticalSpringDamper(realX, vX, bsX, 0, blendSpace.smoothX, dt);
+			realX = r.x;
+			vX = r.v;
+
+			currentTriangle = -1;
+		} else {
+			realX = bsX;
+		}
+
+		if (blendSpace.smoothX > 0) {
+			var r = criticalSpringDamper(realY, vY, bsY, 0, blendSpace.smoothY, dt);
+			realY = r.x;
+			vY = r.v;
+
+			currentTriangle = -1;
+		} else {
+			realY = bsY;
+		}
+
 		for (animInfo in animInfos) {
 			// keep all the animations in sync
 			var scale = animInfo.selfSpeed;
@@ -159,7 +211,7 @@ class BlendSpace2D extends AnimNode {
 			return;
 
 		if (currentTriangle == -1) {
-			var curPos = inline new h2d.col.Point(bsX, bsY);
+			var curPos = inline new h2d.col.Point(realX, realY);
 
 			// find the triangle our curPos resides in
 			var collided = false;

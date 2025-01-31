@@ -17,8 +17,12 @@ class BlendSpace2D extends hrt.prefab.Prefab {
 
 	@:s var minX = 0.0;
 	@:s var maxX = 1.0;
+	@:s var smoothX = 0.0;
+
 	@:s var minY = 0.0;
 	@:s var maxY = 1.0;
+	@:s var smoothY = 0.0;
+
 
 	var instance : BlendSpace2DInstance;
 

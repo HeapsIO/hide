@@ -38,6 +38,8 @@ class BlendSpace2DEditor extends hide.view.FileView {
 
 	var animPreview : hrt.animgraph.AnimGraphInstance;
 
+	var previewBlendPos : hide.Element;
+
 	inline function getPointPos(clientX : Float, clientY : Float, snap: Bool) : h2d.col.Point {
 		var x = hxd.Math.clamp(graphXToLocal(clientX), blendSpace2D.minX, blendSpace2D.maxX);
 		var y = hxd.Math.clamp(graphYToLocal(clientY), blendSpace2D.minY, blendSpace2D.maxY);
@@ -418,7 +420,9 @@ class BlendSpace2DEditor extends hide.view.FileView {
 		<div class="group" name="BlendSpace">
 			<dl>
 				<dt>Min/MaxX</dt><dd><input type="number" field="minX"/><input type="number" field="maxX"/></dd>
+				<dt>Smooth X</dt><dd><input type="range" min="0.0" max="1.0" field="smoothX"/></dd>
 				<dt>Min/MaxY</dt><dd><input type="number" field="minY"/><input type="number" field="maxY"/></dd>
+				<dt>Smooth Y</dt><dd><input type="range" min="0.0" max="1.0" field="smoothY"/></dd>
 			</dl>
 		</div>
 		'), blendSpace2D, (_) -> {
@@ -552,6 +556,21 @@ class BlendSpace2DEditor extends hide.view.FileView {
 
 	}
 
+	var queuedRequest : Int = -1;
+	function onRequestAnimationFrame(dt: Float) {
+		if (previewBlendPos != null && animPreview != null) {
+			var root : hrt.animgraph.nodes.BlendSpace2D.BlendSpace2D = cast @:privateAccess animPreview.rootNode;
+			var rx = @:privateAccess root.realX;
+			var ry = @:privateAccess root.realY;
+			previewBlendPos.attr("transform", 'translate(${localXToGraph(rx)}, ${localYToGraph(ry)})');
+
+			queuedRequest = js.Browser.window.requestAnimationFrame(onRequestAnimationFrame);
+			trace(haxe.Timer.stamp());
+			return;
+		}
+		queuedRequest = -1;
+	}
+
 	function createPoint() {
 
 	}
@@ -669,6 +688,23 @@ class BlendSpace2DEditor extends hide.view.FileView {
 			final size = 10;
 			graph.line(g, -size, -size, size, size).addClass("preview-axis");
 			graph.line(g, -size, size, size, -size).addClass("preview-axis");
+
+			if (animPreview != null) {
+				var root : hrt.animgraph.nodes.BlendSpace2D.BlendSpace2D = cast @:privateAccess animPreview.rootNode;
+				var rx = @:privateAccess root.realX;
+				var ry = @:privateAccess root.realY;
+
+				previewBlendPos = graph.group(graph.element);
+				previewBlendPos.attr("transform", 'translate(${localXToGraph(rx)}, ${localYToGraph(ry)})');
+				final size = 10;
+				graph.line(previewBlendPos, -size, -size, size, size).addClass("preview-axis-real");
+				graph.line(previewBlendPos, -size, size, size, -size).addClass("preview-axis-real");
+
+				if (queuedRequest < 0) {
+					queuedRequest = js.Browser.window.requestAnimationFrame(onRequestAnimationFrame);
+				}
+			}
+
 		}
 	}
 
