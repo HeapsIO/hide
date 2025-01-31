@@ -123,12 +123,12 @@ class GraphEditor extends hide.comp.Component {
 		fn(false);
 	}
 
-	public function commitUndo() {
+	public function commitUndo(noDataChange: Bool = false) {
 		if (currentUndoBuffer.length <= 0) {
 			return;
 		}
 		var buffer = currentUndoBuffer;
-		editor.getUndo().change(Custom(execUndo.bind(buffer)));
+		editor.getUndo().change(Custom(execUndo.bind(buffer)), null, noDataChange);
 		currentUndoBuffer = [];
 	}
 
@@ -257,7 +257,7 @@ class GraphEditor extends hide.comp.Component {
 						opSelect(id, true, save.buffer);
 					}
 					currentUndoBuffer = save.buffer;
-					commitUndo();
+					commitUndo(true);
 					undoSave = null;
 					return;
 				}
@@ -1041,7 +1041,7 @@ class GraphEditor extends hide.comp.Component {
 		for (id => _ in boxes) {
 			opSelect(id, true, currentUndoBuffer);
 		}
-		commitUndo();
+		commitUndo(true);
 	}
 
 	public function setSelection(nodes: Array<IGraphNode>) {
@@ -1051,7 +1051,7 @@ class GraphEditor extends hide.comp.Component {
 			opSelect(node.id, true, currentUndoBuffer);
 		}
 
-		commitUndo();
+		commitUndo(true);
 	}
 
 	public function centerSelection() {
@@ -1281,7 +1281,7 @@ class GraphEditor extends hide.comp.Component {
 					clearSelectionBoxesUndo(currentUndoBuffer);
 				}
 				opSelect(box.node.id, true, currentUndoBuffer);
-				commitUndo();
+				commitUndo(true);
 			}
 			elt.get(0).setPointerCapture(e.pointerId);
 			beginMove(e);
