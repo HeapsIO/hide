@@ -283,8 +283,10 @@ class BlendSpace2D extends AnimNode {
 
 			var strongestAnim = triangles[currentTriangle][max].animInfo?.anim;
 			if (prevAnimEventBind != strongestAnim) {
-				prevAnimEventBind?.onEvent = null;
-				strongestAnim?.onEvent = animEventHander;
+				if (prevAnimEventBind != null)
+					prevAnimEventBind.onEvent = null;
+				if (strongestAnim != null)
+					strongestAnim.onEvent = animEventHander;
 				prevAnimEventBind = strongestAnim;
 			}
 
