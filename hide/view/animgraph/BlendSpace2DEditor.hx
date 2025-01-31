@@ -403,6 +403,9 @@ class BlendSpace2DEditor extends hide.view.FileView {
 					}
 				}
 			}
+
+			updatePreviewAxis();
+			animPreview.resetSmoothedValues();
 		}
 	}
 

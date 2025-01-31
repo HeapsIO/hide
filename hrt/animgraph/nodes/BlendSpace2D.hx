@@ -78,6 +78,13 @@ class BlendSpace2D extends AnimNode {
 		return {x: eydt * (j0 + j1 * dt) + c, v: eydt *(v - j1*half_damping*dt)};
 	}
 
+	override function resetSmoothedValues() {
+		realX = bsX;
+		realY = bsY;
+		vX = 0.0;
+		vY = 0.0;
+	}
+
 
 	override function getBones(ctx: hrt.animgraph.nodes.AnimNode.GetBoneContext):Map<String, Int> {
 		var boneMap : Map<String, Int> = [];

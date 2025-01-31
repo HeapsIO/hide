@@ -80,6 +80,17 @@ class AnimGraphInstance extends h3d.anim.Animation {
 		}
 	}
 
+	/**
+		Force nodes in the graph that smooth their input over time to match the
+		current value of their parameters
+	**/
+	public function resetSmoothedValues() {
+		tickRec(rootNode, 0.0);
+		map(rootNode, (node) -> {
+			node.resetSmoothedValues();
+		});
+	}
+
 	override function clone(?target: h3d.anim.Animation) : h3d.anim.Animation {
 		#if editor
 		if (editorSkipClone) {
