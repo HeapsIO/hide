@@ -3738,8 +3738,10 @@ div.gradient-box {
   color: #e6e6e6;
 }
 .lods .lods-line {
+  position: relative;
   display: flex;
   overflow: hidden;
+  height: 70px;
 }
 .lods .lods-line .line {
   height: 30px;
@@ -3751,7 +3753,7 @@ div.gradient-box {
   width: 100%;
 }
 .lods .lods-line .line div {
-  overflow: hidden;
+  overflow-x: hidden;
   height: 100%;
 }
 .lods .lods-line .line div:nth-child(1n) {
@@ -3778,6 +3780,7 @@ div.gradient-box {
 }
 .lods .lods-line .cursor {
   position: absolute;
+  top: 11px;
   pointer-events: none;
 }
 .lods .lods-line .cursor .cursor-line {
@@ -3791,7 +3794,6 @@ div.gradient-box {
 }
 .lods #buttons {
   width: 100%;
-  margin-top: 25px;
 }
 .lods #buttons input {
   width: 100%;
