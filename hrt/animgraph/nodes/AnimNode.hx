@@ -49,7 +49,7 @@ class GetBoneTransformContext {
 /**
 	An anim node outpus a animation that can be consumed as input parameter by other nodes
 **/
-class AnimNode extends Node {
+abstract class AnimNode extends Node {
 	var numAnimInput : Int;
 	var boneIdToAnimInputBone : Array<Int>;
 
@@ -105,9 +105,7 @@ class AnimNode extends Node {
 	function getBoneTransform(boneId: Int, outMatrix: h3d.Matrix, ctx: GetBoneTransformContext) : Void {
 	}
 
-	function setupAnimEvents() : Void {
-		throw "implement";
-	}
+	abstract function setupAnimEvents() : Void;
 
 
 	#if editor

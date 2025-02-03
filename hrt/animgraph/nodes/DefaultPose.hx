@@ -27,7 +27,7 @@ class DefaultPose extends AnimNode {
 		return bones;
 	}
 
-	override function setupAnimEvents() {
+	function setupAnimEvents() {
 		// no events to handle
 	}
 

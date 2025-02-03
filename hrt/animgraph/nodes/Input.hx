@@ -55,7 +55,7 @@ class Input extends AnimNode {
 		matrix.load(anim.getObjects()[id].targetObject.defaultTransform);
 	}
 
-	override function setupAnimEvents() {
+	function setupAnimEvents() {
 		if (anim != null) {
 			anim.onEvent = onEvent;
 		}

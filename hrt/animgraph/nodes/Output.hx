@@ -11,7 +11,7 @@ class Output extends AnimNode {
 		// update out using inputs
 	}
 
-	override function setupAnimEvents() {
+	function setupAnimEvents() {
 		a.onEvent = onEvent;
 	}
 

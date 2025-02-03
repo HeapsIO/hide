@@ -370,7 +370,7 @@ class BlendSpace2D extends AnimNode {
 		onEvent(name);
 	}
 
-	override function setupAnimEvents() {
+	function setupAnimEvents() {
 		// handled by the triangle setup
 	}
 

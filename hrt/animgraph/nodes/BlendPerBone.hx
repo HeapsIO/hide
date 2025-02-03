@@ -49,7 +49,7 @@ class BlendPerBone extends AnimNode {
 		}
 	}
 
-	override function setupAnimEvents() {
+	function setupAnimEvents() {
 		a.onEvent = (name:String) -> {
 			onEvent(name);
 		}
