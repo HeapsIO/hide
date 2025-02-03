@@ -27,6 +27,10 @@ class DefaultPose extends AnimNode {
 		return bones;
 	}
 
+	override function setupAnimEvents() {
+		// no events to handle
+	}
+
 	override function getBoneTransform(boneId:Int, outMatrix:h3d.Matrix, ctx:hrt.animgraph.nodes.AnimNode.GetBoneTransformContext) {
 		var bone = objects[boneId];
 		if (bone.matDecomposed == null) {

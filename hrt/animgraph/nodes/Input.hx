@@ -55,6 +55,12 @@ class Input extends AnimNode {
 		matrix.load(anim.getObjects()[id].targetObject.defaultTransform);
 	}
 
+	override function setupAnimEvents() {
+		if (anim != null) {
+			anim.onEvent = onEvent;
+		}
+	}
+
 	#if editor
 	override function getPropertiesHTML(width:Float):Array<hide.Element> {
 		var elts = super.getPropertiesHTML(width);

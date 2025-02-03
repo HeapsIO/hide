@@ -11,6 +11,10 @@ class Output extends AnimNode {
 		// update out using inputs
 	}
 
+	override function setupAnimEvents() {
+		a.onEvent = onEvent;
+	}
+
 	#if editor
 	override function getInfo():hide.view.GraphInterface.GraphNodeInfo {
 		var info = super.getInfo();

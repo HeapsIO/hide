@@ -49,6 +49,15 @@ class BlendPerBone extends AnimNode {
 		}
 	}
 
+	override function setupAnimEvents() {
+		a.onEvent = (name:String) -> {
+			onEvent(name);
+		}
+		b.onEvent = (name:String) -> {
+			onEvent(name);
+		}
+	}
+
 	#if editor
 	override function getPropertiesHTML(width:Float):Array<hide.Element> {
 		var arr =  super.getPropertiesHTML(width);

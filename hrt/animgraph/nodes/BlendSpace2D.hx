@@ -87,7 +87,6 @@ class BlendSpace2D extends AnimNode {
 		vY = 0.0;
 	}
 
-
 	override function getBones(ctx: hrt.animgraph.nodes.AnimNode.GetBoneContext):Map<String, Int> {
 		var boneMap : Map<String, Int> = [];
 		animInfos = [];
@@ -368,10 +367,11 @@ class BlendSpace2D extends AnimNode {
 	}
 
 	function animEventHander(name: String) {
-		trace("event", name);
-		if (onEvent != null) {
-			onEvent(name);
-		}
+		onEvent(name);
+	}
+
+	override function setupAnimEvents() {
+		// handled by the triangle setup
 	}
 
 	#if editor

@@ -105,6 +105,11 @@ class AnimNode extends Node {
 	function getBoneTransform(boneId: Int, outMatrix: h3d.Matrix, ctx: GetBoneTransformContext) : Void {
 	}
 
+	function setupAnimEvents() : Void {
+		throw "implement";
+	}
+
+
 	#if editor
 
 	override function getInfo():hide.view.GraphInterface.GraphNodeInfo {

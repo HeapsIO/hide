@@ -59,6 +59,15 @@ class Blend extends AnimNode {
 		outMatrix._33 = m1._33 * a + m2._33 * b;
 	}
 
+	override function setupAnimEvents() {
+		a.onEvent = (name:String) -> {
+			if (alpha < 0.5) onEvent(name);
+		}
+		b.onEvent = (name:String) -> {
+			if (alpha > 0.5) onEvent(name);
+		}
+	}
+
 	#if editor
 	override function getSize():Int {
 		return Node.SIZE_SMALL;

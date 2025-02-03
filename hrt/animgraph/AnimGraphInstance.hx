@@ -141,7 +141,22 @@ class AnimGraphInstance extends h3d.anim.Animation {
 		map(rootNode, updateNodeInputs);
 
 		boneMap = rootNode.getBones(ctx);
+		rootNode.onEvent = onEventHandler;
+
+		map(rootNode, (node) -> {
+			var animNode =	Std.downcast(node, hrt.animgraph.nodes.AnimNode);
+			if (animNode != null) {
+				animNode.setupAnimEvents();
+			}
+		});
+
 		return boneMap;
+	}
+
+	function onEventHandler(name: String) {
+		if (onEvent != null) {
+			onEvent(name);
+		}
 	}
 
 	override function bind(base:h3d.scene.Object) {
