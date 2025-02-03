@@ -1403,7 +1403,14 @@ input[type=checkbox] {
 	}
 
 	.vector {
+		display: inline-flex;
 		flex-direction: row;
+		flex: 1;
+		min-width: 0.9;
+
+		input {
+			min-width: 0;
+		}
 	}
 
 	.btn-cdb-large {

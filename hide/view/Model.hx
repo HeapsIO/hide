@@ -636,15 +636,34 @@ class Model extends FileView {
 			}
 
 			var dynJointEl = new Element('<div class="group" name="Dynamic bone">
-				<dt>Is Dynamic</dt><dd><input id="dynamic" type="checkbox"/></dd>
-				<div class="dynamic-edition">
-					<dt>Damping</dt><dd><input id="damping" type="number" step="0.1" min="0" max="1"/></dd>
-					<dt>Resistance</dt><dd><input id="resistance" type="number" step="0.1" min="0" max="1"/></dd>
-					<dt>Stiffness</dt><dd><input id="stiffness" type="number" step="0.1" min="0" max="1"/></dd>
-					<dt>Slackness</dt><dd><input id="slackness" type="number" step="0.1" min="0" max="1"/></dd>
+				<dt>Apply changes on children</dt><dd><input id="sync-changes" type="checkbox"/></dd>
+				<div class="group" name="Global parameters">
+					<dt>Force</dt><dd class="vector"><input id="force-x" type="number"/><input id="force-y" type="number"/><input id="force-z" type="number"/></dd>
+				</div>
+				<div class="group" name="Local parameters">
+					<dt>Is Dynamic</dt><dd><input id="dynamic" type="checkbox"/></dd>
+					<div class="dynamic-edition">
+						<dt>Damping</dt><dd><input id="damping" type="number" step="0.1" min="0" max="1"/></dd>
+						<dt>Resistance</dt><dd><input id="resistance" type="number" step="0.1" min="0" max="1"/></dd>
+						<dt>Stiffness</dt><dd><input id="stiffness" type="number" step="0.1" min="0" max="1"/></dd>
+						<dt>Slackness</dt><dd><input id="slackness" type="number" step="0.1" min="0" max="1"/></dd>
+					</div>
 				</div>
 			</div>');
 
+			// Sync is used to propagate parent changes on children dynamic bones if checked
+			var synced = getDisplayState("dynamic-bones-sync");
+			if (synced == null)
+				synced = false;
+
+			var syncEl = dynJointEl.find("#sync-changes");
+			syncEl.get(0).toggleAttribute('checked', synced);
+			syncEl.change(function(e) {
+				synced = !synced;
+				saveDisplayState("dynamic-bones-sync", synced);
+			});
+
+			dynJointEl.find("#dynamic");
 			var isDynEl = dynJointEl.find("#dynamic");
 			isDynEl.get(0).toggleAttribute('checked', Std.downcast(j, h3d.anim.Skin.DynamicJoint) != null);
 			if (!isDynEl.is(':checked'))
@@ -667,17 +686,38 @@ class Model extends FileView {
 					newJ.retargetAnim = j.retargetAnim;
 					skinData.allJoints[j.index] = newJ;
 
+					var idx = j.parent?.subs.indexOf(j);
 					j.parent?.subs.remove(j);
-					j.parent?.subs.push(newJ);
+					j.parent?.subs.insert(idx, newJ);
+					if (j.subs != null)
+						for (sub in j.subs)
+							sub.parent = newJ;
 
 					if (!isDynamic) {
-						if (j.parent != null)
-							toggleDynamicJoint(j.parent, isDynamic);
+						// Dynamic bone can't exist with a non-dynamic parent. Check
+						// whether or not a sibling bone is dynamic too (meaning that
+						// we can't set parent to static bone)
+
+						if (j.parent != null) {
+							for (idx in 0...j.parent.subs.length) {
+								if (Std.isOfType(j.parent.subs[idx], h3d.anim.Skin.DynamicJoint))
+									toggleDynamicJoint(j.parent.subs[idx], isDynamic);
+							}
+
+							if (Std.isOfType(j.parent, h3d.anim.Skin.DynamicJoint))
+								toggleDynamicJoint(j.parent, isDynamic);
+						}
+
+						if (synced) {
+							for (idx in 0...newJ.subs.length)
+								toggleDynamicJoint(newJ.subs[idx], isDynamic);
+						}
 					}
 					else {
-						for (s in newJ.subs)
-							toggleDynamicJoint(s, isDynamic);
+						for (idx in 0...newJ.subs.length)
+							toggleDynamicJoint(newJ.subs[idx], isDynamic);
 					}
+
 				}
 
 				var v = isDynEl.is(':checked');
@@ -700,65 +740,33 @@ class Model extends FileView {
 
 			var dynJoin = Std.downcast(j, h3d.anim.Skin.DynamicJoint);
 			if (dynJoin != null) {
-				var damping = dynJointEl.find("#damping");
-				damping.val(dynJoin.damping);
-				damping.change(function(e) {
-					var newV = damping.val();
-					var oldV = dynJoin.damping;
-					function exec(undo) {
-						var v = undo ? oldV : newV;
-						dynJoin.damping = v;
-						damping.val(v);
-					}
+				var params = ["damping", "resistance", "stiffness", "slackness"];
+				for (param in params) {
+					var el = dynJointEl.find('#$param');
+					el.val(Reflect.field(dynJoin, param));
+					el.change(function(e) {
+						var oldJoints = skinData.allJoints.copy();
+						function apply(j : h3d.anim.Skin.Joint, param : String, v : Dynamic) {
+							Reflect.setField(j, param, Std.parseFloat(el.val()));
+							if (synced && j.subs != null) {
+								for (s in j.subs)
+									apply(s, param, Std.parseFloat(el.val()));
+							}
+						}
+						apply(dynJoin, param, Std.parseFloat(el.val()));
+						var newJoints = skinData.allJoints.copy();
+						function exec(undo) {
+							var joints = undo ? oldJoints : newJoints;
+							for (j in skinData.allJoints)
+								skinData.allJoints[j.index] = joints[j.index];
+							skin.setSkinData(skinData);
+							selectObject(obj);
+						}
 
-					exec(false);
-					properties.undo.change(Custom(exec));
-				});
-
-				var resistance = dynJointEl.find("#resistance");
-				resistance.val(dynJoin.resistance);
-				resistance.change(function(e) {
-					var newV = resistance.val();
-					var oldV = dynJoin.resistance;
-					function exec(undo) {
-						var v = undo ? oldV : newV;
-						dynJoin.resistance = v;
-						resistance.val(v);
-					}
-
-					exec(false);
-					properties.undo.change(Custom(exec));
-				});
-
-				var stiffness = dynJointEl.find("#stiffness");
-				stiffness.val(dynJoin.stiffness);
-				stiffness.change(function(e) {
-					var newV = stiffness.val();
-					var oldV = dynJoin.stiffness;
-					function exec(undo) {
-						var v = undo ? oldV : newV;
-						dynJoin.stiffness = v;
-						stiffness.val(v);
-					}
-
-					exec(false);
-					properties.undo.change(Custom(exec));
-				});
-
-				var slackness = dynJointEl.find("#slackness");
-				slackness.val(dynJoin.slackness);
-				slackness.change(function(e) {
-					var newV = slackness.val();
-					var oldV = dynJoin.slackness;
-					function exec(undo) {
-						var v = undo ? oldV : newV;
-						dynJoin.slackness = v;
-						slackness.val(v);
-					}
-
-					exec(false);
-					properties.undo.change(Custom(exec));
-				});
+						exec(false);
+						properties.undo.change(Custom(exec));
+					});
+				}
 			}
 
 			properties.add(dynJointEl, null, function(pname) {});
