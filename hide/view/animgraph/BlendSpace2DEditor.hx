@@ -363,7 +363,7 @@ class BlendSpace2DEditor extends hide.view.FileView {
 				@:privateAccess blendSpaceNode.blendSpace = blendSpace2D;
 				var resolver = null;
 				if (hrt.animgraph.AnimGraph.customEditorResolverProvider != null) {
-					var resolvers = hrt.animgraph.AnimGraph.customEditorResolverProvider(_);
+					var resolvers = hrt.animgraph.AnimGraph.customEditorResolverProvider({animDirectory: blendSpace2D.animFolder, assetPath: state.path});
 					if (resolvers != null) {
 						if (previewState.providerIndex > resolvers.length) {
 							previewState.providerIndex = 0;
@@ -382,7 +382,7 @@ class BlendSpace2DEditor extends hide.view.FileView {
 
 				var resolver = null;
 				if (hrt.animgraph.AnimGraph.customEditorResolverProvider != null) {
-					var resolvers = hrt.animgraph.AnimGraph.customEditorResolverProvider(_);
+					var resolvers = hrt.animgraph.AnimGraph.customEditorResolverProvider({animDirectory: blendSpace2D.animFolder, assetPath: state.path});
 					if (resolvers != null) {
 						resolver = resolvers[previewState.providerIndex]?.resolver;
 					}
@@ -474,7 +474,7 @@ class BlendSpace2DEditor extends hide.view.FileView {
 			updatePreviewAxis();
 		});
 
-		AnimGraphEditor.addAnimSetSelector(preview.find("dl"), undo, () -> previewState.providerIndex, (i: Int) -> {
+		AnimGraphEditor.addAnimSetSelector(preview.find("dl"), {animDirectory: blendSpace2D.animFolder, assetPath: state.path}, undo, () -> previewState.providerIndex, (i: Int) -> {
 			previewState.providerIndex = i;
 			savePreviewState();
 			refreshPreviewAnimation();
