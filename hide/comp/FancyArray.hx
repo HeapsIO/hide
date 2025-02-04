@@ -43,18 +43,22 @@ class FancyArray<T> extends hide.comp.Component {
 
 		for (i => item in items) {
 			var paramElement = new Element('<fancy-item>
-				<header>
-					<div class="reorder ico ico-reorder" draggable="true"></div>
-					<div class="ico ico-chevron-down toggle-open"></div>
+				<fancy-item-header class="fancy-small">
+					<fancy-button class="quieter reorder" draggable="true">
+						<div class="ico ico-reorder"></div>
+					</fancy-button>
+					<fancy-button class="quieter toggle-open">
+						<div class="ico ico-chevron-right"></div>
+					</fancy-button>
 					<input type="text" value="${getItemName(item)}" class="fill"></input>
-					<button-2 class="menu no-border"><div class="ico ico-ellipsis-v"/></button-2>
-				</header>
+					<fancy-button class="menu quieter"><div class="ico ico-ellipsis-v"></div></fancy-button>
+				</fancy-item-header>
 			</fancy-item>').appendTo(fancyItems);
 
 			itemState[i] ??= {};
 			var state = itemState[i];
 			var open : Bool = state.open ?? false;
-			paramElement.toggleClass("folded", !open);
+			paramElement.toggleClass("open", open);
 
 			var name = paramElement.find("input");
 
@@ -137,13 +141,13 @@ class FancyArray<T> extends hide.comp.Component {
 			if (getItemContent != null) {
 				var contentElement = getItemContent(item);
 				if (contentElement != null) {
-					var content = new Element("<content></content>").appendTo(paramElement);
+					var content = new Element("<fancy-item-content></fancy-item-content>").appendTo(paramElement);
 					contentElement.appendTo(content);
 
 					toggleOpen.on("click", (e) -> {
 						state.open = !state.open;
 						saveState();
-						paramElement.toggleClass("folded", !state.open);
+						paramElement.toggleClass("open", state.open);
 					});
 				} else {
 					toggleOpen.remove();
@@ -153,7 +157,7 @@ class FancyArray<T> extends hide.comp.Component {
 			}
 
 			if (removeItem != null) {
-				paramElement.find("header").get(0).addEventListener("contextmenu", function (e : js.html.MouseEvent) {
+				paramElement.find("fancy-item-header").get(0).addEventListener("contextmenu", function (e : js.html.MouseEvent) {
 					e.preventDefault();
 					hide.comp.ContextMenu.createFromEvent(e, [
 						{label: "Delete", click: () -> removeItem(i)}
@@ -167,7 +171,7 @@ class FancyArray<T> extends hide.comp.Component {
 						{label: "Delete", click: () -> removeItem(i)}
 					]);
 				});
-			}			paramElement.find("header").get(0).addEventListener("contextmenu", function (e : js.html.MouseEvent) {
+			}			paramElement.find("fancy-item-header").get(0).addEventListener("contextmenu", function (e : js.html.MouseEvent) {
 				e.preventDefault();
 				hide.comp.ContextMenu.createFromEvent(e, [
 					{label: "Delete", click: () -> removeItem(i)}

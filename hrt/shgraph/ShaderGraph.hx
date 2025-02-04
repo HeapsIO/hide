@@ -61,6 +61,28 @@ enum SgType {
 	SgGeneric(id: Int, constraint: (newType: Type, previousType: Type) -> Null<Type>);
 }
 
+function serializeSgType(t: SgType) : String {
+	switch(t) {
+		case SgFloat(dimmension):
+			return 'SgFloat,$dimmension';
+		case SgSampler, SgInt, SgBool:
+			return EnumValueTools.getName(t);
+		case SgGeneric(_,_):
+			throw "Can't serialize generic variables";
+	}
+}
+
+function unserializeSgType(s: String) : SgType {
+	var split = s.split(",");
+	var name = split.shift();
+	switch(name) {
+		case "SgFloat":
+			return SgFloat(Std.parseInt(split[0]));
+		default:
+			return std.Type.createEnum(SgType, name);
+	}
+}
+
 function typeToSgType(t: Type) : SgType {
 	return switch(t) {
 		case TFloat:
@@ -121,8 +143,6 @@ function ConstraintFloat(newType: Type, previousType: Type) : Null<Type> {
 	}
 }
 
-
-
 typedef ShaderNodeDefInVar = {v: TVar, internal: Bool, ?defVal: ShaderDefInput, isDynamic: Bool};
 typedef ShaderNodeDefOutVar = {v: TVar, internal: Bool, isDynamic: Bool};
 typedef ShaderNodeDef = {
@@ -171,6 +191,13 @@ ExternVarDef {
 	var defValue: Dynamic;
 	var __init__: TExpr;
 	var paramIndex: Null<Int> = null;
+}
+
+@:structInit @:publicFields
+class ShaderGraphVariable {
+	var name: String;
+	var type: SgType;
+	var defValue: Dynamic;
 }
 
 @:access(hrt.shgraph.Graph)
@@ -690,6 +717,8 @@ class Graph {
 	var current_node_id = 0;
 	var nodes : Map<Int, ShaderNode> = [];
 
+	var variables : Array<ShaderGraphVariable> = [];
+
 	public var parent : ShaderGraph = null;
 
 	public var domain : Domain = Fragment;
@@ -703,6 +732,14 @@ class Graph {
 	public function load(json : Dynamic) {
 		nodes = [];
 		generate(Reflect.getProperty(json, "nodes"), Reflect.getProperty(json, "edges"));
+
+		for (variable in json.variables ?? []) {
+			variables.push({
+				name: variable.name,
+				type: unserializeSgType(variable.type),
+				defValue: variable.defValue,
+			});
+		}
 	}
 
 	public function generate(nodes : Array<Dynamic>, edges : Array<Edge>) {
@@ -910,11 +947,21 @@ class Graph {
 				edgesJson.push({ outputNodeId: connection.from.id, nameOutput: connection.from.getOutputs()[outputId].name, inputNodeId: n.id, nameInput: n.getInputs()[inputId].name, inputId: inputId, outputId: outputId });
 			}
 		}
+		var variablesJson = [];
+		for (variable in variables) {
+			variablesJson.push({
+				name: variable.name,
+				type: serializeSgType(variable.type),
+				defValue: variable.defValue,
+			});
+		}
+
 		var json = {
 			nodes: [
 				for (n in nodes) n.serializeToDynamic(),
 			],
-			edges: edgesJson
+			edges: edgesJson,
+			variables: variablesJson,
 		};
 
 		return json;

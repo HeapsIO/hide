@@ -23,4 +23,12 @@ class VarRead extends ShaderNode {
 		ctx.addPreview(out);
 		#end
 	}
+
+	#if editor
+	override function getInfo():hide.view.GraphInterface.GraphNodeInfo {
+		var info = super.getInfo();
+		info.name = "Read: " + @:privateAccess (cast editor.editor: hide.view.shadereditor.ShaderEditor).currentGraph.variables[varId].name;
+		return info;
+	}
+	#end
 }

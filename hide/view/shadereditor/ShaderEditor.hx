@@ -138,6 +138,9 @@ class PreviewSettings {
 	public var height : Int = 300;
 	public function new() {};
 }
+
+@:access(hrt.shgraph.ShaderGraph)
+@:access(hrt.shgraph.Graph)
 class ShaderEditor extends hide.view.FileView implements GraphInterface.IGraphEditor {
 	var graphEditor : hide.view.GraphEditor;
 	var shaderGraph : hrt.shgraph.ShaderGraph;
@@ -164,6 +167,7 @@ class ShaderEditor extends hide.view.FileView implements GraphInterface.IGraphEd
 	var meshPreviewRenderPropsRoot : h3d.scene.Object;
 
 	var parametersList : JQuery;
+	var variableList : hide.comp.FancyArray<ShaderGraphVariable>;
 
 	var previewElem : Element;
 	var draggedParamId : Int;
@@ -230,9 +234,19 @@ class ShaderEditor extends hide.view.FileView implements GraphInterface.IGraphEd
 
 					<div id="parametersList" class="hide-scene-tree hide-list">
 					</div>
-				</div>
-				<div class="options-block hide-block">
+
 					<input id="createParameter" type="button" value="Add parameter" />
+				</div>
+
+
+				<div class="hide-block flexible" >
+					<fancy-array class="variables" style="flex-grow: 1">
+
+					</fancy-array>
+					<fancy-button class="add-variable">Add Variable</fancy-button>
+				</div>
+
+				<div class="options-block hide-block">
 					<div>
 						Shader :
 						<select id="domainSelection"></select>
@@ -246,6 +260,20 @@ class ShaderEditor extends hide.view.FileView implements GraphInterface.IGraphEd
 
 			</div>'
 		);
+
+		variableList = new hide.comp.FancyArray(null, rightPannel.find(".variables"), "variables", "variables");
+
+		variableList.getItems = () -> currentGraph.variables;
+		variableList.getItemName = (v: ShaderGraphVariable) -> v.name;
+		variableList.reorderItem = moveVariable;
+		variableList.removeItem = removeVariable;
+		variableList.setItemName = renameVariable;
+
+		variableList.refresh();
+
+		rightPannel.find(".add-variable").on("click", (e) -> {
+			createVariable(SgFloat(2));
+		});
 
 		rightPannel.find("#centerView").click((e) -> graphEditor.centerView());
 
@@ -408,6 +436,106 @@ class ShaderEditor extends hide.view.FileView implements GraphInterface.IGraphEd
 		if (recordUndo) {
 			undo.change(Custom(exec));
 		}
+	}
+
+	function createVariable(type: SgType) {
+		var name = "New Variable";
+		var i = 0;
+		var index = 0;
+		while(i < currentGraph.variables.length) {
+			if (currentGraph.variables[i].name == name) {
+				i = 0;
+				index ++;
+				name = 'New Variable ($index)';
+			} else {
+				i++;
+			}
+		}
+
+		var variable : ShaderGraphVariable = {
+			name: name,
+			type: type,
+			defValue: [0,0],
+		}
+		var graph = currentGraph;
+
+		function exec(isUndo: Bool) {
+			if (!isUndo) {
+				graph.variables.push(variable);
+			}
+			else {
+				graph.variables.remove(variable);
+			}
+			variableList.refresh();
+		}
+		exec(false);
+		undo.change(Custom(exec));
+	}
+
+	function renameVariable(variable: ShaderGraphVariable, newName: String) {
+		var graph = currentGraph;
+		var oldName = variable.name;
+		function exec(isUndo: Bool) {
+			variable.name = !isUndo ? newName : oldName;
+			variableList.refresh();
+
+			var index = graph.variables.indexOf(variable);
+			for (node in currentGraph.nodes) {
+				if (Std.downcast(node, hrt.shgraph.nodes.VarRead)?.varId == index ||
+					Std.downcast(node, hrt.shgraph.nodes.VarWrite)?.varId == index) {
+					graphEditor.refreshBox(node.id);
+				}
+			}
+		}
+
+		exec(false);
+		undo.change(Custom(exec));
+	}
+
+	function moveVariable(oldIndex: Int, newIndex: Int) {
+		var graph = currentGraph;
+		function exec(isUndo: Bool) {
+			if (!isUndo) {
+				var rem = graph.variables.splice(oldIndex, 1);
+				graph.variables.insert(newIndex, rem[0]);
+			}
+			else {
+				var rem = graph.variables.splice(newIndex, 1);
+				graph.variables.insert(oldIndex, rem[0]);
+			}
+			variableList.refresh();
+		}
+		exec(false);
+		undo.change(Custom(exec));
+	}
+
+	function removeVariable(index: Int) {
+		var usedInGraph = false;
+		for (node in currentGraph.nodes) {
+			if (Std.downcast(node, hrt.shgraph.nodes.VarRead)?.varId == index ||
+				Std.downcast(node, hrt.shgraph.nodes.VarWrite)?.varId == index) {
+				usedInGraph = true;
+				break;
+			}
+		}
+		if (usedInGraph) {
+			hide.Ide.inst.quickError("Variable is used in graph");
+			return;
+		}
+
+		var graph = currentGraph;
+		var variable = graph.variables[index];
+		function exec(isUndo: Bool) {
+			if (!isUndo) {
+				graph.variables.splice(index, 1);
+			}
+			else {
+				graph.variables.insert(index, variable);
+			}
+			variableList.refresh();
+		}
+		exec(false);
+		undo.change(Custom(exec));
 	}
 
 	function createParameter(type : HxslType) {

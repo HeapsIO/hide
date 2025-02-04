@@ -20,4 +20,12 @@ class VarWrite extends ShaderNode {
 		ctx.addExpr(AstTools.makeVarDecl(ctx.getLocalTVar("_sg_var_write", TVec(4, VFloat)), input));
 		ctx.addPreview(input);
 	}
+
+	#if editor
+	override function getInfo():hide.view.GraphInterface.GraphNodeInfo {
+		var info = super.getInfo();
+		info.name = "Write: " + @:privateAccess (cast editor.editor: hide.view.shadereditor.ShaderEditor).currentGraph.variables[varId].name;
+		return info;
+	}
+	#end
 }
