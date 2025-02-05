@@ -191,8 +191,10 @@ class RemoteConsoleView extends hide.ui.View<{}> {
 
 class RemoteConsolePanel extends hide.comp.Component {
 	var view : RemoteConsoleView;
-	public var connection(default, set) : hrt.impl.RemoteConsole.RemoteConsoleConnection;
 	var statusIcon : Element;
+	public var connection(default, set) : hrt.impl.RemoteConsole.RemoteConsoleConnection;
+	public var peerPath(default, null) : String;
+	public var peerCwd(default, null) : String;
 	public function new( view : RemoteConsoleView, connection : Null<hrt.impl.RemoteConsole.RemoteConsoleConnection>, commands : Null<Array<String>> ) {
 		super(null, null);
 		this.view = view;
@@ -201,6 +203,10 @@ class RemoteConsolePanel extends hide.comp.Component {
 			<div class="controls">
 				<div class="ico ico-dot-circle-o" id="statusIcon" style="cursor:default;"></div>
 				<div class="ico ico-close" id="closeBtn" title="Close panel and its connection"></div>
+			</div>
+			<div class="info">
+				<span>Peer Info</span>
+				<input type="text" id="peerInfo" disabled/>
 			</div>
 			<div class="logs">
 			</div>
@@ -224,6 +230,13 @@ class RemoteConsolePanel extends hide.comp.Component {
 			c.onClose = () -> refreshStatusIcon();
 			c.log = (msg) -> log(msg);
 			c.logError = (msg) -> log(msg, true);
+			c.sendCommand("info", null, function(d) {
+				peerPath = d?.programPath == null ? "???" : haxe.io.Path.normalize(d.programPath);
+				var peerArgs = d?.args ?? [];
+				peerCwd = d?.cwd == null ? null : haxe.io.Path.normalize(d.cwd);
+				var peerId = peerPath + (peerArgs.length == 0 ? "" : " " + peerArgs.join(" "));
+				element.find("#peerInfo").val(peerId);
+			});
 		}
 		if( connection != null ) {
 			connection.onClose = () -> {};
@@ -295,14 +308,34 @@ class RemoteConsoleCommand extends hide.comp.Component {
 class RemoteConsoleCommandDump extends RemoteConsoleCommand {
 	public function new( panel : RemoteConsolePanel ) {
 		super(panel);
-		new Element('<legend>Memory dump</legend>').appendTo(element);
+		new Element('<legend>GC Memory</legend>').appendTo(element);
+		var subcmd = new Element('<div class="sub-command"></div>').appendTo(element);
+		var gcBtn = new Element('<input type="button" value="GC Major"/>').appendTo(subcmd);
+		gcBtn.on('click', function(e) {
+			panel.sendCommand("gcMajor", null, function(r) {
+				panel.log('Gc.major took ${r/1000} ms');
+			});
+		});
 		var subcmd = new Element('<div class="sub-command"></div>').appendTo(element);
 		var dumpBtn = new Element('<input type="button" value="Dump"/>').appendTo(subcmd);
 		var dumpFile = new Element('<input type="text" disabled/>').appendTo(subcmd);
 		dumpBtn.on('click', function(e) {
-			panel.sendCommand("dump", null, function(r) {
-				panel.log("Dump saved to hlmemory.dump");
-				dumpFile.val(hide.Ide.inst.projectDir + "/hlmemory.dump");
+			panel.sendCommand("dumpMemory", null, function(r) {
+				var dir = (panel.peerCwd ?? hide.Ide.inst.projectDir) + "/";
+				var file = "hlmemory.dump";
+				try {
+					var now = DateTools.format(Date.now(), "%Y-%m-%d_%H-%M-%S");
+					var outfile = "hlmemory_" + now;
+					sys.FileSystem.rename(dir + file, dir + outfile + ".dump");
+					file = outfile + ".dump";
+					if( panel.peerPath != null && sys.FileSystem.exists(panel.peerPath) ) {
+						sys.io.File.copy(panel.peerPath, dir + outfile + ".hl");
+					}
+				} catch( e ) {
+					panel.log(e.message, true);
+				}
+				panel.log("Dump saved to " + file);
+				dumpFile.val(dir + file);
 			});
 		});
 		var openBtn = new Element('<input type="button" value="Open in Explorer"/>').appendTo(subcmd);
@@ -315,25 +348,18 @@ class RemoteConsoleCommandDump extends RemoteConsoleCommand {
 			}
 		});
 		var subcmd = new Element('<div class="sub-command"></div>').appendTo(element);
-		var programBtn = new Element('<input type="button" value="Get program path"/>').appendTo(subcmd);
-		var programFile = new Element('<input type="text" disabled/>').appendTo(subcmd);
-		programBtn.on('click', function(e) {
-			panel.sendCommand("programPath", null, function(r) {
-				if( r != null ) {
-					programFile.val(r);
-				} else {
-					panel.log("Unknown program path: " + r);
+		var liveBtn = new Element('<input type="button" value="Live object"/>').appendTo(subcmd);
+		var liveClass = new Element('<input type="text" placeholder="Class path..."/>').appendTo(subcmd);
+		liveBtn.on('click', function(e) {
+			var clname = liveClass.val();
+			panel.sendCommand("liveObjects", { clname : clname }, function(r) {
+				if( r >= 0 ) {
+					panel.log('Live Objects of class $clname: count $r');
 				}
 			});
 		});
-		var openBtn = new Element('<input type="button" value="Open in Explorer"/>').appendTo(subcmd);
-		openBtn.on('click', function(e) {
-			var file = programFile.val();
-			if( file.length > 0 && sys.FileSystem.exists(file) ) {
-				hide.Ide.showFileInExplorer(file);
-			} else {
-				panel.log('File $file does not exist', true);
-			}
+		liveClass.keydown(function(e) {
+			if( e.key == 'Enter' ) liveBtn.click();
 		});
 	}
 	static var _ = RemoteConsoleView.registerCommandView("dump", RemoteConsoleCommandDump);
@@ -342,20 +368,34 @@ class RemoteConsoleCommandDump extends RemoteConsoleCommand {
 class RemoteConsoleCommandProf extends RemoteConsoleCommand {
 	public function new( panel : RemoteConsolePanel ) {
 		super(panel);
-		new Element('<legend>CPU Profile</legend>').appendTo(element);
+		new Element('<legend>Profile</legend>').appendTo(element);
 		var subcmd = new Element('<div class="sub-command"></div>').appendTo(element);
 		var startBtn = new Element('<input type="button" value="Start"/>').appendTo(subcmd);
 		startBtn.on('click', function(e) {
-			panel.sendCommand("prof", { action : "start" }, function(r) {
+			panel.sendCommand("profCpu", { action : "start" }, function(r) {
 				panel.log("Profiling started");
 			});
 		});
 		var dumpBtn = new Element('<input type="button" value="Dump"/>').appendTo(subcmd);
 		var dumpFile = new Element('<input type="text" disabled/>').appendTo(subcmd);
 		dumpBtn.on('click', function(e) {
-			panel.sendCommand("prof", { action : "dump" }, function(r) {
-				panel.log("Profil raw dump saved to hlprofile.dump");
-				dumpFile.val(hide.Ide.inst.projectDir + "/hlprofile.dump");
+			panel.sendCommand("profCpu", { action : "dump" }, function(r) {
+				var dir = (panel.peerCwd ?? hide.Ide.inst.projectDir) + "/";
+				var file = "hlprofile.dump";
+				panel.log('Profil raw dump saved to $file');
+				#if (hashlink >= "1.15.0")
+				try {
+					var outfile = "hlprofile.json";
+					hlprof.ProfileGen.run([dir + file, "-o", dir + outfile]);
+					panel.log('Profil converted dump saved to $outfile');
+					file = outfile;
+				} catch (e) {
+					panel.log(e.message, true);
+				}
+				#else
+				panel.log("Please use hlpro.ProfileGen to convert it to json, or compile hide with lib hashlink >= 1.15.0");
+				#end
+				dumpFile.val(dir + file);
 			});
 		});
 		var openBtn = new Element('<input type="button" value="Open in Explorer"/>').appendTo(subcmd);
@@ -367,33 +407,6 @@ class RemoteConsoleCommandProf extends RemoteConsoleCommand {
 				panel.log('File $dumpfile does not exist', true);
 			}
 		});
-	#if (hashlink >= "1.15.0")
-		var subcmd = new Element('<div class="sub-command"></div>').appendTo(element);
-		var convertBtn = new Element('<input type="button" value="Convert"/>').appendTo(subcmd);
-		var jsonFile = new Element('<input type="text" disabled/>').appendTo(subcmd);
-		convertBtn.on('click', function(e) {
-			var file = dumpFile.val();
-			if( file.length < 0 )
-				file = hide.Ide.inst.projectDir + "/hlprofile.dump";
-			var outfile = hide.Ide.inst.projectDir + "/hlprofile.json";
-			jsonFile.val(outfile);
-			try {
-				hlprof.ProfileGen.run([file, "-o", outfile]);
-				panel.log("Profil converted dump saved to hlprofile.json");
-			} catch (e) {
-				panel.log(e.message, true);
-			}
-		});
-		var openBtn = new Element('<input type="button" value="Open in Explorer"/>').appendTo(subcmd);
-		openBtn.on('click', function(e) {
-			var jsonfile = jsonFile.val();
-			if( jsonfile.length > 0 && sys.FileSystem.exists(jsonfile) ) {
-				hide.Ide.showFileInExplorer(jsonfile);
-			} else {
-				panel.log('File $jsonfile does not exist', true);
-			}
-		});
-	#end
 	}
 	static var _ = RemoteConsoleView.registerCommandView("prof", RemoteConsoleCommandProf);
 }

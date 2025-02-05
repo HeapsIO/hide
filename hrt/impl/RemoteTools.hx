@@ -71,4 +71,13 @@ class RemoteTools {
 		rc?.sendCommand("open", { file : file, line : line, column : column });
 	}
 
+	/**
+		@param selectExpr hscript expression that are used for select some elements in the view.
+		Example: `$.name == SomeName`, `$.props.id == Some_Unique_Id`
+		(`"` can be omitted in String literal when no ambiguity).
+	 */
+	public static function openPrefab( file : String, ?selectExpr : String ) {
+		rc?.sendCommand("open", { file : file, selectExpr : selectExpr });
+	}
+
 }

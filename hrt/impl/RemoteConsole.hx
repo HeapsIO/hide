@@ -80,10 +80,8 @@ class RemoteConsole {
 			sock.close();
 			sock = null;
 		}
-		if( connections != null ) {
-			for( s in connections )
-				s.close();
-		}
+		for( s in connections )
+			s.close();
 		connections = [];
 		onClose();
 	}
@@ -277,50 +275,147 @@ class RemoteConsoleConnection {
 		log("[>] " + args);
 	}
 
-	@cmd function cwd() {
-		return Sys.getCwd();
+	@cmd("logError") function logErrorCmd( args : Dynamic ) {
+		logError("[>] " + args);
 	}
 
-	@cmd function programPath() {
-		return Sys.programPath();
+	function sendLogError( msg : String ) {
+		sendCommand("logError", msg);
+	}
+
+	@cmd function info() {
+		return {
+			programPath : Sys.programPath(),
+			args : Sys.args(),
+			cwd : Sys.getCwd(),
+		};
 	}
 
 #if editor
-	@cmd function open( args : { file : String, line : Int, column : Int, cdbsheet : String } ) {
+	// ----- Hide ------
+
+	var parser : hscript.Parser;
+	@cmd function open( args : { file : String, ?line : Int, ?column : Int, ?cdbsheet : String,
+								?selectExpr : String } ) {
 		if( args == null )
 			return;
+		if( parser == null ) {
+			parser = new hscript.Parser();
+			parser.identChars += "$";
+		}
 		if( args.cdbsheet != null ) {
 			var sheet = hide.Ide.inst.database.getSheet(args.cdbsheet);
 			hide.Ide.inst.open("hide.view.CdbTable", {}, null, function(view) {
 				hide.Ide.inst.focus();
-				Std.downcast(view,hide.view.CdbTable).goto(sheet,args.line,args.column);
+				Std.downcast(view, hide.view.CdbTable).goto(sheet, args.line, args.column);
 			});
 		} else {
 			hide.Ide.inst.showFileInResources(args.file);
 			hide.Ide.inst.openFile(args.file, null, function(view) {
 				hide.Ide.inst.focus();
-				var domkit = Std.downcast(view, hide.view.Domkit);
-				if (domkit != null && args.line != null) {
-					@:privateAccess domkit.cssEditor.focus();
-					@:privateAccess domkit.cssEditor.editor.setPosition({column: args.column, lineNumber: args.line+1});
+				var domkitView = Std.downcast(view, hide.view.Domkit);
+				if( domkitView != null ) {
+					@:privateAccess domkitView.cssEditor.focus();
+					@:privateAccess domkitView.cssEditor.editor.setPosition({column: args.column??0, lineNumber: (args.line??0)+1});
+				}
+				if( args.selectExpr != null ) {
+					var sceneEditor : hide.comp.SceneEditor = null;
+					var prefabView = Std.downcast(view, hide.view.Prefab);
+					if( prefabView != null ) {
+						sceneEditor = prefabView.sceneEditor;
+					}
+					var fxView = Std.downcast(view, hide.view.FXEditor);
+					if( fxView != null ) {
+						@:privateAccess sceneEditor = fxView.sceneEditor;
+					}
+					var modelView = Std.downcast(view, hide.view.Model);
+					if( modelView != null ) {
+						@:privateAccess sceneEditor = modelView.sceneEditor;
+					}
+					if( sceneEditor != null ) {
+						try {
+							var expr = parser.parseString(args.selectExpr);
+							@:privateAccess var objs = sceneEditor.sceneData.findAll(null, function(o) {
+								return evalExpr(o, expr);
+							});
+							sceneEditor.selectElements(objs);
+						} catch( e ) {
+							hide.Ide.inst.quickError(e);
+						}
+					}
 				}
 			});
+		}
+	}
+
+	function evalExpr( o : Dynamic, e : hscript.Expr ) : Dynamic {
+		switch( e.e ) {
+		case EConst(c):
+			switch( c ) {
+			case CInt(v): return v;
+			case CFloat(f): return f;
+			case CString(s): return s;
+			}
+		case EIdent("$"):
+			return o;
+		case EIdent(v):
+			return v; // Unknown ident, consider as a String literal
+		case EField(e, f):
+			var v = evalExpr(o, e);
+			return Reflect.field(v, f);
+		case EBinop(op, e1, e2):
+			var v1 = evalExpr(o, e1);
+			var v2 = evalExpr(o, e2);
+			switch( op ) {
+			case "==": return Reflect.compare(v1, v2) == 0;
+			default:
+				throw "Can't eval " + Std.string(v1) + " " + op + " " + Std.string(v2);
+			}
+		default:
+			throw "Unsupported expression " + hscript.Printer.toString(e);
 		}
 	}
 #end
 
 #if hl
-	@cmd function dump( args : { file : String } ) {
+	// ----- Hashlink ------
+
+	@cmd function gcMajor() : Int {
+		var start = haxe.Timer.stamp();
+		hl.Gc.major();
+		var duration_us = (haxe.Timer.stamp() - start) * 1_000_000.;
+		return Std.int(duration_us);
+	}
+
+	@cmd function dumpMemory( args : { file : String } ) {
 		hl.Gc.major();
 		hl.Gc.dumpMemory(args?.file);
 		if( hxd.res.Resource.LIVE_UPDATE ) {
 			var msg = "hxd.res.Resource.LIVE_UPDATE is on, you may want to disable it for mem dumps; RemoteConsole can also impact memdumps.";
 			logError(msg);
-			sendCommand("log", msg);
+			sendLogError(msg);
 		}
 	}
 
-	@cmd function prof( args : { action : String, samples : Int, delay_ms : Int }, onDone : Dynamic -> Void ) {
+	@cmd function liveObjects( args : { clname : String } ) : Int {
+		if( args == null || args.clname == null )
+			return -1;
+		#if( hl_ver >= version("1.15.0") && haxe >= version("5.0.0-alpha.1") )
+		hl.Gc.major();
+		var cl = std.Type.resolveClass(args.clname);
+		if( cl == null ) {
+			sendLogError('Failed to find class for ${args.clname}');
+			return -1;
+		}
+		var c = hl.Gc.getLiveObjects(cl, 0);
+		return c.count;
+		#else
+		sendLogError("getLiveObjects not supported, please use hl >= 1.15.0 and haxe >= 5.0.0");
+		return -1;
+		#end
+	}
+
+	@cmd function profCpu( args : { action : String, samples : Int, delay_ms : Int }, onDone : Dynamic -> Void ) {
 		function doProf( args ) {
 			switch( args.action ) {
 			case "start":
@@ -336,7 +431,7 @@ class RemoteConsoleConnection {
 				hl.Profile.event(-4); // pause all
 				hl.Profile.event(-3); // clear data
 			default:
-				sendCommand("log", "Missing argument action for prof");
+				sendLogError('profCpu: action ${args?.action} not supported');
 			}
 		}
 		if( args == null ) {

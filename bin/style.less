@@ -4070,6 +4070,20 @@ div.gradient-box {
 		cursor: pointer;
 	}
 
+	input {
+		margin-left: 2px;
+		margin-right: 2px;
+		background-color: #333333;
+	}
+
+	input:disabled {
+		background-color: #222222;
+	}
+
+	input:disabled:hover {
+		border-color: #505050;
+	}
+
 	.logs {
 		margin-top: 2px;
 		margin-bottom: 2px;
@@ -4104,13 +4118,6 @@ div.gradient-box {
 		}
 
 		.commands {
-			input {
-				margin-left: 2px;
-				margin-right: 2px;
-			}
-			input:disabled {
-				background-color: #333333;
-			}
 			fieldset {
 				border: 1px dashed #333333;
 			}

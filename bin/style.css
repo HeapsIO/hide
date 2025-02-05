@@ -3484,6 +3484,17 @@ div.gradient-box {
   padding-right: 2px;
   cursor: pointer;
 }
+.remoteconsole input {
+  margin-left: 2px;
+  margin-right: 2px;
+  background-color: #333333;
+}
+.remoteconsole input:disabled {
+  background-color: #222222;
+}
+.remoteconsole input:disabled:hover {
+  border-color: #505050;
+}
 .remoteconsole .logs {
   margin-top: 2px;
   margin-bottom: 2px;
@@ -3511,13 +3522,6 @@ div.gradient-box {
 }
 .remoteconsole .remoteconsole-panel .logs {
   height: 100px;
-}
-.remoteconsole .remoteconsole-panel .commands input {
-  margin-left: 2px;
-  margin-right: 2px;
-}
-.remoteconsole .remoteconsole-panel .commands input:disabled {
-  background-color: #333333;
 }
 .remoteconsole .remoteconsole-panel .commands fieldset {
   border: 1px dashed #333333;
