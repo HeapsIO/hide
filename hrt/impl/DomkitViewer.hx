@@ -51,7 +51,7 @@ class DomkitViewer {
 				clearImportNames(c);
 	}
 
-	public static function loadSource( path : String, pos : Position, fields : Array<Field> ) {
+	public static function loadSource( path : String, pos : Position, fields : Array<Field>, params : Array<Expr> ) {
 		var name = path.split("/").pop().split("_").join("-");
 		var dotPos = name.lastIndexOf(".");
 		if( dotPos >= 0 ) {
