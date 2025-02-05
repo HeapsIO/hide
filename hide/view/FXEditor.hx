@@ -495,7 +495,7 @@ class FXEditor extends hide.view.FileView {
 		helpButton.click(function(e) {
 			if (p == null) {
 				p = new hide.comp.SceneEditor.HelpPopup(helpButton, sceneEditor, tlKeys);
-				@:privateAccess p.element.css({'position':'absolute', 'left':'30px','top':'800px'});
+				@:privateAccess p.element.css({'position':'absolute', 'left':'${helpButton.offset().left + helpButton.width() * 2}px','top':'${helpButton.offset().top - p.element.height()}px'});
 				//p = open(el);
 				p.onClose = function() {
 					p = null;
