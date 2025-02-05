@@ -176,6 +176,8 @@ class BlendSpace2D extends AnimNode {
 
 	override function tick(dt:Float) {
 		super.tick(dt);
+		if (blendSpace == null)
+			return;
 
 		if (blendSpace.smoothX > 0) {
 			var r = criticalSpringDamper(realX, vX, bsX, 0, blendSpace.smoothX, dt);

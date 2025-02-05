@@ -248,7 +248,7 @@ class AnimGraphInstance extends h3d.anim.Animation {
 			return dt2;
 
 		map(rootNode, (node) -> node.tickedThisFrame = false);
-		tickRec(rootNode, dt2);
+		tickRec(rootNode, dt);
 
 		return dt2;
 	}

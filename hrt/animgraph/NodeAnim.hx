@@ -2,7 +2,7 @@ package hrt.animgraph;
 
 @:access(AnimNode)
 class NodeAnim<T:hrt.animgraph.nodes.AnimNode> extends h3d.anim.Animation {
-	var instance: T;
+	public var node: T;
 	var resolver: hrt.animgraph.AnimGraphInstance.AnimResolver;
 	var modelCache: h3d.prim.ModelCache;
 	var syncCtx = new hrt.animgraph.nodes.AnimNode.GetBoneTransformContext();
@@ -12,7 +12,7 @@ class NodeAnim<T:hrt.animgraph.nodes.AnimNode> extends h3d.anim.Animation {
 	public function new(resolver: hrt.animgraph.AnimGraphInstance.AnimResolver, modelCache: h3d.prim.ModelCache) {
 		super(null, 100, 1/60);
 		this.resolver = resolver;
-		this.modelCache = modelCache;
+		this.modelCache = modelCache ?? new h3d.prim.ModelCache();
 	}
 
 	override function bind(base) {
@@ -20,7 +20,7 @@ class NodeAnim<T:hrt.animgraph.nodes.AnimNode> extends h3d.anim.Animation {
 		ctx.targetObject = base;
 		ctx.resolver = resolver.bind(null, base);
 		ctx.modelCache = modelCache;
-		var bones = instance.getBones(ctx);
+		var bones = node.getBones(ctx);
 		if (bones != null) {
 			for (name => id in bones) {
 				objects.push(new hrt.animgraph.AnimGraphInstance.AnimGraphAnimatedObject(name, id));
@@ -36,7 +36,7 @@ class NodeAnim<T:hrt.animgraph.nodes.AnimNode> extends h3d.anim.Animation {
 			workMatrix.identity();
 
 			syncCtx.reset(obj);
-			instance.getBoneTransform(obj.id, workMatrix, syncCtx);
+			node.getBoneTransform(obj.id, workMatrix, syncCtx);
 
 			if (!decompose) {
 				Tools.recomposeMatrix(workMatrix, tmpMatrix);
@@ -59,7 +59,7 @@ class NodeAnim<T:hrt.animgraph.nodes.AnimNode> extends h3d.anim.Animation {
 
 	override function update(dt: Float) : Float {
 		var dt2 = super.update(dt);
-		instance.tick(dt2);
+		node.tick(dt);
 		return dt2;
 	}
 }
