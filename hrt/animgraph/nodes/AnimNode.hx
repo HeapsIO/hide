@@ -102,7 +102,7 @@ abstract class AnimNode extends Node {
 		return boneMap;
 	}
 
-	function getBoneTransform(boneId: Int, outMatrix: h3d.Matrix, ctx: GetBoneTransformContext) : Void {
+	public function getBoneTransform(boneId: Int, outMatrix: h3d.Matrix, ctx: GetBoneTransformContext) : Void {
 	}
 
 	abstract function setupAnimEvents() : Void;
