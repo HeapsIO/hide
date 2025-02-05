@@ -51,7 +51,7 @@ class DomkitViewer {
 				clearImportNames(c);
 	}
 
-	public static function loadSource( path : String, pos : Position, fields : Array<Field>, params : Array<Expr> ) {
+	public static function loadSource( path : String, pos : Position, fields : Array<Field>, extraParams : Array<Expr> ) {
 		var name = path.split("/").pop().split("_").join("-");
 		var dotPos = name.lastIndexOf(".");
 		if( dotPos >= 0 ) {
@@ -62,6 +62,20 @@ class DomkitViewer {
 		var fullPath = try Context.resolvePath(path) catch( e : Dynamic ) return null;
 		if( fullPath == null )
 			return null;
+
+		var staticCSS = false;
+		var hasCSS = true;
+		while( extraParams.length > 0 ) {
+			switch( extraParams[0].expr ) {
+			case EConst(CIdent("staticCSS")): staticCSS = true;
+			case EConst(CIdent("noCSS")): hasCSS = false;
+			default:
+				Context.error("Invalid parameter", extraParams[0].pos);
+				return null;
+			}
+			extraParams.shift();
+		}
+
 		Context.registerModuleDependency(Context.getLocalModule(),fullPath);
 		var fullData = sys.io.File.getContent(fullPath);
 		var data = DomkitFile.parse(fullData);
@@ -116,12 +130,14 @@ class DomkitViewer {
 				removeDynParamsRec(m, dynParams);
 			clearImportNames(m);
 
-			fields.push({
-				name : "__CSS",
-				access : [AStatic],
-				kind : FVar(null, macro hrt.impl.DomkitViewer.DomkitStyle.registerCSSSource($v{path})),
-				pos : pos,
-			});
+			if( hasCSS ) {
+				fields.push({
+					name : "__CSS",
+					access : [AStatic],
+					kind : FVar(null, macro hrt.impl.DomkitViewer.DomkitStyle.registerCSSSource($v{path},$v{staticCSS?fullData:null})),
+					pos : pos,
+				});
+			}
 			return { dml : m, pos : Context.makePosition({ file : fullPath, min : index, max : index + data.dml.length }) };
 		} catch( e : domkit.Error ) {
 			Context.error(e.message, Context.makePosition({ file : fullPath, min : e.pmin, max : e.pmax }));
@@ -675,8 +691,13 @@ class DomkitStyle extends h2d.domkit.Style {
 	public function loadDefaults( globals : Array<hxd.res.Resource> ) {
 		for( r in globals )
 			load(r, true, true);
-		for( path in CSS_SOURCES )
-			load(hxd.res.Loader.currentInstance.load(path));
+		for( path in CSS_SOURCES ) {
+			var content = CONTENT.get(path);
+			if( content == null )
+				load(hxd.res.Loader.currentInstance.load(path));
+			else
+				load(new hxd.res.Resource(new hxd.fs.BytesFileSystem.BytesFileEntry(path,haxe.io.Bytes.ofString(content))));
+		}
 	}
 
 	override function loadData( r : hxd.res.Resource ) {
@@ -688,8 +709,10 @@ class DomkitStyle extends h2d.domkit.Style {
 	}
 
 	static var CSS_SOURCES = [];
-	public static function registerCSSSource( path : String ) {
+	static var CONTENT = new Map();
+	public static function registerCSSSource( path : String, ?content : String ) {
 		CSS_SOURCES.push(path);
+		if( content != null ) CONTENT.set(path, content);
 		return true;
 	}
 }
