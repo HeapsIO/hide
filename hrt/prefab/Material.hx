@@ -168,6 +168,9 @@ class Material extends Prefab {
 			var flat = getRoot(false).flatten(Material);
 			@:privateAccess var pos = flat.indexOf(this);
 			previewSphere.x = ( pos - 1) * 5.0;
+
+			for (idx in (pos+1)...(flat.length))
+				flat[idx].previewSphere?.x = ( idx - 1) * 5.0;
 		}
 		#end
 
