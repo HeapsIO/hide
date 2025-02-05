@@ -338,7 +338,7 @@ class RemoteConsoleConnection {
 							@:privateAccess var objs = sceneEditor.sceneData.findAll(null, function(o) {
 								return evalExpr(o, expr);
 							});
-							sceneEditor.selectElements(objs);
+							sceneEditor.delayReady(() -> sceneEditor.selectElements(objs));
 						} catch( e ) {
 							hide.Ide.inst.quickError(e);
 						}
