@@ -48,6 +48,14 @@ implements hide.view.GraphInterface.IGraphNode
 
 	}
 
+	/**
+		Called on the node when AnimGraphInstance.resetSmoothedValues is called
+		Should reset all the smoothed parameters to their input value OR default values
+	**/
+	public function resetSmoothedValues() : Void {
+
+	}
+
 
 	// Serialization api
 

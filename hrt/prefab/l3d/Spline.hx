@@ -619,7 +619,7 @@ class Spline extends hrt.prefab.Object3D {
 		var l = 0.0;
 		for( i in 0 ... samples.length - 1 ) {
 			samples[i].t = l/length;
-			samples[i].length = length;
+			samples[i].length = l;
 			l += samples[i].pos.distance(samples[i+1].pos);
 		}
 		samples[samples.length - 1].t = 1;

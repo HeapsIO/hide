@@ -55,7 +55,7 @@ class AnimGraphEditor extends GenericGraphEditor {
         refreshPamamList();
 
         var dl = new Element("<dl></dl>").appendTo(propertiesContainer);
-        addAnimSetSelector(dl, undo, () -> previewState.providerIndex, (i: Int) -> {
+        addAnimSetSelector(dl, {animDirectory: animGraph.animFolder, assetPath: state.path}, undo, () -> previewState.providerIndex, (i: Int) -> {
 			previewState.providerIndex = i;
             savePreviewState();
 			refreshPreview();
@@ -238,13 +238,13 @@ class AnimGraphEditor extends GenericGraphEditor {
         return options;
     }
 
-    static public function addAnimSetSelector(target: Element, undo: hide.ui.UndoHistory, getIndex: () -> Int, setIndex:(Int) -> Void) {
+    static public function addAnimSetSelector(target: Element, context:hrt.animgraph.AnimGraph.EditorProviderContext, undo: hide.ui.UndoHistory, getIndex: () -> Int, setIndex:(Int) -> Void) {
         if (hrt.animgraph.AnimGraph.customEditorResolverProvider != null)
         {
             var div = new Element("<div></div>").appendTo(target);
             div.append(new Element("<dt>Anim Set</dt>"));
 
-            var providers = hrt.animgraph.AnimGraph.customEditorResolverProvider(_);
+            var providers = hrt.animgraph.AnimGraph.customEditorResolverProvider(context);
 
             var button = new hide.comp.Button(div, null, null, {hasDropdown: true});
             button.label = providers[getIndex()].name;
@@ -297,7 +297,7 @@ class AnimGraphEditor extends GenericGraphEditor {
 
             var resolver = null;
             if (AnimGraph.customEditorResolverProvider != null) {
-                var providers = AnimGraph.customEditorResolverProvider(_);
+                var providers = AnimGraph.customEditorResolverProvider({animDirectory: animGraph.animFolder, assetPath: state.path});
                 if (providers != null && previewState.providerIndex > providers.length) {
                     previewState.providerIndex = 0;
                     savePreviewState();

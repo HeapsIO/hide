@@ -10,6 +10,7 @@ class GetBoneContext {
 
 	public var targetObject:h3d.scene.Object;
 	public var resolver : (path: String) -> Null<String>;
+	public var modelCache : h3d.prim.ModelCache;
 }
 
 class GetBoneTransformContext {
@@ -48,9 +49,11 @@ class GetBoneTransformContext {
 /**
 	An anim node outpus a animation that can be consumed as input parameter by other nodes
 **/
-class AnimNode extends Node {
+abstract class AnimNode extends Node {
 	var numAnimInput : Int;
 	var boneIdToAnimInputBone : Array<Int>;
+
+	var onEvent : (String) -> Void;
 
 	inline function getInputBoneId(boneId: Int, inputId: Int) {
 		return boneId * numAnimInput + inputId;
@@ -101,6 +104,9 @@ class AnimNode extends Node {
 
 	function getBoneTransform(boneId: Int, outMatrix: h3d.Matrix, ctx: GetBoneTransformContext) : Void {
 	}
+
+	abstract function setupAnimEvents() : Void;
+
 
 	#if editor
 
