@@ -170,7 +170,8 @@ class Material extends Prefab {
 			previewSphere.x = ( pos - 1) * 5.0;
 
 			for (idx in (pos+1)...(flat.length))
-				flat[idx].previewSphere?.x = ( idx - 1) * 5.0;
+				if (flat[idx].previewSphere != null)
+					flat[idx].previewSphere.x = ( idx - 1) * 5.0;
 		}
 		#end
 
