@@ -123,6 +123,28 @@ class VolumetricLightingShader extends h3d.shader.pbr.DefaultForward {
 			return falloff * falloff * exp(-fog * dist);
 		}
 
+		var skipShadow : Bool;
+		function evaluateCascadeShadow() : Float {
+			var i = dirLightStride + pointLightStride + spotLightStride;
+			var shadow = 1.0;
+			var shadowProj = mat3x4(lightInfos[i + 2], lightInfos[i + 3], lightInfos[i + 4]);
+
+			@unroll for ( c in 0...CASCADE_COUNT ) {
+				var cascadeScale = lightInfos[i + 5 + 2 * c];
+				var shadowPos0 = transformedPosition * shadowProj;
+				var shadowPos = i == 0 ? shadowPos0 : shadowPos0 * cascadeScale.xyz + lightInfos[i + 6 + 2 * c].xyz;
+				if ( inside(shadowPos) ) {
+					var zMax = saturate(shadowPos.z);
+					var shadowUv = shadowPos.xy;
+					shadowUv.y = 1.0 - shadowUv.y;
+					var depth = cascadeShadowMaps[c].get(shadowUv.xy).r;
+					shadow -= zMax > depth ? 1.0 : 0.0;
+				}
+			}
+
+			return skipShadow ? 1.0 : saturate(shadow);
+		}
+
 		var useSecondColor : Float;
 		function fogAt(pos : Vec3) : Float {
 			var n = noiseAt(pos);
@@ -138,7 +160,8 @@ class VolumetricLightingShader extends h3d.shader.pbr.DefaultForward {
 			return max(firstFog, secondFog);
 		}
 
-		function getWPos() : Vec3 {			var depth = halfDepthMap.get( fragCoord.xy / halfDepthMap.size() ).r;
+		function getWPos() : Vec3 {
+			var depth = halfDepthMap.get( fragCoord.xy / halfDepthMap.size() ).r;
 			var uv2 = uvToScreen(calculatedUV);
 			var temp = vec4(uv2, depth, 1) * invViewProj;
 			return temp.xyz / temp.w;
@@ -166,12 +189,11 @@ class VolumetricLightingShader extends h3d.shader.pbr.DefaultForward {
 				discard;
 			if ( maxCamDist > 0.0 )
 				cameraDistance = min(cameraDistance, maxCamDist);
-			endPos = startPos + camDir * cameraDistance;
 
 			envColor = irrDiffuse.getLod(-camDir, 0.0).rgb;
 			view = -camDir;
 
-			var stepSize = length(endPos - startPos) / float(steps);
+			var stepSize = cameraDistance / float(steps);
 			var dithering = ditheringNoise.getLod(calculatedUV * targetSize / ditheringSize, 0.0).r * stepSize * ditheringIntensity;
 			startPos += dithering * camDir;
 			var opacity = 0.0;
@@ -181,6 +203,7 @@ class VolumetricLightingShader extends h3d.shader.pbr.DefaultForward {
 			pixelColor = vec4(1.0);
 			var colorAcc = vec4(0.0);
 			var curDist = 0.0;
+			skipShadow = false;
 			for ( i in 0...steps ) {
 				if ( colorAcc.a > 0.99 )
 					break;
@@ -195,6 +218,21 @@ class VolumetricLightingShader extends h3d.shader.pbr.DefaultForward {
 
 				curDist += stepSize;
 			}
+
+			var stepSize = length(endPos - startPos) - curDist;
+			curDist += stepSize;
+			skipShadow = true;
+			if(colorAcc.a < 0.99 && stepSize > 0.0) {
+				transformedPosition = startPos + camDir * curDist;
+				fog = fogAt(transformedPosition);
+				var fColor = getFogColor();
+				var stepColor = evaluateLighting() * fColor * mix(vec3(1.0), saturate(envColor), fogEnvColorMult);
+
+				var stepColor = vec4(stepColor * fog, fog);
+
+				colorAcc += stepColor * (1.0 - colorAcc.a) * stepSize;
+			}
+
 			var outColor = colorAcc.rgb / (0.001 + colorAcc.a);
 			var opacity = saturate(distanceOpacity * colorAcc.a);
 
@@ -225,6 +263,7 @@ class VolumetricLighting extends RendererFX {
 	@:s public var blurDepthThreshold : Float = 10.0;
 	@:s public var startDistance : Float = 0.0;
 	@:s public var endDistance : Float = 200.0;
+	@:s public var maxCamDist : Float = 200.0;
 	@:s public var distanceOpacity : Float = 1.0;
 	@:s public var ditheringIntensity : Float = 1.0;
 
@@ -288,6 +327,7 @@ class VolumetricLighting extends RendererFX {
 			vshader.halfDepthMap = halfDepth;
 			vshader.startDistance = startDistance;
 			vshader.endDistance = endDistance;
+			vshader.maxCamDist = maxCamDist;
 			vshader.distanceOpacity = distanceOpacity;
 			vshader.steps = steps;
 			vshader.invViewProj = r.ctx.camera.getInverseViewProj();
@@ -449,6 +489,7 @@ class VolumetricLighting extends RendererFX {
 					<dt>Blur</dt><dd><input type="range" step="1" min="0" max="100" field="blur"/></dd>
 					<dt>Blur depth threshold</dt><dd><input type="range" field="blurDepthThreshold"/></dd>
 					<dt>Dithering intensity</dt><dd><input type="range" min="0" max="1" field="ditheringIntensity"/></dd>
+					<dt>Fog quality distance</dt><dd><input type="range" min="0" max="200" field="maxCamDist"/></dd>
 				</dl>
 			</div>
 			'), this, function(pname) {
