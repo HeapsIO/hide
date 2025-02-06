@@ -1,5 +1,5 @@
 package hrt.animgraph.nodes;
-using hrt.tools.MapUtils;
+import hrt.tools.MapUtils;
 
 typedef BlendSpaceInstancePoint = {
 	x: Float,
@@ -127,7 +127,7 @@ class BlendSpace2D extends AnimNode {
 							var indexRemap : Array<Null<Int>> = [];
 
 							for (boneId => obj in animInstance.getObjects()) {
-								var ourId = boneMap.getOrPut(obj.objectName, curOurBoneId++);
+								var ourId = MapUtils.getOrPut(boneMap, obj.objectName, curOurBoneId++);
 								indexRemap[ourId] = boneId;
 							}
 
@@ -136,7 +136,7 @@ class BlendSpace2D extends AnimNode {
 						}
 
 						var animIndex = if (blendSpacePoint.keepSync) {
-							animMap.getOrPut(path, makeAnim());
+							MapUtils.getOrPut(animMap, path, makeAnim());
 						} else {
 							// All anims not kept in sync are unique, so we bypass the animMap
 							var i = makeAnim();

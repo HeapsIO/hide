@@ -9,7 +9,7 @@ import hrt.prefab.Curve;
 import hrt.prefab.fx.Event;
 import hide.view.CameraController.CamController;
 
-using hrt.tools.MapUtils;
+import hrt.tools.MapUtils;
 
 typedef PropTrackDef = {
 	name: String,
@@ -1772,7 +1772,7 @@ class FXEditor extends hide.view.FileView {
 				if (event == null)
 					continue;
 
-				var previous = closest.getOrPut(event.findFirstLocal3d(), {instance: instance, distance: hxd.Math.POSITIVE_INFINITY, jumpTo: 0.0});
+				var previous = MapUtils.getOrPut(closest, event.findFirstLocal3d(), {instance: instance, distance: hxd.Math.POSITIVE_INFINITY, jumpTo: 0.0});
 				if (previous.distance == 0)
 					continue;
 

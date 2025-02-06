@@ -1,6 +1,6 @@
 package hrt.animgraph;
 using Lambda;
-using hrt.tools.MapUtils;
+import hrt.tools.MapUtils;
 class AnimGraphAnimatedObject extends h3d.anim.Animation.AnimatedObject {
 	public var id : Int;
 	public var matrix : h3d.Matrix;
@@ -114,7 +114,7 @@ class AnimGraphInstance extends h3d.anim.Animation {
 		if (clonedParam != null) {
 			var nodeParam : hrt.animgraph.nodes.FloatParameter = cast node;
 			if (nodeParam.parameter != null) {
-				clonedParam.parameter = inst.parameterMap.getOrPut(nodeParam.parameter.name, {
+				clonedParam.parameter = MapUtils.getOrPut(inst.parameterMap, nodeParam.parameter.name, {
 					var newParam = new hrt.animgraph.AnimGraph.Parameter();
 					@:privateAccess newParam.copyFromOther(nodeParam.parameter);
 					newParam.runtimeValue = nodeParam.parameter.defaultValue;

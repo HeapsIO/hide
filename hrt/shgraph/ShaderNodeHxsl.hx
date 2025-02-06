@@ -3,7 +3,7 @@ package hrt.shgraph;
 import hxsl.Ast.TExpr;
 using hxsl.Ast;
 using hrt.shgraph.Utils;
-using hrt.tools.MapUtils;
+import hrt.tools.MapUtils;
 
 using Lambda;
 
@@ -66,12 +66,12 @@ class ShaderNodeHxsl extends ShaderNode {
 
 	override public function getInputs() : Array<ShaderNode.InputInfo> {
 		var cl = std.Type.getClass(this);
-		return cache.getOrPut(cast cl, genCache(cl)).inputs;
+		return MapUtils.getOrPut(cache, cast cl, genCache(cl)).inputs;
 	}
 
 	override public function getOutputs() : Array<ShaderNode.OutputInfo> {
 		var cl = std.Type.getClass(this);
-		return cache.getOrPut(cast cl, genCache(cl)).outputs;
+		return MapUtils.getOrPut(cache, cast cl, genCache(cl)).outputs;
 	}
 
 	function genCache(cl: Class<ShaderNodeHxsl>) : CacheEntry {
@@ -116,7 +116,7 @@ class ShaderNodeHxsl extends ShaderNode {
 
 	override public function generate(ctx: NodeGenContext) : Void {
 		var cl = std.Type.getClass(this);
-		var cache = cache.getOrPut(cast cl, genCache(cl));
+		var cache = MapUtils.getOrPut(cache, cast cl, genCache(cl));
 
 		var infos : Map<Int, SgHxslVar> = cast (cl:Dynamic)._variablesInfos;
 		var varsOverride : Map<Int, TExpr> = [];
@@ -189,7 +189,7 @@ class ShaderNodeHxsl extends ShaderNode {
 
 					return replacement;
 				case TVarDecl(v, init):
-					var tvar = varsRemap.getOrPut(v.id,
+					var tvar = MapUtils.getOrPut(varsRemap, v.id,
 						{
 							name: v.name,
 							id: hxsl.Ast.Tools.allocVarId(),
@@ -200,7 +200,7 @@ class ShaderNodeHxsl extends ShaderNode {
 						});
 					return makeExpr(TVarDecl(tvar, if( init != null ) patch(init) else null), e.t);
 				case TFor(v, it, loop):
-					var tvar = varsRemap.getOrPut(v.id,
+					var tvar = MapUtils.getOrPut(varsRemap, v.id,
 						{
 							name: v.name,
 							id: hxsl.Ast.Tools.allocVarId(),
