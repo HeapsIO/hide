@@ -5,7 +5,7 @@ class ArrayUtils {
 	/**
 		Returns arr[pos] if key if present, else execute def and puts it into arr[pos]
 	**/
-	macro public static function getOrPut<V>(arr:Array<V>, pos:ExprOf<Int>, def:ExprOf<V>):Expr {
+	macro public static function getOrPut<V>(arr:ExprOf<Array<V>>, pos:ExprOf<Int>, def:ExprOf<V>):Expr {
 		return macro {
 			var k = ${pos};
 			var m = ${arr};
