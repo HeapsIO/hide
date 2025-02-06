@@ -126,6 +126,8 @@ class BlendSpace2D2 extends h3d.anim.Animation {
 							var proxy = new hrt.animgraph.nodes.Input.AnimProxy(null);
 							var animInstance = animBase.createInstance(proxy);
 
+							animInstance.bind(object);
+
 							var animObjects = [];
 							for (obj in animInstance.getObjects()) {
 								var o = MapUtils.getOrPut(allObjects, obj.objectName, {
@@ -239,7 +241,9 @@ class BlendSpace2D2 extends h3d.anim.Animation {
 			realY = y;
 		}
 
-		syncAnimTime = (syncAnimTime + dt * currentAnimLenght) % 1.0;
+		syncAnimTime = (syncAnimTime + dt / currentAnimLenght) % 1.0;
+
+		updateCurrentTriangle();
 
 		if (currentTriangle < 0)
 			return dt2;
@@ -253,17 +257,18 @@ class BlendSpace2D2 extends h3d.anim.Animation {
 			var newTime = if (animInfo.keepSync) {
 				animInfo.anim.getDuration() * syncAnimTime;
 			} else {
-				animInfo.anim.frame + dt * animInfo.selfSpeed;
+				animInfo.anim.frame / (animInfo.anim.speed * animInfo.anim.sampling) + dt * animInfo.selfSpeed;
 			}
 
 			// Check if the anim info is in one of our triangle points, and if so
 			// tick it normaly,
+
 			for (p in triangle) {
 
 				if (p.animInfo == animInfo) {
 					skip = true;
-					var scale = animInfo.selfSpeed;
-					var delta = newTime - animInfo.anim.frame;
+					//var scale = animInfo.selfSpeed;
+					var delta = newTime - animInfo.anim.frame / (animInfo.anim.speed * animInfo.anim.sampling);
 					animInfo.anim.update(delta);
 					break;
 				}
@@ -272,13 +277,12 @@ class BlendSpace2D2 extends h3d.anim.Animation {
 			if (skip)
 				continue;
 
-			animInfo.anim.setFrame(newTime);
+			animInfo.anim.setFrame(newTime * (animInfo.anim.speed * animInfo.anim.sampling));
 		}
 		return dt2;
 	}
 
-	@:haxe.warning("-WInlineOptimizedField")
-	override function sync(decompose:Bool = false) {
+	function updateCurrentTriangle() {
 		if (triangles.length < 1)
 			return;
 
@@ -376,6 +380,11 @@ class BlendSpace2D2 extends h3d.anim.Animation {
 				}
 			}
 		}
+	}
+
+	@:haxe.warning("-WInlineOptimizedField")
+	override function sync(decompose:Bool = false) {
+		updateCurrentTriangle();
 
 		if (currentTriangle < 0)
 			return;
@@ -397,7 +406,7 @@ class BlendSpace2D2 extends h3d.anim.Animation {
 			// copy modified matrices references
 			@:privateAccess
 			for (object in point.animInfo.objects) {
-				object.matrices[ptIndex] = if( object.targetSkin != null ) object.targetSkin.currentRelPose[object.targetJoint] else object.targetObject.defaultTransform;
+				object.matrices[ptIndex] = (if( object.targetSkin != null ) object.targetSkin.currentRelPose[object.targetJoint] else object.targetObject.defaultTransform) ?? object.matrices[ptIndex];
 			}
 		}
 
@@ -420,6 +429,9 @@ class BlendSpace2D2 extends h3d.anim.Animation {
 				}
 
 				var matrix = object.matrices[ptIndex];
+
+				if (matrix == null)
+					continue;
 
 				blendedPos = inline blendedPos.add(inline new h3d.Vector(matrix.tx * w, matrix.ty * w, matrix.tz * w));
 				blendedScale = inline blendedScale.add(inline new h3d.Vector(matrix._11 * w, matrix._22 * w, matrix._33 * w));

@@ -36,7 +36,7 @@ class BlendSpace2DEditor extends hide.view.FileView {
 	static final pointRadius = 8;
 	var subdivs = 5;
 
-	var animPreview : hrt.animgraph.AnimGraphInstance;
+	var animPreview : hrt.animgraph.anim.BlendSpace2D2;
 
 	var previewBlendPos : hide.Element;
 
@@ -358,54 +358,59 @@ class BlendSpace2DEditor extends hide.view.FileView {
 
 	function refreshPreviewAnimation() {
 		if (previewModel != null) {
-			if (animPreview == null) {
-				var blendSpaceNode = new hrt.animgraph.nodes.BlendSpace2D.BlendSpace2D();
-				@:privateAccess blendSpaceNode.blendSpace = blendSpace2D;
-				var resolver = null;
-				if (hrt.animgraph.AnimGraph.customEditorResolverProvider != null) {
-					var resolvers = hrt.animgraph.AnimGraph.customEditorResolverProvider({animDirectory: blendSpace2D.animFolder, assetPath: state.path});
-					if (resolvers != null) {
-						if (previewState.providerIndex > resolvers.length) {
-							previewState.providerIndex = 0;
-							savePreviewState();
-						}
-						resolver = resolvers[previewState.providerIndex]?.resolver;
-					}
-				}
-				animPreview = new hrt.animgraph.AnimGraphInstance(blendSpaceNode, resolver, "", 1000, 1.0/60.0);
-				@:privateAccess animPreview.editorSkipClone = true;
-				cast previewModel.playAnimation(animPreview);
-			}
-			else @:privateAccess {
-				var root : hrt.animgraph.nodes.BlendSpace2D.BlendSpace2D = cast @:privateAccess animPreview.rootNode;
-				var old = root.points[0]?.animInfo?.anim.frame;
+			var resolver = null;
+			var set : Map<String, String> = [];
 
-				var resolver = null;
-				if (hrt.animgraph.AnimGraph.customEditorResolverProvider != null) {
-					var resolvers = hrt.animgraph.AnimGraph.customEditorResolverProvider({animDirectory: blendSpace2D.animFolder, assetPath: state.path});
-					if (resolvers != null) {
-						resolver = resolvers[previewState.providerIndex]?.resolver;
+			if (hrt.animgraph.AnimGraph.customEditorResolverProvider != null) {
+				var ctx = {animDirectory: blendSpace2D.animFolder, assetPath: state.path};
+				var resolvers = hrt.animgraph.AnimGraph.customEditorResolverProvider(ctx);
+				if (resolvers != null) {
+					if (previewState.providerIndex > resolvers.length) {
+						previewState.providerIndex = 0;
+						savePreviewState();
 					}
+					resolver = resolvers[previewState.providerIndex]?.resolver;
 				}
-				animPreview.resolver = resolver;
 
-				// if the anim or the mesh changed between the last refreshPreviewAnimation
-				if (previewModel.currentAnimation == animPreview) {
-					animPreview.bind(previewModel);
-				} else {
-					previewModel.playAnimation(animPreview);
-				}
-				if (old != null) {
-					for (point in root.points) {
-						if (point.animInfo != null) {
-							point.animInfo.anim.setFrame(old);
-						}
+				if (resolver != null) {
+					var list = hrt.animgraph.AnimGraph.customAnimNameLister(ctx);
+					for (anim in list) {
+						set.set(anim, resolver(null, null, anim));
 					}
 				}
 			}
+
+			var blendSpace = new hrt.animgraph.anim.BlendSpace2D2(blendSpace2D, set, new h3d.prim.ModelCache());
+			animPreview = cast previewModel.playAnimation(blendSpace);
+			// else @:privateAccess {
+			// 	var root : hrt.animgraph.nodes.BlendSpace2D.BlendSpace2D = cast @:privateAccess animPreview.rootNode;
+			// 	var old = root.points[0]?.animInfo?.anim.frame;
+
+			// 	var resolver = null;
+			// 	if (hrt.animgraph.AnimGraph.customEditorResolverProvider != null) {
+			// 		var resolvers = hrt.animgraph.AnimGraph.customEditorResolverProvider({animDirectory: blendSpace2D.animFolder, assetPath: state.path});
+			// 		if (resolvers != null) {
+			// 			resolver = resolvers[previewState.providerIndex]?.resolver;
+			// 		}
+			// 	}
+			// 	animPreview.resolver = resolver;
+
+			// 	// if the anim or the mesh changed between the last refreshPreviewAnimation
+			// 	if (previewModel.currentAnimation == animPreview) {
+			// 		animPreview.bind(previewModel);
+			// 	} else {
+			// 		previewModel.playAnimation(animPreview);
+			// 	}
+			// 	if (old != null) {
+			// 		for (point in root.points) {
+			// 			if (point.animInfo != null) {
+			// 				point.animInfo.anim.setFrame(old);
+			// 			}
+			// 		}
+			// 	}
+			// }
 
 			updatePreviewAxis();
-			animPreview.resetSmoothedValues();
 		}
 	}
 
@@ -561,10 +566,10 @@ class BlendSpace2DEditor extends hide.view.FileView {
 
 	var queuedRequest : Int = -1;
 	function onRequestAnimationFrame(dt: Float) {
+		@:privateAccess
 		if (previewBlendPos != null && animPreview != null) {
-			var root : hrt.animgraph.nodes.BlendSpace2D.BlendSpace2D = cast @:privateAccess animPreview.rootNode;
-			var rx = @:privateAccess root.realX;
-			var ry = @:privateAccess root.realY;
+			var rx = @:privateAccess animPreview.realX;
+			var ry = @:privateAccess animPreview.realY;
 			previewBlendPos.attr("transform", 'translate(${localXToGraph(rx)}, ${localYToGraph(ry)})');
 
 			queuedRequest = js.Browser.window.requestAnimationFrame(onRequestAnimationFrame);
@@ -585,9 +590,8 @@ class BlendSpace2DEditor extends hide.view.FileView {
 
 	function updatePreviewAxis() {
 		if (animPreview != null) {
-			var root : hrt.animgraph.nodes.BlendSpace2D.BlendSpace2D = cast @:privateAccess animPreview.rootNode;
-			@:privateAccess root.bsX = previewAxis.x;
-			@:privateAccess root.bsY = previewAxis.y;
+			animPreview.x = previewAxis.x;
+			animPreview.y = previewAxis.y;
 		}
 		refreshGraph();
 	}
@@ -692,9 +696,8 @@ class BlendSpace2DEditor extends hide.view.FileView {
 			graph.line(g, -size, size, size, -size).addClass("preview-axis");
 
 			if (animPreview != null) {
-				var root : hrt.animgraph.nodes.BlendSpace2D.BlendSpace2D = cast @:privateAccess animPreview.rootNode;
-				var rx = @:privateAccess root.realX;
-				var ry = @:privateAccess root.realY;
+				var rx = @:privateAccess animPreview.realX;
+				var ry = @:privateAccess animPreview.realY;
 
 				previewBlendPos = graph.group(graph.element);
 				previewBlendPos.attr("transform", 'translate(${localXToGraph(rx)}, ${localYToGraph(ry)})');
