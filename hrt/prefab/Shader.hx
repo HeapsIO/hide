@@ -37,6 +37,8 @@ class Shader extends Prefab {
 		syncShaderVars(shader, shaderDef);
 
 		#if editor
+		if (propName == null)
+			return;
 		var rootFx = Std.downcast(getRoot(), hrt.prefab.fx.FX);
 		var fxAnim = Std.downcast(rootFx?.local3d, hrt.prefab.fx.FX.FXAnimation);
 		fxAnim?.updateCustomAnims(rootFx);
