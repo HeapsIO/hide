@@ -123,7 +123,7 @@ class VolumetricLightingShader extends h3d.shader.pbr.DefaultForward {
 			return falloff * falloff * exp(-fog * dist);
 		}
 
-		var skipShadow : Bool;
+		var skipShadow : Bool = false;
 		function evaluateCascadeShadow() : Float {
 			var i = dirLightStride + pointLightStride + spotLightStride;
 			var shadow = 1.0;
