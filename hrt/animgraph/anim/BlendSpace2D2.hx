@@ -1,5 +1,5 @@
 package hrt.animgraph.anim;
-import hrt.tools.MapUtils;
+using hrt.tools.MapUtils;
 
 typedef BlendSpaceInstancePoint = {
 	x: Float,
@@ -73,7 +73,7 @@ class BlendSpace2D2 extends h3d.anim.Animation {
 	var refQuat = new h3d.Quat();
 	var modelCache : h3d.prim.ModelCache;
 
-	public function new(blendSpace: hrt.animgraph.BlendSpace2D, animSet: Map<String, String>, modelCache: h3d.prim.ModelCache) {
+	function new(blendSpace: hrt.animgraph.BlendSpace2D, animSet: Map<String, String>, modelCache: h3d.prim.ModelCache) {
 		this.blendSpace = blendSpace;
 		this.animSet = animSet;
 		this.modelCache = modelCache;
@@ -92,7 +92,6 @@ class BlendSpace2D2 extends h3d.anim.Animation {
 		points = [];
 		triangles = [];
 		currentTriangle = -1;
-		objects = [];
 
 		resetSmooth();
 
@@ -128,11 +127,10 @@ class BlendSpace2D2 extends h3d.anim.Animation {
 
 							var animObjects = [];
 							for (obj in animInstance.getObjects()) {
-								var o = MapUtils.getOrPut(allObjects, obj.objectName, {
+								allObjects.getOrPut(obj.objectName, {
 									var o = new BlendSpaceObject(obj.objectName);
 									o.targetJoint = obj.targetJoint;
 									o.targetSkin = obj.targetSkin;
-									o.targetObject = obj.targetObject;
 
 									@:privateAccess
 									if (o.targetSkin != null) {
@@ -141,10 +139,9 @@ class BlendSpace2D2 extends h3d.anim.Animation {
 										o.defaultMatrix = h3d.anim.SmoothTransition.MZERO;
 									}
 									objects.push(o);
+									animObjects.push(o);
 									o;
 								});
-
-								animObjects.push(o);
 							}
 
 							animInfos.push({anim: animInstance, proxy: proxy, selfSpeed: 1.0, keepSync: blendSpacePoint.keepSync, selfTime: 0, objects: animObjects});
@@ -152,7 +149,7 @@ class BlendSpace2D2 extends h3d.anim.Animation {
 						}
 
 						var animIndex = if (blendSpacePoint.keepSync) {
-							MapUtils.getOrPut(animMap, path, makeAnim());
+							animMap.getOrPut(path, makeAnim());
 						} else {
 							// All anims not kept in sync are unique, so we bypass the animMap
 							var i = makeAnim();
@@ -169,8 +166,6 @@ class BlendSpace2D2 extends h3d.anim.Animation {
 				}
 			}
 		}
-
-		trace(allObjects);
 
 		triangulate();
 	}
@@ -204,16 +199,6 @@ class BlendSpace2D2 extends h3d.anim.Animation {
 			triangle[2] = points[h2dPoints.indexOf(triTriangle.p3)];
 			triangles.push(triangle);
 		}
-	}
-
-	override function clone(?a:h3d.anim.Animation):h3d.anim.Animation {
-		var a : BlendSpace2D2 = cast a;
-		if (a == null)
-			a = new BlendSpace2D2(blendSpace, animSet, modelCache);
-		a.blendSpace = blendSpace;
-		a.animSet = animSet;
-		a.modelCache = a.modelCache;
-		return super.clone(a);
 	}
 
 	override function update(dt:Float):Float {

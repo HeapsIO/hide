@@ -1,11 +1,11 @@
 package hrt.animgraph.nodes;
 
-import hrt.tools.MapUtils;
+using hrt.tools.MapUtils;
 class AnimProxy extends h3d.scene.Object {
 	var map : Map<String, h3d.scene.Object> = [];
 
 	override function getObjectByName(name: String) {
-		return MapUtils.getOrPut(map, name, new h3d.scene.Object(null));
+		return map.getOrPut(name, new h3d.scene.Object(null));
 	}
 }
 

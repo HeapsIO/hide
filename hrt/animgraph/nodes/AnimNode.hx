@@ -1,6 +1,6 @@
 package hrt.animgraph.nodes;
 
-import hrt.tools.MapUtils;
+using hrt.tools.MapUtils;
 
 
 class GetBoneContext {
@@ -85,7 +85,7 @@ abstract class AnimNode extends Node {
 					}
 					var animBones = anim.getBones(ctx);
 					for (name => id in animBones) {
-						var ourBoneId = MapUtils.getOrPut(boneMap, name, {
+						var ourBoneId = boneMap.getOrPut(name, {
 							currentBoneId++;
 							for (i in 0...numAnimInput) {
 								boneIdToAnimInputBone[getInputBoneId(currentBoneId, i)] = -1;

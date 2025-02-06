@@ -11,7 +11,7 @@ import hide.view.shadereditor.Box;
 import hrt.shgraph.ShaderNode;
 import hrt.shgraph.ShaderType;
 using Lambda;
-import hrt.tools.MapUtils;
+using hrt.tools.MapUtils;
 import hrt.shgraph.ShaderType.SType;
 
 import hide.view.GraphInterface.IGraphEditor;
@@ -534,7 +534,7 @@ class GraphEditor extends hide.comp.Component {
 		var groups: Map<String, Array<hide.view.GraphInterface.AddNodeMenuEntry>> = [];
 
 		for (node in nodes) {
-			MapUtils.getOrPut(groups, node.group, []).push(node);
+			groups.getOrPut(node.group, []).push(node);
 		}
 
 		function doAdd(onConstructNode : () -> IGraphNode) {

@@ -3,7 +3,7 @@ package hrt.shgraph;
 using hxsl.Ast;
 using Lambda;
 using hrt.shgraph.Utils;
-import hrt.tools.MapUtils;
+using hrt.tools.MapUtils;
 import hrt.shgraph.AstTools.*;
 import hrt.shgraph.ShaderGraph;
 import hrt.shgraph.ShaderNode;
@@ -16,7 +16,7 @@ class NodeGenContextSubGraph extends NodeGenContext {
 
 	override function getGlobalInput(id: Variables.Global) : TExpr {
 		var global = Variables.Globals[id];
-		var info = MapUtils.getOrPut(globalInVars, Variables.getFullPath(global), {type: global.type, id: inputCount++});
+		var info = globalInVars.getOrPut(Variables.getFullPath(global), {type: global.type, id: inputCount++});
 		return parentCtx?.nodeInputExprs[info.id] ?? parentCtx?.getGlobalInput(id) ?? super.getGlobalInput(id);
 	}
 
@@ -33,7 +33,7 @@ class NodeGenContextSubGraph extends NodeGenContext {
 		if (outputCount == 0 && parentCtx != null) {
 			parentCtx.addPreview(expr);
 		}
-		var info = MapUtils.getOrPut(globalOutVars, Variables.getFullPath(global), {type: global.type, id: outputCount ++});
+		var info = globalOutVars.getOrPut(Variables.getFullPath(global), {type: global.type, id: outputCount ++});
 		if (parentCtx != null) {
 			parentCtx.setOutput(info.id, expr);
 		} else {
@@ -42,7 +42,7 @@ class NodeGenContextSubGraph extends NodeGenContext {
 	}
 
 	override  function getGlobalParam(name: String, type: Type) : TExpr {
-		var info = MapUtils.getOrPut(globalInVars, name, {type: type, id: inputCount ++});
+		var info = globalInVars.getOrPut(name, {type: type, id: inputCount ++});
 		return parentCtx?.nodeInputExprs[info.id] ?? parentCtx?.getGlobalParam(name, type) ?? super.getGlobalParam(name, type);
 	}
 
@@ -50,7 +50,7 @@ class NodeGenContextSubGraph extends NodeGenContext {
 		if (outputCount == 0 && parentCtx != null) {
 			parentCtx.addPreview(expr);
 		}
-		var info = MapUtils.getOrPut(globalOutVars, name, {type : expr.t, id: outputCount ++});
+		var info = globalOutVars.getOrPut(name, {type : expr.t, id: outputCount ++});
 		if (parentCtx != null) {
 			parentCtx.setOutput(info.id, expr);
 		} else {
@@ -113,11 +113,11 @@ class NodeGenContext {
 	}
 
 	public function getGlobalParam(name: String, type: Type) : TExpr {
-		return makeVar(MapUtils.getOrPut(globalVars, name, {v: {id: hxsl.Ast.Tools.allocVarId(), name: name, type: type, kind: Param}, defValue:null, __init__: null}).v);
+		return makeVar(globalVars.getOrPut(name, {v: {id: hxsl.Ast.Tools.allocVarId(), name: name, type: type, kind: Param}, defValue:null, __init__: null}).v);
 	}
 
 	public function setGlobalCustomOutput(name: String, expr: TExpr) : Void {
-		var v = makeVar(MapUtils.getOrPut(globalVars, name, {v: {id: hxsl.Ast.Tools.allocVarId(), name: name, type: expr.t, kind: Param}, defValue:null, __init__: null}).v);
+		var v = makeVar(globalVars.getOrPut(name, {v: {id: hxsl.Ast.Tools.allocVarId(), name: name, type: expr.t, kind: Param}, defValue:null, __init__: null}).v);
 		expressions.push(makeAssign(v, expr));
 	}
 
@@ -180,7 +180,7 @@ class NodeGenContext {
 						var p = Variables.Globals[parent];
 						switch (p.varkind) {
 							case KVar(kind, _, _):
-								v.parent = MapUtils.getOrPut(globalVars, Variables.getFullPath(p), {v : {id : hxsl.Ast.Tools.allocVarId(), name: p.name, type: TStruct([]), kind: kind}, defValue: null, __init__: null}).v;
+								v.parent = globalVars.getOrPut(Variables.getFullPath(p), {v : {id : hxsl.Ast.Tools.allocVarId(), name: p.name, type: TStruct([]), kind: kind}, defValue: null, __init__: null}).v;
 							default:
 								throw "Parent var must be a KVar";
 						}
