@@ -36,7 +36,7 @@ class BlendSpace2DEditor extends hide.view.FileView {
 	static final pointRadius = 8;
 	var subdivs = 5;
 
-	var animPreview : hrt.animgraph.anim.BlendSpace2D2;
+	var animPreview : hrt.animgraph.anim.BlendSpace2D;
 
 	var previewBlendPos : hide.Element;
 
@@ -380,7 +380,7 @@ class BlendSpace2DEditor extends hide.view.FileView {
 				}
 			}
 
-			var blendSpace = new hrt.animgraph.anim.BlendSpace2D2(blendSpace2D, set, new h3d.prim.ModelCache());
+			var blendSpace = new hrt.animgraph.anim.BlendSpace2D(blendSpace2D, set, new h3d.prim.ModelCache());
 			animPreview = cast previewModel.playAnimation(blendSpace);
 			// else @:privateAccess {
 			// 	var root : hrt.animgraph.nodes.BlendSpace2D.BlendSpace2D = cast @:privateAccess animPreview.rootNode;
