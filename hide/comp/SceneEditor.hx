@@ -5,7 +5,7 @@ using hrt.prefab.Object3D; // GetLocal3D
 using hrt.prefab.Object2D; // GetLocal2D
 
 using Lambda;
-using hrt.tools.MapUtils;
+import hrt.tools.MapUtils;
 
 import hrt.prefab.Reference;
 import h3d.scene.Mesh;
