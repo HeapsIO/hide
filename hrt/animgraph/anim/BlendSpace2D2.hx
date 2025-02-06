@@ -73,6 +73,8 @@ class BlendSpace2D2 extends h3d.anim.Animation {
 	var refQuat = new h3d.Quat();
 	var modelCache : h3d.prim.ModelCache;
 
+	var outsideSpeedScale : Float = 1.0;
+
 	public function new(blendSpace: hrt.animgraph.BlendSpace2D, animSet: Map<String, String>, modelCache: h3d.prim.ModelCache) {
 		this.blendSpace = blendSpace;
 		this.animSet = animSet;
@@ -241,7 +243,12 @@ class BlendSpace2D2 extends h3d.anim.Animation {
 			realY = y;
 		}
 
-		syncAnimTime = (syncAnimTime + dt / currentAnimLenght) % 1.0;
+		var scale = 1.0 / currentAnimLenght;
+		if (blendSpace.scaleSpeedOutOfBound)
+		{
+			scale *= outsideSpeedScale;
+		}
+		syncAnimTime = (syncAnimTime + dt * scale) % 1.0;
 
 		updateCurrentTriangle();
 
@@ -309,6 +316,8 @@ class BlendSpace2D2 extends h3d.anim.Animation {
 			if (currentTriangle == -1) {
 
 				var closestDistanceSq : Float = hxd.Math.POSITIVE_INFINITY;
+				var closestX : Float = 0.0;
+				var closestY : Float = 0.0;
 
 				for (triIndex => tri in triangles) {
 					for (i in 0...3) {
@@ -327,6 +336,8 @@ class BlendSpace2D2 extends h3d.anim.Animation {
 						if (dist2SegmentSq < closestDistanceSq) {
 							closestDistanceSq = dist2SegmentSq;
 							currentTriangle = triIndex;
+							closestX = mx;
+							closestY = my;
 
 							debugk = k;
 
@@ -336,6 +347,22 @@ class BlendSpace2D2 extends h3d.anim.Animation {
 						}
 					}
 				}
+
+				var centerX = (blendSpace.maxX + blendSpace.minX) / 2.0;
+				var centerY = (blendSpace.maxY + blendSpace.minY) / 2.0;
+
+				trace(closestX, closestY);
+				closestX += (curPos.x);
+				closestY += (curPos.y);
+				trace(closestX, closestY);
+
+				var distClosesetToCenter = hxd.Math.distance(closestX - centerX, closestY - centerY) + hxd.Math.EPSILON;
+				var distToCenter = curPos.distance(inline new h2d.col.Point(centerX, centerY)) + hxd.Math.EPSILON;
+
+				outsideSpeedScale = distToCenter / distClosesetToCenter;
+				trace(outsideSpeedScale, distToCenter, distClosesetToCenter, "====");
+			} else {
+				outsideSpeedScale = 1.0;
 			}
 
 			if (currentTriangle == -1)

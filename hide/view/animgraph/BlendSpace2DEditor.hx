@@ -431,6 +431,7 @@ class BlendSpace2DEditor extends hide.view.FileView {
 				<dt>Smooth X</dt><dd><input type="range" min="0.0" max="1.0" field="smoothX"/></dd>
 				<dt>Min/MaxY</dt><dd><input type="number" field="minY"/><input type="number" field="maxY"/></dd>
 				<dt>Smooth Y</dt><dd><input type="range" min="0.0" max="1.0" field="smoothY"/></dd>
+				<dt>Scale speed outside</dt><dd><input type="checkbox" field="scaleSpeedOutOfBound"/></dd>
 			</dl>
 		</div>
 		'), blendSpace2D, (_) -> {

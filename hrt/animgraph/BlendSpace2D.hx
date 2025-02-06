@@ -23,6 +23,8 @@ class BlendSpace2D extends hrt.prefab.Prefab {
 	@:s var maxY = 1.0;
 	@:s var smoothY = 0.0;
 
+	@:s var scaleSpeedOutOfBound: Bool = false;
+
 
 	var instance : BlendSpace2DInstance;
 
