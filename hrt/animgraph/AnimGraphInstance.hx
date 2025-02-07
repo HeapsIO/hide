@@ -32,8 +32,6 @@ class AnimGraphInstance extends h3d.anim.Animation {
 
 	var tmpMatrix : h3d.Matrix = new h3d.Matrix();
 
-	var tmpMatrix : h3d.Matrix = new h3d.Matrix();
-
 	#if editor
 	var editorSkipClone : Bool = false;
 	#end

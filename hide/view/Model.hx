@@ -637,7 +637,7 @@ class Model extends FileView {
 
 			var dynJointEl = new Element('<div class="group" name="Dynamic bone">
 				<dt>Apply changes on children</dt><dd><input id="sync-changes" type="checkbox"/></dd>
-				<div class="group" name="Global parameters">
+				<div class="group dynamic-edition" name="Global parameters">
 					<dt>Force</dt><dd class="vector"><input id="force-x" type="number"/><input id="force-y" type="number"/><input id="force-z" type="number"/></dd>
 				</div>
 				<div class="group" name="Local parameters">
@@ -766,6 +766,46 @@ class Model extends FileView {
 						properties.undo.change(Custom(exec));
 					});
 				}
+
+				var forceEl = dynJointEl.find(".vector");
+				var xEl = forceEl.find("#force-x");
+				xEl.val(dynJoin.globalForce.x);
+				var yEl = forceEl.find("#force-y");
+				yEl.val(dynJoin.globalForce.y);
+				var zEl = forceEl.find("#force-z");
+				zEl.val(dynJoin.globalForce.z);
+
+				function onForceChanged() {
+					var newGlobalForce = new h3d.Vector(Std.parseFloat(xEl.val()), Std.parseFloat(yEl.val()), Std.parseFloat(zEl.val()));
+					var oldGlobalForce = new h3d.Vector(0, 0, 0);
+					for (s in skinData.allJoints) {
+						var d = Std.downcast(s, h3d.anim.Skin.DynamicJoint);
+						if (d == null)
+							continue;
+
+						oldGlobalForce.load(d.globalForce);
+						break;
+					}
+
+					function exec(undo) {
+						var force = undo ? oldGlobalForce : newGlobalForce;
+						for (s in skinData.allJoints) {
+							var d = Std.downcast(s, h3d.anim.Skin.DynamicJoint);
+							if (d != null)
+								d.globalForce.load(force);
+						}
+
+						xEl.val(force.x);
+						yEl.val(force.y);
+						zEl.val(force.z);
+					}
+					exec(false);
+					properties.undo.change(Custom(exec));
+				}
+
+				xEl.change((e) -> onForceChanged());
+				yEl.change((e) -> onForceChanged());
+				zEl.change((e) -> onForceChanged());
 			}
 
 			properties.add(dynJointEl, null, function(pname) {});
