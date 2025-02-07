@@ -5,6 +5,8 @@ class SSRShader extends h3d.shader.ScreenShader {
 
 		@global var depthMap : Channel;
 
+		@param var ssrNormalMask : Sampler2D;
+
 		@param var texSize : Vec2;
 		@param var hdrMap : Sampler2D;
 		@param var roughnessMap : Sampler2D;
@@ -20,6 +22,7 @@ class SSRShader extends h3d.shader.ScreenShader {
 		@param var colorMul : Float;
 		@param var thickness : Float;
 		@param var maxRoughness : Float;
+		@param var roughnessIntensity : Float;
 		@param var minCosAngle : Float;
 		@param var rayMarchingResolution : Float;
 
@@ -69,9 +72,13 @@ class SSRShader extends h3d.shader.ScreenShader {
 			if (normal.dot(normal) <= 0)
 				discard;
 
+			var normalMask = ssrNormalMask.get(calculatedUV);
 			var roughnessFactor = 1 - smoothstep(0.0, maxRoughness, roughnessMap.get(calculatedUV).g);
+			roughnessFactor *= roughnessIntensity;
+			roughnessFactor = mix(roughnessFactor, 1.0, normalMask.a);
 			if (roughnessFactor <= 0)
 				discard;
+			normal = mix(normal, normalMask.rgb, normalMask.a);
 
 			var positionFrom = getViewPos(calculatedUV);
 			var camDir = normalize(positionFrom.xyz);
@@ -168,6 +175,7 @@ class SSR extends RendererFX {
 
 	var blurPass = new h3d.pass.Blur();
 	var ssr : h3d.mat.Texture;
+	var normalMaskOutput : h3d.pass.Output;
 
 	@:s public var intensity : Float = 1.;
 	@:s public var colorMul : Float = 1.;
@@ -175,6 +183,7 @@ class SSR extends RendererFX {
 	@:s public var blurRadius : Float = 1.0;
 	@:s public var textureSize : Float = 0.5;
 	@:s public var maxRoughness : Float = 0.75;
+	@:s public var roughnessIntensity : Float = 1.0;
 	@:s public var minAngle : Float = 5.0;
 	@:s public var rayMarchingResolution : Float = 0.5;
 	@:s public var support4K : Bool = false;
@@ -185,6 +194,9 @@ class SSR extends RendererFX {
 	function new(parent, shared) {
 		super(parent, shared);
 		ssrPass = new h3d.pass.ScreenFx(new SSRShader());
+		normalMaskOutput = new h3d.pass.Output("ssrNormalMask",[
+			Vec4([Value("output.normal",3),Swiz(Value("output.color"),[W])])
+		]);
 	}
 
 	override function begin( r : h3d.scene.Renderer, step : h3d.impl.RendererFX.Step ) {
@@ -205,6 +217,7 @@ class SSR extends RendererFX {
 			ssrShader.intensity = intensity;
 			ssrShader.thickness = thickness;
 			ssrShader.maxRoughness = maxRoughness;
+			ssrShader.roughnessIntensity = roughnessIntensity;
 			if ( minAngle == 0 )
 				ssrShader.CHECK_ANGLE = false;
 			ssrShader.minCosAngle = Math.cos(hxd.Math.degToRad(minAngle));
@@ -224,6 +237,18 @@ class SSR extends RendererFX {
 			ssrShader.vignettingSoftness = vignettingSmoothness;
 
 			ssrShader.frustum = r.ctx.getCameraFrustumBuffer();
+
+
+			var ssrNormalMask = r.allocTarget("ssrNormalMask", true, 1.0, RGBA16F);
+			ssrNormalMask.clear(0);
+			r.ctx.engine.pushTarget(ssrNormalMask);
+			var pbrRenderer = Std.downcast(r, h3d.scene.pbr.Renderer);
+			normalMaskOutput.setContext(r.ctx);
+			if ( pbrRenderer != null )
+				normalMaskOutput.draw(r.get("ssrNormalMask"));
+			r.ctx.engine.popTarget();
+
+			ssrShader.ssrNormalMask = ssrNormalMask;
 
 			ssr = r.allocTarget("ssr", false, textureSize / resRescale, hdrMap.format);
 			ssr.clear(0, 0);
@@ -246,6 +271,7 @@ class SSR extends RendererFX {
 				<dt>Intensity</dt><dd><input type="range" min="0" max="1" field="intensity"/></dd>
 				<dt>Color Mul</dt><dd><input type="range" min="0" max="1" field="colorMul"/></dd>
 				<dt>Max Roughness</dt><dd><input type="range" min="0" max="1" field="maxRoughness"/></dd>
+				<dt>Roughness intensity</dt><dd><input type="range" min="0" max="1" field="roughnessIntensity"/></dd>
 				<dt>Min Angle</dt><dd><input type="range" min="0" max="90" field="minAngle"/></dd>
 				<dt>Thickness</dt><dd><input type="range" min="0" max="1" field="thickness"/></dd>
 				<dt>Ray marching resolution</dt><dd><input type="range" min="0" max="1" field="rayMarchingResolution"/></dd>
