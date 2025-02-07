@@ -643,10 +643,10 @@ class Model extends FileView {
 				<div class="group" name="Local parameters">
 					<dt>Is Dynamic</dt><dd><input id="dynamic" type="checkbox"/></dd>
 					<div class="dynamic-edition">
-						<dt>Damping</dt><dd><input id="damping" type="number" step="0.1" min="0" max="1"/></dd>
-						<dt>Resistance</dt><dd><input id="resistance" type="number" step="0.1" min="0" max="1"/></dd>
-						<dt>Stiffness</dt><dd><input id="stiffness" type="number" step="0.1" min="0" max="1"/></dd>
-						<dt>Slackness</dt><dd><input id="slackness" type="number" step="0.1" min="0" max="1"/></dd>
+						<dt title="Reduction of the amplitude of the oscillation movement">Damping</dt><dd><input id="damping" type="number" step="0.1" min="0" max="1"/></dd>
+						<dt title="Reduction factor applied on globale force">Resistance</dt><dd><input id="resistance" type="number" step="0.1" min="0" max="1"/></dd>
+						<dt title="Rigidity of the bone">Stiffness</dt><dd><input id="stiffness" type="number" step="0.1" min="0" max="1"/></dd>
+						<dt title="Elasticity of the bone">Slackness</dt><dd><input id="slackness" type="number" step="0.1" min="0" max="1"/></dd>
 					</div>
 				</div>
 			</div>');
