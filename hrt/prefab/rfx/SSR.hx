@@ -199,68 +199,71 @@ class SSR extends RendererFX {
 		]);
 	}
 
+	function execute( r : h3d.scene.Renderer, step : h3d.impl.RendererFX.Step ) {
+		r.mark("SSR");
+
+		var ssrShader = ssrPass.shader;
+
+		var hdrMap = r.ctx.getGlobal("hdrMap");
+		ssrShader.hdrMap = hdrMap;
+		@:privateAccess ssrShader.roughnessMap = cast(r, h3d.scene.pbr.Renderer).textures.pbr;
+
+		var normalMap = r.ctx.getGlobal("normalMap").texture;
+		ssrShader.normalMap = normalMap;
+		var t = r.ctx.engine.getCurrentTarget();
+		ssrShader.texSize = new h3d.Vector((t == null ? r.ctx.engine.width : t.width), (t == null ? r.ctx.engine.height : t.height));
+		ssrShader.colorMul = colorMul;
+		ssrShader.intensity = intensity;
+		ssrShader.thickness = thickness;
+		ssrShader.maxRoughness = maxRoughness;
+		ssrShader.roughnessIntensity = roughnessIntensity;
+		if ( minAngle == 0 )
+			ssrShader.CHECK_ANGLE = false;
+		ssrShader.minCosAngle = Math.cos(hxd.Math.degToRad(minAngle));
+		var resRescale = 1.0;
+		if ( !support4K )
+			resRescale = hxd.Math.max(1.0, hxd.Math.max(ssrShader.texSize.x / 2560, ssrShader.texSize.y / 1440));
+		ssrShader.rayMarchingResolution = hxd.Math.clamp(rayMarchingResolution / resRescale);
+		ssrShader.batchSample = batchSample;
+
+		ssrShader.cameraView = r.ctx.camera.mcam;
+		ssrShader.cameraInverseView = r.ctx.camera.getInverseView();
+		ssrShader.cameraProj = r.ctx.camera.mproj;
+		ssrShader.cameraInverseProj = r.ctx.camera.getInverseProj();
+		ssrShader.cameraPos = r.ctx.camera.pos;
+
+		ssrShader.vignettingRadius = vignettingRadius;
+		ssrShader.vignettingSoftness = vignettingSmoothness;
+
+		ssrShader.frustum = r.ctx.getCameraFrustumBuffer();
+
+
+		var ssrNormalMask = r.allocTarget("ssrNormalMask", true, 1.0, RGBA16F);
+		ssrNormalMask.clear(0);
+		r.ctx.engine.pushTarget(ssrNormalMask);
+		var pbrRenderer = Std.downcast(r, h3d.scene.pbr.Renderer);
+		normalMaskOutput.setContext(r.ctx);
+		if ( pbrRenderer != null )
+			normalMaskOutput.draw(r.get("ssrNormalMask"));
+		r.ctx.engine.popTarget();
+
+		ssrShader.ssrNormalMask = ssrNormalMask;
+
+		ssr = r.allocTarget("ssr", false, textureSize / resRescale, hdrMap.format);
+		ssr.clear(0, 0);
+		r.ctx.engine.pushTarget(ssr);
+		ssrPass.render();
+		r.ctx.engine.popTarget();
+
+		blurPass.radius = blurRadius;
+		blurPass.apply(r.ctx, ssr);
+
+		h3d.pass.Copy.run(ssr, r.ctx.engine.getCurrentTarget(), Alpha);
+	}
+
 	override function begin( r : h3d.scene.Renderer, step : h3d.impl.RendererFX.Step ) {
-		if( step == Forward ) {
-			r.mark("SSR");
-
-			var ssrShader = ssrPass.shader;
-
-			var hdrMap = r.ctx.getGlobal("hdrMap");
-			ssrShader.hdrMap = hdrMap;
-			@:privateAccess ssrShader.roughnessMap = cast(r, h3d.scene.pbr.Renderer).textures.pbr;
-
-			var normalMap = r.ctx.getGlobal("normalMap").texture;
-			ssrShader.normalMap = normalMap;
-			var t = r.ctx.engine.getCurrentTarget();
-			ssrShader.texSize = new h3d.Vector((t == null ? r.ctx.engine.width : t.width), (t == null ? r.ctx.engine.height : t.height));
-			ssrShader.colorMul = colorMul;
-			ssrShader.intensity = intensity;
-			ssrShader.thickness = thickness;
-			ssrShader.maxRoughness = maxRoughness;
-			ssrShader.roughnessIntensity = roughnessIntensity;
-			if ( minAngle == 0 )
-				ssrShader.CHECK_ANGLE = false;
-			ssrShader.minCosAngle = Math.cos(hxd.Math.degToRad(minAngle));
-			var resRescale = 1.0;
-			if ( !support4K )
-				resRescale = hxd.Math.max(1.0, hxd.Math.max(ssrShader.texSize.x / 2560, ssrShader.texSize.y / 1440));
-			ssrShader.rayMarchingResolution = hxd.Math.clamp(rayMarchingResolution / resRescale);
-			ssrShader.batchSample = batchSample;
-
-			ssrShader.cameraView = r.ctx.camera.mcam;
-			ssrShader.cameraInverseView = r.ctx.camera.getInverseView();
-			ssrShader.cameraProj = r.ctx.camera.mproj;
-			ssrShader.cameraInverseProj = r.ctx.camera.getInverseProj();
-			ssrShader.cameraPos = r.ctx.camera.pos;
-
-			ssrShader.vignettingRadius = vignettingRadius;
-			ssrShader.vignettingSoftness = vignettingSmoothness;
-
-			ssrShader.frustum = r.ctx.getCameraFrustumBuffer();
-
-
-			var ssrNormalMask = r.allocTarget("ssrNormalMask", true, 1.0, RGBA16F);
-			ssrNormalMask.clear(0);
-			r.ctx.engine.pushTarget(ssrNormalMask);
-			var pbrRenderer = Std.downcast(r, h3d.scene.pbr.Renderer);
-			normalMaskOutput.setContext(r.ctx);
-			if ( pbrRenderer != null )
-				normalMaskOutput.draw(r.get("ssrNormalMask"));
-			r.ctx.engine.popTarget();
-
-			ssrShader.ssrNormalMask = ssrNormalMask;
-
-			ssr = r.allocTarget("ssr", false, textureSize / resRescale, hdrMap.format);
-			ssr.clear(0, 0);
-			r.ctx.engine.pushTarget(ssr);
-			ssrPass.render();
-			r.ctx.engine.popTarget();
-
-			blurPass.radius = blurRadius;
-			blurPass.apply(r.ctx, ssr);
-
-			h3d.pass.Copy.run(ssr, r.ctx.engine.getCurrentTarget(), Alpha);
-		}
+		if( step == Forward )
+			execute(r, step);
 	}
 
 	#if editor
