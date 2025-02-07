@@ -43,7 +43,13 @@ class CodeEditor extends Component {
 			mouseWheelZoom: true,
 			scrollBeyondLastLine: false,
 			insertSpaces : false,
-			detectIndentation : false
+			detectIndentation : false,
+			// To remove when scrollbar's bug is fixed (error when user click on scrollbar)
+			scrollbar: {
+				vertical:"hidden",
+				horizontal: "hidden",
+				handleMouseWheel:true,
+			},
 		});
 		var model = editor.getModel();
 		(model : Dynamic).__comp__ = this;
