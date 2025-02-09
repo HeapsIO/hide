@@ -18,6 +18,20 @@ enum SpeedMode {
 	None;
 }
 
+class EditorParticleShader extends hxsl.Shader {
+	static var SRC = {
+
+		var particleLife : Float;
+		var particleLifeTime : Float;
+		var particleRandom : Float;
+
+		function __init__vertex() {
+			particleLife = 0.0;
+			particleLifeTime = 0.0;
+			particleRandom = 0.0;
+		}
+	}
+}
 class ParticleShader extends hxsl.Shader {
 	static var SRC = {
 		@param var localTransform : Mat4;
@@ -490,6 +504,14 @@ class GPUEmitter extends Object3D {
 		super.updateInstance(propName);
 
 		init();
+		#if editor
+		for (m in local3d.getMaterials() ) {
+			var s = m.mainPass.getShader(EditorParticleShader);
+			if ( s != null )
+				m.mainPass.removeShader(s);
+			m.mainPass.addShader(new EditorParticleShader());
+		}
+		#end
 	}
 
 	#if editor

@@ -3,7 +3,7 @@ package hrt.prefab.fx.gpuemitter;
 class BaseSpawn extends ComputeUtils {
 	static var SRC = {
 		@param var batchBuffer : RWPartialBuffer<{
-			modelView : Mat4, 
+			modelView : Mat4,
 		}>;
 		@param var particleBuffer : RWPartialBuffer<{
 			speed : Vec3,
