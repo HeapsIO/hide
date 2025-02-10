@@ -9,8 +9,8 @@ import hrt.shgraph.ShaderGraph;
 import hrt.shgraph.ShaderNode;
 
 class NodeGenContextSubGraph extends NodeGenContext {
-	public function new(parentCtx : NodeGenContext) {
-		super(parentCtx?.domain ?? Fragment);
+	public function new(graph: ShaderGraph.Graph, parentCtx : NodeGenContext) {
+		super(graph, parentCtx?.domain ?? Fragment);
 		this.parentCtx = parentCtx;
 	}
 
@@ -77,9 +77,11 @@ class NodeGenContext {
 	// Pour les rares nodes qui ont besoin de differencier entre vertex et fragment
 	public var domain : ShaderGraph.Domain;
 	public var previewDomain: ShaderGraph.Domain = null;
+	public var graph: ShaderGraph.Graph = null;
 
-	public function new(domain: ShaderGraph.Domain) {
+	public function new(graph: ShaderGraph.Graph, domain: ShaderGraph.Domain) {
 		this.domain = domain;
+		this.graph = graph;
 	}
 
 	// For general input/output of the shader graph. Allocate a new global var if name is not found,
@@ -121,8 +123,15 @@ class NodeGenContext {
 		expressions.push(makeAssign(v, expr));
 	}
 
-	public function getLocalTVar(name: String, type: Type) : TVar {
-		return MapUtils.getOrPut(localVars, name, {id: hxsl.Ast.Tools.allocVarId(), name: name, type: type, kind: Local});
+	public function getLocalTVar(id: Int, init: TExpr = null) : TVar {
+		var graphVar = graph.variables[id];
+		var type = ShaderGraph.sgTypeToType(graphVar.type);
+		var variable = MapUtils.getOrPut(localVars, id, {variable: {id: hxsl.Ast.Tools.allocVarId(), name: '_sg_local_$id', type: type, kind: Local}, isInit: false});
+		if (init != null && !variable.isInit) {
+			variable.isInit = true;
+			addExpr(AstTools.makeVarDecl(variable.variable, init));
+		}
+		return variable.variable;
 	}
 
 	function getOrAllocateFromTVar(tvar: TVar) : TVar {
@@ -369,5 +378,5 @@ class NodeGenContext {
 
 	var nodeInputInfo : Array<InputInfo>;
 	var globalVars: Map<String, ShaderGraph.ExternVarDef> = [];
-	var localVars: Map<String, TVar> = [];
+	var localVars: Map<Int, {variable: TVar, isInit: Bool}> = [];
 }

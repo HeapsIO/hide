@@ -9,8 +9,6 @@ class ShaderParam extends ShaderNode {
 	@prop() public var parameterId : Int;
 	@prop() public var perInstance : Bool;
 
-	public var shaderGraph : ShaderGraph;
-
 	public function new() {
 
 	}
@@ -46,7 +44,7 @@ class ShaderParam extends ShaderNode {
 	}
 
 	function getVariable() : TVar {
-		return shaderGraph.getParameter(parameterId).variable;
+		return graph.parent.getParameter(parameterId).variable;
 	}
 
 	override public function loadProperties(props : Dynamic) {

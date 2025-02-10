@@ -23,6 +23,19 @@ class AstTools {
 		);
 	}
 
+	public static function makeDynamic(type: Type, value: Dynamic) : TExpr {
+		switch(type) {
+			case TInt:
+				return makeInt(value is Int ? cast value : 0);
+			case TFloat:
+				return makeFloat(value is Float ? cast value : 0);
+			case TVec(size, VFloat):
+				return makeVec((value is Array && value.len == size) ? cast value : [for (_ in 0...size) 0.0]);
+			default:
+				throw "unsupported type " + type;
+		}
+	}
+
 	public inline static function makeAssign(to: TExpr, from: TExpr) : TExpr {
 		return makeExpr(TBinop(OpAssign, to, from), to.t);
 	}

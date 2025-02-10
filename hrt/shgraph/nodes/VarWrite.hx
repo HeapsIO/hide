@@ -12,15 +12,15 @@ class VarWrite extends ShaderVar {
 	var inputs: Array<ShaderNode.InputInfo>;
 	override public function getInputs() : Array<ShaderNode.InputInfo> {
 		if (inputs == null) {
-			inputs = [{name: "input", type: SgFloat(4)}];
+			inputs = [{name: "input", type: graph.variables[varId].type}];
 		}
 		return inputs;
 	}
 
 	override function generate(ctx:NodeGenContext) {
 		var input = ctx.getInput(0);
-		ctx.addExpr(AstTools.makeVarDecl(ctx.getLocalTVar('_sg_var_$varId', TVec(4, VFloat)), input));
-		ctx.addPreview(input);
+		var tVar = ctx.getLocalTVar(varId, input);
+		ctx.addPreview(AstTools.makeVar(tVar));
 	}
 
 	#if editor

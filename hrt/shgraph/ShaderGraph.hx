@@ -229,7 +229,7 @@ class ShaderGraphGenContext {
 		initNodes();
 		var sortedNodes = sortGraph();
 
-		genContext = genContext ?? new NodeGenContext(graph.domain);
+		genContext = genContext ?? new NodeGenContext(graph, graph.domain);
 		var expressions : Array<TExpr> = [];
 		genContext.expressions = expressions;
 
@@ -267,6 +267,14 @@ class ShaderGraphGenContext {
 				continue;
 			global.defValue = p.defaultValue;
 			global.paramIndex = p.index;
+		}
+
+		// Default init uninitialized local vars
+		for (id => variable in genContext.localVars) {
+			if (variable.isInit)
+				continue;
+			var initExpr = AstTools.makeVarDecl(variable.variable, AstTools.makeDynamic(variable.variable.type, graph.variables[id].defValue));
+			expressions.unshift(initExpr);
 		}
 
 		return AstTools.makeExpr(TBlock(expressions), TVoid);
@@ -451,13 +459,14 @@ class ShaderGraph extends hrt.prefab.Prefab {
 		};
 
 
-		var nodeGen = new NodeGenContext(Vertex);
+		var nodeGen = new NodeGenContext(null, Vertex);
 		nodeGen.previewDomain = previewDomain;
 
 		for (i => graph in graphs) {
 			if (previewDomain != null && previewDomain != graph.domain)
 				continue;
 			nodeGen.domain = graph.domain;
+			nodeGen.graph = graph;
 			var ctx = new ShaderGraphGenContext(graph);
 			var gen = ctx.generate(nodeGen);
 
@@ -717,7 +726,7 @@ class Graph {
 	var current_node_id = 0;
 	var nodes : Map<Int, ShaderNode> = [];
 
-	var variables : Array<ShaderGraphVariable> = [];
+	public var variables : Array<ShaderGraphVariable> = [];
 
 	public var parent : ShaderGraph = null;
 
@@ -731,8 +740,6 @@ class Graph {
 
 	public function load(json : Dynamic) {
 		nodes = [];
-		generate(Reflect.getProperty(json, "nodes"), Reflect.getProperty(json, "edges"));
-
 		for (variable in json.variables ?? []) {
 			variables.push({
 				name: variable.name,
@@ -740,12 +747,14 @@ class Graph {
 				defValue: variable.defValue,
 			});
 		}
+
+		generate(Reflect.getProperty(json, "nodes"), Reflect.getProperty(json, "edges"));
 	}
 
 	public function generate(nodes : Array<Dynamic>, edges : Array<Edge>) {
 		current_node_id = 0;
 		for (n in nodes) {
-			var node = ShaderNode.createFromDynamic(n, parent);
+			var node = ShaderNode.createFromDynamic(n, this);
 			this.nodes.set(node.id, node);
 			current_node_id = hxd.Math.imax(current_node_id, node.id+1);
 		}

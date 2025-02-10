@@ -214,6 +214,7 @@ class ShaderEditor extends hide.view.FileView implements GraphInterface.IGraphEd
 				@:privateAccess var id = currentGraph.current_node_id++;
 				inst.id = id;
 				inst.setPos(posCursor);
+				inst.graph = currentGraph;
 
 				graphEditor.opBox(inst, true, graphEditor.currentUndoBuffer);
 				graphEditor.commitUndo();
@@ -254,7 +255,6 @@ class ShaderEditor extends hide.view.FileView implements GraphInterface.IGraphEd
 
 			var inst = new ShaderParam();
 			inst.parameterId = draggedParamId;
-			inst.shaderGraph = shaderGraph;
 			addNode(inst);
 		};
 
@@ -1702,7 +1702,7 @@ class ShaderEditor extends hide.view.FileView implements GraphInterface.IGraphEd
 	}
 
 	public function unserializeNode(data : Dynamic, newId : Bool) : IGraphNode {
-		var node = ShaderNode.createFromDynamic(data, shaderGraph);
+		var node = ShaderNode.createFromDynamic(data, currentGraph);
 		if (newId) {
 			@:privateAccess var newId = currentGraph.current_node_id++;
 			node.setId(newId);

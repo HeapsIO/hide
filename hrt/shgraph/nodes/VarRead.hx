@@ -13,13 +13,13 @@ class VarRead extends ShaderVar {
 	var outputs: Array<ShaderNode.OutputInfo>;
 	override public function getOutputs() : Array<ShaderNode.OutputInfo> {
 		if (outputs == null) {
-			outputs  = [{name: "output", type: SgFloat(4)}];
+			outputs  = [{name: "output", type: graph.variables[varId].type}];
 		}
 		return outputs;
 	}
 
 	override function generate(ctx:NodeGenContext) {
-		var out = AstTools.makeVar(ctx.getLocalTVar('_sg_var_$varId', TVec(4, VFloat)));
+		var out = AstTools.makeVar(ctx.getLocalTVar(varId));
 		ctx.setOutput(0, out);
 		#if editor
 		ctx.addPreview(out);

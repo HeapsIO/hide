@@ -25,7 +25,7 @@ class SubGraph extends ShaderNode {
 		var graph = shader.getGraph(ctx.domain);
 
 		var genCtx = new ShaderGraphGenContext(graph, false);
-		genCtx.generate(new NodeGenContext.NodeGenContextSubGraph(ctx));
+		genCtx.generate(new NodeGenContext.NodeGenContextSubGraph(graph, ctx));
 	}
 
 	override public function getInputs() : Array<ShaderNode.InputInfo> {
@@ -37,7 +37,7 @@ class SubGraph extends ShaderNode {
 		var graph = shader.getGraph(hrt.shgraph.ShaderGraph.Domain.Fragment);
 
 		var genCtx = new ShaderGraphGenContext(graph, false);
-		var nodeGenCtx = new NodeGenContext.NodeGenContextSubGraph(null);
+		var nodeGenCtx = new NodeGenContext.NodeGenContextSubGraph(graph, null);
 		genCtx.generate(nodeGenCtx);
 		var inputs: Array<ShaderNode.InputInfo> = [];
 
@@ -59,7 +59,7 @@ class SubGraph extends ShaderNode {
 		var graph = shader.getGraph(hrt.shgraph.ShaderGraph.Domain.Fragment);
 
 		var genCtx = new ShaderGraphGenContext(graph, false);
-		var nodeGenCtx = new NodeGenContext.NodeGenContextSubGraph(null);
+		var nodeGenCtx = new NodeGenContext.NodeGenContextSubGraph(graph, null);
 		genCtx.generate(nodeGenCtx);
 		var outputs: Array<ShaderNode.InputInfo> = [];
 

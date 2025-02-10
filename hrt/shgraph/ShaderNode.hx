@@ -53,6 +53,8 @@ implements hide.view.GraphInterface.IGraphNode
 	public var x : Float;
 	public var y : Float;
 	public var showPreview : Bool = true;
+	public var graph : ShaderGraph.Graph;
+
 	@prop public var nameOverride : String;
 
 
@@ -156,16 +158,13 @@ implements hide.view.GraphInterface.IGraphNode
 		};
 	}
 
-	public static function createFromDynamic(data: Dynamic, graph: ShaderGraph) : ShaderNode {
+	public static function createFromDynamic(data: Dynamic, graph: ShaderGraph.Graph) : ShaderNode {
 		var type = std.Type.resolveClass(data.type);
 		var inst = std.Type.createInstance(type, []);
-		var shaderParam = Std.downcast(inst, ShaderParam);
-		if (shaderParam != null) {
-			shaderParam.shaderGraph = graph;
-		}
 		inst.x = data.x;
 		inst.y = data.y;
 		inst.id = data.id;
+		inst.graph = graph;
 		inst.connections = [];
 		inst.loadProperties(data.properties);
 		return inst;
