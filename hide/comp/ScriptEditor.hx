@@ -43,7 +43,12 @@ class ScriptCache {
 				var path = ide.getPath(f);
 				var content = try sys.io.File.getContent(path) catch( e : Dynamic ) { @:privateAccess ScriptChecker.error(""+e); continue; };
 				types.addXmlApi(Xml.parse(content).firstElement());
-				ide.fileWatcher.register(f, function() { onApiFileChange(); loadFiles(files); });
+				ide.fileWatcher.register(f, function() {
+					haxe.Timer.delay(() -> {
+						onApiFileChange();
+						loadFiles(files);
+					}, 50);
+				});
 			}
 		}
 	}
