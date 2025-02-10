@@ -47,7 +47,7 @@ class ScriptCache {
 					haxe.Timer.delay(() -> {
 						onApiFileChange();
 						loadFiles(files);
-					}, 50);
+					}, 100);
 				});
 			}
 		}
