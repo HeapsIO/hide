@@ -207,25 +207,56 @@ class ShaderEditor extends hide.view.FileView implements GraphInterface.IGraphEd
 			graphEditor.centerView();
 		}, 50);
 
-		graphEditor.element.on("drop" ,function(e) {
-			var posCursor = new Point(graphEditor.lX(ide.mouseX - 25), graphEditor.lY(ide.mouseY - 10));
+		graphEditor.element.get(0).ondrop = (e:js.html.DragEvent) -> {
+			var posCursor = new Point(graphEditor.lX(e.clientX - 25), graphEditor.lY(e.clientY-25));
+
+			function addNode(inst: ShaderNode) : Void {
+				@:privateAccess var id = currentGraph.current_node_id++;
+				inst.id = id;
+				inst.setPos(posCursor);
+
+				graphEditor.opBox(inst, true, graphEditor.currentUndoBuffer);
+				graphEditor.commitUndo();
+			}
+			if (e.dataTransfer.types.contains(variableList.getDragKeyName())) {
+				var index = Std.parseInt(e.dataTransfer.getData(variableList.getDragKeyName()));
+				var hasAnyWrite = false;
+				currentGraph.mapShaderVar((v) -> {
+					if (v.varId == index && Std.downcast(v, hrt.shgraph.nodes.VarWrite) != null) {
+						hasAnyWrite = true;
+						return false;
+					}
+					return true;
+				});
+
+				if (hasAnyWrite) {
+					var read = new hrt.shgraph.nodes.VarRead();
+					read.varId = index;
+					addNode(read);
+				} else {
+					hide.comp.ContextMenu.createFromPoint(e.clientX, e.clientY, [{
+						label: "Write", click: () -> {
+							var write = new hrt.shgraph.nodes.VarWrite();
+							write.varId = index;
+							addNode(write);
+						}
+					},
+					{
+						label: "Read", click: () -> {
+							var read = new hrt.shgraph.nodes.VarRead();
+							read.varId = index;
+							addNode(read);
+						}
+					}]);
+				}
+				return;
+			}
+
 			var inst = new ShaderParam();
-			@:privateAccess var id = currentGraph.current_node_id++;
-			inst.id = id;
 			inst.parameterId = draggedParamId;
 			inst.shaderGraph = shaderGraph;
-			inst.setPos(posCursor);
-
-			graphEditor.opBox(inst, true, graphEditor.currentUndoBuffer);
-			graphEditor.commitUndo();
-			// var node = Std.downcast(currentGraph.addNode(posCursor.x, posCursor.y, ShaderParam, []), ShaderParam);
-			// node.parameterId = draggedParamId;
-			// var paramShader = shaderGraph.getParameter(draggedParamId);
-			// node.variable = paramShader.variable;
-			// node.setName(paramShader.name);
-			//setDisplayValue(node, paramShader.type, paramShader.defaultValue);
-			//addBox(posCursor, ShaderParam, node);
-		});
+			addNode(inst);
+		};
 
 		var rightPannel = new Element(
 			'<div id="rightPanel">
@@ -438,6 +469,7 @@ class ShaderEditor extends hide.view.FileView implements GraphInterface.IGraphEd
 		}
 	}
 
+
 	function createVariable(type: SgType) {
 		var name = "New Variable";
 		var i = 0;
@@ -480,11 +512,15 @@ class ShaderEditor extends hide.view.FileView implements GraphInterface.IGraphEd
 			variableList.refresh();
 
 			var index = graph.variables.indexOf(variable);
-			for (node in currentGraph.nodes) {
-				if (Std.downcast(node, hrt.shgraph.nodes.VarRead)?.varId == index ||
-					Std.downcast(node, hrt.shgraph.nodes.VarWrite)?.varId == index) {
-					graphEditor.refreshBox(node.id);
+			currentGraph.mapShaderVar((variable: hrt.shgraph.nodes.ShaderVar) -> {
+				if (variable.varId == index) {
+					graphEditor.refreshBox(variable.id);
 				}
+				return true;
+			});
+
+			for (node in currentGraph.nodes) {
+
 			}
 		}
 

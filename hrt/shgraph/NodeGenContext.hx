@@ -122,7 +122,7 @@ class NodeGenContext {
 	}
 
 	public function getLocalTVar(name: String, type: Type) : TVar {
-		return localVars.getOrPut(name, {id: hxsl.Ast.Tools.allocVarId(), name: name, type: type, kind: Local});
+		return MapUtils.getOrPut(localVars, name, {id: hxsl.Ast.Tools.allocVarId(), name: name, type: type, kind: Local});
 	}
 
 	function getOrAllocateFromTVar(tvar: TVar) : TVar {

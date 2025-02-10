@@ -2,10 +2,12 @@ package hrt.shgraph.nodes;
 
 @name("Write Var")
 @description("Write a value to a local variable")
-@width(80)
+@width(130)
 @group("Variables")
-class VarWrite extends ShaderNode {
-	@prop() public var varId : Int = 0;
+class VarWrite extends ShaderVar {
+
+	public function new() {
+	}
 
 	var inputs: Array<ShaderNode.InputInfo>;
 	override public function getInputs() : Array<ShaderNode.InputInfo> {
@@ -24,7 +26,9 @@ class VarWrite extends ShaderNode {
 	#if editor
 	override function getInfo():hide.view.GraphInterface.GraphNodeInfo {
 		var info = super.getInfo();
-		info.name = "Write: " + @:privateAccess (cast editor.editor: hide.view.shadereditor.ShaderEditor).currentGraph.variables[varId].name;
+		if (editor != null) {
+			info.name = "Write: " + @:privateAccess (cast editor.editor: hide.view.shadereditor.ShaderEditor).currentGraph.variables[varId].name;
+		}
 		return info;
 	}
 	#end

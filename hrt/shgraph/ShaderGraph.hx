@@ -927,6 +927,20 @@ class Graph {
 		return parent.getParameter(id);
 	}
 
+	/**
+		Iterate on all the shaderVars in the graph, breaking if the cb return false
+	**/
+	public function mapShaderVar(cb: (v: hrt.shgraph.nodes.ShaderVar) -> Bool) {
+		for (node in nodes) {
+			var asVar = Std.downcast(node, hrt.shgraph.nodes.ShaderVar);
+			if (asVar != null) {
+				if (cb(asVar) == false) {
+					break;
+				}
+			}
+		}
+	}
+
 	public function hasCycle() : Bool {
 		var ctx = new ShaderGraphGenContext(this, false);
 		@:privateAccess ctx.initNodes();
