@@ -50,7 +50,15 @@ class Model extends FileView {
 			if (hmd == null)
 				continue;
 
-			h3d.prim.ModelDatabase.current.saveModelProps(o.name, hmd);
+			var input : h3d.prim.ModelDatabase.ModelDataInput = {
+				resourceDirectory : @:privateAccess hmd.lib.resource.entry.directory,
+				resourceName : @:privateAccess hmd.lib.resource.name,
+				objectName : o.name,
+				hmd : hmd,
+				skin : o.find((o) -> Std.downcast(o, h3d.scene.Skin))
+			}
+
+			h3d.prim.ModelDatabase.current.saveModelProps(input);
 		}
 
 		// Save current Anim data
@@ -69,6 +77,7 @@ class Model extends FileView {
 			bytes.writeString(haxe.Json.stringify(hideData, "\t"));
 			hxd.File.saveBytes(getPropsPath(), bytes.getBytes());
 		}
+
 		super.save();
 	}
 
@@ -606,10 +615,201 @@ class Model extends FileView {
 					} else '' +
 				'</dl>
 			</div>
-			<br/>
+
 		'),obj);
 
 		selectedMesh = mesh;
+
+		if (selectedJoint != null) {
+			var current = obj;
+			var skin = Std.downcast(current, h3d.scene.Skin);
+			while (skin == null && current != null) {
+				current = current.parent;
+				skin = Std.downcast(current, h3d.scene.Skin);
+			}
+
+			var skinData = skin.getSkinData();
+			var j = skinData.allJoints[0];
+			for (tmpJ in skinData.allJoints) {
+				if (tmpJ.name == selectedJoint)
+					j = tmpJ;
+			}
+
+			var dynJointEl = new Element('<div class="group" name="Dynamic bone">
+				<dt>Apply changes on children</dt><dd><input id="sync-changes" type="checkbox"/></dd>
+				<div class="group dynamic-edition" name="Global parameters">
+					<dt>Force</dt><dd class="vector"><input id="force-x" type="number"/><input id="force-y" type="number"/><input id="force-z" type="number"/></dd>
+				</div>
+				<div class="group" name="Local parameters">
+					<dt>Is Dynamic</dt><dd><input id="dynamic" type="checkbox"/></dd>
+					<div class="dynamic-edition">
+						<dt title="Reduction of the amplitude of the oscillation movement">Damping</dt><dd><input id="damping" type="number" step="0.1" min="0" max="1"/></dd>
+						<dt title="Reduction factor applied on globale force">Resistance</dt><dd><input id="resistance" type="number" step="0.1" min="0" max="1"/></dd>
+						<dt title="Rigidity of the bone">Stiffness</dt><dd><input id="stiffness" type="number" step="0.1" min="0" max="1"/></dd>
+						<dt title="Elasticity of the bone">Slackness</dt><dd><input id="slackness" type="number" step="0.1" min="0" max="1"/></dd>
+					</div>
+				</div>
+			</div>');
+
+			// Sync is used to propagate parent changes on children dynamic bones if checked
+			var synced = getDisplayState("dynamic-bones-sync");
+			if (synced == null)
+				synced = false;
+
+			var syncEl = dynJointEl.find("#sync-changes");
+			syncEl.get(0).toggleAttribute('checked', synced);
+			syncEl.change(function(e) {
+				synced = !synced;
+				saveDisplayState("dynamic-bones-sync", synced);
+			});
+
+			dynJointEl.find("#dynamic");
+			var isDynEl = dynJointEl.find("#dynamic");
+			isDynEl.get(0).toggleAttribute('checked', Std.downcast(j, h3d.anim.Skin.DynamicJoint) != null);
+			if (!isDynEl.is(':checked'))
+				dynJointEl.find(".dynamic-edition").hide();
+			isDynEl.change(function(e) {
+				function toggleDynamicJoint(j : h3d.anim.Skin.Joint, isDynamic : Bool) {
+					var newJ = isDynamic ? new h3d.anim.Skin.DynamicJoint() : new h3d.anim.Skin.Joint();
+					newJ.index = j.index;
+					newJ.name = j.name;
+					newJ.bindIndex = j.bindIndex;
+					newJ.splitIndex = j.splitIndex;
+					newJ.defMat = j.defMat;
+					newJ.transPos = j.transPos;
+					newJ.parent = j.parent;
+					newJ.follow = j.follow;
+					newJ.subs = j.subs;
+					newJ.offsets = j.offsets;
+					newJ.offsetRay = j.offsetRay;
+					newJ.retargetAnim = j.retargetAnim;
+					skinData.allJoints[j.index] = newJ;
+
+					var idx = j.parent?.subs.indexOf(j);
+					j.parent?.subs.remove(j);
+					j.parent?.subs.insert(idx, newJ);
+					if (j.subs != null)
+						for (sub in j.subs)
+							sub.parent = newJ;
+
+					if (!isDynamic) {
+						// Dynamic bone can't exist with a non-dynamic parent. Check
+						// whether or not a sibling bone is dynamic too (meaning that
+						// we can't set parent to static bone)
+
+						if (j.parent != null) {
+							for (idx in 0...j.parent.subs.length) {
+								if (Std.isOfType(j.parent.subs[idx], h3d.anim.Skin.DynamicJoint))
+									toggleDynamicJoint(j.parent.subs[idx], isDynamic);
+							}
+
+							if (Std.isOfType(j.parent, h3d.anim.Skin.DynamicJoint))
+								toggleDynamicJoint(j.parent, isDynamic);
+						}
+
+						if (synced) {
+							for (idx in 0...newJ.subs.length)
+								toggleDynamicJoint(newJ.subs[idx], isDynamic);
+						}
+					}
+					else {
+						for (idx in 0...newJ.subs.length)
+							toggleDynamicJoint(newJ.subs[idx], isDynamic);
+					}
+
+				}
+
+				var v = isDynEl.is(':checked');
+				var oldJoints = skinData.allJoints.copy();
+				toggleDynamicJoint(j, v);
+				skin.setSkinData(skinData);
+				var newJoints = skinData.allJoints.copy();
+
+				function exec(undo) {
+					var joints = undo ? oldJoints : newJoints;
+					for (j in skinData.allJoints)
+						skinData.allJoints[j.index] = joints[j.index];
+					skin.setSkinData(skinData);
+					selectObject(obj);
+				}
+
+				exec(false);
+				properties.undo.change(Custom(exec));
+			});
+
+			var dynJoin = Std.downcast(j, h3d.anim.Skin.DynamicJoint);
+			if (dynJoin != null) {
+				var params = ["damping", "resistance", "stiffness", "slackness"];
+				for (param in params) {
+					var el = dynJointEl.find('#$param');
+					el.val(Reflect.field(dynJoin, param));
+					el.change(function(e) {
+						var oldJoints = skinData.allJoints.copy();
+						function apply(j : h3d.anim.Skin.Joint, param : String, v : Dynamic) {
+							Reflect.setField(j, param, Std.parseFloat(el.val()));
+							if (synced && j.subs != null) {
+								for (s in j.subs)
+									apply(s, param, Std.parseFloat(el.val()));
+							}
+						}
+						apply(dynJoin, param, Std.parseFloat(el.val()));
+						var newJoints = skinData.allJoints.copy();
+						function exec(undo) {
+							var joints = undo ? oldJoints : newJoints;
+							for (j in skinData.allJoints)
+								skinData.allJoints[j.index] = joints[j.index];
+							skin.setSkinData(skinData);
+							selectObject(obj);
+						}
+
+						exec(false);
+						properties.undo.change(Custom(exec));
+					});
+				}
+
+				var forceEl = dynJointEl.find(".vector");
+				var xEl = forceEl.find("#force-x");
+				xEl.val(dynJoin.globalForce.x);
+				var yEl = forceEl.find("#force-y");
+				yEl.val(dynJoin.globalForce.y);
+				var zEl = forceEl.find("#force-z");
+				zEl.val(dynJoin.globalForce.z);
+
+				function onForceChanged() {
+					var newGlobalForce = new h3d.Vector(Std.parseFloat(xEl.val()), Std.parseFloat(yEl.val()), Std.parseFloat(zEl.val()));
+					var oldGlobalForce = new h3d.Vector(0, 0, 0);
+					for (s in skinData.allJoints) {
+						var d = Std.downcast(s, h3d.anim.Skin.DynamicJoint);
+						if (d == null)
+							continue;
+
+						oldGlobalForce.load(d.globalForce);
+						break;
+					}
+
+					function exec(undo) {
+						var force = undo ? oldGlobalForce : newGlobalForce;
+						for (s in skinData.allJoints) {
+							var d = Std.downcast(s, h3d.anim.Skin.DynamicJoint);
+							if (d != null)
+								d.globalForce.load(force);
+						}
+
+						xEl.val(force.x);
+						yEl.val(force.y);
+						zEl.val(force.z);
+					}
+					exec(false);
+					properties.undo.change(Custom(exec));
+				}
+
+				xEl.change((e) -> onForceChanged());
+				yEl.change((e) -> onForceChanged());
+				zEl.change((e) -> onForceChanged());
+			}
+
+			properties.add(dynJointEl, null, function(pname) {});
+		}
 
 		if (mesh != null && hmd != null) {
 			// Blendshapes edition

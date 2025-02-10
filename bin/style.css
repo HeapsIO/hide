@@ -1271,7 +1271,13 @@ input[type=checkbox]:checked:after {
   color: red;
 }
 .hide-properties .vector {
+  display: inline-flex;
   flex-direction: row;
+  flex: 1;
+  min-width: 0.9;
+}
+.hide-properties .vector input {
+  min-width: 0;
 }
 .hide-properties .btn-cdb-large {
   width: 16px;
