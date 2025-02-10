@@ -19,7 +19,7 @@ class VarWrite extends ShaderVar {
 
 	override function generate(ctx:NodeGenContext) {
 		var input = ctx.getInput(0);
-		ctx.addExpr(AstTools.makeVarDecl(ctx.getLocalTVar("_sg_var_write", TVec(4, VFloat)), input));
+		ctx.addExpr(AstTools.makeVarDecl(ctx.getLocalTVar('_sg_var_$varId', TVec(4, VFloat)), input));
 		ctx.addPreview(input);
 	}
 

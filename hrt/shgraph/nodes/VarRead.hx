@@ -19,7 +19,7 @@ class VarRead extends ShaderVar {
 	}
 
 	override function generate(ctx:NodeGenContext) {
-		var out = AstTools.makeVar(ctx.getLocalTVar("_sg_var_write", TVec(4, VFloat)));
+		var out = AstTools.makeVar(ctx.getLocalTVar('_sg_var_$varId', TVec(4, VFloat)));
 		ctx.setOutput(0, out);
 		#if editor
 		ctx.addPreview(out);
