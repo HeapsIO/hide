@@ -665,9 +665,11 @@ class Model extends FileView {
 
 			dynJointEl.find("#dynamic");
 			var isDynEl = dynJointEl.find("#dynamic");
-			isDynEl.get(0).toggleAttribute('checked', Std.downcast(j, h3d.anim.Skin.DynamicJoint) != null);
+			isDynEl.get(0).toggleAttribute('checked', Std.downcast(j?.subs[0], h3d.anim.Skin.DynamicJoint) != null);
 			if (!isDynEl.is(':checked'))
 				dynJointEl.find(".dynamic-edition").hide();
+			if (j.subs == null || j.subs.length == 0)
+				dynJointEl.hide();
 			isDynEl.change(function(e) {
 				function toggleDynamicJoint(j : h3d.anim.Skin.Joint, isDynamic : Bool) {
 					var newJ = isDynamic ? new h3d.anim.Skin.DynamicJoint() : new h3d.anim.Skin.Joint();
@@ -721,7 +723,8 @@ class Model extends FileView {
 
 				var v = isDynEl.is(':checked');
 				var oldJoints = skinData.allJoints.copy();
-				toggleDynamicJoint(j, v);
+				for (s in j.subs)
+					toggleDynamicJoint(s, v);
 				skin.setSkinData(skinData);
 				var newJoints = skinData.allJoints.copy();
 
@@ -737,7 +740,7 @@ class Model extends FileView {
 				properties.undo.change(Custom(exec));
 			});
 
-			var dynJoin = Std.downcast(j, h3d.anim.Skin.DynamicJoint);
+			var dynJoin = Std.downcast(j?.subs[0], h3d.anim.Skin.DynamicJoint);
 			if (dynJoin != null) {
 				var params = ["damping", "resistance", "stiffness", "slackness"];
 				for (param in params) {
@@ -752,7 +755,8 @@ class Model extends FileView {
 									apply(s, param, Std.parseFloat(el.val()));
 							}
 						}
-						apply(dynJoin, param, Std.parseFloat(el.val()));
+						for (s in dynJoin.parent.subs)
+							apply(s, param, Std.parseFloat(el.val()));
 						var newJoints = skinData.allJoints.copy();
 						function exec(undo) {
 							var joints = undo ? oldJoints : newJoints;
