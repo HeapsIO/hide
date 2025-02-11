@@ -13,7 +13,7 @@ class Select extends Component {
 		if (value == null || value == "") {
 			element.val("--- Choose ---");
 		} else {
-			element.val(choices.find((e) -> e.id == value).text);
+			element.val(choices.find((e) -> e.id == value)?.text ?? '<missing value : $value>');
 		}
 		return value;
 	}
