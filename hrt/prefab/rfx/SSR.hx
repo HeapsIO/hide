@@ -3,7 +3,12 @@ package hrt.prefab.rfx;
 class SSRShader extends h3d.shader.ScreenShader {
 	static var SRC = {
 
-		@global var depthMap : Channel;
+		@param var depthBuffer : Sampler2D;
+		@global var camera : {
+			var position : Vec3;
+			var zNear : Float;
+			var zFar : Float;
+		}
 
 		@const var USE_MASK : Bool;
 		@const var USE_ROUGHNESS : Bool;
@@ -36,6 +41,8 @@ class SSRShader extends h3d.shader.ScreenShader {
 		@param var vignettingRadius : Float;
 		@param var vignettingSoftness : Float;
 
+		@param var depthBufferPrecision : Float;
+
 		var screenDepth : Float;
 
 		function reflectedRay(ray : Vec3, normal : Vec3) : Vec3 {
@@ -43,11 +50,11 @@ class SSRShader extends h3d.shader.ScreenShader {
 		}
 
 		function getViewPos(uv:Vec2):Vec4 {
-			screenDepth = depthMap.getLod(uv, 0).r;
+			screenDepth = depthBuffer.getLod(uv, 0).r;
 			var ruv = vec4(uvToScreen(uv), screenDepth, 1);
 			var vpos = ruv * cameraInverseProj;
 			return vpos / vpos.w;
-		};
+		}
 
 		function intersectViewRayWithFrustum( start : Vec3, dir : Vec3 ) : Vec3 {
 			var wStart = vec4(start, 1.0) * cameraInverseView;
@@ -67,6 +74,13 @@ class SSRShader extends h3d.shader.ScreenShader {
 			var wEnd = wStart.xyz + wDir * minT;
 			var vEnd = vec4(wEnd, 1.0) * cameraView;
 			return vEnd.xyz / vEnd.w;
+		}
+
+		// scale thickness by an approximation of minimum difference between to depth step.
+		// https://www.sjbaker.org/steve/omniv/love_your_z_buffer.html
+		function scaledThickness(z : Float) : Float {
+			var t = thickness * camera.zNear * depthBufferPrecision;
+			return t * z * z / (depthBufferPrecision * camera.zNear - z);
 		}
 
 		function fragment() {
@@ -115,13 +129,15 @@ class SSRShader extends h3d.shader.ScreenShader {
 			var frag = startFrag.xy + increment;
 			var uv = frag / texSize;
 
+			var angleCorrection = 1.0 / abs(dot(camDir, viewNormal));
 			if (!batchSample) {
 				var iStepCount = int( stepCount );
 				for ( curStep in 0...iStepCount ) {
 					var curPos = getViewPos(uv);
 					var viewDistance = (positionFrom.z * positionTo.z) / mix(positionTo.z, positionFrom.z, float( curStep + 1 ) / stepCount );
 					var depth = viewDistance - curPos.z;
-					if ( depth >= 0.0 && depth < thickness && screenDepth < 1 ) {
+					var t = scaledThickness(curPos.z) * angleCorrection;
+					if ( depth >= 0.0 && depth < t && screenDepth < 1 ) {
 						hit = 1;
 						break;
 					}
@@ -139,7 +155,8 @@ class SSRShader extends h3d.shader.ScreenShader {
 						var curPos = getViewPos(uv);
 						var viewDistance = (positionFrom.z * positionTo.z) / mix(positionTo.z, positionFrom.z, float( curStep * 4 + i + 1 ) / stepCount );
 						var depth = viewDistance - curPos.z;
-						results[i] = depth >= 0.0 && depth < thickness && screenDepth < 1;
+						var t = scaledThickness(curPos.z) * angleCorrection;
+						results[i] = depth >= 0.0 && depth < t && screenDepth < 1;
 						frag += increment;
 						uv = frag / texSize;
 					}
@@ -186,7 +203,7 @@ class SSR extends RendererFX {
 
 	@:s public var intensity : Float = 1.;
 	@:s public var colorMul : Float = 1.;
-	@:s public var thickness : Float = 1.0;
+	@:s public var thicknessValue : Float = 0.0001;
 	@:s public var blurRadius : Float = 1.0;
 	@:s public var textureSize : Float = 0.5;
 	@:s public var useMask : Bool = false;
@@ -216,7 +233,8 @@ class SSR extends RendererFX {
 
 		var hdrMap = r.ctx.getGlobal("hdrMap");
 		ssrShader.hdrMap = hdrMap;
-		@:privateAccess ssrShader.roughnessMap = cast(r, h3d.scene.pbr.Renderer).textures.pbr;
+		var pbrRenderer = cast(r, h3d.scene.pbr.Renderer);
+		@:privateAccess ssrShader.roughnessMap = pbrRenderer.textures.pbr;
 
 		var normalMap = r.ctx.getGlobal("normalMap").texture;
 		ssrShader.normalMap = normalMap;
@@ -224,7 +242,7 @@ class SSR extends RendererFX {
 		ssrShader.texSize = new h3d.Vector((t == null ? r.ctx.engine.width : t.width), (t == null ? r.ctx.engine.height : t.height));
 		ssrShader.colorMul = colorMul;
 		ssrShader.intensity = intensity;
-		ssrShader.thickness = thickness;
+		ssrShader.thickness = thicknessValue;
 		ssrShader.maxRoughness = maxRoughness;
 		ssrShader.USE_ROUGHNESS = useRoughness;
 		if ( minAngle == 0 )
@@ -244,6 +262,15 @@ class SSR extends RendererFX {
 
 		ssrShader.vignettingRadius = vignettingRadius;
 		ssrShader.vignettingSoftness = vignettingSmoothness;
+
+		ssrShader.depthBuffer = @:privateAccess pbrRenderer.textures.albedo.depthBuffer;
+		var depthBufferBits = switch(ssrShader.depthBuffer.format) {
+		case Depth16: 16;
+		case Depth24, Depth24Stencil8: 24;
+		case Depth32: 32;
+		default: throw "not a depthBuffer";
+		}
+		ssrShader.depthBufferPrecision = 1 << depthBufferBits;
 
 		ssrShader.frustum = r.ctx.getCameraFrustumBuffer();
 
@@ -289,7 +316,7 @@ class SSR extends RendererFX {
 				<dt>Color Mul</dt><dd><input type="range" min="0" max="1" field="colorMul"/></dd>
 				<dt>Max Roughness</dt><dd><input type="range" min="0" max="1" field="maxRoughness"/></dd>
 				<dt>Min Angle</dt><dd><input type="range" min="0" max="90" field="minAngle"/></dd>
-				<dt>Thickness</dt><dd><input type="range" min="0" max="1" field="thickness"/></dd>
+				<dt>Thickness</dt><dd><input type="range" min="0" max="1" field="thicknessValue"/></dd>
 				<dt>Ray marching resolution</dt><dd><input type="range" min="0" max="1" field="rayMarchingResolution"/></dd>
 				<dt>Blur radius</dt><dd><input type="range" min="0" max="5" field="blurRadius"/></dd>
 				<dt>Texture size</dt><dd><input type="range" min="0" max="1" field="textureSize"/></dd>
