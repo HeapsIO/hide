@@ -117,6 +117,21 @@ function sgTypeToType(t: SgType) : Type {
 	}
 }
 
+function getSgTypeDefVal(t: SgType) : Dynamic {
+	return switch(t) {
+		case SgBool:
+			return false;
+		case SgFloat(1):
+			return 0.0;
+		case SgFloat(n):
+			return [for (i in 0...n) 0.0];
+		case SgInt:
+			return 0;
+		default:
+			throw "Can't have default value for type " + t;
+	}
+}
+
 function ConstraintFloat(newType: Type, previousType: Type) : Null<Type> {
 	function getN(type:Type) {
 		return switch(type) {
@@ -198,6 +213,7 @@ class ShaderGraphVariable {
 	var name: String;
 	var type: SgType;
 	var defValue: Dynamic;
+	var isColor: Bool = false;
 }
 
 @:access(hrt.shgraph.Graph)
@@ -745,6 +761,7 @@ class Graph {
 				name: variable.name,
 				type: unserializeSgType(variable.type),
 				defValue: variable.defValue,
+				isColor: variable.isColor,
 			});
 		}
 
@@ -976,6 +993,7 @@ class Graph {
 				name: variable.name,
 				type: serializeSgType(variable.type),
 				defValue: variable.defValue,
+				isColor: variable.isColor,
 			});
 		}
 

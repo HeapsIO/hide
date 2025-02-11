@@ -274,7 +274,7 @@ class ShaderEditor extends hide.view.FileView implements GraphInterface.IGraphEd
 					<fancy-array class="variables" style="flex-grow: 1">
 
 					</fancy-array>
-					<fancy-button class="add-variable">Add Variable</fancy-button>
+					<fancy-button class="fancy-small add-variable">Add Variable</fancy-button>
 				</div>
 
 				<div class="options-block hide-block">
@@ -299,11 +299,38 @@ class ShaderEditor extends hide.view.FileView implements GraphInterface.IGraphEd
 		variableList.reorderItem = moveVariable;
 		variableList.removeItem = removeVariable;
 		variableList.setItemName = renameVariable;
+		variableList.getItemContent = getVariableContent;
 
 		variableList.refresh();
 
-		rightPannel.find(".add-variable").on("click", (e) -> {
-			createVariable(SgFloat(2));
+		var addVariable = rightPannel.find(".add-variable");
+		addVariable.on("click", (e) -> {
+			hide.comp.ContextMenu.createDropdown(addVariable.get(0), [
+				{
+					label: "Int",
+					click: () -> createVariable(SgInt),
+				},
+				{
+					label: "Float",
+					click: () -> createVariable(SgFloat(1)),
+				},
+				{
+					label: "Vec 2",
+					click: () -> createVariable(SgFloat(2)),
+				},
+				{
+					label: "Vec 3",
+					click: () -> createVariable(SgFloat(3)),
+				},
+				{
+					label: "Vec 4",
+					click: () -> createVariable(SgFloat(4)),
+				},
+				{
+					label: "Color",
+					click: () -> createVariable(SgFloat(4), true),
+				},
+			]);
 		});
 
 		rightPannel.find("#centerView").click((e) -> graphEditor.centerView());
@@ -470,7 +497,7 @@ class ShaderEditor extends hide.view.FileView implements GraphInterface.IGraphEd
 	}
 
 
-	function createVariable(type: SgType) {
+	function createVariable(type: SgType, isColor: Bool = false) {
 		var name = "New Variable";
 		var i = 0;
 		var index = 0;
@@ -487,7 +514,8 @@ class ShaderEditor extends hide.view.FileView implements GraphInterface.IGraphEd
 		var variable : ShaderGraphVariable = {
 			name: name,
 			type: type,
-			defValue: [0,0],
+			defValue: hrt.shgraph.ShaderGraph.getSgTypeDefVal(type),
+			isColor: isColor,
 		}
 		var graph = currentGraph;
 
@@ -499,6 +527,7 @@ class ShaderEditor extends hide.view.FileView implements GraphInterface.IGraphEd
 				graph.variables.remove(variable);
 			}
 			variableList.refresh();
+			requestRecompile();
 		}
 		exec(false);
 		undo.change(Custom(exec));
@@ -528,18 +557,69 @@ class ShaderEditor extends hide.view.FileView implements GraphInterface.IGraphEd
 		undo.change(Custom(exec));
 	}
 
+	function getVariableContent(variable: ShaderGraphVariable) {
+		var e = new Element('<div><div>Def value</div></div>');
+
+		switch(variable.type) {
+			case SgFloat(n):
+				if (n >= 3 && variable.isColor) {
+					hide.comp.PropsEditor.makePropEl({name: "defValue", t: PColor}, e);
+				} else {
+					hide.comp.PropsEditor.makePropEl({name: "defValue", t: PVec(n)}, e);
+				}
+
+				if (n >= 3) {
+					new Element('<div>Is Color</div>').appendTo(e);
+					hide.comp.PropsEditor.makePropEl({name: "isColor", t: PBool}, e);
+				}
+			case SgInt:
+				hide.comp.PropsEditor.makePropEl({name: "defValue", t: PInt()}, e);
+			default:
+				throw "Unsupported variable type";
+		}
+
+		var editRoot = new Element();
+		var edit = new hide.comp.PropsEditor(undo, editRoot);
+		edit.add(e, variable, (name: String) -> {
+			if (name == "isColor") {
+				variableList.refresh();
+			}
+			else if(StringTools.contains(name, "defValue")) {
+				requestRecompile();
+			}
+		});
+		return e;
+	}
+
 	function moveVariable(oldIndex: Int, newIndex: Int) {
 		var graph = currentGraph;
+		var remap: Array<Int> = [];
 		function exec(isUndo: Bool) {
 			if (!isUndo) {
+				var oldOrder = graph.variables.copy();
 				var rem = graph.variables.splice(oldIndex, 1);
 				graph.variables.insert(newIndex, rem[0]);
+
+				for (oldIndex => v in oldOrder) {
+					remap[oldIndex] = graph.variables.indexOf(v);
+				}
+
+				graph.mapShaderVar((v) -> {
+					v.varId = remap[v.varId];
+					return true;
+				});
 			}
 			else {
 				var rem = graph.variables.splice(newIndex, 1);
 				graph.variables.insert(oldIndex, rem[0]);
+
+				graph.mapShaderVar((v) -> {
+					v.varId = remap.indexOf(v.varId);
+					return true;
+				});
 			}
 			variableList.refresh();
+			requestRecompile();
 		}
 		exec(false);
 		undo.change(Custom(exec));
@@ -564,11 +644,28 @@ class ShaderEditor extends hide.view.FileView implements GraphInterface.IGraphEd
 		function exec(isUndo: Bool) {
 			if (!isUndo) {
 				graph.variables.splice(index, 1);
+
+				// fix id of variables above ours
+				graph.mapShaderVar((v) -> {
+					if (v.varId > index) {
+						v.varId --;
+					}
+					return true;
+				});
 			}
 			else {
 				graph.variables.insert(index, variable);
+
+				// fix id of variables above ours
+				graph.mapShaderVar((v) -> {
+					if (v.varId > index-1) {
+						v.varId ++;
+					}
+					return true;
+				});
 			}
 			variableList.refresh();
+			requestRecompile();
 		}
 		exec(false);
 		undo.change(Custom(exec));

@@ -4359,15 +4359,15 @@ graph-editor-root properties-container .anim-list {
   --fancy-quiet-text-color: #999;
 }
 .fancy-small fancy-button,
-.fancy-smallfancy-button {
+fancy-button.fancy-small {
   --size: 20px;
 }
 .fancy-normal fancy-button,
-.fancy-normalfancy-button {
+fancy-button.fancy-normal {
   --size: 28px;
 }
 .fancy-big fancy-button,
-.fancy-bigfancy-button {
+fancy-button.fancy-big {
   --size: 36px;
 }
 fancy-button {

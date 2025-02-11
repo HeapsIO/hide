@@ -30,7 +30,7 @@ class AstTools {
 			case TFloat:
 				return makeFloat(value is Float ? cast value : 0);
 			case TVec(size, VFloat):
-				return makeVec((value is Array && value.len == size) ? cast value : [for (_ in 0...size) 0.0]);
+				return makeVec((value is Array && value.length == size) ? cast value : [for (_ in 0...size) 0.0]);
 			default:
 				throw "unsupported type " + type;
 		}
