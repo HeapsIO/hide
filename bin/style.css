@@ -4500,7 +4500,6 @@ fancy-array fancy-items fancy-item fancy-item-content {
   padding: 0.2em 1em;
   padding-right: 0px;
   padding-right: 0;
-  /* border-left: 1px solid var(--border-color); */
   margin-bottom: 0.5em;
 }
 fancy-array fancy-items fancy-item .toggle-open * {

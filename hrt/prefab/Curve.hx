@@ -799,8 +799,7 @@ class Curve extends Prefab {
 			curveOrVal(x, defVal),
 			curveOrVal(y, defVal),
 			curveOrVal(z, defVal),
-			curveOrVal(w, 1.0)
-		);
+			curveOrVal(w, 1.0));
 	}
 
 	public static function getColorValue(curves: Array<Curve>) : Value {

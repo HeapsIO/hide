@@ -128,7 +128,7 @@ class NodeGenContext {
 		var type = ShaderGraph.sgTypeToType(graphVar.type);
 		var variable = MapUtils.getOrPut(shaderVariables, id, {
 			var varId = hxsl.Ast.Tools.allocVarId();
-			var name = if (graphVar.isGlobal) ${graphVar.name} else '_local_${graphVar.name}_$varId';
+			var name = if (graphVar.isGlobal) graphVar.name else '_local_${graphVar.name}_$varId';
 			{variable: {id: varId, name: name, type: type, kind: Local}, isInit: false}
 		});
 		if (init != null && !variable.isInit) {
