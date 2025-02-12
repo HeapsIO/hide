@@ -1,8 +1,8 @@
 package hrt.shgraph.nodes;
 
-@name("Write Var")
+@name("Var Write")
 @description("Write a value to a local variable")
-@width(130)
+@width(80)
 @group("Variables")
 class VarWrite extends ShaderVar {
 
@@ -12,24 +12,17 @@ class VarWrite extends ShaderVar {
 	var inputs: Array<ShaderNode.InputInfo>;
 	override public function getInputs() : Array<ShaderNode.InputInfo> {
 		if (inputs == null) {
-			inputs = [{name: "input", type: graph.variables[varId].type}];
+			inputs = [{name:"error", type: SgBool}];
 		}
+		// reassign name and type in case they have changed since the last getInput
+		inputs[0].name = graph.parent.variables[varId]?.name ?? "error";
+		inputs[0].type = graph.parent.variables[varId]?.type ?? SgBool;
 		return inputs;
 	}
 
 	override function generate(ctx:NodeGenContext) {
 		var input = ctx.getInput(0);
-		var tVar = ctx.getLocalTVar(varId, input);
+		var tVar = ctx.getShaderVariable(varId, input);
 		ctx.addPreview(AstTools.makeVar(tVar));
 	}
-
-	#if editor
-	override function getInfo():hide.view.GraphInterface.GraphNodeInfo {
-		var info = super.getInfo();
-		if (editor != null) {
-			info.name = "Write: " + @:privateAccess (cast editor.editor: hide.view.shadereditor.ShaderEditor).currentGraph.variables[varId].name;
-		}
-		return info;
-	}
-	#end
 }

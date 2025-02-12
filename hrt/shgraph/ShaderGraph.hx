@@ -214,11 +214,13 @@ class ShaderGraphVariable {
 	var type: SgType;
 	var defValue: Dynamic;
 	var isColor: Bool = false;
+	var isGlobal: Bool = false;
 }
 
 @:access(hrt.shgraph.Graph)
 class ShaderGraphGenContext {
 	var graph : Graph;
+
 	var includePreviews : Bool;
 
 	public function new(graph: Graph, includePreviews: Bool = false) {
@@ -285,14 +287,6 @@ class ShaderGraphGenContext {
 			global.paramIndex = p.index;
 		}
 
-		// Default init uninitialized local vars
-		for (id => variable in genContext.localVars) {
-			if (variable.isInit)
-				continue;
-			var initExpr = AstTools.makeVarDecl(variable.variable, AstTools.makeDynamic(variable.variable.type, graph.variables[id].defValue));
-			expressions.unshift(initExpr);
-		}
-
 		return AstTools.makeExpr(TBlock(expressions), TVoid);
 	}
 
@@ -318,14 +312,35 @@ class ShaderGraphGenContext {
 			var empty = true;
 			var inputs = inst.getInputs();
 
-			// Add a dependency in the node topology between matchin Var Write and Var Read
-			// so the write is done before all the reads
-			var write = graph.findLocalVarWrite(Std.downcast(node.node, hrt.shgraph.nodes.VarRead));
-			if (write != null) {
-				nodeTopology[write.id].to.push(id);
-				nodeTopology[id].incoming ++;
-				empty = false;
+			var asShaderVar = Std.downcast(node.node, hrt.shgraph.nodes.ShaderVar);
+			if (asShaderVar != null) {
+				var variable = graph.parent.variables[asShaderVar.varId];
+
+				if (variable.isGlobal) {
+					// Global Write depend on their Read counterpart (because the write must happen after all the reads)
+					var write = Std.downcast(asShaderVar, hrt.shgraph.nodes.VarWrite);
+					if (write != null) {
+						for (node in nodes) {
+							var asRead = Std.downcast(node?.node, hrt.shgraph.nodes.VarRead);
+							if (asRead == null || asRead.varId != write.varId)
+								continue;
+							nodeTopology[asRead.id].to.push(id);
+							nodeTopology[id].incoming ++;
+							empty = false;
+						}
+					}
+
+				} else {
+					// Local Reads depend on their Write counterpart (because all the reads must happen after the write)
+					var write = graph.findLocalVarWrite(Std.downcast(node.node, hrt.shgraph.nodes.VarRead));
+					if (write != null) {
+						nodeTopology[write.id].to.push(id);
+						nodeTopology[id].incoming ++;
+						empty = false;
+					}
+				}
 			}
+
 
 			for (inputId => connection in inst.connections) {
 				if (connection == null)
@@ -380,10 +395,11 @@ class ShaderGraphGenContext {
 		return sortedNodes;
 	}
 }
-
+@:privateAccess(hrt.shgraph.Graph)
 class ShaderGraph extends hrt.prefab.Prefab {
 
 	var graphs : Array<Graph> = [];
+	public var variables : Array<ShaderGraphVariable> = [];
 
 	var cachedDef : hrt.prefab.Cache.ShaderDef = null;
 
@@ -394,6 +410,16 @@ class ShaderGraph extends hrt.prefab.Prefab {
 		graphs = [];
 		parametersAvailable = [];
 		parametersKeys = [];
+
+		for (variable in json.variables ?? []) {
+			variables.push({
+				name: variable.name,
+				type: unserializeSgType(variable.type),
+				defValue: variable.defValue,
+				isColor: variable.isColor,
+				isGlobal: variable.isGlobal,
+			});
+		}
 
 		loadParameters(json.parameters ?? []);
 		for (domain in haxe.EnumTools.getConstructors(Domain)) {
@@ -416,6 +442,18 @@ class ShaderGraph extends hrt.prefab.Prefab {
 		var json = super.save();
 		json.parameters = [
 			for (p in parametersAvailable) { id : p.id, name : p.name, type : [p.type.getName(), p.type.getParameters().toString()], defaultValue : p.defaultValue, index : p.index, internal : p.internal }
+		];
+
+		json.variables = [
+			for (variable in variables) {
+				{
+					name: variable.name,
+					type: serializeSgType(variable.type),
+					defValue: variable.defValue,
+					isColor: variable.isColor,
+					isGlobal: variable.isGlobal,
+				}
+			}
 		];
 
 		for (graph in graphs) {
@@ -577,6 +615,12 @@ class ShaderGraph extends hrt.prefab.Prefab {
 			}
 		}
 
+		for (id => variable in nodeGen.shaderVariables) {
+			var initExpr = AstTools.makeAssign(AstTools.makeVar(variable.variable), AstTools.makeDynamic(variable.variable.type, this.variables[id].defValue));
+			__init__exprs.push(initExpr);
+			shaderData.vars.push(variable.variable);
+		}
+
 		if (__init__exprs.length != 0) {
 			var funcVar : TVar = {
 				name : "__init__",
@@ -730,6 +774,16 @@ class ShaderGraph extends hrt.prefab.Prefab {
 		}
 	}
 
+	/**
+		Iterate on all the shaderVars in the graph, breaking if the cb return false
+	**/
+	public function mapShaderVar(cb: (v: hrt.shgraph.nodes.ShaderVar) -> Bool) {
+		for (graph in graphs) {
+			if (!graph.mapShaderVar(cb))
+				return;
+		}
+	}
+
 	public function getGraph(domain: Domain) {
 		return graphs[domain.getIndex()];
 	}
@@ -741,8 +795,6 @@ class Graph {
 	var allParamDefaultValue = [];
 	var current_node_id = 0;
 	var nodes : Map<Int, ShaderNode> = [];
-
-	public var variables : Array<ShaderGraphVariable> = [];
 
 	public var parent : ShaderGraph = null;
 
@@ -756,15 +808,6 @@ class Graph {
 
 	public function load(json : Dynamic) {
 		nodes = [];
-		for (variable in json.variables ?? []) {
-			variables.push({
-				name: variable.name,
-				type: unserializeSgType(variable.type),
-				defValue: variable.defValue,
-				isColor: variable.isColor,
-			});
-		}
-
 		generate(Reflect.getProperty(json, "nodes"), Reflect.getProperty(json, "edges"));
 	}
 
@@ -821,12 +864,32 @@ class Graph {
 				}
 			}
 
-			var write = findLocalVarWrite(Std.downcast(node, hrt.shgraph.nodes.VarRead));
-			if (write != null) {
-				if (hasCycle(write, visited))
-					return true;
-			}
+			var asShaderVar = Std.downcast(node, hrt.shgraph.nodes.ShaderVar);
+			if (asShaderVar != null) {
+				var variable = parent.variables[asShaderVar.varId];
 
+				if (variable.isGlobal) {
+					// Global Write depend on their Read counterpart (because the write must happen after all the reads)
+					var write = Std.downcast(asShaderVar, hrt.shgraph.nodes.VarWrite);
+					if (write != null) {
+						for (node in nodes) {
+							var asRead = Std.downcast(node, hrt.shgraph.nodes.VarRead);
+							if (asRead == null || asRead.varId != write.varId)
+								continue;
+							if (hasCycle(asRead, visited))
+								return true;
+						}
+					}
+
+				} else {
+					// Local Reads depend on their Write counterpart (because all the reads must happen after the write)
+					var write = findLocalVarWrite(Std.downcast(node, hrt.shgraph.nodes.VarRead));
+					if (write != null) {
+						if (hasCycle(write, visited))
+							return true;
+					}
+				}
+			}
 
 			return false;
 		}
@@ -953,20 +1016,6 @@ class Graph {
 		return parent.getParameter(id);
 	}
 
-	/**
-		Iterate on all the shaderVars in the graph, breaking if the cb return false
-	**/
-	public function mapShaderVar(cb: (v: hrt.shgraph.nodes.ShaderVar) -> Bool) {
-		for (node in nodes) {
-			var asVar = Std.downcast(node, hrt.shgraph.nodes.ShaderVar);
-			if (asVar != null) {
-				if (cb(asVar) == false) {
-					break;
-				}
-			}
-		}
-	}
-
 	public function hasCycle() : Bool {
 		var ctx = new ShaderGraphGenContext(this, false);
 		@:privateAccess ctx.initNodes();
@@ -987,25 +1036,30 @@ class Graph {
 				edgesJson.push({ outputNodeId: connection.from.id, nameOutput: connection.from.getOutputs()[outputId].name, inputNodeId: n.id, nameInput: n.getInputs()[inputId].name, inputId: inputId, outputId: outputId });
 			}
 		}
-		var variablesJson = [];
-		for (variable in variables) {
-			variablesJson.push({
-				name: variable.name,
-				type: serializeSgType(variable.type),
-				defValue: variable.defValue,
-				isColor: variable.isColor,
-			});
-		}
 
 		var json = {
 			nodes: [
 				for (n in nodes) n.serializeToDynamic(),
 			],
 			edges: edgesJson,
-			variables: variablesJson,
 		};
 
 		return json;
+	}
+
+	/**
+		Iterate on all the shaderVars in the graph, breaking if the cb return false
+	**/
+	public function mapShaderVar(cb: (v: hrt.shgraph.nodes.ShaderVar) -> Bool) {
+		for (node in nodes) {
+			var asVar = Std.downcast(node, hrt.shgraph.nodes.ShaderVar);
+			if (asVar != null) {
+				if (cb(asVar) == false) {
+					return false;
+				}
+			}
+		}
+		return true;
 	}
 
 }

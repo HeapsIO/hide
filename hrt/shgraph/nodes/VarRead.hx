@@ -1,9 +1,9 @@
 package hrt.shgraph.nodes;
 
 
-@name("Read Var")
+@name("Var Read")
 @description("Read a value from a local variable")
-@width(130)
+@width(80)
 @group("Variables")
 class VarRead extends ShaderVar {
 
@@ -13,26 +13,20 @@ class VarRead extends ShaderVar {
 	var outputs: Array<ShaderNode.OutputInfo>;
 	override public function getOutputs() : Array<ShaderNode.OutputInfo> {
 		if (outputs == null) {
-			outputs  = [{name: "output", type: graph.variables[varId].type}];
+			// cache the output array to avoid multiple allocations
+			outputs = [{name:"error", type: SgBool}];
 		}
+		// reassign name and type in case they have changed since the last getOutput
+		outputs[0].name = graph.parent.variables[varId]?.name ?? "error";
+		outputs[0].type = graph.parent.variables[varId]?.type ?? SgBool;
 		return outputs;
 	}
 
 	override function generate(ctx:NodeGenContext) {
-		var out = AstTools.makeVar(ctx.getLocalTVar(varId));
+		var out = AstTools.makeVar(ctx.getShaderVariable(varId));
 		ctx.setOutput(0, out);
 		#if editor
 		ctx.addPreview(out);
 		#end
 	}
-
-	#if editor
-	override function getInfo():hide.view.GraphInterface.GraphNodeInfo {
-		var info = super.getInfo();
-		if (editor != null) {
-			info.name = "Read: " + @:privateAccess (cast editor.editor: hide.view.shadereditor.ShaderEditor).currentGraph.variables[varId].name;
-		}
-		return info;
-	}
-	#end
 }

@@ -123,13 +123,17 @@ class NodeGenContext {
 		expressions.push(makeAssign(v, expr));
 	}
 
-	public function getLocalTVar(id: Int, init: TExpr = null) : TVar {
-		var graphVar = graph.variables[id];
+	public function getShaderVariable(id: Int, init: TExpr = null) : TVar {
+		var graphVar = graph.parent.variables[id];
 		var type = ShaderGraph.sgTypeToType(graphVar.type);
-		var variable = MapUtils.getOrPut(localVars, id, {variable: {id: hxsl.Ast.Tools.allocVarId(), name: '_sg_local_$id', type: type, kind: Local}, isInit: false});
+		var variable = MapUtils.getOrPut(shaderVariables, id, {
+			var varId = hxsl.Ast.Tools.allocVarId();
+			var name = if (graphVar.isGlobal) ${graphVar.name} else '_local_${graphVar.name}_$varId';
+			{variable: {id: varId, name: name, type: type, kind: Local}, isInit: false}
+		});
 		if (init != null && !variable.isInit) {
 			variable.isInit = true;
-			addExpr(AstTools.makeVarDecl(variable.variable, init));
+			addExpr(AstTools.makeAssign(AstTools.makeVar(variable.variable), init));
 		}
 		return variable.variable;
 	}
@@ -378,5 +382,5 @@ class NodeGenContext {
 
 	var nodeInputInfo : Array<InputInfo>;
 	var globalVars: Map<String, ShaderGraph.ExternVarDef> = [];
-	var localVars: Map<Int, {variable: TVar, isInit: Bool}> = [];
+	var shaderVariables: Map<Int, {variable: TVar, isInit: Bool}> = [];
 }
