@@ -1229,7 +1229,6 @@ class ShaderEditor extends hide.view.FileView implements GraphInterface.IGraphEd
 
 
 	public function initMeshPreview() {
-		trace("Init mesh preview");
 		if (meshPreviewScene != null) {
 			meshPreviewScene.element.remove();
 		}

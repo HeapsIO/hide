@@ -270,7 +270,6 @@ class ContextMenu {
 
     function handleMovementKeys(e: js.html.KeyboardEvent) : Bool {
         if (currentSubmenu != null) {
-            trace("submenu");
             return currentSubmenu.handleMovementKeys(e);
         }
         if (e.key == "Escape") {
@@ -593,9 +592,6 @@ class ContextMenu {
 
             var top = menu.scrollTop;
             var bot = menu.scrollTop + menu.clientHeight;
-
-            trace(pos, top, bot);
-
 
             if (pos < top + 60) {
                 menu.scrollTo(0, pos - 60);
