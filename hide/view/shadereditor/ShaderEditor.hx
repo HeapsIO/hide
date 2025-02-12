@@ -138,6 +138,9 @@ class PreviewSettings {
 	public var height : Int = 300;
 	public function new() {};
 }
+
+@:access(hrt.shgraph.ShaderGraph)
+@:access(hrt.shgraph.Graph)
 class ShaderEditor extends hide.view.FileView implements GraphInterface.IGraphEditor {
 	var graphEditor : hide.view.GraphEditor;
 	var shaderGraph : hrt.shgraph.ShaderGraph;
@@ -164,6 +167,7 @@ class ShaderEditor extends hide.view.FileView implements GraphInterface.IGraphEd
 	var meshPreviewRenderPropsRoot : h3d.scene.Object;
 
 	var parametersList : JQuery;
+	var variableList : hide.comp.FancyArray<ShaderGraphVariable>;
 
 	var previewElem : Element;
 	var draggedParamId : Int;
@@ -203,25 +207,56 @@ class ShaderEditor extends hide.view.FileView implements GraphInterface.IGraphEd
 			graphEditor.centerView();
 		}, 50);
 
-		graphEditor.element.on("drop" ,function(e) {
-			var posCursor = new Point(graphEditor.lX(ide.mouseX - 25), graphEditor.lY(ide.mouseY - 10));
-			var inst = new ShaderParam();
-			@:privateAccess var id = currentGraph.current_node_id++;
-			inst.id = id;
-			inst.parameterId = draggedParamId;
-			inst.shaderGraph = shaderGraph;
-			inst.setPos(posCursor);
+		graphEditor.element.get(0).ondrop = (e:js.html.DragEvent) -> {
+			var posCursor = new Point(graphEditor.lX(e.clientX - 25), graphEditor.lY(e.clientY-25));
 
-			graphEditor.opBox(inst, true, graphEditor.currentUndoBuffer);
-			graphEditor.commitUndo();
-			// var node = Std.downcast(currentGraph.addNode(posCursor.x, posCursor.y, ShaderParam, []), ShaderParam);
-			// node.parameterId = draggedParamId;
-			// var paramShader = shaderGraph.getParameter(draggedParamId);
-			// node.variable = paramShader.variable;
-			// node.setName(paramShader.name);
-			//setDisplayValue(node, paramShader.type, paramShader.defaultValue);
-			//addBox(posCursor, ShaderParam, node);
-		});
+			function addNode(inst: ShaderNode) : Void {
+				@:privateAccess var id = currentGraph.current_node_id++;
+				inst.id = id;
+				inst.setPos(posCursor);
+				inst.graph = currentGraph;
+
+				graphEditor.opBox(inst, true, graphEditor.currentUndoBuffer);
+				graphEditor.commitUndo();
+			}
+			if (e.dataTransfer.types.contains(variableList.getDragKeyName())) {
+				var index = Std.parseInt(e.dataTransfer.getData(variableList.getDragKeyName()));
+				var hasAnyWrite = false;
+				shaderGraph.mapShaderVar((v) -> {
+					if (v.varId == index && Std.downcast(v, hrt.shgraph.nodes.VarWrite) != null) {
+						hasAnyWrite = true;
+						return false;
+					}
+					return true;
+				});
+
+				if (hasAnyWrite) {
+					var read = new hrt.shgraph.nodes.VarRead();
+					read.varId = index;
+					addNode(read);
+				} else {
+					hide.comp.ContextMenu.createFromPoint(e.clientX, e.clientY, [{
+						label: "Write", click: () -> {
+							var write = new hrt.shgraph.nodes.VarWrite();
+							write.varId = index;
+							addNode(write);
+						}
+					},
+					{
+						label: "Read", click: () -> {
+							var read = new hrt.shgraph.nodes.VarRead();
+							read.varId = index;
+							addNode(read);
+						}
+					}]);
+				}
+				return;
+			}
+
+			var inst = new ShaderParam();
+			inst.parameterId = draggedParamId;
+			addNode(inst);
+		};
 
 		var rightPannel = new Element(
 			'<div id="rightPanel">
@@ -230,9 +265,19 @@ class ShaderEditor extends hide.view.FileView implements GraphInterface.IGraphEd
 
 					<div id="parametersList" class="hide-scene-tree hide-list">
 					</div>
-				</div>
-				<div class="options-block hide-block">
+
 					<input id="createParameter" type="button" value="Add parameter" />
+				</div>
+
+
+				<div class="hide-block flexible" >
+					<fancy-array class="variables" style="flex-grow: 1">
+
+					</fancy-array>
+					<fancy-button class="fancy-small add-variable">Add Variable</fancy-button>
+				</div>
+
+				<div class="options-block hide-block">
 					<div>
 						Shader :
 						<select id="domainSelection"></select>
@@ -246,6 +291,47 @@ class ShaderEditor extends hide.view.FileView implements GraphInterface.IGraphEd
 
 			</div>'
 		);
+
+		variableList = new hide.comp.FancyArray(null, rightPannel.find(".variables"), "variables", "variables");
+
+		variableList.getItems = () -> shaderGraph.variables;
+		variableList.getItemName = (v: ShaderGraphVariable) -> v.name;
+		variableList.reorderItem = moveVariable;
+		variableList.removeItem = removeVariable;
+		variableList.setItemName = renameVariable;
+		variableList.getItemContent = getVariableContent;
+
+		variableList.refresh();
+
+		var addVariable = rightPannel.find(".add-variable");
+		addVariable.on("click", (e) -> {
+			hide.comp.ContextMenu.createDropdown(addVariable.get(0), [
+				{
+					label: "Int",
+					click: () -> createVariable(SgInt),
+				},
+				{
+					label: "Float",
+					click: () -> createVariable(SgFloat(1)),
+				},
+				{
+					label: "Vec 2",
+					click: () -> createVariable(SgFloat(2)),
+				},
+				{
+					label: "Vec 3",
+					click: () -> createVariable(SgFloat(3)),
+				},
+				{
+					label: "Vec 4",
+					click: () -> createVariable(SgFloat(4)),
+				},
+				{
+					label: "Color",
+					click: () -> createVariable(SgFloat(4), true),
+				},
+			]);
+		});
 
 		rightPannel.find("#centerView").click((e) -> graphEditor.centerView());
 
@@ -402,12 +488,218 @@ class ShaderEditor extends hide.view.FileView implements GraphInterface.IGraphEd
 			domainSelection.val(haxe.EnumTools.EnumValueTools.getName(curr));
 			graphEditor.reload();
 			graphEditor.centerView();
+			requestRecompile();
 		}
 
 		exec(false);
 		if (recordUndo) {
 			undo.change(Custom(exec));
 		}
+	}
+
+
+	function createVariable(type: SgType, isColor: Bool = false) {
+		var name = "New Variable";
+		var i = 0;
+		var index = 0;
+		while(i < shaderGraph.variables.length) {
+			if (shaderGraph.variables[i].name == name) {
+				i = 0;
+				index ++;
+				name = 'New Variable ($index)';
+			} else {
+				i++;
+			}
+		}
+
+		var variable : ShaderGraphVariable = {
+			name: name,
+			type: type,
+			defValue: hrt.shgraph.ShaderGraph.getSgTypeDefVal(type),
+			isColor: isColor,
+		}
+
+		function exec(isUndo: Bool) {
+			if (!isUndo) {
+				shaderGraph.variables.push(variable);
+			}
+			else {
+				shaderGraph.variables.remove(variable);
+			}
+			variableList.refresh();
+			requestRecompile();
+		}
+		exec(false);
+		undo.change(Custom(exec));
+	}
+
+	var validNameCheck = ~/^[_a-zA-Z][_a-zA-Z0-9]*$/;
+
+	function renameVariable(variable: ShaderGraphVariable, newName: String) {
+		if (!validNameCheck.match(newName))
+		{
+			variableList.refresh();
+			ide.quickError('"$newName" is not a valid variable name (must start with _ or a letter, and only contains letters, numbers and underscores)');
+			return;
+		}
+
+		var oldName = variable.name;
+		function exec(isUndo: Bool) {
+			variable.name = !isUndo ? newName : oldName;
+			variableList.refresh();
+
+			var index = shaderGraph.variables.indexOf(variable);
+			currentGraph.mapShaderVar((variable: hrt.shgraph.nodes.ShaderVar) -> {
+				if (variable.varId == index) {
+					graphEditor.refreshBox(variable.id);
+				}
+				return true;
+			});
+
+			for (node in currentGraph.nodes) {
+
+			}
+		}
+
+		exec(false);
+		undo.change(Custom(exec));
+	}
+
+	function getVariableContent(variable: ShaderGraphVariable) {
+		var e = new Element('<div><div>Def value</div></div>');
+
+		switch(variable.type) {
+			case SgFloat(n):
+				if (n >= 3 && variable.isColor) {
+					hide.comp.PropsEditor.makePropEl({name: "defValue", t: PColor}, e);
+				} else {
+					hide.comp.PropsEditor.makePropEl({name: "defValue", t: PVec(n)}, e);
+				}
+
+				if (n >= 3) {
+					var colorCheckbox = new Element('<div>Is Color</div>').appendTo(e);
+					hide.comp.PropsEditor.makePropEl({name: "isColor", t: PBool}, colorCheckbox);
+				}
+			case SgInt:
+				hide.comp.PropsEditor.makePropEl({name: "defValue", t: PInt()}, e);
+			default:
+				throw "Unsupported variable type";
+		}
+
+		var globalCheckbox = new Element('<div title="If the variable is set to global, it will use the exact same name in the generated shader code, allowing it to be shared between multiple shaders in the shaderlist">Is Global <input type="checkbox"/></div>').appendTo(e);
+		var cb = globalCheckbox.find("input");
+		cb.prop("checked", variable.isGlobal);
+		cb.on("change", (e) -> {
+			var old = variable.isGlobal;
+			var val = cb.prop("checked");
+			variable.isGlobal = val;
+			for (graph in shaderGraph.graphs) {
+				if (graph.hasCycle()) {
+					variable.isGlobal = old;
+					ide.quickError('Cannot change isGlobal because variable write and reads are dependant on each other, and isGlobal change the order of the read and writes and it would create a cycle', 10.0);
+					variableList.refresh();
+					return;
+				}
+			}
+
+			undo.change(Field(variable, "isGlobal", old), () -> {
+				requestRecompile();
+				variableList.refresh();
+			});
+			requestRecompile();
+		});
+
+		var editRoot = new Element();
+		var edit = new hide.comp.PropsEditor(undo, editRoot);
+		edit.add(e, variable, (name: String) -> {
+			if (name == "isColor") {
+				variableList.refresh();
+			}
+			else if(StringTools.contains(name, "defValue")) {
+				requestRecompile();
+			}
+		});
+		return e;
+	}
+
+	function moveVariable(oldIndex: Int, newIndex: Int) {
+		var graph = currentGraph;
+		var remap: Array<Int> = [];
+		function exec(isUndo: Bool) {
+			if (!isUndo) {
+				var oldOrder = shaderGraph.variables.copy();
+				var rem = shaderGraph.variables.splice(oldIndex, 1);
+				shaderGraph.variables.insert(newIndex, rem[0]);
+
+				for (oldIndex => v in oldOrder) {
+					remap[oldIndex] = shaderGraph.variables.indexOf(v);
+				}
+
+				shaderGraph.mapShaderVar((v) -> {
+					v.varId = remap[v.varId];
+					return true;
+				});
+			}
+			else {
+				var rem = shaderGraph.variables.splice(newIndex, 1);
+				shaderGraph.variables.insert(oldIndex, rem[0]);
+
+				shaderGraph.mapShaderVar((v) -> {
+					v.varId = remap.indexOf(v.varId);
+					return true;
+				});
+			}
+			variableList.refresh();
+			requestRecompile();
+		}
+		exec(false);
+		undo.change(Custom(exec));
+	}
+
+	function removeVariable(index: Int) {
+		var usedInGraph = false;
+		shaderGraph.mapShaderVar((v) -> {
+			if (v.varId == index) {
+				usedInGraph = true;
+				return false;
+			}
+			return true;
+		});
+
+		if (usedInGraph) {
+			hide.Ide.inst.quickError("Can't remove, variable is used in this Shader Graph");
+			return;
+		}
+
+		var variable = shaderGraph.variables[index];
+		function exec(isUndo: Bool) {
+			if (!isUndo) {
+				shaderGraph.variables.splice(index, 1);
+
+				// fix id of variables above ours
+				shaderGraph.mapShaderVar((v) -> {
+					if (v.varId > index) {
+						v.varId --;
+					}
+					return true;
+				});
+			}
+			else {
+				shaderGraph.variables.insert(index, variable);
+
+				// fix id of variables above ours
+				shaderGraph.mapShaderVar((v) -> {
+					if (v.varId > index-1) {
+						v.varId ++;
+					}
+					return true;
+				});
+			}
+			variableList.refresh();
+			requestRecompile();
+		}
+		exec(false);
+		undo.change(Custom(exec));
 	}
 
 	function createParameter(type : HxslType) {
@@ -1538,7 +1830,7 @@ class ShaderEditor extends hide.view.FileView implements GraphInterface.IGraphEd
 	}
 
 	public function unserializeNode(data : Dynamic, newId : Bool) : IGraphNode {
-		var node = ShaderNode.createFromDynamic(data, shaderGraph);
+		var node = ShaderNode.createFromDynamic(data, currentGraph);
 		if (newId) {
 			@:privateAccess var newId = currentGraph.current_node_id++;
 			node.setId(newId);

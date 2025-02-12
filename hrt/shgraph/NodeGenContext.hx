@@ -9,8 +9,8 @@ import hrt.shgraph.ShaderGraph;
 import hrt.shgraph.ShaderNode;
 
 class NodeGenContextSubGraph extends NodeGenContext {
-	public function new(parentCtx : NodeGenContext) {
-		super(parentCtx?.domain ?? Fragment);
+	public function new(graph: ShaderGraph.Graph, parentCtx : NodeGenContext) {
+		super(graph, parentCtx?.domain ?? Fragment);
 		this.parentCtx = parentCtx;
 	}
 
@@ -77,9 +77,11 @@ class NodeGenContext {
 	// Pour les rares nodes qui ont besoin de differencier entre vertex et fragment
 	public var domain : ShaderGraph.Domain;
 	public var previewDomain: ShaderGraph.Domain = null;
+	public var graph: ShaderGraph.Graph = null;
 
-	public function new(domain: ShaderGraph.Domain) {
+	public function new(graph: ShaderGraph.Graph, domain: ShaderGraph.Domain) {
 		this.domain = domain;
+		this.graph = graph;
 	}
 
 	// For general input/output of the shader graph. Allocate a new global var if name is not found,
@@ -119,6 +121,21 @@ class NodeGenContext {
 	public function setGlobalCustomOutput(name: String, expr: TExpr) : Void {
 		var v = makeVar(MapUtils.getOrPut(globalVars, name, {v: {id: hxsl.Ast.Tools.allocVarId(), name: name, type: expr.t, kind: Param}, defValue:null, __init__: null}).v);
 		expressions.push(makeAssign(v, expr));
+	}
+
+	public function getShaderVariable(id: Int, init: TExpr = null) : TVar {
+		var graphVar = graph.parent.variables[id];
+		var type = ShaderGraph.sgTypeToType(graphVar.type);
+		var variable = MapUtils.getOrPut(shaderVariables, id, {
+			var varId = hxsl.Ast.Tools.allocVarId();
+			var name = if (graphVar.isGlobal) graphVar.name else '_local_${graphVar.name}_$varId';
+			{variable: {id: varId, name: name, type: type, kind: Local}, isInit: false}
+		});
+		if (init != null && !variable.isInit) {
+			variable.isInit = true;
+			addExpr(AstTools.makeAssign(AstTools.makeVar(variable.variable), init));
+		}
+		return variable.variable;
 	}
 
 	function getOrAllocateFromTVar(tvar: TVar) : TVar {
@@ -365,4 +382,5 @@ class NodeGenContext {
 
 	var nodeInputInfo : Array<InputInfo>;
 	var globalVars: Map<String, ShaderGraph.ExternVarDef> = [];
+	var shaderVariables: Map<Int, {variable: TVar, isInit: Bool}> = [];
 }

@@ -69,7 +69,7 @@ class PropsEditor extends Component {
 			var e = new Element('<input type="range" field="${p.name}" step="1">').appendTo(parent);
 			if( min != null ) e.attr("min", "" + min);
 			if(p.def != null) e.attr("value", "" + p.def);
-			e.attr("max", "" + (max == null ? 100 : max));
+			if(max != null) e.attr("max", "" + max);
 		case PFloat(min, max):
 			var e = new Element('<input type="range" field="${p.name}">').appendTo(parent);
 			if(p.def != null) e.attr("value", "" + p.def);
