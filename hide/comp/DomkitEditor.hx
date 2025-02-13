@@ -116,7 +116,7 @@ class DomkitChecker extends ScriptEditor.ScriptChecker {
 				currentComponent = null;
 				switch( c.kind ) {
 				case Node(name):
-					var comp = resolveComp(name.split(":")[0]);
+					var comp = resolveComp(name);
 					if( comp != null && comp.classDef != null ) {
 						currentComponent = comp.classDef;
 						checker.setGlobals(comp.classDef, true);
@@ -376,7 +376,7 @@ class DomkitChecker extends ScriptEditor.ScriptChecker {
 			case Node(null):
 				for( c in expr.children )
 					switch( c.kind ) {
-					case Node(n) if( n.split(":")[0] == name ): node = c;
+					case Node(n) if( n == name ): node = c;
 					default:
 					}
 			default:
@@ -538,17 +538,12 @@ class DomkitChecker extends ScriptEditor.ScriptChecker {
 	static var IDENT = ~/^([A-Za-z_][A-Za-z0-9_]*)$/;
 
 	function defineComponent( name : String, e : domkit.MarkupParser.Markup, params : Map<String,Type> ) {
-		var parts = name.split(":");
 		var parent = null;
 		var c = components.get(name);
-		if( parts.length == 2 ) {
-			name = parts[0];
-			c = components.get(name);
-			parent = resolveComp(parts[1]);
-			if( parent == null ) {
-				var start = e.pmin + name.length + 1;
-				domkitError("Unknown parent component "+parts[1], start, start + parts[1].length);
-			}
+		if( e.parent != null ) {
+			parent = resolveComp(e.parent.name);
+			if( parent == null )
+				domkitError("Unknown parent component", e.parent.pmin, e.parent.pmax);
 		}
 		if( parent == null )
 			parent = components.get("flow");

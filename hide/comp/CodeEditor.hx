@@ -166,7 +166,8 @@ class CodeEditor extends Component {
 	public function setError( msg : String, line : Int, pmin : Int, pmax : Int ) {
 		var linePos = code.substr(0,pmin).lastIndexOf("\n");
 		if( linePos < 0 ) linePos = 0 else linePos++;
-		var range = new monaco.Range(line,pmin + 1 - linePos,line,pmax + 2 - linePos);
+		var delta = pmin == pmax ? 2 : 1;
+		var range = new monaco.Range(line,pmin + 1 - linePos,line,pmax + delta - linePos);
 		currrentDecos = editor.deltaDecorations(currrentDecos,[
 			{ range : range, options : { inlineClassName: "codeErrorContentLine", isWholeLine : true } },
 			{ range : range, options : { linesDecorationsClassName: "codeErrorLine", inlineClassName: "codeErrorContent" } }

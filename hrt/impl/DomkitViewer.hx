@@ -416,8 +416,6 @@ class DomkitViewer extends h2d.Object {
 				var m = expr.children[expr.children.length - i - 1];
 				switch( m.kind ) {
 				case Node(name):
-					var parts = name.split(":");
-					var name = parts[0];
 					mainComp = domkit.Component.get(name, true);
 					break;
 				default:
@@ -452,12 +450,10 @@ class DomkitViewer extends h2d.Object {
 			for( m in expr.children ) {
 				switch( m.kind ) {
 				case Node(name):
-					var parts = name.split(":");
-					var name = parts[0];
 					if( tmpCompMap.exists(name) )
 						error("Duplicate component "+name, m.pmin, m.pmax);
-					var parentType = parts[1] ?? "flow";
-					var compParent = resolveComponent(parentType, m.pmin);
+					var parentName = m.parent?.name ?? "flow";
+					var compParent = resolveComponent(parentName, m.pmin);
 					var comp = domkit.Component.get(name, true);
 					var inst : Dynamic = null;
 					if( comp == null ) {
@@ -473,7 +469,7 @@ class DomkitViewer extends h2d.Object {
 								try Reflect.setProperty(inst, f.name, f.value) catch( e : Dynamic ) {}
 						}
 					}
-					var args = [];
+					var argNames = [];
 					if( m.arguments != null ) {
 						for( arg in m.arguments ) {
 							switch( arg.value ) {
@@ -481,7 +477,7 @@ class DomkitViewer extends h2d.Object {
 								var code = parseCode(code.split(":")[0], arg.pmin);
 								switch( code.e ) {
 								case EIdent(a):
-									args.push(a);
+									argNames.push(a);
 									continue;
 								default:
 								}
@@ -490,7 +486,38 @@ class DomkitViewer extends h2d.Object {
 							error("Invalid argument decl", arg.pmin, arg.pmax);
 						}
 					}
-					var make = makeComponent.bind(res, m, comp, args, interp, inst);
+
+					function make( args : Array<Dynamic>, parent : h2d.Object ) : h2d.Object {
+						var prev = interp.variables.copy();
+						var obj = null;
+						handleErrors(res, function() {
+
+							if( args.length > 0 && argNames.length > 0 ) {
+								for( i => arg in argNames ) {
+									interp.variables.set(arg, args[i]);
+									if( inst != null )
+										try Reflect.setProperty(inst, arg, args[i]) catch( e : Dynamic ) {};
+								}
+							}
+
+							var fmake = tmpCompMap.get(comp.parent.name);
+							if( fmake == null ) fmake = compHooks.get(comp.parent.name);
+							if( fmake == null ) {
+								fmake = comp.parent.make;
+								args = evalArgs(interp, m.parent.arguments);
+							}
+							obj = fmake(args, parent);
+							if( obj.dom == null )
+								obj.dom = new domkit.Properties(obj, cast comp);
+							else
+								@:privateAccess obj.dom.component = cast comp;
+						});
+						for( c in m.children )
+							handleErrors(res, () -> addRec(c, interp, obj));
+						interp.variables = prev;
+						return obj;
+					}
+
 					tmpCompMap.set(name, make);
 					inf.comps.push(make);
 				default:
@@ -538,31 +565,6 @@ class DomkitViewer extends h2d.Object {
 		}
 	}
 
-	function makeComponent( res : hxd.res.Resource, m : Markup, comp : domkit.Component<Dynamic,Dynamic>, argNames : Array<String>, interp : DomkitInterp, inst : Dynamic, args : Array<Dynamic>, parent : h2d.Object ) : h2d.Object {
-		var prev = interp.variables.copy();
-		var obj = null;
-		handleErrors(res, function() {
-			var fmake = tmpCompMap.get(comp.parent.name);
-			if( fmake == null ) fmake = compHooks.get(comp.parent.name);
-			if( fmake == null ) fmake = comp.parent.make;
-			obj = fmake(args, parent);
-			if( obj.dom == null )
-				obj.dom = new domkit.Properties(obj, cast comp);
-			else
-				@:privateAccess obj.dom.component = cast comp;
-			if( args.length > 0 && argNames.length > 0 ) {
-				for( i => arg in argNames ) {
-					interp.variables.set(arg, args[i]);
-					if( inst != null ) try Reflect.setProperty(inst, arg, args[i]) catch( e : Dynamic ) {};
-				}
-			}
-		});
-		for( c in m.children )
-			handleErrors(res, () -> addRec(c, interp, obj));
-		interp.variables = prev;
-		return obj;
-	}
-
 	function resolveComponent( name : String, pmin : Int ) {
 		var comp = domkit.Component.get(name, true);
 		if( comp == null ) {
@@ -583,6 +585,18 @@ class DomkitViewer extends h2d.Object {
 		return comp;
 	}
 
+	function evalArgs( interp : DomkitInterp, args : Array<domkit.MarkupParser.Argument> ) : Array<Dynamic> {
+		return [for( a in args ) {
+			var v : Dynamic = switch( a.value ) {
+			case RawValue(v): v;
+			case Code(code):
+				var code = parseCode(code, a.pmin);
+				evalCode(interp, code);
+			}
+			v;
+		}];
+	}
+
 	function addRec( e : domkit.MarkupParser.Markup, interp : DomkitInterp, parent : h2d.Object ) {
 		switch( e.kind ) {
 		case Node(name):
@@ -592,15 +606,7 @@ class DomkitViewer extends h2d.Object {
 					return;
 			}
 			var comp = resolveComponent(name, e.pmin+1);
-			var args = [for( a in e.arguments ) {
-				var v : Dynamic = switch( a.value ) {
-				case RawValue(v): v;
-				case Code(code):
-					var code = parseCode(code, a.pmin);
-					evalCode(interp, code);
-				}
-				v;
-			}];
+			var args = evalArgs(interp, e.arguments);
 			var parentObj = cast(parent.dom?.contentRoot,h2d.Object) ?? parent;
 			var make = tmpCompMap.get(comp.name);
 			var obj = make != null ? make(args, parentObj) : comp.make(args, parentObj);
