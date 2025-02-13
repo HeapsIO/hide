@@ -504,7 +504,8 @@ class DomkitViewer extends h2d.Object {
 							if( fmake == null ) fmake = compHooks.get(comp.parent.name);
 							if( fmake == null ) {
 								fmake = comp.parent.make;
-								args = evalArgs(interp, m.parent.arguments);
+								if( m.parent != null )
+									args = evalArgs(interp, m.parent.arguments);
 							}
 							obj = fmake(args, parent);
 							if( obj.dom == null )
@@ -565,7 +566,8 @@ class DomkitViewer extends h2d.Object {
 		}
 	}
 
-	function resolveComponent( name : String, pmin : Int ) {
+	function resolveComponent( fullName : String, pmin : Int ) {
+		var name = fullName.split(".").pop();
 		var comp = domkit.Component.get(name, true);
 		if( comp == null ) {
 			for( path in componentsPaths ) {
