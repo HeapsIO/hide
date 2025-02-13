@@ -550,8 +550,8 @@ class DomkitChecker extends ScriptEditor.ScriptChecker {
 		if( c == null )
 			c = makeComponent(name);
 		c.parent = parent;
-		if( e.arguments == null )
-			c.arguments = parent == null ? [] : parent.arguments;
+		if( e.arguments == null || e.arguments.length == 0 )
+			c.arguments = parent == null || e.parent.arguments.length != 0 ? [] : parent.arguments;
 		else {
 			c.arguments = [];
 			for( i => a in e.arguments ) {
@@ -596,7 +596,25 @@ class DomkitChecker extends ScriptEditor.ScriptChecker {
 			domkitError("Invalid condition", e.condition.pmin, e.condition.pmax);
 		if( e.attributes.length > 0 )
 			domkitError("Invalid attribute", e.attributes[0].pmin, e.attributes[0].pmax);
+		if( e.parent != null )
+			checkArguments(parent, e.parent.arguments, e.parent.pmin, e.parent.pmax);
 		return c;
+	}
+
+	function checkArguments( c : TypedComponent, args : Array<domkit.MarkupParser.Argument>, pmin, pmax ) {
+		for( i => a in args ) {
+			var arg = c.arguments[i];
+			if( arg == null )
+				domkitError("Too many arguments (require "+[for( a in c.arguments ) a.name].join(",")+")",a.pmin,a.pmax);
+			var t = switch( a.value ) {
+			case RawValue(_): t_string;
+			case Code(code): typeCode(code, a.pmin, arg.t);
+			};
+			unify(t, arg.t, c, arg.name, a);
+		}
+		for( i in args.length...c.arguments.length )
+			if( !c.arguments[i].opt )
+				domkitError("Missing required argument "+c.arguments[i].name,pmin,pmax);
 	}
 
 	function checkDMLRec( e : domkit.MarkupParser.Markup ) {
@@ -605,19 +623,7 @@ class DomkitChecker extends ScriptEditor.ScriptChecker {
 			var c = resolveComp(name);
 			if( c == null )
 				domkitError("Unknown component "+name, e.pmin, e.pmin + name.length);
-			for( i => a in e.arguments ) {
-				var arg = c.arguments[i];
-				if( arg == null )
-					domkitError("Too many arguments (require "+[for( a in c.arguments ) a.name].join(",")+")",a.pmin,a.pmax);
-				var t = switch( a.value ) {
-				case RawValue(_): t_string;
-				case Code(code): typeCode(code, a.pmin, arg.t);
-				};
-				unify(t, arg.t, c, arg.name, a);
-			}
-			for( i in e.arguments.length...c.arguments.length )
-				if( !c.arguments[i].opt )
-					domkitError("Missing required argument "+c.arguments[i].name,e.pmin,e.pmax);
+			checkArguments(c, e.arguments, e.pmin, e.pmax);
 			for( a in e.attributes ) {
 				var pname = haxeToCss(a.name);
 				switch( pname ) {
