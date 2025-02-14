@@ -534,7 +534,7 @@ class Terrain extends Object3D {
 			<dt>Tile Size (Units 3D)</dt><dd><input type="range" min="1" max="100" step="1" field="tileSize"/></dd>
 			<dt>Vertexes and HeightMap<br/>(per Unit)</dt><dd><input type="range" min="0.1" max="2" field="vertexes"/></dd>
 			<dt>Painting Weight Pixels<br/>(per Unit)</dt><dd><input type="range" min="0.1" max="2" field="pixels"/></dd>
-			<div align="center"><input type="button" value="Apply" class="apply"/></div>
+			<div align="center"><input type="button" value="Apply quality settings" class="apply"/></div>
 		</dl></div>
 		');
 		ctx.properties.add(options,obj);
