@@ -643,6 +643,7 @@ class Model extends FileView {
 				<div class="group" name="Local parameters">
 					<dt>Is Dynamic</dt><dd><input id="dynamic" type="checkbox"/></dd>
 					<div class="dynamic-edition">
+						<dt title="Should dynamic movement be applied on existing animation movement or not">Additive</dt><dd><input type="checkbox" id="additive"/></dd>
 						<dt title="Reduction of the amplitude of the oscillation movement">Damping</dt><dd><input id="damping" type="number" step="0.1" min="0" max="1"/></dd>
 						<dt title="Reduction factor applied on globale force">Resistance</dt><dd><input id="resistance" type="number" step="0.1" min="0" max="1"/></dd>
 						<dt title="Rigidity of the bone">Stiffness</dt><dd><input id="stiffness" type="number" step="0.1" min="0" max="1"/></dd>
@@ -742,17 +743,21 @@ class Model extends FileView {
 
 			var dynJoin = Std.downcast(j?.subs[0], h3d.anim.Skin.DynamicJoint);
 			if (dynJoin != null) {
-				var params = ["damping", "resistance", "stiffness", "slackness"];
+				var params = ["damping", "resistance", "stiffness", "slackness", "additive"];
 				for (param in params) {
 					var el = dynJointEl.find('#$param');
-					el.val(Reflect.field(dynJoin, param));
+					if (el.is(':checkbox'))
+						el.prop("checked", Reflect.field(dynJoin, param));
+					else
+						el.val(Reflect.field(dynJoin, param));
 					el.change(function(e) {
 						var oldJoints = skinData.allJoints.copy();
 						function apply(j : h3d.anim.Skin.Joint, param : String, v : Dynamic) {
-							Reflect.setField(j, param, Std.parseFloat(el.val()));
+							var v : Dynamic = el.is(':checkbox') ? el.is(':checked') : Std.parseFloat(el.val());
+							Reflect.setField(j, param, v);
 							if (synced && j.subs != null) {
 								for (s in j.subs)
-									apply(s, param, Std.parseFloat(el.val()));
+									apply(s, param, v);
 							}
 						}
 						for (s in dynJoin.parent.subs)
