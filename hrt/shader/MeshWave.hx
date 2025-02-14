@@ -11,7 +11,7 @@ class MeshWave extends hxsl.Shader {
 			var position : Vec3;
 			var normal : Vec3;
 			var color: Vec3;
-		}
+		};
 
 		@param var axis : Vec3 = vec3(0.0,1.0,0.0);
 
