@@ -225,6 +225,8 @@ class SSR extends RendererFX {
 	}
 
 	function execute( r : h3d.scene.Renderer, step : h3d.impl.RendererFX.Step ) {
+		if ( !checkEnabled() )
+			return;
 		if ( !useRoughness && !useMask )
 			return;
 		r.mark("SSR");
