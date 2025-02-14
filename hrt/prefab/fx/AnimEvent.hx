@@ -5,7 +5,6 @@ class AnimEvent extends hrt.prefab.fx.Event {
 	@:s public var animation: String;
 	@:s public var loop: Bool = false;
 	@:s public var speed : Float = 1.0;
-	@:s public var duration : Float = 0.0;
 	@:s public var offset : Float = 0.0;
 
 	override function prepare() : Event.EventInstance {

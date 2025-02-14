@@ -35,6 +35,25 @@ class SubFX extends Reference implements hrt.prefab.fx.Event.IEvent{
 		return time = v;
 	}
 
+	public function getDuration() {
+		if (refInstance != null) {
+			var fxAnim : hrt.prefab.fx.FX.FXAnimation = refInstance.findFirstLocal3d().find(o -> Std.downcast(o, hrt.prefab.fx.FX.FXAnimation));
+			if (fxAnim != null) {
+				return fxAnim.duration;
+			}
+		}
+		return 0;
+	}
+
+	#if editor
+	public function setDuration(v) : Void {
+		throw "Can't set duration on subFX";
+	}
+
+	public function canEditDuration() : Bool {
+		return false;
+	}
+	#end
 	function set_loop(v) {
 		#if editor
 		if(instance != null)
