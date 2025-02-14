@@ -7,28 +7,38 @@ class AnimEvent extends hrt.prefab.fx.Event {
 	@:s public var speed : Float = 1.0;
 	@:s public var offset : Float = 0.0;
 
+	var animTemplate : h3d.anim.Animation;
+
+	override function new(parent, shared) {
+		super(parent, shared);
+		duration = -1.0; // negative values mean use the animation length
+	}
+
+	override function makeInstance() {
+		animTemplate = animation != null ? shared.loadAnimation(animation) : null;
+	}
+
 	override function prepare() : Event.EventInstance {
 		var obj = findFirstLocal3d();
-		var anim = animation != null ? shared.loadAnimation(animation) : null;
 		var lastTime = -1.0;
 		var inst = null;
-		if(anim == null) { return null; }
+		if(animTemplate == null) { return null; }
 		return {
 			evt: this,
 			setTime: function(localTime) {
-				var duration = duration > 0 ? duration : anim.getDuration();
+				var duration = getDuration();
 				if(localTime > 0 && (localTime < duration || loop)) {
 					if(inst == null) {
-						inst = obj.playAnimation(anim);
+						inst = obj.playAnimation(animTemplate);
 						inst.pause = true;
 						inst.loop = loop;
 					}
-					var t = hxd.Math.max(0,(localTime + offset) * anim.sampling * anim.speed * speed);
+					var t = hxd.Math.max(0,(localTime + offset) * animTemplate.sampling * animTemplate.speed * speed);
 					if (loop) {
-						t = t % anim.frameCount;
+						t = t % animTemplate.frameCount;
 					}
 					else {
-						t = hxd.Math.min(t, anim.frameCount);
+						t = hxd.Math.min(t, animTemplate.frameCount);
 					}
 					inst.setFrame(t);
 				}
@@ -72,7 +82,8 @@ class AnimEvent extends hrt.prefab.fx.Event {
 				} else {
 					animation = newAnim;
 				}
-				ctx.properties.undo.change(Field(this, "animation", prev));
+				ctx.rebuildPrefab(this);
+				ctx.properties.undo.change(Field(this, "animation", prev), () -> ctx.rebuildPrefab(this));
 				ctx.onChange(this, "animation");
 			}
 		}
@@ -95,11 +106,14 @@ class AnimEvent extends hrt.prefab.fx.Event {
 		}
 		return {
 			label: anim != null ? ctx.scene.animationName(animation) : "null",
-			length: duration > 0 ? duration : anim != null ? anim.getDuration() : 1.0,
 			loop: loop,
 		}
 	}
 	#end
+
+	public override function getDuration() : Float {
+		return duration >= 0 ? duration : (animTemplate != null ? animTemplate.getDuration() : 0.0);
+	}
 
 	static var _ = Prefab.register("animEvent", AnimEvent);
 

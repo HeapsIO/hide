@@ -44,6 +44,15 @@ class EventsEditor extends Component implements CurveEditorComponent
 
 		eventGroup = svg.group(@:privateAccess this.curveEditor.graphGroup, "events");
 
+		var eventSize = 16;
+
+		{
+			var s = eventSize;
+			var hs = eventSize/2;
+			var marker = svg.make(eventGroup, "marker", {"id":"eventcap", "markerWidth":'$s', "markerHeight":'$s', "refX":'$hs', "refY":'$hs', "markerUnits":"userSpaceOnUse"});
+			marker.get(0).innerHTML = '<polygon points="$hs,0 $s,$hs $hs,$s 0,$hs" stroke="context-stroke" fill="context-fill"/>';
+		}
+
 		var eventCount = 0;
 
 		function drawEvent(event:hrt.prefab.fx.Event.IEvent, eventCount: Int, ?style: Dynamic) {
@@ -59,55 +68,66 @@ class EventsEditor extends Component implements CurveEditorComponent
 			var element = event.getEventPrefab();
 
 			var yPos = yOrigin + (eventHeight + spacing) * eventCount;
-			var evtBody = svg.rect(eventGroup, event.time * this.curveEditor.xScale, yPos, ((infos.length == 0 || infos.loop) ? 5000.0 : infos.length)  * this.curveEditor.xScale, eventHeight, style);
-			var evtLabel = svg.text(eventGroup, event.time * this.curveEditor.xScale + 5, yPos + fontSize, infos.label, { 'font-size':fontSize});
+			var duration = event.getDuration();
 
-			evtBody.addClass("event");
-			evtBody.addClass(element.type);
 
-			evtBody.click(function(e) {
-				@:privateAccess this.fxEditor.sceneEditor.showProps(element);
-			});
+			var s = eventSize;
+			var hs = eventSize/2;
 
-			evtBody.contextmenu(function(e) {
-				if (event.lock || event.hidden)
-					return;
+			var line = svg.line(eventGroup, event.time * this.curveEditor.xScale, yPos, (event.time + duration) * this.curveEditor.xScale, yPos);
+			// //line.addClass("event");
+			line.attr("style", 'stroke-width: $eventSize; stroke: white; marker: url(#eventcap)');
+			//var evtBody = svg.rect(eventGroup, event.time * this.curveEditor.xScale, yPos, duration  * this.curveEditor.xScale, eventHeight, style);
+			var evtLabel = svg.text(eventGroup, event.time * this.curveEditor.xScale + eventSize / 2.0, yPos, infos.label, { 'font-size':fontSize, "dominant-baseline":"middle", "fill": "black"});
 
-				e.preventDefault();
-				e.stopPropagation();
+			// var p = new Element('<polyline stroke-width="5" points="" stroke="white" fill="black" transform="translate(${event.time * this.curveEditor.xScale}, $yPos)" />').appendTo(eventGroup);
+			// var p = new Element('<polygon stroke-width="5" points="$hs,0 $s,$hs $hs,$s 0,$hs" stroke="white" fill="black" transform="translate(${event.time * this.curveEditor.xScale}, $yPos)" />').appendTo(eventGroup);
+			// evtBody.addClass("event");
+			// evtBody.addClass(element.type);
 
-				hide.comp.ContextMenu.createFromEvent(cast e,[
-					{
-						label: "Delete", click: function() {
-							events.remove(event);
-							@:privateAccess fxEditor.sceneEditor.deleteElements([element], refreshOverview);
-						}
-					}
-				]);
-			});
+			// evtBody.click(function(e) {
+			// 	@:privateAccess this.fxEditor.sceneEditor.showProps(element);
+			// });
 
-			evtBody.mousedown(function(e) {
-				if (event.lock || event.hidden)
-					return;
+			// evtBody.contextmenu(function(e) {
+			// 	if (event.lock || event.hidden)
+			// 		return;
 
-				var offsetX = e.clientX - @:privateAccess this.curveEditor.xt(event.time);
-				e.preventDefault();
-				e.stopPropagation();
-				if(e.button == 2) {
-				}
-				else {
-					var prevVal = event.time;
-					@:privateAccess fxEditor.startDrag(function(e) {
-						var x = @:privateAccess this.curveEditor.ixt(e.clientX - offsetX);
-						x = hxd.Math.max(0, x);
-						x = untyped parseFloat(x.toFixed(5));
-						event.time = x;
-						refresh();
-					}, function(e) {
-						this.curveEditor.undo.change(Field(event, "time", prevVal), refreshOverview);
-					});
-				}
-			});
+			// 	e.preventDefault();
+			// 	e.stopPropagation();
+
+			// 	hide.comp.ContextMenu.createFromEvent(cast e,[
+			// 		{
+			// 			label: "Delete", click: function() {
+			// 				events.remove(event);
+			// 				@:privateAccess fxEditor.sceneEditor.deleteElements([element], refreshOverview);
+			// 			}
+			// 		}
+			// 	]);
+			// });
+
+			// evtBody.mousedown(function(e) {
+			// 	if (event.lock || event.hidden)
+			// 		return;
+
+			// 	var offsetX = e.clientX - @:privateAccess this.curveEditor.xt(event.time);
+			// 	e.preventDefault();
+			// 	e.stopPropagation();
+			// 	if(e.button == 2) {
+			// 	}
+			// 	else {
+			// 		var prevVal = event.time;
+			// 		@:privateAccess fxEditor.startDrag(function(e) {
+			// 			var x = @:privateAccess this.curveEditor.ixt(e.clientX - offsetX);
+			// 			x = hxd.Math.max(0, x);
+			// 			x = untyped parseFloat(x.toFixed(5));
+			// 			event.time = x;
+			// 			refresh();
+			// 		}, function(e) {
+			// 			this.curveEditor.undo.change(Field(event, "time", prevVal), refreshOverview);
+			// 		});
+			// 	}
+			// });
 		}
 
 		var isSquareRect = svg.element.find(".selection").children().length > 0;
@@ -147,7 +167,7 @@ class EventsEditor extends Component implements CurveEditorComponent
 			var y1 = (yOrigin / yScale - ((eventHeight - spacing) * idx) / yScale);
 			var y2 = y1 - eventHeight / yScale;
 			var x1 = evt.time;
-			var x2 = x1 + (infos.length == 0 ? 5000 : infos.length);
+			var x2 = x1 + evt.getDuration();
 			var a = new h2d.col.Point(x1, y1);
 			var b = new h2d.col.Point(x2, y1);
 			var c = new h2d.col.Point(x1, y2);
@@ -167,7 +187,7 @@ class EventsEditor extends Component implements CurveEditorComponent
 
 			if(eventRect.collideBounds(selection)) {
 				evt.selected = true;
-				@:privateAccess this.curveEditor.selectedElements.push({ event:evt, pos:idx, length:infos.length});
+				@:privateAccess this.curveEditor.selectedElements.push({ event:evt, pos:idx, length:evt.getDuration()});
 			}
 
 			idx++;

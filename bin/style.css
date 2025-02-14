@@ -1601,12 +1601,9 @@ input[type=checkbox]:checked:after {
 }
 .fx-animpanel .events .event {
   stroke: #000;
-  stroke-width: 1px;
+  stroke-width: 10px;
   cursor: pointer;
   user-select: none;
-  fill: #202;
-  overflow-x: hidden;
-  padding-top: 3px;
 }
 .fx-animpanel .events .event.subFX {
   fill: #1b3673;

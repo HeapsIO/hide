@@ -4,10 +4,9 @@ class SubFX extends Reference implements hrt.prefab.fx.Event.IEvent{
 
 	@:s public var time(default, set) : Float;
 	@:s public var loop(default, set) : Bool;
+	@:s public var duration : Float;
 
-	#if editor
 	var instance : hrt.prefab.fx.FX.FXAnimation;
-	#end
 
 	public var hidden:Bool = false;
 	public var lock:Bool = false;
@@ -20,9 +19,7 @@ class SubFX extends Reference implements hrt.prefab.fx.Event.IEvent{
 			if(fxanim != null) {
 				fxanim.startDelay = time;
 			    fxanim.loop = loop;
-				#if editor
 				instance = fxanim;
-				#end
 			}
 		}
 	}
@@ -47,13 +44,10 @@ class SubFX extends Reference implements hrt.prefab.fx.Event.IEvent{
 
 	#if editor
 	public function setDuration(v) : Void {
-		throw "Can't set duration on subFX";
-	}
-
-	public function canEditDuration() : Bool {
-		return false;
+		duration = v;
 	}
 	#end
+
 	function set_loop(v) {
 		#if editor
 		if(instance != null)

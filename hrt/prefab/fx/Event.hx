@@ -10,7 +10,6 @@ interface IEvent {
 	#if editor
 	function getEventPrefab() : hrt.prefab.Prefab;
 	function getDisplayInfo(ctx: hide.prefab.EditContext) : { label: String, ?loop: Bool };
-	function canEditDuration() : Bool;
 	function setDuration(duration: Float) : Void;
 	#end
 	var time(default, set) : Float;
@@ -67,6 +66,7 @@ class Event extends hrt.prefab.Prefab implements IEvent {
 			<div class="group" name="Event">
 				<dl>
 					<dt>Time</dt><dd><input type="number" value="0" field="time"/></dd>
+					<dt>Duration</dt><dd><input type="number" value="0" field="duration"/></dd>
 				</dl>
 			</div>
 		'),this, function(pname) {
@@ -83,7 +83,6 @@ class Event extends hrt.prefab.Prefab implements IEvent {
 	public function getDisplayInfo(ctx: hide.prefab.EditContext) {
 		return {
 			label: name,
-			length: 1.0,
 			loop: false
 		};
 	}
