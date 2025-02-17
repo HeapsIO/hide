@@ -768,7 +768,6 @@ class Model extends FileView {
 							for (j in skinData.allJoints)
 								skinData.allJoints[j.index] = joints[j.index];
 							skin.setSkinData(skinData);
-							selectObject(obj);
 						}
 
 						exec(false);
@@ -1424,7 +1423,7 @@ class Model extends FileView {
 		currentAnimation = { file : file, name : scene.animationName(file) };
 
 		var hideData = loadProps();
-		var animData = hideData.animations.get(currentAnimation.file.split("/").pop());
+		var animData = hideData.animations?.get(currentAnimation.file.split("/").pop());
 		if( animData != null && animData.events != null )
 			anim.setEvents(animData.events);
 
