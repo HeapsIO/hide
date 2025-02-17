@@ -68,17 +68,208 @@ class EventsEditor extends Component implements CurveEditorComponent
 			var element = event.getEventPrefab();
 
 			var yPos = yOrigin + (eventHeight + spacing) * eventCount;
-			var duration = event.getDuration();
 
 
 			var s = eventSize;
 			var hs = eventSize/2;
 
-			var line = svg.line(eventGroup, event.time * this.curveEditor.xScale, yPos, (event.time + duration) * this.curveEditor.xScale, yPos);
+			var thisEventGroup = svg.group(eventGroup);
+
+
+			var line = svg.line(thisEventGroup, 0,0,0,0);
 			// //line.addClass("event");
 			line.attr("style", 'stroke-width: $eventSize; stroke: white; marker: url(#eventcap)');
 			//var evtBody = svg.rect(eventGroup, event.time * this.curveEditor.xScale, yPos, duration  * this.curveEditor.xScale, eventHeight, style);
-			var evtLabel = svg.text(eventGroup, event.time * this.curveEditor.xScale + eventSize / 2.0, yPos, infos.label, { 'font-size':fontSize, "dominant-baseline":"middle", "fill": "black"});
+			var evtLabel = svg.text(thisEventGroup, 0,0, infos.label, { 'font-size':fontSize, "dominant-baseline":"middle", "fill": "black"});
+
+			var move = svg.rect(thisEventGroup, 0,0,0,0);
+			move.addClass("event-move");
+
+			var resizeLeft = svg.rect(thisEventGroup, 0,0,0,0);
+			resizeLeft.addClass("event-resize");
+
+			var resizeRight = svg.rect(thisEventGroup, 0,0,0,0);
+			resizeRight.addClass("event-resize");
+
+			function refreshEventPos() {
+				var duration = event.getDuration();
+				var minGrabSize = 8;
+				var moveStart = event.time * this.curveEditor.xScale;
+				var moveEnd = moveStart + duration * this.curveEditor.xScale;
+				if (hxd.Math.abs(moveStart - moveEnd) < minGrabSize ) {
+					var mid = (moveStart + moveEnd) / 2.0;
+					moveStart = mid - minGrabSize / 2;
+					moveEnd = mid + minGrabSize / 2;
+				}
+
+				var evt = evtLabel.get(0);
+				evt.setAttribute("x", Std.string(event.time * this.curveEditor.xScale + eventSize / 2.0));
+				evt.setAttribute("y", Std.string(yPos));
+
+				var line : js.html.svg.LineElement = cast line.get(0);
+				line.setAttribute("x1", Std.string(event.time * this.curveEditor.xScale));
+				line.setAttribute("y1", Std.string(yPos));
+				line.setAttribute("x2", Std.string((event.time + duration) * this.curveEditor.xScale));
+				line.setAttribute("y2", Std.string(yPos));
+
+				var move : js.html.svg.RectElement = cast move.get(0);
+				move.setAttribute("x", Std.string(moveStart));
+				move.setAttribute("y", Std.string(yPos - eventSize/2));
+				move.setAttribute("width", Std.string(moveEnd - moveStart));
+				move.setAttribute("height", Std.string(eventSize));
+
+				var resizeLeft : js.html.svg.RectElement = cast resizeLeft.get(0);
+				resizeLeft.setAttribute("x", Std.string(moveStart - minGrabSize));
+				resizeLeft.setAttribute("y", Std.string(yPos - eventSize/2));
+				resizeLeft.setAttribute("width", Std.string(minGrabSize));
+				resizeLeft.setAttribute("height", Std.string( eventSize));
+
+				var resizeRight : js.html.svg.RectElement = cast resizeRight.get(0);
+				resizeRight.setAttribute("x", Std.string(moveEnd));
+				resizeRight.setAttribute("y", Std.string(yPos - eventSize/2));
+				resizeRight.setAttribute("width", Std.string(minGrabSize));
+				resizeRight.setAttribute("height", Std.string(eventSize));
+			}
+
+			refreshEventPos();
+
+			// Move event input handling
+			{
+				move.addClass("event-move");
+
+				var drag = false;
+				var startX = 0;
+				var startTime = 0.0;
+				var moveHtml = move.get(0);
+
+				moveHtml.onmousedown = function(e: js.html.MouseEvent) {
+					e.stopPropagation();
+				}
+				moveHtml.onpointerdown = function(e: js.html.PointerEvent) {
+					e.stopPropagation();
+					moveHtml.setPointerCapture(e.pointerId);
+					drag = true;
+					startX = e.clientX;
+					startTime = event.time;
+				}
+
+				moveHtml.onpointermove = function(e: js.html.PointerEvent) {
+					if (!drag)
+						return;
+					var delta = (e.clientX-startX);
+					event.time = startTime + delta / this.curveEditor.xScale;
+
+					refreshEventPos();
+				}
+
+				moveHtml.onpointerup = function(e: js.html.PointerEvent) {
+					if (!drag)
+						return;
+					drag = false;
+
+					var newTime = event.time;
+					curveEditor.undo.change(Custom((isUndo) -> {
+						event.time = !isUndo ? newTime : startTime;
+						refresh(true);
+					}));
+				}
+			}
+
+			// resize event frop left input handling
+			{
+				resizeLeft.addClass("event-resize");
+
+				var drag = false;
+				var startX = 0;
+				var startTime = 0.0;
+				var startDuration = 0.0;
+				var moveHtml = resizeLeft.get(0);
+
+				moveHtml.onmousedown = function(e: js.html.MouseEvent) {
+					e.stopPropagation();
+				}
+
+				moveHtml.onpointerdown = function(e: js.html.PointerEvent) {
+					e.stopPropagation();
+					moveHtml.setPointerCapture(e.pointerId);
+					drag = true;
+					startX = e.clientX;
+					startTime = event.time;
+					startDuration = event.getDuration();
+				}
+
+				moveHtml.onpointermove = function(e: js.html.PointerEvent) {
+					if (!drag)
+						return;
+
+					var delta = e.clientX-startX;
+					event.setDuration(hxd.Math.max(0, startDuration - delta / this.curveEditor.xScale));
+					var newDur = event.getDuration(); // in case setDuration does another clamp
+
+					event.time = startTime - (newDur - startDuration);
+
+					refreshEventPos();
+				}
+
+				moveHtml.onpointerup = function(e: js.html.PointerEvent) {
+					if (!drag)
+						return;
+					drag = false;
+
+					var newTime = event.time;
+					var newDuration = event.getDuration();
+					curveEditor.undo.change(Custom((isUndo) -> {
+						event.time = !isUndo ? newTime : startTime;
+						event.setDuration( !isUndo ? newDuration : startDuration);
+						refresh(true);
+					}));
+				}
+			}
+
+			// resize event frop right input handling
+			{
+				resizeRight.addClass("event-resize");
+
+				var drag = false;
+				var startX = 0;
+				var startDuration = 0.0;
+				var moveHtml = resizeRight.get(0);
+
+				moveHtml.onmousedown = function(e: js.html.MouseEvent) {
+					e.stopPropagation();
+				}
+
+				moveHtml.onpointerdown = function(e: js.html.PointerEvent) {
+					e.stopPropagation();
+					moveHtml.setPointerCapture(e.pointerId);
+					drag = true;
+					startX = e.clientX;
+					startDuration = event.getDuration();
+				}
+
+				moveHtml.onpointermove = function(e: js.html.PointerEvent) {
+					if (!drag)
+						return;
+
+					var delta = e.clientX-startX;
+					event.setDuration(hxd.Math.max(0, startDuration + delta / this.curveEditor.xScale));
+
+					refreshEventPos();
+				}
+
+				moveHtml.onpointerup = function(e: js.html.PointerEvent) {
+					if (!drag)
+						return;
+					drag = false;
+
+					var newDuration = event.getDuration();
+					curveEditor.undo.change(Custom((isUndo) -> {
+						event.setDuration( !isUndo ? newDuration : startDuration);
+						refresh(true);
+					}));
+				}
+			}
+
 
 			// var p = new Element('<polyline stroke-width="5" points="" stroke="white" fill="black" transform="translate(${event.time * this.curveEditor.xScale}, $yPos)" />').appendTo(eventGroup);
 			// var p = new Element('<polygon stroke-width="5" points="$hs,0 $s,$hs $hs,$s 0,$hs" stroke="white" fill="black" transform="translate(${event.time * this.curveEditor.xScale}, $yPos)" />').appendTo(eventGroup);

@@ -1796,6 +1796,20 @@ input[type=checkbox] {
 			user-select: none;
 		}
 
+		.event-move {
+			//fill: rgba(255,0,0,0.50);
+			fill: none;
+			pointer-events: all;
+			cursor: move;
+		}
+
+		.event-resize {
+			//fill: rgba(0,255,0,0.50);
+			fill: none;
+			pointer-events: all;
+			cursor: e-resize;
+		}
+
 		.event.subFX {
 			fill: #1b3673;
 		}
@@ -1833,6 +1847,7 @@ input[type=checkbox] {
 
 		text {
 			pointer-events: none;
+			font-family: var(--default-font), serif;
 		}
 	}
 

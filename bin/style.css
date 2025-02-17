@@ -1605,6 +1605,16 @@ input[type=checkbox]:checked:after {
   cursor: pointer;
   user-select: none;
 }
+.fx-animpanel .events .event-move {
+  fill: none;
+  pointer-events: all;
+  cursor: move;
+}
+.fx-animpanel .events .event-resize {
+  fill: none;
+  pointer-events: all;
+  cursor: e-resize;
+}
 .fx-animpanel .events .event.subFX {
   fill: #1b3673;
 }
@@ -1636,6 +1646,7 @@ input[type=checkbox]:checked:after {
 }
 .fx-animpanel .events text {
   pointer-events: none;
+  font-family: var(--default-font), serif;
 }
 .fx-animpanel .key-event {
   fill: rgba(187, 187, 187, 0.644);
