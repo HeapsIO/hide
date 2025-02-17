@@ -263,7 +263,7 @@ class VolumetricLighting extends RendererFX {
 	@:s public var blurDepthThreshold : Float = 10.0;
 	@:s public var startDistance : Float = 0.0;
 	@:s public var endDistance : Float = 200.0;
-	@:s public var maxCamDist : Float = 200.0;
+	@:s public var maxCamDist : Float = 0.0;
 	@:s public var distanceOpacity : Float = 1.0;
 	@:s public var ditheringIntensity : Float = 1.0;
 
