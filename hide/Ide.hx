@@ -775,6 +775,7 @@ class Ide extends hide.tools.IdeData {
 				e.type = "text/javascript";
 				e.src = "file://"+file.split("\\").join("/");
 				js.Browser.document.body.appendChild(e);
+				fileWatcher.register(file,reload);
 			case "css":
 				var e = js.Browser.document.createLinkElement();
 				e.addEventListener("load", onLoad);
@@ -783,9 +784,9 @@ class Ide extends hide.tools.IdeData {
 				e.type = "text/css";
 				e.href = "file://" + file.split("\\").join("/");
 				js.Browser.document.body.appendChild(e);
+				fileWatcher.register(file, () -> reloadCss());
 			default: error('Unknown plugin type $type for file $file');
 		}
-		fileWatcher.register(file,reload);
 	}
 
 	inline function loadScript( file : String, callb : Void -> Void ) {
