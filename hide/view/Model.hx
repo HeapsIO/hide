@@ -104,7 +104,7 @@ class Model extends FileView {
 	}
 
 	function getPropsPath() {
-		var path = config.get("hmd.savePropsByAnimation") ? currentAnimation.file : getPath();
+		var path = config.get("hmd.savePropsByAnimation", true) ? currentAnimation.file : getPath();
 		var parts = path.split(".");
 		parts.pop();
 		parts.push("props");
