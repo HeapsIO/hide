@@ -88,7 +88,6 @@ class EventsEditor extends Component implements CurveEditorComponent
 			var hs = eventSize/2;
 
 			var thisEventGroup = svg.group(eventGroup);
-			thisEventGroup.toggleClass("selected", event.selected);
 
 			var line = svg.rect(thisEventGroup, 0,0,0,0);
 			line.addClass("event");
@@ -122,6 +121,7 @@ class EventsEditor extends Component implements CurveEditorComponent
 							otherEvent.selected = false;
 						}
 					}
+
 					event.selected = true;
 
 					e.stopPropagation();
@@ -169,6 +169,8 @@ class EventsEditor extends Component implements CurveEditorComponent
 			bindDragEvent(resizeRight.get(0), ResizeRight);
 
 			function refreshEventPos() {
+				thisEventGroup.toggleClass("selected", event.selected);
+
 				var duration = event.getDuration();
 				var minGrabSize = 8;
 				var moveStart = event.time * this.curveEditor.xScale;
@@ -691,6 +693,10 @@ class CurveEditor extends hide.comp.Component {
 
 	var currentTime: Float = 0.;
 	var duration: Float = 2000.;
+
+	public dynamic function onRefreshProps() {
+
+	}
 
 	public function new(undo, ?parent, enableTimeMarker = true) {
 		super(parent,null);
@@ -1929,6 +1935,10 @@ class EventMoving {
 	var eventRefresh: Array<() -> Void> = [];
 	var editor: EventsEditor;
 
+	function snap(v: Float) : Float {
+		return hxd.Math.round(v * 1000.0) / 1000.0;
+	}
+
 	public function new(selectedEvents: Array<hrt.prefab.fx.Event.IEvent>, refreshFns: Array<() -> Void>, startEvent: js.html.PointerEvent, mode: EventMoveMode, editor: EventsEditor) {
 		selection = selectedEvents.copy();
 		for (i => event in selection) {
@@ -1944,19 +1954,20 @@ class EventMoving {
 
 	public function update(event: js.html.PointerEvent) {
 		var delta = event.clientX - startMouseX;
+		var deltaTime = snap(delta / editor.curveEditor.xScale);
 		final mode = mode;
 
 		for (i => event in selection) {
 			switch (mode) {
 				case Move:
-					event.time = startTime[i] + delta / editor.curveEditor.xScale;
+					event.time = snap(startTime[i] + deltaTime);
 				case ResizeLeft:
-					event.setDuration(hxd.Math.max(0, startDuration[i] - delta / editor.curveEditor.xScale));
+					event.setDuration(snap(hxd.Math.max(0, startDuration[i] - deltaTime)));
 					var newDur = event.getDuration(); // in case setDuration does another clamp
 
-					event.time = startTime[i] - (newDur - startDuration[i]);
+					event.time = snap(startTime[i] - (newDur - startDuration[i]));
 				case ResizeRight:
-					event.setDuration(hxd.Math.max(0, startDuration[i] + delta / editor.curveEditor.xScale));
+					event.setDuration(snap(hxd.Math.max(0, startDuration[i] + deltaTime)));
 				case Scale:
 					// todo
 			}
@@ -1978,6 +1989,8 @@ class EventMoving {
 				event.setDuration(!isUndo ? endDuration[i] : startDuration[i]);
 			}
 			editor.refresh();
+			editor.curveEditor.onRefreshProps();
 		}));
+		editor.curveEditor.onRefreshProps();
 	}
 }

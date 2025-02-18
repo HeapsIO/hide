@@ -19,7 +19,7 @@ class FXAnimation extends h3d.scene.Object {
 	public var duration : Float;
 
 
-	/** Enable automatic culling based on `cullingRadius` and `cullingDistance`. Will override `culled` on every sync. **/
+		/** Enable automatic culling based on `cullingRadius` and `cullingDistance`. Will override `culled` on every sync. **/
 	public var autoCull(default, set) = true;
 	public var cullingRadius : Float;
 	public var cullingDistance = defaultCullingDistance;

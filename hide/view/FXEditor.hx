@@ -748,12 +748,9 @@ class FXEditor extends hide.view.FileView {
 			data.refreshObjectAnims();
 		}
 
-		if(pname == "time" || pname == "loop" || pname == "animation" || pname == "blendMode") {
+		if(pname == "time" || pname == "loop" || pname == "animation" || pname == "blendMode" || pname == "duration") {
 			afterPan(false);
 			data.refreshObjectAnims();
-		}
-
-		if (pname == "loop") {
 			rebuildAnimPanel();
 		}
 
@@ -799,6 +796,9 @@ class FXEditor extends hide.view.FileView {
 			previousTime = @:privateAccess this.curveEditor.currentTime;
 
 		this.curveEditor = new hide.comp.CurveEditor(this.undo, rightPanel);
+		this.curveEditor.onRefreshProps = () -> {
+			@:privateAccess sceneEditor.selectElements(sceneEditor.selectedPrefabs, NoHistory);
+		}
 
 		var overviewEditor = new hide.comp.CurveEditor.OverviewEditor(rightPanel, this.curveEditor);
 		var eventEditor = new hide.comp.CurveEditor.EventsEditor(rightPanel, this, this.curveEditor);

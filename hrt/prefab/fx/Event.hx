@@ -3,7 +3,9 @@ package hrt.prefab.fx;
 typedef EventInstance = {
 	evt: Event,
 	?play: Void->Void,
-	?setTime: Float->Void
+	?stop: Void->Void,
+	?setTime: Float->Void,
+	?playing: Bool,
 };
 
 interface IEvent {
@@ -48,8 +50,21 @@ class Event extends hrt.prefab.Prefab implements IEvent {
 		if(evts == null) return;
 
 		for(evt in evts) {
-			if(evt.play != null && time > prevTime && evt.evt.time > prevTime && evt.evt.time <= time)
-				evt.play();
+			var start = evt.evt.time;
+			var end = evt.evt.getDuration() + start;
+			var shouldBePlaying = start < time && end > time;
+
+			if (!evt.playing && shouldBePlaying) {
+				evt.playing = true;
+				if (evt.play != null)
+					evt.play();
+			}
+
+			if (evt.playing && !shouldBePlaying) {
+				evt.playing = false;
+				if (evt.stop != null)
+					evt.stop();
+			}
 
 			if(evt.setTime != null)
 				evt.setTime(time - evt.evt.time);
