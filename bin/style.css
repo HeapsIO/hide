@@ -1464,9 +1464,6 @@ input[type=checkbox]:checked:after {
 .hide-curve-editor svg line {
   stroke-width: 1px;
 }
-.hide-curve-editor svg rect {
-  shape-rendering: crispEdges;
-}
 .hide-curve-editor svg .grid line {
   shape-rendering: crispEdges;
 }
@@ -1600,9 +1597,8 @@ input[type=checkbox]:checked:after {
   cursor: move;
 }
 .fx-animpanel .events .event {
-  stroke: #000;
-  stroke-width: 10px;
-  cursor: pointer;
+  stroke: #ffffff;
+  fill: rgba(255, 255, 255, 0.25);
   user-select: none;
 }
 .fx-animpanel .events .event-move {
@@ -1633,7 +1629,7 @@ input[type=checkbox]:checked:after {
   flex-direction: row-reverse;
   align-items: center;
 }
-.fx-animpanel .events .event-label div .event-label {
+.fx-animpanel .events .event-label div span {
   box-sizing: border-box;
   display: block;
   flex-grow: 0;
@@ -1647,6 +1643,13 @@ input[type=checkbox]:checked:after {
 .fx-animpanel .events text {
   pointer-events: none;
   font-family: var(--default-font), serif;
+}
+.fx-animpanel .events g.selected .event,
+.fx-animpanel .events g.selected .event-key {
+  stroke: #72b4ff;
+}
+.fx-animpanel .events g.selected .event-label span {
+  border-color: #72b4ff;
 }
 .fx-animpanel .key-event {
   fill: rgba(187, 187, 187, 0.644);

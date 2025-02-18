@@ -1636,10 +1636,6 @@ input[type=checkbox] {
 			stroke-width: 1px;
 		}
 
-		rect {
-			shape-rendering: crispEdges;
-		}
-
 		.grid {
 			line {
 				shape-rendering: crispEdges;
@@ -1790,9 +1786,8 @@ input[type=checkbox] {
 
 	.events {
 		.event {
-			stroke:#000;
-			stroke-width: 10px;;
-			cursor: pointer;
+			stroke:rgba(255,255,255,1.0);
+			fill: rgba(255,255,255,0.25);
 			user-select: none;
 		}
 
@@ -1831,7 +1826,7 @@ input[type=checkbox] {
 				display: flex;
 				flex-direction: row-reverse;
 				align-items: center;
-				.event-label {
+				span {
 					box-sizing: border-box;
 					display: block;
 					flex-grow: 0;
@@ -1848,6 +1843,16 @@ input[type=checkbox] {
 		text {
 			pointer-events: none;
 			font-family: var(--default-font), serif;
+		}
+
+		g.selected {
+			.event, .event-key {
+				stroke: rgba(114, 180, 255, 1.0);
+			}
+
+			.event-label span {
+				border-color: rgba(114, 180, 255, 1.0);
+			}
 		}
 	}
 
