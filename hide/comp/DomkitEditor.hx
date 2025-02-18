@@ -551,7 +551,7 @@ class DomkitChecker extends ScriptEditor.ScriptChecker {
 			c = makeComponent(name);
 		c.parent = parent;
 		if( e.arguments == null || e.arguments.length == 0 )
-			c.arguments = parent == null || e.parent.arguments.length != 0 ? [] : parent.arguments;
+			c.arguments = parent == null || (e.parent != null && e.parent.arguments.length != 0) ? [] : parent.arguments;
 		else {
 			c.arguments = [];
 			for( i => a in e.arguments ) {
