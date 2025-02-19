@@ -771,6 +771,8 @@ class FXEditor extends hide.view.FileView {
 	}
 
 	function onSelect(elts : Array<PrefabElement>) {
+		if (skipRebuildPannel > 0)
+			return;
 		rebuildAnimPanel();
 	}
 
@@ -786,6 +788,7 @@ class FXEditor extends hide.view.FileView {
 		}
 	}
 
+	var skipRebuildPannel = 0;
 	function addCurvesToCurveEditor(curves: Array<Curve>, events: Array<Dynamic>){
 		var rightPanel = element.find(".right-fx-animpanel").first();
 		rightPanel.empty();
@@ -797,7 +800,9 @@ class FXEditor extends hide.view.FileView {
 
 		this.curveEditor = new hide.comp.CurveEditor(this.undo, rightPanel);
 		this.curveEditor.onRefreshProps = () -> {
+			skipRebuildPannel++;
 			@:privateAccess sceneEditor.selectElements(sceneEditor.selectedPrefabs, NoHistory);
+			skipRebuildPannel--;
 		}
 
 		var overviewEditor = new hide.comp.CurveEditor.OverviewEditor(rightPanel, this.curveEditor);
@@ -905,6 +910,9 @@ class FXEditor extends hide.view.FileView {
 		var toHiddenList : Array<{ parentEl: Element, elements: Array<Dynamic> }> = [];
 
 		var leftPanel = element.find(".left-fx-animpanel").first();
+
+		var toolbar = new Element('<fancy-toolbar><fancy-button>View<div class="ico ico-chevron-down"></div></fancy-button></fancy-toolbar>');
+		new hide.comp.Button(toolbar, null, "View", {});
 
 		function drawSection(parent : Element, section: Section, depth: Int) {
 

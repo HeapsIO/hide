@@ -32,11 +32,17 @@ class EventsEditor extends Component implements CurveEditorComponent
 		svg = @:privateAccess this.curveEditor.svg;
 	}
 
-	public function setPan() { }
+	public function setPan() {
+		for (cb in eventRefreshFunction) {
+			cb();
+		}
+	}
 
 	public function refreshOverview() {
 		refresh(false);
 	}
+
+	var eventRefreshFunction : Array<() -> Void> = [];
 
 	public function refresh(?anim:Bool = false) {
 		if (eventGroup != null)
@@ -67,7 +73,7 @@ class EventsEditor extends Component implements CurveEditorComponent
 
 		var eventCount = 0;
 
-		var eventRefreshFunction : Array<() -> Void> = [];
+		eventRefreshFunction = [];
 
 		function drawEvent(event:hrt.prefab.fx.Event.IEvent, eventCount: Int, ?style: Dynamic) {
 			var yOrigin = 20;
@@ -103,7 +109,8 @@ class EventsEditor extends Component implements CurveEditorComponent
 			var evtLabelWidth = 300;
 			var evtLabel = svg.foreignObject(thisEventGroup, 0,0, evtLabelWidth, evtLabelHeight);
 			evtLabel.addClass("event-label");
-			evtLabel.append('<div><span>${infos.label}</span></div>');
+			var hideProps = event.getEventPrefab().getHideProps();
+			evtLabel.append('<div><span class="event-label"><span class="ico ico-${hideProps.icon}"></span> ${infos.label}</span></div>');
 
 			var currentEventMove : EventMoving = null;
 
@@ -181,8 +188,18 @@ class EventsEditor extends Component implements CurveEditorComponent
 					moveEnd = mid + minGrabSize / 2;
 				}
 
+				var xOffset = @:privateAccess -this.curveEditor.xt(0);
+				trace(xOffset);
+
 				var evt = evtLabel.get(0);
-				evt.setAttribute("x", Std.string(event.time * this.curveEditor.xScale - evtLabelWidth - eventSize / 2));
+				var labelWidth = evtLabel.find("span").width();
+				var baseX = event.time * this.curveEditor.xScale - evtLabelWidth - eventSize / 2;
+
+				var curveEdWidth = @:privateAccess this.curveEditor.width + xOffset;
+
+				baseX = hxd.Math.clamp(baseX, xOffset + labelWidth - evtLabelWidth + 16, curveEdWidth - evtLabelWidth);
+
+				evt.setAttribute("x", Std.string(baseX));
 				evt.setAttribute("y", Std.string(yPos-evtLabelHeight/2));
 
 				var line : js.html.svg.RectElement = cast line.get(0);
