@@ -322,7 +322,12 @@ class DomkitViewer extends h2d.Object {
 
 		unload();
 		tmpCompMap = compHooks.copy();
-		loadResource(resource);
+		try {
+			loadResource(resource);
+		}
+		catch(e: domkit.Error) {
+			style.cssParser.warnings.push({ msg : e.message, pmin : e.pmin, pmax : e.pmax });
+		}
 
 		var inf = loadComponents(resource);
 
