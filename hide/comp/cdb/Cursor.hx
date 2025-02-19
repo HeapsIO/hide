@@ -1,41 +1,31 @@
 package hide.comp.cdb;
 
+typedef Selection = {
+	var x1 : Int;
+	var y1 : Int;
+	var x2 : Int;
+	var y2 : Int;
+	var ?origin : { x: Int, y: Int };
+}
 
 typedef CursorState = {
 	var sheet : String;
 	var x : Int;
 	var y : Int;
-	var select : Null<{ x : Int, y : Int }>;
+	var selection : Array<Selection>;
 }
 
 class Cursor {
-
 	var editor : Editor;
 	public var table : Table;
 	public var x : Int;
 	public var y : Int;
-	public var select : Null<{ x : Int, y : Int }>;
+	public var selection : Array<Selection>;
 	public var onchange : Void -> Void;
 
 	public function new(editor) {
 		this.editor = editor;
 		set();
-	}
-
-	public function setState(state : CursorState, ?table : Table) {
-		if( state == null )
-			set(table);
-		else
-			set(table, state.x, state.y, state.select);
-	}
-
-	public function getState() : CursorState {
-		return table == null ? null : {
-			sheet : table.sheet.getPath(),
-			x : x,
-			y : y,
-			select : Reflect.copy(select)
-		};
 	}
 
 	public function set( ?t:Table, ?x=0, ?y=0, ?sel, update = true ) {
@@ -49,55 +39,13 @@ class Cursor {
 		this.table = t;
 		this.x = x;
 		this.y = y;
-		this.select = sel;
+		this.selection = sel;
 		var ch = onchange;
 		if( ch != null ) {
 			onchange = null;
 			ch();
 		}
 		if( update ) this.update();
-	}
-
-	public function setDefault(line, column) {
-		set(editor.tables[0], column, line);
-	}
-
-	public function getLine() {
-		if( table == null ) return null;
-		return table.lines[y];
-	}
-
-	public function getSelectedLines() {
-		if( table == null || x != -1 )
-			return [];
-		var selected = getSelection();
-		return [for( iy in selected.y1...(selected.y2 + 1) ) table.lines[iy]];
-	}
-
-	public function getCell() {
-		var line = getLine();
-		if( line == null ) return null;
-		return line.cells[x];
-	}
-
-	public function save() {
-		if( table == null ) return null;
-		return { sheet : table.sheet, x : x, y : y, select : select == null ? null : { x : select.x, y : select.y} };
-	}
-
-	public function load( s ) {
-		if( s == null )
-			return false;
-		var table = null;
-		for( t in editor.tables )
-			if( t.sheet == s.sheet ) {
-				table = t;
-				break;
-			}
-		if( table == null )
-			return false;
-		set(table, s.x, s.y, s.select);
-		return true;
 	}
 
 	public function move( dx : Int, dy : Int, shift : Bool, ctrl : Bool, ?overflow = false ) {
@@ -107,7 +55,7 @@ class Cursor {
 			if( dy != 0 ) {
 				if( table == null )
 					return;
-				if( select == null )
+				if( selection == null )
 					editor.moveLine(getLine(), dy);
 				else
 					editor.moveLines(getSelectedLines(), dy);
@@ -141,10 +89,22 @@ class Cursor {
 			dy = allLines.index(new Element(targetLine)) - allLines.index(line.element);
 		}
 
-		if( !shift )
-			select = null;
-		else if( select == null )
-			select = { x : x, y : y };
+		// Allow area selection while moving cursor with arrows and holding shift
+		if (shift) {
+			if (selection != null && selection[selection.length - 1].origin != null) {
+				var prev = selection[selection.length - 1];
+				selection = [ { x1: Std.int(hxd.Math.min(prev.origin.x, x + dx)), y1: Std.int(hxd.Math.min(prev.origin.y, y + dy)),
+					x2: Std.int(hxd.Math.max(prev.origin.x, x + dx)), y2: Std.int(hxd.Math.max(prev.origin.y, y + dy)),
+					origin: prev.origin }];
+			}
+			else {
+				addElementToSelection(line.table, line, x + dx, y + dy, true, false);
+				selection[selection.length -1].origin = { x: x, y: y };
+			}
+		}
+		else
+			selection = null;
+
 		var minX = table.displayMode == Table ? -1 : 0;
 		var maxX = table.columns.length;
 		var maxY = table.lines.length;
@@ -179,105 +139,274 @@ class Cursor {
 		update();
 	}
 
+	public function setState(state : CursorState, ?table : Table) {
+		if( state == null )
+			set(table);
+		else
+			set(table, state.x, state.y, state.selection);
+	}
+
+	public function getState() : CursorState {
+		return table == null ? null : {
+			sheet : table.sheet.getPath(),
+			x : x,
+			y : y,
+			selection : selection?.copy()
+		};
+	}
+
+	public function setDefault(line, column) {
+		set(editor.tables[0], column, line);
+	}
+
+	public function getLine() {
+		if( table == null ) return null;
+		return table.lines[y];
+	}
+
+	public function getCell() {
+		var line = getLine();
+		if( line == null ) return null;
+		return line.cells[x];
+	}
+
+	public function save() {
+		if( table == null ) return null;
+		return { sheet : table.sheet, x : x, y : y, selection : selection };
+	}
+
+	public function load( s ) {
+		if( s == null )
+			return false;
+		var table = null;
+		for( t in editor.tables )
+			if( t.sheet == s.sheet ) {
+				table = t;
+				break;
+			}
+		if( table == null )
+			return false;
+		set(table, s.x, s.y, s.selection);
+		return true;
+	}
+
 	public function hide() {
 		var elt = editor.element;
 		elt.find(".selected").removeClass("selected");
 		elt.find(".cursorView").removeClass("cursorView");
 		elt.find(".cursorLine").removeClass("cursorLine");
+		elt.find(".top").removeClass("top");
+		elt.find(".left").removeClass("left");
+		elt.find(".right").removeClass("right");
+		elt.find(".bot").removeClass("bot");
 	}
 
 	public function update() {
-		var elt = editor.element;
 		hide();
 		if( table == null )
 			return;
-		if( y < 0 ) {
-			y = 0;
-			select = null;
-		}
-		if( y >= table.lines.length ) {
-			y = table.lines.length - 1;
-			select = null;
-		}
-		var max = table.sheet.props.isProps || table.columns == null ? 1 : table.columns.length;
-		if( x >= max ) {
-			x = max - 1;
-			select = null;
-		}
 		var line = getLine();
 		if( line == null )
 			return;
 		if( x < 0 ) {
 			line.element.addClass("selected");
-			if( select != null ) {
-				var cy = y;
-				while( select.y != cy ) {
-					if( select.y > cy ) cy++ else cy--;
-					table.lines[cy].element.addClass("selected");
-				}
-			}
+			line.element.addClass("top");
+			line.element.addClass("bot");
 		} else {
 			var c = line.cells[x];
 			if( c != null ){
 				c.elementHtml.classList.add("cursorView");
 				c.elementHtml.parentElement.classList.add("cursorLine");
 			}
-			if( select != null ) {
-				var s = getSelection();
-				for( y in s.y1...s.y2 + 1 ) {
-					var l = table.lines[y];
-					for( x in s.x1...s.x2+1)
-						l.cells[x].elementHtml.classList.add("selected");
+		}
+
+		// Add selection style to cell and lines that are in a selected area
+		if (selection != null) {
+			for (s in selection) {
+				for (c in getSelectedCells()) {
+					var cellX = c.columnIndex;
+					var cellY = c.line.index;
+					var el = c.elementHtml;
+					el.classList.add("selected");
+					if (cellY == s.y1)
+						el.classList.add("top");
+					if (cellX == s.x1)
+						el.classList.add("left");
+					if (cellX == s.x2)
+						el.classList.add("right");
+					if (cellY == s.y2)
+						el.classList.add("bot");
+				}
+
+				if (s.x1 == -1) {
+					for (l in getSelectedLines()) {
+						var el = l.element;
+						el.addClass("selected");
+						if (l.index == s.y1)
+							el.addClass("top");
+						if (l.index == s.y2)
+							el.addClass("bot");
+					}
 				}
 			}
 		}
+
 		var e = line.element.get(0);
 		if( e != null ) untyped e.scrollIntoViewIfNeeded();
 	}
 
-	public function getSelection() {
-		if( table == null )
+	// Get selected area with line in it. Otherwise return null
+	public function getSelectedAreaIncludingLine(line : Line) {
+		if (selection == null)
 			return null;
-		var x1 = if( x < 0 ) 0 else x;
-		var x2 = if( x < 0 ) table.columns.length-1 else if( select != null ) select.x else x1;
-		var y1 = y;
-		var y2 = if( select != null ) select.y else y1;
-		if( x2 < x1 ) {
-			var tmp = x2;
-			x2 = x1;
-			x1 = tmp;
+		for (s in selection) {
+			if (line.index >= s.y1 && line.index <= s.y2)
+				return s;
 		}
-		if( y2 < y1 ) {
-			var tmp = y2;
-			y2 = y1;
-			y1 = tmp;
+
+		return null;
+	}
+
+	// Get selected area with cell in it. Otherwise return null
+	public function getSelectedAreaIncludingCell(cell : Cell) {
+		if (selection == null)
+			return null;
+		for (s in selection) {
+			if (cell.line.index >= s.y1 && cell.line.index <= s.y2 &&
+				cell.columnIndex >= s.x1 && cell.columnIndex <= s.x2)
+				return s;
 		}
-		return { x1 : x1, x2 : x2, y1 : y1, y2 : y2 };
+
+		return null;
+	}
+
+	public function getLinesFromSelection(sel : Selection) {
+		if (sel == null)
+			return null;
+		return [for( iy in sel.y1...(sel.y2 + 1) ) table.lines[iy]];
+	}
+
+	public function getCellsFromSelection(sel : Selection) {
+		if (sel == null)
+			return null;
+
+		var cells = [];
+		if (sel.x1 == -1) {
+			for (y in sel.y1...(sel.y2 + 1)) {
+				for (x in 0...(table.lines[y].cells.length)) {
+					cells.push(table.lines[y].cells[x]);
+				}
+			}
+		}
+		else {
+			for (y in sel.y1...(sel.y2 + 1)) {
+				for (x in sel.x1...(sel.x2 + 1)) {
+					cells.push(table.lines[y].cells[x]);
+				}
+			}
+		}
+
+		return cells;
+	}
+
+	public function getSelectedLines() {
+		var lines = [];
+		if (selection == null)
+			return lines;
+
+		for (s in selection) {
+			var tmp = getLinesFromSelection(s);
+			if (tmp == null)
+				continue;
+
+			lines = lines.concat(tmp);
+		}
+
+		return lines;
+	}
+
+	public function getSelectedCells() {
+		var cells = [];
+		if (selection == null)
+			return cells;
+
+		for (s in selection) {
+			var tmp = getCellsFromSelection(s);
+			if (tmp == null)
+				continue;
+
+			cells = cells.concat(tmp);
+		}
+
+		return cells;
 	}
 
 
-	public function clickLine( line : Line, shiftKey = false ) {
-		var sheet = line.table.sheet;
-		if( shiftKey && this.table == line.table && x < 0 ) {
-			select = { x : -1, y : line.index };
-			update();
-		} else {
-			editor.pushCursorState();
-			set(line.table, -1, line.index);
-			line.table.showSeparator(line);
-		}
+	public function clickLine( line : Line, shiftKey = false, ctrlKey = false ) {
+		addElementToSelection(line.table, line, -1, line.index, shiftKey, ctrlKey);
+		set(line.table, -1, line.index, this.selection);
 	}
 
-	public function clickCell( cell : Cell, shiftKey = false ) {
+	public function clickCell( cell : Cell, shiftKey = false, ctrlKey = false ) {
 		var xIndex = cell.table.displayMode == Table ? cell.columnIndex : 0;
-		if( shiftKey && table == cell.table ) {
-			select = { x : xIndex, y : cell.line.index };
-			update();
-		} else {
+		addElementToSelection(cell.table, cell.line, xIndex, cell.line.index, shiftKey, ctrlKey);
+		set(cell.table, xIndex, cell.line.index, this.selection);
+	}
+
+	public function addElementToSelection(table: Table, line: Line, xIndex : Int, yIndex: Int, shift: Bool = false, ctrl: Bool = false) {
+		var p1 = new h3d.Vector(x, y, 0);
+		var p2 = new h3d.Vector(xIndex, yIndex, 0);
+		if (this.table == table) {
+			if (shift) {
+				var prev = selection != null && selection.length >= 1 ? selection[selection.length - 1] : null;
+				if (prev != null && prev.origin != null)
+					p1 = new h3d.Vector(prev.origin.x, prev.origin.y, 0);
+				selection = [];
+				selection.push({ x1: Std.int(hxd.Math.min(p1.x, p2.x)), x2: Std.int(hxd.Math.max(p1.x, p2.x)),
+					 y1: Std.int(hxd.Math.min(p1.y, p2.y)), y2: Std.int(hxd.Math.max(p1.y, p2.y)),
+					origin: prev != null && prev.origin != null ? prev.origin : {x: x, y: y} });
+				updateSelection();
+				update();
+			}
+			else if(ctrl) {
+				if (selection == null) {
+					selection = [];
+					selection.push({ x1: x, x2: x, y1: y, y2: y });
+				}
+				selection.push({ x1: xIndex, x2: xIndex, y1: yIndex, y2: yIndex });
+				updateSelection();
+				update();
+			}
+			else {
+				selection = [{ x1: xIndex, x2: xIndex, y1: yIndex, y2: yIndex }];
+				update();
+			}
+		}
+		else {
+			table.showSeparator(line);
 			editor.pushCursorState();
-			set(cell.table, xIndex, cell.line.index);
-			cell.table.showSeparator(cell.line);
 		}
 	}
 
+	// Ensure each cell in selection is here only once
+	public function updateSelection() {
+		// Is s1 containing s2
+		function isContaining(s1 : Selection, s2: Selection) {
+			return s2.x1 >= s1.x1 && s2.x1 <= s1.x2 && s2.y1 >= s1.y1 && s2.y1 <= s1.y2 &&
+			s2.x2 >= s1.x1 && s2.x2 <= s1.x2 && s2.y2 >= s1.y1 && s2.y2 <= s1.y2;
+		}
+
+		var idx = selection.length;
+		while(idx-- > 0) {
+			var s = selection[idx];
+
+			for (idx2 in 0...selection.length) {
+				var s2 = selection[idx2];
+				if (s2 == s) continue;
+				if (isContaining(s, s2))
+					selection.remove(s2);
+			}
+
+		}
+	}
 }

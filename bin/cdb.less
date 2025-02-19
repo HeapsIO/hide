@@ -35,23 +35,36 @@
 	}
 
 	&:focus .cdb-sheet {
-
 		td.cursorView {
-			outline : 1px solid #ccc;
+			border: 2px solid #ccc !important;
 		}
 
 		tr.cursorLine {
 			background-color: #262d35;
 			td.start, td.t_readonly {
-				background-color: #313a48;
+				color: rgb(170, 170, 170);
+				background-color: #1f427a;
 			}
 		}
 
 		tr.selected, td.selected {
 			background-color : #313a48;
+
+			&.top td.start { border-top: 2px solid #ccc; }
+			&.bot td.start { border-bottom: 2px solid #ccc; }
 			td.start, td.t_readonly {
-				background-color: #313a48;
+				border-left: 2px solid #ccc;
+				border-right: 2px solid #ccc;
+				color: rgb(170, 170, 170);
+				background-color: #0b57d0;
 			}
+		}
+
+		td.selected {
+			&.top { border-top: 1px solid #ccc; }
+			&.right { border-right: 1px solid #ccc; }
+			&.bot { border-bottom: 1px solid #ccc; }
+			&.left { border-left: 1px solid #ccc; }
 		}
 	}
 

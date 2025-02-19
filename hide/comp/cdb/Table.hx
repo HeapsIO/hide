@@ -198,7 +198,7 @@ class Table extends Component {
 					e.preventDefault();
 					return;
 				}
-				editor.cursor.clickLine(line, e.shiftKey);
+				editor.cursor.clickLine(line, e.shiftKey, e.ctrlKey);
 			});
 			#if js
 			var headEl = head.get(0);
@@ -228,9 +228,19 @@ class Table extends Component {
 				ide.unregisterUpdate(updateDrag);
 				previewDrop.hide();
 				if (e.dataTransfer.dropEffect == "none") return false;
-				var pickedLine = getPickedLine(e);
-				if (pickedLine != null) {
-					editor.moveLine(line, pickedLine.index - line.index, true);
+
+				var dropTarget = getPickedLine(e);
+				if (dropTarget == null)
+					return false;
+
+				var selection = editor.cursor.getSelectedAreaIncludingLine(line);
+				if (selection != null) {
+					editor.moveLines(editor.cursor.getLinesFromSelection(selection), selection.y1 > dropTarget.index ? dropTarget.index - selection.y1 : dropTarget.index - selection.y2);
+					return true;
+				}
+
+				if (dropTarget != null) {
+					editor.moveLine(line, dropTarget.index - line.index, true);
 					return true;
 				}
 
@@ -810,7 +820,7 @@ class Table extends Component {
 
 			th.contextmenu(function(e) {
 				editor.popupColumn(this, c, cell);
-				editor.cursor.clickCell(cell, false);
+				editor.cursor.clickCell(cell, false, false);
 				e.preventDefault();
 			});
 		}

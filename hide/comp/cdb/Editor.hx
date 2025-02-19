@@ -155,8 +155,8 @@ class Editor extends Component {
 				sub.cell.elementHtml.click();
 				return;
 			}
-			if( cursor.select != null ) {
-				cursor.select = null;
+			if( cursor.selection != null ) {
+				cursor.selection = null;
 				cursor.update();
 			}
 		});
@@ -399,87 +399,6 @@ class Editor extends Component {
 			cursor.update();
 	}
 
-	function onCopy() {
-		var sel = cursor.getSelection();
-		if( sel == null )
-			return;
-		var data = [];
-		var isProps = (cursor.table.displayMode != Table);
-		var schema;
-		function saveValue(out, obj, c) {
-			var form = @:privateAccess formulas.getFormulaNameFromValue(obj, c);
-			if( form != null ) {
-				Reflect.setField(out, c.name+"__f", form);
-				return;
-			}
-
-			var v = Reflect.field(obj, c.name);
-			if( v != null )
-				Reflect.setField(out, c.name, v);
-		}
-		if( isProps ) {
-			schema = [];
-			var out = {};
-			for( y in sel.y1...sel.y2+1 ) {
-				var line = cursor.table.lines[y];
-				var obj = line.obj;
-				var c = line.columns[0];
-
-				saveValue(out, obj, c);
-				schema.push(c);
-			}
-			data.push(out);
-
-		} else {
-			for( y in sel.y1...sel.y2+1 ) {
-				var obj = cursor.table.lines[y].obj;
-				var out = {};
-				for( x in sel.x1...sel.x2+1 ) {
-					var c = cursor.table.columns[x];
-					saveValue(out, obj, c);
-
-				}
-				data.push(out);
-			}
-			schema = [for( x in sel.x1...sel.x2+1 ) cursor.table.columns[x]];
-		}
-
-		// In case we only have one value, just copy the cell value
-		if (data.length == 1 && Reflect.fields(data[0]).length == 1) {
-			var colName = Reflect.fields(data[0])[0];
-			var col = cursor.table.columns.find((c) -> c.name == colName);
-			if (col == null)
-				throw "unknown column";
-
-			// if we are a property or a list, fallback to the default case
-			if (col.type != TProperties && col.type != TList) {
-				var escape = switch(col.type) {
-					case TGradient, TCurve:
-						true;
-					default:
-						false;
-				};
-
-				var str = cursor.table.sheet.colToString(col, Reflect.field(data[0], colName), escape);
-
-				clipboard = {
-					data : data,
-					text : str,
-					schema : schema,
-				};
-
-				ide.setClipboard(str);
-				return;
-			}
-		}
-		// copy many values at once
-		clipboard = {
-			data : data,
-			text : Std.string([for( o in data ) cursor.table.sheet.objToString(o,true)]),
-			schema : schema,
-		};
-		ide.setClipboard(clipboard.text);
-	}
 
 	function stringToCol(str : String) : Null<Int> {
 		str = str.toUpperCase();
@@ -550,6 +469,89 @@ class Editor extends Component {
 			table.refresh();
 	}
 
+	function onCopy() {
+		if( cursor.selection == null )
+			return;
+		var data = [];
+		var isProps = (cursor.table.displayMode != Table);
+		var schema = [];
+		function saveValue(out, obj, c) {
+			var form = @:privateAccess formulas.getFormulaNameFromValue(obj, c);
+			if( form != null ) {
+				Reflect.setField(out, c.name+"__f", form);
+				return;
+			}
+
+			var v = Reflect.field(obj, c.name);
+			if( v != null )
+				Reflect.setField(out, c.name, v);
+		}
+		if( isProps ) {
+			var out = {};
+			for (sel in cursor.selection) {
+				for( y in sel.y1...sel.y2+1 ) {
+					var line = cursor.table.lines[y];
+					var obj = line.obj;
+					var c = line.columns[0];
+
+					saveValue(out, obj, c);
+					schema.push(c);
+				}
+				data.push(out);
+			}
+		} else {
+			for (sel in cursor.selection) {
+				for( y in sel.y1...sel.y2+1 ) {
+					var obj = cursor.table.lines[y].obj;
+					var out = {};
+					for( x in sel.x1...sel.x2+1 ) {
+						var c = cursor.table.columns[x];
+						saveValue(out, obj, c);
+
+					}
+					data.push(out);
+				}
+				schema = [for( x in sel.x1...sel.x2+1 ) cursor.table.columns[x]];
+			}
+		}
+
+		// In case we only have one value, just copy the cell value
+		if (data.length == 1 && Reflect.fields(data[0]).length == 1) {
+			var colName = Reflect.fields(data[0])[0];
+			var col = cursor.table.columns.find((c) -> c.name == colName);
+			if (col == null)
+				throw "unknown column";
+
+			// if we are a property or a list, fallback to the default case
+			if (col.type != TProperties && col.type != TList) {
+				var escape = switch(col.type) {
+					case TGradient, TCurve:
+						true;
+					default:
+						false;
+				};
+
+				var str = cursor.table.sheet.colToString(col, Reflect.field(data[0], colName), escape);
+
+				clipboard = {
+					data : data,
+					text : str,
+					schema : schema,
+				};
+
+				ide.setClipboard(str);
+				return;
+			}
+		}
+		// copy many values at once
+		clipboard = {
+			data : data,
+			text : Std.string([for( o in data ) cursor.table.sheet.objToString(o,true)]),
+			schema : schema,
+		};
+		ide.setClipboard(clipboard.text);
+	}
+
 	function onPaste() {
 		var text = ide.getClipboard();
 
@@ -565,21 +567,6 @@ class Editor extends Component {
 		var toRefresh : Array<Cell> = [];
 
 		var isProps = (cursor.table.displayMode != Table);
-		var x1 = cursor.x;
-		var y1 = cursor.y;
-		var x2 = cursor.select == null ? x1 : cursor.select.x;
-		var y2 = cursor.select == null ? y1 : cursor.select.y;
-		if( x1 > x2 ) {
-			var tmp = x1;
-			x1 = x2;
-			x2 = tmp;
-		}
-		if( y1 > y2 ) {
-			var tmp = y1;
-			y1 = y2;
-			y2 = tmp;
-		}
-
 		if( clipboard == null || text != clipboard.text ) {
 			if( cursor.x < 0 || cursor.y < 0 ) return;
 			function parseText(text, type : cdb.Data.ColumnType) : Dynamic {
@@ -629,7 +616,7 @@ class Editor extends Component {
 			if( isProps ) {
 				var line = cursor.getLine();
 				toRefresh.push(cursor.getCell());
-				var col = line.columns[x1];
+				var col = line.columns[cursor.x];
 				var p = Editor.getColumnProps(col);
 
 				if( !cursor.table.canEditColumn(col.name) || p.copyPasteImmutable)
@@ -644,21 +631,18 @@ class Editor extends Component {
 				Reflect.setField(obj, col.name, value);
 			} else {
 				beginChanges();
-				for( x in x1...x2+1 ) {
-					var col = columns[x];
-					var p = Editor.getColumnProps(col);
-					if( !cursor.table.canEditColumn(col.name) || p.copyPasteImmutable)
-						continue;
-					var lines = y1 == y2 ? [text] : text.split("\n");
-					for( y in y1...y2+1 ) {
-						var text = lines[y - y1];
-						if( text == null ) text = lines[lines.length - 1];
-						var value = parseText(text, col.type);
-						if( value == null ) continue;
-						var obj = sheet.lines[y];
+				var col = columns[cursor.x];
+				var p = Editor.getColumnProps(col);
+				if( cursor.table.canEditColumn(col.name) && !p.copyPasteImmutable) {
+					var lines = cursor.y == cursor.y ? [text] : text.split("\n");
+					var text = lines[0];
+					if( text == null ) text = lines[lines.length - 1];
+					var value = parseText(text, col.type);
+					if( value != null ) {
+						var obj = sheet.lines[cursor.y];
 						formulas.removeFromValue(obj, col);
 						Reflect.setField(obj, col.name, value);
-						toRefresh.push(allLines[y].cells[x]);
+						toRefresh.push(allLines[cursor.y].cells[cursor.x]);
 					}
 				}
 			}
@@ -718,8 +702,8 @@ class Editor extends Component {
 				Reflect.setField(destObj, destCol.name, v);
 		}
 
-		var posX = x1 < 0 ? 0 : x1;
-		var posY = y1 < 0 ? 0 : y1;
+		var posX = cursor.x < 0 ? 0 : cursor.x;
+		var posY = cursor.y < 0 ? 0 : cursor.y;
 		var data = clipboard.data;
 		if( data.length == 0 )
 			return;
@@ -754,8 +738,8 @@ class Editor extends Component {
 			}
 		} else {
 			beginChanges();
-			if( data.length == 1 && y1 != y2 )
-				data = [for( i in y1...y2+1 ) data[0]];
+			if( data.length == 1 && cursor.y != cursor.y )
+				data = [data[0]];
 			for( obj1 in data ) {
 				if( posY == sheet.lines.length ) {
 					if( !cursor.table.canInsert() ) break;
@@ -796,11 +780,14 @@ class Editor extends Component {
 	}
 
 	function onDelete() {
-		var sel = cursor.getSelection();
-		if( sel == null )
+		if( cursor.selection == null )
 			return;
 
-		delete(sel.x1, sel.x2, sel.y1, sel.y2);
+		beginChanges();
+		cursor.selection.sort((el1, el2) -> { return el1.y1 == el2.y1 ? 0 : el1.y1 < el2.y1 ? 1 : -1; });
+		for (s in cursor.selection)
+			delete(s.x1, s.x2, s.y1, s.y2);
+		endChanges();
 	}
 
 	function delete(x1 : Int, x2 : Int, y1 : Int, y2 : Int) {
@@ -2215,14 +2202,19 @@ class Editor extends Component {
 	function moveLines(lines : Array<Line>, delta : Int) {
 		if( lines.length == 0 || !lines[0].table.canInsert() || delta == 0 )
 			return;
-		var selDiff: Null<Int> = cursor.select == null ? null : cursor.select.y - cursor.y;
 		beginChanges();
+		var newSelection = [{
+			x1: -1,
+			y1: lines[0].index + delta,
+			x2: -1,
+			y2: lines[lines.length - 1].index + delta
+		}];
+
 		lines.sort((a, b) -> { return (a.index - b.index) * delta * -1; });
-		for( l in lines ) {
+		for( l in lines )
 			moveLine(l, delta);
-		}
-		if (selDiff != null && hxd.Math.iabs(selDiff) == lines.length - 1)
-			cursor.set(cursor.table, cursor.x, cursor.y, {x: cursor.x, y: cursor.y + selDiff});
+
+		cursor.set(cursor.table, cursor.x, cursor.y, newSelection);
 		endChanges();
 	}
 
@@ -2325,8 +2317,11 @@ class Editor extends Component {
 				focus();
 			}, keys : config.get("key.duplicate") },
 			{ label : "Delete", click : function() {
-				var sel = cursor.getSelection();
-				delete(sel.x1, sel.x2, sel.y1, sel.y2);
+				beginChanges();
+				cursor.selection.sort((el1, el2) -> { return el1.y1 == el2.y1 ? 0 : el1.y1 < el2.y1 ? 1 : -1; });
+				for (s in cursor.selection)
+					delete(s.x1, s.x2, s.y1, s.y2);
+				endChanges();
 			} },
 			{ label : "Separator", enabled : !sheet.props.hide, checked : sepIndex >= 0, click : function() {
 				beginChanges();

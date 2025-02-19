@@ -77,7 +77,7 @@ class Cell {
 			root.classList.add("t_loc");
 
 		elementHtml.addEventListener("click", function(e) {
-			editor.cursor.clickCell(this, e.shiftKey);
+			editor.cursor.clickCell(this, e.shiftKey, e.ctrlKey);
 			e.stopPropagation();
 		});
 

@@ -12,7 +12,7 @@
   cursor: pointer;
 }
 .refviewer a:hover {
-  color: #4772b3;
+  color: #2c5d87;
 }
 .cdb-view.cdb-diff .cdb-sheet th,
 .cdb-view.cdb-diff th.start {
@@ -25,24 +25,48 @@
   outline: none;
 }
 .cdb:focus .cdb-sheet td.cursorView {
-  outline: 1px solid #ccc;
+  border: 2px solid #ccc !important;
 }
 .cdb:focus .cdb-sheet tr.cursorLine {
   background-color: #262d35;
 }
 .cdb:focus .cdb-sheet tr.cursorLine td.start,
 .cdb:focus .cdb-sheet tr.cursorLine td.t_readonly {
-  background-color: #313a48;
+  color: #aaaaaa;
+  background-color: #1f427a;
 }
 .cdb:focus .cdb-sheet tr.selected,
 .cdb:focus .cdb-sheet td.selected {
   background-color: #313a48;
 }
+.cdb:focus .cdb-sheet tr.selected.top td.start,
+.cdb:focus .cdb-sheet td.selected.top td.start {
+  border-top: 2px solid #ccc;
+}
+.cdb:focus .cdb-sheet tr.selected.bot td.start,
+.cdb:focus .cdb-sheet td.selected.bot td.start {
+  border-bottom: 2px solid #ccc;
+}
 .cdb:focus .cdb-sheet tr.selected td.start,
 .cdb:focus .cdb-sheet td.selected td.start,
 .cdb:focus .cdb-sheet tr.selected td.t_readonly,
 .cdb:focus .cdb-sheet td.selected td.t_readonly {
-  background-color: #313a48;
+  border-left: 2px solid #ccc;
+  border-right: 2px solid #ccc;
+  color: #aaaaaa;
+  background-color: #0b57d0;
+}
+.cdb:focus .cdb-sheet td.selected.top {
+  border-top: 1px solid #ccc;
+}
+.cdb:focus .cdb-sheet td.selected.right {
+  border-right: 1px solid #ccc;
+}
+.cdb:focus .cdb-sheet td.selected.bot {
+  border-bottom: 1px solid #ccc;
+}
+.cdb:focus .cdb-sheet td.selected.left {
+  border-left: 1px solid #ccc;
 }
 .cdb .cdb-sheet {
   width: 100%;
