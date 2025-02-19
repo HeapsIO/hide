@@ -57,6 +57,11 @@ class SplineMesh extends hrt.prefab.Object3D {
 	var meshPrimitive : h3d.prim.RawPrimitive = null;
 	var meshMaterial : h3d.mat.Material = null;
 
+	var vertexPerPoint(get, null) : Int;
+	function get_vertexPerPoint() {
+		return subdivision + 4;
+	}
+
 	override function makeObject(parent3d: h3d.scene.Object) : h3d.scene.Object {
 		if (spline == null)
 			spline = findParent(Spline, null, false, true);
@@ -76,7 +81,7 @@ class SplineMesh extends hrt.prefab.Object3D {
 	}
 
 	function getLocalPoints() : Array<Float> {
-		var vertexPerPoint = ( 4 + subdivision );
+		var vertexPerPoint = vertexPerPoint;
 		var localPoints = [];
 		localPoints.resize(3 * vertexPerPoint );
 		var angle = 0.0;
@@ -90,18 +95,54 @@ class SplineMesh extends hrt.prefab.Object3D {
 		return localPoints;
 	}
 
+	inline function fillPoint( vertexData : hxd.FloatBuffer, dataPos : Int, localPoints : Array<Float>, trs : h3d.Matrix, uvX : Float, bounds : h3d.col.Bounds ) {
+		var vertexPerPoint = vertexPerPoint;
+		for ( i in 0...vertexPerPoint ) {
+			var pos = new h3d.Vector( 0, localPoints[i * 3 + 0], localPoints[i * 3 + 1] );
+			pos.transform(trs);
+			bounds.addPos(pos.x, pos.y, pos.z);
+
+			var normal = new h3d.Vector( 0, localPoints[i * 3 + 0], localPoints[i * 3 + 1] );
+			normal.transform3x3(trs);
+			normal.normalize();
+
+			var tangent = new h3d.Vector(1.0, 0.0, 0.0);
+			tangent.transform3x3(trs);
+			tangent.normalize();
+
+			var uvX = uvX * scaleUVx;
+			var uvY = localPoints[i * 3 + 2] * scaleUVy;
+
+			vertexData[dataPos++] = pos.x;
+			vertexData[dataPos++] = pos.y;
+			vertexData[dataPos++] = pos.z;
+
+			vertexData[dataPos++] = normal.x;
+			vertexData[dataPos++] = normal.y;
+			vertexData[dataPos++] = normal.z;
+
+			vertexData[dataPos++] = tangent.x;
+			vertexData[dataPos++] = tangent.y;
+			vertexData[dataPos++] = tangent.z;
+
+			vertexData[dataPos++] = uvX;
+			vertexData[dataPos++] = uvY;
+		}
+	}
+
 	function computeDefaultSplineMesh() {
 		var bounds = new h3d.col.Bounds();
 		var localPoints = getLocalPoints();
 
 		previewPointCount = hxd.Math.imax(4, previewPointCount);
 
-		var vertexPerPoint = ( 4 + subdivision );
+		var vertexPerPoint = vertexPerPoint;
 		var vertexCount = vertexPerPoint * previewPointCount;
 		var vertexDataStride = SPLINE_FMT.stride;
 		var splineDataSize = vertexDataStride * vertexCount;
 		var vertexData = new hxd.FloatBuffer(splineDataSize * count);
 
+		var dataPos = 0;
 		for ( s in 0...count ) {
 			var spacing = s * spacing - spacing * (count - 1) * 0.5;
 			var uv = 0.0;
@@ -112,33 +153,8 @@ class SplineMesh extends hrt.prefab.Object3D {
 				trs.initTranslation(0.0, previewRadius + spacing);
 				trs.rotateAxis(new h3d.Vector(0.0, 0.0, 1.0), angle);
 				angle += stepAngle;
-
-				for ( j in 0...vertexPerPoint ) {
-					var pos = new h3d.Vector( 0, localPoints[j * 3 + 0], localPoints[j * 3 + 1] );
-					pos.transform(trs);
-					var normal = new h3d.Vector( 0, localPoints[j * 3 + 0], localPoints[j * 3 + 1] );
-					normal.transform3x3(trs);
-					normal.normalize();
-					var tangent = new h3d.Vector(1.0, 0.0, 0.0);
-					tangent.transform3x3(trs);
-					tangent.normalize();
-					bounds.addPos(pos.x, pos.y, pos.z);
-
-					vertexData[ s * splineDataSize + i * vertexDataStride * vertexPerPoint + j * vertexDataStride + 0] = pos.x;
-					vertexData[ s * splineDataSize + i * vertexDataStride * vertexPerPoint + j * vertexDataStride + 1] = pos.y;
-					vertexData[ s * splineDataSize + i * vertexDataStride * vertexPerPoint + j * vertexDataStride + 2] = pos.z;
-
-					vertexData[ s * splineDataSize + i * vertexDataStride * vertexPerPoint + j * vertexDataStride + 3] = normal.x;
-					vertexData[ s * splineDataSize + i * vertexDataStride * vertexPerPoint + j * vertexDataStride + 4] = normal.y;
-					vertexData[ s * splineDataSize + i * vertexDataStride * vertexPerPoint + j * vertexDataStride + 5] = normal.z;
-
-					vertexData[ s * splineDataSize + i * vertexDataStride * vertexPerPoint + j * vertexDataStride + 6] = tangent.x;
-					vertexData[ s * splineDataSize + i * vertexDataStride * vertexPerPoint + j * vertexDataStride + 7] = tangent.y;
-					vertexData[ s * splineDataSize + i * vertexDataStride * vertexPerPoint + j * vertexDataStride + 8] = tangent.z;
-
-					vertexData[ s * splineDataSize + i * vertexDataStride * vertexPerPoint + j * vertexDataStride + 9] = uv * scaleUVx;
-					vertexData[ s * splineDataSize + i * vertexDataStride * vertexPerPoint + j * vertexDataStride + 10] = localPoints[j * 3 + 2] * scaleUVy;
-				}
+				fillPoint(vertexData, dataPos, localPoints, trs, uv, bounds);
+				dataPos += vertexDataStride * vertexPerPoint;
 				uv += hxd.Math.atan(stepAngle) * previewRadius;
 			}
 		}
@@ -169,13 +185,15 @@ class SplineMesh extends hrt.prefab.Object3D {
 
 		var bounds = new h3d.col.Bounds();
 
-		var vertexPerPoint = ( 4 + subdivision );
+		var vertexPerPoint = vertexPerPoint;
 		var vertexCount = vertexPerPoint * samples.length;
-		var splineDataSize = 8 * vertexCount;
+		var vertexDataStride = SPLINE_FMT.stride;
+		var splineDataSize = vertexDataStride * vertexCount;
 		var vertexData = new hxd.FloatBuffer(splineDataSize * count);
 
 		var localPoints = getLocalPoints();
 
+		var dataPos = 0;
 		for ( s in 0...count ) {
 			var spacing = s * spacing - spacing * (count - 1) * 0.5;
 			var uv = 0.0;
@@ -189,28 +207,11 @@ class SplineMesh extends hrt.prefab.Object3D {
 				if (tangent.dot(new h3d.Vector(0.0, 1.0, 0.0)) < 0.0)
 					angle *= -1.0;
 				var trs = new h3d.Matrix();
-				trs.initRotationAxis(new h3d.Vector(0.0, 0.0, 1.0), angle);
+				trs.initTranslation(0.0, spacing, 0.0);
+				trs.rotateAxis(new h3d.Vector(0.0, 0.0, 1.0), angle);
 				trs.translate(absPos.x, absPos.y, absPos.z);
-
-				for ( j in 0...vertexPerPoint ) {
-					var pos = new h3d.Vector( 0, localPoints[j * 3 + 0], localPoints[j * 3 + 1] );
-					pos.y += spacing;
-					pos.transform(trs);
-					var normal = new h3d.Vector( 0, localPoints[j * 3 + 0], localPoints[j * 3 + 1] );
-					normal.transform3x3(trs);
-					normal.normalize();
-					bounds.addPos(pos.x, pos.y, pos.z);
-					vertexData[ s * splineDataSize + i * 8 * vertexPerPoint + j * 8 + 0] = pos.x;
-					vertexData[ s * splineDataSize + i * 8 * vertexPerPoint + j * 8 + 1] = pos.y;
-					vertexData[ s * splineDataSize + i * 8 * vertexPerPoint + j * 8 + 2] = pos.z;
-
-					vertexData[ s * splineDataSize + i * 8 * vertexPerPoint + j * 8 + 3] = normal.x;
-					vertexData[ s * splineDataSize + i * 8 * vertexPerPoint + j * 8 + 4] = normal.y;
-					vertexData[ s * splineDataSize + i * 8 * vertexPerPoint + j * 8 + 5] = normal.z;
-
-					vertexData[ s * splineDataSize + i * 8 * vertexPerPoint + j * 8 + 6] = uv * scaleUVx;
-					vertexData[ s * splineDataSize + i * 8 * vertexPerPoint + j * 8 + 7] = localPoints[j * 3 + 2] * scaleUVy;
-				}
+				fillPoint(vertexData, dataPos, localPoints, trs, uv, bounds);
+				dataPos += vertexDataStride * vertexPerPoint;
 				prevPos = curPos;
 			}
 		}
