@@ -1807,6 +1807,33 @@ input[type=checkbox] {
 			stroke: white;
 		}
 
+		.event-key {
+			stroke: rgba(255,255,255,1.0);
+			stroke-width: 1px;
+			fill: black;
+		}
+
+		.event-label {
+			div {
+				width: 100%;
+				height: 100%;
+				display: flex;
+				flex-direction: row-reverse;
+				align-items: center;
+				.event-label {
+					box-sizing: border-box;
+					display: block;
+					flex-grow: 0;
+					border-radius: 3px;
+					background-color: rgba(33,33,33,0.75);
+					padding:  0px 0.25em;
+					border: 1px solid #666;
+					font-size: 8pt;
+					color: white;
+				}
+			}
+		}
+
 		text {
 			pointer-events: none;
 		}
@@ -4711,10 +4738,27 @@ hide-popover {
 		* {
 			box-sizing: border-box;
 		}
+
+		separator {
+			display: flex;
+			align-items: center;
+			h1 {
+				font-weight: normal;
+				margin: 0em 0.5em;
+				font-size: 9pt;
+				color: #888;
+			}
+			hr {
+				margin-top: 0.8em;
+			}
+			pointer-events: none;
+		}
 		hr {
+			flex-grow: 1;
 			border: 0;
 			height: 1px;
 			background-image: linear-gradient(to right, rgba(44,44,44,0), rgb(100, 100, 100), rgba(44,44,44));
+			pointer-events: none;
 		}
 
 		&:not(:has(:hover, .highlight)) .open {
@@ -5190,26 +5234,41 @@ graph-editor-root {
 	}
 }
 
+fancy-toolbar {
+	display: flex;
+	flex-direction: row;
+}
+
 fancy-button {
+	position: relative;
 	--size: 28px;
 	border: 1px solid var(--fancy-border-color);
 
-	aspect-ratio: 1 / 1;
 
 	text-align: center;
 
 	height: var(--size);
+	min-width: var(--size);
 
-	display: flex;
+	display: inline-flex;
 	flex-direction: row;
 	align-items: center;
 	justify-content: space-evenly;
 
 	user-select: none;
 
-	&:has(.label) {
-		padding-left: 1.0em;
-		padding-right: 1.0em;
+	color: #DDD;
+
+	&:has(.label), &.dropdown {
+		padding-left: 0.5em;
+		padding-right: 0.5em;
+		//aspect-ratio: unset;
+	}
+
+	&.dropdown::after {
+		font-family: "FontAwesome";
+		content: "\f078";
+		font-size: 0.5em;
 	}
 
 	gap: 0.5em;
@@ -5248,7 +5307,10 @@ fancy-button {
 	}
 
 	&.compact {
-		aspect-ratio: unset;
+		min-width: unset;
+		.ico {
+			font-size: 0.7em;
+		}
 	}
 
 	margin-left: -1px;
@@ -5715,5 +5777,30 @@ blend-space-2d-root {
 				filter: brightness(80%);
 			}
 		}
+	}
+}
+
+.hide-gym {
+	background-color: #111;
+	padding: 2em;
+	box-sizing: border-box;
+
+	h1 {
+		font-size: 1.1em;
+	}
+
+	details {
+		summary {
+			font-size: 1.5em;
+			background-color: #333;
+			padding: var(--basic-padding);
+			border-radius: var(--basic-border-radius);
+
+		}
+
+		padding: 1em;
+		background-color: #222;
+
+		border-radius: var(--basic-border-radius);
 	}
 }

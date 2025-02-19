@@ -1614,6 +1614,29 @@ input[type=checkbox]:checked:after {
 .fx-animpanel .events .event:hover {
   stroke: white;
 }
+.fx-animpanel .events .event-key {
+  stroke: #ffffff;
+  stroke-width: 1px;
+  fill: black;
+}
+.fx-animpanel .events .event-label div {
+  width: 100%;
+  height: 100%;
+  display: flex;
+  flex-direction: row-reverse;
+  align-items: center;
+}
+.fx-animpanel .events .event-label div .event-label {
+  box-sizing: border-box;
+  display: block;
+  flex-grow: 0;
+  border-radius: 3px;
+  background-color: rgba(33, 33, 33, 0.75);
+  padding: 0px 0.25em;
+  border: 1px solid #666;
+  font-size: 8pt;
+  color: white;
+}
 .fx-animpanel .events text {
   pointer-events: none;
 }
@@ -4004,10 +4027,26 @@ hide-popover hide-content {
 .context-menu2 menu * {
   box-sizing: border-box;
 }
+.context-menu2 menu separator {
+  display: flex;
+  align-items: center;
+  pointer-events: none;
+}
+.context-menu2 menu separator h1 {
+  font-weight: normal;
+  margin: 0em 0.5em;
+  font-size: 9pt;
+  color: #888;
+}
+.context-menu2 menu separator hr {
+  margin-top: 0.8em;
+}
 .context-menu2 menu hr {
+  flex-grow: 1;
   border: 0;
   height: 1px;
   background-image: linear-gradient(to right, rgba(44, 44, 44, 0), #646464, rgba(44, 44, 44));
+  pointer-events: none;
 }
 .context-menu2 menu:not(:has(:hover, .highlight)) .open {
   background-color: #555555;
@@ -4370,25 +4409,37 @@ fancy-button.fancy-normal {
 fancy-button.fancy-big {
   --size: 36px;
 }
+fancy-toolbar {
+  display: flex;
+  flex-direction: row;
+}
 fancy-button {
+  position: relative;
   --size: 28px;
   border: 1px solid var(--fancy-border-color);
-  aspect-ratio: 1 / 1;
   text-align: center;
   height: var(--size);
-  display: flex;
+  min-width: var(--size);
+  display: inline-flex;
   flex-direction: row;
   align-items: center;
   justify-content: space-evenly;
   user-select: none;
+  color: #DDD;
   gap: 0.5em;
   font-size: calc(var(--size) * 0.5);
   margin-left: -1px;
   --radius: 3px;
 }
-fancy-button:has(.label) {
-  padding-left: 1em;
-  padding-right: 1em;
+fancy-button:has(.label),
+fancy-button.dropdown {
+  padding-left: 0.5em;
+  padding-right: 0.5em;
+}
+fancy-button.dropdown::after {
+  font-family: "FontAwesome";
+  content: "\f078";
+  font-size: 0.5em;
 }
 fancy-button .label {
   font-weight: 200;
@@ -4414,7 +4465,10 @@ fancy-button.quieter:hover {
   color: var(--fancy-main-text-color);
 }
 fancy-button.compact {
-  aspect-ratio: unset;
+  min-width: unset;
+}
+fancy-button.compact .ico {
+  font-size: 0.7em;
 }
 fancy-button:first-child,
 :not(fancy-button) + fancy-button {
@@ -4787,4 +4841,23 @@ blend-space-2d-root properties-container .hide-properties dl > div .hide-range i
 }
 .array-sub-buttons .add:hover::before {
   filter: brightness(80%);
+}
+.hide-gym {
+  background-color: #111;
+  padding: 2em;
+  box-sizing: border-box;
+}
+.hide-gym h1 {
+  font-size: 1.1em;
+}
+.hide-gym details {
+  padding: 1em;
+  background-color: #222;
+  border-radius: var(--basic-border-radius);
+}
+.hide-gym details summary {
+  font-size: 1.5em;
+  background-color: #333;
+  padding: var(--basic-padding);
+  border-radius: var(--basic-border-radius);
 }

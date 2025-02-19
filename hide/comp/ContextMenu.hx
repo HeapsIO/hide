@@ -340,8 +340,20 @@ class ContextMenu {
             filteredItems = null;
             for (id => item in items) {
                 if (item.isSeparator) {
-                    var hr = js.Browser.document.createHRElement();
-                    menu.appendChild(hr);
+                    if (item.label != null && item.label.length > 0) {
+                        var separator = js.Browser.document.createElement("separator");
+                        var h1 = js.Browser.document.createElement("h1");
+                        h1.innerText = item.label;
+                        separator.appendChild(h1);
+
+                        var hr = js.Browser.document.createHRElement();
+                        separator.appendChild(hr);
+
+                        menu.appendChild(separator);
+                    } else {
+                        var hr = js.Browser.document.createHRElement();
+                        menu.appendChild(hr);
+                    }
                 } else {
                     //var li = js.Browser.document.createLIElement();
                     var li = createItem(item, id);
