@@ -504,14 +504,20 @@ class Editor extends Component {
 				for( y in sel.y1...sel.y2+1 ) {
 					var obj = cursor.table.lines[y].obj;
 					var out = {};
-					for( x in sel.x1...sel.x2+1 ) {
+					var start = sel.x1;
+					var end = sel.x2 + 1;
+					if (start < 0) {
+						start = 0;
+						end = cursor.table.columns.length;
+					}
+					
+					for( x in start...end ) {
 						var c = cursor.table.columns[x];
 						saveValue(out, obj, c);
-
+						schema.pushUnique(c);
 					}
 					data.push(out);
 				}
-				schema = [for( x in sel.x1...sel.x2+1 ) cursor.table.columns[x]];
 			}
 		}
 
