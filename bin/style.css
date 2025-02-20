@@ -4399,7 +4399,7 @@ graph-editor-root properties-container .anim-list {
 }
 .fancy-small fancy-button,
 fancy-button.fancy-small {
-  --size: 20px;
+  --size: 22px;
 }
 .fancy-normal fancy-button,
 fancy-button.fancy-normal {
@@ -4412,6 +4412,7 @@ fancy-button.fancy-big {
 fancy-toolbar {
   display: flex;
   flex-direction: row;
+  align-items: center;
 }
 fancy-button {
   position: relative;
