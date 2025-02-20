@@ -440,7 +440,12 @@ class FileTree extends FileView {
 			var extensionNewFile = getExtension(targetPath);
 
 			if (extensionNewFile == null) {
-				var extensionSourceFile = getExtension(sourcePath).extensions[0];
+				var extensionSourceFile = '';
+				var sourceExt = sourcePath.substr(sourcePath.lastIndexOf('.') + 1);
+				for (e in getExtension(sourcePath).extensions) {
+					if (e == sourceExt)
+						extensionSourceFile = e;
+				}
 				if (extensionSourceFile != null) {
 					targetPath =  targetPath + "." + extensionSourceFile;
 				}
