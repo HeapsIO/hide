@@ -7,29 +7,65 @@ class Gym extends hide.ui.View<{}> {
 
 		{
 			var toolbar = section(element, "Buttons");
-			toolbar.append(new Element("<h1>Button</h1>"));
-			toolbar.append(new Element('<fancy-button><span class="ico ico-gear"></span></fancy-button>'));
 
-			toolbar.append(new Element("<h1>Selected</h1>"));
-			toolbar.append(new Element('<fancy-button class="selected"><span class="ico ico-gear"></span></fancy-button>'));
+			toolbar.append(new Element("<h1>Size</h1>"));
 
-			toolbar.append(new Element("<h1>Text button</h1>"));
+			toolbar.append(new Element('<fancy-toolbar>
+				<fancy-button class="fancy-small make-small">
+					<span class="label">Small</span>
+				</fancy-button>
+				<fancy-button class="fancy-medium make-medium">
+					<span class="label">Medium</span>
+				</fancy-button>
+				<fancy-button class="fancy-big make-big">
+					<span class="label">Big</span>
+				</fancy-button>
+			<fancy-toolbar>'));
 
-			toolbar.append(new Element('<fancy-button><span class="label">Options</span></fancy-button>'));
-			toolbar.append(new Element('<fancy-separator></fancy-separator>'));
-			toolbar.append(new Element('<fancy-button class="selected"><span class="label">Options</span></fancy-button>'));
+			var demo = new Element("<div></div>").appendTo(toolbar);
 
-			toolbar.append(new Element("<h1>Icon and text button</h1>"));
-			toolbar.append(new Element('<fancy-button><span class="ico ico-gear"></span><span class="label">Options</span></fancy-button>'));
-			toolbar.append(new Element('<fancy-separator></fancy-separator>'));
-			toolbar.append(new Element('<fancy-button class="selected"><span class="ico ico-gear"></span><span class="label">Options</span></fancy-button>'));
+			var small = toolbar.find(".make-small");
+			var med = toolbar.find(".make-medium");
+			var big = toolbar.find(".make-big");
+			function setSize(newSize: Int) {
+				demo.toggleClass("fancy-small", newSize == 0);
+				demo.toggleClass("fancy-medium", newSize == 1);
+				demo.toggleClass("fancy-big", newSize == 2);
+
+				small.toggleClass("selected", newSize == 0);
+				med.toggleClass("selected", newSize == 1);
+				big.toggleClass("selected", newSize == 2);
+			}
+
+			small.click((e) -> setSize(0));
+			med.click((e) -> setSize(1));
+			big.click((e) -> setSize(2));
+
+			setSize(1);
+
+			demo.append(new Element("<h1>Button</h1>"));
+			demo.append(new Element('<fancy-button><span class="ico ico-gear"></span></fancy-button>'));
+
+			demo.append(new Element("<h1>Selected</h1>"));
+			demo.append(new Element('<fancy-button class="selected"><span class="ico ico-gear"></span></fancy-button>'));
+
+			demo.append(new Element("<h1>Text button</h1>"));
+
+			demo.append(new Element('<fancy-button><span class="label">Options</span></fancy-button>'));
+			demo.append(new Element('<fancy-separator></fancy-separator>'));
+			demo.append(new Element('<fancy-button class="selected"><span class="label">Options</span></fancy-button>'));
+
+			demo.append(new Element("<h1>Icon and text button</h1>"));
+			demo.append(new Element('<fancy-button><span class="ico ico-gear"></span><span class="label">Options</span></fancy-button>'));
+			demo.append(new Element('<fancy-separator></fancy-separator>'));
+			demo.append(new Element('<fancy-button class="selected"><span class="ico ico-gear"></span><span class="label">Options</span></fancy-button>'));
 
 
-			toolbar.append(new Element("<h1>Icon and really long text button</h1>"));
-			toolbar.append(new Element('<fancy-button><span class="ico ico-gear"></span><span class="label">Lorem ispum sit dolor amet</span></fancy-button>'));
+			demo.append(new Element("<h1>Icon and really long text button</h1>"));
+			demo.append(new Element('<fancy-button><span class="ico ico-gear"></span><span class="label">Lorem ispum sit dolor amet</span></fancy-button>'));
 
-			toolbar.append(new Element("<h1>Icon and dropdown aside </h1>"));
-			toolbar.append(new Element('
+			demo.append(new Element("<h1>Icon and dropdown aside </h1>"));
+			demo.append(new Element('
 				<fancy-toolbar>
 					<fancy-button>
 						<span class="ico ico-eye"></span>
@@ -49,8 +85,8 @@ class Gym extends hide.ui.View<{}> {
 				</fancy-toolbar>
 				'));
 
-			toolbar.append(new Element("<h1>With dropdown</h1>"));
-			toolbar.append(new Element('
+			demo.append(new Element("<h1>With dropdown</h1>"));
+			demo.append(new Element('
 				<fancy-toolbar>
 					<fancy-button class="dropdown">
 						<span class="label">Options</span>
@@ -64,8 +100,8 @@ class Gym extends hide.ui.View<{}> {
 			)
 			);
 
-			toolbar.append(new Element("<h1>Icon text and dropdown aside </h1>"));
-			toolbar.append(new Element('
+			demo.append(new Element("<h1>Icon text and dropdown aside </h1>"));
+			demo.append(new Element('
 				<fancy-toolbar>
 					<fancy-button>
 						<span class="ico ico-gear"></span>
@@ -77,12 +113,12 @@ class Gym extends hide.ui.View<{}> {
 			'));
 
 
-			toolbar.find(".compact, .dropdown").click((e:js.jquery.Event) -> {
+			demo.find(".compact, .dropdown").click((e:js.jquery.Event) -> {
 				hide.comp.ContextMenu.createDropdown(cast e.currentTarget, getContextMenuContent(), {});
 			});
 
-			toolbar.append(new Element("<h1>Toolbar</h1>"));
-			toolbar.append(new Element(
+			demo.append(new Element("<h1>Toolbar</h1>"));
+			demo.append(new Element(
 				'<fancy-toolbar>
 					<fancy-button>
 						<span class="ico ico-home"></span>
