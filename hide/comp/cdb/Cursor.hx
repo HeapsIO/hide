@@ -224,6 +224,8 @@ class Cursor {
 		if (selection != null) {
 			for (s in selection) {
 				for (c in getSelectedCells()) {
+					if (c == null)
+						continue;
 					var cellX = c.columnIndex;
 					var cellY = c.line.index;
 					var el = c.elementHtml;
@@ -287,7 +289,7 @@ class Cursor {
 	}
 
 	public function getCellsFromSelection(sel : Selection) {
-		if (sel == null)
+		if (sel == null || sel.y1 >= table.lines.length || sel.y2 >= table.lines.length)
 			return null;
 
 		var cells = [];
@@ -399,8 +401,8 @@ class Cursor {
 		var idx = selection.length;
 		while(idx-- > 0) {
 			var s = selection[idx];
-
-			for (idx2 in 0...selection.length) {
+			var idx2 = selection.length;
+			while(idx2-- > 0) {
 				var s2 = selection[idx2];
 				if (s2 == s) continue;
 				if (isContaining(s, s2))
