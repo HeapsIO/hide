@@ -447,5 +447,96 @@ class RemoteConsoleConnection {
 		}
 	}
 
+	@cmd function profTrack( args : { action : String } ) : Int {
+		switch( args?.action ) {
+		case "start":
+			var tmp = hl.Profile.globalBits;
+			tmp.set(Alloc);
+			hl.Profile.globalBits = tmp;
+			hl.Profile.reset();
+		case "dump":
+			hl.Profile.dump("memprofSize.dump", true, false);
+			hl.Profile.dump("memprofCount.dump", false, true);
+		default:
+			sendLogError('Action ${args?.action} not supported');
+			return -1;
+		}
+		return 0;
+	}
+
+	// ----- Heaps ------
+
+	@cmd function dumpGpu( args : { action : String } ) : Int {
+		switch( args?.action ) {
+		case "enable":
+			h3d.impl.MemoryManager.enableTrackAlloc(true);
+		case "disable":
+			h3d.impl.MemoryManager.enableTrackAlloc(false);
+		case "dump":
+			var engine = h3d.Engine.getCurrent();
+			if( engine == null ) {
+				sendLogError("h3d.Engine.getCurrent() == null");
+				return -1;
+			}
+			var stats = engine.mem.allocStats();
+			if( stats.length <= 0 ) {
+				var msg = "No alloc found, enable with h3d.impl.MemoryManager.enableTrackAlloc()";
+				sendLogError(msg);
+				return -2;
+			}
+			var sb = new StringBuf();
+			stats.sort((s1, s2) -> (s1.size > s2.size && s2.size > 0) ? -1 : 1);
+			var total = 0;
+			var textureSize = 0;
+			var bufferSize = 0;
+			for( s in stats ) {
+				var size = Std.int(s.size / 1024);
+				total += size;
+				if ( s.tex )
+					textureSize += size;
+				else
+					bufferSize += size;
+				sb.add((s.tex?"Texture ":"Buffer ") + '${s.position} #${s.count} ${Std.int(s.size/1024)}kb\n');
+			}
+			sb.add('TOTAL: ${total}kb\n');
+			sb.add('TEXTURE TOTAL: ${textureSize}kb\n');
+			sb.add('BUFFER TOTAL: ${bufferSize}kb\n');
+			sb.add('\nDETAILS\n');
+			for(s in stats) {
+				sb.add('${s.position} #${s.count} ${Std.int(s.size/1024)}kb\n');
+				s.stacks.sort((s1, s2) -> (s1.size > s2.size && s2.size > 0) ? -1 : 1);
+				for (stack in s.stacks) {
+					sb.add('\t#${stack.count} ${Std.int(stack.size/1024)}kb ${stack.stack.split('\n').join('\n\t\t')}\n');
+					for ( s in stack.stats )
+						sb.add('\t\t${s.name} ${Std.int(s.size/1024)}kb\n');
+				}
+			}
+			sys.io.File.saveContent("gpudump.txt", sb.toString());
+		default:
+			sendLogError('Action ${args?.action} not supported');
+			return -1;
+		}
+		return 0;
+	}
+
+	@cmd function profScene( args : { action : String } ) : Int {
+		#if sceneprof
+		switch( args?.action ) {
+		case "start":
+			h3d.impl.SceneProf.start();
+		case "dump":
+			h3d.impl.SceneProf.stop();
+			h3d.impl.SceneProf.save("sceneprof.json");
+		default:
+			sendLogError('Action ${args?.action} not supported');
+			return -1;
+		}
+		return 0;
+		#else
+		sendLogError("SceneProf not supported, please compile with -D sceneprof");
+		return -1;
+		#end
+	}
+
 #end
 }
