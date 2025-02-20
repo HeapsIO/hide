@@ -3513,6 +3513,10 @@ div.gradient-box {
   padding-right: 2px;
   cursor: pointer;
 }
+.remoteconsole .ico.disable {
+  color: #444444;
+  cursor: default;
+}
 .remoteconsole input {
   margin-left: 2px;
   margin-right: 2px;
@@ -3557,6 +3561,17 @@ div.gradient-box {
 }
 .remoteconsole .remoteconsole-panel .commands .sub-command {
   margin: 3px 0px;
+}
+.remoteconsole .remoteconsole-panel .commands .sub-command .sub-sub-command {
+  display: inline-block;
+}
+.remoteconsole .remoteconsole-panel .commands .sub-command .dump-file {
+  width: 200px;
+}
+.remoteconsole .remoteconsole-panel .commands h5 {
+  display: inline-table;
+  min-width: 80px;
+  margin: 0px;
 }
 .remoteconsole .new-panel {
   cursor: pointer;

@@ -8,7 +8,7 @@ package hide.view;
 		"port": 40001,
 		"disableAutoStartServer": false,
 		"commands": [
-			"dump",
+			"hashlink",
 			"custom"
 		]
 	},
@@ -219,13 +219,15 @@ class RemoteConsolePanel extends hide.comp.Component {
 		element.find("#closeBtn").on('click', function(e) {
 			view.removePanel(this);
 		});
-		var commandsList = commands ?? ["dump", "prof", "custom"];
+		var commandsList = commands ?? ["hashlink", "heaps", "custom"];
 		for( name in commandsList )
 			addCommandElement(name);
 	}
 	function set_connection( c ) {
 		if( connection == c )
 			return connection;
+		peerPath = null;
+		peerCwd = null;
 		if( c != null ) {
 			c.onClose = () -> refreshStatusIcon();
 			c.log = (msg) -> log(msg);
@@ -235,7 +237,9 @@ class RemoteConsolePanel extends hide.comp.Component {
 				var peerArgs = d?.args ?? [];
 				peerCwd = d?.cwd == null ? null : haxe.io.Path.normalize(d.cwd);
 				var peerId = peerPath + (peerArgs.length == 0 ? "" : " " + peerArgs.join(" "));
-				element.find("#peerInfo").val(peerId);
+				var peerInfo = element.find("#peerInfo");
+				peerInfo.val(peerId);
+				peerInfo.prop("title", peerId);
 			});
 		}
 		if( connection != null ) {
@@ -305,40 +309,38 @@ class RemoteConsoleCommand extends hide.comp.Component {
 	}
 }
 
-class RemoteConsoleCommandDump extends RemoteConsoleCommand {
-	public function new( panel : RemoteConsolePanel ) {
-		super(panel);
-		new Element('<legend>GC Memory</legend>').appendTo(element);
-		var subcmd = new Element('<div class="sub-command"></div>').appendTo(element);
-		var gcBtn = new Element('<input type="button" value="GC Major"/>').appendTo(subcmd);
-		gcBtn.on('click', function(e) {
-			panel.sendCommand("gcMajor", null, function(r) {
-				panel.log('Gc.major took ${r/1000} ms');
-			});
-		});
-		var subcmd = new Element('<div class="sub-command"></div>').appendTo(element);
-		var dumpBtn = new Element('<input type="button" value="Dump"/>').appendTo(subcmd);
-		var dumpFile = new Element('<input type="text" disabled/>').appendTo(subcmd);
+class RemoteConsoleSubCommandDump extends hide.comp.Component {
+	public function new( panel : RemoteConsolePanel, doDump : (onResult:(file:String,?filedesc:String,?dir:String)->Void) -> Void ) {
+		super(null, null);
+		element = new Element('<div class="sub-sub-command"></div>');
+		var dumpBtn = new Element('<input type="button" value="Dump"/>').appendTo(element);
+		var dumpFile = new Element('<input type="text" class="dump-file" disabled/>').appendTo(element);
+		var openBtn = new Element('<div class="ico ico-folder-open disable" title="Open in Explorer"/>').appendTo(element);
 		dumpBtn.on('click', function(e) {
-			panel.sendCommand("dumpMemory", null, function(r) {
-				var dir = (panel.peerCwd ?? hide.Ide.inst.projectDir) + "/";
-				var file = "hlmemory.dump";
+			doDump(function (file, ?filedesc, ?dir) {
+				if( file == null )
+					return;
+				if( dir == null )
+					dir = (panel.peerCwd ?? hide.Ide.inst.projectDir) + "/";
+				if( !sys.FileSystem.exists(dir + file) ) {
+					panel.log('File $file is not generated', true);
+					return;
+				}
 				try {
+					var newfile = new haxe.io.Path(file);
 					var now = DateTools.format(Date.now(), "%Y-%m-%d_%H-%M-%S");
-					var outfile = "hlmemory_" + now;
-					sys.FileSystem.rename(dir + file, dir + outfile + ".dump");
-					file = outfile + ".dump";
-					if( panel.peerPath != null && sys.FileSystem.exists(panel.peerPath) ) {
-						sys.io.File.copy(panel.peerPath, dir + outfile + ".hl");
-					}
+					newfile.file = newfile.file + "_" + now;
+					sys.FileSystem.rename(dir + file, dir + newfile.toString());
+					file = newfile.toString();
 				} catch( e ) {
 					panel.log(e.message, true);
 				}
-				panel.log("Dump saved to " + file);
+				panel.log('${filedesc??"File"} saved to $file');
 				dumpFile.val(dir + file);
+				dumpFile.prop("title", dir + file);
+				openBtn.removeClass("disable");
 			});
 		});
-		var openBtn = new Element('<input type="button" value="Open in Explorer"/>').appendTo(subcmd);
 		openBtn.on('click', function(e) {
 			var file = dumpFile.val();
 			if( file.length > 0 && sys.FileSystem.exists(file) ) {
@@ -347,9 +349,47 @@ class RemoteConsoleCommandDump extends RemoteConsoleCommand {
 				panel.log('File $file does not exist', true);
 			}
 		});
-		var subcmd = new Element('<div class="sub-command"></div>').appendTo(element);
-		var liveBtn = new Element('<input type="button" value="Live object"/>').appendTo(subcmd);
+	}
+}
+
+class RemoteConsoleCommandHL extends RemoteConsoleCommand {
+	public function new( panel : RemoteConsolePanel ) {
+		super(panel);
+		new Element('<legend>Hashlink</legend>').appendTo(element);
+		var subcmd = new Element('<div class="sub-command">
+			<h5>GC</h5>
+		</div>').appendTo(element);
+		var gcBtn = new Element('<input type="button" value="Major"/>').appendTo(subcmd);
+		gcBtn.on('click', function(e) {
+			panel.sendCommand("gcMajor", null, function(r) {
+				panel.log('Gc.major took ${r/1000} ms');
+			});
+		});
+		var subcmd = new Element('<div class="sub-command">
+			<h5>GC Memory</h5>
+		</div>').appendTo(element);
+		var dump = new RemoteConsoleSubCommandDump(panel, function(onResult) {
+			panel.sendCommand("dumpMemory", null, function(r) {
+				var dir = (panel.peerCwd ?? hide.Ide.inst.projectDir) + "/";
+				var file = "hlmemory.dump";
+				try {
+					var now = DateTools.format(Date.now(), "%Y-%m-%d_%H-%M-%S");
+					var outfile = "hlmemory_" + now;
+					if( panel.peerPath != null && sys.FileSystem.exists(panel.peerPath) ) {
+						sys.io.File.copy(panel.peerPath, dir + outfile + ".hl");
+					}
+					onResult(file, "GC memory dump");
+				} catch( e ) {
+					panel.log(e.message, true);
+					onResult(null);
+				}
+			});
+		}).element.appendTo(subcmd);
+		var subcmd = new Element('<div class="sub-command">
+			<h5>GC Live Objs</h5>
+		</div>').appendTo(element);
 		var liveClass = new Element('<input type="text" placeholder="Class path..."/>').appendTo(subcmd);
+		var liveBtn = new Element('<input type="button" value="Count"/>').appendTo(subcmd);
 		liveBtn.on('click', function(e) {
 			var clname = liveClass.val();
 			panel.sendCommand("liveObjects", { clname : clname }, function(r) {
@@ -361,54 +401,93 @@ class RemoteConsoleCommandDump extends RemoteConsoleCommand {
 		liveClass.keydown(function(e) {
 			if( e.key == 'Enter' ) liveBtn.click();
 		});
-	}
-	static var _ = RemoteConsoleView.registerCommandView("dump", RemoteConsoleCommandDump);
-}
-
-class RemoteConsoleCommandProf extends RemoteConsoleCommand {
-	public function new( panel : RemoteConsolePanel ) {
-		super(panel);
-		new Element('<legend>Profile</legend>').appendTo(element);
-		var subcmd = new Element('<div class="sub-command"></div>').appendTo(element);
+		var subcmd = new Element('<div class="sub-command">
+			<h5>Prof CPU</h5>
+		</div>').appendTo(element);
 		var startBtn = new Element('<input type="button" value="Start"/>').appendTo(subcmd);
 		startBtn.on('click', function(e) {
 			panel.sendCommand("profCpu", { action : "start" }, function(r) {
-				panel.log("Profiling started");
+				panel.log("CPU profiling started");
 			});
 		});
-		var dumpBtn = new Element('<input type="button" value="Dump"/>').appendTo(subcmd);
-		var dumpFile = new Element('<input type="text" disabled/>').appendTo(subcmd);
-		dumpBtn.on('click', function(e) {
+		var dump = new RemoteConsoleSubCommandDump(panel, function(onResult) {
 			panel.sendCommand("profCpu", { action : "dump" }, function(r) {
 				var dir = (panel.peerCwd ?? hide.Ide.inst.projectDir) + "/";
 				var file = "hlprofile.dump";
-				panel.log('Profil raw dump saved to $file');
 				#if (hashlink >= "1.15.0")
 				try {
 					var outfile = "hlprofile.json";
 					hlprof.ProfileGen.run([dir + file, "-o", dir + outfile]);
-					panel.log('Profil converted dump saved to $outfile');
 					file = outfile;
 				} catch (e) {
 					panel.log(e.message, true);
 				}
 				#else
-				panel.log("Please use hlpro.ProfileGen to convert it to json, or compile hide with lib hashlink >= 1.15.0");
+				panel.log("Please use hlprof.ProfileGen to convert it to json, or compile hide with lib hashlink >= 1.15.0");
 				#end
-				dumpFile.val(dir + file);
+				onResult(file, "Profile dump");
+			});
+		}).element.appendTo(subcmd);
+		var subcmd = new Element('<div class="sub-command">
+			<h5>Prof Alloc</h5>
+		</div>').appendTo(element);
+		var startBtn = new Element('<input type="button" value="Start"/>').appendTo(subcmd);
+		startBtn.on('click', function(e) {
+			panel.sendCommand("profTrack", { action : "start" }, function(r) {
+				panel.log("CPU alloc track started");
 			});
 		});
-		var openBtn = new Element('<input type="button" value="Open in Explorer"/>').appendTo(subcmd);
-		openBtn.on('click', function(e) {
-			var dumpfile = dumpFile.val();
-			if( dumpfile.length > 0 && sys.FileSystem.exists(dumpfile) ) {
-				hide.Ide.showFileInExplorer(dumpfile);
-			} else {
-				panel.log('File $dumpfile does not exist', true);
-			}
-		});
+		var dump = new RemoteConsoleSubCommandDump(panel, function(onResult) {
+			panel.sendCommand("profTrack", { action : "dump" }, function(r) {
+				onResult("memprofCount.dump", "Profile alloc dump");
+			});
+		}).element.appendTo(subcmd);
 	}
-	static var _ = RemoteConsoleView.registerCommandView("prof", RemoteConsoleCommandProf);
+	static var _ = RemoteConsoleView.registerCommandView("hashlink", RemoteConsoleCommandHL);
+}
+
+class RemoteConsoleCommandHeaps extends RemoteConsoleCommand {
+	public function new( panel : RemoteConsolePanel ) {
+		super(panel);
+		new Element('<legend>Heaps</legend>').appendTo(element);
+		var subcmd = new Element('<div class="sub-command">
+			<h5>GPU Alloc</h5>
+		</div>').appendTo(element);
+		var enableBtn = new Element('<input type="button" value="Enable"/>').appendTo(subcmd);
+		enableBtn.on('click', function(e) {
+			panel.sendCommand("dumpGpu", { action : "enable" }, function(r) {
+				panel.log('h3d.impl.MemoryManager.enableTrackAlloc(true) called');
+			});
+		});
+		var diableBtn = new Element('<input type="button" value="Disable"/>').appendTo(subcmd);
+		diableBtn.on('click', function(e) {
+			panel.sendCommand("dumpGpu", { action : "disable" }, function(r) {
+				panel.log('h3d.impl.MemoryManager.enableTrackAlloc(false) called');
+			});
+		});
+		var dump = new RemoteConsoleSubCommandDump(panel, function(onResult) {
+			panel.sendCommand("dumpGpu", { action : "dump" }, function(r) {
+				onResult(r < 0 ? null : "gpudump.txt", "GPU dump");
+			});
+		}).element.appendTo(subcmd);
+		var subcmd = new Element('<div class="sub-command">
+			<h5>Scene Prof</h5>
+		</div>').appendTo(element);
+		var startBtn = new Element('<input type="button" value="Start"/>').appendTo(subcmd);
+		startBtn.on('click', function(e) {
+			panel.sendCommand("profScene", { action : "start" }, function(r) {
+				if( r < 0 )
+					return;
+				panel.log("Scene prof started");
+			});
+		});
+		var dump = new RemoteConsoleSubCommandDump(panel, function(onResult) {
+			panel.sendCommand("profScene", { action : "dump" }, function(r) {
+				onResult(r < 0 ? null : "sceneprof.json", "Scene prof");
+			});
+		}).element.appendTo(subcmd);
+	}
+	static var _ = RemoteConsoleView.registerCommandView("heaps", RemoteConsoleCommandHeaps);
 }
 
 class RemoteConsoleCommandCustom extends RemoteConsoleCommand {

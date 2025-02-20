@@ -4103,17 +4103,19 @@ div.gradient-box {
 		padding-right: 2px;
 		cursor: pointer;
 	}
+	.ico.disable {
+		color: #444444;
+		cursor: default;
+	}
 
 	input {
 		margin-left: 2px;
 		margin-right: 2px;
 		background-color: #333333;
 	}
-
 	input:disabled {
 		background-color: #222222;
 	}
-
 	input:disabled:hover {
 		border-color: #505050;
 	}
@@ -4157,6 +4159,17 @@ div.gradient-box {
 			}
 			.sub-command {
 				margin: 3px 0px;
+				.sub-sub-command {
+					display: inline-block;
+				}
+				.dump-file {
+					width: 200px;
+				}
+			}
+			h5 {
+				display: inline-table;
+				min-width: 80px;
+				margin: 0px;
 			}
 		}
 	}
