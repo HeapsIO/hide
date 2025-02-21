@@ -9,6 +9,9 @@ class TrailPoint {
 	public var tx : Float = 0;
 	public var ty : Float = 0;
 	public var tz : Float = 0;
+	public var ux : Float = 0;
+	public var uy : Float = 0;
+	public var uz : Float = 0;
 	public var speed : Float = 0;
 	public var len : Float = 0;
 	public var lifetime : Float = 0;
@@ -102,6 +105,8 @@ class TrailObj extends h3d.scene.Mesh {
 	static var tmpHead = new TrailPoint();
 	static var tmpNormal = new h3d.Vector();
 	static var tmpBinormal = new h3d.Vector();
+	static var tmpTangent = new h3d.Vector();
+	
 
 	public function set_numTrails(new_value : Int) : Int {
 		if (numTrails != new_value) {
@@ -246,11 +251,7 @@ class TrailObj extends h3d.scene.Mesh {
 		shader.uvRepeat = prefab.uvRepeat.getIndex();
 	}
 
-	var ux : Float = 0.0;
-	var uy : Float = 0.0;
-	var uz : Float = 0.0;
-
-	function computeOrientation() {
+	function updateOrientation(p : TrailPoint) {
 		switch (prefab.orientation) {
 			case Camera: {
 				var cam = getScene().camera.pos;
@@ -271,14 +272,14 @@ class TrailObj extends h3d.scene.Mesh {
 
 				len = 1.0 / len;
 
-				ux = vcamx * len;
-				uy = vcamy * len;
-				uz = vcamz * len;
+				p.ux = vcamx * len;
+				p.uy = vcamy * len;
+				p.uz = vcamz * len;
 			}
 			case Up(x, y, z), Right(x, y ,z): {
-				ux = x;
-				uy = y;
-				uz = z;
+				p.ux = x;
+				p.uy = y;
+				p.uz = z;
 			}
 		}
 	}
@@ -388,6 +389,16 @@ class TrailObj extends h3d.scene.Mesh {
 			update(ctx.elapsedTime * timeScale);
 
 		lastUpdateDuration = haxe.Timer.stamp() - t;
+
+		#if editor
+		if (prefab != null && prefab.debugElement != null) {
+			if (prefab.debugElement.closest(js.Browser.document.documentElement).length > 0 && prefab.debug) {
+				for (i in 0...numTrails) {
+					prefab.debugElement.text(" trail[" + i + "].len = " + this.trails[i].totalLength);
+				}
+			}
+		}
+		#end
 	}
 
 	public function updateTrail( t : TrailHead, dt : Float, x : Float, y : Float, z : Float) {
@@ -518,8 +529,6 @@ class TrailObj extends h3d.scene.Mesh {
 			zOffset = sceneAbs.z;
 		}
 
-		computeOrientation();
-
 		var numObj = 0;
 		for ( i => child in children) {
 			if (Std.downcast(child, TrailsSubTailObj) == null)
@@ -577,22 +586,24 @@ class TrailObj extends h3d.scene.Mesh {
 			baseScale.z = scale.z;
 		}
 
-		inline function addEdge( p : h3d.Vector, u : Float, w : Float, normal : h3d.Vector, binormal : h3d.Vector ) {
-			buffer[count++] = p.x + binormal.x * w * baseScale.x;
-			buffer[count++] = p.y + binormal.y * w * baseScale.y;
-			buffer[count++] = p.z + binormal.z * w * baseScale.z;
-			buffer[count++] = normal.x;
-			buffer[count++] = normal.y;
-			buffer[count++] = normal.z;
+		inline function addEdge( p : TrailPoint, u : Float ) {
+		
+
+			buffer[count++] = p.x + (tmpBinormal.x * p.w * baseScale.x);
+			buffer[count++] = p.y + (tmpBinormal.y * p.w * baseScale.y);
+			buffer[count++] = p.z + (tmpBinormal.z * p.w * baseScale.z);
+			buffer[count++] = tmpNormal.x;
+			buffer[count++] = tmpNormal.y;
+			buffer[count++] = tmpNormal.z;
 			buffer[count++] = u;
 			buffer[count++] = 0;
 
-			buffer[count++] = p.x + (binormal.x * -w * baseScale.x);
-			buffer[count++] = p.y + (binormal.y * -w * baseScale.y);
-			buffer[count++] = p.z + (binormal.z * -w * baseScale.z);
-			buffer[count++] = ux;
-			buffer[count++] = uy;
-			buffer[count++] = uz;
+			buffer[count++] = p.x + (tmpBinormal.x * -p.w * baseScale.x);
+			buffer[count++] = p.y + (tmpBinormal.y * -p.w * baseScale.y);
+			buffer[count++] = p.z + (tmpBinormal.z * -p.w * baseScale.z);
+			buffer[count++] = tmpNormal.x;
+			buffer[count++] = tmpNormal.y;
+			buffer[count++] = tmpNormal.z;
 			buffer[count++] = u;
 			buffer[count++] = 1;
 		}
@@ -616,8 +627,6 @@ class TrailObj extends h3d.scene.Mesh {
 		var orientRight = prefab.orientation.match(Right(_,_,_));
 		var customAxis = ( orientRight ) ? tmpBinormal : tmpNormal;
 		var computedAxis = ( orientRight ) ? tmpNormal : tmpBinormal;
-		customAxis.set(ux, uy, uz);
-		customAxis.normalize();
 
 		for (i in 0...numTrails) {
 			var trail = trails[i];
@@ -667,12 +676,14 @@ class TrailObj extends h3d.scene.Mesh {
 						1 - cur.lifetime / prefab.lifetime;
 				}
 
-				var tangent = new h3d.Vector(cur.tx, cur.ty, cur.tz);
-				computedAxis.load( customAxis.cross(tangent) );
+				updateOrientation(cur);
+				customAxis.set(cur.ux, cur.uy, cur.uz);
+				tmpTangent.set(cur.tx, cur.ty, cur.tz);
+
+				computedAxis.load( customAxis.cross(tmpTangent) );
 				computedAxis.normalize();
 
-				var p = new h3d.Vector(cur.x, cur.y, cur.z);
-				addEdge( p, u, cur.w, tmpNormal, tmpBinormal );
+				addEdge(cur, u);
 
 				if ( cur.next != null && cur.speed < prefab.maxSpeed && cur.speed > prefab.minSpeed )
 					addSegment( segmentIndex );
@@ -753,6 +764,7 @@ class Trails extends Object3D {
 	// TODO(ces) : find better way to do that
 	// Override this before calling make() to change how many trails are instancied
 	public var numTrails : Int = 1;
+	public var debug : Bool = false;
 
 	function new(parent, shared) {
 		super(parent, shared);
@@ -832,10 +844,12 @@ class Trails extends Object3D {
 		return { icon : "toggle-on", name : "Trails" };
 	}
 
+	public var debugElement : hide.Element = null;
+
 	override public function edit(ctx:hide.prefab.EditContext) {
 		super.edit(ctx);
 
-		var props = ctx.properties.add(new hide.Element('
+		var mainElement = new hide.Element('
 		<div class="group" name="Trail Properties">
 			<dl id="trail-properties">
 				<dt>Lifetime</dt><dd><input type="range" field="lifetime" min="0" max="1"/></dd>
@@ -848,14 +862,26 @@ class Trails extends Object3D {
 		</div>
 
 		<div class="group" name="UV">
-		<dl>
-			<dt>UV Mode</dt><dd><select field="uvMode"></select></dd>
-			<dt>UV Repeat</dt><dd><select field="uvRepeat"></select></dd>
-			<dt>UV Scale</dt><dd><input type="range" field="uvStretch" min="0" max="5"/></dd>
-		</dl>
-	</div>
-		'),this, function(name:String) {
+			<dl>
+				<dt>UV Mode</dt><dd><select field="uvMode"></select></dd>
+				<dt>UV Repeat</dt><dd><select field="uvRepeat"></select></dd>
+				<dt>UV Scale</dt><dd><input type="range" field="uvStretch" min="0" max="5"/></dd>
+			</dl>
+		</div>
+
+		<div class="group" name="Debug">
+			<dl id="debug-properties">
+				<dt>Show debug</dt><dd><input type="checkbox" field="debug"/></dd>
+			</dl>
+		</div>"
+		');
+
+
+		var resetTrail : hide.Element = null;
+		var props = ctx.properties.add(mainElement,this, function(name:String) {
 			ctx.onChange(this,name);
+			resetTrail.toggle(debug);
+			debugElement.toggle(debug);
 		});
 
 		var orientationEl = new hide.Element('<dt>Orient</dt><dd>
@@ -870,6 +896,15 @@ class Trails extends Object3D {
 			</dd>');
 
 		orientationEl.appendTo(props.find("#trail-properties"));
+
+		resetTrail = new hide.Element('<input type="button" value="Reset trail"/>').appendTo(props.find("#debug-properties"));
+		resetTrail.on('click', function(e) {
+			var trailObj : TrailObj = cast local3d;
+			trailObj.reset();
+		});
+		resetTrail.toggle(debug);
+
+		debugElement = new hide.Element("<p></p>").appendTo(props.find("#debug-properties"));	
 
 		var select = orientationEl.find("select");
 		var upAxisEl = orientationEl.find("#up-axis");
