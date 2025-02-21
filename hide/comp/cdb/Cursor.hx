@@ -367,8 +367,6 @@ class Cursor {
 				selection.push({ x1: Std.int(hxd.Math.min(p1.x, p2.x)), x2: Std.int(hxd.Math.max(p1.x, p2.x)),
 					 y1: Std.int(hxd.Math.min(p1.y, p2.y)), y2: Std.int(hxd.Math.max(p1.y, p2.y)),
 					origin: prev != null && prev.origin != null ? prev.origin : {x: x, y: y} });
-				updateSelection();
-				update();
 			}
 			else if(ctrl) {
 				if (selection == null) {
@@ -376,13 +374,13 @@ class Cursor {
 					selection.push({ x1: x, x2: x, y1: y, y2: y });
 				}
 				selection.push({ x1: xIndex, x2: xIndex, y1: yIndex, y2: yIndex });
-				updateSelection();
-				update();
 			}
 			else {
 				selection = [{ x1: xIndex, x2: xIndex, y1: yIndex, y2: yIndex }];
-				update();
 			}
+			updateSelection();
+			table.showSeparator(line);
+			update();
 		}
 		else {
 			table.showSeparator(line);
