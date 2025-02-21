@@ -52,7 +52,7 @@ class Event extends hrt.prefab.Prefab implements IEvent {
 		for(evt in evts) {
 			var start = evt.evt.time;
 			var end = evt.evt.getDuration() + start;
-			var shouldBePlaying = start < time && end > time;
+			var shouldBePlaying = start < time && end > prevTime;
 
 			if (!evt.playing && shouldBePlaying) {
 				evt.playing = true;
@@ -60,7 +60,7 @@ class Event extends hrt.prefab.Prefab implements IEvent {
 					evt.play();
 			}
 
-			if (evt.playing && !shouldBePlaying) {
+			if (evt.playing && (!shouldBePlaying || end < time)) {
 				evt.playing = false;
 				if (evt.stop != null)
 					evt.stop();
