@@ -81,6 +81,9 @@ class Event extends hrt.prefab.Prefab implements IEvent {
 	}
 
 	public static function stopAllEvents(evts: Array<EventInstance>) {
+		if (evts == null)
+			return;
+
 		for (evt in evts) {
 			if (evt.playing) {
 				evt.playing = false;
