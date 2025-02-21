@@ -21,14 +21,14 @@ class Cursor {
 	public var x : Int;
 	public var y : Int;
 	public var selection : Array<Selection>;
-	public var onchange : Void -> Void;
 
 	public function new(editor) {
 		this.editor = editor;
 		set();
 	}
 
-	public function set( ?t:Table, ?x=0, ?y=0, ?sel, update = true ) {
+
+	public function set( ?t : Table, ?x : Int = 0, ?y : Int = 0, ?sel : Array<Selection>, update : Bool = true ) {
 		if( t != null ) {
 			for( t2 in editor.tables )
 				if( t.sheet.getPath() == t2.sheet.getPath() ) {
@@ -36,36 +36,39 @@ class Cursor {
 					break;
 				}
 		}
+
 		this.table = t;
 		this.x = x;
 		this.y = y;
 		this.selection = sel;
-		var ch = onchange;
-		if( ch != null ) {
-			onchange = null;
-			ch();
-		}
 		if( update ) this.update();
 	}
 
-	public function move( dx : Int, dy : Int, shift : Bool, ctrl : Bool, ?overflow = false ) {
+	public function setDefault(line, column) {
+		set(editor.tables[0], column, line);
+	}
+
+	public function move( dx : Int, dy : Int, shift : Bool, ctrl : Bool, alt : Bool, ?overflow : Bool = false ) {
 		if( table == null )
 			table = editor.tables[0];
-		if( x == -1 && ctrl ) {
+
+		// Allow user to move lines while moving cursor and holding alt
+		if( alt ) {
 			if( dy != 0 ) {
 				if( table == null )
 					return;
-				if( selection == null )
-					editor.moveLine(getLine(), dy);
-				else
-					editor.moveLines(getSelectedLines(), dy);
+				var lines = [];
+				for (c in getSelectedCells())
+					if (!lines.contains(c.line))
+						lines.push(c.line);
+				editor.moveLines(lines, dy);
 			}
 			update();
 			return;
 		}
 
 		// enter/leave subtable
-		if( dx == 0 && !shift && !ctrl ) {
+		if( dx == 0 && !shift && !ctrl && !alt) {
 			var c = getCell();
 			if( c != null && dy == 1 && c.line.subTable != null && c.line.subTable.cell == c ) {
 				set(c.line.subTable);
@@ -139,6 +142,58 @@ class Cursor {
 		update();
 	}
 
+	public function update() {
+		hide();
+
+		var line = getLine();
+		if( table == null || line == null ) return;
+
+		// Update cursor visual
+		var cursorEl = x < 0 ? line.element.find(".start").get(0) : line.cells[x]?.elementHtml;
+		if (cursorEl != null)
+			cursorEl.classList.add("cursorView");
+
+		// Update selection visual
+		if (selection != null) {
+			for (sel in selection) {
+				var selectedCells = getCellsFromSelection(sel);
+				if (selectedCells != null) {
+					for (c in selectedCells) {
+						if (c == null) continue;
+						var cellX = c.columnIndex;
+						var cellY = c.line.index;
+						var el = c.elementHtml;
+						el.classList.add("selected");
+						if (cellY == sel.y1)
+							el.classList.add("top");
+						if (cellX == sel.x1)
+							el.classList.add("left");
+						if (cellX == sel.x2)
+							el.classList.add("right");
+						if (cellY == sel.y2)
+							el.classList.add("bot");
+					}
+				}
+
+				var selectedLines = getLinesFromSelection(sel);
+				if (selectedLines != null) {
+					for (l in selectedLines) {
+						var el = l.element;
+						el.addClass("selected");
+						if (l.index == sel.y1)
+							el.addClass("top");
+						if (l.index == sel.y2)
+							el.addClass("bot");
+					}
+				}
+			}
+		}
+
+		var e = line.element.get(0);
+		if( e != null ) untyped e.scrollIntoViewIfNeeded();
+	}
+
+
 	public function setState(state : CursorState, ?table : Table) {
 		if( state == null )
 			set(table);
@@ -155,20 +210,6 @@ class Cursor {
 		};
 	}
 
-	public function setDefault(line, column) {
-		set(editor.tables[0], column, line);
-	}
-
-	public function getLine() {
-		if( table == null ) return null;
-		return table.lines[y];
-	}
-
-	public function getCell() {
-		var line = getLine();
-		if( line == null ) return null;
-		return line.cells[x];
-	}
 
 	public function save() {
 		if( table == null ) return null;
@@ -194,68 +235,12 @@ class Cursor {
 		var elt = editor.element;
 		elt.find(".selected").removeClass("selected");
 		elt.find(".cursorView").removeClass("cursorView");
-		elt.find(".cursorLine").removeClass("cursorLine");
 		elt.find(".top").removeClass("top");
 		elt.find(".left").removeClass("left");
 		elt.find(".right").removeClass("right");
 		elt.find(".bot").removeClass("bot");
 	}
 
-	public function update() {
-		hide();
-		if( table == null )
-			return;
-		var line = getLine();
-		if( line == null )
-			return;
-		if( x < 0 ) {
-			line.element.addClass("selected");
-			line.element.addClass("top");
-			line.element.addClass("bot");
-		} else {
-			var c = line.cells[x];
-			if( c != null ){
-				c.elementHtml.classList.add("cursorView");
-				c.elementHtml.parentElement.classList.add("cursorLine");
-			}
-		}
-
-		// Add selection style to cell and lines that are in a selected area
-		if (selection != null) {
-			for (s in selection) {
-				for (c in getSelectedCells()) {
-					if (c == null)
-						continue;
-					var cellX = c.columnIndex;
-					var cellY = c.line.index;
-					var el = c.elementHtml;
-					el.classList.add("selected");
-					if (cellY == s.y1)
-						el.classList.add("top");
-					if (cellX == s.x1)
-						el.classList.add("left");
-					if (cellX == s.x2)
-						el.classList.add("right");
-					if (cellY == s.y2)
-						el.classList.add("bot");
-				}
-
-				if (s.x1 == -1) {
-					for (l in getSelectedLines()) {
-						var el = l.element;
-						el.addClass("selected");
-						if (l.index == s.y1)
-							el.addClass("top");
-						if (l.index == s.y2)
-							el.addClass("bot");
-					}
-				}
-			}
-		}
-
-		var e = line.element.get(0);
-		if( e != null ) untyped e.scrollIntoViewIfNeeded();
-	}
 
 	// Get selected area with line in it. Otherwise return null
 	public function getSelectedAreaIncludingLine(line : Line) {
@@ -283,7 +268,7 @@ class Cursor {
 	}
 
 	public function getLinesFromSelection(sel : Selection) {
-		if (sel == null)
+		if (sel == null || sel.x1 >= 0)
 			return null;
 		return [for( iy in sel.y1...(sel.y2 + 1) ) table.lines[iy]];
 	}
@@ -341,6 +326,17 @@ class Cursor {
 		}
 
 		return cells;
+	}
+
+	public function getLine() {
+		if( table == null ) return null;
+		return table.lines[y];
+	}
+
+	public function getCell() {
+		var line = getLine();
+		if( line == null ) return null;
+		return line.cells[x];
 	}
 
 

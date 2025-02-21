@@ -141,8 +141,8 @@ class Editor extends Component {
 		keys.register("redo", function() undo.redo());
 		keys.register("cdb.moveBack", () -> cursorJump(true));
 		keys.register("cdb.moveAhead", () -> cursorJump(false));
-		keys.register("cdb.insertLine", function() { insertLine(cursor.table,cursor.y); cursor.move(0,1,false,false); });
-		keys.register("duplicate", function() { duplicateLine(cursor.table,cursor.y); cursor.move(0,1,false,false); });
+		keys.register("cdb.insertLine", function() { insertLine(cursor.table,cursor.y); cursor.move(0,1,false,false,false); });
+		keys.register("duplicate", function() { duplicateLine(cursor.table,cursor.y); cursor.move(0,1,false,false,false); });
 		for( k in ["cdb.editCell","rename"] )
 			keys.register(k, function() {
 				var c = cursor.getCell();
@@ -189,30 +189,28 @@ class Editor extends Component {
 	}
 
 	function onKey( e : hide.Element.Event ) {
-		if( e.altKey )
-			return false;
 		var isRepeat: Bool = untyped e.originalEvent.repeat;
 		switch( e.keyCode ) {
 		case K.LEFT:
-			cursor.move( -1, 0, e.shiftKey, e.ctrlKey);
+			cursor.move( -1, 0, e.shiftKey, e.ctrlKey, e.altKey);
 			return true;
 		case K.RIGHT:
-			cursor.move( 1, 0, e.shiftKey, e.ctrlKey);
+			cursor.move( 1, 0, e.shiftKey, e.ctrlKey, e.altKey);
 			return true;
 		case K.UP:
-			cursor.move( 0, -1, e.shiftKey, e.ctrlKey);
+			cursor.move( 0, -1, e.shiftKey, e.ctrlKey, e.altKey);
 			return true;
 		case K.DOWN:
-			cursor.move( 0, 1, e.shiftKey, e.ctrlKey);
+			cursor.move( 0, 1, e.shiftKey, e.ctrlKey, e.altKey);
 			return true;
 		case K.TAB:
 			cursor.move( e.shiftKey ? -1 : 1, 0, false, false, true);
 			return true;
 		case K.PGUP:
-			cursor.move(0, -10, e.shiftKey, e.ctrlKey);
+			cursor.move(0, -10, e.shiftKey, e.ctrlKey, e.altKey);
 			return true;
 		case K.PGDOWN:
-			cursor.move(0, 10, e.shiftKey, e.ctrlKey);
+			cursor.move(0, 10, e.shiftKey, e.ctrlKey, e.altKey);
 			return true;
 		case K.SPACE:
 			e.preventDefault(); // prevent scroll
@@ -510,7 +508,7 @@ class Editor extends Component {
 						start = 0;
 						end = cursor.table.columns.length;
 					}
-					
+
 					for( x in start...end ) {
 						var c = cursor.table.columns[x];
 						saveValue(out, obj, c);
@@ -2225,19 +2223,13 @@ class Editor extends Component {
 	}
 
 	public function popupLine( line : Line ) {
-		if( !line.table.canInsert() )
-			return;
+		if( !line.table.canInsert() ) return;
+
 		var sheet = line.table.sheet;
-		var selection = cursor.getSelectedLines();
-		var isSelectedLine = false;
-		for( l in selection ) {
-			if( l == line ) {
-				isSelectedLine = true;
-				break;
-			}
-		}
-		var firstLine = isSelectedLine ? selection[0] : line;
-		var lastLine = isSelectedLine ? selection[selection.length - 1] : line;
+		var selectedLines = cursor.getSelectedLines();
+		var isSelectedLine = selectedLines.contains(line);
+		var firstLine = isSelectedLine ? selectedLines[0] : line;
+		var lastLine = isSelectedLine ? selectedLines[selectedLines.length - 1] : line;
 
 		var sepIndex = -1;
 		for( i in 0...sheet.separators.length )
@@ -2279,7 +2271,7 @@ class Editor extends Component {
 			moveSubmenu.push({
 				label : sep.title,
 				enabled : true,
-				click : isSelectedLine ? moveLines.bind(selection, delta) : () -> moveLine(usedLine, delta),
+				click : isSelectedLine ? moveLines.bind(selectedLines, delta) : () -> moveLine(usedLine, delta),
 			});
 		}
 
@@ -2303,12 +2295,12 @@ class Editor extends Component {
 			{
 				label : "Move Up",
 				enabled:  (firstLine.index > 0 || sepIndex >= 0),
-				click : isSelectedLine ? moveLines.bind(selection, -1) : () -> moveLine(line, -1),
+				click : isSelectedLine ? moveLines.bind(selectedLines, -1) : () -> moveLine(line, -1),
 			},
 			{
 				label : "Move Down",
 				enabled:  (lastLine.index < sheet.lines.length - 1),
-				click : isSelectedLine ? moveLines.bind(selection, 1) : () -> moveLine(line, 1),
+				click : isSelectedLine ? moveLines.bind(selectedLines, 1) : () -> moveLine(line, 1),
 			},
 			{ label : "Move to Group", enabled : moveSubmenu.length > 0, menu : moveSubmenu },
 			{ label : "", isSeparator : true },

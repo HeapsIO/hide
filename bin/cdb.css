@@ -27,32 +27,24 @@
 .cdb:focus .cdb-sheet td.cursorView {
   border: 2px solid #ccc !important;
 }
-.cdb:focus .cdb-sheet tr.cursorLine {
-  background-color: #262d35;
-}
-.cdb:focus .cdb-sheet tr.cursorLine td.start,
-.cdb:focus .cdb-sheet tr.cursorLine td.t_readonly {
-  color: #aaaaaa;
-  background-color: #1f427a;
-}
 .cdb:focus .cdb-sheet tr.selected,
 .cdb:focus .cdb-sheet td.selected {
   background-color: #313a48;
 }
 .cdb:focus .cdb-sheet tr.selected.top td.start,
 .cdb:focus .cdb-sheet td.selected.top td.start {
-  border-top: 2px solid #ccc;
+  border-top: 1px solid #ccc;
 }
 .cdb:focus .cdb-sheet tr.selected.bot td.start,
 .cdb:focus .cdb-sheet td.selected.bot td.start {
-  border-bottom: 2px solid #ccc;
+  border-bottom: 1px solid #ccc;
 }
 .cdb:focus .cdb-sheet tr.selected td.start,
 .cdb:focus .cdb-sheet td.selected td.start,
 .cdb:focus .cdb-sheet tr.selected td.t_readonly,
 .cdb:focus .cdb-sheet td.selected td.t_readonly {
-  border-left: 2px solid #ccc;
-  border-right: 2px solid #ccc;
+  border-left: 1px solid #ccc;
+  border-right: 1px solid #ccc;
   color: #aaaaaa;
   background-color: #0b57d0;
 }

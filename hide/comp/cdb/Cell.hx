@@ -893,7 +893,7 @@ class Cell {
 				case K.TAB:
 					closeEdit();
 					e.preventDefault();
-					editor.cursor.move(e.shiftKey ? -1 : 1, 0, false, false, true);
+					editor.cursor.move(e.shiftKey ? -1 : 1, 0, false, false, false, true);
 					var c = editor.cursor.getCell();
 							if (c != this && c != null)
 								c.edit();
@@ -1006,7 +1006,7 @@ class Cell {
 					return;
 				case K.TAB:
 					d.filterInput.blur();
-					editor.cursor.move(e.shiftKey? -1:1, 0, false, false, true);
+					editor.cursor.move(e.shiftKey? -1:1, 0, false, false, false, true);
 					var c = editor.cursor.getCell();
 					if( c != this ) c.edit();
 					e.preventDefault();
@@ -1042,7 +1042,7 @@ class Cell {
 					return;
 				case K.TAB:
 					d.filterInput.blur();
-					editor.cursor.move(e.shiftKey? -1:1, 0, false, false, true);
+					editor.cursor.move(e.shiftKey? -1:1, 0, false, false, false, true);
 					var c = editor.cursor.getCell();
 					if( c != this ) c.edit();
 					e.preventDefault();
