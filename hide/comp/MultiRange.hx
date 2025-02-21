@@ -38,17 +38,17 @@ class MultiRange extends Component {
     }
 
     function syncRanges() {
-        var biggestMin = Math.NEGATIVE_INFINITY;
-        var smallestMax = Math.POSITIVE_INFINITY;
+        var min = Math.POSITIVE_INFINITY;
+        var max = Math.NEGATIVE_INFINITY;
 
-        for (range in ranges) {
-            biggestMin = Math.max(biggestMin, @:privateAccess range.curMin);
-            smallestMax = Math.min(smallestMax, @:privateAccess range.curMax);
+        for (i => range in ranges) {
+            min = Math.min(value[i], Math.min(min, @:privateAccess range.curMin));
+            max = Math.max(value[i], Math.max(max, @:privateAccess range.curMax));
         }
 
         for (range in ranges) {
-            range.element.attr("min", biggestMin);
-            range.element.attr("max", smallestMax);
+            range.element.attr("min", min);
+            range.element.attr("max", max);
         }
     }
 
