@@ -1894,9 +1894,11 @@ class SceneEditor {
 
 			undo.change(Field(e, "name", oldName), function() {
 				tree.refresh(() -> refreshTree());
+				(cast view:Dynamic).onPrefabChange(e, "name");
 				e.updateInstance("name");
 			});
 
+			(cast view:Dynamic).onPrefabChange(e, "name");
 			e.updateInstance("name");
 
 			return true;

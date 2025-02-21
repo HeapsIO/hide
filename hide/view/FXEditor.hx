@@ -748,7 +748,7 @@ class FXEditor extends hide.view.FileView {
 			data.refreshObjectAnims();
 		}
 
-		if(pname == "time" || pname == "loop" || pname == "animation" || pname == "blendMode" || pname == "duration") {
+		if(pname == "name" || pname == "time" || pname == "loop" || pname == "animation" || pname == "blendMode" || pname == "duration") {
 			afterPan(false);
 			data.refreshObjectAnims();
 			rebuildAnimPanel();
