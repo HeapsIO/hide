@@ -46,14 +46,20 @@ class Event extends hrt.prefab.Prefab implements IEvent {
 		};
 	}
 
-	public static function updateEvents(evts: Array<EventInstance>, time: Float, prevTime: Float) {
+	public static function updateEvents(evts: Array<EventInstance>, time: Float, prevTime: Float, duration: Float) {
 		if(evts == null) return;
 
 		for(evt in evts) {
 			var start = evt.evt.time;
 			var end = evt.evt.getDuration() + start;
+
+			// Take "looping" and seeking back in time into account
+			if (time < prevTime && duration > 0) {
+				prevTime -= duration;
+			}
+
 			if (time > prevTime) {
-				var shouldBePlaying = start <= time && end >= prevTime;
+				var shouldBePlaying = start <= time && end > prevTime;
 
 				if (!evt.playing && shouldBePlaying) {
 					evt.playing = true;
@@ -71,6 +77,16 @@ class Event extends hrt.prefab.Prefab implements IEvent {
 
 			if(evt.setTime != null)
 				evt.setTime(time - evt.evt.time);
+		}
+	}
+
+	public static function stopAllEvents(evts: Array<EventInstance>) {
+		for (evt in evts) {
+			if (evt.playing) {
+				evt.playing = false;
+				if (evt.stop != null)
+					evt.stop();
+			}
 		}
 	}
 

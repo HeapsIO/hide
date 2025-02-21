@@ -219,8 +219,12 @@ class FXAnimation extends h3d.scene.Object {
 			}
 		}
 
-		if( finishedPlaying && onEnd != null )
-			onEnd();  // Delay until after syncRec, to avoid calling syncRec on children
+		if(finishedPlaying) {
+			Event.stopAllEvents(events);
+			if (onEnd != null ) {
+				onEnd();  // Delay until after syncRec, to avoid calling syncRec on children
+			}
+		}
 
 		firstSync = false;
 		ctx.visibleFlag = old;
@@ -374,7 +378,7 @@ class FXAnimation extends h3d.scene.Object {
 			}
 		}
 
-		Event.updateEvents(events, time, prevTime);
+		Event.updateEvents(events, time, prevTime, duration);
 
 		this.prevTime = localTime;
 	}

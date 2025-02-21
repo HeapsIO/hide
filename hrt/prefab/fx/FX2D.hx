@@ -160,7 +160,7 @@ class FX2DAnimation extends h2d.Object {
 			}
 		}
 
-		Event.updateEvents(events, time, prevTime);
+		Event.updateEvents(events, time, prevTime, duration);
 
 		this.prevTime = localTime;
 	}
