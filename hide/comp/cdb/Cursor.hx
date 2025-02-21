@@ -103,7 +103,7 @@ class Cursor {
 			}
 		}
 		else
-			selection = null;
+			addElementToSelection(line.table, line, x + dx, y + dy);
 
 		var minX = table.displayMode == Table ? -1 : 0;
 		var maxX = table.columns.length;
@@ -358,34 +358,29 @@ class Cursor {
 	public function addElementToSelection(table: Table, line: Line, xIndex : Int, yIndex: Int, shift: Bool = false, ctrl: Bool = false) {
 		var p1 = new h3d.Vector(x, y, 0);
 		var p2 = new h3d.Vector(xIndex, yIndex, 0);
-		if (this.table == table) {
-			if (shift) {
-				var prev = selection != null && selection.length >= 1 ? selection[selection.length - 1] : null;
-				if (prev != null && prev.origin != null)
-					p1 = new h3d.Vector(prev.origin.x, prev.origin.y, 0);
+		if (shift && this.table == table) {
+			var prev = selection != null && selection.length >= 1 ? selection[selection.length - 1] : null;
+			if (prev != null && prev.origin != null)
+				p1 = new h3d.Vector(prev.origin.x, prev.origin.y, 0);
+			selection = [];
+			selection.push({ x1: Std.int(hxd.Math.min(p1.x, p2.x)), x2: Std.int(hxd.Math.max(p1.x, p2.x)),
+				 y1: Std.int(hxd.Math.min(p1.y, p2.y)), y2: Std.int(hxd.Math.max(p1.y, p2.y)),
+				origin: prev != null && prev.origin != null ? prev.origin : {x: x, y: y} });
+		}
+		else if(ctrl) {
+			if (selection == null) {
 				selection = [];
-				selection.push({ x1: Std.int(hxd.Math.min(p1.x, p2.x)), x2: Std.int(hxd.Math.max(p1.x, p2.x)),
-					 y1: Std.int(hxd.Math.min(p1.y, p2.y)), y2: Std.int(hxd.Math.max(p1.y, p2.y)),
-					origin: prev != null && prev.origin != null ? prev.origin : {x: x, y: y} });
+				selection.push({ x1: x, x2: x, y1: y, y2: y });
 			}
-			else if(ctrl) {
-				if (selection == null) {
-					selection = [];
-					selection.push({ x1: x, x2: x, y1: y, y2: y });
-				}
-				selection.push({ x1: xIndex, x2: xIndex, y1: yIndex, y2: yIndex });
-			}
-			else {
-				selection = [{ x1: xIndex, x2: xIndex, y1: yIndex, y2: yIndex }];
-			}
-			updateSelection();
-			table.showSeparator(line);
-			update();
+			selection.push({ x1: xIndex, x2: xIndex, y1: yIndex, y2: yIndex });
 		}
 		else {
-			table.showSeparator(line);
-			editor.pushCursorState();
+			selection = [{ x1: xIndex, x2: xIndex, y1: yIndex, y2: yIndex }];
 		}
+
+		updateSelection();
+		table.showSeparator(line);
+		update();
 	}
 
 	// Ensure each cell in selection is here only once
