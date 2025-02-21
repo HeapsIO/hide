@@ -123,9 +123,10 @@ class EventsEditor extends Component implements CurveEditorComponent
 					if (currentEventMove != null)
 						return;
 
-					for (otherEvent in events) {
-						if (!event.selected) {
-							otherEvent.selected = false;
+					if (!event.selected) {
+						for (i => otherEvent in events) {
+								otherEvent.selected = false;
+								eventRefreshFunction[i]();
 						}
 					}
 
