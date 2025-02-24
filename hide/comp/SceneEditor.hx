@@ -4384,7 +4384,7 @@ class SceneEditor {
 		removeInstance(prefab, false);
 
 		var enabled = prefab.enabled && !prefab.inGameOnly;
-		var actuallyInWorld = prefab == sceneData || (prefab.parent != null && prefab.parent.has(prefab));
+		var actuallyInWorld = prefab == sceneData || (prefab.findParent(hrt.prefab.Prefab, null, false, true)?.find((p) -> p == prefab, true, false) != null);
 		if (enabled && actuallyInWorld) {
 			prefab.shared.current3d = prefab.parent?.findFirstLocal3d(true) ?? root3d;
 			prefab.shared.current2d = prefab.parent?.findFirstLocal2d(true) ?? root2d;

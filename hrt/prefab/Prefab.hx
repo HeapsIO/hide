@@ -468,6 +468,9 @@ class Prefab {
 	**/
 	public function findParent<T:Prefab>(?cl:Class<T> ,?filter : (p:T) -> Bool, includeSelf:Bool = false, followRefs:Bool = false) : Null<T> {
 		var current = includeSelf ? this : this.parent;
+		if (current == null && followRefs)
+			current = this.shared.parentPrefab;
+
 		while(current != null) {
 			var asCl = cl != null ? Std.downcast(current, cl) : cast current;
 			if (asCl != null) {

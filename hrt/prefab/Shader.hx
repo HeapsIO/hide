@@ -112,6 +112,18 @@ class Shader extends Prefab {
 			return;
 		var parent = parent;
 
+		// If we are at the root of a prefab, check if we are in a ref, and in that case
+		// get the ref parent as a parent
+		if (parent?.parent == null) {
+			var current = shared.parentPrefab?.parent;
+			while(current != null && current.parent == null) {
+				current = current.shared.parentPrefab?.parent;
+			}
+			if (current != null) {
+				parent = current;
+			}
+		}
+
 		if( Std.isOfType(parent, Material) ) {
 			var material : Material = cast parent;
 			for( m in material.getMaterials(true, filterObj) )

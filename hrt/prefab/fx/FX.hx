@@ -400,7 +400,10 @@ class FXAnimation extends h3d.scene.Object {
 		if (sub != null) {
 			var eventLen = out?.length ?? 0;
 			out = initEvents(sub.refInstance, out);
-			Std.downcast(sub.refInstance.findFirstLocal3d(), FXAnimation).events = null;
+			var fxAnimation = Std.downcast(sub.refInstance.findFirstLocal3d(), FXAnimation);
+			if (fxAnimation != null) {
+				fxAnimation.events = null;
+			}
 			if (out != null) {
 				// Offset the start time of the events that were added to our array in
 				// init events
