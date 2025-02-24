@@ -118,13 +118,10 @@ class TrailObj extends h3d.scene.Mesh {
 		return numTrails;
 	}
 
-	// How many frame we wait before adding a new point
-	static final maxFramerate : Float = 30.0;
-
 	var shader : hrt.shader.BaseTrails;
 
 	public function calcMaxTrailPoints() : Int {
-		return std.Math.ceil( prefab.lifetime * maxFramerate ) + 2; // Segment count + head and tail
+		return std.Math.ceil( prefab.lifetime * prefab.framerate ) + 2; // Segment count + head and tail
 	}
 
 	function calcMaxVertexes() : Int {
@@ -556,7 +553,7 @@ class TrailObj extends h3d.scene.Mesh {
 
 		if ( cooldown > 0.0 )
 			return;
-		cooldown = 1.0 / maxFramerate;
+		cooldown = 1.0 / prefab.framerate;
 
 		if ( numObj > 0) {
 			for (i => childIndex in subTrailChildIndices) {
@@ -760,7 +757,7 @@ class Trails extends Object3D {
 	@:s public var uvMode : UVMode = EStretch;
 	@:s public var uvStretch: Float = 1.0;
 	@:s public var uvRepeat : UVRepeat = EMod;
-
+	@:s public var framerate : Float = 30.0;
 	// TODO(ces) : find better way to do that
 	// Override this before calling make() to change how many trails are instancied
 	public var numTrails : Int = 1;
@@ -836,6 +833,12 @@ class Trails extends Object3D {
 			if ( @:privateAccess trailObj.dprim != null )
 				@:privateAccess trailObj.dprim.alloc(null);
 		}
+
+		if(props == "framerate") {
+			@:privateAccess trailObj.allocBuffers();
+			if ( @:privateAccess trailObj.dprim != null )
+				@:privateAccess trailObj.dprim.alloc(null);
+		}
 	}
 
 	#if editor
@@ -852,6 +855,7 @@ class Trails extends Object3D {
 		var mainElement = new hide.Element('
 		<div class="group" name="Trail Properties">
 			<dl id="trail-properties">
+				<dt>Framerate</dt><dd><input type="range" field="framerate" min="1" max="60"/></dd>
 				<dt>Lifetime</dt><dd><input type="range" field="lifetime" min="0" max="1"/></dd>
 				<dt>Width Start</dt><dd><input type="range" field="startWidth" min="0" max="10"/></dd>
 				<dt>Width End</dt><dd><input type="range" field="endWidth" min="0" max="10"/></dd>
