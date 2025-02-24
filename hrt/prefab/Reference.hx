@@ -99,12 +99,9 @@ class Reference extends Object3D {
 		refInstance = p;
 
 		if (refInstance.to(Object3D) != null) {
-			var obj3d = refInstance.to(Object3D);
-			obj3d.loadTransform(this); // apply this transform to the reference prefab
-			obj3d.name = name;
-			obj3d.visible = visible;
 			refInstance.make();
 			local3d = Object3D.getLocal3d(refInstance);
+			updateInstance();
 		}
 		else {
 			refInstance.make();
