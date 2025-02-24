@@ -11,7 +11,6 @@ class AnimEvent extends hrt.prefab.fx.Event {
 
 	override function new(parent, shared) {
 		super(parent, shared);
-		duration = -1.0; // negative values mean use the animation length
 	}
 
 	override function makeInstance() {
@@ -112,7 +111,7 @@ class AnimEvent extends hrt.prefab.fx.Event {
 	#end
 
 	public override function getDuration() : Float {
-		return duration >= 0 ? duration : (animTemplate != null ? animTemplate.getDuration() : 0.0);
+		return duration > 0.0 ? duration : (animTemplate != null ? animTemplate.getDuration() : 0.0);
 	}
 
 	static var _ = Prefab.register("animEvent", AnimEvent);
