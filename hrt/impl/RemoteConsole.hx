@@ -1,15 +1,14 @@
 package hrt.impl;
 
 /**
-	A simple socket-based local communication channel,
+	A simple socket-based local communication channel (plaintext and unsafe),
 	aim at communicate between 2 programs (e.g. Hide and a HL game).
 
-	Usage in game:
+	Usage in game (see also hrt.impl.RemoteTools):
 	```haxe
 	var rcmd = new hrt.impl.RemoteConsole();
 	// rcmd.log = (msg) -> logToUI(msg);
 	// rcmd.logError = (msg) -> logErrorToUI(msg);
-	rcmd.registerCommands(handler);
 	rcmd.connect();
 	rcmd.sendCommand("log", "Hello!", function(r) {});
 	```
@@ -30,7 +29,7 @@ class RemoteConsole {
 		this.connections = [];
 	}
 
-	public function startServer( ?onClient : RemoteConsoleConnection->Void ) {
+	public function startServer( ?onClient : RemoteConsoleConnection -> Void ) {
 		close();
 		sock = new hxd.net.Socket();
 		sock.onError = function(msg) {
@@ -107,7 +106,9 @@ class RemoteConsole {
 		} else if( connections.length == 1 ) {
 			connections[0].sendCommand(cmd, args, onResult);
 		} else {
-			logError("Send to multiple target not implemented");
+			for( c in connections ) {
+				c.sendCommand(cmd, args, onResult);
+			}
 		}
 	}
 
@@ -121,6 +122,7 @@ class RemoteConsoleConnection {
 	var parent : RemoteConsole;
 	var sock : hxd.net.Socket;
 	var waitReply : Map<Int, Dynamic->Void> = [];
+	var commands : Map<String, (args:Dynamic, onDone:Dynamic->Void) -> Void> = [];
 
 	public function new( parent : RemoteConsole, s : hxd.net.Socket ) {
 		this.parent = parent;
@@ -131,10 +133,13 @@ class RemoteConsoleConnection {
 	public function close() {
 		UID = 0;
 		waitReply = [];
+		commands = [];
 		if( sock != null )
 			sock.close();
 		sock = null;
-		parent.connections.remove(this);
+		if( parent != null )
+			parent.connections.remove(this);
+		parent = null;
 		onClose();
 	}
 
@@ -198,12 +203,12 @@ class RemoteConsoleConnection {
 
 	// ----- Commands -----
 
-	var commands = new Map<String, (args:Dynamic, onDone:Dynamic->Void) -> Void>();
-
 	/**
-		register a single command f.
-		`args` can be null, or an object that can be parse from/to json.
-		`onDone(result)` must be call when `f` finished, and `result` can be null or a json serializable object.
+		Register a single command `name`, with `f` as command handler.
+		`args` can be null, or an object that can be parsed from/to json.
+		`onDone(result)` must be called when `f` finishes, and `result` can be null or a json serializable object.
+
+		If `f` is `null`, the command is considered removed.
 	 */
 	public function registerCommand( name : String, f : (args:Dynamic, onDone:Dynamic->Void) -> Void ) {
 		commands.set(name, f);
@@ -289,6 +294,17 @@ class RemoteConsoleConnection {
 			args : Sys.args(),
 			cwd : Sys.getCwd(),
 		};
+	}
+
+	// ----- Console ------
+
+	@cmd function runInConsole( args : { cmd : String } ) : Int {
+		return onConsoleCommand(args?.cmd ?? "");
+	}
+
+	public dynamic function onConsoleCommand( cmd : String ) : Int {
+		sendLogError('onConsoleCommand not implemented, received $cmd');
+		return -1;
 	}
 
 #if editor

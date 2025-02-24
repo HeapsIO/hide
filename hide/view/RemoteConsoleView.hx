@@ -160,6 +160,11 @@ class RemoteConsoleView extends hide.ui.View<{}> {
 		stopServer();
 	}
 
+	// allow hide-plugin to send console command to connected game instances
+	public static function runInRemoteConsole( cmd : String ) {
+		rcmd?.sendCommand("runInConsole", { cmd : cmd });
+	}
+
 	// allow hide-plugin to add/modify game-specific hide command control
 	public static var commandViews = new Map<String, Class<RemoteConsoleCommand>>();
 	public static function registerCommandView( name : String, cl : Class<RemoteConsoleCommand> ) {
@@ -236,10 +241,12 @@ class RemoteConsolePanel extends hide.comp.Component {
 				peerPath = d?.programPath == null ? "???" : haxe.io.Path.normalize(d.programPath);
 				var peerArgs = d?.args ?? [];
 				peerCwd = d?.cwd == null ? null : haxe.io.Path.normalize(d.cwd);
-				var peerId = peerPath + (peerArgs.length == 0 ? "" : " " + peerArgs.join(" "));
+				var peerArgsStr = (peerArgs.length == 0 ? "" : " " + peerArgs.join(" "));
+				var peerId = haxe.io.Path.withoutDirectory(peerPath) + peerArgsStr;
+				var peerIdFull = peerPath + peerArgsStr;
 				var peerInfo = element.find("#peerInfo");
 				peerInfo.val(peerId);
-				peerInfo.prop("title", peerId);
+				peerInfo.prop("title", peerIdFull);
 			});
 		}
 		if( connection != null ) {
@@ -495,7 +502,8 @@ class RemoteConsoleCommandCustom extends RemoteConsoleCommand {
 	public function new( panel : RemoteConsolePanel ) {
 		super(panel);
 		new Element('<legend>Custom</legend>').appendTo(element);
-		addCustomCmd();
+		addRawCmd();
+		addConsoleCmd();
 		refreshNewCustomCommandButton();
 	}
 	function refreshNewCustomCommandButton() {
@@ -503,15 +511,28 @@ class RemoteConsoleCommandCustom extends RemoteConsoleCommand {
 			newCustomCommandBtn.remove();
 		newCustomCommandBtn = new Element('
 		<div class="sub-command">
-			<i class="ico ico-plus" title="Add custom command"></i>
+			<div class="sub-sub-command" id="add-raw" title="Add raw custom command">
+				<i class="ico ico-plus"></i>
+				raw
+			</div>
+			<div class="sub-sub-command" id="add-console" title="Add console command">
+				<i class="ico ico-plus"></i>
+				console
+			</div>
 		</div>').appendTo(element);
-		newCustomCommandBtn.on('click', function(e) {
-			addCustomCmd();
+		newCustomCommandBtn.find("#add-raw").on('click', function(e) {
+			addRawCmd();
+			refreshNewCustomCommandButton();
+		});
+		newCustomCommandBtn.find("#add-console").on('click', function(e) {
+			addConsoleCmd();
 			refreshNewCustomCommandButton();
 		});
 	}
-	function addCustomCmd() {
-		var subcmd = new Element('<div class="sub-command"></div>').appendTo(element);
+	function addRawCmd() {
+		var subcmd = new Element('<div class="sub-command">
+			<h5>Raw</h5>
+		</div>').appendTo(element);
 		var cmdTxt = new Element('<input type="text" placeholder="Cmd..."/>').appendTo(subcmd);
 		var argsTxt = new Element('<input type="text" placeholder="Args..." title="Can accept formatted json object"/>').appendTo(subcmd);
 		var cmdBtn = new Element('<input type="button" value="Run"/>').appendTo(subcmd);
@@ -519,7 +540,9 @@ class RemoteConsoleCommandCustom extends RemoteConsoleCommand {
 			var str : String = argsTxt.val();
 			var obj = try {haxe.Json.parse(str); } catch (e) { str; };
 			var cmdVal = cmdTxt.val();
-			panel.sendCommand(cmdVal, obj, (result) -> panel.log('$cmdVal $obj result: $result'));
+			panel.sendCommand(cmdVal, obj, function(r) {
+				panel.log('$cmdVal ${Std.string(obj)} result: $r');
+			});
 		});
 		cmdTxt.keydown(function(e) {
 			if( e.key == 'Enter' ) cmdBtn.click();
@@ -528,6 +551,24 @@ class RemoteConsoleCommandCustom extends RemoteConsoleCommand {
 			if( e.key == 'Enter' ) cmdBtn.click();
 		});
 		var closeBtn = new Element('<i class="ico ico-close" title="Remove custom command"></i>').appendTo(subcmd);
+		closeBtn.on('click', function(e) {
+			subcmd.remove();
+		});
+	}
+	function addConsoleCmd() {
+		var subcmd = new Element('<div class="sub-command">
+			<h5>Console</h5>
+		</div>').appendTo(element);
+		var cmdTxt = new Element('<input type="text" class="wide" placeholder="Console Cmd..."/>').appendTo(subcmd);
+		var cmdBtn = new Element('<input type="button" value="Run"/>').appendTo(subcmd);
+		cmdBtn.on('click', function(e) {
+			var cmdVal = cmdTxt.val();
+			panel.sendCommand("runInConsole", { cmd : cmdVal });
+		});
+		cmdTxt.keydown(function(e) {
+			if( e.key == 'Enter' ) cmdBtn.click();
+		});
+		var closeBtn = new Element('<i class="ico ico-close" title="Remove console command"></i>').appendTo(subcmd);
 		closeBtn.on('click', function(e) {
 			subcmd.remove();
 		});

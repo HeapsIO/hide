@@ -3539,6 +3539,9 @@ div.gradient-box {
 .remoteconsole input:disabled:hover {
   border-color: #505050;
 }
+.remoteconsole input.wide {
+  width: 300px;
+}
 .remoteconsole .logs {
   margin-top: 2px;
   margin-bottom: 2px;

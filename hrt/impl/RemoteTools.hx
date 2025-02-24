@@ -43,6 +43,11 @@ class RemoteTools {
 		return rc != null && rc.isConnected();
 	}
 
+	public static dynamic function onConsoleCommand( cmd : String ) : Int {
+		logError('onConsoleCommand not implemented, received $cmd');
+		return -1;
+	}
+
 	static function update() {
 		if( rc == null || rc.isConnected() )
 			return;
@@ -50,13 +55,26 @@ class RemoteTools {
 		if( current - lastUpdate < RETRY_DELAY )
 			return;
 		lastUpdate = current;
-		rc.connect(onConnected);
+		rc.connect(function(b) {
+			if( onConnected != null )
+				onConnected(b);
+			if( b ) {
+				var c = rc.connections[0];
+				if( c != null ) {
+					c.onConsoleCommand = (cmd) -> onConsoleCommand(cmd);
+				}
+			}
+		});
 	}
 
 	// ----- Commands -----
 
 	public static function log( msg : String ) {
 		rc?.sendCommand("log", msg);
+	}
+
+	public static function logError( msg : String ) {
+		rc?.sendCommand("logError", msg);
 	}
 
 	public static function openCdb( sheet : String, ?line : Int, ?column : Int ) {
