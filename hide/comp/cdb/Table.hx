@@ -328,8 +328,13 @@ class Table extends Component {
 			});
 			element.append(l);
 		} else if( sheet.lines.length == 0 && canInsert() ) {
-			var l = J('<tr><td colspan="${columns.length + 1}"><input type="button" value="Insert Line"/></td></tr>');
+			var l = J('<tr><td colspan="${columns.length + 1}"><input class="default-cursor" type="button" value="Insert Line"/></td></tr>');
 			l.find("input").click(function(_) {
+				editor.insertLine(this);
+				editor.cursor.set(this);
+			});
+			l.find("input").keydown(function(e) {
+				if (e.keyCode != 13) return;
 				editor.insertLine(this);
 				editor.cursor.set(this);
 			});
@@ -831,7 +836,7 @@ class Table extends Component {
 		// add/edit properties
 		var end = new Element("<tr>").appendTo(element);
 		end = new Element("<td>").attr("colspan", "2").appendTo(end);
-		var sel = new Element("<select class='insertField'>").appendTo(end);
+		var sel = new Element("<select class='insertField default-cursor'>").appendTo(end);
 		new Element("<option>").attr("value", "").text("--- Choose ---").appendTo(sel);
 		var canInsert = false;
 		available.sort((c1, c2) -> (c1.name > c2.name ? 1 : -1));

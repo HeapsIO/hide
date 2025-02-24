@@ -30,17 +30,30 @@ class Cursor {
 
 	public function set( ?t : Table, ?x : Int = 0, ?y : Int = 0, ?sel : Array<Selection>, update : Bool = true ) {
 		if( t != null ) {
-			for( t2 in editor.tables )
+			for( t2 in editor.tables ) {
 				if( t.sheet.getPath() == t2.sheet.getPath() ) {
 					t = t2;
 					break;
 				}
+			}
+		}
+
+		if (t != null && t.lines.length == 0) {
+			var e = t.element.find(".default-cursor");
+			e.focus();
 		}
 
 		this.table = t;
 		this.x = x;
 		this.y = y;
+
 		this.selection = sel;
+		if (this.selection == null) {
+			var l = t?.lines[y];
+			if (t != null && l != null)
+				addElementToSelection(t, l, x, y);
+		}
+
 		if( update ) this.update();
 	}
 
@@ -67,7 +80,7 @@ class Cursor {
 			return;
 		}
 
-		// enter/leave subtable
+		// Enter/leave subtable
 		if( dx == 0 && !shift && !ctrl && !alt) {
 			var c = getCell();
 			if( c != null && dy == 1 && c.line.subTable != null && c.line.subTable.cell == c ) {
@@ -75,14 +88,23 @@ class Cursor {
 				return;
 			}
 			var st = Std.downcast(table, SubTable);
-			if( c != null && dy == -1 && st != null && c.line.index == 0 ) {
-				set(st.parent, st.cell.columnIndex, st.cell.line.index);
-				return;
+			if (dy == -1 && st != null) {
+				if (c != null && c.line.index == 0) {
+					set(st.parent, st.cell.columnIndex, st.cell.line.index);
+					return;
+				}
+
+				if (c == null) {
+					st.element.find(".default-cursor").blur();
+					set(st.parent, st.cell.columnIndex, st.cell.line.index);
+					return;
+				}
 			}
 		}
 
-		// take care of current filter
+		// Take care of current filter
 		var line = getLine();
+		if (line == null) return;
 		if( line != null && dy != 0 ) {
 			var allLines = line.element.parent().children("tr").not(".separator");
 			var lines = allLines.not(".filtered").not(".hidden");
@@ -91,22 +113,6 @@ class Cursor {
 			if( targetLine == null || targetLine == line.element.get(0) ) return;
 			dy = allLines.index(new Element(targetLine)) - allLines.index(line.element);
 		}
-
-		// Allow area selection while moving cursor with arrows and holding shift
-		if (shift) {
-			if (selection != null && selection[selection.length - 1].origin != null) {
-				var prev = selection[selection.length - 1];
-				selection = [ { x1: Std.int(hxd.Math.min(prev.origin.x, x + dx)), y1: Std.int(hxd.Math.min(prev.origin.y, y + dy)),
-					x2: Std.int(hxd.Math.max(prev.origin.x, x + dx)), y2: Std.int(hxd.Math.max(prev.origin.y, y + dy)),
-					origin: prev.origin }];
-			}
-			else {
-				addElementToSelection(line.table, line, x + dx, y + dy, true, false);
-				selection[selection.length -1].origin = { x: x, y: y };
-			}
-		}
-		else
-			addElementToSelection(line.table, line, x + dx, y + dy);
 
 		var minX = table.displayMode == Table ? -1 : 0;
 		var maxX = table.columns.length;
@@ -139,6 +145,24 @@ class Cursor {
 			y += dy;
 			if( y >= maxY ) y = maxY - 1;
 		}
+
+		// Allow area selection while moving cursor with arrows and holding shift
+		if (shift) {
+			if (selection != null && selection[selection.length - 1].origin != null) {
+				var prev = selection[selection.length - 1];
+				selection = [ { x1: Std.int(hxd.Math.min(prev.origin.x, x)), y1: Std.int(hxd.Math.min(prev.origin.y, y)),
+					x2: Std.int(hxd.Math.max(prev.origin.x, x)), y2: Std.int(hxd.Math.max(prev.origin.y, y)),
+					origin: prev.origin }];
+			}
+			else {
+				addElementToSelection(line.table, line, x, y, true, false);
+				selection[selection.length -1].origin = { x: x - dx, y: y - dy };
+			}
+		}
+		else
+			addElementToSelection(line.table, line, x, y);
+
+
 		update();
 	}
 
@@ -150,8 +174,10 @@ class Cursor {
 
 		// Update cursor visual
 		var cursorEl = x < 0 ? line.element.find(".start").get(0) : line.cells[x]?.elementHtml;
-		if (cursorEl != null)
+		if (cursorEl != null) {
 			cursorEl.classList.add("cursorView");
+			cursorEl.focus();
+		}
 
 		// Update selection visual
 		if (selection != null) {
@@ -366,12 +392,12 @@ class Cursor {
 		else if(ctrl) {
 			if (selection == null) {
 				selection = [];
-				selection.push({ x1: x, x2: x, y1: y, y2: y });
+				selection.push({ x1: x, x2: x, y1: y, y2: y, origin: {x: xIndex, y:yIndex} });
 			}
-			selection.push({ x1: xIndex, x2: xIndex, y1: yIndex, y2: yIndex });
+			selection.push({ x1: xIndex, x2: xIndex, y1: yIndex, y2: yIndex, origin: {x: xIndex, y:yIndex} });
 		}
 		else {
-			selection = [{ x1: xIndex, x2: xIndex, y1: yIndex, y2: yIndex }];
+			selection = [{ x1: xIndex, x2: xIndex, y1: yIndex, y2: yIndex, origin: {x: xIndex, y:yIndex} }];
 		}
 
 		updateSelection();
