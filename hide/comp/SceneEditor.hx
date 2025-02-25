@@ -1261,15 +1261,27 @@ class SceneEditor {
 	function updateStats() {
 		if( statusText.visible ) {
 			var memStats = scene.engine.mem.stats();
+
+			function splitCentaines(v: Int) {
+				var str = Std.string(v);
+				var endStr = "";
+				for (char in 0...str.length) {
+					if (char % 3 == 0 && char > 0) {
+						endStr = " " + endStr;
+					}
+					endStr = str.charAt(str.length - char - 1) + endStr;
+				}
+				return endStr;
+			}
 			@:privateAccess
 			var lines : Array<String> = [
-				'Scene objects: ${scene.s3d.getObjectsCount()}',
-				'Interactives: ' + interactives.count(),
-				'Triangles: ${scene.engine.drawTriangles}',
-				'Buffers: ${memStats.bufferCount}',
-				'Textures: ${memStats.textureCount}',
+				'Scene objects: ${splitCentaines(scene.s3d.getObjectsCount())}',
+				'Interactives: ' + splitCentaines(interactives.count()),
+				'Triangles: ${splitCentaines(scene.engine.drawTriangles)}',
+				'Buffers: ${splitCentaines(memStats.bufferCount)}',
+				'Textures: ${splitCentaines(memStats.textureCount)}',
 				'FPS: ${Math.round(scene.engine.realFps)}',
-				'Draw Calls: ${scene.engine.drawCalls}',
+				'Draw Calls: ${splitCentaines(scene.engine.drawCalls)}',
 				'V Ram: ${Std.int(memStats.totalMemory / (1024 * 1024))} Mb',
 			];
 			statusText.text = lines.join("\n");
