@@ -52,6 +52,7 @@ class Reference extends Object3D {
 		#end
 			var refInstance = hxd.res.Loader.currentInstance.load(source).to(hrt.prefab.Resource).load().clone();
 			refInstance.shared.parentPrefab = this;
+			this.refInstance = refInstance;
 			return refInstance;
 		#if editor
 		} catch (_) {
