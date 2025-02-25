@@ -854,8 +854,13 @@ class Editor extends Component {
 
 		endChanges();
 		cursor.table.getRealSheet().sync();
-		for (t in modifiedTables)
-			t.refresh();
+		for (t in modifiedTables) {
+			var toRefresh = t;
+			while(toRefresh != null) {
+				toRefresh.refresh();
+				toRefresh = toRefresh.parent;
+			}
+		}
 		updateFilter();
 	}
 
