@@ -12,68 +12,8 @@ class SceneTree extends IconTree<String> {
 		init();
 	}
 
-	function resolvePath(id:String) : Dynamic {
-		var path = id.split("/");
-		var root = showRoot ? obj.parent : obj;
-		while( path.length > 0 ) {
-			var idx = Std.parseInt(path[0]);
-			if( idx == null ) break;
-			path.shift();
-			root = root.getChildAt(idx);
-		}
-		if( path.length == 0 )
-			return root;
-		var prop = path[0];
-		switch( prop.split(":").shift() ) {
-		case "mat":
-			return root.toMesh().getMaterials()[Std.parseInt(prop.substr(4))];
-		case "joint":
-			return root.getObjectByName(path.pop().substr(6));
-		}
-		return null;
-	}
-
 	override function onClick(id:String, evt: Dynamic) {
-		var v : Dynamic = resolvePath(id);
-		if( Std.isOfType(v, h3d.scene.Object) )
-			onSelectObject(v);
-		else if( Std.isOfType(v, h3d.mat.Material) )
-			onSelectMaterial(v);
-	}
-
-	public dynamic function onSelectObject( obj : h3d.scene.Object ) {
-	}
-
-	public dynamic function onSelectMaterial( m : h3d.mat.Material ) {
-	}
-
-	override function applyStyle(id: String, el: Element) {
-		var v : Dynamic = resolvePath(id);
-
-		var obj = Std.downcast(v, h3d.scene.Object);
-		if( obj == null || Std.isOfType(obj,h3d.scene.Skin.Joint) ) return;
-
-		if (el.find(".ico-eye").length == 0) {
-			var visibilityToggle = new Element('<i class="ico ico-eye visibility-large-toggle"/>').appendTo(el.find(".jstree-anchor").first());
-			visibilityToggle.click(function (e) {
-				obj.visible = !obj.visible;
-				el.toggleClass("hidden", !obj.visible);
-			});
-		}
-		el.toggleClass("hidden", !obj.visible);
-	}
-
-	function getIcon( c : h3d.scene.Object ) {
-		if( c.isMesh() ) {
-			if( Std.isOfType(c, h3d.scene.Skin) )
-				return "male";
-			if( Std.isOfType(c, h3d.parts.GpuParticles) || Std.isOfType(c, h3d.parts.Particles) )
-				return "snowflake-o";
-			return "cube";
-		}
-		if( Std.isOfType(c, h3d.scene.Light) )
-			return "sun-o";
-		return "circle-o";
+		onSelectionChanged(getSelectedObjects());
 	}
 
 	override function get( id : String ) {
@@ -137,6 +77,23 @@ class SceneTree extends IconTree<String> {
 		return elements;
 	}
 
+	override function applyStyle(id: String, el: Element) {
+		var v : Dynamic = resolvePath(id);
+
+		var obj = Std.downcast(v, h3d.scene.Object);
+		if( obj == null || Std.isOfType(obj,h3d.scene.Skin.Joint) ) return;
+
+		if (el.find(".ico-eye").length == 0) {
+			var visibilityToggle = new Element('<i class="ico ico-eye visibility-large-toggle"/>').appendTo(el.find(".jstree-anchor").first());
+			visibilityToggle.click(function (e) {
+				obj.visible = !obj.visible;
+				el.toggleClass("hidden", !obj.visible);
+			});
+		}
+		el.toggleClass("hidden", !obj.visible);
+	}
+
+
 	public function getObjectName( o : h3d.scene.Object ) {
 		if( o.name != null )
 			return o.name;
@@ -145,4 +102,45 @@ class SceneTree extends IconTree<String> {
 		return o.toString() + "@" + @:privateAccess o.parent.children.indexOf(o);
 	}
 
+
+	function resolvePath(id:String) : Dynamic {
+		var path = id.split("/");
+		var root = showRoot ? obj.parent : obj;
+		while( path.length > 0 ) {
+			var idx = Std.parseInt(path[0]);
+			if( idx == null ) break;
+			path.shift();
+			root = root.getChildAt(idx);
+		}
+		if( path.length == 0 )
+			return root;
+		var prop = path[0];
+		switch( prop.split(":").shift() ) {
+		case "mat":
+			return root.toMesh().getMaterials()[Std.parseInt(prop.substr(4))];
+		case "joint":
+			return root.getObjectByName(path.pop().substr(6));
+		}
+		return null;
+	}
+
+	function getIcon( c : h3d.scene.Object ) {
+		if( c.isMesh() ) {
+			if( Std.isOfType(c, h3d.scene.Skin) )
+				return "male";
+			if( Std.isOfType(c, h3d.parts.GpuParticles) || Std.isOfType(c, h3d.parts.Particles) )
+				return "snowflake-o";
+			return "cube";
+		}
+		if( Std.isOfType(c, h3d.scene.Light) )
+			return "sun-o";
+		return "circle-o";
+	}
+
+	function getSelectedObjects() {
+		return [for (s in getSelection()) resolvePath(s)];
+	}
+
+
+	public dynamic function onSelectionChanged(elts : Array<Dynamic>) {}
 }

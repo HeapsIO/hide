@@ -36,81 +36,6 @@ class Model extends FileView {
 	var shader = new h3d.shader.FixedColor(0xffffff);
 	var shader2 = new h3d.shader.FixedColor(0xff8000);
 
-	override function save() {
-
-		if(!modified) return;
-
-		// Save render props
-		if (Ide.inst.currentConfig.get("sceneeditor.renderprops.edit", false) && sceneEditor.renderPropsRoot != null)
-			sceneEditor.renderPropsRoot.save();
-
-		for (o in obj.findAll(o -> Std.downcast(o, h3d.scene.Mesh))) {
-
-			var hmd = Std.downcast(o.primitive, h3d.prim.HMDModel);
-			if (hmd == null)
-				continue;
-
-			var input : h3d.prim.ModelDatabase.ModelDataInput = {
-				resourceDirectory : @:privateAccess hmd.lib.resource.entry.directory,
-				resourceName : @:privateAccess hmd.lib.resource.name,
-				objectName : o.name,
-				hmd : hmd,
-				skin : o.find((o) -> Std.downcast(o, h3d.scene.Skin))
-			}
-
-			h3d.prim.ModelDatabase.current.saveModelProps(input);
-		}
-
-		// Save current Anim data
-		if( currentAnimation != null ) {
-			var hideData = loadProps();
-
-			var events : Array<{ frame : Int, data : String }> = [];
-			for(i in 0 ... obj.currentAnimation.events.length){
-				if( obj.currentAnimation.events[i] == null) continue;
-				for( e in obj.currentAnimation.events[i])
-					events.push({frame:i, data:e});
-			}
-			hideData.animations.set(currentAnimation.file.split("/").pop(), {events : events} );
-
-			var bytes = new haxe.io.BytesOutput();
-			bytes.writeString(haxe.Json.stringify(hideData, "\t"));
-			hxd.File.saveBytes(getPropsPath(), bytes.getBytes());
-		}
-
-		super.save();
-	}
-
-
-	override function onFileChanged( wasDeleted : Bool, rebuildView = true ) {
-		if (wasDeleted ) {
-			super.onFileChanged(wasDeleted);
-		} else if (element.find(".heaps-scene").length == 0) {
-			super.onFileChanged(wasDeleted);
-		} else {
-			super.onFileChanged(wasDeleted, false);
-			onRefresh();
-		}
-	}
-
-	function loadProps() {
-		var propsPath = getPropsPath();
-		var hideData : h3d.prim.ModelCache.HideProps;
-		if( sys.FileSystem.exists(propsPath) )
-			hideData = haxe.Json.parse(sys.io.File.getContent(propsPath));
-		else
-			hideData = { animations : {} };
-		return hideData;
-	}
-
-	function getPropsPath() {
-		var path = config.get("hmd.savePropsByAnimation", true) ? currentAnimation.file : getPath();
-		var parts = path.split(".");
-		parts.pop();
-		parts.push("props");
-		return ide.getPath(parts.join("."));
-	}
-
 	override function onDisplay() {
 		this.saveDisplayKey = "Model:" + state.path;
 
@@ -160,7 +85,7 @@ class Model extends FileView {
 		sceneEditor = new hide.comp.SceneEditor(this, root);
 		sceneEditor.editorDisplay = false;
 		sceneEditor.onRefresh = onRefresh;
-		sceneEditor.onUpdate = update;
+		sceneEditor.onUpdate = onUpdate;
 		sceneEditor.onSelectionChanged = function(elts : Array<hrt.prefab.Prefab>, ?mode : hide.comp.SceneEditor.SelectMode = Default) {
 			if (tree != null) tree.setSelection([]);
 			refreshSelectionHighlight(null);
@@ -177,7 +102,6 @@ class Model extends FileView {
 
 		sceneEditor.view.keys.register("view.refresh", function() rebuild());
 		sceneEditor.view.keys.register("view.refreshApp", function() untyped chrome.runtime.reload());
-
 
 		element.find(".hide-scene-tree").first().append(sceneEditor.tree.element);
 		element.find(".render-props-edition").find('.hide-scenetree').append(sceneEditor.renderPropsTree.element);
@@ -199,10 +123,482 @@ class Model extends FileView {
 		setRenderPropsEditionVisibility(Ide.inst.currentConfig.get("sceneeditor.renderprops.edit", false));
 	}
 
-	inline function get_scene() return sceneEditor.scene;
+	override function save() {
 
+		if(!modified) return;
+
+		// Save render props
+		if (Ide.inst.currentConfig.get("sceneeditor.renderprops.edit", false) && sceneEditor.renderPropsRoot != null)
+			sceneEditor.renderPropsRoot.save();
+
+		for (o in obj.findAll(o -> Std.downcast(o, h3d.scene.Mesh))) {
+
+			var hmd = Std.downcast(o.primitive, h3d.prim.HMDModel);
+			if (hmd == null)
+				continue;
+
+			var input : h3d.prim.ModelDatabase.ModelDataInput = {
+				resourceDirectory : @:privateAccess hmd.lib.resource.entry.directory,
+				resourceName : @:privateAccess hmd.lib.resource.name,
+				objectName : o.name,
+				hmd : hmd,
+				skin : o.find((o) -> Std.downcast(o, h3d.scene.Skin))
+			}
+
+			h3d.prim.ModelDatabase.current.saveModelProps(input);
+		}
+
+		// Save current Anim data
+		if( currentAnimation != null ) {
+			var hideData = loadProps();
+
+			var events : Array<{ frame : Int, data : String }> = [];
+			for(i in 0 ... obj.currentAnimation.events.length){
+				if( obj.currentAnimation.events[i] == null) continue;
+				for( e in obj.currentAnimation.events[i])
+					events.push({frame:i, data:e});
+			}
+			hideData.animations.set(currentAnimation.file.split("/").pop(), {events : events} );
+
+			var bytes = new haxe.io.BytesOutput();
+			bytes.writeString(haxe.Json.stringify(hideData, "\t"));
+			hxd.File.saveBytes(getPropsPath(), bytes.getBytes());
+		}
+
+		super.save();
+	}
+
+	override function onFileChanged( wasDeleted : Bool, rebuildView = true ) {
+		if (wasDeleted ) {
+			super.onFileChanged(wasDeleted);
+		} else if (element.find(".heaps-scene").length == 0) {
+			super.onFileChanged(wasDeleted);
+		} else {
+			super.onFileChanged(wasDeleted, false);
+			onRefresh();
+		}
+	}
+
+	override function buildTabMenu() {
+		var menu = super.buildTabMenu();
+		var arr : Array<hide.comp.ContextMenu.MenuItem> = [
+			{ label : null, isSeparator : true },
+			{ label : "Export", click : function() {
+				ide.chooseFileSave(this.getPath().substr(0,-4)+"_dump.txt", function(file) {
+					var lib = @:privateAccess scene.loadHMD(this.getPath(),false);
+					var hmd = lib.header;
+					hmd.data = lib.getData();
+					sys.io.File.saveContent(ide.getPath(file), new hxd.fmt.hmd.Dump().dump(hmd));
+				});
+			} },
+			{ label : "Export Animation", enabled : currentAnimation != null, click : function() {
+				ide.chooseFileSave(this.getPath().substr(0,-4)+"_"+currentAnimation.name+"_dump.txt", function(file) {
+					var lib = @:privateAccess scene.loadHMD(ide.getPath(currentAnimation.file),true);
+					var hmd = lib.header;
+					hmd.data = lib.getData();
+					sys.io.File.saveContent(ide.getPath(file), new hxd.fmt.hmd.Dump().dump(hmd));
+				});
+			} },
+		];
+		return menu.concat(arr);
+	}
+
+	// Scene tree bindings
 	var def = false;
-	function selectMaterial( m : h3d.mat.Material ) {
+	static var lodPow : Float = 0.3;
+	var selectedMesh : h3d.scene.Mesh = null;
+	var displayJoints = null;
+	var selectedCount = 0;
+	function onTreeSelectionChanged(elts : Array<Dynamic>) {
+		function canMultiEdit<T>(cl : Class<T>) {
+			for (e in elts)
+				if (!Std.isOfType(e, cl))
+					return false;
+
+			return true;
+		}
+
+		var properties = sceneEditor.properties;
+		properties.clear();
+
+		if (canMultiEdit(h3d.scene.Object))
+			onSelectObjects(cast elts);
+
+		if (canMultiEdit(h3d.mat.Material))
+			onSelectMaterials(cast elts);
+
+		if (canMultiEdit(h3d.scene.Skin.Joint))
+			onSelectJoints(cast elts);
+	}
+
+	function onSelectObjects(objs : Array<h3d.scene.Object>) {
+		// TODO: manage multi-edit for objects
+		if (objs.length != 1)
+			return;
+		var obj = objs[0];
+
+		var properties = sceneEditor.properties;
+
+		var objectCount = 1 + obj.getObjectsCount();
+		var meshes = obj.getMeshes();
+		var vertexCount = 0, triangleCount = 0, materialDraws = 0, materialCount = 0, bonesCount = 0;
+		var uniqueMats = new Map();
+		for( m in obj.getMaterials() ) {
+			if( uniqueMats.exists(m.name) ) continue;
+			uniqueMats.set(m.name, true);
+			materialCount++;
+		}
+		for( m in meshes ) {
+			var p = m.primitive;
+			triangleCount += p.triCount();
+			vertexCount += p.vertexCount();
+			var multi = Std.downcast(m, h3d.scene.MultiMaterial);
+			var skin = Std.downcast(m, h3d.scene.Skin);
+			if( skin != null )
+				bonesCount += skin.getSkinData().allJoints.length;
+			var count = if( skin != null && skin.getSkinData().splitJoints != null )
+				skin.getSkinData().splitJoints.length;
+			else if( multi != null )
+				multi.materials.length
+			else
+				1;
+			materialDraws += count;
+		}
+
+		function roundVec(vec: Dynamic) : Any {
+			var scale = 1000;
+			vec.x = hxd.Math.round(vec.x * scale) / scale;
+			vec.y = hxd.Math.round(vec.y * scale) / scale;
+			vec.z = hxd.Math.round(vec.z * scale) / scale;
+			return vec;
+		}
+
+		var transform = obj.defaultTransform;
+
+		var mesh = Std.downcast(obj, h3d.scene.Mesh);
+		var hmd = mesh != null ? Std.downcast(mesh.primitive, h3d.prim.HMDModel) : null;
+		var vertexFormat = '';
+		if ( mesh != null && mesh.primitive.buffer != null ) {
+			for ( i in mesh.primitive.buffer.format.getInputs() )
+				vertexFormat += ' ' + i.name;
+			vertexFormat = '<dt>Vertex format</dt><dd>$vertexFormat</dd>';
+		}
+		var colliderInfo = '';
+		if ( hmd != null && @:privateAccess hmd.colliderData != null ) {
+			var colliderVertex = 0;
+			var colliderTriangle = 0;
+			var col = hmd.getCollider();
+			function recCol(c : h3d.col.Collider) {
+				var optimized = Std.downcast(c, h3d.col.Collider.OptimizedCollider);
+				if ( optimized != null ) {
+					recCol(optimized.b);
+					return;
+				}
+				var list = Std.downcast(c, h3d.col.Collider.GroupCollider);
+				if ( list != null ) {
+					for ( l in list.colliders )
+						recCol(l);
+					return;
+				}
+				var polygonBuffer = Std.downcast(c, h3d.col.PolygonBuffer);
+				if ( polygonBuffer != null ) {
+					colliderTriangle += @:privateAccess polygonBuffer.triCount;
+					colliderVertex += @:privateAccess Std.int(polygonBuffer.buffer.length / 3);
+					return;
+				}
+				var polygon = Std.downcast(c, h3d.col.Polygon);
+				if ( polygon != null ) {
+					var t = @:privateAccess polygon.triPlanes;
+					while ( t != null ) {
+						colliderTriangle += 1;
+						colliderVertex += 3;
+						t = t.next;
+					}
+					return;
+				}
+			}
+			recCol(col);
+
+			colliderInfo += '<dt>Collider vertices</dt><dd>$colliderVertex</dd>';
+			colliderInfo += '<dt>Collider triangle</dt><dd>$colliderTriangle</dd>';
+		}
+		var e = properties.add(new Element('
+			<div class="group" name="Properties">
+				<dl>
+					<dt>X</dt><dd><input field="x"/></dd>
+					<dt>Y</dt><dd><input field="y"/></dd>
+					<dt>Z</dt><dd><input field="z"/></dd>
+					<dt>Attach</dt><dd><div class="follow">
+					<div class="select">
+						<div class="header">
+							<span class="label">-- None --</span>
+							<div class="icon ico ico-caret-right"></div>
+						</div>
+						<div class="dropdown"/>
+					</div></dd>
+				</dl>
+			</div>
+			<div class="group" name="Info">
+				<dl>
+					<dt>Objects</dt><dd>$objectCount</dd>
+					<dt>Meshes</dt><dd>${meshes.length}</dd>
+					<dt>Materials</dt><dd>$materialCount</dd>
+					<dt>Draws</dt><dd>$materialDraws</dd>
+					<dt>Bones</dt><dd>$bonesCount</dd>
+					<dt>Vertexes</dt><dd>$vertexCount</dd>
+					<dt>Triangles</dt><dd>$triangleCount</dd>
+					' + vertexFormat + colliderInfo +
+					if (transform != null) {
+						var size : h3d.col.Point = roundVec(obj.getBounds().getSize());
+
+						size.x = hxd.Math.max(0, size.x);
+						size.y = hxd.Math.max(0, size.y);
+						size.z = hxd.Math.max(0, size.z);
+
+						var meshSize : h3d.col.Point = null;
+						if (mesh != null) {
+							var bounds = mesh.primitive.getBounds().clone();
+							bounds.transform(obj.getAbsPos());
+							meshSize = bounds.getSize();
+
+							roundVec(meshSize);
+							meshSize.x = hxd.Math.max(0, meshSize.x);
+							meshSize.y = hxd.Math.max(0, meshSize.y);
+							meshSize.z = hxd.Math.max(0, meshSize.z);
+
+						}
+
+						var pos = transform.getPosition();
+						roundVec(pos);
+						var rot = transform.getEulerAngles();
+						rot.x = hxd.Math.radToDeg(rot.x);
+						rot.y = hxd.Math.radToDeg(rot.y);
+						rot.z = hxd.Math.radToDeg(rot.z);
+						rot = roundVec(rot);
+
+						var scale : h3d.Vector = roundVec(transform.getScale());
+
+						'<dt>Local Pos</dt><dd>X: ${pos.x}, Y: ${pos.y}, Z: ${pos.z}</dd>
+						<dt>Local Rot</dt><dd>X: ${rot.x}°, Y: ${rot.y}°, Z: ${rot.z}°</dd>
+						<dt>Local Scale</dt><dd>X: ${scale.x}, Y: ${scale.y}, Z: ${scale.z}</dd>
+						<dt>Total Size</dt><dd>X: ${size.x}, Y: ${size.y}, Z: ${size.z}</dd>
+						${meshSize != null ? '<dt>Mesh Size</dt><dd>X: ${meshSize.x}, Y: ${meshSize.y}, Z: ${meshSize.z}</dd>' : ""}';
+					} else '' +
+				'</dl>
+			</div>
+
+		'),obj);
+
+		selectedMesh = mesh;
+
+		if (mesh != null && hmd != null) {
+			// Blendshapes edition
+			if (@:privateAccess hmd.blendshape != null) {
+				var blendShape = new Element('
+				<div class="group" name="Blend Shapes">
+					<dt>Index</dt><dd><input id="bs-index" type="range" min="0" max="${@:privateAccess hmd.blendshape.getBlendshapeCount() - 1}" step="1" field=""/></dd>
+					<dt>Amount</dt><dd><input id="bs-amount" type="range" min="0" max="1" field=""/></dd>
+				</div>');
+
+				properties.add(blendShape, null, function(pname){
+					@:privateAccess hmd.blendshape.setBlendshapeAmount(blendShape.find("#bs-index").val(),blendShape.find("#bs-amount").val());
+				});
+			}
+
+			// LODs edition
+			if (@:privateAccess hmd.lodCount() > 1) {
+				var lodsEl = new Element('
+					<div class="group lods" name="LODs">
+						<dt>LOD Count</dt><dd>${hmd.lodCount()}</dd>
+						<dt>Force display LOD</dt>
+						<dd>
+							<select id="select-lods">
+								<option value="-1">None</option>
+								${[ for(idx in 0...hmd.lodCount()) '<option value="${idx}">LOD ${idx}</option>'].join("")}
+							</select>
+						</dd>
+						<dt>LOD Vertexes</dt><dd id="vertexes-count">-</dd>
+						<div class="lods-line">
+							<div class="line"></div>
+							<div class="cursor">
+								<div class="cursor-line"></div>
+								<p class="ratio">100%</p>
+							</div>
+						</div>
+						<div id="buttons">
+							<input type="button" value="Reset defaults" id="reset-lods"/>
+						</div>
+					</div>
+				');
+				properties.add(lodsEl, null, null);
+
+				function getLodRatioFromIdx(idx : Int) {
+					var lodConfig = hmd.getLodConfig();
+					if (idx == 0) return 1.;
+					if (idx >= hmd.lodCount() + 1) return 0.;
+					return lodConfig[idx - 1];
+				}
+
+				function getLodRatioFromPx(px : Float) {
+					var ratio = 1 - (px / lodsEl.find(".line").width());
+					return Math.pow(ratio, 1.0 / lodPow);
+				}
+
+				function getLodRatioPowedFromIdx(idx : Int) {
+					var lodConfig = hmd.getLodConfig();
+					var prev = idx == 0 ? 1 : hxd.Math.pow(lodConfig[idx - 1] , lodPow);
+					var c = lodConfig[idx] == null ? 0 : lodConfig[idx];
+					return (Math.abs(prev - hxd.Math.pow(c, lodPow)));
+				}
+
+				function startDrag(onMove: js.jquery.Event->Void, onStop: js.jquery.Event->Void) {
+					var el = new Element(element[0].ownerDocument.body);
+					el.on("mousemove.lods", onMove);
+					el.on("mouseup.lods", function(e: js.jquery.Event) {
+						el.off("mousemove.lods");
+						el.off("mouseup.lods");
+						e.preventDefault();
+						e.stopPropagation();
+						onStop(e);
+					});
+				}
+
+				function refreshLodLine() {
+					var areas = lodsEl.find(".area");
+					var lineEl = lodsEl.find(".line");
+					var idx = 0;
+					for (area in areas) {
+						var areaEl = new Element(area);
+						areaEl.css({ width : '${lineEl.width() * getLodRatioPowedFromIdx(idx)}px' });
+
+						var roundedRatio = Std.int(Math.pow(getLodRatioFromIdx(idx), lodPow) * 10000.) / 100.;
+						areaEl.find('#percent').text('${roundedRatio}%');
+						idx++;
+					}
+				}
+
+				var resetLod = lodsEl.find('#reset-lods');
+				resetLod.on("click", function() {
+					var prevConfig = @:privateAccess hmd.lodConfig?.copy();
+					@:privateAccess hmd.lodConfig = null;
+					Ide.inst.quickMessage('Lod config reset for object : ${obj.name}');
+					refreshLodLine();
+
+					undo.change(Custom(function(undo) {
+						if (undo) {
+							@:privateAccess hmd.lodConfig = prevConfig;
+						} else {
+							@:privateAccess hmd.lodConfig = null;
+						}
+
+						refreshLodLine();
+					}));
+				});
+
+				var selectLod = lodsEl.find("select");
+				selectLod.on("change", function(){
+					hmd.forcedLod = Std.int(lodsEl.find("select").val());
+				});
+
+				var lodsLine = lodsEl.find(".line");
+				for (idx in 0...(hmd.lodCount() + 1)) {
+					var isCulledLod = idx == hmd.lodCount();
+					var areaEl = new Element('
+					<div class="area">
+						<p>${isCulledLod ? 'Culled' : 'LOD&nbsp${idx}'}</p>
+						<p id="percent">-%</p>
+					</div>');
+
+					if (isCulledLod)
+						areaEl.css({ flex : 1 });
+
+					lodsLine.append(areaEl);
+					refreshLodLine();
+
+					var widthHandle = 10;
+					areaEl.on("mousemove", function(e:js.jquery.Event) {
+						if ((e.offsetX <= widthHandle && idx != 0) || (areaEl.width() - e.offsetX) <= widthHandle && idx != hmd.lodCount())
+							areaEl.css({ cursor : 'w-resize' });
+						else
+							areaEl.css({ cursor : 'default' });
+					});
+
+					areaEl.on("mousedown", function(e:js.jquery.Event) {
+						var firstHandle = e.offsetX <= widthHandle && idx != 0;
+						var secondHandle = areaEl.width() - e.offsetX <= widthHandle && idx != hmd.lodCount();
+
+						if (firstHandle || secondHandle) {
+							var currIdx = secondHandle ? idx : idx - 1;
+							var prevConfig = @:privateAccess hmd.lodConfig?.copy();
+							var newConfig = hmd.getLodConfig()?.copy();
+							var limits = [ getLodRatioFromIdx(currIdx + 2), getLodRatioFromIdx(currIdx)];
+
+							startDrag(function(e) {
+								var newRatio = getLodRatioFromPx(e.clientX - lodsLine.offset().left);
+								newRatio = hxd.Math.clamp(newRatio, limits[0], limits[1]);
+								newConfig[currIdx] = newRatio;
+								@:privateAccess hmd.lodConfig = newConfig;
+								refreshLodLine();
+							}, function(e) {
+
+								undo.change(Custom(function(undo) {
+									if (undo) {
+										@:privateAccess hmd.lodConfig = prevConfig;
+									} else {
+										@:privateAccess hmd.lodConfig = newConfig;
+									}
+
+									refreshLodLine();
+								}));
+							});
+						}
+					});
+				}
+			}
+		}
+
+		var select = e.find(".follow");
+		var header = select.find(".header");
+		var dropdown = select.find(".dropdown");
+		function onFollowSelected(v : String) {
+			var name = v.split(".").pop();
+			obj.follow = this.obj.getObjectByName(name);
+			header.find('.label').text(name);
+		}
+
+		var items: Array<hide.comp.ContextMenu.MenuItem> = [{ label: "-- None --", click: () -> onFollowSelected("-- None --")}];
+		for( path in getNamedObjects(obj) ) {
+			var parts = path.split(".");
+			var name = parts[parts.length - 1];
+			var label = [for( p in 1...parts.length ) "&nbsp; "].join("") + parts.pop();
+			items.push({ label: label, click: () -> onFollowSelected(name) });
+		}
+
+		header.click(function(_) {
+			var icon = header.find(".icon");
+			var visible = icon.hasClass('ico-caret-down');
+			visible = !visible;
+			icon.toggleClass("ico-caret-right", !visible);
+			icon.toggleClass("ico-caret-down", visible);
+			if (visible) {
+				var menu = hide.comp.ContextMenu.createDropdown(dropdown.get(0), items, { search: hide.comp.ContextMenu.SearchMode.Visible });
+				menu.onClose = () -> {
+					icon.toggleClass("ico-caret-right", true);
+					icon.toggleClass("ico-caret-down", false);
+				};
+			}
+
+		});
+
+		refreshSelectionHighlight(obj);
+	}
+
+	function onSelectMaterials(mats : Array<h3d.mat.Material>) {
+		// TODO: manage multi-edit for materials
+		if (mats.length != 1)
+			return;
+		var m = mats[0];
+
 		refreshSelectionHighlight(null);
 
 		highlightMaterial(m);
@@ -447,230 +843,119 @@ class Model extends FileView {
 		e.find(".reset").click(function(_) {
 			var old = m.props;
 			m.props = m.getDefaultModelProps();
-			selectMaterial(m);
-			undo.change(Field(m, "props", old), selectMaterial.bind(m));
+			onSelectMaterials(mats);
+			undo.change(Field(m, "props", old), onSelectMaterials.bind(mats));
 		});
 		e.find(".save").click(saveCallback);
 	}
 
-	static var lodPow : Float = 0.3;
-	var selectedJoint : String = null;
-	var selectedMesh : h3d.scene.Mesh = null;
-	var displayJoints = null;
-	function selectObject( obj : h3d.scene.Object ) {
-		if ( Std.isOfType(obj, h3d.scene.Skin.Joint) ) {
-			selectedJoint = obj.name;
-			if ( @:privateAccess sceneEditor.jointsGraphics != null )
-				sceneEditor.setJoints(true, selectedJoint);
-		} else
-			selectedJoint = null;
+	function onSelectJoints(joints : Array<h3d.scene.Skin.Joint>) {
+		// Graphic debug for selected joints
+		if ( @:privateAccess sceneEditor.jointsGraphics != null )
+			sceneEditor.setJoints(true, [for (j in joints) j.name]);
 
-		var properties = sceneEditor.properties;
-		properties.clear();
+		if (joints.length == 0)
+			return;
 
-		var objectCount = 1 + obj.getObjectsCount();
-		var meshes = obj.getMeshes();
-		var vertexCount = 0, triangleCount = 0, materialDraws = 0, materialCount = 0, bonesCount = 0;
-		var uniqueMats = new Map();
-		for( m in obj.getMaterials() ) {
-			if( uniqueMats.exists(m.name) ) continue;
-			uniqueMats.set(m.name, true);
-			materialCount++;
-		}
-		for( m in meshes ) {
-			var p = m.primitive;
-			triangleCount += p.triCount();
-			vertexCount += p.vertexCount();
-			var multi = Std.downcast(m, h3d.scene.MultiMaterial);
-			var skin = Std.downcast(m, h3d.scene.Skin);
-			if( skin != null )
-				bonesCount += skin.getSkinData().allJoints.length;
-			var count = if( skin != null && skin.getSkinData().splitJoints != null )
-				skin.getSkinData().splitJoints.length;
-			else if( multi != null )
-				multi.materials.length
-			else
-				1;
-			materialDraws += count;
-		}
+		var skin = joints[0].skin;
 
-		function roundVec(vec: Dynamic) : Any {
-			var scale = 1000;
-			vec.x = hxd.Math.round(vec.x * scale) / scale;
-			vec.y = hxd.Math.round(vec.y * scale) / scale;
-			vec.z = hxd.Math.round(vec.z * scale) / scale;
-			return vec;
-		}
+		var dynJointEl = new Element('<div class="group" name="Dynamic bone">
+			<dt>Apply changes on children</dt><dd><input id="sync-changes" type="checkbox"/></dd>
+			<div class="group dynamic-edition" name="Global parameters">
+				<dt>Force</dt><dd class="vector"><input id="force-x" type="number"/><input id="force-y" type="number"/><input id="force-z" type="number"/></dd>
+			</div>
+			<div class="group" name="Local parameters">
+				<dt>Is Dynamic</dt><dd><input id="dynamic" type="checkbox"/></dd>
+				<div class="dynamic-edition">
+					<dt title="Should dynamic movement be applied on existing animation movement or not">Additive</dt><dd><input type="checkbox" id="additive"/></dd>
+					<dt title="Reduction of the amplitude of the oscillation movement">Damping</dt><dd><input id="damping" type="number" step="0.1" min="0" max="1"/></dd>
+					<dt title="Reduction factor applied on globale force">Resistance</dt><dd><input id="resistance" type="number" step="0.1" min="0" max="1"/></dd>
+					<dt title="Rigidity of the bone">Stiffness</dt><dd><input id="stiffness" type="number" step="0.1" min="0" max="1"/></dd>
+					<dt title="Elasticity of the bone">Slackness</dt><dd><input id="slackness" type="number" step="0.1" min="0" max="1"/></dd>
+				</div>
+			</div>
+		</div>');
 
-		var transform = obj.defaultTransform;
+		// Sync is used to propagate parent changes on children dynamic bones if checked
+		var synced = getDisplayState("dynamic-bones-sync");
+		if (synced == null)
+			synced = false;
 
-		var mesh = Std.downcast(obj, h3d.scene.Mesh);
-		var hmd = mesh != null ? Std.downcast(mesh.primitive, h3d.prim.HMDModel) : null;
-		var vertexFormat = '';
-		if ( mesh != null && mesh.primitive.buffer != null ) {
-			for ( i in mesh.primitive.buffer.format.getInputs() )
-				vertexFormat += ' ' + i.name;
-			vertexFormat = '<dt>Vertex format</dt><dd>$vertexFormat</dd>';
-		}
-		var colliderInfo = '';
-		if ( hmd != null && @:privateAccess hmd.colliderData != null ) {
-			var colliderVertex = 0;
-			var colliderTriangle = 0;
-			var col = hmd.getCollider();
-			function recCol(c : h3d.col.Collider) {
-				var optimized = Std.downcast(c, h3d.col.Collider.OptimizedCollider);
-				if ( optimized != null ) {
-					recCol(optimized.b);
-					return;
-				}
-				var list = Std.downcast(c, h3d.col.Collider.GroupCollider);
-				if ( list != null ) {
-					for ( l in list.colliders )
-						recCol(l);
-					return;
-				}
-				var polygonBuffer = Std.downcast(c, h3d.col.PolygonBuffer);
-				if ( polygonBuffer != null ) {
-					colliderTriangle += @:privateAccess polygonBuffer.triCount;
-					colliderVertex += @:privateAccess Std.int(polygonBuffer.buffer.length / 3);
-					return;
-				}
-				var polygon = Std.downcast(c, h3d.col.Polygon);
-				if ( polygon != null ) {
-					var t = @:privateAccess polygon.triPlanes;
-					while ( t != null ) {
-						colliderTriangle += 1;
-						colliderVertex += 3;
-						t = t.next;
-					}
-					return;
+		var syncEl = dynJointEl.find("#sync-changes");
+		syncEl.get(0).toggleAttribute('checked', synced);
+		syncEl.change(function(e) {
+			synced = !synced;
+			saveDisplayState("dynamic-bones-sync", synced);
+		});
+
+
+		function refreshEdition() {
+			var skinData = skin.getSkinData();
+			var jointsData = [];
+			for (j in joints) {
+				for (j2 in skinData.allJoints) {
+					if (j.name == j2.name)
+						jointsData.push(j2);
 				}
 			}
-			recCol(col);
 
-			colliderInfo += '<dt>Collider vertices</dt><dd>$colliderVertex</dd>';
-			colliderInfo += '<dt>Collider triangle</dt><dd>$colliderTriangle</dd>';
-		}
-		var e = properties.add(new Element('
-			<div class="group" name="Properties">
-				<dl>
-					<dt>X</dt><dd><input field="x"/></dd>
-					<dt>Y</dt><dd><input field="y"/></dd>
-					<dt>Z</dt><dd><input field="z"/></dd>
-					<dt>Attach</dt><dd><div class="follow">
-					<div class="select">
-						<div class="header">
-							<span class="label">-- None --</span>
-							<div class="icon ico ico-caret-right"></div>
-						</div>
-						<div class="dropdown"/>
-					</div></dd>
-				</dl>
-			</div>
-			<div class="group" name="Info">
-				<dl>
-					<dt>Objects</dt><dd>$objectCount</dd>
-					<dt>Meshes</dt><dd>${meshes.length}</dd>
-					<dt>Materials</dt><dd>$materialCount</dd>
-					<dt>Draws</dt><dd>$materialDraws</dd>
-					<dt>Bones</dt><dd>$bonesCount</dd>
-					<dt>Vertexes</dt><dd>$vertexCount</dd>
-					<dt>Triangles</dt><dd>$triangleCount</dd>
-					' + vertexFormat + colliderInfo +
-					if (transform != null) {
-						var size : h3d.col.Point = roundVec(obj.getBounds().getSize());
+			function cloneSkinData() {
+				var clone = skinData.allJoints.copy();
+				for (idx in 0...skinData.allJoints.length) {
+					clone[idx] = Type.createInstance(Type.getClass(clone[idx]), []);
+					for (f in Reflect.fields(skinData.allJoints[idx]))
+						Reflect.setField(clone[idx], f, Reflect.field(skinData.allJoints[idx], f));
+				}
 
-						size.x = hxd.Math.max(0, size.x);
-						size.y = hxd.Math.max(0, size.y);
-						size.z = hxd.Math.max(0, size.z);
+				for (idx in 0...skinData.allJoints.length) {
+					clone[idx].parent = clone[skinData.allJoints.indexOf(skinData.allJoints[idx].parent)];
+					if (skinData.allJoints[idx].subs == null)
+						continue;
+					clone[idx].subs = [for (s in skinData.allJoints[idx].subs) clone[skinData.allJoints.indexOf(s)]];
+				}
 
-						var meshSize : h3d.col.Point = null;
-						if (mesh != null) {
-							var bounds = mesh.primitive.getBounds().clone();
-							bounds.transform(obj.getAbsPos());
-							meshSize = bounds.getSize();
+				return clone;
+			}
 
-							roundVec(meshSize);
-							meshSize.x = hxd.Math.max(0, meshSize.x);
-							meshSize.y = hxd.Math.max(0, meshSize.y);
-							meshSize.z = hxd.Math.max(0, meshSize.z);
-
+			// Find params that are common to the joints that are selected
+			var dynFields = ["damping", "resistance", "stiffness", "slackness", "additive"];
+			var commonProperties : Dynamic = null;
+			for (j in jointsData) {
+				var dyn = Std.downcast(j?.subs[0], h3d.anim.Skin.DynamicJoint);
+				if (commonProperties == null) {
+					commonProperties = {
+						isDynamic: dyn != null,
+						damping: dyn?.damping,
+						resistance: dyn?.resistance,
+						stiffness: dyn?.stiffness,
+						slackness: dyn?.slackness,
+						additive: dyn?.additive
+					}
+				}
+				else {
+					for (f in Reflect.fields(commonProperties)) {
+						if (f == "isDynamic") {
+							if ((dyn != null) != Reflect.field(commonProperties, f))
+								Reflect.deleteField(commonProperties, "isDynamic");
+							continue;
 						}
 
-						var pos = transform.getPosition();
-						roundVec(pos);
-						var rot = transform.getEulerAngles();
-						rot.x = hxd.Math.radToDeg(rot.x);
-						rot.y = hxd.Math.radToDeg(rot.y);
-						rot.z = hxd.Math.radToDeg(rot.z);
-						rot = roundVec(rot);
-
-						var scale : h3d.Vector = roundVec(transform.getScale());
-
-						'<dt>Local Pos</dt><dd>X: ${pos.x}, Y: ${pos.y}, Z: ${pos.z}</dd>
-						<dt>Local Rot</dt><dd>X: ${rot.x}°, Y: ${rot.y}°, Z: ${rot.z}°</dd>
-						<dt>Local Scale</dt><dd>X: ${scale.x}, Y: ${scale.y}, Z: ${scale.z}</dd>
-						<dt>Total Size</dt><dd>X: ${size.x}, Y: ${size.y}, Z: ${size.z}</dd>
-						${meshSize != null ? '<dt>Mesh Size</dt><dd>X: ${meshSize.x}, Y: ${meshSize.y}, Z: ${meshSize.z}</dd>' : ""}';
-					} else '' +
-				'</dl>
-			</div>
-
-		'),obj);
-
-		selectedMesh = mesh;
-
-		if (selectedJoint != null) {
-			var current = obj;
-			var skin = Std.downcast(current, h3d.scene.Skin);
-			while (skin == null && current != null) {
-				current = current.parent;
-				skin = Std.downcast(current, h3d.scene.Skin);
+						if (Reflect.field(dyn, f) != Reflect.field(commonProperties, f))
+							Reflect.deleteField(commonProperties, f);
+					}
+				}
 			}
-
-			var skinData = skin.getSkinData();
-			var j = skinData.allJoints[0];
-			for (tmpJ in skinData.allJoints) {
-				if (tmpJ.name == selectedJoint)
-					j = tmpJ;
-			}
-
-			var dynJointEl = new Element('<div class="group" name="Dynamic bone">
-				<dt>Apply changes on children</dt><dd><input id="sync-changes" type="checkbox"/></dd>
-				<div class="group dynamic-edition" name="Global parameters">
-					<dt>Force</dt><dd class="vector"><input id="force-x" type="number"/><input id="force-y" type="number"/><input id="force-z" type="number"/></dd>
-				</div>
-				<div class="group" name="Local parameters">
-					<dt>Is Dynamic</dt><dd><input id="dynamic" type="checkbox"/></dd>
-					<div class="dynamic-edition">
-						<dt title="Should dynamic movement be applied on existing animation movement or not">Additive</dt><dd><input type="checkbox" id="additive"/></dd>
-						<dt title="Reduction of the amplitude of the oscillation movement">Damping</dt><dd><input id="damping" type="number" step="0.1" min="0" max="1"/></dd>
-						<dt title="Reduction factor applied on globale force">Resistance</dt><dd><input id="resistance" type="number" step="0.1" min="0" max="1"/></dd>
-						<dt title="Rigidity of the bone">Stiffness</dt><dd><input id="stiffness" type="number" step="0.1" min="0" max="1"/></dd>
-						<dt title="Elasticity of the bone">Slackness</dt><dd><input id="slackness" type="number" step="0.1" min="0" max="1"/></dd>
-					</div>
-				</div>
-			</div>');
-
-			// Sync is used to propagate parent changes on children dynamic bones if checked
-			var synced = getDisplayState("dynamic-bones-sync");
-			if (synced == null)
-				synced = false;
-
-			var syncEl = dynJointEl.find("#sync-changes");
-			syncEl.get(0).toggleAttribute('checked', synced);
-			syncEl.change(function(e) {
-				synced = !synced;
-				saveDisplayState("dynamic-bones-sync", synced);
-			});
 
 			dynJointEl.find("#dynamic");
 			var isDynEl = dynJointEl.find("#dynamic");
-			isDynEl.get(0).toggleAttribute('checked', Std.downcast(j?.subs[0], h3d.anim.Skin.DynamicJoint) != null);
-			if (!isDynEl.is(':checked'))
-				dynJointEl.find(".dynamic-edition").hide();
-			if (j.subs == null || j.subs.length == 0)
-				dynJointEl.hide();
+			if (Reflect.hasField(commonProperties, "isDynamic")) {
+				isDynEl.prop('checked', Reflect.field(commonProperties, "isDynamic"));
+				isDynEl.removeClass("indeterminate");
+			}
+			else {
+				isDynEl.addClass("indeterminate");
+			}
+
 			isDynEl.change(function(e) {
 				function toggleDynamicJoint(j : h3d.anim.Skin.Joint, isDynamic : Bool) {
 					var newJ = isDynamic ? new h3d.anim.Skin.DynamicJoint() : new h3d.anim.Skin.Joint();
@@ -711,47 +996,71 @@ class Model extends FileView {
 						}
 
 						if (synced) {
-							for (idx in 0...newJ.subs.length)
-								toggleDynamicJoint(newJ.subs[idx], isDynamic);
+							for (idx in 0...j.subs.length)
+								toggleDynamicJoint(j.subs[idx], isDynamic);
 						}
 					}
 					else {
-						for (idx in 0...newJ.subs.length)
-							toggleDynamicJoint(newJ.subs[idx], isDynamic);
+						for (idx in 0...j.subs.length)
+							toggleDynamicJoint(j.subs[idx], isDynamic);
 					}
 
 				}
 
-				var v = isDynEl.is(':checked');
-				var oldJoints = skinData.allJoints.copy();
-				for (s in j.subs)
-					toggleDynamicJoint(s, v);
+				var v : Dynamic = isDynEl.is(':checked');
+				var oldValues = cloneSkinData();
+				for (j in jointsData)
+					for (s in j.subs)
+						if (!(Std.isOfType(s, h3d.anim.Skin.DynamicJoint) && v))
+							toggleDynamicJoint(s, v);
 				skin.setSkinData(skinData);
-				var newJoints = skinData.allJoints.copy();
+				var newValues = cloneSkinData();
+				refreshEdition();
 
 				function exec(undo) {
-					var joints = undo ? oldJoints : newJoints;
-					for (j in skinData.allJoints)
-						skinData.allJoints[j.index] = joints[j.index];
+					for (idx in 0...skinData.allJoints.length)
+						skinData.allJoints[idx] = undo ? oldValues[idx] : newValues[idx];
 					skin.setSkinData(skinData);
-					selectObject(obj);
+					refreshEdition();
 				}
 
-				exec(false);
-				properties.undo.change(Custom(exec));
+				sceneEditor.properties.undo.change(Custom(exec));
 			});
 
-			var dynJoin = Std.downcast(j?.subs[0], h3d.anim.Skin.DynamicJoint);
+			// Hide dynamic edition in certain cases
+			dynJointEl.show();
+			dynJointEl.find(".dynamic-edition").show();
+			if (!Reflect.field(commonProperties, "isDynamic"))
+				dynJointEl.find(".dynamic-edition").hide();
+			for (j in jointsData)
+				if (j?.subs[0] == null)
+					dynJointEl.hide();
+
+			// Edition of dynamic joints params
+			var dynJoin = Std.downcast(jointsData[0]?.subs[0], h3d.anim.Skin.DynamicJoint);
 			if (dynJoin != null) {
-				var params = ["damping", "resistance", "stiffness", "slackness", "additive"];
-				for (param in params) {
+				for (param in dynFields) {
 					var el = dynJointEl.find('#$param');
-					if (el.is(':checkbox'))
-						el.prop("checked", Reflect.field(dynJoin, param));
-					else
-						el.val(Reflect.field(dynJoin, param));
+					var isBoolean = el.is(':checkbox');
+					if (Reflect.hasField(commonProperties, param)) {
+						if (isBoolean) {
+							el.prop("checked", Reflect.field(dynJoin, param));
+							el.removeClass("indeterminate");
+						}
+						else
+							el.val(Reflect.field(dynJoin, param));
+					}
+					else {
+						if (isBoolean) {
+							el.addClass("indeterminate");
+						}
+						else {
+							el.attr("placeholder", "-");
+							el.val("");
+						}
+					}
+
 					el.change(function(e) {
-						var oldJoints = skinData.allJoints.copy();
 						function apply(j : h3d.anim.Skin.Joint, param : String, v : Dynamic) {
 							var v : Dynamic = el.is(':checkbox') ? el.is(':checked') : Std.parseFloat(el.val());
 							Reflect.setField(j, param, v);
@@ -760,18 +1069,22 @@ class Model extends FileView {
 									apply(s, param, v);
 							}
 						}
-						for (s in dynJoin.parent.subs)
-							apply(s, param, Std.parseFloat(el.val()));
-						var newJoints = skinData.allJoints.copy();
+
+						var v : Dynamic = isBoolean ? el.is(':checked') : Std.parseFloat(el.val());
+						var oldValues = cloneSkinData();
+						for (j in jointsData)
+							for (s in j.subs)
+								apply(s, param, v);
+						var newValues = cloneSkinData();
+
 						function exec(undo) {
-							var joints = undo ? oldJoints : newJoints;
-							for (j in skinData.allJoints)
-								skinData.allJoints[j.index] = joints[j.index];
+							for (idx in 0...skinData.allJoints.length)
+								skinData.allJoints[idx] = undo ? oldValues[idx] : newValues[idx];
 							skin.setSkinData(skinData);
+							refreshEdition();
 						}
 
-						exec(false);
-						properties.undo.change(Custom(exec));
+						sceneEditor.properties.undo.change(Custom(exec));
 					});
 				}
 
@@ -808,327 +1121,23 @@ class Model extends FileView {
 						zEl.val(force.z);
 					}
 					exec(false);
-					properties.undo.change(Custom(exec));
+					sceneEditor.properties.undo.change(Custom(exec));
 				}
 
 				xEl.change((e) -> onForceChanged());
 				yEl.change((e) -> onForceChanged());
 				zEl.change((e) -> onForceChanged());
 			}
-
-			properties.add(dynJointEl, null, function(pname) {});
 		}
 
-		if (mesh != null && hmd != null) {
-			// Blendshapes edition
-			if (@:privateAccess hmd.blendshape != null) {
-				var blendShape = new Element('
-				<div class="group" name="Blend Shapes">
-					<dt>Index</dt><dd><input id="bs-index" type="range" min="0" max="${@:privateAccess hmd.blendshape.getBlendshapeCount() - 1}" step="1" field=""/></dd>
-					<dt>Amount</dt><dd><input id="bs-amount" type="range" min="0" max="1" field=""/></dd>
-				</div>');
+		refreshEdition();
 
-				properties.add(blendShape, null, function(pname){
-					@:privateAccess hmd.blendshape.setBlendshapeAmount(blendShape.find("#bs-index").val(),blendShape.find("#bs-amount").val());
-				});
-			}
-
-			// LODs edition
-			if (@:privateAccess hmd.lodCount() > 1) {
-				var lodsEl = new Element('
-					<div class="group lods" name="LODs">
-						<dt>LOD Count</dt><dd>${hmd.lodCount()}</dd>
-						<dt>Force display LOD</dt>
-						<dd>
-							<select id="select-lods">
-								<option value="-1">None</option>
-								${[ for(idx in 0...hmd.lodCount()) '<option value="${idx}">LOD ${idx}</option>'].join("")}
-							</select>
-						</dd>
-						<dt>LOD Vertexes</dt><dd id="vertexes-count">-</dd>
-						<div class="lods-line">
-							<div class="line"></div>
-							<div class="cursor">
-								<div class="cursor-line"></div>
-								<p class="ratio">100%</p>
-							</div>
-						</div>
-						<div id="buttons">
-							<input type="button" value="Reset defaults" id="reset-lods"/>
-						</div>
-					</div>
-				');
-				properties.add(lodsEl, null, null);
-
-				function getLodRatioFromIdx(idx : Int) {
-					var lodConfig = hmd.getLodConfig();
-					if (idx == 0) return 1.;
-					if (idx >= hmd.lodCount() + 1) return 0.;
-					return lodConfig[idx - 1];
-				}
-
-				function getLodRatioFromPx(px : Float) {
-					var ratio = 1 - (px / lodsEl.find(".line").width());
-					return Math.pow(ratio, 1.0 / lodPow);
-				}
-
-				function getLodRatioPowedFromIdx(idx : Int) {
-					var lodConfig = hmd.getLodConfig();
-					var prev = idx == 0 ? 1 : hxd.Math.pow(lodConfig[idx - 1] , lodPow);
-					var c = lodConfig[idx] == null ? 0 : lodConfig[idx];
-					return (Math.abs(prev - hxd.Math.pow(c, lodPow)));
-				}
-
-				function startDrag(onMove: js.jquery.Event->Void, onStop: js.jquery.Event->Void) {
-					var el = new Element(element[0].ownerDocument.body);
-					el.on("mousemove.lods", onMove);
-					el.on("mouseup.lods", function(e: js.jquery.Event) {
-						el.off("mousemove.lods");
-						el.off("mouseup.lods");
-						e.preventDefault();
-						e.stopPropagation();
-						onStop(e);
-					});
-				}
-
-				function refreshLodLine() {
-					var areas = lodsEl.find(".area");
-					var lineEl = lodsEl.find(".line");
-					var idx = 0;
-					for (area in areas) {
-						var areaEl = new Element(area);
-						areaEl.css({ width : '${lineEl.width() * getLodRatioPowedFromIdx(idx)}px' });
-
-						var roundedRatio = Std.int(Math.pow(getLodRatioFromIdx(idx), lodPow) * 10000.) / 100.;
-						areaEl.find('#percent').text('${roundedRatio}%');
-						idx++;
-					}
-				}
-
-				var resetLod = lodsEl.find('#reset-lods');
-				resetLod.on("click", function() {
-					var prevConfig = @:privateAccess hmd.lodConfig?.copy();
-					@:privateAccess hmd.lodConfig = null;
-					Ide.inst.quickMessage('Lod config reset for object : ${obj.name}');
-					refreshLodLine();
-
-					undo.change(Custom(function(undo) {
-						if (undo) {
-							@:privateAccess hmd.lodConfig = prevConfig;
-						} else {
-							@:privateAccess hmd.lodConfig = null;
-						}
-
-						refreshLodLine();
-					}));
-				});
-
-				var selectLod = lodsEl.find("select");
-				selectLod.on("change", function(){
-					hmd.forcedLod = Std.int(lodsEl.find("select").val());
-				});
-
-				var lodsLine = lodsEl.find(".line");
-				for (idx in 0...(hmd.lodCount() + 1)) {
-					var isCulledLod = idx == hmd.lodCount();
-					var areaEl = new Element('
-					<div class="area">
-						<p>${isCulledLod ? 'Culled' : 'LOD&nbsp${idx}'}</p>
-						<p id="percent">-%</p>
-					</div>');
-
-					if (isCulledLod)
-						areaEl.css({ flex : 1 });
-
-					lodsLine.append(areaEl);
-					refreshLodLine();
-
-					var widthHandle = 10;
-					areaEl.on("mousemove", function(e:js.jquery.Event) {
-						if ((e.offsetX <= widthHandle && idx != 0) || (areaEl.width() - e.offsetX) <= widthHandle && idx != hmd.lodCount())
-							areaEl.css({ cursor : 'w-resize' });
-						else
-							areaEl.css({ cursor : 'default' });
-					});
-
-					areaEl.on("mousedown", function(e:js.jquery.Event) {
-						var firstHandle = e.offsetX <= widthHandle && idx != 0;
-						var secondHandle = areaEl.width() - e.offsetX <= widthHandle && idx != hmd.lodCount();
-
-						if (firstHandle || secondHandle) {
-							var currIdx = secondHandle ? idx : idx - 1;
-							var prevConfig = @:privateAccess hmd.lodConfig?.copy();
-							var newConfig = hmd.getLodConfig()?.copy();
-							var limits = [ getLodRatioFromIdx(currIdx + 2), getLodRatioFromIdx(currIdx)];
-
-							startDrag(function(e) {
-								var newRatio = getLodRatioFromPx(e.clientX - lodsLine.offset().left);
-								newRatio = hxd.Math.clamp(newRatio, limits[0], limits[1]);
-								newConfig[currIdx] = newRatio;
-								@:privateAccess hmd.lodConfig = newConfig;
-								refreshLodLine();
-							}, function(e) {
-
-								undo.change(Custom(function(undo) {
-									if (undo) {
-										@:privateAccess hmd.lodConfig = prevConfig;
-									} else {
-										@:privateAccess hmd.lodConfig = newConfig;
-									}
-
-									refreshLodLine();
-								}));
-							});
-						}
-					});
-				}
-			}
-		}
-
-		var select = e.find(".follow");
-		var header = select.find(".header");
-		var dropdown = select.find(".dropdown");
-		function onFollowSelected(v : String) {
-			var name = v.split(".").pop();
-			obj.follow = this.obj.getObjectByName(name);
-			header.find('.label').text(name);
-		}
-
-		var items: Array<hide.comp.ContextMenu.MenuItem> = [{ label: "-- None --", click: () -> onFollowSelected("-- None --")}];
-		for( path in getNamedObjects(obj) ) {
-			var parts = path.split(".");
-			var name = parts[parts.length - 1];
-			var label = [for( p in 1...parts.length ) "&nbsp; "].join("") + parts.pop();
-			items.push({ label: label, click: () -> onFollowSelected(name) });
-		}
-
-		header.click(function(_) {
-			var icon = header.find(".icon");
-			var visible = icon.hasClass('ico-caret-down');
-			visible = !visible;
-			icon.toggleClass("ico-caret-right", !visible);
-			icon.toggleClass("ico-caret-down", visible);
-			if (visible) {
-				var menu = hide.comp.ContextMenu.createDropdown(dropdown.get(0), items, { search: hide.comp.ContextMenu.SearchMode.Visible });
-				menu.onClose = () -> {
-					icon.toggleClass("ico-caret-right", true);
-					icon.toggleClass("ico-caret-down", false);
-				};
-			}
-
-		});
-
-		refreshSelectionHighlight(obj);
+		sceneEditor.properties.add(dynJointEl, null, function(pname) {});
 	}
 
-	function refreshSelectionHighlight(selectedObj: h3d.scene.Object) {
-		if (selectedObj == lastSelectedObject && selectedObj != null) {
-			sceneEditor.focusObjects([selectedObj]);
-		}
-		lastSelectedObject = selectedObj;
-		var root = this.obj;
-		if (root == null)
-			return;
 
-		var materials = root.getMaterials();
-
-		for( m in materials ) {
-			m.removePass(m.getPass("highlight"));
-			m.removePass(m.getPass("highlightBack"));
-		}
-
-		if (selectedObj == null) {
-			selectedAxes.visible = false;
-		}
-
-		if (!highlightSelection || selectedObj == null)
-			return;
-
-		{
-			selectedAxes.follow = selectedObj;
-			selectedAxes.visible = showSelectionAxes;
-		}
-
-		materials = selectedObj.getMaterials();
-
-		for( m in materials ) {
-			if( m.name != null && StringTools.startsWith(m.name,"$UI.") )
-				continue;
-			highlightMaterial(m);
-		}
-	}
-
-	function highlightMaterial(m : h3d.mat.Material) {
-		var p = m.allocPass("highlight");
-		p.culling = None;
-		p.depthWrite = false;
-		p.depthTest = LessEqual;
-		p.addShader(shader);
-		var p = m.allocPass("highlightBack");
-		p.culling = None;
-		p.depthWrite = false;
-		p.depthTest = Always;
-		p.addShader(shader2);
-	}
-
-	function getNamedObjects( ?exclude : h3d.scene.Object ) {
-		var out = [];
-
-		function getJoint(path:Array<String>,j:h3d.anim.Skin.Joint) {
-			path.push(j.name);
-			out.push(path.join("."));
-			for( j in j.subs )
-				getJoint(path, j);
-			path.pop();
-		}
-
-		function getRec(path:Array<String>,o:h3d.scene.Object) {
-			if( o == exclude || o.name == null ) return;
-			path.push(o.name);
-			out.push(path.join("."));
-			for( c in o )
-				getRec(path, c);
-			var sk = Std.downcast(o, h3d.scene.Skin);
-			if( sk != null ) {
-				var j = sk.getSkinData();
-				for( j in j.rootJoints )
-					getJoint(path, j);
-			}
-			path.pop();
-		}
-
-		if( obj.name == null )
-			for( o in obj )
-				getRec([], o);
-		else
-			getRec([], obj);
-
-		return out;
-	}
-
-	function makeAxes(width: Float = 1.0, length: Float = 1.0, ?pass:String = null, alpha:Float = 1.0) {
-		var g = new h3d.scene.Graphics(scene.s3d);
-		g.lineStyle(width,0xFF0000, alpha);
-		g.lineTo(length,0,0);
-		g.lineStyle(width,0x00FF00, alpha);
-		g.moveTo(0,0,0);
-		g.lineTo(0,length,0);
-		g.lineStyle(width,0x0000FF, alpha);
-		g.moveTo(0,0,0);
-		g.lineTo(0,0,length);
-		g.lineStyle();
-
-		for(m in g.getMaterials()) {
-			if (pass != null)
-				m.mainPass.setPassName(pass);
-			m.mainPass.depth(false, Always);
-			if (alpha != 1.0) {
-				m.blendMode = Alpha;
-			}
-		}
-
-		return g;
-	}
+	// Scene editor bindings
+	inline function get_scene() return sceneEditor.scene;
 
 	function onRefresh() {
 		this.saveDisplayKey = "Model:" + state.path;
@@ -1221,8 +1230,7 @@ class Model extends FileView {
 
 		if( tree != null ) tree.remove();
 		tree = new hide.comp.SceneTree(obj, overlay, obj.name != null);
-		tree.onSelectMaterial = selectMaterial;
-		tree.onSelectObject = selectObject;
+		tree.onSelectionChanged = onTreeSelectionChanged;
 		tree.saveDisplayKey = this.saveDisplayKey;
 
 		tools.clear();
@@ -1342,6 +1350,185 @@ class Model extends FileView {
 		}
 	}
 
+	function onUpdate(dt:Float) {
+		var cam = scene.s3d.camera;
+		if( light != null ) {
+			if( !sceneEditor.isSelected(plight) )
+				lightDirection = light.getLocalDirection();
+			else {
+				var angle = Math.atan2(cam.target.y - cam.pos.y, cam.target.x - cam.pos.x);
+				light.setDirection(new h3d.Vector(
+					Math.cos(angle) * lightDirection.x - Math.sin(angle) * lightDirection.y,
+					Math.sin(angle) * lightDirection.x + Math.cos(angle) * lightDirection.y,
+					lightDirection.z
+				));
+			}
+		}
+		if( timeline != null ) {
+			timecursor.x = Std.int((obj.currentAnimation.frame / obj.currentAnimation.frameCount) * (scene.s2d.width - timecursor.tile.width));
+			frameIndex.text = untyped obj.currentAnimation.frame.toFixed(2);
+		}
+		if( cameraMove != null )
+			cameraMove();
+
+		if (selectedMesh != null) {
+
+			function round(number:Float, ?precision=2): Float
+			{
+				number *= Math.pow(10, precision);
+				return Math.round(number) / Math.pow(10, precision);
+			}
+
+			var screenRatio = @:privateAccess selectedMesh.curScreenRatio;
+			var line = sceneEditor.properties.element.find(".line");
+			var cursor = sceneEditor.properties.element.find(".cursor");
+			if (cursor.length > 0) {
+				cursor?.css({left: '${line.position().left + line.width() * hxd.Math.clamp((1 - hxd.Math.pow(screenRatio, lodPow)), 0, 1)}px'});
+				cursor?.find(".ratio").text('${round(hxd.Math.clamp(hxd.Math.pow(screenRatio, lodPow) * 100, 0, 100), 2)}%');
+			}
+
+			var hmd = selectedMesh != null ? Std.downcast(selectedMesh.primitive, h3d.prim.HMDModel) : null;
+			if ( hmd != null ) {
+				var lodsCountEl = sceneEditor.properties.element.find("#vertexes-count");
+				var curLod = hmd.forcedLod >= 0 ? hmd.forcedLod : hmd.screenRatioToLod(@:privateAccess selectedMesh.curScreenRatio);
+				var lodVertexesCount = @:privateAccess { ( curLod < hmd.lods.length ) ? hmd.lods[curLod].vertexCount : 0; };
+				lodsCountEl.text(lodVertexesCount);
+			}
+
+		}
+	}
+
+
+
+	function loadProps() {
+		var propsPath = getPropsPath();
+		var hideData : h3d.prim.ModelCache.HideProps;
+		if( sys.FileSystem.exists(propsPath) )
+			hideData = haxe.Json.parse(sys.io.File.getContent(propsPath));
+		else
+			hideData = { animations : {} };
+		return hideData;
+	}
+
+	function getPropsPath() {
+		var path = config.get("hmd.savePropsByAnimation", true) ? currentAnimation.file : getPath();
+		var parts = path.split(".");
+		parts.pop();
+		parts.push("props");
+		return ide.getPath(parts.join("."));
+	}
+
+	function refreshSelectionHighlight(selectedObj: h3d.scene.Object) {
+		if (selectedObj == lastSelectedObject && selectedObj != null) {
+			sceneEditor.focusObjects([selectedObj]);
+		}
+		lastSelectedObject = selectedObj;
+		var root = this.obj;
+		if (root == null)
+			return;
+
+		var materials = root.getMaterials();
+
+		for( m in materials ) {
+			m.removePass(m.getPass("highlight"));
+			m.removePass(m.getPass("highlightBack"));
+		}
+
+		if (selectedObj == null) {
+			selectedAxes.visible = false;
+		}
+
+		if (!highlightSelection || selectedObj == null)
+			return;
+
+		{
+			selectedAxes.follow = selectedObj;
+			selectedAxes.visible = showSelectionAxes;
+		}
+
+		materials = selectedObj.getMaterials();
+
+		for( m in materials ) {
+			if( m.name != null && StringTools.startsWith(m.name,"$UI.") )
+				continue;
+			highlightMaterial(m);
+		}
+	}
+
+	function highlightMaterial(m : h3d.mat.Material) {
+		var p = m.allocPass("highlight");
+		p.culling = None;
+		p.depthWrite = false;
+		p.depthTest = LessEqual;
+		p.addShader(shader);
+		var p = m.allocPass("highlightBack");
+		p.culling = None;
+		p.depthWrite = false;
+		p.depthTest = Always;
+		p.addShader(shader2);
+	}
+
+	function getNamedObjects( ?exclude : h3d.scene.Object ) {
+		var out = [];
+
+		function getJoint(path:Array<String>,j:h3d.anim.Skin.Joint) {
+			path.push(j.name);
+			out.push(path.join("."));
+			for( j in j.subs )
+				getJoint(path, j);
+			path.pop();
+		}
+
+		function getRec(path:Array<String>,o:h3d.scene.Object) {
+			if( o == exclude || o.name == null ) return;
+			path.push(o.name);
+			out.push(path.join("."));
+			for( c in o )
+				getRec(path, c);
+			var sk = Std.downcast(o, h3d.scene.Skin);
+			if( sk != null ) {
+				var j = sk.getSkinData();
+				for( j in j.rootJoints )
+					getJoint(path, j);
+			}
+			path.pop();
+		}
+
+		if( obj.name == null )
+			for( o in obj )
+				getRec([], o);
+		else
+			getRec([], obj);
+
+		return out;
+	}
+
+	function makeAxes(width: Float = 1.0, length: Float = 1.0, ?pass:String = null, alpha:Float = 1.0) {
+		var g = new h3d.scene.Graphics(scene.s3d);
+		g.lineStyle(width,0xFF0000, alpha);
+		g.lineTo(length,0,0);
+		g.lineStyle(width,0x00FF00, alpha);
+		g.moveTo(0,0,0);
+		g.lineTo(0,length,0);
+		g.lineStyle(width,0x0000FF, alpha);
+		g.moveTo(0,0,0);
+		g.lineTo(0,0,length);
+		g.lineStyle();
+
+		for(m in g.getMaterials()) {
+			if (pass != null)
+				m.mainPass.setPassName(pass);
+			m.mainPass.depth(false, Always);
+			if (alpha != 1.0) {
+				m.blendMode = Alpha;
+			}
+		}
+
+		return g;
+	}
+
+
+
 	function setRetargetAnim(b:Bool) {
 		for( m in obj.getMeshes() ) {
 			var sk = Std.downcast(m, h3d.scene.Skin);
@@ -1373,30 +1560,6 @@ class Model extends FileView {
 		c.addCommand("stop", [], function() {
 			cameraMove = null;
 		});
-	}
-
-	override function buildTabMenu() {
-		var menu = super.buildTabMenu();
-		var arr : Array<hide.comp.ContextMenu.MenuItem> = [
-			{ label : null, isSeparator : true },
-			{ label : "Export", click : function() {
-				ide.chooseFileSave(this.getPath().substr(0,-4)+"_dump.txt", function(file) {
-					var lib = @:privateAccess scene.loadHMD(this.getPath(),false);
-					var hmd = lib.header;
-					hmd.data = lib.getData();
-					sys.io.File.saveContent(ide.getPath(file), new hxd.fmt.hmd.Dump().dump(hmd));
-				});
-			} },
-			{ label : "Export Animation", enabled : currentAnimation != null, click : function() {
-				ide.chooseFileSave(this.getPath().substr(0,-4)+"_"+currentAnimation.name+"_dump.txt", function(file) {
-					var lib = @:privateAccess scene.loadHMD(ide.getPath(currentAnimation.file),true);
-					var hmd = lib.header;
-					hmd.data = lib.getData();
-					sys.io.File.saveContent(ide.getPath(file), new hxd.fmt.hmd.Dump().dump(hmd));
-				});
-			} },
-		];
-		return menu.concat(arr);
 	}
 
 	function setAnimation( file : String ) {
@@ -1689,53 +1852,6 @@ class Model extends FileView {
 		}
 	}
 
-	function update(dt:Float) {
-		var cam = scene.s3d.camera;
-		if( light != null ) {
-			if( !sceneEditor.isSelected(plight) )
-				lightDirection = light.getLocalDirection();
-			else {
-				var angle = Math.atan2(cam.target.y - cam.pos.y, cam.target.x - cam.pos.x);
-				light.setDirection(new h3d.Vector(
-					Math.cos(angle) * lightDirection.x - Math.sin(angle) * lightDirection.y,
-					Math.sin(angle) * lightDirection.x + Math.cos(angle) * lightDirection.y,
-					lightDirection.z
-				));
-			}
-		}
-		if( timeline != null ) {
-			timecursor.x = Std.int((obj.currentAnimation.frame / obj.currentAnimation.frameCount) * (scene.s2d.width - timecursor.tile.width));
-			frameIndex.text = untyped obj.currentAnimation.frame.toFixed(2);
-		}
-		if( cameraMove != null )
-			cameraMove();
-
-		if (selectedMesh != null) {
-
-			function round(number:Float, ?precision=2): Float
-			{
-				number *= Math.pow(10, precision);
-				return Math.round(number) / Math.pow(10, precision);
-			}
-
-			var screenRatio = @:privateAccess selectedMesh.curScreenRatio;
-			var line = sceneEditor.properties.element.find(".line");
-			var cursor = sceneEditor.properties.element.find(".cursor");
-			if (cursor.length > 0) {
-				cursor?.css({left: '${line.position().left + line.width() * hxd.Math.clamp((1 - hxd.Math.pow(screenRatio, lodPow)), 0, 1)}px'});
-				cursor?.find(".ratio").text('${round(hxd.Math.clamp(hxd.Math.pow(screenRatio, lodPow) * 100, 0, 100), 2)}%');
-			}
-
-			var hmd = selectedMesh != null ? Std.downcast(selectedMesh.primitive, h3d.prim.HMDModel) : null;
-			if ( hmd != null ) {
-				var lodsCountEl = sceneEditor.properties.element.find("#vertexes-count");
-				var curLod = hmd.forcedLod >= 0 ? hmd.forcedLod : hmd.screenRatioToLod(@:privateAccess selectedMesh.curScreenRatio);
-				var lodVertexesCount = @:privateAccess { ( curLod < hmd.lods.length ) ? hmd.lods[curLod].vertexCount : 0; };
-				lodsCountEl.text(lodVertexesCount);
-			}
-
-		}
-	}
 
 	public function setRenderPropsEditionVisibility(visible : Bool) {
 		if (element == null)

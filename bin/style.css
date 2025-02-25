@@ -387,6 +387,9 @@ input[type=checkbox]:after {
 input[type=checkbox]:checked:after {
   content: '\2714';
 }
+input[type=checkbox].indeterminate:after {
+  content: '-';
+}
 #mainmenu {
   display: none;
 }

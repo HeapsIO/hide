@@ -2754,33 +2754,39 @@ class SceneEditor {
 
 	var jointsGraphics : h3d.scene.Graphics = null;
 	@:access(h3d.scene.Skin)
-	public function setJoints(showJoints = true, selectedJoint : String) {
+	public function setJoints(showJoints = true, selectedJoints : Array<String>) {
 		if( showJoints ) {
 			if( jointsGraphics == null ) {
 				jointsGraphics = new h3d.scene.Graphics(scene.s3d);
 				jointsGraphics.material.mainPass.depth(false, Always);
 				jointsGraphics.material.mainPass.setPassName("overlay");
 			}
+
 			jointsGraphics.clear();
+
 			for ( m in scene.s3d.getMeshes() ) {
 				var sk = Std.downcast(m,h3d.scene.Skin);
 				if( sk != null ) {
-					if ( selectedJoint != null ) {
-						var topParent : h3d.scene.Object = sk;
-						while( topParent.parent != null )
-							topParent = topParent.parent;
-						jointsGraphics.follow = topParent;
-						var skinData = sk.getSkinData();
-						for( j in skinData.allJoints ) {
-							var m = sk.jointsData[j.index].currentAbsPose;
-							var mp = j.parent == null ? sk.absPos : sk.jointsData[j.parent.index].currentAbsPose;
-							if ( j.name == selectedJoint ) {
-								jointsGraphics.lineStyle(1, 0x00FF00FF);
-								jointsGraphics.moveTo(mp._41, mp._42, mp._43);
-								jointsGraphics.lineTo(m._41, m._42, m._43);
+					var topParent : h3d.scene.Object = sk;
+					while( topParent.parent != null )
+						topParent = topParent.parent;
+					jointsGraphics.follow = topParent;
+
+					if (selectedJoints != null) {
+						for (selectedJoint in selectedJoints) {
+							var skinData = sk.getSkinData();
+							for( j in skinData.allJoints ) {
+								var m = sk.jointsData[j.index].currentAbsPose;
+								var mp = j.parent == null ? sk.absPos : sk.jointsData[j.parent.index].currentAbsPose;
+								if ( j.name == selectedJoint ) {
+									jointsGraphics.lineStyle(1, 0x00FF00FF);
+									jointsGraphics.moveTo(mp._41, mp._42, mp._43);
+									jointsGraphics.lineTo(m._41, m._42, m._43);
+								}
 							}
 						}
 					}
+
 					sk.showJoints = true;
 				}
 			}
