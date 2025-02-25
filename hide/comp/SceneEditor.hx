@@ -2844,6 +2844,19 @@ class SceneEditor {
 			if( el != null && el.toggleClass != null ) applyTreeStyle(p, el, pname, renderPropsTree);
 		}
 
+		var modifiedRef = Std.downcast(p.shared.parentPrefab, hrt.prefab.Reference);
+		if (modifiedRef != null) {
+			var path = modifiedRef.source;
+
+			var others = sceneData.findAll(Reference, (r) -> r.source == path && r != modifiedRef, true);
+			@:privateAccess
+			for (ref in others) {
+				removeInstance(ref.refInstance, false);
+				ref.refInstance = modifiedRef.refInstance.clone();
+				queueRebuild(ref);
+			}
+		}
+
 		applySceneStyle(p);
 	}
 
@@ -2993,9 +3006,12 @@ class SceneEditor {
 	}
 
 	public function addElements(elts : Array<PrefabElement>, selectObj : Bool = true, doRefresh : Bool = true, enableUndo = true) {
+
 		beginRebuild();
 		for (e in elts) {
 			makePrefab(e);
+			if (e.parent != null)
+				onPrefabChange(e.parent, "children");
 		}
 		if (doRefresh) {
 			refreshTree(if (selectObj) () -> selectElements(elts, NoHistory) else null);
@@ -3017,10 +3033,13 @@ class SceneEditor {
 				refreshTree(() -> selectElements([], NoHistory));
 			}
 			else {
+
 				beginRebuild();
 				for (e in elts) {
 					e.parent.children.push(e);
 					makePrefab(e);
+					if (e.parent != null)
+						onPrefabChange(e.parent, "children");
 				}
 				endRebuild();
 				refreshTree(if (selectObj) () -> selectElements(elts, NoHistory) else null);
@@ -4058,9 +4077,12 @@ class SceneEditor {
 				refreshInteractive(p);
 			}
 
+			onPrefabChange(elt.parent, "children");
+
 			undoes.push(function(undo) {
 				if(undo) elt.parent.children.remove(clone);
 				else elt.parent.children.insert(index, clone);
+				onPrefabChange(elt.parent, "children");
 			});
 		}
 		endRebuild();
@@ -4127,9 +4149,12 @@ class SceneEditor {
 			removeInstance(elt);
 			parent.children.remove(elt);
 
+			onPrefabChange(parent, "children");
+
 			undoes.unshift(function(undo) {
 				if(undo) elt.parent.children.insert(index, elt);
 				else elt.parent.children.remove(elt);
+				onPrefabChange(elt.parent, "children");
 			});
 		}
 		endRebuild();
@@ -4248,6 +4273,9 @@ class SceneEditor {
 					if(obj3d != null && newTransform != null)
 						obj3d.loadTransform(newTransform);
 				};
+
+				onPrefabChange(prevParent, "children");
+				onPrefabChange(toPrefab, "children");
 			});
 		}
 
