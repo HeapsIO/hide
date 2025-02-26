@@ -307,7 +307,7 @@ class Material extends Prefab {
 		}
 		else {
 			// temporary untill we find a proper way to remove a material
-			shared.editor.queueRebuild(parent);
+			shared.editor?.queueRebuild(parent);
 		}
 		super.editorRemoveInstanceObjects();
 	}
