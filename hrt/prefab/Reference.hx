@@ -130,9 +130,9 @@ class Reference extends Object3D {
 		return res;
 	}
 
-	override public function flatten<T:Prefab>( ?cl : Class<T>, ?arr: Array<T> ) : Array<T> {
+	override public function flatten<T:Prefab>( ?cl : Class<T>, ?arr: Array<T>, followRef : Bool = false ) : Array<T> {
 		arr = super.flatten(cl, arr);
-		if (editMode && refInstance != null) {
+		if ((editMode || followRef) && refInstance != null) {
 			arr = refInstance.flatten(cl, arr);
 		}
 		return arr;

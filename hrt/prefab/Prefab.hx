@@ -391,7 +391,7 @@ class Prefab {
 	/**
 		Returns all prefabs in the tree matching the specified class.
 	**/
-	public function flatten<T:Prefab>( ?cl : Class<T>, ?arr: Array<T> ) : Array<T> {
+	public function flatten<T:Prefab>( ?cl : Class<T>, ?arr: Array<T>, followRef: Bool = false ) : Array<T> {
 		if(arr == null)
 			arr = [];
 		if( cl == null )

@@ -868,8 +868,7 @@ class Prefab extends hide.view.FileView {
 	}
 
 	function applySceneStyle(p: PrefabElement) {
-		var prefabView = Std.downcast(p, hrt.prefab.Prefab); // don't use "to" (Reference)
-		if( prefabView != null && prefabView.parent == null ) {
+		if( p != null && p.parent == null && p.shared.parentPrefab == null) {
 			sceneEditor.updateGrid();
 			return;
 		}
