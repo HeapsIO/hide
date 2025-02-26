@@ -1393,6 +1393,71 @@ input[type=checkbox] {
 
 		>.content {
 			margin-bottom : 5px;
+
+			.array {
+				min-height: 5px;
+				overflow-y: scroll;
+				overflow-x: hidden;
+				background: @color-menu-bg-highlight;
+				max-height: 150px;
+				padding: 3px;
+				margin: 5px;
+				margin-bottom: 0px;
+				border-radius: 3px;
+
+				&.disabled {
+					filter: brightness(50%);
+
+					* , ::after {
+						cursor: not-allowed !important;
+					}
+				}
+
+				.line {
+					display: flex;
+					align-items: center;
+					margin-top: 1px;
+					width: 100%;
+					padding: 3px;
+					border-radius: 3px;
+					background: @color-tool-bg;
+
+					.inclusion {
+						display: flex;
+						justify-content: center;
+						width: 10px;
+						margin: 0 5px 0 5px;
+						padding: 2px 6px 2px 6px;
+						background: red;
+						color: black;
+						font-weight: 900;
+						border-radius: 5px;
+
+						&:hover {
+							cursor: pointer;
+							filter: opacity(80%);
+						}
+					}
+
+					input {
+						margin-right: 5px;
+					}
+
+					input:not([type=checkbox]){
+						flex: 1;
+					}
+
+					.remove {
+						margin: 0 5px 0 5px;
+						padding: 0 5px 0 5px;
+						cursor: pointer;
+
+						&:hover {
+							filter: brightness(80%);
+						}
+					}
+				}
+			}
 		}
 	}
 
@@ -5731,70 +5796,6 @@ blend-space-2d-root {
 				background-color: var(--hover-highlight);
 			}
 			border-radius: var(--basic-border-radius);
-		}
-	}
-}
-.array {
-	min-height: 5px;
-	overflow-y: scroll;
-	overflow-x: hidden;
-	background: @color-menu-bg-highlight;
-	max-height: 150px;
-	padding: 3px;
-	margin: 5px;
-	margin-bottom: 0px;
-	border-radius: 3px;
-
-	&.disabled {
-		filter: brightness(50%);
-
-		* , ::after {
-			cursor: not-allowed !important;
-		}
-	}
-
-	.line {
-		display: flex;
-		align-items: center;
-		margin-top: 1px;
-		width: 100%;
-		padding: 3px;
-		border-radius: 3px;
-		background: @color-tool-bg;
-
-		.inclusion {
-			display: flex;
-			justify-content: center;
-			width: 10px;
-			margin: 0 5px 0 5px;
-			padding: 2px 6px 2px 6px;
-			background: red;
-			color: black;
-			font-weight: 900;
-			border-radius: 5px;
-
-			&:hover {
-				cursor: pointer;
-				filter: opacity(80%);
-			}
-		}
-
-		input {
-			margin-right: 5px;
-		}
-
-		input:not([type=checkbox]){
-			flex: 1;
-		}
-
-		.remove {
-			margin: 0 5px 0 5px;
-			padding: 0 5px 0 5px;
-			cursor: pointer;
-
-			&:hover {
-				filter: brightness(80%);
-			}
 		}
 	}
 }
