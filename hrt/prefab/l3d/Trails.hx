@@ -85,6 +85,8 @@ class TrailObj extends h3d.scene.Mesh {
 	var zOffset : Float = 0;
 
 	public var timeScale : Float = 1.0;
+	public var lockTrailsExtension : Bool = false;
+	var lockTrailEnable = false;
 
 	#if editor
 	var icon : hrt.impl.EditorTools.EditorIcon;
@@ -106,7 +108,6 @@ class TrailObj extends h3d.scene.Mesh {
 	static var tmpNormal = new h3d.Vector();
 	static var tmpBinormal = new h3d.Vector();
 	static var tmpTangent = new h3d.Vector();
-	
 
 	public function set_numTrails(new_value : Int) : Int {
 		if (numTrails != new_value) {
@@ -314,6 +315,9 @@ class TrailObj extends h3d.scene.Mesh {
 		point.w = prefab.startWidth;
 		point.len = len;
 		point.speed = prev != null ? len / ( point.lifetime - prev.lifetime ) : 0;
+		if(lockTrailEnable) {
+			point.speed = 0.0;
+		}
 		point.next = prev;
 
 		head.firstPoint = point;
@@ -564,6 +568,7 @@ class TrailObj extends h3d.scene.Mesh {
 			}
 		} else if (autoTrackPosition)
 			addPoint(trails[0], absPos.tx, absPos.ty, absPos.tz);
+		lockTrailEnable = lockTrailsExtension;
 	}
 
 	override function emit(ctx) {
@@ -584,7 +589,6 @@ class TrailObj extends h3d.scene.Mesh {
 		}
 
 		inline function addEdge( p : TrailPoint, u : Float ) {
-		
 
 			buffer[count++] = p.x + (tmpBinormal.x * p.w * baseScale.x);
 			buffer[count++] = p.y + (tmpBinormal.y * p.w * baseScale.y);
@@ -908,7 +912,7 @@ class Trails extends Object3D {
 		});
 		resetTrail.toggle(debug);
 
-		debugElement = new hide.Element("<p></p>").appendTo(props.find("#debug-properties"));	
+		debugElement = new hide.Element("<p></p>").appendTo(props.find("#debug-properties"));
 
 		var select = orientationEl.find("select");
 		var upAxisEl = orientationEl.find("#up-axis");
