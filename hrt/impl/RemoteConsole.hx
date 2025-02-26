@@ -79,9 +79,12 @@ class RemoteConsole {
 			sock.close();
 			sock = null;
 		}
-		for( s in connections )
-			s.close();
+		// prevent remove during iteration by c.close
+		var prevConnections = connections;
 		connections = [];
+		for( c in prevConnections ) {
+			c.close();
+		}
 		onClose();
 	}
 
