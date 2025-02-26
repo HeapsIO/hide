@@ -5,6 +5,10 @@ class Reference extends Object3D {
 
 	public var refInstance : Prefab;
 
+	#if editor
+	var wasMade : Bool = false;
+	#end
+
 	public static function copy_overrides(from:Dynamic) : haxe.ds.StringMap<Dynamic> {
 		if (Std.isOfType(from, haxe.ds.StringMap)) {
 			return from != null ? cast(from, haxe.ds.StringMap<Dynamic>).copy() : new haxe.ds.StringMap<Dynamic>();
@@ -107,6 +111,10 @@ class Reference extends Object3D {
 		else {
 			refInstance.make();
 		}
+
+		#if editor
+		wasMade = true;
+		#end
 	}
 
 
@@ -147,12 +155,13 @@ class Reference extends Object3D {
 	#if editor
 
 	override public function editorRemoveObjects() : Void {
-		if (refInstance != null) {
+		if (refInstance != null && wasMade) {
 			for (child in refInstance.flatten()) {
 				shared.editor.removeInteractive(child);
 			}
 			refInstance.editorRemoveObjects();
 		}
+		wasMade = false;
 		super.editorRemoveObjects();
 	}
 
