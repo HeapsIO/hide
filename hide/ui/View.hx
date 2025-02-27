@@ -301,8 +301,6 @@ class View<T> extends hide.comp.Component {
 	public static var viewClasses = new Map<String,{ name : String, cl : Class<View<Dynamic>>, options : ViewOptions }>();
 	public static function register<T>( cl : Class<View<T>>, ?options : ViewOptions ) {
 		var name = Type.getClassName(cl);
-		if( viewClasses.exists(name) )
-			return null;
 		if( options == null )
 			options = {}
 		if( options.position == null )

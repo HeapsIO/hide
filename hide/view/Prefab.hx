@@ -30,6 +30,7 @@ class FiltersPopup extends hide.comp.Popup {
 					input.get(0).toggleAttribute("checked", true);
 
 				input.change((e) -> {
+					@:privateAccess editor.sceneFiltersChanged();
 					var on = !filters[typeid];
 					filters.set(typeid, on);
 
@@ -729,6 +730,8 @@ class Prefab extends hide.view.FileView {
 
 	function applySceneFilter(typeid: String, visible: Bool) {
 		saveDisplayState("sceneFilters/" + typeid, visible);
+		if (data == null)
+			return;
 		var all = [];
 		if (typeid != 'light')
 			all = data.findAll(hrt.prefab.Prefab, true);
@@ -927,6 +930,8 @@ class Prefab extends hide.view.FileView {
 		}
 		return null;
 	}
+
+	function sceneFiltersChanged() {}
 
 	static var _ = hide.view.FileTree.registerExtension(Prefab, ["prefab"], { icon : "sitemap", createNew : "Prefab" });
 	static var _1 = hide.view.FileTree.registerExtension(Prefab, ["l3d"], { icon : "sitemap" });
