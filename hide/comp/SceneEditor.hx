@@ -4423,6 +4423,34 @@ class SceneEditor {
 	}
 
 	var rebuildStack = 0;
+
+	function checkIsInWorld(prefab: hrt.prefab.Prefab) : Bool {
+		var current = prefab;
+
+		// check each parent in the parent (or reference) chain to
+		// see if the parent has the current prefab as a child (or reference)
+		while(current != null && current != sceneData) {
+			var parent = current.parent ?? current.shared.parentPrefab;
+			if (parent == null)
+				break;
+			var inParent = parent.children.contains(current);
+			if (!inParent) {
+				var ref = Std.downcast(parent, hrt.prefab.Reference);
+				if (ref != null) {
+					if (current == ref.refInstance) {
+						inParent = true;
+					}
+				}
+			}
+
+			if (!inParent) {
+				return false;
+			}
+			current = parent;
+		}
+		return current == sceneData;
+	}
+
 	function rebuild(prefab: PrefabElement) {
 		rebuildStack ++;
 		scene.setCurrent();
@@ -4430,7 +4458,8 @@ class SceneEditor {
 		removeInstance(prefab, false);
 
 		var enabled = prefab.enabled && !prefab.inGameOnly;
-		var actuallyInWorld = prefab == sceneData || (prefab.findParent(hrt.prefab.Prefab, null, false, true)?.find((p) -> p == prefab, true, false) != null);
+
+		var actuallyInWorld = checkIsInWorld(prefab);
 		if (enabled && actuallyInWorld) {
 			prefab.shared.current3d = prefab.parent?.findFirstLocal3d(true) ?? root3d;
 			prefab.shared.current2d = prefab.parent?.findFirstLocal2d(true) ?? root2d;
