@@ -4490,6 +4490,15 @@ class SceneEditor {
 		for( p in prefab.flatten(null, null) ) {
 			makeInteractive(p);
 			applySceneStyle(p);
+
+			var ref = Std.downcast(p, hrt.prefab.Reference);
+			if (ref != null && !ref.editMode && ref.refInstance != null) {
+
+				// only call applySceneStyle and not makeInteractive on the childs of non edit references
+				for (pp in ref.refInstance.flatten(null, null, true)) {
+					applySceneStyle(ref.refInstance);
+				}
+			}
 		}
 
 		if (prefab == sceneData) {
