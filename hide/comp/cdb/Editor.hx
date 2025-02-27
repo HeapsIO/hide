@@ -829,7 +829,7 @@ class Editor extends Component {
 				y--;
 			}
 
-			cursor.set(cursor.table, -1, y1, null, false);
+			cursor.set(cursor.table, -1, y1, null, true);
 		}
 		else {
 			// delete cells
@@ -853,14 +853,7 @@ class Editor extends Component {
 		}
 
 		endChanges();
-		cursor.table.getRealSheet().sync();
-		for (t in modifiedTables) {
-			var toRefresh = t;
-			while(toRefresh != null) {
-				toRefresh.refresh();
-				toRefresh = toRefresh.parent;
-			}
-		}
+		refreshAll();
 		updateFilter();
 	}
 
