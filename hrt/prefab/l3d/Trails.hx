@@ -253,26 +253,16 @@ class TrailObj extends h3d.scene.Mesh {
 		switch (prefab.orientation) {
 			case Camera: {
 				var cam = getScene().camera.pos;
-				var target = getScene().camera.target;
 
-				var vcamx = cam.x - target.x;
-				var vcamy = cam.y - target.y;
-				var vcamz = cam.z - target.z;
+				var vcamx = cam.x - p.x;
+				var vcamy = cam.y - p.y;
+				var vcamz = cam.z - p.z;
 
-				var len = hxd.Math.distance(vcamx, vcamy, vcamz);
+				var invNorm = 1.0 / hxd.Math.distance(vcamx, vcamy, vcamz);
 
-				if (len == 0) {
-					vcamx = 0;
-					vcamy = 0;
-					vcamz = 1.0;
-					len = 1.0;
-				}
-
-				len = 1.0 / len;
-
-				p.ux = vcamx * len;
-				p.uy = vcamy * len;
-				p.uz = vcamz * len;
+				p.ux = vcamx * invNorm;
+				p.uy = vcamy * invNorm;
+				p.uz = vcamz * invNorm;
 			}
 			case Up(x, y, z), Right(x, y ,z): {
 				p.ux = x;
