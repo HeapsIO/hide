@@ -367,11 +367,13 @@ class Cursor {
 
 
 	public function clickLine( line : Line, shiftKey = false, ctrlKey = false ) {
+		this.table = line.table;
 		addElementToSelection(line.table, line, -1, line.index, shiftKey, ctrlKey);
 		set(line.table, -1, line.index, this.selection);
 	}
 
 	public function clickCell( cell : Cell, shiftKey = false, ctrlKey = false ) {
+		this.table = cell.table;
 		var xIndex = cell.table.displayMode == Table ? cell.columnIndex : 0;
 		addElementToSelection(cell.table, cell.line, xIndex, cell.line.index, shiftKey, ctrlKey);
 		set(cell.table, xIndex, cell.line.index, this.selection);
