@@ -1669,7 +1669,7 @@ class SceneEditor {
 	function onSceneReady() {
 		// Load display state
 		{
-			var all = sceneData.flatten(PrefabElement, null, true);
+			var all = sceneData.flatten(PrefabElement, null);
 			var list = @:privateAccess view.getDisplayState("hideList");
 			if(list != null) {
 				var m = [for(i in (list:Array<Dynamic>)) i => true];
@@ -4495,7 +4495,7 @@ class SceneEditor {
 			if (ref != null && !ref.editMode && ref.refInstance != null) {
 
 				// only call applySceneStyle and not makeInteractive on the childs of non edit references
-				for (pp in ref.refInstance.flatten(null, null, true)) {
+				for (pp in ref.refInstance.flatten(null, null)) {
 					applySceneStyle(ref.refInstance);
 				}
 			}

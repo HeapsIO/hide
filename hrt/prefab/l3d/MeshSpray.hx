@@ -370,7 +370,7 @@ class MeshSpray extends Spray {
 		cast(local3d, MeshSprayObject).redraw();
 	}
 
-	override function flatten<T:Prefab>( ?cl : Class<T>, ?arr: Array<T>, followRef : Bool = false ) : Array<T> {
+	override function flatten<T:Prefab>( ?cl : Class<T>, ?arr: Array<T> ) : Array<T> {
 		if ( !editChildren )
 			return flattenSpray(cl, arr);
 
