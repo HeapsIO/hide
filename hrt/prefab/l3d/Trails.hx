@@ -577,6 +577,16 @@ class TrailObj extends h3d.scene.Mesh {
 			baseScale.y = scale.y;
 			baseScale.z = scale.z;
 		}
+		if(prefab.useMagnification){
+			var cam = getScene().camera.pos;
+			var dist = (cam - absPos.getPosition()).length();
+			dist = hxd.Math.min(dist, prefab.magnificationMaxDist);
+			var magScale = dist / prefab.magnificationRefDist;
+			if(!prefab.useMinify){
+				magScale = hxd.Math.max(magScale, 1.0);
+			}
+			baseScale *= magScale;
+		}
 
 		inline function addEdge( p : TrailPoint, u : Float ) {
 
@@ -745,6 +755,11 @@ class Trails extends Object3D {
 	@:c public var orientation : TrailOrientation = TrailOrientation.Camera;
 	@:s public var useScale : Bool = false;
 
+	@:s public var useMagnification : Bool = false;
+	@:s public var magnificationRefDist : Float = 10.0;
+	@:s public var useMinify : Bool = true;
+	@:s public var magnificationMaxDist : Float = 1000.0;
+
 	@:s public var minSpeed : Float = 10.0;
 	@:s public var maxSpeed : Float = 1000.0;
 
@@ -858,6 +873,15 @@ class Trails extends Object3D {
 				<dt>Use scale</dt><dd><input type="checkbox" field="useScale" /></dd>
 			</dl>
 		</div>
+
+		<div class="group" name="Magnification">
+			<dl>
+				<dt>Enable</dt><dd><input type="checkbox" field="useMagnification" /></dd>
+				<dt>Ref Distance</dt><dd><input type="range" field="magnificationRefDist" min="1" max="100"/></dd>
+				<dt>Minify</dt><dd><input type="checkbox" field="useMinify" /></dd>
+				<dt>Max Distance</dt><dd><input type="range" field="magnificationMaxDist" min="100" max="1000"/></dd>
+			</dl>
+		</div>		
 
 		<div class="group" name="UV">
 			<dl>
