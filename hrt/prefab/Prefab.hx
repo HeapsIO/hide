@@ -402,7 +402,7 @@ class Prefab {
 				arr.push(i);
 		}
 		for(c in children)
-			c.flatten(cl, arr);
+			c.flatten(cl, arr, followRef);
 		return arr;
 	}
 
@@ -502,7 +502,13 @@ class Prefab {
 	/**
 		Returns the absolute name path for this prefab
 	**/
-	public function getAbsPath(unique=false) {
+	public function getAbsPath(unique=false, followRef : Bool = false) {
+		var parent = parent;
+		if (parent != null && followRef) {
+			var ref = Std.downcast(parent.shared.parentPrefab, Reference);
+			if (ref != null && ref.refInstance == parent)
+				parent = ref;
+		}
 		if(parent == null)
 			return "";
 		var path = name ?? "";

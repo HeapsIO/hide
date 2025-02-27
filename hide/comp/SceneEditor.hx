@@ -1076,19 +1076,6 @@ class SceneEditor {
 			]);
 		});
 
-		// Load display state
-		{
-			var all = sceneData.flatten(PrefabElement);
-			var list = @:privateAccess view.getDisplayState("hideList");
-			if(list != null) {
-				var m = [for(i in (list:Array<Dynamic>)) i => true];
-				for(p in all) {
-					if(m.exists(p.getAbsPath(true)))
-						hideList.set(p, true);
-				}
-			}
-		}
-
 		var customEditorProps = @:privateAccess ide.config.current.get("customEditor");
 		if( customEditorProps != null ) {
 			var cl = try js.Lib.eval(customEditorProps) catch( e : Dynamic ) null;
@@ -1680,6 +1667,19 @@ class SceneEditor {
     }
 
 	function onSceneReady() {
+		// Load display state
+		{
+			var all = sceneData.flatten(PrefabElement, null, true);
+			var list = @:privateAccess view.getDisplayState("hideList");
+			if(list != null) {
+				var m = [for(i in (list:Array<Dynamic>)) i => true];
+				for(p in all) {
+					if(m.exists(p.getAbsPath(true, true)))
+						hideList.set(p, true);
+				}
+			}
+		}
+
 		tree.saveDisplayKey = view.saveDisplayKey + '/tree';
 		renderPropsTree.saveDisplayKey = view.saveDisplayKey + '/renderPropsTree';
 
@@ -4004,7 +4004,7 @@ class SceneEditor {
 	}
 
 	function saveDisplayState() {
-		var state = [for (h in hideList.keys()) h.getAbsPath(true)];
+		var state = [for (h in hideList.keys()) h.getAbsPath(true, true)];
 		@:privateAccess view.saveDisplayState("hideList", state);
 	}
 
