@@ -77,8 +77,13 @@ class RemoteTools {
 		rc?.sendCommand("logError", msg);
 	}
 
-	public static function openCdb( sheet : String, ?line : Int, ?column : Int ) {
-		rc?.sendCommand("open", { cdbsheet : sheet, line : line, column : column });
+	/**
+		@param selectExpr hscript expression that are used for select a line in the given sheet.
+		Example: `$.id == Some_Unique_Id`, `$.name == SomeName`
+		(`"` can be omitted in String literal when no ambiguity).
+	 */
+	public static function openCdb( sheet : String, ?line : Int, ?column : Int, ?selectExpr : String ) {
+		rc?.sendCommand("open", { cdbsheet : sheet, line : line, column : column, selectExpr : selectExpr });
 	}
 
 	public static function openRes( file : String ) {

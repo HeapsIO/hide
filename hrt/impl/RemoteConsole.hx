@@ -326,7 +326,21 @@ class RemoteConsoleConnection {
 			var sheet = hide.Ide.inst.database.getSheet(args.cdbsheet);
 			hide.Ide.inst.open("hide.view.CdbTable", {}, null, function(view) {
 				hide.Ide.inst.focus();
-				Std.downcast(view, hide.view.CdbTable).goto(sheet, args.line, args.column);
+				var line = args.line;
+				if( sheet != null && args.selectExpr != null ) {
+					try {
+						var expr = parser.parseString(args.selectExpr);
+						for( i in 0...sheet.lines.length ) {
+							if( evalExpr(sheet.lines[i], expr) == true ) {
+								line = i;
+								break;
+							}
+						}
+					} catch( e ) {
+						hide.Ide.inst.quickError(e);
+					}
+				}
+				Std.downcast(view, hide.view.CdbTable).goto(sheet, line, args.column ?? -1);
 			});
 		} else {
 			hide.Ide.inst.showFileInResources(args.file);
@@ -377,6 +391,8 @@ class RemoteConsoleConnection {
 			}
 		case EIdent("$"):
 			return o;
+		case EIdent("null"):
+			return null;
 		case EIdent(v):
 			return v; // Unknown ident, consider as a String literal
 		case EField(e, f):
@@ -387,6 +403,7 @@ class RemoteConsoleConnection {
 			var v2 = evalExpr(o, e2);
 			switch( op ) {
 			case "==": return Reflect.compare(v1, v2) == 0;
+			case "&&": return v1 == true && v2 == true;
 			default:
 				throw "Can't eval " + Std.string(v1) + " " + op + " " + Std.string(v2);
 			}
