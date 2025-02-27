@@ -4440,7 +4440,7 @@ class SceneEditor {
 			prefab.make();
 		}
 
-		for( p in prefab.flatten(null, null, true) ) {
+		for( p in prefab.flatten(null, null) ) {
 			makeInteractive(p);
 			applySceneStyle(p);
 		}
