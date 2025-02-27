@@ -85,6 +85,7 @@
 	"key.sceneeditor.gridToggle": "G",
 	"key.sceneeditor.toggleLayout": "Tab",
 	"key.sceneeditor.gatherToMouse": "Ctrl-Shift-F",
+	"key.sceneeditor.radialViewModes": "V",
 	"key.sceneeditor.translationMode": "W",
 	"key.sceneeditor.rotationMode": "E",
 	"key.sceneeditor.scalingMode": "R",

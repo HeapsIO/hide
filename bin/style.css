@@ -4198,6 +4198,34 @@ hide-popover hide-content {
 .context-menu2 menu hr {
   width: 100%;
 }
+.radial-menu {
+  position: absolute;
+  width: 500px;
+  height: 500px;
+}
+.radial-menu .center {
+  position: absolute;
+}
+.radial-menu .center:before {
+  color: #1a1a1a;
+  font-size: 3em;
+}
+.radial-menu .radial-button {
+  position: absolute;
+  display: flex;
+  padding: 5px 7px 5px 7px;
+  justify-content: center;
+  align-items: center;
+  background-color: #181818;
+  border-radius: 5px;
+}
+.radial-menu .radial-button .ico {
+  margin-right: 5px;
+  margin-top: 2px;
+}
+.radial-menu .radial-button.selected {
+  background-color: #3673b7 !important;
+}
 .tag-disp {
   color: white;
   mix-blend-mode: difference;

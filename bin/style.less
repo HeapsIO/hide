@@ -4938,6 +4938,39 @@ hide-popover {
 	}
 }
 
+.radial-menu {
+	position: absolute;
+	width: 500px;
+	height: 500px;
+
+	.center {
+		position: absolute;
+		&:before {
+			color: #1a1a1a;
+			font-size: 3em;
+		}
+	}
+
+	.radial-button {
+		position: absolute;
+		display: flex;
+		padding: 5px 7px 5px 7px;
+		justify-content: center;
+		align-items: center;
+		background-color: #181818;
+		border-radius: 5px;
+
+		.ico {
+			margin-right: 5px;
+			margin-top: 2px;
+		}
+
+		&.selected {
+			background-color: #3673b7 !important;
+		}
+	}
+}
+
 .tag-disp {
 	color: white;
     mix-blend-mode: difference;

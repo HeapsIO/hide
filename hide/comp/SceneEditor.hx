@@ -1057,6 +1057,24 @@ class SceneEditor {
 		});
 		view.keys.register("sceneeditor.editPivot", {name: "Edit Pivot", category: "Scene"}, editPivot);
 		view.keys.register("sceneeditor.gatherToMouse", {name: "Gather to mouse", category: "Scene"}, gatherToMouse);
+		view.keys.register("sceneeditor.radialViewModes", {name: "Radial view modes", category: "Scene"}, function() {
+			var renderer = Std.downcast(@:privateAccess scene.s3d.renderer, h3d.scene.pbr.Renderer);
+			var shader = @:privateAccess renderer.slides.shader;
+			hide.comp.RadialMenu.createFromPoint(ide.mouseX, ide.mouseY, [
+				{ label: "LIT", icon:"adjust", click: () -> { renderer.displayMode = DisplayMode.Pbr; } },
+				{ label: "Full", icon:"adjust", click: () -> { renderer.displayMode = DisplayMode.Pbr; } },
+				{ label: "Albedo", icon:"adjust", click: () -> { renderer.displayMode = DisplayMode.Debug; shader.mode = DebugMode.Albedo; } },
+				{ label: "Normal", icon:"adjust", click: () -> { renderer.displayMode = DisplayMode.Debug; shader.mode = DebugMode.Normal; } },
+				{ label: "Roughness", icon:"adjust", click: () -> { renderer.displayMode = DisplayMode.Debug; shader.mode = DebugMode.Roughness; } },
+				{ label: "Metalness", icon:"adjust", click: () -> { renderer.displayMode = DisplayMode.Debug; shader.mode = DebugMode.Metalness; } },
+				{ label: "Emissive", icon:"adjust", click: () -> { renderer.displayMode = DisplayMode.Debug; shader.mode = DebugMode.Emmissive; } },
+				{ label: "AO", icon:"adjust", click: () -> { renderer.displayMode = DisplayMode.Debug; shader.mode = DebugMode.AO; } },
+				{ label: "Shadows", icon:"adjust", click: () -> { renderer.displayMode = DisplayMode.Debug; shader.mode = DebugMode.Shadow; } },
+				{ label: "Performance", icon:"adjust", click: () -> { renderer.displayMode = DisplayMode.Performance; } },
+				{ label: "UVChecker", icon:"adjust" },
+				{ label: "Displacement", icon:"adjust" },
+			]);
+		});
 
 		// Load display state
 		{
