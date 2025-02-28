@@ -3046,7 +3046,7 @@ class SceneEditor {
 		beginRebuild();
 		for (e in elts) {
 			makePrefab(e);
-			if (e.parent != null)
+			if (e.parent != null && doRefresh)
 				onPrefabChange(e.parent, "children");
 		}
 		if (doRefresh) {
@@ -3074,7 +3074,7 @@ class SceneEditor {
 				for (e in elts) {
 					e.parent.children.push(e);
 					makePrefab(e);
-					if (e.parent != null)
+					if (e.parent != null && doRefresh)
 						onPrefabChange(e.parent, "children");
 				}
 				endRebuild();
@@ -4185,7 +4185,8 @@ class SceneEditor {
 			removeInstance(elt);
 			parent.children.remove(elt);
 
-			onPrefabChange(parent, "children");
+			if (doRefresh)
+				onPrefabChange(parent, "children");
 
 			undoes.unshift(function(undo) {
 				if(undo) elt.parent.children.insert(index, elt);
