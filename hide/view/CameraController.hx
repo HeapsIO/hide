@@ -114,6 +114,7 @@ class OrthoController extends CameraControllerBase {
 				}
 			}
 			moveCount = 0;
+			@:privateAccess scene.events.startCapture(onEvent);
 			@:privateAccess scene.window.mouseMode = AbsoluteUnbound(true);
 		case ERelease, EReleaseOutside:
 			if (pushing != -1) {
@@ -126,7 +127,9 @@ class OrthoController extends CameraControllerBase {
 				if( e.kind == ERelease && haxe.Timer.stamp() - pushTime < 0.2 && hxd.Math.distance(e.relX - pushStartX,e.relY - pushStartY) < 5 )
 					onClick(e);
 				@:privateAccess scene.window.mouseMode = Absolute;
+				@:privateAccess scene.events.stopCapture();
 			}
+
 		case EMove:
 			// Windows bug that jumps movementX/Y on all browsers
 			if( moveCount < 10 && Math.distanceSq(pushX - e.relX, pushY - e.relY) > 100000 ) {
@@ -395,6 +398,8 @@ class CamController extends CameraControllerBase {
 				}
 			}
 			moveCount = 0;
+			@:privateAccess scene.events.startCapture(onEvent);
+
 			@:privateAccess scene.window.mouseMode = AbsoluteUnbound(true);
 		case ERelease, EReleaseOutside:
 			sceneEditor.view.keys.popDisable();
@@ -404,7 +409,9 @@ class CamController extends CameraControllerBase {
 				if( e.kind == ERelease && haxe.Timer.stamp() - pushTime < 0.2 && hxd.Math.distance(e.relX - pushStartX,e.relY - pushStartY) < 5 )
 					onClick(e);
 				@:privateAccess scene.window.mouseMode = Absolute;
+				@:privateAccess scene.events.stopCapture();
 			}
+
 		case EMove:
 			// Windows bug that jumps movementX/Y on all browsers
 			if( moveCount < 10 && Math.distanceSq(pushX - e.relX, pushY - e.relY) > 100000 ) {
@@ -442,7 +449,7 @@ class CamController extends CameraControllerBase {
 			}
 
 		case EFocus:
-			@:privateAccess scene.window.mouseMode = Absolute;
+			//@:privateAccess scene.window.mouseMode = Absolute;
 		default:
 		}
 	}
@@ -637,6 +644,7 @@ class FlightController extends CameraControllerBase {
 				}*/
 			}
 			/*moveCount = 0;*/
+			@:privateAccess scene.events.startCapture(onEvent);
 			@:privateAccess scene.window.mouseMode = AbsoluteUnbound(true);
 		case ERelease, EReleaseOutside:
 			if (pushing != -1) {
@@ -649,7 +657,9 @@ class FlightController extends CameraControllerBase {
 				if( e.kind == ERelease && haxe.Timer.stamp() - pushTime < 0.2 && hxd.Math.distance(e.relX - pushStartX,e.relY - pushStartY) < 5 )
 					onClick(e);
 				@:privateAccess scene.window.mouseMode = Absolute;
+				@:privateAccess scene.events.stopCapture();
 			}
+
 		case EMove:
 			// Windows bug that jumps movementX/Y on all browsers
 			/*if( moveCount < 10 && Math.distanceSq(pushX - e.relX, pushY - e.relY) > 100000 ) {
