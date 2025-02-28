@@ -245,8 +245,15 @@ class ModelLibraryInstance {
 				batchCache.push(batch);
 			}
 
-			batches.push( batchID );
-			materials.push( library.getBakedMat(material, cast(mesh.primitive, h3d.prim.HMDModel), mesh.name) );
+			batches.push(batchID);
+			var hmdModel = cast(mesh.primitive, h3d.prim.HMDModel);
+			var bakedMat = library.getBakedMat(material, hmdModel, mesh.name);
+			if ( bakedMat == null ) {
+				var modelPath = @:privateAccess hmdModel.lib.resource.entry.path;
+				var libPath = @:privateAccess library.getPrim().lib.resource.entry.path;
+				throw 'Can\'t emit ${modelPath} because ${material.name} was not baked in ${libPath}';
+			}
+			materials.push(bakedMat);
 		}
 
 		return @:privateAccess new MeshEmitter(this, batches, materials, mesh);
