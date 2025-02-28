@@ -876,24 +876,6 @@ class Prefab extends hide.view.FileView {
 			return;
 		}
 
-		var obj3d = p.to(Object3D);
-		if(obj3d != null) {
-			var visible = obj3d.visible && !sceneEditor.isHidden(obj3d) && sceneFilters.get(p.type) != false;
-			if(visible) {
-				var cdbType = p.getCdbType();
-				if(cdbType != null && sceneFilters.get(cdbType) == false)
-					visible = false;
-			}
-			if (visible) {
-				if ((p.props:Dynamic)?.tag != null) {
-					visible = sceneFilters.get('tag:${(p.props:Dynamic).tag}') != false;
-				}
-			}
-
-			if (obj3d.local3d != null) {
-				obj3d.local3d.visible = visible;
-			}
-		}
 		var color = getDisplayColor(p);
 		if(color != null){
 			color = (color & 0xffffff) | 0xa0000000;
@@ -905,6 +887,35 @@ class Prefab extends hide.view.FileView {
 			if(poly != null) {
 				poly.setColor(color);
 			}
+		}
+
+		var obj3d = p.to(Object3D);
+		if(obj3d != null && obj3d.local3d != null) {
+			// Apply scene filters visibility first
+			var ref = Std.downcast(p, hrt.prefab.Reference);
+			if (!obj3d.visible || (sceneFilters.get(p.type) == false || (ref?.refInstance != null && sceneFilters.get(ref.refInstance.type) == false))) {
+				obj3d.local3d.visible = false;
+				return;
+			}
+
+			// Apply
+			if (sceneEditor.isHidden(obj3d)) {
+				obj3d.local3d.visible = false;
+				return;
+			}
+
+			var cdbType = p.getCdbType();
+			if(cdbType != null && sceneFilters.get(cdbType) == false) {
+				obj3d.local3d.visible = false;
+				return;
+			}
+
+			if ((p.props:Dynamic)?.tag != null) {
+				obj3d.local3d.visible = sceneFilters.get('tag:${(p.props:Dynamic).tag}') != false;
+				return;
+			}
+
+			obj3d.local3d.visible = true;
 		}
 	}
 
