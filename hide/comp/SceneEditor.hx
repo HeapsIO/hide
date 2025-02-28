@@ -4179,21 +4179,26 @@ class SceneEditor {
 	public function deleteElements(elts : Array<PrefabElement>, ?then: Void->Void, doRefresh : Bool = true, enableUndo : Bool = true) {
 		var undoes = [];
 		beginRebuild();
+		var uniqueParents : Map<PrefabElement, Bool> = [];
 		for(elt in elts) {
 			var parent = elt.parent;
 			var index = elt.parent.children.indexOf(elt);
 			removeInstance(elt);
 			parent.children.remove(elt);
-
-			if (doRefresh)
-				onPrefabChange(parent, "children");
-
+			uniqueParents.set(parent, true);
 			undoes.unshift(function(undo) {
 				if(undo) elt.parent.children.insert(index, elt);
 				else elt.parent.children.remove(elt);
 				onPrefabChange(elt.parent, "children");
 			});
 		}
+
+		if (doRefresh) {
+			for (parent => _ in uniqueParents) {
+				onPrefabChange(parent, "children");
+			}
+		}
+
 		endRebuild();
 
 		if (doRefresh) {
