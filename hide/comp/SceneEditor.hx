@@ -1855,8 +1855,49 @@ class SceneEditor {
 					menuItems.push({ label : "Tag", menu: menu });
 			}
 
-			menuItems.push({ isSeparator : true, label : "" });
-			hide.comp.ContextMenu.createFromEvent(cast e, cast menuItems.concat(actionItems));
+			menuItems.push({ isSeparator : true, label : "Actions" });
+
+			menuItems = menuItems.concat(actionItems);
+
+			var customContextMenus: Map<String, Array<hide.comp.ContextMenu.MenuItem>> = [];
+			for (prefab in selectedPrefabs) {
+				var entries = prefab.editorOnContextMenu();
+				for (entry in entries) {
+					var subArray = MapUtils.getOrPut(customContextMenus, entry.label, []);
+					subArray.push(entry);
+				}
+			}
+
+			if (customContextMenus.iterator().hasNext()) {
+				menuItems.push({ isSeparator : true, label : "Prefabs" });
+
+
+
+					for (name => entries in customContextMenus) {
+						menuItems.push({label: name, click: () -> {
+
+							// Create a new undo stack so if the click handler handles
+							// undo/redo, we wrap all the undo/redos in a single operation
+							view.pushUndoStack();
+
+							try {
+								for (entry in entries) {
+									if (entry.click != null) {
+										entry.click();
+									}
+								}
+							} catch (e) {
+								// restore the undo stack in case of a exception returing us early
+								view.popUndoStack();
+								throw e;
+							}
+
+							view.popUndoStack();
+						}});
+					}
+			}
+
+			hide.comp.ContextMenu.createFromEvent(cast e, menuItems);
 		};
 
 		tree.element.parent().contextmenu(ctxMenu.bind(tree));
