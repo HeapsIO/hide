@@ -868,6 +868,7 @@ class Model extends FileView {
 				<dt>Is Dynamic</dt><dd><input id="dynamic" type="checkbox"/></dd>
 				<div class="dynamic-edition">
 					<dt title="Should dynamic movement be applied on existing animation movement or not">Additive</dt><dd><input type="checkbox" id="additive"/></dd>
+					<dt title="Lock axis">Lock axis</dt><dd class="checkboxs"><label>X</label><input type="checkbox" id="lockAxisX"/><label>Y</label><input type="checkbox" id="lockAxisY"/><label>Z</label><input type="checkbox" id="lockAxisZ"/></dd>
 					<dt title="Reduction of the amplitude of the oscillation movement">Damping</dt><dd><input id="damping" type="number" step="0.1" min="0" max="1"/></dd>
 					<dt title="Reduction factor applied on globale force">Resistance</dt><dd><input id="resistance" type="number" step="0.1" min="0" max="1"/></dd>
 					<dt title="Rigidity of the bone">Stiffness</dt><dd><input id="stiffness" type="number" step="0.1" min="0" max="1"/></dd>
@@ -918,13 +919,14 @@ class Model extends FileView {
 			}
 
 			// Find params that are common to the joints that are selected
-			var dynFields = ["damping", "resistance", "stiffness", "slackness", "additive"];
+			var dynFields = ["damping", "resistance", "stiffness", "slackness", "additive", "lockAxis"];
 			var commonProperties : Dynamic = null;
 			for (j in jointsData) {
 				var dyn = Std.downcast(j?.subs[0], h3d.anim.Skin.DynamicJoint);
 				if (commonProperties == null) {
 					commonProperties = {
 						isDynamic: dyn != null,
+						lockAxis: dyn?.lockAxis,
 						damping: dyn?.damping,
 						resistance: dyn?.resistance,
 						stiffness: dyn?.stiffness,
@@ -1043,26 +1045,42 @@ class Model extends FileView {
 					var el = dynJointEl.find('#$param');
 					var isBoolean = el.is(':checkbox');
 					if (Reflect.hasField(commonProperties, param)) {
-						if (isBoolean) {
-							el.prop("checked", Reflect.field(dynJoin, param));
-							el.removeClass("indeterminate");
-						}
-						else
-							el.val(Reflect.field(dynJoin, param));
-					}
-					else {
-						if (isBoolean) {
-							el.addClass("indeterminate");
+						if (param == "lockAxis") {
+							for (f in ["X", "Y", "Z"]) {
+								el = dynJointEl.find('#$param'+f);
+								el.prop("checked", Reflect.field(Reflect.field(dynJoin, param), f.toLowerCase()) == 1);
+								el.removeClass("indeterminate");
+							}
 						}
 						else {
-							el.attr("placeholder", "-");
-							el.val("");
+							if (isBoolean) {
+								el.prop("checked", Reflect.field(dynJoin, param));
+								el.removeClass("indeterminate");
+							}
+							else
+								el.val(Reflect.field(dynJoin, param));
+						}
+					}
+					else {
+						if (param == "lockAxis") {
+							for (f in ["X", "Y", "Z"]) {
+								el = dynJointEl.find('#$param'+f);
+								el.addClass("indeterminate");
+							}
+						}
+						else {
+							if (isBoolean) {
+								el.addClass("indeterminate");
+							}
+							else {
+								el.attr("placeholder", "-");
+								el.val("");
+							}
 						}
 					}
 
-					el.change(function(e) {
+					function onChange(e) {
 						function apply(j : h3d.anim.Skin.Joint, param : String, v : Dynamic) {
-							var v : Dynamic = el.is(':checkbox') ? el.is(':checked') : Std.parseFloat(el.val());
 							Reflect.setField(j, param, v);
 							if (synced && j.subs != null) {
 								for (s in j.subs)
@@ -1071,6 +1089,12 @@ class Model extends FileView {
 						}
 
 						var v : Dynamic = isBoolean ? el.is(':checked') : Std.parseFloat(el.val());
+						if (param == "lockAxis") {
+							v = new h3d.Vector(dynJointEl.find("#lockAxisX").is(':checked') ? 1 : 0,
+							dynJointEl.find("#lockAxisY").is(':checked') ? 1 : 0,
+							dynJointEl.find("#lockAxisZ").is(':checked') ? 1 : 0);
+						}
+
 						var oldValues = cloneSkinData();
 						for (j in jointsData)
 							for (s in j.subs)
@@ -1085,7 +1109,17 @@ class Model extends FileView {
 						}
 
 						sceneEditor.properties.undo.change(Custom(exec));
-					});
+					}
+
+					if (param == "lockAxis") {
+						for (f in ["X", "Y", "Z"]) {
+							el = dynJointEl.find('#$param'+f);
+							el.change(onChange);
+						}
+					}
+					else {
+						el.change(onChange);
+					}
 				}
 
 				var forceEl = dynJointEl.find(".vector");

@@ -1338,6 +1338,9 @@ input[type=checkbox].indeterminate:after {
 .hide-properties .vector input {
   min-width: 0;
 }
+.hide-properties .checkboxs * {
+  margin-right: 5px;
+}
 .hide-properties .btn-cdb-large {
   width: 16px;
   font-size: 14px;
