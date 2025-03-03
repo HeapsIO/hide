@@ -312,7 +312,7 @@ class MeshSpray extends Spray {
 			if( c.type == "model" )
 				makeChild(c);
 
-		cast(local3d, MeshSprayObject).redraw();
+		//cast(local3d, MeshSprayObject).redraw();
 		// then add other children (shaders etc.)
 		for( c in children )
 			if( c.type != "model" )
@@ -355,6 +355,9 @@ class MeshSpray extends Spray {
 	}
 
 	override function makeObject(parent3d:h3d.scene.Object):h3d.scene.Object {
+		#if editor
+		makeGuard ++;
+		#end
 		return new MeshSprayObject(this, parent3d);
 	}
 
@@ -367,7 +370,8 @@ class MeshSpray extends Spray {
 
 	override function applyTransform() {
 		super.applyTransform();
-		cast(local3d, MeshSprayObject).redraw();
+		if (makeGuard == 0)
+			cast(local3d, MeshSprayObject).redraw();
 	}
 
 	override function flatten<T:Prefab>( ?cl : Class<T>, ?arr: Array<T> ) : Array<T> {

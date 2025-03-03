@@ -59,8 +59,18 @@ class SprayObject extends h3d.scene.Object {
 class Spray extends Object3D {
 
 	override function makeObject(parent3d: h3d.scene.Object ) : h3d.scene.Object {
+		#if editor
+		makeGuard ++;
+		#end
 		return new SprayObject(this, parent3d);
 	}
+
+	#if editor
+	override function postMakeInstance() {
+		super.postMakeInstance();
+		makeGuard --;
+	}
+	#end
 
 	#if !editor
 
@@ -121,9 +131,12 @@ class Spray extends Object3D {
 	var sprayedItems : Array<hrt.prefab.Prefab> = [];
 	var selectElement : hide.Element;
 
+	var makeGuard = 0;
+
 	override function applyTransform() {
 		super.applyTransform();
-		cast(local3d, SprayObject).redraw();
+		if (makeGuard == 0)
+			cast(local3d, SprayObject).redraw();
 	}
 
 
