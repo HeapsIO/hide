@@ -633,13 +633,20 @@ class MeshSpray extends Spray {
 		};
 	}
 
-	override function editorOnContextMenu(): Array<hide.comp.ContextMenu.MenuItem> {
-		var items = super.editorOnContextMenu();
-		items.push({
+	static function onContextMenu(selection: Array<hrt.prefab.Prefab>) : Array<hide.comp.ContextMenu.MenuItem> {
+		return [{
 			label: "Set To Ground",
-			click: setToGround,
-		});
-		return items;
+			click: () -> {
+				var selectedSprays : Array<MeshSpray> = cast selection;
+
+				selectedSprays[0].sceneEditor.view.pushUndoStack();
+				for (spray in selectedSprays) {
+					spray.setToGround();
+				}
+				selectedSprays[0].sceneEditor.view.popUndoStack();
+
+			},
+		}];
 	}
 
 	function setToGround() {
@@ -1019,6 +1026,8 @@ class MeshSpray extends Spray {
 		</dl>
 		</div>'), this);
 	}
+
+	static var _1 = hide.comp.SceneEditor.registerContextMenuExtension(MeshSpray, onContextMenu);
 
 	#end
 

@@ -1859,43 +1859,33 @@ class SceneEditor {
 
 			menuItems = menuItems.concat(actionItems);
 
-			var customContextMenus: Map<String, Array<hide.comp.ContextMenu.MenuItem>> = [];
-			for (prefab in selectedPrefabs) {
-				var entries = prefab.editorOnContextMenu();
-				for (entry in entries) {
-					var subArray = MapUtils.getOrPut(customContextMenus, entry.label, []);
-					subArray.push(entry);
+			// Gather custom context menu entries
+			{
+				var customContextMenus: Array<hide.comp.ContextMenu.MenuItem> = [];
+				var uniqueClasses : Map<{}, Bool> = [];
+
+				for (prefab in selectedPrefabs) {
+					var currentClass = Type.getClass(prefab);
+					while (currentClass != null && uniqueClasses.get(cast currentClass) == null) {
+						uniqueClasses.set(cast currentClass, true);
+						currentClass = cast Type.getSuperClass(currentClass);
+					}
+				}
+
+				for (cl => _ in uniqueClasses) {
+					var cb = contextMenuExtRegistry.get(cl);
+					if (cb != null) {
+						var newEntries = cb(selectedPrefabs.filter((f) -> f.to(cast cl) != null));
+						customContextMenus = customContextMenus.concat(newEntries);
+					}
+				}
+
+				if (customContextMenus.length > 0) {
+					menuItems.push({ isSeparator : true, label : "Prefabs" });
+					menuItems = menuItems.concat(customContextMenus);
 				}
 			}
 
-			if (customContextMenus.iterator().hasNext()) {
-				menuItems.push({ isSeparator : true, label : "Prefabs" });
-
-
-
-					for (name => entries in customContextMenus) {
-						menuItems.push({label: name, click: () -> {
-
-							// Create a new undo stack so if the click handler handles
-							// undo/redo, we wrap all the undo/redos in a single operation
-							view.pushUndoStack();
-
-							try {
-								for (entry in entries) {
-									if (entry.click != null) {
-										entry.click();
-									}
-								}
-							} catch (e) {
-								// restore the undo stack in case of a exception returing us early
-								view.popUndoStack();
-								throw e;
-							}
-
-							view.popUndoStack();
-						}});
-					}
-			}
 
 			hide.comp.ContextMenu.createFromEvent(cast e, menuItems);
 		};
@@ -5189,5 +5179,11 @@ class SceneEditor {
 			elt = elt.parent;
 		}
 		return null;
+	}
+
+	static var contextMenuExtRegistry : Map<{}, (elements: Array<hrt.prefab.Prefab>) -> Array<hide.comp.ContextMenu.MenuItem>> = [];
+	static public function registerContextMenuExtension(cl: Class<hrt.prefab.Prefab>, callback: (elements: Array<hrt.prefab.Prefab>) -> Array<hide.comp.ContextMenu.MenuItem>) : Int {
+		contextMenuExtRegistry.set(cast cl, callback);
+		return 0;
 	}
 }

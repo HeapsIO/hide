@@ -628,17 +628,6 @@ class Prefab {
 	}
 
 	/**
-		Return an array of entries to add to the scene context menu. Items with the same
-		name are grouped and executed together (when multiple prefabs are selected for example).
-		At the moment only click is supported for the menuItem.
-		See SceneEditor.onSceneReady.ctxMenu to add more features
-	**/
-	function editorOnContextMenu() : Array<hide.comp.ContextMenu.MenuItem> {
-		return [];
-	}
-
-
-	/**
 		Called by the editor to remove the objects created by this prefab but not its children.
 	**/
 	function editorRemoveInstanceObjects() : Void {
