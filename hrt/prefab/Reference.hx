@@ -121,14 +121,14 @@ class Reference extends Object3D {
 	}
 
 
-	override public function find<T:Prefab>(?cl: Class<T>, ?filter : T -> Bool, followRefs : Bool = false, includeDisabled: Bool = true) : Null<T> {
+	override public function findRec<T:Prefab>(?cl: Class<T>, ?filter : T -> Bool, followRefs : Bool = false, includeDisabled: Bool = true) : Null<T> {
 		if (!includeDisabled && !enabled)
 			return null;
-		var res = super.find(cl, filter, followRefs, includeDisabled);
+		var res = super.findRec(cl, filter, followRefs, includeDisabled);
 		if (res == null && followRefs ) {
 			var p = resolveRef();
 			if( p != null )
-				return p.find(cl, filter, followRefs, includeDisabled);
+				return p.findRec(cl, filter, followRefs, includeDisabled);
 		}
 		return res;
 	}

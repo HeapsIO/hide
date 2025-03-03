@@ -29,6 +29,9 @@ class ContextShared {
 	// Parent prefab of the object if it was created as a reference
 	public var parentPrefab : Prefab = null;
 
+	// Store result of non filtered Prefab.find during the make
+	public var findCache : Map<{}, Prefab> = null;
+
 	/**
 		Disable some checks at the prefab instanciation time. Used to initialize prefabs that
 		don't need locals2d/3d like shaders

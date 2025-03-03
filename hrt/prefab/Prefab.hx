@@ -153,10 +153,16 @@ class Prefab {
 		if (!shouldBeInstanciated())
 			return this;
 
+		if (this.parent == null)
+			shared.findCache = [];
+
 		makeInstance();
 		for (c in children)
 			makeChild(c);
 		postMakeInstance();
+
+		if (this.parent == null)
+			shared.findCache = null;
 
 		return this;
 	}
@@ -426,6 +432,17 @@ class Prefab {
 		Returns null if no matching prefab was found
 	**/
 	public function find<T:Prefab>(?cl: Class<T>, ?filter : T -> Bool, followRefs : Bool = false, includeDisabled: Bool = true) : Null<T> {
+		if (shared.findCache != null && filter == null && followRefs && includeDisabled) {
+			var prev : hrt.prefab.Prefab = shared.findCache.get(cast cl);
+			if (prev != null)
+				return cast prev;
+			prev = findRec(cl, filter, followRefs, includeDisabled);
+			shared.findCache.set(cast cl, prev);
+		}
+		return findRec(cl, filter, followRefs, includeDisabled);
+	}
+
+	function findRec<T:Prefab>(?cl: Class<T>, ?filter : T -> Bool, followRefs : Bool = false, includeDisabled: Bool = true) : Null<T> {
 		if (!includeDisabled && !enabled)
 			return null;
 		var asCl = cl != null ? Std.downcast(this, cl) : cast this;
@@ -433,7 +450,7 @@ class Prefab {
 			if (filter == null || filter(asCl))
 				return asCl;
 		for( p in children ) {
-			var v = p.find(cl, filter, followRefs);
+			var v = p.findRec(cl, filter, followRefs);
 			if( v != null ) return v;
 		}
 		return null;
