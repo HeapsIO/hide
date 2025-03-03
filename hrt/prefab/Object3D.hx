@@ -441,22 +441,6 @@ class Object3D extends Prefab {
 				continue;
 			}
 
-			var asIcon = Std.downcast(mesh, hrt.impl.EditorTools.EditorIcon);
-			if (asIcon != null) {
-				hasSkin = true; // hack
-				/*var pos = asIcon.getAbsPos();
-				bounds.addSpherePos(pos.tx, pos.ty, pos.tz, asIcon.billboardScale);*/
-				continue;
-			}
-
-			var asIcon = Std.downcast(mesh, hrt.impl.EditorTools.EditorIcon);
-			if (asIcon != null) {
-				hasSkin = true; // hack
-				/*var pos = asIcon.getAbsPos();
-				bounds.addSpherePos(pos.tx, pos.ty, pos.tz, asIcon.billboardScale);*/
-				continue;
-			}
-
 			var lb = mesh.primitive.getBounds().clone();
 			lb.transform(localMat);
 			bounds.add(lb);
@@ -480,7 +464,7 @@ class Object3D extends Prefab {
 		if( hasSkin ) {
 			collider = meshCollider; // can't trust bounds
 			meshCollider = null;
-		} else if( totalSeparateBounds / getVolume(bounds) < 0.5 ) {
+		} else {
 			collider = new h3d.col.Collider.OptimizedCollider(collider, meshCollider);
 			meshCollider = null;
 		}
