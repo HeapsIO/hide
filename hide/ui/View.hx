@@ -225,6 +225,7 @@ class View<T> extends hide.comp.Component {
 				ide.fileWatcher.unregister(w.path, w.callb);
 				watches.remove(w);
 			}
+		undo.clear();
 		syncTitle();
 		element.empty();
 		element.off();
