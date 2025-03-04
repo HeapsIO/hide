@@ -72,7 +72,7 @@ class FileSelect extends Component {
 		ide.openFile(getFullPath());
 	}
 
-	public function onDragDrop( items : Array<String>, isDrop : Bool ) : Bool {
+	public function onDragDrop( items : Array<String>, isDrop : Bool, event: js.html.DragEvent) : Bool {
 		if( items.length == 0 )
 			return false;
 		var newPath = ide.makeRelative(items[0]);

@@ -473,7 +473,7 @@ class BlendSpace2DEditor extends hide.view.FileView {
 		super.save();
 	}
 
-	override function onDragDrop(items : Array<String>, isDrop : Bool) {
+	override function onDragDrop(items : Array<String>, isDrop : Bool, event: js.html.DragEvent) {
 		if (items.length != 1)
 			return false;
 		if (!StringTools.endsWith(items[0], ".fbx"))

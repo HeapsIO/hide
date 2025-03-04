@@ -705,8 +705,8 @@ class Prefab extends hide.view.FileView {
 	function onRefresh() {
 	}
 
-	override function onDragDrop(items : Array<String>, isDrop : Bool) {
-		return sceneEditor.onDragDrop(items, isDrop);
+	override function onDragDrop(items : Array<String>, isDrop : Bool, event: js.html.DragEvent) {
+		return sceneEditor.onDragDrop(items, isDrop, event);
 	}
 
 	function applyGraphicsFilter(typeid: String, enable: Bool) {

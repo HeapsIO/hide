@@ -3555,12 +3555,12 @@ class SceneEditor {
 		return localMat;
 	}
 
-	public function onDragDrop( items : Array<String>, isDrop : Bool ) {
+	public function onDragDrop( items : Array<String>, isDrop : Bool, event: js.html.DragEvent ) {
 		var pickedEl = js.Browser.document.elementFromPoint(ide.mouseX, ide.mouseY);
 		var propEl = properties.element[0];
 		while( pickedEl != null ) {
 			if( pickedEl == propEl )
-				return properties.onDragDrop(items, isDrop);
+				return properties.onDragDrop(items, isDrop, event);
 			pickedEl = pickedEl.parentElement;
 		}
 
@@ -3574,11 +3574,11 @@ class SceneEditor {
 		if( paths.length == 0 )
 			return false;
 		if(isDrop)
-			dropElements(paths, sceneData);
+			dropElements(paths, sceneData, event );
 		return true;
 	}
 
-	function createDroppedElement(path: String, defaultParent: PrefabElement) : hrt.prefab.Prefab {
+	function createDroppedElement(path: String, defaultParent: PrefabElement, event: js.html.DragEvent) : hrt.prefab.Prefab {
 		var prefab : hrt.prefab.Prefab = null;
 		var relative = ide.makeRelative(path);
 
@@ -3607,10 +3607,25 @@ class SceneEditor {
 			prefab = shgraph;
 		}
 		else if(ptype != null) {
-			var ref = new hrt.prefab.Reference(null, null);
-			ref.source = relative;
+			// Inline reference if shift is held
+			if (event.shiftKey) {
+				var inlineRef = hxd.res.Loader.currentInstance.load(relative).toPrefab().load();
+				// create a root group
+				var root = new hrt.prefab.Object3D(null, parent.shared);
 
-			prefab = ref;
+				// attach all the children of the loaded reference to the root
+				for (child in inlineRef.children) {
+					child.clone(root);
+				}
+
+				prefab = root;
+			} else {
+				var ref = new hrt.prefab.Reference(null, null);
+				ref.source = relative;
+
+				prefab = ref;
+			}
+
 			prefab.name = new haxe.io.Path(relative).file;
 		}
 		else if(haxe.io.Path.extension(path).toLowerCase() == "json") {
@@ -3641,7 +3656,7 @@ class SceneEditor {
 		return prefab;
 	}
 
-	function dropElements(paths: Array<String>, parent: PrefabElement) {
+	function dropElements(paths: Array<String>, parent: PrefabElement, event: js.html.DragEvent) {
 		scene.setCurrent();
 
 		var localMat = h3d.Matrix.I();
@@ -3656,7 +3671,7 @@ class SceneEditor {
 
 		var elts: Array<PrefabElement> = [];
 		for(path in paths) {
-			var prefab = createDroppedElement(path, parent);
+			var prefab = createDroppedElement(path, parent, event);
 			if (prefab == null) {
 				return;
 			}

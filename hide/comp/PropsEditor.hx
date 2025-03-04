@@ -29,7 +29,7 @@ class PropsEditor extends Component {
 		groups = new Map();
 	}
 
-	public function onDragDrop( items : Array<String>, isDrop : Bool ) : Bool {
+	public function onDragDrop( items : Array<String>, isDrop : Bool, event: js.html.DragEvent) : Bool {
 		if( items.length == 0 )
 			return false;
 
@@ -40,9 +40,9 @@ class PropsEditor extends Component {
 				return false;
 			for( field in fields ) {
 				if( field.tselect != null && field.tselect.element[0] == pickedEl )
-					return field.tselect.onDragDrop(items, isDrop);
+					return field.tselect.onDragDrop(items, isDrop, event);
 				if( field.fselect != null && field.fselect.element[0] == pickedEl )
-					return field.fselect.onDragDrop(items, isDrop);
+					return field.fselect.onDragDrop(items, isDrop, event);
 			}
 			pickedEl = pickedEl.parentElement;
 		}

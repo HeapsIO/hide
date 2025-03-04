@@ -249,7 +249,7 @@ class View<T> extends hide.comp.Component {
 	public function onResize() {
 	}
 
-	public function onDragDrop(items : Array<String>, isDrop : Bool) {
+	public function onDragDrop(items : Array<String>, isDrop : Bool, event: js.html.DragEvent) {
 		return false;
 	}
 

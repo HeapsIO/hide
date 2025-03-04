@@ -417,7 +417,7 @@ class ShaderEditor extends hide.view.FileView implements GraphInterface.IGraphEd
 		initMeshPreview();
 	}
 
-	override function onDragDrop(items : Array<String>, isDrop : Bool) {
+	override function onDragDrop(items : Array<String>, isDrop : Bool, event: js.html.DragEvent) {
 
 		if (previewElem.get(0).matches(":hover")) {
 			for (item in items) {

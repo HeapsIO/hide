@@ -105,7 +105,7 @@ private class FXSceneEditor extends hide.comp.SceneEditor {
 		}
 	}
 
-	override function createDroppedElement(path:String, parent:PrefabElement): hrt.prefab.Prefab {
+	override function createDroppedElement(path:String, parent:PrefabElement, event: js.html.DragEvent): hrt.prefab.Prefab {
 		var type = hrt.prefab.Prefab.getPrefabType(path);
 		if(type == "fx") {
 			var relative = ide.makeRelative(path);
@@ -114,7 +114,7 @@ private class FXSceneEditor extends hide.comp.SceneEditor {
 			ref.name = new haxe.io.Path(relative).file;
 			return ref;
 		}
-		return super.createDroppedElement(path, parent);
+		return super.createDroppedElement(path, parent, event);
 	}
 
 	override function updateGrid() {
@@ -766,8 +766,8 @@ class FXEditor extends hide.view.FileView {
 		}
 	}
 
-	override function onDragDrop(items : Array<String>, isDrop : Bool) {
-		return sceneEditor.onDragDrop(items,isDrop);
+	override function onDragDrop(items : Array<String>, isDrop : Bool, event: js.html.DragEvent) {
+		return sceneEditor.onDragDrop(items,isDrop, event);
 	}
 
 	function onSelect(elts : Array<PrefabElement>) {

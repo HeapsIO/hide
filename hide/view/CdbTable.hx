@@ -329,7 +329,7 @@ class CdbTable extends hide.ui.View<{}> {
 	}
 
 	#if js
-	override public function onDragDrop( items : Array<String>, isDrop : Bool ) {
+	override public function onDragDrop( items : Array<String>, isDrop : Bool, event: js.html.DragEvent) {
 		if( items.length == 0 )
 			return false;
 		var path = ide.makeRelative(items[0]);
