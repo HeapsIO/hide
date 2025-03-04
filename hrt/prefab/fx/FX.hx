@@ -399,7 +399,7 @@ class FXAnimation extends h3d.scene.Object {
 		var sub = Std.downcast(elt, SubFX);
 		if (sub != null) {
 			var eventLen = out?.length ?? 0;
-			out = initEvents(sub.refInstance, out);
+			out = initEvents(@:privateAccess sub.resolveRef(), out);
 			var fxAnimation = Std.downcast(sub.refInstance.findFirstLocal3d(), FXAnimation);
 			if (fxAnimation != null) {
 				fxAnimation.events = null;
