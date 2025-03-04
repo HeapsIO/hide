@@ -59,10 +59,15 @@ class RadialMenu {
 				return pts;
 			}
 
+			var xCenter = (width / 2) - (item.width() / 2);
+			var yCenter = (height / 2) - (item.height() / 2);
+			item.get(0).style.left = '${xCenter}px';
+			item.get(0).style.top = '${yCenter}px';
+			item.width(); // Force recompute of style
 			var x = getPointsOnCircle(150, items.length)[idx].x;
 			var y = getPointsOnCircle(150, items.length)[idx].y;
-			item.get(0).style.left = '${(width / 2) - (item.width() / 2) + x}px';
-        	item.get(0).style.top = '${(height / 2) - (item.height() / 2) + y}px';
+			item.get(0).style.left = '${xCenter + x}px';
+        	item.get(0).style.top = '${yCenter + y}px';
 			radialButtons.push(item);
 		}
 
@@ -74,7 +79,6 @@ class RadialMenu {
 			stop();
 		});
 	}
-
 
 	public static function createFromPoint(x: Float, y: Float, items: Array<RadialMenuItem>) {
 		if (inst != null)
