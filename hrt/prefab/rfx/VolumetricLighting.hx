@@ -120,7 +120,7 @@ class VolumetricLightingShader extends h3d.shader.pbr.DefaultForward {
 				dist *= dist;
 			}
 			falloff *= falloff;
-			return falloff * falloff * exp(-fog * dist);
+			return falloff * falloff * exp(-extinction * dist);
 		}
 
 		var skipShadow : Bool = false;
@@ -172,9 +172,24 @@ class VolumetricLightingShader extends h3d.shader.pbr.DefaultForward {
 			return dfactor * dfactor;
 		}
 
+		function integrateStep(stepSize : Float, integrationValues : Vec4) : Vec4 {
+			extinction = fogAt(transformedPosition);
+			var clampedExtinction = max(extinction, 1e-5);
+			var transmittance = exp(-extinction*stepSize);
+
+			var luminance = evaluateLighting() * getFogColor() * mix(vec3(1.0), saturate(envColor), fogEnvColorMult) * extinction;
+			var integScatt = (luminance - luminance*transmittance) / clampedExtinction;
+
+			integrationValues.rgb += integrationValues.a * integScatt;
+			integrationValues.a *= transmittance;
+
+			return integrationValues;
+		}
+
 		var camDir : Vec3;
 		var envColor : Vec3;
-		var fog : Float;
+		var extinction : Float;
+		var curDist = 0.0;
 		function rayMarch() : Vec4 {
 			metalness = 0.0;
 			emissive = 0.0;
@@ -196,47 +211,29 @@ class VolumetricLightingShader extends h3d.shader.pbr.DefaultForward {
 			var stepSize = cameraDistance / float(steps);
 			var dithering = ditheringNoise.getLod(calculatedUV * targetSize / ditheringSize, 0.0).r * stepSize * ditheringIntensity;
 			startPos += dithering * camDir;
-			var opacity = 0.0;
-			var totalScattered = vec3(0.0);
-			var opticalDepth = 0.0;
-			var prevPixelColor = pixelColor;
-			pixelColor = vec4(1.0);
-			var colorAcc = vec4(0.0);
-			var curDist = 0.0;
+
+			var integrationValues = vec4(0.0,0.0,0.0,1.0);
 			skipShadow = false;
 			for ( i in 0...steps ) {
-				if ( colorAcc.a > 0.99 )
-					break;
 				transformedPosition = startPos + camDir * curDist;
-				fog = fogAt(transformedPosition);
-				var fColor = getFogColor();
-				var stepColor = evaluateLighting() * fColor * mix(vec3(1.0), saturate(envColor), fogEnvColorMult);
-
-				var stepColor = vec4(stepColor * fog, fog);
-
-				colorAcc += stepColor * (1.0 - colorAcc.a) * getDistBlend(curDist) * stepSize;
-
+				if ( integrationValues.a < 1e-2 ) break;
+				integrationValues = integrateStep(stepSize, integrationValues);
 				curDist += stepSize;
 			}
 
-			var stepSize = length(endPos - startPos) - curDist;
-			curDist += stepSize;
-			skipShadow = true;
-			if(colorAcc.a < 0.99 && stepSize > 0.0) {
+			stepSize = length(endPos - startPos) - curDist;
+			if(integrationValues.a > 1e-2 && stepSize > 0.0){
+				curDist += stepSize;
+				skipShadow = true;
 				transformedPosition = startPos + camDir * curDist;
-				fog = fogAt(transformedPosition);
-				var fColor = getFogColor();
-				var stepColor = evaluateLighting() * fColor * mix(vec3(1.0), saturate(envColor), fogEnvColorMult);
-
-				var stepColor = vec4(stepColor * fog, fog);
-
-				colorAcc += stepColor * (1.0 - colorAcc.a) * stepSize;
+				integrationValues = integrateStep(stepSize, integrationValues);
 			}
 
-			var outColor = colorAcc.rgb / (0.001 + colorAcc.a);
-			var opacity = saturate(distanceOpacity * colorAcc.a);
+			integrationValues.a = 1.0 - integrationValues.a;
+			var outColor = integrationValues.rgb / (0.001 + integrationValues.a);
+			var opacity = saturate(distanceOpacity * integrationValues.a);
 
-			return vec4(outColor, opacity);
+			return integrationValues;
 		}
 
 		function fragment() {
