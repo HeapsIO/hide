@@ -262,6 +262,82 @@ class Reference extends Object3D {
 	override function getHideProps() : hide.prefab.HideProps {
 		return { icon : "share", name : "Reference" };
 	}
+
+	@:access(hide.comp.SceneEditor)
+	static function breakReferences(selectedRefs : Array<Reference>) : Void {
+		var editor = selectedRefs[0].shared.editor;
+
+		var clones : Array<hrt.prefab.Prefab> = [];
+		var parents : Array<hrt.prefab.Prefab> = [];
+
+		for (selectedRef in selectedRefs) {
+			var root = new hrt.prefab.Object3D(null, selectedRef.shared);
+			for (child in selectedRef.resolveRef().children) {
+				child.clone(root);
+			}
+			root.name = selectedRef.name;
+			root.visible = selectedRef.visible;
+			root.loadTransform(selectedRef.saveTransform());
+
+			clones.push(root);
+			parents.push(selectedRef.parent);
+		}
+
+		function exec(isUndo) {
+			editor.beginRebuild();
+
+			var newSelection : Array<hrt.prefab.Prefab> = [];
+			for (i => selectedRef in selectedRefs) {
+				if (!isUndo) {
+
+					// find our prefab in the parent children,
+					// and swap it with the clone
+					for (childIndex => prefab in parents[i].children) {
+						if (prefab != selectedRef) continue;
+						parents[i].children[childIndex] = clones[i];
+						break;
+					}
+					editor.removeInstance(selectedRef, false);
+					@:bypassAccessor clones[i].parent = parents[i];
+					@:bypassAccessor selectedRef.parent = null;
+					newSelection.push(clones[i]);
+				}
+				else {
+					// find our clone in the parent children,
+					// and swap it with the original prefab
+					for (childIndex => prefab in parents[i].children) {
+						if (prefab != clones[i]) continue;
+						parents[i].children[childIndex] = selectedRef;
+						break;
+					}
+					editor.removeInstance(clones[i], false);
+					@:bypassAccessor clones[i].parent = null;
+					@:bypassAccessor selectedRef.parent = parents[i];
+					newSelection.push(selectedRef);
+				}
+				editor.queueRebuild(parents[i]);
+			}
+
+			editor.endRebuild();
+
+			editor.selectElements(newSelection, Nothing);
+			editor.refreshTree();
+		}
+
+		exec(false);
+		editor.view.undo.change(Custom(exec));
+	}
+
+	static function onContextMenu(selection: Array<hrt.prefab.Prefab>) : Array<hide.comp.ContextMenu.MenuItem> {
+		return [{
+			label: "Break References",
+			click: () -> {
+				breakReferences(cast selection);
+			},
+		}];
+	}
+
+	public static var _1 =  hide.comp.SceneEditor.registerContextMenuExtension(Reference, onContextMenu);
 	#end
 
 
