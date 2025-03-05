@@ -28,7 +28,7 @@ class Cursor {
 	}
 
 
-	public function set( ?t : Table, ?x : Int = 0, ?y : Int = 0, ?sel : Array<Selection>, update : Bool = true ) {
+	public function set( ?t : Table, ?x : Int = 0, ?y : Int = 0, ?sel : Array<Selection>, update : Bool = true, scrollIntoView : Bool = false ) {
 		if( t != null ) {
 			for( t2 in editor.tables ) {
 				if( t.sheet.getPath() == t2.sheet.getPath() ) {
@@ -55,6 +55,12 @@ class Cursor {
 		}
 
 		if( update ) this.update();
+
+		var line = getLine();
+		if (scrollIntoView && line != null) {
+			var e = line.element.get(0);
+			if( e != null ) untyped e.scrollIntoViewIfNeeded();
+		}
 	}
 
 	public function setDefault(line, column) {
@@ -214,9 +220,6 @@ class Cursor {
 				}
 			}
 		}
-
-		var e = line.element.get(0);
-		if( e != null ) untyped e.scrollIntoViewIfNeeded();
 	}
 
 
