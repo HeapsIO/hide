@@ -484,6 +484,7 @@ class Material extends Prefab {
 		group.find(".view-refs").click(function(_) {
 			var parentPath = shared.currentPath;
 			var refs : hide.view.RefViewer.Data = [];
+			var uniquesPath = [];
 
 			hide.Ide.inst.filterProps(function(data, path) {
 				var indexOf = path.indexOf("materials.props");
@@ -503,6 +504,9 @@ class Material extends Prefab {
 						continue;
 
 					var folderP = path.substring(0, indexOf - 1);
+					if (uniquesPath.contains(folderP))
+						continue;
+					uniquesPath.push(folderP);
 					refs.push({ str: folderP, goto: () -> { hide.Ide.inst.showFileInResources(folderP); } });
 				}
 				return false;
