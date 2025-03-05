@@ -307,8 +307,8 @@ class Editor extends Component {
 		}
 
 		if( filters.length > 0 ) {
+			var currentTable = tables.filter((t) -> t.sheet == currentSheet)[0];
 			if (searchHidden) {
-				var currentTable = tables.filter((t) -> t.sheet == currentSheet)[0];
 				for (l in currentTable.lines) {
 					if (l.element.hasClass("hidden"))
 						l.create();
@@ -329,8 +329,22 @@ class Editor extends Component {
 
 					// Need deep copy here, not ideal but works
 					var cloned = haxe.Json.parse(haxe.Json.stringify(l));
-					for (f in Reflect.fields(cloned))
-						interp.variables.set(f, Reflect.getProperty(cloned, f));
+					for (f in Reflect.fields(cloned)) {
+						var c = currentTable.columns[0];
+						for (col in currentTable.columns) {
+							if (col.name == f) {
+								c = col;
+								break;
+							}
+						}
+
+						switch(c.type) {
+							case cdb.Data.ColumnType.TEnum(e):
+								interp.variables.set(f, e[Reflect.getProperty(cloned, f)]);
+							default:
+								interp.variables.set(f, Reflect.getProperty(cloned, f));
+						}
+					}
 
 					function addFilter() {
 						var lineEl = lines.eq(idx);
