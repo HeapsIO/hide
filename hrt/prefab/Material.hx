@@ -477,6 +477,43 @@ class Material extends Prefab {
 				ctx.rebuildPrefab(fx, true);
 		});
 
+		group.find('.content').append(new hide.Element('<dt></dt>
+			<dd>
+				<input title="View references to this material used as a material library" type="button" value="View references" class="view-refs"/>
+			</dd>'));
+		group.find(".view-refs").click(function(_) {
+			var parentPath = shared.currentPath;
+			var refs : hide.view.RefViewer.Data = [];
+
+			hide.Ide.inst.filterProps(function(data, path) {
+				var indexOf = path.indexOf("materials.props");
+				if (indexOf < 0)
+					return false;
+
+				var mats = Reflect.field(data, "materials");
+				var pbr : Array<Dynamic> = Reflect.field(mats, "PBR");
+				for (f in Reflect.fields(pbr)) {
+					var el = Reflect.field(pbr, f);
+					if (!Reflect.hasField(el, "__ref"))
+						continue;
+
+					var ref = Reflect.field(el, "__ref");
+					var matName = Reflect.field(el, "name");
+					if (ref != parentPath || matName != this.name)
+						continue;
+
+					var folderP = path.substring(0, indexOf - 1);
+					refs.push({ str: folderP, goto: () -> { hide.Ide.inst.showFileInResources(folderP); } });
+				}
+				return false;
+			});
+
+			hide.Ide.inst.open("hide.view.RefViewer", null, null, function(view) {
+				var refViewer : hide.view.RefViewer = cast view;
+				refViewer.showRefs(refs, 'Number of references to "${this.name}"');
+			});
+		});
+
 		if( isPbr ) {
 			var pbrProps : h3d.mat.PbrMaterial.PbrProps = mat.props;
 
