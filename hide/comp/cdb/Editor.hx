@@ -1622,6 +1622,8 @@ class Editor extends Component {
 
 		var searchTypeButton = new Element("<i>").addClass("search-type fa fa-font").appendTo(searchBox);
 		searchTypeButton.attr("title", "Switch to litteral search or expression search");
+		searchTypeButton.toggleClass("fa-superscript", searchExp);
+		searchTypeButton.toggleClass("fa-font", !searchExp);
 
 		searchTypeButton.click(function(_) {
 			searchExp = !searchExp;
