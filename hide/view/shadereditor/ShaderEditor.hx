@@ -511,14 +511,14 @@ class ShaderEditor extends hide.view.FileView implements GraphInterface.IGraphEd
 
 
 	function createVariable(type: SgType, isColor: Bool = false) {
-		var name = "New Variable";
+		var name = "NewVariable";
 		var i = 0;
 		var index = 0;
 		while(i < shaderGraph.variables.length) {
 			if (shaderGraph.variables[i].name == name) {
 				i = 0;
 				index ++;
-				name = 'New Variable ($index)';
+				name = 'NewVariable_$index';
 			} else {
 				i++;
 			}
@@ -1089,23 +1089,31 @@ class ShaderEditor extends hide.view.FileView implements GraphInterface.IGraphEd
 		});
 		inputTitle.on("change", function(e) {
 			var newName = inputTitle.val();
+			if (!validNameCheck.match(newName)) {
+				ide.quickError('"$newName" is not a valid variable name (must start with _ or a letter, and only contains letters, numbers and underscores)');
+				inputTitle.val(parameter.name);
+				return;
+			}
+
 			var prevName = parameter.name;
 			var exec = function(isUndo : Bool) {
 				var v = !isUndo ? newName : prevName;
 				shaderGraph.setParameterTitle(parameter.id, v);
+				inputTitle.val(v);
+
+				requestRecompile();
+
+				for (id => node in currentGraph.getNodes()) {
+					if (Std.downcast(node, ShaderParam) != null) {
+						graphEditor.refreshBox(id);
+					}
+				}
 			}
 
 			exec(false);
 			undo.change(Custom(exec));
 			inputTitle.blur();
 
-			requestRecompile();
-
-			for (id => node in currentGraph.getNodes()) {
-				if (Std.downcast(node, ShaderParam) != null) {
-					graphEditor.refreshBox(id);
-				}
-			}
 
 			// if (shaderGraph.setParameterTitle(parameter.id, newName)) {
 			// 	for (b in listOfBoxes) {

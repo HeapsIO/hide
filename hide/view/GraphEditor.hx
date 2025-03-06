@@ -238,6 +238,14 @@ class GraphEditor extends hide.comp.Component {
 						return;
 					}
 					else {
+						// Filter compatible outputs
+						if (edgeCreationOutput != null) {
+							var unpack = unpackIO(edgeCreationOutput);
+							var output =  boxes[unpack.nodeId].outputs[unpack.ioId];
+
+						}
+
+
 						openAddMenu2();
 						e.stopPropagation();
 						return;
