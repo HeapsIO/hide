@@ -193,8 +193,16 @@ class ShaderEditor extends hide.view.FileView implements GraphInterface.IGraphEd
 		element.html("");
 		loadSettings();
 		element.addClass("shader-editor");
- 		shaderGraph = cast hide.Ide.inst.loadPrefab(state.path, null,  true);
-		currentGraph = shaderGraph.getGraph(Fragment);
+ 		shaderGraph = Std.downcast(hide.Ide.inst.loadPrefab(state.path, null,  true), hrt.shgraph.ShaderGraph);
+		 if (shaderGraph == null) {
+			element.html('<p>${state.path} is not a valid shadergrah');
+			return;
+		}
+		var targetGraph : hrt.shgraph.ShaderGraph.Domain = (try
+			haxe.EnumTools.createByName(hrt.shgraph.ShaderGraph.Domain, getDisplayState("currentGraph"))
+		catch (e) null) ?? Fragment;
+
+		currentGraph = shaderGraph.getGraph(targetGraph);
 		previewShaderBase = new PreviewShaderBase();
 		previewShaderAlpha = new GraphEditor.PreviewShaderAlpha();
 
@@ -489,12 +497,13 @@ class ShaderEditor extends hide.view.FileView implements GraphInterface.IGraphEd
 			domainSelection.val(haxe.EnumTools.EnumValueTools.getName(curr));
 			graphEditor.reload();
 			graphEditor.centerView();
+			saveDisplayState("currentGraph", haxe.EnumTools.EnumValueTools.getName(curr));
 			requestRecompile();
 		}
 
 		exec(false);
 		if (recordUndo) {
-			undo.change(Custom(exec));
+			undo.change(Custom(exec), null, true);
 		}
 	}
 
