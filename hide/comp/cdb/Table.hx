@@ -608,9 +608,34 @@ class Table extends Component {
 				{ label : "Expand All", click : function() {
 					element.find("tr.separator.sep-hidden a.toggle").click();
 				}},
+				{ label : "Expand Children", click : function() {
+					function recExpand(s : SepTree) {
+						var sepEl = separators[s.index].element;
+						if (sepEl.hasClass("sep-hidden"))
+							sepEl.find("a.toggle").click();
+
+						for (sub in s.subs)
+							recExpand(sub);
+					}
+
+					var t = makeSeparatorTree(sepInfo);
+					recExpand(t);
+				}},
 				{ label : "Collapse All", click : function() {
 					element.find("tr.separator").not(".sep-hidden").find("a.toggle").click();
+				}},
+				{ label : "Collapse Children", click : function() {
+					function recExpand(s : SepTree) {
+						var sepEl = separators[s.index].element;
+						if (!sepEl.hasClass("sep-hidden"))
+							sepEl.find("a.toggle").click();
 
+						for (sub in s.subs)
+							recExpand(sub);
+					}
+
+					var t = makeSeparatorTree(sepInfo);
+					recExpand(t);
 				}},
 				{ label : "Collapse Others", click : function() {
 					var directParents = [];
