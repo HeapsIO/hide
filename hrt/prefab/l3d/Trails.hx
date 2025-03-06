@@ -12,6 +12,7 @@ class TrailPoint {
 	public var ux : Float = 0;
 	public var uy : Float = 0;
 	public var uz : Float = 0;
+	public var color : Int = 0xFFFFFFFF;
 	public var speed : Float = 0;
 	public var len : Float = 0;
 	public var lifetime : Float = 0;
@@ -78,6 +79,7 @@ class TrailObj extends h3d.scene.Mesh {
 	var vbuf : hxd.FloatBuffer;
 	var ibuf : hxd.IndexBuffer;
 	var numVertsIndices : Int = 0;
+	var format : hxd.BufferFormat;
 	var bounds : h3d.col.Bounds;
 	var prefab : Trails;
 
@@ -108,6 +110,7 @@ class TrailObj extends h3d.scene.Mesh {
 	static var tmpNormal = new h3d.Vector();
 	static var tmpBinormal = new h3d.Vector();
 	static var tmpTangent = new h3d.Vector();
+	static var tmpColor = new h3d.Vector4();
 
 	public function set_numTrails(new_value : Int) : Int {
 		if (numTrails != new_value) {
@@ -120,6 +123,7 @@ class TrailObj extends h3d.scene.Mesh {
 	}
 
 	var shader : hrt.shader.BaseTrails;
+	var colorShader : h3d.shader.VertexColorAlpha;
 
 	public function calcMaxTrailPoints() : Int {
 		return std.Math.ceil( prefab.lifetime * prefab.framerate ) + 2; // Segment count + head and tail
@@ -145,7 +149,14 @@ class TrailObj extends h3d.scene.Mesh {
 		if (vbuf != null)
 			alloc.disposeFloats(vbuf);
 		currentAllocatedVertexCount = calcMaxVertexes();
-		vbuf = new hxd.FloatBuffer(currentAllocatedVertexCount * 8);
+		if(format == null) {
+			if(prefab.useColor){
+				format = hxd.BufferFormat.POS3D_NORMAL_UV_RGBA;
+			} else {
+				format = hxd.BufferFormat.POS3D_NORMAL_UV;
+			}
+		}
+		vbuf = new hxd.FloatBuffer(currentAllocatedVertexCount * format.stride);
 		if (ibuf != null)
 			alloc.disposeIndexes(ibuf);
 		currentAllocatedIndexCount = calcMaxIndexes();
@@ -247,6 +258,10 @@ class TrailObj extends h3d.scene.Mesh {
 
 	public function updateShader() {
 		shader.uvRepeat = prefab.uvRepeat.getIndex();
+
+		material.mainPass.removeShader(colorShader);
+		if(prefab.useColor)
+			material.mainPass.addShader(colorShader);
 	}
 
 	function updateOrientation(p : TrailPoint) {
@@ -301,6 +316,7 @@ class TrailObj extends h3d.scene.Mesh {
 		point.ty = tangent.y;
 		point.tz = tangent.z;
 
+		point.color = prefab.color;
 		point.lifetime = prefab.lifetime;
 		point.sizeMultiplier = sizeMultiplier;
 		point.w = prefab.startWidth * point.sizeMultiplier;
@@ -327,7 +343,7 @@ class TrailObj extends h3d.scene.Mesh {
 		return {
 			vbuf : vbuf,
 			ibuf : ibuf,
-			format : hxd.BufferFormat.POS3D_NORMAL_UV,
+			format : prefab.useColor ? hxd.BufferFormat.POS3D_NORMAL_UV_RGBA : format = hxd.BufferFormat.POS3D_NORMAL_UV,
 			bounds : bounds,
 		};
 	}
@@ -357,9 +373,9 @@ class TrailObj extends h3d.scene.Mesh {
 
 		shader = new hrt.shader.BaseTrails();
 		material.mainPass.addShader(shader);
-
 		shader.setPriority(-999);
 
+		colorShader = new h3d.shader.VertexColorAlpha();
 		updateShader();
 
 		cooldown = 0.0;
@@ -596,6 +612,15 @@ class TrailObj extends h3d.scene.Mesh {
 			buffer[count++] = u;
 			buffer[count++] = 0;
 
+			if(prefab.useColor){
+				tmpColor = h3d.Vector4.fromColor(p.color);
+				buffer[count++] = tmpColor.x;
+				buffer[count++] = tmpColor.y;
+				buffer[count++] = tmpColor.z;
+				buffer[count++] = tmpColor.w;
+			}
+
+
 			buffer[count++] = p.x + (tmpBinormal.x * -p.w * baseScale.x);
 			buffer[count++] = p.y + (tmpBinormal.y * -p.w * baseScale.y);
 			buffer[count++] = p.z + (tmpBinormal.z * -p.w * baseScale.z);
@@ -604,6 +629,13 @@ class TrailObj extends h3d.scene.Mesh {
 			buffer[count++] = tmpNormal.z;
 			buffer[count++] = u;
 			buffer[count++] = 1;
+
+			if(prefab.useColor){
+				buffer[count++] = tmpColor.x;
+				buffer[count++] = tmpColor.y;
+				buffer[count++] = tmpColor.z;
+				buffer[count++] = tmpColor.w;
+			}
 		}
 
 		inline function addSegment( segmentIndex : Int ) {
@@ -647,6 +679,8 @@ class TrailObj extends h3d.scene.Mesh {
 				tmpHead.tx = tangent.x;
 				tmpHead.ty = tangent.y;
 				tmpHead.tz = tangent.z;
+
+				tmpHead.color = prefab.color;
 
 				tmpHead.w = prefab.startWidth * sizeMultiplier;
 				tmpHead.next = cur;
@@ -692,7 +726,7 @@ class TrailObj extends h3d.scene.Mesh {
 			}
 		}
 
-		var numVerts = Std.int(count/8);
+		var numVerts = Std.int(count/format.stride);
 
 		shader.uvStretch = prefab.uvStretch;
 
@@ -764,6 +798,10 @@ class Trails extends Object3D {
 	@:s public var uvStretch: Float = 1.0;
 	@:s public var uvRepeat : UVRepeat = EMod;
 	@:s public var framerate : Float = 30.0;
+
+	@:s public var useColor : Bool = false;
+	@:s public var color : Int = 0xFFFFFFFF;
+
 	// TODO(ces) : find better way to do that
 	// Override this before calling make() to change how many trails are instancied
 	public var numTrails : Int = 1;
@@ -845,6 +883,14 @@ class Trails extends Object3D {
 			if ( @:privateAccess trailObj.dprim != null )
 				@:privateAccess trailObj.dprim.alloc(null);
 		}
+
+		if(props == "useColor") {
+			@:privateAccess trailObj.format = useColor ? hxd.BufferFormat.POS3D_NORMAL_UV_RGBA : hxd.BufferFormat.POS3D_NORMAL_UV;
+			@:privateAccess trailObj.allocBuffers();
+			if ( @:privateAccess trailObj.dprim != null )
+				@:privateAccess trailObj.dprim.alloc(null);
+			trailObj.updateShader();
+		}
 	}
 
 	#if editor
@@ -868,6 +914,8 @@ class Trails extends Object3D {
 				<dt>Min Speed</dt><dd><input type="range" field="minSpeed" min="0" max="1000"/></dd>
 				<dt>Max Speed</dt><dd><input type="range" field="maxSpeed" min="0" max="1000"/></dd>
 				<dt>Use scale</dt><dd><input type="checkbox" field="useScale" /></dd>
+				<dt>Use color</dt><dd><input type="checkbox" field="useColor" /></dd>
+				<dt>Color</dt><dd><input type="color" field="color" alpha="true"/></dd>
 			</dl>
 		</div>
 
