@@ -15,6 +15,7 @@ class TrailPoint {
 	public var speed : Float = 0;
 	public var len : Float = 0;
 	public var lifetime : Float = 0;
+	public var sizeMultiplier : Float = 1;
 	public var next : TrailPoint = null;
 
 	public function new(){};
@@ -85,8 +86,7 @@ class TrailObj extends h3d.scene.Mesh {
 	var zOffset : Float = 0;
 
 	public var timeScale : Float = 1.0;
-	public var lockTrailsExtension : Bool = false;
-	var lockTrailEnable = false;
+	public var sizeMultiplier : Float = 1.0;
 
 	#if editor
 	var icon : hrt.impl.EditorTools.EditorIcon;
@@ -302,12 +302,10 @@ class TrailObj extends h3d.scene.Mesh {
 		point.tz = tangent.z;
 
 		point.lifetime = prefab.lifetime;
-		point.w = prefab.startWidth;
+		point.sizeMultiplier = sizeMultiplier;
+		point.w = prefab.startWidth * point.sizeMultiplier;
 		point.len = len;
 		point.speed = prev != null ? len / ( point.lifetime - prev.lifetime ) : 0;
-		if(lockTrailEnable) {
-			point.speed = 0.0;
-		}
 		point.next = prev;
 
 		head.firstPoint = point;
@@ -401,8 +399,8 @@ class TrailObj extends h3d.scene.Mesh {
 		var totalLength = 0.0;
 		do {
 			cur.lifetime -= dt;
-			var t = 1.0 - cur.lifetime / prefab.lifetime;
-			cur.w = hxd.Math.lerp(prefab.startWidth, prefab.endWidth, t);
+			var t = cur.lifetime / prefab.lifetime;
+			cur.w = hxd.Math.lerp(prefab.endWidth, prefab.startWidth, t) * cur.sizeMultiplier;
 			if ( cur.lifetime > 0.0 ) {
 				totalLength += cur.len;
 				lastPointAlive = cur;
@@ -467,7 +465,7 @@ class TrailObj extends h3d.scene.Mesh {
 		dyingPoint.ty = tangent.y;
 		dyingPoint.tz = tangent.z;
 
-		dyingPoint.w = prefab.endWidth;
+		dyingPoint.w = prefab.endWidth * dyingPoint.sizeMultiplier;
 		dyingPoint.lifetime = 0.0;
 
 		if ( dyingPoint.next != null ) {
@@ -558,7 +556,6 @@ class TrailObj extends h3d.scene.Mesh {
 			}
 		} else if (autoTrackPosition)
 			addPoint(trails[0], absPos.tx, absPos.ty, absPos.tz);
-		lockTrailEnable = lockTrailsExtension;
 	}
 
 	override function emit(ctx) {
@@ -651,7 +648,7 @@ class TrailObj extends h3d.scene.Mesh {
 				tmpHead.ty = tangent.y;
 				tmpHead.tz = tangent.z;
 
-				tmpHead.w = prefab.startWidth;
+				tmpHead.w = prefab.startWidth * sizeMultiplier;
 				tmpHead.next = cur;
 				tmpHead.lifetime = prefab.lifetime;
 				tmpHead.len = Math.sqrt(curToHeadSq);
@@ -881,7 +878,7 @@ class Trails extends Object3D {
 				<dt>Minify</dt><dd><input type="checkbox" field="useMinify" /></dd>
 				<dt>Max Distance</dt><dd><input type="range" field="magnificationMaxDist" min="100" max="1000"/></dd>
 			</dl>
-		</div>		
+		</div>
 
 		<div class="group" name="UV">
 			<dl>
