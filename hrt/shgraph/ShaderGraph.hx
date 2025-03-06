@@ -640,6 +640,11 @@ class ShaderGraph extends hrt.prefab.Prefab {
 			shaderData.vars.push(funcVar);
 		}
 
+		for (func in nodeGen.functions) {
+			shaderData.funs.push(func);
+			shaderData.vars.push(func.ref);
+		}
+
 		var shared = new SharedShader("");
 		@:privateAccess shared.data = shaderData;
 		@:privateAccess shared.initialize();

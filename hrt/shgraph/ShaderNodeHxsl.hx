@@ -7,7 +7,7 @@ import hrt.tools.MapUtils;
 
 using Lambda;
 
-typedef CacheEntry = {expr: TExpr, inputs: Array<ShaderNode.InputInfo>, outputs: Array<ShaderNode.OutputInfo>, idInputOrder: Map<Int, Int>, idOutputOrder: Map<Int,Int>};
+typedef CacheEntry = {expr: TExpr, funs: Array<TFunction>, inputs: Array<ShaderNode.InputInfo>, outputs: Array<ShaderNode.OutputInfo>, idInputOrder: Map<Int, Int>, idOutputOrder: Map<Int,Int>};
 
 class CustomSerializer extends hxsl.Serializer {
 
@@ -76,16 +76,22 @@ class ShaderNodeHxsl extends ShaderNode {
 
 	function genCache(cl: Class<ShaderNodeHxsl>) : CacheEntry {
 		var toUnser = (cl:Dynamic).SRC;
-		if (toUnser == null) throw "Node " + std.Type.getClassName(cl) + " has no SRC";
+		var className = std.Type.getClassName(cl);
+		if (toUnser == null) throw "Node " + className + " has no SRC";
+		var shortName = std.Type.getClassName(cl).split(".").pop();
 
 		var unser = new CustomSerializer();
 		var data = @:privateAccess unser.unserialize(toUnser);
 
+		var funs = [];
 		var expr : TExpr = null;
 		for (fn in data.funs) {
 			if (fn.ref.name == "fragment") {
 				expr = fn.expr;
 				break;
+			} else {
+				fn.ref.name = shortName + "_" + fn.ref.name; // De-duplicate function name if multiple nodes declare the same function name to avoid conflics
+				funs.push(fn);
 			}
 		}
 
@@ -111,7 +117,7 @@ class ShaderNodeHxsl extends ShaderNode {
 			}
 		}
 
-		return {expr: expr, inputs: inputs, outputs: outputs, idInputOrder: idInputOrder, idOutputOrder: idOutputOrder};
+		return {expr: expr, funs: funs, inputs: inputs, outputs: outputs, idInputOrder: idInputOrder, idOutputOrder: idOutputOrder};
 	}
 
 	override public function generate(ctx: NodeGenContext) : Void {
@@ -178,7 +184,11 @@ class ShaderNodeHxsl extends ShaderNode {
 							if (tvar != null) {
 								replacement = {e: TVar(tvar), p: e.p, t: e.t};
 							} else {
-								replacement = ctx.getGlobalTVar(v);
+								switch(v.type) {
+									case TFun(_): return e;// don't replace tfun vars with global decls
+									default:
+										replacement = ctx.getGlobalTVar(v);
+								}
 							}
 					}
 					if (replacement == null) {
@@ -246,6 +256,10 @@ class ShaderNodeHxsl extends ShaderNode {
 				default:
 					throw "function expr is not a block";
 			}
+		}
+
+		for (func in cache.funs) {
+			ctx.addFunction(func);
 		}
 	}
 

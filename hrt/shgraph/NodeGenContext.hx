@@ -293,6 +293,12 @@ class NodeGenContext {
 		throw "unreachable";
 	}
 
+	public function addFunction(e: TFunction) {
+		if (functions.get(e.ref.id) == null) {
+			functions.set(e.ref.id, e);
+		}
+	}
+
 	public function addExpr(e: TExpr) {
 		expressions.push(e);
 	}
@@ -372,6 +378,7 @@ class NodeGenContext {
 
 	var currentPreviewId: Int = -1;
 	var expressions: Array<TExpr> = [];
+	var functions: Map<Int, TFunction> = [];
 	var outputs: Array<TExpr> = [];
 	var preview : TExpr = null;
 	var nodeOutputInfo: Array<OutputInfo>;
