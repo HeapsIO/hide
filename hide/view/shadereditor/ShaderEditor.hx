@@ -181,8 +181,8 @@ class ShaderEditor extends hide.view.FileView implements GraphInterface.IGraphEd
 	var isDisplayed = false;
 	var isLoaded = false;
 
-	override function onDisplay() {
-		super.onDisplay();
+	override function onRebuild() {
+		super.onRebuild();
 		isDisplayed = true;
 		reloadView();
 	}
@@ -453,17 +453,18 @@ class ShaderEditor extends hide.view.FileView implements GraphInterface.IGraphEd
 	override function onActivate() {
 		super.onActivate();
 		if (!isLoaded && isDisplayed) {
-			var save = graphEditor.saveView();
-			reloadView();
-			graphEditor.loadView(save);
+			graphEditor.createMiniPreviewScene();
+			initMeshPreview();
+			isLoaded = true;
+
 		}
 	}
 
 	override function onHide() {
 		super.onHide();
 		if (isLoaded) {
-			meshPreviewScene?.dispose();
-			graphEditor.previewsScene?.dispose();
+			disposeMeshPreview();
+			graphEditor.disposeMiniPreviewScene();
 			isLoaded = false;
 		}
 	}
@@ -1226,11 +1227,16 @@ class ShaderEditor extends hide.view.FileView implements GraphInterface.IGraphEd
 		param.addClass("reveal");
 	}
 
-
+	public function disposeMeshPreview() {
+		if (meshPreviewScene != null) {
+			meshPreviewScene.dispose();
+			previewElem.remove();
+		}
+	}
 
 	public function initMeshPreview() {
 		if (meshPreviewScene != null) {
-			meshPreviewScene.element.remove();
+			disposeMeshPreview();
 		}
 		previewElem = new Element('<div id="preview"></div>').appendTo(graphEditor.element);
 		var sceneContainer = new Element('<div class="scene-container"></div>').appendTo(previewElem);

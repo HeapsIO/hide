@@ -55,7 +55,7 @@ class GraphEditor extends hide.comp.Component {
 	public var config : hide.Config;
 
 
-	public var previewsScene : hide.comp.Scene;
+	public var previewsScene : hide.comp.Scene = null;
 
 	var boxes : Map<Int, Box> = [];
 
@@ -95,6 +95,8 @@ class GraphEditor extends hide.comp.Component {
 	var lastCurveX : Float = 0;
 	var lastCurveY : Float = 0;
 	var snapToGrid : Bool = true;
+
+	var miniPreviews : Element = null;
 
 	public var currentUndoBuffer : UndoBuffer = [];
 
@@ -168,12 +170,8 @@ class GraphEditor extends hide.comp.Component {
 		keys.register("graph.openAddMenu", openAddMenu2);
 		keys.register("cancel", cancelAll);
 
-		var miniPreviews = new Element('<div class="mini-preview"></div>');
-		heapsScene.prepend(miniPreviews);
-		previewsScene = new hide.comp.Scene(config, null, miniPreviews);
-		previewsScene.onReady = onMiniPreviewReady;
-		previewsScene.onUpdate = onMiniPreviewUpdate;
-		previewsScene.enableNewErrorSystem = true;
+
+		createMiniPreviewScene();
 
 		// rectangle Selection
 		var rawheaps = heapsScene.get(0);
@@ -296,6 +294,27 @@ class GraphEditor extends hide.comp.Component {
 		updateMatrix();
 
 		haxe.Timer.delay(reloadInternal, 100);
+	}
+
+	public function createMiniPreviewScene() {
+		if (previewsScene != null) {
+			return;
+		}
+		miniPreviews = new Element('<div class="mini-preview"></div>');
+		heapsScene.prepend(miniPreviews);
+
+		previewsScene = new hide.comp.Scene(config, null, miniPreviews);
+		previewsScene.onReady = onMiniPreviewReady;
+		previewsScene.onUpdate = onMiniPreviewUpdate;
+		previewsScene.enableNewErrorSystem = true;
+	}
+
+	public function disposeMiniPreviewScene() {
+		if (previewsScene != null) {
+			previewsScene.dispose();
+			previewsScene.remove();
+			previewsScene = null;
+		}
 	}
 
 	function setSnapToGrid(b: Bool) {
