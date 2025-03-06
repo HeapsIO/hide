@@ -183,12 +183,10 @@ class ShaderEditor extends hide.view.FileView implements GraphInterface.IGraphEd
 
 	override function onRebuild() {
 		super.onRebuild();
-		isDisplayed = true;
 		reloadView();
 	}
 
 	function reloadView() {
-		isLoaded = true;
 
 		element.html("");
 		loadSettings();
@@ -198,6 +196,10 @@ class ShaderEditor extends hide.view.FileView implements GraphInterface.IGraphEd
 			element.html('<p>${state.path} is not a valid shadergrah');
 			return;
 		}
+		isLoaded = true;
+		isDisplayed = true;
+
+
 		var targetGraph : hrt.shgraph.ShaderGraph.Domain = (try
 			haxe.EnumTools.createByName(hrt.shgraph.ShaderGraph.Domain, getDisplayState("currentGraph"))
 		catch (e) null) ?? Fragment;
