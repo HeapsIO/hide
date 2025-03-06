@@ -3,12 +3,19 @@ import hide.comp.GradientEditor.GradientBox;
 import hrt.impl.TextureType.Utils;
 import hrt.prefab.Props;
 
+typedef GroupMap = Map<String, {serialize: () -> Dynamic, pasteFn: (refresh: Bool, undo: hide.ui.UndoHistory, data: Dynamic) -> Void, fields: Array<PropsField>}>;
+
 class PropsEditor extends Component {
 
 	public var undo : hide.ui.UndoHistory;
 	public var lastChange : Float = 0.;
 	public var fields(default, null) : Array<PropsField>;
-	public var groups(default, null) : Map<String, Array<PropsField>>;
+	public var groups(default, null) : GroupMap;
+
+	// Called when the props editor want a full refresh
+	public dynamic function onRefresh() {
+
+	}
 
 	public var multiPropsEditor : Array<PropsEditor> = [];
 
@@ -224,6 +231,7 @@ class PropsEditor extends Component {
 
 		// init groups
 		var gindex = 0;
+		var localGroups : GroupMap = [];
 		for( g in e.find(".group").elements() ) {
 			var name = g.attr("name");
 			g.wrapInner("<div class='content'></div>");
@@ -250,7 +258,7 @@ class PropsEditor extends Component {
 			g.get(0).style.setProperty('--level', '$level');
 
 			var groupName = g.attr("name");
-			groups.set(groupName, []);
+			localGroups.set(groupName, {serialize: null, pasteFn: null, fields: []});
 		}
 
 		e.find(".group").not(".open").children(".content").hide();
@@ -339,7 +347,7 @@ class PropsEditor extends Component {
 			};
 			var groupName = f.element.closest(".group").attr("name");
 			if (groupName != null) {
-				groups.get(groupName).push(f);
+				localGroups.get(groupName).fields.push(f);
 			}
 			fields.push(f);
 			// Init reset buttons
@@ -358,6 +366,105 @@ class PropsEditor extends Component {
 					}
 				});
 			}
+		}
+
+		for (groupName => group in localGroups) {
+			groups.set(groupName, group);
+
+			var fields = group.fields;
+
+			function serialize() {
+				var data : Dynamic = {};
+				for (field in fields) {
+					var ctx = context;
+					var paths = field.fname.split(".");
+					for (p in paths) {
+						ctx = Reflect.getProperty(ctx, p);
+					}
+					Reflect.setField(data, field.fname, ctx);
+				}
+				return {group: groupName, data: data};
+			}
+
+			function copyFields() {
+				var ser = haxe.Serializer.run(serialize());
+				ide.setClipboard(ser);
+			}
+
+			function unserCliboard() : Dynamic {
+				var data = try {
+					haxe.Unserializer.run(ide.getClipboard());
+				} catch (e) {
+					return null;
+				}
+				if (data.group != groupName) {
+					return null;
+				}
+				return data;
+			}
+
+			function pasteFields(doRefresh: Bool = true, undo: hide.ui.UndoHistory, data: Dynamic = null) {
+				var data = data ?? unserCliboard();
+				if (data == null)
+					throw "unser failed";
+
+				var tmpUndo = new hide.ui.UndoHistory();
+				for (field in Reflect.fields(data.data)) {
+					var ctx = context;
+					var paths = field.split(".");
+					var last = paths.pop();
+					for (p in paths) {
+						ctx = Reflect.getProperty(ctx, p);
+					}
+					var old = Reflect.getProperty(ctx, last);
+					var curr = Reflect.getProperty(data.data, field);
+					var exec = (isUndo: Bool) -> {
+						var ctx = context;
+						for (p in paths) {
+							ctx = Reflect.getProperty(ctx, p);
+						}
+						Reflect.setProperty(ctx, last, !isUndo ? curr : old);
+						if (onChange != null)
+							onChange(field);
+					};
+					exec(false);
+					tmpUndo.change(Custom(exec));
+				}
+
+
+				if (multiPropsEditor.length > 0) {
+					for (subProp in multiPropsEditor) {
+						var subGroup = subProp.groups.get(groupName);
+						if (subGroup.pasteFn != null) {
+							subGroup.pasteFn(false, tmpUndo, data);
+						}
+					}
+				}
+
+				undo.change(tmpUndo.toElement(), onRefresh);
+
+				if (doRefresh)
+					onRefresh();
+			}
+
+			if (context != null) {
+				group.pasteFn = pasteFields;
+				group.serialize = serialize;
+			}
+
+			var header = e.find('.group[name="$groupName"]').find(".title");
+			header.contextmenu( function(e) {
+				e.preventDefault();
+				ContextMenu.createFromEvent(cast e, [{label: "Copy", click: function() {
+					copyFields();
+				}, enabled: context != null},
+				{label: "Paste", click: function() {
+					pasteFields(true, undo);
+				},
+				enabled: context != null && unserCliboard() != null
+				}
+			]);
+			});
 		}
 
 		return e;
@@ -636,6 +743,7 @@ class PropsField extends Component {
 
 			multiRange = new hide.comp.MultiRange(parentDiv, f, subfields.length, [for (subfield in subfields) name + " " + subfield]);
 			Reflect.setField(multiRange.element[0],"propsField", this);
+			element = multiRange.element;
 
 			var a = getAccess();
 			multiRange.value = Reflect.getProperty(a.obj, a.name);

@@ -993,6 +993,7 @@ class SceneEditor {
 
 		var propsEl = new Element('<div class="props"></div>');
 		properties = new hide.comp.PropsEditor(undo,null,propsEl);
+		properties.onRefresh = refreshProps;
 		properties.saveDisplayKey = view.saveDisplayKey + "/properties";
 
 		tree = new hide.comp.IconTree();
@@ -3186,45 +3187,45 @@ class SceneEditor {
 		return false;
 	}
 
-	function pasteFields(fields : Array<hide.comp.PropsEditor.PropsField>) {
-		var pasteData = ide.getClipboard();
-		var currentData = serializeProps(fields);
-		var success = unserializeProps(fields, pasteData);
-		if (success) {
-			undo.change(Custom(function(undo) {
-				if (undo) {
-					unserializeProps(fields, currentData);
-					curEdit.onChange(curEdit.elements[0], "props");
-					curEdit.rebuildProperties();
-				} else {
-					unserializeProps(fields, pasteData);
-					curEdit.onChange(curEdit.elements[0], "props");
-					curEdit.rebuildProperties();
-				}
-			}));
-
-			curEdit.onChange(curEdit.elements[0], "props");
-			curEdit.rebuildProperties();
-		}
-	}
-
-
-	function copyFields(fields : Array<hide.comp.PropsEditor.PropsField>) {
-		ide.setClipboard(serializeProps(fields));
-	}
-
 	function fillProps(edit : SceneEditorContext, e : PrefabElement, others: Array<PrefabElement> ) {
 		properties.element.append(new Element('<h1 class="prefab-name">${e.getHideProps().name}</h1>'));
 
-		var copyButton = new Element('<div class="hide-button" title="Copy all properties">').append(new Element('<div class="icon ico ico-copy">'));
-		copyButton.click(function(event : js.jquery.Event) {
-			copyFields(properties.fields);
-		});
+		var copyButton = new Element('<fancy-button title="Copy all properties">').append(new Element('<div class="icon ico ico-copy">'));
+
+		function copyData() {
+				var groupData = {};
+				for (groupName => group in edit.properties.groups) {
+					if (group.serialize != null) {
+						var data = group.serialize();
+						Reflect.setProperty(groupData, groupName, data);
+					}
+				}
+				ide.setClipboard(haxe.Serializer.run({properties: "copy", data: groupData}));
+		}
+		copyButton.click(function(event : js.jquery.Event) { copyData(); });
 		properties.element.append(copyButton);
 
-		var pasteButton = new Element('<div class="hide-button" title="Paste values from the clipboard">').append(new Element('<div class="icon ico ico-paste">'));
+		var pasteButton = new Element('<fancy-button title="Paste values from the clipboard">').append(new Element('<div class="icon ico ico-paste">'));
+
+		function pasteData() {
+			var res = try haxe.Unserializer.run(ide.getClipboard()) catch (e) null;
+			if (res == null || res.properties != "copy")
+				return;
+
+			var tmpUndo = new hide.ui.UndoHistory();
+			for (groupName => group in edit.properties.groups) {
+				var groupData = Reflect.getProperty(res.data, groupName);
+				if (groupData == null || group.pasteFn == null)
+					continue;
+				group.pasteFn(false, tmpUndo, groupData);
+			}
+
+			undo.change(tmpUndo.toElement());
+
+			refreshProps();
+		}
 		pasteButton.click(function(event : js.jquery.Event) {
-			pasteFields(properties.fields);
+			pasteData();
 		});
 		properties.element.append(pasteButton);
 
@@ -3346,31 +3347,7 @@ class SceneEditor {
 		}
 	}
 
-	public function addGroupCopyPaste() {
-		for (groupName => groupFields in properties.groups) {
-			var header = properties.element.find('.group[name="$groupName"]').find(".title");
-			header.contextmenu( function(e) {
-				e.preventDefault();
-				ContextMenu.createFromEvent(cast e, [{label: "Copy", click: function() {
-					copyFields(groupFields);
-				}},
-				{label: "Paste", click: function() {
-					pasteFields(groupFields);
-				}}
-
-			]);
-			});
-		}
-	}
-
 	function makeEditContext(elts : Array<PrefabElement>) : SceneEditorContext {
-		/*var rootCtx = context;
-		while( p != null ) {
-			var ctx = context.shared.getContexts(p)[0];
-			if( ctx != null ) rootCtx = ctx;
-			p = p.parent;
-		}*/
-		// rootCtx might not be == context depending on references
 		var edit : SceneEditorContext = new SceneEditorContext(elts, this);
 
 		edit.rootPrefab = sceneData;
@@ -3384,7 +3361,6 @@ class SceneEditor {
 		var edit = makeEditContext([e]);
 		properties.clear();
 		fillProps(edit, e, null);
-		addGroupCopyPaste();
 	}
 
 	function setElementSelected( p : PrefabElement, b : Bool ) {
@@ -3438,7 +3414,6 @@ class SceneEditor {
 				{
 					fillProps(edit, elts[0], null);
 				}
-				addGroupCopyPaste();
 			}
 
 			switch( mode ) {
