@@ -279,7 +279,7 @@ class TextureEditor extends hide.view.FileView implements GraphInterface.IGraphE
 		return edges.iterator();
 	}
 
-	public function getAddNodesMenu():Array<AddNodeMenuEntry> {
+	public function getAddNodesMenu(currentEdge: Null<Edge>):Array<AddNodeMenuEntry> {
 		var entries : Array<AddNodeMenuEntry> = [];
 		var id = 0;
 		for (i => node in hrt.texgraph.TexNode.registeredNodes) {

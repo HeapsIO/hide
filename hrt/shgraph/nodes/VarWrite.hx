@@ -4,6 +4,7 @@ package hrt.shgraph.nodes;
 @description("Write a value to a local variable")
 @width(80)
 @group("Variables")
+@hideInAddMenu
 class VarWrite extends ShaderVar {
 
 	public function new() {
@@ -18,6 +19,7 @@ class VarWrite extends ShaderVar {
 		inputs[0].name = graph.parent.variables[varId]?.name ?? "error";
 		inputs[0].type = graph.parent.variables[varId]?.type ?? SgBool;
 		return inputs;
+
 	}
 
 	override function generate(ctx:NodeGenContext) {

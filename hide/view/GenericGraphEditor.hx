@@ -133,7 +133,7 @@ class GenericGraphEditor extends hide.view.FileView implements IGraphEditor {
         throw "implement";
     }
 
-    public function getAddNodesMenu() : Array<AddNodeMenuEntry> {
+    public function getAddNodesMenu(currentEdge: Null<Edge>) : Array<AddNodeMenuEntry> {
         throw "implement";
     }
 

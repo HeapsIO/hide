@@ -980,7 +980,7 @@ class Graph {
 		this.nodes.set(shNode.id, shNode);
 	}
 
-	public function areTypesCompatible(input: SgType, output: SgType) : Bool {
+	static public function areTypesCompatible(input: SgType, output: SgType) : Bool {
 		return switch (input) {
 			case SgFloat(_):
 				switch (output) {

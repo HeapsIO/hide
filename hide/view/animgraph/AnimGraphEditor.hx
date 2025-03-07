@@ -447,7 +447,7 @@ class AnimGraphEditor extends GenericGraphEditor {
         return edges.iterator();
     }
 
-    override function getAddNodesMenu():Array<AddNodeMenuEntry> {
+    override function getAddNodesMenu(currentEdge: Null<Edge>):Array<AddNodeMenuEntry> {
         var menu : Array<AddNodeMenuEntry> = [];
         for (nodeInternalName => type in hrt.animgraph.Node.registeredNodes) {
             var info = Type.createEmptyInstance(type);

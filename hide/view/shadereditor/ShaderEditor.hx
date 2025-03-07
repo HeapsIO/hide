@@ -293,7 +293,6 @@ class ShaderEditor extends hide.view.FileView implements GraphInterface.IGraphEd
 						<select id="domainSelection"></select>
 					</div>
 					<div> Preview Alpha<input id="previewAlpha" type="checkbox" /></div>
-					<div> Use old add menu<input id="oldAddMenu" type="checkbox" /></div>
 
 					<input id="centerView" type="button" value="Center Graph" />
 					<input id="debugMenu" type="button" value="Debug Menu"/>
@@ -366,15 +365,7 @@ class ShaderEditor extends hide.view.FileView implements GraphInterface.IGraphEd
 		});
 		(cast previewAlpha[0]:Dynamic).checked = previewSettings.previewAlpha;
 
-		var oldAddMenu = rightPannel.find("#oldAddMenu");
-		oldAddMenu.on("change", (e) -> {
-			if (untyped oldAddMenu.get(0).checked) {
-				graphEditor.saveDisplayState("useOldAddMenu", true);
-			} else {
-				graphEditor.removeDisplayState("useOldAddMenu");
-			}
-		});
-		untyped oldAddMenu.get(0).checked = graphEditor.getDisplayState("useOldAddMenu") != null;
+
 
 		rightPannel.appendTo(element);
 
@@ -1870,8 +1861,39 @@ class ShaderEditor extends hide.view.FileView implements GraphInterface.IGraphEd
 		return node;
 	}
 
-	public function getAddNodesMenu() : Array<AddNodeMenuEntry> {
+	public function getAddNodesMenu(currentEdge: Null<Edge>) : Array<AddNodeMenuEntry> {
 		var entries : Array<AddNodeMenuEntry> = [];
+
+		final needCompatibilityCheck = currentEdge != null;
+
+		function checkCompatibilityWithEdge(node: ShaderNode) {
+			if (currentEdge != null) {
+				node.graph = currentGraph;
+				if (currentEdge.nodeToId != null) {
+					var to = currentGraph.nodes[currentEdge.nodeToId];
+					var input = to.getInputs()[currentEdge.inputToId];
+					var outputs = node.getOutputs();
+					for (output in outputs) {
+						if(ShaderGraph.Graph.areTypesCompatible(input.type, output.type)) {
+							return true;
+						}
+					}
+				}
+
+				if (currentEdge.nodeFromId != null) {
+					var from = currentGraph.nodes[currentEdge.nodeFromId];
+					var output = from.getOutputs()[currentEdge.outputFromId];
+					var inputs = node.getInputs();
+					for (input in inputs) {
+						if (ShaderGraph.Graph.areTypesCompatible(input.type, output.type)) {
+							return true;
+						}
+					}
+				}
+				return false;
+			}
+			return true;
+		}
 
 		var id = 0;
 		for (i => node in ShaderNode.registeredNodes) {
@@ -1880,39 +1902,46 @@ class ShaderEditor extends hide.view.FileView implements GraphInterface.IGraphEd
 				continue;
 			}
 
+			if (metas.hideInAddMenu != null)
+				continue;
+
 			var group = metas.group != null ? metas.group[0] : "Other";
 			var name = metas.name != null ? metas.name[0] : "unknown";
 			var description = metas.description != null ? metas.description[0] : "";
 
-			entries.push(
-				{
-					name: name,
-					group: group,
-					description: description,
-					onConstructNode: () -> {
-						@:privateAccess var id = currentGraph.current_node_id++;
-						var inst = std.Type.createInstance(node, []);
-						inst.setId(id);
-						return inst;
-					},
-				}
-			);
-
-			var aliases = std.Type.createEmptyInstance(node).getAliases(name, group, description) ?? [];
-			for (alias in aliases) {
+			if (!needCompatibilityCheck || checkCompatibilityWithEdge(Type.createInstance(node, []))) {
 				entries.push(
 					{
-						name: alias.nameSearch ?? alias.nameOverride ?? name,
-						group: alias.group ?? group,
-						description: alias.description ?? description,
+						name: name,
+						group: group,
+						description: description,
 						onConstructNode: () -> {
 							@:privateAccess var id = currentGraph.current_node_id++;
-							var inst = std.Type.createInstance(node, alias.args ?? []);
+							var inst = std.Type.createInstance(node, []);
 							inst.setId(id);
 							return inst;
 						},
 					}
 				);
+			}
+
+			var aliases = std.Type.createEmptyInstance(node).getAliases(name, group, description) ?? [];
+			for (alias in aliases) {
+				if (!needCompatibilityCheck || checkCompatibilityWithEdge(std.Type.createInstance(node, alias.args ?? []))) {
+					entries.push(
+						{
+							name: alias.nameSearch ?? alias.nameOverride ?? name,
+							group: alias.group ?? group,
+							description: alias.description ?? description,
+							onConstructNode: () -> {
+								@:privateAccess var id = currentGraph.current_node_id++;
+								var inst = std.Type.createInstance(node, alias.args ?? []);
+								inst.setId(id);
+								return inst;
+							},
+						}
+					);
+				}
 			}
 		}
 		return entries;

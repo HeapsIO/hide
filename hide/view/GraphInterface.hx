@@ -76,10 +76,10 @@ typedef AddNodeMenuEntry = {
 
 /**An edge between 2 nodes. the inputs/outpus id are based on the order of the inputs/ouputs returned by IGraphNode.getInfo()**/
 typedef Edge = {
-    nodeFromId : Int,
-    outputFromId : Int,
-    nodeToId : Int,
-    inputToId : Int,
+    ?nodeFromId : Int,
+    ?outputFromId : Int,
+    ?nodeToId : Int,
+    ?inputToId : Int,
 };
 
 interface IGraphNode {
@@ -100,7 +100,13 @@ interface IGraphNode {
 interface IGraphEditor {
     public function getNodes() : Iterator<IGraphNode>;
     public function getEdges() : Iterator<Edge>;
-    public function getAddNodesMenu() : Array<AddNodeMenuEntry>;
+
+    /**
+        currentEdge is not null it there is a link being created.
+        You can use this information to filter the list of nodes in the
+        output entry based on compatible types
+    **/
+    public function getAddNodesMenu(currentEdge: Null<Edge>) : Array<AddNodeMenuEntry>;
 
     public function addNode(node : IGraphNode) : Void;
     public function removeNode(id:Int) : Void;

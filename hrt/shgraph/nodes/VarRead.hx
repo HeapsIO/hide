@@ -5,6 +5,7 @@ package hrt.shgraph.nodes;
 @description("Read a value from a local variable")
 @width(80)
 @group("Variables")
+@hideInAddMenu
 class VarRead extends ShaderVar {
 
 	public function new() {

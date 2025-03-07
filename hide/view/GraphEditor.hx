@@ -167,7 +167,7 @@ class GraphEditor extends hide.comp.Component {
 		keys.register("shadergraph.comment", commentFromSelection);
 		keys.register("duplicateInPlace", duplicateSelection);
 		keys.register("duplicate", duplicateSelection);
-		keys.register("graph.openAddMenu", openAddMenu2);
+		keys.register("graph.openAddMenu", openAddMenu);
 		keys.register("cancel", cancelAll);
 
 
@@ -206,7 +206,7 @@ class GraphEditor extends hide.comp.Component {
 			// 		cleanupCreateEdge();
 			// 	}
 			// 	else {
-			// 		openAddMenu2();
+			// 		openAddMenu();
 			// 	}
 			// 	e.preventDefault();
 			// 	e.stopPropagation();
@@ -214,7 +214,7 @@ class GraphEditor extends hide.comp.Component {
 		});
 
 		heapsScene.on("contextmenu", function(e) {
-			openAddMenu2();
+			openAddMenu();
 			e.preventDefault();
 		});
 
@@ -238,7 +238,7 @@ class GraphEditor extends hide.comp.Component {
 						return;
 					}
 					else {
-						openAddMenu2();
+						openAddMenu();
 						e.stopPropagation();
 						return;
 					}
@@ -538,17 +538,21 @@ class GraphEditor extends hide.comp.Component {
 
 	static var lastOpenAddMenuPoint = new Point();
 
-	function openAddMenu2() {
-		if (getDisplayState("useOldAddMenu") != null) {
-			openAddMenu();
-			return;
-		}
-
+	function openAddMenu() {
 		if (contextMenu != null)
 			return;
 		lastOpenAddMenuPoint.set(lX(ide.mouseX), lY(ide.mouseY));
 
-		var nodes = editor.getAddNodesMenu();
+		var edge : Edge = null;
+		if (edgeCreationOutput != null) {
+			var unpack = unpackIO(edgeCreationOutput);
+			edge = { nodeFromId: unpack.nodeId, outputFromId: unpack.ioId};
+		} else if (edgeCreationInput != null) {
+			var unpack = unpackIO(edgeCreationInput);
+			edge = { nodeToId: unpack.nodeId, inputToId: unpack.ioId};
+		}
+
+		var nodes = editor.getAddNodesMenu(edge);
 
 		var groups: Map<String, Array<hide.view.GraphInterface.AddNodeMenuEntry>> = [];
 
@@ -567,14 +571,6 @@ class GraphEditor extends hide.comp.Component {
 			var createLinkOutput = edgeCreationOutput;
 			var fromInput = createLinkInput != null;
 
-
-			if (createLinkInput != null) {
-				createLinkOutput = packIO(instance.id, 0);
-			}
-			else if (createLinkOutput != null) {
-				createLinkInput = packIO(instance.id, 0);
-			}
-
 			var pos = new h2d.col.Point();
 			pos.load(lastOpenAddMenuPoint);
 			if (createLinkInput != null) {
@@ -584,6 +580,30 @@ class GraphEditor extends hide.comp.Component {
 
 			instance.setPos(pos);
 			opBox(instance, true, currentUndoBuffer);
+
+			if (createLinkInput != null) {
+				// Find first output that is compatible with our input type
+				var input = unpackIO(createLinkInput);
+				for (i in 0...instance.getInfo().outputs.length) {
+					var edge : Edge = {nodeToId: input.nodeId, inputToId: input.ioId, nodeFromId: instance.id, outputFromId: i};
+					if (editor.canAddEdge(edge)) {
+						createLinkOutput = packIO(instance.id, i);
+						break;
+					}
+				}
+			}
+			else if (createLinkOutput != null) {
+				// Find first input that is compatible with our input type
+				var output = unpackIO(createLinkOutput);
+				for (i in 0...instance.getInfo().inputs.length) {
+					var edge : Edge = {nodeToId: instance.id, inputToId: i, nodeFromId: output.nodeId, outputFromId: output.ioId};
+					if (editor.canAddEdge(edge)) {
+						createLinkInput = packIO(instance.id, i);
+						break;
+					}
+				}
+			}
+
 			if (createLinkInput != null && createLinkOutput != null) {
 				var box = boxes[instance.id];
 				var x = (fromInput ? @:privateAccess box.width : 0) - Box.NODE_HITBOX_RADIUS;
@@ -608,235 +628,10 @@ class GraphEditor extends hide.comp.Component {
 			});
 		}
 
-		contextMenu = hide.comp.ContextMenu.createFromPoint(ide.mouseX, ide.mouseY, menu, {search: Visible, noIcons: true});
+		contextMenu = hide.comp.ContextMenu.createFromPoint(ide.mouseX, ide.mouseY, menu, {search: Visible, noIcons: true, flat: nodes.length < 10});
 		contextMenu.onClose = () -> {
 			contextMenu = null;
 		};
-	}
-
-	function openAddMenu(x : Int = 0, y : Int = 0) {
-
-		var boundsWidth = Std.int(element.width());
-		var boundsHeight = Std.int(element.height());
-
-		lastOpenAddMenuPoint.set(lX(ide.mouseX), lY(ide.mouseY));
-
-		var posCursor = new Point(Std.int(ide.mouseX - heapsScene.offset().left) + x, Std.int(ide.mouseY - heapsScene.offset().top) + y);
-		if( posCursor.x < 0 )
-			posCursor.x = 0;
-		if( posCursor.y < 0)
-			posCursor.y = 0;
-
-		if (addMenu != null) {
-			var menuWidth = Std.parseInt(addMenu.css("width")) + 10;
-			var menuHeight = Std.parseInt(addMenu.css("height")) + 10;
-			if( posCursor.x + menuWidth > boundsWidth )
-				posCursor.x = boundsWidth - menuWidth;
-			if( posCursor.y + menuHeight > boundsHeight )
-				posCursor.y = boundsHeight - menuHeight;
-
-			var input = addMenu.find("#search-input");
-			input.val("");
-			addMenu.show();
-			input.focus();
-
-			addMenu.css("left", posCursor.x);
-			addMenu.css("top", posCursor.y);
-
-			for (c in addMenu.find("#results").children().elements()) {
-				c.show();
-			}
-			return;
-		}
-
-		addMenu = new Element('
-		<div id="add-menu">
-			<div class="search-container">
-				<div class="icon" >
-					<i class="ico ico-search"></i>
-				</div>
-				<div class="search-bar" >
-					<input type="text" id="search-input" autocomplete="off" >
-				</div>
-			</div>
-			<div id="results">
-			</div>
-		</div>').appendTo(heapsScene);
-
-		addMenu.on("pointerdown", function(e) {
-			e.stopPropagation();
-		});
-
-		addMenu.on("blur", function(e) {
-			closeAddMenu();
-		});
-
-		var results = addMenu.find("#results");
-		results.on("wheel", function(e) {
-			e.stopPropagation();
-		});
-
-		var nodes = editor.getAddNodesMenu();
-		var prevGroups : Map<String, Element> = [];
-		for (i => node in nodes) {
-			if (prevGroups.get(node.group) == null) {
-				var groupEl = new Element('
-				<div class="group" >
-					<span> ${node.group} </span>
-				</div>').appendTo(results);
-				prevGroups.set(node.group, groupEl);
-			}
-
-			new Element('
-				<div node="$i" >
-					<span> ${node.name} </span> <span> ${node.description} </span>
-				</div>').insertAfter(prevGroups.get(node.group));
-		}
-
-		var menuWidth = Std.parseInt(addMenu.css("width")) + 10;
-		var menuHeight = Std.parseInt(addMenu.css("height")) + 10;
-		if( posCursor.x + menuWidth > boundsWidth )
-			posCursor.x = boundsWidth - menuWidth;
-		if( posCursor.y + menuHeight > boundsHeight )
-			posCursor.y = boundsHeight - menuHeight;
-		addMenu.css("left", posCursor.x);
-		addMenu.css("top", posCursor.y);
-
-		var input = addMenu.find("#search-input");
-		input.focus();
-		var divs = new Element("#results > div");
-		input.on("keydown", function(ev) {
-			if (ev.key == "Escape") {
-				cancelAll();
-				ev.stopPropagation();
-				ev.preventDefault();
-			}
-			if (ev.keyCode == 38 || ev.keyCode == 40) {
-				ev.stopPropagation();
-				ev.preventDefault();
-
-				if (this.selectedNode != null)
-					this.selectedNode.removeClass("selected");
-
-				var selector = "div[node]:not([style*='display: none'])";
-				var elt = this.selectedNode;
-
-				if (ev.keyCode == 38) {
-					do {
-						elt = elt.prev();
-					} while (elt.length > 0 && !elt.is(selector));
-				} else if (ev.keyCode == 40) {
-					do {
-						elt = elt.next();
-					} while (elt.length > 0 && !elt.is(selector));
-				}
-				if (elt.length == 1) {
-					this.selectedNode = elt;
-				}
-				if (this.selectedNode != null)
-					this.selectedNode.addClass("selected");
-
-				var offsetDiff = this.selectedNode.offset().top - results.offset().top;
-				if (offsetDiff > 225) {
-					results.scrollTop((offsetDiff-225)+results.scrollTop());
-				} else if (offsetDiff < 35) {
-					results.scrollTop(results.scrollTop()-(35-offsetDiff));
-				}
-			}
-		});
-
-		function doAdd() {
-			var key = Std.parseInt(this.selectedNode.attr("node"));
-			//var posCursor = new Point(lX(ide.mouseX - 25), lY(ide.mouseY - 10));
-
-			var instance = nodes[key].onConstructNode();
-
-			var createLinkInput = edgeCreationInput;
-			var createLinkOutput = edgeCreationOutput;
-			var fromInput = createLinkInput != null;
-
-
-			if (createLinkInput != null) {
-				createLinkOutput = packIO(instance.id, 0);
-			}
-			else if (createLinkOutput != null) {
-				createLinkInput = packIO(instance.id, 0);
-			}
-
-			var pos = new h2d.col.Point();
-			pos.load(lastOpenAddMenuPoint);
-			if (createLinkInput != null) {
-				pos.set(lastCurveX, lastCurveY);
-			}
-			cleanupCreateEdge();
-
-			instance.setPos(pos);
-			opBox(instance, true, currentUndoBuffer);
-			if (createLinkInput != null && createLinkOutput != null) {
-				var box = boxes[instance.id];
-				var x = (fromInput ? @:privateAccess box.width : 0) - Box.NODE_HITBOX_RADIUS;
-				var y = box.getNodeHeight(0) - Box.NODE_HITBOX_RADIUS;
-				opMove(boxes[instance.id], pos.x - x, pos.y - y, currentUndoBuffer);
-				opEdge(createLinkOutput, createLinkInput, true, currentUndoBuffer);
-			}
-
-			commitUndo();
-			closeAddMenu();
-		}
-
-		input.on("keyup", function(ev) {
-			if (ev.keyCode == 38 || ev.keyCode == 40) {
-				return;
-			}
-
-			if (ev.keyCode == 13) {
-				doAdd();
-			} else {
-				if (this.selectedNode != null)
-					this.selectedNode.removeClass("selected");
-				var value = StringTools.trim(input.val());
-				var children = divs.elements();
-				var isFirst = true;
-				var lastGroup = null;
-				for (elt in children) {
-					if (elt.hasClass("group")) {
-						lastGroup = elt;
-						elt.hide();
-						continue;
-					}
-					if (value.length == 0 || elt.children().first().html().toLowerCase().indexOf(value.toLowerCase()) != -1) {
-						if (isFirst) {
-							this.selectedNode = elt;
-							isFirst = false;
-						}
-						elt.show();
-						if (lastGroup != null)
-							lastGroup.show();
-					} else {
-						elt.hide();
-					}
-				}
-				if (this.selectedNode != null)
-					this.selectedNode.addClass("selected");
-			}
-		});
-		divs.on("pointerover", function(ev) {
-			if (ev.currentTarget.classList.contains("group")) {
-				return;
-			}
-			if (this.selectedNode != null)
-				this.selectedNode.removeClass("selected");
-			this.selectedNode = new Element(ev.currentTarget); // Todo : not make this jquery
-			this.selectedNode.addClass("selected");
-		});
-		divs.on("pointerup", function(ev) {
-			if (ev.currentTarget.classList.contains("group")) {
-				return;
-			}
-
-			doAdd();
-			ev.stopPropagation();
-		});
 	}
 
 	function closeAddMenu() {
