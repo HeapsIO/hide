@@ -125,7 +125,7 @@ class Image extends FileView {
 		</div>');
 		compressionInfo.append(nativeFormat);
 
-		addField(compressionInfo, "Format :", "Compression format used to compress texture", "select-format", ["none", "BC1", "BC2", "BC3", "RGBA", "R16F", "RG16F", "RGBA16F", "R32F", "RG32F", "RGBA32F", "R16U", "RG16U", "RGBA16U"] );
+		addField(compressionInfo, "Format :", "Compression format used to compress texture", "select-format", ["none", "BC1", "BC2", "BC3", "BC7", "RGBA", "R16F", "RG16F", "RGBA16F", "R32F", "RG32F", "RGBA32F", "R16U", "RG16U", "RGBA16U"] );
 
 		var alphaField = new Element('<div class="field alpha">
 			<label>Alpha :</label>
