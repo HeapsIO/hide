@@ -1236,7 +1236,7 @@ class GraphEditor extends hide.comp.Component {
 		var previousFrom : Null<Int> = outputsToInputs.getLeft(input);
 		var prevEdge = null;
 		if (previousFrom != null && doAdd) {
-			prevEdge = edgeFromPack(previousFrom, edgeCreationInput);
+			prevEdge = edgeFromPack(previousFrom, input);
 		}
 
 		if (editor.canAddEdge(edge)) {
