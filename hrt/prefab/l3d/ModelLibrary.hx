@@ -192,11 +192,13 @@ class ModelLibraryInstance {
 	public var library : ModelLibrary;
 	var batchCache: Array<h3d.scene.MeshBatch>;
 	var batchLookup : Map<String, Int>;
+	var shaderKeyCache : Map<String, String>;
 
 	function new(library : ModelLibrary) {
 		this.library = library;
 		batchCache = [];
 		batchLookup = new Map<String, Int>();
+		shaderKeyCache = new Map<String, String>();
 	}
 
 	function getBatch( id : Int ) {
@@ -216,29 +218,48 @@ class ModelLibraryInstance {
 		var materials = [];
 
 		for ( material in mesh.getMaterials(false) ) {
-			var materialClone = h3d.mat.MaterialSetup.current.createMaterial();
-			material.clone(materialClone);
+			var pbrProps = (material.props : PbrProps);
+			var key = haxe.Json.stringify(pbrProps) + appendToKey;
 
-			var shaderKey = "";
 			var props = h3d.mat.MaterialSetup.current.loadMaterialProps(material);
+			var materialClone = null;
+			var matLibPath = null;
+			var matName = null;
+
 			if ( props != null ) {
-				var ref = (props:Dynamic).__ref;
-				if ( ref != null ) {
-					var prefab = hxd.res.Loader.currentInstance.load(ref).toPrefab();
-					hxd.fmt.hmd.Library.setupMaterialLibrary(path -> hxd.res.Loader.currentInstance.load(path).toTexture(),
-					materialClone, prefab, (props:Dynamic).name);
-					var libMat = prefab.load().getOpt(hrt.prefab.Material, (props:Dynamic).name);
-					for ( c in libMat.children )
-						shaderKey += haxe.Json.stringify(@:privateAccess c.serialize());
+				matLibPath = props.__ref;
+				if ( matLibPath != null ) {
+					matName = props.name;
+					var shaderKey = shaderKeyCache.get(matName);
+					if ( shaderKey == null ) {
+						materialClone = h3d.mat.MaterialSetup.current.createMaterial();
+						material.clone(materialClone);
+						var prefab = hxd.res.Loader.currentInstance.load(matLibPath).toPrefab();
+						hxd.fmt.hmd.Library.setupMaterialLibrary(path -> hxd.res.Loader.currentInstance.load(path).toTexture(),
+						materialClone, prefab, matName);
+						var libMat = prefab.load().getOpt(hrt.prefab.Material, matName);
+						shaderKey = "";
+						for ( c in libMat.children )
+							shaderKey += haxe.Json.stringify(@:privateAccess c.serialize());
+						shaderKeyCache.set(matName, shaderKey);
+					}
+					key += shaderKey;
 				}
 			}
 
-			var props = (material.props : PbrProps);
-			var key = haxe.Json.stringify(props) + shaderKey + appendToKey;
 			var batchID = batchLookup.get(key);
 			if ( batchID == null ) {
 				batchID = batchCache.length;
-				var batch = createMeshBatch == null ? library.createMeshBatch(parent, false, null, props, materialClone) : createMeshBatch(library, parent, false, null, props, materialClone);
+				if ( materialClone == null ) {
+					materialClone = h3d.mat.MaterialSetup.current.createMaterial();
+					material.clone(materialClone);
+					if ( matName != null ) {
+						var prefab = hxd.res.Loader.currentInstance.load(matLibPath).toPrefab();
+						hxd.fmt.hmd.Library.setupMaterialLibrary(path -> hxd.res.Loader.currentInstance.load(path).toTexture(),
+						materialClone, prefab, matName);
+					}
+				}
+				var batch = createMeshBatch == null ? library.createMeshBatch(parent, false, null, pbrProps, materialClone) : createMeshBatch(library, parent, false, null, pbrProps, materialClone);
 				if ( batch == null )
 					continue;
 				batchLookup.set(key, batchID);
@@ -255,7 +276,6 @@ class ModelLibraryInstance {
 			}
 			materials.push(bakedMat);
 		}
-
 		return @:privateAccess new MeshEmitter(this, batches, materials, mesh);
 	}
 
