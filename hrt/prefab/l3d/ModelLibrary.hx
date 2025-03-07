@@ -192,13 +192,11 @@ class ModelLibraryInstance {
 	public var library : ModelLibrary;
 	var batchCache: Array<h3d.scene.MeshBatch>;
 	var batchLookup : Map<String, Int>;
-	var shaderKeyCache : Map<String, String>;
 
 	function new(library : ModelLibrary) {
 		this.library = library;
 		batchCache = [];
 		batchLookup = new Map<String, Int>();
-		shaderKeyCache = new Map<String, String>();
 	}
 
 	function getBatch( id : Int ) {
@@ -227,10 +225,10 @@ class ModelLibraryInstance {
 			var matName = null;
 
 			if ( props != null ) {
-				matLibPath = props.__ref;
+				matLibPath = (props:Dynamic).__ref;
 				if ( matLibPath != null ) {
-					matName = props.name;
-					var shaderKey = shaderKeyCache.get(matName);
+					matName = (props:Dynamic).name;
+					var shaderKey = @:privateAccess library.shaderKeyCache.get(matName);
 					if ( shaderKey == null ) {
 						materialClone = h3d.mat.MaterialSetup.current.createMaterial();
 						material.clone(materialClone);
@@ -241,7 +239,7 @@ class ModelLibraryInstance {
 						shaderKey = "";
 						for ( c in libMat.children )
 							shaderKey += haxe.Json.stringify(@:privateAccess c.serialize());
-						shaderKeyCache.set(matName, shaderKey);
+						@:privateAccess library.shaderKeyCache.set(matName, shaderKey);
 					}
 					key += shaderKey;
 				}
@@ -412,6 +410,7 @@ class ModelLibrary extends Prefab {
 	public static inline var CURRENT_VERSION = 2;
 
 	var cache : ModelLibraryCache;
+	var shaderKeyCache : Map<String, String>;
 	var errors = [];
 
 	var killAlpha = new h3d.shader.KillAlpha(0.5);
@@ -419,6 +418,7 @@ class ModelLibrary extends Prefab {
 	public function new(prefab, shared) {
 		super(prefab, shared);
 		cache = new ModelLibraryCache();
+		shaderKeyCache = new Map<String, String>();
 	}
 
 	#if !editor
