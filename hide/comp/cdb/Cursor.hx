@@ -406,7 +406,7 @@ class Cursor {
 		}
 
 		updateSelection();
-		table.showSeparator(line);
+		table.revealLine(line.index);
 		update();
 	}
 

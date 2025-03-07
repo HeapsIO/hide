@@ -119,7 +119,7 @@ class CdbTable extends hide.ui.View<{}> {
 				editor.cursor.set(curTable, colNo, lineNo, i == path.length-1, true);
 				lastCell = editor.cursor.getCell();
 				if( editor.cursor.table != null) {
-					editor.cursor.table.expandLine(lineNo);
+					editor.cursor.table.revealLine(lineNo);
 					if (i < path.length-1) {
 						var sub = editor.cursor.getLine().subTable;
 						var cell = editor.cursor.getCell();
@@ -180,7 +180,7 @@ class CdbTable extends hide.ui.View<{}> {
 			if( column != null )
 				editor.cursor.setDefault(line, column);
 			if( editor.cursor.table != null )
-				editor.cursor.table.expandLine(line);
+				editor.cursor.table.revealLine(line);
 			if (scriptLine != null) {
 				var cell = editor.cursor.getCell();
 				if (cell != null) {

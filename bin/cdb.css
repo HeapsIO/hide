@@ -183,7 +183,8 @@
   padding-bottom: 0px;
 }
 .cdb .cdb-sheet tr.filtered,
-.cdb .cdb-sheet tr.hidden {
+.cdb .cdb-sheet tr.hidden,
+.cdb .cdb-sheet tr.sep-hidden {
   display: none;
 }
 .cdb .cdb-sheet tr.clickable {
