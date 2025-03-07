@@ -1874,7 +1874,7 @@ class ShaderEditor extends hide.view.FileView implements GraphInterface.IGraphEd
 					var input = to.getInputs()[currentEdge.inputToId];
 					var outputs = node.getOutputs();
 					for (output in outputs) {
-						if(ShaderGraph.Graph.areTypesCompatible(input.type, output.type)) {
+						if(hrt.shgraph.ShaderGraph.Graph.areTypesCompatible(input.type, output.type)) {
 							return true;
 						}
 					}
@@ -1885,7 +1885,7 @@ class ShaderEditor extends hide.view.FileView implements GraphInterface.IGraphEd
 					var output = from.getOutputs()[currentEdge.outputFromId];
 					var inputs = node.getInputs();
 					for (input in inputs) {
-						if (ShaderGraph.Graph.areTypesCompatible(input.type, output.type)) {
+						if (hrt.shgraph.ShaderGraph.Graph.areTypesCompatible(input.type, output.type)) {
 							return true;
 						}
 					}
