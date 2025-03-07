@@ -396,8 +396,11 @@ class Table extends Component {
 	public function revealLine(line: Int) {
 		if (this.separators == null) return;
 		for (sIdx in 0...this.separators.length) {
-			if (this.separators[sIdx].data.index > line)
-				this.separators[sIdx - 1].reveal();
+			if (this.separators[sIdx].data.index > line) {
+				if (sIdx - 1 >= 0)
+					this.separators[sIdx - 1].reveal();
+				break;
+			}
 		}
 	}
 
