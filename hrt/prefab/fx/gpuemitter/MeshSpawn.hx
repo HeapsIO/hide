@@ -84,7 +84,7 @@ class MeshSpawnShader extends ComputeUtils {
 		var relativeTransform : Mat4;
 		function main() {
 			var idx = computeVar.globalInvocation.x;
-			var vertexId = idx % vertexCount;
+			var vertexId = int(random(float(idx).xx) * vertexCount);
 			var vertexData = vbuf[vertexId];
 			speed = vec3(1.0);
 			var relativePosition = vertexData.position;
