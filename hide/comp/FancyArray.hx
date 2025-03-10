@@ -8,6 +8,7 @@ class FancyArray<T> extends hide.comp.Component {
 	var itemState : Array<FancyItemState>;
 	var name : String;
 	var fancyItems: Element;
+	var itemsElements : Array<Element> = [];
 
 	public function new(parent: Element = null, e: Element = null, name: String, displayKey: String) {
 		if (e == null)
@@ -33,13 +34,31 @@ class FancyArray<T> extends hide.comp.Component {
 		return dragKeyName;
 	}
 
+	/**
+		Check if the given drag event comes from this FancyArray,
+		and if that's the case, returns the relevant Item index that
+		was dragged from this array
+	**/
+	public function getDragIndex(e:js.html.DragEvent) : Null<Int> {
+		if (!e.dataTransfer.types.contains(getDragKeyName()))
+			return null;
+		return Std.parseInt(e.dataTransfer.getData(getDragKeyName()));
+	}
+
 	function saveState() {
 		saveDisplayState("state", haxe.Json.stringify(itemState));
+	}
+
+	function toggleItem(index:Int, ?forceState: Bool) {
+		itemState[index].open = forceState ?? !itemState[index].open;
+		saveState();
+		fancyItems.children()[index].classList.toggle("open", itemState[index].open);
 	}
 
 	public function refresh() : Void {
 		fancyItems.empty();
 		var items = getItems();
+		itemsElements = [];
 
 		for (i => item in items) {
 			var paramElement = new Element('<fancy-item>
@@ -54,6 +73,8 @@ class FancyArray<T> extends hide.comp.Component {
 					<fancy-button class="menu quieter"><div class="ico ico-ellipsis-v"></div></fancy-button>
 				</fancy-item-header>
 			</fancy-item>').appendTo(fancyItems);
+
+			itemsElements.push(paramElement);
 
 			itemState[i] ??= {};
 			var state = itemState[i];
@@ -73,6 +94,8 @@ class FancyArray<T> extends hide.comp.Component {
 						e.stopPropagation();
 					}
 				});
+			} else {
+				name.attr("readonly");
 			}
 
 			name.on("contextmenu", (e) -> {
@@ -145,9 +168,7 @@ class FancyArray<T> extends hide.comp.Component {
 					contentElement.appendTo(content);
 
 					toggleOpen.on("click", (e) -> {
-						state.open = !state.open;
-						saveState();
-						paramElement.toggleClass("open", state.open);
+						toggleItem(i);
 					});
 				} else {
 					toggleOpen.remove();
@@ -185,7 +206,29 @@ class FancyArray<T> extends hide.comp.Component {
 					{label: "Delete", click: () -> removeItem(i)}
 				]);
 			});
+
+			if (customizeHeader != null) {
+				customizeHeader(item, paramElement.find("fancy-item-header"));
+			}
 		}
+	}
+
+	// Open target item index, and make it flash briefly
+	public function reveal(index: Int) {
+		for (i => param in itemsElements) {
+			toggleItem(i, i == index);
+		}
+		var param = itemsElements[index].get(0);
+		param.onanimationend = (e) -> {
+			param.classList.remove("reveal");
+		};
+		param.classList.remove("reveal");
+		param.classList.add("reveal");
+	}
+
+	// Focus the title bar of the given index for editing
+	public function editTitle(index: Int) {
+		itemsElements[index].find("input").focus().select();
 	}
 
 	public var reorderItem : (oldIndex: Int, newIndex: Int) -> Void = null;
@@ -209,6 +252,12 @@ class FancyArray<T> extends hide.comp.Component {
 		If left null, or if the function returns null, the item cannot be open
 	**/
 	public var getItemContent: (item: T) -> Element;
+
+	/**
+		If set, the function will be called after the header element is created so the user could customize it's appearence
+		like adding icons or type information
+	**/
+	public var customizeHeader: (item: T, header: Element) -> Void;
 
 	public dynamic function getItems() : Array<T> {
 		return [];
