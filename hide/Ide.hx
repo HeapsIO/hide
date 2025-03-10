@@ -1239,11 +1239,15 @@ class Ide extends hide.tools.IdeData {
 		menu.find(".build-files").click(function(_) {
 			var lastTime = haxe.Timer.stamp();
 			var all = [""];
+			var errors = [];
 			var done = 0;
 			function loop() {
 				while( true ) {
 					if( all.length == 0 ) {
 						setProgress();
+						if( errors.length > 0 ) {
+							error("Errors during Build Files:\n" + errors.join("\n"));
+						}
 						return;
 					}
 					if( haxe.Timer.stamp() - lastTime > 0.1 ) {
@@ -1253,7 +1257,12 @@ class Ide extends hide.tools.IdeData {
 						return;
 					}
 					var path = all.shift();
-					var e = try hxd.res.Loader.currentInstance.load(path).entry catch( e : hxd.res.NotFound ) null;
+					var e = try hxd.res.Loader.currentInstance.load(path).entry catch( e ) {
+						if( path != "" ) { // skip root error
+							errors.push(e.message);
+						}
+						null;
+					}
 					if( e == null && path == "" ) e = hxd.res.Loader.currentInstance.fs.getRoot();
 					if( e != null ) done++;
 					if( e != null && e.isDirectory ) {
