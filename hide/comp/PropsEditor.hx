@@ -256,9 +256,6 @@ class PropsEditor extends Component {
 				if (level > 5) break; // Prevent infinite loop
 			}
 			g.get(0).style.setProperty('--level', '$level');
-
-			var groupName = g.attr("name");
-			localGroups.set(groupName, {serialize: null, pasteFn: null, fields: []});
 		}
 
 		e.find(".group").not(".open").children(".content").hide();
@@ -347,7 +344,7 @@ class PropsEditor extends Component {
 			};
 			var groupName = f.element.closest(".group").attr("name");
 			if (groupName != null) {
-				localGroups.get(groupName).fields.push(f);
+				hrt.tools.MapUtils.getOrPut(localGroups,groupName, {serialize: null, pasteFn: null, fields: []}).fields.push(f);
 			}
 			fields.push(f);
 			// Init reset buttons
