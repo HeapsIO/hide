@@ -948,6 +948,9 @@ class CurveEditor extends hide.comp.Component {
 		}
 
 		@:privateAccess lastValue = [for (c in curves) c.serialize()];
+		if (getDisplayState("view") == null) {
+			zoomAll();
+		}
 		refresh();
 		return curves;
 	}
@@ -1093,7 +1096,8 @@ class CurveEditor extends hide.comp.Component {
 
 			selectedElements = [];
 			for (c in curves){
-				c.selected = false;
+				if (curves.length > 1)
+					c.selected = false;
 
 				if (c.hidden || c.lock || c.blendMode == CurveBlendMode.Blend ||  c.blendMode == CurveBlendMode.RandomBlend)
 					continue;
@@ -1130,9 +1134,6 @@ class CurveEditor extends hide.comp.Component {
 				yOffset = view.yOffset;
 				yScale = view.yScale;
 			}
-		}
-		else {
-			zoomAll();
 		}
 	}
 
