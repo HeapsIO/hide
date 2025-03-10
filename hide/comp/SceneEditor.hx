@@ -4146,9 +4146,12 @@ class SceneEditor {
 			selectElements(newElements, NoHistory);
 			tree.setSelection(newElements);
 			if(thenMove && selectedPrefabs.length > 0) {
-				gizmo.startMove(MoveXY, true);
-				gizmo.onFinishMove = function() {
-					refreshProps();
+				if (!gizmo.moving) {
+					gizmo.startMove(MoveXY, true);
+					gizmo.onFinishMove = function() {
+						refreshProps();
+						setupGizmo();
+					}
 				}
 			}
 			isDuplicating = false;
