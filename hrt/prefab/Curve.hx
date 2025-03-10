@@ -526,11 +526,9 @@ class Curve extends Prefab {
 				var prev = this.keys[i-1];
 				var next = this.keys[i];
 				switch (prev.mode) {
-					case Linear:
-						data += 'L ${next.time} ${next.value}';
 					case Constant:
 						data += 'H ${next.time} V ${next.value}';
-					case Aligned, Free:
+					case Aligned, Free, Linear:
 						{
 							var prevDt = prev.nextHandle?.dt ?? 0.0;
 							var prevDv = prev.nextHandle?.dv ?? 0.0;
