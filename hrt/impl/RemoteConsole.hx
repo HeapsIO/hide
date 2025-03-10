@@ -436,7 +436,7 @@ class RemoteConsoleConnection {
 	@cmd function liveObjects( args : { clname : String } ) : Int {
 		if( args == null || args.clname == null )
 			return -1;
-		#if( hl_ver >= version("1.15.0") && haxe >= version("5.0.0-alpha.1") )
+		#if( hl_ver >= version("1.15.0") && haxe_ver >= 5 )
 		hl.Gc.major();
 		var cl = std.Type.resolveClass(args.clname);
 		if( cl == null ) {
