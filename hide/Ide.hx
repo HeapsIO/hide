@@ -1237,49 +1237,13 @@ class Ide extends hide.tools.IdeData {
 			untyped chrome.runtime.reload();
 		});
 		menu.find(".build-files").click(function(_) {
-			var lastTime = haxe.Timer.stamp();
-			var all = [""];
-			var errors = [];
-			var done = 0;
-			function loop() {
-				while( true ) {
-					if( all.length == 0 ) {
-						setProgress();
-						if( errors.length > 0 ) {
-							error("Errors during Build Files:\n" + errors.join("\n"));
-						}
-						return;
-					}
-					if( haxe.Timer.stamp() - lastTime > 0.1 ) {
-						lastTime = haxe.Timer.stamp();
-						setProgress('(${Std.int(done*1000/(done+all.length))/10}%) '+all[0]);
-						haxe.Timer.delay(loop,0);
-						return;
-					}
-					var path = all.shift();
-					var e = try hxd.res.Loader.currentInstance.load(path).entry catch( e ) {
-						if( path != "" ) { // skip root error
-							errors.push(e.message);
-						}
-						null;
-					}
-					if( e == null && path == "" ) e = hxd.res.Loader.currentInstance.fs.getRoot();
-					if( e != null ) done++;
-					if( e != null && e.isDirectory ) {
-						var base = path;
-						if( base != "" ) base += "/";
-						for( f in sys.FileSystem.readDirectory(getPath(path)) ) {
-							var path = base + f;
-							if( path == ".tmp" ) continue;
-							if( sys.FileSystem.isDirectory(getPath(path)) )
-								all.unshift(path);
-							else
-								all.push(path);
-						}
-					}
-				}
-			}
-			loop();
+			hrt.impl.BuildTools.buildAllFiles(resourceDir + "/", function(percent, currentFile) {
+				setProgress('($percent%) $currentFile');
+			}, function(msg) {
+				error(msg);
+			}, function(count) {
+				setProgress();
+			});
 		});
 
 		for( r in renderers ) {
