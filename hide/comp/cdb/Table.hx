@@ -344,6 +344,9 @@ class Table extends Component {
 			tbody.append(line.element);
 		}
 
+		for (s in separators)
+			s.refresh(false);
+
 		element.append(tbody);
 
 		if( colCount == 0 ) {
