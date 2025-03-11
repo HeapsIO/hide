@@ -1241,7 +1241,7 @@ class Ide extends hide.tools.IdeData {
 				setProgress('($percent%) $currentFile');
 			}, function(msg) {
 				error(msg);
-			}, function(count) {
+			}, function(count, errCount) {
 				setProgress();
 			});
 		});

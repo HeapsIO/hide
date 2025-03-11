@@ -493,6 +493,15 @@ class RemoteConsoleCommandHeaps extends RemoteConsoleCommand {
 				onResult(r < 0 ? null : "sceneprof.json", "Scene prof");
 			});
 		}).element.appendTo(subcmd);
+		var subcmd = new Element('<div class="sub-command">
+			<h5>Res</h5>
+		</div>').appendTo(element);
+		var buildFilesBtn = new Element('<input type="button" value="Build Files"/>').appendTo(subcmd);
+		buildFilesBtn.on('click', function(e) {
+			panel.sendCommand("buildFiles", null, function(r) {
+				panel.log('Build files done, $r directory/files processed');
+			});
+		});
 	}
 	static var _ = RemoteConsoleView.registerCommandView("heaps", RemoteConsoleCommandHeaps);
 }

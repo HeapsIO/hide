@@ -14,7 +14,7 @@ class BuildTools {
 	/**
 		Build all files in `baseDir` directory (default: `res/`).
 	 */
-	public static function buildAllFiles( ?baseDir : String, ?onProgress : (percent:Float, currentFile:String) -> Void, ?onError : String -> Void, ?onDone : (count:Int) -> Void ) {
+	public static function buildAllFiles( ?baseDir : String, ?onProgress : (percent:Float, currentFile:String) -> Void, ?onError : String -> Void, ?onDone : (count:Int, errCount:Int) -> Void ) {
 		log("[INFO] Start building all files " + Date.now());
 		var baseDir = baseDir ?? "res/";
 		function getPath(path : String) {
@@ -26,7 +26,7 @@ class BuildTools {
 		var onError = onError ?? function(msg) {
 			log('[INFO] $msg');
 		};
-		var onDone = onDone ?? function(count) {
+		var onDone = onDone ?? function(count, errCount) {
 		};
 		var startTime = haxe.Timer.stamp();
 		var lastTime = startTime;
@@ -41,7 +41,7 @@ class BuildTools {
 					if( errors.length > 0 ) {
 						onError("Errors during Build Files:\n" + errors.join("\n"));
 					}
-					onDone(done);
+					onDone(done, errors.length);
 					return;
 				}
 				if( haxe.Timer.stamp() - lastTime > 0.1 ) {

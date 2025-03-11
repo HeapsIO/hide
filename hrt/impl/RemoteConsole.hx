@@ -287,6 +287,10 @@ class RemoteConsoleConnection {
 		logError("[>] " + args);
 	}
 
+	function sendLog( msg : String ) {
+		sendCommand("log", msg);
+	}
+
 	function sendLogError( msg : String ) {
 		sendCommand("logError", msg);
 	}
@@ -572,6 +576,16 @@ class RemoteConsoleConnection {
 		sendLogError("SceneProf not supported, please compile with -D sceneprof");
 		return -1;
 		#end
+	}
+
+	@cmd function buildFiles( onDone : Int -> Void ) {
+		sendLog("Build files begin");
+		BuildTools.buildAllFiles( null, null, null, function(count, errCount) {
+			if( errCount > 0 ) {
+				sendLogError('Build files has $errCount errors, please check game log for more details');
+			}
+			onDone(count);
+		});
 	}
 
 #end
