@@ -296,7 +296,8 @@ class BaseFXTools {
 			}
 
 			if(batch != null) {
-				batch.material.mainPass.addShader(shader);
+				var shaderPrefab = Std.downcast(elt, hrt.prefab.Shader);
+				@:privateAccess shaderPrefab.applyShader(batch, batch.material, shader);
 			}
 		}
 
