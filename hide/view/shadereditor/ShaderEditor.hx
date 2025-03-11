@@ -267,7 +267,16 @@ class ShaderEditor extends hide.view.FileView implements GraphInterface.IGraphEd
 			var paramIndex = parametersList.getDragIndex(e);
 			if (paramIndex != null) {
 				var inst = new ShaderParam();
-				inst.parameterId = paramIndex;
+				var varId = -1;
+				for (id => param in shaderGraph.parametersAvailable) {
+					if (paramIndex == param.index) {
+						varId = id;
+						break;
+					}
+				}
+				if (varId == -1)
+					throw "missing variable id";
+				inst.parameterId = varId;
 				addNode(inst);
 				return;
 			}
