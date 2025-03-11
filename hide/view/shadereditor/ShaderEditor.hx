@@ -284,22 +284,28 @@ class ShaderEditor extends hide.view.FileView implements GraphInterface.IGraphEd
 
 		var rightPannel = new Element(
 			'<div id="rightPanel">
-				<div class="hide-block flexible" >
-					<h1 class="subtle-title">Parameters</h1 class="subtle-title">
+				<div style="flex-grow: 1; display: flex; flex-direction: column;">
+					<div class="hide-block flexible param-collapse" >
+						<h1 class="subtle-title">Parameters <fancy-button class="quieter"><div class="icon ico ico-chevron-down"></div></fancy-button></h1>
 
-					<fancy-array class="parameters merge-bottom" style="flex-grow: 1">
+						<to-collapse>
+						<fancy-array class="parameters merge-bottom" style="flex-grow: 1">
 
-					</fancy-array>
-					<fancy-button class="fancy-small createParameter merge-top"><div class="icon ico ico-plus"></div></fancy-button>
-				</div>
+						</fancy-array>
+						<fancy-button class="fancy-small createParameter merge-top"><div class="icon ico ico-plus"></div></fancy-button>
+						</to-collapse>
+					</div>
 
 
-				<div class="hide-block flexible" >
-					<h1 class="subtle-title">Variables</h1 class="subtle-title">
-					<fancy-array class="variables merge-bottom" style="flex-grow: 1">
+					<div class="hide-block flexible var-collapse">
+						<h1 class="subtle-title">Variables <fancy-button class="quieter"><div class="icon ico ico-chevron-down"></div></fancy-button></h1 class="subtle-title">
 
-					</fancy-array>
-					<fancy-button class="fancy-small add-variable merge-top"><div class="icon ico ico-plus"></div></fancy-button>
+						<to-collapse>
+						<fancy-array class="variables merge-bottom" style="flex-grow: 1">
+						</fancy-array>
+						<fancy-button class="fancy-small add-variable merge-top"><div class="icon ico ico-plus"></div></fancy-button>
+						</to-collapse>
+					</div>
 				</div>
 
 				<div class="options-block hide-block">
@@ -315,6 +321,25 @@ class ShaderEditor extends hide.view.FileView implements GraphInterface.IGraphEd
 
 			</div>'
 		);
+
+		function collapse(name: String) {
+			var collapse = rightPannel.find("." + name);
+			function refresh() {
+				var state = getDisplayState(name) ?? false;
+				collapse.toggleClass("collapsed", state);
+			}
+			collapse.on("click", () -> {
+				saveDisplayState(name, !(getDisplayState(name) ?? false));
+				refresh();
+			});
+
+			refresh();
+		}
+
+		collapse("param-collapse");
+		collapse("var-collapse");
+
+
 
 		variableList = new hide.comp.FancyArray(null, rightPannel.find(".variables"), "variables", "variables");
 

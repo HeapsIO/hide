@@ -2168,7 +2168,22 @@ input[type=checkbox].indeterminate:after {
   font-weight: bold;
 }
 .shader-editor #rightPanel .flexible {
+  overflow: auto;
   min-height: 0;
+}
+.shader-editor #rightPanel .flexible to-collapse {
+  display: contents;
+}
+.shader-editor #rightPanel .flexible.collapsed {
+  flex-grow: 0;
+  overflow: visible;
+  min-height: unset;
+}
+.shader-editor #rightPanel .flexible.collapsed to-collapse {
+  display: none;
+}
+.shader-editor #rightPanel .flexible.collapsed h1 .ico {
+  transform: rotate(-90deg);
 }
 .shader-editor #rightPanel .hide-block {
   flex: 1;
@@ -4872,4 +4887,7 @@ blend-space-2d-root properties-container .hide-properties dl > div .hide-range i
   font-weight: normal;
   font-style: italic;
   font-size: 1.2em;
+}
+.fancy-hide {
+  display: none;
 }

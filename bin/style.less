@@ -2470,7 +2470,27 @@ input[type=checkbox] {
 		}
 
 		.flexible {
+			overflow: auto;
 			min-height: 0;
+
+
+
+			to-collapse {
+				display: contents;
+			}
+
+			&.collapsed {
+				flex-grow: 0;
+				overflow: visible;
+				to-collapse {
+					display: none;
+				}
+
+				h1 .ico {
+					transform: rotate(-90deg);
+				}
+				min-height: unset;
+			}
 		}
 
 		.hide-block {
@@ -5831,4 +5851,8 @@ blend-space-2d-root {
 	font-weight: normal;
 	font-style: italic;
 	font-size: 1.2em;
+}
+
+.fancy-hide {
+	display: none;
 }
