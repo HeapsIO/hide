@@ -44,11 +44,11 @@ class CdbTable extends hide.ui.View<{}> {
 			return;
 		}
 
-		if (tabs.currentTab.get(0) != tabContents[index].parent().get(0)) {
-			@:privateAccess editor.currentFilters = [];
+		if (tabs.currentTab.get(0) != tabContents[index].parent().get(0))
 			tabs.currentTab = tabContents[index].parent();
-		}
-		editor.setFilter(null);
+
+		@:privateAccess editor.filters = [];
+		@:privateAccess editor.updateFilters();
 		var curTable = @:privateAccess editor.tables[0];
 		var lastCell = null;
 		for (i => part in path) {
@@ -173,9 +173,9 @@ class CdbTable extends hide.ui.View<{}> {
 			return;
 		}
 
-		@:privateAccess editor.currentFilters = [];
 		tabs.currentTab = tabContents[index].parent();
-		editor.setFilter(null);
+		@:privateAccess editor.filters = [];
+		@:privateAccess editor.updateFilters();
 		if( line != null ) {
 			if( column != null )
 				editor.cursor.setDefault(line, column);

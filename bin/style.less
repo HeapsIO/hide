@@ -432,6 +432,7 @@ input[type=checkbox] {
 	max-width : 100%;
 	max-height : 100%;
 	overflow : auto;
+	position: relative;
 }
 
 .hide-modal {
@@ -1147,28 +1148,53 @@ input[type=checkbox] {
 	}
 }
 
-
-.searchBox {
-	display : none;
-	width : 300px;
+.search-box {
 	position : fixed;
+	display : flex;
+	align-items: center;
+	justify-content: center;
+	top : 45px;
+	right : 20px;
 	z-index: @popup-layer;
-	top : 20px;
-	right : 0px;
-	background-color : black;
+	background-color : #262626;
 	border : 1px solid #555;
-	border-top : none;
-	border-right : none;
-	border-bottom-left-radius : 5px;
-	padding : 5px;
-	padding-bottom: 2px;
+	border-radius : 2px;
+	padding : 5px 5px 5px 5px;
+	color : #acacac;
+
+	.btn {
+		color: #acacac;
+		cursor: pointer;
+		margin: 0 5px 0 5px;
+		font-size: 1.2em;
+
+		&:hover {
+			color: #dfdfdf;
+		}
+	}
+
+	.buttons {
+		margin-right: 10px;
+	}
+
+	.search-type {
+		margin-left: 30px;
+	}
+
+	#results {
+		width: 80px;
+		margin: 0;
+		margin-left: 5px;
+		padding: 0;
+	}
+
 	.input-col {
-		float: left;
+		// float: left;
 		text-align: center;
 		input {
 			display: block;
 			width : 220px;
-			background-color : black;
+			background-color : #2e2e2e;
 		}
 		i {
 			margin-top: 2px;
@@ -1187,14 +1213,13 @@ input[type=checkbox] {
 	i.hidden {
 		display: none;
 	}
-	color : #444;
 }
 
-.tree > .searchBox {
+.tree > .search-box {
 	position: sticky;
 	float : right;
-	top : 0px;
-	right : 0px;
+	top : 5px;
+	right : 5px;
 	width : 130px;
 	input {
 		width : 100px;

@@ -397,6 +397,7 @@ input[type=checkbox].indeterminate:after {
   max-width: 100%;
   max-height: 100%;
   overflow: auto;
+  position: relative;
 }
 .hide-modal {
   position: fixed;
@@ -1049,55 +1050,73 @@ input[type=checkbox].indeterminate:after {
 .hide-tabs.tabs-bottom > .tabs-header > div.active {
   border-radius: 0px;
 }
-.searchBox {
-  display: none;
-  width: 300px;
+.search-box {
   position: fixed;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  top: 45px;
+  right: 20px;
   z-index: 800;
-  top: 20px;
-  right: 0px;
-  background-color: black;
+  background-color: #262626;
   border: 1px solid #555;
-  border-top: none;
-  border-right: none;
-  border-bottom-left-radius: 5px;
-  padding: 5px;
-  padding-bottom: 2px;
-  color: #444;
+  border-radius: 2px;
+  padding: 5px 5px 5px 5px;
+  color: #acacac;
 }
-.searchBox .input-col {
-  float: left;
+.search-box .btn {
+  color: #acacac;
+  cursor: pointer;
+  margin: 0 5px 0 5px;
+  font-size: 1.2em;
+}
+.search-box .btn:hover {
+  color: #dfdfdf;
+}
+.search-box .buttons {
+  margin-right: 10px;
+}
+.search-box .search-type {
+  margin-left: 30px;
+}
+.search-box #results {
+  width: 80px;
+  margin: 0;
+  margin-left: 5px;
+  padding: 0;
+}
+.search-box .input-col {
   text-align: center;
 }
-.searchBox .input-col input {
+.search-box .input-col input {
   display: block;
   width: 220px;
-  background-color: black;
+  background-color: #2e2e2e;
 }
-.searchBox .input-col i {
+.search-box .input-col i {
   margin-top: 2px;
 }
-.searchBox i {
+.search-box i {
   cursor: pointer;
   margin-left: 5px;
   display: inline-block;
   font-size: 18px;
   color: #888;
 }
-.searchBox i:hover {
+.search-box i:hover {
   color: #EEE;
 }
-.searchBox i.hidden {
+.search-box i.hidden {
   display: none;
 }
-.tree > .searchBox {
+.tree > .search-box {
   position: sticky;
   float: right;
-  top: 0px;
-  right: 0px;
+  top: 5px;
+  right: 5px;
   width: 130px;
 }
-.tree > .searchBox input {
+.tree > .search-box input {
   width: 100px;
 }
 /* Properties */

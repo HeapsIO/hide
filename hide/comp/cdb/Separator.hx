@@ -252,14 +252,33 @@ class Separator extends Component {
 	}
 
 
-	function get_visible() {
-		if (parent == null)
-			return true;
-		return parent.visible && parent.expanded && !filtered;
+	public static function getParentSeparators(lineIdx : Int, separators : Array<Separator> ) : Array<Separator> {
+		var res = [];
+		var idx = separators.length - 1;
+		while (idx >= 0) {
+			if (separators[idx].data.index <= lineIdx && ((idx + 1) >= separators.length || separators[idx + 1].data.index > lineIdx)) {
+				res.push(separators[idx]);
+				break;
+			}
+			idx--;
+		}
+
+		if (res.length == 0)
+			return res;
+
+		while (res[0].parent != null)
+			res.insert(0, res[0].parent);
+		return res;
 	}
 
 	public function getLinesVisiblity() {
 		return visible && expanded && !filtered;
+	}
+
+	function get_visible() {
+		if (parent == null)
+			return !filtered;
+		return parent.visible && parent.expanded && !filtered;
 	}
 
 	public function getLines() {

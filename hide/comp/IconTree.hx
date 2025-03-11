@@ -398,7 +398,7 @@ class IconTree<T:{}> extends Component {
 			return;
 		}
 		if( searchBox == null ) {
-			searchBox = new Element("<div>").addClass("searchBox").prependTo(element);
+			searchBox = new Element("<div>").addClass("search-box").prependTo(element);
 			new Element("<input type='text'>").appendTo(searchBox).keydown(function(e) {
 				if( e.keyCode == 27 ) {
 					searchBox.find("i").click();
@@ -419,6 +419,7 @@ class IconTree<T:{}> extends Component {
 				closeFilter();
 			});
 		}
+		searchBox.find("input").attr("placeholder", "Find");
 		searchBox.show();
 		if (focus) {
 			searchBox.find("input").focus().select();

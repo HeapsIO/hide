@@ -45,22 +45,14 @@ typedef EditorSheetProps = {
 	var ?categories : Array<String>;
 }
 
-typedef SearchFilter = {
-	var text: String;
-	var isExpr: Bool;
-}
-
 @:allow(hide.comp.cdb)
 class Editor extends Component {
-
 	static var COMPARISON_EXPR_CHARS = ["!=", ">=", "<=", "==", "<", ">"];
+
 	var base : cdb.Database;
 	var currentSheet : cdb.Sheet;
 	var existsCache : Map<String,{ t : Float, r : Bool }> = new Map();
 	var tables : Array<Table> = [];
-	var searchBox : Element;
-	var searchHidden : Bool = true;
-	var searchExp : Bool = false;
 	var pendingSearchRefresh : haxe.Timer = null;
 	var displayMode : Table.DisplayMode;
 	var clipboard : {
@@ -69,11 +61,16 @@ class Editor extends Component {
 		schema : Array<cdb.Data.Column>,
 	};
 	var changesDepth : Int = 0;
-	var currentFilters : Array<SearchFilter> = [];
 	var api : EditorApi;
 	var undoState : Array<UndoState> = [];
 	var currentValue : Any;
 	var cdbTable : hide.view.CdbTable;
+
+	var searchBox : Element;
+	var searchHidden : Bool = true; // Search through hidden categories
+	var searchExp : Bool = false; // Does filters are parsed by hscript parser
+	var filters : Array<String> = [];
+
 	public var view : cdb.DiffFile.ConfigView;
 	public var config : hide.Config;
 	public var cursor : Cursor;
@@ -216,7 +213,7 @@ class Editor extends Component {
 			e.preventDefault(); // prevent scroll
 		case K.ESCAPE:
 			if (!isRepeat) {
-				if( currentFilters.length > 0 ) {
+				if( filters.length > 0 ) {
 					searchFilter([]);
 				}
 
@@ -232,181 +229,157 @@ class Editor extends Component {
 	public dynamic function onScriptCtrlS() {
 	}
 
-	public function updateFilter() {
-		if (currentFilters.length > 0)
-			searchFilter(currentFilters, false);
+
+	public function updateFilters() {
+		if (filters.length > 0)
+			searchFilter(filters, false);
 	}
 
-	public function setFilter( f : SearchFilter ) {
-		if( searchBox != null ) {
-			if( f == null )
-				searchBox.hide();
-			else {
-				searchBox.show();
-				searchBox.find("input").val(f.text);
-			}
-		}
-		if ( f == null )
-			searchFilter([]);
-		else
-			searchFilter([f]);
-	}
-
-	function searchFilter( filters : Array<SearchFilter>, updateCursor=true ) {
-		while( filters.indexOf(null) >= 0 )
-			filters.remove(null);
-		for (f in filters) {
-			if (f.text == "")
-				filters.remove(f);
-		}
-		for (f in filters) {
-			if (f.text == null)
-				filters.remove(f);
-		}
-
-		function matches(haysack: String, needle: String) {
-			return haysack.indexOf(needle) >= 0;
-		}
-
+	function searchFilter( newFilters : Array<String>, updateCursor : Bool = true ) {
 		function removeAccents(str: String) {
 			var t = untyped str.toLowerCase().normalize('NFD');
 			return ~/[\u0300-\u036f]/g.map(t, (r) -> "");
 		}
 
-		var all = element.find("table.cdb-sheet > tbody > tr");
-		if( config.get("cdb.filterIgnoreSublist") )
-			all = element.find("> table.cdb-sheet > tbody > tr");
+		// Clean new filters
+		var idx = newFilters.length;
+		while (idx >= 0) {
+			if (newFilters[idx] == null || newFilters[idx] == "")
+				newFilters.remove(newFilters[idx]);
 
-		all.removeClass("filtered");
-
-		if (searchExp)
-			all = all.not(".head").not(".list").not("props"); // remove potential opened list or properties
-
-		var seps = all.filter(".separator");
-		var lines = all.not(".separator");
-
-		var parser = new hscript.Parser();
-		parser.allowMetadata = true;
-		parser.allowTypes = true;
-		parser.allowJSON = true;
-
-		var interp = new hscript.Interp();
-
-		var sheetNames = new Map();
-		for( s in this.base.sheets )
-			sheetNames.set(Formulas.getTypeName(s), s);
-
-		function replaceRec( e : hscript.Expr ) {
-			switch( e.e ) {
-			case EField({ e : EIdent(s) }, name) if( sheetNames.exists(s) ):
-				if( sheetNames.get(s).idCol != null )
-					e.e = EConst(CString(name)); // replace for faster eval
-			default:
-				hscript.Tools.iter(e, replaceRec);
-			}
+			idx--;
 		}
 
-		if( filters.length > 0 ) {
-			var currentTable = tables.filter((t) -> t.sheet == currentSheet)[0];
-			if (searchHidden) {
-				for (l in currentTable.lines) {
-					if (l.element.hasClass("hidden"))
-						l.create();
+		filters = newFilters;
+
+		var table = tables.filter((t) -> t.sheet == currentSheet)[0];
+		if (filters.length <= 0) @:privateAccess {
+			for (l in table.lines)
+				l.element.removeClass("filtered");
+			for (s in table.separators) {
+				s.filtered = false;
+				s.refresh(false);
+			}
+			searchBox.find("#results").text('No results');
+			return;
+		}
+
+		var isFiltered : (line: Dynamic) -> Bool;
+		if (searchExp) {
+			var parser = new hscript.Parser();
+			parser.allowMetadata = true;
+			parser.allowTypes = true;
+			parser.allowJSON = true;
+
+			var sheetNames = new Map();
+				for( s in this.base.sheets )
+					sheetNames.set(Formulas.getTypeName(s), s);
+
+			function replaceRec( e : hscript.Expr ) {
+				switch( e.e ) {
+				case EField({ e : EIdent(s) }, name) if( sheetNames.exists(s) ):
+					if( sheetNames.get(s).idCol != null )
+						e.e = EConst(CString(name)); // replace for faster eval
+				default:
+					hscript.Tools.iter(e, replaceRec);
 				}
 			}
 
-			// There is two types of search :
-			// Expression search : hscript parser on search expression
-			// Litteral search : litteral text search
-			if (searchExp) {
-				this.formulas.evaluateAll(this.currentSheet.realSheet);
+			var interp = new hscript.Interp();
+			this.formulas.evaluateAll(this.currentSheet.realSheet);
 
-				for (idx => l in currentSheet.lines) {
-					@:privateAccess interp.resetVariables();
-					@:privateAccess interp.initOps();
+			isFiltered = function(line: Dynamic) {
+				@:privateAccess interp.resetVariables();
+				@:privateAccess interp.initOps();
 
-					interp.variables.set("Math", Math);
+				interp.variables.set("Math", Math);
 
-					// Need deep copy here, not ideal but works
-					var cloned = haxe.Json.parse(haxe.Json.stringify(l));
-					for (f in Reflect.fields(cloned)) {
-						var c = currentTable.columns[0];
-						for (col in currentTable.columns) {
-							if (col.name == f) {
-								c = col;
-								break;
-							}
-						}
-
-						switch(c.type) {
-							case cdb.Data.ColumnType.TEnum(e):
-								interp.variables.set(f, e[Reflect.getProperty(cloned, f)]);
-							default:
-								interp.variables.set(f, Reflect.getProperty(cloned, f));
-						}
-					}
-
-					function addFilter() {
-						var lineEl = lines.eq(idx);
-						lineEl.addClass("filtered");
-
-						var nextTr = lineEl.next('tr');
-						if (nextTr.is(".props") || nextTr.is(".list"))
-							nextTr.addClass("filtered");
-					}
-
-					// Check if the current line is filtered or not
-					var filtered = true;
-					for (f in filters) {
-						var input = f.text;
-						var expr = try parser.parseString(input) catch( e : Dynamic ) { addFilter(); continue; }
-						replaceRec(expr);
-
-						var res = try interp.execute(expr) catch( e : hscript.Expr.Error ) { addFilter(); continue; } // Catch errors that can be thrown if search input text is not interpretabled
-						if (res) {
-							filtered = false;
+				// Need deep copy here, not ideal but works
+				var cloned = haxe.Json.parse(haxe.Json.stringify(table.sheet.lines[line.index]));
+				for (f in Reflect.fields(cloned)) {
+					var c = table.columns[0];
+					for (col in table.columns) {
+						if (col.name == f) {
+							c = col;
 							break;
 						}
 					}
 
-					if (filtered)
-						addFilter();
+					switch(c.type) {
+						case cdb.Data.ColumnType.TEnum(e):
+							interp.variables.set(f, e[Reflect.getProperty(cloned, f)]);
+						default:
+							interp.variables.set(f, Reflect.getProperty(cloned, f));
+					}
 				}
-			}
-			else {
-				var f_Filters = new Array<SearchFilter>();
-				for( i in 0...filters.length )
-					f_Filters.push({text:removeAccents(filters[i].text), isExpr:false});
 
-				for( t in lines ) {
-					var content = removeAccents(t.textContent);
-					if( !f_Filters.any(f -> matches(content, f.text.toLowerCase())) )
-						t.classList.add("filtered");
-				}
-			}
+				// function addFilter() {
+				// 	var lineEl = lines.eq(idx);
+				// 	lineEl.addClass("filtered");
 
-			for( t in lines ) {
-				var l = new Element(t);
-				var parent: Element = l.data("parent-tr");
-				if( parent != null ) {
-					var f = parent.hasClass("filtered") && l.hasClass("filtered");
-					l.toggleClass("filtered", f);
-					parent.toggleClass("filtered", f);
-				}
-			}
+				// 	var nextTr = lineEl.next('tr');
+				// 	if (nextTr.is(".props") || nextTr.is(".list"))
+				// 		nextTr.addClass("filtered");
+				// }
 
-			all = all.not(".filtered");
-			if (!searchHidden)
-				all = all.not(".hidden");
-			for( s in seps.elements() ) {
-				var idx = all.index(s);
-				if( idx == all.length - 1 || new Element(all.get(idx+1)).hasClass("separator") ) {
-					s.addClass("filtered");
+				// Check if the current line is filtered or not
+				for (f in filters) {
+					var expr = try parser.parseString(f) catch( e : Dynamic ) { return true; }
+					replaceRec(expr);
+
+					var res = try interp.execute(expr) catch( e : hscript.Expr.Error ) { return true; } // Catch errors that can be thrown if search input text is not interpretabled
+					if (res)
+						return false;
 				}
+
+				return true;
+			}
+		}
+		else {
+			isFiltered = function(line: hide.comp.cdb.Line) {
+				var content = removeAccents(line.element.get(0).textContent);
+				for (f in filters)
+					if (content.indexOf(removeAccents(f)) >= 0)
+						return false;
+
+				return true;
 			}
 		}
 
-		currentFilters = filters;
+		// Create hidden lines to ensure they are take into account while searching
+		if (searchHidden) {
+			for (l in table.lines) {
+				if (l.element.hasClass("hidden"))
+					l.create();
+			}
+		}
+
+		for (s in @:privateAccess table.separators)
+			@:privateAccess s.filtered = true;
+
+		var results = 0;
+		for (l in table.lines) {
+			var filtered = isFiltered(l);
+			l.element.toggleClass("filtered", filtered);
+			if (!filtered) {
+				results++;
+				var seps = Separator.getParentSeparators(l.index, @:privateAccess table.separators);
+				for (s in seps)
+					@:privateAccess s.filtered = false;
+			}
+		}
+
+		for (s in @:privateAccess table.separators)
+			s.refresh(false);
+
+		// Force show lines that are not filtered (even if their parent sep is collapsed)
+		for (l in table.lines) {
+			if (l.element.hasClass("hidden") && !l.element.hasClass("filtered"))
+				l.create();
+		}
+
+		searchBox.find("#results").text(results > 0 ? '$results Results' : 'No results');
+
 		if (updateCursor)
 			cursor.update();
 	}
@@ -868,7 +841,7 @@ class Editor extends Component {
 
 		endChanges();
 		refreshAll();
-		updateFilter();
+		updateFilters();
 	}
 
 	public function changeObject( line : Line, column : cdb.Data.Column, value : Dynamic ) {
@@ -1557,122 +1530,6 @@ class Editor extends Component {
 		element.empty();
 		element.addClass('cdb');
 
-		var filters: Array<SearchFilter> = [];
-
-		searchBox = new Element('<div><div class="input-col"><div class="input-cont"/></div></div>').addClass("searchBox").appendTo(element);
-		var inputCont = searchBox.find(".input-cont");
-		var inputCol = searchBox.find(".input-col");
-
-		function removeSearchInput() {
-			if( filters.length > 1 ) {
-				inputCont.find("input").last().remove();
-				filters.pop();
-				searchFilter(filters.copy());
-				inputCol.find(".remove-btn").toggleClass("hidden", filters.length <= 1);
-			}
-		}
-
-		function addSearchInput() {
-			var index = filters.length;
-			filters.push({text:"", isExpr: false});
-
-			var searchBar = new Element("<input type='text' class='search-bar-cdb'></input>").appendTo(inputCont).keydown(function(e) {
-				if( e.keyCode == 27 ) {
-					searchBox.find("i.close-search").click();
-					return;
-				} else if( e.keyCode == 9 && index == filters.length - 1) {
-					addSearchInput();
-					return;
-				}
-			}).keyup(function(e) {
-				// If user input a comaprison character, switch to expression mode for
-				// the current filter
-				for (c in Editor.COMPARISON_EXPR_CHARS) {
-					if (StringTools.contains(Element.getVal(e.getThis()), c) && !searchExp) {
-						searchExp = true;
-						var searchTypeBtn = searchBox.find(".search-type");
-						searchTypeBtn.toggleClass("fa-superscript", searchExp);
-						searchTypeBtn.toggleClass("fa-font", !searchExp);
-						updateFilter();
-						break;
-					}
-				}
-
-				filters[index].text = Element.getVal(e.getThis());
-				filters[index].isExpr = e.getThis().next().hasClass("fa-superscript");
-
-				// Slow table refresh protection
-				if (currentSheet.lines.length > 300) {
-					if (pendingSearchRefresh != null) {
-						pendingSearchRefresh.stop();
-					}
-					pendingSearchRefresh = haxe.Timer.delay(function()
-						{
-							searchFilter(filters.copy());
-							pendingSearchRefresh = null;
-						}, 500);
-				}
-				else {
-					searchFilter(filters.copy());
-				}
-			});
-
-			inputCol.find(".remove-btn").toggleClass("hidden", filters.length <= 1);
-		}
-
-		var searchTypeButton = new Element("<i>").addClass("search-type fa fa-font").appendTo(searchBox);
-		searchTypeButton.attr("title", "Switch to litteral search or expression search");
-		searchTypeButton.toggleClass("fa-superscript", searchExp);
-		searchTypeButton.toggleClass("fa-font", !searchExp);
-
-		searchTypeButton.click(function(_) {
-			searchExp = !searchExp;
-			searchTypeButton.toggleClass("fa-superscript", searchExp);
-			searchTypeButton.toggleClass("fa-font", !searchExp);
-			updateFilter();
-		});
-
-		var hideButton = new Element("<i>").addClass("fa fa-eye").appendTo(searchBox);
-		hideButton.attr("title", "Search through hidden categories");
-
-		hideButton.click(function(_) {
-			searchHidden = !searchHidden;
-			hideButton.toggleClass("fa-eye", searchHidden);
-			hideButton.toggleClass("fa-eye-slash", !searchHidden);
-			if (!searchHidden) {
-				var hiddenSeps = element.find("table.cdb-sheet > tbody > tr").not(".head").filter(".separator").filter(".sep-hidden").find("a.toggle");
-				hiddenSeps.click();
-				hiddenSeps.click();
-			}
-			updateFilter();
-		});
-
-		new Element("<i>").addClass("close-search ico ico-times-circle").appendTo(searchBox).click(function(_) {
-			searchFilter([]);
-			searchBox.find(".search-bar-cdb").not(':first').remove();
-			searchBox.find(".expr-btn").not(':first').remove();
-			currentFilters.clear();
-			filters.clear();
-			filters.push({text: "", isExpr: false});
-			if(searchBox.find(".expr-btn").hasClass("fa-superscript"))
-				searchBox.find(".expr-btn").removeClass("fa-superscript").addClass("fa-font");
-			searchBox.toggle();
-			var c = cursor.save();
-			focus();
-			cursor.load(c);
-			var hiddenSeps = element.find("table.cdb-sheet > tbody > tr").not(".head").filter(".separator").filter(".sep-hidden").find("a.toggle");
-			hiddenSeps.click();
-			hiddenSeps.click();
-		});
-
-		new Element("<i>").addClass("add-btn ico ico-plus").appendTo(inputCol).click(function(_) {
-			addSearchInput();
-		});
-		new Element("<i>").addClass("remove-btn ico ico-minus").appendTo(inputCol).click(function(_) {
-			removeSearchInput();
-		});
-		addSearchInput();
-
 		formulas = new Formulas(this);
 		formulas.evaluateAll(currentSheet.realSheet);
 
@@ -1690,21 +1547,127 @@ class Editor extends Component {
 			cursor.update();
 		}
 
-		if( currentFilters.length > 0 ) {
-			updateFilter();
-			searchBox.show();
-			for( i in filters.length...currentFilters.length )
-				addSearchInput();
-			if( filters.length <= currentFilters.length ) {
-				var inputs = inputCont.find("input");
-				#if js
-				for( i in 0...inputs.length ) {
-					var input: js.html.InputElement = cast inputs[i];
-					input.value = currentFilters[i].text;
+		// Setup for search bar
+		searchBox = new Element('<div>
+			<div class="buttons">
+				<div class="btn add-btn ico ico-plus" title="Add filter"></div>
+				<div class="btn remove-btn ico ico-minus" title="Remove filter"></div>
+			</div>
+			<div class="input-col">
+				<div class="input-cont"/>
+					<input type="text" class="search-bar-cdb"></input>
+				</div>
+			</div>
+			<p id="results">No results</p>
+			<div class="btn search-type fa fa-font" title="Change search type"></div>
+			<div class="btn search-hidden fa fa-eye" title="Search through hidden categories"></div>
+			<div class="btn close-search ico ico-close" title="Close (Escape)"></div>
+		</div>').addClass("search-box").appendTo(element);
+		searchBox.hide();
+
+		var filters: Array<String> = [];
+		function search(e: js.jquery.Event) {
+			// Close search with escape
+			if( e.keyCode == K.ESCAPE ) {
+				searchBox.find(".close-search").click();
+				return;
+			}
+
+			// Change to expresion mode if we detect an expression character in the search (qol)
+			for (c in Editor.COMPARISON_EXPR_CHARS) {
+				if (StringTools.contains(Element.getVal(e.getThis()), c) && !searchExp) {
+					searchExp = true;
+					var searchTypeBtn = searchBox.find(".search-type");
+					searchTypeBtn.toggleClass("fa-superscript", searchExp);
+					searchTypeBtn.toggleClass("fa-font", !searchExp);
+					updateFilters();
+					break;
 				}
-				#end
+			}
+
+			var index = e.getThis().parent().find('.search-bar-cdb').index(e.getThis());
+			if (filters[index] == null)
+				filters[index] = "";
+
+			filters[index] = Element.getVal(e.getThis());
+
+			// Slow table refresh protection
+			if (currentSheet.lines.length > 300) {
+				if (pendingSearchRefresh != null) {
+					pendingSearchRefresh.stop();
+				}
+				pendingSearchRefresh = haxe.Timer.delay(function()
+					{
+						searchFilter(filters.copy());
+						pendingSearchRefresh = null;
+					}, 500);
+			}
+			else {
+				searchFilter(filters.copy());
 			}
 		}
+
+		var inputs = searchBox.find(".search-bar-cdb");
+		inputs.attr("placeholder", "Find");
+		inputs.keyup(search);
+
+		var inputCont = searchBox.find(".input-cont");
+
+		searchBox.find(".add-btn").click(function(_) {
+			var newInput = new Element('<input type="text" class="search-bar-cdb"></input>');
+			newInput.attr("placeholder", "Find");
+			newInput.appendTo(searchBox.find(".input-cont"));
+			newInput.css({"margin-top": "2px"});
+			updateFilters();
+			searchBox.find(".remove-btn").show();
+		});
+
+		searchBox.find(".remove-btn").hide();
+		searchBox.find(".remove-btn").click(function(_) {
+			var searchBars = inputCont.find(".search-bar-cdb");
+			if( searchBars.length > 1 ) {
+				searchBars.last().remove();
+				filters.pop();
+				searchFilter(filters.copy());
+
+				if (filters.length <= 1)
+					searchBox.find(".remove-btn").hide();
+			}
+		});
+
+		searchBox.find(".close-search").click(function(_) {
+			searchFilter([]);
+			searchBox.find(".search-bar-cdb").not(':first').remove();
+			searchBox.find(".expr-btn").not(':first').remove();
+			filters.clear();
+			if(searchBox.find(".expr-btn").hasClass("fa-superscript"))
+				searchBox.find(".expr-btn").removeClass("fa-superscript").addClass("fa-font");
+			searchBox.toggle();
+			var c = cursor.save();
+			focus();
+			cursor.load(c);
+			var hiddenSeps = element.find("table.cdb-sheet > tbody > tr").not(".head").filter(".separator").filter(".sep-hidden").find("a.toggle");
+			hiddenSeps.click();
+		});
+
+		searchBox.find(".search-type").click(function(_) {
+			searchExp = !searchExp;
+			searchBox.find(".search-type").toggleClass("fa-superscript", searchExp);
+			searchBox.find(".search-type").toggleClass("fa-font", !searchExp);
+			updateFilters();
+		});
+
+		searchBox.find(".search-hidden").click(function(_) {
+			searchHidden = !searchHidden;
+			searchBox.find(".search-hidden").toggleClass("fa-eye", searchHidden);
+			searchBox.find(".search-hidden").toggleClass("fa-eye-slash", !searchHidden);
+			if (!searchHidden) {
+				var hiddenSeps = element.find("table.cdb-sheet > tbody > tr").not(".head").filter(".separator").filter(".sep-hidden").find("a.toggle");
+				hiddenSeps.click();
+				hiddenSeps.click();
+			}
+			updateFilters();
+		});
 	}
 
 	function quickExists(path) {
