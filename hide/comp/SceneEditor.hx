@@ -1689,8 +1689,13 @@ class SceneEditor {
 		view.keys.register("sceneeditor.switchMode", gizmo.switchMode);
 
 		statusText = new h2d.Text(hxd.res.DefaultFont.get(), scene.s2d);
-		statusText = new h2d.Text(hxd.res.DefaultFont.get(), scene.s2d);
 		statusText.setPosition(5, 5);
+		statusText.dropShadow = {
+			dx: 1,
+			dy: 1,
+			color: 0,
+			alpha: 0.5
+		};
 		updateStats();
 
 		gizmo2d = new hide.view.l3d.Gizmo2D();
