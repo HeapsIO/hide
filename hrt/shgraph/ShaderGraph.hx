@@ -409,7 +409,6 @@ class ShaderGraph extends hrt.prefab.Prefab {
 		super.load(json);
 		graphs = [];
 		parametersAvailable = [];
-		parametersKeys = [];
 
 		for (variable in json.variables ?? []) {
 			variables.push({
@@ -680,7 +679,6 @@ class ShaderGraph extends hrt.prefab.Prefab {
 	var allParameters = [];
 	var current_param_id = 0;
 	public var parametersAvailable : Map<Int, Parameter> = [];
-	public var parametersKeys : Array<Int> = [];
 
 	function generateParameter(name : String, type : Type) : TVar {
 		return {
@@ -694,14 +692,6 @@ class ShaderGraph extends hrt.prefab.Prefab {
 
 	public function getParameter(id : Int) {
 		return parametersAvailable.get(id);
-	}
-
-	public function addParameter(type : Type) {
-		var name = "Param_" + current_param_id;
-		parametersAvailable.set(current_param_id, {id: current_param_id, name : name, type : type, defaultValue : null, variable : generateParameter(name, type), index : parametersKeys.length});
-		parametersKeys.push(current_param_id);
-		current_param_id++;
-		return current_param_id-1;
 	}
 
 	function loadParameters(parameters: Array<Dynamic>) {
@@ -728,16 +718,9 @@ class ShaderGraph extends hrt.prefab.Prefab {
 			}
 			p.variable = generateParameter(p.name, p.type);
 			this.parametersAvailable.set(p.id, p);
-			parametersKeys.push(p.id);
 			current_param_id = p.id + 1;
 		}
-		checkParameterOrder();
 	}
-
-	public function checkParameterOrder() {
-		parametersKeys.sort((x,y) -> Reflect.compare(parametersAvailable.get(x).index, parametersAvailable.get(y).index));
-	}
-
 
 	public function setParameterTitle(id : Int, newName : String) {
 		var p = parametersAvailable.get(id);
@@ -767,16 +750,6 @@ class ShaderGraph extends hrt.prefab.Prefab {
 
 	public function removeParameter(id : Int) {
 		parametersAvailable.remove(id);
-		parametersKeys.remove(id);
-		checkParameterIndex();
-	}
-
-	public function checkParameterIndex() {
-		for (k in parametersKeys) {
-			var oldParam = parametersAvailable.get(k);
-			oldParam.index = parametersKeys.indexOf(k);
-			parametersAvailable.set(k, oldParam);
-		}
 	}
 
 	/**

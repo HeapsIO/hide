@@ -424,7 +424,7 @@ class ShaderEditor extends hide.view.FileView implements GraphInterface.IGraphEd
 			values.sort((a, b) -> Reflect.compare(a.index, b.index));
 			return values;
 		};
-		parametersList.getItemName = (v: Parameter) -> v.name;
+		parametersList.getItemName = (v: Parameter) -> v.name + ' (${v.index})';
 		parametersList.reorderItem = reorderParameter;
 		parametersList.removeItem = removeParameter;
 		parametersList.setItemName = renameParameter;
@@ -1071,13 +1071,9 @@ class ShaderEditor extends hide.view.FileView implements GraphInterface.IGraphEd
 		function exec(isUndo:Bool) {
 			if (!isUndo) {
 				var name = "Param_" + paramShaderID;
-				shaderGraph.parametersAvailable.set(paramShaderID, {id: paramShaderID, name : name, type : type, defaultValue : null, variable : shaderGraph.generateParameter(name, type), index : shaderGraph.parametersKeys.length});
-				shaderGraph.parametersKeys.push(paramShaderID);
+				shaderGraph.parametersAvailable.set(paramShaderID, {id: paramShaderID, name : name, type : type, defaultValue : null, variable : shaderGraph.generateParameter(name, type), index : shaderGraph.parametersAvailable.count()});
 			} else {
 				shaderGraph.parametersAvailable.remove(paramShaderID);
-				shaderGraph.parametersKeys.remove(paramShaderID);
-				parametersUpdate.remove(paramShaderID);
-				shaderGraph.checkParameterIndex();
 			}
 			parametersList.refresh();
 		}
@@ -1087,12 +1083,6 @@ class ShaderEditor extends hide.view.FileView implements GraphInterface.IGraphEd
 		var paramShader = shaderGraph.getParameter(paramShaderID);
 		parametersList.editTitle(paramShader.index);
 	}
-
-	// function moveParameter(parameter : Parameter, up : Bool) {
-	// 	var parameterElt = parametersList.find("#param_" + parameter.id);
-	// 	var parameterPrev = shaderGraph.parametersAvailable.get(shaderGraph.parametersKeys[shaderGraph.parametersKeys.indexOf(parameter.id) + (up? -1 : 1)]);
-	// 	execMoveParameterTo(parameter, parameterPrev, !up);
-	// }
 
 	function updateParam(id : Int) : Bool {
 		meshPreviewScene.setCurrent(); // needed for texture changes
