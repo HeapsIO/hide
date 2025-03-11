@@ -214,20 +214,22 @@ class VolumetricLightingShader extends h3d.shader.pbr.DefaultForward {
 
 			var integrationValues = vec4(0.0,0.0,0.0,1.0);
 			skipShadow = false;
+			var transmittanceThreshold = 1e-3;
 			for ( i in 0...steps ) {
 				transformedPosition = startPos + camDir * curDist;
-				if ( integrationValues.a < 1e-2 ) break;
+				if ( integrationValues.a < transmittanceThreshold ) break;
 				integrationValues = integrateStep(stepSize, integrationValues);
 				curDist += stepSize;
 			}
 
 			stepSize = length(endPos - startPos) - curDist;
-			if(integrationValues.a > 1e-2 && stepSize > 0.0){
+			if(integrationValues.a > transmittanceThreshold && stepSize > 0.0){
 				curDist += stepSize;
 				skipShadow = true;
 				transformedPosition = startPos + camDir * curDist;
 				integrationValues = integrateStep(stepSize, integrationValues);
 			}
+			if(integrationValues.a < transmittanceThreshold) integrationValues.a = 0.0;
 
 			integrationValues.a = 1.0 - integrationValues.a;
 			var outColor = integrationValues.rgb / (0.001 + integrationValues.a);
