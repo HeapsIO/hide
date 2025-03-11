@@ -286,7 +286,7 @@ class ShaderEditor extends hide.view.FileView implements GraphInterface.IGraphEd
 			'<div id="rightPanel">
 				<div style="flex-grow: 1; display: flex; flex-direction: column;">
 					<div class="hide-block flexible param-collapse" >
-						<h1 class="subtle-title">Parameters <fancy-button class="quieter"><div class="icon ico ico-chevron-down"></div></fancy-button></h1>
+						<h1 class="subtle-title">Parameters <fancy-button class="quieter btn-collapse"><div class="icon ico ico-chevron-down"></div></fancy-button></h1>
 
 						<to-collapse>
 						<fancy-array class="parameters merge-bottom" style="flex-grow: 1">
@@ -298,7 +298,7 @@ class ShaderEditor extends hide.view.FileView implements GraphInterface.IGraphEd
 
 
 					<div class="hide-block flexible var-collapse">
-						<h1 class="subtle-title">Variables <fancy-button class="quieter"><div class="icon ico ico-chevron-down"></div></fancy-button></h1 class="subtle-title">
+						<h1 class="subtle-title">Variables <fancy-button class="quieter btn-collapse"><div class="icon ico ico-chevron-down"></div></fancy-button></h1 class="subtle-title">
 
 						<to-collapse>
 						<fancy-array class="variables merge-bottom" style="flex-grow: 1">
@@ -328,7 +328,7 @@ class ShaderEditor extends hide.view.FileView implements GraphInterface.IGraphEd
 				var state = getDisplayState(name) ?? false;
 				collapse.toggleClass("collapsed", state);
 			}
-			collapse.on("click", () -> {
+			collapse.find(".btn-collapse").on("click", () -> {
 				saveDisplayState(name, !(getDisplayState(name) ?? false));
 				refresh();
 			});
