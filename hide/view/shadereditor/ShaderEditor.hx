@@ -433,7 +433,7 @@ class ShaderEditor extends hide.view.FileView implements GraphInterface.IGraphEd
 			values.sort((a, b) -> Reflect.compare(a.index, b.index));
 			return values;
 		};
-		parametersList.getItemName = (v: Parameter) -> v.name + ' (${v.index})';
+		parametersList.getItemName = (v: Parameter) -> v.name;
 		parametersList.reorderItem = reorderParameter;
 		parametersList.removeItem = removeParameter;
 		parametersList.setItemName = renameParameter;
