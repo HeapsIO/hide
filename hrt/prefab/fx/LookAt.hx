@@ -39,12 +39,17 @@ class LookAtObject extends h3d.scene.Object {
 	}
 
 	override function calcAbsPos() {
-		if(target != null)
-			lookAtPos = target.getAbsPos().getPosition();
+		var up : h3d.Vector;
+		if(target != null) {
+			var abs = target.getAbsPos();
+			lookAtPos = abs.getPosition();
+			up = abs.up();
+		}
 		else {
 			if(getScene() == null || getScene().camera == null) return;
 			var cam = getScene().camera;
 			lookAtPos.load(definition.faceTargetForward ? this.getAbsPos().getPosition() + -1 * (cam.target - cam.pos) : cam.pos);
+			up = cam.up;
 		}
 
 		super.calcAbsPos();
@@ -106,7 +111,7 @@ class LookAtObject extends h3d.scene.Object {
 				scale *= v.length();
 			}
 
-			qRot.initDirection(deltaVec);
+			qRot.initDirection(deltaVec, up);
 			qRot.toMatrix(absPos);
 			absPos._11 *= scale.x;
 			absPos._12 *= scale.x;
@@ -140,7 +145,9 @@ class LookAt extends Object3D {
 	}
 
 	override function makeObject(parent3d:h3d.scene.Object):h3d.scene.Object {
-		return new LookAtObject(parent3d, this);
+		var obj = new LookAtObject(parent3d, this);
+		obj.name = this.name;
+		return obj;
 	}
 
 	#if editor
