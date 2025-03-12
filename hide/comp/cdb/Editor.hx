@@ -204,10 +204,53 @@ class Editor extends Component {
 			cursor.move( e.shiftKey ? -1 : 1, 0, false, false, true);
 			return true;
 		case K.PGUP:
-			cursor.move(0, -10, e.shiftKey, e.ctrlKey, e.altKey);
+			var scrollView = element.parent(".hide-scroll");
+			var stickyElHeight = scrollView.find(".separator").height();
+			if (Math.isNaN(stickyElHeight))
+				stickyElHeight = scrollView.find("thead").outerHeight();
+			else
+				stickyElHeight += scrollView.find("thead").outerHeight();
+
+			var lines = scrollView.find("tbody").find(".start");
+			var idx = lines.length - 1;
+			while (idx >= 0) {
+				var b = lines[idx].getBoundingClientRect();
+				if (b.top <= stickyElHeight)
+					break;
+				idx--;
+			}
+
+			cursor.set(cursor.table, cursor.x, idx);
+			lines.get(idx).scrollIntoView({ block: js.html.ScrollLogicalPosition.END });
+
+			// Handle sticky elements
+			scrollView.scrollTop(scrollView.scrollTop() + scrollView.parent().siblings(".tabs-header").outerHeight());
+
 			return true;
+
 		case K.PGDOWN:
-			cursor.move(0, 10, e.shiftKey, e.ctrlKey, e.altKey);
+			var scrollView = element.parent(".hide-scroll");
+			var height = scrollView.outerHeight() - (scrollView.find("thead").outerHeight() + scrollView.parent().siblings(".tabs-header").outerHeight());
+			var lines = scrollView.find("tbody").find(".start");
+			var idx = 0;
+			for (el in lines) {
+				var b = el.getBoundingClientRect();
+				if (b.top >= height)
+					break;
+				idx++;
+			}
+
+			if (idx > lines.length - 1)
+				idx = lines.length - 1;
+			lines.get(idx).scrollIntoView(true);
+			cursor.set(cursor.table, cursor.x, idx);
+
+			// Handle sticky elements
+			var sepHeight = scrollView.find(".separator").height();
+			if (Math.isNaN(sepHeight))
+				sepHeight = 0;
+			scrollView.scrollTop(scrollView.scrollTop() - (scrollView.find("thead").height() + sepHeight));
+
 			return true;
 		case K.SPACE:
 			e.preventDefault(); // prevent scroll

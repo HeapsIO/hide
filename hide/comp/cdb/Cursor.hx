@@ -169,6 +169,13 @@ class Cursor {
 			addElementToSelection(line.table, line, x, y);
 
 
+		var c = getCell();
+		var l = getLine();
+		if (c != null)
+			untyped c.elementHtml.scrollIntoViewIfNeeded();
+		else if (l != null)
+			untyped l.element.get(0).scrollIntoViewIfNeeded();
+
 		update();
 	}
 
