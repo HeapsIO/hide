@@ -61,6 +61,14 @@ class Cursor {
 			var e = line.element.get(0);
 			if( e != null ) untyped e.scrollIntoViewIfNeeded();
 		}
+
+		// Manage scroll if cursor is outside of the view
+		var c = getCell();
+		var l = getLine();
+		if (c != null)
+			untyped c.elementHtml.scrollIntoViewIfNeeded();
+		else if (l != null)
+			untyped l.element.get(0).scrollIntoViewIfNeeded();
 	}
 
 	public function setDefault(line, column) {
@@ -168,7 +176,7 @@ class Cursor {
 		else
 			addElementToSelection(line.table, line, x, y);
 
-
+		// Manage scroll if cursor is outside of the view
 		var c = getCell();
 		var l = getLine();
 		if (c != null)
