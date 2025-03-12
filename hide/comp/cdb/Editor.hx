@@ -360,15 +360,6 @@ class Editor extends Component {
 					}
 				}
 
-				// function addFilter() {
-				// 	var lineEl = lines.eq(idx);
-				// 	lineEl.addClass("filtered");
-
-				// 	var nextTr = lineEl.next('tr');
-				// 	if (nextTr.is(".props") || nextTr.is(".list"))
-				// 		nextTr.addClass("filtered");
-				// }
-
 				// Check if the current line is filtered or not
 				for (f in filters) {
 					var expr = try parser.parseString(f) catch( e : Dynamic ) { return true; }
@@ -1612,7 +1603,6 @@ class Editor extends Component {
 		</div>').addClass("search-box").appendTo(element);
 		searchBox.hide();
 
-		var filters: Array<String> = [];
 		function search(e: js.jquery.Event) {
 			// Close search with escape
 			if( e.keyCode == K.ESCAPE ) {
@@ -1716,7 +1706,21 @@ class Editor extends Component {
 			updateFilters();
 		});
 
-		searchFilter([]);
+		// If there is still a search apply it
+		if (filters.length > 0) {
+			searchBox.show();
+
+			for (f in filters)
+				inputs.val(f);
+
+			if (searchExp)
+				searchBox.find(".search-type").click();
+
+			if (!searchHidden)
+				searchBox.find(".search-type").click();
+
+			searchFilter(filters);
+		}
 	}
 
 	function quickExists(path) {
