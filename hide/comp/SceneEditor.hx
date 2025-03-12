@@ -748,7 +748,7 @@ class RenderPropsPopup extends Popup {
 			input.get(0).toggleAttribute("checked", true);
 
 			form_div.append(input);
-			form_div.append(new Element('<label for="${s_renderProps}" class="left">${s_renderProps}</label>'));
+				form_div.append(new Element('<label for="${s_renderProps}" class="left">${s_renderProps}</label>'));
 			return;
 		}
 
@@ -910,7 +910,7 @@ class SceneEditor {
 	public var camera2D(default,set) : Bool = false;
 	public var objectAreSelectable = true;
 	public var renderPropsRoot : Reference;
-	var updates : Array<Float -> Void> = [];
+		var updates : Array<Float -> Void> = [];
 
 	var showGizmo = true;
 	var gizmo : hrt.tools.Gizmo;
@@ -4165,8 +4165,8 @@ class SceneEditor {
 
 		var prevSelection = selectedPrefabs.copy();
 		undo.change(Custom(function(undo) {
+			for(u in undoes) u(undo);
 
-			var fullRefresh = false;
 			if(undo) {
 				beginRebuild();
 				for(elt in newElements) {
@@ -4174,8 +4174,6 @@ class SceneEditor {
 				}
 				endRebuild();
 			}
-
-			for(u in undoes) u(undo);
 
 			if(!undo) {
 				beginRebuild();
