@@ -189,7 +189,9 @@ class TemporalBloom extends RendererFX {
 			<dt>Strength</dt><dd><input type="range" min="0" max="1" field="temporalStrength"/></dd>
 			</dl>
 		</div>
-		'),this);
+		'),this, (pname: String) -> {
+			ctx.onChange(this, pname);
+		});
 	}
 	#end
 
