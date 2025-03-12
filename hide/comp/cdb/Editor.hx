@@ -297,11 +297,15 @@ class Editor extends Component {
 
 		var table = tables.filter((t) -> t.sheet == currentSheet)[0];
 		if (filters.length <= 0) @:privateAccess {
-			for (l in table.lines)
-				l.element.removeClass("filtered");
-			for (s in table.separators) {
-				s.filtered = false;
-				s.refresh(false);
+			if (table.lines != null) {
+				for (l in table.lines)
+					l.element.removeClass("filtered");
+			}
+			if (table.separators != null) {
+				for (s in table.separators) {
+					s.filtered = false;
+					s.refresh(false);
+				}
 			}
 			searchBox.find("#results").text('No results');
 			return;
