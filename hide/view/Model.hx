@@ -452,6 +452,7 @@ class Model extends FileView {
 				function getLodRatioFromIdx(idx : Int) {
 					var lodConfig = hmd.getLodConfig();
 					if (idx == 0) return 1.;
+					if (idx == hmd.lodCount() ) return lodConfig[lodConfig.length - 1];
 					if (idx >= hmd.lodCount() + 1) return 0.;
 					return lodConfig[idx - 1];
 				}
@@ -464,7 +465,9 @@ class Model extends FileView {
 				function getLodRatioPowedFromIdx(idx : Int) {
 					var lodConfig = hmd.getLodConfig();
 					var prev = idx == 0 ? 1 : hxd.Math.pow(lodConfig[idx - 1] , lodPow);
+					if ( idx == hmd.lodCount() ) prev = lodConfig[lodConfig.length - 1];
 					var c = lodConfig[idx] == null ? 0 : lodConfig[idx];
+					if ( idx + 1 == hmd.lodCount() ) c = lodConfig[lodConfig.length - 1];
 					return (Math.abs(prev - hxd.Math.pow(c, lodPow)));
 				}
 
@@ -488,7 +491,7 @@ class Model extends FileView {
 						var areaEl = new Element(area);
 						areaEl.css({ width : '${lineEl.width() * getLodRatioPowedFromIdx(idx)}px' });
 
-						var roundedRatio = Std.int(Math.pow(getLodRatioFromIdx(idx), lodPow) * 10000.) / 100.;
+						var roundedRatio = Std.int(getLodRatioFromIdx(idx) * 10000.) / 100.;
 						areaEl.find('#percent').text('${roundedRatio}%');
 						idx++;
 					}
@@ -1424,8 +1427,7 @@ class Model extends FileView {
 
 		if (selectedMesh != null) {
 
-			function round(number:Float, ?precision=2): Float
-			{
+			function round(number:Float, ?precision=2) : Float {
 				number *= Math.pow(10, precision);
 				return Math.round(number) / Math.pow(10, precision);
 			}
@@ -1435,7 +1437,7 @@ class Model extends FileView {
 			var cursor = sceneEditor.properties.element.find(".cursor");
 			if (cursor.length > 0) {
 				cursor?.css({left: '${line.position().left + line.width() * hxd.Math.clamp((1 - hxd.Math.pow(screenRatio, lodPow)), 0, 1)}px'});
-				cursor?.find(".ratio").text('${round(hxd.Math.clamp(hxd.Math.pow(screenRatio, lodPow) * 100, 0, 100), 2)}%');
+				cursor?.find(".ratio").text('${round(hxd.Math.clamp(screenRatio * 100, 0, 100), 2)}%');
 			}
 
 			var hmd = selectedMesh != null ? Std.downcast(selectedMesh.primitive, h3d.prim.HMDModel) : null;
