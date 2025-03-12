@@ -1155,6 +1155,28 @@ class ShaderEditor extends hide.view.FileView implements GraphInterface.IGraphEd
 				Reflect.setField(previewSettings, f, v);
 			}
 		}
+
+		previewSettings.renderPropsPath = null;
+
+		if (previewSettings.renderPropsPath == null) {
+			previewSettings.renderPropsPath = defaultRenderProps()?.value;
+		}
+	}
+
+	function listRenderProps() {
+		var renderProp = config.getLocal("scene.renderProps");
+		if (renderProp != null) {
+			var renderProps : Array<Dynamic> = renderProp is String ? [{"name": "Default", "value": renderProp}] : cast renderProp;
+			return renderProps;
+		}
+		return null;
+	}
+
+	function defaultRenderProps() {
+		var renderProps = listRenderProps();
+		if (renderProps != null)
+			return renderProps[0];
+		return null;
 	}
 
 	public function savePreviewSettings() {
@@ -1280,6 +1302,26 @@ class ShaderEditor extends hide.view.FileView implements GraphInterface.IGraphEd
 			screenFXMenu.push(getScreenFXBlend(blend));
 		}
 
+		var renderPropMenu : Array<hide.comp.ContextMenu.MenuItem> = [];
+
+		var renderProps = listRenderProps();
+		if (renderProps != null) {
+			for (render in renderProps) {
+				renderPropMenu.push({
+					label: render.name,
+					click: () -> {
+						previewSettings.renderPropsPath = render.value;
+						refreshRenderProps();
+						savePreviewSettings();
+					},
+					radio: () -> {
+						render.value == previewSettings.renderPropsPath;
+					},
+					stayOpen: true,
+				});
+			}
+		}
+
 		menu.click((e) -> {
 			hide.comp.ContextMenu.createDropdown(menu.get(0), [
 				{label: "Reset Camera", click: resetPreviewCamera},
@@ -1299,7 +1341,7 @@ class ShaderEditor extends hide.view.FileView implements GraphInterface.IGraphEd
 				{label: "Screen FX", enabled: meshPreviewPrefab == null && meshPreviewScreenFX.length > 0, menu: screenFXMenu},
 				{label: "Render Settings", menu: [
 					{label: "Background Color", click: openBackgroundColorMenu},
-					{label: "Render Props", click: selectRenderProps},
+					{label: "Render Props", menu: renderPropMenu},
 					{label: "Clear Render Props", click: clearRenderProps},
 				]}
 			]);
@@ -1565,7 +1607,10 @@ class ShaderEditor extends hide.view.FileView implements GraphInterface.IGraphEd
 	public function setMeshPreviewFBX(str: String) {
 		var model : h3d.scene.Mesh = null;
 		try {
-			model = Std.downcast(meshPreviewScene.loadModel(str, false, true), h3d.scene.Mesh);
+			var loadedModel = meshPreviewScene.loadModel(str, false, true);
+			model = loadedModel.find((f) -> Std.downcast(f, h3d.scene.Mesh));
+			if (model == null)
+				throw "invalid model";
 		} catch (e) {
 			Ide.inst.quickError('Could not load mesh $str, error : $e');
 			setMeshPreviewSphere();
