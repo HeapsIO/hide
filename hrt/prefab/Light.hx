@@ -179,7 +179,9 @@ class Light extends Object3D {
 		}
 
 		#if editor
-		icon = hrt.impl.EditorTools.create3DIcon(object, hide.Ide.inst.getHideResPath("icons/PointLight.png"), 0.5, Light);
+		if (shared.parentPrefab == null || Std.downcast(shared.parentPrefab, Reference)?.editMode) {
+			icon = hrt.impl.EditorTools.create3DIcon(object, hide.Ide.inst.getHideResPath("icons/PointLight.png"), 0.5, Light);
+		}
 		#end
 
 		cookieTex = initTexture(cookiePath);
