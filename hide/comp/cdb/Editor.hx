@@ -1711,6 +1711,8 @@ class Editor extends Component {
 			}
 			updateFilters();
 		});
+
+		searchFilter([]);
 	}
 
 	function quickExists(path) {
