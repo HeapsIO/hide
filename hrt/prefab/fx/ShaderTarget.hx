@@ -29,7 +29,7 @@ class ShaderTargetObj extends h3d.scene.Object {
 				s.makeShader();
 				@:privateAccess s.updateInstance();
 			}
-			s.apply3d((o) -> return o != fxAnim);
+			s.apply3d((o) -> return !Std.isOfType(o, hrt.prefab.fx.FX.FXAnimation) );
 		}
 
 		if (fxAnim == null)
