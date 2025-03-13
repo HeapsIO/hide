@@ -76,8 +76,6 @@ class Editor extends Component {
 	public var cursor : Cursor;
 	public var keys : hide.ui.Keys;
 	public var undo : hide.ui.UndoHistory;
-	public var cursorStates : Array<UndoState> = [];
-	public var cursorIndex : Int = 0;
 	public var formulas : Formulas;
 	public var showGUIDs = false;
 
@@ -136,8 +134,8 @@ class Editor extends Component {
 		keys.register("cdb.showReferences", () -> showReferences());
 		keys.register("undo", function() undo.undo());
 		keys.register("redo", function() undo.redo());
-		keys.register("cdb.moveBack", () -> cursorJump(true));
-		keys.register("cdb.moveAhead", () -> cursorJump(false));
+		keys.register("cdb.moveBack", () -> cursor.jump(true));
+		keys.register("cdb.moveAhead", () -> cursor.jump(false));
 		keys.register("cdb.insertLine", function() { insertLine(cursor.table,cursor.y); cursor.move(0,1,false,false,false); });
 		keys.register("duplicate", function() { duplicateLine(cursor.table,cursor.y); cursor.move(0,1,false,false,false); });
 		for( k in ["cdb.editCell","rename"] )
@@ -165,8 +163,8 @@ class Editor extends Component {
 		base = sheet.base;
 		if( cursor == null )
 			cursor = new Cursor(this);
-		else if ( !tables.contains(cursor.table) )
-			cursor.set();
+		// else if ( !tables.contains(cursor.table) ) //TODO(lv): needed ?
+		// 	cursor.set();
 		if( displayMode == null ) displayMode = Table;
 		DataFiles.load();
 		if( currentValue == null ) currentValue = api.copy();
@@ -176,10 +174,10 @@ class Editor extends Component {
 	function onMouseDown( e : hide.Element.Event ) {
 		switch ( e.which ) {
 		case 4:
-			cursorJump(true);
+			cursor.jump(true);
 			return false;
 		case 5:
-			cursorJump(false);
+			cursor.jump(false);
 			return false;
 		}
 		return true;
@@ -189,9 +187,17 @@ class Editor extends Component {
 		var isRepeat: Bool = untyped e.originalEvent.repeat;
 		switch( e.keyCode ) {
 		case K.LEFT:
+			if (e.altKey) {
+				cursor.jump(true);
+				return true;
+			}
 			cursor.move( -1, 0, e.shiftKey, e.ctrlKey, e.altKey);
 			return true;
 		case K.RIGHT:
+			if (e.altKey) {
+				cursor.jump(false);
+				return true;
+			}
 			cursor.move( 1, 0, e.shiftKey, e.ctrlKey, e.altKey);
 			return true;
 		case K.UP:
@@ -220,14 +226,13 @@ class Editor extends Component {
 				idx--;
 			}
 
-			cursor.set(cursor.table, cursor.x, idx);
+			cursor.setDefault(cursor.table, cursor.x, idx);
 			lines.get(idx).scrollIntoView({ block: js.html.ScrollLogicalPosition.END });
 
 			// Handle sticky elements
 			scrollView.scrollTop(scrollView.scrollTop() + scrollView.parent().siblings(".tabs-header").outerHeight());
 
 			return true;
-
 		case K.PGDOWN:
 			var scrollView = element.parent(".hide-scroll");
 			var height = scrollView.outerHeight() - (scrollView.find("thead").outerHeight() + scrollView.parent().siblings(".tabs-header").outerHeight());
@@ -243,7 +248,7 @@ class Editor extends Component {
 			if (idx > lines.length - 1)
 				idx = lines.length - 1;
 			lines.get(idx).scrollIntoView(true);
-			cursor.set(cursor.table, cursor.x, idx);
+			cursor.setDefault(cursor.table, cursor.x, idx);
 
 			// Handle sticky elements
 			var sepHeight = scrollView.find(".separator").height();
@@ -255,15 +260,9 @@ class Editor extends Component {
 		case K.SPACE:
 			e.preventDefault(); // prevent scroll
 		case K.ESCAPE:
-			if (!isRepeat) {
-				if( filters.length > 0 ) {
-					searchFilter([]);
-				}
-
-				if (searchBox != null && searchBox.is(":visible")) {
-					searchBox.hide();
-					refresh();
-				}
+			if (!isRepeat && searchBox != null && searchBox.is(":visible")) {
+				searchBox.find(".close-search").click();
+				return true;
 			}
 		}
 		return false;
@@ -854,7 +853,7 @@ class Editor extends Component {
 				y--;
 			}
 
-			cursor.set(cursor.table, -1, y1, null, true);
+			cursor.set(cursor.table, -1, y1, null, true, true, false);
 		}
 		else {
 			// delete cells
@@ -989,7 +988,6 @@ class Editor extends Component {
 				currentValue = newValue;
 				currentSheet = newSheet;
 			}
-			pushCursorState();
 			api.load(currentValue);
 			DataFiles.save(true); // save reloaded data
 			element.removeClass("is-cdb-editor");
@@ -1041,97 +1039,6 @@ class Editor extends Component {
 				}
 			}
 		}
-	}
-
-
-	function undoStatesEqual( s1 : UndoState, s2 : UndoState, cmpCursors = true ) {
-		function cursorEqual(c1 : Cursor.CursorState, c2 : Cursor.CursorState) {
-			if( c1 == c2 )
-				return true;
-			if( c1 == null || c2 == null )
-				return false;
-			return c1.sheet == c2.sheet && c1.x == c2.x && c1.y == c2.y;
-		}
-		function undoSheetEqual(s1 : UndoSheet, s2 : UndoSheet) {
-			if( s1.parent == null && s2.parent == null )
-				return s1.sheet == s2.sheet;
-			if( s1.parent == null || s2.parent == null )
-				return false;
-			if ( s1.sheet != s2.sheet || s1.parent.column != s2.parent.column || s1.parent.line != s2.parent.line )
-				return false;
-			return undoSheetEqual(s1.parent.sheet, s2.parent.sheet);
-		}
-		if ( s1.sheet != s2.sheet )
-			return false;
-		if( s1.tables.length != s2.tables.length )
-			return false;
-		for( i in 0...s1.tables.length ) {
-			if( !undoSheetEqual(s1.tables[i], s2.tables[i]) )
-				return false;
-		}
-		if( !cmpCursors )
-			return true;
-		if( cursorEqual(s1.cursor, s2.cursor) )
-			return true;
-		if( s1.cursor == null || s2.cursor == null )
-			return false;
-		return s1.cursor.y == -1 && s2.cursor.y == -1;
-	}
-
-	public function pushCursorState() {
-		if ( cursor == null )
-			return;
-		var state = getState();
-		state.data = null;
-
-		var stateBehind = (cursorStates.length <= 0) ? null : cursorStates[cursorIndex];
-		if( stateBehind != null && undoStatesEqual(state, stateBehind) )
-			return;
-		var stateAhead = (cursorStates.length <= 0 || cursorIndex >= cursorStates.length - 1) ? null : cursorStates[cursorIndex + 1];
-		if ( stateAhead != null && undoStatesEqual(state, stateAhead) ) {
-			cursorIndex++;
-			return;
-		}
-
-		if( cursorIndex < cursorStates.length - 1 && cursorIndex >= 0 ) {
-			cursorStates.splice(cursorIndex + 1, cursorStates.length);
-		}
-
-		cursorStates.push(state);
-		if( cursorIndex < cursorStates.length - 1 )
-			cursorIndex++;
-	}
-
-	function cursorJump(back = true) {
-		focus();
-
-		if( (back && cursorIndex <= 0) || (!back && cursorIndex >= cursorStates.length - 1) )
-			return;
-		if( back && cursorIndex == cursorStates.length - 1)
-			pushCursorState();
-
-		if(back)
-			cursorIndex--;
-		else
-			cursorIndex++;
-
-		var state = cursorStates[cursorIndex];
-		syncSheet(null, state.sheet);
-
-		if( undoStatesEqual(state, getState(), false) ) {
-			setState(state, true);
-			if( cursor.table != null ) {
-				for( t in tables ) {
-					if( t.sheet.getPath() == cursor.table.sheet.getPath() )
-						cursor.table = t;
-				}
-			}
-		} else
-			refresh(state);
-
-		if( cdbTable != null )
-			@:privateAccess cdbTable.syncTabs();
-		haxe.Timer.delay(() -> cursor.update(), 1); // scroll
 	}
 
 	public static var inRefreshAll(default,null) : Bool;
@@ -1685,6 +1592,7 @@ class Editor extends Component {
 			cursor.load(c);
 			var hiddenSeps = element.find("table.cdb-sheet > tbody > tr").not(".head").filter(".separator").filter(".sep-hidden").find("a.toggle");
 			hiddenSeps.click();
+			cursor.scrollIntoView();
 		});
 
 		searchBox.find(".search-type").click(function(_) {
@@ -2078,9 +1986,9 @@ class Editor extends Component {
 				sheet.columns.remove(col);
 				sheet.columns.insert(nextIndex, col);
 				if (cursor.x == indexColumn)
-					cursor.set(cursor.table, nextIndex, cursor.y);
+					cursor.setDefault(cursor.table, nextIndex, cursor.y);
 				else if (cursor.x == nextIndex)
-					cursor.set(cursor.table, nextIndex + 1, cursor.y);
+					cursor.setDefault(cursor.table, nextIndex + 1, cursor.y);
 				endChanges();
 				refresh();
 			}},
@@ -2091,9 +1999,9 @@ class Editor extends Component {
 				sheet.columns.remove(col);
 				sheet.columns.insert(nextIndex, col);
 				if (cursor.x == indexColumn)
-					cursor.set(cursor.table, nextIndex, cursor.y);
+					cursor.setDefault(cursor.table, nextIndex, cursor.y);
 				else if (cursor.x == nextIndex)
-					cursor.set(cursor.table, nextIndex - 1, cursor.y);
+					cursor.setDefault(cursor.table, nextIndex - 1, cursor.y);
 				endChanges();
 				refresh();
 			}},

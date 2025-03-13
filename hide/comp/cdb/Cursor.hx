@@ -22,13 +22,21 @@ class Cursor {
 	public var y : Int;
 	public var selection : Array<Selection>;
 
+	// Jump to last / next cursor position with alt keys
+	public var stateIdx : Int = -1;
+	public var states : Array<CursorState> = [];
+
 	public function new(editor) {
 		this.editor = editor;
 		set();
 	}
 
 
-	public function set( ?t : Table, ?x : Int = 0, ?y : Int = 0, ?sel : Array<Selection>, update : Bool = true, scrollIntoView : Bool = false ) {
+	public function setDefault(table : Table, x : Int, y : Int) {
+		set(table == null ? editor.tables[0] : table, x, y, null, true, true, true);
+	}
+
+	public function set( ?t : Table, ?x : Int = 0, ?y : Int = 0, ?sel : Array<Selection>, update : Bool = true, scrollIntoView : Bool = false, saveCursorState : Bool = false ) {
 		if( t != null ) {
 			for( t2 in editor.tables ) {
 				if( t.sheet.getPath() == t2.sheet.getPath() ) {
@@ -56,23 +64,12 @@ class Cursor {
 
 		if( update ) this.update();
 
-		var line = getLine();
-		if (scrollIntoView && line != null) {
-			var e = line.element.get(0);
-			if( e != null ) untyped e.scrollIntoViewIfNeeded();
-		}
+		// Save state allowing jump to with alt keys
+		if (saveCursorState)
+			saveState();
 
-		// Manage scroll if cursor is outside of the view
-		var c = getCell();
-		var l = getLine();
-		if (c != null)
-			untyped c.elementHtml.scrollIntoViewIfNeeded();
-		else if (l != null)
-			untyped l.element.get(0).scrollIntoViewIfNeeded();
-	}
-
-	public function setDefault(line, column) {
-		set(editor.tables[0], column, line);
+		if (scrollIntoView)
+			this.scrollIntoView();
 	}
 
 	public function move( dx : Int, dy : Int, shift : Bool, ctrl : Bool, alt : Bool, ?overflow : Bool = false ) {
@@ -176,16 +173,55 @@ class Cursor {
 		else
 			addElementToSelection(line.table, line, x, y);
 
-		// Manage scroll if cursor is outside of the view
-		var c = getCell();
-		var l = getLine();
-		if (c != null)
-			untyped c.elementHtml.scrollIntoViewIfNeeded();
-		else if (l != null)
-			untyped l.element.get(0).scrollIntoViewIfNeeded();
-
+		this.scrollIntoView();
 		update();
 	}
+
+	public function jump(backward : Bool = true) {
+		stateIdx = Std.int(hxd.Math.clamp(backward ? stateIdx - 1 : stateIdx + 1, 0, states.length - 1));
+		var state = states[stateIdx];
+
+		// Open root sheet
+		var rootSheet = state.sheet.split('@')[0];
+		if (editor.currentSheet.name != rootSheet) {
+			editor.syncSheet(null, rootSheet);
+			 editor.refresh();
+		}
+
+		var curTable = editor.tables[0];
+		function getTable(path : String) : Table {
+			var targetCol = path.split('@')[0].split(':')[0];
+			var targetLineIdx = Std.parseInt(path.split('@')[0].split(':')[1]);
+			for (cIdx => c in curTable.columns) {
+				if (c.name == targetCol) {
+					var cell = curTable.lines[targetLineIdx].cells[ curTable.displayMode == Properties || curTable.displayMode == AllProperties ? 0 : cIdx];
+					if( cell.line.subTable == null && (cell.column.type == TList || cell.column.type == TProperties) )
+						cell.open(true);
+
+					curTable = cell.line.subTable;
+					var newPath = path.split('@');
+					newPath.shift();
+
+					if (newPath.length <= 0)
+						return cell.line.subTable;
+					return getTable(newPath.join("@"));
+				}
+			}
+
+			return null;
+		}
+
+		var newPath = state.sheet.split('@');
+		newPath.shift();
+		var t = newPath.length > 0 ? getTable(newPath.join("@")) : null;
+		if (t == null) {
+			for (table in editor.tables)
+				if (table.sheet.name == rootSheet)
+					t = table;
+		}
+		set(t, state.x, state.y, null, true, true, false);
+	}
+
 
 	public function update() {
 		hide();
@@ -252,6 +288,22 @@ class Cursor {
 			y : y,
 			selection : selection?.copy()
 		};
+	}
+
+	public function saveState() {
+		var state = getState();
+		if (state == null)
+			return;
+
+		if (states.length > 0) {
+			var prevState = states[states.length - 1];
+
+			if (state.sheet == prevState.sheet && state.x == prevState.x && state.y == prevState.y)
+				return;
+		}
+
+		stateIdx++;
+		states[stateIdx] = state;
 	}
 
 
@@ -383,18 +435,27 @@ class Cursor {
 		return line.cells[x];
 	}
 
+	public function scrollIntoView() {
+		var c = getCell();
+		var l = getLine();
+		if (c != null)
+			untyped c.elementHtml.scrollIntoViewIfNeeded();
+		else if (l != null)
+			untyped l.element.get(0).scrollIntoViewIfNeeded();
+	}
+
 
 	public function clickLine( line : Line, shiftKey = false, ctrlKey = false ) {
 		this.table = line.table;
 		addElementToSelection(line.table, line, -1, line.index, shiftKey, ctrlKey);
-		set(line.table, -1, line.index, this.selection);
+		set(line.table, -1, line.index, this.selection, true, false, true);
 	}
 
 	public function clickCell( cell : Cell, shiftKey = false, ctrlKey = false ) {
 		this.table = cell.table;
 		var xIndex = cell.table.displayMode == Table ? cell.columnIndex : 0;
 		addElementToSelection(cell.table, cell.line, xIndex, cell.line.index, shiftKey, ctrlKey);
-		set(cell.table, xIndex, cell.line.index, this.selection);
+		set(cell.table, xIndex, cell.line.index, this.selection, true, false, true);
 	}
 
 	public function addElementToSelection(table: Table, line: Line, xIndex : Int, yIndex: Int, shift: Bool = false, ctrl: Bool = false) {

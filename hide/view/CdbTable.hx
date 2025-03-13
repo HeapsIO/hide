@@ -111,10 +111,6 @@ class CdbTable extends hide.ui.View<{}> {
 					lineNo = -1;
 			}
 
-			if (i == path.length-1) {
-				editor.pushCursorState();
-			}
-			trace(i, colNo, lineNo);
 			if (colNo >= 0 && lineNo >= 0) {
 				editor.cursor.set(curTable, colNo, lineNo, i == path.length-1, true);
 				lastCell = editor.cursor.getCell();
@@ -139,27 +135,6 @@ class CdbTable extends hide.ui.View<{}> {
 			editor.focus();
 			editor.cursor.update();
 		}, 1);
-		/*for (i in 0...coords.length) {
-			var c = coords[i];
-			editor.cursor.set(curTable, c.column, c.line);
-			if( editor.cursor.table != null && c.line != null ) {
-				editor.cursor.table.expandLine(c.line);
-				if (i < coords.length - 1) {
-					var sub = editor.cursor.getLine().subTable;
-					var cell = editor.cursor.getCell();
-					if (sub != null && sub.cell == cell) {
-						curTable = sub;
-					}
-					else {
-						cell.open(false);
-						curTable = editor.cursor.table;
-					}
-				}
-			}
-			else
-				break;
-		}*/
-
 	}
 
 	public function goto( s : cdb.Sheet, ?line : Int, ?column : Int, ?scriptLine : Int ) {
@@ -178,7 +153,7 @@ class CdbTable extends hide.ui.View<{}> {
 		@:privateAccess editor.updateFilters();
 		if( line != null ) {
 			if( column != null )
-				editor.cursor.setDefault(line, column);
+				editor.cursor.setDefault(@:privateAccess editor.tables[0], column, line);
 			if( editor.cursor.table != null )
 				editor.cursor.table.revealLine(line);
 			if (scriptLine != null) {
@@ -221,7 +196,6 @@ class CdbTable extends hide.ui.View<{}> {
 
 	function setEditor(index:Int) {
 		var sheets = getSheets();
-		editor.pushCursorState();
 		editor.show(sheets[index],tabContents[index]);
 		currentSheet = editor.getCurrentSheet();
 		ide.currentConfig.set("cdb.currentSheet", sheets[index].name);
