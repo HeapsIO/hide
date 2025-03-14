@@ -461,14 +461,14 @@ class Prefab {
 		The result is stored in the given array `arr` if it's defined, otherwise an array is created. The final array
 		is then returned.
 	**/
-	public function findAll<T:Prefab>(?cl: Class<T>, ?filter : Prefab -> Bool, followRefs : Bool = false, ?arr : Array<T> ) : Array<T> {
+	public function findAll<T:Prefab>(?cl: Class<T>, ?filter : T -> Bool, followRefs : Bool = false, ?arr : Array<T> ) : Array<T> {
 		if( arr == null ) arr = [];
 		var asCl = cl != null ? Std.downcast(this, cl) : cast this;
 		if (asCl != null) {
 			if (filter == null || filter(asCl))
 				arr.push(asCl);
 		}
-		if (followRefs) {
+		if (followRefs && this.shouldBeInstanciated()) {
 			var ref = to(Reference);
 			if (ref != null && ref.refInstance != null) {
 				ref.refInstance.findAll(cl, filter, followRefs, arr);
