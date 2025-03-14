@@ -962,7 +962,7 @@ class MeshSpray extends Spray {
 			});
 		});
 
-		options.find("#toground").click((e) -> setToGround);
+		options.find("#toground").click((e) -> setToGround());
 
 		options.find("#remove").click(function(_) {
 			var options = selectElement.children().elements();
