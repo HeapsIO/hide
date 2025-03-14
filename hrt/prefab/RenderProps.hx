@@ -15,8 +15,16 @@ class RenderProps extends Object3D {
 
 	override function makeObject(parent3d: h3d.scene.Object) : h3d.scene.Object {
 		return new RenderPropsObject(parent3d);
-
 	}
+
+	#if editor
+	override function postMakeInstance() {
+		super.postMakeInstance();
+
+		// force the refresh of the renderProps
+		shared.editor?.queueRefreshRenderProps();
+	}
+	#end
 
 	public function getProps(renderer: h3d.scene.Renderer) {
 		var p = Reflect.field(this.props, h3d.mat.MaterialSetup.current.name);
@@ -101,11 +109,28 @@ class RenderProps extends Object3D {
 		var env = getOpt(hrt.prefab.l3d.Environment);
 		if( env != null )
 			env.applyToRenderer(renderer);
+		// #if editor
+		// else {
+		// 	var r = Std.downcast(renderer, h3d.scene.pbr.Renderer);
+		// 	if( r != null )
+		// 		r.env = hide.Renderer.PbrSetup.getEnvMap();
+		// }
+		// #end
 		renderer.refreshProps();
 		return true;
 	}
 
 	#if editor
+	override function updateInstance(?propName:String) {
+		super.updateInstance(propName);
+		if (propName == "visible") {
+			shared.editor?.queueRefreshRenderProps();
+		}
+	}
+
+	override function editorRemoveInstanceObjects() {
+		shared.editor?.queueRefreshRenderProps();
+	}
 
 	override function edit(ctx) {
 		super.edit(ctx);
@@ -121,10 +146,12 @@ class RenderProps extends Object3D {
 				setProps(props);
 				needSet = false;
 			}
-			applyProps(renderer);
+			shared.editor?.queueRefreshRenderProps();
 		});
-		ctx.properties.add(new hide.Element('<dl><dt>Make Default</dt><dd><input type="checkbox" field="isDefault"/></dd></dl>'), this);
-		applyProps(renderer);
+		ctx.properties.add(new hide.Element('<dl><dt>Make Default</dt><dd><input type="checkbox" field="isDefault"/></dd></dl>'), this, (_) -> {
+			shared.editor?.queueRefreshRenderProps();
+		});
+		shared.editor?.queueRefreshRenderProps();
 	}
 
 	override function getHideProps() : hide.prefab.HideProps {

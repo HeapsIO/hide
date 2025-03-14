@@ -1206,15 +1206,17 @@ class Model extends FileView {
 		for (c in @:privateAccess sceneEditor.sceneData.children)
 			@:privateAccess sceneEditor.sceneData.children.remove(c);
 
+		@:privateAccess sceneEditor.removeInstance(sceneEditor.renderPropsRoot);
+		sceneEditor.renderPropsRoot = null;
 
-		@:privateAccess sceneEditor.createRenderProps(@:privateAccess sceneEditor.sceneData);
+		@:privateAccess sceneEditor.queueRefreshRenderProps();
 
 		if (sceneEditor.renderPropsRoot != null && sceneEditor.renderPropsRoot.source != null)
 			root.children.push(sceneEditor.renderPropsRoot);
 
 		// Create default render props if no render props has been created yet
 		var r = root.getOpt(hrt.prefab.RenderProps, true);
-		if( r == null) {
+		if( r == null && sceneEditor.renderPropsRoot == null) {
 			var def = new hrt.prefab.Object3D(root, null);
 			def.name = "Default Ligthing";
 			var render = new hrt.prefab.RenderProps(def, null);
@@ -1236,14 +1238,6 @@ class Model extends FileView {
 
 			r = render;
 			r.applyProps(scene.s3d.renderer);
-		}
-
-		// Apply render props properties on scene
-		var refPrefab = new hrt.prefab.Reference(null, null);
-		if( @:privateAccess refPrefab.refInstance != null ) {
-			var renderProps = @:privateAccess refPrefab.refInstance.getOpt(hrt.prefab.RenderProps);
-			if( renderProps != null )
-				renderProps.applyProps(scene.s3d.renderer);
 		}
 
 		plight = root.find(hrt.prefab.Light);

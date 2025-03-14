@@ -692,28 +692,14 @@ class RenderPropsPopup extends Popup {
 		element.css("max-width", "300px");
 
 		var form_div = new Element("<div>").addClass("form-grid").appendTo(element);
-		var lastRenderProps:hrt.prefab.RenderProps = null;
-		var currentRenderProps = @:privateAccess editor.getAllWithRefs(@:privateAccess editor.sceneData, hrt.prefab.RenderProps);
-		for (r in currentRenderProps)
-			if (@:privateAccess r.isDefault) {
-				lastRenderProps = r;
-				break;
-			}
-		if (lastRenderProps == null)
-			lastRenderProps = currentRenderProps[0];
+		var renderProps = @:privateAccess editor.previousSceneRenderProps;
 
 		var fullPath = [];
-		var cur : hrt.prefab.Prefab = lastRenderProps;
-		var renderPropsSource = lastRenderProps?.shared.parentPrefab?.source ?? "inline";
-		renderPropsSource = StringTools.replace(renderPropsSource, "/", "<wbr>/<wbr>");
-		while (cur != null) {
-			fullPath.unshift(cur.getAbsPath());
-			cur = cur.shared.parentPrefab;
-		}
-		var fullPath = fullPath.join("<wbr>&gt;<wbr>");
 
-		if (lastRenderProps != null && !canChangeCurrRp) {
-			form_div.append(new Element('<p>A render props (<code>$renderPropsSource</code> in <code>${fullPath}</code>) is already existing in scene.</p>'));
+		if (renderProps != null && !canChangeCurrRp) {
+			var path = renderProps.getAbsPath(false, true);
+			var renderPropsSource = StringTools.replace(path, ".", "<wbr>.<wbr>");
+			form_div.append(new Element('<p>A render props (<code>$renderPropsSource</code>) already exists in the scene.</p>'));
 			return;
 		}
 
@@ -731,8 +717,17 @@ class RenderPropsPopup extends Popup {
 			cb.on('change', function(){
 				var v = cb.prop('checked');
 				Ide.inst.currentConfig.set("sceneeditor.renderprops.edit", v);
-
 				tmpView.setRenderPropsEditionVisibility(v);
+
+				@:privateAccess
+				if (editor.renderPropsRoot != null) {
+					editor.removeInstance(editor.renderPropsRoot);
+
+					// clear selection
+					editor.selectElements([]);
+					editor.renderPropsRoot = null;
+					editor.queueRefreshRenderProps();
+				}
 			});
 
 			rpEditionEl.find('label').css({ 'padding-left' : '8px' });
@@ -767,9 +762,7 @@ class RenderPropsPopup extends Popup {
 
 				input.change((e) -> {
 					editor.view.saveDisplayState("renderProps", rp);
-					editor.renderPropsRoot = null;
-					editor.refreshScene();
-					@:privateAccess editor.refreshTree();
+					@:privateAccess editor.queueRefreshRenderProps();
 				});
 
 				form_div.append(input);
@@ -910,7 +903,8 @@ class SceneEditor {
 	public var camera2D(default,set) : Bool = false;
 	public var objectAreSelectable = true;
 	public var renderPropsRoot : Reference;
-		var updates : Array<Float -> Void> = [];
+	public var previousSceneRenderProps : hrt.prefab.RenderProps;
+	var updates : Array<Float -> Void> = [];
 
 	var showGizmo = true;
 	var gizmo : hrt.tools.Gizmo;
@@ -933,6 +927,8 @@ class SceneEditor {
 	public var gridStep : Float = 0.;
 	public var gridSize : Int;
 	public var showGrid = false;
+
+	var currentRenderProps: hrt.prefab.RenderProps;
 
 	var statusText : h2d.Text;
 	var ready = false;
@@ -977,7 +973,6 @@ class SceneEditor {
 
 	public var view(default, null) : hide.view.FileView;
 	var sceneData : PrefabElement;
-	var lastRenderProps : hrt.prefab.RenderProps;
 
 	var customEditor : CustomEditor;
 
@@ -1024,6 +1019,7 @@ class SceneEditor {
 		view.keys.register("duplicate", {name: "Duplicate", category: "Scene"}, duplicate.bind(true));
 		view.keys.register("duplicateInPlace", {name: "Duplicate in place", category: "Scene"}, duplicate.bind(false));
 		view.keys.register("debugSceneRefresh", {name: "Refresh debug scene", category: "Scene"}, () -> {ide.quickMessage("Debug : rebuild(sceneData)"); queueRebuild(sceneData);});
+		view.keys.register("debugSelectionRefresh", {name: "Refresh debug Selection", category: "Scene"}, () -> {ide.quickMessage("Debug : rebuild(selectedPrefabs)"); for (s in selectedPrefabs) queueRebuild(s);});
 
 		view.keys.register("group", {name: "Group Selection", category: "Scene"}, groupSelection);
 		view.keys.register("delete", {name: "Delete", category: "Scene"}, () -> deleteElements(selectedPrefabs));
@@ -2097,62 +2093,165 @@ class SceneEditor {
 			ide.fileWatcher.unregister(source, w.callb);
 	}
 
-	function createRenderProps(?parent: hrt.prefab.Prefab){
-		if (renderPropsRoot == null) {
-			renderPropsRoot = new hrt.prefab.Reference(parent, parent?.shared ?? new ContextShared());
-			renderPropsRoot.setEditor(this, this.scene);
+	function teardownRenderer() {
+		scene.s3d.renderer.dispose();
+		scene.s3d.renderer = h3d.mat.MaterialSetup.current.createRenderer();
+	}
 
-			if (parent != null)
-				renderPropsRoot.parent = parent;
+	@:access(hrt.prefab.RenderProps)
+	function setRenderProps(?renderProps: hrt.prefab.RenderProps) {
+		/*
+			Order of priority for render props :
+			1. The render props passed as parameter to this function
+			2. The first currently selected render props
+			3. The first render props in the scene with isDefault == true
+			4. The first render props in the scene
+			5. The chosen default render props in the render props settings
+		*/
 
-			renderPropsRoot.name = "Render Props";
-			@:privateAccess renderPropsRoot.editMode = true;
+		function filter(p: hrt.prefab.RenderProps) : Bool {
+			return p.enabled == true && p.visible == true && !isHidden(p);
+		}
 
-			var renderProps = view.config.getLocal("scene.renderProps");
+		// 1.
+		if (renderProps == null) {
 
-			if (renderProps is String) {
-				renderPropsRoot.source = cast renderProps;
-			}
-
-			if (renderProps is Array) {
-				var a_renderProps = cast (renderProps, Array<Dynamic>);
-				var savedRenderProp = @:privateAccess view.getDisplayState("renderProps");
-
-				// Check if the saved render prop hasn't been deleted from json
-				var isRenderPropAvailable = false;
-				for (idx in 0...a_renderProps.length) {
-					if (savedRenderProp != null && a_renderProps[idx].value == savedRenderProp.value)
-						isRenderPropAvailable = true;
+			// 2.
+			for (prefab in selectedPrefabs) {
+				var asRenderProps = Std.downcast(prefab, hrt.prefab.RenderProps);
+				if (asRenderProps != null && filter(asRenderProps) && checkIsInWorld(asRenderProps)) {
+					renderProps = asRenderProps;
+					break;
 				}
-
-				renderPropsRoot.source = view.config.getLocal("scene.renderProps")[0].value;
-				if (savedRenderProp != null && isRenderPropAvailable)
-					renderPropsRoot.source = savedRenderProp.value;
 			}
 		}
 
-		@:privateAccess renderPropsRoot.shared.root2d = renderPropsRoot.shared.current2d = root2d;
-		@:privateAccess renderPropsRoot.shared.root3d = renderPropsRoot.shared.current3d = root3d;
-
-		renderPropsRoot.make();
-
-		/*var lights = renderPropsRoot.getAll(hrt.prefab.Light, true);
-		for (light in lights) {
-			var ctxs = ctx2.shared.getContexts(light);
-			for (ctx in ctxs) {
-				var icon = Std.downcast(ctx.custom, hrt.impl.EditorTools.EditorIcon);
-				if (icon != null) {
-					icon.remove();
-					ctx.custom = null;
+		if (renderProps == null) {
+			var all = sceneData.findAll(hrt.prefab.RenderProps, filter, true);
+			// 3.
+			for (rp in all) {
+				if (rp.isDefault == true) {
+					renderProps = rp;
+					break;
 				}
 			}
-		}*/
 
+			// 4.
+			if (renderProps == null) {
+				renderProps = all[0];
+			}
+		}
+
+		// 5.
+		if (renderProps == null) {
+			// no enabled render props was found, create an external render props (and don't show it in the scene)
+			refreshDefaultRenderProps();
+			previousSceneRenderProps = null;
+			return;
+		}
+
+
+		// Init a render props in the scene
+
+		// remove the last external render props if it exists
+		if (renderPropsRoot != null) {
+			removeInstance(renderPropsRoot);
+			renderPropsRoot = null;
+			previousSceneRenderProps = null;
+			renderPropsTree.refresh();
+		}
+
+		if (previousSceneRenderProps != renderProps)
+			teardownRenderer();
+		renderProps.applyProps(scene.s3d.renderer);
+		previousSceneRenderProps = renderProps;
+	}
+
+	function getRenderPropsPath() : String {
+		var renderProps = view.config.getLocal("scene.renderProps");
+		if (renderProps is String) {
+			return cast renderProps;
+		}
+
+		if (renderProps is Array) {
+			var a_renderProps = cast (renderProps, Array<Dynamic>);
+			var savedRenderProp = @:privateAccess view.getDisplayState("renderProps");
+
+			// Check if the saved render prop hasn't been deleted from json
+			var isRenderPropAvailable = false;
+			for (idx in 0...a_renderProps.length) {
+				if (savedRenderProp != null && a_renderProps[idx].value == savedRenderProp.value)
+					isRenderPropAvailable = true;
+			}
+
+			var source = view.config.getLocal("scene.renderProps")[0].value;
+			if (savedRenderProp != null && isRenderPropAvailable)
+				source = savedRenderProp.value;
+			return source;
+		}
+		return null;
+	}
+
+	function refreshDefaultRenderProps(){
+		var path = getRenderPropsPath();
+
+		var needTeardown = false;
+		// remove previous render props if it has changed
+		if (renderPropsRoot != null) {
+			if (renderPropsRoot.source != path) {
+				removeInstance(renderPropsRoot);
+				renderPropsRoot = null;
+				needTeardown = true;
+			}
+		}
+
+		if (previousSceneRenderProps != null) {
+			previousSceneRenderProps = null;
+			needTeardown = true;
+		}
+
+		if (needTeardown) {
+			teardownRenderer();
+		}
+
+		if (renderPropsRoot == null && path != null) {
+			renderPropsRoot = new hrt.prefab.Reference(null, new ContextShared());
+			renderPropsRoot.setEditor(this, this.scene);
+			renderPropsRoot.editMode = Ide.inst.currentConfig.get("sceneeditor.renderprops.edit", false);
+			renderPropsRoot.name = "Render Props";
+			renderPropsRoot.source = path;
+
+			@:privateAccess renderPropsRoot.shared.root2d = renderPropsRoot.shared.current2d = root2d;
+			@:privateAccess renderPropsRoot.shared.root3d = renderPropsRoot.shared.current3d = root3d;
+
+			// Needed because make will call queueRefreshRenderProps
+			refreshRenderPropsStack ++;
+
+			renderPropsRoot = renderPropsRoot.make();
+
+			refreshRenderPropsStack --;
+
+			renderPropsTree.refresh();
+
+		}
+
+		var wasSet = false;
 		if( @:privateAccess renderPropsRoot.refInstance != null ) {
 			var renderProps = @:privateAccess renderPropsRoot.refInstance.getOpt(hrt.prefab.RenderProps, true);
 			if( renderProps != null ) {
 				renderProps.applyProps(scene.s3d.renderer);
+				wasSet = true;
 			}
+		}
+
+
+		// Clear render props
+		if (!wasSet) {
+			for(fx in scene.s3d.renderer.effects)
+				if ( fx != null )
+					fx.dispose();
+
+			scene.s3d.renderer.props = scene.s3d.renderer.getDefaultProps();
 		}
 	}
 
@@ -2215,6 +2314,8 @@ class SceneEditor {
 			applySceneStyle(elt);
 
 		refreshTree();
+
+		setRenderProps();
 
 		onRefresh();
 	}
@@ -3067,6 +3168,7 @@ class SceneEditor {
 
 		recRemove(elt);
 		elt.editorRemoveObjects();
+		elt.dispose();
 
 		if (checkRebuild)
 			checkWantRebuild(parent, elt);
@@ -3382,7 +3484,24 @@ class SceneEditor {
 			if( curEdit != null )
 				curEdit.cleanup();
 			var edit = makeEditContext(elts);
+
+			var doRefreshRenderProps = false;
+			for (p in selectedPrefabs) {
+				if (Std.downcast(p, hrt.prefab.RenderProps) != null) {
+					doRefreshRenderProps = true;
+					break;
+				}
+			}
+
 			selectedPrefabs = elts;
+
+			for (p in selectedPrefabs) {
+				if (Std.downcast(p, hrt.prefab.RenderProps) != null && (p.shared.parentPrefab == null || p.shared.parentPrefab != renderPropsRoot)) {
+					doRefreshRenderProps = true;
+					break;
+				}
+			}
+
 			var old = selectedParents.copy();
 			selectedParents.clear();
 			for (parent => _ in old) {
@@ -3460,6 +3579,10 @@ class SceneEditor {
 			setupGizmo();
 
 			onSelectionChanged(elts, mode);
+
+			if (doRefreshRenderProps) {
+				queueRefreshRenderProps();
+			}
 		}
 
 		var prev : Array<PrefabElement> = null;
@@ -4045,6 +4168,10 @@ class SceneEditor {
 				var el = tree.getElement(c);
 				if( el != null ) applyTreeStyle(c, el, tree);
 				applySceneStyle(c);
+
+				if (Std.downcast(c, hrt.prefab.RenderProps) != null) {
+					queueRefreshRenderProps();
+				}
 			}
 		}
 		saveDisplayState();
@@ -4414,6 +4541,24 @@ class SceneEditor {
 		}
 	}
 
+	var queuedRefreshRenderProps = false;
+	var queuedRenderProps : hrt.prefab.RenderProps = null;
+	var refreshRenderPropsStack = 0;
+	public function queueRefreshRenderProps(?rp: hrt.prefab.RenderProps) {
+		if (refreshRenderPropsStack > 0)
+			return;
+		refreshRenderPropsStack ++;
+		if (rebuildQueue == null) {
+			setRenderProps(rp);
+			refreshRenderPropsStack --;
+			return;
+		}
+
+		queuedRefreshRenderProps = true;
+		queuedRenderProps = rp;
+		refreshRenderPropsStack --;
+	}
+
 	/** Register a callback that will be called once all the prefabs in this begin/endRebuild pair have been rebuild**/
 	public function queueRebuildCallback(callback: Void -> Void) {
 		if (rebuildEndCallbacks != null) {
@@ -4466,6 +4611,12 @@ class SceneEditor {
 
 		for (callback in rebuildEndCallbacks) {
 			callback();
+		}
+
+		if (queuedRefreshRenderProps) {
+			setRenderProps(queuedRenderProps);
+			queuedRenderProps = null;
+			queuedRefreshRenderProps = false;
 		}
 		rebuildQueue = null;
 		rebuildEndCallbacks = null;
@@ -4523,44 +4674,6 @@ class SceneEditor {
 			applySceneStyle(p);
 		}
 
-		if (prefab == sceneData) {
-			var previousRenderProps = lastRenderProps;
-
-			var newRenderProps = null;
-			var renderProps : Array<hrt.prefab.RenderProps> = cast getAllWithRefs(sceneData, hrt.prefab.RenderProps);
-			for( r in renderProps ) {
-				if( @:privateAccess r.isDefault ) {
-					newRenderProps = r;
-					break;
-				}
-			}
-
-			if( newRenderProps == null )
-				newRenderProps = renderProps[0];
-
-			scene.s3d.renderer.props = scene.s3d.renderer.getDefaultProps();
-
-			if (newRenderProps != previousRenderProps) {
-				if (previousRenderProps != null)
-					removeInstance(previousRenderProps);
-				lastRenderProps = newRenderProps;
-				if (lastRenderProps != null) {
-					if (renderPropsRoot != null) {
-						removeInstance(renderPropsRoot);
-						renderPropsRoot = null;
-					}
-
-					lastRenderProps.applyProps(scene.s3d.renderer);
-				} else {
-					createRenderProps();
-				}
-			}
-			else {
-				if (newRenderProps == null && renderPropsRoot == null) {
-					createRenderProps();
-				}
-			}
-		}
 		rebuildStack --;
 	}
 
