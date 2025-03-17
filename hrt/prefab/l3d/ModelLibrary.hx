@@ -266,7 +266,7 @@ class ModelLibraryInstance {
 
 			batches.push(batchID);
 			var hmdModel = cast(mesh.primitive, h3d.prim.HMDModel);
-			var bakedMat = library.getBakedMat(material, hmdModel, mesh.name);
+			var bakedMat = @:privateAccess library.getBakedMat(material, hmdModel, mesh.name);
 			if ( bakedMat == null ) {
 				var modelPath = @:privateAccess hmdModel.lib.resource.entry.path;
 				var libPath = @:privateAccess library.getPrim().lib.resource.entry.path;
@@ -1097,9 +1097,8 @@ class ModelLibrary extends Prefab {
 		}
 	}
 
-	public function getBakedMat(mat : h3d.mat.Material, prim : h3d.prim.HMDModel, meshName : String) {
+	function getBakedMat(mat : h3d.mat.Material, prim : h3d.prim.HMDModel, meshName : String) {
 		var matName = mat.name;
-		// TODO : optimize string add.
 		var bk = bakedMaterials.get(@:privateAccess prim.lib.resource.entry.path + "_" + meshName + "_" + matName);
 		if ( bk == null )
 			bk = bakedMaterials.get(@:privateAccess prim.lib.resource.entry.path + "_" + matName);
