@@ -2236,7 +2236,7 @@ class SceneEditor {
 		}
 
 		var wasSet = false;
-		if( @:privateAccess renderPropsRoot.refInstance != null ) {
+		if( @:privateAccess renderPropsRoot?.refInstance != null ) {
 			var renderProps = @:privateAccess renderPropsRoot.refInstance.getOpt(hrt.prefab.RenderProps, true);
 			if( renderProps != null ) {
 				renderProps.applyProps(scene.s3d.renderer);

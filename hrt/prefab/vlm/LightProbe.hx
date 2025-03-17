@@ -135,7 +135,7 @@ class LightProbeObject extends h3d.scene.Mesh {
 
 	override function onRemove() {
 		super.onRemove();
-		env.dispose();
+		env?.dispose();
 	}
 
 	override function emit( ctx : h3d.scene.RenderContext ) {
@@ -528,6 +528,8 @@ class LightProbe extends Object3D {
 	}
 
 	override function setSelected(b : Bool ) {
+		if (local3d == null)
+			return true;
 		var w = local3d.find( o -> o.name == "wire_select" ? o : null);
 		if( w != null )
 			w.visible = b;
