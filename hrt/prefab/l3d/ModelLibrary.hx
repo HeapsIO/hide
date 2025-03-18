@@ -407,7 +407,7 @@ class ModelLibrary extends Prefab {
 	@:s var autoLod : Bool = false;
 	@:s var sighash : String = "";
 
-	public static inline var CURRENT_VERSION = 2;
+	public static inline var CURRENT_VERSION = 3;
 
 	var cache : ModelLibraryCache;
 	var shaderKeyCache : Map<String, String>;
@@ -807,12 +807,11 @@ class ModelLibrary extends Prefab {
 				var lods : Array<Model> = null;
 				var hasLod = m.lods != null;
 				if ( hasLod ) {
-					var isLod = m.name.indexOf("LOD0") < 0;
-					if ( isLod )
+					if ( m.isLOD() )
 						continue;
 					lods = [for ( lod in m.lods) lib.header.models[lod]];
 				} else {
-					var lodInfos = lib.getLODInfos(m);
+					var lodInfos = m.getLODInfos();
 					if ( lodInfos.lodLevel > 0 )
 						continue;
 
@@ -841,7 +840,7 @@ class ModelLibrary extends Prefab {
 						}
 						if ( ignoreModel )
 							break;
-						var mat = addMaterial(mid, root ? "root" : m.name);
+						var mat = addMaterial(mid, root ? "root" : m.getObjectName());
 						if ( mat != null ) {
 							mat.geomId = m2.geometry;
 							mat.indexCount = lib.header.geometries[m.geometry].indexCounts[index];
