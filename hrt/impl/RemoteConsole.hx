@@ -162,6 +162,8 @@ class RemoteConsoleConnection {
 	}
 
 	public function sendCommand( cmd : String, ?args : Dynamic, ?onResult : Dynamic -> Void ) {
+		if( sock == null )
+			return;
 		var id = ++UID;
 		waitReply.set(id, onResult);
 		sendData(cmd, args, id);
