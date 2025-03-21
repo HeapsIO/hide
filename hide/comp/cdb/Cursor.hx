@@ -85,7 +85,7 @@ class Cursor {
 				for (c in getSelectedCells())
 					if (!lines.contains(c.line))
 						lines.push(c.line);
-				editor.moveLines(lines, dy);
+				table.moveLines(lines, dy);
 			}
 			update();
 			return;

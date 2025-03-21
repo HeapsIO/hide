@@ -136,8 +136,8 @@ class Editor extends Component {
 		keys.register("redo", function() undo.redo());
 		keys.register("cdb.moveBack", () -> cursor.jump(true));
 		keys.register("cdb.moveAhead", () -> cursor.jump(false));
-		keys.register("cdb.insertLine", function() { insertLine(cursor.table,cursor.y); cursor.move(0,1,false,false,false); });
-		keys.register("duplicate", function() { duplicateLine(cursor.table,cursor.y); cursor.move(0,1,false,false,false); });
+		keys.register("cdb.insertLine", function() { cursor.table.insertLine(cursor.y); cursor.move(0,1,false,false,false); });
+		keys.register("duplicate", function() { cursor.table.duplicateLine(cursor.y); cursor.move(0,1,false,false,false); });
 		for( k in ["cdb.editCell","rename"] )
 			keys.register(k, function() {
 				var c = cursor.getCell();
@@ -1841,43 +1841,6 @@ class Editor extends Component {
 		newColumn(sheet,col);
 	}
 
-	public function insertLine( table : Table, index = 0 ) {
-		if( table == null || !table.canInsert() )
-			return;
-		if( table.displayMode == Properties ) {
-			var ins = table.element.find("select.insertField");
-			var options = [for( o in ins.find("option").elements() ) Element.getVal(o)];
-			ins.attr("size", options.length);
-			options.shift();
-			ins.focus();
-			var index = 0;
-			ins.val(options[0]);
-			ins.off();
-			ins.blur(function(_) table.refresh());
-			ins.keydown(function(e) {
-				switch( e.keyCode ) {
-				case K.ESCAPE:
-					element.focus();
-				case K.UP if( index > 0 ):
-					ins.val(options[--index]);
-				case K.DOWN if( index < options.length - 1 ):
-					ins.val(options[++index]);
-				case K.ENTER:
-					@:privateAccess table.insertProperty(Element.getVal(ins));
-				default:
-				}
-				e.stopPropagation();
-				e.preventDefault();
-			});
-			return;
-		}
-		beginChanges();
-		table.sheet.newLine(index);
-		table.refreshCellValue();
-		endChanges();
-		table.refresh();
-	}
-
 	public function ensureUniqueId(originalId : String, table : Table, column : cdb.Data.Column) {
 		var scope = table.getScope();
 		var idWithScope : String = if(column.scope != null)  table.makeId(scope, column.scope, originalId) else originalId;
@@ -1936,34 +1899,6 @@ class Editor extends Component {
         while (!isUniqueID(table.getRealSheet(), {}, idWithScope));
 
         return newId;
-	}
-
-	public function duplicateLine( table : Table, index = 0 ) {
-		if( !table.canInsert() || table.displayMode != Table )
-			return;
-		var srcObj = table.sheet.lines[index];
-		beginChanges();
-		var obj = table.sheet.newLine(index);
-		table.refreshCellValue();
-		for(colId => c in table.columns ) {
-			var val = Reflect.field(srcObj, c.name);
-			if( val != null ) {
-				if( c.type != TId ) {
-					// Deep copy
-					Reflect.setField(obj, c.name, haxe.Json.parse(haxe.Json.stringify(val)));
-				} else {
-					// Increment the number at the end of the id if there is one
-
-					var newId = getNewUniqueId(val, table, c);
-					if (newId != null) {
-						Reflect.setField(obj, c.name, newId);
-					}
-				}
-			}
-		}
-		endChanges();
-		table.refresh();
-		table.getRealSheet().sync();
 	}
 
 	public function popupColumn( table : Table, col : cdb.Data.Column, ?cell : Cell ) {
@@ -2103,62 +2038,6 @@ class Editor extends Component {
 		// TODO : create single edit-all script view allowing global search & replace
 	}
 
-	public function moveLine( line : Line, delta : Int, exact = false ) {
-		if( !line.table.canInsert() )
-			return;
-		beginChanges();
-		var prevIndex = line.index;
-
-		var index : Null<Int> = null;
-		var currIndex : Null<Int> = line.index;
-		if (!exact) {
-			var distance = (delta >= 0 ? delta : -1 * delta);
-			for( _ in 0...distance ) {
-				currIndex = line.table.sheet.moveLine( currIndex, delta );
-				if( currIndex == null )
-					break;
-				else
-					index = currIndex;
-			}
-		}
-		else
-			while (index != prevIndex + delta) {
-				currIndex = line.table.sheet.moveLine( currIndex, delta );
-				if( currIndex == null )
-					break;
-				else
-					index = currIndex;
-			}
-
-		if( index != null ) {
-			if (index != prevIndex) {
-				if ( cursor.y == prevIndex ) cursor.set(cursor.table, cursor.x, index);
-				else if ( cursor.y > prevIndex && cursor.y <= index) cursor.set(cursor.table, cursor.x, cursor.y - 1);
-				else if ( cursor.y < prevIndex && cursor.y >= index) cursor.set(cursor.table, cursor.x, cursor.y + 1);
-			}
-			refresh();
-		}
-		endChanges();
-	}
-
-	function moveLines(lines : Array<Line>, delta : Int) {
-		if( lines.length == 0 || !lines[0].table.canInsert() || delta == 0 )
-			return;
-		beginChanges();
-		var newSelection = [{
-			x1: -1,
-			y1: lines[0].index + delta,
-			x2: -1,
-			y2: lines[lines.length - 1].index + delta
-		}];
-
-		lines.sort((a, b) -> { return (a.index - b.index) * delta * -1; });
-		for( l in lines )
-			moveLine(l, delta);
-
-		cursor.set(cursor.table, cursor.x, cursor.y, newSelection);
-		endChanges();
-	}
 
 	public function popupLine( line : Line ) {
 		if( !line.table.canInsert() ) return;
@@ -2206,10 +2085,11 @@ class Editor extends Component {
 				usedLine = lastLine;
 			}
 			var delta = lastOfGroup - usedLine.index + separatorCount(usedLine.index);
+			var linesToMove = isSelectedLine ? selectedLines : [usedLine];
 			moveSubmenu.push({
 				label : sep.title,
 				enabled : true,
-				click : isSelectedLine ? moveLines.bind(selectedLines, delta) : () -> moveLine(usedLine, delta),
+				click : () -> usedLine.table.moveLines(linesToMove, delta)
 			});
 		}
 
@@ -2233,22 +2113,22 @@ class Editor extends Component {
 			{
 				label : "Move Up",
 				enabled:  (firstLine.index > 0 || sepIndex >= 0),
-				click : isSelectedLine ? moveLines.bind(selectedLines, -1) : () -> moveLine(line, -1),
+				click : () -> line.table.moveLines(isSelectedLine ? [line] : selectedLines, -1),
 			},
 			{
 				label : "Move Down",
 				enabled:  (lastLine.index < sheet.lines.length - 1),
-				click : isSelectedLine ? moveLines.bind(selectedLines, 1) : () -> moveLine(line, 1),
+				click : () -> line.table.moveLines(isSelectedLine ? [line] : selectedLines, 1),
 			},
 			{ label : "Move to Group", enabled : moveSubmenu.length > 0, menu : moveSubmenu },
 			{ label : "", isSeparator : true },
 			{ label : "Insert", click : function() {
-				insertLine(line.table,line.index);
+				line.table.insertLine(line.index);
 				cursor.set(line.table, -1, line.index + 1);
 				focus();
 			}, keys : config.get("key.cdb.insertLine") },
 			{ label : "Duplicate", click : function() {
-				duplicateLine(line.table,line.index);
+				line.table.duplicateLine(line.index);
 				cursor.set(line.table, -1, line.index + 1);
 				focus();
 			}, keys : config.get("key.duplicate") },

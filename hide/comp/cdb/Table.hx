@@ -232,12 +232,12 @@ class Table extends Component {
 
 				var selection = editor.cursor.getSelectedAreaIncludingLine(line);
 				if (selection != null) {
-					editor.moveLines(editor.cursor.getLinesFromSelection(selection), selection.y1 > dropTarget.index ? dropTarget.index - selection.y1 : dropTarget.index - selection.y2);
+					moveLinesTo(editor.cursor.getLinesFromSelection(selection), dropTarget.index);
 					return true;
 				}
 
 				if (dropTarget != null) {
-					editor.moveLine(line, dropTarget.index - line.index, true);
+					line.table.moveLinesTo([line], dropTarget.index);
 					return true;
 				}
 
@@ -357,12 +357,12 @@ class Table extends Component {
 		} else if( sheet.lines.length == 0 && canInsert() ) {
 			var l = J('<tr><td colspan="${columns.length + 1}"><input class="default-cursor" type="button" value="Insert Line"/></td></tr>');
 			l.find("input").click(function(_) {
-				editor.insertLine(this);
+				insertLine();
 				editor.cursor.set(this);
 			});
 			l.find("input").keydown(function(e) {
 				if (e.keyCode != 13) return;
-				editor.insertLine(this);
+				insertLine();
 				editor.cursor.set(this);
 			});
 			element.append(l);
@@ -608,5 +608,119 @@ class Table extends Component {
 	function toString() {
 		return "Table#"+sheet.name;
 	}
+	
 
+	public function insertLine(index : Int = 0) {
+		if( !canInsert() )
+			return;
+		if( displayMode == Properties ) {
+			var ins = element.find("select.insertField");
+			var options = [for( o in ins.find("option").elements() ) Element.getVal(o)];
+			ins.attr("size", options.length);
+			options.shift();
+			ins.focus();
+			var index = 0;
+			ins.val(options[0]);
+			ins.off();
+			ins.blur(function(_) refresh());
+			ins.keydown(function(e) {
+				switch (e.keyCode) {
+					case hxd.Key.ESCAPE:
+						element.focus();
+					case hxd.Key.UP if( index > 0 ):
+						ins.val(options[--index]);
+					case hxd.Key.DOWN if( index < options.length - 1 ):
+						ins.val(options[++index]);
+					case hxd.Key.ENTER:
+						insertProperty(Element.getVal(ins));
+					default:
+				}
+				e.stopPropagation();
+				e.preventDefault();
+			});
+			return;
+		}
+		editor.beginChanges();
+		sheet.newLine(index);
+		refreshCellValue();
+		editor.endChanges();
+		refresh();
+	}
+
+	public function moveLines(lines : Array<Line>, delta : Int) {
+		if( !canInsert() )
+			return;
+		
+		editor.beginChanges();
+
+		lines.sort((a, b) -> { return (a.index - b.index) * delta * -1; });
+
+		var range = { min: 100000, max: 0 };
+		for (l in lines ) {
+			// var initialIdx = l.index;
+			var newIdx = l.index;
+			var distance = Std.int(hxd.Math.abs(delta));
+			for( _ in 0...distance ) {
+				newIdx = sheet.moveLine(newIdx, delta);
+				if( newIdx == null )
+					break;
+			
+				if (range.min > newIdx) range.min = newIdx;
+				if (range.max < newIdx) range.max = newIdx;
+			}
+		}
+
+		editor.endChanges();
+		
+		// Set cursor and selection on moved lines
+		editor.cursor.set(this, editor.cursor.x, range.min, [{ x1: -1, y1: range.min, x2: -1, y2: range.max }]);
+		
+		editor.refresh();
+	}
+
+	public function moveLinesTo(lines : Array<Line>, targetIdx : Int) {
+		var fromIdx = lines[0].index;
+		for (l in lines)
+			if (l.index < fromIdx)
+				fromIdx = l.index;
+
+		var movingUp = fromIdx > targetIdx;
+		var sepCount = 0;
+		for (s in separators) {
+			if ((movingUp && s.data.index > targetIdx && s.data.index <= fromIdx) || (!movingUp && s.data.index <= targetIdx && s.data.index > fromIdx))
+				sepCount++;
+		}
+		
+		moveLines(lines, movingUp ? (targetIdx - fromIdx) - sepCount : (targetIdx - fromIdx) + sepCount);
+
+		// Set cursor and selection on moved lines
+		editor.cursor.set(this, editor.cursor.x, targetIdx, [{ x1: -1, y1: targetIdx, x2: -1, y2: targetIdx + (lines.length - 1) }]);
+	}
+
+	public function duplicateLine(index : Int = 0) {
+		if( !canInsert() || displayMode != Table )
+			return;
+		var srcObj = sheet.lines[index];
+		editor.beginChanges();
+		var obj = sheet.newLine(index);
+		refreshCellValue();
+		for(colId => c in columns ) {
+			var val = Reflect.field(srcObj, c.name);
+			if( val != null ) {
+				if( c.type != TId ) {
+					// Deep copy
+					Reflect.setField(obj, c.name, haxe.Json.parse(haxe.Json.stringify(val)));
+				} else {
+					// Increment the number at the end of the id if there is one
+					var newId = editor.getNewUniqueId(val, this, c);
+					if (newId != null) {
+						Reflect.setField(obj, c.name, newId);
+					}
+				}
+			}
+		}
+		editor.endChanges();
+		refresh();
+		getRealSheet().sync();
+	}
 }
