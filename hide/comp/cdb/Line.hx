@@ -21,6 +21,8 @@ class Line extends Component {
 
 
 	public function getId(): String {
+		var columns = table.displayMode == Table ? columns : table.sheet.columns;
+		var obj = obj;
 		for( c in columns ) {
 			if( c.type == TId )
 				return Reflect.field(obj, c.name);
