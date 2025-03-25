@@ -102,7 +102,10 @@ class CdbTable extends hide.ui.View<{}> {
 						if (scr != null) {
 							haxe.Timer.delay(function() {
 								@:privateAccess scr.script.editor.setPosition({column:0, lineNumber: line+1});
-								haxe.Timer.delay(() ->@:privateAccess scr.script.editor.revealLineInCenter(line+1), 1);
+								haxe.Timer.delay(function() {
+									scr.setCursor();
+									@:privateAccess scr.script.editor.revealLineInCenter(line+1);
+								}, 1);
 							}, 1);
 						}
 						#end
