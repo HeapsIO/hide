@@ -220,44 +220,50 @@ class Scene extends hide.comp.Component implements h3d.IDrawable {
 		return js.Browser.document.activeElement == canvas;
 	}
 
-	function sync() {
-		errorThisFrame = false;
-		try {
-			if( new Element(canvas).parents("html").length == 0) {
-				if (autoDisposeOutOfDocument) {
-					dispose();
-				}
-				return;
+	function doSync() {
+		if( new Element(canvas).parents("html").length == 0) {
+			if (autoDisposeOutOfDocument) {
+				dispose();
 			}
-			if( !visible || pendingCount > 0)
-				return;
-			var dt = hxd.Timer.tmod * speed / 60;
-			if( !Ide.inst.isFocused ) {
-				// refresh at 1FPS
-				unFocusedTime += dt;
-				if( unFocusedTime < 1 ) return;
-				unFocusedTime -= 1;
-				dt = 1;
-			} else
-				unFocusedTime = 0;
-			setCurrent();
-			sevents.checkEvents();
-			s2d.setElapsedTime(dt);
-			s3d.setElapsedTime(dt);
-			for( f in listeners )
-				f(dt);
-			onUpdate(dt);
-			engine.render(this);
+			return;
 		}
-		catch (e:haxe.Exception) {
-			var e = errorHandler(e);
-			if (e != null) {
-				throw e;
-			}
-		}
+		if( !visible || pendingCount > 0)
+			return;
+		var dt = hxd.Timer.tmod * speed / 60;
+		if( !Ide.inst.isFocused ) {
+			// refresh at 1FPS
+			unFocusedTime += dt;
+			if( unFocusedTime < 1 ) return;
+			unFocusedTime -= 1;
+			dt = 1;
+		} else
+			unFocusedTime = 0;
+		setCurrent();
+		sevents.checkEvents();
+		s2d.setElapsedTime(dt);
+		s3d.setElapsedTime(dt);
+		for( f in listeners )
+			f(dt);
+		onUpdate(dt);
+		engine.render(this);
+	}
 
-		if (!errorThisFrame) {
-			clearErrorMessage();
+	function sync() {
+		if ( ide.isDebugger )
+			doSync();
+		else {
+			errorThisFrame = false;
+			try {
+				doSync();
+			} catch (e:haxe.Exception) {
+				var e = errorHandler(e);
+				if (e != null) {
+					throw e;
+				}
+			}
+			if (!errorThisFrame) {
+				clearErrorMessage();
+			}
 		}
 	}
 
