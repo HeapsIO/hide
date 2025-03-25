@@ -233,8 +233,8 @@ class VolumetricLightingShader extends h3d.shader.pbr.DefaultForward {
 
 			integrationValues.a = 1.0 - integrationValues.a;
 			var outColor = integrationValues.rgb / (0.001 + integrationValues.a);
-			var opacity = saturate(distanceOpacity * integrationValues.a);
-
+			integrationValues.a = saturate(distanceOpacity * integrationValues.a);
+			
 			return integrationValues;
 		}
 
