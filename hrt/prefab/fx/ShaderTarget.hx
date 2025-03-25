@@ -7,11 +7,14 @@ class ShaderTargetObj extends h3d.scene.Object {
 
 	public function apply(fx : hrt.prefab.fx.FX) {
 		function reparentChildren(obj : hrt.prefab.Object3D) {
-			var i = obj.children.length;
-			while ( i-- > 0 ) {
+			var i = 0;
+			while ( i < obj.children.length ) {
 				var c = obj.children[i];
-				if ( Std.isOfType(c, Shader) || Std.isOfType(c, Material) || Std.isOfType(c, MaterialSelector) )
+				if ( Std.isOfType(c, Shader) || Std.isOfType(c, Material) || Std.isOfType(c, MaterialSelector) ) {
 					c.parent = shadersRoot;
+					i--;
+				}
+				i++;
 			}
 		}
 
@@ -52,7 +55,6 @@ class ShaderTarget extends Object3D {
 	@:s public var priority : Int = 1;
 
 	public var target : h3d.scene.Object;
-	public var shaders : Array<hrt.prefab.Shader>;
 
 	public function new(parent:Prefab, contextShared: ContextShared) {
 		super(parent, contextShared);
