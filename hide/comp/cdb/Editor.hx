@@ -1755,9 +1755,9 @@ class Editor extends Component {
 			if( col != null ) {
 				base.mapType(function(t) {
 					return switch( t ) {
-					case TRef(o) if( o.indexOf(col.name) >= 0 ):
+					case TRef(o) if( o.indexOf(col.name) >= 0 && o.indexOf('@') >= 0 ):
 						TRef(StringTools.replace(o, col.name, c.name));
-					case TLayer(o) if( o.indexOf(col.name) >= 0 ):
+					case TLayer(o) if( o.indexOf(col.name) >= 0 && o.indexOf('@') >= 0 ):
 						TLayer(StringTools.replace(o, col.name, c.name));
 					default:
 						t;
