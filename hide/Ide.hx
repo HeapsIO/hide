@@ -602,8 +602,11 @@ class Ide extends hide.tools.IdeData {
 	var showErrors = true;
 	var errorWindow :Element = null;
 	override function error( e : Dynamic ) {
-		if( showErrors && !js.Browser.window.confirm(e) )
-			showErrors = false;
+		if( showErrors ) {
+			onIdeError(e);
+			if( !js.Browser.window.confirm(e) )
+				showErrors = false;
+		}
 
 		if (!showErrors) {
 			if (errorWindow == null) {
@@ -1632,6 +1635,8 @@ class Ide extends hide.tools.IdeData {
 	public function ask( text : String, ?defaultValue = "" ) {
 		return js.Browser.window.prompt(text, defaultValue);
 	}
+
+	public static dynamic function onIdeError(e: Dynamic) {}
 
 	public static var inst : Ide;
 
