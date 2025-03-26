@@ -6,6 +6,8 @@ class KuwaharaShader extends hrt.shader.PbrShader {
 
 		@param var startDist : Float;
 		@param var endDist : Float;
+		@param var startOpacity : Float;
+		@param var endOpacity : Float;
 		@param var scaledRadius : Int;
 
 		@param var ldrCopy : Sampler2D;
@@ -98,7 +100,7 @@ class KuwaharaShader extends hrt.shader.PbrShader {
 
 			var wPos = getPosition();
 			var dist = distance(camera.position, wPos);
-			var opacity = smoothstep(startDist, endDist, dist);
+			var opacity = mix(startOpacity, endOpacity, smoothstep(startDist, endDist, dist));
 			pixelColor = vec4(filteredColor, opacity);
 		}
 	}
@@ -111,6 +113,9 @@ class KuwaharaFilter extends RendererFX {
 	@:s var startDist : Float = 0.0;
 	@:s var endDist : Float = 100.0;
 
+	@:s var startOpacity : Float = 0.0;
+	@:s var endOpacity : Float = 1.0;
+
 	var pass = new h3d.pass.ScreenFx(new KuwaharaShader());
 
 	override function begin(r:h3d.scene.Renderer, step:h3d.impl.RendererFX.Step) {
@@ -120,6 +125,8 @@ class KuwaharaFilter extends RendererFX {
 			pass.shader.ldrCopy = ldrCopy;
 
 			pass.shader.scaledRadius = Std.int(radius * hxd.Math.max(ldrCopy.width / 1920, ldrCopy.height / 1080));
+			pass.shader.startOpacity = startOpacity;
+			pass.shader.endOpacity = endOpacity;
 			pass.shader.startDist = startDist;
 			pass.shader.endDist = endDist;
 			pass.pass.setBlendMode(Alpha);
@@ -139,8 +146,10 @@ class KuwaharaFilter extends RendererFX {
 			</div>
 			<div class="group" name="Fade">
 				<dl>
-					<dt>Start</dt><dd><input type="range" min="0" field="startDist"/></dd>
-					<dt>End</dt><dd><input type="range" min="0" field="endDist"/></dd>
+					<dt>Start dist</dt><dd><input type="range" min="0" field="startDist"/></dd>
+					<dt>End dist</dt><dd><input type="range" min="0" field="endDist"/></dd>
+					<dt>Start opacity</dt><dd><input type="range" min="0" field="startOpacity"/></dd>
+					<dt>End opacity</dt><dd><input type="range" min="0" field="endOpacity"/></dd>
 				</dl>
 			</div>
 			'), this, function(pname) {
