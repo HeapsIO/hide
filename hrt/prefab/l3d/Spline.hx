@@ -194,6 +194,61 @@ class Spline extends hrt.prefab.Object3D {
 	}
 
 
+	inline public function getSplinePoint(t: Float, ?out: SplinePoint) : SplinePoint {
+		if (samples == null)
+			sample( (this.shape == SplineShape.Linear) ? 1 : sampleResolution);
+
+		if (samples.length <= 1)
+			return null;
+
+		t = hxd.Math.clamp(t, 0, 1);
+		var s1 = 0;
+		var sa = 0;
+		var sb = samples.length-1;
+		if( t >= 1 )
+			s1 = sb;
+		else {
+			do {
+				s1 = Math.floor((sa+sb)/2);
+				if (s1 == -1)
+					break;
+				if( samples[s1].t < t )
+					sa = s1+1;
+				else
+					sb = s1-1;
+			} while( !(samples[s1].t <= t && samples[s1+1].t >= t) );
+		}
+		var s2 : Int = s1 + 1;
+		s2 = hxd.Math.iclamp(s2, 0, samples.length - 1);
+
+		if (out == null)
+			out = new SplinePoint();
+
+		if (s1 == -1)
+			return null;
+
+		// End/Beginning of the curve, just return the point
+		if( s1 == s2 )
+			out.load(samples[s1]);
+
+		// Linear interpolation between the two samples
+		var segmentLength = samples[s1].pos.distance(samples[s2].pos);
+		if (segmentLength == 0) {
+			out.load(samples[s1]);
+		}
+		else {
+			var t = (t - samples[s1].t) / (samples[s2].t - samples[s1].t);
+			out.pos.lerp(samples[s1].pos, samples[s2].pos, t);
+			out.up.lerp(samples[s1].up, samples[s2].up, t);
+			out.tangentIn.lerp(samples[s1].tangentIn, samples[s2].tangentIn, t);
+			out.tangentOut.lerp(samples[s1].tangentOut, samples[s2].tangentOut, t);
+			out.length = hxd.Math.lerp(samples[s1].length, samples[s2].length, t);
+			out.t = t;
+		}
+
+		return out;
+	}
+
 	inline public function getPoint(t: Float, ?out: h3d.col.Point) : h3d.col.Point {
 		if (samples == null)
 			sample( (this.shape == SplineShape.Linear) ? 1 : sampleResolution);
