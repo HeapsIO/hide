@@ -586,6 +586,8 @@ class Editor extends Component {
 		if (this.cursor.table == null)
 			return;
 
+		var targetCells = cursor.getSelectedCells();
+
 		var columns = cursor.table.columns;
 		var sheet = cursor.table.sheet;
 		var realSheet = cursor.table.getRealSheet();
@@ -740,17 +742,17 @@ class Editor extends Component {
 			var obj1 = data[0];
 			var obj2 = cursor.getLine().obj;
 			if( clipboard.schema.length == 1 ) {
-				var line = cursor.getLine();
-				var destCol = line.columns[posX];
-				var p = Editor.getColumnProps(destCol);
 				var clipSchema = clipboard.schema[0];
-				if( clipSchema == null || destCol == null)
-					return;
-				if( !cursor.table.canEditColumn(destCol.name) || p.copyPasteImmutable)
-					return;
-				toRefresh.push(cursor.getCell());
+				if (clipSchema == null) return;
 				beginChanges();
-				setValue(obj1, obj2, clipSchema, destCol);
+				for (c in targetCells) {
+					var col = c.column;
+					if (!c.table.canEditColumn(col.name) || Editor.getColumnProps(col).copyPasteImmutable || clipSchema.kind != col.kind)
+						continue;
+
+					toRefresh.push(c);
+					setValue(obj1, obj2, clipSchema, col);
+				}
 			} else {
 				beginChanges();
 				for( c1 in clipboard.schema ) {
@@ -765,33 +767,51 @@ class Editor extends Component {
 				}
 			}
 		} else {
+			// Several cases could conduce to weird behaviours so just throw an error
+			if (data.length != 1 && targetCells.length != 1) {
+				ide.quickError("Pasting a range of values into another of different length is not allowed");
+				return;
+			}
+
 			beginChanges();
-			if( data.length == 1 && cursor.y != cursor.y )
-				data = [data[0]];
-			for( obj1 in data ) {
-				if( posY == sheet.lines.length ) {
-					if( !cursor.table.canInsert() ) break;
-					sheet.newLine();
-					fullRefresh = true;
-				}
-				var obj2 = sheet.lines[posY];
-				for( cid in 0...clipboard.schema.length ) {
-					var c1 = clipboard.schema[cid];
-					var c2 = columns[cid + posX];
-					if( c2 == null ) continue;
-					var p = Editor.getColumnProps(c2);
 
-					if( !cursor.table.canEditColumn(c2.name) || p.copyPasteImmutable)
+			if (data.length == 1) {
+				// Manage copy one cell into severals that are selected
+				for (c in targetCells) {
+					if( !c.table.canEditColumn(c.column.name) || Editor.getColumnProps(c.column).copyPasteImmutable)
 						continue;
-
-					setValue(obj1, obj2, c1, c2);
-
-					if( c2.type == TList || c2.type == TProperties )
-						fullRefresh = true;
-					if( !fullRefresh )
-						toRefresh.push(allLines[posY].cells[cid + posX]);
+					setValue(data[0], sheet.lines[c.line.index], clipboard.schema[0], c.column);
+					toRefresh.push(c);
 				}
-				posY++;
+			}
+			else {
+				if( data.length == 1 && cursor.y != cursor.y )
+					data = [data[0]];
+				for( obj1 in data ) {
+					if( posY == sheet.lines.length ) {
+						if( !cursor.table.canInsert() ) break;
+						sheet.newLine();
+						fullRefresh = true;
+					}
+					var obj2 = sheet.lines[posY];
+					for( cid in 0...clipboard.schema.length ) {
+						var c1 = clipboard.schema[cid];
+						var c2 = columns[cid + posX];
+						if( c2 == null ) continue;
+						var p = Editor.getColumnProps(c2);
+
+						if( !cursor.table.canEditColumn(c2.name) || p.copyPasteImmutable)
+							continue;
+
+						setValue(obj1, obj2, c1, c2);
+
+						if( c2.type == TList || c2.type == TProperties )
+							fullRefresh = true;
+						if( !fullRefresh )
+							toRefresh.push(allLines[posY].cells[cid + posX]);
+					}
+					posY++;
+				}
 			}
 		}
 		formulas.evaluateAll(realSheet);
