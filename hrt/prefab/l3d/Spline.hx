@@ -901,6 +901,8 @@ class Spline extends hrt.prefab.Object3D {
 	}
 
 	override function setSelected(b: Bool) : Bool {
+		super.setSelected(b);
+
 		if (!b)
 			clearInteractive();
 

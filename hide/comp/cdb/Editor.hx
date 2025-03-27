@@ -767,12 +767,6 @@ class Editor extends Component {
 				}
 			}
 		} else {
-			// Several cases could conduce to weird behaviours so just throw an error
-			if (data.length != 1 && targetCells.length != 1) {
-				ide.quickError("Pasting a range of values into another of different length is not allowed");
-				return;
-			}
-
 			beginChanges();
 
 			if( data.length == 1 && cursor.y != cursor.y )
