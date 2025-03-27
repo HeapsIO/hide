@@ -49,6 +49,18 @@ class SplinePoint {
 	}
 
 	public function load(obj : Dynamic) {
+		var splinePoint = Std.downcast(obj, SplinePoint);
+		if (splinePoint != null) {
+			pos.load(splinePoint.pos);
+			up.load(splinePoint.up);
+			tangentIn.load(splinePoint.tangentIn);
+			tangentOut.load(splinePoint.tangentOut);
+			t = splinePoint.t;
+			length = splinePoint.length;
+			return;
+		}
+
+		// Load from serialized data
 		pos = new h3d.col.Point(obj.x, obj.y, obj.z);
 		up = new h3d.col.Point(obj.upX, obj.upY, obj.upZ);
 		tangentIn = new h3d.Vector(obj.tIn.x, obj.tIn.y, obj.tIn.z);
