@@ -260,7 +260,7 @@ class Spline extends hrt.prefab.Object3D {
 			out.tangentIn.lerp(samples[s1].tangentIn, samples[s2].tangentIn, t);
 			out.tangentOut.lerp(samples[s1].tangentOut, samples[s2].tangentOut, t);
 			out.length = hxd.Math.lerp(samples[s1].length, samples[s2].length, t);
-			out.t = t;
+			out.t = hxd.Math.lerp(samples[s1].t, samples[s2].t, t);
 		}
 
 		return out;
