@@ -117,6 +117,7 @@ class Spline extends hrt.prefab.Object3D {
 		points = [];
 
 		// Backwards compatibility
+		var shouldRecomputeTan = false;
 		var children = Reflect.field(obj, "children");
 		if (children != null) {
 			var i = children.length - 1;
@@ -137,6 +138,7 @@ class Spline extends hrt.prefab.Object3D {
 
 					points.push(sp);
 					children.remove(children[i]);
+					shouldRecomputeTan = true;
 				}
 				i--;
 			}
@@ -166,6 +168,9 @@ class Spline extends hrt.prefab.Object3D {
 		}
 
 		shape = obj.shape == null ? Linear : SplineShape.createByIndex(obj.shape);
+
+		if (shouldRecomputeTan)
+			recomputeTangents();
 	}
 
 	override function copy(obj : hrt.prefab.Prefab) {
