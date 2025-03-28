@@ -180,9 +180,8 @@ class VolumetricLightingShader extends h3d.shader.pbr.DefaultForward {
 			var clampedExtinction = max(extinction, 1e-5);
 			var transmittance = exp(-extinction*stepSize);
 
-			var scaleCorrection = 0.01;
-			var emissiveLum = scaleCorrection * emissiveIntensity * emissiveColor;
-			var luminance = evaluateLighting() * getFogColor() * mix(vec3(1.0), saturate(envColor), fogEnvColorMult) * extinction + emissiveLum;
+			var emissiveLum = emissiveIntensity * emissiveColor;
+			var luminance = (evaluateLighting() * getFogColor() * mix(vec3(1.0), saturate(envColor), fogEnvColorMult) + emissiveLum) * extinction;
 			var integScatt = (luminance - luminance*transmittance) / clampedExtinction;
 
 			integrationValues.rgb += integrationValues.a * integScatt;
