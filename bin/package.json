@@ -9,5 +9,8 @@
 	},
 	"main" : "app.html",
 	"chromium-args":"--enable-spell-checking",
-	"js-flags": "--expose-gc"
+	"js-flags": "--expose-gc",
+	"dependencies": {
+		"mongodb": "^3.2.2"
+	}
 }
