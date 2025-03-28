@@ -47,6 +47,9 @@ class VolumetricLightingShader extends h3d.shader.pbr.DefaultForward {
 		@param var secondFogTop : Float;
 		@param var secondFogHeightFalloff : Float;
 
+		@param var emissiveColor : Vec3;
+		@param var emissiveIntensity : Float;
+
 		var calculatedUV : Vec2;
 
 		function noise( pos : Vec3 ) : Float {
@@ -177,7 +180,9 @@ class VolumetricLightingShader extends h3d.shader.pbr.DefaultForward {
 			var clampedExtinction = max(extinction, 1e-5);
 			var transmittance = exp(-extinction*stepSize);
 
-			var luminance = evaluateLighting() * getFogColor() * mix(vec3(1.0), saturate(envColor), fogEnvColorMult) * extinction;
+			var scaleCorrection = 0.01;
+			var emissiveLum = scaleCorrection * emissiveIntensity * emissiveColor;
+			var luminance = evaluateLighting() * getFogColor() * mix(vec3(1.0), saturate(envColor), fogEnvColorMult) * extinction + emissiveLum;
 			var integScatt = (luminance - luminance*transmittance) / clampedExtinction;
 
 			integrationValues.rgb += integrationValues.a * integScatt;
@@ -234,7 +239,7 @@ class VolumetricLightingShader extends h3d.shader.pbr.DefaultForward {
 			integrationValues.a = 1.0 - integrationValues.a;
 			var outColor = integrationValues.rgb / (0.001 + integrationValues.a);
 			integrationValues.a = saturate(distanceOpacity * integrationValues.a);
-			
+
 			return integrationValues;
 		}
 
@@ -287,6 +292,9 @@ class VolumetricLighting extends RendererFX {
 	@:s public var secondFogHeightFalloff : Float = 5.0;
 	@:s public var secondFogBottom : Float = 0.0;
 	@:s public var secondFogTop : Float = 50.0;
+
+	@:s public var emissiveColor : Int = 0xFFFFFF;
+	@:s public var emissiveIntensity : Float = 0.0;
 
 	var noiseTex : h3d.mat.Texture;
 
@@ -360,6 +368,10 @@ class VolumetricLighting extends RendererFX {
 			vshader.secondFogBottom = secondFogBottom;
 			vshader.secondFogTop = secondFogTop;
 			vshader.secondFogHeightFalloff = secondFogHeightFalloff;
+
+			vshader.emissiveColor.load(h3d.Vector.fromColor(emissiveColor));
+			vshader.emissiveIntensity = emissiveIntensity;
+
 			pass.pass.setBlendMode(Alpha);
 			pass.render();
 
@@ -470,6 +482,12 @@ class VolumetricLighting extends RendererFX {
 					<dt>Bottom [m]</dt><dd><input type="range" min="0" max="1000" field="secondFogBottom"/></dd>
 					<dt>Top [m]</dt><dd><input type="range" min="0" max="1000" field="secondFogTop"/></dd>
 					<dt>Height falloff</dt><dd><input type="range" min="0" max="3" field="secondFogHeightFalloff"/></dd>
+				</dl>
+			</div>
+			<div class="group" name="Emissive">
+				<dl>
+					<dt>Emissive color</dt><dd><input type="color" field="emissiveColor"/></dd>
+					<dt>Emissive Intensity</dt><dd><input type="range" min="0" max="1" field="emissiveIntensity"/></dd>
 				</dl>
 			</div>
 			<div class="group" name="Noise">
