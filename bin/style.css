@@ -73,7 +73,7 @@ body {
 #message-container .message.show {
   outline-color: #686868;
   margin-top: 4px;
-  max-height: 26px;
+  max-height: 100px;
   transition: all 1s;
 }
 #message-container .message.error {

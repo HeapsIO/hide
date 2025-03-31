@@ -1023,7 +1023,7 @@ class Editor extends Component {
 				runningHooks = true;
 				ide.runCommand(commands[i], (e) -> {
 					if (e != null) {
-						ide.error('Hook error:\n$e');
+						ide.quickError('Hook error:\n$e');
 						hookEnd();
 					} else {
 						if (i < commands.length - 1) {

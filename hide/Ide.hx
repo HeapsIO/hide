@@ -642,10 +642,12 @@ class Ide extends hide.tools.IdeData {
 	}
 
 	public function quickError( msg : Dynamic, timeoutSeconds : Float = 5.0 ) {
+		var str = StringTools.htmlEscape(Std.string(msg));
+		str = StringTools.replace(str, "\n", "<br/>");
 		var e = new Element('
 		<div class="message error">
 			<div class="icon ico ico-warning"></div>
-			<div class="text">${StringTools.htmlEscape(Std.string(msg))}</div>
+			<div class="text">${str}</div>
 		</div>');
 
 		js.Browser.console.error(msg);
@@ -1613,10 +1615,12 @@ class Ide extends hide.tools.IdeData {
 	}
 
 	public function quickMessage( text : String, timeoutSeconds : Float = 5.0 ) {
+		var str = StringTools.htmlEscape(text);
+		str = StringTools.replace(str, "\n", "<br/>");
 		var e = new Element('
 		<div class="message">
 			<div class="icon ico ico-info-circle"></div>
-			<div class="text">${text}</div>
+			<div class="text">${str}</div>
 		</div>');
 
 		js.Browser.console.log(text);
