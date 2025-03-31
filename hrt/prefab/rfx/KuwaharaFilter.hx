@@ -120,6 +120,8 @@ class KuwaharaFilter extends RendererFX {
 
 	override function begin(r:h3d.scene.Renderer, step:h3d.impl.RendererFX.Step) {
 		if ( step == AfterTonemapping ) {
+			r.mark("Kuwahara");
+			
 			var ldrCopy = r.allocTarget("ldrCopy", true, 1.0);
 			h3d.pass.Copy.run(r.ctx.engine.getCurrentTarget(), ldrCopy);
 			pass.shader.ldrCopy = ldrCopy;
@@ -148,8 +150,8 @@ class KuwaharaFilter extends RendererFX {
 				<dl>
 					<dt>Start dist</dt><dd><input type="range" min="0" field="startDist"/></dd>
 					<dt>End dist</dt><dd><input type="range" min="0" field="endDist"/></dd>
-					<dt>Start opacity</dt><dd><input type="range" min="0" field="startOpacity"/></dd>
-					<dt>End opacity</dt><dd><input type="range" min="0" field="endOpacity"/></dd>
+					<dt>Start opacity</dt><dd><input type="range" min="0" max="1" field="startOpacity"/></dd>
+					<dt>End opacity</dt><dd><input type="range" min="0" max="1" field="endOpacity"/></dd>
 				</dl>
 			</div>
 			'), this, function(pname) {
