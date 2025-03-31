@@ -26,7 +26,7 @@ class ChromaticAberrationShader extends h3d.shader.ScreenShader {
 			pixelColor.a = opacity;
 
 			if ( DEBUG ) {
-				pixelColor.rgb = vec3(vignettingOpacity);
+				pixelColor.rgb = vec3(pixelColor.a * vignettingOpacity);
 				pixelColor.a = 1.0;
 			}
 		}
