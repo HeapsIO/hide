@@ -605,6 +605,7 @@ class DomkitViewer extends h2d.Object {
 	}
 
 	function addRec( e : domkit.MarkupParser.Markup, interp : DomkitInterp, parent : h2d.Object ) {
+		var parentObj = cast(parent.dom?.contentRoot,h2d.Object) ?? parent;
 		switch( e.kind ) {
 		case Node(name):
 			if( e.condition != null ) {
@@ -614,7 +615,6 @@ class DomkitViewer extends h2d.Object {
 			}
 			var comp = resolveComponent(name, e.pmin+1);
 			var args = evalArgs(interp, e.arguments);
-			var parentObj = cast(parent.dom?.contentRoot,h2d.Object) ?? parent;
 			var make = tmpCompMap.get(comp.name);
 			var obj = make != null ? make(args, parentObj) : comp.make(args, parentObj);
 			if( obj == null )
@@ -671,7 +671,7 @@ class DomkitViewer extends h2d.Object {
 			for( c in e.children )
 				addRec(c, interp, cast p.contentRoot);
 		case Text(text):
-			var tf = new h2d.HtmlText(hxd.res.DefaultFont.get(), parent);
+			var tf = new h2d.HtmlText(hxd.res.DefaultFont.get(), parentObj);
 			tf.dom = domkit.Properties.create("html-text", tf);
 			tf.text = text;
 		case For(cond):
