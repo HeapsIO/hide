@@ -275,7 +275,7 @@ private class FXSceneEditor extends hide.comp.SceneEditor {
 
 		menu.sort(function(l1,l2) return Reflect.compare(l1.label,l2.label));
 
-		var events = allTypes.filter(i -> StringTools.endsWith(i.label, "Event"));
+		var events = allTypes.filter(i -> StringTools.contains(i.label, "Event"));
 		if(events.length > 0) {
 			menu.push({
 				label: "Events",

@@ -56,6 +56,8 @@ class SubFX extends Reference implements hrt.prefab.fx.Event.IEvent{
 		return loop = v;
 	}
 
+	public function getEventPrefab() { return this; }
+
 	#if editor
 
 	override function edit( ctx : hide.prefab.EditContext ) {
@@ -71,8 +73,6 @@ class SubFX extends Reference implements hrt.prefab.fx.Event.IEvent{
 		});
 		super.edit(ctx);
 	}
-
-	public function getEventPrefab() { return this; }
 
 	public function getDisplayInfo(ctx:hide.prefab.EditContext) {
 		var ref = Std.downcast(resolveRef(), FX);

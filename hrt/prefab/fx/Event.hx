@@ -1,7 +1,7 @@
 package hrt.prefab.fx;
 
 typedef EventInstance = {
-	evt: Event,
+	evt: IEvent,
 	?play: Void->Void,
 	?stop: Void->Void,
 	?setTime: Float->Void,
@@ -9,16 +9,17 @@ typedef EventInstance = {
 };
 
 interface IEvent {
-	#if editor
-	function getEventPrefab() : hrt.prefab.Prefab;
-	function getDisplayInfo(ctx: hide.prefab.EditContext) : { label: String, ?loop: Bool };
-	function setDuration(duration: Float) : Void;
-	#end
+	var name : String;
 	var time(default, set) : Float;
 	var hidden : Bool;
 	var lock : Bool;
 	var selected : Bool;
+	function getEventPrefab() : hrt.prefab.Prefab;
 	function getDuration() : Float;
+	#if editor
+	function setDuration(duration: Float) : Void;
+	function getDisplayInfo(ctx: hide.prefab.EditContext) : { label: String, ?loop: Bool };
+	#end
 }
 
 class Event extends hrt.prefab.Prefab implements IEvent {
@@ -93,9 +94,9 @@ class Event extends hrt.prefab.Prefab implements IEvent {
 		}
 	}
 
-	#if editor
-
 	public function getEventPrefab() { return this; }
+
+	#if editor
 
 	override function edit( ctx ) {
 		super.edit(ctx);
@@ -135,4 +136,73 @@ class Event extends hrt.prefab.Prefab implements IEvent {
 	#end
 
 	static var _ = Prefab.register("event", Event);
+}
+
+class Event3D extends hrt.prefab.Object3D implements IEvent {
+	@:s public var time(default, set): Float = 0.0;
+	@:s public var duration: Float = 0.0;
+	public var hidden:Bool = false;
+	public var lock:Bool = false;
+	public var selected:Bool = false;
+
+	public function new(parent, shared: ContextShared) {
+		super(parent, shared);
+	}
+
+	function set_time(v) {
+		return time = v;
+	}
+
+	public function getDuration() {
+		return duration;
+	}
+
+	public function prepare() : EventInstance {
+		return {
+			evt: this
+		};
+	}
+
+	public function getEventPrefab() { return this; }
+
+	#if editor
+
+	override function edit( ctx ) {
+		super.edit(ctx);
+		var props = ctx.properties.add(new hide.Element('
+			<div class="group" name="Event">
+				<dl>
+					<dt>Time</dt><dd><input type="number" value="0" field="time"/></dd>
+					<dt>Duration</dt><dd><input type="number" value="0" field="duration"/></dd>
+				</dl>
+			</div>
+		'),this, function(pname) {
+			ctx.onChange(this, pname);
+		});
+	}
+
+	override function getHideProps() : hide.prefab.HideProps {
+		return {
+			icon : "bookmark", name : "Event3D",
+		};
+	}
+
+	public function getDisplayInfo(ctx: hide.prefab.EditContext) {
+		return {
+			label: name,
+			loop: false
+		};
+	}
+
+	public function canEditDuration() : Bool {
+		return true;
+	};
+
+	public function setDuration(duration: Float) {
+		this.duration = duration;
+	};
+
+	#end
+
+	static var _ = Prefab.register("event3d", Event3D);
 }
