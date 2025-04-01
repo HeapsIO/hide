@@ -32,18 +32,17 @@ class SplinePoint {
 	}
 
 	public function save() : Dynamic {
-		var obj = {
-			x: pos.x,
-			y: pos.y,
-			z: pos.z,
-			upX: up.x,
-			upY: up.y,
-			upZ: up.z,
-			tIn: tangentIn,
-			tOut: tangentOut,
-			t: t,
-			length: length,
-		}
+		var obj: Dynamic = {}
+		obj.x = pos.x;
+		obj.y = pos.y;
+		obj.z = pos.z;
+		obj.upX = up.x;
+		obj.upY = up.y;
+		obj.upZ = up.z;
+		obj.tIn = tangentIn;
+		obj.tOut = tangentOut;
+		obj.t = t;
+		obj.length = length;
 
 		return obj;
 	}
