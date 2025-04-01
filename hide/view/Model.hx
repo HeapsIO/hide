@@ -1206,8 +1206,10 @@ class Model extends FileView {
 		for (c in @:privateAccess sceneEditor.sceneData.children)
 			@:privateAccess sceneEditor.sceneData.children.remove(c);
 
-		@:privateAccess sceneEditor.removeInstance(sceneEditor.renderPropsRoot);
-		sceneEditor.renderPropsRoot = null;
+		if (sceneEditor.renderPropsRoot != null) {
+			@:privateAccess sceneEditor.removeInstance(sceneEditor.renderPropsRoot);
+			sceneEditor.renderPropsRoot = null;
+		}
 
 		@:privateAccess sceneEditor.queueRefreshRenderProps();
 
