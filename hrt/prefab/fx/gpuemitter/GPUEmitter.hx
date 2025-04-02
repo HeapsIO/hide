@@ -104,6 +104,7 @@ class GPUEmitterObject extends h3d.scene.MeshBatch {
 
 	var rateAccumulation : Float = 0.0;
 	var firstDispatch : Bool = true;
+	var countBytes : haxe.io.Bytes;
 
 	public function new(data, primitive, materials, ?parent) {
 		super(primitive, null, parent);
@@ -115,8 +116,9 @@ class GPUEmitterObject extends h3d.scene.MeshBatch {
 				break;
 			p = p.parent;
 		}
-		this.meshBatchFlags.set(EnableGpuUpdate);
-		this.meshBatchFlags.set(EnableStorageBuffer);
+
+		enableGpuUpdate();
+		enableStorageBuffer();
 		if ( materials != null )
 			this.materials = materials;
 		particleShader = new ParticleShader();
@@ -386,6 +388,9 @@ class GPUEmitterObject extends h3d.scene.MeshBatch {
 
 		if ( paramTexture != null )
 			paramTexture.dispose();
+
+		if ( countBytes != null )
+			countBytes = null;
 	}
 }
 

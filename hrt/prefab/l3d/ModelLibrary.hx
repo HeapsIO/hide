@@ -181,7 +181,7 @@ class MeshEmitter {
 	public function emit( absPos : h3d.Matrix, emitCountTip : Int = -1, ?cb : h3d.scene.MeshBatch -> Void ) {
 		for ( i => mat in materials ) {
 			var batch = @:privateAccess libraryInstance.getBatch(batches[i]);
-			libraryInstance.library.emit({ mat : mat, mesh : mesh }, batch, absPos, emitCountTip, batch.meshBatchFlags);
+			libraryInstance.library.emit({ mat : mat, mesh : mesh }, batch, absPos, emitCountTip);
 			if ( cb != null )
 				cb(batch);
 		}
@@ -1104,12 +1104,12 @@ class ModelLibrary extends Prefab {
 		return bk;
 	}
 
-	public function emit(bk : MaterialMesh, batch : h3d.scene.MeshBatch, ?absPos : h3d.Matrix, emitCountTip = -1, ?flags : haxe.EnumFlags<h3d.scene.MeshBatch.MeshBatchFlag> ) {
+	public function emit(bk : MaterialMesh, batch : h3d.scene.MeshBatch, ?absPos : h3d.Matrix, emitCountTip = -1) {
 		cache.shader.uvTransform.set(bk.mat.uvX, bk.mat.uvY, bk.mat.uvSX, bk.mat.uvSY);
 		cache.shader.libraryParams.set(bk.mat.texId, 1.0 / atlasResolution / bk.mat.uvSX, 0.0, 0.0);
 		if ( batch.primitiveSubPart == null ) {
 			batch.primitiveSubPart = new h3d.scene.MeshBatch.MeshBatchPart();
-			batch.begin(emitCountTip, flags);
+			batch.begin(emitCountTip);
 		}
 		batch.primitiveSubPart.indexCount = bk.mat.indexCount;
 		batch.primitiveSubPart.indexStart = bk.mat.indexStart;
