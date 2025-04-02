@@ -443,6 +443,12 @@ class Spline extends hrt.prefab.Object3D {
 
 		var out = new SplinePoint(sp.pos, sp.up, sp.tangentIn, sp.tangentOut);
 		out.pos = localToGlobal(out.pos);
+
+		var abs = getAbsPos(true);
+		out.up = out.up.transformed3x3(abs);
+		out.up.normalize();
+		out.tangentIn = out.tangentIn.transformed3x3(abs);
+		out.tangentOut = out.tangentOut.transformed3x3(abs);
 		return out;
 	}
 
