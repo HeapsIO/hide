@@ -113,7 +113,21 @@ class FileSelect extends Component {
 	}
 
 	function set_path(p:String) {
-		var text = p == null ? "-- select --" : (sys.FileSystem.exists(ide.getPath(p)) ? "" : "[NOT FOUND] ") + p;
+		// We need to do this comparison since sys.FileSystem.exists() is case insensitive on Windows
+		var fullPath = ide.getPath(p);
+		var exists = false;
+		if (fullPath != null) {
+			var filename = fullPath.substr(fullPath.lastIndexOf('/') + 1);
+			var parentDir = fullPath.substring(0, fullPath.lastIndexOf('/'));
+			var files = sys.FileSystem.readDirectory(parentDir);
+			for (f in files) {
+				if (f == filename) {
+					exists = true;
+					break;
+				}
+			}
+		}
+		var text = p == null ? "-- select --" : (exists ? "" : "[NOT FOUND] ") + p;
 		element.val(text);
 		element.attr("title", p == null ? "" : p);
 		return this.path = p;
