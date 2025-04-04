@@ -190,7 +190,6 @@ class EventsEditor extends Component implements CurveEditorComponent
 				}
 
 				var xOffset = @:privateAccess -this.curveEditor.xt(0);
-				trace(xOffset);
 
 				var evt = evtLabel.get(0);
 				var labelWidth = evtLabel.find("span").width();
