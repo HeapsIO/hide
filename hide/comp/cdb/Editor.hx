@@ -124,6 +124,7 @@ class Editor extends Component {
 
 		keys.clear();
 		keys.addListener(onKey);
+		keys.register("view.reopenLastClosedTab", function() ide.reopenLastClosedTab());
 		keys.register("search", function() {
 			searchBox.show();
 			searchBox.find("input").val("").focus().select();
