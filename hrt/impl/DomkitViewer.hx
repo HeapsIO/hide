@@ -726,6 +726,8 @@ class DomkitStyle extends h2d.domkit.Style {
 	static var CSS_SOURCES = [];
 	static var CONTENT = new Map();
 	public static function registerCSSSource( path : String, ?content : String ) {
+		if( CSS_SOURCES.indexOf(path) >= 0 )
+			return false;
 		CSS_SOURCES.push(path);
 		if( content != null ) CONTENT.set(path, content);
 		return true;
