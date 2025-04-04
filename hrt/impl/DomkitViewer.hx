@@ -34,6 +34,8 @@ class DomkitViewer {
 				removeDynParamsRec(c, dynParams);
 				if( c.kind == null ) m.children.remove(c);
 			}
+		if( m.condition != null && codeContains(m.condition.cond,dynParams) )
+			m.condition = null;
 		switch( m.kind ) {
 		case For(cond) if( codeContains(cond,dynParams) ):
 			m.kind = null;
