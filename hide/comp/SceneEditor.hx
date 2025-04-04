@@ -897,6 +897,7 @@ class SceneEditor {
     public var snapForceOnGrid = false;
 
 	public var localTransform = true;
+	public var selfOnlyTransform = false;
 	public var cameraController : CameraControllerBase;
 	public var cameraController2D : hide.view.l3d.CameraController2D;
 	public var editorDisplay(default,set) : Bool;
@@ -1845,6 +1846,7 @@ class SceneEditor {
 				actionItems = actionItems.concat([
 					{ label : "Isolate", click : function() isolate(selectedPrefabs), keys : view.config.get("key.sceneeditor.isolate") },
 					{ label : "Group", enabled : selectedPrefabs != null && canGroupSelection(), click : groupSelection, keys : view.config.get("key.group") },
+					{ label : "Reset transform", click : function() resetTransform(selectedPrefabs) },
 					{ label : "Export", enabled : curEdit != null && canExportSelection(), menu : exportMenu },
 				]);
 			}
@@ -2618,6 +2620,7 @@ class SceneEditor {
 					}
 
 					var obj3d = objects3d[i];
+					var obj3dPrevTransform = obj3d.getTransform();
 					var euler = newMat.getEulerAngles();
                     if (translate != null && translate.length() > 0.0001 && snapForceOnGrid) {
                         obj3d.x = snap(quantize(newMat.tx, posQuant), snapMoveStep);
@@ -2643,6 +2646,8 @@ class SceneEditor {
 						obj3d.scaleZ = quantize(s.z, scaleQuant);
 					}
 					obj3d.applyTransform();
+					if( selfOnlyTransform )
+						restoreChildTransform(obj3d, obj3dPrevTransform);
 					if ( curEdit != null )
 						curEdit.onChange(obj3d, null);
 				}
@@ -2650,22 +2655,18 @@ class SceneEditor {
 
 			gizmo.onFinishMove = function() {
 				var newState = [for(o in objects3d) o.saveTransform()];
+				var selfOnlyTransform = this.selfOnlyTransform;
 				refreshProps();
 				undo.change(Custom(function(undo) {
-					if( undo ) {
-						for(i in 0...objects3d.length) {
-							objects3d[i].loadTransform(prevState[i]);
-							objects3d[i].applyTransform();
-						}
-						refreshProps();
+					for(i in 0...objects3d.length) {
+						var obj3d = objects3d[i];
+						var obj3dPrevTransform = obj3d.getTransform();
+						obj3d.loadTransform(undo ? prevState[i] : newState[i]);
+						obj3d.applyTransform();
+						if( selfOnlyTransform )
+							restoreChildTransform(obj3d, obj3dPrevTransform);
 					}
-					else {
-						for(i in 0...objects3d.length) {
-							objects3d[i].loadTransform(newState[i]);
-							objects3d[i].applyTransform();
-						}
-						refreshProps();
-					}
+					refreshProps();
 
 					for(o in objects3d) {
 						if ( curEdit != null )
@@ -3965,6 +3966,42 @@ class SceneEditor {
 		}));
 		effectFunc(false);
 		//refresh( ? Full : Partial, () -> selectElements([group],NoHistory));
+	}
+
+	// Restore child transform after reset / move only parent transform
+	function restoreChildTransform(obj3d : Object3D, prevTransform : h3d.Matrix) {
+		var newTransform = obj3d.getTransform();
+		newTransform.invert();
+		prevTransform.multiply(prevTransform, newTransform);
+		for( c in obj3d.children ) {
+			var c3d = c.to(Object3D);
+			if( c3d != null ) {
+				var newPos = c3d.getTransform();
+				newPos.multiply(newPos, prevTransform);
+				c3d.setTransform(newPos);
+				c3d.applyTransform();
+				if ( curEdit != null )
+					curEdit.onChange(c3d, null);
+			}
+		}
+	}
+
+	function resetTransform(elts : Array<PrefabElement>) {
+		if(elts == null) return;
+		var pivot = new h3d.Matrix();
+		pivot.initTranslation();
+		for (e in elts) {
+			var obj3d = e.to(Object3D);
+			if( obj3d != null ) {
+				var prevTrans = obj3d.getTransform();
+				obj3d.setTransform(pivot);
+				obj3d.applyTransform();
+				restoreChildTransform(obj3d, prevTrans);
+				if ( curEdit != null )
+					curEdit.onChange(obj3d, null);
+			}
+		}
+		refreshProps();
 	}
 
 	function onCopy() {
