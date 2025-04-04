@@ -613,6 +613,7 @@ class ShaderEditor extends hide.view.FileView implements GraphInterface.IGraphEd
 		exec(false);
 		undo.change(Custom(exec));
 		variableList.editTitle(shaderGraph.variables.length-1);
+		variableList.toggleItem(shaderGraph.variables.length-1, true);
 	}
 
 	var validNameCheck = ~/^[_a-zA-Z][_a-zA-Z0-9]*$/;
@@ -1116,6 +1117,7 @@ class ShaderEditor extends hide.view.FileView implements GraphInterface.IGraphEd
 		undo.change(Custom(exec));
 		var paramShader = shaderGraph.getParameter(paramShaderID);
 		parametersList.editTitle(paramShader.index);
+		parametersList.toggleItem(paramShader.index, true);
 	}
 
 	function updateParam(id : Int) : Bool {

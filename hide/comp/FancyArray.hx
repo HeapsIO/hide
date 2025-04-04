@@ -49,7 +49,7 @@ class FancyArray<T> extends hide.comp.Component {
 		saveDisplayState("state", haxe.Json.stringify(itemState));
 	}
 
-	function toggleItem(index:Int, ?forceState: Bool) {
+	public function toggleItem(index:Int, ?forceState: Bool) {
 		itemState[index].open = forceState ?? !itemState[index].open;
 		saveState();
 		fancyItems.children()[index].classList.toggle("open", itemState[index].open);
@@ -69,7 +69,7 @@ class FancyArray<T> extends hide.comp.Component {
 					<fancy-button class="quieter toggle-open">
 						<div class="ico ico-chevron-right"></div>
 					</fancy-button>
-					<input type="text" value="${getItemName(item)}" class="fill"></input>
+					<input type="text" value="${getItemName(item)}" class="fill title-text"></input>
 					<fancy-button class="menu quieter"><div class="ico ico-ellipsis-v"></div></fancy-button>
 				</fancy-item-header>
 			</fancy-item>').appendTo(fancyItems);
@@ -228,7 +228,9 @@ class FancyArray<T> extends hide.comp.Component {
 
 	// Focus the title bar of the given index for editing
 	public function editTitle(index: Int) {
-		itemsElements[index].find("input").focus().select();
+		var a = itemsElements[index].find(".title-text");
+		a.focus();
+		a.select();
 	}
 
 	public var reorderItem : (oldIndex: Int, newIndex: Int) -> Void = null;
