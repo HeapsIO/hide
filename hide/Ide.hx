@@ -34,6 +34,7 @@ class Ide extends hide.tools.IdeData {
 	var fullscreen : Bool;
 	var updates : Array<Void->Void> = [];
 	var views : Array<hide.ui.View<Dynamic>> = [];
+	var lastClosedTabStates : Array<Dynamic> = [];
 
 	var renderers : Array<h3d.mat.MaterialSetup>;
 	var subView : { component : String, state : Dynamic, events : {} };
@@ -1586,6 +1587,13 @@ class Ide extends hide.tools.IdeData {
 			target.addChild(config);
 		else
 			target.addChild(config, index);
+	}
+
+	public function reopenLastClosedTab() {
+		var state = lastClosedTabStates.pop();
+		if( state != null && state.componentName != null ) {
+			open(state.componentName, state);
+		}
 	}
 
 	public function globalMessage(element: Element, timeoutSeconds : Float = 5.0) {

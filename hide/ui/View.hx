@@ -69,6 +69,7 @@ class View<T> extends hide.comp.Component {
 			keys = new Keys(null);
 			#if js
 			keys.register("view.fullScreen", function() fullScreen = !fullScreen);
+			keys.register("view.reopenLastClosedTab", function() ide.reopenLastClosedTab());
 			#end
 		}
 		return keys;
@@ -300,6 +301,7 @@ class View<T> extends hide.comp.Component {
 		}
 		element = null;
 		containerView.__view = null;
+		@:privateAccess ide.lastClosedTabStates.push(state);
 	}
 
 	function buildTabMenu() : Array<hide.comp.ContextMenu.MenuItem> {
