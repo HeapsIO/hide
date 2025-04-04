@@ -65,8 +65,8 @@ class GraphEditor extends hide.comp.Component {
 	static var CENTER_OFFSET_Y = 0.1; // percent of height
 
 	// used for moving when mouse is close to borders
-	static var BORDER_SIZE = 50;
-	static var SPEED_BORDER_MOVE = 0.05;
+	static var BORDER_SIZE = 5;
+	static var SPEED_BORDER_MOVE = 4.0;
 	var timerUpdateView : Timer;
 	// used for selection
 	var boxesSelected : Map<Int, Bool> = [];
@@ -85,8 +85,6 @@ class GraphEditor extends hide.comp.Component {
 	// used for deleting
 
 	var domain : hrt.shgraph.ShaderGraph.Domain;
-
-	var addMenu : JQuery;
 
 	var edgeCreationCurve : JQuery = null;
 	var edgeCreationOutput : Null<Int> = null;
@@ -187,7 +185,6 @@ class GraphEditor extends hide.comp.Component {
 				var save : SelectionUndoSave ={newSelections: new Map<Int, Bool>(), buffer: new UndoBuffer()};
 				undoSave = save;
 
-				closeAddMenu();
 				clearSelectionBoxesUndo(save.buffer);
 				finalizeUserCreateEdge();
 				rawheaps.setPointerCapture(e.pointerId);
@@ -322,7 +319,6 @@ class GraphEditor extends hide.comp.Component {
 	}
 
 	public function cancelAll() {
-		closeAddMenu();
 		cleanupCreateEdge();
 	}
 
@@ -613,7 +609,6 @@ class GraphEditor extends hide.comp.Component {
 			}
 
 			commitUndo();
-			closeAddMenu();
 		}
 
 		var menu : Array<hide.comp.ContextMenu.MenuItem> = [];
@@ -634,19 +629,13 @@ class GraphEditor extends hide.comp.Component {
 		};
 	}
 
-	function closeAddMenu() {
-		if (addMenu != null) {
-			addMenu.hide();
-			heapsScene.focus();
-		}
-	}
-
 	function mouseMoveFunction(e: js.jquery.Event) {
 		var clientX = e.clientX;
 		var clientY = e.clientY;
 
-		if (addMenu?.is(":visible"))
+		if (contextMenu != null)
 			return;
+
 		if (edgeCreationInput != null || edgeCreationOutput != null) {
 			startUpdateViewPosition();
 			createLink(clientX, clientY);
@@ -1655,25 +1644,37 @@ class GraphEditor extends hide.comp.Component {
 			return;
 		timerUpdateView = new Timer(0);
 		timerUpdateView.run = function() {
+			if (contextMenu != null)
+				return;
+
+			function speed(d: Float) {
+				return hxd.Math.clamp(d/10.0, 0.0, SPEED_BORDER_MOVE);
+			}
 			var posCursor = new Point(ide.mouseX - heapsScene.offset().left, ide.mouseY - heapsScene.offset().top);
 			var wasUpdated = false;
 			if (posCursor.x < BORDER_SIZE) {
-				pan(new Point((BORDER_SIZE - posCursor.x)*SPEED_BORDER_MOVE, 0));
+				pan(new Point(speed(BORDER_SIZE - posCursor.x), 0));
 				wasUpdated = true;
 			}
 			if (posCursor.y < BORDER_SIZE) {
-				pan(new Point(0, (BORDER_SIZE - posCursor.y)*SPEED_BORDER_MOVE));
+				pan(new Point(0, speed(BORDER_SIZE - posCursor.y)));
 				wasUpdated = true;
 			}
 			var rightBorder = heapsScene.width() - BORDER_SIZE;
 			if (posCursor.x > rightBorder) {
-				pan(new Point((rightBorder - posCursor.x)*SPEED_BORDER_MOVE, 0));
+				pan(new Point(-speed(posCursor.x - rightBorder), 0));
 				wasUpdated = true;
 			}
 			var botBorder = heapsScene.height() - BORDER_SIZE;
 			if (posCursor.y > botBorder) {
-				pan(new Point(0, (botBorder - posCursor.y)*SPEED_BORDER_MOVE));
+				pan(new Point(0, -speed(posCursor.y - botBorder)));
 				wasUpdated = true;
+			}
+
+			if (wasUpdated) {
+				if (edgeCreationInput != null || edgeCreationOutput != null) {
+					createLink(Std.int(ide.mouseX), Std.int(ide.mouseY));
+				}
 			}
 		};
 	}
