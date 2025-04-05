@@ -216,7 +216,7 @@ class DomkitViewer extends h2d.Object {
 	function loadResource( res : hxd.res.Resource ) {
 		var loaded = @:privateAccess style.resources.indexOf(res) >= 0;
 		loadedResources.push({ r : res, wasLoaded: loaded });
-		if( !loaded ) style.load(res);
+		if( !loaded ) handleErrors(res, () -> style.load(res));
 		res.watch(rebuild);
 	}
 
@@ -519,10 +519,15 @@ class DomkitViewer extends h2d.Object {
 								obj.dom = new domkit.Properties(obj, cast comp);
 							else
 								@:privateAccess obj.dom.component = cast comp;
+
+							interp.variables.set("this", inst ?? obj);
+							if( inst != null )
+								inst.dom = obj.dom;
 						});
 						for( c in m.children )
 							handleErrors(res, () -> addRec(c, interp, obj));
 						interp.variables = prev;
+						inst.dom = null;
 						return obj;
 					}
 
