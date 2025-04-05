@@ -155,6 +155,7 @@ class ScriptChecker {
 	public var constants : Map<String,Dynamic>;
 	public var evalTo : String;
 	public var checker(default,null) : hscript.Checker;
+	public var cdbEnums : Array<String>;
 	var initDone = false;
 	var apiHash : String;
 
@@ -227,6 +228,7 @@ class ScriptChecker {
 		var contexts = [];
 		var allowGlobalsDefine = false;
 		checkEvents = false;
+		cdbEnums = [];
 
 		for( api in apis ) {
 			for( f in api.globals.keys() ) {
@@ -376,6 +378,7 @@ class ScriptChecker {
 				cl.fields.set(id, { name : id, params : [], canWrite : false, t : kind, isPublic: true, complete : true });
 			}
 			checker.setGlobal(name, TInst(cl,[]));
+			cdbEnums.push(name);
 			return kind;
 		}
 		return null;

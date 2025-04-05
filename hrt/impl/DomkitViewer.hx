@@ -53,6 +53,41 @@ class DomkitViewer {
 				clearImportNames(c);
 	}
 
+	static function remapCDBCode( map : Map<String, Bool>, code : domkit.MarkupParser.CodeExpr ) {
+		switch( code.expr ) {
+		case EConst(CIdent(name)) if( map.exists(name) ):
+			code.expr = EField({ expr : EConst(CIdent(CDB_MODULE)), pos : code.pos }, name+"Kind");
+		default:
+			haxe.macro.ExprTools.iter(code, remapCDBCode.bind(map));
+		}
+	}
+
+	static function iterCode( m : domkit.MarkupParser.Markup, f : domkit.MarkupParser.CodeExpr -> Void ) {
+		if( m.arguments != null ) {
+			for( a in m.arguments )
+				switch( a.value ) {
+				case Code(code): f(code);
+				default:
+				}
+		}
+		if( m.attributes != null ) {
+			for( a in m.attributes )
+				switch( a.value ) {
+				case Code(code): f(code);
+				default:
+				}
+		}
+		if( m.condition != null )
+			f(m.condition.cond);
+		if( m.children != null )
+			for( c in m.children )
+				iterCode(c, f);
+		switch( m.kind ) {
+		case For(cond): f(cond);
+		default:
+		}
+	}
+
 	public static function loadSource( path : String, pos : Position, fields : Array<Field>, extraParams : Array<Expr> ) {
 		var name = path.split("/").pop().split("_").join("-");
 		var dotPos = name.lastIndexOf(".");
@@ -132,6 +167,16 @@ class DomkitViewer {
 				removeDynParamsRec(m, dynParams);
 			clearImportNames(m);
 
+			if( data.enums != null ) {
+				var enums : Array<{ path : String, constrs : Array<String> }> = haxe.Json.parse(data.enums);
+				for( e in enums )
+					if( e.path == "$cdb" ) {
+						var map = [for( c in e.constrs ) c => true];
+						iterCode(m,remapCDBCode.bind(map));
+						break;
+					}
+			}
+
 			if( hasCSS ) {
 				fields.push({
 					name : "__CSS",
@@ -146,6 +191,8 @@ class DomkitViewer {
 			return null;
 		}
 	}
+
+	public static var CDB_MODULE = "Data";
 
 	public static function init() {
 		domkit.Macros.onSourceLoad = loadSource;

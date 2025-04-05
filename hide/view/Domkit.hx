@@ -152,6 +152,12 @@ class Domkit extends FileView {
 		}
 		dmlEditor.check();
 		cssEditor.check();
+		var usedCDB = [];
+		for( c in checker.cdbEnums )
+			if( dmlEditor.code.indexOf(c+".") >= 0 )
+				usedCDB.push(c);
+		if( usedCDB.length > 0 )
+			checker.usedEnums.push({path:"$cdb",constrs:usedCDB});
 	}
 
 	function trimSpaces( code : String ) {
