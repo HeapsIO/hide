@@ -16,6 +16,7 @@ interface IEvent {
 	var selected : Bool;
 	function getEventPrefab() : hrt.prefab.Prefab;
 	function getDuration() : Float;
+	function prepare() : EventInstance;
 	#if editor
 	function setDuration(duration: Float) : Void;
 	function getDisplayInfo(ctx: hide.prefab.EditContext) : { label: String, ?loop: Bool };

@@ -65,8 +65,8 @@ class FX2DAnimation extends h2d.Object {
 		if (elt == null || @:privateAccess !elt.shouldBeInstanciated())
 			return out;
 
-		var asEvent = elt.to(Event);
-		if (asEvent != null) {
+		if( Std.isOfType(elt, IEvent) ) {
+			var asEvent = cast(elt, IEvent);
 			var eventObj = asEvent.prepare();
 			if(eventObj != null) {
 				if(out == null) out = [];

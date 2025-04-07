@@ -58,6 +58,12 @@ class SubFX extends Reference implements hrt.prefab.fx.Event.IEvent{
 
 	public function getEventPrefab() { return this; }
 
+	public function prepare() : Event.EventInstance {
+		return {
+			evt: this
+		};
+	}
+
 	#if editor
 
 	override function edit( ctx : hide.prefab.EditContext ) {

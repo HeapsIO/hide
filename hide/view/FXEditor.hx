@@ -1083,16 +1083,12 @@ class FXEditor extends hide.view.FileView {
 			}
 
 			var events: Array<IEvent> = [];
-			for (e in section.root.flatten(Event)) {
-				events.push(e);
-				allElements.push(e);
-			}
-			for (e in section.root.flatten(hrt.prefab.fx.SubFX)) {
-				events.push(e);
-				allElements.push(e);
+			for (e in section.root.findAll(o -> Std.isOfType(o, IEvent))) {
+				events.push(cast (e, IEvent));
+				allElements.push(cast (e, IEvent));
 			}
 
-			if (section.root is Event || section.root is hrt.prefab.fx.SubFX) {
+			if (section.root is IEvent) {
 				events.push(cast section.root);
 				allElements.push(cast section.root);
 			}
@@ -1300,19 +1296,11 @@ class FXEditor extends hide.view.FileView {
 					}
 				}
 
-				if (child.flatten(Event).length > 0) {
-					if (child is Event) {
-						var e = Std.downcast(child, Event);
+				if (child.find(o -> Std.isOfType(o, IEvent)) != null) {
+					if (child is IEvent) {
+						var e = cast(child, IEvent);
 						section.events.push(e);
 						eventsToDraw.push(e);
-					}
-				}
-
-				if (child.flatten(hrt.prefab.fx.SubFX).length > 0) {
-					if (child is hrt.prefab.fx.SubFX) {
-						var s = Std.downcast(child, hrt.prefab.fx.SubFX);
-						section.events.push(s);
-						eventsToDraw.push(s);
 					}
 				}
 
