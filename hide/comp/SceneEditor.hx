@@ -5090,11 +5090,13 @@ class SceneEditor {
 		var minDist = -1.;
 
 		if (!ignoreTerrain) {
-			for( elt in (paintOn == null ? getGroundPrefabs() : [paintOn]) ) {
+			var arr = (paintOn == null ? getGroundPrefabs() : [paintOn]);
+			for( elt in arr ) {
 				var obj = Std.downcast(elt, Object3D);
 				if( obj == null ) continue;
 
 				var local3d = obj.findFirstLocal3d();
+				if (local3d == null) continue;
 				var lray = ray.clone();
 				lray.transform(local3d.getInvPos());
 				var dist = obj.localRayIntersection(lray);
