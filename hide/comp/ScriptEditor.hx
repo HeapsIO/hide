@@ -378,6 +378,8 @@ class ScriptChecker {
 				cl.fields.set(id, { name : id, params : [], canWrite : false, t : kind, isPublic: true, complete : true });
 			}
 			checker.setGlobal(name, TInst(cl,[]));
+			if (cdbEnums == null)
+				cdbEnums = [];
 			cdbEnums.push(name);
 			return kind;
 		}
