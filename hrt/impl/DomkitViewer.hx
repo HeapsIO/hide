@@ -261,7 +261,13 @@ class DomkitViewer extends h2d.Object {
 	}
 
 	function loadResource( res : hxd.res.Resource ) {
-		var loaded = @:privateAccess style.resources.indexOf(res) >= 0;
+		var loaded = false;
+		var path = res.entry.path;
+		for( r in @:privateAccess style.resources )
+			if( r.entry.path == path ) {
+				loaded = true;
+				break;
+			}
 		loadedResources.push({ r : res, wasLoaded: loaded });
 		if( !loaded ) handleErrors(res, () -> style.load(res));
 		res.watch(rebuild);
