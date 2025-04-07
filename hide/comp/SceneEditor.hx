@@ -438,7 +438,7 @@ class ViewModePopup extends hide.comp.Popup {
 			name: "Emissive",
 			inf : {
 				display: Debug,
-				debug: Emmissive
+				debug: Emissive
 			}
 		},
 		{
@@ -474,6 +474,13 @@ class ViewModePopup extends hide.comp.Popup {
 			inf : {
 				display : Debug,
 				debug : Albedo
+			},
+		},
+		{
+			name : "Velocity",
+			inf : {
+				display : Debug,
+				debug : Velocity
 			},
 		}
 	];
@@ -1062,7 +1069,7 @@ class SceneEditor {
 				{ label: "Performance", icon:"adjust", click: () -> { renderer.displayMode = DisplayMode.Performance; } },
 				{ label: "Shadows", icon:"adjust", click: () -> { renderer.displayMode = DisplayMode.Debug; shader.mode = DebugMode.Shadow; } },
 				{ label: "AO", icon:"adjust", click: () -> { renderer.displayMode = DisplayMode.Debug; shader.mode = DebugMode.AO; } },
-				{ label: "Emissive", icon:"adjust", click: () -> { renderer.displayMode = DisplayMode.Debug; shader.mode = DebugMode.Emmissive; } },
+				{ label: "Emissive", icon:"adjust", click: () -> { renderer.displayMode = DisplayMode.Debug; shader.mode = DebugMode.Emissive; } },
 				{ label: "Metalness", icon:"adjust", click: () -> { renderer.displayMode = DisplayMode.Debug; shader.mode = DebugMode.Metalness; } },
 				{ label: "Roughness", icon:"adjust", click: () -> { renderer.displayMode = DisplayMode.Debug; shader.mode = DebugMode.Roughness; } },
 				{ label: "Normal", icon:"adjust", click: () -> { renderer.displayMode = DisplayMode.Debug; shader.mode = DebugMode.Normal; } },

@@ -107,10 +107,11 @@ class Model extends FileView {
 			var renderer = Std.downcast(@:privateAccess scene.s3d.renderer, h3d.scene.pbr.Renderer);
 			var shader = @:privateAccess renderer.slides.shader;
 			hide.comp.RadialMenu.createFromPoint(ide.mouseX, ide.mouseY, [
+				{ label: "Velocity", icon:"adjust", click: () -> { renderer.displayMode = h3d.scene.pbr.Renderer.DisplayMode.Debug; shader.mode = h3d.shader.pbr.Slides.DebugMode.Velocity; } },
 				{ label: "Performance", icon:"adjust", click: () -> { renderer.displayMode = h3d.scene.pbr.Renderer.DisplayMode.Performance; } },
 				{ label: "Shadows", icon:"adjust", click: () -> { renderer.displayMode = h3d.scene.pbr.Renderer.DisplayMode.Debug; shader.mode = h3d.shader.pbr.Slides.DebugMode.Shadow; } },
 				{ label: "AO", icon:"adjust", click: () -> { renderer.displayMode = h3d.scene.pbr.Renderer.DisplayMode.Debug; shader.mode = h3d.shader.pbr.Slides.DebugMode.AO; } },
-				{ label: "Emissive", icon:"adjust", click: () -> { renderer.displayMode = h3d.scene.pbr.Renderer.DisplayMode.Debug; shader.mode = h3d.shader.pbr.Slides.DebugMode.Emmissive; } },
+				{ label: "Emissive", icon:"adjust", click: () -> { renderer.displayMode = h3d.scene.pbr.Renderer.DisplayMode.Debug; shader.mode = h3d.shader.pbr.Slides.DebugMode.Emissive; } },
 				{ label: "Metalness", icon:"adjust", click: () -> { renderer.displayMode = h3d.scene.pbr.Renderer.DisplayMode.Debug; shader.mode = h3d.shader.pbr.Slides.DebugMode.Metalness; } },
 				{ label: "Roughness", icon:"adjust", click: () -> { renderer.displayMode = h3d.scene.pbr.Renderer.DisplayMode.Debug; shader.mode = h3d.shader.pbr.Slides.DebugMode.Roughness; } },
 				{ label: "Normal", icon:"adjust", click: () -> { renderer.displayMode = h3d.scene.pbr.Renderer.DisplayMode.Debug; shader.mode = h3d.shader.pbr.Slides.DebugMode.Normal; } },

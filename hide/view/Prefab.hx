@@ -792,7 +792,7 @@ class Prefab extends hide.view.FileView {
 	}
 
 	function refreshViewModes() {
-		var filters : Array<String> = ["LIT", "Full", "Albedo", "Normal", "Roughness", "Metalness", "Emissive", "AO", "Shadows", "Performance"];
+		var filters : Array<String> = ["LIT", "Full", "Albedo", "Normal", "Roughness", "Metalness", "Emissive", "AO", "Shadows", "Performance", "Velocity"];
 		viewModes = new Map();
 		for(f in filters) {
 			viewModes.set(f, false);
@@ -831,7 +831,7 @@ class Prefab extends hide.view.FileView {
 							slides.shader.mode = Metalness;
 						case "Emissive":
 							r.displayMode = Debug;
-							slides.shader.mode = Emmissive;
+							slides.shader.mode = Emissive;
 						case "AO":
 							r.displayMode = Debug;
 							slides.shader.mode = AO;
@@ -839,6 +839,8 @@ class Prefab extends hide.view.FileView {
 							r.displayMode = Debug;
 							slides.shader.mode = Shadow;
 						case "Performance":
+							r.displayMode = Performance;
+						case "Velocity":
 							r.displayMode = Performance;
 						default:
 					}
