@@ -135,7 +135,7 @@ class Reference extends Object3D {
 
 	override public function getOpt<T:Prefab>( ?cl : Class<T>, ?name : String, ?followRefs : Bool ) : Null<T> {
 		var res = super.getOpt(cl, name, followRefs);
-		if (res == null && followRefs && refInstance != null) {
+		if (res == null && followRefs && resolveRef() != null) {
 			return refInstance.getOpt(cl, name, followRefs);
 		}
 		return res;
