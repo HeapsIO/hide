@@ -166,12 +166,12 @@ class TemporalFilteringShader extends h3d.shader.ScreenShader {
 @:access(h3d.scene.Renderer)
 class TemporalFiltering extends hrt.prefab.rfx.RendererFX {
 
-	@:s public var amount : Float;
+	@:s public var amount : Float = 0.85;
 	@:s public var varianceClipping : Bool = true;
 	@:s public var catmullRom : Bool = true;
-	@:s public var velocity : Bool = false;
-	@:s public var jitterPattern : FrustumJitter.Pattern = Still;
-	@:s public var jitterScale : Float = 1;
+	@:s public var velocity : Bool = true;
+	@:s public var jitterPattern : FrustumJitter.Pattern = Halton_2_3_x8;
+	@:s public var jitterScale : Float = 0.5;
 	@:s public var renderMode : String = "AfterTonemapping";
 	@:s public var keepSkyAlpha : Bool = false;
 
