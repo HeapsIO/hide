@@ -102,6 +102,7 @@ class Spline extends hrt.prefab.Object3D {
 
 	// Spline display
 	@:s public var showSpline : Bool = true;
+	@:s public var overlayGizmos : Bool = false;
 	var graphics : h3d.scene.Graphics;
 	var lineThickness : Int = 2;
 	var handlesThickness : Int = 4;
@@ -205,6 +206,16 @@ class Spline extends hrt.prefab.Object3D {
 		samples = null;
 		drawSpline();
 		#end
+
+		if (propName == "overlayGizmos") {
+			graphics.material.mainPass.depth(false, overlayGizmos ? Always : LessEqual);
+
+			for (h in handles.keys())
+				h.material.mainPass.depth(false, overlayGizmos ? Always : LessEqual);
+
+			for (h in orphanHandles)
+				h.material.mainPass.depth(false, overlayGizmos ? Always : LessEqual);
+		}
 
 		var splineMeshes = findAll(SplineMesh, true);
 		for ( s in splineMeshes )
@@ -468,7 +479,7 @@ class Spline extends hrt.prefab.Object3D {
 			graphics.lineStyle(lineThickness, lineColor);
 			graphics.name = "lineGraphics";
 			graphics.material.mainPass.setPassName("overlay");
-			graphics.material.mainPass.depth(false, LessEqual);
+			graphics.material.mainPass.depth(false, overlayGizmos ? Always : LessEqual);
 			graphics.ignoreParentTransform = false;
 		}
 
@@ -524,7 +535,7 @@ class Spline extends hrt.prefab.Object3D {
 				g.lineStyle(lineThickness, lineColor);
 				g.name = "handle";
 				g.material.mainPass.setPassName("overlay");
-				g.material.mainPass.depth(false, LessEqual);
+				g.material.mainPass.depth(false, overlayGizmos ? Always : LessEqual);
 				g.ignoreParentTransform = false;
 				handles.set(g, { pos: pos, type: type });
 			}
@@ -538,7 +549,7 @@ class Spline extends hrt.prefab.Object3D {
 			g.lineStyle(lineThickness, lineColor);
 			g.name = "orphan_handle";
 			g.material.mainPass.setPassName("overlay");
-			g.material.mainPass.depth(false, LessEqual);
+			g.material.mainPass.depth(false, overlayGizmos ? Always : LessEqual);
 			g.ignoreParentTransform = false;
 			orphanHandles.push(g);
 			return g;
@@ -774,6 +785,7 @@ class Spline extends hrt.prefab.Object3D {
 				<dl><dt>Sample resolution</dt><dd><input type="range" field="sampleResolution" step="1"></dd></dl>
 			</div>
 			<div class="group spline-editor" name="Spline Editor">
+				<dl><dt>Overlay gizmos</dt><dd><input type="checkbox" field="overlayGizmos" class="overlay-gizmos"/></dd></dl>
 				<div align="center">
 					<input type="button" value="Edit Mode : Disabled" class="editModeButton" />
 				</div>
