@@ -96,6 +96,8 @@ class Spline extends hrt.prefab.Object3D {
 	var previewPoint : SplinePoint;
 	var draggedObj : { pos: h3d.Vector, type: HandleType };
 	var prevPos : h3d.Vector;
+
+	var updateScale : (dt: Float) -> Void;
 	#end
 
 	// Spline display
@@ -1292,6 +1294,24 @@ class Spline extends hrt.prefab.Object3D {
 
 		interactive.onWheel = cancelEventPropagation;
 		interactive.onMove = cancelEventPropagation;
+
+		if (updateScale == null) {
+			updateScale = function(dt) {
+				if (grid != null)
+					grid.setScale(getScaleWithCam(grid.getAbsPos().getPosition(), 70, cam));
+
+				for (h in handles.keys()) {
+					h.setScale(getScaleWithCam(h.getAbsPos().getPosition(), 70, cam));
+				}
+
+				if (previewSpline != null) {
+					for (h in previewSpline.handles.keys())
+						h.setScale(getScaleWithCam(h.getAbsPos().getPosition(), 70, cam));
+				}
+			}
+
+			ctx.addUpdate(updateScale);
+		}
 	}
 
 	function clearInteractive() {
@@ -1382,8 +1402,6 @@ class Spline extends hrt.prefab.Object3D {
 
 		grid.setPosition(center.x, center.y, center.z);
 		grid.setDirection(normal * -1.0, new h3d.Vector(0, 0, 1));
-
-		grid.setScale(getScaleWithCam(grid.getAbsPos().getPosition(), 70, cam));
 	}
 
 	function clearGrid() {
