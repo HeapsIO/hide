@@ -663,6 +663,12 @@ class DomkitChecker extends ScriptEditor.ScriptChecker {
 						domkitError("Not constant id is not allowed",a.pmin,a.pmax);
 					}
 					continue;
+				case "__content__":
+					switch( a.value ) {
+					case RawValue("true"):
+						continue;
+					default:
+					}
 				default:
 				}
 				var p = resolveProperty(c, pname);

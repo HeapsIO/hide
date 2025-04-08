@@ -240,6 +240,7 @@ class DomkitViewer extends h2d.Object {
 	var style : DomkitStyle;
 	var current : h2d.Object;
 	var currentObj : h2d.Object;
+	var currentRoot : h2d.Object;
 	var contexts : Array<Dynamic> = [];
 	var variables : Map<String,Dynamic> = [];
 	var rebuilding = false;
@@ -577,10 +578,15 @@ class DomkitViewer extends h2d.Object {
 							if( inst != null )
 								inst.dom = obj.dom;
 						});
+						var prevRoot = currentRoot;
+						currentRoot = obj;
 						for( c in m.children )
 							handleErrors(res, () -> addRec(c, interp, obj));
 						interp.variables = prev;
-						inst.dom = null;
+						@:privateAccess obj.dom.contentRoot = currentRoot;
+						currentRoot = prevRoot;
+						if( inst != null )
+							inst.dom = null;
 						return obj;
 					}
 
@@ -703,6 +709,10 @@ class DomkitViewer extends h2d.Object {
 					}
 					if( objId != null )
 						(attributes:Dynamic).id = objId;
+					continue;
+				}
+				if( a.name == "__content__" ) {
+					currentRoot = obj;
 					continue;
 				}
 				switch( a.value ) {
