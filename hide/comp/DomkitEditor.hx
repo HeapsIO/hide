@@ -617,6 +617,8 @@ class DomkitChecker extends ScriptEditor.ScriptChecker {
 				domkitError("Missing required argument "+c.arguments[i].name,pmin,pmax);
 	}
 
+	static var R_IDENT = ~/^([A-Za-z_-][A-Za-z0-9_-]*)$/;
+
 	function checkDMLRec( e : domkit.MarkupParser.Markup ) {
 		switch( e.kind ) {
 		case Node(name):
@@ -651,11 +653,16 @@ class DomkitChecker extends ScriptEditor.ScriptChecker {
 						for( a in e.attributes )
 							if( a.name == "class" ) {
 								switch( a.value ) {
-								case RawValue(str) if( str.indexOf(" ") < 0 ):
-									defineIdent(c, "#"+str);
+								case RawValue(str):
+									var id = str.split(" ")[0];
+									if( R_IDENT.match(id) ) {
+										defineIdent(c, "#"+id);
+										break;
+									}
 								default:
-									domkitError("Auto-id reference invalid class",a.pmin,a.pmax);
 								}
+								domkitError("Auto-id reference invalid class",a.pmin,a.pmax);
+								break;
 							}
 					case RawValue(id):
 						defineIdent(c, "#"+id);
