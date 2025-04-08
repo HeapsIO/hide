@@ -3996,19 +3996,27 @@ class SceneEditor {
 	function resetTransform(elts : Array<PrefabElement>) {
 		if(elts == null) return;
 		var pivot = new h3d.Matrix();
-		pivot.initTranslation();
-		for (e in elts) {
-			var obj3d = e.to(Object3D);
-			if( obj3d != null ) {
+		pivot.identity();
+		var objects3d = [for(o in elts) { var obj3d = o.to(hrt.prefab.Object3D); if(obj3d != null) obj3d; }];
+		var prevState = [for(o in objects3d) o.saveTransform()];
+		function doReset(undo) {
+			for(i in 0...objects3d.length) {
+				var obj3d = objects3d[i];
 				var prevTrans = obj3d.getTransform();
-				obj3d.setTransform(pivot);
+				if( undo ) {
+					obj3d.loadTransform(prevState[i]);
+				} else {
+					obj3d.setTransform(pivot);
+				}
 				obj3d.applyTransform();
 				restoreChildTransform(obj3d, prevTrans);
 				if ( curEdit != null )
 					curEdit.onChange(obj3d, null);
 			}
+			refreshProps();
 		}
-		refreshProps();
+		doReset(false);
+		undo.change(Custom(doReset));
 	}
 
 	function onCopy() {
