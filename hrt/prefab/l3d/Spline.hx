@@ -680,9 +680,10 @@ class Spline extends hrt.prefab.Object3D {
 		var curP = localToGlobalSplinePoint(points[0]);
 		var nextP = localToGlobalSplinePoint(points[1]);
 		var stride = 1./numPts;
+		var toCompute : Array<{ s: SplinePoint, idx: Int }> = [ { s: curP, idx: 0 } ];
 		for (i in 1...maxI + 1) {
-			for (i in 1...numPts-1) {
-				var t = stride * i;
+			for (j in 1...numPts - 1) {
+				var t = stride * j;
 				var p = getPointBetween(t, curP, nextP);
 				if (p.distance(samples[samples.length - 1].pos) >= 1./numPts) {
 					var newP = new SplinePoint();
@@ -691,14 +692,17 @@ class Spline extends hrt.prefab.Object3D {
 					newP.tangentIn = -1 * tangent;
 					newP.tangentOut = tangent;
 					samples.push(newP);
+					toCompute.push({ s: newP, idx: -1 });
 				}
 				t += stride;
 			}
 
 			samples.push(new SplinePoint(nextP.pos, nextP.up, nextP.tangentIn, nextP.tangentOut));
+			toCompute.push({ s: samples[samples.length - 1], idx: -1 });
 
 			curP = localToGlobalSplinePoint(points[i]);
 			nextP = localToGlobalSplinePoint(points[(i + 1) % points.length]);
+			toCompute.push({ s: curP, idx: i });
 		}
 
 		// Compute the average length of the spline
@@ -707,13 +711,15 @@ class Spline extends hrt.prefab.Object3D {
 			length += samples[i].pos.distance(samples[i+1].pos);
 
 		var l = 0.0;
-		for( i in 0 ... samples.length - 1 ) {
-			samples[i].t = l/length;
-			samples[i].length = l;
-			l += samples[i].pos.distance(samples[i+1].pos);
+		for( i in 0 ... toCompute.length - 1 ) {
+			var p = toCompute[i].idx == -1 ? toCompute[i].s : points[toCompute[i].idx];
+			p.t = l/length;
+			p.length = l;
+			l += toCompute[i].s.pos.distance(toCompute[i+1].s.pos);
 		}
-		samples[samples.length - 1].t = 1;
-		samples[samples.length - 1].length = length;
+
+		points[points.length - 1].t = 1;
+		points[points.length - 1].length = length;
 	}
 
 
