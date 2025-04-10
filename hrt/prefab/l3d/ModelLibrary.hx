@@ -1107,16 +1107,17 @@ class ModelLibrary extends Prefab {
 	public function emit(bk : MaterialMesh, batch : h3d.scene.MeshBatch, ?absPos : h3d.Matrix, emitCountTip = -1) {
 		cache.shader.uvTransform.set(bk.mat.uvX, bk.mat.uvY, bk.mat.uvSX, bk.mat.uvSY);
 		cache.shader.libraryParams.set(bk.mat.texId, 1.0 / atlasResolution / bk.mat.uvSX, 0.0, 0.0);
-		if ( batch.primitiveSubPart == null ) {
-			batch.primitiveSubPart = new h3d.scene.MeshBatch.MeshBatchPart();
+		if ( batch.primitiveSubParts == null ) {
+			batch.primitiveSubParts = [new h3d.scene.MeshBatch.MeshBatchPart()];
 			batch.begin(emitCountTip);
 		}
-		batch.primitiveSubPart.indexCount = bk.mat.indexCount;
-		batch.primitiveSubPart.indexStart = bk.mat.indexStart;
-		batch.primitiveSubPart.lodIndexCount = bk.mat.lodIndexCount;
-		batch.primitiveSubPart.lodIndexStart = bk.mat.lodIndexStart;
-		batch.primitiveSubPart.lodConfig = cast( bk.mesh.primitive, h3d.prim.HMDModel ).getLodConfig();
-		batch.primitiveSubPart.bounds = cache.geomBounds[bk.mat.geomId];
+		var primitiveSubPart = batch.primitiveSubParts[0];
+		primitiveSubPart.indexCount = bk.mat.indexCount;
+		primitiveSubPart.indexStart = bk.mat.indexStart;
+		primitiveSubPart.lodIndexCount = bk.mat.lodIndexCount;
+		primitiveSubPart.lodIndexStart = bk.mat.lodIndexStart;
+		primitiveSubPart.lodConfig = cast( bk.mesh.primitive, h3d.prim.HMDModel ).getLodConfig();
+		primitiveSubPart.bounds = cache.geomBounds[bk.mat.geomId];
 		if ( absPos != null )
 			batch.worldPosition = absPos;
 		batch.emitInstance();
