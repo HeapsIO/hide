@@ -579,7 +579,7 @@ class DomkitViewer extends h2d.Object {
 								inst.dom = obj.dom;
 						});
 						var prevRoot = currentRoot;
-						currentRoot = obj;
+						currentRoot = obj.dom.contentRoot;
 						for( c in m.children )
 							handleErrors(res, () -> addRec(c, interp, obj));
 						interp.variables = prev;
