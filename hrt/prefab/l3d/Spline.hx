@@ -702,7 +702,8 @@ class Spline extends hrt.prefab.Object3D {
 
 			curP = localToGlobalSplinePoint(points[i]);
 			nextP = localToGlobalSplinePoint(points[(i + 1) % points.length]);
-			toCompute.push({ s: curP, idx: i });
+			if (curP != null)
+				toCompute.push({ s: curP, idx: i });
 		}
 
 		// Compute the average length of the spline
@@ -718,8 +719,9 @@ class Spline extends hrt.prefab.Object3D {
 			l += toCompute[i].s.pos.distance(toCompute[i+1].s.pos);
 		}
 
-		points[points.length - 1].t = 1;
-		points[points.length - 1].length = length;
+		var p = toCompute[toCompute.length - 1].idx == -1 ? toCompute[toCompute.length - 1].s : points[toCompute[toCompute.length - 1].idx];
+		p.t = 1;
+		p.length = length;
 	}
 
 
