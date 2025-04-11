@@ -516,10 +516,32 @@ class Prefab {
 		return [].iterator();
 	}
 
+	public function getUniqueName() {
+		if (parent == null) {
+			return "";
+		}
+
+		var path = name;
+		var suffix = 0;
+		for(i => c in parent.children) {
+			if(c == this)
+				break;
+			else {
+				var cname = c.name ?? "";
+				if(cname == path)
+					++suffix;
+			}
+		}
+		if(suffix > 0)
+			path += "-" + suffix;
+		return path;
+	}
+
 	/**
 		Returns the absolute name path for this prefab
 	**/
 	public function getAbsPath(unique=false, followRef : Bool = false) {
+		var origParent = parent;
 		var parent = parent;
 		if (parent != null && followRef) {
 			var ref = Std.downcast(parent.shared.parentPrefab, Reference);
@@ -532,24 +554,13 @@ class Prefab {
 		if (path == "")
 			path = hrt.prefab.Prefab.emptyNameReplacement;
 		if(unique) {
-			var suffix = 0;
-			for(i in 0...parent.children.length) {
-				var c = parent.children[i];
-				if(c == this)
-					break;
-				else {
-					var cname = c.name ?? "";
-					if(cname == path)
-						++suffix;
-				}
-			}
-			if(suffix > 0)
-				path += "-" + suffix;
+			path = getUniqueName();
 		}
 		if(parent.parent != null)
 			path = parent.getAbsPath(unique) + "." + path;
 		return path;
 	}
+
 
 	/**
 		If the prefab `props` represent CDB data, returns the sheet name of it, or null.
@@ -728,19 +739,30 @@ class Prefab {
 		Finds a prefab by folowing a dot separated path like this one : `parent.child.grandchild`.
 		Returns null if the path is invalid or does not match any prefabs in the hierarchy
 	**/
-	function locatePrefab(path: String) : Null<Prefab> {
+	public function locatePrefab(path: String) : Null<Prefab> {
 		if (path == null)
 			return null;
 		var parts = path.split(".");
 		var p = this;
 		while (parts.length > 0 && p != null) {
 			var name = parts.shift();
+			var subIndex = name.split("-");
+			var chooseNth = 0;
+			if (subIndex.length > 1) {
+				chooseNth = Std.parseInt(subIndex.pop()) ?? 0;
+				name = subIndex[0];
+			}
 			var found = null;
+			var currentNth = 0;
 			for (o in p.children) {
 				if (o.name == name)
 				{
-					found = o;
-					break;
+					if (currentNth == chooseNth) {
+						found = o;
+						break;
+					} else {
+						currentNth ++;
+					}
 				}
 			}
 			p = found;
