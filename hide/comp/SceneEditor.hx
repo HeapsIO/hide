@@ -3980,6 +3980,10 @@ class SceneEditor {
 		var newTransform = obj3d.getTransform();
 		newTransform.invert();
 		prevTransform.multiply(prevTransform, newTransform);
+		var scale = prevTransform.getScale();
+		if ( scale.x != scale.y || scale.x != scale.z ) {
+			ide.quickError("Parent scale is not uniform, the resulting transformation may not be accurate.");
+		}
 		for( c in obj3d.children ) {
 			var c3d = c.to(Object3D);
 			if( c3d != null ) {
