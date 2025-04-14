@@ -450,6 +450,21 @@ class Spline extends hrt.prefab.Object3D {
 		return point.transformed(getAbsPos(true).getInverse());
 	}
 
+	public function globalToLocalSplinePoint(sp : SplinePoint) {
+		if (sp == null)
+			return null;
+
+		var out = new SplinePoint(sp.pos, sp.up, sp.tangentIn, sp.tangentOut);
+		out.pos = localToGlobal(out.pos);
+
+		var absInv = getAbsPos(true).getInverse();
+		out.up = out.up.transformed3x3(absInv);
+		out.up.normalize();
+		out.tangentIn = out.tangentIn.transformed3x3(absInv);
+		out.tangentOut = out.tangentOut.transformed3x3(absInv);
+		return out;
+	}
+
 	public function localToGlobalSplinePoint(sp : SplinePoint) {
 		if (sp == null)
 			return null;
@@ -1068,7 +1083,19 @@ class Spline extends hrt.prefab.Object3D {
 	}
 
 	function editorAddPoint(ctx: hide.prefab.EditContext, pIdx : Int) {
-		addPoint(pIdx);
+		if (pIdx >= points.length)
+			addPoint(pIdx)
+		else {
+			var prevT =  points[pIdx - 1].t;
+			var nextT = pIdx > points.length - 1 ? 0 : points[pIdx].t;
+			var inBetweenT = prevT + (nextT - prevT) / 2;
+			var p = globalToLocal(getPoint(inBetweenT));
+
+			var nextP = globalToLocal(getPoint(hxd.Math.clamp(inBetweenT + 0.1)));
+			var sp = new SplinePoint(p, null, (p - nextP) , (nextP - p));
+			addPoint(pIdx, sp);
+		}
+
 		this.updateInstance();
 		refreshHandles();
 		refreshPointList(ctx);
