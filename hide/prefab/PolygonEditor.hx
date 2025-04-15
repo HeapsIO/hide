@@ -27,12 +27,20 @@ class SphereHandle extends h3d.scene.Mesh {
 	override function sync(ctx:h3d.scene.RenderContext) {
 		var cam = ctx.camera;
 		var gpos = getAbsPos().getPosition();
-		var distToCam = cam.pos.sub(gpos).length();
 		var engine = h3d.Engine.getCurrent();
 		var ratio = 35 / engine.height;
-		// Ignore parent scale
+
+		var scale = 1.0;
+		if (cam.orthoBounds != null) {
+			scale = cam.orthoBounds.getSize().y / 35;
+		}
+		else {
+			var distToCam = cam.pos.sub(gpos).length();
+			// Ignore parent scale
+			scale = ratio * distToCam * Math.tan(cam.fovY * 0.5 * Math.PI / 180.0);
+		}
+
 		var tmp = parent.getAbsPos().getScale();
-		var scale = ratio * distToCam * Math.tan(cam.fovY * 0.5 * Math.PI / 180.0);
 		scaleX = scale / tmp.x;
 		scaleY = scale / tmp.y;
 		scaleZ = scale / tmp.z;
