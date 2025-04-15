@@ -1,8 +1,12 @@
 package hrt.prefab;
 
+enum EditMode {
+	None;
+	Edit;
+	Override;
+}
 class Reference extends Object3D {
-	@:s public var editMode : Bool = false;
-	@:s public var overrideMode : Bool = false;
+	@:s public var editMode : EditMode = None;
 	@:s public var overrides : Dynamic = null;
 
 	public var refInstance : Prefab;
@@ -14,26 +18,27 @@ class Reference extends Object3D {
 	public var originalSource : Dynamic;
 	#end
 
+	function genOverride() : Dynamic {
+		var orig = hrt.prefab.Diff.deepCopy(originalSource);
+		var ref = refInstance.serialize();
+		var diff = hrt.prefab.Diff.diffPrefab(orig, ref);
+		switch (diff) {
+			case Skip:
+				return null;
+			case Set(v):
+				return v;
+		}
+	}
+
 	override function save() {
-		if (overrideMode && refInstance != null) {
-			var original = hxd.res.Loader.currentInstance.load(source).to(hrt.prefab.Resource).load();
-			var orig = original.serialize();
-			var ref = refInstance.serialize();
-			trace(orig);
-			trace(ref);
-			var diff = hrt.prefab.Diff.diffPrefab(orig, ref);
-			switch (diff) {
-				case Skip:
-					this.overrides = null;
-				case Set(v):
-					this.overrides = v;
-			}
+		if (editMode == Override && refInstance != null) {
+			this.overrides = genOverride();
 		}
 
 		var obj : Dynamic = super.save();
 		#if editor
 
-		if( !overrideMode && editMode && refInstance != null ) {
+		if( editMode == Edit && refInstance != null ) {
 			var sheditor = Std.downcast(shared, hide.prefab.ContextShared);
 			if( sheditor.editor != null ) sheditor.editor.watchIgnoreChanges(source);
 
@@ -42,6 +47,20 @@ class Reference extends Object3D {
 		}
 		#end
 		return obj;
+	}
+
+	override function load(obj: Dynamic) {
+		#if editor
+		// Backward compatibility between old bool editMode and new enum based editMode
+		if (Type.typeof(obj.editMode) == TBool) {
+			obj.editMode = "Edit";
+		}
+		#end
+		super.load(obj);
+	}
+
+	override function copy(obj: Prefab) {
+		super.load(obj);
 	}
 
 	#if editor
@@ -56,12 +75,23 @@ class Reference extends Object3D {
 
 	function setRef(data: Dynamic) {
 		#if editor
+		var currentModifications = null;
+		if (originalSource != null && refInstance != null) {
+			currentModifications = genOverride();
+			trace(currentModifications);
+		}
 		originalSource = data;
 		#end
 
 		if (overrides != null) {
 			data = hrt.prefab.Diff.apply(hrt.prefab.Diff.deepCopy(data), overrides);
 		}
+		#if editor
+		if (currentModifications != null) {
+			data = hrt.prefab.Diff.apply(data, currentModifications);
+		}
+		#end
+
 		refInstance = Prefab.createFromDynamic(data, new ContextShared(source, true));
 		refInstance.shared.parentPrefab = this;
 	}
@@ -161,7 +191,7 @@ class Reference extends Object3D {
 
 	override public function flatten<T:Prefab>( ?cl : Class<T>, ?arr: Array<T>) : Array<T> {
 		arr = super.flatten(cl, arr);
-		if ((editMode || overrideMode) && resolveRef() != null) {
+		if (editMode != None && resolveRef() != null) {
 			arr = refInstance.flatten(cl, arr);
 		}
 		return arr;
@@ -190,7 +220,7 @@ class Reference extends Object3D {
 		if (editorOnly)
 			return false;
 		var oldEditMode = editMode;
-		editMode = false;
+		editMode = None;
 		seenPaths = seenPaths?.copy() ?? [];
 		var curPath = this.shared.currentPath;
 		if (seenPaths.get(curPath) != null) {
@@ -221,7 +251,7 @@ class Reference extends Object3D {
 	}
 
 	override function makeInteractive() {
-		if( editMode || overrideMode )
+		if( editMode != None )
 			return null;
 		return super.makeInteractive();
 	}
@@ -231,8 +261,7 @@ class Reference extends Object3D {
 			<div class="group" name="Reference">
 			<dl>
 				<dt>Reference</dt><dd><input type="fileselect" extensions="prefab l3d fx" field="source"/></dd>
-				<dt>Edit</dt><dd><input type="checkbox" field="editMode"/></dd>
-				<dt>Override</dt><dd><input type="checkbox" field="overrideMode"/></dd>
+				<dt>Edit</dt><dd><select field="editMode"></select></dd>
 			</dl>
 			</div>');
 
@@ -245,7 +274,7 @@ class Reference extends Object3D {
 
 		var props = ctx.properties.add(element, this, function(pname) {
 			ctx.onChange(this, pname);
-			if(pname == "source" || pname == "editMode" || pname == "overrideMode") {
+			if(pname == "source" || pname == "editMode") {
 				if (pname == "source") {
 					editorRemoveObjects();
 					refInstance = null;
