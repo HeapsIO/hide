@@ -90,11 +90,13 @@ class Toolbar extends Component {
 		if(label != null)
 			new Element('<label>$label</label>').appendTo(e);
 
-		function tog() {
+		function tog(?force: Bool) {
 			if (!canBeUntoggled && e.get(0).hasAttribute("checked"))
 				return;
 
-			e.get(0).toggleAttribute("checked");
+			var newStatus = if (force == null) !e.get(0).hasAttribute("checked") else force;
+
+			e.get(0).toggleAttribute("checked", newStatus);
 			var checked = e.get(0).hasAttribute("checked");
 
 			if (toggledIcon != null) {
@@ -122,7 +124,7 @@ class Toolbar extends Component {
 		return {
 			id : id,
 			element : e,
-			toggle : function(b) tog(),
+			toggle : function(b) tog(b),
 			isDown: function() return e.get(0).hasAttribute("checked"),
 			rightClick : function(f) {
 				e.contextmenu(function(e) { f(); e.preventDefault(); });

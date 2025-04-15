@@ -36,6 +36,8 @@ class Model extends FileView {
 	var shader = new h3d.shader.FixedColor(0xffffff);
 	var shader2 = new h3d.shader.FixedColor(0xff8000);
 
+	var animSelector : hide.comp.Toolbar.ToolSelect<String>;
+
 	override function onDisplay() {
 		this.saveDisplayKey = "Model:" + state.path;
 
@@ -99,6 +101,10 @@ class Model extends FileView {
 
 		sceneEditor.view.keys.register("undo", function() undo.undo());
 		sceneEditor.view.keys.register("redo", function() undo.redo());
+
+		sceneEditor.view.keys.register("model.animPrev", changeAnim.bind(-1));
+		sceneEditor.view.keys.register("model.animNext", changeAnim.bind(1));
+
 
 		sceneEditor.view.keys.register("view.refresh", function() rebuild());
 		sceneEditor.view.keys.register("view.refreshApp", function() untyped chrome.runtime.reload());
@@ -1295,6 +1301,7 @@ class Model extends FileView {
 					selIdx = aIdx + 1;
 			}
 			var sel = tools.addSelect("play-circle");
+			this.animSelector = sel;
 			var content = [for( a in anims ) {
 				var label = scene.animationName(a);
 				{ label : label, value : a }
@@ -1399,6 +1406,19 @@ class Model extends FileView {
 			sceneEditor.cameraController.set(r, null, null, s.getCenter());
 			sceneEditor.cameraController.toTarget();
 		}
+	}
+
+	function changeAnim(offset: Int) : Void {
+		var anims = scene.listAnims(getPath());
+
+		if (anims == null)
+			return;
+
+		var index = anims.indexOf(currentAnimation.file);
+		index = (index + anims.length + offset) % anims.length;
+
+		setAnimation(anims[index]);
+		animSelector.element.find(".label").text(currentAnimation.name);
 	}
 
 	function onUpdate(dt:Float) {

@@ -46,6 +46,11 @@
 	"key.selectInvert" : "Ctrl-I",
 	"key.playPause" : "Space",
 
+	// model view
+
+	"key.model.animPrev" : "PageUp",
+	"key.model.animNext" : "PageDown",
+
 	// view keys
 
 	"key.view.fullScreen" : "F11",
