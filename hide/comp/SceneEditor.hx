@@ -1900,7 +1900,7 @@ class SceneEditor {
 				value : o,
 				text : o.name,
 				icon : "ico ico-"+icon,
-				children : o.children.length > 0 || (ref != null && (@:privateAccess ref.editMode || ref.overrideMode)),
+				children : o.children.length > 0 || (ref != null && ref.editMode != None),
 				state: state
 			};
 			return r;
@@ -1918,7 +1918,7 @@ class SceneEditor {
 				objs = visibleObjs;
 			}
 			var ref = o == null ? null : o.to(Reference);
-			@:privateAccess if( ref != null && (ref.editMode || ref.overrideMode) && ref.refInstance != null ) {
+			@:privateAccess if( ref != null && ref.editMode != None && ref.refInstance != null ) {
 				for( c in ref.refInstance )
 					objs.push(c);
 			}
@@ -2171,7 +2171,15 @@ class SceneEditor {
 		tree.collapseAll();
 	}
 
+	var treeRefreshing = false;
+	var queueRefresh = false;
+
 	function refreshTree( ?callb ) {
+		if (treeRefreshing) {
+			queueRefresh = true;
+			return;
+		}
+		treeRefreshing = true;
 		tree.refresh(function() {
 			var all = sceneData.flatten(PrefabElement);
 			for(elt in all) {
@@ -2183,6 +2191,12 @@ class SceneEditor {
 			tree.setSelection(selectedPrefabs);
 
 			if(callb != null) callb();
+
+			treeRefreshing = false;
+			if (queueRefresh) {
+				queueRefresh = false;
+				refreshTree();
+			}
 		});
 
 		renderPropsTree.refresh(function() {
@@ -2359,7 +2373,7 @@ class SceneEditor {
 		if (renderPropsRoot == null && path != null) {
 			renderPropsRoot = new hrt.prefab.Reference(null, new ContextShared());
 			renderPropsRoot.setEditor(this, this.scene);
-			renderPropsRoot.editMode = Ide.inst.currentConfig.get("sceneeditor.renderprops.edit", false);
+			renderPropsRoot.editMode = Ide.inst.currentConfig.get("sceneeditor.renderprops.edit", false) ? Edit : None;
 			renderPropsRoot.name = "Render Props";
 			renderPropsRoot.source = path;
 
@@ -2490,10 +2504,10 @@ class SceneEditor {
 			if( isLocked(elt) ) toggleInteractive(elt, false);
 		}
 		var ref = Std.downcast(elt,Reference);
-		@:privateAccess if( ref != null && (ref.editMode || ref.overrideMode) && ref.refInstance != null ) {
-			for( p in ref.refInstance.flatten() )
-				makeInteractive(p);
-		}
+		// @:privateAccess if( ref != null && ref.editMode != None && ref.refInstance != null ) {
+		// 	for( p in ref.refInstance.flatten() )
+		// 		makeInteractive(p);
+		// }
 	}
 
 	function toggleInteractive( e : PrefabElement, visible : Bool ) {
@@ -2660,8 +2674,10 @@ class SceneEditor {
 	}
 
 	public function refreshInteractive(elt : PrefabElement) {
-		removeInteractive(elt);
-		makeInteractive(elt);
+		for (p in elt.flatten(null, null)) {
+			removeInteractive(p);
+			makeInteractive(p);
+		}
 	}
 
 	public function removeInteractive(elt: PrefabElement) {
@@ -3158,20 +3174,22 @@ class SceneEditor {
 		}
 
 		var modifiedRef = Std.downcast(p.shared.parentPrefab, hrt.prefab.Reference);
-		if (modifiedRef != null && modifiedRef.editMode) {
+		if (modifiedRef != null && modifiedRef.editMode == Edit) {
 			var path = modifiedRef.source;
 
 			var others = sceneData.findAll(Reference, (r) -> r.source == path && r != modifiedRef, true);
 			@:privateAccess
 			if (others.length > 0) {
 				var data = modifiedRef.refInstance.serialize();
+				beginRebuild();
 				for (ref in others) {
 					removeInstance(ref.refInstance, false);
 					@:privateAccess ref.setRef(data);
 					queueRebuild(ref);
 				}
+				endRebuild();
+				refreshTree();
 			}
-
 		}
 
 		applySceneStyle(p);
@@ -4575,7 +4593,7 @@ class SceneEditor {
 			return;
 
 		var ref = Std.downcast(to, Reference);
-		@:privateAccess if( ref != null && (ref.editMode || ref.overrideMode) ) to = ref.refInstance;
+		@:privateAccess if( ref != null && ref.editMode != None ) to = ref.refInstance;
 
 		// Sort node based on where they appear in the scene tree
 		var flat = sceneData.flatten();
@@ -4760,12 +4778,19 @@ class SceneEditor {
 		}
 	}
 
+	var beginRebuildStack = 0;
 	function beginRebuild() {
+		beginRebuildStack++;
+		if (beginRebuildStack > 1)
+			return;
 		rebuildQueue = [];
 		rebuildEndCallbacks = [];
 	}
 
 	function endRebuild() {
+		beginRebuildStack --;
+		if (beginRebuildStack > 0)
+			return;
 		for (prefab => want in rebuildQueue) {
 			switch (want) {
 				case Skip:
