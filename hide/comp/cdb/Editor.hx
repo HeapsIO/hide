@@ -261,7 +261,9 @@ class Editor extends Component {
 		case K.SPACE:
 			e.preventDefault(); // prevent scroll
 		case K.ESCAPE:
-			if (!isRepeat && searchBox != null && searchBox.is(":visible")) {
+			var c = cursor.getCell();
+			var sub = Std.downcast(c == null ? cursor.table : c.table, SubTable); // Prevent closing search filter befor closing list
+			if (sub == null && !isRepeat && searchBox != null && searchBox.is(":visible")) {
 				searchBox.find(".close-search").click();
 				return true;
 			}
