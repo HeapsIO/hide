@@ -429,10 +429,12 @@ class Curve extends Prefab {
 				parameter.show();
 				selecta.empty();
 				var root = Std.downcast(getRoot(false), hrt.prefab.fx.FX);
-				for (p in root.parameters) {
-					selecta.append(new hide.Element('<option value="${p.name}">${p.name}</option>'));
+				if (root != null) {
+					for (p in root.parameters) {
+						selecta.append(new hide.Element('<option value="${p.name}">${p.name}</option>'));
+					}
+					selecta.val(blendParam);
 				}
-				selecta.val(blendParam);
 			}
 
 			var reference = props.find('#reference');
@@ -459,7 +461,8 @@ class Curve extends Prefab {
 				var root = getRoot(false);
 				select.append(new hide.Element('<option value="">None</option>'));
 				var flat = root.flatten(Curve);
-				for (param in Std.downcast(root, hrt.prefab.fx.FX).parameters) {
+				var parameters = Std.downcast(root, hrt.prefab.fx.FX)?.parameters ?? [];
+				for (param in parameters) {
 					var path = "$param." + param.name;
 					select.append(new hide.Element('<option value="${path}">Param: ${param.name}</option>'));
 				}
