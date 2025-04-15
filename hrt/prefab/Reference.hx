@@ -2,30 +2,38 @@ package hrt.prefab;
 
 class Reference extends Object3D {
 	@:s public var editMode : Bool = false;
+	@:s public var overrideMode : Bool = false;
+	@:s public var overrides : Dynamic = null;
 
 	public var refInstance : Prefab;
 
 	#if editor
 	var wasMade : Bool = false;
+
+	// used to make the override diff
+	public var originalSource : Dynamic;
 	#end
 
-	public static function copy_overrides(from:Dynamic) : haxe.ds.StringMap<Dynamic> {
-		if (Std.isOfType(from, haxe.ds.StringMap)) {
-			return from != null ? cast(from, haxe.ds.StringMap<Dynamic>).copy() : new haxe.ds.StringMap<Dynamic>();
-		}
-		else {
-			var m = new haxe.ds.StringMap<Dynamic>();
-			for (f in Reflect.fields(from)) {
-				m.set(f, Reflect.getProperty(from ,f));
-			}
-			return m;
-		}
-	}
-
 	override function save() {
+		if (overrideMode && refInstance != null) {
+			var original = hxd.res.Loader.currentInstance.load(source).to(hrt.prefab.Resource).load();
+			var orig = original.serialize();
+			var ref = refInstance.serialize();
+			trace(orig);
+			trace(ref);
+			var diff = hrt.prefab.Diff.diffPrefab(orig, ref);
+			switch (diff) {
+				case Skip:
+					this.overrides = null;
+				case Set(v):
+					this.overrides = v;
+			}
+		}
+
 		var obj : Dynamic = super.save();
 		#if editor
-		if( editMode && refInstance != null ) {
+
+		if( !overrideMode && editMode && refInstance != null ) {
 			var sheditor = Std.downcast(shared, hide.prefab.ContextShared);
 			if( sheditor.editor != null ) sheditor.editor.watchIgnoreChanges(source);
 
@@ -46,6 +54,18 @@ class Reference extends Object3D {
 	}
 	#end
 
+	function setRef(data: Dynamic) {
+		#if editor
+		originalSource = data;
+		#end
+
+		if (overrides != null) {
+			data = hrt.prefab.Diff.apply(hrt.prefab.Diff.deepCopy(data), overrides);
+		}
+		refInstance = Prefab.createFromDynamic(data, new ContextShared(source, true));
+		refInstance.shared.parentPrefab = this;
+	}
+
 	function resolveRef() : Prefab {
 		if(source == null)
 			return null;
@@ -54,9 +74,7 @@ class Reference extends Object3D {
 		#if editor
 		try {
 		#end
-			var refInstance = hxd.res.Loader.currentInstance.load(source).to(hrt.prefab.Resource).load().clone();
-			refInstance.shared.parentPrefab = this;
-			this.refInstance = refInstance;
+			setRef(@:privateAccess hxd.res.Loader.currentInstance.load(source).toPrefab().loadData());
 			return refInstance;
 		#if editor
 		} catch (_) {
@@ -143,7 +161,7 @@ class Reference extends Object3D {
 
 	override public function flatten<T:Prefab>( ?cl : Class<T>, ?arr: Array<T>) : Array<T> {
 		arr = super.flatten(cl, arr);
-		if (editMode && resolveRef() != null) {
+		if ((editMode || overrideMode) && resolveRef() != null) {
 			arr = refInstance.flatten(cl, arr);
 		}
 		return arr;
@@ -203,7 +221,7 @@ class Reference extends Object3D {
 	}
 
 	override function makeInteractive() {
-		if( editMode )
+		if( editMode || overrideMode )
 			return null;
 		return super.makeInteractive();
 	}
@@ -214,6 +232,7 @@ class Reference extends Object3D {
 			<dl>
 				<dt>Reference</dt><dd><input type="fileselect" extensions="prefab l3d fx" field="source"/></dd>
 				<dt>Edit</dt><dd><input type="checkbox" field="editMode"/></dd>
+				<dt>Override</dt><dd><input type="checkbox" field="overrideMode"/></dd>
 			</dl>
 			</div>');
 
@@ -226,7 +245,7 @@ class Reference extends Object3D {
 
 		var props = ctx.properties.add(element, this, function(pname) {
 			ctx.onChange(this, pname);
-			if(pname == "source" || pname == "editMode") {
+			if(pname == "source" || pname == "editMode" || pname == "overrideMode") {
 				if (pname == "source") {
 					editorRemoveObjects();
 					refInstance = null;
@@ -257,6 +276,24 @@ class Reference extends Object3D {
 		});
 
 		super.edit(ctx);
+
+		var over = new hide.Element('
+			<div>
+			Overrides:
+			<pre>
+			${overrides}
+			</pre>
+
+			<fancy-button><span class="label">Reset Overrides</span></fancy-button>
+			</div>
+		');
+		over.find("fancy-button").click((_) -> {
+			var old = overrides;
+			this.overrides = null;
+			@:privateAccess ctx.properties.undo.change(Field(this, "overrides", old));
+			ctx.rebuildPrefab(this);
+		});
+		ctx.properties.add(over);
 	}
 
 	override function getHideProps() : hide.prefab.HideProps {
