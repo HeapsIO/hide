@@ -1900,7 +1900,7 @@ class SceneEditor {
 				value : o,
 				text : o.name,
 				icon : "ico ico-"+icon,
-				children : o.children.length > 0 || (ref != null && @:privateAccess ref.editMode),
+				children : o.children.length > 0 || (ref != null && (@:privateAccess ref.editMode || ref.overrideMode)),
 				state: state
 			};
 			return r;
@@ -1918,7 +1918,7 @@ class SceneEditor {
 				objs = visibleObjs;
 			}
 			var ref = o == null ? null : o.to(Reference);
-			@:privateAccess if( ref != null && ref.editMode && ref.refInstance != null ) {
+			@:privateAccess if( ref != null && (ref.editMode || ref.overrideMode) && ref.refInstance != null ) {
 				for( c in ref.refInstance )
 					objs.push(c);
 			}
@@ -2490,7 +2490,7 @@ class SceneEditor {
 			if( isLocked(elt) ) toggleInteractive(elt, false);
 		}
 		var ref = Std.downcast(elt,Reference);
-		@:privateAccess if( ref != null && ref.editMode && ref.refInstance != null ) {
+		@:privateAccess if( ref != null && (ref.editMode || ref.overrideMode) && ref.refInstance != null ) {
 			for( p in ref.refInstance.flatten() )
 				makeInteractive(p);
 		}
@@ -3158,16 +3158,20 @@ class SceneEditor {
 		}
 
 		var modifiedRef = Std.downcast(p.shared.parentPrefab, hrt.prefab.Reference);
-		if (modifiedRef != null) {
+		if (modifiedRef != null && modifiedRef.editMode) {
 			var path = modifiedRef.source;
 
 			var others = sceneData.findAll(Reference, (r) -> r.source == path && r != modifiedRef, true);
 			@:privateAccess
-			for (ref in others) {
-				removeInstance(ref.refInstance, false);
-				ref.refInstance = modifiedRef.refInstance.clone();
-				queueRebuild(ref);
+			if (others.length > 0) {
+				var data = modifiedRef.refInstance.serialize();
+				for (ref in others) {
+					removeInstance(ref.refInstance, false);
+					@:privateAccess ref.setRef(data);
+					queueRebuild(ref);
+				}
 			}
+
 		}
 
 		applySceneStyle(p);
@@ -4571,7 +4575,7 @@ class SceneEditor {
 			return;
 
 		var ref = Std.downcast(to, Reference);
-		@:privateAccess if( ref != null && ref.editMode ) to = ref.refInstance;
+		@:privateAccess if( ref != null && (ref.editMode || ref.overrideMode) ) to = ref.refInstance;
 
 		// Sort node based on where they appear in the scene tree
 		var flat = sceneData.flatten();
