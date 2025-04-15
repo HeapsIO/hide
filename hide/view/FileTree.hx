@@ -102,7 +102,14 @@ class FileTree extends FileView {
 			return content;
 		};
 
-		tree.onRename = doRename;
+		tree.onRename = (path:String, name:String) -> {
+			// add old extension if previous one is missing
+			if (name.indexOf(".") == -1) {
+				var ext = path.split(".").pop();
+				name += "." + ext;
+			}
+			doRename(path, name);
+		};
 
 		element.contextmenu(function(e) {
 			var over = tree.getCurrentOver();
@@ -182,7 +189,14 @@ class FileTree extends FileView {
 	}
 
 	function onRenameFile( path : String ) {
-		var newFilename = ide.ask("New name:", path.substring( path.lastIndexOf("/") + 1 ));
+		var oldName = path.substring( path.lastIndexOf("/") + 1 );
+		var newFilename = ide.ask("New name:", oldName);
+
+		// If the user removed the extension, add the old one
+		if (newFilename.indexOf(".") == -1) {
+			var ext = oldName.split(".").pop();
+			newFilename += "." + ext;
+		}
 
 		while ( newFilename != null && sys.FileSystem.exists(ide.getPath(newFilename))) {
 			newFilename = ide.ask("This file already exists. Another new name:");
