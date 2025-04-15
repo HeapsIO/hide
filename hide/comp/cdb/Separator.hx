@@ -208,8 +208,13 @@ class Separator extends Component {
 
 		var lines = getLines();
 		for (l in lines) {
-			l.hide();
-			if (getLinesVisiblity())
+			var visible = getLinesVisiblity();
+			if (!visible) {
+				l.hide();
+				continue;
+			}
+
+			if (visible && (l.element == null || l.element.get(0).classList.contains("hidden")))
 				l.create();
 		}
 
