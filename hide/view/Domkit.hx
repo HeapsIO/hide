@@ -175,6 +175,7 @@ class Domkit extends FileView {
 		if( data.dml != dmlEditor.code ) dmlEditor.setCode(data.dml, true);
 		if( data.params != paramsEditor.code ) paramsEditor.setCode(data.params, true);
 		sys.io.File.saveContent(getPath(),str);
+		modified = false;
 	}
 
 	override function getDefaultContent() {
