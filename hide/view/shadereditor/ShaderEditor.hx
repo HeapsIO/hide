@@ -130,7 +130,7 @@ class PreviewSettings {
 	public var backfaceCulling : Bool = true;
 	public var unlit : Bool = false;
 	public var previewAlpha : Bool = false;
-
+	public var shadows : Bool = false;
 
 	public var screenFXusePrevTarget : Bool = false;
 	public var screenFXBlend : h3d.mat.PbrMaterial.PbrBlend = Alpha;
@@ -1339,6 +1339,7 @@ class ShaderEditor extends hide.view.FileView implements GraphInterface.IGraphEd
 					{label: "Alpha Blend", click: () -> {previewSettings.alphaBlend = !previewSettings.alphaBlend; meshPreviewShader = null; savePreviewSettings();}, stayOpen: true, checked: previewSettings.alphaBlend},
 					{label: "Backface Cull", click: () -> {previewSettings.backfaceCulling = !previewSettings.backfaceCulling; meshPreviewShader = null; savePreviewSettings();}, stayOpen: true, checked: previewSettings.backfaceCulling},
 					{label: "Unlit", click: () -> {previewSettings.unlit = !previewSettings.unlit; meshPreviewShader = null; savePreviewSettings();}, stayOpen: true, checked: previewSettings.unlit},
+					{label: "Shadows", click: () -> {previewSettings.shadows = !previewSettings.shadows; meshPreviewShader = null; savePreviewSettings();}, stayOpen: true, checked: previewSettings.shadows},
 				], enabled: meshPreviewPrefab == null},
 				{label: "Screen FX", enabled: meshPreviewPrefab == null && meshPreviewScreenFX.length > 0, menu: screenFXMenu},
 				{label: "Render Settings", menu: [
@@ -1716,14 +1717,12 @@ class ShaderEditor extends hide.view.FileView implements GraphInterface.IGraphEd
 				if (meshPreviewPrefab == null) {
 					m.blendMode = previewSettings.alphaBlend ? Alpha : None;
 					m.mainPass.culling = previewSettings.backfaceCulling ? Back : None;
-					if (previewSettings.unlit) {
+					if (previewSettings.unlit)
 						m.mainPass.setPassName("afterTonemapping");
-						m.shadows = false;
-					}
-					else {
+					else
 						m.mainPass.setPassName("default");
-						m.shadows = true;
-					}
+
+					m.shadows = previewSettings.shadows;
 				}
 
 				curShaderList = curShaderList.next;
