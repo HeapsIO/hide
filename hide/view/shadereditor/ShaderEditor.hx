@@ -1881,7 +1881,7 @@ class ShaderEditor extends hide.view.FileView implements GraphInterface.IGraphEd
 				continue;
 			}
 
-			if (metas.hideInAddMenu != null)
+			if (Reflect.hasField(metas,"hideInAddMenu"))
 				continue;
 
 			var group = metas.group != null ? metas.group[0] : "Other";
