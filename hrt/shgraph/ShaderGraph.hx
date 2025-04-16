@@ -439,9 +439,16 @@ class ShaderGraph extends hrt.prefab.Prefab {
 
 	override function save() {
 		var json = super.save();
+
 		json.parameters = [
 			for (p in parametersAvailable) { id : p.id, name : p.name, type : [p.type.getName(), p.type.getParameters().toString()], defaultValue : p.defaultValue, index : p.index, internal : p.internal }
 		];
+
+		// Fix parameters index that sometimes get f-ed up for an unknown reason
+		json.parameters.sort((a,b) -> Reflect.compare(a.index, b.index));
+		for (i => p in (json.parameters:Array<Dynamic>)) {
+			p.index = i;
+		}
 
 		json.variables = [
 			for (variable in variables) {
