@@ -1249,6 +1249,7 @@ class Cell {
 			}
 			editor.gradientEditor.anchor = e;
 			editor.gradientEditor.open();
+			editor.gradientEditor.element.focus();
 
 			var gradient = hrt.impl.Gradient.getDefaultGradientData();
 			if (value != null && value.colors != null && value.colors.length >= 1) {
@@ -1274,8 +1275,6 @@ class Cell {
 					refresh();
 					focus();
 				}
-
-
 			}
 
 			var customPreviews : Array<hide.comp.GradientEditor.PreviewSettings> = editor.config.get("cdb.gradientCustomPreviews");
