@@ -330,6 +330,9 @@ class Ide extends hide.tools.IdeData {
 		}
 		if( subView == null )
 			config.global.save();
+
+		for (v in views)
+			v.onResize();
 	}
 
 	function initLayout( ?state : { name : String, state : Config.LayoutState } ) {

@@ -8,8 +8,6 @@ class Domkit extends FileView {
 	var prevSave : { css : String, dml : String, params : String };
 	var checker : hide.comp.DomkitEditor.DomkitChecker;
 
-	var totalHeight = 0.;
-	var totalWidth = 0.;
 	override function onDisplay() {
 
 		element.html('
@@ -48,15 +46,13 @@ class Domkit extends FileView {
 		cssEditor.onSave = dmlEditor.onSave = paramsEditor.onSave = save;
 
 		var editors = element.find('.editors');
-		totalWidth = editors.width();
-		totalHeight = editors.height();
 		var panelRight = element.find('.right');
 		var panelLeft = new hide.comp.ResizablePanel(hide.comp.ResizablePanel.LayoutDirection.Horizontal, element.find('.left'), After);
 		panelLeft.onBeforeResize = () -> {
 			panelRight.width(0);
 		};
 		panelLeft.onResize = () -> {
-			panelRight.width(totalWidth - panelLeft.element.width());
+			panelRight.width(editors.width() - panelLeft.element.width());
 		};
 
 		var panelTopLeft = new hide.comp.ResizablePanel(hide.comp.ResizablePanel.LayoutDirection.Vertical, panelLeft.element.find('.top'), After);
@@ -65,7 +61,7 @@ class Domkit extends FileView {
 			panelBotLeft.height(0);
 		};
 		panelTopLeft.onResize = () -> {
-			panelBotLeft.height(totalHeight - panelTopLeft.element.height());
+			panelBotLeft.height(editors.height() - panelTopLeft.element.height());
 		};
 
 		element.find("#format").click(function(_) {
@@ -80,8 +76,7 @@ class Domkit extends FileView {
 
 	override function onResize() {
 		var editors = element.find('.editors');
-		totalWidth = editors.width();
-		totalHeight = editors.height();
+		element.find(".bot").height(editors.height() - element.find(".top").height());
 	}
 
 	function defineGlobals() {
