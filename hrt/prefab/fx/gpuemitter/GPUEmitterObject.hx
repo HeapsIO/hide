@@ -3,21 +3,6 @@ package hrt.prefab.fx.gpuemitter;
 import hrt.prefab.fx.gpuemitter.GPUEmitter.Data;
 import hrt.prefab.fx.gpuemitter.CubeSpawn.CubeSpawnShader;
 
-class EditorParticleShader extends hxsl.Shader {
-	static var SRC = {
-
-		var particleLife : Float;
-		var particleLifeTime : Float;
-		var particleRandom : Float;
-
-		function __init__vertex() {
-			particleLife = 0.0;
-			particleLifeTime = 0.0;
-			particleRandom = 0.0;
-		}
-	}
-}
-
 class ParticleShader extends hxsl.Shader {
 	static var SRC = {
 		@param var localTransform : Mat4;
@@ -337,6 +322,10 @@ class GPUEmitterObject extends h3d.scene.MeshBatch {
 			p = p.next;
 		}
 		firstDispatch = false;
+	}
+
+	override function sync(ctx : h3d.scene.RenderContext) {
+		super.sync(ctx);
 	}
 
 	override function emit(ctx : h3d.scene.RenderContext) {

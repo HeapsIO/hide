@@ -34,6 +34,21 @@ typedef Data = {
 	var minStartSpeed : Float;
 }
 
+class EditorParticleShader extends hxsl.Shader {
+	static var SRC = {
+
+		var particleLife : Float;
+		var particleLifeTime : Float;
+		var particleRandom : Float;
+
+		function __init__vertex() {
+			particleLife = 0.0;
+			particleLifeTime = 0.0;
+			particleRandom = 0.0;
+		}
+	}
+}
+
 @:access(hrt.prefab.fx.gpuemitter.GPUEmitterObject)
 class GPUEmitter extends Object3D {
 
