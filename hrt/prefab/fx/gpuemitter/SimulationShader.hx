@@ -3,7 +3,7 @@ package hrt.prefab.fx.gpuemitter;
 class SimulationShader extends hrt.prefab.Shader {
 
 	override function applyShader(obj : h3d.scene.Object, mat : h3d.mat.Material, sh : hxsl.Shader) {
-		var gpuEmitter = Std.downcast(obj, hrt.prefab.fx.gpuemitter.GPUEmitter.GPUEmitterObject);
+		var gpuEmitter = Std.downcast(obj, GPUEmitterObject);
 		if ( gpuEmitter == null )
 			return;
 		var prevSh = gpuEmitter.simulationPass.getShader(Type.getClass(sh));

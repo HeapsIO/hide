@@ -2,7 +2,7 @@ package hrt.prefab.fx.gpuemitter;
 
 class ComputeUtils extends hxsl.Shader {
 
-	public function onUpdate(emitter : GPUEmitter.GPUEmitterObject, buffer : h3d.Buffer, index : Int) {}
+	public function onUpdate(emitter : GPUEmitterObject, buffer : h3d.Buffer, index : Int) {}
 
 	static var SRC = {
 

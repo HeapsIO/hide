@@ -3,7 +3,7 @@ package hrt.prefab.fx.gpuemitter;
 class SpawnShader extends hrt.prefab.Shader {
 
 	override function applyShader(obj : h3d.scene.Object, mat : h3d.mat.Material, sh : hxsl.Shader) {
-		var gpuEmitter = Std.downcast(obj, GPUEmitter.GPUEmitterObject);
+		var gpuEmitter = Std.downcast(obj, GPUEmitterObject);
 		if ( gpuEmitter == null )
 			return;
 		var prevSh = gpuEmitter.spawnPass.getShader(Type.getClass(sh));

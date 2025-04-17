@@ -1,7 +1,7 @@
 package hrt.prefab.fx.gpuemitter;
 
 class SphereSpawnShader extends ComputeUtils {
-	override function onUpdate(emitter : GPUEmitter.GPUEmitterObject, buffer : h3d.Buffer, index : Int) {
+	override function onUpdate(emitter : GPUEmitterObject, buffer : h3d.Buffer, index : Int) {
 		super.onUpdate(emitter, buffer, index);
 		randOffset = index;
 	}
