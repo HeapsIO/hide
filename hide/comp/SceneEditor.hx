@@ -52,6 +52,100 @@ enum SelectMode {
 }
 
 @:access(hide.comp.SceneEditor)
+class RulerTool {
+	var editor : SceneEditor;
+
+	var interactive : h2d.Interactive;
+	var graphics : h3d.scene.Graphics;
+	var text : h2d.Text;
+
+	var current : h3d.Vector;
+	var start : h3d.Vector;
+	var end : h3d.Vector;
+
+	public function new(editor: SceneEditor) {
+		this.editor = editor;
+
+		interactive = new h2d.Interactive(10000,10000, editor.scene.s2d);
+		interactive.propagateEvents = true;
+		interactive.cancelEvents = false;
+
+		interactive.onPush = function(e) {
+			if (e.button == 0) {
+				e.propagate = false;
+				if ((end == null) == (start == null)) {
+					start = editor.screenToGround(editor.scene.s2d.mouseX, editor.scene.s2d.mouseY);
+					end = null;
+				} else {
+					end = editor.screenToGround(editor.scene.s2d.mouseX, editor.scene.s2d.mouseY);
+				}
+			}
+		}
+
+		interactive.onClick = function(e) {
+			if (e.button == 0) {
+				e.propagate = false;
+			}
+		}
+
+		interactive.onRelease = function(e) {
+			if (e.button == 0) {
+				e.propagate = false;
+			}
+		}
+
+		interactive.onMove = function(e) {
+			current = editor.screenToGround(editor.scene.s2d.mouseX, editor.scene.s2d.mouseY);
+		};
+
+		graphics = new h3d.scene.Graphics(editor.scene.s3d);
+		graphics.material.mainPass.setPassName("ui");
+		graphics.material.mainPass.depth(false, Always);
+		text = new h2d.Text(hxd.res.DefaultFont.get(), editor.scene.s2d);
+		text.dropShadow = {
+			dx: 1,
+			dy: 1,
+			color: 0,
+			alpha: 0.5,
+		};
+	}
+
+	public function update(dt: Float) {
+		graphics.clear();
+		text.visible = false;
+
+		var start = start ?? current;
+		var endPt = end ?? current;
+		if (endPt != null) {
+			graphics.lineStyle(10.0, 0x00AEFF);
+			graphics.moveTo(start.x, start.y, start.z);
+			graphics.lineTo(endPt.x, endPt.y, endPt.z);
+
+			var to : h3d.Vector = (endPt - start);
+			var dist : Float = to.length();
+
+			var screenStart = editor.worldToScreen(start.x, start.y, start.z);
+			var screenEnd = editor.worldToScreen(endPt.x, endPt.y, endPt.z);
+
+			var screenMid = (screenStart + screenEnd) * 0.5;
+			text.setPosition(screenMid.x, screenMid.y-8.0);
+
+			var str = SceneEditor.splitCentainesFloat(dist, 2);
+			text.text = str;
+			text.visible = true;
+		}
+
+	}
+
+	public function dispose() {
+		interactive.remove();
+		graphics.remove();
+		text.remove();
+	}
+
+}
+
+@:access(hide.comp.SceneEditor)
 class ViewportOverlaysPopup extends hide.comp.Popup {
 	var editor:SceneEditor;
 
@@ -984,6 +1078,8 @@ class SceneEditor {
 
 	var customEditor : CustomEditor;
 
+	var ruler : RulerTool;
+
 	public var lastFocusObjects : Array<Object> = [];
 
 	public function new(view, data) {
@@ -1087,6 +1183,21 @@ class SceneEditor {
 				return;
 			}
 			customEditor = Type.createInstance(cl,[this]);
+		}
+	}
+
+	public function toggleRuler(?force: Bool) {
+		var enable : Bool = force ?? (ruler == null);
+		if (scene.s3d != null) {
+			if (ruler != null)
+			{
+				ruler.dispose();
+				ruler = null;
+			}
+
+			if (enable) {
+				ruler = new RulerTool(this);
+			}
 		}
 	}
 
@@ -1266,21 +1377,41 @@ class SceneEditor {
 		return grid;
 	}
 
+	static public function splitCentainesFloat(v: Float, precision: Int) {
+		var str = Std.string(hxd.Math.round(v * hxd.Math.pow(10, precision)));
+		var endStr = "";
+		var reset = 0;
+		for (char in 0...str.length) {
+			if (char == precision) {
+				endStr = "." + endStr;
+				reset = char + 1;
+			}
+
+			if ((char - reset) % 3 == 0 && (char - reset) > 0) {
+				endStr = " " + endStr;
+			}
+			endStr = str.charAt(str.length - char - 1) + endStr;
+		}
+		return endStr;
+	}
+
+	static public function splitCentaines(v: Int) {
+		var str = Std.string(v);
+		var endStr = "";
+		for (char in 0...str.length) {
+			if (char % 3 == 0 && char > 0) {
+				endStr = " " + endStr;
+			}
+			endStr = str.charAt(str.length - char - 1) + endStr;
+		}
+		return endStr;
+	}
+
 	function updateStats() {
 		if( statusText.visible ) {
 			var memStats = scene.engine.mem.stats();
 
-			function splitCentaines(v: Int) {
-				var str = Std.string(v);
-				var endStr = "";
-				for (char in 0...str.length) {
-					if (char % 3 == 0 && char > 0) {
-						endStr = " " + endStr;
-					}
-					endStr = str.charAt(str.length - char - 1) + endStr;
-				}
-				return endStr;
-			}
+
 			@:privateAccess
 			var lines : Array<String> = [
 				'Scene objects: ${splitCentaines(scene.s3d.getObjectsCount())}',
@@ -1324,6 +1455,8 @@ class SceneEditor {
 		scene.dispose();
 		tree.dispose();
 		renderPropsTree.dispose();
+		ruler?.dispose();
+		ruler = null;
 		clearWatches();
 	}
 
@@ -4791,6 +4924,9 @@ class SceneEditor {
 			f(dt);
 		if( customEditor != null )
 			customEditor.update(dt);
+
+		ruler?.update(dt);
+
 		onUpdate(dt);
 	}
 

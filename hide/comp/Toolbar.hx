@@ -18,6 +18,7 @@ typedef ToolDef = {
 	?iconStyle: Dynamic,
 	?rightClick : Void -> Void,
 	?defaultValue : Dynamic,
+	?saveToggleState: Bool, // default to true
 }
 
 typedef ToolToggle = {
@@ -273,7 +274,7 @@ class Toolbar extends Component {
 				case Button(f):
 					el = addButton(tool.icon, tool.title + shortcut, f, tool.rightClick);
 				case Toggle(f):
-					var toggle = addToggle(tool.id, tool.icon, tool.title + shortcut, null, f, tool.defaultValue);
+					var toggle = addToggle(tool.id, tool.icon, tool.title + shortcut, null, f, tool.defaultValue, null, tool.saveToggleState);
 					el = toggle.element;
 					if( key != null && keys != null)
 						keys.register("sceneeditor." + tool.id, () -> toggle.toggle(!toggle.isDown()));

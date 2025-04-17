@@ -473,6 +473,9 @@ class Prefab extends hide.view.FileView {
 		toolsDefs.push({id: "selfOnlyTransformsToggle", title : "Self only transforms", icon : "map-pin", type : Toggle((v) -> sceneEditor.selfOnlyTransform = v)});
 
 		toolsDefs.push({id: "", title : "", icon : "", type : Separator});
+		toolsDefs.push({id: "ruler", title : "Ruler mode", icon : "arrows-h", type : Toggle((v) -> sceneEditor.toggleRuler(v)), defaultValue: false, saveToggleState: false});
+		toolsDefs.push({id: "", title : "", icon : "", type : Separator});
+
 
 		toolsDefs.push({id: "showViewportOverlays", title : "Viewport Overlays", icon : "eye", type : Toggle((v) -> { sceneEditor.updateViewportOverlays(); }) });
 		toolsDefs.push({id: "viewportoverlays-menu", title : "", icon: "", type : Popup((e) -> new hide.comp.SceneEditor.ViewportOverlaysPopup(e, sceneEditor))});
@@ -515,7 +518,7 @@ class Prefab extends hide.view.FileView {
 		toolsDefs.push({id: "", title : "", icon : "", type : Separator});
 
 
-        toolsDefs.push({id: "help", title : "help", icon: "question", type : Popup((e) -> new hide.comp.SceneEditor.HelpPopup(e, sceneEditor))});
+      toolsDefs.push({id: "help", title : "help", icon: "question", type : Popup((e) -> new hide.comp.SceneEditor.HelpPopup(e, sceneEditor))});
 
 		toolsDefs.push({id: "", title : "", icon : "", type : Separator});
 
