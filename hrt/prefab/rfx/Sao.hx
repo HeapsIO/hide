@@ -28,6 +28,9 @@ class Sao extends RendererFX {
 	@:s public var microIntensity : Float = 1;
 	@:s public var useWorldUV : Bool;
 	@:s public var noiseTexturePath: String;
+	@:s public var USE_START_FADE : Bool = false;
+	@:s public var startFadeStart : Float = 0.0;
+	@:s public var startFadeEnd : Float = 50.0;
 	@:s public var USE_FADE : Bool = false;
 	@:s public var fadeStart: Float = 100.0;
 	@:s public var fadeEnd: Float = 200.0;
@@ -82,6 +85,9 @@ class Sao extends RendererFX {
 				sao.shader.noiseTexture = loadNoiseTexture(noiseTexturePath, Repeat);
 			else
 				sao.shader.noiseTexture = h3d.mat.Texture.genNoise(128);
+			sao.shader.USE_START_FADE = USE_START_FADE;
+			sao.shader.startFadeStart = startFadeStart;
+			sao.shader.startFadeEnd = startFadeEnd;
 			sao.shader.USE_FADE = USE_FADE;
 			sao.shader.fadeStart = fadeStart;
 			sao.shader.fadeEnd = fadeEnd;
@@ -134,9 +140,16 @@ class Sao extends RendererFX {
 				<dt>Quality</dt><dd><input type="range" min="0" max="1" field="blurQuality"/></dd>
 			</dl>
 		</div>
-		<div class="group" name="Fade">
+		<div class="group" name="Start Fade">
 			<dl>
-				<dt>Use fade</dt><dd><input type="checkbox" field="USE_FADE"/></dd>
+				<dt>Use start fade</dt><dd><input type="checkbox" field="USE_START_FADE"/></dd>
+				<dt>Fade start</dt><dd><input type="range" field="startFadeStart"/></dd>
+				<dt>Fade end</dt><dd><input type="range" field="startFadeEnd"/></dd>
+			</dl>
+		</div>
+		<div class="group" name="End Fade">
+			<dl>
+				<dt>Use end fade</dt><dd><input type="checkbox" field="USE_FADE"/></dd>
 				<dt>Fade start</dt><dd><input type="range" field="fadeStart"/></dd>
 				<dt>Fade end</dt><dd><input type="range" field="fadeEnd"/></dd>
 			</dl>
