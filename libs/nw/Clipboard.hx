@@ -8,9 +8,14 @@ enum abstract ClipboardType(String) {
 	var Rtf = "rtf";
 }
 
+typedef ClipboardData = {
+	data: String,
+	?type: ClipboardType,
+	?raw: Bool
+}
 extern class Clipboard {
 
-	function set( data : String, ?type : ClipboardType, ?raw : Bool ) : Void;
+	function set( clipboardData : Dynamic ) : Void;
 	function get( ?type : ClipboardType, ?raw : Bool ) : String;
 	function readAvailableTypes() : Array<ClipboardType>;
 	function clear() : Void;

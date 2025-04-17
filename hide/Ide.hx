@@ -538,12 +538,16 @@ class Ide extends hide.tools.IdeData {
 		};
 	}
 
-	public function setClipboard( text : String ) {
-		nw.Clipboard.get().set(text, Text);
+	public function setClipboard( data : String, type: nw.Clipboard.ClipboardType = Text ) {
+		nw.Clipboard.get().set([{data: data, type: type }]);
 	}
 
-	public function getClipboard() {
-		return nw.Clipboard.get().get(Text);
+	public function setClipboardMultiple( datas: Array<nw.Clipboard.ClipboardData> ) {
+		nw.Clipboard.get().set(datas);
+	}
+
+	public function getClipboard(type: nw.Clipboard.ClipboardType = Text) {
+		return nw.Clipboard.get().get(type);
 	}
 
 	public function registerUpdate( updateFun ) {

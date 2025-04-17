@@ -47,6 +47,7 @@ typedef EditorSheetProps = {
 
 @:allow(hide.comp.cdb)
 class Editor extends Component {
+	static var CLIPBOARD_PREFIX = "[CDB_FORMAT]";
 	static var COMPARISON_EXPR_CHARS = ["!=", ">=", "<=", "==", "<", ">"];
 
 	var base : cdb.Database;
@@ -55,11 +56,6 @@ class Editor extends Component {
 	var tables : Array<Table> = [];
 	var pendingSearchRefresh : haxe.Timer = null;
 	var displayMode : Table.DisplayMode;
-	var clipboard : {
-		text : String,
-		data : Array<{}>,
-		schema : Array<cdb.Data.Column>,
-	};
 	var changesDepth : Int = 0;
 	var api : EditorApi;
 	var undoState : Array<UndoState> = [];
@@ -501,10 +497,8 @@ class Editor extends Component {
 	function onCopy() {
 		if( cursor.selection == null )
 			return;
-		var data = [];
-		var isProps = (cursor.table.displayMode != Table);
-		var schema = [];
-		function saveValue(out, obj, c) {
+
+		function saveValue(out: Dynamic, obj: Dynamic, c: cdb.Data.Column) {
 			var form = @:privateAccess formulas.getFormulaNameFromValue(obj, c);
 			if( form != null ) {
 				Reflect.setField(out, c.name+"__f", form);
@@ -515,120 +509,120 @@ class Editor extends Component {
 			if( v != null )
 				Reflect.setField(out, c.name, v);
 		}
-		if( isProps ) {
-			var out = {};
-			for (sel in cursor.selection) {
-				for( y in sel.y1...sel.y2+1 ) {
-					var line = cursor.table.lines[y];
-					var obj = line.obj;
-					var c = line.columns[0];
 
+		var data = [];
+		var schema = [];
+		for (sel in cursor.selection) {
+			for( y in sel.y1...sel.y2+1 ) {
+				var out = {};
+				var obj = cursor.table.lines[y].obj;
+				var start = sel.x1;
+				var end = sel.x2 + 1;
+				if (start < 0) {
+					start = 0;
+					end = cursor.table.columns.length;
+				}
+
+				for( x in start...end ) {
+					var c = cursor.table.columns[x];
 					saveValue(out, obj, c);
-					schema.push(c);
+					schema.pushUnique(c);
 				}
 				data.push(out);
 			}
-		} else {
-			for (sel in cursor.selection) {
-				for( y in sel.y1...sel.y2+1 ) {
-					var obj = cursor.table.lines[y].obj;
-					var out = {};
-					var start = sel.x1;
-					var end = sel.x2 + 1;
-					if (start < 0) {
-						start = 0;
-						end = cursor.table.columns.length;
-					}
-
-					for( x in start...end ) {
-						var c = cursor.table.columns[x];
-						saveValue(out, obj, c);
-						schema.pushUnique(c);
-					}
-					data.push(out);
-				}
-			}
 		}
 
-		// In case we only have one value, just copy the cell value
-		if (data.length == 1 && Reflect.fields(data[0]).length == 1) {
-			var colName = Reflect.fields(data[0])[0];
-			var col = cursor.table.columns.find((c) -> c.name == colName);
-			if (col == null)
-				throw "unknown column";
+		// We're writting data format infos in Rtf MIME field because customs MIME types
+		// aren't allowed anymore
+		var rtfText = '${CLIPBOARD_PREFIX}${haxe.Json.stringify({data: data, schema: schema})}';
 
-			// if we are a property or a list, fallback to the default case
-			if (col.type != TProperties && col.type != TList) {
-				var escape = switch(col.type) {
-					case TGradient, TCurve:
-						true;
-					default:
-						false;
-				};
+		// Plain text will contain only text value of cells
+		var plainText = "";
+		for (cell in cursor.getSelectedCells())
+			plainText += (plainText != "" ? " " : "") + Std.string(cell.value);
 
-				var str = cursor.table.sheet.colToString(col, Reflect.field(data[0], colName), escape);
-
-				clipboard = {
-					data : data,
-					text : str,
-					schema : schema,
-				};
-
-				ide.setClipboard(str);
-				return;
-			}
-		}
-		// copy many values at once
-		clipboard = {
-			data : data,
-			text : Std.string([for( o in data ) cursor.table.sheet.objToString(o,true)]),
-			schema : schema,
-		};
-		ide.setClipboard(clipboard.text);
+		ide.setClipboardMultiple([
+			{ type: nw.Clipboard.ClipboardType.Text, data: plainText },
+			{ type:nw.Clipboard.ClipboardType.Rtf, data: rtfText }
+		]);
 	}
 
 	function onPaste() {
-		var text = ide.getClipboard();
-
 		if (this.cursor.table == null)
 			return;
 
-		var targetCells = cursor.getSelectedCells();
+		var cdbDataText = ide.getClipboard(nw.Clipboard.ClipboardType.Rtf);
+		if (cdbDataText.indexOf(CLIPBOARD_PREFIX) >= 0)
+			cdbDataText = StringTools.replace(cdbDataText, CLIPBOARD_PREFIX, "");
+		else
+			cdbDataText = null; // Rtf data has been set by another application OR data in the plain text clipboard isn't comming from cdb
 
-		var columns = cursor.table.columns;
-		var sheet = cursor.table.sheet;
-		var realSheet = cursor.table.getRealSheet();
-		var allLines = cursor.table.lines;
+		var cdbData = cdbDataText != null ? haxe.Json.parse(cdbDataText) : null;
+		var data : Array<Dynamic> = cdbData?.data;
+		var schema : Array<cdb.Data.Column> = cdbData?.schema;
 
-		var fullRefresh = false;
+		// Hack to force col.type to be an enum value
+		if (schema != null)
+			for (s in schema) {
+				var params = [];
+				for (f in Reflect.fields(s.type)) {
+					if (f.indexOf("_") >= 0)
+						continue;
+
+					params.push(Reflect.field(s.type, f));
+				}
+
+				if (params.length == 0)
+					params = null;
+
+				s.type = cdb.Data.ColumnType.createByName(s.type.getName(), params);
+			}
+
 		var toRefresh : Array<Cell> = [];
+		var shouldFullRefresh = false;
 
-		var isProps = (cursor.table.displayMode != Table);
-		if( clipboard == null || text != clipboard.text ) {
-			if( cursor.x < 0 || cursor.y < 0 ) return;
-			function parseText(text, type : cdb.Data.ColumnType) : Dynamic {
+		var targetCells = cursor.getSelectedCells();
+		var targetSheet = cursor.table.sheet;
+
+		function refresh() {
+			formulas.evaluateAll(targetSheet.realSheet);
+			if (targetSheet.realSheet.parent == null)
+				targetSheet.realSheet.sync();
+			if (shouldFullRefresh) {
+				refreshAll();
+			}
+			else {
+				for (c in toRefresh)
+					c.refresh(true);
+			}
+			refreshRefs();
+		}
+
+		// We are trying to paste value copied from outisde CDB into CDB
+		if (schema == null || data == null) {
+			function parseCDBValue(v: String, type: cdb.Data.ColumnType) : Dynamic {
 				switch( type ) {
 				case TId:
-					if( ~/^[A-Za-z0-9_]+$/.match(text) )
-						return text;
+					if( ~/^[A-Za-z0-9_]+$/.match(v) )
+						return v;
 				case TString:
-					return text;
+					return v;
 				case TFile:
-					return ide.makeRelative(text);
+					return ide.makeRelative(v);
 				case TInt:
-					text = text.split(",").join("").split(" ").join("");
-					return Std.parseInt(text);
+					v = v.split(",").join("").split(" ").join("");
+					return Std.parseInt(v);
 				case TFloat:
-					text = text.split(",").join("").split(" ").join("");
-					var value = Std.parseFloat(text);
+					v = v.split(",").join("").split(" ").join("");
+					var value = Std.parseFloat(v);
 					if( Math.isNaN(value) )
 						return null;
 					return value;
 				case TColor:
-					return stringToCol(text);
+					return stringToCol(v);
 				case TGradient:
 					try {
-						var json = haxe.Json.parse(text);
+						var json = haxe.Json.parse(v);
 						var grad : cdb.Types.Gradient = {colors: [], positions: []};
 						if (Reflect.hasField(json, "stops")) {
 							for (i => stop in (json.stops: Array<Dynamic>)) {
@@ -650,50 +644,30 @@ class Editor extends Component {
 				return null;
 			}
 
-			if( isProps ) {
-				var line = cursor.getLine();
-				toRefresh.push(cursor.getCell());
-				var col = line.columns[cursor.x];
-				var p = Editor.getColumnProps(col);
+			var plainText = ide.getClipboard(nw.Clipboard.ClipboardType.Text);
 
-				if( !cursor.table.canEditColumn(col.name) || p.copyPasteImmutable)
-					return;
+			beginChanges();
+			for (c in targetCells) {
+				var col = c.column;
+				if (!c.table.canEditColumn(col.name) || Editor.getColumnProps(col).copyPasteImmutable)
+					continue;
 
-				var value = parseText(text, col.type);
-				if( value == null )
-					return;
-				beginChanges();
-				var obj = line.obj;
-				formulas.removeFromValue(obj, col);
-				Reflect.setField(obj, col.name, value);
-			} else {
-				beginChanges();
-				var col = columns[cursor.x];
-				var p = Editor.getColumnProps(col);
-				if( cursor.table.canEditColumn(col.name) && !p.copyPasteImmutable) {
-					var lines = cursor.y == cursor.y ? [text] : text.split("\n");
-					var text = lines[0];
-					if( text == null ) text = lines[lines.length - 1];
-					var value = parseText(text, col.type);
-					if( value != null ) {
-						var obj = sheet.lines[cursor.y];
-						formulas.removeFromValue(obj, col);
-						Reflect.setField(obj, col.name, value);
-						toRefresh.push(allLines[cursor.y].cells[cursor.x]);
-					}
-				}
+				var parsedValue = parseCDBValue(plainText, col.type);
+				if (parsedValue == null)
+					continue;
+
+				Reflect.setField(c.line.obj, col.name, parsedValue);
+				toRefresh.push(c);
 			}
-			formulas.evaluateAll(realSheet);
+
 			endChanges();
-			realSheet.sync();
-			for( c in toRefresh ) {
-				c.refresh(true);
-			}
-			refreshRefs();
+			refresh();
 			return;
 		}
 
-		function setValue(cliObj, destObj, clipSchema : cdb.Data.Column, destCol : cdb.Data.Column) {
+
+		function setValue(cliObj : Dynamic, destObj : Dynamic, clipSchema : cdb.Data.Column, destCol : cdb.Data.Column) {
+			var sheet = targetSheet;
 			var form = Reflect.field(cliObj, clipSchema.name+"__f");
 
 			if( form != null && destCol.type.equals(clipSchema.type) ) {
@@ -739,82 +713,84 @@ class Editor extends Component {
 				Reflect.setField(destObj, destCol.name, v);
 		}
 
-		var posX = cursor.x < 0 ? 0 : cursor.x;
-		var posY = cursor.y < 0 ? 0 : cursor.y;
-		var data = clipboard.data;
-		if( data.length == 0 )
-			return;
-
-		if( isProps ) {
-			var obj1 = data[0];
-			var obj2 = cursor.getLine().obj;
-			if( clipboard.schema.length == 1 ) {
-				var clipSchema = clipboard.schema[0];
-				if (clipSchema == null) return;
-				beginChanges();
-				for (c in targetCells) {
-					var col = c.column;
-					if (!c.table.canEditColumn(col.name) || Editor.getColumnProps(col).copyPasteImmutable || clipSchema.kind != col.kind)
-						continue;
-
-					toRefresh.push(c);
-					setValue(obj1, obj2, clipSchema, col);
-				}
-			} else {
-				beginChanges();
-				for( c1 in clipboard.schema ) {
-					var c2 = cursor.table.sheet.columns.find(c -> c.name == c1.name);
-					var p = Editor.getColumnProps(c2);
-					if( c2 == null || !cursor.table.canEditColumn(c2.name) || p.copyPasteImmutable)
-						continue;
-					if( !cursor.table.canInsert() && c2.opt && !Reflect.hasField(obj2, c2.name) )
-						continue;
-					setValue(obj1, obj2, c1, c2);
-					fullRefresh = true;
-				}
-			}
-		} else {
+		// Manage pasting one value into several cells
+		if (data.length == 1) {
 			beginChanges();
 
-			if( data.length == 1 && cursor.y != cursor.y )
-				data = [data[0]];
-			for( obj1 in data ) {
-				if( posY == sheet.lines.length ) {
-					if( !cursor.table.canInsert() ) break;
-					sheet.newLine();
-					fullRefresh = true;
-				}
-				var obj2 = sheet.lines[posY];
-				for( cid in 0...clipboard.schema.length ) {
-					var c1 = clipboard.schema[cid];
-					var c2 = columns[cid + posX];
-					if( c2 == null ) continue;
-					var p = Editor.getColumnProps(c2);
-
-					if( !cursor.table.canEditColumn(c2.name) || p.copyPasteImmutable)
+			// We copied one cell
+			if (schema.length == 1) {
+				for (c in targetCells) {
+					var col = c.column;
+					if (!c.table.canEditColumn(col.name) || Editor.getColumnProps(col).copyPasteImmutable || col.type != schema[0].type)
 						continue;
-
-					setValue(obj1, obj2, c1, c2);
-
-					if( c2.type == TList || c2.type == TProperties )
-						fullRefresh = true;
-					if( !fullRefresh )
-						toRefresh.push(allLines[posY].cells[cid + posX]);
+					setValue(data[0], c.line.obj, schema[0], col);
+					toRefresh.push(c);
 				}
-				posY++;
 			}
+			else {
+				// We copied one line (could be several cells of one line)
+				var targetLines = cursor.getSelectedLines();
+				if (targetLines.length == 0) {
+					for (c in targetCells)
+						targetLines.pushUnique(c.line);
+				}
+
+				for (l in targetLines) {
+					for (c in l.cells) {
+						var col = c.column;
+						if (!l.table.canEditColumn(col.name) || Editor.getColumnProps(col).copyPasteImmutable || !Reflect.hasField(data[0], col.name))
+							continue;
+
+						var sc = schema[0];
+						for (s in schema)
+							if (col.type.equals(s.type) && col.name == s.name)
+								sc = s;
+
+						setValue(data[0], c.line.obj, sc, col);
+						toRefresh.push(c);
+					}
+				}
+			}
+
+			endChanges();
+			refresh();
+			return;
 		}
-		formulas.evaluateAll(realSheet);
+
+
+		beginChanges();
+		var curPosY = Std.int(Math.max(0, cursor.y));
+		var curPosX = Std.int(Math.max(0, cursor.x));
+		for (d in data) {
+			// Insert lines if we still got data to paste and that we are at the end of the sheet
+			if ( curPosY == targetSheet.lines.length ) {
+				if( !cursor.table.canInsert() ) break;
+				targetSheet.newLine();
+				shouldFullRefresh = true;
+			}
+
+			var obj = targetSheet.lines[curPosY];
+			for( cid in 0...schema.length ) {
+				var c1 = schema[cid];
+				var c2 = cursor.table.columns[cid + curPosX];
+				if( c2 == null ) continue;
+				var p = Editor.getColumnProps(c2);
+
+				if( !cursor.table.canEditColumn(c2.name) || p.copyPasteImmutable)
+					continue;
+
+				setValue(d, obj, c1, c2);
+
+				if( c2.type == TList || c2.type == TProperties )
+					shouldFullRefresh = true;
+				if( !shouldFullRefresh )
+					toRefresh.push(cursor.table.lines[curPosY].cells[cid + curPosX]);
+			}
+			curPosY++;
+		}
+
+		refresh();
 		endChanges();
-		realSheet.sync();
-		if( fullRefresh )
-			refreshAll();
-		else {
-			for( c in toRefresh ) {
-				c.refresh(true);
-			}
-			refreshRefs();
-		}
 	}
 
 	function onDelete() {
