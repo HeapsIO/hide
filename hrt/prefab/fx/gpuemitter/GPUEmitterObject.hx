@@ -260,12 +260,6 @@ class GPUEmitterObject extends h3d.scene.MeshBatch {
 				cubeSpawn.boundsMin.set(bounds.xMin, bounds.yMin, bounds.zMin);
 				cubeSpawn.boundsSize.set(bounds.xSize, bounds.ySize, bounds.zSize);
 			}
-			switch (data.mode) {
-			case Camera:
-				fxAnim.autoCull = false;
-			default:
-				fxAnim.autoCull = true;
-			}
 			baseSimulation.CAMERA_BOUNDS = data.mode == Camera;
 
 			var i = 0;
@@ -325,6 +319,11 @@ class GPUEmitterObject extends h3d.scene.MeshBatch {
 	}
 
 	override function sync(ctx : h3d.scene.RenderContext) {
+		switch (data.mode) {
+		case Camera:
+			fxAnim.autoCull = false;
+		default:
+		}
 		super.sync(ctx);
 	}
 
