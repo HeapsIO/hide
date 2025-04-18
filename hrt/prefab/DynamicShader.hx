@@ -39,6 +39,27 @@ class DynamicShader extends Shader {
 		return shader;
 	}
 
+	override function save() : Dynamic {
+		var obj = super.save();
+
+		// Cleanup props from removed variables
+		// only for shaderGraph for the moment
+		if (shaderDef != null && shaderDef.shader != null && shaderDef.isShaderGraph) {
+			var newProps = {};
+			for (v in shaderDef.shader.data.vars) {
+				if (Reflect.hasField(obj.props, v.name)) {
+					Reflect.setField(newProps, v.name, Reflect.field(obj.props, v.name));
+				}
+			}
+			if (Reflect.fields(newProps).length > 0) {
+				obj.props = newProps;
+			} else {
+				Reflect.deleteField(obj, props);
+			}
+		}
+		return obj;
+	}
+
 	function fixSourcePath() {
 		#if editor
 		// shader source is loaded with ../src/path/to/Shader.hx
