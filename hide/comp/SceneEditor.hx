@@ -3181,18 +3181,18 @@ class SceneEditor {
 			var path = modifiedRef.source;
 
 			var others = sceneData.findAll(Reference, (r) -> r.source == path && r != modifiedRef, true);
-			// @:privateAccess
-			// if (others.length > 0) {
-			// 	var data = modifiedRef.refInstance.serialize();
-			// 	beginRebuild();
-			// 	for (ref in others) {
-			// 		removeInstance(ref.refInstance, false);
-			// 		@:privateAccess ref.setRef(data);
-			// 		queueRebuild(ref);
-			// 	}
-			// 	endRebuild();
-			// 	refreshTree();
-			// }
+			@:privateAccess
+			if (others.length > 0) {
+				var data = modifiedRef.refInstance.serialize();
+				beginRebuild();
+				for (ref in others) {
+					removeInstance(ref.refInstance, false);
+					@:privateAccess ref.setRef(data);
+					queueRebuild(ref);
+				}
+				endRebuild();
+				refreshTree();
+			}
 		}
 
 		applySceneStyle(p);
