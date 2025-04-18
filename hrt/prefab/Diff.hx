@@ -74,7 +74,7 @@ class Diff {
 				var key = name;
 
 				#if editor
-				if (originalChild.child.type == null || modifiedChild.child.type == null) {
+				if ((originalChild?.child != null && originalChild.child.type == null) || (modifiedChild?.child != null && modifiedChild.child.type == null)) {
 					throw "can't diff child that have a missing `type`";
 				}
 				#end
