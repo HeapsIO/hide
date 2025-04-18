@@ -2172,11 +2172,13 @@ class SceneEditor {
 	}
 
 	var treeRefreshing = false;
-	var queueRefresh = false;
+	var queueRefresh : Array<() -> Void> = null;
 
 	function refreshTree( ?callb ) {
 		if (treeRefreshing) {
-			queueRefresh = true;
+			queueRefresh ??= [];
+			if (callb != null)
+				queueRefresh.push(callb);
 			return;
 		}
 		treeRefreshing = true;
@@ -2193,9 +2195,10 @@ class SceneEditor {
 			if(callb != null) callb();
 
 			treeRefreshing = false;
-			if (queueRefresh) {
-				queueRefresh = false;
-				refreshTree();
+			if (queueRefresh != null) {
+				var list = queueRefresh;
+				queueRefresh = null;
+				refreshTree(() -> for (cb in list) cb());
 			}
 		});
 
@@ -3178,18 +3181,18 @@ class SceneEditor {
 			var path = modifiedRef.source;
 
 			var others = sceneData.findAll(Reference, (r) -> r.source == path && r != modifiedRef, true);
-			@:privateAccess
-			if (others.length > 0) {
-				var data = modifiedRef.refInstance.serialize();
-				beginRebuild();
-				for (ref in others) {
-					removeInstance(ref.refInstance, false);
-					@:privateAccess ref.setRef(data);
-					queueRebuild(ref);
-				}
-				endRebuild();
-				refreshTree();
-			}
+			// @:privateAccess
+			// if (others.length > 0) {
+			// 	var data = modifiedRef.refInstance.serialize();
+			// 	beginRebuild();
+			// 	for (ref in others) {
+			// 		removeInstance(ref.refInstance, false);
+			// 		@:privateAccess ref.setRef(data);
+			// 		queueRebuild(ref);
+			// 	}
+			// 	endRebuild();
+			// 	refreshTree();
+			// }
 		}
 
 		applySceneStyle(p);

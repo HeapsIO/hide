@@ -5,6 +5,24 @@ enum DiffResult {
 	Set(value: Dynamic);
 }
 
+/**
+	Utility class to get the difference between two dynamics
+
+	There are two main functions : diff and apply, and they are reciprocal
+	diff(A,B) = D
+	apply(A,D) = B
+
+	the diff has a special support for prefab if the diffPrefab function is used :
+	the children array is handled as a special case, and prefabs that change type are
+	fully serialized in the diff instead of just the delta
+
+	Special fields prefixed by an @ can appear in the diff, they are as follow :
+
+	@removed : an array of keys name that are present in A but were removed in B
+	@index : in the prefab children data, indicate that this child has changed index between the A.children and B.children array
+
+**/
+
 class Diff {
 	public static function addToDiff(diff: DiffResult, key: String, value: Dynamic) : DiffResult{
 		var v = switch(diff) {
@@ -54,6 +72,12 @@ class Diff {
 				var originalChild = data.originals[index];
 				var modifiedChild = data.modifieds[index];
 				var key = name;
+
+				#if editor
+				if (originalChild.child.type == null || modifiedChild.child.type == null) {
+					throw "can't diff child that have a missing `type`";
+				}
+				#end
 				if (index > 0)
 					key += '@$index';
 
@@ -183,7 +207,7 @@ class Diff {
 	/**
 		Modifies `target` dynamic so `apply(a, diff(a, b)) == b`
 	**/
-	public static function apply(target: Dynamic, diff: Dynamic) {
+	public static function apply(target: Dynamic, diff: Dynamic) : Dynamic {
 		if (diff == null)
 			return null;
 
@@ -200,12 +224,6 @@ class Diff {
 				var targetChildren = Reflect.field(target, "children") ?? [];
 				var diffChildren = Reflect.field(diff, "children");
 
-				var finalChildren = [];
-
-				for (index => child in targetChildren) {
-					finalChildren[index] = child;
-				}
-
 				for (fields in Reflect.fields(diffChildren)) {
 					var diffChild = Reflect.field(diffChildren, fields);
 					var name = fields;
@@ -217,12 +235,12 @@ class Diff {
 					}
 
 					var targetChild = null;
-					var finalIndex = 0;
+					var originalIndex = targetChildren.length; // if we don't found any children with the right name in the array, this will make sure we add the newly created children at the end of the array
 					for (index => child in targetChildren) {
 						if (name == child.name) {
 							if (nthChild == 0) {
 								targetChild = child;
-								finalIndex = index;
+								originalIndex = index;
 								break;
 							} else {
 								nthChild --;
@@ -232,15 +250,41 @@ class Diff {
 
 					// Remove child if null
 					if (diffChild == null) {
-						finalChildren.splice(finalIndex, 1);
+						targetChildren[originalIndex] = null;
 						continue;
 					}
 
-					var modifiedChild = apply(targetChild, diffChild);
-					finalIndex = Reflect.field(diffChild, "@index") ?? finalIndex;
+					// Skip diff children that don't have type if they don't
+					// modify a prefab from target object (because we can't create a prefab without a type)
+					if (targetChild == null && diffChild.type == null) {
+							continue;
+					}
 
-					finalChildren[finalIndex] = modifiedChild;
+					targetChildren[originalIndex] = apply(targetChild, diffChild);
 				}
+
+				// Reorder the targetChildren array based on @indexes.
+				// if the @index point to a slot already taken, find the next free slot
+				// This should ensure that arrays are somewhat coherent in bad situation like
+				// the target children array has been modified since the last diff
+				var finalChildren : Array<Dynamic> = [];
+				for (index => child in targetChildren) {
+					if (child == null) continue;
+					var changedIndex = Reflect.field(child, "@index");
+					var targetIndex = if (changedIndex != null) {
+						Reflect.deleteField(child, "@index");
+						changedIndex;
+					} else {
+						index;
+					}
+					while (finalChildren[targetIndex] != null) {
+						targetIndex ++;
+					}
+					finalChildren[targetIndex] = child;
+				}
+				// If a prefab has been removed, it get inserted as a null in the childrenArray
+				// we fix that here
+				finalChildren = finalChildren.filter((f) -> f != null);
 
 				Reflect.setField(target, "children", finalChildren);
 				continue;
@@ -254,9 +298,9 @@ class Diff {
 				continue;
 			}
 
-			if (field.charAt(0) == "@") {
-				continue;
-			}
+			// if (field.charAt(0) == "@") {
+			// 	continue;
+			// }
 
 			var targetValue = Reflect.getProperty(target, field);
 			var diffValue = Reflect.getProperty(diff, field);

@@ -74,23 +74,25 @@ class Reference extends Object3D {
 	#end
 
 	function setRef(data: Dynamic) {
-		#if editor
-		var currentModifications = null;
-		if (originalSource != null && refInstance != null) {
-			currentModifications = genOverride();
-			trace(currentModifications);
-		}
-		originalSource = data;
-		#end
+		// #if editor
+		// var currentModifications = null;
+		// if (originalSource != null && refInstance != null) {
+		// 	currentModifications = genOverride();
+		// 	trace(this.name, currentModifications);
+		// }
+		// originalSource = hrt.prefab.Diff.deepCopy(data);
+		// #end
 
-		if (overrides != null) {
+		originalSource = hrt.prefab.Diff.deepCopy(data);
+
+		if (/*#if editor currentModifications == null && #end*/ overrides != null) {
 			data = hrt.prefab.Diff.apply(hrt.prefab.Diff.deepCopy(data), overrides);
 		}
-		#if editor
-		if (currentModifications != null) {
-			data = hrt.prefab.Diff.apply(data, currentModifications);
-		}
-		#end
+		// #if editor
+		// else if (currentModifications != null) {
+		// 	data = hrt.prefab.Diff.apply(data, currentModifications);
+		// }
+		// #end
 
 		refInstance = Prefab.createFromDynamic(data, new ContextShared(source, true));
 		refInstance.shared.parentPrefab = this;
