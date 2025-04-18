@@ -201,6 +201,7 @@ class SSR extends RendererFX {
 	var ssr : h3d.mat.Texture;
 	var normalMaskOutput : h3d.pass.Output;
 
+	@:s public var debugSSRMask : Bool = false;
 	@:s public var intensity : Float = 1.;
 	@:s public var colorMul : Float = 1.;
 	@:s public var thicknessValue : Float = 0.0001;
@@ -288,6 +289,13 @@ class SSR extends RendererFX {
 			r.ctx.engine.popTarget();
 
 			ssrShader.ssrNormalMask = ssrNormalMask;
+
+			if ( debugSSRMask ) {
+				var hdr = r.ctx.engine.getCurrentTarget();
+				hdr.clear(0);
+				h3d.pass.Copy.run(ssrNormalMask, hdr, Alpha);
+				return;
+			}
 		}
 
 		ssr = r.allocTarget("ssr", false, textureSize / resRescale, hdrMap.format);
@@ -326,6 +334,11 @@ class SSR extends RendererFX {
 				<dt>Fast sample</dt><dd><input type="checkbox" field="batchSample"/></dd>
 				<dt>Vignetting radius</dt><dd><input type="range" min="0" max="1" field="vignettingRadius"/></dd>
 				<dt>Vignetting smoothness</dt><dd><input type="range" min="0" max="1" field="vignettingSmoothness"/></dd>
+			</dl>
+		</div>
+		<div class="group" name="Debug">
+			<dl>
+				<dt>Debug SSR mask</dt><dd><input type="checkbox" field="debugSSRMask"/></dd>
 			</dl>
 		</div>
 		'),this);
