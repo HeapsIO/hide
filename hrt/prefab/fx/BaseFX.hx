@@ -302,7 +302,7 @@ class BaseFXTools {
 		}
 
 		var rendererFX = elt.to(hrt.prefab.rfx.RendererFX);
-		if (rendererFX != null) {
+		if (rendererFX != null && rendererFX.enabled) {
 			var screenShaderGraph = elt.to(hrt.prefab.rfx.ScreenShaderGraph);
 			if (screenShaderGraph != null) {
 				var params = makeShaderParams(screenShaderGraph, screenShaderGraph.getShaderDefinition());
