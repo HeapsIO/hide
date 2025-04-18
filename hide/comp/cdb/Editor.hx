@@ -721,7 +721,7 @@ class Editor extends Component {
 			if (schema.length == 1) {
 				for (c in targetCells) {
 					var col = c.column;
-					if (!c.table.canEditColumn(col.name) || Editor.getColumnProps(col).copyPasteImmutable || col.type != schema[0].type)
+					if (!c.table.canEditColumn(col.name) || Editor.getColumnProps(col).copyPasteImmutable || !col.type.equals(schema[0].type))
 						continue;
 					setValue(data[0], c.line.obj, schema[0], col);
 					toRefresh.push(c);
