@@ -187,6 +187,9 @@ class ShaderEditor extends hide.view.FileView implements GraphInterface.IGraphEd
 	}
 
 	function reloadView() {
+		// can happen on close
+		if (element == null)
+			return;
 
 		element.html("");
 		loadSettings();

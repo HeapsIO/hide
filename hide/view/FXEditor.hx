@@ -1837,7 +1837,10 @@ class FXEditor extends hide.view.FileView {
 	}
 
 	public function setRenderPropsEditionVisibility(visible : Bool) {
-		var renderPropsEditionEl = this.element.find('.render-props-edition');
+		var renderPropsEditionEl = this.element?.find('.render-props-edition');
+		// can appen on close
+		if (renderPropsEditionEl == null)
+			return;
 
 		if (!visible) {
 			renderPropsEditionEl.css({ display : 'none' });

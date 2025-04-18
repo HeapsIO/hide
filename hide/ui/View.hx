@@ -228,6 +228,10 @@ class View<T> extends hide.comp.Component {
 			}
 		undo.clear();
 		syncTitle();
+
+		// can happen on close all
+		if (element == null)
+			return;
 		element.empty();
 		element.off();
 		onDisplay();
