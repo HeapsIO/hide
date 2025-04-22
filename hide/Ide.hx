@@ -141,6 +141,7 @@ class Ide extends hide.tools.IdeData {
 		}
 
 		setProject(current);
+		loadProject();
 		window.window.document.addEventListener("mousedown", function(e) {
 			mouseX = e.x;
 			mouseY = e.y;
@@ -663,9 +664,8 @@ class Ide extends hide.tools.IdeData {
 		globalMessage(e, timeoutSeconds);
 	}
 
-	override function setProject( dir : String ) {
-		super.setProject(dir);
-
+	function loadProject() {
+		var dir = ideConfig.currentProject;
 		setProgress();
 		shaderLoader = new hide.tools.ShaderLoader();
 		hxsl.Cache.clear();
@@ -1223,7 +1223,8 @@ class Ide extends hide.tools.IdeData {
 				continue;
 			}
 			new Element("<menu>").attr("label",v).appendTo(menu.find(".project .recents")).click(function(_){
-				setProject(v);
+				var dir = v;
+				setProject(dir);
 				reload(); // Reload stylesheets
 			});
 		}
@@ -1233,6 +1234,7 @@ class Ide extends hide.tools.IdeData {
 				if( StringTools.endsWith(dir,"/res") || StringTools.endsWith(dir,"\\res") )
 					dir = dir.substr(0,-4);
 				setProject(dir);
+				reload();
 			}, true);
 		});
 		menu.find(".project .clear").click(function(_) {
@@ -1265,7 +1267,7 @@ class Ide extends hide.tools.IdeData {
 				if( r != h3d.mat.MaterialSetup.current ) {
 					projectConfig.renderer = name;
 					config.user.save();
-					setProject(ideConfig.currentProject);
+					reload();
 				}
 			});
 		}
