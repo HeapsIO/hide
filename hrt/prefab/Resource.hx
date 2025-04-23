@@ -4,7 +4,8 @@ package hrt.prefab;
 class Resource extends hxd.res.Resource {
 
 	var prefab : Prefab;
-	var cachedData : Dynamic;
+	var diskData : Dynamic;
+	var isBSON : Bool = false;
 	var cacheVersion : Int;
 	var isWatched : Bool;
 
@@ -27,16 +28,13 @@ class Resource extends hxd.res.Resource {
 		});
 	}
 
-	function loadData() {
-		var isBSON = entry.fetchBytes(0,1).get(0) == 'H'.code;
-		cachedData = isBSON ? new hxd.fmt.hbson.Reader(entry.getBytes(),false).read() : haxe.Json.parse(entry.getText());
-		return cachedData;
-	}
+	function loadData() : Dynamic {
+		if (diskData == null || cacheVersion != CACHE_VERSION) {
+			isBSON = entry.fetchBytes(0,1).get(0) == 'H'.code;
+			diskData = isBSON ? entry.getBytes() : entry.getText();
+		}
 
-	public function loadDataCached() {
-		if (cachedData != null && cacheVersion == CACHE_VERSION)
-			return cachedData;
-		return loadData();
+		return isBSON ? new hxd.fmt.hbson.Reader(diskData, false).read() : haxe.Json.parse(diskData);
 	}
 
 	public function load() : Prefab {
