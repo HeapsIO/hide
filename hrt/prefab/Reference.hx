@@ -80,18 +80,15 @@ class Reference extends Object3D {
 	#end
 
 	function setRef(data: Dynamic) {
+		// Fast non override path
 		if (overrides == null) {
 			refInstance = hxd.res.Loader.currentInstance.load(source).toPrefab().load().clone();
 			return;
 		}
 
 		if (data == null) {
-			if (overrides != null) {
 				// need a fresh copy to apply overrides
 				data = @:privateAccess hxd.res.Loader.currentInstance.load(source).toPrefab().loadData();
-			} else {
-				data = @:privateAccess hxd.res.Loader.currentInstance.load(source).toPrefab().loadDataCached();
-			}
 		}
 		#if editor
 		var currentModifications = null;
