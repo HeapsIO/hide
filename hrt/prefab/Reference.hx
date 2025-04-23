@@ -18,6 +18,7 @@ class Reference extends Object3D {
 	public var originalSource : Dynamic;
 	#end
 
+	#if editor
 	function genOverride() : Dynamic {
 		var orig = hrt.prefab.Diff.deepCopy(originalSource);
 		var ref = refInstance.serialize();
@@ -29,13 +30,16 @@ class Reference extends Object3D {
 				return v;
 		}
 	}
+	#end
 
 	override function save() {
+		#if editor
 		if (editMode == Override && refInstance != null) {
 			this.overrides = genOverride();
 		} else if (editMode == Edit && refInstance != null) {
 			this.overrides = null;
 		}
+		#end
 
 		var obj : Dynamic = super.save();
 		#if editor
@@ -85,7 +89,6 @@ class Reference extends Object3D {
 		originalSource = hrt.prefab.Diff.deepCopy(data);
 		#end
 
-		originalSource = hrt.prefab.Diff.deepCopy(data);
 
 		if (#if editor currentModifications == null && #end overrides != null) {
 			data = hrt.prefab.Diff.apply(hrt.prefab.Diff.deepCopy(data), overrides);
