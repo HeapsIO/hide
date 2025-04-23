@@ -4,6 +4,7 @@ package hrt.prefab;
 class Resource extends hxd.res.Resource {
 
 	var prefab : Prefab;
+	var cachedData : Dynamic;
 	var cacheVersion : Int;
 	var isWatched : Bool;
 
@@ -28,7 +29,14 @@ class Resource extends hxd.res.Resource {
 
 	function loadData() {
 		var isBSON = entry.fetchBytes(0,1).get(0) == 'H'.code;
-		return isBSON ? new hxd.fmt.hbson.Reader(entry.getBytes(),false).read() : haxe.Json.parse(entry.getText());
+		cachedData = isBSON ? new hxd.fmt.hbson.Reader(entry.getBytes(),false).read() : haxe.Json.parse(entry.getText());
+		return cachedData;
+	}
+
+	public function loadDataCached() {
+		if (cachedData != null && cacheVersion == CACHE_VERSION)
+			return cachedData;
+		return loadData();
 	}
 
 	public function load() : Prefab {

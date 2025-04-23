@@ -80,6 +80,19 @@ class Reference extends Object3D {
 	#end
 
 	function setRef(data: Dynamic) {
+		if (overrides == null) {
+			refInstance = hxd.res.Loader.currentInstance.load(source).toPrefab().load().clone();
+			return;
+		}
+
+		if (data == null) {
+			if (overrides != null) {
+				// need a fresh copy to apply overrides
+				data = @:privateAccess hxd.res.Loader.currentInstance.load(source).toPrefab().loadData();
+			} else {
+				data = @:privateAccess hxd.res.Loader.currentInstance.load(source).toPrefab().loadDataCached();
+			}
+		}
 		#if editor
 		var currentModifications = null;
 		if (originalSource != null && refInstance != null) {
@@ -87,11 +100,14 @@ class Reference extends Object3D {
 			trace(this.name, currentModifications);
 		}
 		originalSource = hrt.prefab.Diff.deepCopy(data);
+		if (overrides != null) {
+			data = hrt.prefab.Diff.deepCopy(data);
+		}
 		#end
 
 
 		if (#if editor currentModifications == null && #end overrides != null) {
-			data = hrt.prefab.Diff.apply(hrt.prefab.Diff.deepCopy(data), overrides);
+			data = hrt.prefab.Diff.apply(data, overrides);
 		}
 		#if editor
 		else if (currentModifications != null) {
@@ -111,7 +127,7 @@ class Reference extends Object3D {
 		#if editor
 		try {
 		#end
-			setRef(@:privateAccess hxd.res.Loader.currentInstance.load(source).toPrefab().loadData());
+			setRef(null);
 			return refInstance;
 		#if editor
 		} catch (_) {
