@@ -14,6 +14,19 @@ enum SplineShape {
 	Cubic;
 }
 
+class SplineObject extends h3d.scene.Object {
+	public var spline : Spline;
+
+	public function new(parent: h3d.scene.Object) {
+		super(parent);
+	}
+
+	override function calcAbsPos() {
+		super.calcAbsPos();
+		@:privateAccess spline.samples = null;
+	}
+}
+
 class SplinePoint {
 	public static var DEFAULT_TAN_LENGTH = 3.0;
 
@@ -196,7 +209,9 @@ class Spline extends hrt.prefab.Object3D {
 
 	override function makeObject(parent3d: h3d.scene.Object) : h3d.scene.Object {
 		#if editor graphics = null; #end
-		return super.makeObject(parent3d);
+		var splineObject = new SplineObject(parent3d);
+		splineObject.spline = this;
+		return splineObject;
 	}
 
 	override function updateInstance(?propName : String ) {
