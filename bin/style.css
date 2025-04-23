@@ -364,18 +364,19 @@ input[type=checkbox].indeterminate:after {
   text-align: center;
 }
 ::-webkit-scrollbar {
-  width: 5px;
+  width: 10px;
   height: 5px;
   right: 5px;
 }
 ::-webkit-scrollbar-track {
-  background: #666;
-  border-radius: 20px;
+  background: #424242;
   margin: 5px;
 }
 ::-webkit-scrollbar-thumb {
-  background: #ddd;
-  border-radius: 100cqw;
+  background: #686868;
+}
+::-webkit-scrollbar-thumb:hover {
+  background: #7b7b7b;
 }
 ::-webkit-scrollbar-corner {
   visibility: hidden;
