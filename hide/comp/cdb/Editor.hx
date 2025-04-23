@@ -157,7 +157,11 @@ class Editor extends Component {
 			}
 		});
 		keys.register("cdb.gotoReference", () -> gotoReference(cursor.getCell()));
-		keys.register("cdb.globalSeek", () -> new GlobalSeek(cdbTable.element, cdbTable, Sheets, currentSheet));
+		keys.register("cdb.globalSeek", () -> {
+			if (this.displayMode == Table.DisplayMode.AllProperties)
+				return;
+			new GlobalSeek(cdbTable.element, cdbTable, Sheets, currentSheet);
+		});
 		keys.register("cdb.sheetSeekIds", () -> new GlobalSeek(cdbTable.element, cdbTable, LocalIds, currentSheet));
 		keys.register("cdb.globalSeekIds", () -> new GlobalSeek(cdbTable.element, cdbTable, GlobalIds, currentSheet));
 
