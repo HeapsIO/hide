@@ -619,32 +619,21 @@ class Ide extends hide.tools.IdeData {
 
 		if (!showErrors) {
 			if (errorWindow == null) {
-				errorWindow = new Element('
-					<span class="error-suppressed">
-						<button class="reload"><i class="icon ico ico-refresh"></i>Reload</button>
-						Errors are currently suppressed in the editor. Please save your work and reload.
-					</span>
+				statusBar.toggleClass("error");
+
+				errorWindow = new Element('<div class="error-suppressed">
+					<button class="reload"><i class="icon ico ico-refresh"></i>Reload</button>
+					<span>Errors are currently suppressed in the editor. Please save your work and reload.</span>
+					</div>
 				');
 
-				addStatusIcon(errorWindow);
-
-				var errorLog = errorWindow.find(".error-log");
+				errorWindow.insertAfter(statusIcons);
 
 				var btnSaveReload = errorWindow.find(".reload");
 				btnSaveReload.click(function(_) {
 					this.reload();
 				});
-
-				var btnShowErrors = errorWindow.find(".show-errors");
-				btnShowErrors.click(function(_) {
-					if (errorLog.hasClass("hidden"))
-						errorLog.removeClass("hidden");
-					else
-						errorLog.addClass("hidden");
-				});
 			}
-
-			errorWindow.find(".error-log").append(new Element('<p>${e}</p>'));
 		}
 
 		js.Browser.console.error(e);

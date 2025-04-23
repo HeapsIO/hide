@@ -97,57 +97,6 @@ body {
   color: red;
   border: 1px solid #C00;
 }
-.error-panel {
-  position: absolute;
-  width: 100%;
-  z-index: 999;
-  bottom: 0px;
-  left: 0px;
-  padding: 1px;
-}
-.error-panel .error-banner {
-  text-align: center;
-  z-index: 999;
-  padding: 1px;
-  width: 100%;
-  background: #ff5555;
-  color: #191A21;
-  border: 1px solid #ff5555;
-  display: inline-block;
-}
-.error-panel .error-banner button {
-  height: 100%;
-  background: #ff5555;
-  color: #191A21;
-  float: left;
-  margin-left: 5px;
-  border: none;
-  font-size: 9pt;
-}
-.error-panel .error-banner button i {
-  margin-right: 3px;
-}
-.error-panel .error-banner button:hover {
-  background: #FA6868;
-  color: white;
-}
-.error-panel .error-log {
-  display: flex;
-  flex-direction: column-reverse;
-  height: 150px;
-  width: 100%;
-  background-color: #111111;
-  overflow-y: scroll;
-}
-.error-panel .error-log.hidden {
-  display: none;
-}
-.error-panel .error-log p {
-  font-family: var(--default-font), serif;
-  margin: 0px;
-  padding-top: 5px;
-  padding-left: 5px;
-}
 :root {
   --default-font: 'Inter';
   --default-font-size: 10pt;
@@ -4161,6 +4110,7 @@ hide-popover hide-content {
   overflow: clip;
 }
 .hide-root > .status-bar {
+  overflow-x: hidden;
   padding-left: 4px;
   padding-right: 4px;
   height: 16px;
@@ -4170,10 +4120,41 @@ hide-popover hide-content {
   display: flex;
   font-family: var(--default-font);
 }
+.hide-root > .status-bar.error {
+  background-color: #ee6666;
+  color: black;
+}
 .hide-root > .status-bar .build {
   margin-left: auto;
+  flex-grow: 0;
+}
+.hide-root > .status-bar .error-suppressed {
+  flex-grow: 1;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  margin-left: auto;
+  margin-right: auto;
+  padding-left: 4px;
+  padding-right: 4px;
+  color: black;
+  border-radius: 3px;
+}
+.hide-root > .status-bar .error-suppressed button {
+  margin-right: 10px;
+  border: none;
+  background-color: #ee6666;
+}
+.hide-root > .status-bar .error-suppressed button .ico {
+  margin-right: 5px;
+}
+.hide-root > .status-bar .error-suppressed button:hover {
+  cursor: pointer;
+  background-color: #ff8a8a;
+  color: white;
 }
 .hide-root > .status-bar #status-icons {
+  flex-grow: 0;
   display: flex;
   align-items: center;
   gap: 4px;
@@ -4198,13 +4179,6 @@ hide-popover hide-content {
 }
 .hide-root > .status-bar #status-icons button:hover {
   background-color: #ddd;
-}
-.hide-root > .status-bar #status-icons .error-suppressed {
-  padding-left: 4px;
-  padding-right: 4px;
-  background-color: hsl(359, 68%, 71%);
-  color: black;
-  border-radius: 3px;
 }
 /* Spline inspector */
 .spline-editor .points-inspector {
