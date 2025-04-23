@@ -90,7 +90,20 @@ class Script extends FileView {
 				language : lang,
 				automaticLayout : true,
 				wordWrap : true,
+				minimap : { enabled : false },
 				theme : "vs-dark",
+				lineNumbersMinChars: 3,
+				fontSize: "13px",
+				mouseWheelZoom: true,
+				scrollBeyondLastLine: false,
+				insertSpaces : false,
+				detectIndentation : false,
+				// To remove when scrollbar's bug is fixed (error when user click on scrollbar)
+				scrollbar: {
+					vertical:"hidden",
+					horizontal: "hidden",
+					handleMouseWheel:true,
+				}
 			});
 			editor.addCommand(monaco.KeyCode.KEY_S | monaco.KeyMod.CtrlCmd, function() {
 				onSave(editor.getValue({preserveBOM:true}));
