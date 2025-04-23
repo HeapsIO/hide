@@ -33,6 +33,8 @@ class Reference extends Object3D {
 	override function save() {
 		if (editMode == Override && refInstance != null) {
 			this.overrides = genOverride();
+		} else if (editMode == Edit && refInstance != null) {
+			this.overrides = null;
 		}
 
 		var obj : Dynamic = super.save();
@@ -264,13 +266,17 @@ class Reference extends Object3D {
 			<dl>
 				<dt>Reference</dt><dd><input type="fileselect" extensions="prefab l3d fx" field="source"/></dd>
 				<dt>Edit</dt><dd><select field="editMode"></select></dd>
+				<p class="warning">Warning : Edit mode enabled while there are override on this reference. Saving will cause the overrides to be applied to the original reference !</p>
 			</dl>
 			</div>');
+
+		var warning = element.find(".warning");
 
 		function updateProps() {
 			var input = element.find("input");
 			var found = resolveRef() != null;
 			input.toggleClass("error", !found);
+			warning.toggle(overrides != null && editMode == Edit);
 		}
 		updateProps();
 
@@ -309,20 +315,39 @@ class Reference extends Object3D {
 		super.edit(ctx);
 
 		var over = new hide.Element('
-			<div>
-			Overrides:
-			<pre>
-			${overrides}
-			</pre>
-
-			<fancy-button><span class="label">Reset Overrides</span></fancy-button>
+			<div class="group">
+				<dl>
+					<dt>Overrides</dt><dd><p class="override-infos"></p><fancy-button><span class="label">Clear Overrides</span></fancy-button></dd>
+				</dl>
 			</div>
 		');
+
+		var overInfos = over.find(".override-infos");
+		function refreshOverrideInfos() {
+			if (genOverride() == null) {
+				overInfos.text("No overrides");
+			}
+			else {
+				overInfos.text("This reference has overrides");
+			}
+		}
+		refreshOverrideInfos();
+
 		over.find("fancy-button").click((_) -> {
 			var old = overrides;
 			this.overrides = null;
-			@:privateAccess ctx.properties.undo.change(Field(this, "overrides", old));
-			ctx.rebuildPrefab(this);
+			var refresh = () -> {
+				if (originalSource != null) {
+					@:privateAccess shared.editor.removeInstance(refInstance, false);
+					originalSource = null;
+					refInstance = null;
+					ctx.rebuildPrefab(this);
+					refreshOverrideInfos();
+				}
+			};
+			@:privateAccess ctx.properties.undo.change(Field(this, "overrides", old), refresh);
+			refresh();
+			//ctx.rebuildPrefab(this);
 		});
 		ctx.properties.add(over);
 	}

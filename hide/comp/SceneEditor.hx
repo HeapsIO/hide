@@ -3206,8 +3206,23 @@ class SceneEditor {
 		var obj3d  = p.to(Object3D);
 		el.toggleClass("disabled", !p.enabled);
 		var aEl = el.find("a").first();
-		var root = p.getRoot();
-		el.toggleClass("inRef", root != sceneData);
+
+		// reference
+		var isOverride = false;
+		var inRef = false;
+		if (p.shared.parentPrefab != null) {
+			var parentRef = Std.downcast(p.shared.parentPrefab, Reference);
+			if (parentRef != null) {
+				if (parentRef.editMode == Override) {
+					isOverride = true;
+				} else {
+					inRef = true;
+				}
+			}
+		}
+
+		el.toggleClass("inRef", inRef);
+		el.toggleClass("isOverride", isOverride);
 
 		var tag = getTag(p);
 
