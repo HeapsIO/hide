@@ -61,12 +61,10 @@ class Reference extends Object3D {
 	}
 
 	override function load(obj: Dynamic) {
-		#if editor
 		// Backward compatibility between old bool editMode and new enum based editMode
 		if (Type.typeof(obj.editMode) == TBool) {
 			obj.editMode = "Edit";
 		}
-		#end
 
 		super.load(obj);
 
