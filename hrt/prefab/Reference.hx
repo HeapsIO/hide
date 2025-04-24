@@ -25,7 +25,7 @@ class Reference extends Object3D {
 	#if editor
 	function genOverride() : Dynamic {
 		var orig = originalSource;
-		var ref = refInstance.serialize();
+		var ref = refInstance?.serialize() ?? null;
 		var diff = hrt.prefab.Diff.diffPrefab(orig, ref);
 		switch (diff) {
 			case Skip:
@@ -70,6 +70,25 @@ class Reference extends Object3D {
 
 		super.load(obj);
 
+		if (source != null) {
+			initRefInstance();
+		}
+	}
+
+	override function copy(obj: Prefab) {
+		super.copy(obj);
+		var otherRef : Reference = cast obj;
+
+		#if editor
+		originalSource = @:privateAccess hxd.res.Loader.currentInstance.load(source).toPrefab().loadData();
+		#end
+
+		// Clone the refInstance from the original prefab on copy
+		refInstance = otherRef.refInstance.clone(new ContextShared(source, null, null, true));
+		refInstance.shared.parentPrefab = this;
+	}
+
+	function initRefInstance() {
 		// Load reference data into refInstance
 
 		var refInstanceData = null;
@@ -96,19 +115,6 @@ class Reference extends Object3D {
 
 		var shouldBeInstance = #if editor true #else false #end;
 		refInstance = hrt.prefab.Prefab.createFromDynamic(refInstanceData, null, new ContextShared(source, null, null, shouldBeInstance));
-		refInstance.shared.parentPrefab = this;
-	}
-
-	override function copy(obj: Prefab) {
-		super.copy(obj);
-		var otherRef : Reference = cast obj;
-
-		#if editor
-		originalSource = @:privateAccess hxd.res.Loader.currentInstance.load(source).toPrefab().loadData();
-		#end
-
-		// Clone the refInstance from the original prefab on copy
-		refInstance = otherRef.refInstance.clone(new ContextShared(source, null, null, true));
 		refInstance.shared.parentPrefab = this;
 	}
 
@@ -181,6 +187,11 @@ class Reference extends Object3D {
 	override function makeInstance() {
 		if( source == null )
 			return;
+
+		// in the case source has changed since the last load (can happen when creating references manually)
+		if (refInstance?.source != source) {
+			initRefInstance();
+		}
 		// #if editor
 		// if (hasCycle()) {
 		// 	hide.Ide.inst.quickError('Reference ${getAbsPath()} to $source is creating a cycle. Please fix the reference.');
