@@ -248,10 +248,8 @@ class Prefab extends hide.view.FileView {
 
 	override function onDisplay() {
 		if( sceneEditor != null ) sceneEditor.dispose();
-
 		createData();
 		var content = sys.io.File.getContent(getPath());
-		data = hrt.prefab.Prefab.createFromDynamic(haxe.Json.parse(content));
 		currentSign = ide.makeSignature(content);
 
 
@@ -439,6 +437,12 @@ class Prefab extends hide.view.FileView {
 	}
 
 	public function onSceneReady() {
+		data = hxd.res.Loader.currentInstance.load(state.path).toPrefab().load();
+
+		@:privateAccess sceneEditor.sceneData = data;
+
+		sceneEditor.refreshScene();
+
 		refreshSceneFilters();
 		refreshGraphicsFilters();
 		refreshViewModes();
@@ -578,6 +582,7 @@ class Prefab extends hide.view.FileView {
 			initGraphicsFilters();
 			initSceneFilters();
 		}
+
 	}
 
 	function resetCamera( top : Bool ) {

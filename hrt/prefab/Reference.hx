@@ -62,11 +62,45 @@ class Reference extends Object3D {
 			obj.editMode = "Edit";
 		}
 		#end
+
 		super.load(obj);
+
+		// Load reference data into refInstance
+
+		var refInstanceData = null;
+		#if editor
+		try {
+		#end
+		refInstanceData = @:privateAccess hxd.res.Loader.currentInstance.load(source).toPrefab().loadData();
+		#if editor
+		} catch (e) {
+
+		}
+		#end
+
+		if (refInstanceData == null)
+			return;
+
+		#if editor
+		originalSource = @:privateAccess hxd.res.Loader.currentInstance.load(source).toPrefab().loadData();
+		#end
+
+		if (overrides != null) {
+			refInstanceData = hrt.prefab.Diff.apply(refInstanceData, overrides);
+		}
+
+		var shouldBeInstance = #if editor true #else false #end;
+		refInstance = hrt.prefab.Prefab.createFromDynamic(refInstanceData, null, new ContextShared(source, null, null, shouldBeInstance));
+		refInstance.shared.parentPrefab = this;
 	}
 
 	override function copy(obj: Prefab) {
-		super.load(obj);
+		super.copy(obj);
+		var otherRef : Reference = cast obj;
+
+		// Clone the refInstance from the original prefab on copy
+		refInstance = otherRef.refInstance.clone(new ContextShared(source));
+		refInstance.shared.parentPrefab = this;
 	}
 
 	#if editor
@@ -80,71 +114,74 @@ class Reference extends Object3D {
 	#end
 
 	function setRef(data: Dynamic) {
-		// Fast non override path
-		if (overrides == null) {
-			refInstance = hxd.res.Loader.currentInstance.load(source).toPrefab().load().clone();
-			return;
-		}
+		return;
+		// // Fast non override path
+		// if (overrides == null) {
+		// 	refInstance = hxd.res.Loader.currentInstance.load(source).toPrefab().load().clone();
+		// 	return;
+		// }
 
-		if (data == null) {
-				// need a fresh copy to apply overrides
-				data = @:privateAccess hxd.res.Loader.currentInstance.load(source).toPrefab().loadData();
-		}
-		#if editor
-		var currentModifications = null;
-		if (originalSource != null && refInstance != null) {
-			currentModifications = genOverride();
-			trace(this.name, currentModifications);
-		}
-		originalSource = hrt.prefab.Diff.deepCopy(data);
-		if (overrides != null) {
-			data = hrt.prefab.Diff.deepCopy(data);
-		}
-		#end
+		// if (data == null) {
+		// 		// need a fresh copy to apply overrides
+		// 		data = @:privateAccess hxd.res.Loader.currentInstance.load(source).toPrefab().loadData();
+		// }
+		// #if editor
+		// var currentModifications = null;
+		// if (originalSource != null && refInstance != null) {
+		// 	currentModifications = genOverride();
+		// 	trace(this.name, currentModifications);
+		// }
+		// originalSource = hrt.prefab.Diff.deepCopy(data);
+		// if (overrides != null) {
+		// 	data = hrt.prefab.Diff.deepCopy(data);
+		// }
+		// #end
 
 
-		if (#if editor currentModifications == null && #end overrides != null) {
-			data = hrt.prefab.Diff.apply(data, overrides);
-		}
-		#if editor
-		else if (currentModifications != null) {
-			data = hrt.prefab.Diff.apply(data, currentModifications);
-		}
-		#end
+		// if (#if editor currentModifications == null && #end overrides != null) {
+		// 	data = hrt.prefab.Diff.apply(data, overrides);
+		// }
+		// #if editor
+		// else if (currentModifications != null) {
+		// 	data = hrt.prefab.Diff.apply(data, currentModifications);
+		// }
+		// #end
 
-		refInstance = Prefab.createFromDynamic(data, new ContextShared(source, true));
-		refInstance.shared.parentPrefab = this;
+		// refInstance = Prefab.createFromDynamic(data, new ContextShared(source, true));
+		// refInstance.shared.parentPrefab = this;
 	}
 
 	function resolveRef() : Prefab {
-		if(source == null)
-			return null;
-		if (refInstance != null)
-			return refInstance;
-		#if editor
-		try {
-		#end
-			setRef(null);
-			return refInstance;
-		#if editor
-		} catch (_) {
-			return null;
-		}
-		#end
+		return refInstance;
+		// if(source == null)
+		// 	return null;
+		// if (refInstance != null)
+		// 	return refInstance;
+		// #if editor
+		// try {
+		// #end
+		// 	setRef(null);
+		// 	return refInstance;
+		// #if editor
+		// } catch (_) {
+		// 	return null;
+		// }
+		// #end
 	}
 
 	override function makeInstance() {
 		if( source == null )
 			return;
-		#if editor
-		if (hasCycle()) {
-			hide.Ide.inst.quickError('Reference ${getAbsPath()} to $source is creating a cycle. Please fix the reference.');
-			refInstance = null;
-			return;
-		}
-		#end
+		// #if editor
+		// if (hasCycle()) {
+		// 	hide.Ide.inst.quickError('Reference ${getAbsPath()} to $source is creating a cycle. Please fix the reference.');
+		// 	refInstance = null;
+		// 	return;
+		// }
+		// #end
 
-		var p = resolveRef();
+		// var p = resolveRef();
+		var p = refInstance;
 		var refLocal3d : h3d.scene.Object = null;
 
 		if (Std.downcast(p, Object3D) != null) {
@@ -176,11 +213,11 @@ class Reference extends Object3D {
 			obj3d.loadTransform(this); // apply this transform to the reference prefab
 			obj3d.name = name;
 			obj3d.visible = visible;
-			refInstance.make();
+			refInstance = refInstance.make();
 			local3d = Object3D.getLocal3d(refInstance);
 		}
 		else {
-			refInstance.make();
+			refInstance = refInstance.make();
 		}
 
 		#if editor
