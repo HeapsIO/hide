@@ -9,25 +9,29 @@ class Reference extends Object3D {
 	@:s public var editMode : EditMode = None;
 	@:s public var overrides : Dynamic = null;
 
-	public var refInstance : Prefab;
+	public var refInstance(default, set) : Prefab;
+	function set_refInstance(v: Prefab) {
+		trace("setRefInstance");
+		return refInstance = v;
+	}
 
 	#if editor
 	var wasMade : Bool = false;
 
-	// used to make the override diff
+	// copy of the original data to use as a reference on save for overrides
 	public var originalSource : Dynamic;
 	#end
 
 	#if editor
 	function genOverride() : Dynamic {
-		var orig = hrt.prefab.Diff.deepCopy(originalSource);
+		var orig = originalSource;
 		var ref = refInstance.serialize();
 		var diff = hrt.prefab.Diff.diffPrefab(orig, ref);
 		switch (diff) {
 			case Skip:
 				return null;
 			case Set(v):
-				return v;
+				return hrt.prefab.Diff.deepCopy(v);
 		}
 	}
 	#end
@@ -36,6 +40,7 @@ class Reference extends Object3D {
 		#if editor
 		if (editMode == Override && refInstance != null) {
 			this.overrides = genOverride();
+			trace(this.overrides);
 		} else if (editMode == Edit && refInstance != null) {
 			this.overrides = null;
 		}
@@ -98,8 +103,12 @@ class Reference extends Object3D {
 		super.copy(obj);
 		var otherRef : Reference = cast obj;
 
+		#if editor
+		originalSource = @:privateAccess hxd.res.Loader.currentInstance.load(source).toPrefab().loadData();
+		#end
+
 		// Clone the refInstance from the original prefab on copy
-		refInstance = otherRef.refInstance.clone(new ContextShared(source));
+		refInstance = otherRef.refInstance.clone(new ContextShared(source, null, null, true));
 		refInstance.shared.parentPrefab = this;
 	}
 
@@ -181,43 +190,42 @@ class Reference extends Object3D {
 		// #end
 
 		// var p = resolveRef();
-		var p = refInstance;
 		var refLocal3d : h3d.scene.Object = null;
 
-		if (Std.downcast(p, Object3D) != null) {
+		if (Std.downcast(refInstance, Object3D) != null) {
 			refLocal3d = shared.current3d;
 		} else {
 			super.makeInstance();
 			refLocal3d = local3d;
 		}
 
-		if (p == null) {
-			refInstance = null;
+		if (refInstance == null) {
 			return;
 		}
 
-		var sh = p.shared;
+		var sh = refInstance.shared;
 		@:privateAccess sh.root3d = sh.current3d = refLocal3d;
 		@:privateAccess sh.root2d = sh.current2d = findFirstLocal2d();
 
 		#if editor
 		sh.editor = this.shared.editor;
 		sh.scene = this.shared.scene;
+		if (sh.isInstance == false)
+			throw "isInstance should be true";
 		#end
 		sh.parentPrefab = this;
 		sh.customMake = this.shared.customMake;
-		refInstance = p;
 
 		if (refInstance.to(Object3D) != null) {
 			var obj3d = refInstance.to(Object3D);
 			obj3d.loadTransform(this); // apply this transform to the reference prefab
 			obj3d.name = name;
 			obj3d.visible = visible;
-			refInstance = refInstance.make();
+			refInstance.make();
 			local3d = Object3D.getLocal3d(refInstance);
 		}
 		else {
-			refInstance = refInstance.make();
+			refInstance.make();
 		}
 
 		#if editor
