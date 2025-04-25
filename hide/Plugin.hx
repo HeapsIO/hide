@@ -25,7 +25,6 @@ class Plugin {
 		"h3d",
 		"hxd",
 		"hxsl",
-		"hxbit",
 
 		"haxe",
 		"js",
