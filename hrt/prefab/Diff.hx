@@ -1,8 +1,11 @@
 package hrt.prefab;
 
 enum DiffResult {
+	/**The two object are identical, don't save anything**/
 	Skip;
-	Set(value: Dynamic);
+
+	/**The two objects are different, save the result as diff**/
+	Set(diff: Dynamic);
 }
 
 /**
@@ -22,7 +25,6 @@ enum DiffResult {
 	@index : in the prefab children data, indicate that this child has changed index between the A.children and B.children array
 
 **/
-
 class Diff {
 	public static function addToDiff(diff: DiffResult, key: String, value: Dynamic) : DiffResult{
 		var v = switch(diff) {
@@ -40,6 +42,53 @@ class Diff {
 		return haxe.Json.parse(haxe.Json.stringify(v));
 	}
 
+
+	/**
+		Returns the difference of two values together
+	**/
+	public static function diff(originalValue: Dynamic, modifiedValue: Dynamic) : DiffResult {
+		var originalType = Type.typeof(originalValue);
+		var modifiedType = Type.typeof(modifiedValue);
+
+		if (!originalType.equals(modifiedType)) {
+			return Set(modifiedValue);
+		}
+
+		switch (modifiedType) {
+			case TNull:
+				// The only way we get here is if both types are null, so by definition they are both null and so there is no diff
+				return Skip;
+			case TInt | TFloat | TBool:
+				if (originalValue == modifiedValue) {
+					return Skip;
+				}
+			case TObject:
+				return diffObject(originalValue, modifiedValue);
+			case TClass(subClass): {
+				switch (subClass) {
+					case String:
+						if (originalValue == modifiedValue) {
+							return Skip;
+						}
+					case Array:
+						return diffArray(originalValue, modifiedValue);
+					default:
+						throw "Can't diff class " + subClass;
+				}
+			}
+			default:
+				throw "Unhandled type " + modifiedType;
+		}
+		return Set(modifiedValue);
+	}
+
+
+	/**
+		Same as diffObject, but handles `type` and `children` fields as a special case :
+		children is serialized as an object with prefabName: diffPrefab(prefab)
+		and if original.type != modified.type, the whole modified object is copied as is
+		(because we consider that changing the type of a prefab in a diff means the prefab was destroyed then re-created)
+	**/
 	public static function diffPrefab(original: Dynamic, modified: Dynamic) : DiffResult {
 		if (original == null || modified == null) {
 			if (original == modified)
@@ -104,6 +153,9 @@ class Diff {
 		return result;
 	}
 
+	/**
+		Returns the difference between two dynamic objects
+	**/
 	public static function diffObject(original: Dynamic, modified: Dynamic, skipFields: Array<String> = null) : DiffResult {
 		skipFields ??= [];
 		var result = {};
@@ -133,7 +185,7 @@ class Diff {
 			var originalValue = Reflect.getProperty(original, modifiedField);
 			var modifiedValue = Reflect.getProperty(modified, modifiedField);
 
-			switch(diffValue(originalValue, modifiedValue)) {
+			switch(diff(originalValue, modifiedValue)) {
 				case Skip:
 				case Set(v):
 					Reflect.setField(result, modifiedField, v);
@@ -158,7 +210,7 @@ class Diff {
 			var originalValue = original[index];
 			var modifiedValue = modified[index];
 
-			switch(diffValue(originalValue, modifiedValue)) {
+			switch(diff(originalValue, modifiedValue)) {
 				case Set(_):
 					// return the whole modified object when any field is different than the original
 					return Set(deepCopy(modified));
@@ -168,44 +220,8 @@ class Diff {
 		return Skip;
 	}
 
-	public static function diffValue(originalValue: Dynamic, modifiedValue: Dynamic) : DiffResult {
-		var originalType = Type.typeof(originalValue);
-		var modifiedType = Type.typeof(modifiedValue);
-
-		if (!originalType.equals(modifiedType)) {
-			return Set(modifiedValue);
-		}
-
-		switch (modifiedType) {
-			case TNull:
-				// The only way we get here is if both types are null, so by definition they are both null and so there is no diff
-				return Skip;
-			case TInt | TFloat | TBool:
-				if (originalValue == modifiedValue) {
-					return Skip;
-				}
-			case TObject:
-				return diffObject(originalValue, modifiedValue);
-			case TClass(subClass): {
-				switch (subClass) {
-					case String:
-						if (originalValue == modifiedValue) {
-							return Skip;
-						}
-					case Array:
-						return diffArray(originalValue, modifiedValue);
-					default:
-						throw "Can't diff class " + subClass;
-				}
-			}
-			default:
-				throw "Unhandled type " + modifiedType;
-		}
-		return Set(modifiedValue);
-	}
-
 	/**
-		Modifies `target` dynamic so `apply(a, diff(a, b)) == b`
+		Modifies `target` dynamic so `apply(a, diffObject(a, b)) == b`
 	**/
 	public static function apply(target: Dynamic, diff: Dynamic) : Dynamic {
 		if (diff == null)

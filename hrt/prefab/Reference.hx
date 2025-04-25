@@ -1,20 +1,39 @@
 package hrt.prefab;
 
 enum EditMode {
+	/** The reference can't be edited in the editor **/
 	None;
+
+	/** The reference can be edited in the editor, and saving it will update the referenced prefab file on disk **/
 	Edit;
+
+	/** The reference can be edited, and saving it will save a diff between the original prefab and this in the `override` field **/
 	Override;
 }
 class Reference extends Object3D {
-	@:s public var editMode : EditMode = None;
-	@:s public var overrides : Dynamic = null;
-
+	/**
+		The referenced prefab loaded by this reference
+	**/
 	public var refInstance : Prefab;
+
+	/**
+		How the reference can be edited in the editor
+	**/
+	@:s public var editMode : EditMode = None;
+
+	/**
+		List of all the properties that differs between this reference
+		and the original prefab data. Use the format defined by
+		hrt.prefab.Diff.diffPrefab
+	**/
+	@:s public var overrides : Dynamic = null;
 
 	#if editor
 	var wasMade : Bool = false;
 
-	// copy of the original data to use as a reference on save for overrides
+	/**
+		Copy of the original data to use as a reference on save for overrides
+	**/
 	public var originalSource : Dynamic;
 	#end
 
@@ -25,38 +44,17 @@ class Reference extends Object3D {
 		return source = newSource;
 	}
 
-	function resetRefInstance() {
-		#if editor
-		editorRemoveObjects();
-		#end
-
-		refInstance = null;
-	}
-
-	#if editor
-	function genOverride() : Dynamic {
-		var orig = originalSource;
-		var ref = refInstance?.serialize() ?? null;
-		var diff = hrt.prefab.Diff.diffPrefab(orig, ref);
-		switch (diff) {
-			case Skip:
-				return null;
-			case Set(v):
-				return hrt.prefab.Diff.deepCopy(v);
-		}
-	}
-	#end
-
 	override function save() {
 		#if editor
 		if (editMode == Override && refInstance != null) {
-			this.overrides = genOverride();
+			this.overrides = computeDiffFromSource();
 		} else if (editMode == Edit && refInstance != null) {
 			this.overrides = null;
 		}
 		#end
 
 		var obj : Dynamic = super.save();
+
 		#if editor
 
 		if( editMode == Edit && refInstance != null ) {
@@ -105,12 +103,23 @@ class Reference extends Object3D {
 			}
 			refInstance?.shared.parentPrefab = this;
 		}
-
 	}
 
-	function initRefInstance() {
-		// Load reference data into refInstance
+	#if editor
+	function computeDiffFromSource() : Dynamic {
+		var orig = originalSource;
+		var ref = refInstance?.serialize() ?? null;
+		var diff = hrt.prefab.Diff.diffPrefab(orig, ref);
+		switch (diff) {
+			case Skip:
+				return null;
+			case Set(v):
+				return hrt.prefab.Diff.deepCopy(v);
+		}
+	}
+	#end
 
+	function initRefInstance() {
 		var refInstanceData = null;
 		#if editor
 		try {
@@ -149,7 +158,6 @@ class Reference extends Object3D {
 
 	#if editor
 	function setRef(data: Dynamic) {
-		// Fast non override path
 		if (data == null)
 			throw "Null data";
 
@@ -194,8 +202,6 @@ class Reference extends Object3D {
 		return refInstance;
 	}
 
-
-
 	override function makeInstance() {
 		if( source == null )
 			return;
@@ -214,7 +220,6 @@ class Reference extends Object3D {
 		}
 		#end
 
-		// var p = resolveRef();
 		var refLocal3d : h3d.scene.Object = null;
 
 		if (Std.downcast(refInstance, Object3D) != null) {
@@ -258,7 +263,6 @@ class Reference extends Object3D {
 		#end
 	}
 
-
 	override public function findRec<T:Prefab>(?cl: Class<T>, ?filter : T -> Bool, followRefs : Bool = false, includeDisabled: Bool = true) : Null<T> {
 		if (!includeDisabled && !enabled)
 			return null;
@@ -293,6 +297,14 @@ class Reference extends Object3D {
 			refInstance.dispose();
 	}
 
+	function resetRefInstance() {
+		#if editor
+		editorRemoveObjects();
+		#end
+
+		refInstance = null;
+	}
+
 	#if editor
 
 	override public function editorRemoveObjects() : Void {
@@ -306,7 +318,12 @@ class Reference extends Object3D {
 		super.editorRemoveObjects();
 	}
 
+	/**
+		Returns true if this reference has a cycle,
+		meaning that references depends on each other
+	**/
 	public function hasCycle() : Bool {
+
 		var map : Map<String, Bool> = [];
 		map.set(shared.currentPath, true);
 		return hasCyclePath(source, map);
@@ -368,14 +385,10 @@ class Reference extends Object3D {
 		var props = ctx.properties.add(element, this, function(pname) {
 			ctx.onChange(this, pname);
 			if(pname == "source" || pname == "editMode") {
-				if (pname == "source") {
-					editorRemoveObjects();
-					refInstance = null;
-				}
 				if (hasCycle()) {
 					hide.Ide.inst.quickError('Reference to $source would create a cycle. The reference change was aborted.');
-					ctx.properties.undo.undo();
-					@:privateAccess ctx.properties.undo.redoElts.pop();
+					source = null;
+					ctx.rebuildProperties();
 					return;
 				}
 				updateProps();
@@ -409,7 +422,7 @@ class Reference extends Object3D {
 
 		var overInfos = over.find(".override-infos");
 		function refreshOverrideInfos() {
-			if (genOverride() == null) {
+			if (computeDiffFromSource() == null) {
 				overInfos.text("No overrides");
 			}
 			else {

@@ -2141,7 +2141,7 @@ class SceneEditor {
 
 		onSceneReady();
 
-		selectElements([]);
+		selectElements([], NoHistory);
 		this.camera2D = camera2D;
 
 		updateViewportOverlays();
