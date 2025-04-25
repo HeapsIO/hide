@@ -1967,8 +1967,7 @@ class Emitter extends Object3D {
 		super.edit(ctx);
 
 		function refresh() {
-			ctx.properties.clear();
-			this.edit(ctx);
+			ctx.rebuildProperties();
 		}
 
 		function onChange(?pname: String) {
