@@ -68,7 +68,7 @@ class Reference extends Object3D {
 
 		super.load(obj);
 
-		if (source != null) {
+		if (source != null && shouldBeInstanciated()) {
 			initRefInstance();
 		}
 	}
@@ -82,8 +82,15 @@ class Reference extends Object3D {
 		#end
 
 		// Clone the refInstance from the original prefab on copy
-		refInstance = otherRef.refInstance.clone(new ContextShared(source, null, null, true));
-		refInstance.shared.parentPrefab = this;
+		if (source != null && shouldBeInstanciated()) {
+			if (otherRef.refInstance != null) {
+				refInstance = otherRef.refInstance.clone(new ContextShared(source, null, null, true));
+			} else {
+				initRefInstance();
+			}
+			refInstance?.shared.parentPrefab = this;
+		}
+
 	}
 
 	function initRefInstance() {
@@ -111,8 +118,7 @@ class Reference extends Object3D {
 			refInstanceData = hrt.prefab.Diff.apply(refInstanceData, overrides);
 		}
 
-		var shouldBeInstance = #if editor true #else false #end;
-		refInstance = hrt.prefab.Prefab.createFromDynamic(refInstanceData, null, new ContextShared(source, null, null, shouldBeInstance));
+		refInstance = hrt.prefab.Prefab.createFromDynamic(refInstanceData, null, new ContextShared(source, null, null, false));
 		refInstance.shared.parentPrefab = this;
 	}
 
@@ -126,43 +132,38 @@ class Reference extends Object3D {
 	}
 	#end
 
+	#if editor
 	function setRef(data: Dynamic) {
-		return;
-		// // Fast non override path
-		// if (overrides == null) {
-		// 	refInstance = hxd.res.Loader.currentInstance.load(source).toPrefab().load().clone();
-		// 	return;
-		// }
+		// Fast non override path
+		if (data == null)
+			throw "Null data";
 
-		// if (data == null) {
-		// 		// need a fresh copy to apply overrides
-		// 		data = @:privateAccess hxd.res.Loader.currentInstance.load(source).toPrefab().loadData();
-		// }
-		// #if editor
-		// var currentModifications = null;
-		// if (originalSource != null && refInstance != null) {
-		// 	currentModifications = genOverride();
-		// 	trace(this.name, currentModifications);
-		// }
-		// originalSource = hrt.prefab.Diff.deepCopy(data);
-		// if (overrides != null) {
-		// 	data = hrt.prefab.Diff.deepCopy(data);
-		// }
-		// #end
+		if (refInstance == null)
+			return;
 
+		var newSource = hrt.prefab.Diff.deepCopy(data);
+		var currentSerialization = refInstance.serialize();
 
-		// if (#if editor currentModifications == null && #end overrides != null) {
-		// 	data = hrt.prefab.Diff.apply(data, overrides);
-		// }
-		// #if editor
-		// else if (currentModifications != null) {
-		// 	data = hrt.prefab.Diff.apply(data, currentModifications);
-		// }
-		// #end
+		var pristineData = hrt.prefab.Diff.deepCopy(newSource);
 
-		// refInstance = Prefab.createFromDynamic(data, new ContextShared(source, true));
-		// refInstance.shared.parentPrefab = this;
+		// we might have unsaved changes
+		if (editMode == Override) {
+			switch(hrt.prefab.Diff.diffPrefab(originalSource, currentSerialization)) {
+				case Skip:
+				case Set(diff):
+					pristineData = hrt.prefab.Diff.apply(pristineData, diff);
+			}
+		}
+		else if (overrides != null) {
+			pristineData = hrt.prefab.Diff.apply(pristineData, overrides);
+		}
+
+		originalSource = newSource;
+
+		refInstance = Prefab.createFromDynamic(pristineData, new ContextShared(source, true));
+		refInstance.shared.parentPrefab = this;
 	}
+	#end
 
 	function resolveRef() : Prefab {
 		return refInstance;
@@ -186,9 +187,11 @@ class Reference extends Object3D {
 		if( source == null )
 			return;
 
+
 		// in the case source has changed since the last load (can happen when creating references manually)
-		if (refInstance?.source != source) {
+		if (refInstance?.shared.currentPath != source) {
 			initRefInstance();
+			refInstance = refInstance.clone();
 		}
 		// #if editor
 		// if (hasCycle()) {
