@@ -63,7 +63,11 @@ class Prefab {
 	/**
 		The associated source file (an image, a 3D model, etc.) if the prefab type needs it.
 	**/
-	@:s public var source : String;
+	@:s public var source(default, set) : String;
+
+	public function set_source(newSource: String) {
+		return source = newSource;
+	}
 
 	/**
 		The parent of the prefab in the tree view

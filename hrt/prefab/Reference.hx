@@ -18,6 +18,21 @@ class Reference extends Object3D {
 	public var originalSource : Dynamic;
 	#end
 
+	override function set_source(newSource:String):String {
+		if (newSource != source) {
+			resetRefInstance();
+		}
+		return source = newSource;
+	}
+
+	function resetRefInstance() {
+		#if editor
+		editorRemoveObjects();
+		#end
+
+		refInstance = null;
+	}
+
 	#if editor
 	function genOverride() : Dynamic {
 		var orig = originalSource;
@@ -36,7 +51,6 @@ class Reference extends Object3D {
 		#if editor
 		if (editMode == Override && refInstance != null) {
 			this.overrides = genOverride();
-			trace(this.overrides);
 		} else if (editMode == Edit && refInstance != null) {
 			this.overrides = null;
 		}
@@ -53,6 +67,7 @@ class Reference extends Object3D {
 			sys.io.File.saveContent(hide.Ide.inst.getPath(source), hide.Ide.inst.toJSON(s));
 		}
 		#end
+
 		return obj;
 	}
 
@@ -64,7 +79,11 @@ class Reference extends Object3D {
 
 		super.load(obj);
 
-		if (source != null && shouldBeInstanciated()) {
+		if (source != null && shouldBeInstanciated() && hxd.res.Loader.currentInstance.exists(source)) {
+			#if editor
+			if (hasCycle())
+				return;
+			#end
 			initRefInstance();
 		}
 	}
@@ -114,7 +133,7 @@ class Reference extends Object3D {
 			refInstanceData = hrt.prefab.Diff.apply(refInstanceData, overrides);
 		}
 
-		refInstance = hrt.prefab.Prefab.createFromDynamic(refInstanceData, null, new ContextShared(source, null, null, false));
+		refInstance = hrt.prefab.Prefab.createFromDynamic(refInstanceData, null, new ContextShared(source, null, null, true));
 		refInstance.shared.parentPrefab = this;
 	}
 
@@ -162,22 +181,20 @@ class Reference extends Object3D {
 	#end
 
 	function resolveRef() : Prefab {
+		var shouldLoad = refInstance == null && source != null && shouldBeInstanciated();
+
+		#if editor
+		if (hasCycle())
+			shouldLoad = false;
+		#end
+
+		if (shouldLoad) {
+			initRefInstance();
+		}
 		return refInstance;
-		// if(source == null)
-		// 	return null;
-		// if (refInstance != null)
-		// 	return refInstance;
-		// #if editor
-		// try {
-		// #end
-		// 	setRef(null);
-		// 	return refInstance;
-		// #if editor
-		// } catch (_) {
-		// 	return null;
-		// }
-		// #end
 	}
+
+
 
 	override function makeInstance() {
 		if( source == null )
@@ -189,13 +206,13 @@ class Reference extends Object3D {
 			initRefInstance();
 			refInstance = refInstance.clone();
 		}
-		// #if editor
-		// if (hasCycle()) {
-		// 	hide.Ide.inst.quickError('Reference ${getAbsPath()} to $source is creating a cycle. Please fix the reference.');
-		// 	refInstance = null;
-		// 	return;
-		// }
-		// #end
+		#if editor
+		if (hasCycle()) {
+			hide.Ide.inst.quickError('Reference ${getAbsPath()} to $source is creating a cycle. Please fix the reference.');
+			refInstance = null;
+			return;
+		}
+		#end
 
 		// var p = resolveRef();
 		var refLocal3d : h3d.scene.Object = null;
@@ -289,37 +306,35 @@ class Reference extends Object3D {
 		super.editorRemoveObjects();
 	}
 
-	public function hasCycle(?seenPaths: Map<String, Bool>) : Bool {
-		if (editorOnly)
-			return false;
-		var oldEditMode = editMode;
-		editMode = None;
-		seenPaths = seenPaths?.copy() ?? [];
-		var curPath = this.shared.currentPath;
-		if (seenPaths.get(curPath) != null) {
-			editMode = oldEditMode;
+	public function hasCycle() : Bool {
+		var map : Map<String, Bool> = [];
+		map.set(shared.currentPath, true);
+		return hasCyclePath(source, map);
+	}
+
+	static function hasCyclePath(path: String, seenPaths: Map<String, Bool>) : Bool {
+		if (seenPaths.get(path) == true)
 			return true;
+		if (!hxd.res.Loader.currentInstance.exists(path))
+			return false;
+
+		seenPaths.set(path, true);
+		var data = @:privateAccess hxd.res.Loader.currentInstance.load(path).toPrefab().loadData();
+		return hasCycleDynamic(data, seenPaths);
+	}
+
+	static function hasCycleDynamic(data: Dynamic, seenPaths: Map<String, Bool>) : Bool {
+		if (data.source != null) {
+			if (hasCyclePath(data.source, seenPaths.copy()))
+				return true;
 		}
-		seenPaths.set(curPath, true);
-
-		if (source != null) {
-			var ref = resolveRef();
-			if (ref != null) {
-				var root = ref;
-				if (Std.isOfType(root, hrt.prefab.fx.BaseFX)) {
-					root = hrt.prefab.fx.BaseFX.BaseFXTools.getFXRoot(root) ?? root;
-				}
-
-				var allRefs = root.flatten(Reference);
-				for (r in allRefs) {
-					if (r.hasCycle(seenPaths)){
-						editMode = oldEditMode;
-						return true;
-					}
+		if (data.children) {
+			for (child in (data.children:Array<Dynamic>)) {
+				if (hasCycleDynamic(child, seenPaths)) {
+					return true;
 				}
 			}
 		}
-		editMode = oldEditMode;
 		return false;
 	}
 
