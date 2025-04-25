@@ -1,6 +1,5 @@
 -lib hxnodejs
 -lib heaps
--lib hxbit
 -lib hscript
 -lib castle
 -lib hx3compat
