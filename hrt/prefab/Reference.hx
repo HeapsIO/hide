@@ -101,7 +101,9 @@ class Reference extends Object3D {
 			} else {
 				initRefInstance();
 			}
-			refInstance?.shared.parentPrefab = this;
+			if (refInstance != null) {
+				refInstance.shared.parentPrefab = this;
+			}
 		}
 	}
 
