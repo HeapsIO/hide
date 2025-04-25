@@ -9,11 +9,7 @@ class Reference extends Object3D {
 	@:s public var editMode : EditMode = None;
 	@:s public var overrides : Dynamic = null;
 
-	public var refInstance(default, set) : Prefab;
-	function set_refInstance(v: Prefab) {
-		trace("setRefInstance");
-		return refInstance = v;
-	}
+	public var refInstance : Prefab;
 
 	#if editor
 	var wasMade : Bool = false;
@@ -338,10 +334,11 @@ class Reference extends Object3D {
 			<div class="group" name="Reference">
 			<dl>
 				<dt>Reference</dt><dd><input type="fileselect" extensions="prefab l3d fx" field="source"/></dd>
-				<dt>Edit</dt><dd><select field="editMode"></select></dd>
+				<dt>Edit</dt><dd><select field="editMode" class="monSelector"></select></dd>
 				<p class="warning">Warning : Edit mode enabled while there are override on this reference. Saving will cause the overrides to be applied to the original reference !</p>
 			</dl>
 			</div>');
+
 
 		var warning = element.find(".warning");
 
