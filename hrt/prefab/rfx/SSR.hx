@@ -226,10 +226,9 @@ class SSR extends RendererFX {
 	}
 
 	function execute( r : h3d.scene.Renderer, step : h3d.impl.RendererFX.Step ) {
-		if ( !checkEnabled() )
+		if ( !checkEnabled() || debugSSRMask || (!useRoughness && !useMask) )
 			return;
-		if ( !useRoughness && !useMask )
-			return;
+
 		r.mark("SSR");
 
 		var ssrShader = ssrPass.shader;
@@ -278,25 +277,6 @@ class SSR extends RendererFX {
 		ssrShader.frustum = r.ctx.getCameraFrustumBuffer();
 
 		ssrShader.USE_MASK = useMask;
-		if ( useMask ) {
-			var ssrNormalMask = r.allocTarget("ssrNormalMask", true, 1.0, RGBA16F);
-			ssrNormalMask.clear(0,0);
-			r.ctx.engine.pushTarget(ssrNormalMask);
-			var pbrRenderer = Std.downcast(r, h3d.scene.pbr.Renderer);
-			normalMaskOutput.setContext(r.ctx);
-			if ( pbrRenderer != null )
-				normalMaskOutput.draw(r.get("ssrNormalMask"));
-			r.ctx.engine.popTarget();
-
-			ssrShader.ssrNormalMask = ssrNormalMask;
-
-			if ( debugSSRMask ) {
-				var hdr = r.ctx.engine.getCurrentTarget();
-				hdr.clear(0);
-				h3d.pass.Copy.run(ssrNormalMask, hdr, Alpha);
-				return;
-			}
-		}
 
 		ssr = r.allocTarget("ssr", false, textureSize / resRescale, hdrMap.format);
 		ssr.clear(0, 0);
@@ -310,9 +290,33 @@ class SSR extends RendererFX {
 		h3d.pass.Copy.run(ssr, r.ctx.engine.getCurrentTarget(), Alpha);
 	}
 
+	function drawMask(r : h3d.scene.Renderer, step : h3d.impl.RendererFX.Step ) {
+		if ( !useMask )
+			return;
+		var ssrNormalMask = r.allocTarget("ssrNormalMask", true, 1.0, RGBA16F);
+		ssrNormalMask.clear(0,0);
+		r.ctx.engine.pushTarget(ssrNormalMask);
+		var pbrRenderer = Std.downcast(r, h3d.scene.pbr.Renderer);
+		normalMaskOutput.setContext(r.ctx);
+		if ( pbrRenderer != null )
+			normalMaskOutput.draw(r.get("ssrNormalMask"));
+		r.ctx.engine.popTarget();
+
+		ssrPass.shader.ssrNormalMask = ssrNormalMask;
+
+		if ( debugSSRMask ) {
+			var hdr = r.ctx.engine.getCurrentTarget();
+			hdr.clear(0);
+			h3d.pass.Copy.run(ssrNormalMask, hdr, Alpha);
+			return;
+		}
+	}
+
 	override function begin( r : h3d.scene.Renderer, step : h3d.impl.RendererFX.Step ) {
-		if( step == Forward )
+		if( step == Forward ) {
+			drawMask(r, step);
 			execute(r, step);
+		}
 	}
 
 	#if editor
