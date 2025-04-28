@@ -280,7 +280,7 @@ class SSR extends RendererFX {
 		ssrShader.USE_MASK = useMask;
 		if ( useMask ) {
 			var ssrNormalMask = r.allocTarget("ssrNormalMask", true, 1.0, RGBA16F);
-			ssrNormalMask.clear(0);
+			ssrNormalMask.clear(0,0);
 			r.ctx.engine.pushTarget(ssrNormalMask);
 			var pbrRenderer = Std.downcast(r, h3d.scene.pbr.Renderer);
 			normalMaskOutput.setContext(r.ctx);
