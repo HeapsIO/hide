@@ -2734,6 +2734,14 @@ body.hide-subview .lm_controls {
 .jstree .isOverride {
   background: #25346d !important;
 }
+.jstree .isOverride.isOverriden > i,
+.jstree .isOverride.isOverriden > a {
+  color: cyan !important;
+}
+.jstree .isOverride.isOverriden.isOverridenNew i,
+.jstree .isOverride.isOverriden.isOverridenNew a {
+  color: #26c726 !important;
+}
 .jstree a.locked {
   color: #666 !important;
   font-style: italic;

@@ -3231,20 +3231,56 @@ class SceneEditor {
 
 		// reference
 		var isOverride = false;
+		var isOverriden = false;
+		var isOverridenNew = false;
 		var inRef = false;
 		if (p.shared.parentPrefab != null) {
 			var parentRef = Std.downcast(p.shared.parentPrefab, Reference);
 			if (parentRef != null) {
 				if (parentRef.editMode == Override) {
 					isOverride = true;
+
+					var path = [];
+					var current = p;
+					while (current != null) {
+						path.push(current);
+						current = current.parent;
+					}
+
+					var currentOverride = @:privateAccess parentRef.computeDiffFromSource();
+
+					// skip first item in the path
+					path.pop();
+					while(currentOverride != null && path.length > 0) {
+						var current = path.pop();
+						if (currentOverride.children != null) {
+							currentOverride = Reflect.field(currentOverride.children, current.name);
+						}
+					}
+
+					if (currentOverride != null) {
+						var overridenFields = Reflect.fields(currentOverride);
+						overridenFields.remove("children");
+						if (overridenFields.length > 0) {
+							isOverriden = true;
+							if (currentOverride.type != null) {
+								isOverridenNew = true;
+							}
+						}
+					}
+
 				} else {
 					inRef = true;
 				}
 			}
 		}
 
+
 		el.toggleClass("inRef", inRef);
 		el.toggleClass("isOverride", isOverride);
+		el.toggleClass("isOverriden", isOverriden);
+		el.toggleClass("isOverridenNew", isOverridenNew);
+
 
 		var tag = getTag(p);
 
