@@ -384,7 +384,7 @@ class FXAnimation extends h3d.scene.Object {
 	}
 
 	function initEvents(elt: PrefabElement, ?out : Array<Event.EventInstance> ) : Array<Event.EventInstance> {
-		if (elt == null || @:privateAccess !elt.shouldBeInstanciated())
+		if (elt == null || @:privateAccess !elt.shouldBeInstanciated() || elt.findFirstLocal3d() == null)
 			return out;
 
 		if( Std.isOfType(elt, IEvent) ) {
