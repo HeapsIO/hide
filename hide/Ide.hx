@@ -28,7 +28,6 @@ class Ide extends hide.tools.IdeData {
 	var layout : golden.Layout;
 
 	var currentLayout : { name : String, state : Config.LayoutState };
-	var defaultLayout : { name : String, state : Config.LayoutState };
 	var currentFullScreen(default,set) : hide.ui.View<Dynamic>;
 	var maximized : Bool;
 	var fullscreen : Bool;
@@ -336,6 +335,67 @@ class Ide extends hide.tools.IdeData {
 			v.onResize();
 	}
 
+	function getOrInitTarget(position: hide.ui.View.DisplayPosition) : golden.ContentItem {
+		var target = layout.root.getItemsById(position)[0];
+		if (target != null)
+			return target;
+
+		var parent : golden.ContentItem = null;
+		var config : golden.Config.ItemConfig;
+		var index : Int = null;
+		var rootRow = layout.root.contentItems[0];
+		switch(position) {
+			case Left:
+				config = {
+					type: Stack,
+				};
+				parent = rootRow;
+				index = 0;
+			case Center:
+				config = {
+					type: Stack,
+					isClosable: false,
+					width: 1500,
+					height: 800,
+				};
+				parent = getOrInitTarget(MiddleColumnInternal);
+				index = 0;
+			case Bottom:
+				config = {
+					type: Stack,
+				};
+				parent = getOrInitTarget(MiddleColumnInternal);
+				index = parent.contentItems.length;
+			case Right:
+				config = {
+					type: Stack,
+				};
+				parent = rootRow;
+				index = parent.contentItems.length;
+			case MiddleColumnInternal:
+				config = {
+					type: Column,
+					isClosable: false,
+				}
+				parent = rootRow;
+				// if (parent.contentItems[1]?.id == hide.ui.View.DisplayPosition.Center ||
+				// 	parent.contentItems[1]?.id == hide.ui.View.DisplayPosition.Bottom) {
+				// 	config.id = position;
+				// 	var old = parent.contentItems[1];
+				// 	parent.replaceChild(parent.contentItems[1], config);
+				// 	parent.contentItems[1].addChild(cast old);
+				// 	return parent.contentItems[1];
+				// }
+				index = hxd.Math.iclamp(1, 0, parent.contentItems.length);
+		}
+
+		config.id = position;
+		parent.addChild(config, index);
+		var target = layout.root.getItemsById(position)[0];
+
+		return target;
+	}
+
 	function initLayout( ?state : { name : String, state : Config.LayoutState } ) {
 		initializing = true;
 
@@ -344,30 +404,37 @@ class Ide extends hide.tools.IdeData {
 			layout = null;
 		}
 
-		defaultLayout = null;
-		var layoutName = isCDB ? "CDB" : "Default";
 		var emptyLayout : Config.LayoutState = { content : [], fullScreen : null };
-		for( p in projectConfig.layouts )
-			if( p.name == layoutName ) {
-				if( p.state.content == null ) continue; // old version
-				defaultLayout = p;
-				break;
+
+		if( state == null ) {
+			var emptyLayout : Config.LayoutState = {
+				content: [{type: golden.Config.ItemType.Row, isClosable: false, id: "content_root2"}], fullScreen : null,
+			};
+
+
+			var layoutName = isCDB ? "CDB" : "Default";
+			for( i => p in projectConfig.layouts.copy() ) {
+				if( p.name == layoutName ) {
+					if( p.state.content == null || (p.state.content:Array<Dynamic>)[0]?.id != "content_root") {
+						projectConfig.layouts.splice(i, 1);
+						continue;
+					};
+					state = p;
+				}
 			}
-		if( defaultLayout == null ) {
-			defaultLayout = { name : layoutName, state : emptyLayout };
-			projectConfig.layouts.push(defaultLayout);
-			config.current.sync();
-			config.user.save();
+
+			if( state == null ) {
+				state = { name : layoutName, state : emptyLayout };
+				projectConfig.layouts.push(state);
+			}
 		}
-		if( state == null )
-			state = defaultLayout;
 
 		if( subView != null )
 			state = { name : "SubView", state : emptyLayout };
 
-		this.currentLayout = state;
+		currentLayout = state;
 
-		var config : golden.Config = {
+		var goldenConfig : golden.Config = {
 			content: state.state.content,
 			settings: {
 				// Default to false
@@ -377,17 +444,18 @@ class Ide extends hide.tools.IdeData {
 				showMaximiseIcon : config.user.get('layout.showMaximiseIcon') == true
 			}
 		};
+
 		var comps = new Map();
 		for( vcl in hide.ui.View.viewClasses )
 			comps.set(vcl.name, true);
 		function checkRec(i:golden.Config.ItemConfig) {
-			if( i.componentName != null && !comps.exists(i.componentName) ) {
+			if( i.componentName != null && i.componentState != null && !comps.exists(i.componentName) ) {
 				i.componentState.deletedComponent = i.componentName;
 				i.componentName = "hide.view.Unknown";
 			}
 			if( i.content != null ) for( i in i.content ) checkRec(i);
 		}
-		for( i in config.content ) checkRec(i);
+		for( i in goldenConfig.content ) checkRec(i);
 
 		if (hideRoot != null) {
 			hideRoot.remove();
@@ -405,7 +473,10 @@ class Ide extends hide.tools.IdeData {
 			new Element('<span class="build">hide $commitHash</span>').appendTo(statusBar);
 		}
 
-		layout = new golden.Layout(config, goldenContainer.get(0));
+		layout = new golden.Layout(goldenConfig, goldenContainer.get(0));
+
+
+
 		var resizeTimer : haxe.Timer = null;
 		var observer = new hide.comp.ResizeObserver((elts, observer) -> {
 			if (resizeTimer != null) {
@@ -438,6 +509,8 @@ class Ide extends hide.tools.IdeData {
 
 		layout.init();
 		layout.on('stateChanged', onLayoutChanged);
+
+		getOrInitTarget(Center);
 
 		var waitCount = 0;
 		function waitInit() {
@@ -528,7 +601,7 @@ class Ide extends hide.tools.IdeData {
 	function onLayoutChanged() {
 		if( initializing || !ideConfig.autoSaveLayout || isCDB )
 			return;
-		defaultLayout.state = saveLayout();
+		currentLayout.state = saveLayout();
 		if( subView == null ) this.config.user.save();
 	}
 
@@ -1521,8 +1594,8 @@ class Ide extends hide.tools.IdeData {
 	public function open( component : String, state : Dynamic, ?onCreate : hide.ui.View<Dynamic> -> Void, ?onOpen : hide.ui.View<Dynamic> -> Void ) {
 		if( state == null ) state = {};
 
-		var c = hide.ui.View.viewClasses.get(component);
-		if( c == null )
+		var viewConfig = hide.ui.View.viewClasses.get(component);
+		if( viewConfig == null )
 			throw "Unknown component " + component;
 
 		state.componentName = component;
@@ -1535,27 +1608,10 @@ class Ide extends hide.tools.IdeData {
 			}
 		}
 
-		var options = c.options;
+		var options = viewConfig.options;
 
-		var bestTarget : golden.Container = null;
-		for( v in views )
-			if( v.defaultOptions.position == options.position ) {
-				if( bestTarget == null || bestTarget.width * bestTarget.height < v.container.width * v.container.height )
-					bestTarget = v.container;
-			}
+		var target = getOrInitTarget(options.position ?? Center);
 
-		var index : Null<Int> = null;
-		var target;
-		if( bestTarget != null )
-			target = bestTarget.parent.parent;
-		else {
-			target = layout.root.contentItems[0];
-			if( target == null ) {
-				layout.root.addChild({ type : Row, isClosable: false });
-				target = layout.root.contentItems[0];
-			}
-			target.config.isClosable = false;
-		}
 		var needResize = options.width != null;
 		target.on("componentCreated", function(c) {
 			target.off("componentCreated");
@@ -1582,12 +1638,7 @@ class Ide extends hide.tools.IdeData {
 			componentState : state
 		};
 
-		if( options.position == Left ) index = 0;
-
-		if( index == null )
-			target.addChild(config);
-		else
-			target.addChild(config, index);
+		target.addChild(config);
 	}
 
 	public function reopenLastClosedTab() {
