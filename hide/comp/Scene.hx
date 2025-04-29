@@ -370,16 +370,25 @@ class Scene extends hide.comp.Component implements h3d.IDrawable {
 			dirs.unshift(haxe.io.Path.join([ide.resourceDir, path]));
 		}
 
+		function loadAnims( path : String, rec : Bool ) {
+			for( f in try sys.FileSystem.readDirectory(path) catch( e : Dynamic ) [] ) {
+				var file = f.toLowerCase();
+				var filePath = path+"/"+f;
+				if( StringTools.startsWith(f,"Anim_") && (StringTools.endsWith(file,".hmd") || StringTools.endsWith(file,".fbx")) )
+					anims.push(filePath);
+				if (customFilter != null && customFilter(f))
+					anims.push(filePath);
+				if( rec && sys.FileSystem.isDirectory(ide.getPath(filePath)) )
+					loadAnims(filePath, rec);
+			}
+		}
+
 		for( dir in dirs ) {
 			var dir = dir;
+			var recursive = StringTools.endsWith(dir, "*");
+			if( recursive ) dir = dir.substr(0,-1);
 			if( StringTools.endsWith(dir, "/") ) dir = dir.substr(0,-1);
-			for( f in try sys.FileSystem.readDirectory(dir) catch( e : Dynamic ) [] ) {
-				var file = f.toLowerCase();
-				if( StringTools.startsWith(f,"Anim_") && (StringTools.endsWith(file,".hmd") || StringTools.endsWith(file,".fbx")) )
-					anims.push(dir+"/"+f);
-				if (customFilter != null && customFilter(f))
-					anims.push(dir+"/"+f);
-			}
+			loadAnims(dir, recursive);
 		}
 		return anims;
 	}
