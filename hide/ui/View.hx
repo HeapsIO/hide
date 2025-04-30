@@ -8,7 +8,7 @@ enum abstract DisplayPosition(String) from String to String {
 	var MiddleColumnInternal = "content_middle_internal";
 }
 
-typedef ViewOptions = { ?position : DisplayPosition, ?width : Int }
+typedef ViewOptions = { ?position : DisplayPosition, ?width : Int, ?id: String }
 
 @:keepSub @:allow(hide.Ide)
 class View<T> extends hide.comp.Component {

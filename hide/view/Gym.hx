@@ -141,6 +141,76 @@ class Gym extends hide.ui.View<{}> {
 					</fancy-button>
 				</fancy-toolbar>'));
 		}
+
+		{
+			var toolbar = section(element, "Windows");
+
+			var btn = new Element("<fancy-button><span class='label'>Open subwindow 'test'</span></h1>");
+			toolbar.append(btn);
+
+			var subwindow : js.html.Window;
+			var scene : hide.comp.Scene;
+
+			btn.on("click", (_) -> {
+				subwindow = js.Browser.window.open("", "test","popup=true");
+
+				trace("COUCOU");
+
+					var jq = new Element(subwindow.document.body);
+					jq.empty();
+					jq.append(new Element("<p>This is a triumph</p>"));
+					var container = new Element("<div></div>");
+					jq.append(container);
+
+					// var paragraphs = subwindow.document.querySelectorAll("p");
+					// for (p in paragraphs) {
+					// 	p.textContent = "This is the begining of something great";
+					// }
+
+					scene = new hide.comp.Scene(config, container, null);
+
+					scene.onReady = () -> {
+						new h3d.scene.CameraController(scene.s3d);
+						var box = new h3d.scene.Box(scene.s3d);
+						box.material.mainPass.setPassName("overlay");
+
+						var text = new h2d.Text(hxd.res.DefaultFont.get(), scene.s2d);
+						text.text = "Hello world";
+						text.x = 8;
+						text.y = 8;
+					};
+
+					var drag = new Element('<div draggable="true">Drag Me</div>').appendTo(jq);
+					drag.get(0).addEventListener("dragstart", (ev: js.html.DragEvent) -> {
+						ev.dataTransfer.setData("text/plain", "foo");
+						ev.dataTransfer.dropEffect = "copy";
+					});
+			});
+
+			var btn = new Element("<fancy-button><span class='label'>Spawn cube in subwindow</span></h1>");
+			toolbar.append(btn);
+
+			btn.on("click", (_) -> {
+				var box = new h3d.scene.Box(0xFFFFFFFF, scene.s3d);
+				box.setPosition(hxd.Math.random(10),hxd.Math.random(10),hxd.Math.random(10));
+				box.material.mainPass.setPassName("overlay");
+				box.material.color.r = hxd.Math.random();
+				box.material.color.g = hxd.Math.random();
+				box.material.color.b = hxd.Math.random();
+			});
+
+			var dropZone = new Element("<div>Drop something on me from the other window</div>").appendTo(toolbar);
+			dropZone.get(0).addEventListener("drop", (ev : js.html.DragEvent) -> {
+				ev.preventDefault();
+				var data = ev.dataTransfer.getData("text/plain");
+				dropZone.text(data);
+			});
+
+			dropZone.get(0).addEventListener("dragover", (ev : js.html.DragEvent) -> {
+				ev.preventDefault();
+				ev.dataTransfer.dropEffect = "copy";
+			});
+		}
 	}
 
 	static function section(parent: Element, name: String) : Element {

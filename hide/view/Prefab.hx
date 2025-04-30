@@ -242,6 +242,13 @@ class Prefab extends hide.view.FileView {
 		sceneReadyDelayed.empty();
 	}
 
+	override function onHide() {
+		super.onHide();
+
+		//ide.closeInspector();
+
+	}
+
 	override function onDisplay() {
 		if( sceneEditor != null ) sceneEditor.dispose();
 		createData();
@@ -391,6 +398,8 @@ class Prefab extends hide.view.FileView {
 			tools.refreshToggles();
 
 		setRenderPropsEditionVisibility(Ide.inst.currentConfig.get("sceneeditor.renderprops.edit", false));
+
+		//ide.getOrOpenInspector();
 	}
 
 	public function hideColumns(?_) {

@@ -13,5 +13,5 @@ class Inspector extends hide.ui.View<InspectorState> {
 		element.html("<p>Hello world</p>");
 	}
 
-	static var _ = hide.ui.View.register(Inspector, { width : 350, position : Right });
+	static var _ = hide.ui.View.register(Inspector, { width : 350, position : Right, id: "inspector" });
 }

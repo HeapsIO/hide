@@ -21,5 +21,5 @@ extern class ContentItem {
 	public function getActiveContentItem() : ContentItem;
 	public function setActiveContentItem( item : ContentItem ) : Void;
 	public function getItemsById(id : String) : Array<ContentItem>;
-
+	public function remove() : Void ;
 }
