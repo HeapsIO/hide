@@ -4624,13 +4624,11 @@ class SceneEditor {
 
 			var obj3d = prefab.to(Object3D);
 			var preserveTransform = Std.isOfType(toPrefab, hrt.prefab.fx.Emitter) || Std.isOfType(prevParent, hrt.prefab.fx.Emitter);
-			var toObj = getObject(toPrefab);
-			var obj = getObject(prefab);
 			var prevTransform = null;
 			var newTransform = null;
-			if(obj3d != null && toObj != null && obj != null && !preserveTransform) {
-				var mat = worldMat(obj);
-				var parentMat = worldMat(toObj);
+			if(obj3d != null && !preserveTransform) {
+				var mat = worldMat(prefab);
+				var parentMat = worldMat(toPrefab);
 				parentMat.invert();
 				mat.multiply(mat, parentMat);
 				prevTransform = obj3d.saveTransform();
