@@ -351,7 +351,6 @@ class TrailObj extends h3d.scene.Mesh {
 	public function new(parentPrefab: Trails, ?parent : h3d.scene.Object, ?numTrails : Int) {
 		bounds = new h3d.col.Bounds();
 		prefab = parentPrefab;
-		bounds.addPos(0,0,0);
 
 		var nTrails = numTrails != null ? numTrails : 1;
 		if ( nTrails == 1 && parentPrefab.children.length > 1 )
@@ -602,6 +601,7 @@ class TrailObj extends h3d.scene.Mesh {
 		}
 
 		inline function addEdge( p : TrailPoint, u : Float ) {
+			bounds.addPos(p.x, p.y, p.z);
 
 			buffer[count++] = p.x + (tmpBinormal.x * p.w * baseScale.x);
 			buffer[count++] = p.y + (tmpBinormal.y * p.w * baseScale.y);
@@ -658,6 +658,7 @@ class TrailObj extends h3d.scene.Mesh {
 		var customAxis = ( orientRight ) ? tmpBinormal : tmpNormal;
 		var computedAxis = ( orientRight ) ? tmpNormal : tmpBinormal;
 
+		bounds.empty();
 		for (i in 0...numTrails) {
 			var trail = trails[i];
 			if ( trail.firstPoint == null )
@@ -724,6 +725,7 @@ class TrailObj extends h3d.scene.Mesh {
 				segmentIndex++;
 				cur = cur.next;
 			}
+			this.cullingCollider = bounds.toSphere();
 		}
 
 		var numVerts = Std.int(count/format.stride);
