@@ -44,9 +44,11 @@ class LookAtObject extends h3d.scene.Object {
 			var abs = target.getAbsPos();
 			lookAtPos = abs.getPosition();
 			up = abs.up();
-		}
-		else {
-			if(getScene() == null || getScene().camera == null) return;
+		} else {
+			if(getScene() == null || getScene().camera == null) {
+				super.calcAbsPos();
+				return;
+			}
 			var cam = getScene().camera;
 			lookAtPos.load(definition.faceTargetForward ? this.getAbsPos().getPosition() + -1 * (cam.target - cam.pos) : cam.pos);
 			up = cam.up;
