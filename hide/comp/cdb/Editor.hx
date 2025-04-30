@@ -142,9 +142,10 @@ class Editor extends Component {
 			});
 		keys.register("cdb.closeList", function() {
 			var c = cursor.getCell();
+
 			var sub = Std.downcast(c == null ? cursor.table : c.table, SubTable);
 			if (sub == null)
-				sub = c.line.subTable != null && c.line.subTable.cell == c ? c.line.subTable : null;
+				sub = (c != null && c.line.subTable != null && c.line.subTable.cell == c) ? c.line.subTable : null;
 
 			if( sub != null ) {
 				sub.cell.elementHtml.click();
