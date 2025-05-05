@@ -78,6 +78,10 @@ class Reference extends Object3D {
 
 		if (source != null && shouldBeInstanciated() && hxd.res.Loader.currentInstance.exists(source)) {
 			#if editor
+			// we need the resCache to exist or we'll have an error in Ide.CustomeLoader.loadCache
+			if (@:privateAccess h3d.Engine.getCurrent()?.resCache == null)
+				return;
+
 			if (hasCycle())
 				return;
 			#end
@@ -316,10 +320,9 @@ class Reference extends Object3D {
 		meaning that references depends on each other
 	**/
 	public function hasCycle() : Bool {
-
 		var map : Map<String, Bool> = [];
 		map.set(shared.currentPath, true);
-		return hasCyclePath(source, map);
+		return hasCycleDynamic(serialize(), map);
 	}
 
 	static function hasCyclePath(path: String, seenPaths: Map<String, Bool>) : Bool {
@@ -334,7 +337,7 @@ class Reference extends Object3D {
 	}
 
 	static function hasCycleDynamic(data: Dynamic, seenPaths: Map<String, Bool>) : Bool {
-		if (data.source != null) {
+		if (data.source != null && (data.type == "reference" || data.type == "subFX")) {
 			if (hasCyclePath(data.source, seenPaths.copy()))
 				return true;
 		}
