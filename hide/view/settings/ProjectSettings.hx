@@ -173,6 +173,9 @@ class ProjectSettings extends hide.ui.View<{}> {
 		function onChange(file : String, oldObj : Dynamic, newObj : Dynamic) {
 			sys.io.File.saveContent(file, haxe.Json.stringify(newObj, '\t'));
 			inspect(s);
+			ide.currentConfig.load(file);
+			for (v in @:privateAccess ide.views)
+				v.config = null;
 		}
 
 		// Material library
