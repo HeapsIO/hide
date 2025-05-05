@@ -1128,6 +1128,11 @@ input[type=checkbox].indeterminate:after {
   word-break: break-word;
   margin-top: 4px;
 }
+.hide-properties dd span,
+.hide-properties dt span {
+  display: inline-block;
+  width: 20px;
+}
 .hide-properties dt {
   width: calc(80px - var(--level) * 2%);
   text-align: right;
@@ -1160,9 +1165,6 @@ input[type=checkbox].indeterminate:after {
 }
 .hide-properties input[type=checkbox] {
   width: 13px;
-}
-.hide-properties .warning {
-  color: red;
 }
 .hide-properties dt input[type=button] {
   width: 100%;
@@ -2730,17 +2732,6 @@ body.hide-subview .lm_controls {
 }
 .jstree .inRef {
   background: #444444 !important;
-}
-.jstree .isOverride {
-  background: #25346d !important;
-}
-.jstree .isOverride.isOverriden > i,
-.jstree .isOverride.isOverriden > a {
-  color: cyan !important;
-}
-.jstree .isOverride.isOverriden.isOverridenNew i,
-.jstree .isOverride.isOverriden.isOverridenNew a {
-  color: #26c726 !important;
 }
 .jstree a.locked {
   color: #666 !important;

@@ -179,7 +179,7 @@ class Light extends Object3D {
 		}
 
 		#if editor
-		if (shared.parentPrefab == null || (Std.downcast(shared.parentPrefab, Reference)?.editMode != None && shared.parentPrefab != shared.editor?.renderPropsRoot)) {
+		if (shared.parentPrefab == null || (Std.downcast(shared.parentPrefab, Reference)?.editMode && shared.parentPrefab != shared.editor?.renderPropsRoot)) {
 			icon = hrt.impl.EditorTools.create3DIcon(object, hide.Ide.inst.getHideResPath("icons/PointLight.png"), 0.5, Light);
 		}
 		#end

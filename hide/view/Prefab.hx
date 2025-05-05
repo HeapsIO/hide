@@ -52,8 +52,8 @@ class FiltersPopup extends hide.comp.Popup {
 class PrefabSceneEditor extends hide.comp.SceneEditor {
 	var parent : Prefab;
 
-	public function new(view) {
-		super(view);
+	public function new(view, data) {
+		super(view, data);
 		parent = cast view;
 		this.localTransform = false; // TODO: Expose option
 	}
@@ -61,6 +61,11 @@ class PrefabSceneEditor extends hide.comp.SceneEditor {
 	override function update(dt) {
 		super.update(dt);
 		parent.onUpdate(dt);
+	}
+
+	override function onSceneReady() {
+		super.onSceneReady();
+		parent.onSceneReady();
 	}
 
 	override function applyTreeStyle(p: PrefabElement, el: Element, ?pname: String, ?tree: hide.comp.IconTree<PrefabElement>) {
@@ -234,8 +239,7 @@ class Prefab extends hide.view.FileView {
 	}
 
 	function createEditor() {
-		sceneEditor = new PrefabSceneEditor(this);
-		sceneEditor.onSceneReady = onSceneReady;
+		sceneEditor = new PrefabSceneEditor(this, data);
 		for (callback in sceneReadyDelayed) {
 			sceneEditor.delayReady(callback);
 		}
@@ -244,8 +248,10 @@ class Prefab extends hide.view.FileView {
 
 	override function onDisplay() {
 		if( sceneEditor != null ) sceneEditor.dispose();
+
 		createData();
 		var content = sys.io.File.getContent(getPath());
+		data = hrt.prefab.Prefab.createFromDynamic(haxe.Json.parse(content));
 		currentSign = ide.makeSignature(content);
 
 
@@ -433,9 +439,6 @@ class Prefab extends hide.view.FileView {
 	}
 
 	public function onSceneReady() {
-		data = hxd.res.Loader.currentInstance.load(state.path).toPrefab().load().clone();
-		sceneEditor.setPrefab(cast data);
-
 		refreshSceneFilters();
 		refreshGraphicsFilters();
 		refreshViewModes();
@@ -575,7 +578,6 @@ class Prefab extends hide.view.FileView {
 			initGraphicsFilters();
 			initSceneFilters();
 		}
-
 	}
 
 	function resetCamera( top : Bool ) {
