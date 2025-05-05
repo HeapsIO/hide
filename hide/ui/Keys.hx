@@ -53,6 +53,8 @@ class Keys {
 			parts.push("Alt");
 		if( e.ctrlKey )
 			parts.push("Ctrl");
+		if( e.metaKey )
+			parts.push("Command");
 		if( e.shiftKey )
 			parts.push("Shift");
 		if( e.keyCode == hxd.Key.ALT || e.keyCode == hxd.Key.SHIFT || e.keyCode == hxd.Key.CTRL ) {
