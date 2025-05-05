@@ -26,6 +26,10 @@ enum DiffResult {
 
 **/
 class Diff {
+
+	/**
+		Add or Set a key/value pair to a DiffResult. If "diff" was a Skip, it will become a Set({key: value})
+	**/
 	public static function addToDiff(diff: DiffResult, key: String, value: Dynamic) : DiffResult{
 		var v = switch(diff) {
 			case Skip:
@@ -41,7 +45,6 @@ class Diff {
 	public static function deepCopy(v:Dynamic) : Dynamic {
 		return haxe.Json.parse(haxe.Json.stringify(v));
 	}
-
 
 	/**
 		Returns the difference of two values together
@@ -201,6 +204,10 @@ class Diff {
 		return Set(result);
 	}
 
+	/**
+		Returns the difference between two arrays. If the arrays are found to be different, a full copy of
+		modified will be returned as a Set()
+	**/
 	public static function diffArray(original: Array<Dynamic>, modified: Dynamic) : DiffResult {
 		if (original.length != modified.length) {
 			return Set(deepCopy(modified));
@@ -313,10 +320,6 @@ class Diff {
 				}
 				continue;
 			}
-
-			// if (field.charAt(0) == "@") {
-			// 	continue;
-			// }
 
 			var targetValue = Reflect.getProperty(target, field);
 			var diffValue = Reflect.getProperty(diff, field);

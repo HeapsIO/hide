@@ -7,7 +7,7 @@ enum EditMode {
 	/** The reference can be edited in the editor, and saving it will update the referenced prefab file on disk **/
 	Edit;
 
-	/** The reference can be edited, and saving it will save a diff between the original prefab and this in the `override` field **/
+	/** The reference can be edited, and saving it will save a diff between the original prefab and this in the `overrides` field **/
 	Override;
 }
 class Reference extends Object3D {
@@ -56,7 +56,6 @@ class Reference extends Object3D {
 		var obj : Dynamic = super.save();
 
 		#if editor
-
 		if( editMode == Edit && refInstance != null ) {
 			var sheditor = Std.downcast(shared, hide.prefab.ContextShared);
 			if( sheditor.editor != null ) sheditor.editor.watchIgnoreChanges(source);
@@ -126,18 +125,12 @@ class Reference extends Object3D {
 		#if editor
 		try {
 		#end
-		refInstanceData = @:privateAccess hxd.res.Loader.currentInstance.load(source).toPrefab().loadData();
+			refInstanceData = @:privateAccess hxd.res.Loader.currentInstance.load(source).toPrefab().loadData();
 		#if editor
+			originalSource = @:privateAccess hxd.res.Loader.currentInstance.load(source).toPrefab().loadData();
 		} catch (e) {
-
-		}
-		#end
-
-		if (refInstanceData == null)
 			return;
-
-		#if editor
-		originalSource = @:privateAccess hxd.res.Loader.currentInstance.load(source).toPrefab().loadData();
+		}
 		#end
 
 		if (overrides != null) {
@@ -147,48 +140,6 @@ class Reference extends Object3D {
 		refInstance = hrt.prefab.Prefab.createFromDynamic(refInstanceData, null, new ContextShared(source, null, null, true));
 		refInstance.shared.parentPrefab = this;
 	}
-
-	#if editor
-	override function setEditorChildren(sceneEditor:hide.comp.SceneEditor, scene: hide.comp.Scene) {
-		super.setEditorChildren(sceneEditor, scene);
-
-		if (refInstance != null) {
-			refInstance.setEditor(sceneEditor, scene);
-		}
-	}
-	#end
-
-	#if editor
-	function setRef(data: Dynamic) {
-		if (data == null)
-			throw "Null data";
-
-		if (refInstance == null)
-			return;
-
-		var newSource = hrt.prefab.Diff.deepCopy(data);
-		var currentSerialization = refInstance.serialize();
-
-		var pristineData = hrt.prefab.Diff.deepCopy(newSource);
-
-		// we might have unsaved changes
-		if (editMode == Override) {
-			switch(hrt.prefab.Diff.diffPrefab(originalSource, currentSerialization)) {
-				case Skip:
-				case Set(diff):
-					pristineData = hrt.prefab.Diff.apply(pristineData, diff);
-			}
-		}
-		else if (overrides != null) {
-			pristineData = hrt.prefab.Diff.apply(pristineData, overrides);
-		}
-
-		originalSource = newSource;
-
-		refInstance = Prefab.createFromDynamic(pristineData, new ContextShared(source, true));
-		refInstance.shared.parentPrefab = this;
-	}
-	#end
 
 	function resolveRef() : Prefab {
 		var shouldLoad = refInstance == null && source != null && shouldBeInstanciated();
@@ -309,6 +260,14 @@ class Reference extends Object3D {
 
 	#if editor
 
+	override function setEditorChildren(sceneEditor:hide.comp.SceneEditor, scene: hide.comp.Scene) {
+		super.setEditorChildren(sceneEditor, scene);
+
+		if (refInstance != null) {
+			refInstance.setEditor(sceneEditor, scene);
+		}
+	}
+
 	override public function editorRemoveObjects() : Void {
 		if (refInstance != null && wasMade) {
 			for (child in refInstance.flatten()) {
@@ -318,6 +277,38 @@ class Reference extends Object3D {
 		}
 		wasMade = false;
 		super.editorRemoveObjects();
+	}
+
+	/**
+		Updates the original reference data to be equal to `data`.
+		If the ref is an override, the override will be kept as is
+	**/
+	function setRef(data: Dynamic) {
+		if (data == null)
+			throw "Null data";
+
+		if (refInstance == null)
+			return;
+
+		var currentSerialization = refInstance.serialize();
+		var pristineData = hrt.prefab.Diff.deepCopy(data);
+
+		// we might have unsaved changes
+		if (editMode == Override) {
+			switch(hrt.prefab.Diff.diffPrefab(originalSource, currentSerialization)) {
+				case Skip:
+				case Set(diff):
+					pristineData = hrt.prefab.Diff.apply(pristineData, diff);
+			}
+		}
+		else if (overrides != null) {
+			pristineData = hrt.prefab.Diff.apply(pristineData, overrides);
+		}
+
+		originalSource = hrt.prefab.Diff.deepCopy(data);
+
+		refInstance = Prefab.createFromDynamic(pristineData, new ContextShared(source, true));
+		refInstance.shared.parentPrefab = this;
 	}
 
 	/**

@@ -238,10 +238,6 @@ class ViewportOverlaysPopup extends hide.comp.Popup {
 			var btn = addButton("Scene Info", "info-circle", "sceneInformationToggle", () -> editor.updateStatusTextVisibility()).appendTo(group);
 			addButton("Wireframe", "connectdevelop", "wireframeToggle", () -> editor.updateWireframe()).appendTo(group);
 			addButton("Disable Scene Render", "eye-slash", "tog-scene-render", () -> {}).appendTo(group);
-
-			//btn.contextmenu(() -> {
-			//
-			//})
 		}
 
 
@@ -2529,10 +2525,6 @@ class SceneEditor {
 			if( isLocked(elt) ) toggleInteractive(elt, false);
 		}
 		var ref = Std.downcast(elt,Reference);
-		// @:privateAccess if( ref != null && ref.editMode != None && ref.refInstance != null ) {
-		// 	for( p in ref.refInstance.flatten() )
-		// 		makeInteractive(p);
-		// }
 	}
 
 	function toggleInteractive( e : PrefabElement, visible : Bool ) {

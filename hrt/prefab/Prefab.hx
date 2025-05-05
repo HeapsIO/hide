@@ -520,6 +520,13 @@ class Prefab {
 		return [].iterator();
 	}
 
+
+	/**
+		Returns a name that will allow to disambiguate this
+		prefabs from siblings with the same name
+		Prefab with more than one sibling with the same name
+		will have their name formated as `name-<index>` unless their index is 0.
+	**/
 	public function getUniqueName() {
 		if (parent == null) {
 			return "";
@@ -742,6 +749,7 @@ class Prefab {
 	/**
 		Finds a prefab by folowing a dot separated path like this one : `parent.child.grandchild`.
 		Returns null if the path is invalid or does not match any prefabs in the hierarchy
+		If the path contains many prefabs with the same name, they can be disambiguated in the path with `name-index`
 	**/
 	public function locatePrefab(path: String) : Null<Prefab> {
 		if (path == null)
