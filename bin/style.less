@@ -1231,11 +1231,6 @@ input[type=checkbox] {
 		text-wrap: wrap;
 		word-break: break-word;
 		margin-top:4px;
-
-		span {
-			display: inline-block;
-			width: 20px;
-		}
 	}
 
 	dt {
@@ -1276,6 +1271,10 @@ input[type=checkbox] {
 
 	input[type=checkbox] {
 		width:13px;
+	}
+
+	.warning {
+		color: red;
 	}
 
 	dt {
@@ -3163,6 +3162,22 @@ body.hide-subview {
 
 	.inRef {
 		background: rgb(68, 68, 68) !important;
+	}
+
+	.isOverride {
+		background: #25346d !important;
+	}
+
+	.isOverride.isOverriden {
+		> i, > a {
+			color: cyan !important;
+		}
+	}
+
+	.isOverride.isOverriden.isOverridenNew {
+		i, a {
+			color: rgb(38, 199, 38) !important;
+		}
 	}
 
 	a.locked {

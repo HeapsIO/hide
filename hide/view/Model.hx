@@ -80,11 +80,12 @@ class Model extends FileView {
 		tabs = new hide.comp.Tabs(null,element.find(".tabs"));
 		eventList = element.find(".event-editor");
 
-		root = new hrt.prefab.Prefab(null, null);
 		var def = new hrt.prefab.Prefab(null, null);
 		new hrt.prefab.RenderProps(def, null).name = "renderer";
 		var l = new hrt.prefab.Light(def, null);
-		sceneEditor = new hide.comp.SceneEditor(this, root);
+		sceneEditor = new hide.comp.SceneEditor(this);
+		sceneEditor.onSceneReady = onSceneReady;
+
 		sceneEditor.editorDisplay = false;
 		sceneEditor.onRefresh = onRefresh;
 		sceneEditor.onUpdate = onUpdate;
@@ -1199,6 +1200,11 @@ class Model extends FileView {
 
 	// Scene editor bindings
 	inline function get_scene() return sceneEditor.scene;
+
+	function onSceneReady() {
+		root = new hrt.prefab.Prefab(null, null);
+		sceneEditor.setPrefab(root);
+	}
 
 	function onRefresh() {
 		this.saveDisplayKey = "Model:" + state.path;
