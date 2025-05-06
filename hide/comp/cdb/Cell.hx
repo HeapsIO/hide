@@ -1660,14 +1660,14 @@ class Cell {
 			}
 		}
 
-		var d = content.find("#dropdown-custom-type");
-		d.find("option").eq(ctValue == null || ctValue.length == 0 ? 0 : Std.int(ctValue[0] + 1)).attr("selected", "true");
+		var typeDropdown = content.find("#dropdown-custom-type");
+		typeDropdown.find("option").eq(ctValue == null || ctValue.length == 0 ? 0 : Std.int(ctValue[0] + 1)).attr("selected", "true");
 
 		var paramsContent = content.find("#parameters");
 
 		function buildParameters() {
 			paramsContent.empty();
-			var val = d.val();
+			var val = typeDropdown.val();
 			var selected = val != null ? customType.cases[content.find("#dropdown-custom-type").val()] : null;
 
 			if (selected != null && selected.args.length > 0) {
@@ -1688,6 +1688,11 @@ class Cell {
 
 			if (rightAnchor > 0)
 				content.css("right", '${depth == 0 ? rightAnchor - content.width() / 2.0 : rightAnchor}px');
+
+			var box = content.get(0).getBoundingClientRect();
+			if (box.right > js.Browser.window.innerWidth) {
+				content.css("right", '0px');
+			}
 		}
 
 		function closeCdbTypeEdit(applyModifications : Bool = true) {
@@ -1698,10 +1703,10 @@ class Cell {
 
 			var newCtValue : Array<Dynamic> = null;
 
-			var selected = d.val() != null ? customType.cases[d.val()] : null;
+			var selected = typeDropdown.val() != null ? customType.cases[typeDropdown.val()] : null;
 			if (selected != null) {
 				newCtValue = [];
-				newCtValue.push(Std.int(d.val()));
+				newCtValue.push(Std.int(typeDropdown.val()));
 
 				if (selected.args != null && selected.args.length > 0) {
 					var paramsValues = paramsContent.find(".value");
@@ -1760,13 +1765,13 @@ class Cell {
 
 		buildParameters();
 
-		d.on("change", function(e) {
+		typeDropdown.on("change", function(e) {
 			if (ctValue == null) ctValue = [];
 			for (idx in 0...ctValue.length) ctValue.pop();
 
-			var selected = d.val() == 0 ? null : customType.cases[d.val()];
+			var selected = typeDropdown.val() == 0 ? null : customType.cases[typeDropdown.val()];
 			if (selected != null) {
-				ctValue.push(d.val());
+				ctValue.push(typeDropdown.val());
 				for (idx in 0...selected.args.length) {
 					switch (selected.args[idx].type) {
 						case TId, TString, TRef(_):
@@ -1786,7 +1791,7 @@ class Cell {
 			buildParameters();
 		});
 
-		d.focus();
+		typeDropdown.focus();
 
 		// Prevent missclick to actually close the edit mode and
 		// open another one
