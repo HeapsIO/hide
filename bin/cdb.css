@@ -27,6 +27,13 @@
 .cdb .cdb-sheet td.cursorView {
   border: 2px solid #ccc !important;
 }
+.cdb .cdb-sheet th.highlight {
+  background-color: #1c3c70;
+}
+.cdb .cdb-sheet .highlight td.start,
+.cdb .cdb-sheet .highlightth {
+  background-color: #1c3c70;
+}
 .cdb .cdb-sheet tr.selected,
 .cdb .cdb-sheet td.selected {
   background-color: #313a48;

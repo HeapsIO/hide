@@ -255,6 +255,8 @@ class Cursor {
 							el.classList.add("right");
 						if (cellY == sel.y2)
 							el.classList.add("bot");
+						c.line.element.addClass("highlight");
+						table.element.find('th[title="${c.column.name}"]').addClass("highlight");
 					}
 				}
 
@@ -329,6 +331,7 @@ class Cursor {
 
 	public function hide() {
 		var elt = editor.element;
+		elt.find(".highlight").removeClass("highlight");
 		elt.find(".selected").removeClass("selected");
 		elt.find(".cursorView").removeClass("cursorView");
 		elt.find(".top").removeClass("top");
