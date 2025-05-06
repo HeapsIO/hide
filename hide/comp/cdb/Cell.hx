@@ -1468,95 +1468,6 @@ class Cell {
 
 		content.appendTo(parentEl);
 
-		// Manage keyboard flow
-		content.keydown(function(e){
-			var focused = content.find(':focus');
-
-			if (e.altKey || e.shiftKey)
-				return;
-
-			switch (e.keyCode) {
-				case hxd.Key.ENTER:
-					if (focused.is('div'))
-						focused.trigger('click');
-
-					if (focused.is('input')) {
-						if (focused.is('input[type="checkbox"]'))
-							focused.prop('checked', !focused.is(':checked'));
-						else if (focused.prop('readonly'))
-							focused.prop('readonly', false);
-						else
-							focused.prop('readonly', true);
-					}
-
-					if (focused.is('select')) {
-
-					}
-
-					e.stopPropagation();
-					e.preventDefault();
-
-				case hxd.Key.ESCAPE:
-					if (focused.is('input') && !focused.is('input[type="checkbox"]') && !focused.prop('readonly')) {
-						focused.prop('readonly', true);
-
-						e.stopPropagation();
-						return;
-					}
-
-					rootEl.trigger('click');
-					e.stopPropagation();
-					e.preventDefault();
-
-				case hxd.Key.RIGHT:
-					if (focused.is('input') && !focused.prop('readonly') && !focused.is('input[type="checkbox"]')) {
-						e.stopPropagation();
-						return;
-					}
-
-					var s = content.children('select').first();
-					var p = content.find('#parameters').children('.value');
-
-					focused.blur();
-
-					if (focused.is(s))
-						p.first().focus();
-					else if (focused.is(p.last()))
-						s.focus();
-					else
-						p.eq(p.index(focused) + 1).focus();
-					e.stopPropagation();
-					e.preventDefault();
-
-				case hxd.Key.LEFT:
-					if (focused.is('input') && !focused.prop('readonly') && !focused.is('input[type="checkbox"]')) {
-						e.stopPropagation();
-						return;
-					}
-
-					var s = content.children('select').first();
-					var p = content.find('#parameters').children('.value');
-
-					focused.blur();
-
-					if (focused.is(s))
-						p.last().focus();
-					else if (focused.is(p.first()))
-						s.focus();
-					else
-						p.eq(p.index(focused) - 1).focus();
-					e.stopPropagation();
-					e.preventDefault();
-
-				case hxd.Key.UP, hxd.Key.DOWN:
-					e.stopPropagation();
-					e.preventDefault();
-
-				default:
-					trace("Not managed");
-			}
-		});
-
 		function getHtml(value : Dynamic, column : cdb.Data.Column) {
 			switch (column.type) {
 				case TId, TString, TDynamic:
@@ -1695,11 +1606,9 @@ class Cell {
 			}
 		}
 
-		function closeCdbTypeEdit(applyModifications : Bool = true) {
-			// Close children cdb types editor before closing this one
-			var children = content.children().find(".cdb-type-string");
-			if (children.length > 0)
-				children.first().trigger("click");
+		function applyModifications(ctElement : Element) {
+			var d = ctElement.find("#dropdown-custom-type");
+			var paramsContent = ctElement.find("#parameters");
 
 			var newCtValue : Array<Dynamic> = null;
 
@@ -1737,8 +1646,6 @@ class Cell {
 				}
 			}
 
-			parentEl.empty();
-
 			if (newCtValue != null) {
 				if (ctValue == null) ctValue = [];
 				for (idx in 0...ctValue.length) ctValue.pop();
@@ -1751,8 +1658,21 @@ class Cell {
 			if (ctValue.length == 0)
 				ctValue = null;
 
-			if (depth == 0) {
+			if (depth == 0)
 				this.setValue(ctValue);
+		}
+
+		function closeCdbTypeEdit() {
+			// Close children cdb types editor before closing this one
+			var children = content.children().find(".cdb-type-string");
+			if (children.length > 0)
+				children.first().trigger("click");
+
+			applyModifications(content);
+
+			parentEl.empty();
+
+			if (depth == 0) {
 				this.closeEdit();
 				this.focus();
 			}
@@ -1762,6 +1682,92 @@ class Cell {
 				parentEl.focus();
 			}
 		}
+
+		// Manage keyboard flow
+		content.keydown(function(e){
+			var focused = content.find(':focus');
+
+			if (e.altKey || e.shiftKey)
+				return;
+
+			switch (e.keyCode) {
+				case hxd.Key.ENTER:
+					if (focused.is('div'))
+						focused.trigger('click');
+
+					if (focused.is('input')) {
+						if (focused.is('input[type="checkbox"]'))
+							focused.prop('checked', !focused.is(':checked'));
+						else if (focused.prop('readonly'))
+							focused.prop('readonly', false);
+						else
+							focused.prop('readonly', true);
+					}
+
+					applyModifications(content);
+					e.stopPropagation();
+					e.preventDefault();
+
+				case hxd.Key.ESCAPE:
+					if (focused.is('input') && !focused.is('input[type="checkbox"]') && !focused.prop('readonly')) {
+						focused.prop('readonly', true);
+
+						e.stopPropagation();
+						return;
+					}
+
+					rootEl.trigger('click');
+					e.stopPropagation();
+					e.preventDefault();
+
+				case hxd.Key.RIGHT:
+					if (focused.is('input') && !focused.prop('readonly') && !focused.is('input[type="checkbox"]')) {
+						e.stopPropagation();
+						return;
+					}
+
+					var s = content.children('select').first();
+					var p = content.find('#parameters').children('.value');
+
+					focused.blur();
+
+					if (focused.is(s))
+						p.first().focus();
+					else if (focused.is(p.last()))
+						s.focus();
+					else
+						p.eq(p.index(focused) + 1).focus();
+					e.stopPropagation();
+					e.preventDefault();
+
+				case hxd.Key.LEFT:
+					if (focused.is('input') && !focused.prop('readonly') && !focused.is('input[type="checkbox"]')) {
+						e.stopPropagation();
+						return;
+					}
+
+					var s = content.children('select').first();
+					var p = content.find('#parameters').children('.value');
+
+					focused.blur();
+
+					if (focused.is(s))
+						p.last().focus();
+					else if (focused.is(p.first()))
+						s.focus();
+					else
+						p.eq(p.index(focused) - 1).focus();
+					e.stopPropagation();
+					e.preventDefault();
+
+				case hxd.Key.UP, hxd.Key.DOWN:
+					e.stopPropagation();
+					e.preventDefault();
+
+				default:
+					trace("Not managed");
+			}
+		});
 
 		buildParameters();
 
@@ -1795,7 +1801,7 @@ class Cell {
 
 		// Prevent missclick to actually close the edit mode and
 		// open another one
-		rootEl.on("click", function(e, applyModifications) { closeCdbTypeEdit(applyModifications == null); e.stopPropagation(); });
+		rootEl.on("click", function(e, applyModifications) { closeCdbTypeEdit(); e.stopPropagation(); });
 		content.on("click", function(e) { e.stopPropagation(); });
 		content.on("dblclick", function(e) { e.stopPropagation(); });
 
