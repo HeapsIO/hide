@@ -81,9 +81,6 @@ class Reference extends Object3D {
 			// we need the resCache to exist or we'll have an error in Ide.CustomeLoader.loadCache
 			if (@:privateAccess h3d.Engine.getCurrent()?.resCache == null)
 				return;
-
-			if (hasCycle())
-				return;
 			#end
 			initRefInstance();
 		}
@@ -125,6 +122,22 @@ class Reference extends Object3D {
 	#end
 
 	function initRefInstance() {
+		var shouldLoad = refInstance == null && source != null && shouldBeInstanciated();
+
+		#if editor
+		if (hasCycle())
+			shouldLoad = false;
+		#end
+
+		if (shouldLoad) {
+			resolveRef();
+		}
+	}
+
+	function resolveRef() : Prefab {
+		if (refInstance != null)
+			return refInstance;
+
 		var refInstanceData = null;
 		#if editor
 		try {
@@ -133,7 +146,7 @@ class Reference extends Object3D {
 		#if editor
 			originalSource = @:privateAccess hxd.res.Loader.currentInstance.load(source).toPrefab().loadData();
 		} catch (e) {
-			return;
+			return null;
 		}
 		#end
 
@@ -143,19 +156,7 @@ class Reference extends Object3D {
 
 		refInstance = hrt.prefab.Prefab.createFromDynamic(refInstanceData, null, new ContextShared(source, null, null, true));
 		refInstance.shared.parentPrefab = this;
-	}
 
-	function resolveRef() : Prefab {
-		var shouldLoad = refInstance == null && source != null && shouldBeInstanciated();
-
-		#if editor
-		if (hasCycle())
-			shouldLoad = false;
-		#end
-
-		if (shouldLoad) {
-			initRefInstance();
-		}
 		return refInstance;
 	}
 
