@@ -1763,10 +1763,15 @@ class Editor extends Component {
 				if (path.length > 0 || back.length > 0) {
 					function handleMoveTable() {
 						var cdbPath = sheet.getPath().split("@");
-						for(b in back) {
+						for(i in 0...back.length) {
+							var b = back[back.length - i - 1];
+
+							// if it's not actually a backards move
 							if (b != "..") {
-								return 'Invalid backwards move path "${back.join("/")}" (correct syntax : ../../columnName)';
+								path.unshift(b);
+								continue;
 							}
+
 							if (cdbPath.length <= 0) {
 								return 'Backwards path "${back.join("/")}" goes outside of base sheet';
 							}
