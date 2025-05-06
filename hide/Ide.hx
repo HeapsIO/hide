@@ -408,7 +408,7 @@ class Ide extends hide.tools.IdeData {
 
 		if( state == null ) {
 			var emptyLayout : Config.LayoutState = {
-				content: [{type: golden.Config.ItemType.Row, isClosable: false, id: "content_root2"}], fullScreen : null,
+				content: [{type: golden.Config.ItemType.Row, isClosable: false, id: "content_root"}], fullScreen : null,
 			};
 
 
