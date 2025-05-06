@@ -608,7 +608,7 @@ class Table extends Component {
 	function toString() {
 		return "Table#"+sheet.name;
 	}
-	
+
 
 	public function insertLine(index : Int = 0) {
 		if( !canInsert() )
@@ -650,31 +650,31 @@ class Table extends Component {
 	public function moveLines(lines : Array<Line>, delta : Int) {
 		if( !canInsert() )
 			return;
-		
+
 		editor.beginChanges();
 
 		lines.sort((a, b) -> { return (a.index - b.index) * delta * -1; });
 
 		var range = { min: 100000, max: 0 };
+		var distance = Std.int(hxd.Math.abs(delta));
+		var newIdx = 0;
 		for (l in lines ) {
-			// var initialIdx = l.index;
-			var newIdx = l.index;
-			var distance = Std.int(hxd.Math.abs(delta));
+			newIdx = l.index;
 			for( _ in 0...distance ) {
 				newIdx = sheet.moveLine(newIdx, delta);
 				if( newIdx == null )
 					break;
-			
-				if (range.min > newIdx) range.min = newIdx;
-				if (range.max < newIdx) range.max = newIdx;
 			}
+
+			if (range.min > newIdx) range.min = newIdx;
+			if (range.max < newIdx) range.max = newIdx;
 		}
 
 		editor.endChanges();
-		
+
 		// Set cursor and selection on moved lines
 		editor.cursor.set(this, editor.cursor.x, range.min, [{ x1: -1, y1: range.min, x2: -1, y2: range.max }]);
-		
+
 		editor.refresh();
 	}
 
@@ -690,7 +690,7 @@ class Table extends Component {
 			if ((movingUp && s.data.index > targetIdx && s.data.index <= fromIdx) || (!movingUp && s.data.index <= targetIdx && s.data.index > fromIdx))
 				sepCount++;
 		}
-		
+
 		moveLines(lines, movingUp ? (targetIdx - fromIdx) - sepCount : (targetIdx - fromIdx) + sepCount);
 
 		// Set cursor and selection on moved lines
