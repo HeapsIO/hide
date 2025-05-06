@@ -726,7 +726,26 @@ class Editor extends Component {
 			if (schema.length == 1) {
 				for (c in targetCells) {
 					var col = c.column;
-					if (!c.table.canEditColumn(col.name) || Editor.getColumnProps(col).copyPasteImmutable || !col.type.equals(schema[0].type))
+
+					// We have to do this since equals is returning false if enum's param is an object
+					var sameType = switch([col.type, schema[0].type]) {
+						case [TFlags(values1), TFlags(values2)], [TEnum(values1), TEnum(values2)]:
+							if (values1.length != values2.length)
+								false;
+							else {
+								for (idx in 0...values1.length)
+									if (values1[idx] != values2[idx]) {
+										false;
+										break;
+									}
+
+								true;
+							}
+						default:
+							col.type.equals(schema[0].type);
+					};
+
+					if (!c.table.canEditColumn(col.name) || Editor.getColumnProps(col).copyPasteImmutable || !sameType)
 						continue;
 					setValue(data[0], c.line.obj, schema[0], col);
 					toRefresh.push(c);
