@@ -215,7 +215,9 @@ class ModelLibraryInstance {
 		var batches : Array<Int> = [];
 		var materials = [];
 
-		for ( material in mesh.getMaterials(false) ) {
+		var multiMat = Std.downcast(mesh, h3d.scene.MultiMaterial);
+		var meshMaterials = multiMat != null ? multiMat.materials : [mesh.material];
+		for ( material in meshMaterials ) {
 			var pbrProps = (material.props : PbrProps);
 			var key = haxe.Json.stringify(pbrProps) + appendToKey;
 
