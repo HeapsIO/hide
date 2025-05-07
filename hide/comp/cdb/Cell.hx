@@ -785,7 +785,9 @@ class Cell {
 
 	public function focus() {
 		editor.focus();
-		editor.cursor.set(table, this.columnIndex, this.line.index);
+		var x = table.displayMode == Properties ? 0 : columnIndex;
+		var y = line.index;
+		editor.cursor.set(table, x, y, [{ x1: x, y1: y, x2: x, y2: y, origin: {x: x, y: y} }]);
 	}
 
 	function getEnumValueDoc(v: String) {

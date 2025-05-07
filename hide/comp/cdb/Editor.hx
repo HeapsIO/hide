@@ -133,7 +133,11 @@ class Editor extends Component {
 		keys.register("redo", function() undo.redo());
 		keys.register("cdb.moveBack", () -> cursor.jump(true));
 		keys.register("cdb.moveAhead", () -> cursor.jump(false));
-		keys.register("cdb.insertLine", function() { cursor.table.insertLine(cursor.y); cursor.move(0,1,false,false,false); });
+		keys.register("cdb.insertLine", function() {
+			cursor.table.insertLine(cursor.y);
+			if (cursor.table.displayMode != Properties)
+				cursor.move(0,1,false,false,false);
+		});
 		keys.register("duplicate", function() { cursor.table.duplicateLine(cursor.y); cursor.move(0,1,false,false,false); });
 		for( k in ["cdb.editCell","rename"] )
 			keys.register(k, function() {
