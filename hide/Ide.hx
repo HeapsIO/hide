@@ -1377,7 +1377,7 @@ class Ide extends hide.tools.IdeData {
 						projectConfig.dbCategories.remove(cat);
 					else
 						projectConfig.dbCategories.push(cat);
-					config.global.save();
+					config.user.save();
 					applyCategories();
 				});
 			}
@@ -1385,12 +1385,12 @@ class Ide extends hide.tools.IdeData {
 
 			db.find(".dbCatShowAll").click(function(_) {
 				projectConfig.dbCategories = null;
-				config.global.save();
+				config.user.save();
 				applyCategories();
 			});
 			db.find(".dbCatHideAll").click(function(_) {
 				projectConfig.dbCategories = [];
-				config.global.save();
+				config.user.save();
 				applyCategories();
 			});
 		}

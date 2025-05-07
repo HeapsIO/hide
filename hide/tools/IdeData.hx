@@ -2,7 +2,6 @@ package hide.tools;
 
 class IdeData {
 
-	public var currentConfig(get,never) : Config;
 	public var projectDir(get,never) : String;
 	public var resourceDir(get,never) : String;
 	public var appPath(get, null): String;
@@ -17,12 +16,6 @@ class IdeData {
 
 	var pakFile : hxd.fmt.pak.FileSystem;
 
-	public var config : {
-		global : Config,
-		project : Config,
-		user : Config,
-		current : Config,
-	};
 
 	// Default settings for HideGlobalConfig since we can't init values in a typedef
 	public var defaultIdeConfig : Map<String, Dynamic> = [
@@ -33,8 +26,15 @@ class IdeData {
 		"cullingDistanceFactor" => 100,
 	];
 
+	public var currentConfig(get,never) : Config;
 	public var ideConfig(get, never) : hide.Config.HideGlobalConfig;
 	public var projectConfig(get, never) : hide.Config.HideProjectConfig;
+	public var config : {
+		global : Config, // Per user, for all projects
+		user : Config, // Per user, specific project
+		project : Config, // All users, specific project
+		current : Config, // Merge of all configs above
+	};
 
 	public function new() {
 	}
