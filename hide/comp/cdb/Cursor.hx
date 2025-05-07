@@ -255,8 +255,12 @@ class Cursor {
 							el.classList.add("right");
 						if (cellY == sel.y2)
 							el.classList.add("bot");
-						c.line.element.addClass("highlight");
-						table.element.find('th[title="${c.column.name}"]').addClass("highlight");
+						if (Ide.inst.ideConfig.highlightActiveLineHeader)
+							c.line.element.addClass("highlight");
+						if (Ide.inst.ideConfig.highlightActiveColumnHeader)
+							table.element.find('th[title="${c.column.name}"]').addClass("highlight");
+						if (Ide.inst.ideConfig.highlightActiveLine)
+							c.line.element.addClass("active-line");
 					}
 				}
 
@@ -331,6 +335,7 @@ class Cursor {
 
 	public function hide() {
 		var elt = editor.element;
+		elt.find(".active-line").removeClass("active-line");
 		elt.find(".highlight").removeClass("highlight");
 		elt.find(".selected").removeClass("selected");
 		elt.find(".cursorView").removeClass("cursorView");

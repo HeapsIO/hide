@@ -34,6 +34,9 @@
 .cdb .cdb-sheet .highlightth {
   background-color: #1c3c70;
 }
+.cdb .cdb-sheet .active-line {
+  background-color: #1f1e1e;
+}
 .cdb .cdb-sheet tr.selected,
 .cdb .cdb-sheet td.selected {
   background-color: #313a48;

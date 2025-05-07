@@ -19,6 +19,12 @@ class UserSettings extends Settings {
 		performance.add("Track gpu alloc", new Element('<input type="checkbox"/>'), Ide.inst.ideConfig.trackGpuAlloc, (v) -> Ide.inst.ideConfig.trackGpuAlloc = v);
 		performance.add("Culling distance factor", new Element('<input type="number"/>'), Ide.inst.ideConfig.cullingDistanceFactor, (v) -> Ide.inst.ideConfig.cullingDistanceFactor = v);
 		categories.push(performance);
+
+		var cdb = new hide.view.settings.Settings.Categorie("CDB");
+		cdb.add("Highlight active line", new Element('<input type="checkbox"/>'), Ide.inst.ideConfig.highlightActiveLine, (v) -> Ide.inst.ideConfig.highlightActiveLine = v);
+		cdb.add("Highlight active line header", new Element('<input type="checkbox"/>'), Ide.inst.ideConfig.highlightActiveLineHeader, (v) -> Ide.inst.ideConfig.highlightActiveLineHeader = v);
+		cdb.add("Highlight active column header", new Element('<input type="checkbox"/>'), Ide.inst.ideConfig.highlightActiveColumnHeader, (v) -> Ide.inst.ideConfig.highlightActiveColumnHeader = v);
+		categories.push(cdb);
 	}
 
 	override function getTitle() {
