@@ -8,6 +8,7 @@ typedef GlobalsDef = haxe.DynamicAccess<{
 	var evalTo : String;
 	var allowGlobalsDefine : Null<Bool>;
 	var cdbEnums : Array<String>;
+	var publicFields : Bool;
 }>;
 
 class ScriptCache {
@@ -226,6 +227,7 @@ class ScriptChecker {
 
 		var cdbPack : String = config.get("script.cdbPackage");
 		var contexts = [];
+		var publicFields = false;
 		var allowGlobalsDefine = false;
 		checkEvents = false;
 		cdbEnums = [];
@@ -270,11 +272,15 @@ class ScriptChecker {
 				checker.setGlobal(f, t);
 			}
 
-			if( api.context != null )
+			if( api.context != null ) {
 				contexts = [api.context];
+				publicFields = api.publicFields;
+			}
 
-			if( api.contexts != null )
+			if( api.contexts != null ) {
 				contexts = api.contexts;
+				publicFields = api.publicFields;
+			}
 
 			if( api.allowGlobalsDefine != null )
 				allowGlobalsDefine = api.allowGlobalsDefine;
@@ -302,7 +308,9 @@ class ScriptChecker {
 				case TInst(c,_):
 					var cc = c;
 					while( true ) {
-						for( f in cc.fields ) if( f.t.match(TFun(_)) ) f.isPublic = true; // allow access to private methods
+						if( !publicFields ) {
+							for( f in cc.fields ) if( f.t.match(TFun(_)) ) f.isPublic = true; // allow access to private methods
+						}
 						if( cc.superClass == null ) break;
 						cc = switch( cc.superClass ) {
 						case TInst(c,_): c;
