@@ -4282,7 +4282,7 @@ hide-popover hide-content {
 }
 :root {
   --hover-highlight: rgba(114, 180, 255, 0.5);
-  --selection: rgba(114, 180, 255);
+  --selection: #3185ce;
   --hover: #444;
   --basic-shadow: 2px 2px 3px rgba(0, 0, 0, 0.75);
   --sublte-shadow: 1px 1px 3px rgba(0, 0, 0, 0.33);
@@ -4887,4 +4887,107 @@ blend-space-2d-root properties-container .hide-properties dl > div .hide-range i
 }
 .fancy-hide {
   display: none;
+}
+file-browser {
+  display: flex;
+  flex-direction: row;
+  height: 100%;
+}
+file-browser .left {
+  width: 300px;
+  min-width: 100px;
+  background-color: mediumaquamarine;
+}
+file-browser .right {
+  background-color: teal;
+  flex: 1 1;
+}
+fancy-tree {
+  --anim-speed: 0.1s;
+  background-color: #222;
+  height: 100%;
+  display: block;
+  overflow-y: auto;
+}
+fancy-tree:focus {
+  outline: none;
+}
+fancy-tree fancy-wrapper {
+  display: block;
+  width: 100%;
+  min-width: 100px;
+  overflow-x: clip;
+}
+fancy-tree fancy-wrapper fancy-tree-item {
+  --depth: 0;
+  display: flex;
+  flex-direction: column;
+  --highlight: 0;
+}
+fancy-tree fancy-wrapper fancy-tree-item.open > fancy-tree-children {
+  display: block;
+}
+fancy-tree fancy-wrapper fancy-tree-item fancy-tree-children {
+  display: none;
+  transition: display var(--anim-speed);
+}
+fancy-tree fancy-wrapper fancy-tree-item:has(fancy-tree-children .selected) > fancy-tree-header fancy-tree-name {
+  text-decoration: underline var(--selection);
+}
+fancy-tree fancy-wrapper fancy-tree-item.current:not(.selected) {
+  --highlight: 10;
+}
+fancy-tree fancy-wrapper fancy-tree-item.selected > fancy-tree-header {
+  color: white;
+  --background: var(--selection);
+}
+fancy-tree fancy-wrapper fancy-tree-item fancy-tree-header {
+  padding-left: calc((var(--depth) - 1) * 1em + 0.25em);
+  padding-top: 1px;
+  padding-bottom: 1px;
+  --background: #222;
+  background-color: hsl(from var(--background) h s calc(var(--highlight) + l));
+  display: flex;
+  position: relative;
+}
+fancy-tree fancy-wrapper fancy-tree-item fancy-tree-header:hover {
+  --highlight: 10;
+}
+fancy-tree fancy-wrapper fancy-tree-item fancy-tree-header fancy-tree-icon {
+  align-self: center;
+  width: 16px;
+  height: 16px;
+  display: block;
+  filter: drop-shadow(1px 1px rgba(0, 0, 0, 0.5));
+}
+fancy-tree fancy-wrapper fancy-tree-item fancy-tree-header fancy-tree-icon.caret {
+  width: 16px;
+  height: 12px;
+}
+fancy-tree fancy-wrapper fancy-tree-item fancy-tree-header fancy-tree-icon.caret::before {
+  content: "";
+  position: absolute;
+  top: 0;
+  left: 0;
+  width: 100%;
+  height: 100%;
+  transition: transform var(--anim-speed);
+  background-color: currentColor;
+  mask-image: url("res/icons/svg/right_caret.svg");
+  mask-position: center;
+  mask-repeat: no-repeat;
+  mask-size: contain;
+  pointer-events: all;
+  cursor: pointer;
+}
+fancy-tree fancy-wrapper fancy-tree-item fancy-tree-header fancy-tree-name {
+  display: block;
+  text-overflow: ellipsis;
+  overflow: clip;
+  flex: 1 1;
+  text-wrap: nowrap;
+  filter: drop-shadow(1px 1px rgba(0, 0, 0, 0.5));
+}
+fancy-tree fancy-wrapper fancy-tree-item.open > fancy-tree-header .caret::before {
+  transform: rotate(90deg);
 }
