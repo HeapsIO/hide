@@ -55,12 +55,9 @@ class DynamicShader extends Shader {
 			}
 			if (Reflect.fields(newProps).length > 0) {
 				obj.props = newProps;
-			}
-			#if js
-			else {
+			} else {
 				Reflect.deleteField(obj, props);
 			}
-			#end
 		}
 		#end
 		return obj;
