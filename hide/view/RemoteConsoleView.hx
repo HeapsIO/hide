@@ -317,11 +317,12 @@ class RemoteConsoleCommand extends hide.comp.Component {
 }
 
 class RemoteConsoleSubCommandDump extends hide.comp.Component {
+	public var dumpFile : Element;
 	public function new( panel : RemoteConsolePanel, doDump : (onResult:(file:String,?filedesc:String,?dir:String)->Void) -> Void ) {
 		super(null, null);
 		element = new Element('<div class="sub-sub-command"></div>');
 		var dumpBtn = new Element('<input type="button" value="Dump"/>').appendTo(element);
-		var dumpFile = new Element('<input type="text" class="dump-file" disabled/>').appendTo(element);
+		dumpFile = new Element('<input type="text" class="dump-file" disabled/>').appendTo(element);
 		var openBtn = new Element('<div class="ico ico-folder-open disable" title="Open in Explorer"/>').appendTo(element);
 		dumpBtn.on('click', function(e) {
 			doDump(function (file, ?filedesc, ?dir) {
@@ -375,6 +376,10 @@ class RemoteConsoleCommandHL extends RemoteConsoleCommand {
 		var subcmd = new Element('<div class="sub-command">
 			<h5>GC Memory</h5>
 		</div>').appendTo(element);
+		#if (hashlink >= "1.15.0")
+		var openBtn = new Element('<div class="ico ico-share-square-o disable" title="Open in Memory profiler"/>');
+		#end
+		var dumpHlPath = null;
 		var dump = new RemoteConsoleSubCommandDump(panel, function(onResult) {
 			panel.sendCommand("dumpMemory", null, function(r) {
 				var dir = (panel.peerCwd ?? hide.Ide.inst.projectDir) + "/";
@@ -384,14 +389,33 @@ class RemoteConsoleCommandHL extends RemoteConsoleCommand {
 					var outfile = "hlmemory_" + now;
 					if( panel.peerPath != null && sys.FileSystem.exists(panel.peerPath) ) {
 						sys.io.File.copy(panel.peerPath, dir + outfile + ".hl");
+						dumpHlPath = dir + outfile + ".hl";
 					}
 					onResult(file, "GC memory dump");
+					#if (hashlink >= "1.15.0") openBtn.removeClass("disable"); #end
 				} catch( e ) {
 					panel.log(e.message, true);
 					onResult(null);
 				}
 			});
-		}).element.appendTo(subcmd);
+		});
+		dump.element.appendTo(subcmd);
+		#if (hashlink >= "1.15.0")
+		openBtn.on('click', function(e) {
+			var file = dump.dumpFile.val();
+			if( file.length > 0 && sys.FileSystem.exists(file) ) {
+				ide.open("hide.view.MemProfiler",{}, null, function(view) {
+					var prof = Std.downcast(view, hide.view.MemProfiler);
+					prof.hlPath = dumpHlPath;
+					prof.dumpPaths = [file];
+					prof.process();
+				});
+			} else {
+				panel.log('File $file does not exist', true);
+			}
+		});
+		openBtn.appendTo(dump.element);
+		#end
 		var subcmd = new Element('<div class="sub-command">
 			<h5>GC Live Objs</h5>
 		</div>').appendTo(element);

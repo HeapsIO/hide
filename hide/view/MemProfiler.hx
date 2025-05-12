@@ -3,13 +3,15 @@ package hide.view;
 #if (hashlink >= "1.15.0")
 class MemProfiler extends hide.ui.View<{}> {
 	public var analyzer : hlmem.Analyzer = null;
-	var hlPath = "";
-	var dumpPaths : Array<String> = [];
+	public var hlPath(default, set) : String = null;
+	public var dumpPaths(default, set) : Array<String> = [];
 	var currentFilter : hlmem.Memory.FilterMode = None;
 	public var defaultTableLines : Int = 5;
 	public var defaultLocateRoot : Bool = false;
 	public var showTid : Bool = false;
 
+	var hlSelect : hide.comp.FileSelect;
+	var fileSelects : Array<hide.comp.FileSelect>;
 	var statsView : Element;
 	var tabsView : Element;
 	var searchBar : MemProfilerSearchBar;
@@ -74,10 +76,10 @@ class MemProfiler extends hide.ui.View<{}> {
 		</div>'
 		).appendTo(element);
 
-		var hlSelect = new hide.comp.FileSelect(["hl"], null, element.find(".hl-fileselect"));
+		hlSelect = new hide.comp.FileSelect(["hl"], null, element.find(".hl-fileselect"));
 		hlSelect.onChange = function() { hlPath = Ide.inst.getPath(hlSelect.path); };
 
-		var fileSelects : Array<hide.comp.FileSelect> = [];
+		fileSelects = [];
 		for (el in element.find(".dump-fileselect")) {
 			var dumpSelect = new hide.comp.FileSelect(["dump"], null, new Element(el));
 			fileSelects.push(dumpSelect);
@@ -162,16 +164,7 @@ class MemProfiler extends hide.ui.View<{}> {
 
 		var processBtn = element.find("#process-btn");
 		processBtn.on('click', function(e) {
-			if( hlPath == null || hlPath == '' || dumpPaths == null || dumpPaths.length <= 0 ) {
-				Ide.inst.quickMessage('.hl or/and .dump files are missing. Please provide both files before hit the process button');
-				return;
-			}
-
-			clear();
-			load( function(b) {
-				if( b )
-					refresh();
-			});
+			process();
 		});
 
 		var filterOpt = element.find("#mem-filter");
@@ -216,6 +209,34 @@ class MemProfiler extends hide.ui.View<{}> {
 
 	override function getTitle() {
 		return "Memory profiler";
+	}
+
+	public function process() {
+		if( hlPath == null || hlPath == '' || dumpPaths == null || dumpPaths.length <= 0 ) {
+			Ide.inst.quickMessage('.hl or/and .dump files are missing. Please provide both files before hit the process button');
+			return;
+		}
+		clear();
+		load( function(b) {
+			if( b )
+				refresh();
+		});
+	}
+
+	function set_hlPath( p : String ) {
+		if( hlSelect != null ) {
+			hlSelect.path = p;
+		}
+		return hlPath = p;
+	}
+
+	function set_dumpPaths( arr : Array<String> ) {
+		if( fileSelects != null ) {
+			for( i in 0...fileSelects.length ) {
+				fileSelects[i].path = arr[i];
+			}
+		}
+		return dumpPaths = arr;
 	}
 
 	function onFilterChange( f : hlmem.Memory.FilterMode ) {
