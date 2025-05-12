@@ -44,6 +44,8 @@ class DynamicShader extends Shader {
 
 		// Cleanup props from removed variables
 		// only for shaderGraph for the moment
+		// only in editor because hl has some quircks with dynamic vars
+		#if editor
 		if (shaderDef != null && shaderDef.shader != null && shaderDef.isShaderGraph) {
 			var newProps = {};
 			for (v in shaderDef.shader.data.vars) {
@@ -60,6 +62,7 @@ class DynamicShader extends Shader {
 			}
 			#end
 		}
+		#end
 		return obj;
 	}
 
