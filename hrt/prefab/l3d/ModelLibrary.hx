@@ -13,6 +13,7 @@ typedef MaterialData = {
 	var uvY : Float;
 	var uvSX : Float;
 	var uvSY : Float;
+	var materialKey : String;
 }
 
 typedef MaterialMesh = {
@@ -40,6 +41,7 @@ class MaterialSignature {
 	public var diffuseMapPath : String;
 	public var normalMapPath : String;
 	public var specularMapPath : String;
+	public var shaders : Array<Dynamic> = [];
 	function new() {
 	}
 }
@@ -154,6 +156,8 @@ class ModelLibrarySignature {
 			sig.diffuseMapPath = m.diffuseMap;
 			sig.normalMapPath = m.normalMap;
 			sig.specularMapPath = m.specularMap;
+			for ( c in lib.children )
+				sig.shaders.push(@:privateAccess c.serialize());
 			return sig;
 		}
 		sig.diffuseMapPath = m.diffuseTexture;
@@ -219,54 +223,6 @@ class ModelLibraryInstance {
 		var meshMaterials = multiMat != null ? multiMat.materials : [mesh.material];
 		for ( material in meshMaterials ) {
 			var pbrProps = (material.props : PbrProps);
-			var key = haxe.Json.stringify(pbrProps) + appendToKey;
-
-			var props = h3d.mat.MaterialSetup.current.loadMaterialProps(material);
-			var materialClone = null;
-			var matLibPath = null;
-			var matName = null;
-
-			if ( props != null ) {
-				matLibPath = (props:Dynamic).__ref;
-				if ( matLibPath != null ) {
-					matName = (props:Dynamic).name;
-					var shaderKey = @:privateAccess library.shaderKeyCache.get(matName);
-					if ( shaderKey == null ) {
-						materialClone = h3d.mat.MaterialSetup.current.createMaterial();
-						material.clone(materialClone);
-						var prefab = hxd.res.Loader.currentInstance.load(matLibPath).toPrefab();
-						hxd.fmt.hmd.Library.setupMaterialLibrary(path -> hxd.res.Loader.currentInstance.load(path).toTexture(),
-						materialClone, prefab, matName);
-						var libMat = prefab.load().getOpt(hrt.prefab.Material, matName);
-						shaderKey = "";
-						for ( c in libMat.children )
-							shaderKey += haxe.Json.stringify(@:privateAccess c.serialize());
-						@:privateAccess library.shaderKeyCache.set(matName, shaderKey);
-					}
-					key += shaderKey;
-				}
-			}
-
-			var batchID = batchLookup.get(key);
-			if ( batchID == null ) {
-				batchID = batchCache.length;
-				if ( materialClone == null ) {
-					materialClone = h3d.mat.MaterialSetup.current.createMaterial();
-					material.clone(materialClone);
-					if ( matName != null ) {
-						var prefab = hxd.res.Loader.currentInstance.load(matLibPath).toPrefab();
-						hxd.fmt.hmd.Library.setupMaterialLibrary(path -> hxd.res.Loader.currentInstance.load(path).toTexture(),
-						materialClone, prefab, matName);
-					}
-				}
-				var batch = createMeshBatch == null ? library.createMeshBatch(parent, false, null, pbrProps, materialClone) : createMeshBatch(library, parent, false, null, pbrProps, materialClone);
-				if ( batch == null )
-					continue;
-				batchLookup.set(key, batchID);
-				batchCache.push(batch);
-			}
-
-			batches.push(batchID);
 			var hmdModel = cast(mesh.primitive, h3d.prim.HMDModel);
 			var bakedMat = @:privateAccess library.getBakedMat(material, hmdModel, mesh.name);
 			if ( bakedMat == null ) {
@@ -275,6 +231,20 @@ class ModelLibraryInstance {
 				throw 'Can\'t emit ${modelPath} because ${material.name} was not baked in ${libPath}';
 			}
 			materials.push(bakedMat);
+
+			var key = bakedMat.materialKey + appendToKey;
+
+			var batchID = batchLookup.get(key);
+			if ( batchID == null ) {
+				batchID = batchCache.length;
+
+				var batch = createMeshBatch == null ? library.createMeshBatch(parent, false, null, pbrProps, material) : createMeshBatch(library, parent, false, null, pbrProps, material);
+				if ( batch == null )
+					continue;
+				batchLookup.set(key, batchID);
+				batchCache.push(batch);
+			}
+			batches.push(batchID);
 		}
 		return @:privateAccess new MeshEmitter(this, batches, materials, mesh);
 	}
@@ -409,7 +379,7 @@ class ModelLibrary extends Prefab {
 	@:s var autoLod : Bool = false;
 	@:s var sighash : String = "";
 
-	public static inline var CURRENT_VERSION = 3;
+	public static inline var CURRENT_VERSION = 4;
 
 	var cache : ModelLibraryCache;
 	var shaderKeyCache : Map<String, String>;
@@ -497,6 +467,7 @@ class ModelLibrary extends Prefab {
 
 	public function rebuildData() {
 
+		shaderKeyCache = new Map();
 		bakedMaterials = {};
 
 		var hmd = new Data();
@@ -763,7 +734,8 @@ class ModelLibrary extends Prefab {
 					uvX : pos.pos.du,
 					uvY : pos.pos.dv,
 					uvSX : pos.pos.su,
-					uvSY : pos.pos.sv
+					uvSY : pos.pos.sv,
+					materialKey : getMaterialKey(heapsMat)
 				};
 				bakedMaterials.set(key, bk);
 
@@ -978,6 +950,31 @@ class ModelLibrary extends Prefab {
 		sighash = sig.computeHash();
 	}
 
+	function getMaterialKey(material : h3d.mat.Material) {
+		var pbrProps = (material.props : PbrProps);
+		var key = haxe.Json.stringify(pbrProps);
+
+		var props = h3d.mat.MaterialSetup.current.loadMaterialProps(material);
+
+		if ( props != null ) {
+			var matLibPath = (props:Dynamic).__ref;
+			if ( matLibPath != null ) {
+				var matName = (props:Dynamic).name;
+				var shaderKey = shaderKeyCache.get(matName);
+				if ( shaderKey == null ) {
+					var prefab = hxd.res.Loader.currentInstance.load(matLibPath).toPrefab();
+					var libMat = prefab.load().getOpt(hrt.prefab.Material, matName);
+					shaderKey = "";
+					for ( c in libMat.children )
+						shaderKey += haxe.Json.stringify(@:privateAccess c.serialize());
+					shaderKeyCache.set(matName, shaderKey);
+				}
+				key += shaderKey;
+			}
+		}
+		return key;
+	}
+
 	public function saveLibrary( ?filePath : String ) {
 		var path = ( filePath != null ) ? filePath : shared.prefabSource;
 		if ( path == null )
@@ -1052,7 +1049,7 @@ class ModelLibrary extends Prefab {
 	}
 
 	public function createMeshBatch(parent : h3d.scene.Object, isStatic : Bool, ?bounds : h3d.col.Bounds, ?props : h3d.mat.PbrMaterial.PbrProps, ?material : h3d.mat.Material) {
-		var batch = new h3d.scene.MeshBatch(cache.hmdPrim, h3d.mat.Material.create(), parent);
+		var batch = new h3d.scene.MeshBatch(cache.hmdPrim, null, parent);
 		setupMeshBatch(batch, isStatic, bounds, props, material);
 		return batch;
 	}
