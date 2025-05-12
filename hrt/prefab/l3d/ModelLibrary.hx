@@ -215,7 +215,7 @@ class ModelLibraryInstance {
 		}
 	}
 
-	public function createMeshEmitter( mesh : h3d.scene.Mesh, parent : h3d.scene.Object, ?createMeshBatch : CreateMeshBatchFunc, appendToKey : String = "" ) : MeshEmitter {
+	public function createMeshEmitter( mesh : h3d.scene.Mesh, parent : h3d.scene.Object, ?createMeshBatch : CreateMeshBatchFunc, appendToKey : String = null ) : MeshEmitter {
 		var batches : Array<Int> = [];
 		var materials = [];
 
@@ -232,7 +232,9 @@ class ModelLibraryInstance {
 			}
 			materials.push(bakedMat);
 
-			var key = bakedMat.materialKey + appendToKey;
+			var key = bakedMat.materialKey;
+			if ( appendToKey != null )
+				key += appendToKey;
 
 			var batchID = batchLookup.get(key);
 			if ( batchID == null ) {
@@ -1070,13 +1072,13 @@ class ModelLibrary extends Prefab {
 				if ( !isForbiddenShader(s) ) {
 					var shader = batch.material.mainPass.getShader(Type.getClass(s));
 					if ( shader == null || (s.toString() != shader.toString()))
-						batch.material.mainPass.addShader(s.clone());
+						batch.material.mainPass.addShader(s);
 				}
 			for ( s in @:privateAccess material.mainPass.selfShaders )
 				if ( !isForbiddenShader(s) ) {
 					var shader = batch.material.mainPass.getShader(Type.getClass(s));
 					if ( shader == null || (s.toString() != shader.toString()))
-						@:privateAccess batch.material.mainPass.addSelfShader(s.clone());
+						@:privateAccess batch.material.mainPass.addSelfShader(s);
 				}
 		}
 
