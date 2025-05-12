@@ -3351,7 +3351,7 @@ div.gradient-box {
 .profiler .left-panel table td:nth-last-child(1) {
   width: 100%;
   max-width: 700px;
-  text-wrap: auto;
+  text-wrap: wrap;
 }
 .profiler .left-panel table td {
   padding: 3px 30px 3px 1px;
