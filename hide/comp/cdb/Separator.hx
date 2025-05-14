@@ -37,15 +37,10 @@ class Separator extends Component {
 		element.contextmenu(function(e) {
 			var allowedParents : Array<Separator> = [];
 
-			var idx = table.separators.indexOf(this) - 1;
-			if (idx >= 0) {
-				allowedParents.push(table.separators[idx]);
-
-				var allowedParent = table.separators[idx].parent;
-				while (allowedParent != null) {
-					allowedParents.push(allowedParent);
-					allowedParent = allowedParent.parent;
-				}
+			var allowedParent = this.parent;
+			while (allowedParent != null) {
+				allowedParents.push(allowedParent);
+				allowedParent = allowedParent.parent;
 			}
 
 			allowedParents.push(null);
