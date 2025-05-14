@@ -28,8 +28,12 @@ class Batcher extends h3d.scene.Object {
 		meshEmitter.emitInstance(this, absPos, emitCountTip, cb);
 	}
 
+	public function getPrimitive() {
+		return library.cache.hmdPrim;
+	}
+
 	public function defaultCreateMeshBatch(?props : PbrProps, ?material : h3d.mat.Material) {
-		var batch = new h3d.scene.MeshBatch(library.cache.hmdPrim, null, this);
+		var batch = new h3d.scene.MeshBatch(getPrimitive(), null, this);
 		setupMeshBatch(batch, props, material);
 		return batch;
 	}
