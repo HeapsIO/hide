@@ -251,11 +251,13 @@ class TemporalFiltering extends hrt.prefab.rfx.RendererFX {
 			s.VARIANCE_CLIPPING = varianceClipping;
 			s.CATMULL_ROM = catmullRom;
 			s.VARIANCE_CLIPPING = varianceClipping;
-			if ( velocity ) {
+			var pbrRenderer = Std.downcast(r, h3d.scene.pbr.Renderer);
+			var useVelocity = velocity && pbrRenderer != null;
+			if ( useVelocity ) {
 				s.velocityBuffer = ctx.getGlobal("velocity");
 				s.velocityBuffer.filter = Nearest;
-				s.VELOCITY = velocity;
 			}
+			s.VELOCITY = useVelocity;
 
 			s.KEEP_SKY_ALPHA = keepSkyAlpha;
 
