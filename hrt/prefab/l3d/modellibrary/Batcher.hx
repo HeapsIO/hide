@@ -29,7 +29,7 @@ class Batcher extends h3d.scene.Object {
 	}
 
 	public function getPrimitive() {
-		return library.cache.hmdPrim;
+		return library.getPrim();
 	}
 
 	public function defaultCreateMeshBatch(?props : PbrProps, ?material : h3d.mat.Material) {
