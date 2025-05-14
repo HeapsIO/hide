@@ -416,6 +416,10 @@ class Editor extends Component {
 				for (s in seps)
 					@:privateAccess s.filtered = false;
 			}
+			else {
+				if (l.subTable != null)
+					l.subTable.immediateClose();
+			}
 		}
 
 		for (s in @:privateAccess table.separators)
