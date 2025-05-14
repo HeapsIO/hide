@@ -4287,6 +4287,8 @@ hide-popover hide-content {
   --basic-shadow: 2px 2px 3px rgba(0, 0, 0, 0.75);
   --sublte-shadow: 1px 1px 3px rgba(0, 0, 0, 0.33);
   --basic-border: 1px solid #353535;
+  --basic-border-hover: 1px solid #555;
+  --basic-border-focused: 1px solid var(--selection);
   --basic-border-radius: 5px;
   --basic-padding: 0.2em;
   --bg-0: #000;
@@ -4902,12 +4904,77 @@ file-browser .right {
   background-color: teal;
   flex: 1 1;
 }
+fancy-icon {
+  height: 1em;
+  display: block;
+  mask-size: contain;
+  background-color: currentColor;
+  mask-mode: luminance;
+  mask-repeat: no-repeat;
+  aspect-ratio: 1/1;
+  mask-position: center;
+}
+fancy-icon.small {
+  height: 12px;
+}
+fancy-icon.big {
+  height: 22px;
+}
+fancy-icon.fi-right-caret {
+  mask-image: url("res/icons/svg/right_caret.svg");
+}
+fancy-icon.fi-close {
+  mask-image: url("res/icons/svg/close.svg");
+}
+fancy-icon.fi-search {
+  mask-image: url("res/icons/svg/search.svg");
+}
+fancy-search {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background-color: #333;
+  box-shadow: 1px 1px 1px rgba(0, 0, 0, 0.33);
+  margin-bottom: 2px;
+  overflow: hidden;
+  height: 0px;
+}
+fancy-search * {
+  box-sizing: border-box;
+}
+fancy-search .fancy-search-box {
+  position: relative;
+  flex: 1 1;
+}
+fancy-search .fancy-search-box > input {
+  margin: 2px;
+  border: var(--basic-border);
+  border-radius: var(--basic-border-radius);
+  min-width: 0;
+  width: 100%;
+  height: 100%;
+}
+fancy-search .fancy-search-box > input:hover {
+  border: var(--basic-border-hover);
+}
+fancy-search .fancy-search-box > input:focus {
+  border: var(--basic-border-focused);
+  outline: none;
+}
+fancy-search .fancy-search-box .search-icon {
+  position: absolute;
+  right: 0;
+  top: 50%;
+  transform: translateY(-50%);
+  color: #999;
+  z-index: 1;
+}
 fancy-tree {
   --anim-speed: 0.1s;
   background-color: #222;
   height: 100%;
-  display: block;
-  overflow-y: auto;
+  display: flex;
+  flex-direction: column;
 }
 fancy-tree:focus {
   outline: none;
@@ -4915,21 +4982,33 @@ fancy-tree:focus {
 fancy-tree fancy-wrapper {
   display: block;
   width: 100%;
+  flex: 1 1;
   min-width: 100px;
   overflow-x: clip;
+  overflow-y: auto;
 }
 fancy-tree fancy-wrapper fancy-tree-item {
   --depth: 0;
   display: flex;
   flex-direction: column;
   --highlight: 0;
+  box-sizing: border-box;
+}
+fancy-tree fancy-wrapper fancy-tree-item.hide-search {
+  overflow: hidden;
+  height: 0px;
+  display: none;
+}
+fancy-tree fancy-wrapper fancy-tree-item fancy-tree-children {
+  height: 0px;
+  overflow: hidden;
 }
 fancy-tree fancy-wrapper fancy-tree-item.open > fancy-tree-children {
   display: block;
+  height: auto;
 }
-fancy-tree fancy-wrapper fancy-tree-item fancy-tree-children {
-  display: none;
-  transition: display var(--anim-speed);
+fancy-tree fancy-wrapper fancy-tree-item.open > fancy-tree-header .caret::before {
+  transform: rotate(90deg);
 }
 fancy-tree fancy-wrapper fancy-tree-item:has(fancy-tree-children .selected) > fancy-tree-header fancy-tree-name {
   text-decoration: underline var(--selection);
@@ -4945,12 +5024,13 @@ fancy-tree fancy-wrapper fancy-tree-item fancy-tree-header {
   padding-left: calc((var(--depth) - 1) * 1em + 0.25em);
   padding-top: 1px;
   padding-bottom: 1px;
+  box-sizing: border-box;
   --background: #222;
   background-color: hsl(from var(--background) h s calc(var(--highlight) + l));
   display: flex;
   position: relative;
 }
-fancy-tree fancy-wrapper fancy-tree-item fancy-tree-header:hover {
+fancy-tree fancy-wrapper fancy-tree-item fancy-tree-header:has(>.caret:hover, >fancy-tree-name:hover) {
   --highlight: 10;
 }
 fancy-tree fancy-wrapper fancy-tree-item fancy-tree-header fancy-tree-icon {
@@ -4958,19 +5038,21 @@ fancy-tree fancy-wrapper fancy-tree-item fancy-tree-header fancy-tree-icon {
   width: 16px;
   height: 16px;
   display: block;
+  flex-shrink: 0;
   filter: drop-shadow(1px 1px rgba(0, 0, 0, 0.5));
 }
 fancy-tree fancy-wrapper fancy-tree-item fancy-tree-header fancy-tree-icon.caret {
   width: 16px;
-  height: 12px;
+  height: 16px;
 }
 fancy-tree fancy-wrapper fancy-tree-item fancy-tree-header fancy-tree-icon.caret::before {
   content: "";
   position: absolute;
   top: 0;
   left: 0;
-  width: 100%;
-  height: 100%;
+  margin: 2px;
+  width: 12px;
+  height: 12px;
   transition: transform var(--anim-speed);
   background-color: currentColor;
   mask-image: url("res/icons/svg/right_caret.svg");
@@ -4984,10 +5066,42 @@ fancy-tree fancy-wrapper fancy-tree-item fancy-tree-header fancy-tree-name {
   display: block;
   text-overflow: ellipsis;
   overflow: clip;
-  flex: 1 1;
   text-wrap: nowrap;
+  flex-shrink: 1;
+  cursor: pointer;
   filter: drop-shadow(1px 1px rgba(0, 0, 0, 0.5));
 }
-fancy-tree fancy-wrapper fancy-tree-item.open > fancy-tree-header .caret::before {
-  transform: rotate(90deg);
+fancy-tree fancy-wrapper fancy-tree-item fancy-tree-header.feedback-drop-top::after {
+  position: absolute;
+  content: "";
+  display: block;
+  left: 0;
+  right: 0;
+  top: 0;
+  border-top: solid 1px var(--selection);
+  z-index: 10;
+  pointer-events: none;
+}
+fancy-tree fancy-wrapper fancy-tree-item fancy-tree-header.feedback-drop-bot::after {
+  position: absolute;
+  content: "";
+  display: block;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  border-top: solid 1px var(--selection);
+  z-index: 10;
+  pointer-events: none;
+}
+fancy-tree fancy-wrapper fancy-tree-item fancy-tree-header.feedback-drop-in::after {
+  position: absolute;
+  content: "";
+  display: block;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  top: 0;
+  border: solid 1px var(--selection);
+  z-index: 10;
+  pointer-events: none;
 }

@@ -146,6 +146,7 @@ class Gym extends hide.ui.View<{}> {
 			var toolbar = section(element, "Windows");
 
 			var btn = new Element("<fancy-button><span class='label'>Open subwindow 'test'</span></h1>");
+
 			toolbar.append(btn);
 
 			var subwindow : js.html.Window;
@@ -209,6 +210,11 @@ class Gym extends hide.ui.View<{}> {
 			dropZone.get(0).addEventListener("dragover", (ev : js.html.DragEvent) -> {
 				ev.preventDefault();
 				ev.dataTransfer.dropEffect = "copy";
+			});
+
+			var btn2 = new Element("<fancy-button><span class='label'>Localhost 5500</span></h1>").appendTo(toolbar);
+			btn2.on("click", (_) -> {
+				subwindow = js.Browser.window.open("http://127.0.0.1:5500/", "test","popup=true");
 			});
 		}
 	}

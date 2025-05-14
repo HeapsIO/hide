@@ -5090,6 +5090,9 @@ hide-popover {
 	--sublte-shadow: 1px 1px 3px rgba(0,0,0,.33);
 
 	--basic-border: 1px solid #353535;
+	--basic-border-hover: 1px solid #555;
+	--basic-border-focused: 1px solid var(--selection);
+
 	--basic-border-radius: 5px;
 	--basic-padding: 0.2em;
 
@@ -5356,7 +5359,6 @@ fancy-button {
 		&:hover {
 			background: none;
 			color: var(--fancy-main-text-color);
-
 		}
 	}
 
@@ -5871,14 +5873,90 @@ file-browser {
 	}
 }
 
+fancy-icon {
+	aspect-ratio: 1/1;
+	height: 1em;
+	display: block;
+	mask-size: contain;
+	background-color: currentColor;
+	mask-mode: luminance;
+	mask-repeat: no-repeat;
+	aspect-ratio: 1/1;
+	mask-position: center;
+
+	&.small {
+		height: 12px;
+	}
+
+
+	&.big {
+		height: 22px;
+	}
+
+	&.fi-right-caret 		{ mask-image: url("res/icons/svg/right_caret.svg"); }
+	&.fi-close 				{ mask-image: url("res/icons/svg/close.svg"); }
+	&.fi-search 			{ mask-image: url("res/icons/svg/search.svg"); }
+}
+
+fancy-search {
+	display: flex;
+	align-items: center;
+	justify-content: center;
+
+	* {
+		box-sizing: border-box;
+	}
+	.fancy-search-box {
+		position: relative;
+		flex: 1 1;
+
+		> input {
+			margin: 2px;
+			border: var(--basic-border);
+			border-radius: var(--basic-border-radius);
+
+			&:hover {
+				border: var(--basic-border-hover);
+			}
+
+			&:focus {
+				border: var(--basic-border-focused);
+
+				outline: none;
+			}
+
+			min-width: 0;
+			width: 100%;
+			height: 100%;
+		}
+
+		.search-icon {
+			position: absolute;
+			right: 0;
+			top: 50%;
+			transform: translateY(-50%);
+			color: #999;
+			z-index: 1;
+		}
+	}
+
+
+	background-color: #333;
+	box-shadow: 1px 1px 1px rgba(0,0,0,0.33);
+	margin-bottom: 2px;
+
+	overflow: hidden;
+	height: 0px;
+}
+
 fancy-tree {
 	--anim-speed: 0.1s;
 
 	background-color: #222;
 
 	height: 100%;
-	display: block;
-	overflow-y: auto;
+	display: flex;
+	flex-direction: column;
 
 	&:focus {
 		outline: none;
@@ -5887,8 +5965,10 @@ fancy-tree {
 	fancy-wrapper {
 		display: block;
 		width: 100%;
+		flex: 1 1;
 		min-width: 100px;
 		overflow-x: clip;
+		overflow-y: auto;
 
 		fancy-tree-item {
 			--depth: 0;
@@ -5897,15 +5977,25 @@ fancy-tree {
 
 			flex-direction: column;
 
-			&.open > fancy-tree-children {
-				display: block;
+			&.hide-search {
+				overflow: hidden;
+				height: 0px;
+				display: none;
 			}
 
 			fancy-tree-children {
-				display: none;
-				transition: display var(--anim-speed);
+				height: 0px;
+				overflow: hidden;
 			}
 
+			&.open > fancy-tree-children {
+				display: block;
+				height: auto;
+			}
+
+			&.open>fancy-tree-header .caret::before {
+				transform: rotate(90deg);
+			}
 
 			// Select if we have a children that is selected
 			&:has(fancy-tree-children .selected) > fancy-tree-header {
@@ -5924,10 +6014,16 @@ fancy-tree {
 				--background: var(--selection);
 			}
 
+			box-sizing: border-box;
+
+
 			fancy-tree-header {
 				padding-left: calc((var(--depth) - 1) * 1.0em + 0.25em);
 				padding-top: 1px;
 				padding-bottom: 1px;
+				position: relative;
+				box-sizing: border-box;
+
 
 				--background: #222;
 				background-color: e("hsl(from var(--background) h s calc(var(--highlight) + l))");
@@ -5937,11 +6033,9 @@ fancy-tree {
 
 				position: relative;
 
-				&:hover {
+				&:has(>.caret:hover, >fancy-tree-name:hover) {
 					--highlight: 10;
 				}
-
-
 
 				fancy-tree-icon {
 					align-self: center;
@@ -5950,16 +6044,19 @@ fancy-tree {
 
 					display: block;
 
+					flex-shrink: 0;
+
 					filter: drop-shadow(1px 1px rgba(0,0,0,0.5));
 
 					&.caret {
 						width: 16px;
-						height: 12px;
+						height: 16px;
 						&::before {
 							content: "";
 							position: absolute;
 							top: 0; left: 0;
-							width: 100%; height: 100%;
+							margin: 2px;
+							width: 12px; height: 12px;
 
 							transition: transform var(--anim-speed);
 							background-color: currentColor;
@@ -5979,16 +6076,51 @@ fancy-tree {
 					display: block;
 					text-overflow: ellipsis;
 					overflow: clip;
-					flex: 1 1;
 					text-wrap: nowrap;
+					flex-shrink: 1;
+					cursor: pointer;
 					filter: drop-shadow(1px 1px rgba(0,0,0,0.5));
 
 				}
+
+				&.feedback-drop-top::after {
+					position: absolute;
+					content: "";
+					display: block;
+					left: 0;
+					right: 0;
+					top: 0;
+					border-top: solid 1px var(--selection);
+					z-index: 10;
+					pointer-events: none;
+				}
+
+				&.feedback-drop-bot::after {
+					position: absolute;
+					content: "";
+					display: block;
+					left: 0;
+					right: 0;
+					bottom: 0;
+					border-top: solid 1px var(--selection);
+					z-index: 10;
+					pointer-events: none;
+				}
+
+				&.feedback-drop-in::after {
+					position: absolute;
+					content: "";
+					display: block;
+					left: 0;
+					right: 0;
+					bottom: 0;
+					top: 0;
+					border: solid 1px var(--selection);
+					z-index: 10;
+					pointer-events: none;
+				}
 			}
 
-			&.open>fancy-tree-header .caret::before {
-				transform: rotate(90deg);
-			}
 
 
 		}

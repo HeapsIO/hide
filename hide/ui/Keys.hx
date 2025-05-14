@@ -77,6 +77,25 @@ class Keys {
 		return false;
 	}
 
+	static public function matchJsEvent(shortcutName : String, event: js.html.KeyboardEvent, config : Config) {
+		var keyCode : String = config.get("key."+shortcutName);
+
+		var split = keyCode.split("-");
+		for (part in split) {
+			switch (part) {
+				case "Shift":
+					if(!event.shiftKey) return false;
+				case "Ctrl":
+					if(!event.ctrlKey) return false;
+				case "Alt":
+					if(!event.altKey) return false;
+				default:
+					if(hxd.Key.getKeyName(event.keyCode) != part) return false;
+			}
+		}
+		return true;
+	}
+
 	public function triggerKey( e : Element.Event, key : String, config : Config ) {
 		for( l in listeners )
 			if( l(e) )

@@ -211,18 +211,18 @@ class Ide extends hide.tools.IdeData {
 			}
 			return false;
 		}
-		body.ondragover = function(e:js.html.DragEvent) {
-			dragFunc(false, e);
-			return false;
-		};
-		body.ondrop = function(e:js.html.DragEvent) {
-			if(!dragFunc(true, e)) {
-				for( f in e.dataTransfer.files )
-					openFile(Reflect.field(f,"path"));
-				e.preventDefault();
-			}
-			return false;
-		}
+		// body.ondragover = function(e:js.html.DragEvent) {
+		// 	dragFunc(false, e);
+		// 	return false;
+		// };
+		// body.ondrop = function(e:js.html.DragEvent) {
+		// 	if(!dragFunc(true, e)) {
+		// 		for( f in e.dataTransfer.files )
+		// 			openFile(Reflect.field(f,"path"));
+		// 		e.preventDefault();
+		// 	}
+		// 	return false;
+		// }
 
 		if( subView != null ) body.className +=" hide-subview";
 
@@ -336,6 +336,8 @@ class Ide extends hide.tools.IdeData {
 	}
 
 	function getOrInitTarget(position: hide.ui.View.DisplayPosition) : golden.ContentItem {
+		if (layout.root == null)
+			return null;
 		var target = layout.root.getItemsById(position)[0];
 		if (target != null)
 			return target;
@@ -1608,6 +1610,8 @@ class Ide extends hide.tools.IdeData {
 	}
 
 	public function open( component : String, state : Dynamic, ?onCreate : hide.ui.View<Dynamic> -> Void, ?onOpen : hide.ui.View<Dynamic> -> Void ) {
+		if (layout.root == null)
+			return;
 		if( state == null ) state = {};
 
 		var viewConfig = hide.ui.View.viewClasses.get(component);
