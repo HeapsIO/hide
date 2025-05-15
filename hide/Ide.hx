@@ -211,18 +211,17 @@ class Ide extends hide.tools.IdeData {
 			}
 			return false;
 		}
-		// body.ondragover = function(e:js.html.DragEvent) {
-		// 	dragFunc(false, e);
-		// 	return false;
-		// };
-		// body.ondrop = function(e:js.html.DragEvent) {
-		// 	if(!dragFunc(true, e)) {
-		// 		for( f in e.dataTransfer.files )
-		// 			openFile(Reflect.field(f,"path"));
-		// 		e.preventDefault();
-		// 	}
-		// 	return false;
-		// }
+		body.ondragover = function(e:js.html.DragEvent) {
+			dragFunc(false, e);
+			trace(e.defaultPrevented);
+		};
+		body.ondrop = function(e:js.html.DragEvent) {
+			if(!dragFunc(true, e)) {
+				for( f in e.dataTransfer.files )
+					openFile(Reflect.field(f,"path"));
+				e.preventDefault();
+			}
+		}
 
 		if( subView != null ) body.className +=" hide-subview";
 

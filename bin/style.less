@@ -5991,6 +5991,10 @@ fancy-tree {
 			&.open > fancy-tree-children {
 				display: block;
 				height: auto;
+
+				&:has(fancy-tree-name:focus) {
+					overflow: visible;
+				}
 			}
 
 			&.open>fancy-tree-header .caret::before {
@@ -6019,8 +6023,6 @@ fancy-tree {
 
 			fancy-tree-header {
 				padding-left: calc((var(--depth) - 1) * 1.0em + 0.25em);
-				padding-top: 1px;
-				padding-bottom: 1px;
 				position: relative;
 				box-sizing: border-box;
 
@@ -6075,11 +6077,22 @@ fancy-tree {
 				fancy-tree-name {
 					display: block;
 					text-overflow: ellipsis;
+					align-self: stretch;
 					overflow: clip;
 					text-wrap: nowrap;
 					flex-shrink: 1;
 					cursor: pointer;
 					filter: drop-shadow(1px 1px rgba(0,0,0,0.5));
+					min-width: 2em;
+					padding: 1px;
+					padding-left: 0;
+					align-content: center;
+
+					&:focus {
+						z-index: 100;
+						background-color: #222;
+						outline-offset: 1px;
+					}
 
 				}
 

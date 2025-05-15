@@ -46,6 +46,9 @@ class FancyTree<TreeItem : Dynamic> extends hide.comp.Component {
 
 	var searchBar : hide.comp.FancySearch = null;
 
+	var moveLastDragOver : TreeItem;
+	var moveLastDragTime : Int = 0;
+
 	public function new(parent: Element) {
 		var el = new Element('<fancy-tree tabindex="-1">
 			<fancy-search></fancy-search>
@@ -153,12 +156,6 @@ class FancyTree<TreeItem : Dynamic> extends hide.comp.Component {
 			}
 		};
 
-		// try to prevent the IDE from messing up with the drag events
-		fancyTree.ondragover = (e : js.html.DragEvent) -> {
-			e.preventDefault();
-			e.stopPropagation();
-		}
-
 		resetItemCache();
 	}
 
@@ -233,14 +230,14 @@ class FancyTree<TreeItem : Dynamic> extends hide.comp.Component {
 		Used to filter if an item can be reparented to another. Only called if MoveFlags contains Reparent.
 		If this function return false, the reparent operation between the two arguments is not allowed
 	**/
-	public dynamic function canReparentTo(item: TreeItem, newParent: TreeItem) : Bool {
+	public dynamic function canReparentTo(items: Array<TreeItem>, newParent: TreeItem) : Bool {
 		return true;
 	}
 
 	/**
 		Called to handle a reparent/reorder operation. newIndex will be -1 if the current MoveFlags don't contain can reorder, and t
 	**/
-	public dynamic function onMove(item: TreeItem, newParent: TreeItem, newIndex: Int) : Void {
+	public dynamic function onMove(items: Array<TreeItem>, newParent: TreeItem, newIndex: Int) : Void {
 	}
 
 	/**
@@ -449,8 +446,9 @@ class FancyTree<TreeItem : Dynamic> extends hide.comp.Component {
 				clearSelection();
 			}
 
-			if (e.shiftKey) {
-				var flat = flattenTreeItems();
+			var flat = flattenTreeItems();
+			var currentIndex = flat.indexOf(currentItem);
+			if (e.shiftKey && currentIndex >= 0) {
 				var currentIndex = flat.indexOf(currentItem);
 				var newIndex = flat.indexOf(data.item);
 
@@ -463,7 +461,9 @@ class FancyTree<TreeItem : Dynamic> extends hide.comp.Component {
 			} else {
 				setSelection(data.item, !selection.exists(cast data.item));
 			}
-			setCurrent(data.item);
+
+			if (!(e.shiftKey && !e.ctrlKey) || currentItem == null)
+				setCurrent(data.item);
 			onSelectionChanged();
 		}
 
@@ -489,6 +489,11 @@ class FancyTree<TreeItem : Dynamic> extends hide.comp.Component {
 
 			data.header.ondragstart = (e: js.html.DragEvent) -> {
 				var draggedPaths = [];
+				moveLastDragOver = null;
+				if (!selection.get(cast data.item)) {
+					clearSelection();
+					setSelection(data.item, true);
+				}
 				for (item in getSelectedItems()) {
 					var data = getDataOrRoot(item);
 					draggedPaths.push(data.path);
@@ -499,12 +504,28 @@ class FancyTree<TreeItem : Dynamic> extends hide.comp.Component {
 				e.dataTransfer.setDragImage(data.header, 0, 0);
 			}
 
-			var dropHandler = js.Browser.document.createElement("fancy-drop-targets");
-			data.header.appendChild(dropHandler);
-
 			data.header.ondragover = (e: js.html.DragEvent) -> {
 				if (e.dataTransfer.types.contains(getDragDataType())) {
 					var target = getDragTarget(data,e);
+
+					if (canPreformMove(data, target) == null)
+						return;
+
+					if (target == In) {
+						if (moveLastDragOver == data.item) {
+							moveLastDragTime += 1;
+						}
+						else {
+							moveLastDragOver = data.item;
+							moveLastDragTime = 0;
+						}
+
+						if (moveLastDragTime > 25 && !isDataVisuallyOpen(data)) {
+							toggleItemOpen(data.item, true, true, false);
+							saveState();
+						}
+					}
+
 					setDragStyle(data.header, target);
 					e.preventDefault();
 				}
@@ -513,6 +534,8 @@ class FancyTree<TreeItem : Dynamic> extends hide.comp.Component {
 			data.header.ondragenter = (e: js.html.DragEvent) -> {
 				if (e.dataTransfer.types.contains(getDragDataType())) {
 					var target = getDragTarget(data,e);
+					if (canPreformMove(data, target) == null)
+						return;
 					setDragStyle(data.header, target);
 					e.preventDefault();
 				}
@@ -531,8 +554,58 @@ class FancyTree<TreeItem : Dynamic> extends hide.comp.Component {
 					e.preventDefault();
 				}
 			}
+
+			data.header.ondrop = (e: js.html.DragEvent) -> {
+				if (e.dataTransfer.types.contains(getDragDataType())) {
+					var target = getDragTarget(data,e);
+					var moveOp = canPreformMove(data, target);
+
+					setDragStyle(data.header, None);
+					e.preventDefault();
+
+					if (moveOp == null)
+						return;
+
+					onMove(moveOp.toMove, moveOp.newParent, moveOp.newIndex);
+				}
+			}
 		}
 		nameElement.onclick = clickHandler;
+	}
+
+	function canPreformMove(data: TreeItemData<TreeItem>, target: GetDragTarget) : {toMove: Array<TreeItem>, newParent: TreeItem, newIndex: Int} {
+		var toMove = getSelectedItems();
+
+		var newParent = getDataOrRoot(data.parent);
+		var newIndex = 0;
+		var currIndex = newParent.children.indexOf(data.item);
+
+		switch(target) {
+			case Top:
+				newIndex = currIndex;
+			case Bot:
+				newIndex = currIndex + 1;
+			case In:
+				newParent = data;
+			default:
+		}
+
+		// Take into account that the item are removed from the children list before getting inserted at the new index,
+		// which causes the index to not match if these items are before the target
+		if (target == Top || target == Bot) {
+			for (item in toMove) {
+				var indexInParent = newParent.children.indexOf(item);
+				if (indexInParent >= 0 && indexInParent < currIndex) {
+					newIndex --;
+				}
+			}
+		}
+
+		if (!canReparentTo(toMove, newParent.item)) {
+			return null;
+		}
+
+		return {toMove: toMove, newParent: newParent.item, newIndex: newIndex};
 	}
 
 

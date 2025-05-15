@@ -7,6 +7,7 @@ typedef FileBrowserState = {
 typedef DummyFile = {
 	name: String,
 	?children: Array<DummyFile>,
+	?parent: DummyFile,
 };
 
 class FileBrowser extends hide.ui.View<FileBrowserState> {
@@ -16,6 +17,10 @@ class FileBrowser extends hide.ui.View<FileBrowserState> {
 
 	override function new(state) {
 		super(state);
+	}
+
+	override function onDragDrop(items:Array<String>, isDrop:Bool, event:js.html.DragEvent):Bool {
+		return false;
 	}
 	override function onDisplay() {
 		var data : Array<DummyFile> = [
@@ -159,6 +164,19 @@ class FileBrowser extends hide.ui.View<FileBrowserState> {
 			{name: "wriggle"},
 		];
 
+		function setParentRec(current: DummyFile, parent: DummyFile) {
+			current.parent = parent;
+			if (current.children != null) {
+				for (child in current.children) {
+					setParentRec(child, current);
+				}
+			}
+		}
+
+		for (d in data) {
+			setParentRec(d, null);
+		}
+
 		var layout = new Element('
 			<file-browser>
 				<div class="left"></div>
@@ -188,6 +206,35 @@ class FileBrowser extends hide.ui.View<FileBrowserState> {
 		}
 		fancyTree.moveFlags.set(Reparent);
 		fancyTree.moveFlags.set(Reorder);
+
+		fancyTree.canReparentTo = (items, newParent) -> {
+			for (item in items) {
+				var cur = newParent;
+				while(cur != null) {
+					if (cur == item)
+						return false;
+					cur = cur.parent;
+				}
+			}
+			return true;
+		}
+
+		fancyTree.onMove = (items, newParent, newIndex) -> {
+			for (item in items) {
+				(item?.parent?.children ?? data).remove(item);
+			}
+
+			if (newParent != null) {
+				newParent.children ??= [];
+			}
+
+			for (i => item in items) {
+				(newParent?.children ?? data).insert(newIndex + i, item);
+				item.parent = newParent;
+			}
+
+			fancyTree.rebuildTree();
+		}
 
 		fancyTree.rebuildTree();
 	}

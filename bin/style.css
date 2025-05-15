@@ -5007,6 +5007,9 @@ fancy-tree fancy-wrapper fancy-tree-item.open > fancy-tree-children {
   display: block;
   height: auto;
 }
+fancy-tree fancy-wrapper fancy-tree-item.open > fancy-tree-children:has(fancy-tree-name:focus) {
+  overflow: visible;
+}
 fancy-tree fancy-wrapper fancy-tree-item.open > fancy-tree-header .caret::before {
   transform: rotate(90deg);
 }
@@ -5022,8 +5025,6 @@ fancy-tree fancy-wrapper fancy-tree-item.selected > fancy-tree-header {
 }
 fancy-tree fancy-wrapper fancy-tree-item fancy-tree-header {
   padding-left: calc((var(--depth) - 1) * 1em + 0.25em);
-  padding-top: 1px;
-  padding-bottom: 1px;
   box-sizing: border-box;
   --background: #222;
   background-color: hsl(from var(--background) h s calc(var(--highlight) + l));
@@ -5065,11 +5066,21 @@ fancy-tree fancy-wrapper fancy-tree-item fancy-tree-header fancy-tree-icon.caret
 fancy-tree fancy-wrapper fancy-tree-item fancy-tree-header fancy-tree-name {
   display: block;
   text-overflow: ellipsis;
+  align-self: stretch;
   overflow: clip;
   text-wrap: nowrap;
   flex-shrink: 1;
   cursor: pointer;
   filter: drop-shadow(1px 1px rgba(0, 0, 0, 0.5));
+  min-width: 2em;
+  padding: 1px;
+  padding-left: 0;
+  align-content: center;
+}
+fancy-tree fancy-wrapper fancy-tree-item fancy-tree-header fancy-tree-name:focus {
+  z-index: 100;
+  background-color: #222;
+  outline-offset: 1px;
 }
 fancy-tree fancy-wrapper fancy-tree-item fancy-tree-header.feedback-drop-top::after {
   position: absolute;
