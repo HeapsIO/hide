@@ -4001,6 +4001,17 @@ class SceneEditor {
 			localMat.tx = hxd.Math.round(localMat.tx * 10) / 10;
 			localMat.ty = hxd.Math.round(localMat.ty * 10) / 10;
 			localMat.tz = hxd.Math.floor(localMat.tz * 10) / 10;
+
+			if (snapForceOnGrid) {
+				inline function snap(t: Float) : Float {
+					var mod = t % snapMoveStep;
+					return (mod > snapMoveStep / 2) ? t + (snapMoveStep - mod) : t - mod;
+				}
+
+				localMat.tx = snap(localMat.tx);
+				localMat.ty = snap(localMat.ty);
+				localMat.tz = snap(localMat.tz);
+			}
 		}
 
 		var elts: Array<PrefabElement> = [];
