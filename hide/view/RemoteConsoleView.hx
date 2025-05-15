@@ -441,6 +441,9 @@ class RemoteConsoleCommandHL extends RemoteConsoleCommand {
 				panel.log("CPU profiling started");
 			});
 		});
+		#if (hashlink >= "1.15.0")
+		var openBtn = new Element('<div class="ico ico-share-square-o disable" title="Open in DevTools"/>');
+		#end
 		var dump = new RemoteConsoleSubCommandDump(panel, function(onResult) {
 			panel.sendCommand("profCpu", { action : "dump" }, function(r) {
 				var dir = (panel.peerCwd ?? hide.Ide.inst.projectDir) + "/";
@@ -450,6 +453,7 @@ class RemoteConsoleCommandHL extends RemoteConsoleCommand {
 					var outfile = "hlprofile.json";
 					hlprof.ProfileGen.run([dir + file, "-o", dir + outfile]);
 					file = outfile;
+					openBtn.removeClass("disable");
 				} catch (e) {
 					panel.log(e.message, true);
 				}
@@ -458,7 +462,19 @@ class RemoteConsoleCommandHL extends RemoteConsoleCommand {
 				#end
 				onResult(file, "Profile dump");
 			});
-		}).element.appendTo(subcmd);
+		});
+		dump.element.appendTo(subcmd);
+		#if (hashlink >= "1.15.0")
+		openBtn.on('click', function(e) {
+			var file = dump.dumpFile.val();
+			if( file.length > 0 && sys.FileSystem.exists(file) ) {
+				ide.open("hide.view.DevTools", {profileFilePath : file}, null);
+			} else {
+				panel.log('File $file does not exist', true);
+			}
+		});
+		openBtn.appendTo(dump.element);
+		#end
 		var subcmd = new Element('<div class="sub-command">
 			<h5>Prof Alloc</h5>
 		</div>').appendTo(element);

@@ -1435,6 +1435,9 @@ class Ide extends hide.tools.IdeData {
 		analysis.find(".remoteconsole").click(function(_) {
 			open("hide.view.RemoteConsoleView",{});
 		});
+		analysis.find(".devtools").click(function(_) {
+			open("hide.view.DevTools",{});
+		});
 		analysis.find(".gpudump").click(function(_) {
 			var path = hide.tools.MemDump.gpudump();
 			quickMessage('Gpu mem dumped at ${path}.');

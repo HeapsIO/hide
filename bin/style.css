@@ -3522,6 +3522,19 @@ div.gradient-box {
   cursor: pointer;
   text-align: center;
 }
+.devtools {
+  width: 100%;
+  height: 100%;
+}
+.devtools webview {
+  display: block;
+}
+.devtools #webview-blank {
+  height: 0px;
+}
+.devtools #webview-devtools {
+  height: 100%;
+}
 .hover-parent .hover-reveal {
   visibility: hidden;
 }

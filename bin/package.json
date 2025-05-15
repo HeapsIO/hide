@@ -12,5 +12,15 @@
 	"js-flags": "--expose-gc",
 	"dependencies": {
 		"mongodb": "^3.2.2"
+	},
+	"webview": {
+		"partitions": [
+			{
+				"name": "trusted",
+				"accessible_resources": [
+					"<all_urls>"
+				]
+			}
+		]
 	}
 }
