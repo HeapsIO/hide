@@ -96,20 +96,27 @@ class IdeData {
 	function get_appPath() {
 		if( appPath != null )
 			return appPath;
+		var path = getAppPath();
+		if( path == null )
+			fatalError("Hide application path was not found");
+		return appPath = path;
+	}
+
+	static function getAppPath() {
 		var path = #if hl Sys.programPath() #else js.Node.process.argv[0] #end.split("\\").join("/").split("/");
 		path.pop();
 		var hidePath = path.join("/");
 		if( !sys.FileSystem.exists(hidePath + "/package.json") ) {
 			var prevPath = new haxe.io.Path(hidePath).dir;
 			if( sys.FileSystem.exists(prevPath + "/hide.js") )
-				return appPath = prevPath;
+				return prevPath;
 			// nwjs launch
 			var path = Sys.getCwd().split("\\").join("/");
 			if( sys.FileSystem.exists(path+"/hide.js") )
-				return appPath = path;
-			fatalError("Hide application path was not found");
+				return path;
+			return null;
 		}
-		return appPath = hidePath;
+		return hidePath;
 	}
 
 	function get_userStatePath() {
