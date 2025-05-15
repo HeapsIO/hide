@@ -702,7 +702,10 @@ class ShaderGraph extends hrt.prefab.Prefab {
 	}
 
 	function loadParameters(parameters: Array<Dynamic>) {
-		for (p in parameters) {
+		#if editor
+		parameters.sort((a,b) -> Reflect.compare(a.index ?? 0, b.index ?? 0));
+		#end
+		for (i => p in parameters) {
 			var typeString : Array<Dynamic> = Reflect.field(p, "type");
 			if (Std.isOfType(typeString, Array)) {
 				typeString[1] = typeString[1] ?? "";
@@ -724,9 +727,14 @@ class ShaderGraph extends hrt.prefab.Prefab {
 				}
 			}
 			p.variable = generateParameter(p.name, p.type);
+
+			#if editor
+			p.index = i; // make sure indices have no gaps
+			#end
 			this.parametersAvailable.set(p.id, p);
-			current_param_id = p.id + 1;
+			current_param_id = hxd.Math.imax(current_param_id, p.id + 1);
 		}
+
 	}
 
 	public function setParameterTitle(id : Int, newName : String) {
