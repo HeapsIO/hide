@@ -91,7 +91,11 @@ class Reference extends Object3D {
 		var otherRef : Reference = cast obj;
 
 		#if editor
-		originalSource = @:privateAccess hxd.res.Loader.currentInstance.load(source).toPrefab().loadData();
+		try {
+			originalSource = @:privateAccess hxd.res.Loader.currentInstance.load(source).toPrefab().loadData();
+		} catch (e) {
+
+		}
 		#end
 
 		// Clone the refInstance from the original prefab on copy
@@ -168,6 +172,8 @@ class Reference extends Object3D {
 		// in the case source has changed since the last load (can happen when creating references manually)
 		if (refInstance?.shared.currentPath != source) {
 			initRefInstance();
+			if (refInstance == null)
+				return;
 			refInstance = refInstance.clone();
 		}
 		#if editor
