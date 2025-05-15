@@ -5002,6 +5002,7 @@ fancy-tree fancy-wrapper fancy-tree-item.hide-search {
 fancy-tree fancy-wrapper fancy-tree-item fancy-tree-children {
   height: 0px;
   overflow: hidden;
+  display: none;
 }
 fancy-tree fancy-wrapper fancy-tree-item.open > fancy-tree-children {
   display: block;
@@ -5026,6 +5027,9 @@ fancy-tree fancy-wrapper fancy-tree-item.selected > fancy-tree-header {
 fancy-tree fancy-wrapper fancy-tree-item fancy-tree-header {
   padding-left: calc((var(--depth) - 1) * 1em + 0.25em);
   box-sizing: border-box;
+  height: 20px;
+  max-height: 20px;
+  min-height: 20px;
   --background: #222;
   background-color: hsl(from var(--background) h s calc(var(--highlight) + l));
   display: flex;

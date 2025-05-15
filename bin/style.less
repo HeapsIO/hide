@@ -5986,6 +5986,7 @@ fancy-tree {
 			fancy-tree-children {
 				height: 0px;
 				overflow: hidden;
+				display: none;
 			}
 
 			&.open > fancy-tree-children {
@@ -6026,6 +6027,9 @@ fancy-tree {
 				position: relative;
 				box-sizing: border-box;
 
+				height: 20px;
+				max-height: 20px;
+				min-height: 20px;
 
 				--background: #222;
 				background-color: e("hsl(from var(--background) h s calc(var(--highlight) + l))");

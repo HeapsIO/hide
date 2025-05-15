@@ -109,6 +109,9 @@ class FancyTree<TreeItem : Dynamic> extends hide.comp.Component {
 				return;
 			}
 
+			if (currentItem == null)
+				return;
+
 			if (e.key == "ArrowRight" && hasChildren(currentItem)) {
 				e.stopPropagation();
 				e.preventDefault();
@@ -263,7 +266,7 @@ class FancyTree<TreeItem : Dynamic> extends hide.comp.Component {
 
 	function resetItemCache() {
 		itemMap.clear();
-		rootData = {element: element.find("fancy-wrapper").get(0), depth: 0, path: ""};
+		rootData = {element: js.Browser.document.createDivElement() /*element.find("fancy-wrapper").get(0)*/, depth: 0, path: ""};
 		openState = getDisplayState("openState") ?? openState;
 	}
 
@@ -273,7 +276,6 @@ class FancyTree<TreeItem : Dynamic> extends hide.comp.Component {
 	}
 
 	function toggleItemOpen(item: TreeItem, ?force: Bool, animate: Bool = true, temporary: Bool = false) : Void {
-		initChildren(item);
 
 		var data = itemMap.get(cast item);
 
@@ -283,6 +285,10 @@ class FancyTree<TreeItem : Dynamic> extends hide.comp.Component {
 		data.temporaryOpen = wantOpen;
 		if (!temporary) {
 			openState.set(data.path, wantOpen);
+		}
+
+		if (wantOpen) {
+			initChildren(item);
 		}
 
 		data.element.classList.toggle("open", wantOpen);
@@ -341,13 +347,14 @@ class FancyTree<TreeItem : Dynamic> extends hide.comp.Component {
 		var data = getDataOrRoot(item);
 		data.passSearch = true;
 		data.element.classList.toggle("hide-search", !data.passSearch);
-		initChildren(item);
+		//initChildren(item);
 		if (data.children != null) {
 			for (child in data.children) {
 				resetSearch(child);
 			}
 		}
-		syncOpen(null);
+		if (resetSearch == null)
+			syncOpen(null);
 	}
 
 	static function filterMatch(haystack: String, needle: String) {
@@ -367,6 +374,8 @@ class FancyTree<TreeItem : Dynamic> extends hide.comp.Component {
 
 		var anyChildrenPass = false;
 		if (!data.passSearch) {
+			if (data.children == null)
+				initChildren(data.item);
 			if (data.children != null) {
 				for (child in data.children) {
 					anyChildrenPass = filterRec(child, currentFilter) || anyChildrenPass;
