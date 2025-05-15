@@ -76,14 +76,12 @@ class Reference extends Object3D {
 
 		super.load(obj);
 
+		#if !editor
 		if (source != null && shouldBeInstanciated() && hxd.res.Loader.currentInstance.exists(source)) {
-			#if editor
-			// we need the resCache to exist or we'll have an error in Ide.CustomeLoader.loadCache
-			if (@:privateAccess h3d.Engine.getCurrent()?.resCache == null)
-				return;
-			#end
 			initRefInstance();
 		}
+		#end
+
 	}
 
 	override function copy(obj: Prefab) {
