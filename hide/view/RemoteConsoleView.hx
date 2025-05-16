@@ -460,10 +460,17 @@ class RemoteConsoleCommandHL extends RemoteConsoleCommand {
 		});
 		var subcmd = new Element('<div class="sub-command">
 			<h5>Prof CPU</h5>
+			<label for="samplesCount">Samples count</label>
+			<input type="number" id="samplesCount" value="10000" placeholder="10000"/>
+		</div>').appendTo(element);
+		var samplesCount = subcmd.find("#samplesCount");
+		var subcmd = new Element('<div class="sub-command">
+			<h5></h5>
 		</div>').appendTo(element);
 		var startBtn = new Element('<input type="button" value="Start"/>').appendTo(subcmd);
 		startBtn.on('click', function(e) {
-			panel.sendCommand("profCpu", { action : "start" }, function(r) {
+			var samples = Std.parseInt(samplesCount.val());
+			panel.sendCommand("profCpu", { action : "start", samples : samples ?? 10000 }, function(r) {
 				panel.log("CPU profiling started");
 			});
 		});
