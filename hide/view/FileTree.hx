@@ -130,72 +130,78 @@ class FileTree extends FileView {
 					click : createNew.bind(selection[0], { options : { createNew : "Directory" }, extensions : null, component : null }),
 					icon : "folder",
 				});
-			hide.comp.ContextMenu.createFromEvent(cast e, [
-				{ label : "New...", menu:newMenu },
-				{ label : "Collapse", click : tree.collapseAll },
-				{ label : "", isSeparator: true },
-				{ label : "Copy Path", enabled : selection.length == 1, click : function() { ide.setClipboard(selection[0]); } },
-				{ label : "Copy Absolute Path", enabled : selection.length == 1, click : function() { ide.setClipboard(Ide.inst.getPath(selection[0])); } },
-				{ label : "Open in Explorer", enabled : selection.length == 1, click : function() { onExploreFile(selection[0]); } },
-				{ label : "Find References", enabled : selection.length == 1, click : onFindPathRef.bind(selection[0])},
-				{ label : "", isSeparator: true },
-				{ label : "Clone", enabled : selection.length == 1, click : function() {
-						try {
-							if (onCloneFile(selection[0])) {
-								tree.refresh();
+
+				var options : Array<hide.comp.ContextMenu.MenuItem> = [
+					{ label : "New...", menu:newMenu },
+					{ label : "Collapse", click : tree.collapseAll },
+					{ label : "", isSeparator: true },
+					{ label : "Copy Path", enabled : selection.length == 1, click : function() { ide.setClipboard(selection[0]); } },
+					{ label : "Copy Absolute Path", enabled : selection.length == 1, click : function() { ide.setClipboard(Ide.inst.getPath(selection[0])); } },
+					{ label : "Open in Explorer", enabled : selection.length == 1, click : function() { onExploreFile(selection[0]); } },
+					{ label : "Find References", enabled : selection.length == 1, click : onFindPathRef.bind(selection[0])},
+					{ label : "", isSeparator: true },
+					{ label : "Clone", enabled : selection.length == 1, click : function() {
+							try {
+								if (onCloneFile(selection[0])) {
+									tree.refresh();
+								}
+							} catch (e : Dynamic) {
+								js.Browser.window.alert(e);
 							}
+						} },
+					{ label : "Rename", enabled : selection.length == 1, click : function() {
+						try {
+							onRenameFile(selection[0]);
 						} catch (e : Dynamic) {
 							js.Browser.window.alert(e);
 						}
-					} },
-				{ label : "Rename", enabled : selection.length == 1, click : function() {
-					try {
-						onRenameFile(selection[0]);
-					} catch (e : Dynamic) {
-						js.Browser.window.alert(e);
-					}
-					} },
-				{ label : "Move", enabled : selection.length > 0, click : function() {
-					ide.chooseDirectory(function(dir) {
-						for (current in selection) {
-							doRename(current, "/"+dir+"/"+current.split("/").pop());
-						}
-					});
-				}},
-				{ label : "Delete", enabled : selection.length > 0, click : function() {
-					if( js.Browser.window.confirm("Delete " + selection.join(", ") + "?") ) {
-						for (current in selection) {
-							onDeleteFile(current);
-						}
-						tree.refresh();
-					}
-				}},
-				{ label: "Replace Refs With", enabled: selection.length > 0, click : function() {
-					ide.chooseFile(["*"], (newPath: String) -> {
-						if(ide.confirm('Replace all refs of $selection with $newPath ? This action can not be undone')) {
-							for (oldPath in selection) {
-								replacePathInFiles(oldPath, newPath, false);
+						} },
+					{ label : "Move", enabled : selection.length > 0, click : function() {
+						ide.chooseDirectory(function(dir) {
+							for (current in selection) {
+								doRename(current, "/"+dir+"/"+current.split("/").pop());
 							}
-							ide.message("Done");
+						});
+					}},
+					{ label : "Delete", enabled : selection.length > 0, click : function() {
+						if( js.Browser.window.confirm("Delete " + selection.join(", ") + "?") ) {
+							for (current in selection) {
+								onDeleteFile(current);
+							}
+							tree.refresh();
 						}
-					});
-				}},
-				{ label : "", isSeparator: true },
-				{ label: "SVN Log", enabled: selection.length == 1, click : function() {
-					var path = ide.getPath(selection[0]);
-					var blame = js.node.ChildProcess.exec('cmd.exe /c start "" TortoiseProc.exe /command:log /path:"$path"', { cwd: ide.getPath(ide.resourceDir) }, (error, stdout, stderr) -> {
-						if (error != null)
-							ide.quickError('Error while trying to log file ${path} : ${error}');
-					});
-				}},
-				{ label: "SVN Blame", enabled: selection.length == 1, click : function() {
-					var path = ide.getPath(selection[0]);
-					var blame = js.node.ChildProcess.exec('cmd.exe /c start "" TortoiseProc.exe /command:blame /path:"$path"', { cwd: ide.getPath(ide.resourceDir) }, (error, stdout, stderr) -> {
-						if (error != null)
-							ide.quickError('Error while trying to blame file ${path} : ${error}');
-					});
-				}},
-			]);
+					}},
+					{ label: "Replace Refs With", enabled: selection.length > 0, click : function() {
+						ide.chooseFile(["*"], (newPath: String) -> {
+							if(ide.confirm('Replace all refs of $selection with $newPath ? This action can not be undone')) {
+								for (oldPath in selection) {
+									replacePathInFiles(oldPath, newPath, false);
+								}
+								ide.message("Done");
+							}
+						});
+					}}
+				];
+
+				var isSvnAvailable = js.node.ChildProcess.spawnSync("svn",["--version"]).status == 0;
+				if (isSvnAvailable) {
+					options.push({ label : "", isSeparator: true });
+					options.push({ label: "SVN Log", enabled: selection.length == 1, click : function() {
+						var path = ide.getPath(selection[0]);
+						var blame = js.node.ChildProcess.exec('cmd.exe /c start "" TortoiseProc.exe /command:log /path:"$path"', { cwd: ide.getPath(ide.resourceDir) }, (error, stdout, stderr) -> {
+							if (error != null)
+								ide.quickError('Error while trying to log file ${path} : ${error}');
+						});
+					}});
+					options.push({ label: "SVN Blame", enabled: selection.length == 1, click : function() {
+						var path = ide.getPath(selection[0]);
+						var blame = js.node.ChildProcess.exec('cmd.exe /c start "" TortoiseProc.exe /command:blame /path:"$path"', { cwd: ide.getPath(ide.resourceDir) }, (error, stdout, stderr) -> {
+							if (error != null)
+								ide.quickError('Error while trying to blame file ${path} : ${error}');
+						});
+					}});
+				}
+				hide.comp.ContextMenu.createFromEvent(cast e, options);
 		});
 		tree.onDblClick = onOpenFile;
 		tree.onAllowMove = onAllowMove;
