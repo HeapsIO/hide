@@ -74,7 +74,7 @@ class FileBrowser extends hide.ui.View<FileBrowserState> {
 
 		var resize = new hide.comp.ResizablePanel(Horizontal, layout.find(".left"), After);
 
-		var fancyTree = new hide.comp.FancyTree<FileEntry>(resize.element);
+		var fancyTree = new hide.comp.FancyTree2<FileEntry>(resize.element);
 		fancyTree.saveDisplayKey = "fileBrowserTree";
 		fancyTree.getChildren = (file: FileEntry) -> {
 			if (file == null)
@@ -85,9 +85,9 @@ class FileBrowser extends hide.ui.View<FileBrowserState> {
 				populateChildren(file);
 			return file.children;
 		};
-		fancyTree.hasChildren = (file: FileEntry) -> return file.kind == Dir;
+		//fancyTree.hasChildren = (file: FileEntry) -> return file.kind == Dir;
 		fancyTree.getName = (file: FileEntry) -> return file?.name;
-		fancyTree.getIcon = (file: FileEntry) -> return new Element('<div class="ico ico-folder"></div>').get(0);
+		fancyTree.getIcon = (file: FileEntry) -> return '<div class="ico ico-folder"></div>';
 		fancyTree.onSelectionChanged = () -> {
 			var selection = fancyTree.getSelectedItems();
 			var p = layout.find(".right p");

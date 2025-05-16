@@ -38,7 +38,6 @@ class FancyTree<TreeItem : Dynamic> extends hide.comp.Component {
 
 	var openState: Map<String, Bool> = [];
 
-
 	public var moveFlags : MoveFlags = MoveFlags.ofInt(0);
 
 	var selection : Map<{}, Bool> = [];
@@ -247,7 +246,6 @@ class FancyTree<TreeItem : Dynamic> extends hide.comp.Component {
 		Called when the user renamed the item via F2 / Context menu
 	**/
 	public dynamic function onNameChange(item: TreeItem, newName: String) : Void {
-
 	}
 
 	public function getSelectedItems() : Array<TreeItem> {
