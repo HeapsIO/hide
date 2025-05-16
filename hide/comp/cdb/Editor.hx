@@ -146,6 +146,7 @@ class Editor extends Component {
 			});
 		keys.register("cdb.closeList", function() {
 			var c = cursor.getCell();
+			var l = cursor.getLine();
 
 			var sub = Std.downcast(c == null ? cursor.table : c.table, SubTable);
 			if (sub == null)
@@ -157,7 +158,10 @@ class Editor extends Component {
 			}
 			if( cursor.selection != null ) {
 				cursor.selection = null;
-				cursor.addElementToSelection(c.table, c.line, c.columnIndex, c.line.index);
+				if (c != null)
+					cursor.addElementToSelection(c.table, c.line, c.columnIndex, c.line.index);
+				else if (l != null)
+					cursor.addElementToSelection(l.table, l, -1, l.index);
 				cursor.update();
 			}
 		});
