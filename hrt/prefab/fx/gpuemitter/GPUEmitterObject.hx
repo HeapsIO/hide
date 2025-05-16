@@ -35,11 +35,6 @@ class ParticleShader extends hxsl.Shader {
 	}
 }
 
-typedef ParticleBuffer = {
-	var buffer : h3d.Buffer;
-	var atomic : h3d.Buffer;
-}
-
 @:allow(hrt.prefab.fx.GPUEmitter)
 class GPUEmitterObject extends h3d.scene.MeshBatch {
 	public var simulationPass : h3d.mat.Pass;
@@ -52,12 +47,12 @@ class GPUEmitterObject extends h3d.scene.MeshBatch {
 	var shaderParams : Array<{ param : hrt.prefab.fx.BaseFX.ShaderParam, shader : UpdateParamShader }> = [];
 	var paramTexture : h3d.mat.Texture;
 
-	var particleBuffer : ParticleBuffer;
+	var particleBuffer : h3d.Buffer;
 	var particleShader : ParticleShader;
+	var particleCounter : h3d.GPUCounter;
 
 	var rateAccumulation : Float = 0.0;
 	var firstDispatch : Bool = true;
-	var countBytes : haxe.io.Bytes;
 
 	public function new(data, primitive, materials, ?parent) {
 		super(primitive, null, parent);
@@ -145,7 +140,6 @@ class GPUEmitterObject extends h3d.scene.MeshBatch {
 		]);
 
 		if ( particleBuffer == null ) {
-			particleBuffer = { buffer : null, atomic : null };
 			var stride = particleBufferFormat.stride;
 			var floats = alloc.allocFloats(data.maxCount * stride);
 			for ( i in 0...data.maxCount ) {
@@ -161,9 +155,9 @@ class GPUEmitterObject extends h3d.scene.MeshBatch {
 				// floats[i * stride + 6] = 0.0;
 				// floats[i * stride + 7] = 0.0;
 			}
-			particleBuffer.buffer = alloc.ofFloats(floats, particleBufferFormat, UniformReadWrite);
-			particleBuffer.atomic = alloc.allocBuffer( 1, hxd.BufferFormat.VEC4_DATA, UniformReadWrite );
-			particleShader.particleBuffer = particleBuffer.buffer;
+			particleBuffer = alloc.ofFloats(floats, particleBufferFormat, UniformReadWrite);
+			particleCounter = new h3d.GPUCounter();
+			particleShader.particleBuffer = particleBuffer;
 		}
 
 		begin();
@@ -181,14 +175,7 @@ class GPUEmitterObject extends h3d.scene.MeshBatch {
 		#end
 
 		var p = dataPasses;
-		if ( countBytes == null ) {
-			countBytes = haxe.io.Bytes.alloc(4*4);
-			countBytes.setInt32(0, 0);
-			countBytes.setInt32(1, 0);
-			countBytes.setInt32(2, 0);
-			countBytes.setInt32(3, 0);
-		}
-		particleBuffer.atomic.uploadBytes(countBytes, 0, 1);
+		particleCounter.reset();
 
 		while ( p != null ) {
 			var baseSpawn = spawnPass.getShader(BaseSpawn);
@@ -280,11 +267,11 @@ class GPUEmitterObject extends h3d.scene.MeshBatch {
 				}
 
 				baseSpawn.batchBuffer = b;
-				baseSpawn.particleBuffer = particleBuffer.buffer;
-				baseSpawn.atomic = particleBuffer.atomic;
+				baseSpawn.particleBuffer = particleBuffer;
+				baseSpawn.atomic = particleCounter.buffer;
 
 				baseSimulation.batchBuffer = b;
-				baseSimulation.particleBuffer = particleBuffer.buffer;
+				baseSimulation.particleBuffer = particleBuffer;
 
 				ctx.computeList(@:privateAccess spawnPass.shaders);
 				ctx.computeDispatch(instanceCount);
@@ -295,7 +282,7 @@ class GPUEmitterObject extends h3d.scene.MeshBatch {
 				for ( row => p in shaderParams ) {
 					p.shader.paramTexture = paramTexture;
 					p.shader.batchBuffer = b;
-					p.shader.particleBuffer = particleBuffer.buffer;
+					p.shader.particleBuffer = particleBuffer;
 					p.shader.stride = b.format.stride;
 					p.shader.row = (row + 0.5) / shaderParams.length;
 					var pos = 0;
@@ -337,15 +324,16 @@ class GPUEmitterObject extends h3d.scene.MeshBatch {
 		super.onRemove();
 
 		if ( particleBuffer != null ) {
-			particleBuffer.buffer.dispose();
-			particleBuffer.atomic.dispose();
+			particleBuffer.dispose();
+			particleBuffer = null;
 		}
-		particleBuffer = null;
+
+		if(particleCounter != null) {
+			particleCounter.dispose();
+			particleCounter = null;
+		}
 
 		if ( paramTexture != null )
 			paramTexture.dispose();
-
-		if ( countBytes != null )
-			countBytes = null;
 	}
 }
