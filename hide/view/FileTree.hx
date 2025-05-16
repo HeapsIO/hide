@@ -180,6 +180,21 @@ class FileTree extends FileView {
 						}
 					});
 				}},
+				{ label : "", isSeparator: true },
+				{ label: "SVN Log", enabled: selection.length == 1, click : function() {
+					var path = ide.getPath(selection[0]);
+					var blame = js.node.ChildProcess.exec('cmd.exe /c start "" TortoiseProc.exe /command:log /path:"$path"', { cwd: "C:/Projects/Shiro/mog" }, (error, stdout, stderr) -> {
+						if (error != null)
+							ide.quickError('Error while trying to log file ${path} : ${error}');
+					});
+				}},
+				{ label: "SVN Blame", enabled: selection.length == 1, click : function() {
+					var path = ide.getPath(selection[0]);
+					var blame = js.node.ChildProcess.exec('cmd.exe /c start "" TortoiseProc.exe /command:blame /path:"$path"', { cwd: "C:/Projects/Shiro/mog" }, (error, stdout, stderr) -> {
+						if (error != null)
+							ide.quickError('Error while trying to blame file ${path} : ${error}');
+					});
+				}},
 			]);
 		});
 		tree.onDblClick = onOpenFile;
