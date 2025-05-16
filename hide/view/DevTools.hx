@@ -34,6 +34,8 @@ class DevTools extends hide.ui.View<{ profileFilePath : String }> {
 			devtoolsLoaded = true;
 			tryOpen();
 		});
+		if( this.state.profileFilePath != null )
+			watch(this.state.profileFilePath, () -> openProfile());
 	}
 
 	override function buildTabMenu():Array<hide.comp.ContextMenu.MenuItem> {

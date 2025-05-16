@@ -10,10 +10,10 @@ class KuwaharaShader extends hrt.shader.PbrShader {
 		@param var endOpacity : Float;
 		@param var scaledRadius : Int;
 
-		@param var ldrCopy : Sampler2D;
+		@param var texture : Sampler2D;
 
 		function fragment() {			
-			var size = ldrCopy.size();
+			var size = texture.size();
 			var invSize = 1.0 / size;
 			var n = float((scaledRadius + 1) * (scaledRadius + 1));
 			var m0 = vec3(0.0);
@@ -28,7 +28,7 @@ class KuwaharaShader extends hrt.shader.PbrShader {
 
 			for ( j in -scaledRadius...1 )  {
 				for ( i in -scaledRadius...1 )  {
-					var c = ldrCopy.get(calculatedUV + vec2(i,j) * invSize).rgb;
+					var c = texture.get(calculatedUV + vec2(i,j) * invSize).rgb;
 					m0 += c;
 					s0 += c * c;
 				}
@@ -36,7 +36,7 @@ class KuwaharaShader extends hrt.shader.PbrShader {
 
 			for ( j in -scaledRadius...1 )  {
 				for ( i in 0...scaledRadius + 1)  {
-					var c = ldrCopy.get(calculatedUV + vec2(i,j) * invSize).rgb;
+					var c = texture.get(calculatedUV + vec2(i,j) * invSize).rgb;
 					m1 += c;
 					s1 += c * c;
 				}
@@ -44,7 +44,7 @@ class KuwaharaShader extends hrt.shader.PbrShader {
 
 			for ( j in 0...scaledRadius + 1 )  {
 				for ( i in 0...scaledRadius + 1)  {
-					var c = ldrCopy.get(calculatedUV + vec2(i,j) * invSize).rgb;
+					var c = texture.get(calculatedUV + vec2(i,j) * invSize).rgb;
 					m2 += c;
 					s2 += c * c;
 				}
@@ -52,7 +52,7 @@ class KuwaharaShader extends hrt.shader.PbrShader {
 
 			for ( j in 0... scaledRadius + 1 )  {
 				for ( i in -scaledRadius...1 )  {
-					var c = ldrCopy.get(calculatedUV + vec2(i,j) * invSize).rgb;
+					var c = texture.get(calculatedUV + vec2(i,j) * invSize).rgb;
 					m3 += c;
 					s3 += c * c;
 				}
@@ -118,22 +118,30 @@ class KuwaharaFilter extends RendererFX {
 
 	var pass = new h3d.pass.ScreenFx(new KuwaharaShader());
 
-	override function begin(r:h3d.scene.Renderer, step:h3d.impl.RendererFX.Step) {
-		if ( step == AfterTonemapping ) {
-			r.mark("Kuwahara");
-			
-			var ldrCopy = r.allocTarget("ldrCopy", true, 1.0);
-			h3d.pass.Copy.run(r.ctx.engine.getCurrentTarget(), ldrCopy);
-			pass.shader.ldrCopy = ldrCopy;
+	function getInput(r : h3d.scene.Renderer) {
+		var ldrCopy = r.allocTarget("ldrCopy", true, 1.0);
+		h3d.pass.Copy.run(r.ctx.engine.getCurrentTarget(), ldrCopy);
+		return ldrCopy;
+	}
 
-			pass.shader.scaledRadius = Std.int(radius * hxd.Math.max(ldrCopy.width / 1920, ldrCopy.height / 1080));
-			pass.shader.startOpacity = startOpacity;
-			pass.shader.endOpacity = endOpacity;
-			pass.shader.startDist = startDist;
-			pass.shader.endDist = endDist;
-			pass.pass.setBlendMode(Alpha);
-			pass.render();
-		}
+	function execute(r : h3d.scene.Renderer) {
+		r.mark("Kuwahara");
+			
+		var input = getInput(r);
+		pass.shader.texture = input;
+
+		pass.shader.scaledRadius = Std.int(radius * hxd.Math.max(input.width / 1920, input.height / 1080));
+		pass.shader.startOpacity = startOpacity;
+		pass.shader.endOpacity = endOpacity;
+		pass.shader.startDist = startDist;
+		pass.shader.endDist = endDist;
+		pass.pass.setBlendMode(Alpha);
+		pass.render();
+	}
+
+	override function begin(r:h3d.scene.Renderer, step:h3d.impl.RendererFX.Step) {
+		if ( step == AfterTonemapping )
+			execute(r);
 	}
 
 	#if editor

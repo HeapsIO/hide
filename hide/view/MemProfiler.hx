@@ -77,12 +77,20 @@ class MemProfiler extends hide.ui.View<{}> {
 		).appendTo(element);
 
 		hlSelect = new hide.comp.FileSelect(["hl"], null, element.find(".hl-fileselect"));
+		if( hlPath != null ) {
+			hlSelect.path = hlPath;
+		}
 		hlSelect.onChange = function() { hlPath = Ide.inst.getPath(hlSelect.path); };
 
 		fileSelects = [];
-		for (el in element.find(".dump-fileselect")) {
+		var efileSelect = element.find(".dump-fileselect");
+		for( i in 0...efileSelect.length ) {
+			var el = efileSelect[i];
 			var dumpSelect = new hide.comp.FileSelect(["dump"], null, new Element(el));
 			fileSelects.push(dumpSelect);
+			if( dumpPaths != null && dumpPaths[i] != null ) {
+				dumpSelect.path = dumpPaths[i];
+			}
 
 			dumpSelect.onChange = function() {
 				dumpPaths = [];
