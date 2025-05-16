@@ -46,8 +46,19 @@ class Separator extends Component {
 			allowedParents.push(null);
 			allowedParents.reverse();
 
-			if (this.parent != null && this.parent.subs.length > 1 && this.parent.subs[0] != this) {
-				var prevSibling = this.parent.subs[this.parent.subs.indexOf(this) - 1];
+			var siblings = [];
+			if (this.parent == null) {
+				for (s in table.separators) {
+					if (s.parent == null)
+						siblings.push(s);
+				}
+			}
+			else {
+				siblings = this.parent.subs;
+			}
+
+			if (siblings.length > 1 && siblings[0] != this) {
+				var prevSibling = siblings[siblings.indexOf(this) - 1];
 				allowedParents.push(prevSibling);
 			}
 
