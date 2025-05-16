@@ -318,12 +318,16 @@ class RemoteConsoleCommand extends hide.comp.Component {
 
 class RemoteConsoleSubCommandDump extends hide.comp.Component {
 	public var dumpFile : Element;
-	public function new( panel : RemoteConsolePanel, doDump : (onResult:(file:String,?filedesc:String,?dir:String)->Void) -> Void ) {
+	public function new( panel : RemoteConsolePanel,
+			doDump : (onResult:(file:String,?filedesc:String,?dir:String)->Void) -> Void,
+			?doOpen : (file:String) -> Void, autoOpen : Bool = true
+		) {
 		super(null, null);
 		element = new Element('<div class="sub-sub-command"></div>');
 		var dumpBtn = new Element('<input type="button" value="Dump"/>').appendTo(element);
 		dumpFile = new Element('<input type="text" class="dump-file" disabled/>').appendTo(element);
-		var openBtn = new Element('<div class="ico ico-folder-open disable" title="Open in Explorer"/>').appendTo(element);
+		var openInExplorerBtn = new Element('<div class="ico ico-folder-open disable" title="Open in Explorer"/>').appendTo(element);
+		var openBtn = doOpen == null ? null : new Element('<div class="ico ico-share-square-o disable" title="Open"/>').appendTo(element);
 		dumpBtn.on('click', function(e) {
 			doDump(function (file, ?filedesc, ?dir) {
 				if( file == null )
@@ -343,16 +347,32 @@ class RemoteConsoleSubCommandDump extends hide.comp.Component {
 				} catch( e ) {
 					panel.log(e.message, true);
 				}
-				panel.log('${filedesc??"File"} saved to $file');
+				var msg = '${filedesc??"File"} saved to $file';
+				if( openBtn != null && !autoOpen )
+					msg += ", automatic open is disabled";
+				panel.log(msg);
 				dumpFile.val(dir + file);
 				dumpFile.prop("title", dir + file);
-				openBtn.removeClass("disable");
+				openInExplorerBtn.removeClass("disable");
+				if( openBtn != null ) {
+					openBtn.removeClass("disable");
+					if( autoOpen )
+						openBtn.click();
+				}
 			});
 		});
-		openBtn.on('click', function(e) {
+		openInExplorerBtn.on('click', function(e) {
 			var file = dumpFile.val();
 			if( file.length > 0 && sys.FileSystem.exists(file) ) {
 				hide.Ide.showFileInExplorer(file);
+			} else {
+				panel.log('File $file does not exist', true);
+			}
+		});
+		openBtn?.on('click', function(e) {
+			var file = dumpFile.val();
+			if( file.length > 0 && sys.FileSystem.exists(file) ) {
+				doOpen(file);
 			} else {
 				panel.log('File $file does not exist', true);
 			}
@@ -376,9 +396,6 @@ class RemoteConsoleCommandHL extends RemoteConsoleCommand {
 		var subcmd = new Element('<div class="sub-command">
 			<h5>GC Memory</h5>
 		</div>').appendTo(element);
-		#if (hashlink >= "1.15.0")
-		var openBtn = new Element('<div class="ico ico-share-square-o disable" title="Open in Memory profiler"/>');
-		#end
 		var dumpHlPath = null;
 		var dump = new RemoteConsoleSubCommandDump(panel, function(onResult) {
 			panel.sendCommand("dumpMemory", null, function(r) {
@@ -392,30 +409,23 @@ class RemoteConsoleCommandHL extends RemoteConsoleCommand {
 						dumpHlPath = dir + outfile + ".hl";
 					}
 					onResult(file, "GC memory dump");
-					#if (hashlink >= "1.15.0") openBtn.removeClass("disable"); #end
 				} catch( e ) {
 					panel.log(e.message, true);
 					onResult(null);
 				}
 			});
-		});
-		dump.element.appendTo(subcmd);
+		}
 		#if (hashlink >= "1.15.0")
-		openBtn.on('click', function(e) {
-			var file = dump.dumpFile.val();
-			if( file.length > 0 && sys.FileSystem.exists(file) ) {
-				ide.open("hide.view.MemProfiler",{}, null, function(view) {
-					var prof = Std.downcast(view, hide.view.MemProfiler);
-					prof.hlPath = dumpHlPath;
-					prof.dumpPaths = [file];
-					prof.process();
-				});
-			} else {
-				panel.log('File $file does not exist', true);
-			}
-		});
-		openBtn.appendTo(dump.element);
+		, function(file) {
+			ide.open("hide.view.MemProfiler",{}, null, function(view) {
+				var prof = Std.downcast(view, hide.view.MemProfiler);
+				prof.hlPath = dumpHlPath;
+				prof.dumpPaths = [file];
+				prof.process();
+			});
+		}, false
 		#end
+		).element.appendTo(subcmd);
 		var subcmd = new Element('<div class="sub-command">
 			<h5>GC Live Objs</h5>
 		</div>').appendTo(element);
@@ -441,9 +451,6 @@ class RemoteConsoleCommandHL extends RemoteConsoleCommand {
 				panel.log("CPU profiling started");
 			});
 		});
-		#if (hashlink >= "1.15.0")
-		var openBtn = new Element('<div class="ico ico-share-square-o disable" title="Open in DevTools"/>');
-		#end
 		var dump = new RemoteConsoleSubCommandDump(panel, function(onResult) {
 			panel.sendCommand("profCpu", { action : "dump" }, function(r) {
 				var dir = (panel.peerCwd ?? hide.Ide.inst.projectDir) + "/";
@@ -453,7 +460,6 @@ class RemoteConsoleCommandHL extends RemoteConsoleCommand {
 					var outfile = "hlprofile.json";
 					hlprof.ProfileGen.run([dir + file, "-o", dir + outfile]);
 					file = outfile;
-					openBtn.removeClass("disable");
 				} catch (e) {
 					panel.log(e.message, true);
 				}
@@ -462,19 +468,13 @@ class RemoteConsoleCommandHL extends RemoteConsoleCommand {
 				#end
 				onResult(file, "Profile dump");
 			});
-		});
-		dump.element.appendTo(subcmd);
+		}
 		#if (hashlink >= "1.15.0")
-		openBtn.on('click', function(e) {
-			var file = dump.dumpFile.val();
-			if( file.length > 0 && sys.FileSystem.exists(file) ) {
-				ide.open("hide.view.DevTools", {profileFilePath : file}, null);
-			} else {
-				panel.log('File $file does not exist', true);
-			}
-		});
-		openBtn.appendTo(dump.element);
+		, function(file) {
+			ide.open("hide.view.DevTools", { profileFilePath : file });
+		}
 		#end
+		).element.appendTo(subcmd);
 		var subcmd = new Element('<div class="sub-command">
 			<h5>Prof Alloc</h5>
 		</div>').appendTo(element);
@@ -488,6 +488,8 @@ class RemoteConsoleCommandHL extends RemoteConsoleCommand {
 			panel.sendCommand("profTrack", { action : "dump" }, function(r) {
 				onResult("memprofCount.dump", "Profile alloc dump");
 			});
+		}, function(file) {
+			ide.open("hide.view.Script", { path : file });
 		}).element.appendTo(subcmd);
 	}
 	static var _ = RemoteConsoleView.registerCommandView("hashlink", RemoteConsoleCommandHL);
@@ -516,6 +518,8 @@ class RemoteConsoleCommandHeaps extends RemoteConsoleCommand {
 			panel.sendCommand("dumpGpu", { action : "dump" }, function(r) {
 				onResult(r < 0 ? null : "gpudump.txt", "GPU dump");
 			});
+		}, function(file) {
+			ide.open("hide.view.Script", { path : file });
 		}).element.appendTo(subcmd);
 		var subcmd = new Element('<div class="sub-command">
 			<h5>Scene Prof</h5>
@@ -532,6 +536,8 @@ class RemoteConsoleCommandHeaps extends RemoteConsoleCommand {
 			panel.sendCommand("profScene", { action : "dump" }, function(r) {
 				onResult(r < 0 ? null : "sceneprof.json", "Scene prof");
 			});
+		}, function(file) {
+			ide.open("hide.view.Script", { path : file });
 		}).element.appendTo(subcmd);
 		var subcmd = new Element('<div class="sub-command">
 			<h5>Res</h5>
