@@ -320,12 +320,14 @@ class RemoteConsoleSubCommandDump extends hide.comp.Component {
 	public var dumpFile : Element;
 	public function new( panel : RemoteConsolePanel,
 			doDump : (onResult:(file:String,?filedesc:String,?dir:String)->Void) -> Void,
-			?doOpen : (file:String) -> Void, autoOpen : Bool = true
+			?doOpen : (file:String) -> Void, autoOpen : Bool = true,
+			?onExport : (file:String) -> Void,
 		) {
 		super(null, null);
 		element = new Element('<div class="sub-sub-command"></div>');
 		var dumpBtn = new Element('<input type="button" value="Dump"/>').appendTo(element);
 		dumpFile = new Element('<input type="text" class="dump-file" disabled/>').appendTo(element);
+		var exportBtn = new Element('<div class="ico ico-floppy-o disable" title="Export"/>').appendTo(element);
 		var openInExplorerBtn = new Element('<div class="ico ico-folder-open disable" title="Open in Explorer"/>').appendTo(element);
 		var openBtn = doOpen == null ? null : new Element('<div class="ico ico-share-square-o disable" title="Open"/>').appendTo(element);
 		dumpBtn.on('click', function(e) {
@@ -338,21 +340,13 @@ class RemoteConsoleSubCommandDump extends hide.comp.Component {
 					panel.log('File $file is not generated', true);
 					return;
 				}
-				try {
-					var newfile = new haxe.io.Path(file);
-					var now = DateTools.format(Date.now(), "%Y-%m-%d_%H-%M-%S");
-					newfile.file = newfile.file + "_" + now;
-					sys.FileSystem.rename(dir + file, dir + newfile.toString());
-					file = newfile.toString();
-				} catch( e ) {
-					panel.log(e.message, true);
-				}
 				var msg = '${filedesc??"File"} saved to $file';
 				if( openBtn != null && !autoOpen )
 					msg += ", automatic open is disabled";
 				panel.log(msg);
 				dumpFile.val(dir + file);
 				dumpFile.prop("title", dir + file);
+				exportBtn.removeClass("disable");
 				openInExplorerBtn.removeClass("disable");
 				if( openBtn != null ) {
 					openBtn.removeClass("disable");
@@ -360,6 +354,27 @@ class RemoteConsoleSubCommandDump extends hide.comp.Component {
 						openBtn.click();
 				}
 			});
+		});
+		exportBtn.on('click', function(e) {
+			var file = dumpFile.val();
+			if( file.length > 0 && sys.FileSystem.exists(file) ) {
+				try {
+					var newfile = new haxe.io.Path(file);
+					var now = DateTools.format(Date.now(), "%Y-%m-%d_%H-%M-%S");
+					newfile.file = newfile.file + "_" + now;
+					sys.io.File.copy(file, newfile.toString());
+					file = newfile.toString();
+					panel.log('File saved to $file');
+					dumpFile.val(file);
+					dumpFile.prop("title", file);
+					if( onExport != null )
+						onExport(file);
+				} catch( e ) {
+					panel.log(e.message, true);
+				}
+			} else {
+				panel.log('File $file does not exist', true);
+			}
 		});
 		openInExplorerBtn.on('click', function(e) {
 			var file = dumpFile.val();
@@ -399,20 +414,8 @@ class RemoteConsoleCommandHL extends RemoteConsoleCommand {
 		var dumpHlPath = null;
 		var dump = new RemoteConsoleSubCommandDump(panel, function(onResult) {
 			panel.sendCommand("dumpMemory", null, function(r) {
-				var dir = (panel.peerCwd ?? hide.Ide.inst.projectDir) + "/";
-				var file = "hlmemory.dump";
-				try {
-					var now = DateTools.format(Date.now(), "%Y-%m-%d_%H-%M-%S");
-					var outfile = "hlmemory_" + now;
-					if( panel.peerPath != null && sys.FileSystem.exists(panel.peerPath) ) {
-						sys.io.File.copy(panel.peerPath, dir + outfile + ".hl");
-						dumpHlPath = dir + outfile + ".hl";
-					}
-					onResult(file, "GC memory dump");
-				} catch( e ) {
-					panel.log(e.message, true);
-					onResult(null);
-				}
+				dumpHlPath = panel.peerPath;
+				onResult("hlmemory.dump", "GC memory dump");
 			});
 		}
 		#if (hashlink >= "1.15.0")
@@ -425,6 +428,19 @@ class RemoteConsoleCommandHL extends RemoteConsoleCommand {
 			});
 		}, false
 		#end
+		, function(file) {
+			// keep a .hl on export
+			var dir = (panel.peerCwd ?? hide.Ide.inst.projectDir) + "/";
+			try {
+				var newfile = new haxe.io.Path(file);
+				var now = DateTools.format(Date.now(), "%Y-%m-%d_%H-%M-%S");
+				newfile.file = "hlmemory_" + now;
+				newfile.ext = "hl";
+				sys.io.File.copy(panel.peerPath, newfile.toString());
+			} catch( e ) {
+				panel.log(e.message, true);
+			}
+		}
 		).element.appendTo(subcmd);
 		var subcmd = new Element('<div class="sub-command">
 			<h5>GC Live Objs</h5>
