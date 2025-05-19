@@ -159,42 +159,47 @@ class FancyTree<TreeItem> extends hide.comp.Component {
 	public dynamic function onSelectionChanged() {
 	}
 
-	/**
-		Used to filter if an item can be reparented to another. Only called if MoveFlags contains Reparent.
-		If this function return false, the reparent operation between the two arguments is not allowed
-	**/
-	public dynamic function canReparentTo(items: Array<TreeItem>, newParent: TreeItem) : Bool {
-		return true;
+	function getDragMoveInfo(data: TreeItemData<TreeItem>, target: GetDragTarget) : {newParent: TreeItem, newIndex: Int} {
+		var newParent = data.parent;
+		var newIndex = 0;
+		var currIndex = newParent.children.indexOf(data.item);
+
+		switch(target) {
+			case Top:
+				newIndex = currIndex;
+			case Bot:
+				newIndex = currIndex + 1;
+			case In:
+				newParent = data;
+			case None:
+				return null;
+		}
+
+		return {newParent: newParent.item, newIndex: newIndex};
 	}
 
 	/**
-		Called to handle a reparent/reorder operation. newIndex will be -1 if the current MoveFlags don't contain can reorder, and t
+		Called when the user tries to drag an item from the tree. You can use the current selection
+		to move more than one item at once.
+		Return false to cancel the drag operation
 	**/
-	public dynamic function onMove(items: Array<TreeItem>, newParent: TreeItem, newIndex: Int) : Void {
+	public dynamic function setupDrag(item: TreeItem, dataTransfer: js.html.DataTransfer) : Bool {
+		return false;
 	}
 
-	// /**
-	// 	Called when the user tries to drag an item from the tree. You can use the current selection
-	// 	to move more than one item at once.
-	// 	Return false to cancel the drag operation
-	// **/
-	// public dynamic function setupDrag(item: TreeItem, dataTransfer: js.html.DataTransfer) : Bool {
-	// 	return false;
-	// }
+	/**
+		Return true if the data in dataTransfer can be dropped on the given item
+	**/
+	public dynamic function canReciveDrop(parent: TreeItem, dataTransfer: js.html.DataTransfer) : ReciveDropKind {
+		return false;
+	}
 
-	// /**
-	// 	Return true if the data in dataTransfer can be dropped on the given item
-	// **/
-	// public dynamic function canReciveDrop(parent: TreeItem, dataTransfer: js.html.DataTransfer) : ReciveDropKind {
-	// 	return false;
-	// }
+	/**
+		Handle the drop operation
+	**/
+	public dynamic function doDrop(target: TreeItem, where: GetDragIndex, dataTransfer: js.html.DataTransfer) : Void {
 
-	// /**
-	// 	Handle the drop operation
-	// **/
-	// public dynamic function doDrop(parent: TreeItem, dataTransfer: js.html.DataTransfer) : Void {
-
-	// }
+	}
 
 	/**
 		Called when the user renamed the item via F2 / Context menu
@@ -601,90 +606,92 @@ class FancyTree<TreeItem> extends hide.comp.Component {
 	}
 
 	function setupDragAndDrop(data: TreeItemData<TreeItem>) {
-		// if (moveFlags.toInt() != 0) {
-		// 	data.element.draggable = true;
+		if (moveFlags.toInt() != 0) {
+			data.element.draggable = true;
 
-		// 	data.element.ondragstart = (e: js.html.DragEvent) -> {
-		// 		if (!selection.get(cast data)) {
-		// 			clearSelection();
-		// 			setSelection(data, true);
-		// 		}
+			data.element.ondragstart = (e: js.html.DragEvent) -> {
+				if (!selection.get(cast data)) {
+					clearSelection();
+					setSelection(data, true);
+				}
 
-		// 		moveLastDragOver = null;
+				moveLastDragOver = null;
 
-		// 		if (setupDrag(data, e.dataTransfer)) {
-		// 			e.dataTransfer.effectAllowed = "move";
-		// 			e.dataTransfer.setDragImage(data.element, 0, 0);
-		// 		}
-		// 		e.preventDefault();
-		// 	}
+				if (setupDrag(data, e.dataTransfer)) {
+					e.dataTransfer.effectAllowed = "move";
+					e.dataTransfer.setDragImage(data.element, 0, 0);
+				}
+				e.preventDefault();
+			}
 
-		// 	data.element.ondragover = (e: js.html.DragEvent) -> {
-		// 		if (canHandleDrop(data, e.dataTransfer)) {
-		// 			var target = getDragTarget(data,e);
+			data.element.ondragover = (e: js.html.DragEvent) -> {
+				if (canHandleDrop(data, e.dataTransfer)) {
+					var target = getDragTarget(data,e);
 
-		// 			if (canPreformMove(data, target) == null)
-		// 				return;
+					if (getDragMoveInfo(data, target) == null)
+						return;
 
-		// 			if (target == In) {
-		// 				if (moveLastDragOver == data.item) {
-		// 					moveLastDragTime += 1;
-		// 				}
-		// 				else {
-		// 					moveLastDragOver = data.item;
-		// 					moveLastDragTime = 0;
-		// 				}
 
-		// 				if (moveLastDragTime > 25 && !isDataVisuallyOpen(data)) {
-		// 					toggleItemOpen(data.item, true, true, false);
-		// 					saveState();
-		// 				}
-		// 			}
+					// Auto open item if the user hover for enough time
+					if (target == In) {
+						if (moveLastDragOver == data.item) {
+							moveLastDragTime += 1;
+						}
+						else {
+							moveLastDragOver = data.item;
+							moveLastDragTime = 0;
+						}
 
-		// 			setDragStyle(data.element, target);
-		// 			e.preventDefault();
-		// 		}
-		// 	}
+						if (moveLastDragTime > 25 && !isOpen(data)) {
+							toggleDataOpen(data, true);
+							//saveState();
+						}
+					}
 
-		// 	data.element.ondragenter = (e: js.html.DragEvent) -> {
-		// 		if (e.dataTransfer.types.contains(getDragDataType())) {
-		// 			var target = getDragTarget(data,e);
-		// 			if (canPreformMove(data, target) == null)
-		// 				return;
-		// 			setDragStyle(data.element, target);
-		// 			e.preventDefault();
-		// 		}
-		// 	}
+					setDragStyle(data.element, target);
+					e.preventDefault();
+				}
+			}
 
-		// 	data.element.ondragleave = (e: js.html.DragEvent) -> {
-		// 		if (e.dataTransfer.types.contains(getDragDataType())) {
-		// 			setDragStyle(data.element, None);
-		// 			e.preventDefault();
-		// 		}
-		// 	}
+			data.element.ondragenter = (e: js.html.DragEvent) -> {
+				if (e.dataTransfer.types.contains(getDragDataType())) {
+					var target = getDragTarget(data,e);
+					if (getDragMoveInfo(data, target) == null)
+						return;
+					setDragStyle(data.element, target);
+					e.preventDefault();
+				}
+			}
 
-		// 	data.element.ondragexit = (e: js.html.DragEvent) -> {
-		// 		if (e.dataTransfer.types.contains(getDragDataType())) {
-		// 			setDragStyle(data.element, None);
-		// 			e.preventDefault();
-		// 		}
-		// 	}
+			data.element.ondragleave = (e: js.html.DragEvent) -> {
+				if (e.dataTransfer.types.contains(getDragDataType())) {
+					setDragStyle(data.element, None);
+					e.preventDefault();
+				}
+			}
 
-		// 	data.element.ondrop = (e: js.html.DragEvent) -> {
-		// 		if (e.dataTransfer.types.contains(getDragDataType())) {
-		// 			var target = getDragTarget(data,e);
-		// 			var moveOp = canPreformMove(data, target);
+			data.element.ondragexit = (e: js.html.DragEvent) -> {
+				if (e.dataTransfer.types.contains(getDragDataType())) {
+					setDragStyle(data.element, None);
+					e.preventDefault();
+				}
+			}
 
-		// 			setDragStyle(data.element, None);
-		// 			e.preventDefault();
+			data.element.ondrop = (e: js.html.DragEvent) -> {
+				if (e.dataTransfer.types.contains(getDragDataType())) {
+					var target = getDragTarget(data,e);
+					var moveOp = getDragMoveInfo(data, target);
 
-		// 			if (moveOp == null)
-		// 				return;
+					setDragStyle(data.element, None);
+					e.preventDefault();
 
-		// 			onMove(moveOp.toMove, moveOp.newParent, moveOp.newIndex);
-		// 		}
-		// 	}
-		// }
+					if (moveOp == null)
+						return;
+
+					doDrop(moveOp.newParent, moveOp.newIndex, e.dataTransfer);
+				}
+			}
+		}
 	}
 
 	function setDragStyle(element: js.html.Element, target: GetDragTarget) {
