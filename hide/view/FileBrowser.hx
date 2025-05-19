@@ -74,7 +74,7 @@ class FileBrowser extends hide.ui.View<FileBrowserState> {
 
 		var resize = new hide.comp.ResizablePanel(Horizontal, layout.find(".left"), After);
 
-		var fancyTree = new hide.comp.FancyTree2<FileEntry>(resize.element);
+		var fancyTree = new hide.comp.FancyTree<FileEntry>(resize.element);
 		fancyTree.saveDisplayKey = "fileBrowserTree";
 		fancyTree.getChildren = (file: FileEntry) -> {
 			if (file == null)

@@ -45,7 +45,7 @@ class FancySearch extends hide.comp.Component {
 		var want = force != null ? force : !open;
 		if (open != want) {
 			open = want;
-			FancyTree.animateReveal(element.get(0), open);
+			//FancyTree.animateReveal(element.get(0), open);
 		}
 
 		if (open && focus) {

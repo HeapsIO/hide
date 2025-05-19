@@ -6200,8 +6200,14 @@ fancy-tree2 {
 				}
 			}
 
-			&.current:not(.selected) {
-				--highlight: 10;
+			// &.current:not(.selected) {
+			// 	//--highlight: 10;
+			// }
+
+			&.current {
+				outline: dashed 1px #AAA;
+				z-index: 10;
+				outline-offset: -1px;
 			}
 
 			&.selected {

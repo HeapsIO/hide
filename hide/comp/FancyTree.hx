@@ -2,14 +2,16 @@ package hide.comp;
 
 /**
 	TODO :
+		[X] Selection
+		[X] Current Item
+		[X] Arrow navigation
 		[X] Search
-		[X] Rename item
+		[ ] Rename item
 		[ ] Move items
-		[X] Save fold state
+		[ ] Save fold state
 		[ ] Customisable context menu
 		[ ] Customisable end of list icons
 		[ ] Custom "pills" info near the title
-		[X] Fold animation
 		[X] General styling
 
 **/
@@ -19,197 +21,117 @@ enum MoveAllowedOperations {
 	Reparent;
 }
 
-enum GetDragTarget {
-	None;
-	Top;
-	Bot;
-	In;
-}
-
 typedef MoveFlags = haxe.EnumFlags<MoveAllowedOperations>;
 
-typedef TreeItemData<TreeItem> = {?element: js.html.Element, ?header: js.html.Element, ?children: Array<TreeItem>, ?parent: TreeItem, ?depth: Int, ?item: TreeItem, ?temporaryOpen: Bool, ?passSearch: Bool, ?name: String, ?path: String};
+enum RefreshFlag {
+	Flat;
+	Search;
+	FocusCurrent;
+	RegenHeader;
+}
 
-class FancyTree<TreeItem : Dynamic> extends hide.comp.Component {
-	public var itemMap : Map<{}, TreeItemData<TreeItem>> = [];
+typedef RefreshFlags = haxe.EnumFlags<RefreshFlag>;
 
-	// Forced to use another object because itemMap can't use null as an index for some reason
-	var rootData : TreeItemData<TreeItem> = {};
+enum FilterFlag {
+	Visible;
+	MatchSearch;
+	Open;
+}
 
-	var openState: Map<String, Bool> = [];
+typedef FilterFlags = haxe.EnumFlags<FilterFlag>;
 
-	public var moveFlags : MoveFlags = MoveFlags.ofInt(0);
+typedef TreeItemData<TreeItem> = {element: js.html.Element, ?searchRanges: SearchRanges, item: TreeItem, name: String, ?iconCache: String, open: Bool, filterState: FilterFlags, children: Array<TreeItemData<TreeItem>>, parent: TreeItemData<TreeItem>, depth: Int, identifier: String};
 
+enum abstract GetDragTarget(Int) {
+	var None;
+	var Top;
+	var Bot;
+	var In;
+}
+
+
+typedef SearchRanges = Array<Int>;
+class FancyTree<TreeItem> extends hide.comp.Component {
+	var rootData : Array<TreeItemData<TreeItem>> = [];
+	var itemMap : Map<{}, TreeItemData<TreeItem>> = [];
 	var selection : Map<{}, Bool> = [];
-	var currentItem : TreeItem;
+	var openState: Map<String, Bool> = [];
+	var currentItem(default, set) : TreeItemData<TreeItem>;
+	var currentVisible(default, set) : Bool = false;
+
+	public var moveFlags(default, set) : MoveFlags = MoveFlags.ofInt(0);
+	function set_moveFlags(v) {
+		moveFlags = v;
+		queueRefresh(RegenHeader); // We need to regen the header to bind the various drag & drop events
+		return moveFlags;
+	}
+
+	function set_currentVisible(v) {
+		currentVisible = v;
+		if (currentVisible)
+			queueRefresh(FocusCurrent);
+		else
+			queueRefresh();
+		return currentVisible;
+	}
+
+	function set_currentItem(v) {
+		currentItem = v;
+		queueRefresh(FocusCurrent);
+		return currentItem;
+	}
 
 	var searchBar : hide.comp.FancySearch = null;
 
-	var moveLastDragOver : TreeItem;
-	var moveLastDragTime : Int = 0;
+	var flatData : Array<TreeItemData<TreeItem>>;
+
+	var itemContainer : js.html.Element;
+	var scroll : js.html.Element;
+	var currentSearch : String = "";
+
+	var moveLastDragOver: TreeItemData<TreeItem>;
 
 	public function new(parent: Element) {
-		var el = new Element('<fancy-tree tabindex="-1">
-			<fancy-search></fancy-search>
-			<fancy-wrapper></fancy-wrapper></fancy-tree>');
+		var el = new Element('<fancy-tree2 tabindex="-1">
+				<fancy-search></fancy-search>
+				<fancy-scroll>
+				<fancy-item-container>
+				</fancy-item-container>
+				</fancy-scroll>
+			</fancy-tree2>'
+		);
 		super(parent, el);
 
 		searchBar = new FancySearch(null, element.find("fancy-search"));
 		searchBar.onSearch = (search, _) -> {
-			filterRec(null, search);
-
-			ensureVisible(getDataOrRoot(currentItem));
+			currentSearch = search.toLowerCase();
+			queueRefresh(Flat | Search);
 		}
+
+		scroll = el.find("fancy-scroll").get(0);
+		itemContainer = el.find("fancy-item-container").get(0);
+		lastHeight = null;
 
 		var fancyTree = el.get(0);
-		fancyTree.onkeydown = (e: js.html.KeyboardEvent) -> {
+		fancyTree.onkeydown = inputHandler;
 
-			if (hide.ui.Keys.matchJsEvent("search", e, ide.currentConfig)) {
-				e.stopPropagation();
-				e.preventDefault();
+		scroll.onscroll = (e) -> queueRefresh();
 
-				searchBar.toggleSearch(true, true);
-			}
-
-			if (hide.ui.Keys.matchJsEvent("rename", e, ide.currentConfig) && selection.iterator().hasNext()) {
-				e.stopPropagation();
-				e.preventDefault();
-
-				beginRename(cast selection.keyValueIterator().next().key);
-			}
-
-			if (e.key == "Escape") {
-				if (searchBar.isOpen()) {
-					e.stopPropagation();
-					e.preventDefault();
-
-					searchBar.toggleSearch(false);
-					fancyTree.focus();
-					resetSearch(null);
-				}
-			}
-
-			var delta = 0;
-			switch (e.key) {
-				case "ArrowUp":
-					delta -= 1;
-				case "ArrowDown":
-					delta += 1;
-				case "PageUp":
-					delta -= 10;
-				case "PageDown":
-					delta += 10;
-			}
-
-			if (delta != 0) {
-				e.stopPropagation();
-				e.preventDefault();
-				moveCurrent(delta);
-				return;
-			}
-
-			if (currentItem == null)
-				return;
-
-			if (e.key == "ArrowRight" && hasChildren(currentItem)) {
-				e.stopPropagation();
-				e.preventDefault();
-
-				var currentData = getDataOrRoot(currentItem);
-				if (currentData == null || isDataVisuallyOpen(currentData)) {
-					moveCurrent(1);
-				}
-				else if (currentData != null && !isDataVisuallyOpen(currentData)) {
-					toggleItemOpen(currentItem, true);
-					saveState();
-				}
-				return;
-			}
-			if (e.key == "ArrowLeft") {
-				e.stopPropagation();
-				e.preventDefault();
-
-				var currentData = getDataOrRoot(currentItem);
-				if (currentData != null) {
-					var anyChildren = hasChildren(currentItem);
-					var goToParent = !anyChildren && currentData.parent != null;
-					goToParent = goToParent || anyChildren && !isDataVisuallyOpen(currentData);
-
-					if (goToParent && currentData.parent != null) {
-						setCurrent(currentData.parent);
-					} else if(anyChildren && currentItem != null) {
-						toggleItemOpen(currentItem, false);
-						saveState();
-					}
-				}
-				return;
-			}
-
-			if (e.key == "Enter") {
-				e.stopPropagation();
-				e.preventDefault();
-
-				clearSelection();
-				if (currentItem != null) {
-					setSelection(currentItem, true);
-				}
-				onSelectionChanged();
-				return;
-			}
-		};
-
-		resetItemCache();
-	}
-
-	public function beginRename(item: TreeItem) {
-		var data = getDataOrRoot(item);
-
-		var name = data.header.querySelector("fancy-tree-name");
-		name.contentEditable = "plaintext-only";
-		var edit = new ContentEditable(null, new Element(name));
-
-		edit.onChange = (newValue) -> {
-			onNameChange(item, name.textContent);
-			refreshHeader(data);
-			element.focus();
+		fancyTree.onblur = (e) -> {
+			currentVisible = false;
+			currentItem = null;
 		}
 
-		edit.onCancel = () -> {
-			refreshHeader(data);
-			element.focus();
+		fancyTree.onclick = (e) -> {
+			currentVisible = false;
 		}
+ 	}
 
-		edit.element.focus();
-	}
-
-	function saveState() {
-		saveDisplayState("openState", openState);
-	}
-
-	inline function isDataVisuallyOpen(data: TreeItemData<TreeItem>) {
-		return data.item == null || openState.get(data.path) || data.temporaryOpen;
-	}
-
-	/**
-		Called for each of your items in the tree. for the root elements, get called with null as a parameter
-	**/
-	public dynamic function getChildren(item: TreeItem) : Array<TreeItem> {return null;}
-
-	/**
-		Called to know if an item in the tree can be opened or has children. Default to calling getChildren and seeing if it returns false.
-		Set this function to optimise the initial loading of the tree if getChildren is expensive
-	**/
-	public dynamic function hasChildren(item : TreeItem) : Bool {
-		var children = getChildren(item);
-		if (children == null)
-			return false;
-		return children.length > 0;
-	}
 
 	/**
 		To customise the icon of an element
 	**/
-	public dynamic function getIcon(item: TreeItem) : js.html.Element {return null;}
+	public dynamic function getIcon(item: TreeItem) : String {return null;}
 
 	/**
 		The display name of an item
@@ -242,188 +164,99 @@ class FancyTree<TreeItem : Dynamic> extends hide.comp.Component {
 	public dynamic function onMove(items: Array<TreeItem>, newParent: TreeItem, newIndex: Int) : Void {
 	}
 
+	// /**
+	// 	Called when the user tries to drag an item from the tree. You can use the current selection
+	// 	to move more than one item at once.
+	// 	Return false to cancel the drag operation
+	// **/
+	// public dynamic function setupDrag(item: TreeItem, dataTransfer: js.html.DataTransfer) : Bool {
+	// 	return false;
+	// }
+
+	// /**
+	// 	Return true if the data in dataTransfer can be dropped on the given item
+	// **/
+	// public dynamic function canReciveDrop(parent: TreeItem, dataTransfer: js.html.DataTransfer) : ReciveDropKind {
+	// 	return false;
+	// }
+
+	// /**
+	// 	Handle the drop operation
+	// **/
+	// public dynamic function doDrop(parent: TreeItem, dataTransfer: js.html.DataTransfer) : Void {
+
+	// }
+
 	/**
 		Called when the user renamed the item via F2 / Context menu
 	**/
 	public dynamic function onNameChange(item: TreeItem, newName: String) : Void {
 	}
 
+	/**
+		Called for each of your items in the tree. for the root elements, get called with null as a parameter
+	**/
+	public dynamic function getChildren(item: TreeItem) : Array<TreeItem> {return null;}
+
+	/**
+		Returns a string that allow an item in the tree to be uniquely identified.
+		Default to a path/of/the/item/name
+		Customize this if you have items that can share names
+	**/
+	public dynamic function getIdentifier(item: TreeItem) : String {
+		var data = itemMap.get(cast item);
+		if (data == null)
+			return null;
+		function rec(data) {
+			if (data.parent != null)
+				return getIdentifier(data.parent) + "/" + data.name;
+			return data.name;
+		}
+
+		return rec(data);
+	}
+
+	/**
+		Called to know if an item in the tree can be opened or has children. Default to calling getChildren and seeing if it returns false.
+		Set this function to optimise the initial loading of the tree if getChildren is expensive
+	**/
+	public dynamic function hasChildren(item : TreeItem) : Bool {
+		var children = getChildren(item);
+		if (children == null)
+			return false;
+		return children.length > 0;
+	}
+
 	public function getSelectedItems() : Array<TreeItem> {
 		return [for (item => _ in selection) cast item];
 	}
 
-	/**
-		Destroy and recreate all the elements in the tree.
-		All the cached children will be erased
-	**/
-	public function rebuildTree() {
-		resetItemCache();
-		redrawItems();
-		resetSearch(null);
-	}
+	public function generateChildren(parentData: TreeItemData<TreeItem>) : Array<TreeItemData<TreeItem>> {
+		var childrenTreeItem = getChildren(parentData?.item);
 
-	function resetItemCache() {
-		itemMap.clear();
-		rootData = {element: js.Browser.document.createDivElement() /*element.find("fancy-wrapper").get(0)*/, depth: 0, path: ""};
-		openState = getDisplayState("openState") ?? openState;
-	}
-
-	function redrawItems() {
-		untyped rootData.element.replaceChildren();
-		initChildren(null);
-	}
-
-	function toggleItemOpen(item: TreeItem, ?force: Bool, animate: Bool = true, temporary: Bool = false) : Void {
-
-		var data = itemMap.get(cast item);
-
-		var wantOpen = force ?? !isDataVisuallyOpen(data);
-		var wasOpen = isDataVisuallyOpen(data);
-
-		data.temporaryOpen = wantOpen;
-		if (!temporary) {
-			openState.set(data.path, wantOpen);
-		}
-
-		if (wantOpen) {
-			initChildren(item);
-		}
-
-		data.element.classList.toggle("open", wantOpen);
-		var childrenElement = data.element.querySelector("fancy-tree-children");
-		if (animate && childrenElement != null && wantOpen != wasOpen) {
-			animateReveal(childrenElement, wantOpen);
-		}
-
-	}
-
-	public static function animateReveal(element: js.html.Element, reveal: Bool, durationMs: Int = 75) {
-		function finish() {
-			if (reveal) {
-				element.style.height = "auto";
-			} else {
-				element.style.height = null;
-			}
-		};
-
-		for (anim in element.getAnimations()) {
-			anim.cancel();
-		}
-
-		if (durationMs > 0) {
-			var anim = element.animate([
-				{height: "0px"},
-				{height: '${element.scrollHeight}px'},
-			], {
-				duration: durationMs,
-				iterations: 1,
-				direction: reveal ? js.html.PlaybackDirection.NORMAL : js.html.PlaybackDirection.REVERSE,
-				easing: "ease-in",
-			});
-
-			anim.onfinish = (e) -> finish();
-		}
-		else {
-			finish();
-		}
-	}
-
-	function syncOpen(item: TreeItem) : Void {
-		var data = getDataOrRoot(item);
-
-		if (item != null)
-			toggleItemOpen(item, openState.get(data.path) ?? false, false, false);
-
-		if (data.children != null) {
-			for (child in data.children) {
-				syncOpen(child);
+		var childrenData : Array<TreeItemData<TreeItem>> = [];
+		if (childrenTreeItem != null) {
+			for (childItem in childrenTreeItem) {
+				var childData : TreeItemData<TreeItem>;
+				childData = {
+					item: childItem,
+					parent: parentData,
+					children: null,
+					open: false,
+					filterState: Visible,
+					depth: parentData?.depth + 1 ?? 0,
+					element: null,
+					name: StringTools.htmlEscape(getName(childItem)),
+					identifier: getIdentifier(childItem),
+				};
+				itemMap.set(cast childItem, childData);
+				childrenData.push(childData);
 			}
 		}
-	}
-
-	function resetSearch(item: TreeItem) : Void {
-		var data = getDataOrRoot(item);
-		data.passSearch = true;
-		data.element.classList.toggle("hide-search", !data.passSearch);
-		//initChildren(item);
-		if (data.children != null) {
-			for (child in data.children) {
-				resetSearch(child);
-			}
+		if (parentData != null) {
+			parentData.children = childrenData;
 		}
-		if (resetSearch == null)
-			syncOpen(null);
-	}
-
-	static function filterMatch(haystack: String, needle: String) {
-		return StringTools.contains(haystack.toLowerCase(), needle.toLowerCase());
-	}
-
-	/**
-		Returns true if any children passes the current filter
-	**/
-	function filterRec(item: TreeItem, currentFilter: String) : Bool {
-		if (item == null) {
-			resetSearch(null);
-		}
-		var data = getDataOrRoot(item);
-
-		data.passSearch = data.name != null ? filterMatch(data.name, currentFilter) : false;
-
-		var anyChildrenPass = false;
-		if (!data.passSearch) {
-			if (data.children == null)
-				initChildren(data.item);
-			if (data.children != null) {
-				for (child in data.children) {
-					anyChildrenPass = filterRec(child, currentFilter) || anyChildrenPass;
-				}
-			}
-		}
-
-		if (anyChildrenPass) {
-			data.passSearch = true;
-			if (item != null) {
-				toggleItemOpen(item, true, false, true);
-			}
-		}
-
-		if (item != null) {
-			data.element.classList.toggle("hide-search", !data.passSearch);
-		}
-
-		return data.passSearch;
-	}
-
-	function initChildren(item: TreeItem) : Void {
-		var data = getDataOrRoot(item);
-		if (data?.element == null || data?.depth == null)
-			throw "Data is not properly initialised";
-
-		if (data.children == null) {
-			data.children = getChildren(item);
-
-			if (data.children != null) {
-				var childrenElement = js.Browser.document.createElement("fancy-tree-children");
-				data.element.append(childrenElement);
-
-				for (child in data.children) {
-					if (child == null)
-						continue;
-					var childElem = getElement(child, item, data.depth + 1);
-					if (childElem != null)
-						childrenElement.append(childElem);
-				}
-			}
-		}
-	}
-
-	function getDataOrRoot(item: TreeItem) {
-		if (item != null) {
-			return hrt.tools.MapUtils.getOrPut(itemMap, cast item, {item: item});
-		} else {
-			return rootData;
-		}
+		return childrenData;
 	}
 
 	/**
@@ -433,188 +266,416 @@ class FancyTree<TreeItem : Dynamic> extends hide.comp.Component {
 		return ("application/x." + saveDisplayKey + ".move").toLowerCase();
 	}
 
-	function refreshHeader(data: TreeItemData<TreeItem>) {
-		data.header.innerHTML = "";
+	public function ensureVisible(data) {
 
-		var fold = js.Browser.document.createElement("fancy-tree-icon");
-		data.header.append(fold);
+	}
 
-		if (hasChildren(data.item)) {
-			fold.classList.add("caret");
-			fold.addEventListener("click", (e) -> {
-				toggleItemOpen(data.item);
-				saveState();
-			});
+	public function rebuildTree() {
+		rootData = generateChildren(null);
+
+		queueRefresh(Flat | Search);
+	}
+
+	function regenerateFlatData() {
+		flatData = [];
+		flattenRec(rootData, flatData);
+	}
+
+	function inputHandler(e: js.html.KeyboardEvent) {
+		if (hide.ui.Keys.matchJsEvent("search", e, ide.currentConfig)) {
+			e.stopPropagation();
+			e.preventDefault();
+
+			searchBar.toggleSearch(true, true);
 		}
 
-		function clickHandler(e: js.html.MouseEvent) {
-			var lastSelected = currentItem;
-			if (!e.ctrlKey) {
-				clearSelection();
+		// if (hide.ui.Keys.matchJsEvent("rename", e, ide.currentConfig) && selection.iterator().hasNext()) {
+		// 	e.stopPropagation();
+		// 	e.preventDefault();
+
+		// 	beginRename(cast selection.keyValueIterator().next().key);
+		// }
+
+		if (e.key == "Escape") {
+			if (searchBar.isOpen()) {
+				e.stopPropagation();
+				e.preventDefault();
+
+				searchBar.toggleSearch(false);
+				element.get(0).focus();
+				currentSearch = "";
+				queueRefresh(Search);
 			}
+		}
 
-			var flat = flattenTreeItems();
-			var currentIndex = flat.indexOf(currentItem);
-			if (e.shiftKey && currentIndex >= 0) {
-				var currentIndex = flat.indexOf(currentItem);
-				var newIndex = flat.indexOf(data.item);
+		var delta = 0;
+		switch (e.key) {
+			case "ArrowUp":
+				delta -= 1;
+			case "ArrowDown":
+				delta += 1;
+			case "PageUp":
+				delta -= 10;
+			case "PageDown":
+				delta += 10;
+		}
 
-				var min = hxd.Math.imin(currentIndex, newIndex);
-				var max = hxd.Math.imax(currentIndex, newIndex);
+		if (delta != 0) {
+			e.stopPropagation();
+			e.preventDefault();
+			moveCurrent(delta);
+			return;
+		}
 
-				for (i in min...max + 1) {
-					setSelection(flat[i], true);
-				}
-			} else {
-				setSelection(data.item, !selection.exists(cast data.item));
+		if (currentItem == null)
+			return;
+
+		if (e.key == "ArrowRight" && hasChildren(currentItem.item)) {
+			e.stopPropagation();
+			e.preventDefault();
+
+			if (currentItem == null || isOpen(currentItem)) {
+				moveCurrent(1);
 			}
+			else if (currentItem != null && !isOpen(currentItem)) {
+				toggleDataOpen(currentItem, true);
+				//saveState();
+			}
+			return;
+		}
+		if (e.key == "ArrowLeft") {
+			e.stopPropagation();
+			e.preventDefault();
 
-			if (!(e.shiftKey && !e.ctrlKey) || currentItem == null)
-				setCurrent(data.item);
+			var anyChildren = hasChildren(currentItem.item);
+			var goToParent = !anyChildren && currentItem.parent != null;
+			goToParent = goToParent || anyChildren && !isOpen(currentItem);
+
+			if (goToParent && currentItem.parent != null) {
+				currentItem = currentItem.parent;
+			} else if(anyChildren && currentItem != null) {
+				toggleDataOpen(currentItem, false);
+				//saveState();
+			}
+			return;
+		}
+
+		if (e.key == "Enter") {
+			e.stopPropagation();
+			e.preventDefault();
+
+			clearSelection();
+			if (currentItem != null) {
+				setSelection(currentItem, true);
+			}
 			onSelectionChanged();
+			return;
 		}
-
-		var iconContent = getIcon(data.item);
-		if (iconContent != null) {
-			var icon = js.Browser.document.createElement("fancy-tree-icon");
-			icon.append(iconContent);
-			data.header.append(icon);
-			icon.onclick = clickHandler;
-		}
-
-		var nameElement = js.Browser.document.createElement("fancy-tree-name");
-		var name = getName(data.item) ?? "undefined";
-		data.name = name;
-		data.header.title = name;
-		nameElement.innerText = name;
-		data.header.append(nameElement);
-
-
-
-		if (moveFlags.toInt() != 0) {
-			data.header.draggable = true;
-
-			data.header.ondragstart = (e: js.html.DragEvent) -> {
-				var draggedPaths = [];
-				moveLastDragOver = null;
-				if (!selection.get(cast data.item)) {
-					clearSelection();
-					setSelection(data.item, true);
-				}
-				for (item in getSelectedItems()) {
-					var data = getDataOrRoot(item);
-					draggedPaths.push(data.path);
-				}
-				e.dataTransfer.setData(getDragDataType(), haxe.Json.stringify(draggedPaths));
-				trace(e.dataTransfer.types);
-				e.dataTransfer.effectAllowed = "move";
-				e.dataTransfer.setDragImage(data.header, 0, 0);
-			}
-
-			data.header.ondragover = (e: js.html.DragEvent) -> {
-				if (e.dataTransfer.types.contains(getDragDataType())) {
-					var target = getDragTarget(data,e);
-
-					if (canPreformMove(data, target) == null)
-						return;
-
-					if (target == In) {
-						if (moveLastDragOver == data.item) {
-							moveLastDragTime += 1;
-						}
-						else {
-							moveLastDragOver = data.item;
-							moveLastDragTime = 0;
-						}
-
-						if (moveLastDragTime > 25 && !isDataVisuallyOpen(data)) {
-							toggleItemOpen(data.item, true, true, false);
-							saveState();
-						}
-					}
-
-					setDragStyle(data.header, target);
-					e.preventDefault();
-				}
-			}
-
-			data.header.ondragenter = (e: js.html.DragEvent) -> {
-				if (e.dataTransfer.types.contains(getDragDataType())) {
-					var target = getDragTarget(data,e);
-					if (canPreformMove(data, target) == null)
-						return;
-					setDragStyle(data.header, target);
-					e.preventDefault();
-				}
-			}
-
-			data.header.ondragleave = (e: js.html.DragEvent) -> {
-				if (e.dataTransfer.types.contains(getDragDataType())) {
-					setDragStyle(data.header, None);
-					e.preventDefault();
-				}
-			}
-
-			data.header.ondragexit = (e: js.html.DragEvent) -> {
-				if (e.dataTransfer.types.contains(getDragDataType())) {
-					setDragStyle(data.header, None);
-					e.preventDefault();
-				}
-			}
-
-			data.header.ondrop = (e: js.html.DragEvent) -> {
-				if (e.dataTransfer.types.contains(getDragDataType())) {
-					var target = getDragTarget(data,e);
-					var moveOp = canPreformMove(data, target);
-
-					setDragStyle(data.header, None);
-					e.preventDefault();
-
-					if (moveOp == null)
-						return;
-
-					onMove(moveOp.toMove, moveOp.newParent, moveOp.newIndex);
-				}
-			}
-		}
-		nameElement.onclick = clickHandler;
 	}
 
-	function canPreformMove(data: TreeItemData<TreeItem>, target: GetDragTarget) : {toMove: Array<TreeItem>, newParent: TreeItem, newIndex: Int} {
-		var toMove = getSelectedItems();
+	public function moveCurrent(delta: Int) {
+		if (delta == 0)
+			return;
+		if (flatData.length <= 0)
+			return;
 
-		var newParent = getDataOrRoot(data.parent);
-		var newIndex = 0;
-		var currIndex = newParent.children.indexOf(data.item);
+		currentVisible = true;
 
-		switch(target) {
-			case Top:
-				newIndex = currIndex;
-			case Bot:
-				newIndex = currIndex + 1;
-			case In:
-				newParent = data;
-			default:
+		var currentIndex = flatData.indexOf(currentItem);
+		if (currentIndex < 0) {
+			currentItem = flatData[0];
+
+			if (searchBar.isOpen() && searchBar.hasFocus()) {
+				searchBar.blur();
+				element.focus();
+			}
+			return;
 		}
 
-		// Take into account that the item are removed from the children list before getting inserted at the new index,
-		// which causes the index to not match if these items are before the target
-		if (target == Top || target == Bot) {
-			for (item in toMove) {
-				var indexInParent = newParent.children.indexOf(item);
-				if (indexInParent >= 0 && indexInParent < currIndex) {
-					newIndex --;
+		var nextIndex = currentIndex + delta;
+		if (nextIndex < 0) {
+			if (searchBar.isOpen()) {
+				searchBar.focus();
+				return;
+			}
+			else {
+				nextIndex = 0;
+			}
+		}
+		else {
+			if (searchBar.isOpen() && searchBar.hasFocus()) {
+				searchBar.blur();
+				element.focus();
+			}
+		}
+
+		if (nextIndex > flatData.length-1)
+			nextIndex = flatData.length-1;
+
+		if (nextIndex != currentIndex) {
+			currentItem = flatData[nextIndex];
+		}
+	}
+
+	var lastHeight = null;
+
+	// Never call this function directly, instead call queueRefresh();
+	function onRefreshInternal() {
+		if (currentRefreshFlags.has(Search)) {
+			filterRec(rootData);
+			currentRefreshFlags.set(Flat);
+		}
+
+		if (currentRefreshFlags.has(Flat) || flatData == null) {
+			regenerateFlatData();
+		}
+
+		//itemContainer.innerHTML = "";
+		var oldChildren = [for (node in itemContainer.childNodes) node];
+
+		var itemHeightPx = 20;
+
+		var height = itemHeightPx * flatData.length;
+		if (height != lastHeight) {
+			itemContainer.style.height = '${height}px';
+			lastHeight = height;
+		}
+
+		var scrollHeight = scroll.getBoundingClientRect().height;
+
+		if (currentRefreshFlags.has(FocusCurrent)) {
+			var currentIndex = flatData.indexOf(currentItem);
+
+			if (currentIndex >= 0) {
+				var currentHeight = currentIndex * itemHeightPx;
+				if (currentHeight < scroll.scrollTop) {
+					scroll.scrollTo(scroll.scrollLeft, currentHeight);
+				}
+
+				if (currentHeight + itemHeightPx - scrollHeight > scroll.scrollTop) {
+					scroll.scrollTo(scroll.scrollLeft, currentHeight + itemHeightPx - scrollHeight);
 				}
 			}
 		}
 
-		if (!canReparentTo(toMove, newParent.item)) {
+		var clipStart = scroll.scrollTop;
+		var clipEnd = scrollHeight + clipStart;
+		var itemStart = hxd.Math.floor(clipStart / itemHeightPx);
+		var itemEnd = hxd.Math.ceil(clipEnd / itemHeightPx);
+
+		for (index in hxd.Math.imax(itemStart, 0) ... hxd.Math.imin(flatData.length, itemEnd + 1)) {
+			var data = flatData[index];
+			var element = genElement(data);
+			element.style.top = '${index * itemHeightPx}px';
+			if (!oldChildren.remove(element))
+				itemContainer.appendChild(element);
+		}
+
+		for (oldChild in oldChildren) {
+			itemContainer.removeChild(oldChild);
+		}
+
+		currentRefreshFlags = RefreshFlags.ofInt(0);
+		refreshQueued = false;
+	}
+
+	static function computeSearchRanges(haystack: String, needle: String) : SearchRanges {
+		var pos = haystack.toLowerCase().indexOf(needle);
+		if (pos < 0)
 			return null;
-		}
-
-		return {toMove: toMove, newParent: newParent.item, newIndex: newIndex};
+		return [pos, pos + needle.length];
 	}
 
+	public function filterRec(children: Array<TreeItemData<TreeItem>>) : Bool {
+		var anyVisible = false;
+		for (child in children) {
+			child.filterState = FilterFlags.ofInt(0);
+			child.searchRanges = null;
+
+			if (currentSearch.length == 0) {
+				child.filterState |= Visible;
+			} else {
+				child.searchRanges = computeSearchRanges(child.name, currentSearch);
+				if (child.searchRanges != null) {
+					child.filterState |= MatchSearch;
+					child.filterState |= Visible;
+				}
+			}
+			if (child.children == null) {
+				generateChildren(child);
+			}
+
+			if(filterRec(child.children) && currentSearch.length > 0) {
+				child.filterState |= Visible;
+				child.filterState |= Open;
+			}
+
+			anyVisible = anyVisible || child.filterState.has(Visible);
+		}
+
+		return anyVisible;
+	}
+
+	function genElement(data: TreeItemData<TreeItem>) : js.html.Element {
+		var element : js.html.Element = data.element;
+
+		if (currentRefreshFlags.has(RegenHeader) && data.element != null) {
+			data.element.remove();
+			data.element = null;
+		}
+
+		if (data.element == null) {
+			element = js.Browser.document.createElement("fancy-tree-item");
+			element.style.setProperty("--depth", Std.string(data.depth));
+
+			element.innerHTML =
+			'
+				<fancy-tree-icon class="caret"></fancy-tree-icon>
+				<fancy-tree-icon class="header-icon"></fancy-tree-icon>
+				<fancy-tree-name></fancy-tree-name>
+			';
+
+			var fold = element.querySelector(".caret");
+			fold.addEventListener("click", (e) -> {
+				toggleDataOpen(data);
+				//saveState();
+			});
+
+			var closure = dataClickHandler.bind(data);
+
+			var icon = element.querySelector(".header-icon");
+			icon.onclick = closure;
+
+			var name = element.querySelector("fancy-tree-name");
+			name.onclick = closure;
+
+			data.element = element;
+
+			setupDragAndDrop(data);
+		}
+
+		var fold = element.querySelector(".caret");
+		fold.classList.toggle("hidden", !hasChildren(data.item));
+		element.classList.toggle("open", isOpen(data));
+		element.classList.toggle("selected", selection.exists(cast data));
+		element.classList.toggle("current", currentVisible && currentItem == data);
+
+		var icon = element.querySelector(".header-icon");
+		var iconContent = getIcon(data.item);
+		icon.classList.toggle("hidden", iconContent == null);
+		if (iconContent != null && iconContent != data.iconCache) {
+			icon.innerHTML = iconContent;
+			data.iconCache = iconContent;
+		}
+
+		var nameElement = element.querySelector("fancy-tree-name");
+		element.title = data.name;
+
+		if (data.searchRanges != null) {
+			var name = data.name;
+			var lastPos = 0;
+			var finalName = "";
+			for (index in 0...(data.searchRanges.length>>1)) {
+				var first = name.substr(lastPos, data.searchRanges[index]);
+				var match = name.substr(data.searchRanges[index], data.searchRanges[index+1] - data.searchRanges[index]);
+				finalName += first + '<span class="search-hl">' + match + "</span>";
+				lastPos = data.searchRanges[index+1];
+			}
+			finalName += name.substr(lastPos);
+			nameElement.innerHTML = finalName;
+		} else {
+			nameElement.innerHTML = data.name;
+		}
+
+		return data.element;
+	}
+
+	function setupDragAndDrop(data: TreeItemData<TreeItem>) {
+		// if (moveFlags.toInt() != 0) {
+		// 	data.element.draggable = true;
+
+		// 	data.element.ondragstart = (e: js.html.DragEvent) -> {
+		// 		if (!selection.get(cast data)) {
+		// 			clearSelection();
+		// 			setSelection(data, true);
+		// 		}
+
+		// 		moveLastDragOver = null;
+
+		// 		if (setupDrag(data, e.dataTransfer)) {
+		// 			e.dataTransfer.effectAllowed = "move";
+		// 			e.dataTransfer.setDragImage(data.element, 0, 0);
+		// 		}
+		// 		e.preventDefault();
+		// 	}
+
+		// 	data.element.ondragover = (e: js.html.DragEvent) -> {
+		// 		if (canHandleDrop(data, e.dataTransfer)) {
+		// 			var target = getDragTarget(data,e);
+
+		// 			if (canPreformMove(data, target) == null)
+		// 				return;
+
+		// 			if (target == In) {
+		// 				if (moveLastDragOver == data.item) {
+		// 					moveLastDragTime += 1;
+		// 				}
+		// 				else {
+		// 					moveLastDragOver = data.item;
+		// 					moveLastDragTime = 0;
+		// 				}
+
+		// 				if (moveLastDragTime > 25 && !isDataVisuallyOpen(data)) {
+		// 					toggleItemOpen(data.item, true, true, false);
+		// 					saveState();
+		// 				}
+		// 			}
+
+		// 			setDragStyle(data.element, target);
+		// 			e.preventDefault();
+		// 		}
+		// 	}
+
+		// 	data.element.ondragenter = (e: js.html.DragEvent) -> {
+		// 		if (e.dataTransfer.types.contains(getDragDataType())) {
+		// 			var target = getDragTarget(data,e);
+		// 			if (canPreformMove(data, target) == null)
+		// 				return;
+		// 			setDragStyle(data.element, target);
+		// 			e.preventDefault();
+		// 		}
+		// 	}
+
+		// 	data.element.ondragleave = (e: js.html.DragEvent) -> {
+		// 		if (e.dataTransfer.types.contains(getDragDataType())) {
+		// 			setDragStyle(data.element, None);
+		// 			e.preventDefault();
+		// 		}
+		// 	}
+
+		// 	data.element.ondragexit = (e: js.html.DragEvent) -> {
+		// 		if (e.dataTransfer.types.contains(getDragDataType())) {
+		// 			setDragStyle(data.element, None);
+		// 			e.preventDefault();
+		// 		}
+		// 	}
+
+		// 	data.element.ondrop = (e: js.html.DragEvent) -> {
+		// 		if (e.dataTransfer.types.contains(getDragDataType())) {
+		// 			var target = getDragTarget(data,e);
+		// 			var moveOp = canPreformMove(data, target);
+
+		// 			setDragStyle(data.element, None);
+		// 			e.preventDefault();
+
+		// 			if (moveOp == null)
+		// 				return;
+
+		// 			onMove(moveOp.toMove, moveOp.newParent, moveOp.newIndex);
+		// 		}
+		// 	}
+		// }
+	}
 
 	function setDragStyle(element: js.html.Element, target: GetDragTarget) {
 		trace(target);
@@ -645,142 +706,116 @@ class FancyTree<TreeItem : Dynamic> extends hide.comp.Component {
 		return Top;
 	}
 
-	function getElement(item : TreeItem, parent: TreeItem, depth: Int) : js.html.Element {
-		var data = getDataOrRoot(item);
-		data.depth = depth;
-		data.parent = parent;
-
-		if (data.element == null) {
-			data.element = js.Browser.document.createElement("fancy-tree-item");
-			data.element.style.setProperty("--depth", Std.string(depth));
-
-			var header = js.Browser.document.createElement("fancy-tree-header");
-			data.header = header;
-			data.element.append(header);
-			refreshHeader(data);
-		}
-
-		data.path = getDataOrRoot(parent).path + "/" + getUniqueName(item);
-
-		refreshItemSelection(item, selection.get(cast item) ?? false);
-
-		return data.element;
-	}
-
 	public function clearSelection() {
-		for (item => _ in selection) {
-			var item : TreeItem = cast item;
-			refreshItemSelection(item, false);
-		}
 		selection.clear();
+		queueRefresh();
 	}
 
-	public function setSelection(item: TreeItem, newStatus: Bool) {
-		if (newStatus == true)
-			selection.set(cast item, true);
-		else
-			selection.remove(cast item);
-		refreshItemSelection(item, newStatus);
-	}
 
-	public function setCurrent(item: TreeItem) {
-		if (currentItem != null) {
-			var data = getDataOrRoot(currentItem);
-			data?.element?.classList.remove("current");
-		}
-		currentItem = item;
-		var data = getDataOrRoot(item);
-		data?.element?.classList.add("current");
 
-		ensureVisible(data);
-	}
-
-	public function ensureVisible(data: TreeItemData<TreeItem>) {
-		if (data?.element != null) {
-			var root = element.get(0);
-			var rootRect = root.getBoundingClientRect();
-			var elemRect = data.element.getBoundingClientRect();
-
-			if (elemRect.top < rootRect.top) {
-				data.element.scrollIntoView(true);
-			}
-
-			if (elemRect.bottom > rootRect.bottom) {
-				data.element.scrollIntoView(false);
-			}
+	function setSelection(data: TreeItemData<TreeItem>, select: Bool) {
+		if (select) {
+			selection.set(cast data, true);
+		} else {
+			selection.remove(cast data);
 		}
 	}
 
-	public function flattenTreeItems() : Array<TreeItem> {
-		var flat : Array<TreeItem> = [];
-		function flatten(item: TreeItem) {
-			var data = getDataOrRoot(item);
-			if (!data.passSearch)
-				return;
-			if (item != null)
-				flat.push(item);
-
-			if (data.children != null && isDataVisuallyOpen(data)) {
-				for (child in data.children) {
-					flatten(child);
-				}
-			}
+	function dataClickHandler(data: TreeItemData<TreeItem>, event: js.html.MouseEvent) : Void {
+		if (!event.ctrlKey) {
+			clearSelection();
 		}
-		flatten(null);
-		return flat;
+
+		var currentIndex = flatData.indexOf(data);
+		if (event.shiftKey && currentIndex >= 0) {
+
+		}
+
+		var currentIndex = flatData.indexOf(currentItem);
+		if (event.shiftKey && currentIndex >= 0) {
+			var newIndex = flatData.indexOf(data);
+
+			var min = hxd.Math.imin(currentIndex, newIndex);
+			var max = hxd.Math.imax(currentIndex, newIndex);
+
+			for (i in min...max + 1) {
+				setSelection(flatData[i], true);
+			}
+		} else {
+			setSelection(data, !selection.exists(cast data));
+		}
+
+		if (!(event.shiftKey && !event.ctrlKey) || currentItem == null)
+			currentItem = data;
+		onSelectionChanged();
+
+		queueRefresh();
 	}
 
-	public function moveCurrent(delta: Int) {
-		if (delta == 0)
-			return;
+	function toggleDataOpen(data: TreeItemData<TreeItem>, ?force: Bool) {
+		var want = force ?? !isOpen(data);
+		if (currentSearch.length > 0) {
+			data.filterState.setTo(Open, want);
+		}
+		data.open = want;
+		queueRefresh(Flat);
+	}
 
-		var flat = flattenTreeItems();
+	var refreshQueued : Bool = false;
+	var currentRefreshFlags : RefreshFlags = RefreshFlags.ofInt(0);
 
-		var currentIndex = flat.indexOf(currentItem);
-		if (currentIndex < 0) {
-			if (rootData.children == null)
-				return;
+	function queueRefresh(flags: RefreshFlags = cast 0) {
+		currentRefreshFlags |= flags;
+		if (!refreshQueued) {
+			refreshQueued = true;
+			js.Browser.window.requestAnimationFrame((_) -> onRefreshInternal());
+		}
+	}
 
-			currentItem = flat[0];
-			setCurrent(currentItem);
-
-			if (searchBar.isOpen() && searchBar.hasFocus()) {
-				searchBar.blur();
-				element.focus();
+	public static function animateReveal(element: js.html.Element, reveal: Bool, durationMs: Int = 75) {
+		function finish() {
+			if (reveal) {
+				element.style.height = "auto";
+			} else {
+				element.style.height = null;
 			}
-			return;
+		};
+		for (anim in element.getAnimations()) {
+			anim.cancel();
 		}
 
-		var nextIndex = currentIndex + delta;
-		if (nextIndex < 0) {
-			if (searchBar.isOpen()) {
-				searchBar.focus();
-				setCurrent(null);
-				return;
-			}
-			else {
-				nextIndex = 0;
-			}
+		if (durationMs > 0) {
+			var anim = element.animate([
+				{height: "0px"},
+				{height: '${element.scrollHeight}px'},
+			], {
+				duration: durationMs,
+				iterations: 1,
+				direction: reveal ? js.html.PlaybackDirection.NORMAL : js.html.PlaybackDirection.REVERSE,
+				easing: "ease-in",
+			});
+
+			anim.onfinish = (e) -> finish();
 		}
 		else {
-			if (searchBar.isOpen() && searchBar.hasFocus()) {
-				searchBar.blur();
-				element.focus();
+			finish();
+		}
+	}
+	function flattenRec(currentArray: Array<TreeItemData<TreeItem>>, targetArray: Array<TreeItemData<TreeItem>>) {
+		for (child in currentArray) {
+			if (!child.filterState.has(Visible)) continue;
+			targetArray.push(child);
+			if (isOpen(child)) {
+				if (child.children == null)
+					generateChildren(child);
+				flattenRec(child.children, targetArray);
 			}
 		}
-
-		if (nextIndex > flat.length-1)
-			nextIndex = flat.length-1;
-
-		if (nextIndex != currentIndex) {
-			setCurrent(flat[nextIndex]);
-		}
 	}
 
-	function refreshItemSelection(item: TreeItem, status: Bool) {
-		var data = itemMap.get(cast item);
-		if (data?.element == null)
-			return;
-		data.element.classList.toggle("selected", status);
+	function isOpen(data: TreeItemData<TreeItem>) {
+		return data.open || data.filterState.has(Open);
 	}
+
+
 }

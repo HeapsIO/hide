@@ -5169,8 +5169,10 @@ fancy-tree2 fancy-scroll fancy-tree-item.open > .caret::before {
 fancy-tree2 fancy-scroll fancy-tree-item:has(fancy-tree-children .selected) > fancy-tree-header fancy-tree-name {
   text-decoration: underline var(--selection);
 }
-fancy-tree2 fancy-scroll fancy-tree-item.current:not(.selected) {
-  --highlight: 10;
+fancy-tree2 fancy-scroll fancy-tree-item.current {
+  outline: dashed 1px #AAA;
+  z-index: 10;
+  outline-offset: -1px;
 }
 fancy-tree2 fancy-scroll fancy-tree-item.selected {
   color: white;
