@@ -71,7 +71,7 @@ class FancyTree<TreeItem> extends hide.comp.Component {
 		if (currentVisible)
 			queueRefresh(FocusCurrent);
 		else
-			queueRefresh();
+			queueRefresh(cast 0);
 		return currentVisible;
 	}
 
@@ -115,7 +115,7 @@ class FancyTree<TreeItem> extends hide.comp.Component {
 		var fancyTree = el.get(0);
 		fancyTree.onkeydown = inputHandler;
 
-		scroll.onscroll = (e) -> queueRefresh();
+		scroll.onscroll = (e) -> queueRefresh(cast 0);
 
 		fancyTree.onblur = (e) -> {
 			currentVisible = false;
@@ -708,7 +708,7 @@ class FancyTree<TreeItem> extends hide.comp.Component {
 
 	public function clearSelection() {
 		selection.clear();
-		queueRefresh();
+		queueRefresh(cast 0);
 	}
 
 
@@ -749,7 +749,7 @@ class FancyTree<TreeItem> extends hide.comp.Component {
 			currentItem = data;
 		onSelectionChanged();
 
-		queueRefresh();
+		queueRefresh(cast 0);
 	}
 
 	function toggleDataOpen(data: TreeItemData<TreeItem>, ?force: Bool) {
@@ -764,7 +764,7 @@ class FancyTree<TreeItem> extends hide.comp.Component {
 	var refreshQueued : Bool = false;
 	var currentRefreshFlags : RefreshFlags = RefreshFlags.ofInt(0);
 
-	function queueRefresh(flags: RefreshFlags = cast 0) {
+	function queueRefresh(flags: RefreshFlags) {
 		currentRefreshFlags |= flags;
 		if (!refreshQueued) {
 			refreshQueued = true;
