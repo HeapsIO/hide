@@ -184,7 +184,8 @@ class FileTree extends FileView {
 				];
 
 				var isSvnAvailable = js.node.ChildProcess.spawnSync("svn",["--version"]).status == 0;
-				if (isSvnAvailable) {
+				var isTortoiseAvailable = js.node.ChildProcess.spawnSync("where.exe", ["TortoiseProc.exe"]).status == 0;
+				if (isSvnAvailable && isTortoiseAvailable) {
 					options.push({ label : "", isSeparator: true });
 					options.push({ label: "SVN Log", enabled: selection.length == 1, click : function() {
 						var path = ide.getPath(selection[0]);
