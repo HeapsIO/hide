@@ -60,6 +60,25 @@ class ComputeUtils extends hxsl.Shader {
 			return vec3(radius, theta, phi);
 		}
 
+		function lookAtMatrix( eye : Vec3, at : Vec3, up : Vec3) : Mat4 {
+			var ax = normalize(at);
+			var ay = cross(up, ax);
+			if ( dot(ay, ay) < 1e-6 ) {
+				ay.x = ax.y;
+				ay.y = ax.z;
+				ay.z = ax.x;
+			}
+			ay = normalize(ay);
+			var az = ax.cross(ay);
+			var lookAt = mat4(
+				vec4(ax.x, ay.x, az.x, eye.x),
+				vec4(ax.y, ay.y, az.y, eye.y),
+				vec4(ax.z, ay.z, az.z, eye.z),
+				vec4(0.0, 0.0, 0.0, 1.0)
+			);
+			return lookAt;
+		}
+
 		function alignMatrix(up : Vec3, dir : Vec3) : Mat4 {
 			var matrix = mat4(
 				vec4(1.0, 0.0, 0.0, 0.0),
@@ -68,7 +87,7 @@ class ComputeUtils extends hxsl.Shader {
 				vec4(0.0, 0.0, 0.0, 1.0)
 			);
 			var rotationAxis = cross(up, dir);
-			if ( length(rotationAxis) > 1e-6 ) {
+			if ( dot(rotationAxis, rotationAxis) > 1e-6 ) {
 				rotationAxis = normalize(rotationAxis);
 				var sinangle = -length(cross(dir, up));
 				var cosangle = dot(up, dir);
