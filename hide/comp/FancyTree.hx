@@ -42,19 +42,10 @@ typedef FilterFlags = haxe.EnumFlags<FilterFlag>;
 
 typedef TreeItemData<TreeItem> = {element: js.html.Element, ?searchRanges: SearchRanges, item: TreeItem, name: String, ?iconCache: String, open: Bool, filterState: FilterFlags, children: Array<TreeItemData<TreeItem>>, parent: TreeItemData<TreeItem>, depth: Int, identifier: String};
 
-enum abstract GetDragTarget(Int) {
-	var None;
-	var Top;
-	var Bot;
-	var In;
-}
-
-/**
-	Represent how an item is dropped
-**/
-enum ReciveDropKind<TreeItem> {
-	AsChild(parent: TreeItem);
-	AsSibling(parent: TreeItem, index: Int);
+enum DropOperation {
+	Before;
+	After;
+	Inside;
 }
 
 
@@ -98,6 +89,7 @@ class FancyTree<TreeItem> extends hide.comp.Component {
 	var currentSearch : String = "";
 
 	var moveLastDragOver: TreeItemData<TreeItem>;
+	var moveLastDragOverTime: Int = 0;
 
 	public function new(parent: Element) {
 		var el = new Element('<fancy-tree2 tabindex="-1">
@@ -159,25 +151,6 @@ class FancyTree<TreeItem> extends hide.comp.Component {
 	public dynamic function onSelectionChanged() {
 	}
 
-	function getDragMoveInfo(data: TreeItemData<TreeItem>, target: GetDragTarget) : {newParent: TreeItem, newIndex: Int} {
-		var newParent = data.parent;
-		var newIndex = 0;
-		var currIndex = newParent.children.indexOf(data.item);
-
-		switch(target) {
-			case Top:
-				newIndex = currIndex;
-			case Bot:
-				newIndex = currIndex + 1;
-			case In:
-				newParent = data;
-			case None:
-				return null;
-		}
-
-		return {newParent: newParent.item, newIndex: newIndex};
-	}
-
 	/**
 		Called when the user tries to drag an item from the tree. You can use the current selection
 		to move more than one item at once.
@@ -190,14 +163,14 @@ class FancyTree<TreeItem> extends hide.comp.Component {
 	/**
 		Return true if the data in dataTransfer can be dropped on the given item
 	**/
-	public dynamic function canReciveDrop(parent: TreeItem, dataTransfer: js.html.DataTransfer) : ReciveDropKind {
+	public dynamic function canReciveDrop(target: TreeItem, operation: DropOperation, dataTransfer: js.html.DataTransfer) : Bool {
 		return false;
 	}
 
 	/**
 		Handle the drop operation
 	**/
-	public dynamic function doDrop(target: TreeItem, where: GetDragIndex, dataTransfer: js.html.DataTransfer) : Void {
+	public dynamic function doDrop(target: TreeItem, where: DropOperation, dataTransfer: js.html.DataTransfer) : Void {
 
 	}
 
@@ -271,13 +244,6 @@ class FancyTree<TreeItem> extends hide.comp.Component {
 			parentData.children = childrenData;
 		}
 		return childrenData;
-	}
-
-	/**
-		The type used by this tree in the drag/drop operations
-	**/
-	inline public function getDragDataType() {
-		return ("application/x." + saveDisplayKey + ".move").toLowerCase();
 	}
 
 	public function ensureVisible(data) {
@@ -617,95 +583,82 @@ class FancyTree<TreeItem> extends hide.comp.Component {
 
 				moveLastDragOver = null;
 
-				if (setupDrag(data, e.dataTransfer)) {
+				if (setupDrag(data.item, e.dataTransfer)) {
 					e.dataTransfer.effectAllowed = "move";
 					e.dataTransfer.setDragImage(data.element, 0, 0);
+				} else {
+					e.preventDefault();
 				}
-				e.preventDefault();
 			}
 
 			data.element.ondragover = (e: js.html.DragEvent) -> {
-				if (canHandleDrop(data, e.dataTransfer)) {
-					var target = getDragTarget(data,e);
-
-					if (getDragMoveInfo(data, target) == null)
-						return;
-
-
+				var operation = getDragOperation(data,e);
+				if (canReciveDrop(data.item, operation, e.dataTransfer)) {
 					// Auto open item if the user hover for enough time
-					if (target == In) {
-						if (moveLastDragOver == data.item) {
-							moveLastDragTime += 1;
+					if (operation == Inside) {
+						if (moveLastDragOver == data) {
+							moveLastDragOverTime += 1;
 						}
 						else {
-							moveLastDragOver = data.item;
-							moveLastDragTime = 0;
+							moveLastDragOver = data;
+							moveLastDragOverTime = 0;
 						}
 
-						if (moveLastDragTime > 25 && !isOpen(data)) {
+						if (moveLastDragOverTime > 25 && !isOpen(data)) {
 							toggleDataOpen(data, true);
 							//saveState();
 						}
 					}
 
-					setDragStyle(data.element, target);
 					e.preventDefault();
+					setDragStyle(data.element, operation);
+				} else {
+						setDragStyle(data.element, null);
 				}
 			}
 
 			data.element.ondragenter = (e: js.html.DragEvent) -> {
-				if (e.dataTransfer.types.contains(getDragDataType())) {
-					var target = getDragTarget(data,e);
-					if (getDragMoveInfo(data, target) == null)
-						return;
-					setDragStyle(data.element, target);
+				var operation = getDragOperation(data,e);
+				if (canReciveDrop(data.item, operation, e.dataTransfer)) {
+					var operation = getDragOperation(data,e);
+					setDragStyle(data.element, operation);
 					e.preventDefault();
 				}
 			}
 
 			data.element.ondragleave = (e: js.html.DragEvent) -> {
-				if (e.dataTransfer.types.contains(getDragDataType())) {
-					setDragStyle(data.element, None);
-					e.preventDefault();
-				}
+				setDragStyle(data.element, null);
+				e.preventDefault();
 			}
 
-			data.element.ondragexit = (e: js.html.DragEvent) -> {
-				if (e.dataTransfer.types.contains(getDragDataType())) {
-					setDragStyle(data.element, None);
-					e.preventDefault();
-				}
-			}
+			// data.element.ondragexit = (e: js.html.DragEvent) -> {
+			// 	setDragStyle(data.element, null);
+			// 	e.preventDefault();
+			// }
 
 			data.element.ondrop = (e: js.html.DragEvent) -> {
-				if (e.dataTransfer.types.contains(getDragDataType())) {
-					var target = getDragTarget(data,e);
-					var moveOp = getDragMoveInfo(data, target);
+				setDragStyle(data.element, null);
+				e.preventDefault();
 
-					setDragStyle(data.element, None);
-					e.preventDefault();
-
-					if (moveOp == null)
-						return;
-
-					doDrop(moveOp.newParent, moveOp.newIndex, e.dataTransfer);
-				}
+				var operation = getDragOperation(data,e);
+				doDrop(data.item, operation, e.dataTransfer);
+				e.preventDefault();
+				e.stopPropagation();
 			}
 		}
 	}
 
-	function setDragStyle(element: js.html.Element, target: GetDragTarget) {
-		trace(target);
-		element.classList.toggle("feedback-drop-top", target == Top);
-		element.classList.toggle("feedback-drop-bot", target == Bot);
-		element.classList.toggle("feedback-drop-in", target == In);
+	function setDragStyle(element: js.html.Element, target: Null<DropOperation>) {
+		element.classList.toggle("feedback-drop-top", target == Before);
+		element.classList.toggle("feedback-drop-bot", target == After);
+		element.classList.toggle("feedback-drop-in", target == Inside);
 	}
 
-	function getDragTarget(data: TreeItemData<TreeItem>, event: js.html.DragEvent) : GetDragTarget {
+	function getDragOperation(data: TreeItemData<TreeItem>, event: js.html.DragEvent) : DropOperation {
 		var element = data.element;
 		// var canDropIn = moveFlags.has(Reparent) && canReparentTo()
 		if (!moveFlags.has(Reorder)) {
-			return In;
+			return Inside;
 		}
 
 		var rect = element.getBoundingClientRect();
@@ -714,13 +667,13 @@ class FancyTree<TreeItem> extends hide.comp.Component {
 
 		var padding = js.Browser.window.getComputedStyle(element).getPropertyValue;
 		if (moveFlags.has(Reparent) && event.clientX > nameRect.left + 100) {
-			return In;
+			return Inside;
 		}
 
 		if (event.clientY > rect.top + rect.height / 2) {
-			return Bot;
+			return After;
 		}
-		return Top;
+		return Before;
 	}
 
 	public function clearSelection() {

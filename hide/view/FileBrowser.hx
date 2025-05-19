@@ -55,6 +55,13 @@ class FileBrowser extends hide.ui.View<FileBrowserState> {
 		}
 	}
 
+	function getFileEntryPath(file: FileEntry) {
+		if (file.parent == null) return file.name;
+		return getFileEntryPath(file.parent) + "/" + file.name;
+	}
+
+	public static final dragKey = "application/x.filemove";
+
 	override function onDisplay() {
 		root = {
 			name: ide.resourceDir,
@@ -101,8 +108,54 @@ class FileBrowser extends hide.ui.View<FileBrowserState> {
 		fancyTree.onNameChange = (item: FileEntry, newName: String) -> {
 			item.name = newName;
 		}
-		// fancyTree.moveFlags.set(Reparent);
-		// fancyTree.moveFlags.set(Reorder);
+		fancyTree.moveFlags.set(Reparent);
+		fancyTree.moveFlags.set(Reorder);
+
+		fancyTree.setupDrag = function(file: FileEntry, dataTransfer: js.html.DataTransfer) : Bool {
+			var selection = fancyTree.getSelectedItems();
+			if (selection.length <= 0)
+				return false;
+			var ser = [];
+			for (item in selection) {
+				ser.push(getFileEntryPath(file));
+			}
+			dataTransfer.setData(dragKey, haxe.Json.stringify(ser));
+			return true;
+		}
+
+		fancyTree.canReciveDrop = function(target: FileEntry, operation: hide.comp.FancyTree.DropOperation, dataTransfer: js.html.DataTransfer) : Bool {
+			if (dataTransfer.types.contains("Files")) {
+				return true;
+			}
+			if (dataTransfer.types.contains(dragKey)) {
+				return true;
+			}
+			return false;
+		}
+
+		fancyTree.doDrop = function(target: FileEntry, operation: hide.comp.FancyTree.DropOperation, dataTransfer: js.html.DataTransfer) : Bool {
+			var files : Array<String> = [];
+			for (file in dataTransfer.files) {
+				var path : String = untyped file.path; //file.path is an extension from nwjs or node
+				path = StringTools.replace(path, "\\", "/");
+				files.push(path);
+			}
+
+			var fileMoveData = dataTransfer.getData(dragKey);
+			if (fileMoveData.length > 0) {
+				try {
+					var unser = haxe.Json.parse(fileMoveData);
+					for (file in (unser:Array<String>)) {
+						files.push(file);
+					}
+				} catch (e) {
+					trace("Invalid data " + e);
+				}
+			}
+
+			trace(files);
+			return true;
+		}
 
 		// fancyTree.canReparentTo = (items, newParent) -> {
 		// 	for (item in items) {
