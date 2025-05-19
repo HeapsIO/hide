@@ -49,6 +49,14 @@ enum abstract GetDragTarget(Int) {
 	var In;
 }
 
+/**
+	Represent how an item is dropped
+**/
+enum ReciveDropKind<TreeItem> {
+	AsChild(parent: TreeItem);
+	AsSibling(parent: TreeItem, index: Int);
+}
+
 
 typedef SearchRanges = Array<Int>;
 class FancyTree<TreeItem> extends hide.comp.Component {
@@ -71,7 +79,7 @@ class FancyTree<TreeItem> extends hide.comp.Component {
 		if (currentVisible)
 			queueRefresh(FocusCurrent);
 		else
-			queueRefresh(cast 0);
+			queueRefresh();
 		return currentVisible;
 	}
 
@@ -105,7 +113,8 @@ class FancyTree<TreeItem> extends hide.comp.Component {
 		searchBar = new FancySearch(null, element.find("fancy-search"));
 		searchBar.onSearch = (search, _) -> {
 			currentSearch = search.toLowerCase();
-			queueRefresh(Flat | Search);
+			queueRefresh(Flat);
+			queueRefresh(Search);
 		}
 
 		scroll = el.find("fancy-scroll").get(0);
@@ -115,7 +124,7 @@ class FancyTree<TreeItem> extends hide.comp.Component {
 		var fancyTree = el.get(0);
 		fancyTree.onkeydown = inputHandler;
 
-		scroll.onscroll = (e) -> queueRefresh(cast 0);
+		scroll.onscroll = (e) -> queueRefresh();
 
 		fancyTree.onblur = (e) -> {
 			currentVisible = false;
@@ -273,7 +282,8 @@ class FancyTree<TreeItem> extends hide.comp.Component {
 	public function rebuildTree() {
 		rootData = generateChildren(null);
 
-		queueRefresh(Flat | Search);
+		queueRefresh(Flat);
+		queueRefresh(Search);
 	}
 
 	function regenerateFlatData() {
@@ -708,7 +718,7 @@ class FancyTree<TreeItem> extends hide.comp.Component {
 
 	public function clearSelection() {
 		selection.clear();
-		queueRefresh(cast 0);
+		queueRefresh();
 	}
 
 
@@ -749,7 +759,7 @@ class FancyTree<TreeItem> extends hide.comp.Component {
 			currentItem = data;
 		onSelectionChanged();
 
-		queueRefresh(cast 0);
+		queueRefresh();
 	}
 
 	function toggleDataOpen(data: TreeItemData<TreeItem>, ?force: Bool) {
@@ -764,8 +774,14 @@ class FancyTree<TreeItem> extends hide.comp.Component {
 	var refreshQueued : Bool = false;
 	var currentRefreshFlags : RefreshFlags = RefreshFlags.ofInt(0);
 
-	function queueRefresh(flags: RefreshFlags) {
-		currentRefreshFlags |= flags;
+
+	// TODO(ces) : The main release of haxe doesn't support type inference with `|` which make using
+	// queueRefresh with an EnumFlag as an argument cumbersome. Untill then, make multiple queueRefresh calls
+	// with each of the flags you want to set
+	function queueRefresh(?flag: RefreshFlag = null) {
+		if (flag != null) {
+			currentRefreshFlags.set(flag);
+		}
 		if (!refreshQueued) {
 			refreshQueued = true;
 			js.Browser.window.requestAnimationFrame((_) -> onRefreshInternal());
