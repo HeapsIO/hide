@@ -260,6 +260,9 @@ class Diff {
 					var targetChild = null;
 					var originalIndex = targetChildren.length; // if we don't found any children with the right name in the array, this will make sure we add the newly created children at the end of the array
 					for (index => child in targetChildren) {
+						// Can happen if a child get deleted, it is nulled and removed at the end
+						if (child == null)
+							continue;
 						if (name == child.name) {
 							if (nthChild == 0) {
 								targetChild = child;
