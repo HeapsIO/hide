@@ -3115,6 +3115,31 @@ body.hide-subview {
 	outline: none;
 	position: relative;
 
+	.svn {
+		font-family: "FontAwesome";
+		font-size: 0.8em;
+		position:absolute;
+		margin-left: 20px;
+		margin-top: 3px;
+		z-index: 100;
+	}
+
+	.svn-modified {
+		&:before {
+			.svn;
+			content: "\f06a";
+			color: red;
+		}
+	}
+
+	.svn-versioned {
+		&:before {
+			.svn;
+			content: "\f058";
+			color: green;
+		}
+	}
+
 	.filtered {
 		display: none;
 	}

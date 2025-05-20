@@ -1649,6 +1649,29 @@ class Ide extends hide.tools.IdeData {
 		return js.Browser.window.prompt(text, defaultValue);
 	}
 
+	public function getSVNModifiedFiles() {
+		var modifiedFiles : Array<String> = [];
+		if (!isSVNAvailable())
+			throw "SVN not available";
+		var cmd = js.node.ChildProcess.execSync('svn status', { cwd: projectDir });
+		var outputs : Array<String> = '$cmd'.split("\r\n");
+		for (o in outputs) {
+			if (o.length == 0)
+				continue;
+
+			o = StringTools.replace(o, '\\', "/");
+			var file = getPath(o.substr(o.indexOf("res/") + 4));
+			modifiedFiles.push(file);
+		}
+		return modifiedFiles;
+	}
+
+	public function isSVNAvailable() {
+		return js.node.ChildProcess.spawnSync("svn",["--version"]).status == 0 &&
+		js.node.ChildProcess.spawnSync("where.exe", ["TortoiseProc.exe"]).status == 0 &&
+		js.node.ChildProcess.spawnSync("svn", ["info", getPath(projectDir)]).status == 0;
+	}
+
 	public static dynamic function onIdeError(e: Dynamic) {}
 
 	public static var inst : Ide;

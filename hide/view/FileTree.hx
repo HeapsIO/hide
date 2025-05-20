@@ -96,8 +96,10 @@ class FileTree extends FileView {
 					icon : "ico ico-" + (isDir ? "folder" : (ext != null && ext.options.icon != null ? ext.options.icon : "file-text")),
 					children : isDir,
 				});
+				if (!isDir)
+					watch(fullPath, function() rebuild(), { checkDelete: true });
 			}
-			watch(basePath, function() rebuild(),{checkDelete:true});
+			watch(basePath, function() rebuild(), { checkDelete: true });
 			content.sort(function(a,b) { if( a.children != b.children ) return a.children?-1:1; return Reflect.compare(a.text,b.text); });
 			return content;
 		};
@@ -183,20 +185,25 @@ class FileTree extends FileView {
 					}}
 				];
 
-				var isSvnAvailable = js.node.ChildProcess.spawnSync("svn",["--version"]).status == 0;
-				var isTortoiseAvailable = js.node.ChildProcess.spawnSync("where.exe", ["TortoiseProc.exe"]).status == 0;
-				if (isSvnAvailable && isTortoiseAvailable) {
+				if (ide.isSVNAvailable()) {
 					options.push({ label : "", isSeparator: true });
+					options.push({ label: "SVN Revert", enabled: selection.length == 1, click : function() {
+						var path = ide.getPath(selection[0]);
+						js.node.ChildProcess.exec('cmd.exe /c start "" TortoiseProc.exe /command:revert /path:"$path"', { cwd: ide.getPath(ide.resourceDir) }, (error, stdout, stderr) -> {
+							if (error != null)
+								ide.quickError('Error while trying to revert file ${path} : ${error}');
+						});
+					}});
 					options.push({ label: "SVN Log", enabled: selection.length == 1, click : function() {
 						var path = ide.getPath(selection[0]);
-						var blame = js.node.ChildProcess.exec('cmd.exe /c start "" TortoiseProc.exe /command:log /path:"$path"', { cwd: ide.getPath(ide.resourceDir) }, (error, stdout, stderr) -> {
+						js.node.ChildProcess.exec('cmd.exe /c start "" TortoiseProc.exe /command:log /path:"$path"', { cwd: ide.getPath(ide.resourceDir) }, (error, stdout, stderr) -> {
 							if (error != null)
 								ide.quickError('Error while trying to log file ${path} : ${error}');
 						});
 					}});
 					options.push({ label: "SVN Blame", enabled: selection.length == 1, click : function() {
 						var path = ide.getPath(selection[0]);
-						var blame = js.node.ChildProcess.exec('cmd.exe /c start "" TortoiseProc.exe /command:blame /path:"$path"', { cwd: ide.getPath(ide.resourceDir) }, (error, stdout, stderr) -> {
+						js.node.ChildProcess.exec('cmd.exe /c start "" TortoiseProc.exe /command:blame /path:"$path"', { cwd: ide.getPath(ide.resourceDir) }, (error, stdout, stderr) -> {
 							if (error != null)
 								ide.quickError('Error while trying to blame file ${path} : ${error}');
 						});
@@ -208,6 +215,28 @@ class FileTree extends FileView {
 		tree.onAllowMove = onAllowMove;
 		tree.onMove = doMove;
 		tree.init();
+
+		if (ide.isSVNAvailable()) {
+			var svnModifiedFiles = ide.getSVNModifiedFiles();
+			tree.applyStyle = (p, el) -> {
+				var isModified = false;
+				for (f in svnModifiedFiles) {
+					if (ide.getPath(f).indexOf(p) >= 0) {
+						isModified = true;
+						break;
+					}
+				}
+
+				if (isModified) {
+					el.addClass("svn-modified");
+					el.removeClass("svn-versioned");
+				}
+				else {
+					el.addClass("svn-versioned");
+					el.removeClass("svn-modified");
+				}
+			};
+		}
 	}
 
 	function onRenameFile( path : String ) {

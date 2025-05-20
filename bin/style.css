@@ -2693,6 +2693,34 @@ body.hide-subview .lm_controls {
   outline: none;
   position: relative;
 }
+.jstree .svn {
+  font-family: "FontAwesome";
+  font-size: 0.8em;
+  position: absolute;
+  margin-left: 20px;
+  margin-top: 3px;
+  z-index: 100;
+}
+.jstree .svn-modified:before {
+  font-family: "FontAwesome";
+  font-size: 0.8em;
+  position: absolute;
+  margin-left: 20px;
+  margin-top: 3px;
+  z-index: 100;
+  content: "\f06a";
+  color: red;
+}
+.jstree .svn-versioned:before {
+  font-family: "FontAwesome";
+  font-size: 0.8em;
+  position: absolute;
+  margin-left: 20px;
+  margin-top: 3px;
+  z-index: 100;
+  content: "\f058";
+  color: green;
+}
 .jstree .filtered {
   display: none;
 }
