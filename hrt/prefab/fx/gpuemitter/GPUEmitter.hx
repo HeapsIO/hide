@@ -185,45 +185,55 @@ class GPUEmitter extends Object3D {
 
 	override function edit( ctx : hide.prefab.EditContext ) {
 		super.edit(ctx);
-		ctx.properties.add(new hide.Element('
-			<div class="group" name="Emitter">
-				<dl>
-					<dt>Rate</dt><dd><input type="range" step="1" min="1" max="8192" field="rate"/></dd>
-					<dt>Max count</dt><dd><input type="range" step="1" min="1" max="8192" field="maxCount"/></dd>
-					<dt>Min life time</dt><dd><input type="range" min="0.1" max="10" field="minLifeTime"/></dd>
-					<dt>Max life time</dt><dd><input type="range" min="0.1" max="10" field="maxLifeTime"/></dd>
-					<dt>Min size</dt><dd><input type="range" min="0.1" max="10" field="minSize"/></dd>
-					<dt>Max size</dt><dd><input type="range" min="0.1" max="10" field="maxSize"/></dd>
-					<dt>Infinite</dt><dd><input type="checkbox" field="infinite"/></dd>
-					<dt>Mode</dt>
-					<dd>
-						<select field="mode">
-							<option value="World">World</option>
-							<option value="Local">Local</option>
-							<option value="Camera">Camera</option>
-						</select>
-					</dd>
-					<dt>Camera distance</dt><dd><input type="range" min="0" field="cameraModeDistance"/></dd>
-					<dt>Align</dt>
-					<dd>
-						<select field="align">
-							<option value="FaceCam">Face cam</option>
-							<option value="Speed">Speed</option>
-						</select>
-					</dd>
-					<dt>Speed</dt>
-					<dd>
-						<select field="speedMode">
-							<option value="Normal">Normal</option>
-							<option value="None">None</option>
-						</select>
-					</dd>
-					<dt>Min start speed</dt><dd><input type="range" min="0.1" max="10" field="minStartSpeed"/></dd>
-					<dt>Max start speed</dt><dd><input type="range" min="0.1" max="10" field="maxStartSpeed"/></dd>
-				</dl>
-			</div>
-			'), this, function(pname) {
+		var properties = new hide.Element('
+		<div class="group" name="Emitter">
+			<dl>
+				<dt>Rate</dt><dd><input type="range" step="1" min="1" max="8192" field="rate"/></dd>
+				<dt>Max count</dt><dd><input type="range" step="1" min="1" max="8192" field="maxCount"/></dd>
+				<dt>Min life time</dt><dd><input type="range" min="0.1" max="10" field="minLifeTime"/></dd>
+				<dt>Max life time</dt><dd><input type="range" min="0.1" max="10" field="maxLifeTime"/></dd>
+				<dt>Min size</dt><dd><input type="range" min="0.1" max="10" field="minSize"/></dd>
+				<dt>Max size</dt><dd><input type="range" min="0.1" max="10" field="maxSize"/></dd>
+				<dt>Infinite</dt><dd><input type="checkbox" field="infinite"/></dd>
+				<dt>Mode</dt>
+				<dd>
+					<select field="mode">
+						<option value="World">World</option>
+						<option value="Local">Local</option>
+						<option value="Camera">Camera</option>
+					</select>
+				</dd>
+				<ul id="modeParams"></ul>
+				<dt>Align</dt>
+				<dd>
+					<select field="align">
+						<option value="FaceCam">Face cam</option>
+						<option value="Speed">Speed</option>
+					</select>
+				</dd>
+				<dt>Speed</dt>
+				<dd>
+					<select field="speedMode">
+						<option value="Normal">Normal</option>
+						<option value="None">None</option>
+					</select>
+				</dd>
+				<dt>Min start speed</dt><dd><input type="range" min="0.1" max="10" field="minStartSpeed"/></dd>
+				<dt>Max start speed</dt><dd><input type="range" min="0.1" max="10" field="maxStartSpeed"/></dd>
+			</dl>
+		</div>
+		');
+
+		if ( mode == Camera ) {
+			var modeParams = properties.find("ul#modeParams");
+			new hide.Element('
+				<dt>Camera distance</dt><dd><input type="range" min="0" field="cameraModeDistance"/></dd>
+			').appendTo(modeParams);
+		}
+
+		ctx.properties.add(properties, this, function(pname) {
 				ctx.onChange(this, pname);
+				if( pname == "mode" ) ctx.rebuildProperties();
 		});
 	}
 	#end
