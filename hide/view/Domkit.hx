@@ -66,7 +66,7 @@ class Domkit extends FileView {
 
 		element.find("#format").click(function(_) {
 			var dml = dmlEditor.checker.formatDML(dmlEditor.code);
-			dmlEditor.setCode(dml);
+			dmlEditor.setCode(dml, true);
 		});
 
 		// add a scene so the CssParser can resolve Tiles
