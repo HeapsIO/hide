@@ -3819,8 +3819,10 @@ class SceneEditor {
 		// Remove elements that are hidden in the tree by a filter
 		for (el in elts) {
 			var e = tree.getElement(el);
-			if (e.hasClass("filtered"))
-				elts.remove(el);
+			if (e is Object && e.hasClass("filtered")) {
+				if (e.hasClass("filtered"))
+					elts.remove(el);
+			}
 		}
 
 		var prev : Array<PrefabElement> = null;
