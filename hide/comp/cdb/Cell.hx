@@ -1428,6 +1428,15 @@ class Cell {
 			if( change )
 				editor.refresh();
 			closeEdit();
+		case TFloat:
+			var interp = new hscript.Interp();
+			@:privateAccess interp.initOps();
+			interp.variables.set("Math", Math);
+
+			var parser = new hscript.Parser();
+			var expr = parser.parseString(str);
+			var res = interp.execute(expr);
+			setValue(res);
 		default:
 			setValue(newValue);
 		}
