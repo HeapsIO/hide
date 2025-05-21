@@ -7,6 +7,8 @@ class UserSettings extends Settings {
 		var general = new hide.view.settings.Settings.Categorie("General");
 		general.add("Auto-save prefabs before closing", new Element('<input type="checkbox"/>'), Ide.inst.ideConfig.autoSavePrefab, (v) -> Ide.inst.ideConfig.autoSavePrefab = v);
 		general.add("Use alternate font", new Element('<input type="checkbox"/>'), Ide.inst.ideConfig.useAlternateFont, (v) -> {Ide.inst.ideConfig.useAlternateFont = v; Ide.inst.refreshFont();});
+		general.add("Show versioned files in filetree", new Element('<input type="checkbox"/>'), Ide.inst.ideConfig.svnShowVersionedFiles, (v) -> {Ide.inst.ideConfig.svnShowVersionedFiles = v; Ide.inst.getViews(FileTree)[0].rebuild(); });
+		general.add("Show modified files in filetree", new Element('<input type="checkbox"/>'), Ide.inst.ideConfig.svnShowModifiedFiles, (v) -> {Ide.inst.ideConfig.svnShowModifiedFiles = v; Ide.inst.getViews(FileTree)[0].rebuild(); });
 
 		categories.push(general);
 

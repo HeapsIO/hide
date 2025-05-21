@@ -18,6 +18,8 @@ typedef HideGlobalConfig = {
 
 	// General
 	var autoSavePrefab : Bool;
+	var svnShowVersionedFiles : Bool;
+	var svnShowModifiedFiles : Bool;
 
 	// Search
 	var closeSearchOnFileOpen : Bool;

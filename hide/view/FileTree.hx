@@ -228,11 +228,13 @@ class FileTree extends FileView {
 				}
 
 				if (isModified) {
-					el.addClass("svn-modified");
-					el.removeClass("svn-versioned");
+					if (ide.ideConfig.svnShowModifiedFiles)
+						el.addClass("svn-modified");
+						el.removeClass("svn-versioned");
 				}
 				else {
-					el.addClass("svn-versioned");
+					if (ide.ideConfig.svnShowVersionedFiles)
+						el.addClass("svn-versioned");
 					el.removeClass("svn-modified");
 				}
 			};

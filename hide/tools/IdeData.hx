@@ -24,6 +24,8 @@ class IdeData {
 		"autoSavePrefab" => false,
 		"trackGpuAlloc" => false,
 		"cullingDistanceFactor" => 100,
+		"svnShowVersionedFiles" => true,
+		"svnShowModifiedFiles" => true,
 	];
 
 	public var currentConfig(get,never) : Config;
