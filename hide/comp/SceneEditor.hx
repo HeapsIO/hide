@@ -3168,7 +3168,7 @@ class SceneEditor {
 				var d = col.makeDebugObj();
 				for ( mat in d.getMaterials() ) {
 					mat.name = "$collider";
-					mat.mainPass.setPassName("debuggeom");
+					mat.mainPass.setPassName("overlay");
 					mat.shadows = false;
 					mat.mainPass.wireframe = true;
 				}
