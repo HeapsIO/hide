@@ -116,7 +116,6 @@ class GPUEmitter extends Object3D {
 
 		for ( t in templates ) {
 			for ( mesh in t.meshes ) {
-				var data = getData(mesh.getAbsPos().clone());
 				var multimat = Std.downcast(mesh, h3d.scene.MultiMaterial);
 				var materials : Array<h3d.mat.Material>;
 				if ( multimat == null )
@@ -203,7 +202,9 @@ class GPUEmitter extends Object3D {
 						<option value="Camera">Camera</option>
 					</select>
 				</dd>
-				<ul id="modeParams"></ul>
+				<div id="modeCamera">
+					<dt>Camera distance</dt><dd><input type="range" min="0" field="cameraModeDistance"/></dd>
+				</div>
 				<dt>Align</dt>
 				<dd>
 					<select field="align">
@@ -224,16 +225,19 @@ class GPUEmitter extends Object3D {
 		</div>
 		');
 
-		if ( mode == Camera ) {
-			var modeParams = properties.find("ul#modeParams");
-			new hide.Element('
-				<dt>Camera distance</dt><dd><input type="range" min="0" field="cameraModeDistance"/></dd>
-			').appendTo(modeParams);
+		inline function refreshOptParams(name : String, condition : Bool) {
+			var params = properties.find(name);
+			if (condition)
+				params.show();
+			else
+				params.hide();
 		}
 
+		refreshOptParams("#modeCamera", mode == Camera);
 		ctx.properties.add(properties, this, function(pname) {
 				ctx.onChange(this, pname);
-				if( pname == "mode" ) ctx.rebuildProperties();
+				if (pname == "mode")
+					refreshOptParams("#modeCamera", mode == Camera);
 		});
 	}
 	#end

@@ -9,7 +9,10 @@ class BaseSimulation extends ComputeUtils {
 			speed : Vec3,
 			life : Float,
 			random : Float,
+			color : Float,
 		}>;
+
+		@:import h3d.shader.ColorSpaces;
 
 		@const var FACE_CAM : Bool = false;
 		@const var CAMERA_BOUNDS : Bool = false;
@@ -25,6 +28,7 @@ class BaseSimulation extends ComputeUtils {
 		var speed : Vec3;
 		var life : Float;
 		var particleRandom : Float;
+		var particleColor : Vec4;
 		var modelView : Mat4;
 		var prevModelView : Mat4;
 		var prevSpeed : Vec3;
@@ -35,6 +39,7 @@ class BaseSimulation extends ComputeUtils {
 			life = particleBuffer[computeVar.globalInvocation.x].life;
 			prevModelView = batchBuffer[computeVar.globalInvocation.x].modelView;
 			particleRandom = particleBuffer[computeVar.globalInvocation.x].random;
+			particleColor = int2rgba(floatBitsToInt(particleBuffer[computeVar.globalInvocation.x].color));
 			relativeTransform = scaleMatrix((life > 0.0 ? 1.0 : 0.0) * vec3(particleRandom * (maxSize - minSize) + minSize));
 		}
 
@@ -52,6 +57,7 @@ class BaseSimulation extends ComputeUtils {
 			var idx = computeVar.globalInvocation.x;
 			particleBuffer[idx].life = life - dt;
 			particleBuffer[idx].speed = speed;
+			particleBuffer[idx].color = intBitsToFloat(rgba2int(particleColor));
 			batchBuffer[idx].modelView = modelView;
 		}
 	}

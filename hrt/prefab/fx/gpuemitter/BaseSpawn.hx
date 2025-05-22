@@ -10,6 +10,7 @@ class BaseSpawn extends ComputeUtils {
 			life : Float,
 			lifeTime : Float,
 			random : Float,
+			color : Float,
 		}>;
 		@param var atomic : RWBuffer<Int>;
 
@@ -23,17 +24,21 @@ class BaseSpawn extends ComputeUtils {
 		@param var rate : Int;
 		@param var absPos : Mat4;
 
+		@:import h3d.shader.ColorSpaces;
+
 		var life : Float;
 		var particleRandom : Float;
 		var modelView : Mat4;
 		var relativeTransform : Mat4;
 		var emitNormal : Vec3;
+		var particleColor : Vec4;
 		function __init__() {
 			emitNormal = vec3(0.0, 0.0, 1.0);
 			particleRandom = particleBuffer[computeVar.globalInvocation.x].random;
 			life = mix(minLifeTime, maxLifeTime, (global.time + particleRandom) % 1.0);
 			relativeTransform = translationMatrix(vec3(0.0));
 			modelView = relativeTransform * absPos;
+			particleColor = vec4(1.0);
 		}
 
 		function main() {
@@ -49,6 +54,7 @@ class BaseSpawn extends ComputeUtils {
 					particleBuffer[idx].life = life;
 					// Keep in memory duration of particle to normalize curve update.
 					particleBuffer[idx].lifeTime = life;
+					particleBuffer[idx].color = intBitsToFloat(rgba2int(particleColor));
 				}
 			}
 		}

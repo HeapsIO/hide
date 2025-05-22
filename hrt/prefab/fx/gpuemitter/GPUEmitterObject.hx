@@ -12,11 +12,15 @@ class ParticleShader extends hxsl.Shader {
 			life : Float,
 			lifeTime : Float,
 			random : Float,
+			color : Float,
 		}>;
 
-		var particleLife : Float;
-		var particleLifeTime : Float;
-		var particleRandom : Float;
+		@:import h3d.shader.ColorSpaces;
+
+		@flat var particleLife : Float;
+		@flat var particleLifeTime : Float;
+		@flat var particleRandom : Float;
+		@flat var particleColor : Vec4;
 
 		var relativePosition : Vec3;
 		var transformedPosition : Vec3;
@@ -25,12 +29,18 @@ class ParticleShader extends hxsl.Shader {
 				particleLife = particleBuffer[instanceID].life;
 				particleLifeTime = particleBuffer[instanceID].lifeTime;
 				particleRandom = particleBuffer[instanceID].random;
+				particleColor = int2rgba(floatBitsToInt(particleBuffer[instanceID].color));
 			}
 			transformedPosition = transformedPosition * absPos.mat3x4();
 		}
 
 		function vertex() {
 			relativePosition = relativePosition * localTransform.mat3x4();
+		}
+
+		var pixelColor : Vec4;
+		function fragment() {
+			pixelColor *= particleColor;
 		}
 	}
 }
@@ -136,7 +146,8 @@ class GPUEmitterObject extends h3d.scene.MeshBatch {
 			{ name : "life", type : DFloat },
 			{ name : "lifeTime", type : DFloat },
 			{ name : "random", type : DFloat },
-			{ name : "padding", type : DVec2 },
+			{ name : "color", type : DFloat },
+			{ name : "padding", type : DFloat },
 		]);
 
 		if ( particleBuffer == null ) {
@@ -151,8 +162,9 @@ class GPUEmitterObject extends h3d.scene.MeshBatch {
 				var l = hxd.Math.random() * (data.maxLifeTime - data.minLifeTime) + data.minLifeTime;
 				floats[i * stride + 4] = l; // lifeTime
 				floats[i * stride + 5] = hxd.Math.random(); // random
-				// padding
+				// color
 				// floats[i * stride + 6] = 0.0;
+				// padding
 				// floats[i * stride + 7] = 0.0;
 			}
 			particleBuffer = alloc.ofFloats(floats, particleBufferFormat, UniformReadWrite);
