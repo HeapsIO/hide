@@ -24,6 +24,12 @@ enum ParticleScaling {
 	None;
 }
 
+enum SortMode {
+	Depth;
+	Instance;
+	None;
+}
+
 enum AlignMode {
 	None;
 	Screen;
@@ -543,7 +549,7 @@ class EmitterObject extends h3d.scene.Object {
 	public var emitRateTarget : Float = Math.NaN;
 	public var emitScale : Float = 1.0;
 	public var maxCount = 20;
-	public var enableSort = true;
+	public var sortMode : SortMode = None;
 	public var followRotation = false;
 	public var startSpeed: Value;
 	public var startWorldSpeed: Value;
@@ -1332,17 +1338,23 @@ class EmitterObject extends h3d.scene.Object {
 			batch.emitInstance();
 		}
 
-		if(enableSort) {
-			depthSort();
-			var p = listHead;
-			while(p != null) {
-				emit(p);
-				p = p.next;
-			}
-		}
-		else {
-			for(i in 0...numInstances)
-				emit(particles[i]);
+		switch(sortMode) {
+			case Depth:
+					depthSort();
+					var p = listHead;
+					while(p != null) {
+						emit(p);
+						p = p.next;
+					}
+			case Instance:
+				var p = listHead;
+				while(p != null) {
+					emit(p);
+					p = p.next;
+				}
+			case None:
+				for(i in 0...numInstances)
+					emit(particles[i]);
 		}
 	}
 
@@ -1403,7 +1415,7 @@ class EmitterObject extends h3d.scene.Object {
 
 				if(full) {
 					p.updateAbsPos(this);
-					if(p.distToCam < 0 || enableSort)
+					if(p.distToCam < 0 || sortMode == Depth)
 						p.distToCam = camPos.distanceSq(p.absPos.getPosition());
 				}
 				p.life += dt;  // After updateAbsPos(), which uses current life
@@ -1533,6 +1545,7 @@ class Emitter extends Object3D {
 		{ name: "particleScaling", t: PEnum(ParticleScaling), def: ParticleScaling.Parent, disp: "Scaling", groupName : "Properties" },
 		{ name: "followRotation", t: PBool, def: false, disp: "Follow rotation", groupName : "Properties" },
 		{ name: "enableSort", t: PBool, def: true, disp: "Enable Sort", groupName : "Properties"},
+		{ name: "sortMode", t: PEnum(SortMode), def: SortMode.Depth, disp: "Sort mode", groupName : "Properties"},
 
 		// EMIT PARAMS
 		{ name: "emitType", t: PEnum(EmitType), def: EmitType.Infinity, disp: "Type", groupName : "Emit Params"  },
@@ -1886,7 +1899,7 @@ class Emitter extends Object3D {
 		emitterObj.particleScaling		= 	getParamVal("particleScaling");
 		emitterObj.emitOrientation 		= 	getParamVal("emitOrientation");
 		emitterObj.maxCount 			= 	getParamVal("maxCount");
-		emitterObj.enableSort 			= 	getParamVal("enableSort");
+		emitterObj.sortMode 			= 	getParamVal("enableSort") ? getParamVal("sortMode") : None;
 		emitterObj.emitRate 			= 	makeParam(this, "emitRate");
 		emitterObj.emitRateMin 			= 	makeParam(this, "emitRateMin");
 		emitterObj.emitRateMax 			= 	makeParam(this, "emitRateMax");
