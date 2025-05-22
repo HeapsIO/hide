@@ -2709,7 +2709,8 @@ body.hide-subview .lm_controls {
   margin-top: 3px;
   z-index: 100;
   content: "\f06a";
-  color: red;
+  color: #b32020;
+  opacity: 0.7;
 }
 .jstree .svn-versioned:before {
   font-family: "FontAwesome";
@@ -2719,7 +2720,8 @@ body.hide-subview .lm_controls {
   margin-top: 3px;
   z-index: 100;
   content: "\f058";
-  color: green;
+  color: #258833;
+  opacity: 0.7;
 }
 .jstree .filtered {
   display: none;
