@@ -20,10 +20,10 @@ class TangentToWorld extends ShaderNodeHxsl {
 
 		var transformedNormal : Vec3;
 		function fragment() {
-			var tangentWS = vec4(input.tangent * global.modelView.mat3(),input.tangent.dot(input.tangent) > 0.5 ? 1. : -1.);
+			var tangentWS = vec4(input.tangent * global.modelView.mat3(),input.tangent.dot(input.tangent) > 0.5 ? -1. : 1.);
 			var tanX = normalize(tangentWS.xyz);
 			var tanY = cross(transformedNormal, tanX) * tangentWS.w;
-			output = normalize(direction.x * tanX + direction.y * tanY + direction.z * transformedNormal);
+			output = direction.x * tanX + direction.y * tanY + direction.z * transformedNormal;
 		}
 	};
 }
