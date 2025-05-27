@@ -236,7 +236,6 @@ class VolumetricLightingShader extends h3d.shader.pbr.DefaultForward {
 			if(integrationValues.a < transmittanceThreshold) integrationValues.a = 0.0;
 
 			integrationValues.a = 1.0 - integrationValues.a;
-			var outColor = integrationValues.rgb / (0.001 + integrationValues.a);
 			integrationValues.a = saturate(distanceOpacity * integrationValues.a);
 
 			return integrationValues;
