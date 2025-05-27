@@ -529,23 +529,38 @@ class Editor extends Component {
 
 		var data = [];
 		var schema = [];
-		for (sel in cursor.selection) {
-			for( y in sel.y1...sel.y2+1 ) {
-				var out = {};
-				var obj = cursor.table.lines[y].obj;
-				var start = sel.x1;
-				var end = sel.x2 + 1;
-				if (start < 0) {
-					start = 0;
-					end = cursor.table.columns.length;
-				}
 
-				for( x in start...end ) {
-					var c = cursor.table.columns[x];
-					saveValue(out, obj, c);
-					schema.pushUnique(c);
+		if (cursor.table.displayMode == Properties) {
+			for (sel in cursor.selection) {
+				for (y in sel.y1 ... sel.y2+1) {
+					var out = {};
+					var obj = cursor.table.lines[y].obj;
+					var column = cursor.table.lines[y].columns[0];
+					saveValue(out, obj ,column);
+					schema.pushUnique(column);
+					data.push(out);
 				}
-				data.push(out);
+			}
+		}
+		else {
+			for (sel in cursor.selection) {
+				for( y in sel.y1...sel.y2+1 ) {
+					var out = {};
+					var obj = cursor.table.lines[y].obj;
+					var start = sel.x1;
+					var end = sel.x2 + 1;
+					if (start < 0) {
+						start = 0;
+						end = cursor.table.columns.length;
+					}
+
+					for( x in start...end ) {
+						var c = cursor.table.columns[x];
+						saveValue(out, obj, c);
+						schema.pushUnique(c);
+					}
+					data.push(out);
+				}
 			}
 		}
 
