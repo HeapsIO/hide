@@ -398,12 +398,15 @@ class Table extends Component {
 
 	public function revealLine(line: Int) {
 		if (this.separators == null) return;
+		var lastSeparator = -1;
 		for (sIdx in 0...this.separators.length) {
 			if (this.separators[sIdx].data.index > line) {
-				if (sIdx - 1 >= 0)
-					this.separators[sIdx - 1].reveal();
 				break;
 			}
+			lastSeparator = sIdx;
+		}
+		if (lastSeparator >=0 ) {
+			this.separators[lastSeparator].reveal();
 		}
 	}
 
