@@ -134,8 +134,10 @@ class Spline extends hrt.prefab.Object3D {
 		obj.points = [ for (p in points) p.save()];
 		obj.shape = shape.getIndex();
 
-		if (samples != null)
-			obj.samples = [ for (s in samples) s.save()];
+		if (samples == null)
+			computeSamples();
+
+		obj.samples = [ for (s in samples) s.save()];
 		return obj;
 	}
 
