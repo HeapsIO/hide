@@ -100,8 +100,6 @@ class Reference extends Object3D {
 		if (source != null && shouldBeInstanciated()) {
 			if (otherRef.refInstance != null) {
 				refInstance = otherRef.refInstance.clone(new ContextShared(source, null, null, true));
-			} else {
-				initRefInstance();
 			}
 			if (refInstance != null) {
 				refInstance.shared.parentPrefab = this;
