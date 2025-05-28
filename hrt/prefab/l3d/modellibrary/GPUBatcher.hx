@@ -59,7 +59,7 @@ class GPUBatcher extends Batcher {
 		return batch;
 	}
 
-	override function emitInstance(mesh : h3d.scene.Mesh, absPos : h3d.Matrix, emitCountTip : Int = -1, ?cb : h3d.scene.MeshBatch -> Void) {
+	override function emitInstance(mesh : h3d.scene.Mesh, ?absPos : h3d.Matrix, emitCountTip : Int = -1, ?cb : h3d.scene.MeshBatch -> Void) {
 		throw "Unit emitInstance is not compatible with GPU Batcher, use emitInstances with GPU data or use a Batcher instead";
 	}
 
@@ -68,13 +68,12 @@ class GPUBatcher extends Batcher {
 			throw "GPUBatcher is currently incompatible with additive instancing, please group them in one call";
 			//To make it work, we need to copy existing buffers content as soon as they are extended by new emits.
 		}
-		var dummy = new h3d.Matrix();
 		var copyList = new List<CopyInfo>();
 		emitList.sort((e1,e2) -> e2.count - e1.count);
 		for(unit in emitList){
 			currentBatchCount = unit.count;
 			for(i in 0...unit.count){
-				super.emitInstance(unit.mesh, dummy);
+				super.emitInstance(unit.mesh);
 			}
 
 			var meshEmitter = library.getMeshEmitter(unit.mesh);
