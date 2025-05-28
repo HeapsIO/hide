@@ -72,11 +72,16 @@ class ModelLibrary extends Prefab {
 	}
 	#end
 
-	var initRuntime : Bool = false;
 	public function createBatcher(parent : h3d.scene.Object) {
 		if ( meshEmitters == null )
 			initMeshEmitters();
 		return @:privateAccess new Batcher(parent, this);
+	}
+
+	public function createGPUBatcher(parent : h3d.scene.Object) {
+		if ( meshEmitters == null )
+			initMeshEmitters();
+		return @:privateAccess new GPUBatcher(parent, this);
 	}
 
 	function initMeshEmitters() {
