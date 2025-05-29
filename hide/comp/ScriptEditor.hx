@@ -9,6 +9,7 @@ typedef GlobalsDef = haxe.DynamicAccess<{
 	var allowGlobalsDefine : Null<Bool>;
 	var cdbEnums : Array<String>;
 	var publicFields : Bool;
+	var parentScript : String;
 }>;
 
 class ScriptCache {
@@ -211,6 +212,44 @@ class ScriptChecker {
 		return arr;
 	}
 
+	static var NO_VALUE : Dynamic = [];
+
+	function resolveConstantValue( name : String ) : Dynamic {
+		var extra = name.indexOf("@");
+		var extraPath = null;
+		if( extra > 0 ) {
+			extraPath = name.substr(extra+1);
+			name = name.substr(0, extra);
+		}
+		var path = name.split(".");
+		var fields = [];
+		while( path.length > 0 ) {
+			var name = path.join(".");
+			if( constants.exists(name) ) {
+				var value : Dynamic = constants.get(name);
+				for( f in fields )
+					value = Reflect.field(value, f);
+				if( extraPath != null && value != null ) {
+					var sheet = ide.database.getSheet(path[1]);
+					if( sheet == null || sheet.idCol == null )
+						return NO_VALUE;
+					for( line in sheet.getLines() ) {
+						if( Reflect.field(line,sheet.idCol.name) == value ) {
+							value = line;
+							for( p in extraPath.split(".") )
+								value = Reflect.field(value,p);
+							return value;
+						}
+					}
+					return null;
+				}
+				return value;
+			}
+			fields.unshift(path.pop());
+		}
+		return NO_VALUE;
+	}
+
 	function init() {
 		initTypes();
 		if( initDone ) return;
@@ -229,6 +268,7 @@ class ScriptChecker {
 		var contexts = [];
 		var publicFields = false;
 		var allowGlobalsDefine = false;
+		var parentScript = null;
 		checkEvents = false;
 		cdbEnums = [];
 
@@ -243,18 +283,10 @@ class ScriptChecker {
 				if( isClass ) tname = tname.substr(1);
 				var t = checker.types.resolve(tname);
 				if( t == null ) {
-					var path = tname.split(".");
-					var fields = [];
-					while( path.length > 0 ) {
-						var name = path.join(".");
-						if( constants.exists(name) ) {
-							var value : Dynamic = constants.get(name);
-							for( f in fields )
-								value = Reflect.field(value, f);
-							t = typeFromValue(value);
-							if( t == null ) t = TAnon([]);
-						}
-						fields.unshift(path.pop());
+					var value : Dynamic = resolveConstantValue(tname);
+					if( value != NO_VALUE ) {
+						t = typeFromValue(value);
+						if( t == null ) t = TAnon([]);
 					}
 				}
 				if( t == null ) {
@@ -296,6 +328,9 @@ class ScriptChecker {
 					addCDBEnum(c, cdbPack);
 			}
 
+			if( api.parentScript != null )
+				parentScript = api.parentScript;
+
 			if( api.evalTo != null )
 				this.evalTo = api.evalTo;
 		}
@@ -326,6 +361,20 @@ class ScriptChecker {
 		checker.allowGlobalsDefine = allowGlobalsDefine;
 		for( c in TYPE_CHECK_HOOKS )
 			c(this);
+		if( parentScript != null ) {
+			var value : Dynamic = resolveConstantValue(parentScript);
+			if( value != NO_VALUE && value != null ) {
+				try {
+					var parser = makeParser();
+					var expr = parser.parseString(value,"");
+					checker.check(expr);
+					for( v => t in @:privateAccess checker.locals )
+						checker.setGlobal(v, t);
+				} catch( e : Dynamic ) {
+					// ignore parent script errors
+				}
+			}
+		}
 	}
 
 	function getFields( tpath : String ) {
