@@ -24,7 +24,7 @@ private typedef TypedProperty = {
 private typedef TypedComponent = {
 	var name : String;
 	var ?classDef : hscript.Checker.CClass;
-	var ?parent : TypedComponent;
+	var ?parent : { comp : TypedComponent, params : Array<Type> };
 	var properties : Map<String, TypedProperty>;
 	var vars : Map<String, Type>;
 	var arguments : Array<{ name : String, t : Type, ?opt : Bool }>;
@@ -337,8 +337,8 @@ class DomkitChecker extends ScriptEditor.ScriptChecker {
 				switch( p.superClass ) {
 				case null:
 					break;
-				case TInst(pp, _):
-					parent = cmap.get(pp.name);
+				case TInst(pp, pl):
+					parent = { comp : cmap.get(pp.name), params : pl };
 					p = pp;
 				default:
 					throw "assert";
@@ -451,7 +451,7 @@ class DomkitChecker extends ScriptEditor.ScriptChecker {
 			var p = comp.properties.get(name);
 			if( p != null )
 				return p;
-			comp = comp.parent;
+			comp = comp.parent?.comp;
 		}
 		return null;
 	}
@@ -549,7 +549,7 @@ class DomkitChecker extends ScriptEditor.ScriptChecker {
 			parent = components.get("flow");
 		if( c == null )
 			c = makeComponent(name);
-		c.parent = parent;
+		c.parent = parent == null ? null : { comp : parent, params : [] };
 		if( e.arguments == null || e.arguments.length == 0 )
 			c.arguments = parent == null || (e.parent != null && e.parent.arguments.length != 0) ? [] : parent.arguments;
 		else {
@@ -680,13 +680,18 @@ class DomkitChecker extends ScriptEditor.ScriptChecker {
 				}
 				var p = resolveProperty(c, pname);
 				if( p == null ) {
-					var t = null, cur = c;
+					var t = null, cur = c, chain = [];
 					while( t == null && cur != null ) {
 						t = cur.vars.get(a.name);
-						cur = cur.parent;
+						if( t == null )
+							chain.unshift(cur);
+						cur = cur.parent?.comp;
 					}
 					if( t == null )
 						domkitError(c.name+" does not have property "+a.name, a.pmin, a.pmax);
+					for( c in chain )
+						if( c.parent.params.length > 0 )
+							t = checker.apply(t, c.parent.comp.classDef.params, c.parent.params);
 					var pt = switch( a.value ) {
 					case RawValue(_): t_string;
 					case Code(code): typeCode(code, a.vmin, t);
