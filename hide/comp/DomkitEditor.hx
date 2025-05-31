@@ -635,7 +635,7 @@ class DomkitChecker extends ScriptEditor.ScriptChecker {
 						for( cl in ~/[ \t]+/g.split(str) )
 							defineIdent(c,cl);
 					case Code(code):
-						var e = parseCode(code, a.pmin);
+						var e = try parseCode(code, a.pmin) catch( e : hscript.Expr.Error ) parseCode("{"+code+"}",a.pmin-1);
 						switch( e.e ) {
 						case EObject(fl):
 							for( f in fl ) {
