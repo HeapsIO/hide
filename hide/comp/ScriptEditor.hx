@@ -215,6 +215,25 @@ class ScriptChecker {
 	static var NO_VALUE : Dynamic = [];
 
 	function resolveConstantValue( name : String ) : Dynamic {
+
+		var parts = name.split("+");
+		if( parts.length > 1 ) {
+			var cur : Dynamic = NO_VALUE;
+			for( p in parts ) {
+				var v : Dynamic = resolveConstantValue(p);
+				if( v == NO_VALUE ) continue;
+				if( cur == NO_VALUE || cur == null ) {
+					cur = Reflect.isObject(v) ? Reflect.copy(v) : v;
+					continue;
+				}
+				if( Reflect.isObject(cur) && Reflect.isObject(v) ) {
+					for( f in Reflect.fields(v) )
+						Reflect.setField(cur,f,Reflect.field(v,f));
+				}
+			}
+			return cur;
+		}
+
 		var extra = name.indexOf("@");
 		var extraPath = null;
 		if( extra > 0 ) {
