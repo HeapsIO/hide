@@ -716,18 +716,34 @@ class DomkitChecker extends ScriptEditor.ScriptChecker {
 				checkDMLRec(c);
 		case For(cond):
 			var expr = parseCode("for"+cond+"{}", e.pmin);
+			inline function restore(v,t) {
+				@:privateAccess if( t == null ) checker.locals.remove(v) else checker.locals.set(v, t);					
+			}
 			switch( expr.e ) {
 			case EFor(n,it,_): @:privateAccess {
-				var et = checker.getIteratorType(expr,checker.typeExpr(it,Value));
+				var et = checker.getIteratorType(checker.typeExpr(it,Value),it);
 				var prev = checker.locals.get(n);
 				checker.locals.set(n, et);
 				for( c in e.children )
 					checkDMLRec(c);
-				if( prev == null )
-					checker.locals.remove(n);
-				else
-					checker.locals.set(n, prev);
+				restore(n, prev);
 			}
+			case EForGen(it,_):
+				hscript.Tools.getKeyIterator(it, function(vk,vv,it) @:privateAccess {
+					if( vk == null ) {
+						domkitError("Invalid for block", e.pmin);
+						return;
+					}
+					var types = checker.getKeyIteratorTypes(checker.typeExpr(it,Value),it);
+					var prevKey = checker.locals.get(vk);
+					var prevValue = checker.locals.get(vv);
+					checker.locals.set(vk, types.key);
+					checker.locals.set(vv, types.value);
+					for( c in e.children )
+						checkDMLRec(c);
+					restore(vk, prevKey);
+					restore(vv, prevValue);
+				});
 			default:
 				domkitError("Invalid for block", e.pmin);
 			}
