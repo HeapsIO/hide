@@ -20,7 +20,8 @@ typedef HideGlobalConfig = {
 	var autoSavePrefab : Bool;
 	var svnShowVersionedFiles : Bool;
 	var svnShowModifiedFiles : Bool;
-
+	var enableDBFormulas : Bool;
+	
 	// Search
 	var closeSearchOnFileOpen : Bool;
 	var typingDebounceThreshold : Int;
@@ -190,6 +191,7 @@ class Config {
 		if( userGlobals.source.hide == null )
 			userGlobals.source.hide = {
 				autoSaveLayout : true,
+				enableDBFormulas : true,
 				layouts : null,
 				recentProjects : [],
 				currentProject : "",

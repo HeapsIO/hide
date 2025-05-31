@@ -61,6 +61,8 @@ class Formulas {
 	var fmap : Map<String, Map<String, Formula>> = [];
 	var currentMap : Map<String,Dynamic>;
 
+	public var enable = true;
+
 	public function new( editor : Editor ) {
 		ide = hide.Ide.inst;
 		this.editor = editor;
@@ -77,6 +79,8 @@ class Formulas {
 	}
 
 	public function evaluateAll( ?sheet : cdb.Sheet ) {
+		if( !enable )
+			return;
 		currentMap = new Map();
 		for( s in editor.base.sheets ) {
 			if( sheet != null && sheet != s ) continue;

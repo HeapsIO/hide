@@ -1355,6 +1355,11 @@ class Ide extends hide.tools.IdeData {
 		db.find(".dbCustom").click(function(_) {
 			open("hide.view.CdbCustomTypes",{});
 		});
+		db.find(".dbFormulasEnable").prop("checked",ideConfig.enableDBFormulas).click(function(_) {
+			ideConfig.enableDBFormulas = !ideConfig.enableDBFormulas;
+			config.global.save();
+			hide.comp.cdb.Editor.refreshAll();
+		});
 		db.find(".dbFormulas").click(function(_) {
 			open("hide.comp.cdb.FormulasView",{ path : config.current.get("cdb.formulasFile") });
 		});

@@ -1494,6 +1494,7 @@ class Editor extends Component {
 		element.addClass('cdb');
 
 		formulas = new Formulas(this);
+		formulas.enable = ide.ideConfig.enableDBFormulas;
 		formulas.evaluateAll(currentSheet.realSheet);
 
 		var content = new Element("<table>");
