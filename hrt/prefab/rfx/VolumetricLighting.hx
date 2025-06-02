@@ -50,6 +50,8 @@ class VolumetricLightingShader extends h3d.shader.pbr.DefaultForward {
 		@param var emissiveColor : Vec3;
 		@param var emissiveIntensity : Float;
 
+		@param var offsetCamHeight : Float;
+
 		var calculatedUV : Vec2;
 
 		function noise( pos : Vec3 ) : Float {
@@ -151,10 +153,13 @@ class VolumetricLightingShader extends h3d.shader.pbr.DefaultForward {
 		var useSecondColor : Float;
 		function fogAt(pos : Vec3) : Float {
 			var n = noiseAt(pos);
-			var hNorm = smoothstep(0.0, 1.0, (pos.z - fogBottom) / (fogTop - fogBottom));
+			var camOffset = offsetCamHeight * camera.position.z;
+			var finalFogTop = fogTop + camOffset;
+			var hNorm = smoothstep(0.0, 1.0, (pos.z - fogBottom) / (finalFogTop - fogBottom));
 			var firstFog = exp(-hNorm * fogHeightFalloff) * (1.0 - hNorm) * fogDensity;
 
-			var secondHNorm = smoothstep(0.0, 1.0, (pos.z - secondFogBottom) / (secondFogTop - secondFogBottom));
+			var finalSecondFogTop = secondFogTop + camOffset;
+			var secondHNorm = smoothstep(0.0, 1.0, (pos.z - secondFogBottom) / (finalSecondFogTop - secondFogBottom));
 			var secondFog = exp(-secondHNorm * secondFogHeightFalloff) * (1.0 - secondHNorm) * secondFogDensity;
 			firstFog *= mix(1.0, n, fogUseNoise);
 			secondFog *= mix(1.0, n, secondFogUseNoise);
@@ -294,6 +299,8 @@ class VolumetricLighting extends RendererFX {
 	@:s public var emissiveColor : Int = 0xFFFFFF;
 	@:s public var emissiveIntensity : Float = 0.0;
 
+	@:s public var offsetCamHeight : Bool = false;
+
 	var noiseTex : h3d.mat.Texture;
 
 	function execute(r : h3d.scene.Renderer, step : h3d.impl.RendererFX.Step) {
@@ -369,6 +376,8 @@ class VolumetricLighting extends RendererFX {
 
 			vshader.emissiveColor.load(h3d.Vector.fromColor(emissiveColor));
 			vshader.emissiveIntensity = emissiveIntensity;
+
+			vshader.offsetCamHeight = offsetCamHeight ? 1.0 : 0.0;
 
 			pass.pass.setBlendMode(Alpha);
 			pass.render();
@@ -470,6 +479,7 @@ class VolumetricLighting extends RendererFX {
 					<dt>Bottom [m]</dt><dd><input type="range" min="0" max="1000" field="fogBottom"/></dd>
 					<dt>Top [m]</dt><dd><input type="range" min="0" max="1000" field="fogTop"/></dd>
 					<dt>Height falloff</dt><dd><input type="range" min="0" max="3" field="fogHeightFalloff"/></dd>
+					<dt>Follow Camera Height</dt><dd><input type="checkbox" field="offsetCamHeight"/></dd>
 				</dl>
 			</div>
 			<div class="group" name="Second fog">
