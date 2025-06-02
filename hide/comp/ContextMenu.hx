@@ -557,6 +557,10 @@ class ContextMenu {
                     menuItem.click();
                 }
                 if (menuItem.menu != null) {
+                    if (menuItem.click != null && !menuItem.stayOpen) {
+                        closeAll();
+                        return;
+                    }
                     if (popupTimer != null) {
                         popupTimer.stop();
                     }

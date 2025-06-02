@@ -2080,9 +2080,11 @@ class Editor extends Component {
 			}
 
 		var moveSubmenu : Array<hide.comp.ContextMenu.MenuItem> = [];
+		var moveStack : Array<hide.comp.ContextMenu.MenuItem> = [];
 		for( sepIndex => sep in sheet.separators ) {
 			if( sep.title == null )
 				continue;
+			var level = sep.level ?? 0;
 
 			function separatorCount( fromLine : Int ) {
 				var count = 0;
@@ -2110,11 +2112,24 @@ class Editor extends Component {
 			}
 			var delta = lastOfGroup - usedLine.index + separatorCount(usedLine.index);
 			var linesToMove = isSelectedLine ? selectedLines : [usedLine];
-			moveSubmenu.push({
+			var item = {
 				label : sep.title,
 				enabled : true,
-				click : () -> usedLine.table.moveLines(linesToMove, delta)
-			});
+				click : function() {
+					usedLine.table.moveLines(linesToMove, delta);
+				},
+				stayOpen: false,
+			};
+			moveStack[level] = item;
+			moveStack.splice(level + 1, moveStack.length);
+			var arr = moveSubmenu;
+			if (level > 0 && moveStack[level - 1] != null) {
+				var m = moveStack[level - 1];
+				if (m.menu == null)
+					m.menu = [];
+				arr = m.menu;
+			}
+			arr.push(item);
 		}
 
 		var hasLocText = false;
