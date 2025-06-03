@@ -468,9 +468,10 @@ class ParticleInstance {
 
 		if (subEmitters != null) {
 			this.updateAbsPos(emitter);
+			var scene = emitter.getScene();
 			for (sub in subEmitters) {
 				var abs = this.absPos.getPosition();
-				sub.setPosition(abs.x, abs.y, abs.z);
+				sub.setPosition(abs.x - scene.x, abs.y - scene.y, abs.z - scene.z);
 				sub.tick(dt, true);
 
 				#if editor
@@ -1320,7 +1321,7 @@ class EmitterObject extends h3d.scene.Object {
 				return;
 			inline tmpMat.load(p.absPos.toMatrix());
 			batch.worldPosition = tmpMat;
-			for( anim in customAnims ) {
+						for( anim in customAnims ) {
 				var t = hxd.Math.clamp(p.life / p.lifeTime, 0.0, 1.0);
 				anim.setTime(t);
 			}
@@ -1359,6 +1360,9 @@ class EmitterObject extends h3d.scene.Object {
 	}
 
 	function updateParticles(full: Bool, dt: Float) {
+		var scene = getScene();
+		if (scene == null)
+			return;
 
 		switch(simulationSpace){
 			// Particles in Local are spawned next to emitter in the scene tree,
@@ -1391,11 +1395,11 @@ class EmitterObject extends h3d.scene.Object {
 							if ((template.props:Dynamic).subEmitterKind != SubEmitterKind.SpawnOnDeath) {
 								continue;
 							}
-							var subEmitterInstance : Emitter = @:privateAccess template.make(this.getScene());
-						    var emitter : EmitterObject = cast subEmitterInstance.local3d;
+							var subEmitterInstance : Emitter = @:privateAccess template.make(scene);
+							var emitter : EmitterObject = cast subEmitterInstance.local3d;
 							p.updateAbsPos(this);
 							var pos = p.absPos.getPosition();
-							emitter.setPosition(pos.x, pos.y, pos.z);
+							emitter.setPosition(pos.x - scene.x, pos.y - scene.y, pos.z - scene.z);
 							emitter.isSubEmitter = true;
 							emitter.parentEmitter = this;
 							if(subEmitters == null)
