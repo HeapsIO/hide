@@ -1490,7 +1490,6 @@ class Model extends FileView {
 	}
 
 
-
 	function canMergeElements(objects : Array<Dynamic>) {
 		if (objects == null || objects.length <= 1)
 			return false;
@@ -1535,13 +1534,36 @@ class Model extends FileView {
 			mat.props = [];
 			hmd.materials.push(mat);
 
-			var dataOut = new haxe.io.BytesOutput();
 			var maxLod = Std.int(hxd.Math.max(p1.lodCount(), p2.lodCount()));
-			for (idx in 0...maxLod) {
+			var modelName = m1.name + "_" + m2.name;
+
+			var model = new hxd.fmt.hmd.Data.Model();
+			model.name = modelName;
+			model.name = model.toLODName(0);
+			model.geometry = 0;
+			model.materials = [0];
+			model.parent = -1;
+			model.position = new hxd.fmt.hmd.Data.Position();
+			model.position.x = 0;
+			model.position.y = 0;
+			model.position.z = 0;
+			model.position.sx = 1;
+			model.position.sy = 1;
+			model.position.sz = 1;
+			model.position.qx = 0;
+			model.position.qy = 0;
+			model.position.qz = 0;
+			model.lods = [];
+			if (model.props == null) model.props = [];
+			model.props.push(HasLod);
+			hmd.models.push(model);
+
+			var dataOut = new haxe.io.BytesOutput();
+			for (lodIdx in 0...maxLod) {
 				var newFormat = hxd.BufferFormat.make([for (i in format.getInputs()) i]);
 
-				var d1 = hxd.fmt.fbx.Writer.getPrimitiveInfos(p1, newFormat, idx);
-				var d2 = hxd.fmt.fbx.Writer.getPrimitiveInfos(p2, newFormat, idx);
+				var d1 = hxd.fmt.fbx.Writer.getPrimitiveInfos(p1, newFormat, lodIdx);
+				var d2 = hxd.fmt.fbx.Writer.getPrimitiveInfos(p2, newFormat, lodIdx);
 
 				var vertexCount = Std.int((d1.vertexBuffer.length + d2.vertexBuffer.length) / d1.vertexFormat.stride);
 				var indexCount = d1.indexesBuffer.length + d2.indexesBuffer.length;
@@ -1554,22 +1576,22 @@ class Model extends FileView {
 				g.vertexPosition = dataOut.length;
 				hmd.geometries.push(g);
 
-				var model = new hxd.fmt.hmd.Data.Model();
-				model.name = m1.name + "_" + m2.name;
-				model.geometry = 0;
-				model.materials = [0];
-				model.parent = -1;
-				model.position = new hxd.fmt.hmd.Data.Position();
-				model.position.x = 0;
-				model.position.y = 0;
-				model.position.z = 0;
-				model.position.sx = 1;
-				model.position.sy = 1;
-				model.position.sz = 1;
-				model.position.qx = 0;
-				model.position.qy = 0;
-				model.position.qz = 0;
-				hmd.models.push(model);
+				if (lodIdx > 0) {
+					var lodModel = new hxd.fmt.hmd.Data.Model();
+					lodModel.name = modelName;
+					lodModel.name = lodModel.toLODName(lodIdx);
+					lodModel.parent = model.parent;
+					lodModel.follow = model.follow;
+					lodModel.position = model.position;
+					lodModel.materials = model.materials;
+					lodModel.skin = model.skin;
+					lodModel.lods = [];
+					lodModel.geometry = hmd.geometries.length - 1;
+					if (lodModel.props == null) lodModel.props = [];
+					lodModel.props.push(HasLod);
+					hmd.models.push(lodModel);
+					model.lods.push(hmd.models.length - 1);
+				}
 
 				var idx = 0;
 				while (idx < vertexCount * g.vertexFormat.stride) {
@@ -1603,7 +1625,7 @@ class Model extends FileView {
 
 				g.indexPosition = dataOut.length;
 				var offset = 0;
-				for (idx in 0...indexCount) {
+				for (i in 0...indexCount) {
 					function get(vIdx: Int) {
 						if (vIdx < d1.indexesBuffer.length) {
 							if (offset < d1.indexesBuffer[vIdx])
@@ -1614,7 +1636,7 @@ class Model extends FileView {
 							return d2.indexesBuffer[vIdx % d1.indexesBuffer.length] + offset + 1;
 					}
 
-					dataOut.writeUInt16(get(idx));
+					dataOut.writeUInt16(get(i));
 				}
 			}
 
@@ -1634,7 +1656,6 @@ class Model extends FileView {
 			return cast mesh;
 		}
 
-		var oldData = sys.io.File.getContent(Ide.inst.getPath(state.path));
 		var meshes : Array<h3d.scene.Mesh> = cast models;
 		var format = meshes[0].primitive.buffer.format;
 		var tmp : h3d.scene.Mesh = meshes[0];
@@ -1646,10 +1667,8 @@ class Model extends FileView {
 			tmp = merge(tmp, m, format);
 		}
 
-		var root = models[0].parent;
 		for (m in models)
 			m.remove();
-		root.addChild(tmp);
 		meshes = [tmp];
 
 		// Export merge objects
@@ -1660,12 +1679,6 @@ class Model extends FileView {
 				Ide.inst.getPath(filePath),
 				() -> Ide.inst.quickMessage('Successfully merged objects at path : ${filePath}'),
 				params);
-
-		var newData = sys.io.File.getContent(Ide.inst.getPath(state.path));
-
-		// undo.change(Custom(function(undo) {
-		// 	sys.io.File.saveContent(state.path, undo ? oldData : newData);
-		// }));
 	}
 
 	function loadProps() {
