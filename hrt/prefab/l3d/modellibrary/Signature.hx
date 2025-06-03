@@ -95,23 +95,39 @@ class Signature {
 		var mat = h3d.mat.MaterialSetup.current.createMaterial();
 		mat.name = m.name;
 		mat.model = lib.resource;
-		var props = h3d.mat.MaterialSetup.current.loadMaterialProps(mat);
+		var props : Dynamic = h3d.mat.MaterialSetup.current.loadMaterialProps(mat);
 		if( props == null )
 			return null;
-		if( (props:Dynamic).__ref != null ) {
-			var lib = hxd.res.Loader.currentInstance.load((props:Dynamic).__ref).toPrefab().load();
-			var m = lib.getOpt(hrt.prefab.Material, (props:Dynamic).name);
+		if( props.__ref != null ) {
+			var lib = hxd.res.Loader.currentInstance.load(props.__ref).toPrefab().load();
+			var m = lib.getOpt(hrt.prefab.Material, props.name);
 			sig.diffuseMapPath = m.diffuseMap;
 			sig.normalMapPath = m.normalMap;
 			sig.specularMapPath = m.specularMap;
-			for ( c in lib.children )
-				sig.shaders.push(@:privateAccess c.serialize());
+			sig.props = formatValue(m.props);
+			for ( c in m.children )
+				sig.shaders.push(formatValue(@:privateAccess c.serialize()));
 			return sig;
 		}
 		sig.diffuseMapPath = m.diffuseTexture;
 		sig.normalMapPath = m.normalMap;
 		sig.specularMapPath = m.specularTexture;
+		sig.props = formatValue(props);
 		return sig;
+	}
+
+	static function formatValue( v : Dynamic ) : String {
+		if( !Reflect.isObject(v) )
+			return Std.string(v);
+		if( v is String )
+			return v;
+		if( v is Array ) {
+			var a : Array<Dynamic> = v;
+			return [for( v1 in a ) formatValue(v1)].toString();
+		}
+		var fl = Reflect.fields(v);
+		fl.sort(Reflect.compare);
+		return [for( f in fl ) f+"_"+formatValue(Reflect.field(v,f))].join("_");
 	}
 }
 
@@ -130,7 +146,8 @@ class MaterialSignature {
 	public var diffuseMapPath : String;
 	public var normalMapPath : String;
 	public var specularMapPath : String;
-	public var shaders : Array<Dynamic> = [];
+	public var props : String;
+	public var shaders : Array<String> = [];
 	function new() {
 	}
 }
