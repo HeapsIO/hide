@@ -234,6 +234,7 @@ class Model extends FileView {
 	var selectedMesh : h3d.scene.Mesh = null;
 	var displayJoints = null;
 	var selectedCount = 0;
+	var selectedElements : Array<Dynamic>;
 	function onTreeSelectionChanged(elts : Array<Dynamic>) {
 		function canMultiEdit<T>(cl : Class<T>) {
 			for (e in elts)
@@ -242,6 +243,8 @@ class Model extends FileView {
 
 			return true;
 		}
+
+		selectedElements = elts;
 
 		var properties = sceneEditor.properties;
 		properties.clear();
@@ -1296,6 +1299,18 @@ class Model extends FileView {
 		tree.onSelectionChanged = onTreeSelectionChanged;
 		tree.saveDisplayKey = this.saveDisplayKey;
 
+		function ctxMenu(tree, e) {
+			e.preventDefault();
+			var current = tree.getCurrentOver();
+			var menuItems : Array<hide.comp.ContextMenu.MenuItem> = [
+				{ label : "Merge selected", enabled : canMergeElements(selectedElements), click: () -> mergeModels(cast selectedElements) },
+				{ label : "Merge all meshes", enabled : true, click: () -> mergeModels(cast [for (m in obj.findAll(o -> Std.downcast(o, h3d.scene.Mesh))) m]) },
+			];
+
+			hide.comp.ContextMenu.createFromEvent(cast e, menuItems);
+		};
+		tree.element.parent().contextmenu(ctxMenu.bind(tree));
+
 		tools.clear();
 		var anims = scene.listAnims(getPath());
 
@@ -1475,6 +1490,183 @@ class Model extends FileView {
 	}
 
 
+
+	function canMergeElements(objects : Array<Dynamic>) {
+		if (objects == null || objects.length <= 1)
+			return false;
+
+		var format : hxd.BufferFormat = null;
+		for (o in objects) {
+			var m = Std.downcast(o, h3d.scene.Mesh);
+			if (m == null)
+				return false;
+			if (format == null)
+				format = m.primitive.buffer.format;
+			if (format != m.primitive.buffer.format)
+				return false;
+		}
+
+		return true;
+	}
+
+	function mergeModels(models : Array<h3d.scene.Object>) {
+		var relFilePath = ".tmp/tmp.hmd";
+		var tmpFilePath = ide.resourceDir + '/$relFilePath';
+
+		function merge(m1: h3d.scene.Mesh, m2: h3d.scene.Mesh, format: hxd.BufferFormat) : h3d.scene.Mesh {
+			var p1 = Std.downcast(m1.primitive, h3d.prim.HMDModel);
+			var p2 = Std.downcast(m2.primitive, h3d.prim.HMDModel);
+
+			if (p1 == null || p2 == null)
+				throw "!";
+
+			// Creation of the merged HMD
+			var hmd = new hxd.fmt.hmd.Data();
+			hmd.version = hxd.fmt.hmd.Data.CURRENT_VERSION;
+			hmd.geometries = [];
+			hmd.materials = [];
+			hmd.models = [];
+			hmd.animations = [];
+			hmd.shapes = [];
+
+			var mat = new hxd.fmt.hmd.Data.Material();
+			mat.name = "SimpleBlock";
+			mat.blendMode = None;
+			mat.props = [];
+			hmd.materials.push(mat);
+
+			var dataOut = new haxe.io.BytesOutput();
+			var maxLod = Std.int(hxd.Math.max(p1.lodCount(), p2.lodCount()));
+			for (idx in 0...maxLod) {
+				var newFormat = hxd.BufferFormat.make([for (i in format.getInputs()) i]);
+
+				var d1 = hxd.fmt.fbx.Writer.getPrimitiveInfos(p1, newFormat, idx);
+				var d2 = hxd.fmt.fbx.Writer.getPrimitiveInfos(p2, newFormat, idx);
+
+				var vertexCount = Std.int((d1.vertexBuffer.length + d2.vertexBuffer.length) / d1.vertexFormat.stride);
+				var indexCount = d1.indexesBuffer.length + d2.indexesBuffer.length;
+
+				var g = new hxd.fmt.hmd.Data.Geometry();
+				g.bounds = new h3d.col.Bounds();
+				g.indexCounts = [ indexCount ];
+				g.vertexCount = vertexCount;
+				g.vertexFormat = newFormat;
+				g.vertexPosition = dataOut.length;
+				hmd.geometries.push(g);
+
+				var model = new hxd.fmt.hmd.Data.Model();
+				model.name = m1.name + "_" + m2.name;
+				model.geometry = 0;
+				model.materials = [0];
+				model.parent = -1;
+				model.position = new hxd.fmt.hmd.Data.Position();
+				model.position.x = 0;
+				model.position.y = 0;
+				model.position.z = 0;
+				model.position.sx = 1;
+				model.position.sy = 1;
+				model.position.sz = 1;
+				model.position.qx = 0;
+				model.position.qy = 0;
+				model.position.qz = 0;
+				hmd.models.push(model);
+
+				var idx = 0;
+				while (idx < vertexCount * g.vertexFormat.stride) {
+					function get(vIdx: Int) {
+						if (vIdx < d1.vertexBuffer.length)
+							return d1.vertexBuffer[vIdx];
+						else
+							return d2.vertexBuffer[vIdx % d1.vertexBuffer.length];
+					}
+
+					for (i in g.vertexFormat.getInputs()) {
+						var prec = i.precision;
+						var size = i.type.getSize();
+						if (i.name == "position") {
+							var pos = new h3d.Vector(get(idx), get(idx + 1), get(idx + 2));
+							var trs = idx < d1.vertexBuffer.length ? m1.defaultTransform : m2.defaultTransform;
+							pos.transform(trs);
+							hxd.fmt.fbx.HMDOut.writePrec(dataOut, pos.x, prec);
+							hxd.fmt.fbx.HMDOut.writePrec(dataOut, pos.y, prec);
+							hxd.fmt.fbx.HMDOut.writePrec(dataOut, pos.z, prec);
+						}
+						else {
+							for (idx2 in 0...size)
+								hxd.fmt.fbx.HMDOut.writePrec(dataOut, get(idx + idx2), prec);
+						}
+
+						hxd.fmt.fbx.HMDOut.flushPrec(dataOut, prec, size);
+						idx += size;
+					}
+				}
+
+				g.indexPosition = dataOut.length;
+				var offset = 0;
+				for (idx in 0...indexCount) {
+					function get(vIdx: Int) {
+						if (vIdx < d1.indexesBuffer.length) {
+							if (offset < d1.indexesBuffer[vIdx])
+								offset = d1.indexesBuffer[vIdx];
+							return d1.indexesBuffer[vIdx];
+						}
+						else
+							return d2.indexesBuffer[vIdx % d1.indexesBuffer.length] + offset + 1;
+					}
+
+					dataOut.writeUInt16(get(idx));
+				}
+			}
+
+			hmd.data = dataOut.getBytes();
+
+			var out = new haxe.io.BytesOutput();
+			var w = new hxd.fmt.hmd.Writer(out);
+			w.write(hmd);
+
+			var bytes = out.getBytes();
+			sys.io.File.saveBytes(tmpFilePath, bytes);
+
+			// Reload library
+			var lib = hxd.res.Loader.currentInstance.load(relFilePath).toModel().toHmd();
+			var mesh = lib.makeObject();
+			lib.dispose();
+			return cast mesh;
+		}
+
+		var oldData = sys.io.File.getContent(Ide.inst.getPath(state.path));
+		var meshes : Array<h3d.scene.Mesh> = cast models;
+		var format = meshes[0].primitive.buffer.format;
+		var tmp : h3d.scene.Mesh = meshes[0];
+		for (idx => m in meshes) {
+			if (idx == 0) {
+				tmp = m;
+				continue;
+			}
+			tmp = merge(tmp, m, format);
+		}
+
+		var root = models[0].parent;
+		for (m in models)
+			m.remove();
+		root.addChild(tmp);
+		meshes = [tmp];
+
+		// Export merge objects
+		var filePath = Ide.inst.getPath(state.path);
+		var params = { forward:"0", forwardSign:"1", up:"2", upSign:"1" };
+		new hxd.fmt.fbx.Writer(null).export(
+				cast meshes,
+				Ide.inst.getPath(filePath),
+				() -> Ide.inst.quickMessage('Successfully merged objects at path : ${filePath}'),
+				params);
+
+		var newData = sys.io.File.getContent(Ide.inst.getPath(state.path));
+
+		// undo.change(Custom(function(undo) {
+		// 	sys.io.File.saveContent(state.path, undo ? oldData : newData);
+		// }));
+	}
 
 	function loadProps() {
 		var propsPath = getPropsPath();
