@@ -19,7 +19,7 @@ class CdbTable extends hide.ui.View<{}> {
 				haxe.Timer.delay(syncTabs,0);
 			}
 		}, this);
-		undo = editor.undo;
+		undoStack[0] = editor.undo;
 		currentSheet = this.config.get("cdb.currentSheet");
 		view = cast this.config.get("cdb.view");
 	}

@@ -865,7 +865,6 @@ class Editor extends Component {
 				var line = cursor.table.lines[y];
 				if(!cursor.table.lines[y].element.hasClass("filtered")) {
 					sheet.deleteLine(line.index);
-					cursor.table.refreshCellValue();
 					modifiedTables.pushUnique(cursor.table);
 				}
 				y--;
@@ -888,7 +887,6 @@ class Editor extends Component {
 					if( old == def )
 						continue;
 					changeObject(line,c,def);
-					cursor.table.refreshCellValue();
 					modifiedTables.pushUnique(cursor.table);
 				}
 			}
@@ -1971,7 +1969,6 @@ class Editor extends Component {
 					if( table.displayMode == Properties ) {
 						beginChanges();
 						changeObject(cell.line, col, base.getDefault(col,sheet));
-						cursor.table.refreshCellValue();
 					} else {
 						beginChanges(true);
 						sheet.deleteColumn(col.name);
@@ -2041,7 +2038,6 @@ class Editor extends Component {
 					return;
 				beginChanges(true);
 				table.sheet.deleteColumn(col.name);
-				cursor.table.refreshCellValue();
 				endChanges();
 				refresh();
 			}});
