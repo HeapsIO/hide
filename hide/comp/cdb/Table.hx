@@ -113,10 +113,6 @@ class Table extends Component {
 		}
 	}
 
-	public function refreshCellValue() {
-
-	}
-
 	function setupTableElement() {
 		cloneTableHead();
 		#if js
@@ -538,7 +534,6 @@ class Table extends Component {
 				var val = editor.base.getDefault(c, true, sheet);
 				editor.beginChanges();
 				Reflect.setField(props, c.name, val);
-				refreshCellValue();
 				editor.endChanges();
 				refresh();
 				for( l in lines )
@@ -645,7 +640,6 @@ class Table extends Component {
 		}
 		editor.beginChanges();
 		sheet.newLine(index);
-		refreshCellValue();
 		editor.endChanges();
 		refresh();
 	}
@@ -706,7 +700,6 @@ class Table extends Component {
 		var srcObj = sheet.lines[index];
 		editor.beginChanges();
 		var obj = sheet.newLine(index);
-		refreshCellValue();
 		for(colId => c in columns ) {
 			var val = Reflect.field(srcObj, c.name);
 			if( val != null ) {
