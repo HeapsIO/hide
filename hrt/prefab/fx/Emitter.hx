@@ -327,7 +327,7 @@ class ParticleInstance {
 		this.absPos.load(absPos);
 	}
 
-	function update(emitter : EmitterObject, dt : Float) {
+	function update(emitter : EmitterObject, scene: h3d.scene.Scene, dt : Float) {
 		var t = hxd.Math.clamp(life / lifeTime, 0.0, 1.0);
 		tmpSpeed.set(0,0,0);
 
@@ -468,7 +468,6 @@ class ParticleInstance {
 
 		if (subEmitters != null) {
 			this.updateAbsPos(emitter);
-			var scene = emitter.getScene();
 			for (sub in subEmitters) {
 				var abs = this.absPos.getPosition();
 				sub.setPosition(abs.x - scene.x, abs.y - scene.y, abs.z - scene.z);
@@ -1368,7 +1367,7 @@ class EmitterObject extends h3d.scene.Object {
 			// Particles in Local are spawned next to emitter in the scene tree,
 			// so emitter shape can be transformed (especially scaled) without affecting children
 			case Local : parentTransform.load(parent.getAbsPos());
-			case World : parentTransform.load(getScene().getAbsPos());
+			case World : parentTransform.load(scene.getAbsPos());
 			// Optim: set to null if identity to skip multiply in particle updates
 		}
 
@@ -1378,7 +1377,7 @@ class EmitterObject extends h3d.scene.Object {
 		}
 
 		var prev : ParticleInstance = null;
-		var camPos = getScene().camera.pos;
+		var camPos = scene.camera.pos;
 
 		if (trails != null) {
 			trails.numTrails = maxCount;
@@ -1414,7 +1413,7 @@ class EmitterObject extends h3d.scene.Object {
 				}
 			}
 			else {
-				p.update(this, dt);
+				p.update(this, scene, dt);
 				postParticleUpdate(p, dt);
 
 				if(full) {
