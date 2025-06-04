@@ -514,6 +514,7 @@ class EmitterObject extends h3d.scene.Object {
 	#end
 
 	public var emitterPrefab : Emitter;
+	public var parentNonEmitter : h3d.scene.Object;
 
 	// RANDOM
 	public var seedGroup = 0;
@@ -630,6 +631,8 @@ class EmitterObject extends h3d.scene.Object {
 	function init(randSlots: Int, prefab: Emitter) {
 		this.emitterPrefab = prefab;
 		this.randSlots = randSlots;
+
+		updateParentNonEmitter();
 
 		if( batch != null )
 			batch.remove();
@@ -1014,12 +1017,12 @@ class EmitterObject extends h3d.scene.Object {
 							emitterQuat = tmpEmitterQuat;
 							emitterQuat.load(getRotationQuat());
 							tmpMat.load(getAbsPos());
-							tmpMat2.load(parent.getAbsPos());
+							tmpMat2.load(parentNonEmitter.getAbsPos());
 							tmpMat2.invert();
 							tmpMat.multiply(tmpMat, tmpMat2);
 							if (particleScaling == None) {
 								// Re-introduce parent scaling in the spawn position calculations
-								var parentScale = inline parent.getAbsPos().getScale();
+								var parentScale = inline parentNonEmitter.getAbsPos().getScale();
 								tmpMat.prependScale(parentScale.x, parentScale.y, parentScale.z);
 							}
 						}
@@ -1064,7 +1067,7 @@ class EmitterObject extends h3d.scene.Object {
 						var emitter : EmitterObject = cast subEmitterInstance.local3d;
 						emitter.isSubEmitter = true;
 						emitter.parentEmitter = this;
-
+						emitter.updateParentNonEmitter();
 						part.subEmitters = part.subEmitters ?? [];
 						part.subEmitters.push(emitter);
 					}
@@ -1078,6 +1081,15 @@ class EmitterObject extends h3d.scene.Object {
 	/** Called every time a particle is emitted. `offset` and `orient`
 		 can be modified (local space) **/
 	public dynamic function onEmit(offset: h3d.Vector, orient : h3d.Quat) { }
+
+	function updateParentNonEmitter() {
+		parentNonEmitter = parent;
+		var parentEmitterTmp = parentEmitter;
+		while (parentEmitterTmp != null) {
+			parentNonEmitter = parentEmitterTmp.parent;
+			parentEmitterTmp = parentEmitter.parentEmitter;
+		}
+	}
 
 	// No-alloc version of h3d.Matrix.getEulerAngles()
 	static function getEulerAngles(m: h3d.Matrix) {
@@ -1134,14 +1146,14 @@ class EmitterObject extends h3d.scene.Object {
 		if( emitRate == null || emitRate == VZero )
 			return;
 
-		if( parent != null ) {
+		if( parentNonEmitter != null ) {
 			if (particleScaling == None) {
 				worldScale.set(1.0,1.0,1.0);
 			}
 			else {
-				worldScale.load(parent.getAbsPos().getScale());
+				worldScale.load(parentNonEmitter.getAbsPos().getScale());
 			}
-			invTransform.load(parent.getInvPos());
+			invTransform.load(parentNonEmitter.getInvPos());
 		}
 
 		if( enable && emitScale > 0.) {
@@ -1236,7 +1248,7 @@ class EmitterObject extends h3d.scene.Object {
 			tmpMat.invert();
 
 			if(simulationSpace == Local) {  // Compensate parent rotation
-				tmpMat2.load(parent.getAbsPos());
+				tmpMat2.load(parentNonEmitter.getAbsPos());
 				var s = tmpMat2.getScale();
 				tmpMat2.prependScale(1.0 / s.x, 1.0 / s.y, 1.0 / s.z);
 				tmpMat2.invert();
@@ -1275,7 +1287,7 @@ class EmitterObject extends h3d.scene.Object {
 				var invAbsPos = getInvPos();
 				lookAtPos.transform(invAbsPos);
 			} else {
-				var invParent = parent.getInvPos();
+				var invParent = parentNonEmitter.getInvPos();
 				lookAtPos.transform(invParent);
 				lookAtPos.x -= x;
 				lookAtPos.y -= y;
@@ -1366,7 +1378,7 @@ class EmitterObject extends h3d.scene.Object {
 		switch(simulationSpace){
 			// Particles in Local are spawned next to emitter in the scene tree,
 			// so emitter shape can be transformed (especially scaled) without affecting children
-			case Local : parentTransform.load(parent.getAbsPos());
+			case Local : parentTransform.load(parentNonEmitter.getAbsPos());
 			case World : parentTransform.load(scene.getAbsPos());
 			// Optim: set to null if identity to skip multiply in particle updates
 		}
