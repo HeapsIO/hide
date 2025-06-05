@@ -28,7 +28,6 @@ typedef HideGlobalConfig = {
 
 	// Performance
 	var trackGpuAlloc : Bool;
-	var cullingDistanceFactor : Float;
 
 	// CDB
 	var highlightActiveLine : Bool;

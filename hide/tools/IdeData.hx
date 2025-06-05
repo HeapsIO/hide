@@ -23,7 +23,6 @@ class IdeData {
 		"typingDebounceThreshold" => 300,
 		"autoSavePrefab" => false,
 		"trackGpuAlloc" => false,
-		"cullingDistanceFactor" => 100,
 		"svnShowVersionedFiles" => true,
 		"svnShowModifiedFiles" => true,
 	];

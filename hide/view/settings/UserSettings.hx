@@ -19,7 +19,6 @@ class UserSettings extends Settings {
 
 		var performance = new hide.view.settings.Settings.Categorie("Performance");
 		performance.add("Track gpu alloc", new Element('<input type="checkbox"/>'), Ide.inst.ideConfig.trackGpuAlloc, (v) -> Ide.inst.ideConfig.trackGpuAlloc = v);
-		performance.add("Culling distance factor", new Element('<input type="number"/>'), Ide.inst.ideConfig.cullingDistanceFactor, (v) -> Ide.inst.ideConfig.cullingDistanceFactor = v);
 		categories.push(performance);
 
 		var cdb = new hide.view.settings.Settings.Categorie("CDB");
