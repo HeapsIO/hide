@@ -71,6 +71,7 @@ typedef GenFogNoise = {
 }
 
 enum abstract GenFogRenderMode(String) {
+	var Lighting;
 	var BeforeTonemapping;
 	var AfterTonemapping;
 }
@@ -119,7 +120,7 @@ class GenFog extends RendererFX {
 	}
 
 	function checkPass(step : h3d.impl.RendererFX.Step) {
-		return (step == AfterTonemapping && renderMode == AfterTonemapping) || (step == BeforeTonemapping && renderMode == BeforeTonemapping);
+		return (step == AfterTonemapping && renderMode == AfterTonemapping) || (step == BeforeTonemapping && renderMode == BeforeTonemapping) || (step == Lighting && renderMode == Lighting);
 	}
 
 	override function end(r:h3d.scene.Renderer, step:h3d.impl.RendererFX.Step) {
@@ -201,6 +202,7 @@ class GenFog extends RendererFX {
 				<div class="group" name="Rendering">
 					<dt>Render Mode</dt>
 						<dd><select field="renderMode">
+							<option value="Lighting">Lighting</option>
 							<option value="BeforeTonemapping">Before Tonemapping</option>
 							<option value="AfterTonemapping">After Tonemapping</option>
 						</select></dd>
