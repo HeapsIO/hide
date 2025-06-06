@@ -22,7 +22,7 @@ class SPRFXObject extends h3d.scene.Object {
 
 	override function onRemove() {
 		super.onRemove();
-		this.renderer.effects.remove(sprfx);
+		this.renderer?.effects?.remove(sprfx);
 	}
 }
 
