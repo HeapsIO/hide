@@ -219,6 +219,21 @@ class DomkitInterp extends hscript.Async.AsyncInterp {
 		restore(old);
 	}
 
+	public function executeKeyValueLoop( vk : String, vv : String, it : hscript.Expr, callb ) {
+		var old = declared.length;
+		declared.push({ n : vk, old : locals.get(vk) });
+		declared.push({ n : vv, old : locals.get(vv) });
+		var it = makeKeyValueIterator(expr(it));
+		while( it.hasNext() ) {
+			var v = it.next();
+			locals.set(vk,{ r : v.key });
+			locals.set(vv,{ r : v.value });
+			if( !loopRun(callb) )
+				break;
+		}
+		restore(old);
+	}
+
 }
 
 class DomkitBaseContext {
@@ -752,9 +767,22 @@ class DomkitViewer extends h2d.Object {
 					for( c in e.children )
 						addRec(c, interp, parent);
 				});
+				return;
+			case EForGen(it,_):
+				hscript.Tools.getKeyIterator(it, function(vk,vv,it) {
+					if( vk == null ) {
+						throw new domkit.Error("Invalid for loop", e.pmin);
+						return;
+					}
+					interp.executeKeyValueLoop(vk,vv,it,function() {
+						for( c in e.children )
+							addRec(c, interp, parent);
+					});
+				});
+				return;
 			default:
-				throw "assert";
 			}
+			throw new domkit.Error("Invalid for loop", e.pmin);
 		case CodeBlock(v):
 			throw new domkit.Error("Code block not supported", e.pmin);
 		case Macro(id):
