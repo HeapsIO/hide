@@ -12,10 +12,12 @@ class SPRFXObject extends h3d.scene.Object {
 	override function sync(ctx : h3d.scene.RenderContext) {
 		super.sync(ctx);
 
+		#if !editor
 		if (renderer == null) {
 			this.renderer = ctx.scene.renderer;
 			this.renderer.effects.push(@:privateAccess sprfx.instance);
 		}
+		#end
 	}
 
 	override function onRemove() {
