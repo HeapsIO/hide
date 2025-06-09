@@ -22,7 +22,7 @@ class View<T> extends hide.comp.Component {
 	var watches : Array<{ keep : Bool, path : String, callb : Void -> Void }> = [];
 	public var keys(get,null) : Keys;
 	public var state(default, null) : T;
-	public var undo(get, null) = new hide.ui.UndoHistory();
+	public var undo(get, never) : hide.ui.UndoHistory;
 
 	function get_undo() : hide.ui.UndoHistory {
 		return undoStack[undoStack.length-1];

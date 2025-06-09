@@ -835,7 +835,12 @@ class DataFiles {
 		for( file => pf in prefabs ) {
 			skip++;
 			var path = ide.getPath(file);
+
+			var backup = [];
+			hide.view.Prefab.cleanupPrefabCdb(pf, backup);
 			@:privateAccess var out = ide.toJSON(pf.serialize());
+			hide.comp.cdb.Editor.restoreOptionals(backup);
+
 			if( force ) {
 				var txt = try sys.io.File.getContent(path) catch( e : Dynamic ) null;
 				if( txt == out ) continue;

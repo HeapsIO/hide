@@ -221,7 +221,19 @@ class IdeData {
 					hide.comp.cdb.Editor.refreshAll();
 					return;
 				}
+
+				var backup = [];
+				for (sheet in database.sheets) {
+					// only perform cleanup on root sheets as the function is recursive
+					if (sheet.parent == null) {
+						hide.comp.cdb.Editor.cleanupOptionalLines(sheet.lines, sheet, backup);
+					}
+				}
+
 				lastDBContent = database.save();
+
+				hide.comp.cdb.Editor.restoreOptionals(backup);
+
 				sys.io.File.saveContent(getPath(databaseFile), lastDBContent);
 				if ( dbWatcher != null )
 					fileWatcher.ignorePrevChange(dbWatcher);

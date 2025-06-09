@@ -433,7 +433,7 @@ class Prefab extends hide.view.FileView {
 	}
 
 	public function onSceneReady() {
-		data = hxd.res.Loader.currentInstance.load(state.path).toPrefab().load().clone();
+		data = hxd.res.Loader.currentInstance.load(state.path).toPrefab().loadBypassCache();
 		sceneEditor.setPrefab(cast data);
 
 		refreshSceneFilters();
@@ -598,6 +598,22 @@ class Prefab extends hide.view.FileView {
 		return data != null;
 	}
 
+	public static function cleanupPrefabCdb(prefab: hrt.prefab.Prefab, optionalBackup: hide.comp.cdb.Editor.OptionalBackup) {
+		var cdbType = prefab.getCdbType();
+
+		if (cdbType != null) {
+			if (prefab.name == "npc")
+				trace("break");
+			var db = hide.Ide.inst.database;
+			var sheet = db.getSheet(cdbType);
+			hide.comp.cdb.Editor.cleanupOptionalLines([prefab.props], sheet, optionalBackup);
+		}
+
+		for (child in prefab.children) {
+			cleanupPrefabCdb(child, optionalBackup);
+		}
+	}
+
 	override function save() {
 		if( !canSave() )
 			return;
@@ -606,7 +622,13 @@ class Prefab extends hide.view.FileView {
 		if (Ide.inst.currentConfig.get("sceneeditor.renderprops.edit", false) && sceneEditor.renderPropsRoot != null)
 			sceneEditor.renderPropsRoot.save();
 
+		var backup = [];
+		cleanupPrefabCdb(data, backup);
+
 		@:privateAccess var content = ide.toJSON(data.serialize());
+
+		hide.comp.cdb.Editor.restoreOptionals(backup);
+
 		var newSign = ide.makeSignature(content);
 		if(newSign != currentSign)
 			haxe.Timer.delay(saveBackup.bind(content), 0);

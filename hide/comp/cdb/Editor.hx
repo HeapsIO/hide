@@ -45,6 +45,8 @@ typedef EditorSheetProps = {
 	var ?categories : Array<String>;
 }
 
+typedef OptionalBackup = Array<{line: Dynamic, colName: String, data: Dynamic}>;
+
 @:allow(hide.comp.cdb)
 class Editor extends Component {
 	static var CLIPBOARD_PREFIX = "[CDB_FORMAT]";
@@ -865,7 +867,6 @@ class Editor extends Component {
 				var line = cursor.table.lines[y];
 				if(!cursor.table.lines[y].element.hasClass("filtered")) {
 					sheet.deleteLine(line.index);
-					cursor.table.refreshCellValue();
 					modifiedTables.pushUnique(cursor.table);
 				}
 				y--;
@@ -888,7 +889,6 @@ class Editor extends Component {
 					if( old == def )
 						continue;
 					changeObject(line,c,def);
-					cursor.table.refreshCellValue();
 					modifiedTables.pushUnique(cursor.table);
 				}
 			}
@@ -1056,6 +1056,49 @@ class Editor extends Component {
 					runRec(0);
 				}
 			}
+		}
+	}
+
+	/**
+		Recursively removes empty list/properties from the optional columns of `sheet` in the given `lines` objects.
+		A record of the removed items are stored in `optionalBackup` so they can be restored later using `restoreOptionals()`.
+	**/
+	public static function cleanupOptionalLines(lines: Array<Dynamic>, sheet: cdb.Sheet, optionalBackup: OptionalBackup) {
+		if (lines == null)
+			return;
+		for (column in sheet.columns) {
+				for (line in lines) {
+					var data = Reflect.field(line, column.name);
+					if (data == null)
+						continue;
+					switch (column.type) {
+						case TList:
+							var list : Array<Dynamic> = cast data;
+							if (list.length == 0 && column.opt) {
+								optionalBackup.push({line: line, colName: column.name, data: list});
+								Reflect.deleteField(line, column.name);
+							} else {
+								var sub = sheet.getSub(column);
+								cleanupOptionalLines(list, sub, optionalBackup);
+							}
+						case TProperties:
+							var props : Dynamic = cast data;
+							if	(Reflect.fields(props).length == 0 && column.opt) {
+								optionalBackup.push({line: line, colName: column.name, data: props});
+								Reflect.deleteField(line, column.name);
+							} else {
+								var sub = sheet.getSub(column);
+								cleanupOptionalLines([props], sub, optionalBackup);
+							}
+						default:
+					}
+				}
+		}
+	}
+
+	public static function restoreOptionals(optionalBackup: OptionalBackup) {
+		for (backup in optionalBackup) {
+			Reflect.setField(backup.line, backup.colName, backup.data);
 		}
 	}
 
@@ -1971,7 +2014,6 @@ class Editor extends Component {
 					if( table.displayMode == Properties ) {
 						beginChanges();
 						changeObject(cell.line, col, base.getDefault(col,sheet));
-						cursor.table.refreshCellValue();
 					} else {
 						beginChanges(true);
 						sheet.deleteColumn(col.name);
@@ -2041,7 +2083,6 @@ class Editor extends Component {
 					return;
 				beginChanges(true);
 				table.sheet.deleteColumn(col.name);
-				cursor.table.refreshCellValue();
 				endChanges();
 				refresh();
 			}});
