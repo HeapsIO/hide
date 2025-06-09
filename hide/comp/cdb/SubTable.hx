@@ -67,28 +67,29 @@ class SubTable extends Table {
 		return cell.table.sheet.getSub(cell.column);
 	}
 
-	override function refreshCellValue() {
-		if (cell.column.opt == true) {
-			var doSet = true;
-			var value : Dynamic = null;
-			switch( cell.column.type ) {
-				case TList:
-					value = sheet.lines;
-					doSet = value != null && value.length > 0;
-				case TProperties:
-					value = sheet.lines[0];
-					doSet = value != null && Reflect.fields(value).length > 0;
-				default:
-					return;
-			}
-			if (doSet) {
-				Reflect.setField(cell.line.obj, cell.column.name, value);
-			} else {
-				Reflect.deleteField(cell.line.obj, cell.column.name);
-			}
+	override function refresh() {
+		super.refresh();
+
+		checkIntegrity();
+	}
+
+	function checkIntegrity() {
+		var v = Reflect.field(cell.line.obj, cell.column.name);
+		switch(cell.column.type) {
+			case TList:
+				if (v != sheet.lines) {
+					hide.Ide.inst.error("Editor integrity compromised, please refresh the editor and contact someone in the tool team");
+				}
+			case TProperties:
+				if (v != sheet.lines[0]) {
+					hide.Ide.inst.error("Editor integrity compromised, please refresh the editor and contact someone in the tool team");
+				}
+			default:
 		}
-		parent.refreshCellValue();
-		super.refreshCellValue();
+		var parSub = Std.downcast(parent, SubTable);
+		if (parSub != null) {
+			parSub.checkIntegrity();
+		}
 	}
 
 	function makeSubSheet() {
@@ -97,22 +98,19 @@ class SubTable extends Table {
 		var index = cell.line.index;
 		var key = sheet.getPath() + "@" + c.name + ":" + index;
 		var psheet = sheet.getSub(c);
+		var value : Dynamic = Reflect.field(cell.line.obj, cell.column.name);
 		var lines = switch( cell.column.type ) {
 		case TList:
-			var value = cell.value;
 			if( value == null ) {
 				value = [];
-				if (!cell.column.opt)
-					Reflect.setField(cell.line.obj, cell.column.name, value);
+				Reflect.setField(cell.line.obj, cell.column.name, value);
 				// do not save for now
 			}
 			value;
 		case TProperties:
-			var value = cell.value;
 			if( value == null ) {
 				value = {};
-				if (!cell.column.opt)
-					Reflect.setField(cell.line.obj, cell.column.name, value);
+				Reflect.setField(cell.line.obj, cell.column.name, value);
 				// do not save for now
 			}
 			var lines = [for( f in psheet.columns ) value];
@@ -156,12 +154,6 @@ class SubTable extends Table {
 	override function dispose() {
 		super.dispose();
 		insertedTR.remove();
-		var prev = Reflect.getProperty(cell.line.obj, cell.column.name);
-		refreshCellValue();
-		var after = Reflect.getProperty(cell.line.obj, cell.column.name);
-		if (prev != after) {
-			editor.save();
-		}
 		cell.refresh();
 	}
 
