@@ -23,6 +23,7 @@ class FileBrowser extends hide.ui.View<FileBrowserState> {
 	var fileIcons: Element;
 
 	var root : FileEntry;
+	var breadcrumbs : Element;
 
 	override function new(state) {
 		super(state);
@@ -127,11 +128,20 @@ class FileBrowser extends hide.ui.View<FileBrowserState> {
 			<file-browser>
 				<div class="left"></div>
 				<div class="right" tabindex="-1">
-					<fancy-toolbar class="fancy-small shadow"><fancy-button class="btn-parent quiet" title="Go to parent folder"><fancy-image style="background-image:url(\'res/icons/svg/file_parent.svg\')"></fancy-image></fancy-button><fancy-flex-fill></fancy-flex-fill><fancy-search class="fb-search"></fancy-search></fancy-toolbar>
+					<fancy-toolbar class="fancy-small shadow">
+						<fancy-button class="btn-parent quiet" title="Go to parent folder">
+							<fancy-image style="background-image:url(\'res/icons/svg/file_parent.svg\')"></fancy-image>
+						</fancy-button>
+						<fancy-breadcrumbs></fancy-breadcrumbs>
+						<fancy-flex-fill></fancy-flex-fill>
+						<fancy-search class="fb-search"></fancy-search>
+					</fancy-toolbar>
 					<fancy-gallery></fancy-gallery>
 				</div>
 			</file-browser>
 		').appendTo(element);
+
+		breadcrumbs = layout.find("fancy-breadcrumbs");
 
 		var resize = new hide.comp.ResizablePanel(Horizontal, layout.find(".left"), After);
 
@@ -144,8 +154,7 @@ class FileBrowser extends hide.ui.View<FileBrowserState> {
 		var btnParent = layout.find(".btn-parent");
 		btnParent.get(0).onclick = (e: js.html.MouseEvent) -> {
 			if (currentFolder.parent != null) {
-				currentFolder = currentFolder.parent;
-				onSearch();
+				openDir(currentFolder.parent, true);
 			}
 		}
 
@@ -227,8 +236,6 @@ class FileBrowser extends hide.ui.View<FileBrowserState> {
 
 		fancyTree.openItem(root);
 
-		currentFolder = root;
-
 		var right = layout.find(".right");
 		right.get(0).onkeydown = (e: js.html.KeyboardEvent) -> {
 			if (hide.ui.Keys.matchJsEvent("search", e, ide.currentConfig)) {
@@ -286,6 +293,8 @@ class FileBrowser extends hide.ui.View<FileBrowserState> {
 
 		fancyGallery.rebuild();
 
+		openDir(root, false);
+
 
 		fancyTree.onSelectionChanged = () -> {
 			var selection = fancyTree.getSelectedItems();
@@ -298,6 +307,31 @@ class FileBrowser extends hide.ui.View<FileBrowserState> {
 		onSearch();
 	}
 
+	function refreshBreadcrumbs() {
+		breadcrumbs.empty();
+		var path = [];
+		var current = currentFolder;
+		while (current != null) {
+			path.push(current);
+			current = current.parent;
+		}
+
+		for (i => _ in path) {
+			var current = path[path.length-i-1];
+			var button = new Element('<fancy-button class="quiet">${current.name}</fancy-button>');
+			breadcrumbs.append(new Element(button));
+
+			button.get(0).onclick = (e: js.html.MouseEvent) -> {
+				openDir(current, true);
+			}
+
+			if (i < path.length - 1) {
+				breadcrumbs.append(new Element('<fancy-breadcrumb-separator>/</fancy-breadcrumb-separator>'));
+			}
+
+		}
+	}
+
 	function openDir(item: FileEntry, syncTree: Bool) {
 		if (item.kind == Dir) {
 			currentFolder = item;
@@ -307,6 +341,8 @@ class FileBrowser extends hide.ui.View<FileBrowserState> {
 		if (syncTree) {
 			fancyTree.selectItem(item, true);
 		}
+
+		refreshBreadcrumbs();
 	}
 
 	static var _ = hide.ui.View.register(FileBrowser, { width : 350, position : Bottom });
