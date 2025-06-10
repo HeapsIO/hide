@@ -602,8 +602,6 @@ class Prefab extends hide.view.FileView {
 		var cdbType = prefab.getCdbType();
 
 		if (cdbType != null) {
-			if (prefab.name == "npc")
-				trace("break");
 			var db = hide.Ide.inst.database;
 			var sheet = db.getSheet(cdbType);
 			hide.comp.cdb.Editor.cleanupOptionalLines([prefab.props], sheet, optionalBackup);
