@@ -5413,3 +5413,6 @@ fancy-image {
   background-size: cover;
   transform: scale(0.75, 0.75);
 }
+fancy-breadcrumbs fancy-breadcrumbs-separator {
+  padding: 0.5em;
+}

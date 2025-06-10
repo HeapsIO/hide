@@ -326,7 +326,7 @@ class FileBrowser extends hide.ui.View<FileBrowserState> {
 			}
 
 			if (i < path.length - 1) {
-				breadcrumbs.append(new Element('<fancy-breadcrumb-separator>/</fancy-breadcrumb-separator>'));
+				breadcrumbs.append(new Element('<fancy-breadcrumbs-separator>/</fancy-breadcrumbs-separator>'));
 			}
 
 		}
