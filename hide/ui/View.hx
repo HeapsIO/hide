@@ -1,13 +1,14 @@
 package hide.ui;
 
-enum DisplayPosition {
-	Left;
-	Center;
-	Right;
-	Bottom;
+enum abstract DisplayPosition(String) from String to String {
+	var Left = "content_left";
+	var Center = "content_center";
+	var Right = "content_right";
+	var Bottom = "content_bottom";
+	var MiddleColumnInternal = "content_middle_internal";
 }
 
-typedef ViewOptions = { ?position : DisplayPosition, ?width : Int }
+typedef ViewOptions = { ?position : DisplayPosition, ?width : Int, ?id: String }
 
 @:keepSub @:allow(hide.Ide)
 class View<T> extends hide.comp.Component {

@@ -300,6 +300,7 @@ class BlendSpace2DEditor extends hide.view.FileView {
 			panel.onResize = refreshGraph;
 
 			scenePreview = new hide.comp.ScenePreview(config, previewContainer, null, saveDisplayKey + "/preview");
+			scenePreview.addToolbar();
 			scenePreview.listLoadableMeshes = () -> {
 				var ret : Array<{label: String, path: String}> = [];
 				var list = AnimGraphEditor.gatherAllPreviewModels(blendSpace2D.animFolder);

@@ -54,6 +54,7 @@ class GenericGraphEditor extends hide.view.FileView implements IGraphEditor {
 
         // Scene init
         scenePreview = new hide.comp.ScenePreview(config, previewContainer, null, saveDisplayKey + "/scenePreview");
+		  scenePreview.addToolbar();
         scenePreview.element.addClass("scene-preview");
 
         scenePreview.onReady = onScenePreviewReady;

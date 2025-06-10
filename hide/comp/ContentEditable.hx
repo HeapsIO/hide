@@ -5,6 +5,7 @@ class ContentEditable extends Component {
 	public var spellcheck(never, set) : Bool;
 
 	var html : js.html.Element = null;
+	var initialValue: String;
 
 	public function new(?parent : Element, ?element : Element) {
 		if (element == null) {
@@ -22,9 +23,14 @@ class ContentEditable extends Component {
 			var sel = js.Browser.window.getSelection();
 			sel.removeAllRanges();
 			sel.addRange(range);
+			initialValue = value;
 		}
 		html.onkeydown = function(e: js.html.KeyboardEvent) {
 			if (e.keyCode == 13) {
+				html.blur();
+			}
+			if (e.key == "Escape") {
+				value = initialValue;
 				html.blur();
 			}
 			e.stopPropagation();
@@ -49,9 +55,12 @@ class ContentEditable extends Component {
 
 		html.onblur = function() {
 			if (js.Browser.window.getSelection != null) {js.Browser.window.getSelection().removeAllRanges();}
-			if (wasEdited) {
+			if (get_value() != initialValue) {
 				onChange(get_value());
 				wasEdited = false;
+			}
+			else {
+				onCancel();
 			}
 		}
 	}
@@ -68,6 +77,8 @@ class ContentEditable extends Component {
 	function get_value() {
 		return html.innerText;
 	}
+
+	public dynamic function onCancel() {};
 
 	public dynamic function onChange(v: String) {};
 }

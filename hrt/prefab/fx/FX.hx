@@ -301,7 +301,7 @@ class FXAnimation extends h3d.scene.Object {
 						var visible = anim.elt.visible;
 						#if editor
 						var editor = anim.elt.shared.editor;
-						visible = visible && editor.isVisible(anim.elt);
+						visible = visible && (editor?.isVisible(anim.elt) ?? true);
 						#end
 						anim.obj.visible = visible && evaluator.getFloat(anim.visibility, time) > 0.5;
 					}

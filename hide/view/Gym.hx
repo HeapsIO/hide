@@ -141,10 +141,187 @@ class Gym extends hide.ui.View<{}> {
 					</fancy-button>
 				</fancy-toolbar>'));
 		}
+
+		{
+			var toolbar = section(element, "Windows");
+
+			var btn = new Element("<fancy-button><span class='label'>Open subwindow 'test'</span></h1>");
+
+			toolbar.append(btn);
+
+			var subwindow : js.html.Window;
+			var scene : hide.comp.Scene;
+
+			btn.on("click", (_) -> {
+				subwindow = js.Browser.window.open("", "test","popup=true");
+
+					var jq = new Element(subwindow.document.body);
+					jq.empty();
+					jq.append(new Element("<p>This is a triumph</p>"));
+					var container = new Element("<div></div>");
+					jq.append(container);
+
+					// var paragraphs = subwindow.document.querySelectorAll("p");
+					// for (p in paragraphs) {
+					// 	p.textContent = "This is the begining of something great";
+					// }
+
+					scene = new hide.comp.Scene(config, container, null);
+
+					scene.onReady = () -> {
+						new h3d.scene.CameraController(scene.s3d);
+						var box = new h3d.scene.Box(scene.s3d);
+						box.material.mainPass.setPassName("overlay");
+
+						var text = new h2d.Text(hxd.res.DefaultFont.get(), scene.s2d);
+						text.text = "Hello world";
+						text.x = 8;
+						text.y = 8;
+					};
+
+					var drag = new Element('<div draggable="true">Drag Me</div>').appendTo(jq);
+					drag.get(0).addEventListener("dragstart", (ev: js.html.DragEvent) -> {
+						ev.dataTransfer.setData("text/plain", "foo");
+						ev.dataTransfer.dropEffect = "copy";
+					});
+			});
+
+			var btn = new Element("<fancy-button><span class='label'>Spawn cube in subwindow</span></h1>");
+			toolbar.append(btn);
+
+			btn.on("click", (_) -> {
+				var box = new h3d.scene.Box(0xFFFFFFFF, scene.s3d);
+				box.setPosition(hxd.Math.random(10),hxd.Math.random(10),hxd.Math.random(10));
+				box.material.mainPass.setPassName("overlay");
+				box.material.color.r = hxd.Math.random();
+				box.material.color.g = hxd.Math.random();
+				box.material.color.b = hxd.Math.random();
+			});
+
+			var dropZone = new Element("<div>Drop something on me from the other window</div>").appendTo(toolbar);
+			dropZone.get(0).addEventListener("drop", (ev : js.html.DragEvent) -> {
+				ev.preventDefault();
+				var data = ev.dataTransfer.getData("text/plain");
+				dropZone.text(data);
+			});
+
+			dropZone.get(0).addEventListener("dragover", (ev : js.html.DragEvent) -> {
+				ev.preventDefault();
+				ev.dataTransfer.dropEffect = "copy";
+			});
+
+			var btn2 = new Element("<fancy-button><span class='label'>Localhost 5500</span></h1>").appendTo(toolbar);
+			btn2.on("click", (_) -> {
+				subwindow = js.Browser.window.open("http://127.0.0.1:5500/", "test","popup=true");
+			});
+		}
+
+
+		{
+			var toolbar = section(element, "Offscreen Rendering");
+			var btn = new Element("<fancy-button><span class='label'>Render test.thumb.png</span>").appendTo(toolbar);
+
+			btn.get(0).onclick = (e) -> {
+				var fm = hide.tools.FileManager.inst;
+			}
+
+			var btn = new Element("<fancy-button><span class='label'>Test thumbnail generator</span>").appendTo(toolbar);
+
+			var sub : js.node.child_process.ChildProcess = null;
+
+			var remoteSocket : hxd.net.Socket = null;
+
+			btn.get(0).onclick = (e) -> {
+
+				if (sock != null) {
+					sock.close();
+				}
+
+				sock = new hxd.net.Socket();
+
+				sock.onError = (msg) -> {
+					trace("Socket error " + msg);
+				}
+
+				sock.onData = () -> {
+					trace("sock.onData");
+					while(sock.input.available > 0) {
+						var data = sock.input.readLine().toString();
+
+						trace("recieved data sock.onData", data);
+					}
+				}
+
+				sock.bind("localhost", 9669, (rs: hxd.net.Socket) -> {
+					trace("new connexion");
+					remoteSocket = rs;
+
+					remoteSocket.onError = (msg) -> {
+						trace("Socket error " + msg);
+					}
+
+					remoteSocket.onData = () -> {
+						trace("rawsocket.onData");
+
+						while(remoteSocket.input.available > 0) {
+							var data = remoteSocket.input.readLine().toString();
+
+							trace("recieved data", data);
+						}
+					}
+				});
+
+				nw.Window.open('app.html?thumbnail=true', {new_instance: true}, (win: nw.Window) -> {
+					win.on("close", () -> {
+						sock.close();
+						sock = null;
+					});
+				});
+			}
+
+			var btn = new Element("<fancy-button><span class='label'>Send message</span>").appendTo(toolbar);
+			btn.get(0).onclick = (e) -> {
+				remoteSocket.out.writeString("Test message\n");
+			}
+
+			var btn = new Element("<fancy-button><span class='label'>Rethrow test</span>").appendTo(toolbar);
+			btn.get(0).onclick = (e) -> {
+				rethrowTest1();
+			}
+		}
 	}
+
+	function rethrowTest1() {
+		try {
+			rethrowTest2();
+		} catch (e) {
+			js.Lib.rethrow();
+		}
+	}
+
+	function rethrowTest2() {
+		try {
+			rethrowTest3();
+		} catch(e) {
+			js.Lib.rethrow();
+		}
+	}
+
+	function rethrowTest3() {
+		throw "Error Lol";
+	}
+
+	var subwin: js.html.Window;
+	static var sock: hxd.net.Socket;
+
 
 	static function section(parent: Element, name: String) : Element {
 		return new Element('<details><summary>$name</summary></details>').appendTo(parent);
+	}
+
+	static public function onBeforeReload() {
+		sock?.close();
+		sock = null;
 	}
 
 	static function getContextMenuContent() : Array<hide.comp.ContextMenu.MenuItem> {
