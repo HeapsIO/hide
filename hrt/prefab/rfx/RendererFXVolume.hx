@@ -14,6 +14,12 @@ class RendererFXVolume extends Object3D {
 	var innerShapeDebug = { color : 0xFFFF00FF, mesh : null };
 	var outerShapeDebug = { color : 0xFF00EEFF, mesh : null };
 
+	public override function new(parent:Prefab, contextShared: ContextShared) {
+		super(parent, contextShared);
+		this.innerShape = Sphere(1);
+		this.outerShape = Sphere(1);
+	}
+
 	override function load(data: Dynamic) {
 		super.load(data);
 
@@ -132,7 +138,6 @@ class RendererFXVolume extends Object3D {
 		</div>
 		');
 
-		var volume : h3d.impl.RendererFXVolume = cast local3d;
 		var shapeSel = e.find("#shape-sel");
 		for (idx => el in Type.getEnumConstructs(h3d.impl.RendererFXVolume.Shape))
 			shapeSel.append(new hide.Element('<option value="$el" ${ Type.enumIndex(this.innerShape) == idx ? 'selected' : ''}>$el</option>'));
