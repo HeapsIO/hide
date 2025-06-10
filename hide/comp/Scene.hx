@@ -231,14 +231,14 @@ class Scene extends hide.comp.Component implements h3d.IDrawable {
 		if( !visible || pendingCount > 0)
 			return;
 		var dt = hxd.Timer.tmod * speed / 60;
-		// if( !Ide.inst.isFocused ) {
-		// 	// refresh at 1FPS
-		// 	unFocusedTime += dt;
-		// 	if( unFocusedTime < 1 ) return;
-		// 	unFocusedTime -= 1;
-		// 	dt = 1;
-		// } else
-		// 	unFocusedTime = 0;
+		if( !Ide.inst.isFocused ) {
+			// refresh at 1FPS
+			unFocusedTime += dt;
+			if( unFocusedTime < 1 ) return;
+			unFocusedTime -= 1;
+			dt = 1;
+		} else
+			unFocusedTime = 0;
 		setCurrent();
 		sevents.checkEvents();
 		s2d.setElapsedTime(dt);
