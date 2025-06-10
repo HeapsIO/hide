@@ -160,7 +160,6 @@ class RenderProps extends Object3D {
 	override function getHideProps() : hide.prefab.HideProps {
 		return { icon : "sun-o", name : "RenderProps", allowChildren : function(p) {
 			return Prefab.isOfType(p,hrt.prefab.rfx.RendererFX)
-				|| Prefab.isOfType(p,hrt.prefab.rfx.SpatialRendererFX)
 				|| Prefab.isOfType(p,Light)
 				|| Prefab.isOfType(p,hrt.prefab.l3d.Environment);
 		}};

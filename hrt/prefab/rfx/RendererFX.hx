@@ -15,6 +15,10 @@ class RendererFX extends Prefab implements h3d.impl.RendererFX {
 	public function end( r : h3d.scene.Renderer, step : h3d.impl.RendererFX.Step ) {
 	}
 
+	public function transition( r1 : h3d.impl.RendererFX, r2 : h3d.impl.RendererFX, t : Float ) : h3d.impl.RendererFX {
+		return null;
+	}
+
 	inline function checkEnabled() {
 		return enabled #if editor && enableInEditor && !inGameOnly #end;
 	}

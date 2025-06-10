@@ -67,6 +67,13 @@ class ColorGrading extends RendererFX {
 		}
 	}
 
+	override function transition( r1 : h3d.impl.RendererFX, r2 : h3d.impl.RendererFX, t : Float ) {
+		if (t < 0.5)
+			return r1;
+		else
+			return r2;
+	}
+
 	#if editor
 
 	override function edit( ctx : hide.prefab.EditContext ) {

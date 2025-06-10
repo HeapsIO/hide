@@ -1,66 +1,23 @@
 package hrt.prefab.rfx;
 
-class SPRFXObject extends h3d.scene.Object {
-	public var sprfx : SpatialRendererFX;
-	var renderer : h3d.scene.Renderer;
-
-	public function new(sprfx : SpatialRendererFX, ?parent : h3d.scene.Object) {
-		super(parent);
-		this.sprfx = sprfx;
-	}
-
-	override function sync(ctx : h3d.scene.RenderContext) {
-		super.sync(ctx);
-
-		#if !editor
-		if (renderer == null) {
-			this.renderer = ctx.scene.renderer;
-			this.renderer.effects.push(@:privateAccess sprfx.instance);
-		}
-		#end
-	}
-
-	override function onRemove() {
-		super.onRemove();
-		this.renderer?.effects?.remove(sprfx);
-	}
-}
-
-typedef SPRFXDebug = {
+typedef DebugVolume = {
 	var color : Int;
 	var mesh : h3d.scene.Mesh;
 }
 
-enum SPRFXShape {
-	Sphere(radius : Float);
-	Box(width : Float, height: Float);
-}
+class RendererFXVolume extends Object3D {
+	@:s public var priority : Int;
+	@:c public var innerShape : h3d.impl.RendererFXVolume.Shape;
+	@:c public var outerShape : h3d.impl.RendererFXVolume.Shape;
 
-class SpatialRendererFX extends Object3D implements h3d.impl.RendererFX {
-	@:c public var innerShape : SPRFXShape;
-	@:c public var outerShape : SPRFXShape;
-
-	@:s var enableInEditor = true;
-
-	var cam : h3d.Camera;
-
-	// Debug
 	@:s var debug : Bool = false;
 	var innerShapeDebug = { color : 0xFFFF00FF, mesh : null };
 	var outerShapeDebug = { color : 0xFF00EEFF, mesh : null };
 
-	var instance : SpatialRendererFX;
-
-	public function new(parent:Prefab, contextShared: ContextShared) {
-		super(parent, contextShared);
-		this.innerShape = Sphere(1);
-		this.outerShape = Sphere(1);
-	}
-
 	override function load(data: Dynamic) {
 		super.load(data);
 
-		function loadShape(shape : Dynamic) : SPRFXShape {
+		function loadShape(shape : Dynamic) : h3d.impl.RendererFXVolume.Shape {
 			if (shape == null)
 				return Sphere(1);
 
@@ -81,14 +38,14 @@ class SpatialRendererFX extends Object3D implements h3d.impl.RendererFX {
 	override function copy(data: Dynamic) : Void {
 		super.copy(data);
 
-		var s : SpatialRendererFX = cast data;
+		var s : RendererFXVolume = cast data;
 		this.load(s.save());
 	}
 
 	override function save() : Dynamic {
 		var obj = super.save();
 
-		function saveShape(shape : SPRFXShape) : Dynamic {
+		function saveShape(shape : h3d.impl.RendererFXVolume.Shape) : Dynamic {
 			if (shape == null)
 				return { shape: 0, radius: 1 };
 
@@ -107,72 +64,32 @@ class SpatialRendererFX extends Object3D implements h3d.impl.RendererFX {
 		return obj;
 	}
 
-
-	public function start( r : h3d.scene.Renderer ) {
-	}
-
-	public function begin( r : h3d.scene.Renderer, step : h3d.impl.RendererFX.Step ) {
-	}
-
-	public function end( r : h3d.scene.Renderer, step : h3d.impl.RendererFX.Step ) {
-	}
-
-	inline function checkEnabled() {
-		return enabled #if editor && enableInEditor && !inGameOnly #end;
-	}
-
-	override function make( ?sh:hrt.prefab.Prefab.ContextMake ) : Prefab {
-		instance = cast this.clone();
-		// unlink this.props and instance.props for ScreenShaderGraph
-		// because props is cloned by ref
-		instance.props = {};
-
-		if (!shouldBeInstanciated())
-			return this;
-
-		makeInstance();
-		for (c in children)
-			makeChild(c);
-		postMakeInstance();
-		updateInstance();
-
-		return this;
-	}
-
 	override function makeObject(parent3d: h3d.scene.Object) {
-		var o = new SPRFXObject(this, parent3d);
+		var o = new h3d.impl.RendererFXVolume(parent3d);
+		o.innerShape = this.innerShape;
+		o.outerShape = this.outerShape;
+		o.priority = this.priority;
+
 		return o;
 	}
 
+	override function postMakeInstance() {
+		var o : h3d.impl.RendererFXVolume = cast local3d;
+		var rendererFxs : Array<RendererFX> = cast findAll((p) -> { return Std.isOfType(p, RendererFX) && p.enabled; });
+		o.effects = [];
+		for (r in rendererFxs)
+			o.effects.push(@:privateAccess r.instance);
+	}
+
 	override function updateInstance(?propName : String) {
-		if (instance != null) {
-			if (propName != null && propName != "props") {
-				Reflect.setField(instance, propName, Reflect.field(this, propName));
-				return;
-			}
+		super.updateInstance(propName);
 
-			for (f in Reflect.fields(this)) {
-				if (f != "props")
-					Reflect.setField(instance, f, Reflect.field(this, f));
-			}
-		}
+		var volume : h3d.impl.RendererFXVolume = cast local3d;
+		volume.innerShape = this.innerShape;
+		volume.outerShape = this.outerShape;
+		volume.priority = this.priority;
 
-		function createPrim(shape : SPRFXShape) : h3d.prim.Primitive {
-			switch(shape) {
-				case Sphere(radius):
-					var prim = new h3d.prim.Sphere(radius, 64, 64);
-					prim.addNormals();
-					prim.addUVs();
-					return prim;
-				case Box(width, height):
-					var prim = new h3d.prim.Cube(width);
-					prim.addNormals();
-					prim.addUVs();
-					return prim;
-			}
-		}
-
-		function applyDebug(sprDebug : SPRFXDebug, shape : SPRFXShape) {
+		function applyDebug(sprDebug : DebugVolume, shape : h3d.impl.RendererFXVolume.Shape) {
 			if (sprDebug != null) {
 				sprDebug.mesh.remove();
 				sprDebug.mesh = null;
@@ -197,24 +114,9 @@ class SpatialRendererFX extends Object3D implements h3d.impl.RendererFX {
 		applyDebug(outerShapeDebug, this.outerShape);
 	}
 
-	override function dispose() {
-		if (this.instance != null) {
-			var scene = this.instance.shared.root3d?.getScene();
-
-			if(scene != null)
-				scene.renderer.effects.remove(this.instance);
-
-			var i = this.instance;
-			this.instance = null;
-			i.dispose();
-		}
-
-		super.dispose();
-	}
-
 	#if editor
 	override function getHideProps() : hide.prefab.HideProps {
-		return { name : Type.getClassName(Type.getClass(this)).split(".").pop(), icon : "plus-circle" };
+		return { name : Type.getClassName(Type.getClass(this)).split(".").pop(), icon : "cubes" };
 	}
 
 	override function edit(ctx:hide.prefab.EditContext) {
@@ -222,6 +124,7 @@ class SpatialRendererFX extends Object3D implements h3d.impl.RendererFX {
 		<div class="group" name="Spatial Renderer FX">
 			<dl>
 				<dt>Debug</dt><dd><input type="checkbox" field="debug"/></dd>
+				<dt>Priority</dt><dd><input type="range" min="0" max="10" step="1" field="priority"/></dd>
 				<dt>Shape</dt><dd><select id="shape-sel"></select></dd>
 				<div id="params">
 				</div>
@@ -229,8 +132,9 @@ class SpatialRendererFX extends Object3D implements h3d.impl.RendererFX {
 		</div>
 		');
 
+		var volume : h3d.impl.RendererFXVolume = cast local3d;
 		var shapeSel = e.find("#shape-sel");
-		for (idx => el in Type.getEnumConstructs(SPRFXShape))
+		for (idx => el in Type.getEnumConstructs(h3d.impl.RendererFXVolume.Shape))
 			shapeSel.append(new hide.Element('<option value="$el" ${ Type.enumIndex(this.innerShape) == idx ? 'selected' : ''}>$el</option>'));
 		shapeSel.on("change", function(e) {
 			var prevInner = this.innerShape;
@@ -305,18 +209,25 @@ class SpatialRendererFX extends Object3D implements h3d.impl.RendererFX {
 	}
 	#end
 
-	public function getFactor() : Float {
-		if (cam == null)
-			cam = local3d.getScene().camera;
-		var distance = (local3d.getAbsPos().getPosition() - cam.pos).length();
-
-		switch ([innerShape, outerShape]) {
-			case [Sphere(r1), Sphere(r2)]:
-				if (distance < r1) return 1;
-				if (distance > r2) return 0;
-				return 1 - hxd.Math.clamp((distance - r1) / (r2 - r1), 0, 1);
-			default:
-				return 0.;
+	function createPrim(shape : h3d.impl.RendererFXVolume.Shape) : h3d.prim.Primitive {
+		switch(shape) {
+			case Sphere(radius):
+				var prim = new h3d.prim.Sphere(radius, 64, 64);
+				prim.addNormals();
+				prim.addUVs();
+				return prim;
+			case Box(width, height):
+				var prim = new h3d.prim.Cube(width);
+				prim.addNormals();
+				prim.addUVs();
+				return prim;
 		}
 	}
+
+	public function getFactor() : Float {
+		if (local3d == null) return 0.;
+		return cast(local3d, h3d.impl.RendererFXVolume).getFactor();
+	}
+
+	static var _ = Prefab.register("RendererFXVolume", RendererFXVolume);
 }
