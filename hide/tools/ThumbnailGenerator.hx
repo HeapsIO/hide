@@ -69,7 +69,7 @@ class ThumbnailGenerator {
 	var socket : hxd.net.Socket = null;
 	var ready : Bool = false;
 
-	static final debugBypassCache = false;
+	static final debugBypassCache = true;
 	static final debugShowWindow = false;
 
 	function sendSuccess(originalPath: String, finalPath: String) {
