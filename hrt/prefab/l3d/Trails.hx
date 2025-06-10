@@ -233,8 +233,11 @@ class TrailObj extends h3d.scene.Mesh {
 				fxAnim.push(fx);
 			p = p.parent;
 		}
-		for ( fx in fxAnim )
-			fx.trails.remove(this);
+		for ( fx in fxAnim ) {
+			if (fx.trails != null) {
+				fx.trails.remove(this);
+			}
+		}
 		dprim.dispose();
 	}
 

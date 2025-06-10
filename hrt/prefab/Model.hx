@@ -55,8 +55,7 @@ class Model extends Object3D {
 			return obj;
 		#if editor
 		} catch( e : Dynamic ) {
-			e.message = "Could not load model " + source + ": " + e.message;
-			shared.onError(e);
+			hide.Ide.inst.quickError("Could not load model " + source + ": " + e.message);
 		}
 		#end
 		return new h3d.scene.Object(parent3d);

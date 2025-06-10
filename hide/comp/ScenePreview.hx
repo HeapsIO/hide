@@ -20,7 +20,9 @@ class ScenePreview extends Scene {
 	public function new(config, parent, el, save: String) {
 		this.saveDisplayKey = save;
 		super(config, parent, el);
+	}
 
+	public function addToolbar() {
 		var toolbar = new Element('
 		<div class="hide-toolbar2">
 			<div class="tb-group">
@@ -112,6 +114,10 @@ class ScenePreview extends Scene {
 	}
 
 	function listRenderProps() : Array<{name: String, value: String}> {
+		return listRenderPropsStatic(config);
+	}
+
+	static public function listRenderPropsStatic(config: hide.Config) : Array<{name: String, value: String}> {
 		var renderProps = config.getLocal("scene.renderProps");
 		var ret : Array<{name: String, value: String}> = [];
 

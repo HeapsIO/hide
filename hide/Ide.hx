@@ -28,7 +28,6 @@ class Ide extends hide.tools.IdeData {
 	var layout : golden.Layout;
 
 	var currentLayout : { name : String, state : Config.LayoutState };
-	var defaultLayout : { name : String, state : Config.LayoutState };
 	var currentFullScreen(default,set) : hide.ui.View<Dynamic>;
 	var maximized : Bool;
 	var fullscreen : Bool;
@@ -40,6 +39,7 @@ class Ide extends hide.tools.IdeData {
 	var subView : { component : String, state : Dynamic, events : {} };
 	var scripts : Map<String,Array<Void->Void>> = new Map();
 	var hasReloaded = false;
+	public var thumbnailMode : Bool = false;
 
 	var hideRoot : hide.Element;
 	var statusBar : hide.Element;
@@ -60,8 +60,14 @@ class Ide extends hide.tools.IdeData {
 		initPad();
 		isCDB = Sys.getEnv("HIDE_START_CDB") == "1" || nw.App.manifest.name == "CDB";
 		isDebugger = Sys.getEnv("HIDE_DEBUG") == "1";
+
+		var thumb = StringTools.contains(js.Browser.window.location.href, "thumbnail");
+		if (thumb) {
+			thumbnailMode = true;
+		}
+
 		function wait() {
-			if( monaco.ScriptEditor == null ) {
+			if( monaco.ScriptEditor == null && !thumbnailMode ) {
 				haxe.Timer.delay(wait, 10);
 				return;
 			}
@@ -81,6 +87,10 @@ class Ide extends hide.tools.IdeData {
 	function initPad() {
 		gamePad = hxd.Pad.createDummy();
 		hxd.Pad.wait((p) -> gamePad = p);
+	}
+
+	function thumbnailInit() {
+		var generator = @:privateAccess new hide.tools.ThumbnailGenerator();
 	}
 
 	function startup() {
@@ -130,7 +140,9 @@ class Ide extends hide.tools.IdeData {
 				}
 			}
 		}
-		window.show(true);
+
+		if (!thumbnailMode)
+			window.show(true);
 
 		if( config.global.get("hide") == null )
 			error("Failed to load defaultProps.json");
@@ -142,6 +154,13 @@ class Ide extends hide.tools.IdeData {
 
 		setProject(current);
 		loadProject();
+
+		if (thumbnailMode) {
+			thumbnailInit();
+			hxd.System.setLoop(mainLoop);
+			return;
+		}
+
 		window.window.document.addEventListener("mousedown", function(e) {
 			mouseX = e.x;
 			mouseY = e.y;
@@ -162,14 +181,17 @@ class Ide extends hide.tools.IdeData {
 		});
 		window.on('move', function() haxe.Timer.delay(onWindowChange,100));
 		window.on('resize', function() haxe.Timer.delay(onWindowChange,100));
-		window.on('close', function() {
-			if( hasReloaded ) return;
-			if( !isDebugger )
-				for( v in views )
-					if( !v.onBeforeClose() )
-						return;
-			window.close(true);
-		});
+		if (!thumbnailMode) {
+			window.on('close', function() {
+				if( hasReloaded ) return;
+				if( !isDebugger )
+					for( v in views )
+						if( !v.onBeforeClose() )
+							return;
+				window.close(true);
+			});
+		}
+
 		window.on("blur", function() { if( h3d.Engine.getCurrent() != null && !hasReloaded ) hxd.Key.initialize(); });
 
 		// handle commandline parameters
@@ -214,7 +236,6 @@ class Ide extends hide.tools.IdeData {
 		}
 		body.ondragover = function(e:js.html.DragEvent) {
 			dragFunc(false, e);
-			return false;
 		};
 		body.ondrop = function(e:js.html.DragEvent) {
 			if(!dragFunc(true, e)) {
@@ -222,7 +243,6 @@ class Ide extends hide.tools.IdeData {
 					openFile(Reflect.field(f,"path"));
 				e.preventDefault();
 			}
-			return false;
 		}
 
 		if( subView != null ) body.className +=" hide-subview";
@@ -336,6 +356,61 @@ class Ide extends hide.tools.IdeData {
 			v.onResize();
 	}
 
+	function getOrInitTarget(position: hide.ui.View.DisplayPosition) : golden.ContentItem {
+		if (layout.root == null)
+			return null;
+		var target = layout.root.getItemsById(position)[0];
+		if (target != null)
+			return target;
+
+		var parent : golden.ContentItem = null;
+		var config : golden.Config.ItemConfig;
+		var index : Int = null;
+		var rootRow = layout.root.contentItems[0];
+		switch(position) {
+			case Left:
+				config = {
+					type: Stack,
+				};
+				parent = rootRow;
+				index = 0;
+			case Center:
+				config = {
+					type: Stack,
+					isClosable: false,
+					width: 1500,
+					height: 800,
+				};
+				parent = getOrInitTarget(MiddleColumnInternal);
+				index = 0;
+			case Bottom:
+				config = {
+					type: Stack,
+				};
+				parent = getOrInitTarget(MiddleColumnInternal);
+				index = parent.contentItems.length;
+			case Right:
+				config = {
+					type: Stack,
+				};
+				parent = rootRow;
+				index = parent.contentItems.length;
+			case MiddleColumnInternal:
+				config = {
+					type: Column,
+					isClosable: false,
+				}
+				parent = rootRow;
+				index = hxd.Math.iclamp(1, 0, parent.contentItems.length);
+		}
+
+		config.id = position;
+		parent.addChild(config, index);
+		var target = layout.root.getItemsById(position)[0];
+
+		return target;
+	}
+
 	function initLayout( ?state : { name : String, state : Config.LayoutState } ) {
 		initializing = true;
 
@@ -344,30 +419,37 @@ class Ide extends hide.tools.IdeData {
 			layout = null;
 		}
 
-		defaultLayout = null;
-		var layoutName = isCDB ? "CDB" : "Default";
 		var emptyLayout : Config.LayoutState = { content : [], fullScreen : null };
-		for( p in projectConfig.layouts )
-			if( p.name == layoutName ) {
-				if( p.state.content == null ) continue; // old version
-				defaultLayout = p;
-				break;
+
+		if( state == null ) {
+			var emptyLayout : Config.LayoutState = {
+				content: [{type: golden.Config.ItemType.Row, isClosable: false, id: "content_root"}], fullScreen : null,
+			};
+
+
+			var layoutName = isCDB ? "CDB" : "Default";
+			for( i => p in projectConfig.layouts.copy() ) {
+				if( p.name == layoutName ) {
+					if( p.state.content == null || (p.state.content:Array<Dynamic>)[0]?.id != "content_root") {
+						projectConfig.layouts.splice(i, 1);
+						continue;
+					};
+					state = p;
+				}
 			}
-		if( defaultLayout == null ) {
-			defaultLayout = { name : layoutName, state : emptyLayout };
-			projectConfig.layouts.push(defaultLayout);
-			config.current.sync();
-			config.user.save();
+
+			if( state == null ) {
+				state = { name : layoutName, state : emptyLayout };
+				projectConfig.layouts.push(state);
+			}
 		}
-		if( state == null )
-			state = defaultLayout;
 
 		if( subView != null )
 			state = { name : "SubView", state : emptyLayout };
 
-		this.currentLayout = state;
+		currentLayout = state;
 
-		var config : golden.Config = {
+		var goldenConfig : golden.Config = {
 			content: state.state.content,
 			settings: {
 				// Default to false
@@ -377,17 +459,18 @@ class Ide extends hide.tools.IdeData {
 				showMaximiseIcon : config.user.get('layout.showMaximiseIcon') == true
 			}
 		};
+
 		var comps = new Map();
 		for( vcl in hide.ui.View.viewClasses )
 			comps.set(vcl.name, true);
 		function checkRec(i:golden.Config.ItemConfig) {
-			if( i.componentName != null && !comps.exists(i.componentName) ) {
+			if( i.componentName != null && i.componentState != null && !comps.exists(i.componentName) ) {
 				i.componentState.deletedComponent = i.componentName;
 				i.componentName = "hide.view.Unknown";
 			}
 			if( i.content != null ) for( i in i.content ) checkRec(i);
 		}
-		for( i in config.content ) checkRec(i);
+		for( i in goldenConfig.content ) checkRec(i);
 
 		if (hideRoot != null) {
 			hideRoot.remove();
@@ -405,7 +488,10 @@ class Ide extends hide.tools.IdeData {
 			new Element('<span class="build">hide $commitHash</span>').appendTo(statusBar);
 		}
 
-		layout = new golden.Layout(config, goldenContainer.get(0));
+		layout = new golden.Layout(goldenConfig, goldenContainer.get(0));
+
+
+
 		var resizeTimer : haxe.Timer = null;
 		var observer = new hide.comp.ResizeObserver((elts, observer) -> {
 			if (resizeTimer != null) {
@@ -438,6 +524,8 @@ class Ide extends hide.tools.IdeData {
 
 		layout.init();
 		layout.on('stateChanged', onLayoutChanged);
+
+		getOrInitTarget(Center);
 
 		var waitCount = 0;
 		function waitInit() {
@@ -528,7 +616,7 @@ class Ide extends hide.tools.IdeData {
 	function onLayoutChanged() {
 		if( initializing || !ideConfig.autoSaveLayout || isCDB )
 			return;
-		defaultLayout.state = saveLayout();
+		currentLayout.state = saveLayout();
 		if( subView == null ) this.config.user.save();
 	}
 
@@ -711,6 +799,9 @@ class Ide extends hide.tools.IdeData {
 			}
 			h3d.mat.MaterialSetup.current = render;
 
+			if (thumbnailMode) {
+				return;
+			}
 			initMenu();
 			initLayout();
 		});
@@ -798,6 +889,7 @@ class Ide extends hide.tools.IdeData {
 	public function reload() {
 		hasReloaded = true;
 		fileWatcher.dispose();
+		hide.tools.FileManager.onBeforeReload();
 		hide.view.RemoteConsoleView.onBeforeReload();
 		js.Browser.location.reload();
 	}
@@ -1523,11 +1615,29 @@ class Ide extends hide.tools.IdeData {
 		if( subView != null ) Reflect.callMethod(subView.events,Reflect.field(subView.events,name),[param]);
 	}
 
+	public function getOrOpenInspector() {
+		var inspector = layout.root.getItemsById("inspector")[0];
+		if (inspector != null)
+			return;
+
+		open("hide.view.Inspector", {});
+		return;
+	}
+
+	public function closeInspector() {
+		var inspector = layout.root.getItemsById("inspector")[0];
+		if (inspector != null) {
+			inspector.remove();
+		}
+	}
+
 	public function open( component : String, state : Dynamic, ?onCreate : hide.ui.View<Dynamic> -> Void, ?onOpen : hide.ui.View<Dynamic> -> Void ) {
+		if (layout.root == null)
+			return;
 		if( state == null ) state = {};
 
-		var c = hide.ui.View.viewClasses.get(component);
-		if( c == null )
+		var viewConfig = hide.ui.View.viewClasses.get(component);
+		if( viewConfig == null )
 			throw "Unknown component " + component;
 
 		state.componentName = component;
@@ -1540,27 +1650,10 @@ class Ide extends hide.tools.IdeData {
 			}
 		}
 
-		var options = c.options;
+		var options = viewConfig.options;
 
-		var bestTarget : golden.Container = null;
-		for( v in views )
-			if( v.defaultOptions.position == options.position ) {
-				if( bestTarget == null || bestTarget.width * bestTarget.height < v.container.width * v.container.height )
-					bestTarget = v.container;
-			}
+		var target = getOrInitTarget(options.position ?? Center);
 
-		var index : Null<Int> = null;
-		var target;
-		if( bestTarget != null )
-			target = bestTarget.parent.parent;
-		else {
-			target = layout.root.contentItems[0];
-			if( target == null ) {
-				layout.root.addChild({ type : Row, isClosable: false });
-				target = layout.root.contentItems[0];
-			}
-			target.config.isClosable = false;
-		}
 		var needResize = options.width != null;
 		target.on("componentCreated", function(c) {
 			target.off("componentCreated");
@@ -1584,15 +1677,14 @@ class Ide extends hide.tools.IdeData {
 		var config : golden.Config.ItemConfig = {
 			type : Component,
 			componentName : component,
-			componentState : state
+			componentState : state,
 		};
 
-		if( options.position == Left ) index = 0;
+		if (options.id != null) {
+			config.id = options.id;
+		}
 
-		if( index == null )
-			target.addChild(config);
-		else
-			target.addChild(config, index);
+		target.addChild(config);
 	}
 
 	public function reopenLastClosedTab() {

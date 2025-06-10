@@ -5110,13 +5110,16 @@ hide-popover {
 
 :root {
 	--hover-highlight: rgba(114, 180, 255, 0.5);
-	--selection: rgba(114, 180, 255);
+	--selection: #3185ce;
 	--hover: #444;
 
 	--basic-shadow: 2px 2px 3px rgba(0,0,0,.75);
 	--sublte-shadow: 1px 1px 3px rgba(0,0,0,.33);
 
 	--basic-border: 1px solid #353535;
+	--basic-border-hover: 1px solid #555;
+	--basic-border-focused: 1px solid var(--selection);
+
 	--basic-border-radius: 5px;
 	--basic-padding: 0.2em;
 
@@ -5316,6 +5319,16 @@ fancy-toolbar {
 	display: flex;
 	flex-direction: row;
 	align-items: center;
+
+	&.shadow {
+		position: relative;
+		background-color: #272727;
+		box-shadow: 2px 2px 2px rgba(0,0,0,0.2);
+		z-index: 999;
+	}
+
+	padding-left: 0.25em;
+	padding-right: 0.25em;
 }
 
 fancy-button {
@@ -5383,7 +5396,6 @@ fancy-button {
 		&:hover {
 			background: none;
 			color: var(--fancy-main-text-color);
-
 		}
 	}
 
@@ -5879,4 +5891,623 @@ blend-space-2d-root {
 
 .fancy-hide {
 	display: none;
+}
+
+file-browser {
+	display: flex;
+	flex-direction: row;
+	height: 100%;
+
+	.left {
+		width: 300px;
+		min-width: 100px;
+		background-color: mediumaquamarine;
+	}
+
+	.right {
+		flex: 1 1;
+		display: flex;
+		flex-direction: column;
+	}
+}
+
+fancy-flex-fill {
+	flex: 1 1;
+}
+
+fancy-icon {
+	aspect-ratio: 1/1;
+	height: 1em;
+	display: block;
+	mask-size: contain;
+	background-color: currentColor;
+	mask-mode: luminance;
+	mask-repeat: no-repeat;
+	aspect-ratio: 1/1;
+	mask-position: center;
+
+	&.small {
+		height: 12px;
+	}
+
+
+	&.big {
+		height: 22px;
+	}
+
+	&.fi-right-caret 		{ mask-image: url("res/icons/svg/right_caret.svg"); }
+	&.fi-close 				{ mask-image: url("res/icons/svg/close.svg"); }
+	&.fi-search 			{ mask-image: url("res/icons/svg/search.svg"); }
+}
+
+fancy-closable {
+	display: flex;
+	align-items: center;
+	justify-content: center;
+
+	* {
+		box-sizing: border-box;
+	}
+
+	background-color: #333;
+	box-shadow: 1px 1px 1px rgba(0,0,0,0.33);
+	margin-bottom: 2px;
+
+	overflow: hidden;
+	height: 0px;
+}
+
+fancy-search {
+	position: relative;
+	flex: 1 1;
+	padding: 2px;
+	max-width: 400px;
+
+	&, * {
+		box-sizing: border-box;
+	}
+
+	> input {
+		border: var(--basic-border);
+		border-radius: var(--basic-border-radius);
+
+		&:hover {
+			border: var(--basic-border-hover);
+		}
+
+		&:focus {
+			border: var(--basic-border-focused);
+
+			outline: none;
+		}
+
+		min-width: 0;
+		width: 100%;
+		height: 100%;
+	}
+
+	.search-icon {
+		position: absolute;
+		right: 0.5em;
+		top: 50%;
+		transform: translateY(-50%);
+		color: #999;
+		z-index: 1;
+	}
+}
+
+fancy-tree {
+	--anim-speed: 0.1s;
+
+	background-color: #222;
+
+	height: 100%;
+	display: flex;
+	flex-direction: column;
+
+	&:focus {
+		outline: none;
+	}
+
+	fancy-wrapper {
+		display: block;
+		width: 100%;
+		flex: 1 1;
+		min-width: 100px;
+		overflow-x: clip;
+		overflow-y: auto;
+
+		fancy-tree-item {
+			--depth: 0;
+
+			display: flex;
+
+			flex-direction: column;
+
+			&.hide-search {
+				overflow: hidden;
+				height: 0px;
+				display: none;
+			}
+
+			fancy-tree-children {
+				height: 0px;
+				overflow: hidden;
+				display: none;
+			}
+
+			&.open > fancy-tree-children {
+				display: block;
+				height: auto;
+
+				&:has(fancy-tree-name:focus) {
+					overflow: visible;
+				}
+			}
+
+			&.open>fancy-tree-header .caret::before {
+				transform: rotate(90deg);
+			}
+
+			// Select if we have a children that is selected
+			&:has(fancy-tree-children .selected) > fancy-tree-header {
+				fancy-tree-name {
+					text-decoration: underline var(--selection);
+				}
+			}
+
+			--highlight: 0;
+			&.current:not(.selected) {
+				--highlight: 10;
+			}
+
+			&.selected > fancy-tree-header {
+				color: white;
+				--background: var(--selection);
+			}
+
+			box-sizing: border-box;
+
+
+			fancy-tree-header {
+				padding-left: calc((var(--depth) - 1) * 1.0em + 0.25em);
+				position: relative;
+				box-sizing: border-box;
+
+				height: 20px;
+				max-height: 20px;
+				min-height: 20px;
+
+				--background: #222;
+				background-color: e("hsl(from var(--background) h s calc(var(--highlight) + l))");
+
+
+				display: flex;
+
+				position: relative;
+
+				&:has(>.caret:hover, >fancy-tree-name:hover) {
+					--highlight: 10;
+				}
+
+				fancy-tree-icon {
+					align-self: center;
+					width: 16px;
+					height: 16px;
+
+					display: block;
+
+					flex-shrink: 0;
+
+					filter: drop-shadow(1px 1px rgba(0,0,0,0.5));
+
+					&.caret {
+						width: 16px;
+						height: 16px;
+						&::before {
+							content: "";
+							position: absolute;
+							top: 0; left: 0;
+							margin: 2px;
+							width: 12px; height: 12px;
+
+							transition: transform var(--anim-speed);
+							background-color: currentColor;
+							mask-image: url("res/icons/svg/right_caret.svg");
+
+							mask-position: center;
+							mask-repeat: no-repeat;
+							mask-size: contain;
+
+							pointer-events: all;
+							cursor: pointer;
+						}
+					}
+				}
+
+				fancy-tree-name {
+					display: block;
+					text-overflow: ellipsis;
+					align-self: stretch;
+					overflow: clip;
+					text-wrap: nowrap;
+					flex-shrink: 1;
+					cursor: pointer;
+					filter: drop-shadow(1px 1px rgba(0,0,0,0.5));
+					min-width: 2em;
+					padding: 1px;
+					padding-left: 0;
+					align-content: center;
+
+					&:focus {
+						z-index: 100;
+						background-color: #222;
+						outline-offset: 1px;
+					}
+
+				}
+
+				&.feedback-drop-top::after {
+					position: absolute;
+					content: "";
+					display: block;
+					left: 0;
+					right: 0;
+					top: 0;
+					border-top: solid 1px var(--selection);
+					z-index: 10;
+					pointer-events: none;
+				}
+
+				&.feedback-drop-bot::after {
+					position: absolute;
+					content: "";
+					display: block;
+					left: 0;
+					right: 0;
+					bottom: 0;
+					border-top: solid 1px var(--selection);
+					z-index: 10;
+					pointer-events: none;
+				}
+
+				&.feedback-drop-in::after {
+					position: absolute;
+					content: "";
+					display: block;
+					left: 0;
+					right: 0;
+					bottom: 0;
+					top: 0;
+					border: solid 1px var(--selection);
+					z-index: 10;
+					pointer-events: none;
+				}
+			}
+
+
+
+		}
+	}
+
+
+}
+
+fancy-tree2 {
+	--anim-speed: 0.1s;
+
+	background-color: #222;
+
+	height: 100%;
+	display: flex;
+	flex-direction: column;
+
+	&:focus {
+		outline: none;
+	}
+
+	fancy-scroll {
+		display: block;
+		width: 100%;
+		flex: 1 1;
+		min-width: 100px;
+		overflow-x: clip;
+		overflow-y: auto;
+
+		fancy-item-container {
+			position: relative;
+			display: block;
+			overflow: hidden;
+
+			contain: layout paint size style;
+		}
+
+		fancy-tree-item {
+			position: absolute;
+			--depth: 0;
+			--highlight: 0;
+			width: 100%;
+
+			display: flex;
+
+			&.hide-search {
+				overflow: hidden;
+				height: 0px;
+				display: none;
+			}
+
+			&.open> .caret::before {
+				transform: rotate(90deg);
+			}
+
+			// Select if we have a children that is selected
+			&:has(fancy-tree-children .selected) > fancy-tree-header {
+				fancy-tree-name {
+					text-decoration: underline var(--selection);
+				}
+			}
+
+			// &.current:not(.selected) {
+			// 	//--highlight: 10;
+			// }
+
+			&.current {
+				outline: dashed 1px #AAA;
+				z-index: 10;
+				outline-offset: -1px;
+			}
+
+			&.selected {
+				color: white;
+				--background: var(--selection);
+			}
+
+
+
+			box-sizing: border-box;
+
+			padding-left: calc((var(--depth) - 1) * 1.0em + 0.25em);
+			box-sizing: border-box;
+
+			height: 20px;
+			max-height: 20px;
+			min-height: 20px;
+
+			--background: #222;
+			background-color: e("hsl(from var(--background) h s calc(var(--highlight) + l))");
+
+			display: flex;
+
+			&:has(>:hover) {
+				--highlight: 10;
+				cursor: pointer;
+			}
+
+			.hidden {
+				visibility: hidden;
+				pointer-events: none;
+			}
+
+			fancy-tree-icon {
+				align-self: center;
+				width: 16px;
+				height: 16px;
+
+				display: block;
+
+				flex-shrink: 0;
+
+				filter: drop-shadow(1px 1px rgba(0,0,0,0.5));
+
+				&.caret {
+					width: 16px;
+					height: 16px;
+					&::before {
+						content: "";
+						position: absolute;
+						top: 0; left: 0;
+						margin: 2px;
+						width: 12px; height: 12px;
+
+						transition: transform var(--anim-speed);
+						background-color: currentColor;
+						mask-image: url("res/icons/svg/right_caret.svg");
+
+						mask-position: center;
+						mask-repeat: no-repeat;
+						mask-size: contain;
+
+						pointer-events: all;
+					}
+				}
+			}
+
+			fancy-tree-name {
+				display: block;
+				text-overflow: ellipsis;
+				align-self: stretch;
+				overflow: clip;
+				text-wrap: nowrap;
+				flex-shrink: 1;
+				filter: drop-shadow(1px 1px rgba(0,0,0,0.5));
+				min-width: 2em;
+				padding: 1px;
+				padding-left: 0;
+				align-content: center;
+
+				&:focus {
+					z-index: 100;
+					background-color: #222;
+					outline-offset: 1px;
+				}
+
+				>span.search-hl {
+					background-color: var(--selection);
+					color: white;
+				}
+
+			}
+
+			&.feedback-drop-top::after {
+				position: absolute;
+				content: "";
+				display: block;
+				left: 0;
+				right: 0;
+				top: 0;
+				border-top: solid 1px var(--selection);
+				z-index: 10;
+				pointer-events: none;
+			}
+
+			&.feedback-drop-bot::after {
+				position: absolute;
+				content: "";
+				display: block;
+				left: 0;
+				right: 0;
+				bottom: 0;
+				border-top: solid 1px var(--selection);
+				z-index: 10;
+				pointer-events: none;
+			}
+
+			&.feedback-drop-in::after {
+				position: absolute;
+				content: "";
+				display: block;
+				left: 0;
+				right: 0;
+				bottom: 0;
+				top: 0;
+				border: solid 1px var(--selection);
+				z-index: 10;
+				pointer-events: none;
+			}
+
+
+
+		}
+	}
+}
+
+fancy-gallery {
+	display: flex;
+	flex-direction: column;
+	overflow: none;
+
+	flex-grow: 0;
+	flex-shrink: 1;
+	align-self: stretch;
+
+	min-width: 0;
+	min-height: 0;
+
+	width: 100%;
+
+	&,* {
+		box-sizing: border-box;
+	}
+
+	fancy-scroll {
+		flex: 1 1;
+		overflow-y: scroll;
+
+		fancy-item-container {
+			position: relative;
+			display: block;
+			overflow: hidden;
+
+			width: 100%;
+			min-height: 100%;
+
+			contain: layout paint size style;
+
+			fancy-item {
+				padding: 4px;
+				position: absolute;
+				align-items: stretch;
+				overflow: hidden;
+
+				contain: layout paint size style;
+
+				background-color: #282828;
+				border-radius: 6px;
+
+				&:hover {
+					background-color: var(--hover);
+				}
+
+				box-shadow: 2px 2px 2px rgba(0, 0, 0, 0.4);
+
+				&.details {
+					padding: 0;
+					display: flex;
+					align-items: center;
+
+					box-shadow: unset;
+					border-radius: unset;
+				}
+
+				fancy-thumbnail {
+					flex: 0 1;
+					display: block;
+					width: 100%;
+					height: 100%;
+				}
+
+				.thumb {
+					transform: unset;
+
+				}
+
+				.loading {
+					animation: spinner 5.0s linear infinite;
+					transform: rotate(0deg);
+					@keyframes spinner {
+						to { transform: rotate(360deg); }
+					}
+				}
+
+				&.details fancy-image {
+					height: 100%;
+					width: auto;
+					aspect-ratio: 1 / 1;
+				}
+
+				fancy-name {
+					position: absolute;
+					bottom: 0px;
+					left: 0px;
+					right: 0px;
+					height: 32px;
+					display: block;
+					text-align: center;
+					//text-wrap: wrap;
+					//word-break: break-all;
+					text-overflow: ellipsis;
+					overflow: hidden;
+
+				}
+
+				&.details fancy-name {
+					position: relative;
+					height: auto;
+					flex: 1 1;
+					text-align: left;
+
+				}
+			}
+		}
+	}
+}
+
+fancy-image {
+	display: block;
+	width: 100%;
+	aspect-ratio: 1 / 1;
+	background-position: center;
+	background-repeat: no-repeat;
+	background-size: cover;
+	transform: scale(0.75,0.75);
 }

@@ -9,6 +9,7 @@ extern class ContentItem {
 	var childElementContainer : Container;
 	var config : Config.ItemConfig;
 	var header : Header;
+	var id : String;
 
 	var __view : Dynamic;
 
@@ -19,5 +20,6 @@ extern class ContentItem {
 	public function getItemsByFilter( f : ContentItem -> Bool ) : Array<ContentItem>;
 	public function getActiveContentItem() : ContentItem;
 	public function setActiveContentItem( item : ContentItem ) : Void;
-
+	public function getItemsById(id : String) : Array<ContentItem>;
+	public function remove() : Void ;
 }

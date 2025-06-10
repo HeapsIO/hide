@@ -24,10 +24,29 @@
 
 
 <script>
-	var win = nw.Window.get();
-	win.on('close', function() {
-		nw.App.quit();
-	});
+	function getQueryVariable(variable)
+	{
+			var query = window.location.search.substring(1);
+			var vars = query.split("&");
+			for (var i=0;i<vars.length;i++) {
+						var pair = vars[i].split("=");
+						if(pair[0] == variable){return pair[1];}
+			}
+			return(false);
+	}
+
+	var thumbnail = getQueryVariable("thumbnail");
+	if (!thumbnail) {
+		var win = nw.Window.get();
+		win.on('close', function() {
+			chrome.app.window.getAll().forEach(win => {
+				win.close(true);
+			});
+			nw.App.closeAllWindows();
+			nw.App.quit();
+		});
+	}
+
 </script>
 
 <script>
@@ -68,7 +87,9 @@
 	</menu>
 	<menu label="View" class="view">
 		<menu label="Resources" component="hide.view.FileTree" state='{"path":""}'></menu>
-		<menu label="Directory" component="hide.view.FileTree"></menu>
+			<menu label="Directory" component="hide.view.FileTree"></menu>
+		<menu label="File Browser" component="hide.view.FileBrowser" state='{}'></menu>
+		<menu label="Inspector" component="hide.view.Inspector" state='{}'></menu>
 		<separator></separator>
 		<menu label="About" component="hide.view.About"></menu>
 		<menu label="Debug" class="debug"></menu>
@@ -124,22 +145,24 @@
 </xml>
 <script src="hide.js"></script>
 <script>
-	// fix for monaco
-	var _R = Reflect;
-	Reflect = global.Reflect;
-	for( f in _R )
-		Reflect[f] = _R[f];
+	if (!thumbnail) {
+		// fix for monaco
+		var _R = Reflect;
+		Reflect = global.Reflect;
+		for( f in _R )
+			Reflect[f] = _R[f];
 
-	// tmp fix jsonWorker in monaco 0.52, see https://github.com/microsoft/monaco-editor/issues/4778
-	var appPath = hide.tools.IdeData.getAppPath();
+		// tmp fix jsonWorker in monaco 0.52, see https://github.com/microsoft/monaco-editor/issues/4778
+		var appPath = hide.tools.IdeData.getAppPath();
 
-	if (appPath != null && !appPath.endsWith("/")) {
-		appPath += "/";
+		if (appPath != null && !appPath.endsWith("/")) {
+			appPath += "/";
+		}
+
+		var libPath = (appPath == null ? '' : appPath) + 'libs/monaco/min';
+		amdRequire.config({ baseUrl: libPath});
+		amdRequire(['vs/editor/editor.main'], function() { });
 	}
-
-	var libPath = (appPath == null ? '' : appPath) + 'libs/monaco/min';
-	amdRequire.config({ baseUrl: libPath});
-	amdRequire(['vs/editor/editor.main'], function() { });
 </script>
 
 
@@ -153,6 +176,10 @@
 	var ext = file.split(".").pop().toLowerCase();
 	if( ext == "js")
 	{
+		// destroy self if we are in thumbnail generation mode
+		if (thumbnail)
+			nw.Window.get().close(true);
+
 		if (timer != 0)
 			clearTimeout(timer);
 		timer = setTimeout(function() {

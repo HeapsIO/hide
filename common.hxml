@@ -5,6 +5,7 @@
 -lib hx3compat
 -lib domkit
 -lib hashlink
+-lib format
 -D js-classic
 -D js-unflatten
 -D hscriptPos

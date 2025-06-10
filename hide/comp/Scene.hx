@@ -24,6 +24,7 @@ class Scene extends hide.comp.Component implements h3d.IDrawable {
 	public var visible(default, null) : Bool = true;
 	public var editor : hide.comp.SceneEditor;
 	public var autoDisposeOutOfDocument : Bool = true;
+	public var autoUpdate : Bool = true;
 
 	var currentRenderProps: hrt.prefab.Reference;
 
@@ -249,6 +250,8 @@ class Scene extends hide.comp.Component implements h3d.IDrawable {
 	}
 
 	function sync() {
+		if (!autoUpdate)
+			return;
 		if ( ide.isDebugger )
 			doSync();
 		else {
@@ -258,7 +261,7 @@ class Scene extends hide.comp.Component implements h3d.IDrawable {
 			} catch (e:haxe.Exception) {
 				var e = errorHandler(e);
 				if (e != null) {
-					throw e;
+					js.Lib.rethrow();
 				}
 			}
 			if (!errorThisFrame) {
@@ -517,10 +520,12 @@ class Scene extends hide.comp.Component implements h3d.IDrawable {
 		var e;
 		if( reload )
 			@:privateAccess hxd.res.Loader.currentInstance.cache.remove(path);
-		if( ide.isDebugger )
-			e = hxd.res.Loader.currentInstance.load(relPath);
-		else
-			e = try hxd.res.Loader.currentInstance.load(relPath) catch( e : hxd.res.NotFound ) null;
+		e = try {
+			hxd.res.Loader.currentInstance.load(relPath);
+		} catch( e : hxd.res.NotFound ) {
+			ide.quickError('Failed to load HMD at path $path : $e');
+			null;
+		}
 		if( e == null ) {
 			var data = sys.io.File.getBytes(fullPath);
 			if( data.get(0) != 'H'.code ) {
@@ -553,7 +558,7 @@ class Scene extends hide.comp.Component implements h3d.IDrawable {
 		return hmd;
 	}
 
-	public function resetCamera( ?obj : h3d.scene.Object, distanceFactor = 1. ) {
+	public function resetCamera( ?obj : h3d.scene.Object, distanceFactor = 1. , ?maxDist: Float) {
 
 		if( defaultCamera != null ) {
 			s3d.camera.load(defaultCamera);
@@ -568,6 +573,9 @@ class Scene extends hide.comp.Component implements h3d.IDrawable {
 		var dy = Math.max(Math.abs(b.yMax),Math.abs(b.yMin));
 		var dz = Math.max(Math.abs(b.zMax),Math.abs(b.zMin));
 		var dist = Math.max(Math.max(dx * 6, dy * 6), dz * 4) * distanceFactor;
+		if (maxDist != null) {
+			dist = Math.min(maxDist, dist);
+		}
 		var ang = Math.PI / 4;
 		var zang = Math.PI * 0.4;
 		s3d.camera.pos.set(Math.sin(zang) * Math.cos(ang) * dist, Math.sin(zang) * Math.sin(ang) * dist, Math.cos(zang) * dist);
@@ -727,7 +735,7 @@ class PreviewCamController extends h3d.scene.Object {
 	var pushing : Int = -1;
 	var ignoreNext : Bool = false;
 	function onEvent(e : hxd.Event) {
-		if (getScene().children.length <= 1)
+		if (getScene()?.children.length <= 1)
 			return;
 		switch (e.kind) {
 			case EPush: {

@@ -180,6 +180,8 @@ class RemoteConsoleView extends hide.ui.View<{}> {
 				haxe.Timer.delay(wait, 10);
 				return;
 			}
+			if (Ide.inst.thumbnailMode)
+				return;
 			var config = Ide.inst.config.project;
 			var pconfig = config.get("remoteconsole");
 			if( pconfig != null && pconfig.disableAutoStartServer != true ) {

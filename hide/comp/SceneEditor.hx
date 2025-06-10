@@ -1114,6 +1114,23 @@ class SceneEditor {
 			onResize();
 		};
 
+		sceneEl.get(0).ondragover = (e: js.html.DragEvent) -> {
+			if (e.dataTransfer.types.contains(hide.view.FileBrowser.dragKey)) {
+				e.preventDefault();
+				return;
+			}
+		}
+
+		sceneEl.get(0).ondrop = (e: js.html.DragEvent) -> {
+			if (e.dataTransfer.types.contains(hide.view.FileBrowser.dragKey)) {
+				var files : Array<String> = haxe.Json.parse(e.dataTransfer.getData(hide.view.FileBrowser.dragKey));
+				@:privateAccess scene.canvas.focus();
+				onDragDrop(files, true, e);
+				e.preventDefault();
+				return;
+			}
+		}
+
 		editorDisplay = true;
 
 		view.keys.register("copy", {name: "Copy", category: "Edit"}, onCopy);
