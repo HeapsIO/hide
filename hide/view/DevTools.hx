@@ -67,9 +67,6 @@ setTimeout(function() {
 			');
 		} catch( e ) {
 			ide.error("Unable to open profile: " + e.message);
-			this.state.profileFilePath = null;
-			saveState();
-			syncTitle();
 		}
 
 	}
