@@ -101,7 +101,7 @@ class ColorGrading extends RendererFX {
 
 		var c1 : ColorGrading = cast r1;
 		var c2 : ColorGrading = cast r2;
-		var c = new ColorGrading(this.parent, this.shared);
+		var c = new ColorGrading(null, null);
 		c.customLutsBlend = { from : @:privateAccess c1.customLut == null ? c1.getLutTexture() : c1.customLut, to: @:privateAccess c2.customLut == null ? c2.getLutTexture() : c2.customLut };
 		var blendTonemap = new ColorGradingTonemapBlend();
 		blendTonemap.blendFactor = t;
