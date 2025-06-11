@@ -19,6 +19,10 @@ class RendererFX extends Prefab implements h3d.impl.RendererFX {
 		return null;
 	}
 
+	public function modulate( t : Float ) : h3d.impl.RendererFX {
+		return null;
+	}
+
 	inline function checkEnabled() {
 		return enabled #if editor && enableInEditor && !inGameOnly #end;
 	}

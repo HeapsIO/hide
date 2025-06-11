@@ -95,6 +95,14 @@ class ColorGrading extends RendererFX {
 		}
 	}
 
+	override function modulate(t : Float) {
+		var c = new ColorGrading(null, null);
+		c.size = this.size;
+		c.texturePath = this.texturePath;
+		c.intensity = t;
+		return c;
+	}
+
 	override function transition( r1 : h3d.impl.RendererFX, r2 : h3d.impl.RendererFX, t : Float ) {
 		if (t <= 0) return r1;
 		if (t >= 1) return r2;
