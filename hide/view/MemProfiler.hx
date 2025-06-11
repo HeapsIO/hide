@@ -93,7 +93,7 @@ class MemProfiler extends hide.ui.View<{}> {
 			}
 
 			dumpSelect.onChange = function() {
-				dumpPaths = [];
+				@:bypassAccessor dumpPaths = [];
 				for (fs in fileSelects) {
 					if (fs.path != null && fs.path != "")
 						dumpPaths.push(Ide.inst.getPath(fs.path));
