@@ -96,7 +96,7 @@ class FileTree extends FileView {
 					icon : "ico ico-" + (isDir ? "folder" : (ext != null && ext.options.icon != null ? ext.options.icon : "file-text")),
 					children : isDir,
 				});
-				if (!isDir)
+				if (!isDir && (ide.ideConfig.svnShowModifiedFiles || ide.ideConfig.svnShowVersionedFiles))
 					watch(fullPath, function() rebuild(), { checkDelete: true });
 			}
 			watch(basePath, function() rebuild(), { checkDelete: true });
@@ -216,7 +216,7 @@ class FileTree extends FileView {
 		tree.onMove = doMove;
 		tree.init();
 
-		if (ide.isSVNAvailable()) {
+		if (ide.isSVNAvailable() && (ide.ideConfig.svnShowModifiedFiles || ide.ideConfig.svnShowVersionedFiles)) {
 			var svnModifiedFiles = ide.getSVNModifiedFiles();
 			tree.applyStyle = (p, el) -> {
 				var isModified = false;
