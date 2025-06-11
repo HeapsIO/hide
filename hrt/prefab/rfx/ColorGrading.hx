@@ -40,11 +40,29 @@ class ColorGradingTonemap extends hxsl.Shader {
 		}
 	}
 }
+
+class ColorGradingTonemapBlend extends ColorGradingTonemap {
+	static var SRC = {
+
+		@param var lut1 : Sampler2D;
+		@param var lut2 : Sampler2D;
+		@param var blendFactor : Float = 0;
+		@:import ColorGradingFunc;
+
+		function fragment() {
+			var c1 = getColorGrading(pixelColor.rgb, lut1, size);
+			var c2 = getColorGrading(pixelColor.rgb, lut2, size);
+			pixelColor.rgb = mix(pixelColor.rgb, mix(c1, c2, blendFactor), intensity);
+		}
+	}
+}
+
 @:access(h3d.scene.Renderer)
 class ColorGrading extends RendererFX {
 
 	var tonemap = new ColorGradingTonemap();
 	public var customLut : h3d.mat.Texture;
+	public var customLutsBlend : { from : h3d.mat.Texture, to : h3d.mat.Texture } = null;
 
 	@:s var size : Int = 16;
 	@:s var texturePath : String;
@@ -61,17 +79,37 @@ class ColorGrading extends RendererFX {
 			r.mark("ColorGrading");
 			tonemap.intensity = intensity;
 			tonemap.size = size;
-			tonemap.lut = customLut != null ? customLut : getLutTexture();
-			if( tonemap.lut != null && intensity > 0 )
-				r.addShader(tonemap);
+
+			if (Std.isOfType(tonemap, ColorGradingTonemapBlend)) {
+				var blendTonemap : ColorGradingTonemapBlend = cast tonemap;
+				blendTonemap.lut1 = customLutsBlend.from;
+				blendTonemap.lut2 = customLutsBlend.to;
+				if( blendTonemap.lut1 != null && blendTonemap.lut2 != null && intensity > 0 )
+					r.addShader(blendTonemap);
+			}
+			else {
+				tonemap.lut = customLut != null ? customLut : getLutTexture();
+				if( tonemap.lut != null && intensity > 0 )
+					r.addShader(tonemap);
+			}
 		}
 	}
 
 	override function transition( r1 : h3d.impl.RendererFX, r2 : h3d.impl.RendererFX, t : Float ) {
-		if (t < 0.5)
-			return r1;
-		else
-			return r2;
+		if (t <= 0) return r1;
+		if (t >= 1) return r2;
+
+		var c1 : ColorGrading = cast r1;
+		var c2 : ColorGrading = cast r2;
+		var c = new ColorGrading(this.parent, this.shared);
+		c.customLutsBlend = { from : @:privateAccess c1.customLut == null ? c1.getLutTexture() : c1.customLut, to: @:privateAccess c2.customLut == null ? c2.getLutTexture() : c2.customLut };
+		var blendTonemap = new ColorGradingTonemapBlend();
+		blendTonemap.blendFactor = t;
+		c.tonemap = blendTonemap;
+		c.size = this.size;
+		c.texturePath = this.texturePath;
+		c.intensity = this.intensity;
+		return c;
 	}
 
 	#if editor
