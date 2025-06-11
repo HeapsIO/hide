@@ -138,24 +138,35 @@ class Reference extends Object3D {
 		if (refInstance != null)
 			return refInstance;
 
-		var refInstanceData = null;
+		var shouldLoadUniqueObject = #if editor true #else overrides != null #end;
+
 		#if editor
 		try {
 		#end
-			refInstanceData = @:privateAccess hxd.res.Loader.currentInstance.load(source).toPrefab().loadData();
+			if (shouldLoadUniqueObject) {
+				var refInstanceData = @:privateAccess hxd.res.Loader.currentInstance.load(source).toPrefab().loadData();
+
+				#if editor
+				originalSource = @:privateAccess hxd.res.Loader.currentInstance.load(source).toPrefab().loadData();
+				#end
+
+				if (overrides != null) {
+					refInstanceData = hrt.prefab.Diff.apply(refInstanceData, overrides);
+				}
+
+				refInstance = hrt.prefab.Prefab.createFromDynamic(refInstanceData, null, new ContextShared(source, null, null, true));
+
+			} else {
+				refInstance = hxd.res.Loader.currentInstance.load(source).toPrefab().load();
+			}
+
+			refInstance.shared.parentPrefab = this;
+
 		#if editor
-			originalSource = @:privateAccess hxd.res.Loader.currentInstance.load(source).toPrefab().loadData();
 		} catch (e) {
 			return null;
 		}
 		#end
-
-		if (overrides != null) {
-			refInstanceData = hrt.prefab.Diff.apply(refInstanceData, overrides);
-		}
-
-		refInstance = hrt.prefab.Prefab.createFromDynamic(refInstanceData, null, new ContextShared(source, null, null, true));
-		refInstance.shared.parentPrefab = this;
 
 		return refInstance;
 	}
