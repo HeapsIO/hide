@@ -84,7 +84,8 @@ class Plugin {
 					if( !Context.defined("hxnodejs") ) Context.error("Please add -lib hxnodejs", Context.currentPos());
 					continue;
 				}
-				C.define(value,"1");
+				if( !Context.defined(value) )
+					C.define(value,"1");
 				C.addClassPath(getLibraryPath(value));
 			case "-D":
 				C.define(value,"1");
