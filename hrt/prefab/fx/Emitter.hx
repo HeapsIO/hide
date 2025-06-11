@@ -1024,6 +1024,9 @@ class EmitterObject extends h3d.scene.Object {
 								// Re-introduce parent scaling in the spawn position calculations
 								var parentScale = inline parentNonEmitter.getAbsPos().getScale();
 								tmpMat.prependScale(parentScale.x, parentScale.y, parentScale.z);
+								tmpMat.tx *= parentScale.x;
+								tmpMat.ty *= parentScale.y;
+								tmpMat.tz *= parentScale.z;
 							}
 						}
 
