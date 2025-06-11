@@ -1021,12 +1021,10 @@ class EmitterObject extends h3d.scene.Object {
 							tmpMat2.invert();
 							tmpMat.multiply(tmpMat, tmpMat2);
 							if (particleScaling == None) {
-								// Re-introduce parent scaling in the spawn position calculations
+								// // Re-introduce parent scaling in the spawn position calculations
 								var parentScale = inline parentNonEmitter.getAbsPos().getScale();
-								tmpMat.prependScale(parentScale.x, parentScale.y, parentScale.z);
-								tmpMat.tx *= parentScale.x;
-								tmpMat.ty *= parentScale.y;
-								tmpMat.tz *= parentScale.z;
+								tmpMat2.initScale(parentScale.x, parentScale.y, parentScale.z);
+								tmpMat.multiply(tmpMat, tmpMat2);
 							}
 						}
 
