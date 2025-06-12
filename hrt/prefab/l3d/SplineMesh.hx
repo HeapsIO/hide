@@ -202,13 +202,12 @@ class SplineMesh extends hrt.prefab.Object3D {
 				var absPos = spline.globalToLocal(samples[i].pos);
 				var curPos = absPos.clone();
 				uv += curPos.distance(prevPos);
-				var tangent = samples[i].tangentOut.normalized();
-				var angle = hxd.Math.acos( tangent.dot(new h3d.Vector(1.0, 0.0, 0.0)) );
-				if (tangent.dot(new h3d.Vector(0.0, 1.0, 0.0)) < 0.0)
-					angle *= -1.0;
+				var tangent = samples[i].tangentOut.transformed3x3(spline.getAbsPos(true).getInverse()).normalized();
+				var q = new h3d.Quat();
+				q.initDirection(tangent);
 				var trs = new h3d.Matrix();
 				trs.initTranslation(0.0, spacing, 0.0);
-				trs.rotateAxis(new h3d.Vector(0.0, 0.0, 1.0), angle);
+				trs.rotate(q.toEuler().x, q.toEuler().y, q.toEuler().z);
 				trs.translate(absPos.x, absPos.y, absPos.z);
 				fillPoint(vertexData, dataPos, localPoints, trs, uv, bounds);
 				dataPos += vertexDataStride * vertexPerPoint;
