@@ -220,6 +220,16 @@ class ShaderEditor extends hide.view.FileView implements GraphInterface.IGraphEd
 			graphEditor.centerView();
 		}, 50);
 
+		var canDragFunc = (e:js.html.DragEvent) -> {
+			if (e.dataTransfer.types.contains(variableList.getDragKeyName()) || e.dataTransfer.types.contains(parametersList.getDragKeyName())) {
+				e.preventDefault();
+				e.stopPropagation();
+			}
+		};
+
+		graphEditor.element.get(0).ondragenter = canDragFunc;
+		graphEditor.element.get(0).ondragover = canDragFunc;
+
 		graphEditor.element.get(0).ondrop = (e:js.html.DragEvent) -> {
 			var posCursor = new Point(graphEditor.lX(e.clientX - 25), graphEditor.lY(e.clientY-25));
 
