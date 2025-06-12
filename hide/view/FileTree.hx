@@ -97,7 +97,7 @@ class FileTree extends FileView {
 					children : isDir,
 				});
 				if (!isDir && (ide.ideConfig.svnShowModifiedFiles || ide.ideConfig.svnShowVersionedFiles))
-					watch(fullPath, function() rebuild(), { checkDelete: true });
+					watch(fullPath, function() refreshSVNStatusIcons(), { checkDelete: true });
 			}
 			watch(basePath, function() rebuild(), { checkDelete: true });
 			content.sort(function(a,b) { if( a.children != b.children ) return a.children?-1:1; return Reflect.compare(a.text,b.text); });
@@ -214,30 +214,32 @@ class FileTree extends FileView {
 		tree.onDblClick = onOpenFile;
 		tree.onAllowMove = onAllowMove;
 		tree.onMove = doMove;
-		tree.init();
+		tree.init(refreshSVNStatusIcons);
+	}
 
-		if (ide.isSVNAvailable() && (ide.ideConfig.svnShowModifiedFiles || ide.ideConfig.svnShowVersionedFiles)) {
-			var svnModifiedFiles = ide.getSVNModifiedFiles();
-			tree.applyStyle = (p, el) -> {
-				var isModified = false;
-				for (f in svnModifiedFiles) {
-					if (ide.getPath(f).indexOf(p) >= 0) {
-						isModified = true;
-						break;
-					}
-				}
+	function refreshSVNStatusIcons() {
+		if (!ide.isSVNAvailable() || (!ide.ideConfig.svnShowModifiedFiles && !ide.ideConfig.svnShowVersionedFiles))
+			return;
 
-				if (isModified) {
-					if (ide.ideConfig.svnShowModifiedFiles)
-						el.addClass("svn-modified");
-						el.removeClass("svn-versioned");
+		var prevModified = tree.element.find(".svn-modified");
+		prevModified.removeClass("sv-modified");
+		if (ide.ideConfig.svnShowVersionedFiles)
+			tree.element.find(".jstree-node").addClass("svn-versioned");
+
+		if (ide.ideConfig.svnShowModifiedFiles) {
+			for (f in Ide.inst.getSVNModifiedFiles()) {
+				var relPath = f.substr(f.indexOf("res/") + 4);
+				var p = "";
+				for (sp in relPath.split("/")) {
+					p += p.length > 0 ? "/"+sp : sp;
+					var el = tree.getElement(p);
+					if (!(el is hide.Element))
+						continue;
+
+					el.removeClass("svn-versioned");
+					el.addClass("svn-modified");
 				}
-				else {
-					if (ide.ideConfig.svnShowVersionedFiles)
-						el.addClass("svn-versioned");
-					el.removeClass("svn-modified");
-				}
-			};
+			}
 		}
 	}
 

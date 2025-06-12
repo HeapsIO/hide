@@ -121,7 +121,7 @@ class IconTree<T:{}> extends Component {
 		return content;
 	}
 
-	public function init() {
+	public function init(?onReady : Void -> Void) {
 		var inInit = true;
 		(element:Dynamic).jstree({
 			core : {
@@ -212,6 +212,8 @@ class IconTree<T:{}> extends Component {
 				if(item != null)
 					applyStyleInternal(getValue(item), new Element(li));
 			}
+			if (onReady != null)
+				onReady();
 		});
 		element.on('changed.jstree', function (e, data) {
 			var nodes: Array<Dynamic> = data.changed.deselected;
