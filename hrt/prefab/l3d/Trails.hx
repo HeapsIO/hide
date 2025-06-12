@@ -126,7 +126,7 @@ class TrailObj extends h3d.scene.Mesh {
 	var colorShader : h3d.shader.VertexColorAlpha;
 
 	public function calcMaxTrailPoints() : Int {
-		return std.Math.ceil( prefab.lifetime * prefab.framerate ) + 2; // Segment count + head and tail
+		return hxd.Math.ceil( prefab.lifetime * prefab.framerate ) + 2; // Segment count + head and tail
 	}
 
 	function calcMaxVertexes() : Int {

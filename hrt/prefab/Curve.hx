@@ -593,10 +593,10 @@ class Curve extends Prefab {
 							}
 							else {
 
-								if (std.Math.isNaN(r0)) {
+								if (hxd.Math.isNaN(r0)) {
 									r0 = 0.0;
 								}
-								if (std.Math.isNaN(r1)) {
+								if (hxd.Math.isNaN(r1)) {
 									r1 = 1.0;
 								}
 

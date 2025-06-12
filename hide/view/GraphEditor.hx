@@ -718,8 +718,8 @@ class GraphEditor extends hide.comp.Component {
 
 				// Snap origin of move
 				if (snap) {
-					Box.tmpPoint.x = std.Math.round(Box.tmpPoint.x / Box.NODE_MARGIN) * Box.NODE_MARGIN;
-					Box.tmpPoint.y = std.Math.round(Box.tmpPoint.y / Box.NODE_MARGIN) * Box.NODE_MARGIN;
+					Box.tmpPoint.x = hxd.Math.round(Box.tmpPoint.x / Box.NODE_MARGIN) * Box.NODE_MARGIN;
+					Box.tmpPoint.y = hxd.Math.round(Box.tmpPoint.y / Box.NODE_MARGIN) * Box.NODE_MARGIN;
 				}
 
 				var newX = Box.tmpPoint.x + dx;
@@ -727,8 +727,8 @@ class GraphEditor extends hide.comp.Component {
 
 				// Snap movement
 				if (snap) {
-					newX = std.Math.round(newX / Box.NODE_MARGIN) * Box.NODE_MARGIN;
-					newY = std.Math.round(newY / Box.NODE_MARGIN) * Box.NODE_MARGIN;
+					newX = hxd.Math.round(newX / Box.NODE_MARGIN) * Box.NODE_MARGIN;
+					newY = hxd.Math.round(newY / Box.NODE_MARGIN) * Box.NODE_MARGIN;
 				}
 				moveBox(b, newX, newY);
 			}
@@ -1458,8 +1458,8 @@ class GraphEditor extends hide.comp.Component {
 			pt.x += lX(ide.mouseX);
 			pt.y += lY(ide.mouseY);
 			// if (snapToGrid == !e.altKey) {
-			// 	newX = std.Math.round(newX / Box.NODE_MARGIN) * Box.NODE_MARGIN;
-			// 	newY = std.Math.round(newY / Box.NODE_MARGIN) * Box.NODE_MARGIN;
+			// 	newX = hxd.Math.round(newX / Box.NODE_MARGIN) * Box.NODE_MARGIN;
+			// 	newY = hxd.Math.round(newY / Box.NODE_MARGIN) * Box.NODE_MARGIN;
 			// }
 			node.setPos(pt);
 			opBox(node, true, undoBuffer);
