@@ -436,7 +436,7 @@ class ModalColumnForm extends Modal {
 			typeStr : null,
 			name : v.name,
 		};
-		if( v.req != "on" ) c.opt = true;
+		c.opt = v.req != "on";
 		if( v.display != "0" ) c.display = cast Std.parseInt(v.display);
 		c.kind = js.Lib.undefined;
 		switch( v.kind ) {
