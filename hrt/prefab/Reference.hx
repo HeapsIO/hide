@@ -157,7 +157,7 @@ class Reference extends Object3D {
 				refInstance = hrt.prefab.Prefab.createFromDynamic(refInstanceData, null, new ContextShared(source, null, null, true));
 
 			} else {
-				refInstance = hxd.res.Loader.currentInstance.load(source).toPrefab().load();
+				refInstance = hxd.res.Loader.currentInstance.load(source).toPrefab().load().clone();
 			}
 
 			refInstance.shared.parentPrefab = this;
