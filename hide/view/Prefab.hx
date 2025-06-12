@@ -442,7 +442,7 @@ class Prefab extends hide.view.FileView {
 	}
 
 	public function onSceneReady() {
-		data = hxd.res.Loader.currentInstance.load(state.path).toPrefab().load().clone();
+		data = hxd.res.Loader.currentInstance.load(state.path).toPrefab().loadBypassCache();
 		sceneEditor.setPrefab(cast data);
 
 		refreshSceneFilters();

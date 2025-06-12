@@ -27,8 +27,16 @@ class Resource extends hxd.res.Resource {
 	}
 
 	function loadData() {
+		#if editor
+		// Force loading the original prefab data from disc to avoid sync errors between
+		// original data and bson
+		var localEntry = Std.downcast(entry, hxd.fs.LocalFileSystem.LocalEntry);
+		@:privateAccess var path = localEntry.originalFile ?? localEntry.file;
+		return  haxe.Json.parse(sys.io.File.getContent(path));
+		#else
 		var isBSON = entry.fetchBytes(0,1).get(0) == 'H'.code;
 		return isBSON ? new hxd.fmt.hbson.Reader(entry.getBytes(),false).read() : haxe.Json.parse(entry.getText());
+		#end
 	}
 
 	public function loadBypassCache() {
