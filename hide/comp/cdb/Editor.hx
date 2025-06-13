@@ -101,7 +101,6 @@ class Editor extends Component {
 		element.attr("tabindex", 0);
 		element.addClass("is-cdb-editor");
 		element.data("cdb", this);
-		element.on("blur", function(_) cursor.hide());
 		element.on("keypress", function(e) {
 			if( e.target.nodeName == "INPUT" )
 				return;
