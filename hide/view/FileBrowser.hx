@@ -254,7 +254,7 @@ class FileBrowser extends hide.ui.View<FileBrowserState> {
 
 		fancyGallery.getName = (item : FileEntry) -> item.name;
 
-		fancyGallery.getIcon = (item : FileEntry) -> {
+		fancyGallery.getThumbnail = (item : FileEntry) -> {
 			if (item.kind == Dir) {
 				return '<fancy-image style="background-image:url(\'res/icons/svg/big_folder.svg\')"></fancy-image>';
 
@@ -270,6 +270,16 @@ class FileBrowser extends hide.ui.View<FileBrowserState> {
 				return '<fancy-image style="background-image:url(\'res/icons/svg/file.svg\')"></fancy-image>';
 			}
 		};
+
+		fancyGallery.getIcon = (item : FileEntry) -> {
+			var ext = @:privateAccess hide.view.FileTree.getExtension(item.name);
+			if (ext != null) {
+				if (ext?.options.icon != null) {
+					return '<div class="ico ico-${ext.options.icon}" title="${ext.component.split(".").pop()}"></div>';
+				}
+			}
+			return null;
+		}
 
 		fancyGallery.onDoubleClick = (item: FileEntry) -> {
 			if (item.kind == File) {

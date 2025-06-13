@@ -156,7 +156,7 @@ class FileManager {
 		onReady is called back with the path of the loaded miniature, or null if the miniature couldn't be loaded
 	**/
 	public function renderMiniature(path: String, onReady: MiniatureReadyCallback) {
-		var ext = path.split(".").pop();
+		var ext = path.split(".").pop().toLowerCase();
 		switch(ext) {
 			case "prefab" | "fbx" | "l3d" | "fx" | "shgraph" | "jpg" | "jpeg" | "png":
 				if (!onReadyCallbacks.exists(path)) {

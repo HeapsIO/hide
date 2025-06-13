@@ -198,7 +198,7 @@ class ThumbnailGenerator {
 	static public function getThumbPath(basePath: String) : haxe.io.Path {
 		basePath = StringTools.replace(basePath, hide.Ide.inst.resourceDir, "");
 		var path = new haxe.io.Path(haxe.io.Path.join([hide.Ide.inst.resourceDir, thumbRoot, basePath]));
-		path.ext = thumbExt;
+		path.ext += "." + thumbExt;
 		return path;
 	}
 
@@ -212,7 +212,7 @@ class ThumbnailGenerator {
 		var ctx = new hide.prefab.ContextShared(null, sceneRoot);
 		ctx.scene = renderCanvas;
 
-		var ext = toRender.path.split(".").pop();
+		var ext = toRender.path.split(".").pop().toLowerCase();
 
 		var abort = false;
 		if (ext == "fbx") {
@@ -394,7 +394,7 @@ class ThumbnailGenerator {
 
 		var toRender = miniaturesToRender.pop();
 
-		var ext = toRender.path.split(".").pop();
+		var ext = toRender.path.split(".").pop().toLowerCase();
 		switch(ext) {
 			case "prefab" | "fbx" | "l3d" | "fx" | "shgraph":
 				handleModel(toRender);
