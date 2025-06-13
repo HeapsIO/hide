@@ -392,12 +392,23 @@ class Editor extends Component {
 		}
 		else {
 			isFiltered = function(line: hide.comp.cdb.Line) {
-				var content = removeAccents(line.element.get(0).textContent);
-				for (f in filters)
-					if (content.indexOf(removeAccents(f)) >= 0)
-						return false;
+				function isLineFiltered(line : hide.comp.cdb.Line) {
+					var content = removeAccents(line.element.get(0).textContent);
+					for (f in filters)
+						if (content.indexOf(removeAccents(f)) >= 0)
+							return false;
 
-				return true;
+					if (line.subTable != null) {
+						for (l in line.subTable.lines) {
+							if (!isLineFiltered(l))
+								return false;
+						}
+					}
+
+					return true;
+				}
+				
+				return isLineFiltered(line);
 			}
 		}
 
