@@ -511,8 +511,17 @@ class Cursor {
 				if (s2 == s) continue;
 				if (isContaining(s, s2))
 					selection.remove(s2);
-			}
 
+				// Meaning we have several cells selected on the same line
+				if (s.y1 == s2.y1 && s.y2 == s2.y2) {
+					// Merge selections into one if they are side by side
+					if (s.x2 + 1 == s2.x1 || s.x1 - 1 == s2.x2) {
+						s.x1 = Std.int(hxd.Math.min(s.x1, s2.x1));
+						s.x2 = Std.int(hxd.Math.max(s.x2, s2.x2));
+						selection.remove(s2);
+					}
+				}
+			}
 		}
 	}
 }

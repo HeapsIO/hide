@@ -555,9 +555,22 @@ class Editor extends Component {
 			}
 		}
 		else {
+			var dataPerLines = new Map<Int, Dynamic>();
 			for (sel in cursor.selection) {
 				for( y in sel.y1...sel.y2+1 ) {
-					var out = {};
+					// If there is several selection in only one line, we want to merge them into on single object for the line
+					var out : Dynamic = null;
+					if (sel.y1 == sel.y2) {
+						out = dataPerLines.get(sel.y1);
+						if (out == null) {
+							out = {};
+							dataPerLines.set(sel.y1, out);
+						}
+					}
+					else {
+						out = {};
+					}
+
 					var obj = cursor.table.lines[y].obj;
 					var start = sel.x1;
 					var end = sel.x2 + 1;
@@ -571,7 +584,9 @@ class Editor extends Component {
 						saveValue(out, obj, c);
 						schema.pushUnique(c);
 					}
-					data.push(out);
+
+					if (!data.contains(out))
+						data.push(out);
 				}
 			}
 		}
@@ -787,7 +802,7 @@ class Editor extends Component {
 
 						var sc = schema[0];
 						for (s in schema)
-							if (col.type.equals(s.type) && col.name == s.name)
+							if (col.name == s.name)
 								sc = s;
 
 						setValue(data[0], c.line.obj, sc, col);
