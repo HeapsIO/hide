@@ -8,7 +8,7 @@ enum GalleryRefreshFlag {
 
 typedef GalleryRefreshFlags = haxe.EnumFlags<GalleryRefreshFlag>;
 
-typedef GalleryItemData<GalleryItem> = {item: GalleryItem, name: String, element: js.html.Element, iconStringCache: String};
+typedef GalleryItemData<GalleryItem> = {item: GalleryItem, name: String, element: js.html.Element, thumbnailStringCache: String, iconStringCache: String};
 
 class FancyGallery<GalleryItem> extends hide.comp.Component {
 
@@ -97,6 +97,10 @@ class FancyGallery<GalleryItem> extends hide.comp.Component {
 
 	public dynamic function getName(item: GalleryItem) : String {
 		return "";
+	}
+
+	public dynamic function getThumbnail(item: GalleryItem) : String {
+		return null;
 	}
 
 	public dynamic function getIcon(item: GalleryItem) : String {
@@ -241,7 +245,7 @@ class FancyGallery<GalleryItem> extends hide.comp.Component {
 		if (currentRefreshFlags.has(RegenHeader) && data.element != null) {
 			data.element.remove();
 			data.element = null;
-			data.iconStringCache = null;
+			data.thumbnailStringCache = null;
 		}
 
 		if (data.element == null) {
@@ -250,7 +254,8 @@ class FancyGallery<GalleryItem> extends hide.comp.Component {
 
 			data.element.innerHTML = '
 				<fancy-thumbnail></fancy-thumbnail>
-				<fancy-name><fancy-name>
+				<fancy-name></fancy-name>
+				<div class="icon-placement"></div>
 			';
 
 			data.element.ondblclick = (e) -> {
@@ -277,10 +282,17 @@ class FancyGallery<GalleryItem> extends hide.comp.Component {
 		}
 
 		var img = data.element.querySelector("fancy-thumbnail");
-		var imgString = getIcon(data.item) ?? '<fancy-image style="background-image:url(\'res/icons/svg/unknown_file.svg\')"></fancy-image>';
-		if (imgString != data.iconStringCache) {
+		var imgString = getThumbnail(data.item) ?? '<fancy-image style="background-image:url(\'res/icons/svg/unknown_file.svg\')"></fancy-image>';
+		if (imgString != data.thumbnailStringCache) {
 			img.innerHTML = imgString;
-			data.iconStringCache = imgString;
+			data.thumbnailStringCache = imgString;
+		}
+
+		var icon = data.element.querySelector(".icon-placement");
+		var iconString = getIcon(data.item);
+		if (iconString != data.iconStringCache) {
+			icon.innerHTML = iconString;
+			data.iconStringCache = iconString;
 		}
 
 		return data.element;
@@ -294,6 +306,7 @@ class FancyGallery<GalleryItem> extends hide.comp.Component {
 				item: item,
 				name: getName(item),
 				element: null,
+				thumbnailStringCache: null,
 				iconStringCache: null,
 			});
 
