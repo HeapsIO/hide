@@ -2204,12 +2204,12 @@ class Editor extends Component {
 			{
 				label : "Move Up",
 				enabled:  (firstLine.index > 0 || sepIndex >= 0),
-				click : () -> line.table.moveLines(isSelectedLine ? [line] : selectedLines, -1),
+				click : () -> line.table.moveLines(isSelectedLine ? selectedLines : [line] , -1),
 			},
 			{
 				label : "Move Down",
 				enabled:  (lastLine.index < sheet.lines.length - 1),
-				click : () -> line.table.moveLines(isSelectedLine ? [line] : selectedLines, 1),
+				click : () -> line.table.moveLines(isSelectedLine ? selectedLines : [line], 1),
 			},
 			{ label : "Move to Group", enabled : moveSubmenu.length > 0, menu : moveSubmenu },
 			{ label : "", isSeparator : true },
