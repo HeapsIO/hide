@@ -15,6 +15,7 @@ class FileTree extends FileView {
 
 	var tree : hide.comp.IconTree<String>;
 	var ignorePatterns : Array<EReg> = [];
+	var modifiedFiles : Array<String> = [];
 
 	public function new(state) {
 		super(state);
@@ -80,6 +81,7 @@ class FileTree extends FileView {
 		tree.allowRename = true;
 		tree.saveDisplayKey = saveDisplayKey;
 		tree.element.addClass("small");
+		var isSVNAvailable = ide.isSVNAvailable();
 		tree.get = function(path) {
 			if( path == null ) path = "";
 			var basePath = getFilePath(path);
@@ -96,7 +98,7 @@ class FileTree extends FileView {
 					icon : "ico ico-" + (isDir ? "folder" : (ext != null && ext.options.icon != null ? ext.options.icon : "file-text")),
 					children : isDir,
 				});
-				if (!isDir && (ide.ideConfig.svnShowModifiedFiles || ide.ideConfig.svnShowVersionedFiles))
+				if (!isDir && (isSVNAvailable && (ide.ideConfig.svnShowModifiedFiles || ide.ideConfig.svnShowVersionedFiles)))
 					watch(fullPath, function() refreshSVNStatusIcons(), { checkDelete: true });
 			}
 			watch(basePath, function() rebuild(), { checkDelete: true });
@@ -214,20 +216,46 @@ class FileTree extends FileView {
 		tree.onDblClick = onOpenFile;
 		tree.onAllowMove = onAllowMove;
 		tree.onMove = doMove;
-		tree.init(refreshSVNStatusIcons);
+		var svnIcons = ide.isSVNAvailable() && (ide.ideConfig.svnShowModifiedFiles || ide.ideConfig.svnShowVersionedFiles);
+		tree.init(svnIcons ? () -> refreshSVNStatusIcons() : null);
+		if (svnIcons)
+			tree.applyStyle = (e : String, el : Element) -> refreshSVNStatusIcons(false, e, el);
 	}
 
-	function refreshSVNStatusIcons() {
-		if (!ide.isSVNAvailable() || (!ide.ideConfig.svnShowModifiedFiles && !ide.ideConfig.svnShowVersionedFiles))
-			return;
+	function refreshSVNStatusIcons(rec : Bool = true, ?p : String, ?el : Element) {
+		if (!rec) {
+			var isModified = false;
+			for (f in modifiedFiles) {
+				if (ide.getPath(f).indexOf(p) >= 0) {
+					isModified = true;
+					break;
+				}
+			}
 
-		var prevModified = tree.element.find(".svn-modified");
+			if (isModified) {
+				if (ide.ideConfig.svnShowModifiedFiles)
+					el.addClass("svn-modified");
+					el.removeClass("svn-versioned");
+			}
+			else {
+				if (ide.ideConfig.svnShowVersionedFiles)
+					el.addClass("svn-versioned");
+				el.removeClass("svn-modified");
+			}
+			return;
+		}
+
+		modifiedFiles = Ide.inst.getSVNModifiedFiles();
+		if (el == null)
+			el = tree.element;
+
+		var prevModified = el.find(".svn-modified");
 		prevModified.removeClass("sv-modified");
 		if (ide.ideConfig.svnShowVersionedFiles)
-			tree.element.find(".jstree-node").addClass("svn-versioned");
+			el.find(".jstree-node").addClass("svn-versioned");
 
 		if (ide.ideConfig.svnShowModifiedFiles) {
-			for (f in Ide.inst.getSVNModifiedFiles()) {
+			for (f in modifiedFiles) {
 				var relPath = f.substr(f.indexOf("res/") + 4);
 				var p = "";
 				for (sp in relPath.split("/")) {
