@@ -1275,7 +1275,9 @@ class Model extends FileView {
 			obj.remove();
 
 			if (obj.isMesh()) {
-				obj.toMesh().primitive.buffer.dispose();
+				if (obj.toMesh().primitive?.buffer != null) {
+					obj.toMesh().primitive.buffer.dispose();
+				}
 			}
 		}
 
