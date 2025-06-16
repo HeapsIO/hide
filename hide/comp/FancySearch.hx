@@ -43,6 +43,8 @@ class FancySearch extends hide.comp.Component {
 	}
 
 	public static function computeSearchRanges(haystack: String, needle: String) : SearchRanges {
+		if (needle == null || needle == "")
+			return [];
 		var pos = haystack.toLowerCase().indexOf(needle);
 		if (pos < 0)
 			return null;

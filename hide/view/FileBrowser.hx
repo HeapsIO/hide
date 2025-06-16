@@ -27,6 +27,7 @@ class FileBrowser extends hide.ui.View<FileBrowserState> {
 
 	override function new(state) {
 		super(state);
+		saveDisplayKey = "fileBrowser";
 	}
 
 	override function onDragDrop(items:Array<String>, isDrop:Bool, event:js.html.DragEvent):Bool {
@@ -76,17 +77,28 @@ class FileBrowser extends hide.ui.View<FileBrowserState> {
 	var searchString: String = "";
 	var fancyGallery : hide.comp.FancyGallery<FileEntry>;
 	var fancyTree: hide.comp.FancyTree<FileEntry>;
+	var collapseSubfolders : Bool;
+	var collapseSubfoldersButton : js.html.Element;
+
+	function syncCollapseSubfolders() {
+		collapseSubfoldersButton.classList.toggle("selected", collapseSubfolders);
+		saveDisplayState("collapseSubfolders", collapseSubfolders);
+		onSearch();
+	}
 
 
 	function onSearch() {
 		hide.tools.FileManager.inst.clearRenderQueue();
 		currentSearch = [];
-		if (searchString.length == 0) {
+		if (searchString.length == 0 && !collapseSubfolders) {
 			currentSearch = currentFolder.children;
 		} else {
 			function rec(files: Array<FileEntry>) {
 				for (file in files) {
 					if (file.kind == Dir) {
+						if (file.children == null) {
+							populateChildren(file);
+						}
 						rec(file.children);
 					}
 					else {
@@ -99,6 +111,8 @@ class FileBrowser extends hide.ui.View<FileBrowserState> {
 			}
 
 			rec(currentFolder.children);
+
+			currentSearch.sort(compareFile);
 		}
 
 		for (i => _ in currentSearch) {
@@ -134,12 +148,30 @@ class FileBrowser extends hide.ui.View<FileBrowserState> {
 						</fancy-button>
 						<fancy-breadcrumbs></fancy-breadcrumbs>
 						<fancy-flex-fill></fancy-flex-fill>
+
+
+						<fancy-button class="btn-collapse-folders">
+							<span class="ico ico-folder-open-o" title="Display all files in subfolders"></span>
+						</fancy-button>
+						<fancy-separator></fancy-separator>
+
+						<fancy-button class="btn-filter">
+							<span class="ico ico-filter"></span>
+						</fancy-button>
+
+						<fancy-button class="compact bnt-filter-dropdown">
+							<span class="ico ico-chevron-down"></span>
+						</fancy-button>
+
+						<fancy-separator></fancy-separator>
+
 						<fancy-search class="fb-search"></fancy-search>
 					</fancy-toolbar>
 					<fancy-gallery></fancy-gallery>
 				</div>
 			</file-browser>
 		').appendTo(element);
+
 
 		breadcrumbs = layout.find("fancy-breadcrumbs");
 
@@ -260,7 +292,7 @@ class FileBrowser extends hide.ui.View<FileBrowserState> {
 
 			}
 			else if (item.iconPath == "loading") {
-				return '<fancy-image class="loading" style="background-image:url(\'res/icons/svg/loading.svg\')"></fancy-image>';
+				return '<fancy-image class="loading" style="background-image:url(\'res/icons/loading.gif\')"></fancy-image>';
 			}
 			else if (item.iconPath != null) {
 				var url = "file://" + item.iconPath;
@@ -301,6 +333,21 @@ class FileBrowser extends hide.ui.View<FileBrowserState> {
 			}
 		}
 
+		if (Ide.inst.ideConfig.filebrowserDebugShowMenu) {
+			layout.find(".btn-collapse-folders").after(new Element('<fancy-button class="btn-debug"><span class="ico ico-bug"></span></fancy-button>'));
+			var button = layout.find(".btn-debug").get(0);
+			button.onclick = (e) -> {
+				hide.comp.ContextMenu.createDropdown(button, [
+					{
+						label: "Kill render thread",
+						click: () -> {
+							@:privateAccess hide.tools.FileManager.inst.cleanupGenerator();
+						}
+					}
+				]);
+			};
+		}
+
 		fancyGallery.rebuild();
 
 		openDir(root, false);
@@ -314,7 +361,14 @@ class FileBrowser extends hide.ui.View<FileBrowserState> {
 			}
 		}
 
-		onSearch();
+		collapseSubfolders = getDisplayState("collapseSubfolders") ?? false;
+		collapseSubfoldersButton = layout.find(".btn-collapse-folders").get(0);
+		collapseSubfoldersButton.onclick = (e: js.html.MouseEvent) -> {
+			collapseSubfolders = !collapseSubfolders;
+			syncCollapseSubfolders();
+		}
+		syncCollapseSubfolders();
+
 	}
 
 	function refreshBreadcrumbs() {

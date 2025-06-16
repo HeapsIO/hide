@@ -21,7 +21,7 @@ typedef HideGlobalConfig = {
 	var svnShowVersionedFiles : Bool;
 	var svnShowModifiedFiles : Bool;
 	var enableDBFormulas : Bool;
-	
+
 	// Search
 	var closeSearchOnFileOpen : Bool;
 	var typingDebounceThreshold : Int;
@@ -33,6 +33,11 @@ typedef HideGlobalConfig = {
 	var highlightActiveLine : Bool;
 	var highlightActiveLineHeader : Bool;
 	var highlightActiveColumnHeader : Bool;
+
+	// Filebrowser
+	var filebrowserDebugIgnoreThumbnailCache : Bool;
+	var filebrowserDebugShowWindow : Bool;
+	var filebrowserDebugShowMenu : Bool;
 };
 
 typedef HideProjectConfig = {

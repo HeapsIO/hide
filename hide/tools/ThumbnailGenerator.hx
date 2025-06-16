@@ -69,9 +69,6 @@ class ThumbnailGenerator {
 	var socket : hxd.net.Socket = null;
 	var ready : Bool = false;
 
-	static final debugBypassCache = true;
-	static final debugShowWindow = false;
-
 	function sendSuccess(originalPath: String, finalPath: String) {
 		var message = {
 			type: hide.tools.FileManager.GenToManagerCommand.success,
@@ -88,10 +85,10 @@ class ThumbnailGenerator {
 	var bufferSize = 0;
 	static final maxBufferSize = 16384;
 
-
+	var renderPropsPath : String;
 
 	function new() {
-		if (debugShowWindow) {
+		if (Ide.inst.ideConfig.filebrowserDebugShowWindow) {
 			nw.Window.get().show(true);
 		} else {
 			untyped nw.Window.get().hide();
@@ -101,6 +98,7 @@ class ThumbnailGenerator {
 		bufferedData = haxe.io.Bytes.alloc(maxBufferSize);
 
 		socket = new hxd.net.Socket();
+		socket.timeout = 5000;
 
 		// Destroy the generator if any error occurs
 		socket.onError = (msg) -> {
@@ -108,9 +106,6 @@ class ThumbnailGenerator {
 		}
 
 		var handler = new MessageHandler(socket, handleCommand);
-
-		socket.connect(hide.tools.FileManager.thumbnailGeneratorUrl, hide.tools.FileManager.thumbnailGeneratorPort, () -> {
-		});
 
 		var cont = new Element('<div style="width: 512px; height: 512px; z-index: 10000; position: absolute; top:0; left: 0;"></div>').appendTo(js.Browser.document.body);
 		renderCanvas = new hide.comp.Scene(hide.Ide.inst.currentConfig, cont, null);
@@ -134,13 +129,16 @@ class ThumbnailGenerator {
 
 			var renderPropsList = hide.comp.ScenePreview.listRenderPropsStatic(hide.Ide.inst.config.current);
 			if (renderPropsList.length > 0) {
-				renderCanvas.setRenderProps(renderPropsList[0].value);
+				renderPropsPath =  renderPropsList[0].value;
 			}
-
 
 			haxe.Timer.delay(() -> {
 				this.ready = true;
-			}, 100);
+
+				socket.connect(hide.tools.FileManager.thumbnailGeneratorUrl, hide.tools.FileManager.thumbnailGeneratorPort, () -> {
+				});
+
+			}, 1);
 		};
 	}
 
@@ -156,7 +154,7 @@ class ThumbnailGenerator {
 					var thumbPath = getThumbPath(message.path).toString();
 
 					var shouldGenerate = true;
-					if (!debugBypassCache && sys.FileSystem.exists(thumbPath)) {
+					if (!Ide.inst.ideConfig.filebrowserDebugIgnoreThumbnailCache && sys.FileSystem.exists(thumbPath)) {
 						var thumbStat = sys.FileSystem.stat(thumbPath);
 						var fileStat = sys.FileSystem.stat(message.path);
 						if (thumbStat.mtime.getTime() > fileStat.mtime.getTime()) {
@@ -205,7 +203,11 @@ class ThumbnailGenerator {
 	function handleModel(toRender: RenderInfo) {
 		renderCanvas.engine.setCurrent();
 
-		sceneRoot.removeChildren();
+		renderCanvas.s3d.removeChildren();
+		if (renderPropsPath != null)
+			renderCanvas.setRenderProps(renderPropsPath);
+
+		sceneRoot = new h3d.scene.Object(renderCanvas.s3d);
 
 		var engine = renderCanvas.engine;
 

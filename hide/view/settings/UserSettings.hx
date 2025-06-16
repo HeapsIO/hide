@@ -26,6 +26,15 @@ class UserSettings extends Settings {
 		cdb.add("Highlight active line header", new Element('<input type="checkbox"/>'), Ide.inst.ideConfig.highlightActiveLineHeader, (v) -> Ide.inst.ideConfig.highlightActiveLineHeader = v);
 		cdb.add("Highlight active column header", new Element('<input type="checkbox"/>'), Ide.inst.ideConfig.highlightActiveColumnHeader, (v) -> Ide.inst.ideConfig.highlightActiveColumnHeader = v);
 		categories.push(cdb);
+
+
+		var debug = new hide.view.settings.Settings.Categorie("Debug");
+		debug.add("Filebrowser ignore thumbnail cache", new Element('<input type="checkbox"/>'), Ide.inst.ideConfig.filebrowserDebugIgnoreThumbnailCache, (v) -> Ide.inst.ideConfig.filebrowserDebugIgnoreThumbnailCache = v);
+		debug.add("Filebrowser show thumbnail gen window", new Element('<input type="checkbox"/>'), Ide.inst.ideConfig.filebrowserDebugShowWindow, (v) -> Ide.inst.ideConfig.filebrowserDebugShowWindow = v);
+		debug.add("Filebrowser show debug menu", new Element('<input type="checkbox"/>'), Ide.inst.ideConfig.filebrowserDebugShowMenu, (v) -> Ide.inst.ideConfig.filebrowserDebugShowMenu = v);
+		categories.push(debug);
+
+
 	}
 
 	override function getTitle() {
