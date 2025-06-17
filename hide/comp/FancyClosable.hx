@@ -9,14 +9,16 @@ class FancyClosable extends hide.comp.Component {
 
 	public override function new(parent: Element = null, target: Element = null) {
 		var el = new hide.Element('
-			<fancy-closable>
-				<fancy-button class="quieter close-btn"><fancy-icon class="medium fi-close"></fancy-icon></fancy-button>
+			<fancy-closable class="shadow">
+				<fancy-toolbar class="fancy-small">
+					<fancy-button class="quieter close-btn"><fancy-icon class="medium fi-close"></fancy-icon></fancy-button>
+				</fancy-toolbar>
 			</fancy-closable>
 		');
 		if (target != null) {
 			var children = target.children();
 			target.replaceWith(el);
-			children.insertBefore(el.children().first());
+			children.insertBefore(el.find("fancy-toolbar").children().first());
 		}
 		super(parent, el);
 

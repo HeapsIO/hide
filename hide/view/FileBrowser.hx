@@ -139,14 +139,14 @@ class FileBrowser extends hide.ui.View<FileBrowserState> {
 
 			function rec(files: Array<FileEntry>) {
 				for (file in files) {
-					if (file.kind == Dir) {
+					if (file.kind == Dir && (collapseSubfolders || searchString.length > 0)) {
 						if (file.children == null) {
 							populateChildren(file);
 						}
 						rec(file.children);
 					}
 					else {
-						if (filterEnabled) {
+						if (filterEnabled && file.kind == File) {
 							var ext = file.name.split(".").pop().toLowerCase();
 
 							if (!exts.contains(ext)) {
@@ -212,11 +212,11 @@ class FileBrowser extends hide.ui.View<FileBrowserState> {
 						</fancy-button>
 						<fancy-separator></fancy-separator>
 
-						<fancy-button class="btn-filter">
+						<fancy-button class="btn-filter" title="Filter file by type">
 							<span class="ico ico-filter"></span>
 						</fancy-button>
 
-						<fancy-button class="compact bnt-filter-dropdown">
+						<fancy-button class="compact bnt-filter-dropdown" title="Choose filters">
 							<span class="ico ico-chevron-down"></span>
 						</fancy-button>
 

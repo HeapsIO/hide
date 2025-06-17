@@ -4478,7 +4478,8 @@ fancy-toolbar {
   padding-left: 0.25em;
   padding-right: 0.25em;
 }
-fancy-toolbar.shadow {
+fancy-toolbar.shadow,
+fancy-closable.shadow {
   position: relative;
   background-color: #272727;
   box-shadow: 2px 2px 2px rgba(0, 0, 0, 0.2);
@@ -4973,19 +4974,6 @@ fancy-icon.fi-close {
 fancy-icon.fi-search {
   mask-image: url("res/icons/svg/search.svg");
 }
-fancy-closable {
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  background-color: #333;
-  box-shadow: 1px 1px 1px rgba(0, 0, 0, 0.33);
-  margin-bottom: 2px;
-  overflow: hidden;
-  height: 0px;
-}
-fancy-closable * {
-  box-sizing: border-box;
-}
 fancy-search {
   position: relative;
   flex: 1 1;
@@ -5425,4 +5413,11 @@ fancy-image {
 }
 fancy-breadcrumbs fancy-breadcrumbs-separator {
   padding: 0.5em;
+}
+fancy-closable {
+  overflow: hidden;
+  height: 0px;
+}
+fancy-closable * {
+  box-sizing: border-box;
 }

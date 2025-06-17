@@ -5323,15 +5323,15 @@ fancy-toolbar {
 	padding-top: 2px;
 	padding-bottom: 2px;
 
-	&.shadow {
-		position: relative;
-		background-color: #272727;
-		box-shadow: 2px 2px 2px rgba(0,0,0,0.2);
-		z-index: 1;
-	}
-
 	padding-left: 0.25em;
 	padding-right: 0.25em;
+}
+
+fancy-toolbar.shadow, fancy-closable.shadow {
+	position: relative;
+	background-color: #272727;
+	box-shadow: 2px 2px 2px rgba(0,0,0,0.2);
+	z-index: 1;
 }
 
 fancy-button {
@@ -5943,22 +5943,6 @@ fancy-icon {
 	&.fi-search 			{ mask-image: url("res/icons/svg/search.svg"); }
 }
 
-fancy-closable {
-	display: flex;
-	align-items: center;
-	justify-content: center;
-
-	* {
-		box-sizing: border-box;
-	}
-
-	background-color: #333;
-	box-shadow: 1px 1px 1px rgba(0,0,0,0.33);
-	margin-bottom: 2px;
-
-	overflow: hidden;
-	height: 0px;
-}
 
 fancy-search {
 	position: relative;
@@ -6541,4 +6525,12 @@ fancy-breadcrumbs {
 	fancy-breadcrumbs-separator {
 		padding: 0.5em;
 	}
+}
+
+fancy-closable {
+	* {
+		box-sizing: border-box;
+	}
+	overflow: hidden;
+	height: 0px;
 }
