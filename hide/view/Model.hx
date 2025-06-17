@@ -1305,7 +1305,7 @@ class Model extends FileView {
 			e.preventDefault();
 			var current = tree.getCurrentOver();
 			var menuItems : Array<hide.comp.ContextMenu.MenuItem> = [
-				{ label : "Merge selected", enabled : canMergeElements(selectedElements), click: () -> mergeModels(cast selectedElements) },
+				{ label : "Merge selected", enabled : false /*canMergeElements(selectedElements)*/, click: () -> mergeModels(cast selectedElements) },
 				{ label : "Merge all meshes", enabled : true, click: () -> mergeModels(cast [for (m in obj.findAll(o -> Std.downcast(o, h3d.scene.Mesh))) m]) },
 			];
 
@@ -1519,7 +1519,7 @@ class Model extends FileView {
 			var p2 = Std.downcast(m2.primitive, h3d.prim.HMDModel);
 
 			if (p1 == null || p2 == null)
-				throw "!";
+				throw "Can't merge non-HMDModels";
 
 			// Creation of the merged HMD
 			var hmd = new hxd.fmt.hmd.Data();
@@ -1530,12 +1530,6 @@ class Model extends FileView {
 			hmd.animations = [];
 			hmd.shapes = [];
 
-			var mat = new hxd.fmt.hmd.Data.Material();
-			mat.name = "SimpleBlock";
-			mat.blendMode = None;
-			mat.props = [];
-			hmd.materials.push(mat);
-
 			var maxLod = Std.int(hxd.Math.max(p1.lodCount(), p2.lodCount()));
 			var modelName = m1.name + "_" + m2.name;
 
@@ -1543,7 +1537,7 @@ class Model extends FileView {
 			model.name = modelName;
 			model.name = model.toLODName(0);
 			model.geometry = 0;
-			model.materials = [0];
+			model.materials = [];
 			model.parent = -1;
 			model.position = new hxd.fmt.hmd.Data.Position();
 			model.position.x = 0;
@@ -1560,7 +1554,55 @@ class Model extends FileView {
 			model.props.push(HasLod);
 			hmd.models.push(model);
 
+			var mat1 = m1.getMaterials();
+			var mat2 = m2.getMaterials();
+			var indexCounts = [];
+			var totalCount = 0;
+			var remap : Array<Array<{ count : Int, offset : Int }>> = [];
+			for (mIdx in 0...(mat1.length + mat2.length)) {
+				var indexCount = mIdx < mat1.length ? p1.getMaterialIndexCount(mIdx) : p2.getMaterialIndexCount(mIdx - mat1.length);
+				var m = mIdx < mat1.length ? mat1[mIdx] : mat2[mIdx - mat1.length];
+				var mId = -1;
+				for (id in model.materials) {
+					if (hmd.materials[id].name == m.name)
+						mId = id;
+				}
+
+				if (mId != -1) {
+					indexCounts[mId] += indexCount;
+					remap[mId].push({ count: indexCount, offset: totalCount });
+					totalCount += indexCount;
+					continue;
+				}
+
+				mId = hmd.materials.length;
+
+				var matData : hxd.fmt.hmd.Data.Material = null;
+				@:privateAccess {
+					for (dataIdx in 0...(p1.lib.header.materials.length + p2.lib.header.materials.length)) {
+						matData = dataIdx < p1.lib.header.materials.length ? p1.lib.header.materials[dataIdx] :  p1.lib.header.materials[dataIdx - p1.lib.header.materials.length];
+						if (matData.name == m.name)
+							break;
+					}
+				}
+
+				remap[mId] = [{ count: indexCount, offset: totalCount }];
+				indexCounts.push(indexCount);
+				hmd.materials.push(matData);
+				model.materials.push(mId);
+				totalCount += indexCount;
+			}
+
 			var dataOut = new haxe.io.BytesOutput();
+			var totalVertexCount = 0;
+			for (lodIdx in 0...maxLod) {
+				var newFormat = hxd.BufferFormat.make([for (i in format.getInputs()) i]);
+				var d1 = hxd.fmt.fbx.Writer.getPrimitiveInfos(p1, newFormat, lodIdx);
+				var d2 = hxd.fmt.fbx.Writer.getPrimitiveInfos(p2, newFormat, lodIdx);
+				totalVertexCount += Std.int((d1.vertexBuffer.length + d2.vertexBuffer.length) / d1.vertexFormat.stride);
+			}
+
+			var is32 = totalVertexCount > 0x10000;
 			for (lodIdx in 0...maxLod) {
 				var newFormat = hxd.BufferFormat.make([for (i in format.getInputs()) i]);
 
@@ -1572,7 +1614,7 @@ class Model extends FileView {
 
 				var g = new hxd.fmt.hmd.Data.Geometry();
 				g.bounds = new h3d.col.Bounds();
-				g.indexCounts = [ indexCount ];
+				g.indexCounts = indexCounts;
 				g.vertexCount = vertexCount;
 				g.vertexFormat = newFormat;
 				g.vertexPosition = dataOut.length;
@@ -1601,7 +1643,7 @@ class Model extends FileView {
 						if (vIdx < d1.vertexBuffer.length)
 							return d1.vertexBuffer[vIdx];
 						else
-							return d2.vertexBuffer[vIdx % d1.vertexBuffer.length];
+							return d2.vertexBuffer[vIdx - d1.vertexBuffer.length];
 					}
 
 					for (i in g.vertexFormat.getInputs()) {
@@ -1626,19 +1668,24 @@ class Model extends FileView {
 				}
 
 				g.indexPosition = dataOut.length;
-				var offset = 0;
-				for (i in 0...indexCount) {
-					function get(vIdx: Int) {
-						if (vIdx < d1.indexesBuffer.length) {
-							if (offset < d1.indexesBuffer[vIdx])
-								offset = d1.indexesBuffer[vIdx];
-							return d1.indexesBuffer[vIdx];
-						}
-						else
-							return d2.indexesBuffer[vIdx % d1.indexesBuffer.length] + offset + 1;
+				function get(vIdx: Int) {
+					if (vIdx < d1.indexesBuffer.length) {
+						return d1.indexesBuffer[vIdx];
 					}
+					else
+						return d2.indexesBuffer[vIdx - d1.indexesBuffer.length] + Std.int(d1.vertexBuffer.length / g.vertexFormat.stride);
+				}
 
-					dataOut.writeUInt16(get(i));
+				for (r in remap) {
+					for (i in r) {
+						for (idx in 0...i.count) {
+							var realIdx = idx + i.offset;
+							if (is32)
+								dataOut.writeInt32(get(realIdx));
+							else
+								dataOut.writeUInt16(get(realIdx));
+						}
+					}
 				}
 			}
 
