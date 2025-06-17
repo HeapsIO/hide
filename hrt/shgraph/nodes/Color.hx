@@ -32,7 +32,7 @@ class Color extends ShaderConst {
 		var picker = new hide.comp.ColorPicker.ColorBox(element, true, true);
 
 
-		var start = h3d.Vector.fromArray([r, g, b, a]);
+		var start = h3d.Vector4.fromArray([r, g, b, a]);
 		picker.value = start.toColor();
 
 		picker.onChange = function(move) {
