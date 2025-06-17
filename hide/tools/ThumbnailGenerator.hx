@@ -281,7 +281,8 @@ class ThumbnailGenerator {
 				renderCanvas.s3d.render(engine);
 				engine.popTarget();
 
-				sceneRoot.removeChildren();
+				renderCanvas.s3d.removeChildren();
+				renderCanvas.s2d.removeChildren();
 
 				var path = convertAndWriteThumbnail(toRender.path, renderTexture);
 				toRender.cb(path);

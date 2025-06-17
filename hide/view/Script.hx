@@ -123,9 +123,9 @@ class Script extends FileView {
 	}
 
 	static var _ = {
-		FileTree.registerExtension(Script,["js","hx"],{ icon : "file-code-o" });
-		FileTree.registerExtension(Script,["xml","html"],{ icon : "code" });
-		FileTree.registerExtension(Script,["json"],{ icon : "gears" });
+		FileTree.registerExtension(Script,["js","hx"],{ icon : "file-code-o", name: "Script" });
+		FileTree.registerExtension(Script,["xml","html"],{ icon : "code", name: "Script" });
+		FileTree.registerExtension(Script,["json"],{ icon : "gears", name: "Script" });
 	};
 
 }

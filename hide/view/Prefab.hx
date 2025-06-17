@@ -977,7 +977,7 @@ class Prefab extends hide.view.FileView {
 
 	function sceneFiltersChanged() {}
 
-	static var _ = hide.view.FileTree.registerExtension(Prefab, ["prefab"], { icon : "sitemap", createNew : "Prefab" });
-	static var _1 = hide.view.FileTree.registerExtension(Prefab, ["l3d"], { icon : "sitemap" });
+	static var _ = hide.view.FileTree.registerExtension(Prefab, ["prefab"], { icon : "sitemap", createNew : "Prefab", name: "Prefab" });
+	static var _1 = hide.view.FileTree.registerExtension(Prefab, ["l3d"], { icon : "sitemap", name: "Prefab" });
 
 }

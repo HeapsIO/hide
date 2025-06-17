@@ -3,6 +3,7 @@ package hide.view;
 typedef ExtensionOptions = {
 	?icon : String,
 	?createNew : String,
+	?name : String,
 };
 
 typedef ExtensionDesc = {

@@ -9,7 +9,7 @@ private class MSDFViewerShader extends h3d.shader.AlphaMSDF {
 			if (calculatedUV.x > comparisonFactor)
 				pixelColor = texture.get(calculatedUV);
 			else {
-				pixelColor.rgb = vec3(1.0);					
+				pixelColor.rgb = vec3(1.0);
 				var sample = texture.get(calculatedUV);
 				var sd = median(sample.r, sample.g, sample.b);
 				var screenPxDistance = screenPxRange(calculatedUV)*(sd - 0.5);
@@ -50,7 +50,7 @@ class MSDFView extends FileView {
 						<div class="msdf-infos">
 							<p class="tex-weight">Texture weight : missing info </p>
 							<p class="current-size">Current size : 0 px </p>
-							<p>Resize : 
+							<p>Resize :
 								<input type="number" class="size" value=0 style="width:7ch;"></input>
 								<input type="button" class="save-size" value="Save" title="Save current size options into a props.json file."/>
 							</p>
@@ -248,7 +248,7 @@ class MSDFView extends FileView {
 		texMemSize.text('Texture weight : ${@:privateAccess floatToStringPrecision(texture.mem.memSize(texture) / (1024 * 1024)) } mb');
 
 		currentSize = texture.width;
-		
+
 		var resize = element.find(".resize");
 		resize.val(currentSize);
 		var currentSizeField = element.find(".current-size");
@@ -406,6 +406,6 @@ class MSDFView extends FileView {
 		onResize();
 	}
 
-	static var _ = FileTree.registerExtension(MSDFView,["svg"],{ icon : "picture-o" });
+	static var _ = FileTree.registerExtension(MSDFView,["svg"],{ icon : "picture-o", name: "MSDF" });
 
 }

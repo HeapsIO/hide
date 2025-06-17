@@ -79,20 +79,64 @@ class FileBrowser extends hide.ui.View<FileBrowserState> {
 	var fancyTree: hide.comp.FancyTree<FileEntry>;
 	var collapseSubfolders : Bool;
 	var collapseSubfoldersButton : js.html.Element;
+	var filterButton : js.html.Element;
+	var filterEnabled(default, set) : Bool;
+	var filters : Map<String, {exts: Array<String>, icon: String}> = [];
+	var filterState : Map<String, Bool> = [];
+	function set_filterEnabled(v : Bool) {
+		var anySet = false;
+		for (key => value in filterState) {
+			if (value == true) {
+				anySet = true;
+				break;
+			}
+		}
+
+		filterEnabled = anySet && v;
+
+		filterButton.classList.toggle("selected", filterEnabled);
+		saveDisplayState("filterEnabled", filterEnabled);
+		queueGalleryRefresh();
+		return v;
+	}
+
+	function saveFilterState() {
+		saveDisplayState("filterState", [for(k in filterState.keys()) k]);
+	}
 
 	function syncCollapseSubfolders() {
 		collapseSubfoldersButton.classList.toggle("selected", collapseSubfolders);
 		saveDisplayState("collapseSubfolders", collapseSubfolders);
-		onSearch();
+		queueGalleryRefresh();
+	}
+
+	var galleryRefreshQueued = false;
+	function queueGalleryRefresh() {
+		if (!galleryRefreshQueued) {
+			galleryRefreshQueued = true;
+			js.Browser.window.requestAnimationFrame((_) -> onGalleryRefreshInternal());
+		}
 	}
 
 
-	function onSearch() {
+	function onGalleryRefreshInternal() {
+		galleryRefreshQueued = false;
 		hide.tools.FileManager.inst.clearRenderQueue();
 		currentSearch = [];
-		if (searchString.length == 0 && !collapseSubfolders) {
+		if (searchString.length == 0 && !collapseSubfolders && !filterEnabled) {
 			currentSearch = currentFolder.children;
 		} else {
+			var exts = [];
+			if (filterEnabled) {
+				for (name => active in filterState) {
+					if (active) {
+						for (ext in filters.get(name).exts) {
+							exts.push(ext);
+						}
+					}
+				}
+			}
+
 			function rec(files: Array<FileEntry>) {
 				for (file in files) {
 					if (file.kind == Dir) {
@@ -102,10 +146,23 @@ class FileBrowser extends hide.ui.View<FileBrowserState> {
 						rec(file.children);
 					}
 					else {
-						var range = hide.comp.FancySearch.computeSearchRanges(file.name, searchString);
-						if (range != null) {
-							currentSearch.push(file);
+						if (filterEnabled) {
+							var ext = file.name.split(".").pop().toLowerCase();
+
+							if (!exts.contains(ext)) {
+								continue;
+							}
 						}
+
+						if (searchString.length > 0) {
+							var range = hide.comp.FancySearch.computeSearchRanges(file.name, searchString);
+							if (range == null) {
+								continue;
+							}
+						}
+
+						currentSearch.push(file);
+
 					}
 				}
 			}
@@ -180,7 +237,7 @@ class FileBrowser extends hide.ui.View<FileBrowserState> {
 		var search = new hide.comp.FancySearch(null, layout.find(".fb-search"));
 		search.onSearch = (string, _) -> {
 			searchString = string;
-			onSearch();
+			queueGalleryRefresh();
 		};
 
 		var btnParent = layout.find(".btn-parent");
@@ -265,7 +322,6 @@ class FileBrowser extends hide.ui.View<FileBrowserState> {
 		}
 
 		fancyTree.rebuildTree();
-
 		fancyTree.openItem(root);
 
 		var right = layout.find(".right");
@@ -361,6 +417,48 @@ class FileBrowser extends hide.ui.View<FileBrowserState> {
 			}
 		}
 
+		generateFilters();
+
+		var savedFilters : Array<Dynamic> = getDisplayState("filterState") ?? [];
+		for (filter in savedFilters) {
+			if (filters.get(filter) != null) {
+				filterState.set(filter, true);
+			}
+		}
+
+		filterButton = layout.find(".btn-filter").get(0);
+		filterButton.onclick = (e: js.html.MouseEvent) -> {
+			filterEnabled = !filterEnabled;
+		}
+		filterEnabled = getDisplayState("filterEnabled") ?? false;
+
+
+		var filterMoreButton = layout.find(".bnt-filter-dropdown").get(0);
+		filterMoreButton.onclick = (e: js.html.MouseEvent) -> {
+			var options : Array<hide.comp.ContextMenu.MenuItem> = [];
+
+			for (name => info in filters) {
+				options.push({
+					label: name,
+					checked: filterState.get(name) == true,
+					click: () -> {
+						if (filterState.get(name) == true) {
+							filterState.remove(name);
+						} else {
+							filterState.set(name, true);
+						}
+
+						filterEnabled = true;
+						saveFilterState();
+						queueGalleryRefresh();
+					},
+					stayOpen: true,
+				});
+			}
+			hide.comp.ContextMenu.createDropdown(filterMoreButton, options);
+		}
+
+
 		collapseSubfolders = getDisplayState("collapseSubfolders") ?? false;
 		collapseSubfoldersButton = layout.find(".btn-collapse-folders").get(0);
 		collapseSubfoldersButton.onclick = (e: js.html.MouseEvent) -> {
@@ -369,6 +467,13 @@ class FileBrowser extends hide.ui.View<FileBrowserState> {
 		}
 		syncCollapseSubfolders();
 
+	}
+
+	function generateFilters() {
+		for (ext => desc in @:privateAccess FileTree.EXTENSIONS) {
+			var arr = hrt.tools.MapUtils.getOrPut(filters, desc?.options.name ?? "unknown", {exts: [], icon: desc.options.icon});
+			arr.exts.push(ext);
+		}
 	}
 
 	function refreshBreadcrumbs() {
@@ -399,7 +504,7 @@ class FileBrowser extends hide.ui.View<FileBrowserState> {
 	function openDir(item: FileEntry, syncTree: Bool) {
 		if (item.kind == Dir) {
 			currentFolder = item;
-			onSearch();
+			queueGalleryRefresh();
 		}
 
 		if (syncTree) {

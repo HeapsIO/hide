@@ -811,6 +811,6 @@ class Image extends FileView {
 		Ide.inst.quickError('Can\'t load texture with this compression parameters, original texture is loaded instead!');
 	}
 
-	static var _ = FileTree.registerExtension(Image,hide.Ide.IMG_EXTS.concat(["envd","envs"]),{ icon : "picture-o" });
+	static var _ = FileTree.registerExtension(Image,hide.Ide.IMG_EXTS.concat(["envd","envs"]),{ icon : "picture-o", name: "Image" });
 
 }

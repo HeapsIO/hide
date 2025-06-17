@@ -183,7 +183,7 @@ class Domkit extends FileView {
 		return haxe.io.Bytes.ofString('<css>\n$tag {\n}\n</css>\n<$tag>\n</$tag>');
 	}
 
-	static var _ = FileTree.registerExtension(Domkit,["domkit"],{ icon : "id-card-o", createNew : "Domkit Component" });
+	static var _ = FileTree.registerExtension(Domkit,["domkit"],{ icon : "id-card-o", createNew : "Domkit Component" , name: "Domkit"});
 
 }
 
@@ -217,6 +217,6 @@ class DomkitLess extends FileView {
 		// TODO : execute lessc
 	}
 
-	static var _ = FileTree.registerExtension(DomkitLess,["less"],{ icon : "object-group" });
+	static var _ = FileTree.registerExtension(DomkitLess,["less"],{ icon : "object-group", name: "Less" });
 
 }

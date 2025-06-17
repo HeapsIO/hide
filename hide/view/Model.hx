@@ -2149,6 +2149,6 @@ class Model extends FileView {
 		renderPropsEditionEl.css({ display : 'block' });
 	}
 
-	static var _ = FileTree.registerExtension(Model,["hmd","fbx"],{ icon : "cube" });
+	static var _ = FileTree.registerExtension(Model,["hmd","fbx"],{ icon : "cube", name: "Model" });
 
 }

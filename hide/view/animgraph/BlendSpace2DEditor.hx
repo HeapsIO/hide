@@ -696,5 +696,5 @@ class BlendSpace2DEditor extends hide.view.FileView {
 		}
 	}
 
-	static var _ = FileTree.registerExtension(BlendSpace2DEditor,["bs2d"],{ icon : "arrows-alt", createNew: "Blend Space 2D" });
+	static var _ = FileTree.registerExtension(BlendSpace2DEditor,["bs2d"],{ icon : "arrows-alt", createNew: "Blend Space 2D", name: "Blend Space 2D" });
 }
