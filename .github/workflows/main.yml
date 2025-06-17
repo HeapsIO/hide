@@ -10,8 +10,6 @@ on:
 jobs:
   build:
     runs-on: ubuntu-latest
-    env:
-      nwjs-version: v0.88.0
     steps:
     - uses: actions/checkout@v2
     - uses: krdlab/setup-haxe@v1
@@ -32,7 +30,29 @@ jobs:
         haxelib git hx3compat https://github.com/HaxeFoundation/hx3compat
         haxelib git hashlink https://github.com/HaxeFoundation/hashlink master other/haxelib/
         haxe hide.hxml
-    - run: sudo apt-get install p7zip-full
+    - name: Upload artifact
+      uses: actions/upload-artifact@v4
+      with:
+        name: js
+        path: |
+          bin/*.js
+          bin/*.js.map
+
+  deploy:
+    if: github.repository_owner == 'HeapsIO' && github.ref == 'refs/heads/master' && github.event_name != 'pull_request'
+    needs: build
+    runs-on: ubuntu-latest
+    env:
+      nwjs-version: v0.88.0
+    steps:
+    - uses: actions/checkout@v2
+    - name: Download js
+      uses: actions/download-artifact@v4
+      with:
+        name: js
+        path: bin
+    - name: Install deploy packages
+      run: sudo apt-get install p7zip-full
     - name: Windows
       run: |
         wget -O nwjs-win.zip https://dl.nwjs.io/${{env.nwjs-version}}/nwjs-sdk-${{env.nwjs-version}}-win-x64.zip
@@ -72,4 +92,3 @@ jobs:
         echo "${{secrets.DEPLOY_KEY}}" > ~/.ssh/id_rsa
         chmod 600 ~/.ssh/id_rsa
         scp -o StrictHostKeyChecking=no zips/* gama11@community.heaps.io:builds/hide
-      if: github.ref == 'refs/heads/master'
