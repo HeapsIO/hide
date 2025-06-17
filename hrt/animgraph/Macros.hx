@@ -69,9 +69,9 @@ class Macros {
 						} else if (p.name == "Float") {
 							return macro hrt.animgraph.Node.OutputType.TFloat;
 						}
-						Context.error('Unsupported type ${p}', f.pos, 0);
+						Context.error('Unsupported type ${p}', f.pos);
 					default:
-						Context.error('Unsupported type for field ${f.name}', f.pos, 0);
+						Context.error('Unsupported type for field ${f.name}', f.pos);
 					}
 				}
 			case FProp(_,_,t,_): {
@@ -82,9 +82,9 @@ class Macros {
 						} else if (p.name == "Float") {
 							return macro hrt.animgraph.Node.OutputType.TFloat;
 						}
-						Context.error('Unsupported type ${p}', f.pos, 0);
+						Context.error('Unsupported type ${p}', f.pos);
 					default:
-						Context.error('Unsupported type for field ${f.name}', f.pos, 0);
+						Context.error('Unsupported type for field ${f.name}', f.pos);
 					}
 				}
 			default:
