@@ -4118,6 +4118,7 @@ hide-popover hide-content {
   position: absolute;
   width: 500px;
   height: 500px;
+  pointer-events: none;
 }
 .radial-menu .center {
   position: absolute;
@@ -4125,6 +4126,14 @@ hide-popover hide-content {
 .radial-menu .center:before {
   color: #1a1a1a;
   font-size: 3em;
+}
+.radial-menu .center .center-selection {
+  position: absolute;
+}
+.radial-menu .center .center-selection:before {
+  color: #3673b7;
+  font-size: 3em;
+  clip-path: polygon(0% 100%, 100% 100%, 50% 50%);
 }
 .radial-menu .radial-button {
   transition: top 0.2s, left 0.2s;

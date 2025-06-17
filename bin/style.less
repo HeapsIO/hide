@@ -4856,12 +4856,22 @@ hide-popover {
 	position: absolute;
 	width: 500px;
 	height: 500px;
+	pointer-events: none;
 
 	.center {
 		position: absolute;
 		&:before {
 			color: #1a1a1a;
 			font-size: 3em;
+		}
+
+		.center-selection {
+			position: absolute;
+			&:before {
+				color: #3673b7;
+				font-size: 3em;
+				clip-path: polygon(0% 100%, 100% 100%, 50% 50%);
+			}
 		}
 	}
 

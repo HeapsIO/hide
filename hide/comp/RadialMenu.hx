@@ -14,6 +14,7 @@ class RadialMenu {
 
     var rootElement : js.html.Element;
 	var centerElement : Element;
+	var selectionElement : Element;
 	var radialButtons : Array<Element> = [];
 	var radialItems : Array<RadialMenuItem> = [];
 
@@ -22,7 +23,7 @@ class RadialMenu {
 
 		var parent = js.Browser.document.body;
 		rootElement = js.Browser.document.createDivElement();
-        rootElement.setAttribute("tabindex", "0");
+        rootElement.setAttribute("tabindex", "-1");
         parent.appendChild(rootElement);
 
 		rootElement.classList.add("radial-menu");
@@ -36,6 +37,12 @@ class RadialMenu {
 		centerElement.appendTo(rootElement);
 		centerElement.get(0).style.left = '${(width / 2) - centerElement.width() / 2}px';
 		centerElement.get(0).style.top = '${(height / 2) - centerElement.height() / 2}px';
+
+		selectionElement = new Element('<div class="center-selection ico ico-circle-o"></div>');
+		selectionElement.appendTo(centerElement);
+		selectionElement.get(0).style.left = '${0}px';
+		selectionElement.hide();
+
 
 		// Create buttons
 		for (idx => i in items) {
@@ -88,14 +95,27 @@ class RadialMenu {
 
 	function update(e: js.jquery.Event) {
 		var mousePos = new h2d.col.Point(e.clientX, e.clientY);
-		for (btn in radialButtons) {
-			var btnPos = new h2d.col.Point(btn.offset().left + (btn.width() / 2), btn.offset().top + (btn.height() / 2));
-			// TODO: better selection
-			if ((btnPos - mousePos).length() <= 50) {
-				new Element(rootElement).find(".selected").removeClass("selected");
-				btn.addClass("selected");
-			}
-		}
+		var center = new h2d.col.Point(centerElement.offset().left, centerElement.offset().top);
+		center.x += centerElement.width() / 2;
+		center.y += centerElement.height() / 2;
+
+		var dir = mousePos - center;
+		var magnitude = dir.length();
+		dir.normalize();
+
+		selectionElement.hide();
+		new Element(rootElement).find(".selected").removeClass("selected");
+		if (magnitude < 30)
+			return;
+
+		selectionElement.show();
+		var dot = (dir.x * 0) + (dir.y * 1);
+		var angle = dir.x > 0 ? 2 * hxd.Math.PI - hxd.Math.acos(dot) : hxd.Math.acos(dot);
+		var anglePerEl = (2 * hxd.Math.PI) / radialButtons.length;
+		var idxSelected = (radialButtons.length - 1) - Std.int((angle - (anglePerEl / 2)) / anglePerEl);
+		selectionElement.css({ "transform" : 'rotate(${angle}rad)'});
+
+		radialButtons[idxSelected].addClass("selected");
 	}
 
 	function stop() {
