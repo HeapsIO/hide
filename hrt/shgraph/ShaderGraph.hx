@@ -674,7 +674,7 @@ class ShaderGraph extends hrt.prefab.Prefab {
 					var t = hrt.impl.TextureType.Utils.getTextureFromValue(value, Repeat);
 					shader.setParamValue(variable, t);
 				case TVec(size, _):
-					shader.setParamValue(variable, h3d.Vector.fromArray(value));
+					shader.setParamValue(variable, size == 4 ? h3d.Vector4.fromArray(value) : h3d.Vector.fromArray(value));
 				default:
 					shader.setParamValue(variable, value);
 			}
