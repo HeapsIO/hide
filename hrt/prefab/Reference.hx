@@ -124,10 +124,10 @@ class Reference extends Object3D {
 	function initRefInstance() {
 		var shouldLoad = refInstance == null && source != null && shouldBeInstanciated();
 
-		#if editor
-		if (hasCycle())
-			shouldLoad = false;
-		#end
+		// #if editor
+		// if (hasCycle())
+		// 	shouldLoad = false;
+		// #end
 
 		if (shouldLoad) {
 			resolveRef();
@@ -183,13 +183,13 @@ class Reference extends Object3D {
 				return;
 			refInstance = refInstance.clone();
 		}
-		#if editor
-		if (hasCycle()) {
-			hide.Ide.inst.quickError('Reference ${getAbsPath()} to $source is creating a cycle. Please fix the reference.');
-			refInstance = null;
-			return;
-		}
-		#end
+		// #if editor
+		// if (hasCycle()) {
+		// 	hide.Ide.inst.quickError('Reference ${getAbsPath()} to $source is creating a cycle. Please fix the reference.');
+		// 	refInstance = null;
+		// 	return;
+		// }
+		// #end
 
 		var refLocal3d : h3d.scene.Object = null;
 
@@ -329,42 +329,6 @@ class Reference extends Object3D {
 		refInstance.shared.parentPrefab = this;
 	}
 
-	/**
-		Returns true if this reference has a cycle,
-		meaning that references depends on each other
-	**/
-	public function hasCycle() : Bool {
-		var map : Map<String, Bool> = [];
-		map.set(shared.currentPath, true);
-		return hasCycleDynamic(serialize(), map);
-	}
-
-	static function hasCyclePath(path: String, seenPaths: Map<String, Bool>) : Bool {
-		if (seenPaths.get(path) == true)
-			return true;
-		if (!hxd.res.Loader.currentInstance.exists(path))
-			return false;
-
-		seenPaths.set(path, true);
-		var data = @:privateAccess hxd.res.Loader.currentInstance.load(path).toPrefab().loadData();
-		return hasCycleDynamic(data, seenPaths);
-	}
-
-	static function hasCycleDynamic(data: Dynamic, seenPaths: Map<String, Bool>) : Bool {
-		if (data.source != null && (data.type == "reference" || data.type == "subFX")) {
-			if (hasCyclePath(data.source, seenPaths.copy()))
-				return true;
-		}
-		if (data.children) {
-			for (child in (data.children:Array<Dynamic>)) {
-				if (hasCycleDynamic(child, seenPaths)) {
-					return true;
-				}
-			}
-		}
-		return false;
-	}
-
 	override function makeInteractive() {
 		if( editMode != None )
 			return null;
@@ -395,12 +359,12 @@ class Reference extends Object3D {
 		var props = ctx.properties.add(element, this, function(pname) {
 			ctx.onChange(this, pname);
 			if(pname == "source" || pname == "editMode") {
-				if (hasCycle()) {
-					hide.Ide.inst.quickError('Reference to $source would create a cycle. The reference change was aborted.');
-					source = null;
-					ctx.rebuildProperties();
-					return;
-				}
+				// if (hasCycle()) {
+				// 	hide.Ide.inst.quickError('Reference to $source would create a cycle. The reference change was aborted.');
+				// 	source = null;
+				// 	ctx.rebuildProperties();
+				// 	return;
+				// }
 				updateProps();
 				if(!ctx.properties.isTempChange) {
 					if (pname == "source") {

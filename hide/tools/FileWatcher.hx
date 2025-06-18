@@ -7,6 +7,7 @@ private typedef Watch = {
 	events : Array<FileWatchEvent>,
 	#if js
 	w : js.node.fs.FSWatcher,
+	lastStat : js.node.fs.Stats,
 	#else
 	w : hl.uv.Fs,
 	#end
@@ -195,9 +196,20 @@ class FileWatcher {
 
 	function initWatch( w : Watch ) {
 		#if js
-		w.w = js.node.Fs.watch(w.path, function(k:String, file:String) {
+		w.lastStat = js.node.Fs.statSync(w.path);
+		w.w = js.node.Fs.watch(w.path, {persistent: true}, function(k:String, file:String) {
 			if( w.isDir && k == "change" ) return;
-			if( k == "change" ) w.wasChanged = true;
+			if( k == "change" ) {
+				// for an unknown reason (maybe SVN ?), sometimes changes are triggered without the file being actually changed.
+				// we check that here
+				var oldStat = w.lastStat;
+				w.lastStat = js.node.Fs.statSync(w.path);
+				if (w.lastStat.mtime.getTime() <= oldStat.mtime.getTime() &&
+					w.lastStat.ctime.getTime() <= oldStat.ctime.getTime()) {
+					return;
+				}
+				w.wasChanged = true;
+			}
 			if( w.changed ) return;
 			w.changed = true;
 			w.version++;
@@ -227,6 +239,9 @@ class FileWatcher {
 				isDir : try sys.FileSystem.isDirectory(fullPath) catch( e : Dynamic ) false,
 				wasChanged : false,
 				version : 0,
+				#if js
+				lastStat: null,
+				#end
 			};
 			try initWatch(w) catch( e : Dynamic ) {
 				// file does not exists, trigger a delayed event
