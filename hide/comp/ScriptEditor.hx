@@ -9,7 +9,7 @@ typedef GlobalsDef = haxe.DynamicAccess<{
 	var allowGlobalsDefine : Null<Bool>;
 	var cdbEnums : Array<String>;
 	var publicFields : Bool;
-	var parentScript : String;
+	var parentScripts : Array<String>;
 }>;
 
 class ScriptCache {
@@ -214,7 +214,10 @@ class ScriptChecker {
 
 	static var NO_VALUE : Dynamic = [];
 
-	function resolveConstantValue( name : String ) : Dynamic {
+	function resolveConstantValue( name : String, ?constants ) : Dynamic {
+
+		if( constants == null )
+			constants = this.constants;
 
 		var parts = name.split("+");
 		if( parts.length > 1 ) {
@@ -223,10 +226,13 @@ class ScriptChecker {
 				var v : Dynamic = resolveConstantValue(p);
 				if( v == NO_VALUE ) continue;
 				if( cur == NO_VALUE || cur == null ) {
-					cur = Reflect.isObject(v) ? Reflect.copy(v) : v;
+					cur = Std.isOfType(v,Array) ? (v:Array<Dynamic>).copy() : Reflect.isObject(v) ? Reflect.copy(v) : v;
 					continue;
 				}
-				if( Reflect.isObject(cur) && Reflect.isObject(v) ) {
+				if( Std.isOfType(cur,Array) && Std.isOfType(v,Array) ) {
+					for( val in (v:Array<Dynamic>) )
+						(cur:Array<Dynamic>).push(val);
+				} else if( Reflect.isObject(cur) && Reflect.isObject(v) ) {
 					for( f in Reflect.fields(v) )
 						Reflect.setField(cur,f,Reflect.field(v,f));
 				}
@@ -235,11 +241,30 @@ class ScriptChecker {
 		}
 
 		var extra = name.indexOf("@");
-		var extraPath = null;
 		if( extra > 0 ) {
-			extraPath = name.substr(extra+1);
+			var path = name.substr(extra+1);
 			name = name.substr(0, extra);
+			var value : Dynamic = resolveConstantValue(name,constants);
+			if( value == null || value == NO_VALUE )
+				return value;
+			var sheet = ide.database.getSheet(name.split(".")[1]);
+			if( sheet == null || sheet.idCol == null )
+				return NO_VALUE;
+			var obj = null;
+			for( line in sheet.getLines() ) {
+				if( Reflect.field(line,sheet.idCol.name) == value ) {
+					obj = line;
+					break;
+				}
+			}
+			if( obj == null )
+				return null;
+			var constants = new Map();
+			var prefix = "cdb."+sheet.name;
+			constants.set(prefix, obj);
+			return resolveConstantValue(prefix+"."+path, constants);
 		}
+
 		var path = name.split(".");
 		var fields = [];
 		while( path.length > 0 ) {
@@ -248,20 +273,6 @@ class ScriptChecker {
 				var value : Dynamic = constants.get(name);
 				for( f in fields )
 					value = Reflect.field(value, f);
-				if( extraPath != null && value != null ) {
-					var sheet = ide.database.getSheet(path[1]);
-					if( sheet == null || sheet.idCol == null )
-						return NO_VALUE;
-					for( line in sheet.getLines() ) {
-						if( Reflect.field(line,sheet.idCol.name) == value ) {
-							value = line;
-							for( p in extraPath.split(".") )
-								value = Reflect.field(value,p);
-							return value;
-						}
-					}
-					return null;
-				}
 				return value;
 			}
 			fields.unshift(path.pop());
@@ -287,7 +298,7 @@ class ScriptChecker {
 		var contexts = [];
 		var publicFields = false;
 		var allowGlobalsDefine = false;
-		var parentScript = null;
+		var parentScripts = null;
 		checkEvents = false;
 		cdbEnums = [];
 
@@ -347,8 +358,8 @@ class ScriptChecker {
 					addCDBEnum(c, cdbPack);
 			}
 
-			if( api.parentScript != null )
-				parentScript = api.parentScript;
+			if( api.parentScripts != null )
+				parentScripts = api.parentScripts;
 
 			if( api.evalTo != null )
 				this.evalTo = api.evalTo;
@@ -380,9 +391,11 @@ class ScriptChecker {
 		checker.allowGlobalsDefine = allowGlobalsDefine;
 		for( c in TYPE_CHECK_HOOKS )
 			c(this);
-		if( parentScript != null ) {
-			var value : Dynamic = resolveConstantValue(parentScript);
-			if( value != NO_VALUE && value != null ) {
+		if( parentScripts != null ) {
+			for( script in parentScripts ) {
+				var value : Dynamic = resolveConstantValue(script);
+				if( value == NO_VALUE || value == null )
+					continue;
 				try {
 					var parser = makeParser();
 					var expr = parser.parseString(value,"");
