@@ -1668,6 +1668,7 @@ input[type=checkbox].indeterminate:after {
   border: 1px solid #666;
   font-size: 8pt;
   color: white;
+  white-space: nowrap;
 }
 .fx-animpanel .events text {
   pointer-events: none;

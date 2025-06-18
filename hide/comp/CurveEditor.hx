@@ -106,7 +106,7 @@ class EventsEditor extends Component implements CurveEditorComponent
 			//var evtBody = svg.rect(eventGroup, event.time * this.curveEditor.xScale, yPos, duration  * this.curveEditor.xScale, eventHeight, style);
 
 			var evtLabelHeight = eventSize + 4;
-			var evtLabelWidth = 300;
+			var evtLabelWidth = 1000;
 			var evtLabel = svg.foreignObject(thisEventGroup, 0,0, evtLabelWidth, evtLabelHeight);
 			evtLabel.addClass("event-label");
 			var hideProps = event.getEventPrefab().getHideProps();
