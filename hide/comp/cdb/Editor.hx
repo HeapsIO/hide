@@ -406,7 +406,7 @@ class Editor extends Component {
 
 					return true;
 				}
-				
+
 				return isLineFiltered(line);
 			}
 		}
@@ -2239,9 +2239,15 @@ class Editor extends Component {
 			}, keys : config.get("key.duplicate") },
 			{ label : "Delete", click : function() {
 				beginChanges();
-				cursor.selection.sort((el1, el2) -> { return el1.y1 == el2.y1 ? 0 : el1.y1 < el2.y1 ? 1 : -1; });
-				for (s in cursor.selection)
-					delete(s.x1, s.x2, s.y1, s.y2);
+				if (cursor.selection == null) {
+					line.table.sheet.deleteLine(line.index);
+					line.table.refresh();
+				}
+				else {
+					cursor.selection.sort((el1, el2) -> { return el1.y1 == el2.y1 ? 0 : el1.y1 < el2.y1 ? 1 : -1; });
+					for (s in cursor.selection)
+						delete(s.x1, s.x2, s.y1, s.y2);
+				}
 				endChanges();
 			} },
 			{ label : "Separator", enabled : !sheet.props.hide, checked : sepIndex >= 0, click : function() {
