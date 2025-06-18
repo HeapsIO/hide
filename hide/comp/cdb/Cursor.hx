@@ -101,6 +101,10 @@ class Cursor {
 			var st = Std.downcast(table, SubTable);
 			if (dy == -1 && st != null) {
 				if (c != null && c.line.index == 0) {
+					if (st.parent.displayMode == Properties) {
+						set(st.parent, 0, st.cell.line.index);
+						return;
+					}
 					set(st.parent, st.cell.columnIndex, st.cell.line.index);
 					return;
 				}
