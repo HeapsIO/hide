@@ -245,12 +245,13 @@ class FancyGallery<GalleryItem> extends hide.comp.Component {
 		if (currentRefreshFlags.has(RegenHeader) && data.element != null) {
 			data.element.remove();
 			data.element = null;
-			data.thumbnailStringCache = null;
 		}
 
 		if (data.element == null) {
 			data.element = js.Browser.document.createElement("fancy-item");
 			untyped data.element.__data = data;
+			data.thumbnailStringCache = null;
+			data.iconStringCache = null;
 
 			data.element.innerHTML = '
 				<fancy-thumbnail></fancy-thumbnail>

@@ -208,25 +208,42 @@ class FancyTree<TreeItem> extends hide.comp.Component {
 		return [for (item => _ in selection) (cast item:TreeItemData<TreeItem>).item];
 	}
 
-	public function generateChildren(parentData: TreeItemData<TreeItem>) : Array<TreeItemData<TreeItem>> {
+	public function refreshItem(item: TreeItem) {
+		var data = itemMap.get(cast item);
+		if (data != null) {
+			updateData(data);
+			generateChildren(data);
+			queueRefresh(Search);
+			queueRefresh(RegenHeader);
+		}
+	}
+
+	function updateData(data : TreeItemData<TreeItem>) {
+		data.children = null; // invalidate children if we are regenerating the tree
+		data.name = StringTools.htmlEscape(getName(data.item));
+		data.identifier = getIdentifier(data.item);
+	}
+
+	function generateChildren(parentData: TreeItemData<TreeItem>) : Array<TreeItemData<TreeItem>> {
 		var childrenTreeItem = getChildren(parentData?.item);
 
 		var childrenData : Array<TreeItemData<TreeItem>> = [];
 		if (childrenTreeItem != null) {
 			for (childItem in childrenTreeItem) {
-				var childData : TreeItemData<TreeItem>;
-				childData = {
+				var childData : TreeItemData<TreeItem> = hrt.tools.MapUtils.getOrPut(itemMap, cast childItem, {
 					item: childItem,
-					parent: parentData,
-					children: null,
+					parent: null,
 					open: false,
 					filterState: Visible,
-					depth: parentData?.depth + 1 ?? 0,
+					children: null,
+					depth: 0,
 					element: null,
-					name: StringTools.htmlEscape(getName(childItem)),
-					identifier: getIdentifier(childItem),
-				};
-				itemMap.set(cast childItem, childData);
+					name: null,
+					identifier: null,
+				});
+				childData.parent = parentData;
+				childData.depth = parentData?.depth + 1 ?? 0;
+				updateData(childData);
 				childrenData.push(childData);
 			}
 		}
@@ -459,7 +476,8 @@ class FancyTree<TreeItem> extends hide.comp.Component {
 		}
 
 		for (oldChild in oldChildren) {
-			itemContainer.removeChild(oldChild);
+			if (itemContainer.contains(oldChild))
+				itemContainer.removeChild(oldChild);
 		}
 
 		currentRefreshFlags = RefreshFlags.ofInt(0);
@@ -507,6 +525,7 @@ class FancyTree<TreeItem> extends hide.comp.Component {
 		if (data.element == null) {
 			element = js.Browser.document.createElement("fancy-tree-item");
 			element.style.setProperty("--depth", Std.string(data.depth));
+			data.iconCache = null;
 
 			element.innerHTML =
 			'

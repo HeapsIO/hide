@@ -9,12 +9,113 @@ enum FileKind {
 	File;
 }
 
-typedef FileEntry = {
-	name: String,
-	children: Array<FileEntry>,
-	kind: FileKind,
-	parent: FileEntry,
-	iconPath: String,
+class FileEntry {
+	public var name: String;
+	public var children: Array<FileEntry>;
+	public var kind: FileKind;
+	public var parent: FileEntry;
+	public var iconPath: String;
+
+	public var onChange : (file: FileEntry) -> Void;
+
+	var registeredWatcher : hide.tools.FileWatcher.FileWatchEvent = null;
+
+	public function new(name: String, parent: FileEntry, kind: FileKind, onChange: (file: FileEntry) -> Void) {
+		this.name = name;
+		this.parent = parent;
+		this.kind = kind;
+		this.onChange = onChange;
+
+		watch();
+	}
+
+	public function dispose() {
+		if (children != null) {
+			for (child in children) {
+				child.dispose();
+			}
+		}
+		children = null;
+		if (registeredWatcher != null) {
+			hide.Ide.inst.fileWatcher.unregister(this.getPath(), registeredWatcher.fun);
+			registeredWatcher = null;
+		}
+	}
+
+	public function refreshChildren() {
+		var fullPath = getPath();
+		var paths = js.node.Fs.readdirSync(fullPath);
+
+		var oldChildren : Map<String, FileEntry> = [for (file in (children ?? [])) file.name => file];
+
+		if (children == null)
+			children = [];
+		else
+			children.resize(0);
+
+		for (path in paths) {
+			if (StringTools.startsWith(path, "."))
+				continue;
+			var prev = oldChildren.get(path);
+			if (prev != null) {
+				children.push(prev);
+				oldChildren.remove(path);
+			} else {
+				var info = js.node.Fs.statSync(fullPath + "/" + path);
+				children.push(
+					new FileEntry(path, this, info.isDirectory() ? Dir : File, onChange)
+				);
+			}
+		}
+
+		for (child in oldChildren) {
+			child.dispose();
+		}
+
+		children.sort(compareFile);
+	}
+
+	function watch() {
+		if (registeredWatcher != null)
+			throw "already watching";
+
+		var rel = this.getRelPath();
+		if (this.kind == Dir) {
+			registeredWatcher = hide.Ide.inst.fileWatcher.register(rel, onChangeDirInternal, true);
+		} else if (onChange != null) {
+			registeredWatcher = hide.Ide.inst.fileWatcher.register(rel, onChange.bind(this), true);
+		}
+	}
+
+	function onChangeDirInternal() {
+		refreshChildren();
+
+		if (onChange != null) {
+			onChange(this);
+		}
+	}
+
+	public function getPath() {
+		if (this.parent == null) return hide.Ide.inst.resourceDir;
+		return this.parent.getPath() + "/" + this.name;
+	}
+
+	public function getRelPath() {
+		if (this.parent == null) return "";
+		if (this.parent.parent == null) return this.name;
+		return this.parent.getPath() + "/" + this.name;
+	}
+
+	// sort directories before files, and then dirs and files alphabetically
+	static public function compareFile(a: FileEntry, b: FileEntry) {
+		if (a.kind != b.kind) {
+			if (a.kind == Dir) {
+				return -1;
+			}
+			return 1;
+		}
+		return Reflect.compare(a.name, b.name);
+	}
 }
 
 class FileBrowser extends hide.ui.View<FileBrowserState> {
@@ -34,40 +135,8 @@ class FileBrowser extends hide.ui.View<FileBrowserState> {
 		return false;
 	}
 
-	function populateChildren(file: FileEntry) {
-		var fullPath = getFileEntryPath(file);
-		var paths = js.node.Fs.readdirSync(fullPath);
-		file.children = [];
-		for (path in paths) {
-			if (StringTools.startsWith(path, "."))
-				continue;
-			var info = js.node.Fs.statSync(fullPath + "/" + path);
-			file.children.push({
-				name: path,
-				kind: info.isDirectory() ? Dir : File,
-				parent: file,
-				children: null,
-				iconPath: null,
-			});
-		}
+	function queueRebuildChildren(path: String) {
 
-		file.children.sort(compareFile);
-	}
-
-	// sort directories before files, and then dirs and files alphabetically
-	function compareFile(a: FileEntry, b: FileEntry) {
-		if (a.kind != b.kind) {
-			if (a.kind == Dir) {
-				return -1;
-			}
-			return 1;
-		}
-		return Reflect.compare(a.name, b.name);
-	}
-
-	function getFileEntryPath(file: FileEntry) {
-		if (file.parent == null) return ide.resourceDir;
-		return getFileEntryPath(file.parent) + "/" + file.name;
 	}
 
 	public static final dragKey = "application/x.filemove";
@@ -141,7 +210,7 @@ class FileBrowser extends hide.ui.View<FileBrowserState> {
 				for (file in files) {
 					if (file.kind == Dir && (collapseSubfolders || searchString.length > 0)) {
 						if (file.children == null) {
-							populateChildren(file);
+							file.refreshChildren();
 						}
 						rec(file.children);
 					}
@@ -162,38 +231,35 @@ class FileBrowser extends hide.ui.View<FileBrowserState> {
 						}
 
 						currentSearch.push(file);
-
 					}
 				}
 			}
 
 			rec(currentFolder.children);
 
-			currentSearch.sort(compareFile);
+			currentSearch.sort(FileEntry.compareFile);
 		}
 
 		for (i => _ in currentSearch) {
 			var child = currentSearch[currentSearch.length - i - 1];
 			if ((child.iconPath == null || child.iconPath == "loading") && child.kind == File) {
 				child.iconPath = "loading";
-				hide.tools.FileManager.inst.renderMiniature(getFileEntryPath(child), (path: String) -> {child.iconPath = path; fancyGallery.queueRefresh();} );
+				hide.tools.FileManager.inst.renderMiniature(child.getPath(), (path: String) -> {child.iconPath = path; fancyGallery.queueRefresh();} );
 			}
 		}
 
 		fancyGallery.queueRefresh(Items);
-		fancyGallery.queueRefresh(RegenHeader);
+	}
+
+	function onFileChange(file: FileEntry) {
+		fancyTree.refreshItem(file);
+		queueGalleryRefresh();
 	}
 
 	override function onDisplay() {
-		root = {
-			name: "res",
-			kind: Dir,
-			children: null,
-			parent: null,
-			iconPath: null,
-		};
+		root = new FileEntry("res", null, Dir, onFileChange);
 
-		populateChildren(root);
+		root.refreshChildren();
 
 		var layout = new Element('
 			<file-browser>
@@ -255,7 +321,7 @@ class FileBrowser extends hide.ui.View<FileBrowserState> {
 			if (file.kind == File)
 				return null;
 			if (file.children == null)
-				populateChildren(file);
+				file.refreshChildren();
 			return file.children.filter((file) -> file.kind == Dir);
 		};
 		//fancyTree.hasChildren = (file: FileEntry) -> return file.kind == Dir;
@@ -274,7 +340,7 @@ class FileBrowser extends hide.ui.View<FileBrowserState> {
 					return false;
 				var ser = [];
 				for (item in selection) {
-					ser.push(getFileEntryPath(file));
+					ser.push(file.getPath());
 				}
 				dataTransfer.setData(dragKey, haxe.Json.stringify(ser));
 				return true;
@@ -371,20 +437,20 @@ class FileBrowser extends hide.ui.View<FileBrowserState> {
 
 		fancyGallery.onDoubleClick = (item: FileEntry) -> {
 			if (item.kind == File) {
-				ide.openFile(getFileEntryPath(item));
+				ide.openFile(item.getPath());
 			} else {
 				openDir(item, true);
 			}
 		}
 
 		fancyGallery.visibilityChanged = (item: FileEntry, visible: Bool) -> {
-			var path = getFileEntryPath(item);
+			var path = item.getPath();
 			hide.tools.FileManager.inst.setPriority(path, visible ? 1 : 0);
 		}
 
 		fancyGallery.dragAndDropInterface = {
 			onDragStart: (item: FileEntry, dataTransfer: js.html.DataTransfer) -> {
-				dataTransfer.setData(dragKey, haxe.Json.stringify([getFileEntryPath(item)]));
+				dataTransfer.setData(dragKey, haxe.Json.stringify([item.getPath()]));
 				return true;
 			}
 		}
