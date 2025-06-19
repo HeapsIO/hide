@@ -31,6 +31,7 @@ class Model extends FileView {
 	var selectedAxes : h3d.scene.Object;
 	var showSelectionAxes : Bool = false;
 	var lastSelectedObject : h3d.scene.Object = null;
+	var ignoreReload : Int = 0;
 
 	var highlightSelection : Bool = true;
 	var shader = new h3d.shader.FixedColor(0xffffff);
@@ -198,6 +199,9 @@ class Model extends FileView {
 			super.onFileChanged(wasDeleted);
 		} else if (element.find(".heaps-scene").length == 0) {
 			super.onFileChanged(wasDeleted);
+		}
+		else if (ignoreReload > 0) {
+			onRefresh();
 		} else {
 			super.onFileChanged(wasDeleted, false);
 			onRefresh();
@@ -1705,6 +1709,9 @@ class Model extends FileView {
 			return cast mesh;
 		}
 
+		var filePath = Ide.inst.getPath(state.path);
+		var oldData = sys.io.File.getContent(filePath);
+
 		var meshes : Array<h3d.scene.Mesh> = cast models;
 		var format = meshes[0].primitive.buffer.format;
 		var tmp : h3d.scene.Mesh = meshes[0];
@@ -1716,18 +1723,24 @@ class Model extends FileView {
 			tmp = merge(tmp, m, format);
 		}
 
-		for (m in models)
-			m.remove();
-		meshes = [tmp];
+		function onDone() {
+			ignoreReload++;
+			Ide.inst.quickMessage('Successfully merged objects at path : ${filePath}');
+
+			var newData = sys.io.File.getContent(filePath);
+			undo.change(Custom((undo) -> {
+				sys.io.File.saveContent(filePath, undo ? oldData : newData);
+			}), null);
+		}
 
 		// Export merge objects
-		var filePath = Ide.inst.getPath(state.path);
+		meshes = [tmp];
 		var params = { forward:"0", forwardSign:"1", up:"2", upSign:"1" };
 		new hxd.fmt.fbx.Writer(null).export(
-				cast meshes,
-				Ide.inst.getPath(filePath),
-				() -> Ide.inst.quickMessage('Successfully merged objects at path : ${filePath}'),
-				params);
+			cast meshes,
+			Ide.inst.getPath(filePath),
+			onDone,
+			params);
 	}
 
 	function loadProps() {
