@@ -478,16 +478,23 @@ class Curve extends Prefab {
 
 		refreshBlend();
 
-
-
 		blendModeSelect.val(Std.string(blendMode));
 		blendModeSelect.change((_) -> {
-			var val = blendModeSelect.val();
-			blendMode = cast Std.parseInt(val);
-			blendParam = null;
-			refreshBlend();
-			ctx.onChange(this, "blendMode");
-			ctx.rebuildPrefab(this);
+			var oldBlend = this.blendMode;
+			var oldParam = this.blendParam;
+			var newBlend = cast Std.parseInt(blendModeSelect.val());
+			var newParam = null;
+
+			function exec(undo : Bool) {
+				blendMode = undo ? oldBlend : newBlend;
+				blendParam = undo ? oldParam : newParam;
+				refreshBlend();
+				ctx.onChange(this, "blendMode");
+				ctx.rebuildPrefab(this);
+			}
+
+			exec(false);
+			ctx.properties.undo.change(Custom(exec));
 		});
 
 		ctx.properties.add(props, this, function(pname) {
