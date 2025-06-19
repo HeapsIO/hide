@@ -4006,12 +4006,12 @@ class SceneEditor {
 		parent.children.remove(prefab);
 		parent.children.insert(index, prefab);
 
-		// var ref = Std.downcast(prefab, Reference);
-		// if (ref != null && (ref.hasCycle() || ref.source == @:privateAccess view.state.path) ) {
-		// 	parent.children.remove(ref);
-		// 	hide.Ide.inst.quickError('Reference to $relative is creating a cycle. The reference creation was aborted.');
-		// 	return null;
-		// }
+		var ref = Std.downcast(prefab, Reference);
+		if (ref != null && (ref.hasCycle() || ref.source == @:privateAccess view.state.path) ) {
+			parent.children.remove(ref);
+			hide.Ide.inst.quickError('Reference to $relative is creating a cycle. The reference creation was aborted.');
+			return null;
+		}
 
 		return prefab;
 	}

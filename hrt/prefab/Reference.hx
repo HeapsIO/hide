@@ -124,10 +124,10 @@ class Reference extends Object3D {
 	function initRefInstance() {
 		var shouldLoad = refInstance == null && source != null && shouldBeInstanciated();
 
-		// #if editor
-		// if (hasCycle())
-		// 	shouldLoad = false;
-		// #end
+		#if editor
+		if (hasCycle())
+			shouldLoad = false;
+		#end
 
 		if (shouldLoad) {
 			resolveRef();
@@ -183,13 +183,13 @@ class Reference extends Object3D {
 				return;
 			refInstance = refInstance.clone();
 		}
-		// #if editor
-		// if (hasCycle()) {
-		// 	hide.Ide.inst.quickError('Reference ${getAbsPath()} to $source is creating a cycle. Please fix the reference.');
-		// 	refInstance = null;
-		// 	return;
-		// }
-		// #end
+		#if editor
+		if (hasCycle()) {
+			hide.Ide.inst.quickError('Reference ${getAbsPath()} to $source is creating a cycle. Please fix the reference.');
+			refInstance = null;
+			return;
+		}
+		#end
 
 		var refLocal3d : h3d.scene.Object = null;
 
@@ -329,6 +329,34 @@ class Reference extends Object3D {
 		refInstance.shared.parentPrefab = this;
 	}
 
+	/**
+		Returns true if this reference has a cycle,
+		meaning that references depends on each other
+	**/
+	public function hasCycle() : Bool {
+
+		function rec(prefab: Prefab, seenPaths: Map<String, Bool>) : Bool {
+			var ref = Std.downcast(prefab, Reference);
+			if (ref != null && ref.source != null) {
+				if (seenPaths.get(ref.source) == true) {
+					return true;
+				}
+
+				seenPaths.set(ref.source, true);
+				if (rec(ref.resolveRef(), seenPaths))
+					return true;
+			}
+			for (child in prefab.children) {
+				if(rec(child, seenPaths))
+					return true;
+			}
+
+			return false;
+		}
+
+		return rec(this, [this.shared.currentPath => true]);
+	}
+
 	override function makeInteractive() {
 		if( editMode != None )
 			return null;
@@ -359,12 +387,18 @@ class Reference extends Object3D {
 		var props = ctx.properties.add(element, this, function(pname) {
 			ctx.onChange(this, pname);
 			if(pname == "source" || pname == "editMode") {
-				// if (hasCycle()) {
-				// 	hide.Ide.inst.quickError('Reference to $source would create a cycle. The reference change was aborted.');
-				// 	source = null;
-				// 	ctx.rebuildProperties();
-				// 	return;
-				// }
+
+				var oldRefInst = refInstance;
+				refInstance = null; // force resolveRef to return the new referenced prefab for hasCycle();
+				var cycle = hasCycle();
+				refInstance = oldRefInst;
+
+				if (cycle) {
+					hide.Ide.inst.quickError('Reference to $source would create a cycle. The reference change was aborted.');
+					source = null;
+					ctx.rebuildProperties();
+					return;
+				}
 				updateProps();
 				if(!ctx.properties.isTempChange) {
 					if (pname == "source") {
