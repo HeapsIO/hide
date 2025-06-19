@@ -234,6 +234,11 @@ class Ide extends hide.tools.IdeData {
 			}
 			return false;
 		}
+
+		body.ondragenter = function(e:js.html.DragEvent) {
+			dragFunc(false, e);
+		};
+
 		body.ondragover = function(e:js.html.DragEvent) {
 			dragFunc(false, e);
 		};

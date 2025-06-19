@@ -24,6 +24,9 @@ class Table extends Component {
 	public var nestedIndex : Int = 0;
 
 	var resizeObserver : hide.comp.ResizeObserver;
+	var currentDragIndex = -1;
+
+	static final reorderLineKey = "x-cdb.reorder";
 
 	public function new(editor, sheet, root, mode) {
 		super(null,root);
@@ -152,19 +155,26 @@ class Table extends Component {
 		#end
 	}
 
-	function updateDrag() {
+	function updateDragScroll() {
 		#if js
-		var scrollHeight = js.Browser.document.body.scrollHeight;
-		if (ide.mouseY > scrollHeight*0.8) {
-			var scroll = element.get()[0].parentElement.parentElement;
-			scroll.scrollTop += 15 + Std.int((ide.mouseY - scrollHeight*0.8)/(scrollHeight - scrollHeight*0.8)*30);
+		var scroll = element?.get(0)?.parentElement?.parentElement;
+		if (scroll == null)
+			return;
+		var box = scroll.getBoundingClientRect();
+		var percentHeight = (ide.mouseY - box.top) / box.height;
+
+		var scrollAmount = 0.0;
+		if (percentHeight < 0.2) {
+			scrollAmount = percentHeight / 0.2 - 1.0;
 		}
-		if (ide.mouseY < scrollHeight*0.2) {
-			var scroll = element.get()[0].parentElement.parentElement;
-			scroll.scrollTop -= 15 + Std.int((scrollHeight*0.2 - ide.mouseY)/(scrollHeight*0.2)*30);
+		else if (percentHeight > 0.8) {
+			scrollAmount = (percentHeight - 0.8) / 0.2;
 		}
+		scrollAmount = hxd.Math.clamp(scrollAmount, -1.0, 1.0);
+		scroll.scrollTop += hxd.Math.round(scrollAmount * 30);
 		#end
 	}
+
 
 	function refreshTable() {
 		var cols = J("<thead>").addClass("head");
@@ -194,6 +204,7 @@ class Table extends Component {
 				editor.cursor.clickLine(line, e.shiftKey, e.ctrlKey);
 			});
 			#if js
+
 			var headEl = head.get(0);
 			headEl.draggable = true;
 			headEl.ondragstart = function(e:js.html.DragEvent) {
@@ -201,10 +212,14 @@ class Table extends Component {
 					e.preventDefault();
 					return;
 				}
-				ide.registerUpdate(updateDrag);
+				ide.registerUpdate(updateDragScroll);
+				currentDragIndex = line.index;
+				e.dataTransfer.setData(reorderLineKey, Std.string(line.index));
 				e.dataTransfer.effectAllowed = "move";
+				e.dataTransfer.setDragImage(l.get(0), 0, 0);
 				previewDrop.show();
 			}
+
 			headEl.ondrag = function(e:js.html.DragEvent) {
 				if (hxd.Key.isDown(hxd.Key.ESCAPE)) {
 					e.dataTransfer.dropEffect = "none";
@@ -214,30 +229,54 @@ class Table extends Component {
 				var pickedLine = getPickedLine(e);
 				if (pickedLine != null) {
 					var lineEl = editor.getLine(line.table.sheet, pickedLine.index).element;
-					previewDrop.css("top",'${pickedLine.index > line.index ? lineEl.position().top + lineEl.height() : lineEl.position().top}px');
+					previewDrop.css("top",'${lineEl.position().top}px');
 				}
 			}
-			headEl.ondragend = function(e:js.html.DragEvent) {
-				ide.unregisterUpdate(updateDrag);
-				previewDrop.hide();
-				if (e.dataTransfer.dropEffect == "none") return false;
 
-				var dropTarget = getPickedLine(e);
-				if (dropTarget == null)
-					return false;
+			var dragOver = function(e:js.html.DragEvent) {
+				if (!e.dataTransfer.types.contains(reorderLineKey)) {
+					return;
+				}
 
-				var selection = editor.cursor.getSelectedAreaIncludingLine(line);
+				if (currentDragIndex < 0)
+					return;
+
+				ide.mouseX = e.clientX;
+				ide.mouseY = e.clientY;
+
+				e.preventDefault();
+				e.stopPropagation();
+
+				previewDrop.css("top",'${line.index > currentDragIndex ? l.position().top + l.height() : l.position().top}px');
+			}
+
+			var lineEl = l.get(0);
+			lineEl.ondragover = dragOver;
+			lineEl.ondragenter = dragOver;
+
+			lineEl.ondrop = function(e:js.html.DragEvent) {
+				if (currentDragIndex < 0)
+					return;
+
+				if (!e.dataTransfer.types.contains(reorderLineKey)) {
+					return;
+				}
+				e.preventDefault();
+				e.stopPropagation();
+
+				var selection = editor.cursor.getSelectedAreaIncludingLine(line.table.lines[currentDragIndex]);
 				if (selection != null) {
-					moveLinesTo(editor.cursor.getLinesFromSelection(selection), dropTarget.index);
-					return true;
+					moveLinesTo(editor.cursor.getLinesFromSelection(selection), line.index);
+					return;
 				}
 
-				if (dropTarget != null) {
-					line.table.moveLinesTo([line], dropTarget.index);
-					return true;
-				}
+				line.table.moveLinesTo([line.table.lines[currentDragIndex]], line.index);
+			}
 
-				return false;
+			headEl.ondragend = function(e:js.html.DragEvent) {
+				ide.unregisterUpdate(updateDragScroll);
+				previewDrop.hide();
+				currentDragIndex = -1;
 			}
 			#end
 			line;
