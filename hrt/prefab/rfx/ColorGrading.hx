@@ -7,7 +7,7 @@ class ColorGradingFunc extends hxsl.Shader {
 		function getColorGrading(base : Vec3, lut : Sampler2D, size : Float) : Vec3 {
 			var innerWidth = size - 1.0;
 			var sliceSize = 1.0 / size;
-			var slicePixelSize = sliceSize / size;
+			var slicePixelSize = sliceSize * sliceSize;
 			var sliceInnerSize = slicePixelSize * innerWidth;
 			var blueSlice0 = min(floor(base.b * innerWidth), innerWidth);
 			var blueSlice1 = min(blueSlice0 + 1.0, innerWidth);
@@ -20,6 +20,22 @@ class ColorGradingFunc extends hxsl.Shader {
 			var bOffset = mod(base.b * innerWidth, 1.0);
 			return mix(slice0Color, slice1Color, bOffset);
 		}
+	}
+
+	public static function getColorGrading(base : h3d.Vector, pixels : hxd.Pixels,  size : Int) {
+		var innerWidth = size - 1;
+		var blueSlice0 = hxd.Math.imin(hxd.Math.floor(base.b * size), innerWidth);
+		var blueSlice1 = hxd.Math.imin(blueSlice0 + 1, innerWidth);
+		var xOffset = hxd.Math.imin(Std.int(base.r * innerWidth), innerWidth);
+		var yOffset = hxd.Math.imin(Std.int(base.g * innerWidth), innerWidth);
+		var s0x = xOffset + blueSlice0 * size;
+		var s1x = xOffset + blueSlice1 * size;  
+		var slice0Color = h3d.Vector.fromColor(pixels.getPixel(s0x, yOffset));
+		var slice1Color = h3d.Vector.fromColor(pixels.getPixel(s1x, yOffset));
+		var bOffset = base.b * innerWidth % 1.0;
+		// TODO : need interpolation on r and g channels.
+		slice0Color.lerp(slice0Color, slice1Color, bOffset);
+		return slice0Color;
 	}
 }
 
