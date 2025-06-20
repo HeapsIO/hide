@@ -652,10 +652,17 @@ class FileTree extends FileView {
 	static var EXTENSIONS = new Map<String,ExtensionDesc>();
 	public static function registerExtension<T>( c : Class<hide.ui.View<T>>, extensions : Array<String>, ?options : ExtensionOptions ) {
 		hide.ui.View.register(c);
-		if( options == null ) options = {};
-		var obj = { component : Type.getClassName(c), options : options, extensions : extensions };
-		for( e in extensions )
-			EXTENSIONS.set(e, obj);
+		for (e in extensions) {
+			var registered = EXTENSIONS.get(e);
+			if (registered == null) {
+				registered = {component: Type.getClassName(c), options: {}, extensions: extensions };
+				EXTENSIONS.set(e, registered);
+			}
+			if( options == null ) options = {};
+			for (field in Reflect.fields(options)) {
+				Reflect.setField(registered.options, field, Reflect.field(options, field));
+			}
+		}
 		return null;
 	}
 
