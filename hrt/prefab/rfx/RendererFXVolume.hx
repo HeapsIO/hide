@@ -229,9 +229,9 @@ class RendererFXVolume extends Object3D {
 		}
 	}
 
-	public function getFactor() : Float {
+	public function getFactor(pos : h3d.col.Point) : Float {
 		if (local3d == null) return 0.;
-		return cast(local3d, h3d.impl.RendererFXVolume).getFactor();
+		return cast(local3d, h3d.impl.RendererFXVolume).getFactor(pos);
 	}
 
 	static var _ = Prefab.register("RendererFXVolume", RendererFXVolume);
