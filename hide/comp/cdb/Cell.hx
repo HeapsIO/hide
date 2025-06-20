@@ -134,6 +134,7 @@ class Cell {
 						keys : this.editor.config.get("key.cdb.showUnreferenced"),
 					}
 				];
+				menu.append(hide.view.RemoteConsoleView.getCdbMenuActions(this.table.sheet.name, this.value));
 		case TRef(sname):
 			if( value != null && value != "" )
 				menu = [

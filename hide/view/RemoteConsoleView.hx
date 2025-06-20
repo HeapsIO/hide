@@ -97,7 +97,7 @@ class RemoteConsoleView extends hide.ui.View<{}> {
 		if( c != null ) {
 			// Find the first empty or disconnected panel
 			for( p in panels ) {
-				if( p.connection == null || p.connection == c || !p.connection.isConnected() ) {
+				if( p.connection == c || !p.isConnected() ) {
 					p.connection = c;
 					panel = p;
 					break;
@@ -146,6 +146,8 @@ class RemoteConsoleView extends hide.ui.View<{}> {
 		rcmd.startServer(function(c) {
 			if( inst != null )
 				inst.addPanel(c);
+			else
+				c.onClose = () -> refreshStatusIcon();
 			refreshStatusIcon();
 		});
 		refreshStatusIcon();
@@ -160,13 +162,36 @@ class RemoteConsoleView extends hide.ui.View<{}> {
 		stopServer();
 	}
 
-	// allow hide-plugin to send console command to connected game instances
+	public static function getCdbMenuActions( sheet : String, id : String ) : Array<hide.comp.ContextMenu.MenuItem> {
+		if( rcmd == null || !rcmd.isConnected() || rcmd.connections.length == 0)
+			return [];
+		var actions = [];
+		for( c in rcmd.connections ) {
+			if( c.isConnected() && c.menuActions != null ) {
+				for( pa in c.menuActions ) {
+					if( pa.cdbSheet == sheet ) {
+						actions.push({
+							label : pa.name,
+							click : () -> c.sendCommand("menuAction", { action : pa, id : id }),
+						});
+					}
+				}
+			}
+		}
+		return actions;
+	}
+
+	/**
+		For hide-plugin: send console command to connected game instances
+	**/
 	public static function runInRemoteConsole( cmd : String ) {
 		rcmd?.sendCommand("runInConsole", { cmd : cmd });
 	}
 
-	// allow hide-plugin to add/modify game-specific hide command control
 	public static var commandViews = new Map<String, Class<RemoteConsoleCommand>>();
+	/**
+		For hide-plugin: add/modify game-specific hide command control
+	**/
 	public static function registerCommandView( name : String, cl : Class<RemoteConsoleCommand> ) {
 		commandViews.set(name, cl);
 		return null;

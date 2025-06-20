@@ -1,5 +1,10 @@
 package hrt.impl;
 
+typedef RemoteMenuAction = {
+	name : String,
+	?cdbSheet : String,
+}
+
 /**
 	A simple socket-based local communication channel (plaintext and unsafe),
 	aim at communicate between 2 programs (e.g. Hide and a HL game).
@@ -316,11 +321,25 @@ class RemoteConsoleConnection {
 		return -1;
 	}
 
+	public var menuActions(default, null) : Array<RemoteMenuAction> = null;
+	@cmd function registerMenuActions( args : { actions : Array<RemoteMenuAction> } ) {
+		menuActions = args?.actions;
+	}
+
+	@cmd function menuAction( args : { action : RemoteMenuAction, id : String } ) : Int {
+		return onMenuAction(args?.action, args?.id);
+	}
+
+	public dynamic function onMenuAction( action : RemoteMenuAction, id : String ) : Int {
+		sendLogError('onMenuAction not implemented');
+		return -1;
+	}
+
 #if editor
 	// ----- Hide ------
 
 	var parser : hscript.Parser;
-	@cmd function open( args : { file : String, ?line : Int, ?column : Int, ?cdbsheet : String,
+	@cmd function open( args : { ?file : String, ?line : Int, ?column : Int, ?cdbsheet : String,
 								?selectExpr : String } ) {
 		if( args == null )
 			return;
@@ -348,7 +367,7 @@ class RemoteConsoleConnection {
 				}
 				Std.downcast(view, hide.view.CdbTable).goto(sheet, line, args.column ?? -1);
 			});
-		} else {
+		} else if( args.file != null ) {
 			hide.Ide.inst.showFileInResources(args.file);
 			hide.Ide.inst.openFile(args.file, null, function(view) {
 				hide.Ide.inst.focus();

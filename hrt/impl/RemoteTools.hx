@@ -11,6 +11,7 @@ class RemoteTools {
 	static var mainEvent : haxe.MainLoop.MainEvent;
 	static var lastUpdate : Float;
 	static var onConnected : Bool -> Void;
+	static var menuActions : Array<{ action : RemoteConsole.RemoteMenuAction, f : (id:String) -> Int}> = [];
 
 	public static function autoConnect( ?onConnected : Bool -> Void ) {
 		RemoteTools.onConnected = onConnected;
@@ -48,6 +49,25 @@ class RemoteTools {
 		return -1;
 	}
 
+	public static function registerCdbMenu( sheet : String, name : String, f : (id:String) -> Int ) {
+		menuActions.push({ action : { name : name, cdbSheet: sheet }, f : f});
+		// Send menuActions if already connected
+		if( rc != null && rc.isConnected() ) {
+			rc.sendCommand("registerMenuActions", { actions : [for( ma in menuActions ) ma.action] });
+		}
+	}
+
+	static function onMenuAction( action : RemoteConsole.RemoteMenuAction, id : String ) : Int {
+		if( action == null || id == null )
+			return -1;
+		for( ma in menuActions ) {
+			if( ma.action.name == action.name && ma.action.cdbSheet == action.cdbSheet ) {
+				return ma.f(id);
+			}
+		}
+		return -1;
+	}
+
 	static function update() {
 		if( rc == null || rc.isConnected() )
 			return;
@@ -62,7 +82,10 @@ class RemoteTools {
 				var c = rc.connections[0];
 				if( c != null ) {
 					c.onConsoleCommand = (cmd) -> onConsoleCommand(cmd);
+					c.onMenuAction = (action,id) -> onMenuAction(action,id);
 				}
+				// Send menuActions
+				rc.sendCommand("registerMenuActions", { actions : [for( ma in menuActions ) ma.action] });
 			}
 		});
 	}
