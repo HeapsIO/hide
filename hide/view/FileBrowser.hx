@@ -429,7 +429,7 @@ class FileBrowser extends hide.ui.View<FileBrowserState> {
 			var ext = @:privateAccess hide.view.FileTree.getExtension(item.name);
 			if (ext != null) {
 				if (ext?.options.icon != null) {
-					return '<div class="ico ico-${ext.options.icon}" title="${ext.component.split(".").pop()}"></div>';
+					return '<div class="ico ico-${ext.options.icon}" title="${ext.options.name ?? "Unknown"}"></div>';
 				}
 			}
 			return null;
@@ -537,7 +537,10 @@ class FileBrowser extends hide.ui.View<FileBrowserState> {
 
 	function generateFilters() {
 		for (ext => desc in @:privateAccess FileTree.EXTENSIONS) {
-			var arr = hrt.tools.MapUtils.getOrPut(filters, desc?.options.name ?? "unknown", {exts: [], icon: desc.options.icon});
+			var name = desc?.options.name;
+			if (name == null)
+				name = "unknown";
+			var arr = hrt.tools.MapUtils.getOrPut(filters, name, {exts: [], icon: desc.options.icon});
 			arr.exts.push(ext);
 		}
 	}

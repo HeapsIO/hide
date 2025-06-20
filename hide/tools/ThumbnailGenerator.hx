@@ -269,7 +269,6 @@ class ThumbnailGenerator {
 		}
 		if (!abort) {
 			try {
-
 				renderCanvas.resetCamera(sceneRoot, 0.85, 32.0);
 
 				renderTexture.clear(0,0);
@@ -288,7 +287,6 @@ class ThumbnailGenerator {
 				toRender.cb(path);
 			}
 			catch (e) {
-				hide.Ide.inst.quickError('miniature render fail for ${toRender.path} : $e');
 				toRender.cb(null);
 			}
 		} else {
@@ -325,57 +323,61 @@ class ThumbnailGenerator {
 	function handleTexture(toRender: RenderInfo) {
 		renderCanvas.engine.setCurrent();
 
-		var cut = StringTools.replace(toRender.path, hide.Ide.inst.resourceDir + "/", "");
-		var img = hxd.res.Loader.currentInstance.load(cut).toTexture();
-		var width = img.width;
-		var height = img.height;
+		try {
+			var cut = StringTools.replace(toRender.path, hide.Ide.inst.resourceDir + "/", "");
+			var img = hxd.res.Loader.currentInstance.load(cut).toTexture();
+			var width = img.width;
+			var height = img.height;
 
-		final size = 512;
+			final size = 512;
 
-		if (width > height) {
-			height = hxd.Math.floor(height / width * size);
-			width = size;
-		} else if (width < height) {
-			width = hxd.Math.floor(width / height * size);
-			height = size;
-		} else {
-			width = size;
-			height = size;
+			if (width > height) {
+				height = hxd.Math.floor(height / width * size);
+				width = size;
+			} else if (width < height) {
+				width = hxd.Math.floor(width / height * size);
+				height = size;
+			} else {
+				width = size;
+				height = size;
+			}
+
+			renderCanvas.s2d.removeChildren();
+
+			var bg = new h2d.Bitmap(h2d.Tile.fromColor(0), renderCanvas.s2d);
+			bg.width = size;
+			bg.height = size;
+
+			var bmp = new h2d.Bitmap(h2d.Tile.fromTexture(img), renderCanvas.s2d);
+			bmp.width = width;
+			bmp.height = height;
+			bmp.x = (size - width) / 2;
+			bmp.y = (size - height) / 2;
+
+			bmp.blendMode = None;
+
+			var shader = new hide.view.GraphEditor.PreviewShaderAlpha();
+			bmp.addShader(shader);
+
+			var engine = renderCanvas.engine;
+
+			engine.pushTarget(renderTexture);
+			engine.clear();
+			renderCanvas.render(engine);
+			engine.popTarget();
+
+			var path = convertAndWriteThumbnail(toRender.path, renderTexture);
+
+			// restore renderTexture original size
+			renderTexture.resize(512, 512);
+
+			toRender.cb(path);
+		} catch (e) {
+			toRender.cb(null);
 		}
 
 		renderCanvas.s2d.removeChildren();
 
-		var bg = new h2d.Bitmap(h2d.Tile.fromColor(0), renderCanvas.s2d);
-		bg.width = size;
-		bg.height = size;
-
-		var bmp = new h2d.Bitmap(h2d.Tile.fromTexture(img), renderCanvas.s2d);
-		bmp.width = width;
-		bmp.height = height;
-		bmp.x = (size - width) / 2;
-		bmp.y = (size - height) / 2;
-
-		bmp.blendMode = None;
-
-		var shader = new hide.view.GraphEditor.PreviewShaderAlpha();
-		bmp.addShader(shader);
-
-
-		var engine = renderCanvas.engine;
-
-		engine.pushTarget(renderTexture);
-		engine.clear();
-		renderCanvas.render(engine);
-		engine.popTarget();
-
-		renderCanvas.s2d.removeChildren();
-
-		var path = convertAndWriteThumbnail(toRender.path, renderTexture);
-
-		// restore renderTexture original size
-		renderTexture.resize(512, 512);
-
-		toRender.cb(path);
 	}
 
 	function processMiniature() {
