@@ -494,7 +494,14 @@ class ScriptChecker {
 			}
 			return TAnon(fields);
 		case TClass(c):
-			return checker.types.resolve(Type.getClassName(c),[]);
+			var name = Type.getClassName(c);
+			var params = [];
+			if( name == "Array" ) {
+				var t = typeFromValue((cast value : Array<Dynamic>)[0]);
+				if( t == null ) t = TMono({ r : null });
+				params = [t];
+			}
+			return checker.types.resolve(name,params);
 		case TEnum(e):
 			return checker.types.resolve(Type.getEnumName(e),[]);
 		case TFunction, TUnknown:
