@@ -1109,7 +1109,7 @@ class Spline extends hrt.prefab.Object3D {
 	}
 
 	function editorAddPoint(ctx: hide.prefab.EditContext, pIdx : Int) {
-		if (pIdx >= points.length)
+		if (pIdx <= 0 || pIdx >= points.length)
 			addPoint(pIdx)
 		else {
 			var prevT =  points[pIdx - 1].t;
