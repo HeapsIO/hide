@@ -1030,21 +1030,126 @@ class Ide extends hide.tools.IdeData {
 		chooseFileOptions((files) -> onSelect(files != null ? files.pop() : null),{isAbsolute: isAbsolute,onlyDirectory: true,allowNull: allowNull,});
 	}
 
-	public function findPathRefs(path: String) {
-		var refs : Array<{str: String, ?goto: () -> Void}> = [];
+	public function search(text : String, ?filesToInclude : Array<String>, ?filesToExclude : Array<String>) : Array<hide.view.RefViewer.Reference> {
+		var refs : Array<hide.view.RefViewer.Reference> = [];
 
-		function filter(ctx: FilterPathContext) {
-			if (ctx.valueCurrent == path) {
-				refs.push(ctx.getRef());
+		var includeReg : EReg = filesToInclude == null ? null : new EReg('.[.](${[for (i in filesToInclude) '${i}'].join("|")})$', "");
+		var exludeReg : EReg = filesToExclude == null ? null : new EReg('.[.](${[for (i in filesToExclude) '${i}'].join("|")})$', "");
+		var searchReg = new EReg(text, "g");
+		function rec(path : String, file : String) {
+			var absPath = path + "/" + file;
+			var files = sys.FileSystem.readDirectory(absPath);
+			for (f in files) {
+				if (f.charAt(0) == "." || (exludeReg != null && exludeReg.match(absPath + "/" + f))) continue;
+				if (sys.FileSystem.isDirectory(absPath + "/" + f)) {
+					rec(absPath, f);
+					continue;
+				}
+
+				if (includeReg == null || includeReg.match(absPath + "/" + f)) {
+					var content = sys.io.File.getContent(absPath + "/" + f);
+					var results = searchReg.split(content);
+					if (results.length > 1) {
+						var r = { file: f, path: absPath + "/" + f, results: [] };
+						var curLen = 0;
+						for (idx in 0...(results.length - 1)) {
+							var res = results[idx];
+							curLen += res.length;
+							var contextLength = 15;
+							var start = curLen - contextLength + idx * text.length;
+							var end = start + text.length + (contextLength * 2);
+							r.results.push({ text: content.substring(start, end), goto: () -> {
+								var opened = false;
+
+								function getRefInPrefab(rootPrefab: hrt.prefab.Prefab) {
+									var hits = [];
+									function rec(obj : hrt.prefab.Prefab) {
+										for (field in Reflect.fields(obj)) {
+											if (Reflect.field(obj, field) == text)
+												hits.push(obj);
+										}
+										for (c in obj.children)
+											rec(c);
+									}
+
+									rec(rootPrefab);
+									return hits[idx];
+								}
+
+								var ext = f.substr(f.lastIndexOf('.') + 1);
+								switch (ext) {
+									case "prefab":
+										openFile(absPath + "/" + f, null, (view) -> {
+											opened = true;
+											var v = Std.downcast(view, hide.view.Prefab);
+											v.delaySceneEditor(() -> {
+												v.sceneEditor.selectElementsIndirect([getRefInPrefab(@:privateAccess v.data)]);
+											});
+										});
+
+									case "fx":
+										openFile(absPath + "/" + f, null, (view) -> {
+											opened = true;
+											var v = Std.downcast(view, hide.view.FXEditor);
+											v.delaySceneEditor(() -> {
+												@:privateAccess v.sceneEditor.selectElementsIndirect([getRefInPrefab(@:privateAccess cast v.data)]);
+											});
+										});
+
+									case "cdb":
+										var hits : Array<{sheet: cdb.Sheet, path: hide.comp.cdb.Editor.Path}> = [];
+										for( rootSheet in database.sheets ) {
+											// Don't search through datafiles since we already searched them before with prefabs
+											if (rootSheet.props.dataFiles != null && rootSheet.lines == null)
+												continue;
+
+											function rec(sheet : cdb.Sheet, objs : Array<Dynamic>, path : hide.comp.cdb.Editor.Path, depth : Int) {
+												for (idx => obj in objs) {
+													for (c in sheet.columns) {
+														if (Reflect.field(obj, c.name) == text) {
+															var newPath = new hide.comp.cdb.Editor.Path();
+															for (p in path)
+																newPath.push(p);
+															newPath.push(hide.comp.cdb.Editor.PathPart.Prop(c.name));
+															hits.push({ sheet: rootSheet, path: newPath });
+														}
+
+														var sub = sheet.getSub(c);
+														var subObjs: Array<Dynamic> = c.type.match(cdb.Data.ColumnType.TProperties) ? [Reflect.field(obj, c.name)] : Reflect.field(obj, c.name);
+														if (sub != null && subObjs != null) {
+															var newPath = new hide.comp.cdb.Editor.Path();
+															for (p in path)
+																newPath.push(p);
+															newPath.push(hide.comp.cdb.Editor.PathPart.Line(idx, c.name));
+															rec(sub, subObjs, newPath, depth+1);
+														}
+													}
+												}
+											}
+
+											var path = new hide.comp.cdb.Editor.Path();
+											rec(rootSheet, rootSheet.lines, path, 0);
+										}
+
+
+										hide.comp.cdb.Editor.openReference2(hits[idx].sheet, hits[idx].path);
+
+									default:
+										Ide.showFileInExplorer(absPath + "/" + f);
+								}
+							}});
+						}
+						refs.push(r);
+					}
+				}
 			}
 		}
 
-		filterPaths(filter);
+		var path = projectDir.substr(0, projectDir.lastIndexOf("/"));
+		var file = projectDir.substring(projectDir.lastIndexOf("/") + 1);
+		rec(path, file);
 
-		open("hide.view.RefViewer", null, null, function(view) {
-			var refViewer : hide.view.RefViewer = cast view;
-			refViewer.showRefs(refs, 'Number of references to "$path"');
-		});
+		return refs;
 	}
 
 	/**

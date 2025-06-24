@@ -5431,3 +5431,90 @@ fancy-closable {
 fancy-closable * {
   box-sizing: border-box;
 }
+.ref-viewer {
+  overflow-x: hidden;
+}
+.ref-viewer > .header {
+  text-wrap: nowrap;
+  overflow: hidden;
+  border-left: 5px solid;
+  display: flex;
+  flex-direction: column;
+  margin: 10px 10px 10px 20px;
+  padding-left: 5px;
+  font-size: 1.1em;
+}
+.ref-viewer > .header .title {
+  font-weight: 600;
+}
+.ref-viewer > .header .title em {
+  font-weight: 400;
+  font-style: normal;
+  background-color: #404248;
+  border-radius: 10px;
+  padding: 2px 8px 2px 8px;
+}
+.ref-viewer > .header .infos {
+  color: #c8c8ff;
+}
+.ref-viewer .reference {
+  width: 100%;
+}
+.ref-viewer .reference .header {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+.ref-viewer .reference .header:hover {
+  cursor: pointer;
+  background-color: #484848;
+}
+.ref-viewer .reference .header .icon {
+  margin: 0 5px 0 5px;
+}
+.ref-viewer .reference .header .file {
+  align-self: top;
+  margin-right: 10px;
+  font-weight: 800;
+}
+.ref-viewer .reference .header .path {
+  overflow: hidden;
+  flex-grow: 1;
+  font-weight: 200 !important;
+}
+.ref-viewer .reference .header .ref-count {
+  margin-right: 5px;
+  background-color: #404248;
+  padding: 1px 5px 1px 5px;
+  border-radius: 10px;
+}
+.ref-viewer .reference .header .folded {
+  transform: rotate(-90deg);
+}
+.ref-viewer .reference .header .ico:before {
+  font-size: 1.6em;
+}
+.ref-viewer .reference .content {
+  width: 100%;
+  display: flex;
+  flex-direction: column;
+  margin-left: 26px;
+}
+.ref-viewer .reference .content .result {
+  display: flex;
+  flex-direction: column;
+  overflow: hidden;
+  text-wrap: nowrap;
+  padding: 3px 0 3px 0;
+}
+.ref-viewer .reference .content .result .entry {
+  overflow: hidden;
+  cursor: pointer;
+}
+.ref-viewer .reference .content .result .entry a:hover {
+  color: #c8c8ff;
+}
+.ref-viewer .reference .content .result .entry a em {
+  font-style: normal;
+  background-color: #FFFFFF20;
+}

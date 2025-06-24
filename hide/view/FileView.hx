@@ -224,7 +224,13 @@ class FileView extends hide.ui.View<{ path : String }> {
 				{ label : "Open in Resources", enabled : hasPath, click : function() {
 					ide.showFileInResources(state.path);
 				}},
-				{ label : "Find References", enabled : hasPath, click : () -> Ide.inst.findPathRefs(state.path)},
+				{ label : "Find References", enabled : hasPath, click : () -> {
+					var refs = ide.search(state.path, ["hx", "prefab", "fx", "cdb", "json", "props", "ddt"], ["bin"]);
+					ide.open("hide.view.RefViewer", null, null, function(view) {
+						var refViewer : hide.view.RefViewer = cast view;
+						refViewer.showRefs(refs, 'Number of references to "${state.path}"', state.path);
+					});
+				}},
 				{ label : null, isSeparator : true },
 			];
 		}

@@ -1442,15 +1442,14 @@ class Editor extends Component {
 	public function findUnreferenced(col: cdb.Data.Column, table: Table) {
 		var sheet = table.getRealSheet();
 
-		var nonrefs = new Array<{str:String, ?goto:Void->Void}>();
-
+		var nonrefs: Array<hide.view.RefViewer.Reference> = [ { file: "data.cdb", path: Ide.inst.getPath("data.cdb"), results: [] } ];
 		var codeFileCache = [];
 		var prefabFileCache = [];
 		for (o in sheet.lines) {
 			var id = Reflect.getProperty(o, col.name);
 			var refs = getReferences(id, true, true, sheet, codeFileCache, prefabFileCache);
 			if (refs.length == 0) {
-				nonrefs.push({str: id, goto: () -> openReference2(sheet, [Id(col.name, id)])});
+				nonrefs[0].results.push({ text: id, goto: () -> openReference2(sheet, [Id(col.name, id)]) });
 			}
 		}
 		trace("codeFileCache: ", codeFileCache.length);
@@ -1485,7 +1484,7 @@ class Editor extends Component {
 		}
 		ide.open("hide.view.RefViewer", null, function(view) {
 			var refViewer : hide.view.RefViewer = cast view;
-			refViewer.showRefs(refs);
+			refViewer.showRefs(null);
 		});
 	}
 

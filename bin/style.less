@@ -6545,3 +6545,109 @@ fancy-closable {
 	overflow: hidden;
 	height: 0px;
 }
+
+.ref-viewer {
+	overflow-x: hidden;
+	>.header {
+		text-wrap: nowrap;
+		overflow: hidden;
+		border-left: 5px solid;
+		display: flex;
+		flex-direction: column;
+		margin: 10px 10px 10px 20px;
+		padding-left: 5px;
+		font-size: 1.1em;
+
+		.title {
+			font-weight: 600;
+			em {
+				font-weight: 400;
+				font-style: normal;
+				background-color: #404248;
+				border-radius: 10px;
+				padding: 2px 8px 2px 8px;
+			}
+		}
+
+		.infos {
+			color : #c8c8ff;
+		}
+	}
+
+	.reference {
+		width: 100%;
+
+		.header {
+			display: flex;
+			align-items: center;
+  			justify-content: center;
+
+			&:hover {
+				cursor: pointer;
+				background-color: #484848;
+			}
+
+			.icon {
+				margin: 0 5px 0 5px;
+			}
+
+			.file {
+				align-self: top;
+				margin-right: 10px;
+				font-weight: 800;
+			}
+
+			.path {
+				overflow: hidden;
+				flex-grow: 1;
+				font-weight: 200 !important;
+			}
+
+			.ref-count {
+				margin-right: 5px;
+				background-color: #404248;
+				padding: 1px 5px 1px 5px;
+				border-radius: 10px;
+			}
+
+			.folded {
+				transform: rotate(-90deg);
+			}
+
+			.ico:before {
+				font-size: 1.6em;
+			}
+		}
+
+		.content {
+			width: 100%;
+			display: flex;
+			flex-direction: column;
+			margin-left: 26px;
+
+			.result {
+				display: flex;
+				flex-direction: column;
+				overflow: hidden;
+				text-wrap: nowrap;
+				padding: 3px 0 3px 0;
+
+				.entry {
+					overflow: hidden;
+					cursor: pointer;
+
+					a {
+						&:hover {
+							color: rgb(200, 200, 255);
+						}
+
+						em {
+							font-style: normal;
+							background-color: #FFFFFF20;
+						}
+					}
+				}
+			}
+		}
+	}
+}

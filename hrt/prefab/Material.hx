@@ -483,7 +483,7 @@ class Material extends Prefab {
 			</dd>'));
 		group.find(".view-refs").click(function(_) {
 			var parentPath = shared.currentPath;
-			var refs : hide.view.RefViewer.Data = [];
+			var refs : Array<hide.view.RefViewer.Reference> = [];
 			var uniquesPath = [];
 
 			hide.Ide.inst.filterProps(function(data, path) {
@@ -507,14 +507,14 @@ class Material extends Prefab {
 					if (uniquesPath.contains(folderP))
 						continue;
 					uniquesPath.push(folderP);
-					refs.push({ str: folderP, goto: () -> { hide.Ide.inst.showFileInResources(folderP); } });
+					refs.push({ file: folderP, path: path, results: [{ text: folderP, goto: () -> { hide.Ide.inst.showFileInResources(folderP); } }]});
 				}
 				return false;
 			});
 
 			hide.Ide.inst.open("hide.view.RefViewer", null, null, function(view) {
 				var refViewer : hide.view.RefViewer = cast view;
-				refViewer.showRefs(refs, 'Number of references to "${this.name}"');
+				refViewer.showRefs(refs, 'Number of references to "${this.name}"', this.name);
 			});
 		});
 
