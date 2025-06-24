@@ -134,7 +134,11 @@ class Cell {
 						keys : this.editor.config.get("key.cdb.showUnreferenced"),
 					}
 				];
-				menu.append(hide.view.RemoteConsoleView.getCdbMenuActions(this.table.sheet.name, this.value));
+				var remoteMenu = hide.view.RemoteConsoleView.getCdbMenuActions(this.table.sheet.name, this.value);
+				if (!remoteMenu.isEmpty()) {
+					menu.push({ label : "", isSeparator : true });
+					menu.append(remoteMenu);
+				}
 		case TRef(sname):
 			if( value != null && value != "" )
 				menu = [

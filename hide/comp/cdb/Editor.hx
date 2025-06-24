@@ -2130,9 +2130,20 @@ class Editor extends Component {
 
 
 	public function popupLine( line : Line ) {
-		if( !line.table.canInsert() ) return;
-
 		var sheet = line.table.sheet;
+		var remoteMenu: Array<hide.comp.ContextMenu.MenuItem> = [];
+		if (sheet.idCol != null) {
+			var id = Reflect.field(line.obj, sheet.idCol.name);
+			remoteMenu.append(hide.view.RemoteConsoleView.getCdbMenuActions(sheet.name, id));
+		}
+
+		if( !line.table.canInsert() ) {
+			if (!remoteMenu.isEmpty()) {
+				hide.comp.ContextMenu.createFromPoint(ide.mouseX, ide.mouseY, remoteMenu);
+			}
+			return;
+		}
+
 		var selectedLines = cursor.getSelectedLines();
 		var isSelectedLine = selectedLines.contains(line);
 		var firstLine = isSelectedLine ? selectedLines[0] : line;
@@ -2287,6 +2298,10 @@ class Editor extends Component {
 					line.syncClasses();
 				},
 			});
+		}
+		if (!remoteMenu.isEmpty()) {
+			menu.push({ label : "", isSeparator : true });
+			menu.append(remoteMenu);
 		}
 		hide.comp.ContextMenu.createFromPoint(ide.mouseX, ide.mouseY, menu);
 	}
