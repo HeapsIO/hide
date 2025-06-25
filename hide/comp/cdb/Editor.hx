@@ -1489,7 +1489,7 @@ class Editor extends Component {
 		}
 		ide.open("hide.view.RefViewer", null, function(view) {
 			var refViewer : hide.view.RefViewer = cast view;
-			refViewer.showRefs(references);
+			refViewer.showRefs(references, "Number of references", id);
 		});
 	}
 
