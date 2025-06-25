@@ -4475,22 +4475,27 @@ class SceneEditor {
 		if (tree == null)
 			tree = this.tree;
 
-		for(o in elements) {
-			for(c in o.flatten(Object3D)) {
-				if( visible )
-					hideList.remove(c);
-				else
-					hideList.set(o, true);
-				var el = tree.getElement(c);
-				if( el != null ) applyTreeStyle(c, el, tree);
-				applySceneStyle(c);
+		function exec(undo : Bool) {
+			for(o in elements) {
+				for(c in o.flatten(Object3D)) {
+					if( visible )
+						undo ? hideList.set(o, true) : hideList.remove(c);
+					else
+						undo ?  hideList.remove(c) : hideList.set(o, true);
+					var el = tree.getElement(c);
+					if( el != null ) applyTreeStyle(c, el, tree);
+					applySceneStyle(c);
 
-				if (Std.downcast(c, hrt.prefab.RenderProps) != null) {
-					queueRefreshRenderProps();
+					if (Std.downcast(c, hrt.prefab.RenderProps) != null) {
+						queueRefreshRenderProps();
+					}
 				}
 			}
+			saveDisplayState();
 		}
-		saveDisplayState();
+
+		exec(false);
+		undo.change(Custom(exec), null, true);
 	}
 
 	public function setLock(elements : Array<PrefabElement>, locked: Bool, enableUndo : Bool = true, ?tree: IconTree<PrefabElement>) {
