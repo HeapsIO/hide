@@ -237,10 +237,12 @@ class Ide extends hide.tools.IdeData {
 
 		body.ondragenter = function(e:js.html.DragEvent) {
 			dragFunc(false, e);
+			return false;
 		};
 
 		body.ondragover = function(e:js.html.DragEvent) {
 			dragFunc(false, e);
+			return false;
 		};
 		body.ondrop = function(e:js.html.DragEvent) {
 			if(!dragFunc(true, e)) {
@@ -248,6 +250,7 @@ class Ide extends hide.tools.IdeData {
 					openFile(Reflect.field(f,"path"));
 				e.preventDefault();
 			}
+			return false;
 		}
 
 		if( subView != null ) body.className +=" hide-subview";
