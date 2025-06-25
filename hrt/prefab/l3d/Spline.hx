@@ -83,11 +83,17 @@ class SplinePoint {
 }
 
 @:allow(hrt.prefab.l3d.SplineMesh)
+@:allow(hrt.prefab.l3d.SplineMeshSpawner)
 class Spline extends hrt.prefab.Object3D {
 	static var OLD_CLASS_POINT = "splinePoint";
 
 	@:c public var points: Array<SplinePoint> = []; // Local to spline
-	@:c var samples: Array<SplinePoint> = null; // World relative
+	@:c var samples(get, default): Array<SplinePoint> = null; // World relative
+	function get_samples() {
+		if ( samples == null )
+			computeSamples();
+		return samples;
+	}
 
 	@:s public var loop : Bool = false;
 	@:s public var sampleResolution: Int = 16;
@@ -133,9 +139,6 @@ class Spline extends hrt.prefab.Object3D {
 		var obj = super.save();
 		obj.points = [ for (p in points) p.save()];
 		obj.shape = shape.getIndex();
-
-		if (samples == null)
-			computeSamples();
 
 		obj.samples = [ for (s in samples) s.save()];
 		return obj;
@@ -234,15 +237,14 @@ class Spline extends hrt.prefab.Object3D {
 				h.material.mainPass.depth(false, overlayGizmos ? Always : LessEqual);
 		}
 
-		var splineMeshes = findAll(SplineMesh, true);
-		for ( s in splineMeshes )
+		for ( s in findAll(SplineMesh, true) )
+			s.updateInstance();
+		for ( s in findAll(hrt.prefab.l3d.SplineMeshSpawner, true) )
 			s.updateInstance();
 	}
 
 
 	inline public function getSplinePoint(t: Float, ?out: SplinePoint) : SplinePoint {
-		if (samples == null)
-			computeSamples();
 
 		if (samples.length <= 1)
 			return null;
@@ -296,8 +298,6 @@ class Spline extends hrt.prefab.Object3D {
 	}
 
 	inline public function getPoint(t: Float, ?out: h3d.col.Point) : h3d.col.Point {
-		if (samples == null)
-			computeSamples();
 
 		if (samples.length <= 1)
 			return null;
@@ -346,9 +346,6 @@ class Spline extends hrt.prefab.Object3D {
 	}
 
 	inline public function getNearestPointProgressOnSpline(p: h3d.col.Point) : Float {
-		if (samples == null)
-			computeSamples();
-
 		var closestSq = hxd.Math.POSITIVE_INFINITY;
 		var closestT = 0.;
 		var c = p;
@@ -390,8 +387,6 @@ class Spline extends hrt.prefab.Object3D {
 	}
 
 	public function getLength() {
-		if (samples == null)
-			computeSamples();
 		if (samples == null || samples.length == 0)
 			return 0.0;
 		return samples[samples.length - 1].length;

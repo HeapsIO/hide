@@ -41,7 +41,12 @@ class SplineMesh extends hrt.prefab.Object3D {
 
 	static var SPLINE_FMT = hxd.BufferFormat.make([{ name : "position", type : DVec3 }, { name : "normal", type : DVec3 }, { name : "tangent", type : DVec3 }, { name : "uv", type : DVec2 }]);
 
-	var spline : Spline = null;
+	var spline(get, default) : Spline = null;
+	function get_spline() {
+		if ( spline == null )
+			spline = findParent(Spline, null, false, true);
+		return spline;
+	}
 
 	@:s var scaleUVy : Float = 1.0;
 	@:s var scaleUVx : Float = 1.0;
@@ -63,8 +68,6 @@ class SplineMesh extends hrt.prefab.Object3D {
 	}
 
 	override function makeObject(parent3d: h3d.scene.Object) : h3d.scene.Object {
-		if (spline == null)
-			spline = findParent(Spline, null, false, true);
 		return new SplineMeshObject(spline, null, parent3d);
 	}
 
@@ -72,8 +75,6 @@ class SplineMesh extends hrt.prefab.Object3D {
 		super.updateInstance(propName);
 		disposeSplineMesh();
 
-		if (spline == null)
-			spline = findParent(Spline, null, false, true);
 		if ( spline == null || spline.samples == null )
 			computeDefaultSplineMesh();
 		else
@@ -192,7 +193,8 @@ class SplineMesh extends hrt.prefab.Object3D {
 		var vertexData = new hxd.FloatBuffer(splineDataSize * count);
 
 		var localPoints = getLocalPoints();
-
+		var splineInvAbsPos = spline.getAbsPos(true).getInverse();
+		
 		var dataPos = 0;
 		for ( s in 0...count ) {
 			var spacing = s * spacing - spacing * (count - 1) * 0.5;
@@ -202,12 +204,13 @@ class SplineMesh extends hrt.prefab.Object3D {
 				var absPos = spline.globalToLocal(samples[i].pos);
 				var curPos = absPos.clone();
 				uv += curPos.distance(prevPos);
-				var tangent = samples[i].tangentOut.transformed3x3(spline.getAbsPos(true).getInverse()).normalized();
+				var tangent = samples[i].tangentOut.transformed3x3(splineInvAbsPos).normalized();
 				var q = new h3d.Quat();
 				q.initDirection(tangent);
+				var euler = q.toEuler();
 				var trs = new h3d.Matrix();
 				trs.initTranslation(0.0, spacing, 0.0);
-				trs.rotate(q.toEuler().x, q.toEuler().y, q.toEuler().z);
+				trs.rotate(euler.x, euler.y, euler.z);
 				trs.translate(absPos.x, absPos.y, absPos.z);
 				fillPoint(vertexData, dataPos, localPoints, trs, uv, bounds);
 				dataPos += vertexDataStride * vertexPerPoint;
