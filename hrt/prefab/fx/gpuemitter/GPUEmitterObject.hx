@@ -64,6 +64,11 @@ class GPUEmitterObject extends h3d.scene.MeshBatch {
 	var rateAccumulation : Float = 0.0;
 	var firstDispatch : Bool = true;
 
+	public var gameplayRate(default, set) : Float = 1.0;
+	public function set_gameplayRate(v : Float) {
+		return gameplayRate = hxd.Math.clamp(v);
+	}
+
 	public function new(data, primitive, materials, ?parent) {
 		super(primitive, null, parent);
 		fxAnim = null;
@@ -228,6 +233,7 @@ class GPUEmitterObject extends h3d.scene.MeshBatch {
 				baseSimulation.FACE_CAM = false;
 			}
 			baseSimulation.cameraUp.load(ctx.camera.getUp());
+			baseSimulation.curCount = Math.floor(instanceCount * gameplayRate);
 
 			switch ( data.mode ) {
 			case World:
