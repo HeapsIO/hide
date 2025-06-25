@@ -23,6 +23,7 @@ class BaseSimulation extends ComputeUtils {
 		@param var boundsSize : Vec3;
 		@param var minSize : Float;
 		@param var maxSize : Float;
+		@param var curCount : Int;
 
 		var dt : Float;
 		var speed : Vec3;
@@ -40,7 +41,7 @@ class BaseSimulation extends ComputeUtils {
 			prevModelView = batchBuffer[computeVar.globalInvocation.x].modelView;
 			particleRandom = particleBuffer[computeVar.globalInvocation.x].random;
 			particleColor = int2rgba(floatBitsToInt(particleBuffer[computeVar.globalInvocation.x].color));
-			relativeTransform = scaleMatrix((life > 0.0 ? 1.0 : 0.0) * vec3(particleRandom * (maxSize - minSize) + minSize));
+			relativeTransform = scaleMatrix((life > 0.0 ? 1.0 : 0.0) * (computeVar.globalInvocation.x > curCount ? 0.0 : 1.0) * vec3(particleRandom * (maxSize - minSize) + minSize));
 		}
 
 		function main() {
