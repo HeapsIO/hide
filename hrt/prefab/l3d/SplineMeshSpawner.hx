@@ -38,9 +38,10 @@ class SplineMeshSpawnerObject extends h3d.scene.Object {
 			var primMax = primBounds.getMax();
 			var primSize = primBounds.getSize();
 
-			for ( i in 0...points.length-1 ) {
+			var sectionCount = spline.loop ? points.length : points.length-1;
+			for ( i in 0...sectionCount ) {
 				var from = points[i];
-				var to = points[i+1];
+				var to = points[(i+1) % points.length];
 
 				var dist = to.pos.sub(from.pos).length();
 				var count = hxd.Math.imax(Math.floor(dist / primSize.x), 1);
