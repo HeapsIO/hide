@@ -1482,9 +1482,14 @@ class Editor extends Component {
 			ide.message("No reference found");
 			return;
 		}
+
+		var references : Array<hide.view.RefViewer.Reference> = [{ file: "data.cdb", path:"", results: [] }];
+		for (r in refs) {
+			references[0].results.push({ text: r.str, goto: r.goto });
+		}
 		ide.open("hide.view.RefViewer", null, function(view) {
 			var refViewer : hide.view.RefViewer = cast view;
-			refViewer.showRefs(null);
+			refViewer.showRefs(references);
 		});
 	}
 
