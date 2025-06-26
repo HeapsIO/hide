@@ -8,6 +8,7 @@ import h3d.mat.PbrMaterial.PbrProps;
 class Batcher extends h3d.scene.Object {
 	public var library : ModelLibrary;
 	public var isStatic : Bool = false;
+	public var emitCountTip : Int = -1;
 
 	var batches: Array<h3d.scene.MeshBatch>;
 
@@ -23,9 +24,9 @@ class Batcher extends h3d.scene.Object {
 				f(b);
 	}
 
-	public function emitInstance(mesh : h3d.scene.Mesh, ?absPos : h3d.Matrix, emitCountTip : Int = -1, ?cb : h3d.scene.MeshBatch -> Void) {
+	public function emitInstance(mesh : h3d.scene.Mesh, ?absPos : h3d.Matrix, ?cb : h3d.scene.MeshBatch -> Void) {
 		var meshEmitter = library.getMeshEmitter(mesh);
-		meshEmitter.emitInstance(this, absPos, emitCountTip, cb);
+		meshEmitter.emitInstance(this, absPos, cb);
 	}
 
 	public function getPrimitive() {
@@ -82,6 +83,9 @@ class Batcher extends h3d.scene.Object {
 			if ( (batch.material.props:PbrProps).alphaKill && batch.material.textureShader == null )
 				batch.material.mainPass.addShader(library.killAlpha);
 		}
+
+		batch.primitiveSubParts = [new h3d.scene.MeshBatch.MeshBatchPart()];
+		batch.begin(emitCountTip);
 	}
 
 	override function onRemove() {

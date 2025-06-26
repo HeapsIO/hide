@@ -59,7 +59,7 @@ class GPUBatcher extends Batcher {
 		return batch;
 	}
 
-	override function emitInstance(mesh : h3d.scene.Mesh, ?absPos : h3d.Matrix, emitCountTip : Int = -1, ?cb : h3d.scene.MeshBatch -> Void) {
+	override function emitInstance(mesh : h3d.scene.Mesh, ?absPos : h3d.Matrix, ?cb : h3d.scene.MeshBatch -> Void) {
 		throw "Unit emitInstance is not compatible with GPU Batcher, use emitInstances with GPU data or use a Batcher instead";
 	}
 

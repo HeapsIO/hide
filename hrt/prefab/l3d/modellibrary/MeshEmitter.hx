@@ -21,10 +21,10 @@ class MeshEmitter {
 		this.materials = materials;
 	}
 
-	function emitInstance( batcher : Batcher, ?absPos : h3d.Matrix, emitCountTip : Int = -1, ?cb : h3d.scene.MeshBatch -> Void ) {
+	function emitInstance( batcher : Batcher, ?absPos : h3d.Matrix, ?cb : h3d.scene.MeshBatch -> Void ) {
 		for ( materialIndex => bakedMaterial in bakedMaterials ) {
 			var batch = batcher.getBatch(bakedMaterial, materialIndex, this);
-			batcher.library.emitInstance(bakedMaterial, primitive, batch, absPos, emitCountTip);
+			batcher.library.emitInstance(bakedMaterial, primitive, batch, absPos);
 			if ( cb != null )
 				cb(batch);
 		}

@@ -138,13 +138,9 @@ class ModelLibrary extends Prefab {
 		return @:privateAccess prim.lib.resource.entry.path;
 	}
 
-	function emitInstance(bakedMaterial : BakedMaterialData, primitive : h3d.prim.HMDModel, batch : h3d.scene.MeshBatch, ?absPos : h3d.Matrix, emitCountTip = -1) {
+	function emitInstance(bakedMaterial : BakedMaterialData, primitive : h3d.prim.HMDModel, batch : h3d.scene.MeshBatch, ?absPos : h3d.Matrix) {
 		cache.shader.uvTransform.set(bakedMaterial.uvX, bakedMaterial.uvY, bakedMaterial.uvSX, bakedMaterial.uvSY);
 		cache.shader.libraryParams.set(bakedMaterial.texId, 1.0 / atlasResolution / bakedMaterial.uvSX, 0.0, 0.0);
-		if ( batch.primitiveSubParts == null ) {
-			batch.primitiveSubParts = [new h3d.scene.MeshBatch.MeshBatchPart()];
-			batch.begin(emitCountTip);
-		}
 		var primitiveSubPart = batch.primitiveSubParts[0];
 		primitiveSubPart.indexCount = bakedMaterial.indexCount;
 		primitiveSubPart.indexStart = bakedMaterial.indexStart;
