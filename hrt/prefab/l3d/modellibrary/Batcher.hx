@@ -49,6 +49,7 @@ class Batcher extends h3d.scene.Object {
 			var material = meshEmitter.materials[materialIndex];
 			var pbrProps = (material.props:PbrProps);
 			batch = createMeshBatch(this, pbrProps, material);
+			batch.begin(emitCountTip);
 			batches[bakedMaterial.materialConfig] = batch;
 		}
 		return batch;
@@ -85,7 +86,6 @@ class Batcher extends h3d.scene.Object {
 		}
 
 		batch.primitiveSubParts = [new h3d.scene.MeshBatch.MeshBatchPart()];
-		batch.begin(emitCountTip);
 	}
 
 	override function onRemove() {
