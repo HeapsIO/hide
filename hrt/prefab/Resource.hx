@@ -39,7 +39,7 @@ class Resource extends hxd.res.Resource {
 		#end
 	}
 
-	public function loadBypassCache() {
+	public function loadBypassCache() : Prefab {
 		var data = loadData();
 		var prefab = Prefab.createFromDynamic(data, new ContextShared(entry.path, false));
 		return cast prefab;
