@@ -327,7 +327,10 @@ class GPUEmitterObject extends h3d.scene.MeshBatch {
 		switch (data.mode) {
 		case Camera:
 			fxAnim.autoCull = false;
+			ignoreParentTransform = true;
+			setPosition(ctx.camera.pos.x, ctx.camera.pos.y, ctx.camera.pos.z);
 		default:
+			ignoreParentTransform = false;
 		}
 		super.sync(ctx);
 	}
