@@ -73,6 +73,8 @@ class FancyGallery<GalleryItem> extends hide.comp.Component {
 				queueRefresh();
 			}
 		}
+
+		itemContainer.oncontextmenu = contextMenuHandler.bind(null);
 		scroll = el.find("fancy-scroll").get(0);
 
 		scroll.onscroll = (e) -> queueRefresh();
@@ -115,6 +117,15 @@ class FancyGallery<GalleryItem> extends hide.comp.Component {
 	**/
 	public dynamic function visibilityChanged(item: GalleryItem, isVisible: Bool) : Void {
 
+	}
+
+	/**
+		Called when the user right click an item (or the background) of the gallery.
+		`item` will be null if the background was clicked. Default is do nothing
+	**/
+	public dynamic function onContextMenu(item: GalleryItem, event : js.html.MouseEvent) {
+		event.stopPropagation();
+		event.preventDefault();
 	}
 
 	/**
@@ -226,6 +237,10 @@ class FancyGallery<GalleryItem> extends hide.comp.Component {
 		currentRefreshFlags = GalleryRefreshFlags.ofInt(0);
 	}
 
+	function contextMenuHandler(item: GalleryItem, event: js.html.MouseEvent) {
+		onContextMenu(item, event);
+	}
+
 	function setupDragAndDrop(data : GalleryItemData<GalleryItem>) {
 		if (dragAndDropInterface == null)
 			return;
@@ -262,6 +277,8 @@ class FancyGallery<GalleryItem> extends hide.comp.Component {
 			data.element.ondblclick = (e) -> {
 				onDoubleClick(data.item);
 			}
+
+			data.element.oncontextmenu = contextMenuHandler.bind(data.item);
 
 			setupDragAndDrop(data);
 		}

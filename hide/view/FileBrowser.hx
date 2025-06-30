@@ -44,14 +44,21 @@ class FileEntry {
 
 	public function refreshChildren() {
 		var fullPath = getPath();
-		var paths = js.node.Fs.readdirSync(fullPath);
-
-		var oldChildren : Map<String, FileEntry> = [for (file in (children ?? [])) file.name => file];
 
 		if (children == null)
 			children = [];
 		else
 			children.resize(0);
+
+		if (!js.node.Fs.existsSync(fullPath)) {
+			return;
+		}
+
+		var paths = js.node.Fs.readdirSync(fullPath);
+
+		var oldChildren : Map<String, FileEntry> = [for (file in (children ?? [])) file.name => file];
+
+
 
 		for (path in paths) {
 			if (StringTools.startsWith(path, "."))
@@ -407,9 +414,10 @@ class FileBrowser extends hide.ui.View<FileBrowserState> {
 
 				var roots = getRoots(files);
 				var outerFiles: Array<{from: String, to: String}> = [];
+				var targetPath = target.getPath();
 				for (root in roots) {
-					var movePath = targetPath + "/" + file.split("/").pop();
-					outerFiles.push({from: file, to: movePath});
+					var movePath = targetPath + "/" + root.split("/").pop();
+					outerFiles.push({from: root, to: movePath});
 				}
 
 				function exec(isUndo: Bool) {
@@ -504,6 +512,9 @@ class FileBrowser extends hide.ui.View<FileBrowserState> {
 				return true;
 			}
 		}
+
+		fancyGallery.onContextMenu = contextMenu.bind(true);
+
 
 		if (Ide.inst.ideConfig.filebrowserDebugShowMenu) {
 			layout.find(".btn-collapse-folders").after(new Element('<fancy-button class="btn-debug"><span class="ico ico-bug"></span></fancy-button>'));
@@ -615,17 +626,28 @@ class FileBrowser extends hide.ui.View<FileBrowserState> {
 	}
 
 	function deleteFiles(fullPaths : Array<String>) {
+		//trace(fullPaths);
 		var roots = getRoots(fullPaths);
-		if( sys.FileSystem.isDirectory(fullPath) ) {
-			for( f in sys.FileSystem.readDirectory(fullPath) )
-				onDeleteFile(path + "/" + f);
-			sys.FileSystem.deleteDirectory(fullPath);
-		} else
-			sys.FileSystem.deleteFile(fullPath);
+		for (fullPath in roots) {
+			if( sys.FileSystem.isDirectory(fullPath) ) {
+				var filesInDir = [];
+				for (f in sys.FileSystem.readDirectory(fullPath)) {
+					trace("files in dir :", f);
+					filesInDir.push(fullPath + "/" + f);
+				}
+				if (filesInDir.length > 0)
+					deleteFiles(filesInDir);
+				sys.FileSystem.deleteDirectory(fullPath);
+			} else
+				sys.FileSystem.deleteFile(fullPath);
+		}
 	}
 
-	function getItemAndSelection(isGallery: Bool) : Array<FileEntry> {
-		var items = [currentFolder];
+	function getItemAndSelection(baseItem: FileEntry, isGallery: Bool) : Array<FileEntry> {
+		var items = [];
+		if (baseItem != null) {
+			items.push(baseItem);
+		}
 		if (!isGallery) {
 			return items.concat(fancyTree.getSelectedItems());
 		}
@@ -672,34 +694,39 @@ class FileBrowser extends hide.ui.View<FileBrowserState> {
 		if (item == null)
 			item = currentFolder;
 
-		currentFolder = item;
+		/*currentFolder = item;
 		fancyTree.selectItem(currentFolder);
-		queueGalleryRefresh();
+		queueGalleryRefresh();*/
 
 		var newMenu = [];
 		for (e in @:privateAccess hide.view.FileTree.EXTENSIONS) {
 			if (e.options.createNew != null) {
 				newMenu.push({
 				label: e.options.createNew,
-				click : createNew.bind(currentFolder.getPath(), e),
+				click : createNew.bind(item.getPath(), e),
 				icon : e.options.icon,
 				});
 			}
 		}
 
 		var options : Array<hide.comp.ContextMenu.MenuItem> = [];
-		options.push({
-			label: "New ...",
-			menu: newMenu,
-		});
+
+		if (item.kind == Dir) {
+			options.push({
+				label: "New ...",
+				menu: newMenu,
+			});
+
+			options.push({
+				isSeparator: true,
+			});
+		}
 
 		options.push({
-			isSeparator: true;
+			label: "Delete", click: () -> {
+				deleteFiles([for (file in getItemAndSelection(item, isGallery)) file.getPath()]);
+			}
 		});
-
-		options.push({
-			lable: "Delete", click: deleteFile.bind()
-		})
 
 		hide.comp.ContextMenu.createFromEvent(event, options);
 	}
