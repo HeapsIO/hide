@@ -103,7 +103,7 @@ class FileEntry {
 	public function getRelPath() {
 		if (this.parent == null) return "";
 		if (this.parent.parent == null) return this.name;
-		return this.parent.getPath() + "/" + this.name;
+		return this.parent.getRelPath() + "/" + this.name;
 	}
 
 	// sort directories before files, and then dirs and files alphabetically
@@ -192,6 +192,20 @@ class FileBrowser extends hide.ui.View<FileBrowserState> {
 		galleryRefreshQueued = false;
 		hide.tools.FileManager.inst.clearRenderQueue();
 		currentSearch = [];
+
+		var validFolder = currentFolder;
+		while(validFolder != null && !sys.FileSystem.exists(validFolder.getPath())) {
+			validFolder = validFolder.parent;
+		}
+		if (validFolder == null) {
+			validFolder = root;
+		}
+		if (validFolder != currentFolder) {
+			currentFolder = validFolder;
+			fancyTree.clearSelection();
+			fancyTree.selectItem(currentFolder);
+		}
+
 		if (searchString.length == 0 && !collapseSubfolders && !filterEnabled) {
 			currentSearch = currentFolder.children;
 		} else {
@@ -235,6 +249,7 @@ class FileBrowser extends hide.ui.View<FileBrowserState> {
 				}
 			}
 
+
 			rec(currentFolder.children);
 
 			currentSearch.sort(FileEntry.compareFile);
@@ -257,6 +272,10 @@ class FileBrowser extends hide.ui.View<FileBrowserState> {
 	}
 
 	override function onDisplay() {
+
+		keys.register("undo", function() undo.undo());
+		keys.register("redo", function() undo.redo());
+
 		root = new FileEntry("res", null, Dir, onFileChange);
 
 		root.refreshChildren();
@@ -339,8 +358,11 @@ class FileBrowser extends hide.ui.View<FileBrowserState> {
 				if (selection.length <= 0)
 					return false;
 				var ser = [];
+				ser.push(file.getPath());
 				for (item in selection) {
-					ser.push(file.getPath());
+					if (item == file)
+						continue;
+					ser.push(item.getPath());
 				}
 				dataTransfer.setData(dragKey, haxe.Json.stringify(ser));
 				return true;
@@ -368,7 +390,7 @@ class FileBrowser extends hide.ui.View<FileBrowserState> {
 				for (file in dataTransfer.files) {
 					var path : String = untyped file.path; //file.path is an extension from nwjs or node
 					path = StringTools.replace(path, "\\", "/");
-					files.push(path);
+					files.push(ide.getRelPath(path));
 				}
 
 				var fileMoveData = dataTransfer.getData(dragKey);
@@ -376,16 +398,44 @@ class FileBrowser extends hide.ui.View<FileBrowserState> {
 					try {
 						var unser = haxe.Json.parse(fileMoveData);
 						for (file in (unser:Array<String>)) {
-							files.push(file);
+							files.push(ide.getRelPath(file));
 						}
 					} catch (e) {
 						trace("Invalid data " + e);
 					}
 				}
 
+				var roots = getRoots(files);
+				var outerFiles: Array<{from: String, to: String}> = [];
+				for (root in roots) {
+					var movePath = targetPath + "/" + file.split("/").pop();
+					outerFiles.push({from: file, to: movePath});
+				}
+
+				function exec(isUndo: Bool) {
+					if (!isUndo) {
+						for (file in outerFiles) {
+							// File could have been removed by the system in between our undo/redo operations
+							if (sys.FileSystem.exists(ide.getPath(file.from)))
+								FileTree.doRename(file.from, "/" + file.to);
+						}
+					} else {
+						for (file in outerFiles) {
+							// File could have been removed by the system in between our undo/redo operations
+							if (sys.FileSystem.exists(ide.getPath(file.to)))
+								FileTree.doRename(file.to, "/" + file.from);
+						}
+					}
+				}
+
+				undo.change(Custom(exec));
+				exec(false);
+
 				return true;
 			}
 		}
+
+		fancyTree.onContextMenu = contextMenu.bind(false);
 
 		fancyTree.rebuildTree();
 		fancyTree.openItem(root);
@@ -533,6 +583,125 @@ class FileBrowser extends hide.ui.View<FileBrowserState> {
 		}
 		syncCollapseSubfolders();
 
+	}
+
+	function createNew( directoryFullPath : String, ext : hide.view.FileTree.ExtensionDesc ) {
+
+		var file = ide.ask(ext.options.createNew + " name:");
+		if( file == null ) return;
+		if( file.indexOf(".") < 0 && ext.extensions != null )
+			file += "." + ext.extensions[0].split(".").shift();
+
+		var newFilePath = directoryFullPath + "/" + file;
+
+		if( sys.FileSystem.exists(newFilePath) ) {
+			ide.error("File '" + file+"' already exists");
+			createNew(directoryFullPath, ext);
+			return;
+		}
+
+		// directory
+		if( ext.component == null ) {
+			sys.FileSystem.createDirectory(newFilePath);
+			return;
+		}
+
+		var view : hide.view.FileView = Type.createEmptyInstance(Type.resolveClass(ext.component));
+		view.ide = ide;
+		view.state = { path : ide.getRelPath(newFilePath)};
+		sys.io.File.saveBytes(newFilePath, view.getDefaultContent());
+
+		ide.openFile(newFilePath);
+	}
+
+	function deleteFiles(fullPaths : Array<String>) {
+		var roots = getRoots(fullPaths);
+		if( sys.FileSystem.isDirectory(fullPath) ) {
+			for( f in sys.FileSystem.readDirectory(fullPath) )
+				onDeleteFile(path + "/" + f);
+			sys.FileSystem.deleteDirectory(fullPath);
+		} else
+			sys.FileSystem.deleteFile(fullPath);
+	}
+
+	function getItemAndSelection(isGallery: Bool) : Array<FileEntry> {
+		var items = [currentFolder];
+		if (!isGallery) {
+			return items.concat(fancyTree.getSelectedItems());
+		}
+		return items;
+	}
+
+	// Deduplicate paths if they are contained in a directory
+	// also present in paths, to simplify bulk operations
+	function getRoots(fullPaths: Array<String>) {
+		var dirs : Array<String> = [];
+
+		for (file in fullPaths) {
+			if(sys.FileSystem.isDirectory(ide.getPath(file))) {
+				dirs.push(file);
+			}
+		}
+
+		// Find the minimum ammount of files that need to be moved
+		var roots: Array<String> = [];
+		for (file in fullPaths) {
+			var isContainedInAnotherDir = false;
+			for (dir2 in dirs) {
+				if (file == dir2)
+					continue;
+				if (StringTools.contains(file, dir2)) {
+					isContainedInAnotherDir = true;
+					continue;
+				}
+			}
+			if (!isContainedInAnotherDir) {
+				roots.push(file);
+			}
+		}
+
+		return roots;
+	}
+
+	function contextMenu(isGallery: Bool, item: FileEntry, event: js.html.MouseEvent) {
+		event.stopPropagation();
+		event.preventDefault();
+
+		if (item == null && !isGallery)
+			item = root;
+		if (item == null)
+			item = currentFolder;
+
+		currentFolder = item;
+		fancyTree.selectItem(currentFolder);
+		queueGalleryRefresh();
+
+		var newMenu = [];
+		for (e in @:privateAccess hide.view.FileTree.EXTENSIONS) {
+			if (e.options.createNew != null) {
+				newMenu.push({
+				label: e.options.createNew,
+				click : createNew.bind(currentFolder.getPath(), e),
+				icon : e.options.icon,
+				});
+			}
+		}
+
+		var options : Array<hide.comp.ContextMenu.MenuItem> = [];
+		options.push({
+			label: "New ...",
+			menu: newMenu,
+		});
+
+		options.push({
+			isSeparator: true;
+		});
+
+		options.push({
+			lable: "Delete", click: deleteFile.bind()
+		})
+
+		hide.comp.ContextMenu.createFromEvent(event, options);
 	}
 
 	function generateFilters() {

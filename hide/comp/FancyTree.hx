@@ -101,6 +101,7 @@ class FancyTree<TreeItem> extends hide.comp.Component {
 
 		var fancyTree = el.get(0);
 		fancyTree.onkeydown = inputHandler;
+		fancyTree.oncontextmenu = contextMenuHandler.bind(null);
 
 		scroll.onscroll = (e) -> queueRefresh();
 
@@ -163,6 +164,20 @@ class FancyTree<TreeItem> extends hide.comp.Component {
 		**/
 		onDrop: (target: TreeItem, where: DropOperation, dataTransfer: js.html.DataTransfer) -> Void
 	} = null;
+
+	/**
+		Called when the user right click an item (or the background) of the tree.
+		`item` will be null if the background was clicked. Default is do nothing
+	**/
+	public dynamic function onContextMenu(item: TreeItem, event : js.html.MouseEvent) {
+		event.stopPropagation();
+		event.preventDefault();
+	}
+
+	// Separate definition to onContextMenu to allow .bind()
+	function contextMenuHandler(item: TreeItem, event : js.html.MouseEvent) {
+		onContextMenu(item, event);
+	}
 
 	/**
 		Called when the user renamed the item via F2 / Context menu
@@ -533,6 +548,8 @@ class FancyTree<TreeItem> extends hide.comp.Component {
 				<fancy-tree-icon class="header-icon"></fancy-tree-icon>
 				<fancy-tree-name></fancy-tree-name>
 			';
+
+			element.oncontextmenu = contextMenuHandler.bind(data.item);
 
 			var fold = element.querySelector(".caret");
 			fold.addEventListener("click", (e) -> {

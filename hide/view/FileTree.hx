@@ -293,11 +293,11 @@ class FileTree extends FileView {
 		return true;
 	}
 
-	function doRename(path:String, name:String) {
-		var isDir = sys.FileSystem.isDirectory(ide.getPath(path));
-		if( isDir ) ide.fileWatcher.pause();
+	public static function doRename(path:String, name:String) {
+		var isDir = sys.FileSystem.isDirectory(hide.Ide.inst.getPath(path));
+		if( isDir ) hide.Ide.inst.fileWatcher.pause();
 		var ret = onRenameRec(path, name);
-		if( isDir ) ide.fileWatcher.resume();
+		if( isDir ) hide.Ide.inst.fileWatcher.resume();
 		return ret;
 	}
 
@@ -311,8 +311,8 @@ class FileTree extends FileView {
 		});
 	}
 
-	function onRenameRec(path:String, name:String) {
-
+	public static function onRenameRec(path:String, name:String) {
+		var ide = hide.Ide.inst;
 		var parts = path.split("/");
 		parts.pop();
 		for( n in name.split("/") ) {
@@ -485,7 +485,7 @@ class FileTree extends FileView {
 		return true;
 	}
 
-	function replacePathInFiles(oldPath: String, newPath: String, isDir: Bool = false) {
+	static function replacePathInFiles(oldPath: String, newPath: String, isDir: Bool = false) {
 		function filter(ctx: hide.Ide.FilterPathContext) {
 			var p = ctx.valueCurrent;
 			if( p == null )
@@ -510,7 +510,7 @@ class FileTree extends FileView {
 			}
 		}
 
-		ide.filterPaths(filter);
+		hide.Ide.inst.filterPaths(filter);
 	}
 
 	function onAllowMove(e: String, to : String) {
@@ -518,7 +518,7 @@ class FileTree extends FileView {
 		return sys.FileSystem.isDirectory(destAbsPath);
 	}
 
-	function doMove(e : String, to : String, index : Int) {
+	static function doMove(e : String, to : String, index : Int) {
 		var dest = "/" + to + "/" + e.split("/").pop();
 		doRename(e, dest);
 	}

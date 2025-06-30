@@ -5396,6 +5396,8 @@ fancy-gallery fancy-scroll fancy-item-container fancy-item fancy-name {
   height: 32px;
   display: block;
   text-align: center;
+  text-wrap: wrap;
+  word-break: break-all;
   text-overflow: ellipsis;
   overflow: hidden;
 }

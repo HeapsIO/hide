@@ -53,7 +53,6 @@ class MessageHandler {
 			}
 		}
 	}
-
 }
 
 @:access(hide.tools.FileManager)

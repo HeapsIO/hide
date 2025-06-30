@@ -43,7 +43,16 @@ class FileWatcher {
 	public function resume() {
 		for( w in watches )
 			if( w.w == null && w.events.length > 0 ) {
-				initWatch(w);
+				try initWatch(w) catch( e : Dynamic ) {
+					// file does not exists, trigger a delayed event
+					haxe.Timer.delay(function() {
+						for( e in w.events.copy() )
+							if( isLive(w.events,e) && e.checkDel )
+								e.fun();
+					}, 0);
+					return;
+				}
+
 				var sign = getSignature(w.path);
 				for( f in w.events )
 					if( f.ignoreCheck != sign || w.isDir ) {

@@ -168,6 +168,14 @@ class IdeData {
 		return resourceDir+"/"+relPath;
 	}
 
+	public function getRelPath(absPath: String) {
+		if (absPath == null)
+			return null;
+		if (!haxe.io.Path.isAbsolute(absPath))
+			return absPath;
+		return StringTools.replace(absPath, resourceDir + "/", "");
+	}
+
 	var lastDBContent = null;
 	function loadDatabase( ?checkExists ) {
 		var exists = fileExists(databaseFile);
