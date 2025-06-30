@@ -1,129 +1,11 @@
 package hide.view;
 
+import hide.tools.FileManager;
+import hide.tools.FileManager.FileEntry;
 typedef FileBrowserState = {
 
 }
 
-enum FileKind {
-	Dir;
-	File;
-}
-
-class FileEntry {
-	public var name: String;
-	public var children: Array<FileEntry>;
-	public var kind: FileKind;
-	public var parent: FileEntry;
-	public var iconPath: String;
-
-	public var onChange : (file: FileEntry) -> Void;
-
-	var registeredWatcher : hide.tools.FileWatcher.FileWatchEvent = null;
-
-	public function new(name: String, parent: FileEntry, kind: FileKind, onChange: (file: FileEntry) -> Void) {
-		this.name = name;
-		this.parent = parent;
-		this.kind = kind;
-		this.onChange = onChange;
-
-		watch();
-	}
-
-	public function dispose() {
-		if (children != null) {
-			for (child in children) {
-				child.dispose();
-			}
-		}
-		children = null;
-		if (registeredWatcher != null) {
-			hide.Ide.inst.fileWatcher.unregister(this.getPath(), registeredWatcher.fun);
-			registeredWatcher = null;
-		}
-	}
-
-	public function refreshChildren() {
-		var fullPath = getPath();
-
-		if (children == null)
-			children = [];
-		else
-			children.resize(0);
-
-		if (!js.node.Fs.existsSync(fullPath)) {
-			return;
-		}
-
-		var paths = js.node.Fs.readdirSync(fullPath);
-
-		var oldChildren : Map<String, FileEntry> = [for (file in (children ?? [])) file.name => file];
-
-
-
-		for (path in paths) {
-			if (StringTools.startsWith(path, "."))
-				continue;
-			var prev = oldChildren.get(path);
-			if (prev != null) {
-				children.push(prev);
-				oldChildren.remove(path);
-			} else {
-				var info = js.node.Fs.statSync(fullPath + "/" + path);
-				children.push(
-					new FileEntry(path, this, info.isDirectory() ? Dir : File, onChange)
-				);
-			}
-		}
-
-		for (child in oldChildren) {
-			child.dispose();
-		}
-
-		children.sort(compareFile);
-	}
-
-	function watch() {
-		if (registeredWatcher != null)
-			throw "already watching";
-
-		var rel = this.getRelPath();
-		if (this.kind == Dir) {
-			registeredWatcher = hide.Ide.inst.fileWatcher.register(rel, onChangeDirInternal, true);
-		} else if (onChange != null) {
-			registeredWatcher = hide.Ide.inst.fileWatcher.register(rel, onChange.bind(this), true);
-		}
-	}
-
-	function onChangeDirInternal() {
-		refreshChildren();
-
-		if (onChange != null) {
-			onChange(this);
-		}
-	}
-
-	public function getPath() {
-		if (this.parent == null) return hide.Ide.inst.resourceDir;
-		return this.parent.getPath() + "/" + this.name;
-	}
-
-	public function getRelPath() {
-		if (this.parent == null) return "";
-		if (this.parent.parent == null) return this.name;
-		return this.parent.getRelPath() + "/" + this.name;
-	}
-
-	// sort directories before files, and then dirs and files alphabetically
-	static public function compareFile(a: FileEntry, b: FileEntry) {
-		if (a.kind != b.kind) {
-			if (a.kind == Dir) {
-				return -1;
-			}
-			return 1;
-		}
-		return Reflect.compare(a.name, b.name);
-	}
-}
 
 class FileBrowser extends hide.ui.View<FileBrowserState> {
 
@@ -231,7 +113,7 @@ class FileBrowser extends hide.ui.View<FileBrowserState> {
 				for (file in files) {
 					if (file.kind == Dir && (collapseSubfolders || searchString.length > 0)) {
 						if (file.children == null) {
-							file.refreshChildren();
+							throw "null children";
 						}
 						rec(file.children);
 					}
@@ -283,9 +165,7 @@ class FileBrowser extends hide.ui.View<FileBrowserState> {
 		keys.register("undo", function() undo.undo());
 		keys.register("redo", function() undo.redo());
 
-		root = new FileEntry("res", null, Dir, onFileChange);
-
-		root.refreshChildren();
+		root = FileManager.inst.fileRoot;
 
 		var layout = new Element('
 			<file-browser>
@@ -347,7 +227,7 @@ class FileBrowser extends hide.ui.View<FileBrowserState> {
 			if (file.kind == File)
 				return null;
 			if (file.children == null)
-				file.refreshChildren();
+				throw "null children";
 			return file.children.filter((file) -> file.kind == Dir);
 		};
 		//fancyTree.hasChildren = (file: FileEntry) -> return file.kind == Dir;
@@ -515,7 +395,6 @@ class FileBrowser extends hide.ui.View<FileBrowserState> {
 
 		fancyGallery.onContextMenu = contextMenu.bind(true);
 
-
 		if (Ide.inst.ideConfig.filebrowserDebugShowMenu) {
 			layout.find(".btn-collapse-folders").after(new Element('<fancy-button class="btn-debug"><span class="ico ico-bug"></span></fancy-button>'));
 			var button = layout.find(".btn-debug").get(0);
@@ -594,6 +473,12 @@ class FileBrowser extends hide.ui.View<FileBrowserState> {
 		}
 		syncCollapseSubfolders();
 
+		FileManager.inst.onFileChangeHandlers.push(onFileChange);
+	}
+
+	override function destroy() {
+		super.destroy();
+		FileManager.inst.onFileChangeHandlers.remove(onFileChange);
 	}
 
 	function createNew( directoryFullPath : String, ext : hide.view.FileTree.ExtensionDesc ) {

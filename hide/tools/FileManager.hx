@@ -16,9 +16,116 @@ typedef GenToManagerSuccessMessage = {
 	var thumbnailPath : String;
 }
 
-typedef FileData = {
-	name: String,
-	parent: FileData,
+enum FileKind {
+	Dir;
+	File;
+}
+
+@:access(hide.tools.FileManager)
+@:allow(hide.tools.FileManager)
+class FileEntry {
+	public var name: String;
+	public var children: Array<FileEntry>;
+	public var kind: FileKind;
+	public var parent: FileEntry;
+	public var iconPath: String;
+
+	var registeredWatcher : hide.tools.FileWatcher.FileWatchEvent = null;
+
+	public function new(name: String, parent: FileEntry, kind: FileKind) {
+		this.name = name;
+		this.parent = parent;
+		this.kind = kind;
+
+		watch();
+	}
+
+	public function dispose() {
+		if (children != null) {
+			for (child in children) {
+				child.dispose();
+			}
+		}
+		children = null;
+		if (registeredWatcher != null) {
+			hide.Ide.inst.fileWatcher.unregister(this.getPath(), registeredWatcher.fun);
+			registeredWatcher = null;
+		}
+	}
+
+	function refreshChildren(rec: Bool) {
+		if (kind != Dir)
+			return;
+		var fullPath = getPath();
+
+		var oldChildren : Map<String, FileEntry> = [for (file in (children ?? [])) file.name => file];
+
+		if (children == null)
+			children = [];
+		else
+			children.resize(0);
+
+		if (js.node.Fs.existsSync(fullPath)) {
+			var paths = js.node.Fs.readdirSync(fullPath);
+
+			for (path in paths) {
+				if (StringTools.startsWith(path, "."))
+					continue;
+				var prev = oldChildren.get(path);
+				if (prev != null) {
+					children.push(prev);
+					oldChildren.remove(path);
+				} else {
+					var info = js.node.Fs.statSync(fullPath + "/" + path);
+					children.push(
+						new FileEntry(path, this, info.isDirectory() ? Dir : File)
+					);
+				}
+			}
+		}
+
+		for (child in oldChildren) {
+			child.dispose();
+		}
+
+		children.sort(compareFile);
+
+		if (rec) {
+			for (child in children) {
+				child.refreshChildren(rec);
+			}
+		}
+	}
+
+	function watch() {
+		if (registeredWatcher != null)
+			throw "already watching";
+
+		var rel = this.getRelPath();
+		registeredWatcher = hide.Ide.inst.fileWatcher.register(rel, FileManager.inst.fileChangeInternal.bind(this), true);
+	}
+
+	public function getPath() {
+		if (this.parent == null) return hide.Ide.inst.resourceDir;
+		return this.parent.getPath() + "/" + this.name;
+	}
+
+	public function getRelPath() {
+		if (this.parent == null) return "";
+		if (this.parent.parent == null) return this.name;
+		return this.parent.getRelPath() + "/" + this.name;
+	}
+
+	// sort directories before files, and then dirs and files alphabetically
+	static public function compareFile(a: FileEntry, b: FileEntry) {
+		if (a.kind != b.kind) {
+			if (a.kind == Dir) {
+				return -1;
+			}
+			return 1;
+		}
+		return Reflect.compare(a.name, b.name);
+	}
 }
 
 typedef MiniatureReadyCallback = (miniaturePath: String) -> Void;
@@ -28,10 +135,13 @@ typedef MiniatureReadyCallback = (miniaturePath: String) -> Void;
 **/
 class FileManager {
 
+	public var fileRoot: FileEntry;
+
 	public static final thumbnailGeneratorPort = 9669;
 	public static final thumbnailGeneratorUrl = "localhost";
 
 	public static var inst(get, default) : FileManager;
+	public var onFileChangeHandlers: Array<(entry: FileEntry) -> Void> = [];
 
 	var windowManager : RenderWindowManager = null;
 
@@ -41,14 +151,21 @@ class FileManager {
 	var generatorSocket : hxd.net.Socket = null;
 	var pendingMessages : Array<String> = [];
 
+	var fileEntryRefreshDelay : Delayer<FileEntry>;
+
 	var retries = 0;
 	static final maxRetries = 5;
 
 	static function get_inst() {
 		if (inst == null) {
 			inst = new FileManager();
+			inst.init();
 		}
 		return inst;
+	}
+
+	function new() {
+
 	}
 
 	public static function onBeforeReload() {
@@ -138,13 +255,37 @@ class FileManager {
 		});
 	}
 
-	function new() {
+	function init() {
 		// kill server when page is reloaded
 		js.Browser.window.addEventListener('beforeunload', () -> { cleanupGenerator(); cleanupServer(); });
 
 		setupServer();
 		checkWindowReady();
+		initFileSystem();
 	}
+
+	function initFileSystem() {
+		fileEntryRefreshDelay = new Delayer((entry: FileEntry) -> {
+			entry.refreshChildren(false);
+		});
+
+		fileRoot = new FileEntry("res", null, Dir);
+		fileRoot.refreshChildren(true);
+	}
+
+	function fileChangeInternal(entry: FileEntry) {
+		if (!js.node.Fs.existsSync(entry.getPath()) && entry.parent != null) {
+			fileEntryRefreshDelay.queue(entry.parent);
+			return;
+		}
+		if (entry.kind == Dir) {
+			fileEntryRefreshDelay.queue(entry);
+		}
+		for (handler in onFileChangeHandlers) {
+			handler(entry);
+		}
+	}
+
 
 	function processThumbnailGeneratorMessage(message: String) {
 		try {
