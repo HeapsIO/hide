@@ -18,7 +18,7 @@ class SubFX extends Reference implements hrt.prefab.fx.Event.IEvent{
 			var fxanim : hrt.prefab.fx.FX.FXAnimation = refInstance.findFirstLocal3d().find(o -> Std.downcast(o, hrt.prefab.fx.FX.FXAnimation));
 			if(fxanim != null) {
 				fxanim.startDelay = time;
-			    fxanim.loop = loop;
+			   fxanim.loop = loop;
 				instance = fxanim;
 			}
 		}
@@ -33,15 +33,12 @@ class SubFX extends Reference implements hrt.prefab.fx.Event.IEvent{
 	}
 
 	public function getDuration() {
-		if (refInstance != null) {
-			var local = refInstance.findFirstLocal3d();
-			if (local == null)
-				return 0.0;
-			var fxAnim : hrt.prefab.fx.FX.FXAnimation = local.find(o -> Std.downcast(o, hrt.prefab.fx.FX.FXAnimation));
-			if (fxAnim != null) {
-				return fxAnim.duration;
-			}
-		}
+		#if !release
+		if (refInstance != null && instance == null)
+			throw "refInstance is init but instance is not";
+		#end
+		if (instance != null)
+			return instance.duration;
 		return 0.0;
 	}
 
