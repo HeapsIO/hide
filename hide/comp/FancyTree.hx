@@ -272,6 +272,7 @@ class FancyTree<TreeItem> extends hide.comp.Component {
 	}
 
 	public function rebuildTree() {
+		itemMap.clear();
 		rootData = generateChildren(null);
 
 		queueRefresh(Search);

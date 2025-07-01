@@ -4945,6 +4945,13 @@ file-browser {
   display: flex;
   flex-direction: row;
   height: 100%;
+  width: 100%;
+}
+file-browser.vertical {
+  flex-direction: column;
+}
+file-browser.single > .left {
+  flex: 1 1;
 }
 file-browser .left {
   width: 300px;

@@ -5910,7 +5910,17 @@ blend-space-2d-root {
 file-browser {
 	display: flex;
 	flex-direction: row;
+
+	&.vertical {
+		flex-direction: column;
+	}
+
+	&.single > .left {
+		flex: 1 1;
+	}
+
 	height: 100%;
+	width: 100%;
 
 	.left {
 		width: 300px;

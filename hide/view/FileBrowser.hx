@@ -6,6 +6,12 @@ typedef FileBrowserState = {
 
 }
 
+enum Layout {
+	SingleTree;
+	SingleMiniature;
+	Vertical;
+	Horizontal;
+}
 
 class FileBrowser extends hide.ui.View<FileBrowserState> {
 
@@ -14,6 +20,28 @@ class FileBrowser extends hide.ui.View<FileBrowserState> {
 
 	var root : FileEntry;
 	var breadcrumbs : Element;
+
+	var layout(default, set): Layout;
+
+	function set_layout(newLayout: Layout) : Layout {
+		layout = newLayout;
+
+		element.find("file-browser").toggleClass("vertical", layout.match(Vertical));
+		element.find("file-browser").toggleClass("single", layout.match(SingleTree));
+
+		element.find(".left").width(layout == Horizontal ? "300px" : "auto");  // reset splitter width
+		element.find(".left").height(layout == Vertical ? "300px" : "");  // reset splitter height
+		element.find(".left").toggle(!layout.match(SingleMiniature));
+		element.find(".right").toggle(!layout.match(SingleTree));
+		element.find(".splitter").toggle(!layout.match(SingleTree | SingleMiniature));
+		if (layout.match(Horizontal | Vertical))
+			resize.layoutDirection = layout == Horizontal ? Horizontal : Vertical;
+
+		fullRefresh();
+
+		return newLayout;
+	}
+
 
 	override function new(state) {
 		super(state);
@@ -24,8 +52,41 @@ class FileBrowser extends hide.ui.View<FileBrowserState> {
 		return false;
 	}
 
-	function queueRebuildChildren(path: String) {
+	override function buildTabMenu():Array<hide.comp.ContextMenu.MenuItem> {
+		var menu = super.buildTabMenu();
 
+		menu.push({isSeparator: true});
+		menu.push({
+			label: "Display",
+			menu: [
+				{
+					label: "File Tree",
+					radio: () -> layout == SingleTree,
+					click: () -> layout = SingleTree,
+					stayOpen: true,
+				},
+				{
+					label: "Gallery",
+					radio: () -> layout == SingleMiniature,
+					click: () -> layout = SingleMiniature,
+					stayOpen: true,
+				},
+						{
+					label: "Horizontal",
+					radio: () -> layout == Horizontal,
+					click: () -> layout = Horizontal,
+					stayOpen: true,
+				},
+				{
+					label: "Vertical",
+					radio: () -> layout == Vertical,
+					click: () -> layout = Vertical,
+					stayOpen: true,
+				},
+			]
+		});
+
+		return menu;
 	}
 
 	public static final dragKey = "application/x.filemove";
@@ -160,6 +221,13 @@ class FileBrowser extends hide.ui.View<FileBrowserState> {
 		queueGalleryRefresh();
 	}
 
+	function fullRefresh() {
+		fancyTree.rebuildTree();
+		queueGalleryRefresh();
+	}
+
+	var resize : hide.comp.ResizablePanel;
+
 	override function onDisplay() {
 
 		keys.register("undo", function() undo.undo());
@@ -167,7 +235,7 @@ class FileBrowser extends hide.ui.View<FileBrowserState> {
 
 		root = FileManager.inst.fileRoot;
 
-		var layout = new Element('
+		var browserLayout = new Element('
 			<file-browser>
 				<div class="left"></div>
 				<div class="right" tabindex="-1">
@@ -201,25 +269,24 @@ class FileBrowser extends hide.ui.View<FileBrowserState> {
 			</file-browser>
 		').appendTo(element);
 
+		resize = new hide.comp.ResizablePanel(Horizontal, element.find(".left"), After);
 
-		breadcrumbs = layout.find("fancy-breadcrumbs");
+		breadcrumbs = browserLayout.find("fancy-breadcrumbs");
 
-		var resize = new hide.comp.ResizablePanel(Horizontal, layout.find(".left"), After);
-
-		var search = new hide.comp.FancySearch(null, layout.find(".fb-search"));
+		var search = new hide.comp.FancySearch(null, browserLayout.find(".fb-search"));
 		search.onSearch = (string, _) -> {
 			searchString = string;
 			queueGalleryRefresh();
 		};
 
-		var btnParent = layout.find(".btn-parent");
+		var btnParent = browserLayout.find(".btn-parent");
 		btnParent.get(0).onclick = (e: js.html.MouseEvent) -> {
 			if (currentFolder.parent != null) {
 				openDir(currentFolder.parent, true);
 			}
 		}
 
-		fancyTree = new hide.comp.FancyTree<FileEntry>(resize.element);
+		fancyTree = new hide.comp.FancyTree<FileEntry>(browserLayout.find(".left"));
 		fancyTree.saveDisplayKey = "fileBrowserTree";
 		fancyTree.getChildren = (file: FileEntry) -> {
 			if (file == null)
@@ -230,11 +297,26 @@ class FileBrowser extends hide.ui.View<FileBrowserState> {
 				throw "disposed file";
 			if (file.children == null)
 				throw "null children";
+
+			if (layout == SingleTree) {
+				return file.children;
+			}
 			return file.children.filter((file) -> file.kind == Dir);
 		};
 		//fancyTree.hasChildren = (file: FileEntry) -> return file.kind == Dir;
 		fancyTree.getName = (file: FileEntry) -> return file?.name;
-		fancyTree.getIcon = (file: FileEntry) -> return '<div class="ico ico-folder"></div>';
+
+		fancyTree.getIcon = (item : FileEntry) -> {
+			if (item.kind == Dir)
+				return '<div class="ico ico-folder"></div>';
+			var ext = @:privateAccess hide.view.FileTree.getExtension(item.name);
+			if (ext != null) {
+				if (ext?.options.icon != null) {
+					return '<div class="ico ico-${ext.options.icon}" title="${ext.options.name ?? "Unknown"}"></div>';
+				}
+			}
+			return null;
+		}
 
 		fancyTree.onNameChange = (item: FileEntry, newName: String) -> {
 			item.name = newName;
@@ -330,7 +412,7 @@ class FileBrowser extends hide.ui.View<FileBrowserState> {
 		fancyTree.rebuildTree();
 		fancyTree.openItem(root);
 
-		var right = layout.find(".right");
+		var right = browserLayout.find(".right");
 		right.get(0).onkeydown = (e: js.html.KeyboardEvent) -> {
 			if (hide.ui.Keys.matchJsEvent("search", e, ide.currentConfig)) {
 				e.stopPropagation();
@@ -341,7 +423,7 @@ class FileBrowser extends hide.ui.View<FileBrowserState> {
 			}
 		}
 
-		fancyGallery = new hide.comp.FancyGallery<FileEntry>(null, layout.find(".right fancy-gallery"));
+		fancyGallery = new hide.comp.FancyGallery<FileEntry>(null, browserLayout.find(".right fancy-gallery"));
 		fancyGallery.getItems = () -> {
 			return currentSearch;
 		}
@@ -398,8 +480,8 @@ class FileBrowser extends hide.ui.View<FileBrowserState> {
 		fancyGallery.onContextMenu = contextMenu.bind(true);
 
 		if (Ide.inst.ideConfig.filebrowserDebugShowMenu) {
-			layout.find(".btn-collapse-folders").after(new Element('<fancy-button class="btn-debug"><span class="ico ico-bug"></span></fancy-button>'));
-			var button = layout.find(".btn-debug").get(0);
+			browserLayout.find(".btn-collapse-folders").after(new Element('<fancy-button class="btn-debug"><span class="ico ico-bug"></span></fancy-button>'));
+			var button = browserLayout.find(".btn-debug").get(0);
 			button.onclick = (e) -> {
 				hide.comp.ContextMenu.createDropdown(button, [
 					{
@@ -411,8 +493,6 @@ class FileBrowser extends hide.ui.View<FileBrowserState> {
 				]);
 			};
 		}
-
-		fancyGallery.rebuild();
 
 		openDir(root, false);
 
@@ -434,14 +514,14 @@ class FileBrowser extends hide.ui.View<FileBrowserState> {
 			}
 		}
 
-		filterButton = layout.find(".btn-filter").get(0);
+		filterButton = browserLayout.find(".btn-filter").get(0);
 		filterButton.onclick = (e: js.html.MouseEvent) -> {
 			filterEnabled = !filterEnabled;
 		}
 		filterEnabled = getDisplayState("filterEnabled") ?? false;
 
 
-		var filterMoreButton = layout.find(".bnt-filter-dropdown").get(0);
+		var filterMoreButton = browserLayout.find(".bnt-filter-dropdown").get(0);
 		filterMoreButton.onclick = (e: js.html.MouseEvent) -> {
 			var options : Array<hide.comp.ContextMenu.MenuItem> = [];
 
@@ -468,7 +548,7 @@ class FileBrowser extends hide.ui.View<FileBrowserState> {
 
 
 		collapseSubfolders = getDisplayState("collapseSubfolders") ?? false;
-		collapseSubfoldersButton = layout.find(".btn-collapse-folders").get(0);
+		collapseSubfoldersButton = browserLayout.find(".btn-collapse-folders").get(0);
 		collapseSubfoldersButton.onclick = (e: js.html.MouseEvent) -> {
 			collapseSubfolders = !collapseSubfolders;
 			syncCollapseSubfolders();
@@ -476,6 +556,8 @@ class FileBrowser extends hide.ui.View<FileBrowserState> {
 		syncCollapseSubfolders();
 
 		FileManager.inst.onFileChangeHandlers.push(onFileChange);
+
+		layout = Horizontal;
 	}
 
 	override function destroy() {
