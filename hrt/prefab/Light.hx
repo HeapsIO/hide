@@ -5,6 +5,7 @@ enum abstract LightKind(String) {
 	var Directional;
 	var Spot;
 	var Capsule;
+	var Rectangle;
 }
 
 typedef LightShadows = {
@@ -70,6 +71,12 @@ class Light extends Object3D {
 
 	// Capsule
 	@:s public var length : Float = 1.0;
+
+	// Rectangle
+	@:s public var width : Float = 1.0;
+	@:s public var height : Float = 1.0;
+	@:s public var verticalAngle : Float = 1.0;
+	@:s public var horizontalAngle : Float = 1.0;
 
 	// Cascade
 	@:s public var cascade : Bool = false;
@@ -168,6 +175,7 @@ class Light extends Object3D {
 			case Directional: object = new h3d.scene.fwd.DirLight(parent3d);
 			case Spot:
 			case Capsule:
+			case Rectangle:
 			}
 		} else {
 			switch( kind ) {
@@ -175,6 +183,7 @@ class Light extends Object3D {
 			case Directional: object = new h3d.scene.pbr.DirLight(parent3d, cascade);
 			case Spot: object = new h3d.scene.pbr.SpotLight(parent3d);
 			case Capsule: object = new h3d.scene.pbr.CapsuleLight(parent3d);
+			case Rectangle: object = new h3d.scene.pbr.RectangleLight(parent3d);
 			}
 		}
 
@@ -246,6 +255,14 @@ class Light extends Object3D {
 				cl.length = length;
 				cl.radius = size;
 				cl.zNear = hxd.Math.max(0.02, zNear);
+			case Rectangle:
+				var rec = Std.downcast(light, h3d.scene.pbr.RectangleLight);
+				rec.range = range;
+				rec.height = height;
+				rec.width = width;
+				rec.verticalAngle = verticalAngle;
+				rec.horizontalAngle = horizontalAngle;
+				rec.fallOff = fallOff;
 			default:
 			}
 			light.color.setColor(color);
@@ -289,6 +306,8 @@ class Light extends Object3D {
 					icon.texture = ide.getTexture(ide.getHideResPath("icons/SpotLight.png"));
 				case Capsule:
 					icon.texture = ide.getTexture(ide.getHideResPath("icons/CapsuleLight.png"));
+				case Rectangle:
+					icon.texture = ide.getTexture(ide.getHideResPath("icons/RectangleLight.png"));
 			}
 		}
 
@@ -308,6 +327,7 @@ class Light extends Object3D {
 		var debugDir = local3d.find(c -> if(c.name == "_debugDir") c else null);
 		var debugSpot = local3d.find(c -> if(c.name == "_debugSpot") c else null);
 		var debugCapsule = local3d.find(c -> if(c.name == "_debugCapsule") c else null);
+		var debugRectangle = local3d.find(c -> if(c.name == "_debugRectangle") c else null);
 		var sel : h3d.scene.Object = null;
 
 		switch(kind){
@@ -315,6 +335,7 @@ class Light extends Object3D {
 			if(debugDir != null) debugDir.remove();
 			if(debugSpot != null) debugSpot.remove();
 			if(debugCapsule != null) debugCapsule.remove();
+			if(debugRectangle != null) debugRectangle.remove();
 
 			var rangeSphere : h3d.scene.Sphere;
 
@@ -348,6 +369,7 @@ class Light extends Object3D {
 			if(debugPoint != null) debugPoint.remove();
 			if(debugSpot != null) debugSpot.remove();
 			if(debugCapsule != null) debugCapsule.remove();
+			if(debugRectangle != null) debugRectangle.remove();
 
 			if(debugDir == null) {
 				debugDir = new h3d.scene.Object(local3d);
@@ -373,6 +395,7 @@ class Light extends Object3D {
 			if(debugDir != null) debugDir.remove();
 			if(debugPoint != null) debugPoint.remove();
 			if(debugCapsule != null) debugCapsule.remove();
+			if(debugRectangle != null) debugRectangle.remove();
 
 			if(debugSpot == null) {
 				debugSpot = new h3d.scene.Object(local3d);
@@ -415,6 +438,7 @@ class Light extends Object3D {
 			if(debugDir != null) debugDir.remove();
 			if(debugPoint != null) debugPoint.remove();
 			if(debugSpot != null) debugSpot.remove();
+			if(debugRectangle != null) debugRectangle.remove();
 
 			var rangeCapsule : h3d.scene.Capsule;
 
@@ -445,6 +469,66 @@ class Light extends Object3D {
 			sizeCapsule.radius = size / range;
 			sizeCapsule.length = length / range;
 			sel = rangeCapsule;
+
+		case Rectangle:
+			if(debugDir != null) debugDir.remove();
+			if(debugPoint != null) debugPoint.remove();
+			if(debugSpot != null) debugSpot.remove();
+			if(debugCapsule != null) debugCapsule.remove();
+
+			function drawRec(g : h3d.scene.Graphics) {
+				g.lineStyle(1, this.color);
+				var p1 = new h3d.col.Point(0,-width / 2,-height / 2);
+				var p2 = new h3d.col.Point(0, width / 2, -height / 2);
+				var p3 = new h3d.col.Point(0,-width / 2,height / 2);
+				var p4 = new h3d.col.Point(0, width / 2, height / 2);
+
+				var p5 = p1 + new h3d.col.Point(range,-hxd.Math.sin(hxd.Math.degToRad(horizontalAngle) / 2) * range,-hxd.Math.sin(hxd.Math.degToRad(verticalAngle) / 2) * range);
+				var p6 =  p2 + new h3d.col.Point(range,hxd.Math.sin(hxd.Math.degToRad(horizontalAngle) / 2) * range,-hxd.Math.sin(hxd.Math.degToRad(verticalAngle) / 2) * range);
+				var p7 =  p3 + new h3d.col.Point(range,-hxd.Math.sin(hxd.Math.degToRad(horizontalAngle) / 2) * range,hxd.Math.sin(hxd.Math.degToRad(verticalAngle) / 2) * range);
+				var p8 =  p4 + new h3d.col.Point(range,hxd.Math.sin(hxd.Math.degToRad(horizontalAngle) / 2) * range,hxd.Math.sin(hxd.Math.degToRad(verticalAngle) / 2) * range);
+
+				function drawLine(point1 : h3d.col.Point, point2 : h3d.col.Point) {
+					g.moveTo(point1.x, point1.y, point1.z); g.lineTo(point2.x, point2.y, point2.z);
+				}
+
+				// Front
+				drawLine(p1, p2);
+				drawLine(p3, p4);
+				drawLine(p1, p3);
+				drawLine(p2, p4);
+
+				// Back
+				drawLine(p5, p6);
+				drawLine(p7, p8);
+				drawLine(p5, p7);
+				drawLine(p6, p8);
+
+				// Sides
+				drawLine(p1, p5);
+				drawLine(p2, p6);
+				drawLine(p3, p7);
+				drawLine(p4, p8);
+			}
+
+			if(debugRectangle == null) {
+				debugRectangle = new h3d.scene.Object(local3d);
+				debugRectangle.name = "_debugRectangle";
+
+				var g = new h3d.scene.Graphics(debugRectangle);
+				drawRec(g);
+				g.ignoreBounds = true;
+				g.ignoreCollide = true;
+				g.visible = false;
+				g.material.mainPass.setPassName("overlay");
+				sel = g;
+			}
+			else {
+				var g : h3d.scene.Graphics = Std.downcast(debugRectangle.getChildAt(0), h3d.scene.Graphics);
+				g.clear();
+				drawRec(g);
+				sel = g;
+			}
 		}
 
 		var isSelected = false;
@@ -488,6 +572,7 @@ class Light extends Object3D {
 							<option value="Directional">Directional</option>
 							<option value="Spot">Spot</option>
 							<option value="Capsule">Capsule</option>
+							<option value="Rectangle">Rectangle</option>
 						</select></dd>
 					<dt>Color</dt><dd><input type="color" field="color"/></dd>
 					<dt>Power</dt><dd><input type="range" min="0" max="10" field="power"/></dd>
@@ -532,6 +617,16 @@ class Light extends Object3D {
 				{ name: "length", t: PFloat(0, 5), def: 0 },
 				{ name: "range", t: PFloat(1, 20), def: 10 },
 				{ name: "zNear", t: PFloat(0.02, 5), def: 0.02 },
+			]));
+		case Rectangle:
+			group.append(hide.comp.PropsEditor.makePropsList([
+				{ name: "size", t: PFloat(0, 5), def: 0 },
+				{ name: "width", t: PFloat(0, 5), def: 0 },
+				{ name: "height", t: PFloat(0, 5), def: 0 },
+				{ name: "horizontalAngle", t: PFloat(1, 90), def: 0 },
+				{ name: "verticalAngle", t: PFloat(1, 90), def: 0 },
+				{ name: "fallOff", t: PFloat(1, 90), def: 80 },
+				{ name: "range", t: PFloat(1, 20), def: 10 }
 			]));
 		default:
 		}

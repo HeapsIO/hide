@@ -1596,6 +1596,19 @@ class FXEditor extends hide.view.FileView {
 								trackItem("FallOff", [{name: "fallOff"}]),
 								]
 					});
+				case Rectangle:
+					menuItems.push({
+						label: "RectangleLight",
+						menu: [	trackItem("Color", hslTracks(), "color"),
+								trackItem("Power",[{name: "power"}]),
+								trackItem("Range", [{name: "range"}]),
+								trackItem("Height", [{name: "height"}]),
+								trackItem("Width", [{name: "width"}]),
+								trackItem("VerticalAngle", [{name: "verticalAngle"}]),
+								trackItem("HorizontalAngle", [{name: "horizontalAngle"}]),
+								trackItem("FallOff", [{name: "fallOff"}]),
+								]
+					});
 			}
 		}
 		return menuItems;
