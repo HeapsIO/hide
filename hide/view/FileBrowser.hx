@@ -156,7 +156,7 @@ class FileBrowser extends hide.ui.View<FileBrowserState> {
 	}
 
 	function onFileChange(file: FileEntry) {
-		fancyTree.refreshItem(file);
+		fancyTree.invalidateChildren(file);
 		queueGalleryRefresh();
 	}
 
@@ -226,6 +226,8 @@ class FileBrowser extends hide.ui.View<FileBrowserState> {
 				return [root];
 			if (file.kind == File)
 				return null;
+			if (file.disposed)
+				throw "disposed file";
 			if (file.children == null)
 				throw "null children";
 			return file.children.filter((file) -> file.kind == Dir);
@@ -510,31 +512,15 @@ class FileBrowser extends hide.ui.View<FileBrowserState> {
 		ide.openFile(newFilePath);
 	}
 
-	function deleteFiles(fullPaths : Array<String>) {
-		//trace(fullPaths);
-		var roots = getRoots(fullPaths);
-		for (fullPath in roots) {
-			if( sys.FileSystem.isDirectory(fullPath) ) {
-				var filesInDir = [];
-				for (f in sys.FileSystem.readDirectory(fullPath)) {
-					trace("files in dir :", f);
-					filesInDir.push(fullPath + "/" + f);
-				}
-				if (filesInDir.length > 0)
-					deleteFiles(filesInDir);
-				sys.FileSystem.deleteDirectory(fullPath);
-			} else
-				sys.FileSystem.deleteFile(fullPath);
-		}
-	}
-
 	function getItemAndSelection(baseItem: FileEntry, isGallery: Bool) : Array<FileEntry> {
 		var items = [];
 		if (baseItem != null) {
 			items.push(baseItem);
 		}
 		if (!isGallery) {
-			return items.concat(fancyTree.getSelectedItems());
+			for (item in fancyTree.getSelectedItems()) {
+				hide.tools.Extensions.ArrayExtensions.pushUnique(items, item);
+			}
 		}
 		return items;
 	}
@@ -574,10 +560,17 @@ class FileBrowser extends hide.ui.View<FileBrowserState> {
 		event.stopPropagation();
 		event.preventDefault();
 
+		// if the user clicked on the background of the file tree, don't display anything
 		if (item == null && !isGallery)
-			item = root;
-		if (item == null)
+			return;
+
+		// if the user selected the "current" folder in the gallery
+		// prevent move/delete ... operations on it to avoid confusion and wrong operations
+		var implicitFolder = false;
+		if (item == null) {
+			implicitFolder = true;
 			item = currentFolder;
+		}
 
 		/*currentFolder = item;
 		fancyTree.selectItem(currentFolder);
@@ -601,17 +594,26 @@ class FileBrowser extends hide.ui.View<FileBrowserState> {
 				label: "New ...",
 				menu: newMenu,
 			});
+		}
+
+		if (!implicitFolder) {
+			if (options[options.length-1] != null && !options[options.length-1].isSeparator) {
+				options.push({
+					isSeparator: true,
+					menu: newMenu,
+				});
+			}
 
 			options.push({
-				isSeparator: true,
+				label: "Delete", click: () -> {
+					var selection = getItemAndSelection(item, isGallery);
+					var roots = FileManager.inst.getRoots(selection);
+					if(ide.confirm("Confirm deleting files : " + [for (r in roots) r.getRelPath()].join("\n") + '\n(Cannot be undone)'))
+						FileManager.inst.deleteFiles(getItemAndSelection(item, isGallery));
+				}
 			});
 		}
 
-		options.push({
-			label: "Delete", click: () -> {
-				deleteFiles([for (file in getItemAndSelection(item, isGallery)) file.getPath()]);
-			}
-		});
 
 		hide.comp.ContextMenu.createFromEvent(event, options);
 	}

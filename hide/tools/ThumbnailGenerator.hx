@@ -222,11 +222,10 @@ class ThumbnailGenerator {
 			model.make(ctx);
 		} else if (ext == "prefab" || ext == "l3d" || ext == "fx") {
 			try {
-				var ref = new hrt.prefab.Reference(null, null);
 				var cut = StringTools.replace(toRender.path, hide.Ide.inst.resourceDir + "/", "");
-				ref.source = cut;
+				var prefab = hxd.res.Loader.currentInstance.load(cut).toPrefab().loadBypassCache();
 
-				var prefab = ref.make(ctx);
+				var prefab = prefab.make(ctx);
 
 				if (ext == "fx") {
 					var fx = prefab.find(hrt.prefab.fx.FX, true, false);

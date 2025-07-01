@@ -29,6 +29,7 @@ class FileEntry {
 	public var kind: FileKind;
 	public var parent: FileEntry;
 	public var iconPath: String;
+	public var disposed: Bool = false;
 
 	var registeredWatcher : hide.tools.FileWatcher.FileWatchEvent = null;
 
@@ -40,12 +41,17 @@ class FileEntry {
 		watch();
 	}
 
+	public final function toString() : String{
+		return name;
+	}
+
 	public function dispose() {
 		if (children != null) {
 			for (child in children) {
 				child.dispose();
 			}
 		}
+		disposed = true;
 		children = null;
 		if (registeredWatcher != null) {
 			hide.Ide.inst.fileWatcher.unregister(this.getPath(), registeredWatcher.fun);
@@ -53,7 +59,7 @@ class FileEntry {
 		}
 	}
 
-	function refreshChildren(rec: Bool) {
+	function refreshChildren() {
 		if (kind != Dir)
 			return;
 		var fullPath = getPath();
@@ -77,9 +83,9 @@ class FileEntry {
 					oldChildren.remove(path);
 				} else {
 					var info = js.node.Fs.statSync(fullPath + "/" + path);
-					children.push(
-						new FileEntry(path, this, info.isDirectory() ? Dir : File)
-					);
+					var newEntry = new FileEntry(path, this, info.isDirectory() ? Dir : File);
+					newEntry.refreshChildren();
+					children.push(newEntry);
 				}
 			}
 		}
@@ -89,12 +95,6 @@ class FileEntry {
 		}
 
 		children.sort(compareFile);
-
-		if (rec) {
-			for (child in children) {
-				child.refreshChildren(rec);
-			}
-		}
 	}
 
 	function watch() {
@@ -197,6 +197,51 @@ class FileManager {
 		}
 	}
 
+	public function deleteFiles(files : Array<FileEntry>) {
+		//trace(fullPaths);
+		var roots = getRoots(files);
+		for (file in roots) {
+			if( file.kind == Dir ) {
+				file.dispose(); // kill watchers
+				untyped js.node.Fs.rmSync(file.getPath(), {force: true, recursive: true});
+			} else {
+				file.dispose(); // kill watchers
+				untyped js.node.Fs.rmSync(file.getPath(), {force: true, recursive: false});
+			}
+		}
+	}
+
+	// Deduplicate paths if they are contained in a directory
+	// also present in paths, to simplify bulk operations
+	public function getRoots(files: Array<FileEntry>) : Array<FileEntry> {
+		var dirs : Array<FileEntry> = [];
+
+		for (file in files) {
+			if(file.kind == Dir) {
+				dirs.push(file);
+			}
+		}
+
+		// Find the minimum ammount of files that need to be moved
+		var roots: Array<FileEntry> = [];
+		for (file in files) {
+			var isContainedInAnotherDir = false;
+			for (dir2 in dirs) {
+				if (file == dir2)
+					continue;
+				if (StringTools.contains(file.getPath(), dir2.getPath())) {
+					isContainedInAnotherDir = true;
+					continue;
+				}
+			}
+			if (!isContainedInAnotherDir) {
+				roots.push(file);
+			}
+		}
+
+		return roots;
+	}
+
 	function setupServer() {
 		if (serverSocket != null)
 			throw "Server already exists";
@@ -266,14 +311,17 @@ class FileManager {
 
 	function initFileSystem() {
 		fileEntryRefreshDelay = new Delayer((entry: FileEntry) -> {
-			entry.refreshChildren(false);
+			entry.refreshChildren();
 		});
 
 		fileRoot = new FileEntry("res", null, Dir);
-		fileRoot.refreshChildren(true);
+		fileRoot.refreshChildren();
 	}
 
 	function fileChangeInternal(entry: FileEntry) {
+		// invalidate thumbnail
+		entry.iconPath = null;
+
 		if (!js.node.Fs.existsSync(entry.getPath()) && entry.parent != null) {
 			fileEntryRefreshDelay.queue(entry.parent);
 			return;

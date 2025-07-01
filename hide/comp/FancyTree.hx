@@ -115,7 +115,6 @@ class FancyTree<TreeItem> extends hide.comp.Component {
 		}
  	}
 
-
 	/**
 		To customise the icon of an element
 	**/
@@ -499,6 +498,14 @@ class FancyTree<TreeItem> extends hide.comp.Component {
 		refreshQueued = false;
 	}
 
+	public function invalidateChildren(item: TreeItem) {
+		var data = itemMap.get(cast item);
+		if (data == null)
+			return;
+		data.children = null;
+		queueRefresh(Search);
+	}
+
 	public function filterRec(children: Array<TreeItemData<TreeItem>>) : Bool {
 		var anyVisible = false;
 		for (child in children) {
@@ -549,8 +556,6 @@ class FancyTree<TreeItem> extends hide.comp.Component {
 				<fancy-tree-name></fancy-tree-name>
 			';
 
-			element.oncontextmenu = contextMenuHandler.bind(data.item);
-
 			var fold = element.querySelector(".caret");
 			fold.addEventListener("click", (e) -> {
 				toggleDataOpen(data);
@@ -558,12 +563,15 @@ class FancyTree<TreeItem> extends hide.comp.Component {
 			});
 
 			var closure = dataClickHandler.bind(data);
+			var ctxMenuClosure = contextMenuHandler.bind(data.item);
 
 			var icon = element.querySelector(".header-icon");
 			icon.onclick = closure;
+			icon.oncontextmenu = ctxMenuClosure;
 
 			var name = element.querySelector("fancy-tree-name");
 			name.onclick = closure;
+			name.oncontextmenu = ctxMenuClosure;
 
 			data.element = element;
 
