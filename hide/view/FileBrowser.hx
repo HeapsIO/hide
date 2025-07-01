@@ -3,14 +3,14 @@ package hide.view;
 import hide.tools.FileManager;
 import hide.tools.FileManager.FileEntry;
 typedef FileBrowserState = {
-
+	savedLayout: Layout,
 }
 
-enum Layout {
-	SingleTree;
-	SingleMiniature;
-	Vertical;
-	Horizontal;
+enum abstract Layout(String) {
+	var SingleTree;
+	var SingleMiniature;
+	var Vertical;
+	var Horizontal;
 }
 
 class FileBrowser extends hide.ui.View<FileBrowserState> {
@@ -25,17 +25,18 @@ class FileBrowser extends hide.ui.View<FileBrowserState> {
 
 	function set_layout(newLayout: Layout) : Layout {
 		layout = newLayout;
+		state.savedLayout = layout;
+		saveState();
 
-		element.find("file-browser").toggleClass("vertical", layout.match(Vertical));
-		element.find("file-browser").toggleClass("single", layout.match(SingleTree));
+		element.find("file-browser").toggleClass("vertical", layout == Vertical);
+		element.find("file-browser").toggleClass("single", layout == SingleTree);
 
 		element.find(".left").width(layout == Horizontal ? "300px" : "auto");  // reset splitter width
 		element.find(".left").height(layout == Vertical ? "300px" : "");  // reset splitter height
-		element.find(".left").toggle(!layout.match(SingleMiniature));
-		element.find(".right").toggle(!layout.match(SingleTree));
-		element.find(".splitter").toggle(!layout.match(SingleTree | SingleMiniature));
-		if (layout.match(Horizontal | Vertical))
-			resize.layoutDirection = layout == Horizontal ? Horizontal : Vertical;
+		element.find(".left").toggle(layout != SingleMiniature);
+		element.find(".right").toggle(layout != SingleTree);
+		element.find(".splitter").toggle(layout != SingleTree && layout != SingleMiniature);
+		resize.layoutDirection = layout == Horizontal ? Horizontal : Vertical;
 
 		fullRefresh();
 
@@ -412,6 +413,12 @@ class FileBrowser extends hide.ui.View<FileBrowserState> {
 		fancyTree.rebuildTree();
 		fancyTree.openItem(root);
 
+		fancyTree.onDoubleClick = (item: FileEntry) -> {
+			if (item.kind == File) {
+				ide.openFile(item.getPath());
+			}
+		}
+
 		var right = browserLayout.find(".right");
 		right.get(0).onkeydown = (e: js.html.KeyboardEvent) -> {
 			if (hide.ui.Keys.matchJsEvent("search", e, ide.currentConfig)) {
@@ -557,7 +564,7 @@ class FileBrowser extends hide.ui.View<FileBrowserState> {
 
 		FileManager.inst.onFileChangeHandlers.push(onFileChange);
 
-		layout = Horizontal;
+		layout = state.savedLayout ?? Horizontal;
 	}
 
 	override function destroy() {

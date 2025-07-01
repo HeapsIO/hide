@@ -138,6 +138,13 @@ class FancyTree<TreeItem> extends hide.comp.Component {
 	}
 
 	/**
+		Called when the user double click on an item
+	**/
+	public dynamic function onDoubleClick(item: TreeItem) {
+
+	}
+
+	/**
 		Drag and drop interface.
 		Set this struct with all of it's function callback to handle drag and drop inside your tree.
 	**/
@@ -563,16 +570,19 @@ class FancyTree<TreeItem> extends hide.comp.Component {
 				//saveState();
 			});
 
-			var closure = dataClickHandler.bind(data);
+			var clickHandlerClosure = dataClickHandler.bind(data);
 			var ctxMenuClosure = contextMenuHandler.bind(data.item);
+			var doubleClickClosure = onDoubleClick.bind(data.item);
 
 			var icon = element.querySelector(".header-icon");
-			icon.onclick = closure;
+			icon.onclick = clickHandlerClosure;
 			icon.oncontextmenu = ctxMenuClosure;
+			icon.ondblclick = doubleClickClosure;
 
 			var name = element.querySelector("fancy-tree-name");
-			name.onclick = closure;
+			name.onclick = clickHandlerClosure;
 			name.oncontextmenu = ctxMenuClosure;
+			name.ondblclick = doubleClickClosure;
 
 			data.element = element;
 
