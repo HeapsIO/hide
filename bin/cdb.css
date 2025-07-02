@@ -499,7 +499,6 @@
   position: relative;
 }
 .cdb .cdb-sheet div.cdb-script .codeeditor {
-  min-width: 500px;
   min-height: 500px;
 }
 .cdb .cdb-sheet .cdb-types {
