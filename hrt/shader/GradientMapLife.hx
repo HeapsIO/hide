@@ -4,7 +4,6 @@ class GradientMapLife extends hxsl.Shader {
 
 	static var SRC = {
 		@:import hrt.shader.BaseEmitter;
-		@const var sourceAlpha : Bool;
 		@const var colorMult : Bool;
 		@const var destAlpha : Bool = true;
 
