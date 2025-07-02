@@ -228,7 +228,9 @@ class FileView extends hide.ui.View<{ path : String }> {
 					var refs = ide.search(state.path, ["hx", "prefab", "fx", "cdb", "json", "props", "ddt"], ["bin"]);
 					ide.open("hide.view.RefViewer", null, null, function(view) {
 						var refViewer : hide.view.RefViewer = cast view;
-						refViewer.showRefs(refs, 'Number of references to "${state.path}"', state.path);
+						refViewer.showRefs(refs, state.path, function() {
+							ide.openFile(state.path);
+						});
 					});
 				}},
 				{ label : null, isSeparator : true },

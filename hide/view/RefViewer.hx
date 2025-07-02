@@ -3,8 +3,13 @@ package hide.view;
 typedef Reference = {
 	file : String,
 	path : String,
-	results : Array<{text: String, goto : () -> Void}>
+	results : Array<Result>
 };
+
+typedef Result =  {
+	text: String,
+	goto : () -> Void
+}
 
 class RefViewer extends hide.ui.View<{}> {
 	public function new(state: Dynamic) {
@@ -18,7 +23,7 @@ class RefViewer extends hide.ui.View<{}> {
 		return "References Viewer";
 	}
 
-	public function showRefs(references: Array<Reference>, description: String = "Number of references", ?text: String) {
+	public function showRefs(references: Array<Reference>, original: String, gotoOriginal: Void -> Void) {
 		element.html("");
 		var div = new Element('<div class="ref-viewer hide-scroll">').appendTo(element);
 
@@ -27,10 +32,11 @@ class RefViewer extends hide.ui.View<{}> {
 			refCount += r.results.length;
 
 		var headerEl = new Element('<div class="header">
-			<span class="title" title="${text}">References to : <em>${text}</em></span>
+			<span class="title" title="${original}">References to : <em>${original}</em></span>
 			<span class="infos">${refCount} results in ${references.length} files</span>
 		</div>');
 		headerEl.appendTo(div);
+		headerEl.find(".title").on("click", (e) -> gotoOriginal());
 
 		for (r in references) {
 			var el = new Element('<div class="reference">
@@ -47,7 +53,7 @@ class RefViewer extends hide.ui.View<{}> {
 
 			for (result in r.results) {
 				var resultEl = new Element('<div class="result">
-					<span class="entry"><a>${text != null ? StringTools.replace(result.text, text, '<em>${text}</em>') : result.text}<a/></span>
+					<span class="entry"><a>${original != null ? StringTools.replace(result.text, original, '<em>${original}</em>') : result.text}<a/></span>
 				</div>');
 				resultEl.appendTo(el.find(".content"));
 				resultEl.on("click", function(e) {
@@ -66,6 +72,32 @@ class RefViewer extends hide.ui.View<{}> {
 					contentEl.hide();
 				else
 					contentEl.show();
+			});
+		}
+	}
+
+	public function showUnreferenced(unreferenceds: Array<Result>) {
+		element.html("");
+		var div = new Element('<div class="ref-viewer hide-scroll">').appendTo(element);
+		var headerEl = new Element('<div class="header">
+			<span class="title">Unreferenced IDs :</span>
+			<span class="infos">${unreferenceds.length} results</span>
+		</div>');
+		headerEl.appendTo(div);
+
+		var content = new Element('<div class="reference">
+			<div class="content">
+			</div>
+		</div>');
+		content.appendTo(div);
+
+		for (u in unreferenceds) {
+			var resultEl = new Element('<div class="result">
+				<span class="entry"><a>${u.text}<a/></span>
+			</div>');
+			resultEl.appendTo(content.find(".content"));
+			resultEl.on("click", function(e) {
+				u.goto();
 			});
 		}
 	}

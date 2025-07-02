@@ -5453,6 +5453,10 @@ fancy-closable * {
   background-color: #404248;
   border-radius: 10px;
   padding: 2px 8px 2px 8px;
+  cursor: pointer;
+}
+.ref-viewer > .header .title em:hover {
+  background-color: #585a63;
 }
 .ref-viewer > .header .infos {
   color: #c8c8ff;

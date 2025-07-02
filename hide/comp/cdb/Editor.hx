@@ -129,7 +129,6 @@ class Editor extends Component {
 		keys.register("copy", onCopy);
 		keys.register("paste", onPaste);
 		keys.register("delete", onDelete);
-		keys.register("cdb.showReferences", () -> showReferences());
 		keys.register("undo", function() undo.undo());
 		keys.register("redo", function() undo.redo());
 		keys.register("cdb.moveBack", () -> cursor.jump(true));
@@ -1212,7 +1211,7 @@ class Editor extends Component {
 		return {pathNames: path, pathParts: coords};
 	}
 
-	public function getReferences(id: String, withCodePaths = true, returnAtFirstRef = false, sheet: cdb.Sheet, ?codeFileCache: Array<{path: String, data:String}>, ?prefabFileCache: Array<{path: String, data:String}>) : Array<{str:String, ?goto:Void->Void}> {
+	public function getReferences(id: String, withCodePaths = true, returnAtFirstRef = false, sheet: cdb.Sheet, ?codeFileCache: Array<{path: String, data:String}>, ?prefabFileCache: Array<{path: String, data:String}>) : Array<{str:String, ?goto:Void->Void, ?file: String}> {
 		#if hl
 		return [];
 		#else
@@ -1220,11 +1219,11 @@ class Editor extends Component {
 			return [];
 
 		var results = sheet.getReferencesFromId(id);
-		var message = new Array<{str:String, ?goto:Void->Void}>();
+		var message = new Array<{str:String, ?goto:Void->Void, ?file: String}>();
 		if( results != null ) {
 			for( rs in results ) {
 				var path = splitPath(rs);
-				message.push({str: rs.s[0].s.name+"."+path.pathNames.join("."), goto: () -> openReference2(rs.s[0].s, path.pathParts)});
+				message.push({str: rs.s[0].s.name+"."+path.pathNames.join("."), goto: () -> openReference2(rs.s[0].s, path.pathParts), file: @:privateAccess Ide.inst.databaseFile});
 				if (returnAtFirstRef) return message;
 			}
 		}
@@ -1313,7 +1312,7 @@ class Editor extends Component {
 									checkSetPos();
 								});
 							}
-							message.push({str: path+":"+(line+1), goto: fn});
+							message.push({str: path+":"+(line+1), goto: fn, file: fpath});
 							if (returnAtFirstRef) return message;
 						}
 					}
@@ -1364,7 +1363,7 @@ class Editor extends Component {
 									}, 1);
 								});
 							}
-							message.push({str: path+":"+(line+1), goto: fn});
+							message.push({str: path+":"+(line+1), goto: fn, file: fpath});
 						}
 					}
 				}
@@ -1404,7 +1403,7 @@ class Editor extends Component {
 										{
 											var res = splitPath({s: sheets, o: o});
 											res.pathParts.push(Script(line));
-											message.push({str: sheets[0].s.name+"."+res.pathNames.join(".") + "." + c.name + ":" + Std.string(line + 1), goto: () -> openReference2(sheets[0].s, res.pathParts)});
+											message.push({str: sheets[0].s.name+"."+res.pathNames.join(".") + "." + c.name + ":" + Std.string(line + 1), goto: () -> openReference2(sheets[0].s, res.pathParts), file:@:privateAccess Ide.inst.databaseFile});
 											if (returnAtFirstRef) return message;
 										}
 									}
@@ -1442,26 +1441,23 @@ class Editor extends Component {
 	public function findUnreferenced(col: cdb.Data.Column, table: Table) {
 		var sheet = table.getRealSheet();
 
-		var nonrefs: Array<hide.view.RefViewer.Reference> = [ { file: "data.cdb", path: Ide.inst.getPath("data.cdb"), results: [] } ];
 		var codeFileCache = [];
 		var prefabFileCache = [];
+		var nonrefs: Array<hide.view.RefViewer.Result> = [];
 		for (o in sheet.lines) {
 			var id = Reflect.getProperty(o, col.name);
 			var refs = getReferences(id, true, true, sheet, codeFileCache, prefabFileCache);
-			if (refs.length == 0) {
-				nonrefs[0].results.push({ text: id, goto: () -> openReference2(sheet, [Id(col.name, id)]) });
-			}
+			if (refs.length == 0)
+				nonrefs.push({ text: id, goto: () -> openReference2(sheet, [Id(col.name, id)]) });
 		}
-		trace("codeFileCache: ", codeFileCache.length);
-		trace("prefabFileCache: ", prefabFileCache.length);
 
 		ide.open("hide.view.RefViewer", null, function(view) {
 			var refViewer : hide.view.RefViewer = cast view;
-			refViewer.showRefs(nonrefs, "Number of unreferenced ids");
+			refViewer.showUnreferenced(nonrefs);
 		});
 	}
 
-	public function showReferences(?id: String, ?sheet: cdb.Sheet) {
+	public function showReferences(?id: String, ?cell : hide.comp.cdb.Cell, ?sheet: cdb.Sheet) {
 		if( cursor.table == null ) return;
 		if( sheet == null )
 			sheet = cursor.table.sheet;
@@ -1483,13 +1479,22 @@ class Editor extends Component {
 			return;
 		}
 
-		var references : Array<hide.view.RefViewer.Reference> = [{ file: "data.cdb", path:"", results: [] }];
+		var files = new Map<String, hide.view.RefViewer.Reference>();
 		for (r in refs) {
-			references[0].results.push({ text: r.str, goto: r.goto });
+			var ref = files.get(r.file);
+			if (ref == null) {
+				ref = { file : r.file.substr(r.file.lastIndexOf("/") + 1), path : r.file, results: [] };
+				files.set(r.file, ref);
+			}
+
+			ref.results.push({ text: r.str, goto: r.goto });
 		}
+
 		ide.open("hide.view.RefViewer", null, function(view) {
 			var refViewer : hide.view.RefViewer = cast view;
-			refViewer.showRefs(references, "Number of references", id);
+			refViewer.showRefs([for (f in files.keys()) files.get(f)], id, () -> {
+				openReference(cell.table.sheet, cell.line.index, cell.columnIndex);
+			});
 		});
 	}
 

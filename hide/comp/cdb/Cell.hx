@@ -125,7 +125,7 @@ class Cell {
 				menu = [
 					{
 						label : "Show references",
-						click : () -> editor.showReferences(this.value),
+						click : () -> editor.showReferences(this.value, this),
 						keys : this.editor.config.get("key.cdb.showReferences"),
 					},
 					{
@@ -149,7 +149,7 @@ class Cell {
 					},
 					{
 						label : "Show references",
-						click : () -> editor.showReferences(this.value, editor.base.getSheet(sname)),
+						click : () -> editor.showReferences(this.value, this, editor.base.getSheet(sname)),
 						keys : this.editor.config.get("key.cdb.showReferences"),
 					},
 				];

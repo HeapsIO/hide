@@ -514,7 +514,7 @@ class Material extends Prefab {
 
 			hide.Ide.inst.open("hide.view.RefViewer", null, null, function(view) {
 				var refViewer : hide.view.RefViewer = cast view;
-				refViewer.showRefs(refs, 'Number of references to "${this.name}"', this.name);
+				refViewer.showRefs(refs, this.name, () -> {});
 			});
 		});
 
