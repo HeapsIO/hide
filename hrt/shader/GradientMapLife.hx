@@ -12,11 +12,9 @@ class GradientMapLife extends hxsl.Shader {
 		@param var gradient : Sampler2D;
 
 		function fragment() {
-			var t = sourceAlpha ? pixelColor.a : dot(pixelColor.rgb*pixelColor.rgb, vec3(0.2126, 0.7152, 0.0722));
-
 			// force texture reapeat
 			var s = gradient.size();
-			var sample = gradient.get(vec2(saturate(t), saturate(particleLife/particleLifeTime)) * (s-vec2(1.0))/(s));
+			var sample = gradient.get(vec2(saturate(particleLife/particleLifeTime)) * (s-vec2(1.0))/(s));
 			if (colorMult) {
 				pixelColor.rgb *= sample.rgb;
 			}
