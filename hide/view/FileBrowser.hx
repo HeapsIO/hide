@@ -87,6 +87,31 @@ class FileBrowser extends hide.ui.View<FileBrowserState> {
 			]
 		});
 
+		menu.push({
+			label: "Dock",
+			menu: [{
+				label: "Left",
+				click: () -> {
+					saveState();
+					var newState : FileBrowserState = haxe.Json.parse(haxe.Json.stringify(state));
+					newState.savedLayout = Vertical;
+					close();
+					ide.open("hide.view.FileBrowser", newState, Left);
+				}
+			},
+			{
+				label: "Bottom",
+				click: () -> {
+					saveState();
+					var newState : FileBrowserState = haxe.Json.parse(haxe.Json.stringify(state));
+					newState.savedLayout = Horizontal;
+					close();
+					ide.open("hide.view.FileBrowser", newState, Bottom);
+				}
+			},
+			]
+		});
+
 		return menu;
 	}
 
@@ -287,8 +312,7 @@ class FileBrowser extends hide.ui.View<FileBrowserState> {
 			}
 		}
 
-		fancyTree = new hide.comp.FancyTree<FileEntry>(browserLayout.find(".left"));
-		fancyTree.saveDisplayKey = "fileBrowserTree";
+		fancyTree = new hide.comp.FancyTree<FileEntry>(browserLayout.find(".left"), "fileBrowserTree");
 		fancyTree.getChildren = (file: FileEntry) -> {
 			if (file == null)
 				return [root];
@@ -306,6 +330,7 @@ class FileBrowser extends hide.ui.View<FileBrowserState> {
 		};
 		//fancyTree.hasChildren = (file: FileEntry) -> return file.kind == Dir;
 		fancyTree.getName = (file: FileEntry) -> return file?.name;
+		fancyTree.getUniqueName = (file: FileEntry) -> file?.getRelPath();
 
 		fancyTree.getIcon = (item : FileEntry) -> {
 			if (item.kind == Dir)
@@ -542,7 +567,7 @@ class FileBrowser extends hide.ui.View<FileBrowserState> {
 	}
 
 	function renameHandler(item: FileEntry, newName: String) {
-		if (newName.indexOf(".") == -1) {
+		if (newName.indexOf(".") == -1 && item.name.indexOf(".") >= 0) {
 			newName += "." + item.name.split(".").pop();
 		}
 

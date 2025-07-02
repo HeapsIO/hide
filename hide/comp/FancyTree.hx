@@ -24,7 +24,7 @@ enum FilterFlag {
 
 typedef FilterFlags = haxe.EnumFlags<FilterFlag>;
 
-typedef TreeItemData<TreeItem> = {element: js.html.Element, ?searchRanges: FancySearch.SearchRanges, item: TreeItem, name: String, ?iconCache: String, open: Bool, filterState: FilterFlags, children: Array<TreeItemData<TreeItem>>, parent: TreeItemData<TreeItem>, depth: Int, identifier: String};
+typedef TreeItemData<TreeItem> = {element: js.html.Element, ?searchRanges: FancySearch.SearchRanges, item: TreeItem, name: String, uniqueName: String, ?iconCache: String, filterState: FilterFlags, children: Array<TreeItemData<TreeItem>>, parent: TreeItemData<TreeItem>, depth: Int, identifier: String};
 
 enum DropOperation {
 	Before;
@@ -70,7 +70,8 @@ class FancyTree<TreeItem> extends hide.comp.Component {
 	var moveLastDragOverStart: Float = 0;
 
 
-	public function new(parent: Element) {
+	public function new(parent: Element, ?saveKey: String) {
+		saveDisplayKey = saveKey;
 		var el = new Element('
 			<fancy-tree2 tabindex="-1">
 				<fancy-closable><fancy-search></fancy-search></fancy-closable>
@@ -81,6 +82,8 @@ class FancyTree<TreeItem> extends hide.comp.Component {
 			</fancy-tree2>'
 		);
 		super(parent, el);
+
+		loadState();
 
 		searchBarClosable = new FancyClosable(null, element.find("fancy-closable"));
 
@@ -115,6 +118,7 @@ class FancyTree<TreeItem> extends hide.comp.Component {
 		fancyTree.onclick = (e) -> {
 			currentVisible = false;
 		}
+
  	}
 
 	/**
@@ -255,7 +259,7 @@ class FancyTree<TreeItem> extends hide.comp.Component {
 				var childData : TreeItemData<TreeItem> = hrt.tools.MapUtils.getOrPut(itemMap, cast childItem, {
 					item: childItem,
 					parent: null,
-					open: false,
+					uniqueName: getUniqueName(childItem),
 					filterState: Visible,
 					children: null,
 					depth: 0,
@@ -393,7 +397,6 @@ class FancyTree<TreeItem> extends hide.comp.Component {
 			}
 			else if (currentItem != null && !isOpen(currentItem)) {
 				toggleDataOpen(currentItem, true);
-				//saveState();
 			}
 			return;
 		}
@@ -409,7 +412,6 @@ class FancyTree<TreeItem> extends hide.comp.Component {
 				currentItem = currentItem.parent;
 			} else if(anyChildren && currentItem != null) {
 				toggleDataOpen(currentItem, false);
-				//saveState();
 			}
 			return;
 		}
@@ -595,7 +597,6 @@ class FancyTree<TreeItem> extends hide.comp.Component {
 			var fold = element.querySelector(".caret");
 			fold.addEventListener("click", (e) -> {
 				toggleDataOpen(data);
-				//saveState();
 			});
 
 			var clickHandlerClosure = dataClickHandler.bind(data);
@@ -695,7 +696,6 @@ class FancyTree<TreeItem> extends hide.comp.Component {
 
 						if (time - moveLastDragOverStart > overDragOpenDelaySec && !isOpen(data)) {
 							toggleDataOpen(data, true);
-							//saveState();
 						}
 					}
 
@@ -816,8 +816,29 @@ class FancyTree<TreeItem> extends hide.comp.Component {
 		if (currentSearch.length > 0) {
 			data.filterState.setTo(Open, want);
 		}
-		data.open = want;
+
+		if (want) {
+			openState.set(data.uniqueName, true);
+		} else {
+			openState.remove(data.uniqueName);
+		}
+		saveState();
 		queueRefresh(Flat);
+	}
+
+	function loadState() {
+		var open : Array<String> = getDisplayState("openState");
+		if (open != null) {
+			openState = [];
+			for (item in open) {
+				openState.set(item, true);
+			}
+		}
+	}
+
+	function saveState() {
+		var ser = [for (k => _ in openState) k];
+		saveDisplayState("openState", ser);
 	}
 
 	var refreshQueued : Bool = false;
@@ -879,7 +900,7 @@ class FancyTree<TreeItem> extends hide.comp.Component {
 	}
 
 	function isOpen(data: TreeItemData<TreeItem>) {
-		return data.open || data.filterState.has(Open);
+		return (openState.get(data.uniqueName) ?? false) || data.filterState.has(Open);
 	}
 
 }

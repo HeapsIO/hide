@@ -364,7 +364,7 @@ class Ide extends hide.tools.IdeData {
 			v.onResize();
 	}
 
-	function getOrInitTarget(position: hide.ui.View.DisplayPosition) : golden.ContentItem {
+	public function getOrInitTarget(position: hide.ui.View.DisplayPosition) : golden.ContentItem {
 		if (layout.root == null)
 			return null;
 		var target = layout.root.getItemsById(position)[0];
@@ -569,7 +569,7 @@ class Ide extends hide.tools.IdeData {
 				if( isCDB )
 					open("hide.view.CdbTable",{}, function(v) v.fullScreen = true);
 				else
-					open("hide.view.FileTree",{path:""});
+					open("hide.view.Browser",{savedLayout: "SingleTree"}, Left);
 			}
 			if( firstInit ) {
 				firstInit = false;
@@ -1477,8 +1477,10 @@ class Ide extends hide.tools.IdeData {
 			if( cl == null ) error("Missing component class "+cname);
 			var state = c.attr("state");
 			if( state != null ) try haxe.Json.parse(state) catch( e : Dynamic ) error("Invalid state "+state+" ("+e+")");
+
+			var position : hide.ui.View.DisplayPosition = c.attr("position");
 			c.click(function(_) {
-				open(cname, state == null ? null : haxe.Json.parse(state));
+				open(cname, state == null ? null : haxe.Json.parse(state), position);
 			});
 		}
 
@@ -1670,13 +1672,14 @@ class Ide extends hide.tools.IdeData {
 	}
 
 	public function showFileInResources(path: String) {
-		var filetree = getViews(hide.view.FileTree)[0];
-		if( filetree != null) {
-			if (@:privateAccess filetree.tree == null)
-				filetree.onDisplay();
-			filetree.activate();
-			filetree.revealNode(path);
-		}
+		js.Browser.alert("This feature is momentarely disabled");
+		// var filetree = getViews(hide.view.FileTree)[0];
+		// if( filetree != null) {
+		// 	if (@:privateAccess filetree.tree == null)
+		// 		filetree.onDisplay();
+		// 	filetree.activate();
+		// 	filetree.revealNode(path);
+		// }
 	}
 
 	public static function showFileInExplorer(path : String) {
@@ -1744,7 +1747,7 @@ class Ide extends hide.tools.IdeData {
 		}
 	}
 
-	public function open( component : String, state : Dynamic, ?onCreate : hide.ui.View<Dynamic> -> Void, ?onOpen : hide.ui.View<Dynamic> -> Void ) {
+	public function open( component : String, state : Dynamic, ?onCreate : hide.ui.View<Dynamic> -> Void, ?onOpen : hide.ui.View<Dynamic> -> Void, ?positionOverride: hide.ui.View.DisplayPosition ) {
 		if (layout.root == null)
 			return;
 		if( state == null ) state = {};
@@ -1765,7 +1768,7 @@ class Ide extends hide.tools.IdeData {
 
 		var options = viewConfig.options;
 
-		var target = getOrInitTarget(options.position ?? Center);
+		var target = getOrInitTarget(positionOverride ?? options.position ?? Center);
 
 		var needResize = options.width != null;
 		target.on("componentCreated", function(c) {
