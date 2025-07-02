@@ -176,10 +176,8 @@ class Editor extends Component {
 		keys.register("cdb.globalSeekIds", () -> new GlobalSeek(cdbTable.element, cdbTable, GlobalIds, currentSheet));
 
 		base = sheet.base;
-		if( cursor == null )
-			cursor = new Cursor(this);
-		// else if ( !tables.contains(cursor.table) ) //TODO(lv): needed ?
-		// 	cursor.set();
+		cursor = new Cursor(this);
+
 		if( displayMode == null ) displayMode = Table;
 		DataFiles.load();
 		if( currentValue == null ) currentValue = api.copy();
