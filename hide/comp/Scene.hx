@@ -38,11 +38,10 @@ class Scene extends hide.comp.Component implements h3d.IDrawable {
 		this.config = config;
 		element.addClass("hide-scene-container");
 		canvas = cast new Element("<canvas class='hide-scene' style='width:100%;height:100%'/>").appendTo(element)[0];
-
 		canvas.addEventListener("mousemove",function(_) {
 			switch(js.Browser.document.activeElement?.tagName) {
-				// Don't steal focus if we are curently editing an <input>
-				case "INPUT":
+				// Don't steal focus if we are curently editing an input
+				case "INPUT", "TEXTAREA":
 					return;
 				default:
 					canvas.focus();
