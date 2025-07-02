@@ -26,6 +26,7 @@ class ParticleShader extends hxsl.Shader {
 		var transformedPosition : Vec3;
 		function __init__vertex() {
 			{
+				// TODO : particleLife is decreasing, need to be flipped to guarantee compatibility with regular emitter shaders.
 				particleLife = particleBuffer[instanceID].life;
 				particleLifeTime = particleBuffer[instanceID].lifeTime;
 				particleRandom = particleBuffer[instanceID].random;
@@ -356,5 +357,17 @@ class GPUEmitterObject extends h3d.scene.MeshBatch {
 
 		if ( paramTexture != null )
 			paramTexture.dispose();
+
+		for ( s in spawnPass.getShaders() ) {
+			var computeUtils = Std.downcast(s, ComputeUtils);
+			if ( computeUtils != null )
+				computeUtils.onRemove(this);
+		}
+
+		for ( s in simulationPass.getShaders() ) {
+			var computeUtils = Std.downcast(s, ComputeUtils);
+			if ( computeUtils != null )
+				computeUtils.onRemove(this);
+		}
 	}
 }

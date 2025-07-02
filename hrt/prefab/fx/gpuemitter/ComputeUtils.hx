@@ -4,6 +4,8 @@ class ComputeUtils extends hxsl.Shader {
 
 	public function onUpdate(emitter : GPUEmitterObject, buffer : h3d.Buffer, index : Int) {}
 
+	public function onRemove(emitter : GPUEmitterObject) {}
+
 	static var SRC = {
 
 		@global var global : {
