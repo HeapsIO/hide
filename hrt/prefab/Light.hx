@@ -620,7 +620,6 @@ class Light extends Object3D {
 			]));
 		case Rectangle:
 			group.append(hide.comp.PropsEditor.makePropsList([
-				{ name: "size", t: PFloat(0, 5), def: 0 },
 				{ name: "width", t: PFloat(0, 5), def: 0 },
 				{ name: "height", t: PFloat(0, 5), def: 0 },
 				{ name: "horizontalAngle", t: PFloat(1, 90), def: 0 },
