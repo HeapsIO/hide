@@ -19,7 +19,8 @@ class ContentEditable extends Component {
 
 		html.onfocus = function() {
 			var range = js.Browser.document.createRange();
-			range.selectNodeContents(html);
+			range.selectNodeContents(element.get(0));
+			trace(element.get(0), range);
 			var sel = js.Browser.window.getSelection();
 			sel.removeAllRanges();
 			sel.addRange(range);

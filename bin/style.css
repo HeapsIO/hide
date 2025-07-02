@@ -5397,9 +5397,9 @@ fancy-gallery fancy-scroll fancy-item-container fancy-item.details fancy-image {
 }
 fancy-gallery fancy-scroll fancy-item-container fancy-item fancy-name {
   position: absolute;
-  bottom: 0px;
-  left: 0px;
-  right: 0px;
+  bottom: 2px;
+  left: 2px;
+  right: 2px;
   height: 32px;
   display: block;
   text-align: center;

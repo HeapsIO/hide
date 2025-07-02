@@ -105,9 +105,11 @@ class FancyTree<TreeItem> extends hide.comp.Component {
 
 		scroll.onscroll = (e) -> queueRefresh();
 
-		fancyTree.onblur = (e) -> {
-			currentVisible = false;
-			currentItem = null;
+		fancyTree.onblur = (e: js.html.FocusEvent) -> {
+			if (!fancyTree.contains(cast e.relatedTarget)) {
+				currentVisible = false;
+				currentItem = null;
+			}
 		}
 
 		fancyTree.onclick = (e) -> {
@@ -188,8 +190,7 @@ class FancyTree<TreeItem> extends hide.comp.Component {
 	/**
 		Called when the user renamed the item via F2 / Context menu
 	**/
-	public dynamic function onNameChange(item: TreeItem, newName: String) : Void {
-	}
+	public var onNameChange : (item: TreeItem, newName: String) -> Void;
 
 	/**
 		Called for each of your items in the tree. for the root elements, get called with null as a parameter
@@ -305,6 +306,32 @@ class FancyTree<TreeItem> extends hide.comp.Component {
 		}
 	}
 
+	public function rename(item: TreeItem) : Void {
+		if (onNameChange == null)
+			return;
+		var data = itemMap.get(cast item);
+		if (data == null)
+			return;
+
+		var name = data.element.querySelector("fancy-tree-name");
+		//name.innerText = data.name;
+		name.contentEditable = "plaintext-only";
+		var edit = new ContentEditable(null, new Element(name));
+
+		edit.onChange = (newValue) -> {
+			onNameChange(item, name.textContent);
+			queueRefresh(RegenHeader);
+			element.focus();
+		}
+
+		edit.onCancel = () -> {
+			queueRefresh(RegenHeader);
+			element.focus();
+		}
+
+		edit.element.focus();
+	}
+
 	function inputHandler(e: js.html.KeyboardEvent) {
 		if (hide.ui.Keys.matchJsEvent("search", e, ide.currentConfig)) {
 			e.stopPropagation();
@@ -314,12 +341,13 @@ class FancyTree<TreeItem> extends hide.comp.Component {
 			searchBar.focus();
 		}
 
-		// if (hide.ui.Keys.matchJsEvent("rename", e, ide.currentConfig) && selection.iterator().hasNext()) {
-		// 	e.stopPropagation();
-		// 	e.preventDefault();
+		if (hide.ui.Keys.matchJsEvent("rename", e, ide.currentConfig) && selection.iterator().hasNext()) {
+			e.stopPropagation();
+			e.preventDefault();
 
-		// 	beginRename(cast selection.keyValueIterator().next().key);
-		// }
+			if (currentItem != null)
+				rename(currentItem.item);
+		}
 
 		if (e.key == "Escape") {
 			if (searchBarClosable.isOpen()) {

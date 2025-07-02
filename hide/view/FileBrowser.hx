@@ -319,9 +319,7 @@ class FileBrowser extends hide.ui.View<FileBrowserState> {
 			return null;
 		}
 
-		fancyTree.onNameChange = (item: FileEntry, newName: String) -> {
-			item.name = newName;
-		}
+		fancyTree.onNameChange = renameHandler;
 
 		fancyTree.dragAndDropInterface =
 		{
@@ -362,7 +360,8 @@ class FileBrowser extends hide.ui.View<FileBrowserState> {
 				for (file in dataTransfer.files) {
 					var path : String = untyped file.path; //file.path is an extension from nwjs or node
 					path = StringTools.replace(path, "\\", "/");
-					files.push(ide.getRelPath(path));
+					var rel = ide.getRelPath(path);
+					files.push(rel);
 				}
 
 				var fileMoveData = dataTransfer.getData(dragKey);
@@ -377,32 +376,7 @@ class FileBrowser extends hide.ui.View<FileBrowserState> {
 					}
 				}
 
-				var roots = getRoots(files);
-				var outerFiles: Array<{from: String, to: String}> = [];
-				var targetPath = target.getPath();
-				for (root in roots) {
-					var movePath = targetPath + "/" + root.split("/").pop();
-					outerFiles.push({from: root, to: movePath});
-				}
-
-				function exec(isUndo: Bool) {
-					if (!isUndo) {
-						for (file in outerFiles) {
-							// File could have been removed by the system in between our undo/redo operations
-							if (sys.FileSystem.exists(ide.getPath(file.from)))
-								FileTree.doRename(file.from, "/" + file.to);
-						}
-					} else {
-						for (file in outerFiles) {
-							// File could have been removed by the system in between our undo/redo operations
-							if (sys.FileSystem.exists(ide.getPath(file.to)))
-								FileTree.doRename(file.to, "/" + file.from);
-						}
-					}
-				}
-
-				undo.change(Custom(exec));
-				exec(false);
+				moveFiles(target.getRelPath(), files);
 
 				return true;
 			}
@@ -567,6 +541,66 @@ class FileBrowser extends hide.ui.View<FileBrowserState> {
 		layout = state.savedLayout ?? Horizontal;
 	}
 
+	function renameHandler(item: FileEntry, newName: String) {
+		if (newName.indexOf(".") == -1) {
+			newName += "." + item.name.split(".").pop();
+		}
+
+		var newPath = item.getRelPath().split("/");
+		newPath.pop();
+		newPath.push(newName);
+		renameFile(item.getRelPath(), newPath.join("/"));
+	}
+
+	/**
+		Path is relative to res folder
+	**/
+	function moveFiles(targetFolder: String, files: Array<String>) {
+		var roots = getRoots(files);
+		var outerFiles: Array<{from: String, to: String}> = [];
+		for (root in roots) {
+			var movePath = targetFolder + "/" + root.split("/").pop();
+			outerFiles.push({from: root, to: movePath});
+		}
+
+		var exec = execMoveFiles.bind(outerFiles);
+
+		undo.change(Custom(exec));
+		exec(false);
+	}
+
+	static function execMoveFiles(operations: Array<{from: String, to: String}>, isUndo: Bool) : Void {
+		if (!isUndo) {
+			for (file in operations) {
+				// File could have been removed by the system in between our undo/redo operations
+				if (sys.FileSystem.exists(hide.Ide.inst.getPath(file.from))) {
+					try {
+						FileTree.doRename(file.from, "/" + file.to);
+					} catch (e) {
+						hide.Ide.inst.quickError('move file ${file.from} -> ${file.to} failed : $e');
+					}
+				}
+			}
+		} else {
+			for (file in operations) {
+				// File could have been removed by the system in between our undo/redo operations
+				if (sys.FileSystem.exists(hide.Ide.inst.getPath(file.to))) {
+					try {
+						FileTree.doRename(file.to, "/" + file.from);
+					} catch (e) {
+						hide.Ide.inst.quickError('move file ${file.from} -> ${file.to} failed : $e');
+					}
+				}
+			}
+		}
+	}
+
+	function renameFile(oldPath: String, newPath: String) {
+		var exec = execMoveFiles.bind([{from: oldPath, to: newPath}]);
+		undo.change(Custom(exec));
+		exec(false);
+	}
+
 	override function destroy() {
 		super.destroy();
 		FileManager.inst.onFileChangeHandlers.remove(onFileChange);
@@ -694,6 +728,55 @@ class FileBrowser extends hide.ui.View<FileBrowserState> {
 			}
 
 			options.push({
+				label: "Copy Path",
+				click: () -> ide.setClipboard(item.getRelPath())
+			});
+
+			options.push({
+				label: "Copy Absolute Path",
+				click: () -> ide.setClipboard(item.getPath())
+			});
+
+			options.push({
+				label : "Open in Explorer",
+				click : () -> Ide.showFileInExplorer(item.getPath())
+			});
+
+			options.push({ label : "Find References", click : onFindPathRef.bind(item.getRelPath())});
+
+			options.push({
+				isSeparator: true,
+				menu: newMenu,
+			});
+
+			options.push({
+				label: "Clone", click: () -> {
+					hide.tools.FileManager.inst.cloneFile(item);
+				}
+			});
+
+			options.push({
+				label: "Rename", click: () -> {
+					if (!isGallery) {
+						fancyTree.rename(item);
+					} else {
+						fancyGallery.rename(item, (newName:String) -> renameHandler(item, newName));
+					}
+				}, keys: config.get("key.rename"),
+			});
+
+			options.push({
+				label: "Move", click: () -> {
+					ide.chooseDirectory(function(dir) {
+						var selection = getItemAndSelection(item, isGallery);
+						var roots = FileManager.inst.getRoots(selection);
+						moveFiles(dir, [for (file in roots) file.getRelPath()]);
+					});
+				}
+			});
+
+
+			options.push({
 				label: "Delete", click: () -> {
 					var selection = getItemAndSelection(item, isGallery);
 					var roots = FileManager.inst.getRoots(selection);
@@ -701,10 +784,31 @@ class FileBrowser extends hide.ui.View<FileBrowserState> {
 						FileManager.inst.deleteFiles(getItemAndSelection(item, isGallery));
 				}
 			});
+
+			options.push({ label: "Replace Refs With", click : function() {
+				ide.chooseFile(["*"], (newPath: String) -> {
+					var selection = [for (file in getItemAndSelection(item, isGallery)) file.getRelPath()];
+					if(ide.confirm('Replace all refs of $selection with $newPath ? This action can not be undone')) {
+						for (oldPath in selection) {
+							FileTree.replacePathInFiles(oldPath, newPath, false);
+						}
+						ide.message("Done");
+					}
+				});
+			}});
+
 		}
 
 
 		hide.comp.ContextMenu.createFromEvent(event, options);
+	}
+
+	function onFindPathRef(path: String) {
+		var refs = ide.search(path, ["hx", "prefab", "fx", "cdb", "json", "props", "ddt"], ["bin"]);
+		ide.open("hide.view.RefViewer", null, null, function(view) {
+			var refViewer : hide.view.RefViewer = cast view;
+			refViewer.showRefs(refs, 'Number of references to "$path"', path);
+		});
 	}
 
 	function generateFilters() {

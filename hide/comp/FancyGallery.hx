@@ -43,6 +43,11 @@ class FancyGallery<GalleryItem> extends hide.comp.Component {
 			</fancy-scroll>
 		");
 
+		var htmlElem = el.get(0);
+		htmlElem.tabIndex = -1;
+
+		htmlElem.onkeydown = inputHandler;
+
 		var resizeObserver = new hide.comp.ResizeObserver((_, _) -> {
 			queueRefresh();
 		});
@@ -113,6 +118,13 @@ class FancyGallery<GalleryItem> extends hide.comp.Component {
 	}
 
 	/**
+		Custom keyboard handler, register your shortcuts here
+	**/
+	public dynamic function onKeyPress(event: js.html.KeyboardEvent) : Bool {
+		return false;
+	}
+
+	/**
 		Called when an item becomes visible on screen due to scrolling or other things.
 	**/
 	public dynamic function visibilityChanged(item: GalleryItem, isVisible: Bool) : Void {
@@ -155,12 +167,30 @@ class FancyGallery<GalleryItem> extends hide.comp.Component {
 		// onDrop: (target: TreeItem, where: DropOperation, dataTransfer: js.html.DataTransfer) -> Void
 	} = null;
 
-
-
 	public function rebuild() {
 		queueRefresh(Items);
 		queueRefresh(Search);
 		queueRefresh(RegenHeader);
+	}
+
+	public function rename(item: GalleryItem, onFinished : (newName:String) -> Void) {
+		var data = itemMap.get(cast item);
+		var name = data.element.querySelector("fancy-name");
+		name.contentEditable = "plaintext-only";
+		var editable = new ContentEditable(null, new Element(data.element.querySelector("fancy-name")));
+
+		editable.onCancel = () -> {
+			queueRefresh(RegenHeader);
+			element.focus();
+		}
+
+		editable.onChange = (newValue) -> {
+			onFinished(name.textContent);
+			queueRefresh(RegenHeader);
+			element.focus();
+		}
+
+		editable.element.focus();
 	}
 
 	/**
@@ -329,6 +359,13 @@ class FancyGallery<GalleryItem> extends hide.comp.Component {
 			});
 
 			currentData.push(data);
+		}
+	}
+
+	function inputHandler(event: js.html.KeyboardEvent) {
+		if (onKeyPress(event)) {
+			event.stopPropagation();
+			event.preventDefault();
 		}
 	}
 }

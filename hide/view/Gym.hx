@@ -140,6 +140,17 @@ class Gym extends hide.ui.View<{}> {
 						<span class="ico ico-paint-brush"></span>
 					</fancy-button>
 				</fancy-toolbar>'));
+
+			demo.append(new Element("<h1>Contenteditable</h1>"));
+			var ce = new hide.comp.ContentEditable(demo);
+			ce.element.text("Edit me !");
+
+			var ce2 = new Element("<fancy-name>Edit me too !</fancy-name>");
+			demo.append(ce2);
+			ce2.get(0).contentEditable = "true";
+			var ce3 = new hide.comp.ContentEditable(null,ce2);
+			ce3.onChange = (v) -> trace(v);
+			demo.append(new Element("<fancy-button>Focus</fancy-button>").click((_) -> ce.element.focus()));
 		}
 
 		{

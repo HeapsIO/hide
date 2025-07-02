@@ -44,7 +44,7 @@ class FileTree extends FileView {
 		return false;
 	}
 
-	static function getExtension( file : String ) {
+	public static function getExtension( file : String ) {
 		var ext = new haxe.io.Path(file).ext;
 		if( ext == null ) return null;
 		ext = ext.toLowerCase();
@@ -485,7 +485,7 @@ class FileTree extends FileView {
 		return true;
 	}
 
-	static function replacePathInFiles(oldPath: String, newPath: String, isDir: Bool = false) {
+	public static function replacePathInFiles(oldPath: String, newPath: String, isDir: Bool = false) {
 		function filter(ctx: hide.Ide.FilterPathContext) {
 			var p = ctx.valueCurrent;
 			if( p == null )

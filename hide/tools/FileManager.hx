@@ -124,7 +124,7 @@ class FileEntry {
 			}
 			return 1;
 		}
-		return Reflect.compare(a.name, b.name);
+		return Reflect.compare(a.name.toLowerCase(), b.name.toLowerCase());
 	}
 }
 
@@ -332,6 +332,33 @@ class FileManager {
 		for (handler in onFileChangeHandlers) {
 			handler(entry);
 		}
+	}
+
+	public function cloneFile(entry: FileEntry) {
+		var sourcePath = entry.getPath();
+		var nameNewFile = hide.Ide.inst.ask("New filename:", new haxe.io.Path(sourcePath).file);
+		if (nameNewFile == null || nameNewFile.length == 0) {
+			return false;
+		}
+
+		var targetPath = new haxe.io.Path(sourcePath).dir + "/" + nameNewFile;
+		if ( sys.FileSystem.exists(targetPath) ) {
+			throw "File already exists";
+		}
+
+		if( sys.FileSystem.isDirectory(sourcePath) ) {
+			sys.FileSystem.createDirectory(targetPath + "/");
+			for( f in sys.FileSystem.readDirectory(sourcePath) ) {
+				sys.io.File.saveBytes(targetPath + "/" + f, sys.io.File.getBytes(sourcePath + "/" + f));
+			}
+		} else {
+			if (targetPath.indexOf(".") == -1) {
+				var oldExt = sourcePath.split(".").pop();
+				targetPath += "." + oldExt;
+			}
+			sys.io.File.saveBytes(targetPath, sys.io.File.getBytes(sourcePath));
+		}
+		return true;
 	}
 
 
