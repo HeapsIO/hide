@@ -240,28 +240,38 @@ class Model extends Object3D {
 		var select = new hide.comp.Select(null, props.find("#anim"), elts);
 		select.value = animation;
 		select.onChange = function(newAnim : String) {
-			var v = newAnim;
-			var prev = animation;
-			var obj = local3d;
-			ctx.scene.setCurrent();
-			if( v == "" ) {
-				animation = null;
-				obj.stopAnimation();
-			} else {
-				obj.playAnimation(shared.loadAnimation(v)).loop = true;
-				if( lockAnimation ) return;
-				animation = v;
-			}
-			var newValue = animation;
-			ctx.properties.undo.change(Custom(function(undo) {
-				var obj = local3d;
-				animation = undo ? prev : newValue;
-				if( animation == null ) {
+			var models : Array<Model> = [];
+			for (p in ctx.scene.editor.getSelection())
+				if (Std.isOfType(p, Model))
+					models.push(cast p);
+
+			var prevAnims = [];
+			for (idx => m in models) {
+				var v = newAnim;
+				prevAnims[idx] = m.animation;
+				var obj = m.local3d;
+				ctx.scene.setCurrent();
+				if( v == "" ) {
+					m.animation = null;
 					obj.stopAnimation();
 				} else {
-					obj.playAnimation(shared.loadAnimation(animation)).loop = true;
+					obj.playAnimation(m.shared.loadAnimation(v)).loop = true;
+					if( lockAnimation ) return;
+					m.animation = v;
 				}
-				select.value = animation;
+			}
+
+			ctx.properties.undo.change(Custom(function(undo) {
+				for (idx => m in models) {
+					var obj = m.local3d;
+					m.animation = undo ? prevAnims[idx] : newAnim;
+					if( m.animation == null ) {
+						obj.stopAnimation();
+					} else {
+						obj.playAnimation(m.shared.loadAnimation(m.animation)).loop = true;
+					}
+					select.value = m.animation;
+				}
 			}));
 		};
 	}
