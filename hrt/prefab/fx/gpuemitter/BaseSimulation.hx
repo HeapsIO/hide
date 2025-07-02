@@ -8,6 +8,7 @@ class BaseSimulation extends ComputeUtils {
 		@param var particleBuffer : RWPartialBuffer<{
 			speed : Vec3,
 			life : Float,
+			lifeTime : Float,
 			random : Float,
 			color : Float,
 		}>;
@@ -28,6 +29,7 @@ class BaseSimulation extends ComputeUtils {
 		var dt : Float;
 		var speed : Vec3;
 		var life : Float;
+		var lifeTime : Float;
 		var particleRandom : Float;
 		var particleColor : Vec4;
 		var modelView : Mat4;
@@ -38,10 +40,11 @@ class BaseSimulation extends ComputeUtils {
 			dt = dtParam;
 			speed = particleBuffer[computeVar.globalInvocation.x].speed;
 			life = particleBuffer[computeVar.globalInvocation.x].life;
+			lifeTime = particleBuffer[computeVar.globalInvocation.x].lifeTime;
 			prevModelView = batchBuffer[computeVar.globalInvocation.x].modelView;
 			particleRandom = particleBuffer[computeVar.globalInvocation.x].random;
 			particleColor = int2rgba(floatBitsToInt(particleBuffer[computeVar.globalInvocation.x].color));
-			relativeTransform = scaleMatrix((life > 0.0 ? 1.0 : 0.0) * (computeVar.globalInvocation.x > curCount ? 0.0 : 1.0) * vec3(particleRandom * (maxSize - minSize) + minSize));
+			relativeTransform = scaleMatrix((life < lifeTime ? 1.0 : 0.0) * (computeVar.globalInvocation.x > curCount ? 0.0 : 1.0) * vec3(particleRandom * (maxSize - minSize) + minSize));
 		}
 
 		function main() {
@@ -56,7 +59,7 @@ class BaseSimulation extends ComputeUtils {
 				newPos = ((newPos - boundsPos) % boundsSize) + boundsPos;
 			modelView = relativeTransform * align * translationMatrix(newPos);
 			var idx = computeVar.globalInvocation.x;
-			particleBuffer[idx].life = life - dt;
+			particleBuffer[idx].life = life + dt;
 			particleBuffer[idx].speed = speed;
 			particleBuffer[idx].color = intBitsToFloat(rgba2int(particleColor));
 			batchBuffer[idx].modelView = modelView;

@@ -43,7 +43,9 @@ class BaseSpawn extends ComputeUtils {
 
 		function main() {
 			var idx = computeVar.globalInvocation.x;
-			if ( FORCED || (!INFINITE && particleBuffer[idx].life < 0.0) ) {
+			var curLife = particleBuffer[idx].life;
+			var curLifeTime = particleBuffer[idx].lifeTime;
+			if ( FORCED || (!INFINITE && curLife > curLifeTime ) ) {
 				var c = atomicAdd(atomic, 0, 1);
 				if ( FORCED || (!INFINITE && c < rate) ) {
 					batchBuffer[idx].modelView = modelView;
@@ -51,7 +53,7 @@ class BaseSpawn extends ComputeUtils {
 					if ( SPEED_NORMAL )
 						s = emitNormal;
 					particleBuffer[idx].speed = s * maxStartSpeed;
-					particleBuffer[idx].life = life;
+					particleBuffer[idx].life = 0.0;
 					// Keep in memory duration of particle to normalize curve update.
 					particleBuffer[idx].lifeTime = life;
 					particleBuffer[idx].color = intBitsToFloat(rgba2int(particleColor));

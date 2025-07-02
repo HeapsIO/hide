@@ -29,6 +29,7 @@ class RelativeTransformSimulationShader extends ComputeUtils {
 		@param var curveTexture : Sampler2D;
 
 		var life : Float;
+		var lifeTime : Float;
 		var relativeTransform : Mat4;
 
 		function hasBit(n : Int) : Bool {
@@ -36,7 +37,7 @@ class RelativeTransformSimulationShader extends ComputeUtils {
 		}
 
 		function getCurve(n : Int) : Float {
-			return curveTexture.getLod(vec2(life, (n + 0.5) / 9.0), 0.0).r;
+			return curveTexture.getLod(vec2(life / lifeTime, (n + 0.5) / 9.0), 0.0).r;
 		}
 
 		function main() {
@@ -121,7 +122,6 @@ class RelativeTransformSimulation extends SimulationShader {
 			return;
 
 		var curveNames = ["x", "y", "z", "scaleX", "scaleY", "scaleZ", "rotX", "rotY", "rotZ"];
-
 
 		var pixels = hxd.Pixels.alloc(width, height, s.curveTexture.format);
 		for ( c in curves ) {

@@ -26,7 +26,6 @@ class ParticleShader extends hxsl.Shader {
 		var transformedPosition : Vec3;
 		function __init__vertex() {
 			{
-				// TODO : particleLife is decreasing, need to be flipped to guarantee compatibility with regular emitter shaders.
 				particleLife = particleBuffer[instanceID].life;
 				particleLifeTime = particleBuffer[instanceID].lifeTime;
 				particleRandom = particleBuffer[instanceID].random;
@@ -164,8 +163,8 @@ class GPUEmitterObject extends h3d.scene.MeshBatch {
 				// floats[i * stride] = 0.0;
 				// floats[i * stride + 1] = 0.0;
 				// floats[i * stride + 2] = 0.0;
-				floats[i * stride + 3] = 0.0; // life warmup
 				var l = hxd.Math.random() * (data.maxLifeTime - data.minLifeTime) + data.minLifeTime;
+				floats[i * stride + 3] = l; // life warmup
 				floats[i * stride + 4] = l; // lifeTime
 				floats[i * stride + 5] = hxd.Math.random(); // random
 				// color
