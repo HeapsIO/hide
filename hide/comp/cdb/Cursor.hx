@@ -91,6 +91,8 @@ class Cursor {
 			return;
 		}
 
+		var line = getLine();
+
 		// Enter/leave subtable
 		if( dx == 0 && !shift && !ctrl && !alt) {
 			var c = getCell();
@@ -109,7 +111,7 @@ class Cursor {
 					return;
 				}
 
-				if (c == null) {
+				if (c == null && line.index == 0) {
 					st.element.find(".default-cursor").blur();
 					set(st.parent, st.cell.columnIndex, st.cell.line.index);
 					return;
@@ -118,7 +120,6 @@ class Cursor {
 		}
 
 		// Take care of current filter
-		var line = getLine();
 		if (line == null) return;
 		if( line != null && dy != 0 ) {
 			var allLines = line.element.parent().children("tr").not(".separator");
