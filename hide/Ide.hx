@@ -472,6 +472,10 @@ class Ide extends hide.tools.IdeData {
 		for( vcl in hide.ui.View.viewClasses )
 			comps.set(vcl.name, true);
 		function checkRec(i:golden.Config.ItemConfig) {
+			if (i.componentName == 'hide.view.FileTree' && i.componentState?.legacy == null) {
+				i.componentName = "hide.view.FileBrowser";
+				i.componentState = {savedLayout: "SingleTree"};
+			}
 			if( i.componentName != null && i.componentState != null && !comps.exists(i.componentName) ) {
 				i.componentState.deletedComponent = i.componentName;
 				i.componentName = "hide.view.Unknown";
@@ -569,7 +573,7 @@ class Ide extends hide.tools.IdeData {
 				if( isCDB )
 					open("hide.view.CdbTable",{}, function(v) v.fullScreen = true);
 				else
-					open("hide.view.Browser",{savedLayout: "SingleTree"}, Left);
+					open("hide.view.FileBrowser",{savedLayout: "SingleTree"}, Left);
 			}
 			if( firstInit ) {
 				firstInit = false;

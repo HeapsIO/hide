@@ -410,7 +410,7 @@ class FileBrowser extends hide.ui.View<FileBrowserState> {
 		fancyTree.onContextMenu = contextMenu.bind(false);
 
 		fancyTree.rebuildTree();
-		fancyTree.openItem(root);
+		fancyTree.openItem(root, true);
 
 		fancyTree.onDoubleClick = (item: FileEntry) -> {
 			if (item.kind == File) {
@@ -506,8 +506,17 @@ class FileBrowser extends hide.ui.View<FileBrowserState> {
 		fancyTree.onSelectionChanged = () -> {
 			var selection = fancyTree.getSelectedItems();
 
+			// Sinc folder view with other filebrowser in SingleMiniature mode
 			if (selection.length > 0) {
 				openDir(selection[0], false);
+				var views = ide.getViews(hide.view.FileBrowser);
+				for (view in views) {
+					if (view == this)
+						continue;
+					if (view.layout == SingleMiniature) {
+						view.openDir(selection[0], false);
+					}
+				}
 			}
 		}
 
