@@ -814,15 +814,6 @@ class Material extends Prefab {
 
 		return true;
 	}
-	#end
-
-	public static function hasOverride(p: Prefab) {
-		if(Lambda.exists(p.children, c -> Std.isOfType(c, Material) && c.enabled))
-			return true;
-		if(Type.getClass(p.parent) == Object3D)
-			return Lambda.exists(p.parent.children, c -> Std.isOfType(c, Material) && c.enabled);
-		return false;
-	}
 
 	public static function findMaterialLibraryRefs(libPath : String, matName : String) : Array<hide.view.RefViewer.Reference> {
 		// Find every material.props file with ref of the material library that we're searching
@@ -928,6 +919,15 @@ class Material extends Prefab {
 		}
 
 		return refs;
+	}
+	#end
+
+	public static function hasOverride(p: Prefab) {
+		if(Lambda.exists(p.children, c -> Std.isOfType(c, Material) && c.enabled))
+			return true;
+		if(Type.getClass(p.parent) == Object3D)
+			return Lambda.exists(p.parent.children, c -> Std.isOfType(c, Material) && c.enabled);
+		return false;
 	}
 
 	static var _ = Prefab.register("material", Material);
