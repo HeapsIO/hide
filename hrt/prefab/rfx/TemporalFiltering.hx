@@ -22,6 +22,7 @@ class TemporalFilteringShader extends h3d.shader.ScreenShader {
 		@param var depthChannel : Channel;
 		@param var depthTexture : Sampler2D;
 
+		@const var KEEP_ALPHA : Bool;
 		@const var KEEP_SKY_ALPHA : Bool;
 
 		var isSky : Bool;
@@ -155,7 +156,9 @@ class TemporalFilteringShader extends h3d.shader.ScreenShader {
 
 			pixelColor.rgb = ycocg2rgb(mix(curColor, prevColor, blendFactor));
 
-			if ( KEEP_SKY_ALPHA )
+			if ( KEEP_ALPHA )
+				pixelColor.a = curSample.a;
+			else if ( KEEP_SKY_ALPHA )
 				pixelColor.a = isSky ? curSample.a : 1.0;
 			else
 				pixelColor.a = 1.0;
@@ -173,6 +176,7 @@ class TemporalFiltering extends hrt.prefab.rfx.RendererFX {
 	@:s public var jitterPattern : FrustumJitter.Pattern = Halton_2_3_x8;
 	@:s public var jitterScale : Float = 0.5;
 	@:s public var renderMode : String = "AfterTonemapping";
+	@:s public var keepAlpha : Bool = false;
 	@:s public var keepSkyAlpha : Bool = false;
 
 	public var frustumJitter = new FrustumJitter();
@@ -259,6 +263,7 @@ class TemporalFiltering extends hrt.prefab.rfx.RendererFX {
 			}
 			s.VELOCITY = useVelocity;
 
+			s.KEEP_ALPHA = keepAlpha;
 			s.KEEP_SKY_ALPHA = keepSkyAlpha;
 
 			r.setTarget(output, NotBound);
@@ -314,6 +319,7 @@ class TemporalFiltering extends hrt.prefab.rfx.RendererFX {
 							<option value="BeforeTonemapping">Before Tonemapping</option>
 							<option value="AfterTonemapping">After Tonemapping</option>
 						</select></dd>
+					<dt>Keep alpha</dt><dd><input type="checkbox" field="keepAlpha"/></dd>
 					<dt>Keep sky alpha</dt><dd><input type="checkbox" field="keepSkyAlpha"/></dd>
 				</div>
 			</dl>
