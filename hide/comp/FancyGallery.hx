@@ -19,6 +19,8 @@ class FancyGallery<GalleryItem> extends hide.comp.Component {
 
 	var lastHeight : Float = 0;
 
+	var zoom : Int = 5;
+	static final zoomLevels = [0, 32, 64, 96, 128,192, 256, 384, 512];
 	var itemHeightPx = 128;
 	var itemWidthPx = 128;
 	static final itemTitleHeight = 32;
@@ -26,6 +28,7 @@ class FancyGallery<GalleryItem> extends hide.comp.Component {
 	var details = false;
 
 	public function new(parent: Element, el: Element) {
+		saveDisplayKey = "fancyGallery";
 		if (el != null) {
 			if (el.get(0).tagName != "FANCY-GALLERY") {
 				throw "el must be a fancy-gallery node";
@@ -42,6 +45,8 @@ class FancyGallery<GalleryItem> extends hide.comp.Component {
 				</fancy-item-container>
 			</fancy-scroll>
 		");
+
+		zoom = getDisplayState("zoom") ?? zoom;
 
 		var htmlElem = el.get(0);
 		htmlElem.tabIndex = -1;
@@ -60,22 +65,11 @@ class FancyGallery<GalleryItem> extends hide.comp.Component {
 				e.preventDefault();
 				e.stopPropagation();
 
-
 				if (e.deltaY < 0) {
-					if (details) {
-						itemWidthPx = 32;
-						details = false;
-					} else {
-						itemWidthPx = hxd.Math.floor(itemWidthPx * 1.25);
-					}
+					setZoom(zoom + 1);
 				} else if (e.deltaY > 0) {
-					itemWidthPx = hxd.Math.floor(itemWidthPx / 1.25);
+					setZoom(zoom - 1);
 				}
-
-				if (itemWidthPx < 32) {
-					details = true;
-				}
-				queueRefresh();
 			}
 		}
 
@@ -83,6 +77,12 @@ class FancyGallery<GalleryItem> extends hide.comp.Component {
 		scroll = el.find("fancy-scroll").get(0);
 
 		scroll.onscroll = (e) -> queueRefresh();
+	}
+
+	public function setZoom(newLevel: Int) {
+		zoom = hxd.Math.iclamp(newLevel, 0, zoomLevels.length-1);
+		saveDisplayState("zoom", zoom);
+		queueRefresh();
 	}
 
 	var refreshQueued : Bool = false;
@@ -199,28 +199,26 @@ class FancyGallery<GalleryItem> extends hide.comp.Component {
 	function onRefreshInternal() {
 		refreshQueued = false;
 
+		var margin = 8;
+
+		var bounds = scroll.getBoundingClientRect();
+
+		details = zoom == 0;
+		itemWidthPx = zoomLevels[zoom];
+		itemHeightPx = itemWidthPx + itemTitleHeight;
+		if (details) {
+			margin = 0;
+			itemHeightPx = 16;
+			itemWidthPx = hxd.Math.floor(bounds.width);
+		}
+
 		if (currentRefreshFlags.has(Items)) {
 			rebuildItems();
 		}
 
 		var oldChildren = [for (node in itemContainer.childNodes) node];
 
-		var margin = 8;
-
-		var bounds = scroll.getBoundingClientRect();
-
-
-		if (details) {
-			margin = 0;
-			itemHeightPx = 16;
-			itemWidthPx = hxd.Math.floor(bounds.width);
-		} else {
-			itemHeightPx = itemWidthPx + itemTitleHeight;
-		}
-
-
 		var numData = currentData.length;
-
 
 		var itemsPerRow = hxd.Math.imax(hxd.Math.floor((bounds.width - margin) / (itemWidthPx + margin)), 1);
 
