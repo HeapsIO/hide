@@ -482,39 +482,17 @@ class Material extends Prefab {
 				<input title="View references to this material used as a material library" type="button" value="View references" class="view-refs"/>
 			</dd>'));
 		group.find(".view-refs").click(function(_) {
-			var parentPath = shared.currentPath;
-			var refs : Array<hide.view.RefViewer.Reference> = [];
-			var uniquesPath = [];
-
-			hide.Ide.inst.filterProps(function(data, path) {
-				var indexOf = path.indexOf("materials.props");
-				if (indexOf < 0)
-					return false;
-
-				var mats = Reflect.field(data, "materials");
-				var pbr : Array<Dynamic> = Reflect.field(mats, "PBR");
-				for (f in Reflect.fields(pbr)) {
-					var el = Reflect.field(pbr, f);
-					if (!Reflect.hasField(el, "__ref"))
-						continue;
-
-					var ref = Reflect.field(el, "__ref");
-					var matName = Reflect.field(el, "name");
-					if (ref != parentPath || matName != this.name)
-						continue;
-
-					var folderP = path.substring(0, indexOf - 1);
-					if (uniquesPath.contains(folderP))
-						continue;
-					uniquesPath.push(folderP);
-					refs.push({ file: folderP, path: path, results: [{ text: folderP, goto: () -> { hide.Ide.inst.showFileInResources(folderP); } }]});
-				}
-				return false;
-			});
-
+			var refs = findMaterialLibraryRefs(shared.currentPath, this.name);
 			hide.Ide.inst.open("hide.view.RefViewer", null, null, function(view) {
 				var refViewer : hide.view.RefViewer = cast view;
-				refViewer.showRefs(refs, this.name, () -> {});
+				refViewer.showRefs(refs, this.name, () -> {
+					hide.Ide.inst.openFile(shared.currentPath, null, (v) -> {
+						var prefabView = Std.downcast(v, hide.view.Prefab);
+						prefabView.delaySceneEditor(() -> {
+							prefabView.sceneEditor.selectElementsIndirect([this]);
+						});
+					});
+				}, true);
 			});
 		});
 
@@ -844,6 +822,112 @@ class Material extends Prefab {
 		if(Type.getClass(p.parent) == Object3D)
 			return Lambda.exists(p.parent.children, c -> Std.isOfType(c, Material) && c.enabled);
 		return false;
+	}
+
+	public static function findMaterialLibraryRefs(libPath : String, matName : String) : Array<hide.view.RefViewer.Reference> {
+		// Find every material.props file with ref of the material library that we're searching
+		var materialPropsFiles : Array<{ path: String, bindMatName : String, ?model : String }> = [];
+		hide.Ide.inst.filterProps(function(data, path) {
+			var indexOf = path.indexOf("materials.props");
+			if (indexOf < 0)
+				return false;
+
+			var mats = Reflect.field(data, "materials");
+			var pbr : Array<Dynamic> = Reflect.field(mats, "PBR");
+			for (f in Reflect.fields(pbr)) {
+				var el = Reflect.field(pbr, f);
+				if (!Reflect.hasField(el, "__ref"))
+					continue;
+
+				var ref = Reflect.field(el, "__ref");
+				var mName = Reflect.field(el, "name");
+				if (ref != libPath || mName != matName)
+					continue;
+
+				var contains = false;
+				for (m in materialPropsFiles) {
+					if (m.path == path)
+						contains = true;
+				}
+
+				if (contains)
+					continue;
+
+				var indexOf = f.indexOf("/");
+				var modelSpec = Reflect.hasField(el, "__refMode") && Reflect.field(el, "__refMode") == "modelSpec";
+				materialPropsFiles.push({ path: path, bindMatName: f.substr(0, indexOf < 0 ? null : indexOf), model: modelSpec ? f.substr(f.lastIndexOf("/") + 1) : null });
+			}
+
+			return false;
+		});
+
+		function findRefInModels(folder : String, bindedMat : String, model : String, libPath : String, matName : String) : Array<hide.view.RefViewer.Result> {
+			var results = [];
+
+			var files = sys.FileSystem.readDirectory(hide.Ide.inst.getPath(folder));
+			for (f in files) {
+				var path = folder + "/" + f;
+
+				if (sys.FileSystem.isDirectory(path) && model != null) {
+					findRefInModels(path, bindedMat, model, libPath, matName);
+					continue;
+				}
+
+				if (path.indexOf(".fbx") < 0)
+					continue;
+
+				var obj = try {
+				hxd.res.Loader.currentInstance.load(hide.Ide.inst.makeRelative(path)).toModel().toHmd().makeObject();
+				} catch(e : Dynamic) null;
+				if (obj != null) {
+					var mat = obj.getMaterialByName(bindedMat);
+					if (mat != null && (model == null || path.substr(path.lastIndexOf("/") + 1) == model))
+						results.push({ text: path, goto: () -> hide.Ide.inst.openFile(hide.Ide.inst.makeRelative(path)) });
+				}
+			}
+
+			return results;
+		}
+
+		function findRefInPrefabs(folder : String, libPath : String, matName : String) : Array<hide.view.RefViewer.Result> {
+			var results = [];
+
+			var visited = new Map<String, Bool>();
+			hide.Ide.inst.filterPrefabs((p : Prefab, path : String) -> {
+				if (visited.get(path) != null)
+					return false;
+				visited.set(path, true);
+				var mats = p.findAll(Material);
+				for (m in mats) {
+					if (m.refMatLib != libPath + "/" + matName)
+						continue;
+					results.push({ text: path, goto: () -> hide.Ide.inst.openFile(hide.Ide.inst.makeRelative(path), null, (v) -> {
+							var prefabView = Std.downcast(v, hide.view.Prefab);
+							if (prefabView != null)
+								prefabView.delaySceneEditor(() -> prefabView.sceneEditor.selectElementsIndirect([m]));
+
+							var fxView = Std.downcast(v, hide.view.FXEditor);
+							if (fxView != null)
+								fxView.delaySceneEditor(() -> @:privateAccess fxView.sceneEditor.selectElementsIndirect([m]));
+						})
+					});
+				}
+				return false;
+			});
+
+			return results;
+		}
+
+		var refs : Array<hide.view.RefViewer.Reference> = [];
+		for (f in materialPropsFiles) {
+			var folderP = f.path.substr(0, f.path.lastIndexOf("/"));
+			var results = findRefInModels(folderP, f.bindMatName, f.model, libPath, matName);
+			results = results.concat(findRefInPrefabs(folderP, libPath, matName));
+			if (results.length > 0)
+				refs.push({ file: folderP, path: f.path, results: results });
+		}
+
+		return refs;
 	}
 
 	static var _ = Prefab.register("material", Material);

@@ -23,7 +23,7 @@ class RefViewer extends hide.ui.View<{}> {
 		return "References Viewer";
 	}
 
-	public function showRefs(references: Array<Reference>, original: String, gotoOriginal: Void -> Void) {
+	public function showRefs(references: Array<Reference>, original: String, gotoOriginal: Void -> Void, foldedByDefault : Bool = false) {
 		element.html("");
 		var div = new Element('<div class="ref-viewer hide-scroll">').appendTo(element);
 
@@ -73,6 +73,8 @@ class RefViewer extends hide.ui.View<{}> {
 				else
 					contentEl.show();
 			});
+			if (foldedByDefault)
+				headerEl.trigger("click");
 		}
 	}
 
