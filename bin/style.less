@@ -6450,6 +6450,17 @@ fancy-gallery {
 					background-color: var(--hover);
 				}
 
+				&.selected {
+					color: white;
+					background-color: var(--selection);
+				}
+
+				&.current {
+					outline: dashed 1px #AAA;
+					z-index: 10;
+					outline-offset: -1px;
+				}
+
 				box-shadow: 2px 2px 2px rgba(0, 0, 0, 0.4);
 
 				&.details {

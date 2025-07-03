@@ -4,6 +4,7 @@ enum GalleryRefreshFlag {
 	Search;
 	Items;
 	RegenHeader;
+	FocusCurrent;
 }
 
 typedef GalleryRefreshFlags = haxe.EnumFlags<GalleryRefreshFlag>;
@@ -16,6 +17,7 @@ class FancyGallery<GalleryItem> extends hide.comp.Component {
 	var itemMap : Map<{}, GalleryItemData<GalleryItem>> = [];
 	var itemContainer : js.html.Element;
 	var scroll : js.html.Element;
+	var selection : Map<{}, Bool> = [];
 
 	var lastHeight : Float = 0;
 
@@ -26,6 +28,24 @@ class FancyGallery<GalleryItem> extends hide.comp.Component {
 	static final itemTitleHeight = 32;
 
 	var details = false;
+
+	var currentItem(default, set) : GalleryItemData<GalleryItem>;
+	function set_currentItem(v) {
+		currentItem = v;
+		queueRefresh(FocusCurrent);
+		return currentItem;
+	}
+
+	var currentVisible(default, set) : Bool = false;
+
+	function set_currentVisible(v) {
+		currentVisible = v;
+		if (currentVisible)
+			queueRefresh(FocusCurrent);
+		else
+			queueRefresh();
+		return currentVisible;
+	}
 
 	public function new(parent: Element, el: Element) {
 		saveDisplayKey = "fancyGallery";
@@ -71,6 +91,17 @@ class FancyGallery<GalleryItem> extends hide.comp.Component {
 					setZoom(zoom - 1);
 				}
 			}
+		}
+
+		itemContainer.onblur = (e: js.html.FocusEvent) -> {
+			if (itemContainer.contains(cast e.relatedTarget)) {
+				currentVisible = false;
+				currentItem = null;
+			};
+		}
+
+		itemContainer.onclick = (e) -> {
+			currentVisible = false;
 		}
 
 		itemContainer.oncontextmenu = contextMenuHandler.bind(null);
@@ -173,6 +204,45 @@ class FancyGallery<GalleryItem> extends hide.comp.Component {
 		queueRefresh(RegenHeader);
 	}
 
+	public function clearSelection() {
+		selection.clear();
+		queueRefresh();
+	}
+
+	function setSelection(data: GalleryItemData<GalleryItem>, select: Bool) {
+		if (select) {
+			selection.set(cast data, true);
+		} else {
+			selection.remove(cast data);
+		}
+	}
+
+	function dataClickHandler(data: GalleryItemData<GalleryItem>, event: js.html.MouseEvent) : Void {
+		if (!event.ctrlKey) {
+			clearSelection();
+		}
+
+		var currentIndex = currentData.indexOf(currentItem);
+		if (event.shiftKey && currentIndex >= 0) {
+			var newIndex = currentData.indexOf(data);
+
+			var min = hxd.Math.imin(currentIndex, newIndex);
+			var max = hxd.Math.imax(currentIndex, newIndex);
+
+			for (i in min...max + 1) {
+				setSelection(currentData[i], true);
+			}
+		} else {
+			setSelection(data, !selection.exists(cast data));
+		}
+
+		if (!(event.shiftKey && !event.ctrlKey) || currentItem == null)
+			currentItem = data;
+		//onSelectionChanged();
+
+		queueRefresh();
+	}
+
 	public function rename(item: GalleryItem, onFinished : (newName:String) -> Void) {
 		var data = itemMap.get(cast item);
 		var name = data.element.querySelector("fancy-name");
@@ -231,7 +301,20 @@ class FancyGallery<GalleryItem> extends hide.comp.Component {
 		// We might need to recompute the scroll height so we call getBoundingClientRect again
 		var scrollHeight = scroll.getBoundingClientRect().height;
 
+		if (currentRefreshFlags.has(FocusCurrent)) {
+			var currentIndex = currentData.indexOf(currentItem);
 
+			if (currentIndex >= 0) {
+				var currentHeight = (hxd.Math.floor(currentIndex / itemsPerRow)) * (itemHeightPx + margin);
+				if (currentHeight < scroll.scrollTop) {
+					scroll.scrollTo(scroll.scrollLeft, currentHeight);
+				}
+
+				if (currentHeight + itemHeightPx - scrollHeight > scroll.scrollTop) {
+					scroll.scrollTo(scroll.scrollLeft, currentHeight + itemHeightPx - scrollHeight);
+				}
+			}
+		}
 
 		var clipStart = scroll.scrollTop;
 		var clipEnd = scrollHeight + clipStart;
@@ -306,6 +389,8 @@ class FancyGallery<GalleryItem> extends hide.comp.Component {
 				onDoubleClick(data.item);
 			}
 
+			data.element.onclick = dataClickHandler.bind(data);
+
 			data.element.oncontextmenu = contextMenuHandler.bind(data.item);
 
 			setupDragAndDrop(data);
@@ -320,6 +405,8 @@ class FancyGallery<GalleryItem> extends hide.comp.Component {
 
 		data.element.style.height = '${itemHeightPx}px';
 		data.element.classList.toggle("details", details);
+		data.element.classList.toggle("selected", selection.exists(cast data));
+		data.element.classList.toggle("current", currentVisible && currentItem == data);
 
 		var name = data.element.querySelector("fancy-name");
 		if (name.title != data.name) {

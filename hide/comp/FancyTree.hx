@@ -119,6 +119,11 @@ class FancyTree<TreeItem> extends hide.comp.Component {
 			currentVisible = false;
 		}
 
+		var resizeObserver = new hide.comp.ResizeObserver((_, _) -> {
+			queueRefresh();
+		});
+		resizeObserver.observe(element.get(0));
+
  	}
 
 	/**

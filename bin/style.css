@@ -5366,6 +5366,15 @@ fancy-gallery fancy-scroll fancy-item-container fancy-item {
 fancy-gallery fancy-scroll fancy-item-container fancy-item:hover {
   background-color: var(--hover);
 }
+fancy-gallery fancy-scroll fancy-item-container fancy-item.selected {
+  color: white;
+  background-color: var(--selection);
+}
+fancy-gallery fancy-scroll fancy-item-container fancy-item.current {
+  outline: dashed 1px #AAA;
+  z-index: 10;
+  outline-offset: -1px;
+}
 fancy-gallery fancy-scroll fancy-item-container fancy-item.details {
   padding: 0;
   display: flex;
