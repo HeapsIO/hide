@@ -3943,7 +3943,7 @@ class SceneEditor {
 		var relative = ide.makeRelative(path);
 
 		var ptype = hrt.prefab.Prefab.getPrefabType(path);
-		var hover = tree.getCurrentHover();
+		var hover = tree.getItemByElement(js.Browser.document.elementFromPoint(event.clientX, event.clientY));
 		var parent = hover ?? defaultParent;
 		var index = 0;
 		if (parent == defaultParent) {

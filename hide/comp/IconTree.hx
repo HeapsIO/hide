@@ -310,6 +310,15 @@ class IconTree<T:{}> extends Component {
 		return i == null ? null : getValue(i);
 	}
 
+	public function getItemByElement(element: js.html.Element) : Null<T> {
+		var anchor = element.closest(".jstree-anchor");
+		if (anchor == null || anchor.id == null)
+			return null;
+		var trueId = StringTools.replace(anchor.id, "_anchor", "");
+		var i = map.get(trueId);
+		return i == null ? null : getValue(i);
+	}
+
 	public function setSelection( objects : Array<T> ) {
 		(element:Dynamic).jstree('deselect_all');
 		var ids = [for( o in objects ) { var v = getRev(o); if( v != null ) v.id; }];

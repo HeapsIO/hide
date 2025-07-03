@@ -227,6 +227,14 @@ class Ide extends hide.tools.IdeData {
 			syncMousePosition(e);
 			var view = getViewAt(mouseX, mouseY);
 			var items : Array<String> = [for(f in e.dataTransfer.files) Reflect.field(f, "path")];
+			if (e.dataTransfer.types.contains(hide.view.FileBrowser.dragKey)) {
+				var data = e.dataTransfer.getData(hide.view.FileBrowser.dragKey);
+				// when in the middle of a drag (and not a drop) getData return nothing
+				if (data.length > 0) {
+					var moreItems : Array<String> = haxe.Json.parse(data);
+					items = items.concat(moreItems);
+				}
+			}
 			if(view != null && view.onDragDrop(items, drop, e)) {
 				e.preventDefault();
 				e.stopPropagation();
