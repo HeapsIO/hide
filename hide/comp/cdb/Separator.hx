@@ -69,7 +69,7 @@ class Separator extends Component {
 					label : "Parent",
 					enabled : allowedParents.length > 1,
 					menu : [for( p in allowedParents ) {
-						var level = p == null ? 0 : p.data.level == null ? 0 : p.data.level;
+						var level = p == null ? -1 : p.data.level == null ? -1 : p.data.level;
 						{
 							label : p == null ? "(None)" : [for ( i in 0...(level + 1)) ""].join("  ")+p.data.title,
 							checked : p == this.parent,
@@ -82,7 +82,7 @@ class Separator extends Component {
 										rec(sub, newLevel + 1);
 								}
 
-								var newLevel : Int = p == null ? 0 : p.data.level == null ? 1 : p.data.level + 1;
+								var newLevel : Int = p == null ? -1 : p.data.level == null ? 1 : p.data.level + 1;
 								rec(this, newLevel);
 								table.editor.endChanges();
 								table.refresh();
