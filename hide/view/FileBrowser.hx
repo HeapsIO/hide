@@ -399,6 +399,9 @@ class FileBrowser extends hide.ui.View<FileBrowserState> {
 				return Reorder;
 			},
 			onDrop: function(target: FileEntry, operation: hide.comp.FancyTree.DropOperation, dataTransfer: js.html.DataTransfer) : Bool {
+				if (target.kind != Dir)
+					target = target.parent;
+
 				var files : Array<String> = [];
 				for (file in dataTransfer.files) {
 					var path : String = untyped file.path; //file.path is an extension from nwjs or node
@@ -412,12 +415,16 @@ class FileBrowser extends hide.ui.View<FileBrowserState> {
 					try {
 						var unser = haxe.Json.parse(fileMoveData);
 						for (file in (unser:Array<String>)) {
-							files.push(ide.getRelPath(file));
+							var rel = ide.getRelPath(file);
+							files.push(rel);
 						}
 					} catch (e) {
 						trace("Invalid data " + e);
 					}
 				}
+
+				if (files.length == 0)
+					return false;
 
 				moveFiles(target.getRelPath(), files);
 
