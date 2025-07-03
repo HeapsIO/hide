@@ -841,7 +841,9 @@ class FileBrowser extends hide.ui.View<FileBrowserState> {
 		var refs = ide.search(path, ["hx", "prefab", "fx", "cdb", "json", "props", "ddt"], ["bin"]);
 		ide.open("hide.view.RefViewer", null, null, function(view) {
 			var refViewer : hide.view.RefViewer = cast view;
-			refViewer.showRefs(refs, 'Number of references to "$path"', path);
+			refViewer.showRefs(refs, path, function() {
+				ide.openFile(path);
+			});
 		});
 	}
 
