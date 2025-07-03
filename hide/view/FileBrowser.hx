@@ -769,6 +769,22 @@ class FileBrowser extends hide.ui.View<FileBrowserState> {
 				label: "New ...",
 				menu: newMenu,
 			});
+
+			if (!isGallery) {
+				options.push({
+					label: "Collapse",
+					click: fancyTree.collapseItem.bind(item),
+				});
+
+				options.push({
+					label: "Collapse All",
+					click: () -> {
+						for (child in root.children) {
+							fancyTree.collapseItem(child);
+						}
+					}
+				});
+			}
 		}
 
 		if (!implicitFolder) {

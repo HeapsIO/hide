@@ -313,6 +313,7 @@ class FancyTree<TreeItem> extends hide.comp.Component {
 			toggleDataOpen(cur, true);
 			cur = cur.parent;
 		}
+		saveState();
 	}
 
 	public function rename(item: TreeItem) : Void {
@@ -402,6 +403,7 @@ class FancyTree<TreeItem> extends hide.comp.Component {
 			}
 			else if (currentItem != null && !isOpen(currentItem)) {
 				toggleDataOpen(currentItem, true);
+				saveState();
 			}
 			return;
 		}
@@ -417,6 +419,7 @@ class FancyTree<TreeItem> extends hide.comp.Component {
 				currentItem = currentItem.parent;
 			} else if(anyChildren && currentItem != null) {
 				toggleDataOpen(currentItem, false);
+				saveState();
 			}
 			return;
 		}
@@ -602,6 +605,7 @@ class FancyTree<TreeItem> extends hide.comp.Component {
 			var fold = element.querySelector(".caret");
 			fold.addEventListener("click", (e) -> {
 				toggleDataOpen(data);
+				saveState();
 			});
 
 			var clickHandlerClosure = dataClickHandler.bind(data);
@@ -701,6 +705,7 @@ class FancyTree<TreeItem> extends hide.comp.Component {
 
 						if (time - moveLastDragOverStart > overDragOpenDelaySec && !isOpen(data)) {
 							toggleDataOpen(data, true);
+							saveState();
 						}
 					}
 
@@ -813,7 +818,24 @@ class FancyTree<TreeItem> extends hide.comp.Component {
 		var data = itemMap.get(cast item);
 		if (data != null) {
 			toggleDataOpen(data, force);
+			saveState();
 		}
+	}
+
+	public function collapseItem(item: TreeItem) {
+		var data = itemMap.get(cast item);
+		if (data == null)
+			return;
+
+		function collapseData(data: TreeItemData<TreeItem>) {
+			toggleDataOpen(data, false);
+			for (child in data.children) {
+				collapseData(child);
+			}
+		}
+
+		collapseData(data);
+		saveState();
 	}
 
 	function toggleDataOpen(data: TreeItemData<TreeItem>, ?force: Bool) {
@@ -827,7 +849,6 @@ class FancyTree<TreeItem> extends hide.comp.Component {
 		} else {
 			openState.remove(data.uniqueName);
 		}
-		saveState();
 		queueRefresh(Flat);
 	}
 
