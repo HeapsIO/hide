@@ -292,7 +292,7 @@ class Shader extends Prefab {
 		case TSampler(_):
 			PTexture;
 		case TVec(n, VFloat):
-			if (n == 3 || n == 4) {
+			if ((n == 3 || n == 4) && !StringTools.startsWith(v.name.toLowerCase(), "vec")) {
 				PColor;
 			}
 			else PVec(n);
