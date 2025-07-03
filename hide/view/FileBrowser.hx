@@ -128,6 +128,8 @@ class FileBrowser extends hide.ui.View<FileBrowserState> {
 	var filterEnabled(default, set) : Bool;
 	var filters : Map<String, {exts: Array<String>, icon: String}> = [];
 	var filterState : Map<String, Bool> = [];
+	var ignorePatterns: Array<EReg> = [];
+
 	function set_filterEnabled(v : Bool) {
 		var anySet = false;
 		for (key => value in filterState) {
@@ -231,6 +233,8 @@ class FileBrowser extends hide.ui.View<FileBrowserState> {
 			currentSearch.sort(FileEntry.compareFile);
 		}
 
+		currentSearch = currentSearch.filter(filterFiles);
+
 		for (i => _ in currentSearch) {
 			var child = currentSearch[currentSearch.length - i - 1];
 			if ((child.iconPath == null || child.iconPath == "loading") && child.kind == File) {
@@ -254,7 +258,21 @@ class FileBrowser extends hide.ui.View<FileBrowserState> {
 
 	var resize : hide.comp.ResizablePanel;
 
+	function filterFiles(entry: FileEntry) {
+		for (excl in ignorePatterns) {
+			if (excl.match(entry.name))
+				return false;
+		}
+		return return true;
+	}
+
+
 	override function onDisplay() {
+
+		var exclPatterns : Array<String> = ide.currentConfig.get("filetree.excludes", []);
+		ignorePatterns = [];
+		for(pat in exclPatterns)
+			ignorePatterns.push(new EReg(pat, "i"));
 
 		keys.register("undo", function() undo.undo());
 		keys.register("redo", function() undo.redo());
@@ -324,9 +342,9 @@ class FileBrowser extends hide.ui.View<FileBrowserState> {
 				throw "null children";
 
 			if (layout == SingleTree) {
-				return file.children;
+				return file.children.filter(filterFiles);
 			}
-			return file.children.filter((file) -> file.kind == Dir);
+			return file.children.filter((file) -> file.kind == Dir && filterFiles(file));
 		};
 		//fancyTree.hasChildren = (file: FileEntry) -> return file.kind == Dir;
 		fancyTree.getName = (file: FileEntry) -> return file?.name;
