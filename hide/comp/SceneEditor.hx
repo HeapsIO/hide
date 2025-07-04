@@ -1127,6 +1127,7 @@ class SceneEditor {
 				@:privateAccess scene.canvas.focus();
 				onDragDrop(files, true, e);
 				e.preventDefault();
+				e.stopPropagation();
 				return;
 			}
 		}
