@@ -39,6 +39,7 @@ class FileEntry {
 		this.kind = kind;
 
 		watch();
+		FileManager.inst.fileIndex.set(this.getRelPath(), this);
 	}
 
 	public final function toString() : String{
@@ -57,6 +58,7 @@ class FileEntry {
 			hide.Ide.inst.fileWatcher.unregister(this.getPath(), registeredWatcher.fun);
 			registeredWatcher = null;
 		}
+		FileManager.inst.fileIndex.remove(this.getRelPath());
 	}
 
 	function refreshChildren() {
@@ -136,6 +138,7 @@ typedef MiniatureReadyCallback = (miniaturePath: String) -> Void;
 class FileManager {
 
 	public var fileRoot: FileEntry;
+	var fileIndex : Map<String, FileEntry> = [];
 
 	public static final thumbnailGeneratorPort = 9669;
 	public static final thumbnailGeneratorUrl = "localhost";
@@ -209,6 +212,11 @@ class FileManager {
 				untyped js.node.Fs.rmSync(file.getPath(), {force: true, recursive: false});
 			}
 		}
+	}
+
+	public function getFileEntry(path: String) {
+		var relPath = hide.Ide.inst.makeRelative(path);
+		return fileIndex.get(relPath);
 	}
 
 	// Deduplicate paths if they are contained in a directory

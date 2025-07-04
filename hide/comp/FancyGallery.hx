@@ -217,6 +217,16 @@ class FancyGallery<GalleryItem> extends hide.comp.Component {
 		}
 	}
 
+		public function selectItem(item: GalleryItem) {
+		clearSelection();
+		var data = itemMap.get(cast item);
+		if (data == null) {
+			return;
+		}
+		setSelection(data, true);
+		currentItem = data;
+	}
+
 	function dataClickHandler(data: GalleryItemData<GalleryItem>, event: js.html.MouseEvent) : Void {
 		if (!event.ctrlKey) {
 			clearSelection();

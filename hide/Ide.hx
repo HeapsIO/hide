@@ -1684,14 +1684,13 @@ class Ide extends hide.tools.IdeData {
 	}
 
 	public function showFileInResources(path: String) {
-		js.Browser.alert("This feature is momentarely disabled");
-		// var filetree = getViews(hide.view.FileTree)[0];
-		// if( filetree != null) {
-		// 	if (@:privateAccess filetree.tree == null)
-		// 		filetree.onDisplay();
-		// 	filetree.activate();
-		// 	filetree.revealNode(path);
-		// }
+		var filebrowsers = getViews(hide.view.FileBrowser);
+		for (filebrowser in filebrowsers) {
+			if (@:privateAccess filebrowser.fancyTree == null)
+				filebrowser.onDisplay();
+			filebrowser.activate();
+			filebrowser.reveal(path);
+		}
 	}
 
 	public static function showFileInExplorer(path : String) {

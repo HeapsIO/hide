@@ -129,6 +129,9 @@ class FileBrowser extends hide.ui.View<FileBrowserState> {
 	var filters : Map<String, {exts: Array<String>, icon: String}> = [];
 	var filterState : Map<String, Bool> = [];
 	var ignorePatterns: Array<EReg> = [];
+	var delaySelectGallery: String = null;
+	var delaySelectFileTree: String = null;
+	var delayedSelectItem : FileEntry = null;
 
 	function set_filterEnabled(v : Bool) {
 		var anySet = false;
@@ -244,9 +247,30 @@ class FileBrowser extends hide.ui.View<FileBrowserState> {
 		}
 
 		fancyGallery.queueRefresh(Items);
+
+		if (delayedSelectItem != null) {
+			fancyGallery.selectItem(delayedSelectItem);
+			delayedSelectItem = null;
+		}
 	}
 
 	function onFileChange(file: FileEntry) {
+		if (delaySelectFileTree != null) {
+			var item = FileManager.inst.getFileEntry(delaySelectFileTree);
+			if (item != null) {
+				fancyTree.selectItem(item, false);
+				delaySelectFileTree = null;
+			}
+		}
+
+		if (delaySelectGallery != null) {
+			var item = FileManager.inst.getFileEntry(delaySelectGallery);
+			if (item != null) {
+				fancyGallery.selectItem(item);
+				delaySelectGallery = null;
+			}
+		}
+
 		fancyTree.invalidateChildren(file);
 		queueGalleryRefresh();
 	}
@@ -260,7 +284,7 @@ class FileBrowser extends hide.ui.View<FileBrowserState> {
 
 	function filterFiles(entry: FileEntry) {
 		for (excl in ignorePatterns) {
-			if (excl.match(entry.name))
+			if (excl.match(entry.getRelPath()))
 				return false;
 		}
 		return return true;
@@ -665,7 +689,7 @@ class FileBrowser extends hide.ui.View<FileBrowserState> {
 		FileManager.inst.onFileChangeHandlers.remove(onFileChange);
 	}
 
-	function createNew( directoryFullPath : String, ext : hide.view.FileTree.ExtensionDesc ) {
+	function createNew( directoryFullPath : String, ext : hide.view.FileTree.ExtensionDesc, isGallery: Bool) {
 
 		var file = ide.ask(ext.options.createNew + " name:");
 		if( file == null ) return;
@@ -676,7 +700,7 @@ class FileBrowser extends hide.ui.View<FileBrowserState> {
 
 		if( sys.FileSystem.exists(newFilePath) ) {
 			ide.error("File '" + file+"' already exists");
-			createNew(directoryFullPath, ext);
+			createNew(directoryFullPath, ext, isGallery);
 			return;
 		}
 
@@ -692,6 +716,12 @@ class FileBrowser extends hide.ui.View<FileBrowserState> {
 		sys.io.File.saveBytes(newFilePath, view.getDefaultContent());
 
 		ide.openFile(newFilePath);
+
+		if (isGallery) {
+			delaySelectGallery = newFilePath;
+		} else {
+			delaySelectFileTree = newFilePath;
+		}
 	}
 
 	function getItemAndSelection(baseItem: FileEntry, isGallery: Bool) : Array<FileEntry> {
@@ -738,6 +768,20 @@ class FileBrowser extends hide.ui.View<FileBrowserState> {
 		return roots;
 	}
 
+	public function reveal(path: String) {
+		var item = FileManager.inst.getFileEntry(path);
+		if (item == null)
+			return;
+
+		if (layout == SingleTree) {
+			fancyTree.selectItem(item);
+		} else {
+			openDir(item.parent, true);
+			delayedSelectItem = item;
+			queueGalleryRefresh();
+		}
+	}
+
 	function contextMenu(isGallery: Bool, item: FileEntry, event: js.html.MouseEvent) {
 		event.stopPropagation();
 		event.preventDefault();
@@ -776,7 +820,9 @@ class FileBrowser extends hide.ui.View<FileBrowserState> {
 			if (e.options.createNew != null) {
 				newMenu.push({
 				label: e.options.createNew,
-				click : createNew.bind(item.getPath(), e),
+				click : function() : Void {
+					createNew(item.getPath(), e, isGallery);
+				},
 				icon : e.options.icon,
 				});
 			}
