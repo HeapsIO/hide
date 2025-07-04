@@ -37,7 +37,10 @@ class RelativeTransformSimulationShader extends ComputeUtils {
 		}
 
 		function getCurve(n : Int) : Float {
-			return curveTexture.getLod(vec2(life / lifeTime, (n + 0.5) / 9.0), 0.0).r;
+			var c = 0.0;
+			if ( CURVE_MASK != 0 )
+				c = curveTexture.getLod(vec2(life / lifeTime, (n + 0.5) / 9.0), 0.0).r;
+			return c;
 		}
 
 		function main() {
