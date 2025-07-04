@@ -1,10 +1,6 @@
 package hrt.prefab.fx.gpuemitter;
 
 class SphereSpawnShader extends ComputeUtils {
-	override function onUpdate(emitter : GPUEmitterObject, buffer : h3d.Buffer, index : Int) {
-		super.onUpdate(emitter, buffer, index);
-		randOffset = index;
-	}
 
 	static var SRC = {
 		@param var minRadius : Float;

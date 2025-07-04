@@ -1,8 +1,8 @@
 package hrt.prefab.fx.gpuemitter;
 
 class OrbitSpeedSimulationShader extends ComputeUtils {
-	override function onUpdate(emitter : GPUEmitterObject, buffer : h3d.Buffer, index : Int) {
-		super.onUpdate(emitter, buffer, index);
+	override function onDispatch(emitter : GPUEmitterObject) {
+		super.onDispatch(emitter);
 
 		center.load(emitter.getAbsPos().getPosition());
 	}

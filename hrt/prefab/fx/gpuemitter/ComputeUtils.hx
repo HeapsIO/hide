@@ -2,7 +2,7 @@ package hrt.prefab.fx.gpuemitter;
 
 class ComputeUtils extends hxsl.Shader {
 
-	public function onUpdate(emitter : GPUEmitterObject, buffer : h3d.Buffer, index : Int) {}
+	public function onDispatch(emitter : GPUEmitterObject) {}
 
 	public function onRemove(emitter : GPUEmitterObject) {}
 
@@ -137,6 +137,25 @@ class ComputeUtils extends hxsl.Shader {
 				vec4(0.0, 0.0, 1.0, 0.0),
 				vec4(0.0, 0.0, 0.0, 1.0)
 			);
+		}
+
+		function quatInitRotation(ax : Float, ay : Float, az : Float) : Vec4 {
+			var sinX = ( ax * 0.5 ).sin();
+			var cosX = ( ax * 0.5 ).cos();
+			var sinY = ( ay * 0.5 ).sin();
+			var cosY = ( ay * 0.5 ).cos();
+			var sinZ = ( az * 0.5 ).sin();
+			var cosZ = ( az * 0.5 ).cos();
+			var cosYZ = cosY * cosZ;
+			var sinYZ = sinY * sinZ;
+
+			var quat = vec4(0.0);
+			quat.x = sinX * cosYZ - cosX * sinYZ;
+			quat.y = cosX * sinY * cosZ + sinX * cosY * sinZ;
+			quat.z = cosX * cosY * sinZ - sinX * sinY * cosZ;
+			quat.w = cosX * cosYZ + sinX * sinYZ;
+
+			return quat;
 		}
 	}
 }

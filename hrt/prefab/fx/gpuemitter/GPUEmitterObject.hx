@@ -275,13 +275,13 @@ class GPUEmitterObject extends h3d.scene.MeshBatch {
 				for ( s in spawnPass.getShaders() ) {
 					var computeUtils = Std.downcast(s, ComputeUtils);
 					if ( computeUtils != null )
-						computeUtils.onUpdate(this, b, i);
+						computeUtils.onDispatch(this);
 				}
 
 				for ( s in simulationPass.getShaders() ) {
 					var computeUtils = Std.downcast(s, ComputeUtils);
 					if ( computeUtils != null )
-						computeUtils.onUpdate(this, b, i);
+						computeUtils.onDispatch(this);
 				}
 
 				baseSpawn.batchBuffer = b;

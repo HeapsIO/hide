@@ -31,43 +31,49 @@ class RelativeTransformSimulationShader extends ComputeUtils {
 		var life : Float;
 		var lifeTime : Float;
 		var relativeTransform : Mat4;
+		var dt : Float;
 
 		function hasBit(n : Int) : Bool {
 			return (CURVE_MASK & (1 << n) ) != 0;
 		}
 
-		function getCurve(n : Int) : Float {
+		function getCurve(n : Int, l : Float) : Float {
 			var c = 0.0;
 			if ( CURVE_MASK != 0 )
-				c = curveTexture.getLod(vec2(life / lifeTime, (n + 0.5) / 9.0), 0.0).r;
+				c = curveTexture.getLod(vec2(l / lifeTime, (n + 0.5) / 9.0), 0.0).r;
 			return c;
 		}
 
+		function getDiff(n : Int) : Float {
+			return getCurve(n, life + dt) - getCurve(n, life);
+		}
+
 		function main() {
-			var translation = vec3(x,y,z);
+			var justAlive = life <= 0.0;
+			var translation = justAlive ? vec3(x,y,z) : vec3(0.0);
 			var scale = vec3(scaleX, scaleY, scaleZ);
 			var rotation = vec3(rotX, rotY, rotZ);
 
 			if ( hasBit(0) )
-				translation.x = getCurve(0);
+				translation.x = justAlive ? getCurve(0, life) : getDiff(0);
 			if ( hasBit(1) )
-				translation.y = getCurve(1);
+				translation.y = justAlive ? getCurve(1, life) : getDiff(1);
 			if ( hasBit(2) )
-				translation.z = getCurve(2);
+				translation.z = justAlive ? getCurve(2, life) : getDiff(2);
 
 			if ( hasBit(3) )
-				scale.x = getCurve(3);
+				scale.x = getCurve(3, life);
 			if ( hasBit(4) )
-				scale.y = getCurve(4);
+				scale.y = getCurve(4, life);
 			if ( hasBit(5) )
-				scale.z = getCurve(5);
+				scale.z = getCurve(5, life);
 
 			if ( hasBit(6) )
-				rotation.x = getCurve(6);
+				rotation.x = getCurve(6, life);
 			if ( hasBit(7) )
-				rotation.y = getCurve(7);
+				rotation.y = getCurve(7, life);
 			if ( hasBit(8) )
-				rotation.z = getCurve(8);
+				rotation.z = getCurve(8, life);
 
 			// rotation not supported
 			var shaderTRS = scaleMatrix(scale) * translationMatrix(translation);
@@ -97,6 +103,7 @@ class RelativeTransformSimulation extends SimulationShader {
 	override function updateInstance(?propName) {
 		super.updateInstance(propName);
 
+		#if !editor
 		var s = Std.downcast(shader, RelativeTransformSimulationShader);
 		if ( s.curveTexture != null )
 			s.curveTexture.dispose();
@@ -120,26 +127,28 @@ class RelativeTransformSimulation extends SimulationShader {
 
 		s.curveTexture = new h3d.mat.Texture(width, height, null, R32F);
 
-		var curves = findAll(hrt.prefab.Curve);
+		var curves = findAll(hrt.prefab.Curve, p -> p.shouldBeInstanciated());
 		if ( curves.length == 0 )
 			return;
 
 		var curveNames = ["x", "y", "z", "scaleX", "scaleY", "scaleZ", "rotX", "rotY", "rotZ"];
 
+		var evaluator = new Evaluator();
+
 		var pixels = hxd.Pixels.alloc(width, height, s.curveTexture.format);
 		for ( c in curves ) {
-			if ( !c.shouldBeInstanciated() )
-				continue;
 			for ( index => name in curveNames ) {
 				if ( c.name != name )
 					continue;
+				var c = c.makeVal();
 				s.CURVE_MASK = s.CURVE_MASK | (1 << index);
 				for ( i in 0...width )
-					pixels.setPixelF(i, index, new h3d.Vector4(c.getVal(i / width)));
+					pixels.setPixelF(i, index, new h3d.Vector4(evaluator.getFloat(c, (i / width))));
 			}
 		}
 
 		s.curveTexture.uploadPixels(pixels);
+		#end
 	}
 
 	override function postMakeInstance() {

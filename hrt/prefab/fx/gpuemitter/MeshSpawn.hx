@@ -47,8 +47,8 @@ class MeshSpawnShader extends ComputeUtils {
 	}
 
 	var tmpMat : h3d.Matrix = new h3d.Matrix();
-	override function onUpdate(emitter : GPUEmitterObject, buffer : h3d.Buffer, index : Int) {
-		super.onUpdate(emitter, buffer, index);
+	override function onDispatch(emitter : GPUEmitterObject) {
+		super.onDispatch(emitter);
 		var parentInvert = new h3d.Matrix();
 		parentInvert.load(emitter.parent.getAbsPos());
 		parentInvert.invert();
