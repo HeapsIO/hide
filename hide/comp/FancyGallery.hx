@@ -372,6 +372,11 @@ class FancyGallery<GalleryItem> extends hide.comp.Component {
 
 		data.element.draggable = true;
 		data.element.ondragstart = (e:js.html.DragEvent) -> {
+			if (!selection.get(cast data)) {
+				clearSelection();
+				setSelection(data, true);
+			}
+
 			if (dragAndDropInterface.onDragStart(data.item, e.dataTransfer)) {
 				e.dataTransfer.effectAllowed = "move";
 				e.dataTransfer.setDragImage(data.element, 0,0);
