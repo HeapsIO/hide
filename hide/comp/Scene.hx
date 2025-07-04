@@ -581,6 +581,37 @@ class Scene extends hide.comp.Component implements h3d.IDrawable {
 		s3d.camera.target.set(0, 0, (b.zMax + b.zMin) * 0.5);
 	}
 
+
+	public function resetCamera2( ?obj : h3d.scene.Object, distanceFactor = 1., ?maxDist: Float) {
+
+		if( defaultCamera != null ) {
+			s3d.camera.load(defaultCamera);
+			return;
+		}
+
+		if( obj == null ) obj = s3d;
+		var b = obj.getBounds();
+		if( b.isEmpty() )
+			return;
+		var s = b.toSphere();
+		var r = s.r;
+
+		var dist = (r) / hxd.Math.tan(hxd.Math.degToRad(s3d.camera.fovY/2)) * distanceFactor;
+
+		//var debug = new h3d.scene.Sphere(s.r, true, obj.getScene());
+		// debug.x = s.x;
+		// debug.y = s.y;
+		// debug.z = s.z;
+
+		if (maxDist != null) {
+			dist = Math.min(maxDist, dist);
+		}
+		var ang = Math.PI / 4;
+		var zang = Math.PI * 0.4;
+		s3d.camera.pos.set(s.x + Math.sin(zang) * Math.cos(ang) * dist, s.y + Math.sin(zang) * Math.sin(ang) * dist, s.z + Math.cos(zang) * dist);
+		s3d.camera.target.set(s.x, s.y, s.z);
+	}
+
 	public function render( e : h3d.Engine ) {
 		if (Ide.inst.currentConfig.get("sceneeditor.tog-scene-render", false))
 			return;

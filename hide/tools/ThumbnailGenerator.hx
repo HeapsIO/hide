@@ -267,7 +267,13 @@ class ThumbnailGenerator {
 		}
 		if (!abort) {
 			try {
-				renderCanvas.resetCamera(sceneRoot, 0.85, 32.0);
+				renderCanvas.s3d.camera.setFovX(25, 1.0);
+				var downscale = 1.0;
+				// FX have usually large bounds. Scale them down
+				var fx = sceneRoot.find((f) -> Std.downcast(f, hrt.prefab.fx.FX.FXAnimation));
+				if (fx != null)
+					downscale = 0.5;
+				renderCanvas.resetCamera2(sceneRoot, downscale, 1000.0);
 
 				renderTexture.clear(0,0);
 
