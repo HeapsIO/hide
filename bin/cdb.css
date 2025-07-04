@@ -87,7 +87,6 @@
 }
 .cdb .cdb-sheet tr.separator td {
   position: sticky;
-  z-index: 100;
   top: 19px;
   border-left: none;
   padding-top: 6px;

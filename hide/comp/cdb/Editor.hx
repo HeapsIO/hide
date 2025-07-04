@@ -129,6 +129,7 @@ class Editor extends Component {
 		keys.register("copy", onCopy);
 		keys.register("paste", onPaste);
 		keys.register("delete", onDelete);
+		keys.register("cdb.showReferences", () -> showReferences());
 		keys.register("undo", function() undo.undo());
 		keys.register("redo", function() undo.redo());
 		keys.register("cdb.moveBack", () -> cursor.jump(true));
