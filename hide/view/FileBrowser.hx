@@ -742,9 +742,22 @@ class FileBrowser extends hide.ui.View<FileBrowserState> {
 		event.stopPropagation();
 		event.preventDefault();
 
+		var options : Array<hide.comp.ContextMenu.MenuItem> = [];
+
+		var collapseAll : hide.comp.ContextMenu.MenuItem = {
+					label: "Collapse All",
+					click: () -> {
+						for (child in root.children) {
+							fancyTree.collapseItem(child);
+						}
+					}
+				};
+
 		// if the user clicked on the background of the file tree, don't display anything
-		if (item == null && !isGallery)
+		if (item == null && !isGallery) {
+			hide.comp.ContextMenu.createFromEvent(event, [collapseAll]);
 			return;
+		}
 
 		// if the user selected the "current" folder in the gallery
 		// prevent move/delete ... operations on it to avoid confusion and wrong operations
@@ -769,7 +782,6 @@ class FileBrowser extends hide.ui.View<FileBrowserState> {
 			}
 		}
 
-		var options : Array<hide.comp.ContextMenu.MenuItem> = [];
 
 		if (item.kind == Dir) {
 			options.push({
@@ -783,14 +795,7 @@ class FileBrowser extends hide.ui.View<FileBrowserState> {
 					click: fancyTree.collapseItem.bind(item),
 				});
 
-				options.push({
-					label: "Collapse All",
-					click: () -> {
-						for (child in root.children) {
-							fancyTree.collapseItem(child);
-						}
-					}
-				});
+				options.push(collapseAll);
 			}
 		}
 
