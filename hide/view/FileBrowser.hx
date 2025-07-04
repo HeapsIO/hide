@@ -527,7 +527,8 @@ class FileBrowser extends hide.ui.View<FileBrowserState> {
 
 		fancyGallery.dragAndDropInterface = {
 			onDragStart: (item: FileEntry, dataTransfer: js.html.DataTransfer) -> {
-				dataTransfer.setData(dragKey, haxe.Json.stringify([item.getPath()]));
+				var selection = getItemAndSelection(item, true);
+				dataTransfer.setData(dragKey, haxe.Json.stringify([for (item in selection) item.getPath()]));
 				return true;
 			}
 		}
@@ -731,6 +732,10 @@ class FileBrowser extends hide.ui.View<FileBrowserState> {
 		}
 		if (!isGallery) {
 			for (item in fancyTree.getSelectedItems()) {
+				hide.tools.Extensions.ArrayExtensions.pushUnique(items, item);
+			}
+		} else {
+			for (item in fancyGallery.getSelectedItems()) {
 				hide.tools.Extensions.ArrayExtensions.pushUnique(items, item);
 			}
 		}
