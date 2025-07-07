@@ -552,11 +552,24 @@ class FancyTree<TreeItem> extends hide.comp.Component {
 		queueRefresh(Search);
 	}
 
-	public function filterRec(children: Array<TreeItemData<TreeItem>>) : Bool {
+	public function filterRec(children: Array<TreeItemData<TreeItem>>, parentMatch: Bool = false) : Bool {
 		var anyVisible = false;
 		for (child in children) {
+
+
 			child.filterState = FilterFlags.ofInt(0);
 			child.searchRanges = null;
+
+			if (child.children == null) {
+				generateChildren(child);
+			}
+
+			if (parentMatch) {
+				child.filterState |= Visible;
+				filterRec(child.children, parentMatch);
+				return true;
+			}
+
 
 			if (currentSearch.length == 0) {
 				child.filterState |= Visible;
@@ -565,13 +578,14 @@ class FancyTree<TreeItem> extends hide.comp.Component {
 				if (child.searchRanges != null) {
 					child.filterState |= MatchSearch;
 					child.filterState |= Visible;
+					child.filterState |= Open;
 				}
 			}
-			if (child.children == null) {
-				generateChildren(child);
-			}
 
-			if(filterRec(child.children) && currentSearch.length > 0) {
+
+			parentMatch = child.filterState.has(MatchSearch);
+
+			if(filterRec(child.children, parentMatch) && currentSearch.length > 0) {
 				child.filterState |= Visible;
 				child.filterState |= Open;
 			}
