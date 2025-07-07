@@ -353,6 +353,9 @@ class FancyTree<TreeItem> extends hide.comp.Component {
 
 			searchBarClosable.toggleOpen(true);
 			searchBar.focus();
+			currentSearch = searchBar.getValue().toLowerCase();
+			queueRefresh(Search);
+			return;
 		}
 
 		if (hide.ui.Keys.matchJsEvent("rename", e, ide.currentConfig) && selection.iterator().hasNext()) {
@@ -361,6 +364,7 @@ class FancyTree<TreeItem> extends hide.comp.Component {
 
 			if (currentItem != null)
 				rename(currentItem.item);
+			return;
 		}
 
 		if (e.key == "Escape") {
@@ -373,10 +377,17 @@ class FancyTree<TreeItem> extends hide.comp.Component {
 				element.get(0).focus();
 				currentSearch = "";
 				queueRefresh(Search);
+				queueRefresh(FocusCurrent);
 			}
+			return;
 		}
 
 		if (e.key.length == 1) {
+			if (searchBar.hasFocus())
+				return;
+			e.stopPropagation();
+			e.preventDefault();
+
 			var time = haxe.Timer.stamp();
 			if (time - gotoFileLastTime > gotoFileKeyMaxDelay) {
 				gotoFileCurrentMatch = "";
@@ -399,6 +410,7 @@ class FancyTree<TreeItem> extends hide.comp.Component {
 					break;
 				}
 			}
+			return;
 		}
 
 		var delta = 0;
@@ -595,10 +607,7 @@ class FancyTree<TreeItem> extends hide.comp.Component {
 
 			if (parentMatch) {
 				child.filterState |= Visible;
-				filterRec(child.children, parentMatch);
-				return true;
 			}
-
 
 			if (currentSearch.length == 0) {
 				child.filterState |= Visible;
@@ -610,7 +619,6 @@ class FancyTree<TreeItem> extends hide.comp.Component {
 					child.filterState |= Open;
 				}
 			}
-
 
 			parentMatch = child.filterState.has(MatchSearch);
 
@@ -815,6 +823,9 @@ class FancyTree<TreeItem> extends hide.comp.Component {
 
 
 	function setSelection(data: TreeItemData<TreeItem>, select: Bool) {
+		if (data == null)
+			return;
+
 		if (select) {
 			selection.set(cast data, true);
 		} else {
@@ -968,6 +979,16 @@ class FancyTree<TreeItem> extends hide.comp.Component {
 	}
 
 	function isOpen(data: TreeItemData<TreeItem>) {
+		// Always open folders that have selected children
+		for (selected => _ in selection) {
+			var cur = (cast selected:TreeItemData<TreeItem>).parent;
+			while (cur != null) {
+				if (data == cur)
+					return true;
+				cur = cur.parent;
+			}
+		}
+
 		return (openState.get(data.uniqueName) ?? false) || data.filterState.has(Open);
 	}
 

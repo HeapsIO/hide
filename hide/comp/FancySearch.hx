@@ -5,6 +5,7 @@ class FancySearch extends hide.comp.Component {
 	var open = false;
 	var input : js.html.InputElement;
 
+
 	public override function new(parent: Element = null, target: Element = null) {
 		var el = new hide.Element('
 			<fancy-search>
@@ -26,6 +27,10 @@ class FancySearch extends hide.comp.Component {
 		input.onchange = (e) -> {
 			onSearch(e.target.value, true);
 		}
+	}
+
+	public function getValue() {
+		return input.value;
 	}
 
 	public dynamic function onSearch(search: String, enter: Bool) : Void {};
