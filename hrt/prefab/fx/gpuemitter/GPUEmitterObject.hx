@@ -226,6 +226,7 @@ class GPUEmitterObject extends h3d.scene.MeshBatch {
 			baseSimulation.dtParam = ctx.elapsedTime;
 			baseSimulation.maxSize = data.maxSize;
 			baseSimulation.minSize = data.minSize;
+			baseSimulation.INFINITE = data.infinite;
 			switch ( data.align ) {
 			case FaceCam:
 				baseSimulation.FACE_CAM = true;

@@ -17,6 +17,7 @@ class BaseSimulation extends ComputeUtils {
 
 		@const var FACE_CAM : Bool = false;
 		@const var CAMERA_BOUNDS : Bool = false;
+		@const var INFINITE : Bool = false;
 
 		@param var dtParam : Float;
 		@param var cameraUp : Vec3;
@@ -44,7 +45,7 @@ class BaseSimulation extends ComputeUtils {
 			prevModelView = batchBuffer[computeVar.globalInvocation.x].modelView;
 			particleRandom = particleBuffer[computeVar.globalInvocation.x].random;
 			particleColor = int2rgba(floatBitsToInt(particleBuffer[computeVar.globalInvocation.x].color));
-			relativeTransform = scaleMatrix((life < lifeTime ? 1.0 : 0.0) * (computeVar.globalInvocation.x > curCount ? 0.0 : 1.0) * vec3(particleRandom * (maxSize - minSize) + minSize));
+			relativeTransform = scaleMatrix(((INFINITE || life < lifeTime) ? 1.0 : 0.0) * (computeVar.globalInvocation.x > curCount ? 0.0 : 1.0) * vec3(particleRandom * (maxSize - minSize) + minSize));
 		}
 
 		function main() {
