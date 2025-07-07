@@ -124,6 +124,10 @@ class FileBrowser extends hide.ui.View<FileBrowserState> {
 	var fancyTree: hide.comp.FancyTree<FileEntry>;
 	var collapseSubfolders : Bool;
 	var collapseSubfoldersButton : js.html.Element;
+
+	var gallerySearchFullPath : Bool = false;
+	var gallerySearchFullPathButton : js.html.Element;
+
 	var filterButton : js.html.Element;
 	var filterEnabled(default, set) : Bool;
 	var filters : Map<String, {exts: Array<String>, icon: String}> = [];
@@ -157,6 +161,12 @@ class FileBrowser extends hide.ui.View<FileBrowserState> {
 	function syncCollapseSubfolders() {
 		collapseSubfoldersButton.classList.toggle("selected", collapseSubfolders);
 		saveDisplayState("collapseSubfolders", collapseSubfolders);
+		queueGalleryRefresh();
+	}
+
+	function syncGallerySearchFullPath() {
+		gallerySearchFullPathButton.classList.toggle("selected", gallerySearchFullPath);
+		saveDisplayState("gallerySearchFullPath", gallerySearchFullPath);
 		queueGalleryRefresh();
 	}
 
@@ -201,6 +211,8 @@ class FileBrowser extends hide.ui.View<FileBrowserState> {
 				}
 			}
 
+			var base = currentFolder.getRelPath();
+
 			function rec(files: Array<FileEntry>) {
 				for (file in files) {
 					if (file.kind == Dir && (collapseSubfolders || searchString.length > 0)) {
@@ -219,7 +231,13 @@ class FileBrowser extends hide.ui.View<FileBrowserState> {
 						}
 
 						if (searchString.length > 0) {
-							var range = hide.comp.FancySearch.computeSearchRanges(file.name, searchString);
+							var name = if (gallerySearchFullPath) {
+								file.getRelPath().substr(base.length);
+							} else {
+								file.name;
+							}
+
+							var range = hide.comp.FancySearch.computeSearchRanges(name, searchString);
 							if (range == null) {
 								continue;
 							}
@@ -331,6 +349,9 @@ class FileBrowser extends hide.ui.View<FileBrowserState> {
 						<fancy-separator></fancy-separator>
 
 						<fancy-search class="fb-search"></fancy-search>
+						<fancy-button class="btn-seach-full-path" title="Search in files path in addition of the files name">
+							<fancy-icon class="med" style="mask-image:url(\'res/icons/svg/search_folder.svg\')"></fancy-icon>
+						</fancy-button>
 					</fancy-toolbar>
 					<fancy-gallery></fancy-gallery>
 				</div>
@@ -343,7 +364,7 @@ class FileBrowser extends hide.ui.View<FileBrowserState> {
 
 		var search = new hide.comp.FancySearch(null, browserLayout.find(".fb-search"));
 		search.onSearch = (string, _) -> {
-			searchString = string;
+			searchString = string.toLowerCase();
 			queueGalleryRefresh();
 		};
 
@@ -619,6 +640,14 @@ class FileBrowser extends hide.ui.View<FileBrowserState> {
 			syncCollapseSubfolders();
 		}
 		syncCollapseSubfolders();
+
+		gallerySearchFullPath = getDisplayState("gallerySearchFullPath") ?? false;
+		gallerySearchFullPathButton = browserLayout.find(".btn-seach-full-path").get(0);
+		gallerySearchFullPathButton.onclick = (e: js.html.MouseEvent) -> {
+			gallerySearchFullPath = !gallerySearchFullPath;
+			syncGallerySearchFullPath();
+		}
+		syncGallerySearchFullPath();
 
 		FileManager.inst.onFileChangeHandlers.push(onFileChange);
 

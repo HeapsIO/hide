@@ -4979,6 +4979,9 @@ fancy-icon {
 fancy-icon.small {
   height: 12px;
 }
+fancy-icon.med {
+  height: 18px;
+}
 fancy-icon.big {
   height: 22px;
 }
