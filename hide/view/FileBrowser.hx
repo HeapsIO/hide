@@ -831,15 +831,16 @@ class FileBrowser extends hide.ui.View<FileBrowserState> {
 					}
 				};
 
+		var implicitFolder = false;
+
 		// if the user clicked on the background of the file tree, don't display anything
 		if (item == null && !isGallery) {
-			hide.comp.ContextMenu.createFromEvent(event, [collapseAll]);
-			return;
+			implicitFolder = true;
+			item = root;
 		}
 
 		// if the user selected the "current" folder in the gallery
 		// prevent move/delete ... operations on it to avoid confusion and wrong operations
-		var implicitFolder = false;
 		if (item == null) {
 			implicitFolder = true;
 			item = currentFolder;

@@ -620,21 +620,12 @@ class FancyTree<TreeItem> extends hide.comp.Component {
 			fold.addEventListener("click", (e) -> {
 				toggleDataOpen(data);
 				saveState();
+				e.stopPropagation();
 			});
 
-			var clickHandlerClosure = dataClickHandler.bind(data);
-			var ctxMenuClosure = contextMenuHandler.bind(data.item);
-			var doubleClickClosure = onDoubleClick.bind(data.item);
-
-			var icon = element.querySelector(".header-icon");
-			icon.onclick = clickHandlerClosure;
-			icon.oncontextmenu = ctxMenuClosure;
-			icon.ondblclick = doubleClickClosure;
-
-			var name = element.querySelector("fancy-tree-name");
-			name.onclick = clickHandlerClosure;
-			name.oncontextmenu = ctxMenuClosure;
-			name.ondblclick = doubleClickClosure;
+			element.onclick = dataClickHandler.bind(data);
+			element.oncontextmenu = contextMenuHandler.bind(data.item);
+			element.ondblclick = onDoubleClick.bind(data.item);
 
 			data.element = element;
 
