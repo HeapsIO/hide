@@ -856,8 +856,17 @@ class FileBrowser extends hide.ui.View<FileBrowserState> {
 		fancyTree.selectItem(currentFolder);
 		queueGalleryRefresh();*/
 
-		var newMenu = [];
-		for (e in @:privateAccess hide.view.FileTree.EXTENSIONS) {
+		var newMenu : Array<hide.comp.ContextMenu.MenuItem> = [];
+		newMenu.push({
+				label: "Directory",
+				icon: "folder",
+				click: createNew.bind(item.getPath(), { options : { createNew : "Directory" }, extensions : null, component : null }, isGallery),
+			});
+
+		var extIterator = @:privateAccess hide.view.FileTree.EXTENSIONS.iterator();
+		if (extIterator.hasNext())
+			newMenu.push({isSeparator: true});
+		for (e in extIterator) {
 			if (e.options.createNew != null) {
 				newMenu.push({
 				label: e.options.createNew,
