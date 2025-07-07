@@ -404,7 +404,7 @@ class FileBrowser extends hide.ui.View<FileBrowserState> {
 					return '<div class="ico ico-${ext.options.icon}" title="${ext.options.name ?? "Unknown"}"></div>';
 				}
 			}
-			return null;
+			return '<div class="ico ico-file" title="Unknown"></div>';
 		}
 
 		fancyTree.onNameChange = renameHandler;
@@ -574,7 +574,7 @@ class FileBrowser extends hide.ui.View<FileBrowserState> {
 		openDir(root, false);
 
 
-		fancyTree.onSelectionChanged = () -> {
+		fancyTree.onSelectionChanged = (enterKey) -> {
 			var selection = fancyTree.getSelectedItems();
 
 			// Sinc folder view with other filebrowser in SingleMiniature mode
@@ -587,6 +587,12 @@ class FileBrowser extends hide.ui.View<FileBrowserState> {
 					if (view.layout == SingleMiniature) {
 						view.openDir(selection[0], false);
 					}
+				}
+			}
+
+			if (enterKey) {
+				if (selection[0].kind == File) {
+					ide.openFile(selection[0].getPath());
 				}
 			}
 		}

@@ -40,6 +40,10 @@ class FancyTree<TreeItem> extends hide.comp.Component {
 	var currentItem(default, set) : TreeItemData<TreeItem>;
 	var currentVisible(default, set) : Bool = false;
 
+	var gotoFileLastTime : Float = 0.0;
+	var gotoFileCurrentMatch = "";
+
+	static final gotoFileKeyMaxDelay = 0.5;
 	static final overDragOpenDelaySec = 0.5;
 
 	function set_currentVisible(v) {
@@ -145,7 +149,7 @@ class FancyTree<TreeItem> extends hide.comp.Component {
 	/**
 		Called when the selected items in the tree changed
 	**/
-	public dynamic function onSelectionChanged() {
+	public dynamic function onSelectionChanged(enterKey:Bool) {
 	}
 
 	/**
@@ -372,6 +376,31 @@ class FancyTree<TreeItem> extends hide.comp.Component {
 			}
 		}
 
+		if (e.key.length == 1) {
+			var time = haxe.Timer.stamp();
+			if (time - gotoFileLastTime > gotoFileKeyMaxDelay) {
+				gotoFileCurrentMatch = "";
+			}
+
+			gotoFileLastTime = time;
+
+			var lower = e.key.toLowerCase();
+			if (lower != gotoFileCurrentMatch) {
+				gotoFileCurrentMatch += lower;
+			}
+
+			var start = currentItem != null ? flatData.indexOf(currentItem) : 0;
+			if (start < 0)
+				start = 0;
+			for (i in 0 ... flatData.length) {
+				var item = flatData[(start + i + 1) % flatData.length];
+				if (StringTools.startsWith(item.name.toLowerCase(), gotoFileCurrentMatch)) {
+					selectItem(item.item);
+					break;
+				}
+			}
+		}
+
 		var delta = 0;
 		switch (e.key) {
 			case "ArrowUp":
@@ -432,7 +461,7 @@ class FancyTree<TreeItem> extends hide.comp.Component {
 			if (currentItem != null) {
 				setSelection(currentItem, true);
 			}
-			onSelectionChanged();
+			onSelectionChanged(true);
 			return;
 		}
 	}
@@ -625,7 +654,7 @@ class FancyTree<TreeItem> extends hide.comp.Component {
 
 			element.onclick = dataClickHandler.bind(data);
 			element.oncontextmenu = contextMenuHandler.bind(data.item);
-			element.ondblclick = onDoubleClick.bind(data.item);
+			element.ondblclick = doubleClickHander.bind(data);
 
 			data.element = element;
 
@@ -793,6 +822,14 @@ class FancyTree<TreeItem> extends hide.comp.Component {
 		}
 	}
 
+	function doubleClickHander(data: TreeItemData<TreeItem>, event: js.html.MouseEvent) : Void {
+		if (hasChildren(data.item)) {
+			toggleDataOpen(data);
+		} else {
+			onDoubleClick(data.item);
+		}
+	}
+
 	function dataClickHandler(data: TreeItemData<TreeItem>, event: js.html.MouseEvent) : Void {
 		if (!event.ctrlKey) {
 			clearSelection();
@@ -814,7 +851,7 @@ class FancyTree<TreeItem> extends hide.comp.Component {
 
 		if (!(event.shiftKey && !event.ctrlKey) || currentItem == null)
 			currentItem = data;
-		onSelectionChanged();
+		onSelectionChanged(false);
 
 		queueRefresh();
 	}
