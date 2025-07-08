@@ -174,6 +174,11 @@ class FX2DAnimation extends h2d.Object {
 			setTime(curTime);
 			super.sync(ctx);
 			localTime += ctx.elapsedTime * playSpeed;
+
+			if (loop && localTime > duration) {
+				localTime = (localTime % duration);
+			}
+
 			if( duration > 0 && curTime < duration && localTime >= duration) {
 				localTime = duration;
 				if( onEnd != null )
