@@ -77,13 +77,13 @@ class FancyTree<TreeItem> extends hide.comp.Component {
 	public function new(parent: Element, ?saveKey: String) {
 		saveDisplayKey = saveKey;
 		var el = new Element('
-			<fancy-tree2 tabindex="-1">
+			<fancy-tree tabindex="-1">
 				<fancy-closable><fancy-search></fancy-search></fancy-closable>
 				<fancy-scroll>
 				<fancy-item-container>
 				</fancy-item-container>
 				</fancy-scroll>
-			</fancy-tree2>'
+			</fancy-tree>'
 		);
 		super(parent, el);
 
