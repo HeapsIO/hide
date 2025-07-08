@@ -471,6 +471,10 @@ class FileBrowser extends hide.ui.View<FileBrowserState> {
 				if (files.length == 0)
 					return false;
 
+				if(!ide.confirm('Really move files :\n${files.join("\n")}\nto target folder :\n${target.getRelPath()}\n?\n(This could take a long time)')) {
+					return true;
+				}
+
 				moveFiles(target.getRelPath(), files);
 
 				return true;
