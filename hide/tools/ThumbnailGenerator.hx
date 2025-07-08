@@ -143,21 +143,7 @@ class ThumbnailGenerator {
 		}
 		switch((message.type:FileManager.ManagerToGenCommand)) {
 			case queue:
-					var thumbPath = getThumbPath(message.path).toString();
-					var metaPath = thumbPath + ".meta";
-					var shouldGenerate = true;
-					if (!Ide.inst.ideConfig.filebrowserDebugIgnoreThumbnailCache && sys.FileSystem.exists(thumbPath) && sys.FileSystem.exists(metaPath)) {
-						var savedHash = sys.io.File.getContent(metaPath);
-						var hash = getThumbnailHash(message.path);
-						if (hash == savedHash) {
-							shouldGenerate = false;
-							sendSuccess(message.path, thumbPath);
-						}
-					}
-
-					if (shouldGenerate) {
-						renderMiniature(message.path, sendSuccess.bind(message.path));
-					}
+					renderMiniature(message.path, sendSuccess.bind(message.path));
 			case clear:
 				miniaturesToRender = [];
 			case prio:
@@ -409,32 +395,50 @@ class ThumbnailGenerator {
 
 		queued = false;
 
-		if (miniaturesToRender.length == 0) {
-			return;
+
+		var startTime = haxe.Timer.stamp();
+
+		// timeslice at 30 FPS
+		while(haxe.Timer.stamp() - startTime < 0.33) {
+
+			if (miniaturesToRender.length == 0) {
+				return;
+			}
+
+			if (prioDirty) {
+				miniaturesToRender.sort((a, b) -> Reflect.compare(a.priority, b.priority));
+				prioDirty = false;
+			}
+
+			var toRender = miniaturesToRender.pop();
+
+			// Check thumbnail cache
+			var thumbPath = getThumbPath(toRender.path).toString();
+			var metaPath = thumbPath + ".meta";
+			var shouldGenerate = true;
+			if (!Ide.inst.ideConfig.filebrowserDebugIgnoreThumbnailCache && sys.FileSystem.exists(thumbPath) && sys.FileSystem.exists(metaPath)) {
+				var savedHash = sys.io.File.getContent(metaPath);
+				var hash = getThumbnailHash(toRender.path);
+				if (hash == savedHash) {
+					shouldGenerate = false;
+					sendSuccess(toRender.path, thumbPath);
+					continue;
+				}
+			}
+
+			var ext = toRender.path.split(".").pop().toLowerCase();
+			switch(ext) {
+				case "prefab" | "fbx" | "l3d" | "fx" | "shgraph":
+					handleModel(toRender);
+				case "jpg" | "jpeg" | "png":
+					handleTexture(toRender);
+				default:
+					toRender.cb(null);
+			}
 		}
-
-		if (prioDirty) {
-			miniaturesToRender.sort((a, b) -> Reflect.compare(a.priority, b.priority));
-			prioDirty = false;
-		}
-
-		var toRender = miniaturesToRender.pop();
-
-		var ext = toRender.path.split(".").pop().toLowerCase();
-		switch(ext) {
-			case "prefab" | "fbx" | "l3d" | "fx" | "shgraph":
-				handleModel(toRender);
-			case "jpg" | "jpeg" | "png":
-				handleTexture(toRender);
-			default:
-				toRender.cb(null);
-		}
-
 
 		if (miniaturesToRender.length > 0) {
 			haxe.Timer.delay(processMiniature, 1);
-			return;
 		}
-
 	}
 }
