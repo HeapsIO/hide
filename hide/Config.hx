@@ -56,6 +56,7 @@ class Config {
 	var ide : Ide;
 	var parent : Config;
 	public var path(default,null) : String;
+	var lastPathMTime : Float = 0;
 	public var source(default, null) : ConfigDef = cast {};
 	public var current : ConfigDef = cast {};
 
@@ -63,6 +64,10 @@ class Config {
 		ide = Ide.inst;
 		this.parent = parent;
 		sync();
+	}
+
+	public function getMTime() : Float {
+		return parent != null ? hxd.Math.max(parent.getMTime(), lastPathMTime) : lastPathMTime;
 	}
 
 	public function isLocal() {
@@ -73,8 +78,11 @@ class Config {
 	public function load( path : String ) {
 		this.path = path;
 		var fullPath = ide.getPath(path);
-		if( sys.FileSystem.exists(fullPath) )
+		if( sys.FileSystem.exists(fullPath) ) {
+			var stat = js.node.Fs.statSync(fullPath);
+			lastPathMTime = stat.mtime.getTime();
 			source = try ide.parseJSON(sys.io.File.getContent(fullPath)) catch( e : Dynamic ) throw e+" (in "+fullPath+")";
+		}
 		else
 			source = cast {};
 		sync();

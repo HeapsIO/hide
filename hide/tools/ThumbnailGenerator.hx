@@ -126,11 +126,6 @@ class ThumbnailGenerator {
 
 			renderCanvas.errorHandler = (e) -> null;
 
-			var renderPropsList = hide.comp.ScenePreview.listRenderPropsStatic(hide.Ide.inst.config.current);
-			if (renderPropsList.length > 0) {
-				renderPropsPath =  renderPropsList[0].value;
-			}
-
 			haxe.Timer.delay(() -> {
 				this.ready = true;
 
@@ -156,7 +151,8 @@ class ThumbnailGenerator {
 					if (!Ide.inst.ideConfig.filebrowserDebugIgnoreThumbnailCache && sys.FileSystem.exists(thumbPath)) {
 						var thumbStat = sys.FileSystem.stat(thumbPath);
 						var fileStat = sys.FileSystem.stat(message.path);
-						if (thumbStat.mtime.getTime() > fileStat.mtime.getTime()) {
+						var config = Config.loadForFile(Ide.inst, message.path);
+						if (thumbStat.mtime.getTime() > fileStat.mtime.getTime() && thumbStat.mtime.getTime() > config.getMTime()) {
 							shouldGenerate = false;
 							sendSuccess(message.path, thumbPath);
 						}
@@ -203,6 +199,16 @@ class ThumbnailGenerator {
 		renderCanvas.engine.setCurrent();
 
 		renderCanvas.s3d.removeChildren();
+
+		var config = Config.loadForFile(Ide.inst, toRender.path);
+		renderPropsPath = config.getLocal("thumbnail.renderProps");
+		if (renderPropsPath == null) {
+			var renderPropsList = hide.comp.ScenePreview.listRenderPropsStatic(config);
+			if (renderPropsList.length > 0) {
+				renderPropsPath =  renderPropsList[0].value;
+			}
+		}
+
 		if (renderPropsPath != null)
 			renderCanvas.setRenderProps(renderPropsPath);
 
