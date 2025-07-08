@@ -84,8 +84,6 @@ class ThumbnailGenerator {
 	var bufferSize = 0;
 	static final maxBufferSize = 16384;
 
-	var renderPropsPath : String;
-
 	function new() {
 		if (Ide.inst.ideConfig.filebrowserDebugShowWindow) {
 			nw.Window.get().show(true);
@@ -146,13 +144,12 @@ class ThumbnailGenerator {
 		switch((message.type:FileManager.ManagerToGenCommand)) {
 			case queue:
 					var thumbPath = getThumbPath(message.path).toString();
-
+					var metaPath = thumbPath + ".meta";
 					var shouldGenerate = true;
-					if (!Ide.inst.ideConfig.filebrowserDebugIgnoreThumbnailCache && sys.FileSystem.exists(thumbPath)) {
-						var thumbStat = sys.FileSystem.stat(thumbPath);
-						var fileStat = sys.FileSystem.stat(message.path);
-						var config = Config.loadForFile(Ide.inst, message.path);
-						if (thumbStat.mtime.getTime() > fileStat.mtime.getTime() && thumbStat.mtime.getTime() > config.getMTime()) {
+					if (!Ide.inst.ideConfig.filebrowserDebugIgnoreThumbnailCache && sys.FileSystem.exists(thumbPath) && sys.FileSystem.exists(metaPath)) {
+						var savedHash = sys.io.File.getContent(metaPath);
+						var hash = getThumbnailHash(message.path);
+						if (hash == savedHash) {
 							shouldGenerate = false;
 							sendSuccess(message.path, thumbPath);
 						}
@@ -195,19 +192,32 @@ class ThumbnailGenerator {
 		return path;
 	}
 
-	function handleModel(toRender: RenderInfo) {
-		renderCanvas.engine.setCurrent();
-
-		renderCanvas.s3d.removeChildren();
-
-		var config = Config.loadForFile(Ide.inst, toRender.path);
-		renderPropsPath = config.getLocal("thumbnail.renderProps");
+	static function getRenderProps(filePath: String, config: Config) : String {
+		var renderPropsPath = config.getLocal("thumbnail.renderProps");
 		if (renderPropsPath == null) {
 			var renderPropsList = hide.comp.ScenePreview.listRenderPropsStatic(config);
 			if (renderPropsList.length > 0) {
 				renderPropsPath =  renderPropsList[0].value;
 			}
 		}
+		return renderPropsPath;
+	}
+
+	static function getThumbnailHash(filePath: String) : String {
+		var config = Config.loadForFile(Ide.inst, filePath);
+		var toHash = "";
+		toHash += getRenderProps(filePath, config);
+		toHash += sys.FileSystem.stat(filePath).mtime.getTime();
+		return haxe.crypto.Md5.encode(toHash);
+	}
+
+	function handleModel(toRender: RenderInfo) {
+		renderCanvas.engine.setCurrent();
+
+		renderCanvas.s3d.removeChildren();
+
+		var config = Config.loadForFile(Ide.inst, toRender.path);
+		var renderPropsPath = getRenderProps(toRender.path, config);
 
 		if (renderPropsPath != null)
 			renderCanvas.setRenderProps(renderPropsPath);
@@ -327,6 +337,7 @@ class ThumbnailGenerator {
 		});
 
 		sys.io.File.saveBytes(path, bytes.getBytes());
+		sys.io.File.saveContent(path + ".meta", getThumbnailHash(basePath));
 		return path;
 	}
 
