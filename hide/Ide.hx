@@ -46,6 +46,8 @@ class Ide extends hide.tools.IdeData {
 	var goldenContainer : hide.Element;
 	var statusIcons : hide.Element;
 
+	var breakShortcut : Dynamic;
+
 	public var show3DIcons = true;
 	public var show3DIconsCategory : Map<hrt.impl.EditorTools.IconCategory, Bool> = new Map();
 
@@ -547,6 +549,21 @@ class Ide extends hide.tools.IdeData {
 
 		getOrInitTarget(Center);
 
+		// register a global shortcut that break in the debugger
+		// on Alt+F1. Usefull to debug UI elements that are temporary
+		// Note : the debugger window must be open for this to work
+		{
+			var option = {
+				key: "Alt+F1",
+				active: () -> {
+					js.Lib.debug();
+				}
+			};
+
+			breakShortcut = js.Syntax.construct("nw.Shortcut", option);
+			untyped nw.App.registerGlobalHotKey(breakShortcut);
+		}
+
 		var waitCount = 0;
 		function waitInit() {
 			waitCount++;
@@ -909,6 +926,7 @@ class Ide extends hide.tools.IdeData {
 	public function reload() {
 		hasReloaded = true;
 		fileWatcher.dispose();
+		untyped nw.App.unregisterGlobalHotKey(breakShortcut);
 		hide.tools.FileManager.onBeforeReload();
 		hide.view.RemoteConsoleView.onBeforeReload();
 		js.Browser.location.reload();
