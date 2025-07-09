@@ -327,6 +327,8 @@ class ScriptChecker {
 					switch( t ) {
 					case TEnum(e,_):
 						t = TAnon([for( c in e.constructors ) { name : c.name, opt : false, t : c.args == null ? t : TFun(c.args,t) }]);
+					case TInst(c,[]):
+						t = TAnon([for( f in c.statics ) if( f.isPublic || (api.publicFields != true && f.t.match(TFun(_))) ) { name : f.name, opt : false, t : f.t }]);
 					default:
 						error('Cannot process class type $tname');
 					}
