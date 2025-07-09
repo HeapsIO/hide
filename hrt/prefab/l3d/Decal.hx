@@ -211,6 +211,11 @@ class Decal extends Object3D {
 				wireCenter.ignoreCollide = true;
 				wireCenter.material.shadows = false;
 				wireCenter.material.mainPass.depthTest = Always;
+
+				// prevent missing calculatedUV if shaders are added when decal is selected.
+				var uvShader = new h3d.shader.Texture(h3d.mat.Texture.fromColor(0xFFFFFFFF));
+				wire.material.mainPass.addShader(uvShader);
+				wireCenter.material.mainPass.addShader(uvShader);
 			}
 		} else {
 			clearSelection();
