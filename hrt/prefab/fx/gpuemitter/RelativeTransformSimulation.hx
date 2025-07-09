@@ -26,6 +26,10 @@ class RelativeTransformSimulationShader extends ComputeUtils {
 		@param var rotY : Float;
 		@param var rotZ : Float;
 
+		@param var speedX : Float;
+		@param var speedY : Float;
+		@param var speedZ : Float;
+
 		@param var curveTexture : Sampler2D;
 
 		var life : Float;
@@ -54,6 +58,8 @@ class RelativeTransformSimulationShader extends ComputeUtils {
 			var scale = vec3(scaleX, scaleY, scaleZ);
 			var rotation = vec3(rotX, rotY, rotZ);
 
+			var speed = vec3(speedX,speedY,speedZ);
+
 			if ( hasBit(0) )
 				translation.x = justAlive ? getCurve(0, life) : getDiff(0);
 			if ( hasBit(1) )
@@ -76,7 +82,7 @@ class RelativeTransformSimulationShader extends ComputeUtils {
 				rotation.z = getCurve(8, life);
 
 			// rotation not supported
-			var shaderTRS = scaleMatrix(scale) * translationMatrix(translation);
+			var shaderTRS = scaleMatrix(scale) * translationMatrix(translation) * translationMatrix(speed);
 			relativeTransform = relativeTransform * shaderTRS;
 		}
 	}
@@ -95,6 +101,10 @@ class RelativeTransformSimulation extends SimulationShader {
 	@:s var rotX : Float = 0.0;
 	@:s var rotY : Float = 0.0;
 	@:s var rotZ : Float = 0.0;
+
+	@:s var speedX : Float = 0.0;
+	@:s var speedY : Float = 0.0;
+	@:s var speedZ : Float = 0.0;
 
 	override function makeShader() {
 		return new RelativeTransformSimulationShader();
@@ -119,6 +129,10 @@ class RelativeTransformSimulation extends SimulationShader {
 		s.rotX = rotX;
 		s.rotY = rotY;
 		s.rotZ = rotZ;
+
+		s.speedX = speedX;
+		s.speedY = speedY;
+		s.speedZ = speedZ;
 
 		s.CURVE_MASK = 0;
 
@@ -171,6 +185,9 @@ class RelativeTransformSimulation extends SimulationShader {
 					<dt>Rotation X</dt><dd><input type="range" field="rotX"/></dd>
 					<dt>Rotation Y</dt><dd><input type="range" field="rotY"/></dd>
 					<dt>Rotation Z</dt><dd><input type="range" field="rotZ"/></dd>
+					<dt>Speed X</dt><dd><input type="range" field="speedX"/></dd>
+					<dt>Speed Y</dt><dd><input type="range" field="speedY"/></dd>
+					<dt>Speed Z</dt><dd><input type="range" field="speedZ"/></dd>
 				</dl>
 			</div>
 			'), this, function(pname) {
