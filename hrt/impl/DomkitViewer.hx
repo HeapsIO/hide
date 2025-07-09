@@ -305,6 +305,11 @@ class DomkitViewer extends h2d.Object {
 		rebuildDelay();
 	}
 
+	public function addGlobal( name : String, v : Dynamic ) {
+		variables.set(name, v);
+		rebuildDelay();
+	}
+
 	public function addComponentHook( name : String, make ) {
 		compHooks.set(name, make);
 	}
