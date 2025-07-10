@@ -846,11 +846,7 @@ class FancyTree<TreeItem> extends hide.comp.Component {
 	}
 
 	function doubleClickHander(data: TreeItemData<TreeItem>, event: js.html.MouseEvent) : Void {
-		if (hasChildren(data.item)) {
-			toggleDataOpen(data);
-		} else {
-			onDoubleClick(data.item);
-		}
+		onDoubleClick(data.item);
 	}
 
 	function dataClickHandler(data: TreeItemData<TreeItem>, event: js.html.MouseEvent) : Void {

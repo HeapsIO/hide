@@ -5180,6 +5180,15 @@ fancy-tree fancy-scroll fancy-tree-item.feedback-drop-in::after {
   z-index: 10;
   pointer-events: none;
 }
+fancy-tree.overlay {
+  background-color: transparent;
+}
+fancy-tree.overlay fancy-scroll fancy-tree-item {
+  background: transparent;
+}
+fancy-tree.overlay fancy-scroll fancy-tree-item:hover {
+  color: #e2e2e2;
+}
 fancy-gallery {
   display: flex;
   flex-direction: column;

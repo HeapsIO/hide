@@ -7,7 +7,7 @@ class Model extends FileView {
 	var tools : hide.comp.Toolbar;
 	var obj : h3d.scene.Object;
 	var sceneEditor : hide.comp.SceneEditor;
-	var tree : hide.comp.SceneTree;
+	var tree : hide.comp.FancyTree<Dynamic>;
 	var tabs : hide.comp.Tabs;
 	var overlay : Element;
 	var eventList : Element;
@@ -91,7 +91,7 @@ class Model extends FileView {
 		sceneEditor.onRefresh = onRefresh;
 		sceneEditor.onUpdate = onUpdate;
 		sceneEditor.onSelectionChanged = function(elts : Array<hrt.prefab.Prefab>, ?mode : hide.comp.SceneEditor.SelectMode = Default) {
-			if (tree != null) tree.setSelection([]);
+			if (tree != null) tree.clearSelection();
 			refreshSelectionHighlight(null);
 		}
 		sceneEditor.view.keys = new hide.ui.Keys(null); // Remove SceneEditor Shortcuts
@@ -248,6 +248,7 @@ class Model extends FileView {
 			return true;
 		}
 
+		refreshSelectionHighlight(null);
 		selectedElements = elts;
 
 		var properties = sceneEditor.properties;
@@ -1301,21 +1302,103 @@ class Model extends FileView {
 		hidePropsRec(obj);
 
 		if( tree != null ) tree.remove();
-		tree = new hide.comp.SceneTree(obj, overlay, obj.name != null);
-		tree.onSelectionChanged = onTreeSelectionChanged;
-		tree.saveDisplayKey = this.saveDisplayKey;
+		tree = new hide.comp.FancyTree<Dynamic>(overlay);
+		tree.element.addClass("overlay");
+		tree.getChildren = (item: Dynamic) -> {
+			if (item == null)
+				return [obj];
 
-		function ctxMenu(tree, e) {
-			e.preventDefault();
-			var current = tree.getCurrentOver();
+			var skin = Std.downcast(item, h3d.scene.Skin);
+			var obj = Std.downcast(item, h3d.scene.Object);
+			var join = Std.downcast(item, h3d.scene.Skin.Joint);
+			var children : Array<Dynamic> = [];
+
+			if (obj != null && @:privateAccess obj.children != null) {
+				for (c in children)
+					if (!Std.isOfType(c, h3d.scene.Graphics))
+						children.push(c);
+			}
+
+			if (skin != null) {
+				var joints = skin.getSkinData().rootJoints;
+				for (j in joints)
+					children.push(skin.getObjectByName(j.name));
+			}
+
+			if (obj != null) {
+				var mats = item.getMaterials(null, false);
+				children = children.concat(mats);
+			}
+
+			if (join != null) {
+				var sObj : h3d.scene.Object = join;
+				while (!Std.isOfType(sObj, h3d.scene.Skin))
+					sObj = sObj.parent;
+				var skin : h3d.scene.Skin = cast sObj;
+				for (j in @:privateAccess skin.getSkinData().allJoints[join.index].subs)
+					children.push(skin.getObjectByName(j.name));
+			}
+
+			return children;
+		};
+		tree.getName = (item: Dynamic) -> {
+			var obj = Std.downcast(item, h3d.scene.Object);
+			if (obj != null) return obj.name;
+
+			var mat = Std.downcast(item, h3d.mat.Material);
+			if (mat != null) return mat.name;
+
+			var join = Std.downcast(item, h3d.scene.Skin.Joint);
+			if (join != null) return join.name;
+
+			return "";
+		};
+		tree.getUniqueName = (item: Dynamic) -> {
+			var o = Std.downcast(item, h3d.scene.Object);
+			if (o == null) return item.name;
+			var path = o.name;
+			var parent = o.parent;
+			while (parent != null) {
+				path = '${parent.name}/${path}';
+				parent = parent.parent;
+			}
+			return path;
+		};
+		tree.getIcon = (item: Dynamic) -> {
+			var skin = Std.downcast(item, h3d.anim.Skin);
+			if (skin != null) return '<div class="ico ico-male"></div>';
+
+			var mat = Std.downcast(item, h3d.mat.Material);
+			if (mat != null) return '<div class="ico ico-photo"></div>';
+
+			var join = Std.downcast(item, h3d.scene.Skin.Joint);
+			if (join != null) return '<div class="ico ico-male"></div>';
+
+			var obj = Std.downcast(item, h3d.scene.Object);
+			if (obj != null) return '<div class="ico ico-gg"></div>';
+
+			return null;
+		};
+		tree.onSelectionChanged = (enterKey : Bool) -> {
+			var selection = tree.getSelectedItems();
+			onTreeSelectionChanged(selection);
+		};
+		tree.onDoubleClick = (item: Dynamic) -> {
+			var obj = Std.downcast(item, h3d.scene.Object);
+			sceneEditor.focusObjects([obj]);
+		};
+		function ctxMenu(item : Dynamic, event : js.html.MouseEvent) {
+			event.preventDefault();
 			var menuItems : Array<hide.comp.ContextMenu.MenuItem> = [
 				{ label : "Merge selected", enabled : false /*canMergeElements(selectedElements)*/, click: () -> mergeModels(cast selectedElements) },
 				{ label : "Merge all meshes", enabled : true, click: () -> mergeModels(cast [for (m in obj.findAll(o -> Std.downcast(o, h3d.scene.Mesh))) m]) },
 			];
 
-			hide.comp.ContextMenu.createFromEvent(cast e, menuItems);
+			hide.comp.ContextMenu.createFromEvent(cast event, menuItems);
 		};
-		tree.element.parent().contextmenu(ctxMenu.bind(tree));
+		tree.onContextMenu = ctxMenu;
+		tree.rebuildTree();
+		tree.openItem(obj, true);
 
 		tools.clear();
 		var anims = scene.listAnims(getPath());

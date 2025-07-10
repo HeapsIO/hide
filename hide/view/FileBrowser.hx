@@ -96,7 +96,7 @@ class FileBrowser extends hide.ui.View<FileBrowserState> {
 					var newState : FileBrowserState = haxe.Json.parse(haxe.Json.stringify(state));
 					newState.savedLayout = Vertical;
 					close();
-					ide.open("hide.view.FileBrowser", newState, Left);
+					ide.open("hide.view.FileBrowser", newState, hide.ui.View.DisplayPosition.Left);
 				}
 			},
 			{
@@ -106,7 +106,7 @@ class FileBrowser extends hide.ui.View<FileBrowserState> {
 					var newState : FileBrowserState = haxe.Json.parse(haxe.Json.stringify(state));
 					newState.savedLayout = Horizontal;
 					close();
-					ide.open("hide.view.FileBrowser", newState, Bottom);
+					ide.open("hide.view.FileBrowser", newState, hide.ui.View.DisplayPosition.Bottom);
 				}
 			},
 			]
@@ -487,9 +487,10 @@ class FileBrowser extends hide.ui.View<FileBrowserState> {
 		fancyTree.openItem(root, true);
 
 		fancyTree.onDoubleClick = (item: FileEntry) -> {
-			if (item.kind == File) {
+			if (item.kind == File)
 				ide.openFile(item.getPath());
-			}
+			else
+				fancyTree.openItem(item);
 		}
 
 		var right = browserLayout.find(".right");
