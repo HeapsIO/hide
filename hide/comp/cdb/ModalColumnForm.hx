@@ -31,7 +31,7 @@ class ModalColumnForm extends Modal {
 			<table>
 				<tr>
 				<td class="first">Column name
-				<td><input type="text" name="name"/>
+				<td><input type="text" name="name" required/>
 				</tr>
 
 				<tr>

@@ -597,6 +597,9 @@
 .cdb .content-modal form select {
   height: 28px;
 }
+.cdb .content-modal form input:user-invalid {
+  outline: 2px red dashed;
+}
 .cdb .content-modal form td {
   vertical-align: top;
 }
