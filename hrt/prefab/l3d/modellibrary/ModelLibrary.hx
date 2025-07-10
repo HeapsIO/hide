@@ -772,7 +772,9 @@ class ModelLibrary extends Prefab {
 			cache.geomBounds = [for( g in @:privateAccess cache.hmdPrim.lib.header.geometries ) g.bounds];
 		@:privateAccess cache.hmdPrim.curMaterial = -1;
 		if ( cache.shader == null ) {
-			cache.shader = cast(h3d.mat.MaterialSetup.current, h3d.mat.PbrMaterialSetup).createAtlasShader();
+			var pbrMaterialSetup = cast(h3d.mat.MaterialSetup.current, h3d.mat.PbrMaterialSetup);
+			cache.shader = new AtlasShader();
+			cache.shader.GLOSS = pbrMaterialSetup.gloss();
 			cache.shader.mipStart = mipStart;
 			cache.shader.mipEnd = mipEnd;
 			cache.shader.mipPower = mipPower;

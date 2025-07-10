@@ -4,6 +4,7 @@ class Terrain extends hxsl.Shader {
 
 	static var SRC = {
 
+		@const var GLOSS : Bool = true;
 		@const var SHOW_GRID : Bool;
 		@const var SURFACE_COUNT : Int;
 		@const var CHECKER : Bool;
@@ -227,7 +228,10 @@ class Terrain extends hxsl.Shader {
 				// Output
 				transformedNormal = normalize(normal * TBN);
 				pixelColor = vec4(albedo, 1.0);
-				roughness = 1 - pbr.g * pbr.g;
+				if ( GLOSS )
+					roughness = 1 - pbr.g * pbr.g;
+				else
+					roughness = pbr.g;
 				metalness = pbr.r;
 				occlusion = pbr.b;
 				emissive = 0;

@@ -67,6 +67,7 @@ class Tile extends h3d.scene.Mesh {
 		tileX = x;
 		tileY = y;
 		shader = new hrt.shader.Terrain();
+		shader.GLOSS = cast(h3d.mat.MaterialSetup.current, h3d.mat.PbrMaterialSetup).gloss();
 		material.mainPass.addShader(shader);
 		material.mainPass.culling = Back;
 		material.staticShadows = true;

@@ -12,6 +12,7 @@ class AtlasShader extends hxsl.Shader {
 		@const var hasNormal : Bool;
 		@const var hasPbr : Bool;
 		@const var AUTO_LOD : Bool;
+		@const var GLOSS : Bool = true;
 
 		@param var texture : Sampler2D;
 		@param var normalMap : Sampler2D;
@@ -42,7 +43,10 @@ class AtlasShader extends hxsl.Shader {
 
 		function unpackPBR(v : Vec4) : Vec4 {
 			metalness = v.r;
-			roughness = 1 - v.g * v.g;
+			if ( GLOSS )
+				roughness = 1 - v.g * v.g;
+			else
+				roughness = v.g;
 			occlusion = v.b;
 			// no emissive for now
 		}
