@@ -6082,7 +6082,20 @@ fancy-tree {
 				--background: var(--selection);
 			}
 
+			fancy-button.quieter {
+				--size: 16px;
+				font-size: 12px;
 
+				pointer-events: all;
+
+				color: #CCC;
+
+				&.hidden {
+					visibility: hidden;
+				}
+
+				text-shadow: 1px 1px 1px rgba(.0,.0,.0,.75);
+			}
 
 			box-sizing: border-box;
 
@@ -6101,11 +6114,10 @@ fancy-tree {
 			&:hover {
 				--highlight: 10;
 				cursor: pointer;
-			}
 
-			.hidden {
-				visibility: hidden;
-				pointer-events: none;
+				fancy-button.hidden {
+					visibility: visible;
+				}
 			}
 
 			fancy-tree-icon {

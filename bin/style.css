@@ -5088,13 +5088,22 @@ fancy-tree fancy-scroll fancy-tree-item.selected {
   color: white;
   --background: var(--selection);
 }
+fancy-tree fancy-scroll fancy-tree-item fancy-button.quieter {
+  --size: 16px;
+  font-size: 12px;
+  pointer-events: all;
+  color: #CCC;
+  text-shadow: 1px 1px 1px rgba(0, 0, 0, 0.75);
+}
+fancy-tree fancy-scroll fancy-tree-item fancy-button.quieter.hidden {
+  visibility: hidden;
+}
 fancy-tree fancy-scroll fancy-tree-item:hover {
   --highlight: 10;
   cursor: pointer;
 }
-fancy-tree fancy-scroll fancy-tree-item .hidden {
-  visibility: hidden;
-  pointer-events: none;
+fancy-tree fancy-scroll fancy-tree-item:hover fancy-button.hidden {
+  visibility: visible;
 }
 fancy-tree fancy-scroll fancy-tree-item fancy-tree-icon {
   align-self: center;

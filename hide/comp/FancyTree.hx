@@ -24,12 +24,45 @@ enum FilterFlag {
 
 typedef FilterFlags = haxe.EnumFlags<FilterFlag>;
 
-typedef TreeItemData<TreeItem> = {element: js.html.Element, ?searchRanges: FancySearch.SearchRanges, item: TreeItem, name: String, uniqueName: String, ?iconCache: String, filterState: FilterFlags, children: Array<TreeItemData<TreeItem>>, parent: TreeItemData<TreeItem>, depth: Int, identifier: String};
+typedef TreeItemData<TreeItem> = {
+	element: js.html.Element,
+	?searchRanges: FancySearch.SearchRanges,
+	item: TreeItem,
+	name: String,
+	uniqueName: String,
+	?iconCache: String,
+	filterState: FilterFlags,
+	children: Array<TreeItemData<TreeItem>>,
+	parent: TreeItemData<TreeItem>,
+	depth: Int,
+	identifier: String,
+	?buttons: Array<{
+		element: js.html.Element,
+		button: TreeButton<TreeItem>,
+		iconCache: String,
+	}>,
+};
 
 enum DropOperation {
 	Before;
 	After;
 	Inside;
+}
+
+typedef TreeButton<TreeItem> = {
+	click : (TreeItem) -> Void,
+
+	/**
+		Return a html string of the icon content to display in the button.
+		Called each time the tree is refreshed.
+	**/
+	getIcon : (TreeItem) -> String,
+
+	/**
+		If set, the function is called to determine if the button should be visible
+		event when the item is not hovered
+	**/
+	?forceVisiblity : (TreeItem) -> Bool,
 }
 
 class FancyTree<TreeItem> extends hide.comp.Component {
@@ -156,6 +189,10 @@ class FancyTree<TreeItem> extends hide.comp.Component {
 	**/
 	public dynamic function onDoubleClick(item: TreeItem) {
 
+	}
+
+	public dynamic function getButtons(item: TreeItem) : Array<TreeButton<TreeItem>> {
+		return [];
 	}
 
 	/**
@@ -651,6 +688,7 @@ class FancyTree<TreeItem> extends hide.comp.Component {
 		if (currentRefreshFlags.has(RegenHeader) && data.element != null) {
 			data.element.remove();
 			data.element = null;
+			data.buttons = null;
 		}
 
 		if (data.element == null) {
@@ -663,6 +701,7 @@ class FancyTree<TreeItem> extends hide.comp.Component {
 				<fancy-tree-icon class="caret"></fancy-tree-icon>
 				<fancy-tree-icon class="header-icon"></fancy-tree-icon>
 				<fancy-tree-name></fancy-tree-name>
+				<fancy-flex-fill></fancy-flex-fill>
 			';
 
 			var fold = element.querySelector(".caret");
@@ -677,6 +716,31 @@ class FancyTree<TreeItem> extends hide.comp.Component {
 			element.ondblclick = doubleClickHander.bind(data);
 
 			data.element = element;
+
+			var buttons = getButtons(data.item);
+			data.buttons = [];
+			for (buttonData in buttons) {
+				var button = {
+					element: js.Browser.document.createElement("fancy-button"),
+					button: buttonData,
+					iconCache: null,
+				};
+				data.buttons.push(button);
+
+				button.element.classList.add("quieter");
+
+				button.element.onclick = (e: js.html.MouseEvent) -> {
+					e.stopPropagation();
+					button.button.click(data.item);
+					queueRefresh();
+				};
+
+				button.element.ondblclick = (e: js.html.MouseEvent) -> {
+					e.stopPropagation();
+				};
+
+				element.appendChild(button.element);
+			}
 
 			setupDragAndDrop(data);
 		}
@@ -712,6 +776,15 @@ class FancyTree<TreeItem> extends hide.comp.Component {
 			nameElement.innerHTML = finalName;
 		} else {
 			nameElement.innerHTML = data.name;
+		}
+
+		for (button in data.buttons) {
+			var icon = button.button.getIcon(data.item);
+			if (icon != button.iconCache && icon != null) {
+				button.element.innerHTML = icon;
+				button.iconCache = icon;
+			}
+			button.element.classList.toggle("hidden", button.button.forceVisiblity == null || !button.button.forceVisiblity(data.item));
 		}
 
 		return data.element;
