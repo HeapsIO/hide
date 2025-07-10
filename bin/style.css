@@ -2684,6 +2684,9 @@ body.hide-subview .lm_close_tab,
 body.hide-subview .lm_controls {
   display: none;
 }
+.lm_header .lm_tabdropdown_list .lm_tab {
+  width: 100%;
+}
 .lm_header .lm_tabdropdown_list .lm_tab .lm_title {
   width: unset;
   max-width: 500px;
@@ -5326,6 +5329,10 @@ fancy-tooltip {
   box-shadow: var(--basic-shadow);
   margin: 0;
   overflow: visible;
+}
+.lm_tabdropdown_list {
+  z-index: 9999 !important;
+  background-color: #111111;
 }
 .ref-viewer {
   overflow-x: hidden;
