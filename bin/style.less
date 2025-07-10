@@ -34,6 +34,8 @@ body {
 
 	max-width: 100vw;
 	max-height: 100vh;
+
+	overflow: hidden;
 }
 
 .lm_header .lm_tab {
@@ -6240,111 +6242,113 @@ fancy-gallery {
 			min-height: 100%;
 
 			contain: layout paint size style;
-
-			fancy-item {
-				padding: 4px;
-				position: absolute;
-				align-items: stretch;
-				overflow: hidden;
-
-				contain: layout paint size style;
-
-				background-color: #282828;
-				border-radius: 6px;
-
-				&:hover {
-					background-color: var(--hover);
-				}
-
-				&.selected {
-					color: white;
-					background-color: var(--selection);
-				}
-
-				&.current {
-					outline: dashed 1px #AAA;
-					z-index: 10;
-					outline-offset: -1px;
-				}
-
-				box-shadow: 2px 2px 2px rgba(0, 0, 0, 0.4);
-
-				&.details {
-					padding: 0;
-					display: flex;
-					align-items: flex-end;
-
-					box-shadow: unset;
-					border-radius: unset;
-
-					gap: 0.2em;
-
-				}
-
-				fancy-thumbnail {
-					flex: 0 1;
-					display: block;
-					width: 100%;
-					height: 100%;
-				}
-
-				.icon-placement {
-					position: absolute;
-					color: white;
-					bottom: 2px;
-					right: 2px;
-					filter: drop-shadow(2px 2px 2px rgb(0 0 0 / 70%));
-				}
-
-				.thumb {
-					transform: unset;
-				}
-
-				// .loading {
-				// 	// content: strict;
-				// 	// animation: spinner 5.0s linear infinite;
-				// 	// transform: rotate(0deg);
-				// 	// @keyframes spinner {
-				// 	// 	to { transform: rotate(360deg); }
-				// 	// }
-				// }
-
-				&.details fancy-image {
-					height: 100%;
-					width: auto;
-					aspect-ratio: 1 / 1;
-				}
-
-				fancy-name {
-					position: absolute;
-					bottom: 2px;
-					left: 2px;
-					right: 2px;
-					height: 32px;
-					display: block;
-					text-align: center;
-					text-wrap: wrap;
-					word-break: break-all;
-					text-overflow: ellipsis;
-					overflow: hidden;
-				}
-
-				&.details fancy-name {
-					position: relative;
-					height: auto;
-					text-align: left;
-				}
-
-				&.details .icon-placement {
-					position: relative;
-					flex: 0 1;
-					filter: unset;
-					color : #AAA;
-					margin-left: 0.2em;
-					font-size: 0.8em;
-				}
-			}
 		}
+	}
+}
+
+fancy-gallery fancy-item, fancy-tooltip fancy-item {
+	padding: 4px;
+	position: absolute;
+	align-items: stretch;
+	overflow: hidden;
+
+	contain: layout paint size style;
+
+	background-color: #282828;
+	border-radius: 6px;
+
+	color: #aaa;
+
+	&:hover {
+		background-color: var(--hover);
+	}
+
+	&.selected {
+		color: white;
+		background-color: var(--selection);
+	}
+
+	&.current {
+		outline: dashed 1px #AAA;
+		z-index: 10;
+		outline-offset: -1px;
+	}
+
+	box-shadow: 2px 2px 2px rgba(0, 0, 0, 0.4);
+
+	&.details {
+		padding: 0;
+		display: flex;
+		align-items: flex-end;
+
+		box-shadow: unset;
+		border-radius: unset;
+
+		gap: 0.2em;
+
+	}
+
+	fancy-thumbnail {
+		flex: 0 1;
+		display: block;
+		width: 100%;
+		height: 100%;
+	}
+
+	.icon-placement {
+		position: absolute;
+		color: white;
+		bottom: 2px;
+		right: 2px;
+		filter: drop-shadow(2px 2px 2px rgb(0 0 0 / 70%));
+	}
+
+	.thumb {
+		transform: unset;
+	}
+
+	// .loading {
+	// 	// content: strict;
+	// 	// animation: spinner 5.0s linear infinite;
+	// 	// transform: rotate(0deg);
+	// 	// @keyframes spinner {
+	// 	// 	to { transform: rotate(360deg); }
+	// 	// }
+	// }
+
+	&.details fancy-image {
+		height: 100%;
+		width: auto;
+		aspect-ratio: 1 / 1;
+	}
+
+	fancy-name {
+		position: absolute;
+		bottom: 2px;
+		left: 2px;
+		right: 2px;
+		height: 32px;
+		display: block;
+		text-align: center;
+		text-wrap: wrap;
+		word-break: break-all;
+		text-overflow: ellipsis;
+		overflow: hidden;
+	}
+
+	&.details fancy-name {
+		position: relative;
+		height: auto;
+		text-align: left;
+	}
+
+	&.details .icon-placement {
+		position: relative;
+		flex: 0 1;
+		filter: unset;
+		color : #AAA;
+		margin-left: 0.2em;
+		font-size: 0.8em;
 	}
 }
 
@@ -6370,6 +6374,26 @@ fancy-closable {
 	}
 	overflow: hidden;
 	height: 0px;
+}
+
+fancy-tooltip {
+	z-index: 1;
+	position: absolute;
+	pointer-events: none;
+
+	border: none;
+	box-shadow: none;
+	outline: none;
+	background: none;
+
+	box-shadow: var(--basic-shadow);
+
+	margin: 0;
+	overflow: visible;
+
+	// fancy-image {
+	// 	transform: none;
+	// }
 }
 
 .ref-viewer {

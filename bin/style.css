@@ -28,6 +28,7 @@ body {
   user-select: none;
   max-width: 100vw;
   max-height: 100vh;
+  overflow: hidden;
 }
 .lm_header .lm_tab {
   font-family: var(--default-font), Serif !important;
@@ -5205,7 +5206,8 @@ fancy-gallery fancy-scroll fancy-item-container {
   min-height: 100%;
   contain: layout paint size style;
 }
-fancy-gallery fancy-scroll fancy-item-container fancy-item {
+fancy-gallery fancy-item,
+fancy-tooltip fancy-item {
   padding: 4px;
   position: absolute;
   align-items: stretch;
@@ -5213,21 +5215,26 @@ fancy-gallery fancy-scroll fancy-item-container fancy-item {
   contain: layout paint size style;
   background-color: #282828;
   border-radius: 6px;
+  color: #aaa;
   box-shadow: 2px 2px 2px rgba(0, 0, 0, 0.4);
 }
-fancy-gallery fancy-scroll fancy-item-container fancy-item:hover {
+fancy-gallery fancy-item:hover,
+fancy-tooltip fancy-item:hover {
   background-color: var(--hover);
 }
-fancy-gallery fancy-scroll fancy-item-container fancy-item.selected {
+fancy-gallery fancy-item.selected,
+fancy-tooltip fancy-item.selected {
   color: white;
   background-color: var(--selection);
 }
-fancy-gallery fancy-scroll fancy-item-container fancy-item.current {
+fancy-gallery fancy-item.current,
+fancy-tooltip fancy-item.current {
   outline: dashed 1px #AAA;
   z-index: 10;
   outline-offset: -1px;
 }
-fancy-gallery fancy-scroll fancy-item-container fancy-item.details {
+fancy-gallery fancy-item.details,
+fancy-tooltip fancy-item.details {
   padding: 0;
   display: flex;
   align-items: flex-end;
@@ -5235,28 +5242,33 @@ fancy-gallery fancy-scroll fancy-item-container fancy-item.details {
   border-radius: unset;
   gap: 0.2em;
 }
-fancy-gallery fancy-scroll fancy-item-container fancy-item fancy-thumbnail {
+fancy-gallery fancy-item fancy-thumbnail,
+fancy-tooltip fancy-item fancy-thumbnail {
   flex: 0 1;
   display: block;
   width: 100%;
   height: 100%;
 }
-fancy-gallery fancy-scroll fancy-item-container fancy-item .icon-placement {
+fancy-gallery fancy-item .icon-placement,
+fancy-tooltip fancy-item .icon-placement {
   position: absolute;
   color: white;
   bottom: 2px;
   right: 2px;
   filter: drop-shadow(2px 2px 2px rgba(0, 0, 0, 0.7));
 }
-fancy-gallery fancy-scroll fancy-item-container fancy-item .thumb {
+fancy-gallery fancy-item .thumb,
+fancy-tooltip fancy-item .thumb {
   transform: unset;
 }
-fancy-gallery fancy-scroll fancy-item-container fancy-item.details fancy-image {
+fancy-gallery fancy-item.details fancy-image,
+fancy-tooltip fancy-item.details fancy-image {
   height: 100%;
   width: auto;
   aspect-ratio: 1 / 1;
 }
-fancy-gallery fancy-scroll fancy-item-container fancy-item fancy-name {
+fancy-gallery fancy-item fancy-name,
+fancy-tooltip fancy-item fancy-name {
   position: absolute;
   bottom: 2px;
   left: 2px;
@@ -5269,12 +5281,14 @@ fancy-gallery fancy-scroll fancy-item-container fancy-item fancy-name {
   text-overflow: ellipsis;
   overflow: hidden;
 }
-fancy-gallery fancy-scroll fancy-item-container fancy-item.details fancy-name {
+fancy-gallery fancy-item.details fancy-name,
+fancy-tooltip fancy-item.details fancy-name {
   position: relative;
   height: auto;
   text-align: left;
 }
-fancy-gallery fancy-scroll fancy-item-container fancy-item.details .icon-placement {
+fancy-gallery fancy-item.details .icon-placement,
+fancy-tooltip fancy-item.details .icon-placement {
   position: relative;
   flex: 0 1;
   filter: unset;
@@ -5300,6 +5314,18 @@ fancy-closable {
 }
 fancy-closable * {
   box-sizing: border-box;
+}
+fancy-tooltip {
+  z-index: 1;
+  position: absolute;
+  pointer-events: none;
+  border: none;
+  box-shadow: none;
+  outline: none;
+  background: none;
+  box-shadow: var(--basic-shadow);
+  margin: 0;
+  overflow: visible;
 }
 .ref-viewer {
   overflow-x: hidden;

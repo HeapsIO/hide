@@ -19,13 +19,18 @@ class FancyGallery<GalleryItem> extends hide.comp.Component {
 	var scroll : js.html.Element;
 	var selection : Map<{}, Bool> = [];
 
+	var tooltip : FancyTooltip;
+
 	var lastHeight : Float = 0;
+	var mouseOver : Bool = false;
 
 	var zoom : Int = 5;
 	static final zoomLevels = [0, 32, 64, 96, 128,192, 256, 384, 512];
 	var itemHeightPx = 128;
 	var itemWidthPx = 128;
 	static final itemTitleHeight = 32;
+	static final zoomedThumbnailSize = 512;
+	static final zoomedThumbnailMargin = 32;
 
 	var details = false;
 
@@ -66,12 +71,45 @@ class FancyGallery<GalleryItem> extends hide.comp.Component {
 			</fancy-scroll>
 		");
 
+		tooltip = new FancyTooltip();
+
 		zoom = getDisplayState("zoom") ?? zoom;
 
 		var htmlElem = el.get(0);
 		htmlElem.tabIndex = -1;
 
 		htmlElem.onkeydown = inputHandler;
+
+		htmlElem.onmousemove = (e:js.html.MouseEvent) -> {
+			var x = if (details) e.clientX + zoomedThumbnailMargin else e.clientX - Std.int(zoomedThumbnailSize/2);
+			tooltip.x = hxd.Math.iclamp(x, zoomedThumbnailMargin, Std.int(js.Browser.window.innerWidth) - zoomedThumbnailSize - zoomedThumbnailMargin);
+			tooltip.y = hxd.Math.iclamp(e.clientY - Std.int(zoomedThumbnailSize/2), zoomedThumbnailMargin, Std.int(js.Browser.window.innerHeight) - zoomedThumbnailSize - itemTitleHeight - zoomedThumbnailMargin);
+			if (e.altKey) {
+				tooltip.show();
+			} else {
+				tooltip.hide();
+			}
+		};
+
+		htmlElem.onmouseenter = (e:js.html.MouseEvent) -> {
+			mouseOver = true;
+		}
+
+		htmlElem.onmouseleave = (e:js.html.MouseEvent) -> {
+			mouseOver = false;
+			tooltip.hide();
+		}
+
+		js.Browser.document.addEventListener("keydown", (e: js.html.KeyboardEvent) -> {
+			if (mouseOver && e.key == "Alt") {
+				tooltip.show();
+			}
+		});
+		js.Browser.document.addEventListener("keyup", (e: js.html.KeyboardEvent) -> {
+			if (e.key == "Alt") {
+				tooltip.hide();
+			}
+		});
 
 		var resizeObserver = new hide.comp.ResizeObserver((_, _) -> {
 			queueRefresh();
@@ -386,68 +424,91 @@ class FancyGallery<GalleryItem> extends hide.comp.Component {
 		}
 	}
 
-	function getElement(data : GalleryItemData<GalleryItem>) : js.html.Element {
-		if (currentRefreshFlags.has(RegenHeader) && data.element != null) {
+	function getElement(data : GalleryItemData<GalleryItem>, tooltip = false) : js.html.Element {
+		if (!tooltip && currentRefreshFlags.has(RegenHeader) && data.element != null) {
 			data.element.remove();
 			data.element = null;
 		}
 
-		if (data.element == null) {
-			data.element = js.Browser.document.createElement("fancy-item");
-			untyped data.element.__data = data;
+		var genElement = !tooltip ? data.element : null;
+		if (genElement == null) {
+			genElement = js.Browser.document.createElement("fancy-item");
+			if (!tooltip)
+				data.element = genElement;
+			untyped genElement.__data = data;
 			data.thumbnailStringCache = null;
 			data.iconStringCache = null;
 
-			data.element.innerHTML = '
+			genElement.innerHTML = '
 				<fancy-thumbnail></fancy-thumbnail>
 				<fancy-name></fancy-name>
 				<div class="icon-placement"></div>
 			';
 
-			data.element.ondblclick = (e) -> {
-				onDoubleClick(data.item);
+			if (!tooltip) {
+				genElement.ondblclick = (e) -> {
+					onDoubleClick(data.item);
+				}
+
+				genElement.onclick = dataClickHandler.bind(data);
+
+				genElement.oncontextmenu = contextMenuHandler.bind(data.item);
+
+				genElement.onmouseover = (e: js.html.MouseEvent) -> {
+					var child = getElement(data, true);
+					this.tooltip.element.empty();
+					this.tooltip.element.append(child);
+				}
+
+				setupDragAndDrop(data);
 			}
+		}
 
-			data.element.onclick = dataClickHandler.bind(data);
-
-			data.element.oncontextmenu = contextMenuHandler.bind(data.item);
-
-			setupDragAndDrop(data);
+		var details = this.details;
+		var itemWidthPx = this.itemWidthPx;
+		var itemHeightPx = this.itemHeightPx;
+		if (tooltip) {
+			itemWidthPx = zoomedThumbnailSize;
+			itemHeightPx = zoomedThumbnailSize + itemTitleHeight;
+			details = false;
 		}
 
 		if (!details) {
-			data.element.style.width = '${itemWidthPx}px';
-			data.element.style.height = '${itemHeightPx}px';
+			genElement.style.width = '${itemWidthPx}px';
+			genElement.style.height = '${itemHeightPx}px';
 		} else {
-			data.element.style.width = '100%';
+			genElement.style.width = '100%';
 		}
 
-		data.element.style.height = '${itemHeightPx}px';
-		data.element.classList.toggle("details", details);
-		data.element.classList.toggle("selected", selection.exists(cast data));
-		data.element.classList.toggle("current", currentVisible && currentItem == data);
+		genElement.style.height = '${itemHeightPx}px';
 
-		var name = data.element.querySelector("fancy-name");
+		if (!tooltip) {
+			genElement.classList.toggle("details", details);
+			genElement.classList.toggle("selected", selection.exists(cast data));
+			genElement.classList.toggle("current", currentVisible && currentItem == data);
+		}
+
+		var name = genElement.querySelector("fancy-name");
 		if (name.title != data.name) {
 			name.innerHTML = '<span class="bg">${data.name}</span>';
 			name.title = data.name;
 		}
 
-		var img = data.element.querySelector("fancy-thumbnail");
+		var img = genElement.querySelector("fancy-thumbnail");
 		var imgString = getThumbnail(data.item) ?? '<fancy-image style="background-image:url(\'res/icons/svg/unknown_file.svg\')"></fancy-image>';
 		if (imgString != data.thumbnailStringCache) {
 			img.innerHTML = imgString;
 			data.thumbnailStringCache = imgString;
 		}
 
-		var icon = data.element.querySelector(".icon-placement");
+		var icon = genElement.querySelector(".icon-placement");
 		var iconString = getIcon(data.item);
 		if (iconString != data.iconStringCache) {
 			icon.innerHTML = iconString;
 			data.iconStringCache = iconString;
 		}
 
-		return data.element;
+		return genElement;
 	}
 
 	function rebuildItems() {
