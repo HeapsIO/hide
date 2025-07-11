@@ -763,17 +763,7 @@ class FancyTree<TreeItem> extends hide.comp.Component {
 		element.title = data.name;
 
 		if (data.searchRanges != null) {
-			var name = data.name;
-			var lastPos = 0;
-			var finalName = "";
-			for (index in 0...(data.searchRanges.length>>1)) {
-				var first = name.substr(lastPos, data.searchRanges[index]);
-				var match = name.substr(data.searchRanges[index], data.searchRanges[index+1] - data.searchRanges[index]);
-				finalName += first + '<span class="search-hl">' + match + "</span>";
-				lastPos = data.searchRanges[index+1];
-			}
-			finalName += name.substr(lastPos);
-			nameElement.innerHTML = finalName;
+			nameElement.innerHTML = hide.comp.FancySearch.splitSearchRanges(data.name, data.searchRanges);
 		} else {
 			nameElement.innerHTML = data.name;
 		}

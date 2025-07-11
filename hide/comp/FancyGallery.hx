@@ -9,7 +9,7 @@ enum GalleryRefreshFlag {
 
 typedef GalleryRefreshFlags = haxe.EnumFlags<GalleryRefreshFlag>;
 
-typedef GalleryItemData<GalleryItem> = {item: GalleryItem, name: String, element: js.html.Element, thumbnailStringCache: String, iconStringCache: String};
+typedef GalleryItemData<GalleryItem> = {item: GalleryItem, name: String, element: js.html.Element, thumbnailStringCache: String, iconStringCache: String, ranges: hide.comp.FancySearch.SearchRanges};
 
 class FancyGallery<GalleryItem> extends hide.comp.Component {
 
@@ -168,6 +168,10 @@ class FancyGallery<GalleryItem> extends hide.comp.Component {
 	}
 
 	public dynamic function getItems() : Array<GalleryItem> {
+		return [];
+	}
+
+	public dynamic function getItemRanges(item: GalleryItem) : hide.comp.FancySearch.SearchRanges {
 		return [];
 	}
 
@@ -489,8 +493,14 @@ class FancyGallery<GalleryItem> extends hide.comp.Component {
 		}
 
 		var name = genElement.querySelector("fancy-name");
-		if (name.title != data.name) {
-			name.innerHTML = '<span class="bg">${data.name}</span>';
+		var ranges = getItemRanges(data.item);
+		if (name.title != data.name || data.ranges != ranges) {
+			data.ranges = ranges;
+			if (data.ranges != null) {
+				name.innerHTML = FancySearch.splitSearchRanges(data.name, data.ranges);
+			} else {
+				name.innerHTML = data.name;
+			}
 			name.title = data.name;
 		}
 
@@ -521,6 +531,7 @@ class FancyGallery<GalleryItem> extends hide.comp.Component {
 				element: null,
 				thumbnailStringCache: null,
 				iconStringCache: null,
+				ranges: null,
 			});
 
 			currentData.push(data);

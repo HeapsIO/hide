@@ -118,7 +118,8 @@ class FileBrowser extends hide.ui.View<FileBrowserState> {
 	public static final dragKey = "application/x.filemove";
 
 	var currentFolder : FileEntry;
-	var currentSearch = [];
+	var currentSearch : Array<FileEntry> = [];
+	var currentSearchRanges : Map<FileEntry, hide.comp.FancySearch.SearchRanges> = [];
 	var searchString: String = "";
 	var fancyGallery : hide.comp.FancyGallery<FileEntry>;
 	var fancyTree: hide.comp.FancyTree<FileEntry>;
@@ -183,6 +184,7 @@ class FileBrowser extends hide.ui.View<FileBrowserState> {
 		galleryRefreshQueued = false;
 		hide.tools.FileManager.inst.clearRenderQueue();
 		currentSearch = [];
+		currentSearchRanges = [];
 
 		var validFolder = currentFolder;
 		while(validFolder != null && !sys.FileSystem.exists(validFolder.getPath())) {
@@ -237,10 +239,17 @@ class FileBrowser extends hide.ui.View<FileBrowserState> {
 								file.name;
 							}
 
-							var range = hide.comp.FancySearch.computeSearchRanges(name, searchString);
-							if (range == null) {
+							var ranges = hide.comp.FancySearch.computeSearchRanges(name, searchString);
+							if (ranges == null) {
 								continue;
 							}
+
+							if (gallerySearchFullPath == true) {
+								for (i in 0...ranges.length) {
+									ranges[i] = hxd.Math.imax(ranges[i] - (name.length - file.name.length), 0);
+								}
+							}
+							currentSearchRanges.set(file, ranges);
 						}
 
 						currentSearch.push(file);
@@ -510,6 +519,7 @@ class FileBrowser extends hide.ui.View<FileBrowserState> {
 		}
 
 		fancyGallery.getName = (item : FileEntry) -> item.name;
+		fancyGallery.getItemRanges = (item: FileEntry) -> currentSearchRanges.get(item);
 
 		fancyGallery.getThumbnail = (item : FileEntry) -> {
 			if (item.kind == Dir) {

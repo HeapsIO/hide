@@ -6313,7 +6313,6 @@ fancy-gallery fancy-item, fancy-tooltip fancy-item {
 		border-radius: unset;
 
 		gap: 0.2em;
-
 	}
 
 	fancy-thumbnail {
@@ -6362,6 +6361,11 @@ fancy-gallery fancy-item, fancy-tooltip fancy-item {
 		word-break: break-all;
 		text-overflow: ellipsis;
 		overflow: hidden;
+
+		>span.search-hl {
+			background-color: var(--selection);
+			color: white;
+		}
 	}
 
 	&.details fancy-name {

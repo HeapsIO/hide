@@ -5302,6 +5302,11 @@ fancy-tooltip fancy-item fancy-name {
   text-overflow: ellipsis;
   overflow: hidden;
 }
+fancy-gallery fancy-item fancy-name > span.search-hl,
+fancy-tooltip fancy-item fancy-name > span.search-hl {
+  background-color: var(--selection);
+  color: white;
+}
 fancy-gallery fancy-item.details fancy-name,
 fancy-tooltip fancy-item.details fancy-name {
   position: relative;
