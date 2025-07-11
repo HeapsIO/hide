@@ -4967,6 +4967,11 @@ file-browser .right {
   display: flex;
   flex-direction: column;
 }
+file-browser .right .footer {
+  height: 12px;
+  font-size: 11px;
+  background-color: #272727;
+}
 fancy-flex-fill {
   flex: 1 1;
 }

@@ -136,6 +136,9 @@ class FileBrowser extends hide.ui.View<FileBrowserState> {
 	var delaySelectGallery: String = null;
 	var delaySelectFileTree: String = null;
 	var delayedSelectItem : FileEntry = null;
+	var stats: js.html.Element;
+	var statFileCount: Int = 0;
+	var statFileFiltered: Int = 0;
 
 	function set_filterEnabled(v : Bool) {
 		var anySet = false;
@@ -184,6 +187,8 @@ class FileBrowser extends hide.ui.View<FileBrowserState> {
 		hide.tools.FileManager.inst.clearRenderQueue();
 		currentSearch = [];
 		currentSearchRanges = [];
+		statFileCount = 0;
+		statFileFiltered = 0;
 
 		var validFolder = currentFolder;
 		while(validFolder != null && !sys.FileSystem.exists(validFolder.getPath())) {
@@ -200,6 +205,8 @@ class FileBrowser extends hide.ui.View<FileBrowserState> {
 
 		if (searchString.length == 0 && !collapseSubfolders && !filterEnabled) {
 			currentSearch = currentFolder.children;
+			currentSearch = currentSearch.filter(filterFiles);
+			statFileFiltered = currentSearch.length;
 		} else {
 			var exts = [];
 			if (filterEnabled) {
@@ -225,6 +232,10 @@ class FileBrowser extends hide.ui.View<FileBrowserState> {
 						rec(file.children);
 					}
 					else {
+						if (!filterFiles(file))
+							continue;
+
+						statFileFiltered ++;
 						if (filterEnabled && file.kind == File) {
 							var ext = file.name.split(".").pop().toLowerCase();
 
@@ -258,13 +269,14 @@ class FileBrowser extends hide.ui.View<FileBrowserState> {
 				}
 			}
 
-
 			rec(currentFolder.children);
-
-			currentSearch.sort(FileEntry.compareFile);
 		}
 
-		currentSearch = currentSearch.filter(filterFiles);
+		currentSearch.sort(FileEntry.compareFile);
+
+		statFileCount = currentSearch.length;
+		statFileFiltered -= statFileCount;
+		refreshStats();
 
 		for (i => _ in currentSearch) {
 			var child = currentSearch[currentSearch.length - i - 1];
@@ -280,6 +292,10 @@ class FileBrowser extends hide.ui.View<FileBrowserState> {
 			fancyGallery.selectItem(delayedSelectItem);
 			delayedSelectItem = null;
 		}
+	}
+
+	function refreshStats() {
+		stats.innerText = 'Showing ${hide.comp.SceneEditor.splitCentaines(statFileCount)} files (${hide.comp.SceneEditor.splitCentaines(statFileFiltered)} filtered)';
 	}
 
 	function onFileChange(file: FileEntry) {
@@ -354,9 +370,15 @@ class FileBrowser extends hide.ui.View<FileBrowserState> {
 						</fancy-button>
 					</fancy-toolbar>
 					<fancy-gallery></fancy-gallery>
+					<fancy-toolbar class="footer">
+					<fancy-flex-fill></fancy-flex-fill>
+					<span class="stats"></span>
+					<fancy-toolbar>
 				</div>
 			</file-browser>
 		').appendTo(element);
+
+		stats = browserLayout.find(".stats").get(0);
 
 		resize = new hide.comp.ResizablePanel(Horizontal, element.find(".left"), After);
 
