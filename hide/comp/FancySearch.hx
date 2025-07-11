@@ -78,7 +78,7 @@ class FancySearch extends hide.comp.Component {
 			var index = i * 2;
 			var len = ranges[index+1] - ranges[index];
 			if (len > 0) {
-				var first = string.substr(lastPos, ranges[index]);
+				var first = string.substr(lastPos, ranges[index] - lastPos);
 				var match = string.substr(ranges[index], len);
 				finalName += first + openToken + match + closeToken;
 			}
