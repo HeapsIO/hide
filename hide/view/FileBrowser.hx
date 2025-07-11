@@ -133,7 +133,6 @@ class FileBrowser extends hide.ui.View<FileBrowserState> {
 	var filterEnabled(default, set) : Bool;
 	var filters : Map<String, {exts: Array<String>, icon: String}> = [];
 	var filterState : Map<String, Bool> = [];
-	var ignorePatterns: Array<EReg> = [];
 	var delaySelectGallery: String = null;
 	var delaySelectFileTree: String = null;
 	var delayedSelectItem : FileEntry = null;
@@ -312,21 +311,11 @@ class FileBrowser extends hide.ui.View<FileBrowserState> {
 	var resize : hide.comp.ResizablePanel;
 
 	function filterFiles(entry: FileEntry) {
-		for (excl in ignorePatterns) {
-			if (excl.match(entry.getRelPath()))
-				return false;
-		}
-		return return true;
+		return !entry.ignored;
 	}
 
 
 	override function onDisplay() {
-
-		var exclPatterns : Array<String> = ide.currentConfig.get("filetree.excludes", []);
-		ignorePatterns = [];
-		for(pat in exclPatterns)
-			ignorePatterns.push(new EReg(pat, "i"));
-
 		keys.register("undo", function() undo.undo());
 		keys.register("redo", function() undo.redo());
 

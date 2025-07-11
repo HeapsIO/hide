@@ -32,6 +32,7 @@ class FileEntry {
 	public var parent: FileEntry;
 	public var iconPath: String;
 	public var disposed: Bool = false;
+	public var ignored: Bool = false;
 
 	var registeredWatcher : hide.tools.FileWatcher.FileWatchEvent = null;
 
@@ -41,6 +42,7 @@ class FileEntry {
 		this.kind = kind;
 		this.relPath = computeRelPath();
 		this.path = computePath();
+		this.ignored = computeIgnore();
 
 		watch();
 		FileManager.inst.fileIndex.set(this.getRelPath(), this);
@@ -130,6 +132,14 @@ class FileEntry {
 		return this.parent.computeRelPath() + "/" + this.name;
 	}
 
+	function computeIgnore() {
+		for (excl in FileManager.inst.ignorePatterns) {
+			if (excl.match(getRelPath()))
+				return true;
+		}
+		return return false;
+	}
+
 	// sort directories before files, and then dirs and files alphabetically
 	static public function compareFile(a: FileEntry, b: FileEntry) {
 		if (a.kind != b.kind) {
@@ -165,6 +175,8 @@ class FileManager {
 	var serverSocket : hxd.net.Socket = null;
 	var generatorSocket : hxd.net.Socket = null;
 	var pendingMessages : Array<String> = [];
+	var ignorePatterns: Array<EReg> = [];
+
 
 	var fileEntryRefreshDelay : Delayer<FileEntry>;
 
@@ -189,6 +201,7 @@ class FileManager {
 			inst.cleanupServer();
 		}
 	}
+
 
 	var pendingMessageQueued = false;
 	function queueProcessPendingMessages() {
@@ -323,6 +336,11 @@ class FileManager {
 	function init() {
 		// kill server when page is reloaded
 		js.Browser.window.addEventListener('beforeunload', () -> { cleanupGenerator(); cleanupServer(); });
+
+		var exclPatterns : Array<String> = hide.Ide.inst.currentConfig.get("filetree.excludes", []);
+		ignorePatterns = [];
+		for(pat in exclPatterns)
+			ignorePatterns.push(new EReg(pat, "i"));
 
 		setupServer();
 		checkWindowReady();
