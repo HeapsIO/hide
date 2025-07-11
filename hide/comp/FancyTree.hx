@@ -644,6 +644,7 @@ class FancyTree<TreeItem> extends hide.comp.Component {
 
 	public function filterRec(children: Array<TreeItemData<TreeItem>>, parentMatch: Bool = false) : Bool {
 		var anyVisible = false;
+		var searchQuery = FancySearch.createSearchQuery(currentSearch);
 		for (child in children) {
 
 
@@ -661,7 +662,7 @@ class FancyTree<TreeItem> extends hide.comp.Component {
 			if (currentSearch.length == 0) {
 				child.filterState |= Visible;
 			} else {
-				child.searchRanges = FancySearch.computeSearchRanges(child.name, currentSearch);
+				child.searchRanges = FancySearch.computeSearchRanges(child.name, searchQuery);
 				if (child.searchRanges != null) {
 					child.filterState |= MatchSearch;
 					child.filterState |= Visible;

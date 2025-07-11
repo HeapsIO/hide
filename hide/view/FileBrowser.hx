@@ -215,6 +215,8 @@ class FileBrowser extends hide.ui.View<FileBrowserState> {
 
 			var base = currentFolder.getRelPath();
 
+			var query = hide.comp.FancySearch.createSearchQuery(searchString);
+
 			function rec(files: Array<FileEntry>) {
 				for (file in files) {
 					if (file.kind == Dir && (collapseSubfolders || searchString.length > 0)) {
@@ -239,7 +241,7 @@ class FileBrowser extends hide.ui.View<FileBrowserState> {
 								file.name;
 							}
 
-							var ranges = hide.comp.FancySearch.computeSearchRanges(name, searchString);
+							var ranges = hide.comp.FancySearch.computeSearchRanges(name, query);
 							if (ranges == null) {
 								continue;
 							}

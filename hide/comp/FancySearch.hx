@@ -2,6 +2,7 @@ package hide.comp;
 
 typedef SearchRanges = Array<Int>;
 
+typedef SearchQuery = Array<String>;
 class FancySearch extends hide.comp.Component {
 	var open = false;
 	var input : js.html.InputElement;
@@ -48,26 +49,60 @@ class FancySearch extends hide.comp.Component {
 		input.focus();
 	}
 
-	public static function computeSearchRanges(haystack: String, needle: String, spaceIsAnd: Bool = true, caseSensitive: Bool = false) : SearchRanges {
-		if (needle == null || needle == "")
+	public static function createSearchQuery(search: String, spaceIsAnd: Bool = true) : SearchQuery {
+		if (search == null || search == "")
 			return null;
 
-		var needles : Array<String> = if (spaceIsAnd) {
-			StringTools.trim(needle).split(" ");
+		return if (spaceIsAnd) {
+			StringTools.trim(search).split(" ");
 		} else {
-			[needle];
+			[search];
 		}
+	}
+
+	public static function computeSearchRanges(haystack: String, query: SearchQuery, caseSensitive: Bool = false) : SearchRanges {
+		if (query == null)
+			return null;
 
 		var ranges : SearchRanges = [];
-		for (needle in needles) {
-			var pos = haystack.toLowerCase().indexOf(needle);
-			if (pos < 0)
-				return null;
-			ranges.push(pos);
-			ranges.push(pos + needle.length);
+		for (needle in query) {
+			var startPos = ranges[0] == 0 ? ranges[1] : 0;
+			while(true) {
+				var pos = haystack.toLowerCase().indexOf(needle, startPos);
+				if (pos < 0)
+					return null;
+
+				// skip the ranges we already matched
+				for (i in 0...ranges.length>>1) {
+					if (pos >= ranges[2*i] && pos < ranges[2*i+1]) {
+						startPos = ranges[2*i+1];
+						continue;
+					}
+				}
+
+				ranges.push(pos);
+				ranges.push(pos + needle.length);
+				break;
+			}
 		}
 		if (ranges.length==0)
 			return null;
+
+		// Sort the array of ranges
+		for (i in 0...ranges.length >> 1) {
+			for (j in i*2...ranges.length >> 1) {
+				if (ranges[i*2] > ranges[j*2]) {
+					var swap1 = ranges[i*2];
+					var swap2 = ranges[i*2+1];
+
+					ranges[i*2] = ranges[j*2];
+					ranges[i*2+1] = ranges[j*2+1];
+
+					ranges[j*2] = swap1;
+					ranges[j*2+1] = swap2;
+				}
+			}
+		}
 		return ranges;
 	}
 
