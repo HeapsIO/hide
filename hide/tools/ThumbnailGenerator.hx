@@ -227,6 +227,12 @@ class ThumbnailGenerator {
 				var cut = StringTools.replace(toRender.path, hide.Ide.inst.resourceDir + "/", "");
 				var prefab = hxd.res.Loader.currentInstance.load(cut).toPrefab().loadBypassCache();
 
+				// Remove all editor only prefabs
+				var toRemove = prefab.findAll(hrt.prefab.Prefab, (p) -> p.editorOnly == true, true);
+				for (r in toRemove) {
+					r.parent = null;
+				}
+
 				var prefab = prefab.make(ctx);
 
 				if (ext == "fx") {
