@@ -1306,7 +1306,7 @@ class Model extends FileView {
 		tree.element.addClass("overlay");
 		tree.getChildren = (item: Dynamic) -> {
 			if (item == null)
-				return [obj];
+				return [obj.name == null ? @:privateAccess obj.children[0] : obj];
 
 			var skin = Std.downcast(item, h3d.scene.Skin);
 			var obj = Std.downcast(item, h3d.scene.Object);
@@ -1385,6 +1385,7 @@ class Model extends FileView {
 		};
 		tree.onDoubleClick = (item: Dynamic) -> {
 			var obj = Std.downcast(item, h3d.scene.Object);
+			if (obj == null) return;
 			sceneEditor.focusObjects([obj]);
 		};
 		function ctxMenu(item : Dynamic, event : js.html.MouseEvent) {
