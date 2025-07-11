@@ -1,6 +1,7 @@
 package hide.comp;
 
 typedef SearchRanges = Array<Int>;
+
 class FancySearch extends hide.comp.Component {
 	var open = false;
 	var input : js.html.InputElement;
@@ -47,19 +48,34 @@ class FancySearch extends hide.comp.Component {
 		input.focus();
 	}
 
-	public static function computeSearchRanges(haystack: String, needle: String) : SearchRanges {
+	public static function computeSearchRanges(haystack: String, needle: String, spaceIsAnd: Bool = true, caseSensitive: Bool = false) : SearchRanges {
 		if (needle == null || needle == "")
-			return [];
-		var pos = haystack.toLowerCase().indexOf(needle);
-		if (pos < 0)
 			return null;
-		return [pos, pos + needle.length];
+
+		var needles : Array<String> = if (spaceIsAnd) {
+			StringTools.trim(needle).split(" ");
+		} else {
+			[needle];
+		}
+
+		var ranges : SearchRanges = [];
+		for (needle in needles) {
+			var pos = haystack.toLowerCase().indexOf(needle);
+			if (pos < 0)
+				return null;
+			ranges.push(pos);
+			ranges.push(pos + needle.length);
+		}
+		if (ranges.length==0)
+			return null;
+		return ranges;
 	}
 
 	public static function splitSearchRanges(string: String, ranges: SearchRanges, openToken: String = "<span class='search-hl'>", closeToken: String = "</span>") : String {
 		var lastPos = 0;
 		var finalName = "";
-		for (index in 0...(ranges.length>>1)) {
+		for (i in 0...(ranges.length>>1)) {
+			var index = i * 2;
 			var len = ranges[index+1] - ranges[index];
 			if (len > 0) {
 				var first = string.substr(lastPos, ranges[index]);
