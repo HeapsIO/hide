@@ -5100,7 +5100,10 @@ fancy-tree fancy-scroll fancy-tree-item fancy-button.quieter {
   color: #CCC;
   text-shadow: 1px 1px 1px rgba(0, 0, 0, 0.75);
 }
-fancy-tree fancy-scroll fancy-tree-item fancy-button.quieter.hidden {
+fancy-tree fancy-scroll fancy-tree-item fancy-button.quieter.button-hidden {
+  visibility: hidden;
+}
+fancy-tree fancy-scroll fancy-tree-item .hidden {
   visibility: hidden;
 }
 fancy-tree fancy-scroll fancy-tree-item:hover {

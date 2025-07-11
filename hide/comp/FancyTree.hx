@@ -754,7 +754,7 @@ class FancyTree<TreeItem> extends hide.comp.Component {
 
 		var icon = element.querySelector(".header-icon");
 		var iconContent = getIcon(data.item);
-		icon.classList.toggle("hidden", iconContent == null);
+		icon.classList.toggle("button-hidden", iconContent == null);
 		if (iconContent != null && iconContent != data.iconCache) {
 			icon.innerHTML = iconContent;
 			data.iconCache = iconContent;
