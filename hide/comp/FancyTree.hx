@@ -481,7 +481,7 @@ class FancyTree<TreeItem> extends hide.comp.Component {
 			return;
 		}
 
-		if (currentItem == null)
+		if (currentItem == null || searchBar.hasFocus())
 			return;
 
 		if (e.key == "ArrowRight" && hasChildren(currentItem.item)) {
