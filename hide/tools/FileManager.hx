@@ -25,6 +25,8 @@ enum FileKind {
 @:allow(hide.tools.FileManager)
 class FileEntry {
 	public var name: String;
+	public var path: String;
+	public var relPath: String;
 	public var children: Array<FileEntry>;
 	public var kind: FileKind;
 	public var parent: FileEntry;
@@ -37,6 +39,8 @@ class FileEntry {
 		this.name = name;
 		this.parent = parent;
 		this.kind = kind;
+		this.relPath = computeRelPath();
+		this.path = computePath();
 
 		watch();
 		FileManager.inst.fileIndex.set(this.getRelPath(), this);
@@ -107,15 +111,23 @@ class FileEntry {
 		registeredWatcher = hide.Ide.inst.fileWatcher.register(rel, FileManager.inst.fileChangeInternal.bind(this), true);
 	}
 
-	public function getPath() {
-		if (this.parent == null) return hide.Ide.inst.resourceDir;
-		return this.parent.getPath() + "/" + this.name;
+	public inline function getRelPath() {
+		return this.relPath;
 	}
 
-	public function getRelPath() {
+	public inline function getPath() {
+		return this.path;
+	}
+
+	function computePath() {
+		if (this.parent == null) return hide.Ide.inst.resourceDir;
+		return this.parent.computePath() + "/" + this.name;
+	}
+
+	function computeRelPath() {
 		if (this.parent == null) return "";
 		if (this.parent.parent == null) return this.name;
-		return this.parent.getRelPath() + "/" + this.name;
+		return this.parent.computeRelPath() + "/" + this.name;
 	}
 
 	// sort directories before files, and then dirs and files alphabetically
