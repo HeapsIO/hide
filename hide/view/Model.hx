@@ -1314,7 +1314,7 @@ class Model extends FileView {
 			var children : Array<Dynamic> = [];
 
 			if (obj != null && @:privateAccess obj.children != null) {
-				for (c in children)
+				for (c in @:privateAccess obj.children)
 					if (!Std.isOfType(c, h3d.scene.Graphics))
 						children.push(c);
 			}
