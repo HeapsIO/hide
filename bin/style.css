@@ -5073,6 +5073,9 @@ fancy-tree fancy-scroll fancy-tree-item {
   background-color: hsl(from var(--background) h s calc(var(--highlight) + l));
   display: flex;
 }
+fancy-tree fancy-scroll fancy-tree-item.hidden {
+  filter: opacity(40%);
+}
 fancy-tree fancy-scroll fancy-tree-item.hide-search {
   overflow: hidden;
   height: 0px;

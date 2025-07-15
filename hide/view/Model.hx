@@ -1398,6 +1398,48 @@ class Model extends FileView {
 			hide.comp.ContextMenu.createFromEvent(cast event, menuItems);
 		};
 		tree.onContextMenu = ctxMenu;
+		tree.getButtons = (item : Dynamic) -> {
+			var obj = Std.downcast(item, h3d.scene.Object);
+			if (obj == null || Std.isOfType(obj, h3d.scene.Skin.Joint) || Std.isOfType(obj, h3d.mat.Material))
+				return [];
+
+			var buttons: Array<hide.comp.FancyTree.TreeButton<Dynamic>> = [];
+			buttons.push({
+				getIcon: (e:Dynamic) -> obj.visible ? '<div class="ico ico-eye"></div>' : '<div class="ico ico-eye-slash"></div>',
+				click: (e:Dynamic) -> {
+					function setChildrenVisibility(item: hide.comp.FancyTree.TreeItemData<Dynamic>, visible: Bool) {
+						for (c in item.children) {
+							var obj = Std.downcast(c.item, h3d.scene.Object);
+							if (c.buttons?.length > 0 && !obj.visible)
+								continue;
+
+							@:privateAccess tree.genElement(c);
+							if (visible)
+								c.element?.classList?.remove("hidden");
+							else
+								c.element?.classList?.add("hidden");
+							setChildrenVisibility(c, visible);
+						}
+					}
+
+					var treeItemData : hide.comp.FancyTree.TreeItemData<Dynamic> = null;
+					var itemMap = @:privateAccess tree.itemMap;
+					for (h in itemMap.keys()) {
+						if (itemMap.get(h).item == e)
+							treeItemData = itemMap.get(h);
+					}
+
+					obj.visible = !obj.visible;
+					if (obj.visible && obj.parent.visible)
+						treeItemData.element.classList.remove("hidden");
+					else
+						treeItemData.element.classList.add("hidden");
+					setChildrenVisibility(treeItemData, obj.visible);
+				},
+				forceVisiblity: (e:Dynamic) -> true,
+			});
+			return buttons;
+		}
 		tree.rebuildTree();
 		tree.openItem(obj, true);
 
