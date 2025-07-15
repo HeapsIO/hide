@@ -24,6 +24,8 @@ class FancyGallery<GalleryItem> extends hide.comp.Component {
 	var lastHeight : Float = 0;
 	var mouseOver : Bool = false;
 
+	var lastSavedZoomPercent : Null<Float> = null;
+
 	var zoom : Int = 5;
 	static final zoomLevels = [0, 32, 64, 96, 128,192, 256, 384, 512];
 	var itemHeightPx = 128;
@@ -149,6 +151,7 @@ class FancyGallery<GalleryItem> extends hide.comp.Component {
 	}
 
 	public function setZoom(newLevel: Int) {
+		lastSavedZoomPercent = (scroll.scrollTop + scroll.getBoundingClientRect().height / 2) / scroll.scrollHeight;
 		zoom = hxd.Math.iclamp(newLevel, 0, zoomLevels.length-1);
 		saveDisplayState("zoom", zoom);
 		queueRefresh();
@@ -370,6 +373,13 @@ class FancyGallery<GalleryItem> extends hide.comp.Component {
 					scroll.scrollTo(scroll.scrollLeft, currentHeight + itemHeightPx - scrollHeight);
 				}
 			}
+		}
+
+		if (lastSavedZoomPercent != null) {
+			var newScrollTop = lastSavedZoomPercent * scroll.scrollHeight - scrollHeight / 2;
+			lastSavedZoomPercent = null;
+
+			scroll.scrollTo(scroll.scrollLeft, newScrollTop);
 		}
 
 		var clipStart = scroll.scrollTop;
