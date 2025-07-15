@@ -1015,6 +1015,14 @@ class FileBrowser extends hide.ui.View<FileBrowserState> {
 			}});
 		}
 
+		options.push({ label: "Refresh Thumbnail(s)", click : function() {
+			var files = FileManager.inst.getRoots(getItemAndSelection(item, isGallery));
+			for (file in files) {
+				FileManager.inst.invalidateMiniature(file);
+			}
+			queueGalleryRefresh();
+		}});
+
 		if (ide.isSVNAvailable()) {
 			options.push({ label : "", isSeparator: true });
 			options.push({ label: "SVN Revert", click : function() {

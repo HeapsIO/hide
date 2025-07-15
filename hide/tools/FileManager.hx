@@ -521,6 +521,20 @@ class FileManager {
 		}
 	}
 
+	public function invalidateMiniature(file: FileEntry) {
+		if (file.children != null) {
+			for (child in file.children) {
+				invalidateMiniature(child);
+			}
+			return;
+		}
+		var thumbnail = ThumbnailGenerator.getThumbPath(file.getPath());
+		try {
+			sys.FileSystem.deleteFile(thumbnail.toString());
+		} catch (e) {};
+		file.iconPath = null;
+	}
+
 	public function checkWindowReady() {
 		if (serverSocket == null)
 			return false;
