@@ -14,6 +14,8 @@ class SplineMeshSpawnerObject extends h3d.scene.Object {
 			b.remove();
 		batches = [];
 
+		if ( spline == null )
+			return;
 		var points = spline.points;
 		if ( points == null || points.length < 2 )
 			return;
@@ -62,11 +64,12 @@ class SplineMeshSpawnerObject extends h3d.scene.Object {
 					var start = new h3d.Vector();
 					start.lerp(from.pos, to.pos, j/count);
 					batch.worldPosition.translate(start.x, start.y, start.z);
+					batch.worldPosition.multiply3x4(batch.worldPosition, getAbsPos());
 					batch.emitInstance();
 				}
 			}
 		}
-		
+
 	}
 }
 
