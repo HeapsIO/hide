@@ -6044,7 +6044,7 @@ fancy-tree {
 			display: block;
 			overflow: hidden;
 
-			contain: layout paint size style;
+			contain: strict;
 		}
 
 		fancy-tree-item {
@@ -6052,6 +6052,9 @@ fancy-tree {
 			--depth: 0;
 			--highlight: 0;
 			width: 100%;
+			top: 0;
+
+			contain: strict;
 
 			display: flex;
 
@@ -6267,7 +6270,7 @@ fancy-gallery {
 		box-sizing: border-box;
 	}
 
-	contain: layout paint size style;
+	contain: strict;
 
 
 	fancy-scroll {
@@ -6282,7 +6285,7 @@ fancy-gallery {
 			width: 100%;
 			min-height: 100%;
 
-			contain: layout paint size style;
+			contain: strict;
 		}
 	}
 }
@@ -6299,6 +6302,8 @@ fancy-gallery fancy-item, fancy-tooltip fancy-item {
 	border-radius: 6px;
 
 	color: #aaa;
+
+	contain: strict;
 
 	&:hover {
 		background-color: var(--hover);

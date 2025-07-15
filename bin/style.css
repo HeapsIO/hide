@@ -5057,13 +5057,15 @@ fancy-tree fancy-scroll fancy-item-container {
   position: relative;
   display: block;
   overflow: hidden;
-  contain: layout paint size style;
+  contain: strict;
 }
 fancy-tree fancy-scroll fancy-tree-item {
   position: absolute;
   --depth: 0;
   --highlight: 0;
   width: 100%;
+  top: 0;
+  contain: strict;
   padding-left: calc((var(--depth) - 1) * 1em + 0.25em);
   box-sizing: border-box;
   height: 20px;
@@ -5220,7 +5222,7 @@ fancy-gallery {
   min-height: 0;
   width: 100%;
   height: 100%;
-  contain: layout paint size style;
+  contain: strict;
 }
 fancy-gallery,
 fancy-gallery * {
@@ -5236,7 +5238,7 @@ fancy-gallery fancy-scroll fancy-item-container {
   overflow: hidden;
   width: 100%;
   min-height: 100%;
-  contain: layout paint size style;
+  contain: strict;
 }
 fancy-gallery fancy-item,
 fancy-tooltip fancy-item {
@@ -5248,6 +5250,7 @@ fancy-tooltip fancy-item {
   background-color: #282828;
   border-radius: 6px;
   color: #aaa;
+  contain: strict;
   box-shadow: 2px 2px 2px rgba(0, 0, 0, 0.4);
 }
 fancy-gallery fancy-item:hover,

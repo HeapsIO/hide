@@ -29,6 +29,7 @@ typedef TreeItemData<TreeItem> = {
 	?searchRanges: FancySearch.SearchRanges,
 	item: TreeItem,
 	name: String,
+	nameCache: String,
 	uniqueName: String,
 	?iconCache: String,
 	filterState: FilterFlags,
@@ -316,6 +317,7 @@ class FancyTree<TreeItem> extends hide.comp.Component {
 					element: null,
 					name: null,
 					identifier: null,
+					nameCache: null,
 				});
 				childData.parent = parentData;
 				childData.depth = parentData?.depth + 1 ?? 0;
@@ -625,7 +627,7 @@ class FancyTree<TreeItem> extends hide.comp.Component {
 		for (index in hxd.Math.imax(itemStart, 0) ... hxd.Math.imin(flatData.length, itemEnd + 1)) {
 			var data = flatData[index];
 			var element = genElement(data);
-			element.style.top = '${index * itemHeightPx}px';
+			element.style.transform = 'translate(0, ${index * itemHeightPx}px)';
 			if (!oldChildren.remove(element))
 				itemContainer.appendChild(element);
 		}
@@ -701,6 +703,7 @@ class FancyTree<TreeItem> extends hide.comp.Component {
 			element = js.Browser.document.createElement("fancy-tree-item");
 			element.style.setProperty("--depth", Std.string(data.depth));
 			data.iconCache = null;
+			data.nameCache = null;
 
 			element.innerHTML =
 			'
@@ -768,10 +771,14 @@ class FancyTree<TreeItem> extends hide.comp.Component {
 		var nameElement = element.querySelector("fancy-tree-name");
 		element.title = data.name;
 
-		if (data.searchRanges != null) {
-			nameElement.innerHTML = hide.comp.FancySearch.splitSearchRanges(data.name, data.searchRanges);
+		var wantedName = if (data.searchRanges != null) {
+			hide.comp.FancySearch.splitSearchRanges(data.name, data.searchRanges);
 		} else {
-			nameElement.innerHTML = data.name;
+			data.name;
+		}
+		if (wantedName != data.nameCache) {
+			data.nameCache = wantedName;
+			nameElement.innerHTML = wantedName;
 		}
 
 		for (button in data.buttons) {
