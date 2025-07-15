@@ -5272,7 +5272,7 @@ fancy-tooltip fancy-item.details {
   align-items: flex-end;
   box-shadow: unset;
   border-radius: unset;
-  gap: 0.2em;
+  gap: 0.4em;
 }
 fancy-gallery fancy-item fancy-thumbnail,
 fancy-tooltip fancy-item fancy-thumbnail {
