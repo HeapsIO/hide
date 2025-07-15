@@ -1891,12 +1891,11 @@ class Ide extends hide.tools.IdeData {
 		return js.Browser.window.prompt(text, defaultValue);
 	}
 
-	public function getSVNModifiedFiles() {
+	var delayedSvnStatusCallbacks : Array<(files : Array<String>) -> Void> = null;
+
+	function onSvnStatusFinished(callbacks: Array<(files : Array<String>) -> Void>, error: Dynamic, stdOut: String, stderr: String) {
 		var modifiedFiles : Array<String> = [];
-		if (!isSVNAvailable())
-			throw "SVN not available";
-		var cmd = js.node.ChildProcess.execSync('svn status', { cwd: projectDir });
-		var outputs : Array<String> = '$cmd'.split("\r\n");
+		var outputs : Array<String> = stdOut.split("\r\n");
 		for (o in outputs) {
 			if (o.length == 0)
 				continue;
@@ -1905,7 +1904,33 @@ class Ide extends hide.tools.IdeData {
 			var file = getPath(o.substr(o.indexOf("res/") + 4));
 			modifiedFiles.push(file);
 		}
-		return modifiedFiles;
+		for (callback in callbacks) {
+			callback(modifiedFiles);
+		}
+
+		if (delayedSvnStatusCallbacks != null && delayedSvnStatusCallbacks.length > 0) {
+			var oldCallbacks = delayedSvnStatusCallbacks;
+			delayedSvnStatusCallbacks = [];
+			execSvnCommand(onSvnStatusFinished.bind(oldCallbacks));
+		} else {
+			delayedSvnStatusCallbacks = null;
+		}
+	}
+
+	function execSvnCommand(callback: (error: Dynamic, stdOut: String, stderr: String) -> Void) {
+		js.node.ChildProcess.exec('svn status', { cwd: projectDir }, callback);
+	}
+
+	public function getSVNModifiedFiles(callback: (files : Array<String>) -> Void) : Void{
+		if (!isSVNAvailable())
+			throw "SVN not available";
+
+		if (delayedSvnStatusCallbacks == null) {
+			delayedSvnStatusCallbacks = [];
+			execSvnCommand(onSvnStatusFinished.bind([callback]));
+		} else {
+			hide.tools.Extensions.ArrayExtensions.pushUnique(delayedSvnStatusCallbacks, callback);
+		}
 	}
 
 	public function isSVNAvailable() {

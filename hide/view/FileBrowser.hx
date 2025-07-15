@@ -330,6 +330,28 @@ class FileBrowser extends hide.ui.View<FileBrowserState> {
 		return !entry.ignored;
 	}
 
+	public function refreshVCS() {
+		fancyTree.queueRefresh(RegenHeader);
+		fancyGallery.queueRefresh(RegenHeader);
+	}
+
+	function getIcon(item : FileEntry) : String {
+		var vcsClass = switch(item.vcsStatus) {
+			case None: "";
+			case UpToDate: Ide.inst.ideConfig.svnShowVersionedFiles ? "fancy-status-icon fancy-status-icon-ok" : "";
+			case Modified: Ide.inst.ideConfig.svnShowModifiedFiles ? "fancy-status-icon fancy-status-icon-modified" : "";
+		};
+
+		if (item.kind == Dir)
+			return '<div class="ico ico-folder ${vcsClass}"></div>';
+		var ext = @:privateAccess hide.view.FileTree.getExtension(item.name);
+		if (ext != null) {
+			if (ext?.options.icon != null) {
+				return '<div class="ico ico-${ext.options.icon} ${vcsClass}" title="${ext.options.name ?? "Unknown"}"></div>';
+			}
+		}
+		return '<div class="ico ico-file ${vcsClass}" title="Unknown"></div>';
+	}
 
 	override function onDisplay() {
 		keys.register("undo", function() undo.undo());
@@ -417,17 +439,7 @@ class FileBrowser extends hide.ui.View<FileBrowserState> {
 		fancyTree.getName = (file: FileEntry) -> return file?.name;
 		fancyTree.getUniqueName = (file: FileEntry) -> file?.getRelPath();
 
-		fancyTree.getIcon = (item : FileEntry) -> {
-			if (item.kind == Dir)
-				return '<div class="ico ico-folder"></div>';
-			var ext = @:privateAccess hide.view.FileTree.getExtension(item.name);
-			if (ext != null) {
-				if (ext?.options.icon != null) {
-					return '<div class="ico ico-${ext.options.icon}" title="${ext.options.name ?? "Unknown"}"></div>';
-				}
-			}
-			return '<div class="ico ico-file" title="Unknown"></div>';
-		}
+		fancyTree.getIcon = getIcon;
 
 		fancyTree.onNameChange = renameHandler;
 
@@ -551,15 +563,7 @@ class FileBrowser extends hide.ui.View<FileBrowserState> {
 			}
 		};
 
-		fancyGallery.getIcon = (item : FileEntry) -> {
-			var ext = @:privateAccess hide.view.FileTree.getExtension(item.name);
-			if (ext != null) {
-				if (ext?.options.icon != null) {
-					return '<div class="ico ico-${ext.options.icon}" title="${ext.options.name ?? "Unknown"}"></div>';
-				}
-			}
-			return null;
-		}
+		fancyGallery.getIcon = getIcon;
 
 		fancyGallery.onDoubleClick = (item: FileEntry) -> {
 			if (item.kind == File) {
@@ -684,6 +688,7 @@ class FileBrowser extends hide.ui.View<FileBrowserState> {
 		syncGallerySearchFullPath();
 
 		FileManager.inst.onFileChangeHandlers.push(onFileChange);
+		FileManager.inst.onVCSStatusUpdateHandlers.push(refreshVCS);
 
 		layout = state.savedLayout ?? Horizontal;
 	}
@@ -1000,9 +1005,32 @@ class FileBrowser extends hide.ui.View<FileBrowserState> {
 					}
 				});
 			}});
-
 		}
 
+		if (ide.isSVNAvailable()) {
+			options.push({ label : "", isSeparator: true });
+			options.push({ label: "SVN Revert", click : function() {
+				var fileList = FileManager.inst.createSVNFileList(getItemAndSelection(item, isGallery));
+				js.node.ChildProcess.exec('cmd.exe /c start "" TortoiseProc.exe /command:revert /pathfile:"$fileList" /deletepathfile', { cwd: ide.getPath(ide.resourceDir) }, (error, stdout, stderr) -> {
+					if (error != null)
+						ide.quickError('Error while trying to revert files : ${error}');
+				});
+			}});
+			options.push({ label: "SVN Log", click : function() {
+				var path = item.getPath();
+				js.node.ChildProcess.exec('cmd.exe /c start "" TortoiseProc.exe /command:log /path:"$path"', { cwd: ide.getPath(ide.resourceDir) }, (error, stdout, stderr) -> {
+					if (error != null)
+						ide.quickError('Error while trying to log file ${path} : ${error}');
+				});
+			}});
+			options.push({ label: "SVN Blame", click : function() {
+				var path = item.getPath();
+				js.node.ChildProcess.exec('cmd.exe /c start "" TortoiseProc.exe /command:blame /path:"$path"', { cwd: ide.getPath(ide.resourceDir) }, (error, stdout, stderr) -> {
+					if (error != null)
+						ide.quickError('Error while trying to blame file ${path} : ${error}');
+				});
+			}});
+		}
 
 		hide.comp.ContextMenu.createFromEvent(event, options);
 	}

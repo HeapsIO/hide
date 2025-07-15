@@ -4976,13 +4976,13 @@ fancy-flex-fill {
   flex: 1 1;
 }
 fancy-icon {
+  aspect-ratio: 1/1;
   height: 1em;
   display: block;
   mask-size: contain;
   background-color: currentColor;
   mask-mode: luminance;
   mask-repeat: no-repeat;
-  aspect-ratio: 1/1;
   mask-position: center;
 }
 fancy-icon.small {
@@ -5360,6 +5360,33 @@ fancy-tooltip {
   box-shadow: var(--basic-shadow);
   margin: 0;
   overflow: visible;
+}
+.fancy-status-icon {
+  position: relative;
+}
+.fancy-status-icon::after {
+  content: " ";
+  aspect-ratio: 1/1;
+  height: 1em;
+  display: block;
+  mask-size: contain;
+  background-color: currentColor;
+  mask-mode: luminance;
+  mask-repeat: no-repeat;
+  mask-position: center;
+  width: 6px;
+  height: 6px;
+  position: absolute;
+  left: -2px;
+  bottom: 1px;
+}
+.fancy-status-icon.fancy-status-icon-ok::after {
+  mask-image: url("res/icons/svg/dot.svg");
+  color: #87D58E;
+}
+.fancy-status-icon.fancy-status-icon-modified::after {
+  mask-image: url("res/icons/svg/dot.svg");
+  color: #FE383A;
 }
 .lm_tabdropdown_list {
   z-index: 9999 !important;

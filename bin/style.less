@@ -5959,7 +5959,6 @@ fancy-icon {
 	background-color: currentColor;
 	mask-mode: luminance;
 	mask-repeat: no-repeat;
-	aspect-ratio: 1/1;
 	mask-position: center;
 
 	&.small {
@@ -6436,6 +6435,37 @@ fancy-tooltip {
 	// fancy-image {
 	// 	transform: none;
 	// }
+}
+
+.fancy-status-icon {
+	position: relative;
+
+	&::after {
+		content: " ";
+		aspect-ratio: 1/1;
+		height: 1em;
+		display: block;
+		mask-size: contain;
+		background-color: currentColor;
+		mask-mode: luminance;
+		mask-repeat: no-repeat;
+		mask-position: center;
+		width: 6px;
+		height: 6px;
+		position: absolute;
+		left: -2px;
+		bottom: 1px;
+	}
+
+	&.fancy-status-icon-ok::after {
+		mask-image: url("res/icons/svg/dot.svg");
+		color: #87D58E;
+	}
+
+	&.fancy-status-icon-modified::after {
+		mask-image: url("res/icons/svg/dot.svg");
+		color: #FE383A;
+	}
 }
 
 .lm_tabdropdown_list {

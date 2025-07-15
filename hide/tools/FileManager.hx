@@ -21,6 +21,23 @@ enum FileKind {
 	File;
 }
 
+enum VCSStatus {
+	/**
+		Pending or no vsc available on system
+	**/
+	None;
+
+	/**
+		The file is up to date and not modified
+	**/
+	UpToDate;
+
+	/**
+		The file is modified locally
+	**/
+	Modified;
+}
+
 @:access(hide.tools.FileManager)
 @:allow(hide.tools.FileManager)
 class FileEntry {
@@ -32,6 +49,7 @@ class FileEntry {
 	public var parent: FileEntry;
 	public var iconPath: String;
 	public var disposed: Bool = false;
+	public var vcsStatus: VCSStatus = None;
 	public var ignored: Bool = false;
 
 	var registeredWatcher : hide.tools.FileWatcher.FileWatchEvent = null;
@@ -167,6 +185,9 @@ class FileManager {
 
 	public static var inst(get, default) : FileManager;
 	public var onFileChangeHandlers: Array<(entry: FileEntry) -> Void> = [];
+	public var onVCSStatusUpdateHandlers: Array<() -> Void> = [];
+
+	var svnEnabled = false;
 
 	var windowManager : RenderWindowManager = null;
 
@@ -275,6 +296,49 @@ class FileManager {
 		return roots;
 	}
 
+	function onSVNFileModified(modifiedFiles: Array<String>) {
+		for (file in fileIndex) {
+			file.vcsStatus = UpToDate;
+		}
+
+		for (modifiedFile in modifiedFiles) {
+			var relPath = hide.Ide.inst.getRelPath(modifiedFile);
+			var file = fileIndex.get(relPath);
+
+			while(file != null && file.vcsStatus != Modified) {
+				file.vcsStatus = Modified;
+				file = file.parent;
+			}
+		}
+
+		for (handler in onVCSStatusUpdateHandlers) {
+			handler();
+		}
+	}
+
+	/**
+		Return the path to a temporary file with all the paths in the files array inside
+	**/
+	public function createSVNFileList(files: Array<FileEntry>) : String {
+		var tmpdir = js.node.Os.tmpdir();
+		var name = 'hidefiles${Std.int(hxd.Math.random(100000000))}.txt';
+		var path = tmpdir + "/" + name;
+
+
+		var str = [for(f in files) f.getPath()].join("\n");
+
+		// Encode paths as utf-16 because tortoiseproc want the file encoded that way
+		var bytes = haxe.io.Bytes.alloc(str.length * 2);
+		var pos = 0;
+
+		for (char in 0...str.length) {
+			bytes.setUInt16(pos, str.charCodeAt(char));
+			pos += 2;
+		}
+		sys.io.File.saveBytes(path, bytes);
+		return path;
+	}
+
 	function setupServer() {
 		if (serverSocket != null)
 			throw "Server already exists";
@@ -337,6 +401,8 @@ class FileManager {
 		// kill server when page is reloaded
 		js.Browser.window.addEventListener('beforeunload', () -> { cleanupGenerator(); cleanupServer(); });
 
+		svnEnabled = hide.Ide.inst.isSVNAvailable();
+
 		var exclPatterns : Array<String> = hide.Ide.inst.currentConfig.get("filetree.excludes", []);
 		ignorePatterns = [];
 		for(pat in exclPatterns)
@@ -354,6 +420,8 @@ class FileManager {
 
 		fileRoot = new FileEntry("res", null, Dir);
 		fileRoot.refreshChildren();
+
+		queueRefreshSVN();
 	}
 
 	function fileChangeInternal(entry: FileEntry) {
@@ -367,8 +435,17 @@ class FileManager {
 		if (entry.kind == Dir) {
 			fileEntryRefreshDelay.queue(entry);
 		}
+
+		queueRefreshSVN();
+
 		for (handler in onFileChangeHandlers) {
 			handler(entry);
+		}
+	}
+
+	public function queueRefreshSVN() {
+		if (svnEnabled) {
+			hide.Ide.inst.getSVNModifiedFiles(onSVNFileModified);
 		}
 	}
 

@@ -232,8 +232,13 @@ class FancyTree<TreeItem> extends hide.comp.Component {
 	}
 
 	// Separate definition to onContextMenu to allow .bind()
-	function contextMenuHandler(item: TreeItem, event : js.html.MouseEvent) {
-		onContextMenu(item, event);
+	function contextMenuHandler(data: TreeItemData<TreeItem>, event : js.html.MouseEvent) {
+		if ((data == null || !selection.exists(cast data)) && !event.shiftKey) {
+			clearSelection();
+			if (data != null)
+				setSelection(data, true);
+		}
+		onContextMenu(data?.item, event);
 	}
 
 	/**
@@ -713,7 +718,7 @@ class FancyTree<TreeItem> extends hide.comp.Component {
 			});
 
 			element.onclick = dataClickHandler.bind(data);
-			element.oncontextmenu = contextMenuHandler.bind(data.item);
+			element.oncontextmenu = contextMenuHandler.bind(data);
 			element.ondblclick = doubleClickHander.bind(data);
 
 			data.element = element;
@@ -1009,7 +1014,7 @@ class FancyTree<TreeItem> extends hide.comp.Component {
 	// TODO(ces) : The main release of haxe doesn't support type inference with `|` which make using
 	// queueRefresh with an EnumFlag as an argument cumbersome. Untill then, make multiple queueRefresh calls
 	// with each of the flags you want to set
-	function queueRefresh(?flag: RefreshFlag = null) {
+	public function queueRefresh(?flag: RefreshFlag = null) {
 		if (flag != null) {
 			currentRefreshFlags.set(flag);
 		}

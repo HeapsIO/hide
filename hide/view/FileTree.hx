@@ -246,7 +246,7 @@ class FileTree extends FileView {
 			return;
 		}
 
-		modifiedFiles = Ide.inst.getSVNModifiedFiles();
+		modifiedFiles = [];//Ide.inst.getSVNModifiedFiles();
 		if (el == null)
 			el = tree.element;
 
