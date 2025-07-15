@@ -29,6 +29,10 @@ class Camera extends Object3D {
 	@:s var zFar : Float = 200;
 	@:s var zNear : Float = 0.02;
 	@:s var showFrustum = false;
+
+	@:s var ortho : Bool = false;
+	@:s var orthoWidth : Float;
+
 	var preview = false;
 	var obj : h3d.scene.Object = null;
 	#if editor
@@ -58,6 +62,16 @@ class Camera extends Object3D {
 			g.ignoreBounds = true;
 		}
 
+		g.removeChildren();
+		g.clear();
+
+		if ( ortho ) {
+			var orthoBounds = new h3d.scene.Box(0xFFFFFF, getOrthoBounds(1.0));
+			orthoBounds.setRotation(0.0, Math.PI * 0.5, 0.0);
+			g.addChild(orthoBounds);
+			return;
+		}
+
 		var c = new h3d.Camera();
 		c.pos.set(0,0,0);
 		c.target.set(1,0,0);
@@ -69,7 +83,6 @@ class Camera extends Object3D {
 		var nearPlaneCorner = [c.unproject(-1, 1, 0), c.unproject(1, 1, 0), c.unproject(1, -1, 0), c.unproject(-1, -1, 0)];
 		var farPlaneCorner = [c.unproject(-1, 1, 1), c.unproject(1, 1, 1), c.unproject(1, -1, 1), c.unproject(-1, -1, 1)];
 
-		g.clear();
 		g.lineStyle(1, 0xffffff);
 
 		// Near Plane
@@ -107,6 +120,20 @@ class Camera extends Object3D {
 		var cam = new CameraSyncObject(parent3d);
 		obj = cam;
 		return obj;
+	}
+
+	function getOrthoBounds(screenRatio : Float) {
+		var orthoBounds = new h3d.col.Bounds();
+		var X = orthoWidth * 0.5;
+		var Y = X / screenRatio;
+		var Z = zFar * 0.5;
+		orthoBounds.xMax = X;
+		orthoBounds.yMax = Y;
+		orthoBounds.xMin = -X;
+		orthoBounds.yMin = -Y;
+		orthoBounds.zMax = Z;
+		orthoBounds.zMin = -Z;
+		return orthoBounds;
 	}
 
 	override function updateInstance( ?p ) {
@@ -148,6 +175,8 @@ class Camera extends Object3D {
 	}
 
 	public function applyTo(c: h3d.Camera) {
+		c.orthoBounds = null;
+
 		var transform = null;
 		if ( obj != null )
 			transform = obj.getAbsPos();
@@ -168,6 +197,9 @@ class Camera extends Object3D {
 		c.fovY = fovY;
 		c.zFar = zFar;
 		c.zNear = zNear;
+
+		if ( ortho )
+			c.orthoBounds = getOrthoBounds(c.screenRatio);
 	}
 
 	function applyRFX() {
@@ -223,6 +255,12 @@ class Camera extends Object3D {
 					<dt></dt><dd><input class="copy" type="button" value="Copy Current"/></dd>
 					<dt></dt><dd><input class="apply" type="button" value="Apply" /></dd>
 					<dt></dt><dd><input class="reset" type="button" value="Reset" /></dd>
+				</dl>
+			</div>
+			<div class="group" name="Ortho">
+				<dl>
+					<dt>Ortho</dt><dd><input type="checkbox" field="ortho"/></dd>
+					<dt>X width</dt><dd><input type="range" field="orthoWidth"/></dd>
 				</dl>
 			</div>
 			<div class="group" name="Debug">
@@ -351,6 +389,12 @@ class Camera extends Object3D {
 		this.zFar = cam.zFar;
 		this.zNear = cam.zNear;
 		this.fovY = cam.fovY;
+
+		ortho = cam.orthoBounds != null;
+		if ( cam.orthoBounds != null ) {
+			orthoWidth = cam.orthoBounds.xSize;
+			this.zFar = cam.orthoBounds.zSize;
+		}
 	}
 
 	override function getHideProps() : hide.prefab.HideProps {
