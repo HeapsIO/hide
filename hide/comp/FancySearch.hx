@@ -46,6 +46,7 @@ class FancySearch extends hide.comp.Component {
 	}
 
 	public function focus() : Void {
+		input.select();
 		input.focus();
 	}
 
