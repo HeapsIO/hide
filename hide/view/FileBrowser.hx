@@ -951,6 +951,14 @@ class FileBrowser extends hide.ui.View<FileBrowserState> {
 				click : () -> Ide.showFileInExplorer(item.getPath())
 			});
 
+			if (isGallery) {
+				options.push({
+					label : "Open in Resources", click : function() {
+						ide.showFileInResources(item.getRelPath());
+					}
+				});
+			}
+
 			options.push({ label : "Find References", click : onFindPathRef.bind(item.getRelPath())});
 
 			options.push({
