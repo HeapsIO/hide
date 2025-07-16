@@ -294,9 +294,9 @@ class TerrainMesh extends h3d.scene.Object {
 			var shouldCreate = disconectedTiles;
 			if (!shouldCreate && tiles.length == 0) {
 				// allow tile cration arount origin
-				shouldCreate = maxTileX >= 0 && minTileX<=0 && maxTileY>=0 && minTileY<=0;  
+				shouldCreate = maxTileX >= 0 && minTileX<=0 && maxTileY>=0 && minTileY<=0;
 			}
-			
+
 			// check if borders contains a tile
 			if (!shouldCreate) {
 				for (x in minTileX...maxTileX+1)
@@ -395,4 +395,6 @@ class TerrainMesh extends h3d.scene.Object {
 		}
 		return -1;
 	}
+
+	public function onModified() {}
 }

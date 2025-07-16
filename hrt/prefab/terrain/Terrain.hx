@@ -41,7 +41,17 @@ class Terrain extends Object3D {
 	@:c var tmpSurfacesProps : Array<SurfaceProps> = [];
 	@:s var generateMipMaps : Bool = false;
 
-	var modified = false;
+	var modified(default, set) = false;
+	function set_modified(v : Bool) {
+		modified = v;
+		if ( modified ) {
+			if ( local3d != null ) {
+				var terrain = Std.downcast(local3d, hrt.prefab.terrain.TerrainMesh);
+				terrain.onModified();
+			}
+		}
+		return modified;
+	}
 
 	#if editor
 	var packWeight = new h3d.pass.ScreenFx(new PackWeight());
