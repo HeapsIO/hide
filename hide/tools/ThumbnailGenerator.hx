@@ -224,8 +224,9 @@ class ThumbnailGenerator {
 			mat.model = model;
 			mat.blendMode = materialDef.blendMode;
 			var props = h3d.mat.MaterialSetup.current.loadMaterialProps(mat);
-			if (props?.__ref != null) {
-				string += hrt.tools.MapUtils.getOrPut(libTimes, props.__ref, sys.FileSystem.stat(Ide.inst.getPath(props.__ref)).mtime.getTime());
+			var ref = props != null ? (props:Dynamic).__ref : null;
+			if (ref != null) {
+				string += hrt.tools.MapUtils.getOrPut(libTimes, ref, sys.FileSystem.stat(Ide.inst.getPath(ref)).mtime.getTime());
 			}
 		}
 
