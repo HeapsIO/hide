@@ -338,8 +338,18 @@ class FancyTree<TreeItem> extends hide.comp.Component {
 	public function rebuildTree() {
 		itemMap.clear();
 		rootData = generateChildren(null);
+		recLoadChildren(rootData);
 
 		queueRefresh(Search);
+	}
+
+	function recLoadChildren(items: Array<TreeItemData<TreeItem>>) {
+		for (item in items) {
+			if (item.children == null) {
+				generateChildren(item);
+				recLoadChildren(item.children);
+			}
+		}
 	}
 
 	function regenerateFlatData() {
