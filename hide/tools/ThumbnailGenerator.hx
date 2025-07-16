@@ -194,7 +194,42 @@ class ThumbnailGenerator {
 		var toHash = "";
 		toHash += getRenderProps(filePath, config);
 		toHash += sys.FileSystem.stat(filePath).mtime.getTime();
+		if (filePath.split(".").pop().toLowerCase() == "fbx") {
+			var matInfo =  getMaterialInfo(filePath);
+			toHash += matInfo;
+			trace(matInfo);
+		}
 		return haxe.crypto.Md5.encode(toHash);
+	}
+
+	static function getMaterialInfo(filePath: String) : String {
+		var string = "";
+
+		var dir = filePath.split("/");
+		dir.pop();
+		dir.push("materials.props");
+
+		var materialsPropsPath = dir.join("/");
+		if (sys.FileSystem.exists(materialsPropsPath)) {
+			string += sys.FileSystem.stat(materialsPropsPath).mtime.getTime();
+		}
+
+		var model = hxd.res.Loader.currentInstance.load(Ide.inst.getRelPath(filePath)).toModel();
+		var hmd = model.toHmd();
+
+		var libTimes : Map<String, Float> = [];
+		for (materialDef in hmd.header.materials) {
+			var mat = h3d.mat.MaterialSetup.current.createMaterial();
+			mat.name = materialDef.name;
+			mat.model = model;
+			mat.blendMode = materialDef.blendMode;
+			var props = h3d.mat.MaterialSetup.current.loadMaterialProps(mat);
+			if (props?.__ref != null) {
+				string += hrt.tools.MapUtils.getOrPut(libTimes, props.__ref, sys.FileSystem.stat(Ide.inst.getPath(props.__ref)).mtime.getTime());
+			}
+		}
+
+		return string;
 	}
 
 	function handleModel(toRender: RenderInfo) {
