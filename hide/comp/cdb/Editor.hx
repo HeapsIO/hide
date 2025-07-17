@@ -935,6 +935,7 @@ class Editor extends Component {
 		}
 		line.table.getRealSheet().updateValue(column, line.index, prev);
 		line.evaluate(); // propagate
+		line.getRootLine().validate();
 		endChanges();
 	}
 

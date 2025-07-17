@@ -3,6 +3,14 @@ import hscript.Checker;
 
 typedef Formula = { name : String, type : String, call : Dynamic -> Null<Float> }
 
+enum ValidationResult {
+	Ok;
+	Error(message: String);
+}
+
+typedef ValidationFunction = { name : String, type : String, call : Dynamic -> ValidationResult }
+
+
 class SheetAccess {
 	public var form : Formulas;
 	public var name : String;
@@ -60,6 +68,7 @@ class Formulas {
 	var formulas : Array<Formula> = [];
 	var fmap : Map<String, Map<String, Formula>> = [];
 	var currentMap : Map<String,Dynamic>;
+	var validationFuncs : Map<String, ValidationFunction> = [];
 
 	public var enable = true;
 
@@ -111,6 +120,23 @@ class Formulas {
 			}
 		}
 		currentMap = null;
+	}
+
+	public function validateLine(sheet: cdb.Sheet, lineIndex: Int): ValidationResult {
+		var validationFunc = validationFuncs.get(sheet.name);
+		if( validationFunc == null ) return null;
+		
+		var o = sheet.getLines()[lineIndex];
+
+		currentMap = new Map();
+		var omapped = remap(o, sheet);
+		currentMap = null;
+		
+		try {
+			return validationFunc.call(omapped);
+		} catch( e : Dynamic ) {
+			return Error(Std.string(e));
+		}
 	}
 
 	function remap( o : Dynamic, s : cdb.Sheet ) : Dynamic {
@@ -190,7 +216,8 @@ class Formulas {
 
 		formulas = [];
 		fmap = new Map();
-		var o : Dynamic = { Math : Math };
+		validationFuncs = new Map();
+		var o : Dynamic = { Math : Math, Ok : ValidationResult.Ok, Error : ValidationResult.Error };
 		for( r in refs )
 			Reflect.setField(o,r.name, r);
 		var interp = new hscript.JsInterp();
@@ -210,14 +237,18 @@ class Formulas {
 				var value = interp.variables.get(name);
 				if( value == null ) return;
 				var sname = typeNameToSheet(t);
-				var tmap = fmap.get(sname);
-				if( tmap == null ) {
-					tmap = new Map();
-					fmap.set(sname, tmap);
+				if(StringTools.startsWith(name, "validate")) {
+					validationFuncs.set(sname, { name : name, type : t, call : value });
+				} else {
+					var tmap = fmap.get(sname);
+					if( tmap == null ) {
+						tmap = new Map();
+						fmap.set(sname, tmap);
+					}
+					var f : Formula = { name : name, type : t, call : value };
+					tmap.set(name, f);
+					formulas.push(f);
 				}
-				var f : Formula = { name : name, type : t, call : value };
-				tmap.set(name, f);
-				formulas.push(f);
 			default:
 			}
 		}
@@ -359,6 +390,11 @@ class FormulasView extends hide.view.Script {
 		},[]));
 
 		var tstring = check.checker.types.resolve("String");
+
+		var tany = check.checker.types.resolve("Dynamic");
+		check.checker.setGlobal("Ok", tany);
+		check.checker.setGlobal("Error", TFun([{t:tstring,name:"message",opt:false}], tany));
+
 		var _tarray = check.checker.types.resolve("Array");
 		if( tstring == null ) {
 			var cstring = check.checker.types.defineClass("String");
