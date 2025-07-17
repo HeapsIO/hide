@@ -2058,7 +2058,7 @@ class SceneEditor {
 			getItemDropFlags: function(target: hrt.prefab.Prefab, dataTransfer: js.html.DataTransfer) : hide.comp.FancyTree.DropFlags {
 				for (p in movedPrefabs) {
 					if (checkAllowParent({prefabClass : Type.getClass(p), inf : p.getHideProps()}, target))
-						return Reorder | Reparent;
+						return (Reorder:hide.comp.FancyTree.DropFlags) | Reparent;
 				}
 				return Reorder;
 			},
