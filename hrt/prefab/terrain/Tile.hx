@@ -307,6 +307,7 @@ class Tile extends h3d.scene.Mesh {
 			if( surfaceWeights[i] != null ) h3d.pass.Copy.run(surfaceWeights[i], surfaceWeightArray, None, null, i);
 	}
 
+	static var tmpVec4: h3d.Vector4 = new h3d.Vector4();
 	public function getHeight( u : Float, v : Float, ?fast = false ) : Float {
 		var pixels = heightMapPixels;
 		if( pixels == null ) return 0.0;
@@ -332,7 +333,7 @@ class Tile extends h3d.scene.Mesh {
 		else{
 			var x = hxd.Math.floor(u * (pixels.width - 1));
 			var y = hxd.Math.floor(v * (pixels.height - 1));
-			return pixels.getPixelF(x, y).r;
+			return pixels.getPixelF(x, y, tmpVec4).r;
 		}
 	}
 
