@@ -230,6 +230,7 @@ class RemoteConsolePanel extends hide.comp.Component {
 	public function new( view : RemoteConsoleView, connection : Null<hrt.impl.RemoteConsole.RemoteConsoleConnection>, commands : Null<Array<String>> ) {
 		super(null, null);
 		this.view = view;
+		this.saveDisplayKey = "hide.view.RemoteConsoleView.RemoteConsolePanel";
 		element = new Element('
 		<div class="remoteconsole-panel">
 			<div class="controls">
@@ -491,12 +492,25 @@ class RemoteConsoleCommandHL extends RemoteConsoleCommand {
 			<input type="number" id="samplesCount" value="10000" placeholder="10000"/>
 		</div>').appendTo(element);
 		var samplesCount = subcmd.find("#samplesCount");
+		var savedSamplesCount = panel.getDisplayState("samplesCount");
+		if( savedSamplesCount != null ) {
+			samplesCount.val(savedSamplesCount);
+		}
+		#if (hashlink >= "1.16.0")
+		var collapse : Bool = panel.getDisplayState("collapseRecursion") ?? false;
+		var label = new Element('<label for="collapseRecursion">Collapse recursion</label>').appendTo(subcmd);
+		var collapseChkbox = new Element('<input type="checkbox" id="collapseRecursion" ${ collapse ? "checked" : ""}/>').appendTo(subcmd);
+		collapseChkbox.on('change', function(e) {
+			panel.saveDisplayState("collapseRecursion", collapseChkbox.is(":checked"));
+		});
+		#end
 		var subcmd = new Element('<div class="sub-command">
 			<h5></h5>
 		</div>').appendTo(element);
 		var startBtn = new Element('<input type="button" value="Start"/>').appendTo(subcmd);
 		startBtn.on('click', function(e) {
 			var samples = Std.parseInt(samplesCount.val());
+			panel.saveDisplayState("samplesCount", samples);
 			panel.sendCommand("profCpu", { action : "start", samples : samples ?? 10000 }, function(r) {
 				panel.log("CPU profiling started");
 			});
@@ -508,7 +522,13 @@ class RemoteConsoleCommandHL extends RemoteConsoleCommand {
 				#if (hashlink >= "1.15.0")
 				try {
 					var outfile = "hlprofile.json";
-					hlprof.ProfileGen.run([dir + file, "-o", dir + outfile]);
+					var args = [dir + file, "-o", dir + outfile];
+					#if (hashlink >= "1.16.0")
+					if( collapseChkbox.is(":checked") ) {
+						args.push("--collapse-recursion");
+					}
+					#end
+					hlprof.ProfileGen.run(args);
 					file = outfile;
 				} catch (e) {
 					panel.log(e.message, true);

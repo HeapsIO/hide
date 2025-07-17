@@ -3548,6 +3548,12 @@ div.gradient-box {
 .remoteconsole .remoteconsole-panel .commands .sub-command .dump-file {
   width: 200px;
 }
+.remoteconsole .remoteconsole-panel .commands .sub-command input[type=checkbox] {
+  display: inline-block;
+  float: none;
+  outline: 1px solid #505050;
+  margin: 5px;
+}
 .remoteconsole .remoteconsole-panel .commands h5 {
   display: inline-table;
   min-width: 80px;
