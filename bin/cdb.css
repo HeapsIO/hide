@@ -223,6 +223,9 @@
 .cdb .cdb-sheet tr {
   border-bottom: 1px solid #333;
 }
+.cdb .cdb-sheet tr.validation-error td {
+  background-color: rgba(255, 0, 0, 0.3);
+}
 .cdb .cdb-sheet tr.list {
   background-color: black;
 }

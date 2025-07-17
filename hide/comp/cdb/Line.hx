@@ -60,6 +60,7 @@ class Line extends Component {
 	public function syncClasses() {
 		var obj = obj;
 		element.get(0).classList.toggle("locIgnored", Reflect.hasField(obj,cdb.Lang.IGNORE_EXPORT_FIELD));
+		validate();
 	}
 
 	public function getGroupID() {
@@ -117,4 +118,18 @@ class Line extends Component {
 		element.addClass("hidden");
 	}
 
+	public function validate() {
+        var result = table.editor.formulas.validateLine(table.getRealSheet(), index);
+		if(result == null) return;
+
+        element.removeClass("validation-error");
+		element.attr("title", null);
+        
+		switch(result) {
+			case Error(msg):
+				element.addClass("validation-error");
+				element.attr("title", msg);
+			default:
+		}
+    }
 }
