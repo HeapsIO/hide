@@ -2698,91 +2698,8 @@ body.hide-subview .lm_controls {
   outline: none;
   position: relative;
 }
-.jstree .svn {
-  font-family: "FontAwesome";
-  font-size: 0.8em;
-  position: absolute;
-  margin-left: 20px;
-  margin-top: 3px;
-  z-index: 100;
-}
-.jstree .svn-modified:before {
-  font-family: "FontAwesome";
-  font-size: 0.8em;
-  position: absolute;
-  margin-left: 20px;
-  margin-top: 3px;
-  z-index: 100;
-  content: "\f06a";
-  color: #b32020;
-  opacity: 0.7;
-}
-.jstree .svn-versioned:before {
-  font-family: "FontAwesome";
-  font-size: 0.8em;
-  position: absolute;
-  margin-left: 20px;
-  margin-top: 3px;
-  z-index: 100;
-  content: "\f058";
-  color: #258833;
-  opacity: 0.7;
-}
 .jstree .filtered {
   display: none;
-}
-.jstree .editorOnly {
-  color: #02aeda !important;
-}
-.jstree .editorOnly i,
-.jstree .editorOnly a {
-  color: #02aeda;
-}
-.jstree .childSelected > a {
-  outline: 1px solid rgba(114, 180, 255, 0.5);
-  border-radius: 3px;
-}
-.jstree .inGameOnly {
-  color: #daa802 !important;
-}
-.jstree .inGameOnly i,
-.jstree .inGameOnly a {
-  color: #daa802;
-}
-.jstree .hidden {
-  color: #555 !important;
-}
-.jstree .hidden i,
-.jstree .hidden a {
-  color: #555;
-}
-.jstree .disabled a {
-  color: #533 !important;
-  display: inline;
-}
-.jstree .disabled i {
-  color: #533;
-}
-.jstree .inRef {
-  background: #444444 !important;
-}
-.jstree .isOverride {
-  background: #25346d !important;
-}
-.jstree .isOverride.isOverriden > i,
-.jstree .isOverride.isOverriden > a {
-  color: cyan !important;
-}
-.jstree .isOverride.isOverriden.isOverridenNew i,
-.jstree .isOverride.isOverriden.isOverridenNew a {
-  color: #26c726 !important;
-}
-.jstree a.locked {
-  color: #666 !important;
-  font-style: italic;
-}
-.jstree a.locked::after {
-  content: " (locked)";
 }
 .jstree-icon.jstree-ocl {
   opacity: 0.7;
@@ -5092,6 +5009,34 @@ fancy-tree fancy-scroll fancy-tree-item.hide-search {
 fancy-tree fancy-scroll fancy-tree-item.open > .caret::before {
   transform: rotate(90deg);
 }
+fancy-tree fancy-scroll fancy-tree-item.disabled {
+  color: #ee6666;
+}
+fancy-tree fancy-scroll fancy-tree-item.editorOnly {
+  color: #02aeda;
+}
+fancy-tree fancy-scroll fancy-tree-item.inGameOnly {
+  color: #daa802;
+}
+fancy-tree fancy-scroll fancy-tree-item.hidden {
+  color: #555;
+}
+fancy-tree fancy-scroll fancy-tree-item.locked {
+  color: #666;
+  font-style: italic;
+}
+fancy-tree fancy-scroll fancy-tree-item.inRef {
+  background: #3a3a3a;
+}
+fancy-tree fancy-scroll fancy-tree-item.isOverride {
+  background: #0c2346;
+}
+fancy-tree fancy-scroll fancy-tree-item.isOverride.isOverriden {
+  color: cyan;
+}
+fancy-tree fancy-scroll fancy-tree-item.isOverride.isOverriden.isOverridenNew {
+  color: #26c726;
+}
 fancy-tree fancy-scroll fancy-tree-item:has(fancy-tree-children .selected) > fancy-tree-header fancy-tree-name {
   text-decoration: underline var(--selection);
 }
@@ -5103,6 +5048,13 @@ fancy-tree fancy-scroll fancy-tree-item.current {
 fancy-tree fancy-scroll fancy-tree-item.selected {
   color: white;
   --background: var(--selection);
+}
+fancy-tree fancy-scroll fancy-tree-item:hover {
+  background-color: var(--hover);
+}
+fancy-tree fancy-scroll fancy-tree-item.selected {
+  color: white;
+  background-color: var(--selection);
 }
 fancy-tree fancy-scroll fancy-tree-item fancy-button.quieter {
   --size: 16px;

@@ -511,6 +511,7 @@ class Curve extends Prefab {
 					remapPath = null;
 			}
 			refreshBlend();
+			@:privateAccess ctx.scene.editor.refreshTree(SceneTree);
 			ctx.onChange(this, pname);
 		});
 

@@ -63,10 +63,6 @@ class PrefabSceneEditor extends hide.comp.SceneEditor {
 		parent.onUpdate(dt);
 	}
 
-	override function applyTreeStyle(p: PrefabElement, el: Element, ?pname: String, ?tree: hide.comp.IconTree<PrefabElement>) {
-		super.applyTreeStyle(p, el, pname, tree);
-		parent.applyTreeStyle(p, el, pname);
-	}
 
 	override function applySceneStyle(p:PrefabElement) {
 		parent.applySceneStyle(p);
@@ -326,7 +322,7 @@ class Prefab extends hide.view.FileView {
 		currentVersion = undo.currentID;
 
 		createEditor();
-		element.find(".hide-scenetree").first().append(sceneEditor.tree.element);
+		element.find(".hide-scenetree").first().append(sceneEditor.sceneTree.element);
 		element.find(".render-props-edition").find('.hide-scenetree').append(sceneEditor.renderPropsTree.element);
 		element.find(".hide-scroll").first().append(properties.element);
 		element.find(".heaps-scene").first().append(scene.element);
@@ -336,7 +332,7 @@ class Prefab extends hide.view.FileView {
 		resizablePanel.saveDisplayKey = "treeColumn";
 		resizablePanel.onResize = () -> @:privateAccess if( scene.window != null) scene.window.checkResize();
 
-		sceneEditor.tree.element.addClass("small");
+		sceneEditor.sceneTree.element.addClass("small");
 		sceneEditor.renderPropsTree.element.addClass("small");
 
 		refreshColLayout();
@@ -486,37 +482,6 @@ class Prefab extends hide.view.FileView {
 		toolsDefs.push({id: "showViewportOverlays", title : "Viewport Overlays", icon : "eye", type : Toggle((v) -> { sceneEditor.updateViewportOverlays(); }) });
 		toolsDefs.push({id: "viewportoverlays-menu", title : "", icon: "", type : Popup((e) -> new hide.comp.SceneEditor.ViewportOverlaysPopup(e, sceneEditor))});
 
-		var texContent : Element = null;
-		// toolsDefs.push({id: "sceneInformationToggle", title : "Scene information", icon : "info-circle", type : Toggle((b) -> statusText.visible = b), rightClick: () -> {
-		// 	if( texContent != null ) {
-		// 		texContent.remove();
-		// 		texContent = null;
-		// 	}
-		// 	new hide.comp.ContextMenu([
-		// 		{
-		// 			label : "Show Texture Details",
-		// 			click : function() {
-		// 				var memStats = scene.engine.mem.stats();
-		// 				var texs = @:privateAccess scene.engine.mem.textures;
-		// 				var list = [for(t in texs) {
-		// 					n: '${t.width}x${t.height}  ${t.format}  ${t.name}',
-		// 					size: t.width * t.height
-		// 				}];
-		// 				list.sort((a, b) -> Reflect.compare(b.size, a.size));
-		// 				var content = new Element('<div tabindex="1" class="overlay-info"><h2>Scene info</h2><pre></pre></div>');
-		// 				new Element(element[0].ownerDocument.body).append(content);
-		// 				var pre = content.find("pre");
-		// 				pre.text([for(l in list) l.n].join("\n"));
-		// 				texContent = content;
-		// 				content.blur(function(_) {
-		// 					content.remove();
-		// 					texContent = null;
-		// 				});
-		// 			}
-		// 		}
-		// 	]);
-		// }});
-
 		toolsDefs.push({id: "", title : "", icon : "", type : Separator});
 
 		toolsDefs.push({id: "autoSyncToggle", title : "Auto synchronize", icon : "refresh", type : Toggle((b) -> autoSync = b)});
@@ -556,9 +521,6 @@ class Prefab extends hide.view.FileView {
 		toolsDefs.push({id: "sceneSpeed", title : "Speed", type : Range((v) -> scene.speed = v)});
 
 		toolsDefs.push({id: "", title : "", icon : "", type : Separator});
-
-		//toolsDefs.push({id: "test", title : "Hello", icon : "", type : Popup((e : hide.Element) -> new hide.comp.CameraControllerEditor(sceneEditor, null,e))});
-
 
 		tools.makeToolbar(toolsDefs, config, keys);
 
@@ -894,9 +856,6 @@ class Prefab extends hide.view.FileView {
 		}
 		initDone = true;
 		return content;
-	}
-
-	function applyTreeStyle(p: PrefabElement, el: Element, pname: String) {
 	}
 
 	function onPrefabChange(p: PrefabElement, ?pname: String) {

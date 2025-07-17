@@ -66,6 +66,11 @@ typedef TreeButton<TreeItem> = {
 	?forceVisiblity : (TreeItem) -> Bool,
 }
 
+typedef Params =  {
+	?saveDisplayKey : String,
+	?quickGoto : Bool
+}
+
 class FancyTree<TreeItem> extends hide.comp.Component {
 	var rootData : Array<TreeItemData<TreeItem>> = [];
 	var itemMap : Map<{}, TreeItemData<TreeItem>> = [];
@@ -76,6 +81,8 @@ class FancyTree<TreeItem> extends hide.comp.Component {
 
 	var gotoFileLastTime : Float = 0.0;
 	var gotoFileCurrentMatch = "";
+
+	var quickGoto : Bool = true;
 
 	static final gotoFileKeyMaxDelay = 0.5;
 	static final overDragOpenDelaySec = 0.5;
@@ -108,8 +115,10 @@ class FancyTree<TreeItem> extends hide.comp.Component {
 	var moveLastDragOverStart: Float = 0;
 
 
-	public function new(parent: Element, ?saveKey: String) {
-		saveDisplayKey = saveKey;
+	public function new(parent: Element, ?params: Params) {
+		saveDisplayKey = params?.saveDisplayKey;
+		quickGoto = params?.quickGoto != null ? params.quickGoto : true;
+
 		var el = new Element('
 			<fancy-tree tabindex="-1">
 				<fancy-closable><fancy-search></fancy-search></fancy-closable>
@@ -183,6 +192,12 @@ class FancyTree<TreeItem> extends hide.comp.Component {
 		Called when the selected items in the tree changed
 	**/
 	public dynamic function onSelectionChanged(enterKey:Bool) {
+	}
+
+	/**
+		Used to change style of an element in the tree
+	**/
+	public dynamic function applyStyle(item: TreeItem, el: js.html.Element) {
 	}
 
 	/**
@@ -290,6 +305,7 @@ class FancyTree<TreeItem> extends hide.comp.Component {
 		if (data != null) {
 			updateData(data);
 			generateChildren(data);
+			applyStyle(item, data.element);
 			queueRefresh(Search);
 			queueRefresh(RegenHeader);
 		}
@@ -448,7 +464,7 @@ class FancyTree<TreeItem> extends hide.comp.Component {
 			return;
 		}
 
-		if (e.key.length == 1) {
+		if (e.key.length == 1 && quickGoto) {
 			if (searchBar.hasFocus())
 				return;
 			e.stopPropagation();
@@ -762,6 +778,7 @@ class FancyTree<TreeItem> extends hide.comp.Component {
 			}
 
 			setupDragAndDrop(data);
+			applyStyle(data.item, element);
 		}
 
 		var fold = element.querySelector(".caret");

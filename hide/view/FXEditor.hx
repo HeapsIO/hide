@@ -151,52 +151,50 @@ private class FXSceneEditor extends hide.comp.SceneEditor {
 		parent.onSelect(elts);
 	}
 
-	override function applyTreeStyle(p: PrefabElement, el: Element, ?pname: String, ?tree: hide.comp.IconTree<PrefabElement>) {
-		super.applyTreeStyle(p, el, pname, tree);
-		if (el == null)
-			return;
+	override function buildTree(targetTree : hide.comp.SceneEditor.Tree) : hide.comp.FancyTree<hrt.prefab.Prefab> {
+		var tree = super.buildTree(targetTree);
 
-		var asCurve = Std.downcast(p, Curve);
-		if (asCurve != null) {
-			if (asCurve.blendMode == Blend || asCurve.blendMode == Reference) {
-				var paramName = asCurve.blendParam;
-				var color = 0xFFFFFF;
-				var missing = false;
-				var icon = "ico-random";
-				if (asCurve.blendMode == Blend) {
-					var fx = Std.downcast(this.parent.data, hrt.prefab.fx.FX);
-					if (fx == null) {
-						return;
-					}
-					var param = fx.parameters.find(function (p) {return p.name == paramName;});
-					missing = param == null;
-					color = param?.color;
+		var prev = tree.getButtons;
+		tree.getButtons = (p : hrt.prefab.Prefab) -> {
+			var buttons = prev(p);
+			var curve = Std.downcast(p, Curve);
+			if (curve == null || (curve.blendMode != Blend && curve.blendMode != Reference))
+				return buttons;
 
-				}
-				else {
-					var ref = (cast this.parent.data: hrt.prefab.Prefab).locatePrefab(asCurve.blendParam);
-					if (ref == null) {
-						missing = true;
-					}
-					icon = "ico-link";
-				}
+			var paramName = curve.blendParam;
+			var color = 0xFFFFFF;
+			var icon = "ico-random";
+			var missing = false;
 
-				var colorCode = StringTools.hex(missing ? 0xFF0000 : color, 6);
-				var paramEl = el.find('>a>.fx-parameter');
-				if (paramEl.length == 0 ){
-					var v = new Element('<span class="fx-parameter"><i class="ico $icon"></i><span class="fx-param-name"></span></span>');
-					el.find("a").first().append(v);
-					paramEl = v;
-				}
-				var paramNameEl = paramEl.find(".fx-param-name");
-				paramNameEl.get(0).innerText = '$paramName';
-				paramEl.css("color", '#$colorCode');
-				paramEl.toggleClass("missing", missing);
+			if (curve.blendMode == Blend) {
+				var fx = Std.downcast(this.parent.data, hrt.prefab.fx.FX);
+				if (fx == null)
+					return buttons;
+				var param = fx.parameters.find(function (p) {return p.name == paramName;});
+				missing = param == null;
+				color = param?.color;
 			}
 			else {
-				el.find(".fx-parameter").remove();
+				var ref = (cast this.parent.data: hrt.prefab.Prefab).locatePrefab(curve.blendParam);
+				if (ref == null)
+					missing = true;
+				icon = "ico-link";
 			}
+
+			var colorCode = StringTools.hex(missing ? 0xFF0000 : color, 6);
+
+			buttons.insert(0, {
+				getIcon: (p: hrt.prefab.Prefab) ->  {
+					return '<span class="fx-parameter ${missing ? "missing" : ""}" style="color:#$colorCode"><i class="ico $icon"></i><span class="fx-param-name">$paramName</span></span>';
+				},
+				click: (p: hrt.prefab.Prefab) -> {},
+				forceVisiblity: (p: hrt.prefab.Prefab) -> true,
+			});
+
+			return buttons;
 		}
+
+		return tree;
 	}
 
 	override function getNewContextMenu(current: PrefabElement, ?onMake: PrefabElement->Void=null, ?groupByType = true ) {
@@ -451,7 +449,7 @@ class FXEditor extends hide.view.FileView {
 			sceneEditor.is2D = true;
 		}
 
-		element.find(".hide-scenetree").first().append(sceneEditor.tree.element);
+		element.find(".hide-scenetree").first().append(sceneEditor.sceneTree.element);
 		element.find(".render-props-edition").find('.hide-scenetree').append(sceneEditor.renderPropsTree.element);
 		element.find(".hide-scroll").first().append(sceneEditor.properties.element);
 		element.find(".heaps-scene").first().append(sceneEditor.scene.element);
@@ -515,7 +513,7 @@ class FXEditor extends hide.view.FileView {
 		keys.register("playPause", function() { pauseButton.toggle(!pauseButton.isDown()); });
 
 		currentVersion = undo.currentID;
-		sceneEditor.tree.element.addClass("small");
+		sceneEditor.sceneTree.element.addClass("small");
 		sceneEditor.renderPropsTree.element.addClass("small");
 
 		var rpEditionvisible = Ide.inst.currentConfig.get("sceneeditor.renderprops.edit", false);
@@ -673,12 +671,8 @@ class FXEditor extends hide.view.FileView {
 
 			if (pname == "parameters") {
 				var all = p.flatten();
-				for (e in all) {
-					var el = sceneEditor.tree.getElement(e);
-					if (el != null && el.toggleClass != null) {
-						sceneEditor.applyTreeStyle(e, el, pname);
-					}
-				}
+				for (e in all)
+					sceneEditor.applyTreeStyle(e, All);
 			}
 		}
 
@@ -1369,10 +1363,10 @@ class FXEditor extends hide.view.FileView {
 					element.children.push(c);
 			}
 			sceneEditor.queueRebuild(@:privateAccess sceneEditor.sceneData);
-			sceneEditor.queueRebuildCallback(() -> @:privateAccess sceneEditor.refreshTree(() -> sceneEditor.selectElements(!undo ? [for (a in added) a] : [], NoHistory)));
+			sceneEditor.queueRebuildCallback(() -> @:privateAccess sceneEditor.refreshTree(SceneTree, () -> sceneEditor.selectElements(!undo ? [for (a in added) a] : [], NoHistory)));
 		}));
 		sceneEditor.queueRebuild(@:privateAccess sceneEditor.sceneData);
-		sceneEditor.queueRebuildCallback(() -> @:privateAccess sceneEditor.refreshTree(() -> sceneEditor.selectElements([for (a in added) a], NoHistory)));
+		sceneEditor.queueRebuildCallback(() -> @:privateAccess sceneEditor.refreshTree(SceneTree, () -> sceneEditor.selectElements([for (a in added) a], NoHistory)));
 		return added;
 	}
 
@@ -1857,7 +1851,9 @@ class FXEditor extends hide.view.FileView {
 	}
 
 	function get_currentTime():Float {
-		return @:privateAccess this.curveEditor.currentTime;
+		if (this.curveEditor != null)
+			return @:privateAccess this.curveEditor.currentTime;
+		return this.currentTime;
 	}
 }
 

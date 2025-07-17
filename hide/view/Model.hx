@@ -129,13 +129,13 @@ class Model extends FileView {
 			]);
 		});
 
-		element.find(".hide-scene-tree").first().append(sceneEditor.tree.element);
+		element.find(".hide-scene-tree").first().append(sceneEditor.sceneTree.element);
 		element.find(".render-props-edition").find('.hide-scenetree').append(sceneEditor.renderPropsTree.element);
 		element.find(".props").first().append(sceneEditor.properties.element);
 		element.find(".heaps-scene").first().append(sceneEditor.scene.element);
 		sceneEditor.view.keys.register("sceneeditor.focus", {name: "Focus Selection", category: "Scene"},
 			function() {if (lastSelectedObject != null) refreshSelectionHighlight(lastSelectedObject);});
-		sceneEditor.tree.element.addClass("small");
+		sceneEditor.sceneTree.element.addClass("small");
 		sceneEditor.renderPropsTree.element.addClass("small");
 
 		var rpEditionvisible = Ide.inst.currentConfig.get("sceneeditor.renderprops.edit", false);

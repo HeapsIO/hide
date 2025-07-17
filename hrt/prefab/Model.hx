@@ -148,7 +148,7 @@ class Model extends Object3D {
 				if (toRemove != null && toRemove.source == toRemovePath)
 					change(toRemove, toAddPath, undo);
 
-				@:privateAccess ctx.scene.editor.refreshTree();
+				@:privateAccess ctx.scene.editor.refreshTree(SceneTree);
 			}
 
 			exec(false);
@@ -168,7 +168,7 @@ class Model extends Object3D {
 						change(toRemove, toAddPath, undo);
 				}
 
-				@:privateAccess ctx.scene.editor.refreshTree();
+				@:privateAccess ctx.scene.editor.refreshTree(SceneTree);
 			}
 
 			exec(false);

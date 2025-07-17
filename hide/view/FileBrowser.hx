@@ -419,7 +419,7 @@ class FileBrowser extends hide.ui.View<FileBrowserState> {
 			}
 		}
 
-		fancyTree = new hide.comp.FancyTree<FileEntry>(browserLayout.find(".left"), "fileBrowserTree");
+		fancyTree = new hide.comp.FancyTree<FileEntry>(browserLayout.find(".left"), { saveDisplayKey: "fileBrowserTree" } );
 		fancyTree.getChildren = (file: FileEntry) -> {
 			if (file == null)
 				return [root];

@@ -412,7 +412,7 @@ class Reference extends Object3D {
 						}
 
 						shared.editor.refreshInteractive(this);
-						@:privateAccess shared.editor.refreshTree();
+						@:privateAccess shared.editor.refreshTree(All);
 					}
 				}
 			}
@@ -520,7 +520,7 @@ class Reference extends Object3D {
 			editor.endRebuild();
 
 			editor.selectElements(newSelection, Nothing);
-			editor.refreshTree();
+			editor.refreshTree(All);
 		}
 
 		exec(false);
