@@ -2359,7 +2359,13 @@ class SceneEditor {
 	}
 
 	public function collapseTree() {
-		sceneTree.collapseItem(sceneData);
+		function collapse(p : hrt.prefab.Prefab) {
+			sceneTree.collapseItem(p);
+			for (c in p.children)
+				collapse(c);
+		}
+
+		collapse(sceneData);
 	}
 
 
