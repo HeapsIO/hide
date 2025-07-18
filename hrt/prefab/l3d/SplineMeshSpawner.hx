@@ -9,25 +9,72 @@ class SplineMeshSpawnerObject extends h3d.scene.Object {
 		this.spline = spline;
 	}
 
+	public function getInstances() {
+		if ( spline == null )
+			return [];
+		var points = spline.points;
+		if ( points == null || points.length < 2 )
+			return [];
+
+		var meshes = findAll(o -> Std.downcast(o, h3d.scene.Mesh));
+
+		var instances : Array<InstanceData> = [];
+		for ( mesh in meshes ) {
+			var prim = Std.downcast(mesh.primitive, h3d.prim.HMDModel);
+			mesh.culled = prim != null;
+			if ( prim == null )
+				continue;
+			var positions = [];
+			instances.push({mesh : mesh, path : @:privateAccess prim.lib.resource.entry.path, positions : positions});
+			var meshRelPos = new h3d.Matrix();
+			meshRelPos.multiply3x4inline(mesh.getAbsPos(), this.getAbsPos().getInverse());
+
+			var primBounds = prim.getBounds();
+			var primMin = primBounds.getMin();
+			var primMax = primBounds.getMax();
+			var primSize = primBounds.getSize();
+
+			var splineLength = spline.getSplineLength();
+			var count = hxd.Math.imax(Math.floor(splineLength / primSize.x), 1);
+
+			var prevPos = spline.localToGlobal(spline.getPoint(0.0));
+			for ( i in 0...count ) {
+				var t = (i+1) / count;
+				var toPos = spline.localToGlobal(spline.getPoint(t));
+
+				var dir = toPos.sub(prevPos).normalized();
+				var q = new h3d.Quat();
+				q.initDirection(dir, new h3d.Vector(0.0, 0.0, 1.0));
+				var matRot = q.toMatrix();
+
+				var instanceAbsPos = h3d.Matrix.I();
+				instanceAbsPos.load(meshRelPos);
+				var scale = toPos.sub(prevPos).length() / primSize.x;
+				instanceAbsPos.translate(-primMin.x, 0.0, 0.0);
+				instanceAbsPos.scale(scale);
+				instanceAbsPos.multiply3x4inline(instanceAbsPos, matRot);
+				instanceAbsPos.translate(prevPos.x, prevPos.y, prevPos.z);
+				instanceAbsPos.multiply3x4(instanceAbsPos, getAbsPos());
+				positions.push(instanceAbsPos);
+
+				prevPos = toPos;
+			}
+		}
+
+		return instances;
+	}
+
 	public function init() {
 		for ( b in batches )
 			b.remove();
 		batches = [];
 
-		if ( spline == null )
+		var instances = getInstances();
+		if ( instances == null )
 			return;
-		var points = spline.points;
-		if ( points == null || points.length < 2 )
-			return;
-
-		var meshes = findAll(o -> Std.downcast(o, h3d.scene.Mesh));
-		for ( mesh in meshes ) {
-			var prim = Std.downcast(mesh.primitive, h3d.prim.MeshPrimitive);
-			mesh.culled = prim != null;
-			if ( prim == null )
-				continue;
-			var meshRelPos = new h3d.Matrix();
-			meshRelPos.multiply3x4inline(mesh.getAbsPos(), this.getAbsPos().getInverse());
+		for ( meshInstances in instances ) {
+			var mesh = meshInstances.mesh;
+			var prim = cast(mesh.primitive, h3d.prim.HMDModel);
 			var multi = Std.downcast(mesh, h3d.scene.MultiMaterial);
 			var batch = new h3d.scene.MeshBatch(prim, null, this);
 			batches.push(batch);
@@ -35,42 +82,18 @@ class SplineMeshSpawnerObject extends h3d.scene.Object {
 			batch.worldPosition = new h3d.Matrix();
 			batch.begin();
 
-			var primBounds = prim.getBounds();
-			var primMin = primBounds.getMin();
-			var primMax = primBounds.getMax();
-			var primSize = primBounds.getSize();
-
-			var sectionCount = spline.loop ? points.length : points.length-1;
-			for ( i in 0...sectionCount ) {
-				var from = points[i];
-				var to = points[(i+1) % points.length];
-
-				var dist = to.pos.sub(from.pos).length();
-				var count = hxd.Math.imax(Math.floor(dist / primSize.x), 1);
-				var distPerCount = dist / count;
-
-				for ( j in 0...count ) {
-					var dir = to.pos.sub(from.pos).normalized();
-					var q = new h3d.Quat();
-					q.initDirection(dir, from.up);
-					var matRot = q.toMatrix();
-
-					batch.worldPosition.identity();
-					batch.worldPosition.load(meshRelPos);
-					var scale = distPerCount / primSize.x;
-					batch.worldPosition.translate(-primMin.x, 0.0, 0.0);
-					batch.worldPosition.scale(scale);
-					batch.worldPosition.multiply3x4inline(batch.worldPosition, matRot);
-					var start = new h3d.Vector();
-					start.lerp(from.pos, to.pos, j/count);
-					batch.worldPosition.translate(start.x, start.y, start.z);
-					batch.worldPosition.multiply3x4(batch.worldPosition, getAbsPos());
-					batch.emitInstance();
-				}
+			for ( pos in meshInstances.positions ) {
+				batch.worldPosition.load(pos);
+				batch.emitInstance();
 			}
 		}
-
 	}
+}
+
+typedef InstanceData = {
+	var positions : Array<h3d.Matrix>;
+	var mesh : h3d.scene.Mesh;
+	var path : String;
 }
 
 class SplineMeshSpawner extends hrt.prefab.Object3D {
