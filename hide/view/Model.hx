@@ -1306,7 +1306,7 @@ class Model extends FileView {
 		tree.element.addClass("overlay");
 		tree.getChildren = (item: Dynamic) -> {
 			if (item == null)
-				return [obj.name == null ? @:privateAccess obj.children[0] : obj];
+				return obj.name == null ? @:privateAccess obj.children : [obj];
 
 			var skin = Std.downcast(item, h3d.scene.Skin);
 			var obj = Std.downcast(item, h3d.scene.Object);
