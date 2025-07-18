@@ -737,10 +737,7 @@ class Spline extends hrt.prefab.Object3D {
 				toCompute.push({ s: curP, idx: i });
 		}
 
-		// Compute the average length of the spline
-		var length = 0.0;
-		for( i in 0 ... samples.length - 1 )
-			length += samples[i].pos.distance(samples[i+1].pos);
+		var length = getSplineLength();
 
 		var l = 0.0;
 		for( i in 0 ... toCompute.length - 1 ) {
@@ -760,6 +757,14 @@ class Spline extends hrt.prefab.Object3D {
 		p.length = length;
 	}
 
+	public function getSplineLength() {
+		// Compute the average length of the spline
+		var length = 0.0;
+		for( i in 0 ... samples.length - 1 )
+			length += samples[i].pos.distance(samples[i+1].pos);
+		return length;
+	}
+	
 
 	// -- Spline maths -- //
 	inline function getPointBetween( t : Float, p1 : SplinePoint, p2 : SplinePoint ) : h3d.col.Point {
