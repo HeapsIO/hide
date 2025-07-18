@@ -1372,10 +1372,10 @@ class Model extends FileView {
 			if (mat != null) return '<div class="ico ico-photo"></div>';
 
 			var join = Std.downcast(item, h3d.scene.Skin.Joint);
-			if (join != null) return '<div class="ico ico-male"></div>';
+			if (join != null) return '<div class="ico ico-gg"></div>';
 
 			var obj = Std.downcast(item, h3d.scene.Object);
-			if (obj != null) return '<div class="ico ico-gg"></div>';
+			if (obj != null) return '<div class="ico ico-cube"></div>';
 
 			return null;
 		};
