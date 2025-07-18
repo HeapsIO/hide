@@ -1516,17 +1516,6 @@ class SceneEditor {
 	}
 
 	function focusSelection() {
-		function is(p : hrt.prefab.Prefab, filter : (p : hrt.prefab.Prefab) -> Bool) {
-			var res = filter(p);
-			var parent = p.parent;
-			while (parent != null) {
-				res = res && filter(parent);
-				parent = parent.parent;
-			}
-
-			return res;
-		}
-
 		var arr = [];
 		for (pref in sceneTree.getSelectedItems()) {
 			var local3d = pref.getLocal3d();
