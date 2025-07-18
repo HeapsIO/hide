@@ -37,19 +37,21 @@ class SplineMeshSpawnerObject extends h3d.scene.Object {
 			var splineLength = spline.getSplineLength();
 			var count = hxd.Math.imax(Math.floor(splineLength / primSize.x), 1);
 
-			var prevPos = spline.localToGlobal(spline.getPoint(0.0));
+			var prevPoint = spline.getSplinePoint(0.0);
 			for ( i in 0...count ) {
+				var prevPos = spline.localToGlobal(prevPoint.pos);
 				var t = (i+1) / count;
-				var toPos = spline.localToGlobal(spline.getPoint(t));
+				var nextPoint = spline.getSplinePoint(t);
+				var nextPos = spline.localToGlobal(nextPoint.pos);
 
-				var dir = toPos.sub(prevPos).normalized();
+				var dir = nextPos.sub(prevPos).normalized();
 				var q = new h3d.Quat();
-				q.initDirection(dir, new h3d.Vector(0.0, 0.0, 1.0));
+				q.initDirection(dir, prevPoint.up);
 				var matRot = q.toMatrix();
 
 				var instanceAbsPos = h3d.Matrix.I();
 				instanceAbsPos.load(meshRelPos);
-				var scale = toPos.sub(prevPos).length() / primSize.x;
+				var scale = nextPos.sub(prevPos).length() / primSize.x;
 				instanceAbsPos.translate(-primMin.x, 0.0, 0.0);
 				instanceAbsPos.scale(scale);
 				instanceAbsPos.multiply3x4inline(instanceAbsPos, matRot);
@@ -57,7 +59,7 @@ class SplineMeshSpawnerObject extends h3d.scene.Object {
 				instanceAbsPos.multiply3x4(instanceAbsPos, getAbsPos());
 				positions.push(instanceAbsPos);
 
-				prevPos = toPos;
+				prevPos = nextPos;
 			}
 		}
 
