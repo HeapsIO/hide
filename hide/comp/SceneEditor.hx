@@ -1954,10 +1954,10 @@ class SceneEditor {
 			return p.name;
 		}
 		tree.getUniqueName = (p : hrt.prefab.Prefab) -> {
-			var path = p.name;
+			var path = p.getUniqueName();
 			var parent = p.parent;
 			while(parent != null) {
-				path += parent.name + "/" + path;
+				path += parent.getUniqueName() + "/" + path;
 				parent = parent.parent;
 			}
 			return path;
