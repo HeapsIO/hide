@@ -59,7 +59,7 @@ class SplineMeshSpawnerObject extends h3d.scene.Object {
 				instanceAbsPos.multiply3x4(instanceAbsPos, getAbsPos());
 				positions.push(instanceAbsPos);
 
-				prevPos = nextPos;
+				prevPoint = nextPoint;
 			}
 		}
 
