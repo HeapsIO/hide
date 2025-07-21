@@ -3765,7 +3765,7 @@ class SceneEditor {
 				case Default, NoHistory:
 					sceneTree.clearSelection();
 					for (e in elts)
-						sceneTree.selectItem(e, true);
+						sceneTree.selectItem(e, true, false);
 				case Nothing, NoTree:
 			}
 

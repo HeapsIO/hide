@@ -373,8 +373,9 @@ class FancyTree<TreeItem> extends hide.comp.Component {
 		flattenRec(rootData, flatData);
 	}
 
-	public function selectItem(item: TreeItem, openSelf: Bool = false) {
-		clearSelection();
+	public function selectItem(item: TreeItem, openSelf: Bool = false, clearPrevSelection : Bool = true) {
+		if (clearPrevSelection)
+			clearSelection();
 		var data = itemMap.get(cast item);
 		if (data == null) {
 			return;
