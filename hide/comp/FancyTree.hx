@@ -921,14 +921,22 @@ class FancyTree<TreeItem> extends hide.comp.Component {
 		var rect = element.getBoundingClientRect();
 		var nameRect = element.getBoundingClientRect();
 
-		if (flags.has(Reparent) && event.clientX > nameRect.left + 100) {
+		if (!flags.has(Reparent)) {
+			if (event.clientY > rect.top + rect.height / 2.0) {
+				return After;
+			}
+			return Before;
+		}
+		else {
+			final split = 1.0 / 3.0;
+			if (event.clientY < rect.top + rect.height * split) {
+				return Before;
+			}
+			if (event.clientY > rect.top + rect.height * (1.0-split)) {
+				return After;
+			}
 			return Inside;
 		}
-
-		if (event.clientY > rect.top + rect.height / 2) {
-			return After;
-		}
-		return Before;
 	}
 
 	public function clearSelection() {

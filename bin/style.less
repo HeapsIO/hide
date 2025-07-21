@@ -5036,6 +5036,8 @@ hide-popover {
 :root {
 	--hover-highlight: rgba(114, 180, 255, 0.5);
 	--selection: #3185ce;
+	--drop-feedback: white;
+
 	--hover: #444;
 
 	--basic-shadow: 2px 2px 3px rgba(0,0,0,.75);
@@ -6065,7 +6067,8 @@ fancy-tree {
 
 			box-sizing: border-box;
 
-			padding-left: calc((var(--depth) - 1) * 1.0em + 0.25em);
+			--padding: calc((var(--depth) - 1) * 1.0em + 0.25em);
+			padding-left: var(--padding);
 			box-sizing: border-box;
 
 			height: 20px;
@@ -6150,10 +6153,10 @@ fancy-tree {
 				position: absolute;
 				content: "";
 				display: block;
-				left: 0;
+				left: var(--padding);
 				right: 0;
 				top: 0;
-				border-top: solid 1px var(--selection);
+				border-top: solid 1px var(--drop-feedback);
 				z-index: 10;
 				pointer-events: none;
 			}
@@ -6162,10 +6165,10 @@ fancy-tree {
 				position: absolute;
 				content: "";
 				display: block;
-				left: 0;
+				left: var(--padding);
 				right: 0;
 				bottom: 0;
-				border-top: solid 1px var(--selection);
+				border-top: solid 1px var(--drop-feedback);
 				z-index: 10;
 				pointer-events: none;
 			}
@@ -6174,11 +6177,11 @@ fancy-tree {
 				position: absolute;
 				content: "";
 				display: block;
-				left: 0;
+				left: var(--padding);
 				right: 0;
 				bottom: 0;
 				top: 0;
-				border: solid 1px var(--selection);
+				border: solid 1px var(--drop-feedback);
 				z-index: 10;
 				pointer-events: none;
 			}

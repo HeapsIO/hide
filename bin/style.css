@@ -4248,6 +4248,7 @@ hide-popover hide-content {
 :root {
   --hover-highlight: rgba(114, 180, 255, 0.5);
   --selection: #3185ce;
+  --drop-feedback: white;
   --hover: #444;
   --basic-shadow: 2px 2px 3px rgba(0, 0, 0, 0.75);
   --sublte-shadow: 1px 1px 3px rgba(0, 0, 0, 0.33);
@@ -4987,7 +4988,8 @@ fancy-tree fancy-scroll fancy-tree-item {
   width: 100%;
   top: 0;
   contain: strict;
-  padding-left: calc((var(--depth) - 1) * 1em + 0.25em);
+  --padding: calc((var(--depth) - 1) * 1em + 0.25em);
+  padding-left: var(--padding);
   box-sizing: border-box;
   height: 20px;
   max-height: 20px;
@@ -5128,10 +5130,10 @@ fancy-tree fancy-scroll fancy-tree-item.feedback-drop-top::after {
   position: absolute;
   content: "";
   display: block;
-  left: 0;
+  left: var(--padding);
   right: 0;
   top: 0;
-  border-top: solid 1px var(--selection);
+  border-top: solid 1px var(--drop-feedback);
   z-index: 10;
   pointer-events: none;
 }
@@ -5139,10 +5141,10 @@ fancy-tree fancy-scroll fancy-tree-item.feedback-drop-bot::after {
   position: absolute;
   content: "";
   display: block;
-  left: 0;
+  left: var(--padding);
   right: 0;
   bottom: 0;
-  border-top: solid 1px var(--selection);
+  border-top: solid 1px var(--drop-feedback);
   z-index: 10;
   pointer-events: none;
 }
@@ -5150,11 +5152,11 @@ fancy-tree fancy-scroll fancy-tree-item.feedback-drop-in::after {
   position: absolute;
   content: "";
   display: block;
-  left: 0;
+  left: var(--padding);
   right: 0;
   bottom: 0;
   top: 0;
-  border: solid 1px var(--selection);
+  border: solid 1px var(--drop-feedback);
   z-index: 10;
   pointer-events: none;
 }
