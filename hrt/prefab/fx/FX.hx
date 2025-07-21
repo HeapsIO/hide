@@ -300,7 +300,7 @@ class FXAnimation extends h3d.scene.Object {
 		this.localTime = time;
 
 		for (subFX in subFXs) {
-			if (subFX.loop) {
+			if (subFX.playState == Loop) {
 				subFX.setTime(subFX.localTime + subFX.startDelay + dt, fullSync);
 			} else {
 				subFX.setTime(time);
@@ -434,12 +434,12 @@ class FXAnimation extends h3d.scene.Object {
 
 			if(customAnims != null)
 				for(anim in customAnims)
-					anim.setTime(time);
+					anim.setTime(this.prevTime + dt);
 
 			if(emitters != null) {
 				for(em in emitters) {
 					if(em.visible)
-						em.setTime(time);
+						em.setTime(@:privateAccess em.curTime + dt);
 				}
 			}
 
