@@ -1760,15 +1760,6 @@ class Ide extends hide.tools.IdeData {
 		if( subView != null ) Reflect.callMethod(subView.events,Reflect.field(subView.events,name),[param]);
 	}
 
-	public function getOrOpenInspector() {
-		var inspector = layout.root.getItemsById("inspector")[0];
-		if (inspector != null)
-			return;
-
-		open("hide.view.Inspector", {});
-		return;
-	}
-
 	public function closeInspector() {
 		var inspector = layout.root.getItemsById("inspector")[0];
 		if (inspector != null) {
