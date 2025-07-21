@@ -64,6 +64,14 @@ class SubFX extends Reference implements hrt.prefab.fx.Event.IEvent{
 		};
 	}
 
+	override function updateInstance(?propName:String) {
+		super.updateInstance(propName);
+
+		if (propName == "loop") {
+			postMakeInstance();
+		}
+	}
+
 	#if editor
 
 	override function edit( ctx : hide.prefab.EditContext ) {

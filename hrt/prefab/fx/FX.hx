@@ -27,6 +27,7 @@ class FXAnimation extends h3d.scene.Object {
 	function set_loop(v: Bool) {
 		loop = v;
 		initLoop();
+		resetSelf();
 		return loop;
 	}
 
@@ -112,6 +113,9 @@ class FXAnimation extends h3d.scene.Object {
 	public function initLoop() {
 		loopStart = 0.0;
 		loopEnd = duration;
+
+		if (!loop)
+			return;
 
 		if (events == null)
 			return;
@@ -474,22 +478,22 @@ class FXAnimation extends h3d.scene.Object {
 			}
 		}
 
-		var sub = Std.downcast(elt, SubFX);
-		if (sub != null) {
-			var eventLen = out?.length ?? 0;
-			out = initEvents(@:privateAccess sub.resolveRef(), out);
-			var fxAnimation = Std.downcast(sub.refInstance.findFirstLocal3d(), FXAnimation);
-			if (fxAnimation != null) {
-				fxAnimation.events = null;
-			}
-			if (out != null) {
-				// Offset the start time of the events that were added to our array in
-				// init events
-				for (i in eventLen...out.length) {
-					out[i].evt.time += sub.time;
-				}
-			}
-		}
+		// var sub = Std.downcast(elt, SubFX);
+		// if (sub != null) {
+		// 	var eventLen = out?.length ?? 0;
+		// 	out = initEvents(@:privateAccess sub.resolveRef(), out);
+		// 	var fxAnimation = Std.downcast(sub.refInstance.findFirstLocal3d(), FXAnimation);
+		// 	if (fxAnimation != null) {
+		// 		fxAnimation.events = null;
+		// 	}
+		// 	if (out != null) {
+		// 		// Offset the start time of the events that were added to our array in
+		// 		// init events
+		// 		for (i in eventLen...out.length) {
+		// 			out[i].evt.time += sub.time;
+		// 		}
+		// 	}
+		// }
 
 		for(child in elt.children) {
 			out = initEvents(child, out);
