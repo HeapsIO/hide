@@ -2261,8 +2261,10 @@ class SceneEditor {
 			else if (!enabled)
 				data.element.classList.remove(className);
 
-			for (c in data.children)
-				set(c.item, className, enabled);
+			if (data.children != null) {
+				for (c in data.children)
+					set(c.item, className, enabled);
+			}
 		}
 
 		function is(p: hrt.prefab.Prefab, status : (p : hrt.prefab.Prefab) -> Bool) {
