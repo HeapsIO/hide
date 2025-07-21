@@ -631,6 +631,22 @@ class FXEditor extends hide.view.FileView {
 
 
 		pauseButton = tools.addToggle("pause", "pause", "Pause animation", function(v) {}, false, "play");
+		var loopButton = tools.addToggle("loop", "retweet", "Loop animation", function(v) {
+			var fxAnim = sceneEditor.root3d.find((f) -> Std.downcast(f, hrt.prefab.fx.FX.FXAnimation));
+
+			@:privateAccess
+			if (fxAnim != null) {
+				fxAnim.loop = v;
+				fxAnim.reset();
+				if (!fxAnim.loop) {
+					fxAnim.playState = End;
+				} else {
+					if (fxAnim.playState == End) {
+						fxAnim.playState = Loop;
+					}
+				}
+			}
+		}, false);
 		tools.addRange("Speed", function(v) {
 			scene.speed = v;
 		}, scene.speed);
@@ -1748,6 +1764,7 @@ class FXEditor extends hide.view.FileView {
 			@:privateAccess if (fx.parentFX != null)
 				continue;
 			fx.setTime(currentTime - fx.startDelay);
+			currentTime = fx.localTime + fx.startDelay;
 		}
 
 		// Fix anim events :
