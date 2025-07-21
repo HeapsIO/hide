@@ -2357,7 +2357,11 @@ class SceneEditor {
 		if (obj3d == null)
 			return;
 
-		set(p, "hidden", is(p, (p) -> isHidden(Std.downcast(p, Object3D))));
+		set(p, "hidden", is(p, (p) -> {
+			var obj = p.getLocal3d();
+			var objVisible = obj == null || obj.visible;
+			return isHidden(Std.downcast(p, Object3D)) || !objVisible;
+		}));
 	}
 
 	public function collapseTree() {
@@ -4444,8 +4448,8 @@ class SceneEditor {
 						undo ? hideList.set(o, true) : hideList.remove(c);
 					else
 						undo ?  hideList.remove(c) : hideList.set(o, true);
-					refreshTreeStyle(c, All);
 					applySceneStyle(c);
+					refreshTreeStyle(c, All);
 					if (Std.downcast(c, hrt.prefab.RenderProps) != null)
 						queueRefreshRenderProps();
 				}
@@ -4463,8 +4467,8 @@ class SceneEditor {
 		for(o in elements) {
 			o.locked = locked;
 			for( c in o.all()) {
-				refreshTreeStyle(c, All);
 				applySceneStyle(c);
+				refreshTreeStyle(c, All);
 				toggleInteractive(c,!isLocked(c));
 			}
 		}
