@@ -43,7 +43,7 @@ jobs:
     needs: build
     runs-on: ubuntu-latest
     env:
-      nwjs-version: v0.88.0
+      nwjs-version: v0.101.2
     steps:
     - uses: actions/checkout@v2
     - name: Download js
