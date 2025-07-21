@@ -6,7 +6,11 @@ import hrt.prefab.fx.BaseFX.ObjectAnimation;
 import hrt.prefab.fx.BaseFX.ShaderAnimation;
 import hrt.prefab.fx.Event;
 
-
+enum FXPlayState {
+	Start;
+	Loop;
+	End;
+}
 @:allow(hrt.prefab.fx.FX)
 class FXAnimation extends h3d.scene.Object {
 	public static var defaultCullingDistance = 0.0;
@@ -15,8 +19,16 @@ class FXAnimation extends h3d.scene.Object {
 	public var playSpeed : Float = 0;
 	public var localTime : Float = 0.0;
 	public var startDelay : Float = 0.0;
-	public var loop : Bool = false;
+	public var loop(default, set) : Bool = false;
+	public var loopStart: Float = -1;
+	public var loopEnd: Float = -1;
 	public var duration : Float;
+
+	function set_loop(v: Bool) {
+		loop = v;
+		initLoop();
+		return loop;
+	}
 
 
 		/** Enable automatic culling based on `cullingRadius` and `cullingDistance`. Will override `culled` on every sync. **/
@@ -33,12 +45,15 @@ class FXAnimation extends h3d.scene.Object {
 	public var effects : Array<hrt.prefab.rfx.RendererFX>;
 	public var shaderTargets : Array<hrt.prefab.fx.ShaderTarget.ShaderTargetObj>;
 
+	public var subFXs : Array<FXAnimation> = [];
+
 	var evaluator : Evaluator;
 	var parentFX : FXAnimation;
 	var random : hxd.Rand;
 	var prevTime = -1.0;
 	var randSeed : Int;
 	var firstSync = true;
+	var playState : FXPlayState = End;
 
 	public function new(?parent) {
 		super(parent);
@@ -59,6 +74,7 @@ class FXAnimation extends h3d.scene.Object {
 			shaderTarget.applyShaderTarget(def, shaderTarget.target);
 		}
 
+		initSubFXs(root);
 		initObjAnimations(root);
 		initEmitters(root);
 		updateCustomAnims(root);
@@ -70,6 +86,8 @@ class FXAnimation extends h3d.scene.Object {
 		trails = findAll((p) -> Std.downcast(p, hrt.prefab.l3d.Trails.TrailObj));
 		setParameters(def.parameters);
 
+		initLoop();
+
 		for (p in def.flatten(hrt.prefab.rfx.RendererFX)) {
 			var rfx : hrt.prefab.rfx.RendererFX = cast p;
 			if (@:privateAccess rfx.instance == null)
@@ -79,17 +97,62 @@ class FXAnimation extends h3d.scene.Object {
 				this.effects = [];
 			this.effects.push(rfx);
 		}
+
+		resetSelf();
+	}
+
+	public function initSubFXs(root: PrefabElement) {
+		subFXs = [];
+		for (fx in root.findAll(SubFX)) {
+			var anim = Std.downcast(fx.refInstance?.findFirstLocal3d(), FXAnimation);
+			subFXs.push(anim);
+		}
+	}
+
+	public function initLoop() {
+		loopStart = 0.0;
+		loopEnd = duration;
+
+		if (events == null)
+			return;
+
+		for (event in events) {
+			if (event.evt.getEventPrefab().getRoot().findFirstLocal3d() != this)
+				continue;
+			var nameLower = event.evt.name.toLowerCase();
+			if (nameLower == "loop") {
+				loopStart = event.evt.time;
+				var duration = event.evt.getDuration();
+				if (duration > 0) {
+					loopEnd = loopStart + duration;
+				}
+			}
+			if (nameLower == "end") {
+				loopEnd = event.evt.time;
+			}
+		}
 	}
 
 	public function reset() {
-		firstSync = true;
-		prevTime = -1.0;
-		localTime = 0;
+		resetSelf();
+
 		if(parentFX == null) {
 			for(c in findAll(o -> Std.downcast(o, FXAnimation))) {
 				if(c != this)
 					c.reset();
 			}
+		}
+	}
+
+	function resetSelf() {
+		firstSync = true;
+		prevTime = -1.0;
+		localTime = 0;
+
+		if (loop) {
+			playState = Start;
+		} else {
+			playState = End;
 		}
 	}
 
@@ -186,20 +249,12 @@ class FXAnimation extends h3d.scene.Object {
 
 		var needIncrement = false;
 		var curTime = localTime;
+
 		if(playSpeed > 0 || firstSync) {
 			// This is done in syncRec() to make sure time and events are updated regarless of culling state,
 			// so we restore FX in correct state when unculled
-			if(parentFX != null) {
-				var t = hxd.Math.max(0, parentFX.localTime - startDelay);
-				if (loop) {
-					t = (t % duration);
-				}
-				setTime(t, fullSync);
-			}
-			else {
-				setTime(curTime, fullSync);
-				needIncrement = true;
-			}
+			if (parentFX == null)
+				setTime(curTime + ctx.elapsedTime * playSpeed, fullSync);
 		}
 
 		for (t in trails) {
@@ -208,15 +263,10 @@ class FXAnimation extends h3d.scene.Object {
 
 		if(fullSync)
 			super.syncRec(ctx);
-		if (needIncrement) {
-			localTime += ctx.elapsedTime * playSpeed;
-			if( loop && duration > 0 ) {
-				localTime = (localTime % duration);
-			}
-			if( duration > 0 && curTime < duration && localTime >= duration) {
-				localTime = duration;
-				finishedPlaying = true;
-			}
+
+		if(playState == End && duration > 0 && curTime < duration && localTime >= duration) {
+			localTime = duration;
+			finishedPlaying = true;
 		}
 
 		if(finishedPlaying) {
@@ -233,9 +283,29 @@ class FXAnimation extends h3d.scene.Object {
 	static var tempMat = new h3d.Matrix();
 	static var tempTransform = new h3d.Matrix();
 	static var tempVec = new h3d.Vector4();
-	public function setTime( time : Float, fullSync=true ) {
+	public function setTime( time : Float, fullSync=true) {
+		time = hxd.Math.max(0, time - startDelay);
 		var dt = time - this.prevTime;
+
+		if (playState == Start) {
+			if (time >= loopStart) {
+				playState = Loop;
+			}
+		}
+
+		if (playState == Loop) {
+			time = ((time - loopStart) % (loopEnd - loopStart)) + loopStart;
+		}
+
 		this.localTime = time;
+
+		for (subFX in subFXs) {
+			if (subFX.loop) {
+				subFX.setTime(subFX.localTime + subFX.startDelay + dt, fullSync);
+			} else {
+				subFX.setTime(time);
+			}
+		}
 
 		if(fullSync) {
 			if(objAnims != null) {
@@ -381,6 +451,14 @@ class FXAnimation extends h3d.scene.Object {
 		Event.updateEvents(events, time, prevTime, duration);
 
 		this.prevTime = localTime;
+	}
+
+	public function stop(instant: Bool = false, onEnd: () -> Void) {
+		this.onEnd = onEnd;
+		playState = End;
+		if (instant == true) {
+			setTime(duration, false);
+		}
 	}
 
 	function initEvents(elt: PrefabElement, ?out : Array<Event.EventInstance> ) : Array<Event.EventInstance> {
