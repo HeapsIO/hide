@@ -51,7 +51,6 @@ class FXAnimation extends h3d.scene.Object {
 	var evaluator : Evaluator;
 	var parentFX : FXAnimation;
 	var random : hxd.Rand;
-	var prevTime = -1.0;
 	var randSeed : Int;
 	var firstSync = true;
 	var playState : FXPlayState = End;
@@ -106,7 +105,9 @@ class FXAnimation extends h3d.scene.Object {
 		subFXs = [];
 		for (fx in root.findAll(SubFX)) {
 			var anim = Std.downcast(fx.refInstance?.findFirstLocal3d(), FXAnimation);
-			subFXs.push(anim);
+			if (anim != null) {
+				subFXs.push(anim);
+			}
 		}
 	}
 
@@ -150,7 +151,6 @@ class FXAnimation extends h3d.scene.Object {
 
 	function resetSelf() {
 		firstSync = true;
-		prevTime = -1.0;
 		localTime = 0;
 
 		if (loop) {
@@ -284,184 +284,283 @@ class FXAnimation extends h3d.scene.Object {
 		ctx.visibleFlag = old;
 	}
 
+	public function seek(time: Float) {
+		setTimeInternal(time, false);
+	}
+
+	public function update(dt: Float) {
+		setTimeInternal(dt, true);
+	}
+
+	static var closest : Map<h3d.scene.Object, {instance: EventInstance, distance: Float, jumpTo: Float}> = [];
+
+	/**
+		If continuous, timeParam is relative to localTime, else it's absolute
+	**/
+	function setTimeInternal(timeParam:Float, continuous:Bool ) {
+		var newTime = continuous ? localTime + timeParam : timeParam;
+
+		if (continuous) {
+			if (playState == Start) {
+				if (newTime >= loopStart) {
+					playState = Loop;
+				}
+			}
+
+			if (playState == Loop) {
+				newTime = ((newTime - loopStart) % (loopEnd - loopStart)) + loopStart;
+			}
+		}
+		else {
+			if (loop) {
+				if (newTime < loopStart) {
+					playState = Start;
+				} else if (newTime >= loopEnd) {
+					playState = End;
+				} else {
+					playState = Loop;
+				}
+			} else {
+				playState = End;
+			}
+		}
+
+		var oldTime = localTime;
+		localTime = newTime;
+
+		for (subFX in subFXs) {
+			if (continuous) {
+				subFX.update(timeParam);
+			} else {
+				subFX.seek(newTime);
+			}
+		}
+
+		syncAnims(newTime);
+		syncParticles(timeParam, continuous);
+
+		for (t in trails) {
+			t.update(hxd.Math.max(newTime - oldTime, 0.0));
+		}
+
+		Event.updateEvents(events, newTime, oldTime, duration);
+
+		if (!continuous) {
+			fixEventSeek();
+		}
+	}
+
+	function fixEventSeek() {
+		var time = localTime;
+
+		if (events == null)
+			return;
+
+		var closest : Map<h3d.scene.Object, {instance: EventInstance, distance: Float, jumpTo: Float}> = [];
+
+		for (instance in events) {
+			var event = Std.downcast(instance.evt, hrt.prefab.fx.AnimEvent);
+			if (event == null)
+				continue;
+
+			var previous = hrt.tools.MapUtils.getOrPut(closest, event.findFirstLocal3d(), {instance: instance, distance: hxd.Math.POSITIVE_INFINITY, jumpTo: 0.0});
+			if (previous.distance == 0)
+				continue;
+
+			var firstFrame = event.time;
+			var toFirstFrame = firstFrame - time;
+			if (toFirstFrame >= 0 && toFirstFrame < previous.distance) {
+				previous.instance = instance;
+				previous.distance = toFirstFrame;
+				previous.jumpTo = 0.0001;
+			}
+
+			var anim = event.animation != null ? event.shared.loadAnimation(event.animation) : null;
+			var duration = event.duration > 0 ? event.duration : (anim?.getDuration() ?? 0.0);
+			var lastFrame = event.time + duration;
+			var toLastFrame = time - lastFrame;
+			if (toLastFrame >= 0 && toLastFrame < previous.distance) {
+				previous.instance = instance;
+				previous.distance = toLastFrame;
+				previous.jumpTo = duration-0.0001;
+			}
+
+			// We are currently playing this animation
+			if (toFirstFrame < 0 && toLastFrame < 0) {
+				previous.instance = null;
+				previous.distance = 0;
+				continue;
+			}
+		}
+
+		for (obj in closest) {
+			if (obj.instance == null) // can be null if we are in the middle of the animation
+				continue;
+			obj.instance.setTime(obj.jumpTo);
+		}
+	}
+
+	function syncParticles(timeParam: Float, continuous: Bool) {
+		if(emitters != null) {
+			for(em in emitters) {
+				if(em.visible)
+				{
+					if (continuous) {
+						em.setTime(@:privateAccess em.curTime + timeParam);
+					} else {
+						em.setTime(timeParam);
+					}
+				}
+			}
+		}
+
+
+	}
+
 	static var tempMat = new h3d.Matrix();
 	static var tempTransform = new h3d.Matrix();
 	static var tempVec = new h3d.Vector4();
+
+	/** Use seek or update depending on what you want to do instead of this function**/
+	@:deprecated
 	public function setTime( time : Float, fullSync=true) {
-		time = hxd.Math.max(0, time - startDelay);
-		var dt = time - this.prevTime;
-
-		if (playState == Start) {
-			if (time >= loopStart) {
-				playState = Loop;
-			}
-		}
-
-		if (playState == Loop) {
-			time = ((time - loopStart) % (loopEnd - loopStart)) + loopStart;
-		}
-
-		this.localTime = time;
-
-		for (subFX in subFXs) {
-			if (subFX.playState == Loop) {
-				subFX.setTime(subFX.localTime + subFX.startDelay + dt, fullSync);
-			} else {
-				subFX.setTime(time);
-			}
-		}
-
-		if(fullSync) {
-			if(objAnims != null) {
-				for(anim in objAnims) {
-					if(anim.scale != null || anim.rotation != null || anim.position != null) {
-						var m = tempMat;
-						if(anim.scale != null) {
-							var scale = evaluator.getVector(anim.scale, time, tempVec);
-							m.initScale(scale.x, scale.y, scale.z);
-						}
-						else
-							m.identity();
-
-						if(anim.rotation != null) {
-							var rotation = evaluator.getVector(anim.rotation, time, tempVec);
-							rotation.scale3(Math.PI / 180.0);
-							m.rotate(rotation.x, rotation.y, rotation.z);
-						}
-
-						var baseMat = anim.elt.getTransform(tempTransform);
-						var offset = baseMat.getPosition();
-						baseMat.tx = baseMat.ty = baseMat.tz = 0.0;  // Ignore
-						m.multiply(baseMat, m);
-						m.translate(offset.x, offset.y, offset.z);
-
-						if(anim.position != null) {
-							var pos = evaluator.getVector(anim.position, time, tempVec);
-							m.translate(pos.x, pos.y, pos.z);
-						}
-
-						anim.obj.setTransform(m);
-					}
-
-					// Animations that are only applied on local transforms of leafs objects
-					if (anim.localRotation != null || anim.localPosition != null) {
-						var leafObjects = anim.elt.findAll(Object3D, o -> o.children == null || o.children.length == 0);
-
-						for (o in leafObjects) {
-							if (o.local3d == null)
-								continue;
-							var baseMat = o.getTransform();
-
-							tempMat.identity();
-							var m = tempMat;
-
-							if(anim.localRotation != null) {
-								var localRotation = evaluator.getVector(anim.localRotation, time, tempVec);
-								localRotation.scale3(Math.PI / 180.0);
-								m.rotate(localRotation.x, localRotation.y, localRotation.z);
-							}
-
-							if(anim.localPosition != null) {
-								var localPosition = evaluator.getVector(anim.localPosition, time, tempVec);
-								m.translate(localPosition.x, localPosition.y, localPosition.z);
-							}
-
-							m.multiply(m, baseMat);
-							o.local3d.setTransform(m);
-						}
-					}
-
-					if(anim.visibility != null) {
-						var visible = anim.elt.visible;
-						#if editor
-						var editor = anim.elt.shared.editor;
-						visible = visible && (editor?.isVisible(anim.elt) ?? true);
-						#end
-						anim.obj.visible = visible && evaluator.getFloat(anim.visibility, time) > 0.5;
-					}
-
-					if(anim.color != null) {
-						switch(anim.color) {
-							case VCurve(a):
-								for(mat in anim.obj.getMaterials())
-									mat.color.a = evaluator.getFloat(anim.color, time);
-							default:
-								for(mat in anim.obj.getMaterials())
-									mat.color.load(evaluator.getVector(anim.color, time, tempVec));
-						}
-					}
-
-					if( anim.additionalProperies != null ) {
-						switch(anim.additionalProperies) {
-							case None :
-							case PointLight( color, power, size, range ) :
-								var l = Std.downcast(anim.obj, h3d.scene.pbr.PointLight);
-								if( l != null ) {
-									if( color != null ) {
-										var v = evaluator.getVector(color, time, tempVec);
-										l.color.set(v.x, v.y, v.z);
-									}
-									if( power != null ) l.power = evaluator.getFloat(power, time);
-									if( size != null ) l.size = evaluator.getFloat(size, time);
-									if( range != null ) l.range = evaluator.getFloat(range, time);
-								}
-							case DirLight(color, power):
-								var l = Std.downcast(anim.obj, h3d.scene.pbr.DirLight);
-								if( l != null ) {
-									if( color != null ) {
-										var v = evaluator.getVector(color, time, tempVec);
-										l.color.set(v.x, v.y, v.z);
-									}
-									if( power != null ) l.power = evaluator.getFloat(power, time);
-								}
-							case SpotLight(color, power, range, angle, fallOff):
-								var l = Std.downcast(anim.obj, h3d.scene.pbr.SpotLight);
-								if( l != null ) {
-									if( color != null ) {
-										var v = evaluator.getVector(color, time, tempVec);
-										l.color.set(v.x, v.y, v.z);
-									}
-									if( power != null ) l.power = evaluator.getFloat(power, time);
-									if( range != null ) l.range = evaluator.getFloat(range, time);
-									if( angle != null ) l.angle = evaluator.getFloat(angle, time);
-									if( fallOff != null ) l.fallOff = evaluator.getFloat(fallOff, time);
-								}
-						}
-					}
-				}
-			}
-
-			if (effects != null) {
-				for (e in effects)
-					@:privateAccess e.updateInstance();
-			}
-
-			if(customAnims != null)
-				for(anim in customAnims)
-					anim.setTime(this.prevTime + dt);
-
-			if(emitters != null) {
-				for(em in emitters) {
-					if(em.visible)
-						em.setTime(@:privateAccess em.curTime + dt);
-				}
-			}
-
-			for (t in trails) {
-				t.update(hxd.Math.max(dt, 0.0));
-			}
-		}
-
-		Event.updateEvents(events, time, prevTime, duration);
-
-		this.prevTime = localTime;
+		// broken heuristic for back-compat
+		var continuous = time - localTime < hxd.Timer.dt * 1.5;
+		setTimeInternal(continuous ? time - localTime : time, continuous);
 	}
+
+	function syncAnims(time: Float) {
+		if(objAnims != null) {
+			for(anim in objAnims) {
+				if(anim.scale != null || anim.rotation != null || anim.position != null) {
+					var m = tempMat;
+					if(anim.scale != null) {
+						var scale = evaluator.getVector(anim.scale, time, tempVec);
+						m.initScale(scale.x, scale.y, scale.z);
+					}
+					else
+						m.identity();
+
+					if(anim.rotation != null) {
+						var rotation = evaluator.getVector(anim.rotation, time, tempVec);
+						rotation.scale3(Math.PI / 180.0);
+						m.rotate(rotation.x, rotation.y, rotation.z);
+					}
+
+					var baseMat = anim.elt.getTransform(tempTransform);
+					var offset = baseMat.getPosition();
+					baseMat.tx = baseMat.ty = baseMat.tz = 0.0;  // Ignore
+					m.multiply(baseMat, m);
+					m.translate(offset.x, offset.y, offset.z);
+
+					if(anim.position != null) {
+						var pos = evaluator.getVector(anim.position, time, tempVec);
+						m.translate(pos.x, pos.y, pos.z);
+					}
+
+					anim.obj.setTransform(m);
+				}
+
+				// Animations that are only applied on local transforms of leafs objects
+				if (anim.localRotation != null || anim.localPosition != null) {
+					var leafObjects = anim.elt.findAll(Object3D, o -> o.children == null || o.children.length == 0);
+
+					for (o in leafObjects) {
+						if (o.local3d == null)
+							continue;
+						var baseMat = o.getTransform();
+
+						tempMat.identity();
+						var m = tempMat;
+
+						if(anim.localRotation != null) {
+							var localRotation = evaluator.getVector(anim.localRotation, time, tempVec);
+							localRotation.scale3(Math.PI / 180.0);
+							m.rotate(localRotation.x, localRotation.y, localRotation.z);
+						}
+
+						if(anim.localPosition != null) {
+							var localPosition = evaluator.getVector(anim.localPosition, time, tempVec);
+							m.translate(localPosition.x, localPosition.y, localPosition.z);
+						}
+
+						m.multiply(m, baseMat);
+						o.local3d.setTransform(m);
+					}
+				}
+
+				if(anim.visibility != null) {
+					var visible = anim.elt.visible;
+					#if editor
+					var editor = anim.elt.shared.editor;
+					visible = visible && (editor?.isVisible(anim.elt) ?? true);
+					#end
+					anim.obj.visible = visible && evaluator.getFloat(anim.visibility, time) > 0.5;
+				}
+
+				if(anim.color != null) {
+					switch(anim.color) {
+						case VCurve(a):
+							for(mat in anim.obj.getMaterials())
+								mat.color.a = evaluator.getFloat(anim.color, time);
+						default:
+							for(mat in anim.obj.getMaterials())
+								mat.color.load(evaluator.getVector(anim.color, time, tempVec));
+					}
+				}
+
+				if( anim.additionalProperies != null ) {
+					switch(anim.additionalProperies) {
+						case None :
+						case PointLight( color, power, size, range ) :
+							var l = Std.downcast(anim.obj, h3d.scene.pbr.PointLight);
+							if( l != null ) {
+								if( color != null ) {
+									var v = evaluator.getVector(color, time, tempVec);
+									l.color.set(v.x, v.y, v.z);
+								}
+								if( power != null ) l.power = evaluator.getFloat(power, time);
+								if( size != null ) l.size = evaluator.getFloat(size, time);
+								if( range != null ) l.range = evaluator.getFloat(range, time);
+							}
+						case DirLight(color, power):
+							var l = Std.downcast(anim.obj, h3d.scene.pbr.DirLight);
+							if( l != null ) {
+								if( color != null ) {
+									var v = evaluator.getVector(color, time, tempVec);
+									l.color.set(v.x, v.y, v.z);
+								}
+								if( power != null ) l.power = evaluator.getFloat(power, time);
+							}
+						case SpotLight(color, power, range, angle, fallOff):
+							var l = Std.downcast(anim.obj, h3d.scene.pbr.SpotLight);
+							if( l != null ) {
+								if( color != null ) {
+									var v = evaluator.getVector(color, time, tempVec);
+									l.color.set(v.x, v.y, v.z);
+								}
+								if( power != null ) l.power = evaluator.getFloat(power, time);
+								if( range != null ) l.range = evaluator.getFloat(range, time);
+								if( angle != null ) l.angle = evaluator.getFloat(angle, time);
+								if( fallOff != null ) l.fallOff = evaluator.getFloat(fallOff, time);
+							}
+					}
+				}
+			}
+		}
+
+		if (effects != null) {
+			for (e in effects)
+				@:privateAccess e.updateInstance();
+		}
+	}
+
 
 	public function stop(instant: Bool = false, onEnd: () -> Void) {
 		this.onEnd = onEnd;
 		playState = End;
 		if (instant == true) {
-			setTime(duration, false);
+			setTime(duration);
 		}
 	}
 
