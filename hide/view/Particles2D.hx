@@ -338,6 +338,6 @@ class Particles2D extends FileView {
 		return 1000 + @:privateAccess parts.groups.indexOf(pGroup) * 30000;
 	}
 
-	static var _ = FileTree.registerExtension(Particles2D, ["json.particles2D"], { icon : "snowflake-o", createNew: "Particle 2D", name: "Particle 2D" });
+	static var _ = Extension.registerExtension(Particles2D, ["json.particles2D"], { icon : "snowflake-o", createNew: "Particle 2D", name: "Particle 2D" });
 
 }

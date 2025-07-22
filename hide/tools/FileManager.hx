@@ -599,6 +599,216 @@ class FileManager {
 		pendingMessages.push(cmd);
 		queueProcessPendingMessages();
 	}
+
+	public static function doRename(path:String, name:String) {
+		var isDir = sys.FileSystem.isDirectory(hide.Ide.inst.getPath(path));
+		if( isDir ) hide.Ide.inst.fileWatcher.pause();
+		var ret = onRenameRec(path, name);
+		if( isDir ) hide.Ide.inst.fileWatcher.resume();
+		return ret;
+	}
+
+	public static function onRenameRec(path:String, name:String) {
+		var ide = hide.Ide.inst;
+		var parts = path.split("/");
+		parts.pop();
+		for( n in name.split("/") ) {
+			if( n == ".." )
+				parts.pop();
+			else
+				parts.push(n);
+		}
+		var newPath = name.charAt(0) == "/" ? name.substr(1) : parts.join("/");
+
+		if( newPath == path )
+			return false;
+
+		if( sys.FileSystem.exists(ide.getPath(newPath)) ) {
+			function addPath(path:String,rand:String) {
+				var p = path.split(".");
+				if( p.length > 1 )
+					p[p.length-2] += rand;
+				else
+					p[p.length-1] += rand;
+				return p.join(".");
+			}
+			if( path.toLowerCase() == newPath.toLowerCase() ) {
+				// case change
+				var rand = "__tmp"+Std.random(10000);
+				onRenameRec(path, "/"+addPath(path,rand));
+				onRenameRec(addPath(path,rand), name);
+			} else {
+				if( !ide.confirm(newPath+" already exists, invert files?") )
+					return false;
+				var rand = "__tmp"+Std.random(10000);
+				onRenameRec(path, "/"+addPath(path,rand));
+				onRenameRec(newPath, "/"+path);
+				onRenameRec(addPath(path,rand), name);
+			}
+			return false;
+		}
+
+		var isDir = sys.FileSystem.isDirectory(ide.getPath(path));
+		var wasRenamed = false;
+		var isSVNRepo = sys.FileSystem.exists(ide.projectDir+"/.svn") || js.node.ChildProcess.spawnSync("svn",["info"], { cwd : ide.resourceDir }).status == 0; // handle not root dirs
+		if( isSVNRepo ) {
+			if( js.node.ChildProcess.spawnSync("svn",["--version"]).status != 0 ) {
+				if( isDir && !ide.confirm("Renaming a SVN directory, but 'svn' system command was not found. Continue ?") )
+					return false;
+			} else {
+				// Check if origin file and target directory are versioned
+				var isFileVersioned = js.node.ChildProcess.spawnSync("svn",["info", ide.getPath(path)]).status == 0;
+				var newAbsPath = ide.getPath(newPath);
+				var parentFolder = newAbsPath.substring(0, newAbsPath.lastIndexOf('/'));
+				var isDirVersioned = js.node.ChildProcess.spawnSync("svn",["info", parentFolder]).status == 0;
+				if (isFileVersioned && isDirVersioned) {
+					var cwd = Sys.getCwd();
+					Sys.setCwd(ide.resourceDir);
+					var code = Sys.command("svn",["rename", path, newPath]);
+					Sys.setCwd(cwd);
+					if( code == 0 )
+						wasRenamed = true;
+					else {
+						if( !ide.confirm("SVN rename failure, perform file rename ?") )
+							return false;
+					}
+				}
+			}
+		}
+
+		if( !wasRenamed )
+			sys.FileSystem.rename(ide.getPath(path), ide.getPath(newPath));
+
+		replacePathInFiles(path, newPath, isDir);
+
+		var dataDir = new haxe.io.Path(path);
+		if( dataDir.ext != "dat" ) {
+			dataDir.ext = "dat";
+			var dataPath = dataDir.toString();
+			if( sys.FileSystem.isDirectory(ide.getPath(dataPath)) ) {
+				var destPath = new haxe.io.Path(name);
+				destPath.ext = "dat";
+				onRenameRec(dataPath, destPath.toString());
+			}
+		}
+
+		// update Materials.props if an FBX is moved/renamed
+		var newSysPath = new haxe.io.Path(name);
+		var oldSysPath = new haxe.io.Path(path);
+		if (newSysPath.dir == null) {
+			newSysPath.dir = oldSysPath.dir;
+		}
+		if (newSysPath.ext?.toLowerCase() == "fbx" && oldSysPath.ext?.toLowerCase() == "fbx") {
+			function remLeadingSlash(s:String) {
+				if(StringTools.startsWith(s,"/")) {
+					return s.length > 1 ? s.substr(1) : "";
+				}
+				return s;
+			}
+
+			var oldMatPropsPath = ide.getPath(remLeadingSlash((oldSysPath.dir ?? "") + "/materials.props"));
+
+			if (sys.FileSystem.exists(oldMatPropsPath)) {
+				var newMatPropsPath = ide.getPath(remLeadingSlash((newSysPath.dir ?? "") + "/materials.props"));
+
+				var oldMatProps = haxe.Json.parse(sys.io.File.getContent(oldMatPropsPath));
+
+				var newMatProps : Dynamic =
+					if (sys.FileSystem.exists(newMatPropsPath))
+						haxe.Json.parse(sys.io.File.getContent(newMatPropsPath))
+					else {};
+
+				var oldNameExt = oldSysPath.file + "." + oldSysPath.ext;
+				var newNameExt = newSysPath.file + "." + newSysPath.ext;
+				function moveRec(originalData: Dynamic, oldData:Dynamic, newData: Dynamic) {
+
+					for (field in Reflect.fields(originalData)) {
+						if (StringTools.endsWith(field, oldNameExt)) {
+							var innerData = Reflect.getProperty(originalData, field);
+							var newField = StringTools.replace(field, oldNameExt, newNameExt);
+							Reflect.setProperty(newData, newField, innerData);
+							Reflect.deleteField(oldData, field);
+						}
+						else {
+							var originalInner = Reflect.getProperty(originalData, field);
+							if (Type.typeof(originalInner) != TObject)
+								continue;
+
+							var oldInner = Reflect.getProperty(oldData, field);
+							var newInner = Reflect.getProperty(newData, field) ?? {};
+							moveRec(originalInner, oldInner, newInner);
+
+							// Avoid creating empty fields
+							if (Reflect.fields(newInner).length > 0) {
+								Reflect.setProperty(newData, field, newInner);
+							}
+
+							// Cleanup removed fields in old props
+							if (Reflect.fields(oldInner).length == 0) {
+								Reflect.deleteField(oldData, field);
+							}
+						}
+					}
+				}
+
+				var sourceData = oldMatProps;
+				var oldDataToSave = oldMatPropsPath == newMatPropsPath ? newMatProps : haxe.Json.parse(haxe.Json.stringify(oldMatProps));
+
+				moveRec(oldMatProps, oldDataToSave, newMatProps);
+				sys.io.File.saveContent(newMatPropsPath, haxe.Json.stringify(newMatProps, null, "\t"));
+
+				if (oldMatPropsPath != newMatPropsPath) {
+					if (Reflect.fields(oldMatProps).length > 0) {
+						sys.io.File.saveContent(oldMatPropsPath, haxe.Json.stringify(oldDataToSave, null, "\t"));
+					} else {
+						sys.FileSystem.deleteFile(oldMatPropsPath);
+					}
+				}
+
+				// Clear caches
+				@:privateAccess
+				{
+					if (h3d.mat.MaterialSetup.current != null) {
+						h3d.mat.MaterialSetup.current.database.db.remove(ide.makeRelative(oldMatPropsPath));
+						h3d.mat.MaterialSetup.current.database.db.remove(ide.makeRelative(newMatPropsPath));
+					}
+					hxd.res.Loader.currentInstance.cache.remove(ide.makeRelative(oldMatPropsPath));
+					hxd.res.Loader.currentInstance.cache.remove(ide.makeRelative(newMatPropsPath));
+				}
+			}
+
+		}
+
+		return true;
+	}
+
+	public static function replacePathInFiles(oldPath: String, newPath: String, isDir: Bool = false) {
+		function filter(ctx: hide.Ide.FilterPathContext) {
+			var p = ctx.valueCurrent;
+			if( p == null )
+				return;
+			if( p == oldPath ) {
+				ctx.change(newPath);
+				return;
+			}
+			if( p == "/"+oldPath ) {
+				ctx.change(newPath);
+				return;
+			}
+			if( isDir ) {
+				if( StringTools.startsWith(p,oldPath+"/") ) {
+					ctx.change(newPath + p.substr(oldPath.length));
+					return;
+				}
+				if( StringTools.startsWith(p,"/"+oldPath+"/") ) {
+					ctx.change("/"+newPath + p.substr(oldPath.length+1));
+					return;
+				}
+			}
+		}
+
+		hide.Ide.inst.filterPaths(filter);
+	}
 }
 
 

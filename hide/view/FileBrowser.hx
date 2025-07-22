@@ -43,7 +43,6 @@ class FileBrowser extends hide.ui.View<FileBrowserState> {
 		return newLayout;
 	}
 
-
 	override function new(state) {
 		super(state);
 		saveDisplayKey = "fileBrowser";
@@ -344,7 +343,7 @@ class FileBrowser extends hide.ui.View<FileBrowserState> {
 
 		if (item.kind == Dir)
 			return '<div class="ico ico-folder ${vcsClass}"></div>';
-		var ext = @:privateAccess hide.view.FileTree.getExtension(item.name);
+		var ext = Extension.getExtension(item.name);
 		if (ext != null) {
 			if (ext?.options.icon != null) {
 				return '<div class="ico ico-${ext.options.icon} ${vcsClass}" title="${ext.options.name ?? "Unknown"}"></div>';
@@ -727,7 +726,7 @@ class FileBrowser extends hide.ui.View<FileBrowserState> {
 				// File could have been removed by the system in between our undo/redo operations
 				if (sys.FileSystem.exists(hide.Ide.inst.getPath(file.from))) {
 					try {
-						FileTree.doRename(file.from, "/" + file.to);
+						FileManager.doRename(file.from, "/" + file.to);
 					} catch (e) {
 						hide.Ide.inst.quickError('move file ${file.from} -> ${file.to} failed : $e');
 					}
@@ -738,7 +737,7 @@ class FileBrowser extends hide.ui.View<FileBrowserState> {
 				// File could have been removed by the system in between our undo/redo operations
 				if (sys.FileSystem.exists(hide.Ide.inst.getPath(file.to))) {
 					try {
-						FileTree.doRename(file.to, "/" + file.from);
+						FileManager.doRename(file.to, "/" + file.from);
 					} catch (e) {
 						hide.Ide.inst.quickError('move file ${file.from} -> ${file.to} failed : $e');
 					}
@@ -758,7 +757,7 @@ class FileBrowser extends hide.ui.View<FileBrowserState> {
 		FileManager.inst.onFileChangeHandlers.remove(onFileChange);
 	}
 
-	function createNew( directoryFullPath : String, ext : hide.view.FileTree.ExtensionDesc, isGallery: Bool) {
+	function createNew( directoryFullPath : String, ext : Extension.ExtensionDesc, isGallery: Bool) {
 
 		var file = ide.ask(ext.options.createNew + " name:");
 		if( file == null ) return;
@@ -896,7 +895,7 @@ class FileBrowser extends hide.ui.View<FileBrowserState> {
 				click: createNew.bind(item.getPath(), { options : { createNew : "Directory" }, extensions : null, component : null }, isGallery),
 			});
 
-		var extIterator = @:privateAccess hide.view.FileTree.EXTENSIONS.iterator();
+		var extIterator = Extension.EXTENSIONS.iterator();
 		if (extIterator.hasNext())
 			newMenu.push({isSeparator: true});
 		for (e in extIterator) {
@@ -1007,7 +1006,7 @@ class FileBrowser extends hide.ui.View<FileBrowserState> {
 					var selection = [for (file in getItemAndSelection(item, isGallery)) file.getRelPath()];
 					if(ide.confirm('Replace all refs of $selection with $newPath ? This action can not be undone')) {
 						for (oldPath in selection) {
-							FileTree.replacePathInFiles(oldPath, newPath, false);
+							FileManager.replacePathInFiles(oldPath, newPath, false);
 						}
 						ide.message("Done");
 					}
@@ -1062,7 +1061,7 @@ class FileBrowser extends hide.ui.View<FileBrowserState> {
 	}
 
 	function generateFilters() {
-		for (ext => desc in @:privateAccess FileTree.EXTENSIONS) {
+		for (ext => desc in Extension.EXTENSIONS) {
 			var name = desc?.options.name;
 			if (name == null)
 				name = "unknown";

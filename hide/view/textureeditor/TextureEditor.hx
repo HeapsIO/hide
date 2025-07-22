@@ -455,5 +455,5 @@ class TextureEditor extends hide.view.FileView implements GraphInterface.IGraphE
 		updateResetButtonVisibility(outputFormat, "outputFormat");
 	}
 
-	static var _ = FileTree.registerExtension(TextureEditor, ["texgraph"], { icon : "scribd", createNew: "Texture Graph", name: "Texture Graph" });
+	static var _ = Extension.registerExtension(TextureEditor, ["texgraph"], { icon : "scribd", createNew: "Texture Graph", name: "Texture Graph" });
 }

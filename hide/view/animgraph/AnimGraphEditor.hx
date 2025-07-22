@@ -591,5 +591,5 @@ class AnimGraphEditor extends GenericGraphEditor {
         exec(false);
     }
 
-    static var _ = FileTree.registerExtension(AnimGraphEditor,["animgraph"],{ icon : "play-circle-o", createNew: "Anim Graph", name: "Anim Graph" });
+    static var _ = Extension.registerExtension(AnimGraphEditor,["animgraph"],{ icon : "play-circle-o", createNew: "Anim Graph", name: "Anim Graph" });
 }

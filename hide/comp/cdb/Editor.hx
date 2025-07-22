@@ -1290,7 +1290,7 @@ class Editor extends Component {
 							}
 							var path = ide.makeRelative(fpath);
 							var fn = function () {
-								var ext = @:privateAccess hide.view.FileTree.getExtension(path);
+								var ext = Extension.getExtension(path);
 
 								ide.open(ext.component, { path : path }, function (v) {
 									var scr : hide.view.Script = cast v;

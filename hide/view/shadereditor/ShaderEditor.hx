@@ -2004,5 +2004,5 @@ class ShaderEditor extends hide.view.FileView implements GraphInterface.IGraphEd
 		}
 	}
 
-	static var _ = FileTree.registerExtension(ShaderEditor,["shgraph"],{ icon : "scribd", createNew: "Shader Graph", name: "Shader Graph" });
+	static var _ = Extension.registerExtension(ShaderEditor,["shgraph"],{ icon : "scribd", createNew: "Shader Graph", name: "Shader Graph" });
 }

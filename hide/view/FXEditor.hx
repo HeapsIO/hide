@@ -1,5 +1,4 @@
 package hide.view;
-import hide.view.FileTree;
 import hrt.prefab.Light;
 using Lambda;
 
@@ -1827,7 +1826,7 @@ class FXEditor extends hide.view.FileView {
 		return curve.findParent(hrt.prefab.fx.Emitter) != null;
 	}
 
-	static var _ = FileTree.registerExtension(FXEditor, ["fx"], { icon : "sitemap", createNew : "FX", name: "FX" });
+	static var _ = Extension.registerExtension(FXEditor, ["fx"], { icon : "sitemap", createNew : "FX", name: "FX" });
 
 	function set_currentTime(value:Float):Float {
 		if (this.curveEditor != null)
@@ -1864,5 +1863,5 @@ class FX2DEditor extends FXEditor {
 		@:privateAccess return haxe.io.Bytes.ofString(ide.toJSON(new hrt.prefab.fx.FX2D(null, null).save()));
 	}
 
-	static var _2d = FileTree.registerExtension(FX2DEditor, ["fx2d"], { icon : "sitemap", createNew : "FX 2D", name: "FX 2D" });
+	static var _2d = Extension.registerExtension(FX2DEditor, ["fx2d"], { icon : "sitemap", createNew : "FX 2D", name: "FX 2D" });
 }

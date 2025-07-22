@@ -389,7 +389,7 @@ input[type=checkbox].indeterminate:after {
   width: 16px;
   height: 16px;
   display: inline-block;
-  background: url('libs/jstree/default-dark/throbber.gif');
+  background: url('res/icons/throbber.gif');
 }
 .hide-scene-container {
   width: 100%;
@@ -422,12 +422,6 @@ input[type=checkbox].indeterminate:after {
   position: absolute;
   z-index: 200;
   max-height: 100%;
-}
-.hide-scene-layer .jstree {
-  padding-right: 5px;
-}
-.hide-scene-layer .jstree-container-ul {
-  padding-right: 5px;
 }
 .scene-partition > .props-column .hide-toolbar {
   padding-bottom: 4px;
@@ -534,12 +528,6 @@ input[type=checkbox].indeterminate:after {
   box-sizing: border-box;
   margin-bottom: 1px;
   border-radius: 3px;
-}
-.hide-scenetree .jstree {
-  overflow-x: hidden;
-}
-.hide-scenetree .jstree-container-ul {
-  max-width: 300px;
 }
 .hide-range {
   display: inline-block;
@@ -2689,27 +2677,6 @@ body.hide-subview .lm_controls {
   width: unset;
   max-width: 500px;
 }
-/* JSTree fixes */
-.jstree {
-  background: transparent !important;
-  padding-bottom: 40px;
-  outline: none;
-  position: relative;
-}
-.jstree .filtered {
-  display: none;
-}
-.jstree-icon.jstree-ocl {
-  opacity: 0.7;
-  width: 18px !important;
-  top: -1px;
-}
-.jstree-icon i {
-  color: #aaa;
-}
-.jstree-node {
-  padding-right: 10px!important;
-}
 .visibility-toggle,
 .visibility-large-toggle {
   position: absolute;
@@ -2744,32 +2711,6 @@ body.hide-subview .lm_controls {
 }
 .lock-large-toggle {
   font-size: 14px!important;
-}
-.jstree.small a {
-  font-size: 1em;
-}
-.jstree.small .jstree-node {
-  min-height: 18px;
-  line-height: 18px;
-  margin-left: 12px;
-  min-width: 18px;
-}
-.jstree.small .jstree-anchor {
-  line-height: 18px;
-  height: 18px;
-}
-.jstree.small .jstree-icon {
-  width: 18px;
-  height: 18px;
-  line-height: 18px;
-}
-.jstree.small .jstree-icon:empty {
-  width: 18px;
-  height: 18px;
-  line-height: 18px;
-}
-.jstree.small .jstree-wholerow {
-  height: 18px;
 }
 /* Spectrum Color picker */
 div.sp-replacer {
@@ -5009,8 +4950,9 @@ fancy-tree fancy-scroll fancy-tree-item.hide-search {
 fancy-tree fancy-scroll fancy-tree-item.open > .caret::before {
   transform: rotate(90deg);
 }
-fancy-tree fancy-scroll fancy-tree-item.disabled {
-  color: #ee6666;
+fancy-tree fancy-scroll fancy-tree-item.selected {
+  color: white;
+  --background: var(--selection);
 }
 fancy-tree fancy-scroll fancy-tree-item.editorOnly {
   color: #02aeda;
@@ -5022,8 +4964,10 @@ fancy-tree fancy-scroll fancy-tree-item.hidden {
   color: #555;
 }
 fancy-tree fancy-scroll fancy-tree-item.locked {
-  color: #666;
   font-style: italic;
+}
+fancy-tree fancy-scroll fancy-tree-item.disabled {
+  color: #ee6666;
 }
 fancy-tree fancy-scroll fancy-tree-item.inRef {
   background: #3a3a3a;
@@ -5045,16 +4989,8 @@ fancy-tree fancy-scroll fancy-tree-item.current {
   z-index: 10;
   outline-offset: -1px;
 }
-fancy-tree fancy-scroll fancy-tree-item.selected {
-  color: white;
-  --background: var(--selection);
-}
 fancy-tree fancy-scroll fancy-tree-item:hover {
   background-color: var(--hover);
-}
-fancy-tree fancy-scroll fancy-tree-item.selected {
-  color: white;
-  background-color: var(--selection);
 }
 fancy-tree fancy-scroll fancy-tree-item fancy-button.quieter {
   --size: 16px;

@@ -422,7 +422,7 @@ input[type=checkbox] {
 	width : 16px;
 	height : 16px;
 	display : inline-block;
-	background : url('libs/jstree/default-dark/throbber.gif');
+	background : url('res/icons/throbber.gif');
 }
 
 .hide-scene-container {
@@ -461,15 +461,6 @@ input[type=checkbox] {
 	position: absolute;
 	z-index: @default-layer;
 	max-height: 100%;
-
-	.jstree {
-		padding-right : 5px;
-	}
-
-	.jstree-container-ul {
-		padding-right : 5px;
-	}
-
 }
 
 .scene-partition > .props-column {
@@ -596,14 +587,6 @@ input[type=checkbox] {
 	box-sizing: border-box;
 	margin-bottom: 1px;
 	border-radius: 3px;
-
-	.jstree {
-		overflow-x: hidden;
-	}
-
-	.jstree-container-ul {
-		max-width: 300px;
-	}
 }
 
 @tileselect-cursor-border: 1px;
@@ -3112,35 +3095,6 @@ body.hide-subview {
 	max-width: 500px;
 }
 
-/* JSTree fixes */
-
-.jstree {
-	background:transparent !important;
-	padding-bottom: 40px;
-	outline: none;
-	position: relative;
-
-	.filtered {
-		display: none;
-	}
-}
-
-.jstree-icon.jstree-ocl {
-	opacity: 0.7;
-	width:18px !important;
-	top:-1px;
-}
-
-.jstree-icon {
-	i {
-		color : #aaa;
-	}
-}
-
-.jstree-node {
-	padding-right: 10px!important;
-}
-
 .visibility-toggle, .visibility-large-toggle {
 	position: absolute;
 	right: 4px;
@@ -3179,38 +3133,6 @@ body.hide-subview {
 
 .lock-large-toggle {
 	font-size: 14px!important;
-}
-
-.jstree.small {
-	@size: 18px;
-
-	a {
-		font-size: 1em;
-	}
-
-	.jstree-node {
-		min-height: @size;
-		line-height: @size;
-		margin-left: 12px;
-		min-width: @size;
-	}
-	.jstree-anchor {
-		line-height: @size;
-		height: @size;
-	}
-	.jstree-icon {
-		width: @size;
-		height: @size;
-		line-height: @size;
-	}
-	.jstree-icon:empty {
-		width: @size;
-		height: @size;
-		line-height: @size;
-	}
-	.jstree-wholerow {
-		height: @size;
-	}
 }
 
 /* Spectrum Color picker */
@@ -5982,8 +5904,9 @@ fancy-tree {
 				transform: rotate(90deg);
 			}
 
-			&.disabled {
-				color: #ee6666;
+			&.selected {
+				color: white;
+				--background: var(--selection);
 			}
 
 			&.editorOnly {
@@ -5999,8 +5922,11 @@ fancy-tree {
 			}
 
 			&.locked {
-				color: #666;
 				font-style: italic;
+			}
+
+			&.disabled {
+				color: #ee6666;
 			}
 
 			&.inRef {
@@ -6032,18 +5958,8 @@ fancy-tree {
 				outline-offset: -1px;
 			}
 
-			&.selected {
-				color: white;
-				--background: var(--selection);
-			}
-
 			&:hover {
 				background-color: var(--hover);
-			}
-
-			&.selected {
-				color: white;
-				background-color: var(--selection);
 			}
 
 			fancy-button.quieter {

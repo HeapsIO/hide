@@ -406,6 +406,6 @@ class MSDFView extends FileView {
 		onResize();
 	}
 
-	static var _ = FileTree.registerExtension(MSDFView,["svg"],{ icon : "picture-o", name: "MSDF" });
+	static var _ = Extension.registerExtension(MSDFView,["svg"],{ icon : "picture-o", name: "MSDF" });
 
 }

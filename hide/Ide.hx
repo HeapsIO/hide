@@ -265,41 +265,6 @@ class Ide extends hide.tools.IdeData {
 
 		if( subView != null ) body.className +=" hide-subview";
 
-		// Listen to FileTree dnd
-		function treeDragFun(data,drop, event) {
-			var nodeIds : Array<String> = cast data.data.nodes;
-			if(data.data.jstree == null) return false;
-			for( ft in getViews(hide.view.FileTree) ) {
-				var paths = [];
-				@:privateAccess {
-					if (ft.tree == null || data.data.origin == null) continue;
-					if(ft.tree.element[0] != data.data.origin.element[0]) continue;
-					for(id in nodeIds) {
-						var item = ft.tree.map.get(id);
-						if(item != null)
-							paths.push(item.value);
-					}
-				}
-				if(paths.length == 0)
-					continue;
-				var view = getViewAt(mouseX, mouseY);
-				if(view != null)
-					return view.onDragDrop(paths, drop, event);
-			}
-			return false;
-		}
-		new Element(window.window.document).on("dnd_move.vakata.jstree", function(e, data:Dynamic) {
-			var el = (data.helper:hide.Element);
-			var drag = treeDragFun(data,false,data.event.originalEvent);
-			var icon = el.find(new Element(".jstree-icon"));
-			el.css(drag ? { filter : "brightness(120%)", opacity : 1 } : { filter : "", opacity : 0.5 });
-			icon.toggleClass("jstree-er", !drag);
-			icon.toggleClass("jstree-ok", drag);
-		});
-		new Element(window.window.document).on("dnd_stop.vakata.jstree", function(e, data:Dynamic) {
-			treeDragFun(data,true, data.event.originalEvent);
-		});
-
 		// dispatch global keys based on mouse position
 		new Element(body).keydown(function(e) {
 			var view = getViewAt(mouseX, mouseY);
@@ -1728,7 +1693,7 @@ class Ide extends hide.tools.IdeData {
 	}
 
 	public function openFile( file : String, ?onCreate, ?onOpen) {
-		var ext = @:privateAccess hide.view.FileTree.getExtension(file);
+		var ext = Extension.getExtension(file);
 		if( ext == null ) return;
 		// look if already open
 		var path = makeRelative(file);

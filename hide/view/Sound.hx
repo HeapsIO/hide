@@ -8,7 +8,7 @@ class Sound extends FileView {
 	}
 
 	static var _ = {
-		FileTree.registerExtension(Sound,["wav"],{ icon : "volume-up", name: "Sound" });
-		FileTree.registerExtension(Sound,["mp3","ogg"],{ icon : "music", name: "Sound" });
+		Extension.registerExtension(Sound,["wav"],{ icon : "volume-up", name: "Sound" });
+		Extension.registerExtension(Sound,["mp3","ogg"],{ icon : "music", name: "Sound" });
 	};
 }

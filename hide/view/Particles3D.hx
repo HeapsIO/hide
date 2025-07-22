@@ -324,6 +324,6 @@ class Particles3D extends FileView {
 		}, null);
 	}
 
-	static var _ = FileTree.registerExtension(Particles3D, ["json.particles3D"], { icon : "snowflake-o", createNew: "Particle 3D", name: "Particle 3D" });
+	static var _ = Extension.registerExtension(Particles3D, ["json.particles3D"], { icon : "snowflake-o", createNew: "Particle 3D", name: "Particle 3D" });
 
 }
