@@ -154,7 +154,9 @@ class Sao extends RendererFX {
 				<dt>Fade end</dt><dd><input type="range" field="fadeEnd"/></dd>
 			</dl>
 		</div>
-		'),this);
+		'),this, function(pname) {
+			ctx.onChange(this,pname);
+		});
 	}
 	#end
 
