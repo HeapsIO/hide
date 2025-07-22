@@ -344,7 +344,13 @@ class VolumetricLighting extends RendererFX {
 			vshader.steps = steps;
 			vshader.invViewProj = r.ctx.camera.getInverseViewProj();
 			if ( vshader.ditheringNoise == null ) {
-				vshader.ditheringNoise = hxd.res.Embed.getResource("hrt/prefab/rfx/blueNoise.png").toImage().toTexture();
+				// can't wrap the following code in a method in h3d.Engine because of macro.
+				var resCache = @:privateAccess r.ctx.engine.resCache;
+				vshader.ditheringNoise = resCache.get("hrt/prefab/rfx/blueNoise.png");
+				if ( vshader.ditheringNoise == null ) {
+					vshader.ditheringNoise = hxd.res.Embed.getResource("hrt/prefab/rfx/blueNoise.png").toImage().toTexture();
+					resCache.set("hrt/prefab/rfx/blueNoise.png", vshader.ditheringNoise);
+				}
 				vshader.ditheringNoise.wrap = Repeat;
 			}
 			vshader.targetSize.set(tex.width, tex.height);
