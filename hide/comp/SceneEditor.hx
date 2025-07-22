@@ -4443,8 +4443,8 @@ class SceneEditor {
 	public function setVisible(elements : Array<PrefabElement>, visible: Bool) {
 		function exec(undo : Bool) {
 			for(o in elements) {
-				for(c in o.flatten(Object3D)) {
-					if( visible )
+				for(c in o.flatten(hrt.prefab.Prefab)) {
+					if (visible)
 						undo ? hideList.set(o, true) : hideList.remove(c);
 					else
 						undo ?  hideList.remove(c) : hideList.set(o, true);
