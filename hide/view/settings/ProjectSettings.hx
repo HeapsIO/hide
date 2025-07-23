@@ -193,6 +193,10 @@ class ProjectSettings extends hide.ui.View<{}> {
 
 		if (matLibs != null) {
 			for (ml in matLibs) {
+				if (Std.isOfType(ml, String)) {
+					var p : String = cast ml;
+					ml = { name: p.substring(p.lastIndexOf("/") + 1), path: p };
+				}
 				var row = new Element('<div class="row">
 					<div class="ico ico-circle"></div>
 					<input value="${Reflect.field(ml, "name")}"/>

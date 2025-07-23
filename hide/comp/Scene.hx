@@ -682,9 +682,12 @@ class Scene extends hide.comp.Component implements h3d.IDrawable {
 		var matLibs : Array<Dynamic> = config.get("materialLibraries");
 		if( matLibs == null ) matLibs = [];
 
-		if (matLibs.length > 0 && matLibs[0] is String) {
+		if (matLibs.length > 0) {
 			for (idx in 0...matLibs.length) {
-				matLibs[idx] = { name : matLibs[idx], path : matLibs[idx] };
+				var m = Std.isOfType(matLibs[idx], String) ? cast (matLibs[idx]) : null;
+				if (m == null)
+					continue;
+				matLibs[idx] = { name : m.substring(m.lastIndexOf("/") + 1), path : m };
 			}
 		}
 
