@@ -19,18 +19,10 @@ class FXAnimation extends h3d.scene.Object {
 	public var playSpeed : Float = 0;
 	public var localTime : Float = 0.0;
 	public var startDelay : Float = 0.0;
-	public var loop(default, set) : Bool = false;
+	public var loop : Bool = false;
 	public var loopStart: Float = -1;
 	public var loopEnd: Float = -1;
 	public var duration : Float;
-
-	function set_loop(v: Bool) {
-		loop = v;
-		initLoop();
-		resetSelf();
-		return loop;
-	}
-
 
 		/** Enable automatic culling based on `cullingRadius` and `cullingDistance`. Will override `culled` on every sync. **/
 	public var autoCull(default, set) = true;
@@ -54,6 +46,7 @@ class FXAnimation extends h3d.scene.Object {
 	var randSeed : Int;
 	var firstSync = true;
 	var playState : FXPlayState = End;
+	var stopTime : Float = -1;
 
 	public function new(?parent) {
 		super(parent);
@@ -115,9 +108,6 @@ class FXAnimation extends h3d.scene.Object {
 		loopStart = 0.0;
 		loopEnd = duration;
 
-		if (!loop)
-			return;
-
 		if (events == null)
 			return;
 
@@ -131,6 +121,7 @@ class FXAnimation extends h3d.scene.Object {
 				if (duration > 0) {
 					loopEnd = loopStart + duration;
 				}
+				loop = true;
 			}
 			if (nameLower == "end") {
 				loopEnd = event.evt.time;
@@ -315,6 +306,21 @@ class FXAnimation extends h3d.scene.Object {
 		if (playState == Loop) {
 			localTime = oldLocalTime + dt;
 			localTime = ((localTime - loopStart) % (loopEnd - loopStart)) + loopStart;
+		}
+
+		if (playState == End) {
+
+			// Fast forward to end of loop if we are still in the loop
+			if (loopEnd > 0 && stopTime >= 0) {
+				var loopCatchTime = loopEnd - stopTime;
+				var passedTime = localTime - stopTime;
+				if(loopCatchTime > 0.1) { // Catch up lerp from loop
+					if(passedTime < 0.1)
+						localTime = hxd.Math.lerp(stopTime, loopEnd, passedTime / 0.1);
+					else if(localTime < loopEnd)
+						localTime = loopEnd;
+				}
+			}
 		}
 
 		for (subFX in subFXs) {
@@ -541,6 +547,8 @@ class FXAnimation extends h3d.scene.Object {
 		playState = End;
 		if (instant == true) {
 			setTime(duration, 0, true, true);
+		} else {
+			stopTime = localTime;
 		}
 	}
 
