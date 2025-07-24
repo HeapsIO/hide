@@ -114,7 +114,6 @@ class FileBrowser extends hide.ui.View<FileBrowserState> {
 		return menu;
 	}
 
-	public static final dragKey = "application/x.filemove";
 
 	var currentFolder : FileEntry;
 	var currentSearch : Array<FileEntry> = [];
@@ -444,63 +443,31 @@ class FileBrowser extends hide.ui.View<FileBrowserState> {
 
 		fancyTree.dragAndDropInterface =
 		{
-			onDragStart: function(file: FileEntry, dataTransfer: js.html.DataTransfer) : Bool {
+			onDragStart: function(file: FileEntry, e: js.html.DragEvent) : Bool {
 				var selection = fancyTree.getSelectedItems();
 				if (selection.length <= 0)
 					return false;
-				var ser = [];
-				ser.push(file.getPath());
-				for (item in selection) {
-					if (item == file)
-						continue;
-					ser.push(item.getPath());
-				}
-				dataTransfer.setData(dragKey, haxe.Json.stringify(ser));
+				ide.setData("drag/filetree", cast selection);
 				return true;
 			},
-			getItemDropFlags: function(target: FileEntry, dataTransfer: js.html.DataTransfer) : hide.comp.FancyTree.DropFlags {
-				var containsFiles = false;
-				if (dataTransfer.types.contains("Files")) {
-					containsFiles = true;
-				}
-				if (dataTransfer.types.contains(dragKey)) {
-					containsFiles = true;
-				}
+			getItemDropFlags: function(target: FileEntry, e: js.html.DragEvent) : hide.comp.FancyTree.DropFlags {
+				var fileEntries : Array<FileEntry> = cast ide.getData("drag/filetree");
+				var containsFiles = fileEntries.length > 0;
 
-				if (!containsFiles) {
+				if (!containsFiles)
 					return hide.comp.FancyTree.DropFlags.ofInt(0);
-				}
 
-				if (target.kind == Dir) {
+				if (target.kind == Dir)
 					return (Reorder:hide.comp.FancyTree.DropFlags) | Reparent;
-				}
+
 				return Reorder;
 			},
-			onDrop: function(target: FileEntry, operation: hide.comp.FancyTree.DropOperation, dataTransfer: js.html.DataTransfer) : Bool {
+			onDrop: function(target: FileEntry, operation: hide.comp.FancyTree.DropOperation, e: js.html.DragEvent) : Bool {
 				if (target.kind != Dir)
 					target = target.parent;
 
-				var files : Array<String> = [];
-				for (file in dataTransfer.files) {
-					var path : String = untyped file.path; //file.path is an extension from nwjs or node
-					path = StringTools.replace(path, "\\", "/");
-					var rel = ide.getRelPath(path);
-					files.push(rel);
-				}
-
-				var fileMoveData = dataTransfer.getData(dragKey);
-				if (fileMoveData.length > 0) {
-					try {
-						var unser = haxe.Json.parse(fileMoveData);
-						for (file in (unser:Array<String>)) {
-							var rel = ide.getRelPath(file);
-							files.push(rel);
-						}
-					} catch (e) {
-						trace("Invalid data " + e);
-					}
-				}
-
+				var fileEntries : Array<FileEntry> = cast ide.getData("drag/filetree");
+				var files = [ for (f in fileEntries) f.path ];
 				if (files.length == 0)
 					return false;
 
@@ -580,7 +547,7 @@ class FileBrowser extends hide.ui.View<FileBrowserState> {
 		fancyGallery.dragAndDropInterface = {
 			onDragStart: (item: FileEntry, dataTransfer: js.html.DataTransfer) -> {
 				var selection = getItemAndSelection(item, true);
-				dataTransfer.setData(dragKey, haxe.Json.stringify([for (item in selection) item.getPath()]));
+				ide.setData("drag/filetree", cast selection);
 				return true;
 			}
 		}

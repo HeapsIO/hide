@@ -99,7 +99,7 @@ private class FXSceneEditor extends hide.comp.SceneEditor {
 		}
 	}
 
-	override function createDroppedElement(path:String, parent:PrefabElement, event: js.html.DragEvent): hrt.prefab.Prefab {
+	override function createDroppedElement(path:String, parent:PrefabElement, inlinePrefab: Bool): hrt.prefab.Prefab {
 		var type = hrt.prefab.Prefab.getPrefabType(path);
 		if(type == "fx") {
 			var relative = ide.makeRelative(path);
@@ -108,7 +108,7 @@ private class FXSceneEditor extends hide.comp.SceneEditor {
 			ref.name = new haxe.io.Path(relative).file;
 			return ref;
 		}
-		return super.createDroppedElement(path, parent, event);
+		return super.createDroppedElement(path, parent, inlinePrefab);
 	}
 
 	override function updateGrid() {

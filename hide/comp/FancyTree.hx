@@ -219,23 +219,23 @@ class FancyTree<TreeItem> extends hide.comp.Component {
 	{
 		/**
 			Called when the user starts a drag and drop operation on `item`.
-			Fill dataTransfer with the information you want to transfer, you can use getSelectedItems to handle dragging more than
+			Fill event.dataTransfer with the information you want to transfer, you can use getSelectedItems to handle dragging more than
 			one item at a time.
 			Return `true` if the drag operation is allowed, and `false` to cancel it
 		**/
-		onDragStart: (item: TreeItem, dataTransfer: js.html.DataTransfer) -> Bool,
+		onDragStart: (item: TreeItem, event : js.html.DragEvent) -> Bool,
 
 		/**
 			Called when the user hovers on `target` with a drag and drop operation. You need to return what drop orperation is allowed
 			on the given object
 		**/
-		getItemDropFlags: (target: TreeItem, dataTransfer: js.html.DataTransfer) -> DropFlags,
+		getItemDropFlags: (target: TreeItem, event : js.html.DragEvent) -> DropFlags,
 
 		/**
 			Called when the user drops an item on `target` and getItemDropFlags returned at least one valid flag.
-			`where` tells you where the item was dropped, and you can use `dataTransfer` to know what was dropped
+			`where` tells you where the item was dropped, and you can use `event.dataTransfer` to know what was dropped
 		**/
-		onDrop: (target: TreeItem, where: DropOperation, dataTransfer: js.html.DataTransfer) -> Void
+		onDrop: (target: TreeItem, where: DropOperation, event : js.html.DragEvent) -> Void
 	} = null;
 
 	/**
@@ -827,7 +827,7 @@ class FancyTree<TreeItem> extends hide.comp.Component {
 
 				moveLastDragOver = null;
 
-				if (dragAndDropInterface.onDragStart(data.item, e.dataTransfer)) {
+				if (dragAndDropInterface.onDragStart(data.item, e)) {
 					e.dataTransfer.effectAllowed = "move";
 					e.dataTransfer.setDragImage(data.element, 0, 0);
 				} else {
@@ -889,7 +889,7 @@ class FancyTree<TreeItem> extends hide.comp.Component {
 
 				var operation = getDragOperation(data,e);
 				if (operation != null) {
-					dragAndDropInterface.onDrop(data.item, operation, e.dataTransfer);
+					dragAndDropInterface.onDrop(data.item, operation, e);
 				}
 				e.preventDefault();
 				e.stopPropagation();
@@ -905,7 +905,7 @@ class FancyTree<TreeItem> extends hide.comp.Component {
 
 	function getDragOperation(data: TreeItemData<TreeItem>, event: js.html.DragEvent) : DropOperation {
 		var element = data.element;
-		var flags = dragAndDropInterface.getItemDropFlags(data.item, event.dataTransfer);
+		var flags = dragAndDropInterface.getItemDropFlags(data.item, event);
 		if (flags == DropFlags.ofInt(0)) {
 			return null;
 		}

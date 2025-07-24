@@ -41,6 +41,8 @@ class Ide extends hide.tools.IdeData {
 	var hasReloaded = false;
 	public var thumbnailMode : Bool = false;
 
+	var dataTransfer : Map<String, Dynamic> = new Map();
+
 	var hideRoot : hide.Element;
 	var statusBar : hide.Element;
 	var goldenContainer : hide.Element;
@@ -229,8 +231,8 @@ class Ide extends hide.tools.IdeData {
 			syncMousePosition(e);
 			var view = getViewAt(mouseX, mouseY);
 			var items : Array<String> = [for(f in e.dataTransfer.files) Reflect.field(f, "path")];
-			if (e.dataTransfer.types.contains(hide.view.FileBrowser.dragKey)) {
-				var data = e.dataTransfer.getData(hide.view.FileBrowser.dragKey);
+			if (e.dataTransfer.types.contains("application/x.filemove")) {
+				var data = e.dataTransfer.getData("application/x.filemove");
 				// when in the middle of a drag (and not a drop) getData return nothing
 				if (data.length > 0) {
 					var moreItems : Array<String> = haxe.Json.parse(data);
@@ -629,6 +631,7 @@ class Ide extends hide.tools.IdeData {
 		};
 	}
 
+
 	public function setClipboard( data : String, type: nw.Clipboard.ClipboardType = Text ) {
 		nw.Clipboard.get().set([{data: data, type: type }]);
 	}
@@ -640,6 +643,16 @@ class Ide extends hide.tools.IdeData {
 	public function getClipboard(type: nw.Clipboard.ClipboardType = Text) {
 		return nw.Clipboard.get().get(type);
 	}
+
+
+	public function setData(key: String,  data: Dynamic) {
+		dataTransfer.set(key, data);
+	}
+
+	public function getData(key: String) {
+		return dataTransfer.get(key);
+	}
+
 
 	public function registerUpdate( updateFun ) {
 		updates.push(updateFun);
