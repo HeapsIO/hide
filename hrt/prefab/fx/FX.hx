@@ -257,8 +257,10 @@ class FXAnimation extends h3d.scene.Object {
 		if(playSpeed > 0 || firstSync) {
 			// This is done in syncRec() to make sure time and events are updated regarless of culling state,
 			// so we restore FX in correct state when unculled
-			if (parentFX == null)
-				setTime(curTime + ctx.elapsedTime * playSpeed, fullSync);
+			if (parentFX == null) {
+				var dt = ctx.elapsedTime * playSpeed;
+				setTime(curTime + dt, dt, false, fullSync);
+			}
 		}
 
 		for (t in trails) {
@@ -284,69 +286,58 @@ class FXAnimation extends h3d.scene.Object {
 		ctx.visibleFlag = old;
 	}
 
-	public function seek(time: Float) {
-		setTimeInternal(time, false);
-	}
-
-	public function update(dt: Float) {
-		setTimeInternal(dt, true);
-	}
-
 	static var closest : Map<h3d.scene.Object, {instance: EventInstance, distance: Float, jumpTo: Float}> = [];
 
 	/**
-		If continuous, timeParam is relative to localTime, else it's absolute
+		newTime is the new time to set, relative to the "parent" timeline
+		dt is the relative delta of time since the last "parent" update
+		Depending on how the parent loops, `newTime != lastTime + dt`, that's why the two arguments exists
 	**/
-	function setTimeInternal(timeParam:Float, continuous:Bool ) {
-		var newTime = continuous ? localTime + timeParam : timeParam;
+	public function setTime(newTimeParent:Float, dt: Float, isSeek: Bool, fullSync: Bool = true) {
 
-		if (continuous) {
-			if (playState == Start) {
-				if (newTime >= loopStart) {
-					playState = Loop;
-				}
-			}
+		var oldLocalTime = localTime;
+		localTime = newTimeParent - startDelay;
 
-			if (playState == Loop) {
-				newTime = ((newTime - loopStart) % (loopEnd - loopStart)) + loopStart;
+		if (playState == Start) {
+			if (localTime >= loopStart) {
+				playState = Loop;
 			}
 		}
-		else {
-			if (loop) {
-				if (newTime < loopStart) {
-					playState = Start;
-				} else if (newTime >= loopEnd) {
-					playState = End;
-				} else {
-					playState = Loop;
-				}
-			} else {
+
+		if (playState == Loop && isSeek) {
+			if (localTime >= loopEnd) {
 				playState = End;
+			} else if (localTime < loopStart) {
+				playState = Start;
 			}
 		}
 
-		var oldTime = localTime;
-		localTime = newTime;
+		if (playState == Loop) {
+			localTime = oldLocalTime + dt;
+			localTime = ((localTime - loopStart) % (loopEnd - loopStart)) + loopStart;
+		}
+
+		visible = localTime >= 0;
 
 		for (subFX in subFXs) {
-			if (continuous) {
-				subFX.update(timeParam);
-			} else {
-				subFX.seek(newTime);
+			subFX.setTime(localTime, dt, isSeek, fullSync);
+		}
+
+		if (fullSync) {
+			syncAnims(localTime, dt);
+			syncParticles(localTime, dt, isSeek);
+
+			for (t in trails) {
+				t.update(hxd.Math.max(dt, 0.0));
 			}
-		}
 
-		syncAnims(newTime);
-		syncParticles(timeParam, continuous);
+			Event.updateEvents(events, localTime, oldLocalTime, duration);
 
-		for (t in trails) {
-			t.update(hxd.Math.max(newTime - oldTime, 0.0));
-		}
-
-		Event.updateEvents(events, newTime, oldTime, duration);
-
-		if (!continuous) {
-			fixEventSeek();
+			#if editor
+			if (isSeek || hxd.Math.abs(dt) > hxd.Timer.dt * 1.5) {
+				fixEventSeek();
+			}
+			#end
 		}
 	}
 
@@ -400,49 +391,35 @@ class FXAnimation extends h3d.scene.Object {
 		}
 	}
 
-	function syncParticles(timeParam: Float, continuous: Bool) {
+	function syncParticles(newTime: Float, dt: Float, seek: Bool) {
 		if(emitters != null) {
 			for(em in emitters) {
 				if(em.visible)
 				{
-					if (continuous) {
-						em.setTime(@:privateAccess em.curTime + timeParam);
-					} else {
-						em.setTime(timeParam);
-					}
+					em.setTime(newTime, dt, seek);
 				}
 			}
 		}
-
-
 	}
 
 	static var tempMat = new h3d.Matrix();
 	static var tempTransform = new h3d.Matrix();
 	static var tempVec = new h3d.Vector4();
 
-	/** Use seek or update depending on what you want to do instead of this function**/
-	@:deprecated
-	public function setTime( time : Float, fullSync=true) {
-		// broken heuristic for back-compat
-		var continuous = time - localTime < hxd.Timer.dt * 1.5;
-		setTimeInternal(continuous ? time - localTime : time, continuous);
-	}
-
-	function syncAnims(time: Float) {
+	function syncAnims(newTime: Float, dt: Float) {
 		if(objAnims != null) {
 			for(anim in objAnims) {
 				if(anim.scale != null || anim.rotation != null || anim.position != null) {
 					var m = tempMat;
 					if(anim.scale != null) {
-						var scale = evaluator.getVector(anim.scale, time, tempVec);
+						var scale = evaluator.getVector(anim.scale, newTime, tempVec);
 						m.initScale(scale.x, scale.y, scale.z);
 					}
 					else
 						m.identity();
 
 					if(anim.rotation != null) {
-						var rotation = evaluator.getVector(anim.rotation, time, tempVec);
+						var rotation = evaluator.getVector(anim.rotation, newTime, tempVec);
 						rotation.scale3(Math.PI / 180.0);
 						m.rotate(rotation.x, rotation.y, rotation.z);
 					}
@@ -454,7 +431,7 @@ class FXAnimation extends h3d.scene.Object {
 					m.translate(offset.x, offset.y, offset.z);
 
 					if(anim.position != null) {
-						var pos = evaluator.getVector(anim.position, time, tempVec);
+						var pos = evaluator.getVector(anim.position, newTime, tempVec);
 						m.translate(pos.x, pos.y, pos.z);
 					}
 
@@ -474,13 +451,13 @@ class FXAnimation extends h3d.scene.Object {
 						var m = tempMat;
 
 						if(anim.localRotation != null) {
-							var localRotation = evaluator.getVector(anim.localRotation, time, tempVec);
+							var localRotation = evaluator.getVector(anim.localRotation, newTime, tempVec);
 							localRotation.scale3(Math.PI / 180.0);
 							m.rotate(localRotation.x, localRotation.y, localRotation.z);
 						}
 
 						if(anim.localPosition != null) {
-							var localPosition = evaluator.getVector(anim.localPosition, time, tempVec);
+							var localPosition = evaluator.getVector(anim.localPosition, newTime, tempVec);
 							m.translate(localPosition.x, localPosition.y, localPosition.z);
 						}
 
@@ -495,17 +472,17 @@ class FXAnimation extends h3d.scene.Object {
 					var editor = anim.elt.shared.editor;
 					visible = visible && (editor?.isVisible(anim.elt) ?? true);
 					#end
-					anim.obj.visible = visible && evaluator.getFloat(anim.visibility, time) > 0.5;
+					anim.obj.visible = visible && evaluator.getFloat(anim.visibility, newTime) > 0.5;
 				}
 
 				if(anim.color != null) {
 					switch(anim.color) {
 						case VCurve(a):
 							for(mat in anim.obj.getMaterials())
-								mat.color.a = evaluator.getFloat(anim.color, time);
+								mat.color.a = evaluator.getFloat(anim.color, newTime);
 						default:
 							for(mat in anim.obj.getMaterials())
-								mat.color.load(evaluator.getVector(anim.color, time, tempVec));
+								mat.color.load(evaluator.getVector(anim.color, newTime, tempVec));
 					}
 				}
 
@@ -516,33 +493,33 @@ class FXAnimation extends h3d.scene.Object {
 							var l = Std.downcast(anim.obj, h3d.scene.pbr.PointLight);
 							if( l != null ) {
 								if( color != null ) {
-									var v = evaluator.getVector(color, time, tempVec);
+									var v = evaluator.getVector(color, newTime, tempVec);
 									l.color.set(v.x, v.y, v.z);
 								}
-								if( power != null ) l.power = evaluator.getFloat(power, time);
-								if( size != null ) l.size = evaluator.getFloat(size, time);
-								if( range != null ) l.range = evaluator.getFloat(range, time);
+								if( power != null ) l.power = evaluator.getFloat(power, newTime);
+								if( size != null ) l.size = evaluator.getFloat(size, newTime);
+								if( range != null ) l.range = evaluator.getFloat(range, newTime);
 							}
 						case DirLight(color, power):
 							var l = Std.downcast(anim.obj, h3d.scene.pbr.DirLight);
 							if( l != null ) {
 								if( color != null ) {
-									var v = evaluator.getVector(color, time, tempVec);
+									var v = evaluator.getVector(color, newTime, tempVec);
 									l.color.set(v.x, v.y, v.z);
 								}
-								if( power != null ) l.power = evaluator.getFloat(power, time);
+								if( power != null ) l.power = evaluator.getFloat(power, newTime);
 							}
 						case SpotLight(color, power, range, angle, fallOff):
 							var l = Std.downcast(anim.obj, h3d.scene.pbr.SpotLight);
 							if( l != null ) {
 								if( color != null ) {
-									var v = evaluator.getVector(color, time, tempVec);
+									var v = evaluator.getVector(color, newTime, tempVec);
 									l.color.set(v.x, v.y, v.z);
 								}
-								if( power != null ) l.power = evaluator.getFloat(power, time);
-								if( range != null ) l.range = evaluator.getFloat(range, time);
-								if( angle != null ) l.angle = evaluator.getFloat(angle, time);
-								if( fallOff != null ) l.fallOff = evaluator.getFloat(fallOff, time);
+								if( power != null ) l.power = evaluator.getFloat(power, newTime);
+								if( range != null ) l.range = evaluator.getFloat(range, newTime);
+								if( angle != null ) l.angle = evaluator.getFloat(angle, newTime);
+								if( fallOff != null ) l.fallOff = evaluator.getFloat(fallOff, newTime);
 							}
 					}
 				}
@@ -560,7 +537,7 @@ class FXAnimation extends h3d.scene.Object {
 		this.onEnd = onEnd;
 		playState = End;
 		if (instant == true) {
-			setTime(duration);
+			setTime(duration, 0, true, true);
 		}
 	}
 
