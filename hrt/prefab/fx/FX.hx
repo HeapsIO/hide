@@ -323,6 +323,11 @@ class FXAnimation extends h3d.scene.Object {
 
 		if (fullSync) {
 			syncAnims(localTime, dt);
+
+			if(customAnims != null)
+				for(anim in customAnims)
+					anim.setTime(localTime);
+
 			syncParticles(localTime, dt, isSeek);
 
 			for (t in trails) {
