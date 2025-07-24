@@ -5357,7 +5357,7 @@ class SceneEditor {
 		}
 
 
-		var zPlane = h3d.col.Plane.Z(0);
+		var zPlane = h3d.col.Plane.Z(ray.pz >= 0 ? 0 : ray.pz - 10);
 		var pt = ray.intersect(zPlane);
 		if( pt != null ) {
 			minDist = pt.sub(ray.getPos()).length();
