@@ -28,6 +28,7 @@ typedef HideGlobalConfig = {
 
 	// Performance
 	var trackGpuAlloc : Bool;
+	var unfocusCPUSavingMode : Bool;
 
 	// CDB
 	var highlightActiveLine : Bool;

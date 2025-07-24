@@ -25,6 +25,7 @@ class IdeData {
 		"trackGpuAlloc" => false,
 		"svnShowVersionedFiles" => true,
 		"svnShowModifiedFiles" => true,
+		"unfocusCPUSavingMode" => true,
 	];
 
 	public var currentConfig(get,never) : Config;
