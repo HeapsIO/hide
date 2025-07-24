@@ -1756,14 +1756,15 @@ class FXEditor extends hide.view.FileView {
 			var hasJumped = currentTime != lastTime ;
 
 			if(!pauseButton.isDown() || hasJumped) {
-				if (currentTime + scene.speed * dt >= previewMax) {
-					fx.seek(previewMin);
-					fx.setRandSeed(Std.random(0xFFFFFF));
-				} else if (hasJumped) {
-					fx.seek(currentTime + scene.speed * dt);
-				} else {
-					fx.update(scene.speed * dt);
+				var localDt = scene.speed * dt;
+				var nextTime = currentTime + localDt;
+				if (nextTime > fx.duration) {
+					nextTime = 0;
+					localDt = 0;
+					hasJumped = true;
+					fx.reset();
 				}
+				@:privateAccess fx.setTime(nextTime, localDt, hasJumped);
 
 				currentTime = fx.localTime;
 				lastTime = currentTime;

@@ -787,14 +787,19 @@ class EmitterObject extends h3d.scene.Object {
 		super.onRemove();
 	}
 
-	public function reset() {
-		numInstances = 0;
+
+	public function softReset() {
+		totalBurstCount = 0;
 		enable = true;
+	}
+
+	public function reset() {
+		softReset();
 		random.init(randomSeed);
+		numInstances = 0;
 		curTime = 0.0;
 		emitCount = 0;
 		emitTarget = 0;
-		totalBurstCount = 0;
 		listHead = null;
 
 		if(randomValues != null) {
@@ -1475,9 +1480,20 @@ class EmitterObject extends h3d.scene.Object {
 	public var tickTime : Float = 0;
 	#end
 
-	public function setTime(time: Float) {
-		time = time * speedFactor + warmUpTime;
-		time = Math.max(0, time - delay * speedFactor);
+	public function setTime(parentTime: Float, dt: Float, seek: Bool) {
+		var time : Float = if (!seek) {
+			if (parentTime < curTime) {
+				softReset();
+			}
+			curTime + dt * speedFactor;
+		} else {
+			if (parentTime < curTime) {
+				reset();
+				updateMeshBatch();  // Make sure mesh batch is reset even when no tick is called()
+			}
+			var time = parentTime * speedFactor + warmUpTime;
+			Math.max(0, time - delay * speedFactor);
+		}
 
 		if(hxd.Math.abs(time - curTime) < 1e-6) {  // Time imprecisions can occur during accumulation
 			updateAlignment();
@@ -1485,11 +1501,6 @@ class EmitterObject extends h3d.scene.Object {
 				particles[i].updateAbsPos(this);
 			updateMeshBatch();
 			return;
-		}
-
-		if(time < curTime) {
-			reset();
-			updateMeshBatch();  // Make sure mesh batch is reset even when no tick is called()
 		}
 
 		var abs = this.getAbsPos();
