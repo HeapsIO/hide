@@ -317,8 +317,6 @@ class FXAnimation extends h3d.scene.Object {
 			localTime = ((localTime - loopStart) % (loopEnd - loopStart)) + loopStart;
 		}
 
-		visible = localTime >= 0;
-
 		for (subFX in subFXs) {
 			subFX.setTime(localTime, dt, isSeek, fullSync);
 		}

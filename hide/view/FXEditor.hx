@@ -1759,10 +1759,12 @@ class FXEditor extends hide.view.FileView {
 				var localDt = scene.speed * dt;
 				var nextTime = currentTime + localDt;
 				if (nextTime > fx.duration) {
-					nextTime = 0;
-					localDt = 0;
-					hasJumped = true;
-					fx.reset();
+					if (!fx.loop) {
+						nextTime = 0;
+						localDt = 0;
+						hasJumped = true;
+						fx.reset();
+					}
 				}
 				@:privateAccess fx.setTime(nextTime, localDt, hasJumped);
 
