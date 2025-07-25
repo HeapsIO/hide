@@ -250,7 +250,7 @@ class FXAnimation extends h3d.scene.Object {
 			// so we restore FX in correct state when unculled
 			if (parentFX == null) {
 				var dt = ctx.elapsedTime * playSpeed;
-				setTime(curTime + dt, dt, false, fullSync);
+				setTimeInternal(curTime + dt, dt, false, fullSync);
 			}
 		}
 
@@ -279,12 +279,35 @@ class FXAnimation extends h3d.scene.Object {
 
 	static var closest : Map<h3d.scene.Object, {instance: EventInstance, distance: Float, jumpTo: Float}> = [];
 
+
+	/**
+		Jump or rewind in time instantly in the current fx
+	**/
+	public function seek(newTime: Float, fullsync: Bool = true) {
+		setTimeInternal(newTime, 0, true, fullsync);
+	}
+
+	/**
+		Increase the current playtime of the animation by a small ammount
+	**/
+	public function update(dt: Float, fullsync: Bool) {
+		setTimeInternal(localTime + dt, dt, false, fullsync);
+	}
+
+	/**
+		Prefer using seek or update depending on the context
+	**/
+	@:deprecated
+	public function setTime(newTime: Float, fullsync: Bool = true) {
+		seek(newTime, fullsync);
+	}
+
 	/**
 		newTime is the new time to set, relative to the "parent" timeline
 		dt is the relative delta of time since the last "parent" update
 		Depending on how the parent loops, `newTime != lastTime + dt`, that's why the two arguments exists
 	**/
-	public function setTime(newTimeParent:Float, dt: Float, isSeek: Bool, fullSync: Bool = true) {
+	public function setTimeInternal(newTimeParent:Float, dt: Float, isSeek: Bool, fullSync: Bool = true) {
 
 		var oldLocalTime = localTime;
 		localTime = newTimeParent - startDelay;
@@ -324,7 +347,7 @@ class FXAnimation extends h3d.scene.Object {
 		}
 
 		for (subFX in subFXs) {
-			subFX.setTime(localTime, dt, isSeek, fullSync);
+			subFX.setTimeInternal(localTime, dt, isSeek, fullSync);
 		}
 
 		if (fullSync) {
@@ -546,7 +569,7 @@ class FXAnimation extends h3d.scene.Object {
 		this.onEnd = onEnd;
 		playState = End;
 		if (instant == true) {
-			setTime(duration, 0, true, true);
+			setTimeInternal(duration, 0, true, true);
 		} else {
 			stopTime = localTime;
 		}

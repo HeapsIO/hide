@@ -1766,7 +1766,7 @@ class FXEditor extends hide.view.FileView {
 						fx.reset();
 					}
 				}
-				@:privateAccess fx.setTime(nextTime, localDt, hasJumped);
+				@:privateAccess fx.setTimeInternal(nextTime, localDt, hasJumped);
 
 				currentTime = fx.localTime;
 				lastTime = currentTime;
