@@ -340,6 +340,7 @@ class FXEditor extends hide.view.FileView {
 	var fxprops : hide.comp.PropsEditor;
 
 	var pauseButton : hide.comp.Toolbar.ToolToggle;
+	var loopButton : hide.comp.Toolbar.ToolToggle;
 	@:isVar var currentTime(get, set) : Float;
 	var lastTime : Float;
 	var selectMin : Float;
@@ -511,6 +512,7 @@ class FXEditor extends hide.view.FileView {
 		}
 
 		keys.register("playPause", function() { pauseButton.toggle(!pauseButton.isDown()); });
+		keys.register("loopAnim", function() { loopButton.toggle(!loopButton.isDown()); });
 
 		currentVersion = undo.currentID;
 		sceneEditor.sceneTree.element.addClass("small");
@@ -631,8 +633,8 @@ class FXEditor extends hide.view.FileView {
 		tools.addSeparator();
 
 
-		pauseButton = tools.addToggle("pause", "pause", "Pause animation", function(v) {}, false, "play");
-		var loopButton = tools.addToggle("loop", "retweet", "Loop animation", function(v) {
+		pauseButton = tools.addToggle("pause", "pause", "Pause animation (Space)", function(v) {}, false, "play");
+		loopButton = tools.addToggle("loop", "retweet", "Loop animation (O)", function(v) {
 			var fxAnim = sceneEditor.root3d.find((f) -> Std.downcast(f, hrt.prefab.fx.FX.FXAnimation));
 
 			@:privateAccess
