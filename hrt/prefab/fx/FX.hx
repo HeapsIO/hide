@@ -22,6 +22,7 @@ class FXAnimation extends h3d.scene.Object {
 	public var loop : Bool = false;
 	public var loopStart: Float = -1;
 	public var loopEnd: Float = -1;
+	public var hasLoopPoints(default, null): Bool = false;
 	public var duration : Float;
 
 		/** Enable automatic culling based on `cullingRadius` and `cullingDistance`. Will override `culled` on every sync. **/
@@ -45,7 +46,7 @@ class FXAnimation extends h3d.scene.Object {
 	var random : hxd.Rand;
 	var randSeed : Int;
 	var firstSync = true;
-	var playState : FXPlayState = End;
+	public var playState : FXPlayState = End;
 	var stopTime : Float = -1;
 
 	public function new(?parent) {
@@ -105,15 +106,16 @@ class FXAnimation extends h3d.scene.Object {
 	}
 
 	public function initLoop() {
-		loopStart = 0.0;
+		loopStart = 0;
 		loopEnd = duration;
+		hasLoopPoints = false;
 
 		if (events == null)
 			return;
 
 		for (event in events) {
-			if (event.evt.getEventPrefab().getRoot().findFirstLocal3d() != this)
-				continue;
+			//if (event.evt.getEventPrefab().getRoot().findFirstLocal3d() != this)
+			//	continue;
 			var nameLower = event.evt.name.toLowerCase();
 			if (nameLower == "loop") {
 				loopStart = event.evt.time;
@@ -121,10 +123,11 @@ class FXAnimation extends h3d.scene.Object {
 				if (duration > 0) {
 					loopEnd = loopStart + duration;
 				}
-				loop = true;
+				hasLoopPoints = true;
 			}
 			if (nameLower == "end") {
 				loopEnd = event.evt.time;
+				hasLoopPoints = true;
 			}
 		}
 	}

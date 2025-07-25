@@ -753,6 +753,10 @@ class FXEditor extends hide.view.FileView {
 			afterPan(false);
 			data.refreshObjectAnims();
 			rebuildAnimPanel();
+			var fx3d = Std.downcast((cast data : hrt.prefab.Prefab).findFirstLocal3d(), hrt.prefab.fx.FX.FXAnimation);
+			if (fx3d != null) {
+				fx3d.initLoop();
+			}
 		}
 
 		if (pname == "parameters") {
@@ -1759,7 +1763,7 @@ class FXEditor extends hide.view.FileView {
 				var localDt = scene.speed * dt;
 				var nextTime = currentTime + localDt;
 				if (nextTime > fx.duration) {
-					if (!fx.loop) {
+					if (!fx.loop || fx.playState == End) {
 						nextTime = 0;
 						localDt = 0;
 						hasJumped = true;
