@@ -100,6 +100,8 @@ class Signature {
 			return null;
 		if( props.__ref != null ) {
 			var lib = hxd.res.Loader.currentInstance.load(props.__ref).toPrefab().load();
+			// Prefab file might be outdated, call make to be sure
+			lib.make();
 			var m = lib.getOpt(hrt.prefab.Material, props.name);
 			sig.diffuseMapPath = m.diffuseMap;
 			sig.normalMapPath = m.normalMap;
