@@ -116,17 +116,21 @@ class FileSelect extends Component {
 		// We need to do this comparison since sys.FileSystem.exists() is case insensitive on Windows
 		var fullPath = ide.getPath(p);
 		var exists = false;
-		if (fullPath != null) {
-			var filename = fullPath.substr(fullPath.lastIndexOf('/') + 1);
-			var parentDir = fullPath.substring(0, fullPath.lastIndexOf('/'));
-			var files = sys.FileSystem.readDirectory(parentDir);
-			for (f in files) {
-				if (f == filename) {
-					exists = true;
-					break;
+		try {
+			if (fullPath != null) {
+				var filename = fullPath.substr(fullPath.lastIndexOf('/') + 1);
+				var parentDir = fullPath.substring(0, fullPath.lastIndexOf('/'));
+				var files = sys.FileSystem.readDirectory(parentDir);
+				for (f in files) {
+					if (f == filename) {
+						exists = true;
+						break;
+					}
 				}
 			}
+		} catch(e) {
 		}
+
 		var text = p == null ? "-- select --" : (exists ? "" : "[NOT FOUND] ") + p;
 		element.val(text);
 		element.attr("title", p == null ? "" : p);
