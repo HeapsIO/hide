@@ -1470,7 +1470,7 @@ class ShaderEditor extends hide.view.FileView implements GraphInterface.IGraphEd
 		var anims = meshPreviewRoot3d.findAll((f) -> Std.downcast(f, hrt.prefab.fx.FX.FXAnimation));
 		for (anim in anims) {
 			if (@:privateAccess anim.parentFX != null) {
-				@:privateAccess anim.setTime(meshPreviewScene.s3d.renderer.ctx.time % anim.duration, meshPreviewScene.s3d.renderer.ctx.elapsedTime, false);
+				@:privateAccess anim.setTimeInternal(meshPreviewScene.s3d.renderer.ctx.time % anim.duration, meshPreviewScene.s3d.renderer.ctx.elapsedTime, false);
 			}
 		}
 	}

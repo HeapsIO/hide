@@ -789,7 +789,6 @@ class EmitterObject extends h3d.scene.Object {
 
 
 	public function softReset() {
-		trace("softReset");
 		totalBurstCount = 0;
 		enable = true;
 	}
@@ -1226,9 +1225,6 @@ class EmitterObject extends h3d.scene.Object {
 				case Burst:
 					if( burstDelay > 0 ) {
 						var burstTarget = hxd.Math.min(burstCount, 1 + hxd.Math.floor(curTime / burstDelay));
-						if (burstTarget > totalBurstCount) {
-							trace("bc:", burstCount, "curTime", curTime, "bt:", burstTarget);
-						}
 						while( totalBurstCount < burstTarget ) {
 							var delta = hxd.Math.ceil(hxd.Math.min(maxCount - numInstances, Std.int(evaluator.getFloat(burstParticleCount, curTime))));
 							doEmit(delta);
@@ -1496,7 +1492,6 @@ class EmitterObject extends h3d.scene.Object {
 		}
 		else if (!seek) {
 			if (parentTime < lastParentTime) {
-				trace("softReset", parentTime, localTime, curTime);
 				softReset();
 				curTime = localTime;
 			}
