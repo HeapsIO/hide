@@ -35,7 +35,17 @@ class Event extends hrt.prefab.Prefab implements IEvent {
 	}
 
 	function set_time(v) {
-		return time = v;
+		time = v;
+		#if editor
+		if (this.name.toLowerCase() == "loop" || this.name.toLowerCase() == "end") {
+			var fx3d = Std.downcast(getRoot().findFirstLocal3d(), hrt.prefab.fx.FX.FXAnimation);
+			if (fx3d != null) {
+				fx3d.initLoop();
+			}
+		}
+		#end
+
+		return time;
 	}
 
 	public function getDuration() {
@@ -133,6 +143,13 @@ class Event extends hrt.prefab.Prefab implements IEvent {
 
 	public function setDuration(duration: Float) {
 		this.duration = duration;
+
+		if (this.name.toLowerCase() == "loop") {
+			var fx3d = Std.downcast(getRoot().findFirstLocal3d(), hrt.prefab.fx.FX.FXAnimation);
+			if (fx3d != null) {
+				fx3d.initLoop();
+			}
+		}
 	};
 
 	#end
