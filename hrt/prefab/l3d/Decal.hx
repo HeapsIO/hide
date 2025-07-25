@@ -94,7 +94,7 @@ class Decal extends Object3D {
 			var refMatName = this.refMatLib.substring(this.refMatLib.lastIndexOf("/") + 1);
 
 			var prefabLib = hxd.res.Loader.currentInstance.load(refMatLibPath).toPrefab().load();
-			for(c in prefabLib.children) {
+			for(c in prefabLib.flatten(Material)) {
 				if (c.name != refMatName)
 					continue;
 
