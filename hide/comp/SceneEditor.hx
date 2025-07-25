@@ -1098,16 +1098,22 @@ class SceneEditor {
 			onResize();
 		};
 
-		sceneEl.get(0).ondrop = (e: js.html.DragEvent) -> {
-			var fileEntries : Array<hide.tools.FileManager.FileEntry> = cast ide.getData("drag/filetree");
-			if (fileEntries == null)
+		sceneEl.get(0).ondragover = (e: js.html.DragEvent) -> {
+			if (e.dataTransfer.types.contains(hide.view.FileBrowser.dragKey)) {
+				e.preventDefault();
 				return;
+			}
+		}
 
-			var files = [for (f in fileEntries) f.relPath];
-			@:privateAccess scene.canvas.focus();
-			onDragDrop(files, true, e);
-			e.preventDefault();
-			e.stopPropagation();
+		sceneEl.get(0).ondrop = (e: js.html.DragEvent) -> {
+			if (e.dataTransfer.types.contains(hide.view.FileBrowser.dragKey)) {
+				var files : Array<String> = haxe.Json.parse(e.dataTransfer.getData(hide.view.FileBrowser.dragKey));
+				@:privateAccess scene.canvas.focus();
+				onDragDrop(files, true, e);
+				e.preventDefault();
+				e.stopPropagation();
+				return;
+			}
 		}
 
 		editorDisplay = true;
@@ -2051,99 +2057,32 @@ class SceneEditor {
 			return buttons;
 		}
 
+		var movedPrefabs : Array<hrt.prefab.Prefab> = [];
 		tree.dragAndDropInterface =
 		{
-			onDragStart: function(p: hrt.prefab.Prefab, e: js.html.DragEvent) : Bool {
+			onDragStart: function(p: hrt.prefab.Prefab, dataTransfer: js.html.DataTransfer) : Bool {
 				var selection = tree.getSelectedItems();
 				if (selection.length <= 0)
 					return false;
-				ide.setData("drag/scenetree", cast selection);
+				movedPrefabs = selection;
 				return true;
 			},
-			getItemDropFlags: function(target: hrt.prefab.Prefab, e: js.html.DragEvent) : hide.comp.FancyTree.DropFlags {
-				var prefabs : Array<hrt.prefab.Prefab> = cast ide.getData("drag/scenetree");
-				if (prefabs != null) {
-					for (p in prefabs) {
-						if (checkAllowParent({prefabClass : Type.getClass(p), inf : p.getHideProps()}, target))
-							return (Reorder:hide.comp.FancyTree.DropFlags) | Reparent;
-					}
+			getItemDropFlags: function(target: hrt.prefab.Prefab, dataTransfer: js.html.DataTransfer) : hide.comp.FancyTree.DropFlags {
+				for (p in movedPrefabs) {
+					if (checkAllowParent({prefabClass : Type.getClass(p), inf : p.getHideProps()}, target))
+						return (Reorder:hide.comp.FancyTree.DropFlags) | Reparent;
 				}
-
-				var files : Array<hide.tools.FileManager.FileEntry> = cast ide.getData("drag/filetree");
-				if (files != null) {
-					for (f in files) {
-						var ptype = hrt.prefab.Prefab.getPrefabType(f.relPath);
-						var ext = f.relPath.substring(f.relPath.lastIndexOf(".") + 1);
-
-						if (ptype != null) {
-							return (Reorder:hide.comp.FancyTree.DropFlags) | Reparent;
-						}
-						else if (ext == "fbx" || ext == "hmd") {
-							var model = new hrt.prefab.Model(null, null);
-							if (checkAllowParent({prefabClass : hrt.prefab.Model, inf : model.getHideProps()}, target))
-								return (Reorder:hide.comp.FancyTree.DropFlags) | Reparent;
-						}
-					}
-				}
-
 				return Reorder;
 			},
-			onDrop: function(target: hrt.prefab.Prefab, operation: hide.comp.FancyTree.DropOperation, e: js.html.DragEvent) : Bool {
+			onDrop: function(target: hrt.prefab.Prefab, operation: hide.comp.FancyTree.DropOperation, dataTransfer: js.html.DataTransfer) : Bool {
 				var parent = operation.match(hide.comp.FancyTree.DropOperation.Inside) ? target : target.parent;
 				var tChildren = target.parent.children;
-
-				var prefabs : Array<hrt.prefab.Prefab> = cast ide.getData("drag/scenetree");
-				if (prefabs != null) {
-					var idx = tChildren.indexOf(target);
-					if (operation.match(hide.comp.FancyTree.DropOperation.After))
-						idx++;
-					reparentElement(prefabs, parent, idx);
-					refreshTree(targetTree);
-					return true;
-				}
-
-				var files : Array<hide.tools.FileManager.FileEntry> = cast ide.getData("drag/filetree");
-				if (files != null) {
-					var createdPrefab : Array<{ p : hrt.prefab.Prefab, idx: Int }> = [];
-					for (f in files) {
-						var idx = switch (operation) {
-							case hide.comp.FancyTree.DropOperation.Inside:
-								parent.children.length;
-							case hide.comp.FancyTree.DropOperation.After:
-								tChildren.indexOf(target) + 1;
-							case hide.comp.FancyTree.DropOperation.Before:
-								tChildren.indexOf(target);
-						}
-
-						var p = createDroppedElement(f.relPath, parent, e.shiftKey);
-						parent.children.remove(p);
-						parent.children.insert(idx, p);
-						queueRebuild(p);
-						createdPrefab.push({ p : p, idx : idx });
-					}
-
-					undo.change(Custom((undo) -> {
-						if (undo) {
-							for (p in createdPrefab) {
-								parent.children.remove(p.p);
-								p.p.editorRemoveInstanceObjects();
-							}
-						}
-						else {
-							for (p in createdPrefab) {
-								parent.children.insert(p.idx, p.p);
-								queueRebuild(p.p);
-							}
-						}
-
-						refreshTree(targetTree);
-					}));
-
-					refreshTree(targetTree);
-					return true;
-				}
-
-				return false;
+				var idx = tChildren.indexOf(target);
+				if (operation.match(hide.comp.FancyTree.DropOperation.After))
+					idx++;
+				reparentElement(movedPrefabs, parent, idx);
+				refreshTree(targetTree);
+				return true;
 			}
 		}
 		function ctxMenu(p: hrt.prefab.Prefab, e: js.html.Event) {
@@ -3651,7 +3590,7 @@ class SceneEditor {
 			return;
 		}
 
-		// try {
+		try {
 			if (others != null) {
 				for (prefab in others) {
 					var multiProps = new hide.comp.PropsEditor(null, null, new Element("<div>"));
@@ -3664,21 +3603,21 @@ class SceneEditor {
 				}
 			}
 			e.edit(edit);
-		// } catch (e) {
-		// 	if (others != null) {
-		// 		// Multi edit non intrusive error
-		// 		properties.clear();
-		// 		var msg = e.toString();
-		// 		msg = StringTools.replace(msg, '\n', '</br>');
-		// 		var selection = [for (o in others) Type.getClassName(Type.getClass(o))].join(", ");
-		// 		var stack = e.stack.toString();
-		// 		stack = ~/\(chrome-extension:.*\)/g.replace(stack, "");
-		// 		stack = StringTools.replace(stack, '\n', '</br>');
-		// 		properties.add(new hide.Element('<p>Multi edit error</p><p>Selection : $selection</p><p>$msg</p><p>$stack</p>'));
-		// 		return;
-		// 	}
-		// 	throw e;
-		// }
+		} catch (e) {
+			if (others != null) {
+				// Multi edit non intrusive error
+				properties.clear();
+				var msg = e.toString();
+				msg = StringTools.replace(msg, '\n', '</br>');
+				var selection = [for (o in others) Type.getClassName(Type.getClass(o))].join(", ");
+				var stack = e.stack.toString();
+				stack = ~/\(chrome-extension:.*\)/g.replace(stack, "");
+				stack = StringTools.replace(stack, '\n', '</br>');
+				properties.add(new hide.Element('<p>Multi edit error</p><p>Selection : $selection</p><p>$msg</p><p>$stack</p>'));
+				return;
+			}
+			throw e;
+		}
 
 
 
@@ -3969,12 +3908,17 @@ class SceneEditor {
 		return true;
 	}
 
-	function createDroppedElement(path: String, parent: PrefabElement, inlinePrefab : Bool) : hrt.prefab.Prefab {
+	function createDroppedElement(path: String, defaultParent: PrefabElement, event: js.html.DragEvent) : hrt.prefab.Prefab {
 		var prefab : hrt.prefab.Prefab = null;
 		var relative = ide.makeRelative(path);
 
 		var ptype = hrt.prefab.Prefab.getPrefabType(path);
-		var index = parent.children.length;
+		var hover = null;//tree.getItemByElement(js.Browser.document.elementFromPoint(event.clientX, event.clientY));
+		var parent = hover ?? defaultParent;
+		var index = 0;
+		if (parent == defaultParent) {
+			index = defaultParent.children.length;
+		}
 		if (ptype == "shgraph") {
 			var p = parent;
 			while (p != null && Std.downcast(p, Object3D) == null && Std.downcast(p, Object2D) == null && Std.downcast(p, hrt.prefab.Material) == null) {
@@ -3994,7 +3938,7 @@ class SceneEditor {
 		}
 		else if(ptype != null) {
 			// Inline reference if shift is held
-			if (inlinePrefab) {
+			if (event.shiftKey) {
 				var inlineRef = hxd.res.Loader.currentInstance.load(relative).toPrefab().load();
 				// create a root group
 				var root = new hrt.prefab.Object3D(null, parent.shared);
@@ -4039,7 +3983,6 @@ class SceneEditor {
 			return null;
 		}
 
-		autoName(prefab);
 		return prefab;
 	}
 
@@ -4069,7 +4012,7 @@ class SceneEditor {
 
 		var elts: Array<PrefabElement> = [];
 		for(path in paths) {
-			var prefab = createDroppedElement(path, parent, event.shiftKey);
+			var prefab = createDroppedElement(path, parent, event);
 			if (prefab == null) {
 				return;
 			}
@@ -4077,6 +4020,7 @@ class SceneEditor {
 			if (obj3d != null) {
 				obj3d.setTransform(localMat);
 			}
+			autoName(prefab);
 			elts.push(prefab);
 		}
 
