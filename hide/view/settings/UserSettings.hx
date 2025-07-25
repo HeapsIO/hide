@@ -15,6 +15,8 @@ class UserSettings extends Settings {
 		var search = new hide.view.settings.Settings.Categorie("Search");
 		search.add("Typing debounce threshold (ms)", new Element('<input type="number"/>'), Ide.inst.ideConfig.typingDebounceThreshold, (v) -> Ide.inst.ideConfig.typingDebounceThreshold = v);
 		search.add("Close search on file opening", new Element('<input type="checkbox"/>'), Ide.inst.ideConfig.closeSearchOnFileOpen, (v) -> Ide.inst.ideConfig.closeSearchOnFileOpen = v);
+		search.add("Close search on CDB Sheet change", new Element('<input type="checkbox"/>'), Ide.inst.ideConfig.closeSearchOnCDBSheetChange, (v) -> Ide.inst.ideConfig.closeSearchOnCDBSheetChange = v);
+
 		categories.push(search);
 
 		var performance = new hide.view.settings.Settings.Categorie("Performance");

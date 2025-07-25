@@ -1713,7 +1713,7 @@ class Editor extends Component {
 		});
 
 		// If there is still a search apply it
-		if (filters.length > 0) {
+		if (filters.length > 0 && !Ide.inst.ideConfig.closeSearchOnCDBSheetChange) {
 			searchBox.show();
 
 			for (f in filters)

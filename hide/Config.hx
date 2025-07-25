@@ -24,6 +24,7 @@ typedef HideGlobalConfig = {
 
 	// Search
 	var closeSearchOnFileOpen : Bool;
+	var closeSearchOnCDBSheetChange : Bool;
 	var typingDebounceThreshold : Int;
 
 	// Performance
