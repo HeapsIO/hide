@@ -1438,10 +1438,20 @@ class Cell {
 			@:privateAccess interp.initOps();
 			interp.variables.set("Math", Math);
 
-			var parser = new hscript.Parser();
-			var expr = parser.parseString(str);
-			var res = interp.execute(expr);
-			setValue(res);
+			// Remove leading + if the user miss typed the expression
+			var str : String = str;
+			if(str.charAt(0) == "+") {
+				str = str.substr(1);
+			}
+
+			try {
+				var parser = new hscript.Parser();
+				var expr = parser.parseString(str);
+				var res = interp.execute(expr);
+				setValue(res);
+			} catch(e) {
+				ide.quickError('Invalid float : ${e.toString()}');
+			}
 		default:
 			setValue(newValue);
 		}
