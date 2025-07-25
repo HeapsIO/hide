@@ -3651,7 +3651,7 @@ class SceneEditor {
 			return;
 		}
 
-		// try {
+		try {
 			if (others != null) {
 				for (prefab in others) {
 					var multiProps = new hide.comp.PropsEditor(null, null, new Element("<div>"));
@@ -3664,21 +3664,21 @@ class SceneEditor {
 				}
 			}
 			e.edit(edit);
-		// } catch (e) {
-		// 	if (others != null) {
-		// 		// Multi edit non intrusive error
-		// 		properties.clear();
-		// 		var msg = e.toString();
-		// 		msg = StringTools.replace(msg, '\n', '</br>');
-		// 		var selection = [for (o in others) Type.getClassName(Type.getClass(o))].join(", ");
-		// 		var stack = e.stack.toString();
-		// 		stack = ~/\(chrome-extension:.*\)/g.replace(stack, "");
-		// 		stack = StringTools.replace(stack, '\n', '</br>');
-		// 		properties.add(new hide.Element('<p>Multi edit error</p><p>Selection : $selection</p><p>$msg</p><p>$stack</p>'));
-		// 		return;
-		// 	}
-		// 	throw e;
-		// }
+		} catch (e) {
+			if (others != null) {
+				// Multi edit non intrusive error
+				properties.clear();
+				var msg = e.toString();
+				msg = StringTools.replace(msg, '\n', '</br>');
+				var selection = [for (o in others) Type.getClassName(Type.getClass(o))].join(", ");
+				var stack = e.stack.toString();
+				stack = ~/\(chrome-extension:.*\)/g.replace(stack, "");
+				stack = StringTools.replace(stack, '\n', '</br>');
+				properties.add(new hide.Element('<p>Multi edit error</p><p>Selection : $selection</p><p>$msg</p><p>$stack</p>'));
+				return;
+			}
+			throw e;
+		}
 
 
 
