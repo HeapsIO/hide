@@ -29,7 +29,7 @@ class ColorGradingFunc extends hxsl.Shader {
 		var xOffset = hxd.Math.imin(Std.int(base.r * innerWidth), innerWidth);
 		var yOffset = hxd.Math.imin(Std.int(base.g * innerWidth), innerWidth);
 		var s0x = xOffset + blueSlice0 * size;
-		var s1x = xOffset + blueSlice1 * size;  
+		var s1x = xOffset + blueSlice1 * size;
 		var slice0Color = h3d.Vector.fromColor(pixels.getPixel(s0x, yOffset));
 		var slice1Color = h3d.Vector.fromColor(pixels.getPixel(s1x, yOffset));
 		var bOffset = base.b * innerWidth % 1.0;
@@ -112,11 +112,11 @@ class ColorGrading extends RendererFX {
 	}
 
 	override function modulate(t : Float) {
-		var c = new ColorGrading(null, null);
-		c.size = this.size;
-		c.texturePath = this.texturePath;
-		c.intensity = t;
-		return c;
+		if (this.instance == null)
+			this.make();
+
+		cast (this.instance, ColorGrading).intensity = this.intensity * t;
+		return this.instance;
 	}
 
 	override function transition( r1 : h3d.impl.RendererFX, r2 : h3d.impl.RendererFX, t : Float ) {
@@ -130,9 +130,9 @@ class ColorGrading extends RendererFX {
 		var blendTonemap = new ColorGradingTonemapBlend();
 		blendTonemap.blendFactor = t;
 		c.tonemap = blendTonemap;
-		c.size = this.size;
-		c.texturePath = this.texturePath;
-		c.intensity = this.intensity;
+		c.size = hxd.Math.round(hxd.Math.lerp(c1.size, c2.size, t));
+		c.texturePath = c2.texturePath;
+		c.intensity = hxd.Math.lerp(c1.intensity, c2.intensity, t);
 		return c;
 	}
 
