@@ -20,7 +20,9 @@ class RendererFX extends Prefab implements h3d.impl.RendererFX {
 	}
 
 	public function modulate( t : Float ) : h3d.impl.RendererFX {
-		return null;
+		if (this.instance == null)
+			this.make();
+		return this.instance;
 	}
 
 	inline function checkEnabled() {
