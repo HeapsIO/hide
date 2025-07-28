@@ -276,10 +276,9 @@ class FXAnimation extends h3d.scene.Object {
 		var curTime = localTime;
 
 		if(playSpeed > 0 || firstSync) {
-			// This is done in syncRec() to make sure time and events are updated regarless of culling state,
-			// so we restore FX in correct state when unculled
 			if (parentFX == null) {
-				var dt = ctx.elapsedTime * playSpeed;
+				var dt = firstSync ? 0 : ctx.elapsedTime * playSpeed;
+
 				setTimeInternal(curTime + dt, dt, false, fullSync);
 			}
 		}
@@ -394,14 +393,14 @@ class FXAnimation extends h3d.scene.Object {
 				t.update(hxd.Math.max(dt, 0.0));
 			}
 
-			Event.updateEvents(events, localTime, oldLocalTime, duration);
-
 			#if editor
 			if (isSeek || hxd.Math.abs(dt) > hxd.Timer.dt * 1.5) {
 				fixEventSeek();
 			}
 			#end
 		}
+
+		Event.updateEvents(events, localTime, oldLocalTime, duration);
 	}
 
 	function fixEventSeek() {
