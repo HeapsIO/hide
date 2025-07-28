@@ -16,7 +16,15 @@ class RendererFX extends Prefab implements h3d.impl.RendererFX {
 	}
 
 	public function transition( r1 : h3d.impl.RendererFX, r2 : h3d.impl.RendererFX, t : Float ) : h3d.impl.RendererFX {
-		return null;
+		var rfx1 = Std.downcast(r1, RendererFX);
+		if (rfx1.instance == null)
+			rfx1.make();
+
+		var rfx2 = Std.downcast(r2, RendererFX);
+		if (rfx2.instance == null)
+			rfx2.make();
+
+		return rfx2.instance;
 	}
 
 	public function modulate( t : Float ) : h3d.impl.RendererFX {
