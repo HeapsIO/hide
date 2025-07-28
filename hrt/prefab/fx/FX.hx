@@ -6,10 +6,16 @@ import hrt.prefab.fx.BaseFX.ObjectAnimation;
 import hrt.prefab.fx.BaseFX.ShaderAnimation;
 import hrt.prefab.fx.Event;
 
+/**
+	What part of the FXAnimation loop is currently playing
+**/
 enum FXPlayState {
 	Start;
 	Loop;
 	End;
+
+	/**localTime reached duration **/
+	Finished;
 }
 @:allow(hrt.prefab.fx.FX)
 class FXAnimation extends h3d.scene.Object {
@@ -19,11 +25,28 @@ class FXAnimation extends h3d.scene.Object {
 	public var playSpeed : Float = 0;
 	public var localTime : Float = 0.0;
 	public var startDelay : Float = 0.0;
-	public var loop : Bool = false;
+	public var loop(default, set) : Bool = false;
 	public var loopStart: Float = -1;
 	public var loopEnd: Float = -1;
 	public var hasLoopPoints(default, null): Bool = false;
 	public var duration : Float;
+
+	function set_loop(v: Bool) {
+		loop = v;
+		if (loop) {
+			playState = Start;
+		} else {
+			playState = End;
+		}
+		return loop;
+	}
+
+	var playStateSetLock : Int = 0;
+	function set_playState(newPlayState: FXPlayState) : FXPlayState {
+		playState = newPlayState;
+		onPlayStateChange(playState);
+		return playState;
+	}
 
 		/** Enable automatic culling based on `cullingRadius` and `cullingDistance`. Will override `culled` on every sync. **/
 	public var autoCull(default, set) = true;
@@ -41,12 +64,16 @@ class FXAnimation extends h3d.scene.Object {
 
 	public var subFXs : Array<FXAnimation> = [];
 
+	public dynamic function onPlayStateChange(newPlayState: FXPlayState) : Void {
+
+	}
+
 	var evaluator : Evaluator;
 	var parentFX : FXAnimation;
 	var random : hxd.Rand;
 	var randSeed : Int;
 	var firstSync = true;
-	public var playState : FXPlayState = End;
+	public var playState(default, set) : FXPlayState = End;
 	var stopTime : Float = -1;
 
 	public function new(?parent) {
@@ -266,6 +293,7 @@ class FXAnimation extends h3d.scene.Object {
 
 		if(playState == End && duration > 0 && curTime < duration && localTime >= duration) {
 			localTime = duration;
+			playState = Finished;
 			finishedPlaying = true;
 		}
 
@@ -568,7 +596,7 @@ class FXAnimation extends h3d.scene.Object {
 	}
 
 
-	public function stop(instant: Bool = false, onEnd: () -> Void) {
+	public function stop(instant: Bool = false, onEnd: () -> Void = null) {
 		this.onEnd = onEnd;
 		playState = End;
 		if (instant == true) {
