@@ -356,6 +356,12 @@ class FancyTree<TreeItem> extends hide.comp.Component {
 		rootData = generateChildren(null);
 		recLoadChildren(rootData);
 
+		element.get(0).ondrop = (e: js.html.DragEvent) -> {
+			e.preventDefault();
+			e.stopPropagation();
+			dragAndDropInterface.onDrop(null, DropOperation.Inside, e);
+		}
+
 		queueRefresh(Search);
 	}
 

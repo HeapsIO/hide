@@ -2089,8 +2089,10 @@ class SceneEditor {
 				return Reorder;
 			},
 			onDrop: function(target: hrt.prefab.Prefab, operation: hide.comp.FancyTree.DropOperation, e: js.html.DragEvent) : Bool {
-				var parent = operation.match(hide.comp.FancyTree.DropOperation.Inside) ? target : target.parent;
-				var tChildren = target.parent.children;
+				if (target == null)
+					target = sceneData;
+				var parent = operation.match(hide.comp.FancyTree.DropOperation.Inside) ? target : target?.parent;
+				var tChildren = target.parent == null ? target.children : target.parent.children;
 
 				var prefabs : Array<hrt.prefab.Prefab> = cast ide.getData("drag/scenetree");
 				if (prefabs != null) {
