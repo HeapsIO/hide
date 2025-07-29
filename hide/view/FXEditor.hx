@@ -640,7 +640,6 @@ class FXEditor extends hide.view.FileView {
 			@:privateAccess
 			if (fxAnim != null) {
 				fxAnim.loop = v;
-				fxAnim.reset();
 				if (!fxAnim.loop) {
 					fxAnim.playState = End;
 				} else {

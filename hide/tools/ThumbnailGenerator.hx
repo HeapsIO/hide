@@ -280,7 +280,7 @@ class ThumbnailGenerator {
 						// Forward the animations a little bit to show something more usefull
 						if (fxAnim != null) {
 							var duration = fxAnim.duration;
-							fxAnim.setTimeInternal(duration * 0.25, 0, true, true);
+							fxAnim.seek(duration * 0.25);
 						}
 					}
 				}

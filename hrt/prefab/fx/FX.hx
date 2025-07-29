@@ -41,7 +41,6 @@ class FXAnimation extends h3d.scene.Object {
 		return loop;
 	}
 
-	var playStateSetLock : Int = 0;
 	function set_playState(newPlayState: FXPlayState) : FXPlayState {
 		playState = newPlayState;
 		onPlayStateChange(playState);
@@ -141,8 +140,6 @@ class FXAnimation extends h3d.scene.Object {
 			return;
 
 		for (event in events) {
-			//if (event.evt.getEventPrefab().getRoot().findFirstLocal3d() != this)
-			//	continue;
 			var nameLower = event.evt.name.toLowerCase();
 			if (nameLower == "loop") {
 				loopStart = event.evt.time;
@@ -320,7 +317,7 @@ class FXAnimation extends h3d.scene.Object {
 	/**
 		Increase the current playtime of the animation by a small ammount
 	**/
-	public function update(dt: Float, fullsync: Bool) {
+	public function update(dt: Float, fullsync: Bool = true) {
 		setTimeInternal(localTime + dt, dt, false, fullsync);
 	}
 
@@ -617,23 +614,6 @@ class FXAnimation extends h3d.scene.Object {
 				out.push(eventObj);
 			}
 		}
-
-		// var sub = Std.downcast(elt, SubFX);
-		// if (sub != null) {
-		// 	var eventLen = out?.length ?? 0;
-		// 	out = initEvents(@:privateAccess sub.resolveRef(), out);
-		// 	var fxAnimation = Std.downcast(sub.refInstance.findFirstLocal3d(), FXAnimation);
-		// 	if (fxAnimation != null) {
-		// 		fxAnimation.events = null;
-		// 	}
-		// 	if (out != null) {
-		// 		// Offset the start time of the events that were added to our array in
-		// 		// init events
-		// 		for (i in eventLen...out.length) {
-		// 			out[i].evt.time += sub.time;
-		// 		}
-		// 	}
-		// }
 
 		for(child in elt.children) {
 			out = initEvents(child, out);
