@@ -4802,6 +4802,19 @@ class SceneEditor {
 				newTransform = makeTransform(mat);
 			}
 
+			var obj2d = prefab.to(Object2D);
+			var prevTransform2d = null;
+			var newTransform2d = null;
+			if (obj2d != null && !preserveTransform) {
+				var mat = worldMat2d(obj2d);
+				var parentMat = worldMat2d(toPrefab);
+				parentMat.invert();
+				mat.multiply(mat, parentMat);
+				prevTransform2d = obj2d.getTransformMatrix();
+				newTransform2d = mat;
+			}
+
+
 			effects.push(function(undo) {
 				if( undo ) {
 					prefab.parent = prevParent;
@@ -4812,6 +4825,8 @@ class SceneEditor {
 
 					if(obj3d != null && prevTransform != null)
 						obj3d.loadTransform(prevTransform);
+					if (obj2d != null && prevTransform2d != null)
+						obj2d.setTransformMatrix(prevTransform2d);
 				} else {
 					@:bypassAccessor prefab.parent = toPrefab;
 					checkWantRebuild(prevParent, prefab);
@@ -4820,6 +4835,8 @@ class SceneEditor {
 					toPrefab.children.insert(index + i, prefab);
 					if(obj3d != null && newTransform != null)
 						obj3d.loadTransform(newTransform);
+					if (obj2d != null && newTransform2d != null)
+						obj2d.setTransformMatrix(newTransform2d);
 				};
 
 				onPrefabChange(prevParent, "children");
@@ -5520,6 +5537,19 @@ class SceneEditor {
 			}
 			return mat;
 		}
+	}
+
+	public function worldMat2d(elt: PrefabElement) : h2d.col.Matrix {
+		var mat = new h2d.col.Matrix();
+		mat.identity();
+		while(elt != null) {
+			var o = Std.downcast(elt, Object2D);
+			if (o != null) {
+				mat.multiply(mat, o.getTransformMatrix());
+			}
+			elt = o.parent;
+		}
+		return mat;
 	}
 
 	function editPivot() {
