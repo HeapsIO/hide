@@ -3418,8 +3418,10 @@ class SceneEditor {
 	}
 
 	public function onPrefabChange(p: PrefabElement, ?pname: String) {
-		if(p != sceneData)
-			refreshTreeStyle(p, All);
+		if(p != sceneData) {
+			for (p in p.all())
+				refreshTreeStyle(p, All);
+		}
 
 		var modifiedRef = Std.downcast(p.shared.parentPrefab, hrt.prefab.Reference);
 		if (modifiedRef != null && modifiedRef.editMode == Edit) {
