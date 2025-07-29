@@ -336,6 +336,9 @@ class Reference extends Object3D {
 	public function hasCycle() : Bool {
 
 		function rec(prefab: Prefab, seenPaths: Map<String, Bool>) : Bool {
+			if (prefab == null)
+				return false;
+
 			var ref = Std.downcast(prefab, Reference);
 			if (ref != null && ref.source != null && ref.shouldBeInstanciated()) {
 				if (seenPaths.get(ref.source) == true) {
