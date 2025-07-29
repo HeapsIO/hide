@@ -2165,6 +2165,18 @@ class SceneEditor {
 				{ label : "Delete", enabled : p != null, click : function() deleteElements(selectedPrefabs), keys : view.config.get("key.delete") },
 				{ label : "Duplicate", enabled : p != null, click : duplicate.bind(false), keys : view.config.get("key.duplicateInPlace") },
 			];
+			var collapseItems : Array<hide.comp.ContextMenu.MenuItem> = [
+				{ label : "Collapse", enabled : p != null, click : () -> {
+					var curItem = @:privateAccess tree.itemMap.get(p);
+					while (curItem.children == null || curItem.children.length <= 0) {
+						if (curItem.parent == null)
+							break;
+						curItem = curItem.parent;
+					}
+					tree.collapseItem(curItem.item);
+				} },
+				{ label : "Collapse All", enabled : p != null, click : collapseTree },
+			];
 
 			var isObj = p != null && (p.to(Object3D) != null || p.to(Object2D) != null);
 			var isRef = isReference(p);
@@ -2201,8 +2213,9 @@ class SceneEditor {
 					menuItems.push({ label : "Tag", menu: menu });
 			}
 
+			menuItems.push({ isSeparator: true });
+			menuItems = menuItems.concat(collapseItems);
 			menuItems.push({ isSeparator : true, label : "Actions" });
-
 			menuItems = menuItems.concat(actionItems);
 
 			// Gather custom context menu entries

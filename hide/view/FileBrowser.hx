@@ -828,13 +828,13 @@ class FileBrowser extends hide.ui.View<FileBrowserState> {
 		var options : Array<hide.comp.ContextMenu.MenuItem> = [];
 
 		var collapseAll : hide.comp.ContextMenu.MenuItem = {
-					label: "Collapse All",
-					click: () -> {
-						for (child in root.children) {
-							fancyTree.collapseItem(child);
-						}
-					}
-				};
+			label: "Collapse All",
+			click: () -> {
+				for (child in root.children) {
+					fancyTree.collapseItem(child);
+				}
+			}
+		};
 
 		var implicitFolder = false;
 
@@ -850,10 +850,6 @@ class FileBrowser extends hide.ui.View<FileBrowserState> {
 			implicitFolder = true;
 			item = currentFolder;
 		}
-
-		/*currentFolder = item;
-		fancyTree.selectItem(currentFolder);
-		queueGalleryRefresh();*/
 
 		var newMenu : Array<hide.comp.ContextMenu.MenuItem> = [];
 		newMenu.push({
@@ -877,21 +873,29 @@ class FileBrowser extends hide.ui.View<FileBrowserState> {
 			}
 		}
 
-
 		if (item.kind == Dir) {
 			options.push({
 				label: "New ...",
 				menu: newMenu,
 			});
+			options.push({
+				isSeparator: true
+			});
+		}
 
-			if (!isGallery) {
-				options.push({
-					label: "Collapse",
-					click: fancyTree.collapseItem.bind(item),
-				});
+		if (!isGallery) {
 
-				options.push(collapseAll);
-			}
+			options.push({
+				label: "Collapse",
+				click: () -> {
+					var collapseTarget = item;
+					if (item.kind != Dir)
+						collapseTarget = item.parent;
+					fancyTree.collapseItem(collapseTarget);
+				}
+			});
+
+			options.push(collapseAll);
 		}
 
 		if (!implicitFolder) {
