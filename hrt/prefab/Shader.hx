@@ -269,7 +269,8 @@ class Shader extends Prefab {
 			// Notify change to FX in case param is used by curves
 			var fx = findParent(hrt.prefab.fx.FX);
 			if(fx != null) {
-				shared.editor.queueRebuild(fx);
+				@:privateAccess Std.downcast(fx.local3d, hrt.prefab.fx.FX.FXAnimation)?.updateCustomAnims(fx);
+				//shared.editor.queueRebuild(fx);
 			}
 		});
 	}

@@ -350,6 +350,7 @@ class FXEditor extends hide.view.FileView {
 	var curveEditor : hide.comp.CurveEditor;
 	var afterPanRefreshes : Array<Bool->Void> = [];
 	var statusText : h2d.Text;
+	var forceTick : Bool = false;
 
 	var cullingPreview : h3d.scene.Sphere;
 
@@ -674,7 +675,7 @@ class FXEditor extends hide.view.FileView {
 
 	function onPrefabChange(p: PrefabElement, ?pname: String) {
 		// force timeline jump
-		lastTime = -1;
+		forceTick = true;
 
 		if(p == cast(data, hrt.prefab.Prefab)) {
 			if (this.curveEditor != null) {
@@ -880,7 +881,7 @@ class FXEditor extends hide.view.FileView {
 			this.curveEditor.curves.push(curve);
 			this.curveEditor.onChange = function(anim) {
 				//refreshDopesheet();
-				lastTime = -1;
+				forceTick = true;
 			}
 
 			rightPanel.on("mousewheel", function(e) {
@@ -1760,8 +1761,10 @@ class FXEditor extends hide.view.FileView {
 		if (fx != null) {
 			var hasJumped = currentTime != lastTime;
 
-			if(!pauseButton.isDown() || hasJumped) {
-				var localDt = hasJumped ? 0 : scene.speed * dt;
+			var paused = pauseButton.isDown();
+
+			if(!paused || hasJumped || forceTick) {
+				var localDt = (hasJumped || (paused && forceTick)) ? 0 : scene.speed * dt;
 				var nextTime = currentTime + localDt;
 				if (nextTime > fx.duration) {
 					if (!fx.loop || fx.playState == End) {
@@ -1771,13 +1774,14 @@ class FXEditor extends hide.view.FileView {
 						fx.reset();
 					}
 				}
-				@:privateAccess fx.setTimeInternal(nextTime, localDt, hasJumped && lastTime != -1);
+				@:privateAccess fx.setTimeInternal(nextTime, localDt, hasJumped);
 
 				currentTime = fx.localTime;
 				lastTime = currentTime;
+				forceTick = false;
 			}
 
-			if (hasJumped || pauseButton.isDown()) {
+			if (hasJumped || paused) {
 				@:privateAccess scene.s3d.renderer.ctx.time = currentTime;
 			}
 		}
