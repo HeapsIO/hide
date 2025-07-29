@@ -110,6 +110,31 @@ class Object2D extends Prefab {
 		return type == "object2D" ? "group2D" : super.getDefaultEditorName();
 	}
 
+	public function getTransformMatrix(m : h2d.col.Matrix = null) : h2d.col.Matrix {
+		if (m == null)
+			m = new h2d.col.Matrix();
+		m.initScale(scaleX, scaleY);
+		m.rotate(hxd.Math.degToRad(rotation));
+		m.translate(x, y);
+		return m;
+	}
+
+	static var tmpPoint = new h2d.col.Point();
+	static var tmpMat = new h2d.col.Matrix();
+	public function setTransformMatrix(m: h2d.col.Matrix) : Void {
+
+		m.getScale(tmpPoint);
+		scaleX = tmpPoint.x;
+		scaleY = tmpPoint.y;
+
+		tmpMat.initScale(1.0/scaleX, 1.0/scaleY);
+		tmpMat.multiply(tmpMat, m);
+		rotation = hxd.Math.radToDeg(hxd.Math.atan2(tmpMat.b, tmpMat.a));
+		x = m.x;
+		y = m.y;
+		updateInstance();
+	}
+
 	#if editor
 	override function getHideProps() : hide.prefab.HideProps {
 		// Check children
