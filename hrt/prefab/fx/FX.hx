@@ -702,22 +702,28 @@ class FXAnimation extends h3d.scene.Object {
 	}
 
 	function initEmitters(elt: PrefabElement) {
-		if(!elt.enabled) return;
-		var em = Std.downcast(elt, hrt.prefab.fx.Emitter);
-		if(em != null)  {
-			var local3d = Object3D.getLocal3d(em);
-			if (local3d != null) {
-				if(emitters == null) emitters = [];
-				var emobj : hrt.prefab.fx.Emitter.EmitterObject = cast local3d;
-				emobj.setRandSeed(randSeed);
-				emitters.push(emobj);
+		if (emitters != null)
+			emitters.resize(0);
+
+		function rec(elt: PrefabElement) {
+			if(!elt.enabled) return;
+			var em = Std.downcast(elt, hrt.prefab.fx.Emitter);
+			if(em != null)  {
+				var local3d = Object3D.getLocal3d(em);
+				if (local3d != null) {
+					if(emitters == null) emitters = [];
+					var emobj : hrt.prefab.fx.Emitter.EmitterObject = cast local3d;
+					emobj.setRandSeed(randSeed);
+					emitters.push(emobj);
+				}
+			}
+			else {
+				for(c in elt.children) {
+					rec(c);
+				}
 			}
 		}
-		else {
-			for(c in elt.children) {
-				initEmitters(c);
-			}
-		}
+		rec(elt);
 	}
 
 	function initConstraints(elt : PrefabElement ){
