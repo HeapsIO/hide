@@ -2098,6 +2098,9 @@ class SceneEditor {
 
 				var prefabs : Array<hrt.prefab.Prefab> = cast ide.getData("drag/scenetree");
 				if (prefabs != null) {
+					// Avoid moving target onto itelf
+					prefabs.remove(target);
+
 					var idx = tChildren.indexOf(target);
 					if (operation.match(hide.comp.FancyTree.DropOperation.After))
 						idx++;
