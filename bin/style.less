@@ -5958,9 +5958,9 @@ fancy-tree {
 				outline-offset: -1px;
 			}
 
-			&:hover {
-				background-color: var(--hover);
-			}
+			// &:hover {
+			// 	background-color: var(--hover);
+			// }
 
 			fancy-button.quieter {
 				--size: 16px;
@@ -6111,10 +6111,11 @@ fancy-tree {
 		background-color: transparent;
 		fancy-scroll {
 			fancy-tree-item {
+				--background: rgba(0,0,0,0);
 				&:hover {
+					--background: #222;
 					color: #e2e2e2;
 				}
-				background: transparent;
 			}
 		}
  	}

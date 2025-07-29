@@ -4989,9 +4989,6 @@ fancy-tree fancy-scroll fancy-tree-item.current {
   z-index: 10;
   outline-offset: -1px;
 }
-fancy-tree fancy-scroll fancy-tree-item:hover {
-  background-color: var(--hover);
-}
 fancy-tree fancy-scroll fancy-tree-item fancy-button.quieter {
   --size: 16px;
   font-size: 12px;
@@ -5100,9 +5097,10 @@ fancy-tree.overlay {
   background-color: transparent;
 }
 fancy-tree.overlay fancy-scroll fancy-tree-item {
-  background: transparent;
+  --background: rgba(0, 0, 0, 0);
 }
 fancy-tree.overlay fancy-scroll fancy-tree-item:hover {
+  --background: #222;
   color: #e2e2e2;
 }
 fancy-gallery {
