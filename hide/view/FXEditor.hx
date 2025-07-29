@@ -1771,12 +1771,12 @@ class FXEditor extends hide.view.FileView {
 				}
 				@:privateAccess fx.setTimeInternal(nextTime, localDt, hasJumped);
 
-				if (hasJumped) {
-					@:privateAccess scene.s3d.renderer.ctx.time = currentTime;
-				}
-
 				currentTime = fx.localTime;
 				lastTime = currentTime;
+			}
+
+			if (hasJumped || pauseButton.isDown()) {
+				@:privateAccess scene.s3d.renderer.ctx.time = currentTime;
 			}
 		}
 
