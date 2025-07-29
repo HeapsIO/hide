@@ -20,8 +20,12 @@ class Bitmap extends Object2D {
 			}
 			if (src != null) {
 				tex = shared.loadTexture(src);
-				bmp.tile = h2d.Tile.fromTexture(this.tex);
-			} else {
+				if (tex != null) {
+					bmp.tile = h2d.Tile.fromTexture(tex);
+				}
+			}
+
+			if (bmp.tile == null) {
 				bmp.tile = h2d.Tile.fromColor(0xFF00FF,32,32,0.5);
 			}
 		}
