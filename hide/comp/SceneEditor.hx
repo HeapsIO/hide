@@ -2043,7 +2043,9 @@ class SceneEditor {
 					return !isHidden(obj3d) ? '<div class="ico ico-eye"></div>' : '<div class="ico ico-eye-slash"></div>';
 				},
 				click: (p: hrt.prefab.Prefab) -> {
-					setVisible([p], isHidden(obj3d));
+					var selection = tree.getSelectedItems();
+					selection.push(p);
+					setVisible(selection, isHidden(obj3d));
 				},
 				forceVisiblity: (p: hrt.prefab.Prefab) -> isHidden(obj3d),
 			});
