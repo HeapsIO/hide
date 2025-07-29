@@ -1759,7 +1759,7 @@ class FXEditor extends hide.view.FileView {
 			var hasJumped = currentTime != lastTime ;
 
 			if(!pauseButton.isDown() || hasJumped) {
-				var localDt = scene.speed * dt;
+				var localDt = hasJumped ? 0 : scene.speed * dt;
 				var nextTime = currentTime + localDt;
 				if (nextTime > fx.duration) {
 					if (!fx.loop || fx.playState == End) {
