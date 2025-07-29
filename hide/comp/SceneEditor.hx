@@ -4788,7 +4788,8 @@ class SceneEditor {
 		for(i => prefab in prefabs) {
 			var prevParent = prefab.parent;
 			var prevIndex = prevParent.children.indexOf(prefab);
-
+			for (p in prefab.flatten(null, null))
+				p.shared = toPrefab.shared;
 			var obj3d = prefab.to(Object3D);
 			var preserveTransform = Std.isOfType(toPrefab, hrt.prefab.fx.Emitter) || Std.isOfType(prevParent, hrt.prefab.fx.Emitter);
 			var prevTransform = null;
