@@ -666,8 +666,6 @@ class FXEditor extends hide.view.FileView {
 		gizmo.onChangeMode = onSetGizmoMode;
 		onSetGizmoMode(gizmo.editMode);
 
-
-
 		statusText = new h2d.Text(hxd.res.DefaultFont.get(), scene.s2d);
 		statusText.setPosition(5, 5);
 
@@ -675,6 +673,9 @@ class FXEditor extends hide.view.FileView {
 	}
 
 	function onPrefabChange(p: PrefabElement, ?pname: String) {
+		// force timeline jump
+		lastTime = -1;
+
 		if(p == cast(data, hrt.prefab.Prefab)) {
 			if (this.curveEditor != null) {
 				previewMax = data.duration == 0 ? 5000 : data.duration;
@@ -879,6 +880,7 @@ class FXEditor extends hide.view.FileView {
 			this.curveEditor.curves.push(curve);
 			this.curveEditor.onChange = function(anim) {
 				//refreshDopesheet();
+				lastTime = -1;
 			}
 
 			rightPanel.on("mousewheel", function(e) {
@@ -1756,7 +1758,7 @@ class FXEditor extends hide.view.FileView {
 		});
 
 		if (fx != null) {
-			var hasJumped = currentTime != lastTime ;
+			var hasJumped = currentTime != lastTime;
 
 			if(!pauseButton.isDown() || hasJumped) {
 				var localDt = hasJumped ? 0 : scene.speed * dt;
@@ -1769,7 +1771,7 @@ class FXEditor extends hide.view.FileView {
 						fx.reset();
 					}
 				}
-				@:privateAccess fx.setTimeInternal(nextTime, localDt, hasJumped);
+				@:privateAccess fx.setTimeInternal(nextTime, localDt, hasJumped && lastTime != -1);
 
 				currentTime = fx.localTime;
 				lastTime = currentTime;
