@@ -4936,6 +4936,8 @@ class SceneEditor {
 		beginRebuildStack --;
 		if (beginRebuildStack > 0)
 			return;
+
+		var sort2d : Map<h2d.Object, Bool> = [];
 		for (prefab => want in rebuildQueue) {
 			switch (want) {
 				case Skip:
@@ -4967,11 +4969,37 @@ class SceneEditor {
 						continue;
 
 					rebuild(prefab);
+					if (Std.downcast(prefab, Object2D) != null) {
+						var parent2d = prefab.findFirstLocal2d()?.parent;
+						if (parent2d != null) {
+							sort2d.set(parent2d, true);
+						}
+					}
 			}
 		}
 
 		for (callback in rebuildEndCallbacks) {
 			callback();
+		}
+
+		if (sort2d.iterator().hasNext()) {
+			var flat = sceneData.flatten();
+			var indexes : Map<h2d.Object, Int> = [];
+			for (index => prefab in flat) {
+				var local2d = Std.downcast(prefab, Object2D)?.local2d;
+				if (local2d != null) {
+					indexes.set(local2d, index);
+				}
+			}
+
+			for (toSort => _ in sort2d) {
+				var children = @:privateAccess toSort.children.copy();
+				children.sort((a, b) -> Reflect.compare(indexes.get(a), indexes.get(b)));
+
+				for (child in children) {
+					toSort.addChild(child);
+				}
+			}
 		}
 
 		if (queuedRefreshRenderProps) {
