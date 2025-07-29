@@ -340,7 +340,9 @@ class FXEditor extends hide.view.FileView {
 	var fxprops : hide.comp.PropsEditor;
 
 	var pauseButton : hide.comp.Toolbar.ToolToggle;
+	var loopButton : hide.comp.Toolbar.ToolToggle;
 	@:isVar var currentTime(get, set) : Float;
+	var lastTime : Float;
 	var selectMin : Float;
 	var selectMax : Float;
 	var previewMin : Float;
@@ -510,6 +512,7 @@ class FXEditor extends hide.view.FileView {
 		}
 
 		keys.register("playPause", function() { pauseButton.toggle(!pauseButton.isDown()); });
+		keys.register("loopAnim", function() { loopButton.toggle(!loopButton.isDown()); });
 
 		currentVersion = undo.currentID;
 		sceneEditor.sceneTree.element.addClass("small");
@@ -630,7 +633,22 @@ class FXEditor extends hide.view.FileView {
 		tools.addSeparator();
 
 
-		pauseButton = tools.addToggle("pause", "pause", "Pause animation", function(v) {}, false, "play");
+		pauseButton = tools.addToggle("pause", "pause", "Pause animation (Space)", function(v) {}, false, "play");
+		loopButton = tools.addToggle("loop", "retweet", "Loop animation (O)", function(v) {
+			var fxAnim = sceneEditor.root3d.find((f) -> Std.downcast(f, hrt.prefab.fx.FX.FXAnimation));
+
+			@:privateAccess
+			if (fxAnim != null) {
+				fxAnim.loop = v;
+				if (!fxAnim.loop) {
+					fxAnim.playState = End;
+				} else {
+					if (fxAnim.playState == End) {
+						fxAnim.playState = Loop;
+					}
+				}
+			}
+		}, false);
 		tools.addRange("Speed", function(v) {
 			scene.speed = v;
 		}, scene.speed);
@@ -736,6 +754,10 @@ class FXEditor extends hide.view.FileView {
 			afterPan(false);
 			data.refreshObjectAnims();
 			rebuildAnimPanel();
+			var fx3d = Std.downcast((cast data : hrt.prefab.Prefab).findFirstLocal3d(), hrt.prefab.fx.FX.FXAnimation);
+			if (fx3d != null) {
+				fx3d.initLoop();
+			}
 		}
 
 		if (pname == "parameters") {
@@ -1623,8 +1645,6 @@ class FXEditor extends hide.view.FileView {
 			onUpdate2D(dt);
 		else
 			onUpdate3D(dt);
-
-		@:privateAccess scene.s3d.renderer.ctx.time = currentTime - scene.s3d.renderer.ctx.elapsedTime;
 	}
 
 	function onUpdate2D(dt:Float) {
@@ -1728,81 +1748,42 @@ class FXEditor extends hide.view.FileView {
 		if(local3d == null)
 			return;
 
-		var allFx = local3d.findAll(o -> Std.downcast(o, hrt.prefab.fx.FX.FXAnimation));
+		var fx = local3d.find(o -> {
+			var fx = Std.downcast(o, hrt.prefab.fx.FX.FXAnimation);
+			if (fx == null || @:privateAccess fx.parentFX != null)
+				return null;
+			return fx;
+		});
 
-		if(!pauseButton.isDown()) {
-			currentTime += scene.speed * dt;
-			if(this.curveEditor != null) {
-				this.curveEditor.refreshTimeline(currentTime);
-				this.curveEditor.refreshOverlay(data.duration);
-			}
-			if(currentTime >= previewMax) {
-				currentTime = previewMin;
+		if (fx != null) {
+			var hasJumped = currentTime != lastTime ;
 
-				for(f in allFx)
-					f.setRandSeed(Std.random(0xFFFFFF));
+			if(!pauseButton.isDown() || hasJumped) {
+				var localDt = scene.speed * dt;
+				var nextTime = currentTime + localDt;
+				if (nextTime > fx.duration) {
+					if (!fx.loop || fx.playState == End) {
+						nextTime = 0;
+						localDt = 0;
+						hasJumped = true;
+						fx.reset();
+					}
+				}
+				@:privateAccess fx.setTimeInternal(nextTime, localDt, hasJumped);
+
+				if (hasJumped) {
+					@:privateAccess scene.s3d.renderer.ctx.time = currentTime;
+				}
+
+				currentTime = fx.localTime;
+				lastTime = currentTime;
 			}
 		}
 
-		for(fx in allFx) {
-			@:privateAccess if (fx.parentFX != null)
-				continue;
-			fx.setTime(currentTime - fx.startDelay);
-		}
 
-		// Fix anim events :
-		// we force play the first or last frame of the nearset
-		// anim event for each prefab that has anim events in the FX
-		// if we are not in the middle of playing an animation
-		@:privateAccess
-		for (fx in allFx) {
-			var time = fx.localTime;
-
-			if (fx.events == null)
-				continue;
-
-			var closest : Map<h3d.scene.Object, {instance: EventInstance, distance: Float, jumpTo: Float}> = [];
-
-			for (instance in fx.events) {
-				var event = Std.downcast(instance.evt, hrt.prefab.fx.AnimEvent);
-				if (event == null)
-					continue;
-
-				var previous = MapUtils.getOrPut(closest, event.findFirstLocal3d(), {instance: instance, distance: hxd.Math.POSITIVE_INFINITY, jumpTo: 0.0});
-				if (previous.distance == 0)
-					continue;
-
-				var firstFrame = event.time;
-				var toFirstFrame = firstFrame - time;
-				if (toFirstFrame >= 0 && toFirstFrame < previous.distance) {
-					previous.instance = instance;
-					previous.distance = toFirstFrame;
-					previous.jumpTo = 0.0001;
-				}
-
-				var anim = event.animation != null ? event.shared.loadAnimation(event.animation) : null;
-				var duration = event.duration > 0 ? event.duration : (anim?.getDuration() ?? 0.0);
-				var lastFrame = event.time + duration;
-				var toLastFrame = time - lastFrame;
-				if (toLastFrame >= 0 && toLastFrame < previous.distance) {
-					previous.instance = instance;
-					previous.distance = toLastFrame;
-					previous.jumpTo = duration-0.0001;
-				}
-
-				// We are currently playing this animation
-				if (toFirstFrame < 0 && toLastFrame < 0) {
-					previous.instance = null;
-					previous.distance = 0;
-					continue;
-				}
-			}
-
-			for (obj in closest) {
-				if (obj.instance == null) // can be null if we are in the middle of the animation
-					continue;
-				obj.instance.setTime(obj.jumpTo);
-			}
+		if(this.curveEditor != null) {
+			this.curveEditor.refreshTimeline(currentTime);
+			this.curveEditor.refreshOverlay(data.duration);
 		}
 
 		var cam = scene.s3d.camera;
@@ -1835,6 +1816,12 @@ class FXEditor extends hide.view.FileView {
 		return this.currentTime = value;
 	}
 
+	function get_currentTime():Float {
+		if (this.curveEditor != null)
+			return @:privateAccess this.curveEditor.currentTime;
+		return this.currentTime;
+	}
+
 	public function setRenderPropsEditionVisibility(visible : Bool) {
 		var renderPropsEditionEl = this.element?.find('.render-props-edition');
 		// can appen on close
@@ -1847,12 +1834,6 @@ class FXEditor extends hide.view.FileView {
 		}
 
 		renderPropsEditionEl.css({ display : 'block' });
-	}
-
-	function get_currentTime():Float {
-		if (this.curveEditor != null)
-			return @:privateAccess this.curveEditor.currentTime;
-		return this.currentTime;
 	}
 }
 

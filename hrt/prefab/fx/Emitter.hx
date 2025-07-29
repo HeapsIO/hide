@@ -787,14 +787,19 @@ class EmitterObject extends h3d.scene.Object {
 		super.onRemove();
 	}
 
-	public function reset() {
-		numInstances = 0;
+
+	public function softReset() {
+		totalBurstCount = 0;
 		enable = true;
+	}
+
+	public function reset() {
+		softReset();
 		random.init(randomSeed);
-		curTime = 0.0;
+		numInstances = 0;
+		curTime = -delay;
 		emitCount = 0;
 		emitTarget = 0;
-		totalBurstCount = 0;
 		listHead = null;
 
 		if(randomValues != null) {
@@ -1157,7 +1162,7 @@ class EmitterObject extends h3d.scene.Object {
 			invTransform.load(parentNonEmitter.getInvPos());
 		}
 
-		if( enable && emitScale > 0.) {
+		if( enable && emitScale > 0. && curTime >= 0) {
 			switch emitType {
 				case Infinity:
 					emitTarget += evaluator.getFloat(emitRate, curTime) * hxd.Math.clamp(emitScale) * dt;
@@ -1475,9 +1480,40 @@ class EmitterObject extends h3d.scene.Object {
 	public var tickTime : Float = 0;
 	#end
 
-	public function setTime(time: Float) {
-		time = time * speedFactor + warmUpTime;
-		time = Math.max(0, time - delay * speedFactor);
+
+	var lastParentTime = 0.0;
+	public function setTime(parentTime: Float, dt: Float, seek: Bool) {
+		var localTime = (parentTime-delay) * speedFactor;
+
+		if (seek && parentTime < lastParentTime) {
+			reset();
+			updateMeshBatch();  // Make sure mesh batch is reset even when no tick is called()
+			curTime = localTime;
+		}
+		else if (!seek) {
+			if (parentTime < lastParentTime) {
+				softReset();
+				curTime = localTime;
+			}
+		}
+		lastParentTime = parentTime;
+
+		var abs = this.getAbsPos();
+		baseEmitterShader.emitPosition.set(abs.tx, abs.ty, abs.tz);
+
+		if (!seek) {
+			#if editor
+			var start = haxe.Timer.stamp();
+			#end
+			tick(dt * speedFactor, true);
+			#if editor
+			var end = haxe.Timer.stamp();
+			tickTime = end - start;
+			#end
+			return;
+		}
+
+		var time = localTime + warmUpTime;
 
 		if(hxd.Math.abs(time - curTime) < 1e-6) {  // Time imprecisions can occur during accumulation
 			updateAlignment();
@@ -1486,15 +1522,6 @@ class EmitterObject extends h3d.scene.Object {
 			updateMeshBatch();
 			return;
 		}
-
-		if(time < curTime) {
-			reset();
-			updateMeshBatch();  // Make sure mesh batch is reset even when no tick is called()
-		}
-
-		var abs = this.getAbsPos();
-		baseEmitterShader.emitPosition.set(abs.tx, abs.ty, abs.tz);
-
 
 		var catchupTime = time - curTime;
 

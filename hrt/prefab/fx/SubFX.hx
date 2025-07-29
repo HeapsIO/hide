@@ -33,10 +33,6 @@ class SubFX extends Reference implements hrt.prefab.fx.Event.IEvent{
 	}
 
 	public function getDuration() {
-		#if !release
-		if (refInstance != null && instance == null)
-			throw "refInstance is init but instance is not";
-		#end
 		if (instance != null)
 			return instance.duration;
 		return 0.0;
@@ -62,6 +58,14 @@ class SubFX extends Reference implements hrt.prefab.fx.Event.IEvent{
 		return {
 			evt: this
 		};
+	}
+
+	override function updateInstance(?propName:String) {
+		super.updateInstance(propName);
+
+		if (propName == "loop") {
+			postMakeInstance();
+		}
 	}
 
 	#if editor

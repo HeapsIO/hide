@@ -45,6 +45,7 @@
 	"key.selectAll" : "Ctrl-A",
 	"key.selectInvert" : "Ctrl-I",
 	"key.playPause" : "Space",
+	"key.loopAnim" : "O",
 
 	// model view
 
