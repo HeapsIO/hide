@@ -117,21 +117,22 @@ class ColorGrading extends RendererFX {
 		return c.instance;
 	}
 
-	override function transition( r1 : h3d.impl.RendererFX, r2 : h3d.impl.RendererFX, t : Float ) {
-		if (t <= 0) return r1;
-		if (t >= 1) return r2;
-
+	override function transition( r1 : h3d.impl.RendererFX, r2 : h3d.impl.RendererFX ) : h3d.impl.RendererFX.RFXTransition {
 		var c1 : ColorGrading = cast r1;
 		var c2 : ColorGrading = cast r2;
 		var c = new ColorGrading(null, null);
 		c.customLutsBlend = { from : @:privateAccess c1.customLut == null ? c1.getLutTexture() : c1.customLut, to: @:privateAccess c2.customLut == null ? c2.getLutTexture() : c2.customLut };
 		var blendTonemap = new ColorGradingTonemapBlend();
-		blendTonemap.blendFactor = t;
+		blendTonemap.blendFactor = 0.;
 		c.tonemap = blendTonemap;
-		c.size = hxd.Math.round(hxd.Math.lerp(c1.size, c2.size, t));
+		c.size = c1.size;
 		c.texturePath = c2.texturePath;
-		c.intensity = hxd.Math.lerp(c1.intensity, c2.intensity, t);
-		return c;
+		c.intensity = c1.intensity;
+		return { effect : cast c, setFactor : (f : Float) -> {
+			blendTonemap.blendFactor = f;
+			c.size = hxd.Math.round(hxd.Math.lerp(c1.size, c2.size, f));
+			c.intensity = hxd.Math.lerp(c1.intensity, c2.intensity, f);
+		} };
 	}
 
 	#if editor

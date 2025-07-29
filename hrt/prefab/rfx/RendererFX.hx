@@ -15,7 +15,7 @@ class RendererFX extends Prefab implements h3d.impl.RendererFX {
 	public function end( r : h3d.scene.Renderer, step : h3d.impl.RendererFX.Step ) {
 	}
 
-	public function transition( r1 : h3d.impl.RendererFX, r2 : h3d.impl.RendererFX, t : Float ) : h3d.impl.RendererFX {
+	public function transition( r1 : h3d.impl.RendererFX, r2 : h3d.impl.RendererFX ) : h3d.impl.RendererFX.RFXTransition {
 		var rfx1 = Std.downcast(r1, RendererFX);
 		if (rfx1.instance == null)
 			rfx1.make();
@@ -24,7 +24,7 @@ class RendererFX extends Prefab implements h3d.impl.RendererFX {
 		if (rfx2.instance == null)
 			rfx2.make();
 
-		return rfx2.instance;
+		return { effect : rfx2, setFactor : (f : Float) -> {} };
 	}
 
 	public function modulate( t : Float ) : h3d.impl.RendererFX {
