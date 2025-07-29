@@ -653,6 +653,12 @@ class Ide extends hide.tools.IdeData {
 		return dataTransfer.get(key);
 	}
 
+	public function popData(key: String) {
+		var d = dataTransfer.get(key);
+		dataTransfer.remove(key);
+		return d;
+	}
+
 
 	public function registerUpdate( updateFun ) {
 		updates.push(updateFun);

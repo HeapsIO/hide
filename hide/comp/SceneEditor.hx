@@ -1099,7 +1099,7 @@ class SceneEditor {
 		};
 
 		sceneEl.get(0).ondrop = (e: js.html.DragEvent) -> {
-			var fileEntries : Array<hide.tools.FileManager.FileEntry> = cast ide.getData("drag/filetree");
+			var fileEntries : Array<hide.tools.FileManager.FileEntry> = cast ide.popData("drag/filetree");
 			if (fileEntries == null)
 				return;
 
@@ -2096,7 +2096,7 @@ class SceneEditor {
 				var parent = operation.match(hide.comp.FancyTree.DropOperation.Inside) ? target : target?.parent;
 				var tChildren = target.parent == null ? target.children : target.parent.children;
 
-				var prefabs : Array<hrt.prefab.Prefab> = cast ide.getData("drag/scenetree");
+				var prefabs : Array<hrt.prefab.Prefab> =  cast ide.popData("drag/scenetree");
 				if (prefabs != null) {
 					// Avoid moving target onto itelf
 					prefabs.remove(target);
@@ -2109,7 +2109,7 @@ class SceneEditor {
 					return true;
 				}
 
-				var files : Array<hide.tools.FileManager.FileEntry> = cast ide.getData("drag/filetree");
+				var files : Array<hide.tools.FileManager.FileEntry> =  cast ide.popData("drag/filetree");
 				if (files != null) {
 					var createdPrefab : Array<{ p : hrt.prefab.Prefab, idx: Int }> = [];
 					for (f in files) {

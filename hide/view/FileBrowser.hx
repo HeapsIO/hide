@@ -466,7 +466,7 @@ class FileBrowser extends hide.ui.View<FileBrowserState> {
 				if (target.kind != Dir)
 					target = target.parent;
 
-				var fileEntries : Array<FileEntry> = cast ide.getData("drag/filetree");
+				var fileEntries : Array<FileEntry> = cast ide.popData("drag/filetree");
 				var files = [ for (f in fileEntries) f.path ];
 				if (files.length == 0)
 					return false;
