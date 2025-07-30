@@ -452,7 +452,7 @@ class FileBrowser extends hide.ui.View<FileBrowserState> {
 			},
 			getItemDropFlags: function(target: FileEntry, e: js.html.DragEvent) : hide.comp.FancyTree.DropFlags {
 				var fileEntries : Array<FileEntry> = cast ide.getData("drag/filetree");
-				var containsFiles = fileEntries.length > 0;
+				var containsFiles = fileEntries != null && fileEntries.length > 0;
 
 				if (!containsFiles)
 					return hide.comp.FancyTree.DropFlags.ofInt(0);
