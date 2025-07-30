@@ -2127,6 +2127,8 @@ class SceneEditor {
 						}
 
 						var p = createDroppedElement(f.relPath, parent, e.shiftKey);
+						if (p == null)
+							continue;
 						parent.children.remove(p);
 						parent.children.insert(idx, p);
 						queueRebuild(p);
