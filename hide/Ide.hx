@@ -1674,9 +1674,8 @@ class Ide extends hide.tools.IdeData {
 
 			chooseFileSave("capture.png", (path) -> {
 				var textureRes = ideConfig.screenCaptureResolution;
-				scene.s3d.camera.screenRatio = 1;
 
-				var renderTexture = new h3d.mat.Texture(textureRes, textureRes, [Target]);
+				var renderTexture = new h3d.mat.Texture(Std.int(textureRes * scene.s3d.camera.screenRatio), textureRes, [Target]);
 				scene.engine.pushTarget(renderTexture);
 				scene.s3d.render(scene.engine);
 				scene.engine.popTarget();
