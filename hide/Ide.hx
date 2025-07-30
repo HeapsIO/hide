@@ -1649,6 +1649,44 @@ class Ide extends hide.tools.IdeData {
 			config.global.save();
 		});
 
+		menu.find(".screen-capture").click(function(_) {
+			var currentView : hide.ui.View<Dynamic> = null;
+			for (v in views) {
+				if (v.isActive())
+					currentView = v;
+			}
+
+			var scene : hide.comp.Scene = null;
+			var modelView = Std.downcast(currentView, hide.view.Model);
+			if (modelView != null)
+				scene = @:privateAccess modelView.scene;
+			var prefabView = Std.downcast(currentView, hide.view.Prefab);
+			if (prefabView != null)
+				scene = @:privateAccess prefabView.scene;
+			var fxView = Std.downcast(currentView, hide.view.FXEditor);
+			if (fxView != null)
+				scene = @:privateAccess fxView.scene;
+
+			if (scene == null) {
+				quickError("Active view isn't capturable");
+				return;
+			}
+
+			chooseFileSave("capture.png", (path) -> {
+				var textureRes = ideConfig.screenCaptureResolution;
+				scene.s3d.camera.screenRatio = 1;
+
+				var renderTexture = new h3d.mat.Texture(textureRes, textureRes, [Target]);
+				scene.engine.pushTarget(renderTexture);
+				scene.s3d.render(scene.engine);
+				scene.engine.popTarget();
+
+				var pixels = renderTexture.capturePixels();
+				var absPath = getPath(path);
+				sys.io.File.saveBytes(absPath, pixels.toPNG(0));
+			});
+		});
+
 		// analysis
 		var analysis = menu.find(".analysis");
 		analysis.find(".memprof").click(function(_) {

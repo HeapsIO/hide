@@ -26,6 +26,7 @@ class IdeData {
 		"svnShowVersionedFiles" => true,
 		"svnShowModifiedFiles" => true,
 		"unfocusCPUSavingMode" => true,
+		"screenCaptureResolution" => 4096,
 	];
 
 	public var currentConfig(get,never) : Config;
