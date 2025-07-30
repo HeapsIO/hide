@@ -687,8 +687,16 @@ class Table extends Component {
 		if( !canInsert() )
 			return;
 
-		editor.beginChanges();
+		var start = lines[0].index + 1;
+		var end = start + delta;
+		if (delta < 0) {
+			var tmp = start;
+			start = end - 1;
+			end = tmp - 1;
+		}
+		var toUpdate : Array<Line> = [for (lIdx in start...end) this.lines[lIdx]];
 
+		editor.beginChanges();
 		lines.sort((a, b) -> { return (a.index - b.index) * delta * -1; });
 
 		var range = { min: 100000, max: 0 };
@@ -708,9 +716,25 @@ class Table extends Component {
 
 		editor.endChanges();
 
+		// Update parent subtable line index to prevent weird behaviors while trying to reopen previous subtable
+		// after editor refresh
+		for (t in editor.tables) {
+			var st = Std.downcast(t, SubTable);
+			if (st == null)
+				continue;
+
+			if (toUpdate.contains(st.cell.line)) {
+				var offset = lines.length;
+				if (delta > 0)
+					offset *= -1;
+				st.sheet.parent.line += offset;
+			}
+		}
+
 		// Set cursor and selection on moved lines
 		editor.cursor.set(this, editor.cursor.x, range.min, [{ x1: -1, y1: range.min, x2: -1, y2: range.max }]);
-
+		var state = editor.getState();
+		trace(state);
 		editor.refresh();
 	}
 
