@@ -2040,14 +2040,14 @@ class SceneEditor {
 
 			buttons.push({
 				getIcon: (p: hrt.prefab.Prefab) ->  {
-					return !isHidden(obj3d) ? '<div class="ico ico-eye"></div>' : '<div class="ico ico-eye-slash"></div>';
+					return !isHidden(p) ? '<div class="ico ico-eye"></div>' : '<div class="ico ico-eye-slash"></div>';
 				},
 				click: (p: hrt.prefab.Prefab) -> {
 					var selection = tree.getSelectedItems();
 					selection.push(p);
-					setVisible(selection, isHidden(obj3d));
+					setVisible(selection, isHidden(p));
 				},
-				forceVisiblity: (p: hrt.prefab.Prefab) -> isHidden(obj3d),
+				forceVisiblity: (p: hrt.prefab.Prefab) -> isHidden(p),
 			});
 
 			return buttons;
@@ -2434,14 +2434,15 @@ class SceneEditor {
 		set(p, "isOverriden", isOverriden);
 		set(p, "isOverridenNew", isOverridenNew);
 
-		var obj3d  = p.to(Object3D);
-		if (obj3d == null)
-			return;
-
 		set(p, "hidden", is(p, (p) -> {
 			var obj = p.getLocal3d();
-			var objVisible = obj == null || obj.visible;
-			return isHidden(Std.downcast(p, Object3D)) || !objVisible;
+			var obj2d = p.getLocal2d();
+			var objVisible = true;
+			if (obj != null)
+				objVisible = obj.visible;
+			if (obj2d != null)
+				objVisible = obj2d.visible;
+			return isHidden(p) || !objVisible;
 		}));
 	}
 
@@ -3454,6 +3455,15 @@ class SceneEditor {
 				local.visible = visible;
 			}
 		}
+
+		var obj2d = p.to(Object2D);
+		if (obj2d != null) {
+			var visible = obj2d.visible && !isHidden(obj2d);
+			var local = obj2d.getLocal2d();
+			if (local != null) {
+				local.visible = visible;
+			}
+		}
 	}
 
 	public function getInteractives(elt : PrefabElement) {
@@ -4400,10 +4410,8 @@ class SceneEditor {
 	public function isVisible(elt: PrefabElement) {
 		if(elt == sceneData)
 			return true;
-		var o = elt.to(Object3D);
-		if(o == null)
-			return true;
-		return o.visible && !isHidden(o) && (elt.parent != null ? isVisible(elt.parent) : true);
+		var visible = elt.to(Object3D)?.visible || elt.to(Object2D)?.visible;
+		return visible && !isHidden(elt) && (elt.parent != null ? isVisible(elt.parent) : true);
 	}
 
 	public function getAllSelectable3D() : Array<PrefabElement> {
