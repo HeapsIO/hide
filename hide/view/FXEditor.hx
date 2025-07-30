@@ -38,7 +38,6 @@ class FXEditContext extends hide.prefab.EditContext {
 @:access(hide.view.FXEditor)
 private class FXSceneEditor extends hide.comp.SceneEditor {
 	var parent : hide.view.FXEditor;
-	public var grid2d : h2d.Graphics;
 	public var is2D : Bool = false;
 
 
@@ -115,28 +114,6 @@ private class FXSceneEditor extends hide.comp.SceneEditor {
 		super.updateGrid();
 
 		var showGrid = getOrInitConfig("sceneeditor.gridToggle", false);
-
-		if(grid2d != null) {
-			grid2d.remove();
-			grid2d = null;
-		}
-
-		if(!showGrid)
-			return;
-
-		if (is2D) {
-			grid2d = new h2d.Graphics(scene.s2d);
-			grid2d.scale(1);
-
-			grid2d.lineStyle(1.0, 12632256, 1.0);
-			grid2d.moveTo(0, -2000);
-			grid2d.lineTo(0, 2000);
-			grid2d.moveTo(-2000, 0);
-			grid2d.lineTo(2000, 0);
-			grid2d.lineStyle(0);
-
-			return;
-		}
 	}
 
 	override function setElementSelected( p : PrefabElement, b : Bool ) {
@@ -1671,23 +1648,19 @@ class FXEditor extends hide.view.FileView {
 			anim.setTime(currentTime);
 		}
 
-		if(statusText != null) {
-			var lines : Array<String> = [
-				'Time: ${Math.round(currentTime*1000)} ms',
-				'Scene objects: ${scene.s2d.getObjectsCount()}',
-				'Drawcalls: ${h3d.Engine.getCurrent().drawCalls}',
-			];
-			statusText.text = lines.join("\n");
-		}
+		// if(statusText != null) {
+		// 	var lines : Array<String> = [
+		// 		'Time: ${Math.round(currentTime*1000)} ms',
+		// 		'Scene objects: ${scene.s2d.getObjectsCount()}',
+		// 		'Drawcalls: ${h3d.Engine.getCurrent().drawCalls}',
+		// 	];
+		// 	statusText.text = lines.join("\n");
+		// }
 
 		if( autoSync && (currentVersion != undo.currentID || lastSyncChange != properties.lastChange) ) {
 			save();
 			lastSyncChange = properties.lastChange;
 			currentVersion = undo.currentID;
-		}
-
-		if (sceneEditor.grid2d != null) {
-			@:privateAccess sceneEditor.grid2d.setPosition(scene.s2d.children[0].x, scene.s2d.children[0].y);
 		}
 
 	}

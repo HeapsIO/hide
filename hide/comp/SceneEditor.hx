@@ -1021,8 +1021,8 @@ class SceneEditor {
 	public var selectedPrefabs : Array<PrefabElement> = [];
 
 	public var guide2d : h2d.Object = null;
-	public var editorRoot2d : h2d.Object = null; // root where we put gizmos and stuff
-	public var root2d : h2d.Object = null; // root where the prefab will be made
+	public var grid2d : h2d.Graphics = null;
+	public var root2d : h2d.Object = null;
 	public var root3d : h3d.scene.Object = null;
 
 	public var showOverlays : Bool = true;
@@ -1295,7 +1295,7 @@ class SceneEditor {
 		}
 
 		showGrid = getOrInitConfig("sceneeditor.gridToggle", false);
-		if(!showGrid || !showOverlays)
+		if(!showGrid || !showOverlays || camera2D)
 			return;
 
 		grid = new h3d.scene.Graphics(scene.s3d);
@@ -1508,7 +1508,7 @@ class SceneEditor {
 	}
 
 	function makeCamController2D() {
-		return new hide.view.l3d.CameraController2D(editorRoot2d);
+		return new hide.view.l3d.CameraController2D(root2d);
 	}
 
 	function focusSelection() {
@@ -1896,6 +1896,8 @@ class SceneEditor {
 		this.camera2D = camera2D;
 
 		updateViewportOverlays();
+
+		makeGuide2d();
 
 
 		for (callback in readyDelayed) {
@@ -2662,7 +2664,6 @@ class SceneEditor {
 
 		if (root2d != null) root2d.remove();
 		if (root3d != null) root3d.remove();
-		if (editorRoot2d != null) editorRoot2d.remove();
 
 		if (sceneData == null)
 			return;
@@ -2674,20 +2675,15 @@ class SceneEditor {
 		root3d = new h3d.scene.Object();
 		root3d.name = "root3d";
 
-		editorRoot2d = new h2d.Object();
-		editorRoot2d.name = "editorRoot2d";
-
-		root2d = new h2d.Object(editorRoot2d);
+		root2d = new h2d.Object();
 		root2d.name = "root2d";
 
 		scene.s3d.addChild(root3d);
-		scene.s2d.addChild(editorRoot2d);
+		scene.s2d.addChild(root2d);
 
 		scene.s2d.defaultSmooth = true;
-		editorRoot2d.x = scene.s2d.width >> 1;
-		editorRoot2d.y = scene.s2d.height >> 1;
-
-		makeGuide2d();
+		root2d.x = scene.s2d.width >> 1;
+		root2d.y = scene.s2d.height >> 1;
 
 		cameraController2D = makeCamController2D();
 		cameraController2D.onClick = cameraController.onClick;
@@ -2695,16 +2691,16 @@ class SceneEditor {
 		if (camera2D) {
 			var cam2d = @:privateAccess view.getDisplayState("Camera2D");
 			if( cam2d != null ) {
-				editorRoot2d.x = scene.s2d.width*0.5 + cam2d.x;
-				editorRoot2d.y = scene.s2d.height*0.5 + cam2d.y;
-				editorRoot2d.setScale(cam2d.z);
+				root2d.x = scene.s2d.width*0.5 + cam2d.x;
+				root2d.y = scene.s2d.height*0.5 + cam2d.y;
+				root2d.setScale(cam2d.z);
 			}
 			cameraController2D.loadFromScene();
 		}
 
 		set_camera2D(camera2D);
 
-		editorRoot2d.addChild(cameraController2D);
+		root2d.addChild(cameraController2D);
 		scene.setCurrent();
 		scene.onResize();
 
@@ -2743,29 +2739,65 @@ class SceneEditor {
 	}
 
 	function makeGuide2d() {
-		guide2d = new h2d.Object(editorRoot2d);
+		guide2d = new h2d.Object();
+		scene.s2d.add(guide2d, 1);
+		grid2d = new h2d.Graphics(guide2d);
+		//guide2d.visible = false;
+	}
 
-		var grid = new h2d.Graphics(guide2d);
-		grid.lineStyle(1, 0x00FF77, 0.5);
-		grid.drawRect(-1920/2 - 1, -1080/2 - 1, 1920+2, 1080 + 2);
+	function updateGuide2d() {
+		//var any2DSelected = selectedPrefabs.find((p) -> Std.downcast(p, Object2D) != null) != null;
+		guide2d.visible = camera2D && getOrInitConfig("sceneeditor.gridToggle", false) && showOverlays;
 
-		grid.lineStyle(1, 0x00FF77, 0.25);
-		grid.moveTo(-100000, 0);
-		grid.lineTo(100000, 0);
+		if (!guide2d.visible)
+			return;
 
-		grid.moveTo(0, -100000);
-		grid.lineTo(0, 100000);
+		guide2d.x = root2d.x;
+		guide2d.y = root2d.y;
+		var z = root2d.scaleX;
 
-		grid.smooth = true;
+		grid2d.clear();
+		grid2d.removeChildren();
 
-		var label = new h2d.Text(hxd.res.DefaultFont.get(), guide2d);
+		var col = h3d.Vector.fromColor(scene?.engine?.backgroundColor ?? 0);
+		var hsl = col.toColorHSL();
+
+		  var mov = 0.1;
+
+		  if (snapToggle) {
+				mov = 0.2;
+				hsl.y += (1.0-hsl.y) * 0.2;
+		  }
+		if(hsl.z > 0.5) hsl.z -= mov;
+		else hsl.z += mov;
+
+		col.makeColor(hsl.x, hsl.y, hsl.z);
+
+		final guideColor = col.toColor();
+
+		grid2d.lineStyle(1, guideColor, 0.5);
+		grid2d.drawRect((-1920/2) * z - 1, -(1080/2) * z - 1, (1920)*z+2, 1080*z + 2);
+
+		grid2d.lineStyle(1, guideColor, 0.25);
+		grid2d.moveTo(-100000*z, 0);
+		grid2d.lineTo(100000*z, 0);
+
+		grid2d.moveTo(0, -100000*z);
+		grid2d.lineTo(0, 100000*z);
+
+		var label = new h2d.Text(hxd.res.DefaultFont.get(), grid2d);
 		label.text = "1080p";
 		label.textAlign = Right;
-		label.x = 1920/2;
-		label.y = 1080/2 + 16;
-		label.smooth = true;
-
-		//guide2d.visible = false;
+		label.x = (1920/2)*z;
+		label.y = (1080/2)*z;
+		label.smooth = false;
+		label.color.setColor(guideColor | 0xFF000000);
+		label.dropShadow = {
+			dx: 1,
+			dy: 1,
+			color: 0,
+			alpha: 0.5
+		};
 	}
 
 	function refreshGuide2d() {
@@ -5178,7 +5210,7 @@ class SceneEditor {
 		saveCam3D();
 
 		if (camera2D) {
-			var save = { x : editorRoot2d.x - scene.s2d.width*0.5, y : editorRoot2d.y - scene.s2d.height*0.5, z : editorRoot2d.scaleX };
+			var save = { x : root2d.x - scene.s2d.width*0.5, y : root2d.y - scene.s2d.height*0.5, z : root2d.scaleX };
 			@:privateAccess view.saveDisplayState("Camera2D", save);
 		}
 		if(gizmo != null) {
@@ -5195,6 +5227,8 @@ class SceneEditor {
 			customEditor.update(dt);
 
 		ruler?.update(dt);
+
+		updateGuide2d();
 
 		onUpdate(dt);
 	}
