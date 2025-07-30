@@ -355,7 +355,9 @@ class FXAnimation extends h3d.scene.Object {
 
 		if (playState == Loop) {
 			localTime = oldLocalTime + dt;
-			localTime = ((localTime - loopStart) % (loopEnd - loopStart)) + loopStart;
+			if (loopEnd - loopStart > 0) {
+				localTime = ((localTime - loopStart) % (loopEnd - loopStart)) + loopStart;
+			}
 		}
 
 		if (playState == End) {
