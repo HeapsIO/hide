@@ -1020,7 +1020,9 @@ class SceneEditor {
 	var hideList : Map<PrefabElement, Bool> = new Map();
 	public var selectedPrefabs : Array<PrefabElement> = [];
 
-	public var root2d : h2d.Object = null;
+	public var guide2d : h2d.Object = null;
+	public var editorRoot2d : h2d.Object = null; // root where we put gizmos and stuff
+	public var root2d : h2d.Object = null; // root where the prefab will be made
 	public var root3d : h3d.scene.Object = null;
 
 	public var showOverlays : Bool = true;
@@ -1506,7 +1508,7 @@ class SceneEditor {
 	}
 
 	function makeCamController2D() {
-		return new hide.view.l3d.CameraController2D(root2d);
+		return new hide.view.l3d.CameraController2D(editorRoot2d);
 	}
 
 	function focusSelection() {
@@ -2660,6 +2662,7 @@ class SceneEditor {
 
 		if (root2d != null) root2d.remove();
 		if (root3d != null) root3d.remove();
+		if (editorRoot2d != null) editorRoot2d.remove();
 
 		if (sceneData == null)
 			return;
@@ -2671,15 +2674,20 @@ class SceneEditor {
 		root3d = new h3d.scene.Object();
 		root3d.name = "root3d";
 
-		root2d = new h2d.Object();
+		editorRoot2d = new h2d.Object();
+		editorRoot2d.name = "editorRoot2d";
+
+		root2d = new h2d.Object(editorRoot2d);
 		root2d.name = "root2d";
 
 		scene.s3d.addChild(root3d);
-		scene.s2d.addChild(root2d);
+		scene.s2d.addChild(editorRoot2d);
 
 		scene.s2d.defaultSmooth = true;
-		root2d.x = scene.s2d.width >> 1;
-		root2d.y = scene.s2d.height >> 1;
+		editorRoot2d.x = scene.s2d.width >> 1;
+		editorRoot2d.y = scene.s2d.height >> 1;
+
+		makeGuide2d();
 
 		cameraController2D = makeCamController2D();
 		cameraController2D.onClick = cameraController.onClick;
@@ -2687,17 +2695,16 @@ class SceneEditor {
 		if (camera2D) {
 			var cam2d = @:privateAccess view.getDisplayState("Camera2D");
 			if( cam2d != null ) {
-				root2d.x = scene.s2d.width*0.5 + cam2d.x;
-				root2d.y = scene.s2d.height*0.5 + cam2d.y;
-				root2d.setScale(cam2d.z);
+				editorRoot2d.x = scene.s2d.width*0.5 + cam2d.x;
+				editorRoot2d.y = scene.s2d.height*0.5 + cam2d.y;
+				editorRoot2d.setScale(cam2d.z);
 			}
 			cameraController2D.loadFromScene();
-			resetCamera();
 		}
 
 		set_camera2D(camera2D);
 
-		root2d.addChild(cameraController2D);
+		editorRoot2d.addChild(cameraController2D);
 		scene.setCurrent();
 		scene.onResize();
 
@@ -2733,6 +2740,37 @@ class SceneEditor {
 		setRenderProps();
 
 		onRefresh();
+	}
+
+	function makeGuide2d() {
+		guide2d = new h2d.Object(editorRoot2d);
+
+		var grid = new h2d.Graphics(guide2d);
+		grid.lineStyle(1, 0x00FF77, 0.5);
+		grid.drawRect(-1920/2 - 1, -1080/2 - 1, 1920+2, 1080 + 2);
+
+		grid.lineStyle(1, 0x00FF77, 0.25);
+		grid.moveTo(-100000, 0);
+		grid.lineTo(100000, 0);
+
+		grid.moveTo(0, -100000);
+		grid.lineTo(0, 100000);
+
+		grid.smooth = true;
+
+		var label = new h2d.Text(hxd.res.DefaultFont.get(), guide2d);
+		label.text = "1080p";
+		label.textAlign = Right;
+		label.x = 1920/2;
+		label.y = 1080/2 + 16;
+		label.smooth = true;
+
+		//guide2d.visible = false;
+	}
+
+	function refreshGuide2d() {
+		var any2DSelected = selectedPrefabs.find((p) -> Std.downcast(p, Object2D) != null) != null;
+		//guide2d.visible = any2DSelected;
 	}
 
 	function getAllWithRefs<T:PrefabElement>( p : PrefabElement, cl : Class<T>, ?arr : Array<T>, forceLoad: Bool = false ) : Array<T> {
@@ -3897,6 +3935,8 @@ class SceneEditor {
 				}
 			curEdit = edit;
 			setupGizmo();
+
+			refreshGuide2d();
 
 			onSelectionChanged(elts, mode);
 
@@ -5138,7 +5178,8 @@ class SceneEditor {
 		saveCam3D();
 
 		if (camera2D) {
-			@:privateAccess view.saveDisplayState("Camera2D", { x : sceneData.shared.root2d.x - scene.s2d.width*0.5, y : sceneData.shared.root2d.y - scene.s2d.height*0.5, z : sceneData.shared.root2d.scaleX });
+			var save = { x : editorRoot2d.x - scene.s2d.width*0.5, y : editorRoot2d.y - scene.s2d.height*0.5, z : editorRoot2d.scaleX };
+			@:privateAccess view.saveDisplayState("Camera2D", save);
 		}
 		if(gizmo != null) {
 			if(!gizmo.moving) {

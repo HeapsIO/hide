@@ -59,6 +59,23 @@ class CameraControllerBase extends h3d.scene.CameraController {
 		targetOffset.z -= pt.z;
 	}
 
+	override function onEvent( e : hxd.Event ) {
+		var p : h3d.scene.Object = this;
+		while( p != null ) {
+			if( !p.visible ) {
+				e.propagate = true;
+				return;
+			}
+			p = p.parent;
+		}
+
+		onEventInternal(e);
+	}
+
+	function onEventInternal(e: hxd.Event) {
+
+	}
+
 }
 
 class OrthoController extends CameraControllerBase {
@@ -81,7 +98,7 @@ class OrthoController extends CameraControllerBase {
 		data.orthoZoom = orthoZoom;
 	}
 
-	override function onEvent( e : hxd.Event ) {
+	override function onEventInternal( e : hxd.Event ) {
 		if(curPos == null) return;
 		switch( e.kind ) {
 		case EWheel:
@@ -233,7 +250,7 @@ class FPSController extends CameraControllerBase {
 		cam.up.set(0,0,1);
 	}
 
-	override function onEvent(e : hxd.Event) {
+	override function onEventInternal(e : hxd.Event) {
 		switch( e.kind ) {
 		case EWheel:
 			if (pushing == 2 || pushing == 1) {
@@ -373,7 +390,7 @@ class CamController extends CameraControllerBase {
 		data.distance = distance;
 	}
 
-	override function onEvent( e : hxd.Event ) {
+	override function onEventInternal( e : hxd.Event ) {
 		switch( e.kind ) {
 		case EWheel:
 			zoom(e.wheelDelta);
@@ -399,6 +416,7 @@ class CamController extends CameraControllerBase {
 			}
 			moveCount = 0;
 			@:privateAccess scene.events.startCapture(onEvent);
+			trace(this.visible);
 
 			@:privateAccess scene.window.mouseMode = AbsoluteUnbound(true);
 		case ERelease, EReleaseOutside:
@@ -612,7 +630,7 @@ class FlightController extends CameraControllerBase {
 		syncCamera();
 	}
 
-	override function onEvent( e : hxd.Event ) {
+	override function onEventInternal( e : hxd.Event ) {
 		switch( e.kind ) {
 		case EWheel:
 			if (pushing == 2 || pushing == 1) {
