@@ -122,6 +122,27 @@ class MeshSpray extends Spray {
 		super.copy(other);
 	}
 
+	function loadBinary() {
+		binaryMeshes = [];
+		var bytes = new haxe.io.BytesInput(shared.loadPrefabDat("content","dat",name).entry.getBytes());
+		try {
+			while( true ) {
+				binaryMeshes.push({
+					path : sources[bytes.readByte() - 1].path,
+					x : bytes.readFloat(),
+					y : bytes.readFloat(),
+					z : bytes.readFloat(),
+					scale : bytes.readFloat(),
+					rotX : bytes.readFloat(),
+					rotY : bytes.readFloat(),
+					rotZ : bytes.readFloat(),
+				});
+				if( bytes.readByte() != "\n".code ) throw "assert";
+			}
+		} catch( e : haxe.io.Eof ) {
+		}
+	}
+
 	#if !editor
 
 	var clearBinaryMeshes : Bool = true;
@@ -192,27 +213,6 @@ class MeshSpray extends Spray {
 			}
 		}
 		return mspray;
-	}
-
-	function loadBinary() {
-		binaryMeshes = [];
-		var bytes = new haxe.io.BytesInput(shared.loadPrefabDat("content","dat",name).entry.getBytes());
-		try {
-			while( true ) {
-				binaryMeshes.push({
-					path : sources[bytes.readByte() - 1].path,
-					x : bytes.readFloat(),
-					y : bytes.readFloat(),
-					z : bytes.readFloat(),
-					scale : bytes.readFloat(),
-					rotX : bytes.readFloat(),
-					rotY : bytes.readFloat(),
-					rotZ : bytes.readFloat(),
-				});
-				if( bytes.readByte() != "\n".code ) throw "assert";
-			}
-		} catch( e : haxe.io.Eof ) {
-		}
 	}
 
 	override function make(?sh:hrt.prefab.Prefab.ContextMake) : hrt.prefab.Prefab {
@@ -327,24 +327,7 @@ class MeshSpray extends Spray {
 
 	override function makeInstance() {
 		if( binaryStorage ) {
-			binaryMeshes = [];
-			var bytes = new haxe.io.BytesInput(shared.loadPrefabDat("content","dat",name).entry.getBytes());
-			try {
-				while( true ) {
-					binaryMeshes.push({
-						path : sources[bytes.readByte() - 1].path,
-						x : bytes.readFloat(),
-						y : bytes.readFloat(),
-						z : bytes.readFloat(),
-						scale : bytes.readFloat(),
-						rotX : bytes.readFloat(),
-						rotY : bytes.readFloat(),
-						rotZ : bytes.readFloat(),
-					});
-					if( bytes.readByte() != "\n".code ) throw "assert";
-				}
-			} catch( e : haxe.io.Eof ) {
-			}
+			loadBinary();
 		}
 		super.makeInstance();
 	}
@@ -400,7 +383,11 @@ class MeshSpray extends Spray {
 			var c = c.to(Model);
 			if (!meshes.exists(c.source)) continue;
 			binaryMeshes.push({ path : c.source, x : c.x, y : c.y, z : c.z, scale : c.scaleX, rotX : c.rotationX, rotY : c.rotationY, rotZ : c.rotationZ });
-			children.remove(c);
+			#if editor
+			c.editorRemoveInstanceObjects();
+			c.dispose();
+			#end
+			c.parent = null;
 			binaryChanged = true;
 		}
 		if( !binaryChanged )
@@ -434,6 +421,9 @@ class MeshSpray extends Spray {
 		}
 		shared.savePrefabDat("content","dat",name, bytes.getBytes());
 		binaryChanged = false;
+
+		loadBinary();
+		cast(local3d,MeshSprayObject).redraw();
 	}
 
 	function saveConfigMeshBatch() {
