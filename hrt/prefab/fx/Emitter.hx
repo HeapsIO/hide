@@ -264,7 +264,7 @@ class ParticleInstance {
 
 		switch( emitter.alignMode ) {
 			case Screen|Axis:
-				if ( emitter.followRotation || emitter.simulationSpace == World) {
+				if ( emitter.followRotation ) {
 					inline qRot.toQuat().toMatrix(absPos);
 					absPos.multiply(emitter.screenRot, absPos);
 				} else
