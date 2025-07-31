@@ -2937,6 +2937,36 @@ class SceneEditor {
 		interactives.set(elt,cast int);
 	}
 
+	function getAllPrefabsUnderMouse() : Array<{d: Float, prefab: PrefabElement}> {
+		var camera = scene.s3d.camera;
+		var ray = camera.rayFromScreen(scene.s2d.mouseX, scene.s2d.mouseY);
+
+		var selectables = getAllSelectable3D();
+		var hits : Array<{d: Float, prefab: PrefabElement}> = [];
+
+		for (selectable in selectables) {
+			var int = interactives.get(selectable);
+			if (int != null) {
+				var int3d = Std.downcast(int, h3d.scene.Interactive);
+				if (int3d != null) {
+					var distance = int3d.shape?.rayIntersection(ray, false);
+					if (distance < 0)
+						continue;
+
+					var distance = int3d.preciseShape?.rayIntersection(ray, true) ?? distance;
+
+					if (distance > 0) {
+							hits.push({d: distance, prefab: selectable});
+					}
+				}
+			}
+		}
+
+		hits.sort((a,b) -> Reflect.compare(a.d, b.d));
+
+		return hits;
+	}
+
 	function selectNewObject(e:hxd.Event) {
 		if( !objectAreSelectable )
 			return;
@@ -2950,6 +2980,15 @@ class SceneEditor {
 		if (origTrans == null) {
 			origTrans = new h3d.Matrix();
 			origTrans.identity();
+		}
+
+		var selectItems: Array<hide.comp.ContextMenu.MenuItem> = [];
+
+		for (hit in getAllPrefabsUnderMouse()) {
+			selectItems.push({
+				label: hit.prefab.name,
+				click: () -> selectElements([hit.prefab]),
+			});
 		}
 
 		var originPt = origTrans.getPosition();
@@ -2984,6 +3023,7 @@ class SceneEditor {
 			}
 		});
 		var menuItems : Array<hide.comp.ContextMenu.MenuItem> = [
+			{ label : "Select", menu: selectItems },
 			{ label : "New...", menu : newItems },
 			{ isSeparator : true, label : "" },
 			{
