@@ -2045,8 +2045,7 @@ class SceneEditor {
 				},
 				click: (p: hrt.prefab.Prefab) -> {
 					var selection = tree.getSelectedItems();
-					selection.push(p);
-					setVisible(selection, isHidden(p));
+					setVisible(selection.contains(p) ? selection : [p], isHidden(p));
 				},
 				forceVisiblity: (p: hrt.prefab.Prefab) -> isHidden(p),
 			});
