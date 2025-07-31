@@ -491,9 +491,9 @@ class FormulasView extends hide.view.Script {
 				addField(c.name,t);
 			}
 			if( s.props.hasGroup )
-				addField("index",TInt);
-			if( s.props.hasIndex )
 				addField("group",TInt);
+			if( s.props.hasIndex )
+				addField("index",TInt);
 			check.checker.types.defineClass(cdef.name, cdef);
 		}
 		return check;
