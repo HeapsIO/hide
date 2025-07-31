@@ -117,7 +117,9 @@ class CloudShadow extends RendererFX {
 				<dt>Angle</dt><dd><input type="range" min="-180" max="180" field="angle"/></dd>
 				<dt>Texture</dt><dd><input type="texturepath" field="texturePath"/></dd>
 			</div>
-		'),this);
+		'),this, function(pname) {
+			ctx.onChange(this,pname);
+		});
 		var dist = distort;
 		if( dist == null )
 			dist = {

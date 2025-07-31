@@ -127,7 +127,9 @@ class DistanceBlur extends RendererFX {
 				<div class="group" name="Debug">
 					<dt>Show Debug</dt><dd><input type="checkbox" field="showDebug"/></dd>
 				</div>
-		'),this);
+		'),this, function(pname) {
+			ctx.onChange(this,pname);
+		});
 		super.edit(ctx);
 	}
 	#end
