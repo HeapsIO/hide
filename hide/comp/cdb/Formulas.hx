@@ -125,16 +125,18 @@ class Formulas {
 	public function validateLine(sheet: cdb.Sheet, lineIndex: Int): ValidationResult {
 		var validationFunc = validationFuncs.get(sheet.name);
 		if( validationFunc == null ) return null;
-		
+
 		var o = sheet.getLines()[lineIndex];
 
 		currentMap = new Map();
 		var omapped = remap(o, sheet);
-		currentMap = null;
-		
+
 		try {
-			return validationFunc.call(omapped);
+			var ret = validationFunc.call(omapped);
+			currentMap = null;
+			return ret;
 		} catch( e : Dynamic ) {
+			currentMap = null;
 			return Error(Std.string(e));
 		}
 	}
