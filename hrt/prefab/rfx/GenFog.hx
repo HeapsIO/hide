@@ -209,7 +209,9 @@ class GenFog extends RendererFX {
 				</div>
 
 			</dl>
-		'),this);
+		'),this, function(pname) {
+			ctx.onChange(this,pname);
+		});
 		if( noise == null ) {
 			var e = ctx.properties.add(new hide.Element('
 			<div class="group" name="Noise">

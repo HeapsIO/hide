@@ -43,7 +43,9 @@ class Distortion extends RendererFX {
 					<dt>Amount</dt><dd><input type="range" min="0" max="1" field="amount"/></dd>
 				</dl>
 			</div>
-		'),this);
+		'),this, function(pname) {
+			ctx.onChange(this,pname);
+		});
 	}
 	#end
 
