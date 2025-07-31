@@ -62,8 +62,8 @@ class Separator extends Component {
 			}
 
 			var opts : Array<hide.comp.ContextMenu.MenuItem> = [
-				{ label : "Expand", click : function() expand() },
-				{ label : "Collapse", click : function() collapse() },
+				{ label : "Expand", click : function() expand(), enabled: data.title != null },
+				{ label : "Collapse", click : function() collapse(), enabled: data.title != null },
 				{
 					label : "Parent",
 					enabled : allowedParents.length > 1,
@@ -205,7 +205,7 @@ class Separator extends Component {
 	}
 
 	public function refresh(refreshChildren : Bool = true) {
-		expanded = table.editor.separatorsState.get(getSeparatorKey()) ?? true;
+		expanded = if (data.title == null) true else table.editor.separatorsState.get(getSeparatorKey()) ?? true;
 
 		var content = element.find("span");
 		var toggle = element.find("a");
@@ -272,6 +272,8 @@ class Separator extends Component {
 	}
 
 	function setState(expand : Bool) {
+		if (data.title == null)
+			return;
 		if (expand == this.expanded)
 			return;
 
