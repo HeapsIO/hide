@@ -143,7 +143,7 @@ class Formulas {
 
 	function remap( o : Dynamic, s : cdb.Sheet ) : Dynamic {
 		var id = s.idCol != null ? Reflect.field(o, s.idCol.name) : null;
-		var m = if( id != null ) currentMap.get(s.name+":"+id) else null;
+		var m : Dynamic = if( id != null ) currentMap.get(s.name+":"+id) else null;
 		if( m != null )
 			return m;
 		m = {};
@@ -174,6 +174,29 @@ class Formulas {
 			default:
 			}
 			Reflect.setField(m, c.name, v);
+		}
+		if( s.props.hasIndex )
+			m.index = s.lines.indexOf(o);
+		if( s.props.hasGroup ) {
+			var gid = -1;
+			var sindex = 0;
+			var sheet = s;
+			// skip separators if at head
+			while( true ) {
+				var s = sheet.separators[sindex];
+				if( s == null || s.index != 0 ) break;
+				sindex++;
+				if( s.title != null ) gid++;
+			}
+			if( gid < 0 ) gid++; // None insert
+			var index = s.lines.indexOf(o);
+			for( i in sindex...sheet.separators.length ) {
+				var s = sheet.separators[i];
+				if( s.index > index )
+					break;
+				if( s.title != null ) gid++;
+			}
+			m.group = gid;
 		}
 		return m;
 	}
@@ -440,6 +463,9 @@ class FormulasView extends hide.view.Script {
 		var tenum = TInst(check.checker.types.defineClass("EnumValue"),[]);
 		for( s in ide.database.sheets ) {
 			var cdef = cdefs.get(s.name);
+			inline function addField(name,t) {
+				cdef.fields.set(name, { t : t, name : name, isPublic : true, complete : true, canWrite : false, params : [] });
+			}
 			for( c in s.columns ) {
 				var t = switch( c.type ) {
 				case TId: skind.get(s.name);
@@ -462,8 +488,12 @@ class FormulasView extends hide.view.Script {
 					tstring;
 				}
 				if( t == null ) continue;
-				cdef.fields.set(c.name, { t : t, name : c.name, isPublic : true, complete : true, canWrite : false, params : [] });
+				addField(c.name,t);
 			}
+			if( s.props.hasGroup )
+				addField("index",TInt);
+			if( s.props.hasIndex )
+				addField("group",TInt);
 			check.checker.types.defineClass(cdef.name, cdef);
 		}
 		return check;
