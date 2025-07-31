@@ -16,7 +16,6 @@ class Separator extends Component {
 	public function new(root : Element, table: Table, data : cdb.Data.Separator) {
 		this.table = table;
 		this.data = data;
-		this.saveDisplayKey = SEPARATOR_KEY;
 
 		var e = new Element('<tr class="separator">
 			<td colspan="${table.columns.length + 1}">
@@ -34,7 +33,7 @@ class Separator extends Component {
 
 		refresh();
 
-		element.contextmenu(function(e) {
+		element.get(0).oncontextmenu = function(e : js.html.MouseEvent) {
 			var allowedParents : Array<Separator> = [];
 
 			var allowedParent = this.parent;
@@ -76,14 +75,28 @@ class Separator extends Component {
 							click : function() {
 								table.editor.beginChanges();
 
+								var sepExpand : Array<Bool> = [];
+								for (i => _ in table.sheet.separators) {
+									var key = getSeparatorKeyStatic(table.sheet, i);
+									sepExpand.push(table.editor.separatorsState.get(key) ?? true);
+									table.editor.separatorsState.remove(key);
+								}
+
 								function rec(s : Separator, newLevel : Int) {
 									s.data.level = newLevel;
+
 									for (sub in s.subs)
 										rec(sub, newLevel + 1);
 								}
 
-								var newLevel : Int = p == null ? -1 : p.data.level == null ? 1 : p.data.level + 1;
+								var newLevel : Int = p == null ? 0 : p.data.level == null ? 1 : p.data.level + 1;
 								rec(this, newLevel);
+
+								for (i => _ in table.sheet.separators) {
+									var key = getSeparatorKeyStatic(table.sheet, i);
+									table.editor.separatorsState.set(key, sepExpand[i]);
+								}
+
 								table.editor.endChanges();
 								table.refresh();
 							},
@@ -146,7 +159,7 @@ class Separator extends Component {
 				});
 			#end
 			hide.comp.ContextMenu.createFromPoint(ide.mouseX, ide.mouseY, opts);
-		});
+		};
 
 		element.dblclick(function(e) {
 			if( !table.canInsert() ) return;
@@ -192,8 +205,7 @@ class Separator extends Component {
 	}
 
 	public function refresh(refreshChildren : Bool = true) {
-		expanded = getDisplayState(getSeparatorKey());
-		if (expanded == null) expanded = true;
+		expanded = table.editor.separatorsState.get(getSeparatorKey()) ?? true;
 
 		var content = element.find("span");
 		var toggle = element.find("a");
@@ -210,6 +222,7 @@ class Separator extends Component {
 		}
 
 		content.text(data.title == null ? "" : data.title+(expanded ? "" : " ("+getLineCountRec(this)+")"));
+		content.attr("title", getSeparatorKey());
 		element.toggleClass("sep-hidden", !visible);
 
 		var lines = getLines();
@@ -263,7 +276,8 @@ class Separator extends Component {
 			return;
 
 		expanded = expand;
-		saveDisplayState(getSeparatorKey(), expanded);
+		table.editor.separatorsState.set(getSeparatorKey(), expanded);
+		table.editor.saveSeparatorState();
 		refresh();
 	}
 
@@ -305,14 +319,26 @@ class Separator extends Component {
 	}
 
 	function getSeparatorKey() : String {
-		var key = this.data.title;
+		return getSeparatorKeyStatic(this.table.sheet, this.table.sheet.separators.indexOf(this.data));
+	}
 
-		var parent = this.parent;
-		while(parent != null) {
-			key = '${parent.getSeparatorKey()}/$key';
-			parent = parent.parent;
-		}
+	static function getSeparatorKeyStatic(table: cdb.Sheet, separatorIndex: Int) : String {
+		if (separatorIndex < 0 || separatorIndex >= table.separators.length)
+			throw "Separator not in sheet";
 
-		return key;
+		var key = table.separators[separatorIndex].title;
+		var level = table.separators[separatorIndex].level ?? 0;
+		if (level <= 0)
+			return key;
+
+		var parentIndex = separatorIndex - 1;
+		while(parentIndex >= 0 && (table.separators[parentIndex].level ?? 0) >= level)
+			parentIndex-=1;
+
+		// We don't actually have a parent
+		if (separatorIndex < 0)
+			return key;
+
+		return getSeparatorKeyStatic(table, parentIndex) + "/" + key;
 	}
 }

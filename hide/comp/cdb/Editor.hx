@@ -24,6 +24,7 @@ typedef UndoSheet = {
 typedef UndoState = {
 	var data : Any;
 	var sheet : String;
+	var separatorsState: Map<String, Bool>;
 	var cursor : Cursor.CursorState;
 	var tables : Array<UndoSheet>;
 }
@@ -63,6 +64,7 @@ class Editor extends Component {
 	var undoState : Array<UndoState> = [];
 	var currentValue : Any;
 	var cdbTable : hide.view.CdbTable;
+	var separatorsState : Map<String, Bool> = [];
 
 	var searchBox : Element;
 	var searchHidden : Bool = true; // Search through hidden categories
@@ -98,6 +100,8 @@ class Editor extends Component {
 		if( parent != null )
 			parent.append(element);
 		currentSheet = sheet;
+		saveDisplayKey = "cdb_" + sheet.getPath();
+		separatorsState = getDisplayState("separatorsState") ?? new Map();
 		element.attr("tabindex", 0);
 		element.addClass("is-cdb-editor");
 		element.data("cdb", this);
@@ -953,6 +957,7 @@ class Editor extends Component {
 		return {
 			data : currentValue,
 			sheet : getCurrentSheet(),
+			separatorsState: separatorsState.copy(),
 			cursor : cursor.getState(),
 			tables : [for( i in 1...tables.length ) {
 				function makeParent(t:Table) : UndoSheet {
@@ -1019,6 +1024,7 @@ class Editor extends Component {
 			return;
 		var state = undoState[0];
 		var newSheet = getCurrentSheet();
+		var newSaparatorsState = separatorsState;
 		currentValue = newValue;
 		save();
 		undo.change(Custom(function(undo) {
@@ -1027,10 +1033,12 @@ class Editor extends Component {
 				undoState.shift();
 				currentValue = state.data;
 				currentSheet = state.sheet;
+				separatorsState = state.separatorsState;
 			} else {
 				undoState.unshift(state);
 				currentValue = newValue;
 				currentSheet = newSheet;
+				separatorsState = newSaparatorsState;
 			}
 			api.load(currentValue);
 			DataFiles.save(true); // save reloaded data
@@ -1045,8 +1053,13 @@ class Editor extends Component {
 
 	static var runningHooks = false;
 	static var queuedCommand: Void -> Void = null;
+	public function saveSeparatorState() {
+		saveDisplayState("separatorsState", separatorsState);
+	}
+
 	function save() {
 		api.save();
+		saveSeparatorState();
 
 		function hookEnd() {
 			runningHooks = false;
