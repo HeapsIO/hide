@@ -15,7 +15,8 @@
   outline: none;
 }
 .cdb .cdb-sheet td.cursorView {
-  border: 2px solid #ccc !important;
+  outline: 2px solid #ccc !important;
+  outline-offset: -1px;
 }
 .cdb .cdb-sheet th.highlight {
   background-color: #1c3c70;
