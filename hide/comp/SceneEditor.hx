@@ -1752,10 +1752,105 @@ class SceneEditor {
 			switch( e.button ) {
 			case K.MOUSE_RIGHT:
 				selectNewObject(e);
-			case K.MOUSE_LEFT:
-				selectElements([]);
 			}
 		};
+
+		var startDrag : Array<Float> = null;
+		var curDrag = null;
+		var dragBtn = -1;
+		var lastPush : Array<Float> = null;
+
+		function customEventHandler(e: hxd.Event) {
+			switch(e.kind) {
+			case ERelease:
+				if( e.button == K.MOUSE_MIDDLE ) return;
+				if (e.button == K.MOUSE_LEFT && startDrag != null) {
+					var elts = getAllPrefabsUnderMouse();
+					if (elts.length > 0) {
+						if(K.isDown(K.SHIFT)) {
+							var elt = elts[0].prefab;
+							if (selectedPrefabs.length > 0 && elts.find((e) -> e.prefab == selectedPrefabs[0]) != null) {
+								elt = selectedPrefabs[0];
+							}
+							if(Type.getClass(elt.parent) == hrt.prefab.Object3D)
+								selectElements([elt.parent]);
+							else
+								selectElements(elt.parent.children);
+
+						}
+						else if (K.isDown(K.CTRL)) {
+							var sel = selectedPrefabs.copy();
+							sel.pushUnique(elts[0].prefab);
+							selectElements(sel);
+						}
+						else {
+							if (selectedPrefabs.length != 1 || !Ide.inst.ideConfig.sceneEditorClickCycleObjects) {
+								selectElements([elts[0].prefab]);
+							} else {
+								var found = false;
+								for (index => elt in elts) {
+									if (elt.prefab == selectedPrefabs[0]) {
+										selectElements([elts[(index + 1) % elts.length].prefab]);
+										found = true;
+										break;
+									}
+								}
+
+								if (!found) {
+									selectElements([elts[0].prefab]);
+								}
+							}
+						}
+					} else {
+						selectElements([]);
+					}
+				}
+				startDrag = null;
+				curDrag = null;
+				dragBtn = -1;
+				if (e.button == K.MOUSE_LEFT) {
+					scene.sevents.stopCapture();
+					e.propagate = false;
+				}
+			case EMove:
+				if(startDrag != null && hxd.Math.distance(startDrag[0] - scene.s2d.mouseX, startDrag[1] - scene.s2d.mouseY) > 5 ) {
+					if(dragBtn == K.MOUSE_LEFT ) {
+						moveGizmoToSelection();
+						gizmo.startMove(MoveXY);
+						// if( i3d != null ) {
+						// 	moveGizmoToSelection();
+						// 	gizmo.startMove(MoveXY);
+						// }
+						// if( i2d != null ) {
+						// 	moveGizmoToSelection();
+						// 	gizmo2d.startMove(Pan);
+						// }
+					}
+					e.propagate = false;
+					startDrag = null;
+				}
+			case EPush:
+				if( e.button == K.MOUSE_MIDDLE ) return;
+				var elt = getAllPrefabsUnderMouse()[0]?.prefab;
+				if (elt == null)
+					return;
+
+				startDrag = [scene.s2d.mouseX, scene.s2d.mouseY];
+				if( e.button == K.MOUSE_RIGHT )
+					lastPush = startDrag;
+				dragBtn = e.button;
+
+				// ensure we get onMove even if outside our interactive, allow fast click'n'drag
+				if( e.button == K.MOUSE_LEFT ) {
+					scene.sevents.startCapture(customEventHandler);
+					e.propagate = false;
+				}
+			default:
+			}
+		}
+
+		cameraController.onCustomEvent = customEventHandler;
+
 
 		var settings = @:privateAccess view.getDisplayState("Camera");
 		var isGlobalSettings = Ide.inst.currentConfig.get("sceneeditor.camera.isglobalsettings", false);
@@ -2851,89 +2946,6 @@ class SceneEditor {
 		function preventClick() : Void;
 	} ) {
 		if( int == null ) return;
-		var startDrag = null;
-		var curDrag = null;
-		var dragBtn = -1;
-		var lastPush : Array<Float> = null;
-		var i3d = Std.downcast(int, h3d.scene.Interactive);
-		var i2d = Std.downcast(int, h2d.Interactive);
-
-		int.onClick = function(e) {
-			if(e.button == K.MOUSE_RIGHT) {
-				var dist = hxd.Math.distance(scene.s2d.mouseX - lastPush[0], scene.s2d.mouseY - lastPush[1]);
-				if( dist > 5 ) return;
-				selectNewObject(e);
-				e.propagate = false;
-				return;
-			}
-		}
-		int.onPush = function(e) {
-			if( e.button == K.MOUSE_MIDDLE ) return;
-			startDrag = [scene.s2d.mouseX, scene.s2d.mouseY];
-			if( e.button == K.MOUSE_RIGHT )
-				lastPush = startDrag;
-			dragBtn = e.button;
-			if( e.button == K.MOUSE_LEFT ) {
-				var elts = null;
-				if(K.isDown(K.SHIFT)) {
-					if(Type.getClass(elt.parent) == hrt.prefab.Object3D)
-						elts = [elt.parent];
-					else
-						elts = elt.parent.children;
-				}
-				else
-					elts = [elt];
-
-				if(K.isDown(K.CTRL)) {
-					var current = selectedPrefabs.copy();
-					if(current.indexOf(elt) < 0) {
-						for(e in elts) {
-							if(current.indexOf(e) < 0)
-								current.push(e);
-						}
-					}
-					else {
-						for(e in elts)
-							current.remove(e);
-					}
-					selectElements(current);
-				}
-				else
-					selectElements(elts);
-
-			}
-			// ensure we get onMove even if outside our interactive, allow fast click'n'drag
-			if( e.button == K.MOUSE_LEFT ) {
-				scene.sevents.startCapture(int.handleEvent);
-				e.propagate = false;
-			}
-		};
-		int.onRelease = function(e) {
-			if( e.button == K.MOUSE_MIDDLE ) return;
-			startDrag = null;
-			curDrag = null;
-			dragBtn = -1;
-			if( e.button == K.MOUSE_LEFT ) {
-				scene.sevents.stopCapture();
-				e.propagate = false;
-			}
-		}
-		int.onMove = function(e) {
-			if(startDrag != null && hxd.Math.distance(startDrag[0] - scene.s2d.mouseX, startDrag[1] - scene.s2d.mouseY) > 5 ) {
-				if(dragBtn == K.MOUSE_LEFT ) {
-					if( i3d != null ) {
-						moveGizmoToSelection();
-						gizmo.startMove(MoveXY);
-					}
-					if( i2d != null ) {
-						moveGizmoToSelection();
-						gizmo2d.startMove(Pan);
-					}
-				}
-				int.preventClick();
-				startDrag = null;
-			}
-		}
 		interactives.set(elt,cast int);
 	}
 
@@ -2956,7 +2968,7 @@ class SceneEditor {
 					var distance = int3d.preciseShape?.rayIntersection(ray, true) ?? distance;
 
 					if (distance > 0) {
-							hits.push({d: distance, prefab: selectable});
+						hits.push({d: distance, prefab: selectable});
 					}
 				}
 			}

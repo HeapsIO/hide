@@ -27,6 +27,7 @@ class IdeData {
 		"svnShowModifiedFiles" => true,
 		"unfocusCPUSavingMode" => true,
 		"screenCaptureResolution" => 4096,
+		"sceneEditorClickCycleObjects" => true,
 	];
 
 	public var currentConfig(get,never) : Config;
