@@ -5604,7 +5604,7 @@ class SceneEditor {
 		var now = haxe.Timer.stamp();
 		if (now - groundPrefabsCacheTime > 5) {
 			var all = getAllPrefabs(sceneData);
-			var grounds = [for( p in all ) if( Std.isOfType(p, Object3D)) p];
+			var grounds = [for( p in all ) if( p.getHideProps().isGround || (p.name != null && p.name.toLowerCase() == "ground")) p];
 			grounds = grounds.filter((p) -> {
 				while(p != null) {
 					if (Std.downcast(p, Object3D)?.visible == false) {
