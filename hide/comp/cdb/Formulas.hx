@@ -6,6 +6,7 @@ typedef Formula = { name : String, type : String, call : Dynamic -> Null<Float> 
 enum ValidationResult {
 	Ok;
 	Error(message: String);
+	Warning(message: String);
 }
 
 typedef ValidationFunction = { name : String, type : String, call : Dynamic -> ValidationResult }
@@ -242,7 +243,7 @@ class Formulas {
 		formulas = [];
 		fmap = new Map();
 		validationFuncs = new Map();
-		var o : Dynamic = { Math : Math, Ok : ValidationResult.Ok, Error : ValidationResult.Error };
+		var o : Dynamic = { Math : Math, Ok : ValidationResult.Ok, Error : ValidationResult.Error, Warning : ValidationResult.Warning };
 		for( r in refs )
 			Reflect.setField(o,r.name, r);
 		var interp = new hscript.JsInterp();
@@ -419,6 +420,7 @@ class FormulasView extends hide.view.Script {
 		var tany = check.checker.types.resolve("Dynamic");
 		check.checker.setGlobal("Ok", tany);
 		check.checker.setGlobal("Error", TFun([{t:tstring,name:"message",opt:false}], tany));
+		check.checker.setGlobal("Warning", TFun([{t:tstring,name:"message",opt:false}], tany));
 
 		var _tarray = check.checker.types.resolve("Array");
 		if( tstring == null ) {

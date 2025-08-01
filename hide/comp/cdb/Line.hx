@@ -123,12 +123,16 @@ class Line extends Component {
 		if(result == null) return;
 
         element.removeClass("validation-error");
+        element.removeClass("validation-warning");
 		element.attr("title", null);
         
 		switch(result) {
 			case Error(msg):
 				element.addClass("validation-error");
-				element.attr("title", msg);
+				element.attr("title", "Error: " + msg);
+			case Warning(msg):
+				element.addClass("validation-warning");
+				element.attr("title", "Warning: " + msg);
 			default:
 		}
     }
