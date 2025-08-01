@@ -1396,7 +1396,7 @@ class SceneEditor {
 			var lines : Array<String> = [
 				'Scene objects: ${splitCentaines(scene.s3d.getObjectsCount())}',
 				'Interactives: ' + splitCentaines(interactives.count()),
-				'Triangles: ${splitCentaines(scene.engine.drawTriangles)}',
+				'Triangles: ${splitCentaines(Std.int(scene.engine.drawTriangles))}',
 				'Buffers: ${splitCentaines(memStats.bufferCount)}',
 				'Textures: ${splitCentaines(memStats.textureCount)}',
 				'FPS: ${Math.round(scene.engine.realFps)}',
