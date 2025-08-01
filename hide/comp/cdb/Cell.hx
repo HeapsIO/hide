@@ -1137,9 +1137,6 @@ class Cell {
 			@:privateAccess modal.reflow();
 		case TTilePos:
 			var modal = new hide.comp.Modal.Modal2(new Element(elementHtml), "Tile Picker", "tile-picker");
-			//var modal = new hide.comp.Modal(new Element(elementHtml));
-			//modal.modalClick = function(_) closeEdit();
-
 			var modalHtml = modal.element.get(0);
 
 			modalHtml.addEventListener("keydown", (e: js.html.KeyboardEvent) -> {
@@ -1161,7 +1158,7 @@ class Cell {
 						height: (t.height != null && t.height > 0) ? t.height : t.size,
 					};
 				}
-				return {width: t.size, height: t.size};
+				return { width: t.size, height: t.size };
 			}
 
 			var t : cdb.Types.TilePos = currentValue;
@@ -1222,7 +1219,7 @@ class Cell {
 			}
 
 			#if js
-			var ts = new hide.comp.TileSelector(file,dims,modal.content);
+			var ts = new hide.comp.TileSelector(file, dims, modal.content);
 			ts.allowRectSelect = true;
 			ts.allowSizeSelect = true;
 			ts.allowFileChange = true;

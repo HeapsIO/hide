@@ -240,7 +240,7 @@ class TileSelector extends Component {
 			imageHeight = i.height;
 			@:bypassAccessor this.size = {
 				height:Std.int(hxd.Math.clamp(this.size.height, 1, imageHeight)),
-				width:Std.int(hxd.Math.clamp(this.size.height, 1, imageWidth))
+				width:Std.int(hxd.Math.clamp(this.size.width, 1, imageWidth))
 			};
 
 			zoomLevel = getDisplayState("zoomLevel") ?? getDefaultZoomLevel();
