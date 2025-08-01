@@ -4073,8 +4073,8 @@ class SceneEditor {
 		// Do not update every frame because it can be very heavy on large prefabs
 		if (hxd.Timer.frameCount % 2 != 0)
 			return true;
-		var pos = getDragPreviewPosition();
-		previewDraggedObj.setPosition(pos.x, pos.y, pos.z);
+		// previewDraggedObj.setTransform();
+		previewDraggedObj.setTransform(getDragPreviewTransform());
 		return true;
 	}
 
@@ -4100,10 +4100,6 @@ class SceneEditor {
 				paths.push(f.path);
 		}
 
-		var pos = getDragPreviewPosition();
-		var transform = new h3d.Matrix();
-		transform.initTranslation(pos.x, pos.y, pos.z);
-
 		var elts : Array<hrt.prefab.Prefab> = [];
 		for (path in paths) {
 			var prefab = createDroppedElement(path, sceneData, e.shiftKey);
@@ -4111,7 +4107,7 @@ class SceneEditor {
 				continue;
 			var obj3d = Std.downcast(prefab, Object3D);
 			if (obj3d != null)
-				obj3d.setTransform(transform);
+				obj3d.setTransform(getDragPreviewTransform());
 			elts.push(prefab);
 		}
 
@@ -4168,11 +4164,15 @@ class SceneEditor {
 		return root;
 	}
 
-	function getDragPreviewPosition() : h3d.Vector {
+	function getDragPreviewTransform() : h3d.Matrix {
+		var transform = new h3d.Matrix();
+		transform.identity();
+
 		var camera = scene.s3d.camera;
 		var ray = camera.rayFromScreen(scene.s2d.mouseX, scene.s2d.mouseY);
 
 		var minDist = -1.;
+		var hitObj : h3d.scene.Object = null;
 		for (obj in scene.s3d) {
 			function get(obj : Object) {
 				if (obj == previewDraggedObj || Std.isOfType(obj, hrt.tools.Gizmo))
@@ -4182,7 +4182,10 @@ class SceneEditor {
 
 				try {
 					var dist = obj.getCollider().rayIntersection(ray, true);
-					minDist = minDist < 0 || (dist >= 0 && dist < minDist) ? dist : minDist;
+					if (minDist < 0 || (dist >= 0 && dist < minDist)) {
+						minDist = dist;
+						hitObj = obj;
+					}
 				}
 				catch (e : Dynamic) {};
 
@@ -4193,16 +4196,40 @@ class SceneEditor {
 			get(obj);
 		}
 
-		if (minDist >= 0)
-			return ray.getPoint(minDist);
+		if (minDist >= 0) {
+			// Find hit normal
+			var center = ray.getPoint(minDist);
+			var dx : h3d.col.Point = null;
+			var dy : h3d.col.Point = null;
+			var ray2 = camera.rayFromScreen(scene.s2d.mouseX + 1, scene.s2d.mouseY);
+			dx = ray2.getPoint(hitObj.getCollider().rayIntersection(ray2, true));
+
+			var ray3 = camera.rayFromScreen(scene.s2d.mouseX - 1, scene.s2d.mouseY + 1);
+			dy = ray3.getPoint(hitObj.getCollider().rayIntersection(ray3, true));
+
+			var ddx = dx - center;
+			var ddy = dy - center;
+			var norm = ddx.cross(ddy);
+			norm.normalize();
+
+			var q = new h3d.Quat();
+			q.initMoveTo(new h3d.Vector(0, 0, 1), norm);
+			transform = q.toMatrix();
+
+			transform.setPosition(center);
+			return transform;
+		}
 
 		// If there is no collision with objects, try to collide with z=0 plane
 		var zPlane = h3d.col.Plane.Z(0);
 		var pt = ray.intersect(zPlane);
-		if (pt != null)
-			return pt;
+		if (pt != null) {
+			transform.setPosition(pt);
+			return transform;
+		}
 
-		return ray.getPoint(minDist);
+		transform.setPosition(ray.getPoint(minDist));
+		return transform;
 	}
 
 	function createDroppedElement(path: String, parent: PrefabElement, inlinePrefab : Bool) : hrt.prefab.Prefab {
