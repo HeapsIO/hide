@@ -26,7 +26,8 @@ class UserSettings extends Settings {
 		categories.push(performance);
 
 		var sceneEditor = new hide.view.settings.Settings.Categorie("Scene Editor");
-		performance.add("Click cycle objects under the mouse", new Element('<input type="checkbox"/>'), Ide.inst.ideConfig.sceneEditorClickCycleObjects, (v) -> Ide.inst.ideConfig.sceneEditorClickCycleObjects = v);
+		sceneEditor.add("Click cycle objects under the mouse", new Element('<input type="checkbox"/>'), Ide.inst.ideConfig.sceneEditorClickCycleObjects, (v) -> Ide.inst.ideConfig.sceneEditorClickCycleObjects = v);
+		categories.push(sceneEditor);
 
 		var cdb = new hide.view.settings.Settings.Categorie("CDB");
 		cdb.add("Highlight active line", new Element('<input type="checkbox"/>'), Ide.inst.ideConfig.highlightActiveLine, (v) -> Ide.inst.ideConfig.highlightActiveLine = v);
