@@ -259,16 +259,13 @@ class Ide extends hide.tools.IdeData {
 			return false;
 		}
 		body.ondragend = function(e: js.html.DragEvent) {
-			var view = getViewAt(mouseX, mouseY);
-			if (view != null) {
-				var handled = view.onDragEnd(e);
-				if (handled) {
-					e.preventDefault();
-					e.stopPropagation();
-					return true;
-				}
+			for (v in views) {
+				if (v != null)
+					v.onDragEnd(e);
 			}
-			return false;
+			e.preventDefault();
+			e.stopPropagation();
+			return true;
 		}
 
 		if( subView != null ) body.className +=" hide-subview";
