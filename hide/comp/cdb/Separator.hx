@@ -338,7 +338,7 @@ class Separator extends Component {
 			parentIndex-=1;
 
 		// We don't actually have a parent
-		if (separatorIndex < 0)
+		if (parentIndex < 0)
 			return key;
 
 		return getSeparatorKeyStatic(table, parentIndex) + "/" + key;
