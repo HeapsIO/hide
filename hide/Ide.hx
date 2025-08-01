@@ -227,22 +227,16 @@ class Ide extends hide.tools.IdeData {
 				};
 			}
 		});
-		function dragFunc(drop : Bool, e:js.html.DragEvent) {
+		function dragFunc(drop : Bool, e : js.html.DragEvent) {
 			syncMousePosition(e);
 			var view = getViewAt(mouseX, mouseY);
-			var items : Array<String> = [for(f in e.dataTransfer.files) Reflect.field(f, "path")];
-			if (e.dataTransfer.types.contains("application/x.filemove")) {
-				var data = e.dataTransfer.getData("application/x.filemove");
-				// when in the middle of a drag (and not a drop) getData return nothing
-				if (data.length > 0) {
-					var moreItems : Array<String> = haxe.Json.parse(data);
-					items = items.concat(moreItems);
+			if (view != null) {
+				var handled = drop ? view.onDrop(e) : view.onDrag(e);
+				if (handled) {
+					e.preventDefault();
+					e.stopPropagation();
+					return true;
 				}
-			}
-			if(view != null && view.onDragDrop(items, drop, e)) {
-				e.preventDefault();
-				e.stopPropagation();
-				return true;
 			}
 			return false;
 		}
@@ -261,6 +255,18 @@ class Ide extends hide.tools.IdeData {
 				for( f in e.dataTransfer.files )
 					openFile(Reflect.field(f,"path"));
 				e.preventDefault();
+			}
+			return false;
+		}
+		body.ondragend = function(e: js.html.DragEvent) {
+			var view = getViewAt(mouseX, mouseY);
+			if (view != null) {
+				var handled = view.onDragEnd(e);
+				if (handled) {
+					e.preventDefault();
+					e.stopPropagation();
+					return true;
+				}
 			}
 			return false;
 		}

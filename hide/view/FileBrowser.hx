@@ -48,10 +48,6 @@ class FileBrowser extends hide.ui.View<FileBrowserState> {
 		saveDisplayKey = "fileBrowser";
 	}
 
-	override function onDragDrop(items:Array<String>, isDrop:Bool, event:js.html.DragEvent):Bool {
-		return false;
-	}
-
 	override function buildTabMenu():Array<hide.comp.ContextMenu.MenuItem> {
 		var menu = super.buildTabMenu();
 
@@ -433,7 +429,7 @@ class FileBrowser extends hide.ui.View<FileBrowserState> {
 			}
 			return file.children.filter((file) -> file.kind == Dir && filterFiles(file));
 		};
-		//fancyTree.hasChildren = (file: FileEntry) -> return file.kind == Dir;
+
 		fancyTree.getName = (file: FileEntry) -> return file?.name;
 		fancyTree.getUniqueName = (file: FileEntry) -> file?.getRelPath();
 
@@ -451,6 +447,9 @@ class FileBrowser extends hide.ui.View<FileBrowserState> {
 				return true;
 			},
 			getItemDropFlags: function(target: FileEntry, e: js.html.DragEvent) : hide.comp.FancyTree.DropFlags {
+				if (target == null)
+					return Reorder;
+
 				var fileEntries : Array<FileEntry> = cast ide.getData("drag/filetree");
 				var containsFiles = fileEntries != null && fileEntries.length > 0;
 

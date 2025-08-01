@@ -1097,18 +1097,6 @@ class SceneEditor {
 			onResize();
 		};
 
-		sceneEl.get(0).ondrop = (e: js.html.DragEvent) -> {
-			var fileEntries : Array<hide.tools.FileManager.FileEntry> = cast ide.popData("drag/filetree");
-			if (fileEntries == null)
-				return;
-
-			var files = [for (f in fileEntries) f.relPath];
-			@:privateAccess scene.canvas.focus();
-			onDragDrop(files, true, e);
-			e.preventDefault();
-			e.stopPropagation();
-		}
-
 		editorDisplay = true;
 
 		view.keys.register("copy", {name: "Copy", category: "Edit"}, onCopy);
@@ -2026,7 +2014,6 @@ class SceneEditor {
 			applyTreeStyle(p, targetTree);
 		}
 		tree.getButtons = (p : hrt.prefab.Prefab) -> {
-			var obj3d = Std.downcast(p, Object3D);
 			var buttons: Array<hide.comp.FancyTree.TreeButton<hrt.prefab.Prefab>> = [];
 
 			buttons.push({
@@ -4071,44 +4058,151 @@ class SceneEditor {
 		}
 	}
 
-	public function getPickTransform(parent: PrefabElement) {
-		var proj = screenToGround(scene.s2d.mouseX, scene.s2d.mouseY);
-		if(proj == null) return null;
 
-		var localMat = new h3d.Matrix();
-		localMat.initTranslation(proj.x, proj.y, proj.z);
+	var previewDraggedObj : h3d.scene.Object;
+	public function onDrag(e : js.html.DragEvent) : Bool {
+		var files : Array<hide.tools.FileManager.FileEntry> = ide.getData("drag/filetree");
+		if (files == null || files.length <= 0)
+			return false;
 
-		if(parent == null)
-			return localMat;
+		if (previewDraggedObj == null) {
+			previewDraggedObj = getPreviewObject(files);
+			scene.s3d.addChild(previewDraggedObj);
+		}
 
-		var parentMat = worldMat(getObject(parent));
-		parentMat.invert();
-
-		localMat.multiply(localMat, parentMat);
-		return localMat;
+		// Do not update every frame because it can be very heavy on large prefabs
+		if (hxd.Timer.frameCount % 2 != 0)
+			return true;
+		var pos = getDragPreviewPosition();
+		previewDraggedObj.setPosition(pos.x, pos.y, pos.z);
+		return true;
 	}
 
-	public function onDragDrop( items : Array<String>, isDrop : Bool, event: js.html.DragEvent ) {
-		var pickedEl = js.Browser.document.elementFromPoint(ide.mouseX, ide.mouseY);
-		var propEl = properties.element[0];
-		while( pickedEl != null ) {
-			if( pickedEl == propEl )
-				return properties.onDragDrop(items, isDrop, event);
-			pickedEl = pickedEl.parentElement;
-		}
+	public function onDragEnd(e : js.html.DragEvent) : Bool {
+		previewDraggedObj?.remove();
+		previewDraggedObj = null;
+		return true;
+	}
+
+	public function onDrop(e : js.html.DragEvent) : Bool {
+		previewDraggedObj?.remove();
+		previewDraggedObj = null;
+
+		var files : Array<hide.tools.FileManager.FileEntry> = ide.getData("drag/filetree");
+		if (files == null || files.length <= 0)
+			return false;
 
 		var supported = @:privateAccess hrt.prefab.Prefab.extensionRegistry;
 		var paths = [];
-			for(path in items) {
-			var ext = haxe.io.Path.extension(path).toLowerCase();
+		for (f in files) {
+			var ext = haxe.io.Path.extension(f.path).toLowerCase();
 			if( supported.exists(ext) || ext == "fbx" || ext == "hmd" || ext == "json")
-				paths.push(path);
+				paths.push(f.path);
 		}
-		if( paths.length == 0 )
-			return false;
-		if(isDrop)
-			dropElements(paths, sceneData, event );
+
+		var pos = getDragPreviewPosition();
+		var transform = new h3d.Matrix();
+		transform.initTranslation(pos.x, pos.y, pos.z);
+
+		var elts : Array<hrt.prefab.Prefab> = [];
+		for (path in paths) {
+			var prefab = createDroppedElement(path, sceneData, e.shiftKey);
+			if (prefab == null)
+				continue;
+			var obj3d = Std.downcast(prefab, Object3D);
+			if (obj3d != null)
+				obj3d.setTransform(transform);
+			elts.push(prefab);
+		}
+
+		beginRebuild();
+		for(e in elts)
+			queueRebuild(e);
+		endRebuild();
+
+		refreshTree(SceneTree, () -> selectElements(elts, NoHistory));
+
+		undo.change(Custom(function(undo) {
+			if( undo ) {
+				beginRebuild();
+				for(e in elts) {
+					removeInstance(e);
+					e.parent.children.remove(e);
+				}
+				endRebuild();
+				refreshTree(SceneTree, () -> selectElements([], NoHistory));
+			}
+			else {
+				beginRebuild();
+				for(e in elts) {
+					e.parent.children.push(e);
+					makePrefab(e);
+				}
+				endRebuild();
+				refreshTree(SceneTree, () -> selectElements(elts, NoHistory));
+			}
+		}));
+
 		return true;
+	}
+
+	function getPreviewObject(files : Array<hide.tools.FileManager.FileEntry>) : h3d.scene.Object {
+		var root = new h3d.scene.Object();
+
+		for (f in files) {
+			var ptype = hrt.prefab.Prefab.getPrefabType(f.path);
+			if (ptype != null) {
+				var ref = new hrt.prefab.Reference(null, sceneData.shared);
+				ref.source = ide.makeRelative(f.path);
+				ref.make();
+				if (ref.local3d != null)
+					root.addChild(ref.local3d);
+			}
+
+			if (f.path.substr(f.path.lastIndexOf(".") + 1) == "fbx") {
+				var mesh = sceneData.shared.loadModel(ide.makeRelative(f.path));
+				root.addChild(mesh);
+			}
+		}
+
+		return root;
+	}
+
+	function getDragPreviewPosition() : h3d.Vector {
+		var camera = scene.s3d.camera;
+		var ray = camera.rayFromScreen(scene.s2d.mouseX, scene.s2d.mouseY);
+
+		var minDist = -1.;
+		for (obj in scene.s3d) {
+			function get(obj : Object) {
+				if (obj == previewDraggedObj || Std.isOfType(obj, hrt.tools.Gizmo))
+					return;
+				if (!obj.getBounds().inFrustum(camera.frustum))
+					return;
+
+				try {
+					var dist = obj.getCollider().rayIntersection(ray, true);
+					minDist = minDist < 0 || (dist >= 0 && dist < minDist) ? dist : minDist;
+				}
+				catch (e : Dynamic) {};
+
+				for (c in @:privateAccess obj.children)
+					get(c);
+			}
+
+			get(obj);
+		}
+
+		if (minDist >= 0)
+			return ray.getPoint(minDist);
+
+		// If there is no collision with objects, try to collide with z=0 plane
+		var zPlane = h3d.col.Plane.Z(0);
+		var pt = ray.intersect(zPlane);
+		if (pt != null)
+			return pt;
+
+		return ray.getPoint(minDist);
 	}
 
 	function createDroppedElement(path: String, parent: PrefabElement, inlinePrefab : Bool) : hrt.prefab.Prefab {
@@ -4185,70 +4279,23 @@ class SceneEditor {
 		return prefab;
 	}
 
-	function dropElements(paths: Array<String>, parent: PrefabElement, event: js.html.DragEvent) {
-		scene.setCurrent();
 
-		var localMat = h3d.Matrix.I();
-		if(scene.hasFocus()) {
-			localMat = getPickTransform(parent);
-			if(localMat == null) return;
 
-			localMat.tx = hxd.Math.round(localMat.tx * 10) / 10;
-			localMat.ty = hxd.Math.round(localMat.ty * 10) / 10;
-			localMat.tz = hxd.Math.floor(localMat.tz * 10) / 10;
+	public function getPickTransform(parent: PrefabElement) {
+		var proj = screenToGround(scene.s2d.mouseX, scene.s2d.mouseY);
+		if(proj == null) return null;
 
-			if (snapForceOnGrid) {
-				inline function snap(t: Float) : Float {
-					var mod = t % snapMoveStep;
-					return (mod > snapMoveStep / 2) ? t + (snapMoveStep - mod) : t - mod;
-				}
+		var localMat = new h3d.Matrix();
+		localMat.initTranslation(proj.x, proj.y, proj.z);
 
-				localMat.tx = snap(localMat.tx);
-				localMat.ty = snap(localMat.ty);
-				localMat.tz = snap(localMat.tz);
-			}
-		}
+		if(parent == null)
+			return localMat;
 
-		var elts: Array<PrefabElement> = [];
-		for(path in paths) {
-			var prefab = createDroppedElement(path, parent, event.shiftKey);
-			if (prefab == null) {
-				return;
-			}
-			var obj3d= Std.downcast(prefab, Object3D);
-			if (obj3d != null) {
-				obj3d.setTransform(localMat);
-			}
-			elts.push(prefab);
-		}
+		var parentMat = worldMat(getObject(parent));
+		parentMat.invert();
 
-		beginRebuild();
-		for(e in elts)
-			queueRebuild(e);
-		endRebuild();
-
-		refreshTree(SceneTree, () -> selectElements(elts, NoHistory));
-
-		undo.change(Custom(function(undo) {
-			if( undo ) {
-				beginRebuild();
-				for(e in elts) {
-					removeInstance(e);
-					e.parent.children.remove(e);
-				}
-				endRebuild();
-				refreshTree(SceneTree, () -> selectElements([], NoHistory));
-			}
-			else {
-				beginRebuild();
-				for(e in elts) {
-					e.parent.children.push(e);
-					makePrefab(e);
-				}
-				endRebuild();
-				refreshTree(SceneTree, () -> selectElements(elts, NoHistory));
-			}
-		}));
+		localMat.multiply(localMat, parentMat);
+		return localMat;
 	}
 
 	function gatherToMouse() {
@@ -5538,25 +5585,26 @@ class SceneEditor {
 		return 0.;
 	}
 
+	function getAllPrefabs(data : PrefabElement) {
+		var all = data.findAll(hrt.prefab.Prefab);
+		for( a in all.copy() ) {
+			var r = Std.downcast(a, hrt.prefab.Reference);
+			if( r != null ) {
+				var sub = @:privateAccess r.refInstance;
+				if( sub != null ) all = all.concat(getAllPrefabs(sub));
+			}
+		}
+		return all;
+	}
+
 	var groundPrefabsCache : Array<PrefabElement> = null;
 	var groundPrefabsCacheTime : Float = -1e9;
 
 	function getGroundPrefabs() : Array<PrefabElement> {
 		var now = haxe.Timer.stamp();
-		if( now - groundPrefabsCacheTime > 5 ) {
-			function getAll(data:PrefabElement) {
-				var all = data.findAll(hrt.prefab.Prefab);
-				for( a in all.copy() ) {
-					var r = Std.downcast(a, hrt.prefab.Reference);
-					if( r != null ) {
-						var sub = @:privateAccess r.refInstance;
-						if( sub != null ) all = all.concat(getAll(sub));
-					}
-				}
-				return all;
-			}
-			var all = getAll(sceneData);
-			var grounds = [for( p in all ) if( p.getHideProps().isGround || (p.name != null && p.name.toLowerCase() == "ground")) p];
+		if (now - groundPrefabsCacheTime > 5) {
+			var all = getAllPrefabs(sceneData);
+			var grounds = [for( p in all ) if( Std.isOfType(p, Object3D)) p];
 			grounds = grounds.filter((p) -> {
 				while(p != null) {
 					if (Std.downcast(p, Object3D)?.visible == false) {
@@ -5568,7 +5616,7 @@ class SceneEditor {
 			});
 			var results = [];
 			for( g in grounds )
-				results = results.concat(getAll(g));
+				results = results.concat(getAllPrefabs(g));
 			groundPrefabsCache = results;
 			groundPrefabsCacheTime = now;
 		}
@@ -5577,7 +5625,6 @@ class SceneEditor {
 
 	public function projectToGround(ray: h3d.col.Ray, ?paintOn : hrt.prefab.Prefab, ignoreTerrain: Bool = false) {
 		var minDist = -1.;
-
 		if (!ignoreTerrain) {
 			var arr = (paintOn == null ? getGroundPrefabs() : [paintOn]);
 			for( elt in arr ) {

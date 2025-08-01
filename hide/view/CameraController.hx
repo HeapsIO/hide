@@ -416,7 +416,6 @@ class CamController extends CameraControllerBase {
 			}
 			moveCount = 0;
 			@:privateAccess scene.events.startCapture(onEvent);
-			trace(this.visible);
 
 			@:privateAccess scene.window.mouseMode = AbsoluteUnbound(true);
 		case ERelease, EReleaseOutside:

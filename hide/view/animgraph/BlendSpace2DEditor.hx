@@ -474,19 +474,18 @@ class BlendSpace2DEditor extends hide.view.FileView {
 		super.save();
 	}
 
-	override function onDragDrop(items : Array<String>, isDrop : Bool, event: js.html.DragEvent) {
-		if (items.length != 1)
+	override function onDrop(event: js.html.DragEvent) {
+		var files : Array<hide.tools.FileManager.FileEntry> = ide.getData("drag/filetree");
+		if (files.length != 1)
 			return false;
-		if (!StringTools.endsWith(items[0], ".fbx"))
+		if (!StringTools.endsWith(files[0].path, ".fbx"))
 			return false;
 
 		var rect = graph.element.get(0).getBoundingClientRect();
 		if (ide.mouseX >= rect.x && ide.mouseX <= rect.x + rect.width && ide.mouseY >= rect.y && ide.mouseY <= rect.y + rect.height) {
-			if (isDrop) {
-				var pos = getPointPos(ide.mouseX, ide.mouseY, true);
-				var newPoint : hrt.animgraph.BlendSpace2D.BlendSpacePoint = {x: pos.x, y: pos.y, speed: 1.0, animPath: items[0]};
-				addPoint(newPoint, true);
-			}
+			var pos = getPointPos(ide.mouseX, ide.mouseY, true);
+			var newPoint : hrt.animgraph.BlendSpace2D.BlendSpacePoint = {x: pos.x, y: pos.y, speed: 1.0, animPath: files[0].relPath};
+			addPoint(newPoint, true);
 			return true;
 		}
 		return false;

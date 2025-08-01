@@ -306,14 +306,16 @@ class CdbTable extends hide.ui.View<{}> {
 	}
 
 	#if js
-	override public function onDragDrop( items : Array<String>, isDrop : Bool, event: js.html.DragEvent) {
-		if( items.length == 0 )
+	override public function onDrop(event: js.html.DragEvent) : Bool {
+		var files : Array<hide.tools.FileManager.FileEntry> = ide.getData("drag/filetree");
+		if (files == null || files.length <= 0)
 			return false;
-		var path = ide.makeRelative(items[0]);
+
+		var path = ide.makeRelative(files[0].relPath);
 		var cell = getCellFromMousePos(ide.mouseX, ide.mouseY);
 		if( cell == null )
 			return false;
-		return cell.dragDropFile(path, isDrop);
+		return cell.dragDropFile(path, true);
 	}
 
 	public function getCellFromMousePos( x : Int, y : Int ) : Null<hide.comp.cdb.Cell> {

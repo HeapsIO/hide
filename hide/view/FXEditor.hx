@@ -751,8 +751,22 @@ class FXEditor extends hide.view.FileView {
 		}
 	}
 
-	override function onDragDrop(items : Array<String>, isDrop : Bool, event: js.html.DragEvent) {
-		return sceneEditor.onDragDrop(items,isDrop, event);
+	override function onDrag(e : js.html.DragEvent) {
+		if (e.target != scene.canvas)
+			return false;
+		return sceneEditor.onDrag(e);
+	}
+
+	override function onDragEnd(e : js.html.DragEvent) {
+		if (e.target != scene.canvas)
+			return false;
+		return sceneEditor.onDragEnd(e);
+	}
+
+	override function onDrop(e : js.html.DragEvent) {
+		if (e.target != scene.canvas)
+			return false;
+		return sceneEditor.onDrop(e);
 	}
 
 	function onSelect(elts : Array<PrefabElement>) {

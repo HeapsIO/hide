@@ -509,31 +509,29 @@ class ShaderEditor extends hide.view.FileView implements GraphInterface.IGraphEd
 		initMeshPreview();
 	}
 
-	override function onDragDrop(items : Array<String>, isDrop : Bool, event: js.html.DragEvent) {
+	override function onDrop(event: js.html.DragEvent) {
+		var files : Array<hide.tools.FileManager.FileEntry> = ide.getData("drag/filetree");
+		if (files == null || files.length <= 0)
+			return false;
 
+		var items = [ for (f in files) f.relPath];
 		if (previewElem.get(0).matches(":hover")) {
 			for (item in items) {
 				if (StringTools.endsWith(item, ".prefab") || StringTools.endsWith(item, ".fx")) {
 					var renderProp = config.getLocal("scene.renderProps");
 					var renderProps : Array<String> = renderProp is String ? [renderProp] : cast renderProp;
 					if (renderProps.contains(item)) {
-						if (isDrop) {
-							previewSettings.renderPropsPath = item;
-							refreshRenderProps();
-						}
+						previewSettings.renderPropsPath = item;
+						refreshRenderProps();
 						return true;
 					}
 					else {
-						if (isDrop) {
-							setMeshPreviewPrefab(item);
-						}
+						setMeshPreviewPrefab(item);
 						return true;
 					}
 				}
 				else if (StringTools.endsWith(item, ".fbx")) {
-					if (isDrop) {
-						setMeshPreviewFBX(item);
-					}
+					setMeshPreviewFBX(item);
 					return true;
 				}
 			}
