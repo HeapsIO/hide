@@ -33,11 +33,6 @@ class FXAnimation extends h3d.scene.Object {
 
 	function set_loop(v: Bool) {
 		loop = v;
-		if (loop) {
-			playState = Start;
-		} else {
-			playState = End;
-		}
 		return loop;
 	}
 
@@ -170,12 +165,7 @@ class FXAnimation extends h3d.scene.Object {
 	function resetSelf() {
 		firstSync = true;
 		localTime = 0;
-
-		if (loop) {
-			playState = Start;
-		} else {
-			playState = End;
-		}
+		playState = Start;
 	}
 
 	public function updateCustomAnims(root : Prefab) {
@@ -287,8 +277,11 @@ class FXAnimation extends h3d.scene.Object {
 		if(fullSync)
 			super.syncRec(ctx);
 
-		if(playState == End && duration > 0 && curTime < duration && localTime >= duration) {
-			localTime = duration;
+		if(playState == Start && localTime >= duration && duration > 0) {
+			stop(onEnd);
+		}
+
+		if(playState == End && localTime >= duration) {
 			playState = Finished;
 			finishedPlaying = true;
 		}
@@ -340,7 +333,7 @@ class FXAnimation extends h3d.scene.Object {
 		localTime = newTimeParent - startDelay;
 
 		if (playState == Start) {
-			if (localTime >= loopStart) {
+			if (localTime >= loopStart && loop) {
 				playState = Loop;
 			}
 		}
@@ -361,7 +354,6 @@ class FXAnimation extends h3d.scene.Object {
 		}
 
 		if (playState == End) {
-
 			// Fast forward to end of loop if we are still in the loop
 			if (loopEnd > 0 && stopTime >= 0) {
 				var loopCatchTime = loopEnd - stopTime;
