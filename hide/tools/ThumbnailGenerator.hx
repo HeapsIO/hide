@@ -197,7 +197,6 @@ class ThumbnailGenerator {
 		if (filePath.split(".").pop().toLowerCase() == "fbx") {
 			var matInfo =  getMaterialInfo(filePath);
 			toHash += matInfo;
-			trace(matInfo);
 		}
 		return haxe.crypto.Md5.encode(toHash);
 	}
