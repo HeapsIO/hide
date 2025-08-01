@@ -677,7 +677,7 @@ class FileBrowser extends hide.ui.View<FileBrowserState> {
 		var outerFiles: Array<{from: String, to: String}> = [];
 		for (root in roots) {
 			var movePath = targetFolder + "/" + root.split("/").pop();
-			outerFiles.push({from: root, to: movePath});
+			outerFiles.push({from: ide.makeRelative(root), to: movePath});
 		}
 
 		var exec = execMoveFiles.bind(outerFiles);
