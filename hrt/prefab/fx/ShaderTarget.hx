@@ -10,7 +10,7 @@ class ShaderTargetObj extends h3d.scene.Object {
 			var i = 0;
 			while ( i < obj.children.length ) {
 				var c = obj.children[i];
-				if ( Std.isOfType(c, Shader) || Std.isOfType(c, Material) || Std.isOfType(c, MaterialSelector) ) {
+				if ( (c.enabled && !c.editorOnly) && (Std.isOfType(c, Shader) || Std.isOfType(c, Material) || Std.isOfType(c, MaterialSelector)) ) {
 					c.parent = shadersRoot;
 					i--;
 				}
@@ -28,6 +28,8 @@ class ShaderTargetObj extends h3d.scene.Object {
 		var fxAnim : hrt.prefab.fx.FX.FXAnimation = cast fx.local3d;
 		shadersRoot.local3d = parent;
 		for ( s in shadersRoot.findAll(Shader) ) {
+			if (!s.enabled || s.editorOnly)
+				continue;
 			if (s.shader == null) {
 				s.makeShader();
 				@:privateAccess s.updateInstance();
