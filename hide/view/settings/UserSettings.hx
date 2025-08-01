@@ -25,10 +25,6 @@ class UserSettings extends Settings {
 		performance.add("Slow scene update when not focused", new Element('<input type="checkbox"/>'), Ide.inst.ideConfig.unfocusCPUSavingMode, (v) -> Ide.inst.ideConfig.unfocusCPUSavingMode = v);
 		categories.push(performance);
 
-		var sceneEditor = new hide.view.settings.Settings.Categorie("Scene Editor");
-		sceneEditor.add("Click cycle objects under the mouse", new Element('<input type="checkbox"/>'), Ide.inst.ideConfig.sceneEditorClickCycleObjects, (v) -> Ide.inst.ideConfig.sceneEditorClickCycleObjects = v);
-		categories.push(sceneEditor);
-
 		var cdb = new hide.view.settings.Settings.Categorie("CDB");
 		cdb.add("Highlight active line", new Element('<input type="checkbox"/>'), Ide.inst.ideConfig.highlightActiveLine, (v) -> Ide.inst.ideConfig.highlightActiveLine = v);
 		cdb.add("Highlight active line header", new Element('<input type="checkbox"/>'), Ide.inst.ideConfig.highlightActiveLineHeader, (v) -> Ide.inst.ideConfig.highlightActiveLineHeader = v);

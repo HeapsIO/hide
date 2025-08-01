@@ -69,15 +69,7 @@ class CameraControllerBase extends h3d.scene.CameraController {
 			p = p.parent;
 		}
 
-		onCustomEvent(e);
-		if (e.propagate == false)
-			return;
-
 		onEventInternal(e);
-	}
-
-	public dynamic function onCustomEvent(e: hxd.Event) {
-
 	}
 
 	function onEventInternal(e: hxd.Event) {
