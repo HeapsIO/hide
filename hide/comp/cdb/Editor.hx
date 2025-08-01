@@ -655,8 +655,14 @@ class Editor extends Component {
 				refreshAll();
 			}
 			else {
-				for (c in toRefresh)
+				var refreshLines = [];
+				for (c in toRefresh) {
 					c.refresh(true);
+					refreshLines.pushUnique(c.line.getRootLine());
+				}
+				for (l in refreshLines) {
+					l.validate();
+				}
 			}
 			refreshRefs();
 		}
