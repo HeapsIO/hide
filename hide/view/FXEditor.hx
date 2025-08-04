@@ -758,11 +758,9 @@ class FXEditor extends hide.view.FileView {
 	}
 
 	override function onDragEnd(e : js.html.DragEvent) {
-		if (e.target != scene.canvas)
-			return false;
 		if (sceneEditor == null)
 			return false;
-		return sceneEditor?.onDragEnd(e);
+		return sceneEditor.onDragEnd(e);
 	}
 
 	override function onDrop(e : js.html.DragEvent) {
