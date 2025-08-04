@@ -4970,10 +4970,10 @@ fancy-tree fancy-scroll fancy-tree-item.disabled {
   color: #ee6666;
 }
 fancy-tree fancy-scroll fancy-tree-item.inRef {
-  background: #3a3a3a;
+  --background: #3a3a3a;
 }
 fancy-tree fancy-scroll fancy-tree-item.isOverride {
-  background: #0c2346;
+  --background: #0c2346;
 }
 fancy-tree fancy-scroll fancy-tree-item.isOverride.isOverriden {
   color: cyan;
