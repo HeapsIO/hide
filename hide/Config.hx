@@ -33,6 +33,9 @@ typedef HideGlobalConfig = {
 	var trackGpuAlloc : Bool;
 	var unfocusCPUSavingMode : Bool;
 
+	// Scene Editor
+	var sceneEditorClickCycleObjects : Bool;
+
 	// CDB
 	var highlightActiveLine : Bool;
 	var highlightActiveLineHeader : Bool;
