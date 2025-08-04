@@ -94,6 +94,7 @@ class Decal extends Object3D {
 
 	#if editor
 	override function makeInteractive():hxd.SceneEvents.Interactive {
+		if (editorIcon2 == null) return null;
 		var int = new h3d.scene.Interactive(editorIcon2.getCollider(), editorIcon2);
 		int.ignoreParentTransform = true;
 		int.propagateEvents = true;
