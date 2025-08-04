@@ -30,6 +30,10 @@ class Decal extends Object3D {
 	@:s var normalFadeEnd : Float = 1;
 	@:s var refMatLib : String;
 
+	#if editor
+	var editorIcon2 : hrt.impl.EditorTools.EditorIcon;
+	#end
+
 	override function save() : Dynamic {
 		var obj : Dynamic = super.save();
 		if(blendMode != Alpha) obj.blendMode = blendMode.getIndex();
@@ -77,8 +81,26 @@ class Decal extends Object3D {
 		mesh.material.mainPass.depthTest = GreaterEqual;
 		mesh.material.mainPass.culling = Front;
 		mesh.material.shadows = false;
+
+		#if editor
+		var offsetter = new h3d.scene.Object(mesh);
+		offsetter.z = 0.25;
+		offsetter.name = "offsetter";
+		editorIcon2 = hrt.impl.EditorTools.create3DIcon(offsetter, hide.Ide.inst.getHideResPath("icons/decal.png"), 0.5, Decals);
+		#end
+
 		return mesh;
 	}
+
+	#if editor
+	override function makeInteractive():hxd.SceneEvents.Interactive {
+		var int = new h3d.scene.Interactive(editorIcon2.getCollider(), editorIcon2);
+		int.ignoreParentTransform = true;
+		int.propagateEvents = true;
+		int.enableRightButton = true;
+		return int;
+	}
+	#end
 
 	public function updateRenderParams() {
 		var mesh = Std.downcast(local3d, h3d.scene.Mesh);
@@ -216,6 +238,8 @@ class Decal extends Object3D {
 				var uvShader = new h3d.shader.Texture(h3d.mat.Texture.fromColor(0xFFFFFFFF));
 				wire.material.mainPass.addShader(uvShader);
 				wireCenter.material.mainPass.addShader(uvShader);
+
+				editorIcon2.material.color.setColor(0xFFFFFF00);
 			}
 		} else {
 			clearSelection();
@@ -229,6 +253,7 @@ class Decal extends Object3D {
 		var objs = obj.findAll( o -> if(o.name == "_highlight") o else null );
 		for( o in objs )
 			o.remove();
+		editorIcon2.material.color.setColor(0xFFFFFFFF);
 	}
 
 	override function edit( ctx : hide.prefab.EditContext ) {
