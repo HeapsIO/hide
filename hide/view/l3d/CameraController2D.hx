@@ -91,6 +91,10 @@ class CameraController2D extends h2d.Object {
 	public dynamic function onClick( e : hxd.Event ) {
 	}
 
+	public dynamic function onCustomEvent(e : hxd.Event ) {
+
+	}
+
 	function onEvent( e : hxd.Event ) {
 
 		var p : h2d.Object = this;
@@ -101,6 +105,10 @@ class CameraController2D extends h2d.Object {
 			}
 			p = p.parent;
 		}
+
+		onCustomEvent(e);
+		if (e.propagate == false)
+			return;
 
 		switch( e.kind ) {
 		case EWheel:
