@@ -348,8 +348,10 @@ class Ide extends hide.tools.IdeData {
 		if (layout.root == null)
 			return null;
 		var target = layout.root.getItemsById(position)[0];
-		if (target != null)
+		if (target != null) {
+			target.config.content ??= [];
 			return target;
+		}
 
 		var parent : golden.ContentItem = null;
 		var config : golden.Config.ItemConfig;
