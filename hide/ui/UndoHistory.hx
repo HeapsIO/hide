@@ -9,13 +9,15 @@ enum HistoryElement {
 private typedef Elt = { h : HistoryElement, id : Int, callb : Void -> Void };
 
 class UndoHistory {
+	public var currentID(get, never) : Int;
 
 	var uidGen = 0;
 	var undoElts : Array<Elt> = [];
 	var redoElts : Array<Elt> = [];
-	public var currentID(get, never) : Int;
+	var maxHistoryCount : Int;
 
-	public function new() {
+	public function new(maxHistoryCount : Int = 50) {
+		this.maxHistoryCount = maxHistoryCount;
 	}
 
 	function get_currentID() {
@@ -23,6 +25,8 @@ class UndoHistory {
 	}
 
 	public function change(h, ?callb, ?noDataChange) {
+		if (undoElts.length >= maxHistoryCount)
+			undoElts.shift();
 		undoElts.push({ h : h, id : noDataChange ? currentID : ++uidGen, callb : callb });
 		redoElts = [];
 		onChange();
