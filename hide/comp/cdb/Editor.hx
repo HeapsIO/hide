@@ -87,7 +87,7 @@ class Editor extends Component {
 		this.config = config;
 		this.cdbTable = cdbTable;
 		view = cast this.config.get("cdb.view");
-		undo = new hide.ui.UndoHistory();
+		undo = new hide.ui.UndoHistory(40);
 	}
 
 	public function getCurrentSheet() {
@@ -954,6 +954,8 @@ class Editor extends Component {
 		Allow recursion, only last endChanges() will trigger db save and undo point creation.
 	**/
 	public function beginChanges( ?structure : Bool ) {
+		if (undoState.length >= @:privateAccess undo.maxHistoryCount)
+			undoState.shift();
 		if( changesDepth == 0 )
 			undoState.unshift(getState());
 		changesDepth++;
