@@ -382,7 +382,7 @@ class Camera extends Object3D {
 		if ( parent != null ) {
 			var invPos = new h3d.Matrix();
 			invPos._44 = 0;
-			invPos.inverse3x4(parent.getAbsPos());
+			invPos.inverse3x4(parent.getAbsPos(true));
 			transform.multiply(transform, invPos);
 		}
 		setTransform(transform);
