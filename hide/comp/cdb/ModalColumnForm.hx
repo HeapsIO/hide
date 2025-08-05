@@ -436,7 +436,14 @@ class ModalColumnForm extends Modal {
 			typeStr : null,
 			name : v.name,
 		};
-		c.opt = v.req != "on";
+
+		// preserve null c.opt to avoid triggering old.opt != c.opt in cdb.Database.updateColumn
+		if (v.req == "on" && refColumn.opt == null) {
+			c.opt = null;
+		} else {
+			c.opt = v.req != "on";
+		}
+
 		if( v.display != "0" ) c.display = cast Std.parseInt(v.display);
 		c.kind = js.Lib.undefined;
 		switch( v.kind ) {
