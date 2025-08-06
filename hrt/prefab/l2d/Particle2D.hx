@@ -186,31 +186,34 @@ class Particle2D extends Object2D {
 	override function edit( ctx : hide.prefab.EditContext ) {
 		super.edit(ctx);
 
+		if (this.local2d == null)
+			this.make();
+
 		var params = new hide.Element(hide.view.Particles2D.getParamsHTMLform());
 
 		var particles2d = (cast local2d : Particles);
-			var group = @:privateAccess particles2d.groups[0];
-			ctx.properties.add(new hide.Element('
-			<div class="content">
-				<div class="group" name="Emit">
-					<dt>Is burst emit</dt><dd><input type="checkbox" field="isBurstEmit"/></dd>
-					<dt>Burst particle count</dt><dd><input type="range" field="burstParticleCount" min="0" max="100" step="1"/></dd>
-					<dt>Initial burst delay</dt><dd><input type="range" field="initialBurstDelay" min="0" max="10" step="0.1"/></dd>
-					<dt>Delay between burst</dt><dd><input type="range" field="burstDelay" min="0" max="10" step="0.1"/></dd>
-				</div>
+		var group = @:privateAccess particles2d.groups[0];
+		ctx.properties.add(new hide.Element('
+		<div class="content">
+			<div class="group" name="Emit">
+				<dt>Is burst emit</dt><dd><input type="checkbox" field="isBurstEmit"/></dd>
+				<dt>Burst particle count</dt><dd><input type="range" field="burstParticleCount" min="0" max="100" step="1"/></dd>
+				<dt>Initial burst delay</dt><dd><input type="range" field="initialBurstDelay" min="0" max="10" step="0.1"/></dd>
+				<dt>Delay between burst</dt><dd><input type="range" field="burstDelay" min="0" max="10" step="0.1"/></dd>
 			</div>
-			'), this, function (pname) { ctx.onChange(this, pname); });
+		</div>
+		'), this, function (pname) { ctx.onChange(this, pname); });
 
-			ctx.properties.add(params, group, function (pname) {
-				// if fx2d is running, tick() changes group params and modifies group.save()
-				// if a param has a curve and we changed this param on the right panel,
-				// the saved value will be the value of the curve at this point.
-				Reflect.setField(paramsParticleGroup, pname, Reflect.field(group.save(), pname));
+		ctx.properties.add(params, group, function (pname) {
+			// if fx2d is running, tick() changes group params and modifies group.save()
+			// if a param has a curve and we changed this param on the right panel,
+			// the saved value will be the value of the curve at this point.
+			Reflect.setField(paramsParticleGroup, pname, Reflect.field(group.save(), pname));
 
 
-				ctx.onChange(this, pname);
-			});
-		}
+			ctx.onChange(this, pname);
+		});
+	}
 
 	override function getHideProps() : hide.prefab.HideProps {
 		return { icon : "square", name : "Particle2D" };

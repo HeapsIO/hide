@@ -36,6 +36,9 @@ class Particles3D extends Object3D {
 	override function edit(ectx:hide.prefab.EditContext) {
 		super.edit(ectx);
 		if(source == null) {
+			if (local3d == null)
+				this.make();
+
 			var parts = cast(local3d,h3d.parts.GpuParticles);
 
 			function undo(f) {
