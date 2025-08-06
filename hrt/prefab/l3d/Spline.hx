@@ -764,7 +764,7 @@ class Spline extends hrt.prefab.Object3D {
 			length += samples[i].pos.distance(samples[i+1].pos);
 		return length;
 	}
-	
+
 
 	// -- Spline maths -- //
 	inline function getPointBetween( t : Float, p1 : SplinePoint, p2 : SplinePoint ) : h3d.col.Point {
@@ -788,6 +788,22 @@ class Spline extends hrt.prefab.Object3D {
 	inline function getCubicBezierPoint( t : Float, p0 : h3d.col.Point, p1 : h3d.col.Point, p2 : h3d.col.Point, p3 : h3d.col.Point) : h3d.col.Point {
 		// Cubic Interpolation : p(t) = p0 * (1 - t)³ + p1 * t * 3 * (1 - t)² + p2 * t² * 3 * (1 - t) + p3 * t³
 		return p0.scaled((1 - t) * (1 - t) * (1 - t)).add(p1.scaled(t * 3 * (1 - t) * (1 - t))).add(p2.scaled(t * t * 3 * (1 - t))).add(p3.scaled(t * t * t));
+	}
+
+	inline function getTangentInBetween(t: Float, p1: SplinePoint, p2 : SplinePoint) : h3d.col.Point {
+		return switch (shape) {
+			case Linear: new h3d.col.Point();
+			case Quadratic: new h3d.col.Point(); // in tangent point is ignored in quadratic mode
+			case Cubic: getQuadraticBezierPoint(t, p1.pos, p1.pos + p1.tangentOut, p2.pos + p2.tangentIn) - getPointBetween(t, p1, p2);
+		}
+	}
+
+	inline function getTangentOutBetween(t: Float, p1: SplinePoint, p2 : SplinePoint) : h3d.col.Point {
+		return switch (shape) {
+			case Linear: new h3d.col.Point();
+			case Quadratic: getLinearBezierPoint(t, p1.pos + p1.tangentOut, p2.pos) - getPointBetween(t, p1, p2);
+			case Cubic: getQuadraticBezierPoint(t, p1.pos + p1.tangentOut, p2.pos + p2.tangentIn, p2.pos) - getPointBetween(t, p1, p2);
+		}
 	}
 
 	inline function getTangentBetween( t : Float, p1 : SplinePoint, p2 : SplinePoint ) : h3d.col.Point {
@@ -1109,33 +1125,62 @@ class Spline extends hrt.prefab.Object3D {
 	}
 
 	function editorAddPoint(ctx: hide.prefab.EditContext, pIdx : Int) {
-		if (pIdx <= 0 || pIdx >= points.length)
-			addPoint(pIdx)
-		else {
-			var prevT =  points[pIdx - 1].t;
-			var nextT = pIdx > points.length - 1 ? 0 : points[pIdx].t;
-			var inBetweenT = prevT + (nextT - prevT) / 2;
-			var p = globalToLocal(getPoint(inBetweenT));
+		var prevTangentOutOld = null;
+		var prevTangentOutNew = null;
+		var nextTangentInOld = null;
+		var nextTangentInNew = null;
 
-			var nextP = globalToLocal(getPoint(hxd.Math.clamp(inBetweenT + 0.1)));
-			var sp = new SplinePoint(p, null, (p - nextP) , (nextP - p));
-			addPoint(pIdx, sp);
+		var point : SplinePoint = null;
+		if (pIdx <= 0 || pIdx >= points.length)
+			point = new SplinePoint();
+		else {
+			var prev =  points[pIdx - 1];
+			var next = points[pIdx];
+			var p = globalToLocal(getPointBetween(0.5, prev, next));
+			var tangentIn = globalToLocal(getTangentInBetween(0.5, prev, next));
+			var tangentOut = globalToLocal(getTangentOutBetween(0.5, prev, next));
+			point = new SplinePoint(p, null, tangentIn, tangentOut);
+
+			// when in quadratic mode, we also need to update the previous point tangentOut to keep the same curve as before
+			if (shape == Quadratic) {
+				prevTangentOutOld = prev.tangentOut;
+				prevTangentOutNew = p - tangentOut - prev.pos;
+			}
+			else if (shape == Cubic) {
+				prevTangentOutOld = prev.tangentOut;
+				prevTangentOutNew = getLinearBezierPoint(0.5, prev.pos, prev.pos + prev.tangentOut) - prev.pos;
+				nextTangentInOld = next.tangentIn;
+				nextTangentInNew = getLinearBezierPoint(0.5, next.pos + next.tangentIn, next.pos) - next.pos;
+			}
 		}
 
-		this.updateInstance();
-		refreshHandles();
-		refreshPointList(ctx);
-		ctx.properties.undo.change(Custom(function(undo) {
+		var exec = function(undo) {
 			if (undo) {
 				removePoint(pIdx);
+				if (prevTangentOutOld != null) {
+					points[pIdx - 1].tangentOut = prevTangentOutOld;
+				}
+				if (nextTangentInOld != null) {
+					points[pIdx].tangentIn = nextTangentInOld;
+				}
 			}
 			else {
-				addPoint(pIdx);
+				if (prevTangentOutNew != null) {
+					points[pIdx - 1].tangentOut = prevTangentOutNew;
+				}
+				if (nextTangentInNew != null) {
+					points[pIdx].tangentIn = nextTangentInNew;
+				}
+				addPoint(pIdx, point);
 			}
 			this.updateInstance();
 			refreshHandles();
 			refreshPointList(ctx);
-		}));
+		};
+
+		exec(false);
+
+		ctx.properties.undo.change(Custom(exec));
 	}
 
 	function editorRemovePoint(ctx: hide.prefab.EditContext, pIdx : Int) {
