@@ -378,7 +378,7 @@ class Camera extends Object3D {
 		transform.ty = cam.pos.y;
 		transform.tz = cam.pos.z;
 
-		var parent = findParent(hrt.prefab.Object3D);
+		var parent = findParent(hrt.prefab.Object3D, false, true);
 		if ( parent != null ) {
 			var invPos = new h3d.Matrix();
 			invPos._44 = 0;
