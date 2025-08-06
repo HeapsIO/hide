@@ -438,7 +438,7 @@ class ModalColumnForm extends Modal {
 		};
 
 		// preserve null c.opt to avoid triggering old.opt != c.opt in cdb.Database.updateColumn
-		if (v.req == "on" && refColumn.opt == null) {
+		if (v.req == "on" && refColumn?.opt == null) {
 			c.opt = null;
 		} else {
 			c.opt = v.req != "on";
