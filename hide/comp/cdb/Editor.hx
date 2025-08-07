@@ -898,7 +898,7 @@ class Editor extends Component {
 				return;
 			}
 
-			while( y >= y1 ) {
+			while( y >= y1 && y < cursor.table.lines.length) {
 				var line = cursor.table.lines[y];
 				if(!cursor.table.lines[y].element.hasClass("filtered")) {
 					sheet.deleteLine(line.index);
