@@ -1299,7 +1299,7 @@ class Spline extends hrt.prefab.Object3D {
 						var isOnCurve = false;
 						var addToEnd = false;
 
-						if (nearestSampleScreenPos.distance(mousePos) < 20 && !hxd.Key.isPressed(hxd.Key.SHIFT)) {
+						if (nearestSampleScreenPos.distance(mousePos) < 20 && !hxd.Key.isDown(hxd.Key.SHIFT)) {
 							worldMousePos = nearestSamplePos; // If user's mouse is near the spline, snap the new point on spline
 							worldMousePos = worldMousePos.transformed(getAbsPos(true).getInverse());
 							var index = Std.int(nearestSample.realPointIndex);
