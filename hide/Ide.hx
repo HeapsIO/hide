@@ -1680,14 +1680,17 @@ class Ide extends hide.tools.IdeData {
 			chooseFileSave("capture.png", (path) -> {
 				var textureRes = ideConfig.screenCaptureResolution;
 
+
 				var renderTexture = new h3d.mat.Texture(Std.int(textureRes * scene.s3d.camera.screenRatio), textureRes, [Target]);
-				scene.engine.pushTarget(renderTexture);
+				renderTexture.depthBuffer = new h3d.mat.Texture(renderTexture.width, renderTexture.height, Depth24Stencil8);
+				scene.s3d.setOutputTarget(scene.engine, renderTexture);
 				scene.s3d.render(scene.engine);
-				scene.engine.popTarget();
+				scene.s3d.setOutputTarget();
 
 				var pixels = renderTexture.capturePixels();
 				var absPath = getPath(path);
 				sys.io.File.saveBytes(absPath, pixels.toPNG(0));
+				quickMessage('Screen capture saved at ${path}');
 			});
 		});
 

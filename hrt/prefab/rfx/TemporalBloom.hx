@@ -179,7 +179,7 @@ class TemporalBloom extends RendererFX {
 				<dt>Threshold</dt><dd><input type="range" min="0" max="1" field="threshold"/></dd>
 				<dt>Intensity</dt><dd><input type="range" min="0" max="1" field="intensity"/></dd>
 				<dt>Max</dt><dd><input type="range" min="0" max="100" field="maxValue"/></dd>
-				<dt>Texture Size</dt><dd><input type="range" min="0" max="1" field="size"/></dd>
+				<dt>Texture Size</dt><dd><input type="range" step="0.1" min="0.1" max="1" field="size"/></dd>
 				<dt>DownScale/UpScale Count</dt><dd><input type="range" min="1" max="5" field="downScaleCount" step="1"/></dd>
 			</dl>
 		</div>
