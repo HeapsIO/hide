@@ -22,6 +22,7 @@ typedef HideGlobalConfig = {
 	var svnShowModifiedFiles : Bool;
 	var enableDBFormulas : Bool;
 	var screenCaptureResolution : Int;
+	var orientMeshOnDrag : Bool;
 
 	// Search
 	var closeSearchOnFileOpen : Bool;

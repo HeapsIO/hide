@@ -4212,9 +4212,15 @@ class SceneEditor {
 			var norm = ddx.cross(ddy);
 			norm.normalize();
 
-			var q = new h3d.Quat();
-			q.initMoveTo(new h3d.Vector(0, 0, 1), norm);
-			transform = q.toMatrix();
+			if (ide.ideConfig.orientMeshOnDrag) {
+				var q = new h3d.Quat();
+				q.initMoveTo(new h3d.Vector(0, 0, 1), norm);
+				transform = q.toMatrix();
+			}
+			else {
+				transform = new h3d.Matrix();
+				transform.identity();
+			}
 
 			transform.setPosition(center);
 			return transform;

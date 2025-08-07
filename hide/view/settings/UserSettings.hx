@@ -10,6 +10,7 @@ class UserSettings extends Settings {
 		general.add("Show versioned files in filetree", new Element('<input type="checkbox"/>'), Ide.inst.ideConfig.svnShowVersionedFiles, (v) -> {Ide.inst.ideConfig.svnShowVersionedFiles = v; for(view in Ide.inst.getViews(FileBrowser)) view.refreshVCS(); });
 		general.add("Show modified files in filetree", new Element('<input type="checkbox"/>'), Ide.inst.ideConfig.svnShowModifiedFiles, (v) -> {Ide.inst.ideConfig.svnShowModifiedFiles = v; for(view in Ide.inst.getViews(FileBrowser)) view.refreshVCS(); });
 		general.add("Screen capture resolution", new Element('<input type="number"/>'), Ide.inst.ideConfig.screenCaptureResolution, (v) -> {Ide.inst.ideConfig.screenCaptureResolution = v; });
+		general.add("Orient mesh on drag", new Element('<input type="checkbox"/>'), Ide.inst.ideConfig.orientMeshOnDrag, (v) -> {Ide.inst.ideConfig.orientMeshOnDrag = v; });
 
 		categories.push(general);
 
