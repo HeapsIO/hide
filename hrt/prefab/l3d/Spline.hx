@@ -1156,7 +1156,7 @@ class Spline extends hrt.prefab.Object3D {
 
 
 			if (shape == Quadratic) {
-				newPrev.tangentOut = p - tangentOut - prev.pos;
+				newPrev.tangentOut = getLinearBezierPoint(t, prev.pos, prev.pos + prev.tangentOut) - prev.pos;
 			}
 			else if (shape == Cubic) {
 				newPrev.tangentOut = getLinearBezierPoint(t, prev.pos, prev.pos + prev.tangentOut) - prev.pos;
@@ -1299,7 +1299,7 @@ class Spline extends hrt.prefab.Object3D {
 						var isOnCurve = false;
 						var addToEnd = false;
 
-						if (nearestSampleScreenPos.distance(mousePos) < 20) {
+						if (nearestSampleScreenPos.distance(mousePos) < 20 && !hxd.Key.isPressed(hxd.Key.SHIFT)) {
 							worldMousePos = nearestSamplePos; // If user's mouse is near the spline, snap the new point on spline
 							worldMousePos = worldMousePos.transformed(getAbsPos(true).getInverse());
 							var index = Std.int(nearestSample.realPointIndex);
