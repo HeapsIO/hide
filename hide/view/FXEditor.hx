@@ -1653,9 +1653,14 @@ class FXEditor extends hide.view.FileView {
 			}
 			if(currentTime >= previewMax) {
 				currentTime = previewMin;
-
+				lastTime = currentTime;
 				anim.setRandSeed(Std.random(0xFFFFFF));
 			}
+		}
+
+		if (pauseButton.isDown() || lastTime > currentTime) {
+			@:privateAccess scene.s2d.renderer.time = currentTime;
+			@:privateAccess scene.s3d.renderer.ctx.time = currentTime;
 		}
 
 		if(anim != null) {
@@ -1677,6 +1682,7 @@ class FXEditor extends hide.view.FileView {
 			currentVersion = undo.currentID;
 		}
 
+		lastTime = currentTime;
 	}
 
 	var avg_smooth = 0.0;
