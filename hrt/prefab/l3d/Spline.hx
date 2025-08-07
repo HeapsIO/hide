@@ -36,6 +36,7 @@ class SplinePoint {
 	public var tangentOut : h3d.Vector; // Relative to point
 	public var length : Float = 0;
 	public var t : Float = 0;
+	public var realPointIndex: Float; // When sampled, integer part is equal to index of the first real spline point before this sampled point, fractional part is equal to the t between the point and the next one
 
 	public function new(?pos: h3d.col.Point, ?up: h3d.Vector, ?tangentIn: h3d.Vector, ?tangentOut: h3d.Vector) {
 		this.pos = (pos == null) ? new h3d.col.Point(0, 0, 0) : pos.clone();
@@ -80,6 +81,15 @@ class SplinePoint {
 		t = obj.t;
 		length = obj.length;
 	}
+
+	public function loadOther(other: SplinePoint) {
+		pos.load(other.pos);
+		up.load(other.up);
+		tangentIn.load(other.tangentIn);
+		tangentOut.load(other.tangentOut);
+		t = other.t;
+		length = other.length;
+	}
 }
 
 @:allow(hrt.prefab.l3d.SplineMesh)
@@ -112,7 +122,6 @@ class Spline extends hrt.prefab.Object3D {
 	var grid : h3d.scene.Graphics;
 	var mousePos : h3d.Vector;
 	var previewSpline : Spline;
-	var previewPoint : SplinePoint;
 	var draggedObj : { pos: h3d.Vector, type: HandleType };
 	var prevPos : h3d.Vector;
 
@@ -706,7 +715,10 @@ class Spline extends hrt.prefab.Object3D {
 		if( numPts <= 0 ) return;
 		if( points == null || points.length <= 1 ) return;
 
-		samples.push(localToGlobalSplinePoint(new SplinePoint(points[0].pos, points[0].up, points[0].tangentIn, points[0].tangentOut)));
+		var currentIndex = 0;
+		var pt = localToGlobalSplinePoint(new SplinePoint(points[0].pos, points[0].up, points[0].tangentIn, points[0].tangentOut));
+		pt.realPointIndex = currentIndex;
+		samples.push(pt);
 		var maxI = loop ? points.length : points.length - 1;
 		var curP = localToGlobalSplinePoint(points[0]);
 		var nextP = localToGlobalSplinePoint(points[1]);
@@ -718,6 +730,7 @@ class Spline extends hrt.prefab.Object3D {
 				var p = getPointBetween(t, curP, nextP);
 				if (p.distance(samples[samples.length - 1].pos) >= 1./numPts) {
 					var newP = new SplinePoint();
+					newP.realPointIndex = currentIndex + t;
 					newP.pos = p;
 					var tangent = getTangentBetween(t, curP, nextP);
 					newP.tangentIn = -1 * tangent;
@@ -728,7 +741,11 @@ class Spline extends hrt.prefab.Object3D {
 				t += stride;
 			}
 
-			samples.push(new SplinePoint(nextP.pos, nextP.up, nextP.tangentIn, nextP.tangentOut));
+			currentIndex ++;
+
+			var pt = new SplinePoint(nextP.pos, nextP.up, nextP.tangentIn, nextP.tangentOut);
+			pt.realPointIndex = currentIndex;
+			samples.push(pt);
 			toCompute.push({ s: samples[samples.length - 1], idx: -1 });
 
 			curP = localToGlobalSplinePoint(points[i]);
@@ -1124,52 +1141,70 @@ class Spline extends hrt.prefab.Object3D {
 		}
 	}
 
-	function editorAddPoint(ctx: hide.prefab.EditContext, pIdx : Int) {
-		var prevTangentOutOld = null;
-		var prevTangentOutNew = null;
-		var nextTangentInOld = null;
-		var nextTangentInNew = null;
+
+	function getFuturePointBetween(t: Float, prev: SplinePoint, next: SplinePoint) : {prev: SplinePoint, toAdd: SplinePoint, next: SplinePoint} {
+			var p = globalToLocal(getPointBetween(t, prev, next));
+			var tangentIn = globalToLocal(getTangentInBetween(t, prev, next));
+			var tangentOut = globalToLocal(getTangentOutBetween(t, prev, next));
+			var toAdd = new SplinePoint(p, null, tangentIn, tangentOut);
+
+			var newPrev = new SplinePoint();
+			newPrev.loadOther(prev);
+
+			var newNext = new SplinePoint();
+			newNext.loadOther(next);
+
+
+			if (shape == Quadratic) {
+				newPrev.tangentOut = p - tangentOut - prev.pos;
+			}
+			else if (shape == Cubic) {
+				newPrev.tangentOut = getLinearBezierPoint(t, prev.pos, prev.pos + prev.tangentOut) - prev.pos;
+				newNext.tangentIn = getLinearBezierPoint(t, next.pos + next.tangentIn, next.pos) - next.pos;
+			}
+
+			return {
+				prev: newPrev,
+				toAdd: toAdd,
+				next: newNext,
+			};
+	}
+
+	function editorAddPoint(ctx: hide.prefab.EditContext, pIdx : Int, t: Float = 0.5) {
+		var prevOld = null;
+		var prevNew = null;
+		var nextOld = null;
+		var nextNew = null;
 
 		var point : SplinePoint = null;
 		if (pIdx <= 0 || pIdx >= points.length)
 			point = new SplinePoint();
 		else {
-			var prev =  points[pIdx - 1];
-			var next = points[pIdx];
-			var p = globalToLocal(getPointBetween(0.5, prev, next));
-			var tangentIn = globalToLocal(getTangentInBetween(0.5, prev, next));
-			var tangentOut = globalToLocal(getTangentOutBetween(0.5, prev, next));
-			point = new SplinePoint(p, null, tangentIn, tangentOut);
+			var data = getFuturePointBetween(t, points[pIdx - 1], points[pIdx]);
+			point = data.toAdd;
+			prevOld = points[pIdx - 1];
+			prevNew = data.prev;
 
-			// when in quadratic mode, we also need to update the previous point tangentOut to keep the same curve as before
-			if (shape == Quadratic) {
-				prevTangentOutOld = prev.tangentOut;
-				prevTangentOutNew = p - tangentOut - prev.pos;
-			}
-			else if (shape == Cubic) {
-				prevTangentOutOld = prev.tangentOut;
-				prevTangentOutNew = getLinearBezierPoint(0.5, prev.pos, prev.pos + prev.tangentOut) - prev.pos;
-				nextTangentInOld = next.tangentIn;
-				nextTangentInNew = getLinearBezierPoint(0.5, next.pos + next.tangentIn, next.pos) - next.pos;
-			}
+			nextOld = points[pIdx];
+			nextNew = data.next;
 		}
 
 		var exec = function(undo) {
 			if (undo) {
 				removePoint(pIdx);
-				if (prevTangentOutOld != null) {
-					points[pIdx - 1].tangentOut = prevTangentOutOld;
+				if (prevOld != null) {
+					points[pIdx - 1] = prevOld;
 				}
-				if (nextTangentInOld != null) {
-					points[pIdx].tangentIn = nextTangentInOld;
+				if (nextOld != null) {
+					points[pIdx] = nextOld;
 				}
 			}
 			else {
-				if (prevTangentOutNew != null) {
-					points[pIdx - 1].tangentOut = prevTangentOutNew;
+				if (prevNew != null) {
+					points[pIdx - 1] = prevNew;
 				}
-				if (nextTangentInNew != null) {
-					points[pIdx].tangentIn = nextTangentInNew;
+				if (nextNew != null) {
+					points[pIdx] = nextNew;
 				}
 				addPoint(pIdx, point);
 			}
@@ -1225,12 +1260,11 @@ class Spline extends hrt.prefab.Object3D {
 		interactive.propagateEvents = true;
 		interactive.cancelEvents = false;
 
+
 		interactive.onKeyDown = function(e) {
 			if (e.keyCode == hxd.Key.ALT) {
-				if (previewPoint == null) {
+				if (previewSpline == null) {
 					previewSpline = cast this.clone(this.parent, this.shared).make();
-					previewPoint = new SplinePoint();
-					previewSpline.addPoint(null, previewPoint);
 
 					this.local3d.visible = false;
 					if (mousePos == null)
@@ -1244,6 +1278,14 @@ class Spline extends hrt.prefab.Object3D {
 						if (previewSpline == null)
 							return;
 
+						previewSpline.points.resize(points.length);
+						for (i => point in points) {
+							if (previewSpline.points[i] == null) {
+								previewSpline.points[i] = new SplinePoint();
+							}
+							previewSpline.points[i].loadOther(point);
+						}
+
 						var nearestSample = getClosestSplinePointFromMouse(mousePos, cam);
 						var nearestSamplePos = nearestSample == null ? splinePos : nearestSample.pos;
 						var plane = h3d.col.Plane.fromNormalPoint(getCameraClosestEulerPlaneNormal(cam), nearestSamplePos);
@@ -1254,11 +1296,21 @@ class Spline extends hrt.prefab.Object3D {
 						// Find nearest point on spline
 						var nearestSampleScreenPos = cam.projectInline(nearestSamplePos.x, nearestSamplePos.y, nearestSamplePos.z, width, height);
 						nearestSampleScreenPos.z = 0;
+						var isOnCurve = false;
+						var addToEnd = false;
+
 						if (nearestSampleScreenPos.distance(mousePos) < 20) {
 							worldMousePos = nearestSamplePos; // If user's mouse is near the spline, snap the new point on spline
+							worldMousePos = worldMousePos.transformed(getAbsPos(true).getInverse());
+							var index = Std.int(nearestSample.realPointIndex);
+							var t = nearestSample.realPointIndex - index;
+							var next = (index + 1) % points.length;
+							var data = getFuturePointBetween(t, points[index], points[next]);
+							previewSpline.points[index] = data.prev;
+							previewSpline.points[next] = data.next;
+							previewSpline.addPoint(index+1, data.toAdd);
 						}
 						else {
-							var addToEnd = false;
 							if (points != null && points.length > 0) {
 								var startP = points[0];
 								var endP = points[points.length - 1];
@@ -1270,12 +1322,14 @@ class Spline extends hrt.prefab.Object3D {
 
 							plane = h3d.col.Plane.fromNormalPoint(getCameraClosestEulerPlaneNormal(cam), worldMousePos);
 							drawGrid(nearestSamplePos, plane.getNormal(), cam, s3d);
-							previewSpline.points.remove(previewPoint);
+
+							worldMousePos = worldMousePos.transformed(getAbsPos(true).getInverse());
+
+							var previewPoint = new SplinePoint();
+							previewPoint.pos = worldMousePos;
 							previewSpline.addPoint(addToEnd ? previewSpline.points.length : 0, previewPoint);
 						}
 
-						worldMousePos = worldMousePos.transformed(getAbsPos(true).getInverse());
-						previewPoint.pos = worldMousePos;
 						updateSpline(previewSpline);
 					}
 
@@ -1292,7 +1346,7 @@ class Spline extends hrt.prefab.Object3D {
 		}
 
 		interactive.onKeyUp = function(e) {
-			if (e.keyCode == hxd.Key.ALT && previewPoint != null) {
+			if (e.keyCode == hxd.Key.ALT && previewSpline != null) {
 				local3d.visible = true;
 				clearGrid();
 				clearPreviewSpline();
@@ -1302,25 +1356,24 @@ class Spline extends hrt.prefab.Object3D {
 		}
 
 		interactive.onClick = function(e) {
-			if (previewPoint != null) {
-				var p = previewPoint;
-				var pidx = previewSpline.points.indexOf(previewPoint);
-				addPoint(pidx, previewPoint);
+			if (previewSpline != null) {
+				var oldPoints = points;
+				var newPoints = previewSpline.points;
 
-				ctx.properties.undo.change(Custom(function(undo) {
+				var exec = function(undo) {
 					if (undo) {
-						removePoint(pidx);
+						points = oldPoints;
 					}
 					else {
-						addPoint(pidx, p);
+						points = newPoints;
 					}
 
 					updateSpline(this);
 					refreshPointList(ctx);
-				}));
+				};
 
-				refreshPointList(ctx);
-				updateSpline(this);
+				exec(false);
+				ctx.properties.undo.change(Custom(exec));
 				clearPreviewSpline();
 			}
 
@@ -1406,7 +1459,7 @@ class Spline extends hrt.prefab.Object3D {
 		}
 
 		function cancelEventPropagation(e : hxd.Event) {
-			if (previewPoint != null)
+			if (previewSpline != null)
 				e.propagate = false;
 		}
 
@@ -1460,7 +1513,6 @@ class Spline extends hrt.prefab.Object3D {
 		previewSpline?.local3d.remove();
 		previewSpline?.parent.children.remove(previewSpline);
 		previewSpline = null;
-		previewPoint = null;
 	}
 
 	function drawGrid(center : h3d.col.Point, normal : h3d.Vector, cam : h3d.Camera, s3d : h3d.scene.Scene) {
