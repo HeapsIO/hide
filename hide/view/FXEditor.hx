@@ -325,6 +325,7 @@ class FXEditor extends hide.view.FileView {
 	var loopButton : hide.comp.Toolbar.ToolToggle;
 	@:isVar var currentTime(get, set) : Float;
 	var lastTime : Float;
+	var lastSeek : Float = 0;
 	var selectMin : Float;
 	var selectMax : Float;
 	var previewMin : Float;
@@ -496,6 +497,8 @@ class FXEditor extends hide.view.FileView {
 
 		keys.register("playPause", function() { pauseButton.toggle(!pauseButton.isDown()); });
 		keys.register("loopAnim", function() { loopButton.toggle(!loopButton.isDown()); });
+		keys.register("playFromLastSeek", function() { pauseButton.toggle(false); currentTime = lastSeek; });
+		keys.register("playFromStart", function() { pauseButton.toggle(false); currentTime = 0; lastSeek = 0; });
 
 		currentVersion = undo.currentID;
 		sceneEditor.sceneTree.element.addClass("small");
@@ -1650,8 +1653,13 @@ class FXEditor extends hide.view.FileView {
 
 		var anim = sceneEditor.root2d.find((p) -> Std.downcast(p, hrt.prefab.fx.FX2D.FX2DAnimation));
 
+		if (lastTime != currentTime) {
+			lastSeek = currentTime;
+		}
+
 		if(!pauseButton.isDown()) {
 			currentTime += scene.speed * dt;
+
 			if(this.curveEditor != null) {
 				this.curveEditor.refreshTimeline(currentTime);
 				this.curveEditor.refreshOverlay(data.duration);
@@ -1671,6 +1679,8 @@ class FXEditor extends hide.view.FileView {
 		if(anim != null) {
 			anim.setTime(currentTime);
 		}
+
+		lastTime = currentTime;
 
 		// if(statusText != null) {
 		// 	var lines : Array<String> = [
@@ -1760,6 +1770,10 @@ class FXEditor extends hide.view.FileView {
 			var hasJumped = currentTime != lastTime;
 
 			var paused = pauseButton.isDown();
+
+			if (hasJumped) {
+				lastSeek = currentTime;
+			}
 
 			if(!paused || hasJumped || forceTick) {
 				var localDt = (hasJumped || (paused && forceTick)) ? 0 : scene.speed * dt;
