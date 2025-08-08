@@ -2966,8 +2966,10 @@ class SceneEditor {
 	function toggleInteractive( e : PrefabElement, visible : Bool ) {
 		var ints = getInteractives(e);
 		for (int in ints) {
-			Std.downcast(int,h2d.Interactive)?.visible = visible;
-			Std.downcast(int,h3d.scene.Interactive)?.visible = visible;
+			var i2d = Std.downcast(int,h2d.Interactive);
+			if (i2d != null) i2d.visible = visible;
+			var i3d = Std.downcast(int,h3d.scene.Interactive);
+			if (i3d != null) i3d.visible = visible;
 		}
 	}
 
