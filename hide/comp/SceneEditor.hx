@@ -5750,8 +5750,8 @@ class SceneEditor {
 			var o = Std.downcast(elt, Object2D);
 			if (o != null) {
 				mat.multiply(mat, o.getTransformMatrix());
-			}
-			elt = o.parent;
+				elt = o.parent;
+			} else break;
 		}
 		return mat;
 	}
