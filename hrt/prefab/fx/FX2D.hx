@@ -103,13 +103,13 @@ class FX2DAnimation extends h2d.Object {
 		for(anim in objects) {
 			if(anim.scale != null) {
 				evaluator.getVector(anim.scale, time, tmpPt);
-				anim.obj2d.scaleX = tmpPt.x;
-				anim.obj2d.scaleY = tmpPt.y;
+				anim.obj2d.scaleX = anim.elt2d.scaleX * tmpPt.x;
+				anim.obj2d.scaleY = anim.elt2d.scaleY * tmpPt.y;
 			}
 
 			if(anim.rotation != null) {
 				var rotation = evaluator.getFloat(anim.rotation, time);
-				anim.obj2d.rotation = rotation * (Math.PI / 180.0);
+				anim.obj2d.rotation = anim.elt2d.rotation + rotation * (Math.PI / 180.0);
 			}
 
 			if(anim.position != null) {
