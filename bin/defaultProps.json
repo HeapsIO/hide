@@ -45,8 +45,8 @@
 	"key.selectAll" : "Ctrl-A",
 	"key.selectInvert" : "Ctrl-I",
 	"key.playPause" : "Space",
-	"key.playFromLastSeek" : "Ctrl-Space",
-	"key.playFromStart" : "Ctrl-Shift-Space",
+	"key.playFromLastSeek" : "Ctrl-Shift-Space",
+	"key.playFromStart" : "Ctrl-Space",
 	"key.loopAnim" : "O",
 
 	// model view
