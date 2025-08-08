@@ -1765,12 +1765,10 @@ class FXEditor extends hide.view.FileView {
 				var localDt = (hasJumped || (paused && forceTick)) ? 0 : scene.speed * dt;
 				var nextTime = currentTime + localDt;
 				if (nextTime > fx.duration && fx.duration > 0) {
-					if (!fx.loop || fx.playState == End) {
-						nextTime = 0;
-						localDt = 0;
-						hasJumped = true;
-						fx.reset();
-					}
+					nextTime = 0;
+					localDt = 0;
+					hasJumped = true;
+					fx.reset();
 				}
 				@:privateAccess fx.setTimeInternal(nextTime, localDt, hasJumped);
 

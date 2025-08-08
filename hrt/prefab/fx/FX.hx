@@ -332,37 +332,48 @@ class FXAnimation extends h3d.scene.Object {
 		var oldLocalTime = localTime;
 		localTime = newTimeParent - startDelay;
 
-		if (playState == Start) {
-			if (localTime >= loopStart && loop) {
-				playState = Loop;
-			}
-		}
-
-		if (playState == Loop && isSeek) {
+		if (isSeek && loop) {
 			if (localTime >= loopEnd) {
 				playState = End;
 			} else if (localTime < loopStart) {
 				playState = Start;
+			} else {
+				playState = Loop;
 			}
 		}
-
-		if (playState == Loop) {
-			localTime = oldLocalTime + dt;
-			if (loopEnd - loopStart > 0) {
-				localTime = ((localTime - loopStart) % (loopEnd - loopStart)) + loopStart;
+		else if (loop) {
+			if (playState == Start) {
+				if (localTime >= loopStart) {
+					playState = Loop;
+				}
 			}
-		}
 
-		if (playState == End) {
-			// Fast forward to end of loop if we are still in the loop
-			if (loopEnd > 0 && stopTime >= 0) {
-				var loopCatchTime = loopEnd - stopTime;
-				var passedTime = localTime - stopTime;
-				if(loopCatchTime > 0.1) { // Catch up lerp from loop
-					if(passedTime < 0.1)
-						localTime = hxd.Math.lerp(stopTime, loopEnd, passedTime / 0.1);
-					else if(localTime < loopEnd)
-						localTime = loopEnd;
+			if (playState == Loop && isSeek) {
+				if (localTime >= loopEnd) {
+					playState = End;
+				} else if (localTime < loopStart) {
+					playState = Start;
+				}
+			}
+
+			if (playState == Loop) {
+				localTime = oldLocalTime + dt;
+				if (loopEnd - loopStart > 0) {
+					localTime = ((localTime - loopStart) % (loopEnd - loopStart)) + loopStart;
+				}
+			}
+
+			if (playState == End) {
+				// Fast forward to end of loop if we are still in the loop
+				if (loopEnd > 0 && stopTime >= 0) {
+					var loopCatchTime = loopEnd - stopTime;
+					var passedTime = localTime - stopTime;
+					if(loopCatchTime > 0.1) { // Catch up lerp from loop
+						if(passedTime < 0.1)
+							localTime = hxd.Math.lerp(stopTime, loopEnd, passedTime / 0.1);
+						else if(localTime < loopEnd)
+							localTime = loopEnd;
+					}
 				}
 			}
 		}
