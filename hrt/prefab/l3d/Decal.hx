@@ -83,10 +83,7 @@ class Decal extends Object3D {
 		mesh.material.shadows = false;
 
 		#if editor
-		var offsetter = new h3d.scene.Object(mesh);
-		offsetter.z = 0.25;
-		offsetter.name = "offsetter";
-		editorIcon2 = hrt.impl.EditorTools.create3DIcon(offsetter, hide.Ide.inst.getHideResPath("icons/decal.png"), 0.5, Decals);
+		makeEditorIcon(mesh);
 		#end
 
 		return mesh;
@@ -94,12 +91,22 @@ class Decal extends Object3D {
 
 	#if editor
 	override function makeInteractive():hxd.SceneEvents.Interactive {
-		if (editorIcon2 == null) return null;
-		var int = new h3d.scene.Interactive(editorIcon2.getCollider(), editorIcon2);
-		int.ignoreParentTransform = true;
-		int.propagateEvents = true;
-		int.enableRightButton = true;
-		return int;
+		if (editorIcon2 != null) {
+			var int = new h3d.scene.Interactive(editorIcon2.getCollider(), editorIcon2);
+			int.ignoreParentTransform = true;
+			int.propagateEvents = true;
+			int.enableRightButton = true;
+			return int;
+		} else {
+			return super.makeInteractive();
+		}
+	}
+
+	function makeEditorIcon(parentObject: h3d.scene.Object) {
+		var offsetter = new h3d.scene.Object(parentObject);
+		offsetter.z = 0.25;
+		offsetter.name = "offsetter";
+		editorIcon2 = hrt.impl.EditorTools.create3DIcon(offsetter, hide.Ide.inst.getHideResPath("icons/decal.png"), 0.5, Decals);
 	}
 	#end
 
