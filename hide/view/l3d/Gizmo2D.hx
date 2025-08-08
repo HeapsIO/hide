@@ -26,6 +26,7 @@ class Gizmo2D extends h2d.Object {
 		int = new h2d.Interactive(0,0,this);
 		int.propagateEvents = true;
 		var cScale = hxd.Cursor.CustomCursor.getNativeCursor("nwse-resize");
+		var cMove = hxd.Cursor.CustomCursor.getNativeCursor("move");
 		var cScaleX = hxd.Cursor.CustomCursor.getNativeCursor("ew-resize");
 		var cScaleY = hxd.Cursor.CustomCursor.getNativeCursor("ns-resize");
 		var cRot = hxd.Cursor.CustomCursor.getNativeCursor("grabbing");
@@ -34,8 +35,8 @@ class Gizmo2D extends h2d.Object {
 			var z = getZone(e);
 			switch( z ) {
 			case Pan:
-				e.cancel = true;
 				int.cursor = Button;
+				return;
 			case Scale:
 				int.cursor = cScale;
 			case ScaleX:
@@ -49,7 +50,7 @@ class Gizmo2D extends h2d.Object {
 		int.onPush = function(e:hxd.Event) {
 			var z = getZone(e);
 			if( z == Pan ) {
-				e.cancel = true;
+				//e.cancel = true;
 				return;
 			}
 			if( e.button != 0 )

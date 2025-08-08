@@ -1770,7 +1770,7 @@ class SceneEditor {
 		var curDrag = null;
 		var dragBtn = -1;
 		var lastPush : Array<Float> = null;
-		var delaySelection : Bool = false;
+		var delaySelection : Bool = true;
 
 		function doPickSelect(allowCycle: Bool, ?elts: Array<{d: Float, prefab: PrefabElement}>) {
 			allowCycle = allowCycle && Ide.inst.ideConfig.sceneEditorClickCycleObjects;
@@ -1826,6 +1826,7 @@ class SceneEditor {
 				startDrag = null;
 				curDrag = null;
 				dragBtn = -1;
+				delaySelection = true;
 				if (e.button == K.MOUSE_LEFT) {
 					scene.sevents.stopCapture();
 					e.propagate = false;
@@ -1859,7 +1860,21 @@ class SceneEditor {
 				if (elts.length <= 0)
 					return;
 
-				if (e.button == K.MOUSE_LEFT && (selectedPrefabs.length < 0 || elts.find((e) -> selectedPrefabs.contains(e.prefab)) == null)) {
+				var anyElementOrParentSelected = false;
+				for (elt in elts) {
+					for (selected in selectedPrefabs) {
+						var curr = elt.prefab;
+						while(curr != null) {
+							if (curr == selected) {
+								anyElementOrParentSelected = true;
+								break;
+							}
+							curr = curr.parent;
+						}
+					}
+				}
+
+				if (e.button == K.MOUSE_LEFT && (selectedPrefabs.length < 0 || !anyElementOrParentSelected)) {
 					doPickSelect(false, elts);
 					delaySelection = false;
 				}
