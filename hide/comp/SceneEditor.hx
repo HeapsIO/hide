@@ -3250,6 +3250,12 @@ class SceneEditor {
 					obj.x = quantize(pt.x, posQuant);
 					obj.y = quantize(pt.y, posQuant);
 					obj.applyTransform(sceneObjs[i]);
+					var fx2d = obj.findParent(hrt.prefab.fx.FX2D);
+					if (fx2d != null && fx2d.local2d != null) {
+						// recompute animations
+						var anim : hrt.prefab.fx.FX2D.FX2DAnimation = cast fx2d.local2d;
+						anim.setTime(anim.localTime);
+					}
 				}
 			};
 			gizmo2d.onFinishMove = function() {
