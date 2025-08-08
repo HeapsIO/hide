@@ -4428,37 +4428,74 @@ class SceneEditor {
 
 		// Sort the selection to match the scene order
 		var elts : Array<hrt.prefab.Prefab> = [];
+
 		for (p in sceneData.flatten()) {
 			if (selectedPrefabs.contains(p))
 				elts.push(p);
 		}
 
+		var any2d = elts.find((f) -> Std.downcast(f, Object2D) != null) != null;
+		var any3d = elts.find((f) -> Std.downcast(f, Object3D) != null) != null;
+
 		var parent = elts[0].parent;
-		var parentMat = worldMat(parent);
-		var invParentMat = parentMat.clone();
-		invParentMat.invert();
 
+		var group : hrt.prefab.Prefab = null;
+		if (any2d && !any3d) {
+			var parentMat = worldMat2d(parent);
+			var invParentMat = parentMat.clone();
+			invParentMat.invert();
 
-		var pivot = new h3d.Vector();
-		{
-			var count = 0;
-			for(elt in selectedPrefabs) {
-				var m = worldMat(elt);
-				if(m != null) {
-					pivot = pivot.add(m.getPosition());
-					++count;
+			var pivot = new h2d.col.Point();
+			{
+				var count = 0;
+				for (elt in selectedPrefabs) {
+					var m = worldMat2d(elt);
+					if (m != null) {
+						pivot.add(m.getPosition());
+						 ++count;
+					}
 				}
 			}
-			pivot.scale(1.0 / count);
+
+			var local = new h2d.col.Matrix();
+			local.initTranslate(pivot.x, pivot.y);
+			local.multiply(local, invParentMat);
+
+			var group2d = new Object2D(parent, null);
+			group = group2d;
+			autoName(group);
+			group2d.x = local.x;
+			group2d.y = local.y;
 		}
-		var local = new h3d.Matrix();
-		local.initTranslation(pivot.x, pivot.y, pivot.z);
-		local.multiply(local, invParentMat);
-		var group = new hrt.prefab.Object3D(parent, null);
-		autoName(group);
-		group.x = local.tx;
-		group.y = local.ty;
-		group.z = local.tz;
+		else {
+			var parentMat = worldMat(parent);
+			var invParentMat = parentMat.clone();
+			invParentMat.invert();
+
+			var pivot = new h3d.Vector();
+			{
+				var count = 0;
+				for(elt in selectedPrefabs) {
+					var m = worldMat(elt);
+					if(m != null) {
+						pivot = pivot.add(m.getPosition());
+						++count;
+					}
+				}
+				pivot.scale(1.0 / count);
+			}
+			var local = new h3d.Matrix();
+			local.initTranslation(pivot.x, pivot.y, pivot.z);
+			local.multiply(local, invParentMat);
+
+			var group3d = new hrt.prefab.Object3D(parent, null);
+			group = group3d;
+			autoName(group);
+			group3d.x = local.tx;
+			group3d.y = local.ty;
+			group3d.z = local.tz;
+		}
+
 
 		group.shared.current2d = parent.findFirstLocal2d();
 		group.shared.current3d = parent.findFirstLocal3d();
