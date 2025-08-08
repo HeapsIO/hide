@@ -173,6 +173,11 @@ private class FXSceneEditor extends hide.comp.SceneEditor {
 		return tree;
 	}
 
+	override function getRecentMenuKey() {
+		if (parent.is2D) return "sceneeditor.newrecents2d";
+		return super.getRecentMenuKey();
+	}
+
 	override function getNewContextMenu(current: PrefabElement, ?onMake: PrefabElement->Void=null, ?groupByType = true ) {
 		if(current != null && current.to(hrt.prefab.Shader) != null) {
 			var ret : Array<hide.comp.ContextMenu.MenuItem> = [];

@@ -5354,10 +5354,14 @@ class SceneEditor {
 	public dynamic function onUpdate(dt:Float) {
 	}
 
+	public function getRecentMenuKey() : String {
+		return "sceneeditor.newrecents";
+	}
+
 	function getNewRecentContextMenu(current, ?onMake: PrefabElement->Void=null) : Array<hide.comp.ContextMenu.MenuItem> {
 		var parent = current == null ? sceneData : current;
 		var grecent = [];
-		var recents : Array<String> = ide.currentConfig.get("sceneeditor.newrecents", []);
+		var recents : Array<String> = ide.currentConfig.get(getRecentMenuKey(), []);
 		for( g in recents) {
 			@:privateAccess var pmodel = hrt.prefab.Prefab.registry.get(g);
 			if (pmodel != null && checkAllowParent(pmodel, parent))
@@ -5454,12 +5458,12 @@ class SceneEditor {
 						autoName(p);
 					if(onMake != null)
 						onMake(p);
-					var recents : Array<String> = ide.currentConfig.get("sceneeditor.newrecents", []);
+					var recents : Array<String> = ide.currentConfig.get(getRecentMenuKey(), []);
 					recents.remove(p.type);
 					recents.unshift(p.type);
 					var recentSize : Int = view.config.get("sceneeditor.recentsize");
 					if (recents.length > recentSize) recents.splice(recentSize, recents.length - recentSize);
-					ide.currentConfig.set("sceneeditor.newrecents", recents);
+					ide.currentConfig.set(getRecentMenuKey(), recents);
 					return p;
 				}
 
@@ -5467,7 +5471,7 @@ class SceneEditor {
 					if( path != null ) {
 						var p = make(path);
 						addElements([p]);
-						var recents : Array<String> = ide.currentConfig.get("sceneeditor.newrecents", []);
+						var recents : Array<String> = ide.currentConfig.get(getRecentMenuKey(), []);
 						recents.remove(p.type);
 					} else {
 						ide.chooseFile(prefabInfo.inf.fileSource, function(path) {
