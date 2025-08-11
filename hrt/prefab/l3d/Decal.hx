@@ -247,7 +247,8 @@ class Decal extends Object3D {
 				wire.material.mainPass.addShader(uvShader);
 				wireCenter.material.mainPass.addShader(uvShader);
 
-				editorIcon2.material.color.setColor(0xFFFFFF00);
+				if (editorIcon2 != null)
+					editorIcon2.material.color.setColor(0xFFFFFF00);
 			}
 		} else {
 			clearSelection();
@@ -261,7 +262,8 @@ class Decal extends Object3D {
 		var objs = obj.findAll( o -> if(o.name == "_highlight") o else null );
 		for( o in objs )
 			o.remove();
-		editorIcon2.material.color.setColor(0xFFFFFFFF);
+		if (editorIcon2 != null)
+			editorIcon2.material.color.setColor(0xFFFFFFFF);
 	}
 
 	override function edit( ctx : hide.prefab.EditContext ) {
