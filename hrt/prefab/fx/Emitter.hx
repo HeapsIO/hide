@@ -1509,6 +1509,11 @@ class EmitterObject extends h3d.scene.Object {
 		var abs = this.getAbsPos();
 		baseEmitterShader.emitPosition.set(abs.tx, abs.ty, abs.tz);
 
+		var time = localTime + warmUpTime;
+		var catchupTime = time - curTime;
+
+		var seek = seek || (catchupTime > 1.5 * dt);
+
 		if (!seek) {
 			#if editor
 			var start = haxe.Timer.stamp();
@@ -1521,7 +1526,6 @@ class EmitterObject extends h3d.scene.Object {
 			return;
 		}
 
-		var time = localTime + warmUpTime;
 
 		if(hxd.Math.abs(time - curTime) < 1e-6) {  // Time imprecisions can occur during accumulation
 			updateAlignment();
@@ -1531,7 +1535,6 @@ class EmitterObject extends h3d.scene.Object {
 			return;
 		}
 
-		var catchupTime = time - curTime;
 
 		#if !editor  // Limit catchup time to avoid spikes when showing long running FX
 		var longCatchup = catchupTime > maxCatchupWindow;
