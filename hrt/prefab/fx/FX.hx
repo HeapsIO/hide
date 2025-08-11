@@ -151,6 +151,10 @@ class FXAnimation extends h3d.scene.Object {
 		}
 	}
 
+	public function hasEnd() {
+		return loopEnd < duration && loopEnd >= 0;
+	}
+
 	public function reset() {
 		resetSelf();
 
@@ -600,6 +604,8 @@ class FXAnimation extends h3d.scene.Object {
 	public function stop(instant: Bool = false, onEnd: () -> Void = null) {
 		this.onEnd = onEnd;
 		playState = End;
+		if (loopEnd < 0 || loopEnd == duration)
+			instant = true;
 		if (instant == true) {
 			setTimeInternal(duration, 0, true, true);
 		} else {
