@@ -1011,7 +1011,8 @@ class SceneEditor {
 	var basis : h3d.scene.Object;
 	public var showBasis = false;
 	static var customPivot : CustomPivot;
-	var interactives : Map<PrefabElement, hxd.SceneEvents.Interactive> = [];
+	var interactives : Map<PrefabElement, h3d.scene.Interactive> = [];
+	var interactives2d : Map<PrefabElement, h2d.Interactive> = [];
 	public var ide : hide.Ide;
 	public var event(default, null) : hxd.WaitEvent;
 	var hideList : Map<PrefabElement, Bool> = new Map();
@@ -1096,6 +1097,14 @@ class SceneEditor {
 			if( cameraController2D != null ) cameraController2D.toTarget();
 			onResize();
 		};
+
+		scene.element.get(0).addEventListener("blur", (e) -> {
+			scene.sevents.stopCapture();
+		});
+
+		scene.element.get(0).addEventListener("focus", (e) -> {
+			scene.sevents.stopCapture();
+		});
 
 		editorDisplay = true;
 
@@ -1396,6 +1405,7 @@ class SceneEditor {
 			var lines : Array<String> = [
 				'Scene objects: ${splitCentaines(scene.s3d.getObjectsCount())}',
 				'Interactives: ' + splitCentaines(interactives.count()),
+				'Interactives 2d: ' + splitCentaines(interactives2d.count()),
 				'Triangles: ${splitCentaines(Std.int(scene.engine.drawTriangles))}',
 				'Buffers: ${splitCentaines(memStats.bufferCount)}',
 				'Textures: ${splitCentaines(memStats.textureCount)}',
@@ -1664,6 +1674,7 @@ class SceneEditor {
 			cameraController.remove();
 
 		cameraController = Type.createInstance(camClass, [scene.s3d, this]);
+		setupCameraEvents(cameraController);
 
 		if (settings != null) {
 			for (i in 0...CameraControllerEditor.controllersClasses.length) {
@@ -1736,14 +1747,7 @@ class SceneEditor {
 		if (cameraController == null)
 			cameraController = Type.createInstance(CamController, [scene.s3d, this]);
 
-		cameraController.onClick = function(e) {
-			switch( e.button ) {
-			case K.MOUSE_RIGHT:
-				selectNewObject(e);
-			case K.MOUSE_LEFT:
-				selectElements([]);
-			}
-		};
+		setupCameraEvents(cameraController);
 
 		var settings = @:privateAccess view.getDisplayState("Camera");
 		var isGlobalSettings = Ide.inst.currentConfig.get("sceneeditor.camera.isglobalsettings", false);
@@ -1752,6 +1756,143 @@ class SceneEditor {
 		}
 
 		applyCameraControllerSettings(settings);
+	}
+
+	function setupCameraEvents(cameraController: Dynamic) {
+		cameraController.onClick = function(e) {
+			switch( e.button ) {
+			case K.MOUSE_RIGHT:
+				selectNewObject(e);
+			}
+		};
+
+		var startDrag : Array<Float> = null;
+		var curDrag = null;
+		var dragBtn = -1;
+		var lastPush : Array<Float> = null;
+		var delaySelection : Bool = true;
+
+		function doPickSelect(allowCycle: Bool, ?elts: Array<{d: Float, prefab: PrefabElement}>) {
+			allowCycle = allowCycle && Ide.inst.ideConfig.sceneEditorClickCycleObjects;
+			elts ??= getAllPrefabsUnderMouse();
+			if (elts.length > 0) {
+				if(K.isDown(K.SHIFT)) {
+					var elt = elts[0].prefab;
+					if (selectedPrefabs.length > 0 && elts.find((e) -> e.prefab == selectedPrefabs[0]) != null) {
+						elt = selectedPrefabs[0];
+					}
+					if(Type.getClass(elt.parent) == hrt.prefab.Object3D)
+						selectElements([elt.parent]);
+					else
+						selectElements(elt.parent.children);
+
+				}
+				else if (K.isDown(K.CTRL)) {
+					var sel = selectedPrefabs.copy();
+					sel.pushUnique(elts[0].prefab);
+					selectElements(sel);
+				}
+				else {
+					if (selectedPrefabs.length != 1 || !allowCycle) {
+						selectElements([elts[0].prefab]);
+					} else {
+						var found = false;
+						for (index => elt in elts) {
+							if (elt.prefab == selectedPrefabs[0]) {
+								selectElements([elts[(index + 1) % elts.length].prefab]);
+								found = true;
+								break;
+							}
+						}
+
+						if (!found) {
+							selectElements([elts[0].prefab]);
+						}
+					}
+				}
+			} else {
+				selectElements([]);
+			}
+		}
+
+		function customEventHandler(e: hxd.Event) {
+			switch(e.kind) {
+			case ERelease:
+				if( e.button == K.MOUSE_MIDDLE ) return;
+				if (e.button == K.MOUSE_LEFT && startDrag != null) {
+					if (delaySelection)
+						doPickSelect(true);
+				}
+				startDrag = null;
+				curDrag = null;
+				dragBtn = -1;
+				delaySelection = true;
+				if (e.button == K.MOUSE_LEFT) {
+					scene.sevents.stopCapture();
+					e.propagate = false;
+				}
+			case EMove:
+				if(startDrag != null && hxd.Math.distance(startDrag[0] - scene.s2d.mouseX, startDrag[1] - scene.s2d.mouseY) > 5 ) {
+					if(dragBtn == K.MOUSE_LEFT && selectedPrefabs.length > 0) {
+						if( selectedPrefabs[0].to(Object3D) != null ) {
+							moveGizmoToSelection();
+							gizmo.startMove(MoveXY);
+						}
+						if( selectedPrefabs[0].to(Object2D) != null ) {
+							moveGizmoToSelection();
+							gizmo2d.startMove(Pan);
+						}
+					}
+					e.propagate = false;
+					startDrag = null;
+				}
+			case EPush:
+				if( e.button == K.MOUSE_MIDDLE ) return;
+				delaySelection = true;
+
+				// try to reset capture if stopCapture didn't fired off
+				if (e.button == K.MOUSE_LEFT) {
+					scene.sevents.stopCapture();
+					e.propagate = false;
+				}
+
+				var elts = getAllPrefabsUnderMouse();
+				if (elts.length <= 0)
+					return;
+
+				var anyElementOrParentSelected = false;
+				for (elt in elts) {
+					for (selected in selectedPrefabs) {
+						var curr = elt.prefab;
+						while(curr != null) {
+							if (curr == selected) {
+								anyElementOrParentSelected = true;
+								break;
+							}
+							curr = curr.parent;
+						}
+					}
+				}
+
+				if (e.button == K.MOUSE_LEFT && (selectedPrefabs.length < 0 || !anyElementOrParentSelected)) {
+					doPickSelect(false, elts);
+					delaySelection = false;
+				}
+
+				startDrag = [scene.s2d.mouseX, scene.s2d.mouseY];
+				if( e.button == K.MOUSE_RIGHT )
+					lastPush = startDrag;
+				dragBtn = e.button;
+
+				// ensure we get onMove even if outside our interactive, allow fast click'n'drag
+				if( e.button == K.MOUSE_LEFT ) {
+					scene.sevents.startCapture(customEventHandler);
+				}
+			default:
+			}
+		}
+
+		cameraController.onCustomEvent = customEventHandler;
 	}
 
 	public function saveCam3D() {
@@ -1827,7 +1968,7 @@ class SceneEditor {
 		updateStats();
 
 		gizmo2d = new hide.view.l3d.Gizmo2D();
-		scene.s2d.add(gizmo2d, 1); // over local3d
+		scene.s2d.add(gizmo2d, 2); // over local3d
 
 		basis = new h3d.scene.Object(scene.s3d);
 
@@ -2665,14 +2806,14 @@ class SceneEditor {
 		root2d.name = "root2d";
 
 		scene.s3d.addChild(root3d);
-		scene.s2d.addChild(root2d);
+		scene.s2d.addChildAt(root2d, 0); // make sure the 2d scene is behind the UI
 
 		scene.s2d.defaultSmooth = true;
 		root2d.x = scene.s2d.width >> 1;
 		root2d.y = scene.s2d.height >> 1;
 
 		cameraController2D = makeCamController2D();
-		cameraController2D.onClick = cameraController.onClick;
+		setupCameraEvents(cameraController2D);
 
 		if (camera2D) {
 			var cam2d = @:privateAccess view.getDisplayState("Camera2D");
@@ -2823,12 +2964,13 @@ class SceneEditor {
 	}
 
 	function toggleInteractive( e : PrefabElement, visible : Bool ) {
-		var int = getInteractive(e);
-		if( int == null ) return;
-		var i2d = Std.downcast(int,h2d.Interactive);
-		var i3d = Std.downcast(int,h3d.scene.Interactive);
-		if( i2d != null ) i2d.visible = visible;
-		if( i3d != null ) i3d.visible = visible;
+		var ints = getInteractives(e);
+		for (int in ints) {
+			var i2d = Std.downcast(int,h2d.Interactive);
+			if (i2d != null) i2d.visible = visible;
+			var i3d = Std.downcast(int,h3d.scene.Interactive);
+			if (i3d != null) i3d.visible = visible;
+		}
 	}
 
 	function initInteractive( elt : PrefabElement, int : {
@@ -2840,114 +2982,71 @@ class SceneEditor {
 		function preventClick() : Void;
 	} ) {
 		if( int == null ) return;
-		var startDrag = null;
-		var curDrag = null;
-		var dragBtn = -1;
-		var lastPush : Array<Float> = null;
 		var i3d = Std.downcast(int, h3d.scene.Interactive);
+		if (i3d != null) {
+			interactives.set(elt,i3d);
+			i3d.propagateEvents = true;
+		}
 		var i2d = Std.downcast(int, h2d.Interactive);
-
-		int.onClick = function(e) {
-			if(e.button == K.MOUSE_RIGHT) {
-				var dist = hxd.Math.distance(scene.s2d.mouseX - lastPush[0], scene.s2d.mouseY - lastPush[1]);
-				if( dist > 5 ) return;
-				selectNewObject(e);
-				e.propagate = false;
-				return;
-			}
+		if (i2d != null ) {
+			interactives2d.set(elt, i2d);
+			i2d.propagateEvents = true;
 		}
-		int.onPush = function(e) {
-			if( e.button == K.MOUSE_MIDDLE ) return;
-			startDrag = [scene.s2d.mouseX, scene.s2d.mouseY];
-			if( e.button == K.MOUSE_RIGHT )
-				lastPush = startDrag;
-			dragBtn = e.button;
-			if( e.button == K.MOUSE_LEFT ) {
-				var elts = null;
-				if(K.isDown(K.SHIFT)) {
-					if(Type.getClass(elt.parent) == hrt.prefab.Object3D)
-						elts = [elt.parent];
-					else
-						elts = elt.parent.children;
-				}
-				else
-					elts = [elt];
-
-				if(K.isDown(K.CTRL)) {
-					var current = selectedPrefabs.copy();
-					if(current.indexOf(elt) < 0) {
-						for(e in elts) {
-							if(current.indexOf(e) < 0)
-								current.push(e);
-						}
-					}
-					else {
-						for(e in elts)
-							current.remove(e);
-					}
-					selectElements(current);
-				}
-				else
-					selectElements(elts);
-
-			}
-			// ensure we get onMove even if outside our interactive, allow fast click'n'drag
-			if( e.button == K.MOUSE_LEFT ) {
-				scene.sevents.startCapture(int.handleEvent);
-				e.propagate = false;
-			}
-		};
-		int.onRelease = function(e) {
-			if( e.button == K.MOUSE_MIDDLE ) return;
-			startDrag = null;
-			curDrag = null;
-			dragBtn = -1;
-			if( e.button == K.MOUSE_LEFT ) {
-				scene.sevents.stopCapture();
-				e.propagate = false;
-			}
-		}
-		int.onMove = function(e) {
-			if(startDrag != null && hxd.Math.distance(startDrag[0] - scene.s2d.mouseX, startDrag[1] - scene.s2d.mouseY) > 5 ) {
-				if(dragBtn == K.MOUSE_LEFT ) {
-					if( i3d != null ) {
-						moveGizmoToSelection();
-						gizmo.startMove(MoveXY);
-					}
-					if( i2d != null ) {
-						moveGizmoToSelection();
-						gizmo2d.startMove(Pan);
-					}
-				}
-				int.preventClick();
-				startDrag = null;
-			}
-		}
-		interactives.set(elt,cast int);
 	}
+
+
+	var tmpPt : h2d.col.Point = new h2d.col.Point();
 
 	function getAllPrefabsUnderMouse() : Array<{d: Float, prefab: PrefabElement}> {
 		var camera = scene.s3d.camera;
 		var ray = camera.rayFromScreen(scene.s2d.mouseX, scene.s2d.mouseY);
 
-		var selectables = getAllSelectable3D();
+		var selectables = getAllSelectable(true, true);
 		var hits : Array<{d: Float, prefab: PrefabElement}> = [];
 
+		var order2d : Map<PrefabElement, Int> = null;
+
 		for (selectable in selectables) {
-			var int = interactives.get(selectable);
-			if (int != null) {
-				var int3d = Std.downcast(int, h3d.scene.Interactive);
-				if (int3d != null) {
-					var distance = int3d.shape?.rayIntersection(ray, false);
-					if (distance < 0)
+			var int3d = interactives.get(selectable);
+			if (int3d != null) {
+				var distance = int3d.shape?.rayIntersection(ray, false);
+				if (distance < 0)
+					continue;
+
+				var distance = int3d.preciseShape?.rayIntersection(ray, true) ?? distance;
+
+				if (distance > 0) {
+					hits.push({d: distance, prefab: selectable});
+				}
+			}
+
+			var int2d = interactives2d.get(selectable);
+			@:privateAccess if (int2d != null) {
+				var dx = scene.s2d.mouseX - int2d.absX;
+				var dy = scene.s2d.mouseY - int2d.absY;
+				var rx = (dx * int2d.matD - dy * int2d.matC) * int2d.invDet;
+				var ry = (dy * int2d.matA - dx * int2d.matB) * int2d.invDet;
+
+				if ( int2d.shape != null ) {
+					// Check collision for Shape Interactive.
+					tmpPt.set(rx + int2d.shapeX,ry + int2d.shapeY);
+					if ( !int2d.shape.contains(tmpPt) ) continue;
+				} else {
+					// Check AABB for width/height Interactive.
+					if( ry < 0 || rx < 0 || rx >= int2d.width || ry >= int2d.height )
 						continue;
+				}
 
-					var distance = int3d.preciseShape?.rayIntersection(ray, true) ?? distance;
-
-					if (distance > 0) {
-							hits.push({d: distance, prefab: selectable});
+				if (order2d == null) {
+					order2d = [];
+					var flat = sceneData.flatten();
+					for (i => prefab in flat) {
+						order2d.set(prefab, i);
 					}
 				}
+
+				var index = order2d.get(selectable);
+				hits.push({d: -index, prefab: selectable});
 			}
 		}
 
@@ -3035,20 +3134,16 @@ class SceneEditor {
 	public function removeInteractive(elt: PrefabElement) {
 		var int = interactives.get(elt);
 		if(int != null) {
-			var i3d = Std.downcast(int, h3d.scene.Interactive);
-			if( i3d != null ) i3d.remove() else cast(int,h2d.Interactive).remove();
+			int.remove();
 			interactives.remove(elt);
 		}
-	}
 
-	function refreshInteractives() {
-		interactives = new Map();
-		var all = sceneData.all();
-		for(elt in all) {
-			makeInteractive(elt);
+		var i2d = interactives2d.get(elt);
+		if (i2d != null) {
+			i2d.remove();
+			interactives2d.remove(elt);
 		}
 	}
-
 
 	function setupGizmo() {
 		if(selectedPrefabs == null) return;
@@ -3394,7 +3489,7 @@ class SceneEditor {
 			}
 
 			if(K.isDown(K.MOUSE_LEFT)) {
-				var all = getAllSelectable3D();
+				var all = getAllSelectable(true, false);
 				var inside = [];
 				for(elt in all) {
 					if(elt.to(Object3D) == null)
@@ -3577,16 +3672,18 @@ class SceneEditor {
 		}
 	}
 
-	public function getInteractives(elt : PrefabElement) {
-		var r = [getInteractive(elt)];
+	public function getInteractives(elt : PrefabElement) : Array<hxd.SceneEvents.Interactive> {
+		var r : Array<hxd.SceneEvents.Interactive> = [];
+		var i3d = interactives.get(elt);
+		if (i3d != null) r.push(i3d);
+
+		var i2d = interactives2d.get(elt);
+		if (i2d != null) r.push(i2d);
+
 		for(c in elt.children) {
 			r = r.concat(getInteractives(c));
 		}
 		return r;
-	}
-
-	public function getInteractive(elt: PrefabElement) {
-		return interactives.get(elt);
 	}
 
 	public function getObject(elt: PrefabElement) {
@@ -3607,12 +3704,7 @@ class SceneEditor {
 				recRemove(c);
 			}
 
-			var int = interactives.get(e);
-			if(int != null) {
-				var i3d = Std.downcast(int, h3d.scene.Interactive);
-				if( i3d != null ) i3d.remove() else cast(int,h2d.Interactive).remove();
-				interactives.remove(e);
-			}
+			removeInteractive(e);
 		}
 
 		var parent = elt.parent;
@@ -4657,23 +4749,41 @@ class SceneEditor {
 		return visible && !isHidden(elt) && (elt.parent != null ? isVisible(elt.parent) : true);
 	}
 
-	public function getAllSelectable3D() : Array<PrefabElement> {
+	public function getAllSelectable(include3d: Bool, include2d: Bool) : Array<PrefabElement> {
 		var ret = [];
-		for(elt in interactives.keys()) {
-			var i = interactives.get(elt);
-			var p : h3d.scene.Object = Std.downcast(i, h3d.scene.Interactive);
-			if( p == null )
-				continue;
-			while( p != null && p.visible )
-				p = p.parent;
-			if( p != null ) continue;
-			ret.push(elt);
+
+		function rec(prefab: PrefabElement) {
+
+			var o3d = prefab.to(Object3D);
+			var o2d = prefab.to(Object2D);
+
+			var visible = if (o3d != null) {
+				o3d.visible;
+			} else if (o2d != null) {
+				o2d.visible;
+			} else true;
+
+			if (!visible || isHidden(prefab))
+				return;
+			if (StringTools.contains(prefab.name.toLowerCase(), "wind"))
+				trace("break");
+			if (!isLocked(prefab)) {
+				if (interactives.get(prefab) != null) ret.push(prefab)
+				else if (interactives2d.get(prefab) != null) ret.push(prefab);
+			}
+
+			for (child in prefab.children) {
+				rec(child);
+			}
 		}
+
+		rec(sceneData);
+
 		return ret;
 	}
 
 	public function selectAll() {
-		selectElements(getAllSelectable3D());
+		selectElements(getAllSelectable(true, false));
 	}
 
 	public function selectInvert() {
@@ -5350,6 +5460,13 @@ class SceneEditor {
 		for( p in prefab.flatten(null, null) ) {
 			makeInteractive(p);
 			applySceneStyle(p);
+
+			// Enforce interactive not being actually interactive because we do our own event handling
+			var i3d = interactives.get(p);
+			if (i3d != null) i3d.propagateEvents = true;
+
+			var i2d = interactives2d.get(p);
+			if (i2d != null) i2d.propagateEvents = true;
 		}
 
 		rebuildStack --;
