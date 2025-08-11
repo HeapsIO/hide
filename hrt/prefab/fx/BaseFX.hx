@@ -25,6 +25,10 @@ typedef ShaderParams = Array<ShaderParam>;
 	in FX.
 */
 class CustomAnimation extends Evaluator {
+	/** This animation will need to keep being updated if setTime was called once **/
+	public var finishSync : Bool = false;
+	public var startedPlaying : Bool = false;
+
 	public function setTime(time: Float) {
 		throw "This method should overrided!";
 	}
@@ -313,6 +317,7 @@ class BaseFXTools {
 					];
 					anim.rfx = cast @:privateAccess screenShaderGraph.instance;
 					anims.push(anim);
+					anim.finishSync = true;
 				}
 			}
 			else {
@@ -322,6 +327,7 @@ class BaseFXTools {
 					anim.params = params;
 					anim.rfx = @:privateAccess rendererFX.instance;
 					anims.push(anim);
+					anim.finishSync = true;
 				}
 			}
 		}

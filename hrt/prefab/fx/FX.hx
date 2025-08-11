@@ -164,6 +164,10 @@ class FXAnimation extends h3d.scene.Object {
 					c.reset();
 			}
 		}
+
+		for (anim in customAnims) {
+			anim.startedPlaying = false;
+		}
 	}
 
 	function resetSelf() {
@@ -388,11 +392,19 @@ class FXAnimation extends h3d.scene.Object {
 
 		if (fullSync) {
 			syncAnims(localTime, dt);
+		}
 
-			if(customAnims != null)
-				for(anim in customAnims)
+
+		if(customAnims != null) {
+			for(anim in customAnims) {
+				if (fullSync || (anim.startedPlaying && anim.finishSync)) {
 					anim.setTime(localTime);
+					anim.startedPlaying = true;
+				}
+			}
+		}
 
+		if (fullSync) {
 			syncParticles(localTime, dt, isSeek);
 
 			for (t in trails) {
