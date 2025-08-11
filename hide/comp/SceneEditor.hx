@@ -3203,7 +3203,7 @@ class SceneEditor {
 					}
 
 					var obj = sceneObjs[i];
-					if ( obj != null ) {
+					if ( obj != null && obj.parent != null ) {
 						var parentMat = obj.parent.getAbsPos().clone();
 						if(obj.follow != null) {
 							if(obj.followPositionOnly)
@@ -4753,6 +4753,8 @@ class SceneEditor {
 		var ret = [];
 
 		function rec(prefab: PrefabElement) {
+			if (prefab == null)
+				return;
 
 			var o3d = prefab.to(Object3D);
 			var o2d = prefab.to(Object2D);
@@ -4774,6 +4776,11 @@ class SceneEditor {
 
 			for (child in prefab.children) {
 				rec(child);
+			}
+
+			var ref = Std.downcast(prefab, Reference);
+			if (ref != null && ref.editMode != None) {
+				rec(ref.refInstance);
 			}
 		}
 
