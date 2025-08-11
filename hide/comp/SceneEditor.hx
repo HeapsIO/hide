@@ -2606,6 +2606,7 @@ class SceneEditor {
 		if (renderPropsRoot == null && path != null) {
 			renderPropsRoot = new hrt.prefab.Reference(null, new ContextShared());
 			renderPropsRoot.setEditor(this, this.scene);
+			renderPropsRoot.shared.customMake = customMake;
 			renderPropsRoot.editMode = Ide.inst.currentConfig.get("sceneeditor.renderprops.edit", false) ? Edit : None;
 			renderPropsRoot.name = "Render Props";
 			renderPropsRoot.source = path;
@@ -2691,6 +2692,7 @@ class SceneEditor {
 
 		@:privateAccess sceneData.setSharedRec(new ContextShared(root2d,root3d));
 		sceneData.shared.currentPath = view.state.path;
+		sceneData.shared.customMake = customMake;
 		sceneData.setEditor(this, this.scene);
 
 		var bgcol = scene.engine.backgroundColor;
@@ -3548,6 +3550,7 @@ class SceneEditor {
 	}
 
 	public function applySceneStyle(p: PrefabElement) {
+		var wasHandled = false;
 		var obj3d = p.to(Object3D);
 		if(obj3d != null) {
 			var visible = obj3d.visible && !isHidden(obj3d);
@@ -3555,6 +3558,7 @@ class SceneEditor {
 			if (local != null) {
 				local.visible = visible;
 			}
+			wasHandled = true;
 		}
 
 		var obj2d = p.to(Object2D);
@@ -3564,6 +3568,12 @@ class SceneEditor {
 			if (local != null) {
 				local.visible = visible;
 			}
+			wasHandled = true;
+		}
+
+		// Fallback : rebuild the prefab, the customMake will skip hidden prefabs
+		if (!wasHandled) {
+			queueRebuild(p.parent);
 		}
 	}
 
@@ -5229,7 +5239,25 @@ class SceneEditor {
 					if (skip == true)
 						continue;
 
+					// Rebuilding the root fx will cause it's play time to be reset.
+					// so we compensate for that here
+					var fxTime = 0.0;
+					if (prefab == sceneData && Std.downcast(prefab, hrt.prefab.fx.FX) != null) {
+						var fxAnimation : hrt.prefab.fx.FX.FXAnimation = cast prefab.findFirstLocal3d();
+						if (fxAnimation != null) {
+							fxTime = fxAnimation.localTime;
+						}
+					}
+
 					rebuild(prefab);
+
+					if (prefab == sceneData && Std.downcast(prefab, hrt.prefab.fx.FX) != null) {
+						var fxAnimation : hrt.prefab.fx.FX.FXAnimation = cast prefab.findFirstLocal3d();
+						if (fxAnimation != null) {
+							fxAnimation.setTimeInternal(fxTime, 0, true, true);
+						}
+					}
+
 					if (Std.downcast(prefab, Object2D) != null) {
 						var parent2d = prefab.findFirstLocal2d()?.parent;
 						if (parent2d != null) {
@@ -5325,6 +5353,13 @@ class SceneEditor {
 		}
 
 		rebuildStack --;
+	}
+
+	function customMake(p: hrt.prefab.Prefab) {
+		if (Std.downcast(p, Object3D) == null && Std.downcast(p, Object2D) == null && isHidden(p)) {
+			return;
+		}
+		p.make(p.shared);
 	}
 
 	function autoName(p : PrefabElement) {

@@ -698,7 +698,7 @@ class EmitterObject extends h3d.scene.Object {
 					p = p.parent;
 
 				if (this.emitterPrefab == p) {
-					if(mat.enabled) {
+					if(checkEnabled(mat)) {
 						@:privateAccess mat.makeInstance();
 					}
 				}
@@ -714,7 +714,7 @@ class EmitterObject extends h3d.scene.Object {
 					p = p.parent;
 				}
 				if (this.emitterPrefab == p) {
-					if( !shader.enabled ) continue;
+					if( !checkEnabled(shader) ) continue;
 					makeShaderInstance(shader);
 					hrt.prefab.fx.BaseFX.BaseFXTools.getCustomAnimations(shader, customAnims, batch);
 				}
@@ -768,6 +768,14 @@ class EmitterObject extends h3d.scene.Object {
 		}
 
 		reset();
+	}
+
+	public static inline function checkEnabled(prefab: Prefab) {
+		#if editor
+		if (prefab.shared.editor?.isHidden(prefab) == true)
+			return false;
+		#end
+		return prefab.enabled;
 	}
 
 	override function onRemove() {
@@ -1777,7 +1785,7 @@ class Emitter extends Object3D {
 
 		var randIdx = 0;
 		var template : Object3D = cast children.find(
-			c -> c.enabled &&
+			c -> EmitterObject.checkEnabled(c) &&
 			(c.name == null || c.name.indexOf("collision") == -1) &&
 			c.to(Object3D) != null &&
 			c.to(Object3D).visible &&
@@ -1916,11 +1924,11 @@ class Emitter extends Object3D {
 		emitterObj.particleTemplate = template;
 
 		// SUB-EMITTER
-		var subEmitterTemplates : Array<Prefab> = children.filter( p -> p.enabled && Std.downcast(p, Emitter) != null && p.to(Object3D).visible);
+		var subEmitterTemplates : Array<Prefab> = children.filter( p -> EmitterObject.checkEnabled(p) && Std.downcast(p, Emitter) != null && p.to(Object3D).visible);
 		emitterObj.subEmitterTemplates = subEmitterTemplates.length > 0 ? [for (s in subEmitterTemplates) cast s] : null;
 
 		// TRAILS
-		var trailsTemplate : hrt.prefab.l3d.Trails = cast children.find(p -> p.enabled && Std.isOfType(p, hrt.prefab.l3d.Trails) && p.to(Object3D).visible);
+		var trailsTemplate : hrt.prefab.l3d.Trails = cast children.find(p -> EmitterObject.checkEnabled(p) && Std.isOfType(p, hrt.prefab.l3d.Trails) && p.to(Object3D).visible);
 		emitterObj.trailsTemplate = trailsTemplate;
 
 		// RANDOM

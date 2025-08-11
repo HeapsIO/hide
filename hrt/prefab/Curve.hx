@@ -679,6 +679,9 @@ class Curve extends Prefab {
 	public static function getCurve(parent : Prefab, name: String, onlyEnabled=true) {
 		for(c in parent.children) {
 			if(onlyEnabled && !c.enabled) continue;
+			#if editor
+			if (parent.shared.editor?.isHidden(c)) continue;
+			#end
 			if(c.name != name) continue;
 			var curve = c.to(Curve);
 			if(curve == null) continue;
@@ -691,6 +694,9 @@ class Curve extends Prefab {
 		var ret = null;
 		for(c in parent.children) {
 			if(!c.enabled) continue;
+			#if editor
+			if (parent.shared.editor?.isHidden(c)) continue;
+			#end
 			var idx = c.name.indexOf(":");
 			var curvePrefix = (idx >= 0) ? c.name.substr(0, idx) : c.name;
 			if(curvePrefix != prefix)
