@@ -2038,6 +2038,15 @@ class Emitter extends Object3D {
 		}
 
 		function onChange(?pname: String) {
+			if (pname == "useRandomGradient") {
+				if ((props:Dynamic).useRandomGradient == true) {
+					(props:Dynamic).randomGradient = Gradient.getDefaultGradientData();
+				} else {
+					Reflect.deleteField(props, "randomGradient");
+				}
+				refresh();
+			}
+
 			ctx.onChange(this, pname);
 
 			if (pname == "warmUpTime") {
@@ -2054,8 +2063,9 @@ class Emitter extends Object3D {
 				"useCollision",
 				"emitType",
 				"useRandomColor",
-				"useRandomGradient"].indexOf(pname) >= 0)
-				refresh();
+				].indexOf(pname) >= 0) {
+					refresh();
+				}
 		}
 
 		var params = emitterParams.copy();
