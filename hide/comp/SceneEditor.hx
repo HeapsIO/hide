@@ -3552,8 +3552,8 @@ class SceneEditor {
 						for (selectedJoint in selectedJoints) {
 							var skinData = sk.getSkinData();
 							for( j in skinData.allJoints ) {
-								var m = sk.jointsData[j.index].currentAbsPose;
-								var mp = j.parent == null ? sk.absPos : sk.jointsData[j.parent.index].currentAbsPose;
+								var m = sk.jointsData[j.index].currentAbsPos;
+								var mp = j.parent == null ? sk.absPos : sk.jointsData[j.parent.index].currentAbsPos;
 								if ( j.name == selectedJoint ) {
 									jointsGraphics.lineStyle(1, 0x00FF00FF);
 									jointsGraphics.moveTo(mp._41, mp._42, mp._43);

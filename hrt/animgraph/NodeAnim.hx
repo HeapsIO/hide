@@ -50,7 +50,7 @@ class NodeAnim<T:hrt.animgraph.nodes.AnimNode> extends h3d.anim.Animation {
 			@:privateAccess
 			var targetMatrix = if (obj.targetSkin != null) {
 				obj.targetSkin.jointsUpdated = true;
-				obj.targetSkin.jointsData[obj.targetJoint].currentRelPose = workMatrix;
+				obj.targetSkin.jointsData[obj.targetJoint].currentRelPos = workMatrix;
 			} else {
 				obj.targetObject.defaultTransform = workMatrix;
 			}
