@@ -3572,7 +3572,7 @@ class SceneEditor {
 		}
 
 		// Fallback : rebuild the prefab, the customMake will skip hidden prefabs
-		if (!wasHandled) {
+		if (!wasHandled && p.parent != null) {
 			queueRebuild(p.parent);
 		}
 	}
