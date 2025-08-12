@@ -1264,9 +1264,14 @@ class Spline extends hrt.prefab.Object3D {
 		interactive.onKeyDown = function(e) {
 			if (e.keyCode == hxd.Key.ALT) {
 				if (previewSpline == null) {
+					this.shared.current2d = this.parent.findFirstLocal2d();
+					this.shared.current3d = this.parent.findFirstLocal3d();
 					previewSpline = cast this.clone(this.parent, this.shared).make();
 
 					this.local3d.visible = false;
+
+					trace(previewSpline.local3d.getAbsPos());
+					trace(this.local3d.getAbsPos());
 					if (mousePos == null)
 						mousePos = new h3d.Vector(e.relX, e.relY);
 
