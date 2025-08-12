@@ -1515,6 +1515,8 @@ class EmitterObject extends h3d.scene.Object {
 		var seek = seek || (catchupTime > 1.5 * dt);
 
 		if (!seek) {
+			if (dt == 0)
+				return;
 			#if editor
 			var start = haxe.Timer.stamp();
 			#end
