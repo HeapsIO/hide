@@ -1143,9 +1143,9 @@ class Spline extends hrt.prefab.Object3D {
 
 
 	function getFuturePointBetween(t: Float, prev: SplinePoint, next: SplinePoint) : {prev: SplinePoint, toAdd: SplinePoint, next: SplinePoint} {
-			var p = globalToLocal(getPointBetween(t, prev, next));
-			var tangentIn = globalToLocal(getTangentInBetween(t, prev, next));
-			var tangentOut = globalToLocal(getTangentOutBetween(t, prev, next));
+			var p = getPointBetween(t, prev, next);
+			var tangentIn = getTangentInBetween(t, prev, next);
+			var tangentOut = getTangentOutBetween(t, prev, next);
 			var toAdd = new SplinePoint(p, null, tangentIn, tangentOut);
 
 			var newPrev = new SplinePoint();
