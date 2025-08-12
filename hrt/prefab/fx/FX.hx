@@ -165,9 +165,12 @@ class FXAnimation extends h3d.scene.Object {
 			}
 		}
 
-		for (anim in customAnims) {
-			anim.startedPlaying = false;
+		if (customAnims != null) {
+			for (anim in customAnims) {
+				anim.startedPlaying = false;
+			}
 		}
+
 	}
 
 	function resetSelf() {
