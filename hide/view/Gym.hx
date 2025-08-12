@@ -300,6 +300,43 @@ class Gym extends hide.ui.View<{}> {
 				rethrowTest1();
 			}
 		}
+
+		{
+			var toolbar = section(element, "Drag & Drop 2");
+			var btn = new Element("<fancy-button><span class='label'>Drag Me</span></h1>").appendTo(toolbar);
+
+			hide.tools.DragAndDrop.makeDraggable(btn.get(0), (event: hide.tools.DragAndDrop.DragEvent, data: hide.tools.DragAndDrop.DragData) -> {
+				switch (event) {
+					case Start:
+						data.setThumbnail(btn.get(0));
+					case Stop:
+
+				}
+				return true;
+			});
+
+			var dropTarget1 = new Element("<fancy-button><span class='label'>Target 1</span></h1>").appendTo(toolbar);
+			var dropTarget2 = new Element("<fancy-button><span class='label'>Target 2</span></h1>").appendTo(toolbar);
+
+			for (target in [dropTarget1, dropTarget2]) {
+				hide.tools.DragAndDrop.makeDropTarget(target.get(0), (event: hide.tools.DragAndDrop.DropEvent, data: hide.tools.DragAndDrop.DragData) -> {
+					var name = target.find("span").text();
+					switch(event) {
+						case Move:
+							trace("move", name);
+						case Enter:
+							trace("enter", name);
+							target.get(0).style.outline = "1px solid blue";
+						case Leave:
+							trace("leave", name);
+							target.get(0).style.outline = null;
+						case Drop:
+							trace("drop", name);
+					}
+					return AllowDrop;
+				});
+			}
+		}
 	}
 
 	function rethrowTest1() {

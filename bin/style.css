@@ -5381,3 +5381,10 @@ fancy-tooltip {
   font-style: normal;
   background-color: #FFFFFF20;
 }
+fancy-drag-drop-thumbnail {
+  pointer-events: none;
+  margin: 0;
+  border: none;
+  background: none;
+  opacity: 0.5;
+}
