@@ -310,9 +310,8 @@ class Gym extends hide.ui.View<{}> {
 					case Start:
 						data.setThumbnail(btn.get(0));
 					case Stop:
-
 				}
-				return true;
+				return Allow;
 			});
 
 			var dropTarget1 = new Element("<fancy-button><span class='label'>Target 1</span></h1>").appendTo(toolbar);
