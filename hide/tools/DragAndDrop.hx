@@ -40,8 +40,13 @@ class DragData {
 	public function setThumbnail(element: js.html.Element) : Void {
 		if (thumbnail != null)
 			throw "already has thumbnail";
-		var clone = element.cloneNode(true);
+		var clone : js.html.Element = cast element.cloneNode(true);
 		var container = js.Browser.document.createElement("fancy-drag-drop-thumbnail");
+		clone.style.transform = null;
+		clone.style.left = null;
+		clone.style.top = null;
+		clone.style.position = "static";
+		clone.style.display = "block";
 		container.appendChild(clone);
 		thumbnail = container;
 	}
@@ -68,6 +73,7 @@ class DragData {
 	function copyFromPointerEvent(e: js.html.PointerEvent) {
 		mouseX = e.clientX;
 		mouseY = e.clientY;
+		@:privateAccess hide.Ide.inst.syncMousePosition(e);
 		shiftKey = e.shiftKey;
 	}
 }
@@ -150,6 +156,7 @@ class DragAndDrop {
 		}
 
 		currentDrag.dropTargetValidity = AllowDrop;
+		currentDrag.setThumbnailVisiblity(true);
 
 		if (currentDropTarget != null) {
 			currentDropTarget.onHideDropEvent(Move, currentDrag);
@@ -190,6 +197,15 @@ class DragAndDrop {
 		}
 	}
 
+	static function onOverlayKeyDown(e: js.html.KeyboardEvent) : Void {
+		if (e.key == "Escape") {
+			e.stopImmediatePropagation();
+			e.stopPropagation();
+			e.preventDefault();
+			cleanupDrag(false);
+		}
+	}
+
 	static function onInitialPointerMove(e:js.html.PointerEvent) : Void {
 		if (dragOverlayHandler != null) {
 			cleanupDrag(false);
@@ -222,8 +238,10 @@ class DragAndDrop {
 
 			dragOverlayHandler.onpointermove = onOverlayPointerMove;
 			js.Browser.window.addEventListener("scroll", updateDragOperation, {capture: true});
-			dragOverlayHandler.onpointerup = onOverlayPointerUp;
-			dragOverlayHandler.onpointerdown = onOverlayPointerDown;
+			js.Browser.window.addEventListener("keydown", onOverlayKeyDown, {capture: true});
+			js.Browser.window.addEventListener("pointerdown", onOverlayPointerDown, {capture: true});
+			js.Browser.window.addEventListener("pointerup", onOverlayPointerUp, {capture: true});
+			js.Browser.window.addEventListener("contextmenu", onOverlayPointerDown, {capture: true});
 			dragOverlayHandler.onlostpointercapture = onOverlayLostPointerCapture;
 			dragOverlayHandler.setPointerCapture(e.pointerId);
 
@@ -238,7 +256,12 @@ class DragAndDrop {
 			dragOverlayHandler.remove();
 			dragOverlayHandler = null;
 		}
+
 		js.Browser.window.removeEventListener("scroll", updateDragOperation, {capture: true});
+		js.Browser.window.removeEventListener("keydown", onOverlayKeyDown, {capture: true});
+		js.Browser.window.removeEventListener("pointerdown", onOverlayPointerDown, {capture: true});
+		js.Browser.window.removeEventListener("pointerup", onOverlayPointerUp, {capture: true});
+		js.Browser.window.removeEventListener("contextmenu", onOverlayPointerDown, {capture: true});
 
 		currentDropTarget?.onHideDropEvent(Leave, currentDrag);
 		if (performDrop)

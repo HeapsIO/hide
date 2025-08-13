@@ -546,8 +546,9 @@ class FileBrowser extends hide.ui.View<FileBrowserState> {
 		}
 
 		fancyGallery.dragAndDropInterface = {
-			onDragStart: (item: FileEntry, dataTransfer: js.html.DataTransfer) -> {
+			onDragStart: (item: FileEntry, dragData: hide.tools.DragAndDrop.DragData) -> {
 				var selection = getItemAndSelection(item, true);
+				dragData.data.set("drag/filetree", selection);
 				ide.setData("drag/filetree", cast selection);
 				return true;
 			}

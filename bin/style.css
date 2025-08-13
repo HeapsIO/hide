@@ -5132,8 +5132,7 @@ fancy-gallery fancy-scroll fancy-item-container {
   min-height: 100%;
   contain: strict;
 }
-fancy-gallery fancy-item,
-fancy-tooltip fancy-item {
+fancy-gallery-item {
   padding: 4px;
   position: absolute;
   align-items: stretch;
@@ -5145,23 +5144,19 @@ fancy-tooltip fancy-item {
   contain: strict;
   box-shadow: 2px 2px 2px rgba(0, 0, 0, 0.4);
 }
-fancy-gallery fancy-item:hover,
-fancy-tooltip fancy-item:hover {
+fancy-gallery-item:hover {
   background-color: var(--hover);
 }
-fancy-gallery fancy-item.selected,
-fancy-tooltip fancy-item.selected {
+fancy-gallery-item.selected {
   color: white;
   background-color: var(--selection);
 }
-fancy-gallery fancy-item.current,
-fancy-tooltip fancy-item.current {
+fancy-gallery-item.current {
   outline: dashed 1px #AAA;
   z-index: 10;
   outline-offset: -1px;
 }
-fancy-gallery fancy-item.details,
-fancy-tooltip fancy-item.details {
+fancy-gallery-item.details {
   padding: 0;
   display: flex;
   align-items: flex-end;
@@ -5169,33 +5164,28 @@ fancy-tooltip fancy-item.details {
   border-radius: unset;
   gap: 0.4em;
 }
-fancy-gallery fancy-item fancy-thumbnail,
-fancy-tooltip fancy-item fancy-thumbnail {
+fancy-gallery-item fancy-thumbnail {
   flex: 0 1;
   display: block;
   width: 100%;
   height: 100%;
 }
-fancy-gallery fancy-item .icon-placement,
-fancy-tooltip fancy-item .icon-placement {
+fancy-gallery-item .icon-placement {
   position: absolute;
   color: white;
   bottom: 2px;
   right: 2px;
   filter: drop-shadow(2px 2px 2px rgba(0, 0, 0, 0.7));
 }
-fancy-gallery fancy-item .thumb,
-fancy-tooltip fancy-item .thumb {
+fancy-gallery-item .thumb {
   transform: unset;
 }
-fancy-gallery fancy-item.details fancy-image,
-fancy-tooltip fancy-item.details fancy-image {
+fancy-gallery-item.details fancy-image {
   height: 100%;
   width: auto;
   aspect-ratio: 1 / 1;
 }
-fancy-gallery fancy-item fancy-name,
-fancy-tooltip fancy-item fancy-name {
+fancy-gallery-item fancy-name {
   position: absolute;
   bottom: 2px;
   left: 2px;
@@ -5208,19 +5198,16 @@ fancy-tooltip fancy-item fancy-name {
   text-overflow: ellipsis;
   overflow: hidden;
 }
-fancy-gallery fancy-item fancy-name > span.search-hl,
-fancy-tooltip fancy-item fancy-name > span.search-hl {
+fancy-gallery-item fancy-name > span.search-hl {
   background-color: var(--selection);
   color: white;
 }
-fancy-gallery fancy-item.details fancy-name,
-fancy-tooltip fancy-item.details fancy-name {
+fancy-gallery-item.details fancy-name {
   position: relative;
   height: auto;
   text-align: left;
 }
-fancy-gallery fancy-item.details .icon-placement,
-fancy-tooltip fancy-item.details .icon-placement {
+fancy-gallery-item.details .icon-placement {
   position: relative;
   flex: 0 1;
   filter: unset;

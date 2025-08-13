@@ -696,24 +696,6 @@ class Prefab extends hide.view.FileView {
 	function onRefresh() {
 	}
 
-	override function onDrag(e : js.html.DragEvent) {
-		if (e.target != scene.canvas)
-			return false;
-		return sceneEditor?.onDrag(e);
-	}
-
-	override function onDragEnd(e : js.html.DragEvent) {
-		if (sceneEditor == null)
-			return false;
-		return sceneEditor.onDragEnd(e);
-	}
-
-	override function onDrop(e : js.html.DragEvent) {
-		if (e.target != scene.canvas)
-			return false;
-		return sceneEditor?.onDrop(e);
-	}
-
 	function applyGraphicsFilter(typeid: String, enable: Bool) {
 		saveDisplayState("graphicsFilters/" + typeid, enable);
 
