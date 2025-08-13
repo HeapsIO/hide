@@ -311,7 +311,6 @@ class Gym extends hide.ui.View<{}> {
 						data.setThumbnail(btn.get(0));
 					case Stop:
 				}
-				return Allow;
 			});
 
 			var dropTarget1 = new Element("<fancy-button><span class='label'>Target 1</span></h1>").appendTo(toolbar);
@@ -323,6 +322,7 @@ class Gym extends hide.ui.View<{}> {
 					switch(event) {
 						case Move:
 							trace("move", name);
+							data.dropTargetValidity = AllowDrop;
 						case Enter:
 							trace("enter", name);
 							target.get(0).style.outline = "1px solid blue";
@@ -332,7 +332,7 @@ class Gym extends hide.ui.View<{}> {
 						case Drop:
 							trace("drop", name);
 					}
-					return AllowDrop;
+
 				});
 			}
 		}
