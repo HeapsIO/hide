@@ -2181,108 +2181,112 @@ class SceneEditor {
 			return buttons;
 		}
 
-		// tree.dragAndDropInterface =
-		// {
-		// 	onDragStart: function(p: hrt.prefab.Prefab, e: js.html.DragEvent) : Bool {
-		// 		var selection = tree.getSelectedItems();
-		// 		if (selection.length <= 0)
-		// 			return false;
-		// 		ide.setData("drag/scenetree", cast selection);
-		// 		return true;
-		// 	},
-		// 	getItemDropFlags: function(target: hrt.prefab.Prefab, e: js.html.DragEvent) : hide.comp.FancyTree.DropFlags {
-		// 		var prefabs : Array<hrt.prefab.Prefab> = cast ide.getData("drag/scenetree");
-		// 		if (prefabs != null) {
-		// 			for (p in prefabs) {
-		// 				if (checkAllowParent({prefabClass : Type.getClass(p), inf : p.getHideProps()}, target))
-		// 					return (Reorder:hide.comp.FancyTree.DropFlags) | Reparent;
-		// 			}
-		// 		}
+		tree.dragAndDropInterface =
+		{
+			onDragStart: function(p: hrt.prefab.Prefab, dragData: hide.tools.DragAndDrop.DragData) : Bool {
+				var selection = tree.getSelectedItems();
+				if (selection.length <= 0)
+					return false;
+				ide.setData("drag/scenetree", cast selection);
+				return true;
+			},
+			getItemDropFlags: function(target: hrt.prefab.Prefab, dragData: hide.tools.DragAndDrop.DragData) : hide.comp.FancyTree.DropFlags {
+				var prefabs : Array<hrt.prefab.Prefab> = cast ide.getData("drag/scenetree");
+				if (prefabs != null) {
+					for (p in prefabs) {
+						if (checkAllowParent({prefabClass : Type.getClass(p), inf : p.getHideProps()}, target))
+							return (Reorder:hide.comp.FancyTree.DropFlags) | Reparent;
+					}
+				}
 
-		// 		var files : Array<hide.tools.FileManager.FileEntry> = cast ide.getData("drag/filetree");
-		// 		if (files != null) {
-		// 			for (f in files) {
-		// 				var ptype = hrt.prefab.Prefab.getPrefabType(f.relPath);
-		// 				var ext = f.relPath.substring(f.relPath.lastIndexOf(".") + 1);
+				var files : Array<hide.tools.FileManager.FileEntry> = cast ide.getData("drag/filetree");
+				if (files != null) {
+					for (f in files) {
+						var ptype = hrt.prefab.Prefab.getPrefabType(f.relPath);
+						var ext = f.relPath.substring(f.relPath.lastIndexOf(".") + 1);
 
-		// 				if (ptype != null) {
-		// 					return (Reorder:hide.comp.FancyTree.DropFlags) | Reparent;
-		// 				}
-		// 				else if (ext == "fbx" || ext == "hmd") {
-		// 					var model = new hrt.prefab.Model(null, null);
-		// 					if (checkAllowParent({prefabClass : hrt.prefab.Model, inf : model.getHideProps()}, target))
-		// 						return (Reorder:hide.comp.FancyTree.DropFlags) | Reparent;
-		// 				}
-		// 			}
-		// 		}
+						if (ptype != null) {
+							return (Reorder:hide.comp.FancyTree.DropFlags) | Reparent;
+						}
+						else if (ext == "fbx" || ext == "hmd") {
+							var model = new hrt.prefab.Model(null, null);
+							if (checkAllowParent({prefabClass : hrt.prefab.Model, inf : model.getHideProps()}, target))
+								return (Reorder:hide.comp.FancyTree.DropFlags) | Reparent;
+						}
+					}
+				}
 
-		// 		return Reorder;
-		// 	},
-		// 	onDrop: function(target: hrt.prefab.Prefab, operation: hide.comp.FancyTree.DropOperation, e: js.html.DragEvent) : Bool {
-		// 		if (target == null)
-		// 			target = sceneData;
-		// 		var parent = operation.match(hide.comp.FancyTree.DropOperation.Inside) ? target : target?.parent;
-		// 		var tChildren = target.parent == null ? target.children : target.parent.children;
+				return Reorder;
+			},
+			onDrop: function(target: hrt.prefab.Prefab, operation: hide.comp.FancyTree.DropOperation, dragData: hide.tools.DragAndDrop.DragData) : Bool {
+				if (target == null)
+					target = sceneData;
+				var parent = operation.match(hide.comp.FancyTree.DropOperation.Inside) ? target : target?.parent;
+				var tChildren = target.parent == null ? target.children : target.parent.children;
 
-		// 		var prefabs : Array<hrt.prefab.Prefab> =  cast ide.popData("drag/scenetree");
-		// 		if (prefabs != null) {
-		// 			// Avoid moving target onto itelf
-		// 			prefabs.remove(target);
+				var prefabs : Array<hrt.prefab.Prefab> =  cast ide.popData("drag/scenetree");
+				if (prefabs != null) {
+					// Avoid moving target onto itelf
+					for (prefab in prefabs.copy()) {
+						if (target.findParent((p) -> p == prefab) != null) {
+							prefabs.remove(prefab);
+						}
+					}
 
-		// 			var idx = tChildren.indexOf(target);
-		// 			if (operation.match(hide.comp.FancyTree.DropOperation.After))
-		// 				idx++;
-		// 			reparentElement(prefabs, parent, idx);
-		// 			refreshTree(targetTree);
-		// 			return true;
-		// 		}
+					var idx = tChildren.indexOf(target);
+					if (operation.match(hide.comp.FancyTree.DropOperation.After))
+						idx++;
+					reparentElement(prefabs, parent, idx);
+					refreshTree(targetTree);
+					return true;
+				}
 
-		// 		var files : Array<hide.tools.FileManager.FileEntry> =  cast ide.popData("drag/filetree");
-		// 		if (files != null) {
-		// 			var createdPrefab : Array<{ p : hrt.prefab.Prefab, idx: Int }> = [];
-		// 			for (f in files) {
-		// 				var idx = switch (operation) {
-		// 					case hide.comp.FancyTree.DropOperation.Inside:
-		// 						parent.children.length;
-		// 					case hide.comp.FancyTree.DropOperation.After:
-		// 						tChildren.indexOf(target) + 1;
-		// 					case hide.comp.FancyTree.DropOperation.Before:
-		// 						tChildren.indexOf(target);
-		// 				}
+				var files : Array<hide.tools.FileManager.FileEntry> =  cast ide.popData("drag/filetree");
+				if (files != null) {
+					var createdPrefab : Array<{ p : hrt.prefab.Prefab, idx: Int }> = [];
+					for (f in files) {
+						var idx = switch (operation) {
+							case hide.comp.FancyTree.DropOperation.Inside:
+								parent.children.length;
+							case hide.comp.FancyTree.DropOperation.After:
+								tChildren.indexOf(target) + 1;
+							case hide.comp.FancyTree.DropOperation.Before:
+								tChildren.indexOf(target);
+						}
 
-		// 				var p = createDroppedElement(f.relPath, parent, e.shiftKey);
-		// 				if (p == null)
-		// 					continue;
-		// 				parent.children.remove(p);
-		// 				parent.children.insert(idx, p);
-		// 				queueRebuild(p);
-		// 				createdPrefab.push({ p : p, idx : idx });
-		// 			}
+						var p = createDroppedElement(f.relPath, parent, dragData.shiftKey);
+						if (p == null)
+							continue;
+						parent.children.remove(p);
+						parent.children.insert(idx, p);
+						queueRebuild(p);
+						createdPrefab.push({ p : p, idx : idx });
+					}
 
-		// 			undo.change(Custom((undo) -> {
-		// 				if (undo) {
-		// 					for (p in createdPrefab) {
-		// 						parent.children.remove(p.p);
-		// 						p.p.editorRemoveInstanceObjects();
-		// 					}
-		// 				}
-		// 				else {
-		// 					for (p in createdPrefab) {
-		// 						parent.children.insert(p.idx, p.p);
-		// 						queueRebuild(p.p);
-		// 					}
-		// 				}
+					undo.change(Custom((undo) -> {
+						if (undo) {
+							for (p in createdPrefab) {
+								parent.children.remove(p.p);
+								p.p.editorRemoveInstanceObjects();
+							}
+						}
+						else {
+							for (p in createdPrefab) {
+								parent.children.insert(p.idx, p.p);
+								queueRebuild(p.p);
+							}
+						}
 
-		// 				refreshTree(targetTree);
-		// 			}));
+						refreshTree(targetTree);
+					}));
 
-		// 			refreshTree(targetTree);
-		// 			return true;
-		// 		}
+					refreshTree(targetTree);
+					return true;
+				}
 
-		// 		return false;
-		// 	}
-		// }
+				return false;
+			}
+		}
 		function ctxMenu(p: hrt.prefab.Prefab, e: js.html.Event) {
 			e.preventDefault();
 			e.stopPropagation();

@@ -26,6 +26,7 @@ enum DropTargetValidity {
 class DragData {
 	public var mouseX : Int = 0;
 	public var mouseY : Int = 0;
+	public var shiftKey : Bool = false;
 
 	public var data: Map<String, Dynamic> = [];
 	public var sourceElement : DragElement = null;
@@ -62,6 +63,12 @@ class DragData {
 		if (thumbnail != null) {
 			thumbnail.remove();
 		}
+	}
+
+	function copyFromPointerEvent(e: js.html.PointerEvent) {
+		mouseX = e.clientX;
+		mouseY = e.clientY;
+		shiftKey = e.shiftKey;
 	}
 }
 
@@ -112,8 +119,7 @@ class DragAndDrop {
 	}
 
 	static function onOverlayPointerMove(e: js.html.PointerEvent) : Void {
-		currentDrag.mouseX = e.clientX;
-		currentDrag.mouseY = e.clientY;
+		currentDrag.copyFromPointerEvent(e);
 		updateDragOperation();
 	}
 
@@ -185,8 +191,9 @@ class DragAndDrop {
 	}
 
 	static function onInitialPointerMove(e:js.html.PointerEvent) : Void {
-		if (dragOverlayHandler != null)
-			throw "no";
+		if (dragOverlayHandler != null) {
+			cleanupDrag(false);
+		}
 
 		var element : DragElement = cast e.currentTarget;
 		if (element.onHideDragEvent == null)
@@ -198,8 +205,7 @@ class DragAndDrop {
 		if (currentDrag == null) {
 
 			currentDrag = new DragData(element);
-			currentDrag.mouseX = e.clientX;
-			currentDrag.mouseY = e.clientY;
+			currentDrag.copyFromPointerEvent(e);
 			element.onHideDragEvent(Start, currentDrag);
 			if (currentDrag.canceled) {
 				currentDrag = null;

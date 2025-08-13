@@ -846,12 +846,7 @@ class FancyTree<TreeItem> extends hide.comp.Component {
 				}
 			};
 
-			var elements = [data.element.querySelector("fancy-tree-name"), data.element.querySelector(".header-icon")];
-
-			// drag from the interactible elements of the item
-			for (element in elements) {
-				hide.tools.DragAndDrop.makeDraggable(element, dragStart);
-			}
+			hide.tools.DragAndDrop.makeDraggable(data.element, dragStart);
 
 			function onDropEvent(event: hide.tools.DragAndDrop.DropEvent, dragData: hide.tools.DragAndDrop.DragData) : Void {
 				switch(event) {
