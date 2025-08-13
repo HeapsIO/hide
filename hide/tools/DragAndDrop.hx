@@ -52,7 +52,7 @@ class DragData {
 	}
 
 	public function setThumbnailVisiblity(visible: Bool) : Void {
-		thumbnail.style.visibility = visible ? "visible" : "hidden";
+		thumbnail?.style.visibility = visible ? "visible" : "hidden";
 	}
 
 	/** Cancel the drag operation. Only valid when called by the onDrag callback of makeDraggable**/
@@ -70,7 +70,7 @@ class DragData {
 		}
 	}
 
-	function copyFromPointerEvent(e: js.html.PointerEvent) {
+	function copyFromMouseEvent(e: js.html.MouseEvent) {
 		mouseX = e.clientX;
 		mouseY = e.clientY;
 		@:privateAccess hide.Ide.inst.syncMousePosition(e);
@@ -99,9 +99,34 @@ class DragAndDrop {
 		dragElement.onHideDragEvent = onDrag;
 	}
 
+	static var tmpDrag : DragData = new DragData(null);
 	static public function makeDropTarget(element: js.html.Element, onEvent: (event: DropEvent, data: DragData) -> Void) : Void {
 		var dropTarget : DropTarget = cast element;
 		dropTarget.onHideDropEvent = onEvent;
+
+		function nativeDropHandler(event: DropEvent, e: js.html.DragEvent) : Bool {
+			tmpDrag.dropTargetValidity = AllowDrop;
+			tmpDrag.data = [];
+			var list = [];
+			for (file in e.dataTransfer.files) {
+				var fe = FileManager.inst.getFileEntry(untyped file.path);
+				if (fe != null) {
+					list.push(fe);
+				}
+			}
+			tmpDrag.data.set("drag/filetree", list);
+			tmpDrag.copyFromMouseEvent(e);
+			onEvent(event, tmpDrag);
+			if (tmpDrag.dropTargetValidity == ForbidDrop) {
+				return false;
+			}
+			return true;
+		}
+
+		dropTarget.ondragenter = nativeDropHandler.bind(Enter);
+		dropTarget.ondragleave = nativeDropHandler.bind(Leave);
+		dropTarget.ondragover = nativeDropHandler.bind(Move);
+		dropTarget.ondrop = nativeDropHandler.bind(Drop);
 	}
 
 	static function onInitialPointerDown(e:js.html.PointerEvent) : Void {
@@ -125,7 +150,7 @@ class DragAndDrop {
 	}
 
 	static function onOverlayPointerMove(e: js.html.PointerEvent) : Void {
-		currentDrag.copyFromPointerEvent(e);
+		currentDrag.copyFromMouseEvent(e);
 		updateDragOperation();
 	}
 
@@ -221,7 +246,7 @@ class DragAndDrop {
 		if (currentDrag == null) {
 
 			currentDrag = new DragData(element);
-			currentDrag.copyFromPointerEvent(e);
+			currentDrag.copyFromMouseEvent(e);
 			element.onHideDragEvent(Start, currentDrag);
 			if (currentDrag.canceled) {
 				currentDrag = null;

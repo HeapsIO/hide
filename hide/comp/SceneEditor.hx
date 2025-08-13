@@ -2193,7 +2193,7 @@ class SceneEditor {
 				return true;
 			},
 			getItemDropFlags: function(target: hrt.prefab.Prefab, dragData: hide.tools.DragAndDrop.DragData) : hide.comp.FancyTree.DropFlags {
-				var prefabs : Array<hrt.prefab.Prefab> = cast ide.getData("drag/scenetree");
+				var prefabs : Array<hrt.prefab.Prefab> = cast dragData.data.get("drag/scenetree");
 				if (prefabs != null) {
 					for (p in prefabs) {
 						if (checkAllowParent({prefabClass : Type.getClass(p), inf : p.getHideProps()}, target))
@@ -2201,7 +2201,7 @@ class SceneEditor {
 					}
 				}
 
-				var files : Array<hide.tools.FileManager.FileEntry> = cast ide.getData("drag/filetree");
+				var files : Array<hide.tools.FileManager.FileEntry> = cast dragData.data.get("drag/filetree");
 				if (files != null) {
 					for (f in files) {
 						var ptype = hrt.prefab.Prefab.getPrefabType(f.relPath);
@@ -4176,7 +4176,7 @@ class SceneEditor {
 	public function onDropEvent(event: hide.tools.DragAndDrop.DropEvent, dragData : hide.tools.DragAndDrop.DragData) : Void {
 		switch(event) {
 			case Move:
-				var files : Array<hide.tools.FileManager.FileEntry> = ide.getData("drag/filetree");
+				var files : Array<hide.tools.FileManager.FileEntry> = dragData.data.get("drag/filetree");
 
 				if (files == null || files.length <= 0) {
 					dragData.dropTargetValidity = ForbidDrop;
@@ -4205,7 +4205,7 @@ class SceneEditor {
 				previewDraggedObj?.remove();
 				previewDraggedObj = null;
 			case Drop:
-				var files : Array<hide.tools.FileManager.FileEntry> = ide.getData("drag/filetree");
+				var files : Array<hide.tools.FileManager.FileEntry> = dragData.data.get("drag/filetree");
 				if (files == null || files.length <= 0)
 					return;
 

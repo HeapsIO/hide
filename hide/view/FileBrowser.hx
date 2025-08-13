@@ -451,7 +451,7 @@ class FileBrowser extends hide.ui.View<FileBrowserState> {
 				if (target == null)
 					return Reorder;
 
-				var fileEntries : Array<FileEntry> = e.data.get("drag/filetree") ?? cast ide.getData("drag/filetree");
+				var fileEntries : Array<FileEntry> = e.data.get("drag/filetree");
 				var containsFiles = fileEntries != null && fileEntries.length > 0;
 
 				if (!containsFiles)
