@@ -509,6 +509,7 @@ class FileBrowser extends hide.ui.View<FileBrowserState> {
 		}
 
 		fancyGallery.getName = (item : FileEntry) -> item.name;
+		fancyGallery.getTitle = (item : FileEntry) -> item.getRelPath();
 		fancyGallery.getItemRanges = (item: FileEntry) -> currentSearchRanges.get(item);
 
 		fancyGallery.getThumbnail = (item : FileEntry) -> {

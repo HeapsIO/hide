@@ -9,7 +9,15 @@ enum GalleryRefreshFlag {
 
 typedef GalleryRefreshFlags = haxe.EnumFlags<GalleryRefreshFlag>;
 
-typedef GalleryItemData<GalleryItem> = {item: GalleryItem, name: String, element: js.html.Element, thumbnailStringCache: String, iconStringCache: String, ranges: hide.comp.FancySearch.SearchRanges};
+typedef GalleryItemData<GalleryItem> = {
+	item: GalleryItem,
+	name: String,
+	element: js.html.Element,
+	thumbnailStringCache: String,
+	iconStringCache: String,
+	ranges: hide.comp.FancySearch.SearchRanges,
+	title: String,
+};
 
 class FancyGallery<GalleryItem> extends hide.comp.Component {
 
@@ -180,6 +188,10 @@ class FancyGallery<GalleryItem> extends hide.comp.Component {
 
 	public dynamic function getName(item: GalleryItem) : String {
 		return "";
+	}
+
+	public dynamic function getTitle(item: GalleryItem) : String {
+		return getName(item);
 	}
 
 	public dynamic function getThumbnail(item: GalleryItem) : String {
@@ -504,15 +516,17 @@ class FancyGallery<GalleryItem> extends hide.comp.Component {
 
 		var name = genElement.querySelector("fancy-name");
 		var ranges = getItemRanges(data.item);
-		if (name.title != data.name || data.ranges != ranges) {
+		if (Reflect.getProperty(name, "x-name") != data.name || data.ranges != ranges) {
 			data.ranges = ranges;
 			if (data.ranges != null) {
 				name.innerHTML = FancySearch.splitSearchRanges(data.name, data.ranges);
 			} else {
 				name.innerHTML = data.name;
 			}
-			name.title = data.name;
+			Reflect.setProperty(name, "x-name", data.name);
 		}
+
+		genElement.title = data.title;
 
 		var img = genElement.querySelector("fancy-thumbnail");
 		var imgString = getThumbnail(data.item) ?? '<fancy-image style="background-image:url(\'res/icons/svg/unknown_file.svg\')"></fancy-image>';
@@ -542,6 +556,7 @@ class FancyGallery<GalleryItem> extends hide.comp.Component {
 				thumbnailStringCache: null,
 				iconStringCache: null,
 				ranges: null,
+				title: getTitle(item),
 			});
 
 			currentData.push(data);
