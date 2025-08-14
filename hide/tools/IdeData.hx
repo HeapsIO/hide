@@ -180,6 +180,10 @@ class IdeData {
 		return StringTools.replace(absPath, resourceDir + "/", "");
 	}
 
+	public function getDirPath(path: String) {
+		return path.substring(0, path.lastIndexOf("/"));
+	}
+
 	var lastDBContent = null;
 	function loadDatabase( ?checkExists ) {
 		var exists = fileExists(databaseFile);

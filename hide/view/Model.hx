@@ -140,6 +140,10 @@ class Model extends FileView {
 
 		var rpEditionvisible = Ide.inst.currentConfig.get("sceneeditor.renderprops.edit", false);
 		setRenderPropsEditionVisibility(rpEditionvisible);
+
+		dynamicJointsScope = null;
+		dynamicJointsConfFolder = null;
+		@:privateAccess hxd.fmt.hmd.Library.defaultDynamicBonesConfigs.clear();
 	}
 
 	override function onActivate() {
@@ -157,8 +161,8 @@ class Model extends FileView {
 		if (Ide.inst.currentConfig.get("sceneeditor.renderprops.edit", false) && sceneEditor.renderPropsRoot != null)
 			sceneEditor.renderPropsRoot.save();
 
+		var scope = this.sceneEditor.properties.element.find("#scope").val();
 		for (o in obj.findAll(o -> Std.downcast(o, h3d.scene.Mesh))) {
-
 			var hmd = Std.downcast(o.primitive, h3d.prim.HMDModel);
 			if (hmd == null)
 				continue;
@@ -171,7 +175,36 @@ class Model extends FileView {
 				skin : o.find((o) -> Std.downcast(o, h3d.scene.Skin))
 			}
 
-			h3d.prim.ModelDatabase.current.saveModelProps(input);
+			// If Dynamic bones edition scope is global or folder, save it to props.json
+			if (scope == "folder") {
+				// Check if data were saved in a model.props, and in this case, delete it
+				var modelPropsFile = ide.getPath(input.resourceDirectory + "/model.props");
+				if (sys.FileSystem.exists(modelPropsFile)) {
+					var content = haxe.Json.parse(sys.io.File.getContent(modelPropsFile));
+					var entry = '${input.resourceName}/${input.objectName}';
+					if (Reflect.field(content, entry) != null) {
+						Reflect.deleteField(content, entry);
+						if (Reflect.fields(content).length == 0)
+							sys.FileSystem.deleteFile(modelPropsFile);
+						else
+							sys.io.File.saveContent(modelPropsFile, haxe.Json.stringify(content, null, '\t'));
+					}
+				}
+
+				var content = "";
+				var propsFile = ide.getPath(sceneEditor.properties.element.find(".file").val()) + "/props.json";
+				if (sys.FileSystem.exists(propsFile))
+					content = haxe.Json.parse(sys.io.File.getContent(propsFile));
+				else
+					content = "{}";
+				@:privateAccess h3d.prim.ModelDatabase.current.saveDynamicBonesConfig(input, content);
+				sys.io.File.saveContent(ide.getPath(propsFile), haxe.Json.stringify(content, null, '\t'));
+
+				@:privateAccess hxd.fmt.hmd.Library.defaultDynamicBonesConfigs.clear();
+			}
+			else {
+				h3d.prim.ModelDatabase.current.saveModelProps(input);
+			}
 		}
 
 		// Save current Anim data
@@ -237,6 +270,8 @@ class Model extends FileView {
 	static var lodPow : Float = 0.3;
 	var selectedMesh : h3d.scene.Mesh = null;
 	var displayJoints = null;
+	var dynamicJointsScope : String = null;
+	var dynamicJointsConfFolder : String = null;
 	var selectedCount = 0;
 	var selectedElements : Array<Dynamic>;
 	function onTreeSelectionChanged(elts : Array<Dynamic>) {
@@ -896,6 +931,14 @@ class Model extends FileView {
 		var skin = joints[0].skin;
 
 		var dynJointEl = new Element('<div class="group" name="Dynamic bone">
+			<dt>Scope</dt>
+			<dd>
+				<select id="scope">
+					<option value="folder">Folder</option>
+					<option value="model">Model</option>
+				</select>
+			</dd>
+			<div id="scope-select"><dt>Folder</dt><dd id="folder-select"></dd></div>
 			<dt>Apply changes on children</dt><dd><input id="sync-changes" type="checkbox"/></dd>
 			<div class="group dynamic-edition" name="Global parameters">
 				<dt>Force</dt><dd class="vector"><input id="force-x" type="number"/><input id="force-y" type="number"/><input id="force-z" type="number"/></dd>
@@ -917,6 +960,68 @@ class Model extends FileView {
 		var synced = getDisplayState("dynamic-bones-sync");
 		if (synced == null)
 			synced = false;
+
+		var scopeSelect = dynJointEl.find("#scope-select");
+		var folderSelect = new hide.comp.FileSelect(null, null, null);
+		folderSelect.directory = true;
+		folderSelect.element.appendTo(dynJointEl.find("#folder-select"));
+
+		function refreshScope() {
+			scopeSelect.show();
+			if (dynamicJointsScope == "model")
+				scopeSelect.hide();
+			else {
+				if (dynamicJointsConfFolder == null) {
+					var dir = ide.getPath(state.path.substr(0, state.path.lastIndexOf("/")));
+					var p = dir + "/props.json";
+					while (!sys.FileSystem.exists(p) || !Reflect.hasField(haxe.Json.parse(sys.io.File.getContent(p)), "dynamicBones")) {
+						dir = dir.substr(0, dir.lastIndexOf("/"));
+						if (dir == ide.projectDir) {
+							dir = null;
+							break;
+						}
+						p = dir + "/props.json";
+					}
+
+					dynamicJointsConfFolder = dir == null ? null : ide.makeRelative(dir);
+				}
+				folderSelect.path = dynamicJointsConfFolder;
+			}
+		}
+
+		folderSelect.onChange = () -> {
+			var prevP = dynamicJointsConfFolder;
+			dynamicJointsConfFolder = folderSelect.path;
+			var newP = dynamicJointsConfFolder;
+			undo.change(Custom((undo) -> {
+				dynamicJointsConfFolder = undo ? prevP : newP;
+				refreshScope();
+			}));
+		}
+
+		// Initialize scope
+		if (dynamicJointsScope == null) {
+			dynamicJointsScope = "folder";
+			var conf = hxd.fmt.hmd.Library.getDefaultDynamicBonesConfig(ide.getDirPath(state.path));
+			if (conf == null || conf.length == 0)
+				dynamicJointsScope = "model";
+		}
+		refreshScope();
+
+		var scope = dynJointEl.find("#scope");
+		scope.val(dynamicJointsScope);
+		scope.on("change", function(e) {
+			var prev = dynamicJointsScope;
+			var newScope = scope.val();
+			dynamicJointsScope = newScope;
+			scopeSelect.hide();
+			refreshScope();
+			undo.change(Custom((undo) -> {
+				scope.val(undo ? prev : newScope);
+				dynamicJointsScope = scope.val();
+				refreshScope();
+			}));
+		});
 
 		var syncEl = dynJointEl.find("#sync-changes");
 		syncEl.get(0).toggleAttribute('checked', synced);
