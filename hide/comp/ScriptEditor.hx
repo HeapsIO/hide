@@ -444,7 +444,7 @@ class ScriptChecker {
 			name = name.charAt(0).toUpperCase() + name.substr(1);
 			var kname = path.join("_")+"Kind";
 			kname = kname.charAt(0).toUpperCase() + kname.substr(1);
-			if( cdbPack != "" ) kname = cdbPack + "." + kname;
+			if( cdbPack != null && cdbPack != "" ) kname = cdbPack + "." + kname;
 			var kind = checker.types.resolve(kname);
 			if( kind == null )
 				kind = TEnum({ name : kname, params : [], constructors : [] },[]);
