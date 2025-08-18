@@ -216,8 +216,6 @@ class CdbTable extends hide.ui.View<{}> {
 			});
 			return;
 		}
-		hide.tools.DragAndDrop.makeDropTarget(element.get(0), onDropEvent);
-
 		element.addClass("cdb-view");
 		element.toggleClass("cdb-diff", @:privateAccess ide.databaseDiff != null);
 		tabs = new hide.comp.Tabs(element, true);
@@ -308,24 +306,16 @@ class CdbTable extends hide.ui.View<{}> {
 	}
 
 	#if js
-	function onDropEvent(event: hide.tools.DragAndDrop.DropEvent, dragData: hide.tools.DragAndDrop.DragData) {
-		var files : Array<hide.tools.FileManager.FileEntry> = dragData.data.get("drag/filetree");
-		if (files == null || files.length <= 0) {
-			dragData.dropTargetValidity = ForbidDrop;
-			return;
-		}
+	override public function onDrop(event: js.html.DragEvent) : Bool {
+		var files : Array<hide.tools.FileManager.FileEntry> = ide.getData("drag/filetree");
+		if (files == null || files.length <= 0)
+			return false;
 
 		var path = ide.makeRelative(files[0].relPath);
 		var cell = getCellFromMousePos(ide.mouseX, ide.mouseY);
-		if( cell == null ) {
-			dragData.dropTargetValidity = ForbidDrop;
-			return;
-		}
-
-		if (event != Drop)
-			return;
-
-		cell.dragDropFile(path, true);
+		if( cell == null )
+			return false;
+		return cell.dragDropFile(path, true);
 	}
 
 	public function getCellFromMousePos( x : Int, y : Int ) : Null<hide.comp.cdb.Cell> {

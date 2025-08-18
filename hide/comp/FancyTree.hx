@@ -223,19 +223,19 @@ class FancyTree<TreeItem> extends hide.comp.Component {
 			one item at a time.
 			Return `true` if the drag operation is allowed, and `false` to cancel it
 		**/
-		onDragStart: (item: TreeItem, event : hide.tools.DragAndDrop.DragData) -> Bool,
+		onDragStart: (item: TreeItem, event : js.html.DragEvent) -> Bool,
 
 		/**
 			Called when the user hovers on `target` with a drag and drop operation. You need to return what drop orperation is allowed
 			on the given object
 		**/
-		getItemDropFlags: (target: TreeItem, event : hide.tools.DragAndDrop.DragData) -> DropFlags,
+		getItemDropFlags: (target: TreeItem, event : js.html.DragEvent) -> DropFlags,
 
 		/**
 			Called when the user drops an item on `target` and getItemDropFlags returned at least one valid flag.
 			`where` tells you where the item was dropped, and you can use `event.dataTransfer` to know what was dropped
 		**/
-		onDrop: (target: TreeItem, where: DropOperation, event : hide.tools.DragAndDrop.DragData) -> Void
+		onDrop: (target: TreeItem, where: DropOperation, event : js.html.DragEvent) -> Void
 	} = null;
 
 	/**
@@ -356,16 +356,11 @@ class FancyTree<TreeItem> extends hide.comp.Component {
 		rootData = generateChildren(null);
 		recLoadChildren(rootData);
 
-		hide.tools.DragAndDrop.makeDropTarget(element.get(0), (event: hide.tools.DragAndDrop.DropEvent, dragData: hide.tools.DragAndDrop.DragData) -> {
-			switch (event) {
-				case Enter:
-				case Leave:
-				case Move:
-					dragData.dropTargetValidity = AllowDrop;
-				case Drop:
-					dragAndDropInterface.onDrop(null, DropOperation.Inside, dragData);
-			}
-		});
+		element.get(0).ondrop = (e: js.html.DragEvent) -> {
+			e.preventDefault();
+			e.stopPropagation();
+			dragAndDropInterface.onDrop(null, DropOperation.Inside, e);
+		}
 
 		queueRefresh(Search);
 	}
@@ -830,8 +825,7 @@ class FancyTree<TreeItem> extends hide.comp.Component {
 
 	function setupDragAndDrop(data: TreeItemData<TreeItem>) {
 		if (dragAndDropInterface != null) {
-
-			function dragStart(e: hide.tools.DragAndDrop.DragEvent, dragData: hide.tools.DragAndDrop.DragData) : Void {
+			var ondragstart = (e: js.html.DragEvent) -> {
 				if (!selection.get(cast data)) {
 					clearSelection();
 					setSelection(data, true);
@@ -839,55 +833,73 @@ class FancyTree<TreeItem> extends hide.comp.Component {
 
 				moveLastDragOver = null;
 
-				if (dragAndDropInterface.onDragStart(data.item, dragData)) {
-					dragData.setThumbnail(data.element);
+				if (dragAndDropInterface.onDragStart(data.item, e)) {
+					e.dataTransfer.effectAllowed = "move";
+					e.dataTransfer.setDragImage(data.element, 0, 0);
 				} else {
-					dragData.cancel();
+					e.preventDefault();
 				}
 			};
 
-			hide.tools.DragAndDrop.makeDraggable(data.element, dragStart);
+			var elements = [data.element.querySelector("fancy-tree-name"), data.element.querySelector(".header-icon")];
 
-			function onDropEvent(event: hide.tools.DragAndDrop.DropEvent, dragData: hide.tools.DragAndDrop.DragData) : Void {
-				switch(event) {
-					case Move:
-						var operation = getDragOperation(data,dragData);
-						if (operation != null) {
-							// Auto open item if the user hover for enough time
-							if (operation == Inside) {
-								var time = haxe.Timer.stamp();
+			// drag from the interactible elements of the item
+			for (element in elements) {
+				element.draggable = true;
+				element.ondragstart = ondragstart;
+			}
 
-								if (moveLastDragOver != data) {
-									moveLastDragOver = data;
-									moveLastDragOverStart = haxe.Timer.stamp();
-								}
 
-								if (time - moveLastDragOverStart > overDragOpenDelaySec && !isOpen(data)) {
-									toggleDataOpen(data, true);
-									saveState();
-								}
-							}
-							setDragStyle(data.element, operation);
-							dragData.dropTargetValidity = AllowDrop;
-							return;
+			// drop on the full item element
+			data.element.ondragover = (e: js.html.DragEvent) -> {
+				var operation = getDragOperation(data,e);
+				if (operation != null) {
+					// Auto open item if the user hover for enough time
+					if (operation == Inside) {
+						var time = haxe.Timer.stamp();
+
+						if (moveLastDragOver != data) {
+							moveLastDragOver = data;
+							moveLastDragOverStart = haxe.Timer.stamp();
 						}
-						dragData.dropTargetValidity = ForbidDrop;
-				case Leave:
-					setDragStyle(data.element, null);
-				case Enter:
-					var operation = getDragOperation(data, dragData);
-					if (operation != null) {
-						setDragStyle(data.element, operation);
-					}
-				case Drop:
-					var operation = getDragOperation(data,dragData);
-					if (operation != null) {
-						dragAndDropInterface.onDrop(data.item, operation, dragData);
-					}
-				};
-			};
 
-			hide.tools.DragAndDrop.makeDropTarget(data.element, onDropEvent);
+						if (time - moveLastDragOverStart > overDragOpenDelaySec && !isOpen(data)) {
+							toggleDataOpen(data, true);
+							saveState();
+						}
+					}
+
+					e.preventDefault();
+					setDragStyle(data.element, operation);
+				} else {
+					setDragStyle(data.element, null);
+				}
+			}
+
+			data.element.ondragenter = (e: js.html.DragEvent) -> {
+				var operation = getDragOperation(data,e);
+				if (operation != null) {
+					setDragStyle(data.element, operation);
+					e.preventDefault();
+				}
+			}
+
+			data.element.ondragleave = (e: js.html.DragEvent) -> {
+				setDragStyle(data.element, null);
+				e.preventDefault();
+			}
+
+			data.element.ondrop = (e: js.html.DragEvent) -> {
+				setDragStyle(data.element, null);
+				e.preventDefault();
+
+				var operation = getDragOperation(data,e);
+				if (operation != null) {
+					dragAndDropInterface.onDrop(data.item, operation, e);
+				}
+				e.preventDefault();
+				e.stopPropagation();
+			}
 		}
 	}
 
@@ -897,9 +909,9 @@ class FancyTree<TreeItem> extends hide.comp.Component {
 		element.classList.toggle("feedback-drop-in", target == Inside);
 	}
 
-	function getDragOperation(data: TreeItemData<TreeItem>, dragData: hide.tools.DragAndDrop.DragData) : DropOperation {
+	function getDragOperation(data: TreeItemData<TreeItem>, event: js.html.DragEvent) : DropOperation {
 		var element = data.element;
-		var flags = dragAndDropInterface.getItemDropFlags(data.item, dragData);
+		var flags = dragAndDropInterface.getItemDropFlags(data.item, event);
 		if (flags == DropFlags.ofInt(0)) {
 			return null;
 		}
@@ -912,17 +924,17 @@ class FancyTree<TreeItem> extends hide.comp.Component {
 		var nameRect = element.getBoundingClientRect();
 
 		if (!flags.has(Reparent)) {
-			if (dragData.mouseY > rect.top + rect.height / 2.0) {
+			if (event.clientY > rect.top + rect.height / 2.0) {
 				return After;
 			}
 			return Before;
 		}
 		else {
 			final split = 1.0 / 3.0;
-			if (dragData.mouseY < rect.top + rect.height * split) {
+			if (event.clientY < rect.top + rect.height * split) {
 				return Before;
 			}
-			if (dragData.mouseY > rect.top + rect.height * (1.0-split)) {
+			if (event.clientY > rect.top + rect.height * (1.0-split)) {
 				return After;
 			}
 			return Inside;

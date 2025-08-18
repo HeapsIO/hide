@@ -439,19 +439,18 @@ class FileBrowser extends hide.ui.View<FileBrowserState> {
 
 		fancyTree.dragAndDropInterface =
 		{
-			onDragStart: function(file: FileEntry, e: hide.tools.DragAndDrop.DragData) : Bool {
+			onDragStart: function(file: FileEntry, e: js.html.DragEvent) : Bool {
 				var selection = fancyTree.getSelectedItems();
 				if (selection.length <= 0)
 					return false;
-				e.data.set("drag/filetree", selection);
 				ide.setData("drag/filetree", cast selection);
 				return true;
 			},
-			getItemDropFlags: function(target: FileEntry, e: hide.tools.DragAndDrop.DragData) : hide.comp.FancyTree.DropFlags {
+			getItemDropFlags: function(target: FileEntry, e: js.html.DragEvent) : hide.comp.FancyTree.DropFlags {
 				if (target == null)
 					return Reorder;
 
-				var fileEntries : Array<FileEntry> = e.data.get("drag/filetree");
+				var fileEntries : Array<FileEntry> = cast ide.getData("drag/filetree");
 				var containsFiles = fileEntries != null && fileEntries.length > 0;
 
 				if (!containsFiles)
@@ -462,7 +461,7 @@ class FileBrowser extends hide.ui.View<FileBrowserState> {
 
 				return Reorder;
 			},
-			onDrop: function(target: FileEntry, operation: hide.comp.FancyTree.DropOperation, e: hide.tools.DragAndDrop.DragData) : Bool {
+			onDrop: function(target: FileEntry, operation: hide.comp.FancyTree.DropOperation, e: js.html.DragEvent) : Bool {
 				if (target.kind != Dir)
 					target = target.parent;
 
@@ -546,9 +545,8 @@ class FileBrowser extends hide.ui.View<FileBrowserState> {
 		}
 
 		fancyGallery.dragAndDropInterface = {
-			onDragStart: (item: FileEntry, dragData: hide.tools.DragAndDrop.DragData) -> {
+			onDragStart: (item: FileEntry, dataTransfer: js.html.DataTransfer) -> {
 				var selection = getItemAndSelection(item, true);
-				dragData.data.set("drag/filetree", selection);
 				ide.setData("drag/filetree", cast selection);
 				return true;
 			}

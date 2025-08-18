@@ -509,16 +509,10 @@ class ShaderEditor extends hide.view.FileView implements GraphInterface.IGraphEd
 		initMeshPreview();
 	}
 
-	function onDropEvent(event: hide.tools.DragAndDrop.DropEvent, dragData: hide.tools.DragAndDrop.DragData) {
-		var files : Array<hide.tools.FileManager.FileEntry> = dragData.data.get("drag/filetree");
-		if (files == null || files.length <= 0) {
-			dragData.dropTargetValidity = ForbidDrop;
-			return;
-		}
-
-		if (event != Drop) {
-			return;
-		}
+	override function onDrop(event: js.html.DragEvent) {
+		var files : Array<hide.tools.FileManager.FileEntry> = ide.getData("drag/filetree");
+		if (files == null || files.length <= 0)
+			return false;
 
 		var items = [ for (f in files) f.relPath];
 		if (previewElem.get(0).matches(":hover")) {
@@ -529,16 +523,21 @@ class ShaderEditor extends hide.view.FileView implements GraphInterface.IGraphEd
 					if (renderProps.contains(item)) {
 						previewSettings.renderPropsPath = item;
 						refreshRenderProps();
+						return true;
 					}
 					else {
 						setMeshPreviewPrefab(item);
+						return true;
 					}
 				}
 				else if (StringTools.endsWith(item, ".fbx")) {
 					setMeshPreviewFBX(item);
+					return true;
 				}
 			}
 		}
+
+		return false;
 	}
 
 	override function onActivate() {

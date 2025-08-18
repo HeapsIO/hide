@@ -240,7 +240,7 @@ class FancyGallery<GalleryItem> extends hide.comp.Component {
 			one item at a time.
 			Return `true` if the drag operation is allowed, and `false` to cancel it
 		**/
-		onDragStart: (item: GalleryItem, dataTransfer: hide.tools.DragAndDrop.DragData) -> Bool,
+		onDragStart: (item: GalleryItem, dataTransfer: js.html.DataTransfer) -> Bool,
 
 		// /**
 		// 	Called when the user hovers on `target` with a drag and drop operation. You need to return what drop orperation is allowed
@@ -434,25 +434,20 @@ class FancyGallery<GalleryItem> extends hide.comp.Component {
 		if (dragAndDropInterface == null)
 			return;
 
-		function onDragStart (event: hide.tools.DragAndDrop.DragEvent, dragData:hide.tools.DragAndDrop.DragData) : Void {
-			switch (event) {
-				case Start:
-					if (!selection.get(cast data)) {
-						clearSelection();
-						setSelection(data, true);
-					}
+		data.element.draggable = true;
+		data.element.ondragstart = (e:js.html.DragEvent) -> {
+			if (!selection.get(cast data)) {
+				clearSelection();
+				setSelection(data, true);
+			}
 
-					if (dragAndDropInterface.onDragStart(data.item, dragData)) {
-						dragData.setThumbnail(data.element);
-					} else {
-						dragData.cancel();
-					}
-				case Stop:
+			if (dragAndDropInterface.onDragStart(data.item, e.dataTransfer)) {
+				e.dataTransfer.effectAllowed = "move";
+				e.dataTransfer.setDragImage(data.element, 0,0);
+			} else {
+				e.preventDefault();
 			}
 		}
-
-		hide.tools.DragAndDrop.makeDraggable(data.element, onDragStart);
-
 	}
 
 	function getElement(data : GalleryItemData<GalleryItem>, tooltip = false) : js.html.Element {
@@ -463,7 +458,7 @@ class FancyGallery<GalleryItem> extends hide.comp.Component {
 
 		var genElement = !tooltip ? data.element : null;
 		if (genElement == null) {
-			genElement = js.Browser.document.createElement("fancy-gallery-item");
+			genElement = js.Browser.document.createElement("fancy-item");
 			if (!tooltip)
 				data.element = genElement;
 			untyped genElement.__data = data;
