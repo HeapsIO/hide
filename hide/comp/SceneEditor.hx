@@ -1098,6 +1098,8 @@ class SceneEditor {
 			onResize();
 		};
 
+		hide.tools.DragAndDrop.makeDropTarget(scene.element.get(0), onDropEvent);
+
 		scene.element.get(0).addEventListener("blur", (e) -> {
 			scene.sevents.stopCapture();
 		});
@@ -2183,15 +2185,16 @@ class SceneEditor {
 
 		tree.dragAndDropInterface =
 		{
-			onDragStart: function(p: hrt.prefab.Prefab, e: js.html.DragEvent) : Bool {
+			onDragStart: function(p: hrt.prefab.Prefab, dragData: hide.tools.DragAndDrop.DragData) : Bool {
 				var selection = tree.getSelectedItems();
 				if (selection.length <= 0)
 					return false;
+				dragData.data.set("drag/scenetree", cast selection);
 				ide.setData("drag/scenetree", cast selection);
 				return true;
 			},
-			getItemDropFlags: function(target: hrt.prefab.Prefab, e: js.html.DragEvent) : hide.comp.FancyTree.DropFlags {
-				var prefabs : Array<hrt.prefab.Prefab> = cast ide.getData("drag/scenetree");
+			getItemDropFlags: function(target: hrt.prefab.Prefab, dragData: hide.tools.DragAndDrop.DragData) : hide.comp.FancyTree.DropFlags {
+				var prefabs : Array<hrt.prefab.Prefab> = cast dragData.data.get("drag/scenetree");
 				if (prefabs != null) {
 					for (p in prefabs) {
 						if (checkAllowParent({prefabClass : Type.getClass(p), inf : p.getHideProps()}, target))
@@ -2199,7 +2202,7 @@ class SceneEditor {
 					}
 				}
 
-				var files : Array<hide.tools.FileManager.FileEntry> = cast ide.getData("drag/filetree");
+				var files : Array<hide.tools.FileManager.FileEntry> = cast dragData.data.get("drag/filetree");
 				if (files != null) {
 					for (f in files) {
 						var ptype = hrt.prefab.Prefab.getPrefabType(f.relPath);
@@ -2218,7 +2221,7 @@ class SceneEditor {
 
 				return Reorder;
 			},
-			onDrop: function(target: hrt.prefab.Prefab, operation: hide.comp.FancyTree.DropOperation, e: js.html.DragEvent) : Bool {
+			onDrop: function(target: hrt.prefab.Prefab, operation: hide.comp.FancyTree.DropOperation, dragData: hide.tools.DragAndDrop.DragData) : Bool {
 				if (target == null)
 					target = sceneData;
 				var parent = operation.match(hide.comp.FancyTree.DropOperation.Inside) ? target : target?.parent;
@@ -2227,7 +2230,11 @@ class SceneEditor {
 				var prefabs : Array<hrt.prefab.Prefab> =  cast ide.popData("drag/scenetree");
 				if (prefabs != null) {
 					// Avoid moving target onto itelf
-					prefabs.remove(target);
+					for (prefab in prefabs.copy()) {
+						if (target.findParent((p) -> p == prefab) != null) {
+							prefabs.remove(prefab);
+						}
+					}
 
 					var idx = tChildren.indexOf(target);
 					if (operation.match(hide.comp.FancyTree.DropOperation.After))
@@ -2250,7 +2257,7 @@ class SceneEditor {
 								tChildren.indexOf(target);
 						}
 
-						var p = createDroppedElement(f.relPath, parent, e.shiftKey);
+						var p = createDroppedElement(f.relPath, parent, dragData.shiftKey);
 						if (p == null)
 							continue;
 						parent.children.remove(p);
@@ -4166,88 +4173,90 @@ class SceneEditor {
 		}
 	}
 
-
 	var previewDraggedObj : h3d.scene.Object;
-	public function onDrag(e : js.html.DragEvent) : Bool {
-		var files : Array<hide.tools.FileManager.FileEntry> = ide.getData("drag/filetree");
-		if (files == null || files.length <= 0)
-			return false;
+	public function onDropEvent(event: hide.tools.DragAndDrop.DropEvent, dragData : hide.tools.DragAndDrop.DragData) : Void {
+		switch(event) {
+			case Move:
+				var files : Array<hide.tools.FileManager.FileEntry> = dragData.data.get("drag/filetree");
 
-		if (previewDraggedObj == null) {
-			previewDraggedObj = getPreviewObject(files);
-			scene.s3d.addChild(previewDraggedObj);
-		}
-
-		// Do not update every frame because it can be very heavy on large prefabs
-		if (hxd.Timer.frameCount % 2 != 0)
-			return true;
-		// previewDraggedObj.setTransform();
-		previewDraggedObj.setTransform(getDragPreviewTransform());
-		return true;
-	}
-
-	public function onDragEnd(e : js.html.DragEvent) : Bool {
-		previewDraggedObj?.remove();
-		previewDraggedObj = null;
-		return true;
-	}
-
-	public function onDrop(e : js.html.DragEvent) : Bool {
-		previewDraggedObj?.remove();
-		previewDraggedObj = null;
-
-		var files : Array<hide.tools.FileManager.FileEntry> = ide.getData("drag/filetree");
-		if (files == null || files.length <= 0)
-			return false;
-
-		var supported = @:privateAccess hrt.prefab.Prefab.extensionRegistry;
-		var paths = [];
-		for (f in files) {
-			var ext = haxe.io.Path.extension(f.path).toLowerCase();
-			if( supported.exists(ext) || ext == "fbx" || ext == "hmd" || ext == "json")
-				paths.push(f.path);
-		}
-
-		var elts : Array<hrt.prefab.Prefab> = [];
-		for (path in paths) {
-			var prefab = createDroppedElement(path, sceneData, e.shiftKey);
-			if (prefab == null)
-				continue;
-			var obj3d = Std.downcast(prefab, Object3D);
-			if (obj3d != null)
-				obj3d.setTransform(getDragPreviewTransform());
-			elts.push(prefab);
-		}
-
-		beginRebuild();
-		for(e in elts)
-			queueRebuild(e);
-		endRebuild();
-
-		refreshTree(SceneTree, () -> selectElements(elts, NoHistory));
-
-		undo.change(Custom(function(undo) {
-			if( undo ) {
-				beginRebuild();
-				for(e in elts) {
-					removeInstance(e);
-					e.parent.children.remove(e);
+				if (files == null || files.length <= 0) {
+					dragData.dropTargetValidity = ForbidDrop;
+					return;
 				}
-				endRebuild();
-				refreshTree(SceneTree, () -> selectElements([], NoHistory));
-			}
-			else {
-				beginRebuild();
-				for(e in elts) {
-					e.parent.children.push(e);
-					makePrefab(e);
+
+
+				if (previewDraggedObj == null) {
+					try {
+						previewDraggedObj = getPreviewObject(files);
+						scene.s3d.addChild(previewDraggedObj);
+						dragData.setThumbnailVisiblity(false);
+					} catch (e) {
+						dragData.dropTargetValidity = ForbidDrop;
+						return;
+					}
 				}
+
+				// Do not update every frame because it can be very heavy on large prefabs
+				if (hxd.Timer.frameCount % 2 != 0)
+					return;
+				// previewDraggedObj.setTransform();
+				previewDraggedObj.setTransform(getDragPreviewTransform());
+			case Enter:
+			case Leave:
+				previewDraggedObj?.remove();
+				previewDraggedObj = null;
+			case Drop:
+				var files : Array<hide.tools.FileManager.FileEntry> = dragData.data.get("drag/filetree");
+				if (files == null || files.length <= 0)
+					return;
+
+				var supported = @:privateAccess hrt.prefab.Prefab.extensionRegistry;
+				var paths = [];
+				for (f in files) {
+					var ext = haxe.io.Path.extension(f.path).toLowerCase();
+					if( supported.exists(ext) || ext == "fbx" || ext == "hmd" || ext == "json")
+						paths.push(f.path);
+				}
+
+				var elts : Array<hrt.prefab.Prefab> = [];
+				for (path in paths) {
+					var prefab = createDroppedElement(path, sceneData, dragData.shiftKey);
+					if (prefab == null)
+						continue;
+					var obj3d = Std.downcast(prefab, Object3D);
+					if (obj3d != null)
+						obj3d.setTransform(getDragPreviewTransform());
+					elts.push(prefab);
+				}
+
+				beginRebuild();
+				for(e in elts)
+					queueRebuild(e);
 				endRebuild();
+
 				refreshTree(SceneTree, () -> selectElements(elts, NoHistory));
-			}
-		}));
 
-		return true;
+				undo.change(Custom(function(undo) {
+					if( undo ) {
+						beginRebuild();
+						for(e in elts) {
+							removeInstance(e);
+							e.parent.children.remove(e);
+						}
+						endRebuild();
+						refreshTree(SceneTree, () -> selectElements([], NoHistory));
+					}
+					else {
+						beginRebuild();
+						for(e in elts) {
+							e.parent.children.push(e);
+							makePrefab(e);
+						}
+						endRebuild();
+						refreshTree(SceneTree, () -> selectElements(elts, NoHistory));
+					}
+				}));
+		}
 	}
 
 	function getPreviewObject(files : Array<hide.tools.FileManager.FileEntry>) : h3d.scene.Object {
@@ -4767,8 +4776,6 @@ class SceneEditor {
 
 			if (!visible || isHidden(prefab))
 				return;
-			if (StringTools.contains(prefab.name.toLowerCase(), "wind"))
-				trace("break");
 			if (!isLocked(prefab)) {
 				if (interactives.get(prefab) != null) ret.push(prefab)
 				else if (interactives2d.get(prefab) != null) ret.push(prefab);

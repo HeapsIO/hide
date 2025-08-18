@@ -5879,232 +5879,6 @@ fancy-tree {
 			contain: strict;
 		}
 
-		fancy-tree-item {
-			position: absolute;
-			--depth: 0;
-			--highlight: 0;
-			width: 100%;
-			top: 0;
-
-			contain: strict;
-
-			display: flex;
-
-			&.hidden {
-				filter: opacity(40%);
-			}
-
-			&.hide-search {
-				overflow: hidden;
-				height: 0px;
-				display: none;
-			}
-
-			&.open> .caret::before {
-				transform: rotate(90deg);
-			}
-
-			&.selected {
-				color: white;
-				--background: var(--selection);
-			}
-
-			&.editorOnly {
-				color: rgb(2, 174, 218);
-			}
-
-			&.inGameOnly {
-				color: rgb(218, 168, 2);
-			}
-
-			&.hidden {
-				color: #555;
-			}
-
-			&.locked {
-				font-style: italic;
-			}
-
-			&.disabled {
-				color: #ee6666;
-			}
-
-			&.inRef {
-				--background: rgb(58, 58, 58);
-			}
-
-			&.isOverride {
-				--background: rgb(12, 35, 70);
-			}
-
-			&.isOverride.isOverriden {
-				color: cyan;
-			}
-
-			&.isOverride.isOverriden.isOverridenNew {
-				color: rgb(38, 199, 38);
-			}
-
-			// Select if we have a children that is selected
-			&:has(fancy-tree-children .selected) > fancy-tree-header {
-				fancy-tree-name {
-					text-decoration: underline var(--selection);
-				}
-			}
-
-			&.current {
-				outline: dashed 1px #AAA;
-				z-index: 10;
-				outline-offset: -1px;
-			}
-
-			// &:hover {
-			// 	background-color: var(--hover);
-			// }
-
-			fancy-button.quieter {
-				--size: 16px;
-				font-size: 12px;
-
-				pointer-events: all;
-
-				color: #CCC;
-
-				&.button-hidden {
-					visibility: hidden;
-				}
-
-				text-shadow: 1px 1px 1px rgba(.0,.0,.0,.75);
-			}
-
-			.hidden {
-				visibility: hidden;
-			}
-
-			box-sizing: border-box;
-
-			--padding: calc((var(--depth) - 1) * 1.0em + 0.25em);
-			padding-left: var(--padding);
-			box-sizing: border-box;
-
-			height: 20px;
-			max-height: 20px;
-			min-height: 20px;
-
-			--background: #222;
-			background-color: e("hsl(from var(--background) h s calc(var(--highlight) + l))");
-
-			display: flex;
-
-			&:hover {
-				--highlight: 10;
-				cursor: pointer;
-
-				fancy-button.hidden {
-					visibility: visible;
-				}
-			}
-
-			fancy-tree-icon {
-				align-self: center;
-				width: 16px;
-				height: 16px;
-
-				display: block;
-
-				flex-shrink: 0;
-
-				filter: drop-shadow(1px 1px rgba(0,0,0,0.5));
-
-				&.caret {
-					width: 16px;
-					height: 16px;
-					&::before {
-						content: "";
-						position: absolute;
-						top: 0; left: 0;
-						margin: 2px;
-						width: 12px; height: 12px;
-
-						transition: transform var(--anim-speed);
-						background-color: currentColor;
-						mask-image: url("res/icons/svg/right_caret.svg");
-
-						mask-position: center;
-						mask-repeat: no-repeat;
-						mask-size: contain;
-
-						pointer-events: all;
-					}
-				}
-			}
-
-			fancy-tree-name {
-				display: block;
-				text-overflow: ellipsis;
-				align-self: stretch;
-				overflow: clip;
-				text-wrap: nowrap;
-				flex-shrink: 1;
-				filter: drop-shadow(1px 1px rgba(0,0,0,0.5));
-				min-width: 2em;
-				padding: 1px;
-				padding-left: 0;
-				align-content: center;
-
-				&:focus {
-					z-index: 100;
-					background-color: #222;
-					outline-offset: 1px;
-				}
-
-				>span.search-hl {
-					background-color: var(--selection);
-					color: white;
-				}
-
-			}
-
-			&.feedback-drop-top::after {
-				position: absolute;
-				content: "";
-				display: block;
-				left: var(--padding);
-				right: 0;
-				top: 0;
-				border-top: solid 1px var(--drop-feedback);
-				z-index: 10;
-				pointer-events: none;
-			}
-
-			&.feedback-drop-bot::after {
-				position: absolute;
-				content: "";
-				display: block;
-				left: var(--padding);
-				right: 0;
-				bottom: 0;
-				border-top: solid 1px var(--drop-feedback);
-				z-index: 10;
-				pointer-events: none;
-			}
-
-			&.feedback-drop-in::after {
-				position: absolute;
-				content: "";
-				display: block;
-				left: var(--padding);
-				right: 0;
-				bottom: 0;
-				top: 0;
-				border: solid 1px var(--drop-feedback);
-				z-index: 10;
-				pointer-events: none;
-			}
-
-
-
-		}
 	}
 
 	&.overlay {
@@ -6119,6 +5893,237 @@ fancy-tree {
 			}
 		}
  	}
+}
+
+fancy-drag-drop-thumbnail fancy-tree-item {
+	width: 200px;
+	--depth: 0 !important;
+}
+
+fancy-tree-item {
+	position: absolute;
+	--depth: 0;
+	--highlight: 0;
+	width: 100%;
+	top: 0;
+
+	contain: strict;
+
+	display: flex;
+
+	color: #aaa;
+
+	&.hidden {
+		filter: opacity(40%);
+	}
+
+	&.hide-search {
+		overflow: hidden;
+		height: 0px;
+		display: none;
+	}
+
+	&.open> .caret::before {
+		transform: rotate(90deg);
+	}
+
+	&.selected {
+		color: white;
+		--background: var(--selection);
+	}
+
+	&.editorOnly {
+		color: rgb(2, 174, 218);
+	}
+
+	&.inGameOnly {
+		color: rgb(218, 168, 2);
+	}
+
+	&.hidden {
+		color: #555;
+	}
+
+	&.locked {
+		font-style: italic;
+	}
+
+	&.disabled {
+		color: #ee6666;
+	}
+
+	&.inRef {
+		--background: rgb(58, 58, 58);
+	}
+
+	&.isOverride {
+		--background: rgb(12, 35, 70);
+	}
+
+	&.isOverride.isOverriden {
+		color: cyan;
+	}
+
+	&.isOverride.isOverriden.isOverridenNew {
+		color: rgb(38, 199, 38);
+	}
+
+	// Select if we have a children that is selected
+	&:has(fancy-tree-children .selected) > fancy-tree-header {
+		fancy-tree-name {
+			text-decoration: underline var(--selection);
+		}
+	}
+
+	&.current {
+		outline: dashed 1px #AAA;
+		z-index: 10;
+		outline-offset: -1px;
+	}
+
+	// &:hover {
+	// 	background-color: var(--hover);
+	// }
+
+	fancy-button.quieter {
+		--size: 16px;
+		font-size: 12px;
+
+		pointer-events: all;
+
+		color: #CCC;
+
+		&.button-hidden {
+			visibility: hidden;
+		}
+
+		text-shadow: 1px 1px 1px rgba(.0,.0,.0,.75);
+	}
+
+	.hidden {
+		visibility: hidden;
+	}
+
+	box-sizing: border-box;
+
+	--padding: calc((var(--depth) - 1) * 1.0em + 0.25em);
+	padding-left: var(--padding);
+	box-sizing: border-box;
+
+	height: 20px;
+	max-height: 20px;
+	min-height: 20px;
+
+	--background: #222;
+	background-color: e("hsl(from var(--background) h s calc(var(--highlight) + l))");
+
+	display: flex;
+
+	&:hover {
+		--highlight: 10;
+		cursor: pointer;
+
+		fancy-button.hidden {
+			visibility: visible;
+		}
+	}
+
+	fancy-tree-icon {
+		align-self: center;
+		width: 16px;
+		height: 16px;
+
+		display: block;
+
+		flex-shrink: 0;
+
+		filter: drop-shadow(1px 1px rgba(0,0,0,0.5));
+
+		&.caret {
+			width: 16px;
+			height: 16px;
+			&::before {
+				content: "";
+				position: absolute;
+				top: 0; left: 0;
+				margin: 2px;
+				width: 12px; height: 12px;
+
+				transition: transform var(--anim-speed);
+				background-color: currentColor;
+				mask-image: url("res/icons/svg/right_caret.svg");
+
+				mask-position: center;
+				mask-repeat: no-repeat;
+				mask-size: contain;
+
+				pointer-events: all;
+			}
+		}
+	}
+
+	fancy-tree-name {
+		display: block;
+		text-overflow: ellipsis;
+		align-self: stretch;
+		overflow: clip;
+		text-wrap: nowrap;
+		flex-shrink: 1;
+		filter: drop-shadow(1px 1px rgba(0,0,0,0.5));
+		min-width: 2em;
+		padding: 1px;
+		padding-left: 0;
+		align-content: center;
+
+		&:focus {
+			z-index: 100;
+			background-color: #222;
+			outline-offset: 1px;
+		}
+
+		>span.search-hl {
+			background-color: var(--selection);
+			color: white;
+		}
+
+	}
+
+	&.feedback-drop-top::after {
+		position: absolute;
+		content: "";
+		display: block;
+		left: var(--padding);
+		right: 0;
+		top: 0;
+		border-top: solid 1px var(--drop-feedback);
+		z-index: 10;
+		pointer-events: none;
+	}
+
+	&.feedback-drop-bot::after {
+		position: absolute;
+		content: "";
+		display: block;
+		left: var(--padding);
+		right: 0;
+		bottom: 0;
+		border-top: solid 1px var(--drop-feedback);
+		z-index: 10;
+		pointer-events: none;
+	}
+
+	&.feedback-drop-in::after {
+		position: absolute;
+		content: "";
+		display: block;
+		left: var(--padding);
+		right: 0;
+		bottom: 0;
+		top: 0;
+		border: solid 1px var(--drop-feedback);
+		z-index: 10;
+		pointer-events: none;
+	}
 }
 
 fancy-gallery {
@@ -6157,118 +6162,6 @@ fancy-gallery {
 
 			contain: strict;
 		}
-	}
-}
-
-fancy-gallery fancy-item, fancy-tooltip fancy-item {
-	padding: 4px;
-	position: absolute;
-	align-items: stretch;
-	overflow: hidden;
-
-	contain: layout paint size style;
-
-	background-color: #282828;
-	border-radius: 6px;
-
-	color: #aaa;
-
-	contain: strict;
-
-	&:hover {
-		background-color: var(--hover);
-	}
-
-	&.selected {
-		color: white;
-		background-color: var(--selection);
-	}
-
-	&.current {
-		outline: dashed 1px #AAA;
-		z-index: 10;
-		outline-offset: -1px;
-	}
-
-	box-shadow: 2px 2px 2px rgba(0, 0, 0, 0.4);
-
-	&.details {
-		padding: 0;
-		display: flex;
-		align-items: flex-end;
-
-		box-shadow: unset;
-		border-radius: unset;
-
-		gap: 0.4em;
-	}
-
-	fancy-thumbnail {
-		flex: 0 1;
-		display: block;
-		width: 100%;
-		height: 100%;
-	}
-
-	.icon-placement {
-		position: absolute;
-		color: white;
-		bottom: 2px;
-		right: 2px;
-		filter: drop-shadow(2px 2px 2px rgb(0 0 0 / 70%));
-	}
-
-	.thumb {
-		transform: unset;
-	}
-
-	// .loading {
-	// 	// content: strict;
-	// 	// animation: spinner 5.0s linear infinite;
-	// 	// transform: rotate(0deg);
-	// 	// @keyframes spinner {
-	// 	// 	to { transform: rotate(360deg); }
-	// 	// }
-	// }
-
-	&.details fancy-image {
-		height: 100%;
-		width: auto;
-		aspect-ratio: 1 / 1;
-	}
-
-	fancy-name {
-		position: absolute;
-		bottom: 2px;
-		left: 2px;
-		right: 2px;
-		height: 32px;
-		display: block;
-		text-align: center;
-		text-wrap: wrap;
-		word-break: break-all;
-		text-overflow: ellipsis;
-		overflow: hidden;
-
-		>span.search-hl {
-			background-color: var(--selection);
-			color: white;
-		}
-	}
-
-	&.details fancy-name {
-		position: relative;
-		height: auto;
-		text-align: left;
-	}
-
-	&.details .icon-placement {
-		position: relative;
-		flex: 0 1;
-		filter: unset;
-		color : #AAA;
-		margin-left: 0.2em;
-		font-size: 0.8em;
 	}
 }
 
@@ -6463,10 +6356,119 @@ fancy-tooltip {
 	}
 }
 
-fancy-drag-drop-thumbnail {
+fancy-drag-drop-overlay {
 	pointer-events: none;
-	margin: 0;
+	width: 100%;
+	height: 100%;
 	border: none;
-	background: none;
-	opacity: 0.5;
+	background: transparent;
+
+	fancy-drag-drop-thumbnail {
+		position: absolute;
+		opacity: 0.5;
+	}
+}
+
+fancy-gallery-item {
+	padding: 4px;
+	position: absolute;
+	display: block;
+	align-items: stretch;
+	overflow: hidden;
+
+	contain: layout paint size style;
+
+	background-color: #282828;
+	border-radius: 6px;
+
+	color: #aaa;
+
+	contain: strict;
+
+	&:hover {
+		background-color: var(--hover);
+	}
+
+	&.selected {
+		color: white;
+		background-color: var(--selection);
+	}
+
+	&.current {
+		outline: dashed 1px #AAA;
+		z-index: 10;
+		outline-offset: -1px;
+	}
+
+	box-shadow: 2px 2px 2px rgba(0, 0, 0, 0.4);
+
+	&.details {
+		padding: 0;
+		display: flex;
+		align-items: flex-end;
+
+		box-shadow: unset;
+		border-radius: unset;
+
+		gap: 0.4em;
+	}
+
+	fancy-thumbnail {
+		flex: 0 1;
+		display: block;
+		width: 100%;
+		height: 100%;
+	}
+
+	.icon-placement {
+		position: absolute;
+		color: white;
+		bottom: 2px;
+		right: 2px;
+		filter: drop-shadow(2px 2px 2px rgb(0 0 0 / 70%));
+	}
+
+	.thumb {
+		transform: unset;
+	}
+
+	&.details fancy-image {
+		height: 100%;
+		width: auto;
+		aspect-ratio: 1 / 1;
+	}
+
+	fancy-name {
+		position: absolute;
+		bottom: 2px;
+		left: 2px;
+		right: 2px;
+		height: 32px;
+		display: block;
+		text-align: center;
+		text-wrap: wrap;
+		word-break: break-all;
+		text-overflow: ellipsis;
+		overflow: hidden;
+
+		>span.search-hl {
+			background-color: var(--selection);
+			color: white;
+		}
+	}
+
+	&.details fancy-name {
+		position: relative;
+		height: auto;
+		text-align: left;
+	}
+
+	&.details .icon-placement {
+		position: relative;
+		flex: 0 1;
+		filter: unset;
+		color : #AAA;
+		margin-left: 0.2em;
+		font-size: 0.8em;
+	}
 }

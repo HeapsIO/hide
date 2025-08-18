@@ -89,6 +89,7 @@ class BlendSpace2DEditor extends hide.view.FileView {
 		}
 
 		element.html("");
+		hide.tools.DragAndDrop.makeDropTarget(element.get(0), onDropEvent);
 
 		root = new hide.Element("<blend-space-2d-root></blend-space-2d-root>").appendTo(element);
 		mainPanel = new hide.Element("<main-panel></main-panel>").appendTo(root);
@@ -474,21 +475,26 @@ class BlendSpace2DEditor extends hide.view.FileView {
 		super.save();
 	}
 
-	override function onDrop(event: js.html.DragEvent) {
-		var files : Array<hide.tools.FileManager.FileEntry> = ide.getData("drag/filetree");
-		if (files.length != 1)
-			return false;
-		if (!StringTools.endsWith(files[0].path, ".fbx"))
-			return false;
+	function onDropEvent(event: hide.tools.DragAndDrop.DropEvent, dragData: hide.tools.DragAndDrop.DragData) {
+		var files : Array<hide.tools.FileManager.FileEntry> = dragData.data.get("drag/filetree");
+		if (files.length != 1) {
+			dragData.dropTargetValidity = ForbidDrop;
+			return;
+		}
+		if (!StringTools.endsWith(files[0].path, ".fbx")) {
+			dragData.dropTargetValidity = ForbidDrop;
+			return;
+		}
+
+		if (event != Drop)
+			return;
 
 		var rect = graph.element.get(0).getBoundingClientRect();
 		if (ide.mouseX >= rect.x && ide.mouseX <= rect.x + rect.width && ide.mouseY >= rect.y && ide.mouseY <= rect.y + rect.height) {
 			var pos = getPointPos(ide.mouseX, ide.mouseY, true);
 			var newPoint : hrt.animgraph.BlendSpace2D.BlendSpacePoint = {x: pos.x, y: pos.y, speed: 1.0, animPath: files[0].relPath};
 			addPoint(newPoint, true);
-			return true;
 		}
-		return false;
 	}
 
 	function onScenePreviewReady() {
