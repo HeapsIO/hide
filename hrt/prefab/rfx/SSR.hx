@@ -36,8 +36,6 @@ class SSRShader extends h3d.shader.ScreenShader {
 
 		@param var frustum : Buffer<Vec4, 6>;
 
-		@const var batchSample : Bool;
-
 		@param var vignettingRadius : Float;
 		@param var vignettingSoftness : Float;
 
@@ -121,7 +119,6 @@ class SSRShader extends h3d.shader.ScreenShader {
 			if ( roundStartFrag.x == roundEndFrag.x && roundStartFrag.y == roundEndFrag.y )
 				discard;
 
-			var hit = 0;
 			var ray = endFrag.xy - startFrag.xy;
 			var rayLength = length(ray);
 			var stepCount = ceil(rayLength * rayMarchingResolution);
@@ -130,47 +127,32 @@ class SSRShader extends h3d.shader.ScreenShader {
 			var uv = frag / texSize;
 
 			var angleCorrection = 1.0 / abs(dot(camDir, viewNormal));
-			if (!batchSample) {
-				var iStepCount = int( stepCount );
-				for ( curStep in 0...iStepCount ) {
+
+			var iStepCount = int( ceil( stepCount / 4 ) );
+			var hit = 0;
+			for ( curStep in 0...iStepCount ) {
+				var results : Array<Bool, 4> = [false, false, false, false];
+
+				@unroll
+				for ( i in 0...4 ) {
 					var curPos = getViewPos(uv);
-					var viewDistance = (positionFrom.z * positionTo.z) / mix(positionTo.z, positionFrom.z, float( curStep + 1 ) / stepCount );
+					var viewDistance = (positionFrom.z * positionTo.z) / mix(positionTo.z, positionFrom.z, float( curStep * 4 + i + 1 ) / stepCount );
 					var depth = viewDistance - curPos.z;
 					var t = scaledThickness(curPos.z) * angleCorrection;
-					if ( depth >= 0.0 && depth < t && screenDepth < 1 ) {
-						hit = 1;
-						break;
-					}
-
+					results[i] = depth >= 0.0 && depth < t && screenDepth < 1;
 					frag += increment;
 					uv = frag / texSize;
 				}
-			} else {
-				var iStepCount = int( ceil( stepCount / 4 ) );
-				for ( curStep in 0...iStepCount ) {
-					var results : Array<Bool, 4> = [false, false, false, false];
 
-					@unroll
-					for ( i in 0...4 ) {
-						var curPos = getViewPos(uv);
-						var viewDistance = (positionFrom.z * positionTo.z) / mix(positionTo.z, positionFrom.z, float( curStep * 4 + i + 1 ) / stepCount );
-						var depth = viewDistance - curPos.z;
-						var t = scaledThickness(curPos.z) * angleCorrection;
-						results[i] = depth >= 0.0 && depth < t && screenDepth < 1;
-						frag += increment;
-						uv = frag / texSize;
-					}
-
-					if (results[0] || results[1] || results[2] || results[3]) {
-						hit = 1;
-						for ( j in 0...4 ) {
-							if (results[j]) {
-								uv = (frag - (increment * (4 - j))) / texSize;
-								break;
-							}
+				if (results[0] || results[1] || results[2] || results[3]) {
+					hit = 1;
+					for ( j in 0...4 ) {
+						if (results[j]) {
+							uv = (frag - (increment * (4 - j))) / texSize;
+							break;
 						}
-						break;
 					}
+					break;
 				}
 			}
 
@@ -213,7 +195,6 @@ class SSR extends RendererFX {
 	@:s public var minAngle : Float = 5.0;
 	@:s public var rayMarchingResolution : Float = 0.5;
 	@:s public var support4K : Bool = false;
-	@:s public var batchSample : Bool = true;
 	@:s public var vignettingRadius : Float = 1.0;
 	@:s public var vignettingSmoothness : Float = 0.6;
 
@@ -254,7 +235,6 @@ class SSR extends RendererFX {
 		if ( !support4K )
 			resRescale = hxd.Math.max(1.0, hxd.Math.max(ssrShader.texSize.x / 2560, ssrShader.texSize.y / 1440));
 		ssrShader.rayMarchingResolution = hxd.Math.clamp(rayMarchingResolution / resRescale);
-		ssrShader.batchSample = batchSample;
 
 		ssrShader.cameraView = r.ctx.camera.mcam;
 		ssrShader.cameraInverseView = r.ctx.camera.getInverseView();
@@ -335,7 +315,6 @@ class SSR extends RendererFX {
 				<dt>Blur radius</dt><dd><input type="range" min="0" max="5" field="blurRadius"/></dd>
 				<dt>Texture size</dt><dd><input type="range" min="0" max="1" field="textureSize"/></dd>
 				<dt>Support 4K</dt><dd><input type="checkbox" field="support4K"/></dd>
-				<dt>Fast sample</dt><dd><input type="checkbox" field="batchSample"/></dd>
 				<dt>Vignetting radius</dt><dd><input type="range" min="0" max="1" field="vignettingRadius"/></dd>
 				<dt>Vignetting smoothness</dt><dd><input type="range" min="0" max="1" field="vignettingSmoothness"/></dd>
 			</dl>
