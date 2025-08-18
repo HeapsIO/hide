@@ -76,7 +76,8 @@ class DragData {
 	}
 
 	public function setThumbnailVisiblity(visible: Bool) : Void {
-		thumbnail?.style.visibility = visible ? "visible" : "hidden";
+		if (thumbnail != null)
+			thumbnail.style.visibility = visible ? "visible" : "hidden";
 	}
 
 	/** Cancel the drag operation. Only valid when called by the onDrag callback of makeDraggable**/
