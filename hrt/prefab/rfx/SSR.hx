@@ -196,7 +196,7 @@ class SSR extends RendererFX {
 	@:s public var rayMarchingResolution : Float = 0.5;
 	@:s public var support4K : Bool = false;
 	@:s public var vignettingRadius : Float = 1.0;
-	@:s public var vignettingSmoothness : Float = 0.6;
+	@:s public var vignettingSmoothness : Float = 0.35;
 
 	function new(parent, shared) {
 		super(parent, shared);
