@@ -2044,8 +2044,12 @@ class FilterPathContext {
 	public function filter(valueCurrent: String) {
 		this.valueCurrent = valueCurrent;
 		valueChanged = null;
+		var prevChanged = changed;
+		changed = false;
 		filterFn(this);
-		return changed ? valueChanged : valueCurrent;
+		var res = changed ? valueChanged : valueCurrent;
+		changed = prevChanged || changed;
+		return res;
 	}
 
 	public var getRef : () -> {str: String, ?goto: () -> Void};
