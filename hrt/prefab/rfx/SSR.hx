@@ -183,9 +183,9 @@ class SSRShader extends h3d.shader.ScreenShader {
 					discard;
 			}
 
-			var screenPos = uvToScreen(calculatedUV);
+			var screenPos = uvToScreen(uv);
 			var dist = length(screenPos);
-			var vignetting = 1.0 - smoothstep(vignettingRadius-vignettingSoftness, vignettingRadius, dist);
+			var vignetting = smoothstep(vignettingRadius, vignettingRadius-vignettingSoftness, dist);
 
 			var fragmentColor = hdrMap.get(uv).rgb;
 			pixelColor = saturate(vec4(fragmentColor * colorMul, intensity * intensityFactor * vignetting));
