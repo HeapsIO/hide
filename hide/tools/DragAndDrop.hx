@@ -6,9 +6,26 @@ enum DragEvent {
 }
 
 enum DropEvent {
+	/**
+		Called when the cursor has moved over a registered drop target
+	**/
 	Move;
+
+	/**
+		Called when the cursor stared hovering a registered drop target. Use it to update the style of the drop target to show that
+		it can receive the drop for example.
+	**/
 	Enter;
+
+	/**
+		Called when the cursor stopped hovering the previously entered drop target. This event is always called when the drop operation
+		ends (whenever it has been cancelled or processed). Use it to cleanup any style changes performed in the Move or Enter event for example.
+	**/
 	Leave;
+
+	/**
+		Called when the users perform a drop action on a registered valid drop target. Not called if a previous onDropEvent set dropTargetValidity to ForbidDrop
+	**/
 	Drop;
 }
 
@@ -24,14 +41,22 @@ enum DropTargetValidity {
 
 @:allow(hide.tools.DragAndDrop)
 class DragData {
+	/** Mouse position on the screen **/
 	public var mouseX : Int = 0;
 	public var mouseY : Int = 0;
+
+	/**
+		Whenever the shiftKey is being held down
+	**/
 	public var shiftKey : Bool = false;
 
+	/**
+		Custom data for the drag and drop operation. Set it up in the onDrag event handler, and read it in the onDropEvent
+	**/
 	public var data: Map<String, Dynamic> = [];
 	public var sourceElement : DragElement = null;
 
-	/** Allow to feedback to the user if the current drag operation has a valid target or no. Should be set from the onDrop event in makeDropTarget**/
+	/** Allow to feedback to the user if the current drag operation has a valid target or no. Defaults to AllowDrop each time onDropEvent is called, so you'll need to set it to ForbidDrop if you want to prevent the operation each time**/
 	public var dropTargetValidity : DropTargetValidity = AllowDrop;
 
 	var thumbnail : js.html.Element;
@@ -46,7 +71,6 @@ class DragData {
 		clone.style.left = null;
 		clone.style.top = null;
 		clone.style.position = "static";
-		clone.style.display = "block";
 		container.appendChild(clone);
 		thumbnail = container;
 	}
@@ -92,17 +116,16 @@ class DragAndDrop {
 	static var currentDropTarget : DropTarget = null;
 	static var dragOverlayHandler : js.html.Element = null;
 
-	static public function makeDraggable(element: js.html.Element, onDrag : (event: DragEvent, data: DragData) -> Void) : Void {
-		element.addEventListener("pointerdown", onInitialPointerDown, {capture: true});
-		element.addEventListener("pointerup", onInitialPointerUp, {capture: true});
+	static public function makeDraggable(element: js.html.Element, onDragEvent : (event: DragEvent, data: DragData) -> Void) : Void {
+		element.addEventListener("pointerdown", onInitialPointerDown);
 		var dragElement : DragElement = cast element;
-		dragElement.onHideDragEvent = onDrag;
+		dragElement.onHideDragEvent = onDragEvent;
 	}
 
 	static var tmpDrag : DragData = new DragData(null);
-	static public function makeDropTarget(element: js.html.Element, onEvent: (event: DropEvent, data: DragData) -> Void) : Void {
+	static public function makeDropTarget(element: js.html.Element, onDropEvent: (event: DropEvent, data: DragData) -> Void) : Void {
 		var dropTarget : DropTarget = cast element;
-		dropTarget.onHideDropEvent = onEvent;
+		dropTarget.onHideDropEvent = onDropEvent;
 
 		function nativeDropHandler(event: DropEvent, e: js.html.DragEvent) : Bool {
 			tmpDrag.dropTargetValidity = AllowDrop;
@@ -116,7 +139,7 @@ class DragAndDrop {
 			}
 			tmpDrag.data.set("drag/filetree", list);
 			tmpDrag.copyFromMouseEvent(e);
-			onEvent(event, tmpDrag);
+			onDropEvent(event, tmpDrag);
 			if (tmpDrag.dropTargetValidity == ForbidDrop) {
 				return false;
 			}
@@ -136,17 +159,6 @@ class DragAndDrop {
 		e.stopPropagation();
 		element.addEventListener("pointermove", onInitialPointerMove, {capture: true});
 		element.setPointerCapture(e.pointerId);
-	}
-
-	static function onInitialPointerUp(e:js.html.PointerEvent) : Void {
-		var element : js.html.Element = cast e.currentTarget;
-		if (currentDrag == null) {
-			e.stopImmediatePropagation();
-			e.stopPropagation();
-			e.preventDefault();
-			cleanupDrag(false);
-			e.stopPropagation();
-		}
 	}
 
 	static function onOverlayPointerMove(e: js.html.PointerEvent) : Void {
@@ -262,7 +274,7 @@ class DragAndDrop {
 			element.removeEventListener("pointermove", onInitialPointerMove);
 
 			dragOverlayHandler.onpointermove = onOverlayPointerMove;
-			js.Browser.window.addEventListener("scroll", updateDragOperation, {capture: true});
+			js.Browser.window.addEventListener("scroll", updateDragOperation, {capture: true, passive: true});
 			js.Browser.window.addEventListener("keydown", onOverlayKeyDown, {capture: true});
 			js.Browser.window.addEventListener("pointerdown", onOverlayPointerDown, {capture: true});
 			js.Browser.window.addEventListener("pointerup", onOverlayPointerUp, {capture: true});

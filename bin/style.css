@@ -4922,13 +4922,28 @@ fancy-tree fancy-scroll fancy-item-container {
   overflow: hidden;
   contain: strict;
 }
-fancy-tree fancy-scroll fancy-tree-item {
+fancy-tree.overlay {
+  background-color: transparent;
+}
+fancy-tree.overlay fancy-scroll fancy-tree-item {
+  --background: rgba(0, 0, 0, 0);
+}
+fancy-tree.overlay fancy-scroll fancy-tree-item:hover {
+  --background: #222;
+  color: #e2e2e2;
+}
+fancy-drag-drop-thumbnail fancy-tree-item {
+  width: 200px;
+  --depth: 0 !important;
+}
+fancy-tree-item {
   position: absolute;
   --depth: 0;
   --highlight: 0;
   width: 100%;
   top: 0;
   contain: strict;
+  color: #aaa;
   --padding: calc((var(--depth) - 1) * 1em + 0.25em);
   padding-left: var(--padding);
   box-sizing: border-box;
@@ -4939,77 +4954,77 @@ fancy-tree fancy-scroll fancy-tree-item {
   background-color: hsl(from var(--background) h s calc(var(--highlight) + l));
   display: flex;
 }
-fancy-tree fancy-scroll fancy-tree-item.hidden {
+fancy-tree-item.hidden {
   filter: opacity(40%);
 }
-fancy-tree fancy-scroll fancy-tree-item.hide-search {
+fancy-tree-item.hide-search {
   overflow: hidden;
   height: 0px;
   display: none;
 }
-fancy-tree fancy-scroll fancy-tree-item.open > .caret::before {
+fancy-tree-item.open > .caret::before {
   transform: rotate(90deg);
 }
-fancy-tree fancy-scroll fancy-tree-item.selected {
+fancy-tree-item.selected {
   color: white;
   --background: var(--selection);
 }
-fancy-tree fancy-scroll fancy-tree-item.editorOnly {
+fancy-tree-item.editorOnly {
   color: #02aeda;
 }
-fancy-tree fancy-scroll fancy-tree-item.inGameOnly {
+fancy-tree-item.inGameOnly {
   color: #daa802;
 }
-fancy-tree fancy-scroll fancy-tree-item.hidden {
+fancy-tree-item.hidden {
   color: #555;
 }
-fancy-tree fancy-scroll fancy-tree-item.locked {
+fancy-tree-item.locked {
   font-style: italic;
 }
-fancy-tree fancy-scroll fancy-tree-item.disabled {
+fancy-tree-item.disabled {
   color: #ee6666;
 }
-fancy-tree fancy-scroll fancy-tree-item.inRef {
+fancy-tree-item.inRef {
   --background: #3a3a3a;
 }
-fancy-tree fancy-scroll fancy-tree-item.isOverride {
+fancy-tree-item.isOverride {
   --background: #0c2346;
 }
-fancy-tree fancy-scroll fancy-tree-item.isOverride.isOverriden {
+fancy-tree-item.isOverride.isOverriden {
   color: cyan;
 }
-fancy-tree fancy-scroll fancy-tree-item.isOverride.isOverriden.isOverridenNew {
+fancy-tree-item.isOverride.isOverriden.isOverridenNew {
   color: #26c726;
 }
-fancy-tree fancy-scroll fancy-tree-item:has(fancy-tree-children .selected) > fancy-tree-header fancy-tree-name {
+fancy-tree-item:has(fancy-tree-children .selected) > fancy-tree-header fancy-tree-name {
   text-decoration: underline var(--selection);
 }
-fancy-tree fancy-scroll fancy-tree-item.current {
+fancy-tree-item.current {
   outline: dashed 1px #AAA;
   z-index: 10;
   outline-offset: -1px;
 }
-fancy-tree fancy-scroll fancy-tree-item fancy-button.quieter {
+fancy-tree-item fancy-button.quieter {
   --size: 16px;
   font-size: 12px;
   pointer-events: all;
   color: #CCC;
   text-shadow: 1px 1px 1px rgba(0, 0, 0, 0.75);
 }
-fancy-tree fancy-scroll fancy-tree-item fancy-button.quieter.button-hidden {
+fancy-tree-item fancy-button.quieter.button-hidden {
   visibility: hidden;
 }
-fancy-tree fancy-scroll fancy-tree-item .hidden {
+fancy-tree-item .hidden {
   visibility: hidden;
 }
-fancy-tree fancy-scroll fancy-tree-item:hover {
+fancy-tree-item:hover {
   --highlight: 10;
   cursor: pointer;
 }
-fancy-tree fancy-scroll fancy-tree-item:hover fancy-button.hidden {
+fancy-tree-item:hover fancy-button.hidden {
   visibility: visible;
 }
-fancy-tree fancy-scroll fancy-tree-item fancy-tree-icon {
+fancy-tree-item fancy-tree-icon {
   align-self: center;
   width: 16px;
   height: 16px;
@@ -5017,11 +5032,11 @@ fancy-tree fancy-scroll fancy-tree-item fancy-tree-icon {
   flex-shrink: 0;
   filter: drop-shadow(1px 1px rgba(0, 0, 0, 0.5));
 }
-fancy-tree fancy-scroll fancy-tree-item fancy-tree-icon.caret {
+fancy-tree-item fancy-tree-icon.caret {
   width: 16px;
   height: 16px;
 }
-fancy-tree fancy-scroll fancy-tree-item fancy-tree-icon.caret::before {
+fancy-tree-item fancy-tree-icon.caret::before {
   content: "";
   position: absolute;
   top: 0;
@@ -5037,7 +5052,7 @@ fancy-tree fancy-scroll fancy-tree-item fancy-tree-icon.caret::before {
   mask-size: contain;
   pointer-events: all;
 }
-fancy-tree fancy-scroll fancy-tree-item fancy-tree-name {
+fancy-tree-item fancy-tree-name {
   display: block;
   text-overflow: ellipsis;
   align-self: stretch;
@@ -5050,16 +5065,16 @@ fancy-tree fancy-scroll fancy-tree-item fancy-tree-name {
   padding-left: 0;
   align-content: center;
 }
-fancy-tree fancy-scroll fancy-tree-item fancy-tree-name:focus {
+fancy-tree-item fancy-tree-name:focus {
   z-index: 100;
   background-color: #222;
   outline-offset: 1px;
 }
-fancy-tree fancy-scroll fancy-tree-item fancy-tree-name > span.search-hl {
+fancy-tree-item fancy-tree-name > span.search-hl {
   background-color: var(--selection);
   color: white;
 }
-fancy-tree fancy-scroll fancy-tree-item.feedback-drop-top::after {
+fancy-tree-item.feedback-drop-top::after {
   position: absolute;
   content: "";
   display: block;
@@ -5070,7 +5085,7 @@ fancy-tree fancy-scroll fancy-tree-item.feedback-drop-top::after {
   z-index: 10;
   pointer-events: none;
 }
-fancy-tree fancy-scroll fancy-tree-item.feedback-drop-bot::after {
+fancy-tree-item.feedback-drop-bot::after {
   position: absolute;
   content: "";
   display: block;
@@ -5081,7 +5096,7 @@ fancy-tree fancy-scroll fancy-tree-item.feedback-drop-bot::after {
   z-index: 10;
   pointer-events: none;
 }
-fancy-tree fancy-scroll fancy-tree-item.feedback-drop-in::after {
+fancy-tree-item.feedback-drop-in::after {
   position: absolute;
   content: "";
   display: block;
@@ -5092,16 +5107,6 @@ fancy-tree fancy-scroll fancy-tree-item.feedback-drop-in::after {
   border: solid 1px var(--drop-feedback);
   z-index: 10;
   pointer-events: none;
-}
-fancy-tree.overlay {
-  background-color: transparent;
-}
-fancy-tree.overlay fancy-scroll fancy-tree-item {
-  --background: rgba(0, 0, 0, 0);
-}
-fancy-tree.overlay fancy-scroll fancy-tree-item:hover {
-  --background: #222;
-  color: #e2e2e2;
 }
 fancy-gallery {
   display: flex;
@@ -5131,89 +5136,6 @@ fancy-gallery fancy-scroll fancy-item-container {
   width: 100%;
   min-height: 100%;
   contain: strict;
-}
-fancy-gallery-item {
-  padding: 4px;
-  position: absolute;
-  align-items: stretch;
-  overflow: hidden;
-  contain: layout paint size style;
-  background-color: #282828;
-  border-radius: 6px;
-  color: #aaa;
-  contain: strict;
-  box-shadow: 2px 2px 2px rgba(0, 0, 0, 0.4);
-}
-fancy-gallery-item:hover {
-  background-color: var(--hover);
-}
-fancy-gallery-item.selected {
-  color: white;
-  background-color: var(--selection);
-}
-fancy-gallery-item.current {
-  outline: dashed 1px #AAA;
-  z-index: 10;
-  outline-offset: -1px;
-}
-fancy-gallery-item.details {
-  padding: 0;
-  display: flex;
-  align-items: flex-end;
-  box-shadow: unset;
-  border-radius: unset;
-  gap: 0.4em;
-}
-fancy-gallery-item fancy-thumbnail {
-  flex: 0 1;
-  display: block;
-  width: 100%;
-  height: 100%;
-}
-fancy-gallery-item .icon-placement {
-  position: absolute;
-  color: white;
-  bottom: 2px;
-  right: 2px;
-  filter: drop-shadow(2px 2px 2px rgba(0, 0, 0, 0.7));
-}
-fancy-gallery-item .thumb {
-  transform: unset;
-}
-fancy-gallery-item.details fancy-image {
-  height: 100%;
-  width: auto;
-  aspect-ratio: 1 / 1;
-}
-fancy-gallery-item fancy-name {
-  position: absolute;
-  bottom: 2px;
-  left: 2px;
-  right: 2px;
-  height: 32px;
-  display: block;
-  text-align: center;
-  text-wrap: wrap;
-  word-break: break-all;
-  text-overflow: ellipsis;
-  overflow: hidden;
-}
-fancy-gallery-item fancy-name > span.search-hl {
-  background-color: var(--selection);
-  color: white;
-}
-fancy-gallery-item.details fancy-name {
-  position: relative;
-  height: auto;
-  text-align: left;
-}
-fancy-gallery-item.details .icon-placement {
-  position: relative;
-  flex: 0 1;
-  filter: unset;
-  color: #AAA;
-  margin-left: 0.2em;
-  font-size: 0.8em;
 }
 fancy-image {
   display: block;
@@ -5373,9 +5295,93 @@ fancy-drag-drop-overlay {
   width: 100%;
   height: 100%;
   border: none;
-  background: none;
+  background: transparent;
 }
 fancy-drag-drop-overlay fancy-drag-drop-thumbnail {
   position: absolute;
   opacity: 0.5;
+}
+fancy-gallery-item {
+  padding: 4px;
+  position: absolute;
+  display: block;
+  align-items: stretch;
+  overflow: hidden;
+  contain: layout paint size style;
+  background-color: #282828;
+  border-radius: 6px;
+  color: #aaa;
+  contain: strict;
+  box-shadow: 2px 2px 2px rgba(0, 0, 0, 0.4);
+}
+fancy-gallery-item:hover {
+  background-color: var(--hover);
+}
+fancy-gallery-item.selected {
+  color: white;
+  background-color: var(--selection);
+}
+fancy-gallery-item.current {
+  outline: dashed 1px #AAA;
+  z-index: 10;
+  outline-offset: -1px;
+}
+fancy-gallery-item.details {
+  padding: 0;
+  display: flex;
+  align-items: flex-end;
+  box-shadow: unset;
+  border-radius: unset;
+  gap: 0.4em;
+}
+fancy-gallery-item fancy-thumbnail {
+  flex: 0 1;
+  display: block;
+  width: 100%;
+  height: 100%;
+}
+fancy-gallery-item .icon-placement {
+  position: absolute;
+  color: white;
+  bottom: 2px;
+  right: 2px;
+  filter: drop-shadow(2px 2px 2px rgba(0, 0, 0, 0.7));
+}
+fancy-gallery-item .thumb {
+  transform: unset;
+}
+fancy-gallery-item.details fancy-image {
+  height: 100%;
+  width: auto;
+  aspect-ratio: 1 / 1;
+}
+fancy-gallery-item fancy-name {
+  position: absolute;
+  bottom: 2px;
+  left: 2px;
+  right: 2px;
+  height: 32px;
+  display: block;
+  text-align: center;
+  text-wrap: wrap;
+  word-break: break-all;
+  text-overflow: ellipsis;
+  overflow: hidden;
+}
+fancy-gallery-item fancy-name > span.search-hl {
+  background-color: var(--selection);
+  color: white;
+}
+fancy-gallery-item.details fancy-name {
+  position: relative;
+  height: auto;
+  text-align: left;
+}
+fancy-gallery-item.details .icon-placement {
+  position: relative;
+  flex: 0 1;
+  filter: unset;
+  color: #AAA;
+  margin-left: 0.2em;
+  font-size: 0.8em;
 }

@@ -322,7 +322,6 @@ class Gym extends hide.ui.View<{}> {
 					switch(event) {
 						case Move:
 							trace("move", name);
-							data.dropTargetValidity = AllowDrop;
 						case Enter:
 							trace("enter", name);
 							target.get(0).style.outline = "1px solid blue";

@@ -315,13 +315,16 @@ class CdbTable extends hide.ui.View<{}> {
 			return;
 		}
 
+		var path = ide.makeRelative(files[0].relPath);
+		var cell = getCellFromMousePos(ide.mouseX, ide.mouseY);
+		if( cell == null ) {
+			dragData.dropTargetValidity = ForbidDrop;
+			return;
+		}
+
 		if (event != Drop)
 			return;
 
-		var path = ide.makeRelative(files[0].relPath);
-		var cell = getCellFromMousePos(ide.mouseX, ide.mouseY);
-		if( cell == null )
-			return;
 		cell.dragDropFile(path, true);
 	}
 

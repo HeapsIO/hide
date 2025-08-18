@@ -4183,12 +4183,12 @@ class SceneEditor {
 					return;
 				}
 
-				dragData.setThumbnailVisiblity(false);
 
 				if (previewDraggedObj == null) {
 					try {
 						previewDraggedObj = getPreviewObject(files);
 						scene.s3d.addChild(previewDraggedObj);
+						dragData.setThumbnailVisiblity(false);
 					} catch (e) {
 						dragData.dropTargetValidity = ForbidDrop;
 						return;
