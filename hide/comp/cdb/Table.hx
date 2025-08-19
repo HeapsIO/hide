@@ -796,6 +796,8 @@ class Table extends Component {
 	}
 
 	public function refreshLinesStatus() {
+		if (editor.cdbTable.element == null)
+			return;
 		editor.cdbTable.element.find(".warning").find("p").text(warningCount);
 		editor.cdbTable.element.find(".error").find("p").text(errorCount);
 		editor.cdbTable.element.find(".regular").find("p").text(lines.length - (errorCount + warningCount));
