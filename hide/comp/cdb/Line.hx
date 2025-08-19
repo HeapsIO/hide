@@ -8,6 +8,7 @@ class Line extends Component {
 	public var cells : Array<Cell>;
 	public var columns : Array<cdb.Data.Column>;
 	public var subTable : SubTable;
+	public var status : Formulas.ValidationResult;
 
 	public function new(table, columns, index, root) {
 		super(null,root);
@@ -119,21 +120,39 @@ class Line extends Component {
 	}
 
 	public function validate() {
-        var result = table.editor.formulas.validateLine(table.getRealSheet(), index);
-		if(result == null) return;
+		if (table.errors.get(this) != null) {
+			table.errors.remove(this);
+			table.errorCount--;
+		}
+		if (table.warnings.get(this) != null) {
+			table.warnings.remove(this);
+			table.warningCount--;
+		}
+
+        status = table.editor.formulas.validateLine(table.getRealSheet(), index);
+		if(status == null) {
+			table.refreshLinesStatus();
+			return;
+		}
 
         element.removeClass("validation-error");
         element.removeClass("validation-warning");
 		element.attr("title", null);
-        
-		switch(result) {
+
+		switch(status) {
 			case Error(msg):
 				element.addClass("validation-error");
 				element.attr("title", "Error: " + msg);
+				table.errorCount++;
+				table.errors.set(this, true);
 			case Warning(msg):
 				element.addClass("validation-warning");
 				element.attr("title", "Warning: " + msg);
+				table.warningCount++;
+				table.warnings.set(this, true);
 			default:
 		}
+
+		table.refreshLinesStatus();
     }
 }

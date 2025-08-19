@@ -48,6 +48,14 @@ typedef EditorSheetProps = {
 
 typedef OptionalBackup = Array<{line: Dynamic, colName: String, data: Dynamic}>;
 
+enum FilterFlag {
+	Regular;
+	Warning;
+	Error;
+}
+
+typedef FilterFlags = haxe.EnumFlags<FilterFlag>;
+
 @:allow(hide.comp.cdb)
 class Editor extends Component {
 	static var CLIPBOARD_PREFIX = "[CDB_FORMAT]";
@@ -69,6 +77,7 @@ class Editor extends Component {
 	var searchBox : Element;
 	var searchHidden : Bool = true; // Search through hidden categories
 	var searchExp : Bool = false; // Does filters are parsed by hscript parser
+	var filterFlags : FilterFlags = (Regular: FilterFlags) | (Warning: FilterFlags) | (Error: FilterFlags);
 	var filters : Array<String> = [];
 
 	public var view : cdb.DiffFile.ConfigView;
@@ -292,42 +301,82 @@ class Editor extends Component {
 
 
 	public function updateFilters() {
-		if (filters.length > 0)
-			searchFilter(filters, false);
+		var table = tables.filter((t) -> t.sheet == currentSheet)[0];
+
+		// Reset visibility
+		for (l in table.lines)
+			l.element.removeClass("filtered");
+
+		if (@:privateAccess table.separators != null) {
+			for (s in @:privateAccess table.separators) {
+				@:privateAccess s.filtered = true;
+				s.refresh(false);
+			}
+		}
+
+		// Clean filters
+		var idx = filters.length;
+		while (idx >= 0) {
+			if (filters[idx] == null || filters[idx] == "")
+				filters.remove(filters[idx]);
+			idx--;
+		}
+
+		if (filters.length <= 0)
+			searchBox.find("#results").text('No results');
+
+		// Create hidden lines to ensure they are take into account while searching
+		if (searchHidden) {
+			for (l in table.lines) {
+				if (l.element.hasClass("hidden"))
+					l.create();
+			}
+		}
+
+		// Apply filters on lines
+		var results = 0;
+		for (l in table.lines) {
+			var filtered = isLineFilteredBySearch(table, l);
+			if (filtered)
+				results++;
+
+			filtered = filtered || isLineFilteredByStatus(l);
+
+			if (filtered) {
+				l.element.addClass("filtered");
+				if (l.subTable != null)
+					l.subTable.immediateClose();
+			}
+			else {
+				var seps = Separator.getParentSeparators(l.index, @:privateAccess table.separators);
+				for (s in seps)
+					@:privateAccess s.filtered = false;
+			}
+		}
+
+		for (s in @:privateAccess table.separators)
+			s.refresh(false);
+
+		// Force show lines that are not filtered (even if their parent sep is collapsed)
+		for (l in table.lines) {
+			if (l.element.hasClass("hidden") && !l.element.hasClass("filtered"))
+				l.create();
+		}
+
+		searchBox.find("#results").text(results > 0 ? '$results Results' : 'No results');
+
+		// if (updateCursor)
+			cursor.update();
 	}
 
-	function searchFilter( newFilters : Array<String>, updateCursor : Bool = true ) {
+	function isLineFilteredBySearch(table : Table, line : Line) : Bool {
 		function removeAccents(str: String) {
 			var t = untyped str.toLowerCase().normalize('NFD');
 			return ~/[\u0300-\u036f]/g.map(t, (r) -> "");
 		}
 
-		// Clean new filters
-		var idx = newFilters.length;
-		while (idx >= 0) {
-			if (newFilters[idx] == null || newFilters[idx] == "")
-				newFilters.remove(newFilters[idx]);
-
-			idx--;
-		}
-
-		filters = newFilters;
-
-		var table = tables.filter((t) -> t.sheet == currentSheet)[0];
-		if (filters.length <= 0) @:privateAccess {
-			if (table.lines != null) {
-				for (l in table.lines)
-					l.element.removeClass("filtered");
-			}
-			if (table.separators != null) {
-				for (s in table.separators) {
-					s.filtered = false;
-					s.refresh(false);
-				}
-			}
-			searchBox.find("#results").text('No results');
-			return;
-		}
+		if (filters.length == 0)
+			return false;
 
 		var isFiltered : (line: Dynamic) -> Bool;
 		if (searchExp) {
@@ -413,46 +462,26 @@ class Editor extends Component {
 			}
 		}
 
-		// Create hidden lines to ensure they are take into account while searching
-		if (searchHidden) {
-			for (l in table.lines) {
-				if (l.element.hasClass("hidden"))
-					l.create();
-			}
+		return isFiltered(line);
+	}
+
+	function isLineFilteredByStatus(line : Line) : Bool {
+		if (line.status == null) {
+			if (!filterFlags.has(Regular))
+				return true;
+			return false;
 		}
 
-		for (s in @:privateAccess table.separators)
-			@:privateAccess s.filtered = true;
-
-		var results = 0;
-		for (l in table.lines) {
-			var filtered = isFiltered(l);
-			l.element.toggleClass("filtered", filtered);
-			if (!filtered) {
-				results++;
-				var seps = Separator.getParentSeparators(l.index, @:privateAccess table.separators);
-				for (s in seps)
-					@:privateAccess s.filtered = false;
-			}
-			else {
-				if (l.subTable != null)
-					l.subTable.immediateClose();
-			}
+		switch (line.status) {
+			case Error(_) if (!filterFlags.has(Error)):
+				return true;
+			case Warning(_) if (!filterFlags.has(Warning)):
+				return true;
+			case Ok if (!filterFlags.has(Regular)):
+				return true;
+			default:
+				return false;
 		}
-
-		for (s in @:privateAccess table.separators)
-			s.refresh(false);
-
-		// Force show lines that are not filtered (even if their parent sep is collapsed)
-		for (l in table.lines) {
-			if (l.element.hasClass("hidden") && !l.element.hasClass("filtered"))
-				l.create();
-		}
-
-		searchBox.find("#results").text(results > 0 ? '$results Results' : 'No results');
-
-		if (updateCursor)
-			cursor.update();
 	}
 
 
@@ -1661,12 +1690,12 @@ class Editor extends Component {
 				}
 				pendingSearchRefresh = haxe.Timer.delay(function()
 					{
-						searchFilter(filters.copy());
+						updateFilters();
 						pendingSearchRefresh = null;
 					}, 500);
 			}
 			else {
-				searchFilter(filters.copy());
+				updateFilters();
 			}
 		}
 
@@ -1691,7 +1720,7 @@ class Editor extends Component {
 			if( searchBars.length > 1 ) {
 				searchBars.last().remove();
 				filters.pop();
-				searchFilter(filters.copy());
+				updateFilters();
 
 				if (filters.length <= 1)
 					searchBox.find(".remove-btn").hide();
@@ -1699,7 +1728,8 @@ class Editor extends Component {
 		});
 
 		searchBox.find(".close-search").click(function(_) {
-			searchFilter([]);
+			filters = [];
+			updateFilters();
 			searchBox.find(".search-bar-cdb").not(':first').remove();
 			searchBox.find(".expr-btn").not(':first').remove();
 			filters.clear();
@@ -1734,19 +1764,20 @@ class Editor extends Component {
 		});
 
 		// If there is still a search apply it
-		if (filters.length > 0 && !Ide.inst.ideConfig.closeSearchOnCDBSheetChange) {
-			searchBox.show();
+		if (!Ide.inst.ideConfig.closeSearchOnCDBSheetChange) {
+			if (filters.length > 0) {
+				searchBox.show();
+				for (f in filters)
+					inputs.val(f);
 
-			for (f in filters)
-				inputs.val(f);
+				if (searchExp)
+					searchBox.find(".search-type").click();
 
-			if (searchExp)
-				searchBox.find(".search-type").click();
+				if (!searchHidden)
+					searchBox.find(".search-type").click();
+			}
 
-			if (!searchHidden)
-				searchBox.find(".search-type").click();
-
-			searchFilter(filters);
+			updateFilters();
 		}
 	}
 

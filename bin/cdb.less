@@ -4,8 +4,68 @@
 	width: 12px;
 }
 
-.cdb-view .cdb {
-	margin-bottom: 350px;
+.cdb-view {
+	.top-bar {
+		@border-color : black;
+		@border-size : 1px;
+
+		height: 18px;
+		display: flex;
+		align-items: center;
+		justify-content: right;
+		padding: 0 5px 0 5px;
+		border-top: solid @border-size  @border-color;
+		border-bottom: solid @border-size  @border-color;
+		position: sticky;
+		z-index: 50;
+		top: 0;
+		background-color: #222222;
+
+		span {
+			width: 35px;
+			display: flex;
+			align-items: center;
+			justify-content: center;
+			border-left: solid @border-size  @border-color;
+			padding: 5px;
+
+			&:hover {
+				filter: brightness(1.5);
+				cursor: pointer;
+			}
+
+			&.disabled {
+				opacity: 0.4;
+			}
+
+			.icon {
+				margin-right: 3px;
+			}
+
+			&.regular {
+				.icon {
+					color:#72b043;
+				}
+			}
+
+			&.warning {
+				.icon {
+					color:#f8cc1b;
+				}
+			}
+
+			&.error {
+				border-right: solid @border-size  @border-color;
+				.icon {
+					color:#e12729;
+				}
+			}
+		}
+	}
+
+	.cdb {
+		margin-bottom: 350px;
+	}
 }
 
 .cdb-view.cdb-diff {
@@ -93,7 +153,7 @@
 			height : 10px;
 			td {
 				position: sticky;
-				top: 19px;
+				top: 39px;
 				z-index: 2;
 				border-left: none;
 				padding-top: 6px;
@@ -206,7 +266,7 @@
 		&:not(.cdb-sub-sheet) > thead.head > th {
 			position: sticky;
 			z-index: @header-layer;
-			top: 0;
+			top: 20px;
 		}
 
 		tr.head, th {

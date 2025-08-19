@@ -26,6 +26,11 @@ class Table extends Component {
 	var resizeObserver : hide.comp.ResizeObserver;
 	var currentDragIndex = -1;
 
+	public var errorCount = 0;
+	public var errors = new Map<Line, Bool>();
+	public var warningCount = 0;
+	public var warnings = new Map<Line, Bool>();
+
 	static final reorderLineKey = "x-cdb.reorder";
 
 	public function new(editor, sheet, root, mode) {
@@ -177,6 +182,11 @@ class Table extends Component {
 
 
 	function refreshTable() {
+		errorCount = 0;
+		errors = new Map<Line, Bool>();
+		warningCount = 0;
+		warnings = new Map<Line, Bool>();
+
 		var cols = J("<thead>").addClass("head");
 		var start = J("<th>").addClass("start").appendTo(cols);
 		if (!Std.isOfType(this, SubTable) && sheet.props.dataFiles == null) {
@@ -378,6 +388,8 @@ class Table extends Component {
 				line.hide();
 			tbody.append(line.element);
 		}
+
+		refreshLinesStatus();
 
 		for (s in separators)
 			s.refresh(false);
@@ -781,5 +793,11 @@ class Table extends Component {
 		editor.endChanges();
 		refresh();
 		getRealSheet().sync();
+	}
+
+	public function refreshLinesStatus() {
+		editor.cdbTable.element.find(".warning").find("p").text(warningCount);
+		editor.cdbTable.element.find(".error").find("p").text(errorCount);
+		editor.cdbTable.element.find(".regular").find("p").text(lines.length - (errorCount + warningCount));
 	}
 }

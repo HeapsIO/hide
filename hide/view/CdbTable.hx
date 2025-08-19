@@ -250,6 +250,32 @@ class CdbTable extends hide.ui.View<{}> {
 			};
 		}
 
+		var topBar = new Element('<div class="top-bar">
+			<span class="regular ${@:privateAccess editor.filterFlags.has(Regular) ? "" : "disabled"}"><div class="icon ico ico-check-square"></div><p>0</p></span>
+			<span class="warning" ${@:privateAccess editor.filterFlags.has(Warning) ? "" : "disabled"}><div class="icon ico ico-warning"></div><p>0</p></span>
+			<span class="error" ${@:privateAccess editor.filterFlags.has(Error) ? "" : "disabled"}><div class="icon ico ico-exclamation-circle"></div><p>0</p></span>
+		</div>');
+		topBar.prependTo(element.find(".hide-scroll"));
+
+		function filterListener(el : Element, flag : hide.comp.cdb.Editor.FilterFlag) {
+			var disabled = el.hasClass("disabled");
+			disabled = !disabled;
+			el.toggleClass("disabled", disabled);
+
+			if (disabled)
+				@:privateAccess editor.filterFlags.unset(flag);
+			else
+				@:privateAccess editor.filterFlags.set(flag);
+			editor.updateFilters();
+		}
+
+		var regularEl = element.find(".regular");
+		regularEl.on("click", function(e) { filterListener(regularEl, Regular); });
+		var warningEl = element.find(".warning");
+		warningEl.on("click", function(e) { filterListener(warningEl, Warning); });
+		var errorEl = element.find(".error");
+		errorEl.on("click", function(e) { filterListener(errorEl, Error); });
+
 		if( sheets.length > 0 ) {
 			var idx = 0;
 			for( i in 0...sheets.length )

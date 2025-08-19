@@ -157,4 +157,6 @@ class SubTable extends Table {
 		cell.refresh();
 	}
 
+	override function refreshLinesStatus() {
+	}
 }

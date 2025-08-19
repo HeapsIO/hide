@@ -1,6 +1,49 @@
 .cdb-view > .hide-tabs > .tab > ::-webkit-scrollbar {
   width: 12px;
 }
+.cdb-view .top-bar {
+  height: 18px;
+  display: flex;
+  align-items: center;
+  justify-content: right;
+  padding: 0 5px 0 5px;
+  border-top: solid 1px black;
+  border-bottom: solid 1px black;
+  position: sticky;
+  z-index: 50;
+  top: 0;
+  background-color: #222222;
+}
+.cdb-view .top-bar span {
+  width: 35px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  border-left: solid 1px black;
+  padding: 5px;
+}
+.cdb-view .top-bar span:hover {
+  filter: brightness(1.5);
+  cursor: pointer;
+}
+.cdb-view .top-bar span.disabled {
+  opacity: 0.4;
+}
+.cdb-view .top-bar span .icon {
+  margin-right: 3px;
+}
+.cdb-view .top-bar span.regular .icon {
+  color: #72b043;
+}
+.cdb-view .top-bar span.warning .icon {
+  color: #f8cc1b;
+}
+.cdb-view .top-bar span.error {
+  border-right: solid 1px black;
+}
+.cdb-view .top-bar span.error .icon {
+  color: #e12729;
+}
 .cdb-view .cdb {
   margin-bottom: 350px;
 }
@@ -88,7 +131,7 @@
 }
 .cdb .cdb-sheet tr.separator td {
   position: sticky;
-  top: 19px;
+  top: 39px;
   z-index: 2;
   border-left: none;
   padding-top: 6px;
@@ -197,7 +240,7 @@
 .cdb .cdb-sheet:not(.cdb-sub-sheet) > thead.head > th {
   position: sticky;
   z-index: 600;
-  top: 0;
+  top: 20px;
 }
 .cdb .cdb-sheet tr.head,
 .cdb .cdb-sheet th {
