@@ -4936,6 +4936,10 @@ fancy-drag-drop-thumbnail fancy-tree-item {
   width: 200px;
   --depth: 0 !important;
 }
+.fancy-drag-drop-target {
+  outline: 2px dashed var(--selection);
+  outline-offset: 1px;
+}
 fancy-tree-item {
   position: absolute;
   --depth: 0;

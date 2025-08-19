@@ -1,14 +1,15 @@
 package hide.comp;
 
 class TextureSelect extends FileSelect {
+	public static var IMG_EXTS = hide.Ide.IMG_EXTS.concat(["svg"]);
 
 	public var value(default, set) : h3d.mat.Texture;
 	public var area(default, set) : { x : Int, y : Int, width : Int, height : Int };
 	var preview : Element;
 
-	public function new(?parent,?root) {
+	public function new(?parent,?root, handleDrop: Bool = true) {
 		preview = new Element("<div class='texture-preview'>");
-		super(hide.Ide.IMG_EXTS.concat(["svg"]), parent, root);
+		super(IMG_EXTS, parent, root, handleDrop);
 		preview.insertAfter(element);
 	}
 

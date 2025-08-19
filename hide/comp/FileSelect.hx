@@ -7,7 +7,7 @@ class FileSelect extends Component {
 	public var disabled(default, set) = false;
 	public var directory : Bool = false;
 
-	public function new(extensions,?parent,?root) {
+	public function new(extensions,?parent,?root, handleDragAndDrop=true) {
 		if( root == null )
 			root = new Element("<input>");
 		super(parent,root);
@@ -56,6 +56,34 @@ class FileSelect extends Component {
 		root.parent().prev("dt").contextmenu(contextMenu);
 		root.contextmenu(contextMenu);
 
+		if (handleDragAndDrop) {
+
+			hide.tools.DragAndDrop.makeDropTarget(root.get(0), (event: hide.tools.DragAndDrop.DropEvent, dragData: hide.tools.DragAndDrop.DragData) -> {
+				var paths : Array<hide.tools.FileManager.FileEntry> = cast dragData.data.get("drag/filetree") ?? [];
+				if (paths.length == 0) {
+					dragData.dropTargetValidity = ForbidDrop;
+					return;
+				}
+
+				var newPath = ide.makeRelative(paths[0].path);
+				if (!pathIsValid(newPath)) {
+					dragData.dropTargetValidity = ForbidDrop;
+					return;
+				}
+
+				switch (event) {
+					case Enter:
+						root.addClass("fancy-drag-drop-target");
+					case Leave:
+						root.removeClass("fancy-drag-drop-target");
+					case Move:
+					case Drop:
+						path = newPath;
+						onChange();
+				}
+			});
+		}
+
 		// allow drag files
 		root.on("dragover", function(e) {
 			root.addClass("dragover");
@@ -72,31 +100,21 @@ class FileSelect extends Component {
 		ide.openFile(getFullPath());
 	}
 
-	public function onDragDrop( items : Array<String>, isDrop : Bool, event: js.html.DragEvent) : Bool {
-		if( items.length == 0 )
-			return false;
-		var newPath = ide.makeRelative(items[0]);
-		if( pathIsValid(newPath) ) {
-			if( isDrop ) {
-				path = newPath;
-				onChange();
-			}
-			return true;
-		}
-		return false;
+	function pathIsValid( path : String ) : Bool {
+		return pathIsValidStatic(path, extensions, directory);
 	}
 
-	function pathIsValid( path : String ) : Bool {
+	static public function pathIsValidStatic(path: String, extensions: Array<String>, directory: Bool) : Bool {
 		if (!directory) {
 			return (
 				path != null
-				&& sys.FileSystem.exists(ide.getPath(path))
+				&& sys.FileSystem.exists(hide.Ide.inst.getPath(path))
 				&& extensions.indexOf(path.split(".").pop().toLowerCase()) >= 0
 			);
 		} else {
 			return (
 				path != null
-				&& sys.FileSystem.exists(ide.getPath(path))
+				&& sys.FileSystem.exists(hide.Ide.inst.getPath(path))
 				&& sys.FileSystem.isDirectory(path)
 			);
 		}
