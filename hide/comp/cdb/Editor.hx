@@ -946,6 +946,7 @@ class Editor extends Component {
 				var line = cursor.table.lines[y];
 				if (line.element.hasClass("filtered"))
 					continue;
+				var moveCursor = false;
 				for( x in x1...x2+1 ) {
 					var c = line.columns[x];
 					if( !line.cells[x].canEdit() )
@@ -955,7 +956,15 @@ class Editor extends Component {
 					if( old == def )
 						continue;
 					changeObject(line,c,def);
+					// Move cursor for props deletion
+					if (Reflect.field(line.obj, c.name) == null && cursor.table.displayMode == Properties) {
+						moveCursor = true;
+					}
 					modifiedTables.pushUnique(cursor.table);
+				}
+
+				if (moveCursor) {
+					cursor.set(cursor.table, 0, y1-1, null, true, true, false);
 				}
 			}
 		}

@@ -111,7 +111,7 @@ class Cursor {
 					return;
 				}
 
-				if (c == null && line.index == 0) {
+				if (c == null && line != null && line.index == 0) {
 					st.element.find(".default-cursor").blur();
 					set(st.parent, st.cell.columnIndex, st.cell.line.index);
 					return;
