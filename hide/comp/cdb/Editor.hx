@@ -302,6 +302,8 @@ class Editor extends Component {
 
 	public function updateFilters() {
 		var table = tables.filter((t) -> t.sheet == currentSheet)[0];
+		if (table.displayMode == AllProperties)
+			return;
 
 		// Reset visibility
 		for (l in table.lines)
