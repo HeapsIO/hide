@@ -130,8 +130,10 @@ class SSRShader extends h3d.shader.ScreenShader {
 
 			var iStepCount = int( ceil( stepCount / 4 ) );
 			var hit = 0;
+			var hitDepthRatio = 0.0;
 			for ( curStep in 0...iStepCount ) {
 				var results : Array<Bool, 4> = [false, false, false, false];
+				var depthRatio : Array<Float, 4> = [0.0, 0.0, 0.0, 0.0];
 
 				@unroll
 				for ( i in 0...4 ) {
@@ -140,6 +142,7 @@ class SSRShader extends h3d.shader.ScreenShader {
 					var depth = viewDistance - curPos.z;
 					var t = scaledThickness(curPos.z) * angleCorrection;
 					results[i] = depth >= 0.0 && depth < t && screenDepth < 1;
+					depthRatio[i] = 1.0 - saturate(depth / t);
 					frag += increment;
 					uv = frag / texSize;
 				}
@@ -149,6 +152,7 @@ class SSRShader extends h3d.shader.ScreenShader {
 					for ( j in 0...4 ) {
 						if (results[j]) {
 							uv = (frag - (increment * (4 - j))) / texSize;
+							hitDepthRatio = depthRatio[j];
 							break;
 						}
 					}
@@ -170,7 +174,7 @@ class SSRShader extends h3d.shader.ScreenShader {
 			var vignetting = smoothstep(vignettingRadius, vignettingRadius-vignettingSoftness, dist);
 
 			var fragmentColor = hdrMap.get(uv).rgb;
-			pixelColor = saturate(vec4(fragmentColor * colorMul, intensity * intensityFactor * vignetting));
+			pixelColor = saturate(vec4(fragmentColor * colorMul, intensity * intensityFactor * vignetting * hitDepthRatio));
 		}
 	}
 }
