@@ -574,6 +574,7 @@ class MeshSpray extends Spray {
 		if( needRedraw ) {
 			clearBrushes();
 			cast(local3d,MeshSprayObject).redraw();
+			shared.editor.sceneTree.refreshItem(this);
 		}
 	}
 

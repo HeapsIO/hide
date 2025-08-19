@@ -517,6 +517,7 @@ class Spray extends Object3D {
 			previewItems = [];
 			clearBrushes();
 			cast(local3d,SprayObject).redraw();
+			shared.editor.sceneTree.refreshItem(this);
 		}
 	}
 
