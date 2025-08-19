@@ -2072,9 +2072,13 @@ class SceneEditor {
 			}
 
 			var ref = Std.downcast(p, Reference);
-			if (ref != null && (ref.editMode == Edit || ref.editMode == Override))
-				return ref.refInstance.children;
-			return p.children;
+			var children = (ref != null && (ref.editMode == Edit || ref.editMode == Override)) ? ref.refInstance.children : p.children;
+
+			var props = p.getHideProps();
+			if (props != null && props.hideChildren != null)
+				return children.filter((p) -> !props.hideChildren(p));
+			return children;
+
 		}
 		tree.getName = (p : hrt.prefab.Prefab) -> {
 			return p.name;

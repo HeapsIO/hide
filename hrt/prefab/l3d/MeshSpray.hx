@@ -65,6 +65,10 @@ class MeshSprayObject extends Spray.SprayObject {
 			if( updateShaders ) b.shadersChanged = true;
 			b.begin();
 		}
+
+		if (editChildren)
+			return;
+
 		for( c in children ) {
 			c.culled = false;
 			if( c.alwaysSyncAnimation ) continue;
@@ -346,8 +350,9 @@ class MeshSpray extends Spray {
 
 	override function updateInstance(?propName) {
 		cast(local3d, MeshSprayObject).editChildren = editChildren;
-		if ( editChildren )
+		if ( editChildren)
 			locked = false;
+		cast(local3d, MeshSprayObject).redraw();
 		super.updateInstance(propName);
 	}
 
@@ -622,6 +627,13 @@ class MeshSpray extends Spray {
 			onChildUpdate: p -> cast(local3d, MeshSprayObject).redraw(),
 		};
 	}
+
+	#if editor
+	override function onEditorTreeChanged(child:Prefab):hrt.prefab.Prefab.TreeChangedResult {
+		cast(local3d, MeshSprayObject).redraw();
+		return Skip;
+	}
+	#end
 
 	static function onContextMenu(selection: Array<hrt.prefab.Prefab>) : Array<hide.comp.ContextMenu.MenuItem> {
 		return [{
@@ -1017,7 +1029,11 @@ class MeshSpray extends Spray {
 			<dt>Binary Storage</dt><dd><input type="checkbox" field="binaryStorage" ${binaryStorage?"disabled":""}/></dd>
 			<dt>Edit children</dt><dd><input type="checkbox" field="editChildren"}/></dd>
 		</dl>
-		</div>'), this);
+		</div>'), this, function(pname: String) {
+			if (pname == "editChildren") {
+				ectx.scene.editor.sceneTree.refreshItem(this);
+			}
+		});
 	}
 
 	static var _1 = hide.comp.SceneEditor.registerContextMenuExtension(MeshSpray, onContextMenu);
