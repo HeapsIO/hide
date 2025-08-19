@@ -170,6 +170,16 @@ class FancyTree<TreeItem> extends hide.comp.Component {
 		});
 		resizeObserver.observe(element.get(0));
 
+		hide.tools.DragAndDrop.makeDropTarget(element.get(0), (event: hide.tools.DragAndDrop.DropEvent, dragData: hide.tools.DragAndDrop.DragData) -> {
+			switch (event) {
+				case Enter:
+				case Leave:
+				case Move:
+					dragData.dropTargetValidity = AllowDrop;
+				case Drop:
+					dragAndDropInterface.onDrop(null, DropOperation.Inside, dragData);
+			}
+		});
  	}
 
 	/**
@@ -355,17 +365,6 @@ class FancyTree<TreeItem> extends hide.comp.Component {
 		itemMap.clear();
 		rootData = generateChildren(null);
 		recLoadChildren(rootData);
-
-		hide.tools.DragAndDrop.makeDropTarget(element.get(0), (event: hide.tools.DragAndDrop.DropEvent, dragData: hide.tools.DragAndDrop.DragData) -> {
-			switch (event) {
-				case Enter:
-				case Leave:
-				case Move:
-					dragData.dropTargetValidity = AllowDrop;
-				case Drop:
-					dragAndDropInterface.onDrop(null, DropOperation.Inside, dragData);
-			}
-		});
 
 		queueRefresh(Search);
 	}
