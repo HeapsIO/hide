@@ -2351,6 +2351,35 @@ class SceneEditor {
 					{ label : "Export", enabled : curEdit != null && canExportSelection(), menu : exportMenu },
 				]);
 			}
+
+			if (isMatLib()) {
+				var matLibs = scene.listMatLibraries(sceneData.shared.currentPath);
+
+				var menu : Array<hide.comp.ContextMenu.MenuItem> = [];
+
+				for (matLib in matLibs) {
+					if (matLib.path == view.state.path) {
+						continue;
+					}
+
+					menu.push(
+					{
+						label: matLib.name,
+						click: migrateMaterialLibrary.bind(selectedPrefabs, matLib.path),
+					});
+				}
+
+				if (menu.length > 0) {
+					actionItems.push(
+						{
+							label: "Migrate Material",
+							enabled: selectedPrefabs.find((f) -> f.to(hrt.prefab.Material) != null || f.find(hrt.prefab.Material) != null) != null,
+							menu: menu,
+						}
+					);
+				}
+			}
+
 			if( p != null ) {
 				var menu = getTagMenu(selectedPrefabs);
 				if(menu != null)
@@ -2393,6 +2422,71 @@ class SceneEditor {
 		}
 		tree.onContextMenu = ctxMenu;
 		return tree;
+	}
+
+	function migrateMaterialLibrary(prefabs: Array<hrt.prefab.Prefab>, newPath: String) {
+		if(!ide.confirm("Move " + prefabs + " to " + newPath + " ? (Cannot be undone)"))
+			return;
+
+		var absPath = ide.getPath(newPath);
+		var targetPrefab = hxd.res.Loader.currentInstance.load(newPath).toPrefab().loadBypassCache();
+
+		// only keep roots from selection
+		for (mat in prefabs) {
+			var p = mat.parent;
+			while(p != null) {
+				if (prefabs.contains(p)) {
+					prefabs.remove(p);
+					break;
+				}
+				p = p.parent;
+			}
+		}
+
+		var movedMats : Array<hrt.prefab.Material> = [];
+		for (prefab in prefabs) {
+			var flat = prefab.flatten();
+			for (child in flat) {
+				var mat = child.to(hrt.prefab.Material);
+				if (mat != null) {
+					movedMats.push(mat);
+				}
+			}
+		}
+
+		for (prefab in prefabs) {
+			prefab.parent = targetPrefab;
+		}
+
+		var ser = ide.toJSON(targetPrefab.serialize());
+
+		sys.io.File.saveContent(absPath, ser);
+		view.save();
+
+		var path = ide.getRelPath(@:privateAccess view.getPath());
+		ide.filterPaths((ctx: hide.Ide.FilterPathContext) -> {
+			if (path == ctx.valueCurrent) {
+				var name = ctx.currentObject.name;
+				if (name != null) {
+					for (mat in movedMats) {
+						if (name == mat.name) {
+							ctx.change(newPath);
+							return;
+						}
+					}
+				}
+			}
+			else {
+				for (mat in movedMats) {
+					if (ctx.valueCurrent == path + "/" + mat.name) {
+						ctx.change(newPath + "/" + mat.name);
+						return;
+					}
+				}
+			}
+		});
+
+		view.rebuild();
 	}
 
 	function refreshTree(target: Tree, ?callb) {
@@ -5497,6 +5591,11 @@ class SceneEditor {
 		p.make(p.shared);
 	}
 
+	function isMatLib() {
+		var prefabView = Std.downcast(view, hide.view.Prefab);
+		return prefabView != null && @:privateAccess prefabView.matLibPath != null && @:privateAccess prefabView.matLibPath != "";
+	}
+
 	function autoName(p : PrefabElement) {
 		var uniqueName = false;
 
@@ -5507,9 +5606,7 @@ class SceneEditor {
 			uniqueName = true;
 
 		var mat = Std.downcast(p, hrt.prefab.Material);
-		var prefabView = Std.downcast(view, hide.view.Prefab);
-		var isMatLib = prefabView != null && @:privateAccess prefabView.matLibPath != null && @:privateAccess prefabView.matLibPath != "";
-		uniqueName = !uniqueName && mat != null && mat.parent == sceneData.getRoot() && isMatLib;
+		uniqueName = !uniqueName && mat != null && mat.parent == sceneData.getRoot() && isMatLib();
 
 		var prefix = null;
 		if(p.name != null && p.name.length > 0) {

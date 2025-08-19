@@ -1181,33 +1181,33 @@ class Ide extends hide.tools.IdeData {
 	public function filterPaths(callb: (ctx : FilterPathContext) -> Void) {
 		var context = new FilterPathContext(callb);
 
-		var adaptedFilter = function(obj: String) {
-			return context.filter(obj);
+		var adaptedFilter = function(name: String) {
+			return context.filter(name, context.currentObject);
 		}
 
 		function filterContent(content:Dynamic) {
-			var visited = new Map<Dynamic, Bool>();
-			function browseRec(obj:Dynamic) : Dynamic {
+			var visited = new Map<{}, Bool>();
+			function browseRec(obj:Dynamic, parent: Dynamic) : Dynamic {
 				switch( Type.typeof(obj) ) {
 				case TObject:
-					if( visited.exists(obj)) return null;
-					visited.set(obj, true);
+					if( visited.exists(cast obj)) return null;
+					visited.set(cast obj, true);
 					for( f in Reflect.fields(obj) ) {
 						var v : Dynamic = Reflect.field(obj, f);
-						v = browseRec(v);
+						v = browseRec(v, obj);
 						if( v != null ) Reflect.setField(obj, f, v);
 					}
 				case TClass(Array):
-					if( visited.exists(obj)) return null;
-					visited.set(obj, true);
+					if( visited.exists(cast obj)) return null;
+					visited.set(cast obj, true);
 					var arr : Array<Dynamic> = obj;
 					for( i in 0...arr.length ) {
 						var v : Dynamic = arr[i];
-						v = browseRec(v);
+						v = browseRec(v, arr);
 						if( v != null ) arr[i] = v;
 					}
 				case TClass(String):
-					return context.filter(obj);
+					return context.filter(obj, parent);
 				default:
 				}
 				return null;
@@ -1215,7 +1215,7 @@ class Ide extends hide.tools.IdeData {
 			for( f in Reflect.fields(content) ) {
 				if (f == "children")
 					continue;
-				var v = browseRec(Reflect.field(content,f));
+				var v = browseRec(Reflect.field(content,f), content);
 				if( v != null ) Reflect.setField(content,f,v);
 			}
 		}
@@ -1246,7 +1246,8 @@ class Ide extends hide.tools.IdeData {
 				context.changed = false;
 				currentPath = path;
 				currentPrefab = p;
-				p.source = context.filter(p.source);
+				context.currentObject = p;
+				p.source = context.filter(p.source, p);
 				var h = p.getHideProps();
 				if( h.onResourceRenamed != null )
 					h.onResourceRenamed(adaptedFilter);
@@ -1303,7 +1304,7 @@ class Ide extends hide.tools.IdeData {
 						currentColumn = c.name;
 						currentObject = obj;
 						var path = Reflect.field(obj.path[obj.path.length - 1], c.name);
-						var v : Dynamic = context.filter(path);
+						var v : Dynamic = context.filter(path, obj.path[obj.path.length - 1]);
 						if( v != null ) Reflect.setField(obj.path[obj.path.length - 1], c.name, v);
 					}
 				case TTilePos:
@@ -1315,7 +1316,7 @@ class Ide extends hide.tools.IdeData {
 
 						var tilePos : cdb.Types.TilePos = Reflect.field(obj.path[obj.path.length - 1], c.name);
 						if (tilePos != null) {
-							var v : Dynamic = context.filter(tilePos.file);
+							var v : Dynamic = context.filter(tilePos.file, tilePos);
 							if (v != null) Reflect.setField(tilePos, 'file', v);
 						}
 					}
@@ -1374,6 +1375,8 @@ class Ide extends hide.tools.IdeData {
 			var ext = path.split(".").pop();
 			if( exts.indexOf(ext) < 0 ) return;
 			try {
+				if (path == "assets/Enviro_Props/Props/materials.props")
+					trace("break");
 				var content = parseJSON(sys.io.File.getContent(getPath(path)));
 				var changed = callb(content, path);
 				if( !changed ) return;
@@ -2027,6 +2030,7 @@ class CustomLoader extends hxd.res.Loader {
 @:allow(hide.Ide)
 class FilterPathContext {
 	public var valueCurrent: String;
+	public var currentObject: Dynamic;
 	var valueChanged: String;
 
 	public var filterFn: (FilterPathContext) -> Void;
@@ -2041,8 +2045,9 @@ class FilterPathContext {
 		valueChanged = newValue;
 	}
 
-	public function filter(valueCurrent: String) {
+	public function filter(valueCurrent: String, obj: Dynamic) {
 		this.valueCurrent = valueCurrent;
+		this.currentObject = obj;
 		valueChanged = null;
 		var prevChanged = changed;
 		changed = false;

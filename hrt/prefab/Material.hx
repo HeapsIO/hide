@@ -773,8 +773,18 @@ class Material extends Prefab {
 				if (refMatLib == null)
 					refMatLib = "";
 
+				// handle just the source file of the mat lib being renamed
 				var refPath = refMatLib.substr(0,refMatLib.lastIndexOf("/"));
-				refMatLib = f(refPath) + refMatLib.substr(refMatLib.lastIndexOf("/"));
+				var newPath = f(refPath);
+				if (newPath != refPath) {
+					refMatLib = newPath + refMatLib.substr(refMatLib.lastIndexOf("/"));
+				} else {
+					// handle the whole path being renamed (by sceneEditor.migrateMaterialLibrary)
+					var old = refMatLib;
+					refMatLib = f(refMatLib);
+					if (old != refMatLib)
+						trace("break");
+				}
 			},
 			allowChildren: function(t) return !Prefab.isOfType(t, Material),
 		};
