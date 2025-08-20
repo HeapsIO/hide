@@ -311,9 +311,17 @@ class Editor extends Component {
 
 		if (@:privateAccess table.separators != null) {
 			for (s in @:privateAccess table.separators) {
-				@:privateAccess s.filtered = true;
+				@:privateAccess s.filtered = false;
 				s.refresh(false);
 			}
+		}
+
+		if (filters.length == 0 && filterFlags.has(Regular) && filterFlags.has(Warning) && filterFlags.has(Error))
+			return;
+
+		for (s in @:privateAccess table.separators) {
+			@:privateAccess s.filtered = true;
+			s.refresh(false);
 		}
 
 		// Clean filters
@@ -368,7 +376,7 @@ class Editor extends Component {
 		searchBox.find("#results").text(results > 0 ? '$results Results' : 'No results');
 
 		// if (updateCursor)
-			cursor.update();
+		cursor.update();
 	}
 
 	function isLineFilteredBySearch(table : Table, line : Line) : Bool {
