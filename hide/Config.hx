@@ -23,6 +23,7 @@ typedef HideGlobalConfig = {
 	var enableDBFormulas : Bool;
 	var screenCaptureResolution : Int;
 	var orientMeshOnDrag : Bool;
+	var minDistFromCameraOnDrag : Float;
 
 	// Search
 	var closeSearchOnFileOpen : Bool;

@@ -4397,7 +4397,7 @@ class SceneEditor {
 
 				try {
 					var dist = obj.getCollider().rayIntersection(ray, true);
-					if (minDist < 0 || (dist >= 0 && dist < minDist)) {
+					if ((minDist < 0 || (dist >= 0 && dist < minDist)) && dist > ide.ideConfig.minDistFromCameraOnDrag) {
 						minDist = dist;
 						hitObj = obj;
 					}

@@ -29,6 +29,7 @@ class IdeData {
 		"screenCaptureResolution" => 4096,
 		"sceneEditorClickCycleObjects" => true,
 		"orientMeshOnDrag" => true,
+		"minDistFromCameraOnDrag" => 1,
 	];
 
 	public var currentConfig(get,never) : Config;
