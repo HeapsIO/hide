@@ -1791,7 +1791,10 @@ class SceneEditor {
 				}
 				else if (K.isDown(K.CTRL)) {
 					var sel = selectedPrefabs.copy();
-					sel.pushUnique(elts[0].prefab);
+					if (sel.contains(elts[0].prefab))
+						sel.remove(elts[0].prefab);
+					else
+						sel.pushUnique(elts[0].prefab);
 					selectElements(sel);
 				}
 				else {
@@ -1859,26 +1862,25 @@ class SceneEditor {
 				}
 
 				var elts = getAllPrefabsUnderMouse();
-				if (elts.length <= 0)
-					return;
-
-				var anyElementOrParentSelected = false;
-				for (elt in elts) {
-					for (selected in selectedPrefabs) {
-						var curr = elt.prefab;
-						while(curr != null) {
-							if (curr == selected) {
-								anyElementOrParentSelected = true;
-								break;
+				if (elts.length > 0) {
+					var anyElementOrParentSelected = false;
+					for (elt in elts) {
+						for (selected in selectedPrefabs) {
+							var curr = elt.prefab;
+							while(curr != null) {
+								if (curr == selected) {
+									anyElementOrParentSelected = true;
+									break;
+								}
+								curr = curr.parent;
 							}
-							curr = curr.parent;
 						}
 					}
-				}
 
-				if (e.button == K.MOUSE_LEFT && (selectedPrefabs.length < 0 || !anyElementOrParentSelected)) {
-					doPickSelect(false, elts);
-					delaySelection = false;
+					if (e.button == K.MOUSE_LEFT && (selectedPrefabs.length < 0 || !anyElementOrParentSelected)) {
+						doPickSelect(false, elts);
+						delaySelection = false;
+					}
 				}
 
 				startDrag = [scene.s2d.mouseX, scene.s2d.mouseY];
