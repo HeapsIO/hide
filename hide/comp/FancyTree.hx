@@ -851,26 +851,28 @@ class FancyTree<TreeItem> extends hide.comp.Component {
 				switch(event) {
 					case Move:
 						var operation = getDragOperation(data,dragData);
-						if (operation != null) {
-							// Auto open item if the user hover for enough time
-							if (operation == Inside) {
-								var time = haxe.Timer.stamp();
-
-								if (moveLastDragOver != data) {
-									moveLastDragOver = data;
-									moveLastDragOverStart = haxe.Timer.stamp();
-								}
-
-								if (time - moveLastDragOverStart > overDragOpenDelaySec && !isOpen(data)) {
-									toggleDataOpen(data, true);
-									saveState();
-								}
-							}
-							setDragStyle(data.element, operation);
-							dragData.dropTargetValidity = AllowDrop;
+						if (operation == null) {
+							dragData.dropTargetValidity = ForbidDrop;
 							return;
 						}
-						dragData.dropTargetValidity = ForbidDrop;
+
+						// Auto open item if the user hover for enough time
+						if (operation == Inside) {
+							var time = haxe.Timer.stamp();
+
+							if (moveLastDragOver != data) {
+								moveLastDragOver = data;
+								moveLastDragOverStart = haxe.Timer.stamp();
+							}
+
+							if (time - moveLastDragOverStart > overDragOpenDelaySec && !isOpen(data)) {
+								toggleDataOpen(data, true);
+								saveState();
+							}
+						}
+						setDragStyle(data.element, operation);
+						dragData.dropTargetValidity = AllowDrop;
+						return;
 				case Leave:
 					setDragStyle(data.element, null);
 				case Enter:

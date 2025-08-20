@@ -451,10 +451,17 @@ class FileBrowser extends hide.ui.View<FileBrowserState> {
 				if (target == null)
 					return Reorder;
 
-				var fileEntries : Array<FileEntry> = e.data.get("drag/filetree");
+				var fileEntries : Array<FileEntry> = cast e.data.get("drag/filetree") ?? [];
+				fileEntries = fileEntries.copy();
 				var containsFiles = fileEntries != null && fileEntries.length > 0;
 
 				if (!containsFiles)
+					return hide.comp.FancyTree.DropFlags.ofInt(0);
+
+				// Can't drop a file on itself
+				fileEntries.remove(target);
+
+				if (fileEntries.length == 0)
 					return hide.comp.FancyTree.DropFlags.ofInt(0);
 
 				if (target.kind == Dir)
@@ -466,7 +473,10 @@ class FileBrowser extends hide.ui.View<FileBrowserState> {
 				if (target.kind != Dir)
 					target = target.parent;
 
-				var fileEntries : Array<FileEntry> = cast ide.popData("drag/filetree");
+				var fileEntries : Array<FileEntry> = cast e.data.get("drag/filetree") ?? [];
+				fileEntries = fileEntries.copy();
+				fileEntries.remove(target);
+
 				var files = [ for (f in fileEntries) f.path ];
 				if (files.length == 0)
 					return false;
