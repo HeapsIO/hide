@@ -622,7 +622,7 @@ class FXAnimation extends h3d.scene.Object {
 		if (loopEnd < 0 || loopEnd == duration)
 			instant = true;
 		if (instant == true) {
-			setTimeInternal(duration, 0, true, true);
+			setTimeInternal(startDelay + duration, 0, true, true);
 		} else {
 			stopTime = localTime;
 		}
