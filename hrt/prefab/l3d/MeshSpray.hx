@@ -988,6 +988,7 @@ class MeshSpray extends Spray {
 					binaryMeshes = [];
 				}
 				sceneEditor.deleteElements(meshes);
+				sceneEditor.selectElements([this], NoHistory);
 				cast(local3d, MeshSprayObject).redraw();
 			}
 		});
