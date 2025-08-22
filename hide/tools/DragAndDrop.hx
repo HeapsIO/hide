@@ -119,6 +119,7 @@ class DragAndDrop {
 	static var dragOverlayHandler : js.html.Element = null;
 	static var lastMouseX : Int = -1;
 	static var lastMouseY : Int = -1;
+	static final minDragDistance : Float = 15;
 
 	static public function makeDraggable(element: js.html.Element, onDragEvent : (event: DragEvent, data: DragData) -> Void) : Void {
 		element.addEventListener("pointerdown", onInitialPointerDown);
@@ -255,7 +256,7 @@ class DragAndDrop {
 	}
 
 	static function onInitialPointerMove(e:js.html.PointerEvent) : Void {
-		if (lastMouseX < 0 || lastMouseX < 0 || hxd.Math.distance(e.clientX - lastMouseX, e.clientY - lastMouseY) < 5) {
+		if (lastMouseX < 0 || lastMouseX < 0 || hxd.Math.distance(e.clientX - lastMouseX, e.clientY - lastMouseY) < minDragDistance) {
 			return;
 		}
 

@@ -2189,6 +2189,16 @@ class SceneEditor {
 			return buttons;
 		}
 
+		// remove elements that have target in their parent hierarchy
+		function sanitizeReparent(target: hrt.prefab.Prefab, elements: Array<hrt.prefab.Prefab>) {
+			// Avoid moving target onto itelf
+			for (prefab in elements.copy()) {
+				if (target.findParent((p) -> p == prefab, true) != null) {
+					elements.remove(prefab);
+				}
+			}
+		}
+
 		tree.dragAndDropInterface =
 		{
 			onDragStart: function(p: hrt.prefab.Prefab, dragData: hide.tools.DragAndDrop.DragData) : Bool {
@@ -2202,6 +2212,13 @@ class SceneEditor {
 			getItemDropFlags: function(target: hrt.prefab.Prefab, dragData: hide.tools.DragAndDrop.DragData) : hide.comp.FancyTree.DropFlags {
 				var prefabs : Array<hrt.prefab.Prefab> = cast dragData.data.get("drag/scenetree");
 				if (prefabs != null) {
+					prefabs = prefabs.copy();
+					sanitizeReparent(target, prefabs);
+					if (prefabs.length == 0) {
+						dragData.dropTargetValidity = ForbidDrop;
+						return hide.comp.FancyTree.DropFlags.ofInt(0);
+					}
+
 					for (p in prefabs) {
 						if (checkAllowParent({prefabClass : Type.getClass(p), inf : p.getHideProps()}, target))
 							return (Reorder:hide.comp.FancyTree.DropFlags) | Reparent;
@@ -2235,11 +2252,11 @@ class SceneEditor {
 
 				var prefabs : Array<hrt.prefab.Prefab> =  cast ide.popData("drag/scenetree");
 				if (prefabs != null) {
-					// Avoid moving target onto itelf
-					for (prefab in prefabs.copy()) {
-						if (target.findParent((p) -> p == prefab) != null) {
-							prefabs.remove(prefab);
-						}
+					prefabs = prefabs.copy();
+					sanitizeReparent(target, prefabs);
+					if (prefabs.length == 0) {
+						dragData.dropTargetValidity = ForbidDrop;
+						return false;
 					}
 
 					var idx = tChildren.indexOf(target);
