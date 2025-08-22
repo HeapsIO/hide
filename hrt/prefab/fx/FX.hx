@@ -522,8 +522,8 @@ class FXAnimation extends h3d.scene.Object {
 				}
 
 				// Animations that are only applied on local transforms of leafs objects
+				var leafObjects = anim.elt.findAll(Object3D, o -> o.children == null || o.children.length == 0);
 				if (anim.localRotation != null || anim.localPosition != null) {
-					var leafObjects = anim.elt.findAll(Object3D, o -> o.children == null || o.children.length == 0);
 
 					for (o in leafObjects) {
 						if (o.local3d == null)
@@ -622,9 +622,8 @@ class FXAnimation extends h3d.scene.Object {
 		if (loopEnd < 0 || loopEnd == duration)
 			instant = true;
 		if (instant == true) {
-			var endTime = startDelay + duration;
-			if (localTime < endTime)
-				setTimeInternal(endTime, 0, true, true);
+			if (localTime < duration)
+				setTimeInternal(startDelay + duration, 0, true, true);
 		} else {
 			stopTime = localTime;
 		}
