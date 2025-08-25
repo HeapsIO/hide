@@ -1,6 +1,24 @@
 package hide.view;
 import hxd.Key as K;
 
+typedef CollisionSettings = { mode : Int, params : Dynamic };
+
+private enum abstract CollisionMode(Int) from Int to Int {
+	var Default = 0;
+	var None    = 1;
+	var Auto    = 2;
+	var Count   = 3;
+
+	public function toString() {
+		return switch (this) {
+			case Default: "Default";
+			case None: "None";
+			case Auto: "Auto";
+			default: "Undefined";
+		}
+	}
+}
+
 class Model extends FileView {
 	static var KEY_ANIM_PLAYING = "AnimationPlaying";
 
@@ -11,6 +29,8 @@ class Model extends FileView {
 	var tabs : hide.comp.Tabs;
 	var overlay : Element;
 	var eventList : Element;
+	var collisionEditor : Element;
+	var collisionSettings : Map<String, CollisionSettings>;
 
 	var plight : hrt.prefab.Prefab;
 	var light : h3d.scene.Object;
@@ -70,8 +90,25 @@ class Model extends FileView {
 						<div class="tab expand" name="Animation" icon="cog">
 							<div class="event-editor"> </div>
 						</div>
+						<div class="tab expand" name="Collision" icon="codepen">
+							<div class="collision-editor">
+								<label class="title">Collision settings</label>
+								<dl>
+									<dt>Collision mode</dt>
+									<dd>
+										<select id="select-collision-mode">
+											${[for(idx in 0...CollisionMode.Count) '<option value="${idx}">${cast(idx, CollisionMode).toString()}</option>'].join("")}
+										</select>
+									</dd>
+								</dl>
+								<div id="collision-params">
+									<dl><dt>Precision</dt><dd><input type="text" id="precision"></dd></dl>
+									<dl><dt>Max convex hulls</dt><dd><input type="text" id="hulls"></dd></dl>
+									<dl><dt>max subdivision</dt><dd><input type="text" id="subdiv"></dd></dl>
+								</div>
+							</div>
+						</div>
 					</div>
-
 				</div>
 			</div>
 		');
@@ -80,6 +117,7 @@ class Model extends FileView {
 		overlay = element.find(".hide-scene-layer .tree");
 		tabs = new hide.comp.Tabs(null,element.find(".tabs"));
 		eventList = element.find(".event-editor");
+		initCollisionEditor();
 
 		var def = new hrt.prefab.Prefab(null, null);
 		new hrt.prefab.RenderProps(def, null).name = "renderer";
@@ -146,6 +184,75 @@ class Model extends FileView {
 		@:privateAccess hxd.fmt.hmd.Library.defaultDynamicBonesConfigs.clear();
 	}
 
+	function updateCollisionParams(settings) {
+		var collisionParams = element.find("#collision-params");
+		switch (settings.mode) {
+			case Default, None: collisionParams.hide();
+			case Auto:
+				collisionParams.show();
+
+				var elPrec = collisionParams.find("#precision");
+				var elHull = collisionParams.find("#hulls");
+				var elSubdiv = collisionParams.find("#subdiv");
+
+				var params = settings.params;
+				elPrec.val('${params.precision}');
+				elHull.val('${params.maxConvexHulls}');
+				elSubdiv.val('${params.maxSubdiv}');
+			default: throw "Unexpected mode";
+		}
+	}
+
+	function initCollisionEditor() {
+		collisionEditor = element.find(".collision-editor");
+		collisionEditor.hide();
+		collisionSettings = [];
+
+		var collisionParams = collisionEditor.find("#collision-params");
+		var elPrec = collisionParams.find("#precision");
+		var elHull = collisionParams.find("#hulls");
+		var elSubdiv = collisionParams.find("#subdiv");
+		collisionParams.on("change", function(_) {
+			var modelName = selectedMesh.name;
+			var settings = collisionSettings.get(modelName);
+			var prevParams = settings.params;
+			var curParams = {
+				precision : Std.parseFloat(elPrec.val()),
+				maxConvexHulls : Std.parseInt(elHull.val()),
+				maxSubdiv : Std.parseInt(elSubdiv.val())
+			}
+			settings.params = curParams;
+			undo.change(Custom(function(undo) {
+				var params = undo ? prevParams : curParams;
+				settings.params = params;
+				if ( modelName == selectedMesh.name ) {
+					elPrec.val('${params.precision}');
+					elHull.val('${params.maxConvexHulls}');
+					elSubdiv.val('${params.maxSubdiv}');
+				}
+			}));
+		});
+
+		var collisionDropdown = collisionEditor.find("#select-collision-mode");
+		collisionDropdown.on("change", function(_) {
+			var modelName = selectedMesh.name;
+			var settings = collisionSettings.get(modelName);
+			var prevMode = settings.mode;
+			var curMode = Std.parseInt(collisionDropdown.val());
+			settings.mode = curMode;
+			updateCollisionParams(settings);
+
+			undo.change(Custom(function(undo) {
+				var mode = undo ? prevMode : curMode;
+				settings.mode = mode;
+				if ( modelName == selectedMesh.name ) {
+					collisionDropdown.val('${Std.int(mode)}');
+					updateCollisionParams(settings);
+				}
+			}));
+		});
+	}
+
 	override function onActivate() {
 		if (tools != null)
 			tools.refreshToggles();
@@ -167,12 +274,23 @@ class Model extends FileView {
 			if (hmd == null)
 				continue;
 
+			var collide = {};
+			var settings = collisionSettings.get(o.name);
+			if ( settings != null ) {
+				switch ( settings.mode ) {
+					case Default:
+					case None: Reflect.setField(collide, "collide", null);
+					case Auto: Reflect.setField(collide, "collide", settings.params);
+					default: throw "Unexpected collision mode";
+				}
+			}
 			var input : h3d.prim.ModelDatabase.ModelDataInput = {
 				resourceDirectory : @:privateAccess hmd.lib.resource.entry.directory,
 				resourceName : @:privateAccess hmd.lib.resource.name,
 				objectName : o.name,
 				hmd : hmd,
-				skin : o.find((o) -> Std.downcast(o, h3d.scene.Skin))
+				skin : o.find((o) -> Std.downcast(o, h3d.scene.Skin)),
+				collide : collide
 			}
 
 			// If Dynamic bones edition scope is global or folder, save it to props.json
@@ -204,6 +322,11 @@ class Model extends FileView {
 			}
 			else {
 				h3d.prim.ModelDatabase.current.saveModelProps(input);
+				var lfs = cast(hxd.res.Loader.currentInstance.fs, hxd.fs.LocalFileSystem);
+				var path = state.path;
+				lfs.removePathFromCache(path);
+				@:privateAccess hxd.res.Loader.currentInstance.cache.remove(path);
+				onRefresh();
 			}
 		}
 
@@ -285,6 +408,8 @@ class Model extends FileView {
 
 		refreshSelectionHighlight(null);
 		selectedElements = elts;
+
+		collisionEditor.hide();
 
 		var properties = sceneEditor.properties;
 		properties.clear();
@@ -626,6 +751,31 @@ class Model extends FileView {
 					});
 				}
 			}
+
+			// Collision edition
+			var modelName = mesh.name;
+
+			var settings = collisionSettings.get(modelName);
+			if ( settings == null ) {
+				var mode = Default;
+				var dirPath = @:privateAccess hmd.lib.resource.entry.directory;
+				var resName = @:privateAccess hmd.lib.resource.name;
+				var props = @:privateAccess h3d.prim.ModelDatabase.current.getModelData(dirPath, resName, modelName);
+				var collideField = null;
+				if ( props != null && Reflect.hasField(props, "collide") ) {
+					collideField = Reflect.field(props, "collide");
+					mode = collideField == null ? None : Auto;
+				}
+				var params = collideField ?? { precision : 1.0, maxConvexHulls : 1, maxSubdiv : 32 };
+				settings = { mode : mode, params : params };
+				collisionSettings.set(modelName, settings);
+			}
+
+			var collisionDropdown = collisionEditor.find("#select-collision-mode");
+			collisionDropdown.val('${Std.int(settings.mode)}');
+			updateCollisionParams(settings);
+
+			collisionEditor.show();
 		}
 
 		var select = e.find(".follow");

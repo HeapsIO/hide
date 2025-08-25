@@ -3199,6 +3199,50 @@ div.sp-container {
 	}
 }
 
+/* Collision Editor */
+.collision-editor {
+	.title {
+		display: block;
+		text-align: center;
+		font-weight: bold;
+		font-size: 12px;
+		margin: 4px;
+		background-color : rgb(30,30,30);
+	}
+	dl {
+		overflow-x:hidden;
+		margin:0 0 0 4px;
+		width:100%;
+		display: flex;
+	}
+	dd, dt {
+		vertical-align:middle;
+		display:inline-block;
+		text-wrap: wrap;
+		word-break: break-word;
+		margin:2% 5% 0 0;
+		flex:2;
+		align-content: center;
+		select {
+			width: 100%;
+		}
+		input {
+			width: 100%;
+		}
+	}
+	dt {
+		text-align:right;
+		font-size:11px;
+		color:#aaa;
+		user-select:none;
+		text-transform: capitalize;
+		cursor:pointer;
+		font-weight: normal;
+		flex:1;
+	}
+}
+
+
 /* Script Editor */
 
 .codeeditor {

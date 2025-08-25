@@ -2768,6 +2768,49 @@ div.sp-container input:hover {
   display: inline-block;
   width: 50%;
 }
+/* Collision Editor */
+.collision-editor .title {
+  display: block;
+  text-align: center;
+  font-weight: bold;
+  font-size: 12px;
+  margin: 4px;
+  background-color: #1e1e1e;
+}
+.collision-editor dl {
+  overflow-x: hidden;
+  margin: 0 0 0 4px;
+  width: 100%;
+  display: flex;
+}
+.collision-editor dd,
+.collision-editor dt {
+  vertical-align: middle;
+  display: inline-block;
+  text-wrap: wrap;
+  word-break: break-word;
+  margin: 2% 5% 0 0;
+  flex: 2;
+  align-content: center;
+}
+.collision-editor dd select,
+.collision-editor dt select {
+  width: 100%;
+}
+.collision-editor dd input,
+.collision-editor dt input {
+  width: 100%;
+}
+.collision-editor dt {
+  text-align: right;
+  font-size: 11px;
+  color: #aaa;
+  user-select: none;
+  text-transform: capitalize;
+  cursor: pointer;
+  font-weight: normal;
+  flex: 1;
+}
 /* Script Editor */
 .codeeditor {
   position: relative;
