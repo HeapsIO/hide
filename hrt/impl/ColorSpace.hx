@@ -23,18 +23,66 @@ class Color {
 	}
 
 	inline static public function fromInt(rgb: Int, withAlpha: Bool = true) : Color {
-		return new Color(
-			(rgb >> 16) & 0xFF,
-			(rgb >> 8) & 0xFF,
-			(rgb >> 0) & 0xFF,
-			withAlpha ? (rgb >> 24) & 0xFF : 255
-		);
+		var c = new Color();
+		c.load(rgb, withAlpha);
+		return c;
+	}
+
+	public function load(rgb: Int, withAlpha: Bool = true) {
+		r = (rgb >> 16) & 0xFF;
+		g = (rgb >> 8) & 0xFF;
+		b = (rgb >> 0) & 0xFF;
+		if (withAlpha) {
+			a = (rgb >> 24) & 0xFF;
+		} else {
+			a = 255;
+		}
 	}
 
 	inline public function toInt(includeAlpha: Bool) : Int {
 		return if (!includeAlpha) (r << 16) + (g << 8) + b
 		else (r << 16) + (g << 8) + (b << 0) + (a << 24);
 	}
+
+	static public function intFromString(str:String, withAlpha: Bool) : Null<Int> {
+		if (str.charAt(0) == "#")
+			str = str.substr(1);
+
+		var color = Std.parseInt("0x"+str);
+		if (color == null)
+			return null;
+
+		color = color & 0xFFFFFFFF;
+
+		var containsAlpha = false;
+		switch (str.length) {
+			case 2: // Assume color is shade of gray
+				color = (color << 16) + (color << 8) + (color);
+			case 3: // handle #XXX html codes
+				var r = (color >> 8) & 0xF;
+				var g = (color >> 4) & 0xF;
+				var b = (color >> 0) & 0xF;
+				color = (r << 20) + (r << 16) + (g << 12) + (g << 8) + (b << 4) + (b << 0);
+			case 6:
+			case 8:
+				containsAlpha = true;
+			default:
+				return null;
+		}
+
+		if (!containsAlpha && withAlpha) {
+			color = (color) + (0xFF << 24);
+		}
+		else if (containsAlpha && !withAlpha) {
+			color = (color & 0xFFFFFF) ;
+		}
+		return color;
+	}
+
+	function toString() : String {
+		return '[$r, $g, $b, $a]';
+	}
+
 }
 
 class ColorSpace {

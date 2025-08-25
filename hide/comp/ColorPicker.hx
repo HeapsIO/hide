@@ -441,38 +441,7 @@ class ColorPicker extends Popup {
 	}
 
 	function getColorFromString(str:String) : Null<Int> {
-		if (str.charAt(0) == "#")
-			str = str.substr(1);
-
-		var color = Std.parseInt("0x"+str);
-		if (color == null)
-			return null;
-
-		color = color & 0xFFFFFFFF;
-
-		var containsAlpha = false;
-		switch (str.length) {
-			case 2: // Assume color is shade of gray
-				color = (color << 16) + (color << 8) + (color);
-			case 3: // handle #XXX html codes
-				var r = (color >> 8) & 0xF;
-				var g = (color >> 4) & 0xF;
-				var b = (color >> 0) & 0xF;
-				color = (r << 20) + (r << 16) + (g << 12) + (g << 8) + (b << 4) + (b << 0);
-			case 6:
-			case 8:
-				containsAlpha = true;
-			default:
-				return null;
-		}
-
-		if (!containsAlpha && canEditAlpha) {
-			color = (color) + (0xFF << 24);
-		}
-		else if (containsAlpha && !canEditAlpha) {
-			color = (color & 0xFFFFFF) ;
-		}
-		return color;
+		return Color.intFromString(str, canEditAlpha);
 	}
 
 	function get_value() {
