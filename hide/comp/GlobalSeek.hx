@@ -27,16 +27,20 @@ class GlobalSeek extends Modal {
             }
         } else {
             function addSheet(s: cdb.Sheet) {
-                for (i in 0...s.all.length) {
-                    var l = s.all[i];
+                if (s.idCol == null)
+                    return;
+                for (i in 0...s.lines.length) {
+                    var l = s.lines[i];
                     var id = Reflect.field(l, s.idCol.name);
-                    if (l.id != null) {
-                        choices.push({
-                            id: '#${s.name}:$id',
-                            ico: s.name,
-                            text: l.disp,
-                        });
-                    }
+                    if (id == null)
+                        continue;
+                    var dispL = s.index.get(id);
+                    choices.push({
+                        id: '#${s.name}:$id',
+                        ico: s.name,
+                        text: dispL.disp,
+                        searchText: "" + i,
+                    });
                 }
             }
             if (currentSheet != null && currentSheet.idCol != null) {

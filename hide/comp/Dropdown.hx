@@ -8,6 +8,7 @@ typedef Choice = {
 	@:optional var classes: Array<String>;
 	@:optional var doc: String;
 	@:optional var index: Int;
+	@:optional var searchText: String;
 }
 
 class Dropdown extends Component {
@@ -53,6 +54,7 @@ class Dropdown extends Component {
 			}
 			el.data("id", o.id);
 			el.data("text", o.text);
+			el.data("searchText", o.searchText);
 			el.data("index", o.index);
 			el.click((_) -> applyValue(o.id));
 			el.mousemove(function(_) {
@@ -73,7 +75,7 @@ class Dropdown extends Component {
 			var v = filterInput.val();
 			if (v != null) {
 				for( o in optionsCont.children().elements() ) {
-					var m = matches(o.data("text"), v) || (!ignoreIdInSearch && matches(o.data("id"), v));
+					var m = matches(o.data("text"), v) || (!ignoreIdInSearch && matches(o.data("id"), v)) || matches(o.data("searchText"), v);
 					o.toggleClass("hidden", !m);
 				}
 				var sortedChildren = optionsCont.children().elements().toArray();
