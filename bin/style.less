@@ -589,6 +589,50 @@ input[type=checkbox] {
 	border-radius: 3px;
 }
 
+.hide-scenetree, .hide-scene-layer {
+	fancy-tree-item {
+		&.editorOnly {
+			color: rgb(2, 174, 218);
+		}
+
+		&.inGameOnly {
+			color: rgb(218, 168, 2);
+		}
+
+		&.hidden {
+			color: #666;
+
+			&.selected {
+				color: #999 !important;
+			}
+		}
+
+		&.locked {
+			font-style: italic;
+		}
+
+		&.disabled {
+			color: #ee6666;
+		}
+
+		&.inRef {
+			--background: rgb(58, 58, 58);
+		}
+
+		&.isOverride {
+			--background: rgb(12, 35, 70);
+		}
+
+		&.isOverride.isOverriden {
+			color: cyan;
+		}
+
+		&.isOverride.isOverriden.isOverridenNew {
+			color: rgb(38, 199, 38);
+		}
+	}
+}
+
 @tileselect-cursor-border: 1px;
 
 
@@ -5962,8 +6006,8 @@ fancy-tree-item {
 
 	color: #aaa;
 
-	&.hidden {
-		filter: opacity(40%);
+	&.selected {
+		color: white;
 	}
 
 	&.hide-search {
@@ -5974,47 +6018,6 @@ fancy-tree-item {
 
 	&.open> .caret::before {
 		transform: rotate(90deg);
-	}
-
-	&.selected {
-		color: white;
-		--background: var(--selection);
-	}
-
-	&.editorOnly {
-		color: rgb(2, 174, 218);
-	}
-
-	&.inGameOnly {
-		color: rgb(218, 168, 2);
-	}
-
-	&.hidden {
-		color: #555;
-	}
-
-	&.locked {
-		font-style: italic;
-	}
-
-	&.disabled {
-		color: #ee6666;
-	}
-
-	&.inRef {
-		--background: rgb(58, 58, 58);
-	}
-
-	&.isOverride {
-		--background: rgb(12, 35, 70);
-	}
-
-	&.isOverride.isOverriden {
-		color: cyan;
-	}
-
-	&.isOverride.isOverriden.isOverridenNew {
-		color: rgb(38, 199, 38);
 	}
 
 	// Select if we have a children that is selected
@@ -6029,10 +6032,6 @@ fancy-tree-item {
 		z-index: 10;
 		outline-offset: -1px;
 	}
-
-	// &:hover {
-	// 	background-color: var(--hover);
-	// }
 
 	fancy-button.quieter {
 		--size: 16px;
@@ -6172,6 +6171,10 @@ fancy-tree-item {
 		border: solid 1px var(--drop-feedback);
 		z-index: 10;
 		pointer-events: none;
+	}
+
+	&.selected {
+		--background: var(--selection) !important;
 	}
 }
 

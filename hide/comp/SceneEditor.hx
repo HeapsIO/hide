@@ -2090,7 +2090,7 @@ class SceneEditor {
 			var parent = p.parent;
 			while(parent != null) {
 				path += parent.getUniqueName() + "/" + path;
-				parent = parent.parent;
+				parent = parent.parent ?? parent.shared.parentPrefab;
 			}
 			return path;
 		}
@@ -2620,8 +2620,8 @@ class SceneEditor {
 
 		var tag = getTag(p);
 		if(tag != null) {
-			el.style.background = tag.color;
-			el.style.color = tag.color + "90";
+			el.style.setProperty("--background", tag.color + "80");
+			el.style.color = tag.color;
 		}
 		else {
 			el.style.background = null;
