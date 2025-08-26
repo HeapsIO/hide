@@ -4405,6 +4405,18 @@ class SceneEditor {
 		var camera = scene.s3d.camera;
 		var ray = camera.rayFromScreen(scene.s2d.mouseX, scene.s2d.mouseY);
 
+		function snapTransform(t : h3d.Matrix) {
+			if (snapForceOnGrid) {
+				var p = t.getPosition();
+				p.x = snap(p.x, snapMoveStep);
+				p.y = snap(p.y, snapMoveStep);
+				p.z = snap(p.z, snapMoveStep);
+				t.setPosition(p);
+			}
+
+			return t;
+		}
+
 		if (ide.ideConfig.collisionOnDrag) {
 			var minDist = -1.;
 			var hitObj : h3d.scene.Object = null;
@@ -4458,7 +4470,7 @@ class SceneEditor {
 				}
 
 				transform.setPosition(center);
-				return transform;
+				return snapTransform(transform);
 			}
 		}
 
@@ -4467,7 +4479,7 @@ class SceneEditor {
 		var pt = ray.intersect(zPlane);
 		if (pt != null) {
 			transform.setPosition(pt);
-			return transform;
+			return snapTransform(transform);
 		}
 
 		transform.setPosition(ray.getPoint(10));
