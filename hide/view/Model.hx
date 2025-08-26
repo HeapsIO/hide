@@ -594,7 +594,7 @@ class Model extends FileView {
 				</div>');
 
 				properties.add(blendShape, null, function(pname){
-					@:privateAccess hmd.blendshape.setBlendshapeAmountByIndex(blendShape.find("#bs-index").val(),blendShape.find("#bs-amount").val());
+					@:privateAccess hmd.blendshape.setBlendShapeWeight(mesh, blendShape.find("#bs-index").val(), blendShape.find("#bs-amount").val());
 				});
 			}
 

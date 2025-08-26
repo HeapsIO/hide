@@ -347,7 +347,7 @@ class Editor extends Component {
 		var results = 0;
 		for (l in table.lines) {
 			var filtered = isLineFilteredBySearch(table, l);
-			if (filtered)
+			if (!filtered)
 				results++;
 
 			filtered = filtered || isLineFilteredByStatus(l);
