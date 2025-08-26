@@ -229,7 +229,7 @@ class Light extends Object3D {
 					var cs = Std.downcast(s, h3d.pass.CascadeShadowMap);
 					if ( cs != null ) {
 						cs.cascade = cascadeNbr;
-						cs.pow = cascadePow;
+						cs.ditributionPower = cascadePow;
 						cs.firstCascadeSize = firstCascadeSize;
 						cs.minPixelSize = minPixelSize;
 						cs.debug = debugDisplay;
@@ -741,7 +741,7 @@ class Light extends Object3D {
 					<dt>Number</dt><dd><input type="range" field="cascadeNbr" step="1" min="1" max="4"/></dd>
 					<dt>Min pixel size</dt><dd><input type="range" step="1" field="minPixelSize" min="0" max="100"/></dd>
 					<dt>First cascade size</dt><dd><input type="range" field="firstCascadeSize" min="5" max="100"/></dd>
-					<dt>Range power</dt><dd><input type="range" field="cascadePow" min="0.1" max="10"/></dd>
+					<dt>Distribution power</dt><dd><input type="range" field="cascadePow" min="0.1" max="10"/></dd>
 					<dt>Casting max dist</dt><dd><input type="range" field="castingMaxDist" min="-1" max="1000"/></dd>
 					<dt>Transition fraction</dt><dd><input type="range" field="transitionFraction" min="0.0" max="0.3"/></dd>
 					<dl>
