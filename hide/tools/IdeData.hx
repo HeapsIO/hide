@@ -29,6 +29,7 @@ class IdeData {
 		"screenCaptureResolution" => 4096,
 		"sceneEditorClickCycleObjects" => true,
 		"orientMeshOnDrag" => true,
+		"collisionOnDrag" => true,
 		"minDistFromCameraOnDrag" => 1,
 	];
 

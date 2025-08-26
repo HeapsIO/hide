@@ -4405,59 +4405,61 @@ class SceneEditor {
 		var camera = scene.s3d.camera;
 		var ray = camera.rayFromScreen(scene.s2d.mouseX, scene.s2d.mouseY);
 
-		var minDist = -1.;
-		var hitObj : h3d.scene.Object = null;
-		for (obj in scene.s3d) {
-			function get(obj : Object) {
-				if (obj == previewDraggedObj || Std.isOfType(obj, hrt.tools.Gizmo))
-					return;
-				if (!obj.getBounds().inFrustum(camera.frustum))
-					return;
+		if (ide.ideConfig.collisionOnDrag) {
+			var minDist = -1.;
+			var hitObj : h3d.scene.Object = null;
+			for (obj in scene.s3d) {
+				function get(obj : Object) {
+					if (obj == previewDraggedObj || Std.isOfType(obj, hrt.tools.Gizmo))
+						return;
+					if (!obj.getBounds().inFrustum(camera.frustum))
+						return;
 
-				try {
-					var dist = obj.getCollider().rayIntersection(ray, true);
-					if ((minDist < 0 || (dist >= 0 && dist < minDist)) && dist > ide.ideConfig.minDistFromCameraOnDrag) {
-						minDist = dist;
-						hitObj = obj;
+					try {
+						var dist = obj.getCollider().rayIntersection(ray, true);
+						if ((minDist < 0 || (dist >= 0 && dist < minDist)) && dist > ide.ideConfig.minDistFromCameraOnDrag) {
+							minDist = dist;
+							hitObj = obj;
+						}
 					}
+					catch (e : Dynamic) {};
+
+					for (c in @:privateAccess obj.children)
+						get(c);
 				}
-				catch (e : Dynamic) {};
 
-				for (c in @:privateAccess obj.children)
-					get(c);
+				get(obj);
 			}
 
-			get(obj);
-		}
+			if (minDist >= 0) {
+				// Find hit normal
+				var center = ray.getPoint(minDist);
+				var dx : h3d.col.Point = null;
+				var dy : h3d.col.Point = null;
+				var ray2 = camera.rayFromScreen(scene.s2d.mouseX + 1, scene.s2d.mouseY);
+				dx = ray2.getPoint(hitObj.getCollider().rayIntersection(ray2, true));
 
-		if (minDist >= 0) {
-			// Find hit normal
-			var center = ray.getPoint(minDist);
-			var dx : h3d.col.Point = null;
-			var dy : h3d.col.Point = null;
-			var ray2 = camera.rayFromScreen(scene.s2d.mouseX + 1, scene.s2d.mouseY);
-			dx = ray2.getPoint(hitObj.getCollider().rayIntersection(ray2, true));
+				var ray3 = camera.rayFromScreen(scene.s2d.mouseX - 1, scene.s2d.mouseY + 1);
+				dy = ray3.getPoint(hitObj.getCollider().rayIntersection(ray3, true));
 
-			var ray3 = camera.rayFromScreen(scene.s2d.mouseX - 1, scene.s2d.mouseY + 1);
-			dy = ray3.getPoint(hitObj.getCollider().rayIntersection(ray3, true));
+				var ddx = dx - center;
+				var ddy = dy - center;
+				var norm = ddx.cross(ddy);
+				norm.normalize();
 
-			var ddx = dx - center;
-			var ddy = dy - center;
-			var norm = ddx.cross(ddy);
-			norm.normalize();
+				if (ide.ideConfig.orientMeshOnDrag) {
+					var q = new h3d.Quat();
+					q.initMoveTo(new h3d.Vector(0, 0, 1), norm);
+					transform = q.toMatrix();
+				}
+				else {
+					transform = new h3d.Matrix();
+					transform.identity();
+				}
 
-			if (ide.ideConfig.orientMeshOnDrag) {
-				var q = new h3d.Quat();
-				q.initMoveTo(new h3d.Vector(0, 0, 1), norm);
-				transform = q.toMatrix();
+				transform.setPosition(center);
+				return transform;
 			}
-			else {
-				transform = new h3d.Matrix();
-				transform.identity();
-			}
-
-			transform.setPosition(center);
-			return transform;
 		}
 
 		// If there is no collision with objects, try to collide with z=0 plane
@@ -4468,7 +4470,7 @@ class SceneEditor {
 			return transform;
 		}
 
-		transform.setPosition(ray.getPoint(minDist));
+		transform.setPosition(ray.getPoint(10));
 		return transform;
 	}
 

@@ -22,7 +22,6 @@ typedef HideGlobalConfig = {
 	var svnShowModifiedFiles : Bool;
 	var enableDBFormulas : Bool;
 	var screenCaptureResolution : Int;
-	var orientMeshOnDrag : Bool;
 	var minDistFromCameraOnDrag : Float;
 
 	// Search
@@ -35,6 +34,8 @@ typedef HideGlobalConfig = {
 	var unfocusCPUSavingMode : Bool;
 
 	// Scene Editor
+	var orientMeshOnDrag : Bool;
+	var collisionOnDrag : Bool;
 	var sceneEditorClickCycleObjects : Bool;
 
 	// CDB
