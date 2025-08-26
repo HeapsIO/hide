@@ -491,7 +491,7 @@ class Image extends FileView {
 		}
 
 		var compTexMemSize = element.find(".comp-tex-weight");
-		compTexMemSize.text('Compressed texture weight : ${@:privateAccess floatToStringPrecision(compressedTexture.mem.memSize(compressedTexture) / (1024 * 1024)) } mb');
+		compTexMemSize.text('Compressed texture weight : ${@:privateAccess floatToStringPrecision(compressedTexture.mem.memSize(compressedTexture) / (1024 * 1024)) } MB');
 
 		updateImageCompressionInfos();
 		applyShaderConfiguration();
@@ -659,7 +659,7 @@ class Image extends FileView {
 			size.val(texMaxSize);
 
 		var uncompTWeight = element.find(".uncomp-tex-weight");
-		uncompTWeight.text('Uncompressed texture weight : ${getTextureMemSize(state.path)} mb');
+		uncompTWeight.text('Uncompressed texture weight : ${getTextureMemSize(state.path)} MB');
 
 		nativeFormat.text(getTextureNativeFormat(state.path).getName());
 	}
@@ -716,7 +716,7 @@ class Image extends FileView {
 		}
 
 		var compTexMemSize = element.find(".comp-tex-weight");
-		compTexMemSize.text('Compressed texture weight : ${@:privateAccess floatToStringPrecision(t.mem.memSize(t) / (1024 * 1024)) } mb');
+		compTexMemSize.text('Compressed texture weight : ${@:privateAccess floatToStringPrecision(t.mem.memSize(t) / (1024 * 1024)) } MB');
 
 		applyShaderConfiguration();
 		onResize();
