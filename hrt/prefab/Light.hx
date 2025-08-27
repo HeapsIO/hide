@@ -667,6 +667,15 @@ class Light extends Object3D {
 		var shadowGroup = new hide.Element('
 			<div class="group" name="Shadows">
 				<dl>
+					<dt>Mode</dt>
+					<dd>
+						<select field="mode">
+							<option value="None">None</option>
+							<option value="Static">Static</option>
+							<option value="Mixed">Mixed</option>
+							<option value="Dynamic">Dynamic (Moving light)</option>
+						</select>
+					</dd>
 					<dt>Size</dt>
 					<dd>
 						<select field="size" type="number">
@@ -680,15 +689,6 @@ class Light extends Object3D {
 						</select>
 					</dd>
 					<div class="nonCascadeParams">
-						<dt>Mode</dt>
-						<dd>
-							<select field="mode">
-								<option value="None">None</option>
-								<option value="Static">Static</option>
-								<option value="Mixed">Mixed</option>
-								<option value="Dynamic">Dynamic (Moving light)</option>
-							</select>
-						</dd>
 						<dt>Blur Radius</dt><dd><input type="range" field="radius" min="0" max="20"/></dd>
 						<dt>Blur Quality</dt><dd><input type="range" field="quality" min="0" max="1"/></dd>
 						<dt>Bias</dt><dd><input type="range" field="bias" min="0" max="1"/></dd>
