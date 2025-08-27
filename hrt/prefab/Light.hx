@@ -209,13 +209,6 @@ class Light extends Object3D {
 		if( light != null ) { // PBR
 			light.isMainLight = isMainLight;
 			light.occlusionFactor = occlusionFactor;
-			light.color.setColor(color);
-			light.power = power;
-			light.shadows.mode = shadows.mode;
-			light.shadows.size = shadows.size;
-			light.shadows.blur.radius = shadows.radius;
-			light.shadows.blur.quality = shadows.quality;
-			light.shadows.bias = shadows.bias * 0.1;
 
 			switch( kind ) {
 			case Directional:
@@ -236,8 +229,6 @@ class Light extends Object3D {
 						cs.castingMaxDist = castingMaxDist;
 						cs.transitionFraction = transitionFraction;
 						cs.debugShader = debugShader;
-						cs.blur.radius = 0.0;
-						cs.mode = Dynamic;
 						params.resize(cascadeNbr);
 						for ( i in 0...params.length )
 							if ( params[i] == null )
@@ -273,6 +264,13 @@ class Light extends Object3D {
 				rec.fallOff = fallOff;
 			default:
 			}
+			light.color.setColor(color);
+			light.power = power;
+			light.shadows.mode = shadows.mode;
+			light.shadows.size = shadows.size;
+			light.shadows.blur.radius = shadows.radius;
+			light.shadows.blur.quality = shadows.quality;
+			light.shadows.bias = shadows.bias * 0.1;
 
 			switch (shadows.samplingMode.kind) {
 				case None:
@@ -667,6 +665,15 @@ class Light extends Object3D {
 		var shadowGroup = new hide.Element('
 			<div class="group" name="Shadows">
 				<dl>
+					<dt>Mode</dt>
+					<dd>
+						<select field="mode">
+							<option value="None">None</option>
+							<option value="Static">Static</option>
+							<option value="Mixed">Mixed</option>
+							<option value="Dynamic">Dynamic (Moving light)</option>
+						</select>
+					</dd>
 					<dt>Size</dt>
 					<dd>
 						<select field="size" type="number">
@@ -679,18 +686,9 @@ class Light extends Object3D {
 							<option value="4096">4096</option>
 						</select>
 					</dd>
-					<div class="nonCascadeParams">
-						<dt>Mode</dt>
-						<dd>
-							<select field="mode">
-								<option value="None">None</option>
-								<option value="Static">Static</option>
-								<option value="Mixed">Mixed</option>
-								<option value="Dynamic">Dynamic (Moving light)</option>
-							</select>
-						</dd>
-						<dt>Blur Radius</dt><dd><input type="range" field="radius" min="0" max="20"/></dd>
-						<dt>Blur Quality</dt><dd><input type="range" field="quality" min="0" max="1"/></dd>
+					<dt>Blur Radius</dt><dd><input type="range" field="radius" min="0" max="20"/></dd>
+					<dt>Blur Quality</dt><dd><input type="range" field="quality" min="0" max="1"/></dd>
+					<div class="bias">
 						<dt>Bias</dt><dd><input type="range" field="bias" min="0" max="1"/></dd>
 					</div>
 					<dt>Sampling Mode</dt>
@@ -705,11 +703,11 @@ class Light extends Object3D {
 			</div>
 		');
 
-		var nonCascadeParamsEl = shadowGroup.find(".nonCascadeParams");
+		var biasEl = shadowGroup.find(".bias");
 		if ( cascade )
-			nonCascadeParamsEl.hide();
+			biasEl.hide();
 		else
-			nonCascadeParamsEl.show();
+			biasEl.show();
 
 		switch (shadows.samplingMode.kind) {
 			case None:
