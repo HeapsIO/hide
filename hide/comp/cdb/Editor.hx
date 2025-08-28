@@ -1003,7 +1003,7 @@ class Editor extends Component {
 	**/
 	public function beginChanges( ?structure : Bool ) {
 		if (undoState.length >= @:privateAccess undo.maxHistoryCount)
-			undoState.shift();
+			undoState.pop();
 		if( changesDepth == 0 )
 			undoState.unshift(getState());
 		changesDepth++;
