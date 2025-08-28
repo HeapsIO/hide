@@ -8,6 +8,7 @@ class CdbTable extends hide.ui.View<{}> {
 	var tabCache : String;
 	var tabs : hide.comp.Tabs;
 	var view : cdb.DiffFile.ConfigView;
+	var topBar : Element;
 
 	public function new( ?state ) {
 		super(state);
@@ -202,6 +203,14 @@ class CdbTable extends hide.ui.View<{}> {
 		editor.show(sheets[index],tabContents[index]);
 		currentSheet = editor.getCurrentSheet();
 		ide.currentConfig.set("cdb.currentSheet", sheets[index].name);
+
+		var validationFunc = @:privateAccess editor.formulas?.validationFuncs?.get(currentSheet);
+		if (validationFunc == null) {
+			topBar.get(0).style.display = "none";
+		} else {
+			topBar.get(0).style.display = null;
+		}
+
 		haxe.Timer.delay(editor.focus,1);
 	}
 
@@ -225,8 +234,7 @@ class CdbTable extends hide.ui.View<{}> {
 		tabContents = [];
 		for( sheet in sheets ) {
 			var tab = tabs == null ? element : tabs.createTab(sheet.name);
-			var sc = new hide.comp.Scrollable(tab);
-			tabContents.push(sc.element);
+			tabContents.push(tab);
 		}
 		if( tabs != null ) {
 			tabs.onTabChange = setEditor;
@@ -250,12 +258,12 @@ class CdbTable extends hide.ui.View<{}> {
 			};
 		}
 
-		var topBar = new Element('<div class="top-bar">
+		topBar = new Element('<div class="top-bar">
 			<span class="regular ${@:privateAccess editor.filterFlags.has(Regular) ? "" : "disabled"}"><div class="icon ico ico-check-square"></div><p>0</p></span>
 			<span class="warning" ${@:privateAccess editor.filterFlags.has(Warning) ? "" : "disabled"}><div class="icon ico ico-warning"></div><p>0</p></span>
 			<span class="error" ${@:privateAccess editor.filterFlags.has(Error) ? "" : "disabled"}><div class="icon ico ico-exclamation-circle"></div><p>0</p></span>
 		</div>');
-		topBar.prependTo(element.find(".hide-scroll"));
+		tabs.element.prepend(topBar);
 
 		function filterListener(el : Element, flag : hide.comp.cdb.Editor.FilterFlag) {
 			var disabled = el.hasClass("disabled");
@@ -276,6 +284,7 @@ class CdbTable extends hide.ui.View<{}> {
 		var errorEl = element.find(".error");
 		errorEl.on("click", function(e) { filterListener(errorEl, Error); });
 
+
 		if( sheets.length > 0 ) {
 			var idx = 0;
 			for( i in 0...sheets.length )
@@ -283,7 +292,7 @@ class CdbTable extends hide.ui.View<{}> {
 					idx = i;
 					break;
 				}
-			tabs.currentTab = tabContents[idx].parent();
+			tabs.currentTab = tabContents[idx];
 		}
 
 		applyCategories(ide.projectConfig.dbCategories, false);

@@ -236,14 +236,13 @@ class Editor extends Component {
 			cursor.move( e.shiftKey ? -1 : 1, 0, false, false, true);
 			return true;
 		case K.PGUP:
-			var scrollView = element.parent(".hide-scroll");
-			var stickyElHeight = scrollView.find(".separator").height();
+			var stickyElHeight = element.find(".separator").height();
 			if (Math.isNaN(stickyElHeight))
-				stickyElHeight = scrollView.find("thead").outerHeight();
+				stickyElHeight = element.find("thead").outerHeight();
 			else
-				stickyElHeight += scrollView.find("thead").outerHeight();
+				stickyElHeight += element.find("thead").outerHeight();
 
-			var lines = scrollView.find("tbody").find(".start");
+			var lines = element.find("tbody").find(".start");
 			var idx = lines.length - 1;
 			while (idx >= 0) {
 				var b = lines[idx].getBoundingClientRect();
@@ -256,13 +255,12 @@ class Editor extends Component {
 			lines.get(idx).scrollIntoView({ block: js.html.ScrollLogicalPosition.END });
 
 			// Handle sticky elements
-			scrollView.scrollTop(scrollView.scrollTop() + scrollView.parent().siblings(".tabs-header").outerHeight());
+			element.scrollTop(element.scrollTop() + element.parent().siblings(".tabs-header").outerHeight());
 
 			return true;
 		case K.PGDOWN:
-			var scrollView = element.parent(".hide-scroll");
-			var height = scrollView.outerHeight() - (scrollView.find("thead").outerHeight() + scrollView.parent().siblings(".tabs-header").outerHeight());
-			var lines = scrollView.find("tbody").find(".start");
+			var height = element.outerHeight() - (element.find("thead").outerHeight() + element.parent().siblings(".tabs-header").outerHeight());
+			var lines = element.find("tbody").find(".start");
 			var idx = 0;
 			for (el in lines) {
 				var b = el.getBoundingClientRect();
@@ -277,10 +275,10 @@ class Editor extends Component {
 			cursor.setDefault(cursor.table, cursor.x, idx);
 
 			// Handle sticky elements
-			var sepHeight = scrollView.find(".separator").height();
+			var sepHeight = element.find(".separator").height();
 			if (Math.isNaN(sepHeight))
 				sepHeight = 0;
-			scrollView.scrollTop(scrollView.scrollTop() - (scrollView.find("thead").height() + sepHeight));
+			element.scrollTop(element.scrollTop() - (element.find("thead").height() + sepHeight));
 
 			return true;
 		case K.SPACE:

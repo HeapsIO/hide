@@ -16,9 +16,6 @@
 		padding: 0 5px 0 5px;
 		border-top: solid @border-size  @border-color;
 		border-bottom: solid @border-size  @border-color;
-		position: sticky;
-		z-index: 50;
-		top: 0;
 		background-color: #222222;
 
 		span {
@@ -64,8 +61,14 @@
 	}
 
 	.cdb {
-		margin-bottom: 350px;
+		overflow-y: scroll;
+
+		> table {
+			margin-bottom: 200px;
+		}
 	}
+
+
 }
 
 .cdb-view.cdb-diff {
@@ -75,14 +78,16 @@
 }
 
 .cdb {
-
-	background-color : black;
+	height: 100%;
+	//background-color : black;
 
 	&:focus {
 		outline: none;
 	}
 
 	.cdb-sheet {
+		overflow-x: auto;
+
 		td.cursorView {
 			outline: 2px solid #ccc !important;
 			outline-offset: -1px;
@@ -120,10 +125,6 @@
 			&.bot { border-bottom: 1px solid #ccc; }
 			&.left { border-left: 1px solid #ccc; }
 		}
-	}
-
-
-	.cdb-sheet {
 
 		width : 100%;
 		table-layout:fixed;
@@ -153,7 +154,7 @@
 			height : 10px;
 			td {
 				position: sticky;
-				top: 39px;
+				top: 19px;
 				z-index: 2;
 				border-left: none;
 				padding-top: 6px;
@@ -263,10 +264,9 @@
 			background-color : #f8f8f8;
 		}
 
-		&:not(.cdb-sub-sheet) > thead.head > th {
+		&:not(.cdb-sub-sheet) > thead.head {
 			position: sticky;
-			z-index: @header-layer;
-			top: 20px;
+			top: 0;
 		}
 
 		tr.head, th {

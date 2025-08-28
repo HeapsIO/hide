@@ -123,13 +123,6 @@ class Table extends Component {
 
 	function setupTableElement() {
 		cloneTableHead();
-		#if js
-		@:privateAccess {
-			var elt = editor.element.parent();
-			var scrollbarWidth = elt.parent().width() - elt.width();
-			element.width(@:privateAccess editor.cdbTable.contentWidth - scrollbarWidth); // prevent to reflow all cdb-view
-		}
-		#end
 	}
 
 	function cloneTableHead() {
