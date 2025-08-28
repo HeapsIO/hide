@@ -652,7 +652,7 @@ class Material extends Prefab {
 
 		var dropDownMaterials = new hide.Element('
 				<dl>
-					<dt>Name</dt><dd><select><option value="any">Any</option></select>
+					<dt>Target material</dt><dd><select><option value="any">Any</option></select>
 				</dl> ');
 		var select = dropDownMaterials.find("select");
 		var materialList = findFirstLocal3d()?.getMaterials();
