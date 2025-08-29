@@ -107,8 +107,7 @@ class Macros {
 							}
 
 							expr.iter(iter);
-							var shader = new hxsl.MacroParser().parseExpr(expr);
-							f.kind = FVar(null, macro @:pos(pos) $v{shader});
+							var shaderExpr = new hxsl.MacroParser().parseExpr(expr);
 							var name = Std.string(c);
 
 							var check = new hxsl.Checker();
@@ -118,30 +117,15 @@ class Macros {
 
 							check.loadShader = loadShader;
 
-							var shader = check.check(name, shader);
-							//trace(shader);
-							//Printer.check(shader);
+							var shader = check.check(name, shaderExpr);
 							var serializer = new hxsl.Serializer();
-							var str = Context.defined("display") ? "" : serializer.serialize(shader);
+							var str = serializer.serialize(shader);
 							f.kind = FVar(null, { expr : EConst(CString(str)), pos : pos } );
 							f.meta.push({
 								name : ":keep",
 								pos : pos,
 							});
 
-							function makeField(name: String, arr: Array<String>) : Field
-							{
-								return {
-									name: name,
-									access: [APublic, AStatic],
-									kind: FVar(macro : Array<String>, macro $v{arr}),
-									pos: f.pos,
-									meta: [{
-											name : ":keep",
-											pos : pos,}
-									],
-								};
-							}
 
 							var finalMap : Map<Int, hrt.shgraph.SgHxslVar> = [];
 
