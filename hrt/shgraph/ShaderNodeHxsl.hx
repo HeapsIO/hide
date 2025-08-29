@@ -7,7 +7,18 @@ import hrt.tools.MapUtils;
 
 using Lambda;
 
-typedef CacheEntry = {expr: TExpr, funs: Array<TFunction>, inputs: Array<ShaderNode.InputInfo>, outputs: Array<ShaderNode.OutputInfo>, idInputOrder: Map<Int, Int>, idOutputOrder: Map<Int,Int>};
+typedef FunctionCache = {
+	fun: TFunction,
+	useSgIO: Bool,
+}
+typedef CacheEntry = {
+	expr: TExpr,
+	funs: Array<FunctionCache>,
+	inputs: Array<ShaderNode.InputInfo>,
+	outputs: Array<ShaderNode.OutputInfo>,
+	idInputOrder: Map<Int, Int>,
+	idOutputOrder: Map<Int,Int>,
+};
 
 class CustomSerializer extends hxsl.Serializer {
 
@@ -83,18 +94,6 @@ class ShaderNodeHxsl extends ShaderNode {
 		var unser = new CustomSerializer();
 		var data = @:privateAccess unser.unserialize(toUnser);
 
-		var funs = [];
-		var expr : TExpr = null;
-		for (fn in data.funs) {
-			if (fn.ref.name == "fragment") {
-				expr = fn.expr;
-				break;
-			} else {
-				fn.ref.name = shortName + "_" + fn.ref.name; // De-duplicate function name if multiple nodes declare the same function name to avoid conflics
-				funs.push(fn);
-			}
-		}
-
 		var inputs : Array<ShaderNode.InputInfo> = [];
 		var outputs : Array<ShaderNode.OutputInfo> = [];
 		var idInputOrder : Map<Int,Int> = [];
@@ -114,6 +113,42 @@ class ShaderNodeHxsl extends ShaderNode {
 					idOutputOrder.set(v.id, outputCount++);
 				case SgConst:
 				case null:
+			}
+		}
+
+		var funs : Array<FunctionCache> = [];
+		var expr : TExpr = null;
+		for (fn in data.funs) {
+			if (fn.ref.name == "fragment") {
+				expr = fn.expr;
+				break;
+			} else {
+				fn.ref.name = shortName + "_" + fn.ref.name; // De-duplicate function name if multiple nodes declare the same function name to avoid conflics
+
+				var useSgIO = false;
+				function hasShaderInput(e: TExpr) : Void {
+					switch (e.e) {
+						case TVar(v):
+							switch(infos.get(v.id)) {
+								case SgInput(isDynamic, defaultValue):
+									useSgIO = true;
+									return;
+								case SgOutput(_):
+									useSgIO = true;
+								case null:
+								default:
+							}
+						default:
+							if (!useSgIO)
+								e.iter(hasShaderInput);
+					}
+				};
+				fn.expr.iter(hasShaderInput);
+
+				funs.push({
+					fun: fn,
+					useSgIO: useSgIO,
+				});
 			}
 		}
 
@@ -225,7 +260,58 @@ class ShaderNodeHxsl extends ShaderNode {
 			}
 		}
 
+		var funs: Array<FunctionCache> = [];
+
+		for (fun in cache.funs) {
+
+			if (fun.useSgIO) {
+				// If the function use input/outputs, we need to duplicate it per Node invocation,
+				// because we need to patch the function to properly set the input/outputs
+				var fun = fun.fun;
+				var tvar = MapUtils.getOrPut(varsRemap, fun.ref.id,
+				{
+					name: '${fun.ref.name}_$id',
+					id: hxsl.Ast.Tools.allocVarId(),
+					type: fun.ref.type,
+					kind: fun.ref.kind,
+					parent: fun.ref.parent,
+					qualifiers: fun.ref.qualifiers,
+				});
+
+				var args : Array<TVar> = [];
+				for (arg in fun.args) {
+					var tvar = MapUtils.getOrPut(varsRemap, arg.id,
+					{
+						name: arg.name,
+						id: hxsl.Ast.Tools.allocVarId(),
+						type: arg.type,
+						kind: arg.kind,
+						parent: arg.parent,
+						qualifiers: arg.qualifiers,
+					});
+					args.push(tvar);
+				}
+
+				var replacementFunc : TFunction = {
+					ref: tvar,
+					expr: fun.expr,
+					ret: fun.ret,
+					args: args,
+					kind: fun.kind
+				}
+
+				funs.push({fun: replacementFunc, useSgIO: true});
+			}
+			else {
+				funs.push(fun);
+			}
+		}
+
 		var expr = patch(cache.expr);
+		for (fun in funs) {
+			if (fun.useSgIO)
+				fun.fun.expr = patch(fun.fun.expr);
+		}
 
 		if (genFailure) {
 			for (outputId => o in cache.outputs) {
@@ -258,8 +344,8 @@ class ShaderNodeHxsl extends ShaderNode {
 			}
 		}
 
-		for (func in cache.funs) {
-			ctx.addFunction(func);
+		for (func in funs) {
+			ctx.addFunction(func.fun);
 		}
 	}
 
