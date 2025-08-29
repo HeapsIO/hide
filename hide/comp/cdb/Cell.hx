@@ -1248,7 +1248,7 @@ class Cell {
 			var e = new Element(elementHtml);
 			e.addClass("edit");
 			if (editor.gradientEditor == null) {
-				editor.gradientEditor = new GradientEditor(editor.element.parents(".hide-scroll").first(), false);
+				editor.gradientEditor = new GradientEditor(editor.element, false);
 				editor.gradientEditor.keepPreviewAlive = true;
 			}
 			editor.gradientEditor.anchor = e;
