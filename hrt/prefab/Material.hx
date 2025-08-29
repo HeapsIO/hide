@@ -676,7 +676,7 @@ class Material extends Prefab {
 			}));
 			ctx.onChange(this, null);
 			ctx.rebuildProperties();
-			ctx.scene.editor.queueRebuild(this);
+			ctx.scene.editor.queueRebuild(this.parent);
 
 			var fx = findParent(hrt.prefab.fx.FX);
 			if(fx != null)
