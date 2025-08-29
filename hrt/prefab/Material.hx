@@ -254,6 +254,7 @@ class Material extends Prefab {
 
 		var propsToApply = currMat.renderProps();
 		propsToApply = applyOverrides(propsToApply);
+		currMat.materialName = materialName;
 
 		currMat.applyTo(local3d, propsToApply, shared);
 	}
