@@ -45,8 +45,8 @@ class CdbTable extends hide.ui.View<{}> {
 			return;
 		}
 
-		if (tabs.currentTab.get(0) != tabContents[index].parent().get(0))
-			tabs.currentTab = tabContents[index].parent();
+		if (tabs.currentTab.get(0) != tabContents[index].get(0))
+			tabs.currentTab = tabContents[index];
 
 		@:privateAccess editor.filters = [];
 		@:privateAccess editor.updateFilters();
