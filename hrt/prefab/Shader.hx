@@ -258,6 +258,7 @@ class Shader extends Prefab {
 		ectx.properties.add(propGroup, this, function(pname) {
 			if( targetMaterial == "" ) targetMaterial = null;
 			ectx.onChange(this, pname);
+			ectx.rebuildPrefab(this.findParent(Object3D) ?? this.findParent(Object2D));
 		});
 
 		var group = new hide.Element('<div class="group" name="Shader"></div>');
