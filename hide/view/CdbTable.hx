@@ -152,7 +152,7 @@ class CdbTable extends hide.ui.View<{}> {
 			return;
 		}
 
-		tabs.currentTab = tabContents[index].parent();
+		tabs.currentTab = tabContents[index];
 		@:privateAccess editor.filters = [];
 		@:privateAccess editor.updateFilters();
 		if( line != null ) {
