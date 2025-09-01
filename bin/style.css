@@ -2487,6 +2487,38 @@ input[type=checkbox].indeterminate:after {
 .graph-view .heaps-scene svg g.box foreignObject container .play-button:hover {
   color: #AAA;
 }
+.graph-view .heaps-scene svg g.box .sg-const-name {
+  display: flex;
+}
+.graph-view .heaps-scene svg g.box .sg-const-name > fancy-button {
+  --size: 20px;
+  font-size: 16px;
+}
+.graph-view .heaps-scene svg g.box .sg-const-name > input {
+  width: unset;
+  min-width: 0;
+  display: block;
+  border: none;
+  background: none;
+  text-align: right;
+  margin: 0;
+  padding: 0;
+}
+.graph-view .heaps-scene svg g.box .sg-const-name > input:hover {
+  background-color: rgba(0, 0, 0, 0.2);
+}
+.graph-view .heaps-scene svg g.box .sg-const-name > input:focus {
+  outline: none;
+  background-color: rgba(0, 0, 0, 0.3);
+}
+.graph-view .heaps-scene svg g.box .sg-const-name > input:focus::placeholder {
+  color: transparent;
+}
+.graph-view .heaps-scene svg g.box .sg-const-input {
+  display: flex;
+  justify-content: center;
+  align-items: center;
+}
 .graph-view .heaps-scene svg g.box.comment {
   pointer-events: none;
 }

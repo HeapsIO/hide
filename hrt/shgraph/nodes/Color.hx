@@ -2,11 +2,10 @@ package hrt.shgraph.nodes;
 
 using hxsl.Ast;
 
-@name("Color")
+@name("Const Color")
 @description("Color property (static)")
 @group("Property")
 @width(100)
-@noheader()
 class Color extends ShaderConst {
 
 	@prop() var r : Float = 0;
@@ -28,9 +27,9 @@ class Color extends ShaderConst {
 	#if editor
 	override public function getPropertiesHTML(width : Float) : Array<hide.Element> {
 		var elements = super.getPropertiesHTML(width);
-		var element = new hide.Element('<div style="width: 47px; height: 35px"></div>');
+		var element = new hide.Element('<div class="sg-const-input" style="width: ${width}px"></div>');
 		var picker = new hide.comp.ColorPicker.ColorBox(element, true, true);
-
+		element.height(picker.element.height());
 
 		var start = h3d.Vector4.fromArray([r, g, b, a]);
 		picker.value = start.toColor();

@@ -383,10 +383,12 @@ class Box {
 			var prop = editor.editorDisplay.group(propertiesGroup).addClass("prop-group");
 			prop.attr("transform", 'translate(0, ${propsHeight})');
 
+			var height = p.height();
 			var propWidth = (p.width() > 0 ? p.width() : this.width);
-			var fObject = editor.editorDisplay.foreignObject(prop, (this.width - propWidth) / 2, 5, propWidth, p.height());
+			var fObject = editor.editorDisplay.foreignObject(prop, (this.width - propWidth) / 2, 5, propWidth, height);
+			trace(p.height());
 			p.appendTo(fObject);
-			propsHeight += Std.int(p.outerHeight()) + 1;
+			propsHeight += Std.int(height) + 1;
 		}
 
 		propsHeight += 10;
@@ -481,7 +483,7 @@ class Box {
 		}
 		var nodeHeight = getNodesHeight();
 		if (collapseProperties()) {
-			return hxd.Math.max(nodeHeight, propsHeight);
+			return hxd.Math.max(nodeHeight, propsHeight + HEADER_HEIGHT);
 		}
 		return nodeHeight + propsHeight;
 	}

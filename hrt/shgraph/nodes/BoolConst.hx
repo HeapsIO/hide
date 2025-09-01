@@ -2,11 +2,10 @@ package hrt.shgraph.nodes;
 
 using hxsl.Ast;
 
-@name("Bool")
+@name("Const Bool")
 @description("Boolean input (static)")
 @group("Property")
 @width(100)
-@noheader()
 class BoolConst extends ShaderConst {
 
 
@@ -26,7 +25,7 @@ class BoolConst extends ShaderConst {
 	#if editor
 	override public function getPropertiesHTML(width : Float) : Array<hide.Element> {
 		var elements = super.getPropertiesHTML(width);
-		var element = new hide.Element('<div style="width: 15px; height: 30px"></div>');
+		var element = new hide.Element('<div class="sg-const-input" style="width: ${width}px; height: 15px"></div>');
 		element.append(new hide.Element('<input type="checkbox" id="value" />'));
 
 		var input = element.children("input");

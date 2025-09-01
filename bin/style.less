@@ -2864,6 +2864,44 @@ input[type=checkbox] {
 						}
 					}
 
+
+					.sg-const-name {
+						display: flex;
+
+						> fancy-button {
+							--size: 20px;
+							font-size: 16px;
+						}
+						> input {
+							width: unset;
+							min-width: 0;
+							display: block;
+							border: none;
+							background: none;
+							text-align: right;
+							margin: 0;
+							padding: 0;
+							&:hover {
+								background-color: rgba(0,0,0,0.20);
+
+							}
+							&:focus {
+								outline: none;
+								background-color: rgba(0,0,0,0.30);
+
+								&::placeholder {
+									color: transparent;
+								}
+							}
+						}
+					}
+
+					.sg-const-input {
+						display: flex;
+						justify-content: center;
+						align-items: center;
+					}
+
 					&.comment {
 						.head-box {
 							fill: rgba(80,80,80,0.5);
