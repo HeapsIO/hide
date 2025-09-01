@@ -4893,10 +4893,38 @@ file-browser.vertical {
 file-browser.single > .left {
   flex: 1 1;
 }
+file-browser fancy-scroll {
+  display: block;
+  width: 100%;
+  flex: 1 1;
+  min-width: 100px;
+  overflow-x: clip;
+  overflow-y: auto;
+}
+file-browser fancy-scroll fancy-item-container {
+  position: relative;
+  display: block;
+  overflow: hidden;
+  contain: strict;
+}
 file-browser .left {
   width: 300px;
   min-width: 100px;
-  background-color: mediumaquamarine;
+  background-color: #222222;
+  display: flex;
+  flex-direction: column;
+}
+file-browser .left .top {
+  width: 100%;
+  padding-bottom: 20px;
+}
+file-browser .left .top.hidden {
+  height: 0px;
+  padding-bottom: 0px;
+}
+file-browser .left .bot {
+  width: 100%;
+  flex: 1;
 }
 file-browser .right {
   flex: 1 1;
@@ -5243,6 +5271,14 @@ fancy-tooltip {
 .fancy-status-icon.fancy-status-icon-modified::after {
   mask-image: url("res/icons/svg/dot.svg");
   color: #FE383A;
+}
+.fancy-status-icon.fancy-status-icon-star::after {
+  width: 11px;
+  height: 11px;
+  left: -4px;
+  bottom: -1px;
+  mask-image: url("res/icons/svg/star.svg");
+  color: #fcbf07;
 }
 .lm_tabdropdown_list {
   z-index: 9999 !important;

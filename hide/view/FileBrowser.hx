@@ -2,6 +2,13 @@ package hide.view;
 
 import hide.tools.FileManager;
 import hide.tools.FileManager.FileEntry;
+
+typedef FavoriteEntry = {
+	parent : FavoriteEntry,
+	children : Array<FavoriteEntry>,
+	?ref : FileEntry,
+}
+
 typedef FileBrowserState = {
 	savedLayout: Layout,
 }
@@ -14,6 +21,7 @@ enum abstract Layout(String) {
 }
 
 class FileBrowser extends hide.ui.View<FileBrowserState> {
+	static var FAVORITES_KEY = "filebrowser_favorites";
 
 	var fileTree: Element;
 	var fileIcons: Element;
@@ -46,6 +54,10 @@ class FileBrowser extends hide.ui.View<FileBrowserState> {
 	override function new(state) {
 		super(state);
 		saveDisplayKey = "fileBrowser";
+
+		this.favorites = getDisplayState(FAVORITES_KEY);
+		if (this.favorites == null)
+			this.favorites = [];
 	}
 
 	override function buildTabMenu():Array<hide.comp.ContextMenu.MenuItem> {
@@ -133,6 +145,9 @@ class FileBrowser extends hide.ui.View<FileBrowserState> {
 	var stats: js.html.Element;
 	var statFileCount: Int = 0;
 	var statFileFiltered: Int = 0;
+
+	var favorites : Array<String>;
+	var favoritesTree : hide.comp.FancyTree<FavoriteEntry>;
 
 	function set_filterEnabled(v : Bool) {
 		var anySet = false;
@@ -355,7 +370,12 @@ class FileBrowser extends hide.ui.View<FileBrowserState> {
 
 		var browserLayout = new Element('
 			<file-browser>
-				<div class="left"></div>
+				<div class="left">
+					<fancy-scroll>
+						<div class="top"></div>
+						<div class="bot"></div>
+					</fancy-scroll>
+				</div>
 				<div class="right" tabindex="-1">
 					<fancy-toolbar class="fancy-small shadow">
 						<fancy-button class="btn-parent quiet" title="Go to parent folder">
@@ -413,7 +433,182 @@ class FileBrowser extends hide.ui.View<FileBrowserState> {
 			}
 		}
 
-		fancyTree = new hide.comp.FancyTree<FileEntry>(browserLayout.find(".left"), { saveDisplayKey: "fileBrowserTree" } );
+		// Favorites tree
+		favoritesTree = new hide.comp.FancyTree<FavoriteEntry>(browserLayout.find(".left").find(".top"), { saveDisplayKey: "fileBrowserTree_Favorites" } );
+		favoritesTree.getChildren = (file: FavoriteEntry) -> {
+			function rec(parent : FavoriteEntry) {
+				if (parent.ref.children == null)
+					return;
+				for (c in parent.ref.children) {
+					var f = { parent : parent, children : [], ref: FileManager.inst.getFileEntry(c.path) };
+					parent.children.push(f);
+					rec(f);
+				}
+			}
+
+			if (file == null) {
+				var fav : FavoriteEntry = {
+					parent : null,
+					children : [],
+					ref : null
+				}
+
+				fav.children = [];
+				for (f in favorites) {
+					// Ref could be null if this f is a favorite of another project
+					var ref = FileManager.inst.getFileEntry(f);
+					if (ref == null)
+						continue;
+					var c = { parent: fav, children: [], ref: ref }
+					fav.children.push(c);
+					rec(c);
+				}
+
+				return [fav];
+			}
+
+			if (file?.ref?.kind == File)
+				return null;
+			if (file.children == null)
+				throw "null children";
+
+			return file.children;
+
+			// return [for (c in file.children) { parent: file, children: [], ref: FileManager.inst.getFileEntry(c.ref.path) }];
+		};
+		favoritesTree.getName = (file: FavoriteEntry) -> return file.ref == null ? "Favorites" : file?.ref.name;
+		favoritesTree.getUniqueName = (file: FavoriteEntry) -> {
+			if (file == null)
+				return "";
+			if (file.ref == null)
+				return "favorites";
+			var relPath = file.ref.name;
+			var p = file.parent;
+			while (p != null) {
+				var name = p.ref == null ? "favorites" : p.ref.name;
+				relPath = name + "/" + relPath;
+				p = p.parent;
+			}
+			return relPath;
+		}
+		favoritesTree.getIcon = (file: FavoriteEntry) -> {
+			if (file.parent == null)
+				return '<div class="ico ico-star"></div>';
+
+			var fav = file.parent.ref == null ? "fancy-status-icon fancy-status-icon-star" : "";
+			if (file.ref.kind == Dir)
+				return '<div class="ico ico-folder $fav"></div>';
+			var ext = Extension.getExtension(file.ref.name);
+			if (ext != null) {
+				if (ext?.options.icon != null) {
+					return '<div class="ico ico-${ext.options.icon} $fav" title="${ext.options.name ?? "Unknown"}"></div>';
+				}
+			}
+			return '<div class="ico ico-file $fav" title="Unknown"></div>';
+		};
+		favoritesTree.onContextMenu = (item: FavoriteEntry, event: js.html.MouseEvent) -> {
+			event.stopPropagation();
+			event.preventDefault();
+
+			var options : Array<hide.comp.ContextMenu.MenuItem> = [];
+			options.push({
+				label: "Collapse",
+				click: () -> {
+					var collapseTarget = item;
+					if (item.ref.kind != Dir)
+						collapseTarget = item.parent;
+					favoritesTree.collapseItem(collapseTarget);
+				}
+			});
+			options.push({
+				label: "Collapse All",
+				click: () -> {
+					for (child in item.children)
+						favoritesTree.collapseItem(child);
+				}
+			});
+			options.push({
+				isSeparator: true
+			});
+
+			// Root favorite tree options
+			var isFavoriteRoot = item?.parent == null;
+			if (isFavoriteRoot) {
+				options.push({
+					label: "Clear Favorites",
+					click: () -> {
+						favorites = [];
+						saveDisplayState(FAVORITES_KEY, favorites);
+						favoritesTree.rebuildTree();
+						this.favoritesTree.element.parent().hide();
+					}
+				});
+
+				hide.comp.ContextMenu.createFromEvent(event, options);
+				return;
+			}
+			else {
+				if (!this.favorites.contains(item.ref.getPath())) {
+				options.push({ label: "Mark as Favorite", click : function() {
+					this.favorites.push(item.ref.getPath());
+					saveDisplayState(FAVORITES_KEY, this.favorites);
+					this.favoritesTree.rebuildTree();
+					this.favoritesTree.element.parent().show();
+				}});
+				}
+				else {
+					options.push({ label: "Remove from Favorite", click : function() {
+						this.favorites.remove(item.ref.getPath());
+						saveDisplayState(FAVORITES_KEY, this.favorites);
+						this.favoritesTree.rebuildTree();
+						if (this.favorites.length == 0)
+							this.favoritesTree.element.parent().hide();
+					}});
+				}
+			}
+
+			hide.comp.ContextMenu.createFromEvent(event, options);
+		};
+		favoritesTree.onDoubleClick = (item: FavoriteEntry) -> {
+			if (item?.ref?.kind == File)
+				ide.openFile(item.ref.getPath());
+			else
+				favoritesTree.openItem(item);
+		}
+		favoritesTree.onSelectionChanged = (enterKey) -> {
+			fancyTree.clearSelection();
+
+			var selection = favoritesTree.getSelectedItems();
+
+			// Sinc folder view with other filebrowser in SingleMiniature mode
+			if (selection.length > 0) {
+				if (selection[0].ref == null) return;
+
+				openDir(selection[0].ref, false);
+				var views = ide.getViews(hide.view.FileBrowser);
+				for (view in views) {
+					if (view == this)
+						continue;
+					if (view.layout == SingleMiniature) {
+						view.openDir(selection[0].ref, false);
+					}
+				}
+			}
+
+			if (enterKey) {
+				if (selection[0].ref.kind == File) {
+					ide.openFile(selection[0].ref.getPath());
+				}
+			}
+		}
+
+		favoritesTree.rebuildTree();
+
+		if (this.favorites.length == 0)
+			this.favoritesTree.element.parent().hide();
+			
+		// Ressources tree
+		fancyTree = new hide.comp.FancyTree<FileEntry>(browserLayout.find(".left").find(".bot"), { saveDisplayKey: "fileBrowserTree_Main", search: true, customScroll: element.find("fancy-scroll").get(0) } );
 		fancyTree.getChildren = (file: FileEntry) -> {
 			if (file == null)
 				return [root];
@@ -436,6 +631,15 @@ class FileBrowser extends hide.ui.View<FileBrowserState> {
 		fancyTree.getIcon = getIcon;
 
 		fancyTree.onNameChange = renameHandler;
+
+		fancyTree.onSearch = () -> {
+			favoritesTree.element.parent().hide();
+		}
+
+		fancyTree.onSearchEnd = () -> {
+			if (this.favorites.length > 0)
+				favoritesTree.element.parent().show();
+		}
 
 		fancyTree.dragAndDropInterface =
 		{
@@ -526,7 +730,6 @@ class FileBrowser extends hide.ui.View<FileBrowserState> {
 		fancyGallery.getThumbnail = (item : FileEntry) -> {
 			if (item.kind == Dir) {
 				return '<fancy-image style="background-image:url(\'res/icons/svg/big_folder.svg\')"></fancy-image>';
-
 			}
 			else if (item.iconPath == "loading") {
 				return '<fancy-image class="loading" style="background-image:url(\'res/icons/loading.gif\')"></fancy-image>';
@@ -585,6 +788,8 @@ class FileBrowser extends hide.ui.View<FileBrowserState> {
 
 
 		fancyTree.onSelectionChanged = (enterKey) -> {
+			favoritesTree.clearSelection();
+
 			var selection = fancyTree.getSelectedItems();
 
 			// Sinc folder view with other filebrowser in SingleMiniature mode
@@ -994,6 +1199,24 @@ class FileBrowser extends hide.ui.View<FileBrowserState> {
 						ide.message("Done");
 					}
 				});
+			}});
+		}
+
+		if (!this.favorites.contains(item.getPath())) {
+			options.push({ label: "Mark as Favorite", click : function() {
+				this.favorites.push(item.getPath());
+				saveDisplayState(FAVORITES_KEY, this.favorites);
+				this.favoritesTree.rebuildTree();
+				this.favoritesTree.element.parent().show();
+			}});
+		}
+		else {
+			options.push({ label: "Remove from Favorite", click : function() {
+				this.favorites.remove(item.getPath());
+				saveDisplayState(FAVORITES_KEY, this.favorites);
+				this.favoritesTree.rebuildTree();
+				if (this.favorites.length == 0)
+					this.favoritesTree.element.parent().hide();
 			}});
 		}
 

@@ -68,7 +68,9 @@ typedef TreeButton<TreeItem> = {
 
 typedef Params =  {
 	?saveDisplayKey : String,
-	?quickGoto : Bool
+	?quickGoto : Bool,
+	?search : Bool,
+	?customScroll : js.html.Element
 }
 
 class FancyTree<TreeItem> extends hide.comp.Component {
@@ -83,6 +85,8 @@ class FancyTree<TreeItem> extends hide.comp.Component {
 	var gotoFileCurrentMatch = "";
 
 	var quickGoto : Bool = true;
+	var allowSearch : Bool = true;
+	var useCustomScroll : Bool = false;
 
 	static final gotoFileKeyMaxDelay = 0.5;
 	static final overDragOpenDelaySec = 0.5;
@@ -118,6 +122,8 @@ class FancyTree<TreeItem> extends hide.comp.Component {
 	public function new(parent: Element, ?params: Params) {
 		saveDisplayKey = params?.saveDisplayKey;
 		quickGoto = params?.quickGoto != null ? params.quickGoto : true;
+		allowSearch = params?.search;
+		useCustomScroll = params?.customScroll != null;
 
 		var el = new Element('
 			<fancy-tree tabindex="-1">
@@ -132,19 +138,21 @@ class FancyTree<TreeItem> extends hide.comp.Component {
 
 		loadState();
 
-		searchBarClosable = new FancyClosable(null, element.find("fancy-closable"));
+		if (allowSearch) {
+			searchBarClosable = new FancyClosable(null, element.find("fancy-closable"));
 
-		searchBar = new FancySearch(null, element.find("fancy-search"));
-		searchBar.onSearch = (search, _) -> {
-			currentSearch = search.toLowerCase();
-			queueRefresh(Search);
+			searchBar = new FancySearch(null, element.find("fancy-search"));
+			searchBar.onSearch = (search, _) -> {
+				currentSearch = search.toLowerCase();
+				queueRefresh(Search);
+			}
+
+			searchBarClosable.onClose = () -> {
+				onSearchClose();
+			}
 		}
 
-		searchBarClosable.onClose = () -> {
-			onSearchClose();
-		}
-
-		scroll = el.find("fancy-scroll").get(0);
+		scroll = params.customScroll == null ? el.find("fancy-scroll").get(0) : params.customScroll;
 		itemContainer = el.find("fancy-item-container").get(0);
 		lastHeight = null;
 
@@ -219,6 +227,12 @@ class FancyTree<TreeItem> extends hide.comp.Component {
 
 	public dynamic function getButtons(item: TreeItem) : Array<TreeButton<TreeItem>> {
 		return [];
+	}
+
+	public dynamic function onSearch() {
+	}
+
+	public dynamic function onSearchEnd() {
 	}
 
 	/**
@@ -442,10 +456,14 @@ class FancyTree<TreeItem> extends hide.comp.Component {
 	}
 
 	function inputHandler(e: js.html.KeyboardEvent) {
+		if (!allowSearch)
+			return;
+
 		if (hide.ui.Keys.matchJsEvent("search", e, ide.currentConfig)) {
 			e.stopPropagation();
 			e.preventDefault();
 
+			onSearch();
 			searchBarClosable.toggleOpen(true);
 			searchBar.focus();
 			currentSearch = searchBar.getValue().toLowerCase();
@@ -467,6 +485,7 @@ class FancyTree<TreeItem> extends hide.comp.Component {
 				e.stopPropagation();
 				e.preventDefault();
 
+				onSearchEnd();
 				searchBarClosable.toggleOpen(false);
 				searchBar.blur();
 
@@ -525,7 +544,7 @@ class FancyTree<TreeItem> extends hide.comp.Component {
 			return;
 		}
 
-		if (currentItem == null || searchBar.hasFocus())
+		if (currentItem == null || searchBar?.hasFocus())
 			return;
 
 		if (e.key == "ArrowRight" && hasChildren(currentItem.item)) {
@@ -628,7 +647,8 @@ class FancyTree<TreeItem> extends hide.comp.Component {
 			regenerateFlatData();
 		}
 
-		//itemContainer.innerHTML = "";
+		var scrollHeight = scroll.getBoundingClientRect().height;
+		var offsetTop = useCustomScroll ? scroll.getElementsByClassName("top")[0].getBoundingClientRect().height : 0;
 		var oldChildren = [for (node in itemContainer.childNodes) node];
 
 		var itemHeightPx = 20;
@@ -639,13 +659,11 @@ class FancyTree<TreeItem> extends hide.comp.Component {
 			lastHeight = height;
 		}
 
-		var scrollHeight = scroll.getBoundingClientRect().height;
-
 		if (currentRefreshFlags.has(FocusCurrent)) {
 			var currentIndex = flatData.indexOf(currentItem);
 
 			if (currentIndex >= 0) {
-				var currentHeight = currentIndex * itemHeightPx;
+				var currentHeight = currentIndex * itemHeightPx - offsetTop;
 				if (currentHeight < scroll.scrollTop) {
 					scroll.scrollTo(scroll.scrollLeft, currentHeight);
 				}
@@ -656,7 +674,7 @@ class FancyTree<TreeItem> extends hide.comp.Component {
 			}
 		}
 
-		var clipStart = scroll.scrollTop;
+		var clipStart = scroll.scrollTop - offsetTop;
 		var clipEnd = scrollHeight + clipStart;
 		var itemStart = hxd.Math.floor(clipStart / itemHeightPx);
 		var itemEnd = hxd.Math.ceil(clipEnd / itemHeightPx);

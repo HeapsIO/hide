@@ -5838,10 +5838,44 @@ file-browser {
 	height: 100%;
 	width: 100%;
 
+	fancy-scroll {
+		display: block;
+		width: 100%;
+		flex: 1 1;
+		min-width: 100px;
+		overflow-x: clip;
+		overflow-y: auto;
+
+		fancy-item-container {
+			position: relative;
+			display: block;
+			overflow: hidden;
+
+			contain: strict;
+		}
+
+	}
+
 	.left {
 		width: 300px;
 		min-width: 100px;
-		background-color: mediumaquamarine;
+		background-color: #222222;
+		display: flex;
+		flex-direction: column;
+
+		.top {
+			&.hidden {
+				height: 0px;
+				padding-bottom: 0px;
+			}
+			width: 100%;
+			padding-bottom: 20px;
+		}
+
+		.bot {
+			width: 100%;
+			flex: 1;
+		}
 	}
 
 	.right {
@@ -6279,6 +6313,15 @@ fancy-tooltip {
 	&.fancy-status-icon-modified::after {
 		mask-image: url("res/icons/svg/dot.svg");
 		color: #FE383A;
+	}
+
+	&.fancy-status-icon-star::after {
+		width: 11px;
+		height: 11px;
+		left: -4px;
+		bottom: -1px;
+		mask-image: url("res/icons/svg/star.svg");
+		color: #fcbf07;
 	}
 }
 

@@ -2065,7 +2065,7 @@ class SceneEditor {
 			icons.set(f, Reflect.field(iconsConfig,f));
 
 		var saveDisplayKey = isSceneTree ? view.saveDisplayKey + '/tree' : view.saveDisplayKey + '/renderPropsTree';
-		var tree = new FancyTree<hrt.prefab.Prefab>(null, { saveDisplayKey: saveDisplayKey, quickGoto: false });
+		var tree = new FancyTree<hrt.prefab.Prefab>(null, { saveDisplayKey: saveDisplayKey, quickGoto: false, search: true });
 		tree.getChildren = (p : hrt.prefab.Prefab) -> {
 			if (p == null) {
 				if (isSceneTree)
