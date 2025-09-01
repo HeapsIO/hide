@@ -8,6 +8,7 @@ class EditorIcon extends hrt.prefab.l3d.Billboard.BillboardObj {
 		super(tile, parent);
 		ignoreCollide = false;
 		this.category = category;
+		this.material.castShadows = false;
 	}
 
 	override function sync(ctx) {
