@@ -1,7 +1,10 @@
 package hide.view;
 
+using hide.tools.Extensions;
+
 class CdbTable extends hide.ui.View<{}> {
 
+	public var sheetsOrder : Array<String>;
 	var tabContents : Array<Element>;
 	var editor : hide.comp.cdb.Editor;
 	var currentSheet : String;
@@ -23,6 +26,9 @@ class CdbTable extends hide.ui.View<{}> {
 		undoStack[0] = editor.undo;
 		currentSheet = this.config.get("cdb.currentSheet");
 		view = cast this.config.get("cdb.view");
+		saveDisplayKey = "cdb:" + ide.getPath(@:privateAccess ide.databaseFile);
+		sheetsOrder = getDisplayState("sheetsOrder");
+		if( sheetsOrder == null ) sheetsOrder = [];
 	}
 
 	override function destroy() {
@@ -185,7 +191,26 @@ class CdbTable extends hide.ui.View<{}> {
 	}
 
 	public function getSheets() {
-		return [for( s in ide.database.sheets ) if( !s.props.hide && (view == null || view.exists(s.name)) ) s];
+		var arr = [for( s in ide.database.sheets ) if( !s.props.hide && (view == null || view.exists(s.name)) ) s];
+		haxe.ds.ArraySort.sort(arr, (s1, s2) -> sheetsOrder.indexOf(s1.name) - sheetsOrder.indexOf(s2.name));
+		sheetsOrder = arr.map(s -> s.name);
+		saveSheetsOrder();
+		return arr;
+	}
+
+	public function saveSheetsOrder() {
+		saveDisplayState("sheetsOrder", sheetsOrder);
+	}
+
+	public function moveSheetDisplayOrder( s : cdb.Sheet, delta : Int ) {
+		var index = sheetsOrder.findIndex(o -> o == s.name);
+		var newIndex = index + delta;
+		if( index < 0 || newIndex < 0 || newIndex >= sheetsOrder.length )
+			return false;
+		var order = sheetsOrder[index];
+		sheetsOrder.remove(order);
+		sheetsOrder.insert(newIndex, order);
+		return true;
 	}
 
 	function getTabCache() {
@@ -239,7 +264,8 @@ class CdbTable extends hide.ui.View<{}> {
 		if( tabs != null ) {
 			tabs.onTabChange = setEditor;
 			tabs.onTabRightClick = function(index) {
-				editor.popupSheet(true, getSheets()[index], function() {
+				var sheet = getSheets()[index];
+				editor.popupSheet(true, sheet, function() {
 					var newSheets = getSheets();
 					var delta = newSheets.length - sheets.length;
 					var sshow = null;
@@ -248,7 +274,7 @@ class CdbTable extends hide.ui.View<{}> {
 					else if( delta < 0 )
 						sshow = newSheets[index-1];
 					else
-						sshow = newSheets[index]; // rename
+						sshow = sheet; // rename or move display order
 					if( sshow != null )
 						currentSheet = sshow.name;
 					if( getTabCache() != tabCache )
