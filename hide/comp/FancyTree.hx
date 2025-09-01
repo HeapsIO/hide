@@ -152,7 +152,7 @@ class FancyTree<TreeItem> extends hide.comp.Component {
 			}
 		}
 
-		scroll = params.customScroll == null ? el.find("fancy-scroll").get(0) : params.customScroll;
+		scroll = params?.customScroll == null ? el.find("fancy-scroll").get(0) : params.customScroll;
 		itemContainer = el.find("fancy-item-container").get(0);
 		lastHeight = null;
 
