@@ -27,6 +27,7 @@ typedef UndoState = {
 	var separatorsState: Map<String, Bool>;
 	var cursor : Cursor.CursorState;
 	var tables : Array<UndoSheet>;
+	var sheetOrder : Array<String>;
 }
 
 typedef EditorApi = {
@@ -1024,6 +1025,7 @@ class Editor extends Component {
 				}
 				makeParent(tables[i]);
 			}],
+			sheetOrder : cdbTable.sheetsOrder.copy(),
 		};
 	}
 
@@ -1079,6 +1081,7 @@ class Editor extends Component {
 		var state = undoState[0];
 		var newSheet = getCurrentSheet();
 		var newSaparatorsState = separatorsState;
+		var newSheetsOrder = cdbTable.sheetsOrder.copy();
 		currentValue = newValue;
 		save();
 		undo.change(Custom(function(undo) {
@@ -1088,11 +1091,13 @@ class Editor extends Component {
 				currentValue = state.data;
 				currentSheet = state.sheet;
 				separatorsState = state.separatorsState;
+				cdbTable.sheetsOrder = state.sheetOrder;
 			} else {
 				undoState.unshift(state);
 				currentValue = newValue;
 				currentSheet = newSheet;
 				separatorsState = newSaparatorsState;
+				cdbTable.sheetsOrder = newSheetsOrder;
 			}
 			api.load(currentValue);
 			DataFiles.save(true); // save reloaded data
@@ -2413,6 +2418,9 @@ class Editor extends Component {
 		for( s in base.sheets )
 			if( StringTools.startsWith(s.name, old + "@") )
 				s.rename(name + "@" + s.name.substr(old.length + 1));
+		var order = cdbTable.sheetsOrder.indexOf(old);
+		if( order >= 0 )
+			cdbTable.sheetsOrder[order] = name;
 		endChanges();
 		DataFiles.save(true,[ sheet.name => old ]);
 		return true;
@@ -2462,6 +2470,18 @@ class Editor extends Component {
 			return null;
 		}
 		ide.saveDatabase();
+		var orderIndex = -1;
+		if( index == 0 ) {
+			orderIndex = 0;
+		} else if( index > 0 ) {
+			var prevSheetName = base.sheets[index-1]?.name;
+			orderIndex = prevSheetName == null ? -1 : cdbTable.sheetsOrder.findIndex((s) -> s == prevSheetName);
+			if( orderIndex >= 0 )
+				orderIndex += 1;
+		}
+		if( orderIndex >= 0 && orderIndex <= cdbTable.sheetsOrder.length ) {
+			cdbTable.sheetsOrder.insert(orderIndex, s.name);
+		}
 		refreshAll();
 		return s;
 	}
@@ -2477,8 +2497,8 @@ class Editor extends Component {
 		if (withMacro) {
 			content = content.concat([
 				{ label : "Add Sheet", click : function() { beginChanges(); var db = createDBSheet(index+1); endChanges(); if( db != null ) onChange(); } },
-				{ label : "Move Left", click : function() { beginChanges(); base.moveSheet(sheet,-1); endChanges(); onChange(); } },
-				{ label : "Move Right", click : function() { beginChanges(); base.moveSheet(sheet,1); endChanges(); onChange(); } },
+				{ label : "Move Left", click : function() { beginChanges(); cdbTable.moveSheetDisplayOrder(sheet,-1); endChanges(); onChange(); } },
+				{ label : "Move Right", click : function() { beginChanges(); cdbTable.moveSheetDisplayOrder(sheet,1); endChanges(); onChange(); } },
 				{ label : "Rename", click : function() {
 					var name = ide.ask("New name", sheet.name);
 					if( name == null || name == "" || name == sheet.name ) return;
