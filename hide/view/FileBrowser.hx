@@ -523,8 +523,8 @@ class FileBrowser extends hide.ui.View<FileBrowserState> {
 			options.push({
 				label: "Collapse All",
 				click: () -> {
-					for (child in item.children)
-						favoritesTree.collapseItem(child);
+					for (child in @:privateAccess favoritesTree.rootData)
+						favoritesTree.collapseItem(child.item);
 				}
 			});
 			options.push({
