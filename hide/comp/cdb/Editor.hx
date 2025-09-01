@@ -318,10 +318,8 @@ class Editor extends Component {
 		if (filters.length == 0 && filterFlags.has(Regular) && filterFlags.has(Warning) && filterFlags.has(Error))
 			return;
 
-		for (s in @:privateAccess table.separators) {
+		for (s in @:privateAccess table.separators)
 			@:privateAccess s.filtered = true;
-			s.refresh(false);
-		}
 
 		// Clean filters
 		var idx = filters.length;
