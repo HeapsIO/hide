@@ -1390,6 +1390,8 @@ class Ide extends hide.tools.IdeData {
 	function browseFiles( callb : String -> Void ) {
 		function browseRec(path) {
 			if( path == ".tmp" ) return;
+			if( path == ".backed" ) return;
+
 			for( p in sys.FileSystem.readDirectory(resourceDir + "/" + path) ) {
 				var p = path == "" ? p : path + "/" + p;
 				if( sys.FileSystem.isDirectory(resourceDir+"/"+p) ) {
