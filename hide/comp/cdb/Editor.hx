@@ -1023,7 +1023,7 @@ class Editor extends Component {
 				}
 				makeParent(tables[i]);
 			}],
-			sheetOrder : cdbTable.sheetsOrder.copy(),
+			sheetOrder : cdbTable?.sheetsOrder.copy(),
 		};
 	}
 
@@ -1079,7 +1079,7 @@ class Editor extends Component {
 		var state = undoState[0];
 		var newSheet = getCurrentSheet();
 		var newSaparatorsState = separatorsState;
-		var newSheetsOrder = cdbTable.sheetsOrder.copy();
+		var newSheetsOrder = cdbTable?.sheetsOrder.copy();
 		currentValue = newValue;
 		save();
 		undo.change(Custom(function(undo) {
@@ -1089,13 +1089,13 @@ class Editor extends Component {
 				currentValue = state.data;
 				currentSheet = state.sheet;
 				separatorsState = state.separatorsState;
-				cdbTable.sheetsOrder = state.sheetOrder;
+				if( cdbTable != null ) cdbTable.sheetsOrder = state.sheetOrder;
 			} else {
 				undoState.unshift(state);
 				currentValue = newValue;
 				currentSheet = newSheet;
 				separatorsState = newSaparatorsState;
-				cdbTable.sheetsOrder = newSheetsOrder;
+				if( cdbTable != null ) cdbTable.sheetsOrder = newSheetsOrder;
 			}
 			api.load(currentValue);
 			DataFiles.save(true); // save reloaded data
