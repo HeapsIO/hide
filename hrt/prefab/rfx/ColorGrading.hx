@@ -114,7 +114,7 @@ class ColorGrading extends RendererFX {
 	override function modulate(t : Float) {
 		var c : ColorGrading = cast super.modulate(t);
 		c.intensity = this.intensity * t;
-		return c.instance;
+		return c;
 	}
 
 	override function transition( r1 : h3d.impl.RendererFX, r2 : h3d.impl.RendererFX ) : h3d.impl.RendererFX.RFXTransition {
