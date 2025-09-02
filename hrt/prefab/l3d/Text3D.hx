@@ -16,6 +16,7 @@ class Text3DPrimitive extends h2d.TileGroup.TileLayerContent {
 			tmp.push(1);
 			tmp.push(t.u);
 			tmp.push(t.v);
+
 			tmp.push(sx + t.width);
 			tmp.push(sy);
 			tmp.push(1);
@@ -24,6 +25,7 @@ class Text3DPrimitive extends h2d.TileGroup.TileLayerContent {
 			tmp.push(1);
 			tmp.push(t.u2);
 			tmp.push(t.v);
+
 			tmp.push(sx);
 			tmp.push(sy + t.height);
 			tmp.push(1);
@@ -32,6 +34,7 @@ class Text3DPrimitive extends h2d.TileGroup.TileLayerContent {
 			tmp.push(1);
 			tmp.push(t.u);
 			tmp.push(t.v2);
+
 			tmp.push(sx + t.width);
 			tmp.push(sy + t.height);
 			tmp.push(1);
@@ -48,12 +51,29 @@ class Text3DPrimitive extends h2d.TileGroup.TileLayerContent {
 			y += t.height;
 			if( x > xMax ) xMax = x;
 			if( y > yMax ) yMax = y;
+
+		}
+	}
+
+	override public function alloc(engine:h3d.Engine) {
+		if( tmp == null ) {
+			clear();
+			indexes = null;
+			return;
+		}
+		if( tmp.length > 0 ) {
+			buffer = tmp.length < useAllocatorLimit
+				? hxd.impl.Allocator.get().ofFloats(tmp, hxd.BufferFormat.POS3D_NORMAL_UV)
+				: h3d.Buffer.ofFloats(tmp, hxd.BufferFormat.POS3D_NORMAL_UV);
+
+			indexes = engine.mem.getQuadIndexes(buffer.vertices);
 		}
 	}
 
 	override public function render( engine : h3d.Engine ) {
 		if( tmp == null || tmp.length == 0) return;
-		super.render(engine);
+		if( buffer == null || buffer.isDisposed() ) alloc(engine);
+		engine.renderIndexed(buffer,indexes, 0, buffer.vertices >> 1);
 	}
 
 	override function getBounds() {
@@ -81,6 +101,8 @@ class SignedDistanceField3D extends hxsl.Shader {
 
 		function fragment() {
 			pixelColor = vec4(color.r, color.g, color.b, smoothstep(alphaCutoff - smoothing, alphaCutoff + smoothing, median(pixelColor.r, pixelColor.g, pixelColor.b)));
+			if (pixelColor.a <= 0.0)
+				discard;
 		}
 	}
 
@@ -180,12 +202,11 @@ class Text3D extends Object3D {
 			return;
 		var mesh : h3d.scene.Mesh = cast local3d;
 		var h2dFont = loadFont();
-		var h2dText = null/*(cast local2d : h2d.Text)*/;
-		h2dText.font = h2dFont;
-		h2dText.letterSpacing = letterSpacing;
-		h2dText.text = text;
-		h2dText.smooth = true;
-        h2dText.textAlign = switch (align) {
+		text2d.font = h2dFont;
+		text2d.letterSpacing = letterSpacing;
+		text2d.text = text;
+		text2d.smooth = true;
+        text2d.textAlign = switch (align) {
 			case 1:
 				h2d.Text.Align.Center;
 			case 2:
@@ -193,15 +214,17 @@ class Text3D extends Object3D {
 			default:
 				h2d.Text.Align.Left;
 		}
-		@:privateAccess h2dText.glyphs.content = (cast mesh.primitive : Text3DPrimitive);
+		@:privateAccess text2d.glyphs.content = (cast mesh.primitive : Text3DPrimitive);
 		@:privateAccess {
-			h2dText.initGlyphs(text);
-			h2dText.glyphs.setDefaultColor(color, 1);
-			mesh.primitive = h2dText.glyphs.content;
+			text2d.initGlyphs(text);
+			text2d.glyphs.setDefaultColor(color, 1);
+			mesh.primitive = text2d.glyphs.content;
 			mesh.material.texture = h2dFont.tile.getTexture();
 			mesh.material.shadows = false;
-			mesh.material.mainPass.setPassName("overlay");
-			mesh.material.mainPass.depth(false, LessEqual);
+			mesh.material.mainPass.setPassName("afterTonemapping");
+
+			//mesh.material.mainPass.setPassName("overlay");
+			//mesh.material.mainPass.depth(false, LessEqual);
 
 			var shader = mesh.material.mainPass.getShader(SignedDistanceField3D);
 			if (shader != null) {
