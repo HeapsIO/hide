@@ -601,6 +601,65 @@ class FileBrowser extends hide.ui.View<FileBrowserState> {
 				}
 			}
 		}
+		favoritesTree.dragAndDropInterface = {
+			onDragStart: function(file: FavoriteEntry, e: hide.tools.DragAndDrop.DragData) : Bool {
+				var selection = favoritesTree.getSelectedItems();
+				if (selection.length <= 0)
+					return false;
+
+				var fileEntries = [];
+				for (s in selection) {
+					if (s.ref != null)
+						fileEntries.push(s.ref);
+				}
+
+				e.data.set("drag/filetree", fileEntries);
+				ide.setData("drag/filetree", cast fileEntries);
+				return true;
+			},
+			getItemDropFlags: function(target: FavoriteEntry, e: hide.tools.DragAndDrop.DragData) : hide.comp.FancyTree.DropFlags {
+				if (target == null)
+					return Reorder;
+
+				var fileEntries : Array<FileEntry> = cast e.data.get("drag/filetree") ?? [];
+				fileEntries = fileEntries.copy();
+				var containsFiles = fileEntries != null && fileEntries.length > 0;
+
+				if (!containsFiles)
+					return hide.comp.FancyTree.DropFlags.ofInt(0);
+
+				// Can't drop a file on itself
+				fileEntries.remove(target.ref);
+
+				if (fileEntries.length == 0)
+					return hide.comp.FancyTree.DropFlags.ofInt(0);
+
+				if (target.ref.kind == Dir)
+					return (Reorder:hide.comp.FancyTree.DropFlags) | Reparent;
+
+				return Reorder;
+			},
+			onDrop: function(target: FavoriteEntry, operation: hide.comp.FancyTree.DropOperation, e: hide.tools.DragAndDrop.DragData) : Bool {
+				if (target.ref.kind != Dir)
+					target = target.parent;
+
+				var fileEntries : Array<FileEntry> = cast e.data.get("drag/filetree") ?? [];
+				fileEntries = fileEntries.copy();
+				fileEntries.remove(target.ref);
+
+				var files = [ for (f in fileEntries) f.path ];
+				if (files.length == 0)
+					return false;
+
+				if(!ide.confirm('Really move files :\n${files.join("\n")}\nto target folder :\n${target.ref.getRelPath()}\n?\n(This could take a long time)')) {
+					return true;
+				}
+
+				moveFiles(target.ref.getRelPath(), files);
+
+				return true;
+			}
+		}
 
 		favoritesTree.rebuildTree();
 
