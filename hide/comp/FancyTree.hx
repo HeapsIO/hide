@@ -663,7 +663,7 @@ class FancyTree<TreeItem> extends hide.comp.Component {
 			var currentIndex = flatData.indexOf(currentItem);
 
 			if (currentIndex >= 0) {
-				var currentHeight = currentIndex * itemHeightPx - offsetTop;
+				var currentHeight = currentIndex * itemHeightPx + offsetTop;
 				if (currentHeight < scroll.scrollTop) {
 					scroll.scrollTo(scroll.scrollLeft, currentHeight);
 				}

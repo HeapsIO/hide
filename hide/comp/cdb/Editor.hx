@@ -372,7 +372,6 @@ class Editor extends Component {
 
 		searchBox.find("#results").text(results > 0 ? '$results Results' : 'No results');
 
-		// if (updateCursor)
 		cursor.update();
 	}
 
