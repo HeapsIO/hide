@@ -138,18 +138,16 @@ class FancyTree<TreeItem> extends hide.comp.Component {
 
 		loadState();
 
-		if (allowSearch) {
-			searchBarClosable = new FancyClosable(null, element.find("fancy-closable"));
+		searchBarClosable = new FancyClosable(null, element.find("fancy-closable"));
 
-			searchBar = new FancySearch(null, element.find("fancy-search"));
-			searchBar.onSearch = (search, _) -> {
-				currentSearch = search.toLowerCase();
-				queueRefresh(Search);
-			}
+		searchBar = new FancySearch(null, element.find("fancy-search"));
+		searchBar.onSearch = (search, _) -> {
+			currentSearch = search.toLowerCase();
+			queueRefresh(Search);
+		}
 
-			searchBarClosable.onClose = () -> {
-				onSearchClose();
-			}
+		searchBarClosable.onClose = () -> {
+			onSearchClose();
 		}
 
 		scroll = params?.customScroll == null ? el.find("fancy-scroll").get(0) : params.customScroll;
