@@ -111,7 +111,7 @@ class Terrain extends hxsl.Shader {
 			var viewNS = normalize(camera.position - transformedPosition) * TBN;
 			viewNS.xy /= viewNS.z;
 			viewNS.x *= -1;
-			var numLayers = mix(float(maxStep), float(minStep), viewNS.dot(terrainNormal));
+			var numLayers = mix(float(maxStep), float(minStep), saturate(viewNS.dot(terrainNormal)));
 			var layerDepth = 1.0 / numLayers;
 			var curLayerDepth = 0.;
 			var delta = (viewNS.xy * parallaxAmount / primSize) / numLayers;
