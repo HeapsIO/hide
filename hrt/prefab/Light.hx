@@ -237,7 +237,7 @@ class Light extends Object3D {
 						cs.transitionFraction = transitionFraction;
 						cs.debugShader = debugShader;
 						cs.blur.radius = 0.0;
-						cs.mode = Dynamic;
+						cs.mode = shadows.mode == None ? None : Dynamic;
 						params.resize(cascadeNbr);
 						for ( i in 0...params.length )
 							if ( params[i] == null )
