@@ -179,27 +179,32 @@ class Formulas {
 		if( s.props.hasIndex )
 			m.index = s.lines.indexOf(o);
 		if( s.props.hasGroup ) {
-			var gid = -1;
 			var sindex = 0;
 			var sheet = s;
+			var last = "None";
 			// skip separators if at head
 			while( true ) {
 				var s = sheet.separators[sindex];
 				if( s == null || s.index != 0 ) break;
 				sindex++;
-				if( s.title != null ) gid++;
+				if( s.title != null )
+					last = s.title;
 			}
-			if( gid < 0 ) gid++; // None insert
 			var index = s.lines.indexOf(o);
 			for( i in sindex...sheet.separators.length ) {
 				var s = sheet.separators[i];
 				if( s.index > index )
 					break;
-				if( s.title != null ) gid++;
+				if( s.title != null )
+					last = s.title;
 			}
-			m.group = gid;
+			m.group = toIdent(last);
 		}
 		return m;
+	}
+
+	public static function toIdent( name : String ) {
+		return ~/[^A-Za-z0-9_]/g.replace(name,"_");
 	}
 
 	function load() {
@@ -209,16 +214,25 @@ class Formulas {
 		var expr = try parser.parseString(code) catch( e : Dynamic ) return;
 
 		var sheetNames = new Map();
-		for( s in editor.base.sheets )
-			sheetNames.set(getTypeName(s), s);
+		var enumNames = new Map();
+		for( s in editor.base.sheets ) {
+			var name = getTypeName(s);
+			sheetNames.set(name, s);
+			if( s.props.hasGroup )
+				enumNames.set(name+"_group", true);
+			for( c in s.columns ) {
+				switch( c.type ) {
+				case TEnum(_):
+					enumNames.set(name+"_"+c.name, true);
+				default:
+				}
+			}
+		}
 
 		var changed = false;
 		var refs : Array<SheetAccess> = [];
 		function replaceRec( e : hscript.Expr ) {
 			switch( e.e ) {
-			case EField({ e : EIdent(s) }, name) if ( s == "Sheets" ):
-				e.e = EIdent(name);
-				changed = true;
 			case EField({ e : EIdent(s) }, name) if( sheetNames.exists(s) ):
 				if( name == "all" || name == "resolve" ) {
 					var found = false;
@@ -229,6 +243,8 @@ class Formulas {
 						refs.push(new SheetAccess(this, s));
 				} else if( sheetNames.get(s).idCol != null )
 					e.e = EConst(CString(name)); // replace for faster eval
+			case EField({ e : EIdent(s) }, name) if( enumNames.exists(s) ):
+				e.e = EConst(CString(name)); // replace for faster eval
 			default:
 				hscript.Tools.iter(e, replaceRec);
 			}
@@ -246,6 +262,8 @@ class Formulas {
 		var o : Dynamic = { Math : Math, Ok : ValidationResult.Ok, Error : ValidationResult.Error, Warning : ValidationResult.Warning };
 		for( r in refs )
 			Reflect.setField(o,r.name, r);
+
+		hscript.JsInterp.defineArrayExtensions();
 		var interp = new hscript.JsInterp();
 		interp.ctx = o;
 		interp.properties = ["all" => true];
@@ -433,8 +451,8 @@ class FormulasView extends hide.view.Script {
 		}
 		var carray = switch( _tarray ) { case TInst(c,_): c; default: throw "assert"; }
 		function tarray(t) return TInst(carray,[t]);
+		function mkType(name,t) return TType({name:name,params:[],t:t},[]);
 
-		var sfields : Array<{name : String, t : TType, opt : Bool}> = [];
 		var cdefs = new Map();
 		for( s in ide.database.sheets ) {
 			var cdef : CClass = {
@@ -449,20 +467,33 @@ class FormulasView extends hide.view.Script {
 					name : "all",
 					t : tarray(TInst(cdef,[])),
 					opt : false,
-				},
-				{
+				}
+			];
+			if( s.idCol != null ) {
+				var tkind = skind.get(s.name);
+				afields.push({
 					name : "resolve",
 					t : TFun([{t:tstring,name:"id",opt:false}],TInst(cdef,[])),
 					opt : false,
+				});
+				for( v in s.getLines() ) {
+					var id = Reflect.field(v, s.idCol.name);
+					if( id != null && id != "" )
+						afields.push({ name : id, t : tkind, opt : false });
 				}
-			];
-
-			sfields.push({name: cdef.name, t : TAnon(afields), opt : false});
-			check.checker.setGlobal(cdef.name, TAnon(afields));
+			}
+			var t = mkType("#"+cdef.name,TAnon(afields));
+			check.checker.setGlobal(cdef.name, t);
 		}
 
-		check.checker.setGlobal("Sheets", TAnon(sfields));
-		var tenum = TInst(check.checker.types.defineClass("EnumValue"),[]);
+		function defineEnum(name,values:Array<String>) {
+			values = [for( v in values ) Formulas.toIdent(v)];
+			var t = TEnum({ name : name, params : [], constructors : [for( v in values ) {name:v}] },[]);
+			var tvalues = [for( v in values ) {name:v,t:t,opt:false}];
+			check.checker.setGlobal(name,mkType("#"+name,TAnon(tvalues)));
+			return t;
+		}
+
 		for( s in ide.database.sheets ) {
 			var cdef = cdefs.get(s.name);
 			inline function addField(name,t) {
@@ -473,9 +504,7 @@ class FormulasView extends hide.view.Script {
 				case TId: skind.get(s.name);
 				case TInt, TColor: TInt;
 				case TEnum(values):
-					for( v in values )
-						check.checker.setGlobal(v,tenum);
-					tenum;
+					defineEnum(cdef.name+"_"+c.name, values);
 				case TFlags(flags):
 					TAnon([for(f in flags) { name : f, t : TBool, opt : true }]);
 				case TFloat: TFloat;
@@ -492,8 +521,17 @@ class FormulasView extends hide.view.Script {
 				if( t == null ) continue;
 				addField(c.name,t);
 			}
-			if( s.props.hasGroup )
-				addField("group",TInt);
+			if( s.props.hasGroup ) {
+				var groups = [];
+				for( s in s.separators ) {
+					if( s.level == null && s.title != null ) {
+						if( s.index != 0 && groups.length == 0 ) groups.push("None"); 
+						groups.push(s.title);
+					}
+				}
+				var t = defineEnum(cdef.name+"_group",groups);
+				addField("group",t);
+			}
 			if( s.props.hasIndex )
 				addField("index",TInt);
 			check.checker.types.defineClass(cdef.name, cdef);
