@@ -462,6 +462,8 @@ class FormulasView extends hide.view.Script {
 				params : [],
 			};
 			cdefs.set(s.name, cdef);
+			if( s.getParent() != null )
+				continue;
 			var afields = [
 				{
 					name : "all",
