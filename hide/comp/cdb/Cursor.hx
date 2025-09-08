@@ -379,7 +379,13 @@ class Cursor {
 	public function getLinesFromSelection(sel : Selection) {
 		if (sel == null || sel.x1 >= 0)
 			return null;
-		return [for( iy in sel.y1...(sel.y2 + 1) ) table.lines[iy]];
+		var array : Array<Line> = [];
+		for( iy in sel.y1...(sel.y2 + 1) ) {
+			var line = table.lines[iy];
+			if (!line.element.hasClass("filtered"))
+				array.push(line);
+		}
+		return array;
 	}
 
 	public function getCellsFromSelection(sel : Selection) {
@@ -389,15 +395,21 @@ class Cursor {
 		var cells = [];
 		if (sel.x1 == -1) {
 			for (y in sel.y1...(sel.y2 + 1)) {
-				for (x in 0...(table.lines[y].cells.length)) {
-					cells.push(table.lines[y].cells[x]);
+				var line = table.lines[y];
+				if (line.element.hasClass("filtered"))
+					continue;
+				for (x in 0...(line.cells.length)) {
+					cells.push(line.cells[x]);
 				}
 			}
 		}
 		else {
 			for (y in sel.y1...(sel.y2 + 1)) {
+				var line = table.lines[y];
+				if (line.element.hasClass("filtered"))
+					continue;
 				for (x in sel.x1...(sel.x2 + 1)) {
-					cells.push(table.lines[y].cells[x]);
+					cells.push(line.cells[x]);
 				}
 			}
 		}
