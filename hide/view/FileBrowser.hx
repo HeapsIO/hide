@@ -665,7 +665,7 @@ class FileBrowser extends hide.ui.View<FileBrowserState> {
 
 		if (this.favorites.length == 0)
 			this.favoritesTree.element.parent().hide();
-			
+
 		// Ressources tree
 		fancyTree = new hide.comp.FancyTree<FileEntry>(browserLayout.find(".left").find(".bot"), { saveDisplayKey: "fileBrowserTree_Main", search: true, customScroll: element.find("fancy-scroll").get(0) } );
 		fancyTree.getChildren = (file: FileEntry) -> {
@@ -965,27 +965,13 @@ class FileBrowser extends hide.ui.View<FileBrowserState> {
 
 	static function execMoveFiles(operations: Array<{from: String, to: String}>, isUndo: Bool) : Void {
 		if (!isUndo) {
-			for (file in operations) {
-				// File could have been removed by the system in between our undo/redo operations
-				if (sys.FileSystem.exists(hide.Ide.inst.getPath(file.from))) {
-					try {
-						FileManager.doRename(file.from, "/" + file.to);
-					} catch (e) {
-						hide.Ide.inst.quickError('move file ${file.from} -> ${file.to} failed : $e');
-					}
-				}
-			}
+			FileManager.doRename(operations);
 		} else {
-			for (file in operations) {
-				// File could have been removed by the system in between our undo/redo operations
-				if (sys.FileSystem.exists(hide.Ide.inst.getPath(file.to))) {
-					try {
-						FileManager.doRename(file.to, "/" + file.from);
-					} catch (e) {
-						hide.Ide.inst.quickError('move file ${file.from} -> ${file.to} failed : $e');
-					}
-				}
+			var rev = [];
+			for (op in operations) {
+				rev.push({from: op.to, to: op.from});
 			}
+			FileManager.doRename(rev);
 		}
 	}
 
@@ -1250,12 +1236,11 @@ class FileBrowser extends hide.ui.View<FileBrowserState> {
 
 			options.push({ label: "Replace Refs With", click : function() {
 				ide.chooseFile(["*"], (newPath: String) -> {
-					var selection = [for (file in getItemAndSelection(item, isGallery)) file.getRelPath()];
-					if(ide.confirm('Replace all refs of $selection with $newPath ? This action can not be undone')) {
-						for (oldPath in selection) {
-							FileManager.replacePathInFiles(oldPath, newPath, false);
-						}
-						ide.message("Done");
+					var files = [for (file in getItemAndSelection(item, isGallery)) file.getRelPath()];
+					if(ide.confirm('Replace all refs of $files with $newPath ? This action can not be undone')) {
+						var selection = [for (file in files) {from: file, to: newPath}];
+						FileManager.replacePathInFiles(selection);
+						ide.message("All references replaced");
 					}
 				});
 			}});

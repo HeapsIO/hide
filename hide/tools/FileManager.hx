@@ -600,12 +600,12 @@ class FileManager {
 		queueProcessPendingMessages();
 	}
 
-	public static function doRename(path:String, name:String) {
-		var isDir = sys.FileSystem.isDirectory(hide.Ide.inst.getPath(path));
-		if( isDir ) hide.Ide.inst.fileWatcher.pause();
-		var ret = onRenameRec(path, name);
-		if( isDir ) hide.Ide.inst.fileWatcher.resume();
-		return ret;
+	public static function doRename(operations: Array<{from: String, to: String}>) {
+		for (op in operations) {
+			onRenameRec(op.from, "/" + op.to);
+		}
+
+		replacePathInFiles(operations);
 	}
 
 	public static function onRenameRec(path:String, name:String) {
@@ -621,6 +621,9 @@ class FileManager {
 		var newPath = name.charAt(0) == "/" ? name.substr(1) : parts.join("/");
 
 		if( newPath == path )
+			return false;
+
+		if (!sys.FileSystem.exists(ide.getPath(path)))
 			return false;
 
 		if( sys.FileSystem.exists(ide.getPath(newPath)) ) {
@@ -678,8 +681,6 @@ class FileManager {
 
 		if( !wasRenamed )
 			sys.FileSystem.rename(ide.getPath(path), ide.getPath(newPath));
-
-		replacePathInFiles(path, newPath, isDir);
 
 		var dataDir = new haxe.io.Path(path);
 		if( dataDir.ext != "dat" ) {
@@ -782,20 +783,23 @@ class FileManager {
 		return true;
 	}
 
-	public static function replacePathInFiles(oldPath: String, newPath: String, isDir: Bool = false) {
+	public static function replacePathInFiles(operations: Array<{from: String, to: String}>) {
 		function filter(ctx: hide.Ide.FilterPathContext) {
 			var p = ctx.valueCurrent;
 			if( p == null )
 				return;
-			if( p == oldPath ) {
-				ctx.change(newPath);
-				return;
-			}
-			if( p == "/"+oldPath ) {
-				ctx.change(newPath);
-				return;
-			}
-			if( isDir ) {
+			for (op in operations) {
+				var oldPath = op.from;
+				var newPath = op.to;
+
+				if( p == oldPath ) {
+					ctx.change(newPath);
+					return;
+				}
+				if( p == "/"+oldPath ) {
+					ctx.change(newPath);
+					return;
+				}
 				if( StringTools.startsWith(p,oldPath+"/") ) {
 					ctx.change(newPath + p.substr(oldPath.length));
 					return;
