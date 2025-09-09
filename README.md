@@ -22,7 +22,8 @@ If you don't want to build Hide from source, you can download a nightly build fr
 #### 1. Install Prerequisites
 - Install [Haxe](https://haxe.org/) using appropriate installer from https://haxe.org/download/
 - Install these libraries:
-```
+```shell
+haxelib git format https://github.com/HaxeFoundation/format
 haxelib git heaps https://github.com/HeapsIO/heaps
 haxelib git castle https://github.com/ncannasse/castle
 haxelib git hxbit https://github.com/ncannasse/hxbit
@@ -30,6 +31,7 @@ haxelib git hscript https://github.com/HaxeFoundation/hscript
 haxelib git hxnodejs https://github.com/HaxeFoundation/hxnodejs
 haxelib git domkit https://github.com/HeapsIO/domkit
 haxelib git hx3compat https://github.com/HaxeFoundation/hx3compat
+haxelib git hashlink https://github.com/HaxeFoundation/hashlink master other/haxelib/
 ```
 
 #### 2. Build Heaps IDE
