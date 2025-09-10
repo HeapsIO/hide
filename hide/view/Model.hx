@@ -2316,7 +2316,8 @@ class Model extends FileView {
 
 		obj.playAnimation(anim);
 		var skin = Std.downcast(obj, h3d.scene.Skin);
-		@:privateAccess skin.prevAbsPosFrame = -1;
+		if (skin != null)
+			@:privateAccess skin.prevAbsPosFrame = -1;
 		buildTimeline();
 		buildEventPanel();
 		modified = false;
