@@ -44,7 +44,7 @@ class BaseSimulation extends ComputeUtils {
 			lifeTime = particleBuffer[computeVar.globalInvocation.x].lifeTime;
 			prevModelView = batchBuffer[computeVar.globalInvocation.x].modelView;
 			particleRandom = particleBuffer[computeVar.globalInvocation.x].random;
-			particleColor = int2rgba(floatBitsToInt(particleBuffer[computeVar.globalInvocation.x].color));
+			particleColor = unpackIntColor(floatBitsToInt(particleBuffer[computeVar.globalInvocation.x].color));
 			relativeTransform = scaleMatrix(((INFINITE || life < lifeTime) ? 1.0 : 0.0) * (computeVar.globalInvocation.x > curCount ? 0.0 : 1.0) * vec3(particleRandom * (maxSize - minSize) + minSize));
 		}
 
@@ -62,7 +62,7 @@ class BaseSimulation extends ComputeUtils {
 			var idx = computeVar.globalInvocation.x;
 			particleBuffer[idx].life = life + dt;
 			particleBuffer[idx].speed = speed;
-			particleBuffer[idx].color = intBitsToFloat(rgba2int(particleColor));
+			particleBuffer[idx].color = intBitsToFloat(packIntColor(particleColor));
 			batchBuffer[idx].modelView = modelView;
 		}
 	}

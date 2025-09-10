@@ -29,7 +29,7 @@ class ParticleShader extends hxsl.Shader {
 				particleLife = particleBuffer[instanceID].life;
 				particleLifeTime = particleBuffer[instanceID].lifeTime;
 				particleRandom = particleBuffer[instanceID].random;
-				particleColor = int2rgba(floatBitsToInt(particleBuffer[instanceID].color));
+				particleColor = unpackIntColor(floatBitsToInt(particleBuffer[instanceID].color));
 			}
 			transformedPosition = transformedPosition * absPos.mat3x4();
 		}

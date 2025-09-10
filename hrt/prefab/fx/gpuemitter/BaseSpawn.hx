@@ -56,7 +56,7 @@ class BaseSpawn extends ComputeUtils {
 					particleBuffer[idx].life = 0.0;
 					// Keep in memory duration of particle to normalize curve update.
 					particleBuffer[idx].lifeTime = life;
-					particleBuffer[idx].color = intBitsToFloat(rgba2int(particleColor));
+					particleBuffer[idx].color = intBitsToFloat(packIntColor(particleColor));
 				}
 			}
 		}

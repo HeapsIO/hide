@@ -12,8 +12,8 @@ class RandomColorSpawnShader extends ComputeUtils {
 		var particleColor : Vec4;
 		function main() {
 			var idx = computeVar.globalInvocation.x;
-			var fromColor = int2rgba(color1);
-			var toColor = int2rgba(color2);
+			var fromColor = unpackIntColor(color1);
+			var toColor = unpackIntColor(color2);
 			particleColor = mix(fromColor, toColor, particleRandom);
 		}
 	}
