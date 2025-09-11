@@ -141,13 +141,28 @@ class ModelLibrary extends Prefab {
 	function emitInstance(bakedMaterial : BakedMaterialData, primitive : h3d.prim.HMDModel, batch : h3d.scene.MeshBatch, ?absPos : h3d.Matrix) {
 		cache.shader.uvTransform.set(bakedMaterial.uvX, bakedMaterial.uvY, bakedMaterial.uvSX, bakedMaterial.uvSY);
 		cache.shader.libraryParams.set(bakedMaterial.texId, 1.0 / atlasResolution / bakedMaterial.uvSX, 0.0, 0.0);
-		var primitiveSubPart = batch.primitiveSubParts[0];
-		primitiveSubPart.indexCount = bakedMaterial.indexCount;
-		primitiveSubPart.indexStart = bakedMaterial.indexStart;
-		primitiveSubPart.lodIndexCount = bakedMaterial.lodIndexCount;
-		primitiveSubPart.lodIndexStart = bakedMaterial.lodIndexStart;
-		primitiveSubPart.lodConfig = primitive.getLodConfig();
-		primitiveSubPart.bounds = cache.geomBounds[bakedMaterial.geomId];
+		var curSubMesh = -1;
+		for ( subMeshIndex => subMesh in batch.primitiveSubMeshes ) {
+			var subPart = subMesh.subParts[0];
+			if ( subPart.indexStart == bakedMaterial.indexStart )
+				curSubMesh = subMeshIndex;
+		}
+		if ( curSubMesh == -1 ) {
+			var subPart = new h3d.scene.MeshBatch.SubPart();
+			subPart.indexStart = bakedMaterial.indexStart;
+			subPart.indexCount = bakedMaterial.indexCount;
+			subPart.lodIndexStart = bakedMaterial.lodIndexStart;
+			subPart.lodIndexCount = bakedMaterial.lodIndexCount;
+			subPart.matIndex = 0;
+			var subMesh = new h3d.scene.MeshBatch.SubMesh();
+			subMesh.lodCount = bakedMaterial.lodIndexCount == null ? 1 : bakedMaterial.lodIndexCount.length + 1;
+			subMesh.lodConfig = primitive.getLodConfig();
+			subMesh.subParts = [subPart];
+			subMesh.bounds = cache.geomBounds[bakedMaterial.geomId];
+			batch.primitiveSubMeshes.push(subMesh);
+			curSubMesh = batch.primitiveSubMeshes.length - 1;
+		}
+		batch.curSubMesh = curSubMesh;
 		if ( absPos != null )
 			batch.worldPosition = absPos;
 		batch.emitInstance();

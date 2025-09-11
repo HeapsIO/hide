@@ -85,7 +85,7 @@ class Batcher extends h3d.scene.Object {
 				batch.material.mainPass.addShader(library.killAlpha);
 		}
 
-		batch.primitiveSubParts = [new h3d.scene.MeshBatch.MeshBatchPart()];
+		batch.primitiveSubMeshes = [];
 	}
 
 	override function onRemove() {

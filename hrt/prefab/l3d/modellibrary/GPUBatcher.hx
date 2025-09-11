@@ -42,16 +42,18 @@ class GPUBatcher extends Batcher {
 		var batch : h3d.scene.MeshBatch;
 		if(currentBatchCount > GPUMeshBatchThreshold) {
 			var gpuBatch = new h3d.scene.GPUMeshBatch(getPrimitive(), null, this);
+			gpuBatch.primitiveSubMeshes = [];
 			gpuBatch.enableGpuCulling();
 			gpuBatch.enableGpuLod();
-			gpuBatch.calcBounds = true;
 			batch = gpuBatch;
-		} else {
+		}
+		else {
 			batch = new h3d.scene.MeshBatch(getPrimitive(), null, this);
 			batch.enableStorageBuffer();
 		}
 
 		batch.forceGpuUpdate();
+		batch.calcBounds = false;
 
 		setupMeshBatch(batch, props, material);
 
