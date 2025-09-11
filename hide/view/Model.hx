@@ -264,6 +264,7 @@ class Model extends FileView {
 
 		if(!modified) return;
 
+		var needRefresh = false;
 		// Save render props
 		if (Ide.inst.currentConfig.get("sceneeditor.renderprops.edit", false) && sceneEditor.renderPropsRoot != null)
 			sceneEditor.renderPropsRoot.save();
@@ -326,7 +327,7 @@ class Model extends FileView {
 				var path = state.path;
 				lfs.removePathFromCache(path);
 				@:privateAccess hxd.res.Loader.currentInstance.cache.remove(path);
-				onRefresh();
+				needRefresh = true;
 			}
 		}
 
@@ -348,6 +349,7 @@ class Model extends FileView {
 		}
 
 		super.save();
+		if(needRefresh) onRefresh();
 	}
 
 	override function onFileChanged( wasDeleted : Bool, rebuildView = true ) {
