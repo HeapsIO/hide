@@ -1105,6 +1105,8 @@ class Cell {
 			elementHtml.innerHTML = null;
 
 			var modal = new hide.comp.Popup(new Element(elementHtml));
+			modal.bindCloseOnEscape();
+
 			var div = modal.element;
 			div.addClass("flagValues");
 			div.click(function(e) e.stopPropagation()).dblclick(function(e) e.stopPropagation());
@@ -1316,6 +1318,7 @@ class Cell {
 			var e = new Element(elementHtml);
 			e.addClass("edit");
 			var curveEditor = new hide.comp.CurveEditor.CurvePopup(e, editor.undo);
+			curveEditor.bindCloseOnEscape();
 
 			var prefabCurve = new hrt.prefab.Curve(null, null);
 			var linear : Float = cast hrt.prefab.Curve.CurveKeyMode.Linear;
