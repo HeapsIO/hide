@@ -1132,7 +1132,7 @@ class Cell {
 			}
 			modal.onClose = () -> {
 				setValue(val);
-				closeEdit();
+				closeEdit(false);
 			};
 			@:privateAccess modal.reflow();
 		case TTilePos:
@@ -1459,7 +1459,7 @@ class Cell {
 		editor.changeObject(line,column,value);
 	}
 
-	public function closeEdit() {
+	public function closeEdit(refreshFocus: Bool = true) {
 		inEdit = false;
 		var input = new Element(elementHtml).find("div[contenteditable]").get(0);
 		var text : String = input?.innerText;
@@ -1469,7 +1469,9 @@ class Cell {
 		}
 
 		refresh();
-		focus();
+		if (refreshFocus) {
+			focus();
+		}
 	}
 
 	public function editCustomType(typeName : String, ctValue : Dynamic, col : cdb.Data.Column, parentEl : Element, rightAnchor: Float, topAnchor : Float, depth : Int = 0) {
