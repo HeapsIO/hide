@@ -34,7 +34,7 @@ class Sharpen extends RendererFX {
 			r.mark("Sharpen");
 			var sharpen = r.allocTarget("sharpen", true, 1.0, RGBA);
 			var ctx = r.ctx;
-			ctx.engine.pushTarget(sharpen);
+			ctx.engine.pushTarget(sharpen, NotBound);
 			sharpenPass.shader.source = ctx.getGlobal("ldrMap");
 			sharpenPass.shader.intensity = intensity;
 			sharpenPass.shader.resolution.set(ctx.engine.width, ctx.engine.height);
@@ -53,7 +53,9 @@ class Sharpen extends RendererFX {
 					<dt>Intensity</dt><dd><input type="range" min="0" max="1" field="intensity"/></dd>
 				</dl>
 			</div>
-		'),this);
+		'), this, function(pname) {
+			ctx.onChange(this,pname);
+		});
 	}
 	#end
 
