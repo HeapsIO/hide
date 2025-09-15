@@ -9,6 +9,7 @@ class Popup extends Component {
 	var timer : haxe.Timer;
 	var isSearchable:Bool;
 	public var anchor : Element;
+	var globalKeyListener : Dynamic = null;
 
 	function onMouseDown(e : js.html.MouseEvent) {
 		originalTarget = e.target;
@@ -25,7 +26,7 @@ class Popup extends Component {
 	var originalTarget : js.html.EventTarget;
 
 	public function new(?parent:Element, isSearchable = false) {
-        super(parent,new Element("<div>"));
+      super(parent,new Element("<div>"));
 
 		element.attr("popover", "").addClass("popup");
 
@@ -43,9 +44,6 @@ class Popup extends Component {
 		var body = parent.closest(".lm_content");
 		if (body.length == 0) body = new Element("body");
 
-		// Browser.document.addEventListener("mousedown",onMouseDown);
-		// Browser.document.addEventListener("mouseup", onMouseUp);
-
 		timer = new haxe.Timer(500);
 		timer.run = function() {
 			if( parent.closest("body").length == 0 ) {
@@ -56,6 +54,24 @@ class Popup extends Component {
 		untyped element.get(0).showPopover();
 		element.get(0).addEventListener("toggle", onToggle);
         reflow();
+	}
+
+	public function bindCloseOnEscape() {
+		globalKeyListener = (e: js.html.KeyboardEvent) -> {
+			// in case somehow our event wasn't properly cleaned up
+			if (element.closest("body") == null) {
+				cleanupGlobalKeyListener();
+				return;
+			}
+
+			if (e.key == "Escape") {
+				close();
+				e.preventDefault();
+				e.stopPropagation();
+			}
+		};
+
+		Browser.document.addEventListener("keydown", globalKeyListener, true);
 	}
 
 	public function open() {
@@ -79,7 +95,15 @@ class Popup extends Component {
 			}
 			element.hide();
 			onClose();
+			if (globalKeyListener != null) {
+				cleanupGlobalKeyListener();
+			}
 		}
+	}
+
+	function cleanupGlobalKeyListener() {
+		Browser.document.removeEventListener("keydown", globalKeyListener, true);
+		globalKeyListener = null;
 	}
 
 	function fixInputSelect() {
