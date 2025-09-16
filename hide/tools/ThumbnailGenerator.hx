@@ -195,7 +195,7 @@ class ThumbnailGenerator {
 		toHash += getRenderProps(filePath, config);
 		toHash += sys.FileSystem.stat(filePath).mtime.getTime();
 		if (filePath.split(".").pop().toLowerCase() == "fbx") {
-			var matInfo =  getMaterialInfo(filePath);
+			var matInfo = try getMaterialInfo(filePath) catch(e) "__error__";
 			toHash += matInfo;
 		}
 		return haxe.crypto.Md5.encode(toHash);
