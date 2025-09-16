@@ -5525,3 +5525,6 @@ fancy-gallery-item.details .icon-placement {
   margin-left: 0.2em;
   font-size: 0.8em;
 }
+.model-view-mat-not-set {
+  color: #ee6666 !important;
+}

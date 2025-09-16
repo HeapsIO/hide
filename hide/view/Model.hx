@@ -1054,6 +1054,7 @@ class Model extends FileView {
 			}
 			h3d.mat.MaterialSetup.current.saveMaterialProps(m, defaultProps);
 			Ide.inst.quickMessage('Properties for mat (${m.name}) had been saved');
+			tree.queueRefresh(RegenHeader);
 		};
 		saveButton.click(saveCallback);
 		properties.add(matLibrary, m);
@@ -1699,6 +1700,16 @@ class Model extends FileView {
 		}
 		tree.rebuildTree();
 		tree.openItem(obj, true);
+
+		tree.applyStyle = (item: Dynamic, elt : js.html.Element) -> {
+			if (hide.Ide.inst.currentConfig.get("highlightUnsetMats") ?? false) {
+				var mat = Std.downcast(item, h3d.mat.Material);
+				if (mat != null) {
+					var props : Dynamic =  h3d.mat.MaterialSetup.current.loadMaterialProps(mat);
+					elt.classList.toggle("model-view-mat-not-set", props == null || props.__ref == null);
+				}
+			}
+		}
 
 		tools.clear();
 		var anims = scene.listAnims(getPath());
