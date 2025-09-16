@@ -3667,6 +3667,12 @@ div.gradient-box {
 .project-settings {
   width: 100%;
   height: 100%;
+  display: flex;
+  flex-direction: column;
+}
+.project-settings,
+.project-settings * {
+  box-sizing: border-box;
 }
 .project-settings h1 {
   margin: 5px 5px 5px 10px;
@@ -3680,11 +3686,13 @@ div.gradient-box {
   align-self: center;
 }
 .project-settings .body {
-  width: 100%;
-  height: 100%;
+  min-height: 0;
+  flex-grow: 1;
   display: flex;
 }
 .project-settings .body .left-panel {
+  display: flex;
+  flex-direction: column;
   flex: 0.5;
   padding: 10px;
 }
@@ -3701,11 +3709,20 @@ div.gradient-box {
 .project-settings .body .right-panel {
   flex: 1;
   padding: 10px;
+  min-height: 0;
+  overflow-y: auto;
+  scrollbar-gutter: stable;
+}
+.project-settings .body .array {
+  min-height: 0;
+  display: flex;
+  flex-direction: column;
 }
 .project-settings .body .array .rows {
   min-height: 20px;
   max-height: 750px;
-  overflow-y: scroll;
+  overflow-y: auto;
+  scrollbar-gutter: stable;
   width: 100%;
   background: #3f3f3f;
   border-radius: 2px 2px 0px 2px;
@@ -3737,7 +3754,7 @@ div.gradient-box {
   display: none;
 }
 .project-settings .body .array .buttons {
-  float: right;
+  align-self: flex-end;
   padding: 5px 10px 5px 10px;
   border-radius: 0px 0px 2px 2px;
   background: #3f3f3f;
