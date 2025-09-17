@@ -128,7 +128,7 @@
 
 		width : 100%;
 		table-layout:fixed;
-		border-collapse : collapse;
+		//border-collapse : collapse;
 		border-spacing : 0;
 		background-color: #222;
 		position: relative; // so that error message follow along with scrolling
@@ -144,6 +144,7 @@
 			cursor : pointer;
 			background-color: #333;
 			border-left: none;
+			border-bottom : 1px solid #444;
 		}
 
 		tr.head td.start {
@@ -151,10 +152,11 @@
 		}
 
 		tr.separator {
+			--level: 0;
 			height : 10px;
 			td {
 				position: sticky;
-				top: 19px;
+				top: 21px;
 				z-index: 2;
 				border-left: none;
 				padding-top: 6px;
@@ -170,41 +172,12 @@
 					}
 				}
 			}
-			&.seplevel-1 td {
+
+			& td {
 				.toggle {
-					padding-left : 25px;
+					padding-left : calc(25px + var(--level) * 20px);
 				}
-				background-color : #3d3d3d;
-			}
-			&.seplevel-2 td {
-				.toggle {
-					padding-left : 40px;
-				}
-				background-color : #383838;
-			}
-			&.seplevel-3 td {
-				.toggle {
-					padding-left : 50px;
-				}
-				background-color : #343434;
-			}
-			&.seplevel-4 td {
-				.toggle {
-					padding-left : 60px;
-				}
-				background-color : #303030;
-			}
-			&.seplevel-5 td {
-				.toggle {
-					padding-left : 70px;
-				}
-				background-color : #303030;
-			}
-			&.seplevel-6 td {
-				.toggle {
-					padding-left : 80px;
-				}
-				background-color : #303030;
+				background-color: mix(#3d3d3d, #303030, calc(var(--level) / 6));
 			}
 		}
 
@@ -264,18 +237,28 @@
 			background-color : #f8f8f8;
 		}
 
+		thead.head {
+			background-color : #2A2A2A;
+			z-index: 9;
+		}
+
 		&:not(.cdb-sub-sheet) > thead.head {
 			position: sticky;
 			top: 0;
+		}
+
+		.cdb-sub-sheet > thead.head {
+			top: 21px;
+			z-index: 10;
+
 		}
 
 		tr.head, th {
 			font-weight: bold;
 			text-align: center;
 			padding: 1px 10px 4px 10px;
-			box-shadow: inset 0px -1px 1px #666;
-			border-left: 1px solid #444;
-			background-color : #222;
+			border-left: 1px solid #666;
+			border-bottom: 1px solid #666;
 			color : #ddd;
 			width: auto;
 			white-space: nowrap;
@@ -291,9 +274,7 @@
 		td {
 			user-select: none;
 			border-left : 1px solid #444;
-		}
 
-		tr {
 			border-bottom : 1px solid #333;
 		}
 
@@ -446,7 +427,6 @@
 		}
 
 		td.t_flags {
-			position: relative;
 			overflow: visible;
 		}
 

@@ -238,8 +238,7 @@ class Separator extends Component {
 		}
 
 		element.attr("level", data.level == null ? 0 : data.level);
-		element.removeClass("seplevel-"+(data.level == null ? 0 : data.level));
-		element.addClass('seplevel-'+(data.level == null ? 0 : data.level));
+		element.get(0).style.setProperty("--level", data.level == null ? "0" : ""+data.level);
 
 		if (refreshChildren) {
 			for (s in subs)
