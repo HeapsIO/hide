@@ -5,6 +5,17 @@ typedef RemoteMenuAction = {
 	?cdbSheet : String,
 }
 
+typedef RemotePrefabAction = {
+	kind: RemotePrefabActionKind,
+	data: Dynamic,
+	id: String,
+};
+
+enum abstract RemotePrefabActionKind(String) {
+	var Open;
+	var Update;
+}
+
 /**
 	A simple socket-based local communication channel (plaintext and unsafe),
 	aim at communicate between 2 programs (e.g. Hide and a HL game).
@@ -333,6 +344,27 @@ class RemoteConsoleConnection {
 	public dynamic function onMenuAction( action : RemoteMenuAction, id : String ) : Int {
 		sendLogError('onMenuAction not implemented');
 		return -1;
+	}
+
+	/**
+		Game <-> Hide editor messages for remote prefab edition
+	**/
+	@cmd function remotePrefab(args: RemotePrefabAction) {
+		trace("editPrefab", args.data);
+
+		switch (args.kind) {
+			case Open:
+				#if editor
+					hide.Ide.inst.open("hide.view.Prefab", {data: args.data, id: args.id});
+				#else
+					throw "game can't open prefab as a remote action";
+				#end
+			case Update:
+				var cb = @:privateAccess RemoteTools.remotePrefabsCallbacks.get(args.id);
+				if (cb != null) {
+					cb(args.data);
+				}
+		}
 	}
 
 #if editor

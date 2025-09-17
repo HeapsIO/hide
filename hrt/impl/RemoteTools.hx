@@ -1,5 +1,7 @@
 package hrt.impl;
 
+typedef RemotePrefabCallback = (data: Dynamic) -> Void;
+
 /**
 	A helper class to use a RemoteConsole in game.
  */
@@ -12,6 +14,7 @@ class RemoteTools {
 	static var lastUpdate : Float;
 	static var onConnected : Bool -> Void;
 	static var menuActions : Array<{ action : RemoteConsole.RemoteMenuAction, f : (id:String) -> Int}> = [];
+	static var remotePrefabsCallbacks: Map<String, RemotePrefabCallback> = [];
 
 	public static function autoConnect( ?onConnected : Bool -> Void ) {
 		RemoteTools.onConnected = onConnected;
@@ -126,4 +129,8 @@ class RemoteTools {
 		rc?.sendCommand("open", { file : file, selectExpr : selectExpr });
 	}
 
+	public static function editPrefab( prefab: hrt.prefab.Prefab, id: String, callback: RemotePrefabCallback) {
+		rc?.sendCommand("remotePrefab", {kind: hrt.impl.RemoteConsole.RemotePrefabActionKind.Open, data: @:privateAccess prefab.serialize(), id: id});
+		remotePrefabsCallbacks.set(id, callback);
+	}
 }

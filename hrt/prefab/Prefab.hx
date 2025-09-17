@@ -615,6 +615,24 @@ class Prefab {
 
 	// Editor API
 
+	/**
+		Called by the editor to remove the object created by this prefab tree
+	**/
+	function editorRemoveObjects() : Void {
+		for (child in children) {
+			child.editorRemoveObjects();
+		}
+		editorRemoveInstanceObjects();
+		dispose();
+	}
+
+	/**
+		Called by the editor to remove the objects created by this prefab but not its children.
+	**/
+	function editorRemoveInstanceObjects() : Void {
+	}
+
+
 	#if editor
 	/**
 		Allows to customize how the prefab object is displayed / handled within Hide
@@ -636,23 +654,6 @@ class Prefab {
 	**/
 	public function setSelected(b : Bool ) : Bool {
 		return true;
-	}
-
-	/**
-		Called by the editor to remove the object created by this prefab tree
-	**/
-	function editorRemoveObjects() : Void {
-		for (child in children) {
-			child.editorRemoveObjects();
-		}
-		editorRemoveInstanceObjects();
-		dispose();
-	}
-
-	/**
-		Called by the editor to remove the objects created by this prefab but not its children.
-	**/
-	function editorRemoveInstanceObjects() : Void {
 	}
 
 	/**
