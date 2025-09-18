@@ -190,7 +190,8 @@ class Editor extends Component {
 		keys.register("cdb.globalSeekIds", () -> new GlobalSeek(cdbTable.element, cdbTable, GlobalIds, currentSheet));
 
 		base = sheet.base;
-		cursor = new Cursor(this);
+		if( cursor == null )
+			cursor = new Cursor(this);
 
 		if( displayMode == null ) displayMode = Table;
 		DataFiles.load();
@@ -563,7 +564,7 @@ class Editor extends Component {
 	}
 
 	function onCopy() {
-		if( cursor.selection == null )
+		if( cursor.selection == null || cursor.table == null )
 			return;
 
 		function saveValue(out: Dynamic, obj: Dynamic, c: cdb.Data.Column) {
