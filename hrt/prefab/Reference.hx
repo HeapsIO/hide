@@ -234,6 +234,18 @@ class Reference extends Object3D {
 		#end
 	}
 
+	override function editorRemoveInstanceObjects() {
+		super.editorRemoveInstanceObjects();
+		// Clean cache to force proper ref reloading
+		@:privateAccess if (source != null) {
+			var cachedPrefab = Std.downcast(hxd.res.Loader.currentInstance.cache.get(source), hrt.prefab.Resource);
+			if (cachedPrefab != null) {
+				cachedPrefab.prefab = null;
+			}
+		}
+		refInstance = null;
+	}
+
 	override public function findRec<T:Prefab>(?cl: Class<T>, ?filter : T -> Bool, followRefs : Bool = false, includeDisabled: Bool = true) : Null<T> {
 		if (!includeDisabled && !enabled)
 			return null;

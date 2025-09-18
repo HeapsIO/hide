@@ -229,6 +229,20 @@ class Object3D extends Prefab {
 		return [];
 	}
 
+	override function editorRemoveInstanceObjects() : Void {
+		if (local3d != null)
+			local3d.remove();
+		#if editor
+		if (editorIcon != null)
+			editorIcon.remove();
+		#end
+		local3d = null;
+		#if editor
+		editorIcon = null;
+		#end
+		super.editorRemoveInstanceObjects();
+	}
+
 #if editor
 	override function setSelected(b:Bool):Bool {
 		if (local3d == null)
@@ -474,16 +488,6 @@ class Object3D extends Prefab {
 		int.propagateEvents = true;
 		int.enableRightButton = true;
 		return int;
-	}
-
-	override function editorRemoveInstanceObjects() : Void {
-		if (local3d != null)
-			local3d.remove();
-		if (editorIcon != null)
-			editorIcon.remove();
-		local3d = null;
-		editorIcon = null;
-		super.editorRemoveInstanceObjects();
 	}
 
 	override function edit( ctx : hide.prefab.EditContext ) {

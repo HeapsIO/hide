@@ -5,6 +5,17 @@ typedef RemoteMenuAction = {
 	?cdbSheet : String,
 }
 
+typedef RemotePrefabAction = {
+	kind: RemotePrefabActionKind,
+	data: Dynamic,
+	id: String,
+};
+
+enum abstract RemotePrefabActionKind(String) {
+	var Open; /** Game -> Hide : Request open of the prefab data contained in data**/
+	var Update; /** Hide -> Game : Update the opened prefab in the game with the new provided data**/
+}
+
 /**
 	A simple socket-based local communication channel (plaintext and unsafe),
 	aim at communicate between 2 programs (e.g. Hide and a HL game).
@@ -333,6 +344,41 @@ class RemoteConsoleConnection {
 	public dynamic function onMenuAction( action : RemoteMenuAction, id : String ) : Int {
 		sendLogError('onMenuAction not implemented');
 		return -1;
+	}
+
+	/**
+		Game <-> Hide editor messages for remote prefab edition
+	**/
+	@cmd function remotePrefab(args: RemotePrefabAction) : {data: Dynamic} {
+		switch (args.kind) {
+			case Open:
+				#if editor
+				hide.Ide.inst.open("hide.view.Prefab", {remoteId: args.id}, null, (v) -> @:privateAccess {
+					var prefabView : hide.view.Prefab = cast v;
+					var toEdit = hrt.prefab.Prefab.createFromDynamic(args.data);
+					prefabView.createData();
+					toEdit.parent = prefabView.data;
+					prefabView.sceneEditor.delayReady(() -> {
+						prefabView.sceneEditor.setPrefab(cast prefabView.data);
+						prefabView.sceneEditor.selectElements([toEdit], NoHistory);
+						haxe.Timer.delay(() -> {
+							prefabView.sceneEditor.focusObjects([toEdit.findFirstLocal3d()]);
+						},0);
+					});
+				});
+				#end
+				return null;
+			case Update:
+				#if !editor
+				var cb = @:privateAccess RemoteTools.remotePrefabsCallbacks.get(args.id);
+				if (cb != null) {
+					cb(args.data);
+					return {data: "ok"};
+				}
+				return {data: null};
+				#end
+				return null;
+		}
 	}
 
 #if editor

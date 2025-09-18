@@ -194,20 +194,28 @@ class Prefab extends hide.view.FileView {
 	public var properties(get, null):  hide.comp.PropsEditor;
 	function get_properties() return sceneEditor.properties;
 
+	var remoteEditMode = false;
+
 
 	override function new(state) {
 		super(state);
 
-		var config = hide.Config.loadForFile(ide, ide.getPath(state.path));
-		var matLibs : Array<Dynamic> = config.get("materialLibraries");
-		if (matLibs != null) {
-			for (lib in matLibs) {
-				if (state.path == lib.path) {
-					matLibPath = lib.path;
-					renameMatsHistory = [];
-					break;
+		if (state.path != null) {
+			var config = hide.Config.loadForFile(ide, ide.getPath(state.path));
+			var matLibs : Array<Dynamic> = config.get("materialLibraries");
+			if (matLibs != null) {
+				for (lib in matLibs) {
+					if (state.path == lib.path) {
+						matLibPath = lib.path;
+						renameMatsHistory = [];
+						break;
+					}
 				}
 			}
+		}
+
+		if ((state:Dynamic).remoteId != null) {
+			remoteEditMode = true;
 		}
 	}
 
@@ -248,9 +256,10 @@ class Prefab extends hide.view.FileView {
 	override function onDisplay() {
 		if( sceneEditor != null ) sceneEditor.dispose();
 		createData();
-		var content = sys.io.File.getContent(getPath());
-		currentSign = ide.makeSignature(content);
-
+		if (!remoteEditMode) {
+			var content = sys.io.File.getContent(getPath());
+			currentSign = ide.makeSignature(content);
+		}
 
 		element.html('
 			<div class="flex vertical">
@@ -436,7 +445,9 @@ class Prefab extends hide.view.FileView {
 	}
 
 	public function onSceneReady() {
-		data = hxd.res.Loader.currentInstance.load(state.path).toPrefab().loadBypassCache();
+		if (state.path != null) {
+			data = hxd.res.Loader.currentInstance.load(state.path).toPrefab().loadBypassCache();
+		}
 		sceneEditor.setPrefab(cast data);
 
 		refreshSceneFilters();
@@ -585,6 +596,22 @@ class Prefab extends hide.view.FileView {
 		if( !canSave() )
 			return;
 
+		if (remoteEditMode) {
+			currentSign = Std.string(Std.parseInt(currentSign) + 1);
+			var localVersion = currentSign;
+			var data = data.children[0].serialize();
+
+			@:privateAccess hide.view.RemoteConsoleView.rcmd?.sendCommand("remotePrefab", {kind: hrt.impl.RemoteConsole.RemotePrefabActionKind.Update, data: data, id: (state:Dynamic).remoteId}, (result: {data: String}) -> {
+				if (result?.data == "ok") {
+					if (localVersion == currentSign) {
+						modified = false;
+					}
+				}
+			});
+
+			return;
+		}
+
 		// Save render props
 		if (Ide.inst.currentConfig.get("sceneeditor.renderprops.edit", false) && sceneEditor.renderPropsRoot != null)
 			sceneEditor.renderPropsRoot.save();
@@ -610,7 +637,6 @@ class Prefab extends hide.view.FileView {
 		// 	renameMatsHistory = [];
 		// }
 	}
-
 	function saveMatLibsRenames(oldName : String, newName : String, prefab : hrt.prefab.Prefab) {
 		function renameContent(content:Dynamic) {
 			var visited = new Array<Dynamic>();
@@ -746,11 +772,36 @@ class Prefab extends hide.view.FileView {
 		}
 	}
 
+	override function getPath() {
+		if (state.path == null)
+			return null;
+		return ide.getPath(state.path);
+	}
+
+	override function getTitle() {
+		var name = "Prefab Editor";
+		if (state.path != null) {
+			var parts = state.path.split("/");
+			if( parts[parts.length - 1] == "" ) parts.pop(); // directory
+			while( parts.length > 2 ) parts.shift();
+			name = parts.join(" / ");
+		}
+		else if (remoteEditMode) {
+			name = "Remote Prefab Editor";
+		}
+		return name+(modified?" *":"");
+	}
+
 	function initGraphicsFilters() {
 		for (typeid in graphicsFilters.keys())
 		{
 			applyGraphicsFilter(typeid, graphicsFilters.get(typeid));
 		}
+	}
+
+	public static function getRemoteView(remoteId: String) : hide.view.Prefab {
+		var ide = hide.Ide.inst;
+		return ide.getViews(hide.view.Prefab).find((v) -> (v.state:Dynamic).remoteId == remoteId);
 	}
 
 	function initSceneFilters() {
