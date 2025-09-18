@@ -597,12 +597,13 @@ class Prefab extends hide.view.FileView {
 			return;
 
 		if (remoteEditMode) {
+			currentSign = Std.string(Std.parseInt(currentSign) + 1);
+			var localVersion = currentSign;
 			var data = data.children[0].serialize();
-			currentSign = hrt.impl.RemoteTools.makeSignature(haxe.Json.stringify(data));
 
-			@:privateAccess hide.view.RemoteConsoleView.rcmd?.sendCommand("remotePrefab", {kind: hrt.impl.RemoteConsole.RemotePrefabActionKind.Update, data: data, id: (state:Dynamic).remoteId}, (result: {data: Dynamic}) -> {
-				if (result.data != null) {
-					if (result.data == currentSign) {
+			@:privateAccess hide.view.RemoteConsoleView.rcmd?.sendCommand("remotePrefab", {kind: hrt.impl.RemoteConsole.RemotePrefabActionKind.Update, data: data, id: (state:Dynamic).remoteId}, (result: {data: String}) -> {
+				if (result?.data == "ok") {
+					if (localVersion == currentSign) {
 						modified = false;
 					}
 				}

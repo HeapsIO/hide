@@ -353,30 +353,31 @@ class RemoteConsoleConnection {
 		switch (args.kind) {
 			case Open:
 				#if editor
-					hide.Ide.inst.open("hide.view.Prefab", {remoteId: args.id}, null, (v) -> @:privateAccess {
-						var prefabView : hide.view.Prefab = cast v;
-						var toEdit = hrt.prefab.Prefab.createFromDynamic(args.data);
-						prefabView.createData();
-						toEdit.parent = prefabView.data;
-						prefabView.sceneEditor.delayReady(() -> {
-							prefabView.sceneEditor.setPrefab(cast prefabView.data);
-							prefabView.sceneEditor.selectElements([toEdit], NoHistory);
-							haxe.Timer.delay(() -> {
-								prefabView.sceneEditor.focusObjects([toEdit.findFirstLocal3d()]);
-							},0);
-						});
+				hide.Ide.inst.open("hide.view.Prefab", {remoteId: args.id}, null, (v) -> @:privateAccess {
+					var prefabView : hide.view.Prefab = cast v;
+					var toEdit = hrt.prefab.Prefab.createFromDynamic(args.data);
+					prefabView.createData();
+					toEdit.parent = prefabView.data;
+					prefabView.sceneEditor.delayReady(() -> {
+						prefabView.sceneEditor.setPrefab(cast prefabView.data);
+						prefabView.sceneEditor.selectElements([toEdit], NoHistory);
+						haxe.Timer.delay(() -> {
+							prefabView.sceneEditor.focusObjects([toEdit.findFirstLocal3d()]);
+						},0);
 					});
-				#else
-					throw "game can't open prefab as a remote action";
+				});
 				#end
 				return null;
 			case Update:
+				#if !editor
 				var cb = @:privateAccess RemoteTools.remotePrefabsCallbacks.get(args.id);
 				if (cb != null) {
 					cb(args.data);
-					return {data: RemoteTools.makeSignature(haxe.Json.stringify(args.data))};
+					return {data: "ok"};
 				}
 				return {data: null};
+				#end
+				return null;
 		}
 	}
 
