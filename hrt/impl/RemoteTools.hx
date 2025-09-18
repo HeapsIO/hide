@@ -133,4 +133,8 @@ class RemoteTools {
 		rc?.sendCommand("remotePrefab", {kind: hrt.impl.RemoteConsole.RemotePrefabActionKind.Open, data: @:privateAccess prefab.serialize(), id: id});
 		remotePrefabsCallbacks.set(id, callback);
 	}
+
+	public static function makeSignature(data: String) {
+		return haxe.crypto.Md5.encode(data);
+	}
 }

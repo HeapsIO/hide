@@ -214,16 +214,7 @@ class Prefab extends hide.view.FileView {
 			}
 		}
 
-		var customPrefabData = (state:Dynamic).data;
-		if (customPrefabData != null) {
-			try {
-				var toEdit = hrt.prefab.Prefab.createFromDynamic(customPrefabData);
-				createData();
-				toEdit.parent = data;
-			} catch (e) {
-				ide.quickError("Couldn't load prefab from data : " + e);
-				return;
-			}
+		if ((state:Dynamic).remoteId != null) {
 			remoteEditMode = true;
 		}
 	}
@@ -264,8 +255,8 @@ class Prefab extends hide.view.FileView {
 
 	override function onDisplay() {
 		if( sceneEditor != null ) sceneEditor.dispose();
+		createData();
 		if (!remoteEditMode) {
-			createData();
 			var content = sys.io.File.getContent(getPath());
 			currentSign = ide.makeSignature(content);
 		}
@@ -607,7 +598,16 @@ class Prefab extends hide.view.FileView {
 
 		if (remoteEditMode) {
 			var data = data.children[0].serialize();
-			@:privateAccess hide.view.RemoteConsoleView.rcmd?.sendCommand("remotePrefab", {kind: hrt.impl.RemoteConsole.RemotePrefabActionKind.Update, data: data, id: (state:Dynamic).id});
+			currentSign = hrt.impl.RemoteTools.makeSignature(haxe.Json.stringify(data));
+
+			@:privateAccess hide.view.RemoteConsoleView.rcmd?.sendCommand("remotePrefab", {kind: hrt.impl.RemoteConsole.RemotePrefabActionKind.Update, data: data, id: (state:Dynamic).remoteId}, (result: {data: Dynamic}) -> {
+				if (result.data != null) {
+					if (result.data == currentSign) {
+						modified = false;
+					}
+				}
+			});
+
 			return;
 		}
 
@@ -636,7 +636,6 @@ class Prefab extends hide.view.FileView {
 		// 	renameMatsHistory = [];
 		// }
 	}
-
 	function saveMatLibsRenames(oldName : String, newName : String, prefab : hrt.prefab.Prefab) {
 		function renameContent(content:Dynamic) {
 			var visited = new Array<Dynamic>();
@@ -779,12 +778,15 @@ class Prefab extends hide.view.FileView {
 	}
 
 	override function getTitle() {
-		var name = "Prefab";
+		var name = "Prefab Editor";
 		if (state.path != null) {
 			var parts = state.path.split("/");
 			if( parts[parts.length - 1] == "" ) parts.pop(); // directory
 			while( parts.length > 2 ) parts.shift();
 			name = parts.join(" / ");
+		}
+		else if (remoteEditMode) {
+			name = "Remote Prefab Editor";
 		}
 		return name+(modified?" *":"");
 	}
@@ -794,6 +796,11 @@ class Prefab extends hide.view.FileView {
 		{
 			applyGraphicsFilter(typeid, graphicsFilters.get(typeid));
 		}
+	}
+
+	public static function getRemoteView(remoteId: String) : hide.view.Prefab {
+		var ide = hide.Ide.inst;
+		return ide.getViews(hide.view.Prefab).find((v) -> (v.state:Dynamic).remoteId == remoteId);
 	}
 
 	function initSceneFilters() {
