@@ -737,10 +737,11 @@ class FXEditor extends hide.view.FileView {
 			data.refreshObjectAnims();
 		}
 
-		if(pname == "name" || pname == "time" || pname == "loop" || pname == "animation" || pname == "blendMode" || pname == "duration") {
+		if(p is Event || p is Curve) {
 			afterPan(false);
 			data.refreshObjectAnims();
 			rebuildAnimPanel();
+			sceneEditor.sceneTree.refreshItem(p);
 			var fx3d = Std.downcast((cast data : hrt.prefab.Prefab).findFirstLocal3d(), hrt.prefab.fx.FX.FXAnimation);
 			if (fx3d != null) {
 				fx3d.initLoop();
