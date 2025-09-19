@@ -1786,58 +1786,61 @@ class CurveEditor extends hide.comp.Component {
 		curveGroup.empty();
 
 		function drawCurve(curve : Curve, ?style: Dynamic, bypassRemap: Bool = false, lowQuality = false) {
-			// Draw curve
-			if(curve.keys.length > 0) {
-				{
+			// Basic value of xScale is 200
+			var min = xOffset;
+			var max = min + width / xScale;
 
+			var minTime = xOffset;
+			var maxTime = minTime + width / xScale;
 
-					// Basic value of xScale is 200
-					var min = xOffset;
-					var max = min + width / xScale;
+			var num : Int = width;
+			if (lowQuality) {
+				num = num >> 4;
+			}
 
-					var minTime = xOffset;
-					var maxTime = minTime + width / xScale;
+			if (pointBuffer.length != num*2)
+				pointBuffer.resize(num*2);
 
-					var num : Int = width;
-					if (lowQuality) {
-						num = num >> 4;
+			var v = curve.makeVal(bypassRemap);
+			evaluator.parameters.clear();
+			var paramName = curve.getRemapParameter();
+
+			var fx = Std.downcast(curve.getRoot(false), hrt.prefab.fx.FX);
+
+			if (curve.blendParam != null) {
+				for (param in fx.parameters) {
+					if (param.name == curve.blendParam) {
+						evaluator.parameters.set(curve.blendParam, param.def);
 					}
-
-					if (pointBuffer.length != num*2)
-						pointBuffer.resize(num*2);
-
-					var v = curve.makeVal(bypassRemap);
-					evaluator.parameters.clear();
-					var paramName = curve.getRemapParameter();
-					if (paramName != null) {
-						var fx = Std.downcast(curve.getRoot(false), hrt.prefab.fx.FX);
-						for (param in fx.parameters) {
-							if (param.name == paramName) {
-								evaluator.parameters.set(paramName, param.def);
-								var color = '#${StringTools.hex(param.color)}';
-								svg.polylineRawArray(curveGroup, [param.def * xScale, (-yOffset) * yScale - height / 2, param.def * xScale, (-yOffset) * yScale + height / 2], {"stroke": color, "stroke-width": "0.5px", "stroke-dasharray":"7, 5" });
-							}
-						}
-					}
-					if (v == null) throw "wtf";
-
-					inline function getTime(i : Int) {
-						return hxd.Math.lerp(minTime, maxTime, i/(num-1));
-					}
-					for (i in 0...num) {
-						var t = getTime(i);
-						var y = evaluator.getFloat(v, getTime(i));
-
-						var x = xScale * t;
-						var y = yScale * (-y);
-
-						pointBuffer[i * 2] = x;
-						pointBuffer[i * 2 + 1] = y;
-					}
-
-					svg.polylineRawArray(curveGroup, pointBuffer, style);
 				}
 			}
+
+			if (paramName != null) {
+				for (param in fx.parameters) {
+					if (param.name == paramName) {
+						evaluator.parameters.set(paramName, param.def);
+						var color = '#${StringTools.hex(param.color)}';
+						svg.polylineRawArray(curveGroup, [param.def * xScale, (-yOffset) * yScale - height / 2, param.def * xScale, (-yOffset) * yScale + height / 2], {"stroke": color, "stroke-width": "0.5px", "stroke-dasharray":"7, 5" });
+					}
+				}
+			}
+			if (v == null) throw "wtf";
+
+			inline function getTime(i : Int) {
+				return hxd.Math.lerp(minTime, maxTime, i/(num-1));
+			}
+			for (i in 0...num) {
+				var t = getTime(i);
+				var y = evaluator.getFloat(v, getTime(i));
+
+				var x = xScale * t;
+				var y = yScale * (-y);
+
+				pointBuffer[i * 2] = x;
+				pointBuffer[i * 2 + 1] = y;
+			}
+
+			svg.polylineRawArray(curveGroup, pointBuffer, style);
 		}
 
 		function drawBlendArea(curve : Curve, ?style: Dynamic) {
