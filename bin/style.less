@@ -5252,7 +5252,7 @@ graph-editor-root {
 		display: flex;
 		flex-direction: column;
 		flex-basis: 300px;
-
+		min-height: 0;
 
 		border-left: var(--basic-border);
 
@@ -5274,6 +5274,7 @@ graph-editor-root {
 		.anim-list {
 			flex-grow: 0;
 			flex-shrink: 0;
+			min-height: 0;
 		}
 	}
 }
@@ -5791,6 +5792,8 @@ blend-space-2d-root {
 	border-radius: var(--basic-border-radius);
 	height: 400px;
 	display: flex;
+	min-height: 0;
+
 	flex-direction: column;
 	h1 {
 		font-size: 1em;

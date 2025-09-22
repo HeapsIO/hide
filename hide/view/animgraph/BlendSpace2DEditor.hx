@@ -377,10 +377,13 @@ class BlendSpace2DEditor extends hide.view.FileView {
 			}
 
 			var blendSpace = blendSpace2D.makeAnimation(set, new h3d.prim.ModelCache());
-			animPreview = cast previewModel.playAnimation(blendSpace);
-
-			updatePreviewAxis();
-			animPreview.resetSmooth();
+			if (blendSpace.points?.length >= 3) {
+				animPreview = cast previewModel.playAnimation(blendSpace);
+				updatePreviewAxis();
+				animPreview.resetSmooth();
+			} else {
+				animPreview = null;
+			}
 		}
 	}
 
