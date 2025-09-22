@@ -4362,9 +4362,21 @@ div.gradient-box {
 				background: #3f3f3f;
 				border-radius: 2px 2px 0px 2px;
 
-				.row {
+				.horizontal {
 					display: flex;
 					flex-direction: row;
+
+					>*:not(.ico) {
+						flex: 1;
+						border: 1px solid #666;
+						border-radius: 5px;
+						box-sizing: border-box;
+						margin: 2px;
+						padding: 1px;
+					}
+				}
+
+				.row {
 					width: 100%;
 
 					.ico {
@@ -4373,12 +4385,19 @@ div.gradient-box {
 						align-self : center;
 					}
 
-					input {
-						flex: 1;
-						border: 1px solid #666;
-						border-radius: 5px;
-						box-sizing: border-box;
-						margin: 2px;
+					.content {
+						background: #2b2b2b;
+						padding: 10px;
+
+						h3 {
+							margin: 0 0 5px 0;
+						}
+
+						.field {
+							display: flex;
+							flex-direction: row;
+							gap: 5px;
+						}
 					}
 
 					&:hover {
@@ -4391,6 +4410,16 @@ div.gradient-box {
 
 					&.filtered {
 						display: none;
+					}
+
+					&.closed {
+						.ico-sort-down {
+							transform: rotate(-90deg);
+						}
+
+						.content {
+							display: none;
+						}
 					}
 				}
 			}

@@ -3727,9 +3727,19 @@ div.gradient-box {
   background: #3f3f3f;
   border-radius: 2px 2px 0px 2px;
 }
-.project-settings .body .array .rows .row {
+.project-settings .body .array .rows .horizontal {
   display: flex;
   flex-direction: row;
+}
+.project-settings .body .array .rows .horizontal > *:not(.ico) {
+  flex: 1;
+  border: 1px solid #666;
+  border-radius: 5px;
+  box-sizing: border-box;
+  margin: 2px;
+  padding: 1px;
+}
+.project-settings .body .array .rows .row {
   width: 100%;
 }
 .project-settings .body .array .rows .row .ico {
@@ -3737,12 +3747,17 @@ div.gradient-box {
   margin-right: 5px;
   align-self: center;
 }
-.project-settings .body .array .rows .row input {
-  flex: 1;
-  border: 1px solid #666;
-  border-radius: 5px;
-  box-sizing: border-box;
-  margin: 2px;
+.project-settings .body .array .rows .row .content {
+  background: #2b2b2b;
+  padding: 10px;
+}
+.project-settings .body .array .rows .row .content h3 {
+  margin: 0 0 5px 0;
+}
+.project-settings .body .array .rows .row .content .field {
+  display: flex;
+  flex-direction: row;
+  gap: 5px;
 }
 .project-settings .body .array .rows .row:hover {
   background: #5a5a5a;
@@ -3751,6 +3766,12 @@ div.gradient-box {
   background: #2c5d87;
 }
 .project-settings .body .array .rows .row.filtered {
+  display: none;
+}
+.project-settings .body .array .rows .row.closed .ico-sort-down {
+  transform: rotate(-90deg);
+}
+.project-settings .body .array .rows .row.closed .content {
   display: none;
 }
 .project-settings .body .array .buttons {

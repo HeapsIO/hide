@@ -10,6 +10,7 @@ enum Filter {
 	NONE;
 	MATLIB;
 	RENDERPROPS;
+	CONVERT;
 }
 
 class ProjectSettings extends hide.ui.View<{}> {
@@ -17,6 +18,7 @@ class ProjectSettings extends hide.ui.View<{}> {
 
 	public static var MATLIB_ENTRY = "materialLibraries";
 	public static var RENDERPROPS_ENTRY = "scene.renderProps";
+	public static var CONVERT_ENTRY = "fs.convert";
 
 	var settings : Array<LocalSetting>;
 	var currentFilter = Filter.NONE;
@@ -71,8 +73,9 @@ class ProjectSettings extends hide.ui.View<{}> {
 						<p>Filter : </p>
 						<select class="filter">
 							<option value="0" selected>None</option>
-							<option value="1">Material libraries</option>
-							<option value="2">Render props</option>
+							<option value="1">Material Libraries</option>
+							<option value="2">Render Props</option>
+							<option value="3">Asset Convert</option>
 						</select>
 					</div>
 				</div>
@@ -104,7 +107,7 @@ class ProjectSettings extends hide.ui.View<{}> {
 			rows.empty();
 
 			for (s in settings) {
-				var row = new Element('<div class="row">
+				var row = new Element('<div class="row horizontal">
 					<div class="ico ico-circle"></div>
 				</div>').appendTo(rows);
 
@@ -112,6 +115,7 @@ class ProjectSettings extends hide.ui.View<{}> {
 				if (!currentFilter.match(Filter.NONE)) {
 					filtered = filtered || currentFilter.match(Filter.MATLIB) && !Reflect.hasField(s.content, MATLIB_ENTRY);
 					filtered = filtered || currentFilter.match(Filter.RENDERPROPS) && !Reflect.hasField(s.content, RENDERPROPS_ENTRY);
+					filtered = filtered || currentFilter.match(Filter.CONVERT) && !Reflect.hasField(s.content, CONVERT_ENTRY);
 				}
 
 				row.toggleClass('filtered', filtered);
@@ -164,13 +168,12 @@ class ProjectSettings extends hide.ui.View<{}> {
 		});
 	}
 
+
 	function inspect(s : LocalSetting) {
 		var rightPanel = element.find(".right-panel");
 		rightPanel.empty();
 
-		var obj = s.content;
-
-		function onChange(file : String, oldObj : Dynamic, newObj : Dynamic) {
+		function onChange(file : String, newObj : Dynamic) {
 			sys.io.File.saveContent(file, haxe.Json.stringify(newObj, '\t'));
 			inspect(s);
 			ide.currentConfig.load(file);
@@ -178,80 +181,13 @@ class ProjectSettings extends hide.ui.View<{}> {
 				v.config = null;
 		}
 
-		// Material library
-		var matLibs : Array<Dynamic> = Reflect.field(obj, MATLIB_ENTRY);
-		var matLibsEl = new Element('<div>
-			<h2>Material libraries</h2>
-			<div class="array">
-				<div class="rows"></div>
-				<div class="buttons">
-					<div class="add-btn icon ico ico-plus"></div>
-					<div class="remove-btn icon ico ico-minus"></div>
-				</div>
-			</div>
-		</div>').appendTo(rightPanel);
+		inspectMaterialLibraries(s, rightPanel, onChange);
+		inspectRenderProps(s, rightPanel, onChange);
+		inspectConvert(s, rightPanel, onChange);
+	}
 
-		if (matLibs != null) {
-			for (ml in matLibs) {
-				if (Std.isOfType(ml, String)) {
-					var p : String = cast ml;
-					ml = { name: p.substring(p.lastIndexOf("/") + 1), path: p };
-				}
-				var row = new Element('<div class="row">
-					<div class="ico ico-circle"></div>
-					<input value="${Reflect.field(ml, "name")}"/>
-				</div>').appendTo(matLibsEl.find(".rows"));
-
-				row.click(function(e) {
-					matLibsEl.find(".row").removeClass("selected");
-					row.addClass("selected");
-				});
-
-				var nameInput = row.find("input");
-				nameInput.change(function(e) {
-					var oldObj = Reflect.copy(obj);
-					Reflect.setField(ml, "name", nameInput.val());
-					onChange(s.file, oldObj, obj);
-				});
-
-				var file = new hide.comp.FileSelect(["prefab"], row, null);
-				file.path = Reflect.field(ml, "path");
-				file.onChange = function() {
-					var oldObj = Reflect.copy(obj);
-					Reflect.setField(ml, "path", file.path);
-					onChange(s.file, oldObj, obj);
-				};
-			}
-		}
-
-		matLibsEl.find(".add-btn").click(function(e) {
-			if (matLibs == null) {
-				matLibs = [];
-				Reflect.setField(obj, MATLIB_ENTRY, matLibs);
-			}
-
-			var selIdx = getSelectionIdxInArray(matLibsEl, matLibs);
-			var oldObj = Reflect.copy(obj);
-			matLibs.insert(selIdx + 1, {name:"New", path:null});
-			onChange(s.file, oldObj, obj);
-		});
-
-		matLibsEl.find(".remove-btn").click(function(e) {
-			if (matLibs == null)
-				return;
-
-			var selIdx = getSelectionIdxInArray(matLibsEl, matLibs);
-			var oldObj = Reflect.copy(obj);
-			matLibs.remove(matLibs[selIdx]);
-			if (matLibs.length == 0) {
-				Reflect.deleteField(obj, MATLIB_ENTRY);
-				matLibs = null;
-			}
-			onChange(s.file, oldObj, obj);
-
-		});
-
-		// Render props
+	function inspectRenderProps(s : LocalSetting, parentElement: hide.Element, onChange : (file : String, newObj : Dynamic) -> Void) {
+		var obj = s.content;
 		var v = Reflect.field(obj, RENDERPROPS_ENTRY);
 		var renderProps : Array<Dynamic> = v is Array ? v : v != null ? [{name: "", value:v}] : null;
 		Reflect.setField(obj, RENDERPROPS_ENTRY, renderProps);
@@ -264,7 +200,7 @@ class ProjectSettings extends hide.ui.View<{}> {
 					<div class="remove-btn icon ico ico-minus"></div>
 				</div>
 			</div>
-		</div>').appendTo(rightPanel);
+		</div>').appendTo(parentElement);
 
 		renderPropsEl.find(".add-btn").click(function(e) {
 			if (renderProps == null) {
@@ -273,9 +209,8 @@ class ProjectSettings extends hide.ui.View<{}> {
 			}
 
 			var selIdx = getSelectionIdxInArray(renderPropsEl, renderProps);
-			var oldObj = Reflect.copy(obj);
 			renderProps.insert(selIdx + 1, {name:"New", value:null});
-			onChange(s.file, oldObj, obj);
+			onChange(s.file, obj);
 		});
 
 		renderPropsEl.find(".remove-btn").click(function(e) {
@@ -283,19 +218,18 @@ class ProjectSettings extends hide.ui.View<{}> {
 				return;
 
 			var selIdx = getSelectionIdxInArray(renderPropsEl, renderProps);
-			var oldObj = Reflect.copy(obj);
 			renderProps.remove(renderProps[selIdx]);
 			if (renderProps.length == 0) {
 				Reflect.deleteField(obj, RENDERPROPS_ENTRY);
 				renderProps = null;
 			}
-			onChange(s.file, oldObj, obj);
+			onChange(s.file, obj);
 
 		});
 
 		if (renderProps != null) {
 			for (rp in renderProps) {
-				var row = new Element('<div class="row">
+				var row = new Element('<div class="row horizontal">
 					<div class="ico ico-circle"></div>
 					<input value="${Reflect.field(rp, "name")}"/>
 				</div>').appendTo(renderPropsEl.find(".rows"));
@@ -307,28 +241,186 @@ class ProjectSettings extends hide.ui.View<{}> {
 
 				var nameInput = row.find("input");
 				nameInput.change(function(e) {
-					var oldObj = Reflect.copy(obj);
 					Reflect.setField(rp, "name", nameInput.val());
-					onChange(s.file, oldObj, obj);
+					onChange(s.file, obj);
 				});
 
 				var file = new hide.comp.FileSelect(["prefab"], row, null);
 				file.path = Reflect.field(rp, "value");
 				file.onChange = function() {
-					var oldObj = Reflect.copy(obj);
 					Reflect.setField(rp, "value", file.path);
-					onChange(s.file, oldObj, obj);
+					onChange(s.file, obj);
 				};
 			}
 		}
 	}
 
+	function inspectMaterialLibraries(s : LocalSetting, parentElement: hide.Element, onChange : (file : String, newObj : Dynamic) -> Void) {
+		var obj = s.content;
+		var matLibs : Array<Dynamic> = Reflect.field(obj, MATLIB_ENTRY);
+		var matLibsEl = new Element('<div>
+			<h2>Material libraries</h2>
+			<div class="array">
+				<div class="rows"></div>
+				<div class="buttons">
+					<div class="add-btn icon ico ico-plus"></div>
+					<div class="remove-btn icon ico ico-minus"></div>
+				</div>
+			</div>
+		</div>').appendTo(parentElement);
+
+		if (matLibs != null) {
+			for (ml in matLibs) {
+				if (Std.isOfType(ml, String)) {
+					var p : String = cast ml;
+					ml = { name: p.substring(p.lastIndexOf("/") + 1), path: p };
+				}
+				var row = new Element('<div class="row horizontal">
+					<div class="ico ico-circle"></div>
+					<input value="${Reflect.field(ml, "name")}"/>
+				</div>').appendTo(matLibsEl.find(".rows"));
+
+				row.click(function(e) {
+					matLibsEl.find(".row").removeClass("selected");
+					row.addClass("selected");
+				});
+
+				var nameInput = row.find("input");
+				nameInput.change(function(e) {
+					Reflect.setField(ml, "name", nameInput.val());
+					onChange(s.file, obj);
+				});
+
+				var file = new hide.comp.FileSelect(["prefab"], row, null);
+				file.path = Reflect.field(ml, "path");
+				file.onChange = function() {
+					Reflect.setField(ml, "path", file.path);
+					onChange(s.file, obj);
+				};
+			}
+		}
+
+		matLibsEl.find(".add-btn").click(function(e) {
+			if (matLibs == null) {
+				matLibs = [];
+				Reflect.setField(obj, MATLIB_ENTRY, matLibs);
+			}
+
+			var selIdx = getSelectionIdxInArray(matLibsEl, matLibs);
+			matLibs.insert(selIdx + 1, {name:"New", path:null});
+			onChange(s.file, obj);
+		});
+
+		matLibsEl.find(".remove-btn").click(function(e) {
+			if (matLibs == null)
+				return;
+
+			var selIdx = getSelectionIdxInArray(matLibsEl, matLibs);
+			matLibs.remove(matLibs[selIdx]);
+			if (matLibs.length == 0) {
+				Reflect.deleteField(obj, MATLIB_ENTRY);
+				matLibs = null;
+			}
+			onChange(s.file, obj);
+
+		});
+	}
+
+	function inspectConvert(s : LocalSetting, parentElement: hide.Element, onChange : (file : String, newObj : Dynamic) -> Void) {
+		var obj = s.content;
+		var convertsEl = new Element('<div>
+			<h2>Asset convert</h2>
+			<div class="array">
+				<div class="rows"></div>
+				<div class="buttons">
+					<div class="add-btn icon ico ico-plus"></div>
+					<div class="remove-btn icon ico ico-minus"></div>
+				</div>
+			</div>
+		</div>').appendTo(parentElement);
+
+		var converts : Dynamic = Reflect.field(obj, CONVERT_ENTRY);
+		if (converts == null)
+			return;
+
+		for (f in Reflect.fields(converts)) {
+			var row = new Element('<div class="row closed">
+				<div class="horizontal">
+					<div class="ico ico-circle"></div>
+					<div class="icon ico ico-sort-down"></div>
+					<input class="regex" value="${f}"/>
+				</div>
+				<div class="content">
+					<h3>Parameters</h3>
+					<div class="field">
+						<label for="precise">Precise</label>
+						<div class="checkbox-wrapper"><input name="precise" type="checkbox" ${Reflect.hasField(Reflect.field(converts, f), "precise") ? "checked" : ""}/></div>
+					</div>
+				</div>
+			</div>').appendTo(convertsEl.find(".rows"));
+
+			row.find(".ico-sort-down").on("click", function() {
+				row.toggleClass("closed", !row.hasClass("closed"));
+			});
+
+			row.click(function(e) {
+				convertsEl.find(".row").removeClass("selected");
+				row.addClass("selected");
+			});
+
+			var regInput = row.find(".regex");
+			regInput.change(function(e) {
+				Reflect.setField(converts, regInput.val(), Reflect.field(converts, f));
+				Reflect.deleteField(converts, f);
+				onChange(s.file, obj);
+			});
+
+			var preciseInput = row.find("input[name=precise]");
+			preciseInput.change(function(e) {
+				var v = preciseInput.prop("checked");
+				if (v)
+					Reflect.setField(Reflect.field(converts, f), "precise", true);
+				else
+					Reflect.deleteField(Reflect.field(converts, f), "precise");
+				onChange(s.file, obj);
+			});
+		}
+
+		convertsEl.find(".add-btn").click(function(e) {
+			if (converts == null) {
+				converts = {};
+				Reflect.setField(obj, CONVERT_ENTRY, converts);
+			}
+
+			Reflect.setField(Reflect.field(obj, CONVERT_ENTRY), "*", {});
+			onChange(s.file, obj);
+		});
+
+		convertsEl.find(".remove-btn").click(function(e) {
+			if (converts == null)
+				return;
+
+			var selIdx = -1;
+			for (idx in 0...Reflect.fields(converts).length)
+				if (convertsEl.find(".row").eq(idx).hasClass("selected"))
+					selIdx = idx;
+
+			Reflect.deleteField(converts, Reflect.fields(converts)[selIdx]);
+			if (Reflect.fields(converts).length == 0) {
+				Reflect.deleteField(obj, CONVERT_ENTRY);
+				converts = null;
+			}
+			onChange(s.file, obj);
+		});
+	}
+
+
 	function getSelectionIdxInArray(arrEl : Element, arr : Array<Dynamic>) {
 		var selIdx = arr.length - 1;
-			for (idx in 0...arr.length)
-				if (arrEl.find(".row").eq(idx).hasClass("selected"))
-					selIdx = idx;
-			return selIdx;
+		for (idx in 0...arr.length)
+			if (arrEl.find(".row").eq(idx).hasClass("selected"))
+				selIdx = idx;
+		return selIdx;
 	}
 
 	function getPropsFiles(path: String) {
