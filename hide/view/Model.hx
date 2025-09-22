@@ -336,10 +336,12 @@ class Model extends FileView {
 			var hideData = loadProps();
 
 			var events : Array<{ frame : Int, data : String }> = [];
-			for(i in 0 ... obj.currentAnimation.events.length){
-				if( obj.currentAnimation.events[i] == null) continue;
-				for( e in obj.currentAnimation.events[i])
-					events.push({frame:i, data:e});
+			if (obj.currentAnimation.events != null) {
+				for(i in 0 ... obj.currentAnimation.events.length){
+					if( obj.currentAnimation.events[i] == null) continue;
+					for( e in obj.currentAnimation.events[i])
+						events.push({frame:i, data:e});
+				}
 			}
 			hideData.animations.set(currentAnimation.file.split("/").pop(), {events : events} );
 
