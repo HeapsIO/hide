@@ -1176,15 +1176,20 @@ class Cell {
 				};
 			}
 			if( file == null ) {
-				var y = line.index - 1;
-				while( y >= 0 ) {
-					var o = line.table.lines[y--];
-					var v2 = Reflect.field(o.obj, column.name);
+				var lines = line.table.getRealSheet().getLines();
+
+				var startY = lines.indexOf(line.obj) ?? 0;
+				var y = (startY - 1 + lines.length) % lines.length;
+
+				while( y != startY ) {
+					var o = lines[y];
+					var v2 = Reflect.field(o, column.name);
 					if( v2 != null ) {
 						file = v2.file;
 						dims = getDims(v2);
 						break;
 					}
+					y = (y - 1 + lines.length) % lines.length;
 				}
 			}
 
