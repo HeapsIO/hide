@@ -550,7 +550,15 @@ class FileBrowser extends hide.ui.View<FileBrowserState> {
 			else {
 				if (!this.favorites.contains(item.ref.getPath())) {
 				options.push({ label: "Mark as Favorite", click : function() {
-					this.favorites.push(item.ref.getPath());
+					var toAdd = [];
+					var sel = favoritesTree.getSelectedItems();
+					if (sel.length > 0)
+						toAdd = sel;
+					else
+						toAdd = [item];
+
+					for (a in toAdd)
+						this.favorites.push(a.ref.getPath());
 					saveDisplayState(FAVORITES_KEY, this.favorites);
 					this.favoritesTree.rebuildTree();
 					this.favoritesTree.element.parent().show();
@@ -558,7 +566,15 @@ class FileBrowser extends hide.ui.View<FileBrowserState> {
 				}
 				else {
 					options.push({ label: "Remove from Favorite", click : function() {
-						this.favorites.remove(item.ref.getPath());
+						var toRemove = [];
+						var sel = favoritesTree.getSelectedItems();
+						if (sel.length > 0)
+							toRemove = sel;
+						else
+							toRemove = [item];
+
+						for (a in toRemove)
+							this.favorites.remove(a.ref.getPath());
 						saveDisplayState(FAVORITES_KEY, this.favorites);
 						this.favoritesTree.rebuildTree();
 						if (this.favorites.length == 0)
@@ -1248,7 +1264,15 @@ class FileBrowser extends hide.ui.View<FileBrowserState> {
 
 		if (!this.favorites.contains(item.getPath())) {
 			options.push({ label: "Mark as Favorite", click : function() {
-				this.favorites.push(item.getPath());
+				var toAdd = [];
+				var sel = fancyTree.getSelectedItems();
+				if (sel.length > 0)
+					toAdd = sel;
+				else
+					toAdd = [item];
+
+				for (a in toAdd)
+					this.favorites.push(a.getPath());
 				saveDisplayState(FAVORITES_KEY, this.favorites);
 				this.favoritesTree.rebuildTree();
 				this.favoritesTree.element.parent().show();
@@ -1256,7 +1280,15 @@ class FileBrowser extends hide.ui.View<FileBrowserState> {
 		}
 		else {
 			options.push({ label: "Remove from Favorite", click : function() {
-				this.favorites.remove(item.getPath());
+				var toRemove = [];
+				var sel = fancyTree.getSelectedItems();
+				if (sel.length > 0)
+					toRemove = sel;
+				else
+					toRemove = [item];
+
+				for (r in toRemove)
+					this.favorites.remove(r.getPath());
 				saveDisplayState(FAVORITES_KEY, this.favorites);
 				this.favoritesTree.rebuildTree();
 				if (this.favorites.length == 0)
