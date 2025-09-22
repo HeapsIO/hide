@@ -151,12 +151,6 @@ class LightProbeObject extends h3d.scene.Mesh {
 		indirectShader.irrPower = env.power * env.power;
 		indirectShader.irrRotation.set(Math.cos(env.rotation), Math.sin(env.rotation));
 
-		super.emit(ctx);
-	}
-
-	override function sync( ctx : h3d.scene.RenderContext ) {
-		super.sync(ctx);
-
 		var r : h3d.scene.pbr.Renderer = cast ctx.scene.renderer;
 		if( r != null ) {
 			if( material.mainPass.getShader(h3d.shader.pbr.PropsImport) == null )
@@ -179,8 +173,9 @@ class LightProbeObject extends h3d.scene.Mesh {
 				boundFadeShader.POWER2 = true;
 				boundFadeShader.SMOOTHSTEP = false;
 		}
-	}
 
+		super.emit(ctx);
+	}
 }
 
 @:access(h3d.scene.pbr.Environment)
