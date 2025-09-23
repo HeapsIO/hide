@@ -32,13 +32,13 @@ class GlobalSeek extends Modal {
                 for (i in 0...s.lines.length) {
                     var l = s.lines[i];
                     var id = Reflect.field(l, s.idCol.name);
-                    if (id == null)
+                    if (id == null || id == "")
                         continue;
                     var dispL = s.index.get(id);
                     choices.push({
                         id: '#${s.name}:$id',
                         ico: s.name,
-                        text: dispL.disp,
+                        text: dispL?.disp,
                         searchText: "" + i,
                     });
                 }
