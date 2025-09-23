@@ -15,7 +15,8 @@ enum Shape {
 	Disc(segments: Int, angle: Float, inner: Float, rings:Int);
 	Custom;
 	Sphere( segsW : Int, segsH : Int );
-	Capsule( segsW : Int, segsH : Int );
+	Capsule( segsW : Int, segsH : Int);
+	Box;
 }
 
 typedef PrimCache = Map<Shape, h3d.prim.Polygon>;
@@ -39,7 +40,7 @@ class Polygon extends Object3D {
 		var data = super.save();
 		data.kind = shape.getIndex();
 		switch(shape){
-		case Quad(_), Disc(_), Sphere(_), Capsule(_):
+		case Quad(_), Disc(_), Sphere(_), Capsule(_), Box:
 			data.args = shape.getParameters();
 		case Custom:
 			data.points = [for( p in points ) { x : p.x, y : p.y }];
@@ -150,6 +151,8 @@ class Polygon extends Object3D {
 			null;
 		case Capsule(_):
 			null;
+		case Box:
+			null;
 		};
 	}
 
@@ -238,6 +241,12 @@ class Polygon extends Object3D {
 			case Capsule(sw, sh):
 				var cp = new h3d.prim.Capsule(1, 1, sw);
 				return cp;
+			case Box:
+				var bp = new h3d.prim.Cube(true);
+				bp.addUVs();
+				bp.addNormals();
+				bp.addTangents();
+				return bp;
 			default:
 		}
 
@@ -329,8 +338,8 @@ class Polygon extends Object3D {
 		var viewModel = {
 			kind: shape.getName(),
 			subdivision: 0,
-			segments: 24,
-			segmentsH : 24,
+			segments: 16,
+			segmentsH : 16,
 			rings: 4,
 			innerRadius: 0.0,
 			angle: 360.0
@@ -350,6 +359,7 @@ class Polygon extends Object3D {
 			case Capsule(segw, segh):
 				viewModel.segments = segw;
 				viewModel.segmentsH = segh;
+			case Box:
 		}
 
 		var group = new hide.Element('
@@ -361,6 +371,7 @@ class Polygon extends Object3D {
 						<option value="Disc">Disc</option>
 						<option value="Sphere">Sphere</option>
 						<option value="Capsule">Capsule</option>
+						<option value="Box">Box</option>
 						<option value="Custom">Custom</option>
 					</select>
 				</dd>
@@ -418,6 +429,8 @@ class Polygon extends Object3D {
 					shape = Sphere(viewModel.segments, viewModel.segmentsH);
 				case "Capsule":
 					shape = Capsule(viewModel.segments, viewModel.segmentsH);
+				case "Box":
+					shape = Box;
 				case "Custom":
 					shape = Custom;
 					if(pIsKind) {
