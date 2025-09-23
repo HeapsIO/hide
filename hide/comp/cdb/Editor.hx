@@ -109,6 +109,9 @@ class Editor extends Component {
 		element = new Element('<div>');
 		if( parent != null )
 			parent.append(element);
+
+		element.on("scrollend", () -> saveDisplayState("scroll", element.scrollTop()));
+
 		currentSheet = sheet;
 		saveDisplayKey = "cdb_" + sheet.getPath();
 		separatorsState = getDisplayState("separatorsState") ?? new Map();
@@ -197,6 +200,10 @@ class Editor extends Component {
 		DataFiles.load();
 		if( currentValue == null ) currentValue = api.copy();
 		refresh();
+
+		js.Browser.window.requestAnimationFrame((_) -> {
+			element.scrollTop(getDisplayState("scroll") ?? 0);
+		});
 	}
 
 	function onMouseDown( e : hide.Element.Event ) {
