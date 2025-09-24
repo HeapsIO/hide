@@ -51,7 +51,7 @@ class Polygon extends Object3D {
 	override function load( obj : Dynamic ) {
 		super.load(obj);
 		switch(obj.kind){
-			case 0, 1, 3, 4: shape = Type.createEnumIndex(Shape, obj.kind, obj.args == null ? [0] : obj.args);
+			case 0, 1, 3, 4, 5: shape = Type.createEnumIndex(Shape, obj.kind, obj.args == null ? [0] : obj.args);
 			case 2:
 				shape = Custom;
 				var list : Array<Dynamic> = obj.points;
