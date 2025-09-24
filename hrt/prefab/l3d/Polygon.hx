@@ -51,7 +51,15 @@ class Polygon extends Object3D {
 	override function load( obj : Dynamic ) {
 		super.load(obj);
 		switch(obj.kind){
-			case 0, 1, 3, 4, 5: shape = Type.createEnumIndex(Shape, obj.kind, obj.args == null ? [0] : obj.args);
+			case 0, 1, 3, 5: shape = Type.createEnumIndex(Shape, obj.kind, obj.args == null ? [0] : obj.args);
+			case 4: {
+				var params : Array<Dynamic> = cast obj.args;
+				if (params == null)
+					params = [0,0,0];
+				if (params.length == 2) // backwards compat for when axis didn't exist
+					params.push(0);
+				shape = Type.createEnumIndex(Shape, obj.kind, params);
+			}
 			case 2:
 				shape = Custom;
 				var list : Array<Dynamic> = obj.points;
