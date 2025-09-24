@@ -15,7 +15,7 @@ enum Shape {
 	Disc(segments: Int, angle: Float, inner: Float, rings:Int);
 	Custom;
 	Sphere( segsW : Int, segsH : Int );
-	Capsule( segsW : Int, segsH : Int);
+	Capsule( segsW : Int, segsH : Int, axis: h3d.prim.Capsule.Axis);
 	Box;
 }
 
@@ -238,8 +238,8 @@ class Polygon extends Object3D {
 				sp.addNormals();
 				sp.addTangents();
 				return sp;
-			case Capsule(sw, sh):
-				var cp = new h3d.prim.Capsule(1, 1, sw);
+			case Capsule(sw, sh, axis):
+				var cp = new h3d.prim.Capsule(1, 1, sw, axis);
 				return cp;
 			case Box:
 				var bp = new h3d.prim.Cube(true);
@@ -342,7 +342,8 @@ class Polygon extends Object3D {
 			segmentsH : 16,
 			rings: 4,
 			innerRadius: 0.0,
-			angle: 360.0
+			angle: 360.0,
+			axis: "2", // default to Z axis
 		};
 
 		switch(shape) {
@@ -356,9 +357,10 @@ class Polygon extends Object3D {
 			case Sphere(segw, segh):
 				viewModel.segments = segw;
 				viewModel.segmentsH = segh;
-			case Capsule(segw, segh):
+			case Capsule(segw, segh, axis):
 				viewModel.segments = segw;
 				viewModel.segmentsH = segh;
+				viewModel.axis = '${axis ?? 0}';
 			case Box:
 		}
 
@@ -392,9 +394,21 @@ class Polygon extends Object3D {
 			<dt>Segments</dt><dd><input field="segments" type="range" min="0" max="100" step="1" /></dd>
 			<dt>SegmentsH</dt><dd><input field="segmentsH" type="range" min="0" max="100" step="1" /></dd>');
 
+		var capsuleProps = new hide.Element('
+			<dt>Axis</dt>
+			<dd>
+				<select field="axis"/>
+					<option value="0">X</option>
+					<option value="1">Y</option>
+					<option value="2">Z</option>
+				</select>
+			</dd>
+		');
+
 		group.append(quadProps);
 		group.append(discProps);
 		group.append(sphereProps);
+		group.append(capsuleProps);
 
 		var updateProps = null;
 
@@ -428,7 +442,7 @@ class Polygon extends Object3D {
 				case "Sphere":
 					shape = Sphere(viewModel.segments, viewModel.segmentsH);
 				case "Capsule":
-					shape = Capsule(viewModel.segments, viewModel.segmentsH);
+					shape = Capsule(viewModel.segments, viewModel.segmentsH, cast Std.parseInt(viewModel.axis));
 				case "Box":
 					shape = Box;
 				case "Custom":
@@ -480,10 +494,12 @@ class Polygon extends Object3D {
 			quadProps.hide();
 			discProps.hide();
 			editorProps.hide();
+			capsuleProps.hide();
 			switch(viewModel.kind){
 				case "Quad": quadProps.show();
 				case "Disc": discProps.show();
 				case "Sphere": sphereProps.show();
+				case "Capsule": capsuleProps.show();
 				case "Custom":
 					editorProps.show();
 					setSelected(true);
