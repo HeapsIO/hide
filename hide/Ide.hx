@@ -199,14 +199,27 @@ class Ide extends hide.tools.IdeData {
 		window.on("blur", function() { if( h3d.Engine.getCurrent() != null && !hasReloaded ) hxd.Key.initialize(); });
 
 		// handle commandline parameters
-		nw.App.on("open", function(cmd) {
+		function onOpen(cmd: String) {
+			var dyncmd: Dynamic = cmd;
+			if (Type.typeof(dyncmd).match(TClass(Array))) {
+				var arr: Array<String> = dyncmd;
+				cmd = arr[arr.length - 1];
+			}
+			var uriIndex = cmd.indexOf("hide://");
+			var uri = cmd.substr(uriIndex);
+			if (!StringTools.contains(uri, " ")) {
+				onOpenUri(uri);
+			}
+			haxe.Timer.delay(() -> trace("on open", cmd), 500);
+			nw.App.on("open", onOpen);
 			if( hasReloaded ) return;
 			~/"([^"]+)"/g.map(cmd, function(r) {
 				var file = r.matched(1);
 				if( sys.FileSystem.exists(file) ) openFile(file);
 				return "";
 			});
-		});
+		}
+		nw.App.on("open", onOpen);
 
 		var body = window.window.document.body;
 		window.on("focus", function() {
@@ -1965,6 +1978,7 @@ class Ide extends hide.tools.IdeData {
 	}
 
 	public static dynamic function onIdeError(e: Dynamic) {}
+	public static dynamic function onOpenUri(uri: String) {}
 
 	public static var inst : Ide;
 
