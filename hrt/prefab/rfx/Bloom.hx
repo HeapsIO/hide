@@ -57,6 +57,35 @@ class Bloom extends RendererFX {
 		}
 	}
 
+	override function modulate(t : Float) {
+		var c : Bloom = cast super.modulate(t);
+		c.intensity = this.intensity * t;
+		return c;
+	}
+
+	override function transition( r1 : h3d.impl.RendererFX, r2 : h3d.impl.RendererFX ) : h3d.impl.RendererFX.RFXTransition {
+		var c1 : Bloom = cast r1;
+		var c2 : Bloom = cast r2;
+		var c = new Bloom(null, null);
+		c.size = c1.size;
+		c.threshold = c1.threshold;
+		c.intensity = c1.intensity;
+		c.blur = c1.blur;
+		c.saturation = c1.saturation;
+		c.blurQuality = c1.blurQuality;
+		c.blurLinear = c1.blurLinear;
+
+		return { effect : cast c, setFactor : (f : Float) -> {
+			c.size = hxd.Math.lerp(c1.size, c2.size, f);
+			c.threshold = hxd.Math.lerp(c1.threshold, c2.threshold, f);
+			c.intensity = hxd.Math.lerp(c1.intensity, c2.intensity, f);
+			c.blur = hxd.Math.lerp(c1.blur, c2.blur, f);
+			c.saturation = hxd.Math.lerp(c1.saturation, c2.saturation, f);
+			c.blurQuality = hxd.Math.lerp(c1.blurQuality, c2.blurQuality, f);
+			c.blurLinear = hxd.Math.lerp(c1.blurLinear, c2.blurLinear, f);
+		} };
+	}
+
 	#if editor
 	override function edit( ctx : hide.prefab.EditContext ) {
 		ctx.properties.add(new hide.Element('
