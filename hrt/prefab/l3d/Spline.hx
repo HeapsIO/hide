@@ -774,7 +774,7 @@ class Spline extends hrt.prefab.Object3D {
 		p.length = length;
 	}
 
-	public function getSplineLength() {
+	public function getSplineLength() : Float {
 		// Compute the average length of the spline
 		var length = 0.0;
 		for( i in 0 ... samples.length - 1 )
