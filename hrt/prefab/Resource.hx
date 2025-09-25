@@ -51,7 +51,7 @@ class Resource extends hxd.res.Resource {
 		prefab = loadBypassCache();
 		cacheVersion = CACHE_VERSION;
 		onPrefabLoaded(prefab);
-		watch(function() {}); // auto lib reload
+		if( !isWatched ) watch(function() {}); // auto lib reload
 		return cast prefab;
 	}
 
@@ -64,7 +64,7 @@ class Resource extends hxd.res.Resource {
 		prefab.shared.currentPath = entry.path;
 		cacheVersion = CACHE_VERSION;
 		onPrefabLoaded(prefab);
-		watch(function() {}); // auto lib reload
+		if( !isWatched ) watch(function() {}); // auto lib reload
 		return cast prefab;
 	}
 
