@@ -1677,16 +1677,29 @@ input[type=checkbox] {
 	.keyPopup {
 		padding: 4px;
 		padding-bottom: 2px;
-		background-color: #151515;
-		position: absolute;
 		.line {
+			display: flex;
+			align-items: baseline;
 			margin-bottom: 2px;
 		}
-		label {
-			width: 60px;
+		label{
+			text-align: right;
+			padding-right: 0.5em;
+			width: 40px;
 			display: inline-block;
 		}
-		input { width: 80px; }
+		input, select {
+			box-sizing: border-box;
+			height: 22px !important;
+			width: 100px  !important;
+			margin: 0;
+			padding: 2px;
+		}
+		input::-webkit-outer-spin-button,
+		input::-webkit-inner-spin-button {
+		-webkit-appearance: none;
+		margin: 0;
+		}
 	}
 	svg {
 		@selectCol: rgb(255, 255, 255);

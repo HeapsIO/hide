@@ -1452,6 +1452,8 @@ class CurveEditor extends hide.comp.Component {
 		}
 
 		function editPopup(curve: Curve, key: CurveKey, top: Float, left: Float) {
+			var popupWidget = new Popup(element, false);
+
 			var popup = new Element('<div class="keyPopup">
 					<div class="line"><label>Time</label><input class="x" type="number" value="0" step="0.1"/></div>
 					<div class="line"><label>Value</label><input class="y" type="number" value="0" step="0.1"/></div>
@@ -1464,14 +1466,11 @@ class CurveEditor extends hide.comp.Component {
 							<option value="3">Constant</option>
 						</select>
 					</div>
-				</div>').appendTo(element);
-			popup.css({top: top, left: left});
-			popup.focusout(function(e) {
-				haxe.Timer.delay(function() {
-					if(popup.find(':focus').length == 0)
-						popup.remove();
-				}, 0);
-			});
+				</div>').appendTo(popupWidget.element);
+			popupWidget.offsetX = left+8;
+			popupWidget.offsetY = top;
+			popupWidget.position = Inside;
+			popupWidget.onClose = () -> popupWidget.element.remove();
 
 			function setMode(m: hrt.prefab.Curve.CurveKeyMode) {
 					key.mode = m;

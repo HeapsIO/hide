@@ -2,6 +2,10 @@ package hide.comp;
 
 import js.Browser;
 
+enum PopupPosition {
+	Inside;
+	Bellow;
+}
 // Open a "popup" window that can be closed by
 // clicking outside of it. Usefull for medium size editors
 // that appears when clicking on an item
@@ -9,7 +13,27 @@ class Popup extends Component {
 	var timer : haxe.Timer;
 	var isSearchable:Bool;
 	public var anchor : Element;
-	var globalKeyListener : Dynamic = null;
+	public var offsetX(default, set) : Float = 0;
+	public var offsetY(default, set) : Float = 0;
+	public var position(default, set): PopupPosition = Bellow;
+
+	function set_offsetX(v) {
+		offsetX = v;
+		reflow();
+		return offsetX;
+	}
+
+	function set_offsetY(v) {
+		offsetY = v;
+		reflow();
+		return offsetY;
+	}
+
+	function set_position(v) {
+		position = v;
+		reflow();
+		return position;
+	}
 
 	function onMouseDown(e : js.html.MouseEvent) {
 		originalTarget = e.target;
@@ -28,9 +52,13 @@ class Popup extends Component {
 	public function new(?parent:Element, isSearchable = false) {
       super(parent,new Element("<div>"));
 
-		element.attr("popover", "").addClass("popup");
+		element.attr("tabindex", "-1").attr("popover", "auto").addClass("popup");
 
 		element[0].addEventListener("dblclick", (e) -> {e.stopPropagation();});
+
+		// Prevent parent elements from e.preventDefault(), which would break the
+		// ESC to dismiss the popover behavior
+		element[0].addEventListener("keydown", (e) -> {e.stopPropagation();});
 
 		this.isSearchable = isSearchable;
 
@@ -51,27 +79,13 @@ class Popup extends Component {
 			}
 		};
 
-		untyped element.get(0).showPopover();
-		element.get(0).addEventListener("toggle", onToggle);
-        reflow();
-	}
+		untyped element[0].showPopover();
+		element[0].addEventListener("toggle", onToggle);
+      reflow();
 
-	public function bindCloseOnEscape() {
-		globalKeyListener = (e: js.html.KeyboardEvent) -> {
-			// in case somehow our event wasn't properly cleaned up
-			if (element.closest("body") == null) {
-				cleanupGlobalKeyListener();
-				return;
-			}
-
-			if (e.key == "Escape") {
-				close();
-				e.preventDefault();
-				e.stopPropagation();
-			}
-		};
-
-		Browser.document.addEventListener("keydown", globalKeyListener, true);
+		// Make sure our element is focused so the whole ESC to dismiss properly works
+		// (because our element steals inputs and prevent the event from escaping bellow it)
+		element[0].focus();
 	}
 
 	public function open() {
@@ -89,21 +103,22 @@ class Popup extends Component {
 	function onToggle(e: Dynamic) {
 		if (e.newState == "closed") {
 			timer.stop();
-			element.parent()?.get(0)?.removeEventListener("scroll", onScroll);
+			var parent = element[0].parentElement;
+			if (parent != null) {
+				// Focus our parent when closing the popup, it allows
+				// the ESC to dismiss the popup to properly work
+				// when we are interracting in a nested popup scenario
+				parent.focus();
+
+				parent.removeEventListener("scroll", onScroll);
+			}
+
 			if (anchor == null) {
 				element.remove();
 			}
 			element.hide();
 			onClose();
-			if (globalKeyListener != null) {
-				cleanupGlobalKeyListener();
-			}
 		}
-	}
-
-	function cleanupGlobalKeyListener() {
-		Browser.document.removeEventListener("keydown", globalKeyListener, true);
-		globalKeyListener = null;
 	}
 
 	function fixInputSelect() {
@@ -121,22 +136,35 @@ class Popup extends Component {
 		});
 	}
 
+	var reflowQueued = false;
 	function reflow() {
+		if (!reflowQueued) {
+			reflowQueued = true;
+			Browser.window.requestAnimationFrame((_) -> reflowInternal());
+		}
+	}
+
+	function reflowInternal() {
 		var refElement = if (anchor != null) anchor else element.parent();
 		var offset = refElement.offset();
-		var popupHeight = element.get(0).offsetHeight;
-		var popupWidth = element.get(0).offsetWidth;
+		var box = element[0].getBoundingClientRect();
+		var popupHeight = box.height;
+		var popupWidth = box.width;
 
 		var clientHeight = Browser.document.documentElement.clientHeight;
 		var clientWidth = Browser.document.documentElement.clientWidth;
 
-		offset.top += refElement.get(0).offsetHeight;
+		offset.top += offsetY;
+		if (position == Bellow) {
+			offset.top += refElement.get(0).offsetHeight;
+		}
 		offset.top = Math.min(offset.top,  clientHeight - popupHeight - 16);
 
-		//offset.left += element.get(0).offsetWidth;
-		offset.left = Math.min(offset.left,  clientWidth - popupWidth - 16);
+		offset.left += offsetX;
+		offset.left = Math.min(offset.left,  clientWidth - popupWidth - 16) ;
 
 		element.offset(offset);
+		reflowQueued = false;
 	}
 
 	public function onSearchChanged(searchBar:Element):Void {}
