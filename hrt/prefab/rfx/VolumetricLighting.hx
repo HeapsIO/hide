@@ -10,6 +10,8 @@ class VolumetricLightingShader extends h3d.shader.pbr.DefaultForward {
 
 		@param var invViewProj : Mat4;
 
+		@param var intensity : Float;
+
 		@param var noiseTurmoil : Float;
 		@param var noiseScale : Float;
 		@param var noiseLacunarity : Float;
@@ -247,7 +249,7 @@ class VolumetricLightingShader extends h3d.shader.pbr.DefaultForward {
 		}
 
 		function fragment() {
-			pixelColor = rayMarch();
+			pixelColor.rgba = mix(pixelColor.rgba, rayMarch().rgba, intensity);
 		}
 	}
 }
@@ -261,6 +263,8 @@ class VolumetricLighting extends RendererFX {
 
 	var blurPass = new h3d.pass.Blur();
 	var vshader = new VolumetricLightingShader();
+
+	@:s public var intensity : Float = 1.0;
 
 	@:s public var AFTER_FX : Bool = false;
 	@:s public var blend : h3d.mat.PbrMaterial.PbrBlend = Alpha;
@@ -386,6 +390,8 @@ class VolumetricLighting extends RendererFX {
 
 			vshader.offsetCamHeight = offsetCamHeight ? 1.0 : 0.0;
 
+			vshader.intensity = intensity;
+
 			pass.pass.setBlendMode(Alpha);
 			pass.render();
 
@@ -455,6 +461,104 @@ class VolumetricLighting extends RendererFX {
 		return tex;
 	}
 
+	override function modulate(t : Float) {
+		var c : VolumetricLighting = cast super.modulate(t);
+		c.intensity = this.intensity * t;
+		return c;
+	}
+
+	override function transition( r1 : h3d.impl.RendererFX, r2 : h3d.impl.RendererFX ) : h3d.impl.RendererFX.RFXTransition {
+		var v1 : VolumetricLighting = cast r1;
+		var v2 : VolumetricLighting = cast r2;
+		var v = new VolumetricLighting(null, null);
+
+		v.intensity = v1.intensity;
+		v.steps = v1.steps;
+		v.blur = v1.blur;
+		v.blurDepthThreshold = v1.blurDepthThreshold;
+		v.startDistance = v1.startDistance;
+		v.endDistance = v1.endDistance;
+		v.maxCamDist = v1.maxCamDist;
+		v.distanceOpacity = v1.distanceOpacity;
+		v.ditheringIntensity = v1.ditheringIntensity;
+		v.noiseScale = v1.noiseScale;
+		v.noiseLacunarity = v1.noiseLacunarity;
+		v.noiseSharpness = v1.noiseSharpness;
+		v.noisePersistence = v1.noisePersistence;
+		v.noiseTurmoil = v1.noiseTurmoil;
+		v.noiseOctave = v1.noiseOctave;
+		v.fogDensity = v1.fogDensity;
+		v.fogUseNoise = v1.fogUseNoise;
+		v.fogHeightFalloff = v1.fogHeightFalloff;
+		v.fogEnvPower = v1.fogEnvPower;
+		v.fogBottom = v1.fogBottom;
+		v.fogTop = v1.fogTop;
+		v.fogEnvColorMult = v1.fogEnvColorMult;
+		v.secondFogUseNoise = v1.secondFogUseNoise;
+		v.secondFogDensity = v1.secondFogDensity;
+		v.secondFogHeightFalloff = v1.secondFogHeightFalloff;
+		v.secondFogBottom = v1.secondFogBottom;
+		v.secondFogTop = v1.secondFogTop;
+		v.emissiveIntensity = v1.emissiveIntensity;
+
+		v.color = v1.color;
+		v.secondFogColor = v1.secondFogColor;
+		v.emissiveColor = v1.emissiveColor;
+		v.AFTER_FX = v1.AFTER_FX;
+		v.offsetCamHeight = v1.offsetCamHeight;
+		v.blend = v1.blend;
+
+		return { effect : cast v, setFactor : (f : Float) -> {
+			v.intensity = hxd.Math.lerp(v1.intensity, v2.intensity, f);
+			v.steps = Std.int(hxd.Math.lerp(v1.steps, v2.steps, f));
+			v.blur = hxd.Math.lerp(v1.blur, v2.blur, f);
+			v.blurDepthThreshold = hxd.Math.lerp(v1.blurDepthThreshold, v2.blurDepthThreshold, f);
+			v.startDistance = hxd.Math.lerp(v1.startDistance, v2.startDistance, f);
+			v.endDistance = hxd.Math.lerp(v1.endDistance, v2.endDistance, f);
+			v.maxCamDist = hxd.Math.lerp(v1.maxCamDist, v2.maxCamDist, f);
+			v.distanceOpacity = hxd.Math.lerp(v1.distanceOpacity, v2.distanceOpacity, f);
+			v.ditheringIntensity = hxd.Math.lerp(v1.ditheringIntensity, v2.ditheringIntensity, f);
+			v.noiseScale = hxd.Math.lerp(v1.noiseScale, v2.noiseScale, f);
+			v.noiseLacunarity = hxd.Math.lerp(v1.noiseLacunarity, v2.noiseLacunarity, f);
+			v.noiseSharpness = hxd.Math.lerp(v1.noiseSharpness, v2.noiseSharpness, f);
+			v.noisePersistence = hxd.Math.lerp(v1.noisePersistence, v2.noisePersistence, f);
+			v.noiseTurmoil = hxd.Math.lerp(v1.noiseTurmoil, v2.noiseTurmoil, f);
+			v.noiseOctave = Std.int(hxd.Math.lerp(v1.noiseOctave, v2.noiseOctave, f));
+			v.fogDensity = hxd.Math.lerp(v1.fogDensity, v2.fogDensity, f);
+			v.fogUseNoise = hxd.Math.lerp(v1.fogUseNoise, v2.fogUseNoise, f);
+			v.fogHeightFalloff = hxd.Math.lerp(v1.fogHeightFalloff, v2.fogHeightFalloff, f);
+			v.fogEnvPower = hxd.Math.lerp(v1.fogEnvPower, v2.fogEnvPower, f);
+			v.fogBottom = hxd.Math.lerp(v1.fogBottom, v2.fogBottom, f);
+			v.fogTop = hxd.Math.lerp(v1.fogTop, v2.fogTop, f);
+			v.fogEnvColorMult = hxd.Math.lerp(v1.fogEnvColorMult, v2.fogEnvColorMult, f);
+			v.secondFogUseNoise = hxd.Math.lerp(v1.secondFogUseNoise, v2.secondFogUseNoise, f);
+			v.secondFogDensity = hxd.Math.lerp(v1.secondFogDensity, v2.secondFogDensity, f);
+			v.secondFogHeightFalloff = hxd.Math.lerp(v1.secondFogHeightFalloff, v2.secondFogHeightFalloff, f);
+			v.secondFogBottom = hxd.Math.lerp(v1.secondFogBottom, v2.secondFogBottom, f);
+			v.secondFogTop = hxd.Math.lerp(v1.secondFogTop, v2.secondFogTop, f);
+			v.emissiveIntensity = hxd.Math.lerp(v1.emissiveIntensity, v2.emissiveIntensity, f);
+
+			function lerpColor(c1 : Int, c2 : Int, f : Float) {
+				var color1 = hrt.impl.ColorSpace.Color.fromInt(c1);
+				var color2 = hrt.impl.ColorSpace.Color.fromInt(c2);
+
+				var res = new hrt.impl.ColorSpace.Color();
+				res.a = hxd.Math.ceil(hxd.Math.lerp(color1.a, color2.a, f));
+				res.r = hxd.Math.ceil(hxd.Math.lerp(color1.r, color2.r, f));
+				res.g = hxd.Math.ceil(hxd.Math.lerp(color1.g, color2.g, f));
+				res.b = hxd.Math.ceil(hxd.Math.lerp(color1.b, color2.b, f));
+				return res.toInt(true);
+			}
+
+			v.color = lerpColor(v1.color, v2.color, f);
+			v.secondFogColor = lerpColor(v1.secondFogColor, v2.secondFogColor, f);
+			v.emissiveColor = lerpColor(v1.emissiveColor, v2.emissiveColor, f);
+			v.AFTER_FX = f < 0.5 ? v1.AFTER_FX : v2.AFTER_FX;
+			v.offsetCamHeight = f < 0.5 ? v1.offsetCamHeight : v2.offsetCamHeight;
+			v.blend = f < 0.5 ? v1.blend : v2.blend;
+		} };
+	}
+
 	#if editor
 
 	override function edit( ctx : hide.prefab.EditContext ) {
@@ -462,6 +566,7 @@ class VolumetricLighting extends RendererFX {
 		ctx.properties.add(new hide.Element(
 			'<div class="group" name="Fog">
 				<dl>
+					<dt>Intensity</dt><dd><input type="range" min="0" max="1" field="intensity"/></dd>
 					<dt>Blend</dt>
 					<dd>
 						<select field="blend">
