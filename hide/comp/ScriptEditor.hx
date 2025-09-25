@@ -1,4 +1,5 @@
 package hide.comp;
+import hscript.Checker;
 
 typedef GlobalsDef = haxe.DynamicAccess<{
 	var globals : haxe.DynamicAccess<String>;
@@ -45,12 +46,6 @@ class ScriptCache {
 				var path = ide.getPath(f);
 				var content = try sys.io.File.getContent(path) catch( e : Dynamic ) { @:privateAccess ScriptChecker.error(""+e); continue; };
 				types.addXmlApi(Xml.parse(content).firstElement());
-				ide.fileWatcher.register(f, function() {
-					haxe.Timer.delay(() -> {
-						onApiFileChange();
-						loadFiles(files);
-					}, 100);
-				});
 			}
 		}
 	}
@@ -168,6 +163,15 @@ class ScriptChecker {
 		ide = hide.Ide.inst;
 		api = ScriptCache.loadApiFiles(config);
 		initTypes();
+
+		for (f in api.files) {
+			ide.fileWatcher.register(f, function() {
+				haxe.Timer.delay(() -> {
+					api = ScriptCache.loadApiFiles(config);
+					initTypes();
+				}, 100);
+			});
+		}
 	}
 
 	function initTypes() {
@@ -178,6 +182,138 @@ class ScriptChecker {
 		checker.allowAsync = true;
 		checker.types = api.types;
 		initDone = false;
+
+		var skind = new Map();
+		for( s in ide.database.sheets ) {
+			if( s.idCol != null )
+				skind.set(s.name, addCDBEnum(s.name.split("@").join(".")));
+		}
+		var tstring = checker.types.resolve("String");
+
+		var mfields = new Map<String, CField>();
+		inline function field(name,t,r,?r2) {
+			mfields.set(name, {
+				name : name,
+				t : r2 == null ? TFun([{ name : "v", t : t, opt : false }], r) : TFun([{ name : "v1", t: t, opt : false },{ name : "v2", t : r, opt : false }],r2),
+				isPublic : true,
+				complete : true,
+				canWrite : false,
+				params : [],
+			});
+		}
+		field("ceil",TFloat,TInt);
+		field("floor",TFloat,TInt);
+		field("round",TFloat,TInt);
+		field("sqrt",TFloat,TInt);
+		field("abs",TFloat,TFloat);
+		field("pow",TFloat,TFloat,TFloat);
+		@:privateAccess checker.setGlobal("Math", TInst({
+			name : "Math",
+			fields : mfields,
+			statics : [],
+			params : [],
+		},[]));
+
+		var _tarray = checker.types.resolve("Array");
+		if( tstring == null ) {
+			var cstring = checker.types.defineClass("String");
+			tstring = TInst(cstring,[]);
+		}
+		if( _tarray == null ) {
+			var carray = checker.types.defineClass("Array");
+			_tarray = TInst(carray,[]);
+		}
+
+		var carray = switch( _tarray ) { case TInst(c,_): c; default: throw "assert"; }
+		function tarray(t) return TInst(carray,[t]);
+		function mkType(name,t) return TType({name:name,params:[],t:t},[]);
+
+		var cdefs = new Map();
+		for( s in ide.database.sheets ) {
+			var cdef : CClass = {
+				name : hide.comp.cdb.Formulas.getTypeName(s),
+				fields : [],
+				statics : [],
+				params : [],
+			};
+			cdefs.set(s.name, cdef);
+			if( s.getParent() != null )
+				continue;
+			var afields = [
+				{
+					name : "all",
+					t : tarray(TInst(cdef,[])),
+					opt : false,
+				}
+			];
+			if( s.idCol != null ) {
+				var tkind = skind.get(s.name);
+				afields.push({
+					name : "resolve",
+					t : TFun([{t:tstring,name:"id",opt:false}],TInst(cdef,[])),
+					opt : false,
+				});
+				for( v in s.getLines() ) {
+					var id = Reflect.field(v, s.idCol.name);
+					if( id != null && id != "" )
+						afields.push({ name : id, t : tkind, opt : false });
+				}
+			}
+			var t = mkType("#"+cdef.name,TAnon(afields));
+			checker.setGlobal(cdef.name, t);
+		}
+
+		function defineEnum(name,values:Array<String>) {
+			values = [for( v in values ) hide.comp.cdb.Formulas.toIdent(v)];
+			var t = TEnum({ name : name, params : [], constructors : [for( v in values ) {name:v}] },[]);
+			var tvalues = [for( v in values ) {name:v,t:t,opt:false}];
+			checker.setGlobal(name,mkType("#"+name,TAnon(tvalues)));
+			return t;
+		}
+
+		for( s in ide.database.sheets ) {
+			var cdef = cdefs.get(s.name);
+			inline function addField(name,t) {
+				cdef.fields.set(name, { t : t, name : name, isPublic : true, complete : true, canWrite : false, params : [] });
+			}
+			for( c in s.columns ) {
+				var t = switch( c.type ) {
+				case TId: skind.get(s.name);
+				case TInt, TColor: TInt;
+				case TEnum(values):
+					defineEnum(cdef.name+"_"+c.name, values);
+				case TFlags(flags):
+					TAnon([for(f in flags) { name : f, t : TBool, opt : true }]);
+				case TFloat: TFloat;
+				case TBool: TBool;
+				case TDynamic: TDynamic;
+				case TRef(other): TInst(cdefs.get(other),[]);
+				case TCustom(_), TImage, TLayer(_), TTileLayer, TTilePos, TGradient, TCurve: null;
+				case TList, TProperties:
+					var t = TInst(cdefs.get(s.name+"@"+c.name),[]);
+					c.type == TList ? @:privateAccess checker.types.getType("Array",[t]) : t;
+				case TString, TFile, TGuid:
+					tstring;
+				}
+				if( t == null ) continue;
+				addField(c.name,t);
+			}
+			if( s.props.hasGroup ) {
+				var groups = [];
+				for( s in s.separators ) {
+					if( s.level == null && s.title != null ) {
+						if( s.index != 0 && groups.length == 0 ) groups.push("None");
+						groups.push(s.title);
+					}
+				}
+				var t = defineEnum(cdef.name+"_group",groups);
+				addField("group",t);
+			}
+			if( s.props.hasIndex )
+				addField("index",TInt);
+			checker.types.defineClass(cdef.name, cdef);
+		}
+
 		return true;
 	}
 
@@ -536,7 +672,7 @@ class ScriptChecker {
 	public function check( script : String, checkTypes = true ) {
 		var parser = makeParser();
 		try {
-			var expr = parser.parseString(script, "");
+		var expr = parser.parseString(script, "");
 
 			if( checkTypes )
 				init();
