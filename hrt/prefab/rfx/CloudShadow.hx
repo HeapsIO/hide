@@ -107,6 +107,46 @@ class CloudShadow extends RendererFX {
 		}
 	}
 
+	override function modulate(t : Float) {
+		var c : CloudShadow = cast super.modulate(t);
+		c.opacity = this.opacity * t;
+		return c;
+	}
+
+	override function transition( r1 : h3d.impl.RendererFX, r2 : h3d.impl.RendererFX ) : h3d.impl.RendererFX.RFXTransition {
+		var c1 : CloudShadow = cast r1;
+		var c2 : CloudShadow = cast r2;
+
+		var c = new CloudShadow(null, null);
+		c.opacity = c1.opacity;
+		c.scale = c1.scale;
+		c.speed = c1.speed;
+		c.angle = c1.angle;
+		c.texturePath = c1.texturePath;
+		c.distort = {
+			path : c1.distort.path,
+			scale : c1.distort.scale,
+			speed : c1.distort.speed,
+			angle : c1.distort.angle,
+			amount : c1.distort.amount
+		}
+
+		return { effect : cast c, setFactor : (f : Float) -> {
+			c.opacity = hxd.Math.lerp(c1.opacity, c2.opacity, f);
+			c.scale = hxd.Math.lerp(c1.scale, c2.scale, f);
+			c.speed = hxd.Math.lerp(c1.speed, c2.speed, f);
+			c.angle = hxd.Math.lerp(c1.angle, c2.angle, f);
+			c.texturePath = f < 0.5 ? c1.texturePath : c2.texturePath;
+			c.distort = {
+				path : f < 0.5 ? c1.distort.path : c2.distort.path,
+				scale : f < 0.5 ? c1.distort.scale : c2.distort.scale,
+				speed : f < 0.5 ? c1.distort.speed : c2.distort.speed,
+				angle : f < 0.5 ? c1.distort.angle : c2.distort.angle,
+				amount : f < 0.5 ? c1.distort.amount : c2.distort.amount
+			}
+		} };
+	}
+
 	#if editor
 	override function edit( ctx : hide.prefab.EditContext ) {
 		ctx.properties.add(new hide.Element('
