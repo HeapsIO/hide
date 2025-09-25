@@ -200,7 +200,7 @@ class Spline extends hrt.prefab.Object3D {
 
 		if (obj.samples != null) {
 			samples = [];
-			var objSamples : Array<SplinePoint> = obj.samples;
+			var objSamples : Array<Dynamic> = obj.samples;
 			for (s in objSamples) {
 				var objSample = new SplinePoint();
 				objSample.load(s);
