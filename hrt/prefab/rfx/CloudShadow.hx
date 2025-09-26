@@ -38,6 +38,33 @@ class DirLightWithClouds extends h3d.shader.pbr.Light {
 	};
 }
 
+class DirLightWithCloudsBlend extends DirLightWithClouds {
+
+	static var SRC = {
+
+		@param var blendFactor : Float;
+
+		@param var clouds1 : Sampler2D;
+		@param var clouds2 : Sampler2D;
+
+		@param var distort1 : Sampler2D;
+		@param var distort2 : Sampler2D;
+
+		function fragment() {
+			pbrLightDirection = lightDir;
+			pbrLightColor = lightColor;
+			pbrOcclusionFactor = occlusionFactor;
+
+			var pos = transformedPosition.xy * scale;
+			var uv = pos + time * speed;
+			if( hasDistort )
+				uv += mix(distort1.get(uv).r, distort2.get(uv).r, blendFactor) * distortAmount;
+			var cloudIntensity =  mix(clouds1.get(uv).r, clouds2.get(uv).r, blendFactor) * opacity;
+			pbrLightColor *= 1.0 - cloudIntensity.saturate();
+		}
+	};
+}
+
 @:access(h3d.scene.pbr.DirLight)
 @:access(h3d.scene.Renderer)
 class CloudShadow extends RendererFX {
@@ -118,6 +145,26 @@ class CloudShadow extends RendererFX {
 		var c2 : CloudShadow = cast r2;
 
 		var c = new CloudShadow(null, null);
+
+		@:privateAccess {
+			var dlwcBlend = new DirLightWithCloudsBlend();
+
+			dlwcBlend.clouds1 = Loader.currentInstance.load(c1.texturePath).toTexture();
+			dlwcBlend.clouds1.wrap = Repeat;
+			dlwcBlend.clouds2 = Loader.currentInstance.load(c2.texturePath).toTexture();
+			dlwcBlend.clouds2.wrap = Repeat;
+
+			dlwcBlend.distort1 = Loader.currentInstance.load(c1.distort.path).toTexture();
+			if( dlwcBlend.distort1 != null ) dlwcBlend.distort1.wrap = Repeat;
+			dlwcBlend.distort2 = Loader.currentInstance.load(c2.distort.path).toTexture();
+			if( dlwcBlend.distort2 != null ) dlwcBlend.distort2.wrap = Repeat;
+
+			dlwcBlend.hasDistort = dlwcBlend.distort1 != null && dlwcBlend.distort2 != null;
+
+			dlwcBlend.blendFactor = 0.;
+			c.dlwc = dlwcBlend;
+		}
+
 		c.opacity = c1.opacity;
 		c.scale = c1.scale;
 		c.speed = c1.speed;
@@ -139,11 +186,12 @@ class CloudShadow extends RendererFX {
 			c.texturePath = f < 0.5 ? c1.texturePath : c2.texturePath;
 			c.distort = {
 				path : f < 0.5 ? c1.distort.path : c2.distort.path,
-				scale : f < 0.5 ? c1.distort.scale : c2.distort.scale,
-				speed : f < 0.5 ? c1.distort.speed : c2.distort.speed,
-				angle : f < 0.5 ? c1.distort.angle : c2.distort.angle,
-				amount : f < 0.5 ? c1.distort.amount : c2.distort.amount
+				scale : hxd.Math.lerp(c1.distort.scale, c2.distort.scale, f),
+				speed : hxd.Math.lerp(c1.distort.speed, c2.distort.speed, f),
+				angle : hxd.Math.lerp(c1.distort.angle, c2.distort.angle, f),
+				amount : hxd.Math.lerp(c1.distort.amount, c2.distort.amount, f)
 			}
+			@:privateAccess cast (c.dlwc, DirLightWithCloudsBlend).blendFactor = f;
 		} };
 	}
 

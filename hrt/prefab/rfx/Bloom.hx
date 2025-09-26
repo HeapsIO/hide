@@ -66,6 +66,7 @@ class Bloom extends RendererFX {
 	override function transition( r1 : h3d.impl.RendererFX, r2 : h3d.impl.RendererFX ) : h3d.impl.RendererFX.RFXTransition {
 		var c1 : Bloom = cast r1;
 		var c2 : Bloom = cast r2;
+
 		var c = new Bloom(null, null);
 		c.size = c1.size;
 		c.threshold = c1.threshold;
@@ -90,7 +91,7 @@ class Bloom extends RendererFX {
 	override function edit( ctx : hide.prefab.EditContext ) {
 		ctx.properties.add(new hide.Element('
 			<dl>
-			<dt>Intensity</dt><dd><input type="range" min="0" max="2" field="intensity"/></dd>
+			<dt>Intensity</dt><dd><input type="range" min="0" max="1" field="intensity"/></dd>
 			<dt>Threshold</dt><dd><input type="range" min="0" max="1" field="threshold"/></dd>
 			<dt>Size</dt><dd><input type="range" min="0" max="1" field="size"/></dd>
 			<dt>Blur</dt><dd><input type="range" min="0" max="20" field="blur"/></dd>
