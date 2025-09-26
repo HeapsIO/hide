@@ -1610,6 +1610,7 @@ class Editor extends Component {
 				this.currentSheet = s;
 				break;
 			}
+		@:privateAccess cdbTable?.syncTabs();
 	}
 
 	function isUniqueID( sheet : cdb.Sheet, obj : {}, id : String ) {
