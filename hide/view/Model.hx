@@ -1723,7 +1723,7 @@ class Model extends FileView {
 				if (anim == a)
 					selIdx = aIdx + 1;
 			}
-			var sel = tools.addSelect("play-circle");
+			var sel = tools.addSelect("play-circle", null, this.saveDisplayKey + "/animationSearch");
 			this.animSelector = sel;
 			var content = [for( a in anims ) {
 				var label = scene.animationName(a);

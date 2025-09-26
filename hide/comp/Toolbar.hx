@@ -158,7 +158,7 @@ class Toolbar extends Component {
 		return color;
 	}
 
-	public function addSelect<T>( icon : String, ?label : String ) : ToolSelect<T> {
+	public function addSelect<T>( icon : String, ?label : String, ?saveSearchKey: String ) : ToolSelect<T> {
 		var e = new Element('
 			<div class="select" title="${label==null ? "" : label}">
 				<div class="icon ico ico-$icon"></div>
@@ -199,7 +199,7 @@ class Toolbar extends Component {
 			icon.toggleClass("ico-caret-down", visible);
 
 			if (visible) {
-				var menu = ContextMenu.createDropdown(e.find(".dropdown").get(0), items, { search: ContextMenu.SearchMode.Visible });
+				var menu = ContextMenu.createDropdown(e.find(".dropdown").get(0), items, { search: ContextMenu.SearchMode.Visible, rememberSearchKey: saveSearchKey });
 				menu.onClose = () -> {
 					icon.toggleClass("ico-caret-right", true);
 					icon.toggleClass("ico-caret-down", false);

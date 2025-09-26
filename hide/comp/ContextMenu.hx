@@ -65,6 +65,11 @@ typedef MenuOptions = {
     **/
     ?flat: Bool,
 
+	 /**
+		If true, will save the search string to this key name
+	 **/
+	 ?rememberSearchKey: String
+
 }
 
 class ContextMenu {
@@ -166,17 +171,25 @@ class ContextMenu {
         untyped rootElement.showPopover();
 
         menu = js.Browser.document.createMenuElement();
-        if (options.search != None) {
+
+		filter = "";
+		if (options.rememberSearchKey != null) {
+			filter = Ide.inst.localStorage.getItem(options.rememberSearchKey) ?? "";
+		}
+
+		if (options.search != None) {
             searchBar = js.Browser.document.createDivElement();
             rootElement.appendChild(searchBar);
             searchBar.classList.add("search-bar");
 
             searchInput = js.Browser.document.createInputElement();
             searchInput.type = "text";
+			searchInput.value = filter;
             searchInput.placeholder = "Search ...";
             searchInput.onkeyup = (e:js.html.KeyboardEvent) -> {
                 if (filter != searchInput.value) {
                     filter = searchInput.value;
+					Ide.inst.localStorage.setItem(options.rememberSearchKey, filter);
                     refreshMenu();
                 }
             }
@@ -184,6 +197,7 @@ class ContextMenu {
             searchInput.onblur = (e) -> {
                 rootElement.focus();
             }
+
 
             searchBar.appendChild(searchInput);
         }
@@ -202,6 +216,7 @@ class ContextMenu {
             rootElement.addEventListener("keydown", onGlobalKeyDown);
             if (options.search == Visible) {
                 searchInput.focus();
+				searchInput.select();
             }
             else {
                 rootElement.focus();
