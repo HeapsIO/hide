@@ -735,7 +735,7 @@ class ScriptEditor extends CodeEditor {
 
 	override function getCompletion( position : Int ) : Array<monaco.Languages.CompletionItem> {
 		var script = code.substr(0,position);
-		var vars = checker.checker.getGlobals();
+		var vars : Map<String,TType>;
 		if( script.charCodeAt(script.length-1) == ".".code ) {
 			vars = [];
 			var t = checker.getCompletion(script);
@@ -743,6 +743,16 @@ class ScriptEditor extends CodeEditor {
 				var fields = checker.checker.getFields(t);
 				for( f in fields )
 					vars.set(f.name, f.t);
+			}
+		} else {
+			vars = checker.checker.getGlobals();
+			for( ev => t in @:privateAccess checker.checker.events ) {
+				vars.set(ev,t);
+				switch( t ) {
+				case TFun(args,_):
+					vars.set("function "+ev+"("+[for( a in args ) a.name].join(",")+") {\n}", t);
+				default:
+				}
 			}
 		}
 		var checker = checker.checker;
