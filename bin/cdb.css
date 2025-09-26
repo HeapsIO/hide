@@ -372,9 +372,6 @@
   border: 2px solid white;
   outline: 1px solid black;
 }
-.cdb .cdb-sheet td.t_flags {
-  overflow: visible;
-}
 .cdb .cdb-sheet td.t_ref,
 .cdb .cdb-sheet td.t_enum {
   overflow: visible;
