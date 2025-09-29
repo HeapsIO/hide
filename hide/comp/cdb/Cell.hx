@@ -465,10 +465,10 @@ class Cell {
 				var pval = Reflect.field(v, c.name);
 				if( pval == null && c.opt ) continue;
 				if( !canViewSubColumn(ps, c) ) continue;
-				out.push(c.name+" : "+valueHtml(c, pval, ps, v, scope).str);
+				out.push('<div class="label">${c.name} : <div class="content">${valueHtml(c, pval, ps, v, scope).str}</div></div>');
 			}
 			scope.pop();
-			html(out.join("<br/>"));
+			html(out.join(""));
 		case TCustom(name):
 			var t = editor.base.getCustomType(name);
 			var isHtml = false;
