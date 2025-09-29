@@ -122,7 +122,8 @@ class CdbTable extends hide.ui.View<{}> {
 			}
 
 			if (colNo >= 0 && lineNo >= 0) {
-				editor.cursor.set(curTable, colNo, lineNo, i == path.length-1, true);
+				var isLastJump : Bool = i == path.length-1;
+				editor.cursor.set(curTable, colNo, lineNo, null, isLastJump, isLastJump, isLastJump);
 				lastCell = editor.cursor.getCell();
 				if( editor.cursor.table != null) {
 					editor.cursor.table.revealLine(lineNo);
