@@ -1129,4 +1129,11 @@ class FancyTree<TreeItem> extends hide.comp.Component {
 		return (openState.get(data.uniqueName) ?? false) || data.filterState.has(Open);
 	}
 
+	function getTreeItemData(item: TreeItem) : TreeItemData<TreeItem> {
+		for (i in itemMap.keys())
+			if (itemMap.get(i).item == item)
+				return itemMap.get(i);
+		return null;
+	}
+
 }

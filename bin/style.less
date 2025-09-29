@@ -632,6 +632,18 @@ input[type=checkbox] {
 		&.isOverride.isOverriden.isOverridenNew {
 			color: rgb(38, 199, 38);
 		}
+
+		&.warning {
+			.header-icon .ico::after {
+				font-family: "FontAwesome";
+				content: "\f071";
+				color: #ffb922;
+				font-size: 0.6em;
+				position: absolute;
+				left: -3px;
+				top: 7px;
+			}
+		}
 	}
 }
 

@@ -6,35 +6,54 @@ class Constraint extends Prefab {
 	@:s public var target(default,null) : String;
 	@:s public var positionOnly(default,null) : Bool;
 
-	public function apply( root : h3d.scene.Object ) : Bool {
-		if (object == null || target == null)
-			return true;
-		var srcObj = root.getObjectByName(object.split(".").pop());
-		var targetObj = root.getObjectByName(target.split(".").pop());
-		if( srcObj != null && targetObj != null ){
+	public function apply() : Bool {
+		var binds = getBindedObjects();
+		if( binds.object != null && binds.target != null ){
 			#if editor
-			var p = targetObj;
+			var p = binds.target;
 			while(p != null) {
-				if (p == srcObj) {
+				if (p == binds.object) {
 					target = null;
 					return false;
 				}
 				p = p.follow ?? p.parent;
 			}
 			#end
-			srcObj.follow = targetObj;
-			srcObj.followPositionOnly = positionOnly;
+			binds.object.follow = binds.target;
+			binds.object.followPositionOnly = positionOnly;
 		}
 		return true;
 	}
 
+	function getBindedObjects() : { object : h3d.scene.Object, target : h3d.scene.Object } {
+		var res = { object : null, target : null };
+		if (object != null)
+			res.object = shared.root3d.getObjectByName(object.split(".").pop());
+		if (target != null)
+				res.target = shared.root3d.getObjectByName(target.split(".").pop());
+		return res;
+	}
+
 	override function makeInstance() {
-		apply(shared.root3d);
+		apply();
 	}
 
 	#if editor
 	override function getHideProps() : hide.prefab.HideProps {
-		return { icon : "lock", name : "Constraint" };
+		return {
+			icon : "lock",
+			name : "Constraint",
+			applyTreeStyle: (p : hrt.prefab.Prefab, element : js.html.Element) -> {
+				var binds = getBindedObjects();
+				if (binds.object != null && binds.target != null) {
+					element.classList.remove("warning");
+					element.title = this.name;
+					return;
+				}
+				element.classList.add("warning");
+				element.title = "Constraint should have 2 objects binded to work!";
+			}
+		};
 	}
 
 	override function edit(ctx:hide.prefab.EditContext) {
@@ -47,11 +66,15 @@ class Constraint extends Prefab {
 			</dl>
 		'),this, function(_) {
 			if( curObj != null ) curObj.follow = null;
-			if (!apply(shared.root3d)) {
+			if (!apply()) {
 				hide.Ide.inst.quickError("Loop detected in constraints");
 				ctx.rebuildProperties();
 			}
 			curObj = getRoot().locateObject(object);
+
+			var itemData = @:privateAccess ctx.scene.editor.sceneTree.getTreeItemData(this);
+			if (itemData != null)
+				@:privateAccess ctx.scene.editor.sceneTree.applyStyle(this, itemData.element);
 		});
 
 		for( select in [props.find("[field=object]"), props.find("[field=target]")] ) {

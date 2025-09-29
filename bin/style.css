@@ -571,6 +571,16 @@ input[type=checkbox].indeterminate:after {
 .hide-scene-layer fancy-tree-item.isOverride.isOverriden.isOverridenNew {
   color: #26c726;
 }
+.hide-scenetree fancy-tree-item.warning .header-icon .ico::after,
+.hide-scene-layer fancy-tree-item.warning .header-icon .ico::after {
+  font-family: "FontAwesome";
+  content: "\f071";
+  color: #ffb922;
+  font-size: 0.6em;
+  position: absolute;
+  left: -3px;
+  top: 7px;
+}
 .hide-range {
   display: inline-block;
 }

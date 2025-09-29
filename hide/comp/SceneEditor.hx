@@ -2161,6 +2161,9 @@ class SceneEditor {
 		}
 		tree.applyStyle = (p : hrt.prefab.Prefab, el : js.html.Element) -> {
 			applyTreeStyle(p, targetTree);
+			var props = p.getHideProps();
+			if (props.applyTreeStyle != null)
+				props.applyTreeStyle(p, el);
 		}
 		tree.getButtons = (p : hrt.prefab.Prefab) -> {
 			var buttons: Array<hide.comp.FancyTree.TreeButton<hrt.prefab.Prefab>> = [];

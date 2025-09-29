@@ -11,4 +11,5 @@ typedef HideProps = {
 	@:optional dynamic function onChildUpdate( p : hrt.prefab.Prefab ) : Void;
 	@:optional dynamic function onResourceRenamed( map : (oldPath : String) -> String ) : Void;
 	@:optional dynamic function hideChildren( p : hrt.prefab.Prefab ) : Bool;
+	@:optional dynamic function applyTreeStyle( p : hrt.prefab.Prefab, element : js.html.Element ) : Void;
 }
