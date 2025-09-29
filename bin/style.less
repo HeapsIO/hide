@@ -1,5 +1,9 @@
 @import "common.less";
 
+:root {
+	interpolate-size: allow-keywords;
+}
+
 @font-face {
 	font-family: 'FontAwesome';
 	src: url('libs/fontawesome-webfont.eot?v=4.7.0');
@@ -376,6 +380,8 @@ input[type=checkbox] {
 	position: relative;
 	min-width: 0;
 	min-height: 0;
+	scrollbar-gutter: stable;
+
 }
 
 .hide-modal {
@@ -1358,7 +1364,7 @@ input[type=checkbox] {
 		}
 	}
 
-	.group {
+	.group, .group2 {
 		--level: 0;
 		width: calc(100% - var(--level) * 5%);
 		margin: 0 auto;
@@ -1457,6 +1463,18 @@ input[type=checkbox] {
 					}
 				}
 			}
+		}
+	}
+
+	.group2 {
+		> .content {
+			overflow: hidden;
+			height: 0;
+			transition: height ease 100ms;
+		}
+
+		&.open > .content {
+			height: max-content;
 		}
 	}
 

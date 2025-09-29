@@ -1,3 +1,6 @@
+:root {
+  interpolate-size: allow-keywords;
+}
 @font-face {
   font-family: 'FontAwesome';
   src: url('libs/fontawesome-webfont.eot?v=4.7.0');
@@ -350,6 +353,7 @@ input[type=checkbox].indeterminate:after {
   position: relative;
   min-width: 0;
   min-height: 0;
+  scrollbar-gutter: stable;
 }
 .hide-modal {
   position: fixed;
@@ -1234,13 +1238,15 @@ input[type=checkbox].indeterminate:after {
 .hide-properties dl dl .hide-range input[type=text] {
   width: 30px;
 }
-.hide-properties .group {
+.hide-properties .group,
+.hide-properties .group2 {
   --level: 0;
   width: calc(100% - var(--level) * 5%);
   margin: 0 auto;
   margin-top: 5px;
 }
-.hide-properties .group > .title {
+.hide-properties .group > .title,
+.hide-properties .group2 > .title {
   background-color: rgb(calc(25 + (var(--level) * 3)), calc(25 + (var(--level) * 3)), calc(25 + (var(--level) * 3)));
   text-align: center;
   cursor: pointer;
@@ -1248,7 +1254,8 @@ input[type=checkbox].indeterminate:after {
   padding: 1px;
   position: relative;
 }
-.hide-properties .group > .title input[type=button] {
+.hide-properties .group > .title input[type=button],
+.hide-properties .group2 > .title input[type=button] {
   border: none;
   position: absolute;
   top: 0px;
@@ -1257,17 +1264,21 @@ input[type=checkbox].indeterminate:after {
   padding: 1px 5px;
   background-color: #282828;
 }
-.hide-properties .group > .title input[type=button]:hover {
+.hide-properties .group > .title input[type=button]:hover,
+.hide-properties .group2 > .title input[type=button]:hover {
   background-color: #464646;
 }
-.hide-properties .group > .title > .checkbox-wrapper {
+.hide-properties .group > .title > .checkbox-wrapper,
+.hide-properties .group2 > .title > .checkbox-wrapper {
   position: absolute;
   left: 5px;
 }
-.hide-properties .group > .content {
+.hide-properties .group > .content,
+.hide-properties .group2 > .content {
   margin-bottom: 5px;
 }
-.hide-properties .group > .content .array {
+.hide-properties .group > .content .array,
+.hide-properties .group2 > .content .array {
   min-height: 5px;
   overflow-y: scroll;
   overflow-x: hidden;
@@ -1278,14 +1289,18 @@ input[type=checkbox].indeterminate:after {
   margin-bottom: 0px;
   border-radius: 3px;
 }
-.hide-properties .group > .content .array.disabled {
+.hide-properties .group > .content .array.disabled,
+.hide-properties .group2 > .content .array.disabled {
   filter: brightness(50%);
 }
 .hide-properties .group > .content .array.disabled *,
-.hide-properties .group > .content .array.disabled ::after {
+.hide-properties .group2 > .content .array.disabled *,
+.hide-properties .group > .content .array.disabled ::after,
+.hide-properties .group2 > .content .array.disabled ::after {
   cursor: not-allowed !important;
 }
-.hide-properties .group > .content .array .line {
+.hide-properties .group > .content .array .line,
+.hide-properties .group2 > .content .array .line {
   display: flex;
   align-items: center;
   margin-top: 1px;
@@ -1294,7 +1309,8 @@ input[type=checkbox].indeterminate:after {
   border-radius: 3px;
   background: #545454;
 }
-.hide-properties .group > .content .array .line .inclusion {
+.hide-properties .group > .content .array .line .inclusion,
+.hide-properties .group2 > .content .array .line .inclusion {
   display: flex;
   justify-content: center;
   width: 10px;
@@ -1305,23 +1321,36 @@ input[type=checkbox].indeterminate:after {
   font-weight: 900;
   border-radius: 5px;
 }
-.hide-properties .group > .content .array .line .inclusion:hover {
+.hide-properties .group > .content .array .line .inclusion:hover,
+.hide-properties .group2 > .content .array .line .inclusion:hover {
   cursor: pointer;
   filter: opacity(80%);
 }
-.hide-properties .group > .content .array .line input {
+.hide-properties .group > .content .array .line input,
+.hide-properties .group2 > .content .array .line input {
   margin-right: 5px;
 }
-.hide-properties .group > .content .array .line input:not([type=checkbox]) {
+.hide-properties .group > .content .array .line input:not([type=checkbox]),
+.hide-properties .group2 > .content .array .line input:not([type=checkbox]) {
   flex: 1;
 }
-.hide-properties .group > .content .array .line .remove {
+.hide-properties .group > .content .array .line .remove,
+.hide-properties .group2 > .content .array .line .remove {
   margin: 0 5px 0 5px;
   padding: 0 5px 0 5px;
   cursor: pointer;
 }
-.hide-properties .group > .content .array .line .remove:hover {
+.hide-properties .group > .content .array .line .remove:hover,
+.hide-properties .group2 > .content .array .line .remove:hover {
   filter: brightness(80%);
+}
+.hide-properties .group2 > .content {
+  overflow: hidden;
+  height: 0;
+  transition: height ease 100ms;
+}
+.hide-properties .group2.open > .content {
+  height: max-content;
 }
 .hide-properties .btn-list * {
   margin-bottom: 5px;

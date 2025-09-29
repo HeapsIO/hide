@@ -6,6 +6,8 @@ class EditContext {
 
 	#if editor
 
+	public var hideKitRoot: hide.kit.Element;
+
 	/**
 		list of functions to call in the sceneEditor `update()`
 	**/
