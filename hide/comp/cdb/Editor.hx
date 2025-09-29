@@ -1750,7 +1750,7 @@ class Editor extends Component {
 				filters.pop();
 				updateFilters();
 
-				if (filters.length <= 1)
+				if (searchBox.find("input").length <= 1)
 					searchBox.find(".remove-btn").hide();
 			}
 		});
@@ -1761,6 +1761,7 @@ class Editor extends Component {
 			searchBox.find(".search-bar-cdb").not(':first').remove();
 			searchBox.find(".expr-btn").not(':first').remove();
 			filters.clear();
+			searchBox.find(".remove-btn").hide();
 			if(searchBox.find(".expr-btn").hasClass("fa-superscript"))
 				searchBox.find(".expr-btn").removeClass("fa-superscript").addClass("fa-font");
 			searchBox.toggle();
