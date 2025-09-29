@@ -6,8 +6,8 @@ class Constraint extends Prefab {
 	@:s public var target(default,null) : String;
 	@:s public var positionOnly(default,null) : Bool;
 
-	public function apply() : Bool {
-		var binds = getBindedObjects();
+	public function apply(root : h3d.scene.Object) : Bool {
+		var binds = getBindedObjects(root);
 		if( binds.object != null && binds.target != null ){
 			#if editor
 			var p = binds.target;
@@ -25,17 +25,17 @@ class Constraint extends Prefab {
 		return true;
 	}
 
-	function getBindedObjects() : { object : h3d.scene.Object, target : h3d.scene.Object } {
+	function getBindedObjects(root : h3d.scene.Object) : { object : h3d.scene.Object, target : h3d.scene.Object } {
 		var res = { object : null, target : null };
 		if (object != null)
-			res.object = shared.root3d.getObjectByName(object.split(".").pop());
+			res.object = root.getObjectByName(object.split(".").pop());
 		if (target != null)
-				res.target = shared.root3d.getObjectByName(target.split(".").pop());
+				res.target = root.getObjectByName(target.split(".").pop());
 		return res;
 	}
 
 	override function makeInstance() {
-		apply();
+		apply(shared.root3d);
 	}
 
 	#if editor
@@ -44,7 +44,7 @@ class Constraint extends Prefab {
 			icon : "lock",
 			name : "Constraint",
 			applyTreeStyle: (p : hrt.prefab.Prefab, element : js.html.Element) -> {
-				var binds = getBindedObjects();
+				var binds = getBindedObjects(shared.root3d);
 				if (binds.object != null && binds.target != null) {
 					element.classList.remove("warning");
 					element.title = this.name;
@@ -66,7 +66,7 @@ class Constraint extends Prefab {
 			</dl>
 		'),this, function(_) {
 			if( curObj != null ) curObj.follow = null;
-			if (!apply()) {
+			if (!apply(shared.root3d)) {
 				hide.Ide.inst.quickError("Loop detected in constraints");
 				ctx.rebuildProperties();
 			}
