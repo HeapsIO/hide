@@ -14,8 +14,8 @@ abstract class Input<ValueType> extends Element {
 		return label;
 	}
 
-	var input: WrappedElement;
-	var labelElement: WrappedElement;
+	var input: NativeElement;
+	var labelElement: NativeElement;
 
 	function get_value() return value;
 	function set_value(v:ValueType) {
@@ -24,11 +24,11 @@ abstract class Input<ValueType> extends Element {
 		return value;
 	}
 
-	override function makeWrap():WrappedElement {
+	override function makeNative():NativeElement {
 		var parentLine = Std.downcast(parent, Line);
 
 		#if js
-		var container : WrappedElement;
+		var container : NativeElement;
 		if (parentLine == null) {
 			container = js.Browser.document.createElement("kit-line");
 		} else {
@@ -47,7 +47,7 @@ abstract class Input<ValueType> extends Element {
 		#end
 	}
 
-	abstract function makeInput() : WrappedElement;
+	abstract function makeInput() : NativeElement;
 
 	public dynamic function onValueChange(temporaryEdit: Bool) : Void {
 
