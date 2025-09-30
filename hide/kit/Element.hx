@@ -11,30 +11,30 @@ class Element {
 	/**
 		The underlying implementation element
 	**/
-	var wrap: WrappedElement;
+	var native: NativeElement;
 
 	/**
-		Where wrapped children element should be added
+		Where nativeped children element should be added
 	**/
-	var wrapContent(get, never) : WrappedElement;
+	var nativeContent(get, never) : NativeElement;
 
 
 	inline function get_numChildren() return children?.length ?? 0;
-	function get_wrapContent() return wrap;
+	function get_nativeContent() return native;
 
 	public function new(ctx: hide.prefab.EditContext, parent: Element, id: String) {
 		this.editorContext = ctx;
 		this.parent = parent;
 		this.id = id;
 
-		wrap = makeWrap();
+		native = makeNative();
 
 		if (this.parent != null) {
 			this.parent.addChild(this);
 		}
 	}
 
-	function makeWrap() : WrappedElement {
+	function makeNative() : NativeElement {
 		#if js
 		return js.Browser.document.createDivElement();
 		#else
@@ -53,9 +53,9 @@ class Element {
 		children.insert(position, newChild);
 		#if js
 		if (childBefore != null) {
-			childBefore.wrap.before(newChild.wrap);
+			childBefore.native.before(newChild.native);
 		} else {
-			wrapContent.append(newChild.wrap);
+			nativeContent.append(newChild.native);
 		}
 		#else
 		throw "HideKitHL Implement";

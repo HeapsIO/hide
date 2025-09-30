@@ -13,7 +13,7 @@ class Line extends Element {
 
 		if (labelElement == null) {
 			labelElement = js.Browser.document.createElement("kit-label");
-			wrap.prepend(labelElement);
+			native.prepend(labelElement);
 		}
 
 		labelElement.innerHTML = label;
@@ -24,9 +24,9 @@ class Line extends Element {
 		return label;
 	}
 
-	public var labelElement: WrappedElement;
+	public var labelElement: NativeElement;
 
-	override function makeWrap():WrappedElement {
+	override function makeNative():NativeElement {
 		#if js
 		return js.Browser.document.createElement("kit-line");
 		#else

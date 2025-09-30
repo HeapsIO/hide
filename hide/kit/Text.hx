@@ -6,7 +6,7 @@ class Text extends Element {
 	function set_content(v: String) : String {
 		content = v;
 		#if js
-		wrap.textContent = content;
+		native.textContent = content;
 		#else
 		throw "HideKitHL Implement";
 		#end
@@ -18,7 +18,7 @@ class Text extends Element {
 		this.content = content;
 	}
 
-	override function makeWrap() : WrappedElement {
+	override function makeNative() : NativeElement {
 		#if js
 		return js.Browser.document.createParagraphElement();
 		#else
