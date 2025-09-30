@@ -7,7 +7,7 @@ class KitTest extends Object3D {
 		// TEST
 		{
 			var root = new hide.kit.Element(ctx, null, "");
-			ctx.properties.element[0].append(@:privateAccess root.wrap);
+			ctx.properties.element[0].append(@:privateAccess root.native);
 			{
 				var cat = new hide.kit.Category(ctx, root, "test", "Test");
 				{
