@@ -18,7 +18,7 @@ class Text extends Element {
 		this.content = content;
 	}
 
-	override function makeObject() : WrappedElement {
+	override function makeWrap() : WrappedElement {
 		#if js
 		return js.Browser.document.createParagraphElement();
 		#else

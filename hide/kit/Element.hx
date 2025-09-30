@@ -27,18 +27,16 @@ class Element {
 		this.parent = parent;
 		this.id = id;
 
-		wrap = makeObject();
+		wrap = makeWrap();
 
 		if (this.parent != null) {
 			this.parent.addChild(this);
 		}
 	}
 
-	function makeObject() : WrappedElement {
+	function makeWrap() : WrappedElement {
 		#if js
-		var e = js.Browser.document.createDivElement();
-		e.textContent = Type.getClassName(Type.getClass(this));
-		return e;
+		return js.Browser.document.createDivElement();
 		#else
 		throw "HideKitHL Implement";
 		#end
