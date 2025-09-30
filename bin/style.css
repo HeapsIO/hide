@@ -1344,13 +1344,60 @@ input[type=checkbox].indeterminate:after {
 .hide-properties .group2 > .content .array .line .remove:hover {
   filter: brightness(80%);
 }
+.hide-properties .group2 * {
+  box-sizing: border-box;
+}
 .hide-properties .group2 > .content {
   overflow: hidden;
   height: 0;
   transition: height ease 100ms;
+  display: flex;
+  flex-direction: column;
+  min-height: 0;
+  gap: 2px;
 }
 .hide-properties .group2.open > .content {
   height: max-content;
+}
+.hide-properties .group2 p {
+  text-align: center;
+  margin: 0;
+  padding: 0;
+}
+.hide-properties .group2 kit-line {
+  display: flex;
+  align-items: center;
+  gap: 0.2em;
+  min-width: 0;
+  /** Container for elements that need to be grouped together, without disturbing the hierarchy with the display:content**/
+}
+.hide-properties .group2 kit-line kit-label {
+  font-size: 0.95em;
+}
+.hide-properties .group2 kit-line kit-label:empty {
+  display: none;
+}
+.hide-properties .group2 kit-line > kit-label:first-child,
+.hide-properties .group2 kit-line > kit-div:first-child > kit-label:first-child {
+  flex: 0 0 85px;
+  text-align: right;
+  display: block;
+}
+.hide-properties .group2 kit-line kit-div {
+  display: contents;
+}
+.hide-properties .group2 kit-line input {
+  font-variant-numeric: tabular-nums;
+  min-width: 0;
+  flex: 1 1;
+  text-align: right;
+  cursor: ew-resize;
+  width: 100%;
+  max-width: 100%;
+  font-size: 0.95em;
+}
+.hide-properties .group2 kit-line kit-slider {
+  flex: 1 1;
 }
 .hide-properties .btn-list * {
   margin-bottom: 5px;
