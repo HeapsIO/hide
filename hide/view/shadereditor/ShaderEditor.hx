@@ -297,28 +297,26 @@ class ShaderEditor extends hide.view.FileView implements GraphInterface.IGraphEd
 
 		var rightPannel = new Element(
 			'<div id="rightPanel">
-				<div style="flex-grow: 1; display: flex; flex-direction: column;">
-					<div class="hide-block flexible param-collapse" >
-						<h1 class="subtle-title">Parameters <fancy-button class="quieter btn-collapse"><div class="icon ico ico-chevron-down"></div></fancy-button></h1>
+				<div class="hide-block flexible param-collapse" >
+					<h1 class="subtle-title">Parameters <fancy-button class="quieter btn-collapse"><div class="icon ico ico-chevron-down"></div></fancy-button></h1>
 
-						<to-collapse>
-						<fancy-array class="parameters merge-bottom" style="flex-grow: 1">
+					<to-collapse>
+					<fancy-array class="parameters merge-bottom" style="flex-grow: 1">
 
-						</fancy-array>
-						<fancy-button class="fancy-small createParameter merge-top"><div class="icon ico ico-plus"></div></fancy-button>
-						</to-collapse>
-					</div>
+					</fancy-array>
+					<fancy-button class="fancy-small createParameter merge-top"><div class="icon ico ico-plus"></div></fancy-button>
+					</to-collapse>
+				</div>
 
 
-					<div class="hide-block flexible var-collapse">
-						<h1 class="subtle-title">Variables <fancy-button class="quieter btn-collapse"><div class="icon ico ico-chevron-down"></div></fancy-button></h1 class="subtle-title">
+				<div class="hide-block flexible var-collapse">
+					<h1 class="subtle-title">Variables <fancy-button class="quieter btn-collapse"><div class="icon ico ico-chevron-down"></div></fancy-button></h1 class="subtle-title">
 
-						<to-collapse>
-						<fancy-array class="variables merge-bottom" style="flex-grow: 1">
-						</fancy-array>
-						<fancy-button class="fancy-small add-variable merge-top"><div class="icon ico ico-plus"></div></fancy-button>
-						</to-collapse>
-					</div>
+					<to-collapse>
+					<fancy-array class="variables merge-bottom" style="flex-grow: 1">
+					</fancy-array>
+					<fancy-button class="fancy-small add-variable merge-top"><div class="icon ico ico-plus"></div></fancy-button>
+					</to-collapse>
 				</div>
 
 				<div class="options-block hide-block">

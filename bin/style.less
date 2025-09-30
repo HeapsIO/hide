@@ -2444,6 +2444,8 @@ input[type=checkbox] {
 		display: flex;
 		flex-direction: column;
 		min-width: 270px;
+		min-height: 0;
+		height: 100%;
 
 		padding-top: 10px;
 		border-left: 1px solid #444444;
@@ -5570,16 +5572,21 @@ fancy-array {
 					border: none;
 
 					font-size: 14px;
-
+					border-radius: 3px;
 
 					&:hover {
 						outline: 1px solid var(--fancy-border-color);
-						border-radius: 3px;
 					}
 
 					&:focus {
 						outline: 1px solid var(--fancy-border-color-focus);
-						border-radius: 3px;
+					}
+
+					&[disabled] {
+						outline: none;
+						cursor:default;
+						pointer-events: none;
+						user-select: none;
 					}
 				}
 			}

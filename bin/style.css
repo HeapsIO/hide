@@ -2150,6 +2150,7 @@ input[type=checkbox].indeterminate:after {
   display: flex;
   flex-direction: column;
   min-width: 270px;
+  min-height: 0;
   padding-top: 10px;
   border-left: 1px solid #444444;
   background: #222222;
@@ -4689,14 +4690,19 @@ fancy-array fancy-items fancy-item fancy-item-header > input[type="text"] {
   outline: none;
   border: none;
   font-size: 14px;
+  border-radius: 3px;
 }
 fancy-array fancy-items fancy-item fancy-item-header > input[type="text"]:hover {
   outline: 1px solid var(--fancy-border-color);
-  border-radius: 3px;
 }
 fancy-array fancy-items fancy-item fancy-item-header > input[type="text"]:focus {
   outline: 1px solid var(--fancy-border-color-focus);
-  border-radius: 3px;
+}
+fancy-array fancy-items fancy-item fancy-item-header > input[type="text"][disabled] {
+  outline: none;
+  cursor: default;
+  pointer-events: none;
+  user-select: none;
 }
 fancy-array fancy-items fancy-item fancy-item-content {
   display: none;

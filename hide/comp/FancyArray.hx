@@ -95,7 +95,7 @@ class FancyArray<T> extends hide.comp.Component {
 					}
 				});
 			} else {
-				name.attr("readonly");
+				name.attr("disabled", "true");
 			}
 
 			name.on("contextmenu", (e) -> {
