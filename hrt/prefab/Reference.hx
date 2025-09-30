@@ -107,6 +107,11 @@ class Reference extends Object3D {
 		}
 	}
 
+	override function reload( p : Dynamic ) {
+		super.reload(p);
+		this.refInstance = null;
+	}
+
 	#if editor
 	function computeDiffFromSource() : Dynamic {
 		var orig = originalSource;
