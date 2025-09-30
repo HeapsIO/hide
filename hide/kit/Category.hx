@@ -10,10 +10,10 @@ class Category extends Element {
 
 	#if js
 	var jsContent : js.html.Element;
-	override function get_wrapContent() return jsContent;
+	override function get_nativeContent() return jsContent;
 	#end
 
-	override function makeWrap(): WrappedElement {
+	override function makeNative(): NativeElement {
 		#if js
 		var e = new hide.Element('
 			<div class="group2 open" name="$name" style="--level: 0">

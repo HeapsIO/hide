@@ -3,7 +3,7 @@ package hide.kit;
 class Slider extends Input<Float> {
 	var slider: js.html.InputElement;
 
-	function makeInput() : WrappedElement {
+	function makeInput() : NativeElement {
 		#if js
 		var container = js.Browser.document.createElement("kit-slider");
 		slider = js.Browser.document.createInputElement();
