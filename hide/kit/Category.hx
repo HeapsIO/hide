@@ -13,7 +13,7 @@ class Category extends Element {
 	override function get_wrapContent() return jsContent;
 	#end
 
-	override function makeObject(): WrappedElement {
+	override function makeWrap(): WrappedElement {
 		#if js
 		var e = new hide.Element('
 			<div class="group2 open" name="$name" style="--level: 0">
