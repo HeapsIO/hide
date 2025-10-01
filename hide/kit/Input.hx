@@ -7,7 +7,7 @@ abstract class Input<ValueType> extends Element {
 	function set_label(v: String) : String {
 		label = v;
 		#if js
-		labelElement.innerHTML = label;
+		labelElement?.innerHTML = label;
 		#else
 		throw "implement";
 		#end
@@ -20,28 +20,32 @@ abstract class Input<ValueType> extends Element {
 	function get_value() return value;
 	function set_value(v:ValueType) {
 		value = v;
-		syncValue();
+		syncValueUI();
 		return value;
 	}
 
-	override function makeNative():NativeElement {
+	override function makeSelf():Void {
 		var parentLine = Std.downcast(parent, Line);
 
 		#if js
-		var container : NativeElement;
 		if (parentLine == null) {
-			container = js.Browser.document.createElement("kit-line");
+			native = js.Browser.document.createElement("kit-line");
 		} else {
-			container = js.Browser.document.createElement("kit-div");
+			native = js.Browser.document.createElement("kit-div");
 		}
 
 		labelElement = js.Browser.document.createElement("kit-label");
-		container.appendChild(labelElement);
+		if (parentLine == null || (parent.children[0] == this && parentLine.label == null)) {
+			labelElement.classList.add("first");
+		}
+		labelElement.innerHTML = label;
+
+		native.appendChild(labelElement);
 
 		input = makeInput();
-		container.appendChild(input);
+		native.appendChild(input);
 
-		return container;
+		syncValueUI();
 		#else
 		throw "aaa";
 		#end
@@ -53,7 +57,34 @@ abstract class Input<ValueType> extends Element {
 
 	}
 
-	function syncValue() {
+	/**
+		Call this internaly when the user interract with the widget to change the value
+	**/
+	function broadcastValueChange(temporaryEdit) : Void {
+		properties.broadcastValueChange(this, temporaryEdit);
+	}
+
+	// public function bindField(fieldName: String, object: Dynamic, onChange: (propName: String) -> Void) {
+	// 	var previousValue = value;
+	// 	var editing = false;
+	// 	onValueChange = (temporaryEdit) -> {
+	// 		if (!editing) {
+	// 			previousValue = value;
+	// 			editing = true;
+	// 		}
+
+	// 		Reflect.setProperty(fieldName, object);
+	// 		if (onChange != null) {
+	// 			onChange(fieldName);
+	// 		}
+
+	// 		if (!temporaryEdit) {
+	// 			editorContext.properties.undo.change()
+	// 		}
+	// 	}
+	// }
+
+	function syncValueUI() {
 
 	}
 }
