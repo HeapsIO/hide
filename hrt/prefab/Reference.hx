@@ -15,6 +15,7 @@ class Reference extends Object3D {
 		The referenced prefab loaded by this reference
 	**/
 	public var refInstance : Prefab;
+	var refInstanceVersion : Int = -1;
 
 	/**
 		How the reference can be edited in the editor
@@ -98,6 +99,12 @@ class Reference extends Object3D {
 
 		// Clone the refInstance from the original prefab on copy
 		if (source != null && shouldBeInstanciated()) {
+			var newVersion = hxd.res.Loader.currentInstance.load(source).toPrefab().reloadedVersion;
+			if (newVersion != otherRef.refInstanceVersion) {
+				otherRef.refInstance = null;
+				otherRef.initRefInstance();
+			}
+
 			if (otherRef.refInstance != null) {
 				refInstance = otherRef.refInstance.clone(new ContextShared(source, null, null, true));
 			}
@@ -105,11 +112,6 @@ class Reference extends Object3D {
 				refInstance.shared.parentPrefab = this;
 			}
 		}
-	}
-
-	override function reload( p : Dynamic ) {
-		super.reload(p);
-		this.refInstance = null;
 	}
 
 	#if editor
@@ -148,11 +150,13 @@ class Reference extends Object3D {
 		#if editor
 		try {
 		#end
+			var res = @:privateAccess hxd.res.Loader.currentInstance.load(source).toPrefab();
+
 			if (shouldLoadUniqueObject) {
-				var refInstanceData = @:privateAccess hxd.res.Loader.currentInstance.load(source).toPrefab().loadData();
+				var refInstanceData = @:privateAccess res.loadData();
 
 				#if editor
-				originalSource = @:privateAccess hxd.res.Loader.currentInstance.load(source).toPrefab().loadData();
+				originalSource = @:privateAccess res.loadData();
 				#end
 
 				if (overrides != null) {
@@ -162,8 +166,10 @@ class Reference extends Object3D {
 				refInstance = hrt.prefab.Prefab.createFromDynamic(refInstanceData, null, new ContextShared(source, null, null, true));
 
 			} else {
-				refInstance = hxd.res.Loader.currentInstance.load(source).toPrefab().load().clone();
+				refInstance = res.load().clone();
 			}
+
+			refInstanceVersion = res.reloadedVersion;
 
 			refInstance.shared.parentPrefab = this;
 

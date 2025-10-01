@@ -5,6 +5,9 @@ class Resource extends hxd.res.Resource {
 
 	var prefab : Prefab;
 	var cacheVersion : Int;
+
+	/**Increase each time this resource get reloaded, can be used for cache invalidation**/
+	public var reloadedVersion(default, null) : Int = 0;
 	var isWatched : Bool;
 
 	override function watch( onChanged: Null<Void -> Void> ) {
@@ -20,6 +23,7 @@ class Resource extends hxd.res.Resource {
 			if( prefab != null ) {
 				var data = try loadData() catch( e : Dynamic ) return; // parsing error (conflict ?)
 				prefab.reload(data);
+				reloadedVersion ++;
 				onPrefabLoaded(prefab);
 			}
 			onChanged();
