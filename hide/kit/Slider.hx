@@ -3,6 +3,9 @@ package hide.kit;
 class Slider extends Input<Float> {
 	var slider: js.html.InputElement;
 
+	public var min(default, set) : Null<Float> = null;
+	public var max(default, set) : Null<Float> = null;
+
 	function makeInput() : NativeElement {
 		#if js
 		var container = js.Browser.document.createElement("kit-slider");
@@ -35,7 +38,12 @@ class Slider extends Input<Float> {
 			if (e.ctrlKey) mult *= 10.0;
 			if (e.shiftKey) mult /= 10.0;
 			value += e.movementX * mult;
-			onValueChange(true);
+			if (min != null)
+				value = hxd.Math.max(value, min);
+			if (max != null)
+				value = hxd.Math.min(value, max);
+
+			broadcastValueChange(true);
 			hasMoved = true;
 		});
 
@@ -52,7 +60,7 @@ class Slider extends Input<Float> {
 				slider.focus();
 				slider.select();
 			} else {
-				onValueChange(false);
+				broadcastValueChange(false);
 			}
 		});
 
@@ -68,14 +76,15 @@ class Slider extends Input<Float> {
 			var newValue = Std.parseInt(slider.value);
 			if (newValue != null) {
 				@:bypassAccessor value = newValue;
-				onValueChange(true);
+
+				broadcastValueChange(true);
 			}
 		});
 
 		slider.addEventListener("blur", (e: js.html.FocusEvent) -> {
 			var newValue = Std.parseInt(slider.value);
 			value = newValue ?? value;
-			onValueChange(false);
+			broadcastValueChange(false);
 		});
 
 		return container;
@@ -84,7 +93,30 @@ class Slider extends Input<Float> {
 		#end
 	}
 
-	override function syncValue() {
+	inline function set_min(v) {
+		min = v;
+		syncValueUI();
+		return v;
+	}
+
+	inline function set_max(v) {
+		max = v;
+		syncValueUI();
+		return v;
+	}
+
+	override function syncValueUI() {
 		slider?.value = Std.string(hxd.Math.round(value * 100) / 100);
+
+		if (min != null && max != null) {
+			var alpha = hxd.Math.clamp((value - min) / (max - min)) * 100;
+			#if js
+			slider?.style.background = 'linear-gradient(to right, #3185ce ${alpha}%, #222222 ${alpha}%)';
+			#end
+		} else {
+			#if js
+			slider?.style.background = null;
+			#end
+		}
 	}
 }
