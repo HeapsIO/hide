@@ -3,7 +3,7 @@ package hide.kit;
 class Element {
 	var parent(default, null) : Element;
 	var id(default, null) : String;
-	var editorContext(default, null) : hide.prefab.EditContext;
+	var properties(default, null) : hide.kit.Properties;
 
 	var children : Array<Element> = null;
 	public var numChildren(get, never) : Int;
@@ -22,21 +22,42 @@ class Element {
 	inline function get_numChildren() return children?.length ?? 0;
 	function get_nativeContent() return native;
 
-	public function new(ctx: hide.prefab.EditContext, parent: Element, id: String) {
-		this.editorContext = ctx;
+	public function new(properties: hide.kit.Properties, parent: Element, id: String) {
+		this.properties = properties;
 		this.parent = parent;
 		this.id = id;
 
-		native = makeNative();
+		this.parent?.addChild(this);
+		this.properties?.register(this);
+	}
 
-		if (this.parent != null) {
-			this.parent.addChild(this);
+	public function make() {
+		makeSelf();
+
+		for (c in children ?? []) {
+			c.make();
+			attachNative(c);
 		}
 	}
 
-	function makeNative() : NativeElement {
+	public function getIdPath() {
+		if (parent == null || parent is Properties)
+			return id;
+		return parent.getIdPath() + "." + id;
+	}
+
+	function makeSelf() : Void {
 		#if js
-		return js.Browser.document.createDivElement();
+		native = js.Browser.document.createDivElement();
+		#else
+		throw "HideKitHL Implement";
+		#end
+	}
+
+	function attachNative(child: Element) : Void {
+		#if js
+		child.native.remove();
+		nativeContent.appendChild(child.native);
 		#else
 		throw "HideKitHL Implement";
 		#end
@@ -49,17 +70,16 @@ class Element {
 	public function addChildAt(newChild: Element, position: Int) : Void {
 		if (children == null)
 			children = [];
-		var childBefore = children[position];
 		children.insert(position, newChild);
-		#if js
-		if (childBefore != null) {
-			childBefore.native.before(newChild.native);
-		} else {
-			nativeContent.append(newChild.native);
-		}
-		#else
-		throw "HideKitHL Implement";
-		#end
+		// #if js
+		// if (childBefore != null) {
+		// 	childBefore.native.before(newChild.native);
+		// } else {
+		// 	nativeContent.append(newChild.native);
+		// }
+		// #else
+		// throw "HideKitHL Implement";
+		// #end
 	}
 
 

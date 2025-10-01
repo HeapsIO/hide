@@ -5,32 +5,39 @@ class Line extends Element {
 
 	function set_label(v: String) : String {
 		label = v;
-		#if js
-		if (v == null) {
-			labelElement?.remove();
-			return label;
-		}
-
-		if (labelElement == null) {
-			labelElement = js.Browser.document.createElement("kit-label");
-			native.prepend(labelElement);
-		}
-
-		labelElement.innerHTML = label;
-
-		#else
-		throw "implement";
-		#end
+		refreshLabel();
 		return label;
 	}
 
 	public var labelElement: NativeElement;
 
-	override function makeNative():NativeElement {
+	override function makeSelf():Void {
 		#if js
-		return js.Browser.document.createElement("kit-line");
+		native = js.Browser.document.createElement("kit-line");
+		refreshLabel();
 		#else
 		throw "aaa";
+		#end
+	}
+
+	function refreshLabel() {
+		if (native == null)
+			return;
+		#if js
+		if (label == null) {
+			labelElement?.remove();
+			return;
+		}
+
+		if (labelElement == null) {
+			labelElement = js.Browser.document.createElement("kit-label");
+			labelElement.classList.add("first");
+			native.prepend(labelElement);
+		}
+
+		labelElement.innerHTML = label;
+		#else
+		throw "implement";
 		#end
 	}
 }

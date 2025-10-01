@@ -670,6 +670,12 @@ class Prefab {
 	public function edit(editContext : hide.prefab.EditContext) {
 	}
 
+	/**
+		New hideKit based edit function. Return false if the edit function was not yet ported to the new system
+	**/
+	public function edit2(editContext: hide.prefab.EditContext) {
+	}
+
 	public function setEditor(sceneEditor: hide.comp.SceneEditor, scene: hide.comp.Scene) {
 		shared.editor = sceneEditor;
 		shared.scene = scene;

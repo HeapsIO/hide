@@ -3963,6 +3963,10 @@ class SceneEditor {
 		return false;
 	}
 
+	function fillProps2(edit : SceneEditorContext, proxy : PrefabElement, selection: Array<PrefabElement>) {
+
+	}
+
 	function fillProps(edit : SceneEditorContext, e : PrefabElement, others: Array<PrefabElement> ) {
 		properties.element.append(new Element('<h1 class="prefab-name">${e.getHideProps().name}</h1>'));
 
@@ -4176,16 +4180,38 @@ class SceneEditor {
 			}
 			properties.clear();
 			if( elts.length > 0 ) {
-				if (elts.length > 1) {
-					var commonClass = hrt.tools.ClassUtils.getCommonClass(elts, hrt.prefab.Prefab);
+				var commonClass = hrt.tools.ClassUtils.getCommonClass(elts, hrt.prefab.Prefab);
 
+				if (useEdit2.contains(commonClass)) {
 					var proxyPrefab = Type.createInstance(commonClass, [null, new ContextShared()]);
 					proxyPrefab.load(haxe.Json.parse(haxe.Json.stringify(elts[0].save())));
-					fillProps(edit, proxyPrefab, elts);
+					var rootProperties = new hide.kit.Properties(null, null, null, proxyPrefab);
+					edit.properties2 = rootProperties;
+					proxyPrefab.edit2(edit);
+					for (i => select in selectedPrefabs) {
+						var childProperties = new hide.kit.Properties(null, null, null, select);
+						rootProperties.editedPrefabsProperties.push(childProperties);
+						edit.properties2 = childProperties;
+						select.edit2(edit);
+					}
+
+					edit.properties2 = rootProperties;
+					edit.properties2.make();
+
+					@:privateAccess properties.element.append(edit.properties2.nativeContent);
 				}
-				else
-				{
-					fillProps(edit, elts[0], null);
+				else {
+					if (elts.length > 1) {
+						var commonClass = hrt.tools.ClassUtils.getCommonClass(elts, hrt.prefab.Prefab);
+
+						var proxyPrefab = Type.createInstance(commonClass, [null, new ContextShared()]);
+						proxyPrefab.load(haxe.Json.parse(haxe.Json.stringify(elts[0].save())));
+						fillProps(edit, proxyPrefab, elts);
+					}
+					else
+					{
+						fillProps(edit, elts[0], null);
+					}
 				}
 			}
 
@@ -6277,4 +6303,9 @@ class SceneEditor {
 		contextMenuExtRegistry.set(cast cl, callback);
 		return 0;
 	}
+
+
+	static var useEdit2 : Array<Class<hrt.prefab.Prefab>> = [
+		hrt.prefab.l3d.KitTest
+	];
 }
