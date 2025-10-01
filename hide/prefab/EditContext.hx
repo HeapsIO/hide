@@ -16,6 +16,7 @@ class EditContext {
 	public var ide(get,never) : hide.Ide;
 	public var scene : hide.comp.Scene;
 	public var properties : hide.comp.PropsEditor;
+	public var properties2: hide.kit.Properties;
 	public var cleanups : Array<Void->Void>;
 	public var rootPrefab : hrt.prefab.Prefab;
 	function get_ide() return hide.Ide.inst;
