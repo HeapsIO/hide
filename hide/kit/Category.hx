@@ -3,9 +3,9 @@ package hide.kit;
 class Category extends Element {
 	var name(default, null) : String;
 
-	public function new(ctx: hide.prefab.EditContext, parent: Element, id: String, name: String) : Void {
+	public function new(properties: Properties, parent: Element, id: String, name: String) : Void {
 		this.name = name;
-		super(ctx, parent, id);
+		super(properties, parent, id);
 	}
 
 	#if js
@@ -13,24 +13,22 @@ class Category extends Element {
 	override function get_nativeContent() return jsContent;
 	#end
 
-	override function makeNative(): NativeElement {
+	override function makeSelf(): Void {
 		#if js
-		var e = new hide.Element('
+		native = new hide.Element('
 			<div class="group2 open" name="$name" style="--level: 0">
 				<div class="title">$name</div>
 				<div class="content"></div>
 			</div>
 		')[0];
-		jsContent = e.querySelector(".content");
-		var title = e.querySelector(".title");
+		jsContent = native.querySelector(".content");
+		var title = native.querySelector(".title");
 		title.addEventListener("mousedown", (event: js.html.MouseEvent) -> {
 			if (event.button != 0)
 				return;
 
-			e.classList.toggle("open");
+			native.classList.toggle("open");
 		});
-
-		return e;
 		#else
 		throw "HideKitHL Implement";
 		#end
