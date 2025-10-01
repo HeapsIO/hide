@@ -5,22 +5,27 @@ class Text extends Element {
 
 	function set_content(v: String) : String {
 		content = v;
-		#if js
-		native.textContent = content;
-		#else
-		throw "HideKitHL Implement";
-		#end
+		refreshText();
 		return content;
 	}
 
-	public function new(ctx: hide.prefab.EditContext, parent: Element, id: String, content: String) : Void {
-		super(ctx, parent, id);
+	public function new(properties: Properties, parent: Element, id: String, content: String) : Void {
+		super(properties, parent, id);
 		this.content = content;
 	}
 
-	override function makeNative() : NativeElement {
+	override function makeSelf() : Void {
 		#if js
-		return js.Browser.document.createParagraphElement();
+		native = js.Browser.document.createParagraphElement();
+		refreshText();
+		#else
+		throw "HideKitHL Implement";
+		#end
+	}
+
+	function refreshText() {
+		#if js
+		native?.textContent = content;
 		#else
 		throw "HideKitHL Implement";
 		#end
