@@ -3,9 +3,9 @@ package hide.kit;
 class Category extends Element {
 	var name(default, null) : String;
 
-	public function new(properties: Properties, parent: Element, id: String, name: String) : Void {
+	public function new(parent: Element, id: String, name: String) : Void {
 		this.name = name;
-		super(properties, parent, id);
+		super(parent, id);
 	}
 
 	#if js
