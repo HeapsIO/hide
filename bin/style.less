@@ -1527,11 +1527,9 @@ input[type=checkbox] {
 			}
 
 			input {
-				font-variant-numeric: tabular-nums;
 				min-width: 0;
 				flex: 1 1;
 				text-align: left;
-				cursor: ew-resize;
 				width: 100%;
 				max-width: 100%;
 				font-size: 0.95em;
@@ -1542,6 +1540,10 @@ input[type=checkbox] {
 
 			kit-slider {
 				flex: 1 1;
+				> input {
+					font-variant-numeric: tabular-nums;
+					cursor: ew-resize;
+				}
 			}
 
 			kit-file {
