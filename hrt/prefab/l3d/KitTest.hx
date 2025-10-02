@@ -19,6 +19,7 @@ class KitTest extends Object3D {
 	@:s var filePath : String;
 	@:s var color : Int;
 	@:s var gradient : hrt.impl.Gradient.GradientData;
+	@:s var select : String;
 
 	#if js
 	override function edit2(ctx:hide.prefab.EditContext) {
@@ -95,6 +96,10 @@ class KitTest extends Object3D {
 					var gradient = new hide.kit.Gradient(cat, "gradient"); gradient.label="Gradient"; gradient.value = this.gradient; gradient.onValueChange = (temp) -> {
 						this.gradient = gradient.value;
 					}
+
+					var select = new hide.kit.Select(cat, "select", ["Fire", "Earth", "Water", "Air"]); select.label = "Select"; select.value = this.select; select.onValueChange = (temp) -> {
+						this.select = select.value;
+					};
 				}
 
 
