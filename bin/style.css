@@ -1426,6 +1426,24 @@ input[type=checkbox].indeterminate:after {
   height: 1.5em;
   text-align: left;
 }
+.hide-properties .group2 kit-line kit-button {
+  flex: 1 1;
+  height: 1.6em;
+  border: var(--basic-border);
+  border-radius: var(--basic-border-radius);
+  background-color: var(--bg-2);
+  text-align: center;
+  vertical-align: middle;
+  cursor: pointer;
+}
+.hide-properties .group2 kit-line kit-button:hover {
+  border: var(--basic-border-hover);
+  background-color: var(--bg-3);
+}
+.hide-properties .group2 kit-line kit-button:active {
+  position: relative;
+  top: 1px;
+}
 .hide-properties .btn-list * {
   margin-bottom: 5px;
 }

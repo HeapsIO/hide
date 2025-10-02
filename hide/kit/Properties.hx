@@ -21,14 +21,10 @@ class Properties extends Element {
 	public function broadcastValueChange(input: Input<Dynamic>, isTemporaryEdit: Bool) {
 		var idPath = input.getIdPath();
 
-		if (prefabUndoPoint == null) {
-			prefabUndoPoint = prefab.save();
-			for (childProperties in editedPrefabsProperties) {
-				childProperties.prefabUndoPoint = childProperties.prefab.save();
-			}
-		}
+		prepareUndoPoint();
 
 		input.onValueChange(isTemporaryEdit);
+		prefab.updateInstance(input.id);
 
 		for (childProperties in editedPrefabsProperties) {
 
@@ -38,24 +34,63 @@ class Properties extends Element {
 			if (childInput != null) {
 				childInput.value = input.value;
 				childInput.onValueChange(isTemporaryEdit);
+				childProperties.prefab.updateInstance(input.id);
 			}
 		}
 
 		if (!isTemporaryEdit) {
-			var sideEffects : Array<(isUndo:Bool) -> Void> = [];
-			createUndoStep(sideEffects);
+			finishUndoPoint();
+		}
+	}
 
+	public function broadcastClick(button: Button) {
+		var idPath = button.getIdPath();
+
+		prepareUndoPoint();
+
+		button.onClick();
+		prefab.updateInstance();
+
+		for (childProperties in editedPrefabsProperties) {
+
+			var childElement = childProperties.registeredElements.get(idPath);
+			var childButton = Std.downcast(childElement, Button);
+			if (childButton != null) {
+				childButton.onClick();
+				childProperties.prefab.updateInstance();
+			}
+		}
+
+		finishUndoPoint();
+	}
+
+	/**
+		Creates an undoPoint for the currently edited prefabs if none exists
+	**/
+	function prepareUndoPoint() : Void {
+		if (prefabUndoPoint == null) {
+			prefabUndoPoint = prefab.save();
 			for (childProperties in editedPrefabsProperties) {
-				childProperties.createUndoStep(sideEffects);
+				childProperties.prefabUndoPoint = childProperties.prefab.save();
 			}
+		}
+	}
 
-			if (sideEffects.length > 0) {
-				edit.properties.undo.change(Custom((isUndo: Bool) -> {
-					for (sideEffect in sideEffects) {
-						sideEffect(isUndo);
-					}
-				}));
-			}
+	function finishUndoPoint() {
+		var sideEffects : Array<(isUndo:Bool) -> Void> = [];
+		createUndoStep(sideEffects);
+
+		for (childProperties in editedPrefabsProperties) {
+			childProperties.createUndoStep(sideEffects);
+		}
+
+		if (sideEffects.length > 0) {
+			edit.properties.undo.change(Custom((isUndo: Bool) -> {
+				for (sideEffect in sideEffects) {
+					sideEffect(isUndo);
+				}
+				Std.downcast(edit, hide.comp.SceneEditor.SceneEditorContext)?.rebuildProperties();
+			}));
 		}
 	}
 

@@ -24,18 +24,36 @@ class KitTest extends Object3D {
 				var cat = new hide.kit.Category(root, root, "widgets", "Widgets");
 				{
 					var text = new hide.kit.Text(root, cat, null, "Text");
-					var slider = new hide.kit.Slider(root, cat, "x"); slider.label = "x"; slider.value = x; slider.onValueChange = (temp) -> {
-						this.x = slider.value;
-						updateInstance("x");
+					var slider = new hide.kit.Slider(root, cat, "x"); slider.label = "X"; slider.value = x; slider.onValueChange = (temp) -> {
+						x = slider.value;
 					};
-					var slider = new hide.kit.Slider(root, cat, "y"); slider.label = "y"; slider.value = y; slider.onValueChange = (temp) -> {
-						this.y = slider.value;
-						updateInstance("y");
+					var slider = new hide.kit.Slider(root, cat, "y"); slider.label = "Y"; slider.value = y; slider.onValueChange = (temp) -> {
+						y = slider.value;
 					};
-					var slider = new hide.kit.Slider(root, cat, "z"); slider.label = "z"; slider.value = z; slider.onValueChange = (temp) -> {
-						this.z = slider.value;
-						updateInstance("z");
+					var slider = new hide.kit.Slider(root, cat, "z"); slider.label = "Z"; slider.value = z; slider.onValueChange = (temp) -> {
+						z = slider.value;
 					};
+
+					var button = new hide.kit.Button(root, cat, "reset", "Reset"); button.onClick = () -> {
+						x = 0;
+						y = 0;
+						z = 0;
+					};
+
+					var line =  new hide.kit.Line(root, cat, "operators");
+					{
+						var button = new hide.kit.Button(root, line, "mult", "x2"); button.onClick = () -> {
+							x *= 2;
+							y *= 2;
+							z *= 2;
+						}
+
+						var button = new hide.kit.Button(root, line, "div", "/2"); button.onClick = () -> {
+							x /= 2;
+							y /= 2;
+							z /= 2;
+						}
+					}
 
 
 					var range = new hide.kit.Range(root, cat, "slider", 0.0, 100.0); range.label = "Slider"; range.value = 12.34;
