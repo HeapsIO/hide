@@ -1446,6 +1446,9 @@ input[type=checkbox].indeterminate:after {
   position: relative;
   top: 1px;
 }
+.hide-properties .group2 kit-line kit-button.highlight {
+  background-color: var(--selection);
+}
 .hide-properties .btn-list * {
   margin-bottom: 5px;
 }

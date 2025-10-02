@@ -2,6 +2,14 @@ package hide.kit;
 
 class Button extends Element {
 	var label : String;
+	public var highlight(default, set) : Bool = false;
+	var button : NativeElement;
+
+	function set_highlight(v:Bool) : Bool {
+		highlight = v;
+		syncHightlight();
+		return v;
+	}
 
 	public function new(parent: Element, id: String, label: String) {
 		super(parent, id);
@@ -26,7 +34,7 @@ class Button extends Element {
 			native = js.Browser.document.createElement("kit-div");
 		}
 
-		var button = js.Browser.document.createElement("kit-button");
+		button = js.Browser.document.createElement("kit-button");
 		button.innerHTML = label;
 		native.appendChild(button);
 		button.addEventListener("click", (e:js.html.MouseEvent) -> {
@@ -34,8 +42,17 @@ class Button extends Element {
 			e.preventDefault();
 			e.stopPropagation();
 		});
+
+		syncHightlight();
 		#else
 
+		#end
+	}
+
+	function syncHightlight() {
+		#if js
+		if (button != null)
+			button.classList.toggle("highlight", highlight);
 		#end
 	}
 }
