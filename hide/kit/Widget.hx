@@ -24,7 +24,8 @@ abstract class Widget<ValueType> extends Element {
 	function get_value() return value;
 	function set_value(v:ValueType) {
 		value = v;
-		syncValueUI();
+		if (input != null)
+			syncValueUI();
 		return value;
 	}
 
