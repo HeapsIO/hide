@@ -17,6 +17,7 @@ class KitTest extends Object3D {
 
 	@:s var inputString : String;
 	@:s var filePath : String;
+	@:s var color : Int;
 
 	#if js
 	override function edit2(ctx:hide.prefab.EditContext) {
@@ -78,6 +79,9 @@ class KitTest extends Object3D {
 					var input = new hide.kit.Input(cat, null); input.placeholder = "Placeholder text"; input.label="Input"; input.value = inputString; input.onValueChange = (temp) -> {
 						inputString = input.value;
 					};
+					var color = new hide.kit.Color(cat, "color"); input.label="Color"; color.value = this.color; color.onValueChange = (temp) -> {
+						this.color = color.value;
+					}
 				}
 
 
