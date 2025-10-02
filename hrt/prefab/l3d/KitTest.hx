@@ -86,6 +86,9 @@ class KitTest extends Object3D {
 					var file = new hide.kit.File( cat, "file"); file.label="File"; file.type = "texture"; file.value = filePath; file.onValueChange = (temp) -> {
 						filePath = file.value;
 					};
+					var button = new hide.kit.Button(cat, "button", "Button");
+					var button = new hide.kit.Button(cat, "buttonHighlight", "Button Highlight"); button.highlight = true;
+
 					var input = new hide.kit.Input(cat, null); input.placeholder = "Placeholder text"; input.label="Input"; input.value = inputString; input.onValueChange = (temp) -> {
 						inputString = input.value;
 					};
