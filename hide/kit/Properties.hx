@@ -105,8 +105,10 @@ class Properties extends Element {
 				} else {
 					prefab.load(after);
 				}
+				trace("prefab -> ", prefab.save());
 				prefab.updateInstance();
 			});
 		}
+		trace("prefab -> ", prefab.save());
 	}
 }

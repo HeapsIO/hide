@@ -54,4 +54,11 @@ class Input extends Widget<String> {
 			input.setAttribute("placeholder", placeholder);
 		}
 	}
+
+	override function syncValueUI() {
+		#if js
+		if (input != null)
+			(cast input: js.html.InputElement).value = value;
+		#end
+	}
 }
