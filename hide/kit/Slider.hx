@@ -1,6 +1,6 @@
 package hide.kit;
 
-class Slider extends Input<Float> {
+class Slider extends Widget<Float> {
 	var slider: js.html.InputElement;
 
 	public var min(default, set) : Null<Float> = null;
@@ -68,6 +68,11 @@ class Slider extends Input<Float> {
 			if (e.key == "Enter") {
 				e.preventDefault();
 				e.stopPropagation();
+				slider.blur();
+			} else if (e.key == "Escape") {
+				e.preventDefault();
+				e.stopPropagation();
+				slider.value = value;
 				slider.blur();
 			}
 		});

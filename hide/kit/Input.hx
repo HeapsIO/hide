@@ -1,91 +1,50 @@
 package hide.kit;
 
-abstract class Input<ValueType> extends Element {
-	public var label(default, set): String;
-	@:isVar public var value(get, set): ValueType;
-
-	function set_label(v: String) : String {
-		label = v;
-		#if js
-		if (labelElement != null)
-			labelElement.innerHTML = label;
-		#else
-		throw "implement";
-		#end
-		return label;
+class Input extends Widget<String> {
+	public var placeholder(default, set) : String;
+	function set_placeholder(v) {
+		placeholder = v;
+		syncPlaceholder();
+		return placeholder;
 	}
 
-	var input: NativeElement;
-	var labelElement: NativeElement;
-
-	function get_value() return value;
-	function set_value(v:ValueType) {
-		value = v;
-		syncValueUI();
-		return value;
-	}
-
-	override function makeSelf():Void {
-		var parentLine = Std.downcast(parent, Line);
-
+	function makeInput():NativeElement {
 		#if js
-		if (parentLine == null) {
-			native = js.Browser.document.createElement("kit-line");
-		} else {
-			native = js.Browser.document.createElement("kit-div");
-		}
+		var input = js.Browser.document.createInputElement();
+		this.input = input;
 
-		labelElement = js.Browser.document.createElement("kit-label");
-		if (parentLine == null || (parent.children[0] == this && parentLine.label == null)) {
-			labelElement.classList.add("first");
-		}
-		labelElement.innerHTML = label;
+		input.addEventListener("input", (e: js.html.InputEvent) -> {
+			value = input.value;
+			broadcastValueChange(true);
+		});
 
-		native.appendChild(labelElement);
+		input.addEventListener("blur", (e: js.html.FocusEvent) -> {
+			value = input.value;
+			broadcastValueChange(false);
+		});
 
-		input = makeInput();
-		native.appendChild(input);
+		input.addEventListener("keydown", (e: js.html.KeyboardEvent) -> {
+			if (e.key == "Enter") {
+				e.preventDefault();
+				e.stopPropagation();
+				input.blur();
+			} else if (e.key == "Escape") {
+				e.preventDefault();
+				e.stopPropagation();
+				input.value = value;
+				input.blur();
+			}
+		});
 
-		syncValueUI();
-		#else
-		throw "aaa";
+		syncPlaceholder();
+
+		return input;
 		#end
 	}
 
-	abstract function makeInput() : NativeElement;
-
-	public dynamic function onValueChange(temporaryEdit: Bool) : Void {
-
-	}
-
-	/**
-		Call this internaly when the user interract with the widget to change the value
-	**/
-	function broadcastValueChange(temporaryEdit) : Void {
-		properties.broadcastValueChange(this, temporaryEdit);
-	}
-
-	// public function bindField(fieldName: String, object: Dynamic, onChange: (propName: String) -> Void) {
-	// 	var previousValue = value;
-	// 	var editing = false;
-	// 	onValueChange = (temporaryEdit) -> {
-	// 		if (!editing) {
-	// 			previousValue = value;
-	// 			editing = true;
-	// 		}
-
-	// 		Reflect.setProperty(fieldName, object);
-	// 		if (onChange != null) {
-	// 			onChange(fieldName);
-	// 		}
-
-	// 		if (!temporaryEdit) {
-	// 			editorContext.properties.undo.change()
-	// 		}
-	// 	}
-	// }
-
-	function syncValueUI() {
-
+	function syncPlaceholder() {
+		if (input != null) {
+			input.setAttribute("placeholder", placeholder);
+		}
 	}
 }
