@@ -3,8 +3,8 @@ package hide.kit;
 class Button extends Element {
 	var label : String;
 
-	public function new(properties: hide.kit.Properties, parent: Element, id: String, label: String) {
-		super(properties, parent, id);
+	public function new(parent: Element, id: String, label: String) {
+		super(parent, id);
 		this.label = label;
 	}
 

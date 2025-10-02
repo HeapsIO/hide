@@ -8,8 +8,8 @@ class Properties extends Element {
 
 	var registeredElements : Map<String, Element> = [];
 
-	public function new(properties: hide.kit.Properties, parent: Element, id: String, prefab: hrt.prefab.Prefab, editContext: hide.prefab.EditContext ) {
-		super(properties, parent, id);
+	public function new(parent: Element, id: String, prefab: hrt.prefab.Prefab, editContext: hide.prefab.EditContext ) {
+		super(parent, id);
 		this.prefab = prefab;
 		edit = editContext;
 	}
