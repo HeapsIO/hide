@@ -18,11 +18,20 @@ class KitTest extends Object3D {
 	@:s var inputString : String;
 	@:s var filePath : String;
 	@:s var color : Int;
+	@:s var gradient : hrt.impl.Gradient.GradientData;
 
 	#if js
 	override function edit2(ctx:hide.prefab.EditContext) {
 		// TEST
 		{
+			hide.kit.Macros.build(ctx.properties2,
+				<group label="hello">
+					<slider field="x"/>
+					<slider field="y"/>
+					<slider field="z"/>
+				</group>, this
+				);
+
 			var root = @:privateAccess ctx.properties2;
 			{
 				var cat = new hide.kit.Category( root, "testEditor", "Test Editor");
@@ -79,8 +88,12 @@ class KitTest extends Object3D {
 					var input = new hide.kit.Input(cat, null); input.placeholder = "Placeholder text"; input.label="Input"; input.value = inputString; input.onValueChange = (temp) -> {
 						inputString = input.value;
 					};
-					var color = new hide.kit.Color(cat, "color"); input.label="Color"; color.value = this.color; color.onValueChange = (temp) -> {
+					var color = new hide.kit.Color(cat, "color"); color.label="Color"; color.value = this.color; color.onValueChange = (temp) -> {
 						this.color = color.value;
+					}
+
+					var gradient = new hide.kit.Gradient(cat, "gradient"); gradient.label="Gradient"; gradient.value = this.gradient; gradient.onValueChange = (temp) -> {
+						this.gradient = gradient.value;
 					}
 				}
 
