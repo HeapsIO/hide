@@ -69,9 +69,9 @@ class Properties extends Element {
 	**/
 	function prepareUndoPoint() : Void {
 		if (prefabUndoPoint == null) {
-			prefabUndoPoint = prefab.save();
+			prefabUndoPoint = hrt.prefab.Diff.deepCopy(prefab.save());
 			for (childProperties in editedPrefabsProperties) {
-				childProperties.prefabUndoPoint = childProperties.prefab.save();
+				childProperties.prefabUndoPoint = hrt.prefab.Diff.deepCopy(childProperties.prefab.save());
 			}
 		}
 	}
@@ -105,10 +105,8 @@ class Properties extends Element {
 				} else {
 					prefab.load(after);
 				}
-				trace("prefab -> ", prefab.save());
 				prefab.updateInstance();
 			});
 		}
-		trace("prefab -> ", prefab.save());
 	}
 }
