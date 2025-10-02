@@ -23,6 +23,11 @@ class Input extends Widget<String> {
 			broadcastValueChange(false);
 		});
 
+		var inputSave = null;
+		input.addEventListener("focus", (e: js.html.InputEvent) -> {
+			inputSave = input.value;
+		});
+
 		input.addEventListener("keydown", (e: js.html.KeyboardEvent) -> {
 			if (e.key == "Enter") {
 				e.preventDefault();
@@ -31,7 +36,9 @@ class Input extends Widget<String> {
 			} else if (e.key == "Escape") {
 				e.preventDefault();
 				e.stopPropagation();
-				input.value = value;
+				if (inputSave != null)
+					input.value = inputSave;
+				inputSave = null;
 				input.blur();
 			}
 		});
