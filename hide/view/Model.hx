@@ -1,19 +1,21 @@
 package hide.view;
 import hxd.Key as K;
 
-typedef CollisionSettings = { mode : Int, params : Dynamic };
+typedef CollisionSettings = { mode : Int, params : hxd.fmt.fbx.HMDOut.CollideParams };
 
 private enum abstract CollisionMode(Int) from Int to Int {
 	var Default = 0;
 	var None    = 1;
 	var Auto    = 2;
-	var Count   = 3;
+	var Mesh    = 3;
+	var Count   = 4;
 
 	public function toString() {
 		return switch (this) {
 			case Default: "Default";
 			case None: "None";
 			case Auto: "Auto";
+			case Mesh: "Mesh";
 			default: "Undefined";
 		}
 	}
@@ -29,8 +31,8 @@ class Model extends FileView {
 	var tabs : hide.comp.Tabs;
 	var overlay : Element;
 	var eventList : Element;
-	var collisionEditor : Element;
-	var collisionSettings : Map<String, CollisionSettings>;
+	var collisionList : hide.comp.FancyArray<CollisionSettings>;
+	var collisionSettings : Map<String, Array<CollisionSettings>>;
 
 	var plight : hrt.prefab.Prefab;
 	var light : h3d.scene.Object;
@@ -93,19 +95,6 @@ class Model extends FileView {
 						<div class="tab expand" name="Collision" icon="codepen">
 							<div class="collision-editor">
 								<label class="title">Collision settings</label>
-								<dl>
-									<dt>Collision mode</dt>
-									<dd>
-										<select id="select-collision-mode">
-											${[for(idx in 0...CollisionMode.Count) '<option value="${idx}">${cast(idx, CollisionMode).toString()}</option>'].join("")}
-										</select>
-									</dd>
-								</dl>
-								<div id="collision-params">
-									<dl><dt>Precision</dt><dd><input type="text" id="precision"></dd></dl>
-									<dl><dt>Max convex hulls</dt><dd><input type="text" id="hulls"></dd></dl>
-									<dl><dt>max subdivision</dt><dd><input type="text" id="subdiv"></dd></dl>
-								</div>
 							</div>
 						</div>
 					</div>
@@ -117,7 +106,7 @@ class Model extends FileView {
 		overlay = element.find(".hide-scene-layer .tree");
 		tabs = new hide.comp.Tabs(null,element.find(".tabs"));
 		eventList = element.find(".event-editor");
-		initCollisionEditor();
+		collisionSettings = [];
 
 		var def = new hrt.prefab.Prefab(null, null);
 		new hrt.prefab.RenderProps(def, null).name = "renderer";
@@ -184,75 +173,6 @@ class Model extends FileView {
 		@:privateAccess hxd.fmt.hmd.Library.defaultDynamicBonesConfigs.clear();
 	}
 
-	function updateCollisionParams(settings) {
-		var collisionParams = element.find("#collision-params");
-		switch (settings.mode) {
-			case Default, None: collisionParams.hide();
-			case Auto:
-				collisionParams.show();
-
-				var elPrec = collisionParams.find("#precision");
-				var elHull = collisionParams.find("#hulls");
-				var elSubdiv = collisionParams.find("#subdiv");
-
-				var params = settings.params;
-				elPrec.val('${params.precision}');
-				elHull.val('${params.maxConvexHulls}');
-				elSubdiv.val('${params.maxSubdiv}');
-			default: throw "Unexpected mode";
-		}
-	}
-
-	function initCollisionEditor() {
-		collisionEditor = element.find(".collision-editor");
-		collisionEditor.hide();
-		collisionSettings = [];
-
-		var collisionParams = collisionEditor.find("#collision-params");
-		var elPrec = collisionParams.find("#precision");
-		var elHull = collisionParams.find("#hulls");
-		var elSubdiv = collisionParams.find("#subdiv");
-		collisionParams.on("change", function(_) {
-			var modelName = selectedMesh.name;
-			var settings = collisionSettings.get(modelName);
-			var prevParams = settings.params;
-			var curParams = {
-				precision : Std.parseFloat(elPrec.val()),
-				maxConvexHulls : Std.parseInt(elHull.val()),
-				maxSubdiv : Std.parseInt(elSubdiv.val())
-			}
-			settings.params = curParams;
-			undo.change(Custom(function(undo) {
-				var params = undo ? prevParams : curParams;
-				settings.params = params;
-				if ( modelName == selectedMesh.name ) {
-					elPrec.val('${params.precision}');
-					elHull.val('${params.maxConvexHulls}');
-					elSubdiv.val('${params.maxSubdiv}');
-				}
-			}));
-		});
-
-		var collisionDropdown = collisionEditor.find("#select-collision-mode");
-		collisionDropdown.on("change", function(_) {
-			var modelName = selectedMesh.name;
-			var settings = collisionSettings.get(modelName);
-			var prevMode = settings.mode;
-			var curMode = Std.parseInt(collisionDropdown.val());
-			settings.mode = curMode;
-			updateCollisionParams(settings);
-
-			undo.change(Custom(function(undo) {
-				var mode = undo ? prevMode : curMode;
-				settings.mode = mode;
-				if ( modelName == selectedMesh.name ) {
-					collisionDropdown.val('${Std.int(mode)}');
-					updateCollisionParams(settings);
-				}
-			}));
-		});
-	}
-
 	override function onActivate() {
 		if (tools != null)
 			tools.refreshToggles();
@@ -275,15 +195,18 @@ class Model extends FileView {
 			if (hmd == null)
 				continue;
 
+			var settingsArr = collisionSettings.get(o.name);
 			var collide = {};
-			var settings = collisionSettings.get(o.name);
-			if ( settings != null ) {
+			if( settingsArr.length == 1 ) {
+				var settings = settingsArr[0];
 				switch ( settings.mode ) {
-					case Default:
-					case None: Reflect.setField(collide, "collide", null);
-					case Auto: Reflect.setField(collide, "collide", settings.params);
+					case Default: collide = {};
+					case None: collide = { collide : null };
+					case Auto, Mesh: collide = { collide : [settings.params] };
 					default: throw "Unexpected collision mode";
 				}
+			} else {
+				collide = { collide : [for( settings in settingsArr ) settings.params] };
 			}
 			var input : h3d.prim.ModelDatabase.ModelDataInput = {
 				resourceDirectory : @:privateAccess hmd.lib.resource.entry.directory,
@@ -413,7 +336,8 @@ class Model extends FileView {
 		refreshSelectionHighlight(null);
 		selectedElements = elts;
 
-		collisionEditor.hide();
+		collisionList?.remove();
+		collisionList = null;
 
 		var properties = sceneEditor.properties;
 		properties.clear();
@@ -758,28 +682,160 @@ class Model extends FileView {
 
 			// Collision edition
 			var modelName = mesh.name;
+			collisionList = new hide.comp.FancyArray(element.find(".collision-editor"), null, "Collision settings", "CollisionSettings");
+			collisionList.getItems = function() {
+				var cachedArr = collisionSettings.get(modelName);
+				if( cachedArr != null )
+					return cachedArr;
 
-			var settings = collisionSettings.get(modelName);
-			if ( settings == null ) {
-				var mode = Default;
+				var settingsArr = [];
+				collisionSettings.set(modelName, settingsArr);
 				var dirPath = @:privateAccess hmd.lib.resource.entry.directory;
 				var resName = @:privateAccess hmd.lib.resource.name;
 				var props = @:privateAccess h3d.prim.ModelDatabase.current.getModelData(dirPath, resName, modelName);
-				var collideField = null;
 				if ( props != null && Reflect.hasField(props, "collide") ) {
-					collideField = Reflect.field(props, "collide");
-					mode = collideField == null ? None : Auto;
+					var collideFields = Reflect.field(props, "collide");
+					if( collideFields == null )
+						settingsArr.push({ mode : None, params : null });
+					else if( collideFields != null && Std.isOfType(collideFields, Array) ) {
+						for( cf in (collideFields:Array<Dynamic>) ) {
+							var mode = Default;
+							if( cf == null )
+								mode = None;
+							else if( Reflect.field(cf, "useDefault") )
+								mode = Default;
+							else if( Reflect.hasField(cf, "precision") )
+								mode = Auto;
+							else if( Reflect.hasField(cf, "mesh") )
+								mode = Mesh;
+							settingsArr.push({ mode : mode, params : cf });
+						}
+					}
 				}
-				var params = collideField ?? { precision : 1.0, maxConvexHulls : 1, maxSubdiv : 32 };
-				settings = { mode : mode, params : params };
-				collisionSettings.set(modelName, settings);
+				if( settingsArr.length == 0 )
+					settingsArr.push({ mode : Default, params : { useDefault : true } });
+				return settingsArr;
+			};
+			collisionList.getItemName = function( item : CollisionSettings ) {
+				var settingsArr = collisionSettings.get(modelName);
+				var idx = settingsArr.indexOf(item);
+				return idx == 0 ? "Default" : "Collider " + idx;
+			};
+			collisionList.insertItem = function( index : Int ) {
+				var settingsArr = collisionSettings.get(modelName);
+				var settings = { mode : None, params : null };
+				settingsArr.push(settings);
+				collisionList.refresh();
+				undo.change(Custom(function(undo) {
+					if( undo )
+						settingsArr.remove(settings);
+					else
+						settingsArr.push(settings);
+					collisionList.refresh();
+				}));
+			};
+			collisionList.removeItem = function( index : Int ) {
+				if( index == 0 )
+					return;
+				var settingsArr = collisionSettings.get(modelName);
+				var settings = settingsArr[index];
+				settingsArr.remove(settings);
+				collisionList.refresh();
+				undo.change(Custom(function(undo) {
+					if( undo )
+						settingsArr.insert(index, settings);
+					else
+						settingsArr.remove(settings);
+					collisionList.refresh();
+				}));
+			};
+			collisionList.getItemContent = function( settings : CollisionSettings ) {
+				var hmd = selectedMesh != null ? Std.downcast(selectedMesh.primitive, h3d.prim.HMDModel) : null;
+				var meshList = [null];
+				if( hmd != null ) {
+					for( m in hmd.lib.header.models ) {
+						if( m.geometry >= 0 )
+							meshList.push(m.name);
+					}
+				}
+				var collisionParams = new Element('<div class="collision-params">
+					<div class="collision-param collision-all"><dl><dt>Collision mode</dt><dd>
+						<select class="select-collision-mode">
+							${[for(idx in 0...CollisionMode.Count) '<option value="${idx}">${cast(idx, CollisionMode).toString()}</option>'].join("")}
+						</select>
+					</dl></div>
+					<div class="collision-param collision-auto"><dl><dt>Precision</dt><dd><input type="text" class="precision"/></dd></dl></div>
+					<div class="collision-param collision-auto"><dl><dt>Max convex hulls</dt><dd><input type="text" class="hulls"/></dd></dl></div>
+					<div class="collision-param collision-auto"><dl><dt>Max subdivision</dt><dd><input type="text" class="subdiv"/></dd></dl></div>
+					<div class="collision-param collision-auto collision-mesh"><dl><dt>Mesh</dt><dd>
+						<select class="select-collision-mesh">
+							${[for(mname in meshList) '<option value="${mname}">${mname == null ? "" : mname}</option>'].join("")}
+						</select>
+					</dd></dl></div>
+				</div>');
+				var elMode = collisionParams.find(".select-collision-mode");
+				var elPrec = collisionParams.find(".precision");
+				var elHull = collisionParams.find(".hulls");
+				var elSubdiv = collisionParams.find(".subdiv");
+				var elMesh = collisionParams.find(".select-collision-mesh");
+
+				function applySettings( settings : CollisionSettings ) {
+					collisionParams.find(".collision-param").hide();
+					collisionParams.find(".collision-all").show();
+					switch (settings.mode) {
+						case Default, None:
+						case Auto:
+							collisionParams.find(".collision-auto").show();
+						case Mesh:
+							collisionParams.find(".collision-mesh").show();
+						default: throw "Unexpected mode";
+					}
+					elMode.val(settings.mode);
+
+					var params = settings.params ?? {};
+					elPrec.val('${params.precision ?? 1.0}');
+					elHull.val('${params.maxConvexHulls ?? 1}');
+					elSubdiv.val('${params.maxSubdiv ?? 32}');
+					elMesh.val(params.mesh);
+				}
+
+				collisionParams.on("change", function(_) {
+					var prevMode = settings.mode;
+					var prevParams = settings.params;
+					var meshName = elMesh.val();
+					var curMode = Std.parseInt(elMode.val());
+					var curParams = {};
+					switch( curMode ) {
+						case Default:
+							Reflect.setField(curParams, "useDefault", true);
+						case None:
+							curParams = null;
+						case Auto:
+							Reflect.setField(curParams, "precision", Std.parseFloat(elPrec.val()));
+							Reflect.setField(curParams, "maxConvexHulls", Std.parseInt(elHull.val()));
+							Reflect.setField(curParams, "maxSubdiv", Std.parseInt(elSubdiv.val()));
+							Reflect.setField(curParams, "mesh", meshName == "null" ? null : meshName);
+						case Mesh:
+							Reflect.setField(curParams, "mesh", meshName == "null" ? null : meshName);
+						default:
+							throw "Unknown collision mode";
+					}
+					settings.mode = curMode;
+					settings.params = curParams;
+					applySettings(settings);
+
+					undo.change(Custom(function(undo) {
+						var mode = undo ? prevMode : curMode;
+						var params = undo ? prevParams : curParams;
+						settings.mode = mode;
+						settings.params = params;
+						applySettings(settings);
+					}));
+				});
+				applySettings(settings);
+				return collisionParams;
 			}
-
-			var collisionDropdown = collisionEditor.find("#select-collision-mode");
-			collisionDropdown.val('${Std.int(settings.mode)}');
-			updateCollisionParams(settings);
-
-			collisionEditor.show();
+			collisionList.refresh();
 		}
 
 		var select = e.find(".follow");
@@ -857,7 +913,7 @@ class Model extends FileView {
 
 		var selectedLib = null;
 		var selectedMat = null;
-		var props : Dynamic =  h3d.mat.MaterialSetup.current.loadMaterialProps(m);
+		var props : Dynamic = h3d.mat.MaterialSetup.current.loadMaterialProps(m);
 		if ( props != null && props.__ref != null && !def ) {
 			selectedMat = props.__ref + "/" + props.name;
 			selectedLib = props.__ref;
@@ -1707,7 +1763,7 @@ class Model extends FileView {
 			if (hide.Ide.inst.currentConfig.get("highlightUnsetMats") ?? false) {
 				var mat = Std.downcast(item, h3d.mat.Material);
 				if (mat != null) {
-					var props : Dynamic =  h3d.mat.MaterialSetup.current.loadMaterialProps(mat);
+					var props : Dynamic = h3d.mat.MaterialSetup.current.loadMaterialProps(mat);
 					elt.classList.toggle("model-view-mat-not-set", props == null || props.__ref == null);
 				}
 			}
@@ -1772,7 +1828,7 @@ class Model extends FileView {
 		toolsDefs.push({id: "viewportoverlays-menu", title : "", icon: "", type : Popup((e) -> new hide.comp.SceneEditor.ViewportOverlaysPopup(e, sceneEditor))});
 
 		//toolsDefs.push({id: "iconVisibility", title : "Toggle 3d icons visibility", icon : "image", type : Toggle((v) -> { hide.Ide.inst.show3DIcons = v; }), defaultValue: true });
-        //toolsDefs.push({id: "iconVisibility-menu", title : "", icon: "", type : Popup((e) -> new hide.comp.SceneEditor.IconVisibilityPopup(null, e, sceneEditor))});
+		//toolsDefs.push({id: "iconVisibility-menu", title : "", icon: "", type : Popup((e) -> new hide.comp.SceneEditor.IconVisibilityPopup(null, e, sceneEditor))});
 		tools.makeToolbar(toolsDefs);
 
 		tools.addSeparator();
@@ -1980,7 +2036,7 @@ class Model extends FileView {
 				var matData : hxd.fmt.hmd.Data.Material = null;
 				@:privateAccess {
 					for (dataIdx in 0...(p1.lib.header.materials.length + p2.lib.header.materials.length)) {
-						matData = dataIdx < p1.lib.header.materials.length ? p1.lib.header.materials[dataIdx] :  p1.lib.header.materials[dataIdx - p1.lib.header.materials.length];
+						matData = dataIdx < p1.lib.header.materials.length ? p1.lib.header.materials[dataIdx] : p1.lib.header.materials[dataIdx - p1.lib.header.materials.length];
 						if (matData.name == m.name)
 							break;
 					}
