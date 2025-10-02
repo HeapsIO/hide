@@ -1,6 +1,6 @@
 package hide.kit;
 
-class File extends Input<String> {
+class File extends Widget<String> {
 
 	public var type(default, set) : String;
 
