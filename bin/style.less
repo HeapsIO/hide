@@ -1562,6 +1562,29 @@ input[type=checkbox] {
 					text-align: left;
 				}
 			}
+
+			kit-button {
+				flex: 1 1;
+				height: 1.6em;
+				border: var(--basic-border);
+				border-radius: var(--basic-border-radius);
+				background-color: var(--bg-2);
+
+				text-align: center;
+				vertical-align: middle;
+
+				cursor: pointer;
+
+				&:hover {
+					border: var(--basic-border-hover);
+					background-color: var(--bg-3);
+				}
+
+				&:active {
+					position: relative;
+					top: 1px;
+				}
+			}
 		}
 	}
 
