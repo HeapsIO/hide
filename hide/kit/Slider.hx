@@ -64,6 +64,11 @@ class Slider extends Widget<Float> {
 			}
 		});
 
+		var inputSave = null;
+		slider.addEventListener("focus", (e: js.html.InputEvent) -> {
+			inputSave = slider.value;
+		});
+
 		slider.addEventListener("keydown", (e: js.html.KeyboardEvent) -> {
 			if (e.key == "Enter") {
 				e.preventDefault();
@@ -72,13 +77,15 @@ class Slider extends Widget<Float> {
 			} else if (e.key == "Escape") {
 				e.preventDefault();
 				e.stopPropagation();
-				slider.value = value;
+				if (inputSave != null)
+					slider.value = inputSave;
+				inputSave = null;
 				slider.blur();
 			}
 		});
 
 		slider.addEventListener("input", (e: js.html.InputEvent) -> {
-			var newValue = Std.parseInt(slider.value);
+			var newValue = Std.parseFloat(slider.value);
 			if (newValue != null) {
 				@:bypassAccessor value = newValue;
 
@@ -87,7 +94,7 @@ class Slider extends Widget<Float> {
 		});
 
 		slider.addEventListener("blur", (e: js.html.FocusEvent) -> {
-			var newValue = Std.parseInt(slider.value);
+			var newValue = Std.parseFloat(slider.value);
 			value = newValue ?? value;
 			broadcastValueChange(false);
 		});
