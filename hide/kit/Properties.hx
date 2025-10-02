@@ -18,7 +18,7 @@ class Properties extends Element {
 		registeredElements.set(element.getIdPath(), element);
 	}
 
-	public function broadcastValueChange(input: Input<Dynamic>, isTemporaryEdit: Bool) {
+	public function broadcastValueChange(input: Widget<Dynamic>, isTemporaryEdit: Bool) {
 		var idPath = input.getIdPath();
 
 		prepareUndoPoint();

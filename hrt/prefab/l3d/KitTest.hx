@@ -21,7 +21,7 @@ class KitTest extends Object3D {
 		{
 			var root = @:privateAccess ctx.properties2;
 			{
-				var cat = new hide.kit.Category( root, "widgets", "Widgets");
+				var cat = new hide.kit.Category( root, "testEditor", "Test Editor");
 				{
 					var text = new hide.kit.Text( cat, null, "Text");
 					var slider = new hide.kit.Slider( cat, "x"); slider.label = "X"; slider.value = x; slider.onValueChange = (temp) -> {
@@ -54,9 +54,13 @@ class KitTest extends Object3D {
 							z /= 2;
 						}
 					}
+				}
 
-
-					var range = new hide.kit.Range( cat, "slider", 0.0, 100.0); range.label = "Slider"; range.value = 12.34;
+				var cat = new hide.kit.Category(root, "elements", "All elmements");
+				{
+					var text = new hide.kit.Text( cat, null, "Text");
+					var slider = new hide.kit.Slider( cat, "slider"); slider.label = "Slider"; slider.value = 12.34;
+					var range = new hide.kit.Range( cat, "range", 0.0, 100.0); range.label = "Range"; range.value = 12.34;
 
 					var line = new hide.kit.Line( cat, null); line.label = "Line";
 					{
@@ -66,7 +70,10 @@ class KitTest extends Object3D {
 					var text = new hide.kit.Text( cat, null, "Separator");
 					var separator = new hide.kit.Separator( cat, null);
 					var file = new hide.kit.File( cat, null); file.label="File"; file.type = "texture";
+					var input = new hide.kit.Input(cat, null); input.placeholder = "Placeholder text"; input.label="Input";
 				}
+
+
 
 				var cat = new hide.kit.Category( root, "test", "Layout");
 				{
