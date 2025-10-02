@@ -15,6 +15,9 @@ class KitTest extends Object3D {
 		return mesh;
 	}
 
+	@:s var inputString : String;
+	@:s var filePath : String;
+
 	#if js
 	override function edit2(ctx:hide.prefab.EditContext) {
 		// TEST
@@ -69,8 +72,12 @@ class KitTest extends Object3D {
 					}
 					var text = new hide.kit.Text( cat, null, "Separator");
 					var separator = new hide.kit.Separator( cat, null);
-					var file = new hide.kit.File( cat, null); file.label="File"; file.type = "texture";
-					var input = new hide.kit.Input(cat, null); input.placeholder = "Placeholder text"; input.label="Input";
+					var file = new hide.kit.File( cat, "file"); file.label="File"; file.type = "texture"; file.value = filePath; file.onValueChange = (temp) -> {
+						filePath = file.value;
+					};
+					var input = new hide.kit.Input(cat, null); input.placeholder = "Placeholder text"; input.label="Input"; input.value = inputString; input.onValueChange = (temp) -> {
+						inputString = input.value;
+					};
 				}
 
 
