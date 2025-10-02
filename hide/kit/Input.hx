@@ -7,7 +7,8 @@ abstract class Input<ValueType> extends Element {
 	function set_label(v: String) : String {
 		label = v;
 		#if js
-		labelElement?.innerHTML = label;
+		if (labelElement != null)
+			labelElement.innerHTML = label;
 		#else
 		throw "implement";
 		#end

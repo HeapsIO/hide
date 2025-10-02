@@ -22,9 +22,9 @@ class Element {
 	inline function get_numChildren() return children?.length ?? 0;
 	function get_nativeContent() return native;
 
-	public function new(properties: hide.kit.Properties, parent: Element, id: String) {
-		this.properties = properties;
+	public function new(parent: Element, id: String) {
 		this.parent = parent;
+		this.properties = this.parent?.properties ?? Std.downcast(this.parent, Properties);
 		this.id = id;
 
 		this.parent?.addChild(this);

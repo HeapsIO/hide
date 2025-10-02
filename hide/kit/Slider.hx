@@ -106,16 +106,18 @@ class Slider extends Input<Float> {
 	}
 
 	override function syncValueUI() {
-		slider?.value = Std.string(hxd.Math.round(value * 100) / 100);
+		if (slider == null)
+			return;
+		slider.value = Std.string(hxd.Math.round(value * 100) / 100);
 
 		if (min != null && max != null) {
 			var alpha = hxd.Math.clamp((value - min) / (max - min)) * 100;
 			#if js
-			slider?.style.background = 'linear-gradient(to right, #3185ce ${alpha}%, #222222 ${alpha}%)';
+			slider.style.background = 'linear-gradient(to right, #3185ce ${alpha}%, #222222 ${alpha}%)';
 			#end
 		} else {
 			#if js
-			slider?.style.background = null;
+			slider.style.background = null;
 			#end
 		}
 	}

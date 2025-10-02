@@ -9,8 +9,8 @@ class Text extends Element {
 		return content;
 	}
 
-	public function new(properties: Properties, parent: Element, id: String, content: String) : Void {
-		super(properties, parent, id);
+	public function new(parent: Element, id: String, content: String) : Void {
+		super(parent, id);
 		this.content = content;
 	}
 
@@ -25,7 +25,8 @@ class Text extends Element {
 
 	function refreshText() {
 		#if js
-		native?.textContent = content;
+		if (native != null)
+			native.textContent = content;
 		#else
 		throw "HideKitHL Implement";
 		#end

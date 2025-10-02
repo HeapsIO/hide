@@ -21,34 +21,34 @@ class KitTest extends Object3D {
 		{
 			var root = @:privateAccess ctx.properties2;
 			{
-				var cat = new hide.kit.Category(root, root, "widgets", "Widgets");
+				var cat = new hide.kit.Category( root, "widgets", "Widgets");
 				{
-					var text = new hide.kit.Text(root, cat, null, "Text");
-					var slider = new hide.kit.Slider(root, cat, "x"); slider.label = "X"; slider.value = x; slider.onValueChange = (temp) -> {
+					var text = new hide.kit.Text( cat, null, "Text");
+					var slider = new hide.kit.Slider( cat, "x"); slider.label = "X"; slider.value = x; slider.onValueChange = (temp) -> {
 						x = slider.value;
 					};
-					var slider = new hide.kit.Slider(root, cat, "y"); slider.label = "Y"; slider.value = y; slider.onValueChange = (temp) -> {
+					var slider = new hide.kit.Slider( cat, "y"); slider.label = "Y"; slider.value = y; slider.onValueChange = (temp) -> {
 						y = slider.value;
 					};
-					var slider = new hide.kit.Slider(root, cat, "z"); slider.label = "Z"; slider.value = z; slider.onValueChange = (temp) -> {
+					var slider = new hide.kit.Slider( cat, "z"); slider.label = "Z"; slider.value = z; slider.onValueChange = (temp) -> {
 						z = slider.value;
 					};
 
-					var button = new hide.kit.Button(root, cat, "reset", "Reset"); button.onClick = () -> {
+					var button = new hide.kit.Button( cat, "reset", "Reset"); button.onClick = () -> {
 						x = 0;
 						y = 0;
 						z = 0;
 					};
 
-					var line =  new hide.kit.Line(root, cat, "operators");
+					var line =  new hide.kit.Line( cat, "operators");
 					{
-						var button = new hide.kit.Button(root, line, "mult", "x2"); button.onClick = () -> {
+						var button = new hide.kit.Button( line, "mult", "x2"); button.onClick = () -> {
 							x *= 2;
 							y *= 2;
 							z *= 2;
 						}
 
-						var button = new hide.kit.Button(root, line, "div", "/2"); button.onClick = () -> {
+						var button = new hide.kit.Button( line, "div", "/2"); button.onClick = () -> {
 							x /= 2;
 							y /= 2;
 							z /= 2;
@@ -56,39 +56,39 @@ class KitTest extends Object3D {
 					}
 
 
-					var range = new hide.kit.Range(root, cat, "slider", 0.0, 100.0); range.label = "Slider"; range.value = 12.34;
+					var range = new hide.kit.Range( cat, "slider", 0.0, 100.0); range.label = "Slider"; range.value = 12.34;
 
-					var line = new hide.kit.Line(root, cat, null); line.label = "Line";
+					var line = new hide.kit.Line( cat, null); line.label = "Line";
 					{
-						var slider = new hide.kit.Range(root, line, "sliderA", 0, 100); slider.label = "A"; slider.value = 12.34;
-						var slider = new hide.kit.Range(root, line, "sliderB", 0, 100); slider.label = "B"; slider.value = 12.34;
+						var slider = new hide.kit.Range( line, "sliderA", 0, 100); slider.label = "A"; slider.value = 12.34;
+						var slider = new hide.kit.Range( line, "sliderB", 0, 100); slider.label = "B"; slider.value = 12.34;
 					}
-					var text = new hide.kit.Text(root, cat, null, "Separator");
-					var separator = new hide.kit.Separator(root, cat, null);
-					var file = new hide.kit.File(root, cat, null); file.label="File"; file.type = "texture";
+					var text = new hide.kit.Text( cat, null, "Separator");
+					var separator = new hide.kit.Separator( cat, null);
+					var file = new hide.kit.File( cat, null); file.label="File"; file.type = "texture";
 				}
 
-				var cat = new hide.kit.Category(root, root, "test", "Layout");
+				var cat = new hide.kit.Category( root, "test", "Layout");
 				{
-					var text = new hide.kit.Text(root, cat, null, "Hello world");
-					var slider = new hide.kit.Slider(root, cat, "slider"); slider.label = "Slider"; slider.value = 12.34;
-					var slider = new hide.kit.Slider(root, cat, "slider2"); slider.label = "Another Slider"; slider.value = 12.34;
-					var separator = new hide.kit.Separator(root, cat, null);
-					var slider = new hide.kit.Slider(root, cat, "slider2"); slider.label = "Another Slider"; slider.value = 12.34;
-					var slider = new hide.kit.Slider(root, cat, "slider3"); slider.label = "Another Slider With a Long Name"; slider.value = 12.34;
+					var text = new hide.kit.Text( cat, null, "Hello world");
+					var slider = new hide.kit.Slider( cat, "slider"); slider.label = "Slider"; slider.value = 12.34;
+					var slider = new hide.kit.Slider( cat, "slider2"); slider.label = "Another Slider"; slider.value = 12.34;
+					var separator = new hide.kit.Separator( cat, null);
+					var slider = new hide.kit.Slider( cat, "slider2"); slider.label = "Another Slider"; slider.value = 12.34;
+					var slider = new hide.kit.Slider( cat, "slider3"); slider.label = "Another Slider With a Long Name"; slider.value = 12.34;
 
-					var line = new hide.kit.Line(root, cat, null);
+					var line = new hide.kit.Line( cat, null);
 					{
-						var slider = new hide.kit.Slider(root, line, "sliderA"); slider.label = "A"; slider.value = 12.34;
-						var slider = new hide.kit.Slider(root, line, "sliderB"); slider.label = "B"; slider.value = 12.34;
+						var slider = new hide.kit.Slider( line, "sliderA"); slider.label = "A"; slider.value = 12.34;
+						var slider = new hide.kit.Slider( line, "sliderB"); slider.label = "B"; slider.value = 12.34;
 					}
 
-					var line = new hide.kit.Line(root, cat, null); line.label = "Position";
+					var line = new hide.kit.Line( cat, null); line.label = "Position";
 					{
-						var slider = new hide.kit.Slider(root, line, "sliderX"); slider.value = 12.34;
-						var slider = new hide.kit.Slider(root, line, "sliderY"); slider.value = 12.34;
-						var separator = new hide.kit.Separator(root, line, null);
-						var slider = new hide.kit.Slider(root, line, "sliderZ"); slider.value = 12.34;
+						var slider = new hide.kit.Slider( line, "sliderX"); slider.value = 12.34;
+						var slider = new hide.kit.Slider( line, "sliderY"); slider.value = 12.34;
+						var separator = new hide.kit.Separator( line, null);
+						var slider = new hide.kit.Slider( line, "sliderZ"); slider.value = 12.34;
 					}
 				}
 			}
