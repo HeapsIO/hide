@@ -32,26 +32,29 @@ class File extends Widget<String> {
 
 	function makeInput():NativeElement {
 		#if js
-		var fileInput = js.Browser.document.createElement("kit-file");
+		input = js.Browser.document.createElement("kit-file");
 		text = js.Browser.document.createParagraphElement();
-		fileInput.appendChild(text);
+		input.appendChild(text);
 
-		fileInput.addEventListener("mousedown", (e: js.html.MouseEvent) -> {
+		input.addEventListener("mousedown", (e: js.html.MouseEvent) -> {
 			if (e.button != 0)
 				return;
 			Ide.inst.chooseFile(types.get(type), (v: String) -> {
 				value = v;
-				onValueChange(false);
+				broadcastValueChange(false);
 			}, true);
 		});
 
-		return fileInput;
+		return input;
 		#else
 		#end
 	}
 
 	override function syncValueUI() {
-		text.innerText = value;
+		#if js
+		if (text != null)
+			text.innerText = value ?? "-- Choose Texture --";
+		#end
 	}
 
 	static var types : Map<String, Array<String>> = [
