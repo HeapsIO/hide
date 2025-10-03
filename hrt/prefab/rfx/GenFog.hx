@@ -4,6 +4,8 @@ class GenFogShader extends hrt.shader.PbrShader {
 
 	static var SRC = {
 
+		@param var intensity : Float;
+
 		@param var startDistance : Float;
 		@param var distanceScale : Float;
 		@param var distanceOpacity : Float;
@@ -51,7 +53,7 @@ class GenFogShader extends hrt.shader.PbrShader {
 
 			var fogColor = mix(startColor, endColor, smoothstep(0.0, 1.0, amount));
 			fogColor.rgb += smoothstep(0.0, 1.0, ((camera.position - origin).normalize().dot(lightDirection) - dotThreshold) / (1.0 - dotThreshold)) * lightColor;
-			pixelColor = fogColor;
+			pixelColor = mix(pixelColor, fogColor, intensity);
 		}
 
 	};
@@ -80,6 +82,8 @@ enum abstract GenFogRenderMode(String) {
 class GenFog extends RendererFX {
 
 	var fogPass = new h3d.pass.ScreenFx(new GenFogShader());
+
+	@:s public var intensity : Float = 1;
 
 	@:s public var startDistance : Float;
 	@:s public var endDistance : Float;
@@ -129,6 +133,8 @@ class GenFog extends RendererFX {
 			r.mark("DistanceFog");
 			var ctx = r.ctx;
 
+			fogPass.shader.intensity = intensity;
+
 			fogPass.shader.startDistance = startDistance;
 			fogPass.shader.distanceScale = 1 / (endDistance - startDistance);
 			fogPass.shader.distanceOpacity = distanceOpacity;
@@ -167,10 +173,89 @@ class GenFog extends RendererFX {
 		}
 	}
 
+	override function modulate(t : Float) {
+		var g : GenFog = cast super.modulate(t);
+		g.intensity = this.intensity * t;
+		return g;
+	}
+
+	override function transition( r1 : h3d.impl.RendererFX, r2 : h3d.impl.RendererFX ) : h3d.impl.RendererFX.RFXTransition {
+		var g1 : GenFog = cast r1;
+		var g2 : GenFog = cast r2;
+
+		var g = new GenFog(null, null);
+		g.intensity = g1.intensity;
+		g.startDistance = g1.startDistance;
+		g.endDistance = g1.endDistance;
+		g.distanceOpacity = g1.distanceOpacity;
+		g.distanceFixed = g1.distanceFixed;
+		g.startHeight = g1.startHeight;
+		g.endHeight = g1.endHeight;
+		g.heightOpacity = g1.heightOpacity;
+		g.startOpacity = g1.startOpacity;
+		g.endOpacity = g1.endOpacity;
+		g.startColor = g1.startColor;
+		g.endColor = g1.endColor;
+		g.renderMode = g1.renderMode;
+		g.noise = g1.noise;
+		g.posX = g1.posX;
+		g.posY = g1.posY;
+		g.posZ = g1.posZ;
+		g.usePosition = g1.usePosition;
+		g.lightColor = g1.lightColor;
+		g.lightColorAmount = g1.lightColorAmount;
+		g.lightAngle = g1.lightAngle;
+
+		return { effect : cast g, setFactor : (f : Float) -> {
+			g.intensity = hxd.Math.lerp(g1.intensity, g2.intensity, f);
+			g.startDistance = hxd.Math.lerp(g1.startDistance, g2.startDistance, f);
+			g.endDistance = hxd.Math.lerp(g1.endDistance, g2.endDistance, f);
+			g.distanceOpacity = hxd.Math.lerp(g1.distanceOpacity, g2.distanceOpacity, f);
+			g.startHeight = hxd.Math.lerp(g1.startHeight, g2.startHeight, f);
+			g.endHeight = hxd.Math.lerp(g1.endHeight, g2.endHeight, f);
+			g.heightOpacity = hxd.Math.lerp(g1.heightOpacity, g2.heightOpacity, f);
+			g.startOpacity = hxd.Math.lerp(g1.startOpacity, g2.startOpacity, f);
+			g.endOpacity = hxd.Math.lerp(g1.endOpacity, g2.endOpacity, f);
+			g.posX = hxd.Math.lerp(g1.posX, g2.posX, f);
+			g.posY = hxd.Math.lerp(g1.posY, g2.posY, f);
+			g.posZ = hxd.Math.lerp(g1.posZ, g2.posZ, f);
+			g.lightColorAmount = hxd.Math.lerp(g1.lightColorAmount, g2.lightColorAmount, f);
+			g.lightAngle = hxd.Math.lerp(g1.lightAngle, g2.lightAngle, f);
+
+			function lerpColor(c1 : Int, c2 : Int, f : Float) : Int {
+				var a1 = (c1 >> 24) & 0xFF;
+				var r1 = (c1 >> 16) & 0xFF;
+				var g1 = (c1 >> 8) & 0xFF;
+				var b1 = c1 & 0xFF;
+
+				var a2 = (c2 >> 24) & 0xFF;
+				var r2 = (c2 >> 16) & 0xFF;
+				var g2 = (c2 >> 8) & 0xFF;
+				var b2 = c2 & 0xFF;
+
+    			inline function lerp(v1:Int, v2:Int, f:Float) : Int return Std.int(v1 * (1 - f) + v2 * f);
+    			return (lerp(a1, a2, f) << 24) | (lerp(r1, r2, f) << 16) | (lerp(g1, g2, f) << 8) | lerp(b1, b2, f);
+			}
+
+			g.startColor = lerpColor(g1.startColor, g2.startColor, f);
+			g.endColor = lerpColor(g1.endColor, g2.endColor, f);
+			g.lightColor = lerpColor(g1.lightColor, g2.lightColor, f);
+
+			g.noise = f < 0.5 ? g1.noise : g2.noise;
+
+			g.renderMode = f < 0.5 ? g1.renderMode : g2.renderMode;
+			g.usePosition = f < 0.5 ? g1.usePosition : g2.usePosition;
+			g.distanceFixed = f < 0.5 ? g1.distanceFixed : g2.distanceFixed;
+		} };
+	}
+
 	#if editor
 	override function edit( ctx : hide.prefab.EditContext ) {
 		ctx.properties.add(new hide.Element('
 			<dl>
+				<div class="group" name="General">
+					<dt>Intensity</dt><dd><input type="range" min="0" max="1" field="intensity"/></dd>
+				</div>
 				<div class="group" name="Distance">
 					<dt>Start Distance</dt><dd><input type="range" min="0" max="100" field="startDistance"/></dd>
 					<dt>End Distance</dt><dd><input type="range" min="0" max="100" field="endDistance"/></dd>
