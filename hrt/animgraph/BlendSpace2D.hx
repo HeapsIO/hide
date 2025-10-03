@@ -30,6 +30,8 @@ class BlendSpace2D extends hrt.prefab.Prefab {
 		for (point in points) {
 			var path = point.animPath;
 			path = animSet[path] ?? path;
+			if (path == "" || path == null)
+				continue;
 			var anim = animCache.loadAnimation(hxd.res.Loader.currentInstance.load(path).toModel());
 			anim.speed = point.speed;
 			instPoints.push(new h3d.anim.BlendSpace2D.BlendSpace2DPoint(point.x, point.y, anim, point.keepSync));
