@@ -20,6 +20,7 @@ class KitTest extends Object3D {
 	@:s var color : Int;
 	@:s var gradient : hrt.impl.Gradient.GradientData;
 	@:s var select : String;
+	@:s var checkbox: Bool;
 
 	#if js
 	override function edit2(ctx:hide.prefab.EditContext) {
@@ -103,6 +104,10 @@ class KitTest extends Object3D {
 					var select = new hide.kit.Select(cat, "select", ["Fire", "Earth", "Water", "Air"]); select.label = "Select"; select.value = this.select; select.onValueChange = (temp) -> {
 						this.select = select.value;
 					};
+
+					var checkbox = new hide.kit.Checkbox(cat, "checkbox"); checkbox.label="Checkbox"; checkbox.value = this.checkbox; checkbox.onValueChange = (temp) -> {
+						this.checkbox = checkbox.value;
+					};
 				}
 
 
@@ -128,6 +133,13 @@ class KitTest extends Object3D {
 						var slider = new hide.kit.Slider( line, "sliderY"); slider.value = 12.34;
 						var separator = new hide.kit.Separator( line, null);
 						var slider = new hide.kit.Slider( line, "sliderZ"); slider.value = 12.34;
+					}
+
+					var line = new hide.kit.Line(cat, "checkboxes"); line.label = "Checkboxes";
+					{
+						for (i in 0...8) {
+							var cb = new hide.kit.Checkbox(line, 'cb$i');
+						}
 					}
 				}
 			}
