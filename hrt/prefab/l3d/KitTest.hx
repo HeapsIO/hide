@@ -71,7 +71,7 @@ class KitTest extends Object3D {
 					}
 				}
 
-				var cat = new hide.kit.Category(root, "elements", "All elmements");
+				var cat = new hide.kit.Category(root, "elements", "All Elements");
 				{
 					var text = new hide.kit.Text( cat, null, "Text");
 					var slider = new hide.kit.Slider( cat, "slider"); slider.label = "Slider"; slider.value = 12.34;
