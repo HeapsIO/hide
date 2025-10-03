@@ -307,6 +307,8 @@ class ModalColumnForm extends Modal {
 						form.find("#editBtn").click();
 					else
 						form.find("#createBtn").click();
+					e.preventDefault();
+					e.stopPropagation();
 				}
 			}
 			e.stopPropagation();
