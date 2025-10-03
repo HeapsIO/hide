@@ -10,7 +10,6 @@ class Checkbox extends Widget<Bool> {
 
 		checkbox.addEventListener("input", () -> {
 			value = checkbox.checked;
-			trace(value);
 			broadcastValueChange(false);
 		});
 
