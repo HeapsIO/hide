@@ -24,7 +24,8 @@ class BlendSpace2D extends hrt.prefab.Prefab {
 
 	@:s var scaleSpeedOutOfBound: Bool = false;
 
-	public function makeAnimation(animSet: Map<String, String>, animCache: h3d.prim.ModelCache) : h3d.anim.BlendSpace2D {
+	public function makeAnimation(?animSet: Map<String, String>, animCache: h3d.prim.ModelCache) : h3d.anim.BlendSpace2D {
+		animSet = animSet ?? [];
 		var instPoints : Array<h3d.anim.BlendSpace2D.BlendSpace2DPoint> = [];
 		for (point in points) {
 			var path = point.animPath;
