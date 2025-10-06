@@ -735,17 +735,24 @@ class Model extends FileView {
 				}));
 			};
 			collisionList.removeItem = function( index : Int ) {
-				if( index == 0 )
-					return;
 				var settingsArr = collisionSettings.get(modelName);
 				var settings = settingsArr[index];
-				settingsArr.remove(settings);
+				if( index == 0 )
+					settingsArr[0] = { mode : Default, params : { useDefault : true } };
+				else
+					settingsArr.remove(settings);
 				collisionList.refresh();
 				undo.change(Custom(function(undo) {
 					if( undo )
-						settingsArr.insert(index, settings);
+						if( index == 0 )
+							settingsArr[0] = settings;
+						else
+							settingsArr.insert(index, settings);
 					else
-						settingsArr.remove(settings);
+						if( index == 0 )
+							settingsArr[0] = { mode : Default, params : { useDefault : true } };
+						else
+							settingsArr.remove(settings);
 					collisionList.refresh();
 				}));
 			};
