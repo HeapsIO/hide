@@ -66,19 +66,8 @@ class ContextShared extends hrt.prefab.ContextShared.ContextSharedBase {
 		var datDir = path.toString();
 		var instanceDir = datDir + "/" + p;
 
-		if(!sys.FileSystem.isDirectory( hide.Ide.inst.getPath(datDir)))
-			sys.FileSystem.createDirectory( hide.Ide.inst.getPath(datDir));
-		if(!sys.FileSystem.isDirectory( hide.Ide.inst.getPath(instanceDir)))
-			sys.FileSystem.createDirectory( hide.Ide.inst.getPath(instanceDir));
-
-		var path = new haxe.io.Path("");
-		path.dir = instanceDir;
-		path.file = file;
-		path.ext = ext;
-		var file = hide.Ide.inst.getPath(path.toString());
-
 		if( bytes == null ){
-			try sys.FileSystem.deleteFile(file) catch( e : Dynamic ) {};
+			hxd.res.Loader.currentInstance.delete(getPrefabDatPath(file, ext, p));
 			var p = hide.Ide.inst.getPath(instanceDir);
 			if(sys.FileSystem.isDirectory(p)){
 				var dir = sys.FileSystem.readDirectory(p);
@@ -89,8 +78,18 @@ class ContextShared extends hrt.prefab.ContextShared.ContextSharedBase {
 				var dir = sys.FileSystem.readDirectory(p);
 				if(dir.length == 0) sys.FileSystem.deleteDirectory(p);
 			}
-			return;
-		}else{
+		} else {
+			var path = new haxe.io.Path("");
+			path.dir = instanceDir;
+			path.file = file;
+			path.ext = ext;
+
+			var file = hide.Ide.inst.getPath(path.toString());
+			if(!sys.FileSystem.isDirectory( hide.Ide.inst.getPath(datDir)))
+				sys.FileSystem.createDirectory( hide.Ide.inst.getPath(datDir));
+			if(!sys.FileSystem.isDirectory( hide.Ide.inst.getPath(instanceDir)))
+				sys.FileSystem.createDirectory( hide.Ide.inst.getPath(instanceDir));
+
 			final numRetries = 5;
 			var success = false;
 			var lastError = null;
@@ -110,6 +109,5 @@ class ContextShared extends hrt.prefab.ContextShared.ContextSharedBase {
 			}
 		}
 	}
-
 	#end
 }
