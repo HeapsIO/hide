@@ -36,14 +36,16 @@ class Dropdown extends Component {
 		filterInput = root.find("#filter").first();
 		#if js
 		optionsCont = root.find(".options").first();
-		for( o in options ) {
+		for( oIdx => o in options ) {
 			var el = new Element('<div tabindex="-1" class="dropdown-option">
 				<p class="option-text">${StringTools.htmlEscape(o.text)}</p>
 			</div>');
 			if( buildIcon != null )
 				el.prepend(buildIcon(o));
-			if( o.id == currentValue )
+			if( o.id == currentValue ) {
+				highlightIndex = oIdx;
 				el.addClass("current-value");
+			}
 			if( o.classes != null ) {
 				for( c in o.classes )
 					el.addClass(c);
@@ -86,7 +88,6 @@ class Dropdown extends Component {
 			resetHighlight();
 		});
 		filterInput.keydown(onKey);
-		resetHighlight();
 
 		if (!detached) {
 			super(parent, root);
@@ -124,6 +125,9 @@ class Dropdown extends Component {
 			if( !removed && element[0].isConnected )
 				remove();
 		});
+
+		refreshHighlight();
+
 		#else
 		super(parent, root);
 		#end
