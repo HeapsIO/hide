@@ -197,16 +197,18 @@ class Model extends FileView {
 
 			var settingsArr = collisionSettings.get(o.name);
 			var collide = {};
-			if( settingsArr.length == 1 ) {
-				var settings = settingsArr[0];
-				switch ( settings.mode ) {
-					case Default: collide = {};
-					case None: collide = { collide : null };
-					case Auto, Mesh: collide = { collide : [settings.params] };
-					default: throw "Unexpected collision mode";
+			if (settingsArr != null) {
+				if( settingsArr.length == 1 ) {
+					var settings = settingsArr[0];
+					switch ( settings.mode ) {
+						case Default: collide = {};
+						case None: collide = { collide : null };
+						case Auto, Mesh: collide = { collide : [settings.params] };
+						default: throw "Unexpected collision mode";
+					}
+				} else {
+					collide = { collide : [for( settings in settingsArr ) settings.params] };
 				}
-			} else {
-				collide = { collide : [for( settings in settingsArr ) settings.params] };
 			}
 			var input : h3d.prim.ModelDatabase.ModelDataInput = {
 				resourceDirectory : @:privateAccess hmd.lib.resource.entry.directory,
