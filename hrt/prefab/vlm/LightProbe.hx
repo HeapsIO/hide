@@ -210,9 +210,7 @@ class LightProbe extends Object3D {
 	@:s public var debugDisplay : Bool = true;
 	@:s public var sphereRadius : Float = 0.5;
 
-	public function new(parent : Prefab, shared: ContextShared) {
-		super(parent, shared);
-
+	override function makeInstance() : Void {
 		// Duplicate Name Fix - Prevent baked data conflict
 		var root : Prefab = this;
 		while( root.parent != null ) {
@@ -224,7 +222,7 @@ class LightProbe extends Object3D {
 		while( needCheck ) {
 			needCheck = false;
 			for( p in probeList ) {
-				if( p.name != null && p.name.indexOf("_" + curIndex) != -1 ) {
+				if( p != this && p.name != null && p.name.indexOf("_" + curIndex) != -1 ) {
 					curIndex++;
 					needCheck = true;
 					continue;
@@ -232,9 +230,7 @@ class LightProbe extends Object3D {
 			}
 		}
 		name = "lightProbe_" + curIndex;
-	}
 
-	override function makeInstance() : Void {
 		var lpo = new LightProbeObject(shared.current3d);
 		lpo.material.castShadows = false;
 		lpo.material.mainPass.setPassName("lightProbe");
