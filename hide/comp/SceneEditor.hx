@@ -3849,17 +3849,16 @@ class SceneEditor {
 	}
 
 	public function addElements(elts : Array<PrefabElement>, selectObj : Bool = true, doRefresh : Bool = true, enableUndo = true) {
-
 		beginRebuild();
 		for (e in elts) {
 			makePrefab(e);
 			if (e.parent != null && doRefresh)
 				onPrefabChange(e.parent, "children");
 		}
+		endRebuild();
 		if (doRefresh) {
 			refreshTree(SceneTree, if (selectObj) () -> selectElements(elts, NoHistory) else null);
 		}
-		endRebuild();
 
 		if( !enableUndo )
 			return;
