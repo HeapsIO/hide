@@ -38,7 +38,8 @@ class Separator extends Component {
 
 			var allowedParent = this.parent;
 			while (allowedParent != null) {
-				allowedParents.push(allowedParent);
+				if (allowedParent.data.title != null)
+					allowedParents.push(allowedParent);
 				allowedParent = allowedParent.parent;
 			}
 
@@ -58,7 +59,8 @@ class Separator extends Component {
 
 			if (siblings.length > 1 && siblings[0] != this) {
 				var prevSibling = siblings[siblings.indexOf(this) - 1];
-				allowedParents.push(prevSibling);
+				if (prevSibling.data.title != null)
+					allowedParents.push(prevSibling);
 			}
 
 			var opts : Array<hide.comp.ContextMenu.MenuItem> = [

@@ -2359,7 +2359,7 @@ class Editor extends Component {
 					sheet.separators.splice(sepIndex, 1);
 				} else {
 					sepIndex = sheet.separators.length;
-					var level = 1;
+					var level = 0;
 					for( i in 0...sheet.separators.length ) {
 						if( sheet.separators[i].index > line.index ) {
 							sepIndex = i;
@@ -2367,9 +2367,11 @@ class Editor extends Component {
 						}
 						var lv = sheet.separators[i].level;
 						if( lv == null ) lv = 0;
+						if( sheet.separators[i].title == null ) continue;
 						level = lv + 1;
 					}
-					sheet.separators.insert(sepIndex, { index : line.index, level : level });
+					var data = level == 0 ? { index : line.index } : { index : line.index, level : level };
+					sheet.separators.insert(sepIndex, data);
 				}
 				endChanges();
 				refresh();
