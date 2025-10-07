@@ -26,13 +26,38 @@ class KitTest extends Object3D {
 	override function edit2(ctx:hide.prefab.EditContext) {
 		// TEST
 		{
+
+			trace("start of test macro");
+
+
 			hide.kit.Macros.build(ctx.properties2,
-				<group label="hello">
-					<slider field="x"/>
-					<slider field="y"/>
-					<slider field="z"/>
-				</group>, this
-				);
+				<category("hello") id="hello">
+					<text("world")/>
+					<slider label="Slider" id="slider" min="-10" max="10"/>
+				</category>, this
+			);
+
+			trace("end of test macro");
+
+			// ==>
+
+			// var hello : hide.kit.Category;
+			// {
+			// 	var parent = ctx.properties2;
+			// 	hello = new hide.kit.Category(parent, "hello", "hello");
+			// 	{
+			// 		parent = hello;
+			// 		var text = new hide.kit.Category(parent, null, "world");
+			// 	}
+			// }
+
+			// // le code extérieur peut maintenant manipuler hello
+			// hello.addChild(...);
+
+			// hide.kit.Macros.build(ctx.properties2,
+			// 	<element>
+			// 	</element>, this
+			// );
 
 			var root = @:privateAccess ctx.properties2;
 			{
