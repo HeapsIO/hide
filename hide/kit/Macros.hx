@@ -190,7 +190,7 @@ class Macros {
 										case "Float":
 											{expr: EConst(CFloat(string)), pos: attributePos};
 										case "Bool":
-											{expr: EConst(CIdent(string == "false" ? "false" : "true"))};
+											{expr: EConst(CIdent(string == "false" ? "false" : "true")), pos: attributePos};
 										default:
 											error("unhandeld abstract " + a.toString(), attribute.pmin, attribute.pmax);
 									}
@@ -207,7 +207,7 @@ class Macros {
 						case Code(haxeExpr):
 							haxeExpr;
 						case null:
-							{expr: EConst(CIdent("true"))};
+							{expr: EConst(CIdent("true")), pos: attributePos};
 					};
 					var finalExpr = macro @:pos(attributePos) $field = $valueExpr;
 					block.push(finalExpr);
