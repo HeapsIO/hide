@@ -137,8 +137,8 @@ class EditContext {
 	}
 	#end
 
-	public macro function build(ethis: haxe.macro.Expr, dml: haxe.macro.Expr, contextObj: haxe.macro.Expr) : haxe.macro.Expr {
-		return hide.kit.Macros.build(macro $ethis.properties2, dml, contextObj);
+	public macro function build(ethis: haxe.macro.Expr, dml: haxe.macro.Expr, ?contextObj: haxe.macro.Expr, ?parentElement: haxe.macro.Expr.ExprOf<#if !macro hide.kit.Element #else Dynamic #end> ) : haxe.macro.Expr {
+		return hide.kit.Macros.build(macro $ethis.properties2, dml, contextObj, parentElement);
 	}
 
 }
