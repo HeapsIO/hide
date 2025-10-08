@@ -21,6 +21,7 @@ class KitTest extends Object3D {
 	@:s var gradient : hrt.impl.Gradient.GradientData;
 	@:s var select : String;
 	@:s var checkbox: Bool;
+	@:s var texture: Dynamic;
 
 	#if js
 	override function edit2(ctx:hide.prefab.EditContext) {
@@ -166,6 +167,8 @@ class KitTest extends Object3D {
 						this.gradient = gradient.value;
 					}
 
+					var texture = new hide.kit.Texture(cat, "texture"); texture.label="Texture"; texture.value = this.texture; texture.onValueChange = (_) -> this.texture = texture.value;
+
 					var select = new hide.kit.Select(cat, "select", ["Fire", "Earth", "Water", "Air"]); select.label = "Select"; select.value = this.select; select.onValueChange = (temp) -> {
 						this.select = select.value;
 					};
@@ -206,6 +209,7 @@ class KitTest extends Object3D {
 							var cb = new hide.kit.Checkbox(line, 'cb$i');
 						}
 					}
+
 				}
 			}
 		}
