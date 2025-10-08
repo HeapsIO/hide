@@ -165,8 +165,13 @@ class KitTest extends Object3D {
 					</category>
 				);
 
-				ctx.build(<button("hehe")/>, null, parentGroup);
+				ctx.build(<text("In parent group")/>, null, parentGroup);
 
+				// uncomment this to test error "contextObj must be not null for `field` to work"
+				// ctx.build(<slider field="foo"/>, null, parentGroup);
+
+				// uncomment this to test error "contextObj doesn't have a field named foo"
+				// ctx.build(<slider field="foo"/>, "bar", parentGroup);
 
 				var cat = new hide.kit.Category(root, "elements", "All Elements");
 				{
