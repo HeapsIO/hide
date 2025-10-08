@@ -164,14 +164,14 @@ class Macros {
 					}
 				}
 
-				{
-					var newExpr : Expr = {expr: ENew(@:privateAccess TypeTools.toTypePath(classType, []), newArguments), pos: pos};
-					if (!isGlobal) {
-						var e = macro parent = $newExpr;
-						block.push({expr: EVars([exprVar]), pos: pos});
-					}
-					block.push({expr: EBinop(OpAssign, varExpr, newExpr), pos: pos});
+
+				var newExpr : Expr = {expr: ENew(@:privateAccess TypeTools.toTypePath(classType, []), newArguments), pos: pos};
+				if (!isGlobal) {
+					var e = macro parent = $newExpr;
+					block.push({expr: EVars([exprVar]), pos: pos});
 				}
+				block.push({expr: EBinop(OpAssign, varExpr, newExpr), pos: pos});
+
 
 				for (attribute in fieldsAttributes) {
 					var attributePos = makePos(globalPos, attribute.pmin, attribute.pmax);
@@ -237,7 +237,13 @@ class Macros {
 					block.push({expr: EBlock(outputExpr), pos: pos});
 				}
 
-				args.outputExprs.push({expr: EBlock(block), pos: pos});
+				var finalBlock = {expr: EBlock(block), pos: pos};
+				var finalExpr : Expr = if (args.markup.condition != null) {
+					{expr: EIf(args.markup.condition.cond, finalBlock, null), pos: pos};
+				} else {
+					finalBlock;
+				}
+				args.outputExprs.push(finalExpr);
 			}
 			default:
 				error("unhandled", args.markup.pmin, args.markup.pmax);
