@@ -1,9 +1,11 @@
 package hide.prefab;
 
+#if !macro
 import hrt.prefab.Prefab;
+#end
 
 class EditContext {
-
+	#if !macro
 	#if editor
 
 	public var hideKitRoot: hide.kit.Element;
@@ -132,6 +134,11 @@ class EditContext {
 			getRec([], o);
 
 		return out;
+	}
+	#end
+
+	public macro function build(ethis: haxe.macro.Expr, dml: haxe.macro.Expr, contextObj: haxe.macro.Expr) : haxe.macro.Expr {
+		return hide.kit.Macros.build(macro $ethis.properties2, dml, contextObj);
 	}
 
 }

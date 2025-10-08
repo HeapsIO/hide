@@ -21,7 +21,8 @@ typedef BuildExprArgs = {
 **/
 
 class Macros {
-	public static macro function build(properties: ExprOf<#if !macro hide.kit.Properties #else Dynamic #end>, dml: Expr, contextObj: Expr) : Expr {
+	#if macro
+	public static function build(properties: ExprOf<#if !macro hide.kit.Properties #else Dynamic #end>, dml: Expr, contextObj: Expr) : Expr {
 		switch (dml.expr) {
 			case EMeta({name :":markup"} ,{expr: EConst(CString(dmlString))}): {
 				var parser = new domkit.MarkupParser();
@@ -60,7 +61,6 @@ class Macros {
 		return null;
 	}
 
-	#if macro
 	static function buildExpr(args: BuildExprArgs) : Void {
 
 		var globalPos = Context.currentPos();

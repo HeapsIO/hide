@@ -41,7 +41,7 @@ class KitTest extends Object3D {
 			}
 
 
-			hide.kit.Macros.build(ctx.properties2,
+			ctx.build(
 				<category("hello") id="hello">
 					<text("world")/>
 					<slider label="Slider" id="slider" min="-10" max="10"/>
@@ -69,12 +69,12 @@ class KitTest extends Object3D {
 			// // le code extérieur peut maintenant manipuler hello
 			// hello.addChild(...);
 
-			// hide.kit.Macros.build(ctx.properties2,
+			// ctx.build(ctx.properties2,
 			// 	<element>
 			// 	</element>, this
 			// );
 
-			hide.kit.Macros.build(ctx.properties2,
+			ctx.build(
 				<category("Test Editor Kit")>
 					<slider field="x"/>
 					<slider field="y"/>
@@ -97,7 +97,7 @@ class KitTest extends Object3D {
 						}}/>
 					</line>
 				</category>
-				, this
+				,this
 			);
 
 			var root = @:privateAccess ctx.properties2;
@@ -137,7 +137,7 @@ class KitTest extends Object3D {
 					}
 				}
 
-				hide.kit.Macros.build(ctx.properties2,
+				ctx.build(
 					<category("All Elements Kit")>
 						<text("Text")/>
 						<slider label="Slider" value={12.34}/>
