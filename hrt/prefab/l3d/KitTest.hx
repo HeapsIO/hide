@@ -27,7 +27,17 @@ class KitTest extends Object3D {
 		// TEST
 		{
 
+
+
 			trace("start of test macro");
+
+			function getChoiceList() {
+				return ["Alice", "Bob", "Charles"];
+			}
+
+			function onButtonClick() {
+				trace("clicked");
+			}
 
 
 			hide.kit.Macros.build(ctx.properties2,
@@ -35,6 +45,9 @@ class KitTest extends Object3D {
 					<text("world")/>
 					<slider label="Slider" id="slider" min="-10" max="10"/>
 					<slider label="Slider Conditional" id="slider-conditionnal" min="-10" max="10" if(inputString != null)/>
+					<select(["Fire", "Water", "Air", "Earth"]) label="Choice" id="choice"/>
+					<select(getChoiceList()) label="Choice" id="choice2"/>
+					<button("Click me") onClick={onButtonClick} id="button1"/>
 				</category>, this
 			);
 
