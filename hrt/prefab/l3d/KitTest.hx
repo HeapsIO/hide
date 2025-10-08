@@ -34,6 +34,7 @@ class KitTest extends Object3D {
 				<category("hello") id="hello">
 					<text("world")/>
 					<slider label="Slider" id="slider" min="-10" max="10"/>
+					<slider label="Slider Conditional" id="slider-conditionnal" min="-10" max="10" if(inputString != null)/>
 				</category>, this
 			);
 
