@@ -132,15 +132,20 @@ class Macros {
 							};
 							fieldLabelAttribute = {name: "label", value: domkit.MarkupParser.AttributeValue.RawValue(field), pmin: attribute.pmin, pmax: attribute.pmax, vmin: attribute.vmin};
 
-							var contextType = Context.typeExpr(args.contextObj);
-							switch(Context.follow(contextType.t)) {
+							var isNull = args.contextObj.expr.match(EConst(CIdent("null")));
+							if (isNull)
+								error("contextObj must be not null for `field` to work", attribute.pmin, attribute.pmax);
+
+							var contextTyped = Context.typeExpr(args.contextObj);
+							var contextType = Context.follow(contextTyped.t);
+							switch(contextType) {
 								case TInst(classType, _):
 									var classField = classType.get().findField(field);
 									if (classField == null)
 										error("contextObj doesn't have a field named " + field, attribute.pmin, attribute.pmax);
 								case TDynamic(t):
 								default:
-									error("contextObj must be a dynamic or a class instance for field to work", attribute.pmin, attribute.pmax);
+									error("contextObj must be a dynamic or a class instance for field to work (got " + contextType.toString() + ")", attribute.pmin, attribute.pmax);
 							}
 						default:
 							fieldsAttributes.push(attribute);
