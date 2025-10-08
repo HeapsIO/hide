@@ -21,7 +21,7 @@ typedef BuildExprArgs = {
 **/
 
 class Macros {
-	public static macro function build(properties: ExprOf<#if !macro hide.kit.Properties #else Dynamic #end>, dml: Expr, contextObj: ExprOf<Dynamic>) : Expr {
+	public static macro function build(properties: ExprOf<#if !macro hide.kit.Properties #else Dynamic #end>, dml: Expr, contextObj: Expr) : Expr {
 		switch (dml.expr) {
 			case EMeta({name :":markup"} ,{expr: EConst(CString(dmlString))}): {
 				var parser = new domkit.MarkupParser();
@@ -62,6 +62,7 @@ class Macros {
 
 	#if macro
 	static function buildExpr(args: BuildExprArgs) : Void {
+
 		var globalPos = Context.currentPos();
 		var pos = makePos(globalPos, args.markup.pmin, args.markup.pmax);
 
@@ -98,6 +99,8 @@ class Macros {
 				var kitId: String = null;
 				var codeId: String = null;
 				var label: String = null;
+				var field: String = null;
+				var fieldLabelAttribute = null;
 
 				var fieldsAttributes = [];
 
@@ -122,14 +125,37 @@ class Macros {
 								error("A component with the id " + codeId + " already exists in this build", attribute.pmin, attribute.pmax);
 							}
 							kitId = kebabToCamelCase(valueString);
+						case "field":
+							field = switch(attribute.value) {
+								case RawValue(v): v;
+								case Code(v): error("field must be a string", attribute.pmin, attribute.pmax);
+							};
+							fieldLabelAttribute = {name: "label", value: domkit.MarkupParser.AttributeValue.RawValue(field), pmin: attribute.pmin, pmax: attribute.pmax, vmin: attribute.vmin};
+
+							var contextType = Context.typeExpr(args.contextObj);
+							switch(Context.follow(contextType.t)) {
+								case TInst(classType, _):
+									var classField = classType.get().findField(field);
+									if (classField == null)
+										error("contextObj doesn't have a field named " + field, attribute.pmin, attribute.pmax);
+								case TDynamic(t):
+								default:
+									error("contextObj must be a dynamic or a class instance for field to work", attribute.pmin, attribute.pmax);
+							}
 						default:
 							fieldsAttributes.push(attribute);
 					}
 				}
 
+				if (label == null && field != null) {
+					label = camelToSpaceCase(field);
+					fieldsAttributes.push(fieldLabelAttribute);
+					fieldLabelAttribute.value = domkit.MarkupParser.AttributeValue.RawValue(label);
+				}
+
 				if (kitId == null) {
 					if (label != null) {
-						kitId = label;
+						kitId = toInternalIdentifier(label);
 					} else {
 						kitId = '#${args.autoIdCount}';
 						args.autoIdCount += 1;
@@ -213,11 +239,16 @@ class Macros {
 					block.push(finalExpr);
 				}
 
+				if (field != null) {
+					block.push(macro @:pos(pos) $varExpr.value = ${args.contextObj}.$field);
+					block.push(macro @:pos(pos) $varExpr.onValueChange = function(temp:Bool) {${args.contextObj}.$field = $varExpr.value;});
+				}
+
 				var hasChildren = args.markup.children?.length > 0;
 
 				if (hasChildren) {
 					var outputExpr: Array<Expr> = [];
-					for (childMarkup in args.markup.children) {
+					for (childIndex => childMarkup in args.markup.children) {
 						var childPos = makePos(globalPos, childMarkup.pmin, childMarkup.pmax);
 
 						var childrenArgs : BuildExprArgs = {
@@ -225,7 +256,7 @@ class Macros {
 							outputExprs: [],
 							markup: childMarkup,
 							globalElements: args.globalElements,
-							autoIdCount: 0,
+							autoIdCount: childIndex,
 							contextObj: args.contextObj,
 						};
 
@@ -275,7 +306,7 @@ class Macros {
 		return finalString;
 	}
 
-	static function camelToSpaceCase(str: String) : String {
+	static function camelToSpaceCase(str:String):String {
 		var wasCap = false;
 		var finalString = "";
 		for (charIndex in 0...str.length) {
@@ -288,18 +319,36 @@ class Macros {
 			}
 
 			var isCap = (char.toUpperCase() == char);
+
+			if (isCap && !wasCap) {
+				finalString += " ";
+			}
+
 			if (isCap && wasCap) {
 				finalString += char.toUpperCase();
 				continue;
 			}
 
-			if (!isCap && wasCap) {
-				finalString += " ";
-			}
-
 			finalString += char;
 
 			wasCap = isCap;
+		}
+		return finalString;
+	}
+
+	static function toInternalIdentifier(str: String) : String {
+		var finalString = "";
+		for (charIndex in 0...str.length) {
+			var char = str.charAt(charIndex).toLowerCase();
+			var charCode = char.charCodeAt(0);
+			if ((charCode >= "a".code && charCode <= "z".code) ||
+				 (charCode >= "0".code && charCode <= "9".code) ||
+				 (charCode == "-".code) ||
+				 (charCode == "_".code)) {
+				finalString += char;
+			} else {
+				finalString += "_";
+			}
 		}
 		return finalString;
 	}

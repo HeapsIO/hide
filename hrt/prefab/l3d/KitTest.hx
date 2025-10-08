@@ -73,6 +73,32 @@ class KitTest extends Object3D {
 			// 	</element>, this
 			// );
 
+			hide.kit.Macros.build(ctx.properties2,
+				<category("Test Editor Kit") id="test">
+					<slider field="x"/>
+					<slider field="y"/>
+					<slider field="z"/>
+					<button("Reset") onClick={() -> {
+						x = 0;
+						y = 0;
+						z = 0;
+					}}/>
+					<line id="line">
+						<button("x2") onClick={() -> {
+							x *= 2.0;
+							y *= 2.0;
+							z *= 2.0;
+						}}/>
+						<button("/2") onClick={() -> {
+							x /= 2;
+							y /= 2;
+							z /= 2;
+						}}/>
+					</line>
+				</category>
+				, this
+			);
+
 			var root = @:privateAccess ctx.properties2;
 			{
 				var cat = new hide.kit.Category( root, "testEditor", "Test Editor");
