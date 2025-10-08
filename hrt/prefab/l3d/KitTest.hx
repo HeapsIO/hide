@@ -160,6 +160,12 @@ class KitTest extends Object3D {
 					</category>,
 				this);
 
+				ctx.build(
+					<category("Parent Group") id="parentGroup">
+					</category>
+				);
+
+				ctx.build(<button("hehe")/>, null, parentGroup);
 
 
 				var cat = new hide.kit.Category(root, "elements", "All Elements");
