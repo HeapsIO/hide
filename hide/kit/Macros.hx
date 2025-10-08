@@ -22,7 +22,7 @@ typedef BuildExprArgs = {
 
 class Macros {
 	#if macro
-	public static function build(properties: ExprOf<#if !macro hide.kit.Properties #else Dynamic #end>, dml: Expr, contextObj: Expr) : Expr {
+	public static function build(properties: Expr, dml: Expr, ?contextObj: Expr, ?parentElement: Expr ) : Expr {
 		switch (dml.expr) {
 			case EMeta({name :":markup"} ,{expr: EConst(CString(dmlString))}): {
 				var parser = new domkit.MarkupParser();
@@ -32,7 +32,7 @@ class Macros {
 				var args : BuildExprArgs = {
 					markup: markup,
 					outputExprs: [],
-					parent: properties,
+					parent: parentElement.expr.match(EConst(CIdent("null"))) ? properties : parentElement,
 					contextObj: contextObj,
 					autoIdCount: 0,
 					globalElements: [],
@@ -301,7 +301,7 @@ class Macros {
 			if (wasDash) {
 				finalString += char.toUpperCase();
 			} else {
-				finalString += char.toLowerCase();
+				finalString += char;
 			}
 			wasDash = false;
 		}
