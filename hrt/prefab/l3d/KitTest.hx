@@ -137,6 +137,31 @@ class KitTest extends Object3D {
 					}
 				}
 
+				hide.kit.Macros.build(ctx.properties2,
+					<category("All Elements Kit")>
+						<text("Text")/>
+						<slider label="Slider" value={12.34}/>
+						<range(0.0, 100.0) label="Range" value={12.34}/>
+						<line>
+							<slider label="A" value={12.34}/>
+							<slider label="B" value={12.34}/>
+						</line>
+						<text("Separator")/>
+						<separator/>
+						<file field="filePath" type="texture"/>
+						<button("Button")/>
+						<button("Button Highlight") highlight/>
+						<input label="Input" placeholder="Placeholder text" field="inputString"/>
+						<color field="color"/>
+						<gradient field="gradient"/>
+						<texture field="texture"/>
+						<select(["Fire", "Earth", "Water", "Air"]) field="select" />
+						<checkbox field="checkbox"/>
+					</category>,
+				this);
+
+
+
 				var cat = new hide.kit.Category(root, "elements", "All Elements");
 				{
 					var text = new hide.kit.Text( cat, null, "Text");
