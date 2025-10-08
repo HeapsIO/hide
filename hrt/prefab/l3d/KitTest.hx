@@ -74,7 +74,7 @@ class KitTest extends Object3D {
 			// );
 
 			hide.kit.Macros.build(ctx.properties2,
-				<category("Test Editor Kit") id="test">
+				<category("Test Editor Kit")>
 					<slider field="x"/>
 					<slider field="y"/>
 					<slider field="z"/>

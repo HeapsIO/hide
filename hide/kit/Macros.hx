@@ -162,18 +162,18 @@ class Macros {
 					}
 				}
 
-				var exprVar : Var;
+				var elementVar : Var;
 				var isGlobal = false;
 				if (codeId != null) {
-					exprVar = {name: codeId, type: elementType.toComplexType()};
-					args.globalElements.push(exprVar);
+					elementVar = {name: codeId, type: elementType.toComplexType()};
+					args.globalElements.push(elementVar);
 					isGlobal = true;
 				} else {
-					exprVar = {name : "element", type: elementType.toComplexType()};
+					elementVar = {name : "element", type: elementType.toComplexType()};
 					isGlobal = false;
 				}
 
-				var varExpr : Expr = {expr: EConst(CIdent(exprVar.name)), pos: pos};
+				var elementExpr : Expr = {expr: EConst(CIdent(elementVar.name)), pos: pos};
 
 				var block: Array<Expr> = [];
 
@@ -194,14 +194,14 @@ class Macros {
 				var newExpr : Expr = {expr: ENew(@:privateAccess TypeTools.toTypePath(classType, []), newArguments), pos: pos};
 				if (!isGlobal) {
 					var e = macro parent = $newExpr;
-					block.push({expr: EVars([exprVar]), pos: pos});
+					block.push({expr: EVars([elementVar]), pos: pos});
 				}
-				block.push({expr: EBinop(OpAssign, varExpr, newExpr), pos: pos});
+				block.push({expr: EBinop(OpAssign, elementExpr, newExpr), pos: pos});
 
 
 				for (attribute in fieldsAttributes) {
 					var attributePos = makePos(globalPos, attribute.pmin, attribute.pmax);
-					var field : Expr = {expr: EField(varExpr, attribute.name), pos: attributePos};
+					var field : Expr = {expr: EField(elementExpr, attribute.name), pos: attributePos};
 					var classField = classType.findField(attribute.name);
 
 					var valueExpr : Expr = switch (attribute.value) {
@@ -240,19 +240,21 @@ class Macros {
 				}
 
 				if (field != null) {
-					block.push(macro @:pos(pos) $varExpr.value = ${args.contextObj}.$field);
-					block.push(macro @:pos(pos) $varExpr.onValueChange = function(temp:Bool) {${args.contextObj}.$field = $varExpr.value;});
+					block.push(macro @:pos(pos) $elementExpr.value = ${args.contextObj}.$field);
+					block.push(macro @:pos(pos) $elementExpr.onValueChange = function(temp:Bool) {${args.contextObj}.$field = $elementExpr.value;});
 				}
 
 				var hasChildren = args.markup.children?.length > 0;
 
 				if (hasChildren) {
 					var outputExpr: Array<Expr> = [];
+					var parentExpr = macro @:pos(pos) var __parent = $elementExpr;
+					outputExpr.push(parentExpr);
 					for (childIndex => childMarkup in args.markup.children) {
 						var childPos = makePos(globalPos, childMarkup.pmin, childMarkup.pmax);
 
 						var childrenArgs : BuildExprArgs = {
-							parent: varExpr,
+							parent: macro @:pos(pos) __parent,
 							outputExprs: [],
 							markup: childMarkup,
 							globalElements: args.globalElements,
