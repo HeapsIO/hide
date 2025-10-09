@@ -157,15 +157,33 @@ class KitTest extends Object3D {
 						<texture field="texture"/>
 						<select(["Fire", "Earth", "Water", "Air"]) field="select" />
 						<checkbox field="checkbox"/>
+
+						<line>
+							<image-button("ui/search.png") medium/>
+							<image-button("ui/home.png") medium/>
+							<image-button("ui/menu.png") medium/>
+							<image-button("ui/close.png") medium/>
+						</line>
+
+
+						<line id="parentLine" multiline>
+						</line>
+
+						<block id="addToMe"></block>
 					</category>,
 				this);
 
-				ctx.build(
-					<category("Parent Group") id="parentGroup">
-					</category>
-				);
+				ctx.build(<image-button("textures/dirt01.jpg") big/>, null, parentLine);
+				ctx.build(<image-button("textures/dirt01.jpg") big/>, null, parentLine);
+				ctx.build(<image-button("textures/dirt01.jpg") big/>, null, parentLine);
+				ctx.build(<image-button("textures/dirt01.jpg") big/>, null, parentLine);
+				ctx.build(<image-button("textures/dirt01.jpg") huge/>, null, parentLine);
+				ctx.build(<image-button("textures/dirt01.jpg") huge/>, null, parentLine);
 
-				ctx.build(<text("In parent group")/>, null, parentGroup);
+				for (i in 0...5) {
+					ctx.build(<button({'$i';}) id="button"/>, null, addToMe);
+					button.onClick = () -> trace('onclick $i');
+				}
 
 				// uncomment this to test error "contextObj must be not null for `field` to work"
 				// ctx.build(<slider field="foo"/>, null, parentGroup);

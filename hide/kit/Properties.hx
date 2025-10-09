@@ -18,6 +18,10 @@ class Properties extends Element {
 		registeredElements.set(element.getIdPath(), element);
 	}
 
+	public function getElementByPath(id: String) {
+		return registeredElements.get(id);
+	}
+
 	public function broadcastValueChange(input: Widget<Dynamic>, isTemporaryEdit: Bool) {
 		var idPath = input.getIdPath();
 

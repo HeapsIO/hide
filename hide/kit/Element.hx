@@ -25,7 +25,8 @@ class Element {
 	public function new(parent: Element, id: String) {
 		this.parent = parent;
 		this.properties = this.parent?.properties ?? Std.downcast(this.parent, Properties);
-		this.id = id;
+
+		this.id = ensureUniqueId(id);
 
 		this.parent?.addChild(this);
 		this.properties?.register(this);
@@ -38,6 +39,19 @@ class Element {
 			c.make();
 			attachNative(c);
 		}
+	}
+
+	function ensureUniqueId(id: String) : String {
+		if (this.properties == null)
+			return id;
+		var parentPath = this.parent != null ? this.parent.getIdPath() + "." : "";
+		var count = 0;
+		var newId = id;
+		while (this.properties.getElementByPath(parentPath+newId) != null) {
+			count ++;
+			newId = id + count;
+		}
+		return newId;
 	}
 
 	public function getIdPath() {
