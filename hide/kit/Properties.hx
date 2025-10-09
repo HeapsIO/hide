@@ -14,6 +14,15 @@ class Properties extends Element {
 		edit = editContext;
 	}
 
+	override function makeSelf() : Void {
+		#if js
+		native = js.Browser.document.createDivElement();
+		#else
+		native = new hidehl.ui.Element();
+		native.dom.addClass("properties");
+		#end
+	}
+
 	public function register(element: Element) {
 		registeredElements.set(element.getIdPath(), element);
 	}
@@ -81,6 +90,7 @@ class Properties extends Element {
 	}
 
 	function finishUndoPoint() {
+		#if js
 		var sideEffects : Array<(isUndo:Bool) -> Void> = [];
 		createUndoStep(sideEffects);
 
@@ -96,6 +106,7 @@ class Properties extends Element {
 				Std.downcast(edit, hide.comp.SceneEditor.SceneEditorContext)?.rebuildProperties();
 			}));
 		}
+		#end
 	}
 
 	function createUndoStep(sideEffects : Array<(isUndo:Bool) -> Void>) : Void {

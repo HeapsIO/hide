@@ -10,7 +10,12 @@ class Line extends Element {
 		return label;
 	}
 
+	#if js
 	public var labelElement: NativeElement;
+	#else
+	public var labelContainer: hidehl.ui.Element;
+	public var labelText: hidehl.ui.FmtText;
+	#end
 
 	override function makeSelf():Void {
 		#if js
@@ -20,7 +25,9 @@ class Line extends Element {
 		}
 		refreshLabel();
 		#else
-		throw "aaa";
+		native = new hidehl.ui.Element();
+		native.dom.addClass("line");
+		refreshLabel();
 		#end
 	}
 
@@ -41,7 +48,20 @@ class Line extends Element {
 
 		labelElement.innerHTML = label;
 		#else
-		throw "implement";
+		if (label == null) {
+			labelContainer?.remove();
+			return;
+		}
+
+		if (labelContainer == null) {
+			labelContainer = new hidehl.ui.Element(native);
+			labelContainer.dom.addClass("label");
+			labelContainer.dom.addClass("first");
+
+			labelText = new hidehl.ui.FmtText(labelContainer);
+		}
+
+		labelText.text = label;
 		#end
 	}
 }

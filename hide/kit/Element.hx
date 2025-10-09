@@ -64,7 +64,7 @@ class Element {
 		#if js
 		native = js.Browser.document.createDivElement();
 		#else
-		throw "HideKitHL Implement";
+		native = new hidehl.ui.Element();
 		#end
 	}
 
@@ -73,7 +73,8 @@ class Element {
 		child.native.remove();
 		nativeContent.appendChild(child.native);
 		#else
-		throw "HideKitHL Implement";
+		child.native.remove();
+		nativeContent.addChild(child.native);
 		#end
 	}
 

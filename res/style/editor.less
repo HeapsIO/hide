@@ -1,0 +1,70 @@
+
+editor-root {
+	text, fmt-text {
+		font: url("font/inter_14pt_ss02_tnum.fnt");
+		text-shadow : 0 1 #000 0.8;
+	}
+
+
+
+	.properties {
+		layout: vertical;
+		width: 300;
+		padding: 2;
+
+		background: #3d3d3d;
+
+		category {
+			layout: vertical;
+			fill-width: 1;
+			#header {
+				fill-width: 1;
+				padding: 2;
+				margin-left: 8;
+				margin-right: 8;
+
+				background: #111;
+				& > fmt-text {
+					halign: middle;
+				}
+			}
+
+			#content {
+				layout: vertical;
+				padding-left: 5;
+			}
+		}
+
+		.label {
+			& > fmt-text {
+				halign: right;
+				color: #fff;
+			}
+			padding-left: 2;
+			padding-right: 5;
+		}
+
+		.line {
+			fill-width: true;
+
+			height: 16;
+
+			.first {
+				width: 90;
+			}
+
+			.widget {
+				fill-width: true;
+				auto-size-width: 1;
+			}
+		}
+
+		hide-slider {
+			fill-width: true;
+			auto-size-width: 1;
+		}
+
+	}
+
+
+}

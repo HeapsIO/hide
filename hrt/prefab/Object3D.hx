@@ -243,6 +243,29 @@ class Object3D extends Prefab {
 		super.editorRemoveInstanceObjects();
 	}
 
+	override function edit2(editContext:hide.prefab.EditContext) {
+		editContext.build(
+			<category("Position")>
+				<line label="Position">
+					<slider field="x"/>
+					<slider field="y"/>
+					<slider field="z"/>
+				</line>
+				<line label="Scale">
+					<slider field="scaleX" label="X"/>
+					<slider field="scaleY" label="Y"/>
+					<slider field="scaleZ" label="Z"/>
+				</line>
+				<line label="Rotation">
+					<slider field="rotationX" min="-180" max="180" wrap label="X"/>
+					<slider field="rotationY" min="-180" max="180" wrap label="Y"/>
+					<slider field="rotationZ" min="-180" max="180" wrap label="Z"/>
+				</line>
+				<checkbox field="visible"/>
+			</category>, this
+		);
+	}
+
 #if editor
 	override function setSelected(b:Bool):Bool {
 		if (local3d == null)

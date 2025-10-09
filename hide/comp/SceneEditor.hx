@@ -6306,6 +6306,7 @@ class SceneEditor {
 
 
 	static var useEdit2 : Array<Class<hrt.prefab.Prefab>> = [
-		hrt.prefab.l3d.KitTest
+		hrt.prefab.l3d.KitTest,
+		Object3D,
 	];
 }
