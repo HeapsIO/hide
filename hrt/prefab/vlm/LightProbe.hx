@@ -124,12 +124,17 @@ class LightProbeObject extends h3d.scene.Mesh {
 	}
 
 	public function clear() {
-		if( env.env != null )
+		if( env.env != null ) {
 			env.env.clear(0);
-		if( env.diffuse != null )
+			env.env.realloc = null;
+		}
+		if( env.diffuse != null ) {
 			env.diffuse.clear(0);
+			env.diffuse.realloc = null;
+		}
 		if( env.specular != null ) {
 			env.specular.clear(0);
+			env.specular.realloc = null;
 		}
 	}
 
@@ -326,9 +331,6 @@ class LightProbe extends Object3D {
 				}
 
 			case Capture:
-
-				var needCompute = false;
-
 				if( lpo.env == null )
 					lpo.env = new Environment(null);
 
@@ -336,14 +338,7 @@ class LightProbe extends Object3D {
 				lpo.env.sampleBits = sampleBits;
 				lpo.env.ignoredSpecLevels = ignoredSpecLevels;
 
-				if( propName == "sampleBits" || propName == "ignoredSpecLevels" )
-					needCompute = true;
-
-				if( loadBinary(lpo.env) )
-					needCompute = false; // No Env available with binary load, everything else is already baked
-
-				if( needCompute )
-					lpo.env.compute();
+				loadBinary(lpo.env);
 		}
 
 		updatePreviewSphere();
@@ -639,6 +634,9 @@ class LightProbe extends Object3D {
 				var lpo : LightProbeObject = cast local3d;
 				lpo.env.createTextures();
 				lpo.clear();
+				shared.savePrefabDat("envd", "dds", name, null);
+				shared.savePrefabDat("envs", "dds", name, null);
+				shared.savePrefabDat("data", "bake", name, null);
 				ctx.properties.undo.change(Custom(function(undo) {
 					// TO DO
 				}));
