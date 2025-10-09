@@ -606,7 +606,7 @@ class Model extends FileView {
 				var resetLod = lodsEl.find('#reset-lods');
 				resetLod.on("click", function() {
 					var prevConfig = @:privateAccess hmd.lodConfig?.copy();
-					@:privateAccess hmd.lodConfig = null;
+					@:privateAccess hmd.lodConfig = hxd.fmt.hmd.Library.getDefaultLodConfig(hmd.lib.resource.entry.directory);
 					Ide.inst.quickMessage('Lod config reset for object : ${obj.name}');
 					refreshLodLine();
 
