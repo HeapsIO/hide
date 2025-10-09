@@ -5,5 +5,6 @@ class Range extends Slider {
 		super(parent, id);
 		this.min = min;
 		this.max = max;
+		this.showRange = true;
 	}
 }

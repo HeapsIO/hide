@@ -11,6 +11,9 @@ class Category extends Element {
 	#if js
 	var jsContent : js.html.Element;
 	override function get_nativeContent() return jsContent;
+	#else
+	var hlCategory : hidehl.ui.Category;
+	override function get_nativeContent() return hlCategory.content;
 	#end
 
 	override function makeSelf(): Void {
@@ -30,7 +33,8 @@ class Category extends Element {
 			native.classList.toggle("open");
 		});
 		#else
-		throw "HideKitHL Implement";
+		native = hlCategory = new hidehl.ui.Category();
+		hlCategory.headerName = name;
 		#end
 	}
 }
