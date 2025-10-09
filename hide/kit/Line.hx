@@ -2,6 +2,7 @@ package hide.kit;
 
 class Line extends Element {
 	public var label(default, set): String;
+	public var multiline: Bool = false;
 
 	function set_label(v: String) : String {
 		label = v;
@@ -14,6 +15,9 @@ class Line extends Element {
 	override function makeSelf():Void {
 		#if js
 		native = js.Browser.document.createElement("kit-line");
+		if (multiline) {
+			native.classList.add("multiline");
+		}
 		refreshLabel();
 		#else
 		throw "aaa";
