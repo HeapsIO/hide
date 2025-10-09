@@ -6,6 +6,10 @@ import hrt.prefab.Prefab;
 
 class EditContext {
 	#if !macro
+
+	public var rootPrefab : hrt.prefab.Prefab;
+	public var properties2: hide.kit.Properties;
+
 	#if editor
 
 	public var hideKitRoot: hide.kit.Element;
@@ -18,9 +22,7 @@ class EditContext {
 	public var ide(get,never) : hide.Ide;
 	public var scene : hide.comp.Scene;
 	public var properties : hide.comp.PropsEditor;
-	public var properties2: hide.kit.Properties;
 	public var cleanups : Array<Void->Void>;
-	public var rootPrefab : hrt.prefab.Prefab;
 	function get_ide() return hide.Ide.inst;
 
 	public function onChange(p : Prefab, propName : String) {
@@ -89,7 +91,6 @@ class EditContext {
 	**/
 	public function positionToGroundZ( x : Float, y : Float, ?forPrefab : Prefab ) : Float {
 		throw "Not implemented";
-		return null;
 	}
 
 	/**

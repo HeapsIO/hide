@@ -1,7 +1,11 @@
 package hide.kit;
 
 class Checkbox extends Widget<Bool> {
+	#if js
 	var checkbox : js.html.InputElement;
+	#else
+	var checkbox : NativeElement;
+	#end
 
 	function makeInput() : NativeElement {
 		#if js
@@ -14,6 +18,8 @@ class Checkbox extends Widget<Bool> {
 		});
 
 		return checkbox;
+		#else
+		return new hidehl.ui.FmtText("checkbox");
 		#end
 	}
 

@@ -13,13 +13,19 @@ abstract class Widget<ValueType> extends Element {
 		if (labelElement != null)
 			labelElement.innerHTML = label;
 		#else
-		throw "implement";
+		if (labelElement != null)
+			labelElement.text = label;
 		#end
 		return label;
 	}
 
 	var input: NativeElement;
+
+	#if js
 	var labelElement: NativeElement;
+	#else
+	var labelElement: hidehl.ui.FmtText;
+	#end
 
 	function get_value() return value;
 	function set_value(v:ValueType) {
@@ -50,10 +56,29 @@ abstract class Widget<ValueType> extends Element {
 		input = makeInput();
 		native.appendChild(input);
 
-		syncValueUI();
 		#else
-		throw "aaa";
+		if (parentLine == null) {
+			native = new hidehl.ui.Element();
+			native.dom.addClass("line");
+		} else {
+			native = new hidehl.ui.Element();
+			native.dom.addClass("widget");
+		}
+
+		var labelContainer = new hidehl.ui.Element(native);
+		labelContainer.dom.addClass("label");
+
+		labelElement = new hidehl.ui.FmtText(labelContainer);
+		labelElement.text = label;
+
+		if (parentLine == null || (parent.children[0] == this && parentLine.label == null)) {
+			labelContainer.dom.addClass("first");
+		}
+
+		input = makeInput();
+		native.addChild(input);
 		#end
+		syncValueUI();
 	}
 
 	abstract function makeInput() : NativeElement;
