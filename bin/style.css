@@ -5582,3 +5582,17 @@ fancy-gallery-item.details .icon-placement {
 .model-view-mat-not-set {
   color: #ee6666 !important;
 }
+#shape-editor {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 5px 10px;
+}
+#shape-editor > :nth-child(2n+1) {
+  text-align: right;
+  align-self: center;
+}
+#shape-editor button {
+  background-color: #444444;
+  border: 1px solid #444444;
+  color: white;
+}

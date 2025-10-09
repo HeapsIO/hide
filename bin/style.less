@@ -6689,3 +6689,20 @@ fancy-gallery-item {
 .model-view-mat-not-set {
 	color: #ee6666 !important;
 }
+
+#shape-editor {
+	display: grid;
+	grid-template-columns: 1fr 1fr;
+	gap: 5px 10px;
+
+	>:nth-child(2n+1) {
+		text-align: right;
+		align-self: center;
+	}
+
+	button {
+		background-color: #444444;
+		border: 1px solid #444444;
+		color: white;
+	}
+}
