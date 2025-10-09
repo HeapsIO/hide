@@ -59,6 +59,7 @@ class ModalColumnForm extends Modal {
 				<option value="gradient">Gradient</option>
 				<option value="curve">Curve</option>
 				<option value="custom">Custom Type</option>
+				<option value="structref">Structure Reference</option>
 				<option value="guid">GUID</option>
 				</select>
 				</tr>
@@ -102,6 +103,11 @@ class ModalColumnForm extends Modal {
 					<td><select name="ctype"></select>
 				</tr>
 
+				<tr class="structref">
+					<td>Structure
+					<td><select name="stype"></select>
+				</tr>
+
 				<tr class="scope">
 					<td>Scope
 					<td>
@@ -128,6 +134,11 @@ class ModalColumnForm extends Modal {
 				<tr class="doc hide">
 					<td>&nbsp;
 					<td><label><input type="checkbox" name="copyPasteImmutable"/>&nbsp;Ignore copy paste</label>
+				</tr>
+
+				<tr class="doc hide">
+					<td>&nbsp;
+					<td><label><input type="checkbox" name="shared"/>&nbsp;Shared</label>
 				</tr>
 
 				<tr class="doc hide">
@@ -239,6 +250,17 @@ class ModalColumnForm extends Modal {
 		for( t in base.getCustomTypes() )
 			new Element("<option>").attr("value", "" + t.name).text(t.name).appendTo(ctypes);
 
+		var stypes = form.find("[name=stype]");
+		new Element("<option>").attr("value", "").text("--- Select ---").appendTo(stypes);
+		for( s in base.sheets ) {
+			for( c in s.columns ) {
+				if( c.shared == true ) {
+					var refString = s.name + "@" + c.name;
+					new Element("<option>").attr("value", refString).text(refString).appendTo(stypes);
+				}
+			}
+		}
+
 		var cforms = form.find("[name=formula]");
 		for( f in editor.formulas.getList(sheet) )
 			new Element("<option>").attr("value", f.name).text(f.name).appendTo(cforms);
@@ -258,7 +280,8 @@ class ModalColumnForm extends Modal {
 		if (editForm) {
 			form.addClass("edit");
 			form.find("[name=name]").val(column.name);
-			form.find("[name=type]").val(column.type.getName().substr(1).toLowerCase()).change();
+			var typeValue = column.structRef != null ? "structref" : column.type.getName().substr(1).toLowerCase();
+			form.find("[name=type]").val(typeValue).change();
 			form.find("[name=req]").prop("checked", !column.opt);
 			form.find("[name=display]").val(column.display == null ? "0" : Std.string(column.display));
 			form.find("[name=kind]").val(column.kind == null ? "" : ""+column.kind);
@@ -266,6 +289,7 @@ class ModalColumnForm extends Modal {
 			form.find("[name=hidden]").prop("checked", column.kind == Hidden);
 			var p = Editor.getColumnProps(column);
 			form.find("[name=copyPasteImmutable]").prop( "checked", p.copyPasteImmutable );
+			form.find("[name=shared]").prop("checked", column.shared == true);
 			if( column.documentation != null ) {
 				form.find("[name=doc]").val(column.documentation);
 				form.find(".doc").removeClass("hide");
@@ -287,6 +311,9 @@ class ModalColumnForm extends Modal {
 				form.find("[name=defaultValue]").prop('checked', column.defaultValue );
 			default:
 				form.find("[name=defaultValue]").val( column.defaultValue );
+			}
+			if( column.structRef != null ) {
+				form.find("[name=stype]").val(column.structRef);
 			}
 		} else {
 			form.addClass("create");
@@ -405,6 +432,16 @@ class ModalColumnForm extends Modal {
 				return null;
 			}
 			TCustom(t.name);
+		case "structref":
+			if( v.stype == null || v.stype == "" ) {
+				error("Structure reference not selected");
+				return null;
+			}
+			var parts = v.stype.split("@");
+			var colName = parts.pop();
+			var parentSheet = base.getSheet(parts.join("@"));
+			var refCol = Lambda.find(parentSheet.columns, function(c) return c.name == colName);
+			refCol.type;
 		case "color":
 			TColor;
 		case "layer":
@@ -481,6 +518,12 @@ class ModalColumnForm extends Modal {
 		}
 		if( t == TId && v.scope != "" ) c.scope = Std.parseInt(v.scope);
 		if( v.doc != "" ) c.documentation = v.doc;
+		
+		// Handle structRef and shared fields
+		if( v.stype != null && v.stype != "" ) c.structRef = v.stype;
+		if( v.shared == "on" ) {
+			c.shared = true;
+		}
 
 		var hasProp = false;
 		for( f in Reflect.fields(props) )

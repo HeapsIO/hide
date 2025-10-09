@@ -668,12 +668,16 @@
 .cdb .content-modal form .t_custom .custom {
   display: table-row;
 }
+.cdb .content-modal form .t_structref .structref {
+  display: table-row;
+}
 .cdb .content-modal form .t_id .scope {
   display: table-row;
 }
 .cdb .content-modal form .values,
 .cdb .content-modal form .sheet,
 .cdb .content-modal form .custom,
+.cdb .content-modal form .structref,
 .cdb .content-modal form .disp,
 .cdb .content-modal form .kind,
 .cdb .content-modal form .scope {

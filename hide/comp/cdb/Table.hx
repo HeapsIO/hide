@@ -173,6 +173,32 @@ class Table extends Component {
 		#end
 	}
 
+	function addIcons(c: cdb.Data.Column, el: hide.Element) {
+		if( c.documentation != null ) {
+			el.attr("title", c.documentation);
+			new Element('<i style="margin-left: 5px" class="ico ico-book"/>').appendTo(el);
+		}
+		if( c.shared ) {
+			new Element('<i style="margin-left: 5px" class="ico ico-share-alt" title="Shared column"/>').appendTo(el);
+			el.addClass("shared");
+		}
+		if( c.structRef != null ) {
+			new Element('<i style="margin-left: 5px" class="ico ico-reply" title="Referencing ${c.structRef}"/>').appendTo(el);
+			el.addClass("struct-ref");
+		}
+		if( c.type == TString ) {
+			var ico = switch(c.kind) {
+				case Localizable:
+					"ico-globe";
+				case Script:
+					"ico-code";
+				default:
+					"ico-text-width";
+			}
+			new Element('<i style="margin-right: 5px" class="ico $ico"/>').prependTo(el);
+		}
+	}
+
 
 	function refreshTable() {
 		errorCount = 0;
@@ -300,21 +326,7 @@ class Table extends Component {
 				for(c in editProps.categories)
 					col.addClass("cat-" + c);
 
-			if( c.documentation != null ) {
-				col.attr("title", c.documentation);
-				new Element('<i style="margin-left: 5px" class="ico ico-book"/>').appendTo(col);
-			}
-			if( c.type == TString ) {
-				var ico = switch(c.kind) {
-					case Localizable:
-						"ico-globe";
-					case Script:
-						"ico-code";
-					default:
-						"ico-text-width";
-				}
-				new Element('<i style="margin-right: 5px" class="ico $ico"/>').prependTo(col);
-			}
+			addIcons(c, col);
 			if( sheet.props.displayColumn == c.name )
 				col.addClass("display");
 			col.contextmenu(function(e) {
@@ -508,22 +520,7 @@ class Table extends Component {
 			var th = new Element("<th>").text(c.name).appendTo(l);
 			var td = new Element("<td>").addClass("c").appendTo(l);
 
-			if( c.documentation != null ) {
-				th.attr("title", c.documentation);
-				new Element('<i style="margin-left: 5px" class="ico ico-book"/>').appendTo(th);
-			}
-			if( c.type == TString ) {
-				var ico = switch(c.kind) {
-					case Localizable:
-						"ico-globe";
-					case Script:
-						"ico-code";
-					default:
-						"ico-text-width";
-				}
-				new Element('<i style="margin-right: 5px" class="ico $ico"/>').prependTo(th);
-			}
-
+			addIcons(c, th);
 			var line = new Line(this, [c], lines.length, l);
 			var cell = new Cell(td.get(0), line, c);
 			lines.push(line);
