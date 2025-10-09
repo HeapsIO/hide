@@ -1,10 +1,16 @@
 package hide.kit;
 
 class Slider extends Widget<Float> {
+	#if js
 	var slider: js.html.InputElement;
+	#else
+	var slider: hidehl.ui.HideSlider;
+	#end
 
 	public var min(default, set) : Null<Float> = null;
 	public var max(default, set) : Null<Float> = null;
+	public var wrap: Bool = false;
+	var showRange: Bool = false;
 
 	function makeInput() : NativeElement {
 		#if js
@@ -38,10 +44,17 @@ class Slider extends Widget<Float> {
 			if (e.ctrlKey) mult *= 10.0;
 			if (e.shiftKey) mult /= 10.0;
 			value += e.movementX * mult;
-			if (min != null)
-				value = hxd.Math.max(value, min);
-			if (max != null)
-				value = hxd.Math.min(value, max);
+
+			if (wrap && min != null && max !=null) {
+				var size = max - min;
+				value = ((value - min + size) % size) + min;
+			} else {
+				if (min != null)
+					value = hxd.Math.max(value, min);
+				if (max != null)
+					value = hxd.Math.min(value, max);
+			}
+
 
 			broadcastValueChange(true);
 			hasMoved = true;
@@ -101,7 +114,14 @@ class Slider extends Widget<Float> {
 
 		return container;
 		#else
-		throw "implement";
+		slider = new hidehl.ui.HideSlider();
+		slider.slider.onChange = () -> {
+			value = slider.slider.value;
+			broadcastValueChange(true);
+		}
+		slider.slider.minValue = -10;
+		slider.slider.maxValue = 10;
+		return slider;
 		#end
 	}
 
@@ -120,9 +140,13 @@ class Slider extends Widget<Float> {
 	override function syncValueUI() {
 		if (slider == null)
 			return;
+		#if js
 		slider.value = Std.string(hxd.Math.round(value * 100) / 100);
+		#else
+		slider.slider.value = value;
+		#end
 
-		if (min != null && max != null) {
+		if (showRange && min != null && max != null) {
 			var alpha = hxd.Math.clamp((value - min) / (max - min)) * 100;
 			#if js
 			slider.style.background = 'linear-gradient(to right, #3185ce ${alpha}%, #222222 ${alpha}%)';
