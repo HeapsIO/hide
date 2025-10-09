@@ -1623,6 +1623,35 @@ input[type=checkbox] {
 				&.highlight {
 					background-color: var(--selection);
 				}
+
+				> kit-image {
+					max-width: 100%;
+					aspect-ratio: 1/1;
+					background-size: cover;
+					background-repeat: no-repeat;
+					display: block;
+				}
+
+				&:has(kit-image) {
+					flex: 0 1 1.6em;
+					padding: 3px;
+					height: unset;
+				}
+
+				&.kit-medium {
+					flex : 0 1 32px;
+				}
+
+				&.kit-big {
+					flex : 0 1 64px;
+				}
+
+				&.kit-huge {
+					flex : 0 1 64px;
+				}
+			}
+			&.multiline {
+				flex-wrap: wrap;
 			}
 		}
 	}
