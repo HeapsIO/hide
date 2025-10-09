@@ -1475,6 +1475,30 @@ input[type=checkbox].indeterminate:after {
 .hide-properties .group2 kit-line kit-button.highlight {
   background-color: var(--selection);
 }
+.hide-properties .group2 kit-line kit-button > kit-image {
+  max-width: 100%;
+  aspect-ratio: 1/1;
+  background-size: cover;
+  background-repeat: no-repeat;
+  display: block;
+}
+.hide-properties .group2 kit-line kit-button:has(kit-image) {
+  flex: 0 1 1.6em;
+  padding: 3px;
+  height: unset;
+}
+.hide-properties .group2 kit-line kit-button.kit-medium {
+  flex: 0 1 32px;
+}
+.hide-properties .group2 kit-line kit-button.kit-big {
+  flex: 0 1 64px;
+}
+.hide-properties .group2 kit-line kit-button.kit-huge {
+  flex: 0 1 64px;
+}
+.hide-properties .group2 kit-line.multiline {
+  flex-wrap: wrap;
+}
 .hide-properties .btn-list * {
   margin-bottom: 5px;
 }

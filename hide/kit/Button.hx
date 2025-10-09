@@ -3,6 +3,11 @@ package hide.kit;
 class Button extends Element {
 	var label : String;
 	public var highlight(default, set) : Bool = false;
+	public var image : String;
+	public var medium : Bool = false;
+	public var big : Bool = false;
+	public var huge : Bool = false;
+
 	var button : NativeElement;
 
 	function set_highlight(v:Bool) : Bool {
@@ -36,6 +41,18 @@ class Button extends Element {
 
 		button = js.Browser.document.createElement("kit-button");
 		button.innerHTML = label;
+		if (image != null) {
+			var imageElement = js.Browser.document.createElement("kit-image");
+			imageElement.style.backgroundImage = 'url(file://${hide.Ide.inst.getPath(image)})';
+			button.appendChild(imageElement);
+		}
+		if (medium) {
+			button.classList.add("kit-medium");
+		}
+		if (big) {
+			button.classList.add("kit-big");
+		}
+
 		native.appendChild(button);
 		button.addEventListener("click", (e:js.html.MouseEvent) -> {
 			broadcastClick();
