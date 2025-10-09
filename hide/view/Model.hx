@@ -519,12 +519,12 @@ class Model extends FileView {
 			if (@:privateAccess hmd.blendshape != null) {
 				var blendShape = new Element('
 				<div class="group" name="Blend Shapes">
-					<dt>Index</dt><dd><input id="bs-index" type="range" min="0" max="${@:privateAccess hmd.blendshape.getBlendshapeCount() - 1}" step="1" field=""/></dd>
+					<dt>Shape</dt><dd><select id="bs-name">${[for (s in @:privateAccess hmd.blendshape.shapes) '<option value="${s.name}">${s.name}</option>'].join("")}</select></dd>
 					<dt>Amount</dt><dd><input id="bs-amount" type="range" min="0" max="1" field=""/></dd>
 				</div>');
 
 				properties.add(blendShape, null, function(pname){
-					@:privateAccess hmd.blendshape.setBlendShapeWeight(mesh, blendShape.find("#bs-index").val(), blendShape.find("#bs-amount").val());
+					mesh.setBlendshapeWeight(blendShape.find("#bs-name").val(), Std.parseFloat(blendShape.find("#bs-amount").val()));
 				});
 			}
 
