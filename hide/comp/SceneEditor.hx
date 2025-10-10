@@ -4181,8 +4181,16 @@ class SceneEditor {
 			properties.clear();
 			if( elts.length > 0 ) {
 				var commonClass = hrt.tools.ClassUtils.getCommonClass(elts, hrt.prefab.Prefab);
+				var parentClass = Type.getSuperClass(commonClass);
+				var useNewEditor = false;
 
-				if (useEdit2.contains(commonClass)) {
+				if (parentClass != null) {
+					if (Reflect.field(Type.createEmptyInstance(commonClass), "edit2") != Reflect.field(Type.createEmptyInstance(parentClass), "edit2")) {
+						useNewEditor = true;
+					}
+				}
+
+				if (useNewEditor) {
 					var proxyPrefab = Type.createInstance(commonClass, [null, new ContextShared()]);
 					proxyPrefab.load(haxe.Json.parse(haxe.Json.stringify(elts[0].save())));
 					var rootProperties = new hide.kit.Properties(null, null, proxyPrefab, edit);
