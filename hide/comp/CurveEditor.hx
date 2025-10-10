@@ -237,55 +237,6 @@ class EventsEditor extends Component implements CurveEditorComponent
 
 			refreshEventPos();
 			eventRefreshFunction.push(refreshEventPos);
-
-			// var p = new Element('<polyline stroke-width="5" points="" stroke="white" fill="black" transform="translate(${event.time * this.curveEditor.xScale}, $yPos)" />').appendTo(eventGroup);
-			// var p = new Element('<polygon stroke-width="5" points="$hs,0 $s,$hs $hs,$s 0,$hs" stroke="white" fill="black" transform="translate(${event.time * this.curveEditor.xScale}, $yPos)" />').appendTo(eventGroup);
-			// evtBody.addClass("event");
-			// evtBody.addClass(element.type);
-
-			// evtBody.click(function(e) {
-			// 	@:privateAccess this.fxEditor.sceneEditor.showProps(element);
-			// });
-
-			// evtBody.contextmenu(function(e) {
-			// 	if (event.lock || event.hidden)
-			// 		return;
-
-			// 	e.preventDefault();
-			// 	e.stopPropagation();
-
-			// 	hide.comp.ContextMenu.createFromEvent(cast e,[
-			// 		{
-			// 			label: "Delete", click: function() {
-			// 				events.remove(event);
-			// 				@:privateAccess fxEditor.sceneEditor.deleteElements([element], refreshOverview);
-			// 			}
-			// 		}
-			// 	]);
-			// });
-
-			// evtBody.mousedown(function(e) {
-			// 	if (event.lock || event.hidden)
-			// 		return;
-
-			// 	var offsetX = e.clientX - @:privateAccess this.curveEditor.xt(event.time);
-			// 	e.preventDefault();
-			// 	e.stopPropagation();
-			// 	if(e.button == 2) {
-			// 	}
-			// 	else {
-			// 		var prevVal = event.time;
-			// 		@:privateAccess fxEditor.startDrag(function(e) {
-			// 			var x = @:privateAccess this.curveEditor.ixt(e.clientX - offsetX);
-			// 			x = hxd.Math.max(0, x);
-			// 			x = untyped parseFloat(x.toFixed(5));
-			// 			event.time = x;
-			// 			refresh();
-			// 		}, function(e) {
-			// 			this.curveEditor.undo.change(Field(event, "time", prevVal), refreshOverview);
-			// 		});
-			// 	}
-			// });
 		}
 
 		var isSquareRect = svg.element.find(".selection").children().length > 0;
@@ -741,8 +692,6 @@ class CurveEditor extends hide.comp.Component {
 
 		evaluator = new hrt.prefab.fx.Evaluator([]);
 
-		var sMin = 0.0;
-		var sMax = 0.0;
 		tlGroup.mousedown(function(e) {
 			var lastX = e.clientX;
 			var shift = e.shiftKey;
@@ -750,18 +699,9 @@ class CurveEditor extends hide.comp.Component {
 			var xoffset = svg.element.offset().left;
 
 			function updateMouse(e: js.jquery.Event) {
-				var dt = (e.clientX - lastX) / xScale;
 				if(e.which == 1) {
-					// if(shift) {
-					// 	sMax = ixt(e.clientX - xoffset);
-					// }
-					// else if(ctrl) {
-					// 	previewMax = ixt(e.clientX - xoffset);
-					// }
-					//else {
-						currentTime = ixt(e.clientX - xoffset);
-						currentTime = hxd.Math.max(currentTime, 0);
-					//}
+					currentTime = ixt(e.clientX - xoffset);
+					currentTime = hxd.Math.max(currentTime, 0);
 				}
 			}
 
@@ -773,76 +713,17 @@ class CurveEditor extends hide.comp.Component {
 			}, function(e) {
 				updateMouse(e);
 
-				// if(previewMax < previewMin + 0.1) {
-				// 	previewMin = 0;
-				// 	previewMax = data.duration == 0 ? 5000 : data.duration;
-				// }
-
 				element.off("mousemove");
 				element.off("mouseup");
 				e.preventDefault();
 				e.stopPropagation();
 				refreshTimeline(currentTime);
 				refreshOverlay(duration);
-				//afterPan(false);
 			});
-
-			// 	if(hxd.Math.abs(sMax - sMin) < 1e-5) {
-			// 		selectMin = 0;
-			// 		selectMax = 0;
-			// 	}
-			// 	else {
-			// 		selectMax = hxd.Math.max(sMin, sMax);
-			// 		selectMin = hxd.Math.min(sMin, sMax);
-			// 	}
-			// }
-
-			// if(data.markers != null) {
-			// 	var marker = data.markers.find(m -> hxd.Math.abs(xt(clickTime) - xt(m.t)) < 4);
-			// 	if(marker != null) {
-			// 		var prevVal = marker.t;
-			// 		startDrag(function(e) {
-			// 			updateMouse(e);
-			// 			var x = ixt(e.clientX - xoffset);
-			// 			x = hxd.Math.max(0, x);
-			// 			x = untyped parseFloat(x.toFixed(5));
-			// 			marker.t = x;
-			// 			refreshTimeline(true);
-			// 		}, function(e) {
-			// 			undo.change(Field(marker, "t", prevVal), refreshTimeline.bind(false));
-			// 		});
-			// 		e.preventDefault();
-			// 		e.stopPropagation();
-			// 		return;
-			// 	}
-			// }
 
 			e.preventDefault();
 			e.stopPropagation();
 		});
-
-		// var wheelTimer : haxe.Timer = null;
-		// timeline.on("mousewheel", function(e) {
-		// 	var step = e.originalEvent.wheelDelta > 0 ? 1.0 : -1.0;
-		// 	xScale *= Math.pow(1.125, step);
-		// 	e.preventDefault();
-		// 	e.stopPropagation();
-		// 	refreshTimeline(false);
-		// 	if(wheelTimer != null)
-		// 		wheelTimer.stop();
-		// 	wheelTimer = haxe.Timer.delay(function() {
-		// 		this.curveEditor.xOffset = xOffset;
-		// 		this.curveEditor.xScale = xScale;
-		// 		this.curveEditor.refresh();
-		// 		afterPan(false);
-		// 	}, 50);
-		// });
-
-		// selectMin = 0.0;
-		// selectMax = 0.0;
-		// previewMin = 0.0;
-		// previewMax = data.duration == 0 ? 5000 : data.duration;
-		// refreshTimeline(false);
 
 		root.resize((e) -> refresh());
 		root.addClass("hide-curve-editor");
@@ -1015,13 +896,6 @@ class CurveEditor extends hide.comp.Component {
 				case Aligned:
 					addPrevH();
 					addNextH();
-					// var pa = hxd.Math.atan2(key.prevHandle.dv, key.prevHandle.dt);
-					// var na = hxd.Math.atan2(key.nextHandle.dv, key.nextHandle.dt);
-
-					// if(hxd.Math.abs(hxd.Math.angle(pa - na)) < Math.PI - (1./180.)) {
-					// 	key.nextHandle.dt = -key.prevHandle.dt;
-					// 	key.nextHandle.dv = -key.prevHandle.dv;
-					// }
 				case Free:
 					addPrevH();
 					addNextH();
@@ -1043,10 +917,6 @@ class CurveEditor extends hide.comp.Component {
 				key.time = prev.time + 0.01;
 			if(next != null && key.time > next.time)
 				key.time = next.time - 0.01;
-
-			// disabled until some one need it
-			// if(c.minValue < c.maxValue)
-			// 	key.value = hxd.Math.clamp(key.value, c.minValue, c.maxValue);
 
 			if(false) {
 				// TODO: This sorta works but is annoying.
