@@ -33,18 +33,18 @@ class Main extends hxd.App {
 			{
 				var proxyPrefab = Type.createInstance(commonClass, [null, new hrt.prefab.ContextShared()]);
 				proxyPrefab.load(haxe.Json.parse(haxe.Json.stringify(selectedPrefabs[0].save())));
-				var rootProperties = new hide.kit.Properties(null, null, proxyPrefab, editContext);
-				editContext.properties2 = rootProperties;
+				var rootProperties = new hide.kit.KitRoot(null, null, proxyPrefab, editContext);
+				editContext.kitRoot = rootProperties;
 				proxyPrefab.edit2(editContext);
 				for (i => select in selectedPrefabs) {
-					var childProperties = new hide.kit.Properties(null, null, select, editContext);
+					var childProperties = new hide.kit.KitRoot(null, null, select, editContext);
 					rootProperties.editedPrefabsProperties.push(childProperties);
-					editContext.properties2 = childProperties;
+					editContext.kitRoot = childProperties;
 					select.edit2(editContext);
 				}
 
-				editContext.properties2 = rootProperties;
-				editContext.properties2.make();
+				editContext.kitRoot = rootProperties;
+				editContext.kitRoot.make();
 
 				@:privateAccess editorRoot.panelRight.addChild(editContext.properties2.nativeContent);
 			}

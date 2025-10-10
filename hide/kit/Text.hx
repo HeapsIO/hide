@@ -16,7 +16,7 @@ class Text extends Element {
 
 	override function makeSelf() : Void {
 		#if js
-		native = js.Browser.document.createParagraphElement();
+		native = js.Browser.document.createElement("kit-text");
 		refreshText();
 		#else
 		throw "HideKitHL Implement";

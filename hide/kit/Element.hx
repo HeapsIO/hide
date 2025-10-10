@@ -3,7 +3,7 @@ package hide.kit;
 class Element {
 	var parent(default, null) : Element;
 	var id(default, null) : String;
-	var properties(default, null) : hide.kit.Properties;
+	var root(default, null) : hide.kit.KitRoot;
 
 	var children : Array<Element> = null;
 	public var numChildren(get, never) : Int;
@@ -24,12 +24,12 @@ class Element {
 
 	public function new(parent: Element, id: String) {
 		this.parent = parent;
-		this.properties = this.parent?.properties ?? Std.downcast(this.parent, Properties);
+		this.root = this.parent?.root ?? Std.downcast(this.parent, KitRoot);
 
 		this.id = ensureUniqueId(id);
 
 		this.parent?.addChild(this);
-		this.properties?.register(this);
+		this.root?.register(this);
 	}
 
 	public function make() {
@@ -42,12 +42,12 @@ class Element {
 	}
 
 	function ensureUniqueId(id: String) : String {
-		if (this.properties == null)
+		if (this.root == null)
 			return id;
 		var parentPath = this.parent != null ? this.parent.getIdPath() + "." : "";
 		var count = 0;
 		var newId = id;
-		while (this.properties.getElementByPath(parentPath+newId) != null) {
+		while (this.root.getElementByPath(parentPath+newId) != null) {
 			count ++;
 			newId = id + count;
 		}
@@ -55,7 +55,7 @@ class Element {
 	}
 
 	public function getIdPath() {
-		if (parent == null || parent is Properties)
+		if (parent == null || parent is KitRoot)
 			return id;
 		return parent.getIdPath() + "." + id;
 	}

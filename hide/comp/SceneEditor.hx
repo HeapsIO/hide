@@ -4193,20 +4193,20 @@ class SceneEditor {
 				if (useNewEditor) {
 					var proxyPrefab = Type.createInstance(commonClass, [null, new ContextShared()]);
 					proxyPrefab.load(haxe.Json.parse(haxe.Json.stringify(elts[0].save())));
-					var rootProperties = new hide.kit.Properties(null, null, proxyPrefab, edit);
-					edit.properties2 = rootProperties;
+					var baseRoot = new hide.kit.KitRoot(null, null, proxyPrefab, edit);
+					edit.kitRoot = baseRoot;
 					proxyPrefab.edit2(edit);
 					for (i => select in selectedPrefabs) {
-						var childProperties = new hide.kit.Properties(null, null, select, edit);
-						rootProperties.editedPrefabsProperties.push(childProperties);
-						edit.properties2 = childProperties;
+						var childRoot = new hide.kit.KitRoot(null, null, select, edit);
+						baseRoot.editedPrefabsProperties.push(childRoot);
+						edit.kitRoot = childRoot;
 						select.edit2(edit);
 					}
 
-					edit.properties2 = rootProperties;
-					edit.properties2.make();
+					edit.kitRoot = baseRoot;
+					edit.kitRoot.make();
 
-					@:privateAccess properties.element.append(edit.properties2.nativeContent);
+					@:privateAccess properties.element.append(edit.kitRoot.nativeContent);
 				}
 				else {
 					if (elts.length > 1) {

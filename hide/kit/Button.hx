@@ -26,7 +26,7 @@ class Button extends Element {
 	}
 
 	function broadcastClick() {
-		properties.broadcastClick(this);
+		root.broadcastClick(this);
 	}
 
 	override function makeSelf() {

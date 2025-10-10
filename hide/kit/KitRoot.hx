@@ -1,7 +1,7 @@
 package hide.kit;
 
-class Properties extends Element {
-	public var editedPrefabsProperties : Array<Properties> = [];
+class KitRoot extends Element {
+	public var editedPrefabsProperties : Array<KitRoot> = [];
 	var prefab : hrt.prefab.Prefab;
 	var prefabUndoPoint : Dynamic = null;
 	var edit : hide.prefab.EditContext;
@@ -16,10 +16,10 @@ class Properties extends Element {
 
 	override function makeSelf() : Void {
 		#if js
-		native = js.Browser.document.createDivElement();
+		native = js.Browser.document.createElement("kit-root");
 		#else
 		native = new hidehl.ui.Element();
-		native.dom.addClass("properties");
+		native.dom.addClass("root");
 		#end
 	}
 
