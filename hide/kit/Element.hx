@@ -14,7 +14,7 @@ class Element {
 	var native: NativeElement;
 
 	/**
-		Where nativeped children element should be added
+		Where native children element should be added
 	**/
 	var nativeContent(get, never) : NativeElement;
 
@@ -86,15 +86,6 @@ class Element {
 		if (children == null)
 			children = [];
 		children.insert(position, newChild);
-		// #if js
-		// if (childBefore != null) {
-		// 	childBefore.native.before(newChild.native);
-		// } else {
-		// 	nativeContent.append(newChild.native);
-		// }
-		// #else
-		// throw "HideKitHL Implement";
-		// #end
 	}
 
 
