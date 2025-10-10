@@ -3713,6 +3713,8 @@ class SceneEditor {
 			collider.removeChildren();
 			var meshes = scene.s3d.getMeshes();
 			meshes = meshes.filter(function (m : h3d.scene.Mesh) {
+				if (Std.isOfType(m, h3d.scene.Graphics))
+					return false;
 				var p = m.parent;
 				while ( p != null ) {
 					if ( p == gizmo )
