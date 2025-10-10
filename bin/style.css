@@ -1107,6 +1107,8 @@ input[type=checkbox].indeterminate:after {
 }
 /* Properties */
 .props-column {
+  display: flex;
+  flex-direction: column;
   height: 100%;
   background-color: #111;
   width: 320px;
@@ -1238,15 +1240,13 @@ input[type=checkbox].indeterminate:after {
 .hide-properties dl dl .hide-range input[type=text] {
   width: 30px;
 }
-.hide-properties .group,
-.hide-properties .group2 {
+.hide-properties .group {
   --level: 0;
   width: calc(100% - var(--level) * 5%);
   margin: 0 auto;
   margin-top: 5px;
 }
-.hide-properties .group > .title,
-.hide-properties .group2 > .title {
+.hide-properties .group > .title {
   background-color: rgb(calc(25 + (var(--level) * 3)), calc(25 + (var(--level) * 3)), calc(25 + (var(--level) * 3)));
   text-align: center;
   cursor: pointer;
@@ -1254,8 +1254,7 @@ input[type=checkbox].indeterminate:after {
   padding: 1px;
   position: relative;
 }
-.hide-properties .group > .title input[type=button],
-.hide-properties .group2 > .title input[type=button] {
+.hide-properties .group > .title input[type=button] {
   border: none;
   position: absolute;
   top: 0px;
@@ -1264,21 +1263,17 @@ input[type=checkbox].indeterminate:after {
   padding: 1px 5px;
   background-color: #282828;
 }
-.hide-properties .group > .title input[type=button]:hover,
-.hide-properties .group2 > .title input[type=button]:hover {
+.hide-properties .group > .title input[type=button]:hover {
   background-color: #464646;
 }
-.hide-properties .group > .title > .checkbox-wrapper,
-.hide-properties .group2 > .title > .checkbox-wrapper {
+.hide-properties .group > .title > .checkbox-wrapper {
   position: absolute;
   left: 5px;
 }
-.hide-properties .group > .content,
-.hide-properties .group2 > .content {
+.hide-properties .group > .content {
   margin-bottom: 5px;
 }
-.hide-properties .group > .content .array,
-.hide-properties .group2 > .content .array {
+.hide-properties .group > .content .array {
   min-height: 5px;
   overflow-y: scroll;
   overflow-x: hidden;
@@ -1289,18 +1284,14 @@ input[type=checkbox].indeterminate:after {
   margin-bottom: 0px;
   border-radius: 3px;
 }
-.hide-properties .group > .content .array.disabled,
-.hide-properties .group2 > .content .array.disabled {
+.hide-properties .group > .content .array.disabled {
   filter: brightness(50%);
 }
 .hide-properties .group > .content .array.disabled *,
-.hide-properties .group2 > .content .array.disabled *,
-.hide-properties .group > .content .array.disabled ::after,
-.hide-properties .group2 > .content .array.disabled ::after {
+.hide-properties .group > .content .array.disabled ::after {
   cursor: not-allowed !important;
 }
-.hide-properties .group > .content .array .line,
-.hide-properties .group2 > .content .array .line {
+.hide-properties .group > .content .array .line {
   display: flex;
   align-items: center;
   margin-top: 1px;
@@ -1309,8 +1300,7 @@ input[type=checkbox].indeterminate:after {
   border-radius: 3px;
   background: #545454;
 }
-.hide-properties .group > .content .array .line .inclusion,
-.hide-properties .group2 > .content .array .line .inclusion {
+.hide-properties .group > .content .array .line .inclusion {
   display: flex;
   justify-content: center;
   width: 10px;
@@ -1321,225 +1311,23 @@ input[type=checkbox].indeterminate:after {
   font-weight: 900;
   border-radius: 5px;
 }
-.hide-properties .group > .content .array .line .inclusion:hover,
-.hide-properties .group2 > .content .array .line .inclusion:hover {
+.hide-properties .group > .content .array .line .inclusion:hover {
   cursor: pointer;
   filter: opacity(80%);
 }
-.hide-properties .group > .content .array .line input,
-.hide-properties .group2 > .content .array .line input {
+.hide-properties .group > .content .array .line input {
   margin-right: 5px;
 }
-.hide-properties .group > .content .array .line input:not([type=checkbox]),
-.hide-properties .group2 > .content .array .line input:not([type=checkbox]) {
+.hide-properties .group > .content .array .line input:not([type=checkbox]) {
   flex: 1;
 }
-.hide-properties .group > .content .array .line .remove,
-.hide-properties .group2 > .content .array .line .remove {
+.hide-properties .group > .content .array .line .remove {
   margin: 0 5px 0 5px;
   padding: 0 5px 0 5px;
   cursor: pointer;
 }
-.hide-properties .group > .content .array .line .remove:hover,
-.hide-properties .group2 > .content .array .line .remove:hover {
+.hide-properties .group > .content .array .line .remove:hover {
   filter: brightness(80%);
-}
-.hide-properties .group2 * {
-  box-sizing: border-box;
-  font-size: 11px;
-  color: white;
-}
-.hide-properties .group2 .title {
-  font-size: 12px;
-  margin-bottom: 0.5em;
-}
-.hide-properties .group2 > .content {
-  overflow: hidden;
-  height: 0;
-  transition: height ease 100ms;
-  display: flex;
-  flex-direction: column;
-  min-height: 0;
-  gap: 6px;
-}
-.hide-properties .group2.open > .content {
-  height: max-content;
-}
-.hide-properties .group2 p {
-  text-align: center;
-  margin: 0;
-  padding: 0;
-}
-.hide-properties .group2 kit-separator {
-  height: 0.5em;
-  width: auto;
-}
-.hide-properties .group2 kit-line > kit-separator {
-  width: 0.4em;
-}
-.hide-properties .group2 kit-line {
-  display: flex;
-  align-items: center;
-  gap: 0.2em;
-  min-width: 0;
-  min-height: 2em;
-  /** Container for elements that need to be grouped together, without disturbing the hierarchy with the display:content**/
-}
-.hide-properties .group2 kit-line kit-label {
-  font-size: 0.95em;
-}
-.hide-properties .group2 kit-line kit-label:empty {
-  display: none;
-}
-.hide-properties .group2 kit-line kit-label.first {
-  flex: 0 0 85px;
-  text-align: right;
-  display: block;
-  margin-right: 0.5em;
-}
-.hide-properties .group2 kit-line kit-div {
-  display: contents;
-}
-.hide-properties .group2 kit-line input {
-  min-width: 0;
-  flex: 1 1;
-  text-align: left;
-  width: 100%;
-  max-width: 100%;
-  font-size: 0.95em;
-  color: #EEE;
-  text-shadow: 0px 1px 0px black;
-  border-radius: 4px;
-  box-shadow: inset 1px 1px 1px #111;
-  align-self: stretch;
-}
-.hide-properties .group2 kit-line .texture-choice > :first-child {
-  align-self: stretch;
-  flex: 1 1 auto;
-}
-.hide-properties .group2 kit-line .texture-choice > :first-child input {
-  height: 100%;
-  width: 100% !important;
-}
-.hide-properties .group2 kit-line .texture-choice > :first-child .texture-preview {
-  height: calc(100% - 4px);
-  width: unset;
-  aspect-ratio: 1/1;
-  background-size: cover !important;
-  background-repeat: no-repeat;
-  box-sizing: border-box;
-  margin: 2px;
-  right: 0;
-}
-.hide-properties .group2 kit-line .texture-choice .hide-button {
-  height: unset;
-  width: unset;
-  align-self: stretch;
-  aspect-ratio: 1/1;
-}
-.hide-properties .group2 kit-line input[type="checkbox"] {
-  appearance: none;
-  width: auto;
-  flex: 0 0 auto;
-  outline: none !important;
-  border: none !important;
-  padding: 0;
-  margin: 0;
-  width: 16px;
-  height: 16px;
-}
-.hide-properties .group2 kit-line input[type="checkbox"]::after {
-  box-sizing: border-box;
-  display: box;
-  background-color: #444;
-  width: 100%;
-  height: 100%;
-  border: 1px solid #555;
-  border-radius: 4px;
-  padding: 0;
-  margin: 0;
-  box-shadow: inset 1px 1px #333;
-}
-.hide-properties .group2 kit-line input[type="checkbox"]:hover::after {
-  border-color: var(--highlight);
-}
-.hide-properties .group2 kit-line kit-slider {
-  flex: 1 1;
-  align-self: stretch;
-}
-.hide-properties .group2 kit-line kit-slider > input {
-  font-variant-numeric: tabular-nums;
-  cursor: ew-resize;
-  height: 100%;
-  font-size: 12px;
-  vertical-align: center;
-}
-.hide-properties .group2 kit-line kit-file {
-  border: var(--basic-border);
-  border-radius: var(--basic-border-radius);
-  background-color: var(--bg-2);
-  flex: 1 1;
-  cursor: pointer;
-  align-self: stretch;
-  display: flex;
-  align-items: center;
-}
-.hide-properties .group2 kit-line kit-file:hover {
-  border: var(--basic-border-hover);
-}
-.hide-properties .group2 kit-line kit-file > p {
-  display: block;
-  margin: 0;
-  padding: 0;
-  text-align: left;
-}
-.hide-properties .group2 kit-line kit-button {
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  flex: 1 1;
-  border: var(--basic-border);
-  border-radius: var(--basic-border-radius);
-  background-color: var(--bg-2);
-  align-self: stretch;
-  text-align: center;
-  cursor: pointer;
-}
-.hide-properties .group2 kit-line kit-button:hover {
-  border: var(--basic-border-hover);
-  background-color: var(--bg-3);
-}
-.hide-properties .group2 kit-line kit-button:active {
-  position: relative;
-  top: 1px;
-}
-.hide-properties .group2 kit-line kit-button.highlight {
-  background-color: var(--selection);
-}
-.hide-properties .group2 kit-line kit-button > kit-image {
-  flex: 1 1 auto;
-  max-width: 100%;
-  aspect-ratio: 1/1;
-  background-size: cover;
-  background-repeat: no-repeat;
-  display: block;
-}
-.hide-properties .group2 kit-line kit-button:has(kit-image) {
-  flex: 0 1 1.6em;
-  padding: 3px;
-  height: unset;
-}
-.hide-properties .group2 kit-line kit-button.kit-medium {
-  flex: 0 1 32px;
-}
-.hide-properties .group2 kit-line kit-button.kit-big {
-  flex: 0 1 64px;
-}
-.hide-properties .group2 kit-line kit-button.kit-huge {
-  flex: 0 1 64px;
-}
-.hide-properties .group2 kit-line.multiline {
-  flex-wrap: wrap;
 }
 .hide-properties .btn-list * {
   margin-bottom: 5px;
@@ -1601,6 +1389,253 @@ input[type=checkbox].indeterminate:after {
   position: absolute;
   top: 30px;
   left: 200px;
+}
+kit-root {
+  --widget-height: 26px;
+  padding: 6px;
+  min-height: 0;
+  display: flex;
+  flex-direction: column;
+  background-color: #111;
+}
+kit-root kit-category {
+  --level: 0;
+  width: calc(100% - var(--level) * 5%);
+  margin: 0 auto;
+  margin-top: 5px;
+  background-color: #1b1b1b;
+  border-radius: 4px;
+  border: 1px solid #2d2d2d;
+}
+kit-root kit-category > .title {
+  background-color: #323232;
+  border-radius: 4px;
+  text-align: center;
+  cursor: pointer;
+  user-select: none;
+  padding: 1px;
+  position: relative;
+}
+kit-root kit-category > .title input[type=button] {
+  border: none;
+  position: absolute;
+  top: 0px;
+  right: 0px;
+  width: auto;
+  padding: 1px 5px;
+  background-color: #282828;
+}
+kit-root kit-category > .title input[type=button]:hover {
+  background-color: #464646;
+}
+kit-root kit-category > .title > .checkbox-wrapper {
+  position: absolute;
+  left: 5px;
+}
+kit-root kit-category * {
+  box-sizing: border-box;
+  font-size: 11px;
+  color: white;
+}
+kit-root kit-category .title {
+  font-size: 12px;
+}
+kit-root kit-category > .collapsable {
+  transition: height ease 100ms;
+  height: 0;
+  overflow: clip;
+}
+kit-root kit-category.open > .collapsable {
+  height: max-content;
+}
+kit-root kit-category > .collapsable > .content {
+  box-sizing: border-box;
+  display: flex;
+  flex-direction: column;
+  min-height: 0;
+  padding: 5px;
+  gap: 3px;
+}
+kit-root kit-category.open > .title {
+  border-bottom-left-radius: 0px;
+  border-bottom-right-radius: 0px;
+}
+kit-root kit-text {
+  text-align: center;
+  margin: 0;
+  padding: 0;
+}
+kit-root kit-separator {
+  height: 0.5em;
+  width: auto;
+}
+kit-root kit-line > kit-separator {
+  width: 0.4em;
+}
+kit-root kit-line {
+  display: flex;
+  align-items: center;
+  gap: 0.4em;
+  min-width: 0;
+  min-height: 2em;
+}
+kit-root kit-line kit-label {
+  font-size: 0.95em;
+}
+kit-root kit-line kit-label:empty {
+  display: none;
+}
+kit-root kit-line kit-label.first {
+  flex: 0 0 85px;
+  text-align: right;
+  display: block;
+  margin-right: 0.5em;
+}
+kit-root kit-line kit-div {
+  display: contents;
+}
+kit-root kit-line input {
+  flex: 1 1;
+  text-align: left;
+  width: 100%;
+  max-width: 100%;
+  min-width: 0;
+  height: var(--widget-height);
+  font-size: 0.95em;
+  color: #EEE;
+  text-shadow: 0px 1px 0px black;
+  border-radius: 4px;
+  box-shadow: inset 1px 1px 1px #111;
+}
+kit-root kit-line .texture-choice > :first-child {
+  height: var(--widget-height);
+  flex: 1 1 auto;
+}
+kit-root kit-line .texture-choice > :first-child input {
+  height: 100%;
+  width: 100% !important;
+}
+kit-root kit-line .texture-choice > :first-child .texture-preview {
+  height: calc(100% - 4px);
+  width: unset;
+  aspect-ratio: 1/1;
+  background-size: cover !important;
+  background-repeat: no-repeat;
+  box-sizing: border-box;
+  margin: 2px;
+  right: 0;
+}
+kit-root kit-line .texture-choice .hide-button {
+  height: unset;
+  width: unset;
+  align-self: stretch;
+  aspect-ratio: 1/1;
+  height: var(--widget-height);
+}
+kit-root kit-line input[type="checkbox"] {
+  appearance: none;
+  width: auto;
+  flex: 0 0 auto;
+  outline: none !important;
+  border: none !important;
+  padding: 0;
+  margin: 0;
+  width: 16px;
+  height: 16px;
+}
+kit-root kit-line input[type="checkbox"]::after {
+  box-sizing: border-box;
+  display: box;
+  background-color: #444;
+  width: 100%;
+  height: 100%;
+  border: 1px solid #555;
+  border-radius: 4px;
+  padding: 0;
+  margin: 0;
+  box-shadow: inset 1px 1px #333;
+}
+kit-root kit-line input[type="checkbox"]:hover::after {
+  border-color: var(--highlight);
+}
+kit-root kit-line kit-slider {
+  flex: 1 1;
+  height: var(--widget-height);
+  align-self: flex-start;
+}
+kit-root kit-line kit-slider > input {
+  font-variant-numeric: tabular-nums;
+  cursor: ew-resize;
+  height: 100%;
+  font-size: 12px;
+  vertical-align: center;
+}
+kit-root kit-line kit-file {
+  border: var(--basic-border);
+  border-radius: var(--basic-border-radius);
+  background-color: var(--bg-2);
+  flex: 1 1;
+  cursor: pointer;
+  align-self: stretch;
+  display: flex;
+  align-items: center;
+}
+kit-root kit-line kit-file:hover {
+  border: var(--basic-border-hover);
+}
+kit-root kit-line kit-file > p {
+  display: block;
+  margin: 0;
+  padding: 0;
+  text-align: left;
+}
+kit-root kit-line kit-button {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  flex: 1 1;
+  border: var(--basic-border);
+  border-radius: var(--basic-border-radius);
+  background-color: var(--bg-2);
+  align-self: stretch;
+  text-align: center;
+  cursor: pointer;
+}
+kit-root kit-line kit-button:hover {
+  border: var(--basic-border-hover);
+  background-color: var(--bg-3);
+}
+kit-root kit-line kit-button:active {
+  position: relative;
+  top: 1px;
+}
+kit-root kit-line kit-button.highlight {
+  background-color: var(--selection);
+}
+kit-root kit-line kit-button > kit-image {
+  flex: 1 1 auto;
+  max-width: 100%;
+  aspect-ratio: 1/1;
+  background-size: cover;
+  background-repeat: no-repeat;
+  display: block;
+}
+kit-root kit-line kit-button:has(kit-image) {
+  flex: 0 1 1.6em;
+  padding: 3px;
+  height: unset;
+}
+kit-root kit-line kit-button.kit-medium {
+  flex: 0 1 32px;
+}
+kit-root kit-line kit-button.kit-big {
+  flex: 0 1 64px;
+}
+kit-root kit-line kit-button.kit-huge {
+  flex: 0 1 64px;
+}
+kit-root kit-line.multiline {
+  flex-wrap: wrap;
 }
 /* Image Viewer */
 .image-properties {
