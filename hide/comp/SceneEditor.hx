@@ -4193,6 +4193,8 @@ class SceneEditor {
 				}
 
 				if (useNewEditor) {
+					properties.element.removeClass("hide-properties");
+					properties.element.removeClass("props");
 					var proxyPrefab = Type.createInstance(commonClass, [null, new ContextShared()]);
 					proxyPrefab.load(haxe.Json.parse(haxe.Json.stringify(elts[0].save())));
 					var baseRoot = new hide.kit.KitRoot(null, null, proxyPrefab, edit);
@@ -4211,6 +4213,8 @@ class SceneEditor {
 					@:privateAccess properties.element.append(edit.kitRoot.nativeContent);
 				}
 				else {
+					properties.element.addClass("hide-properties");
+					properties.element.addClass("props");
 					if (elts.length > 1) {
 						var commonClass = hrt.tools.ClassUtils.getCommonClass(elts, hrt.prefab.Prefab);
 
@@ -4222,6 +4226,7 @@ class SceneEditor {
 					{
 						fillProps(edit, elts[0], null);
 					}
+
 				}
 			}
 
