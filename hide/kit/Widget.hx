@@ -91,7 +91,7 @@ abstract class Widget<ValueType> extends Element {
 		Call this internally when the user interact with the widget to change the value
 	**/
 	function broadcastValueChange(temporaryEdit) : Void {
-		properties.broadcastValueChange(this, temporaryEdit);
+		root.broadcastValueChange(this, temporaryEdit);
 	}
 
 	function syncValueUI() {

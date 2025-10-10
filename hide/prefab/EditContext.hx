@@ -8,7 +8,7 @@ class EditContext {
 	#if !macro
 
 	public var rootPrefab : hrt.prefab.Prefab;
-	public var properties2: hide.kit.Properties;
+	public var kitRoot: hide.kit.KitRoot;
 
 	#if editor
 
@@ -139,7 +139,7 @@ class EditContext {
 	#end
 
 	public macro function build(ethis: haxe.macro.Expr, dml: haxe.macro.Expr, ?contextObj: haxe.macro.Expr, ?parentElement: haxe.macro.Expr.ExprOf<#if !macro hide.kit.Element #else Dynamic #end> ) : haxe.macro.Expr {
-		return hide.kit.Macros.build(macro $ethis.properties2, dml, contextObj, parentElement);
+		return hide.kit.Macros.build(macro $ethis.kitRoot, dml, contextObj, parentElement);
 	}
 
 }
