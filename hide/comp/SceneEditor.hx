@@ -4527,7 +4527,14 @@ class SceneEditor {
 
 				prefab = root;
 			} else {
-				var ref = new hrt.prefab.Reference(null, null);
+				var ref : hrt.prefab.Reference = if (ptype == "fx") {
+					var fx = new hrt.prefab.fx.SubFX(null, null);
+					fx.time = 0;
+					fx.loop = false;
+					fx;
+				} else {
+					new hrt.prefab.Reference(null, null);
+				}
 				ref.source = relative;
 
 				prefab = ref;
