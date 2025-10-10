@@ -19,9 +19,12 @@ class Category extends Element {
 	override function makeSelf(): Void {
 		#if js
 		native = new hide.Element('
-			<div class="group2 open" name="$name" style="--level: 0">
+			<kit-category class="open">
 				<div class="title">$name</div>
-				<div class="content"></div>
+				<div class="collapsable">
+					<div class="content">
+					</div>
+				</div>
 			</div>
 		')[0];
 		jsContent = native.querySelector(".content");
