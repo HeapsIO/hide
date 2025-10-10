@@ -128,7 +128,7 @@ class SSRShader extends h3d.shader.ScreenShader {
 
 			var angleCorrection = 1.0 / abs(dot(camDir, viewNormal));
 
-			var iStepCount = int( ceil( stepCount / 4 ) );
+			var iStepCount = int( ceil( min(stepCount,length(texSize)) / 4 ) );
 			var hit = 0;
 			var hitDepthRatio = 0.0;
 			for ( curStep in 0...iStepCount ) {
