@@ -5,7 +5,7 @@ class Block extends Element {
 		#if js
 		native = js.Browser.document.createDivElement();
 		#else
-
+		native = new hidehl.ui.Element();
 		#end
 	}
 }

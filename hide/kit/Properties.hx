@@ -31,7 +31,8 @@ class Properties extends Element {
 		return registeredElements.get(id);
 	}
 
-	public function broadcastValueChange(input: Widget<Dynamic>, isTemporaryEdit: Bool) {
+	@:allow(hide.kit.Element)
+	function broadcastValueChange(input: Widget<Dynamic>, isTemporaryEdit: Bool) {
 		var idPath = input.getIdPath();
 
 		prepareUndoPoint();
@@ -56,7 +57,8 @@ class Properties extends Element {
 		}
 	}
 
-	public function broadcastClick(button: Button) {
+	@:allow(hide.kit.Element)
+	function broadcastClick(button: Button) {
 		var idPath = button.getIdPath();
 
 		prepareUndoPoint();

@@ -1346,6 +1346,12 @@ input[type=checkbox].indeterminate:after {
 }
 .hide-properties .group2 * {
   box-sizing: border-box;
+  font-size: 11px;
+  color: white;
+}
+.hide-properties .group2 .title {
+  font-size: 12px;
+  margin-bottom: 0.5em;
 }
 .hide-properties .group2 > .content {
   overflow: hidden;
@@ -1354,7 +1360,7 @@ input[type=checkbox].indeterminate:after {
   display: flex;
   flex-direction: column;
   min-height: 0;
-  gap: 2px;
+  gap: 6px;
 }
 .hide-properties .group2.open > .content {
   height: max-content;
@@ -1376,7 +1382,7 @@ input[type=checkbox].indeterminate:after {
   align-items: center;
   gap: 0.2em;
   min-width: 0;
-  min-height: 1.6em;
+  min-height: 2em;
   /** Container for elements that need to be grouped together, without disturbing the hierarchy with the display:content**/
 }
 .hide-properties .group2 kit-line kit-label {
@@ -1389,7 +1395,7 @@ input[type=checkbox].indeterminate:after {
   flex: 0 0 85px;
   text-align: right;
   display: block;
-  margin-right: 0.2em;
+  margin-right: 0.5em;
 }
 .hide-properties .group2 kit-line kit-div {
   display: contents;
@@ -1404,6 +1410,32 @@ input[type=checkbox].indeterminate:after {
   color: #EEE;
   text-shadow: 0px 1px 0px black;
   border-radius: 4px;
+  box-shadow: inset 1px 1px 1px #111;
+  align-self: stretch;
+}
+.hide-properties .group2 kit-line .texture-choice > :first-child {
+  align-self: stretch;
+  flex: 1 1 auto;
+}
+.hide-properties .group2 kit-line .texture-choice > :first-child input {
+  height: 100%;
+  width: 100% !important;
+}
+.hide-properties .group2 kit-line .texture-choice > :first-child .texture-preview {
+  height: calc(100% - 4px);
+  width: unset;
+  aspect-ratio: 1/1;
+  background-size: cover !important;
+  background-repeat: no-repeat;
+  box-sizing: border-box;
+  margin: 2px;
+  right: 0;
+}
+.hide-properties .group2 kit-line .texture-choice .hide-button {
+  height: unset;
+  width: unset;
+  align-self: stretch;
+  aspect-ratio: 1/1;
 }
 .hide-properties .group2 kit-line input[type="checkbox"] {
   appearance: none;
@@ -1414,6 +1446,7 @@ input[type=checkbox].indeterminate:after {
   padding: 0;
   margin: 0;
   width: 16px;
+  height: 16px;
 }
 .hide-properties .group2 kit-line input[type="checkbox"]::after {
   box-sizing: border-box;
@@ -1432,10 +1465,14 @@ input[type=checkbox].indeterminate:after {
 }
 .hide-properties .group2 kit-line kit-slider {
   flex: 1 1;
+  align-self: stretch;
 }
 .hide-properties .group2 kit-line kit-slider > input {
   font-variant-numeric: tabular-nums;
   cursor: ew-resize;
+  height: 100%;
+  font-size: 12px;
+  vertical-align: center;
 }
 .hide-properties .group2 kit-line kit-file {
   border: var(--basic-border);
@@ -1443,6 +1480,9 @@ input[type=checkbox].indeterminate:after {
   background-color: var(--bg-2);
   flex: 1 1;
   cursor: pointer;
+  align-self: stretch;
+  display: flex;
+  align-items: center;
 }
 .hide-properties .group2 kit-line kit-file:hover {
   border: var(--basic-border-hover);
@@ -1451,17 +1491,18 @@ input[type=checkbox].indeterminate:after {
   display: block;
   margin: 0;
   padding: 0;
-  height: 1.5em;
   text-align: left;
 }
 .hide-properties .group2 kit-line kit-button {
+  display: flex;
+  align-items: center;
+  justify-content: center;
   flex: 1 1;
-  height: 1.6em;
   border: var(--basic-border);
   border-radius: var(--basic-border-radius);
   background-color: var(--bg-2);
+  align-self: stretch;
   text-align: center;
-  vertical-align: middle;
   cursor: pointer;
 }
 .hide-properties .group2 kit-line kit-button:hover {
@@ -1476,6 +1517,7 @@ input[type=checkbox].indeterminate:after {
   background-color: var(--selection);
 }
 .hide-properties .group2 kit-line kit-button > kit-image {
+  flex: 1 1 auto;
   max-width: 100%;
   aspect-ratio: 1/1;
   background-size: cover;

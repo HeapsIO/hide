@@ -9,6 +9,7 @@ class Slider extends Widget<Float> {
 
 	public var min(default, set) : Null<Float> = null;
 	public var max(default, set) : Null<Float> = null;
+	public var step : Float = 1.0;
 	public var wrap: Bool = false;
 	var showRange: Bool = false;
 
@@ -40,7 +41,7 @@ class Slider extends Widget<Float> {
 			e.preventDefault();
 			e.stopPropagation();
 
-			var mult = 1.0;
+			var mult = step;
 			if (e.ctrlKey) mult *= 10.0;
 			if (e.shiftKey) mult /= 10.0;
 			value += e.movementX * mult;
