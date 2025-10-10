@@ -88,31 +88,11 @@ abstract class Widget<ValueType> extends Element {
 	}
 
 	/**
-		Call this internaly when the user interract with the widget to change the value
+		Call this internally when the user interact with the widget to change the value
 	**/
 	function broadcastValueChange(temporaryEdit) : Void {
 		properties.broadcastValueChange(this, temporaryEdit);
 	}
-
-	// public function bindField(fieldName: String, object: Dynamic, onChange: (propName: String) -> Void) {
-	// 	var previousValue = value;
-	// 	var editing = false;
-	// 	onValueChange = (temporaryEdit) -> {
-	// 		if (!editing) {
-	// 			previousValue = value;
-	// 			editing = true;
-	// 		}
-
-	// 		Reflect.setProperty(fieldName, object);
-	// 		if (onChange != null) {
-	// 			onChange(fieldName);
-	// 		}
-
-	// 		if (!temporaryEdit) {
-	// 			editorContext.properties.undo.change()
-	// 		}
-	// 	}
-	// }
 
 	function syncValueUI() {
 
