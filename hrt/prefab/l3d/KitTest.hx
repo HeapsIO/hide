@@ -100,7 +100,7 @@ class KitTest extends Object3D {
 				,this
 			);
 
-			var root = @:privateAccess ctx.properties2;
+			var root = @:privateAccess ctx.kitRoot;
 			{
 				var cat = new hide.kit.Category( root, "testEditor", "Test Editor");
 				{
