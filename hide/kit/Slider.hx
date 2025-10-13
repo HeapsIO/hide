@@ -4,7 +4,7 @@ class Slider extends Widget<Float> {
 	#if js
 	var slider: js.html.InputElement;
 	#else
-	var slider: hidehl.ui.HideSlider;
+	var slider: hidehl.ui.HuiSlider;
 	#end
 
 	public var min(default, set) : Null<Float> = null;
@@ -115,7 +115,7 @@ class Slider extends Widget<Float> {
 
 		return container;
 		#else
-		slider = new hidehl.ui.HideSlider();
+		slider = new hidehl.ui.HuiSlider();
 		slider.slider.onChange = () -> {
 			value = slider.slider.value;
 			broadcastValueChange(true);

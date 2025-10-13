@@ -17,6 +17,7 @@ class Color extends Widget<Int> {
 		}
 		return colorBox.element[0];
 		#end
+		throw "implement";
 	}
 
 	override function syncValueUI() {

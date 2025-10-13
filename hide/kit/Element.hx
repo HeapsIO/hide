@@ -1,5 +1,6 @@
 package hide.kit;
 
+@:keepSub
 class Element {
 	var parent(default, null) : Element;
 	var id(default, null) : String;
@@ -64,7 +65,7 @@ class Element {
 		#if js
 		native = js.Browser.document.createDivElement();
 		#else
-		native = new hidehl.ui.Element();
+		native = new hidehl.ui.HuiElement();
 		#end
 	}
 

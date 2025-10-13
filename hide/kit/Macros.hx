@@ -23,42 +23,48 @@ typedef BuildExprArgs = {
 class Macros {
 	#if macro
 	public static function build(properties: Expr, dml: Expr, ?contextObj: Expr, ?parentElement: Expr ) : Expr {
-		switch (dml.expr) {
-			case EMeta({name :":markup"} ,{expr: EConst(CString(dmlString))}): {
-				var parser = new domkit.MarkupParser();
-				var pinf = Context.getPosInfos(dml.pos);
-				var markup = parser.parse(dmlString, pinf.file, pinf.min).children[0];
+		try {
+			switch (dml.expr) {
+				case EMeta({name :":markup"} ,{expr: EConst(CString(dmlString))}): {
+					var parser = new domkit.MarkupParser();
+					var pinf = Context.getPosInfos(dml.pos);
+					var markup = parser.parse(dmlString, pinf.file, pinf.min).children[0];
 
-				var args : BuildExprArgs = {
-					markup: markup,
-					outputExprs: [],
-					parent: parentElement.expr.match(EConst(CIdent("null"))) ? properties : parentElement,
-					contextObj: contextObj,
-					autoIdCount: 0,
-					globalElements: [],
-				}
-
-				buildExpr(args);
-
-				// trick to declare the globalElement variables in the parent scope
-				// as one expression
-				var initVar : Var = {
-					name: "__kit_init",
-					expr: macro {
-						$b{args.outputExprs};
-						true;
+					var args : BuildExprArgs = {
+						markup: markup,
+						outputExprs: [],
+						parent: parentElement.expr.match(EConst(CIdent("null"))) ? properties : parentElement,
+						contextObj: contextObj,
+						autoIdCount: 0,
+						globalElements: [],
 					}
-				};
 
-				args.globalElements.push(initVar);
+					buildExpr(args);
 
-				return {expr: EVars(args.globalElements), pos: Context.currentPos()};
+					// trick to declare the globalElement variables in the parent scope
+					// as one expression
+					var initVar : Var = {
+						name: "__kit_init",
+						expr: macro {
+							$b{args.outputExprs};
+							true;
+						}
+					};
+
+					args.globalElements.push(initVar);
+
+					return {expr: EVars(args.globalElements), pos: Context.currentPos()};
+				}
+				default:
+					Context.error("Should be a DML Expression", dml.pos);
+					return null;
 			}
-			default:
-				Context.error("Should be a DML Expression", dml.pos);
-				return null;
+		}
+		catch (e : domkit.Error) {
+			haxe.macro.Context.error(e.message, @:privateAccess domkit.Macros.makePos(dml.pos,e.pmin,e.pmax));
 		}
 		return null;
+
 	}
 
 	static function buildExpr(args: BuildExprArgs) : Void {

@@ -15,7 +15,10 @@ abstract EntriesOrStrings(Array<SelectEntry>) from Array<SelectEntry> to Array<S
 
 class Select extends Widget<Dynamic> {
 	public var entries(default, null) : Array<SelectEntry>;
+
+	#if js
 	var select: hide.comp.Select;
+	#end
 
 	public function new(parent: Element, id: String, entries: EntriesOrStrings) {
 		super(parent, id);
@@ -23,6 +26,7 @@ class Select extends Widget<Dynamic> {
 	}
 
 	function makeInput() : NativeElement {
+		#if js
 		var selectEntries: Array<hide.comp.Dropdown.Choice> = [for (i => entry in entries) {id: '$i', text: entry.label, searchText: entry.label}];
 		select = new hide.comp.Select(null, null, selectEntries, true);
 		select.onChange = (newId) -> {
@@ -30,6 +34,8 @@ class Select extends Widget<Dynamic> {
 			broadcastValueChange(false);
 		}
 		return select.element[0];
+		#end
+		return null;
 	}
 
 	override function syncValueUI() {

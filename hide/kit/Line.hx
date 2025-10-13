@@ -14,8 +14,8 @@ class Line extends Element {
 	#if js
 	public var labelElement: NativeElement;
 	#else
-	public var labelContainer: hidehl.ui.Element;
-	public var labelText: hidehl.ui.FmtText;
+	public var labelContainer: hidehl.ui.HuiElement;
+	public var labelText: hidehl.ui.HuiFmtText;
 	#end
 
 	override function makeSelf():Void {
@@ -26,7 +26,7 @@ class Line extends Element {
 		}
 		refreshLabel();
 		#else
-		native = new hidehl.ui.Element();
+		native = new hidehl.ui.HuiElement();
 		native.dom.addClass("line");
 		refreshLabel();
 		#end
@@ -55,11 +55,11 @@ class Line extends Element {
 		}
 
 		if (labelContainer == null) {
-			labelContainer = new hidehl.ui.Element(native);
+			labelContainer = new hidehl.ui.HuiElement(native);
 			labelContainer.dom.addClass("label");
 			labelContainer.dom.addClass("first");
 
-			labelText = new hidehl.ui.FmtText(labelContainer);
+			labelText = new hidehl.ui.HuiFmtText(labelContainer);
 		}
 
 		labelText.text = label;

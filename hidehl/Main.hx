@@ -4,7 +4,7 @@ class Main extends hxd.App {
 	override function init() {
 		new h3d.scene.CameraController(s3d);
 
-		editorRoot = new hidehl.ui.EditorRoot(s2d);
+		editorRoot = new hidehl.ui.HuiEditorRoot(s2d);
 
 		editorStyle = new h2d.domkit.Style();
 		editorStyle.load(hxd.Res.style.editor);
@@ -61,10 +61,10 @@ class Main extends hxd.App {
 
 	static function main() {
 		hxd.res.Resource.LIVE_UPDATE = true;
-		hxd.Res.initLocal();
+		//hxd.Res.initLocal();
 		new Main();
 	}
 
-	var editorRoot : hidehl.ui.EditorRoot;
+	var editorRoot : hidehl.ui.HuiEditorRoot;
 	var editorStyle : h2d.domkit.Style;
 }

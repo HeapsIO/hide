@@ -1,6 +1,6 @@
 package hidehl.ui;
 
-class HideSlider extends Element {
+class HuiSlider extends HuiElement {
 	public var slider: h2d.Slider;
 
 	public function new(?parent: h2d.Object) {

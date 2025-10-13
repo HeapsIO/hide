@@ -12,7 +12,7 @@ class Category extends Element {
 	var jsContent : js.html.Element;
 	override function get_nativeContent() return jsContent;
 	#else
-	var hlCategory : hidehl.ui.Category;
+	var hlCategory : hidehl.ui.HuiCategory;
 	override function get_nativeContent() return hlCategory.content;
 	#end
 
@@ -36,7 +36,7 @@ class Category extends Element {
 			native.classList.toggle("open");
 		});
 		#else
-		native = hlCategory = new hidehl.ui.Category();
+		native = hlCategory = new hidehl.ui.HuiCategory();
 		hlCategory.headerName = name;
 		#end
 	}
