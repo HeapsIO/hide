@@ -7,6 +7,8 @@ class FancySearch extends hide.comp.Component {
 	var open = false;
 	var input : js.html.InputElement;
 
+	var searchHistory : Array<String> = [];
+	var searchIdx : Int = 0;
 
 	public override function new(parent: Element = null, target: Element = null) {
 		var el = new hide.Element('
@@ -28,6 +30,39 @@ class FancySearch extends hide.comp.Component {
 
 		input.onchange = (e) -> {
 			onSearch(e.target.value, true);
+		}
+
+		input.onkeydown = (e) -> {
+			var down = e.keyCode == 40;
+			var up = e.keyCode == 38;
+
+			if (!down && !up)
+				return;
+
+			e.preventDefault();
+			e.stopPropagation();
+
+			if (searchHistory.length == 0)
+				return;
+
+			if (up) {
+				searchIdx = Std.int(hxd.Math.max(0, searchIdx - 1));
+				input.value = searchHistory[searchIdx];
+				onSearch(e.target.value, true);
+			}
+
+			if (down) {
+				searchIdx = Std.int(hxd.Math.min(searchIdx + 1, searchHistory.length - 1));
+				input.value = searchHistory[searchIdx];
+				onSearch(e.target.value, true);
+			}
+		}
+
+		input.onblur = (e) -> {
+			if (input.value == "" || searchHistory[searchHistory.length - 1] == input.value)
+				return;
+			searchHistory.push(input.value);
+			searchIdx = searchHistory.length - 1;
 		}
 	}
 
