@@ -1554,6 +1554,7 @@ input[type=checkbox] {
 
 kit-root {
 	--widget-height: 26px;
+	--widget-gap: 3px;
 	padding: 6px;
 	min-height: 0;
 
@@ -1626,17 +1627,21 @@ kit-root {
 
 		>.collapsable>.content {
 			box-sizing: border-box;
-			display: flex;
-			flex-direction: column;
-			min-height: 0;
+
 			padding: 5px;
-			gap: 3px;
 		}
 
 		&.open>.title {
 			border-bottom-left-radius: 0px;
 			border-bottom-right-radius: 0px;
 		}
+	}
+
+	.content, kit-block {
+		display: flex;
+		flex-direction: column;
+		min-height: 0;
+		gap: var(--widget-gap);
 	}
 
 	kit-text {
@@ -1646,23 +1651,30 @@ kit-root {
 	}
 
 	kit-separator {
-		height: 0.5em;
-		width: auto;
+		margin-top: 5px;
+		margin-bottom: 5px;
+		width: 100%;
+		border-bottom: 1px solid #333;
+		align-self: center;
 	}
 
 	kit-line>kit-separator {
-		width: 0.4em;
+		margin-left: 5px;
+		margin-right: 5px;
+		border: none;
+		border-right: 1px solid #333;
 	}
 
 	kit-line {
 		display: flex;
 		align-items: center;
-		gap: 0.4em;
+		gap: 0.3em;
 		min-width: 0;
-		min-height: 2em;
+		min-height: var(--widget-height);
 
 		kit-label {
 			font-size: 0.95em;
+			margin-left: 0.3em;
 		}
 
 		kit-label:empty {
@@ -1673,14 +1685,14 @@ kit-root {
 			flex: 0 0 85px;
 			text-align: right;
 			display: block;
-			margin-right: 0.5em;
+			margin-right: 0.2em;
 		}
 
 		kit-div {
 			display: contents;
 		}
 
-		input {
+		input, kit-file {
 			min-width: 0;
 			flex: 1 1;
 			text-align: left;
@@ -1783,6 +1795,7 @@ kit-root {
 			flex: 1 1;
 			cursor: pointer;
 			align-self: stretch;
+			padding-left: 1em;
 
 			display: flex;
 			align-items: center;
@@ -1797,6 +1810,14 @@ kit-root {
 				padding: 0;
 				text-align: left;
 			}
+		}
+
+		.gradient-box {
+			height: var(--widget-height);
+		}
+
+		.color-box {
+			height: var(--widget-height)
 		}
 
 		kit-button {
