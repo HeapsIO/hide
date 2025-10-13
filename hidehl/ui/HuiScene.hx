@@ -1,10 +1,10 @@
 package hidehl.ui;
 
-class Scene extends Element {
+class HuiScene extends Element {
 	static var SRC =
-	<scene>
+	<hui-scene>
 		<bitmap public id="display"/>
-	</scene>
+	</hui-scene>
 
 	public var s3d : h3d.scene.Scene;
 	var renderTexture : h3d.mat.Texture;
