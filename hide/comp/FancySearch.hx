@@ -7,7 +7,7 @@ class FancySearch extends hide.comp.Component {
 	var open = false;
 	var input : js.html.InputElement;
 
-	var thresholdRegister : Int = 1000; // ms
+	var thresholdRegister : Int = 2000; // ms
 	var currentRegisterSignature : Int = 0;
 	var searchHistory : Array<String> = [];
 	var searchIdx : Int = 0;
