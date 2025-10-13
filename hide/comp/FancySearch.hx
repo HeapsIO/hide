@@ -7,6 +7,8 @@ class FancySearch extends hide.comp.Component {
 	var open = false;
 	var input : js.html.InputElement;
 
+	var thresholdRegister : Int = 1000; // ms
+	var currentRegisterSignature : Int = 0;
 	var searchHistory : Array<String> = [];
 	var searchIdx : Int = 0;
 
@@ -25,6 +27,15 @@ class FancySearch extends hide.comp.Component {
 		input = cast element.get(0).querySelector(".search-field");
 
 		input.oninput = (e) -> {
+			function register(signature : Int) {
+				if (signature != currentRegisterSignature || input.value == "" || searchHistory[searchHistory.length - 1] == input.value)
+					return;
+				searchHistory.push(input.value);
+				searchIdx = searchHistory.length - 1;
+			}
+
+			currentRegisterSignature++;
+			haxe.Timer.delay(() -> register(currentRegisterSignature), thresholdRegister);
 			onSearch(e.target.value, false);
 		}
 
@@ -52,17 +63,10 @@ class FancySearch extends hide.comp.Component {
 			}
 
 			if (down) {
-				searchIdx = Std.int(hxd.Math.min(searchIdx + 1, searchHistory.length - 1));
-				input.value = searchHistory[searchIdx];
+				searchIdx = Std.int(hxd.Math.min(searchIdx + 1, searchHistory.length));
+				input.value = searchIdx == searchHistory.length ? "" : searchHistory[searchIdx];
 				onSearch(e.target.value, true);
 			}
-		}
-
-		input.onblur = (e) -> {
-			if (input.value == "" || searchHistory[searchHistory.length - 1] == input.value)
-				return;
-			searchHistory.push(input.value);
-			searchIdx = searchHistory.length - 1;
 		}
 	}
 
