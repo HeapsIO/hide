@@ -18,7 +18,7 @@ class KitRoot extends Element {
 		#if js
 		native = js.Browser.document.createElement("kit-root");
 		#else
-		native = new hidehl.ui.Element();
+		native = new hidehl.ui.HuiElement();
 		native.dom.addClass("root");
 		#end
 	}

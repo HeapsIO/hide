@@ -5,7 +5,7 @@ class Block extends Element {
 		#if js
 		native = js.Browser.document.createElement("kit-block");
 		#else
-		native = new hidehl.ui.Element();
+		native = new hidehl.ui.HuiElement();
 		#end
 	}
 }
