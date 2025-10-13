@@ -46,13 +46,17 @@ class Input extends Widget<String> {
 		syncPlaceholder();
 
 		return input;
+		#else
+		throw "Implement";
 		#end
 	}
 
 	function syncPlaceholder() {
+		#if js
 		if (input != null) {
 			input.setAttribute("placeholder", placeholder);
 		}
+		#end
 	}
 
 	override function syncValueUI() {
