@@ -1392,6 +1392,7 @@ input[type=checkbox].indeterminate:after {
 }
 kit-root {
   --widget-height: 26px;
+  --widget-gap: 3px;
   padding: 6px;
   min-height: 0;
   display: flex;
@@ -1450,15 +1451,18 @@ kit-root kit-category.open > .collapsable {
 }
 kit-root kit-category > .collapsable > .content {
   box-sizing: border-box;
-  display: flex;
-  flex-direction: column;
-  min-height: 0;
   padding: 5px;
-  gap: 3px;
 }
 kit-root kit-category.open > .title {
   border-bottom-left-radius: 0px;
   border-bottom-right-radius: 0px;
+}
+kit-root .content,
+kit-root kit-block {
+  display: flex;
+  flex-direction: column;
+  min-height: 0;
+  gap: var(--widget-gap);
 }
 kit-root kit-text {
   text-align: center;
@@ -1466,21 +1470,28 @@ kit-root kit-text {
   padding: 0;
 }
 kit-root kit-separator {
-  height: 0.5em;
-  width: auto;
+  margin-top: 5px;
+  margin-bottom: 5px;
+  width: 100%;
+  border-bottom: 1px solid #333;
+  align-self: center;
 }
 kit-root kit-line > kit-separator {
-  width: 0.4em;
+  margin-left: 5px;
+  margin-right: 5px;
+  border: none;
+  border-right: 1px solid #333;
 }
 kit-root kit-line {
   display: flex;
   align-items: center;
-  gap: 0.4em;
+  gap: 0.3em;
   min-width: 0;
-  min-height: 2em;
+  min-height: var(--widget-height);
 }
 kit-root kit-line kit-label {
   font-size: 0.95em;
+  margin-left: 0.3em;
 }
 kit-root kit-line kit-label:empty {
   display: none;
@@ -1489,12 +1500,13 @@ kit-root kit-line kit-label.first {
   flex: 0 0 85px;
   text-align: right;
   display: block;
-  margin-right: 0.5em;
+  margin-right: 0.2em;
 }
 kit-root kit-line kit-div {
   display: contents;
 }
-kit-root kit-line input {
+kit-root kit-line input,
+kit-root kit-line kit-file {
   flex: 1 1;
   text-align: left;
   width: 100%;
@@ -1577,6 +1589,7 @@ kit-root kit-line kit-file {
   flex: 1 1;
   cursor: pointer;
   align-self: stretch;
+  padding-left: 1em;
   display: flex;
   align-items: center;
 }
@@ -1588,6 +1601,12 @@ kit-root kit-line kit-file > p {
   margin: 0;
   padding: 0;
   text-align: left;
+}
+kit-root kit-line .gradient-box {
+  height: var(--widget-height);
+}
+kit-root kit-line .color-box {
+  height: var(--widget-height);
 }
 kit-root kit-line kit-button {
   display: flex;
