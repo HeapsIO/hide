@@ -48,6 +48,30 @@ class Vignetting extends RendererFX {
 		}
 	}
 
+	override function modulate(t : Float) {
+		var v : Vignetting = cast super.modulate(t);
+		v.alpha = this.alpha * t;
+		return v;
+	}
+
+	// override function transition( r1 : h3d.impl.RendererFX, r2 : h3d.impl.RendererFX ) : h3d.impl.RendererFX.RFXTransition {
+	// 	var c1 : Vignetting = cast r1;
+	// 	var c2 : Vignetting = cast r2;
+	// 	var c = new ColorGrading(null, null);
+	// 	c.customLutsBlend = { from : @:privateAccess c1.customLut == null ? c1.getLutTexture() : c1.customLut, to: @:privateAccess c2.customLut == null ? c2.getLutTexture() : c2.customLut };
+	// 	var blendTonemap = new ColorGradingTonemapBlend();
+	// 	blendTonemap.blendFactor = 0.;
+	// 	c.tonemap = blendTonemap;
+	// 	c.size = c1.size;
+	// 	c.texturePath = c2.texturePath;
+	// 	c.intensity = c1.intensity;
+	// 	return { effect : cast c, setFactor : (f : Float) -> {
+	// 		blendTonemap.blendFactor = f;
+	// 		c.size = hxd.Math.round(hxd.Math.lerp(c1.size, c2.size, f));
+	// 		c.intensity = hxd.Math.lerp(c1.intensity, c2.intensity, f);
+	// 	} };
+	// }
+
 	#if editor
 	override function edit( ctx : hide.prefab.EditContext ) {
 		ctx.properties.add(new hide.Element('
