@@ -46,7 +46,7 @@ abstract class Widget<ValueType> extends Element {
 		}
 
 		labelElement = js.Browser.document.createElement("kit-label");
-		if (parentLine == null || (parent.children[0] == this && parentLine.label == null)) {
+		if (parentLine == null) {
 			labelElement.classList.add("first");
 		}
 		labelElement.innerHTML = label;
