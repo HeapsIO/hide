@@ -395,6 +395,7 @@ class Prefab extends hide.view.FileView {
 	}
 
 	override function onActivate() {
+		super.onActivate();
 		if( element == null )
 			return;
 		if( sceneEditor != null )

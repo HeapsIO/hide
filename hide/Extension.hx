@@ -23,6 +23,10 @@ class Extension {
 				registered = {component: Type.getClassName(c), options: {}, extensions: extensions };
 				EXTENSIONS.set(e, registered);
 			}
+			else {
+				// Override views in projects
+				registered.component = Type.getClassName(c);
+			}
 			if( options == null ) options = {};
 			for (field in Reflect.fields(options)) {
 				Reflect.setField(registered.options, field, Reflect.field(options, field));
