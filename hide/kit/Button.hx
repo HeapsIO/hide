@@ -35,6 +35,12 @@ class Button extends Element {
 
 		if (parentLine == null) {
 			native = js.Browser.document.createElement("kit-line");
+
+			// create empty label so button is in the right column
+			var labelElement = js.Browser.document.createElement("kit-label");
+			labelElement.classList.add("first");
+			native.appendChild(labelElement);
+
 		} else {
 			native = js.Browser.document.createElement("kit-div");
 		}

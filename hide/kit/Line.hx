@@ -3,7 +3,7 @@ package hide.kit;
 class Line extends Element {
 	public var label(default, set): String;
 	public var multiline: Bool = false;
-	public var fullWidth: Bool = false;
+	public var full: Bool = false;
 
 	function set_label(v: String) : String {
 		label = v;
@@ -36,7 +36,7 @@ class Line extends Element {
 		if (native == null)
 			return;
 		#if js
-		if (label == null && fullWidth) {
+		if (full) {
 			labelElement?.remove();
 			return;
 		}
