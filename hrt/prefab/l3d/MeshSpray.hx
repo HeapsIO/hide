@@ -58,7 +58,7 @@ class MeshSprayObject extends Spray.SprayObject {
 		return mesh;
 	}
 
-	override public function redraw(updateShaders=false) {
+	override public function redraw(updateShaders : Bool = false) {
 		getBounds(); // force absBos calculus on children
 		for( b in batches ) {
 			b.flags.set(FFixedPositionSynced, false);
@@ -628,13 +628,6 @@ class MeshSpray extends Spray {
 			onChildUpdate: p -> cast(local3d, MeshSprayObject).redraw(),
 		};
 	}
-
-	#if editor
-	override function onEditorTreeChanged(child:Prefab):hrt.prefab.Prefab.TreeChangedResult {
-		cast(local3d, MeshSprayObject).redraw();
-		return Skip;
-	}
-	#end
 
 	static function onContextMenu(selection: Array<hrt.prefab.Prefab>) : Array<hide.comp.ContextMenu.MenuItem> {
 		return [{
