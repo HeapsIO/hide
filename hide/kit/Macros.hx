@@ -133,8 +133,14 @@ class Macros {
 							kitId = kebabToCamelCase(valueString);
 						case "field":
 							field = switch(attribute.value) {
-								case RawValue(v): v;
-								case Code(v): error("field must be a string", attribute.pmin, attribute.pmax);
+								case RawValue(v): error("field must be an expression", attribute.pmin, attribute.pmax);
+								case Code(v):
+									switch(v.expr) {
+										case EConst(CIdent(s)):
+											s;
+										default:
+											error("field must be an identifier expression", attribute.pmin, attribute.pmax);
+									};
 							};
 							fieldLabelAttribute = {name: "label", value: domkit.MarkupParser.AttributeValue.RawValue(field), pmin: attribute.pmin, pmax: attribute.pmax, vmin: attribute.vmin};
 

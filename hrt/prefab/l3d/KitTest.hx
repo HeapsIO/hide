@@ -76,9 +76,9 @@ class KitTest extends Object3D {
 
 			ctx.build(
 				<category("Test Editor Kit")>
-					<slider field="x"/>
-					<slider field="y"/>
-					<slider field="z"/>
+					<slider field={x}/>
+					<slider field={y}/>
+					<slider field={z}/>
 					<button("Reset") onClick={() -> {
 						x = 0;
 						y = 0;
@@ -148,15 +148,15 @@ class KitTest extends Object3D {
 						</line>
 						<text("Separator")/>
 						<separator/>
-						<file field="filePath" type="texture"/>
+						<file field={filePath} type="texture"/>
 						<button("Button")/>
 						<button("Button Highlight") highlight/>
-						<input label="Input" placeholder="Placeholder text" field="inputString"/>
-						<color field="color"/>
-						<gradient field="gradient"/>
-						<texture field="texture"/>
-						<select(["Fire", "Earth", "Water", "Air"]) field="select" />
-						<checkbox field="checkbox"/>
+						<input label="Input" placeholder="Placeholder text" field={inputString}/>
+						<color field={color}/>
+						<gradient field={gradient}/>
+						<texture field={texture}/>
+						<select(["Fire", "Earth", "Water", "Air"]) field={select} />
+						<checkbox field={checkbox}/>
 
 						<line full>
 							<image-button("ui/search.png") medium/>
@@ -186,10 +186,10 @@ class KitTest extends Object3D {
 				}
 
 				// uncomment this to test error "contextObj must be not null for `field` to work"
-				// ctx.build(<slider field="foo"/>, null, parentGroup);
+				// ctx.build(<slider field={foo}/>, null, parentGroup);
 
 				// uncomment this to test error "contextObj doesn't have a field named foo"
-				// ctx.build(<slider field="foo"/>, "bar", parentGroup);
+				// ctx.build(<slider field={foo}/>, "bar", parentGroup);
 
 				var cat = new hide.kit.Category(root, "elements", "All Elements");
 				{
