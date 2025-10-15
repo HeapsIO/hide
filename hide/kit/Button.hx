@@ -31,19 +31,6 @@ class Button extends Element {
 
 	override function makeSelf() {
 		#if js
-		var parentLine = Std.downcast(parent, Line);
-
-		if (parentLine == null) {
-			native = js.Browser.document.createElement("kit-line");
-
-			// create empty label so button is in the right column
-			var labelElement = js.Browser.document.createElement("kit-label");
-			labelElement.classList.add("first");
-			native.appendChild(labelElement);
-
-		} else {
-			native = js.Browser.document.createElement("kit-div");
-		}
 
 		button = js.Browser.document.createElement("kit-button");
 		button.innerHTML = label;
@@ -59,7 +46,6 @@ class Button extends Element {
 			button.classList.add("kit-big");
 		}
 
-		native.appendChild(button);
 		button.addEventListener("click", (e:js.html.MouseEvent) -> {
 			broadcastClick();
 			e.preventDefault();
@@ -70,6 +56,7 @@ class Button extends Element {
 		#else
 
 		#end
+		setupPropLine(null, button);
 	}
 
 	function syncHightlight() {

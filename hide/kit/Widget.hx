@@ -6,6 +6,12 @@ package hide.kit;
 abstract class Widget<ValueType> extends Element {
 	public var label(default, set): String;
 	@:isVar public var value(get, set): ValueType;
+	public var defaultValue: ValueType;
+
+	function new(parent: Element, id: String) {
+		super(parent, id);
+		defaultValue = getDefaultFallback();
+	}
 
 	function set_label(v: String) : String {
 		label = v;
@@ -39,23 +45,8 @@ abstract class Widget<ValueType> extends Element {
 		var parentLine = Std.downcast(parent, Line);
 
 		#if js
-		if (parentLine == null) {
-			native = js.Browser.document.createElement("kit-line");
-		} else {
-			native = js.Browser.document.createElement("kit-div");
-		}
-
 		labelElement = js.Browser.document.createElement("kit-label");
-		if (parentLine == null) {
-			labelElement.classList.add("first");
-		}
 		labelElement.innerHTML = label;
-
-		native.appendChild(labelElement);
-
-		input = makeInput();
-		native.appendChild(input);
-
 		#else
 		if (parentLine == null) {
 			native = new hidehl.ui.HuiElement();
@@ -71,13 +62,12 @@ abstract class Widget<ValueType> extends Element {
 		labelElement = new hidehl.ui.HuiFmtText(labelContainer);
 		labelElement.text = label;
 
-		if (parentLine == null || (parent.children[0] == this && parentLine.label == null)) {
-			labelContainer.dom.addClass("first");
-		}
-
 		input = makeInput();
 		native.addChild(input);
 		#end
+
+		input = makeInput();
+		setupPropLine(labelElement, input);
 		syncValueUI();
 	}
 
@@ -97,4 +87,12 @@ abstract class Widget<ValueType> extends Element {
 	function syncValueUI() {
 
 	}
+
+	override function reset() {
+		value = defaultValue;
+		root.broadcastValueChange(this, true);
+		super.reset();
+	}
+
+	abstract function getDefaultFallback() : ValueType;
 }

@@ -6,7 +6,7 @@ class Element {
 	var id(default, null) : String;
 	var root(default, null) : hide.kit.KitRoot;
 
-	var children : Array<Element> = null;
+	var children : Array<Element> = [];
 	public var numChildren(get, never) : Int;
 
 	/**
@@ -36,7 +36,7 @@ class Element {
 	public function make() {
 		makeSelf();
 
-		for (c in children ?? []) {
+		for (c in children) {
 			c.make();
 			attachNative(c);
 		}
@@ -87,6 +87,57 @@ class Element {
 		if (children == null)
 			children = [];
 		children.insert(position, newChild);
+	}
+
+	function setupPropLine(label: NativeElement, content: NativeElement) {
+		var parentLine = Std.downcast(parent, Line);
+
+		if (parentLine == null) {
+			native = js.Browser.document.createElement("kit-line");
+
+			native.addEventListener("contextmenu", (e: js.html.MouseEvent) -> {
+				e.preventDefault();
+				e.stopPropagation();
+
+				hide.comp.ContextMenu.createFromEvent(e, [
+					{label: "Reset", click: resetWithUndo},
+				]
+				);
+			});
+
+		} else {
+			native = js.Browser.document.createElement("kit-div");
+		}
+
+		if (label == null) {
+			label = js.Browser.document.createElement("kit-label");
+		}
+
+		if (label != null) {
+			if (parentLine == null) {
+				label.classList.add("first");
+			} else if(parent.children[0] == this && parentLine.label == null && !parentLine.full) {
+				label.classList.add("first");
+				parentLine.labelElement.remove();
+			}
+			native.appendChild(label);
+		}
+		if (content != null)
+			native.appendChild(content);
+	}
+
+	function resetWithUndo() {
+		@:privateAccess root.prepareUndoPoint();
+
+		reset();
+
+		@:privateAccess root.finishUndoPoint();
+	}
+
+	function reset() {
+		for (child in children) {
+			child.reset();
+		}
 	}
 
 
