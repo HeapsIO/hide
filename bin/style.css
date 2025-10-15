@@ -1391,7 +1391,9 @@ input[type=checkbox].indeterminate:after {
   left: 200px;
 }
 kit-root {
-  --widget-height: 26px;
+  --widget-height: 22px;
+  --widget-bg: #2d2d2d;
+  --widget-hover-bg: #3d3d3d;
   --widget-gap: 3px;
   padding: 6px;
   min-height: 0;
@@ -1491,6 +1493,9 @@ kit-root kit-line {
   min-width: 0;
   min-height: var(--widget-height);
 }
+kit-root kit-line:hover {
+  background-color: #252525;
+}
 kit-root kit-line kit-label {
   font-size: 0.95em;
   margin-left: 0.3em;
@@ -1519,7 +1524,12 @@ kit-root kit-line kit-file {
   color: #EEE;
   text-shadow: 0px 1px 0px black;
   border-radius: 4px;
+  background-color: var(--widget-bg);
   box-shadow: inset 1px 1px 1px #111;
+}
+kit-root kit-line .texture-choice {
+  display: flex;
+  align-items: center;
 }
 kit-root kit-line .texture-choice > :first-child {
   height: var(--widget-height);
@@ -1530,7 +1540,8 @@ kit-root kit-line .texture-choice > :first-child input {
   width: 100% !important;
 }
 kit-root kit-line .texture-choice > :first-child .texture-preview {
-  height: calc(100% - 4px);
+  position: absolute;
+  height: calc(var(--widget-height) - 4px);
   width: unset;
   aspect-ratio: 1/1;
   background-size: cover !important;
@@ -1538,13 +1549,15 @@ kit-root kit-line .texture-choice > :first-child .texture-preview {
   box-sizing: border-box;
   margin: 2px;
   right: 0;
+  top: 0;
 }
 kit-root kit-line .texture-choice .hide-button {
   height: unset;
   width: unset;
-  align-self: stretch;
   aspect-ratio: 1/1;
   height: var(--widget-height);
+  margin: 0;
+  box-sizing: border-box;
 }
 kit-root kit-line input[type="checkbox"] {
   appearance: none;
@@ -1617,14 +1630,10 @@ kit-root kit-line kit-button {
   flex: 1 1;
   border: var(--basic-border);
   border-radius: var(--basic-border-radius);
-  background-color: var(--bg-2);
+  background-color: var(--widget-bg);
   align-self: stretch;
   text-align: center;
   cursor: pointer;
-}
-kit-root kit-line kit-button:hover {
-  border: var(--basic-border-hover);
-  background-color: var(--bg-3);
 }
 kit-root kit-line kit-button:active {
   position: relative;
@@ -1654,6 +1663,17 @@ kit-root kit-line kit-button.kit-big {
 }
 kit-root kit-line kit-button.kit-huge {
   flex: 0 1 64px;
+}
+kit-root kit-line input:hover,
+kit-root kit-line kit-file:hover,
+kit-root kit-line kit-button:hover {
+  border: var(--basic-border-hover);
+  background-color: var(--widget-hover-bg);
+}
+kit-root kit-line input:hover.highlight,
+kit-root kit-line kit-file:hover.highlight,
+kit-root kit-line kit-button:hover.highlight {
+  background-color: var(--selection);
 }
 kit-root kit-line.multiline {
   flex-wrap: wrap;
@@ -4648,7 +4668,7 @@ hide-popover hide-content {
   --basic-shadow: 2px 2px 3px rgba(0, 0, 0, 0.75);
   --sublte-shadow: 1px 1px 3px rgba(0, 0, 0, 0.33);
   --basic-border: 1px solid #353535;
-  --basic-border-hover: 1px solid #555;
+  --basic-border-hover: 1px solid #777;
   --basic-border-focused: 1px solid var(--selection);
   --basic-border-radius: 5px;
   --basic-padding: 0.2em;
