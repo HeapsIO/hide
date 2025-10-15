@@ -94,5 +94,16 @@ abstract class Widget<ValueType> extends Element {
 		super.reset();
 	}
 
+	override function copySelf(target: Dynamic) {
+		target.value = value;
+	}
+
+	override function pasteSelf(obj: Dynamic) {
+		if (obj.value != null) {
+			value = obj.value;
+			broadcastValueChange(true);
+		}
+	}
+
 	abstract function getDefaultFallback() : ValueType;
 }
