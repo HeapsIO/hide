@@ -24,4 +24,8 @@ class Gradient extends Widget<hrt.impl.Gradient.GradientData> {
 			gradientBox.value = value ?? hrt.impl.Gradient.getDefaultGradientData();
 		#end
 	}
+
+	function getDefaultFallback() : hrt.impl.Gradient.GradientData {
+		return  hrt.impl.Gradient.getDefaultGradientData();
+	}
 }
