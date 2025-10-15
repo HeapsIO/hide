@@ -49,4 +49,8 @@ class Select extends Widget<Dynamic> {
 		select.value = index == -1 ? null : '$index';
 		#end
 	}
+
+	function getDefaultFallback() : Dynamic {
+		return null;
+	}
 }

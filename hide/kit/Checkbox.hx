@@ -29,4 +29,8 @@ class Checkbox extends Widget<Bool> {
 			checkbox.checked = value;
 		#end
 	}
+
+	function getDefaultFallback() : Bool {
+		return false;
+	}
 }

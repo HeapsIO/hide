@@ -252,9 +252,9 @@ class Object3D extends Prefab {
 					<slider field={z}/>
 				</line>
 				<line label="Scale">
-					<slider field={scaleX} label="X" step="0.1"/>
-					<slider field={scaleY} label="Y" step="0.1"/>
-					<slider field={scaleZ} label="Z" step="0.1"/>
+					<slider field={scaleX} label="X" step="0.1" default={1.0}/>
+					<slider field={scaleY} label="Y" step="0.1" default={1.0}/>
+					<slider field={scaleZ} label="Z" step="0.1" default={1.0}/>
 				</line>
 				<line label="Rotation">
 					<slider field={rotationX} min="-180" max="180" wrap label="X"/>

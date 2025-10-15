@@ -58,6 +58,10 @@ class File extends Widget<String> {
 		#end
 	}
 
+	function getDefaultFallback() : String {
+		return null;
+	}
+
 	static var types : Map<String, Array<String>> = [
 		"texture" => ["png", "dds", "jpeg", "jpg"],
 		"model" => ["fbx", "hmd"],

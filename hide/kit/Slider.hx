@@ -158,4 +158,8 @@ class Slider extends Widget<Float> {
 			#end
 		}
 	}
+
+	function getDefaultFallback() : Float {
+		return 0.0;
+	}
 }

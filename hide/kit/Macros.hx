@@ -131,6 +131,10 @@ class Macros {
 								error("A component with the id " + codeId + " already exists in this build", attribute.pmin, attribute.pmax);
 							}
 							kitId = kebabToCamelCase(valueString);
+						case "default":
+							// special case for "default" because default is a reserved keyword in haxe
+							attribute.name = "defaultValue";
+							fieldsAttributes.push(attribute);
 						case "field":
 							field = switch(attribute.value) {
 								case RawValue(v): error("field must be an expression", attribute.pmin, attribute.pmax);
