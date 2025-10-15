@@ -100,6 +100,9 @@ class Element {
 				e.stopPropagation();
 
 				hide.comp.ContextMenu.createFromEvent(e, [
+					{label: "Copy", click: copyToClipboard},
+					{label: "Paste", click: pasteFromClipboard},
+					{isSeparator: true},
 					{label: "Reset", click: resetWithUndo},
 				]
 				);
@@ -140,5 +143,84 @@ class Element {
 		}
 	}
 
+	function copyToClipboard() {
+		var data = {};
+		copy(data);
+		Ide.inst.setClipboard(haxe.Json.stringify(data));
+	}
 
+	function copy(target: Dynamic) {
+		copySelf(target);
+
+		if (children.length > 0) {
+			target.children = {};
+			for (child in children) {
+				var subTarget = {};
+				child.copy(subTarget);
+				Reflect.setField(target.children, child.id, subTarget);
+			}
+		}
+	}
+
+	function copySelf(target: Dynamic) {
+
+	}
+
+	function pasteFromClipboard() {
+		var clipboard = Ide.inst.getClipboard();
+		if (clipboard == null)
+			return;
+
+		var data = try {
+			haxe.Json.parse(clipboard);
+		} catch (e) {
+			clipboard;
+			return;
+		}
+		if (data == null)
+			return;
+
+		@:privateAccess root.prepareUndoPoint();
+
+
+		if (data is Object) {
+			paste(data);
+		} else {
+			pasteString(haxe.Json.stringify(clipboard));
+		}
+
+		@:privateAccess root.finishUndoPoint();
+
+
+
+	}
+
+	function paste(data: Dynamic) {
+		if (data is String) {
+			pasteSelfString(data);
+		} else {
+			pasteSelf(data);
+		}
+
+		for (child in children) {
+			if (data is String) {
+				child.paste(data);
+			} else {
+				if (data.children != null) {
+					var subData = Reflect.field(data.children, child.id);
+					if (subData != null) {
+						child.paste(subData);
+					}
+				}
+			}
+		}
+	}
+
+	function pasteSelf(data: Dynamic) {
+
+	}
+
+	function pasteSelfString(data: String) {
+
+	}
 }

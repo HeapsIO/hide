@@ -1464,7 +1464,6 @@ kit-root kit-block {
   display: flex;
   flex-direction: column;
   min-height: 0;
-  gap: var(--widget-gap);
 }
 kit-root kit-text {
   text-align: center;
@@ -1487,6 +1486,9 @@ kit-root kit-line > kit-separator {
   align-self: stretch;
 }
 kit-root kit-line {
+  padding-block: var(--widget-gap);
+  box-sizing: border-box;
+  position: relative;
   display: flex;
   align-items: center;
   gap: 0.3em;
@@ -1494,7 +1496,15 @@ kit-root kit-line {
   min-height: var(--widget-height);
 }
 kit-root kit-line:hover {
-  background-color: #252525;
+  background-color: #282828;
+}
+kit-root kit-line:hover:after {
+  position: absolute;
+  border-right: 4px solid #666;
+  top: 0;
+  bottom: 0;
+  left: -4px;
+  content: "";
 }
 kit-root kit-line kit-label {
   font-size: 0.95em;
