@@ -1553,7 +1553,9 @@ input[type=checkbox] {
 }
 
 kit-root {
-	--widget-height: 26px;
+	--widget-height: 22px;
+	--widget-bg: #2d2d2d;
+	--widget-hover-bg: #3d3d3d;
 	--widget-gap: 3px;
 	padding: 6px;
 	min-height: 0;
@@ -1668,6 +1670,10 @@ kit-root {
 	}
 
 	kit-line {
+		&:hover {
+			background-color: #252525;
+		}
+
 		display: flex;
 		align-items: center;
 		gap: 0.3em;
@@ -1706,11 +1712,15 @@ kit-root {
 			color: #EEE;
 			text-shadow: 0px 1px 0px black;
 			border-radius: 4px;
+			background-color: var(--widget-bg);
 
 			box-shadow: inset 1px 1px 1px #111;
 		}
 
 		.texture-choice {
+			display: flex;
+
+			align-items: center;
 			> :first-child {
 				height: var(--widget-height);
 				flex: 1 1 auto;
@@ -1721,7 +1731,8 @@ kit-root {
 				}
 
 				.texture-preview {
-					height: calc(100% - 4px);
+					position: absolute;
+					height: calc(var(--widget-height) - 4px);
 					width: unset;
 					aspect-ratio: 1/1;
 					background-size: cover !important;
@@ -1729,16 +1740,17 @@ kit-root {
 					box-sizing: border-box;
 					margin: 2px;
 					right: 0;
+					top: 0;
 				}
 			}
 
 			.hide-button {
 				height: unset;
 				width: unset;
-				align-self: stretch;
 				aspect-ratio: 1/1;
 				height: var(--widget-height);
-
+				margin: 0;
+				box-sizing: border-box;
 			}
 		}
 
@@ -1819,17 +1831,18 @@ kit-root {
 		}
 
 		.color-box {
-			height: var(--widget-height)
+			height: var(--widget-height);
 		}
 
 		kit-button {
+
 			display: flex;
 			align-items: center;
 			justify-content: center;
 			flex: 1 1;
 			border: var(--basic-border);
 			border-radius: var(--basic-border-radius);
-			background-color: var(--bg-2);
+			background-color: var(--widget-bg);
 			text-align: center;
 
 			align-self: stretch;
@@ -1837,11 +1850,6 @@ kit-root {
 			text-align: center;
 
 			cursor: pointer;
-
-			&:hover {
-				border: var(--basic-border-hover);
-				background-color: var(--bg-3);
-			}
 
 			&:active {
 				position: relative;
@@ -1877,6 +1885,18 @@ kit-root {
 
 			&.kit-huge {
 				flex: 0 1 64px;
+			}
+		}
+
+		input, kit-file, kit-button {
+			&:hover {
+				border: var(--basic-border-hover);
+				background-color: var(--widget-hover-bg);
+
+				&.highlight {
+					background-color: var(--selection);
+
+				}
 			}
 		}
 
@@ -5516,7 +5536,7 @@ hide-popover {
 	--sublte-shadow: 1px 1px 3px rgba(0,0,0,.33);
 
 	--basic-border: 1px solid #353535;
-	--basic-border-hover: 1px solid #555;
+	--basic-border-hover: 1px solid #777;
 	--basic-border-focused: 1px solid var(--selection);
 
 	--basic-border-radius: 5px;
