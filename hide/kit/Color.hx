@@ -27,4 +27,8 @@ class Color extends Widget<Int> {
 		}
 		#end
 	}
+
+	function getDefaultFallback() : Int {
+		return 0;
+	}
 }

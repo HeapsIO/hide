@@ -24,4 +24,8 @@ class Texture extends Widget<Dynamic> {
 			textureChoice.value = value;
 		#end
 	}
+
+	function getDefaultFallback() : Dynamic {
+		return null;
+	}
 }

@@ -65,4 +65,8 @@ class Input extends Widget<String> {
 			(cast input: js.html.InputElement).value = value;
 		#end
 	}
+
+	function getDefaultFallback() : String {
+		return null;
+	}
 }
