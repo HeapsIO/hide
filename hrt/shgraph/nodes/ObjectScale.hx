@@ -13,14 +13,10 @@ class ObjectScale extends ShaderNodeHxsl {
 		@global var global : { @perObject var modelView : Mat4; };
 
 		function fragment() {
-			var objPos = vec3(0.0) * global.modelView.mat3x4();
-			var xPos = vec3(1.0, 0.0, 0.0) * global.modelView.mat3x4();
-			var x = length(xPos - objPos);
-			var yPos = vec3(0.0, 1.0, 0.0) * global.modelView.mat3x4();
-			var y = length(yPos - objPos);
-			var zPos = vec3(0.0, 0.0, 1.0) * global.modelView.mat3x4();
-			var z = length(zPos - objPos);
-			output = vec3(x, y, z);
+			var scaleX = length(vec3(global.modelView[0].x,global.modelView[1].x,global.modelView[2].x));
+			var scaleY = length(vec3(global.modelView[0].y,global.modelView[1].y,global.modelView[2].y));
+			var scaleZ = length(vec3(global.modelView[0].z,global.modelView[1].z,global.modelView[2].z));
+			output = vec3(scaleX, scaleY, scaleZ);
 		}
 	};
 }
