@@ -162,4 +162,10 @@ class Slider extends Widget<Float> {
 	function getDefaultFallback() : Float {
 		return 0.0;
 	}
+
+	override function pasteSelfString(obj: String) {
+		var unser = Std.parseFloat(obj);
+		if (!Math.isNaN(unser))
+			value = unser;
+	}
 }

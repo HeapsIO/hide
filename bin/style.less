@@ -1643,7 +1643,6 @@ kit-root {
 		display: flex;
 		flex-direction: column;
 		min-height: 0;
-		gap: var(--widget-gap);
 	}
 
 	kit-text {
@@ -1670,8 +1669,20 @@ kit-root {
 	}
 
 	kit-line {
+		padding-block: var(--widget-gap);
+		box-sizing: border-box;
+		position: relative;
+
 		&:hover {
-			background-color: #252525;
+			background-color: #282828;
+			&:after {
+				position: absolute;
+				border-right: 4px solid #666;
+				top: 0;
+				bottom: 0;
+				left: -4px;
+				content: "";
+			}
 		}
 
 		display: flex;
