@@ -13,7 +13,8 @@ class RemoteTools {
 	static var mainEvent : haxe.MainLoop.MainEvent;
 	static var lastUpdate : Float;
 	static var onConnected : Bool -> Void;
-	static var menuActions : Array<{ action : RemoteConsole.RemoteMenuAction, f : (id:String) -> Int}> = [];
+	static var menuActions : Array<{ action : RemoteConsole.RemoteMenuAction, f : (id:String) -> Int }> = [];
+	static var uriActions : Array<{ path : String, f : (uri: String) -> Void }> = [];
 	static var remotePrefabsCallbacks: Map<String, RemotePrefabCallback> = [];
 
 	public static function autoConnect( ?onConnected : Bool -> Void ) {
@@ -71,6 +72,27 @@ class RemoteTools {
 		return -1;
 	}
 
+	public static function handleUri(uri: String) {
+		if (onUri == null)
+			return;
+		var start = uri.indexOf("://");
+		var path = uri.substr(start + "://".length);
+
+		var parts = path.split("?");
+		var args = new Map();
+		var argsStr = parts[1];
+		var path = parts[0];
+		if (argsStr != null) {
+			var parts = argsStr.split("&");
+			for( p in parts ) {
+				var p = p.split("=");
+				args.set(p[0], StringTools.urlDecode(p[1]));
+			}
+		}
+		onUri(uri, path, args);
+	}
+	public static var onUri: (uri: String, path: String, args: Map<String, String>) -> Void = null;
+
 	static function update() {
 		if( rc == null || rc.isConnected() )
 			return;
@@ -86,6 +108,7 @@ class RemoteTools {
 				if( c != null ) {
 					c.onConsoleCommand = (cmd) -> onConsoleCommand(cmd);
 					c.onMenuAction = (action,id) -> onMenuAction(action,id);
+					c.onUri = (uri) -> handleUri(uri);
 				}
 				// Send menuActions
 				rc.sendCommand("registerMenuActions", { actions : [for( ma in menuActions ) ma.action] });

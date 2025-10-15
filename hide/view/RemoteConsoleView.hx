@@ -181,6 +181,15 @@ class RemoteConsoleView extends hide.ui.View<{}> {
 		return actions;
 	}
 
+	public static function onOpenUri( uri : String ) {
+		if( rcmd == null || !rcmd.isConnected() || rcmd.connections.length == 0)
+			return;
+		for( c in rcmd.connections ) {
+			if( c.isConnected())
+				c.sendCommand("handleUri", uri);
+		}
+	}
+
 	/**
 		For hide-plugin: send console command to connected game instances
 	**/

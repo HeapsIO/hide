@@ -205,10 +205,15 @@ class Ide extends hide.tools.IdeData {
 				var arr: Array<String> = dyncmd;
 				cmd = arr[arr.length - 1];
 			}
-			var uriIndex = cmd.indexOf("hide://");
-			var uri = cmd.substr(uriIndex);
-			if (!StringTools.contains(uri, " ")) {
-				onOpenUri(uri);
+			var protocols = ["hide://", "cdb://"];
+			for (p in protocols) {
+				var uriIndex = cmd.indexOf(p);
+				if (uriIndex >= 0) {
+					var uri = cmd.substr(uriIndex);
+					if (!StringTools.contains(uri, " ")) {
+						hide.view.RemoteConsoleView.onOpenUri(uri);
+					}
+				}
 			}
 			haxe.Timer.delay(() -> trace("on open", cmd), 500);
 			nw.App.on("open", onOpen);
@@ -1978,7 +1983,6 @@ class Ide extends hide.tools.IdeData {
 	}
 
 	public static dynamic function onIdeError(e: Dynamic) {}
-	public static dynamic function onOpenUri(uri: String) {}
 
 	public static var inst : Ide;
 

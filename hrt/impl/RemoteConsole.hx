@@ -346,6 +346,13 @@ class RemoteConsoleConnection {
 		return -1;
 	}
 
+	@cmd function handleUri( path : String ) {
+		onUri(path);
+	}
+	public dynamic function onUri( uri : String ) {
+		sendLogError('onUri not implemented');
+	}
+
 	/**
 		Game <-> Hide editor messages for remote prefab edition
 	**/
