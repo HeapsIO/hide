@@ -2,6 +2,7 @@ package hide.kit;
 
 class Category extends Element {
 	var name(default, null) : String;
+	var open : Bool;
 
 	public function new(parent: Element, id: String, name: String) : Void {
 		this.name = name;
@@ -32,15 +33,22 @@ class Category extends Element {
 		title.addEventListener("mousedown", (event: js.html.MouseEvent) -> {
 			if (event.button != 0)
 				return;
-
-			native.classList.toggle("open");
+			open = !open;
+			saveSetting(SameKind, "open", open ? null : false);
+			refresh();
 		});
 
+		open = getSetting(SameKind, "open") ?? true;
+		refresh();
 		addEditMenu(title);
 
 		#else
 		native = hlCategory = new hrt.ui.HuiCategory();
 		hlCategory.headerName = name;
 		#end
+	}
+
+	function refresh() {
+		native.classList.toggle("open", open);
 	}
 }
