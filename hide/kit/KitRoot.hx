@@ -48,24 +48,27 @@ class KitRoot extends Element {
 		return registeredElements.get(id);
 	}
 
-	@:allow(hide.kit.Element)
-	function broadcastValueChange(input: Widget<Dynamic>, isTemporaryEdit: Bool) {
-		var idPath = input.getIdPath();
+	@:allow(hide.kit.Widget)
+	function broadcastValuesChange(inputs: Array<Widget<Dynamic>>, isTemporaryEdit: Bool) {
 
 		prepareUndoPoint();
 
-		input.onValueChange(isTemporaryEdit);
-		prefab.updateInstance(input.id);
+		for(input in inputs) {
+			input.onValueChange(isTemporaryEdit);
+			prefab.updateInstance(input.id);
+		}
 
-		for (childProperties in editedPrefabsProperties) {
+		for (input in inputs) {
+			var idPath = input.getIdPath();
+			for (childProperties in editedPrefabsProperties) {
+				var childElement = childProperties.registeredElements.get(idPath);
+				var childInput = Std.downcast(childElement, Type.getClass(input));
 
-			var childElement = childProperties.registeredElements.get(idPath);
-			var childInput = Std.downcast(childElement, Type.getClass(input));
-
-			if (childInput != null) {
-				childInput.value = input.value;
-				childInput.onValueChange(isTemporaryEdit);
-				childProperties.prefab.updateInstance(input.id);
+				if (childInput != null) {
+					childInput.value = input.value;
+					childInput.onValueChange(isTemporaryEdit);
+					childProperties.prefab.updateInstance(input.id);
+				}
 			}
 		}
 
