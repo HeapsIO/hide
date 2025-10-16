@@ -35,6 +35,9 @@ class Category extends Element {
 
 			native.classList.toggle("open");
 		});
+
+		addEditMenu(title);
+
 		#else
 		native = hlCategory = new hrt.ui.HuiCategory();
 		hlCategory.headerName = name;

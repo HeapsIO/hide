@@ -4195,11 +4195,21 @@ class SceneEditor {
 					properties.element.removeClass("props");
 					var proxyPrefab = Type.createInstance(commonClass, [null, new ContextShared()]);
 					proxyPrefab.load(haxe.Json.parse(haxe.Json.stringify(elts[0].save())));
-					var baseRoot = new hide.kit.KitRoot(null, null, proxyPrefab, edit);
+
+					var editorApi = new hide.kit.EditorAPI();
+
+					editorApi.recordUndo = (callback) -> {
+						undo.change(Custom(callback));
+					}
+					editorApi.refreshInspector = () -> {
+						edit.rebuildProperties();
+					}
+
+					var baseRoot = new hide.kit.KitRoot(null, null, proxyPrefab, editorApi);
 					edit.kitRoot = baseRoot;
 					proxyPrefab.edit2(edit);
 					for (i => select in selectedPrefabs) {
-						var childRoot = new hide.kit.KitRoot(null, null, select, edit);
+						var childRoot = new hide.kit.KitRoot(null, null, select, editorApi);
 						baseRoot.editedPrefabsProperties.push(childRoot);
 						edit.kitRoot = childRoot;
 						select.edit2(edit);

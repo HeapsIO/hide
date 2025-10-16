@@ -89,6 +89,23 @@ class Element {
 		children.insert(position, newChild);
 	}
 
+	function addEditMenu(e: NativeElement) {
+		#if js
+		native.addEventListener("contextmenu", (e: js.html.MouseEvent) -> {
+			e.preventDefault();
+			e.stopPropagation();
+
+			hide.comp.ContextMenu.createFromEvent(e, [
+				{label: "Copy", click: copyToClipboard},
+				{label: "Paste", click: pasteFromClipboard},
+				{isSeparator: true},
+				{label: "Reset", click: resetWithUndo},
+			]
+			);
+		});
+		#end
+	}
+
 	function setupPropLine(label: NativeElement, content: NativeElement) {
 		#if js
 		var parentLine = Std.downcast(parent, Line);
@@ -96,18 +113,7 @@ class Element {
 		if (parentLine == null) {
 			native = js.Browser.document.createElement("kit-line");
 
-			native.addEventListener("contextmenu", (e: js.html.MouseEvent) -> {
-				e.preventDefault();
-				e.stopPropagation();
-
-				hide.comp.ContextMenu.createFromEvent(e, [
-					{label: "Copy", click: copyToClipboard},
-					{label: "Paste", click: pasteFromClipboard},
-					{isSeparator: true},
-					{label: "Reset", click: resetWithUndo},
-				]
-				);
-			});
+			addEditMenu(native);
 
 		} else {
 			native = js.Browser.document.createElement("kit-div");
@@ -200,7 +206,7 @@ class Element {
 
 		@:privateAccess root.finishUndoPoint();
 
-
+		root.editor.refreshInspector();
 		#end
 	}
 

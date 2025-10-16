@@ -4,19 +4,36 @@ class KitRoot extends Element {
 	public var editedPrefabsProperties : Array<KitRoot> = [];
 	var prefab : hrt.prefab.Prefab;
 	var prefabUndoPoint : Dynamic = null;
-	var edit : hide.prefab.EditContext;
+	public var editor(default, null) : EditorAPI;
 
 	var registeredElements : Map<String, Element> = [];
 
-	public function new(parent: Element, id: String, prefab: hrt.prefab.Prefab, editContext: hide.prefab.EditContext ) {
+	public function new(parent: Element, id: String, prefab: hrt.prefab.Prefab, editor: EditorAPI ) {
 		super(parent, id);
 		this.prefab = prefab;
-		edit = editContext;
+		this.editor = editor;
+		root = root ?? this;
 	}
 
 	override function makeSelf() : Void {
 		#if js
 		native = js.Browser.document.createElement("kit-root");
+
+		var toolbar = js.Browser.document.createElement("kit-toolbar");
+		native.appendChild(toolbar);
+		var copyButton = new hide.Element('<fancy-button title="Copy all properties">').append(new hide.Element('<div class="icon ico ico-copy">'))[0];
+		toolbar.appendChild(copyButton);
+		copyButton.addEventListener("click", (e: js.html.MouseEvent) -> {
+			copyToClipboard();
+		});
+
+		var pasteButton = new hide.Element('<fancy-button title="Paste values from the clipboard">').append(new hide.Element('<div class="icon ico ico-paste">'))[0];
+		toolbar.appendChild(pasteButton);
+		pasteButton.addEventListener("click", (e: js.html.MouseEvent) -> {
+			pasteFromClipboard();
+		});
+
+
 		#else
 		native = new hrt.ui.HuiElement();
 		native.dom.addClass("root");
@@ -92,7 +109,6 @@ class KitRoot extends Element {
 	}
 
 	function finishUndoPoint() {
-		#if js
 		var sideEffects : Array<(isUndo:Bool) -> Void> = [];
 		createUndoStep(sideEffects);
 
@@ -101,14 +117,13 @@ class KitRoot extends Element {
 		}
 
 		if (sideEffects.length > 0) {
-			edit.properties.undo.change(Custom((isUndo: Bool) -> {
+			editor.recordUndo((isUndo: Bool) -> {
 				for (sideEffect in sideEffects) {
 					sideEffect(isUndo);
 				}
-				Std.downcast(edit, hide.comp.SceneEditor.SceneEditorContext)?.rebuildProperties();
-			}));
+				editor.refreshInspector();
+			});
 		}
-		#end
 	}
 
 	function createUndoStep(sideEffects : Array<(isUndo:Bool) -> Void>) : Void {
