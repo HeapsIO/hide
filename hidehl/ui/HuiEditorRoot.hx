@@ -1,6 +1,6 @@
 package hidehl.ui;
 
-class HuiEditorRoot extends HuiElement {
+class HuiEditorRoot extends hrt.ui.HuiElement {
 	static var SRC =
 		<hui-editor-root>
 			<hui-element id="panel-left" public></hui-element>

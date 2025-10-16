@@ -6,8 +6,10 @@
 -lib hscript
 -D hscriptPos
 -D hide
+-D resourcesPath=hidehl/res
 --macro include("hrt.prefab")
 --macro include("hrt.shader")
 --macro include("hrt.shgraph")
 --macro include("hrt")
---macro domkit.Macros.registerComponentsPath("hidehl.ui.$")
+--macro domkit.Macros.registerComponentsPath("hrt.ui.$")
+
