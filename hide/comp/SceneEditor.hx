@@ -4197,6 +4197,7 @@ class SceneEditor {
 					proxyPrefab.load(haxe.Json.parse(haxe.Json.stringify(elts[0].save())));
 
 					var baseRoot = new hide.kit.KitRoot(null, null, proxyPrefab, edit);
+					edit.saveKey = Type.getClassName(commonClass);
 					edit.kitRoot = baseRoot;
 					proxyPrefab.edit2(edit);
 					for (i => select in selectedPrefabs) {

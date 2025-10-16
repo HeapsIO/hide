@@ -30,7 +30,6 @@ class Element {
 		this.id = ensureUniqueId(id);
 
 		this.parent?.addChild(this);
-		this.root?.register(this);
 	}
 
 	public function make() {
@@ -235,5 +234,31 @@ class Element {
 	}
 
 	function pasteSelfString(data: String) {
+	}
+
+	function getSaveKey(category: hide.kit.EditorAPI.SettingCategory, key: String) {
+		switch (category) {
+			case Global:
+				return '$id/$key';
+			case SameKind:
+				return '${getIdPath()}/$key';
+		}
+	}
+
+	function saveSetting(category: hide.kit.EditorAPI.SettingCategory, key: String, data: Dynamic) : Void {
+		root.editor.saveSetting(category, getSaveKey(category, key), data);
+	}
+
+	function getSetting(category: hide.kit.EditorAPI.SettingCategory, key: String) : Dynamic {
+		return root.editor.getSetting(category, getSaveKey(category, key));
+	}
+
+	function getChildById(id: String) : Element {
+		for (child in children) {
+			if (child.id == id) {
+				return child;
+			}
+		}
+		return null;
 	}
 }

@@ -4,10 +4,8 @@ package hide.prefab;
 import hrt.prefab.Prefab;
 #end
 
-class EditContext implements hide.kit.EditorAPI {
+class EditContext #if (editor && !macro) implements hide.kit.EditorAPI #end {
 	#if !macro
-
-
 
 	#if editor
 
@@ -15,6 +13,7 @@ class EditContext implements hide.kit.EditorAPI {
 
 	public var rootPrefab : hrt.prefab.Prefab;
 	public var kitRoot: hide.kit.KitRoot;
+	public var saveKey: String;
 
 	var undo : hide.ui.UndoHistory;
 
@@ -153,11 +152,30 @@ class EditContext implements hide.kit.EditorAPI {
 		rebuildProperties();
 	}
 
-	#else
-	public function recordUndo(cb: (isUndo:Bool) -> Void) {
-	}
+	public function saveSetting(category: hide.kit.EditorAPI.SettingCategory, key: String, value: Dynamic) : Void {
+		if (value == null) {
+			ide.localStorage.removeItem(getSaveKey(category, key));
+			return;
+		}
+		ide.localStorage.setItem(getSaveKey(category, key), haxe.Json.stringify(value));
+	};
 
-	public function refreshInspector() : Void {
+	public function getSetting(category: hide.kit.EditorAPI.SettingCategory, key: String) : Null<Dynamic> {
+		var v = ide.localStorage.getItem(getSaveKey(category, key));
+		if( v == null )
+			return null;
+		return haxe.Json.parse(v);
+	};
+
+	function getSaveKey(category: hide.kit.EditorAPI.SettingCategory, key: String) {
+		var mid = switch(category) {
+			case Global:
+				"global";
+			case SameKind:
+				saveKey;
+		};
+
+		return 'inspector/$mid/$key';
 	}
 	#end
 

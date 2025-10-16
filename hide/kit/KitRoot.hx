@@ -6,8 +6,6 @@ class KitRoot extends Element {
 	var prefabUndoPoint : Dynamic = null;
 	public var editor(default, null) : EditorAPI;
 
-	var registeredElements : Map<String, Element> = [];
-
 	public function new(parent: Element, id: String, prefab: hrt.prefab.Prefab, editor: EditorAPI ) {
 		super(parent, id);
 		this.prefab = prefab;
@@ -40,12 +38,15 @@ class KitRoot extends Element {
 		#end
 	}
 
-	public function register(element: Element) {
-		registeredElements.set(element.getIdPath(), element);
-	}
-
-	public function getElementByPath(id: String) {
-		return registeredElements.get(id);
+	public function getElementByPath(path: String) {
+		var parts = path.split(".");
+		var currentElement : Element = this;
+		for (part in parts) {
+			currentElement = currentElement.getChildById(part);
+			if (currentElement == null)
+				break;
+		}
+		return currentElement;
 	}
 
 	@:allow(hide.kit.Widget)
@@ -61,7 +62,7 @@ class KitRoot extends Element {
 		for (input in inputs) {
 			var idPath = input.getIdPath();
 			for (childProperties in editedPrefabsProperties) {
-				var childElement = childProperties.registeredElements.get(idPath);
+				var childElement = childProperties.getElementByPath(idPath);
 				var childInput = Std.downcast(childElement, Type.getClass(input));
 
 				if (childInput != null) {
@@ -88,7 +89,7 @@ class KitRoot extends Element {
 
 		for (childProperties in editedPrefabsProperties) {
 
-			var childElement = childProperties.registeredElements.get(idPath);
+			var childElement = childProperties.getElementByPath(idPath);
 			var childButton = Std.downcast(childElement, Button);
 			if (childButton != null) {
 				childButton.onClick();

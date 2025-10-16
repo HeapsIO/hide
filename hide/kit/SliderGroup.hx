@@ -20,8 +20,10 @@ class SliderGroup extends Line {
 
 		lock.onclick = (e: js.html.MouseEvent) -> {
 			isLocked = !isLocked;
+			saveSetting(Global, "lock", isLocked ? null : false);
 			refresh();
 		}
+		isLocked = getSetting(Global, "lock") ?? true;
 		refresh();
 
 		labelGroup.appendChild(lock);
