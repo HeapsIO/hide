@@ -81,7 +81,7 @@ abstract class Widget<ValueType> extends Element {
 		Call this internally when the user interact with the widget to change the value
 	**/
 	function broadcastValueChange(temporaryEdit) : Void {
-		root.broadcastValueChange(this, temporaryEdit);
+		root.broadcastValuesChange([this], temporaryEdit);
 	}
 
 	function syncValueUI() {
@@ -90,7 +90,7 @@ abstract class Widget<ValueType> extends Element {
 
 	override function reset() {
 		value = defaultValue;
-		root.broadcastValueChange(this, true);
+		root.broadcastValuesChange([this], true);
 		super.reset();
 	}
 

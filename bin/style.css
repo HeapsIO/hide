@@ -1513,11 +1513,17 @@ kit-root kit-line kit-label {
 kit-root kit-line kit-label:empty {
   display: none;
 }
-kit-root kit-line kit-label.first {
+kit-root kit-line .first {
   flex: 0 0 85px;
   text-align: right;
   display: block;
   margin-right: 0.2em;
+}
+kit-root kit-line kit-slider-group-label {
+  display: flex !important;
+  align-items: center;
+  justify-content: end;
+  gap: 0.3em;
 }
 kit-root kit-line kit-div {
   display: contents;
