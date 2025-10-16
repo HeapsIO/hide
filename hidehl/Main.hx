@@ -13,45 +13,69 @@ class Main extends hxd.App {
 		editorStyle.inspectKeyCode = hxd.Key.CTRL;
 		editorStyle.useSmartCache = true;
 
-		var testPrefab = hxd.Res.test.testObject.load();
-		var prefab = testPrefab.make(s3d);
+		var bg = new h2d.Bitmap(h2d.Tile.fromColor(0x333333, 100000, 100000), s2d);
+		bg.x = -5000;
+		bg.y = -5000;
 
-		var g = new h3d.scene.Graphics(prefab.children[0].findFirstLocal3d());
-		g.lineStyle(5, 0xFFFFFF, 1.0);
-		g.moveTo(0,0,-1.0);
-		g.lineTo(0,0,1.0);
-		g.moveTo(0,-1.0,0);
-		g.lineTo(0,1.0,0);
-		g.moveTo(-1.0,0,0);
-		g.lineTo(1.0,0,0);
+		var bg = new hrt.ui.HuiBackground(s2d);
+		bg.width = 100;
+		bg.height = 32;
+		bg.x = 8;
+		bg.y = 65+8+4;
 
-		@:privateAccess
-		{
-			var selectedPrefabs = [prefab.children[0]];
-			var commonClass = hrt.tools.ClassUtils.getCommonClass(selectedPrefabs, hrt.prefab.Prefab);
-			var editContext = new hide.prefab.EditContext();
-			{
-				var proxyPrefab = Type.createInstance(commonClass, [null, new hrt.prefab.ContextShared()]);
-				proxyPrefab.load(haxe.Json.parse(haxe.Json.stringify(selectedPrefabs[0].save())));
-				var rootProperties = new hide.kit.KitRoot(null, null, proxyPrefab, editContext);
-				editContext.kitRoot = rootProperties;
-				proxyPrefab.edit2(editContext);
-				for (i => select in selectedPrefabs) {
-					var childProperties = new hide.kit.KitRoot(null, null, select, editContext);
-					rootProperties.editedPrefabsProperties.push(childProperties);
-					editContext.kitRoot = childProperties;
-					select.edit2(editContext);
-				}
+		var bg = new hrt.ui.HuiBackground(s2d);
+		bg.width = 87;
+		bg.height = 65;
+		bg.x = 8;
+		bg.y = 8;
 
-				editContext.kitRoot = rootProperties;
-				editContext.kitRoot.make();
+		var bg = new hrt.ui.HuiBackground(s2d);
+		bg.width = 27;
+		bg.height = 27;
+		bg.x = 8;
+		bg.y = 120;
 
-				@:privateAccess editorRoot.panelRight.addChild(editContext.properties2.nativeContent);
-			}
-		}
+
+		// var testPrefab = hxd.Res.test.testObject.load();
+		// var prefab = testPrefab.make(s3d);
+
+		// var g = new h3d.scene.Graphics(prefab.children[0].findFirstLocal3d());
+		// g.lineStyle(5, 0xFFFFFF, 1.0);
+		// g.moveTo(0,0,-1.0);
+		// g.lineTo(0,0,1.0);
+		// g.moveTo(0,-1.0,0);
+		// g.lineTo(0,1.0,0);
+		// g.moveTo(-1.0,0,0);
+		// g.lineTo(1.0,0,0);
+
+		// @:privateAccess
+		// {
+		// 	var selectedPrefabs = [prefab.children[0]];
+		// 	var commonClass = hrt.tools.ClassUtils.getCommonClass(selectedPrefabs, hrt.prefab.Prefab);
+		// 	var editContext = new hide.prefab.EditContext();
+		// 	{
+		// 		var proxyPrefab = Type.createInstance(commonClass, [null, new hrt.prefab.ContextShared()]);
+		// 		proxyPrefab.load(haxe.Json.parse(haxe.Json.stringify(selectedPrefabs[0].save())));
+		// 		var rootProperties = new hide.kit.KitRoot(null, null, proxyPrefab, editContext);
+		// 		editContext.kitRoot = rootProperties;
+		// 		proxyPrefab.edit2(editContext);
+		// 		for (i => select in selectedPrefabs) {
+		// 			var childProperties = new hide.kit.KitRoot(null, null, select, editContext);
+		// 			rootProperties.editedPrefabsProperties.push(childProperties);
+		// 			editContext.kitRoot = childProperties;
+		// 			select.edit2(editContext);
+		// 		}
+
+		// 		editContext.kitRoot = rootProperties;
+		// 		editContext.kitRoot.make();
+
+		// 		@:privateAccess editorRoot.panelRight.addChild(editContext.properties2.nativeContent);
+		// 	}
+		// }
 	}
 
 	override function update(dt: Float) {
+
 		try {
 			editorStyle.sync(dt);
 		} catch (e) {
@@ -61,7 +85,8 @@ class Main extends hxd.App {
 
 	static function main() {
 		hxd.res.Resource.LIVE_UPDATE = true;
-		//hxd.Res.initLocal();
+		hxd.Res.initLocal();
+		hxd.fs.SourceLoader.initLivePaths();
 		new Main();
 	}
 

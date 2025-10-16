@@ -1,4 +1,4 @@
-package hidehl.ui;
+package hrt.ui;
 
 class HuiSlider extends HuiElement {
 	public var slider: h2d.Slider;

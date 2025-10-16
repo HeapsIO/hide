@@ -1,6 +1,6 @@
-package hidehl.ui;
+package hrt.ui;
 
-class HuiScene extends Element {
+class HuiScene extends HuiElement {
 	static var SRC =
 	<hui-scene>
 		<bitmap public id="display"/>
