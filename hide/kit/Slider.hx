@@ -44,20 +44,19 @@ class Slider extends Widget<Float> {
 			var mult = step;
 			if (e.ctrlKey) mult *= 10.0;
 			if (e.shiftKey) mult /= 10.0;
-			value += e.movementX * mult;
+			var newValue = value + e.movementX * mult;
 
 			if (wrap && min != null && max !=null) {
 				var size = max - min;
-				value = ((value - min + size) % size) + min;
+				newValue = ((newValue - min + size) % size) + min;
 			} else {
 				if (min != null)
-					value = hxd.Math.max(value, min);
+					newValue = hxd.Math.max(newValue, min);
 				if (max != null)
-					value = hxd.Math.min(value, max);
+					newValue = hxd.Math.min(newValue, max);
 			}
 
-
-			broadcastValueChange(true);
+			slideTo(newValue, true);
 			hasMoved = true;
 		});
 
@@ -74,7 +73,7 @@ class Slider extends Widget<Float> {
 				slider.focus();
 				slider.select();
 			} else {
-				broadcastValueChange(false);
+				slideTo(value, false);
 			}
 		});
 
@@ -101,16 +100,13 @@ class Slider extends Widget<Float> {
 		slider.addEventListener("input", (e: js.html.InputEvent) -> {
 			var newValue = Std.parseFloat(slider.value);
 			if (newValue != null) {
-				@:bypassAccessor value = newValue;
-
 				broadcastValueChange(true);
 			}
 		});
 
 		slider.addEventListener("blur", (e: js.html.FocusEvent) -> {
 			var newValue = Std.parseFloat(slider.value);
-			value = newValue ?? value;
-			broadcastValueChange(false);
+			slideTo(newValue ?? value, false);
 		});
 
 		return container;
@@ -124,6 +120,33 @@ class Slider extends Widget<Float> {
 		slider.slider.maxValue = 10;
 		return slider;
 		#end
+	}
+
+	function slideTo(newValue: Float, isTemporary: Bool) {
+		var group = Std.downcast(parent, SliderGroup);
+		if (group != null && group.isLocked) {
+			var changeDelta = newValue / value;
+
+			var sliders : Array<Widget<Dynamic>> = [];
+			for (sibling in parent.children) {
+				var siblingSlider = Std.downcast(sibling, Slider);
+				if (siblingSlider == null)
+					continue;
+
+				if (Math.isFinite(changeDelta)) {
+					siblingSlider.value = siblingSlider.value * changeDelta;
+				} else {
+					siblingSlider.value = newValue;
+				}
+				sliders.push(siblingSlider);
+			}
+
+			root.broadcastValuesChange(sliders, isTemporary);
+		}
+		else {
+			value = newValue;
+			broadcastValueChange(isTemporary);
+		}
 	}
 
 	inline function set_min(v) {

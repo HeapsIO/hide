@@ -232,10 +232,8 @@ class Element {
 	}
 
 	function pasteSelf(data: Dynamic) {
-
 	}
 
 	function pasteSelfString(data: String) {
-
 	}
 }
