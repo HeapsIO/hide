@@ -19,7 +19,7 @@ class Checkbox extends Widget<Bool> {
 
 		return checkbox;
 		#else
-		return new hidehl.ui.HuiFmtText("checkbox");
+		return new hrt.ui.HuiFmtText("checkbox");
 		#end
 	}
 

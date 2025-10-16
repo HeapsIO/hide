@@ -17,3 +17,4 @@
 /bin/icudtl.dat
 *.hl
 res/.tmp
+shaders/

@@ -8,8 +8,8 @@ class Line extends Element {
 	#if js
 	public var labelElement: NativeElement;
 	#else
-	public var labelContainer: hidehl.ui.HuiElement;
-	public var labelText: hidehl.ui.HuiFmtText;
+	public var labelContainer: hrt.ui.HuiElement;
+	public var labelText: hrt.ui.HuiFmtText;
 	#end
 
 	override function makeSelf():Void {
@@ -26,9 +26,9 @@ class Line extends Element {
 		}
 
 		#else
-		native = new hidehl.ui.HuiElement();
+		native = new hrt.ui.HuiElement();
 		native.dom.addClass("line");
-		refreshLabel();
+		//refreshLabel();
 		#end
 	}
 
@@ -55,11 +55,11 @@ class Line extends Element {
 	// 	}
 
 	// 	if (labelContainer == null) {
-	// 		labelContainer = new hidehl.ui.HuiElement(native);
+	// 		labelContainer = new hrt.ui.HuiElement(native);
 	// 		labelContainer.dom.addClass("label");
 	// 		labelContainer.dom.addClass("first");
 
-	// 		labelText = new hidehl.ui.HuiFmtText(labelContainer);
+	// 		labelText = new hrt.ui.HuiFmtText(labelContainer);
 	// 	}
 
 	// 	labelText.text = label;
