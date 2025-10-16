@@ -180,19 +180,23 @@ class Element {
 			haxe.Json.parse(clipboard);
 		} catch (e) {
 			clipboard;
-			return;
 		}
 		if (data == null)
 			return;
 
 		@:privateAccess root.prepareUndoPoint();
 
-
-		// if (data is Object) {
-		// 	paste(data);
-		// } else {
-		// 	pasteString(haxe.Json.stringify(clipboard));
-		// }
+		switch(Type.typeof(data)) {
+			case TObject, TClass(String):
+				paste(data);
+			default:
+				try {
+					var string = haxe.Json.stringify(data);
+					paste(string);
+				} catch(e) {
+					Ide.inst.quickError(e);
+				}
+		}
 
 		@:privateAccess root.finishUndoPoint();
 

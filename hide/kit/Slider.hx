@@ -163,9 +163,10 @@ class Slider extends Widget<Float> {
 		return 0.0;
 	}
 
-	override function pasteSelfString(obj: String) {
+	function stringToValue(obj: String) : Null<Float> {
 		var unser = Std.parseFloat(obj);
-		if (!Math.isNaN(unser))
-			value = unser;
+		if (Math.isNaN(unser))
+			return null;
+		return unser;
 	}
 }

@@ -53,4 +53,13 @@ class Select extends Widget<Dynamic> {
 	function getDefaultFallback() : Dynamic {
 		return null;
 	}
+
+	function stringToValue(obj: String) : Dynamic {
+		for (entry in entries) {
+			if (haxe.Json.stringify(entry.value) == obj) {
+				return entry.value;
+			}
+		}
+		return null;
+	}
 }

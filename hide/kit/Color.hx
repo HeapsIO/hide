@@ -31,4 +31,8 @@ class Color extends Widget<Int> {
 	function getDefaultFallback() : Int {
 		return 0;
 	}
+
+	function stringToValue(str: String) : Null<Int> {
+		return hrt.impl.ColorSpace.Color.intFromString(str, alpha);
+	}
 }

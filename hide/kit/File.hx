@@ -2,33 +2,11 @@ package hide.kit;
 
 class File extends Widget<String> {
 
-	public var type(default, set) : String;
+	public var type : String;
 
 	#if js
 	var text: js.html.ParagraphElement;
 	#end
-
-	function set_type(v: String) : String {
-		type = v;
-		#if js
-		if (native != null) {
-			var exts = types.get(type);
-			var accept = null;
-			if (exts != null) {
-				accept = "";
-				for (i => ext in exts) {
-					accept += "." + "ext";
-					if (i < exts.length)
-						accept += ",";
-				}
-			}
-			(cast native:js.html.InputElement).accept = accept;
-		}
-		#else
-		throw "aaa";
-		#end
-		return v;
-	}
 
 	function makeInput():NativeElement {
 		#if js
@@ -66,4 +44,12 @@ class File extends Widget<String> {
 		"texture" => ["png", "dds", "jpeg", "jpg"],
 		"model" => ["fbx", "hmd"],
 	];
+
+	function stringToValue(obj: String) : String {
+		var ext = obj.split(".").pop();
+		if (types.get(type).contains(ext)) {
+			return obj;
+		}
+		return null;
+	}
 }

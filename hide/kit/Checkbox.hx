@@ -33,4 +33,12 @@ class Checkbox extends Widget<Bool> {
 	function getDefaultFallback() : Bool {
 		return false;
 	}
+
+	function stringToValue(obj: String) : Null<Bool> {
+		if (obj.toLowerCase() == "true")
+			return true;
+		if (obj.toLowerCase() == "false")
+			return false;
+		return null;
+	}
 }
