@@ -65,7 +65,7 @@ class Element {
 		#if js
 		native = js.Browser.document.createDivElement();
 		#else
-		native = new hidehl.ui.HuiElement();
+		native = new hrt.ui.HuiElement();
 		#end
 	}
 
@@ -90,6 +90,7 @@ class Element {
 	}
 
 	function setupPropLine(label: NativeElement, content: NativeElement) {
+		#if js
 		var parentLine = Std.downcast(parent, Line);
 
 		if (parentLine == null) {
@@ -127,6 +128,7 @@ class Element {
 		}
 		if (content != null)
 			native.appendChild(content);
+		#end
 	}
 
 	function resetWithUndo() {
@@ -144,9 +146,11 @@ class Element {
 	}
 
 	function copyToClipboard() {
+		#if js
 		var data = {};
 		copy(data);
 		Ide.inst.setClipboard(haxe.Json.stringify(data));
+		#end
 	}
 
 	function copy(target: Dynamic) {
@@ -167,6 +171,7 @@ class Element {
 	}
 
 	function pasteFromClipboard() {
+		#if js
 		var clipboard = Ide.inst.getClipboard();
 		if (clipboard == null)
 			return;
@@ -183,16 +188,16 @@ class Element {
 		@:privateAccess root.prepareUndoPoint();
 
 
-		if (data is Object) {
-			paste(data);
-		} else {
-			pasteString(haxe.Json.stringify(clipboard));
-		}
+		// if (data is Object) {
+		// 	paste(data);
+		// } else {
+		// 	pasteString(haxe.Json.stringify(clipboard));
+		// }
 
 		@:privateAccess root.finishUndoPoint();
 
 
-
+		#end
 	}
 
 	function paste(data: Dynamic) {

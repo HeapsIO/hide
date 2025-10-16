@@ -1,6 +1,6 @@
 
-editor-root {
-	text, fmt-text {
+hui-editor-root {
+	text, hui-fmt-text {
 		font: url("font/inter_14pt_ss02_tnum.fnt");
 		text-shadow : 0 1 #000 0.8;
 	}
@@ -14,7 +14,7 @@ editor-root {
 
 		background: #3d3d3d;
 
-		category {
+		hui-category {
 			layout: vertical;
 			fill-width: 1;
 			#header {
@@ -24,7 +24,7 @@ editor-root {
 				margin-right: 8;
 
 				background: #111;
-				& > fmt-text {
+				& > hui-fmt-text {
 					halign: middle;
 				}
 			}
@@ -36,7 +36,7 @@ editor-root {
 		}
 
 		.label {
-			& > fmt-text {
+			& > hui-fmt-text {
 				halign: right;
 				color: #fff;
 			}
@@ -59,7 +59,7 @@ editor-root {
 			}
 		}
 
-		hide-slider {
+		hui-slider {
 			fill-width: true;
 			auto-size-width: 1;
 		}

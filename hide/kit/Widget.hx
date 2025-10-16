@@ -30,7 +30,7 @@ abstract class Widget<ValueType> extends Element {
 	#if js
 	var labelElement: NativeElement;
 	#else
-	var labelElement: hidehl.ui.HuiFmtText;
+	var labelElement: hrt.ui.HuiFmtText;
 	#end
 
 	function get_value() return value;
@@ -49,17 +49,17 @@ abstract class Widget<ValueType> extends Element {
 		labelElement.innerHTML = label;
 		#else
 		if (parentLine == null) {
-			native = new hidehl.ui.HuiElement();
+			native = new hrt.ui.HuiElement();
 			native.dom.addClass("line");
 		} else {
-			native = new hidehl.ui.HuiElement();
+			native = new hrt.ui.HuiElement();
 			native.dom.addClass("widget");
 		}
 
-		var labelContainer = new hidehl.ui.HuiElement(native);
+		var labelContainer = new hrt.ui.HuiElement(native);
 		labelContainer.dom.addClass("label");
 
-		labelElement = new hidehl.ui.HuiFmtText(labelContainer);
+		labelElement = new hrt.ui.HuiFmtText(labelContainer);
 		labelElement.text = label;
 
 		input = makeInput();
