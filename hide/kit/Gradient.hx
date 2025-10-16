@@ -26,6 +26,15 @@ class Gradient extends Widget<hrt.impl.Gradient.GradientData> {
 	}
 
 	function getDefaultFallback() : hrt.impl.Gradient.GradientData {
-		return  hrt.impl.Gradient.getDefaultGradientData();
+		return hrt.impl.Gradient.getDefaultGradientData();
+	}
+
+	function stringToValue(str:String) : Null<hrt.impl.Gradient.GradientData> {
+		var parsedData = try {
+			haxe.Json.parse(str);
+		} catch(e) {
+			return null;
+		}
+		return hrt.impl.TextureType.Utils.getGradientData(parsedData);
 	}
 }

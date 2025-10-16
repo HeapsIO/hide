@@ -28,4 +28,16 @@ class Texture extends Widget<Dynamic> {
 	function getDefaultFallback() : Dynamic {
 		return null;
 	}
+
+	function stringToValue(obj: String) : Dynamic {
+		var parsedData = try {
+			haxe.Json.parse(obj);
+		} catch(e) {
+			return null;
+		}
+		if (hrt.impl.TextureType.Utils.getTextureType(obj) != null) {
+			return obj;
+		}
+		return null;
+	}
 }
