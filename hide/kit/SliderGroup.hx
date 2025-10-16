@@ -14,7 +14,7 @@ class SliderGroup extends Line {
 		labelElement.innerText = label ?? "";
 		labelGroup.appendChild(labelElement);
 
-		lock = new hide.Element('<fancy-button class="fancy-small" title="Link sliders">')[0];
+		lock = new hide.Element('<fancy-button class="fancy-small quiet" title="Link sliders">')[0];
 		lockIcon = new hide.Element('<div class="icon ico">')[0];
 		lock.appendChild(lockIcon);
 
