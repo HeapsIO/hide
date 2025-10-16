@@ -105,5 +105,16 @@ abstract class Widget<ValueType> extends Element {
 		}
 	}
 
+	override function pasteSelfString(str: String) {
+		var parsedValue = stringToValue(str);
+		if (parsedValue != null) {
+			value = parsedValue;
+			broadcastValueChange(true);
+		}
+	}
+
+	/** Returns null if the value can't be parsed**/
+	abstract function stringToValue(str: String) : Null<ValueType>;
+
 	abstract function getDefaultFallback() : ValueType;
 }

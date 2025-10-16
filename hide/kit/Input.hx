@@ -69,4 +69,8 @@ class Input extends Widget<String> {
 	function getDefaultFallback() : String {
 		return null;
 	}
+
+	function stringToValue(str: String) : String {
+		return str;
+	}
 }
