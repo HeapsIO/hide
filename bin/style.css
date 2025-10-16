@@ -1508,7 +1508,8 @@ kit-root kit-line:hover:after {
 }
 kit-root kit-line kit-label {
   font-size: 0.95em;
-  margin-left: 0.3em;
+  margin-right: -0.1em;
+  margin-left: 0.2em;
 }
 kit-root kit-line kit-label:empty {
   display: none;
@@ -1518,6 +1519,7 @@ kit-root kit-line .first {
   text-align: right;
   display: block;
   margin-right: 0.2em;
+  margin-left: 0;
 }
 kit-root kit-line kit-slider-group-label {
   display: flex !important;
