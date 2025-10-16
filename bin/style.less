@@ -1578,10 +1578,10 @@ kit-root {
 
 		>.title {
 			background-color: rgb(50,50,50);
+			display: flex;
 
 			border-radius: 4px;
 
-			text-align: center;
 			cursor: pointer;
 			user-select: none;
 			padding: 1px;
@@ -1605,6 +1605,27 @@ kit-root {
 				position: absolute;
 				left: 5px;
 			}
+
+			&::before {
+				display: inline-block;
+				content: "";
+				margin: 2px;
+				width: 12px; height: 12px;
+
+				transition: transform 0.2s;
+				background-color: currentColor;
+				mask-image: url("res/icons/svg/right_caret.svg");
+
+				mask-position: center;
+				mask-repeat: no-repeat;
+				mask-size: contain;
+
+				pointer-events: all;
+			}
+		}
+
+		&.open>.title::before {
+			transform: rotate(90deg);
 		}
 
 		* {

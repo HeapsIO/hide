@@ -1412,8 +1412,8 @@ kit-root kit-category {
 }
 kit-root kit-category > .title {
   background-color: #323232;
+  display: flex;
   border-radius: 4px;
-  text-align: center;
   cursor: pointer;
   user-select: none;
   padding: 1px;
@@ -1434,6 +1434,23 @@ kit-root kit-category > .title input[type=button]:hover {
 kit-root kit-category > .title > .checkbox-wrapper {
   position: absolute;
   left: 5px;
+}
+kit-root kit-category > .title::before {
+  display: inline-block;
+  content: "";
+  margin: 2px;
+  width: 12px;
+  height: 12px;
+  transition: transform 0.2s;
+  background-color: currentColor;
+  mask-image: url("res/icons/svg/right_caret.svg");
+  mask-position: center;
+  mask-repeat: no-repeat;
+  mask-size: contain;
+  pointer-events: all;
+}
+kit-root kit-category.open > .title::before {
+  transform: rotate(90deg);
 }
 kit-root kit-category * {
   box-sizing: border-box;
