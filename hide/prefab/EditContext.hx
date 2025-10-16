@@ -4,15 +4,23 @@ package hide.prefab;
 import hrt.prefab.Prefab;
 #end
 
-class EditContext {
+class EditContext implements hide.kit.EditorAPI {
 	#if !macro
 
-	public var rootPrefab : hrt.prefab.Prefab;
-	public var kitRoot: hide.kit.KitRoot;
+
 
 	#if editor
 
 	public var hideKitRoot: hide.kit.Element;
+
+	public var rootPrefab : hrt.prefab.Prefab;
+	public var kitRoot: hide.kit.KitRoot;
+
+	var undo : hide.ui.UndoHistory;
+
+	public function new(undo: hide.ui.UndoHistory) {
+		this.undo = undo;
+	}
 
 	/**
 		list of functions to call in the sceneEditor `update()`
@@ -23,6 +31,7 @@ class EditContext {
 	public var scene : hide.comp.Scene;
 	public var properties : hide.comp.PropsEditor;
 	public var cleanups : Array<Void->Void>;
+
 	function get_ide() return hide.Ide.inst;
 
 	public function onChange(p : Prefab, propName : String) {
@@ -70,8 +79,7 @@ class EditContext {
 
 	#end
 
-	public function new() {
-	}
+
 
 	/*public function getContext( p : Prefab ) {
 		return rootContext.shared.contexts.get(p);
@@ -136,10 +144,24 @@ class EditContext {
 
 		return out;
 	}
+
+	public function recordUndo(cb: (isUndo:Bool) -> Void) {
+		undo.change(Custom(cb));
+	}
+
+	public function refreshInspector() : Void {
+		rebuildProperties();
+	}
+
+	#else
+	public function recordUndo(cb: (isUndo:Bool) -> Void) {
+	}
+
+	public function refreshInspector() : Void {
+	}
 	#end
 
 	public macro function build(ethis: haxe.macro.Expr, dml: haxe.macro.Expr, ?contextObj: haxe.macro.Expr, ?parentElement: haxe.macro.Expr.ExprOf<#if !macro hide.kit.Element #else Dynamic #end> ) : haxe.macro.Expr {
 		return hide.kit.Macros.build(macro $ethis.kitRoot, dml, contextObj, parentElement);
 	}
-
 }

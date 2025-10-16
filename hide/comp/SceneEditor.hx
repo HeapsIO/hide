@@ -394,8 +394,8 @@ class SceneEditorContext extends hide.prefab.EditContext {
 	public var rootObjects2D(default, null): Array<h2d.Object>;
 	public var rootElements(default, null): Array<PrefabElement>;
 
-	public function new(elts, editor) {
-		super();
+	public function new(undo, elts, editor) {
+		super(undo);
 		this.editor = editor;
 		this.updates = @:privateAccess editor.updates;
 		this.elements = elts;
@@ -4022,7 +4022,7 @@ class SceneEditor {
 					var multiProps = new hide.comp.PropsEditor(null, null, new Element("<div>"));
 					multiProps.isShadowEditor = true;
 					edit.properties.multiPropsEditor.push(multiProps);
-					var ctx = new SceneEditorContext([prefab], this);
+					var ctx = new SceneEditorContext(undo, [prefab], this);
 					ctx.properties = multiProps;
 					ctx.scene = this.scene;
 					prefab.edit(ctx);
@@ -4128,7 +4128,7 @@ class SceneEditor {
 	}
 
 	function makeEditContext(elts : Array<PrefabElement>) : SceneEditorContext {
-		var edit : SceneEditorContext = new SceneEditorContext(elts, this);
+		var edit : SceneEditorContext = new SceneEditorContext(undo, elts, this);
 
 		edit.rootPrefab = sceneData;
 		edit.properties = properties;
@@ -4196,20 +4196,11 @@ class SceneEditor {
 					var proxyPrefab = Type.createInstance(commonClass, [null, new ContextShared()]);
 					proxyPrefab.load(haxe.Json.parse(haxe.Json.stringify(elts[0].save())));
 
-					var editorApi = new hide.kit.EditorAPI();
-
-					editorApi.recordUndo = (callback) -> {
-						undo.change(Custom(callback));
-					}
-					editorApi.refreshInspector = () -> {
-						edit.rebuildProperties();
-					}
-
-					var baseRoot = new hide.kit.KitRoot(null, null, proxyPrefab, editorApi);
+					var baseRoot = new hide.kit.KitRoot(null, null, proxyPrefab, edit);
 					edit.kitRoot = baseRoot;
 					proxyPrefab.edit2(edit);
 					for (i => select in selectedPrefabs) {
-						var childRoot = new hide.kit.KitRoot(null, null, select, editorApi);
+						var childRoot = new hide.kit.KitRoot(null, null, select, edit);
 						baseRoot.editedPrefabsProperties.push(childRoot);
 						edit.kitRoot = childRoot;
 						select.edit2(edit);

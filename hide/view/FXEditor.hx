@@ -25,8 +25,8 @@ typedef Section = {
 @:access(hide.view.FXEditor)
 class FXEditContext extends hide.prefab.EditContext {
 	var parent : FXEditor;
-	public function new(parent) {
-		super();
+	public function new(undo, parent) {
+		super(undo);
 		this.parent = parent;
 	}
 	override function onChange(p, propName) {
@@ -550,7 +550,7 @@ class FXEditor extends hide.view.FileView {
 		previewMax = data.duration == 0 ? 5000 : data.duration;
 
 		{
-			var edit = new FXEditContext(this);
+			var edit = new FXEditContext(undo, this);
 			edit.properties = fxprops;
 			edit.scene = sceneEditor.scene;
 			edit.cleanups = [];
