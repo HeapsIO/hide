@@ -38,13 +38,13 @@ class TriplanarParams extends ShaderNodeHxsl {
 			var normal = MODE == 0 ? transformedNormal : input.normal;
 			var position = MODE == 1 ? relativePosition.xyz : transformedPosition.xyz;
 			if ( MODE == 2 ) {
-				var scaleX = length(vec3(global.modelView[0].x,global.modelView[1].x,global.modelView[2].x));
-				var scaleY = length(vec3(global.modelView[0].y,global.modelView[1].y,global.modelView[2].y));
-				var scaleZ = length(vec3(global.modelView[0].z,global.modelView[1].z,global.modelView[2].z));
-				var scale = vec3(scaleX, scaleY, scaleZ);
-				position -= vec3(global.modelView[0].w, global.modelView[1].w, global.modelView[2].w);
-				position = position * global.modelViewInverse.mat3x4();
-				position *= scale;
+				var scaleRot = global.modelView.mat3();
+				var rot = mat3(
+					normalize(vec3(scaleRot[0].x, scaleRot[1].x, scaleRot[2].x)),
+					normalize(vec3(scaleRot[0].y, scaleRot[1].y, scaleRot[2].y)),
+					normalize(vec3(scaleRot[0].z, scaleRot[1].z, scaleRot[2].z))
+				);
+				position = position * rot;
 			}
 			weight = pow(abs(normal), vec3(sharpness));
 			weight = weight / (weight.x + weight.y + weight.z);
