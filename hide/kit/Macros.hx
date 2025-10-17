@@ -20,49 +20,87 @@ typedef BuildExprArgs = {
 **/
 
 class Macros {
-	#if macro
-	public static function build(properties: Expr, dml: Expr, ?contextObj: Expr, ?parentElement: Expr ) : Expr {
+	/** Used for unit tests to ensure that dml errors are correctly handled **/
+	public static macro function testError(dml : Expr, contextObj: Expr, wantedErrorExpr: ExprOf<String>) : Expr {
+		var error = "No Error";
+		var errorExpr = switch(wantedErrorExpr.expr) {
+			case EConst(CString(e, kind)): e;
+			default: throw "wantedError must be a string";
+		}
+
 		try {
-			switch (dml.expr) {
-				case EMeta({name :":markup"} ,{expr: EConst(CString(dmlString))}): {
-					var parser = new domkit.MarkupParser();
-					var pinf = Context.getPosInfos(dml.pos);
-					var markup = parser.parse(dmlString, pinf.file, pinf.min).children[0];
-
-					var args : BuildExprArgs = {
-						markup: markup,
-						outputExprs: [],
-						parent: parentElement.expr.match(EConst(CIdent("null"))) ? properties : parentElement,
-						contextObj: contextObj,
-						globalElements: [],
-					}
-
-					buildExpr(args);
-
-					// trick to declare the globalElement variables in the parent scope
-					// as one expression
-					var initVar : Var = {
-						name: "__kit_init",
-						expr: macro {
-							$b{args.outputExprs};
-							true;
-						}
-					};
-
-					args.globalElements.push(initVar);
-
-					return {expr: EVars(args.globalElements), pos: Context.currentPos()};
-				}
-				default:
-					Context.error("Should be a DML Expression", dml.pos);
-					return null;
+			buildDml(macro new hide.kit.KitRoot(null, null, contextObj, null), dml, contextObj, macro null);
+		} catch (e: domkit.Error) {
+			if (e.message == errorExpr) {
+				return macro {};
 			}
+			error = e.message;
+		}
+		Context.error('Assert error failed, wanted "$errorExpr", got "$error"', dml.pos);
+		return macro {};
+	}
+
+	public static macro function testNoError(dml : Expr, contextObj: Expr) : Expr {
+		try {
+			buildDml(macro new hide.kit.KitRoot(null, null, contextObj, null), dml, contextObj, macro null);
+		} catch (e: domkit.Error) {
+			Context.error('Assert error failed, wanted no errors, got "${e.message}"', @:privateAccess domkit.Macros.makePos(dml.pos,e.pmin,e.pmax));
+			return macro {};
+		}
+		return macro {};
+	}
+
+	#if macro
+	public static function build(properties: Expr, dml: Expr, ?contextObj: Expr, parentElement: Expr ) : Expr {
+		try {
+			return buildDml(properties, dml, contextObj, parentElement);
 		}
 		catch (e : domkit.Error) {
 			haxe.macro.Context.error(e.message, @:privateAccess domkit.Macros.makePos(dml.pos,e.pmin,e.pmax));
 		}
-		return null;
+		return macro {};
 
+	}
+
+	static function buildDml(properties: Expr, dml: Expr, ?contextObj: Expr, parentElement: Expr) : Expr {
+		switch (dml.expr) {
+			case EMeta({name :":markup"} ,{expr: EConst(CString(dmlString))}): {
+				var parser = new domkit.MarkupParser();
+				var pinf = Context.getPosInfos(dml.pos);
+				var markup = parser.parse(dmlString, pinf.file, pinf.min).children[0];
+
+				var args : BuildExprArgs = {
+					markup: markup,
+					outputExprs: [],
+					parent: parentElement.expr.match(EConst(CIdent("null"))) ? properties : parentElement,
+					contextObj: contextObj,
+					globalElements: [],
+				}
+
+				buildExpr(args);
+
+				// trick to declare the globalElement variables in the parent scope
+				// as one expression
+				var initVar : Var = {
+					name: "__kit_init",
+					expr: macro {
+						$b{args.outputExprs};
+						true;
+					}
+				};
+
+				args.globalElements.push(initVar);
+
+				return {expr: EVars(args.globalElements), pos: Context.currentPos()};
+			}
+			default:
+				error("dml argument should be a DML Expression", dml.pos.getInfos().min, dml.pos.getInfos().max);
+				return null;
+		}
+	}
+
+	static function makeStringExpr(string: String, pos: Position) : Expr {
+		return {expr: EConst(CString(string)), pos: pos};
 	}
 
 	static function buildExpr(args: BuildExprArgs) : Void {
@@ -76,7 +114,7 @@ class Macros {
 				var elementPath = "hide.kit." + elementName;
 
 				var elementType = try Context.getType(elementPath) catch(e) {
-					error("hide-kit element " + elementName + " doesn't exist", args.markup.pmin, args.markup.pmax);
+					error("hide-kit element " + elementPath + " doesn't exist", args.markup.pmin, args.markup.pmax);
 					return;
 				};
 
@@ -100,26 +138,40 @@ class Macros {
 						error("type " + elementPath + " is not a class", args.markup.pmin, args.markup.pmax);
 				}
 
-				var kitId: String = null;
 				var codeId: String = null;
-				var label: String = null;
 				var field: String = null;
 				var fieldLabelAttribute = null;
+
+				var label: ExprOf<String> = null;
+				var kitId: ExprOf<String> = null;
 
 				var fieldsAttributes = [];
 
 				for (attribute in args.markup.attributes ?? []) {
-					var valueString = switch(attribute.value) {
-						case RawValue(s): s;
-						default:
-							null;
+					var valueString : String = null;
+					var valueExpr : ExprOf<String> = null;
+
+					switch(attribute.value) {
+						case RawValue(s):
+							valueString = s;
+							valueExpr = makeStringExpr(s,pos);
+						case Code(expr):
+							var typedExpr = Context.typeExpr(expr);
+							if (typedExpr.t.toString() == "String") {
+								valueExpr = expr;
+							}
+							switch (expr.expr) {
+								case EConst(CString(s)):
+									valueString = s;
+								default:
+							}
 					}
 
 					switch(attribute.name) {
 						case "label":
-							if (valueString == null)
-								error("label value must be a const string", attribute.pmin, attribute.pmax);
-							label = valueString;
+							if (valueExpr == null)
+								error("label value must be string expression or a string constant", attribute.pmin, attribute.pmax);
+							label = valueExpr;
 							fieldsAttributes.push(attribute);
 						case "id":
 							if (valueString == null)
@@ -128,7 +180,7 @@ class Macros {
 							if (args.globalElements.find((otherVar) -> otherVar.name == codeId) != null) {
 								error("A component with the id " + codeId + " already exists in this build", attribute.pmin, attribute.pmax);
 							}
-							kitId = domkit.CssParser.cssToHaxe(valueString, true);
+							kitId = makeStringExpr(domkit.CssParser.cssToHaxe(valueString, true), pos);
 						case "default":
 							// special case for "default" because default is a reserved keyword in haxe
 							attribute.name = "defaultValue";
@@ -167,16 +219,16 @@ class Macros {
 				}
 
 				if (label == null && field != null) {
-					label = camelToSpaceCase(field);
+					label = makeStringExpr(camelToSpaceCase(field), pos);
 					fieldsAttributes.push(fieldLabelAttribute);
-					fieldLabelAttribute.value = domkit.MarkupParser.AttributeValue.RawValue(label);
+					fieldLabelAttribute.value = domkit.MarkupParser.AttributeValue.Code(label);
 				}
 
 				if (kitId == null) {
 					if (label != null) {
-						kitId = toInternalIdentifier(label);
+						kitId = macro @:privateAccess hide.kit.Macros.toInternalIdentifier(${label});
 					} else {
-						kitId = '#${elementName}';
+						kitId = makeStringExpr('#${elementName}', pos);
 					}
 				}
 
@@ -197,12 +249,12 @@ class Macros {
 
 				var newArguments : Array<Expr> = [];
 				newArguments.push(args.parent);
-				newArguments.push({expr: EConst(CString(kitId)), pos: pos});
+				newArguments.push(kitId);
 
 				for (argumentNo => argument in args.markup.arguments) {
 					switch(argument.value) {
 						case RawValue(string):
-							newArguments.push({expr: EConst(CString(string)), pos: pos});
+							newArguments.push(makeStringExpr(string, pos));
 						case Code(haxeExpr):
 							newArguments.push(haxeExpr);
 					}
