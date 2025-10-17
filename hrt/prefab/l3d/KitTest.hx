@@ -141,6 +141,7 @@ class KitTest extends Object3D {
 					<category("All Elements Kit")>
 						<text("Text")/>
 						<slider label="Slider" value={12.34}/>
+						<slider label="Slider Exp" value={12.34} exp={0.001}/>
 						<range(0.0, 100.0) label="Range" value={12.34}/>
 						<line>
 							<slider label="A" value={12.34}/>

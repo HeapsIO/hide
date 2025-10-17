@@ -9,7 +9,8 @@ class Slider extends Widget<Float> {
 
 	public var min(default, set) : Null<Float> = null;
 	public var max(default, set) : Null<Float> = null;
-	public var step : Float = 1.0;
+	public var step : Null<Float> = 0.1;
+	public var exp : Null<Float> = null;
 	public var wrap: Bool = false;
 	var showRange: Bool = false;
 
@@ -41,10 +42,32 @@ class Slider extends Widget<Float> {
 			e.preventDefault();
 			e.stopPropagation();
 
-			var mult = step;
-			if (e.ctrlKey) mult *= 10.0;
-			if (e.shiftKey) mult /= 10.0;
-			var newValue = value + e.movementX * mult;
+			var currentValue = value;
+
+			var newValue = value;
+
+			if (exp != null) {
+				var mult = exp;
+				if (e.ctrlKey) mult *= 10.0;
+				if (e.shiftKey) mult /= 10.0;
+
+				newValue = value * hxd.Math.exp(e.movementX * mult);
+			} else {
+				var mult = step;
+
+				if (step == null) {
+					if (min == null && max == null) {
+						var currentStep = hxd.Math.floor(hxd.Math.max(hxd.Math.log10(hxd.Math.abs(currentValue)), -3));
+						mult = hxd.Math.pow(10.0, currentStep-1);
+					} else {
+						var currentStep = hxd.Math.floor(hxd.Math.log10(hxd.Math.abs(max-min)));
+						mult = hxd.Math.pow(10.0, currentStep-2);
+					}
+				}
+				if (e.ctrlKey) mult *= 10.0;
+				if (e.shiftKey) mult /= 10.0;
+				newValue = value + e.movementX * mult;
+			}
 
 			if (wrap && min != null && max !=null) {
 				var size = max - min;

@@ -62,7 +62,7 @@ class Input extends Widget<String> {
 	override function syncValueUI() {
 		#if js
 		if (input != null)
-			(cast input: js.html.InputElement).value = value;
+			(cast input: js.html.InputElement).value = value ?? "";
 		#end
 	}
 
