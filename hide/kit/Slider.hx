@@ -45,13 +45,14 @@ class Slider extends Widget<Float> {
 			var currentValue = value;
 
 			var newValue = value;
+			var delta = e.movementX / js.Browser.window.devicePixelRatio;
 
 			if (exp != null) {
 				var mult = exp;
 				if (e.ctrlKey) mult *= 10.0;
 				if (e.shiftKey) mult /= 10.0;
 
-				newValue = value * hxd.Math.exp(e.movementX * mult);
+				newValue = value * hxd.Math.exp(delta * mult);
 			} else {
 				var mult = step;
 
@@ -66,7 +67,7 @@ class Slider extends Widget<Float> {
 				}
 				if (e.ctrlKey) mult *= 10.0;
 				if (e.shiftKey) mult /= 10.0;
-				newValue = value + e.movementX * mult;
+				newValue = value + delta * mult;
 			}
 
 			if (wrap && min != null && max !=null) {
