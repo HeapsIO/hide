@@ -498,6 +498,10 @@ class ShaderEditor extends hide.view.FileView implements GraphInterface.IGraphEd
 					label : "Print Complete Shader code to Console",
 					click: () -> trace(hxsl.Printer.shaderToString(shaderGraph.compile(null).shader.data, true))
 				},
+				{
+					label : "Print Complete Shader code to Console (no ID)",
+					click: () -> trace(hxsl.Printer.shaderToString(shaderGraph.compile(null).shader.data, false))
+				},
 			]);
 		});
 
