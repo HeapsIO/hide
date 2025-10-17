@@ -1718,7 +1718,7 @@ kit-root {
 			margin-left: 0.2em;
 		}
 
-		kit-label:empty {
+		kit-label:empty:not(.first) {
 			display: none;
 		}
 
@@ -1886,6 +1886,7 @@ kit-root {
 			border-radius: var(--basic-border-radius);
 			background-color: var(--widget-bg);
 			text-align: center;
+			height: var(--widget-height);
 
 			align-self: stretch;
 
