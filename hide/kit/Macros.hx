@@ -9,7 +9,6 @@ using Lambda;
 typedef BuildExprArgs = {
 	parent: Expr,
 	contextObj: Expr,
-	autoIdCount: Int,
 	globalElements: Array<Var>,
 	markup: domkit.MarkupParser.Markup,
 	outputExprs: Array<Expr>,
@@ -35,7 +34,6 @@ class Macros {
 						outputExprs: [],
 						parent: parentElement.expr.match(EConst(CIdent("null"))) ? properties : parentElement,
 						contextObj: contextObj,
-						autoIdCount: 0,
 						globalElements: [],
 					}
 
@@ -74,7 +72,7 @@ class Macros {
 
 		switch(args.markup.kind) {
 			case Node(nodeName): {
-				var elementName = kebabToCamelCase(nodeName, true);
+				var elementName = domkit.CssParser.cssToHaxe(nodeName, false);
 				var elementPath = "hide.kit." + elementName;
 
 				var elementType = try Context.getType(elementPath) catch(e) {
@@ -126,11 +124,11 @@ class Macros {
 						case "id":
 							if (valueString == null)
 								error("id value must be a const string", attribute.pmin, attribute.pmax);
-							codeId = kebabToCamelCase(valueString);
+							codeId = domkit.CssParser.cssToHaxe(valueString, true);
 							if (args.globalElements.find((otherVar) -> otherVar.name == codeId) != null) {
 								error("A component with the id " + codeId + " already exists in this build", attribute.pmin, attribute.pmax);
 							}
-							kitId = kebabToCamelCase(valueString);
+							kitId = domkit.CssParser.cssToHaxe(valueString, true);
 						case "default":
 							// special case for "default" because default is a reserved keyword in haxe
 							attribute.name = "defaultValue";
@@ -178,8 +176,7 @@ class Macros {
 					if (label != null) {
 						kitId = toInternalIdentifier(label);
 					} else {
-						kitId = '#${args.autoIdCount}';
-						args.autoIdCount += 1;
+						kitId = '#${elementName}';
 					}
 				}
 
@@ -279,7 +276,6 @@ class Macros {
 							outputExprs: [],
 							markup: childMarkup,
 							globalElements: args.globalElements,
-							autoIdCount: childIndex,
 							contextObj: args.contextObj,
 						};
 
@@ -309,25 +305,6 @@ class Macros {
 		return Context.makePosition({ min : pmin, max : pmax, file : p0.file });
 	}
 	#end
-
-	static function kebabToCamelCase(str: String, pascalCase: Bool = false) : String {
-		var wasDash = pascalCase;
-		var finalString = "";
-		for (charIndex in 0...str.length) {
-			var char = str.charAt(charIndex);
-			if (char == "-") {
-				wasDash = true;
-				continue;
-			}
-			if (wasDash) {
-				finalString += char.toUpperCase();
-			} else {
-				finalString += char;
-			}
-			wasDash = false;
-		}
-		return finalString;
-	}
 
 	static function camelToSpaceCase(str:String):String {
 		var wasCap = false;
