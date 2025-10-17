@@ -267,6 +267,56 @@ class KitTest extends Object3D {
 
 				}
 			}
+
+			// DML TESTS
+			hide.kit.Macros.testError(
+				"c'est pas du dml", this, "dml argument should be a DML Expression"
+			);
+
+			hide.kit.Macros.testError(
+				<unknown-component/>, this, "hide-kit element hide.kit.UnknownComponent doesn't exist"
+			);
+
+			// LABEL RELATED TESTS
+
+			hide.kit.Macros.testNoError(
+				<range label="label"/>, this
+			);
+
+			{
+				var monLabel = "label";
+				hide.kit.Macros.testNoError(
+					<range label={monLabel}/>, this
+				);
+			}
+
+			hide.kit.Macros.testError(
+				<range label={123}/>, this, "label value must be string expression or a string constant"
+			);
+
+			// Can't test this because the error is a hide error after the codegen pass is done
+			// hide.kit.Macros.testError(
+			// 	<range label={unknownVariable}/>, this, "label value must be string expression or a string constant"
+			// );
+
+			// ID Related tests
+
+			hide.kit.Macros.testNoError(
+				<range id="id"/>, this
+			);
+
+			hide.kit.Macros.testNoError(
+				<range id={"id"}/>, this
+			);
+
+			// Id must be comptime known
+			{
+				var id = "id";
+				hide.kit.Macros.testError(
+					<range id={id}/>, this, "id value must be a const string"
+				);
+			}
+
 		}
 	}
 
