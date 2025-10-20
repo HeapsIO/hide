@@ -3963,10 +3963,6 @@ class SceneEditor {
 		return false;
 	}
 
-	function fillProps2(edit : SceneEditorContext, proxy : PrefabElement, selection: Array<PrefabElement>) {
-
-	}
-
 	function fillProps(edit : SceneEditorContext, e : PrefabElement, others: Array<PrefabElement> ) {
 		properties.element.append(new Element('<h1 class="prefab-name">${e.getHideProps().name}</h1>'));
 
@@ -6340,10 +6336,4 @@ class SceneEditor {
 		contextMenuExtRegistry.set(cast cl, callback);
 		return 0;
 	}
-
-
-	static var useEdit2 : Array<Class<hrt.prefab.Prefab>> = [
-		hrt.prefab.l3d.KitTest,
-		Object3D,
-	];
 }
