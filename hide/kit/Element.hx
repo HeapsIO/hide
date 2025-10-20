@@ -2,6 +2,7 @@ package hide.kit;
 
 @:keepSub
 class Element {
+	#if !macro
 	var parent(default, null) : Element;
 
 	/**
@@ -318,5 +319,10 @@ class Element {
 			newId = id + count;
 		}
 		return newId;
+	}
+	#end
+
+	public macro function build(ethis: haxe.macro.Expr, dml: haxe.macro.Expr, ?contextObj: haxe.macro.Expr) : haxe.macro.Expr {
+		return hide.kit.Macros.build(ethis, dml, contextObj);
 	}
 }
