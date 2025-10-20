@@ -20,7 +20,6 @@ class GenFogFunc extends hrt.shader.PbrShader {
 			var position : Vec3;
 
 			var useNoise : Bool;
-			var noiseTex : Sampler2D;
 			var noiseScale : Float;
 			var noiseSpeed : Float;
 			var noiseAmount : Vec3;
