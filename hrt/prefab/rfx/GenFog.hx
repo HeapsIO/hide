@@ -30,8 +30,8 @@ class GenFogFunc extends hrt.shader.PbrShader {
 			var dotThreshold : Float;
 		}
 
-		function applyNoise(origin : Vec3) : Vec3 {
-			var noise = fogParams.noiseTex.get( origin.xy * fogParams.noiseScale + vec2(global.time * fogParams.noiseSpeed, fogParams.noiseScale * origin.z) * vec2(1,-1) );
+		function applyNoise(origin : Vec3, sampler : Sampler2D) : Vec3 {
+			var noise = sampler.get( origin.xy * fogParams.noiseScale + vec2(global.time * fogParams.noiseSpeed, fogParams.noiseScale * origin.z) * vec2(1,-1) );
 			return origin + (noise.rgb - 0.5) * fogParams.noiseAmount;
 		}
 
@@ -105,7 +105,6 @@ class GenFogShader extends hrt.shader.PbrShader {
 			fogParams.endColor = endColor;
 			fogParams.usePosition = usePosition;
 			fogParams.position = position;
-			fogParams.noiseTex = noiseTex;
 			fogParams.noiseScale = noiseScale;
 			fogParams.noiseSpeed = noiseSpeed;
 			fogParams.noiseAmount = noiseAmount;
@@ -121,7 +120,7 @@ class GenFogShader extends hrt.shader.PbrShader {
 			var amount = 0.;
 
 			if (useNoise)
-				origin = applyNoise(origin);
+				origin = applyNoise(origin, noiseTex);
 			amount = applyDistanceOpacity(amount, origin);
 			amount = applyHeightOpacity(amount, origin);
 			var fogColor = getFogColor(amount, origin);
@@ -196,7 +195,6 @@ class GenFogBlendShader extends hrt.shader.PbrShader {
 			fogParams.endColor = endColor1;
 			fogParams.usePosition = usePosition1;
 			fogParams.position = position1;
-			fogParams.noiseTex = noiseTex1;
 			fogParams.noiseScale = noiseScale1;
 			fogParams.noiseSpeed = noiseSpeed1;
 			fogParams.noiseAmount = noiseAmount1;
@@ -217,7 +215,6 @@ class GenFogBlendShader extends hrt.shader.PbrShader {
 			fogParams.endColor = endColor2;
 			fogParams.usePosition = usePosition2;
 			fogParams.position = position2;
-			fogParams.noiseTex = noiseTex2;
 			fogParams.noiseScale = noiseScale2;
 			fogParams.noiseSpeed = noiseSpeed2;
 			fogParams.noiseAmount = noiseAmount2;
@@ -231,7 +228,7 @@ class GenFogBlendShader extends hrt.shader.PbrShader {
 			var origin = getPosition();
 			var amount = 0.;
 			if (useNoise1)
-				origin = applyNoise(origin);
+				origin = applyNoise(origin, noiseTex1);
 			amount = applyDistanceOpacity(amount, origin);
 			amount = applyHeightOpacity(amount, origin);
 			var fogColor1 = getFogColor(amount, origin);
@@ -240,7 +237,7 @@ class GenFogBlendShader extends hrt.shader.PbrShader {
 			origin = getPosition();
 			amount = 0.;
 			if (useNoise2)
-				origin = applyNoise(origin);
+				origin = applyNoise(origin, noiseTex2);
 			amount = applyDistanceOpacity(amount, origin);
 			amount = applyHeightOpacity(amount, origin);
 			var fogColor2 = getFogColor(amount, origin);
