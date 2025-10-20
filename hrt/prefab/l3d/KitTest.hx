@@ -182,15 +182,15 @@ class KitTest extends Object3D {
 					</category>,
 				this);
 
-				root.build(<image-button("textures/dirt01.jpg") big/>, null, parentLine);
-				root.build(<image-button("textures/dirt01.jpg") big/>, null, parentLine);
-				root.build(<image-button("textures/dirt01.jpg") big/>, null, parentLine);
-				root.build(<image-button("textures/dirt01.jpg") big/>, null, parentLine);
-				root.build(<image-button("textures/dirt01.jpg") huge/>, null, parentLine);
-				root.build(<image-button("textures/dirt01.jpg") huge/>, null, parentLine);
+				parentLine.build(<image-button("textures/dirt01.jpg") big/>, null);
+				parentLine.build(<image-button("textures/dirt01.jpg") big/>, null);
+				parentLine.build(<image-button("textures/dirt01.jpg") big/>, null);
+				parentLine.build(<image-button("textures/dirt01.jpg") big/>, null);
+				parentLine.build(<image-button("textures/dirt01.jpg") huge/>, null);
+				parentLine.build(<image-button("textures/dirt01.jpg") huge/>, null);
 
 				for (i in 0...5) {
-					root.build(<button({'$i';}) id="button"/>, null, addToMe);
+					addToMe.build(<button({'$i';}) id="button"/>, null);
 					button.onClick = () -> trace('onclick $i');
 				}
 
