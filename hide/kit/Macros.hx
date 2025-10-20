@@ -248,7 +248,7 @@ class Macros {
 				var elementVar : Var;
 				var isGlobal = false;
 				if (elementPublicId != null) {
-					elementVar = {name: elementPublicId, type: elementType.toComplexType()};
+					elementVar = {name: elementPublicId, type: elementType.toComplexType(), expr: macro null};
 					args.globalElements.push(elementVar);
 					isGlobal = true;
 				} else {
@@ -347,7 +347,7 @@ class Macros {
 					}
 
 					block.push(macro @:pos(pos) $elementExpr.value = $field);
-					block.push(macro @:pos(pos) $elementExpr.onValueChange = function(temp:Bool) {$field = $elementExpr.value;});
+					block.push(macro @:pos(pos) @:privateAccess $elementExpr.onFieldChange = (temp:Bool) -> $field = $elementExpr.value);
 				}
 
 				var hasChildren = args.markup.children?.length > 0;
