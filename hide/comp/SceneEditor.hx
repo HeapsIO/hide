@@ -4178,27 +4178,49 @@ class SceneEditor {
 			if (elts.length == 0 || (customPivot != null && customPivot.elt != selectedPrefabs[0])) {
 				customPivot = null;
 			}
+
+
 			properties.clear();
+
 			if( elts.length > 0 ) {
 				var commonClass = hrt.tools.ClassUtils.getCommonClass(elts, hrt.prefab.Prefab);
 				var parentClass = Type.getSuperClass(commonClass);
-				var useNewEditor = false;
+				var hasNewInspector = false;
 
 				if (parentClass != null) {
 					if (Reflect.field(Type.createEmptyInstance(commonClass), "edit2") != Reflect.field(Type.createEmptyInstance(parentClass), "edit2")) {
-						useNewEditor = true;
+						hasNewInspector = true;
 					}
 				}
 
-				if (useNewEditor) {
+				var allowNewInspector = Ide.inst.currentConfig.get("sceneeditor.newInspector", false);
+
+				var toggle = null;
+				if (hasNewInspector) {
+					toggle = new Element('<div class="new-editor-prompt-toggle"><label for="new-edit-toggle">Use new inspector</label><input name="new-edit-toggle" type="checkbox"></input></div>');
+					var checkbox : js.html.InputElement = cast toggle.find("input").get(0);
+					checkbox.checked = allowNewInspector;
+					checkbox.onchange = () -> {
+						Ide.inst.currentConfig.set("sceneeditor.newInspector", checkbox.checked);
+						Ide.inst.currentConfig.save();
+						refreshProps();
+					}
+
+					properties.element.append(toggle);
+				}
+
+
+				if (hasNewInspector && allowNewInspector) {
 					properties.element.removeClass("hide-properties");
 					properties.element.removeClass("props");
+					toggle.addClass("margin");
 					var proxyPrefab = Type.createInstance(commonClass, [null, new ContextShared()]);
 					proxyPrefab.load(haxe.Json.parse(haxe.Json.stringify(elts[0].save())));
 
 					var baseRoot = new hide.kit.KitRoot(null, null, proxyPrefab, edit);
 					edit.saveKey = Type.getClassName(commonClass);
 					edit.kitRoot = baseRoot;
+
 					proxyPrefab.edit2(edit);
 					for (i => select in selectedPrefabs) {
 						var childRoot = new hide.kit.KitRoot(null, null, select, edit);

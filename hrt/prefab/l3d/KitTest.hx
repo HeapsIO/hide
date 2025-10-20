@@ -1,5 +1,10 @@
 package hrt.prefab.l3d;
 
+typedef SubStruct = {
+	innerValue: Float,
+	?rec: SubStruct,
+};
+
 class KitTest extends Object3D {
 
 	override function makeObject(parent3d: h3d.scene.Object) : h3d.scene.Object {
@@ -22,6 +27,7 @@ class KitTest extends Object3D {
 	@:s var select : String;
 	@:s var checkbox: Bool;
 	@:s var texture: Dynamic;
+	var substruct: SubStruct = { innerValue: 0.0, };
 
 	#if js
 	override function edit2(ctx:hide.prefab.EditContext) {
@@ -41,11 +47,14 @@ class KitTest extends Object3D {
 			}
 
 
+			var localVar = 42.0;
 			ctx.build(
 				<category("hello") id="hello">
 					<text("world")/>
 					<slider label="Slider" id="slider" min="-10" max="10"/>
 					<slider label="Slider Conditional" id="slider-conditionnal" min="-10" max="10" if(inputString != null)/>
+					<slider label="Slider Local" field={localVar}/>
+
 					<select(["Fire", "Water", "Air", "Earth"]) label="Choice" id="choice"/>
 					<select(getChoiceList()) label="Choice" id="choice2"/>
 					<button("Click me") onClick={onButtonClick} id="button1"/>
@@ -317,6 +326,80 @@ class KitTest extends Object3D {
 				);
 			}
 
+			// Field related tests
+
+			hide.kit.Macros.testNoError(
+				<range field={x}/>, this
+			);
+
+			hide.kit.Macros.testNoError(
+				<range field={this.x}/>, this
+			);
+
+			hide.kit.Macros.testNoError(
+				<range field={substruct.rec.innerValue}/>, this
+			);
+
+			{
+				var local : Float = 42.0;
+				hide.kit.Macros.testNoError(
+					<range field={local}/>, this
+				);
+			}
+
+			hide.kit.Macros.testError(
+				<range field="x"/>, this, "field must be an expression"
+			);
+
+			hide.kit.Macros.testError(
+				<range field={123}/>, this, "field must be an identifier expression or a structure field expression"
+			);
+
+			// Attributes related tests
+
+			// Parse string as correct type
+			hide.kit.Macros.testNoError(
+				<range min="0"/>, this
+			);
+
+			hide.kit.Macros.testError(
+				<range min="notANumber"/>, this, 'cannot convert "notANumber" to Float for attribute min'
+			);
+
+			hide.kit.Macros.testError(
+				<range unknown-attribute="true"/>, this, "unknown class field unknownAttribute"
+			);
+
+			hide.kit.Macros.testError(
+				<range unknown-attribute/>, this, "unknown class field unknownAttribute"
+			);
+
+			hide.kit.Macros.testNoError(
+				<line multiline/>, this,
+			);
+
+			hide.kit.Macros.testNoError(
+				<line multiline="false"/>, this,
+			);
+
+			hide.kit.Macros.testNoError(
+				<line multiline={true}/>, this,
+			);
+
+			{
+				var local = true;
+				hide.kit.Macros.testNoError(
+					<line multiline={local}/>, this
+				);
+			}
+
+			hide.kit.Macros.testNoError(
+				<line multiline="true"/>, this,
+			);
+
+			hide.kit.Macros.testError(
+				<line multiline="True"/>, this, 'cannot convert "True" to Bool for attribute multiline (must be either "true" or "false")'
+			);
 		}
 	}
 

@@ -1390,11 +1390,21 @@ input[type=checkbox].indeterminate:after {
   top: 30px;
   left: 200px;
 }
+.new-editor-prompt-toggle {
+  display: flex;
+  flex-direction: row-reverse;
+  gap: 0.5em;
+  justify-content: flex-end;
+}
+.new-editor-prompt-toggle.margin {
+  margin: 10px;
+  margin-bottom: 5px;
+}
 kit-root {
   --widget-height: 22px;
   --widget-bg: #2d2d2d;
   --widget-hover-bg: #3d3d3d;
-  --widget-gap: 3px;
+  --widget-gap: 2px;
   padding: 6px;
   min-height: 0;
   display: flex;
@@ -1560,7 +1570,6 @@ kit-root kit-line kit-file {
   text-shadow: 0px 1px 0px black;
   border-radius: 4px;
   background-color: var(--widget-bg);
-  box-shadow: inset 1px 1px 1px #111;
 }
 kit-root kit-line .texture-choice {
   display: flex;
@@ -1622,6 +1631,7 @@ kit-root kit-line input[type="checkbox"]:hover::after {
 }
 kit-root kit-line kit-slider {
   flex: 1 1;
+  display: flex;
   height: var(--widget-height);
   align-self: flex-start;
 }

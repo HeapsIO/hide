@@ -1,9 +1,9 @@
 package hide.kit;
 
 class Line extends Element {
-	public var label: String;
-	public var multiline: Bool = false;
-	public var full: Bool = false;
+	@:attr public var label: String;
+	@:attr public var multiline: Bool = false;
+	@:attr public var full: Bool = false;
 
 	#if js
 	public var labelElement: NativeElement;

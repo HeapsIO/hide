@@ -17,6 +17,13 @@ class KitRoot extends Element {
 		#if js
 		native = js.Browser.document.createElement("kit-root");
 
+		var title = js.Browser.document.createElement("kit-title");
+		var titleText = prefab.getHideProps().name;
+		if (editedPrefabsProperties.length > 1)
+			titleText += ' (${editedPrefabsProperties.length})';
+		title.textContent = titleText;
+		native.appendChild(title);
+
 		var toolbar = js.Browser.document.createElement("kit-toolbar");
 		native.appendChild(toolbar);
 		var copyButton = new hide.Element('<fancy-button title="Copy all properties">').append(new hide.Element('<div class="icon ico ico-copy">'))[0];

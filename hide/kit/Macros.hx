@@ -138,12 +138,14 @@ class Macros {
 						error("type " + elementPath + " is not a class", args.markup.pmin, args.markup.pmax);
 				}
 
-				var codeId: String = null;
-				var field: String = null;
+				var elementPublicId: String = null;
 				var fieldLabelAttribute = null;
 
 				var label: ExprOf<String> = null;
-				var kitId: ExprOf<String> = null;
+				var kitInternalId: ExprOf<String> = null;
+				var field: Expr = null;
+				var fieldName : String;
+				var fieldId : String;
 
 				var fieldsAttributes = [];
 
@@ -176,11 +178,11 @@ class Macros {
 						case "id":
 							if (valueString == null)
 								error("id value must be a const string", attribute.pmin, attribute.pmax);
-							codeId = domkit.CssParser.cssToHaxe(valueString, true);
-							if (args.globalElements.find((otherVar) -> otherVar.name == codeId) != null) {
-								error("A component with the id " + codeId + " already exists in this build", attribute.pmin, attribute.pmax);
+							elementPublicId = domkit.CssParser.cssToHaxe(valueString, true);
+							if (args.globalElements.find((otherVar) -> otherVar.name == elementPublicId) != null) {
+								error("A component with the id " + elementPublicId + " already exists in this build", attribute.pmin, attribute.pmax);
 							}
-							kitId = makeStringExpr(domkit.CssParser.cssToHaxe(valueString, true), pos);
+							kitInternalId = makeStringExpr(domkit.CssParser.cssToHaxe(valueString, true), pos);
 						case "default":
 							// special case for "default" because default is a reserved keyword in haxe
 							attribute.name = "defaultValue";
@@ -191,51 +193,63 @@ class Macros {
 								case Code(v):
 									switch(v.expr) {
 										case EConst(CIdent(s)):
-											s;
+											v;
+										case EField(_, _, _):
+											v;
 										default:
-											error("field must be an identifier expression", attribute.pmin, attribute.pmax);
+											error("field must be an identifier expression or a structure field expression", attribute.pmin, attribute.pmax);
 									};
 							};
-							fieldLabelAttribute = {name: "label", value: domkit.MarkupParser.AttributeValue.RawValue(field), pmin: attribute.pmin, pmax: attribute.pmax, vmin: attribute.vmin};
 
-							var isNull = args.contextObj.expr.match(EConst(CIdent("null")));
-							if (isNull)
-								error("contextObj must be not null for `field` to work", attribute.pmin, attribute.pmax);
+							fieldLabelAttribute = {name: "label", value: null, pmin: attribute.pmin, pmax: attribute.pmax, vmin: attribute.vmin};
 
-							var contextTyped = Context.typeExpr(args.contextObj);
-							var contextType = Context.follow(contextTyped.t);
-							switch(contextType) {
-								case TInst(classType, _):
-									var classField = classType.get().findField(field);
-									if (classField == null)
-										error("contextObj doesn't have a field named " + field, attribute.pmin, attribute.pmax);
-								case TDynamic(t):
-								default:
-									error("contextObj must be a dynamic or a class instance for field to work (got " + contextType.toString() + ")", attribute.pmin, attribute.pmax);
+							var expr = field;
+							var fieldPath: Array<String> = [];
+							while(expr != null) {
+								switch(expr.expr) {
+									case EConst(CIdent(s)):
+										fieldPath.unshift(s);
+										if (fieldName == null)
+											fieldName = s;
+										break;
+									case EField(parentExpr, partName):
+										if (fieldName == null)
+											fieldName = partName;
+										fieldPath.unshift(partName);
+										expr = parentExpr;
+									default:
+										throw "Internal error : field path contain unhandled cases";
+								}
 							}
+							fieldId = fieldPath.join(".");
+							if (fieldName == null)
+								throw "Internal error : fieldName shouldn't be null";
 						default:
 							fieldsAttributes.push(attribute);
 					}
 				}
 
 				if (label == null && field != null) {
-					label = makeStringExpr(camelToSpaceCase(field), pos);
+					label = makeStringExpr(camelToSpaceCase(fieldName), pos);
 					fieldsAttributes.push(fieldLabelAttribute);
 					fieldLabelAttribute.value = domkit.MarkupParser.AttributeValue.Code(label);
 				}
 
-				if (kitId == null) {
+				if (kitInternalId == null) {
+					if (fieldId != null) {
+						kitInternalId = makeStringExpr(fieldId, pos);
+					}
 					if (label != null) {
-						kitId = macro @:privateAccess hide.kit.Macros.toInternalIdentifier(${label});
+						kitInternalId = macro @:privateAccess hide.kit.Macros.toInternalIdentifier(${label});
 					} else {
-						kitId = makeStringExpr('#${elementName}', pos);
+						kitInternalId = makeStringExpr('#${elementName}', pos);
 					}
 				}
 
 				var elementVar : Var;
 				var isGlobal = false;
-				if (codeId != null) {
-					elementVar = {name: codeId, type: elementType.toComplexType()};
+				if (elementPublicId != null) {
+					elementVar = {name: elementPublicId, type: elementType.toComplexType()};
 					args.globalElements.push(elementVar);
 					isGlobal = true;
 				} else {
@@ -249,7 +263,7 @@ class Macros {
 
 				var newArguments : Array<Expr> = [];
 				newArguments.push(args.parent);
-				newArguments.push(kitId);
+				newArguments.push(kitInternalId);
 
 				for (argumentNo => argument in args.markup.arguments) {
 					switch(argument.value) {
@@ -271,22 +285,32 @@ class Macros {
 
 				for (attribute in fieldsAttributes) {
 					var attributePos = makePos(globalPos, attribute.pmin, attribute.pmax);
-					var field : Expr = {expr: EField(elementExpr, attribute.name), pos: attributePos};
-					var classField = classType.findField(attribute.name);
+					var fieldName = domkit.CssParser.cssToHaxe(attribute.name, true);
+					var fieldExpr : Expr = {expr: EField(elementExpr, fieldName), pos: attributePos};
+					var classField = classType.findField(fieldName);
+
+					if (classField == null)
+						error("unknown class field " + fieldName, attribute.pmin, attribute.pmax);
 
 					var valueExpr : Expr = switch (attribute.value) {
 						case RawValue(string):
-							if (classField == null)
-								error("unknown class field " + attribute.name, attribute.pmin, attribute.pmax);
 							switch(Context.follow(classField.type)) {
 								case TAbstract(a, params):
 									switch(a.toString())	{
 										case "Int":
+											var int = Std.parseInt(string);
+											if (int == null)
+												error('cannot convert "$string" to Int for attribute ${attribute.name}', attribute.pmin, attribute.pmax);
 											{expr: EConst(CInt(string)), pos: attributePos};
 										case "Float":
+											var float = Std.parseFloat(string);
+											if (Math.isNaN(float))
+												error('cannot convert "$string" to Float for attribute ${attribute.name}', attribute.pmin, attribute.pmax);
 											{expr: EConst(CFloat(string)), pos: attributePos};
 										case "Bool":
-											{expr: EConst(CIdent(string == "false" ? "false" : "true")), pos: attributePos};
+											if (string != "true" && string != "false")
+												error('cannot convert "$string" to Bool for attribute ${attribute.name} (must be either "true" or "false")', attribute.pmin, attribute.pmax);
+											{expr: EConst(CIdent(string)), pos: attributePos};
 										default:
 											error("unhandeld abstract " + a.toString(), attribute.pmin, attribute.pmax);
 									}
@@ -305,13 +329,26 @@ class Macros {
 						case null:
 							{expr: EConst(CIdent("true")), pos: attributePos};
 					};
-					var finalExpr = macro @:pos(attributePos) $field = $valueExpr;
+					var finalExpr = macro @:pos(attributePos) $fieldExpr = $valueExpr;
 					block.push(finalExpr);
 				}
 
 				if (field != null) {
-					block.push(macro @:pos(pos) $elementExpr.value = ${args.contextObj}.$field);
-					block.push(macro @:pos(pos) $elementExpr.onValueChange = function(temp:Bool) {${args.contextObj}.$field = $elementExpr.value;});
+					// if we have a context object, remap the expression so it's in the form
+					// contextObj.path.to.field
+					if (!args.contextObj.expr.match(EConst(CIdent("null")))) {
+						field = field.map((e) -> {
+							switch(e.expr) {
+								case EConst(CIdent(s)):
+									return {expr: EField(field, s), pos: e.pos}
+								default:
+									return e;
+							}
+						});
+					}
+
+					block.push(macro @:pos(pos) $elementExpr.value = $field);
+					block.push(macro @:pos(pos) $elementExpr.onValueChange = function(temp:Bool) {$field = $elementExpr.value;});
 				}
 
 				var hasChildren = args.markup.children?.length > 0;
