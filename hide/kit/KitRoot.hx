@@ -155,8 +155,4 @@ class KitRoot #if !macro extends Element #end {
 	}
 
 	#end
-
-	public macro function build(ethis: haxe.macro.Expr, dml: haxe.macro.Expr, ?contextObj: haxe.macro.Expr, ?parentElement: haxe.macro.Expr.ExprOf<#if !macro hide.kit.Element #else Dynamic #end> ) : haxe.macro.Expr {
-		return hide.kit.Macros.build(ethis, dml, contextObj, parentElement);
-	}
 }

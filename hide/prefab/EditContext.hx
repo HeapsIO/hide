@@ -178,8 +178,4 @@ class EditContext #if (editor && !macro) implements hide.kit.EditorAPI #end {
 		return 'inspector/$mid/$key';
 	}
 	#end
-
-	public macro function build(ethis: haxe.macro.Expr, dml: haxe.macro.Expr, ?contextObj: haxe.macro.Expr, ?parentElement: haxe.macro.Expr.ExprOf<#if !macro hide.kit.Element #else Dynamic #end> ) : haxe.macro.Expr {
-		return hide.kit.Macros.build(macro $ethis.kitRoot, dml, contextObj, parentElement);
-	}
 }

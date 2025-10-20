@@ -29,7 +29,7 @@ class Macros {
 		}
 
 		try {
-			buildDml(macro new hide.kit.KitRoot(null, null, contextObj, null), dml, contextObj, macro null);
+			buildDml(dml, contextObj, macro null);
 		} catch (e: domkit.Error) {
 			if (e.message == errorExpr) {
 				return macro {};
@@ -42,7 +42,7 @@ class Macros {
 
 	public static macro function testNoError(dml : Expr, contextObj: Expr) : Expr {
 		try {
-			buildDml(macro new hide.kit.KitRoot(null, null, contextObj, null), dml, contextObj, macro null);
+			buildDml(dml, contextObj, macro null);
 		} catch (e: domkit.Error) {
 			Context.error('Assert error failed, wanted no errors, got "${e.message}"', @:privateAccess domkit.Macros.makePos(dml.pos,e.pmin,e.pmax));
 			return macro {};
@@ -51,18 +51,17 @@ class Macros {
 	}
 
 	#if macro
-	public static function build(properties: Expr, dml: Expr, ?contextObj: Expr, parentElement: Expr ) : Expr {
+	public static function build(parentElement: Expr, dml: Expr, ?contextObj: Expr) : Expr {
 		try {
-			return buildDml(properties, dml, contextObj, parentElement);
+			return buildDml(dml, contextObj, parentElement);
 		}
 		catch (e : domkit.Error) {
 			haxe.macro.Context.error(e.message, @:privateAccess domkit.Macros.makePos(dml.pos,e.pmin,e.pmax));
 		}
 		return macro {};
-
 	}
 
-	static function buildDml(properties: Expr, dml: Expr, ?contextObj: Expr, parentElement: Expr) : Expr {
+	static function buildDml(dml: Expr, ?contextObj: Expr, parentElement: Expr) : Expr {
 		switch (dml.expr) {
 			case EMeta({name :":markup"} ,{expr: EConst(CString(dmlString))}): {
 				var parser = new domkit.MarkupParser();
@@ -72,7 +71,7 @@ class Macros {
 				var args : BuildExprArgs = {
 					markup: markup,
 					outputExprs: [],
-					parent: parentElement.expr.match(EConst(CIdent("null"))) ? properties : parentElement,
+					parent: parentElement,
 					contextObj: contextObj,
 					globalElements: [],
 				}
