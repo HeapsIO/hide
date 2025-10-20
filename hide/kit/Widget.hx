@@ -88,10 +88,9 @@ abstract class Widget<ValueType> extends Element {
 
 	}
 
-	override function reset() {
+	override function resetSelf() {
 		value = defaultValue;
 		root.broadcastValuesChange([this], true);
-		super.reset();
 	}
 
 	override function copySelf(target: Dynamic) {

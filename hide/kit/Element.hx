@@ -3,6 +3,10 @@ package hide.kit;
 @:keepSub
 class Element {
 	var parent(default, null) : Element;
+
+	/**
+		Internal ID of this element that is unique between this element siblings
+	**/
 	var id(default, null) : String;
 	var root(default, null) : hide.kit.KitRoot;
 
@@ -19,47 +23,65 @@ class Element {
 	**/
 	var nativeContent(get, never) : NativeElement;
 
-
-	inline function get_numChildren() return children?.length ?? 0;
+	inline function get_numChildren() return children.length;
 	function get_nativeContent() return native;
 
 	public function new(parent: Element, id: String) {
 		this.parent = parent;
 		this.root = this.parent?.root ?? Std.downcast(this.parent, KitRoot);
 
-		this.id = ensureUniqueId(id);
+		this.id = makeUniqueId(id);
 
 		this.parent?.addChild(this);
 	}
 
+	/**
+		Create the native elements of this Element to be displayed in the editor
+	**/
 	public function make() {
 		makeSelf();
 
 		for (c in children) {
 			c.make();
-			attachNative(c);
+			attachChildNative(c);
 		}
 	}
 
-	function ensureUniqueId(id: String) : String {
-		if (this.root == null)
-			return id;
-		var parentPath = this.parent != null ? this.parent.getIdPath() + "." : "";
-		var count = 0;
-		var newId = id;
-		while (this.root.getElementByPath(parentPath+newId) != null) {
-			count ++;
-			newId = id + count;
-		}
-		return newId;
-	}
-
+	/**
+		Get a path uniquely identifying this Element from the root
+	**/
 	public function getIdPath() {
 		if (parent == null || parent is KitRoot)
 			return id;
 		return parent.getIdPath() + "." + id;
 	}
 
+	// Overridable API
+
+	/**
+		Called to reset to their default value this Element values
+	**/
+	function resetSelf() : Void {}
+
+	/**
+		Load values from data onto this element values. Data is garanteed to be a Dynamic object (but it's content can be anything)
+	**/
+	function pasteSelf(data: Dynamic) {}
+
+	/**
+		Load value from a string onto this object. Done when the used copied a string from somewhere else instread of copying it from the editor
+	**/
+	function pasteSelfString(data: String) {}
+
+	/**
+		Make a copy of this element values and store them in target (not recursive)
+	**/
+	function copySelf(target: Dynamic) {}
+
+	/**
+		Create the nativeElement for this Element.
+		This should set the "native" field to the created element
+	**/
 	function makeSelf() : Void {
 		#if js
 		native = js.Browser.document.createDivElement();
@@ -68,23 +90,16 @@ class Element {
 		#end
 	}
 
-	function attachNative(child: Element) : Void {
-		#if js
-		child.native.remove();
-		nativeContent.appendChild(child.native);
-		#else
-		child.native.remove();
-		nativeContent.addChild(child.native);
-		#end
-	}
+	// Internal API
 
-	public function addChild(newChild: Element) : Void {
+	/**
+		At the moment adding / removing child dynamically after the make is not supported.
+	**/
+	function addChild(newChild: Element) : Void {
 		addChildAt(newChild, numChildren);
 	}
 
-	public function addChildAt(newChild: Element, position: Int) : Void {
-		if (children == null)
-			children = [];
+	function addChildAt(newChild: Element, position: Int) : Void {
 		children.insert(position, newChild);
 	}
 
@@ -105,6 +120,11 @@ class Element {
 		#end
 	}
 
+	/**
+		Create a line in the inspector, with the given label (on the left) and content (on the right).
+		If the element is already in the line, the function correclty handle that and create the appropriate
+		element instead.
+	**/
 	function setupPropLine(label: NativeElement, content: NativeElement) {
 		#if js
 		var parentLine = Std.downcast(parent, Line);
@@ -136,7 +156,7 @@ class Element {
 		#end
 	}
 
-	function resetWithUndo() {
+	final function resetWithUndo() {
 		@:privateAccess root.prepareUndoPoint();
 
 		reset();
@@ -144,13 +164,21 @@ class Element {
 		@:privateAccess root.finishUndoPoint();
 	}
 
+	/**
+		Reset this element and it's element children to their default values
+	**/
 	function reset() {
+		resetSelf();
+
 		for (child in children) {
 			child.reset();
 		}
 	}
 
-	function copyToClipboard() {
+	/**
+		Copy this element value and its children to the clipboard
+	**/
+	final function copyToClipboard() {
 		#if js
 		var data = {};
 		copy(data);
@@ -158,7 +186,10 @@ class Element {
 		#end
 	}
 
-	function copy(target: Dynamic) {
+	/**
+		Make a copy of this element values and its children and store them in target
+	**/
+	final function copy(target: Dynamic) {
 		copySelf(target);
 
 		if (children.length > 0) {
@@ -171,11 +202,7 @@ class Element {
 		}
 	}
 
-	function copySelf(target: Dynamic) {
-
-	}
-
-	function pasteFromClipboard() {
+	final function pasteFromClipboard() {
 		#if js
 		var clipboard = Ide.inst.getClipboard();
 		if (clipboard == null)
@@ -209,7 +236,10 @@ class Element {
 		#end
 	}
 
-	function paste(data: Dynamic) {
+	/**
+		Load values present in data in this element values. Data can either be a String or a Dynamic object
+	**/
+	final function paste(data: Dynamic) {
 		if (data is String) {
 			pasteSelfString(data);
 		} else {
@@ -230,12 +260,17 @@ class Element {
 		}
 	}
 
-	function pasteSelf(data: Dynamic) {
+	function attachChildNative(child: Element) : Void {
+		#if js
+		nativeContent.appendChild(child.native);
+		#else
+		nativeContent.addChild(child.native);
+		#end
 	}
 
-	function pasteSelfString(data: String) {
-	}
-
+	/**
+		Return a key used to store settings for this particular element (identified by the id)
+	**/
 	function getSaveKey(category: hide.kit.EditorAPI.SettingCategory, key: String) {
 		switch (category) {
 			case Global:
@@ -245,14 +280,24 @@ class Element {
 		}
 	}
 
+	/**
+		Save a setting value from `data` identified with `key` for this particular element in the local storage
+	**/
 	function saveSetting(category: hide.kit.EditorAPI.SettingCategory, key: String, data: Dynamic) : Void {
 		root.editor.saveSetting(category, getSaveKey(category, key), data);
 	}
 
+	/**
+		Retrieve a setting identified with `key` for this particular element in the local storage.
+		Returns null if the value is not set
+	**/
 	function getSetting(category: hide.kit.EditorAPI.SettingCategory, key: String) : Dynamic {
 		return root.editor.getSetting(category, getSaveKey(category, key));
 	}
 
+	/**
+		Find the child of this element that has the given id. Not reccursive
+	**/
 	function getChildById(id: String) : Element {
 		for (child in children) {
 			if (child.id == id) {
@@ -260,5 +305,18 @@ class Element {
 			}
 		}
 		return null;
+	}
+
+	function makeUniqueId(id: String) : String {
+		if (this.root == null)
+			return id;
+		var parentPath = this.parent != null ? this.parent.getIdPath() + "." : "";
+		var count = 0;
+		var newId = id;
+		while (this.root.getElementByPath(parentPath+newId) != null) {
+			count ++;
+			newId = id + count;
+		}
+		return newId;
 	}
 }
