@@ -49,6 +49,8 @@ class Category extends Element {
 	}
 
 	function refresh() {
+		#if js
 		native.classList.toggle("open", open);
+		#end
 	}
 }
