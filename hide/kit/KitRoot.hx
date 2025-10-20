@@ -1,6 +1,7 @@
 package hide.kit;
 
-class KitRoot extends Element {
+class KitRoot #if !macro extends Element #end {
+	#if !macro
 	public var editedPrefabsProperties : Array<KitRoot> = [];
 	var prefab : hrt.prefab.Prefab;
 	var prefabUndoPoint : Dynamic = null;
@@ -151,5 +152,11 @@ class KitRoot extends Element {
 				prefab.updateInstance();
 			});
 		}
+	}
+
+	#end
+
+	public macro function build(ethis: haxe.macro.Expr, dml: haxe.macro.Expr, ?contextObj: haxe.macro.Expr, ?parentElement: haxe.macro.Expr.ExprOf<#if !macro hide.kit.Element #else Dynamic #end> ) : haxe.macro.Expr {
+		return hide.kit.Macros.build(ethis, dml, contextObj, parentElement);
 	}
 }

@@ -635,7 +635,7 @@ class Prefab {
 	/**
 		New hideKit based edit function. Return false if the edit function was not yet ported to the new system
 	**/
-	public function edit2(editContext: hide.prefab.EditContext) {
+	public function edit2(root: hide.kit.KitRoot) : Void {
 	}
 
 	#if editor
