@@ -71,19 +71,28 @@ abstract class Widget<ValueType> extends Element {
 		syncValueUI();
 	}
 
+	/**
+		Create the underlying input element
+	**/
 	abstract function makeInput() : NativeElement;
 
+	/**
+		Called when value has been changed by the user
+	**/
 	public dynamic function onValueChange(temporaryEdit: Bool) : Void {
 
 	}
 
 	/**
-		Call this internally when the user interact with the widget to change the value
+		Call this internally when the user interact with the widget to indicate to the Inspector that the value has changed
 	**/
-	function broadcastValueChange(temporaryEdit) : Void {
+	function broadcastValueChange(temporaryEdit: Bool) : Void {
 		root.broadcastValuesChange([this], temporaryEdit);
 	}
 
+	/**
+		Called when `value` has changed to update the UI accordingly
+	**/
 	function syncValueUI() {
 
 	}
