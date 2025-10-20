@@ -1552,11 +1552,22 @@ input[type=checkbox] {
 	}
 }
 
+.new-editor-prompt-toggle {
+	display: flex;
+	flex-direction: row-reverse;
+	gap: 0.5em;
+	justify-content: flex-end;
+	&.margin {
+		margin: 10px;
+		margin-bottom: 5px;
+	}
+}
+
 kit-root {
 	--widget-height: 22px;
 	--widget-bg: #2d2d2d;
 	--widget-hover-bg: #3d3d3d;
-	--widget-gap: 3px;
+	--widget-gap: 2px;
 	padding: 6px;
 	min-height: 0;
 
@@ -1756,7 +1767,7 @@ kit-root {
 			border-radius: 4px;
 			background-color: var(--widget-bg);
 
-			box-shadow: inset 1px 1px 1px #111;
+			// box-shadow: inset 1px 1px 1px #111;
 		}
 
 		.texture-choice {
@@ -1831,6 +1842,8 @@ kit-root {
 
 		kit-slider {
 			flex: 1 1;
+
+			display: flex;
 
 			>input {
 				font-variant-numeric: tabular-nums;
