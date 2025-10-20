@@ -30,7 +30,7 @@ class KitTest extends Object3D {
 	var substruct: SubStruct = { innerValue: 0.0, };
 
 	#if js
-	override function edit2(ctx:hide.prefab.EditContext) {
+	override function edit2(root:hide.kit.KitRoot) {
 		// TEST
 		{
 
@@ -48,7 +48,7 @@ class KitTest extends Object3D {
 
 
 			var localVar = 42.0;
-			ctx.build(
+			root.build(
 				<category("hello") id="hello">
 					<text("world")/>
 					<slider label="Slider" id="slider" min="-10" max="10"/>
@@ -83,7 +83,7 @@ class KitTest extends Object3D {
 			// 	</element>, this
 			// );
 
-			ctx.build(
+			root.build(
 				<category("Test Editor Kit")>
 					<slider field={x}/>
 					<slider field={y}/>
@@ -109,7 +109,6 @@ class KitTest extends Object3D {
 				,this
 			);
 
-			var root = @:privateAccess ctx.kitRoot;
 			{
 				var cat = new hide.kit.Category( root, "testEditor", "Test Editor");
 				{
@@ -146,7 +145,7 @@ class KitTest extends Object3D {
 					}
 				}
 
-				ctx.build(
+				root.build(
 					<category("All Elements Kit")>
 						<text("Text")/>
 						<slider label="Slider" value={12.34}/>
@@ -183,23 +182,23 @@ class KitTest extends Object3D {
 					</category>,
 				this);
 
-				ctx.build(<image-button("textures/dirt01.jpg") big/>, null, parentLine);
-				ctx.build(<image-button("textures/dirt01.jpg") big/>, null, parentLine);
-				ctx.build(<image-button("textures/dirt01.jpg") big/>, null, parentLine);
-				ctx.build(<image-button("textures/dirt01.jpg") big/>, null, parentLine);
-				ctx.build(<image-button("textures/dirt01.jpg") huge/>, null, parentLine);
-				ctx.build(<image-button("textures/dirt01.jpg") huge/>, null, parentLine);
+				root.build(<image-button("textures/dirt01.jpg") big/>, null, parentLine);
+				root.build(<image-button("textures/dirt01.jpg") big/>, null, parentLine);
+				root.build(<image-button("textures/dirt01.jpg") big/>, null, parentLine);
+				root.build(<image-button("textures/dirt01.jpg") big/>, null, parentLine);
+				root.build(<image-button("textures/dirt01.jpg") huge/>, null, parentLine);
+				root.build(<image-button("textures/dirt01.jpg") huge/>, null, parentLine);
 
 				for (i in 0...5) {
-					ctx.build(<button({'$i';}) id="button"/>, null, addToMe);
+					root.build(<button({'$i';}) id="button"/>, null, addToMe);
 					button.onClick = () -> trace('onclick $i');
 				}
 
 				// uncomment this to test error "contextObj must be not null for `field` to work"
-				// ctx.build(<slider field={foo}/>, null, parentGroup);
+				// root.build(<slider field={foo}/>, null, parentGroup);
 
 				// uncomment this to test error "contextObj doesn't have a field named foo"
-				// ctx.build(<slider field={foo}/>, "bar", parentGroup);
+				// root.build(<slider field={foo}/>, "bar", parentGroup);
 
 				var cat = new hide.kit.Category(root, "elements", "All Elements");
 				{

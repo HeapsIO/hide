@@ -42,7 +42,9 @@ class SliderGroup extends Line {
 	}
 
 	function refresh() {
+		#if js
         lockIcon.classList.toggle("ico-link", isLocked);
         lockIcon.classList.toggle("ico-unlink", !isLocked);
+		#end
 	}
 }

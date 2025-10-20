@@ -4217,12 +4217,12 @@ class SceneEditor {
 					edit.saveKey = Type.getClassName(commonClass);
 					edit.kitRoot = baseRoot;
 
-					proxyPrefab.edit2(edit);
+					proxyPrefab.edit2(baseRoot);
 					for (i => select in selectedPrefabs) {
 						var childRoot = new hide.kit.KitRoot(null, null, select, edit);
 						baseRoot.editedPrefabsProperties.push(childRoot);
 						edit.kitRoot = childRoot;
-						select.edit2(edit);
+						select.edit2(childRoot);
 					}
 
 					edit.kitRoot = baseRoot;

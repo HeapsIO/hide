@@ -29,8 +29,8 @@ class Box extends Object3D {
 		return mesh;
 	}
 
-	override function edit2(editContext:hide.prefab.EditContext) {
-		super.edit2(editContext);
+	override function edit2(root:hide.kit.KitRoot) {
+		super.edit2(root);
 	}
 
 	#if editor
