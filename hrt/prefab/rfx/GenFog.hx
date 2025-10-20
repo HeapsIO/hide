@@ -1,5 +1,65 @@
 package hrt.prefab.rfx;
 
+class GenFogFunc extends hrt.shader.PbrShader {
+	static var SRC = {
+
+		var fogParams : {
+			var startDistance : Float;
+			var distanceScale : Float;
+			var distanceOpacity : Float;
+			var cameraDistance : Float;
+
+			var startHeight : Float;
+			var heightScale : Float;
+			var heightOpacity : Float;
+
+			var startColor : Vec4;
+			var endColor : Vec4;
+
+			var usePosition : Bool;
+			var position : Vec3;
+
+			var useNoise : Bool;
+			var noiseTex : Sampler2D;
+			var noiseScale : Float;
+			var noiseSpeed : Float;
+			var noiseAmount : Vec3;
+
+			var lightDirection : Vec3;
+			var lightColor : Vec3;
+			var dotThreshold : Float;
+		}
+
+		function applyNoise(origin : Vec3) : Vec3 {
+			var noise = fogParams.noiseTex.get( origin.xy * fogParams.noiseScale + vec2(global.time * fogParams.noiseSpeed, fogParams.noiseScale * origin.z) * vec2(1,-1) );
+			return origin + (noise.rgb - 0.5) * fogParams.noiseAmount;
+		}
+
+		function applyDistanceOpacity(amount : Float, origin : Vec3) : Float {
+			if( fogParams.distanceOpacity != 0 ) {
+				var distance = (origin - (fogParams.usePosition ? fogParams.position : camera.position)).length() - fogParams.cameraDistance;
+				amount += smoothstep(0.0, 1.0, (distance - fogParams.startDistance) * fogParams.distanceScale) * fogParams.distanceOpacity;
+			}
+			return amount;
+		}
+
+		function applyHeightOpacity(amount : Float, origin : Vec3) : Float {
+			if( fogParams.heightOpacity != 0 ) {
+				var height = origin.z;
+				if( fogParams.usePosition ) height -= fogParams.position.z;
+				amount += smoothstep(0.0, 1.0, (height - fogParams.startHeight) * fogParams.heightScale) * fogParams.heightOpacity;
+			}
+			return amount;
+		}
+
+		function getFogColor(amount : Float, origin : Vec3) : Vec4 {
+			var fogColor = mix(fogParams.startColor, fogParams.endColor, smoothstep(0.0, 1.0, amount));
+			fogColor.rgb += smoothstep(0.0, 1.0, ((camera.position - origin).normalize().dot(fogParams.lightDirection) - fogParams.dotThreshold) / (1.0 - fogParams.dotThreshold)) * fogParams.lightColor;
+			return fogColor;
+		}
+	}
+}
+
 class GenFogShader extends hrt.shader.PbrShader {
 
 	static var SRC = {
@@ -31,28 +91,40 @@ class GenFogShader extends hrt.shader.PbrShader {
 		@param var lightColor : Vec3;
 		@param var dotThreshold : Float;
 
+		@:import GenFogFunc;
+
+		function initFogParams() {
+			fogParams.startDistance = startDistance;
+			fogParams.distanceScale = distanceScale;
+			fogParams.distanceOpacity = distanceOpacity;
+			fogParams.cameraDistance = cameraDistance;
+			fogParams.startHeight = startHeight;
+			fogParams.heightScale = heightScale;
+			fogParams.heightOpacity = heightOpacity;
+			fogParams.startColor = startColor;
+			fogParams.endColor = endColor;
+			fogParams.usePosition = usePosition;
+			fogParams.position = position;
+			fogParams.noiseTex = noiseTex;
+			fogParams.noiseScale = noiseScale;
+			fogParams.noiseSpeed = noiseSpeed;
+			fogParams.noiseAmount = noiseAmount;
+			fogParams.lightDirection = lightDirection;
+			fogParams.lightColor = lightColor;
+			fogParams.dotThreshold = dotThreshold;
+		}
+
 		function fragment() {
+			initFogParams();
+
 			var origin = getPosition();
 			var amount = 0.;
 
-			if( useNoise ) {
-				var noise = noiseTex.get( origin.xy * noiseScale + vec2(global.time * noiseSpeed, noiseScale * origin.z) * vec2(1,-1) );
-				origin += (noise.rgb - 0.5) * noiseAmount;
-			}
-
-			if( distanceOpacity != 0 ) {
-				var distance = (origin - (usePosition ? position : camera.position)).length() - cameraDistance;
-				amount += smoothstep(0.0, 1.0, (distance - startDistance) * distanceScale) * distanceOpacity;
-			}
-
-			if( heightOpacity != 0 ) {
-				var height = origin.z;
-				if( usePosition ) height -= position.z;
-				amount += smoothstep(0.0, 1.0, (height - startHeight) * heightScale) * heightOpacity;
-			}
-
-			var fogColor = mix(startColor, endColor, smoothstep(0.0, 1.0, amount));
-			fogColor.rgb += smoothstep(0.0, 1.0, ((camera.position - origin).normalize().dot(lightDirection) - dotThreshold) / (1.0 - dotThreshold)) * lightColor;
+			if (useNoise)
+				origin = applyNoise(origin);
+			amount = applyDistanceOpacity(amount, origin);
+			amount = applyHeightOpacity(amount, origin);
+			var fogColor = getFogColor(amount, origin);
 			pixelColor = mix(pixelColor, fogColor, intensity);
 		}
 
@@ -61,7 +133,126 @@ class GenFogShader extends hrt.shader.PbrShader {
 	public function new() {
 		super();
 	}
+}
 
+class GenFogBlendShader extends hrt.shader.PbrShader {
+
+	static var SRC = {
+		@param var blendFactor : Float;
+
+		@param var cameraDistance : Float;
+
+		@param var intensity1 : Float;
+		@param var startDistance1 : Float;
+		@param var distanceScale1 : Float;
+		@param var distanceOpacity1 : Float;
+		@param var startHeight1 : Float;
+		@param var heightScale1 : Float;
+		@param var heightOpacity1 : Float;
+		@param var startColor1 : Vec4;
+		@param var endColor1 : Vec4;
+		@const var usePosition1 : Bool;
+		@param var position1 : Vec3;
+		@const var useNoise1 : Bool;
+		@param var noiseTex1 : Sampler2D;
+		@param var noiseScale1 : Float;
+		@param var noiseSpeed1 : Float;
+		@param var noiseAmount1 : Vec3;
+		@param var lightDirection1 : Vec3;
+		@param var lightColor1 : Vec3;
+		@param var dotThreshold1 : Float;
+
+		@param var intensity2 : Float;
+		@param var startDistance2 : Float;
+		@param var distanceScale2 : Float;
+		@param var distanceOpacity2 : Float;
+		@param var startHeight2 : Float;
+		@param var heightScale2 : Float;
+		@param var heightOpacity2 : Float;
+		@param var startColor2 : Vec4;
+		@param var endColor2 : Vec4;
+		@const var usePosition2 : Bool;
+		@param var position2 : Vec3;
+		@const var useNoise2 : Bool;
+		@param var noiseTex2 : Sampler2D;
+		@param var noiseScale2 : Float;
+		@param var noiseSpeed2 : Float;
+		@param var noiseAmount2 : Vec3;
+		@param var lightDirection2 : Vec3;
+		@param var lightColor2 : Vec3;
+		@param var dotThreshold2 : Float;
+
+		@:import GenFogFunc;
+
+		function initFogParams1() {
+			fogParams.startDistance = startDistance1;
+			fogParams.distanceScale = distanceScale1;
+			fogParams.distanceOpacity = distanceOpacity1;
+			fogParams.cameraDistance = cameraDistance;
+			fogParams.startHeight = startHeight1;
+			fogParams.heightScale = heightScale1;
+			fogParams.heightOpacity = heightOpacity1;
+			fogParams.startColor = startColor1;
+			fogParams.endColor = endColor1;
+			fogParams.usePosition = usePosition1;
+			fogParams.position = position1;
+			fogParams.noiseTex = noiseTex1;
+			fogParams.noiseScale = noiseScale1;
+			fogParams.noiseSpeed = noiseSpeed1;
+			fogParams.noiseAmount = noiseAmount1;
+			fogParams.lightDirection = lightDirection1;
+			fogParams.lightColor = lightColor1;
+			fogParams.dotThreshold = dotThreshold1;
+		}
+
+		function initFogParams2() {
+			fogParams.startDistance = startDistance2;
+			fogParams.distanceScale = distanceScale2;
+			fogParams.distanceOpacity = distanceOpacity2;
+			fogParams.cameraDistance = cameraDistance;
+			fogParams.startHeight = startHeight2;
+			fogParams.heightScale = heightScale2;
+			fogParams.heightOpacity = heightOpacity2;
+			fogParams.startColor = startColor2;
+			fogParams.endColor = endColor2;
+			fogParams.usePosition = usePosition2;
+			fogParams.position = position2;
+			fogParams.noiseTex = noiseTex2;
+			fogParams.noiseScale = noiseScale2;
+			fogParams.noiseSpeed = noiseSpeed2;
+			fogParams.noiseAmount = noiseAmount2;
+			fogParams.lightDirection = lightDirection2;
+			fogParams.lightColor = lightColor2;
+			fogParams.dotThreshold = dotThreshold2;
+		}
+
+		function fragment() {
+			initFogParams1();
+			var origin = getPosition();
+			var amount = 0.;
+			if (useNoise1)
+				origin = applyNoise(origin);
+			amount = applyDistanceOpacity(amount, origin);
+			amount = applyHeightOpacity(amount, origin);
+			var fogColor1 = getFogColor(amount, origin);
+
+			initFogParams2();
+			origin = getPosition();
+			amount = 0.;
+			if (useNoise2)
+				origin = applyNoise(origin);
+			amount = applyDistanceOpacity(amount, origin);
+			amount = applyHeightOpacity(amount, origin);
+			var fogColor2 = getFogColor(amount, origin);
+
+			pixelColor = mix(fogColor1, fogColor2, blendFactor);
+		}
+
+	};
+
+	public function new() {
+		super();
+	}
 }
 
 typedef GenFogNoise = {
@@ -81,7 +272,9 @@ enum abstract GenFogRenderMode(String) {
 @:access(h3d.scene.Renderer)
 class GenFog extends RendererFX {
 
-	var fogPass = new h3d.pass.ScreenFx(new GenFogShader());
+	var isBlend : Bool;
+	var fogPass : h3d.pass.ScreenFx<GenFogShader> = null;
+	var fogPassBlend : h3d.pass.ScreenFx<GenFogBlendShader> = null;
 
 	@:s public var intensity : Float = 1;
 
@@ -120,7 +313,28 @@ class GenFog extends RendererFX {
 		endOpacity = 1;
 		startColor = 0xffffff;
 	    endColor = 0xffffff;
-		fogPass.pass.setBlendMode(Alpha);
+
+		initShader();
+	}
+
+	function initShader(blend : Bool = false) {
+		if (blend) {
+			fogPass?.dispose();
+			fogPass = null;
+
+			fogPassBlend = new h3d.pass.ScreenFx(new GenFogBlendShader());
+			fogPassBlend.pass.setBlendMode(Alpha);
+
+		}
+		else {
+			fogPassBlend?.dispose();
+			fogPassBlend = null;
+
+			fogPass = new h3d.pass.ScreenFx(new GenFogShader());
+			fogPass.pass.setBlendMode(Alpha);
+		}
+
+		isBlend = blend;
 	}
 
 	function checkPass(step : h3d.impl.RendererFX.Step) {
@@ -132,44 +346,59 @@ class GenFog extends RendererFX {
 		if( checkPass(step) ) {
 			r.mark("DistanceFog");
 			var ctx = r.ctx;
-
-			fogPass.shader.intensity = intensity;
-
-			fogPass.shader.startDistance = startDistance;
-			fogPass.shader.distanceScale = 1 / (endDistance - startDistance);
-			fogPass.shader.distanceOpacity = distanceOpacity;
-			fogPass.shader.cameraDistance = distanceFixed ? r.ctx.camera.pos.sub(r.ctx.camera.target).length() : 0;
-
-			fogPass.shader.startHeight = startHeight;
-			fogPass.shader.heightScale = 1 / (endHeight - startHeight);
-			fogPass.shader.heightOpacity = heightOpacity;
-
-			fogPass.shader.startColor.setColor(startColor);
-			fogPass.shader.endColor.setColor(endColor);
-			fogPass.shader.startColor.a = startOpacity;
-			fogPass.shader.endColor.a = endOpacity;
-
-			fogPass.shader.position.set(posX, posY, posZ);
-			fogPass.shader.usePosition = usePosition;
-
-			fogPass.shader.useNoise = noise != null && noise.texture != null;
-			if( noise != null && noise.texture != null ) {
-				fogPass.shader.noiseTex = hxd.res.Loader.currentInstance.load(noise.texture).toTexture();
-				fogPass.shader.noiseTex.wrap = Repeat;
-				fogPass.shader.noiseScale = 1 / noise.scale;
-				fogPass.shader.noiseSpeed = noise.speed / noise.scale;
-				fogPass.shader.noiseAmount.set(noise.amount * noise.distAmount, noise.amount * noise.distAmount, noise.amount);
+			if (isBlend) {
+				fogPassBlend.shader.cameraDistance = distanceFixed ? r.ctx.camera.pos.sub(r.ctx.camera.target).length() : 0;
+				var ls = r.getLightSystem().shadowLight;
+				if( ls == null ) {
+					fogPassBlend.shader.lightDirection1.set(0,0,0);
+					fogPassBlend.shader.lightDirection2.set(0,0,0);
+				}
+				else {
+					var d = @:privateAccess ls.getShadowDirection();
+					fogPassBlend.shader.lightDirection1.load(d);
+					fogPassBlend.shader.lightDirection2.load(d);
+				}
+				fogPassBlend.render();
 			}
+			else {
+				fogPass.shader.intensity = intensity;
 
-			var ls = r.getLightSystem().shadowLight;
-			if( ls == null )
-				fogPass.shader.lightDirection.set(0,0,0);
-			else
-				fogPass.shader.lightDirection.load(@:privateAccess ls.getShadowDirection());
-			fogPass.shader.lightColor.setColor(lightColor);
-			fogPass.shader.lightColor.scale(lightColorAmount);
-			fogPass.shader.dotThreshold = hxd.Math.cos(lightAngle * Math.PI/180);
-			fogPass.render();
+				fogPass.shader.startDistance = startDistance;
+				fogPass.shader.distanceScale = 1 / (endDistance - startDistance);
+				fogPass.shader.distanceOpacity = distanceOpacity;
+				fogPass.shader.cameraDistance = distanceFixed ? r.ctx.camera.pos.sub(r.ctx.camera.target).length() : 0;
+
+				fogPass.shader.startHeight = startHeight;
+				fogPass.shader.heightScale = 1 / (endHeight - startHeight);
+				fogPass.shader.heightOpacity = heightOpacity;
+
+				fogPass.shader.startColor.setColor(startColor);
+				fogPass.shader.endColor.setColor(endColor);
+				fogPass.shader.startColor.a = startOpacity;
+				fogPass.shader.endColor.a = endOpacity;
+
+				fogPass.shader.position.set(posX, posY, posZ);
+				fogPass.shader.usePosition = usePosition;
+
+				fogPass.shader.useNoise = noise != null && noise.texture != null;
+				if( noise != null && noise.texture != null ) {
+					fogPass.shader.noiseTex = hxd.res.Loader.currentInstance.load(noise.texture).toTexture();
+					fogPass.shader.noiseTex.wrap = Repeat;
+					fogPass.shader.noiseScale = 1 / noise.scale;
+					fogPass.shader.noiseSpeed = noise.speed / noise.scale;
+					fogPass.shader.noiseAmount.set(noise.amount * noise.distAmount, noise.amount * noise.distAmount, noise.amount);
+				}
+
+				var ls = r.getLightSystem().shadowLight;
+				if( ls == null )
+					fogPass.shader.lightDirection.set(0,0,0);
+				else
+					fogPass.shader.lightDirection.load(@:privateAccess ls.getShadowDirection());
+				fogPass.shader.lightColor.setColor(lightColor);
+				fogPass.shader.lightColor.scale(lightColorAmount);
+				fogPass.shader.dotThreshold = hxd.Math.cos(lightAngle * Math.PI/180);
+				fogPass.render();
+			}
 		}
 	}
 
@@ -184,68 +413,61 @@ class GenFog extends RendererFX {
 		var g2 : GenFog = cast r2;
 
 		var g = new GenFog(null, null);
-		g.intensity = g1.intensity;
-		g.startDistance = g1.startDistance;
-		g.endDistance = g1.endDistance;
-		g.distanceOpacity = g1.distanceOpacity;
-		g.distanceFixed = g1.distanceFixed;
-		g.startHeight = g1.startHeight;
-		g.endHeight = g1.endHeight;
-		g.heightOpacity = g1.heightOpacity;
-		g.startOpacity = g1.startOpacity;
-		g.endOpacity = g1.endOpacity;
-		g.startColor = g1.startColor;
-		g.endColor = g1.endColor;
-		g.renderMode = g1.renderMode;
-		g.noise = g1.noise;
-		g.posX = g1.posX;
-		g.posY = g1.posY;
-		g.posZ = g1.posZ;
-		g.usePosition = g1.usePosition;
-		g.lightColor = g1.lightColor;
-		g.lightColorAmount = g1.lightColorAmount;
-		g.lightAngle = g1.lightAngle;
+		@:privateAccess g.initShader(true);
+
+		g.fogPassBlend.shader.intensity1 = g1.intensity;
+		g.fogPassBlend.shader.startDistance1 = g1.startDistance;
+		g.fogPassBlend.shader.distanceScale1 = 1 / (g1.endDistance - g1.startDistance);
+		g.fogPassBlend.shader.distanceOpacity1 = g1.distanceOpacity;
+		g.fogPassBlend.shader.startHeight1 = g1.startHeight;
+		g.fogPassBlend.shader.heightScale1 = 1 / (g1.endHeight - g1.startHeight);
+		g.fogPassBlend.shader.heightOpacity1 = g1.heightOpacity;
+		g.fogPassBlend.shader.startColor1.setColor(g1.startColor);
+		g.fogPassBlend.shader.endColor1.setColor(g1.endColor);
+		g.fogPassBlend.shader.startColor1.a = g1.startOpacity;
+		g.fogPassBlend.shader.endColor1.a = g1.endOpacity;
+		g.fogPassBlend.shader.position1.set(g1.posX, g1.posY, g1.posZ);
+		g.fogPassBlend.shader.usePosition1 = g1.usePosition;
+		g.fogPassBlend.shader.useNoise1 = g1.noise != null && g1.noise.texture != null;
+		if( g1.noise != null && g1.noise.texture != null ) {
+			g.fogPassBlend.shader.noiseTex1 = hxd.res.Loader.currentInstance.load(g1.noise.texture).toTexture();
+			g.fogPassBlend.shader.noiseTex1.wrap = Repeat;
+			g.fogPassBlend.shader.noiseScale1 = 1 / g1.noise.scale;
+			g.fogPassBlend.shader.noiseSpeed1 = g1.noise.speed / g1.noise.scale;
+			g.fogPassBlend.shader.noiseAmount1.set(g1.noise.amount * g1.noise.distAmount, g1.noise.amount * g1.noise.distAmount, g1.noise.amount);
+		}
+		g.fogPassBlend.shader.lightColor1.setColor(g1.lightColor);
+		g.fogPassBlend.shader.lightColor1.scale(g1.lightColorAmount);
+		g.fogPassBlend.shader.dotThreshold1 = hxd.Math.cos(g1.lightAngle * Math.PI/180);
+
+
+		g.fogPassBlend.shader.intensity2 = g2.intensity;
+		g.fogPassBlend.shader.startDistance2 = g2.startDistance;
+		g.fogPassBlend.shader.distanceScale2 = 1 / (g2.endDistance - g2.startDistance);
+		g.fogPassBlend.shader.distanceOpacity2 = g2.distanceOpacity;
+		g.fogPassBlend.shader.startHeight2 = g2.startHeight;
+		g.fogPassBlend.shader.heightScale2 = 1 / (g2.endHeight - g2.startHeight);
+		g.fogPassBlend.shader.heightOpacity2 = g2.heightOpacity;
+		g.fogPassBlend.shader.startColor2.setColor(g2.startColor);
+		g.fogPassBlend.shader.endColor2.setColor(g2.endColor);
+		g.fogPassBlend.shader.startColor2.a = g2.startOpacity;
+		g.fogPassBlend.shader.endColor2.a = g2.endOpacity;
+		g.fogPassBlend.shader.position2.set(g2.posX, g2.posY, g2.posZ);
+		g.fogPassBlend.shader.usePosition2 = g2.usePosition;
+		g.fogPassBlend.shader.useNoise2 = g2.noise != null && g2.noise.texture != null;
+		if( g2.noise != null && g2.noise.texture != null ) {
+			g.fogPassBlend.shader.noiseTex2 = hxd.res.Loader.currentInstance.load(g2.noise.texture).toTexture();
+			g.fogPassBlend.shader.noiseTex2.wrap = Repeat;
+			g.fogPassBlend.shader.noiseScale2 = 1 / g2.noise.scale;
+			g.fogPassBlend.shader.noiseSpeed2 = g2.noise.speed / g1.noise.scale;
+			g.fogPassBlend.shader.noiseAmount2.set(g2.noise.amount * g2.noise.distAmount, g2.noise.amount * g2.noise.distAmount, g2.noise.amount);
+		}
+		g.fogPassBlend.shader.lightColor2.setColor(g2.lightColor);
+		g.fogPassBlend.shader.lightColor2.scale(g2.lightColorAmount);
+		g.fogPassBlend.shader.dotThreshold2 = hxd.Math.cos(g2.lightAngle * Math.PI/180);
 
 		return { effect : cast g, setFactor : (f : Float) -> {
-			g.intensity = hxd.Math.lerp(g1.intensity, g2.intensity, f);
-			g.startDistance = hxd.Math.lerp(g1.startDistance, g2.startDistance, f);
-			g.endDistance = hxd.Math.lerp(g1.endDistance, g2.endDistance, f);
-			g.distanceOpacity = hxd.Math.lerp(g1.distanceOpacity, g2.distanceOpacity, f);
-			g.startHeight = hxd.Math.lerp(g1.startHeight, g2.startHeight, f);
-			g.endHeight = hxd.Math.lerp(g1.endHeight, g2.endHeight, f);
-			g.heightOpacity = hxd.Math.lerp(g1.heightOpacity, g2.heightOpacity, f);
-			g.startOpacity = hxd.Math.lerp(g1.startOpacity, g2.startOpacity, f);
-			g.endOpacity = hxd.Math.lerp(g1.endOpacity, g2.endOpacity, f);
-			g.posX = hxd.Math.lerp(g1.posX, g2.posX, f);
-			g.posY = hxd.Math.lerp(g1.posY, g2.posY, f);
-			g.posZ = hxd.Math.lerp(g1.posZ, g2.posZ, f);
-			g.lightColorAmount = hxd.Math.lerp(g1.lightColorAmount, g2.lightColorAmount, f);
-			g.lightAngle = hxd.Math.lerp(g1.lightAngle, g2.lightAngle, f);
-
-			function lerpColor(c1 : Int, c2 : Int, f : Float) : Int {
-				var a1 = (c1 >> 24) & 0xFF;
-				var r1 = (c1 >> 16) & 0xFF;
-				var g1 = (c1 >> 8) & 0xFF;
-				var b1 = c1 & 0xFF;
-
-				var a2 = (c2 >> 24) & 0xFF;
-				var r2 = (c2 >> 16) & 0xFF;
-				var g2 = (c2 >> 8) & 0xFF;
-				var b2 = c2 & 0xFF;
-
-    			inline function lerp(v1:Int, v2:Int, f:Float) : Int return Std.int(v1 * (1 - f) + v2 * f);
-    			return (lerp(a1, a2, f) << 24) | (lerp(r1, r2, f) << 16) | (lerp(g1, g2, f) << 8) | lerp(b1, b2, f);
-			}
-
-			g.startColor = lerpColor(g1.startColor, g2.startColor, f);
-			g.endColor = lerpColor(g1.endColor, g2.endColor, f);
-			g.lightColor = lerpColor(g1.lightColor, g2.lightColor, f);
-
-			g.noise = f < 0.5 ? g1.noise : g2.noise;
-
-			g.renderMode = f < 0.5 ? g1.renderMode : g2.renderMode;
-			g.usePosition = f < 0.5 ? g1.usePosition : g2.usePosition;
-			g.distanceFixed = f < 0.5 ? g1.distanceFixed : g2.distanceFixed;
+			g.fogPassBlend.shader.blendFactor = f;
 		} };
 	}
 

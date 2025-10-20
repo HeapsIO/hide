@@ -112,12 +112,6 @@ class Environment extends Object3D {
 			r.env = env;
 	}
 
-	public function modulate(f : Float) {
-		if (env == null)
-			return;
-		env.power = this.power * f;
-	}
-
 	#if editor
 
 	override function getHideProps() : hide.prefab.HideProps {

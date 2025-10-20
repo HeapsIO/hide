@@ -75,6 +75,8 @@ class RenderProps extends Object3D {
 
 		renderer.effects = [];
 		for (v in findAll(hrt.prefab.rfx.RendererFX, true)) {
+			if (!v.enabled) continue;
+
 			if (@:privateAccess v.instance != null) {
 				renderer.effects.push(@:privateAccess v.instance);
 				continue;

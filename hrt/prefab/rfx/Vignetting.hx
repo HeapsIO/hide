@@ -54,23 +54,38 @@ class Vignetting extends RendererFX {
 		return v;
 	}
 
-	// override function transition( r1 : h3d.impl.RendererFX, r2 : h3d.impl.RendererFX ) : h3d.impl.RendererFX.RFXTransition {
-	// 	var c1 : Vignetting = cast r1;
-	// 	var c2 : Vignetting = cast r2;
-	// 	var c = new ColorGrading(null, null);
-	// 	c.customLutsBlend = { from : @:privateAccess c1.customLut == null ? c1.getLutTexture() : c1.customLut, to: @:privateAccess c2.customLut == null ? c2.getLutTexture() : c2.customLut };
-	// 	var blendTonemap = new ColorGradingTonemapBlend();
-	// 	blendTonemap.blendFactor = 0.;
-	// 	c.tonemap = blendTonemap;
-	// 	c.size = c1.size;
-	// 	c.texturePath = c2.texturePath;
-	// 	c.intensity = c1.intensity;
-	// 	return { effect : cast c, setFactor : (f : Float) -> {
-	// 		blendTonemap.blendFactor = f;
-	// 		c.size = hxd.Math.round(hxd.Math.lerp(c1.size, c2.size, f));
-	// 		c.intensity = hxd.Math.lerp(c1.intensity, c2.intensity, f);
-	// 	} };
-	// }
+	override function transition( r1 : h3d.impl.RendererFX, r2 : h3d.impl.RendererFX ) : h3d.impl.RendererFX.RFXTransition {
+		var v1 : Vignetting = cast r1;
+		var v2 : Vignetting = cast r2;
+
+		var v = new Vignetting(null, null);
+		v.color = v1.color;
+		v.alpha = v1.alpha;
+		v.radius = v1.radius;
+		v.softness = v1.softness;
+
+		inline function lerpColor(c1 : Int, c2 : Int, f : Float) : Int {
+			var a1 = (c1 >> 24) & 0xFF;
+			var r1 = (c1 >> 16) & 0xFF;
+			var g1 = (c1 >> 8) & 0xFF;
+			var b1 = c1 & 0xFF;
+
+			var a2 = (c2 >> 24) & 0xFF;
+			var r2 = (c2 >> 16) & 0xFF;
+			var g2 = (c2 >> 8) & 0xFF;
+			var b2 = c2 & 0xFF;
+
+    		inline function lerp(v1:Int, v2:Int, f:Float) : Int return Std.int(v1 * (1 - f) + v2 * f);
+    		return (lerp(a1, a2, f) << 24) | (lerp(r1, r2, f) << 16) | (lerp(g1, g2, f) << 8) | lerp(b1, b2, f);
+		}
+
+		return { effect : cast v, setFactor : (f : Float) -> {
+			v.color = lerpColor(v1.color, v2.color, f);
+			v.alpha = hxd.Math.lerp(v1.alpha, v2.alpha, f);
+			v.radius = hxd.Math.lerp(v1.radius, v2.radius, f);
+			v.softness = hxd.Math.lerp(v1.softness, v2.softness, f);
+		} };
+	}
 
 	#if editor
 	override function edit( ctx : hide.prefab.EditContext ) {

@@ -7,7 +7,7 @@ class SaoMerge extends h3d.shader.ScreenShader {
 		@param var screenOcclusion : Sampler2D;
 		@param var materialOcclusionIntensity : Float;
 		@ignore @param var materialOcclusion : Channel;
-		
+
 		function fragment() {
 			pixelColor.rgb = screenOcclusion.get(calculatedUV).xxx;
 			pixelColor.rgb *= mix(1.0, materialOcclusion.get(calculatedUV).x, materialOcclusionIntensity);
@@ -111,6 +111,58 @@ class Sao extends RendererFX {
 			saoCopy.pass.setColorChannel(occlu.channel);
 			saoCopy.apply(saoMerge, occlu.texture);
 		}
+	}
+
+	override function modulate(t : Float) {
+		var s : Sao = cast super.modulate(t);
+		s.intensity = this.intensity * t;
+		return s;
+	}
+
+	override function transition( r1 : h3d.impl.RendererFX, r2 : h3d.impl.RendererFX ) : h3d.impl.RendererFX.RFXTransition {
+		var s1 : Sao = cast r1;
+		var s2 : Sao = cast r2;
+
+		var s = new Sao(null, null);
+		s.size = s1.size;
+		s.blur = s1.blur;
+		s.blurQuality = s1.blurQuality;
+		s.noiseScale = s1.noiseScale;
+		s.samples = s1.samples;
+		s.radius = s1.radius;
+		s.intensity = s1.intensity;
+		s.bias = s1.bias;
+		s.microIntensity = s1.microIntensity;
+		s.useWorldUV = s1.useWorldUV;
+		s.noiseTexturePath = s1.noiseTexturePath;
+		s.USE_START_FADE = s1.USE_START_FADE;
+		s.startFadeStart = s1.startFadeStart;
+		s.startFadeEnd = s1.startFadeEnd;
+		s.USE_FADE = s1.USE_FADE;
+		s.fadeStart = s1.fadeStart;
+		s.fadeEnd = s1.fadeEnd;
+		s.useScalableBias = s1.useScalableBias;
+
+		return { effect : cast s, setFactor : (f : Float) -> {
+			s.size = hxd.Math.lerp(s1.size, s2.size, f);
+			s.blur = hxd.Math.lerp(s1.blur, s2.blur, f);
+			s.blurQuality = hxd.Math.lerp(s1.blurQuality, s2.blurQuality, f);
+			s.noiseScale = hxd.Math.lerp(s1.noiseScale, s2.noiseScale, f);
+			s.samples = Std.int(hxd.Math.lerp(s1.samples, s2.samples, f));
+			s.radius = hxd.Math.lerp(s1.radius, s2.radius, f);
+			s.intensity = hxd.Math.lerp(s1.intensity, s2.intensity, f);
+			s.bias = hxd.Math.lerp(s1.bias, s2.bias, f);
+			s.microIntensity = hxd.Math.lerp(s1.microIntensity, s2.microIntensity, f);
+			s.useWorldUV = f < 0.5 ? s1.useWorldUV : s2.useWorldUV;
+			s.noiseTexturePath = f < 0.5 ? s1.noiseTexturePath : s2.noiseTexturePath;
+			s.USE_START_FADE = f < 0.5 ? s1.USE_START_FADE : s2.USE_START_FADE;
+			s.startFadeStart = hxd.Math.lerp(s1.startFadeStart, s2.startFadeStart, f);
+			s.startFadeEnd = hxd.Math.lerp(s1.startFadeEnd, s2.startFadeEnd, f);
+			s.USE_FADE = f < 0.5 ? s1.USE_FADE : s2.USE_FADE;
+			s.fadeStart = hxd.Math.lerp(s1.fadeStart, s2.fadeStart, f);
+			s.fadeEnd = hxd.Math.lerp(s1.fadeEnd, s2.fadeEnd, f);
+			s.useScalableBias = f < 0.5 ? s1.useScalableBias : s2.useScalableBias;
+		} };
 	}
 
 	#if editor
