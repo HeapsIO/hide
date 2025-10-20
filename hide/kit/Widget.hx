@@ -84,6 +84,13 @@ abstract class Widget<ValueType> extends Element {
 	}
 
 	/**
+		Internal version of onValueChange for field editing
+	**/
+	dynamic function onFieldChange(temporaryEdit: Bool) : Void {
+
+	}
+
+	/**
 		Call this internally when the user interact with the widget to indicate to the Inspector that the value has changed
 	**/
 	function broadcastValueChange(temporaryEdit: Bool) : Void {

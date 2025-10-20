@@ -63,6 +63,7 @@ class KitRoot #if !macro extends Element #end {
 		prepareUndoPoint();
 
 		for(input in inputs) {
+			@:privateAccess input.onFieldChange(isTemporaryEdit);
 			input.onValueChange(isTemporaryEdit);
 			prefab.updateInstance(input.id);
 		}
@@ -75,6 +76,7 @@ class KitRoot #if !macro extends Element #end {
 
 				if (childInput != null) {
 					childInput.value = input.value;
+					@:privateAccess childInput.onFieldChange(isTemporaryEdit);
 					childInput.onValueChange(isTemporaryEdit);
 					childProperties.prefab.updateInstance(input.id);
 				}
