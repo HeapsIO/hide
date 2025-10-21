@@ -4213,22 +4213,25 @@ class SceneEditor {
 					var proxyPrefab = Type.createInstance(commonClass, [null, new ContextShared()]);
 					proxyPrefab.load(haxe.Json.parse(haxe.Json.stringify(elts[0].save())));
 
-					var baseRoot = new hide.kit.KitRoot(null, null, proxyPrefab, edit);
-					edit.saveKey = Type.getClassName(commonClass);
-					edit.kitRoot = baseRoot;
+					var ectx2 = new hide.prefab.EditContext.HideJsEditContext2(edit);
 
-					proxyPrefab.edit2(baseRoot);
+					var baseRoot = new hide.kit.KitRoot(null, null, proxyPrefab, ectx2);
+					@:privateAccess ectx2.saveKey = Type.getClassName(commonClass);
+					ectx2.root = baseRoot;
+
+					proxyPrefab.edit2(ectx2);
 					for (i => select in selectedPrefabs) {
-						var childRoot = new hide.kit.KitRoot(null, null, select, edit);
+						var ectx2 = new hide.prefab.EditContext.HideJsEditContext2(edit);
+						@:privateAccess ectx2.saveKey = Type.getClassName(commonClass);
+						var childRoot = new hide.kit.KitRoot(null, null, select, ectx2);
 						baseRoot.editedPrefabsProperties.push(childRoot);
-						edit.kitRoot = childRoot;
-						select.edit2(childRoot);
+						ectx2.root = childRoot;
+						select.edit2(ectx2);
 					}
 
-					edit.kitRoot = baseRoot;
-					edit.kitRoot.make();
+					baseRoot.make();
 
-					@:privateAccess properties.element.append(edit.kitRoot.nativeContent);
+					@:privateAccess properties.element.append(baseRoot.nativeContent);
 				}
 				else {
 					properties.element.addClass("hide-properties");

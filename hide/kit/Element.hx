@@ -272,7 +272,7 @@ class Element {
 	/**
 		Return a key used to store settings for this particular element (identified by the id)
 	**/
-	function getSaveKey(category: hide.kit.EditorAPI.SettingCategory, key: String) {
+	function getSaveKey(category: hrt.prefab.EditContext2.SettingCategory, key: String) {
 		switch (category) {
 			case Global:
 				return '$id/$key';
@@ -284,7 +284,7 @@ class Element {
 	/**
 		Save a setting value from `data` identified with `key` for this particular element in the local storage
 	**/
-	function saveSetting(category: hide.kit.EditorAPI.SettingCategory, key: String, data: Dynamic) : Void {
+	function saveSetting(category: hrt.prefab.EditContext2.SettingCategory, key: String, data: Dynamic) : Void {
 		root.editor.saveSetting(category, getSaveKey(category, key), data);
 	}
 
@@ -292,7 +292,7 @@ class Element {
 		Retrieve a setting identified with `key` for this particular element in the local storage.
 		Returns null if the value is not set
 	**/
-	function getSetting(category: hide.kit.EditorAPI.SettingCategory, key: String) : Dynamic {
+	function getSetting(category: hrt.prefab.EditContext2.SettingCategory, key: String) : Dynamic {
 		return root.editor.getSetting(category, getSaveKey(category, key));
 	}
 
