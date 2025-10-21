@@ -1558,9 +1558,18 @@ input[type=checkbox] {
 	gap: 0.5em;
 	justify-content: flex-end;
 	&.margin {
-		margin: 10px;
-		margin-bottom: 5px;
+		padding: 10px;
+		padding-bottom: 5px;
 	}
+}
+
+.hide-scroll:has(.hide-properties2) {
+	flex: 1;
+	background-color: #222;
+
+}
+.hide-properties2 {
+	background-color: #222;
 }
 
 kit-root {
@@ -1571,9 +1580,10 @@ kit-root {
 	padding: 6px;
 	min-height: 0;
 
+	background-color: #222;
+
 	display: flex;
 	flex-direction: column;
-	background-color: #111;
 
 	kit-category {
 		--level: 0;
@@ -1581,16 +1591,18 @@ kit-root {
 		margin: 0 auto;
 		margin-top: 5px;
 
-		background-color: #1b1b1b;
+		// background-color: #1b1b1b;
 
-		border-radius: 4px;
+		// border-radius: 4px;
 
-		border: 1px solid #2d2d2d;
+		// border: 1px solid #2d2d2d;
 
 		>.title {
-			background-color: rgb(50,50,50);
 			display: flex;
 
+			&:hover {
+				background-color: rgb(50,50,50);
+			}
 			border-radius: 4px;
 
 			cursor: pointer;
