@@ -109,252 +109,258 @@ class Macros {
 
 		switch(args.markup.kind) {
 			case Node(nodeName): {
-				var elementName = domkit.CssParser.cssToHaxe(nodeName, false);
-				var elementPath = "hide.kit." + elementName;
-
-				var elementType = try Context.getType(elementPath) catch(e) {
-					error("hide-kit element " + elementPath + " doesn't exist", args.markup.pmin, args.markup.pmax);
-					return;
-				};
-
-				var constructorArgs = null;
-				var classType : ClassType = null;
-				switch(elementType) {
-					case TInst(classTypeRef, _):
-						classType = classTypeRef.get();
-						var constructorType : Type = Context.follow(classType.constructor.get().type);
-
-						while(constructorType != null) {
-							switch(constructorType) {
-								case TFun(funArgs, _):
-									constructorArgs = funArgs;
-									break;
-								default:
-									error("couldn't resolve constructor for " + elementPath, args.markup.pmin, args.markup.pmax);
-							}
-						};
-					default:
-						error("type " + elementPath + " is not a class", args.markup.pmin, args.markup.pmax);
-				}
-
-				var elementPublicId: String = null;
-				var fieldLabelAttribute = null;
-
-				var label: ExprOf<String> = null;
-				var kitInternalId: ExprOf<String> = null;
-				var field: Expr = null;
-				var fieldName : String;
-				var fieldId : String;
-
-				var fieldsAttributes = [];
-
-				for (attribute in args.markup.attributes ?? []) {
-					var valueString : String = null;
-					var valueExpr : ExprOf<String> = null;
-
-					switch(attribute.value) {
-						case RawValue(s):
-							valueString = s;
-							valueExpr = makeStringExpr(s,pos);
-						case Code(expr):
-							var typedExpr = Context.typeExpr(expr);
-							if (typedExpr.t.toString() == "String") {
-								valueExpr = expr;
-							}
-							switch (expr.expr) {
-								case EConst(CString(s)):
-									valueString = s;
-								default:
-							}
-					}
-
-					switch(attribute.name) {
-						case "label":
-							if (valueExpr == null)
-								error("label value must be string expression or a string constant", attribute.pmin, attribute.pmax);
-							label = valueExpr;
-							fieldsAttributes.push(attribute);
-						case "id":
-							if (valueString == null)
-								error("id value must be a const string", attribute.pmin, attribute.pmax);
-							elementPublicId = domkit.CssParser.cssToHaxe(valueString, true);
-							if (args.globalElements.find((otherVar) -> otherVar.name == elementPublicId) != null) {
-								error("A component with the id " + elementPublicId + " already exists in this build", attribute.pmin, attribute.pmax);
-							}
-							kitInternalId = makeStringExpr(domkit.CssParser.cssToHaxe(valueString, true), pos);
-						case "default":
-							// special case for "default" because default is a reserved keyword in haxe
-							attribute.name = "defaultValue";
-							fieldsAttributes.push(attribute);
-						case "field":
-							field = switch(attribute.value) {
-								case RawValue(v): error("field must be an expression", attribute.pmin, attribute.pmax);
-								case Code(v):
-									switch(v.expr) {
-										case EConst(CIdent(s)):
-											v;
-										case EField(_, _, _):
-											v;
-										default:
-											error("field must be an identifier expression or a structure field expression", attribute.pmin, attribute.pmax);
-									};
-							};
-
-							fieldLabelAttribute = {name: "label", value: null, pmin: attribute.pmin, pmax: attribute.pmax, vmin: attribute.vmin};
-
-							var expr = field;
-							var fieldPath: Array<String> = [];
-							while(expr != null) {
-								switch(expr.expr) {
-									case EConst(CIdent(s)):
-										fieldPath.unshift(s);
-										if (fieldName == null)
-											fieldName = s;
-										break;
-									case EField(parentExpr, partName):
-										if (fieldName == null)
-											fieldName = partName;
-										fieldPath.unshift(partName);
-										expr = parentExpr;
-									default:
-										throw "Internal error : field path contain unhandled cases";
-								}
-							}
-							fieldId = fieldPath.join(".");
-							if (fieldName == null)
-								throw "Internal error : fieldName shouldn't be null";
-						default:
-							fieldsAttributes.push(attribute);
-					}
-				}
-
-				if (label == null && field != null) {
-					label = makeStringExpr(camelToSpaceCase(fieldName), pos);
-					fieldsAttributes.push(fieldLabelAttribute);
-					fieldLabelAttribute.value = domkit.MarkupParser.AttributeValue.Code(label);
-				}
-
-				if (kitInternalId == null) {
-					if (fieldId != null) {
-						kitInternalId = makeStringExpr(fieldId, pos);
-					}
-					if (label != null) {
-						kitInternalId = macro @:privateAccess hide.kit.Macros.toInternalIdentifier(${label});
-					} else {
-						kitInternalId = makeStringExpr('#${elementName}', pos);
-					}
-				}
-
-				var elementVar : Var;
-				var isGlobal = false;
-				if (elementPublicId != null) {
-					elementVar = {name: elementPublicId, type: elementType.toComplexType(), expr: macro null};
-					args.globalElements.push(elementVar);
-					isGlobal = true;
-				} else {
-					elementVar = {name : "element", type: elementType.toComplexType()};
-					isGlobal = false;
-				}
-
-				var elementExpr : Expr = {expr: EConst(CIdent(elementVar.name)), pos: pos};
-
 				var block: Array<Expr> = [];
 
-				var newArguments : Array<Expr> = [];
-				newArguments.push(args.parent);
-				newArguments.push(kitInternalId);
+				var parentExpr : Expr = args.parent;
 
-				for (argumentNo => argument in args.markup.arguments) {
-					switch(argument.value) {
-						case RawValue(string):
-							newArguments.push(makeStringExpr(string, pos));
-						case Code(haxeExpr):
-							newArguments.push(haxeExpr);
-					}
-				}
+				if (nodeName != "root") {
+					var elementName = domkit.CssParser.cssToHaxe(nodeName, false);
+					var elementPath = "hide.kit." + elementName;
 
-
-				var newExpr : Expr = {expr: ENew(@:privateAccess TypeTools.toTypePath(classType, []), newArguments), pos: pos};
-				if (!isGlobal) {
-					var e = macro parent = $newExpr;
-					block.push({expr: EVars([elementVar]), pos: pos});
-				}
-				block.push({expr: EBinop(OpAssign, elementExpr, newExpr), pos: pos});
-
-
-				for (attribute in fieldsAttributes) {
-					var attributePos = makePos(globalPos, attribute.pmin, attribute.pmax);
-					var fieldName = domkit.CssParser.cssToHaxe(attribute.name, true);
-					var fieldExpr : Expr = {expr: EField(elementExpr, fieldName), pos: attributePos};
-					var classField = classType.findField(fieldName);
-
-					if (classField == null)
-						error("unknown class field " + fieldName, attribute.pmin, attribute.pmax);
-
-					var valueExpr : Expr = switch (attribute.value) {
-						case RawValue(string):
-							switch(Context.follow(classField.type)) {
-								case TAbstract(a, params):
-									switch(a.toString())	{
-										case "Int":
-											var int = Std.parseInt(string);
-											if (int == null)
-												error('cannot convert "$string" to Int for attribute ${attribute.name}', attribute.pmin, attribute.pmax);
-											{expr: EConst(CInt(string)), pos: attributePos};
-										case "Float":
-											var float = Std.parseFloat(string);
-											if (Math.isNaN(float))
-												error('cannot convert "$string" to Float for attribute ${attribute.name}', attribute.pmin, attribute.pmax);
-											{expr: EConst(CFloat(string)), pos: attributePos};
-										case "Bool":
-											if (string != "true" && string != "false")
-												error('cannot convert "$string" to Bool for attribute ${attribute.name} (must be either "true" or "false")', attribute.pmin, attribute.pmax);
-											{expr: EConst(CIdent(string)), pos: attributePos};
-										default:
-											error("unhandeld abstract " + a.toString(), attribute.pmin, attribute.pmax);
-									}
-								case TInst(type, _):
-									switch(type.toString()) {
-										case "String":
-											{expr: EConst(CString(string)), pos: attributePos};
-										default:
-											error("unhandeld inst " + type.toString(), attribute.pmin, attribute.pmax);
-									}
-								default:
-									error("can't convert "  + string + '(${attribute.name} -> ${classField.type})  to ' + classField.type.toString(), attribute.pmin, attribute.pmax);
-							};
-						case Code(haxeExpr):
-							haxeExpr;
-						case null:
-							{expr: EConst(CIdent("true")), pos: attributePos};
+					var elementType = try Context.getType(elementPath) catch(e) {
+						error("hide-kit element " + elementPath + " doesn't exist", args.markup.pmin, args.markup.pmax);
+						return;
 					};
-					var finalExpr = macro @:pos(attributePos) $fieldExpr = $valueExpr;
-					block.push(finalExpr);
-				}
 
-				if (field != null) {
-					// if we have a context object, remap the expression so it's in the form
-					// contextObj.path.to.field
-					if (!args.contextObj.expr.match(EConst(CIdent("null")))) {
-						field = field.map((e) -> {
-							switch(e.expr) {
-								case EConst(CIdent(s)):
-									return {expr: EField(field, s), pos: e.pos}
-								default:
-									return e;
-							}
-						});
+					var constructorArgs = null;
+					var classType : ClassType = null;
+					switch(elementType) {
+						case TInst(classTypeRef, _):
+							classType = classTypeRef.get();
+							var constructorType : Type = Context.follow(classType.constructor.get().type);
+
+							while(constructorType != null) {
+								switch(constructorType) {
+									case TFun(funArgs, _):
+										constructorArgs = funArgs;
+										break;
+									default:
+										error("couldn't resolve constructor for " + elementPath, args.markup.pmin, args.markup.pmax);
+								}
+							};
+						default:
+							error("type " + elementPath + " is not a class", args.markup.pmin, args.markup.pmax);
 					}
 
-					block.push(macro @:pos(pos) $elementExpr.value = $field);
-					block.push(macro @:pos(pos) @:privateAccess $elementExpr.onFieldChange = (temp:Bool) -> $field = $elementExpr.value);
+					var elementPublicId: String = null;
+					var fieldLabelAttribute = null;
+
+					var label: ExprOf<String> = null;
+					var kitInternalId: ExprOf<String> = null;
+					var field: Expr = null;
+					var fieldName : String;
+					var fieldId : String;
+
+					var fieldsAttributes = [];
+
+					for (attribute in args.markup.attributes ?? []) {
+						var valueString : String = null;
+						var valueExpr : ExprOf<String> = null;
+
+						switch(attribute.value) {
+							case RawValue(s):
+								valueString = s;
+								valueExpr = makeStringExpr(s,pos);
+							case Code(expr):
+								var typedExpr = Context.typeExpr(expr);
+								if (typedExpr.t.toString() == "String") {
+									valueExpr = expr;
+								}
+								switch (expr.expr) {
+									case EConst(CString(s)):
+										valueString = s;
+									default:
+								}
+						}
+
+						switch(attribute.name) {
+							case "label":
+								if (valueExpr == null)
+									error("label value must be string expression or a string constant", attribute.pmin, attribute.pmax);
+								label = valueExpr;
+								fieldsAttributes.push(attribute);
+							case "id":
+								if (valueString == null)
+									error("id value must be a const string", attribute.pmin, attribute.pmax);
+								elementPublicId = domkit.CssParser.cssToHaxe(valueString, true);
+								if (args.globalElements.find((otherVar) -> otherVar.name == elementPublicId) != null) {
+									error("A component with the id " + elementPublicId + " already exists in this build", attribute.pmin, attribute.pmax);
+								}
+								kitInternalId = makeStringExpr(domkit.CssParser.cssToHaxe(valueString, true), pos);
+							case "default":
+								// special case for "default" because default is a reserved keyword in haxe
+								attribute.name = "defaultValue";
+								fieldsAttributes.push(attribute);
+							case "field":
+								field = switch(attribute.value) {
+									case RawValue(v): error("field must be an expression", attribute.pmin, attribute.pmax);
+									case Code(v):
+										switch(v.expr) {
+											case EConst(CIdent(s)):
+												v;
+											case EField(_, _, _):
+												v;
+											default:
+												error("field must be an identifier expression or a structure field expression", attribute.pmin, attribute.pmax);
+										};
+								};
+
+								fieldLabelAttribute = {name: "label", value: null, pmin: attribute.pmin, pmax: attribute.pmax, vmin: attribute.vmin};
+
+								var expr = field;
+								var fieldPath: Array<String> = [];
+								while(expr != null) {
+									switch(expr.expr) {
+										case EConst(CIdent(s)):
+											fieldPath.unshift(s);
+											if (fieldName == null)
+												fieldName = s;
+											break;
+										case EField(parentExpr, partName):
+											if (fieldName == null)
+												fieldName = partName;
+											fieldPath.unshift(partName);
+											expr = parentExpr;
+										default:
+											throw "Internal error : field path contain unhandled cases";
+									}
+								}
+								fieldId = fieldPath.join(".");
+								if (fieldName == null)
+									throw "Internal error : fieldName shouldn't be null";
+							default:
+								fieldsAttributes.push(attribute);
+						}
+					}
+
+					if (label == null && field != null) {
+						label = makeStringExpr(camelToSpaceCase(fieldName), pos);
+						fieldsAttributes.push(fieldLabelAttribute);
+						fieldLabelAttribute.value = domkit.MarkupParser.AttributeValue.Code(label);
+					}
+
+					if (kitInternalId == null) {
+						if (fieldId != null) {
+							kitInternalId = makeStringExpr(fieldId, pos);
+						}
+						if (label != null) {
+							kitInternalId = macro @:privateAccess hide.kit.Macros.toInternalIdentifier(${label});
+						} else {
+							kitInternalId = makeStringExpr('#${elementName}', pos);
+						}
+					}
+
+					var elementVar : Var;
+					var isGlobal = false;
+					if (elementPublicId != null) {
+						elementVar = {name: elementPublicId, type: elementType.toComplexType(), expr: macro null};
+						args.globalElements.push(elementVar);
+						isGlobal = true;
+					} else {
+						elementVar = {name : "element", type: elementType.toComplexType()};
+						isGlobal = false;
+					}
+
+					var elementExpr : Expr = {expr: EConst(CIdent(elementVar.name)), pos: pos};
+					parentExpr = elementExpr;
+
+					var newArguments : Array<Expr> = [];
+					newArguments.push(args.parent);
+					newArguments.push(kitInternalId);
+
+					for (argumentNo => argument in args.markup.arguments) {
+						switch(argument.value) {
+							case RawValue(string):
+								newArguments.push(makeStringExpr(string, pos));
+							case Code(haxeExpr):
+								newArguments.push(haxeExpr);
+						}
+					}
+
+
+					var newExpr : Expr = {expr: ENew(@:privateAccess TypeTools.toTypePath(classType, []), newArguments), pos: pos};
+					if (!isGlobal) {
+						var e = macro parent = $newExpr;
+						block.push({expr: EVars([elementVar]), pos: pos});
+					}
+					block.push({expr: EBinop(OpAssign, elementExpr, newExpr), pos: pos});
+
+
+					for (attribute in fieldsAttributes) {
+						var attributePos = makePos(globalPos, attribute.pmin, attribute.pmax);
+						var fieldName = domkit.CssParser.cssToHaxe(attribute.name, true);
+						var fieldExpr : Expr = {expr: EField(elementExpr, fieldName), pos: attributePos};
+						var classField = classType.findField(fieldName);
+
+						if (classField == null)
+							error("unknown class field " + fieldName, attribute.pmin, attribute.pmax);
+
+						var valueExpr : Expr = switch (attribute.value) {
+							case RawValue(string):
+								switch(Context.follow(classField.type)) {
+									case TAbstract(a, params):
+										switch(a.toString())	{
+											case "Int":
+												var int = Std.parseInt(string);
+												if (int == null)
+													error('cannot convert "$string" to Int for attribute ${attribute.name}', attribute.pmin, attribute.pmax);
+												{expr: EConst(CInt(string)), pos: attributePos};
+											case "Float":
+												var float = Std.parseFloat(string);
+												if (Math.isNaN(float))
+													error('cannot convert "$string" to Float for attribute ${attribute.name}', attribute.pmin, attribute.pmax);
+												{expr: EConst(CFloat(string)), pos: attributePos};
+											case "Bool":
+												if (string != "true" && string != "false")
+													error('cannot convert "$string" to Bool for attribute ${attribute.name} (must be either "true" or "false")', attribute.pmin, attribute.pmax);
+												{expr: EConst(CIdent(string)), pos: attributePos};
+											default:
+												error("unhandeld abstract " + a.toString(), attribute.pmin, attribute.pmax);
+										}
+									case TInst(type, _):
+										switch(type.toString()) {
+											case "String":
+												{expr: EConst(CString(string)), pos: attributePos};
+											default:
+												error("unhandeld inst " + type.toString(), attribute.pmin, attribute.pmax);
+										}
+									default:
+										error("can't convert "  + string + '(${attribute.name} -> ${classField.type})  to ' + classField.type.toString(), attribute.pmin, attribute.pmax);
+								};
+							case Code(haxeExpr):
+								haxeExpr;
+							case null:
+								{expr: EConst(CIdent("true")), pos: attributePos};
+						};
+						var finalExpr = macro @:pos(attributePos) $fieldExpr = $valueExpr;
+						block.push(finalExpr);
+					}
+
+					if (field != null) {
+						// if we have a context object, remap the expression so it's in the form
+						// contextObj.path.to.field
+						if (!args.contextObj.expr.match(EConst(CIdent("null")))) {
+							field = field.map((e) -> {
+								switch(e.expr) {
+									case EConst(CIdent(s)):
+										return {expr: EField(field, s), pos: e.pos}
+									default:
+										return e;
+								}
+							});
+						}
+
+						block.push(macro @:pos(pos) $elementExpr.value = $field);
+						block.push(macro @:pos(pos) @:privateAccess $elementExpr.onFieldChange = (temp:Bool) -> $field = $elementExpr.value);
+					}
+
 				}
 
 				var hasChildren = args.markup.children?.length > 0;
 
 				if (hasChildren) {
 					var outputExpr: Array<Expr> = [];
-					var parentExpr = macro @:pos(pos) var __parent = $elementExpr;
+					var parentExpr = macro @:pos(pos) var __parent = $parentExpr;
 					outputExpr.push(parentExpr);
 					for (childIndex => childMarkup in args.markup.children) {
 						var childPos = makePos(globalPos, childMarkup.pmin, childMarkup.pmax);
