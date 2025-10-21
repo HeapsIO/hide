@@ -344,7 +344,7 @@ class FXAnimation extends h3d.scene.Object {
 		localTime = newTimeParent - startDelay;
 
 		if (isSeek && loop) {
-			if (localTime >= loopEnd) {
+			if (loopEnd > 0 && localTime >= loopEnd) {
 				playState = End;
 			} else if (localTime < loopStart) {
 				playState = Start;
@@ -360,7 +360,7 @@ class FXAnimation extends h3d.scene.Object {
 			}
 
 			if (playState == Loop && isSeek) {
-				if (localTime >= loopEnd) {
+				if (loopEnd > 0 && localTime >= loopEnd) {
 					playState = End;
 				} else if (localTime < loopStart) {
 					playState = Start;
@@ -369,7 +369,7 @@ class FXAnimation extends h3d.scene.Object {
 
 			if (playState == Loop) {
 				localTime = oldLocalTime + dt;
-				if (loopEnd - loopStart > 0) {
+				if (loopEnd > 0 && loopEnd - loopStart > 0) {
 					localTime = ((localTime - loopStart) % (loopEnd - loopStart)) + loopStart;
 				}
 			}
