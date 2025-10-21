@@ -4208,6 +4208,7 @@ class SceneEditor {
 
 				if (hasNewInspector && allowNewInspector) {
 					properties.element.removeClass("hide-properties");
+					properties.element.addClass("hide-properties2");
 					properties.element.removeClass("props");
 					toggle.addClass("margin");
 					var proxyPrefab = Type.createInstance(commonClass, [null, new ContextShared()]);
