@@ -243,8 +243,8 @@ class Object3D extends Prefab {
 		super.editorRemoveInstanceObjects();
 	}
 
-	override function edit2(root:hide.kit.KitRoot) {
-		root.build(
+	override function edit2(ctx:hrt.prefab.EditContext2) {
+		ctx.build(
 			<category("Position")>
 				<line label="Position">
 					<slider field={x}/>

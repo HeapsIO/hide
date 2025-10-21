@@ -6,7 +6,7 @@ class Category extends Element {
 
 	public function new(parent: Element, id: String, name: String) : Void {
 		this.name = name;
-		super(parent, id);
+		super(parent, name);
 	}
 
 	#if js
