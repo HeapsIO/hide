@@ -195,6 +195,16 @@ class KitTest extends Object3D {
 					button.onClick = () -> trace('onclick $i');
 				}
 
+				ctx.build(
+					<root>
+						<category("A")>
+						</category>
+						<category("B")>
+						</category>
+					</root>
+				);
+
+
 				// uncomment this to test error "contextObj must be not null for `field` to work"
 				// root.build(<slider field={foo}/>, null, parentGroup);
 
