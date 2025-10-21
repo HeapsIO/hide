@@ -1397,8 +1397,15 @@ input[type=checkbox].indeterminate:after {
   justify-content: flex-end;
 }
 .new-editor-prompt-toggle.margin {
-  margin: 10px;
-  margin-bottom: 5px;
+  padding: 10px;
+  padding-bottom: 5px;
+}
+.hide-scroll:has(.hide-properties2) {
+  flex: 1;
+  background-color: #222;
+}
+.hide-properties2 {
+  background-color: #222;
 }
 kit-root {
   --widget-height: 22px;
@@ -1407,27 +1414,26 @@ kit-root {
   --widget-gap: 2px;
   padding: 6px;
   min-height: 0;
+  background-color: #222;
   display: flex;
   flex-direction: column;
-  background-color: #111;
 }
 kit-root kit-category {
   --level: 0;
   width: calc(100% - var(--level) * 5%);
   margin: 0 auto;
   margin-top: 5px;
-  background-color: #1b1b1b;
-  border-radius: 4px;
-  border: 1px solid #2d2d2d;
 }
 kit-root kit-category > .title {
-  background-color: #323232;
   display: flex;
   border-radius: 4px;
   cursor: pointer;
   user-select: none;
   padding: 1px;
   position: relative;
+}
+kit-root kit-category > .title:hover {
+  background-color: #323232;
 }
 kit-root kit-category > .title input[type=button] {
   border: none;
