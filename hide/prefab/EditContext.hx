@@ -4,16 +4,12 @@ package hide.prefab;
 import hrt.prefab.Prefab;
 #end
 
-class EditContext #if (editor && !macro) implements hide.kit.EditorAPI #end {
+class EditContext {
 	#if !macro
 
 	#if editor
 
-	public var hideKitRoot: hide.kit.Element;
-
 	public var rootPrefab : hrt.prefab.Prefab;
-	public var kitRoot: hide.kit.KitRoot;
-	public var saveKey: String;
 
 	var undo : hide.ui.UndoHistory;
 
@@ -143,31 +139,42 @@ class EditContext #if (editor && !macro) implements hide.kit.EditorAPI #end {
 
 		return out;
 	}
+	#end
+}
+
+@:access(hide.prefab.EditContext)
+class HideJsEditContext2 extends hrt.prefab.EditContext2 {
+	var ctx : EditContext;
+	var saveKey: String;
+
+	public function new(ctx: EditContext) {
+		this.ctx = ctx;
+	}
 
 	public function recordUndo(cb: (isUndo:Bool) -> Void) {
-		undo.change(Custom(cb));
+		ctx.undo.change(Custom(cb));
 	}
 
 	public function refreshInspector() : Void {
-		rebuildProperties();
+		ctx.rebuildProperties();
 	}
 
-	public function saveSetting(category: hide.kit.EditorAPI.SettingCategory, key: String, value: Dynamic) : Void {
+	public function saveSetting(category: hrt.prefab.EditContext2.SettingCategory, key: String, value: Dynamic) : Void {
 		if (value == null) {
-			ide.localStorage.removeItem(getSaveKey(category, key));
+			ctx.ide.localStorage.removeItem(getSaveKey(category, key));
 			return;
 		}
-		ide.localStorage.setItem(getSaveKey(category, key), haxe.Json.stringify(value));
+		ctx.ide.localStorage.setItem(getSaveKey(category, key), haxe.Json.stringify(value));
 	};
 
-	public function getSetting(category: hide.kit.EditorAPI.SettingCategory, key: String) : Null<Dynamic> {
-		var v = ide.localStorage.getItem(getSaveKey(category, key));
+	public function getSetting(category: hrt.prefab.EditContext2.SettingCategory, key: String) : Null<Dynamic> {
+		var v = ctx.ide.localStorage.getItem(getSaveKey(category, key));
 		if( v == null )
 			return null;
 		return haxe.Json.parse(v);
 	};
 
-	function getSaveKey(category: hide.kit.EditorAPI.SettingCategory, key: String) {
+	function getSaveKey(category: hrt.prefab.EditContext2.SettingCategory, key: String) {
 		var mid = switch(category) {
 			case Global:
 				"global";
@@ -177,5 +184,12 @@ class EditContext #if (editor && !macro) implements hide.kit.EditorAPI #end {
 
 		return 'inspector/$mid/$key';
 	}
-	#end
+
+	public function getScene3d() : h3d.scene.Scene {
+		return ctx.scene.s3d;
+	}
+
+	public function getCameraController3d():hide.view.CameraController.CameraControllerBase {
+		return ctx.scene.editor.cameraController;
+	}
 }

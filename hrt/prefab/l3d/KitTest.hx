@@ -30,7 +30,7 @@ class KitTest extends Object3D {
 	var substruct: SubStruct = { innerValue: 0.0, };
 
 	#if js
-	override function edit2(root:hide.kit.KitRoot) {
+	override function edit2(ctx:hrt.prefab.EditContext2) {
 		// TEST
 		{
 
@@ -48,7 +48,7 @@ class KitTest extends Object3D {
 
 
 			var localVar = 42.0;
-			root.build(
+			ctx.build(
 				<category("hello") id="hello">
 					<text("world")/>
 					<slider label="Slider" id="slider" min="-10" max="10"/>
@@ -83,7 +83,7 @@ class KitTest extends Object3D {
 			// 	</element>, this
 			// );
 
-			root.build(
+			ctx.build(
 				<category("Test Editor Kit")>
 					<slider field={x}/>
 					<slider field={y}/>
@@ -110,6 +110,7 @@ class KitTest extends Object3D {
 			);
 
 			{
+				var root = ctx.root;
 				var cat = new hide.kit.Category( root, "testEditor", "Test Editor");
 				{
 					var text = new hide.kit.Text( cat, null, "Text");
@@ -145,7 +146,7 @@ class KitTest extends Object3D {
 					}
 				}
 
-				root.build(
+				ctx.build(
 					<category("All Elements Kit")>
 						<text("Text")/>
 						<slider label="Slider" value={12.34}/>
