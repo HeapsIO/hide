@@ -638,14 +638,6 @@ class Prefab {
 	public function edit2(ctx: hrt.prefab.EditContext2) : Void {
 	}
 
-	/**
-		Override this to return true if the prefab class edit2 function has side effects that would break
-		the multi edit architechture. Example : If the edit2 has buttons that modify the editor scene state.
-	**/
-	function supportMultiEdit() : Bool {
-		return true;
-	}
-
 	#if editor
 	/**
 		Allows to customize how the prefab object is displayed / handled within Hide

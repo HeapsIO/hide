@@ -1570,6 +1570,19 @@ input[type=checkbox] {
 }
 
 kit-root {
+	.disabled {
+		color: #777 !important;
+		pointer-events: none;
+
+		kit-button, input {
+			pointer-events: none;
+			color: #777 !important;
+			cursor: pointer;
+			background-color: #222;
+			border-color: #444;
+		}
+	}
+
 	--widget-height: 22px;
 	--widget-bg: #2d2d2d;
 	--widget-hover-bg: #3d3d3d;
