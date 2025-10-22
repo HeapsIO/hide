@@ -226,21 +226,38 @@ class Camera extends Object3D {
 		}
 	}
 
+	override function supportMultiEdit() : Bool {
+		return false;
+	}
+
 	override function edit2(ctx:hrt.prefab.EditContext2) : Void {
 		super.edit2(ctx);
 		editContext2 = ctx;
 
 		ctx.build(
-			<category("Camera")>
-				<range(0,180) field={fovY}/>
-				<range(0,1000) field={zFar}/>
-				<range(0,1000) field={zNear}/>
-				<line>
-					<button("Copy") id="copy"/>
-					<button("Apply") id="apply"/>
-					<button("Reset") id="reset"/>
-				</line>
-			</category>
+			<root>
+				<category("Camera")>
+					<range(0,180) field={fovY}/>
+					<range(0,1000) field={zFar}/>
+					<range(0,1000) field={zNear}/>
+					<line>
+						<button("Copy") id="copy"/>
+						<button("Apply") id="apply"/>
+						<button("Reset") id="reset"/>
+					</line>
+				</category>
+				<category("Ortho")>
+					<checkbox field={ortho}/>
+					<slider label="X width" field={orthoWidth}/>
+				</category>
+				<category("Debug")>
+					<checkbox field={showFrustum}/>
+					<button("Preview Mode") highlight={preview} id="btnPreviewMode" />
+				</category>
+				<category("Deprecation")>
+					<button("Upgrade") id="upgrade"/>
+				</category>
+			</root>
 		);
 
 		copy.onClick = () -> {
@@ -255,20 +272,6 @@ class Camera extends Object3D {
 			camController.loadFOVFromCamera();
 			camController.loadFromCamera(true);
 		}
-
-		ctx.build(
-			<category("Ortho")>
-				<checkbox field={ortho}/>
-				<slider label="X width" field={orthoWidth}/>
-			</category>
-		);
-
-		ctx.build(
-			<category("Debug")>
-				<checkbox field={showFrustum}/>
-				<button("Preview Mode") highlight={preview} id="btnPreviewMode" />
-			</category>
-		);
 
 		btnPreviewMode.onClick = () -> {
 			preview = !preview;
@@ -326,11 +329,6 @@ class Camera extends Object3D {
 			}
 		}
 
-		ctx.build(
-			<category("Deprecation")>
-				<button("Upgrade") id="upgrade"/>
-			</category>
-		);
 
 
 	}
