@@ -1400,12 +1400,9 @@ input[type=checkbox].indeterminate:after {
   padding: 10px;
   padding-bottom: 5px;
 }
-.hide-scroll:has(.hide-properties2) {
+.hide-scroll:has(kit-root) {
   flex: 1;
-  background-color: #222;
-}
-.hide-properties2 {
-  background-color: #222;
+  background-color: #111111;
 }
 kit-root {
   --widget-height: 22px;
@@ -1414,7 +1411,7 @@ kit-root {
   --widget-gap: 2px;
   padding: 6px;
   min-height: 0;
-  background-color: #222;
+  background-color: #111111;
   display: flex;
   flex-direction: column;
 }
