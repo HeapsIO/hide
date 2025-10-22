@@ -1670,8 +1670,8 @@ kit-root {
 
 		>.collapsable>.content {
 			box-sizing: border-box;
-
-			padding: 5px;
+			padding-top: 0.2em;
+			padding-bottom: 1em;
 		}
 
 		&.open>.title {
@@ -1715,15 +1715,15 @@ kit-root {
 		position: relative;
 
 		&:hover {
-			background-color: #282828;
-			&:after {
-				position: absolute;
-				border-right: 4px solid #666;
-				top: 0;
-				bottom: 0;
-				left: -4px;
-				content: "";
-			}
+			background-color: #222;
+			// &:after {
+			// 	position: absolute;
+			// 	border-right: 4px solid #666;
+			// 	top: 0;
+			// 	bottom: 0;
+			// 	left: 0px;
+			// 	content: "";
+			// }
 		}
 
 		display: flex;
@@ -1965,7 +1965,9 @@ kit-root {
 			}
 		}
 
-		&.multiline {
+		kit-multiline {
+			flex-grow: 1;
+			display: flex;
 			flex-wrap: wrap;
 		}
 	}
