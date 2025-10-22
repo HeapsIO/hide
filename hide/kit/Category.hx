@@ -1,8 +1,13 @@
 package hide.kit;
 
 class Category extends Element {
+	/**
+		If this category should be closed by default
+	**/
+	public var closed = false;
+
 	var name(default, null) : String;
-	var open : Bool;
+	var openState : Bool;
 
 	public function new(parent: Element, id: String, name: String) : Void {
 		this.name = name;
@@ -33,12 +38,16 @@ class Category extends Element {
 		title.addEventListener("mousedown", (event: js.html.MouseEvent) -> {
 			if (event.button != 0)
 				return;
-			open = !open;
-			saveSetting(SameKind, "open", open ? null : false);
+			openState = !openState;
+			if (closed) {
+				saveSetting(SameKind, "openState", openState ? true : null);
+			} else {
+				saveSetting(SameKind, "openState", openState ? null : false);
+			}
 			refresh();
 		});
 
-		open = getSetting(SameKind, "open") ?? true;
+		openState = getSetting(SameKind, "openState") ?? !closed;
 		refresh();
 		addEditMenu(title);
 
@@ -50,7 +59,7 @@ class Category extends Element {
 
 	function refresh() {
 		#if js
-		native.classList.toggle("open", open);
+		native.classList.toggle("open", openState);
 		#end
 	}
 }

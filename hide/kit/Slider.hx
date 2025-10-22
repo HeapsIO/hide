@@ -1,18 +1,21 @@
 package hide.kit;
 
-class Slider extends Widget<Float> {
+class Slider<T:Float> extends Widget<T> {
 	#if js
 	var slider: js.html.InputElement;
 	#else
 	var slider: hrt.ui.HuiSlider;
 	#end
 
-	public var min(default, set) : Null<Float> = null;
-	public var max(default, set) : Null<Float> = null;
-	public var step : Null<Float> = null;
-	public var exp : Null<Float> = null;
+	public var min(default, set) : Null<T> = null;
+	public var max(default, set) : Null<T> = null;
+	public var step : Null<T> = null;
+	public var exp : Null<T> = null;
 	public var wrap: Bool = false;
 	var showRange: Bool = false;
+
+	// set internally by the macro if the field is an Int
+	var isInt : Bool = false;
 
 	function makeInput() : NativeElement {
 		#if js
@@ -44,19 +47,21 @@ class Slider extends Widget<Float> {
 
 			var currentValue = value;
 
-			var newValue = value;
+			var newValue : Float = value;
 			var delta = e.movementX / js.Browser.window.devicePixelRatio;
 
 			if (exp != null) {
-				var mult = exp;
+				var mult : Float = exp;
 				if (e.ctrlKey) mult *= 10.0;
 				if (e.shiftKey) mult /= 10.0;
 
 				newValue = value * hxd.Math.exp(delta * mult);
 			} else {
-				var mult = step ?? 0.01;
+				var mult : Float = step;
+				if (mult == null)
+					mult = isInt ? 1 : 0.01;
 
-				if (step == null) {
+				if (step == null && !isInt) {
 					if (min != null && max != null) {
 						var currentStep = hxd.Math.floor(hxd.Math.log10(hxd.Math.abs(max-min)));
 						mult = hxd.Math.pow(10.0, currentStep-2);
@@ -77,7 +82,7 @@ class Slider extends Widget<Float> {
 					newValue = hxd.Math.min(newValue, max);
 			}
 
-			slideTo(newValue, true);
+			slideTo(cast newValue, true);
 			hasMoved = true;
 		});
 
@@ -127,7 +132,7 @@ class Slider extends Widget<Float> {
 
 		slider.addEventListener("blur", (e: js.html.FocusEvent) -> {
 			var newValue = Std.parseFloat(slider.value);
-			slideTo(newValue ?? value, false);
+			slideTo(cast newValue ?? value, false);
 		});
 
 		return container;
@@ -143,7 +148,7 @@ class Slider extends Widget<Float> {
 		#end
 	}
 
-	function slideTo(newValue: Float, isTemporary: Bool) {
+	function slideTo(newValue: T, isTemporary: Bool) {
 		var group = Std.downcast(parent, SliderGroup);
 		if (group != null && group.isLocked) {
 			var changeDelta = newValue / value;
@@ -155,9 +160,9 @@ class Slider extends Widget<Float> {
 					continue;
 
 				if (Math.isFinite(changeDelta)) {
-					siblingSlider.value = siblingSlider.value * changeDelta;
+					siblingSlider.value = cast (siblingSlider.value:Float) * changeDelta;
 				} else {
-					siblingSlider.value = newValue;
+					siblingSlider.value = cast newValue;
 				}
 				sliders.push(siblingSlider);
 			}
@@ -166,6 +171,9 @@ class Slider extends Widget<Float> {
 		}
 		else {
 			value = newValue;
+			if (isInt) {
+				value = cast hxd.Math.round(cast value);
+			}
 			broadcastValueChange(isTemporary);
 		}
 	}
@@ -203,14 +211,14 @@ class Slider extends Widget<Float> {
 		}
 	}
 
-	function getDefaultFallback() : Float {
-		return 0.0;
+	function getDefaultFallback() : T {
+		return cast 0;
 	}
 
-	function stringToValue(obj: String) : Null<Float> {
+	function stringToValue(obj: String) : Null<T> {
 		var unser = Std.parseFloat(obj);
 		if (Math.isNaN(unser))
 			return null;
-		return unser;
+		return cast unser;
 	}
 }
