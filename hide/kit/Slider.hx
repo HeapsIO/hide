@@ -9,7 +9,7 @@ class Slider extends Widget<Float> {
 
 	public var min(default, set) : Null<Float> = null;
 	public var max(default, set) : Null<Float> = null;
-	public var step : Null<Float> = 0.01;
+	public var step : Null<Float> = null;
 	public var exp : Null<Float> = null;
 	public var wrap: Bool = false;
 	var showRange: Bool = false;
@@ -54,13 +54,10 @@ class Slider extends Widget<Float> {
 
 				newValue = value * hxd.Math.exp(delta * mult);
 			} else {
-				var mult = step;
+				var mult = step ?? 0.01;
 
 				if (step == null) {
-					if (min == null && max == null) {
-						var currentStep = hxd.Math.floor(hxd.Math.max(hxd.Math.log10(hxd.Math.abs(currentValue)), -3));
-						mult = hxd.Math.pow(10.0, currentStep-1);
-					} else {
+					if (min != null && max != null) {
 						var currentStep = hxd.Math.floor(hxd.Math.log10(hxd.Math.abs(max-min)));
 						mult = hxd.Math.pow(10.0, currentStep-2);
 					}

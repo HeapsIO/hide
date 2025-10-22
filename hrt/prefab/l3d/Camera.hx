@@ -239,7 +239,7 @@ class Camera extends Object3D {
 				<category("Camera")>
 					<range(0,180) field={fovY}/>
 					<range(0,1000) field={zFar}/>
-					<range(0,1000) field={zNear}/>
+					<range(0,10) field={zNear}/>
 					<line>
 						<button("Copy") id="copy"/>
 						<button("Apply") id="apply"/>
