@@ -193,7 +193,7 @@ class Macros {
 								fieldsAttributes.push(attribute);
 							case "field":
 								field = switch(attribute.value) {
-									case RawValue(v): error("field must be an expression", attribute.pmin, attribute.pmax);
+									case RawValue(v): error("field must be an identifier expression or a structure field expression", attribute.pmin, attribute.pmax);
 									case Code(v):
 										switch(v.expr) {
 											case EConst(CIdent(s)):
@@ -293,7 +293,7 @@ class Macros {
 						var classField = classType.findField(fieldName);
 
 						if (classField == null)
-							error("unknown class field " + fieldName, attribute.pmin, attribute.pmax);
+							error('$elementPath has no attribute named $fieldName', attribute.pmin, attribute.pmax);
 
 						var valueExpr : Expr = switch (attribute.value) {
 							case RawValue(string):
@@ -390,7 +390,7 @@ class Macros {
 				args.outputExprs.push(finalExpr);
 			}
 			default:
-				error("unhandled", args.markup.pmin, args.markup.pmax);
+				throw "Internal error : unhandled node kind " + args.markup.kind;
 		}
 	}
 
