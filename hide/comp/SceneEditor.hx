@@ -4180,6 +4180,22 @@ class SceneEditor {
 
 			if( elts.length > 0 ) {
 				var commonClass = hrt.tools.ClassUtils.getCommonClass(elts, hrt.prefab.Prefab);
+
+				/**
+					If we are in a multi edit scenario, find the first prefab class that actually supports
+					multi edit
+				**/
+				if (elts.length > 1) {
+					while(true) {
+						var inst = Type.createEmptyInstance(commonClass);
+						if (!inst.supportMultiEdit()) {
+							commonClass = cast Type.getSuperClass(commonClass);
+						} else {
+							break;
+						}
+					}
+				}
+
 				var parentClass = Type.getSuperClass(commonClass);
 				var hasNewInspector = false;
 
@@ -4212,7 +4228,12 @@ class SceneEditor {
 					properties.element.removeClass("props");
 					toggle.addClass("margin");
 					var proxyPrefab = Type.createInstance(commonClass, [null, new ContextShared()]);
-					proxyPrefab.load(haxe.Json.parse(haxe.Json.stringify(elts[0].save())));
+					var canMultiEdit = proxyPrefab.supportMultiEdit();
+					if (canMultiEdit) {
+						proxyPrefab.load(haxe.Json.parse(haxe.Json.stringify(elts[0].save())));
+					} else {
+						proxyPrefab = elts[0];
+					}
 
 					var ectx2 = new hide.prefab.EditContext.HideJsEditContext2(edit);
 
@@ -4221,13 +4242,16 @@ class SceneEditor {
 					ectx2.root = baseRoot;
 
 					proxyPrefab.edit2(ectx2);
-					for (i => select in selectedPrefabs) {
-						var ectx2 = new hide.prefab.EditContext.HideJsEditContext2(edit);
-						@:privateAccess ectx2.saveKey = Type.getClassName(commonClass);
-						var childRoot = new hide.kit.KitRoot(null, null, select, ectx2);
-						baseRoot.editedPrefabsProperties.push(childRoot);
-						ectx2.root = childRoot;
-						select.edit2(ectx2);
+
+					if (canMultiEdit) {
+						for (i => select in selectedPrefabs) {
+							var ectx2 = new hide.prefab.EditContext.HideJsEditContext2(edit);
+							@:privateAccess ectx2.saveKey = Type.getClassName(commonClass);
+							var childRoot = new hide.kit.KitRoot(null, null, select, ectx2);
+							baseRoot.editedPrefabsProperties.push(childRoot);
+							ectx2.root = childRoot;
+							select.edit2(ectx2);
+						}
 					}
 
 					baseRoot.make();
