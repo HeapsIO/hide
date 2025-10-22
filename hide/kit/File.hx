@@ -2,7 +2,7 @@ package hide.kit;
 
 class File extends Widget<String> {
 
-	public var type : String;
+	public var type : String = "file";
 
 	#if js
 	var text: js.html.ParagraphElement;
@@ -10,20 +10,13 @@ class File extends Widget<String> {
 
 	function makeInput():NativeElement {
 		#if js
-		input = js.Browser.document.createElement("kit-file");
-		text = js.Browser.document.createParagraphElement();
-		input.appendChild(text);
+		var file = new hide.comp.FileSelect(types.get(type), null, null, true);
+		file.onChange = () -> {
+			value = file.path;
+			broadcastValueChange(false);
+		}
 
-		input.addEventListener("mousedown", (e: js.html.MouseEvent) -> {
-			if (e.button != 0)
-				return;
-			Ide.inst.chooseFile(types.get(type), (v: String) -> {
-				value = v;
-				broadcastValueChange(false);
-			}, true);
-		});
-
-		return input;
+		return file.element[0];
 		#else
 		throw "implment";
 		#end
@@ -32,7 +25,7 @@ class File extends Widget<String> {
 	override function syncValueUI() {
 		#if js
 		if (text != null)
-			text.innerText = value ?? "-- Choose Texture --";
+			text.innerText = value ?? '-- Choose ${type.toUpperCase()} --';
 		#end
 	}
 
@@ -41,6 +34,7 @@ class File extends Widget<String> {
 	}
 
 	static var types : Map<String, Array<String>> = [
+		"file" => ["*"],
 		"prefab" => ["prefab", "l3d", "fx"],
 		"texture" => ["png", "dds", "jpeg", "jpg"],
 		"model" => ["fbx", "hmd"],
