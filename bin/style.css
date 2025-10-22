@@ -1483,7 +1483,8 @@ kit-root kit-category.open > .collapsable {
 }
 kit-root kit-category > .collapsable > .content {
   box-sizing: border-box;
-  padding: 5px;
+  padding-top: 0.2em;
+  padding-bottom: 1em;
 }
 kit-root kit-category.open > .title {
   border-bottom-left-radius: 0px;
@@ -1526,15 +1527,7 @@ kit-root kit-line {
   min-height: var(--widget-height);
 }
 kit-root kit-line:hover {
-  background-color: #282828;
-}
-kit-root kit-line:hover:after {
-  position: absolute;
-  border-right: 4px solid #666;
-  top: 0;
-  bottom: 0;
-  left: -4px;
-  content: "";
+  background-color: #222;
 }
 kit-root kit-line kit-label {
   font-size: 0.95em;
@@ -1724,7 +1717,9 @@ kit-root kit-line kit-file:hover.highlight,
 kit-root kit-line kit-button:hover.highlight {
   background-color: var(--selection);
 }
-kit-root kit-line.multiline {
+kit-root kit-line kit-multiline {
+  flex-grow: 1;
+  display: flex;
   flex-wrap: wrap;
 }
 /* Image Viewer */
