@@ -298,6 +298,10 @@ class KitTest extends Object3D {
 				<unknown-component/>, this, "hide-kit element hide.kit.UnknownComponent doesn't exist"
 			);
 
+			hide.kit.Macros.testError(
+				<native-element/>, this, "type hide.kit.NativeElement is not a class"
+			);
+
 			// LABEL RELATED TESTS
 
 			hide.kit.Macros.testNoError(
@@ -338,6 +342,13 @@ class KitTest extends Object3D {
 				);
 			}
 
+			hide.kit.Macros.testError(
+				<root>
+					<range id="a"/>
+					<range id="a"/>
+				</root>
+			, this, "A component with the id a already exists in this build");
+
 			// Field related tests
 
 			hide.kit.Macros.testNoError(
@@ -360,7 +371,7 @@ class KitTest extends Object3D {
 			}
 
 			hide.kit.Macros.testError(
-				<range field="x"/>, this, "field must be an expression"
+				<range field="x"/>, this, "field must be an identifier expression or a structure field expression"
 			);
 
 			hide.kit.Macros.testError(
@@ -379,11 +390,11 @@ class KitTest extends Object3D {
 			);
 
 			hide.kit.Macros.testError(
-				<range unknown-attribute="true"/>, this, "unknown class field unknownAttribute"
+				<range unknown-attribute="true"/>, this, "hide.kit.Range has no attribute named unknownAttribute"
 			);
 
 			hide.kit.Macros.testError(
-				<range unknown-attribute/>, this, "unknown class field unknownAttribute"
+				<range unknown-attribute/>, this, "hide.kit.Range has no attribute named unknownAttribute"
 			);
 
 			hide.kit.Macros.testNoError(
