@@ -6,8 +6,9 @@ class KitRoot #if !macro extends Element #end {
 	var prefab : hrt.prefab.Prefab;
 	var prefabUndoPoint : Dynamic = null;
 	public var editor(default, null) : hrt.prefab.EditContext2;
+	public var isMultiEdit(default, null) : Bool;
 
-	public function new(parent: Element, id: String, prefab: hrt.prefab.Prefab, editor: hrt.prefab.EditContext2 ) {
+	public function new(parent: Element, id: String, prefab: hrt.prefab.Prefab, editor: hrt.prefab.EditContext2) {
 		super(parent, id);
 		this.prefab = prefab;
 		this.editor = editor;

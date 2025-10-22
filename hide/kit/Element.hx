@@ -5,6 +5,12 @@ class Element {
 	#if !macro
 	var parent(default, null) : Element;
 
+
+	/**
+		If set, the element and it's children will be disabled when editing more than one prefab at the time.
+	**/
+	public var singleEdit : Bool = false;
+
 	/**
 		Internal ID of this element that is unique between this element siblings
 	**/
@@ -13,6 +19,8 @@ class Element {
 
 	var children : Array<Element> = [];
 	public var numChildren(get, never) : Int;
+
+	var enabled = true;
 
 	/**
 		The underlying implementation element
@@ -40,11 +48,19 @@ class Element {
 		Create the native elements of this Element to be displayed in the editor
 	**/
 	public function make() {
+		if (singleEdit && root.isMultiEdit)
+			enabled = false;
+
 		makeSelf();
 
+		if (parent != null)
+			parent.attachChildNative(this);
+
+		setEnabled(enabled);
+
 		for (c in children) {
+			c.enabled = c.enabled && enabled;
 			c.make();
-			attachChildNative(c);
 		}
 	}
 
@@ -106,18 +122,20 @@ class Element {
 
 	function addEditMenu(e: NativeElement) {
 		#if js
-		native.addEventListener("contextmenu", (e: js.html.MouseEvent) -> {
-			e.preventDefault();
-			e.stopPropagation();
+		if (enabled) {
+			native.addEventListener("contextmenu", (e: js.html.MouseEvent) -> {
+				e.preventDefault();
+				e.stopPropagation();
 
-			hide.comp.ContextMenu.createFromEvent(e, [
-				{label: "Copy", click: copyToClipboard},
-				{label: "Paste", click: pasteFromClipboard},
-				{isSeparator: true},
-				{label: "Reset", click: resetWithUndo},
-			]
-			);
-		});
+				hide.comp.ContextMenu.createFromEvent(e, [
+					{label: "Copy", click: copyToClipboard},
+					{label: "Paste", click: pasteFromClipboard},
+					{isSeparator: true},
+					{label: "Reset", click: resetWithUndo},
+				]
+				);
+			});
+		}
 		#end
 	}
 
@@ -266,6 +284,15 @@ class Element {
 		nativeContent.appendChild(child.native);
 		#else
 		nativeContent.addChild(child.native);
+		#end
+	}
+
+	function setEnabled(enabled: Bool) : Void {
+		this.enabled = enabled;
+		#if js
+		nativeContent.classList.toggle("disabled", !enabled);
+		#else
+
 		#end
 	}
 
