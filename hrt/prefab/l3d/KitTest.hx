@@ -150,6 +150,7 @@ class KitTest extends Object3D {
 					<category("All Elements Kit")>
 						<text("Text")/>
 						<slider label="Slider" value={12.34}/>
+						<slider label="Disabled slider" value={12.34} disabled/>
 						<slider label="Slider Exp" value={12.34} exp={0.001}/>
 						<range(0.0, 100.0) label="Range" value={12.34}/>
 						<line>
@@ -161,6 +162,7 @@ class KitTest extends Object3D {
 						<file field={filePath} type="texture"/>
 						<button("Button")/>
 						<button("Button Highlight") highlight/>
+						<button("Button Disabled") disabled/>
 						<input label="Input" placeholder="Placeholder text" field={inputString}/>
 						<color field={color}/>
 						<gradient field={gradient}/>
