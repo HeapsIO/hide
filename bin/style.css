@@ -5132,6 +5132,10 @@ fancy-tree fancy-scroll fancy-item-container {
   overflow: hidden;
   contain: strict;
 }
+fancy-tree fancy-closable {
+  position: sticky !important;
+  top: 0px;
+}
 fancy-tree.overlay {
   background-color: transparent;
 }
