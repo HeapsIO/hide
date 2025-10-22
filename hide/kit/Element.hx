@@ -3,24 +3,28 @@ package hide.kit;
 @:keepSub
 class Element {
 	#if !macro
-	var parent(default, null) : Element;
-
-
 	/**
-		If set, the element and it's children will be disabled when editing more than one prefab at the time.
+		If set, the element and its children will be disabled when editing more than one prefab at the time.
 	**/
 	public var singleEdit : Bool = false;
 
 	/**
-		Internal ID of this element that is unique between this element siblings
+		If set, the element and its children can't be edited and will be grayed out
+	**/
+	public var disabled = false;
+
+
+	/**
+		Internal ID of this element that is unique between this element siblings (use getIdPath for a unique identifier in this element tree)
 	**/
 	var id(default, null) : String;
+
 	var root(default, null) : hide.kit.KitRoot;
+	var parent(default, null) : Element;
 
 	var children : Array<Element> = [];
 	public var numChildren(get, never) : Int;
 
-	var enabled = true;
 
 	/**
 		The underlying implementation element
@@ -49,17 +53,17 @@ class Element {
 	**/
 	public function make() {
 		if (singleEdit && root.isMultiEdit)
-			enabled = false;
+			disabled = true;
 
 		makeSelf();
 
 		if (parent != null)
 			parent.attachChildNative(this);
 
-		setEnabled(enabled);
+		setEnabled(!disabled);
 
 		for (c in children) {
-			c.enabled = c.enabled && enabled;
+			c.disabled = c.disabled || disabled;
 			c.make();
 		}
 	}
@@ -122,7 +126,7 @@ class Element {
 
 	function addEditMenu(e: NativeElement) {
 		#if js
-		if (enabled) {
+		if (!disabled) {
 			native.addEventListener("contextmenu", (e: js.html.MouseEvent) -> {
 				e.preventDefault();
 				e.stopPropagation();
@@ -288,9 +292,9 @@ class Element {
 	}
 
 	function setEnabled(enabled: Bool) : Void {
-		this.enabled = enabled;
+		this.disabled = !enabled;
 		#if js
-		nativeContent.classList.toggle("disabled", !enabled);
+		nativeContent.classList.toggle("disabled", disabled);
 		#else
 
 		#end
