@@ -146,6 +146,7 @@ class KitTest extends Object3D {
 					}
 				}
 
+				var int : Int = 1;
 				ctx.build(
 					<category("All Elements Kit")>
 						<text("Text")/>
@@ -153,6 +154,7 @@ class KitTest extends Object3D {
 						<slider label="Disabled slider" value={12.34} disabled/>
 						<slider label="Slider Exp" value={12.34} exp={0.001}/>
 						<range(0.0, 100.0) label="Range" value={12.34}/>
+						<range(0,10) label="Range Int" field={int}/>
 						<line>
 							<slider label="A" value={12.34}/>
 							<slider label="B" value={12.34}/>
@@ -201,7 +203,8 @@ class KitTest extends Object3D {
 					<root>
 						<category("A")>
 						</category>
-						<category("B")>
+						<category("Closed by default") closed>
+							<text("Not visible by default because parent is closed")/>
 						</category>
 					</root>
 				);
