@@ -192,6 +192,9 @@ class Editor extends Component {
 		keys.register("cdb.sheetSeekIds", () -> new GlobalSeek(cdbTable.element, cdbTable, LocalIds, currentSheet));
 		keys.register("cdb.globalSeekIds", () -> new GlobalSeek(cdbTable.element, cdbTable, GlobalIds, currentSheet));
 
+		filterFlags = (Regular: FilterFlags) | (Warning: FilterFlags) | (Error: FilterFlags);
+		this.cdbTable.element.find(".top-bar").find(".disabled").removeClass("disabled");
+
 		base = sheet.base;
 		if( cursor == null )
 			cursor = new Cursor(this);
