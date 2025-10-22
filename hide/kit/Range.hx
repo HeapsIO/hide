@@ -1,10 +1,10 @@
 package hide.kit;
 
-class Range extends Slider {
+class Range<T:Float> extends Slider<T> {
 	public function new(parent: Element, id: String, min: Float, max: Float) {
 		super(parent, id);
-		this.min = min;
-		this.max = max;
+		this.min = cast min;
+		this.max = cast max;
 		this.showRange = true;
 	}
 }

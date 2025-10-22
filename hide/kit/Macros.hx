@@ -321,6 +321,11 @@ class Macros {
 										switch(type.toString()) {
 											case "String":
 												{expr: EConst(CString(string)), pos: attributePos};
+											case "hide.kit.Slider.T":
+												var float = Std.parseFloat(string);
+												if (Math.isNaN(float))
+													error('cannot convert "$string" to Float for attribute ${attribute.name}', attribute.pmin, attribute.pmax);
+												{expr: EConst(CFloat(string)), pos: attributePos};
 											default:
 												error("unhandeld inst " + type.toString(), attribute.pmin, attribute.pmax);
 										}
@@ -350,8 +355,28 @@ class Macros {
 							});
 						}
 
+						var elementField = macro $elementExpr.value;
+						//var typedElementField = Context.typeExpr(elementField);
+						var externField = field;
+						//trace(Context.typeof(externField));
+						var get = macro @:pos(pos) $elementField = $externField;
+						var set = macro @:pos(pos) @:privateAccess $elementExpr.onFieldChange = (temp:Bool) -> $externField = $elementField;
+						if( elementName == "Range") {
+							trace("pushCheck", field);
+							block.push(macro @:privateAccess $elementExpr.isInt = hide.kit.Macros.checkIsInt($field));
+						}
+
+						// if (typedElementField.t.toString() != typedExternField.t.toString()) {
+						// 	if (typedElementField.t.toString() == "Float" && typedExternField.t.toString() == "Int") {
+						// 		set = macro @:pos(pos) @:privateAccess $elementExpr.onFieldChange = (temp:Bool) -> $externField = Std.int($elementField);
+						// 	} else {
+						// 		error('Incompatible types for field for widget $elementPath (got ${typedExternField.t.toString()}, want ${typedElementField.t.toString()})', fieldLabelAttribute.pmin, fieldLabelAttribute.pmax);
+						// 	}
+						// }
+
 						block.push(macro @:pos(pos) $elementExpr.value = $field);
 						block.push(macro @:pos(pos) @:privateAccess $elementExpr.onFieldChange = (temp:Bool) -> $field = $elementExpr.value);
+
 					}
 
 				}
@@ -455,5 +480,12 @@ class Macros {
 
 	static function error( msg : String, pmin : Int, pmax : Int = -1 ) : Dynamic {
 		throw new domkit.Error(msg, pmin, pmax);
+	}
+
+	macro static function checkIsInt(expr: Expr) : Expr {
+		trace(Context.typeof(expr).toString(), expr);
+		if (Context.typeof(expr).toString() == "Int")
+			return macro true;
+		return macro false;
 	}
 }

@@ -112,6 +112,28 @@ class Environment extends Object3D {
 			r.env = env;
 	}
 
+	override function edit2(ctx: hrt.prefab.EditContext2) {
+		ctx.build(
+			<root>
+				<category("Environment")>
+					<button("Set Current") single-edit/>
+
+					<file type="texture" field={sourceMapPath} label="SkyBox"/>
+					<range(0, 360) field={rotation}/>
+					<range(0,2) field={power}/>
+
+				</category>
+				<category("Generation") closed>
+					<range(1,512) step={1} field={diffSize}/>
+				</category>
+
+			</root>
+
+
+		);
+	}
+
+
 	#if editor
 
 	override function getHideProps() : hide.prefab.HideProps {
