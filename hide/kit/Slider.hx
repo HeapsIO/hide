@@ -9,7 +9,7 @@ class Slider extends Widget<Float> {
 
 	public var min(default, set) : Null<Float> = null;
 	public var max(default, set) : Null<Float> = null;
-	public var step : Null<Float> = 0.1;
+	public var step : Null<Float> = 0.01;
 	public var exp : Null<Float> = null;
 	public var wrap: Bool = false;
 	var showRange: Bool = false;
