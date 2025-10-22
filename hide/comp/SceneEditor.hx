@@ -4180,22 +4180,6 @@ class SceneEditor {
 
 			if( elts.length > 0 ) {
 				var commonClass = hrt.tools.ClassUtils.getCommonClass(elts, hrt.prefab.Prefab);
-
-				/**
-					If we are in a multi edit scenario, find the first prefab class that actually supports
-					multi edit
-				**/
-				if (elts.length > 1) {
-					while(true) {
-						var inst = Type.createEmptyInstance(commonClass);
-						if (!inst.supportMultiEdit()) {
-							commonClass = cast Type.getSuperClass(commonClass);
-						} else {
-							break;
-						}
-					}
-				}
-
 				var parentClass = Type.getSuperClass(commonClass);
 				var hasNewInspector = false;
 
@@ -4227,8 +4211,8 @@ class SceneEditor {
 					properties.element.removeClass("props");
 					toggle.addClass("margin");
 					var proxyPrefab = Type.createInstance(commonClass, [null, new ContextShared()]);
-					var canMultiEdit = proxyPrefab.supportMultiEdit();
-					if (canMultiEdit) {
+					var isMultiEdit = selectedPrefabs.length > 1;
+					if (isMultiEdit) {
 						proxyPrefab.load(haxe.Json.parse(haxe.Json.stringify(elts[0].save())));
 					} else {
 						proxyPrefab = elts[0];
@@ -4237,16 +4221,19 @@ class SceneEditor {
 					var ectx2 = new hide.prefab.EditContext.HideJsEditContext2(edit);
 
 					var baseRoot = new hide.kit.KitRoot(null, null, proxyPrefab, ectx2);
+					@:privateAccess baseRoot.isMultiEdit = isMultiEdit;
+
 					@:privateAccess ectx2.saveKey = Type.getClassName(commonClass);
 					ectx2.root = baseRoot;
 
 					proxyPrefab.edit2(ectx2);
 
-					if (canMultiEdit) {
+					if (isMultiEdit) {
 						for (i => select in selectedPrefabs) {
 							var ectx2 = new hide.prefab.EditContext.HideJsEditContext2(edit);
 							@:privateAccess ectx2.saveKey = Type.getClassName(commonClass);
 							var childRoot = new hide.kit.KitRoot(null, null, select, ectx2);
+							@:privateAccess childRoot.isMultiEdit = isMultiEdit;
 							baseRoot.editedPrefabsProperties.push(childRoot);
 							ectx2.root = childRoot;
 							select.edit2(ectx2);

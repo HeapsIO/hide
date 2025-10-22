@@ -46,11 +46,13 @@ class Button extends Element {
 			button.classList.add("kit-big");
 		}
 
-		button.addEventListener("click", (e:js.html.MouseEvent) -> {
-			broadcastClick();
-			e.preventDefault();
-			e.stopPropagation();
-		});
+		if (enabled) {
+			button.addEventListener("click", (e:js.html.MouseEvent) -> {
+				broadcastClick();
+				e.preventDefault();
+				e.stopPropagation();
+			});
+		}
 
 		syncHightlight();
 		#else

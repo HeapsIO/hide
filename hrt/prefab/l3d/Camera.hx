@@ -226,10 +226,6 @@ class Camera extends Object3D {
 		}
 	}
 
-	override function supportMultiEdit() : Bool {
-		return false;
-	}
-
 	override function edit2(ctx:hrt.prefab.EditContext2) : Void {
 		super.edit2(ctx);
 		editContext2 = ctx;
@@ -242,7 +238,7 @@ class Camera extends Object3D {
 					<range(0,10) field={zNear}/>
 					<line>
 						<button("Copy") id="copy"/>
-						<button("Apply") id="apply"/>
+						<button("Apply") id="apply" single-edit/>
 						<button("Reset") id="reset"/>
 					</line>
 				</category>
@@ -252,7 +248,7 @@ class Camera extends Object3D {
 				</category>
 				<category("Debug")>
 					<checkbox field={showFrustum}/>
-					<button("Preview Mode") highlight={preview} id="btnPreviewMode" />
+					<button("Preview Mode") highlight={preview} id="btnPreviewMode" single-edit/>
 				</category>
 				<category("Deprecation")>
 					<button("Upgrade") id="upgrade"/>
