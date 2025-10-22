@@ -5583,16 +5583,54 @@ fancy-gallery-item.details .icon-placement {
   color: #ee6666 !important;
 }
 #shape-editor {
+  margin-top: 5px;
+  margin-bottom: 5px;
+}
+#shape-editor .grid {
   display: grid;
-  grid-template-columns: 1fr 1fr;
+  grid-template-columns: 1fr 197px;
   gap: 5px 10px;
 }
-#shape-editor > :nth-child(2n+1) {
+#shape-editor .grid > :nth-child(2n+1) {
   text-align: right;
   align-self: center;
 }
-#shape-editor button {
+#shape-editor #params {
+  display: grid;
+  grid-template-columns: 1fr 197px;
+  gap: 5px 10px;
+}
+#shape-editor #params > :nth-child(2n+1) {
+  text-align: right;
+  align-self: center;
+}
+#shape-editor #params button {
   background-color: #444444;
   border: 1px solid #444444;
   color: white;
+  cursor: pointer;
+  opacity: 0.8;
+}
+#shape-editor #params button:hover {
+  opacity: 1;
+}
+#shape-editor #extra-params {
+  display: grid;
+  grid-template-columns: 1fr 197px;
+  gap: 5px 10px;
+  margin-top: 5px;
+}
+#shape-editor #extra-params > :nth-child(2n+1) {
+  text-align: right;
+  align-self: center;
+}
+#shape-editor #extra-params .inlined {
+  flex-direction: row;
+  display: flex;
+  align-items: center;
+  gap: 2px;
+}
+#shape-editor #extra-params .inlined input {
+  min-width: 0;
+  flex: 1;
 }

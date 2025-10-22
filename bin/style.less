@@ -6691,18 +6691,50 @@ fancy-gallery-item {
 }
 
 #shape-editor {
-	display: grid;
-	grid-template-columns: 1fr 1fr;
-	gap: 5px 10px;
+	margin-top: 5px;
+	margin-bottom: 5px;
 
-	>:nth-child(2n+1) {
-		text-align: right;
-		align-self: center;
+	.grid {
+		display: grid;
+		grid-template-columns: 1fr 197px;
+		gap: 5px 10px;
+
+		>:nth-child(2n+1) {
+			text-align: right;
+			align-self: center;
+		}
 	}
 
-	button {
-		background-color: #444444;
-		border: 1px solid #444444;
-		color: white;
+	#params {
+		.grid;
+
+		button {
+			background-color: #444444;
+			border: 1px solid #444444;
+			color: white;
+			cursor: pointer;
+			opacity: 0.8;
+
+			&:hover {
+				opacity: 1;
+			}
+		}
+	}
+
+	#extra-params {
+		.grid;
+		margin-top: 5px;
+
+		.inlined {
+			flex-direction: row;
+			display: flex;
+			align-items: center;
+			gap: 2px;
+
+			input {
+				min-width: 0;
+				flex: 1;
+			}
+		}
 	}
 }

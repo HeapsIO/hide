@@ -628,8 +628,6 @@ class LightProbe extends Object3D {
 				ctx.rebuildProperties();
 		});
 
-		var shapeEditor = new hide.comp.ShapeEditor(ctx.properties.element);
-
 		var clearButton = props.find(".clear");
 		if( clearButton != null ) {
 			clearButton.click(function(_) {
