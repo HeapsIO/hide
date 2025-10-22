@@ -5,8 +5,13 @@ class Line extends Element {
 	@:attr public var multiline: Bool = false;
 	@:attr public var full: Bool = false;
 
+
 	#if js
 	public var labelElement: NativeElement;
+	public var multilineElement: NativeElement;
+	override function get_nativeContent():NativeElement {
+		return multilineElement ?? native;
+	}
 	#else
 	public var labelContainer: hrt.ui.HuiElement;
 	public var labelText: hrt.ui.HuiFmtText;
@@ -15,54 +20,24 @@ class Line extends Element {
 	override function makeSelf():Void {
 		#if js
 		if (!full) {
+			label = "";
 			labelElement = js.Browser.document.createElement("kit-label");
-			labelElement.innerText = label ?? "";
+			labelElement.innerText = label;
 		}
 
-		setupPropLine(labelElement, null);
-
+		var me = null;
 		if (multiline) {
-			native.classList.add("multiline");
+			me = js.Browser.document.createElement("kit-multiline");
 		}
 
+		setupPropLine(labelElement, me);
+
+		// we assing this.multilineElement here to avoid setupPropLine
+		// to add items to multilineElement
+		this.multilineElement = me;
 		#else
 		native = new hrt.ui.HuiElement();
 		native.dom.addClass("line");
-		//refreshLabel();
 		#end
 	}
-
-	// function refreshLabel() {
-	// 	if (native == null)
-	// 		return;
-	// 	#if js
-	// 	if (full) {
-	// 		labelElement?.remove();
-	// 		return;
-	// 	}
-
-	// 	if (labelElement == null) {
-	// 		labelElement = js.Browser.document.createElement("kit-label");
-	// 		labelElement.classList.add("first");
-	// 		native.prepend(labelElement);
-	// 	}
-
-	// 	labelElement.innerHTML = label ?? "";
-	// 	#else
-	// 	if (label == null) {
-	// 		labelContainer?.remove();
-	// 		return;
-	// 	}
-
-	// 	if (labelContainer == null) {
-	// 		labelContainer = new hrt.ui.HuiElement(native);
-	// 		labelContainer.dom.addClass("label");
-	// 		labelContainer.dom.addClass("first");
-
-	// 		labelText = new hrt.ui.HuiFmtText(labelContainer);
-	// 	}
-
-	// 	labelText.text = label;
-	// 	#end
-	// }
 }
