@@ -16,6 +16,7 @@ abstract class EditContext2 {
 	public abstract function refreshInspector() : Void;
 	public abstract function getScene3d() : h3d.scene.Scene;
 	public abstract function getCameraController3d() : hide.view.CameraController.CameraControllerBase;
+	public abstract function openFile(path: String) : Void;
 
 
 	abstract function recordUndo(callback: (isUndo: Bool) -> Void ) : Void;
