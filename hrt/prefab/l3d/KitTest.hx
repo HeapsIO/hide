@@ -152,9 +152,10 @@ class KitTest extends Object3D {
 						<text("Text")/>
 						<slider label="Slider" value={12.34}/>
 						<slider label="Disabled slider" value={12.34} disabled/>
-						<slider label="Slider Exp" value={12.34} exp={0.001}/>
+						<slider label="Slider Exp" value={12.34} exp step={0.001}/>
 						<range(0.0, 100.0) label="Range" value={12.34}/>
 						<range(0,10) label="Range Int" field={int}/>
+						<range(0.001, 1000.0) label="Range Exp" value={12.34} exp step={0.001}/>
 						<line>
 							<slider label="A" value={12.34}/>
 							<slider label="B" value={12.34}/>

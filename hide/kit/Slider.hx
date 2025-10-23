@@ -10,9 +10,11 @@ class Slider<T:Float> extends Widget<T> {
 	public var min(default, set) : Null<T> = null;
 	public var max(default, set) : Null<T> = null;
 	public var step : Null<T> = null;
-	public var exp : Null<T> = null;
+	public var exp : Bool = false;
 	public var wrap: Bool = false;
 	var showRange: Bool = false;
+	var subPixelSlide : Float = 0;
+	var startValue : Float = 0;
 
 	// set internally by the macro if the field is an Int
 	var isInt : Bool = false;
@@ -34,6 +36,8 @@ class Slider<T:Float> extends Widget<T> {
 
 			slider.setPointerCapture(e.pointerId);
 			slider.requestPointerLock();
+			subPixelSlide = 0;
+			startValue = value;
 			capture = true;
 			hasMoved = false;
 		});
@@ -45,31 +49,25 @@ class Slider<T:Float> extends Widget<T> {
 			e.preventDefault();
 			e.stopPropagation();
 
-			var currentValue = value;
 
-			var newValue : Float = value;
-			var delta = e.movementX / js.Browser.window.devicePixelRatio;
+			var newValue : Float = 0;
+			var mult = step ?? 0.01;
 
-			if (exp != null) {
-				var mult : Float = exp;
-				if (e.ctrlKey) mult *= 10.0;
-				if (e.shiftKey) mult /= 10.0;
-
-				newValue = value * hxd.Math.exp(delta * mult);
-			} else {
-				var mult : Float = step;
-				if (mult == null)
-					mult = isInt ? 1 : 0.01;
-
-				if (step == null && !isInt) {
-					if (min != null && max != null) {
-						var currentStep = hxd.Math.floor(hxd.Math.log10(hxd.Math.abs(max-min)));
-						mult = hxd.Math.pow(10.0, currentStep-2);
-					}
+			if (step == null) {
+				if (min != null && max != null) {
+					var currentStep = hxd.Math.floor(hxd.Math.log10(hxd.Math.abs(max-min)));
+					mult = hxd.Math.pow(10.0, currentStep-2);
 				}
-				if (e.ctrlKey) mult *= 10.0;
-				if (e.shiftKey) mult /= 10.0;
-				newValue = value + delta * mult;
+			}
+
+			if (e.ctrlKey) mult *= 10.0;
+			if (e.shiftKey) mult /= 10.0;
+			subPixelSlide += e.movementX / js.Browser.window.devicePixelRatio * mult;
+
+			if (exp) {
+				newValue = startValue * hxd.Math.exp(subPixelSlide);
+			} else {
+				newValue = startValue + subPixelSlide;
 			}
 
 			if (wrap && min != null && max !=null) {
