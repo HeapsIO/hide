@@ -434,6 +434,7 @@ class FileBrowser extends hide.ui.View<FileBrowserState> {
 		}
 
 		// Favorites tree
+
 		favoritesTree = new hide.comp.FancyTree<FavoriteEntry>(browserLayout.find(".left").find(".top"), { saveDisplayKey: "fileBrowserTree_Favorites" } );
 		favoritesTree.getChildren = (file: FavoriteEntry) -> {
 			function rec(parent : FavoriteEntry) {
@@ -781,6 +782,12 @@ class FileBrowser extends hide.ui.View<FileBrowserState> {
 			else
 				fancyTree.openItem(item);
 		}
+
+		var resizeObserver = new hide.comp.ResizeObserver((_, _) -> {
+			favoritesTree.queueRefresh();
+			fancyTree.queueRefresh();
+		});
+		resizeObserver.observe(browserLayout.find(".left").get(0));
 
 		var right = browserLayout.find(".right");
 		right.get(0).onkeydown = (e: js.html.KeyboardEvent) -> {
