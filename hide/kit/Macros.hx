@@ -367,7 +367,11 @@ class Macros {
 						var get = macro @:pos(pos) $elementField = $externField;
 						var set = macro @:pos(pos) @:privateAccess $elementExpr.onFieldChange = (temp:Bool) -> $externField = $elementField;
 						if( elementName == "Range") {
-							block.push(macro @:privateAccess $elementExpr.isInt = hide.kit.Macros.checkIsInt($field));
+							block.push(macro {
+								if (@:privateAccess hide.kit.Macros.checkIsInt($field)) {
+									$elementExpr.int = true;
+								}
+							});
 						}
 
 						// if (typedElementField.t.toString() != typedExternField.t.toString()) {
