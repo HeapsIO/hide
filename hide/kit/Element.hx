@@ -168,9 +168,6 @@ class Element {
 		if (label != null) {
 			if (parentLine == null) {
 				label.classList.add("first");
-			} else if(parent.children[0] == this && parentLine.label == null && !parentLine.full) {
-				label.classList.add("first");
-				parentLine.labelElement.remove();
 			}
 			native.appendChild(label);
 		}

@@ -1442,8 +1442,7 @@ kit-root kit-category > .title {
   border-radius: 4px;
   cursor: pointer;
   user-select: none;
-  padding: 1px;
-  position: relative;
+  padding: 2px;
 }
 kit-root kit-category > .title:hover {
   background-color: #323232;
