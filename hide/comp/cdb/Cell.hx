@@ -840,17 +840,15 @@ class Cell {
 			open();
 		case TInt, TFloat, TString, TId, TDynamic, TGuid:
 			var val = value;
-			if (column.display == Percent) {
+			if (column.display == Percent)
 				val *= 100;
-			}
+
 			var str = value == null ? "" : Std.isOfType(value, String) ? value : editor.base.valToString(column.type, val, false);
 
 			elementHtml.innerHTML = null;
 			elementHtml.classList.add("edit");
 
-
-
-			var i = new Element("<div contenteditable='true' tabindex='1' class='custom-text-edit'>");
+			var i = new Element("<div contenteditable='true' tabindex='1' class='custom-text-edit'></div>");
 			// replace all spaces with unbreakable spaces (I wanna die)
 			str = spacesToNBSP(str);
 			i.get(0).innerText = str;
@@ -1412,8 +1410,11 @@ class Cell {
 				currentValue = newValue;
 			}
 			focus();
-		case TString if( column.kind == Script || column.kind == Localizable ):
-			setValue(trimNonBreakableSpaces(newValue));
+		case TString:
+			var v = trimNonBreakableSpaces(newValue);
+			if (v == "")
+				v = editor.base.getDefault(column, false, table.sheet);
+			setValue(v);
 		case TTilePos:
 			// if we change a file that has moved, change it for all instances having the same file
 			editor.beginChanges();
