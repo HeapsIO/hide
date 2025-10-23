@@ -1,25 +1,78 @@
 package hide.kit;
 
 class Slider<T:Float> extends Widget<T> {
+	/**
+		If set, the slider won't go bellow the given value
+	**/
+	public var min(default, set) : Null<T> = null;
+
+	/**
+		If set, the slider won't go above the given value
+	**/
+	public var max(default, set) : Null<T> = null;
+
+	/**
+		Override the default step for editing the curve. Note that if min and max are set the step will be calculated accordingly, but setting
+		this will override the automaticaly calculated value.
+	**/
+	public var step : Null<T> = null;
+
+	/**
+		If set, the slider will use an exponential curve (n^x) for editing values.
+		if true, n will be equal to e (or 2.71828), if set to a float, n will be equal to that float instead
+	**/
+	public var exp : Dynamic = false;
+
+	/**
+		If set, the slider will use a polynomial curve (x^n) for editing values.
+		if true, n will be equal to 2, if set to a float, n will be equal to that float instead
+	**/
+	public var poly : Dynamic = false;
+
+	/**
+		If true, when the user reaches the min or max value, the value will wrap to the max / min value respectively
+	**/
+	public var wrap: Bool = false;
+
 	#if js
 	var slider: js.html.InputElement;
 	#else
 	var slider: hrt.ui.HuiSlider;
 	#end
 
-	public var min(default, set) : Null<T> = null;
-	public var max(default, set) : Null<T> = null;
-	public var step : Null<T> = null;
-	public var exp : Bool = false;
-	public var wrap: Bool = false;
 	var showRange: Bool = false;
 	var subPixelSlide : Float = 0;
-	var startValue : Float = 0;
+	var startValueLinear : Float = 0;
+	var expScale : Null<Float> = null;
+	var polyScale : Null<Float> = null;
+
 
 	// set internally by the macro if the field is an Int
 	var isInt : Bool = false;
 
+	function parseScaleParam(param: Dynamic, def: Float) : Null<Float>  {
+		if (param is Bool) {
+			if (param == false)
+				return null;
+			return def;
+		} else if (param is Float || param is Int) {
+			return cast param;
+		} else if (param is String) {
+			return Std.parseFloat(param);
+		} else {
+			throw "unknown type";
+		}
+		return null;
+	}
+
 	function makeInput() : NativeElement {
+		expScale = parseScaleParam(exp, 2.71828);
+		polyScale = parseScaleParam(poly, 2.0);
+
+		if (expScale != null && polyScale != null) {
+			throw "Slider can't be both exp and poly";
+		}
+
 		#if js
 		var container = js.Browser.document.createElement("kit-slider");
 		slider = js.Browser.document.createInputElement();
@@ -37,7 +90,7 @@ class Slider<T:Float> extends Widget<T> {
 			slider.setPointerCapture(e.pointerId);
 			slider.requestPointerLock();
 			subPixelSlide = 0;
-			startValue = value;
+			startValueLinear = valueToLinear(value);
 			capture = true;
 			hasMoved = false;
 		});
@@ -50,37 +103,34 @@ class Slider<T:Float> extends Widget<T> {
 			e.stopPropagation();
 
 
-			var newValue : Float = 0;
+
+			var min = min != null ? valueToLinear(min) : null;
+			var max = max != null ? valueToLinear(max) : null;
+
 			var mult = step ?? 0.01;
-
-			if (step == null) {
-				if (min != null && max != null) {
-					var currentStep = hxd.Math.floor(hxd.Math.log10(hxd.Math.abs(max-min)));
-					mult = hxd.Math.pow(10.0, currentStep-2);
-				}
+			if (min != null && max != null) {
+				mult = (max - min) / 1000.0;
 			}
-
 			if (e.ctrlKey) mult *= 10.0;
 			if (e.shiftKey) mult /= 10.0;
+
 			subPixelSlide += e.movementX / js.Browser.window.devicePixelRatio * mult;
 
-			if (exp) {
-				newValue = startValue * hxd.Math.exp(subPixelSlide);
-			} else {
-				newValue = startValue + subPixelSlide;
-			}
+			var newValueLinear = startValueLinear + subPixelSlide;
 
 			if (wrap && min != null && max !=null) {
 				var size = max - min;
-				newValue = ((newValue - min + size) % size) + min;
+				newValueLinear = ((newValueLinear - min + size) % size) + min;
 			} else {
 				if (min != null)
-					newValue = hxd.Math.max(newValue, min);
+					newValueLinear = hxd.Math.max(newValueLinear, min);
 				if (max != null)
-					newValue = hxd.Math.min(newValue, max);
+					newValueLinear = hxd.Math.min(newValueLinear, max);
 			}
 
-			slideTo(cast newValue, true);
+			subPixelSlide = newValueLinear - startValueLinear;
+
+			slideTo(cast linearToValue(newValueLinear), true);
 			hasMoved = true;
 		});
 
@@ -188,6 +238,22 @@ class Slider<T:Float> extends Widget<T> {
 		return v;
 	}
 
+	function linearToValue(v: Float) : Float {
+		if (expScale != null)
+			return hxd.Math.pow(expScale, v);
+		if (polyScale != null)
+			return hxd.Math.pow(v, polyScale);
+		return v;
+	}
+
+	function valueToLinear(v:Float) : Float {
+		if (expScale != null)
+			return hxd.Math.logBase(v, expScale);
+		if (polyScale != null)
+			return hxd.Math.pow(v, 1.0/polyScale);
+		return v;
+	}
+
 	override function syncValueUI() {
 		if (slider == null)
 			return;
@@ -198,6 +264,10 @@ class Slider<T:Float> extends Widget<T> {
 		#end
 
 		if (showRange && min != null && max != null) {
+			var min : Float = valueToLinear(min);
+			var max : Float = valueToLinear(max);
+			var value : Float = valueToLinear(value);
+
 			var alpha = hxd.Math.clamp((value - min) / (max - min)) * 100;
 			#if js
 			slider.style.background = 'linear-gradient(to right, #3185ce ${alpha}%, #222222 ${alpha}%)';

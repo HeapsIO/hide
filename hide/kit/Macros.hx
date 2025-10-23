@@ -329,6 +329,11 @@ class Macros {
 											default:
 												error("unhandeld inst " + type.toString(), attribute.pmin, attribute.pmax);
 										}
+									case TDynamic(t):
+										if (string == "true")
+											{expr: EConst(CIdent("true")), pos: attributePos};
+										else
+											{expr: EConst(CString(string)), pos: attributePos};
 									default:
 										error("can't convert "  + string + '(${attribute.name} -> ${classField.type})  to ' + classField.type.toString(), attribute.pmin, attribute.pmax);
 								};
@@ -362,7 +367,6 @@ class Macros {
 						var get = macro @:pos(pos) $elementField = $externField;
 						var set = macro @:pos(pos) @:privateAccess $elementExpr.onFieldChange = (temp:Bool) -> $externField = $elementField;
 						if( elementName == "Range") {
-							trace("pushCheck", field);
 							block.push(macro @:privateAccess $elementExpr.isInt = hide.kit.Macros.checkIsInt($field));
 						}
 
@@ -483,7 +487,6 @@ class Macros {
 	}
 
 	macro static function checkIsInt(expr: Expr) : Expr {
-		trace(Context.typeof(expr).toString(), expr);
 		if (Context.typeof(expr).toString() == "Int")
 			return macro true;
 		return macro false;
