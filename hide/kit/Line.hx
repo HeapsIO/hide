@@ -20,9 +20,15 @@ class Line extends Element {
 	override function makeSelf():Void {
 		#if js
 		if (!full) {
-			label = "";
 			labelElement = js.Browser.document.createElement("kit-label");
-			labelElement.innerText = label;
+
+			if (label != null) {
+				var span = js.Browser.document.createSpanElement();
+				span.innerText = label;
+				labelElement.appendChild(span);
+			}
+
+			stealChildLabel(labelElement);
 		}
 
 		var me = null;

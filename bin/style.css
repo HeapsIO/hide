@@ -1538,7 +1538,7 @@ kit-root kit-line {
   position: relative;
   display: flex;
   align-items: center;
-  gap: 0.3em;
+  gap: 0.4em;
   min-width: 0;
   min-height: var(--widget-height);
 }
@@ -1546,9 +1546,12 @@ kit-root kit-line:hover {
   background-color: #222;
 }
 kit-root kit-line kit-label {
+  display: flex;
+  justify-content: end;
+  align-items: center;
+  gap: 0.4em;
   font-size: 0.95em;
-  margin-right: -0.1em;
-  margin-left: 0.2em;
+  margin-left: 0.3em;
 }
 kit-root kit-line kit-label:empty:not(.first) {
   display: none;
@@ -1556,8 +1559,6 @@ kit-root kit-line kit-label:empty:not(.first) {
 kit-root kit-line .first {
   flex: 0 0 85px;
   text-align: right;
-  display: block;
-  margin-right: 0.2em;
   margin-left: 0;
 }
 kit-root kit-line kit-slider-group-label {
@@ -1582,6 +1583,10 @@ kit-root kit-line kit-file {
   text-shadow: 0px 1px 0px black;
   border-radius: 4px;
   background-color: var(--widget-bg);
+}
+kit-root kit-line input:focus,
+kit-root kit-line kit-file:focus {
+  outline-color: #777;
 }
 kit-root kit-line .texture-choice {
   display: flex;
@@ -1687,7 +1692,7 @@ kit-root kit-line kit-button {
   flex: 1 1;
   border: var(--basic-border);
   border-radius: var(--basic-border-radius);
-  background-color: var(--widget-bg);
+  background-color: #4d4d4d;
   height: var(--widget-height);
   align-self: stretch;
   text-align: center;
@@ -1732,6 +1737,9 @@ kit-root kit-line input:hover.highlight,
 kit-root kit-line kit-file:hover.highlight,
 kit-root kit-line kit-button:hover.highlight {
   background-color: var(--selection);
+}
+kit-root kit-line kit-button:hover {
+  background-color: #6d6d6d;
 }
 kit-root kit-line kit-multiline {
   flex-grow: 1;
@@ -4874,6 +4882,10 @@ graph-editor-root properties-container .anim-list {
 .fancy-small fancy-button,
 fancy-button.fancy-small {
   --size: 22px;
+}
+.fancy-tiny fancy-button,
+fancy-button.fancy-tiny {
+  --size: 16px;
 }
 .fancy-normal fancy-button,
 fancy-button.fancy-normal {

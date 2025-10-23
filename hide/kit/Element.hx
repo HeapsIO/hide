@@ -179,6 +179,21 @@ class Element {
 		#end
 	}
 
+	/**
+		If the first child of this element can have a label, add it to label and remove it from the child
+	**/
+	function stealChildLabel(target: NativeElement) {
+		var childWidget = Std.downcast(children[0], Widget);
+		if (childWidget != null) {
+			if (childWidget.label != null && childWidget.label.length > 0) {
+				var span = js.Browser.document.createSpanElement();
+				span.innerText = childWidget.label;
+				target.appendChild(span);
+				childWidget.label = null;
+			}
+		}
+	}
+
 	final function resetWithUndo() {
 		@:privateAccess root.prepareUndoPoint();
 
