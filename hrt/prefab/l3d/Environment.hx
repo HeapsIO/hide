@@ -116,7 +116,7 @@ class Environment extends Object3D {
 		ctx.build(
 			<root>
 				<category("Environment")>
-					<button("Set Current") single-edit/>
+					<button("Set Current") single-edit id="setCurrent"/>
 
 					<file type="texture" field={sourceMapPath} label="SkyBox"/>
 					<range(0, 360) field={rotation}/>
@@ -124,13 +124,36 @@ class Environment extends Object3D {
 
 				</category>
 				<category("Generation") closed>
-					<range(1,512) step={1} field={diffSize}/>
+					<range(1,512) field={diffSize} label="Diffuse"/>
+					<range(1,2048) field={specSize} label="Specular"/>
+					<range(1,12) field={sampleBits} label="Sample Count"/>
+					<range(0,3) field={ignoredSpecLevels}/>
+					<range(0,100) field={hdrMax} label="HDR Max"/>
+					<input field={configName}/>
+					<button("Compute") id="compute" single-edit/>
+					<line label="View">
+						<button("Diffuse") id="showDiff"/>
+						<button("Specular") id="showSpecular"/>
+					</line>
 				</category>
-
 			</root>
-
-
 		);
+
+		setCurrent.onClick = () -> {
+			applyToRenderer(ctx.getScene3d().renderer);
+		}
+
+		compute.onClick = () -> {
+			updateInstance("force");
+		}
+
+		showDiff.onClick = () -> {
+			ctx.openFile(getBinaryPath(true));
+		}
+
+		showSpecular.onClick = () -> {
+			ctx.openFile(getBinaryPath(false));
+		}
 	}
 
 

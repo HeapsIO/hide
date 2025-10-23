@@ -9,12 +9,14 @@ class SliderGroup extends Line {
 
 	override function makeSelf():Void {
 		#if js
-		labelGroup = js.Browser.document.createElement("kit-slider-group-label");
-		labelElement = js.Browser.document.createElement("kit-label");
-		labelElement.innerText = label ?? "";
-		labelGroup.appendChild(labelElement);
+		labelGroup = js.Browser.document.createElement("kit-label");
+		if (label != null) {
+			labelElement = js.Browser.document.createSpanElement();
+			labelElement.innerText = label ?? "";
+			labelGroup.appendChild(labelElement);
+		}
 
-		lock = new hide.Element('<fancy-button class="fancy-small quiet" title="Link sliders">')[0];
+		lock = new hide.Element('<fancy-button class="fancy-tiny quiet" title="Link sliders">')[0];
 		lockIcon = new hide.Element('<div class="icon ico">')[0];
 		lock.appendChild(lockIcon);
 
@@ -27,6 +29,8 @@ class SliderGroup extends Line {
 		refresh();
 
 		labelGroup.appendChild(lock);
+
+		stealChildLabel(labelGroup);
 
 		setupPropLine(labelGroup, null);
 
