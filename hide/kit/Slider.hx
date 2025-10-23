@@ -34,6 +34,12 @@ class Slider<T:Float> extends Widget<T> {
 	**/
 	public var wrap: Bool = false;
 
+	/**
+		If set, the value of this slider will be rounded to the nearest int
+	**/
+	public var int : Bool = false;
+
+
 	#if js
 	var slider: js.html.InputElement;
 	#else
@@ -45,10 +51,6 @@ class Slider<T:Float> extends Widget<T> {
 	var startValueLinear : Float = 0;
 	var expScale : Null<Float> = null;
 	var polyScale : Null<Float> = null;
-
-
-	// set internally by the macro if the field is an Int
-	var isInt : Bool = false;
 
 	function parseScaleParam(param: Dynamic, def: Float) : Null<Float>  {
 		if (param is Bool) {
@@ -211,8 +213,13 @@ class Slider<T:Float> extends Widget<T> {
 
 				if (Math.isFinite(changeDelta)) {
 					siblingSlider.value = cast (siblingSlider.value:Float) * changeDelta;
+
 				} else {
 					siblingSlider.value = cast newValue;
+				}
+
+				if (int) {
+					siblingSlider.value = cast hxd.Math.round(cast siblingSlider);
 				}
 				sliders.push(siblingSlider);
 			}
@@ -221,7 +228,7 @@ class Slider<T:Float> extends Widget<T> {
 		}
 		else {
 			value = newValue;
-			if (isInt) {
+			if (int) {
 				value = cast hxd.Math.round(cast value);
 			}
 			broadcastValueChange(isTemporary);
