@@ -407,8 +407,9 @@ class FXAnimation extends h3d.scene.Object {
 			}
 		}
 
+		syncParticles(localTime, dt, isSeek, fullSync);
+
 		if (fullSync) {
-			syncParticles(localTime, dt, isSeek);
 
 			for (t in trails) {
 				t.update(hxd.Math.max(dt, 0.0));
@@ -474,13 +475,10 @@ class FXAnimation extends h3d.scene.Object {
 		}
 	}
 
-	function syncParticles(newTime: Float, dt: Float, seek: Bool) {
+	function syncParticles(newTime: Float, dt: Float, seek: Bool, full: Bool) {
 		if(emitters != null) {
 			for(em in emitters) {
-				if(em.visible)
-				{
-					em.setTime(newTime, dt, seek);
-				}
+				em.setTime(newTime, dt, seek, em.visible && full);
 			}
 		}
 	}

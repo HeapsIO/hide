@@ -1490,8 +1490,12 @@ class EmitterObject extends h3d.scene.Object {
 
 
 	var lastParentTime = 0.0;
-	public function setTime(parentTime: Float, dt: Float, seek: Bool) {
+	public function setTime(parentTime: Float, dt: Float, seek: Bool, full: Bool) {
 		var localTime = (parentTime-delay) * speedFactor;
+		if (!full) {
+			curTime = localTime;
+			return;
+		}
 
 		if (seek && parentTime < lastParentTime) {
 			reset();
