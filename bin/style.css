@@ -1515,6 +1515,7 @@ kit-root kit-text {
   text-align: center;
   margin: 0;
   padding: 0;
+  min-width: 50px;
 }
 kit-root kit-separator {
   margin-top: 5px;

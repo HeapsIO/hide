@@ -10,6 +10,12 @@ enum SettingCategory {
 
 @:allow(hide.kit.Element)
 abstract class EditContext2 {
+	var parent : EditContext2 = null;
+
+	public function new(parent: EditContext2) {
+		this.parent = parent;
+	}
+
 	#if !macro
 	public var root: hide.kit.KitRoot;
 
