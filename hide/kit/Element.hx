@@ -148,7 +148,7 @@ class Element {
 		If the element is already in the line, the function correclty handle that and create the appropriate
 		element instead.
 	**/
-	function setupPropLine(label: NativeElement, content: NativeElement) {
+	function setupPropLine(label: NativeElement, content: NativeElement, autoCreateLabel: Bool = true) {
 		#if js
 		var parentLine = Std.downcast(parent, Line);
 
@@ -161,7 +161,7 @@ class Element {
 			native = js.Browser.document.createElement("kit-div");
 		}
 
-		if (label == null) {
+		if (label == null && autoCreateLabel) {
 			label = js.Browser.document.createElement("kit-label");
 		}
 

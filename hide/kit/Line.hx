@@ -29,14 +29,13 @@ class Line extends Element {
 			}
 
 			stealChildLabel(labelElement);
+		} else {
+			trace("break");
 		}
 
 		var me = null;
-		if (multiline) {
-			me = js.Browser.document.createElement("kit-multiline");
-		}
 
-		setupPropLine(labelElement, me);
+		setupPropLine(labelElement, me, false);
 
 		// we assing this.multilineElement here to avoid setupPropLine
 		// to add items to multilineElement
