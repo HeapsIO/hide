@@ -193,15 +193,17 @@ class Macros {
 								fieldsAttributes.push(attribute);
 							case "field":
 								field = switch(attribute.value) {
-									case RawValue(v): error("field must be an identifier expression or a structure field expression", attribute.pmin, attribute.pmax);
+									case RawValue(v): error("field must be an identifier,structure field or array expression", attribute.pmin, attribute.pmax);
 									case Code(v):
 										switch(v.expr) {
 											case EConst(CIdent(s)):
 												v;
 											case EField(_, _, _):
 												v;
+											case EArray(_, _):
+												v;
 											default:
-												error("field must be an identifier expression or a structure field expression", attribute.pmin, attribute.pmax);
+												error("field must be an identifier,structure field or array expression", attribute.pmin, attribute.pmax);
 										};
 								};
 
@@ -216,12 +218,23 @@ class Macros {
 											if (fieldName == null)
 												fieldName = s;
 											break;
+										case EArray(array, index):
+											switch(array.expr) {
+												case EConst(CIdent(s)):
+													if (fieldName == null)
+														fieldName = s;
+													fieldPath.unshift(s);
+												default:
+													throw "Internal Error : Unknown array field type " + array;
+											}
+											break;
 										case EField(parentExpr, partName):
 											if (fieldName == null)
 												fieldName = partName;
 											fieldPath.unshift(partName);
 											expr = parentExpr;
 										default:
+											trace(expr.expr);
 											throw "Internal error : field path contain unhandled cases";
 									}
 								}
@@ -360,27 +373,16 @@ class Macros {
 							});
 						}
 
-						var elementField = macro $elementExpr.value;
-						//var typedElementField = Context.typeExpr(elementField);
-						var externField = field;
-						//trace(Context.typeof(externField));
-						var get = macro @:pos(pos) $elementField = $externField;
-						var set = macro @:pos(pos) @:privateAccess $elementExpr.onFieldChange = (temp:Bool) -> $externField = $elementField;
-						if( elementName == "Range") {
+						var elementValue = macro $elementExpr.value;
+						var get = macro @:pos(pos) $elementValue = $field;
+						var set = macro @:pos(pos) @:privateAccess $elementExpr.onFieldChange = (temp:Bool) -> $field = $elementValue;
+						if( elementName == "Range" || elementName == "Slider") {
 							block.push(macro {
 								if (@:privateAccess hide.kit.Macros.checkIsInt($field)) {
 									$elementExpr.int = true;
 								}
 							});
 						}
-
-						// if (typedElementField.t.toString() != typedExternField.t.toString()) {
-						// 	if (typedElementField.t.toString() == "Float" && typedExternField.t.toString() == "Int") {
-						// 		set = macro @:pos(pos) @:privateAccess $elementExpr.onFieldChange = (temp:Bool) -> $externField = Std.int($elementField);
-						// 	} else {
-						// 		error('Incompatible types for field for widget $elementPath (got ${typedExternField.t.toString()}, want ${typedElementField.t.toString()})', fieldLabelAttribute.pmin, fieldLabelAttribute.pmax);
-						// 	}
-						// }
 
 						block.push(macro @:pos(pos) $elementExpr.value = $field);
 						block.push(macro @:pos(pos) @:privateAccess $elementExpr.onFieldChange = (temp:Bool) -> $field = $elementExpr.value);

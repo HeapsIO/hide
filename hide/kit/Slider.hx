@@ -18,10 +18,9 @@ class Slider<T:Float> extends Widget<T> {
 	public var step : Null<T> = null;
 
 	/**
-		If set, the slider will use an exponential curve (n^x) for editing values.
-		if true, n will be equal to e (or 2.71828), if set to a float, n will be equal to that float instead
+		If set, the slider will use an exponential curve (e^x) for editing values.
 	**/
-	public var exp : Dynamic = false;
+	public var exp : Bool = false;
 
 	/**
 		If set, the slider will use a polynomial curve (x^n) for editing values.

@@ -4220,7 +4220,7 @@ class SceneEditor {
 						proxyPrefab = elts[0];
 					}
 
-					var ectx2 = new hide.prefab.EditContext.HideJsEditContext2(edit);
+					var ectx2 = new hide.prefab.EditContext.HideJsEditContext2(null, edit);
 
 					var baseRoot = new hide.kit.KitRoot(null, null, proxyPrefab, ectx2);
 					@:privateAccess baseRoot.isMultiEdit = isMultiEdit;
@@ -4232,7 +4232,7 @@ class SceneEditor {
 
 					if (isMultiEdit) {
 						for (i => select in selectedPrefabs) {
-							var ectx2 = new hide.prefab.EditContext.HideJsEditContext2(edit);
+							var ectx2 = new hide.prefab.EditContext.HideJsEditContext2(ectx2, edit);
 							@:privateAccess ectx2.saveKey = Type.getClassName(commonClass);
 							var childRoot = new hide.kit.KitRoot(null, null, select, ectx2);
 							@:privateAccess childRoot.isMultiEdit = isMultiEdit;

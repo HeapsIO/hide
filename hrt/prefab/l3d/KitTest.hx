@@ -27,6 +27,9 @@ class KitTest extends Object3D {
 	@:s var select : String;
 	@:s var checkbox: Bool;
 	@:s var texture: Dynamic;
+
+	@:s var advancedDetails: Bool;
+	@:s var dynamicArray: Array<Int> = [];
 	var substruct: SubStruct = { innerValue: 0.0, };
 
 	#if js
@@ -37,12 +40,12 @@ class KitTest extends Object3D {
 				<slider label="Slider" value={12.34}/>
 				<slider label="Disabled slider" value={12.34} disabled/>
 				<slider label="Slider Exp" value={12.34} exp step={0.001}/>
-				<slider label="Slider Exp Custom" value={12.34} exp={1.5} step={0.001}/>
+				<slider label="Slider Exp Custom" value={12.34} exp step={0.0001}/>
 				<slider label="Slider Poly" value={12.34} poly step={0.001}/>
 				<slider label="Slider Poly Custom" value={12.34} poly={1.5} step={0.001}/>
 				<range(0.0, 100.0) label="Range" value={12.34}/>
 				<range(0,100) label="Range Int" value={12} int/>
-				<range(0.001, 1000.0) label="Range Exp" value={12.34} exp={100} step={0.01}/>
+				<range(0.001, 1000.0) label="Range Exp" value={12.34} exp step={0.01}/>
 				<range(0.001, 1000.0) label="Range Poly" value={12.34} poly step={0.01}/>
 				<line>
 					<slider label="A" value={12.34}/>
@@ -85,6 +88,9 @@ class KitTest extends Object3D {
 			button.onClick = () -> trace('onclick $i');
 		}
 
+
+		// Use root to declare multiple top level elements at the same time
+		// without creating a top level element
 		ctx.build(
 			<root>
 				<category("A")>
@@ -94,6 +100,129 @@ class KitTest extends Object3D {
 				</category>
 			</root>
 		);
+
+		// Element API examples
+		{
+			// Assigning an explicit id to an element will make it available inside this scope
+			// You can call build on a hide.kit.Element to add more element with DML
+			ctx.build(
+				<category("Element") id="category"></category>
+			);
+
+			// Assigning an explicit id to an element will make it available inside this scope
+			category.build(<button("Button") id="button"/>);
+			button.onClick = () -> {trace("Button clicked");};
+
+			// If for some reason you want an element to not be interactible, you can set it to `disabled`
+			category.build(<button("Disabled") disabled/>);
+
+
+			// Some element shouldn't be edited if multiple elements are selected in the editor. This is
+			// especially important for button that can do operations on things other than the prefab there are linked to (like modifying the scene for example)
+			// In that case, setting the single-edit attribute will disable that element and all of it's children
+			// when more than one prefab is selected
+			category.build(<button("Single Edit") single-edit/>);
+		}
+
+		// Slider examples
+		{
+			ctx.build(
+				<root>
+					<category("Slider")>
+						<slider label="Basic" value={10} id="basic" /> // Bind later with id
+						<slider field={x}/> // Bind to a class field
+						<slider label="Min/max" value={10} min={0} max={100} /> // Min max
+						<slider label="Wrap" value={10} min={0} max={100} wrap/> // Wrap around
+						<slider label="Exp" value={10} exp wrap/> // Exponential curve
+						<slider label="Poly" value={10} poly wrap/> // Polynomial curve
+
+						<slider label="Int" value={10} int/> // Int Slider
+
+					</category>
+					<category("Range")>
+						<text("Ranges are basically an alias for a slider with a mandatory min/max")/>
+						<range(0.0, 100.0) label="Range" value={12.34}/>
+						<range(0,100) label="Range Int" value={12} int/>
+						<range(0.001, 1000.0) label="Range Exp" value={12.34} exp/>
+						<range(0.001, 1000.0) label="Range Poly" value={12.34} poly/>
+					</category>
+				</root>
+			);
+
+			basic.onValueChange = (temp: Bool) -> {
+				trace(basic.value, temp);
+			};
+		}
+
+		// Lines
+		{
+
+		}
+
+		{
+			ctx.build(
+				<category("Dynamic UI")>
+					// Use a checkbox to "dynamicaly hide elements using a if() statement".
+					// To make the UI dynamic, we need to call ctx.refreshInspector() when the value is changed
+					<checkbox field={advancedDetails} onValueChange={(tmp) -> ctx.refreshInspector()}/>
+					<slider label="Advanced setting" if(advancedDetails)/>
+
+					// We can also use the disabled attribute instead of hiding the element to avoid UI shifts
+					<slider label="Enabled if advanced" disabled={!advancedDetails}/>
+					<separator/>
+					<text("Array editor example")/>
+
+					// Here is an example of an array editor done only with the basic kit elements
+					// we use a block element to later add elements in a for loop. The block element
+					// is an element that doesn't create anything in the final layout
+					<block id="arrayEdit">
+
+					</block>
+					<line><button("Add one") id="addOne"/><button("Clear") id="clear"/></line>
+				</category>
+			);
+
+			// Here we build the rest of the Array editor
+			// Undo redo is magically supported because dynamicArray is a @:s field in this prefab !
+			for (i => value in dynamicArray) {
+				arrayEdit.build(
+					<line label={'$i'}>
+						// We can use an array+index as a field !
+						<slider field={dynamicArray[i]} label=""/>
+						<button("-") id="sub"/>
+						<button("+") id="plus"/>
+						<button("Delete") id="delete"/>
+					</line>
+				);
+
+				sub.onClick = () -> {
+					dynamicArray[i] --;
+					// Don't forget to refresh the UI to refresh the slider
+					ctx.refreshInspector();
+				}
+
+				plus.onClick = () -> {
+					dynamicArray[i] ++;
+					ctx.refreshInspector();
+				}
+
+				delete.onClick = () -> {
+					dynamicArray.splice(i, 1);
+					ctx.refreshInspector();
+				}
+			}
+
+			addOne.onClick = () -> {
+				dynamicArray.push(0);
+				ctx.refreshInspector();
+			}
+
+			clear.onClick = () -> {
+				dynamicArray.resize(0);
+				ctx.refreshInspector();
+			}
+
+		}
 
 		// DML TESTS
 		hide.kit.Macros.testError(
@@ -177,11 +306,11 @@ class KitTest extends Object3D {
 		}
 
 		hide.kit.Macros.testError(
-			<range field="x"/>, this, "field must be an identifier expression or a structure field expression"
+			<range field="x"/>, this, "field must be an identifier,structure field or array expression"
 		);
 
 		hide.kit.Macros.testError(
-			<range field={123}/>, this, "field must be an identifier expression or a structure field expression"
+			<range field={123}/>, this, "field must be an identifier,structure field or array expression"
 		);
 
 		// Attributes related tests
