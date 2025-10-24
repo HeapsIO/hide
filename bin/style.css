@@ -1,3 +1,6 @@
+:root {
+  interpolate-size: allow-keywords;
+}
 @font-face {
   font-family: 'FontAwesome';
   src: url('libs/fontawesome-webfont.eot?v=4.7.0');
@@ -350,6 +353,7 @@ input[type=checkbox].indeterminate:after {
   position: relative;
   min-width: 0;
   min-height: 0;
+  scrollbar-gutter: stable;
 }
 .hide-modal {
   position: fixed;
@@ -1103,6 +1107,8 @@ input[type=checkbox].indeterminate:after {
 }
 /* Properties */
 .props-column {
+  display: flex;
+  flex-direction: column;
   height: 100%;
   background-color: #111;
   width: 320px;
@@ -1383,6 +1389,362 @@ input[type=checkbox].indeterminate:after {
   position: absolute;
   top: 30px;
   left: 200px;
+}
+.new-editor-prompt-toggle {
+  display: flex;
+  flex-direction: row-reverse;
+  gap: 0.5em;
+  justify-content: flex-end;
+}
+.new-editor-prompt-toggle.margin {
+  padding: 10px;
+  padding-bottom: 5px;
+}
+.hide-scroll:has(kit-root) {
+  flex: 1;
+  background-color: #111111;
+}
+kit-root {
+  --widget-height: 22px;
+  --widget-bg: #2d2d2d;
+  --widget-hover-bg: #3d3d3d;
+  --widget-gap: 2px;
+  padding: 6px;
+  min-height: 0;
+  background-color: #111111;
+  display: flex;
+  flex-direction: column;
+}
+kit-root .disabled {
+  color: #777 !important;
+  pointer-events: none;
+}
+kit-root .disabled kit-button,
+kit-root .disabled input,
+kit-root .disabled kit-label {
+  pointer-events: none;
+  color: #777 !important;
+  cursor: pointer;
+}
+kit-root .disabled kit-button,
+kit-root .disabled input {
+  background-color: #222;
+  border-color: #444;
+}
+kit-root kit-category {
+  --level: 0;
+  width: calc(100% - var(--level) * 5%);
+  margin: 0 auto;
+  margin-top: 5px;
+}
+kit-root kit-category > .title {
+  display: flex;
+  border-radius: 4px;
+  cursor: pointer;
+  user-select: none;
+  padding: 2px;
+}
+kit-root kit-category > .title:hover {
+  background-color: #323232;
+}
+kit-root kit-category > .title input[type=button] {
+  border: none;
+  position: absolute;
+  top: 0px;
+  right: 0px;
+  width: auto;
+  padding: 1px 5px;
+  background-color: #282828;
+}
+kit-root kit-category > .title input[type=button]:hover {
+  background-color: #464646;
+}
+kit-root kit-category > .title > .checkbox-wrapper {
+  position: absolute;
+  left: 5px;
+}
+kit-root kit-category > .title::before {
+  display: inline-block;
+  content: "";
+  margin: 2px;
+  width: 12px;
+  height: 12px;
+  transition: transform 0.2s;
+  background-color: currentColor;
+  mask-image: url("res/icons/svg/right_caret.svg");
+  mask-position: center;
+  mask-repeat: no-repeat;
+  mask-size: contain;
+  pointer-events: all;
+}
+kit-root kit-category.open > .title::before {
+  transform: rotate(90deg);
+}
+kit-root kit-category * {
+  box-sizing: border-box;
+  font-size: 11px;
+  color: white;
+}
+kit-root kit-category .title {
+  font-size: 12px;
+}
+kit-root kit-category > .collapsable {
+  transition: height ease 100ms;
+  height: 0;
+  overflow: clip;
+}
+kit-root kit-category.open > .collapsable {
+  height: max-content;
+}
+kit-root kit-category > .collapsable > .content {
+  box-sizing: border-box;
+  padding-top: 0.2em;
+  padding-bottom: 1em;
+}
+kit-root kit-category.open > .title {
+  border-bottom-left-radius: 0px;
+  border-bottom-right-radius: 0px;
+}
+kit-root .content,
+kit-root kit-block {
+  display: flex;
+  flex-direction: column;
+  min-height: 0;
+}
+kit-root kit-text {
+  text-align: center;
+  margin: 0;
+  padding: 0;
+  min-width: 50px;
+}
+kit-root kit-separator {
+  margin-top: 5px;
+  margin-bottom: 5px;
+  width: 100%;
+  border-bottom: 1px solid #333;
+  align-self: center;
+}
+kit-root kit-line > kit-separator {
+  margin-left: 5px;
+  margin-right: 5px;
+  border: none;
+  border-right: 1px solid #333;
+  width: 0;
+  align-self: stretch;
+}
+kit-root kit-line {
+  padding-block: var(--widget-gap);
+  box-sizing: border-box;
+  position: relative;
+  display: flex;
+  align-items: center;
+  gap: 0.4em;
+  min-width: 0;
+  min-height: var(--widget-height);
+}
+kit-root kit-line:hover {
+  background-color: #222;
+}
+kit-root kit-line kit-label {
+  display: flex;
+  justify-content: end;
+  align-items: center;
+  gap: 0.4em;
+  font-size: 0.95em;
+  margin-left: 0.3em;
+}
+kit-root kit-line kit-label:empty:not(.first) {
+  display: none;
+}
+kit-root kit-line .first {
+  flex: 0 0 85px;
+  text-align: right;
+  margin-left: 0;
+}
+kit-root kit-line kit-slider-group-label {
+  display: flex !important;
+  align-items: center;
+  justify-content: end;
+  gap: 0.3em;
+}
+kit-root kit-line kit-div {
+  display: contents;
+}
+kit-root kit-line input,
+kit-root kit-line kit-file {
+  flex: 1 1;
+  text-align: left;
+  width: 100%;
+  max-width: 100%;
+  min-width: 0;
+  height: var(--widget-height);
+  font-size: 0.95em;
+  color: #EEE;
+  text-shadow: 0px 1px 0px black;
+  border-radius: 4px;
+  background-color: var(--widget-bg);
+}
+kit-root kit-line input:focus,
+kit-root kit-line kit-file:focus {
+  outline-color: #777;
+}
+kit-root kit-line .texture-choice {
+  display: flex;
+  align-items: center;
+}
+kit-root kit-line .texture-choice > :first-child {
+  height: var(--widget-height);
+  flex: 1 1 auto;
+}
+kit-root kit-line .texture-choice > :first-child input {
+  height: 100%;
+  width: 100% !important;
+}
+kit-root kit-line .texture-choice > :first-child .texture-preview {
+  position: absolute;
+  height: calc(var(--widget-height) - 4px);
+  width: unset;
+  aspect-ratio: 1/1;
+  background-size: cover !important;
+  background-repeat: no-repeat;
+  box-sizing: border-box;
+  margin: 2px;
+  right: 0;
+  top: 0;
+}
+kit-root kit-line .texture-choice .hide-button {
+  height: unset;
+  width: unset;
+  aspect-ratio: 1/1;
+  height: var(--widget-height);
+  margin: 0;
+  box-sizing: border-box;
+}
+kit-root kit-line input[type="checkbox"] {
+  appearance: none;
+  width: auto;
+  flex: 0 0 auto;
+  outline: none !important;
+  border: none !important;
+  padding: 0;
+  margin: 0;
+  width: 16px;
+  height: 16px;
+}
+kit-root kit-line input[type="checkbox"]::after {
+  box-sizing: border-box;
+  display: box;
+  background-color: #444;
+  width: 100%;
+  height: 100%;
+  border: 1px solid #555;
+  border-radius: 4px;
+  padding: 0;
+  margin: 0;
+  box-shadow: inset 1px 1px #333;
+}
+kit-root kit-line input[type="checkbox"]:hover::after {
+  border-color: var(--highlight);
+}
+kit-root kit-line kit-slider {
+  flex: 1 1;
+  display: flex;
+  height: var(--widget-height);
+  align-self: flex-start;
+}
+kit-root kit-line kit-slider > input {
+  font-variant-numeric: tabular-nums;
+  cursor: ew-resize;
+  height: 100%;
+  font-size: 12px;
+  vertical-align: center;
+}
+kit-root kit-line kit-file {
+  border: var(--basic-border);
+  border-radius: var(--basic-border-radius);
+  background-color: var(--bg-2);
+  flex: 1 1;
+  cursor: pointer;
+  align-self: stretch;
+  padding-left: 1em;
+  display: flex;
+  align-items: center;
+}
+kit-root kit-line kit-file:hover {
+  border: var(--basic-border-hover);
+}
+kit-root kit-line kit-file > p {
+  display: block;
+  margin: 0;
+  padding: 0;
+  text-align: left;
+}
+kit-root kit-line .gradient-box {
+  height: var(--widget-height);
+}
+kit-root kit-line .color-box {
+  height: var(--widget-height);
+}
+kit-root kit-line kit-button {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  flex: 1 1;
+  border: var(--basic-border);
+  border-radius: var(--basic-border-radius);
+  background-color: #4d4d4d;
+  height: var(--widget-height);
+  align-self: stretch;
+  text-align: center;
+  cursor: pointer;
+}
+kit-root kit-line kit-button:active {
+  position: relative;
+  top: 1px;
+}
+kit-root kit-line kit-button.highlight {
+  background-color: var(--selection);
+}
+kit-root kit-line kit-button > kit-image {
+  flex: 1 1 auto;
+  max-width: 100%;
+  aspect-ratio: 1/1;
+  background-size: cover;
+  background-repeat: no-repeat;
+  display: block;
+}
+kit-root kit-line kit-button:has(kit-image) {
+  flex: 0 1 1.6em;
+  padding: 3px;
+  height: unset;
+}
+kit-root kit-line kit-button.kit-medium {
+  flex: 0 1 32px;
+}
+kit-root kit-line kit-button.kit-big {
+  flex: 0 1 64px;
+}
+kit-root kit-line kit-button.kit-huge {
+  flex: 0 1 64px;
+}
+kit-root kit-line input:hover,
+kit-root kit-line kit-file:hover,
+kit-root kit-line kit-button:hover {
+  border: var(--basic-border-hover);
+  background-color: var(--widget-hover-bg);
+}
+kit-root kit-line input:hover.highlight,
+kit-root kit-line kit-file:hover.highlight,
+kit-root kit-line kit-button:hover.highlight {
+  background-color: var(--selection);
+}
+kit-root kit-line kit-button:hover {
+  background-color: #6d6d6d;
+}
+kit-root kit-line kit-multiline {
+  flex-grow: 1;
+  display: flex;
+  flex-wrap: wrap;
 }
 /* Image Viewer */
 .image-properties {
@@ -3014,6 +3376,10 @@ div.sp-container input:hover {
 div.color-box {
   display: inline-flex;
   cursor: pointer;
+  border: 1px solid #777;
+}
+div.color-box:hover {
+  border-color: var(--highlight);
 }
 div.popup {
   inset: unset;
@@ -3165,6 +3531,9 @@ div.gradient-box {
   font-size: 9pt;
   border: 1px solid #444;
   cursor: pointer;
+}
+div.gradient-box:hover {
+  border-color: var(--highlight);
 }
 .gradient-editor {
   background-color: #282829;
@@ -4367,7 +4736,7 @@ hide-popover hide-content {
   --basic-shadow: 2px 2px 3px rgba(0, 0, 0, 0.75);
   --sublte-shadow: 1px 1px 3px rgba(0, 0, 0, 0.33);
   --basic-border: 1px solid #353535;
-  --basic-border-hover: 1px solid #555;
+  --basic-border-hover: 1px solid #777;
   --basic-border-focused: 1px solid var(--selection);
   --basic-border-radius: 5px;
   --basic-padding: 0.2em;
@@ -4513,6 +4882,10 @@ graph-editor-root properties-container .anim-list {
 .fancy-small fancy-button,
 fancy-button.fancy-small {
   --size: 22px;
+}
+.fancy-tiny fancy-button,
+fancy-button.fancy-tiny {
+  --size: 16px;
 }
 .fancy-normal fancy-button,
 fancy-button.fancy-normal {

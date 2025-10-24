@@ -394,8 +394,8 @@ class SceneEditorContext extends hide.prefab.EditContext {
 	public var rootObjects2D(default, null): Array<h2d.Object>;
 	public var rootElements(default, null): Array<PrefabElement>;
 
-	public function new(elts, editor) {
-		super();
+	public function new(undo, elts, editor) {
+		super(undo);
 		this.editor = editor;
 		this.updates = @:privateAccess editor.updates;
 		this.elements = elts;
@@ -4020,7 +4020,7 @@ class SceneEditor {
 					var multiProps = new hide.comp.PropsEditor(null, null, new Element("<div>"));
 					multiProps.isShadowEditor = true;
 					edit.properties.multiPropsEditor.push(multiProps);
-					var ctx = new SceneEditorContext([prefab], this);
+					var ctx = new SceneEditorContext(undo, [prefab], this);
 					ctx.properties = multiProps;
 					ctx.scene = this.scene;
 					prefab.edit(ctx);
@@ -4126,7 +4126,7 @@ class SceneEditor {
 	}
 
 	function makeEditContext(elts : Array<PrefabElement>) : SceneEditorContext {
-		var edit : SceneEditorContext = new SceneEditorContext(elts, this);
+		var edit : SceneEditorContext = new SceneEditorContext(undo, elts, this);
 
 		edit.rootPrefab = sceneData;
 		edit.properties = properties;
@@ -4176,18 +4176,91 @@ class SceneEditor {
 			if (elts.length == 0 || (customPivot != null && customPivot.elt != selectedPrefabs[0])) {
 				customPivot = null;
 			}
-			properties.clear();
-			if( elts.length > 0 ) {
-				if (elts.length > 1) {
-					var commonClass = hrt.tools.ClassUtils.getCommonClass(elts, hrt.prefab.Prefab);
 
-					var proxyPrefab = Type.createInstance(commonClass, [null, new ContextShared()]);
-					proxyPrefab.load(haxe.Json.parse(haxe.Json.stringify(elts[0].save())));
-					fillProps(edit, proxyPrefab, elts);
+
+			properties.clear();
+
+			if( elts.length > 0 ) {
+				var commonClass = hrt.tools.ClassUtils.getCommonClass(elts, hrt.prefab.Prefab);
+				var parentClass = Type.getSuperClass(commonClass);
+				var hasNewInspector = false;
+
+				if (parentClass != null) {
+					if (Reflect.field(Type.createEmptyInstance(commonClass), "edit2") != Reflect.field(Type.createEmptyInstance(parentClass), "edit2")) {
+						hasNewInspector = true;
+					}
 				}
-				else
-				{
-					fillProps(edit, elts[0], null);
+
+				var allowNewInspector = Ide.inst.currentConfig.get("sceneeditor.newInspector", false);
+
+				var toggle = null;
+				if (hasNewInspector) {
+					toggle = new Element('<div class="new-editor-prompt-toggle"><label for="new-edit-toggle">Use new inspector</label><input name="new-edit-toggle" type="checkbox"></input></div>');
+					var checkbox : js.html.InputElement = cast toggle.find("input").get(0);
+					checkbox.checked = allowNewInspector;
+					checkbox.onchange = () -> {
+						Ide.inst.currentConfig.set("sceneeditor.newInspector", checkbox.checked);
+						Ide.inst.currentConfig.save();
+						refreshProps();
+					}
+
+					properties.element.append(toggle);
+				}
+
+
+				if (hasNewInspector && allowNewInspector) {
+					properties.element.removeClass("hide-properties");
+					properties.element.removeClass("props");
+					toggle.addClass("margin");
+					var proxyPrefab = Type.createInstance(commonClass, [null, new ContextShared()]);
+					var isMultiEdit = selectedPrefabs.length > 1;
+					if (isMultiEdit) {
+						proxyPrefab.load(haxe.Json.parse(haxe.Json.stringify(elts[0].save())));
+					} else {
+						proxyPrefab = elts[0];
+					}
+
+					var ectx2 = new hide.prefab.EditContext.HideJsEditContext2(null, edit);
+
+					var baseRoot = new hide.kit.KitRoot(null, null, proxyPrefab, ectx2);
+					@:privateAccess baseRoot.isMultiEdit = isMultiEdit;
+
+					@:privateAccess ectx2.saveKey = Type.getClassName(commonClass);
+					ectx2.root = baseRoot;
+
+					proxyPrefab.edit2(ectx2);
+
+					if (isMultiEdit) {
+						for (i => select in selectedPrefabs) {
+							var ectx2 = new hide.prefab.EditContext.HideJsEditContext2(ectx2, edit);
+							@:privateAccess ectx2.saveKey = Type.getClassName(commonClass);
+							var childRoot = new hide.kit.KitRoot(null, null, select, ectx2);
+							@:privateAccess childRoot.isMultiEdit = isMultiEdit;
+							baseRoot.editedPrefabsProperties.push(childRoot);
+							ectx2.root = childRoot;
+							select.edit2(ectx2);
+						}
+					}
+
+					baseRoot.make();
+
+					@:privateAccess properties.element.append(baseRoot.nativeContent);
+				}
+				else {
+					properties.element.addClass("hide-properties");
+					properties.element.addClass("props");
+					if (elts.length > 1) {
+						var commonClass = hrt.tools.ClassUtils.getCommonClass(elts, hrt.prefab.Prefab);
+
+						var proxyPrefab = Type.createInstance(commonClass, [null, new ContextShared()]);
+						proxyPrefab.load(haxe.Json.parse(haxe.Json.stringify(elts[0].save())));
+						fillProps(edit, proxyPrefab, elts);
+					}
+					else
+					{
+						fillProps(edit, elts[0], null);
+					}
+
 				}
 			}
 
