@@ -67,7 +67,7 @@ class Slider<T:Float> extends Widget<T> {
 	}
 
 	function makeInput() : NativeElement {
-		expScale = parseScaleParam(exp, 2.71828);
+		expScale = parseScaleParam(exp, 1.2);
 		polyScale = parseScaleParam(poly, 2.0);
 
 		if (expScale != null && polyScale != null) {

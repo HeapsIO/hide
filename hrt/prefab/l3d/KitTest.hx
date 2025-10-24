@@ -156,7 +156,42 @@ class KitTest extends Object3D {
 
 		// Lines
 		{
-
+			ctx.build(
+				<category("Lines")>
+					<line label="Two">
+						<slider label="A"/>
+						<slider label="B"/>
+					</line>
+					<line label="Three">
+						<slider label="A"/>
+						<slider label="B"/>
+						<slider label="C"/>
+					</line>
+					<line label="Four">
+						<slider label="A"/>
+						<slider label="B"/>
+						<slider label="C"/>
+						<slider label="D"/>
+					</line>
+					<line full>
+						<slider label="A"/>
+						<slider label="B"/>
+						<slider label="C"/>
+						<slider label="D"/>
+					</line>
+					<line label="Mix">
+						<slider label="A"/>
+						<button("B")/>
+						<select(["A", "B", "C"]) label="C"/>
+					</line>
+					<line label="Disabled" disabled>
+						<slider label="A"/>
+						<slider label="B"/>
+						<slider label="C"/>
+						<slider label="D"/>
+					</line>
+				</category>
+			);
 		}
 
 		{
