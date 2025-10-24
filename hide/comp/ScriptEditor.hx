@@ -311,8 +311,12 @@ class ScriptChecker {
 			checker.types.defineClass(cdef.name, cdef);
 		}
 
+		onInitTypes();
+
 		return true;
 	}
+
+	public dynamic function onInitTypes() {}
 
 	function resolveApis( path : String ) {
 		var config : GlobalsDef = config.get("script.api");

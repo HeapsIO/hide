@@ -404,14 +404,19 @@ class FormulasView extends hide.view.Script {
 	override function getScriptChecker() {
 		var check = new hide.comp.ScriptEditor.ScriptChecker(config,"cdb formula");
 		check.checker.allowAsync = false;
-		var tstring = check.checker.types.resolve("String");
 
+		initFormulaTypes(check);
+		check.onInitTypes = () -> initFormulaTypes(check);
+
+		return check;
+	}
+
+	function initFormulaTypes(check : hide.comp.ScriptEditor.ScriptChecker) {
+		var tstring = check.checker.types.resolve("String");
 		var tany = check.checker.types.resolve("Dynamic");
 		check.checker.setGlobal("Ok", tany);
 		check.checker.setGlobal("Error", TFun([{t:tstring,name:"message",opt:false}], tany));
 		check.checker.setGlobal("Warning", TFun([{t:tstring,name:"message",opt:false}], tany));
-
-		return check;
 	}
 
 	static var _ = hide.ui.View.register(FormulasView);
