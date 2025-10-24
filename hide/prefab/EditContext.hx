@@ -147,19 +147,27 @@ class HideJsEditContext2 extends hrt.prefab.EditContext2 {
 	var ctx : EditContext;
 	var saveKey: String;
 
-	public function new(ctx: EditContext) {
+	public function new(parent: hrt.prefab.EditContext2, ctx: EditContext) {
+		super(parent);
 		this.ctx = ctx;
 	}
 
 	public function recordUndo(cb: (isUndo:Bool) -> Void) {
+		if (parent != null)
+			throw "Side effect in a multi edit context";
 		ctx.undo.change(Custom(cb));
 	}
 
 	public function refreshInspector() : Void {
-		ctx.rebuildProperties();
+		if (parent != null)
+			return;
+		js.Browser.window.requestAnimationFrame((_) -> ctx.rebuildProperties());
 	}
 
 	public function saveSetting(category: hrt.prefab.EditContext2.SettingCategory, key: String, value: Dynamic) : Void {
+		if (parent != null)
+			return;
+
 		if (value == null) {
 			ctx.ide.localStorage.removeItem(getSaveKey(category, key));
 			return;
@@ -194,6 +202,8 @@ class HideJsEditContext2 extends hrt.prefab.EditContext2 {
 	}
 
 	public function openFile(path:String) : Void {
+		if (parent != null)
+			return;
 		ctx.ide.openFile(path);
 	}
 }
