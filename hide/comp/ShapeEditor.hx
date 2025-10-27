@@ -54,6 +54,8 @@ class ShapeEditor extends Component {
 			<div id="extra-params" class="edition"></div>
 		</div>'));
 
+		uninspect();
+
 		element.find("#btn-add").on("click", function() {
 			this.shapes.push(Box(new h3d.col.Point(0, 0, 0), new h3d.Vector(0, 0, 0), 1, 1, 1));
 			updateShapeList();
@@ -76,6 +78,7 @@ class ShapeEditor extends Component {
 			}
 
 			selectedShapeIdx = -1;
+			uninspect();
 			updateShapeList();
 		});
 
@@ -93,7 +96,7 @@ class ShapeEditor extends Component {
 
 	override function remove() {
 		super.remove();
-		stopShapeEditing();
+		uninspect();
 		selectedShapeIdx = -1;
 		for (i in interactives)
 			i.remove();
@@ -293,10 +296,11 @@ class ShapeEditor extends Component {
 			onChange();
 		}
 
+		element.find("#extra-params").empty();
+		element.find("#shape-inspector").show();
+
 		shapeSelect.val(shape.getIndex());
 		shapeSelect.on("change", updateShape);
-
-		extraParams.empty();
 
 		switch (shape) {
 			case Box(center, rotation, x, y, z):
@@ -335,6 +339,12 @@ class ShapeEditor extends Component {
 				e.find("input").on("change", updateShape);
 				e.appendTo(extraParams);
 		}
+	}
+
+	function uninspect() {
+		stopShapeEditing();
+		element.find("#shape-inspector").hide();
+		element.find("#extra-params").empty();
 	}
 
 	function updateShapeList() {
