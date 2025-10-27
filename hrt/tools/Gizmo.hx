@@ -90,6 +90,7 @@ class Gizmo extends h3d.scene.Object {
 	public var onMove: h3d.Vector -> h3d.Quat -> h3d.Vector -> Void;
 	public var onFinishMove: Void -> Void;
 	public var moving(default, null): Bool;
+	public var allowNegativeScale : Bool = false;
 	dynamic public function snap(v: Float, mode: EditMode) : Float {
 		return v;
 	}
@@ -306,7 +307,7 @@ class Gizmo extends h3d.scene.Object {
 			var speedFactor = (K.isDown(K.SHIFT) && !K.isDown(K.CTRL)) ? 0.1 : 1.0;
 			delta.scale(speedFactor);
 			inline function scaleFunc(x: Float) {
-				return x > 0 ? x + 1 : 1 / (1 - x);
+				return allowNegativeScale ? (x + 1) : (x > 0 ? x + 1 : 1 / (1 - x));
 			}
 
 			function moveSnap(m: Float) {
