@@ -5602,7 +5602,7 @@ fancy-gallery-item.details .icon-placement {
 #shape-editor #shape-list {
   min-height: 20px;
   max-height: 150px;
-  background-color: #222222;
+  background-color: #2d2d2d;
   border-radius: 5px 5px 0 5px;
   display: flex;
   flex-direction: column;
@@ -5627,7 +5627,7 @@ fancy-gallery-item.details .icon-placement {
   margin-bottom: 5px;
 }
 #shape-editor #buttons > div {
-  background-color: #222222;
+  background-color: #2d2d2d;
   padding: 5px 10px 5px 10px;
   cursor: pointer;
 }

@@ -93,8 +93,11 @@ class Model extends FileView {
 							<div class="event-editor"> </div>
 						</div>
 						<div class="tab expand" name="Collision" icon="codepen">
-							<div class="collision-editor">
-								<label class="title">Collision settings</label>
+							<div class="hide-block">
+							<div class="props hide-scroll">
+								<div class="collision-editor">
+									<label class="title">Collision settings</label>
+								</div>
 							</div>
 						</div>
 					</div>
