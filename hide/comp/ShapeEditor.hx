@@ -112,13 +112,18 @@ class ShapeEditor extends Component {
 		var extraParams = element.find("#extra-params");
 
 		function updateShape() {
-			this.shapes[selectedShapeIdx] = Shape.createByIndex(Std.parseInt(shapeSelect.val()), getExtraParams());
+			var selIdx = Std.parseInt(shapeSelect.val());
+			if (this.shapes[selectedShapeIdx].getIndex() != selIdx)
+				this.shapes[selectedShapeIdx] = getDefaultShape(Shape.createByIndex(selIdx, getExtraParams()));
+			else
+				this.shapes[selectedShapeIdx] = Shape.createByIndex(selIdx, getExtraParams());
 
 			var i = interactives[selectedShapeIdx];
 			i.remove();
 			interactives[selectedShapeIdx] = getShapeInteractive(this.shapes[selectedShapeIdx]);
 
 			updateShapeList();
+			inspect(this.shapes[selectedShapeIdx]);
 			onChange();
 		}
 
@@ -265,6 +270,19 @@ class ShapeEditor extends Component {
 		return mesh;
 	}
 
+	function getDefaultShape(shape : Shape) : Shape {
+		return switch (shape) {
+			case Box(_):
+				Box(new h3d.col.Point(0, 0, 0), new h3d.Vector(0, 0, 0), 1., 1., 1.);
+			case Sphere(_):
+				Sphere(new h3d.col.Point(0, 0, 0), 1.);
+			case Capsule(_):
+				Capsule(new h3d.col.Point(0, 0, 0), new h3d.Vector(0, 0, 0), 1., 1.);
+			case Cylinder(_):
+				Cylinder(new h3d.col.Point(0, 0, 0), new h3d.Vector(0, 0, 0), 1., 1.);
+		}
+	}
+
 	function startShapeEditing() {
 		isInShapeEdition = true;
 		element.find("#edit-btn").toggleClass("activated", true);
@@ -273,15 +291,18 @@ class ShapeEditor extends Component {
 		var offsetRotation = new h3d.Quat();
 		var offsetScale = new h3d.Vector(0, 0, 0);
 
+		var initialShape = this.shapes[selectedShapeIdx];
 		var initialAbsPos = new h3d.Matrix();
 
 		@:privateAccess scene.editor.showGizmo = false;
 		gizmo = new hrt.tools.Gizmo(scene.s3d, scene.s2d);
+		gizmo.setTransform(this.interactives[selectedShapeIdx].getAbsPos());
 		gizmo.onStartMove = function(mode : hrt.tools.Gizmo.TransformMode) {
 			offsetPosition.set(0, 0, 0);
 			offsetRotation.identity();
 			offsetScale.set(1, 1, 1);
 
+			initialShape = shapes[selectedShapeIdx];
 			initialAbsPos.load(interactives[selectedShapeIdx].getAbsPos());
 			gizmo.setTransform(initialAbsPos);
 		}
@@ -300,7 +321,7 @@ class ShapeEditor extends Component {
 				offsetScale.load(scale);
 
 			// Update interactive
-			switch (this.shapes[selectedShapeIdx]) {
+			switch (initialShape) {
 				case Box(center, rotation, x, y, z):
 					if (offsetPosition != null)
 						absPos.translate(offsetPosition.x, offsetPosition.y, offsetPosition.z);
@@ -312,6 +333,56 @@ class ShapeEditor extends Component {
 						var eulers = offsetRotation.toEuler();
 						absPos.prependRotation(eulers.x, eulers.y, eulers.z);
 					}
+
+				case Sphere(center, radius):
+					if (offsetPosition != null)
+						absPos.translate(offsetPosition.x, offsetPosition.y, offsetPosition.z);
+					if (offsetScale != null) {
+						var offsetRadius = offsetScale.x != 1 ? offsetScale.x : offsetScale.y != 1 ? offsetScale.y : offsetScale.z;
+						offsetRadius -= 1;
+						absPos.prependScale(1 / radius, 1 / radius, 1 / radius);
+						absPos.prependScale(radius + offsetRadius, radius + offsetRadius, radius + offsetRadius);
+					}
+
+				case Capsule(center, rotation, radius, height):
+					if (offsetPosition != null)
+						absPos.translate(offsetPosition.x, offsetPosition.y, offsetPosition.z);
+					if (offsetScale != null) {
+						if (offsetScale.x == offsetScale.y && offsetScale.x == offsetScale.z) {
+							var radiusOffset = offsetScale.x == 1 ? offsetScale.y : offsetScale.x;
+							radiusOffset -= 1;
+							absPos.prependScale(1 / radius, 1 / radius, 1 / height);
+							absPos.prependScale(radius + radiusOffset, radius + radiusOffset, height + offsetScale.z - 1);
+						}
+						else {
+							// We need to recreate the capsule prim if scale isn't uniform
+							var radiusOffset = offsetScale.x == 1 ? offsetScale.y : offsetScale.x;
+							radiusOffset -= 1;
+							var newShape = Capsule(center + offsetPosition, rotation + offsetRotation.toEuler(), radius + radiusOffset, height + offsetScale.z - 1);
+							shapes[selectedShapeIdx] = newShape;
+							interactives[selectedShapeIdx].remove();
+							interactives[selectedShapeIdx] = getShapeInteractive(newShape);
+						}
+					}
+					if (offsetRotation != null) {
+						var eulers = offsetRotation.toEuler();
+						absPos.prependRotation(eulers.x, eulers.y, eulers.z);
+					}
+
+				case Cylinder(center, rotation, radius, height):
+					if (offsetPosition != null)
+						absPos.translate(offsetPosition.x, offsetPosition.y, offsetPosition.z);
+					if (offsetScale != null) {
+						var radiusOffset = offsetScale.x == 1 ? offsetScale.y : offsetScale.x;
+						radiusOffset -= 1;
+						absPos.prependScale(1 / radius, 1 / radius, 1 / height);
+						absPos.prependScale(radius + radiusOffset, radius + radiusOffset, height + offsetScale.z - 1);
+					}
+					if (offsetRotation != null) {
+						var eulers = offsetRotation.toEuler();
+						absPos.prependRotation(eulers.x, eulers.y, eulers.z);
+					}
+
 				default:
 			}
 
@@ -322,9 +393,23 @@ class ShapeEditor extends Component {
 			var newShape = switch(shapes[selectedShapeIdx]) {
 				case Box(center, rotation, sizeX, sizeY, sizeZ):
 					Box(center + offsetPosition, rotation + offsetRotation.toEuler(), sizeX + offsetScale.x - 1, sizeY + offsetScale.y - 1, sizeZ + offsetScale.z - 1);
-
-				default:
-					shapes[selectedShapeIdx];
+				case Sphere(center, radius):
+					var offsetRadius = offsetScale.x != 1 ? offsetScale.x : offsetScale.y != 1 ? offsetScale.y : offsetScale.z;
+					offsetRadius -= 1;
+					Sphere(center + offsetPosition, radius + offsetRadius);
+				case Capsule(center, rotation, radius, height):
+					if (offsetScale.x == offsetScale.y && offsetScale.x == offsetScale.z) {
+						var radiusOffset = offsetScale.x == 1 ? offsetScale.y : offsetScale.x;
+						radiusOffset -= 1;
+						Capsule(center + offsetPosition, rotation + offsetRotation.toEuler(), radius + radiusOffset, height + offsetScale.z - 1);
+					}
+					else {
+						Capsule(center, rotation, radius, height);
+					}
+				case Cylinder(center, rotation, radius, height):
+					var radiusOffset = offsetScale.x == 1 ? offsetScale.y : offsetScale.x;
+					radiusOffset -= 1;
+					Cylinder(center + offsetPosition, rotation + offsetRotation.toEuler(), radius + radiusOffset, height + offsetScale.z - 1);
 			}
 
 			shapes[selectedShapeIdx] = newShape;
