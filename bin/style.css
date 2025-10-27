@@ -5599,23 +5599,67 @@ fancy-gallery-item.details .icon-placement {
   text-align: right;
   align-self: center;
 }
-#shape-editor #params {
+#shape-editor #shape-list {
+  min-height: 20px;
+  max-height: 150px;
+  background-color: #222222;
+  border-radius: 5px 5px 0 5px;
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  padding: 5px;
+}
+#shape-editor #shape-list .shape-list-entry {
+  background-color: #444444;
+  border-radius: 2px;
+  padding: 3px 0px 3px 10px;
+  cursor: pointer;
+}
+#shape-editor #shape-list .shape-list-entry:hover {
+  background-color: #6a6a6a;
+}
+#shape-editor #shape-list .shape-list-entry.selected {
+  background-color: #3185ce;
+}
+#shape-editor #buttons {
+  display: flex;
+  justify-content: end;
+  margin-bottom: 5px;
+}
+#shape-editor #buttons > div {
+  background-color: #222222;
+  padding: 5px 10px 5px 10px;
+  cursor: pointer;
+}
+#shape-editor #buttons > div:hover {
+  color: white;
+}
+#shape-editor #buttons #btn-add {
+  border-radius: 0 0 0 5px;
+}
+#shape-editor #buttons #btn-remove {
+  border-radius: 0 0 5px 0;
+}
+#shape-editor #shape-inspector {
   display: grid;
   grid-template-columns: 1fr 197px;
   gap: 5px 10px;
 }
-#shape-editor #params > :nth-child(2n+1) {
+#shape-editor #shape-inspector > :nth-child(2n+1) {
   text-align: right;
   align-self: center;
 }
-#shape-editor #params button {
+#shape-editor #shape-inspector button {
   background-color: #444444;
   border: 1px solid #444444;
   color: white;
   cursor: pointer;
   opacity: 0.8;
 }
-#shape-editor #params button:hover {
+#shape-editor #shape-inspector button.activated {
+  background-color: #3185ce;
+}
+#shape-editor #shape-inspector button:hover {
   opacity: 1;
 }
 #shape-editor #extra-params {

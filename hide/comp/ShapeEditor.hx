@@ -1,83 +1,193 @@
 package hide.comp;
 
 enum Shape {
-	Box(center : h3d.col.Point, x : Float, y : Float, z : Float);
+	Box(center : h3d.col.Point, rotation : h3d.Vector, sizeX : Float, sizeY : Float, sizeZ : Float);
 	Sphere(center : h3d.col.Point, radius : Float);
-	Capsule(center: h3d.col.Point, radius : Float, height : Float);
-	Cylinder(center: h3d.col.Point, radius : Float, height : Float);
+	Capsule(center: h3d.col.Point, rotation : h3d.Vector, radius : Float, height : Float);
+	Cylinder(center: h3d.col.Point, rotation : h3d.Vector, radius : Float, height : Float);
 }
 
 typedef ShapeEditorOptions = {
 	@:optional var shapesAllowed : Array<String>;
 	@:optional var disableShapeEdition : Bool;
+	@:optional var multipleShapes : Bool;
 }
 
 class ShapeEditor extends Component {
+	static var DEFAULT_COLOR = 0xFFFFFF;
+	static var SELECTED_COLOR = 0x3185CE;
+
 	var parentObj : h3d.scene.Object;
-	var interactive : h3d.scene.Object;
+	var shapes : Array<Shape> = [];
 
-	var shape : Shape;
+	var interactives : Array<h3d.scene.Mesh> = [];
+	var selectedShapeIdx : Int = -1;
+	var isInShapeEdition = false;
+	var gizmo : hrt.tools.Gizmo;
+	var scene : Scene;
 
-	public function new(parentObj : h3d.scene.Object, ?shape: Shape, ?options : ShapeEditorOptions, ?parent: Element) {
+	public function new(scene : Scene, parentObj : h3d.scene.Object, ?shapes : Array<Shape>, ?options : ShapeEditorOptions, ?parent: Element) {
+		this.scene = scene;
 		this.parentObj = parentObj;
-		this.shape = shape;
+		this.shapes = shapes;
 
 		// Set default value if not passed in constructor
-		if (shape == null)
-			this.shape = Box(new h3d.col.Point(0, 0, 0), 1, 1, 1);
+		if (this.shapes == null)
+			this.shapes = [];
 
-		var allowedShapes = options.shapesAllowed ?? Type.getEnumConstructs(Shape);
+		var allowedShapes = options?.shapesAllowed ?? Type.getEnumConstructs(Shape);
     	super(parent, new Element('<div id="shape-editor">
-			<div id="params">
+			<div id="shape-list">
+			</div>
+			<div id="buttons">
+				<div id="btn-add" class="icon ico ico-plus"></div>
+				<div id="btn-remove" class="icon ico ico-minus"></div>
+			</div>
+			<div id="shape-inspector">
 				<label>Shape</label>
 				<select id="shape-type">
 					${[for (s in allowedShapes) '<option value="${Shape.createByName(s, []).getIndex()}">${s}</option>'].join("")}
 				</select>
 				<label class="edition">Edit Shape</label>
-				<button class="edition"><div class="icon ico ico-pencil"></div></button>
+				<button id="edit-btn" class="edition"><div class="icon ico ico-pencil"></div></button>
 			</div>
-			<div id="extra-params edition"></div>
+			<div id="extra-params" class="edition"></div>
 		</div>'));
 
-		var extraParams = element.find("#extra-params");
-		var shapeTypeSelector = element.find("#shape-type");
-		shapeTypeSelector.on("change", function() {
-			var center = new h3d.col.Point(0, 0, 0);
-			this.shape = switch(Shape.createByIndex(Std.parseInt(shapeTypeSelector.val()), [])) {
-				case Box(_,_,_):
-					Box(center, 1, 1, 1);
-				case Sphere(_):
-					Sphere(center, 1);
-				case Capsule(_,_):
-					Capsule(center, 1, 1);
-				case Cylinder(_,_):
-					Cylinder(center, 1, 1);
-			}
+		element.find("#btn-add").on("click", function() {
+			this.shapes.push(Box(new h3d.col.Point(0, 0, 0), new h3d.Vector(0, 0, 0), 1, 1, 1));
+			updateShapeList();
 
-			extraParams.empty();
-			extraParams.append(getExtraParamsEdit());
-
-			interactive?.remove();
-			interactive = getShapeInteractive();
-			onChange();
+			var i = getShapeInteractive(this.shapes[this.shapes.length - 1]);
+			interactives.push(i);
 		});
 
-		extraParams.append(getExtraParamsEdit());
-		interactive = getShapeInteractive();
+		element.find("#btn-remove").on("click", function() {
+			if (selectedShapeIdx == -1) {
+				this.shapes.pop();
+				var i = interactives.pop();
+				i.remove();
+			}
+			else {
+				this.shapes.remove(this.shapes[selectedShapeIdx]);
+				var i = interactives[selectedShapeIdx];
+				i.remove();
+				interactives.remove(i);
+			}
 
-		if (options?.disableShapeEdition)
+			selectedShapeIdx = -1;
+			updateShapeList();
+		});
+
+		var editBtn = element.find("#edit-btn");
+		editBtn.on("click", function() {
+			if (isInShapeEdition)
+				stopShapeEditing();
+			else
+				startShapeEditing();
+		});
+
+		if (options != null && options?.disableShapeEdition)
 			element.find(".edition").hide();
 	}
 
 	override function remove() {
 		super.remove();
-		interactive?.remove();
+		stopShapeEditing();
+		selectedShapeIdx = -1;
+		for (i in interactives)
+			i.remove();
 	}
 
-	public function getValue() : Shape {
-		return this.shape;
+	public function getValue() : Array<Shape> {
+		return this.shapes;
 	}
 
+	public dynamic function onChange() {}
+
+
+
+	function inspect(shape : Shape) {
+		var shapeSelect = element.find("#shape-type");
+		var extraParams = element.find("#extra-params");
+
+		function updateShape() {
+			this.shapes[selectedShapeIdx] = Shape.createByIndex(Std.parseInt(shapeSelect.val()), getExtraParams());
+
+			var i = interactives[selectedShapeIdx];
+			i.remove();
+			interactives[selectedShapeIdx] = getShapeInteractive(this.shapes[selectedShapeIdx]);
+
+			updateShapeList();
+			onChange();
+		}
+
+		shapeSelect.val(shape.getIndex());
+		shapeSelect.on("change", updateShape);
+
+		extraParams.empty();
+
+		switch (shape) {
+			case Box(center, rotation, x, y, z):
+				var e = new Element('
+					<label>Center</label>
+					<div class="inlined vector"><input type="number" id="x" value="${center.x}"/><input type="number" id="y" value="${center.y}"/><input type="number" id="z" value="${center.z}"/></div>
+					<label>Rotation (Radians)</label>
+					<div class="inlined vector"><input type="number" id="rotation-x" value="${rotation.x}"/><input type="number" id="rotation-y" value="${rotation.y}"/><input type="number" id="rotation-z" value="${rotation.z}"/></div>
+					<label>Size</label>
+					<div class="inlined"><input type="number" min="0" id="size-x" value="$x"/><input type="number" min="0" id="size-y" value="$y"/><input type="number" min="0" id="size-z" value="$z"/></div>
+				');
+				e.find("input").on("change", updateShape);
+				e.appendTo(extraParams);
+
+			case Sphere(center, radius):
+				var e = new Element('
+					<label>Center</label>
+					<div class="vector"><input type="number" id="x" value="${center.x}"/><input type="number" id="y" value="${center.y}"/><input type="number" id="z" value="${center.z}"/></div>
+					<label>Radius</label>
+					<div><input type="number" min="0" id="radius" value="$radius"/></div>
+				');
+				e.find("input").on("change", updateShape);
+				e.appendTo(extraParams);
+
+			case Capsule(center, rotation, radius, height), Cylinder(center, rotation, radius, height):
+				var e = new Element('
+					<label>Center</label>
+					<div class="vector"><input type="number" id="x" value="${center.x}"/><input type="number" id="y" value="${center.y}"/><input type="number" id="z" value="${center.z}"/></div>
+					<label>Rotation (Radians)</label>
+					<div class="inlined vector"><input type="number" id="rotation-x" value="${rotation.x}"/><input type="number" id="rotation-y" value="${rotation.y}"/><input type="number" id="rotation-z" value="${rotation.z}"/></div>
+					<label>Radius</label>
+					<div><input type="number" min="0" id="radius" value="$radius"/></div>
+					<label>Height</label>
+					<div><input type="number" min="0" id="height" value="$height"/></div>
+				');
+				e.find("input").on("change", updateShape);
+				e.appendTo(extraParams);
+		}
+	}
+
+	function updateShapeList() {
+		var list = element.find("#shape-list");
+		list.empty();
+
+		for (idx => s in shapes) {
+			var el = new Element('<div class="shape-list-entry ${idx == selectedShapeIdx ? "selected" : ""}">${s.getName()}</div>');
+
+			el.on("click", function() {
+				if (selectedShapeIdx != -1)
+					interactives[selectedShapeIdx].material.mainPass.getShader(h3d.shader.FixedColor).color.setColor(DEFAULT_COLOR);
+
+				selectedShapeIdx = idx;
+				list.find(".selected").removeClass("selected");
+				el.addClass("selected");
+				inspect(s);
+
+				interactives[selectedShapeIdx].material.mainPass.getShader(h3d.shader.FixedColor).color.setColor(SELECTED_COLOR);
+			});
+
+			el.appendTo(list);
+		}
+	}
 
 	function getExtraParams() : Array<Dynamic> {
 		var params : Array<Dynamic> = [];
@@ -103,56 +213,14 @@ class ShapeEditor extends Component {
 		return params;
 	}
 
-	function getExtraParamsEdit() : Element {
-		function paramChanged() {
-			this.shape = Shape.createByIndex(this.shape.getIndex(), getExtraParams());
-			interactive?.remove();
-			interactive = getShapeInteractive();
-			onChange();
-		}
-
-		return switch (getValue()) {
-			case Box(center, x, y, z):
-				var e = new Element('
-					<label>Center</label>
-					<div class="inlined vector"><input type="number" id="x" value="${center.x}"/><input type="number" id="y" value="${center.y}"/><input type="number" id="z" value="${center.z}"/></div>
-					<label>Size</label>
-					<div class="inlined"><input type="number" min="0" id="size-x" value="$x"/><input type="number" min="0" id="size-y" value="$y"/><input type="number" min="0" id="size-z" value="$z"/></div>
-				');
-				e.find("input").on("change", paramChanged);
-				e;
-
-			case Sphere(center, radius):
-				var e = new Element('
-					<label>Center</label>
-					<div class="vector"><input type="number" id="x" value="${center.x}"/><input type="number" id="y" value="${center.y}"/><input type="number" id="z" value="${center.z}"/></div>
-					<label>Radius</label>
-					<div><input type="number" min="0" id="radius" value="$radius"/></div>
-				');
-				e.find("input").on("change", paramChanged);
-				e;
-
-			case Capsule(center, radius, height), Cylinder(center, radius, height):
-				var e = new Element('
-					<label>Center</label>
-					<div class="vector"><input type="number" id="x" value="${center.x}"/><input type="number" id="y" value="${center.y}"/><input type="number" id="z" value="${center.z}"/></div>
-					<label>Radius</label>
-					<div><input type="number" min="0" id="radius" value="$radius"/></div>
-					<label>Height</label>
-					<div><input type="number" min="0" id="height" value="$height"/></div>
-				');
-				e.find("input").on("change", paramChanged);
-				e;
-		}
-	}
-
-
-	function getShapeInteractive() : h3d.scene.Mesh {
+	function getShapeInteractive(shape : Shape) : h3d.scene.Mesh {
 		var offset = new h3d.Vector(0, 0, 0);
+		var offsetRotation = new h3d.Vector(0, 0, 0);
 		var prim : h3d.prim.Primitive = switch (shape) {
-			case Box(center, x, y, z):
+			case Box(center, rotation, x, y, z):
 				var b = new h3d.prim.Cube(x, y, z, true);
 				offset.load(center);
+				offsetRotation.load(rotation);
 				b.addNormals();
 				b;
 			case Sphere(center, radius):
@@ -160,33 +228,138 @@ class ShapeEditor extends Component {
 				offset.load(center);
 				s.addNormals();
 				s;
-			case Capsule(center, radius, height):
+			case Capsule(center, rotation, radius, height):
 				var c = new h3d.prim.Capsule(radius, height, 8, Z);
 				offset.load(center);
+				offsetRotation.load(rotation);
 				c.addNormals();
 				c;
-			case Cylinder(center, radius, height):
+			case Cylinder(center, rotation, radius, height):
 				var c = new h3d.prim.Cylinder(16, radius, height, true);
 				offset.load(center);
+				offsetRotation.load(rotation);
 				c.addNormals();
 				c;
 		}
 
 		var mesh = new h3d.scene.Mesh(prim, null, parentObj);
 		mesh.setPosition(offset.x, offset.y, offset.z);
+		mesh.setRotation(offsetRotation.x, offsetRotation.y, offsetRotation.z);
+
 		var s = new h3d.shader.AlphaMult();
 		s.alpha = 0.3;
 		mesh.material.mainPass.addShader(s);
 		mesh.material.blendMode = Alpha;
+
+		var fixedColor = new h3d.shader.FixedColor(this.shapes.indexOf(shape) == selectedShapeIdx ? SELECTED_COLOR : DEFAULT_COLOR);
+		fixedColor.USE_ALPHA = false;
+		@:privateAccess mesh.material.mainPass.addSelfShader(fixedColor);
+
 		mesh.material.mainPass.setPassName("overlay");
+
 		var p = mesh.material.allocPass("highlight");
 		p.culling = None;
 		p.depthWrite = false;
 		p.depthTest = LessEqual;
-		p.addShader(new h3d.shader.FixedColor(0xffffff));
 
 		return mesh;
 	}
 
-	public dynamic function onChange() {}
+	function startShapeEditing() {
+		isInShapeEdition = true;
+		element.find("#edit-btn").toggleClass("activated", true);
+
+		var offsetPosition = new h3d.Vector(0, 0, 0);
+		var offsetRotation = new h3d.Quat();
+		var offsetScale = new h3d.Vector(0, 0, 0);
+
+		var initialAbsPos = new h3d.Matrix();
+
+		@:privateAccess scene.editor.showGizmo = false;
+		gizmo = new hrt.tools.Gizmo(scene.s3d, scene.s2d);
+		gizmo.onStartMove = function(mode : hrt.tools.Gizmo.TransformMode) {
+			offsetPosition.set(0, 0, 0);
+			offsetRotation.identity();
+			offsetScale.set(1, 1, 1);
+
+			initialAbsPos.load(interactives[selectedShapeIdx].getAbsPos());
+			gizmo.setTransform(initialAbsPos);
+		}
+
+		gizmo.onMove = function(position: h3d.Vector, rotation: h3d.Quat, scale: h3d.Vector) {
+			var interactive = interactives[selectedShapeIdx];
+			var absPos = initialAbsPos.clone();
+
+			if (position != null)
+				offsetPosition.load(position);
+
+			if (rotation != null)
+				offsetRotation.load(rotation);
+
+			if (scale != null)
+				offsetScale.load(scale);
+
+			// Update interactive
+			switch (this.shapes[selectedShapeIdx]) {
+				case Box(center, rotation, x, y, z):
+					if (offsetPosition != null)
+						absPos.translate(offsetPosition.x, offsetPosition.y, offsetPosition.z);
+					if (offsetScale != null) {
+						absPos.prependScale(1 / x, 1 / y, 1 / z);
+						absPos.prependScale(x + offsetScale.x - 1, y + offsetScale.y - 1, z + offsetScale.z - 1);
+					}
+					if (offsetRotation != null) {
+						var eulers = offsetRotation.toEuler();
+						absPos.prependRotation(eulers.x, eulers.y, eulers.z);
+					}
+				default:
+			}
+
+			@:privateAccess interactive.absPos.load(absPos);
+		}
+
+		gizmo.onFinishMove = function() {
+			var newShape = switch(shapes[selectedShapeIdx]) {
+				case Box(center, rotation, sizeX, sizeY, sizeZ):
+					Box(center + offsetPosition, rotation + offsetRotation.toEuler(), sizeX + offsetScale.x - 1, sizeY + offsetScale.y - 1, sizeZ + offsetScale.z - 1);
+
+				default:
+					shapes[selectedShapeIdx];
+			}
+
+			shapes[selectedShapeIdx] = newShape;
+			interactives[selectedShapeIdx].remove();
+			interactives[selectedShapeIdx] = getShapeInteractive(newShape);
+			inspect(newShape);
+		}
+
+		@:privateAccess scene.editor.gizmo.onChangeMode = (mode) -> {
+			switch (mode) {
+				case Translation:
+					gizmo.translationMode();
+				case Rotation:
+					gizmo.rotationMode();
+				case Scaling:
+					gizmo.scalingMode();
+			}
+		}
+
+		var el = new Element(element[0].ownerDocument.body);
+		el.on("mousemove.shapeeditor", (e) -> {
+			gizmo.update(0, true);
+			e.stopPropagation();
+			e.preventDefault();
+		});
+	}
+
+	function stopShapeEditing() {
+		isInShapeEdition = false;
+		element.find("#edit-btn").toggleClass("activated", false);
+
+		@:privateAccess scene.editor.showGizmo = true;
+		var el = new Element(element[0].ownerDocument.body);
+		el.off("mousemove.shapeeditor");
+		gizmo.remove();
+		gizmo = null;
+	}
 }
