@@ -1,35 +1,44 @@
 package hide.kit;
 
 /**
-	# Migration notes
+	# hrt.prefab.edit -> hrt.prefab.edit2 Migration notes
 
-	1. Nouvelle signature : edit2(ctx: hrt.prefab.EditContext2).
-	2. A placer en dehors d'un block #if editor
-	3. Nouvelle syntaxe pour créer un bloc de ui :
+	- new function signature : edit2(ctx: hrt.prefab.EditContext2).
+	- must be palced outside a `#if editor` block at the moment
+	- new element creation syntax (replaces `new hide.Element("...")`):
 		ctx.build(<element></element>);
+	- multiple elements can be build at the same time in a ctx.build by putting them in a unique
+		`<root></root>` container. This root container will not appear in the final element tree
+		example :
+			ctx.build(
+				<root>
+					<category("A")/>
+					<category("B")/>
+				</root>
+			);
 
-	4. `<div class="Group" name="Reference></div>` -> `<category("Reference")></category>`
-	5. `<dl></dl>` -> Rien du tout (ne sert plus à rien)
-	6. `<dt>Label</dt><dd><input type="range" field="x"></input><dd>` -> <slider label="Label" field={x}/>
-		Note : si le label est identique au field, pas besoin de préciser (le field sera transformé en label automatiquement, avec des majuscules et des espaces)
-	7. Conversion des types d'input
-		`<input type="button" value="Nom du bouton"/>` -> `<button("Nom du boutton")/>`
+	- `<div class="Group" name="Reference></div>` -> `<category("Reference")></category>`
+	- `<dl></dl>` -> Nothing (this syntax is not needed anymore)
+	- `<dt>Label</dt><dd><input type="range" field="x"></input><dd>` -> <slider label="Label" field={x}/>
+		Note : if no label is specified, an automatic label will be generated from its field expression if possible, automatically adding caps and spaces if needed (i.e a "fooBar" field creates a "Foo Bar" label)
+	- Widget conversion suggestions :
+		`<input type="button" value="Button Name"/>` -> `<button("Button Name")/>`
+			Note : to bind a callback, use the onClick attribute on the button, or add an id to the button and add the callback later
 		`<input type="range" min="0" max="360"/>` -> `<range(0, 360)/>`
 		`<input type="text">` -> `<input/>`
-		`<select></select>` -> `<select(["Choix 1", "Choix 2"])/>`
-			Note : la liste d'option peut soit être une liste de string, soit une liste d'objets {value: Dynamic, label: String}. La premiere sera automatiquement convertie dans le second format avec la string en valeur et en label. La valeur du widget Select sera égal a la `value` de l'item acutellement selectionné
-		`<input type="texturepath"/>` -> `<file type="texture">` si vous ne voulez pas que l'utilisateur puisse passer un gradient généré par l'éditeur (95% des cas hors shader) ou `<texture/>`
-		`<input type="fileselect" extensions="..."/>` -> Trouver ou ajouter les extensions dans hide.kit.File.types, puis `<file type="nom_du_type"/>`
-		`<p>Message d'information</p>` -> `<text("Message d'information")/>`
+		`<select></select>` -> `<select(["Choice 1", "Choice 2"])/>`
+			Note : the option list can either be a string or an Array<{value: Dynamic, label: String}>. A string array will automatically be converted in a value/label string using the string as the value and the label. The widget `value` will be equal to the `value` of the currently selected item
+		`<input type="texturepath"/>` -> `<file type="texture">` if you don't want to support gratiend (95% of non shader use-cases), otherwise use a `<texture/>`
+		`<input type="fileselect" extensions="..."/>` -> `<file type="type_name"/>` The list of allowed type can be found in hide.kit.File.types, you can add more types to the list if needed
+		`<p>Info message</p>` -> `<text("Info message")/>`
 
-	8. Conversion d'api Editeur :
+	- Editor api conversions :
 		`ctx.rebuildProperties()` -> `ctx.rebuildInspector()`
 		`shaded.editor.refreshInteractive(this)` -> `ctx.rebuildPrefab(this)`;
 		`shaded.editor.refreshTree(All)` -> `ctx.rebuildTree(this)`;
 		`ctx.rebuildPrefab(this)` -> `ctx.rebuildPrefab(this)`;
-		Les callbacks qui sont bind dans le onChange sont plutot à placer sur le onValueChange des widgets**/
-
-
+		Callbacks bound in the onChange function should be bound on the relevant widget onValueChange instead
+	**/
 
 @:keepSub
 class Element {
