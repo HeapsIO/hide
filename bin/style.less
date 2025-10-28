@@ -1590,6 +1590,7 @@ kit-root {
 	--widget-bg: #2d2d2d;
 	--widget-hover-bg: #3d3d3d;
 	--widget-gap: 2px;
+	--basic-border: 1px solid #444;
 	padding: 6px;
 	min-height: 0;
 
@@ -1773,7 +1774,7 @@ kit-root {
 			display: contents;
 		}
 
-		input, kit-file {
+		input, kit-select {
 			min-width: 0;
 			flex: 1 1;
 			text-align: left;
@@ -1784,8 +1785,12 @@ kit-root {
 			font-size: 0.95em;
 			color: #EEE;
 			text-shadow: 0px 1px 0px black;
-			border-radius: 4px;
 			background-color: var(--widget-bg);
+			padding: 0;
+			padding-left: 0.2em;
+
+			border: var(--basic-border);
+			border-radius: var(--basic-border-radius);
 
 			&:focus {
 				outline-color: #777;
@@ -1873,7 +1878,6 @@ kit-root {
 				font-variant-numeric: tabular-nums;
 				cursor: ew-resize;
 				height: 100%;
-				font-size: 12px;
 				vertical-align: center;
 			}
 
@@ -1881,27 +1885,36 @@ kit-root {
 			align-self: flex-start;
 		}
 
-		kit-file {
-			border: var(--basic-border);
-			border-radius: var(--basic-border-radius);
-			background-color: var(--bg-2);
+		kit-select {
 			flex: 1 1;
 			cursor: pointer;
 			align-self: stretch;
-			padding-left: 1em;
 
 			display: flex;
 			align-items: center;
 
-			&:hover {
-				border: var(--basic-border-hover);
+			span {
+				flex: 1 1;
 			}
 
-			>p {
-				display: block;
-				margin: 0;
-				padding: 0;
-				text-align: left;
+			&::after {
+				flex: 0 0 12px;
+				display: inline-block;
+				justify-self: flex-end;
+				content: "";
+				margin: 8px;
+				width: 12px; height: 12px;
+
+
+				transform: rotate(90deg);
+				background-color: currentColor;
+				mask-image: url("res/icons/svg/right_caret.svg");
+
+				mask-position: center;
+				mask-repeat: no-repeat;
+				mask-size: contain;
+
+				pointer-events: all;
 			}
 		}
 
@@ -1968,7 +1981,7 @@ kit-root {
 			}
 		}
 
-		input, kit-file, kit-button {
+		input, kit-select, kit-button {
 			&:hover {
 				border: var(--basic-border-hover);
 				background-color: var(--widget-hover-bg);

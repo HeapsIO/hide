@@ -1409,6 +1409,7 @@ kit-root {
   --widget-bg: #2d2d2d;
   --widget-hover-bg: #3d3d3d;
   --widget-gap: 2px;
+  --basic-border: 1px solid #444;
   padding: 6px;
   min-height: 0;
   background-color: #111111;
@@ -1571,7 +1572,7 @@ kit-root kit-line kit-div {
   display: contents;
 }
 kit-root kit-line input,
-kit-root kit-line kit-file {
+kit-root kit-line kit-select {
   flex: 1 1;
   text-align: left;
   width: 100%;
@@ -1581,11 +1582,14 @@ kit-root kit-line kit-file {
   font-size: 0.95em;
   color: #EEE;
   text-shadow: 0px 1px 0px black;
-  border-radius: 4px;
   background-color: var(--widget-bg);
+  padding: 0;
+  padding-left: 0.2em;
+  border: var(--basic-border);
+  border-radius: var(--basic-border-radius);
 }
 kit-root kit-line input:focus,
-kit-root kit-line kit-file:focus {
+kit-root kit-line kit-select:focus {
   outline-color: #777;
 }
 kit-root kit-line .texture-choice {
@@ -1656,28 +1660,33 @@ kit-root kit-line kit-slider > input {
   font-variant-numeric: tabular-nums;
   cursor: ew-resize;
   height: 100%;
-  font-size: 12px;
   vertical-align: center;
 }
-kit-root kit-line kit-file {
-  border: var(--basic-border);
-  border-radius: var(--basic-border-radius);
-  background-color: var(--bg-2);
+kit-root kit-line kit-select {
   flex: 1 1;
   cursor: pointer;
   align-self: stretch;
-  padding-left: 1em;
   display: flex;
   align-items: center;
 }
-kit-root kit-line kit-file:hover {
-  border: var(--basic-border-hover);
+kit-root kit-line kit-select span {
+  flex: 1 1;
 }
-kit-root kit-line kit-file > p {
-  display: block;
-  margin: 0;
-  padding: 0;
-  text-align: left;
+kit-root kit-line kit-select::after {
+  flex: 0 0 12px;
+  display: inline-block;
+  justify-self: flex-end;
+  content: "";
+  margin: 8px;
+  width: 12px;
+  height: 12px;
+  transform: rotate(90deg);
+  background-color: currentColor;
+  mask-image: url("res/icons/svg/right_caret.svg");
+  mask-position: center;
+  mask-repeat: no-repeat;
+  mask-size: contain;
+  pointer-events: all;
 }
 kit-root kit-line .gradient-box {
   height: var(--widget-height);
@@ -1728,13 +1737,13 @@ kit-root kit-line kit-button.kit-huge {
   flex: 0 1 64px;
 }
 kit-root kit-line input:hover,
-kit-root kit-line kit-file:hover,
+kit-root kit-line kit-select:hover,
 kit-root kit-line kit-button:hover {
   border: var(--basic-border-hover);
   background-color: var(--widget-hover-bg);
 }
 kit-root kit-line input:hover.highlight,
-kit-root kit-line kit-file:hover.highlight,
+kit-root kit-line kit-select:hover.highlight,
 kit-root kit-line kit-button:hover.highlight {
   background-color: var(--selection);
 }

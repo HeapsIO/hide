@@ -17,7 +17,9 @@ class Select extends Widget<Dynamic> {
 	public var entries(default, null) : Array<SelectEntry>;
 
 	#if js
-	var select: hide.comp.Select;
+	var select: NativeElement;
+	var text: NativeElement;
+	var dropdown = null;
 	#end
 
 	public function new(parent: Element, id: String, entries: EntriesOrStrings) {
@@ -27,26 +29,45 @@ class Select extends Widget<Dynamic> {
 
 	function makeInput() : NativeElement {
 		#if js
-		var selectEntries: Array<hide.comp.Dropdown.Choice> = [for (i => entry in entries) {id: '$i', text: entry.label, searchText: entry.label}];
-		select = new hide.comp.Select(null, null, selectEntries, true);
-		select.onChange = (newId) -> {
-			value = newId != null ? entries[Std.parseInt(newId)]?.value : null;
+		function valueChanged(newValue: SelectEntry) {
+			value = newValue.value;
 			broadcastValueChange(false);
+			select.innerText = newValue.label;
 		}
-		return select.element[0];
+
+		select = js.Browser.document.createElement("kit-select");
+		text = js.Browser.document.createSpanElement();
+		select.appendChild(text);
+
+		var selectEntries: Array<hide.comp.ContextMenu.MenuItem> = [for (i => entry in entries) {label: entry.label, click: valueChanged.bind(entry)}];
+		select.onclick = (e: js.html.MouseEvent) -> {
+			if (dropdown == null) {
+				dropdown = hide.comp.ContextMenu.createDropdown(select, selectEntries);
+				dropdown.onClose = () -> {
+					dropdown = null;
+				}
+			} else {
+				dropdown.close();
+			}
+		}
+
+		return select;
 		#end
 		return null;
 	}
 
 	override function syncValueUI() {
 		#if js
-		var index = -1;
-		for (i => entry in entries) {
+		if (text == null)
+			return;
+		var selectedEntry = null;
+		for (entry in entries) {
 			if (entry.value == value) {
-				index = i;
+				selectedEntry = entry;
+				break;
 			}
 		}
-		select.value = index == -1 ? null : '$index';
+		text.innerText = selectedEntry == null ? "--- Select ---" : selectedEntry.label;
 		#end
 	}
 
