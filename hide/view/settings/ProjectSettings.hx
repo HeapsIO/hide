@@ -187,7 +187,7 @@ class ProjectSettings extends hide.ui.View<{}> {
 	}
 
 	function inspectRenderProps(s : LocalSetting, parentElement: hide.Element, onChange : (file : String, newObj : Dynamic) -> Void) {
-		var obj = s.content;
+		var obj = Reflect.copy(s.content);
 		var v = Reflect.field(obj, RENDERPROPS_ENTRY);
 		var renderProps : Array<Dynamic> = v is Array ? v : v != null ? [{name: "", value:v}] : null;
 		Reflect.setField(obj, RENDERPROPS_ENTRY, renderProps);
@@ -340,6 +340,33 @@ class ProjectSettings extends hide.ui.View<{}> {
 		</div>').appendTo(parentElement);
 
 		var converts : Dynamic = Reflect.field(obj, CONVERT_ENTRY);
+		convertsEl.find(".add-btn").click(function(e) {
+			if (converts == null) {
+				converts = {};
+				Reflect.setField(obj, CONVERT_ENTRY, converts);
+			}
+
+			Reflect.setField(Reflect.field(obj, CONVERT_ENTRY), "*", {});
+			onChange(s.file, obj);
+		});
+
+		convertsEl.find(".remove-btn").click(function(e) {
+			if (converts == null)
+				return;
+
+			var selIdx = -1;
+			for (idx in 0...Reflect.fields(converts).length)
+				if (convertsEl.find(".row").eq(idx).hasClass("selected"))
+					selIdx = idx;
+
+			Reflect.deleteField(converts, Reflect.fields(converts)[selIdx]);
+			if (Reflect.fields(converts).length == 0) {
+				Reflect.deleteField(obj, CONVERT_ENTRY);
+				converts = null;
+			}
+			onChange(s.file, obj);
+		});
+
 		if (converts == null)
 			return;
 
@@ -385,33 +412,6 @@ class ProjectSettings extends hide.ui.View<{}> {
 				onChange(s.file, obj);
 			});
 		}
-
-		convertsEl.find(".add-btn").click(function(e) {
-			if (converts == null) {
-				converts = {};
-				Reflect.setField(obj, CONVERT_ENTRY, converts);
-			}
-
-			Reflect.setField(Reflect.field(obj, CONVERT_ENTRY), "*", {});
-			onChange(s.file, obj);
-		});
-
-		convertsEl.find(".remove-btn").click(function(e) {
-			if (converts == null)
-				return;
-
-			var selIdx = -1;
-			for (idx in 0...Reflect.fields(converts).length)
-				if (convertsEl.find(".row").eq(idx).hasClass("selected"))
-					selIdx = idx;
-
-			Reflect.deleteField(converts, Reflect.fields(converts)[selIdx]);
-			if (Reflect.fields(converts).length == 0) {
-				Reflect.deleteField(obj, CONVERT_ENTRY);
-				converts = null;
-			}
-			onChange(s.file, obj);
-		});
 	}
 
 
