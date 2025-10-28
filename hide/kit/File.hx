@@ -5,12 +5,12 @@ class File extends Widget<String> {
 	public var type : String = "file";
 
 	#if js
-	var text: js.html.ParagraphElement;
+	var file: hide.comp.FileSelect;
 	#end
 
 	function makeInput():NativeElement {
 		#if js
-		var file = new hide.comp.FileSelect(types.get(type), null, null, true);
+		file = new hide.comp.FileSelect(types.get(type), null, null, true);
 		file.onChange = () -> {
 			value = file.path;
 			broadcastValueChange(false);
@@ -24,12 +24,21 @@ class File extends Widget<String> {
 
 	override function syncValueUI() {
 		#if js
-		if (text != null)
-			text.innerText = value ?? '-- Choose ${type.toUpperCase()} --';
+		if (file != null)
+			file.path = value ?? '-- Choose ${type.toUpperCase()} --';
 		#end
 	}
 
 	function getDefaultFallback() : String {
+		return null;
+	}
+
+
+	function stringToValue(obj: String) : String {
+		var ext = obj.split(".").pop();
+		if (types.get(type).contains(ext)) {
+			return obj;
+		}
 		return null;
 	}
 
@@ -39,12 +48,4 @@ class File extends Widget<String> {
 		"texture" => ["png", "dds", "jpeg", "jpg"],
 		"model" => ["fbx", "hmd"],
 	];
-
-	function stringToValue(obj: String) : String {
-		var ext = obj.split(".").pop();
-		if (types.get(type).contains(ext)) {
-			return obj;
-		}
-		return null;
-	}
 }
