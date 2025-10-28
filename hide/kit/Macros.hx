@@ -81,7 +81,7 @@ class Macros {
 				// trick to declare the globalElement variables in the parent scope
 				// as one expression
 				var initVar : Var = {
-					name: "__kit_init",
+					name: "_",
 					expr: macro {
 						$b{args.outputExprs};
 						true;
