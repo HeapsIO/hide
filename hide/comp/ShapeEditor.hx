@@ -57,14 +57,17 @@ class ShapeEditor extends Component {
 		uninspect();
 
 		element.find("#btn-add").on("click", function() {
+			var prevShapes = this.shapes.copy();
 			this.shapes.push(Box(new h3d.col.Point(0, 0, 0), new h3d.Vector(0, 0, 0), 1, 1, 1));
 			updateShapeList();
-
+			var newShapes = this.shapes.copy();
 			var i = getShapeInteractive(this.shapes[this.shapes.length - 1]);
 			interactives.push(i);
+			registerUndo(prevShapes, newShapes);
 		});
 
 		element.find("#btn-remove").on("click", function() {
+			var prevShapes = this.shapes.copy();
 			if (selectedShapeIdx == -1) {
 				this.shapes.pop();
 				var i = interactives.pop();
@@ -76,6 +79,8 @@ class ShapeEditor extends Component {
 				i.remove();
 				interactives.remove(i);
 			}
+			var newShapes = this.shapes.copy();
+			registerUndo(prevShapes, newShapes);
 
 			selectedShapeIdx = -1;
 			uninspect();
@@ -217,6 +222,7 @@ class ShapeEditor extends Component {
 		}
 
 		gizmo.onFinishMove = function() {
+			var prevShapes = this.shapes.copy();
 			var newShape = switch(shapes[selectedShapeIdx]) {
 				case Box(center, rotation, sizeX, sizeY, sizeZ):
 					Box(center + offsetPosition, rotation + offsetRotation.toEuler(), sizeX + offsetScale.x - 1, sizeY + offsetScale.y - 1, sizeZ + offsetScale.z - 1);
@@ -243,6 +249,9 @@ class ShapeEditor extends Component {
 			interactives[selectedShapeIdx].remove();
 			interactives[selectedShapeIdx] = getShapeInteractive(newShape);
 			inspect(newShape);
+
+			var newShapes = this.shapes.copy();
+			registerUndo(prevShapes, newShapes);
 		}
 
 		@:privateAccess scene.editor.gizmo.onChangeMode = (mode) -> {
@@ -281,11 +290,14 @@ class ShapeEditor extends Component {
 		var extraParams = element.find("#extra-params");
 
 		function updateShape() {
+			var prevShapes = this.shapes.copy();
 			var selIdx = Std.parseInt(shapeSelect.val());
 			if (this.shapes[selectedShapeIdx].getIndex() != selIdx)
 				this.shapes[selectedShapeIdx] = getDefaultShape(Shape.createByIndex(selIdx, getExtraParams()));
 			else
 				this.shapes[selectedShapeIdx] = Shape.createByIndex(selIdx, getExtraParams());
+
+			var newShapes = this.shapes.copy();
 
 			var i = interactives[selectedShapeIdx];
 			i.remove();
@@ -294,6 +306,17 @@ class ShapeEditor extends Component {
 			updateShapeList();
 			inspect(this.shapes[selectedShapeIdx]);
 			onChange();
+
+			scene.editor.properties.undo.change(Custom((undo) -> {
+				this.shapes = undo ? prevShapes : newShapes;
+				inspect(this.shapes[this.selectedShapeIdx]);
+				for (idx in 0...shapes.length) {
+					this.interactives[idx].remove();
+					this.interactives[idx] = getShapeInteractive(this.shapes[idx]);
+				}
+				updateShapeList();
+				onChange();
+			}));
 		}
 
 		element.find("#extra-params").empty();
@@ -345,6 +368,26 @@ class ShapeEditor extends Component {
 		stopShapeEditing();
 		element.find("#shape-inspector").hide();
 		element.find("#extra-params").empty();
+	}
+
+
+	function registerUndo(prevShapes : Array<Shape>, newShapes : Array<Shape>) {
+		scene.editor.properties.undo.change(Custom((undo) -> {
+			this.shapes = undo ? prevShapes : newShapes;
+			if (this.selectedShapeIdx == -1 || this.selectedShapeIdx >= this.shapes.length)
+				uninspect();
+			else
+				inspect(this.shapes[this.selectedShapeIdx]);
+			for (i in this.interactives)
+				i.remove();
+			this.interactives = [];
+			for (idx in 0...shapes.length)
+				this.interactives[idx] = getShapeInteractive(this.shapes[idx]);
+			if (this.selectedShapeIdx != -1)
+				gizmo?.setTransform(this.interactives[this.selectedShapeIdx].getAbsPos());
+			updateShapeList();
+			onChange();
+		}));
 	}
 
 	function updateShapeList() {
