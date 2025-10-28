@@ -1,5 +1,36 @@
 package hide.kit;
 
+/**
+	# Migration notes
+
+	1. Nouvelle signature : edit2(ctx: hrt.prefab.EditContext2).
+	2. A placer en dehors d'un block #if editor
+	3. Nouvelle syntaxe pour créer un bloc de ui :
+		ctx.build(<element></element>);
+
+	4. `<div class="Group" name="Reference></div>` -> `<category("Reference")></category>`
+	5. `<dl></dl>` -> Rien du tout (ne sert plus à rien)
+	6. `<dt>Label</dt><dd><input type="range" field="x"></input><dd>` -> <slider label="Label" field={x}/>
+		Note : si le label est identique au field, pas besoin de préciser (le field sera transformé en label automatiquement, avec des majuscules et des espaces)
+	7. Conversion des types d'input
+		`<input type="button" value="Nom du bouton"/>` -> `<button("Nom du boutton")/>`
+		`<input type="range" min="0" max="360"/>` -> `<range(0, 360)/>`
+		`<input type="text">` -> `<input/>`
+		`<select></select>` -> `<select(["Choix 1", "Choix 2"])/>`
+			Note : la liste d'option peut soit être une liste de string, soit une liste d'objets {value: Dynamic, label: String}. La premiere sera automatiquement convertie dans le second format avec la string en valeur et en label. La valeur du widget Select sera égal a la `value` de l'item acutellement selectionné
+		`<input type="texturepath"/>` -> `<file type="texture">` si vous ne voulez pas que l'utilisateur puisse passer un gradient généré par l'éditeur (95% des cas hors shader) ou `<texture/>`
+		`<input type="fileselect" extensions="..."/>` -> Trouver ou ajouter les extensions dans hide.kit.File.types, puis `<file type="nom_du_type"/>`
+		`<p>Message d'information</p>` -> `<text("Message d'information")/>`
+
+	8. Conversion d'api Editeur :
+		`ctx.rebuildProperties()` -> `ctx.rebuildInspector()`
+		`shaded.editor.refreshInteractive(this)` -> `ctx.rebuildPrefab(this)`;
+		`shaded.editor.refreshTree(All)` -> `ctx.rebuildTree(this)`;
+		`ctx.rebuildPrefab(this)` -> `ctx.rebuildPrefab(this)`;
+		Les callbacks qui sont bind dans le onChange sont plutot à placer sur le onValueChange des widgets**/
+
+
+
 @:keepSub
 class Element {
 	#if !macro
@@ -267,7 +298,7 @@ class Element {
 
 		@:privateAccess root.finishUndoPoint();
 
-		root.editor.refreshInspector();
+		root.editor.rebuildInspector();
 		#end
 	}
 

@@ -313,6 +313,54 @@ class Reference extends Object3D {
 		refInstance = null;
 	}
 
+	override function edit2(ctx: hrt.prefab.EditContext2) {
+
+		ctx.build(
+			<category("Reference")>
+				<file type="prefab" field={source} id="fileSource"/>
+				<select([
+					{value: EditMode.None, label: "None"},
+					{value: EditMode.Edit, label: "Edit"},
+					{value: EditMode.Override, label: "Override"}]) field={editMode} id="editModeSelect"/>
+				<text("Warning : Edit mode enabled while there are override on this reference. Saving will cause the overrides to be applied to the original reference !") if(overrides != null && editMode == Edit)/>
+			</category>
+		);
+
+		fileSource.onValueChange = (_) -> {
+			ctx.rebuildPrefab(this);
+		}
+
+		editModeSelect.onValueChange = (_) -> {
+			ctx.rebuildPrefab(this);
+			ctx.rebuildTree(this);
+			ctx.rebuildInspector();
+		}
+
+		super.edit2(ctx);
+
+		var hasOverrides = computeDiffFromSource() != null;
+
+		ctx.build(
+			<category("Overrides")>
+				<text(hasOverrides ? "This reference has overrides" : "No Overrides")/>
+				<button("Clear Overrides") id="btnClearOverrides" disabled={!hasOverrides}/>
+			</category>
+		);
+
+		btnClearOverrides.onClick = () -> {
+			this.overrides = null;
+			if (originalSource != null) {
+				@:privateAccess shared.editor.removeInstance(refInstance, false);
+				originalSource = null;
+				refInstance = null;
+				ctx.rebuildPrefab(this);
+				ctx.rebuildInspector();
+			}
+		};
+
+	}
+
+
 	#if editor
 
 	override function setEditorChildren(sceneEditor:hide.comp.SceneEditor, scene: hide.comp.Scene) {

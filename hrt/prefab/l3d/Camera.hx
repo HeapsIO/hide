@@ -258,7 +258,7 @@ class Camera extends Object3D {
 
 		copy.onClick = () -> {
 			copyCam(ctx.getScene3d().camera);
-			ctx.refreshInspector();
+			ctx.rebuildInspector();
 		}
 
 		apply.onClick = () -> {
@@ -271,7 +271,7 @@ class Camera extends Object3D {
 
 		btnPreviewMode.onClick = () -> {
 			preview = !preview;
-			ctx.refreshInspector();
+			ctx.rebuildInspector();
 			var s3d = ctx.getScene3d();
 			var cam = s3d.camera;
 			var camController = ctx.getCameraController3d();

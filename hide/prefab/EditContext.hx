@@ -158,7 +158,7 @@ class HideJsEditContext2 extends hrt.prefab.EditContext2 {
 		ctx.undo.change(Custom(cb));
 	}
 
-	public function refreshInspector() : Void {
+	public function rebuildInspector() : Void {
 		if (parent != null)
 			return;
 		js.Browser.window.requestAnimationFrame((_) -> ctx.rebuildProperties());
@@ -205,5 +205,13 @@ class HideJsEditContext2 extends hrt.prefab.EditContext2 {
 		if (parent != null)
 			return;
 		ctx.ide.openFile(path);
+	}
+
+	public function rebuildPrefab(prefab:Prefab) {
+		ctx.scene.editor.queueRebuild(prefab);
+	}
+
+	public function rebuildTree(prefab: Prefab) {
+		ctx.scene.editor.sceneTree.refreshItem(prefab);
 	}
 }
