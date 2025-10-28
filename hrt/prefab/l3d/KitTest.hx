@@ -65,7 +65,7 @@ class KitTest extends Object3D {
 				<select(["Fire", "Earth", "Water", "Air"]) field={select} />
 				<checkbox field={checkbox}/>
 
-				<line full>
+				<line>
 					<image-button("ui/search.png") medium/>
 					<image-button("ui/home.png") medium/>
 					<image-button("ui/menu.png") medium/>
