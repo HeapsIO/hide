@@ -194,12 +194,27 @@ class KitTest extends Object3D {
 			);
 		}
 
+		// BUTTONS
+		{
+			ctx.build(
+				<category("Buttons")>
+					<button("Simple Button") id="simpleButton"/>
+					<button("Inline onClick") onClick={() -> hide.Ide.inst.quickMessage("Inline Button clicked")}/>
+					<button("Highlight") highlight/>
+				</category>
+			);
+
+			simpleButton.onClick = () -> {
+				hide.Ide.inst.quickMessage("Button clicked");
+			}
+		}
+
 		{
 			ctx.build(
 				<category("Dynamic UI")>
 					// Use a checkbox to "dynamicaly hide elements using a if() statement".
-					// To make the UI dynamic, we need to call ctx.refreshInspector() when the value is changed
-					<checkbox field={advancedDetails} onValueChange={(tmp) -> ctx.refreshInspector()}/>
+					// To make the UI dynamic, we need to call ctx.rebuildInspector() when the value is changed
+					<checkbox field={advancedDetails} onValueChange={(tmp) -> ctx.rebuildInspector()}/>
 					<slider label="Advanced setting" if(advancedDetails)/>
 
 					// We can also use the disabled attribute instead of hiding the element to avoid UI shifts
@@ -233,28 +248,28 @@ class KitTest extends Object3D {
 				sub.onClick = () -> {
 					dynamicArray[i] --;
 					// Don't forget to refresh the UI to refresh the slider
-					ctx.refreshInspector();
+					ctx.rebuildInspector();
 				}
 
 				plus.onClick = () -> {
 					dynamicArray[i] ++;
-					ctx.refreshInspector();
+					ctx.rebuildInspector();
 				}
 
 				delete.onClick = () -> {
 					dynamicArray.splice(i, 1);
-					ctx.refreshInspector();
+					ctx.rebuildInspector();
 				}
 			}
 
 			addOne.onClick = () -> {
 				dynamicArray.push(0);
-				ctx.refreshInspector();
+				ctx.rebuildInspector();
 			}
 
 			clear.onClick = () -> {
 				dynamicArray.resize(0);
-				ctx.refreshInspector();
+				ctx.rebuildInspector();
 			}
 
 		}

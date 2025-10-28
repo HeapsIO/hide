@@ -136,7 +136,7 @@ class KitRoot #if !macro extends Element #end {
 				for (sideEffect in sideEffects) {
 					sideEffect(isUndo);
 				}
-				editor.refreshInspector();
+				editor.rebuildInspector();
 			});
 		}
 	}

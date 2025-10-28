@@ -132,8 +132,8 @@ class Environment extends Object3D {
 					<input field={configName}/>
 					<button("Compute") id="compute" single-edit/>
 					<line label="View">
-						<button("Diffuse") id="showDiff"/>
-						<button("Specular") id="showSpecular"/>
+						<button("Diffuse") id="showDiff" single-edit/>
+						<button("Specular") id="showSpecular" single-edit/>
 					</line>
 				</category>
 			</root>

@@ -19,9 +19,34 @@ abstract class EditContext2 {
 	#if !macro
 	public var root: hide.kit.KitRoot;
 
-	public abstract function refreshInspector() : Void;
+	/**
+		Request the inspector to be rebuild, resulting in edit2 to be called again
+	**/
+	public abstract function rebuildInspector() : Void;
+
+	/**
+		Request that the given prefab should be recreated in the editor
+	**/
+	public abstract function rebuildPrefab(prefab: Prefab) : Void;
+
+	/**
+		Request that the scene tree widget should be rebuild for the given prefab
+	**/
+	public abstract function rebuildTree(prefab: Prefab) : Void;
+
+	/**
+		Return the scene3d of the current editor
+	**/
 	public abstract function getScene3d() : h3d.scene.Scene;
+
+	/**
+		Return the camera controller of the current editor
+	**/
 	public abstract function getCameraController3d() : hide.view.CameraController.CameraControllerBase;
+
+	/**
+		Open the given file path in the editor
+	**/
 	public abstract function openFile(path: String) : Void;
 
 
