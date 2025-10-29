@@ -1,9 +1,0 @@
-{
-	"type": "prefab",
-	"children": [
-		{
-			"type": "object",
-			"name": "object"
-		}
-	]
-}
