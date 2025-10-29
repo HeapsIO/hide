@@ -62,7 +62,7 @@ class CollisionSettings {
 				halfExtent.transform3x3(rmat);
 				halfExtent.normalize();
 				halfExtent.scale(height * 0.5);
-				shapes.push({ type : Capsule, position: center, halfExtent : halfExtent, radius : radius });
+				shapes.push({ type : Cylinder, position: center, halfExtent : halfExtent, radius : radius });
 			}
 		}
 		return shapes;
