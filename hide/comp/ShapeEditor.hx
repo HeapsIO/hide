@@ -85,6 +85,7 @@ class ShapeEditor extends Component {
 			selectedShapeIdx = -1;
 			uninspect();
 			updateShapeList();
+			onChange();
 		});
 
 		var editBtn = element.find("#edit-btn");
@@ -94,6 +95,12 @@ class ShapeEditor extends Component {
 			else
 				startShapeEditing();
 		});
+
+		for (sIdx => s in shapes) {
+			interactives[sIdx] = getShapeInteractive(s);
+		}
+
+		updateShapeList();
 
 		if (options != null && options?.disableShapeEdition)
 			element.find(".edition").hide();

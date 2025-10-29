@@ -1,14 +1,81 @@
 package hide.view;
 import hxd.Key as K;
 
-typedef CollisionSettings = { mode : Int, params : hxd.fmt.fbx.HMDOut.CollideParams };
+class CollisionSettings {
+	public var mode : Int;
+	public var params : hxd.fmt.fbx.HMDOut.CollideParams;
+	public function new( mode : Int, params : hxd.fmt.fbx.HMDOut.CollideParams ) {
+		this.mode = mode;
+		this.params = params;
+	}
+	public function toShapeEditor() {
+		if( params == null || mode != Shapes || params.shapes == null )
+			return [];
+		var arr : Array<hide.comp.ShapeEditor.Shape> = [];
+		inline function makeVector( dyn ) {
+			return new h3d.Vector(dyn.x, dyn.y, dyn.z);
+		}
+		for( s in params.shapes ) {
+			var position = makeVector(s.position);
+			switch( s.type ) {
+			case Sphere:
+				arr.push(Sphere(position, s.radius));
+			case Box:
+				var halfExtent = makeVector(s.halfExtent);
+				var rotation = makeVector(s.rotation);
+				arr.push(Box(position, rotation, halfExtent.x * 2, halfExtent.y * 2, halfExtent.z * 2));
+			case Capsule:
+				var halfExtent = makeVector(s.halfExtent);
+				var qrot = new h3d.Quat();
+				qrot.initMoveTo(new h3d.Vector(0.0, 0.0, 1.0), halfExtent);
+				arr.push(Capsule(position, qrot.toEuler(), s.radius, halfExtent.length() * 2));
+			case Cylinder:
+				var halfExtent = makeVector(s.halfExtent);
+				var qrot = new h3d.Quat();
+				qrot.initMoveTo(new h3d.Vector(0.0, 0.0, 1.0), halfExtent);
+				arr.push(Cylinder(position, qrot.toEuler(), s.radius, halfExtent.length() * 2));
+			default:
+				hide.Ide.inst.quickError("Don't know how to handle shape type " + s.type);
+			}
+		}
+		return arr;
+	}
+	public function fromShapeEditor( arr : Array<hide.comp.ShapeEditor.Shape> ) {
+		var shapes : Array<hxd.fmt.fbx.HMDOut.ShapeColliderParams> = [];
+		for( s in arr ) {
+			switch(s) {
+			case Sphere(center, radius):
+				shapes.push({ type : Sphere, position : center, radius : radius });
+			case Box(center, rotation, sizeX, sizeY, sizeZ):
+				var halfExtent = new h3d.Vector(sizeX * 0.5, sizeY * 0.5, sizeZ * 0.5);
+				shapes.push({ type : Box, position : center, rotation : rotation, halfExtent: halfExtent });
+			case Capsule(center, rotation, radius, height):
+				var rmat = h3d.Matrix.R(rotation.x, rotation.y, rotation.z);
+				var halfExtent = new h3d.Vector(0.0, 0.0, 1.0);
+				halfExtent.transform3x3(rmat);
+				halfExtent.normalize();
+				halfExtent.scale(height * 0.5);
+				shapes.push({ type : Capsule, position: center, halfExtent : halfExtent, radius : radius });
+			case Cylinder(center, rotation, radius, height):
+				var rmat = h3d.Matrix.R(rotation.x, rotation.y, rotation.z);
+				var halfExtent = new h3d.Vector(0.0, 0.0, 1.0);
+				halfExtent.transform3x3(rmat);
+				halfExtent.normalize();
+				halfExtent.scale(height * 0.5);
+				shapes.push({ type : Capsule, position: center, halfExtent : halfExtent, radius : radius });
+			}
+		}
+		return shapes;
+	}
+}
 
 private enum abstract CollisionMode(Int) from Int to Int {
 	var Default = 0;
 	var None    = 1;
 	var Auto    = 2;
 	var Mesh    = 3;
-	var Count   = 4;
+	var Shapes  = 4;
+	var Count   = 5;
 
 	public function toString() {
 		return switch (this) {
@@ -16,6 +83,7 @@ private enum abstract CollisionMode(Int) from Int to Int {
 			case None: "None";
 			case Auto: "Auto";
 			case Mesh: "Mesh";
+			case Shapes: "Shapes";
 			default: "Undefined";
 		}
 	}
@@ -206,7 +274,7 @@ class Model extends FileView {
 					switch ( settings.mode ) {
 						case Default: collide = {};
 						case None: collide = { collide : null };
-						case Auto, Mesh: collide = { collide : [settings.params] };
+						case Auto, Mesh, Shapes: collide = { collide : [settings.params] };
 						default: throw "Unexpected collision mode";
 					}
 				} else {
@@ -701,7 +769,7 @@ class Model extends FileView {
 				if ( props != null && Reflect.hasField(props, "collide") ) {
 					var collideFields = Reflect.field(props, "collide");
 					if( collideFields == null )
-						settingsArr.push({ mode : None, params : null });
+						settingsArr.push(new CollisionSettings(None, null));
 					else if( collideFields != null && Std.isOfType(collideFields, Array) ) {
 						for( cf in (collideFields:Array<Dynamic>) ) {
 							var mode = Default;
@@ -713,12 +781,14 @@ class Model extends FileView {
 								mode = Auto;
 							else if( Reflect.hasField(cf, "mesh") )
 								mode = Mesh;
-							settingsArr.push({ mode : mode, params : cf });
+							else if( Reflect.hasField(cf, "shapes") )
+								mode = Shapes;
+							settingsArr.push(new CollisionSettings(mode, cf));
 						}
 					}
 				}
 				if( settingsArr.length == 0 )
-					settingsArr.push({ mode : Default, params : { useDefault : true } });
+					settingsArr.push(new CollisionSettings(Default, { useDefault : true }));
 				return settingsArr;
 			};
 			collisionList.getItemName = function( item : CollisionSettings ) {
@@ -728,7 +798,7 @@ class Model extends FileView {
 			};
 			collisionList.insertItem = function( index : Int ) {
 				var settingsArr = collisionSettings.get(modelName);
-				var settings = { mode : None, params : null };
+				var settings = new CollisionSettings(None, null);
 				settingsArr.push(settings);
 				collisionList.refresh();
 				undo.change(Custom(function(undo) {
@@ -743,7 +813,7 @@ class Model extends FileView {
 				var settingsArr = collisionSettings.get(modelName);
 				var settings = settingsArr[index];
 				if( index == 0 )
-					settingsArr[0] = { mode : Default, params : { useDefault : true } };
+					settingsArr[0] = new CollisionSettings(Default, { useDefault : true });
 				else
 					settingsArr.remove(settings);
 				collisionList.refresh();
@@ -755,7 +825,7 @@ class Model extends FileView {
 							settingsArr.insert(index, settings);
 					else
 						if( index == 0 )
-							settingsArr[0] = { mode : Default, params : { useDefault : true } };
+							settingsArr[0] = new CollisionSettings(Default, { useDefault : true });
 						else
 							settingsArr.remove(settings);
 					collisionList.refresh();
@@ -784,12 +854,18 @@ class Model extends FileView {
 							${[for(mname in meshList) '<option value="${mname}">${mname == null ? "" : mname}</option>'].join("")}
 						</select>
 					</dd></dl></div>
+					<div class="collision-param collision-shapes">Shape Editor</div>
+					<div class="collision-param collision-shapes collision-shape-editor"></div>
 				</div>');
 				var elMode = collisionParams.find(".select-collision-mode");
 				var elPrec = collisionParams.find(".precision");
 				var elHull = collisionParams.find(".hulls");
 				var elSubdiv = collisionParams.find(".subdiv");
 				var elMesh = collisionParams.find(".select-collision-mesh");
+				var shapeEditor = new hide.comp.ShapeEditor(scene, obj, settings.toShapeEditor(), null, collisionParams.find(".collision-shape-editor"));
+				shapeEditor.onChange = function() {
+					collisionParams.change();
+				}
 
 				function applySettings( settings : CollisionSettings ) {
 					collisionParams.find(".collision-param").hide();
@@ -800,6 +876,8 @@ class Model extends FileView {
 							collisionParams.find(".collision-auto").show();
 						case Mesh:
 							collisionParams.find(".collision-mesh").show();
+						case Shapes:
+							collisionParams.find(".collision-shapes").show();
 						default: throw "Unexpected mode";
 					}
 					elMode.val(settings.mode);
@@ -829,6 +907,12 @@ class Model extends FileView {
 							Reflect.setField(curParams, "mesh", meshName == "null" ? null : meshName);
 						case Mesh:
 							Reflect.setField(curParams, "mesh", meshName == "null" ? null : meshName);
+						case Shapes:
+							var shapes = settings.fromShapeEditor(shapeEditor.getValue());
+							if( shapes.length == 0 )
+								curParams = null;
+							else
+								Reflect.setField(curParams, "shapes", shapes);
 						default:
 							throw "Unknown collision mode";
 					}
