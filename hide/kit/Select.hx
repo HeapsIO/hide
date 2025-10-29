@@ -32,7 +32,6 @@ class Select extends Widget<Dynamic> {
 		function valueChanged(newValue: SelectEntry) {
 			value = newValue.value;
 			broadcastValueChange(false);
-			select.innerText = newValue.label;
 		}
 
 		select = js.Browser.document.createElement("kit-select");

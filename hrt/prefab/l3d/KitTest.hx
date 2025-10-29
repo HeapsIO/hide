@@ -32,7 +32,6 @@ class KitTest extends Object3D {
 	@:s var dynamicArray: Array<Int> = [];
 	var substruct: SubStruct = { innerValue: 0.0, };
 
-	#if js
 	override function edit2(ctx:hrt.prefab.EditContext2) {
 		ctx.build(
 			<category("All Elements")>
@@ -82,6 +81,8 @@ class KitTest extends Object3D {
 		parentLine.build(<image-button("textures/dirt01.jpg") big/>, null);
 		parentLine.build(<image-button("textures/dirt01.jpg") big/>, null);
 		parentLine.build(<image-button("textures/dirt01.jpg") big/>, null);
+		parentLine.build(<image-button("textures/dirt01.jpg") big/>, null);
+		parentLine.build(<image-button("textures/dirt01.jpg") big/>, null);
 
 		for (i in 0...3) {
 			addToMe.build(<button({'$i';}) id="button"/>, null);
@@ -124,7 +125,7 @@ class KitTest extends Object3D {
 			category.build(<button("Single Edit") single-edit/>);
 		}
 
-		// Slider examples
+		// SLIDER / RANGES
 		{
 			ctx.build(
 				<root>
@@ -135,9 +136,15 @@ class KitTest extends Object3D {
 						<slider label="Wrap" value={10} min={0} max={100} wrap/> // Wrap around
 						<slider label="Exp" value={10} exp wrap/> // Exponential curve
 						<slider label="Poly" value={10} poly wrap/> // Polynomial curve
-
 						<slider label="Int" value={10} int/> // Int Slider
 
+						<separator/>
+						<text("A slider group add a little \"link\" button that allow one slider to change all the other sliders proportionally")/>
+						<slider-group label="Group">
+							<slider label="A" value={10}/>
+							<slider label="B" value={20}/>
+							<slider label="C" value={30}/>
+						</slider-group>
 					</category>
 					<category("Range")>
 						<text("Ranges are basically an alias for a slider with a mandatory min/max")/>
@@ -154,7 +161,16 @@ class KitTest extends Object3D {
 			};
 		}
 
-		// Lines
+		// TEXT
+		{
+			ctx.build(
+				<category("Text")>
+					<text("This is a text element example")/>
+				</category>
+			);
+		}
+
+		// LINES
 		{
 			ctx.build(
 				<category("Lines")>
@@ -173,6 +189,8 @@ class KitTest extends Object3D {
 						<slider label="C"/>
 						<slider label="D"/>
 					</line>
+
+					// Full lines don't reserve space for their label to the left of the editor
 					<line full>
 						<slider label="A"/>
 						<slider label="B"/>
@@ -184,6 +202,17 @@ class KitTest extends Object3D {
 						<button("B")/>
 						<select(["A", "B", "C"]) label="C"/>
 					</line>
+
+					<line label="Multiline" multiline>
+						<slider label="A"/>
+						<slider label="B"/>
+						<slider label="C"/>
+						<slider label="D"/>
+						<slider label="E"/>
+						<button("Big Button") big/>
+						<button("Big Button") big/>
+					</line>
+
 					<line label="Disabled" disabled>
 						<slider label="A"/>
 						<slider label="B"/>
@@ -196,19 +225,60 @@ class KitTest extends Object3D {
 
 		// BUTTONS
 		{
+			function onButtonClick() {
+				hide.Ide.inst.quickMessage("Button clicked");
+			}
+
 			ctx.build(
 				<category("Buttons")>
-					<button("Simple Button") id="simpleButton"/>
-					<button("Inline onClick") onClick={() -> hide.Ide.inst.quickMessage("Inline Button clicked")}/>
+					<button("Simple Button") id="simpleButton"/> // bind via ID
+					<button("Inline onClick") onClick={() -> hide.Ide.inst.quickMessage("Inline Button clicked")}/> // Bind with an inline function
+					<button("Direct bind onClick") onClick={onButtonClick}/> // Bind with a function
 					<button("Highlight") highlight/>
+					<button("Disabled") disabled/>
+					<button("Single Edit") single-edit/>
 				</category>
 			);
 
-			simpleButton.onClick = () -> {
-				hide.Ide.inst.quickMessage("Button clicked");
-			}
+			simpleButton.onClick = onButtonClick;
 		}
 
+		// INPUT
+		{
+			ctx.build(
+				<category("Input")>
+					<input label="Input"/>
+					<input placeholder="Insert your text here" label="Placehodler"/>
+				</category>
+			);
+		}
+
+		// SELECT
+		{
+			function generator() {
+				return [for (i in 0...10) {value: i, label: '$i'}];
+			}
+
+			ctx.build(
+				<category("Select")>
+					<select(["Earth", "Wind", "Fire", "Water"]) label="Strings" value={"Earth"}/>
+					<select([{value: 0, label: "Earth"}, {value: 1, label: "Wind"}, {value: 2, label: "Fire"}, {value: 3, label: "Water"}]) label="Objects" value={0}/>
+					<select(generator()) label="From Generator" value={0}/>
+				</category>
+			);
+		}
+
+		// COLOR
+		{
+			ctx.build(
+				<category("Color")>
+					<color value={0xFF00FF} label="Color"/>
+					<color value={0x88FF00FF} alpha label="With Alpha"/>
+				</category>
+			);
+		}
+
+		// Dynamic UI example
 		{
 			ctx.build(
 				<category("Dynamic UI")>
@@ -271,12 +341,13 @@ class KitTest extends Object3D {
 				dynamicArray.resize(0);
 				ctx.rebuildInspector();
 			}
-
 		}
+	}
 
-		// DML TESTS
+	@:keep
+	function compilationTests() {
 		hide.kit.Macros.testError(
-			"c'est pas du dml", this, "dml argument should be a DML Expression"
+			"not a dml expression", this, "dml argument should be a DML Expression"
 		);
 
 		hide.kit.Macros.testError(
@@ -410,13 +481,13 @@ class KitTest extends Object3D {
 		);
 	}
 
+	#if editor
 	override function getHideProps():Null<hide.prefab.HideProps> {
 		return {
 			name: "Kit Test",
 			icon: "question-cicle",
 		}
 	}
-
 	#end
 
 	static var _ = hrt.prefab.Prefab.register("kitTest", KitTest);
