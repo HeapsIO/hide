@@ -1400,9 +1400,31 @@ input[type=checkbox].indeterminate:after {
   padding: 10px;
   padding-bottom: 5px;
 }
+:root {
+  --inspector-bg: #1b1b1b;
+}
 .hide-scroll:has(kit-root) {
   flex: 1;
-  background-color: #111111;
+  background-color: var(--inspector-bg);
+  overflow-y: auto;
+  border-right: 1px solid #444;
+}
+.hide-scroll:has(kit-root)::-webkit-scrollbar {
+  width: 10px;
+  height: 10px;
+  background: transparent;
+}
+.hide-scroll:has(kit-root)::-webkit-scrollbar-track {
+  background: transparent;
+}
+.hide-scroll:has(kit-root)::-webkit-scrollbar-thumb {
+  background-color: rgba(155, 155, 155, 0.75);
+  border-radius: 20px;
+  border: transparent;
+}
+.hide-scroll:has(kit-root) > div {
+  border-right: 1px solid #444;
+  height: 100%;
 }
 kit-root {
   --widget-height: 22px;
@@ -1410,9 +1432,8 @@ kit-root {
   --widget-hover-bg: #3d3d3d;
   --widget-gap: 2px;
   --basic-border: 1px solid #444;
-  padding: 6px;
   min-height: 0;
-  background-color: #111111;
+  background-color: var(--inspector-bg);
   display: flex;
   flex-direction: column;
 }
@@ -1435,12 +1456,13 @@ kit-root .disabled input {
 kit-root kit-category {
   --level: 0;
   width: calc(100% - var(--level) * 5%);
-  margin: 0 auto;
-  margin-top: 5px;
+  margin-bottom: -1px;
 }
 kit-root kit-category > .title {
   display: flex;
-  border-radius: 4px;
+  background-color: #272727;
+  border-top: 1px solid #333;
+  border-bottom: 1px solid #333;
   cursor: pointer;
   user-select: none;
   padding: 2px;
@@ -1499,8 +1521,7 @@ kit-root kit-category.open > .collapsable {
 }
 kit-root kit-category > .collapsable > .content {
   box-sizing: border-box;
-  padding-top: 0.2em;
-  padding-bottom: 1em;
+  padding: 0.4em;
 }
 kit-root kit-category.open > .title {
   border-bottom-left-radius: 0px;

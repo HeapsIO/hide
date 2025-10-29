@@ -1563,10 +1563,34 @@ input[type=checkbox] {
 	}
 }
 
+:root {
+	--inspector-bg: #1b1b1b;
+}
+
 .hide-scroll:has(kit-root) {
 	flex: 1;
-	background-color: #111111;
+	background-color: var(--inspector-bg);
+	overflow-y: auto;
 
+	&::-webkit-scrollbar {
+		width: 10px;
+		height: 10px;
+		background: transparent;
+	}
+	&::-webkit-scrollbar-track {
+		background: transparent;
+	}
+	&::-webkit-scrollbar-thumb {
+		background-color: rgba(155, 155, 155, 0.75);
+		border-radius: 20px;
+		border: transparent;
+	}
+	border-right: 1px solid #444;
+
+	> div {
+		border-right: 1px solid #444;
+		height: 100%;
+	}
 }
 
 kit-root {
@@ -1591,10 +1615,9 @@ kit-root {
 	--widget-hover-bg: #3d3d3d;
 	--widget-gap: 2px;
 	--basic-border: 1px solid #444;
-	padding: 6px;
 	min-height: 0;
 
-	background-color: #111111;
+	background-color: var(--inspector-bg);
 
 	display: flex;
 	flex-direction: column;
@@ -1602,16 +1625,17 @@ kit-root {
 	kit-category {
 		--level: 0;
 		width: calc(100% - var(--level) * 5%);
-		margin: 0 auto;
-		margin-top: 5px;
+		margin-bottom: -1px;
 
 		>.title {
 			display: flex;
+			background-color: #272727;
 
 			&:hover {
 				background-color: rgb(50,50,50);
 			}
-			border-radius: 4px;
+			border-top: 1px solid #333;
+			border-bottom: 1px solid #333;
 
 			cursor: pointer;
 			user-select: none;
@@ -1680,8 +1704,7 @@ kit-root {
 
 		>.collapsable>.content {
 			box-sizing: border-box;
-			padding-top: 0.2em;
-			padding-bottom: 1em;
+			padding: 0.4em;
 		}
 
 		&.open>.title {
