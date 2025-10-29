@@ -44,9 +44,11 @@ class CdbAccess<T,Kind> {
 		return map.get(cast kind);
 	}
 
+	#if haxe5
 	public function getUID( uid : cdb.Types.GuidInt<T> ) : T {
 		return mapUID.get(uid);
 	}
+	#end
 
 	public function resolve( id : String, ?opt : Bool, ?approximate : Bool ) : T {
 		var v = map.get(id);
