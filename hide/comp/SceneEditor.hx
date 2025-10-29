@@ -3893,18 +3893,6 @@ class SceneEditor {
 		}
 	}
 
-	function makeCdbProps( e : PrefabElement, type : cdb.Sheet ) {
-		var props = type.getDefaults();
-		Reflect.setField(props, "$cdbtype", DataFiles.getTypeName(type));
-		if( type.idCol != null && !type.idCol.opt ) {
-			var id = new haxe.io.Path(view.state.path).file;
-			id = id.charAt(0).toUpperCase() + id.substr(1);
-			id += "_"+e.name;
-			Reflect.setField(props, type.idCol.name, id);
-		}
-		return props;
-	}
-
 	function serializeProps(fields : Array<hide.comp.PropsEditor.PropsField>) : String {
 		var out = new Array<String>();
 		for (field in fields) {
@@ -4096,7 +4084,7 @@ class SceneEditor {
 				changeProps(null);
 				return;
 			}
-			var props = makeCdbProps(e, DataFiles.resolveType(typeId));
+			var props = hrt.prefab.Prefab.makeCdbProps(e, view.state.path, DataFiles.resolveType(typeId));
 			changeProps(props);
 		});
 
@@ -4214,6 +4202,7 @@ class SceneEditor {
 					var isMultiEdit = selectedPrefabs.length > 1;
 					if (isMultiEdit) {
 						proxyPrefab.load(haxe.Json.parse(haxe.Json.stringify(elts[0].save())));
+						proxyPrefab.shared.currentPath = view.state.path;
 					} else {
 						proxyPrefab = elts[0];
 					}
@@ -4227,6 +4216,7 @@ class SceneEditor {
 					ectx2.root = baseRoot;
 
 					proxyPrefab.edit2(ectx2);
+					baseRoot.postEditStep();
 
 					if (isMultiEdit) {
 						for (i => select in selectedPrefabs) {
@@ -4237,6 +4227,7 @@ class SceneEditor {
 							baseRoot.editedPrefabsProperties.push(childRoot);
 							ectx2.root = childRoot;
 							select.edit2(ectx2);
+							childRoot.postEditStep();
 						}
 					}
 

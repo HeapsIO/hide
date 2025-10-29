@@ -60,14 +60,14 @@ class Select extends Widget<Dynamic> {
 		#if js
 		if (text == null)
 			return;
-		var selectedEntry = null;
+		var label = "--- Select ---";
 		for (entry in entries) {
 			if (entry.value == value) {
-				selectedEntry = entry;
+				label = entry.label;
 				break;
 			}
 		}
-		text.innerText = selectedEntry == null ? "--- Select ---" : selectedEntry.label;
+		text.innerText = label;
 		#end
 	}
 
