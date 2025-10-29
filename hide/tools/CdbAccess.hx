@@ -5,6 +5,9 @@ class CdbAccess<T,Kind> {
 	public var all(get,never) : cdb.Types.ArrayRead<T>;
 	var name : String;
 	var map : Map<String,T> = [];
+	#if haxe5
+	var mapUID : Map<haxe.Int64,T> = null;
+	#end
 	var lines : Array<T>;
 
 	public function new( sheet : String ) {
@@ -18,6 +21,19 @@ class CdbAccess<T,Kind> {
 					map.set(id, l);
 			}
 		}
+		#if haxe5
+		for( c in s.columns ) {
+			if( c.type == TGuid ) {
+				mapUID = [];
+				for( l in lines ) {
+					var guid : cdb.Types.Guid<T> = Reflect.field(l, c.name);
+					if( guid != null )
+						mapUID.set(guid.toInt(), l);
+				}
+				break;
+			}
+		}
+		#end
 	}
 
 	function get_all() : cdb.Types.ArrayRead<T> {
@@ -26,6 +42,10 @@ class CdbAccess<T,Kind> {
 
 	public function get( kind : Kind ) : T {
 		return map.get(cast kind);
+	}
+
+	public function getUID( uid : cdb.Types.GuidInt<T> ) : T {
+		return mapUID.get(uid);
 	}
 
 	public function resolve( id : String, ?opt : Bool, ?approximate : Bool ) : T {
