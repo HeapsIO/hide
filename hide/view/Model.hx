@@ -128,6 +128,7 @@ class Model extends FileView {
 	var shader2 = new h3d.shader.FixedColor(0xff8000);
 
 	var animSelector : hide.comp.Toolbar.ToolSelect<String>;
+	var shapesEditor : Array<hide.comp.ShapeEditor> = [];
 
 	override function onDisplay() {
 		this.saveDisplayKey = "Model:" + state.path;
@@ -164,7 +165,6 @@ class Model extends FileView {
 							<div class="hide-block">
 							<div class="props hide-scroll">
 								<div class="collision-editor">
-									<label class="title">Collision settings</label>
 								</div>
 							</div>
 						</div>
@@ -755,7 +755,9 @@ class Model extends FileView {
 
 			// Collision edition
 			var modelName = mesh.name;
-			collisionList = new hide.comp.FancyArray(element.find(".collision-editor"), null, "Collision settings", "CollisionSettings");
+			var collisionEditor = element.find(".collision-editor");
+			new Element('<label class="title">Collision settings</label>').appendTo(collisionEditor);
+			collisionList = new hide.comp.FancyArray(collisionEditor, null, "Collision settings", "CollisionSettings");
 			collisionList.getItems = function() {
 				var cachedArr = collisionSettings.get(modelName);
 				if( cachedArr != null )
@@ -854,7 +856,6 @@ class Model extends FileView {
 							${[for(mname in meshList) '<option value="${mname}">${mname == null ? "" : mname}</option>'].join("")}
 						</select>
 					</dd></dl></div>
-					<div class="collision-param collision-shapes">Shape Editor</div>
 					<div class="collision-param collision-shapes collision-shape-editor"></div>
 				</div>');
 				var elMode = collisionParams.find(".select-collision-mode");
@@ -862,10 +863,10 @@ class Model extends FileView {
 				var elHull = collisionParams.find(".hulls");
 				var elSubdiv = collisionParams.find(".subdiv");
 				var elMesh = collisionParams.find(".select-collision-mesh");
+
 				var shapeEditor = new hide.comp.ShapeEditor(scene, obj, settings.toShapeEditor(), null, collisionParams.find(".collision-shape-editor"));
-				shapeEditor.onChange = function() {
-					collisionParams.change();
-				}
+				shapeEditor.onChange = collisionParams.change;
+				shapesEditor.push(shapeEditor);
 
 				function applySettings( settings : CollisionSettings ) {
 					collisionParams.find(".collision-param").hide();
@@ -1795,6 +1796,13 @@ class Model extends FileView {
 			var selection = tree.getSelectedItems();
 			onTreeSelectionChanged(selection);
 		};
+		tree.onSelectionCleared = () -> {
+			element.find(".collision-editor").empty();
+			for (s in shapesEditor) {
+				s.remove();
+			}
+			shapesEditor = [];
+		}
 		tree.onDoubleClick = (item: Dynamic) -> {
 			var obj = Std.downcast(item, h3d.scene.Object);
 			if (obj == null) return;

@@ -233,6 +233,8 @@ class FancyTree<TreeItem> extends hide.comp.Component {
 	public dynamic function onSearchEnd() {
 	}
 
+	public dynamic function onSelectionCleared() {}
+
 	/**
 		Drag and drop interface.
 		Set this struct with all of it's function callback to handle drag and drop inside your tree.
@@ -949,6 +951,7 @@ class FancyTree<TreeItem> extends hide.comp.Component {
 	public function clearSelection() {
 		selection.clear();
 		queueRefresh();
+		onSelectionCleared();
 	}
 
 

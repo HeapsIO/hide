@@ -54,16 +54,18 @@ class ShapeEditor extends Component {
 			<div id="extra-params" class="edition"></div>
 		</div>'));
 
-		uninspect();
+		if (options != null && options?.disableShapeEdition)
+			element.find(".edition").hide();
 
 		element.find("#btn-add").on("click", function() {
 			var prevShapes = this.shapes.copy();
 			this.shapes.push(Box(new h3d.col.Point(0, 0, 0), new h3d.Vector(0, 0, 0), 1, 1, 1));
 			updateShapeList();
 			var newShapes = this.shapes.copy();
-			var i = getShapeInteractive(this.shapes[this.shapes.length - 1]);
+			var i = getInteractive(this.shapes[this.shapes.length - 1]);
 			interactives.push(i);
 			registerUndo(prevShapes, newShapes);
+			onChange();
 		});
 
 		element.find("#btn-remove").on("click", function() {
@@ -88,22 +90,16 @@ class ShapeEditor extends Component {
 			onChange();
 		});
 
-		var editBtn = element.find("#edit-btn");
-		editBtn.on("click", function() {
+		element.find("#edit-btn").on("click", function() {
 			if (isInShapeEdition)
 				stopShapeEditing();
 			else
 				startShapeEditing();
 		});
 
-		for (sIdx => s in shapes) {
-			interactives[sIdx] = getShapeInteractive(s);
-		}
-
+		uninspect();
 		updateShapeList();
-
-		if (options != null && options?.disableShapeEdition)
-			element.find(".edition").hide();
+		createAllInteractives();
 	}
 
 	override function remove() {
@@ -200,7 +196,7 @@ class ShapeEditor extends Component {
 							var newShape = Capsule(center + offsetPosition, rotation + offsetRotation.toEuler(), radius + radiusOffset, height + offsetScale.z - 1);
 							shapes[selectedShapeIdx] = newShape;
 							interactives[selectedShapeIdx].remove();
-							interactives[selectedShapeIdx] = getShapeInteractive(newShape);
+							interactives[selectedShapeIdx] = getInteractive(newShape);
 						}
 					}
 					if (offsetRotation != null) {
@@ -254,8 +250,9 @@ class ShapeEditor extends Component {
 
 			shapes[selectedShapeIdx] = newShape;
 			interactives[selectedShapeIdx].remove();
-			interactives[selectedShapeIdx] = getShapeInteractive(newShape);
+			interactives[selectedShapeIdx] = getInteractive(newShape);
 			inspect(newShape);
+			onChange();
 
 			var newShapes = this.shapes.copy();
 			registerUndo(prevShapes, newShapes);
@@ -289,6 +286,7 @@ class ShapeEditor extends Component {
 		el.off("mousemove.shapeeditor");
 		gizmo.remove();
 		gizmo = null;
+		@:privateAccess scene.editor.gizmo.onChangeMode = (mode) -> {};
 	}
 
 
@@ -308,7 +306,7 @@ class ShapeEditor extends Component {
 
 			var i = interactives[selectedShapeIdx];
 			i.remove();
-			interactives[selectedShapeIdx] = getShapeInteractive(this.shapes[selectedShapeIdx]);
+			interactives[selectedShapeIdx] = getInteractive(this.shapes[selectedShapeIdx]);
 
 			updateShapeList();
 			inspect(this.shapes[selectedShapeIdx]);
@@ -319,7 +317,7 @@ class ShapeEditor extends Component {
 				inspect(this.shapes[this.selectedShapeIdx]);
 				for (idx in 0...shapes.length) {
 					this.interactives[idx].remove();
-					this.interactives[idx] = getShapeInteractive(this.shapes[idx]);
+					this.interactives[idx] = getInteractive(this.shapes[idx]);
 				}
 				updateShapeList();
 				onChange();
@@ -378,6 +376,71 @@ class ShapeEditor extends Component {
 	}
 
 
+	function getInteractive(shape : Shape) : h3d.scene.Mesh {
+		var offset = new h3d.Vector(0, 0, 0);
+		var offsetRotation = new h3d.Vector(0, 0, 0);
+		var prim : h3d.prim.Primitive = switch (shape) {
+			case Box(center, rotation, x, y, z):
+				var b = new h3d.prim.Cube(x, y, z, true);
+				offset.load(center);
+				offsetRotation.load(rotation);
+				b.addNormals();
+				b;
+			case Sphere(center, radius):
+				var s = new h3d.prim.Sphere(radius);
+				offset.load(center);
+				s.addNormals();
+				s;
+			case Capsule(center, rotation, radius, height):
+				var c = new h3d.prim.Capsule(radius, height, 8, Z);
+				offset.load(center);
+				offsetRotation.load(rotation);
+				c.addNormals();
+				c;
+			case Cylinder(center, rotation, radius, height):
+				var c = new h3d.prim.Cylinder(16, radius, height, true);
+				offset.load(center);
+				offsetRotation.load(rotation);
+				c.addNormals();
+				c;
+		}
+
+		var mesh = new h3d.scene.Mesh(prim, null, parentObj);
+		mesh.setPosition(offset.x, offset.y, offset.z);
+		mesh.setRotation(offsetRotation.x, offsetRotation.y, offsetRotation.z);
+
+		var s = new h3d.shader.AlphaMult();
+		s.alpha = 0.3;
+		mesh.material.mainPass.addShader(s);
+		mesh.material.blendMode = Alpha;
+
+		var fixedColor = new h3d.shader.FixedColor(this.shapes.indexOf(shape) == selectedShapeIdx ? SELECTED_COLOR : DEFAULT_COLOR);
+		fixedColor.USE_ALPHA = false;
+		@:privateAccess mesh.material.mainPass.addSelfShader(fixedColor);
+
+		mesh.material.mainPass.setPassName("overlay");
+
+		var p = mesh.material.allocPass("highlight");
+		p.culling = None;
+		p.depthWrite = false;
+		p.depthTest = LessEqual;
+
+		return mesh;
+	}
+
+	function createAllInteractives() {
+		removeAllInteractives();
+		for (idx in 0...shapes.length)
+			this.interactives[idx] = getInteractive(this.shapes[idx]);
+	}
+
+	function removeAllInteractives() {
+		for (i in this.interactives)
+			i.remove();
+		this.interactives = [];
+	}
+
+
 	function registerUndo(prevShapes : Array<Shape>, newShapes : Array<Shape>) {
 		scene.editor.properties.undo.change(Custom((undo) -> {
 			this.shapes = undo ? prevShapes : newShapes;
@@ -389,7 +452,7 @@ class ShapeEditor extends Component {
 				i.remove();
 			this.interactives = [];
 			for (idx in 0...shapes.length)
-				this.interactives[idx] = getShapeInteractive(this.shapes[idx]);
+				this.interactives[idx] = getInteractive(this.shapes[idx]);
 			if (this.selectedShapeIdx != -1)
 				gizmo?.setTransform(this.interactives[this.selectedShapeIdx].getAbsPos());
 			updateShapeList();
@@ -442,58 +505,6 @@ class ShapeEditor extends Component {
 		}
 
 		return params;
-	}
-
-	function getShapeInteractive(shape : Shape) : h3d.scene.Mesh {
-		var offset = new h3d.Vector(0, 0, 0);
-		var offsetRotation = new h3d.Vector(0, 0, 0);
-		var prim : h3d.prim.Primitive = switch (shape) {
-			case Box(center, rotation, x, y, z):
-				var b = new h3d.prim.Cube(x, y, z, true);
-				offset.load(center);
-				offsetRotation.load(rotation);
-				b.addNormals();
-				b;
-			case Sphere(center, radius):
-				var s = new h3d.prim.Sphere(radius);
-				offset.load(center);
-				s.addNormals();
-				s;
-			case Capsule(center, rotation, radius, height):
-				var c = new h3d.prim.Capsule(radius, height, 8, Z);
-				offset.load(center);
-				offsetRotation.load(rotation);
-				c.addNormals();
-				c;
-			case Cylinder(center, rotation, radius, height):
-				var c = new h3d.prim.Cylinder(16, radius, height, true);
-				offset.load(center);
-				offsetRotation.load(rotation);
-				c.addNormals();
-				c;
-		}
-
-		var mesh = new h3d.scene.Mesh(prim, null, parentObj);
-		mesh.setPosition(offset.x, offset.y, offset.z);
-		mesh.setRotation(offsetRotation.x, offsetRotation.y, offsetRotation.z);
-
-		var s = new h3d.shader.AlphaMult();
-		s.alpha = 0.3;
-		mesh.material.mainPass.addShader(s);
-		mesh.material.blendMode = Alpha;
-
-		var fixedColor = new h3d.shader.FixedColor(this.shapes.indexOf(shape) == selectedShapeIdx ? SELECTED_COLOR : DEFAULT_COLOR);
-		fixedColor.USE_ALPHA = false;
-		@:privateAccess mesh.material.mainPass.addSelfShader(fixedColor);
-
-		mesh.material.mainPass.setPassName("overlay");
-
-		var p = mesh.material.allocPass("highlight");
-		p.culling = None;
-		p.depthWrite = false;
-		p.depthTest = LessEqual;
-
-		return mesh;
 	}
 
 	function getDefaultShape(shape : Shape) : Shape {
