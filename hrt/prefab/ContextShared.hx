@@ -133,7 +133,7 @@ class ContextShared {
 		return r;
 	}
 
-	public function loadModel( path : String ) {
+	public function loadModel( path : String, opt = false ) {
 		return Cache.get().modelCache.loadModel(hxd.res.Loader.currentInstance.load(path).toModel());
 	}
 

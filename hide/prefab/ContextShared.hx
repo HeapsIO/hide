@@ -18,8 +18,9 @@ class ContextShared extends hrt.prefab.ContextShared.ContextSharedBase {
 		return hide.Ide.inst.shaderLoader.loadSharedShader(path);
 	}
 
-	override function loadModel( path : String ) {
+	override function loadModel( path : String, opt = false ) {
 		scene.setCurrent();
+		if( opt ) hxd.res.Loader.currentInstance.load(path); // will raise hxd.res.NotFound
 		return scene.loadModel(path);
 	}
 
