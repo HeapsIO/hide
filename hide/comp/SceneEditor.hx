@@ -4177,15 +4177,28 @@ class SceneEditor {
 					}
 				}
 
-				var allowNewInspector = Ide.inst.currentConfig.get("sceneeditor.newInspector", false);
+				var preferEdit2List = Ide.inst.currentConfig.get("sceneeditor.preferEdit2") ?? [];
+				var preferEdit2 = preferEdit2List.contains(Type.getClassName(commonClass));
+
+				var allowNewInspector = false;
+				if (preferEdit2) {
+					allowNewInspector = !Ide.inst.currentConfig.get("sceneeditor.oldInspector", false);
+				} else {
+					allowNewInspector = Ide.inst.currentConfig.get("sceneeditor.newInspector", false);
+				}
 
 				var toggle = null;
 				if (hasNewInspector) {
-					toggle = new Element('<div class="new-editor-prompt-toggle"><label for="new-edit-toggle">Use new inspector</label><input name="new-edit-toggle" type="checkbox"></input></div>');
+					var label = preferEdit2 ? "Use old inspector" : "Use new inspector";
+					toggle = new Element('<div class="new-editor-prompt-toggle"><label for="new-edit-toggle">$label</label><input name="new-edit-toggle" type="checkbox"></input></div>');
 					var checkbox : js.html.InputElement = cast toggle.find("input").get(0);
-					checkbox.checked = allowNewInspector;
+					checkbox.checked = allowNewInspector != preferEdit2;
 					checkbox.onchange = () -> {
-						Ide.inst.currentConfig.set("sceneeditor.newInspector", checkbox.checked);
+						if (preferEdit2) {
+							Ide.inst.currentConfig.set("sceneeditor.oldInspector", checkbox.checked);
+						} else {
+							Ide.inst.currentConfig.set("sceneeditor.newInspector", checkbox.checked);
+						}
 						Ide.inst.currentConfig.save();
 						refreshProps();
 					}
