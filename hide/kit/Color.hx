@@ -1,8 +1,7 @@
 package hide.kit;
 
 class Color extends Widget<Int> {
-
-	var alpha : Bool = false;
+	public var alpha : Bool = false;
 
 	#if js
 	var colorBox : hide.comp.ColorPicker.ColorBox;

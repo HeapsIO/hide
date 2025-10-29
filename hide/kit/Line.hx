@@ -28,17 +28,20 @@ class Line extends Element {
 				labelElement.appendChild(span);
 			}
 
-			stealChildLabel(labelElement);
+			if (!multiline) {
+				stealChildLabel(labelElement);
+			}
 		} else {
 			trace("break");
 		}
 
 		var me = null;
+		if (multiline) {
+			me = js.Browser.document.createElement("kit-multiline");
+		}
 
 		setupPropLine(labelElement, me, false);
 
-		// we assing this.multilineElement here to avoid setupPropLine
-		// to add items to multilineElement
 		this.multilineElement = me;
 		#else
 		native = new hrt.ui.HuiElement();

@@ -1606,6 +1606,7 @@ kit-root kit-line kit-select {
   background-color: var(--widget-bg);
   padding: 0;
   padding-left: 0.2em;
+  overflow: clip;
   border: var(--basic-border);
   border-radius: var(--basic-border-radius);
 }
@@ -1775,6 +1776,13 @@ kit-root kit-line kit-multiline {
   flex-grow: 1;
   display: flex;
   flex-wrap: wrap;
+  gap: 0.4em;
+}
+kit-root kit-line kit-multiline kit-div {
+  display: flex;
+  min-width: 40px;
+  flex: 1 1;
+  gap: 0.4em;
 }
 /* Image Viewer */
 .image-properties {

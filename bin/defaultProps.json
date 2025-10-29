@@ -179,7 +179,8 @@
 	"sceneeditor.gridStep": 1,
 
 	"sceneeditor.preferEdit2": [
-		"hrt.prefab.Object3D"
+		"hrt.prefab.Object3D",
+		"hrt.prefab.l3d.KitTest"
 	],
 
 	// FX editor
