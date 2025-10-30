@@ -14,8 +14,10 @@ typedef ShapeEditorOptions = {
 }
 
 class ShapeEditor extends Component {
-	static var DEFAULT_COLOR = 0xFFFFFF;
-	static var SELECTED_COLOR = 0x3185CE;
+	static var DEFAULT_COLOR = 0x55FFFFFF;
+	static var SELECTED_COLOR = 0x553185CE;
+	static var INTERSECTION_COLOR = 0x55FF0000;
+	static var SELECTED_INTERSECTION_COLOR = 0x99FF0000;
 
 	var parentObj : h3d.scene.Object;
 	var shapes : Array<Shape> = [];
@@ -221,7 +223,7 @@ class ShapeEditor extends Component {
 				default:
 			}
 
-			@:privateAccess interactive.absPos.load(absPos);
+			@:privateAccess interactive.setTransform(absPos);
 		}
 
 		gizmo.onFinishMove = function() {
@@ -405,25 +407,33 @@ class ShapeEditor extends Component {
 				c;
 		}
 
+		var isSelected = this.shapes.indexOf(shape) == selectedShapeIdx;
+		var shapeColor = isSelected ? SELECTED_COLOR : DEFAULT_COLOR;
+		var intersectionColor = isSelected ? SELECTED_INTERSECTION_COLOR : INTERSECTION_COLOR;
+
 		var mesh = new h3d.scene.Mesh(prim, null, parentObj);
 		mesh.setPosition(offset.x, offset.y, offset.z);
 		mesh.setRotation(offsetRotation.x, offsetRotation.y, offsetRotation.z);
-
-		var s = new h3d.shader.AlphaMult();
-		s.alpha = 0.3;
-		mesh.material.mainPass.addShader(s);
+		mesh.material.castShadows = false;
 		mesh.material.blendMode = Alpha;
+		mesh.material.color.setColor(shapeColor);
+		mesh.material.mainPass.setPassName("afterTonemapping");
 
-		var fixedColor = new h3d.shader.FixedColor(this.shapes.indexOf(shape) == selectedShapeIdx ? SELECTED_COLOR : DEFAULT_COLOR);
-		fixedColor.USE_ALPHA = false;
-		@:privateAccess mesh.material.mainPass.addSelfShader(fixedColor);
+		var meshWireframe = new h3d.scene.Mesh(prim, null, mesh);
+		meshWireframe.name = "wireframe";
+		meshWireframe.material.mainPass.wireframe = true;
+		meshWireframe.material.castShadows = false;
+		meshWireframe.material.color.setColor(shapeColor);
+		meshWireframe.material.mainPass.setPassName("afterTonemapping");
 
-		mesh.material.mainPass.setPassName("overlay");
-
-		var p = mesh.material.allocPass("highlight");
-		p.culling = None;
-		p.depthWrite = false;
-		p.depthTest = LessEqual;
+		var meshIntersection = new h3d.scene.Mesh(prim, null, mesh);
+		meshIntersection.name = "intersection";
+		meshIntersection.material.castShadows = false;
+		meshIntersection.material.blendMode = Alpha;
+		meshIntersection.material.mainPass.culling = Front;
+		meshIntersection.material.mainPass.depth(false, GreaterEqual);
+		meshIntersection.material.color.setColor(intersectionColor);
+		meshIntersection.material.mainPass.setPassName("afterTonemapping");
 
 		return mesh;
 	}
@@ -468,15 +478,26 @@ class ShapeEditor extends Component {
 			var el = new Element('<div class="shape-list-entry ${idx == selectedShapeIdx ? "selected" : ""}">${s.getName()}</div>');
 
 			el.on("click", function() {
-				if (selectedShapeIdx != -1)
-					interactives[selectedShapeIdx].material.mainPass.getShader(h3d.shader.FixedColor).color.setColor(DEFAULT_COLOR);
+				var interactive = interactives[selectedShapeIdx];
+				var interactiveMaterial = interactive?.material;
+				var intersectionMaterial = cast (interactive?.getObjectByName("intersection"), h3d.scene.Mesh)?.material;
+				if (selectedShapeIdx != -1) {
+					interactiveMaterial.color.setColor(DEFAULT_COLOR);
+					intersectionMaterial.color.setColor(INTERSECTION_COLOR);
+				}
 
 				selectedShapeIdx = idx;
+
+				interactive = interactives[selectedShapeIdx];
+				interactiveMaterial = interactive.material;
+				intersectionMaterial = cast (interactive.getObjectByName("intersection"), h3d.scene.Mesh).material;
+
 				list.find(".selected").removeClass("selected");
 				el.addClass("selected");
 				inspect(s);
-				gizmo?.setTransform(interactives[selectedShapeIdx].getAbsPos());
-				interactives[selectedShapeIdx].material.mainPass.getShader(h3d.shader.FixedColor).color.setColor(SELECTED_COLOR);
+				gizmo?.setTransform(interactive.getAbsPos());
+				interactiveMaterial.color.setColor(SELECTED_COLOR);
+				intersectionMaterial.color.setColor(SELECTED_INTERSECTION_COLOR);
 			});
 
 			el.appendTo(list);
