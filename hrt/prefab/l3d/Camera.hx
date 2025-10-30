@@ -242,8 +242,7 @@ class Camera extends Object3D {
 						<button("Reset") id="reset"/>
 					</line>
 				</category>
-				<category("Ortho")>
-					<checkbox field={ortho}/>
+				<category("Ortho") field={ortho}>
 					<slider label="X width" field={orthoWidth}/>
 				</category>
 				<category("Debug")>

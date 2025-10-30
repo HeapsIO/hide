@@ -1617,6 +1617,7 @@ kit-root {
 	--basic-border: 1px solid #444;
 	min-height: 0;
 
+	--content-padding: 0.4em;
 	background-color: var(--inspector-bg);
 
 	display: flex;
@@ -1624,22 +1625,36 @@ kit-root {
 
 	kit-category {
 		--level: 0;
-		width: calc(100% - var(--level) * 5%);
-		margin-bottom: -1px;
+		width: 100%;
+
+		&+kit-category, kit-category:first-child {
+			margin-top: -1px;
+		}
 
 		>.title {
 			display: flex;
-			background-color: #272727;
+
+			--base-color: calc(39 + 10 * var(--level));
+			--color: var(--base-color);
 
 			&:hover {
-				background-color: rgb(50,50,50);
+				--color: calc(15 + var(--base-color));
 			}
+
+			background-color: rgb(var(--color), var(--color), var(--color));
+
+
+
 			border-top: 1px solid #333;
 			border-bottom: 1px solid #333;
 
 			cursor: pointer;
 			user-select: none;
 			padding: 2px;
+			align-items: center;
+			gap: 0.4em;
+			padding-left: calc(1em * var(--level));
+
 
 			input[type=button] {
 				border: none;
@@ -1676,6 +1691,12 @@ kit-root {
 
 				pointer-events: all;
 			}
+
+			kit-label {
+				color: #DDD;
+				font-size: 12px;
+				font-weight: bold;
+			}
 		}
 
 		&.open>.title::before {
@@ -1704,7 +1725,6 @@ kit-root {
 
 		>.collapsable>.content {
 			box-sizing: border-box;
-			padding: 0.4em;
 		}
 
 		&.open>.title {
@@ -1743,10 +1763,50 @@ kit-root {
 		align-self: stretch;
 	}
 
+	input[type="checkbox"] {
+		appearance: none;
+
+		width: auto;
+		flex: 0 0 auto;
+
+		outline: none !important;
+		border: none !important;
+		padding: 0;
+		margin: 0;
+		top: 0;
+
+		width: 16px;
+		height: 16px;
+
+		&::after {
+			box-sizing: border-box;
+			display: block;
+			background-color: #444;
+			width: 100%;
+			height: 100%;
+
+			border: 1px solid #555;
+			border-radius: 4px;
+			padding: 0;
+			margin: 0;
+			box-shadow: inset 1px 1px #333;
+		}
+
+		&:hover::after {
+			border-color: var(--highlight);
+		}
+	}
+
+	kit-section {
+		padding: var(--content-padding);
+
+	}
+
 	kit-line {
 		padding-block: var(--widget-gap);
 		box-sizing: border-box;
 		position: relative;
+
 
 		&:hover {
 			background-color: #222;
@@ -1857,39 +1917,6 @@ kit-root {
 				height: var(--widget-height);
 				margin: 0;
 				box-sizing: border-box;
-			}
-		}
-
-		input[type="checkbox"] {
-			appearance: none;
-
-			width: auto;
-			flex: 0 0 auto;
-
-			outline: none !important;
-			border: none !important;
-			padding: 0;
-			margin: 0;
-
-			width: 16px;
-			height: 16px;
-
-			&::after {
-				box-sizing: border-box;
-				display: box;
-				background-color: #444;
-				width: 100%;
-				height: 100%;
-
-				border: 1px solid #555;
-				border-radius: 4px;
-				padding: 0;
-				margin: 0;
-				box-shadow: inset 1px 1px #333;
-			}
-
-			&:hover::after {
-				border-color: var(--highlight);
 			}
 		}
 

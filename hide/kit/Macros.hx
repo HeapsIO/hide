@@ -383,6 +383,13 @@ class Macros {
 								}
 							});
 						}
+						else if (elementName == "Color") {
+							block.push(macro {
+								if (@:privateAccess hide.kit.Macros.checkIsVec($field)) {
+									$elementExpr.vec = true;
+								}
+							});
+						}
 
 						block.push(macro @:pos(pos) $elementExpr.value = $field);
 						block.push(macro @:pos(pos) @:privateAccess $elementExpr.onFieldChange = (temp:Bool) -> $field = $elementExpr.value);
@@ -495,6 +502,13 @@ class Macros {
 	macro static function checkIsInt(expr: Expr) : Expr {
 		if (Context.typeof(expr).toString() == "Int")
 			return macro true;
+		return macro false;
+	}
+
+	macro static function checkIsVec(expr: Expr) : Expr {
+		if (Context.typeof(expr).toString() == "h3d.Vector4") {
+			return macro true;
+		}
 		return macro false;
 	}
 }

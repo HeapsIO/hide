@@ -27,6 +27,8 @@ class KitTest extends Object3D {
 	@:s var select : String;
 	@:s var checkbox: Bool;
 	@:s var texture: Dynamic;
+	@:s var vector4: h3d.Vector4 = new h3d.Vector4();
+	@:s var category: Bool = false;
 
 	@:s var advancedDetails: Bool;
 	@:s var dynamicArray: Array<Int> = [];
@@ -89,20 +91,7 @@ class KitTest extends Object3D {
 			button.onClick = () -> trace('onclick $i');
 		}
 
-
-		// Use root to declare multiple top level elements at the same time
-		// without creating a top level element
-		ctx.build(
-			<root>
-				<category("A")>
-				</category>
-				<category("Closed by default") closed>
-					<text("Not visible by default because parent is closed")/>
-				</category>
-			</root>
-		);
-
-		// Element API examples
+		// GENERAL API
 		{
 			// Assigning an explicit id to an element will make it available inside this scope
 			// You can call build on a hide.kit.Element to add more element with DML
@@ -124,6 +113,38 @@ class KitTest extends Object3D {
 			// when more than one prefab is selected
 			category.build(<button("Single Edit") single-edit/>);
 		}
+
+		// CATEGORIES
+		{
+			ctx.build(
+				<root>
+					<category("Basic Category")>
+						<text("This is an element inside a category")/>
+					</category>
+					<category("Default colapsed category") closed>
+						<text("This category defaults to a closed state by default")/>
+					</category>
+					<category("Value category") field={category}>
+						<text("This category is bound to a field/value and displays a checkbox that allow to set this value. All of its content are disabled if the value is false")/>
+						<slider/>
+						<button("Button")/>
+						<category("Nested value category") value={false}>
+							<text("This category should be disabled when its parent value is set to false")/>
+							<button("Button")/>
+						</category>
+					</category>
+					<category("Nested category")>
+						<category("Child 1")>
+							<button("Button")/>
+						</category>
+						<category("Child 2")>
+							<button("Button")/>
+						</category>
+					</category>
+				</root>
+			);
+		}
+
 
 		// SLIDER / RANGES
 		{
@@ -274,6 +295,7 @@ class KitTest extends Object3D {
 				<category("Color")>
 					<color value={0xFF00FF} label="Color"/>
 					<color value={0x88FF00FF} alpha label="With Alpha"/>
+					<color field={vector4} label="Vec4"/>
 				</category>
 			);
 		}
