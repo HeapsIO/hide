@@ -85,8 +85,21 @@ class Category extends Widget<Null<Bool>> {
 		#end
 	}
 
+	override function getEditMenuContent() : Array<hide.comp.ContextMenu.MenuItem> {
+		var content = super.getEditMenuContent();
+		content.unshift({isSeparator: true});
+		content.unshift({label: "Collapse", click: collapse});
+		content.unshift({label: "Collapse All", click: root.collapse.bind()});
+		return content;
+	}
+
 	override function getChildDisabled():Bool {
 		return isDisabled() || value == false;
+	}
+
+	override function collapse() {
+		toggleOpenState(false);
+		super.collapse();
 	}
 
 	override function attachChildNative(child: Element) : Void {
@@ -108,7 +121,7 @@ class Category extends Widget<Null<Bool>> {
 		#end
 	}
 
-	function toggleOpenState(?force: Bool) {
+	public function toggleOpenState(?force: Bool) {
 		openState = force ?? !openState;
 		if (closed) {
 			saveSetting(SameKind, "openState", openState ? true : null);

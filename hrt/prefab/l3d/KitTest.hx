@@ -96,7 +96,7 @@ class KitTest extends Object3D {
 			// Assigning an explicit id to an element will make it available inside this scope
 			// You can call build on a hide.kit.Element to add more element with DML
 			ctx.build(
-				<category("Element") id="category"></category>
+				<category("Element API") id="category"></category>
 			);
 
 			// Assigning an explicit id to an element will make it available inside this scope
@@ -112,6 +112,34 @@ class KitTest extends Object3D {
 			// In that case, setting the single-edit attribute will disable that element and all of it's children
 			// when more than one prefab is selected
 			category.build(<button("Single Edit") single-edit/>);
+
+			category.build(
+				<root>
+					<line label="Width">
+						<slider width="2" label="2"/>
+						<slider width="1" label="1"/>
+						<slider width="3" label="3"/>
+					</line>
+					<line label="Spacer 1">
+						<slider label="2"/>
+						<slider label="1"/>
+						<spacer width="1"/>
+						<slider label="3"/>
+					</line>
+					<line label="Spacer 2">
+						<slider label="2"/>
+						<slider label="1"/>
+						<spacer width="2"/>
+						<slider label="3"/>
+					</line>
+					<line label="Spacer 3">
+						<slider label="2"/>
+						<slider label="1"/>
+						<spacer width="3"/>
+						<slider label="3"/>
+					</line>
+				</root>
+			);
 		}
 
 		// CATEGORIES
@@ -168,6 +196,26 @@ class KitTest extends Object3D {
 						<text("Middle")/>
 						<separator/>
 						<text("Right")/>
+					</line>
+
+				</category>
+			);
+		}
+
+		// SPACER
+		{
+			ctx.build(
+				<category("Spacer")>
+					<text("Separators allow to divide a category or a line by adding space")/>
+					<spacer/>
+					<text("The height or width of a spacer can be scaled with the width attribute")/>
+					<spacer width="2"/>
+					<text("Here is an example of a spacer used inside a line")/>
+					<line label="Spacer">
+						<slider label="1"/>
+						<slider label="2"/>
+						<spacer width="2"/>
+						<slider label="3"/>
 					</line>
 
 				</category>
@@ -298,7 +346,7 @@ class KitTest extends Object3D {
 			ctx.build(
 				<category("Input")>
 					<input label="Input"/>
-					<input placeholder="Insert your text here" label="Placehodler"/>
+					<input placeholder="Insert your text here" label="Placeholder"/>
 				</category>
 			);
 		}
@@ -359,9 +407,10 @@ class KitTest extends Object3D {
 				arrayEdit.build(
 					<line label={'$i'}>
 						// We can use an array+index as a field !
-						<slider field={dynamicArray[i]} label=""/>
-						<button("-") id="sub"/>
-						<button("+") id="plus"/>
+						<slider field={dynamicArray[i]} width="2" label=""/>
+						<button("-") width="1" id="sub"/>
+						<button("+") width="1" id="plus"/>
+						<spacer width="2"/>
 						<button("Delete") id="delete"/>
 					</line>
 				);

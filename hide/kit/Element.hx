@@ -53,6 +53,11 @@ class Element {
 	**/
 	public var disabled(default, set) = false;
 
+	/**
+		If set, the element will take width units of space in its line
+	**/
+	public var width : Null<Int> = null;
+
 
 	/**
 		Internal ID of this element that is unique between this element siblings (use getIdPath for a unique identifier in this element tree)
@@ -198,16 +203,25 @@ class Element {
 				e.preventDefault();
 				e.stopPropagation();
 
-				hide.comp.ContextMenu.createFromEvent(e, [
-					{label: "Copy", click: copyToClipboard},
-					{label: "Paste", click: pasteFromClipboard},
-					{isSeparator: true},
-					{label: "Reset", click: resetWithUndo},
-				]
-				);
+				hide.comp.ContextMenu.createFromEvent(e, getEditMenuContent());
 			});
 		}
 		#end
+	}
+
+	function getEditMenuContent() : Array<hide.comp.ContextMenu.MenuItem> {
+		return [
+			{label: "Copy", click: copyToClipboard},
+			{label: "Paste", click: pasteFromClipboard},
+			{isSeparator: true},
+			{label: "Reset", click: resetWithUndo}
+		];
+	}
+
+	public function collapse() {
+		for (child in children) {
+			child.collapse();
+		}
 	}
 
 	/**
@@ -238,8 +252,11 @@ class Element {
 			}
 			native.appendChild(label);
 		}
-		if (content != null)
+		if (content != null) {
 			native.appendChild(content);
+			if (width != null)
+				native.style.setProperty('--width', '$width');
+		}
 		#end
 	}
 

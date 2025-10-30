@@ -39,11 +39,12 @@ kit-root {
   --widget-height: 22px;
   --widget-bg: #2d2d2d;
   --widget-bg-disabled: #222222;
-  --button-bg: #444444;
-  --button-bg-highlight: var(--selection);
-  --widget-gap: 1px;
   --widget-border-color: #484848;
   --widget-border-color-disabled: #333333;
+  --widget-gap: 1px;
+  --button-bg: #4d4d4d;
+  --button-bg-highlight: var(--selection);
+  --button-border-color: #5d5d5d;
   --separator-color: #333333;
   --section-padding: 4px;
   --line-hover-highlight: 4;
@@ -154,7 +155,7 @@ kit-root kit-block {
   background-color: hsl(from var(--category-background-color) h s calc(l + var(--level) * var(--category-background-color-per-level)));
 }
 kit-root kit-text {
-  flex: 1 0;
+  flex: var(--width, 1) 0;
   margin: 0;
   padding: 0;
   min-width: 50px;
@@ -167,17 +168,26 @@ kit-root kit-separator {
   align-self: center;
 }
 kit-root kit-line > kit-separator {
+  display: flex;
+  justify-content: center;
   margin-left: 5px;
   margin-right: 5px;
   border: none;
-  border-right: 1px solid var(--separator-color);
-  width: 0;
   align-self: stretch;
+  flex: var(--width, 0) 0;
+}
+kit-root kit-line > kit-separator:before {
+  content: "";
+  border-right: 1px solid var(--separator-color);
+  align-self: stretch;
+}
+kit-root kit-spacer {
+  flex: 0 1 calc(var(--width, 1) * 12px);
 }
 kit-root input[type="checkbox"] {
   appearance: none;
   width: auto;
-  flex: 0 0 auto;
+  flex: var(--width, 0) 0 auto;
   outline: none !important;
   border: none !important;
   padding: 0;
@@ -248,7 +258,7 @@ kit-root kit-line kit-div {
 }
 kit-root kit-line input,
 kit-root kit-line kit-select {
-  flex: 1 1;
+  flex: var(--width, 1) 1;
   text-align: left;
   width: 100%;
   max-width: 100%;
@@ -302,7 +312,7 @@ kit-root kit-line .texture-choice .hide-button {
   box-sizing: border-box;
 }
 kit-root kit-line kit-slider {
-  flex: 1 1;
+  flex: var(--width, 1) 1;
   display: flex;
   height: var(--widget-height);
   align-self: flex-start;
@@ -314,7 +324,7 @@ kit-root kit-line kit-slider > input {
   vertical-align: center;
 }
 kit-root kit-line kit-select {
-  flex: 1 1;
+  flex: var(--width, 1) 1;
   cursor: pointer;
   align-self: stretch;
   display: flex;
@@ -349,16 +359,16 @@ kit-root kit-line kit-button {
   display: flex;
   align-items: center;
   justify-content: center;
-  flex: 1 1;
+  flex: var(--width, 1) 1;
   border: var(--basic-border);
   border-color: var(--widget-border-color);
   border-radius: var(--basic-border-radius);
-  background-color: #4d4d4d;
   height: var(--widget-height);
   align-self: stretch;
   text-align: center;
   cursor: pointer;
   --widget-bg: var(--button-bg);
+  --widget-border-color: var(--button-border-color);
   --hover: 0;
   background-color: hsl(from var(--button-bg) h s calc(l + var(--hover) * var(--title-background-color-hover)));
 }

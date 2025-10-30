@@ -1,9 +1,9 @@
 package hide.kit;
 
-class Separator extends Element {
+class Spacer extends Element {
 	override function makeSelf():Void {
 		#if js
-		native = js.Browser.document.createElement("kit-separator");
+		native = js.Browser.document.createElement("kit-spacer");
 		if (width != null)
 			native.style.setProperty("--width", '$width');
 		#else
