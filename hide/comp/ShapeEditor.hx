@@ -310,6 +310,7 @@ class ShapeEditor extends Component {
 			i.remove();
 			interactives[selectedShapeIdx] = getInteractive(this.shapes[selectedShapeIdx]);
 
+			gizmo?.setTransform(interactives[selectedShapeIdx].getAbsPos());
 			updateShapeList();
 			inspect(this.shapes[selectedShapeIdx]);
 			onChange();
@@ -321,6 +322,8 @@ class ShapeEditor extends Component {
 					this.interactives[idx].remove();
 					this.interactives[idx] = getInteractive(this.shapes[idx]);
 				}
+
+				gizmo?.setTransform(interactives[selectedShapeIdx].getAbsPos());
 				updateShapeList();
 				onChange();
 			}));
@@ -389,18 +392,18 @@ class ShapeEditor extends Component {
 				b.addNormals();
 				b;
 			case Sphere(center, radius):
-				var s = new h3d.prim.Sphere(radius);
+				var s = new h3d.prim.Sphere(radius, 20, 20);
 				offset.load(center);
 				s.addNormals();
 				s;
 			case Capsule(center, rotation, radius, height):
-				var c = new h3d.prim.Capsule(radius, height, 8, Z);
+				var c = new h3d.prim.Capsule(radius, height, 20, Z);
 				offset.load(center);
 				offsetRotation.load(rotation);
 				c.addNormals();
 				c;
 			case Cylinder(center, rotation, radius, height):
-				var c = new h3d.prim.Cylinder(16, radius, height, true);
+				var c = new h3d.prim.Cylinder(20, radius, height, true);
 				offset.load(center);
 				offsetRotation.load(rotation);
 				c.addNormals();
