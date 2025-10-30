@@ -51,7 +51,7 @@ class Element {
 	/**
 		If set, the element and its children can't be edited and will be grayed out
 	**/
-	public var disabled = false;
+	public var disabled(default, set) = false;
 
 
 	/**
@@ -78,6 +78,32 @@ class Element {
 
 	inline function get_numChildren() return children.length;
 	function get_nativeContent() return native;
+	function set_disabled(v: Bool) {
+		disabled = v;
+		refreshDisabled();
+		return disabled;
+	}
+
+	function refreshDisabled() {
+		#if js
+		if (native != null) {
+			native.classList.toggle("disabled", isDisabled());
+		}
+		#end
+		for (child in children) {
+			child.refreshDisabled();
+		}
+	}
+
+	function isDisabled() {
+		if (parent != null)
+			return disabled || parent.getChildDisabled();
+		return disabled;
+	}
+
+	function getChildDisabled() {
+		return isDisabled();
+	}
 
 	public function new(parent: Element, id: String) {
 		this.parent = parent;
@@ -100,7 +126,8 @@ class Element {
 		if (parent != null)
 			parent.attachChildNative(this);
 
-		setEnabled(!disabled);
+		// call setters
+		disabled = disabled;
 
 		for (c in children) {
 			c.disabled = c.disabled || disabled;
@@ -345,11 +372,6 @@ class Element {
 
 	function setEnabled(enabled: Bool) : Void {
 		this.disabled = !enabled;
-		#if js
-		nativeContent.classList.toggle("disabled", disabled);
-		#else
-
-		#end
 	}
 
 	/**
