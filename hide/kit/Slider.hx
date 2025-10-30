@@ -278,7 +278,7 @@ class Slider<T:Float> extends Widget<T> {
 
 			var alpha = hxd.Math.clamp((value - min) / (max - min)) * 100;
 			#if js
-			slider.style.background = 'linear-gradient(to right, #3185ce ${alpha}%, #222222 ${alpha}%)';
+			slider.style.background = 'linear-gradient(to right, var(--range-fill) ${alpha}%, var(--widget-bg) ${alpha}%)';
 			#end
 		} else {
 			#if js
