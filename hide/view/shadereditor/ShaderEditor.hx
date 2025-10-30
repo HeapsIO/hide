@@ -1723,7 +1723,6 @@ class ShaderEditor extends hide.view.FileView implements GraphInterface.IGraphEd
 					if (dyn.shader.data.name == newShader.shader.data.name) {
 						found = true;
 						curShaderList.s = newShader;
-						m.mainPass.resetRendererFlags();
 						m.mainPass.selfShadersChanged = true;
 					}
 				}
