@@ -141,7 +141,36 @@ class KitTest extends Object3D {
 							<button("Button")/>
 						</category>
 					</category>
+					<category("Nested category + content")>
+						<text("Content before the sub categories")/>
+						<category("Child 1")>
+							<button("Button")/>
+						</category>
+						<category("Child 2")>
+							<button("Button")/>
+						</category>
+						<text("Content after the sub categories")/>
+					</category>
 				</root>
+			);
+		}
+
+		// SEPARATORS
+		{
+			ctx.build(
+				<category("Separator")>
+					<text("Separators allow to divide a category in multiple uncollapsable subsections")/>
+					<separator/>
+					<text("Separators can also be used inside of a line")/>
+					<line>
+						<text("Left")/>
+						<separator/>
+						<text("Middle")/>
+						<separator/>
+						<text("Right")/>
+					</line>
+
+				</category>
 			);
 		}
 

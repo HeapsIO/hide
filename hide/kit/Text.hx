@@ -3,6 +3,10 @@ package hide.kit;
 class Text extends Element {
 	var content(default, set) : String;
 
+	#if js
+	var text: NativeElement;
+	#end
+
 	function set_content(v: String) : String {
 		content = v;
 		refreshText();
@@ -16,7 +20,8 @@ class Text extends Element {
 
 	override function makeSelf() : Void {
 		#if js
-		native = js.Browser.document.createElement("kit-text");
+		text = js.Browser.document.createElement("kit-text");
+		setupPropLine(null, text, false);
 		refreshText();
 		#else
 		throw "HideKitHL Implement";
@@ -25,8 +30,8 @@ class Text extends Element {
 
 	function refreshText() {
 		#if js
-		if (native != null)
-			native.textContent = content;
+		if (text != null)
+			text.textContent = content;
 		#else
 		throw "HideKitHL Implement";
 		#end
