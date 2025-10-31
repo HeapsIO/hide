@@ -115,6 +115,17 @@ class Reference extends Object3D {
 	}
 
 	#if editor
+	override function shouldBeInstanciated() {
+		if (!super.shouldBeInstanciated())
+			return false;
+
+		// Avoid infinite loops with editor only prefabs
+		if (editorOnly && shared.parentPrefab != null)
+			return false;
+
+		return true;
+	}
+
 	function computeDiffFromSource() : Dynamic {
 		var orig = originalSource;
 		var ref = refInstance?.serialize() ?? null;
@@ -363,7 +374,7 @@ class Reference extends Object3D {
 				return false;
 
 			var ref = Std.downcast(prefab, Reference);
-			if (ref != null && ref.source != null && ref.shouldBeInstanciated()) {
+			if (ref != null && ref.source != null && ref.shouldBeInstanciated() && !ref.editorOnly) {
 				if (seenPaths.get(ref.source) == true) {
 					return true;
 				}
