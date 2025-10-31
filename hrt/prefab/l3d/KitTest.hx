@@ -163,6 +163,12 @@ class KitTest extends Object3D {
 					</category>
 					<category("Nested category")>
 						<category("Child 1")>
+								<category("Subchild")>
+									<category("SubSubchild")>
+										<button("Button")/>
+									</category>
+									<button("Button")/>
+								</category>
 							<button("Button")/>
 						</category>
 						<category("Child 2")>

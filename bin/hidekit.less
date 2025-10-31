@@ -8,15 +8,15 @@
 	overflow-y: auto;
 
 	&::-webkit-scrollbar {
-		width: 10px;
-		height: 10px;
+		width: 7px;
+		height: 7px;
 		background: transparent;
 	}
 	&::-webkit-scrollbar-track {
 		background: transparent;
 	}
 	&::-webkit-scrollbar-thumb {
-		background-color: rgba(155, 155, 155, 0.75);
+		background-color: #555;
 		border-radius: 20px;
 		border: transparent;
 	}
@@ -24,7 +24,6 @@
 
 	> div {
 		border-right: 1px solid #444;
-		height: 100%;
 	}
 }
 
@@ -40,7 +39,7 @@ kit-root {
 	--title-background-color: #272727;
 	--title-background-color-per-level: 5;
 	--title-background-color-hover: 10;
-	--title-border-color-lightness: 5;
+	--title-border-color-lightness: 4;
 
 	--category-background-color: var(--inspector-bg);
 	--category-background-color-per-level: 2;
@@ -58,7 +57,7 @@ kit-root {
 
 	--separator-color: #333333;
 
-	--section-padding: 4px;
+	--section-padding: 8px;
 	--line-hover-highlight: 4;
 
 	--range-fill: var(--selection);
@@ -94,6 +93,13 @@ kit-root {
 	kit-category {
 		--level: 0;
 		width: 100%;
+
+		kit-category {
+			.title > kit-label {
+				font-weight: normal;
+				font-size: var(--font-size-base);
+			}
+		}
 
 		&+kit-category, kit-category:first-child {
 			margin-top: -1px;
