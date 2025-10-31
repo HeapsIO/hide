@@ -83,6 +83,7 @@ class Slider<T:Float> extends Widget<T> {
 
 		var capture = false;
 		var hasMoved = false;
+		var ignoreMoveEvents = 2;
 		slider.addEventListener("pointerdown", (e: js.html.PointerEvent) -> {
 			if (e.button != 0)
 				return;
@@ -96,11 +97,18 @@ class Slider<T:Float> extends Widget<T> {
 			startValueLinear = valueToLinear(value);
 			capture = true;
 			hasMoved = false;
+			ignoreMoveEvents = 2;
 		});
 
 		slider.addEventListener("pointermove", (e: js.html.PointerEvent) -> {
 			if (!capture)
 				return;
+
+			// Ignore nth move events to remove some weirdness with display scaling
+			if (ignoreMoveEvents > 0) {
+				ignoreMoveEvents--;
+				return;
+			}
 
 			e.preventDefault();
 			e.stopPropagation();
