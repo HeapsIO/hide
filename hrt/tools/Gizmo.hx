@@ -540,4 +540,8 @@ class Gizmo extends h3d.scene.Object {
 			o.getMaterials()[0].color.w = show ? 0.2 : 0;
 
 	}
+
+	public function isGizmo(obj : h3d.scene.Object) {
+		return gizmo.findAll((f) -> f).contains(obj);
+	}
 }

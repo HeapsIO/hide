@@ -4,10 +4,12 @@ import hxd.Key as K;
 class CollisionSettings {
 	public var mode : Int;
 	public var params : hxd.fmt.fbx.HMDOut.CollideParams;
+
 	public function new( mode : Int, params : hxd.fmt.fbx.HMDOut.CollideParams ) {
 		this.mode = mode;
 		this.params = params;
 	}
+
 	public function toShapeEditor() {
 		if( params == null || mode != Shapes || params.shapes == null )
 			return [];
@@ -40,6 +42,7 @@ class CollisionSettings {
 		}
 		return arr;
 	}
+
 	public function fromShapeEditor( arr : Array<hide.comp.ShapeEditor.Shape> ) {
 		var shapes : Array<hxd.fmt.fbx.HMDOut.ShapeColliderParams> = [];
 		for( s in arr ) {
@@ -67,6 +70,27 @@ class CollisionSettings {
 		}
 		return shapes;
 	}
+
+	public function getDebugCollider(mesh : h3d.scene.Mesh) : h3d.scene.Object {
+		switch (mode) {
+			case None:
+				return null;
+			case Default:
+				return mesh.getCollider().makeDebugObj();
+			case Mesh:
+				if (params.mesh == null)
+					return null;
+				var mesh = new h3d.scene.Mesh(mesh.primitive, null, null);
+				mesh.forcedLod = Std.parseInt(params.mesh.charAt(params.mesh.lastIndexOf("LOD") + 3));
+				return mesh;
+			case Auto:
+				return null;
+			case Shapes:
+				return null;
+			default:
+				throw "Unknown collision mode";
+		}
+	}
 }
 
 private enum abstract CollisionMode(Int) from Int to Int {
@@ -89,12 +113,89 @@ private enum abstract CollisionMode(Int) from Int to Int {
 	}
 }
 
+@:access(hide.view.Model)
+@:allow(hide.view.Model)
+class ModelSceneEditor extends hide.comp.SceneEditor {
+	var parent : hide.view.Model;
+
+	public function new(view) {
+		super(view);
+		parent = cast view;
+	}
+
+	override function updateCollidersVisibility() {
+		super.updateCollidersVisibility();
+		if (parent.collisionSettings == null || this.parent.scene == null)
+			return;
+
+		for (k in parent.collisionSettings.keys()) {
+			var obj = parent.scene.s3d.getObjectByName(k);
+			if (obj == null)
+				continue;
+
+			var col = debugColliders.get(obj);
+			var rootDebugObjects = col?.parent ?? collider;
+			var newCol = new h3d.scene.Object(rootDebugObjects);
+			newCol.name = "debugCollider";
+			debugColliders.set(obj, newCol);
+			col?.remove();
+
+			for (c in parent.collisionSettings.get(k)) {
+				var debug = c.getDebugCollider(cast obj);
+				if (debug == null)
+					continue;
+
+				newCol.addChild(debug);
+
+				var colliderColor = 0x55FFFFFF;
+				var intersectionColor = 0x55FF0000;
+
+				for (m in debug.getMeshes()) {
+					m.material.castShadows = false;
+					m.material.blendMode = Alpha;
+					m.material.color.setColor(colliderColor);
+					m.material.mainPass.setPassName("afterTonemapping");
+
+					var debugWireframe = new h3d.scene.Mesh(m.primitive, null, m);
+					debugWireframe.forcedLod = m.forcedLod;
+					debugWireframe.name = "debugWireframe";
+					debugWireframe.material.mainPass.wireframe = true;
+					debugWireframe.material.castShadows = false;
+					debugWireframe.material.color.setColor(colliderColor);
+					debugWireframe.material.mainPass.setPassName("afterTonemapping");
+
+					var debugIntersection = new h3d.scene.Mesh(m.primitive, null, m);
+					debugIntersection.forcedLod = m.forcedLod;
+					debugIntersection.name = "debugIntersection";
+					debugIntersection.material.castShadows = false;
+					debugIntersection.material.blendMode = Alpha;
+					debugIntersection.material.mainPass.culling = Front;
+					debugIntersection.material.mainPass.depth(false, GreaterEqual);
+					debugIntersection.material.color.setColor(intersectionColor);
+					debugIntersection.material.mainPass.setPassName("afterTonemapping");
+				}
+
+				newCol.addChild(debug);
+			}
+		}
+	}
+
+	override function setWireframe(val : Bool = true) {
+		super.setWireframe(val);
+		var wireframes : Array<h3d.scene.Mesh> = scene.s3d.findAll((f) -> f.name == "debugWireframe" ? Std.downcast(f, h3d.scene.Mesh) : null);
+		if (wireframes == null)
+			return;
+		for (m in wireframes)
+			cast (m, h3d.scene.Mesh).material.mainPass.wireframe = true;
+	}
+}
+
 class Model extends FileView {
 	static var KEY_ANIM_PLAYING = "AnimationPlaying";
 
 	var tools : hide.comp.Toolbar;
 	var obj : h3d.scene.Object;
-	var sceneEditor : hide.comp.SceneEditor;
+	var sceneEditor : ModelSceneEditor;
 	var tree : hide.comp.FancyTree<Dynamic>;
 	var tabs : hide.comp.Tabs;
 	var overlay : Element;
@@ -173,16 +274,15 @@ class Model extends FileView {
 			</div>
 		');
 
-		tools = new hide.comp.Toolbar(null,element.find("#toolbar"));
+		tools = new hide.comp.Toolbar(null, element.find("#toolbar"));
 		overlay = element.find(".hide-scene-layer .tree");
-		tabs = new hide.comp.Tabs(null,element.find(".tabs"));
+		tabs = new hide.comp.Tabs(null, element.find(".tabs"));
 		eventList = element.find(".event-editor");
-		collisionSettings = [];
 
 		var def = new hrt.prefab.Prefab(null, null);
 		new hrt.prefab.RenderProps(def, null).name = "renderer";
 		var l = new hrt.prefab.Light(def, null);
-		sceneEditor = new hide.comp.SceneEditor(this);
+		sceneEditor = new ModelSceneEditor(this);
 		sceneEditor.onSceneReady = onSceneReady;
 
 		sceneEditor.editorDisplay = false;
@@ -252,10 +352,10 @@ class Model extends FileView {
 	}
 
 	override function save() {
-
 		if(!modified) return;
 
 		var needRefresh = false;
+
 		// Save render props
 		if (Ide.inst.currentConfig.get("sceneeditor.renderprops.edit", false) && sceneEditor.renderPropsRoot != null)
 			sceneEditor.renderPropsRoot.save();
@@ -281,6 +381,7 @@ class Model extends FileView {
 					collide = { collide : [for( settings in settingsArr ) settings.params] };
 				}
 			}
+
 			var input : h3d.prim.ModelDatabase.ModelDataInput = {
 				resourceDirectory : @:privateAccess hmd.lib.resource.entry.directory,
 				resourceName : @:privateAccess hmd.lib.resource.name,
@@ -397,6 +498,7 @@ class Model extends FileView {
 	var dynamicJointsConfFolder : String = null;
 	var selectedCount = 0;
 	var selectedElements : Array<Dynamic>;
+
 	function onTreeSelectionChanged(elts : Array<Dynamic>) {
 		function canMultiEdit<T>(cl : Class<T>) {
 			for (e in elts)
@@ -694,7 +796,7 @@ class Model extends FileView {
 
 				var selectLod = lodsEl.find("select");
 				selectLod.on("change", function(){
-					hmd.forcedLod = Std.int(lodsEl.find("select").val());
+					mesh.forcedLod = Std.int(lodsEl.find("select").val());
 				});
 
 				var lodsLine = lodsEl.find(".line");
@@ -759,39 +861,7 @@ class Model extends FileView {
 			new Element('<label class="title">Collision settings</label>').appendTo(collisionEditor);
 			collisionList = new hide.comp.FancyArray(collisionEditor, null, "Collision settings", "CollisionSettings");
 			collisionList.getItems = function() {
-				var cachedArr = collisionSettings.get(modelName);
-				if( cachedArr != null )
-					return cachedArr;
-
-				var settingsArr = [];
-				collisionSettings.set(modelName, settingsArr);
-				var dirPath = @:privateAccess hmd.lib.resource.entry.directory;
-				var resName = @:privateAccess hmd.lib.resource.name;
-				var props = @:privateAccess h3d.prim.ModelDatabase.current.getModelData(dirPath, resName, modelName);
-				if ( props != null && Reflect.hasField(props, "collide") ) {
-					var collideFields = Reflect.field(props, "collide");
-					if( collideFields == null )
-						settingsArr.push(new CollisionSettings(None, null));
-					else if( collideFields != null && Std.isOfType(collideFields, Array) ) {
-						for( cf in (collideFields:Array<Dynamic>) ) {
-							var mode = Default;
-							if( cf == null )
-								mode = None;
-							else if( Reflect.field(cf, "useDefault") )
-								mode = Default;
-							else if( Reflect.hasField(cf, "precision") )
-								mode = Auto;
-							else if( Reflect.hasField(cf, "mesh") )
-								mode = Mesh;
-							else if( Reflect.hasField(cf, "shapes") )
-								mode = Shapes;
-							settingsArr.push(new CollisionSettings(mode, cf));
-						}
-					}
-				}
-				if( settingsArr.length == 0 )
-					settingsArr.push(new CollisionSettings(Default, { useDefault : true }));
-				return settingsArr;
+				return collisionSettings.get(modelName);
 			};
 			collisionList.getItemName = function( item : CollisionSettings ) {
 				var settingsArr = collisionSettings.get(modelName);
@@ -882,12 +952,12 @@ class Model extends FileView {
 						default: throw "Unexpected mode";
 					}
 					elMode.val(settings.mode);
-
 					var params = settings.params ?? {};
 					elPrec.val('${params.precision ?? 1.0}');
 					elHull.val('${params.maxConvexHulls ?? 1}');
 					elSubdiv.val('${params.maxSubdiv ?? 32}');
 					elMesh.val(params.mesh);
+					sceneEditor.updateCollidersVisibility();
 				}
 
 				collisionParams.on("change", function(_) {
@@ -1625,6 +1695,48 @@ class Model extends FileView {
 	function onSceneReady() {
 		root = new hrt.prefab.Prefab(null, null);
 		sceneEditor.setPrefab(root);
+
+		collisionSettings = [];
+		for (o in scene.s3d.getMeshes()) {
+			if (Std.isOfType(o, h3d.scene.Graphics) || @:privateAccess sceneEditor.gizmo.isGizmo(o))
+				continue;
+
+			var hmd = Std.downcast(o.primitive, h3d.prim.HMDModel);
+			if (hmd == null) continue;
+
+			var settings = [];
+			var dirPath = @:privateAccess hmd.lib.resource.entry.directory;
+			var resName = @:privateAccess hmd.lib.resource.name;
+			var props = @:privateAccess h3d.prim.ModelDatabase.current.getModelData(dirPath, resName, o.name);
+			if ( props != null && Reflect.hasField(props, "collide") ) {
+				var collideFields = Reflect.field(props, "collide");
+				if( collideFields == null )
+					settings.push(new CollisionSettings(None, null));
+				else if( collideFields != null && Std.isOfType(collideFields, Array) ) {
+					for( cf in (collideFields:Array<Dynamic>) ) {
+						var mode = Default;
+						if( cf == null )
+							mode = None;
+						else if( Reflect.field(cf, "useDefault") )
+							mode = Default;
+						else if( Reflect.hasField(cf, "precision") )
+							mode = Auto;
+						else if( Reflect.hasField(cf, "mesh") )
+							mode = Mesh;
+						else if( Reflect.hasField(cf, "shapes") )
+							mode = Shapes;
+						settings.push(new CollisionSettings(mode, cf));
+					}
+				}
+			}
+
+			if( settings.length == 0 )
+				settings.push(new CollisionSettings(Default, { useDefault : true }));
+
+			collisionSettings.set(o.name, settings);
+		}
+		sceneEditor.updateCollidersVisibility();
+		trace("e");
 	}
 
 	function onRefresh() {
@@ -1798,10 +1910,10 @@ class Model extends FileView {
 		};
 		tree.onSelectionCleared = () -> {
 			element.find(".collision-editor").empty();
-			for (s in shapesEditor) {
+			for (s in shapesEditor)
 				s.remove();
-			}
 			shapesEditor = [];
+			sceneEditor.updateCollidersVisibility();
 		}
 		tree.onDoubleClick = (item: Dynamic) -> {
 			var obj = Std.downcast(item, h3d.scene.Object);
@@ -2043,7 +2155,7 @@ class Model extends FileView {
 			var hmd = selectedMesh != null ? Std.downcast(selectedMesh.primitive, h3d.prim.HMDModel) : null;
 			if ( hmd != null ) {
 				var lodsCountEl = sceneEditor.properties.element.find("#vertexes-count");
-				var curLod = hmd.forcedLod >= 0 ? hmd.forcedLod : hmd.screenRatioToLod(@:privateAccess selectedMesh.curScreenRatio);
+				var curLod = selectedMesh.getLodIndex();
 				var lodVertexesCount = @:privateAccess { ( curLod < hmd.lods.length ) ? hmd.lods[curLod].vertexCount : 0; };
 				lodsCountEl.text(lodVertexesCount);
 			}

@@ -1205,6 +1205,7 @@ class SceneEditor {
 		}
 		return v;
 	}
+
 	public function updateViewportOverlays() {
 		showOverlays = getOrInitConfig("sceneeditor.showViewportOverlays", true);
 
@@ -1245,6 +1246,7 @@ class SceneEditor {
 	public function updateCollidersVisibility() {
 		var visible = getOrInitConfig("sceneeditor.colliderToggle", false) && showOverlays;
 		setCollider(visible);
+		trace("e");
 	}
 
 	public function updateGizmoVisibility() {
@@ -3706,6 +3708,7 @@ class SceneEditor {
 	}
 
 	var collider : h3d.scene.Object = null;
+	var debugColliders : Map<h3d.scene.Object, h3d.scene.Object> = [];
 	public function setCollider(showCollider = true) {
 		if( showCollider ) {
 			if( collider == null )
@@ -3713,14 +3716,8 @@ class SceneEditor {
 			collider.removeChildren();
 			var meshes = scene.s3d.getMeshes();
 			meshes = meshes.filter(function (m : h3d.scene.Mesh) {
-				if (Std.isOfType(m, h3d.scene.Graphics))
+				if (Std.isOfType(m, h3d.scene.Graphics) || gizmo.isGizmo(m))
 					return false;
-				var p = m.parent;
-				while ( p != null ) {
-					if ( p == gizmo )
-						return false;
-					p = p.parent;
-				}
 				return true;
 			});
 			for ( m in meshes ) {
@@ -3738,8 +3735,10 @@ class SceneEditor {
 					mat.mainPass.wireframe = true;
 				}
 				collider.addChild(d);
+				debugColliders.set(m, d);
 			}
 		} else if( collider != null ) {
+			debugColliders = [];
 			collider.remove();
 			collider = null;
 		}
