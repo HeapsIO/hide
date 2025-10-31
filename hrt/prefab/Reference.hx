@@ -156,6 +156,9 @@ class Reference extends Object3D {
 		if (refInstance != null)
 			return refInstance;
 
+		if (shared.parentPrefab != null && editorOnly)
+			return null;
+
 		var shouldLoadUniqueObject = #if editor true #else overrides != null #end;
 
 		#if editor
