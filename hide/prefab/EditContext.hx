@@ -1,10 +1,21 @@
 package hide.prefab;
 
+#if !macro
 import hrt.prefab.Prefab;
+#end
 
 class EditContext {
+	#if !macro
 
 	#if editor
+
+	public var rootPrefab : hrt.prefab.Prefab;
+
+	var undo : hide.ui.UndoHistory;
+
+	public function new(undo: hide.ui.UndoHistory) {
+		this.undo = undo;
+	}
 
 	/**
 		list of functions to call in the sceneEditor `update()`
@@ -15,7 +26,7 @@ class EditContext {
 	public var scene : hide.comp.Scene;
 	public var properties : hide.comp.PropsEditor;
 	public var cleanups : Array<Void->Void>;
-	public var rootPrefab : hrt.prefab.Prefab;
+
 	function get_ide() return hide.Ide.inst;
 
 	public function onChange(p : Prefab, propName : String) {
@@ -63,8 +74,7 @@ class EditContext {
 
 	#end
 
-	public function new() {
-	}
+
 
 	/*public function getContext( p : Prefab ) {
 		return rootContext.shared.contexts.get(p);
@@ -84,7 +94,6 @@ class EditContext {
 	**/
 	public function positionToGroundZ( x : Float, y : Float, ?forPrefab : Prefab ) : Float {
 		throw "Not implemented";
-		return null;
 	}
 
 	/**
@@ -130,5 +139,79 @@ class EditContext {
 
 		return out;
 	}
+	#end
+}
 
+@:access(hide.prefab.EditContext)
+class HideJsEditContext2 extends hrt.prefab.EditContext2 {
+	var ctx : EditContext;
+	var saveKey: String;
+
+	public function new(parent: hrt.prefab.EditContext2, ctx: EditContext) {
+		super(parent);
+		this.ctx = ctx;
+	}
+
+	public function recordUndo(cb: (isUndo:Bool) -> Void) {
+		if (parent != null)
+			throw "Side effect in a multi edit context";
+		ctx.undo.change(Custom(cb));
+	}
+
+	public function rebuildInspector() : Void {
+		if (parent != null)
+			return;
+		js.Browser.window.requestAnimationFrame((_) -> ctx.rebuildProperties());
+	}
+
+	public function saveSetting(category: hrt.prefab.EditContext2.SettingCategory, key: String, value: Dynamic) : Void {
+		if (parent != null)
+			return;
+
+		if (value == null) {
+			ctx.ide.localStorage.removeItem(getSaveKey(category, key));
+			return;
+		}
+		ctx.ide.localStorage.setItem(getSaveKey(category, key), haxe.Json.stringify(value));
+	};
+
+	public function getSetting(category: hrt.prefab.EditContext2.SettingCategory, key: String) : Null<Dynamic> {
+		var v = ctx.ide.localStorage.getItem(getSaveKey(category, key));
+		if( v == null )
+			return null;
+		return haxe.Json.parse(v);
+	};
+
+	function getSaveKey(category: hrt.prefab.EditContext2.SettingCategory, key: String) {
+		var mid = switch(category) {
+			case Global:
+				"global";
+			case SameKind:
+				saveKey;
+		};
+
+		return 'inspector/$mid/$key';
+	}
+
+	public function getScene3d() : h3d.scene.Scene {
+		return ctx.scene.s3d;
+	}
+
+	public function getCameraController3d():hide.view.CameraController.CameraControllerBase {
+		return ctx.scene.editor.cameraController;
+	}
+
+	public function openFile(path:String) : Void {
+		if (parent != null)
+			return;
+		ctx.ide.openFile(path);
+	}
+
+	public function rebuildPrefab(prefab:Prefab) {
+		ctx.scene.editor.queueRebuild(prefab);
+	}
+
+	public function rebuildTree(prefab: Prefab) {
+		ctx.scene.editor.sceneTree.refreshItem(prefab);
+	}
 }

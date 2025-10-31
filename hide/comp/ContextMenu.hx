@@ -477,7 +477,7 @@ class ContextMenu {
         refreshPos();
     }
 
-    function close() {
+    public function close() {
         cleanup();
     }
 
