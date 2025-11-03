@@ -75,8 +75,10 @@ class CollisionSettings {
 		switch (mode) {
 			case None:
 				return null;
+
 			case Default:
 				return mesh.getCollider().makeDebugObj();
+
 			case Mesh:
 				if (params.mesh == null)
 					return null;
@@ -102,6 +104,7 @@ class CollisionSettings {
 				}
 
 				return null;
+
 			case Auto:
 				var hmd = Std.downcast(mesh.primitive, h3d.prim.HMDModel);
 				var convexHulls = hxd.fmt.hmd.Data.ConvexHullsCollider.buildConvexHullCollider(hmd, params);
@@ -110,14 +113,9 @@ class CollisionSettings {
 
 				var parentObj = new h3d.scene.Object();
 				for (convexHull in convexHulls) {
-					var prim = new h3d.prim.BigPrimitive(hxd.BufferFormat.POS3D);
-					prim.begin(0,0);
-					for (p in convexHull.points)
-						prim.addPoint(p.x, p.y, p.z);
-					for (index in convexHull.indexes)
-						prim.addIndex(index);
-					prim.flush();
-					new h3d.scene.Mesh(prim, null, parentObj);
+					var polygonBuffer = new h3d.col.PolygonBuffer();
+					polygonBuffer.setData(cast convexHull.points, cast convexHull.indexes, true);
+					parentObj.addChild(polygonBuffer.makeDebugObj());
 				}
 				return parentObj;
 
