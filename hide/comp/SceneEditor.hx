@@ -2075,7 +2075,7 @@ class SceneEditor {
 			}
 
 			var ref = Std.downcast(p, Reference);
-			var children = (ref != null && (ref.editMode == Edit || ref.editMode == Override)) ? ref.refInstance.children : p.children;
+			var children = (ref != null && ref.refInstance != null && (ref.editMode == Edit || ref.editMode == Override)) ? ref.refInstance.children : p.children;
 
 			var props = p.getHideProps();
 			if (props != null && props.hideChildren != null)
