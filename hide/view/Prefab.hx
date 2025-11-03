@@ -95,7 +95,7 @@ class PrefabSceneEditor extends hide.comp.SceneEditor {
 				function make(name) {
 					var p = new Instance(current == null ? sceneData : current, null);
 					p.name = name;
-					p.props = hrt.prefab.Prefab.makeCdbProps(p, view.state.path, type);
+					p.props = makeCdbProps(p, type);
 					setup(p);
 					if(onMake != null)
 						onMake(p);

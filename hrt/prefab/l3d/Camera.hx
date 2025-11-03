@@ -35,7 +35,6 @@ class Camera extends Object3D {
 
 	var preview = false;
 	var obj : h3d.scene.Object = null;
-	var editContext2 : hrt.prefab.EditContext2;
 	#if editor
 	var editContext : hide.prefab.EditContext;
 	var beforePreviewCam : h3d.Camera; // Used to save scene camera controller's values
@@ -150,14 +149,8 @@ class Camera extends Object3D {
 			cso.zNear = zNear;
 			cso.enable = preview;
 		}
-
-		if (preview && editContext2 != null) {
-			applyTo(editContext2.getScene3d().camera);
-			editContext2.getCameraController3d().lockZPlanes = true;
-			editContext2.getCameraController3d().loadFromCamera();
-		}
 		#if editor
-		if ( preview && editContext != null) {
+		if ( preview ) {
 			applyTo(editContext.scene.s3d.camera);
 			editContext.scene.editor.cameraController.lockZPlanes = true;
 			editContext.scene.editor.cameraController.loadFromCamera();
@@ -224,108 +217,6 @@ class Camera extends Object3D {
 				renderer.effects.remove( effect );
 			}
 		}
-	}
-
-	override function edit2(ctx:hrt.prefab.EditContext2) : Void {
-		super.edit2(ctx);
-		editContext2 = ctx;
-
-		ctx.build(
-			<root>
-				<category("Camera")>
-					<range(0,180) field={fovY}/>
-					<range(0,1000) field={zFar}/>
-					<range(0,10) field={zNear}/>
-					<line>
-						<button("Copy") id="copy"/>
-						<button("Apply") id="apply" single-edit/>
-						<button("Reset") id="reset"/>
-					</line>
-				</category>
-				<category("Ortho") field={ortho}>
-					<slider label="X width" field={orthoWidth}/>
-				</category>
-				<category("Debug")>
-					<checkbox field={showFrustum}/>
-					<button("Preview Mode") highlight={preview} id="btnPreviewMode" single-edit/>
-				</category>
-				// <category("Deprecation")>
-				// 	<button("Upgrade") id="upgrade"/>
-				// </category>
-			</root>
-		);
-
-		copy.onClick = () -> {
-			copyCam(ctx.getScene3d().camera);
-			ctx.rebuildInspector();
-		}
-
-		apply.onClick = () -> {
-			applyTo(ctx.getScene3d().camera);
-			var camController = ctx.getCameraController3d();
-			camController.lockZPlanes = true;
-			camController.loadFOVFromCamera();
-			camController.loadFromCamera(true);
-		}
-
-		btnPreviewMode.onClick = () -> {
-			preview = !preview;
-			ctx.rebuildInspector();
-			var s3d = ctx.getScene3d();
-			var cam = s3d.camera;
-			var camController = ctx.getCameraController3d();
-
-			var renderer = @:privateAccess s3d.renderer;
-			if (preview) {
-				beforePreviewCam = s3d.camera.clone();
-				updateInstance();
-				applyTo(cam);
-				for ( effect in findAll(hrt.prefab.rfx.RendererFX) ) {
-					renderer.effects.remove(effect);
-					renderer.effects.push( effect );
-				}
-				camController.lockZPlanes = true;
-				camController.loadFromCamera();
-				var border = new hrt.prefab.rfx.Border(null, null);
-				border.setParams(0.02, 0x0000ff, 0.5);
-				renderer.effects.push(border);
-			}
-			else {
-				for ( effect in findAll(hrt.prefab.rfx.RendererFX) ) {
-					renderer.effects.remove( effect );
-				}
-				for ( effect in renderer.effects ) {
-					if ( Std.isOfType(effect, hrt.prefab.rfx.Border) ) {
-						renderer.effects.remove(effect);
-						break;
-					}
-				}
-				copyCam(cam);
-
-				// Rollback to previous preview value for scene camera
-				cam.load(beforePreviewCam);
-				camController.loadFromCamera();
-
-				function floatToStringPrecision(number:Float, ?precision=4) {
-					number *= Math.pow(10, precision);
-					return Math.round(number) / Math.pow(10, precision);
-				}
-
-				// Round values to remove floating point error
-				this.x = floatToStringPrecision(floatToStringPrecision(this.x));
-				this.y = floatToStringPrecision(floatToStringPrecision(this.y));
-				this.z = floatToStringPrecision(floatToStringPrecision(this.z));
-				this.scaleX = floatToStringPrecision(floatToStringPrecision(this.scaleX));
-				this.scaleY = floatToStringPrecision(floatToStringPrecision(this.scaleY));
-				this.scaleZ = floatToStringPrecision(floatToStringPrecision(this.scaleZ));
-				this.rotationX = floatToStringPrecision(floatToStringPrecision(this.rotationX));
-				this.rotationY = floatToStringPrecision(floatToStringPrecision(this.rotationY));
-				this.rotationZ = floatToStringPrecision(floatToStringPrecision(this.rotationZ));
-			}
-		}
-
-
-
 	}
 
 	#if editor

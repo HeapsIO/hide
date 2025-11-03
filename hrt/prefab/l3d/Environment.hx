@@ -112,51 +112,6 @@ class Environment extends Object3D {
 			r.env = env;
 	}
 
-	override function edit2(ctx: hrt.prefab.EditContext2) {
-		ctx.build(
-			<root>
-				<category("Environment")>
-					<button("Set Current") single-edit id="setCurrent"/>
-
-					<file type="texture" field={sourceMapPath} label="SkyBox"/>
-					<range(0, 360) field={rotation}/>
-					<range(0,2) field={power}/>
-
-				</category>
-				<category("Generation") closed>
-					<range(1,512) field={diffSize} label="Diffuse"/>
-					<range(1,2048) field={specSize} label="Specular"/>
-					<range(1,12) field={sampleBits} label="Sample Count"/>
-					<range(0,3) field={ignoredSpecLevels}/>
-					<range(0,100) field={hdrMax} label="HDR Max"/>
-					<input field={configName}/>
-					<button("Compute") id="compute" single-edit/>
-					<line label="View">
-						<button("Diffuse") id="showDiff" single-edit/>
-						<button("Specular") id="showSpecular" single-edit/>
-					</line>
-				</category>
-			</root>
-		);
-
-		setCurrent.onClick = () -> {
-			applyToRenderer(ctx.getScene3d().renderer);
-		}
-
-		compute.onClick = () -> {
-			updateInstance("force");
-		}
-
-		showDiff.onClick = () -> {
-			ctx.openFile(getBinaryPath(true));
-		}
-
-		showSpecular.onClick = () -> {
-			ctx.openFile(getBinaryPath(false));
-		}
-	}
-
-
 	#if editor
 
 	override function getHideProps() : hide.prefab.HideProps {

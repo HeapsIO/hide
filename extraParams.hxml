@@ -1,2 +1,0 @@
---macro domkit.Macros.registerComponentsPath("hidehl.ui.$")
---macro include("hide.kit")

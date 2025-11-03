@@ -1,9 +1,5 @@
 @import "common.less";
 
-:root {
-	interpolate-size: allow-keywords;
-}
-
 @font-face {
 	font-family: 'FontAwesome';
 	src: url('libs/fontawesome-webfont.eot?v=4.7.0');
@@ -380,8 +376,6 @@ input[type=checkbox] {
 	position: relative;
 	min-width: 0;
 	min-height: 0;
-	scrollbar-gutter: stable;
-
 }
 
 .hide-modal {
@@ -1208,8 +1202,6 @@ input[type=checkbox] {
 
 /* Properties */
 .props-column {
-	display: flex;
-	flex-direction: column;
 	height : 100%;
 	background-color: #111;
 	width: 320px;
@@ -1468,8 +1460,6 @@ input[type=checkbox] {
 		}
 	}
 
-
-
 	.btn-list {
 		* {
 			margin-bottom: 5px;
@@ -1551,20 +1541,6 @@ input[type=checkbox] {
 		}
 	}
 }
-
-.new-editor-prompt-toggle {
-	display: flex;
-	flex-direction: row-reverse;
-	gap: 0.5em;
-	justify-content: flex-end;
-	&.margin {
-		padding: 10px;
-		padding-bottom: 5px;
-	}
-}
-
-
-
 /* Image Viewer */
 @imgPanelWidht : 320px;
 .image-properties {
@@ -3510,10 +3486,6 @@ div.sp-container {
 div.color-box {
 	display: inline-flex;
 	cursor: pointer;
-	border: 1px solid #777;
-	&:hover {
-		border-color: var(--highlight);
-	}
 }
 
 
@@ -3704,10 +3676,6 @@ div.gradient-box {
     font-size: 9pt;
 
 	border: 1px solid #444;
-	&:hover {
-		border-color: var(--highlight);
-	}
-
 
 	cursor: pointer;
 }
@@ -5198,7 +5166,7 @@ hide-popover {
 	--sublte-shadow: 1px 1px 3px rgba(0,0,0,.33);
 
 	--basic-border: 1px solid #353535;
-	--basic-border-hover: 1px solid #777;
+	--basic-border-hover: 1px solid #555;
 	--basic-border-focused: 1px solid var(--selection);
 
 	--basic-border-radius: 5px;
@@ -5383,12 +5351,6 @@ graph-editor-root {
 .fancy-small {
 	fancy-button, fancy-button& {
 		--size: 22px;
-	}
-}
-
-.fancy-tiny {
-	fancy-button, fancy-button& {
-		--size: 16px;
 	}
 }
 
