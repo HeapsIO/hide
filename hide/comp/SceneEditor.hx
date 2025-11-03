@@ -5764,13 +5764,16 @@ class SceneEditor {
 				newItems.push(m);
 			else {
 				var found = false;
-				for( g in groups )
+				for( g in groups ) {
 					for(cls in g.classes)
 						if( hrt.prefab.Prefab.isOfType(hrt.prefab.Prefab.getPrefabInfoByName(ptype).prefabClass, cls) ) {
 							g.group.push(m);
 							found = true;
 							break;
 						}
+					
+					if (found) break;
+				}
 				if( !found ) gother.push(m);
 			}
 		}
