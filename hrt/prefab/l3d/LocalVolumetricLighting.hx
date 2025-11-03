@@ -74,6 +74,9 @@ class LocalVolumetricShader extends hxsl.Shader {
 
 			var backgroundLocalPosition = (vec4(getPosition(), 1.0) * global.modelViewInverse).xyz;
 			var backgroundDist = length(backgroundLocalPosition-path.xyz);
+			if(dot(dir, backgroundLocalPosition - path.xyz) < 0.0){
+				backgroundDist = 0.0;
+			}
 			path.w = min(path.w, backgroundDist);
 			return path;
 		}
@@ -151,7 +154,8 @@ class LocalVolumetricLightingObject extends h3d.scene.Object {
 	public var localVolume : LocalVolumetricLighting;
 	public var bounds : h3d.col.OrientedBounds;
 
-	public var mesh : h3d.scene.Mesh;
+	public var meshInside : h3d.scene.Mesh;
+	public var meshOutside : h3d.scene.Mesh;
 	public var boundsDisplay : h3d.scene.Graphics;
 
 	public var shader : LocalVolumetricShader;
@@ -163,43 +167,61 @@ class LocalVolumetricLightingObject extends h3d.scene.Object {
 
 		var prim = new h3d.prim.Cube(1,1,1,true);
 		prim.addNormals();
-		mesh = new h3d.scene.Mesh(prim, this);
-
-		var material = mesh.material;
-		material.castShadows = false;
-		mesh.material.mainPass.setPassName("volumetricOverlay");
-		mesh.material.mainPass.setBlendMode(h3d.mat.BlendMode.Alpha);
-		mesh.material.mainPass.depthWrite = false;
 
 		shader = new LocalVolumetricShader();
 
-		material.mainPass.addShader(shader);
+		meshInside = new h3d.scene.Mesh(prim, this);
+		meshInside.visible = false;
+		var materialInside = meshInside.material;
+		materialInside.castShadows = false;
+		meshInside.material.mainPass.setPassName("volumetricOverlay");
+		meshInside.material.mainPass.setBlendMode(h3d.mat.BlendMode.Alpha);
+		meshInside.material.mainPass.culling = Front;
+		meshInside.material.mainPass.depthTest = Always;
+		meshInside.material.mainPass.depthWrite = false;
+		materialInside.mainPass.addShader(shader);
+
+		meshOutside = new h3d.scene.Mesh(prim, this);
+		var materialOutside = meshOutside.material;
+		materialOutside.castShadows = false;
+		meshOutside.material.mainPass.setPassName("volumetricOverlay");
+		meshOutside.material.mainPass.setBlendMode(h3d.mat.BlendMode.Alpha);
+		meshOutside.material.mainPass.culling = Back;
+		meshOutside.material.mainPass.depthTest = Less;
+		meshOutside.material.mainPass.depthWrite = false;
+		materialOutside.mainPass.addShader(shader);
 
 		refresh();
 	}
 
 	function isInside(ctx : h3d.scene.RenderContext) : Bool {
-		var pos = ctx.camera.pos.clone().add(ctx.camera.getForward().scaled(ctx.camera.zNear));
-		pos.transform(this.getInvPos());
-		return pos.x >= -bounds.hx && pos.x <= bounds.hx &&
-			   pos.y >= -bounds.hy && pos.y <= bounds.hy &&
-			   pos.z >= -bounds.hz && pos.z <= bounds.hz;
+		function nearPlaneHalfDiag(cam : h3d.Camera) : Float {
+			var v = cam.zNear * Math.tan(cam.fovY * 0.5);
+			var h = v * cam.screenRatio;
+			return Math.sqrt(v * v + h * h);
+		}
+
+		bounds.setMatrix(this.getAbsPos());
+		var c = ctx.camera.pos.add(ctx.camera.getForward().scaled(ctx.camera.zNear));
+		var s = new h3d.col.Sphere(c.x, c.y, c.z, nearPlaneHalfDiag(ctx.camera));
+		return bounds.hasSphere(s);
 	}
 
 	override function sync(ctx : h3d.scene.RenderContext) {
 		var inside = isInside(ctx);
-		if(inside){
-			mesh.material.mainPass.culling = Front;
-			mesh.material.mainPass.depthTest = Always;
-		} else{
-			mesh.material.mainPass.culling = Back;
-			mesh.material.mainPass.depthTest = Less;
+
+		if(inside && !meshInside.visible)
+		{
+			meshOutside.visible = false;
+			meshInside.visible = true;
+		} else if(!inside && !meshOutside.visible){
+			meshOutside.visible = true;
+			meshInside.visible = false;
 		}
 	}
 
 	public function refresh() {
-		var ob = bounds;
-		shader.obH.set(ob.hx, ob.hy, ob.hz);
+		shader.obH.set(0.5, 0.5, 0.5);
 
 		shader.fogColor.setColor(localVolume.color);
 		shader.fogDensity = localVolume.fogDensity;
