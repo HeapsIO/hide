@@ -178,6 +178,11 @@
 	"sceneeditor.gridSize": 100,
 	"sceneeditor.gridStep": 1,
 
+	"sceneeditor.preferEdit2": [
+		"hrt.prefab.Object3D",
+		"hrt.prefab.l3d.KitTest"
+	],
+
 	// FX editor
 	"fx.shaders": [
 		"h3d.shader.AlphaMap",

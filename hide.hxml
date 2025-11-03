@@ -19,4 +19,5 @@ common.hxml
 --macro include("hrt")
 -dce no
 -debug
+-D dump=pretty
 #-D shader_debug_dump
