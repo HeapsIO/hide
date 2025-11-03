@@ -30,7 +30,7 @@ class Category extends Widget<Null<Bool>> {
 		#if js
 		native = new hide.Element('
 			<kit-category class="open">
-				<div class="title"><input type="checkbox" class="header-checkbox"/><kit-label>$name</kit-label></div>
+				<div class="title"><kit-label>$name</kit-label><input type="checkbox" class="header-checkbox"/></div>
 				<div class="collapsable">
 					<div class="content">
 					</div>
@@ -46,7 +46,7 @@ class Category extends Widget<Null<Bool>> {
 				parent = parent.parent;
 			}
 		}
-		native.style.setProperty("--level", '$level');
+		native.classList.add('level-$level');
 		jsContent = native.querySelector(".content");
 		var title = native.querySelector(".title");
 		title.addEventListener("mousedown", (event: js.html.MouseEvent) -> {

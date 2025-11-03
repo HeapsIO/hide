@@ -249,9 +249,9 @@ class Camera extends Object3D {
 					<checkbox field={showFrustum}/>
 					<button("Preview Mode") highlight={preview} id="btnPreviewMode" single-edit/>
 				</category>
-				<category("Deprecation")>
-					<button("Upgrade") id="upgrade"/>
-				</category>
+				// <category("Deprecation")>
+				// 	<button("Upgrade") id="upgrade"/>
+				// </category>
 			</root>
 		);
 
