@@ -169,6 +169,7 @@ class LocalVolumetricLightingObject extends h3d.scene.Object {
 		material.castShadows = false;
 		mesh.material.mainPass.setPassName("volumetricOverlay");
 		mesh.material.mainPass.setBlendMode(h3d.mat.BlendMode.Alpha);
+		mesh.material.mainPass.depthWrite = false;
 
 		shader = new LocalVolumetricShader();
 
