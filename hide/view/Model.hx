@@ -103,7 +103,24 @@ class CollisionSettings {
 
 				return null;
 			case Auto:
-				return null;
+				var hmd = Std.downcast(mesh.primitive, h3d.prim.HMDModel);
+				var convexHulls = hxd.fmt.hmd.Data.ConvexHullsCollider.buildConvexHullCollider(hmd, params);
+				if (convexHulls == null)
+					return null;
+
+				var parentObj = new h3d.scene.Object();
+				for (convexHull in convexHulls) {
+					var prim = new h3d.prim.BigPrimitive(hxd.BufferFormat.POS3D);
+					prim.begin(0,0);
+					for (p in convexHull.points)
+						prim.addPoint(p.x, p.y, p.z);
+					for (index in convexHull.indexes)
+						prim.addIndex(index);
+					prim.flush();
+					new h3d.scene.Mesh(prim, null, parentObj);
+				}
+				return parentObj;
+
 			case Shapes:
 				return null;
 			default:
@@ -144,9 +161,23 @@ class ModelSceneEditor extends hide.comp.SceneEditor {
 
 	override function updateCollidersVisibility() {
 		super.updateCollidersVisibility();
+
 		if (parent.collisionSettings == null || this.parent.scene == null)
 			return;
 
+		createColliderDebugs();
+	}
+
+	override function setWireframe(val : Bool = true) {
+		super.setWireframe(val);
+		var wireframes : Array<h3d.scene.Mesh> = scene.s3d.findAll((f) -> f.name == "debugWireframe" ? Std.downcast(f, h3d.scene.Mesh) : null);
+		if (wireframes == null)
+			return;
+		for (m in wireframes)
+			cast (m, h3d.scene.Mesh).material.mainPass.wireframe = true;
+	}
+
+	function createColliderDebugs() {
 		for (k in parent.collisionSettings.keys()) {
 			var obj = parent.scene.s3d.getObjectByName(k);
 			if (obj == null)
@@ -198,15 +229,6 @@ class ModelSceneEditor extends hide.comp.SceneEditor {
 				newCol.addChild(debug);
 			}
 		}
-	}
-
-	override function setWireframe(val : Bool = true) {
-		super.setWireframe(val);
-		var wireframes : Array<h3d.scene.Mesh> = scene.s3d.findAll((f) -> f.name == "debugWireframe" ? Std.downcast(f, h3d.scene.Mesh) : null);
-		if (wireframes == null)
-			return;
-		for (m in wireframes)
-			cast (m, h3d.scene.Mesh).material.mainPass.wireframe = true;
 	}
 }
 
@@ -946,6 +968,7 @@ class Model extends FileView {
 							${[for(mname in meshList) '<option value="${mname}">${mname == null ? "" : mname}</option>'].join("")}
 						</select>
 					</dd></dl></div>
+					<div class="collision-param collision-auto"><dl><dt></dt><dd><input type="button" id="compute-collider" value="Compute Collider"/></dd></dl></div>
 					<div class="collision-param collision-shapes collision-shape-editor"></div>
 				</div>');
 				var elMode = collisionParams.find(".select-collision-mode");
@@ -977,8 +1000,14 @@ class Model extends FileView {
 					elHull.val('${params.maxConvexHulls ?? 1}');
 					elSubdiv.val('${params.maxSubdiv ?? 32}');
 					elMesh.val(params.mesh);
-					sceneEditor.updateCollidersVisibility();
+
+					if (settings.mode != Auto)
+						sceneEditor.updateCollidersVisibility();
 				}
+
+				collisionParams.find("#compute-collider").on("click", function(_) {
+					sceneEditor.updateCollidersVisibility();
+				});
 
 				collisionParams.on("change", function(_) {
 					var prevMode = settings.mode;
@@ -1755,8 +1784,6 @@ class Model extends FileView {
 
 			collisionSettings.set(o.name, settings);
 		}
-		sceneEditor.updateCollidersVisibility();
-		trace("e");
 	}
 
 	function onRefresh() {
@@ -1933,7 +1960,6 @@ class Model extends FileView {
 			for (s in shapesEditor)
 				s.remove();
 			shapesEditor = [];
-			sceneEditor.updateCollidersVisibility();
 		}
 		tree.onDoubleClick = (item: Dynamic) -> {
 			var obj = Std.downcast(item, h3d.scene.Object);

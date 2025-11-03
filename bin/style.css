@@ -2902,6 +2902,9 @@ div.sp-container input:hover {
   font-weight: normal;
   flex: 1;
 }
+.collision-editor fancy-array {
+  overflow: hidden;
+}
 /* Script Editor */
 .codeeditor {
   position: relative;
