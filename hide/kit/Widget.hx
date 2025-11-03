@@ -128,6 +128,18 @@ abstract class Widget<ValueType> extends Element {
 		}
 	}
 
+	override function canCopy():Bool {
+		return true;
+	}
+
+	override function canPaste():Bool {
+		return true;
+	}
+
+	override function canReset():Bool {
+		return true;
+	}
+
 	/** Returns null if the value can't be parsed**/
 	abstract function stringToValue(str: String) : Null<ValueType>;
 

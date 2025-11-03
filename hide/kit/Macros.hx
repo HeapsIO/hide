@@ -366,7 +366,7 @@ class Macros {
 							field = field.map((e) -> {
 								switch(e.expr) {
 									case EConst(CIdent(s)):
-										return {expr: EField(field, s), pos: e.pos}
+										return {expr: EField(args.contextObj, s), pos: e.pos}
 									default:
 										return e;
 								}

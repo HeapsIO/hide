@@ -67,7 +67,7 @@ class Category extends Widget<Null<Bool>> {
 			headerCheckbox.addEventListener("input", () -> {
 				value = headerCheckbox.checked;
 				broadcastValueChange(false);
-				toggleOpenState(true);
+				toggleOpenState(value);
 			});
 		} else {
 			headerCheckbox.style.display = "none";

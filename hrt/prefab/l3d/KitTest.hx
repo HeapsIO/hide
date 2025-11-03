@@ -35,6 +35,9 @@ class KitTest extends Object3D {
 	var substruct: SubStruct = { innerValue: 0.0, };
 
 	override function edit2(ctx:hrt.prefab.EditContext2) {
+		this.props = this.props ?? {};
+		var props : Dynamic = cast this.props;
+
 		ctx.build(
 			<category("All Elements")>
 				<text("Text")/>
@@ -77,8 +80,15 @@ class KitTest extends Object3D {
 				</line>
 
 				<block id="addToMe"></block>
-			</category>,
-		this);
+
+				<slider label="Value" field={props.float}/>
+				<button("Delete Value") id="delete"/>
+			</category>);
+
+		delete.onClick = () -> {
+			hrt.impl.Macros.deleteField(props.float);
+			ctx.rebuildInspector();
+		}
 
 		parentLine.build(<image-button("textures/dirt01.jpg") big/>, null);
 		parentLine.build(<image-button("textures/dirt01.jpg") big/>, null);

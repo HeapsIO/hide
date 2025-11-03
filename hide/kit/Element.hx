@@ -209,12 +209,36 @@ class Element {
 		#end
 	}
 
+	function canCopy() : Bool {
+		for (child in children) {
+			if (child.canCopy())
+				return true;
+		}
+		return false;
+	}
+
+	function canPaste() : Bool {
+		for (child in children) {
+			if (child.canPaste())
+				return true;
+		}
+		return false;
+	}
+
+	function canReset() : Bool {
+		for (child in children) {
+			if (child.canReset())
+				return true;
+		}
+		return false;
+	}
+
 	function getEditMenuContent() : Array<hide.comp.ContextMenu.MenuItem> {
 		return [
-			{label: "Copy", click: copyToClipboard},
-			{label: "Paste", click: pasteFromClipboard},
+			{label: "Copy", click: copyToClipboard, enabled: canCopy()},
+			{label: "Paste", click: pasteFromClipboard, enabled: canPaste()},
 			{isSeparator: true},
-			{label: "Reset", click: resetWithUndo}
+			{label: "Reset", click: resetWithUndo, enabled: canReset()}
 		];
 	}
 
