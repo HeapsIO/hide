@@ -158,21 +158,8 @@ class Macros {
 		return macro $b{exprs};
 	}
 
-	public static macro function deleteField(value: Expr) : Expr {
-		#if macro
-		var pos = Context.currentPos();
-		switch(value.expr) {
-			case EField(rest, name):
-				var nameExpr : Expr = {expr: EConst(CString(name)), pos: pos};
-				return macro Reflect.deleteField($rest, $nameExpr);
-			default:
-				Context.error("expr must be a field expression", pos);
-		};
-		#end
-		return macro {};
-	}
-
 	#if macro
+
 	public static function buildPrefab() {
 		var fields = Context.getBuildFields();
 		var toSerialize = [], toCopy = [];
@@ -245,7 +232,7 @@ class Macros {
 				ser.push(macro @:pos(pos) if( $serCond ) obj.$name = hrt.impl.Macros.serializeValue(this.$name));
 
 				unser.push(macro @:pos(pos) hrt.impl.Macros.fixupEnumUnserialise(this.$name,obj.$name));
-
+				
 				unser.push(macro @:pos(pos) this.$name = obj.$name == null ? $e : obj.$name);
 				copy.push(macro @:pos(pos) this.$name = p.$name);
 			default:

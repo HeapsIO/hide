@@ -394,8 +394,8 @@ class SceneEditorContext extends hide.prefab.EditContext {
 	public var rootObjects2D(default, null): Array<h2d.Object>;
 	public var rootElements(default, null): Array<PrefabElement>;
 
-	public function new(undo, elts, editor) {
-		super(undo);
+	public function new(elts, editor) {
+		super();
 		this.editor = editor;
 		this.updates = @:privateAccess editor.updates;
 		this.elements = elts;
@@ -3893,6 +3893,18 @@ class SceneEditor {
 		}
 	}
 
+	function makeCdbProps( e : PrefabElement, type : cdb.Sheet ) {
+		var props = type.getDefaults();
+		Reflect.setField(props, "$cdbtype", DataFiles.getTypeName(type));
+		if( type.idCol != null && !type.idCol.opt ) {
+			var id = new haxe.io.Path(view.state.path).file;
+			id = id.charAt(0).toUpperCase() + id.substr(1);
+			id += "_"+e.name;
+			Reflect.setField(props, type.idCol.name, id);
+		}
+		return props;
+	}
+
 	function serializeProps(fields : Array<hide.comp.PropsEditor.PropsField>) : String {
 		var out = new Array<String>();
 		for (field in fields) {
@@ -4006,7 +4018,7 @@ class SceneEditor {
 					var multiProps = new hide.comp.PropsEditor(null, null, new Element("<div>"));
 					multiProps.isShadowEditor = true;
 					edit.properties.multiPropsEditor.push(multiProps);
-					var ctx = new SceneEditorContext(undo, [prefab], this);
+					var ctx = new SceneEditorContext([prefab], this);
 					ctx.properties = multiProps;
 					ctx.scene = this.scene;
 					prefab.edit(ctx);
@@ -4084,7 +4096,7 @@ class SceneEditor {
 				changeProps(null);
 				return;
 			}
-			var props = hrt.prefab.Prefab.makeCdbProps(e, view.state.path, DataFiles.resolveType(typeId));
+			var props = makeCdbProps(e, DataFiles.resolveType(typeId));
 			changeProps(props);
 		});
 
@@ -4112,7 +4124,7 @@ class SceneEditor {
 	}
 
 	function makeEditContext(elts : Array<PrefabElement>) : SceneEditorContext {
-		var edit : SceneEditorContext = new SceneEditorContext(undo, elts, this);
+		var edit : SceneEditorContext = new SceneEditorContext(elts, this);
 
 		edit.rootPrefab = sceneData;
 		edit.properties = properties;
@@ -4162,107 +4174,18 @@ class SceneEditor {
 			if (elts.length == 0 || (customPivot != null && customPivot.elt != selectedPrefabs[0])) {
 				customPivot = null;
 			}
-
-
 			properties.clear();
-
 			if( elts.length > 0 ) {
-				var commonClass = hrt.tools.ClassUtils.getCommonClass(elts, hrt.prefab.Prefab);
-				var parentClass = Type.getSuperClass(commonClass);
-				var hasNewInspector = false;
+				if (elts.length > 1) {
+					var commonClass = hrt.tools.ClassUtils.getCommonClass(elts, hrt.prefab.Prefab);
 
-				if (parentClass != null) {
-					if (Reflect.field(Type.createEmptyInstance(commonClass), "edit2") != Reflect.field(Type.createEmptyInstance(parentClass), "edit2")) {
-						hasNewInspector = true;
-					}
-				}
-
-				var preferEdit2List = Ide.inst.currentConfig.get("sceneeditor.preferEdit2") ?? [];
-				var preferEdit2 = preferEdit2List.contains(Type.getClassName(commonClass));
-
-				var allowNewInspector = false;
-				if (preferEdit2) {
-					allowNewInspector = !Ide.inst.currentConfig.get("sceneeditor.oldInspector", false);
-				} else {
-					allowNewInspector = Ide.inst.currentConfig.get("sceneeditor.newInspector", false);
-				}
-
-				var toggle = null;
-				if (hasNewInspector) {
-					var label = preferEdit2 ? "Use old inspector" : "Use new inspector";
-					toggle = new Element('<div class="new-editor-prompt-toggle"><label for="new-edit-toggle">$label</label><input name="new-edit-toggle" type="checkbox"></input></div>');
-					var checkbox : js.html.InputElement = cast toggle.find("input").get(0);
-					checkbox.checked = allowNewInspector != preferEdit2;
-					checkbox.onchange = () -> {
-						if (preferEdit2) {
-							Ide.inst.currentConfig.set("sceneeditor.oldInspector", checkbox.checked);
-						} else {
-							Ide.inst.currentConfig.set("sceneeditor.newInspector", checkbox.checked);
-						}
-						Ide.inst.currentConfig.save();
-						refreshProps();
-					}
-
-					properties.element.append(toggle);
-				}
-
-
-				if (hasNewInspector && allowNewInspector) {
-					properties.element.removeClass("hide-properties");
-					properties.element.removeClass("props");
-					toggle.addClass("margin");
 					var proxyPrefab = Type.createInstance(commonClass, [null, new ContextShared()]);
-					var isMultiEdit = selectedPrefabs.length > 1;
-					if (isMultiEdit) {
-						proxyPrefab.load(haxe.Json.parse(haxe.Json.stringify(elts[0].save())));
-						proxyPrefab.shared.currentPath = view.state.path;
-					} else {
-						proxyPrefab = elts[0];
-					}
-
-					var ectx2 = new hide.prefab.EditContext.HideJsEditContext2(null, edit);
-
-					var baseRoot = new hide.kit.KitRoot(null, null, proxyPrefab, ectx2);
-					@:privateAccess baseRoot.isMultiEdit = isMultiEdit;
-
-					@:privateAccess ectx2.saveKey = Type.getClassName(commonClass);
-					ectx2.root = baseRoot;
-
-					proxyPrefab.edit2(ectx2);
-					baseRoot.postEditStep();
-
-					if (isMultiEdit) {
-						for (i => select in selectedPrefabs) {
-							var ectx2 = new hide.prefab.EditContext.HideJsEditContext2(ectx2, edit);
-							@:privateAccess ectx2.saveKey = Type.getClassName(commonClass);
-							var childRoot = new hide.kit.KitRoot(null, null, select, ectx2);
-							@:privateAccess childRoot.isMultiEdit = isMultiEdit;
-							baseRoot.editedPrefabsProperties.push(childRoot);
-							ectx2.root = childRoot;
-							select.edit2(ectx2);
-							childRoot.postEditStep();
-						}
-					}
-
-					baseRoot.make();
-
-					@:privateAccess properties.element.append(baseRoot.nativeContent);
+					proxyPrefab.load(haxe.Json.parse(haxe.Json.stringify(elts[0].save())));
+					fillProps(edit, proxyPrefab, elts);
 				}
-				else {
-					properties.element.addClass("hide-properties");
-					properties.element.addClass("props");
-					if (elts.length > 1) {
-						var commonClass = hrt.tools.ClassUtils.getCommonClass(elts, hrt.prefab.Prefab);
-
-						var proxyPrefab = Type.createInstance(commonClass, [null, new ContextShared()]);
-						proxyPrefab.load(haxe.Json.parse(haxe.Json.stringify(elts[0].save())));
-						fillProps(edit, proxyPrefab, elts);
-					}
-					else
-					{
-						fillProps(edit, elts[0], null);
-					}
-
+				else
+				{
+					fillProps(edit, elts[0], null);
 				}
 			}
 

@@ -29,10 +29,6 @@ class Box extends Object3D {
 		return mesh;
 	}
 
-	override function edit2(ctx:hrt.prefab.EditContext2) {
-		super.edit2(ctx);
-	}
-
 	#if editor
 	static public function setDebugColor(color : Int, mat : h3d.mat.Material) {
 		mat.color.setColor(color);
