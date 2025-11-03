@@ -1246,7 +1246,6 @@ class SceneEditor {
 	public function updateCollidersVisibility() {
 		var visible = getOrInitConfig("sceneeditor.colliderToggle", false) && showOverlays;
 		setCollider(visible);
-		trace("e");
 	}
 
 	public function updateGizmoVisibility() {

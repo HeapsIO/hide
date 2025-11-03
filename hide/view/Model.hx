@@ -80,9 +80,28 @@ class CollisionSettings {
 			case Mesh:
 				if (params.mesh == null)
 					return null;
-				var mesh = new h3d.scene.Mesh(mesh.primitive, null, null);
-				mesh.forcedLod = Std.parseInt(params.mesh.charAt(params.mesh.lastIndexOf("LOD") + 3));
-				return mesh;
+
+				var colliderIdentifier = "_Collider";
+				var hmd = Std.downcast(mesh.primitive, h3d.prim.HMDModel);
+				if (params.mesh.lastIndexOf(colliderIdentifier) >= 0) {
+					var d = @:privateAccess hmd.collider.makeDebugObj();
+					return d;
+				}
+
+				var lodIdentifier = "_LOD";
+				for (m in mesh.getMeshes()) {
+					if (params.mesh.substring(0, params.mesh.lastIndexOf(lodIdentifier)) == m.name) {
+						var mesh = new h3d.scene.Mesh(m.primitive, null, null);
+						mesh.forcedLod = Std.parseInt(params.mesh.charAt(params.mesh.lastIndexOf(lodIdentifier) + 4));
+						return mesh;
+					}
+					else if (params.mesh == m.name) {
+						var mesh = new h3d.scene.Mesh(m.primitive, null, null);
+						return mesh;
+					}
+				}
+
+				return null;
 			case Auto:
 				return null;
 			case Shapes:
@@ -146,6 +165,7 @@ class ModelSceneEditor extends hide.comp.SceneEditor {
 					continue;
 
 				newCol.addChild(debug);
+				debug.follow = obj;
 
 				var colliderColor = 0x55FFFFFF;
 				var intersectionColor = 0x55FF0000;
