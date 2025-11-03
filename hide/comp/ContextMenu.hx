@@ -14,6 +14,8 @@ typedef MenuItem = {
     ?radio: () -> Bool, // Radio button instead of checked.
 }
 
+#if js
+
 // for retrocompat with the old menu system
 @:deprecated("Use MenuItem instead")
 typedef ContextMenuItem = hide.comp.ContextMenu.MenuItem;
@@ -477,7 +479,7 @@ class ContextMenu {
         refreshPos();
     }
 
-    function close() {
+    public function close() {
         cleanup();
     }
 
@@ -680,3 +682,4 @@ class ContextMenu {
         }
     }
 }
+#end
