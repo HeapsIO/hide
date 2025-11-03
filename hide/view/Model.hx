@@ -106,18 +106,19 @@ class CollisionSettings {
 				return null;
 
 			case Auto:
-				var hmd = Std.downcast(mesh.primitive, h3d.prim.HMDModel);
-				var convexHulls = hxd.fmt.hmd.Data.ConvexHullsCollider.buildConvexHullCollider(hmd, params);
-				if (convexHulls == null)
-					return null;
+				return null;
+				// var hmd = Std.downcast(mesh.primitive, h3d.prim.HMDModel);
+				// var convexHulls = hxd.fmt.hmd.Data.ConvexHullsCollider.buildConvexHullCollider(hmd, params);
+				// if (convexHulls == null)
+				// 	return null;
 
-				var parentObj = new h3d.scene.Object();
-				for (convexHull in convexHulls) {
-					var polygonBuffer = new h3d.col.PolygonBuffer();
-					polygonBuffer.setData(cast convexHull.points, cast convexHull.indexes, true);
-					parentObj.addChild(polygonBuffer.makeDebugObj());
-				}
-				return parentObj;
+				// var parentObj = new h3d.scene.Object();
+				// for (convexHull in convexHulls) {
+				// 	var polygonBuffer = new h3d.col.PolygonBuffer();
+				// 	polygonBuffer.setData(cast convexHull.points, cast convexHull.indexes, true);
+				// 	parentObj.addChild(polygonBuffer.makeDebugObj());
+				// }
+				// return parentObj;
 
 			case Shapes:
 				return null;
