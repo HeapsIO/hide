@@ -810,8 +810,14 @@ class Model extends FileView {
 						var areaEl = new Element(area);
 						areaEl.css({ width : '${lineEl.width() * getLodRatioPowedFromIdx(idx)}px' });
 
+
 						var roundedRatio = Std.int(getLodRatioFromIdx(idx) * 10000.) / 100.;
 						areaEl.find('#percent').text('${roundedRatio}%');
+
+						var text = "";
+						areaEl.children().each((idx, el) -> text += el.textContent + "\n");
+						areaEl.get(0).title = text;
+
 						idx++;
 					}
 				}

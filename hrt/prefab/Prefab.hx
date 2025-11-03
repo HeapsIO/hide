@@ -613,6 +613,18 @@ class Prefab {
 		return type.split(".").pop();
 	}
 
+	public static function makeCdbProps( e : Prefab, prefabFilePath: String, type : cdb.Sheet ) {
+		var props = type.getDefaults();
+		Reflect.setField(props, "$cdbtype", hide.comp.cdb.DataFiles.getTypeName(type));
+		if( type.idCol != null && !type.idCol.opt ) {
+			var id = new haxe.io.Path(prefabFilePath).file;
+			id = id.charAt(0).toUpperCase() + id.substr(1);
+			id += "_"+e.name;
+			Reflect.setField(props, type.idCol.name, id);
+		}
+		return props;
+	}
+
 	// Editor API
 
 	/**
@@ -632,6 +644,11 @@ class Prefab {
 	function editorRemoveInstanceObjects() : Void {
 	}
 
+	/**
+		New hideKit based edit function. Return false if the edit function was not yet ported to the new system
+	**/
+	public function edit2(ctx: hrt.prefab.EditContext2) : Void {
+	}
 
 	#if editor
 	/**
@@ -669,6 +686,8 @@ class Prefab {
 	**/
 	public function edit(editContext : hide.prefab.EditContext) {
 	}
+
+
 
 	public function setEditor(sceneEditor: hide.comp.SceneEditor, scene: hide.comp.Scene) {
 		shared.editor = sceneEditor;
