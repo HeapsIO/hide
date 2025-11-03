@@ -5738,7 +5738,7 @@ class SceneEditor {
 			var parts = g.split("|");
 			final classes : Array<Dynamic> = [];
 			for (partIdx in 1...parts.length) {
-				var cl : Dynamic = Type.resolveClass(parts[partIdx]);
+				var cl : Class<Dynamic> = Type.resolveClass(parts[partIdx]);
 				if( cl == null ) continue;
 				classes.push(cl);
 			}
