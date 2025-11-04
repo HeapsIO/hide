@@ -296,6 +296,11 @@ class Material extends Prefab {
 	}
 
 	override function edit2(ctx:EditContext2) {
+
+		// ctx.build(
+		// 	<matlib(this.getAbsPath()) label="Mat Lib" field={refMatLib}/>
+		// );
+
 		var mat = h3d.mat.Material.create();
 		mat.props = renderProps();
 
