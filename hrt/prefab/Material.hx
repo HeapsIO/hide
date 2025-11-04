@@ -295,6 +295,14 @@ class Material extends Prefab {
 		return newProps;
 	}
 
+	override function edit2(ctx:EditContext2) {
+		var mat = h3d.mat.Material.create();
+		mat.props = renderProps();
+
+		var editor = hide.prefab.materialEditor.MaterialEditor.makeEditor(mat);
+		editor.edit2(ctx);
+	}
+
 	#if editor
 	override function editorRemoveInstanceObjects() : Void {
 		if (gradientFollower != null) {

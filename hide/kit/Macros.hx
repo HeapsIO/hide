@@ -14,11 +14,6 @@ typedef BuildExprArgs = {
 	outputExprs: Array<Expr>,
 };
 
-/**
-	TODOS :
-	Error reporting position is not accurate (for exemple when assigning to a variable that doesn't exists via attributes)
-**/
-
 class Macros {
 	/** Used for unit tests to ensure that dml errors are correctly handled **/
 	public static macro function testError(dml : Expr, contextObj: Expr, wantedErrorExpr: ExprOf<String>) : Expr {
@@ -68,6 +63,15 @@ class Macros {
 				var pinf = Context.getPosInfos(dml.pos);
 				var markup = parser.parse(dmlString, pinf.file, pinf.min).children[0];
 
+				// Automatically convert Any to Dynamic to avoid compilation issues when
+				// the context is prefab.props for example
+				if (!contextObj.expr.match(EConst(CIdent("null")))) {
+					var type = try Context.typeExpr(contextObj)?.t catch(_) null;
+					if (type.toString() == "Any") {
+						contextObj = macro ($contextObj:Dynamic);
+					}
+				}
+
 				var args : BuildExprArgs = {
 					markup: markup,
 					outputExprs: [],
@@ -75,6 +79,7 @@ class Macros {
 					contextObj: contextObj,
 					globalElements: [],
 				}
+
 
 				buildExpr(args);
 
@@ -154,6 +159,7 @@ class Macros {
 					var fieldsAttributes = [];
 
 					for (attribute in args.markup.attributes ?? []) {
+
 						var valueString : String = null;
 						var valueExpr : ExprOf<String> = null;
 
@@ -162,14 +168,16 @@ class Macros {
 								valueString = s;
 								valueExpr = makeStringExpr(s,pos);
 							case Code(expr):
-								var typedExpr = Context.typeExpr(expr);
-								if (typedExpr.t.toString() == "String") {
-									valueExpr = expr;
-								}
-								switch (expr.expr) {
-									case EConst(CString(s)):
-										valueString = s;
-									default:
+								var typedExpr = try Context.typeExpr(expr) catch(e) null;
+								if (typedExpr != null) {
+									if (typedExpr.t.toString() == "String") {
+										valueExpr = expr;
+									}
+									switch (expr.expr) {
+										case EConst(CString(s)):
+											valueString = s;
+										default:
+									}
 								}
 						}
 
@@ -360,18 +368,30 @@ class Macros {
 					}
 
 					if (field != null) {
-						// if we have a context object, remap the expression so it's in the form
-						// contextObj.path.to.field
-						if (!args.contextObj.expr.match(EConst(CIdent("null")))) {
-							field = field.map((e) -> {
-								switch(e.expr) {
-									case EConst(CIdent(s)):
-										return {expr: EField(args.contextObj, s), pos: e.pos}
-									default:
-										return e;
-								}
-							});
+
+
+						function remap(e: Expr) {
+							switch(e.expr) {
+								case EConst(CIdent(s)):
+									// if we have a context object, remap the expression so it's in the form
+									// contextObj.path.to.field
+									if (!args.contextObj.expr.match(EConst(CIdent("null"))))
+										return {expr: EField(args.contextObj, s), pos: e.pos};
+									return e;
+								case EField(expr, name):
+									var type = try Context.typeExpr(expr)?.t catch(_) null;
+
+									// Auto cast Any to Dynamic for prefab.props
+									if (type.toString() == "Any") {
+										e.expr = EField(macro ($expr:Dynamic), name);
+									}
+									return e;
+								default:
+									return e.map(remap);
+							}
 						}
+
+						field = remap(field);
 
 						var elementValue = macro $elementExpr.value;
 						var get = macro @:pos(pos) $elementValue = $field;

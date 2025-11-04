@@ -21,7 +21,6 @@ class Category extends Widget<Null<Bool>> {
 	var headerCheckbox : js.html.InputElement;
 	var currentSection : js.html.Element;
 	var sections: Array<js.html.Element> = [];
-
 	#else
 	var hlCategory : hrt.ui.HuiCategory;
 	override function get_nativeContent() return hlCategory.content;
