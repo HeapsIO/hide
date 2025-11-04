@@ -19,11 +19,15 @@ class LocalVolumetricShader extends hxsl.Shader {
 			@perObject var modelViewInverse : Mat4;
 		};
 
+		@param var shape : Int;
+
 		@param var obH : Vec3;
 
 		@param var fogColor : Vec4;
 		@param var fogDensity : Float;
-		@param var fogFade : Float;
+
+		@param var cubeCornerRound : Float;
+		@param var coneTipRadius : Float;
 
 		var screenUV : Vec2;
 		var transformedPosition : Vec3;
@@ -55,14 +59,94 @@ class LocalVolumetricShader extends hxsl.Shader {
 			var tF = minComp(t2);
 			var hit = vec3(tN, tF, 1.0);
 			if(tN>tF || tF<0.0) {
-				hit = vec3(-1.0, -1.0, -1.0);
+				hit = vec3(-1.0);
 			}
 			return hit;
 		}
 
+		function dot2(v : Vec3) : Float {
+			return dot(v, v);
+		}
+
+		function rayCappedConeIntersection( o : Vec3, d : Vec3, he : Float, ra : Float, rb : Float) : Float {
+			var ob = o - vec3(0.0, 0.0,he);
+
+			var res = 0.0;
+			var hit = false;
+			//caps
+			if( o.z<0.0 ) {
+				if( dot2(o*d.z-d*o.z)<(ra*ra*d.z*d.z) ){
+					res = -o.z/d.z;
+					hit = true;
+				}
+			} else if( o.z>he ) {
+				if( dot2(ob*d.z-d*ob.z)<(rb*rb*d.z*d.z) ) {
+					res = -ob.z/d.z;
+					hit = true;
+				}
+			}
+
+			if(!hit) {
+				// body
+				var m4 = dot(d,o);
+				var m5 = dot(o,o);
+				var rr = ra - rb;
+				var hz = he*he + rr*rr;
+
+				var k2 = he*he    - d.z*d.z*hz;
+				var k1 = he*he*m4 - o.z*d.z*hz + ra*(rr*he*d.z*1.0 );
+				var k0 = he*he*m5 - o.z*o.z*hz + ra*(rr*he*o.z*2.0 - he*he*ra);
+
+				var h = k1*k1 - k2*k0;
+				if( h<0.0 ) {
+					res = -1.0;
+					hit = true;
+				} else {
+					var t = (-k1-sqrt(h))/k2;
+
+					var z = o.z + t*d.z;
+					if( z>0.0 && z<he )
+					{
+						res = t;
+						hit = true;
+					}
+				}
+			}
+
+			return hit ? res : -1.0;
+		}
+
+		function intersectCone( o : Vec3, d : Vec3) : Vec3 {
+			o.z += 0.5;
+			var res = vec3(-1.0);
+			var tN = rayCappedConeIntersection(o, d, 1.0, 0.5, coneTipRadius + 1e-4);
+
+			var offset = max(tN,0.0) + 1.5;
+			var oF = o + d * offset;
+			var tF = rayCappedConeIntersection(oF, -d, 1.0, 0.5, coneTipRadius);
+			if(tF > 0.0){
+				tF = offset - tF;
+			}
+
+			if(tN > 0.0){
+				res = vec3(tN, tF, 1.0);
+			} else if(tF > 0.0){
+				res = vec3(-1.0, tF, 1.0);
+			} else {
+				res = vec3(-1.0);
+			}
+
+			return res;
+		}
+
 		function getPath(o : Vec3, d : Vec3) : Vec4 {
 			var dir = normalize(d);
-			var hit = rayBoxIntersection(o, dir);
+			var hit = vec3(0.0);
+			if(shape == 1){
+				hit = intersectCone(o, dir);
+			} else {
+				hit = rayBoxIntersection(o, dir);
+			}
 			var path = vec4(o, -1.0);
 			if(hit.z > 0.0){
 				if(hit.x > 0.0){
@@ -112,10 +196,14 @@ class LocalVolumetricShader extends hxsl.Shader {
 		}
 
 		function sampleFog(pos : Vec3, dir : Vec3, dist : Float) : Float {
-			return clamp(fogDensity * boxDensity(pos, dir, dist) / fogFade, 0.0, fogDensity);
+			var density = fogDensity;
+			if(shape == 0){
+				density = clamp(fogDensity * boxDensity(pos, dir, dist) / cubeCornerRound, 0.0, fogDensity);
+			}
+			return density;
 		}
 
-		function integrateBox(pos : Vec3, dir: Vec3, dist : Float, integrationValues : Vec4) : Vec4 {
+		function integrateShape(pos : Vec3, dir: Vec3, dist : Float, integrationValues : Vec4) : Vec4 {
 			var extinction = sampleFog(pos, dir, dist/length(dir));
 			var clampedExtinction = max(extinction, 1e-5);
 			var transmittance = exp(-extinction*dist);
@@ -137,7 +225,7 @@ class LocalVolumetricShader extends hxsl.Shader {
 			var path = getPath(pos, dir);
 
 			var integrationValues = vec4(0.0,0.0,0.0,1.0);
-			return integrateBox(path.xyz, dir, path.w, integrationValues);
+			return integrateShape(path.xyz, dir, path.w, integrationValues);
 		}
 
 		function fragment() {
@@ -223,9 +311,12 @@ class LocalVolumetricLightingObject extends h3d.scene.Object {
 	public function refresh() {
 		shader.obH.set(0.5, 0.5, 0.5);
 
+		shader.shape = localVolume.shape;
+		shader.coneTipRadius = localVolume.coneTipRadius * 0.5;
+
 		shader.fogColor.setColor(localVolume.color);
 		shader.fogDensity = localVolume.fogDensity;
-		shader.fogFade = localVolume.fogFade;
+		shader.cubeCornerRound = localVolume.cubeRoundCorner;
 
 		if(localVolume.showBounds){
 			boundsDisplay = bounds.makeDebugObj();
@@ -242,11 +333,27 @@ class LocalVolumetricLighting extends hrt.prefab.Object3D {
 
 	var localVolumeObject : LocalVolumetricLightingObject;
 
+	@:s public var shape : Int = 0;
+
+	@:s public var coneTipRadius : Float = 0.5;
+	@:s public var cubeRoundCorner : Float = 0.0;
+
 	@:s public var fogDensity : Float = 1.0;
-	@:s public var fogFade : Float = 1.0;
+
 	@:s public var color : Int = 0xFFFFFF;
 
 	@:s public var showBounds : Bool = false;
+
+	override public function copy(other:Prefab) {
+		super.copy(other);
+	}
+
+	override function load( obj : Dynamic ) {
+		super.load(obj);
+		if(obj.fogFade != null){
+			cubeRoundCorner = obj.fogFade;
+		}
+	}
 
 	override function makeObject(parent3d: h3d.scene.Object) : h3d.scene.Object {
 		localVolumeObject = new LocalVolumetricLightingObject(parent3d, this);
@@ -260,23 +367,31 @@ class LocalVolumetricLighting extends hrt.prefab.Object3D {
 
 	#if editor
 	override function edit( ctx : hide.prefab.EditContext ) {
-		super.edit(ctx);
 		ctx.properties.add(new hide.Element('
-			<div class="group" name="Rendering">
-				<dl>
-					<dt>Density</dt><dd><input type="range" min="0" max="2" field="fogDensity"/></dd>
-					<dt>Fade</dt><dd><input type="range" min="0" max="1" field="fogFade"/></dd>
-					<dt>Color</dt><dd><input type="color" field="color"/></dd>
-				</dl>
-			</div>
-			<div class="group" name="Debug">
-				<dl>
-					<dt>Show Bounds</dt><dd><input type="checkbox" field="showBounds"/></dd>
-				</dl>
-			</div>
-		'), this, function(pname) { ctx.onChange(this, pname); });
+			<p style="color: red;"> Use new editor </p>
+		'), this);
 	}
 	#end
+
+	override function edit2( ctx : hrt.prefab.EditContext2 ) {
+		super.edit2(ctx);
+
+		ctx.build(
+			<root>
+				<category("Shape")>
+					<select([{"label":"Box","value":0},{"label":"Cone","value":1}]) field={shape} onValueChange={(_)->ctx.rebuildInspector()}/>
+					<range(0,1) field={cubeRoundCorner} label="Round Corner" if(shape == 0)/>
+					<range(0.0, 1.0) field={coneTipRadius} if(shape == 1)/>
+				</category>
+				<category("Rendering")>
+					<range(0,2) label="Density" field={fogDensity}/>
+					<color field={color}/>
+				</category>
+				<category("Debug")>
+					<checkbox field={showBounds}/>
+				</category>
+			</root>);
+	}
 
 	static var _ = hrt.prefab.Prefab.register("LocalVolumeLighting", LocalVolumetricLighting);
 }

@@ -180,7 +180,8 @@
 
 	"sceneeditor.preferEdit2": [
 		"hrt.prefab.Object3D",
-		"hrt.prefab.l3d.KitTest"
+		"hrt.prefab.l3d.KitTest",
+		"hrt.prefab.l3d.LocalVolumetricLighting"
 	],
 
 	// FX editor
