@@ -181,17 +181,8 @@ class TemporalFiltering extends hrt.prefab.rfx.RendererFX {
 
 	public var frustumJitter = new FrustumJitter();
 	public var pass = new h3d.pass.ScreenFx(new TemporalFilteringShader());
-	public var jitterMat = new h3d.Matrix();
 	var curMatNoJitter = new h3d.Matrix();
-	var curMatJittered = new h3d.Matrix();
-
-	var tmp = new h3d.Matrix();
-	public function getMatrixJittered( camera : h3d.Camera ) : h3d.Matrix {
-		tmp.identity();
-		tmp.multiply(camera.mproj, jitterMat);
-		tmp.multiply(camera.mcam, tmp);
-		return tmp;
-	}
+	var prevMatJittered = new h3d.Matrix();
 
 	override function start( r:h3d.scene.Renderer) {
 		r.ctx.computeVelocity = velocity;
@@ -215,9 +206,9 @@ class TemporalFiltering extends hrt.prefab.rfx.RendererFX {
 			ctx.camera.jitterOffsetX = jitterOffsetX;
 			ctx.camera.jitterOffsetY = jitterOffsetY;
 			ctx.camera.update();
-			curMatJittered.load(ctx.camera.m);
 			@:privateAccess ctx.cameraJitterOffsets.set( jitterOffsetX, jitterOffsetY, prevJitterOffsetX, prevJitterOffsetY );
 			s.cameraInverseViewProj.initInverse(curMatNoJitter);
+			@:privateAccess r.ctx.cameraPreviousViewProj.load(prevMatJittered);
 		}
 	}
 
@@ -231,7 +222,8 @@ class TemporalFiltering extends hrt.prefab.rfx.RendererFX {
 			var prevFrame = r.allocTarget("prevFrame", false, 1.0, output.format);
 			if ( !prevFrame.flags.has(WasCleared) ) {
 				prevFrame.flags.set(WasCleared);
-				prevFrame.clear(0);
+				h3d.pass.Copy.run(output, prevFrame);
+				return;
 			}
 			var curFrame = r.allocTarget("curFrame", false, 1.0, output.format);
 			h3d.pass.Copy.run(output, curFrame);
@@ -276,6 +268,7 @@ class TemporalFiltering extends hrt.prefab.rfx.RendererFX {
 			ctx.camera.jitterOffsetY = 0;
 
 			// Remove Jitter for effects post TAA
+			prevMatJittered.load(r.ctx.camera.m);
 			r.ctx.camera.update();
 		}
 	}
