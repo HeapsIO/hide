@@ -37,10 +37,14 @@ jobs:
         path: |
           bin/*.js
           bin/*.js.map
-    - name: Test - Build simple plugin
+    - name: Test - Build sample
       run: |
         haxelib dev hide .
-        haxe tests/empty-plugin.hxml
+        haxelib git hlsdl https://github.com/HaxeFoundation/hashlink master libs/sdl
+        cd sample
+        haxe hide-plugin.hxml
+        haxe main.hxml
+        cd ..
 
   deploy:
     if: github.repository_owner == 'HeapsIO' && github.ref == 'refs/heads/master' && github.event_name != 'pull_request'

@@ -1,0 +1,31 @@
+{
+	"type": "prefab",
+	"children": [
+		{
+			"type": "demo",
+			"name": "demo",
+			"speed": 1,
+			"children": [
+				{
+					"type": "box",
+					"name": "box",
+					"x": 3,
+					"children": [
+						{
+							"type": "demo",
+							"name": "demo",
+							"speed": 1.5,
+							"children": [
+								{
+									"type": "box",
+									"name": "box",
+									"y": 3
+								}
+							]
+						}
+					]
+				}
+			]
+		}
+	]
+}
