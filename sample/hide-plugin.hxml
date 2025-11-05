@@ -1,0 +1,11 @@
+-cp src
+-lib hide
+-lib hxnodejs
+-lib domkit
+-lib castle
+--macro hide.Plugin.init()
+-D script
+-js hide-plugin.js
+-debug
+-dce no
+--macro include("prefab")
