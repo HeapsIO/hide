@@ -401,7 +401,23 @@ class Macros {
 
 		replaceNew(buildFields);
 
+		#if !domkit
+		stubEdit2(buildFields);
+		#end
+
 		return buildFields;
+	}
+
+	static public function stubEdit2(fields: Array<Field>) {
+		var edit2 = fields.find((field) -> field.name == "edit2");
+		if (edit2 != null) {
+			switch(edit2.kind) {
+				case FFun(f):
+					f.expr.expr = EBlock([]);
+				default:
+					Context.error("Edit 2 should be a function", edit2.pos);
+			}
+		}
 	}
 
 	static public function replaceNew(fields: Array<Field>) {

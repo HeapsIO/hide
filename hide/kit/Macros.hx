@@ -6,6 +6,7 @@ using haxe.macro.Tools;
 using haxe.macro.TypeTools;
 using Lambda;
 
+#if domkit
 typedef BuildExprArgs = {
 	parent: Expr,
 	contextObj: Expr,
@@ -13,10 +14,12 @@ typedef BuildExprArgs = {
 	markup: domkit.MarkupParser.Markup,
 	outputExprs: Array<Expr>,
 };
+#end
 
 class Macros {
 	/** Used for unit tests to ensure that dml errors are correctly handled **/
 	public static macro function testError(dml : Expr, contextObj: Expr, wantedErrorExpr: ExprOf<String>) : Expr {
+		#if domkit
 		var error = "No Error";
 		var errorExpr = switch(wantedErrorExpr.expr) {
 			case EConst(CString(e, kind)): e;
@@ -32,31 +35,37 @@ class Macros {
 			error = e.message;
 		}
 		Context.error('Assert error failed, wanted "$errorExpr", got "$error"', dml.pos);
+		#end
 		return macro {};
 	}
 
 	public static macro function testNoError(dml : Expr, contextObj: Expr) : Expr {
+		#if domkit
 		try {
 			buildDml(dml, contextObj, macro null);
 		} catch (e: domkit.Error) {
 			Context.error('Assert error failed, wanted no errors, got "${e.message}"', @:privateAccess domkit.Macros.makePos(dml.pos,e.pmin,e.pmax));
 			return macro {};
 		}
+		#end
 		return macro {};
 	}
 
 	#if macro
 	public static function build(parentElement: Expr, dml: Expr, ?contextObj: Expr) : Expr {
+		#if domkit
 		try {
 			return buildDml(dml, contextObj, parentElement);
 		}
 		catch (e : domkit.Error) {
 			haxe.macro.Context.error(e.message, @:privateAccess domkit.Macros.makePos(dml.pos,e.pmin,e.pmax));
 		}
+		#end
 		return macro {};
 	}
 
 	static function buildDml(dml: Expr, ?contextObj: Expr, parentElement: Expr) : Expr {
+		#if domkit
 		switch (dml.expr) {
 			case EMeta({name :":markup"} ,{expr: EConst(CString(dmlString))}): {
 				var parser = new domkit.MarkupParser();
@@ -101,12 +110,15 @@ class Macros {
 				error("dml argument should be a DML Expression", dml.pos.getInfos().min, dml.pos.getInfos().max);
 				return null;
 		}
+		#end
+		return macro {};
 	}
 
 	static function makeStringExpr(string: String, pos: Position) : Expr {
 		return {expr: EConst(CString(string)), pos: pos};
 	}
 
+	#if domkit
 	static function buildExpr(args: BuildExprArgs) : Void {
 
 		var globalPos = Context.currentPos();
@@ -455,6 +467,7 @@ class Macros {
 				throw "Internal error : unhandled node kind " + args.markup.kind;
 		}
 	}
+	#end
 
 	static function makePos( p : Position, pmin : Int, pmax : Int ) {
 		var p0 = Context.getPosInfos(p);
