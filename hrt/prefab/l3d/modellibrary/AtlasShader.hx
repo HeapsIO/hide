@@ -53,7 +53,7 @@ class AtlasShader extends hxsl.Shader {
 
 		function __init__vertex() {
 			calculatedUV = input2.uv;
-			previousTransformedPosition = transformedPosition;
+			prevModelView = global.modelView.mat3x4();
 			if( hasNormal )
 				transformedTangent = vec4(input2.tangent * global.modelView.mat3(),input2.tangent.dot(input2.tangent) > 0.5 ? 1. : -1.);
 			mipLevel = pow(saturate((projectedPosition.z - mipStart) / (mipEnd - mipStart)), mipPower) * mipNumber;
