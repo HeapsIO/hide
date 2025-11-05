@@ -1,5 +1,7 @@
 package hrt.ui;
 
+#if domkit
+
 class HuiScene extends HuiElement {
 	static var SRC =
 	<hui-scene>
@@ -56,3 +58,5 @@ class HuiScene extends HuiElement {
 		ctx.setCurrent();
 	}
 }
+
+#end

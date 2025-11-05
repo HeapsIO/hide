@@ -1,5 +1,7 @@
 package hide.kit;
 
+#if domkit
+
 class File extends Widget<String> {
 
 	public var type : String = "file";
@@ -49,3 +51,5 @@ class File extends Widget<String> {
 		"model" => ["fbx", "hmd"],
 	];
 }
+
+#end

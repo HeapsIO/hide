@@ -1,5 +1,7 @@
 package hide.kit;
 
+#if domkit
+
 /**
 	Base class for all hide elements that manipulate a Value, like sliders, inputs etc...
 **/
@@ -145,3 +147,5 @@ abstract class Widget<ValueType> extends Element {
 
 	abstract function getDefaultFallback() : ValueType;
 }
+
+#end

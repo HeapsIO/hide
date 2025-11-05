@@ -1,5 +1,7 @@
 package hide.kit;
 
+#if domkit
+
 class Color extends Widget<Dynamic> {
 	public var alpha : Bool = false;
 	public var vec : Bool = false;
@@ -69,3 +71,5 @@ class Color extends Widget<Dynamic> {
 		return hrt.impl.ColorSpace.Color.intFromString(str, alpha);
 	}
 }
+
+#end

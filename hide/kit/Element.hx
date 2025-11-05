@@ -1,5 +1,7 @@
 package hide.kit;
 
+#if domkit
+
 /**
 	# hrt.prefab.edit -> hrt.prefab.edit2 Migration notes
 
@@ -474,3 +476,5 @@ class Element {
 		return hide.kit.Macros.build(ethis, dml, contextObj);
 	}
 }
+
+#end

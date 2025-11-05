@@ -613,18 +613,6 @@ class Prefab {
 		return type.split(".").pop();
 	}
 
-	public static function makeCdbProps( e : Prefab, prefabFilePath: String, type : cdb.Sheet ) {
-		var props = type.getDefaults();
-		Reflect.setField(props, "$cdbtype", hide.comp.cdb.DataFiles.getTypeName(type));
-		if( type.idCol != null && !type.idCol.opt ) {
-			var id = new haxe.io.Path(prefabFilePath).file;
-			id = id.charAt(0).toUpperCase() + id.substr(1);
-			id += "_"+e.name;
-			Reflect.setField(props, type.idCol.name, id);
-		}
-		return props;
-	}
-
 	// Editor API
 
 	/**

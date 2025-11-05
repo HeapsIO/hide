@@ -1,5 +1,7 @@
 package hide.kit;
 
+#if domkit
+
 class Range<T:Float> extends Slider<T> {
 	public function new(parent: Element, id: String, min: Float, max: Float) {
 		super(parent, id);
@@ -8,3 +10,5 @@ class Range<T:Float> extends Slider<T> {
 		this.showRange = true;
 	}
 }
+
+#end

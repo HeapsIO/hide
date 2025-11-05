@@ -1,5 +1,7 @@
 package hide.kit;
 
+#if domkit
+
 class Separator extends Element {
 	override function makeSelf():Void {
 		#if js
@@ -11,3 +13,5 @@ class Separator extends Element {
 		#end
 	}
 }
+
+#end

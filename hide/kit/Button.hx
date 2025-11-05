@@ -1,5 +1,7 @@
 package hide.kit;
 
+#if domkit
+
 class Button extends Element {
 	var label : String;
 	public var highlight(default, set) : Bool = false;
@@ -68,3 +70,5 @@ class Button extends Element {
 		#end
 	}
 }
+
+#end

@@ -1,5 +1,7 @@
 package hide.kit;
 
+#if domkit
+
 #if js
 import hide.comp.cdb.DataFiles;
 #end
@@ -48,7 +50,7 @@ class CDB extends Element {
 			} else {
 				if (prefab.shared.currentPath.length == 0)
 					throw "hurgh";
-				prefab.props = hrt.prefab.Prefab.makeCdbProps(prefab, prefab.shared.currentPath, DataFiles.resolveType(typeId));
+				prefab.props = hide.view.Prefab.makeCdbProps(prefab, prefab.shared.currentPath, DataFiles.resolveType(typeId));
 			}
 			root.editor.rebuildInspector();
 		}
@@ -95,3 +97,5 @@ class CDB extends Element {
 	}
 	#end
 }
+
+#end

@@ -1,5 +1,7 @@
 package hide.kit;
 
+#if domkit
+
 typedef SelectEntry = {value:Dynamic, label:String};
 
 abstract EntriesOrStrings(Array<SelectEntry>) from Array<SelectEntry> to Array<SelectEntry> {
@@ -83,3 +85,5 @@ class Select extends Widget<Dynamic> {
 		return null;
 	}
 }
+
+#end

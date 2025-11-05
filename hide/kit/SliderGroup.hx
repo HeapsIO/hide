@@ -1,5 +1,7 @@
 package hide.kit;
 
+#if domkit
+
 class SliderGroup extends Line {
 	public var isLocked : Bool = true;
 
@@ -56,3 +58,5 @@ class SliderGroup extends Line {
 		#end
 	}
 }
+
+#end

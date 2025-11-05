@@ -1,6 +1,8 @@
 package hrt.ui;
 
-class HuiElement extends h2d.Flow implements h2d.domkit.Object {
+#if domkit
+
+class HuiElement extends h2d.Flow #if domkit implements h2d.domkit.Object #end {
 	static var SRC =
 		<hui-element>
 		</hui-element>
@@ -10,3 +12,5 @@ class HuiElement extends h2d.Flow implements h2d.domkit.Object {
 		initComponent();
 	}
 }
+
+#end

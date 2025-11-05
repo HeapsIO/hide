@@ -1,5 +1,7 @@
 package hide.kit;
 
+#if domkit
+
 class Input extends Widget<String> {
 	public var placeholder(default, set) : String;
 	function set_placeholder(v) {
@@ -74,3 +76,5 @@ class Input extends Widget<String> {
 		return str;
 	}
 }
+
+#end

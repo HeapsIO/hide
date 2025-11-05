@@ -1,5 +1,7 @@
 package hrt.ui;
 
+#if domkit
+
 class HuiSlider extends HuiElement {
 	public var slider: h2d.Slider;
 
@@ -13,3 +15,5 @@ class HuiSlider extends HuiElement {
 		slider.width = calculatedWidth;
 	}
 }
+
+#end

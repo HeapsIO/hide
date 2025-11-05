@@ -1,6 +1,6 @@
 package hide.kit;
 
-
+#if domkit
 
 class ImageButton extends Button {
 	public function new(parent: Element, id: String, image: String) {
@@ -8,3 +8,5 @@ class ImageButton extends Button {
 		this.image = image;
 	}
 }
+
+#end

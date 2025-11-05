@@ -95,7 +95,7 @@ class PrefabSceneEditor extends hide.comp.SceneEditor {
 				function make(name) {
 					var p = new Instance(current == null ? sceneData : current, null);
 					p.name = name;
-					p.props = hrt.prefab.Prefab.makeCdbProps(p, view.state.path, type);
+					p.props = hide.view.Prefab.makeCdbProps(p, view.state.path, type);
 					setup(p);
 					if(onMake != null)
 						onMake(p);
@@ -978,6 +978,18 @@ class Prefab extends hide.view.FileView {
 			}
 		}
 		return null;
+	}
+
+	public static function makeCdbProps( e : hrt.prefab.Prefab, prefabFilePath: String, type : cdb.Sheet ) {
+		var props = type.getDefaults();
+		Reflect.setField(props, "$cdbtype", hide.comp.cdb.DataFiles.getTypeName(type));
+		if( type.idCol != null && !type.idCol.opt ) {
+			var id = new haxe.io.Path(prefabFilePath).file;
+			id = id.charAt(0).toUpperCase() + id.substr(1);
+			id += "_"+e.name;
+			Reflect.setField(props, type.idCol.name, id);
+		}
+		return props;
 	}
 
 	function sceneFiltersChanged() {}

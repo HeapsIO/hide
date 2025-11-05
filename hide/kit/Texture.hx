@@ -1,5 +1,7 @@
 package hide.kit;
 
+#if domkit
+
 class Texture extends Widget<Dynamic> {
 	#if js
 	var textureChoice: hide.comp.TextureChoice;
@@ -41,3 +43,5 @@ class Texture extends Widget<Dynamic> {
 		return null;
 	}
 }
+
+#end

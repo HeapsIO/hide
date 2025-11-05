@@ -4084,7 +4084,7 @@ class SceneEditor {
 				changeProps(null);
 				return;
 			}
-			var props = hrt.prefab.Prefab.makeCdbProps(e, view.state.path, DataFiles.resolveType(typeId));
+			var props = hide.view.Prefab.makeCdbProps(e, view.state.path, DataFiles.resolveType(typeId));
 			changeProps(props);
 		});
 

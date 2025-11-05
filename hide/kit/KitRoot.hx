@@ -1,5 +1,7 @@
 package hide.kit;
 
+#if domkit
+
 class KitRoot #if !macro extends Element #end {
 	#if !macro
 	public var editedPrefabsProperties : Array<KitRoot> = [];
@@ -165,3 +167,5 @@ class KitRoot #if !macro extends Element #end {
 
 	#end
 }
+
+#end

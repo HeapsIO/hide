@@ -1,5 +1,7 @@
 package hrt.ui;
 
+#if domkit
+
 class HuiBackgroundShader extends hxsl.Shader {
 	static var SRC = {
 
@@ -72,3 +74,5 @@ class HuiBackground extends h2d.ScaleGrid implements h2d.domkit.Object {
 		shader.size.set(width, height);
 	}
 }
+
+#end

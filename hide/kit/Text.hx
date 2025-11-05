@@ -1,5 +1,7 @@
 package hide.kit;
 
+#if domkit
+
 class Text extends Element {
 	var content(default, set) : String;
 
@@ -37,3 +39,5 @@ class Text extends Element {
 		#end
 	}
 }
+
+#end

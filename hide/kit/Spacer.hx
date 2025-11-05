@@ -1,5 +1,7 @@
 package hide.kit;
 
+#if domkit
+
 class Spacer extends Element {
 	override function makeSelf():Void {
 		#if js
@@ -11,3 +13,5 @@ class Spacer extends Element {
 		#end
 	}
 }
+
+#end

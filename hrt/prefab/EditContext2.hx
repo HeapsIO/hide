@@ -1,5 +1,6 @@
 package hrt.prefab;
 
+
 enum SettingCategory {
 	/** saved for all the inspectors**/
 	Global;
@@ -10,6 +11,8 @@ enum SettingCategory {
 
 @:allow(hide.kit.Element)
 abstract class EditContext2 {
+	#if domkit
+
 	var parent : EditContext2 = null;
 
 	public function new(parent: EditContext2) {
@@ -58,4 +61,6 @@ abstract class EditContext2 {
 	public macro function build(ethis: haxe.macro.Expr, dml: haxe.macro.Expr, ?contextObj: haxe.macro.Expr) : haxe.macro.Expr {
 		return hide.kit.Macros.build(macro $ethis.root, dml, contextObj);
 	}
+	#end
+
 }

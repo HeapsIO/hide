@@ -1,5 +1,7 @@
 package hide.kit;
 
+#if domkit
+
 class Category extends Widget<Null<Bool>> {
 	/**
 		If this category should be closed by default
@@ -163,3 +165,5 @@ class Category extends Widget<Null<Bool>> {
 		#end
 	}
 }
+
+#end

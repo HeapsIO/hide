@@ -529,7 +529,11 @@ class Macros {
 	}
 
 	static function error( msg : String, pmin : Int, pmax : Int = -1 ) : Dynamic {
+		#if domkit
 		throw new domkit.Error(msg, pmin, pmax);
+		#else
+		throw msg;
+		#end
 	}
 
 	macro static function checkIsInt(expr: Expr) : Expr {

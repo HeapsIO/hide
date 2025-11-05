@@ -1,5 +1,7 @@
 package hide.kit;
 
+#if domkit
+
 class Gradient extends Widget<hrt.impl.Gradient.GradientData> {
 	#if js
 	var gradientBox: hide.comp.GradientEditor.GradientBox;
@@ -38,3 +40,5 @@ class Gradient extends Widget<hrt.impl.Gradient.GradientData> {
 		return hrt.impl.TextureType.Utils.getGradientData(parsedData);
 	}
 }
+
+#end

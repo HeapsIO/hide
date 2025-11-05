@@ -1,5 +1,7 @@
 package hide.kit;
 
+#if domkit
+
 class Checkbox extends Widget<Bool> {
 	#if js
 	var checkbox : js.html.InputElement;
@@ -42,3 +44,5 @@ class Checkbox extends Widget<Bool> {
 		return null;
 	}
 }
+
+#end

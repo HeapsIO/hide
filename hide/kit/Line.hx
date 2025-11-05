@@ -1,5 +1,7 @@
 package hide.kit;
 
+#if domkit
+
 class Line extends Element {
 	@:attr public var label: String;
 	@:attr public var multiline: Bool = false;
@@ -49,3 +51,5 @@ class Line extends Element {
 		#end
 	}
 }
+
+#end

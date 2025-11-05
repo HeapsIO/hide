@@ -1,5 +1,7 @@
 package hrt.ui;
 
+#if domkit
+
 class HuiCategory extends HuiElement {
 	public var headerName(get, set) : String;
 
@@ -17,3 +19,5 @@ class HuiCategory extends HuiElement {
 		initComponent();
 	}
 }
+
+#end

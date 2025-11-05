@@ -1,5 +1,7 @@
 package hide.kit;
 
+#if domkit
+
 class Slider<T:Float> extends Widget<T> {
 	/**
 		If set, the slider won't go bellow the given value
@@ -307,3 +309,5 @@ class Slider<T:Float> extends Widget<T> {
 		return cast unser;
 	}
 }
+
+#end
