@@ -142,6 +142,8 @@ class EditContext {
 	#end
 }
 
+#if domkit
+
 @:access(hide.prefab.EditContext)
 class HideJsEditContext2 extends hrt.prefab.EditContext2 {
 	var ctx : EditContext;
@@ -215,3 +217,5 @@ class HideJsEditContext2 extends hrt.prefab.EditContext2 {
 		ctx.scene.editor.sceneTree.refreshItem(prefab);
 	}
 }
+
+#end

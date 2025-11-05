@@ -71,6 +71,7 @@ class Plugin {
 
 	static function init() {
 		var hidePath = getLibraryPath("hide");
+
 		for( f in sys.io.File.getContent(hidePath+"/common.hxml").split("\n") ) {
 			var f = StringTools.trim(f);
 			if( f == "" ) continue;
@@ -84,6 +85,15 @@ class Plugin {
 					if( !Context.defined("hxnodejs") ) Context.error("Please add -lib hxnodejs", Context.currentPos());
 					continue;
 				}
+				if ( value == "domkit" ) {
+					// should be set with -lib or will conflict with macro code
+					if (!Context.defined("domkit")) {
+						Context.error("Please add -lib domkit", Context.currentPos());
+					}
+					continue;
+				}
+
+
 				if( !Context.defined(value) )
 					C.define(value,"1");
 				C.addClassPath(getLibraryPath(value));

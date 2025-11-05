@@ -424,6 +424,7 @@ class RemoteConsoleConnection {
 			hide.Ide.inst.showFileInResources(args.file);
 			hide.Ide.inst.openFile(args.file, null, function(view) {
 				hide.Ide.inst.focus();
+				#if domkit
 				var domkitView = Std.downcast(view, hide.view.Domkit);
 				if( domkitView != null ) {
 					var col = args.column ?? 0;
@@ -437,6 +438,7 @@ class RemoteConsoleConnection {
 						}
 					}, 1);
 				}
+				#end
 				if( args.selectExpr != null ) {
 					var sceneEditor : hide.comp.SceneEditor = null;
 					var prefabView = Std.downcast(view, hide.view.Prefab);
