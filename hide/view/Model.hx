@@ -86,8 +86,18 @@ class CollisionSettings {
 				var colliderIdentifier = "_Collider";
 				var hmd = Std.downcast(mesh.primitive, h3d.prim.HMDModel);
 				if (params.mesh.lastIndexOf(colliderIdentifier) >= 0) {
-					var d = @:privateAccess hmd.collider.makeDebugObj();
-					return d;
+					for (m in hmd.lib.header.models) {
+						if (m.name == params.mesh) {
+							var g = hmd.lib.header.geometries[m.geometry];
+							var buffers = hmd.lib.getBuffers(g, hxd.BufferFormat.POS3D);
+
+							var polygonBuffer = new h3d.col.PolygonBuffer();
+							polygonBuffer.setData(buffers.vertexes, buffers.indexes);
+							return polygonBuffer.makeDebugObj();
+						}
+					}
+
+					return null;
 				}
 
 				var lodIdentifier = "_LOD";
@@ -106,19 +116,36 @@ class CollisionSettings {
 				return null;
 
 			case Auto:
-				return null;
-				// var hmd = Std.downcast(mesh.primitive, h3d.prim.HMDModel);
-				// var convexHulls = hxd.fmt.hmd.Data.ConvexHullsCollider.buildConvexHullCollider(hmd, params);
-				// if (convexHulls == null)
-				// 	return null;
+				var hmd = Std.downcast(mesh.primitive, h3d.prim.HMDModel);
 
-				// var parentObj = new h3d.scene.Object();
-				// for (convexHull in convexHulls) {
-				// 	var polygonBuffer = new h3d.col.PolygonBuffer();
-				// 	polygonBuffer.setData(cast convexHull.points, cast convexHull.indexes, true);
-				// 	parentObj.addChild(polygonBuffer.makeDebugObj());
-				// }
-				// return parentObj;
+				var dim = hmd.getBounds().dimension();
+				var prec = hxd.Math.min(dim, params.precision);
+				var subdiv = hxd.Math.ceil(dim / prec);
+				subdiv = hxd.Math.imin(subdiv, params.maxSubdiv);
+				var p = { maxConvexHulls: params.maxConvexHulls, maxResolution: subdiv * subdiv * subdiv };
+
+				var vertices : Array<Float> = [];
+				var indexes : Array<Int> = [];
+				for (idx => m in mesh.getMaterials()) {
+					if (Reflect.field(m.props, "ignoreCollide"))
+						continue;
+
+					var bufs = hmd.getDataBuffers(hxd.BufferFormat.POS3D, null, idx);
+					vertices = vertices.concat(cast bufs.vertexes);
+					indexes = indexes.concat(cast bufs.indexes);
+				}
+
+				var convexHulls = hxd.fmt.hmd.Data.ConvexHullsCollider.buildConvexHulls(cast vertices, cast indexes, p);
+				if (convexHulls == null)
+					return null;
+
+				var parentObj = new h3d.scene.Object();
+				for (convexHull in convexHulls) {
+					var polygonBuffer = new h3d.col.PolygonBuffer();
+					polygonBuffer.setData(cast convexHull.vertices, cast convexHull.indexes, true);
+					parentObj.addChild(polygonBuffer.makeDebugObj());
+				}
+				return parentObj;
 
 			case Shapes:
 				return null;
