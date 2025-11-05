@@ -4206,7 +4206,7 @@ class SceneEditor {
 					properties.element.append(toggle);
 				}
 
-
+				#if domkit
 				if (hasNewInspector && allowNewInspector) {
 					properties.element.removeClass("hide-properties");
 					properties.element.removeClass("props");
@@ -4248,7 +4248,7 @@ class SceneEditor {
 
 					@:privateAccess properties.element.append(baseRoot.nativeContent);
 				}
-				else {
+				else { #end
 					properties.element.addClass("hide-properties");
 					properties.element.addClass("props");
 					if (elts.length > 1) {
@@ -4263,7 +4263,9 @@ class SceneEditor {
 						fillProps(edit, elts[0], null);
 					}
 
+				#if domkit
 				}
+				#end
 			}
 
 			switch( mode ) {

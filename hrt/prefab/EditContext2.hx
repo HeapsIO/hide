@@ -11,8 +11,6 @@ enum SettingCategory {
 
 @:allow(hide.kit.Element)
 abstract class EditContext2 {
-	#if domkit
-
 	var parent : EditContext2 = null;
 
 	public function new(parent: EditContext2) {
@@ -20,7 +18,9 @@ abstract class EditContext2 {
 	}
 
 	#if !macro
+	#if domkit
 	public var root: hide.kit.KitRoot;
+	#end
 
 	/**
 		Request the inspector to be rebuild, resulting in edit2 to be called again
@@ -58,6 +58,7 @@ abstract class EditContext2 {
 	abstract function getSetting(category: SettingCategory, key: String) : Null<Dynamic>;
 	#end
 
+	#if domkit
 	public macro function build(ethis: haxe.macro.Expr, dml: haxe.macro.Expr, ?contextObj: haxe.macro.Expr) : haxe.macro.Expr {
 		return hide.kit.Macros.build(macro $ethis.root, dml, contextObj);
 	}
