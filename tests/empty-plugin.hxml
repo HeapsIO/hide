@@ -1,0 +1,5 @@
+-lib hide
+-lib hxnodejs
+--macro hide.Plugin.init()
+-js hide-plugin.js
+--debug
