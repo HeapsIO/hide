@@ -207,14 +207,6 @@ class HideJsEditContext2 extends hrt.prefab.EditContext2 {
 		ctx.ide.openFile(path);
 	}
 
-	public function listMatLibraries(path: String) : Array<{path: String, name: String}> {
-		return ctx.scene.listMatLibraries(path);
-	}
-
-	public function listMaterialFromLibrary(path: String, libName: String) : Array<{path: String, mat: hrt.prefab.Material}> {
-		return ctx.scene.listMaterialFromLibrary(path, libName);
-	}
-
 	public function rebuildPrefab(prefab:Prefab) {
 		ctx.scene.editor.queueRebuild(prefab);
 	}

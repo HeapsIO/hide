@@ -676,18 +676,18 @@ class Scene extends hide.comp.Component implements h3d.IDrawable {
 		return @:privateAccess h3d.Engine.getCurrent().resCache.get(Scene);
 	}
 
-	public function listMatLibraries(path : String) : Array<{name: String, path: String}> {
+	public function listMatLibraries(path : String) {
 		var config = hide.Config.loadForFile(ide, path);
 
-		var configMatLibs : Array<Dynamic> = config.get("materialLibraries");
-		var matLibs : Array<{name: String, path: String}> = [];
+		var matLibs : Array<Dynamic> = config.get("materialLibraries");
+		if( matLibs == null ) matLibs = [];
 
-		if (configMatLibs.length > 0) {
-			for (idx in 0...configMatLibs.length) {
-				var m : String = Std.isOfType(configMatLibs[idx], String) ? cast (configMatLibs[idx]) : null;
+		if (matLibs.length > 0) {
+			for (idx in 0...matLibs.length) {
+				var m = Std.isOfType(matLibs[idx], String) ? cast (matLibs[idx]) : null;
 				if (m == null)
 					continue;
-				matLibs.push({ name : m.substring(m.lastIndexOf("/") + 1), path : m });
+				matLibs[idx] = { name : m.substring(m.lastIndexOf("/") + 1), path : m };
 			}
 		}
 
@@ -706,7 +706,7 @@ class Scene extends hide.comp.Component implements h3d.IDrawable {
 		return null;
 	}
 
-	public function listMaterialFromLibrary( path : String, library : String ) : Array<{path: String, mat: hrt.prefab.Material}> {
+	public function listMaterialFromLibrary( path : String, library : String ) {
 		var libraries = listMatLibraries(path);
 		var lPath = "";
 		for (l in libraries) {

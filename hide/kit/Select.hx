@@ -14,19 +14,13 @@ abstract EntriesOrStrings(Array<SelectEntry>) from Array<SelectEntry> to Array<S
 }
 
 class Select extends Widget<Dynamic> {
-	public var entries(default, set) : Array<SelectEntry>;
+	public var entries(default, null) : Array<SelectEntry>;
 
 	#if js
 	var select: NativeElement;
 	var text: NativeElement;
 	var dropdown = null;
 	#end
-
-	function set_entries(value: Array<SelectEntry>) {
-		entries = value;
-		syncValueUI();
-		return entries;
-	}
 
 	public function new(parent: Element, id: String, entries: EntriesOrStrings) {
 		super(parent, id);
@@ -44,8 +38,8 @@ class Select extends Widget<Dynamic> {
 		text = js.Browser.document.createSpanElement();
 		select.appendChild(text);
 
+		var selectEntries: Array<hide.comp.ContextMenu.MenuItem> = [for (i => entry in entries) {label: entry.label, click: valueChanged.bind(entry)}];
 		select.onclick = (e: js.html.MouseEvent) -> {
-			var selectEntries: Array<hide.comp.ContextMenu.MenuItem> = [for (i => entry in entries) {label: entry.label, click: valueChanged.bind(entry)}];
 			if (dropdown == null) {
 				dropdown = hide.comp.ContextMenu.createDropdown(select, selectEntries);
 				dropdown.onClose = () -> {

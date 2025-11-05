@@ -49,8 +49,6 @@ abstract class EditContext2 {
 	**/
 	public abstract function openFile(path: String) : Void;
 
-	public abstract function listMatLibraries(path: String) : Array<{path: String, name: String}>;
-	public abstract function listMaterialFromLibrary(path: String, libName: String) : Array<{path: String, mat: hrt.prefab.Material}>;
 
 	abstract function recordUndo(callback: (isUndo: Bool) -> Void ) : Void;
 	abstract function saveSetting(category: SettingCategory, key: String, value: Dynamic) : Void;
