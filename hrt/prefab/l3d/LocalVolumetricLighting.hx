@@ -28,11 +28,16 @@ class LocalVolumetricShader extends hxsl.Shader {
 
 		@param var cubeCornerRound : Float;
 		@param var coneTipRadius : Float;
+		@param var capsuleZscale : Float;
 
 		var screenUV : Vec2;
 		var transformedPosition : Vec3;
 		var transformedNormal : Vec3;
 		var pixelColor : Vec4;
+
+		function isBox() : Bool { return shape == 0; }
+		function isCone() : Bool { return shape == 1; }
+		function isCapsule() : Bool { return shape == 2; }
 
 		function maxComp(a : Vec3) : Float { return max(a.x, max(a.y, a.z)); }
 		function minComp(a : Vec3) : Float { return min(a.x, min(a.y, a.z)); }
@@ -47,6 +52,10 @@ class LocalVolumetricShader extends hxsl.Shader {
 
 		function getPosition() : Vec3 {
 			return getPositionAt(screenUV);
+		}
+
+		function dot2(v : Vec3) : Float {
+			return dot(v, v);
 		}
 
 		function rayBoxIntersection( o : Vec3, d : Vec3) : Vec3 {
@@ -64,8 +73,64 @@ class LocalVolumetricShader extends hxsl.Shader {
 			return hit;
 		}
 
-		function dot2(v : Vec3) : Float {
-			return dot(v, v);
+		function rayCapsuleIntersection( ro : Vec3, rd : Vec3, pa : Vec3, pb : Vec3, r : Float ) : Float
+		{
+			var ba = pb - pa;
+			var oa = ro - pa;
+
+			var baba = dot(ba,ba);
+			var bard = dot(ba,rd);
+			var baoa = dot(ba,oa);
+			var rdoa = dot(rd,oa);
+			var oaoa = dot(oa,oa);
+
+			var a = baba      - bard*bard;
+			var b = baba*rdoa - baoa*bard;
+			var c = baba*oaoa - baoa*baoa - r*r*baba;
+			var h = b*b - a*c;
+
+			var res = -1.0;
+			if( h>=0.0 )
+			{
+				var t = (-b-sqrt(h))/a;
+				var y = baoa + t*bard;
+				// body
+				if( y>0.0 && y<baba ) {
+					res = t;
+				} else {
+					// caps
+					var oc = (y<=0.0) ? oa : ro - pb;
+					b = dot(rd,oc);
+					c = dot(oc,oc) - r*r;
+					h = b*b - c;
+					if( h>0.0 ){
+						res = -b - sqrt(h);
+					}
+				}
+			}
+			return res;
+		}
+
+		function intersectCapsule( o : Vec3, d : Vec3) : Vec3 {
+			var res = vec3(-1.0);
+			var r = 0.5;
+			var hH = 0.5*max(capsuleZscale - 2*r, 0.0);
+			var tN = rayCapsuleIntersection(o, d, vec3(0.0,0.0,-hH), vec3(0.0,0.0,hH), r);
+
+			var offset = max(tN,0.0) + (1.5)*max(capsuleZscale, 1.0);
+			var oF = o + d * offset;
+			var tF = rayCapsuleIntersection(oF, -d, vec3(0.0,0.0,-hH), vec3(0.0,0.0,hH), r);
+			if(tF > 0.0){ tF = offset - tF; }
+
+			if(tN > 0.0){
+				res = vec3(tN, tF, 1.0);
+			} else if(tF > 0.0){
+				res = vec3(-1.0, tF, 1.0);
+			} else {
+				res = vec3(-1.0);
+			}
+
+			return res;
 		}
 
 		function rayCappedConeIntersection( o : Vec3, d : Vec3, he : Float, ra : Float, rb : Float) : Float {
@@ -124,9 +189,7 @@ class LocalVolumetricShader extends hxsl.Shader {
 			var offset = max(tN,0.0) + 1.5;
 			var oF = o + d * offset;
 			var tF = rayCappedConeIntersection(oF, -d, 1.0, 0.5, coneTipRadius);
-			if(tF > 0.0){
-				tF = offset - tF;
-			}
+			if(tF > 0.0){ tF = offset - tF; }
 
 			if(tN > 0.0){
 				res = vec3(tN, tF, 1.0);
@@ -142,8 +205,10 @@ class LocalVolumetricShader extends hxsl.Shader {
 		function getPath(o : Vec3, d : Vec3) : Vec4 {
 			var dir = normalize(d);
 			var hit = vec3(0.0);
-			if(shape == 1){
+			if(isCone()){
 				hit = intersectCone(o, dir);
+			} else if(isCapsule()){
+				hit = intersectCapsule(o, dir);
 			} else {
 				hit = rayBoxIntersection(o, dir);
 			}
@@ -157,6 +222,9 @@ class LocalVolumetricShader extends hxsl.Shader {
 			}
 
 			var backgroundLocalPosition = (vec4(getPosition(), 1.0) * global.modelViewInverse).xyz;
+			if(isCapsule()){
+				backgroundLocalPosition *= vec3(1.0,1.0, capsuleZscale);
+			}
 			var backgroundDist = length(backgroundLocalPosition-path.xyz);
 			if(dot(dir, backgroundLocalPosition - path.xyz) < 0.0){
 				backgroundDist = 0.0;
@@ -197,7 +265,7 @@ class LocalVolumetricShader extends hxsl.Shader {
 
 		function sampleFog(pos : Vec3, dir : Vec3, dist : Float) : Float {
 			var density = fogDensity;
-			if(shape == 0){
+			if(isBox()){
 				density = clamp(fogDensity * boxDensity(pos, dir, dist) / cubeCornerRound, 0.0, fogDensity);
 			}
 			return density;
@@ -220,7 +288,13 @@ class LocalVolumetricShader extends hxsl.Shader {
 			var pos = camera.position;
 
 			dir = dir * global.modelViewInverse.mat3();
+			if(isCapsule()){
+				dir *= vec3(1.0,1.0, capsuleZscale);
+			}
 			pos = (vec4(pos, 1) * global.modelViewInverse).xyz;
+			if(isCapsule()){
+				pos *= vec3(1.0,1.0, capsuleZscale);
+			}
 
 			var path = getPath(pos, dir);
 
@@ -317,6 +391,7 @@ class LocalVolumetricLightingObject extends h3d.scene.Object {
 		shader.fogColor.setColor(localVolume.color);
 		shader.fogDensity = localVolume.fogDensity;
 		shader.cubeCornerRound = localVolume.cubeRoundCorner;
+		shader.capsuleZscale = scaleZ / Math.min(scaleX, scaleY);
 
 		if(localVolume.showBounds){
 			boundsDisplay = bounds.makeDebugObj();
@@ -379,7 +454,10 @@ class LocalVolumetricLighting extends hrt.prefab.Object3D {
 		ctx.build(
 			<root>
 				<category("Shape")>
-					<select([{"label":"Box","value":0},{"label":"Cone","value":1}]) field={shape} onValueChange={(_)->ctx.rebuildInspector()}/>
+					<select([{"label":"Box","value":0},
+							 {"label":"Cone","value":1},
+							 {"label":"Capsule","value":2}])
+							 field={shape} onValueChange={(_)->ctx.rebuildInspector()}/>
 					<range(0,1) field={cubeRoundCorner} label="Round Corner" if(shape == 0)/>
 					<range(0.0, 1.0) field={coneTipRadius} if(shape == 1)/>
 				</category>
