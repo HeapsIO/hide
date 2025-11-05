@@ -3,8 +3,9 @@ package hrt.prefab.l3d.modellibrary;
 import hrt.prefab.l3d.modellibrary.ModelLibrary.BakedMaterialData;
 import h3d.mat.PbrMaterial.PbrProps;
 
-@:access(hrt.prefab.l3d.modellibrary.ModelLibrary)
 @:access(hrt.prefab.l3d.modellibrary.MeshEmitter)
+@:access(hrt.prefab.l3d.modellibrary.ModelLibrary)
+@:allow(hrt.prefab.l3d.modellibrary.ModelLibrary)
 class Batcher extends h3d.scene.Object {
 	public var library : ModelLibrary;
 	public var isStatic : Bool = false;
@@ -24,7 +25,7 @@ class Batcher extends h3d.scene.Object {
 				f(b);
 	}
 
-	public function emitInstance(mesh : h3d.scene.Mesh, ?absPos : h3d.Matrix, ?cb : h3d.scene.MeshBatch -> Void) {
+	public function emitInstance(mesh : h3d.scene.Mesh, ?absPos : h3d.Matrix, ?cb : (h3d.scene.MeshBatch, Int) -> Void) {
 		var meshEmitter = library.getMeshEmitter(mesh);
 		meshEmitter.emitInstance(this, absPos, cb);
 	}

@@ -13,8 +13,9 @@ typedef CopyInfo = {
 	var batch : h3d.scene.MeshBatch;
 	var bakedMat : ModelLibrary.BakedMaterialData;
 }
-@:access(hrt.prefab.l3d.modellibrary.ModelLibrary)
 @:access(hrt.prefab.l3d.modellibrary.MeshEmitter)
+@:access(hrt.prefab.l3d.modellibrary.ModelLibrary)
+@:allow(hrt.prefab.l3d.modellibrary.ModelLibrary)
 class GPUBatcher extends Batcher {
 
 	var basicCopyShaders : hxsl.ShaderList;
@@ -61,7 +62,7 @@ class GPUBatcher extends Batcher {
 		return batch;
 	}
 
-	override function emitInstance(mesh : h3d.scene.Mesh, ?absPos : h3d.Matrix, ?cb : h3d.scene.MeshBatch -> Void) {
+	override function emitInstance(mesh : h3d.scene.Mesh, ?absPos : h3d.Matrix, ?cb : (h3d.scene.MeshBatch, Int) -> Void) {
 		throw "Unit emitInstance is not compatible with GPU Batcher, use emitInstances with GPU data or use a Batcher instead";
 	}
 

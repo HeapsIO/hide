@@ -25,6 +25,7 @@ class ModelLibraryCache {
 	public var geomBounds : Array<h3d.col.Bounds>;
 }
 
+@:access(h3d.prim.HMDModel)
 class ModelLibrary extends Prefab {
 
 	@:s var bakedMaterials : haxe.DynamicAccess<BakedMaterialData>;
@@ -75,13 +76,13 @@ class ModelLibrary extends Prefab {
 	public function createBatcher(parent : h3d.scene.Object) {
 		if ( meshEmitters == null )
 			initMeshEmitters();
-		return @:privateAccess new Batcher(parent, this);
+		return new Batcher(parent, this);
 	}
 
 	public function createGPUBatcher(parent : h3d.scene.Object) {
 		if ( meshEmitters == null )
 			initMeshEmitters();
-		return @:privateAccess new GPUBatcher(parent, this);
+		return new GPUBatcher(parent, this);
 	}
 
 	function initMeshEmitters() {
@@ -105,21 +106,21 @@ class ModelLibrary extends Prefab {
 			var hmdModel = cast(mesh.primitive, h3d.prim.HMDModel);
 			var bakedMat = getBakedMat(material, hmdModel, mesh.name);
 			if ( bakedMat == null ) {
-				var modelPath = @:privateAccess hmdModel.lib.resource.entry.path;
-				var libPath = @:privateAccess getPrim().lib.resource.entry.path;
+				var modelPath = hmdModel.lib.resource.entry.path;
+				var libPath = getPrim().lib.resource.entry.path;
 				throw 'Can\'t emit ${modelPath} because ${material.name} was not baked in ${libPath}';
 			}
 			bakedMaterials.push(bakedMat);
 		}
-		var meshEmitter = @:privateAccess MeshEmitter.createFromMesh(bakedMaterials, mesh);
+		var meshEmitter = MeshEmitter.createFromMesh(bakedMaterials, mesh);
 		meshEmitters.set(meshEmitterKey(mesh), meshEmitter);
 	}
 
 	function getBakedMat(mat : h3d.mat.Material, prim : h3d.prim.HMDModel, meshName : String) {
 		var matName = mat.name;
-		var bk = bakedMaterials.get(@:privateAccess prim.lib.resource.entry.path + "_" + meshName + "_" + matName);
+		var bk = bakedMaterials.get(prim.lib.resource.entry.path + "_" + meshName + "_" + matName);
 		if ( bk == null )
-			bk = bakedMaterials.get(@:privateAccess prim.lib.resource.entry.path + "_" + matName);
+			bk = bakedMaterials.get(prim.lib.resource.entry.path + "_" + matName);
 		return bk;
 	}
 
@@ -135,7 +136,7 @@ class ModelLibrary extends Prefab {
 
 	function meshEmitterKey(mesh : h3d.scene.Mesh) {
 		var prim = cast(mesh.primitive, h3d.prim.HMDModel);
-		return @:privateAccess prim.lib.resource.entry.path;
+		return prim.lib.resource.entry.path + '/${prim.model.name}';
 	}
 
 	function emitInstance(bakedMaterial : BakedMaterialData, primitive : h3d.prim.HMDModel, batch : h3d.scene.MeshBatch, ?absPos : h3d.Matrix) {
@@ -447,7 +448,7 @@ class ModelLibrary extends Prefab {
 			for( m in shared.loadModel(m.source).getMeshes() ) {
 				var m = Std.downcast(m.primitive, h3d.prim.HMDModel);
 				if( m != null ) {
-					lib = @:privateAccess m.lib;
+					lib = m.lib;
 					break;
 				}
 			}

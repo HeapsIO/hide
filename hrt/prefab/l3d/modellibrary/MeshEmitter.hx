@@ -4,6 +4,7 @@ import hrt.prefab.l3d.modellibrary.ModelLibrary.BakedMaterialData;
 
 @:access(hrt.prefab.l3d.modellibrary.Batcher)
 @:access(hrt.prefab.l3d.modellibrary.ModelLibrary)
+@:allow(hrt.prefab.l3d.modellibrary.ModelLibrary)
 class MeshEmitter {
 	var bakedMaterials : Array<BakedMaterialData>;
 	var primitive : h3d.prim.HMDModel;
@@ -21,12 +22,12 @@ class MeshEmitter {
 		this.materials = materials;
 	}
 
-	function emitInstance( batcher : Batcher, ?absPos : h3d.Matrix, ?cb : h3d.scene.MeshBatch -> Void ) {
+	function emitInstance( batcher : Batcher, ?absPos : h3d.Matrix, ?cb : (h3d.scene.MeshBatch, Int) -> Void ) {
 		for ( materialIndex => bakedMaterial in bakedMaterials ) {
 			var batch = batcher.getBatch(bakedMaterial, materialIndex, this);
-			batcher.library.emitInstance(bakedMaterial, primitive, batch, absPos);
 			if ( cb != null )
-				cb(batch);
+				cb(batch, materialIndex);
+			batcher.library.emitInstance(bakedMaterial, primitive, batch, absPos);
 		}
 	}
 }
