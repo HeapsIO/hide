@@ -191,6 +191,24 @@ class LookAt extends Object3D {
 
 		select.val(Reflect.field(this, select.attr("field")));
 	}
+
+	override function edit2(ctx:hrt.prefab.EditContext2) {
+		super.edit2(ctx);
+
+		ctx.build(
+			<category("Look At")>
+				<select([]) label="Target">
+				</select>
+				<line label="Lock Axis">
+					<slider label="X" id="lockAxisX" field={lockAxis[0]}/>
+					<slider label="Y" id="lockAxisY" field={lockAxis[1]}/>
+					<slider label="Z" id="lockAxisZ" field={lockAxis[2]}/>
+				</line>
+				<checkbox field={faceTargetForward}/>
+				<checkbox field={constantScreenSize}/>
+			</category>
+		);
+	}
 	#end
 
 	static var _ = Prefab.register("lookAt", LookAt);
