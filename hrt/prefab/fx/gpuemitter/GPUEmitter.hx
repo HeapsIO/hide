@@ -169,6 +169,27 @@ class GPUEmitter extends Object3D {
 		#end
 	}
 
+	override function edit2( ctx : hrt.prefab.EditContext2 ) {
+		super.edit2(ctx);
+		ctx.build(
+			<category("Emitter")>
+				<range(1, 8192) int field={rate}/>
+				<range(1, 8192) int field={maxCount}/>
+				<slider min={0.01} field={minLifeTime} poly/>
+				<slider min={0.01} field={maxLifeTime} poly/>
+				<slider min={0.01} field={minSize} poly/>
+				<slider min={0.01} field={maxSize} poly/>
+				<checkbox field={infinite}/>
+				<select([{value:World, label:"World"}, {value:Local, label:"Local"}, {value:Camera, label:"Camera"}]) field={mode} onValueChange={(_) -> ctx.rebuildInspector()}/>
+				<slider min={0.0} label="Camera distance" field={cameraModeDistance} if (mode == Camera)/>
+				<select([{value:Speed, label:"Speed"}, {value:FaceCam, label:"Face cam"}]) field={align}/>
+				<select([{value:Normal, label:"Normal"}, {value:None, label:"None"}]) label="Speed" field={speedMode}/>
+				<slider min={0.01} field={minStartSpeed}/>
+				<slider min={0.01} field={maxStartSpeed}/>
+			</category>
+		);
+	}
+
 	#if editor
 	override function setSelected(b : Bool) {
 		return false;
