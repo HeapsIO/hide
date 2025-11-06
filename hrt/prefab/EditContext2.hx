@@ -45,7 +45,7 @@ abstract class EditContext2 {
 	/**
 		Return the camera controller of the current editor
 	**/
-	public abstract function getCameraController3d() : #if js hide.view.CameraController.CameraControllerBase #else Dynamic #end;
+	public abstract function getCameraController3d() : #if (js && domkit) hide.view.CameraController.CameraControllerBase #else Dynamic #end;
 
 	/**
 		Open the given file path in the editor
