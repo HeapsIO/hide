@@ -12,6 +12,10 @@ class Instance extends Object3D {
 		props = {};
 	}
 
+	override function edit2(ctx:hrt.prefab.EditContext2) {
+		super.edit2(ctx);
+	}
+
 	#if editor
 	override function makeObject(parent3d: h3d.scene.Object) : h3d.scene.Object {
 
