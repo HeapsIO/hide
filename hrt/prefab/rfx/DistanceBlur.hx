@@ -134,6 +134,33 @@ class DistanceBlur extends RendererFX {
 	}
 	#end
 
+	override function edit2( ctx : hrt.prefab.EditContext2 ) {
+		ctx.build(
+			<root>
+			<category("Near Blur")>
+				<range(0,20) label="Start Distance" field={nearStartDistance} />
+				<range(0,20) label="End Distance" field={nearEndDistance} />
+				<range(0,1) label="Start Opacity" field={nearStartIntensity} />
+				<range(0,1) label="End Opacity" field={nearEndIntensity} />
+			</category>
+			<category("Far Blur")>
+				<range(0,50) label="Start Distance" field={farStartDistance} />
+				<range(0,50) label="End Distance" field={farEndDistance} />
+				<range(0,1) label="Start Opacity" field={farStartIntensity} />
+				<range(0,1) label="End Opacity" field={farEndIntensity} />
+			</category>
+			<category("Blur")>
+				<range(0,1) label="Texture Size" field={blurTextureSize} />
+				<range(0,20) step={2} label="Range" field={blurRange} />
+			</category>
+			<category("Debug")>
+				<checkbox field={showDebug} />
+			</category>
+		</root>
+		);
+		super.edit2(ctx);
+	}
+
 	static var _ = Prefab.register("rfx.distanceBlur", DistanceBlur);
 
 }
