@@ -12,7 +12,7 @@ class KuwaharaShader extends hrt.shader.PbrShader {
 
 		@param var texture : Sampler2D;
 
-		function fragment() {			
+		function fragment() {
 			var size = texture.size();
 			var invSize = 1.0 / size;
 			var n = float((scaledRadius + 1) * (scaledRadius + 1));
@@ -20,7 +20,7 @@ class KuwaharaShader extends hrt.shader.PbrShader {
 			var m1 = vec3(0.0);
 			var m2 = vec3(0.0);
 			var m3 = vec3(0.0);
-			
+
 			var s0 = vec3(0.0);
 			var s1 = vec3(0.0);
 			var s2 = vec3(0.0);
@@ -126,7 +126,7 @@ class KuwaharaFilter extends RendererFX {
 
 	function execute(r : h3d.scene.Renderer) {
 		r.mark("Kuwahara");
-			
+
 		var input = getInput(r);
 		pass.shader.texture = input;
 
@@ -168,6 +168,24 @@ class KuwaharaFilter extends RendererFX {
 	}
 
 	#end
+
+	override function edit2( ctx : hrt.prefab.EditContext2 ) {
+		super.edit2(ctx);
+
+		ctx.build(
+			<root>
+				<category("Filter")>
+					<slider min={1} field={radius} />
+				</category>
+				<category("Fade")>
+					<slider min={0.0} field={startDist} />
+					<slider min={0.0} field={endDist} />
+					<range(0,1) field={startOpacity} />
+					<range(0,1) field={endOpacity} />
+				</category>
+			</root>
+		);
+	}
 
 	static var _ = Prefab.register("rfx.kuwaharaFilter", KuwaharaFilter);
 
