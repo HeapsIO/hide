@@ -164,11 +164,16 @@ class Text extends Object2D {
 					<range(0, 1) label="Quality" field={dsQuality}/>
 					<checkbox label="Smooth Color" field={dsSmoothColor}/>
 				</category>
-				<category("Responsive")>
-					<input field={text}/>
-				</category>
 			</root>
 		);
+
+		#if editor
+		ctx.build(
+			<category("Responsive")>
+				<input field={text}/>
+			</category>
+		);
+		#end
 	}
 
 	#if editor
