@@ -47,6 +47,14 @@ class Distortion extends RendererFX {
 			ctx.onChange(this,pname);
 		});
 	}
+
+	override function edit2( ctx : hrt.prefab.EditContext2 ) {
+		ctx.build(
+			<category("Distortion")>
+				<range(0, 1) field={amount}/>
+			</category>
+		);
+	}
 	#end
 
 	static var _ = Prefab.register("rfx.distortion", Distortion);
