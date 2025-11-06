@@ -165,6 +165,41 @@ class Sao extends RendererFX {
 		} };
 	}
 
+	override function edit2( ctx : hrt.prefab.EditContext2 ) {
+		ctx.build(
+			<root>
+				<category("SSAO")>
+					<slider min={0.0} field={intensity}/>
+					<slider min={0.0} field={radius}/>
+					<range(0.0, 0.5) field={bias}/>
+					<checkbox field={useScalableBias}/>
+					<range(0.0, 1.0) label="Texture Size" field={size}/>
+					<range(3, 127) int field={samples}/>
+					<range(0.0, 1.0) label="Materials occlusion" field={microIntensity}/>
+				</category>
+				<category("Noise")>
+					<slider default={1.0} label="Scale" poly field={noiseScale}/>
+					<checkbox field={useWorldUV}/>
+					<file label="Texture" field={noiseTexturePath} type="texture"/>
+				</category>
+				<category("Blur")>
+					<slider min={0.0} label="Size" field={blur}/>
+					<range(0.0, 1.0) label="Quality" field={blurQuality}/>
+				</category>
+				<category("Start Fade")>
+					<checkbox label="Use start fade" field={USE_START_FADE}/>
+					<slider min={0.0} label="Fade start" poly field={startFadeStart}/>
+					<slider min={0.0} label="Fade end" poly field={startFadeEnd}/>
+				</category>
+				<category("End Fade")>
+					<checkbox label="Use end fade" field={USE_FADE}/>
+					<slider min={0.0} label="Fade start" poly field={fadeStart}/>
+					<slider min={0.0} label="Fade end" poly field={fadeEnd}/>
+				</category>
+			</root>
+		);
+	}
+
 	#if editor
 	override function edit( ctx : hide.prefab.EditContext ) {
 		ctx.properties.add(new hide.Element('
