@@ -303,6 +303,31 @@ class SSR extends RendererFX {
 		}
 	}
 
+	override function edit2( ctx : hrt.prefab.EditContext2 ) {
+		ctx.build(
+			<root>
+				<category("SSR")>
+					<checkbox label="Use mask" field={useMask}/>
+					<checkbox label="Use roughness" field={useRoughness}/>
+					<range(0.0, 1.0) label="Intensity" field={intensity}/>
+					<range(0.0, 1.0) label="Color Mul" field={colorMul}/>
+					<range(0.0, 1.0) label="Max Roughness" field={maxRoughness}/>
+					<range(0.0, 90.0) label="Min Angle" field={minAngle}/>
+					<range(0.0, 1.0) label="Thickness" field={thicknessValue}/>
+					<range(0.0, 1.0) label="Ray marching resolution" field={rayMarchingResolution}/>
+					<range(0.0, 5.0) label="Blur radius" field={blurRadius}/>
+					<range(0.0, 1.0) label="Texture size" field={textureSize}/>
+					<checkbox label="Support 4K" field={support4K}/>
+					<range(0.0, 1.0) label="Vignetting radius" field={vignettingRadius}/>
+					<range(0.0, 1.0) label="Vignetting smoothness" field={vignettingSmoothness}/>
+				</category>
+				<category("Debug")>
+					<checkbox label="Debug SSR mask" field={debugSSRMask}/>
+				</category>
+			</root>
+		);
+	}
+
 	#if editor
 	override function edit( ctx : hide.prefab.EditContext ) {
 		ctx.properties.add(new hide.Element('
