@@ -51,6 +51,21 @@ class Anim2D extends Object2D {
 		return h2dAnim;
 	}
 
+	override function edit2(ctx:hrt.prefab.EditContext2) {
+		super.edit2(ctx);
+		ctx.build(
+			<category("Frames")>
+				<file label="Background" field={src} type="texture"/>
+				<range(0, 100) field={widthFrame}/>
+				<range(0, 100) field={heightFrame}/>
+				<range(0, 60) label="FPS" field={fpsAnimation}/>
+				<range(0, 120) field={nbFrames}/>
+				<range(0, 10) field={delayStart}/>
+				<checkbox field={loop}/>
+			</category>
+		);
+	}
+
 	#if editor
 	override function edit( ctx : hide.prefab.EditContext ) {
 		super.edit(ctx);
