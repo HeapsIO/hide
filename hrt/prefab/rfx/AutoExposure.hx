@@ -61,6 +61,20 @@ class AutoExposure extends RendererFX {
 	}
 	#end
 
+	override function edit2( ctx : hrt.prefab.EditContext2 ) {
+		var render = cast(ctx.getScene3d().renderer, h3d.scene.pbr.Renderer);
+		ctx.build(
+			<root>
+				<range(-2,2) field={lightFront} />
+				<range(-2,2) field={lightBack} />
+				<range(0,3) field={lightPower} />
+				<checkbox field={useLightZ} />
+				<range(0,1) field={transitionSpeed} />
+				<text("Current " + hxd.Math.fmt(render.exposure)) />
+			</root>
+		);
+	}
+
 	static var _ = Prefab.register("rfx.autoexp", AutoExposure);
 
 }
