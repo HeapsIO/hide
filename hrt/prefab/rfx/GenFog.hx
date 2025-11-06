@@ -551,6 +551,78 @@ class GenFog extends RendererFX {
 		}
 		super.edit(ctx);
 	}
+
+	override function edit2(ctx : hrt.prefab.EditContext2) {
+		super.edit2(ctx);
+
+		ctx.build(
+			<root>
+				<category("General")>
+					<range(0, 1) field={intensity}/>
+				</category>
+				<category("Distance")>
+					<range(0, 100) field={startDistance}/>
+					<range(0, 100) field={endDistance}/>
+					<range(0, 100) field={distanceOpacity}/>
+					<checkbox label="Camera Independant" field={distanceFixed}/>
+				</category>
+				<category("Height")>
+					<range(0, 100) field={startHeight}/>
+					<range(0, 100) field={endHeight}/>
+					<range(0, 2) field={heightOpacity}/>
+				</category>
+				<category("Center")>
+					<checkbox label="Use Center Point" field={usePosition}/>
+					<line label="Center">
+						<slider label="X" field={posX}/>
+						<slider label="Y" field={posY}/>
+						<slider label="Z" field={posZ}/>
+					</line>
+				</category>
+				<category("Color")>
+					<color  field={startColor}/>
+					<color  field={endColor}/>
+					<range(0, 1) field={startOpacity}/>
+					<range(0, 1) field={endOpacity}/>
+				</category>
+				<category("Light")>
+					<color  field={lightColor}/>
+					<range(0, 1) field={lightColorAmount}/>
+					<range(0, 180) field={lightAngle} wrap/>
+				</category>
+				<category("Rendering")>
+					<select(["Lighting", "BeforeTonemapping", "AfterTonemapping"]) field={renderMode}/>
+				</category>
+				<category("Noise")>
+					<button("Add") id="btnAddNoise" if (noise == null)/>
+					<block if (noise != null)>
+						<file type="texturepath" field={noise.texture}/>
+						<range(0, 10) field={noise.amount}/>
+						<range(0, 10) field={noise.scale}/>
+						<range(0, 10) field={noise.speed}/>
+						<range(0, 10) field={noise.distAmount}/>
+						<button("Remove") id="btnRemoveNoise"/>
+					</block>
+				</category>
+			</root>
+		);
+
+		btnAddNoise?.onClick = () -> {
+			this.noise = {
+				texture : null,
+				amount : 1,
+				scale : 1,
+				speed : 1,
+				distAmount : 0.5,
+			};
+			ctx.rebuildInspector();
+		}
+
+		btnRemoveNoise?.onClick = () -> {
+			this.noise = null;
+			ctx.rebuildInspector();
+		}
+	}
 	#end
 
 	static var _ = Prefab.register("rfx.genFog", GenFog);
