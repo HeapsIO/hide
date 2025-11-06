@@ -52,6 +52,11 @@ abstract class EditContext2 {
 	**/
 	public abstract function openFile(path: String) : Void;
 
+	/**
+		Prompt the user to select a file, and then call callback with the chosen path.
+	**/
+	public abstract function chooseFileSave(path: String, callback:(absPath: String) -> Void, allowNull: Bool = false) : Void;
+
 
 	abstract function recordUndo(callback: (isUndo: Bool) -> Void ) : Void;
 	abstract function saveSetting(category: SettingCategory, key: String, value: Dynamic) : Void;

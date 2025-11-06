@@ -213,6 +213,12 @@ class HideJsEditContext2 extends hrt.prefab.EditContext2 {
 		ctx.scene.editor.queueRebuild(prefab);
 	}
 
+	public function chooseFileSave(path: String, callback:(absPath: String) -> Void, allowNull: Bool = false) : Void {
+		hide.Ide.inst.chooseFileSave(path, (relPath) -> {
+			callback(hide.Ide.inst.getPath(relPath));
+		}, allowNull);
+	}
+
 	public function rebuildTree(prefab: Prefab) {
 		ctx.scene.editor.sceneTree.refreshItem(prefab);
 	}
