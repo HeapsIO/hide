@@ -636,6 +636,59 @@ class VolumetricLighting extends RendererFX {
 
 	#end
 
+	override function edit2( ctx : hrt.prefab.EditContext2 ) {
+		super.edit2(ctx);
+
+		ctx.build(
+			<root>
+				<category("Fog")>
+					<range(0,1) field={intensity} />
+					<select(["None","Alpha","Add","AlphaAdd","Multiply","AlphaMultiply"]) field={blend}/>
+					<checkbox label="After FX" field={AFTER_FX} />
+					<slider min="0" field={startDistance} />
+					<slider min="0" field={endDistance} />
+					<range(0,1) field={distanceOpacity} />
+					<range(0,2) label="Env Power"field={fogEnvPower} />
+					<range(0,1) label="Env Color Mult" field={fogEnvColorMult} />
+					<color field={color} />
+					<range(0,2) field={fogDensity} />
+					<range(0,1) field={fogUseNoise} />
+					<range(0,1000) label="Bottom [m]" field={fogBottom} />
+					<range(0,1000) label="Top [m]" field={fogTop} />
+					<range(0,3) label="Height Falloff" field={fogHeightFalloff} />
+					<checkbox label="Follow Camera Height" field={offsetCamHeight} />
+				</category>
+				<category("Second Fog")>
+					<color label="color" field={secondFogColor} />
+					<range(0,2) label="Density" field={secondFogDensity} />
+					<range(0,1) label="Use Noise" field={secondFogUseNoise} />
+					<range(0,1000) label="Bottom [m]" field={secondFogBottom} />
+					<range(0,1000) label="Top [m]" field={secondFogTop} />
+					<range(0,3) label="Height Falloff" field={secondFogHeightFalloff} />
+				</category>
+				<category("Emissive")>
+					<color field={emissiveColor} />
+					<range(0,1) label="Emissive Intensity" field={emissiveIntensity} />
+				</category>
+				<category("Noise")>
+					<range(0,4) label="Octaves" field={noiseOctave} />
+					<range(0,100) label="Scale" field={noiseScale} />
+					<range(0,100) label="Turmoil" field={noiseTurmoil} />
+					<range(0,1) label="Persistence" field={noisePersistence} />
+					<range(0,2) label="Lacunarity" field={noiseLacunarity} />
+					<range(0,2) label="Sharpness" field={noiseSharpness} />
+				</category>
+				<category("Rendering")>
+					<range(0,255) label="Steps" field={steps} />
+					<range(0,100) step="1" field={blur} />
+					<slider field={blurDepthThreshold} />
+					<range(0,1) field={ditheringIntensity} />
+					<range(0,200) label="Fog Quality Distance" field={maxCamDist} />
+				</category>
+			</root>
+			);
+	}
+
 	static var _ = Prefab.register("rfx.volumetricLighting", VolumetricLighting);
 
 }
