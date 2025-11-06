@@ -190,6 +190,23 @@ class Text3D extends Object3D {
 		});
 	}
 
+	override function edit2(ctx : hrt.prefab.EditContext2) {
+		super.edit2(ctx);
+
+		ctx.build(
+			<category("Parameters")>
+				<input label="Text" field={contentText}/>
+				<file type="font" field={pathFont}/>
+				<select([{label: "Left", value: 0}, {label: "Center", value: 1}, {label: "Right", value: 2}]) id="alignment" field={align}/>
+				<color field={color}/>
+				<slider min={0} field={size}/>
+				<range(0, 1) field={cutoff}/>
+				<range(0, 1) field={smoothing}/>
+				<slider field={letterSpacing}/>
+			</category>
+		);
+	}
+
 	#end
 
 	override function updateInstance(?propName : String) {
