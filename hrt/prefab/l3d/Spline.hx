@@ -131,6 +131,7 @@ class Spline extends hrt.prefab.Object3D {
 	// Spline display
 	@:s public var showSpline : Bool = true;
 	@:s public var overlayGizmos : Bool = false;
+	@:s public var factorTanLengthEdition : Float = 1.0;
 	var graphics : h3d.scene.Graphics;
 	var lineThickness : Int = 2;
 	var handlesThickness : Int = 4;
@@ -235,6 +236,9 @@ class Spline extends hrt.prefab.Object3D {
 		samples = null;
 		drawSpline();
 		#end
+
+		if (propName == "factorTanLengthEdition")
+			refreshHandles();
 
 		if (propName == "overlayGizmos") {
 			graphics.material.mainPass.depth(false, overlayGizmos ? Always : LessEqual);
@@ -630,13 +634,14 @@ class Spline extends hrt.prefab.Object3D {
 			var g = getGraphics();
 			g.lineStyle(tangentThickness, tangentColor);
 			g.moveTo(0, 0, 0);
-			g.lineTo(tangent.x, tangent.y, tangent.z);
+			var tPos = tangent * factorTanLengthEdition;
+			g.lineTo(tPos.x, tPos.y, tPos.z);
 			g.setPosition(pos.x, pos.y, pos.z);
 
 			graphics.lineStyle(handlesThickness, pointColor);
 			drawCircle(new h3d.Vector(0,0,0), 0.2, graphics);
 
-			var abs = pos + tangent;
+			var abs = pos + tPos;
 			graphics.setPosition(abs.x, abs.y, abs.z);
 		}
 
@@ -868,6 +873,7 @@ class Spline extends hrt.prefab.Object3D {
 			</div>
 			<div class="group spline-editor" name="Spline Editor">
 				<dl><dt>Overlay gizmos</dt><dd><input type="checkbox" field="overlayGizmos" class="overlay-gizmos"/></dd></dl>
+				<dl><dt>Tangents edition scale</dt><dd><input type="range" min="0.1" max="10" step="1" field="factorTanLengthEdition"></dd></dl>
 				<div align="center">
 					<input type="button" value="Edit Mode : Disabled" class="editModeButton" />
 				</div>
@@ -1270,8 +1276,6 @@ class Spline extends hrt.prefab.Object3D {
 
 					this.local3d.visible = false;
 
-					trace(previewSpline.local3d.getAbsPos());
-					trace(this.local3d.getAbsPos());
 					if (mousePos == null)
 						mousePos = new h3d.Vector(e.relX, e.relY);
 
@@ -1301,7 +1305,6 @@ class Spline extends hrt.prefab.Object3D {
 						// Find nearest point on spline
 						var nearestSampleScreenPos = cam.projectInline(nearestSamplePos.x, nearestSamplePos.y, nearestSamplePos.z, width, height);
 						nearestSampleScreenPos.z = 0;
-						var isOnCurve = false;
 						var addToEnd = false;
 
 						if (nearestSampleScreenPos.distance(mousePos) < 20 && !hxd.Key.isDown(hxd.Key.SHIFT)) {
@@ -1391,10 +1394,11 @@ class Spline extends hrt.prefab.Object3D {
 				var b = handle.getBounds();
 				if (b.rayIntersection(ray, true) >= 0.0) {
 					mousePos = new h3d.Vector(e.relX, e.relY, 0);
-					var plane = h3d.col.Plane.fromNormalPoint(getCameraClosestEulerPlaneNormal(cam), handle.getAbsPos().getPosition());
+					var handlePos = handle.getAbsPos().getPosition();
+					var plane = h3d.col.Plane.fromNormalPoint(getCameraClosestEulerPlaneNormal(cam), handlePos);
 					draggedObj = obj;
 					prevPos = obj.pos.clone();
-					drawGrid(handle.getAbsPos().getPosition(), plane.getNormal(), cam, s3d);
+					drawGrid(handlePos, plane.getNormal(), cam, s3d);
 
 					@:privateAccess s3d.window.mouseMode = Relative(function(e) {
 						mousePos.x += e.relX;
@@ -1409,11 +1413,13 @@ class Spline extends hrt.prefab.Object3D {
 							case HandleType.TangentIn(p):
 								var globalToSpline = pos.transformed(getAbsPos(true).getInverse());
 								var newPos = globalToSpline - p.pos;
+								newPos *= 1 / factorTanLengthEdition;
 								obj.pos.set(newPos.x, newPos.y, newPos.z);
 								p.tangentOut = newPos * -1.;
 							case HandleType.TangentOut(p):
 								var globalToSpline = pos.transformed(getAbsPos(true).getInverse());
 								var newPos = globalToSpline - p.pos;
+								newPos *= 1 / factorTanLengthEdition;
 								obj.pos.set(newPos.x, newPos.y, newPos.z);
 								p.tangentIn = newPos * -1.;
 						}
