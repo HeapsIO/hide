@@ -235,10 +235,11 @@ class Spline extends hrt.prefab.Object3D {
 		#if editor
 		samples = null;
 		drawSpline();
-		#end
 
 		if (propName == "factorTanLengthEdition")
 			refreshHandles();
+		#end
+
 
 		if (propName == "overlayGizmos") {
 			graphics.material.mainPass.depth(false, overlayGizmos ? Always : LessEqual);
