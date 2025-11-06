@@ -36,6 +36,17 @@ class Gradient extends Object2D {
 		#end
 	}
 
+	override function edit2(ctx:hrt.prefab.EditContext2) {
+		super.edit2(ctx);
+		ctx.build(
+			<category("Parameters")>
+				<gradient field={gradient}/>
+				<range(-0.5, 0.5) label="Bg Pivot DX" field={dx}/>
+				<range(-0.5, 0.5) label="Bg Pivot DY" field={dy}/>
+			</category>
+		);
+	}
+
     #if editor
 
 	override function makeInteractive():h2d.Interactive {
