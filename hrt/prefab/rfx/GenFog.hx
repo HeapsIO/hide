@@ -607,20 +607,24 @@ class GenFog extends RendererFX {
 			</root>
 		);
 
-		btnAddNoise?.onClick = () -> {
-			this.noise = {
-				texture : null,
-				amount : 1,
-				scale : 1,
-				speed : 1,
-				distAmount : 0.5,
-			};
-			ctx.rebuildInspector();
+		if (btnAddNoise != null) {
+			btnAddNoise.onClick = () -> {
+				this.noise = {
+					texture : null,
+					amount : 1,
+					scale : 1,
+					speed : 1,
+					distAmount : 0.5,
+				};
+				ctx.rebuildInspector();
+			}
 		}
 
-		btnRemoveNoise?.onClick = () -> {
-			this.noise = null;
-			ctx.rebuildInspector();
+		if (btnRemoveNoise != null) {
+			btnRemoveNoise.onClick = () -> {
+				this.noise = null;
+				ctx.rebuildInspector();
+			}
 		}
 	}
 	#end
