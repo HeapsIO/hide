@@ -120,10 +120,12 @@ class Slider<T:Float> extends Widget<T> {
 			var min = min != null ? valueToLinear(min) : null;
 			var max = max != null ? valueToLinear(max) : null;
 
-			var mult = step ?? 0.01;
-			if (min != null && max != null) {
+			var mult : Float = step;
+			if (min != null && max != null && mult == null) {
 				mult = (max - min) / 1000.0;
 			}
+			if (mult == null)
+				mult = 0.01;
 			if (e.ctrlKey) mult *= 10.0;
 			if (e.shiftKey) mult /= 10.0;
 
