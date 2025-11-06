@@ -30,6 +30,14 @@ class CubeSpawn extends SpawnShader {
 		sh.boundsSize.set(cubeEdge, cubeEdge, cubeEdge);
 	}
 
+	override function edit2( ctx : hrt.prefab.EditContext2 ) {
+		ctx.build(
+			<category("Spawn")>
+				<slider min={0.01} field={cubeEdge}/>
+			</category>
+		);
+	}
+
 	#if editor
 	override function edit( ctx : hide.prefab.EditContext ) {
 		ctx.properties.add(new hide.Element('
