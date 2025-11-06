@@ -88,5 +88,9 @@ class Refraction extends RendererFX {
 		}
 	}
 
+	override function edit2( ctx : hrt.prefab.EditContext2 ) {
+		super.edit2(ctx);
+	}
+
 	static var _ = Prefab.register("rfx.refraction", Refraction);
 }
