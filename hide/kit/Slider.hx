@@ -120,12 +120,17 @@ class Slider<T:Float> extends Widget<T> {
 			var min = min != null ? valueToLinear(min) : null;
 			var max = max != null ? valueToLinear(max) : null;
 
-			var mult : Float = step;
+			var mult : Float = int ? null : step;
 			if (min != null && max != null && mult == null) {
 				mult = (max - min) / 1000.0;
 			}
-			if (mult == null)
-				mult = 0.01;
+			if (mult == null) {
+				if (int) {
+					mult = 0.01 * step;
+				} else {
+					mult = 0.01;
+				}
+			}
 			if (e.ctrlKey) mult *= 10.0;
 			if (e.shiftKey) mult /= 10.0;
 
@@ -214,6 +219,10 @@ class Slider<T:Float> extends Widget<T> {
 
 	function slideTo(newValue: T, isTemporary: Bool) {
 		var group = Std.downcast(parent, SliderGroup);
+		var snap = 1.0;
+		if (int)
+			snap = (cast step) ?? 1.0;
+
 		if (group != null && group.isLocked) {
 			var changeDelta = newValue / value;
 
@@ -231,7 +240,7 @@ class Slider<T:Float> extends Widget<T> {
 				}
 
 				if (int) {
-					siblingSlider.value = cast hxd.Math.round(cast siblingSlider);
+					siblingSlider.value = cast hxd.Math.round((cast siblingSlider:Float) / snap) * snap;
 				}
 				sliders.push(siblingSlider);
 			}
@@ -241,7 +250,7 @@ class Slider<T:Float> extends Widget<T> {
 		else {
 			value = newValue;
 			if (int) {
-				value = cast hxd.Math.round(cast value);
+				value = cast hxd.Math.round((cast value:Float) / snap) * snap;
 			}
 			broadcastValueChange(isTemporary);
 		}

@@ -49,6 +49,7 @@ class KitTest extends Object3D {
 				<slider label="Slider Poly Custom" value={12.34} poly={1.5} step={0.001}/>
 				<range(0.0, 100.0) label="Range" value={12.34}/>
 				<range(0,100) label="Range Int" value={12} int/>
+				<range(0,100) label="Range Int Step" value={10} step={10} int/>
 				<range(0.001, 1000.0) label="Range Exp" value={12.34} exp step={0.01}/>
 				<range(0.001, 1000.0) label="Range Poly" value={12.34} poly step={0.01}/>
 				<line>
