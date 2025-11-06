@@ -55,6 +55,18 @@ class Bitmap extends Object2D {
 		return [0.5 + hxd.Math.clamp(dx, -0.5, 0.5), 0.5 + hxd.Math.clamp(dy, -0.5, 0.5)];
 	}
 
+	override function edit2(ctx:hrt.prefab.EditContext2) {
+		super.edit2(ctx);
+		ctx.build(
+			<category("Parameters")>
+				<color field={color}/>
+				<file label="Background" field={src} type="texture"/>
+				<range(-0.5, 0.5) label="Bg Pivot DX" field={dx}/>
+				<range(-0.5, 0.5) label="Bg Pivot DY" field={dy}/>
+			</category>
+		);
+	}
+
 	#if editor
 
 	override function makeInteractive():h2d.Interactive {
