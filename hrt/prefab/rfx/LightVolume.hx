@@ -75,6 +75,20 @@ class LightVolume extends RendererFX {
 	}
 	#end
 
+	override function edit2( ctx : hrt.prefab.EditContext2 ) {
+		super.edit2(ctx);
+
+		ctx.build(
+			<root>
+				<range(1,255) field={steps} />
+				<range(0,5) field={blurRadius} />
+				<range(0,1) field={textureSize} />
+				<file field={ditheringNoise} type="texture"/>
+				<range(0,1) field={ditheringIntensity} />
+			</root>
+		);
+	}
+
 	static var _ = Prefab.register("rfx.lightVolume", LightVolume);
 
 }
