@@ -273,6 +273,45 @@ class TemporalFiltering extends hrt.prefab.rfx.RendererFX {
 		}
 	}
 
+	override function edit2( ctx : hrt.prefab.EditContext2 ) {
+		ctx.build(
+			<root>
+				<category("Rendering")>
+					<range(0.0, 1.0) field={amount}/>
+					<checkbox field={varianceClipping}/>
+					<checkbox field={catmullRom}/>
+					<checkbox field={velocity}/>
+					<select([
+						{value: "BeforeTonemapping", label: "Before Tonemapping"},
+						{value: "AfterTonemapping",  label: "After Tonemapping"},
+					]) label="Render Mode" field={renderMode}/>
+					<checkbox field={keepAlpha}/>
+					<checkbox field={keepSkyAlpha}/>
+				</category>
+				<category("Jitter")>
+					<select([
+						{value: "Still",            label: "Still"},
+						{value: "Uniform2",         label: "Uniform2"},
+						{value: "Uniform4",         label: "Uniform4"},
+						{value: "Uniform4_Helix",   label: "Uniform4 Helix"},
+						{value: "SkewButterfly",    label: "SkewButterfly"},
+						{value: "Rotated4_Helix",   label: "Rotated4 Helix"},
+						{value: "Rotated4_Helix2",  label: "Rotated4 Helix2"},
+						{value: "Poisson10",        label: "Poisson10"},
+						{value: "Pentagram",        label: "Pentagram"},
+						{value: "Halton_2_3_x8",    label: "Halton_2_3_x8"},
+						{value: "Halton_2_3_x16",   label: "Halton_2_3_x16"},
+						{value: "Halton_2_3_x32",   label: "Halton_2_3_x32"},
+						{value: "Halton_2_3_x256",  label: "Halton_2_3_x256"},
+						{value: "MotionPerp2",      label: "MotionPerp2"},
+						{value: "MotionVPerp2",     label: "MotionVPerp2"},
+					]) label="Pattern" field={jitterPattern}/>
+					<range(0.0, 2.0) label="Scake" field={jitterScale}/>
+				</category>
+			</root>
+		);
+	}
+
 	#if editor
 	override function edit( ctx : hide.prefab.EditContext ) {
 		ctx.properties.add(new hide.Element('
