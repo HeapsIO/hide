@@ -49,6 +49,7 @@ class File extends Widget<String> {
 		"prefab" => ["prefab", "l3d", "fx"],
 		"texture" => ["png", "dds", "jpeg", "jpg"],
 		"model" => ["fbx", "hmd"],
+		"atlas" => ["atlas"],
 	];
 }
 

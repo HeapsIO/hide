@@ -51,6 +51,19 @@ class Atlas extends Object2D {
 		return h2dAnim;
 	}
 
+	override function edit2(ctx:hrt.prefab.EditContext2) {
+		super.edit2(ctx);
+		ctx.build(
+			<category("Parameters")>
+				<file label="Background" field={src} type="atlas"/>
+				<range(0, 60) label="FPS" field={fpsAnimation}/>
+				<range(0, 5) field={delayStart}/>
+				<checkbox field={loop}/>
+				<checkbox field={forcePivotCenter}/>
+			</category>
+		);
+	}
+
 	#if editor
 
 	override function makeInteractive():h2d.Interactive {
