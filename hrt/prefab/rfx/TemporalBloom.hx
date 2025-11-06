@@ -195,6 +195,26 @@ class TemporalBloom extends RendererFX {
 	}
 	#end
 
+	override function edit2( ctx : hrt.prefab.EditContext2 ) {
+		super.edit2(ctx);
+
+		ctx.build(
+			<root>
+			<category("Bloom")>
+				<range(0,1) field={threshold} />
+				<range(0,1) field={intensity} />
+				<range(0,100) label="Max" field={maxValue} />
+				<range(0.1,1) label="Texture Size" field={size} />
+				<range(1,5) field={downScaleCount} />
+			</category>
+			<category("Temporal Filtering")>
+				<checkbox label="Enable" field={useTemporalFilter} />
+				<range(0,1) label="Strength" field={temporalStrength} />
+			</category>
+		</root>
+		);
+	}
+
 	static var _ = Prefab.register("rfx.temporalbloom", TemporalBloom);
 
 }
