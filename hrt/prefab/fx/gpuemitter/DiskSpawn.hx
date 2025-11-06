@@ -34,6 +34,15 @@ class DiskSpawn extends SpawnShader {
 		sh.maxRadius = maxRadius;
 	}
 
+	override function edit2( ctx : hrt.prefab.EditContext2 ) {
+		ctx.build(
+			<category("Spawn")>
+				<slider min={0.01} field={minRadius}/>
+				<slider min={0.01} field={maxRadius}/>
+			</category>
+		);
+	}
+
 	#if editor
 	override function edit( ctx : hide.prefab.EditContext ) {
 		ctx.properties.add(new hide.Element('
