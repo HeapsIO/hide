@@ -84,6 +84,12 @@ class RendererFX extends Prefab implements h3d.impl.RendererFX {
 		super.dispose();
 	}
 
+	override function edit2(ctx:hrt.prefab.EditContext2) {
+		ctx.build(
+			<checkbox field={enableInEditor}/>
+		);
+	}
+
 	#if editor
 	override function getHideProps() : hide.prefab.HideProps {
 		return { name : Type.getClassName(Type.getClass(this)).split(".").pop(), icon : "plus-circle" };
