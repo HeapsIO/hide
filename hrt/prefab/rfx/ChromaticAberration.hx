@@ -19,8 +19,8 @@ class ChromaticAberrationShader extends h3d.shader.ScreenShader {
 			var dir = normalize(pos);
 			var vignettingOpacity = 1 - smoothstep(radius, radius-softness, dist);
 
-			var red = ldrCopy.get(calculatedUV + dir * vignettingOpacity * intensity).r;			
-			var green = ldrCopy.get(calculatedUV).g;			
+			var red = ldrCopy.get(calculatedUV + dir * vignettingOpacity * intensity).r;
+			var green = ldrCopy.get(calculatedUV).g;
 			var blue = ldrCopy.get(calculatedUV - dir * vignettingOpacity * intensity).b;
 			pixelColor.rgb = vec3(red, green, blue);
 			pixelColor.a = opacity;
@@ -47,7 +47,7 @@ class ChromaticAberration extends RendererFX {
 	override function begin(r:h3d.scene.Renderer, step:h3d.impl.RendererFX.Step) {
 		if ( step == AfterTonemapping ) {
 			r.mark("ChromaticAberration");
-			
+
 			var ldrCopy = r.allocTarget("ldrCopy", true, 1.0);
 			h3d.pass.Copy.run(r.ctx.engine.getCurrentTarget(), ldrCopy);
 			pass.shader.ldrCopy = ldrCopy;
@@ -87,6 +87,24 @@ class ChromaticAberration extends RendererFX {
 	}
 
 	#end
+
+	override function edit2( ctx : hrt.prefab.EditContext2 ) {
+		super.edit2(ctx);
+
+		ctx.build(
+			<root>
+				<category("Aberration")>
+					<range(0, 3) label="Intensity [%]" field={intensity}/>
+				</category>
+				<category("Vignetting")>
+					<checkbox field={DEBUG}/>
+					<range(0, 1) field={opacity}/>
+					<range(0, 1) field={radius}/>
+					<range(0, 1) field={softness}/>
+				</category>
+			</root>
+		);
+	}
 
 	static var _ = Prefab.register("rfx.chromaticAberration", ChromaticAberration);
 
