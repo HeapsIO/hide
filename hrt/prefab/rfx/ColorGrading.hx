@@ -135,6 +135,38 @@ class ColorGrading extends RendererFX {
 		} };
 	}
 
+	override function edit2( ctx : hrt.prefab.EditContext2 ) {
+		ctx.build(
+			<root>
+				<category("Color Grading")>
+					<file label="LUT" field={texturePath} type="texture"/>
+					<range(1, 256) int field={size}/>
+					<range(0, 1) field={intensity}/>
+				</category>
+				<category("Debug")>
+					<button("Create default") id="createDefault"/>
+				</category>
+			</root>
+		);
+
+		createDefault.onClick = () -> {
+			function saveTexture( path : String ) {
+				var step = hxd.Math.ceil(255/(size - 1));
+				var p = hxd.Pixels.alloc(size * size, size, RGBA);
+				for( r in 0 ... size ) {
+					for( g in 0 ... size ) {
+						for( b in 0 ... size ) {
+							p.setPixel(r + b * size, g, 255 << 24 | ((r*step) << 16) | ((g*step) << 8 ) | (b*step));
+						}
+					}
+				}
+				sys.io.File.saveBytes(path, p.toPNG());
+				p.dispose();
+			}
+			ctx.chooseFileSave("defaultLUT.png", saveTexture);
+		};
+	}
+
 	#if editor
 
 	override function edit( ctx : hide.prefab.EditContext ) {
