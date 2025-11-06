@@ -3714,9 +3714,13 @@ class SceneEditor {
 				collider = new h3d.scene.Object(scene.s3d);
 			collider.removeChildren();
 			var meshes = scene.s3d.getMeshes();
+			var gizmos = scene.s3d.findAll((f) -> Std.downcast(f, hrt.tools.Gizmo));
 			meshes = meshes.filter(function (m : h3d.scene.Mesh) {
-				if (Std.isOfType(m, h3d.scene.Graphics) || gizmo.isGizmo(m))
+				if (Std.isOfType(m, h3d.scene.Graphics))
 					return false;
+				for (g in gizmos)
+					if (g.isGizmo(m))
+						return false;
 				return true;
 			});
 			for ( m in meshes ) {

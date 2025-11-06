@@ -131,24 +131,36 @@ class CollisionSettings {
 						continue;
 
 					var bufs = hmd.getDataBuffers(hxd.BufferFormat.POS3D, null, idx);
-					vertices = vertices.concat(cast bufs.vertexes);
-					indexes = indexes.concat(cast bufs.indexes);
+					for (v in bufs.vertexes)
+						vertices.push(v);
+					for (i in bufs.indexes)
+						indexes.push(i);
 				}
 
-				var convexHulls = hxd.fmt.hmd.Data.ConvexHullsCollider.buildConvexHulls(cast vertices, cast indexes, p);
+				var convexHulls = hxd.fmt.hmd.Data.ConvexHullsCollider.buildConvexHulls(vertices, indexes, p);
 				if (convexHulls == null)
 					return null;
 
 				var parentObj = new h3d.scene.Object();
 				for (convexHull in convexHulls) {
 					var polygonBuffer = new h3d.col.PolygonBuffer();
-					polygonBuffer.setData(cast convexHull.vertices, cast convexHull.indexes, true);
+					var vbuf = new haxe.ds.Vector<hxd.impl.Float32>(convexHull.vertices.length);
+					for (vIdx => v in convexHull.vertices)
+						vbuf[vIdx] = v;
+					var ibuf = new haxe.ds.Vector<Int>(convexHull.indexes.length);
+					for (i => idx in convexHull.indexes)
+						ibuf[i] = idx;
+					polygonBuffer.setData(vbuf, ibuf, true);
 					parentObj.addChild(polygonBuffer.makeDebugObj());
 				}
 				return parentObj;
 
 			case Shapes:
-				return null;
+				var parentObj = new h3d.scene.Object();
+				for (s in toShapeEditor())
+					hide.comp.ShapeEditor.getInteractive(s, false, parentObj);
+				return parentObj;
+
 			default:
 				throw "Unknown collision mode";
 		}
@@ -217,6 +229,14 @@ class ModelSceneEditor extends hide.comp.SceneEditor {
 			col?.remove();
 
 			for (c in parent.collisionSettings.get(k)) {
+				if (parent.shapesEditor.length > 0 && c.mode == Shapes) {
+					for (shapeEditor in parent.shapesEditor) {
+						@:privateAccess shapeEditor.removeAllInteractives();
+						@:privateAccess shapeEditor.createAllInteractives();
+					}
+					continue;
+				}
+
 				var debug = c.getDebugCollider(cast obj);
 				if (debug == null)
 					continue;
@@ -1078,6 +1098,10 @@ class Model extends FileView {
 						settings.mode = mode;
 						settings.params = params;
 						applySettings(settings);
+						if (settings.mode == Shapes) {
+							for (s in shapesEditor)
+								s.refresh(settings.toShapeEditor());
+						}
 					}));
 				});
 				applySettings(settings);
@@ -1989,9 +2013,12 @@ class Model extends FileView {
 		};
 		tree.onSelectionCleared = () -> {
 			element.find(".collision-editor").empty();
+			var wasShapeEditing = shapesEditor?.length > 0;
 			for (s in shapesEditor)
 				s.remove();
 			shapesEditor = [];
+			if (wasShapeEditing)
+				sceneEditor.updateCollidersVisibility();
 		}
 		tree.onDoubleClick = (item: Dynamic) -> {
 			var obj = Std.downcast(item, h3d.scene.Object);

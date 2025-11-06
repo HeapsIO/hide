@@ -1,5 +1,6 @@
 package hide.comp;
 
+// Shapes center and rotation are defined relative to parent
 enum Shape {
 	Box(center : h3d.col.Point, rotation : h3d.Vector, sizeX : Float, sizeY : Float, sizeZ : Float);
 	Sphere(center : h3d.col.Point, radius : Float);
@@ -59,19 +60,17 @@ class ShapeEditor extends Component {
 		if (options != null && options?.disableShapeEdition)
 			element.find(".edition").hide();
 
-		element.find("#btn-add").on("click", function() {
-			var prevShapes = this.shapes.copy();
+		element.find("#btn-add").on("click", function(e) {
 			this.shapes.push(Box(new h3d.col.Point(0, 0, 0), new h3d.Vector(0, 0, 0), 1, 1, 1));
 			updateShapeList();
-			var newShapes = this.shapes.copy();
-			var i = getInteractive(this.shapes[this.shapes.length - 1]);
+			var i = getInteractive(this.shapes[this.shapes.length - 1], (this.shapes.length - 1) == selectedShapeIdx, parentObj);
 			interactives.push(i);
-			registerUndo(prevShapes, newShapes);
 			onChange();
+			e.preventDefault();
+			e.stopPropagation();
 		});
 
-		element.find("#btn-remove").on("click", function() {
-			var prevShapes = this.shapes.copy();
+		element.find("#btn-remove").on("click", function(e) {
 			if (selectedShapeIdx == -1) {
 				this.shapes.pop();
 				var i = interactives.pop();
@@ -83,13 +82,13 @@ class ShapeEditor extends Component {
 				i.remove();
 				interactives.remove(i);
 			}
-			var newShapes = this.shapes.copy();
-			registerUndo(prevShapes, newShapes);
 
 			selectedShapeIdx = -1;
 			uninspect();
 			updateShapeList();
 			onChange();
+			e.preventDefault();
+			e.stopPropagation();
 		});
 
 		element.find("#edit-btn").on("click", function() {
@@ -102,6 +101,23 @@ class ShapeEditor extends Component {
 		uninspect();
 		updateShapeList();
 		createAllInteractives();
+	}
+
+	public function refresh(?shapes : Array<Shape>) {
+		this.shapes = shapes;
+		if (this.shapes == null)
+			this.shapes = [];
+
+		updateShapeList();
+		removeAllInteractives();
+		createAllInteractives();
+		if (selectedShapeIdx != -1 && selectedShapeIdx < this.shapes.length) {
+			inspect(this.shapes[selectedShapeIdx]);
+			gizmo?.setTransform(interactives[selectedShapeIdx].getAbsPos());
+		}
+		else {
+			stopShapeEditing();
+		}
 	}
 
 	override function remove() {
@@ -123,141 +139,123 @@ class ShapeEditor extends Component {
 		isInShapeEdition = true;
 		element.find("#edit-btn").toggleClass("activated", true);
 
-		var offsetPosition = new h3d.Vector(0, 0, 0);
-		var offsetRotation = new h3d.Quat();
-		var offsetScale = new h3d.Vector(0, 0, 0);
+		var lclOffsetPosition = new h3d.Vector(0, 0, 0);
+		var lclOffsetRotation = new h3d.Vector(0, 0, 0);
+		var lclOffsetScale = new h3d.Vector(0, 0, 0);
 
 		var initialShape = this.shapes[selectedShapeIdx];
-		var initialAbsPos = new h3d.Matrix();
+		var initialRelPos = new h3d.Matrix();
 
 		@:privateAccess scene.editor.showGizmo = false;
 		gizmo = new hrt.tools.Gizmo(scene.s3d, scene.s2d);
 		gizmo.allowNegativeScale = true;
-		gizmo.setTransform(this.interactives[selectedShapeIdx].getAbsPos());
+
+		gizmo.setTransform(interactives[selectedShapeIdx].getAbsPos());
+
 		gizmo.onStartMove = function(mode : hrt.tools.Gizmo.TransformMode) {
-			offsetPosition.set(0, 0, 0);
-			offsetRotation.identity();
-			offsetScale.set(1, 1, 1);
+			lclOffsetPosition.set(0, 0, 0);
+			lclOffsetRotation.set(0, 0, 0);
+			lclOffsetScale.set(1, 1, 1);
 
 			initialShape = shapes[selectedShapeIdx];
-			initialAbsPos.load(interactives[selectedShapeIdx].getAbsPos());
-			gizmo.setTransform(initialAbsPos);
+			initialRelPos.load(interactives[selectedShapeIdx].getTransform());
+
+			gizmo.setTransform(interactives[selectedShapeIdx].getAbsPos());
 		}
 
 		gizmo.onMove = function(position: h3d.Vector, rotation: h3d.Quat, scale: h3d.Vector) {
 			var interactive = interactives[selectedShapeIdx];
-			var absPos = initialAbsPos.clone();
+
+			var relPos = gizmo.getAbsPos().multiplied(interactive.parent.getAbsPos().getInverse());
+			interactive.setTransform(relPos);
+			var curRelPos = interactive.getTransform();
 
 			if (position != null)
-				offsetPosition.load(position);
+				lclOffsetPosition.load(curRelPos.getPosition() - initialRelPos.getPosition());
 
 			if (rotation != null)
-				offsetRotation.load(rotation);
+				lclOffsetRotation.load(curRelPos.getEulerAngles() - initialRelPos.getEulerAngles());
 
 			if (scale != null)
-				offsetScale.load(scale);
+				lclOffsetScale.load(scale);
 
 			// Update interactive
 			switch (initialShape) {
 				case Box(center, rotation, x, y, z):
-					if (offsetPosition != null)
-						absPos.translate(offsetPosition.x, offsetPosition.y, offsetPosition.z);
-					if (offsetScale != null) {
-						absPos.prependScale(1 / x, 1 / y, 1 / z);
-						absPos.prependScale(x + offsetScale.x - 1, y + offsetScale.y - 1, z + offsetScale.z - 1);
-					}
-					if (offsetRotation != null) {
-						var eulers = offsetRotation.toEuler();
-						absPos.prependRotation(eulers.x, eulers.y, eulers.z);
+					if (lclOffsetScale != null) {
+						curRelPos.prependScale(1 / x, 1 / y, 1 / z);
+						curRelPos.prependScale(x + lclOffsetScale.x - 1, y + lclOffsetScale.y - 1, z + lclOffsetScale.z - 1);
 					}
 
 				case Sphere(center, radius):
-					if (offsetPosition != null)
-						absPos.translate(offsetPosition.x, offsetPosition.y, offsetPosition.z);
-					if (offsetScale != null) {
-						var offsetRadius = offsetScale.x != 1 ? offsetScale.x : offsetScale.y != 1 ? offsetScale.y : offsetScale.z;
+					if (lclOffsetScale != null) {
+						var offsetRadius = lclOffsetScale.x != 1 ? lclOffsetScale.x : lclOffsetScale.y != 1 ? lclOffsetScale.y : lclOffsetScale.z;
 						offsetRadius -= 1;
-						absPos.prependScale(1 / radius, 1 / radius, 1 / radius);
-						absPos.prependScale(radius + offsetRadius, radius + offsetRadius, radius + offsetRadius);
+						curRelPos.prependScale(1 / radius, 1 / radius, 1 / radius);
+						curRelPos.prependScale(radius + offsetRadius, radius + offsetRadius, radius + offsetRadius);
 					}
 
 				case Capsule(center, rotation, radius, height):
-					if (offsetPosition != null)
-						absPos.translate(offsetPosition.x, offsetPosition.y, offsetPosition.z);
-					if (offsetScale != null) {
-						if (offsetScale.x == offsetScale.y && offsetScale.x == offsetScale.z) {
-							var radiusOffset = offsetScale.x == 1 ? offsetScale.y : offsetScale.x;
+					if (lclOffsetScale != null) {
+						if (lclOffsetScale.x == lclOffsetScale.y && lclOffsetScale.x == lclOffsetScale.z) {
+							var radiusOffset = lclOffsetScale.x == 1 ? lclOffsetScale.y : lclOffsetScale.x;
 							radiusOffset -= 1;
-							absPos.prependScale(1 / radius, 1 / radius, 1 / height);
-							absPos.prependScale(radius + radiusOffset, radius + radiusOffset, height + offsetScale.z - 1);
+							curRelPos.prependScale(1 / radius, 1 / radius, 1 / height);
+							curRelPos.prependScale(radius + radiusOffset, radius + radiusOffset, height + lclOffsetScale.z - 1);
 						}
 						else {
 							// We need to recreate the capsule prim if scale isn't uniform
-							var radiusOffset = offsetScale.x == 1 ? offsetScale.y : offsetScale.x;
+							var radiusOffset = lclOffsetScale.x == 1 ? lclOffsetScale.y : lclOffsetScale.x;
 							radiusOffset -= 1;
-							var newShape = Capsule(center + offsetPosition, rotation + offsetRotation.toEuler(), radius + radiusOffset, height + offsetScale.z - 1);
+							var newShape = Capsule(curRelPos.getPosition(), curRelPos.getEulerAngles(), radius + radiusOffset, height + lclOffsetScale.z - 1);
 							shapes[selectedShapeIdx] = newShape;
 							interactives[selectedShapeIdx].remove();
-							interactives[selectedShapeIdx] = getInteractive(newShape);
+							interactives[selectedShapeIdx] = getInteractive(newShape, true, parentObj);
 						}
-					}
-					if (offsetRotation != null) {
-						var eulers = offsetRotation.toEuler();
-						absPos.prependRotation(eulers.x, eulers.y, eulers.z);
 					}
 
 				case Cylinder(center, rotation, radius, height):
-					if (offsetPosition != null)
-						absPos.translate(offsetPosition.x, offsetPosition.y, offsetPosition.z);
-					if (offsetScale != null) {
-						var radiusOffset = offsetScale.x == 1 ? offsetScale.y : offsetScale.x;
+					if (lclOffsetScale != null) {
+						var radiusOffset = lclOffsetScale.x == 1 ? lclOffsetScale.y : lclOffsetScale.x;
 						radiusOffset -= 1;
-						absPos.prependScale(1 / radius, 1 / radius, 1 / height);
-						absPos.prependScale(radius + radiusOffset, radius + radiusOffset, height + offsetScale.z - 1);
-					}
-					if (offsetRotation != null) {
-						var eulers = offsetRotation.toEuler();
-						absPos.prependRotation(eulers.x, eulers.y, eulers.z);
+						curRelPos.prependScale(1 / radius, 1 / radius, 1 / height);
+						curRelPos.prependScale(radius + radiusOffset, radius + radiusOffset, height + lclOffsetScale.z - 1);
 					}
 
 				default:
 			}
 
-			@:privateAccess interactive.setTransform(absPos);
+			interactive.setTransform(curRelPos);
 		}
 
 		gizmo.onFinishMove = function() {
-			var prevShapes = this.shapes.copy();
 			var newShape = switch(shapes[selectedShapeIdx]) {
 				case Box(center, rotation, sizeX, sizeY, sizeZ):
-					Box(center + offsetPosition, rotation + offsetRotation.toEuler(), sizeX + offsetScale.x - 1, sizeY + offsetScale.y - 1, sizeZ + offsetScale.z - 1);
+					Box(center + lclOffsetPosition, rotation + lclOffsetRotation, sizeX + lclOffsetScale.x - 1, sizeY + lclOffsetScale.y - 1, sizeZ + lclOffsetScale.z - 1);
 				case Sphere(center, radius):
-					var offsetRadius = offsetScale.x != 1 ? offsetScale.x : offsetScale.y != 1 ? offsetScale.y : offsetScale.z;
+					var offsetRadius = lclOffsetScale.x != 1 ? lclOffsetScale.x : lclOffsetScale.y != 1 ? lclOffsetScale.y : lclOffsetScale.z;
 					offsetRadius -= 1;
-					Sphere(center + offsetPosition, radius + offsetRadius);
+					Sphere(center + lclOffsetPosition, radius + offsetRadius);
 				case Capsule(center, rotation, radius, height):
-					if (offsetScale.x == offsetScale.y && offsetScale.x == offsetScale.z) {
-						var radiusOffset = offsetScale.x == 1 ? offsetScale.y : offsetScale.x;
+					if (lclOffsetScale.x == lclOffsetScale.y && lclOffsetScale.x == lclOffsetScale.z) {
+						var radiusOffset = lclOffsetScale.x == 1 ? lclOffsetScale.y : lclOffsetScale.x;
 						radiusOffset -= 1;
-						Capsule(center + offsetPosition, rotation + offsetRotation.toEuler(), radius + radiusOffset, height + offsetScale.z - 1);
+						Capsule(center + lclOffsetPosition, rotation + lclOffsetRotation, radius + radiusOffset, height + lclOffsetScale.z - 1);
 					}
 					else {
 						Capsule(center, rotation, radius, height);
 					}
 				case Cylinder(center, rotation, radius, height):
-					var radiusOffset = offsetScale.x == 1 ? offsetScale.y : offsetScale.x;
+					var radiusOffset = lclOffsetScale.x == 1 ? lclOffsetScale.y : lclOffsetScale.x;
 					radiusOffset -= 1;
-					Cylinder(center + offsetPosition, rotation + offsetRotation.toEuler(), radius + radiusOffset, height + offsetScale.z - 1);
+					Cylinder(center + lclOffsetPosition, rotation + lclOffsetRotation, radius + radiusOffset, height + lclOffsetScale.z - 1);
 			}
 
 			shapes[selectedShapeIdx] = newShape;
 			interactives[selectedShapeIdx].remove();
-			interactives[selectedShapeIdx] = getInteractive(newShape);
+			interactives[selectedShapeIdx] = getInteractive(newShape, true, parentObj);
 			inspect(newShape);
 			onChange();
-
-			var newShapes = this.shapes.copy();
-			registerUndo(prevShapes, newShapes);
 		}
 
 		@:privateAccess scene.editor.gizmo.onChangeMode = (mode) -> {
@@ -297,43 +295,31 @@ class ShapeEditor extends Component {
 		var extraParams = element.find("#extra-params");
 
 		function updateShape() {
-			var prevShapes = this.shapes.copy();
 			var selIdx = Std.parseInt(shapeSelect.val());
 			if (this.shapes[selectedShapeIdx].getIndex() != selIdx)
 				this.shapes[selectedShapeIdx] = getDefaultShape(Shape.createByIndex(selIdx, getExtraParams()));
 			else
 				this.shapes[selectedShapeIdx] = Shape.createByIndex(selIdx, getExtraParams());
 
-			var newShapes = this.shapes.copy();
-
 			var i = interactives[selectedShapeIdx];
 			i.remove();
-			interactives[selectedShapeIdx] = getInteractive(this.shapes[selectedShapeIdx]);
+			interactives[selectedShapeIdx] = getInteractive(this.shapes[selectedShapeIdx], true, parentObj);
 
-			gizmo?.setTransform(interactives[selectedShapeIdx].getAbsPos());
+			gizmo?.setTransform(interactives[selectedShapeIdx].getTransform());
 			updateShapeList();
 			inspect(this.shapes[selectedShapeIdx]);
 			onChange();
-
-			scene.editor.properties.undo.change(Custom((undo) -> {
-				this.shapes = undo ? prevShapes : newShapes;
-				inspect(this.shapes[this.selectedShapeIdx]);
-				for (idx in 0...shapes.length) {
-					this.interactives[idx].remove();
-					this.interactives[idx] = getInteractive(this.shapes[idx]);
-				}
-
-				gizmo?.setTransform(interactives[selectedShapeIdx].getAbsPos());
-				updateShapeList();
-				onChange();
-			}));
 		}
 
 		element.find("#extra-params").empty();
 		element.find("#shape-inspector").show();
 
 		shapeSelect.val(shape.getIndex());
-		shapeSelect.on("change", updateShape);
+		shapeSelect.on("change", function(e) {
+			updateShape();
+			e.preventDefault();
+			e.stopPropagation();
+		});
 
 		switch (shape) {
 			case Box(center, rotation, x, y, z):
@@ -351,7 +337,7 @@ class ShapeEditor extends Component {
 			case Sphere(center, radius):
 				var e = new Element('
 					<label>Center</label>
-					<div class="vector"><input type="number" id="x" value="${center.x}"/><input type="number" id="y" value="${center.y}"/><input type="number" id="z" value="${center.z}"/></div>
+					<div class="inlined vector"><input type="number" id="x" value="${center.x}"/><input type="number" id="y" value="${center.y}"/><input type="number" id="z" value="${center.z}"/></div>
 					<label>Radius</label>
 					<div><input type="number" min="0" id="radius" value="$radius"/></div>
 				');
@@ -361,7 +347,7 @@ class ShapeEditor extends Component {
 			case Capsule(center, rotation, radius, height), Cylinder(center, rotation, radius, height):
 				var e = new Element('
 					<label>Center</label>
-					<div class="vector"><input type="number" id="x" value="${center.x}"/><input type="number" id="y" value="${center.y}"/><input type="number" id="z" value="${center.z}"/></div>
+					<div class="inlined vector"><input type="number" id="x" value="${center.x}"/><input type="number" id="y" value="${center.y}"/><input type="number" id="z" value="${center.z}"/></div>
 					<label>Rotation (Radians)</label>
 					<div class="inlined vector"><input type="number" id="rotation-x" value="${rotation.x}"/><input type="number" id="rotation-y" value="${rotation.y}"/><input type="number" id="rotation-z" value="${rotation.z}"/></div>
 					<label>Radius</label>
@@ -381,7 +367,7 @@ class ShapeEditor extends Component {
 	}
 
 
-	function getInteractive(shape : Shape) : h3d.scene.Mesh {
+	public static function getInteractive(shape : Shape, highlight : Bool, parent : h3d.scene.Object) : h3d.scene.Mesh {
 		var offset = new h3d.Vector(0, 0, 0);
 		var offsetRotation = new h3d.Vector(0, 0, 0);
 		var prim : h3d.prim.Primitive = switch (shape) {
@@ -410,11 +396,10 @@ class ShapeEditor extends Component {
 				c;
 		}
 
-		var isSelected = this.shapes.indexOf(shape) == selectedShapeIdx;
-		var shapeColor = isSelected ? SELECTED_COLOR : DEFAULT_COLOR;
-		var intersectionColor = isSelected ? SELECTED_INTERSECTION_COLOR : INTERSECTION_COLOR;
+		var shapeColor = highlight ? SELECTED_COLOR : DEFAULT_COLOR;
+		var intersectionColor = highlight ? SELECTED_INTERSECTION_COLOR : INTERSECTION_COLOR;
 
-		var mesh = new h3d.scene.Mesh(prim, null, parentObj);
+		var mesh = new h3d.scene.Mesh(prim, null, parent);
 		mesh.setPosition(offset.x, offset.y, offset.z);
 		mesh.setRotation(offsetRotation.x, offsetRotation.y, offsetRotation.z);
 		mesh.material.castShadows = false;
@@ -444,33 +429,13 @@ class ShapeEditor extends Component {
 	function createAllInteractives() {
 		removeAllInteractives();
 		for (idx in 0...shapes.length)
-			this.interactives[idx] = getInteractive(this.shapes[idx]);
+			this.interactives[idx] = getInteractive(this.shapes[idx], idx == selectedShapeIdx, parentObj);
 	}
 
 	function removeAllInteractives() {
 		for (i in this.interactives)
 			i.remove();
 		this.interactives = [];
-	}
-
-
-	function registerUndo(prevShapes : Array<Shape>, newShapes : Array<Shape>) {
-		scene.editor.properties.undo.change(Custom((undo) -> {
-			this.shapes = undo ? prevShapes : newShapes;
-			if (this.selectedShapeIdx == -1 || this.selectedShapeIdx >= this.shapes.length)
-				uninspect();
-			else
-				inspect(this.shapes[this.selectedShapeIdx]);
-			for (i in this.interactives)
-				i.remove();
-			this.interactives = [];
-			for (idx in 0...shapes.length)
-				this.interactives[idx] = getInteractive(this.shapes[idx]);
-			if (this.selectedShapeIdx != -1)
-				gizmo?.setTransform(this.interactives[this.selectedShapeIdx].getAbsPos());
-			updateShapeList();
-			onChange();
-		}));
 	}
 
 	function updateShapeList() {
@@ -498,7 +463,7 @@ class ShapeEditor extends Component {
 				list.find(".selected").removeClass("selected");
 				el.addClass("selected");
 				inspect(s);
-				gizmo?.setTransform(interactive.getAbsPos());
+				gizmo?.setTransform(interactives[selectedShapeIdx].getAbsPos());
 				interactiveMaterial.color.setColor(SELECTED_COLOR);
 				intersectionMaterial.color.setColor(SELECTED_INTERSECTION_COLOR);
 			});
