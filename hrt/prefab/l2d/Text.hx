@@ -135,6 +135,42 @@ class Text extends Object2D {
 		return null;
 	}
 
+	override function edit2(ctx:hrt.prefab.EditContext2) {
+		super.edit2(ctx);
+		ctx.build(
+			<root>
+				<category("Parameters")>
+					<select([{value:0, label:"Left"}, {value:1, label:"Center"}, {value:2, label:"Right"}]) field={align}/>
+					<file label="Font" field={pathFont} type="font"/>
+					<color field={color}/>
+					<range(1, 50) field={size}/>
+					<range(0, 1) field={cutoff}/>
+					<range(0, 1) field={smoothing}/>
+					<range(0, 500) field={maxWidth}/>
+				</category>
+				<category("Text Shadow (double render)") field={enableTextShadow}>
+					<range(-50, 50) label="DX" field={tsDx}/>
+					<range(-50, 50) label="DY" field={tsDy}/>
+					<color label="Color" field={tsColor}/>
+					<range(0, 1) label="Alpha" field={tsAlpha}/>
+				</category>
+				<category("Drop Shadow") field={enableDropShadow}>
+					<range(-50, 50) label="Distance" field={dsDistance}/>
+					<range(-1.571, 1.571) label="Angle" field={dsAngle} step={0.0524}/>
+					<color label="Color" field={dsColor}/>
+					<range(0, 1) label="Alpha" field={dsAlpha}/>
+					<range(0, 50) label="Radius" field={dsRadius}/>
+					<range(0.1, 50) label="Gain" field={dsGain}/>
+					<range(0, 1) label="Quality" field={dsQuality}/>
+					<checkbox label="Smooth Color" field={dsSmoothColor}/>
+				</category>
+				<category("Responsive")>
+					<input field={text}/>
+				</category>
+			</root>
+		);
+	}
+
 	#if editor
 
 	override function makeInteractive():h2d.Interactive {

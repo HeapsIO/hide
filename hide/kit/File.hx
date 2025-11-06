@@ -50,6 +50,7 @@ class File extends Widget<String> {
 		"texture" => ["png", "dds", "jpeg", "jpg"],
 		"model" => ["fbx", "hmd"],
 		"atlas" => ["atlas"],
+		"font" => ["fnt"],
 	];
 }
 
