@@ -32,6 +32,12 @@ class AnimSpeedControl extends hrt.prefab.Prefab {
 			ctx.onChange(this, p);
 		});
 	}
+
+	override function edit2(ctx:hrt.prefab.EditContext2) {
+		ctx.build(
+			<slider field={speed}/>
+		);
+	}
 	#end
 
 	static var _ = Prefab.register("animSpeedCtrl", AnimSpeedControl);
