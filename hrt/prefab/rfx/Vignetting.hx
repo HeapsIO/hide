@@ -103,6 +103,18 @@ class Vignetting extends RendererFX {
 	}
 	#end
 
+	override function edit2( ctx : hrt.prefab.EditContext2 ) {
+		ctx.build(
+			<root>
+				<color field={color} />
+				<range(0,1) field={alpha} />
+				<range(0,1) field={radius} />
+				<range(0,1) field={softness} />
+			</root>
+		);
+		super.edit2(ctx);
+	}
+
 	static var _ = Prefab.register("rfx.Vignetting", Vignetting);
 
 }
