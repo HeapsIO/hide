@@ -77,7 +77,7 @@ class CollisionSettings {
 				return null;
 
 			case Default:
-				return mesh.getCollider().makeDebugObj();
+				return mesh.getCollider()?.makeDebugObj();
 
 			case Mesh:
 				if (params.mesh == null)
@@ -231,10 +231,14 @@ class ModelSceneEditor extends hide.comp.SceneEditor {
 			for (c in parent.collisionSettings.get(k)) {
 				if (parent.shapesEditor.length > 0 && c.mode == Shapes) {
 					for (shapeEditor in parent.shapesEditor) {
-						@:privateAccess shapeEditor.removeAllInteractives();
-						@:privateAccess shapeEditor.createAllInteractives();
+						shapeEditor.removeAllInteractives();
+						shapeEditor.createAllInteractives();
 					}
 					continue;
+				}
+				else {
+					for (shapeEditor in parent.shapesEditor)
+						shapeEditor.removeAllInteractives();
 				}
 
 				var debug = c.getDebugCollider(cast obj);
@@ -1091,6 +1095,8 @@ class Model extends FileView {
 					settings.mode = curMode;
 					settings.params = curParams;
 					applySettings(settings);
+					if (curMode != prevMode)
+						sceneEditor.updateCollidersVisibility();
 
 					undo.change(Custom(function(undo) {
 						var mode = undo ? prevMode : curMode;
@@ -1098,6 +1104,8 @@ class Model extends FileView {
 						settings.mode = mode;
 						settings.params = params;
 						applySettings(settings);
+						if (curMode != prevMode)
+							sceneEditor.updateCollidersVisibility();
 						if (settings.mode == Shapes) {
 							for (s in shapesEditor)
 								s.refresh(settings.toShapeEditor());

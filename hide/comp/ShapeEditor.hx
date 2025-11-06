@@ -426,13 +426,13 @@ class ShapeEditor extends Component {
 		return mesh;
 	}
 
-	function createAllInteractives() {
+	public function createAllInteractives() {
 		removeAllInteractives();
 		for (idx in 0...shapes.length)
 			this.interactives[idx] = getInteractive(this.shapes[idx], idx == selectedShapeIdx, parentObj);
 	}
 
-	function removeAllInteractives() {
+	public function removeAllInteractives() {
 		for (i in this.interactives)
 			i.remove();
 		this.interactives = [];
