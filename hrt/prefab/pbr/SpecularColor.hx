@@ -143,5 +143,26 @@ class SpecularColor extends Prefab {
 	}
 	#end
 
+	override function edit2( ctx : hrt.prefab.EditContext2 ) {
+		super.edit2(ctx);
+
+		function rebuild( isTemp : Bool){
+			ctx.rebuildInspector();
+			refreshShaders();
+		}
+
+		ctx.build(
+			<root>
+				<category("Specular Color")>
+					<range(0,1) label="Reflection Amount" field={specular} />
+					<range(0,1) label="Tint Amount" field={specularTint} />
+					<select(["Albedo","Flat","Texture"]) field={mode} onValueChange={rebuild}/>
+					<color label="Color" field={specularColorCustomValue} if(mode == SpecularColorMode.Flat)/>
+					<file label="Color" field={specularColorPath} type="texture" onValueChange={rebuild} if(mode == SpecularColorMode.Texture)/>
+				</category>
+			</root>
+		);
+	}
+
 	static var _ = Prefab.register("specularColor", SpecularColor);
 }
