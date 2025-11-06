@@ -103,6 +103,22 @@ class Bloom extends RendererFX {
 	}
 	#end
 
+	override function edit2( ctx : hrt.prefab.EditContext2 ) {
+		super.edit2(ctx);
+
+		ctx.build(
+			<root>
+				<range(0, 1) field={intensity}/>
+				<range(0, 1) field={threshold}/>
+				<range(0, 1) field={size}/>
+				<range(0, 20) field={blur}/>
+				<range(-1, 1) field={saturation}/>
+				<range(0, 1) field={blurQuality}/>
+				<range(0, 1) field={blurLinear}/>
+			</root>
+		);
+	}
+
 	static var _ = Prefab.register("rfx.bloom", Bloom);
 
 }
