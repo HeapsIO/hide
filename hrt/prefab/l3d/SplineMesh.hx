@@ -194,7 +194,7 @@ class SplineMesh extends hrt.prefab.Object3D {
 
 		var localPoints = getLocalPoints();
 		var splineInvAbsPos = spline.getAbsPos(true).getInverse();
-		
+
 		var dataPos = 0;
 		for ( s in 0...count ) {
 			var spacing = s * spacing - spacing * (count - 1) * 0.5;
@@ -276,6 +276,29 @@ class SplineMesh extends hrt.prefab.Object3D {
 
 		props.find(".refresh").click(function(_) { ctx.onChange(this, null); });
 		ctx.properties.add(props, this, function(pname) { ctx.onChange(this, pname); });
+	}
+
+	override function edit2(ctx:hrt.prefab.EditContext2) {
+		super.edit2(ctx);
+
+		ctx.build(
+			<root>
+				<category("Material")>
+					<slider min={0.001} field={scaleUVx}/>
+					<slider min={0.001} field={scaleUVy}/>
+				</category>
+				<category("Mesh")>
+					<slider min={1} field={subdivision}/>
+					<slider min={0.} field={thickness}/>
+					<range(1, 10) field={count}/>
+					<slider min={0.} field={spacing}/>
+				</category>
+				<category("Preview")>
+					<range(4, 64) field={previewPointCount}/>
+					<range(1, 10) field={previewRadius}/>
+				</category>
+			</root>
+		);
 	}
 
 	override function getHideProps() : hide.prefab.HideProps {
