@@ -135,6 +135,30 @@ class Object2D extends Prefab {
 		updateInstance();
 	}
 
+	override function edit2(ctx:hrt.prefab.EditContext2) {
+		var enumList = haxe.EnumTools.createAll(h2d.BlendMode);
+		var selectBlendMode = [for( e in enumList ) { value : e, label : e.getName() }];
+		ctx.build(
+			<root>
+				<category("Position")>
+					<line label="Position">
+						<slider field={x}/>
+						<slider field={y}/>
+					</line>
+					<slider-group label="Scale">
+						<slider field={scaleX} label="X" default={1.0}/>
+						<slider field={scaleY} label="Y" default={1.0}/>
+					</slider-group>
+					<slider field={rotation} min="-180" max="180" wrap/>
+				</category>
+				<category("Display")>
+					<checkbox field={visible}/>
+					<select(selectBlendMode) field={blendMode}/>
+				</category>
+			</root>
+		);
+	}
+
 	#if editor
 	override function getHideProps() : hide.prefab.HideProps {
 		// Check children
