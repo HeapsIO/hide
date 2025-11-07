@@ -229,17 +229,17 @@ class ModelSceneEditor extends hide.comp.SceneEditor {
 			col?.remove();
 
 			for (c in parent.collisionSettings.get(k)) {
-				if (parent.shapesEditor.length > 0 && c.mode == Shapes) {
-					for (shapeEditor in parent.shapesEditor) {
-						shapeEditor.removeAllInteractives();
+				var debugCreated = false;
+				for (shapeEditor in parent.shapesEditor) {
+					shapeEditor.removeAllInteractives();
+					if (parent.shapesEditor.length > 0 && c.mode == Shapes) {
 						shapeEditor.createAllInteractives();
+						debugCreated = true;
 					}
+				}
+
+				if (debugCreated)
 					continue;
-				}
-				else {
-					for (shapeEditor in parent.shapesEditor)
-						shapeEditor.removeAllInteractives();
-				}
 
 				var debug = c.getDebugCollider(cast obj);
 				if (debug == null)
@@ -2213,6 +2213,13 @@ class Model extends FileView {
 			var r = s.r * 4.0;
 			sceneEditor.cameraController.set(r, null, null, s.getCenter());
 			sceneEditor.cameraController.toTarget();
+		}
+
+		// Reset parent obj of shapeEditors
+		for (s in shapesEditor) {
+			var objName = s.rootDebugObj.name;
+			s.rootDebugObj.remove();
+			s.rootDebugObj = obj.getObjectByName(objName);
 		}
 	}
 

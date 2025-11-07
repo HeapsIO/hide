@@ -20,7 +20,7 @@ class ShapeEditor extends Component {
 	static var INTERSECTION_COLOR = 0x55FF0000;
 	static var SELECTED_INTERSECTION_COLOR = 0x99FF0000;
 
-	var parentObj : h3d.scene.Object;
+	public var rootDebugObj(default, set) : h3d.scene.Object;
 	var shapes : Array<Shape> = [];
 
 	var interactives : Array<h3d.scene.Mesh> = [];
@@ -29,9 +29,9 @@ class ShapeEditor extends Component {
 	var gizmo : hrt.tools.Gizmo;
 	var scene : Scene;
 
-	public function new(scene : Scene, parentObj : h3d.scene.Object, ?shapes : Array<Shape>, ?options : ShapeEditorOptions, ?parent: Element) {
+	public function new(scene : Scene, rootDebugObj : h3d.scene.Object, ?shapes : Array<Shape>, ?options : ShapeEditorOptions, ?parent: Element) {
 		this.scene = scene;
-		this.parentObj = parentObj;
+		this.rootDebugObj = rootDebugObj;
 		this.shapes = shapes;
 
 		// Set default value if not passed in constructor
@@ -63,7 +63,7 @@ class ShapeEditor extends Component {
 		element.find("#btn-add").on("click", function(e) {
 			this.shapes.push(Box(new h3d.col.Point(0, 0, 0), new h3d.Vector(0, 0, 0), 1, 1, 1));
 			updateShapeList();
-			var i = getInteractive(this.shapes[this.shapes.length - 1], (this.shapes.length - 1) == selectedShapeIdx, parentObj);
+			var i = getInteractive(this.shapes[this.shapes.length - 1], (this.shapes.length - 1) == selectedShapeIdx, rootDebugObj);
 			interactives.push(i);
 			onChange();
 			e.preventDefault();
@@ -210,7 +210,7 @@ class ShapeEditor extends Component {
 							var newShape = Capsule(curRelPos.getPosition(), curRelPos.getEulerAngles(), radius + radiusOffset, height + lclOffsetScale.z - 1);
 							shapes[selectedShapeIdx] = newShape;
 							interactives[selectedShapeIdx].remove();
-							interactives[selectedShapeIdx] = getInteractive(newShape, true, parentObj);
+							interactives[selectedShapeIdx] = getInteractive(newShape, true, rootDebugObj);
 						}
 					}
 
@@ -253,7 +253,7 @@ class ShapeEditor extends Component {
 
 			shapes[selectedShapeIdx] = newShape;
 			interactives[selectedShapeIdx].remove();
-			interactives[selectedShapeIdx] = getInteractive(newShape, true, parentObj);
+			interactives[selectedShapeIdx] = getInteractive(newShape, true, rootDebugObj);
 			inspect(newShape);
 			onChange();
 		}
@@ -303,7 +303,7 @@ class ShapeEditor extends Component {
 
 			var i = interactives[selectedShapeIdx];
 			i.remove();
-			interactives[selectedShapeIdx] = getInteractive(this.shapes[selectedShapeIdx], true, parentObj);
+			interactives[selectedShapeIdx] = getInteractive(this.shapes[selectedShapeIdx], true, rootDebugObj);
 
 			gizmo?.setTransform(interactives[selectedShapeIdx].getTransform());
 			updateShapeList();
@@ -429,7 +429,7 @@ class ShapeEditor extends Component {
 	public function createAllInteractives() {
 		removeAllInteractives();
 		for (idx in 0...shapes.length)
-			this.interactives[idx] = getInteractive(this.shapes[idx], idx == selectedShapeIdx, parentObj);
+			this.interactives[idx] = getInteractive(this.shapes[idx], idx == selectedShapeIdx, rootDebugObj);
 	}
 
 	public function removeAllInteractives() {
@@ -507,5 +507,14 @@ class ShapeEditor extends Component {
 			case Cylinder(_):
 				Cylinder(new h3d.col.Point(0, 0, 0), new h3d.Vector(0, 0, 0), 1., 1.);
 		}
+	}
+
+	function set_rootDebugObj(v : h3d.scene.Object) {
+		this.rootDebugObj = v;
+		if (interactives.length > 0) {
+			removeAllInteractives();
+			createAllInteractives();
+		}
+		return this.rootDebugObj;
 	}
 }
