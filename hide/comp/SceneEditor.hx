@@ -3072,7 +3072,7 @@ class SceneEditor {
 		@:privateAccess
 		if (ref != null && ref.enabled) {
 			if (forceLoad) {
-				ref.resolveRef();
+				ref.resolve();
 			}
 			if (ref.refInstance != null) getAllWithRefs(ref.refInstance, cl, arr, forceLoad);
 		}

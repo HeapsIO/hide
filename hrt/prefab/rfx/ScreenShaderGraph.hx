@@ -111,7 +111,7 @@ class ScreenShaderGraph extends RendererFX {
 
 	public function loadShaderDef() {
 		if (shaderGraph == null)
-			resolveRef();
+			resolve();
 		shaderDef = shaderGraph.compile(null);
 		if(shaderDef == null)
 			return;
@@ -203,7 +203,7 @@ class ScreenShaderGraph extends RendererFX {
 				Reflect.setField(instance.props, f, Reflect.field(this.props, f));
 			}
 		}
-		var p = resolveRef();
+		var p = resolve();
 		if(p == null)
 			return;
 		if (shader == null)
@@ -212,7 +212,7 @@ class ScreenShaderGraph extends RendererFX {
 			syncShaderVars();
 	}
 
-	public function resolveRef() {
+	public function resolve() {
 		if(shaderGraph != null)
 			return shaderGraph;
 		if(source == null)

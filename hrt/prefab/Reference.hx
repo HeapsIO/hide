@@ -148,37 +148,34 @@ class Reference extends Object3D {
 		#end
 
 		if (shouldLoad) {
-			resolveRef();
+			resolve();
 		}
 	}
 
-	function resolveRef() : Prefab {
+	/**
+		Loads the prefab referenced by `source`, apply overrides to it if applicable and store it in refInstance and returns it.
+	**/
+	public function resolve(forceClone: Bool = false) : Prefab {
 		if (refInstance != null)
 			return refInstance;
 
 		if (shared.parentPrefab != null && editorOnly)
 			return null;
 
-		var shouldLoadUniqueObject = #if editor true #else overrides != null #end;
-
 		#if editor
 		try {
 		#end
 			var res = @:privateAccess hxd.res.Loader.currentInstance.load(source).toPrefab();
 
-			if (shouldLoadUniqueObject) {
+			if (overrides != null) {
 				var refInstanceData = @:privateAccess res.loadData();
 
 				#if editor
 				originalSource = @:privateAccess res.loadData();
 				#end
 
-				if (overrides != null) {
-					refInstanceData = hrt.prefab.Diff.apply(refInstanceData, overrides);
-				}
-
+				refInstanceData = hrt.prefab.Diff.apply(refInstanceData, overrides);
 				refInstance = hrt.prefab.Prefab.createFromDynamic(refInstanceData, null, new ContextShared(source, null, null, true));
-
 			} else {
 				// Don't clone the refInstance if we are the original prefab
 				if (!shared.isInstance) {
@@ -281,7 +278,7 @@ class Reference extends Object3D {
 			return null;
 		var res = super.findRec(cl, filter, followRefs, includeDisabled);
 		if (res == null && followRefs ) {
-			var p = resolveRef();
+			var p = resolve();
 			if( p != null )
 				return p.findRec(cl, filter, followRefs, includeDisabled);
 		}
@@ -290,7 +287,7 @@ class Reference extends Object3D {
 
 	override public function getOpt<T:Prefab>( ?cl : Class<T>, ?name : String, ?followRefs : Bool ) : Null<T> {
 		var res = super.getOpt(cl, name, followRefs);
-		if (res == null && followRefs && resolveRef() != null) {
+		if (res == null && followRefs && resolve() != null) {
 			return refInstance.getOpt(cl, name, followRefs);
 		}
 		return res;
@@ -298,7 +295,7 @@ class Reference extends Object3D {
 
 	override public function flatten<T:Prefab>( ?cl : Class<T>, ?arr: Array<T>) : Array<T> {
 		arr = super.flatten(cl, arr);
-		if (editMode != None && resolveRef() != null) {
+		if (editMode != None && resolve() != null) {
 			arr = refInstance.flatten(cl, arr);
 		}
 		return arr;
@@ -435,7 +432,7 @@ class Reference extends Object3D {
 				}
 
 				seenPaths.set(ref.source, true);
-				if (rec(ref.resolveRef(), seenPaths.copy()))
+				if (rec(ref.resolve(), seenPaths.copy()))
 					return true;
 			}
 			for (child in prefab.children) {
@@ -470,7 +467,7 @@ class Reference extends Object3D {
 
 		function updateProps() {
 			var input = element.find("input");
-			var found = resolveRef() != null;
+			var found = resolve() != null;
 			input.toggleClass("error", !found);
 			warning.toggle(overrides != null && editMode == Edit);
 		}
@@ -481,7 +478,7 @@ class Reference extends Object3D {
 			if(pname == "source" || pname == "editMode") {
 
 				var oldRefInst = refInstance;
-				refInstance = null; // force resolveRef to return the new referenced prefab for hasCycle();
+				refInstance = null; // force resolve to return the new referenced prefab for hasCycle();
 				var cycle = hasCycle();
 				refInstance = oldRefInst;
 
@@ -564,7 +561,7 @@ class Reference extends Object3D {
 
 		for (selectedRef in selectedRefs) {
 			var root = new hrt.prefab.Object3D(null, selectedRef.shared);
-			for (child in selectedRef.resolveRef().children) {
+			for (child in selectedRef.resolve().children) {
 				child.clone(root);
 			}
 			root.name = selectedRef.name;
