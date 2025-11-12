@@ -513,9 +513,10 @@ class Reference extends Object3D {
 		super.edit(ctx);
 
 		var over = new hide.Element('
-			<div class="group">
-				<dl>
-					<dt>Overrides</dt><dd><p class="override-infos"></p><fancy-button><span class="label">Clear Overrides</span></fancy-button></dd>
+			<div class="group" name="Overrides">
+				<p class="override-infos"></p>
+				<dl style="height: 100px;">
+					<dt></dt><dd><fancy-button><span class="label">Clear Overrides</span></fancy-button></dd>
 				</dl>
 			</div>
 		');
@@ -545,7 +546,7 @@ class Reference extends Object3D {
 			};
 			@:privateAccess ctx.properties.undo.change(Field(this, "overrides", old), refresh);
 			refresh();
-			//ctx.rebuildPrefab(this);
+			ctx.rebuildPrefab(this);
 		});
 		ctx.properties.add(over);
 	}
