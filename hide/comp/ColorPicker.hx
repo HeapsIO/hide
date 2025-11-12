@@ -564,7 +564,7 @@ class ColorSlider extends Component {
 	}
 
 	public function repaint() : Void {
-		var c2d = canvas.getContext("2d");
+		var c2d = canvas.getContext("2d", { willReadFrequently: true });
 
 		var image_data = c2d.getImageData(0,0,canvas.width,canvas.height);
 		var value : Vector4 = new Vector4();
