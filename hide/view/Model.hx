@@ -72,50 +72,27 @@ class CollisionSettings {
 	}
 
 	public function getDebugCollider(mesh : h3d.scene.Mesh) : h3d.scene.Object {
-		switch (mode) {
-			case None:
-				return null;
+		var hmd = Std.downcast(mesh.primitive, h3d.prim.HMDModel);
+		var model : hxd.fmt.hmd.Data.Model = null;
+		if (params != null) {
+			for (m in hmd.lib.header.models)
+				if (m.getObjectName() == params.mesh || m.getObjectName() == mesh.name)
+					model = m;
+		}
 
-			case Default:
-				return mesh.getCollider()?.makeDebugObj();
+		var colliderType = hxd.fmt.hmd.Data.Collider.resolveColliderType(hmd.lib.header, model, params);
+		if (colliderType == null)
+			return null;
 
-			case Mesh:
-				if (params.mesh == null)
-					return null;
+		return switch (colliderType) {
+			case Mesh(model):
+				var g = hmd.lib.header.geometries[model.geometry];
+				var buffers = hmd.lib.getBuffers(g, hxd.BufferFormat.POS3D);
+				var polygonBuffer = new h3d.col.PolygonBuffer();
+				polygonBuffer.setData(buffers.vertexes, buffers.indexes);
+				return polygonBuffer.makeDebugObj();
 
-				var colliderIdentifier = "_Collider";
-				var hmd = Std.downcast(mesh.primitive, h3d.prim.HMDModel);
-				if (params.mesh.lastIndexOf(colliderIdentifier) >= 0) {
-					for (m in hmd.lib.header.models) {
-						if (m.name == params.mesh) {
-							var g = hmd.lib.header.geometries[m.geometry];
-							var buffers = hmd.lib.getBuffers(g, hxd.BufferFormat.POS3D);
-
-							var polygonBuffer = new h3d.col.PolygonBuffer();
-							polygonBuffer.setData(buffers.vertexes, buffers.indexes);
-							return polygonBuffer.makeDebugObj();
-						}
-					}
-
-					return null;
-				}
-
-				var lodIdentifier = "_LOD";
-				for (m in mesh.getMeshes()) {
-					if (params.mesh.substring(0, params.mesh.lastIndexOf(lodIdentifier)) == m.name) {
-						var mesh = new h3d.scene.Mesh(m.primitive, null, null);
-						mesh.forcedLod = Std.parseInt(params.mesh.charAt(params.mesh.lastIndexOf(lodIdentifier) + 4));
-						return mesh;
-					}
-					else if (params.mesh == m.name) {
-						var mesh = new h3d.scene.Mesh(m.primitive, null, null);
-						return mesh;
-					}
-				}
-
-				return null;
-
-			case Auto:
+			case ConvexHulls(model):
 				var hmd = Std.downcast(mesh.primitive, h3d.prim.HMDModel);
 
 				var dim = hmd.getBounds().dimension();
@@ -130,7 +107,7 @@ class CollisionSettings {
 					if (Reflect.field(m.props, "ignoreCollide"))
 						continue;
 
-					var bufs = hmd.getDataBuffers(hxd.BufferFormat.POS3D, null, idx);
+					var bufs = hmd.lib.getBuffers(hmd.lib.header.geometries[model.geometry], hxd.BufferFormat.POS3D, null, idx);
 					for (v in bufs.vertexes)
 						vertices.push(v);
 					for (i in bufs.indexes)
@@ -153,16 +130,18 @@ class CollisionSettings {
 					polygonBuffer.setData(vbuf, ibuf, true);
 					parentObj.addChild(polygonBuffer.makeDebugObj());
 				}
+
 				return parentObj;
 
 			case Shapes:
 				var parentObj = new h3d.scene.Object();
 				for (s in toShapeEditor())
 					hide.comp.ShapeEditor.getInteractive(s, false, parentObj);
-				return parentObj;
+
+				parentObj;
 
 			default:
-				throw "Unknown collision mode";
+				null;
 		}
 	}
 }
