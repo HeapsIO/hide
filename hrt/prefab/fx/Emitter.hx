@@ -1505,6 +1505,16 @@ class EmitterObject extends h3d.scene.Object {
 		else if (!seek) {
 			if (parentTime < lastParentTime) {
 				softReset();
+				if (burstDelay > 0)
+					totalBurstCount = hxd.Math.ceil(hxd.Math.max(0.0, localTime/burstDelay));
+				if (emitType == Burst) {
+					if (totalBurstCount >= burstCount)
+						enable = false;
+				} else if (emitType == BurstDuration) {
+					if (curTime > emitDuration)
+						enable = false;
+				}
+
 				curTime = localTime;
 			}
 		}
