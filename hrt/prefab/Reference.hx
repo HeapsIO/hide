@@ -155,7 +155,7 @@ class Reference extends Object3D {
 	/**
 		Loads the prefab referenced by `source`, apply overrides to it if applicable and store it in refInstance and returns it.
 	**/
-	public function resolve(forceClone: Bool = false) : Prefab {
+	public function resolve() : Prefab {
 		if (refInstance != null)
 			return refInstance;
 
