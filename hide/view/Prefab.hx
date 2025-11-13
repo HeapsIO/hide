@@ -600,7 +600,14 @@ class Prefab extends hide.view.FileView {
 		if (remoteEditMode) {
 			currentSign = Std.string(Std.parseInt(currentSign) + 1);
 			var localVersion = currentSign;
+			if (data.children.length > 1) {
+				ide.quickError('Remote save failed : prefab should only have one root element (you have ${data.children.length})');
+				return;
+			}
+
+
 			var data = data.children[0].serialize();
+
 
 			@:privateAccess hide.view.RemoteConsoleView.rcmd?.sendCommand("remotePrefab", {kind: hrt.impl.RemoteConsole.RemotePrefabActionKind.Update, data: data, id: (state:Dynamic).remoteId}, (result: {data: String}) -> {
 				if (result?.data == "ok") {
@@ -984,10 +991,12 @@ class Prefab extends hide.view.FileView {
 		var props = type.getDefaults();
 		Reflect.setField(props, "$cdbtype", hide.comp.cdb.DataFiles.getTypeName(type));
 		if( type.idCol != null && !type.idCol.opt ) {
-			var id = new haxe.io.Path(prefabFilePath).file;
-			id = id.charAt(0).toUpperCase() + id.substr(1);
-			id += "_"+e.name;
-			Reflect.setField(props, type.idCol.name, id);
+			if (prefabFilePath != null) {
+				var id = new haxe.io.Path(prefabFilePath).file;
+				id = id.charAt(0).toUpperCase() + id.substr(1);
+				id += "_"+e.name;
+				Reflect.setField(props, type.idCol.name, id);
+			}
 		}
 		return props;
 	}
