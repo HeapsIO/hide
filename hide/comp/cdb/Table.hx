@@ -529,6 +529,7 @@ class Table extends Component {
 				editor.popupColumn(this, c, cell);
 				editor.cursor.clickCell(cell, false, false);
 				e.preventDefault();
+				e.stopPropagation();
 			});
 		}
 

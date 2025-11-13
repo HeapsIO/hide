@@ -66,7 +66,7 @@ class CDB extends Element {
 			var detachable = new hide.comp.DetachablePanel();
 			detachable.saveDisplayKey = "detachedCdb";
 
-			var props = new hide.Element('<div></div>').appendTo(cdbCategory.native);
+			var props = new hide.Element('<div></div>').appendTo(cdbCategory.nativeContent);
 			var fileRef = prefab.shared.currentPath;
 			detachable.element.appendTo(props);
 			var ctx = Std.downcast(@:privateAccess (cast root.editor: hide.prefab.EditContext.HideJsEditContext2).ctx, hide.comp.SceneEditor.SceneEditorContext);
