@@ -178,7 +178,7 @@ class Reference extends Object3D {
 				refInstance = hrt.prefab.Prefab.createFromDynamic(refInstanceData, null, new ContextShared(source, null, null, true));
 			} else {
 				// Don't clone the refInstance if we are the original prefab
-				if (!shared.isInstance) {
+				if (!shared.isInstance && false /**Temp disabled until we figure out how to manage how to handle the prefab api that uses followRef on cached prefabs**/) {
 					refInstance = res.load();
 				} else {
 					refInstance = res.load().clone();
