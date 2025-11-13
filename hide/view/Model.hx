@@ -1074,6 +1074,9 @@ class Model extends FileView {
 					settings.mode = curMode;
 					settings.params = curParams;
 					applySettings(settings);
+					if (curMode != Shapes)
+						for (s in shapesEditor)
+							@:privateAccess s.stopShapeEditing();
 					if (curMode != prevMode)
 						sceneEditor.updateCollidersVisibility();
 
