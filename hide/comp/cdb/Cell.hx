@@ -1452,6 +1452,7 @@ class Cell {
 				var parser = new hscript.Parser();
 				var expr = parser.parseString(str);
 				var res = interp.execute(expr);
+				res = try editor.base.parseValue(column.type, res, false) catch( e : Dynamic ) return;
 				setValue(res);
 			} catch(e) {
 				ide.quickError('Invalid float : ${e.toString()}');
