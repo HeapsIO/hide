@@ -230,6 +230,8 @@ class ModelLibrary extends Prefab {
 	}
 
 	public function bake() {
+		var prevTimeout = hxd.System.allowTimeout;
+		hxd.System.allowTimeout = false;
 
 		shaderKeyCache = new Map();
 		var materialConfigs : Map<String, Int> = new Map();
@@ -650,6 +652,8 @@ class ModelLibrary extends Prefab {
 		geomAll.vertexPosition = dataOut.length;
 		if( geomAll.vertexFormat.stride < 3 ) {
 			pushError("No model found in data");
+			if (prevTimeout) hxd.System.timeoutTick();
+			hxd.System.allowTimeout = prevTimeout;
 			return;
 		}
 
@@ -715,15 +719,15 @@ class ModelLibrary extends Prefab {
 			shared.savePrefabDat(name,"dds",this.name, hxd.Pixels.toDDSLayers(all));
 		}
 		makeTex(textures,"texture");
-		hxd.System.timeoutTick();
 		makeTex(normalMaps,"normal");
-		hxd.System.timeoutTick();
 		makeTex(specMaps,"specular");
-		hxd.System.timeoutTick();
 
 		version = CURRENT_VERSION;
 		var sig = Signature.fromLib(this);
 		sighash = sig.computeHash();
+
+		if (prevTimeout) hxd.System.timeoutTick();
+		hxd.System.allowTimeout = prevTimeout;
 	}
 
 	function getMaterialKey(material : h3d.mat.Material) {
