@@ -715,8 +715,11 @@ class ModelLibrary extends Prefab {
 			shared.savePrefabDat(name,"dds",this.name, hxd.Pixels.toDDSLayers(all));
 		}
 		makeTex(textures,"texture");
+		hxd.System.timeoutTick();
 		makeTex(normalMaps,"normal");
+		hxd.System.timeoutTick();
 		makeTex(specMaps,"specular");
+		hxd.System.timeoutTick();
 
 		version = CURRENT_VERSION;
 		var sig = Signature.fromLib(this);
