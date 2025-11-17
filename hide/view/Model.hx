@@ -413,6 +413,14 @@ class Model extends FileView {
 		dynamicJointsScope = null;
 		dynamicJointsConfFolder = null;
 		@:privateAccess hxd.fmt.hmd.Library.defaultDynamicBonesConfigs.clear();
+
+		sceneEditor.delayReady(() -> {
+			var root = @:privateAccess tree.rootData;
+			if (root.length > 0) {
+				tree.selectItem(root[0].item);
+				tree.onSelectionChanged(false);
+			}
+		});
 	}
 
 	override function onActivate() {
