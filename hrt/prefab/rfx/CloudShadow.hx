@@ -122,13 +122,18 @@ class CloudShadow extends RendererFX {
 					dlwc.clouds.wrap = Repeat;
 				var dist = distort;
 				dlwc.hasDistort = dist != null;
-				if( dist != null ) {
+				if( dist != null && dist.path != null ) {
 					var angle = dist.angle * Math.PI / 180;
 					dlwc.distort = Loader.currentInstance.load(dist.path).toTexture();
 					if( dlwc.distort != null ) dlwc.distort.wrap = Repeat;
 					dlwc.distortAmount = dist.amount * 0.01;
 					dlwc.distortSpeed.set(Math.cos(angle) * dist.speed * 0.1, Math.sin(angle) * dist.speed * 0.1);
 					dlwc.distortScale = dist.scale;
+				} else {
+					dlwc.distort = null;
+					dlwc.distortAmount = 0;
+					dlwc.distortSpeed.set(0,0);
+					dlwc.distortScale = 1;
 				}
 			}
 		}
@@ -235,6 +240,27 @@ class CloudShadow extends RendererFX {
 		});
 	}
 	#end
+
+	override function edit2( ctx : hrt.prefab.EditContext2 ) {
+		ctx.build(
+			<root>
+				<category("Cloud")>
+					<range(0,1) field={opacity}/>
+					<range(0,50) field={scale}/>
+					<range(-1,1) field={speed}/>
+					<slider min={-180.0} max={180.0} field={angle} wrap/>
+					<file field={texturePath} label="Texture"type="texture"/>
+				</category>
+				<category("Distort")>
+					<file field={distort.path} label="Texture"type="texture"/>
+					<range(0,1) field={distort.amount}/>
+					<range(0.1,2) field={distort.scale}/>
+					<range(-1,1) field={distort.speed}/>
+					<slider min={-180.0} max={180.0} field={distort.angle} wrap/>
+				</category>
+			</root>
+		);
+	}
 
 	static var _ = Prefab.register("rfx.cloudShadow", CloudShadow);
 
