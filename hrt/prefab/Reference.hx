@@ -78,7 +78,7 @@ class Reference extends Object3D {
 		super.load(obj);
 
 		#if !editor
-		if (source != null && shouldBeInstanciated() && hxd.res.Loader.currentInstance.exists(source)) {
+		if (source != null && shouldBeInstanciated() && hxd.res.Loader.currentInstance?.exists(source)) {
 			initRefInstance();
 		}
 		#end
