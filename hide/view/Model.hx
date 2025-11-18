@@ -412,7 +412,7 @@ class Model extends FileView {
 
 		dynamicJointsScope = null;
 		dynamicJointsConfFolder = null;
-		@:privateAccess hxd.fmt.hmd.Library.defaultDynamicBonesConfigs.clear();
+		@:privateAccess hxd.fmt.hmd.Library.defaultModelConfigs.clear();
 
 		sceneEditor.delayReady(() -> {
 			var root = @:privateAccess tree.rootData;
@@ -439,7 +439,8 @@ class Model extends FileView {
 		if (Ide.inst.currentConfig.get("sceneeditor.renderprops.edit", false) && sceneEditor.renderPropsRoot != null)
 			sceneEditor.renderPropsRoot.save();
 
-		var scope = this.sceneEditor.properties.element.find("#scope").val();
+		// Save model props
+		var dynamicJointScope = this.sceneEditor.properties.element.find("#scope").val();
 		for (o in obj.findAll(o -> Std.downcast(o, h3d.scene.Mesh))) {
 			var hmd = Std.downcast(o.primitive, h3d.prim.HMDModel);
 			if (hmd == null)
@@ -470,10 +471,17 @@ class Model extends FileView {
 				collide : collide
 			}
 
-			// If Dynamic bones edition scope is global or folder, save it to props.json
-			if (scope == "folder") {
-				// Check if data were saved in a model.props, and in this case, delete it
-				var modelPropsFile = ide.getPath(input.resourceDirectory + "/model.props");
+			h3d.prim.ModelDatabase.current.saveModelProps(input);
+			var lfs = cast(hxd.res.Loader.currentInstance.fs, hxd.fs.LocalFileSystem);
+			var path = state.path;
+			lfs.removePathFromCache(path);
+			@:privateAccess hxd.res.Loader.currentInstance.cache.remove(path);
+			needRefresh = true;
+
+
+			if (dynamicJointScope == "folder") {
+				// Check if data were saved in a local model.props, and in this case, delete it
+				var modelPropsFile = ide.getPath(input.resourceDirectory + "/" + h3d.prim.ModelDatabase.FILE_NAME);
 				if (sys.FileSystem.exists(modelPropsFile)) {
 					var content = haxe.Json.parse(sys.io.File.getContent(modelPropsFile));
 					var entry = '${input.resourceName}/${input.objectName}';
@@ -486,24 +494,18 @@ class Model extends FileView {
 					}
 				}
 
-				var content = "";
-				var propsFile = ide.getPath(sceneEditor.properties.element.find(".file").val()) + "/props.json";
+				// Create a global model.props file in the target scope folder
+				var content = {};
+				var propsFile = ide.getPath(sceneEditor.properties.element.find(".file").val()) + "/" + h3d.prim.ModelDatabase.FILE_NAME;
 				if (sys.FileSystem.exists(propsFile))
 					content = haxe.Json.parse(sys.io.File.getContent(propsFile));
-				else
-					content = "{}";
-				@:privateAccess h3d.prim.ModelDatabase.current.saveDynamicBonesConfig(input, content);
+				var defaultConf = Reflect.field(content, h3d.prim.ModelDatabase.DEFAULT_CONFIG_ENTRY);
+				if (defaultConf == null)
+					defaultConf = {};
+				@:privateAccess h3d.prim.ModelDatabase.current.saveDynamicBonesConfig(input, defaultConf);
+				Reflect.setField(content, h3d.prim.ModelDatabase.DEFAULT_CONFIG_ENTRY, defaultConf);
 				sys.io.File.saveContent(ide.getPath(propsFile), haxe.Json.stringify(content, null, '\t'));
-
-				@:privateAccess hxd.fmt.hmd.Library.defaultDynamicBonesConfigs.clear();
-			}
-			else {
-				h3d.prim.ModelDatabase.current.saveModelProps(input);
-				var lfs = cast(hxd.res.Loader.currentInstance.fs, hxd.fs.LocalFileSystem);
-				var path = state.path;
-				lfs.removePathFromCache(path);
-				@:privateAccess hxd.res.Loader.currentInstance.cache.remove(path);
-				needRefresh = true;
+				@:privateAccess hxd.fmt.hmd.Library.defaultModelConfigs.clear();
 			}
 		}
 
@@ -1454,14 +1456,21 @@ class Model extends FileView {
 			else {
 				if (dynamicJointsConfFolder == null) {
 					var dir = ide.getPath(state.path.substr(0, state.path.lastIndexOf("/")));
-					var p = dir + "/props.json";
-					while (!sys.FileSystem.exists(p) || !Reflect.hasField(haxe.Json.parse(sys.io.File.getContent(p)), "dynamicBones")) {
+					var p = dir + "/" + h3d.prim.ModelDatabase.FILE_NAME;
+
+					var data : Dynamic = null;
+					if (sys.FileSystem.exists(p))
+						data = haxe.Json.parse(sys.io.File.getContent(p));
+					var defaultConf : h3d.prim.ModelDatabase.ModelProps = Reflect.field(data, h3d.prim.ModelDatabase.DEFAULT_CONFIG_ENTRY);
+					while (defaultConf?.dynamicBones == null) {
 						dir = dir.substr(0, dir.lastIndexOf("/"));
 						if (dir == ide.projectDir) {
 							dir = null;
 							break;
 						}
-						p = dir + "/props.json";
+						p = dir + "/" + h3d.prim.ModelDatabase.FILE_NAME;
+						data = sys.FileSystem.exists(p) ? haxe.Json.parse(sys.io.File.getContent(p)) : null;
+						defaultConf = Reflect.field(data, h3d.prim.ModelDatabase.DEFAULT_CONFIG_ENTRY);
 					}
 
 					dynamicJointsConfFolder = dir == null ? null : ide.makeRelative(dir);
@@ -1482,10 +1491,11 @@ class Model extends FileView {
 
 		// Initialize scope
 		if (dynamicJointsScope == null) {
-			dynamicJointsScope = "folder";
-			var conf = hxd.fmt.hmd.Library.getDefaultDynamicBonesConfig(ide.getDirPath(state.path));
-			if (conf == null || conf.length == 0)
-				dynamicJointsScope = "model";
+			dynamicJointsScope = "model";
+			var defaultConf = hxd.fmt.hmd.Library.getDefaultDynamicBonesConfig(ide.getDirPath(state.path));
+			var conf = @:privateAccess h3d.prim.ModelDatabase.current.getModelData(ide.getDirPath(state.path), state.path.substr(state.path.lastIndexOf("/") + 1), joints[0].skin.name);
+			if (defaultConf != null && conf == null)
+				dynamicJointsScope = "folder";
 		}
 		refreshScope();
 
