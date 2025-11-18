@@ -306,7 +306,7 @@ class TemporalFiltering extends hrt.prefab.rfx.RendererFX {
 						{value: "MotionPerp2",      label: "MotionPerp2"},
 						{value: "MotionVPerp2",     label: "MotionVPerp2"},
 					]) label="Pattern" field={jitterPattern}/>
-					<range(0.0, 2.0) label="Scake" field={jitterScale}/>
+					<range(0.0, 2.0) label="Scale" field={jitterScale}/>
 				</category>
 			</root>
 		);
