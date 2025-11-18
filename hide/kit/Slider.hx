@@ -245,7 +245,7 @@ class Slider<T:Float> extends Widget<T> {
 				sliders.push(siblingSlider);
 			}
 
-			root.broadcastValuesChange(sliders, isTemporary);
+			propagateChange(Value(sliders, isTemporary));
 		}
 		else {
 			value = newValue;

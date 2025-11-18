@@ -6361,3 +6361,24 @@ class SceneEditor {
 		return 0;
 	}
 }
+
+@:access(hide.comp.SceneEditor)
+class HideSceneEditorAPI implements hrt.prefab.SceneEditorAPI {
+	var parent: SceneEditor;
+
+	public function new(parent: SceneEditor) {
+		this.parent = parent;
+	}
+
+	public function getRootPrefab() : hrt.prefab.Prefab {
+		return parent.sceneData;
+	}
+
+	public function selectPrefabs(prefabs: Array<hrt.prefab.Prefab>) : Void {
+		parent.selectElements(prefabs);
+	}
+
+	public function focusObjects(objects: Array<h3d.scene.Object>) : Void {
+		parent.focusObjects(objects);
+	}
+}

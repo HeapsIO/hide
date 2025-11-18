@@ -4,12 +4,12 @@ class Material extends MaterialEditor<h3d.mat.Material> {
 
 	override function edit2(ctx:hrt.prefab.EditContext2) {
 		ctx.build(
-			<root>
+			<category("Material")>
 				<select(["Opaque", "Alpha", "AlphaKill", "Add", "SoftAdd", "Hidden"]) field={kind}/>
 				<checkbox field={shadows}/>
 				<checkbox field={culling}/>
 				<checkbox field={light}/>
-			</root>, material.props
+			</category>, material.props
 		);
 	}
 

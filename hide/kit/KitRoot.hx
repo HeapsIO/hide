@@ -60,9 +60,16 @@ class KitRoot #if !macro extends Element #end {
 		return currentElement;
 	}
 
-	@:allow(hide.kit.Widget)
-	function broadcastValuesChange(inputs: Array<Widget<Dynamic>>, isTemporaryEdit: Bool) {
+	override function propagateChange(kind: hide.kit.Element.ChangeKind) {
+		switch (kind) {
+			case Value(widgets, temporary):
+				onWidgetChange(widgets, temporary);
+			case Click(button):
+				onButtonClick(button);
+		}
+	}
 
+	function onWidgetChange(inputs: Array<Widget<Dynamic>>, isTemporaryEdit: Bool) {
 		prepareUndoPoint();
 
 		for(input in inputs) {
@@ -91,8 +98,7 @@ class KitRoot #if !macro extends Element #end {
 		}
 	}
 
-	@:allow(hide.kit.Element)
-	function broadcastClick(button: Button) {
+	function onButtonClick(button: Button) {
 		var idPath = button.getIdPath();
 
 		prepareUndoPoint();

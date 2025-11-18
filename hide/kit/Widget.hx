@@ -96,7 +96,7 @@ abstract class Widget<ValueType> extends Element {
 		Call this internally when the user interact with the widget to indicate to the Inspector that the value has changed
 	**/
 	function broadcastValueChange(temporaryEdit: Bool) : Void {
-		root.broadcastValuesChange([this], temporaryEdit);
+		parent?.propagateChange(Value([this], temporaryEdit));
 	}
 
 	/**
@@ -108,7 +108,7 @@ abstract class Widget<ValueType> extends Element {
 
 	override function resetSelf() {
 		value = defaultValue;
-		root.broadcastValuesChange([this], true);
+		broadcastValueChange(true);
 	}
 
 	override function copySelf(target: Dynamic) {

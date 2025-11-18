@@ -30,6 +30,8 @@ class CDB extends Element {
 			var id = DataFiles.getTypeName(type);
 			options.push({value: id, label: id});
 		}
+		#if !macro
+
 		this.build(
 			<category("CDB") id="cdbCategory" single-edit>
 				<select(options) id="propTypeSelect" label="Type"/>
@@ -54,6 +56,7 @@ class CDB extends Element {
 			}
 			root.editor.rebuildInspector();
 		}
+		#end
 	}
 
 	override function make() {

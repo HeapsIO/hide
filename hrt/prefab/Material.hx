@@ -296,18 +296,18 @@ class Material extends Prefab {
 	}
 
 	// Work in progress
-	// override function edit2(ctx:EditContext2) {
+	override function edit2(ctx:EditContext2) {
 
-	// 	// ctx.build(
-	// 	// 	<matlib(this.getAbsPath()) label="Mat Lib" field={refMatLib}/>
-	// 	// );
+		ctx.build(
+			<matlib(this.getAbsPath()) label="Mat Lib" field={refMatLib}/>
+		);
 
-	// 	var mat = h3d.mat.Material.create();
-	// 	mat.props = renderProps();
+		var mat = h3d.mat.Material.create();
+		mat.props = renderProps();
 
-	// 	var editor = hide.prefab.materialEditor.MaterialEditor.makeEditor(mat);
-	// 	editor.edit2(ctx);
-	// }
+		var editor = hide.prefab.materialEditor.MaterialEditor.makeEditor(mat);
+		editor.edit2(ctx);
+	}
 
 	#if editor
 	override function editorRemoveInstanceObjects() : Void {
