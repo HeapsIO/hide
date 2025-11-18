@@ -71,7 +71,7 @@ class CollisionSettings {
 		return shapes;
 	}
 
-	public function getDebugCollider(mesh : h3d.scene.Mesh) : h3d.scene.Object {
+	public function getDebugCollider(mesh : h3d.scene.Mesh, convertRule : hxd.fs.FileConverter.ConvertRule) : h3d.scene.Object {
 		var hmd = Std.downcast(mesh.primitive, h3d.prim.HMDModel);
 		var model : hxd.fmt.hmd.Data.Model = null;
 		if (params != null) {
@@ -80,7 +80,9 @@ class CollisionSettings {
 					model = m;
 		}
 
-		var colliderType = hxd.fmt.hmd.Data.Collider.resolveColliderType(hmd.lib.header, model, params);
+		var collisionThresholdHeight = Reflect.field(convertRule.cmd.params, "collisionThresholdHeight");
+		var collisionUseLowLod = Reflect.field(convertRule.cmd.params, "collisionUseLowLod");
+		var colliderType = hxd.fmt.hmd.Data.Collider.resolveColliderType(hmd.lib.header, model, params, collisionThresholdHeight, collisionUseLowLod);
 		if (colliderType == null)
 			return null;
 
@@ -195,6 +197,9 @@ class ModelSceneEditor extends hide.comp.SceneEditor {
 	}
 
 	function createColliderDebugs() {
+		var fs : hxd.fs.LocalFileSystem = Std.downcast(hxd.res.Loader.currentInstance.fs, hxd.fs.LocalFileSystem);
+		var convertRule = @:privateAccess fs.convert.getConvertRule(parent.state.path);
+
 		for (k in parent.collisionSettings.keys()) {
 			var obj = parent.scene.s3d.getObjectByName(k);
 			if (obj == null)
@@ -220,7 +225,7 @@ class ModelSceneEditor extends hide.comp.SceneEditor {
 				if (debugCreated)
 					continue;
 
-				var debug = c.getDebugCollider(cast obj);
+				var debug = c.getDebugCollider(cast obj, convertRule);
 				if (debug == null)
 					continue;
 
@@ -1821,8 +1826,8 @@ class Model extends FileView {
 			var dirPath = @:privateAccess hmd.lib.resource.entry.directory;
 			var resName = @:privateAccess hmd.lib.resource.name;
 			var props = @:privateAccess h3d.prim.ModelDatabase.current.getModelData(dirPath, resName, o.name);
-			if ( props != null && Reflect.hasField(props, "collide") ) {
-				var collideFields = Reflect.field(props, "collide");
+			if ( props != null && Reflect.hasField(props, h3d.prim.ModelDatabase.COLLIDE_CONFIG) ) {
+				var collideFields = Reflect.field(props, h3d.prim.ModelDatabase.COLLIDE_CONFIG);
 				if( collideFields == null )
 					settings.push(new CollisionSettings(None, null));
 				else if( collideFields != null && Std.isOfType(collideFields, Array) ) {
