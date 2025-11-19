@@ -5604,6 +5604,8 @@ fancy-gallery-item.details fancy-name {
   position: relative;
   height: auto;
   text-align: left;
+  text-wrap: nowrap;
+  text-overflow: ellipsis;
 }
 fancy-gallery-item.details .icon-placement {
   position: relative;
