@@ -73,6 +73,8 @@ class CollisionSettings {
 
 	public function getDebugCollider(mesh : h3d.scene.Mesh, convertRule : hxd.fs.FileConverter.ConvertRule) : h3d.scene.Object {
 		var hmd = Std.downcast(mesh.primitive, h3d.prim.HMDModel);
+		if (hmd == null)
+			return null;
 		var model : hxd.fmt.hmd.Data.Model = null;
 		if (params != null) {
 			for (m in hmd.lib.header.models)
