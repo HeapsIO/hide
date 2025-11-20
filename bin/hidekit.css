@@ -280,6 +280,12 @@ kit-root .detached .is-cdb-editor {
     background-color: #474747;
     border-color: #7b7b7b;
   }
+  :scope input[type="checkbox"]:checked:after {
+    content: '\2714';
+  }
+  :scope input[type="checkbox"]:indeterminate:after {
+    content: '-' !important;
+  }
   :scope kit-section {
     display: flex;
     flex-direction: column;

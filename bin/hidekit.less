@@ -305,6 +305,14 @@ kit-root {
 				background-color: @widget-bg-hover;
 				border-color: @widget-border-color-hover;
 			}
+
+			&:checked:after {
+				content: '\2714';
+			}
+
+			&:indeterminate:after {
+				content: '-' !important;
+			}
 		}
 
 		kit-section {

@@ -284,9 +284,20 @@ class Slider<T:Float> extends Widget<T> {
 		return v;
 	}
 
+	override function customIndeterminate():Bool {
+		return true;
+	}
+
 	override function syncValueUI() {
 		if (slider == null)
 			return;
+
+		if (isIndeterminate()) {
+			#if js
+			slider.value = "---";
+			#end
+			return;
+		}
 		#if js
 		slider.value = Std.string(hxd.Math.round(value * 100) / 100);
 		#else

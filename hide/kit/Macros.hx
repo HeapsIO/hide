@@ -406,8 +406,6 @@ class Macros {
 						field = remap(field);
 
 						var elementValue = macro $elementExpr.value;
-						var get = macro @:pos(pos) $elementValue = $field;
-						var set = macro @:pos(pos) @:privateAccess $elementExpr.onFieldChange = (temp:Bool) -> $field = $elementValue;
 						if( elementName == "Range" || elementName == "Slider") {
 							block.push(macro {
 								if (@:privateAccess hide.kit.Macros.checkIsInt($field)) {
@@ -423,6 +421,7 @@ class Macros {
 							});
 						}
 
+						block.push(macro @:pos(pos) @:privateAccess $elementExpr.fieldName = $v{fieldName});
 						block.push(macro @:pos(pos) $elementExpr.value = $field);
 						block.push(macro @:pos(pos) @:privateAccess $elementExpr.onFieldChange = (temp:Bool) -> $field = $elementExpr.value);
 

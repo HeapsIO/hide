@@ -9,6 +9,7 @@ abstract class Widget<ValueType> extends Element {
 	public var label(default, set): String;
 	@:isVar public var value(get, set): ValueType;
 	public var defaultValue: ValueType;
+	var fieldName: String;
 
 	function new(parent: Element, id: String) {
 		super(parent, id);
@@ -38,10 +39,16 @@ abstract class Widget<ValueType> extends Element {
 	function get_value() return value;
 	function set_value(v:ValueType) {
 		value = v;
-		if (input != null)
-			syncValueUI();
+		if (input != null) {
+			if (!syncQueued) {
+				syncQueued = true;
+				// delay the sync value so all side effects are accounted for (useful for isIndeterminate())
+				haxe.Timer.delay(() -> {syncQueued = false; syncValueUI();}, 0);
+			}
+		}
 		return value;
 	}
+	var syncQueued = false;
 
 	override function makeSelf():Void {
 		var parentLine = Std.downcast(parent, Line);
@@ -68,9 +75,40 @@ abstract class Widget<ValueType> extends Element {
 		native.addChild(input);
 		#end
 
-		input = makeInput();
-		setupPropLine(labelElement, input);
-		syncValueUI();
+		if (!customIndeterminate() && isIndeterminate()) {
+			#if js
+			var indeterminate = js.Browser.document.createElement("kit-div");
+			var label = js.Browser.document.createElement("kit-label");
+			label.innerHTML = "Multiple Values";
+			indeterminate.appendChild(label);
+
+			var reset = js.Browser.document.createElement("kit-button");
+			reset.innerHTML = "Reset";
+			indeterminate.appendChild(reset);
+
+			var paste = js.Browser.document.createElement("kit-button");
+			paste.innerHTML = "Paste";
+			indeterminate.appendChild(paste);
+
+			reset.onclick = (e) -> {
+				value = defaultValue ?? getDefaultFallback();
+				broadcastValueChange(false);
+				root.editor.rebuildInspector();
+			}
+
+			paste.onclick = (e) -> {
+				pasteFromClipboard();
+				root.editor.rebuildInspector();
+			}
+
+			setupPropLine(labelElement, indeterminate);
+			#end
+		}
+		else {
+			input = makeInput();
+			setupPropLine(labelElement, input);
+			syncValueUI();
+		}
 	}
 
 	/**
@@ -82,7 +120,6 @@ abstract class Widget<ValueType> extends Element {
 		Called when value has been changed by the user
 	**/
 	public dynamic function onValueChange(temporaryEdit: Bool) : Void {
-
 	}
 
 	/**
@@ -99,11 +136,35 @@ abstract class Widget<ValueType> extends Element {
 		parent?.propagateChange(Value([this], temporaryEdit));
 	}
 
+	/** Returns true if the values between the currently edited prefabs differs **/
+	function isIndeterminate() : Bool {
+		if (root.editedPrefabsProperties.length == 0) {
+			return false;
+		}
+		var id = getIdPath();
+		for (editors in root.editedPrefabsProperties) {
+			var other : Widget<ValueType> = cast editors.getElementByPath(id);
+			if (other != null) {
+				if (!valueEqual(value, other.value))
+					return true;
+			}
+		}
+		return false;
+	}
+
 	/**
 		Called when `value` has changed to update the UI accordingly
 	**/
 	function syncValueUI() {
 
+	}
+
+	/**
+		Override this to return true if your prefab handles the indeterminate state in another manner
+		than replacing the widget with the indeterminate widget
+	**/
+	function customIndeterminate() : Bool {
+		return false;
 	}
 
 	override function resetSelf() {
@@ -146,6 +207,10 @@ abstract class Widget<ValueType> extends Element {
 	abstract function stringToValue(str: String) : Null<ValueType>;
 
 	abstract function getDefaultFallback() : ValueType;
+
+	function valueEqual(a: ValueType, b: ValueType) : Bool {
+		return a == b;
+	}
 }
 
 #end

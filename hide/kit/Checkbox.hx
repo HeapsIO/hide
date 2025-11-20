@@ -25,10 +25,16 @@ class Checkbox extends Widget<Bool> {
 		#end
 	}
 
+	override function customIndeterminate():Bool {
+		return true;
+	}
+
 	override function syncValueUI() {
 		#if js
-		if (checkbox != null)
+		if (checkbox != null) {
+			checkbox.indeterminate = isIndeterminate();
 			checkbox.checked = value;
+		}
 		#end
 	}
 

@@ -23,12 +23,12 @@ class Gradient extends Widget<hrt.impl.Gradient.GradientData> {
 	override function syncValueUI() {
 		#if js
 		if (gradientBox != null)
-			gradientBox.value = value ?? hrt.impl.Gradient.getDefaultGradientData();
+			gradientBox.value = value ?? getDefaultFallback();
 		#end
 	}
 
 	function getDefaultFallback() : hrt.impl.Gradient.GradientData {
-		return hrt.impl.Gradient.getDefaultGradientData();
+		return haxe.Json.parse(haxe.Json.stringify(hrt.impl.Gradient.getDefaultGradientData()));
 	}
 
 	function stringToValue(str:String) : Null<hrt.impl.Gradient.GradientData> {
@@ -38,6 +38,13 @@ class Gradient extends Widget<hrt.impl.Gradient.GradientData> {
 			return null;
 		}
 		return hrt.impl.TextureType.Utils.getGradientData(parsedData);
+	}
+
+	override function valueEqual(a: hrt.impl.Gradient.GradientData, b: hrt.impl.Gradient.GradientData) : Bool {
+		var aa = haxe.Json.stringify(a);
+		var bb = haxe.Json.stringify(b);
+		var diff = hrt.prefab.Diff.diff(a, b);
+		return haxe.Json.stringify(a) == haxe.Json.stringify(b);
 	}
 }
 
