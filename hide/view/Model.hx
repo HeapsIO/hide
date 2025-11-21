@@ -873,7 +873,7 @@ class Model extends FileView {
 				var resetLod = lodsEl.find('#reset-lods');
 				resetLod.on("click", function() {
 					var prevConfig = @:privateAccess hmd.lodConfig?.copy();
-					@:privateAccess hmd.lodConfig = hxd.fmt.hmd.Library.getDefaultLodConfig(hmd.lib.resource.entry.directory);
+					@:privateAccess hmd.lodConfig = h3d.prim.ModelDatabase.current.getDefaultLodConfig(hmd.lib.resource.entry.directory);
 					Ide.inst.quickMessage('Lod config reset for object : ${obj.name}');
 					refreshLodLine();
 
@@ -1499,7 +1499,7 @@ class Model extends FileView {
 		// Initialize scope
 		if (dynamicJointsScope == null) {
 			dynamicJointsScope = "model";
-			var defaultConf = hxd.fmt.hmd.Library.getDefaultDynamicBonesConfig(ide.getDirPath(state.path));
+			var defaultConf = h3d.prim.ModelDatabase.current.getDefaultDynamicBonesConfig(ide.getDirPath(state.path));
 			var conf = @:privateAccess h3d.prim.ModelDatabase.current.getModelData(ide.getDirPath(state.path), state.path.substr(state.path.lastIndexOf("/") + 1), joints[0].skin.name);
 			if (defaultConf != null && conf == null)
 				dynamicJointsScope = "folder";
