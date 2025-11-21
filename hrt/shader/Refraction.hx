@@ -74,6 +74,15 @@ class Refraction extends hrt.prefab.Shader {
 			ctx.onChange(this, pname);
 		});
 	}
+
+	override function edit2( ctx: hrt.prefab.EditContext2 ) {
+		ctx.build(
+			<category("Refraction props")>
+				<range(0, 1) field={intensity}/>
+				<range(0, 1) field={albedoMult}/>
+			</category>
+		);
+	}
 	#end
 
 	static var _ = hrt.prefab.Prefab.register("refraction", Refraction);
