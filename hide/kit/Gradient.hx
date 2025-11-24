@@ -41,10 +41,7 @@ class Gradient extends Widget<hrt.impl.Gradient.GradientData> {
 	}
 
 	override function valueEqual(a: hrt.impl.Gradient.GradientData, b: hrt.impl.Gradient.GradientData) : Bool {
-		var aa = haxe.Json.stringify(a);
-		var bb = haxe.Json.stringify(b);
-		var diff = hrt.prefab.Diff.diff(a, b);
-		return haxe.Json.stringify(a) == haxe.Json.stringify(b);
+		return hrt.prefab.Diff.diff(a, b) == Skip;
 	}
 }
 

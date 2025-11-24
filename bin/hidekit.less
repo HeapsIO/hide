@@ -587,6 +587,11 @@ kit-root {
 				}
 			}
 		}
+
+		kit-button.disabled, input.disabled, input[type=checkbox].disabled:after {
+			background-color: @widget-bg-disabled;
+			border-color: @widget-border-color-disabled;
+		}
 	}
 }
 

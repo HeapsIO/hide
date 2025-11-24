@@ -501,4 +501,10 @@ kit-root .detached .is-cdb-editor {
     flex: 1 1;
     gap: 0.4em;
   }
+  :scope kit-button.disabled,
+  :scope input.disabled,
+  :scope input[type=checkbox].disabled:after {
+    background-color: #222222;
+    border-color: #333333;
+  }
 }
