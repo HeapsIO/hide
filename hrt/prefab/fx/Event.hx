@@ -106,6 +106,16 @@ class Event extends hrt.prefab.Prefab implements IEvent {
 		}
 	}
 
+	override function edit2(ctx:EditContext2) {
+		super.edit2(ctx);
+		ctx.build(
+			<category("Event")>
+				<slider field={time}/>
+				<slider field={duration}/>
+			</category>
+		);
+	}
+
 	public function getEventPrefab() { return this; }
 
 	#if editor
