@@ -275,13 +275,14 @@ class Macros {
 	}
 
 	static public function getDefValueForType(t : Type) {
-		return switch(t) {
+		return switch(Context.followWithAbstracts(t)) {
 			case TAbstract(t, c):
 				var n = t.get().name;
 				switch(n) {
-					case "Int"|"Float": macro 0;
-					case "Bool": macro false;
+					case "Int"|"Float": macro cast 0;
+					case "Bool": macro cast false;
 					default: macro null;
+
 				}
 			default:
 				macro null;

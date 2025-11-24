@@ -16,6 +16,10 @@ abstract EntriesOrStrings(Array<SelectEntry>) from Array<SelectEntry> to Array<S
 }
 
 class Select extends Widget<Dynamic> {
+	/**
+		List of entries to be displayed in the select list. If field is set and the field is an enum or an abstract enum,
+		and if entries is left to null, then the entries will be automatically generated from the given enum (see `hide.kit.Macros.tryAutoSelect()`)
+	**/
 	public var entries(default, null) : Array<SelectEntry>;
 
 	public function setEntries(entries: EntriesOrStrings) {
@@ -30,7 +34,7 @@ class Select extends Widget<Dynamic> {
 	var dropdown = null;
 	#end
 
-	public function new(parent: Element, id: String, entries: EntriesOrStrings) {
+	public function new(parent: Element, id: String, entries: EntriesOrStrings = null) {
 		super(parent, id);
 		this.entries = entries;
 	}

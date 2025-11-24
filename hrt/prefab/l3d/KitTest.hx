@@ -5,6 +5,31 @@ typedef SubStruct = {
 	?rec: SubStruct,
 };
 
+enum TestEnum {
+	Foo;
+	Bar;
+	Fizz;
+	Buzz;
+	FooBar;
+}
+
+enum abstract TestAbstractString(String) {
+	var Foo;
+	var Bar;
+	var Fizz;
+	var Buzz;
+	var FooBar;
+}
+
+enum abstract TestAbstractInt(Int) {
+	var Foo;
+	var Bar;
+	var Fizz;
+	var Buzz;
+	var FooBar;
+}
+
+
 class KitTest extends Object3D {
 
 	override function makeObject(parent3d: h3d.scene.Object) : h3d.scene.Object {
@@ -32,6 +57,9 @@ class KitTest extends Object3D {
 
 	@:s var advancedDetails: Bool;
 	@:s var dynamicArray: Array<Int> = [];
+	@:s var testEnum: TestEnum;
+	@:s var testAbstractString: TestAbstractString;
+	@:s var testAbstractInt: TestAbstractInt;
 	var substruct: SubStruct = { innerValue: 0.0, };
 
 	override function edit2(ctx:hrt.prefab.EditContext2) {
@@ -68,6 +96,10 @@ class KitTest extends Object3D {
 				<gradient field={gradient}/>
 				<texture field={texture}/>
 				<select(["Fire", "Earth", "Water", "Air"]) field={select} />
+				<select field={testEnum}/>
+				<select field={testAbstractString}/>
+				<select field={testAbstractInt}/>
+
 				<checkbox field={checkbox}/>
 
 				<line>
@@ -596,6 +628,9 @@ class KitTest extends Object3D {
 		hide.kit.Macros.testError(
 			<line multiline="True"/>, this, 'cannot convert "True" to Bool for attribute multiline (must be either "true" or "false")'
 		);
+
+		var abstractString : TestAbstractString = Foo;
+		var enumEnum : TestEnum = Foo;
 	}
 
 	#if editor

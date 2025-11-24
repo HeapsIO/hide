@@ -425,6 +425,9 @@ class Macros {
 						block.push(macro @:pos(pos) $elementExpr.value = $field);
 						block.push(macro @:pos(pos) @:privateAccess $elementExpr.onFieldChange = (temp:Bool) -> $field = $elementExpr.value);
 
+						if (nodeName == "select") {
+							block.push(macro hide.kit.Macros.tryAutoSelect($field, $elementExpr));
+						}
 					}
 
 				}
@@ -546,5 +549,36 @@ class Macros {
 			return macro true;
 		}
 		return macro false;
+	}
+
+	macro public static function tryAutoSelect(enumExpr: Expr, targetSelect: Expr) : Expr {
+		var enumType = Context.typeof(enumExpr);
+
+		var decls : Array<Expr> = [];
+		switch(enumType) {
+			case TAbstract(abstractType, _):
+				if (abstractType.toString() == "Int")
+					return macro {};
+				var statics = abstractType.get().impl.get().statics.get();
+				for (s in statics) {
+					decls.push(macro {value: $e{Context.getTypedExpr(s.expr())}, label: $v{camelToSpaceCase(s.name)}});
+				}
+			case TEnum(t, _):
+				var trueEnum = t.get();
+				var constructors = trueEnum.constructs.array();
+
+				// Reorder constructors in the order they appear in the file
+				constructors.sort((a,b) -> Reflect.compare(a.index, b.index));
+
+				for (constructor in constructors) {
+					var pak = trueEnum.pack.copy();
+					pak.push(trueEnum.name);
+					pak.push(constructor.name);
+					decls.push(macro {value: $p{pak}, label: $v{camelToSpaceCase(constructor.name)}});
+				}
+			default:
+				return macro {};
+		}
+		return macro if ($targetSelect.entries == null) $targetSelect.setEntries(cast $a{decls});
 	}
 }
