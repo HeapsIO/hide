@@ -75,5 +75,15 @@ class Unknown extends Prefab {
 			ctx.onChange(this, pname);
 		});
 	}
+
+	override function edit2( ctx: hrt.prefab.EditContext2 ) {
+		ctx.build(
+			<root>
+				<text('Unknown prefab type : <code>${data.type}')/>
+				<text('This prefab might has been saved in a more recent version of hide (in that case try to update) or this type no longer exists.')/>
+				<text('No data will be lost if this prefab is saved; but rendering glitches or strange offsets can occur.')/>
+			</root>
+		);
+	}
 #end
 }
