@@ -421,13 +421,16 @@ class Macros {
 							});
 						}
 
+						// auto select must be done before the value is set because it calls setEntries which reset
+						// the input value
+						if (nodeName == "select") {
+							block.push(macro hide.kit.Macros.tryAutoSelect($field, $elementExpr));
+						}
+
 						block.push(macro @:pos(pos) @:privateAccess $elementExpr.fieldName = $v{fieldName});
 						block.push(macro @:pos(pos) $elementExpr.value = $field);
 						block.push(macro @:pos(pos) @:privateAccess $elementExpr.onFieldChange = (temp:Bool) -> $field = $elementExpr.value);
 
-						if (nodeName == "select") {
-							block.push(macro hide.kit.Macros.tryAutoSelect($field, $elementExpr));
-						}
 					}
 
 				}
@@ -561,7 +564,8 @@ class Macros {
 					return macro {};
 				var statics = abstractType.get().impl.get().statics.get();
 				for (s in statics) {
-					decls.push(macro {value: $e{Context.getTypedExpr(s.expr())}, label: $v{camelToSpaceCase(s.name)}});
+					if (s.meta.has(":value"))
+						decls.push(macro {value: $e{Context.getTypedExpr(s.expr())}, label: $v{camelToSpaceCase(s.name)}});
 				}
 			case TEnum(t, _):
 				var trueEnum = t.get();
