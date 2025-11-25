@@ -156,8 +156,14 @@
 		// tmp fix jsonWorker in monaco 0.52, see https://github.com/microsoft/monaco-editor/issues/4778
 		var appPath = hide.tools.IdeData.getAppPath();
 
-		if (appPath != null && !appPath.endsWith("/")) {
-			appPath += "/";
+		if (appPath != null) {
+			if (!appPath.endsWith("/")) {
+				appPath += "/";
+			}
+
+			if (appPath.startsWith("/")) {
+				appPath = "file://" + appPath;
+			}
 		}
 
 		var libPath = (appPath == null ? '' : appPath) + 'libs/monaco/min';
