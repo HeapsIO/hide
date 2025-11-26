@@ -6176,7 +6176,10 @@ class SceneEditor {
 			var o = Std.downcast(elt ?? elt.shared.parentPrefab, Object3D);
 			while (o != null) {
 				mat.multiply(mat, o.getTransform());
-				o = (o.shared.parentPrefab ?? o.parent).to(hrt.prefab.Object3D);
+				var parent = o?.parent;
+				o = Std.downcast(parent, hrt.prefab.Object3D);
+				if (o == null)
+					o = Std.downcast(parent?.shared?.parentPrefab, hrt.prefab.Object3D);
 			}
 			return mat;
 		}
