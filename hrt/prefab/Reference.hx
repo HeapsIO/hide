@@ -167,12 +167,14 @@ class Reference extends Object3D {
 		#end
 			var res = @:privateAccess hxd.res.Loader.currentInstance.load(source).toPrefab();
 
+			#if editor
+			if (editMode == Override) {
+				originalSource = @:privateAccess res.loadData();
+			}
+			#end
+
 			if (overrides != null) {
 				var refInstanceData = @:privateAccess res.loadData();
-
-				#if editor
-				originalSource = @:privateAccess res.loadData();
-				#end
 
 				refInstanceData = hrt.prefab.Diff.apply(refInstanceData, overrides);
 				refInstance = hrt.prefab.Prefab.createFromDynamic(refInstanceData, null, new ContextShared(source, null, null, true));
@@ -320,10 +322,7 @@ class Reference extends Object3D {
 		ctx.build(
 			<category("Reference")>
 				<file type="prefab" field={source} id="fileSource"/>
-				<select([
-					{value: EditMode.None, label: "None"},
-					{value: EditMode.Edit, label: "Edit"},
-					{value: EditMode.Override, label: "Override"}]) field={editMode} id="editModeSelect"/>
+				<select field={editMode} id="editModeSelect"/>
 				<text("Warning : Edit mode enabled while there are override on this reference. Saving will cause the overrides to be applied to the original reference !") if(overrides != null && editMode == Edit)/>
 			</category>
 		);
