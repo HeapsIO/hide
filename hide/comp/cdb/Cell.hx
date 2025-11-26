@@ -1392,7 +1392,7 @@ class Cell {
 
 	function setRawValue( str : Dynamic ) {
 		var newValue : Dynamic;
-		if ( !column.type.match(TFloat) && Std.isOfType(str,String) ) {
+		if ( !column.type.match(TFloat) && !column.type.match(TDynamic) && Std.isOfType(str,String) ) {
 			newValue = try editor.base.parseValue(column.type, str, false) catch( e : Dynamic ) return;
 		} else
 			newValue = str;
