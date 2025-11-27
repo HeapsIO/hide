@@ -545,6 +545,7 @@ class Cell {
 				val('#DATA');
 		case TDynamic:
 			var str = Std.string(v).split("\n").join(" ").split("\t").join("");
+			str = try editor.base.parseValue(c.type, str, false) catch( e : Dynamic ) '"$str"';
 			if( str.length > 50 ) str = str.substr(0, 47) + "...";
 			val(str);
 		case TGradient:
@@ -907,7 +908,7 @@ class Cell {
 			});
 			i.keyup(function(e) try {
 				var t : Element.HTMLElement = cast e.target;
-				var v = editor.base.parseValue(column.type, t.innerText);
+				var v = parseEditorValue(t.innerText);
 
 				if (column.type == TId && !isUniqueID((v:String), true)) {
 					throw v + " is not a unique id";
@@ -1390,16 +1391,52 @@ class Cell {
 		return str.substr(pos, endPos - pos + 1);
 	}
 
-	function setRawValue( str : Dynamic ) {
+	function parseEditorValue(str : String) : Dynamic {
 		var newValue : Dynamic;
 		if ( !column.type.match(TFloat) && !column.type.match(TDynamic) && Std.isOfType(str,String) ) {
-			newValue = try editor.base.parseValue(column.type, str, false) catch( e : Dynamic ) return;
+			newValue = editor.base.parseValue(column.type, str, false);
 		} else
 			newValue = str;
 
 		if (column.display == Percent)
 			newValue *= 0.01;
 
+		switch( column.type ) {
+		case TString:
+			var v = trimNonBreakableSpaces(newValue);
+			if (v == "")
+				v = editor.base.getDefault(column, false, table.sheet);
+			return v;
+		case TFloat:
+			var interp = new hscript.Interp();
+			@:privateAccess interp.initOps();
+			interp.variables.set("Math", Math);
+
+			// Remove leading + if the user miss typed the expression
+			var str : String = str;
+			if(str.charAt(0) == "+") {
+				str = str.substr(1);
+			}
+
+			try {
+				var parser = new hscript.Parser();
+				var expr = parser.parseString(str);
+				var res = interp.execute(expr);
+				return editor.base.parseValue(column.type, res, false);
+			} catch (e : Dynamic) {
+				throw '$str is not a float';
+			}
+
+		case TDynamic:
+			newValue = try editor.base.parseValue(column.type, str, false) catch( e : Dynamic ) str;
+			return newValue;
+		default:
+			return newValue;
+		}
+	}
+
+	function setRawValue( str : Dynamic ) {
+		var newValue : Dynamic = try parseEditorValue(str) catch (e : Dynamic) return;
 		if( newValue == null || newValue == currentValue )
 			return;
 
@@ -1410,15 +1447,9 @@ class Cell {
 				currentValue = newValue;
 			}
 			focus();
-		case TString:
-			var v = trimNonBreakableSpaces(newValue);
-			if (v == "")
-				v = editor.base.getDefault(column, false, table.sheet);
-			setValue(v);
 		case TTilePos:
 			// if we change a file that has moved, change it for all instances having the same file
 			editor.beginChanges();
-			var obj = line.obj;
 			var change = false;
 			var oldV : cdb.Types.TilePos = currentValue;
 			var newV : cdb.Types.TilePos = newValue;
@@ -1437,26 +1468,6 @@ class Cell {
 			if( change )
 				editor.refresh();
 			closeEdit();
-		case TFloat:
-			var interp = new hscript.Interp();
-			@:privateAccess interp.initOps();
-			interp.variables.set("Math", Math);
-
-			// Remove leading + if the user miss typed the expression
-			var str : String = str;
-			if(str.charAt(0) == "+") {
-				str = str.substr(1);
-			}
-
-			try {
-				var parser = new hscript.Parser();
-				var expr = parser.parseString(str);
-				var res = interp.execute(expr);
-				res = try editor.base.parseValue(column.type, res, false) catch( e : Dynamic ) return;
-				setValue(res);
-			} catch(e) {
-				ide.quickError('Invalid float : ${e.toString()}');
-			}
 		default:
 			setValue(newValue);
 		}
