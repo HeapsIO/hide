@@ -30,6 +30,23 @@ class Tile extends Bitmap {
 		#end
 	}
 
+	override function edit2(ctx:hrt.prefab.EditContext2) {
+		super.edit2(ctx);
+		ctx.build(
+			<category("Tile")>
+				<slider field={size}/>
+				<line label="Position">
+					<slider label="X" field={posX}/>
+					<slider label="Y" field={posY} />
+				</line>
+				<slider-group label="Size">
+					<slider label="X" field={sizeX}/>
+					<slider label="Y" field={sizeY}/>
+				</slider-group>
+			</category>
+		);
+	}
+
 	#if editor
 
 	override function edit( ctx : hide.prefab.EditContext ) {
