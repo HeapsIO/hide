@@ -94,6 +94,20 @@ class Billboard extends Object3D {
 		billboard.LockZ = this.LockZ;
 	}
 
+	override function edit2(ctx:hrt.prefab.EditContext2) {
+		super.edit2(ctx);
+		ctx.build(
+			<category("Billboard")>
+				<checkbox field={IsAbsolute}/>
+				<line label="Axis constraints">
+					<checkbox label="X" field={LockX}/>
+					<checkbox label="Y" field={LockY}/>
+					<checkbox label="Z" field={LockZ}/>
+				</line>
+			</category>
+		);
+	}
+
 	#if editor
 	override function getHideProps():hide.prefab.HideProps {
 		return {
