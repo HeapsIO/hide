@@ -126,7 +126,7 @@ class Slider<T:Float> extends Widget<T> {
 			}
 			if (mult == null) {
 				if (int) {
-					mult = 0.01 * step;
+					mult = 0.01 * (step ?? 1.0);
 				} else {
 					mult = 0.01;
 				}
@@ -135,6 +135,7 @@ class Slider<T:Float> extends Widget<T> {
 			if (e.shiftKey) mult /= 10.0;
 
 			subPixelSlide += e.movementX / js.Browser.window.devicePixelRatio * mult;
+			trace(mult);
 
 			var newValueLinear = startValueLinear + subPixelSlide;
 
