@@ -30,6 +30,12 @@ enum abstract TestAbstractInt(Int) {
 }
 
 
+typedef ListItem = {
+	x: Float,
+	y: Float,
+	name: String,
+}
+
 class KitTest extends Object3D {
 
 	override function makeObject(parent3d: h3d.scene.Object) : h3d.scene.Object {
@@ -60,11 +66,39 @@ class KitTest extends Object3D {
 	@:s var testEnum: TestEnum;
 	@:s var testAbstractString: TestAbstractString;
 	@:s var testAbstractInt: TestAbstractInt;
+
 	var substruct: SubStruct = { innerValue: 0.0, };
+
+
+	@:s var list: Array<ListItem> = [{x: 0, y: 0, name: "Alice"}, {x: 42, y: 15, name: "Bob"}];
 
 	override function edit2(ctx:hrt.prefab.EditContext2) {
 		this.props = this.props ?? {};
 		var props : Dynamic = cast this.props;
+
+		// Fuction is put inside edit2 to avoid having to surround it with #if domkit
+		function makeListItem(header: hide.kit.Element, content: hide.kit.Element, item: ListItem) {
+			header.build(
+				<root>
+					<slider field={item.x}/>
+					<slider field={item.y}/>
+				</root>
+			);
+
+			content.build(
+				<root>
+					<input field={item.name}/>
+				</root>
+			);
+		}
+
+		ctx.build(
+			<category("List")>
+				<list(makeListItem, null) field={list}/>
+			</category>
+		);
+
+
 
 		ctx.build(
 			<category("All Elements")>
@@ -116,6 +150,7 @@ class KitTest extends Object3D {
 
 				<slider label="Value" field={props.float}/>
 				<button("Delete Value") id="delete"/>
+
 			</category>);
 
 		delete.onClick = () -> {

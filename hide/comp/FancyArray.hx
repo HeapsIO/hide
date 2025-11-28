@@ -177,40 +177,40 @@ class FancyArray<T> extends hide.comp.Component {
 				toggleOpen.remove();
 			}
 
-			if (removeItem != null) {
-				paramElement.find("fancy-item-header").get(0).addEventListener("contextmenu", function (e : js.html.MouseEvent) {
-					e.preventDefault();
-					hide.comp.ContextMenu.createFromEvent(e, [
-						{label: "Delete", click: () -> removeItem(i)}
-					]);
-				});
-
-				var menu = paramElement.find(".menu");
-				menu.on("click", (e) -> {
-					e.preventDefault();
-					hide.comp.ContextMenu.createDropdown(menu.get(0), [
-						{label: "Delete", click: () -> removeItem(i)}
-					]);
-				});
-			}			paramElement.find("fancy-item-header").get(0).addEventListener("contextmenu", function (e : js.html.MouseEvent) {
+			var dropdown = getDropdownMenu(i);
+			paramElement.find("fancy-item-header").get(0).addEventListener("contextmenu", function (e : js.html.MouseEvent) {
 				e.preventDefault();
-				hide.comp.ContextMenu.createFromEvent(e, [
-					{label: "Delete", click: () -> removeItem(i)}
-				]);
+				e.stopPropagation();
+				if (dropdown.length > 0) {
+					hide.comp.ContextMenu.createFromEvent(e, dropdown);
+				}
 			});
 
 			var menu = paramElement.find(".menu");
-			menu.on("click", (e) -> {
-				e.preventDefault();
-				hide.comp.ContextMenu.createDropdown(menu.get(0), [
-					{label: "Delete", click: () -> removeItem(i)}
-				]);
-			});
+			if (dropdown.length > 0) {
+				menu.on("click", (e) -> {
+					e.preventDefault();
+					e.stopPropagation();
+					hide.comp.ContextMenu.createDropdown(menu.get(0), getDropdownMenu(i));
+				});
+			} else {
+				menu.remove();
+			}
 
 			if (customizeHeader != null) {
 				customizeHeader(item, paramElement.find("fancy-item-header"));
 			}
 		}
+	}
+
+	public function getDropdownMenu(index: Int) : Array<hide.comp.ContextMenu.MenuItem> {
+		var menu : Array<hide.comp.ContextMenu.MenuItem> = [];
+
+		if (removeItem != null) {
+			menu.push({label: "Delete", click: () -> removeItem(index)});
+		}
+
+		return menu;
 	}
 
 	// Open target item index, and make it flash briefly

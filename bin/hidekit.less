@@ -116,6 +116,119 @@ kit-root {
 			color: @widget-font-color;
 		}
 
+		fancy-array {
+			border: none;
+			border-radius: 0;
+			// border-color: lighten(@title-background-color, @title-border-color-lightness);
+
+			margin-left: 4px;
+			padding: 0;
+
+			fancy-items {
+				gap: 0;
+
+				fancy-item {
+					margin-top: -1px;
+					background-color: transparent;
+
+					fancy-item-content {
+						padding-left: 0;
+						background-color: transparent !important;
+					}
+
+					fancy-item-header {
+						border-radius: 0;
+						border-block: 1px solid;
+						background-color: @title-background-color;
+						border-color: lighten(@title-background-color, @title-border-color-lightness);
+					}
+				}
+
+			}
+
+		}
+
+		kit-list {
+			padding-block: 5px;
+			margin-block: 5px;
+			@indent: 20px;
+
+			display: block;
+			border-top: 1px solid #333;
+			border-bottom: 1px solid #333;
+			>kit-collapse-line>kit-line, >kit-line {
+				padding-left: @indent;
+				border-radius: 0;
+			}
+
+			>kit-collapse-line {
+				>kit-content>kit-content {
+					position: relative;
+					display: block;
+					&::before {
+						// box-shadow: 0px 0px 7px #555;
+
+						z-index: 5;
+						position: absolute;
+						left: @indent+8px;
+						bottom: 0px;
+						top: -8px;
+						width: 15px;
+						border-left: 1px solid #333;
+						border-image: linear-gradient(to right, #555 0%, #000 100%) 1;
+						display: block;
+						content: " ";
+					}
+				}
+			}
+		}
+
+
+		kit-collapse-line {
+			> kit-line {
+				&::before {
+					position: absolute;
+					display: inline-block;
+					content: "";
+					margin: 2px;
+					width: 12px; height: 12px;
+
+					transition: transform 0.2s;
+					background-color: currentColor;
+					mask-image: url("res/icons/svg/right_caret.svg");
+
+					mask-position: center;
+					mask-repeat: no-repeat;
+					mask-size: contain;
+
+					pointer-events: all;
+				}
+			}
+
+			&.open>kit-line::before {
+				transform: rotate(90deg);
+			}
+
+			* {
+				box-sizing: border-box;
+			}
+
+			>kit-content {
+				display: block;
+				transition: height ease 100ms;
+				height: 0;
+				overflow: clip;
+			}
+
+			&.open>kit-content {
+				height: max-content;
+			}
+
+			>kit-content>.kit-content {
+				box-sizing: border-box;
+			}
+		}
+
 		kit-category {
 			width: 100%;
 
@@ -347,6 +460,7 @@ kit-root {
 			min-height: @widget-height;
 
 			kit-label {
+				font-variant-numeric: tabular-nums;
 				display:flex;
 				justify-content: end;
 				align-items: center;
@@ -544,7 +658,7 @@ kit-root {
 					display: block;
 				}
 
-				&:has(kit-image) {
+				&:has(kit-image), &.square {
 					flex: 0 1 1.6em;
 					padding: 3px;
 					height: unset;

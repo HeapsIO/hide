@@ -65,6 +65,90 @@ kit-root .detached .is-cdb-editor {
   :scope input {
     color: #FFFFFF;
   }
+  :scope fancy-array {
+    border: none;
+    border-radius: 0;
+    margin-left: 4px;
+    padding: 0;
+  }
+  :scope fancy-array fancy-items {
+    gap: 0;
+  }
+  :scope fancy-array fancy-items fancy-item {
+    margin-top: -1px;
+    background-color: transparent;
+  }
+  :scope fancy-array fancy-items fancy-item fancy-item-content {
+    padding-left: 0;
+    background-color: transparent !important;
+  }
+  :scope fancy-array fancy-items fancy-item fancy-item-header {
+    border-radius: 0;
+    border-block: 1px solid;
+    background-color: #272727;
+    border-color: #313131;
+  }
+  :scope kit-list {
+    padding-block: 5px;
+    margin-block: 5px;
+    display: block;
+    border-top: 1px solid #333;
+    border-bottom: 1px solid #333;
+  }
+  :scope kit-list > kit-collapse-line > kit-line,
+  :scope kit-list > kit-line {
+    padding-left: 20px;
+    border-radius: 0;
+  }
+  :scope kit-list > kit-collapse-line > kit-content > kit-content {
+    position: relative;
+    display: block;
+  }
+  :scope kit-list > kit-collapse-line > kit-content > kit-content::before {
+    z-index: 5;
+    position: absolute;
+    left: 28px;
+    bottom: 0px;
+    top: -8px;
+    width: 15px;
+    border-left: 1px solid #333;
+    border-image: linear-gradient(to right, #555 0%, #000 100%) 1;
+    display: block;
+    content: " ";
+  }
+  :scope kit-collapse-line > kit-line::before {
+    position: absolute;
+    display: inline-block;
+    content: "";
+    margin: 2px;
+    width: 12px;
+    height: 12px;
+    transition: transform 0.2s;
+    background-color: currentColor;
+    mask-image: url("res/icons/svg/right_caret.svg");
+    mask-position: center;
+    mask-repeat: no-repeat;
+    mask-size: contain;
+    pointer-events: all;
+  }
+  :scope kit-collapse-line.open > kit-line::before {
+    transform: rotate(90deg);
+  }
+  :scope kit-collapse-line * {
+    box-sizing: border-box;
+  }
+  :scope kit-collapse-line > kit-content {
+    display: block;
+    transition: height ease 100ms;
+    height: 0;
+    overflow: clip;
+  }
+  :scope kit-collapse-line.open > kit-content {
+    height: max-content;
+  }
+  :scope kit-collapse-line > kit-content > .kit-content {
+    box-sizing: border-box;
+  }
   :scope kit-category {
     width: 100%;
     font-size: 11px;
@@ -306,6 +390,7 @@ kit-root .detached .is-cdb-editor {
     background-color: hsl(from var(--inspector-bg) h s calc(l + var(--line-hover-highlight)));
   }
   :scope kit-line kit-label {
+    font-variant-numeric: tabular-nums;
     display: flex;
     justify-content: end;
     align-items: center;
@@ -465,7 +550,8 @@ kit-root .detached .is-cdb-editor {
     background-repeat: no-repeat;
     display: block;
   }
-  :scope kit-line kit-button:has(kit-image) {
+  :scope kit-line kit-button:has(kit-image),
+  :scope kit-line kit-button.square {
     flex: 0 1 1.6em;
     padding: 3px;
     height: unset;

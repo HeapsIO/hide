@@ -131,18 +131,22 @@ class Element {
 	/**
 		Create the native elements of this Element to be displayed in the editor
 	**/
-	public function make() {
+	public function make(attach: Bool = true) {
 		if (singleEdit && root.isMultiEdit)
 			disabled = true;
 
 		makeSelf();
 
-		if (parent != null)
+		if (attach && parent != null)
 			parent.attachChildNative(this);
 
 		// call setters
 		disabled = disabled;
 
+		makeChildren();
+	}
+
+	function makeChildren() {
 		for (c in children) {
 			c.disabled = c.disabled || disabled;
 			c.make();
@@ -262,7 +266,7 @@ class Element {
 		If the element is already in the line, the function correclty handle that and create the appropriate
 		element instead.
 	**/
-	function setupPropLine(label: NativeElement, content: NativeElement, autoCreateLabel: Bool = true) {
+	function setupPropLine(label: NativeElement, content: NativeElement, autoCreateLabel: Bool = true, bigContent: Bool = false) {
 		#if js
 		var parentLine = Std.downcast(parent, Line);
 

@@ -59,7 +59,7 @@ class CDB extends Element {
 		#end
 	}
 
-	override function make() {
+	override function make(attach: Bool = true) {
 		super.make();
 
 		#if js

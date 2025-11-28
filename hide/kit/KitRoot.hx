@@ -85,7 +85,7 @@ class KitRoot #if !macro extends Element #end {
 				var childInput = Std.downcast(childElement, Type.getClass(input));
 
 				if (childInput != null) {
-					childInput.value = input.value;
+					childInput.value = haxe.Json.parse(haxe.Json.stringify(input.value));
 					@:privateAccess childInput.onFieldChange(isTemporaryEdit);
 					childInput.onValueChange(isTemporaryEdit);
 					childProperties.prefab.updateInstance(@:privateAccess input.fieldName);
