@@ -73,15 +73,9 @@ class Matlib extends Widget<String> {
 		syncValueUI();
 	}
 
-	override function propagateChange(kind: hide.kit.Element.ChangeKind) {
-		switch (kind) {
-			case Value(inputs, isTemporary):
-				for (input in inputs) {
-					input.onValueChange(isTemporary);
-				}
-			case Click(button):
-				button.onClick();
-		}
+	override function change(callback: () -> Void, isTemporaryEdit: Bool) {
+		callback();
+		onValueChange(isTemporaryEdit);
 	}
 
 	function getMaterialList(library: String) {

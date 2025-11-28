@@ -133,7 +133,27 @@ abstract class Widget<ValueType> extends Element {
 		Call this internally when the user interact with the widget to indicate to the Inspector that the value has changed
 	**/
 	function broadcastValueChange(temporaryEdit: Bool) : Void {
-		parent?.propagateChange(Value([this], temporaryEdit));
+		parent?.change(changeBehaviorInternal.bind(temporaryEdit), temporaryEdit);
+	}
+
+	/** Internal function passed to change() **/
+	function changeBehaviorInternal(isTemporaryEdit: Bool) {
+		onFieldChange(isTemporaryEdit);
+		onValueChange(isTemporaryEdit);
+		@:privateAccess root.prefab?.updateInstance(fieldName);
+
+		var idPath = getIdPath();
+		for (childProperties in root.editedPrefabsProperties) {
+			var childElement = childProperties.getElementByPath(idPath);
+			var childInput = Std.downcast(childElement, Type.getClass(this));
+
+			if (childInput != null) {
+				childInput.value = haxe.Json.parse(haxe.Json.stringify(value));
+				childInput.onFieldChange(isTemporaryEdit);
+				childInput.onValueChange(isTemporaryEdit);
+				@:privateAccess childProperties.prefab?.updateInstance(fieldName);
+			}
+		}
 	}
 
 	/** Returns true if the values between the currently edited prefabs differs **/

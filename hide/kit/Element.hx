@@ -42,13 +42,6 @@ package hide.kit;
 		Callbacks bound in the onChange function should be bound on the relevant widget onValueChange instead
 	**/
 
-#if !macro
-enum ChangeKind {
-	Value(widgets: Array<Widget<Dynamic>>, temporary: Bool);
-	Click(button: Button);
-}
-#end
-
 @:keepSub
 class Element {
 	#if !macro
@@ -314,9 +307,9 @@ class Element {
 		#end
 	}
 
-	function propagateChange(kind: ChangeKind) {
+	function change(callback: () -> Void, isTemporary: Bool) {
 		if (parent != null) {
-			parent.propagateChange(kind);
+			parent.change(callback, isTemporary);
 		}
 	}
 

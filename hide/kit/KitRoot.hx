@@ -60,63 +60,14 @@ class KitRoot #if !macro extends Element #end {
 		return currentElement;
 	}
 
-	override function propagateChange(kind: hide.kit.Element.ChangeKind) {
-		switch (kind) {
-			case Value(widgets, temporary):
-				onWidgetChange(widgets, temporary);
-			case Click(button):
-				onButtonClick(button);
-		}
-	}
-
-	function onWidgetChange(inputs: Array<Widget<Dynamic>>, isTemporaryEdit: Bool) {
+	override function change(callback: () -> Void, isTemporaryEdit: Bool) : Void {
 		prepareUndoPoint();
 
-		for(input in inputs) {
-			@:privateAccess input.onFieldChange(isTemporaryEdit);
-			input.onValueChange(isTemporaryEdit);
-			prefab.updateInstance(@:privateAccess input.fieldName);
-		}
-
-		for (input in inputs) {
-			var idPath = input.getIdPath();
-			for (childProperties in editedPrefabsProperties) {
-				var childElement = childProperties.getElementByPath(idPath);
-				var childInput = Std.downcast(childElement, Type.getClass(input));
-
-				if (childInput != null) {
-					childInput.value = haxe.Json.parse(haxe.Json.stringify(input.value));
-					@:privateAccess childInput.onFieldChange(isTemporaryEdit);
-					childInput.onValueChange(isTemporaryEdit);
-					childProperties.prefab.updateInstance(@:privateAccess input.fieldName);
-				}
-			}
-		}
+		callback();
 
 		if (!isTemporaryEdit) {
 			finishUndoPoint();
 		}
-	}
-
-	function onButtonClick(button: Button) {
-		var idPath = button.getIdPath();
-
-		prepareUndoPoint();
-
-		button.onClick();
-		prefab.updateInstance();
-
-		for (childProperties in editedPrefabsProperties) {
-
-			var childElement = childProperties.getElementByPath(idPath);
-			var childButton = Std.downcast(childElement, Button);
-			if (childButton != null) {
-				childButton.onClick();
-				childProperties.prefab.updateInstance();
-			}
-		}
-
-		finishUndoPoint();
 	}
 
 	/**

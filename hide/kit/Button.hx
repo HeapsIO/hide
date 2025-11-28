@@ -28,7 +28,24 @@ class Button extends Element {
 	}
 
 	function broadcastClick() {
-		parent?.propagateChange(Click(this));
+		parent?.change(onClickChange, false);
+	}
+
+	/** Internal function passed to change() **/
+	function onClickChange() {
+		onClick();
+		@:privateAccess root.prefab?.updateInstance();
+
+		var idPath = getIdPath();
+		for (childProperties in root.editedPrefabsProperties) {
+
+			var childElement = childProperties.getElementByPath(idPath);
+			var childButton = Std.downcast(childElement, Button);
+			if (childButton != null) {
+				childButton.onClick();
+				@:privateAccess childProperties.prefab?.updateInstance();
+			}
+		}
 	}
 
 	override function makeSelf() {

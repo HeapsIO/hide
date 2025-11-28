@@ -245,7 +245,11 @@ class Slider<T:Float> extends Widget<T> {
 				sliders.push(siblingSlider);
 			}
 
-			propagateChange(Value(sliders, isTemporary));
+			parent?.change(() -> {
+				for (slider in sliders) {
+					slider.changeBehaviorInternal(isTemporary);
+				}
+			}, isTemporary);
 		}
 		else {
 			value = newValue;
