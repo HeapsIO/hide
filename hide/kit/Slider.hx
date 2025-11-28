@@ -135,7 +135,6 @@ class Slider<T:Float> extends Widget<T> {
 			if (e.shiftKey) mult /= 10.0;
 
 			subPixelSlide += e.movementX / js.Browser.window.devicePixelRatio * mult;
-			trace(mult);
 
 			var newValueLinear = startValueLinear + subPixelSlide;
 
@@ -218,14 +217,17 @@ class Slider<T:Float> extends Widget<T> {
 		#end
 	}
 
+	function snap(value: Float) : T {
+		var snap : Float = (step:Float) ?? (int ? 1.0 : 0.01);
+		return cast hxd.Math.round(value / snap) * snap;
+	}
+
 	function slideTo(newValue: T, isTemporary: Bool) {
 		var group = Std.downcast(parent, SliderGroup);
-		var snap = 1.0;
-		if (int)
-			snap = (cast step) ?? 1.0;
+		newValue = snap(newValue);
 
 		if (group != null && group.isLocked) {
-			var changeDelta = newValue / value;
+			var changeDelta : Float = (newValue:Float) / (value:Float);
 
 			var sliders : Array<Widget<Dynamic>> = [];
 			for (sibling in parent.children) {
@@ -234,15 +236,12 @@ class Slider<T:Float> extends Widget<T> {
 					continue;
 
 				if (Math.isFinite(changeDelta)) {
-					siblingSlider.value = cast (siblingSlider.value:Float) * changeDelta;
-
+					siblingSlider.value = cast snap(changeDelta * siblingSlider.value);
 				} else {
+					// if we divided by zero, just set the value to be equal to the new one
 					siblingSlider.value = cast newValue;
 				}
 
-				if (int) {
-					siblingSlider.value = cast hxd.Math.round((cast siblingSlider:Float) / snap) * snap;
-				}
 				sliders.push(siblingSlider);
 			}
 
@@ -250,9 +249,6 @@ class Slider<T:Float> extends Widget<T> {
 		}
 		else {
 			value = newValue;
-			if (int) {
-				value = cast hxd.Math.round((cast value:Float) / snap) * snap;
-			}
 			broadcastValueChange(isTemporary);
 		}
 	}

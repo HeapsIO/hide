@@ -292,6 +292,12 @@ class KitTest extends Object3D {
 							<slider label="B" value={20}/>
 							<slider label="C" value={30}/>
 						</slider-group>
+
+						<slider-group label="Int group">
+							<slider label="A" int value={10}/>
+							<slider label="B" int value={20}/>
+							<slider label="C" int value={30}/>
+						</slider-group>
 					</category>
 					<category("Range")>
 						<text("Ranges are basically an alias for a slider with a mandatory min/max")/>
