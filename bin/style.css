@@ -3304,13 +3304,10 @@ div.gradient-box:hover {
   padding-left: 10px;
   flex-grow: 1;
 }
-.domkitEditor .editors .panel.right > .editor {
-  height: 100%;
-}
 .domkitEditor .editors .panel > .editor {
   display: flex;
   flex-direction: column;
-  height: 50%;
+  height: 100%;
 }
 .domkitEditor .editors .panel > .editor > span {
   font-size: 18px;

@@ -1,5 +1,10 @@
 package monaco;
 
+enum abstract ScrollType(Int) {
+	var Smooth = 0;
+	var Immediate = 1;
+}
+
 @:native("monaco.editor")
 extern class ScriptEditor {
 
@@ -18,8 +23,11 @@ extern class ScriptEditor {
 	function updateOptions( options : Dynamic ) : Void;
 	function getPosition() : Position;
 	function setPosition( p : Position ) : Void;
-	function revealLine(lineNumber: Int, ?ScrollType: Int) : Void;
-	function revealLineInCenter(lineNumber: Int, ?ScrollType: Int) : Void;
+	function revealLine(lineNumber: Int, ?ScrollType: ScrollType) : Void;
+	function revealLineInCenter(lineNumber: Int, ?ScrollType: ScrollType) : Void;
+	function revealLineNearTop( lineNumber : Int, ?ScrollType: ScrollType) : Void;
+	function getOption( opt : Int ) : Dynamic;
+	function setScrollTop( value : Int ) : Void;
 
 
 	public static function create( elt : js.html.Element, ?options : Dynamic ) : ScriptEditor;

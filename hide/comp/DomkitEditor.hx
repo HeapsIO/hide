@@ -717,7 +717,7 @@ class DomkitChecker extends ScriptEditor.ScriptChecker {
 		case For(cond):
 			var expr = parseCode("for"+cond+"{}", e.pmin);
 			inline function restore(v,t) {
-				@:privateAccess if( t == null ) checker.locals.remove(v) else checker.locals.set(v, t);					
+				@:privateAccess if( t == null ) checker.locals.remove(v) else checker.locals.set(v, t);
 			}
 			switch( expr.e ) {
 			case EFor(n,it,_): @:privateAccess {
@@ -766,6 +766,7 @@ class DomkitEditor extends CodeEditor {
 
 	public function new( config, kind, code : String, ?checker, ?parent : Element, ?root : Element ) {
 		this.kind = kind;
+		allowScrollBeyondLine = true;
 		var lang = kind == DML ? "html" : "less";
 		super(code, lang, parent, root);
 		switch( kind ) {
@@ -778,6 +779,33 @@ class DomkitEditor extends CodeEditor {
 		if( checker == null )
 			checker = new DomkitChecker(config);
 		this.checker = checker;
+
+	}
+
+	override function onKey( e : js.jquery.Event ) {
+		if( e.keyCode == hxd.Key.F12 ) {
+			e.preventDefault();
+			var pos = editor.getPosition();
+			var line = code.split("\n")[pos.lineNumber - 1];
+			var col = pos.column - 1;
+			var validChar = ~/[A-Za-z0-9\-]/;
+			if( !validChar.match(line.substr(col,1)) )
+				return;
+			while( col >= 0 ) {
+				var c = line.charCodeAt(col);
+				if( c == " ".code || c == "\t".code || c == "<".code || c == ",".code ) {
+					col++;
+					break;
+				}
+				if( !validChar.match(line.charAt(col)) )
+					return;
+				col--;
+			}
+			if( col < 0 ) col = 0;
+			var r = ~/^([A-Za-z][A-Za-z0-9\-]*)/;
+			if( r.match(line.substr(col)) )
+				gotoComponent(r.matched(1));
+		}
 	}
 
 	public function setDomkitError( e : domkit.Error ) {
@@ -795,6 +823,9 @@ class DomkitEditor extends CodeEditor {
 		} catch( e : domkit.Error ) {
 			setDomkitError(e);
 		}
+	}
+
+	public dynamic function gotoComponent(name:String) {
 	}
 
 	public function getComponent() {

@@ -12,6 +12,7 @@ class CodeEditor extends Component {
 	public var code(get,never) : String;
 	public var propagateKeys : Bool = false;
 	public var saveOnBlur : Bool = true;
+	var allowScrollBeyondLine : Bool;
 
 	public function new( code : String, lang : String, ?parent : Element, ?root : Element ) {
 
@@ -28,6 +29,7 @@ class CodeEditor extends Component {
 		this.lang = lang;
 		root.addClass("codeeditor");
 		root.on("keydown", function(e) {
+			onKey(e);
 			if( e.keyCode == 27 && root.find(".suggest-widget.visible").length == 0 ) onClose();
 			if( !propagateKeys ) e.stopPropagation();
 		});
@@ -41,7 +43,7 @@ class CodeEditor extends Component {
 			lineNumbersMinChars: 3,
 			fontSize: "13px",
 			mouseWheelZoom: true,
-			scrollBeyondLastLine: false,
+			scrollBeyondLastLine: allowScrollBeyondLine == true,
 			insertSpaces : false,
 			detectIndentation : false,
 			// To remove when scrollbar's bug is fixed (error when user click on scrollbar)
@@ -64,6 +66,9 @@ class CodeEditor extends Component {
 				saveBind();
 			});
 		});
+	}
+
+	function onKey( e : js.jquery.Event ) {
 	}
 
 	function saveBind() {
@@ -179,6 +184,12 @@ class CodeEditor extends Component {
 		var rect = errorMessage[0].getBoundingClientRect();
 		if( rect.bottom > js.Browser.window.innerHeight )
 			errorMessage[0].scrollIntoView(false);
+	}
+
+	public function setCursor( line : Int, ?column = 0 ) {
+		editor.setPosition({ lineNumber : line + 1, column: column + 1 });
+		var lineHeight = editor.getOption(67 /*lineHeight*/);
+		editor.setScrollTop((line + 1) * lineHeight);
 	}
 
 }
