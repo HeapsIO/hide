@@ -816,6 +816,18 @@ class DomkitStyle extends h2d.domkit.Style {
 		}
 	}
 
+	public function loadComponents( path : String ) {
+		function loadRec( dir : hxd.fs.FileEntry ) {
+			for( f in dir ) {
+				if( f.isDirectory )
+					loadRec(f);
+				else if( f.extension == "less" )
+					load(hxd.res.Loader.currentInstance.load(f.path));
+			}
+		}
+		loadRec(hxd.res.Loader.currentInstance.load(path).entry);
+	}
+
 	override function loadData( r : hxd.res.Resource ) {
 		if( r.entry.extension != "domkit" )
 			return super.loadData(r);
