@@ -643,7 +643,7 @@ class ScriptChecker {
 			return checker.types.resolve(name,params);
 		case TEnum(e):
 			return checker.types.resolve(Type.getEnumName(e),[]);
-		case TFunction, TUnknown:
+		default:
 		}
 		return null;
 	}
