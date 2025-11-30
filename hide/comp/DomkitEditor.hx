@@ -341,72 +341,7 @@ class DomkitChecker extends ScriptEditor.ScriptChecker {
 	}
 
 	function resolveComp( name : String ) : TypedComponent {
-
-		var rootComp = name;
-		var index = name.indexOf(".");
-		if( index >= 0 ) {
-			rootComp = name.substr(0, index);
-			name = name.substr(index+1);
-		}
-		var c = components.get(name);
-		if( c != null )
-			return c;
-		// dynamic load from comps directories
-		var dirs : Array<String> = config.get("domkit.components");
-		if( dirs == null ) dirs = ["ui/comp"];
-		for( d in dirs ) {
-			var path = d+"/"+rootComp.split("-").join("_")+".domkit";
-			var content = try sys.io.File.getContent(ide.getPath(path)) catch( e : Dynamic ) continue;
-			var data = hrt.impl.DomkitViewer.DomkitFile.parse(content);
-			var node = null, params = new Map();
-
-			var parser = new domkit.MarkupParser();
-			parser.allowRawText = true;
-			var expr = try parser.parse(data.dml,path,content.indexOf(data.dml)) catch( e : domkit.Error ) continue;
-
-			switch( expr.kind ) {
-			case Node(null):
-				for( c in expr.children )
-					switch( c.kind ) {
-					case Node(n) if( n == name ): node = c;
-					default:
-					}
-			default:
-				throw "assert";
-			}
-
-			if( node == null )
-				continue;
-
-			if( node.arguments != null ) {
-				var args = [for( a in node.arguments ) switch( a.value ) { case Code(ident): ident; default: null; }];
-				for( a in args )
-					if( a != null )
-						params.set(a, TLazy(() -> throw new hscript.Expr.Error(ECustom("Missing param type "+a),0,0,"",0)));
-				try {
-					var t = typeCode(data.params, content.indexOf(data.params));
-					switch( t ) {
-					case TAnon(fields):
-						var fm = [for( f in fields ) f.name => f.t];
-						for( a in args )
-							if( a != null ) {
-								var t = fm.get(a);
-								if( t != null )
-									params.set(a, t);
-							}
-					default:
-					}
-				} catch( e : hscript.Expr.Error ) {
-				}
-			}
-
-			try {
-				return defineComponent(name, node, params);
-			} catch( e : domkit.Error ) {
-				continue;
-			}
-		}
-		return null;
+		return components.get(name);
 	}
 
 	function parseCode( code : String, pos : Int ) {

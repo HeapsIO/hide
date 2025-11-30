@@ -16,7 +16,7 @@ private typedef CompDef = {
 	var event : hide.tools.FileWatcher.FileWatchEvent;
 }
 
-class DomkitEditor extends hide.ui.View<{ ?comp : String }> {
+class DomkitStudio extends hide.ui.View<{ ?comp : String }> {
 
 	static var R_PACKAGE = ~/package[ \t\r\n]+([A-Za-z0-9_\.]+)/;
 	static var R_COMP_HX = ~/static[ \t\r\n]+var[ \t\r\n]+SRC[ \t\r\n]+=[ \t\r\n]+<([a-zA-Z0-9_\-]+)/;
@@ -333,6 +333,40 @@ class DomkitEditor extends hide.ui.View<{ ?comp : String }> {
 		throw 'Component ${c.name} not found in '+c.file;
 	}
 
-	static var _ = hide.ui.View.register(DomkitEditor);
+	static var _ = hide.ui.View.register(DomkitStudio);
+
+}
+
+
+class DomkitLess extends FileView {
+
+	var editor : hide.comp.DomkitEditor;
+
+	override function onDisplay() {
+		super.onDisplay();
+		var content = sys.io.File.getContent(getPath());
+		element.html('<div class="lesseditor">
+			<div class="scene"></div>
+		</div>');
+		editor = new hide.comp.DomkitEditor(config, Less, content, element.find(".lesseditor"));
+		editor.onSave = function() {
+			content = editor.code;
+			save();
+		};
+		editor.onChanged = function() {
+			modified = content != editor.code;
+			editor.check();
+		};
+		// add a scene so the CssParser can resolve Tiles
+		var scene = element.find(".scene");
+		new hide.comp.Scene(config, scene, scene).onReady = function() editor.check();
+	}
+
+	override function save() {
+		super.save();
+		sys.io.File.saveContent(getPath(), editor.code);
+	}
+
+	static var _ = Extension.registerExtension(DomkitLess,["less"],{ icon : "object-group", name: "Less" });
 
 }

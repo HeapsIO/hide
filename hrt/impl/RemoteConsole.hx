@@ -425,7 +425,7 @@ class RemoteConsoleConnection {
 			hide.Ide.inst.openFile(args.file, null, function(view) {
 				hide.Ide.inst.focus();
 				#if domkit
-				var domkitView = Std.downcast(view, hide.view.Domkit.DomkitLess);
+				var domkitView = Std.downcast(view, hide.view.DomkitStudio.DomkitLess);
 				if( domkitView != null ) {
 					var col = args.column ?? 0;
 					var line = (args.line ?? 0) + 1;
