@@ -425,16 +425,16 @@ class RemoteConsoleConnection {
 			hide.Ide.inst.openFile(args.file, null, function(view) {
 				hide.Ide.inst.focus();
 				#if domkit
-				var domkitView = Std.downcast(view, hide.view.Domkit);
+				var domkitView = Std.downcast(view, hide.view.Domkit.DomkitLess);
 				if( domkitView != null ) {
 					var col = args.column ?? 0;
 					var line = (args.line ?? 0) + 1;
-					haxe.Timer.delay(function() {
-						var cssEditor = @:privateAccess domkitView.cssEditor;
+					haxe.Timer.delay(function() @:privateAccess {
+						var cssEditor = domkitView.editor;
 						if (cssEditor != null) {
 							cssEditor.focus();
-							@:privateAccess cssEditor.editor.revealLineInCenter(line);
-							@:privateAccess cssEditor.editor.setPosition({ column: col, lineNumber: line });
+							cssEditor.editor.revealLineInCenter(line);
+							cssEditor.editor.setPosition({ column: col, lineNumber: line });
 						}
 					}, 1);
 				}

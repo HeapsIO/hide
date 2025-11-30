@@ -158,17 +158,22 @@ class DomkitEditor extends hide.ui.View<{ ?comp : String }> {
 						<span>
 							DML
 							<input id="format" type="button" value="Format"/>
+							<div class="dmlSource"></div>
 						</span>
 					</div>
 				</div>
 				<div class="right panel">
 					<div class="editor cssEditor top">
-						<span>CSS</span>
+						<span>
+							CSS
+							<div class="cssSource"></div>
+						</span>
 					</div>
 				</div>
 				<div class="tree panel">
 				</div>
 			</div>
+			<div class="scene"></div>
 		</div>
 		');
 		root.appendTo(element);
@@ -189,8 +194,13 @@ class DomkitEditor extends hide.ui.View<{ ?comp : String }> {
 			if( p.isComp ) openComponent(p.name);
 		};
 		tree.rebuildTree();
-		if( state.comp != null )
-			openComponent(state.comp);
+
+		// add a scene so the CssParser can resolve Tiles
+		var scene = element.find(".scene");
+		new hide.comp.Scene(config, scene, scene).onReady = function() {
+			if( state.comp != null )
+				openComponent(state.comp);
+		};
 	}
 
 	function detectPadding( content : String ) {
@@ -260,15 +270,16 @@ class DomkitEditor extends hide.ui.View<{ ?comp : String }> {
 			sys.io.File.saveContent(comp.file, data);
 			ide.fileWatcher.ignorePrevChange(comp.event);
 		};
+		var paths : Array<String> = config.get("domkit.components");
+		var defaultCss = ide.getPath(paths[0]+"/"+comp.name+".less");
 		cssEditor = new hide.comp.DomkitEditor(config, Less, rawCss, element.find(".cssEditor"));
 		cssEditor.onSave = function() {
 			if( comp.cssFile == null ) {
-				var path : Array<String> = config.get("domkit.components");
-				if( path.length == 0 ) {
+				if( paths.length == 0 ) {
 					ide.error('"domkit.components" path is not set in res/props.json');
 					return;
 				}
-				var path = ide.getPath(path[0]+"/"+comp.name+".less");
+				var path = defaultCss;
 				if( sys.FileSystem.exists(path) ) {
 					ide.error(path+" already exists. Can't save");
 					return;
@@ -290,8 +301,18 @@ class DomkitEditor extends hide.ui.View<{ ?comp : String }> {
 		if( comp.cssFile != null ) cssEditor.setCursor(comp.cssFile.line);
 		cssEditor.focus();
 		cssEditor.gotoComponent = dmlEditor.gotoComponent = openComponent;
+		cssEditor.onChanged = dmlEditor.onChanged = check;
 		state.comp = name;
+		element.find(".dmlSource").text(ide.getRelPath(comp.file).substr(0,-3).split("/").join("."));
+		var dispSrc = if( comp.cssFile != null && comp.cssFile.file != defaultCss ) ide.getRelPath(comp.cssFile.file) else "";
+		element.find(".cssSource").text(dispSrc);
 		saveState();
+		check();
+	}
+
+	function check() {
+		dmlEditor.check();
+		cssEditor.check();
 	}
 
 	function getFileLocation( c : CompDef ) {

@@ -1,5 +1,6 @@
 package hide.view;
 
+#if false
 class Domkit extends FileView {
 
 	var cssEditor : hide.comp.DomkitEditor;
@@ -186,6 +187,7 @@ class Domkit extends FileView {
 	static var _ = Extension.registerExtension(Domkit,["domkit"],{ icon : "id-card-o", createNew : "Domkit Component" , name: "Domkit"});
 
 }
+#end
 
 class DomkitLess extends FileView {
 
@@ -214,7 +216,6 @@ class DomkitLess extends FileView {
 	override function save() {
 		super.save();
 		sys.io.File.saveContent(getPath(), editor.code);
-		// TODO : execute lessc
 	}
 
 	static var _ = Extension.registerExtension(DomkitLess,["less"],{ icon : "object-group", name: "Less" });

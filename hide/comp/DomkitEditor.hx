@@ -54,7 +54,6 @@ class DomkitChecker extends ScriptEditor.ScriptChecker {
 	var parsers : Array<domkit.CssValue.ValueParser>;
 	var lastVariables : Map<String, domkit.CssValue> = new Map();
 	var currentComponent : hscript.Checker.CClass;
-	public var usedEnums : Array<{ path : String, constrs : Array<String> }> = [];
 	public var params : Map<String, Type> = new Map();
 	public var components : Map<String, TypedComponent>;
 	public var properties : Map<String, Array<TypedProperty>>;
@@ -62,7 +61,7 @@ class DomkitChecker extends ScriptEditor.ScriptChecker {
 
 	public function new(config) {
 		super(config,"domkit");
-		checker.onTopDownEnum = onEnumUsed;
+		defaultPublicFields = true;
 		parsers = [new h2d.domkit.BaseComponents.CustomParser()];
 		var dcfg : Array<String> = config.get("domkit.parsers");
 		if( dcfg != null ) {
@@ -75,20 +74,6 @@ class DomkitChecker extends ScriptEditor.ScriptChecker {
 				parsers.push(std.Type.createInstance(cl,[]));
 			}
 		}
-	}
-
-	function onEnumUsed(e:hscript.Checker.CEnum,f:String) {
-		for( e2 in usedEnums )
-			if( e2.path == e.name ) {
-				if( e2.constrs.indexOf(f) < 0 ) {
-					e2.constrs.push(f);
-					e2.constrs.sort(Reflect.compare);
-				}
-				return true;
-			}
-		usedEnums.push({ path : e.name, constrs : [f] });
-		usedEnums.sort(function(e1,e2) return Reflect.compare(e1.path,e2.path));
-		return true;
 	}
 
 	override function initTypes() {
@@ -188,6 +173,7 @@ class DomkitChecker extends ScriptEditor.ScriptChecker {
 					var comp = components.get(c.component.name);
 					setComp(comp);
 				}
+				if( comp == null ) break;
 			}
 			for( s in r.style ) {
 				var value = s.value;
@@ -333,18 +319,24 @@ class DomkitChecker extends ScriptEditor.ScriptChecker {
 			var c = def.c;
 			var p = c;
 			var parent = null;
+			var params = null;
 			while( parent == null && p.superClass != null ) {
 				switch( p.superClass ) {
 				case null:
 					break;
 				case TInst(pp, pl):
-					parent = { comp : cmap.get(pp.name), params : pl };
+					parent = cmap.get(pp.name);
 					p = pp;
+					if( params == null )
+						params = pl;
+					else
+						params = [for( p in params ) checker.apply(p, pp.params, pl)];
 				default:
 					throw "assert";
 				}
 			}
-			comp.parent = parent;
+			if( parent != null )
+				comp.parent = { comp : parent, params : params };
 		}
 	}
 
@@ -496,7 +488,7 @@ class DomkitChecker extends ScriptEditor.ScriptChecker {
 						return null;
 					} catch( e : domkit.Property.InvalidProperty ) {
 						if( err == null || (e.message != null && e.message.length < err.length) )
-							err = e.message ?? "Invalid property (should be "+name+")";
+							err = e.message ?? "Invalid property "+domkit.CssParser.valueStr(value)+" (should be "+name+")";
 					}
 				}
 			}

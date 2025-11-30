@@ -3313,6 +3313,9 @@ div.gradient-box:hover {
   font-size: 18px;
   margin: 15px 0px 5px 10px;
 }
+.domkitEditor .editors .panel > .editor > span > div {
+  font-size: 12px;
+}
 .domkitEditor .editors .panel > .editor .codeeditor {
   flex-grow: 1;
   height: 5px;

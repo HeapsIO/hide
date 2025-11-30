@@ -159,6 +159,7 @@ class ScriptChecker {
 	public var evalTo : String;
 	public var checker(default,null) : hscript.Checker;
 	public var cdbEnums : Array<String>;
+	public var defaultPublicFields : Bool = false;
 	var initDone = false;
 	var apiHash : String;
 
@@ -433,7 +434,7 @@ class ScriptChecker {
 
 		var cdbPack : String = config.get("script.cdbPackage");
 		var contexts = [];
-		var publicFields = false;
+		var publicFields = defaultPublicFields;
 		var allowGlobalsDefine = false;
 		var parentScripts = null;
 		checkEvents = false;
