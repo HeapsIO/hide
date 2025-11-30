@@ -260,7 +260,8 @@ class DomkitStudio extends hide.ui.View<{ ?comp : String }> {
 				return ide.confirm("Changes haven't been saved, continue ?");
 			return true;
 		};
-		dmlEditor = new hide.comp.DomkitEditor(config, DML, content, element.find(".dmlEditor"));
+		var sharedChecker = new hide.comp.DomkitEditor.DomkitChecker(config);
+		dmlEditor = new hide.comp.DomkitEditor(config, DML, content, sharedChecker, element.find(".dmlEditor"));
 		dmlEditor.onSave = function() {
 			content = dmlEditor.code;
 			rawContent = inf.format(dmlEditor.code);
@@ -272,7 +273,7 @@ class DomkitStudio extends hide.ui.View<{ ?comp : String }> {
 		};
 		var paths : Array<String> = config.get("domkit.components");
 		var defaultCss = ide.getPath(paths[0]+"/"+comp.name+".less");
-		cssEditor = new hide.comp.DomkitEditor(config, Less, rawCss, element.find(".cssEditor"));
+		cssEditor = new hide.comp.DomkitEditor(config, Less, rawCss, sharedChecker, element.find(".cssEditor"));
 		cssEditor.onSave = function() {
 			if( comp.cssFile == null ) {
 				if( paths.length == 0 ) {
