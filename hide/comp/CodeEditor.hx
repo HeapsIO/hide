@@ -181,6 +181,10 @@ class CodeEditor extends Component {
 		errorMessage.html(errStr);
 		errorMessage.prop('title', errStr);
 		errorMessage.toggle(true);
+		errorMessage.off();
+		errorMessage.on("click", function() {
+			setCursor(range.startLineNumber - 1, range.startColumn - 1);
+		});
 		var rect = errorMessage[0].getBoundingClientRect();
 		if( rect.bottom > js.Browser.window.innerHeight )
 			errorMessage[0].scrollIntoView(false);
