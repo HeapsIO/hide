@@ -63,11 +63,31 @@ class DomkitChecker {
 		return chk;
 	}
 
+	static var R_PREFIX = ~/<([A-Za-z0-9-]+)/;
+
 	public function checkDML( dmlCode : String, filePath : String, position = 0 ) {
 		try {
-			getChecker().parse(dmlCode,filePath,position,{});
+			var locals = {};
+			if( R_PREFIX.match(dmlCode) ) {
+				var compName = R_PREFIX.matched(1);
+				var c = checker.components.get(compName);
+				if( c != null && c.classDef != null ) {
+					for( s in c.classDef.statics )
+						if( StringTools.endsWith(s.name,"__LOCALS_TYPES") ) {
+							switch( s.t ) {
+							case TAnon(fields):
+								for( f in fields )
+									Reflect.setField(locals, f.name, { ctype : f.t });
+							default:
+							}
+							break;
+						}
+				}
+			}
+			getChecker().parse(dmlCode,filePath,position,locals);
 		} catch( e : hscript.Expr.Error ) {
-			throw new domkit.Error(e.toString(), e.pmin, e.pmax);
+			var offset = 1; // hscript is pmax-included whereas domkit is pmax-excluded
+			throw new domkit.Error(e.toString(), e.pmin, e.pmax + offset);
 		}
 	}
 
