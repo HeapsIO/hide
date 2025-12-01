@@ -553,8 +553,6 @@ class GenFog extends RendererFX {
 	}
 
 	override function edit2(ctx : hrt.prefab.EditContext2) {
-		super.edit2(ctx);
-
 		ctx.build(
 			<root>
 				<category("General")>
@@ -626,6 +624,7 @@ class GenFog extends RendererFX {
 				ctx.rebuildInspector();
 			}
 		}
+		super.edit2(ctx);
 	}
 	#end
 
