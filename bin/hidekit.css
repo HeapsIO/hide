@@ -140,6 +140,7 @@ kit-root .detached .is-cdb-editor {
   :scope kit-collapse-line kit-text.info {
     color: #AAA;
     font-style: italic;
+    font-variant-numeric: tabular-nums;
   }
   :scope kit-collapse-line > kit-line::before {
     display: block;
