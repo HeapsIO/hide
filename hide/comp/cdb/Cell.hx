@@ -544,10 +544,20 @@ class Cell {
 			else
 				val('#DATA');
 		case TDynamic:
+			var html = v;
 			var str = Std.string(v).split("\n").join(" ").split("\t").join("");
-			str = try editor.base.parseValue(c.type, str, false) catch( e : Dynamic ) '"$str"';
-			if( str.length > 50 ) str = str.substr(0, 47) + "...";
-			val(str);
+			var parsed : Dynamic = try editor.base.parseValue(c.type, str, false) catch(e : Dynamic) null;
+			if (parsed == null) {
+				var f = Std.parseFloat(str);
+				if (!hxd.Math.isNaN(f))
+					parsed = f;
+			}
+			if (v is String && parsed != null)
+				html = '"$str"';
+			else if (parsed != null)
+				html = parsed;
+			if( html?.length > 50 ) str = str.substr(0, 47) + "...";
+			val(html);
 		case TGradient:
 			if (v.colors == null || v.positions == null || v.colors.length == 0 || v.colors.length != v.positions.length)
 				return val('#INVALID GRADIENT `${haxe.Json.stringify(v)}`');
@@ -1428,7 +1438,12 @@ class Cell {
 			}
 
 		case TDynamic:
-			newValue = try editor.base.parseValue(column.type, str, false) catch( e : Dynamic ) str;
+			newValue = try editor.base.parseValue(column.type, str, false) catch( e : Dynamic ) null;
+			if (newValue == null) {
+				newValue = Std.parseFloat(str);
+				if (hxd.Math.isNaN(newValue))
+					newValue = str;
+			}
 			return newValue;
 		default:
 			return newValue;
