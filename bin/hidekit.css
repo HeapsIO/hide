@@ -137,9 +137,12 @@ kit-root .detached .is-cdb-editor {
     display: block;
     content: " ";
   }
+  :scope kit-collapse-line kit-text.info {
+    color: #AAA;
+    font-style: italic;
+  }
   :scope kit-collapse-line > kit-line::before {
-    position: absolute;
-    display: inline-block;
+    display: block;
     content: "";
     margin: 2px;
     width: 12px;
@@ -398,7 +401,8 @@ kit-root .detached .is-cdb-editor {
   }
   :scope kit-line {
     padding-block: 1px;
-    padding-inline: 8px;
+    padding-right: 8px;
+    padding-left: 2px;
     box-sizing: border-box;
     position: relative;
     display: flex;

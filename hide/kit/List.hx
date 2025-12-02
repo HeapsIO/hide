@@ -12,7 +12,7 @@ class List<T> extends Widget<Array<T>> {
 
 	var currentDragIndex = -1;
 
-	public dynamic function makeLine(header: hide.kit.Element, content: hide.kit.Element, item: T) : Void {
+	public dynamic function makeLine(header: hide.kit.Element, content: hide.kit.Element, item: T, index:Int) : Void {
 
 	}
 
@@ -20,7 +20,7 @@ class List<T> extends Widget<Array<T>> {
 		return cast {};
 	}
 
-	public function new(parent: Element, id: String, makeLine: (header: hide.kit.Element, content: hide.kit.Element, item: T) -> Void, createItem: () -> Dynamic) {
+	public function new(parent: Element, id: String, makeLine: (header: hide.kit.Element, content: hide.kit.Element, item: T, index:Int) -> Void, createItem: () -> Dynamic) {
 		super(parent, id);
 		this.makeLine = makeLine;
 		this.createItem = createItem;
@@ -121,7 +121,7 @@ class List<T> extends Widget<Array<T>> {
 		for (i => item in value) {
 			var header = new KitListHeader(this, 'item_header_$i');
 			var content = new Element(this, 'item_content_$i');
-			makeLine(header, content, item);
+			makeLine(header, content, item, i);
 
 			var headerString = '<kit-line><kit-label class="first"><kit-image draggable="true" data-id="$i" class="drag" style="background-image: url(\'res/icons/svg/drag.svg\')"></kit-image>$i</kit-label><kit-div class="header-content"></kit-div><kit-button class="square"><kit-image style="background-image: url(\'res/icons/svg/substract.svg\')"/></kit-button></kit-line>';
 
@@ -275,7 +275,7 @@ class List<T> extends Widget<Array<T>> {
 	override function syncValueUI() {
 		#if js
 		var info = native.querySelector(".info");
-		info.innerHTML = '${value.length} element(s)';
+		info.innerHTML = '(${value.length} element(s))';
 		#end
 		regenerateItems();
 	}

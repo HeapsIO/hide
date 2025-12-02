@@ -77,7 +77,7 @@ class KitTest extends Object3D {
 		var props : Dynamic = cast this.props;
 
 		// Fuction is put inside edit2 to avoid having to surround it with #if domkit
-		function makeListItem(header: hide.kit.Element, content: hide.kit.Element, item: ListItem) {
+		function makeListItem(header: hide.kit.Element, content: hide.kit.Element, item: ListItem, index: Int) {
 			header.build(
 				<root>
 					<slider field={item.x}/>
