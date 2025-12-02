@@ -9,6 +9,9 @@ class List<T> extends Widget<Array<T>> {
 	var fancyArray : hide.comp.FancyArray<T>;
 	var listElement: NativeElement;
 	#end
+
+	var currentDragIndex = -1;
+
 	public dynamic function makeLine(header: hide.kit.Element, content: hide.kit.Element, item: T) : Void {
 
 	}
@@ -84,32 +87,29 @@ class List<T> extends Widget<Array<T>> {
 			syncValueUI();
 		}
 
-		listElement.ondragstart = (e: js.html.DragEvent) -> {
-			var target : js.html.Element = cast e.target;
-			if (!target.classList.contains("drag"))
-				return;
-			var id = Std.parseInt(target.dataset.id);
-			trace(id);
-			var header = target.closest("kit-line");
-			e.dataTransfer.setDragImage(header, 0,11);
-		};
-
-
-		function dragOverHandler(over: Bool, e: js.html.DragEvent) {
-			var target : js.html.Element = cast e.target;
-			var element = target.closest("kit-collapse-line") ?? target.closest("kit-line");
-			element.classList.toggle("dragover", over);
-		}
-
-		listElement.ondragenter = dragOverHandler.bind(true);
-		listElement.ondragleave = dragOverHandler.bind(false);
-		listElement.ondragover = dragOverHandler.bind(true);
+		listElement.addEventListener("dragleave", (e:js.html.DragEvent) -> {
+			if (!js.Browser.document.elementsFromPoint(e.clientX, e.clientY).contains(listElement)) {
+				resetDragStyle();
+			}
+		}, false);
 
 		openState = getSetting(SameKind, "openState") ?? false;
 		refresh();
 		syncValueUI();
 		#end
 	}
+
+	function resetDragStyle() {
+		#if js
+		var query = new hide.Element(listElement);
+		var over = query.find(".dragover");
+
+		over.toggleClass("dragover", false);
+		over.toggleClass("dragover-top", false);
+		over.toggleClass("dragover-bottom", false);
+		#end
+	}
+
 
 	override function makeChildren() {
 		// skip making children
@@ -143,7 +143,6 @@ class List<T> extends Widget<Array<T>> {
 
 				var lineElement = itemElement.querySelector("kit-line");
 				header.target = lineElement;
-
 
 				var lineOpenState = getSetting(SameKind, 'openState.list.$i') ?? false;
 
@@ -187,10 +186,72 @@ class List<T> extends Widget<Array<T>> {
 
 			var drag = itemElement.querySelector(".drag");
 
+			drag.addEventListener("dragstart", (e: js.html.DragEvent) -> {
+				var header = drag.closest("kit-line");
+				e.dataTransfer.setDragImage(header, 0,11);
+				e.dataTransfer.setData(getDragKey(), drag.dataset.id);
+				e.stopPropagation();
+			}, true);
+
+			drag.addEventListener("dragend", (e: js.html.DragEvent) -> {
+				resetDragStyle();
+			}, true);
+
+			itemElement.addEventListener("dragenter", dragOverHandler.bind(true), true);
+			itemElement.addEventListener("dragover", dragOverHandler.bind(true), true);
+			itemElement.addEventListener("drop", (e:js.html.DragEvent) -> {
+				var rectangle = itemElement.getBoundingClientRect();
+				var halfHeight = rectangle.y + rectangle.height / 2.0;
+
+				parent?.change(() -> {
+					var draggedId : Int = Std.parseInt(e.dataTransfer.getData(getDragKey()));
+					if (draggedId == null)
+						return;
+
+					var insertAt = e.clientY < halfHeight ? i : i+1;
+					value.insert(insertAt, value[draggedId]);
+
+					var removeAt = draggedId >= insertAt ? draggedId + 1 : draggedId;
+					value.splice(removeAt, 1);
+
+					changeBehaviorInternal(false);
+					syncValueUI();
+				}, false);
+			});
+
+
 			listElement.appendChild(itemElement);
 		}
 		#end
 	}
+
+	function getDragKey() {
+		return (getIdPath() + "list-drag-index").toLowerCase();
+	}
+
+	#if js
+	function dragOverHandler(over: Bool, e: js.html.DragEvent) {
+		if (!e.dataTransfer.types.contains(getDragKey())) {
+			e.stopPropagation();
+			return;
+		}
+
+		var target : js.html.Element = cast e.currentTarget;
+		resetDragStyle();
+		target.classList.toggle("dragover", over);
+
+		var rectangle = target.getBoundingClientRect();
+		var halfHeight = rectangle.y + rectangle.height / 2.0;
+
+		if (e.clientY < halfHeight) {
+			target.classList.toggle("dragover-top", over);
+		} else {
+			target.classList.toggle("dragover-bottom", over);
+		}
+		e.preventDefault();
+		e.stopPropagation();
+	}
+	#end
 
 	override function change(callback: () -> Void, isTemporaryEdit: Bool) {
 		parent?.change(() -> {

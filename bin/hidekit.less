@@ -93,6 +93,29 @@ kit-root {
 		display: flex;
 		flex-direction: column;
 
+
+		.dragover, .dragover>kit-line {
+			position: relative;
+		}
+
+		.dragover-top::before, .dragover-bottom::before {
+			content: "";
+			position: absolute;
+			left: 0;
+			right: 0;
+			height: 0;
+			border: 1px solid #FFFFFF;
+			z-index: 1;
+		}
+
+		.dragover-top::before {
+			top: 0;
+		}
+
+		.dragover-bottom::before {
+			bottom: 0;
+		}
+
 		.disabled {
 			* {
 				color: @font-color-disabled !important;
