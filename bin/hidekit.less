@@ -149,19 +149,19 @@ kit-root {
 		}
 
 		kit-list {
-			padding-block: 5px;
-			margin-block: 5px;
+			padding-block: 2px;
+			// margin-block: 2px;
 			@indent: 20px;
 
 			display: block;
-			border-top: 1px solid #333;
-			border-bottom: 1px solid #333;
+			background-color: #1F1F1F;
 			>kit-collapse-line>kit-line, >kit-line {
 				padding-left: @indent;
 				border-radius: 0;
 			}
 
 			>kit-collapse-line {
+				display: block;
 				>kit-content>kit-content {
 					position: relative;
 					display: block;
@@ -611,6 +611,20 @@ kit-root {
 				height: @widget-height;
 			}
 
+
+			kit-label {
+				> kit-image {
+					flex: 0 1 auto;
+					justify-self: stretch;
+					aspect-ratio: 1/1;
+					height: 100%;
+					background-size: cover;
+					background-repeat: no-repeat;
+					display: block;
+					height: @widget-height;
+				}
+			}
+
 			kit-button {
 				display: flex;
 				align-items: center;
@@ -659,9 +673,10 @@ kit-root {
 				}
 
 				&:has(kit-image), &.square {
-					flex: 0 1 1.6em;
+					flex: 0 1 auto;
+					aspect-ratio: 1 / 1;
 					padding: 3px;
-					height: unset;
+					min-height: 100%;
 				}
 
 				&.kit-medium {

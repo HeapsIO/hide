@@ -24,10 +24,15 @@ class List<T> extends Widget<Array<T>> {
 	}
 
 	override function makeSelf() {
+		if (isIndeterminate()) {
+			makeIndeterminateWidget();
+			return;
+		}
+
 		#if js
 		native = new hide.Element('
 			<kit-collapse-line>
-				<kit-line><kit-label class="first">$label</kit-label><kit-text class="info"></kit-text><kit-button class="add square">+</kit-button><kit-button class="clear square">X</kit-button></kit-line>
+				<kit-line><kit-label class="first">$label</kit-label><kit-text class="info"></kit-text><kit-button class="add square"><kit-image style="background-image: url(\'res/icons/svg/add.svg\')"/></kit-button><kit-button class="clear square"><kit-image style="background-image: url(\'res/icons/svg/delete.svg\')"/></kit-button></kit-line>
 				<kit-content>
 					<kit-content>
 						<kit-list>
@@ -39,10 +44,7 @@ class List<T> extends Widget<Array<T>> {
 		)[0];
 
 		var line = native.querySelector("kit-line");
-		var info = native.querySelector(".info");
 		listElement = native.querySelector("kit-list");
-
-		info.innerHTML = '${value.length} element(s)';
 
 		line.addEventListener("mousedown", (event: js.html.MouseEvent) -> {
 			if (event.button != 0)
@@ -52,9 +54,60 @@ class List<T> extends Widget<Array<T>> {
 			refresh();
 		});
 
+		var add = native.querySelector(".add");
+		add.onmousedown = (e) -> {
+			e.stopPropagation();
+		}
+		add.onclick = (e) -> {
+			e.stopPropagation();
+
+			parent?.change(() -> {
+				value.push(createItem());
+				changeBehaviorInternal(false);
+			}, false);
+
+			syncValueUI();
+		}
+
+		var clear = native.querySelector(".clear");
+		clear.onmousedown = (e) -> {
+			e.stopPropagation();
+		}
+		clear.onclick = (e) -> {
+			e.stopPropagation();
+
+			parent?.change(() -> {
+				value.resize(0);
+				changeBehaviorInternal(false);
+			}, false);
+
+			syncValueUI();
+		}
+
+		listElement.ondragstart = (e: js.html.DragEvent) -> {
+			var target : js.html.Element = cast e.target;
+			if (!target.classList.contains("drag"))
+				return;
+			var id = Std.parseInt(target.dataset.id);
+			trace(id);
+			var header = target.closest("kit-line");
+			e.dataTransfer.setDragImage(header, 0,11);
+		};
+
+
+		function dragOverHandler(over: Bool, e: js.html.DragEvent) {
+			var target : js.html.Element = cast e.target;
+			var element = target.closest("kit-collapse-line") ?? target.closest("kit-line");
+			element.classList.toggle("dragover", over);
+		}
+
+		listElement.ondragenter = dragOverHandler.bind(true);
+		listElement.ondragleave = dragOverHandler.bind(false);
+		listElement.ondragover = dragOverHandler.bind(true);
+
 		openState = getSetting(SameKind, "openState") ?? false;
 		refresh();
-		regenerateItems();
+		syncValueUI();
 		#end
 	}
 
@@ -70,7 +123,7 @@ class List<T> extends Widget<Array<T>> {
 			var content = new Element(this, 'item_content_$i');
 			makeLine(header, content, item);
 
-			var headerString = '<kit-line><kit-label class="first">$i</kit-label><kit-div class="header-content"></kit-div><kit-button class="square">-</kit-button></kit-line>';
+			var headerString = '<kit-line><kit-label class="first"><kit-image draggable="true" data-id="$i" class="drag" style="background-image: url(\'res/icons/svg/drag.svg\')"></kit-image>$i</kit-label><kit-div class="header-content"></kit-div><kit-button class="square"><kit-image style="background-image: url(\'res/icons/svg/substract.svg\')"/></kit-button></kit-line>';
 
 			var itemElement = if (content.children.length == 0) {
 				new hide.Element('
@@ -122,19 +175,28 @@ class List<T> extends Widget<Array<T>> {
 			var removeButton = itemElement.querySelector("kit-button");
 
 			removeButton.onclick = (e) -> {
-				// If we don't copy, we will modify the value in the prefab
-				// directly and this breaks the undo system
-				value = hrt.prefab.Diff.deepCopy(value);
-				value.splice(i, 1);
-				broadcastValueChange(false);
-				root.editor.rebuildInspector();
+				parent?.change(() -> {
+					value.splice(i, 1);
+					changeBehaviorInternal(false);
+					syncValueUI();
+				}, false);
+
 				e.stopPropagation();
 				e.preventDefault();
 			}
 
+			var drag = itemElement.querySelector(".drag");
+
 			listElement.appendChild(itemElement);
 		}
 		#end
+	}
+
+	override function change(callback: () -> Void, isTemporaryEdit: Bool) {
+		parent?.change(() -> {
+			callback();
+			changeBehaviorInternal(isTemporaryEdit);
+		}, isTemporaryEdit);
 	}
 
 	// override function propagateChange(kind:hide.kit.Element.ChangeKind) {
@@ -148,6 +210,14 @@ class List<T> extends Widget<Array<T>> {
 	// 	}
 	// 	}
 	// }
+
+	override function syncValueUI() {
+		#if js
+		var info = native.querySelector(".info");
+		info.innerHTML = '${value.length} element(s)';
+		#end
+		regenerateItems();
+	}
 
 	function makeInput():NativeElement {
 		throw new haxe.exceptions.NotImplementedException();
@@ -166,6 +236,10 @@ class List<T> extends Widget<Array<T>> {
 		#if js
 		native.classList.toggle("open", openState);
 		#end
+	}
+
+	override function valueEqual(a:Array<T>, b:Array<T>):Bool {
+		return hrt.prefab.Diff.diffArray(a, b) == Skip;
 	}
 }
 

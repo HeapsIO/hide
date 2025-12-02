@@ -89,16 +89,17 @@ kit-root .detached .is-cdb-editor {
     border-color: #313131;
   }
   :scope kit-list {
-    padding-block: 5px;
-    margin-block: 5px;
+    padding-block: 2px;
     display: block;
-    border-top: 1px solid #333;
-    border-bottom: 1px solid #333;
+    background-color: #1F1F1F;
   }
   :scope kit-list > kit-collapse-line > kit-line,
   :scope kit-list > kit-line {
     padding-left: 20px;
     border-radius: 0;
+  }
+  :scope kit-list > kit-collapse-line {
+    display: block;
   }
   :scope kit-list > kit-collapse-line > kit-content > kit-content {
     position: relative;
@@ -513,6 +514,16 @@ kit-root .detached .is-cdb-editor {
   :scope kit-line .color-box {
     height: 22px;
   }
+  :scope kit-line kit-label > kit-image {
+    flex: 0 1 auto;
+    justify-self: stretch;
+    aspect-ratio: 1/1;
+    height: 100%;
+    background-size: cover;
+    background-repeat: no-repeat;
+    display: block;
+    height: 22px;
+  }
   :scope kit-line kit-button {
     display: flex;
     align-items: center;
@@ -552,9 +563,10 @@ kit-root .detached .is-cdb-editor {
   }
   :scope kit-line kit-button:has(kit-image),
   :scope kit-line kit-button.square {
-    flex: 0 1 1.6em;
+    flex: 0 1 auto;
+    aspect-ratio: 1 / 1;
     padding: 3px;
-    height: unset;
+    min-height: 100%;
   }
   :scope kit-line kit-button.kit-medium {
     flex: 0 1 32px;

@@ -70,7 +70,7 @@ class KitTest extends Object3D {
 	var substruct: SubStruct = { innerValue: 0.0, };
 
 
-	@:s var list: Array<ListItem> = [{x: 0, y: 0, name: "Alice"}, {x: 42, y: 15, name: "Bob"}];
+	@:s var list: Array<ListItem> = [];//[{x: 0, y: 0, name: "Alice"}, {x: 42, y: 15, name: "Bob"}];
 
 	override function edit2(ctx:hrt.prefab.EditContext2) {
 		this.props = this.props ?? {};
@@ -94,7 +94,7 @@ class KitTest extends Object3D {
 
 		ctx.build(
 			<category("List")>
-				<list(makeListItem, null) field={list}/>
+				<list(makeListItem, () -> {x: 0, y:0, name:""}) field={list}/>
 			</category>
 		);
 

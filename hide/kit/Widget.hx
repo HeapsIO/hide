@@ -76,39 +76,47 @@ abstract class Widget<ValueType> extends Element {
 		#end
 
 		if (!customIndeterminate() && isIndeterminate()) {
-			#if js
-			var indeterminate = js.Browser.document.createElement("kit-div");
-			var label = js.Browser.document.createElement("kit-label");
-			label.innerHTML = "Multiple Values";
-			indeterminate.appendChild(label);
-
-			var reset = js.Browser.document.createElement("kit-button");
-			reset.innerHTML = "Reset";
-			indeterminate.appendChild(reset);
-
-			var paste = js.Browser.document.createElement("kit-button");
-			paste.innerHTML = "Paste";
-			indeterminate.appendChild(paste);
-
-			reset.onclick = (e) -> {
-				value = defaultValue ?? getDefaultFallback();
-				broadcastValueChange(false);
-				root.editor.rebuildInspector();
-			}
-
-			paste.onclick = (e) -> {
-				pasteFromClipboard();
-				root.editor.rebuildInspector();
-			}
-
-			setupPropLine(labelElement, indeterminate);
-			#end
+			makeIndeterminateWidget();
 		}
 		else {
 			input = makeInput();
 			setupPropLine(labelElement, input);
 			syncValueUI();
 		}
+	}
+
+	function makeIndeterminateWidget() : Void {
+		#if js
+
+		labelElement = js.Browser.document.createElement("kit-label");
+		labelElement.innerHTML = label;
+
+		var indeterminate = js.Browser.document.createElement("kit-div");
+		var label = js.Browser.document.createElement("kit-label");
+		label.innerHTML = "Multiple Values";
+		indeterminate.appendChild(label);
+
+		var reset = js.Browser.document.createElement("kit-button");
+		reset.innerHTML = "Reset";
+		indeterminate.appendChild(reset);
+
+		var paste = js.Browser.document.createElement("kit-button");
+		paste.innerHTML = "Paste";
+		indeterminate.appendChild(paste);
+
+		reset.onclick = (e) -> {
+			value = defaultValue ?? getDefaultFallback();
+			broadcastValueChange(false);
+			root.editor.rebuildInspector();
+		}
+
+		paste.onclick = (e) -> {
+			pasteFromClipboard();
+			root.editor.rebuildInspector();
+		}
+
+		setupPropLine(labelElement, indeterminate);
+		#end
 	}
 
 	/**
