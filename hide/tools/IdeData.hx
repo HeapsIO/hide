@@ -224,11 +224,22 @@ class IdeData {
 		if( dbWatcher != null ) {
 			var b = fileWatcher.isChangePending(dbWatcher);
 			if( b ) {
-				throw "Save when database is changed outside of Hide and is waiting for reload.";
+				throw "Save when database is changed outside of Hide and is waiting for reload. Please reload Hide.";
 			}
 		}
+		var lastStats = fileStat(databaseFile);
+
+		function checkBeforeWrite() {
+			var stats = fileStat(databaseFile);
+			if( stats == null || lastStats == null )
+				return;
+			if( stats.mtime.getTime() != lastStats.mtime.getTime() )
+				throw "Save when database is changed outside of Hide. Please reload Hide.";
+		}
+
 		hide.comp.cdb.DataFiles.save(function() {
 			if( databaseDiff != null ) {
+				checkBeforeWrite();
 				sys.io.File.saveContent(getPath(databaseDiff), toJSON(new cdb.DiffFile().make(originDataBase,database)));
 				if ( dbWatcher != null )
 					fileWatcher.ignorePrevChange(dbWatcher);
@@ -249,10 +260,11 @@ class IdeData {
 				}
 
 				lastDBContent = database.save();
+				checkBeforeWrite();
+				sys.io.File.saveContent(getPath(databaseFile), lastDBContent);
 
 				hide.comp.cdb.Editor.restoreOptionals(backup);
 
-				sys.io.File.saveContent(getPath(databaseFile), lastDBContent);
 				if ( dbWatcher != null )
 					fileWatcher.ignorePrevChange(dbWatcher);
 			}
@@ -263,6 +275,13 @@ class IdeData {
 		if( sys.FileSystem.exists(getPath(path)) ) return true;
 		if( pakFile != null && pakFile.exists(path) ) return true;
 		return false;
+	}
+
+	public function fileStat( path : String ) : Null<sys.FileStat> {
+		var fullPath = getPath(path);
+		if( !sys.FileSystem.exists(fullPath) )
+			return null;
+		return sys.FileSystem.stat(fullPath);
 	}
 
 	public function getFile( path : String ) {
