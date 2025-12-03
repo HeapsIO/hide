@@ -109,14 +109,41 @@ kit-root .detached .is-cdb-editor {
     border-color: #313131;
   }
   :scope kit-list {
-    padding-block: 2px;
+    max-height: 400px;
+    overflow: auto;
+    margin-right: 2px;
     display: block;
     background-color: #1F1F1F;
+  }
+  :scope kit-list::-webkit-scrollbar {
+    width: 7px;
+    height: 7px;
+    background: transparent;
+  }
+  :scope kit-list::-webkit-scrollbar-track {
+    background: transparent;
+  }
+  :scope kit-list::-webkit-scrollbar-thumb {
+    background-color: #555;
+    border-radius: 20px;
+    border: transparent;
+  }
+  :scope kit-list > div {
+    border-right: 1px solid #444;
+    min-height: 100%;
   }
   :scope kit-list > kit-collapse-line > kit-line,
   :scope kit-list > kit-line {
     padding-left: 20px;
     border-radius: 0;
+  }
+  :scope kit-list > kit-collapse-line > kit-line .drag,
+  :scope kit-list > kit-line .drag {
+    opacity: 0.3;
+  }
+  :scope kit-list > kit-collapse-line > kit-line .drag:hover,
+  :scope kit-list > kit-line .drag:hover {
+    opacity: 1;
   }
   :scope kit-list > kit-collapse-line {
     display: block;
