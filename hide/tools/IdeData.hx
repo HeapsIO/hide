@@ -221,13 +221,13 @@ class IdeData {
 	}
 
 	public function saveDatabase( ?forcePrefabs ) {
+		var lastStats = fileStat(databaseFile);
 		if( dbWatcher != null ) {
 			var b = fileWatcher.isChangePending(dbWatcher);
 			if( b ) {
 				throw "Save when database is changed outside of Hide and is waiting for reload. Please reload Hide.";
 			}
 		}
-		var lastStats = fileStat(databaseFile);
 
 		function checkBeforeWrite() {
 			var stats = fileStat(databaseFile);
