@@ -410,6 +410,7 @@ class GradientEditor extends Popup {
 			elem.onpointerdown = function (e : PointerEvent) {
 				isDragging = true;
 				elem.setPointerCapture(e.pointerId);
+				trace("capture");
 				selectStop(group);
 			}
 
@@ -423,6 +424,7 @@ class GradientEditor extends Popup {
 				isDragging = false;
 				onChange(false);
 				elem.releasePointerCapture(e.pointerId);
+				trace("release");
 			}
 		}
 

@@ -122,7 +122,7 @@ class Popup extends Component {
 	}
 
 	function fixInputSelect() {
-		var e = new Element("input");
+		var e = element.find("input");
 		e.each(function (id : Int, elem : js.html.Element) {
 			if (elem.onpointerdown == null && elem.onpointerup == null) {
 				elem.onpointerdown = function(event : js.html.PointerEvent) {
