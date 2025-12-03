@@ -889,6 +889,7 @@ class Spline extends hrt.prefab.Object3D {
 				<div align="center">
 					<input type="button" value="Recompute tangents" class="btn recompute" />
 					<input type="button" value="Recenter spline" class="btn recenter" />
+					<input type="button" value="Reverse spline" class="btn reverse" />
 				</div>
 			</div>
 		');
@@ -984,6 +985,25 @@ class Spline extends hrt.prefab.Object3D {
 				this.updateInstance();
 				refreshHandles();
 				refreshPointList(ctx);
+			}));
+		});
+
+		props.find(".reverse").click(function(_) {
+			function reverse() {
+				points.reverse();
+				for (p in points) {
+					var tmp = p.tangentIn;
+					p.tangentIn = p.tangentOut;
+					p.tangentOut = tmp;
+				}
+				this.updateInstance();
+				refreshHandles();
+				refreshPointList(ctx);
+			}
+
+			reverse();
+			ctx.properties.undo.change(Custom(function(undo) {
+				reverse();
 			}));
 		});
 
