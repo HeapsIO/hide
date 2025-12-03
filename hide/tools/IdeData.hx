@@ -262,11 +262,10 @@ class IdeData {
 				lastDBContent = database.save();
 				checkBeforeWrite();
 				sys.io.File.saveContent(getPath(databaseFile), lastDBContent);
-
-				hide.comp.cdb.Editor.restoreOptionals(backup);
-
 				if ( dbWatcher != null )
 					fileWatcher.ignorePrevChange(dbWatcher);
+
+				hide.comp.cdb.Editor.restoreOptionals(backup);
 			}
 		}, forcePrefabs);
 	}
