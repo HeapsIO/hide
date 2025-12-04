@@ -115,4 +115,23 @@ class Evaluator {
 		}
 		return vec;
 	}
+
+	public function getVector2(pidx: Int=0, v: Value, time: Float, vec: h2d.col.Point) {
+		switch(v) {
+			case VMult(a, b):
+				throw "need optimization";
+			case VVector(x, y, z, null):
+				vec.set(getFloat(pidx, x, time), getFloat(pidx, y, time));
+			case VVector(x, y, z, w):
+				vec.set(getFloat(pidx, x, time), getFloat(pidx, y, time));
+			case VZero:
+				vec.set(0,0);
+			case VOne:
+				vec.set(1,1);
+			default:
+				var f = getFloat(pidx, v, time);
+				vec.set(f, f);
+		}
+		return vec;
+	}
 }

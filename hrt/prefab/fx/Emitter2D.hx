@@ -13,29 +13,27 @@ class Particle2DInstance extends h2d.SpriteBatch.BatchElement {
 	public var idx : Int;
 	public var lifeTime : Float;
 	public var curLifeTime : Float;
-	public var speed : h3d.Vector = new h3d.Vector();
-	public var qRot : h3d.Quat = new h3d.Quat();
+	public var speed : h2d.col.Point = new h2d.col.Point();
 	public var absPos = h3d.Matrix.I();
-	public var emitOrientation = h3d.Matrix.I();
 
 	public function new(t : h2d.Tile, e : Emitter2DObject) {
 		super(t);
 		this.emitter = e;
 	}
 
-	static var tmpRot = new h3d.Vector4();
-	static var tmpOffset = new h3d.Vector4();
-	static var tmpScale = new h3d.Vector4();
-	static var tmpLocalSpeed = new h3d.Vector4();
-	static var tmpWorldSpeed = new h3d.Vector4();
-	static var tmpSpeedAccumulation = new h3d.Vector4();
-	static var tmpSpeed = new h3d.Vector();
-	static var tmpMat = new h3d.Matrix();
-	static var tmpMat2 = new h3d.Matrix();
-	static var tmpCamVec = new h3d.Vector();
-	static var tmpCamVec2 = new h3d.Vector();
-	static var tmpQuat = new h3d.Quat();
+	static var tmpSpeed = new h2d.col.Point();
+	static var rotMat = new h2d.col.Matrix();
 
+	static var tmpVec = new h2d.col.Point();
+	static var tmpMat = new h2d.col.Matrix();
+
+	public function setDirection(d : h2d.col.Point) {
+		var dot = new h2d.col.Point(1, 0).dot(d.normalized());
+		if ((d.x >= 0 && d.y >= 0) || (d.x < 0 && d.y >= 0))
+			this.rotation = hxd.Math.acos(dot);
+		else
+			this.rotation = -hxd.Math.acos(dot);
+	}
 
 	inline function add( v1 : h3d.Vector, v2 : h3d.Vector4 ) {
 		v1.x += v2.x;
@@ -54,49 +52,47 @@ class Particle2DInstance extends h2d.SpriteBatch.BatchElement {
 
 		var def = emitter.instDef;
 		var evaluator = @:privateAccess emitter.evaluator;
-		// var emitOrientation = emitOrientation.toMatrix();
-		// var speedAccumulation = this.speedAccumulation.toVector();
 		var t = hxd.Math.clamp(curLifeTime / lifeTime);
 
-		tmpSpeed.set(0, 0, 0);
+		rotMat.initRotate(this.rotation);
+		tmpSpeed.set(0, 0);
 
 		if (t == 0) {
 			// START LOCAL SPEED
-			evaluator.getVector(idx, emitter.startSpeed, emitter.curTime, tmpSpeedAccumulation);
-			// tmpSpeedAccumulation.transform3x3(emitOrientation);
-			add(speed, tmpSpeedAccumulation);
+			evaluator.getVector2(idx, emitter.startSpeed, emitter.curTime, tmpVec);
+			tmpVec.transform2x2(rotMat);
+			speed += tmpVec;
 			// START WORLD SPEED
-			evaluator.getVector(idx, emitter.startWorldSpeed, emitter.curTime, tmpSpeedAccumulation);
-			tmpSpeedAccumulation.transform3x3(emitter.invTransform);
-			add(speed, tmpSpeedAccumulation);
+			evaluator.getVector2(idx, emitter.startWorldSpeed, emitter.curTime, tmpVec);
+			tmpVec.transform2x2(emitter.invTransform);
+			speed += tmpVec;
 		}
 
 		// ACCELERATION
 		if(def.acceleration != VZero) {
-			evaluator.getVector(idx, def.acceleration, t, tmpSpeedAccumulation);
-			tmpSpeedAccumulation.scale3(dt);
-			// tmpSpeedAccumulation.transform3x3(emitOrientation);
-			add(speed, tmpSpeedAccumulation);
+			evaluator.getVector2(idx, def.acceleration, t, tmpVec);
+			tmpVec.scale(dt);
+			tmpVec.transform2x2(rotMat);
+			speed += tmpVec;
 		}
 
 		// WORLD ACCELERATION
 		if(def.worldAcceleration != VZero) {
-			evaluator.getVector(idx, def.worldAcceleration, t, tmpSpeedAccumulation);
-			tmpSpeedAccumulation.scale3(dt);
+			evaluator.getVector2(idx, def.worldAcceleration, t, tmpVec);
+			tmpVec.scale(dt);
 			if(emitter.simulationSpace == Local)
-				tmpSpeedAccumulation.transform3x3(emitter.invTransform);
-			add(speed, tmpSpeedAccumulation);
+				tmpVec.transform2x2(emitter.invTransform);
+			speed += tmpVec;
 		}
 
 		tmpSpeed.x += speed.x;
 		tmpSpeed.y += speed.y;
-		tmpSpeed.z += speed.z;
 
 		// SPEED
 		if(def.localSpeed != VZero) {
-			evaluator.getVector(idx, def.localSpeed, t, tmpLocalSpeed);
-			// tmpLocalSpeed.transform3x3(emitOrientation);
-			add(tmpSpeed, tmpLocalSpeed);
+			evaluator.getVector2(idx, def.localSpeed, t, tmpVec);
+			tmpVec.transform2x2(rotMat);
+			tmpSpeed += tmpVec;
 		}
 
 		// DAMPEN
@@ -109,10 +105,10 @@ class Particle2DInstance extends h2d.SpriteBatch.BatchElement {
 
 		// WORLD SPEED
 		if(def.worldSpeed != VZero) {
-			evaluator.getVector(idx, def.worldSpeed, t, tmpWorldSpeed);
+			evaluator.getVector2(idx, def.worldSpeed, t, tmpVec);
 			if(emitter.simulationSpace == Local)
-				tmpWorldSpeed.transform3x3(emitter.invTransform);
-			add(tmpSpeed, tmpWorldSpeed);
+				tmpVec.transform2x2(emitter.invTransform);
+			tmpSpeed += tmpVec;
 		}
 
 		// MAX VELOCITY
@@ -128,65 +124,56 @@ class Particle2DInstance extends h2d.SpriteBatch.BatchElement {
 		if(emitter.simulationSpace == World) {
 			tmpSpeed.x *= emitter.worldScale.x;
 			tmpSpeed.y *= emitter.worldScale.y;
-			tmpSpeed.z *= emitter.worldScale.z;
 		}
 
 		// STRETCH VELOCITY
 		if (def.stretchVelocity != VZero) {
-			var s = evaluator.getFloat(idx, def.stretchVelocity, t);
-			var up = tmpCamVec2;
-			up.set(absPos._11, absPos._12, absPos._13);
-			var sx = hxd.Math.abs(tmpSpeed.dot(up));
-			sx = hxd.Math.min(sx, 0.25);
+			// var s = evaluator.getFloat(idx, def.stretchVelocity, t);
+			// var up = tmpCamVec2;
+			// up.set(absPos._11, absPos._12, absPos._13);
+			// var sx = hxd.Math.abs(tmpSpeed.dot(up));
+			// sx = hxd.Math.min(sx, 0.25);
 
-			absPos._11 *= s * sx;
-			absPos._12 *= s * sx;
-			absPos._13 *= s * sx;
-			absPos._21 *= s * 1.0/sx;
-			absPos._22 *= s * 1.0/sx;
-			absPos._23 *= s * 1.0/sx;
-			absPos._31 *= s * 1.0/sx;
-			absPos._32 *= s * 1.0/sx;
-			absPos._33 *= s * 1.0/sx;
+			// absPos._11 *= s * sx;
+			// absPos._12 *= s * sx;
+			// absPos._13 *= s * sx;
+			// absPos._21 *= s * 1.0/sx;
+			// absPos._22 *= s * 1.0/sx;
+			// absPos._23 *= s * 1.0/sx;
+			// absPos._31 *= s * 1.0/sx;
+			// absPos._32 *= s * 1.0/sx;
+			// absPos._33 *= s * 1.0/sx;
 		}
 
 		x += tmpSpeed.x * dt;
 		y += tmpSpeed.y * dt;
 
-		// if(def.orbitSpeed != VZero) {
-		// 	evaluator.getVector(idx, def.orbitSpeed, t, tmpLocalSpeed);
+		if(def.orbitSpeed != VZero) {
+			var orbitSpeed = evaluator.getFloat(idx, def.orbitSpeed, t);
 
-		// 	var factorOverTime = evaluator.getFloat(idx, def.orbitSpeedOverTime, emitter.curTime);
-		// 	tmpLocalSpeed.scale3(factorOverTime);
+			var factorOverTime = evaluator.getFloat(idx, def.orbitSpeedOverTime, emitter.curTime);
+			orbitSpeed *= factorOverTime;
 
-		// 	tmpMat.initRotation(tmpLocalSpeed.x * dt, tmpLocalSpeed.y * dt, tmpLocalSpeed.z * dt);
+			tmpMat.initRotate(orbitSpeed * dt);
 
-		// 	// Rotate in emitter space and convert back to world space
-		// 	var parentAbsPos = emitter.parent.getAbsPos();
-		// 	var prevPos = new h2d.col.Point(x, y);
-		// 	var pos = prevPos.add(new h3d.Vector(parentAbsPos.getPosition().x, parentAbsPos.getPosition().y));
-		// 	pos.transform(emitter.getInvPos());
-		// 	pos.transform3x3(tmpMat);
-		// 	pos.transform(emitter.getAbsPos());
-		// 	x = pos.x - parentAbsPos.tx;
-		// 	y = pos.y - parentAbsPos.ty;
-		// 	z = pos.z - parentAbsPos.tz;
+			var prevPos = new h2d.col.Point(x, y);
 
-		// 	// Take transform into account into local speed
-		// 	var delta = new h3d.Vector(x, y).sub(prevPos);
-		// 	delta.scale(1 / dt);
-		// 	tmpSpeed.x += delta.x;
-		// 	tmpSpeed.y += delta.y;
-		// 	tmpSpeed.z += delta.z;
-		// }
+			var newPos = prevPos.clone();
+			newPos.transform(tmpMat);
+			x = newPos.x;
+			y = newPos.y;
+
+			// Take transform into account into local speed
+			var delta = newPos.sub(prevPos);
+			delta.scale(1 / dt);
+			tmpSpeed.x += delta.x;
+			tmpSpeed.y += delta.y;
+		}
 
 		this.speed.load(speed);
 
-		// if(emitter.emitOrientation.match(Speed) && tmpSpeed.length() > 0.0001) {
-		// 	var dot = new h3d.Vector(0, 1).dot(tmpSpeed.normalized());
-		// 	this.rotation = (1 - dot) * Math.PI;
-		// }
-		this.rotation += 0.2;
+		if(emitter.emitOrientation.match(Speed) && tmpSpeed.length() > 0.0001)
+			setDirection(tmpSpeed);
 
 		curLifeTime += dt;
 		if (curLifeTime >= lifeTime) {
@@ -219,10 +206,13 @@ class Emitter2DObject extends h2d.Object {
 	var countToEmit = 0.;
 	var lastEmitTime = 0.;
 	var totalBurstCount = 0;
+	var randomValues : Array<Float>;
+	var randSlots : Int;
+	var instanceCounter = 0;
 
 	// Emitter parameters
 	public var instDef : InstanceDef;
-	public var texture : h3d.mat.Texture;
+	public var texture : String;
 	public var seed = 0;
 	public var particleTemplate : hrt.prefab.Object3D;
 	public var subEmitterTemplates : Array<Emitter>;
@@ -274,7 +264,7 @@ class Emitter2DObject extends h2d.Object {
 	public var randomColor1 : h3d.Vector;
 	public var randomColor2 : h3d.Vector;
 	public var randomGradient : GradientData;
-	public var invTransform = new h3d.Matrix();
+	public var invTransform = new h2d.col.Matrix();
 	public var screenRot = new h3d.Matrix();
 	public var worldScale = new h3d.Vector(1,1,1);
 
@@ -288,7 +278,8 @@ class Emitter2DObject extends h2d.Object {
 	}
 
 	public function init(randSlots: Int, prefab: Emitter2D) {
-
+		var randomValues = [for(_ in 0...(maxCount * randSlots)) rand.srand()];
+		evaluator = new Evaluator(randomValues, randSlots);
 	}
 
 	public function setTime(time : Float) {
@@ -348,6 +339,8 @@ class Emitter2DObject extends h2d.Object {
 				}
 		}
 
+		invTransform.inverse(parent.getAbsPos());
+
 		// Update particles
 		for (p in particles)
 			@:privateAccess p.update(dt);
@@ -389,6 +382,9 @@ class Emitter2DObject extends h2d.Object {
 					part.x = r * Math.cos(a);
 					part.y = r * Math.sin(a);
 
+					if (emitOrientation.match(Normal))
+						part.setDirection(new h2d.col.Point(part.x, part.y));
+
 				case Rectangle:
 					var width = evaluator.getFloat(emitWidth, curTime);
 					var height = evaluator.getFloat(emitHeight, curTime);
@@ -401,6 +397,9 @@ class Emitter2DObject extends h2d.Object {
 						else
 							part.y = rand.rand() < 0.5 ? -height / 2 : height / 2;
 					}
+
+					if (emitOrientation.match(Normal))
+						part.setDirection(new h2d.col.Point(part.x, part.y));
 			}
 
 			if (simulationSpace.match(World)) {
@@ -412,7 +411,8 @@ class Emitter2DObject extends h2d.Object {
 			// part.speed = new h2d.col.Point(0, 0);
 			part.lifeTime = lifeTime + rand.srand(lifeTimeRand);
 			this.particles.push(part);
-			part.idx = this.particles.length - 1;
+			part.idx = instanceCounter;
+			instanceCounter = (instanceCounter + 1) % maxCount;
 		}
 	}
 
@@ -422,12 +422,17 @@ class Emitter2DObject extends h2d.Object {
 		countToEmit = 0;
 		totalBurstCount = 0;
 		rand.init(seed);
+
+		if(randomValues != null) {
+			for(i in 0...randomValues.length)
+				randomValues[i] = rand.srand();
+		}
 	}
 
 	function getTile() {
 		var t = h2d.Tile.fromColor(0xFFFFFF, 10, 10);
 		if (texture != null)
-			t = h2d.Tile.fromTexture(texture);
+			t = h2d.Tile.fromTexture(hxd.res.Loader.currentInstance.load(texture).toTexture());
 		t.dx = -t.width / 2;
 		t.dy = -t.height / 2;
 		return t;
@@ -499,7 +504,7 @@ class Emitter2D extends Object2D {
 		{ name: "instStartSpeed",      		t: PVec(2, -10, 10),  def: [0.,0.], disp: "Start Speed",			groupName: "Particle Movement", instance: false},
 		{ name: "instStartWorldSpeed", 		t: PVec(2, -10, 10),  def: [0.,0.], disp: "Start World Speed",	groupName: "Particle Movement", instance: false},
 
-		{ name: "instOrbitSpeed", 			t: PVec(2, -10, 10),  def: [0.,0.], disp: "Orbit Speed", groupName: "Particle Movement"},
+		{ name: "instOrbitSpeed", 			t: PFloat(-10., 10.),  def: 0., disp: "Orbit Speed", groupName: "Particle Movement"},
 		{ name: "instOrbitSpeedOverTime", 			t: PFloat(0, 2.0),  def: 1., disp: "Orbit Speed over time", groupName: "Particle Movement"},
 		{ name: "instMaxVelocity",      			t: PFloat(0, 10.0),    def: 0.,         disp: "Max Velocity", groupName: "Limit Velocity"},
 		{ name: "instDampen",      			t: PFloat(0, 10.0),    def: 0.,         disp: "Dampen", groupName: "Limit Velocity"},
