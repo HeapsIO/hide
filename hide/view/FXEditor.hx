@@ -1384,6 +1384,7 @@ class FXEditor extends hide.view.FileView {
 		var screenShaderGraph = Std.downcast(elt, hrt.prefab.rfx.ScreenShaderGraph);
 
 		var emitterElt = Std.downcast(elt, hrt.prefab.fx.Emitter);
+		var emitter2DElt = Std.downcast(elt, hrt.prefab.fx.Emitter2D);
 
 		var particle2dElt = Std.downcast(elt, hrt.prefab.l2d.Particle2D);
 		var menuItems : Array<hide.comp.ContextMenu.MenuItem> = [];
@@ -1537,6 +1538,7 @@ class FXEditor extends hide.view.FileView {
 			};
 			menuItems.push(item);
 		}
+
 		if(emitterElt != null) {
 			for(param in hrt.prefab.fx.Emitter.emitterParams) {
 				if(!param.animate)
@@ -1544,6 +1546,19 @@ class FXEditor extends hide.view.FileView {
 				addParam(param, "");
 			}
 			for(param in hrt.prefab.fx.Emitter.instanceParams) {
+				if(!param.animate)
+					continue;
+				addParam(param, param.instance ? "Instance " : "");
+			}
+		}
+
+		if(emitter2DElt != null) {
+			for(param in hrt.prefab.fx.Emitter2D.emitterParams) {
+				if(!param.animate)
+					continue;
+				addParam(param, "");
+			}
+			for(param in hrt.prefab.fx.Emitter2D.instanceParams) {
 				if(!param.animate)
 					continue;
 				addParam(param, param.instance ? "Instance " : "");

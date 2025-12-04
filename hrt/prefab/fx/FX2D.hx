@@ -20,7 +20,7 @@ class FX2DAnimation extends h2d.Object {
 	public var loop : Bool;
 	public var objects: Array<ObjectAnimation> = [];
 	public var customAnims : Array<BaseFX.CustomAnimation> = [];
-	public var emitters : Array<hrt.prefab.l2d.Particle2D.Particles>;
+	public var emitters : Array<hrt.prefab.fx.Emitter2D.Emitter2DObject>;
 	public var events: Array<hrt.prefab.fx.Event.EventInstance>;
 
 	var evaluator : Evaluator;
@@ -47,18 +47,27 @@ class FX2DAnimation extends h2d.Object {
 	}
 
 	function initEmitters(elt: PrefabElement) {
-		var em = Std.downcast(elt, hrt.prefab.l2d.Particle2D);
-		if(em != null)  {
-			if(em.local2d == null) return;
-				if(emitters == null) emitters = [];
-			var emobj : hrt.prefab.l2d.Particle2D.Particles = cast em.local2d;
-				emitters.push(emobj);
+		if (emitters != null)
+			emitters.resize(0);
+
+		function rec(elt: PrefabElement) {
+			if(!elt.enabled) return;
+			var em = Std.downcast(elt, hrt.prefab.fx.Emitter2D);
+			if(em != null)  {
+				var local2d = Object2D.getLocal2d(em);
+				if (local2d != null) {
+					if(emitters == null) emitters = [];
+					var emobj : hrt.prefab.fx.Emitter2D.Emitter2DObject = cast local2d;
+					emitters.push(emobj);
+				}
 			}
-		else {
-			for(c in elt.children) {
-				initEmitters(c);
+			else {
+				for(c in elt.children) {
+					rec(c);
+				}
 			}
 		}
+		rec(elt);
 	}
 
 	function initEvents(elt: PrefabElement, ?out : Array<Event.EventInstance> ) : Array<Event.EventInstance> {
