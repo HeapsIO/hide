@@ -579,13 +579,9 @@ class GradientEditor extends Popup {
 			try {
 				if (StringTools.startsWith(path, "cdb@")) {
 					var namePath = StringTools.replace(path, "cdb@", "").split(".");
-					var currentProps = getObjectPathRec(namePath, baseData, true);
+					var currentProps : Dynamic = getObjectPathRec(namePath, baseData, true);
 					if (currentProps != null) {
-						if (currentProps is String) {
-							path = currentProps;
-						} else if (currentProps is Array) {
-							path = currentProps[0];
-						}
+						path = currentProps;
 					}
 					else {
 						continue;
