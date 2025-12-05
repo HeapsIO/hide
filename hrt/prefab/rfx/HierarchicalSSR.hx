@@ -122,7 +122,7 @@ class HierarchicalSSR extends RendererFX {
 		ssrResolve.shader.ssrMipLevel = ssrMipLevels;
 		ssrResolve.shader.ssrColor = ssrTarget;
 		ssrResolve.pass.setBlendMode(Alpha);
-		ctx.engine.pushTarget(hdr, NotBound);
+		ctx.engine.pushTarget(hdr);
 		ssrResolve.render();
 		ctx.engine.popTarget();
 
