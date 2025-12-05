@@ -13,8 +13,10 @@ class Particle2DInstance extends h2d.SpriteBatch.BatchElement {
 	public var idx : Int;
 	public var lifeTime : Float;
 	public var curLifeTime : Float;
-	public var speed : h2d.col.Point = new h2d.col.Point();
-	public var absPos = h3d.Matrix.I();
+	
+	var initialAbsPos = new h2d.col.Matrix();
+	var currentAbsPos = new h2d.col.Matrix();
+	var speed : h2d.col.Point = new h2d.col.Point();
 
 	public function new(t : h2d.Tile, e : Emitter2DObject) {
 		super(t);
@@ -22,46 +24,142 @@ class Particle2DInstance extends h2d.SpriteBatch.BatchElement {
 	}
 
 	static var tmpSpeed = new h2d.col.Point();
-	static var rotMat = new h2d.col.Matrix();
-
+	
 	static var tmpVec = new h2d.col.Point();
 	static var tmpMat = new h2d.col.Matrix();
 
-	public function setDirection(d : h2d.col.Point) {
+	public function getEuler(d : h2d.col.Point) {
 		var dot = new h2d.col.Point(1, 0).dot(d.normalized());
 		if ((d.x >= 0 && d.y >= 0) || (d.x < 0 && d.y >= 0))
-			this.rotation = hxd.Math.acos(dot);
+			return hxd.Math.acos(dot);
 		else
-			this.rotation = -hxd.Math.acos(dot);
+			return -hxd.Math.acos(dot);
 	}
 
-	inline function add( v1 : h3d.Vector, v2 : h3d.Vector4 ) {
-		v1.x += v2.x;
-		v1.y += v2.y;
-		v1.z += v2.z;
-	}
-
-	inline function sub( v1 : h3d.Vector, v2 : h3d.Vector4 ) {
-		v1.x -= v2.x;
-		v1.y -= v2.y;
-		v1.z -= v2.z;
+	override function remove() {
+		super.remove();
+		emitter.particles.remove(this);
 	}
 
 	override function update(dt : Float) {
 		super.update(dt);
 
+		getInitialAbsPos(initialAbsPos, dt);
+		getCurrentAbsPos(currentAbsPos, dt);
+
+		var absPos = new h2d.col.Matrix();
+		absPos.multiply(initialAbsPos, currentAbsPos);
+
+		this.x = absPos.getPosition().x;
+		this.y = absPos.getPosition().y;
+
+		var d = new h2d.col.Point(1, 0);
+		d.transform2x2(absPos);
+		this.rotation = getEuler(d);
+
+		this.scaleX = absPos.getScale().x;
+		this.scaleY = absPos.getScale().y;
+
+		curLifeTime += dt;
+		if (curLifeTime >= lifeTime) {
+			remove();
+			return false;
+		}
+
+		return true;
+	}
+
+	function getInitialAbsPos(m : h2d.col.Matrix, dt : Float) {
 		var def = emitter.instDef;
 		var evaluator = @:privateAccess emitter.evaluator;
 		var t = hxd.Math.clamp(curLifeTime / lifeTime);
 
-		rotMat.initRotate(this.rotation);
-		tmpSpeed.set(0, 0);
+		m.identity();
+		
+		// POSITION
+		if (def.localOffset != VZero) {
+			evaluator.getVector2(idx, def.localOffset, t, tmpVec);
+			m.initTranslate(tmpVec.x, tmpVec.y);
+		}
+
+		// ROTATION
+		if (def.rotation != VZero) {
+			var r = evaluator.getFloat(idx, def.rotation, t) * Math.PI / 180.0;
+			m.rotate(r);
+		}
+		
+		// SCALE
+		evaluator.getVector2(idx, def.stretch, t, tmpVec);
+		tmpVec *= evaluator.getFloat(idx, def.scale, t);
+		tmpVec *= evaluator.getFloat(idx, def.scaleOverTime, emitter.curTime);
+		m.scale(tmpVec.x, tmpVec.y);
+	}
+
+	function getCurrentAbsPos(m : h2d.col.Matrix, dt : Float) {
+		var def = emitter.instDef;
+		var evaluator = @:privateAccess emitter.evaluator;
+		var t = hxd.Math.clamp(curLifeTime / lifeTime);
 
 		if (t == 0) {
+			switch (emitter.emitShape) {
+				case Circle:
+					var radius = evaluator.getFloat(emitter.emitRadius, emitter.curTime);
+					var startAngle = evaluator.getFloat(emitter.emitAngle1, emitter.curTime) * hxd.Math.PI / 180;
+					var endAngle = evaluator.getFloat(emitter.emitAngle2, emitter.curTime) * hxd.Math.PI / 180;
+
+					// normalize the angular span to [0, 2PI)
+					var twoPI = Math.PI * 2;
+					var a0 = startAngle % twoPI;
+					if (a0 < 0) a0 += twoPI;
+					var a1 = endAngle % twoPI;
+					if (a1 < 0) a1 += twoPI;
+					var delta = a1 - a0;
+					if (delta <= 0) delta += twoPI; // handle wrap-around
+
+					// pick random angle uniformly over the angular span
+					var a = a0 + emitter.rand.rand() * delta;
+
+					// pick radius so area is uniform: r = sqrt(u*(R^2 - r0^2) + r0^2)
+					var rsq = emitter.rand.rand() * Math.max(0, radius) * Math.max(0, radius);
+					var r = emitter.emitSurface ? radius : Math.sqrt(rsq);
+
+					var posX = r * Math.cos(a);
+					var posY = r * Math.sin(a);
+					if (emitter.emitOrientation.match(Normal))
+						currentAbsPos.initRotate(getEuler(new h2d.col.Point(posX, posY)));
+
+					currentAbsPos.translate(posX, posY);
+
+				case Rectangle:
+					var width = evaluator.getFloat(emitter.emitWidth, emitter.curTime);
+					var height = evaluator.getFloat(emitter.emitHeight, emitter.curTime);
+
+					var posX = (emitter.rand.rand() - 0.5) * width;
+					var posY = (emitter.rand.rand() - 0.5) * height;
+					if (emitter.emitSurface) {
+						if (emitter.rand.rand() < 0.5)
+							posX = emitter.rand.rand() < 0.5 ? -width / 2 : width / 2;
+						else
+							posY = emitter.rand.rand() < 0.5 ? -height / 2 : height / 2;
+					}
+
+					if (emitter.emitOrientation.match(Normal))
+						currentAbsPos.initRotate(getEuler(new h2d.col.Point(posX, posY)));		
+					
+					currentAbsPos.translate(posX, posY);
+			}
+
+			// if (simulationSpace.match(World)) {
+			// 	var pos = getAbsPos().getPosition();
+			// 	part.x += pos.x;
+			// 	part.y += pos.y;
+			// }
+
 			// START LOCAL SPEED
 			evaluator.getVector2(idx, emitter.startSpeed, emitter.curTime, tmpVec);
-			tmpVec.transform2x2(rotMat);
+			tmpVec.transform2x2(currentAbsPos);
 			speed += tmpVec;
+
 			// START WORLD SPEED
 			evaluator.getVector2(idx, emitter.startWorldSpeed, emitter.curTime, tmpVec);
 			tmpVec.transform2x2(emitter.invTransform);
@@ -69,29 +167,28 @@ class Particle2DInstance extends h2d.SpriteBatch.BatchElement {
 		}
 
 		// ACCELERATION
-		if(def.acceleration != VZero) {
+		if (def.acceleration != VZero) {
 			evaluator.getVector2(idx, def.acceleration, t, tmpVec);
 			tmpVec.scale(dt);
-			tmpVec.transform2x2(rotMat);
+			tmpVec.transform2x2(currentAbsPos);
 			speed += tmpVec;
 		}
 
 		// WORLD ACCELERATION
-		if(def.worldAcceleration != VZero) {
+		if (def.worldAcceleration != VZero) {
 			evaluator.getVector2(idx, def.worldAcceleration, t, tmpVec);
 			tmpVec.scale(dt);
-			if(emitter.simulationSpace == Local)
+			if (emitter.simulationSpace == Local)
 				tmpVec.transform2x2(emitter.invTransform);
 			speed += tmpVec;
 		}
 
-		tmpSpeed.x += speed.x;
-		tmpSpeed.y += speed.y;
+		tmpSpeed.set(speed.x, speed.y);
 
 		// SPEED
-		if(def.localSpeed != VZero) {
+		if (def.localSpeed != VZero) {
 			evaluator.getVector2(idx, def.localSpeed, t, tmpVec);
-			tmpVec.transform2x2(rotMat);
+			tmpVec.transform2x2(currentAbsPos);
 			tmpSpeed += tmpVec;
 		}
 
@@ -104,9 +201,9 @@ class Particle2DInstance extends h2d.SpriteBatch.BatchElement {
 
 
 		// WORLD SPEED
-		if(def.worldSpeed != VZero) {
+		if (def.worldSpeed != VZero) {
 			evaluator.getVector2(idx, def.worldSpeed, t, tmpVec);
-			if(emitter.simulationSpace == Local)
+			if (emitter.simulationSpace == Local)
 				tmpVec.transform2x2(emitter.invTransform);
 			tmpSpeed += tmpVec;
 		}
@@ -121,10 +218,10 @@ class Particle2DInstance extends h2d.SpriteBatch.BatchElement {
 			}
 		}
 
-		if(emitter.simulationSpace == World) {
-			tmpSpeed.x *= emitter.worldScale.x;
-			tmpSpeed.y *= emitter.worldScale.y;
-		}
+		// if (emitter.simulationSpace == World) {
+		// 	tmpSpeed.x *= emitter.worldScale.x;
+		// 	tmpSpeed.y *= emitter.worldScale.y;
+		// }
 
 		// STRETCH VELOCITY
 		if (def.stretchVelocity != VZero) {
@@ -145,24 +242,19 @@ class Particle2DInstance extends h2d.SpriteBatch.BatchElement {
 			// absPos._33 *= s * 1.0/sx;
 		}
 
-		x += tmpSpeed.x * dt;
-		y += tmpSpeed.y * dt;
+		currentAbsPos.translate(tmpSpeed.x * dt, tmpSpeed.y * dt);
 
-		if(def.orbitSpeed != VZero) {
+		if (def.orbitSpeed != VZero) {
 			var orbitSpeed = evaluator.getFloat(idx, def.orbitSpeed, t);
 
 			var factorOverTime = evaluator.getFloat(idx, def.orbitSpeedOverTime, emitter.curTime);
 			orbitSpeed *= factorOverTime;
 
+			var prevPos = currentAbsPos.getPosition().clone();
 			tmpMat.initRotate(orbitSpeed * dt);
-
-			var prevPos = new h2d.col.Point(x, y);
-
-			var newPos = prevPos.clone();
-			newPos.transform(tmpMat);
-			x = newPos.x;
-			y = newPos.y;
-
+			currentAbsPos.multiply(currentAbsPos, tmpMat);
+			var newPos = currentAbsPos.getPosition().clone();
+	
 			// Take transform into account into local speed
 			var delta = newPos.sub(prevPos);
 			delta.scale(1 / dt);
@@ -170,23 +262,8 @@ class Particle2DInstance extends h2d.SpriteBatch.BatchElement {
 			tmpSpeed.y += delta.y;
 		}
 
-		this.speed.load(speed);
-
-		if(emitter.emitOrientation.match(Speed) && tmpSpeed.length() > 0.0001)
-			setDirection(tmpSpeed);
-
-		curLifeTime += dt;
-		if (curLifeTime >= lifeTime) {
-			remove();
-			return false;
-		}
-
-		return true;
-	}
-
-	override function remove() {
-		super.remove();
-		emitter.particles.remove(this);
+		if (emitter.emitOrientation.match(Speed) && tmpSpeed.length() > 0.0001)
+			initialAbsPos.rotate(getEuler(tmpSpeed));
 	}
 }
 
@@ -339,7 +416,7 @@ class Emitter2DObject extends h2d.Object {
 				}
 		}
 
-		invTransform.inverse(parent.getAbsPos());
+		invTransform.inverse(getAbsPos());
 
 		// Update particles
 		for (p in particles)
@@ -357,61 +434,9 @@ class Emitter2DObject extends h2d.Object {
 	function doEmit(count : Int) {
 		for (_ in 0...count) {
 			var part = new Particle2DInstance(getTile(), this);
-			switch (emitShape) {
-				case Circle:
-					var radius = evaluator.getFloat(emitRadius, curTime);
-					var startAngle = evaluator.getFloat(emitAngle1, curTime) * hxd.Math.PI / 180;
-					var endAngle = evaluator.getFloat(emitAngle2, curTime) * hxd.Math.PI / 180;
-
-					// normalize the angular span to [0, 2PI)
-					var twoPI = Math.PI * 2;
-					var a0 = startAngle % twoPI;
-					if (a0 < 0) a0 += twoPI;
-					var a1 = endAngle % twoPI;
-					if (a1 < 0) a1 += twoPI;
-					var delta = a1 - a0;
-					if (delta <= 0) delta += twoPI; // handle wrap-around
-
-					// pick random angle uniformly over the angular span
-					var a = a0 + rand.rand() * delta;
-
-					// pick radius so area is uniform: r = sqrt(u*(R^2 - r0^2) + r0^2)
-					var rsq = rand.rand() * Math.max(0, radius) * Math.max(0, radius);
-					var r = emitSurface ? radius : Math.sqrt(rsq);
-
-					part.x = r * Math.cos(a);
-					part.y = r * Math.sin(a);
-
-					if (emitOrientation.match(Normal))
-						part.setDirection(new h2d.col.Point(part.x, part.y));
-
-				case Rectangle:
-					var width = evaluator.getFloat(emitWidth, curTime);
-					var height = evaluator.getFloat(emitHeight, curTime);
-
-					part.x = (rand.rand() - 0.5) * width;
-					part.y = (rand.rand() - 0.5) * height;
-					if (emitSurface) {
-						if (rand.rand() < 0.5)
-							part.x = rand.rand() < 0.5 ? -width / 2 : width / 2;
-						else
-							part.y = rand.rand() < 0.5 ? -height / 2 : height / 2;
-					}
-
-					if (emitOrientation.match(Normal))
-						part.setDirection(new h2d.col.Point(part.x, part.y));
-			}
-
-			if (simulationSpace.match(World)) {
-				var pos = getAbsPos().getPosition();
-				part.x += pos.x;
-				part.y += pos.y;
-			}
-
-			// part.speed = new h2d.col.Point(0, 0);
 			part.lifeTime = lifeTime + rand.srand(lifeTimeRand);
-			this.particles.push(part);
 			part.idx = instanceCounter;
+			this.particles.push(part);
 			instanceCounter = (instanceCounter + 1) % maxCount;
 		}
 	}
@@ -512,7 +537,7 @@ class Emitter2D extends Object2D {
 		{ name: "instScaleOverTime",      			t: PFloat(0, 2.0),    def: 1.,         disp: "Scale over time", groupName: "Particle Transform"},
 		{ name: "instStretch",    			t: PVec(2, 0.0, 2.0), def: [1.,1.], disp: "Stretch", groupName: "Particle Transform"},
 		{ name: "instStretchVelocity",    	t: PFloat(0.0, 2.0), def: 0.0, disp: "Stretch Vel.", groupName: "Particle Transform"},
-		{ name: "instRotation",   			t: PVec(2, 0, 360),   def: [0.,0.], disp: "Rotation", groupName: "Particle Transform"},
+		{ name: "instRotation",   			t: PFloat(0, 360),   def: 0., disp: "Rotation", groupName: "Particle Transform"},
 		{ name: "instOffset",     			t: PVec(2, -10, 10),  def: [0.,0.], disp: "Offset", groupName: "Particle Transform"},
 	];
 
