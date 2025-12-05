@@ -1319,7 +1319,8 @@ class Cell {
 			var path = paths.join(".");
 
 			if (previewSettings != null) {
-				editor.gradientEditor.setPreview(previewSettings, line.getRootLine().obj, path);
+				var obj = line.getRootLine().obj;
+				editor.gradientEditor.setPreview(previewSettings, obj, path);
 			}
 			else {
 				editor.gradientEditor.cleanupPreview();

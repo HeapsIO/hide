@@ -543,7 +543,7 @@ class GradientEditor extends Popup {
 
 		previewRoot3d?.removeChildren();
 		previewRoot2d?.removeChildren();
-
+		previewPrefab = null;
 
 		@:privateAccess
 		{
@@ -563,32 +563,66 @@ class GradientEditor extends Popup {
 		previewRoot3d = previewRoot3d ?? new h3d.scene.Object(previewScene.s3d);
 		previewRoot2d = previewRoot2d ?? new h2d.Object(previewScene.s2d);
 
-		try {
-			if (StringTools.startsWith(previewSettings.prefab, "cdb@")) {
-				var namePath = StringTools.replace(previewSettings.prefab, "cdb@", "").split(".");
-				var currentProps = getObjectPathRec(namePath, baseData, true);
-				previewSettings.prefab = currentProps;
-			}
-			var res = hxd.res.Loader.currentInstance.load(previewSettings.prefab);
-			res.watch(() -> previewNeedRebuild = true);
-			var prefab = res.toPrefab().load();
-			prefab.shared.scene = previewScene;
-			var shared = new hrt.prefab.ContextShared(previewSettings.prefab, previewRoot2d, previewRoot3d);
-			previewPrefab = prefab.make(shared);
+		var paths = [];
+		if (previewSettings.prefab != null && previewSettings.prefab is String) {
+			paths = [previewSettings.prefab];
+		} else if (previewSettings.prefabs != null && previewSettings.prefabs is Array) {
+			paths = previewSettings.prefabs;
+		}
 
+		if (paths.length == 0) {
+			cleanupPreview();
+			return;
+		}
 
-			if (previewSettings.renderProps != null) {
-				var renderPropsPrefab = hxd.res.Loader.currentInstance.load(previewSettings.renderProps).toPrefab().load();
-				var shared = new hrt.prefab.ContextShared(previewSettings.renderProps, previewRoot2d, previewRoot3d);
-				renderPropsPrefab.shared.scene = previewScene;
-				renderPropsPrefab = renderPropsPrefab.make(shared);
-				var renderProps = @:privateAccess renderPropsPrefab.getOpt(hrt.prefab.RenderProps, true);
-				if( renderProps != null ) {
-					renderProps.applyProps(previewScene.s3d.renderer);
+		for (path in paths) {
+			try {
+				if (StringTools.startsWith(path, "cdb@")) {
+					var namePath = StringTools.replace(path, "cdb@", "").split(".");
+					var currentProps = getObjectPathRec(namePath, baseData, true);
+					if (currentProps != null) {
+						if (currentProps is String) {
+							path = currentProps;
+						} else if (currentProps is Array) {
+							path = currentProps[0];
+						}
+					}
+					else {
+						continue;
+					}
 				}
+
+				var res = hxd.res.Loader.currentInstance.load(path);
+				res.watch(() -> previewNeedRebuild = true);
+				var prefab = res.toPrefab().load();
+				prefab.shared.scene = previewScene;
+				var shared = new hrt.prefab.ContextShared(path, previewRoot2d, previewRoot3d);
+				previewPrefab = prefab.make(shared);
+
+
+				if (previewSettings.renderProps != null) {
+					var renderPropsPrefab = hxd.res.Loader.currentInstance.load(previewSettings.renderProps).toPrefab().load();
+					var shared = new hrt.prefab.ContextShared(previewSettings.renderProps, previewRoot2d, previewRoot3d);
+					renderPropsPrefab.shared.scene = previewScene;
+					renderPropsPrefab = renderPropsPrefab.make(shared);
+					var renderProps = @:privateAccess renderPropsPrefab.getOpt(hrt.prefab.RenderProps, true);
+					if( renderProps != null ) {
+						renderProps.applyProps(previewScene.s3d.renderer);
+					}
+				}
+			} catch(e) {
+				trace(e);
+				previewPrefab = null;
+				continue;
 			}
-		} catch(e) {
-			ide.error("Couln't load preview " + previewSettings.prefab + ", " + e.toString());
+
+			if (previewPrefab != null) {
+				break;
+			}
+		}
+
+		if (previewPrefab == null) {
+			ide.quickError("Couldn't find a suitable preview for gradient");
 			cleanupPreview();
 			return;
 		}
@@ -663,7 +697,7 @@ class GradientEditor extends Popup {
 				var propPath = propPath.copy();
 				var currentProps = getObjectPathRec(propPath, prefab, false);
 
-				if (value != null) {
+				if (value != null && currentProps != null) {
 					switch (dataOverride.type) {
 						case null:
 							Reflect.setField(currentProps, propPath[0], value);
@@ -707,8 +741,12 @@ class GradientEditor extends Popup {
 			var key = path.shift();
 			obj = Reflect.getProperty(obj, key);
 			if (obj == null) {
-				obj = {}
-				Reflect.setProperty(prev, key, obj);
+				return null;
+			}
+			if (obj is Array) {
+				obj = obj[0];
+				if (obj == null)
+					return null;
 			}
 		}
 		return obj;
@@ -738,6 +776,8 @@ class GradientEditor extends Popup {
 
 	function onPreviewReady() {
 		setPreviewInternal(this.previewSettings, this.previewBaseData);
+		if (previewScene == null)
+			return;
 
 		previewScene.s2d.camera.anchorX = 0.5;
 		previewScene.s2d.camera.anchorY = 0.5;
@@ -809,6 +849,7 @@ typedef DataOverride = {cdbPath: String, targetPath: String, type: String};
 typedef PreviewSettings = {
 	cdbPaths: Array<String>, // table.column names to match to apply the preview setting
 	prefab: String, // prefab path or `cdb@column_with_the_path`
+	?prefabs: Array<String>, // multiple prefab path or `cdb@column_with_the_path`, take the first one not null
 	?renderProps: String, // render props for the preview
 	?overrides: Array<DataOverride>, // Overrides to load with the prefab data
 };
