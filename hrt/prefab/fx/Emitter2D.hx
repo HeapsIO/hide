@@ -371,10 +371,16 @@ class Emitter2DObject extends h2d.Object {
 		}
 
 		var dt = curTime - prevTime;
-		if (dt < 0) {
+		if (dt < 0 || dt > hxd.Timer.maxDeltaTime) {
 			reset();
-			totalBurstCount = hxd.Math.ceil(hxd.Math.max(0.0, curTime / burstDelay));
-			tick(curTime);
+			var targetTime = curTime;
+			curTime = 0;
+			prevTime = 0;
+			var t = 0.;
+			while (curTime < targetTime) {
+				t = hxd.Math.min(t + hxd.Timer.dt, targetTime);
+				setTime(t);
+			}
 		}
 		else if (dt > 0) {
 			tick(dt);
@@ -447,9 +453,10 @@ class Emitter2DObject extends h2d.Object {
 		batch.clear();
 		countToEmit = 0;
 		totalBurstCount = 0;
-		rand.init(seed);
+		instanceCounter = 0;
 
-		if(randomValues != null) {
+		rand.init(seed);
+		if (randomValues != null) {
 			for(i in 0...randomValues.length)
 				randomValues[i] = rand.srand();
 		}
