@@ -152,6 +152,11 @@ class Reference extends Object3D {
 		}
 	}
 
+	@:deprecated("Use resolve() instead")
+	inline function resolveRef() : Prefab {
+		return resolve();
+	}
+
 	/**
 		Loads the prefab referenced by `source`, apply overrides to it if applicable and store it in refInstance and returns it.
 	**/
