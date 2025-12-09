@@ -13,7 +13,7 @@ class Particle2DInstance extends h2d.SpriteBatch.BatchElement {
 	public var idx : Int;
 	public var lifeTime : Float;
 	public var curLifeTime : Float;
-	
+
 	var initialAbsPos = new h2d.col.Matrix();
 	var currentAbsPos = new h2d.col.Matrix();
 	var speed : h2d.col.Point = new h2d.col.Point();
@@ -24,7 +24,6 @@ class Particle2DInstance extends h2d.SpriteBatch.BatchElement {
 	}
 
 	static var tmpSpeed = new h2d.col.Point();
-	
 	static var tmpVec = new h2d.col.Point();
 	static var tmpMat = new h2d.col.Matrix();
 
@@ -54,7 +53,7 @@ class Particle2DInstance extends h2d.SpriteBatch.BatchElement {
 		this.y = absPos.getPosition().y;
 
 		var d = new h2d.col.Point(1, 0);
-		d.transform2x2(absPos);
+		d.transform2x2(initialAbsPos);
 		this.rotation = getEuler(d);
 
 		this.scaleX = absPos.getScale().x;
@@ -75,7 +74,7 @@ class Particle2DInstance extends h2d.SpriteBatch.BatchElement {
 		var t = hxd.Math.clamp(curLifeTime / lifeTime);
 
 		m.identity();
-		
+
 		// POSITION
 		if (def.localOffset != VZero) {
 			evaluator.getVector2(idx, def.localOffset, t, tmpVec);
@@ -87,7 +86,7 @@ class Particle2DInstance extends h2d.SpriteBatch.BatchElement {
 			var r = evaluator.getFloat(idx, def.rotation, t) * Math.PI / 180.0;
 			m.rotate(r);
 		}
-		
+
 		// SCALE
 		evaluator.getVector2(idx, def.stretch, t, tmpVec);
 		tmpVec *= evaluator.getFloat(idx, def.scale, t);
@@ -144,8 +143,8 @@ class Particle2DInstance extends h2d.SpriteBatch.BatchElement {
 					}
 
 					if (emitter.emitOrientation.match(Normal))
-						currentAbsPos.initRotate(getEuler(new h2d.col.Point(posX, posY)));		
-					
+						currentAbsPos.initRotate(getEuler(new h2d.col.Point(posX, posY)));
+
 					currentAbsPos.translate(posX, posY);
 			}
 
@@ -252,18 +251,20 @@ class Particle2DInstance extends h2d.SpriteBatch.BatchElement {
 
 			var prevPos = currentAbsPos.getPosition().clone();
 			tmpMat.initRotate(orbitSpeed * dt);
-			currentAbsPos.multiply(currentAbsPos, tmpMat);
-			var newPos = currentAbsPos.getPosition().clone();
-	
+			tmpMat.multiply(currentAbsPos, tmpMat);
+			var delta = tmpMat.getPosition().sub(prevPos);
+			currentAbsPos.prependTranslate(delta.x, delta.y);
+
 			// Take transform into account into local speed
-			var delta = newPos.sub(prevPos);
 			delta.scale(1 / dt);
 			tmpSpeed.x += delta.x;
 			tmpSpeed.y += delta.y;
 		}
 
-		if (emitter.emitOrientation.match(Speed) && tmpSpeed.length() > 0.0001)
-			initialAbsPos.rotate(getEuler(tmpSpeed));
+		if (emitter.emitOrientation.match(Speed) && hxd.Math.abs(tmpSpeed.length()) > 0.0001) {
+			var targetRotation = getEuler(tmpSpeed);
+			initialAbsPos.rotate(targetRotation);
+		}
 	}
 }
 
@@ -375,7 +376,7 @@ class Emitter2DObject extends h2d.Object {
 			totalBurstCount = hxd.Math.ceil(hxd.Math.max(0.0, curTime / burstDelay));
 			tick(curTime);
 		}
-		else {
+		else if (dt > 0) {
 			tick(dt);
 		}
 	}
