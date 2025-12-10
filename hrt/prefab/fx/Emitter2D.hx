@@ -8,6 +8,17 @@ using Lambda;
 
 typedef Vector = h2d.col.Point;
 
+enum Emit2DShape {
+	Circle;
+	Rectangle;
+}
+
+enum SpriteType {
+	Color;
+	Texture;
+	SpriteSheet;
+}
+
 @:access(hrt.prefab.fx.Emitter2DObject)
 class Particle2DInstance extends h2d.SpriteBatch.BatchElement {
 	public var emitter : Emitter2DObject;
@@ -165,8 +176,7 @@ class Particle2DInstance extends h2d.SpriteBatch.BatchElement {
 		if (def.worldAcceleration != VZero) {
 			evaluator.getVector2(idx, def.worldAcceleration, t, tmpVec);
 			tmpVec.scale(dt);
-			if (emitter.simulationSpace == Local)
-				tmpVec.transform2x2(emitter.invTransform);
+			tmpVec.transform2x2(emitter.invTransform);
 			speed += tmpVec;
 		}
 
@@ -190,8 +200,7 @@ class Particle2DInstance extends h2d.SpriteBatch.BatchElement {
 		// WORLD SPEED
 		if (def.worldSpeed != VZero) {
 			evaluator.getVector2(idx, def.worldSpeed, t, tmpVec);
-			if (emitter.simulationSpace == Local)
-				tmpVec.transform2x2(emitter.invTransform);
+			tmpVec.transform2x2(emitter.invTransform);
 			tmpSpeed += tmpVec;
 		}
 
@@ -204,11 +213,6 @@ class Particle2DInstance extends h2d.SpriteBatch.BatchElement {
 				tmpSpeed.scale(maxVel);
 			}
 		}
-
-		// if (emitter.simulationSpace == World) {
-		// 	tmpSpeed.x *= emitter.worldScale.x;
-		// 	tmpSpeed.y *= emitter.worldScale.y;
-		// }
 
 		movementAbsPos.translate(tmpSpeed.x * dt, tmpSpeed.y * dt);
 
@@ -237,11 +241,6 @@ class Particle2DInstance extends h2d.SpriteBatch.BatchElement {
 	}
 }
 
-enum Emit2DShape {
-	Circle;
-	Rectangle;
-}
-
 class Emitter2DObject extends h2d.Object {
 	public var particles : Array<Particle2DInstance> = [];
 	public var batch : h2d.SpriteBatch;
@@ -251,7 +250,6 @@ class Emitter2DObject extends h2d.Object {
 	var prevTime : Float;
 	var curTime = 0.;
 	var countToEmit = 0.;
-	var lastEmitTime = 0.;
 	var totalBurstCount = 0;
 	var randomValues : Array<Float>;
 	var randSlots : Int;
@@ -259,21 +257,13 @@ class Emitter2DObject extends h2d.Object {
 
 	// Emitter parameters
 	public var instDef : InstanceDef;
-	public var texture : String;
 	public var seed = 0;
-	public var particleTemplate : hrt.prefab.Object3D;
-	public var subEmitterTemplates : Array<Emitter>;
-	public var subEmitters : Array<EmitterObject>;
-	public var subEmitterKind : SubEmitterKind;
-	public var trails : hrt.prefab.l3d.Trails.TrailObj;
-	public var trailsTemplate : hrt.prefab.l3d.Trails;
 	public var lifeTime = 2.0;
 	public var lifeTimeRand = 0.0;
 	public var speedFactor = 1.0;
 	public var warmUpTime = 0.0;
 	public var delay = 0.0;
 	public var emitOrientation : Orientation = Forward;
-	public var simulationSpace : SimulationSpace = Local;
 	public var emitType : EmitType = Infinity;
 	public var burstCount : Int = 1;
 	public var burstParticleCount : Value;
@@ -283,10 +273,6 @@ class Emitter2DObject extends h2d.Object {
 	public var emitRateMin : Value;
 	public var emitRateMax : Value;
 	public var emitRateChangeDelay : Float = 1.0;
-	public var emitRateChangeDelayStart : Float = 0.0;
-	public var emitRateCurrent : Float = Math.NaN;
-	public var emitRatePrevious : Float = Math.NaN;
-	public var emitRateTarget : Float = Math.NaN;
 	public var emitScale : Float = 1.0;
 	public var maxCount = 20;
 	public var startSpeed: Value;
@@ -298,6 +284,9 @@ class Emitter2DObject extends h2d.Object {
 	public var emitWidth : Value;
 	public var emitHeight : Value;
 	public var emitSurface : Bool = false;
+	public var spriteType : SpriteType = Color;
+	public var color : h3d.Vector;
+	public var texture : String;
 	public var spriteSheet : String;
 	public var frameCount : Int = 0;
 	public var frameDivisionX : Int = 1;
@@ -312,13 +301,11 @@ class Emitter2DObject extends h2d.Object {
 	public var randomColor2 : h3d.Vector;
 	public var randomGradient : GradientData;
 	public var invTransform = new h2d.col.Matrix();
-	public var screenRot = new h3d.Matrix();
-	public var worldScale = new h3d.Vector(1,1,1);
 
 	public function new(?parent) {
 		super(parent);
 
-		batch = new h2d.SpriteBatch(getTile(), this);
+		batch = new h2d.SpriteBatch(h2d.Tile.fromColor(0xFF00FF, 10, 10), this);
 		batch.hasRotationScale = true;
 		evaluator = new Evaluator([0], 1);
 		rand = new hxd.Rand(seed);
@@ -432,9 +419,16 @@ class Emitter2DObject extends h2d.Object {
 	}
 
 	function getTile() {
-		var t = h2d.Tile.fromColor(0xFFFFFF, 10, 10);
-		if (texture != null)
-			t = h2d.Tile.fromTexture(hxd.res.Loader.currentInstance.load(texture).toTexture());
+		var t = h2d.Tile.fromColor(0xFF00FF, 10, 10);
+		switch (spriteType) {
+			case Color:
+				t = h2d.Tile.fromColor(color.toColor(), 10, 10);
+			case Texture:
+				t = h2d.Tile.fromTexture(hxd.res.Loader.currentInstance.load(texture).toTexture());
+			case SpriteSheet:
+				// TODO
+		}
+
 		t.dx = -t.width / 2;
 		t.dy = -t.height / 2;
 		return t;
@@ -445,76 +439,77 @@ class Emitter2DObject extends h2d.Object {
 class Emitter2D extends Object2D {
 
 	public static var emitterParams : Array<hrt.prefab.fx.Emitter.ParamDef> = [
-		{ name: "texture", t: PTexture, def: 1.0, groupName : "Display" },
-
-		{ name: "lifeTime", t: PFloat(0, 10), def: 1.0, groupName : "Properties" },
-		{ name: "lifeTimeRand", t: PFloat(0, 1), def: 0.0, groupName : "Properties" },
-		{ name: "subEmitterKind", disp: "Sub Kind", t: PEnum(SubEmitterKind), def: SubEmitterKind.SpawnOnDeath, groupName: "Properties"},
+		// PROPERTIES
 		{ name: "speedFactor", disp: "Speed Factor", t: PFloat(0, 1), def: 1.0, groupName : "Properties" },
-		{ name: "warmUpTime", disp: "Warm Up", t: PFloat(0, 1), def: 0.0, groupName : "Properties" },
-		{ name: "delay", disp: "Delay", t: PFloat(0, 10), def: 0.0, groupName : "Properties" },
 		{ name: "seed", t: PInt(0, 100), def: 0, groupName : "Properties", disp: "Seed"},
-		{ name: "simulationSpace", t: PEnum(SimulationSpace), def: SimulationSpace.Local, disp: "Simulation Space", groupName : "Properties" },
 
-		// EMIT PARAMS
-		{ name: "emitType", t: PEnum(EmitType), def: EmitType.Infinity, disp: "Type", groupName : "Emit Params"  },
-		{ name: "emitDuration", t: PFloat(0, 10.0), disp: "Duration", def : 1.0, groupName : "Emit Params" },
-		{ name: "emitRate", t: PInt(0, 100), def: 5, disp: "Rate", animate: true, groupName : "Emit Params" },
-		{ name: "emitRateMin", t: PInt(0, 100), def: 5, disp: "Rate Min", animate: true, groupName : "Emit Params" },
-		{ name: "emitRateMax", t: PInt(0, 100), def: 5, disp: "Rate Max", animate: true, groupName : "Emit Params" },
-		{ name: "emitRateChangeDelay", t: PFloat(0.01, 5.0), def: 1.0, disp: "Rate Change Time", groupName : "Emit Params" },
-		{ name: "burstCount", t: PInt(1, 10), disp: "Count", def : 1, groupName : "Emit Params" },
-		{ name: "burstDelay", t: PFloat(0, 1.0), disp: "Delay", def : 1.0, groupName : "Emit Params" },
-		{ name: "burstParticleCount", t: PInt(1, 10), disp: "Particle Count", def : 1, groupName : "Emit Params", animate: true },
-		{ name: "maxCount", t: PInt(0, 100), def: 20, groupName : "Emit Params" },
-		// EMIT SHAPE
-		{ name: "emitShape", t: PEnum(Emit2DShape), def: Emit2DShape.Circle, disp: "Shape", groupName : "Emit Shape" },
-		{ name: "emitRadius", t: PFloat(0, 360.0), def: 20.0, disp: "Radius", groupName : "Emit Shape", animate: true },
-		{ name: "emitAngle1", t: PFloat(0, 360.0), def: 20.0, disp: "Angle 1", groupName : "Emit Shape", animate: true },
-		{ name: "emitAngle2", t: PFloat(0, 360.0), def: 40.0, disp: "Angle 2", groupName : "Emit Shape", animate: true },
-		{ name: "emitWidth", t: PFloat(0, 10.0), def: 1.0, disp: "Width", groupName : "Emit Shape", animate: true },
-		{ name: "emitHeight", t: PFloat(0, 10.0), def: 1.0, disp: "Height", groupName : "Emit Shape", animate: true },
-		{ name: "emitSurface", t: PBool, def: false, disp: "Surface", groupName : "Emit Shape" },
-		{ name: "emitOrientation", t: PEnum(Orientation), def: Orientation.Forward, disp: "Orientation", groupName : "Emit Params" },
-		// COLOR
-		{ name: "useRandomColor", t: PBool, def: false, disp: "Random Color", groupName : "Color" },
-		{ name: "useRandomGradient", t: PBool, def: false, disp: "Random Gradient", groupName : "Color" },
-		{ name: "randomColor1", t: PVec(4), disp: "Color 1", def : [0,0,0,1], groupName : "Color" },
-		{ name: "randomColor2", t: PVec(4), disp: "Color 2", def : [1,1,1,1], groupName : "Color" },
-		{ name: "randomGradient", t:PGradient, disp: "Gradient", def: null, groupName : "Color" },
-		// ANIMATION
-		{ name: "spriteSheet", t: PFile(["jpg","png"]), def: null, groupName : "Sprite Sheet Animation", disp: "Sheet" },
-		{ name: "frameCount", t: PInt(0), def: 0, groupName : "Sprite Sheet Animation", disp: "Frames" },
-		{ name: "frameDivisionX", t: PInt(1), def: 1, groupName : "Sprite Sheet Animation", disp: "Divisions X" },
-		{ name: "frameDivisionY", t: PInt(1), def: 1, groupName : "Sprite Sheet Animation", disp: "Divisions Y" },
-		{ name: "animationSpeed", t: PFloat(0, 2.0), def: 1.0, groupName : "Sprite Sheet Animation", disp: "Speed" },
-		{ name: "animationLoop", t: PBool, def: true, groupName : "Sprite Sheet Animation", disp: "Loop" },
-		{ name: "animationUseSourceUVs", t: PBool, def: true, groupName : "Sprite Sheet Animation", disp: "Use Source UV" },
-		{ name: "animationBlendBetweenFrames", t: PBool, def: true, groupName : "Sprite Sheet Animation", disp: "Blend frames" },
+		// EMISSION
+		{ name: "warmUpTime", disp: "Warm Up", t: PFloat(0, 1), def: 0.0, groupName : "Emission" },
+		{ name: "delay", disp: "Delay", t: PFloat(0, 10), def: 0.0, groupName : "Emission" },
+		{ name: "emitType", t: PEnum(EmitType), def: EmitType.Infinity, disp: "Type", groupName : "Emission"  },
+		{ name: "emitDuration", t: PFloat(0, 10.0), disp: "Duration", def : 1.0, groupName : "Emission" },
+		{ name: "emitRate", t: PInt(0, 100), def: 5, disp: "Rate", animate: true, groupName : "Emission" },
+		{ name: "emitRateMin", t: PInt(0, 100), def: 5, disp: "Rate Min", animate: true, groupName : "Emission" },
+		{ name: "emitRateMax", t: PInt(0, 100), def: 5, disp: "Rate Max", animate: true, groupName : "Emission" },
+		{ name: "emitRateChangeDelay", t: PFloat(0.01, 5.0), def: 1.0, disp: "Rate Change Time", groupName : "Emission" },
+		{ name: "burstCount", t: PInt(1, 10), disp: "Count", def : 1, groupName : "Emission" },
+		{ name: "burstDelay", t: PFloat(0, 1.0), disp: "Delay", def : 1.0, groupName : "Emission" },
+		{ name: "burstParticleCount", t: PInt(1, 10), disp: "Particle Count", def : 1, groupName : "Emission", animate: true },
+		{ name: "maxCount", t: PInt(0, 100), def: 20, groupName : "Emission" },
+		{ name: "emitOrientation", t: PEnum(Orientation), def: Orientation.Forward, disp: "Orientation", groupName : "Emission" },
 
-		// DEBUG
-		{ name: "viewDebug", disp: "Show Debug",t: PBool, def: false, groupName : "Debug"},
+		// SHAPE EMISSION
+		{ name: "emitShape", t: PEnum(Emit2DShape), def: Emit2DShape.Circle, disp: "Shape", groupName : "Shape Emission" },
+		{ name: "emitRadius", t: PFloat(0, 360.0), def: 20.0, disp: "Radius", groupName : "Shape Emission", animate: true },
+		{ name: "emitAngle1", t: PFloat(0, 360.0), def: 20.0, disp: "Angle 1", groupName : "Shape Emission", animate: true },
+		{ name: "emitAngle2", t: PFloat(0, 360.0), def: 40.0, disp: "Angle 2", groupName : "Shape Emission", animate: true },
+		{ name: "emitWidth", t: PFloat(0, 10.0), def: 1.0, disp: "Width", groupName : "Shape Emission", animate: true },
+		{ name: "emitHeight", t: PFloat(0, 10.0), def: 1.0, disp: "Height", groupName : "Shape Emission", animate: true },
+		{ name: "emitSurface", t: PBool, def: false, disp: "Surface", groupName : "Shape Emission" },
+
+		// PARTICLE
+		{ name: "lifeTime", t: PFloat(0, 10), def: 1.0, groupName : "Particle" },
+		{ name: "lifeTimeRand", t: PFloat(0, 1), def: 0.0, groupName : "Particle" },
+		{ name: "spriteType", t: PEnum(SpriteType), def: SpriteType.Color, groupName : "Particle" },
+		{ name: "color", t: PVec(4), def: [0,0,0,1], groupName : "Particle" },
+		{ name: "texture", t: PTexture, def: 1.0, groupName : "Particle" },
+		{ name: "useRandomColor", t: PBool, def: false, disp: "Random Color", groupName : "Particle" },
+		{ name: "useRandomGradient", t: PBool, def: false, disp: "Random Gradient", groupName : "Particle" },
+		{ name: "randomColor1", t: PVec(4), disp: "Color 1", def : [0,0,0,1], groupName : "Particle" },
+		{ name: "randomColor2", t: PVec(4), disp: "Color 2", def : [1,1,1,1], groupName : "Particle" },
+		{ name: "randomGradient", t:PGradient, disp: "Gradient", def: null, groupName : "Particle" },
+		{ name: "spriteSheet", t: PFile(["jpg","png"]), def: null, groupName : "Particle", disp: "Sheet" },
+		{ name: "frameCount", t: PInt(0), def: 0, groupName : "Particle", disp: "Frames" },
+		{ name: "frameDivisionX", t: PInt(1), def: 1, groupName : "Particle", disp: "Divisions X" },
+		{ name: "frameDivisionY", t: PInt(1), def: 1, groupName : "Particle", disp: "Divisions Y" },
+		{ name: "animationSpeed", t: PFloat(0, 2.0), def: 1.0, groupName : "Particle", disp: "Speed" },
+		{ name: "animationLoop", t: PBool, def: true, groupName : "Particle", disp: "Loop" },
+		{ name: "animationUseSourceUVs", t: PBool, def: true, groupName : "Particle", disp: "Use Source UV" },
+		{ name: "animationBlendBetweenFrames", t: PBool, def: true, groupName : "Particle", disp: "Blend frames" },
 	];
 
 	public static var instanceParams : Array<hrt.prefab.fx.Emitter.ParamDef> = [
-		{ name: "instAcceleration",			t: PVec(2, -10, 10),  def: [0.,0.], disp: "Acceleration", groupName: "Particle Movement"},
-		{ name: "instWorldAcceleration",	t: PVec(2, -10, 10),  def: [0.,0.], disp: "World Acceleration", groupName: "Particle Movement"},
-		{ name: "instSpeed",      			t: PVec(2, -10, 10),  def: [0.,0.], disp: "Fixed Speed", groupName: "Particle Movement" },
-		{ name: "instWorldSpeed", 			t: PVec(2, -10, 10),  def: [0.,0.], disp: "Fixed World Speed", groupName: "Particle Movement"},
-
-		// In instance param to avoid refactoring the param editor more, but this is no longer linked to the instances (hence the instance: false in the declaration)
-		{ name: "instStartSpeed",      		t: PVec(2, -10, 10),  def: [0.,0.], disp: "Start Speed",			groupName: "Particle Movement", instance: false},
-		{ name: "instStartWorldSpeed", 		t: PVec(2, -10, 10),  def: [0.,0.], disp: "Start World Speed",	groupName: "Particle Movement", instance: false},
-
-		{ name: "instOrbitSpeed", 			t: PFloat(-10., 10.),  def: 0., disp: "Orbit Speed", groupName: "Particle Movement"},
-		{ name: "instOrbitSpeedOverTime", 			t: PFloat(0, 2.0),  def: 1., disp: "Orbit Speed over time", groupName: "Particle Movement"},
-		{ name: "instMaxVelocity",      			t: PFloat(0, 10.0),    def: 0.,         disp: "Max Velocity", groupName: "Limit Velocity"},
-		{ name: "instDampen",      			t: PFloat(0, 10.0),    def: 0.,         disp: "Dampen", groupName: "Limit Velocity"},
+		// PARTICLE TRANSFORM
 		{ name: "instScale",      			t: PFloat(0, 2.0),    def: 1.,         disp: "Scale", groupName: "Particle Transform"},
 		{ name: "instScaleOverTime",      			t: PFloat(0, 2.0),    def: 1.,         disp: "Scale over time", groupName: "Particle Transform"},
 		{ name: "instStretch",    			t: PVec(2, 0.0, 2.0), def: [1.,1.], disp: "Stretch", groupName: "Particle Transform"},
 		{ name: "instRotation",   			t: PFloat(0, 360),   def: 0., disp: "Rotation", groupName: "Particle Transform"},
 		{ name: "instOffset",     			t: PVec(2, -10, 10),  def: [0.,0.], disp: "Offset", groupName: "Particle Transform"},
+
+		// PARTICLE MOVEMENT
+		{ name: "instAcceleration",			t: PVec(2, -10, 10),  def: [0.,0.], disp: "Acceleration", groupName: "Particle Movement"},
+		{ name: "instWorldAcceleration",	t: PVec(2, -10, 10),  def: [0.,0.], disp: "World Acceleration", groupName: "Particle Movement"},
+		{ name: "instSpeed",      			t: PVec(2, -10, 10),  def: [0.,0.], disp: "Fixed Speed", groupName: "Particle Movement" },
+		{ name: "instWorldSpeed", 			t: PVec(2, -10, 10),  def: [0.,0.], disp: "Fixed World Speed", groupName: "Particle Movement"},
+		// In instance param to avoid refactoring the param editor more, but this is no longer linked to the instances (hence the instance: false in the declaration)
+		{ name: "instStartSpeed",      		t: PVec(2, -10, 10),  def: [0.,0.], disp: "Start Speed",			groupName: "Particle Movement", instance: false},
+		{ name: "instStartWorldSpeed", 		t: PVec(2, -10, 10),  def: [0.,0.], disp: "Start World Speed",	groupName: "Particle Movement", instance: false},
+		{ name: "instOrbitSpeed", 			t: PFloat(-10., 10.),  def: 0., disp: "Orbit Speed", groupName: "Particle Movement"},
+		{ name: "instOrbitSpeedOverTime", 			t: PFloat(0, 2.0),  def: 1., disp: "Orbit Speed over time", groupName: "Particle Movement"},
+
+		// PARTICLE LIMIT VELOCITY
+		{ name: "instMaxVelocity",      			t: PFloat(0, 10.0),    def: 0.,         disp: "Max Velocity", groupName: "Particle Limit Velocity"},
+		{ name: "instDampen",      			t: PFloat(0, 10.0),    def: 0.,         disp: "Dampen", groupName: "Particle Limit Velocity"},
 	];
 
 	public static var PARAMS : Map<String, ParamDef> = {
@@ -552,7 +547,6 @@ class Emitter2D extends Object2D {
 		super.updateInstance(propName);
 
 		var emitterObj = Std.downcast(local2d, Emitter2DObject);
-
 		var randIdx = 0;
 
 		function makeParam(scope: Prefab, name: String): Value {
@@ -684,25 +678,20 @@ class Emitter2D extends Object2D {
 		d.rotation = makeParam(this, "instRotation");
 		emitterObj.instDef = d;
 
-		// DISPLAY
-		emitterObj.texture 			= 	getParamVal("texture");
-
-		// RANDOM
-		emitterObj.seed 			= 	getParamVal("seed");
-		emitterObj.subEmitterKind		= 	getParamVal("subEmitterKind");
-		// LIFE
+		emitterObj.spriteType          	= 	getParamVal("spriteType");
+		emitterObj.texture 			   	= 	getParamVal("texture");
+		emitterObj.color 			   	= 	getParamVal("color");
+		emitterObj.seed 			    = 	getParamVal("seed");
 		emitterObj.lifeTime 			= 	getParamVal("lifeTime");
 		emitterObj.lifeTimeRand 		= 	getParamVal("lifeTimeRand");
 		emitterObj.speedFactor 			= 	getParamVal("speedFactor");
 		emitterObj.warmUpTime 			= 	getParamVal("warmUpTime");
 		emitterObj.delay 				= 	getParamVal("delay");
-		// EMIT PARAMS
 		emitterObj.emitType 			= 	getParamVal("emitType");
 		emitterObj.burstCount 			= 	getParamVal("burstCount");
 		emitterObj.burstDelay 			= 	getParamVal("burstDelay");
 		emitterObj.burstParticleCount 	= 	makeParam(this, "burstParticleCount");
 		emitterObj.emitDuration 		= 	getParamVal("emitDuration");
-		emitterObj.simulationSpace 		= 	getParamVal("simulationSpace");
 		emitterObj.emitOrientation 		= 	getParamVal("emitOrientation");
 		emitterObj.maxCount 			= 	getParamVal("maxCount");
 		emitterObj.emitRate 			= 	makeParam(this, "emitRate");
@@ -710,14 +699,12 @@ class Emitter2D extends Object2D {
 		emitterObj.emitRateMax 			= 	makeParam(this, "emitRateMax");
 		emitterObj.emitRateChangeDelay 	= 	getParamVal("emitRateChangeDelay");
 		emitterObj.emitShape 			= 	getParamVal("emitShape");
-		// EMIT SHAPE
 		emitterObj.emitRadius 			= 	makeParam(this, "emitRadius");
 		emitterObj.emitAngle1 			= 	makeParam(this, "emitAngle1");
 		emitterObj.emitAngle2 			= 	makeParam(this, "emitAngle2");
 		emitterObj.emitWidth 			= 	makeParam(this, "emitWidth");
 		emitterObj.emitHeight 			= 	makeParam(this, "emitHeight");
 		emitterObj.emitSurface 			= 	getParamVal("emitSurface");
-		// ANIMATION
 		emitterObj.spriteSheet 			= 	getParamVal("spriteSheet");
 		emitterObj.frameCount 			= 	getParamVal("frameCount");
 		emitterObj.frameDivisionX 		= 	getParamVal("frameDivisionX");
@@ -726,24 +713,13 @@ class Emitter2D extends Object2D {
 		emitterObj.animationLoop 		= 	getParamVal("animationLoop");
 		emitterObj.animationUseSourceUVs 			= 	getParamVal("animationUseSourceUVs");
 		emitterObj.animationBlendBetweenFrames 		= 	getParamVal("animationBlendBetweenFrames");
-
-		// RANDOM COLOR
 		emitterObj.useRandomColor 		= 	getParamVal("useRandomColor");
 		emitterObj.useRandomGradient 	= 	getParamVal("useRandomGradient");
 		emitterObj.randomColor1 		= 	getParamVal("randomColor1");
 		emitterObj.randomColor2 		= 	getParamVal("randomColor2");
 		emitterObj.randomGradient 		= 	getParamVal("randomGradient");
-
-		// PARTICLE MOVEMENT
 		emitterObj.startSpeed			=	makeParam(this, "instStartSpeed");
 		emitterObj.startWorldSpeed 		= 	makeParam(this, "instStartWorldSpeed");
-
-		if (propName == null || propName == "simulationSpace") {
-			switch(emitterObj.simulationSpace) {
-				case World: emitterObj.getScene().addChild(emitterObj.batch);
-				case Local: emitterObj.addChild(emitterObj.batch);
-			}
-		}
 
 		emitterObj.init(randIdx, this);
 
@@ -786,6 +762,7 @@ class Emitter2D extends Object2D {
 				"useCollision",
 				"emitType",
 				"useRandomColor",
+				"spriteType"
 				].indexOf(pname) >= 0) {
 					refresh();
 				}
@@ -807,9 +784,23 @@ class Emitter2D extends Object2D {
 			removeParam("emitHeight");
 		}
 
-		var isSub = findParent(Emitter) != null;
-		if (!isSub) {
-			removeParam("subEmitterKind");
+		var spriteType = getParamVal("spriteType");
+		if (spriteType != SpriteType.Color) {
+			removeParam("color");
+			removeParam("useRandomColor");
+		}
+		if (spriteType != SpriteType.Texture) {
+			removeParam("texture");
+		}
+		if (spriteType != SpriteType.SpriteSheet) {
+			removeParam("spriteSheet");
+			removeParam("frameCount");
+			removeParam("frameDivisionX");
+			removeParam("frameDivisionY");
+			removeParam("animationSpeed");
+			removeParam("animationLoop");
+			removeParam("animationUseSourceUVs");
+			removeParam("animationBlendBetweenFrames");
 		}
 
 		if(!getParamVal("useRandomColor")) {
