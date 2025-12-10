@@ -1525,7 +1525,7 @@ class FXEditor extends hide.view.FileView {
 				}
 			}
 		}
-		function addParam(param : hrt.prefab.fx.Emitter.ParamDef, prefix: String) {
+		function addParam(param : hrt.prefab.fx.EmitterHelper.ParamDef, prefix: String) {
 			var label = prefix + (param.disp != null ? param.disp : upperCase(param.name));
 			var item : hide.comp.ContextMenu.MenuItem = switch(param.t) {
 				case PVec(n, _):

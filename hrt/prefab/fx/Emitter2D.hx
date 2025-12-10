@@ -438,7 +438,7 @@ class Emitter2DObject extends h2d.Object {
 @:access(hrt.prefab.fx.Emitter2DObject)
 class Emitter2D extends Object2D {
 
-	public static var emitterParams : Array<hrt.prefab.fx.Emitter.ParamDef> = [
+	public static var emitterParams : Array<hrt.prefab.fx.EmitterHelper.ParamDef> = [
 		// PROPERTIES
 		{ name: "speedFactor", disp: "Speed Factor", t: PFloat(0, 1), def: 1.0, groupName : "Properties" },
 		{ name: "seed", t: PInt(0, 100), def: 0, groupName : "Properties", disp: "Seed"},
@@ -488,7 +488,7 @@ class Emitter2D extends Object2D {
 		{ name: "animationBlendBetweenFrames", t: PBool, def: true, groupName : "Particle", disp: "Blend frames" },
 	];
 
-	public static var instanceParams : Array<hrt.prefab.fx.Emitter.ParamDef> = [
+	public static var instanceParams : Array<hrt.prefab.fx.EmitterHelper.ParamDef> = [
 		// PARTICLE TRANSFORM
 		{ name: "instScale",      			t: PFloat(0, 2.0),    def: 1.,         disp: "Scale", groupName: "Particle Transform"},
 		{ name: "instScaleOverTime",      			t: PFloat(0, 2.0),    def: 1.,         disp: "Scale over time", groupName: "Particle Transform"},
@@ -512,7 +512,7 @@ class Emitter2D extends Object2D {
 		{ name: "instDampen",      			t: PFloat(0, 10.0),    def: 0.,         disp: "Dampen", groupName: "Particle Limit Velocity"},
 	];
 
-	public static var PARAMS : Map<String, ParamDef> = {
+	public static var PARAMS : Map<String, hrt.prefab.fx.EmitterHelper.ParamDef> = {
 		var map = new Map();
 		for(e in emitterParams) {
 			map.set(e.name, e);
@@ -535,7 +535,7 @@ class Emitter2D extends Object2D {
 		props = { };
 		for(param in emitterParams) {
 			if(param.def != null)
-				resetParam(param);
+				EmitterHelper.resetParam(props, param);
 		}
 	}
 
@@ -552,59 +552,8 @@ class Emitter2D extends Object2D {
 		function makeParam(scope: Prefab, name: String): Value {
 			var getCurve = hrt.prefab.Curve.getCurve.bind(scope);
 
-			function vVal(f: Float) : Value {
-				return switch(f) {
-					case 0.0: VZero;
-					case 1.0: VOne;
-					default: VConst(f);
-				}
-			}
-
-			function vMult(a: Value, b: Value) : Value {
-				if(a == VZero || b == VZero) return VZero;
-				if(a == VOne) return b;
-				if(b == VOne) return a;
-				switch a {
-					case VConst(va):
-						return VMult(a, b);
-					case VCurve(ca):
-						return VMult(a, b);
-					case VRandomScale(ri,rscale):
-						switch b {
-							case VCurve(vb): return VAddRandCurve(0, ri, rscale, vb);
-							default:
-						}
-					case VAdd(va,VRandomScale(ri,rscale)):
-						var av = switch (va) {
-							case VConst(v): v;
-							case VOne: 1.0;
-							default: throw "Unsupported";
-						}
-						switch b {
-							case VCurve(vb): return VAddRandCurve(av, ri, rscale, vb);
-							default:
-						}
-					default:
-				}
-				return VMult(a, b);
-			}
-
-			function vAdd(a: Value, b: Value) : Value {
-				if(a == VZero) return b;
-				if(b == VZero) return a;
-				switch a {
-					case VConst(va):
-						switch b {
-							case VConst(vb): return VConst(va + vb);
-							default:
-						}
-					default:
-				}
-				return VAdd(a, b);
-			}
-
 			function makeCompVal(baseProp: Null<Float>, defVal: Float, randProp: Null<Float>, pname: String, suffix: String) : Value {
-				var xVal = vVal(baseProp != null ? baseProp : defVal);
+				var xVal = Evaluator.vVal(baseProp != null ? baseProp : defVal);
 				var randCurve = getCurve(pname + suffix + ":rand");
 				var randVal : Value = VZero;
 				if(randCurve != null)
@@ -619,17 +568,17 @@ class Emitter2D extends Object2D {
 					}
 					else {
 						if (pname.indexOf("Rotation") >= 0 || pname.indexOf("Offset") >= 0)
-							return vAdd(vAdd(xVal, randVal), xCurve.makeVal());
+							return Evaluator.vAdd(Evaluator.vAdd(xVal, randVal), xCurve.makeVal());
 						else
-							return vMult(vAdd(xVal, randVal), xCurve.makeVal());
+							return Evaluator.vMult(Evaluator.vAdd(xVal, randVal), xCurve.makeVal());
 					}
 				}
 				else
-					return vAdd(xVal, randVal);
+					return Evaluator.vAdd(xVal, randVal);
 			}
 
 			var baseProp: Dynamic = Reflect.field(props, name);
-			var randProp: Dynamic = Reflect.field(props, randProp(name));
+			var randProp: Dynamic = Reflect.field(props, EmitterHelper.randProp(name));
 			var param = PARAMS.get(name);
 			switch(param.t) {
 				case PVec(_):
@@ -655,13 +604,6 @@ class Emitter2D extends Object2D {
 			}
 		}
 
-		function makeColor(scope: Prefab, name: String) {
-			var curves = hrt.prefab.Curve.getCurves(scope, name);
-			if(curves == null || curves.length == 0)
-				return null;
-			return hrt.prefab.Curve.getColorValue(curves);
-		}
-
 		var d = new InstanceDef();
 		d.localSpeed = makeParam(this, "instSpeed");
 		d.worldSpeed = makeParam(this, "instWorldSpeed");
@@ -678,46 +620,46 @@ class Emitter2D extends Object2D {
 		d.rotation = makeParam(this, "instRotation");
 		emitterObj.instDef = d;
 
-		emitterObj.spriteType          	= 	getParamVal("spriteType");
-		emitterObj.texture 			   	= 	getParamVal("texture");
-		emitterObj.color 			   	= 	getParamVal("color");
-		emitterObj.seed 			    = 	getParamVal("seed");
-		emitterObj.lifeTime 			= 	getParamVal("lifeTime");
-		emitterObj.lifeTimeRand 		= 	getParamVal("lifeTimeRand");
-		emitterObj.speedFactor 			= 	getParamVal("speedFactor");
-		emitterObj.warmUpTime 			= 	getParamVal("warmUpTime");
-		emitterObj.delay 				= 	getParamVal("delay");
-		emitterObj.emitType 			= 	getParamVal("emitType");
-		emitterObj.burstCount 			= 	getParamVal("burstCount");
-		emitterObj.burstDelay 			= 	getParamVal("burstDelay");
+		emitterObj.spriteType          	= 	EmitterHelper.getParamVal(PARAMS, props, "spriteType");
+		emitterObj.texture 			   	= 	EmitterHelper.getParamVal(PARAMS, props, "texture");
+		emitterObj.color 			   	= 	EmitterHelper.getParamVal(PARAMS, props, "color");
+		emitterObj.seed 			    = 	EmitterHelper.getParamVal(PARAMS, props, "seed");
+		emitterObj.lifeTime 			= 	EmitterHelper.getParamVal(PARAMS, props, "lifeTime");
+		emitterObj.lifeTimeRand 		= 	EmitterHelper.getParamVal(PARAMS, props, "lifeTimeRand");
+		emitterObj.speedFactor 			= 	EmitterHelper.getParamVal(PARAMS, props, "speedFactor");
+		emitterObj.warmUpTime 			= 	EmitterHelper.getParamVal(PARAMS, props, "warmUpTime");
+		emitterObj.delay 				= 	EmitterHelper.getParamVal(PARAMS, props, "delay");
+		emitterObj.emitType 			= 	EmitterHelper.getParamVal(PARAMS, props, "emitType");
+		emitterObj.burstCount 			= 	EmitterHelper.getParamVal(PARAMS, props, "burstCount");
+		emitterObj.burstDelay 			= 	EmitterHelper.getParamVal(PARAMS, props, "burstDelay");
 		emitterObj.burstParticleCount 	= 	makeParam(this, "burstParticleCount");
-		emitterObj.emitDuration 		= 	getParamVal("emitDuration");
-		emitterObj.emitOrientation 		= 	getParamVal("emitOrientation");
-		emitterObj.maxCount 			= 	getParamVal("maxCount");
+		emitterObj.emitDuration 		= 	EmitterHelper.getParamVal(PARAMS, props, "emitDuration");
+		emitterObj.emitOrientation 		= 	EmitterHelper.getParamVal(PARAMS, props, "emitOrientation");
+		emitterObj.maxCount 			= 	EmitterHelper.getParamVal(PARAMS, props, "maxCount");
 		emitterObj.emitRate 			= 	makeParam(this, "emitRate");
 		emitterObj.emitRateMin 			= 	makeParam(this, "emitRateMin");
 		emitterObj.emitRateMax 			= 	makeParam(this, "emitRateMax");
-		emitterObj.emitRateChangeDelay 	= 	getParamVal("emitRateChangeDelay");
-		emitterObj.emitShape 			= 	getParamVal("emitShape");
+		emitterObj.emitRateChangeDelay 	= 	EmitterHelper.getParamVal(PARAMS, props, "emitRateChangeDelay");
+		emitterObj.emitShape 			= 	EmitterHelper.getParamVal(PARAMS, props, "emitShape");
 		emitterObj.emitRadius 			= 	makeParam(this, "emitRadius");
 		emitterObj.emitAngle1 			= 	makeParam(this, "emitAngle1");
 		emitterObj.emitAngle2 			= 	makeParam(this, "emitAngle2");
 		emitterObj.emitWidth 			= 	makeParam(this, "emitWidth");
 		emitterObj.emitHeight 			= 	makeParam(this, "emitHeight");
-		emitterObj.emitSurface 			= 	getParamVal("emitSurface");
-		emitterObj.spriteSheet 			= 	getParamVal("spriteSheet");
-		emitterObj.frameCount 			= 	getParamVal("frameCount");
-		emitterObj.frameDivisionX 		= 	getParamVal("frameDivisionX");
-		emitterObj.frameDivisionY 		= 	getParamVal("frameDivisionY");
-		emitterObj.animationSpeed 		= 	getParamVal("animationSpeed");
-		emitterObj.animationLoop 		= 	getParamVal("animationLoop");
-		emitterObj.animationUseSourceUVs 			= 	getParamVal("animationUseSourceUVs");
-		emitterObj.animationBlendBetweenFrames 		= 	getParamVal("animationBlendBetweenFrames");
-		emitterObj.useRandomColor 		= 	getParamVal("useRandomColor");
-		emitterObj.useRandomGradient 	= 	getParamVal("useRandomGradient");
-		emitterObj.randomColor1 		= 	getParamVal("randomColor1");
-		emitterObj.randomColor2 		= 	getParamVal("randomColor2");
-		emitterObj.randomGradient 		= 	getParamVal("randomGradient");
+		emitterObj.emitSurface 			= 	EmitterHelper.getParamVal(PARAMS, props, "emitSurface");
+		emitterObj.spriteSheet 			= 	EmitterHelper.getParamVal(PARAMS, props, "spriteSheet");
+		emitterObj.frameCount 			= 	EmitterHelper.getParamVal(PARAMS, props, "frameCount");
+		emitterObj.frameDivisionX 		= 	EmitterHelper.getParamVal(PARAMS, props, "frameDivisionX");
+		emitterObj.frameDivisionY 		= 	EmitterHelper.getParamVal(PARAMS, props, "frameDivisionY");
+		emitterObj.animationSpeed 		= 	EmitterHelper.getParamVal(PARAMS, props, "animationSpeed");
+		emitterObj.animationLoop 		= 	EmitterHelper.getParamVal(PARAMS, props, "animationLoop");
+		emitterObj.animationUseSourceUVs 			= 	EmitterHelper.getParamVal(PARAMS, props, "animationUseSourceUVs");
+		emitterObj.animationBlendBetweenFrames 		= 	EmitterHelper.getParamVal(PARAMS, props, "animationBlendBetweenFrames");
+		emitterObj.useRandomColor 		= 	EmitterHelper.getParamVal(PARAMS, props, "useRandomColor");
+		emitterObj.useRandomGradient 	= 	EmitterHelper.getParamVal(PARAMS, props, "useRandomGradient");
+		emitterObj.randomColor1 		= 	EmitterHelper.getParamVal(PARAMS, props, "randomColor1");
+		emitterObj.randomColor2 		= 	EmitterHelper.getParamVal(PARAMS, props, "randomColor2");
+		emitterObj.randomGradient 		= 	EmitterHelper.getParamVal(PARAMS, props, "randomGradient");
 		emitterObj.startSpeed			=	makeParam(this, "instStartSpeed");
 		emitterObj.startWorldSpeed 		= 	makeParam(this, "instStartWorldSpeed");
 
@@ -773,7 +715,7 @@ class Emitter2D extends Object2D {
 			params.remove(params.find(p -> p.name == pname));
 		}
 
-		var emitShape : Emit2DShape = getParamVal("emitShape");
+		var emitShape : Emit2DShape = EmitterHelper.getParamVal(PARAMS, props, "emitShape");
 		if(!emitShape.match(Circle)) {
 			removeParam("emitRadius");
 			removeParam("emitAngle1");
@@ -784,7 +726,7 @@ class Emitter2D extends Object2D {
 			removeParam("emitHeight");
 		}
 
-		var spriteType = getParamVal("spriteType");
+		var spriteType = EmitterHelper.getParamVal(PARAMS, props, "spriteType");
 		if (spriteType != SpriteType.Color) {
 			removeParam("color");
 			removeParam("useRandomColor");
@@ -803,14 +745,14 @@ class Emitter2D extends Object2D {
 			removeParam("animationBlendBetweenFrames");
 		}
 
-		if(!getParamVal("useRandomColor")) {
+		if(!EmitterHelper.getParamVal(PARAMS, props, "useRandomColor")) {
 			removeParam("useRandomGradient");
 			removeParam("randomColor1");
 			removeParam("randomColor2");
 			removeParam("randomGradient");
 		}
 		else {
-			if (getParamVal("useRandomGradient")){
+			if (EmitterHelper.getParamVal(PARAMS, props, "useRandomGradient")){
 				removeParam("randomColor1");
 				removeParam("randomColor2");
 			} else {
@@ -818,7 +760,7 @@ class Emitter2D extends Object2D {
 			}
 		}
 
-		var emitType : EmitType = getParamVal("emitType");
+		var emitType : EmitType = EmitterHelper.getParamVal(PARAMS, props, "emitType");
 		switch (emitType) {
 			case Infinity:
 				removeParam("burstCount");
@@ -855,126 +797,7 @@ class Emitter2D extends Object2D {
 				removeParam("emitRateChangeDelay");
 		}
 
-		// Emitter
-		{
-			// Sort by groupName
-			var groupNames : Array<String> = [];
-			for( p in params ) {
-				if( p.groupName == null && groupNames.indexOf("Emitter") == -1 )
-					groupNames.push("Emitter");
-				else if( p.groupName != null && groupNames.indexOf(p.groupName) == -1 )
-					groupNames.push(p.groupName);
-			}
-
-			for( gn in groupNames ) {
-				var params = params.filter( p -> p.groupName == (gn == "Emitter" ? null : gn) );
-				var group = new hide.Element('<div class="group" name="$gn"></div>');
-				group.append(hide.comp.PropsEditor.makePropsList(params));
-				ctx.properties.add(group, this.props, onChange);
-			}
-		}
-
-		// Instances
-		{
-			var groups = new Map<String, Array<ParamDef>>();
-			for(p in instanceParams) {
-				var groupName = p.groupName != null ? p.groupName : "Particles";
-
-				if (!groups.exists(groupName))
-					groups.set(groupName, []);
-				groups[groupName].push(p);
-			}
-
-			for (groupName => params in groups)
-			{
-				var instGroup = new hide.Element('<div class="group" name="$groupName"></div>');
-				var dl = new hide.Element('<dl>').appendTo(instGroup);
-
-				for (p in params) {
-					var dt = new hide.Element('<dt>${p.disp != null ? p.disp : p.name}</dt>').appendTo(dl);
-					var dd = new hide.Element('<dd>').appendTo(dl);
-
-					function addUndo(pname: String) {
-						ctx.properties.undo.change(Field(this.props, pname, Reflect.field(this.props, pname)), function() {
-							if(Reflect.field(this.props, pname) == null)
-								Reflect.deleteField(this.props, pname);
-							refresh();
-						});
-					}
-
-					if(Reflect.hasField(this.props, p.name)) {
-						hide.comp.PropsEditor.makePropEl(p, dd);
-						dt.contextmenu(function(e) {
-							e.preventDefault();
-							hide.comp.ContextMenu.createFromEvent(cast e, [
-								{ label : "Reset", click : function() {
-									addUndo(p.name);
-									resetParam(p);
-									onChange();
-									refresh();
-								} },
-								{ label : "Remove", click : function() {
-									addUndo(p.name);
-									Reflect.deleteField(this.props, p.name);
-									onChange();
-									refresh();
-								} },
-							]);
-							return false;
-						});
-					}
-					else {
-						var btn = new hide.Element('<input type="button" value="+"></input>').appendTo(dd);
-						btn.click(function(e) {
-							addUndo(p.name);
-							resetParam(p);
-							refresh();
-						});
-					}
-					var dt = new hide.Element('<dt>~</dt>').appendTo(dl);
-					var dd = new hide.Element('<dd>').appendTo(dl);
-					var randDef : Dynamic = switch(p.t) {
-						case PVec(n): [for(i in 0...n) 0.0];
-						case PFloat(_): 0.0;
-						default: 0;
-					};
-					if(Reflect.hasField(this.props, randProp(p.name))) {
-						hide.comp.PropsEditor.makePropEl({
-							name: randProp(p.name),
-							t: p.t,
-							def: randDef}, dd);
-						dt.contextmenu(function(e) {
-							e.preventDefault();
-							hide.comp.ContextMenu.createFromEvent(cast e, [
-								{ label : "Reset", click : function() {
-									addUndo(randProp(p.name));
-									Reflect.setField(this.props, randProp(p.name), randDef);
-									onChange();
-									refresh();
-								} },
-								{ label : "Remove", click : function() {
-									addUndo(randProp(p.name));
-									Reflect.deleteField(this.props, randProp(p.name));
-									onChange();
-									refresh();
-								} },
-							]);
-							return false;
-						});
-					}
-					else {
-						var btn = new hide.Element('<input type="button" value="+"></input>').appendTo(dd);
-						btn.click(function(e) {
-							addUndo(randProp(p.name));
-							Reflect.setField(this.props, randProp(p.name), randDef);
-							refresh();
-						});
-					}
-				}
-
-				ctx.properties.add(instGroup, this.props, onChange);
-			}
-		}
+		EmitterHelper.generateEdit(params, instanceParams, props, ctx.properties, onChange, refresh);
 	}
 
 	override function getHideProps() : hide.prefab.HideProps {
@@ -1006,36 +829,6 @@ class Emitter2D extends Object2D {
 		}
 	}
 	#end
-
-	inline function resetParam(param: ParamDef) {
-		if(param.def is Array)
-			Reflect.setField(props, param.name, cast(param.def, Array<Dynamic>).copy());
-		else
-			Reflect.setField(props, param.name, param.def);
-	}
-
-	static function randProp(name: String) {
-		return name + "_rand";
-	}
-
-	function getParamVal(name: String, rand: Bool=false) : Dynamic {
-		var param = PARAMS.get(name);
-		if(param == null)
-			return Reflect.field(props, name);
-		var isVector = switch(param.t) {
-			case PVec(_): true;
-			default: false;
-		}
-		var val : Dynamic = rand ? (isVector ? [0.,0.,0.,0.] : 0.) : param.def;
-		if(rand)
-			name = randProp(name);
-		if(props != null && Reflect.hasField(props, name)) {
-			val = Reflect.field(props, name);
-		}
-		if(isVector)
-			return h3d.Vector.fromArray(val);
-		return val;
-	}
 
 	static var _ = Prefab.register("emitter2D", Emitter2D);
 }
