@@ -11,7 +11,11 @@ class CdbTable extends hide.ui.View<{}> {
 	var tabCache : String;
 	var tabs : hide.comp.Tabs;
 	var view : cdb.DiffFile.ConfigView;
+
 	var topBar : Element;
+	var regularCountEl : Element;
+	var warningCountEl : Element;
+	var errorCountEl : Element;
 
 	public function new( ?state ) {
 		super(state);
@@ -291,6 +295,9 @@ class CdbTable extends hide.ui.View<{}> {
 			<span class="error" ${@:privateAccess editor.filterFlags.has(Error) ? "" : "disabled"}><div class="icon ico ico-exclamation-circle"></div><p>0</p></span>
 		</div>');
 		tabs.element.prepend(topBar);
+		regularCountEl = topBar.find(".regular").find("p");
+		warningCountEl = topBar.find(".warning").find("p");
+		errorCountEl = topBar.find(".error").find("p");
 
 		function filterListener(el : Element, flag : hide.comp.cdb.Editor.FilterFlag) {
 			var disabled = el.hasClass("disabled");

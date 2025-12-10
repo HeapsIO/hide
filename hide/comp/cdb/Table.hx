@@ -789,8 +789,8 @@ class Table extends Component {
 	public function refreshLinesStatus() {
 		if (editor.cdbTable == null)
 			return;
-		editor.cdbTable.element.find(".warning").find("p").text(warningCount);
-		editor.cdbTable.element.find(".error").find("p").text(errorCount);
-		editor.cdbTable.element.find(".regular").find("p").text(lines.length - (errorCount + warningCount));
+		@:privateAccess editor.cdbTable.warningCountEl.text(warningCount);
+		@:privateAccess editor.cdbTable.errorCountEl.text(errorCount);
+		@:privateAccess editor.cdbTable.regularCountEl.text(lines.length - (errorCount + warningCount));
 	}
 }
