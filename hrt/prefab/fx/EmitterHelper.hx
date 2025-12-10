@@ -47,6 +47,7 @@ class EmitterHelper {
 		return val;
 	}
 
+	#if editor
 	public static function generateEdit(params : Array<ParamDef>, instanceParams : Array<ParamDef>, props : Dynamic, properties : hide.comp.PropsEditor, onChange : (?pname : String) -> Void, refresh : Void -> Void) {
 		// Emitter
 		{
@@ -169,4 +170,5 @@ class EmitterHelper {
 			}
 		}
 	}
+	#end
 }
