@@ -10,6 +10,57 @@ class Evaluator {
 		this.stride = stride;
 	}
 
+	public static function vVal(f: Float) : Value {
+		return switch(f) {
+			case 0.0: VZero;
+			case 1.0: VOne;
+			default: VConst(f);
+		}
+	}
+
+	public static function vMult(a: Value, b: Value) : Value {
+		if(a == VZero || b == VZero) return VZero;
+		if(a == VOne) return b;
+		if(b == VOne) return a;
+		switch a {
+			case VConst(va):
+				return VMult(a, b);
+			case VCurve(ca):
+				return VMult(a, b);
+			case VRandomScale(ri,rscale):
+				switch b {
+					case VCurve(vb): return VAddRandCurve(0, ri, rscale, vb);
+					default:
+				}
+			case VAdd(va,VRandomScale(ri,rscale)):
+				var av = switch (va) {
+					case VConst(v): v;
+					case VOne: 1.0;
+					default: throw "Unsupported";
+				}
+				switch b {
+					case VCurve(vb): return VAddRandCurve(av, ri, rscale, vb);
+					default:
+				}
+			default:
+		}
+		return VMult(a, b);
+	}
+
+	public static function vAdd(a: Value, b: Value) : Value {
+		if(a == VZero) return b;
+		if(b == VZero) return a;
+		switch a {
+			case VConst(va):
+				switch b {
+					case VConst(vb): return VConst(va + vb);
+					default:
+				}
+			default:
+		}
+		return VAdd(a, b);
+	}
+
 	inline function getRandom(pidx: Int, ridx: Int) {
 		var i = pidx * stride + ridx;
 		return randValues[i];
@@ -112,6 +163,25 @@ class Evaluator {
 			default:
 				var f = getFloat(pidx, v, time);
 				vec.set(f, f, f, 1.0);
+		}
+		return vec;
+	}
+
+	public function getVector2(pidx: Int=0, v: Value, time: Float, vec: h2d.col.Point) {
+		switch(v) {
+			case VMult(a, b):
+				throw "need optimization";
+			case VVector(x, y, z, null):
+				vec.set(getFloat(pidx, x, time), getFloat(pidx, y, time));
+			case VVector(x, y, z, w):
+				vec.set(getFloat(pidx, x, time), getFloat(pidx, y, time));
+			case VZero:
+				vec.set(0,0);
+			case VOne:
+				vec.set(1,1);
+			default:
+				var f = getFloat(pidx, v, time);
+				vec.set(f, f);
 		}
 		return vec;
 	}
