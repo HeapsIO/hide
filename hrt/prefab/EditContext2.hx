@@ -61,11 +61,17 @@ abstract class EditContext2 {
 
 	public abstract function listMaterialLibraries(path: String) : Array<{path: String, name: String}>;
 
+	/**
+		Displays an error message to the user
+	**/
+	public abstract function quickError(message: String) : Void;
+
 	abstract function recordUndo(callback: (isUndo: Bool) -> Void ) : Void;
 	abstract function saveSetting(category: SettingCategory, key: String, value: Dynamic) : Void;
 	abstract function getSetting(category: SettingCategory, key: String) : Null<Dynamic>;
 
 	abstract function getRootObjects3d() : Array<h3d.scene.Object>;
+
 	#end
 
 	#if domkit

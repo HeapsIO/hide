@@ -233,15 +233,18 @@ class HideJsEditContext2 extends hrt.prefab.EditContext2 {
 
 	public function openPrefab(path: String, ?afterOpen : (api: hrt.prefab.SceneEditorAPI) -> Void) : Void {
 		hide.Ide.inst.openFile(path, null, (view) -> {
-		if (afterOpen != null) {
-			var prefabView : hide.view.Prefab.Prefab = cast view;
-			prefabView.delaySceneEditor(() -> {
-				haxe.Timer.delay(() -> afterOpen(new hide.comp.SceneEditor.HideSceneEditorAPI(prefabView.sceneEditor)), 100);
-			});
-		}
-	});
+			if (afterOpen != null) {
+				var prefabView : hide.view.Prefab.Prefab = cast view;
+				prefabView.delaySceneEditor(() -> {
+					haxe.Timer.delay(() -> afterOpen(new hide.comp.SceneEditor.HideSceneEditorAPI(prefabView.sceneEditor)), 100);
+				});
+			}
+		});
 	};
 
+	public function quickError(message: String) {
+		Ide.inst.quickError(message);
+	}
 }
 
 #end
