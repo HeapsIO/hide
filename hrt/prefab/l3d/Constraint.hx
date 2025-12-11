@@ -38,6 +38,27 @@ class Constraint extends Prefab {
 		apply(shared.root3d);
 	}
 
+	override function edit2(ctx: hrt.prefab.EditContext2) {
+		function checkLoop(_:Bool) {
+			var curObj = getRoot().locateObject(object);
+			if( curObj != null ) curObj.follow = null;
+			if (!apply(shared.root3d)) {
+				ctx.quickError("Loop detected in constraints");
+				ctx.rebuildInspector();
+			}
+
+			ctx.rebuildTree(this);
+		}
+
+		ctx.build(
+			<category("Constraint")>
+				<object-3d-ref field={object} onValueChange={checkLoop}/>
+				<object-3d-ref field={target} onValueChange={checkLoop}/>
+				<checkbox field={positionOnly}/>
+			</category>
+		);
+	}
+
 	#if editor
 	override function getHideProps() : hide.prefab.HideProps {
 		return {
