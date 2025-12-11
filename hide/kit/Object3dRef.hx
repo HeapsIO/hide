@@ -48,6 +48,38 @@ class Object3dRef extends Widget<String> {
 				dropdown.close();
 			}
 		}
+
+		hide.tools.DragAndDrop.makeDropTarget(select, (event: hide.tools.DragAndDrop.DropEvent, data: hide.tools.DragAndDrop.DragData) -> {
+			switch(event) {
+				case Enter, Move, Leave:
+					if (data.data.get("drag/scenetree") != null)
+						data.dropTargetValidity = AllowDrop;
+					select.classList.toggle("fancy-drag-drop-target", event != Leave);
+				case Drop: {
+					var objects : Array<hrt.prefab.Prefab> = cast data.data.get("drag/scenetree");
+					if (objects == null || objects.length == 0)
+						return;
+
+					var object3d = objects[0].findFirstLocal3d();
+					var name = "";
+					while (object3d != null && object3d != @:privateAccess root.prefab.shared.root3d) {
+						if (name.length > 0)
+							name = name + ".";
+						name = name + object3d.name;
+						object3d = object3d.parent;
+					}
+
+					if (@:privateAccess root.prefab.shared.root3d.getObjectByName(name) != objects[0].findFirstLocal3d()) {
+						root.editor.quickError("Fail");
+					} else {
+						value = name;
+						broadcastValueChange(false);
+					}
+				}
+
+			}
+		});
+
 		return select;
 		#else
 		return null;

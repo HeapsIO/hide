@@ -47,6 +47,7 @@ class File extends Widget<String> {
 	static var types : Map<String, Array<String>> = [
 		"file" => ["*"],
 		"prefab" => ["prefab", "l3d", "fx"],
+		"fx" => ["fx"],
 		"texture" => ["png", "dds", "jpeg", "jpg"],
 		"model" => ["fbx", "hmd"],
 		"atlas" => ["atlas"],
