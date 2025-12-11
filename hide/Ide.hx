@@ -1,4 +1,7 @@
 package hide;
+#if !editor
+#error "Non editor code shouldn't depend on hide"
+#end
 
 class IdeCache {
 	public var getTextureCache : Map<String, h3d.mat.Texture> = [];
