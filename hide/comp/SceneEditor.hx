@@ -4383,8 +4383,8 @@ class SceneEditor {
 
 				if (previewDraggedObj == null) {
 					try {
-						previewDraggedObj = getPreviewObject(files);
-						scene.s3d.addChild(previewDraggedObj);
+						previewDraggedObj = new h3d.scene.Object(scene.s3d);
+						addPreviewObject(files, previewDraggedObj);
 						dragData.setThumbnailVisiblity(false);
 					} catch (e) {
 						dragData.dropTargetValidity = ForbidDrop;
@@ -4455,9 +4455,7 @@ class SceneEditor {
 		}
 	}
 
-	function getPreviewObject(files : Array<hide.tools.FileManager.FileEntry>) : h3d.scene.Object {
-		var root = new h3d.scene.Object();
-
+	function addPreviewObject(files : Array<hide.tools.FileManager.FileEntry>, parent : h3d.scene.Object) : h3d.scene.Object {
 		for (f in files) {
 			var ptype = hrt.prefab.Prefab.getPrefabType(f.path);
 			if (ptype != null) {
@@ -4465,16 +4463,16 @@ class SceneEditor {
 				ref.source = ide.makeRelative(f.path);
 				ref.make();
 				if (ref.local3d != null)
-					root.addChild(ref.local3d);
+					parent.addChild(ref.local3d);
 			}
 
 			if (f.path.substr(f.path.lastIndexOf(".") + 1) == "fbx") {
 				var mesh = sceneData.shared.loadModel(ide.makeRelative(f.path));
-				root.addChild(mesh);
+				parent.addChild(mesh);
 			}
 		}
 
-		return root;
+		return parent;
 	}
 
 	function getDragPreviewTransform() : h3d.Matrix {
