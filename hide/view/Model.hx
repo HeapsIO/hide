@@ -142,7 +142,7 @@ class CollisionSettings {
 				for (s in toShapeEditor())
 					hide.comp.ShapeEditor.getInteractive(s, false, parentObj);
 
-				parentObj;
+				return parentObj;
 
 			default:
 				null;
@@ -219,6 +219,10 @@ class ModelSceneEditor extends hide.comp.SceneEditor {
 				for (shapeEditor in parent.shapesEditor) {
 					shapeEditor.removeAllInteractives();
 					if (parent.shapesEditor.length > 0 && c.mode == Shapes) {
+						var d = new h3d.scene.Object(newCol);
+						d.follow = obj;
+						d.defaultTransform = obj.defaultTransform?.getInverse();
+						shapeEditor.rootDebugObj = d;
 						shapeEditor.createAllInteractives();
 						debugCreated = true;
 					}
@@ -233,6 +237,7 @@ class ModelSceneEditor extends hide.comp.SceneEditor {
 
 				newCol.addChild(debug);
 				debug.follow = obj;
+				debug.defaultTransform = obj.defaultTransform?.getInverse();
 
 				var colliderColor = 0x55FFFFFF;
 				var intersectionColor = 0x55FF0000;
