@@ -64,6 +64,8 @@ abstract class EditContext2 {
 	abstract function recordUndo(callback: (isUndo: Bool) -> Void ) : Void;
 	abstract function saveSetting(category: SettingCategory, key: String, value: Dynamic) : Void;
 	abstract function getSetting(category: SettingCategory, key: String) : Null<Dynamic>;
+
+	abstract function getRootObjects3d() : Array<h3d.scene.Object>;
 	#end
 
 	#if domkit

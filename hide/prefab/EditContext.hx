@@ -203,6 +203,10 @@ class HideJsEditContext2 extends hrt.prefab.EditContext2 {
 		return ctx.scene.editor.cameraController;
 	}
 
+	public function getRootObjects3d() : Array<h3d.scene.Object> {
+		return @:privateAccess ctx.rootPrefab.shared.root3d.children;
+	}
+
 	public function openFile(path:String) : Void {
 		if (parent != null)
 			return;
