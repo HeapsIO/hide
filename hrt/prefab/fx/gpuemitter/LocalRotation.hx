@@ -34,6 +34,14 @@ class LocalRotation extends SimulationShader {
 		sh.speedRotation = speedRotation * 2.0 * Math.PI;
 	}
 
+	override function edit2( ctx : hrt.prefab.EditContext2 ) {
+		ctx.build(
+			<category("Simulation")>
+				<range(0, 1) label="Rotation speed" field={speedRotation}/>
+			</category>
+		);
+	}
+
 	#if editor
 	override function edit( ctx : hide.prefab.EditContext ) {
 		ctx.properties.add(new hide.Element('
