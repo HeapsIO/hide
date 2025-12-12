@@ -599,7 +599,11 @@ class ScriptChecker {
 				var id = o.id;
 				if( id == null || id.length == 0 ) continue;
 				if( refPath != null ) {
-					buf.clear();
+					#if haxe5
+						buf.clear();
+					#else
+						@:privateAccess buf.b = "";
+					#end
 					if( isOtherSheet ) {
 						buf.addSub(id, id.lastIndexOf(':') + 1);
 					}
