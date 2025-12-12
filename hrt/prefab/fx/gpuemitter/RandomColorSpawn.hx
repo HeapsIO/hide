@@ -36,6 +36,15 @@ class RandomColorSpawn extends SpawnShader {
 		sh.color2 = color2;
 	}
 
+	override function edit2( ctx : hrt.prefab.EditContext2 ) {
+		ctx.build(
+			<category("Spawn")>
+				<color field={color1} alpha/>
+				<color field={color2} alpha/>
+			</category>
+		);
+	}
+
 	#if editor
 	override function edit( ctx : hide.prefab.EditContext ) {
 		ctx.properties.add(new hide.Element('

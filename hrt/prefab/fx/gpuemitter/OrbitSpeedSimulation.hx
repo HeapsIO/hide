@@ -54,7 +54,7 @@ class OrbitSpeedSimulation extends SimulationShader {
 	override function edit2( ctx : hrt.prefab.EditContext2 ) {
 		ctx.build(
 			<category("Simulation")>
-				<line label="Gravity">
+				<line label="Speed">
 					<range(-1, 1) label="X" field={axisX}/>
 					<range(-1, 1) label="Y" field={axisY}/>
 					<range(-1, 1) label="Z" field={axisZ}/>
