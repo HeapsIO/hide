@@ -181,13 +181,6 @@ class ScriptChecker {
 		checker.types = api.types;
 		initDone = false;
 
-		var skind = new Map();
-		for( s in ide.database.sheets ) {
-			if( s.idCol != null )
-				skind.set(s.name, addCDBEnum(s.name.split("@").join(".")));
-		}
-		var tstring = checker.types.resolve("String");
-
 		var mfields = new Map<String, CField>();
 		inline function field(name,t,r,?r2) {
 			mfields.set(name, {
@@ -212,19 +205,25 @@ class ScriptChecker {
 			params : [],
 		},[]));
 
-		var _tarray = checker.types.resolve("Array");
+		var tstring = checker.types.resolve("String");
 		if( tstring == null ) {
 			var cstring = checker.types.defineClass("String");
 			tstring = TInst(cstring,[]);
 		}
+		var _tarray = checker.types.resolve("Array");
 		if( _tarray == null ) {
 			var carray = checker.types.defineClass("Array");
 			_tarray = TInst(carray,[]);
 		}
-
 		var carray = switch( _tarray ) { case TInst(c,_): c; default: throw "assert"; }
 		function tarray(t) return TInst(carray,[t]);
 		function mkType(name,t) return TType({name:name,params:[],t:t},[]);
+
+		var skind = new Map();
+		for( s in ide.database.sheets ) {
+			if( s.idCol != null )
+				skind.set(s.name, addCDBEnum(s.name.split("@").join(".")));
+		}
 
 		var cdefs = new Map();
 		for( s in ide.database.sheets ) {
@@ -576,8 +575,9 @@ class ScriptChecker {
 			objPath = objID == null ? [] : objID.split(":");
 			isOtherSheet = this.constants.get("cdb."+path[0]) == null;
 		}
-		for( s in ide.database.sheets ) {
-			if( s.name != sname ) continue;
+
+		var s = ide.database.getSheet(sname);
+		if (s != null) {
 			var name = path[path.length - 1];
 			name = name.charAt(0).toUpperCase() + name.substr(1);
 			var kname = path.join("_")+"Kind";
@@ -612,6 +612,7 @@ class ScriptChecker {
 			cdbEnums.push(name);
 			return kind;
 		}
+
 		return null;
 	}
 
