@@ -4629,6 +4629,13 @@ fancy-button.compact {
 fancy-button.compact .ico {
   font-size: 0.7em;
 }
+fancy-button.disabled {
+  pointer-events: none;
+  color: #666;
+}
+fancy-button.disabled fancy-image {
+  opacity: 0.5;
+}
 fancy-button:has( + fancy-button) {
   border-start-end-radius: 0;
   border-end-end-radius: 0;

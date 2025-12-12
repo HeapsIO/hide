@@ -31,6 +31,9 @@ class FileBrowser extends hide.ui.View<FileBrowserState> {
 
 	var layout(default, set): Layout;
 
+	var history: Array<FileEntry> = [];
+	var historyPos: Int;
+
 	function set_layout(newLayout: Layout) : Layout {
 		layout = newLayout;
 		state.savedLayout = layout;
@@ -134,6 +137,9 @@ class FileBrowser extends hide.ui.View<FileBrowserState> {
 
 	var gallerySearchFullPath : Bool = false;
 	var gallerySearchFullPathButton : js.html.Element;
+
+	var buttonBack : js.html.Element;
+	var buttonForward : js.html.Element;
 
 	var filterButton : js.html.Element;
 	var filterEnabled(default, set) : Bool;
@@ -378,6 +384,12 @@ class FileBrowser extends hide.ui.View<FileBrowserState> {
 				</div>
 				<div class="right" tabindex="-1">
 					<fancy-toolbar class="fancy-small shadow">
+						<fancy-button class="btn-back quiet" title="Go to parent folder">
+							<fancy-image style="background-image:url(\'res/icons/svg/back.svg\')"></fancy-image>
+						</fancy-button>
+						<fancy-button class="btn-forward quiet" title="Go to parent folder">
+							<fancy-image style="background-image:url(\'res/icons/svg/forward.svg\')"></fancy-image>
+						</fancy-button>
 						<fancy-button class="btn-parent quiet" title="Go to parent folder">
 							<fancy-image style="background-image:url(\'res/icons/svg/file_parent.svg\')"></fancy-image>
 						</fancy-button>
@@ -415,6 +427,16 @@ class FileBrowser extends hide.ui.View<FileBrowserState> {
 		').appendTo(element);
 
 		stats = browserLayout.find(".stats").get(0);
+
+		buttonBack = browserLayout.find(".btn-back").get(0);
+		buttonBack.onclick = (e) -> {
+			previousDir();
+		}
+
+		buttonForward = browserLayout.find(".btn-forward").get(0);
+		buttonForward.onclick = (e) -> {
+			forwardDir();
+		}
 
 		resize = new hide.comp.ResizablePanel(Horizontal, element.find(".left"), After);
 
@@ -1384,8 +1406,29 @@ class FileBrowser extends hide.ui.View<FileBrowserState> {
 		}
 	}
 
-	function openDir(item: FileEntry, syncTree: Bool) {
+	function refreshHistoryArrows() {
+		buttonBack.classList.toggle("disabled", historyPos <= 0 );
+		buttonForward.classList.toggle("disabled", historyPos >= history.length-1 );
+	}
+
+	function previousDir() {
+		historyPos  = hxd.Math.imax(historyPos - 1, 0);
+		openDir(history[historyPos], true, false);
+	}
+
+	function forwardDir() {
+		historyPos = hxd.Math.imin(historyPos + 1, history.length - 1);
+		openDir(history[historyPos], true, false);
+	}
+
+	function openDir(item: FileEntry, syncTree: Bool, recordHistory: Bool = true) {
 		if (item.kind == Dir) {
+			if (recordHistory) {
+				history.splice(historyPos+1, history.length);
+				history.push(item);
+				historyPos = history.length - 1;
+			}
+			refreshHistoryArrows();
 			currentFolder = item;
 			queueGalleryRefresh();
 		}
