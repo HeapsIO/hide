@@ -111,7 +111,6 @@ kit-root .detached .is-cdb-editor {
   :scope kit-list {
     max-height: 400px;
     overflow: auto;
-    margin-right: 2px;
     display: block;
     background-color: #1F1F1F;
   }
