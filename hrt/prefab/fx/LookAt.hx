@@ -146,6 +146,9 @@ class LookAt extends Object3D {
 		var targetObj = null;
 		if(target != "camera")
 			targetObj = locateObject(target);
+		var lookAt = Std.downcast(local3d, LookAtObject);
+		if (lookAt != null)
+			@:privateAccess lookAt.target = targetObj;
 	}
 
 	override function makeObject(parent3d:h3d.scene.Object):h3d.scene.Object {
