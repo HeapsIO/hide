@@ -7,7 +7,7 @@ class GravitySimulationShader extends ComputeUtils {
 		var speed : Vec3;
 		var dt : Float;
 		function main() {
-			speed += dt * gravity * 9.81; 
+			speed += dt * gravity * 9.81;
 		}
 	}
 }
@@ -26,6 +26,18 @@ class GravitySimulation extends SimulationShader {
 
 		var sh = cast(shader, GravitySimulationShader);
 		sh.gravity.set(gravityX, gravityY, gravityZ);
+	}
+
+	override function edit2( ctx : hrt.prefab.EditContext2 ) {
+		ctx.build(
+			<category("Simulation")>
+				<line label="Gravity">
+					<range(-1, 1) label="X" field={gravityX}/>
+					<range(-1, 1) label="Y" field={gravityY}/>
+					<range(-1, 1) label="Z" field={gravityZ}/>
+				</line>
+			</category>
+		);
 	}
 
 	#if editor
