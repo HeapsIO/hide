@@ -223,6 +223,10 @@ class Shader extends Prefab {
 		return props;
 	}
 
+	override function edit2(ctx:hrt.prefab.EditContext2) {
+		super.edit2(ctx);
+	}
+
 	override function edit( ectx : hide.prefab.EditContext ) {
 		super.edit(ectx);
 

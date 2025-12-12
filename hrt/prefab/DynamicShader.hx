@@ -151,6 +151,43 @@ class DynamicShader extends Shader {
 		}
 	}
 
+	override function edit2(ctx:hrt.prefab.EditContext2) {
+		var isCorrupted = false;
+		if (StringTools.endsWith(source, ".shgraph")) {
+			var res = hxd.res.Loader.currentInstance.load(source);
+			var shgraph = Std.downcast(res.toPrefab().load(), hrt.shgraph.ShaderGraph);
+			isCorrupted = shgraph == null;
+		}
+
+		ctx.build(
+			<category("Source") id="toto">
+				<file type="shgraph" field={source} id="path"/>
+				<text("The given shadergraph is corrupted") if (isCorrupted)/>
+				<checkbox field={isInstance} if ((isInstance && !shaderDef.isShaderGraph) || loadShaderClass(true) != null)/>
+			</category>
+		);
+
+		path.onValueChange = (isTempChange) -> {
+			shaderDef = null;
+			if (!isTempChange)
+				ctx.rebuildPrefab(this);
+		}
+
+		path.onView = () -> {
+			#if editor
+			var p = hide.Ide.inst.getPath(source);
+			p = sys.FileSystem.exists(p) ? p : null;
+			hide.Ide.inst.openFile(p, null, (v) -> {
+				var sheditor : hide.view.shadereditor.ShaderEditor = cast v;
+				var renderProps = shared.editor.renderPropsRoot?.source;
+				sheditor.setPrefabAndRenderDelayed(shared.currentPath,renderProps);
+			});
+			#end
+		}
+
+		super.edit2(ctx);
+	}
+
 	#if editor
 	override function edit( ectx : hide.prefab.EditContext ) {
 
@@ -188,10 +225,6 @@ class DynamicShader extends Shader {
 					});
 				}
 			}
-
-
-
-
 		}
 
 		super.edit(ectx);

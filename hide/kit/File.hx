@@ -17,6 +17,7 @@ class File extends Widget<String> {
 			value = file.path;
 			broadcastValueChange(false);
 		}
+		file.onView = () -> onView();
 
 		return file.element[0];
 		#else
@@ -35,7 +36,6 @@ class File extends Widget<String> {
 		return null;
 	}
 
-
 	function stringToValue(obj: String) : String {
 		var ext = obj.split(".").pop();
 		if (types.get(type).contains(ext)) {
@@ -43,6 +43,8 @@ class File extends Widget<String> {
 		}
 		return null;
 	}
+
+	public dynamic function onView() {}
 
 	static var types : Map<String, Array<String>> = [
 		"file" => ["*"],
