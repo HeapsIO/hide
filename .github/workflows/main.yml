@@ -48,6 +48,9 @@ jobs:
 
   deploy:
     if: github.repository_owner == 'HeapsIO' && github.ref == 'refs/heads/master' && github.event_name != 'pull_request'
+    concurrency:
+      group: ${{ github.workflow }}-${{ github.ref }}
+      cancel-in-progress: true
     needs: build
     runs-on: ubuntu-latest
     env:
