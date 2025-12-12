@@ -195,13 +195,14 @@ class LookAt extends Object3D {
 		select.val(Reflect.field(this, select.attr("field")));
 	}
 
+	#end
+
 	override function edit2(ctx:hrt.prefab.EditContext2) {
 		super.edit2(ctx);
 
 		ctx.build(
 			<category("Look At")>
-				<select([]) label="Target">
-				</select>
+				<object-3d-ref field={target}/>
 				<line label="Lock Axis">
 					<slider label="X" id="lockAxisX" field={lockAxis[0]}/>
 					<slider label="Y" id="lockAxisY" field={lockAxis[1]}/>
@@ -212,7 +213,6 @@ class LookAt extends Object3D {
 			</category>
 		);
 	}
-	#end
 
 	static var _ = Prefab.register("lookAt", LookAt);
 }
