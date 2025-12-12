@@ -94,6 +94,19 @@ class ShaderTarget extends Object3D {
 			o.apply(fx);
 	}
 
+	override function edit2(ctx:EditContext2) {
+		super.edit2(ctx);
+
+		var tags : Array<String> = #if editor cast hide.Ide.inst.currentConfig.get("fx.shaderTargetsTags") ?? #end [];
+
+		ctx.build(
+			<category("Shader Target")>
+				<select(tags) field={tag}/>
+				<slider field={priority} min={0}/>
+			</category>
+		);
+	}
+
 	#if editor
 	override function getHideProps() : hide.prefab.HideProps {
 		return { icon : "dot-circle-o", name : "Shader Target" };
