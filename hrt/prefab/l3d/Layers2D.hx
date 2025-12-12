@@ -426,7 +426,7 @@ class Layers2D extends hrt.prefab.Object3D {
 			var MAX_X = Math.floor(currentPixels.width * layerScale) - 1;
 			var MAX_Y = Math.floor(currentPixels.height * layerScale) - 1;
 
-			var collideScale = collidePixels.width / worldSize;
+			var collideScale = (collidePixels?.width ?? 4096) / worldSize;
 
 			if ( worldPos != null ) {
 				var startX = worldPos.x - offsetX;
@@ -458,7 +458,7 @@ class Layers2D extends hrt.prefab.Object3D {
 					var queue : Array<Int> = [];
 
 					inline function isCollide( ix : Int, iy : Int ) {
-						return collideEnable && collidePixels.getPixel(Math.floor(ix * collideScale), Math.floor(iy * collideScale)) & collideMask == collideMask;
+						return collideEnable && collidePixels != null && collidePixels.getPixel(Math.floor(ix * collideScale), Math.floor(iy * collideScale)) & collideMask == collideMask;
 					}
 
 					function add( ix : Int, iy : Int, d : Int ) {
@@ -743,8 +743,8 @@ class Layers2D extends hrt.prefab.Object3D {
 			for( key => layerTexture in layerTextures ) {
 				var newLayerTexture = hxd.Pixels.alloc(size, size, R8);
 				newLayerTexture.blit(
-					hxd.Math.imax(0, -dox), hxd.Math.imax(0, -doy), 
-					layerTexture, 
+					hxd.Math.imax(0, -dox), hxd.Math.imax(0, -doy),
+					layerTexture,
 					hxd.Math.imax(0, dox), hxd.Math.imax(0, doy),
 					copySizeX, copySizeY
 				);
