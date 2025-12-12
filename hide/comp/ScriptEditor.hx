@@ -565,6 +565,7 @@ class ScriptChecker {
 		}
 	}
 
+	static var buf = new StringBuf();
 	public function addCDBEnum( name : String, ?cdbPack : String ) {
 		var path = name.split(".");
 		var sname = path.join("@");
@@ -582,7 +583,8 @@ class ScriptChecker {
 			name = name.charAt(0).toUpperCase() + name.substr(1);
 			var kname = path.join("_")+"Kind";
 			kname = kname.charAt(0).toUpperCase() + kname.substr(1);
-			if( cdbPack != null && cdbPack != "" ) kname = cdbPack + "." + kname;
+			if( cdbPack != null && cdbPack.length > 0 )
+				kname = cdbPack + "." + kname;
 			var kind = checker.types.resolve(kname);
 			if( kind == null )
 				kind = TEnum({ name : kname, params : [], constructors : [] },[]);
@@ -595,14 +597,17 @@ class ScriptChecker {
 			var refPath = s.idCol.scope == null ? null : objPath.slice(0, s.idCol.scope).join(":")+":";
 			for( o in s.all ) {
 				var id = o.id;
-				if( id == null || id == "" ) continue;
+				if( id == null || id.length == 0 ) continue;
 				if( refPath != null ) {
-					if( isOtherSheet )
-						id = id.split(":").pop();
+					buf.clear();
+					if( isOtherSheet ) {
+						buf.addSub(id, id.lastIndexOf(':') + 1);
+					}
 					else {
 						if( !StringTools.startsWith(id, refPath) ) continue;
-						id = id.substr(refPath.length);
+						buf.addSub(id, refPath.length);
 					}
+					id = buf.toString();
 				}
 				cl.fields.set(id, { name : id, params : [], canWrite : false, t : kind, isPublic: true, complete : true });
 			}
