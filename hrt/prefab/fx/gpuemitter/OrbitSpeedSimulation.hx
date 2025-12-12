@@ -51,6 +51,18 @@ class OrbitSpeedSimulation extends SimulationShader {
 		sh.axis.normalize();
 	}
 
+	override function edit2( ctx : hrt.prefab.EditContext2 ) {
+		ctx.build(
+			<category("Simulation")>
+				<line label="Gravity">
+					<range(-1, 1) label="X" field={axisX}/>
+					<range(-1, 1) label="Y" field={axisY}/>
+					<range(-1, 1) label="Z" field={axisZ}/>
+				</line>
+			</category>
+		);
+	}
+
 	#if editor
 	override function edit( ctx : hide.prefab.EditContext ) {
 		ctx.properties.add(new hide.Element('
