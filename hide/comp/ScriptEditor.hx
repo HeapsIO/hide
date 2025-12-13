@@ -99,7 +99,7 @@ class ScriptCache {
 		LAST_API_TYPES = null;
 	}
 
-	public static function getCachedResult( config : hide.Config, documentName : String, constants : Map<String,Dynamic>, code : String ) : Bool {
+	static function loadCache( config : hide.Config ) {
 		var api = config.get("script.api");
 		var apiFiles : Array<String> = config.get("script.api.files");
 		if( api != LAST_API || apiFiles != LAST_FILES || CHECK_CACHE == null ) {
@@ -113,7 +113,11 @@ class ScriptCache {
 				CHECK_CACHE.loadConfig(hash);
 			}
 		}
-		var cache = CHECK_CACHE;
+		return CHECK_CACHE;
+	}
+
+	public static function getCachedResult( config : hide.Config, documentName : String, constants : Map<String,Dynamic>, code : String ) : Bool {
+		var cache = loadCache(config);
 		var signature = hashString(code+":"+documentName+":"+haxe.Json.stringify(constants));
 		var error : Null<Bool> = cache.getResult(signature);
 		if( error == null ) {

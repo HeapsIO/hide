@@ -35,6 +35,8 @@ class DomkitChecker {
 
 	public function new(config) {
 		ide = hide.Ide.inst;
+		var api = hide.comp.ScriptEditor.ScriptCache.loadApiFiles(config);
+		this.checker = new domkit.Checker(api.types);
 		this.config = config;
 		parsers = [new h2d.domkit.BaseComponents.CustomParser()];
 		var dcfg : Array<String> = config.get("domkit.parsers");
@@ -48,16 +50,10 @@ class DomkitChecker {
 				parsers.push(std.Type.createInstance(cl,[]));
 			}
 		}
-		if( !domkit.Checker.isInit() ) {
-			var api : Array<String> = config.get("script.api.files");
-			if( api.length == 0 ) ide.error("Missing 'script.api.files' in props.json");
-			domkit.Checker.init(ide.getPath(api[0]));
-		}
-		checker = domkit.Checker.inst;
 	}
 
 	function getChecker() {
-		var chk = new DMLChecker();
+		var chk = new DMLChecker(checker);
 		chk.definedIdents = definedIdents;
 		chk.parsers = parsers;
 		return chk;
@@ -134,7 +130,7 @@ class DomkitEditor extends CodeEditor {
 	public var kind : DomkitEditorKind;
 	public var checker : DomkitChecker;
 
-	public function new( config, kind, code : String, ?checker, ?parent : Element, ?root : Element ) {
+	public function new( kind, code : String, checker, ?parent : Element, ?root : Element ) {
 		this.kind = kind;
 		allowScrollBeyondLine = true;
 		var lang = kind == DML ? "html" : "less";
@@ -146,8 +142,6 @@ class DomkitEditor extends CodeEditor {
 			initCompletion();
 		}
 		saveOnBlur = false;
-		if( checker == null )
-			checker = new DomkitChecker(config);
 		this.checker = checker;
 	}
 
@@ -211,14 +205,14 @@ class DomkitEditor extends CodeEditor {
 	override function getCompletion( position : Int ) {
 		var code = code;
 		var results = super.getCompletion(position);
-		for( c in domkit.Checker.inst.components )
+		for( c in @:privateAccess checker.checker.components )
 			results.push({
 				kind : Class,
 				label : c.name,
 			});
 		if( kind == DML && (code.charCodeAt(position-1) == "<".code || code.charCodeAt(position-1) == "/".code) )
 			return results;
-		for( pname => pl in domkit.Checker.inst.properties ) {
+		for( pname => pl in @:privateAccess checker.checker.properties ) {
 			var p = pl[0];
 			results.push({
 				kind : Field,

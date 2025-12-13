@@ -28,6 +28,7 @@ class DomkitStudio extends hide.ui.View<{ ?comp : String }> {
 	var cssEditor : hide.comp.DomkitEditor;
 	var tree : hide.comp.FancyTree<CompPackage>;
 	var onBeforeOpen : Void -> Bool;
+	var domkitCheck : hide.comp.DomkitEditor.DomkitChecker;
 
 	function collectComponents() {
 		comps = new Map();
@@ -61,6 +62,7 @@ class DomkitStudio extends hide.ui.View<{ ?comp : String }> {
 		};
 		while( compsRoot.comps.length == 0 && Lambda.array(compsRoot.subs).length == 1 )
 			compsRoot = compsRoot.subs.iterator().next();
+		domkitCheck = new hide.comp.DomkitEditor.DomkitChecker(config);
 	}
 
 	function collectCssFiles() {
@@ -260,8 +262,7 @@ class DomkitStudio extends hide.ui.View<{ ?comp : String }> {
 				return ide.confirm("Changes haven't been saved, continue ?");
 			return true;
 		};
-		var sharedChecker = new hide.comp.DomkitEditor.DomkitChecker(config);
-		dmlEditor = new hide.comp.DomkitEditor(config, DML, content, sharedChecker, element.find(".dmlEditor"));
+		dmlEditor = new hide.comp.DomkitEditor(DML, content, domkitCheck, element.find(".dmlEditor"));
 		dmlEditor.onSave = function() {
 			content = dmlEditor.code;
 			rawContent = inf.format(dmlEditor.code);
@@ -273,7 +274,7 @@ class DomkitStudio extends hide.ui.View<{ ?comp : String }> {
 		};
 		var paths : Array<String> = config.get("domkit.components");
 		var defaultCss = ide.getPath(paths[0]+"/"+comp.name+".less");
-		cssEditor = new hide.comp.DomkitEditor(config, Less, rawCss, sharedChecker, element.find(".cssEditor"));
+		cssEditor = new hide.comp.DomkitEditor(Less, rawCss, domkitCheck, element.find(".cssEditor"));
 		cssEditor.onSave = function() {
 			if( comp.cssFile == null ) {
 				if( paths.length == 0 ) {
@@ -349,7 +350,8 @@ class DomkitLess extends FileView {
 		element.html('<div class="lesseditor">
 			<div class="scene"></div>
 		</div>');
-		editor = new hide.comp.DomkitEditor(config, Less, content, element.find(".lesseditor"));
+		var checker = new hide.comp.DomkitEditor.DomkitChecker(config);
+		editor = new hide.comp.DomkitEditor(Less, content, checker, element.find(".lesseditor"));
 		editor.onSave = function() {
 			content = editor.code;
 			save();
