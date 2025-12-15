@@ -98,8 +98,6 @@ class KitTest extends Object3D {
 			</category>
 		);
 
-
-
 		ctx.build(
 			<category("All Elements")>
 				<text("Text")/>
@@ -121,8 +119,8 @@ class KitTest extends Object3D {
 				<text("Separator")/>
 				<separator/>
 				<file field={filePath} type="texture"/>
-				<button("Button")/>
-				<button("Button Highlight") highlight/>
+				<button("Button") onClick={ctx.quickError.bind("Button")}/>
+				<button("Button Highlight") onClick={ctx.quickError.bind("Button highlight")} highlight/>
 				<button("Button Disabled") disabled/>
 				<button("Button Single Edit") single-edit/>
 				<input label="Input" placeholder="Placeholder text" field={inputString}/>

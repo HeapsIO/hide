@@ -3,6 +3,10 @@ package hide;
 #error "Non editor code shouldn't depend on hide"
 #end
 
+enum MessageKind {
+	Info;
+	Error;
+}
 class IdeCache {
 	public var getTextureCache : Map<String, h3d.mat.Texture> = [];
 
@@ -775,17 +779,9 @@ class Ide extends hide.tools.IdeData {
 	}
 
 	public function quickError( msg : Dynamic, timeoutSeconds : Float = 5.0 ) {
-		var str = StringTools.htmlEscape(Std.string(msg));
-		str = StringTools.replace(str, "\n", "<br/>");
-		var e = new Element('
-		<div class="message error">
-			<div class="icon ico ico-warning"></div>
-			<div class="text">${str}</div>
-		</div>');
-
 		js.Browser.console.error(msg);
 
-		globalMessage(e, timeoutSeconds);
+		globalMessage(msg, Error, timeoutSeconds);
 	}
 
 	function loadProject() {
@@ -1885,7 +1881,51 @@ class Ide extends hide.tools.IdeData {
 		}
 	}
 
-	public function globalMessage(element: Element, timeoutSeconds : Float = 5.0) {
+	var deduplicateMessages : Map<String, {element: Element, timer: haxe.Timer}> = [];
+
+	public function globalMessage(message: String, kind: MessageKind, timeoutSeconds : Float = 5.0) {
+		var str = StringTools.htmlEscape(Std.string(message));
+		str = StringTools.replace(str, "\n", "<br/>");
+
+		var element = switch(kind) {
+			case Info:
+				new Element('
+				<div class="message">
+					<div class="icon ico ico-info-circle"></div>
+					<div class="text">${str}</div>
+				</div>');
+			case Error:
+				new Element('
+				<div class="message error">
+					<div class="icon ico ico-warning"></div>
+					<div class="text">${str}</div>
+				</div>');
+		}
+
+		final mergeMessageDelayMs = 200;
+
+		function timeMessage(element: Element) {
+			var timer = haxe.Timer.delay(() -> {
+				deduplicateMessages.remove(str);
+				haxe.Timer.delay(() -> {
+					element.get(0).ontransitionend = function(_){
+						element.remove();
+					};
+					element.removeClass("show");
+				}, Std.int(timeoutSeconds * 1000.0 - mergeMessageDelayMs));
+			}, mergeMessageDelayMs);
+			deduplicateMessages.set(str, {element: element, timer: timer});
+		}
+
+		var prev = deduplicateMessages.get(str);
+		// if there is already a message with the same message as ours, restart it
+		if (prev != null) {
+			prev.timer.stop();
+			deduplicateMessages.remove(str);
+			timeMessage(prev.element);
+			return;
+		}
+
 		var body = new Element('body');
 		var messages = body.find("#message-container");
 		if (messages.length == 0) {
@@ -1894,35 +1934,18 @@ class Ide extends hide.tools.IdeData {
 		}
 
 		messages.append(element);
-		// envie de prendre le raccourci vers le rez de chaussée la
 
 		haxe.Timer.delay(() -> {
 			element.addClass("show");
 		}, 10);
 
-		if (timeoutSeconds > 0.0) {
-			haxe.Timer.delay(() -> {
-				element.get(0).ontransitionend = function(_){
-					element.remove();
-				};
-				element.removeClass("show");
-
-			}, Std.int(timeoutSeconds * 1000.0));
-		}
+		timeMessage(element);
 	}
 
 	public function quickMessage( text : String, timeoutSeconds : Float = 5.0 ) {
-		var str = StringTools.htmlEscape(text);
-		str = StringTools.replace(str, "\n", "<br/>");
-		var e = new Element('
-		<div class="message">
-			<div class="icon ico ico-info-circle"></div>
-			<div class="text">${str}</div>
-		</div>');
-
 		js.Browser.console.log(text);
 
-		globalMessage(e, timeoutSeconds);
+		globalMessage(text, Info, timeoutSeconds);
 	}
 
 	public function message( text : String ) {
