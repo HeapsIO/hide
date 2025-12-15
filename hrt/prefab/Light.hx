@@ -427,19 +427,23 @@ class Light extends Object3D {
 			}
 		}
 
-		cookiePathEl?.onValueChange = (_) -> {
-			#if editor
-			cookieTex = loadTextureCustom(this.cookiePath, cookieTex, Clamp);
-			#end
+		if (cookiePathEl != null) {
+			cookiePathEl.onValueChange = (_) -> {
+				#if editor
+				cookieTex = loadTextureCustom(this.cookiePath, cookieTex, Clamp);
+				#end
+			}
 		}
 
-		samplingModeSel?.onValueChange = (_) -> {
-			switch (shadows.samplingMode.kind) {
-				case None: shadows.samplingMode = cast { kind : None };
-				case PCF: shadows.samplingMode = cast { kind : PCF, quality : 1, scale : 1.0, bias : 0.1 };
-				case ESM: shadows.samplingMode = cast { kind : ESM, power : 30, bias : 0.1 };
+		if (samplingModeSel != null) {
+			samplingModeSel.onValueChange = (_) -> {
+				switch (shadows.samplingMode.kind) {
+					case None: shadows.samplingMode = cast { kind : None };
+					case PCF: shadows.samplingMode = cast { kind : PCF, quality : 1, scale : 1.0, bias : 0.1 };
+					case ESM: shadows.samplingMode = cast { kind : ESM, power : 30, bias : 0.1 };
+				}
+				ctx.rebuildInspector();
 			}
-			ctx.rebuildInspector();
 		}
 	}
 
