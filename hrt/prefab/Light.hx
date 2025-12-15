@@ -80,7 +80,7 @@ class Light extends Object3D {
 
 	// Cascade
 	@:s public var cascade : Bool = false;
-	@:s public var cascadeNbr : Int = 1;
+	@:s public var cascadeNbr : Int = 0;
 	@:s public var cascadePow : Float = 2;
 	@:s public var firstCascadeSize : Float = 10;
 	@:s public var minPixelSize : Int = 1;
@@ -317,6 +317,128 @@ class Light extends Object3D {
 		// no "Mixed" in editor
 		if( light != null && light.shadows.mode == Mixed ) light.shadows.mode = Dynamic;
 		#end
+	}
+
+
+	override function edit2(ctx:hrt.prefab.EditContext2) {
+		super.edit2(ctx);
+
+		function refresh(_:Bool) {
+			ctx.rebuildPrefab(this);
+			ctx.rebuildInspector();
+		}
+
+		function addCascade(_:Bool) {
+			if (params.length > cascadeNbr) {
+				params.resize(cascadeNbr);
+			}
+			else {
+				while (params.length < cascadeNbr)
+					params.push({ depthBias: 0.1, slopeBias: 0.1 });
+			}
+
+			ctx.rebuildInspector();
+		}
+
+		var tmp : Dynamic = shadows.samplingMode;
+		ctx.build(
+			<root>
+				<category("Light")>
+					<checkbox field={debugDisplay}/>
+					<checkbox field={isMainLight} label="MainLight"/>
+					<select field={kind} id="lightKind" onValueChange={refresh}/>
+					<color field={color}/>
+					<range(0, 10) field={power}/>
+					<range(0, 1) field={occlusionFactor}/>
+					<block if (kind == Directional)>
+						<range(0, 1000) field={maxDist}/>
+						<range(0, 50) field={maxDist}/>
+						<checkbox field={autoShrink} onValueChange={refresh}/>
+						<checkbox field={autoZPlanes} if (autoShrink)/>
+						<checkbox field={cascade} onValueChange={refresh}/>
+					</block>
+					<block if (kind == Spot)>
+						<range(1, 20) field={range}/>
+						<range(1, 90) field={angle}/>
+						<range(1, 90) field={fallOff}/>
+						<file type={"texture"} field={cookiePath} id="cookiePathEl"/>
+					</block>
+					<block if (kind == Point)>
+						<range(0, 5) field={size}/>
+						<range(1, 20) field={range}/>
+						<range(0.02, 5) field={zNear}/>
+					</block>
+					<block if (kind == Capsule)>
+						<range(0, 5) field={size}/>
+						<range(0, 5) field={length}/>
+						<range(1, 20) field={range}/>
+						<range(0.02, 5) field={zNear}/>
+					</block>
+					<block if (kind == Rectangle)>
+						<range(0, 5) field={width}/>
+						<range(0, 5) field={height}/>
+						<range(1, 90) field={horizontalAngle}/>
+						<range(1, 90) field={verticalAngle}/>
+						<range(1, 90) field={fallOff}/>
+						<range(1, 20) field={range}/>
+					</block>
+				</category>
+				<category("Shadows")>
+					<select field={shadows.mode} onValueChange={refresh}/>
+					<select(["64", "128", "256", "512", "1024", "2048", "4096"]) field={shadows.size}/>
+					<block if (!cascade)>
+						<range(0, 20) label="Blur Radius" field={shadows.radius}/>
+						<range(0, 1) label="Blur Quality" field={shadows.quality}/>
+						<range(0, 1) field={shadows.bias}/>
+					</block>
+					<select field={shadows.samplingMode.kind} id="samplingModeSel"/>
+					<category("ESM") if (shadows.mode != None && shadows.samplingMode.kind == ESM)>
+						<range(0, 50) field={tmp.power}/>
+					</category>
+					<category("PCF") if (shadows.mode != None && shadows.samplingMode.kind == PCF)>
+						<range(0, 1) field={tmp.quality}/>
+						<range(0, 10) field={tmp.scale}/>
+					</category>
+					<category("Cascades") if (cascade && shadows.mode != None)>
+						<range(1, 4) label="Number" field={cascadeNbr} onValueChange={addCascade}/>
+						<range(0, 100) field={minPixelSize}/>
+						<range(5, 100) label="First Cascade Size" field={firstCascadeSize}/>
+						<range(0.1, 10) label="Distribution Power" field={cascadePow}/>
+						<range(-1, 1000) field={castingMaxDist}/>
+						<range(0, 0.3) field={transitionFraction}/>
+						<checkbox field={debugShader}/>
+						<checkbox field={highPrecision}/>
+						<category("Params") id="cascadeParams">
+						</category>
+					</category>
+				</category>
+			</root>
+		);
+
+		if (params.length > 0) {
+			for (n in 0...cascadeNbr) {
+				var cascadeLabel = 'Cascade ${n}';
+				cascadeParams.build(
+					<category(cascadeLabel)>
+						<range(0, 10) field={params[n].depthBias}/>
+						<range(0, 10) field={params[n].slopeBias}/>
+					</category>
+				);
+			}
+		}
+
+		cookiePathEl?.onValueChange = (_) -> {
+			cookieTex = loadTextureCustom(this.cookiePath, cookieTex, Clamp);
+		}
+
+		samplingModeSel?.onValueChange = (_) -> {
+			switch (shadows.samplingMode.kind) {
+				case None: shadows.samplingMode = cast { kind : None };
+				case PCF: shadows.samplingMode = cast { kind : PCF, quality : 1, scale : 1.0, bias : 0.1 };
+				case ESM: shadows.samplingMode = cast { kind : ESM, power : 30, bias : 0.1 };
+			}
+			ctx.rebuildInspector();
+		}
 	}
 
 	#if editor
