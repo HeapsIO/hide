@@ -428,7 +428,9 @@ class Light extends Object3D {
 		}
 
 		cookiePathEl?.onValueChange = (_) -> {
+			#if editor
 			cookieTex = loadTextureCustom(this.cookiePath, cookieTex, Clamp);
+			#end
 		}
 
 		samplingModeSel?.onValueChange = (_) -> {
