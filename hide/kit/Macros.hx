@@ -575,10 +575,14 @@ class Macros {
 				constructors.sort((a,b) -> Reflect.compare(a.index, b.index));
 
 				for (constructor in constructors) {
-					var pak = trueEnum.pack.copy();
-					pak.push(trueEnum.name);
-					pak.push(constructor.name);
-					decls.push(macro {value: $p{pak}, label: $v{camelToSpaceCase(constructor.name)}});
+					var moduleName = trueEnum.module.substring(trueEnum.module.lastIndexOf(".") + 1);
+					var pack = trueEnum.pack.copy();
+					if (moduleName != trueEnum.name) {
+						pack.push(moduleName);
+					}
+					pack.push(trueEnum.name);
+					pack.push(constructor.name);
+					decls.push(macro {value: $p{pack}, label: $v{camelToSpaceCase(constructor.name)}});
 				}
 			default:
 				return macro {};
