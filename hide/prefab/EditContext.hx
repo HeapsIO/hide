@@ -199,10 +199,6 @@ class HideJsEditContext2 extends hrt.prefab.EditContext2 {
 		return ctx.scene.s3d;
 	}
 
-	public function getScene2d() : h2d.Scene {
-		return ctx.scene.s2d;
-	}
-
 	public function getCameraController3d():hide.view.CameraController.CameraControllerBase {
 		return ctx.scene.editor.cameraController;
 	}
@@ -248,10 +244,6 @@ class HideJsEditContext2 extends hrt.prefab.EditContext2 {
 
 	public function quickError(message: String) {
 		Ide.inst.quickError(message);
-	}
-
-	public function setTool(tool:hrt.prefab.EditContext2.EditorTool, unique:Bool = true) {
-
 	}
 }
 

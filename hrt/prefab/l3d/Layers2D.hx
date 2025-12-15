@@ -141,20 +141,6 @@ class Layer2DRFX extends hrt.prefab.rfx.RendererFX {
 
 }
 
-@:access(hrt.prefab.l3d.Layers2D)
-class Layers2DTool extends hrt.prefab.editor.Tool {
-	var layers: Layers2D;
-	public function new(ctx: EditContext2, layers: Layers2D) {
-		super(ctx);
-		this.layers = layers;
-		this.mouseSupport = true;
-	}
-
-
-
-}
-
-
 @:allow(hrt.prefab.l3d)
 class Layers2D extends hrt.prefab.Object3D {
 
