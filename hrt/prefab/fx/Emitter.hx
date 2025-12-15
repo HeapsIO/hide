@@ -2201,7 +2201,7 @@ class Emitter extends Object3D {
 	}
 	#end
 
-	static var _ = Prefab.register("emitter3D", Emitter);
+	static var _ = Prefab.register("emitter", Emitter);
 
 }
 
