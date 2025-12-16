@@ -66,12 +66,9 @@ class MeshSprayObject extends Spray.SprayObject {
 			b.begin();
 		}
 
-		if (editChildren)
-			return;
-
 		for( c in children ) {
 			c.culled = false;
-			if( c.alwaysSyncAnimation ) continue;
+			if( c.alwaysSyncAnimation || editChildren) continue;
 			var m = Std.downcast(c, h3d.scene.Mesh);
 			if( m == null || !Std.isOfType(m.primitive, h3d.prim.MeshPrimitive) ) continue;
 
@@ -108,6 +105,7 @@ class MeshSpray extends Spray {
 
 	@:s var split : Int;
 	@:s var binaryStorage : Bool = false;
+	@:s var editChildren = false; // We assume that editChildren can't be activated when binary storage is activated
 
 	var binaryMeshes : Array<{ path : String, x : Float, y : Float, z : Float, rotX : Float, rotY : Float, rotZ : Float, scale : Float }>;
 
@@ -145,6 +143,46 @@ class MeshSpray extends Spray {
 			}
 		} catch( e : haxe.io.Eof ) {
 		}
+	}
+
+	function convertDataFromBinary() {
+		#if editor
+		if (binaryMeshes == null)
+			return;
+
+		// Delete dat files
+		var path = hide.Ide.inst.getPath(shared.getPrefabDatPath("content", "dat", name));
+		var prefabPath = shared.getFolderDatPath();
+		prefabPath = hide.Ide.inst.getPath(prefabPath.substring(0, prefabPath.length - 1));
+		var folderPath = prefabPath + '/${name}';
+		folderPath = hide.Ide.inst.getPath(folderPath);
+		if (sys.FileSystem.exists(path))
+			sys.FileSystem.deleteFile(path);
+		if (sys.FileSystem.readDirectory(folderPath).length == 0)
+			sys.FileSystem.deleteDirectory(folderPath);
+		if (sys.FileSystem.readDirectory(prefabPath).length == 0)
+			sys.FileSystem.deleteDirectory(prefabPath);
+
+		// Add models to the scene
+		for (binModel in binaryMeshes) {
+			var model = new Model(this, this.shared);
+			model.name = binModel.path.substring(binModel.path.lastIndexOf('/') + 1, );
+			model.name = model.name.substr(0, model.name.length - 4);
+			model.source = binModel.path;
+			model.x = binModel.x;
+			model.y = binModel.y;
+			model.z = binModel.z;
+			model.rotationX = binModel.rotX;
+			model.rotationY = binModel.rotY;
+			model.rotationZ = binModel.rotZ;
+			model.scaleX = model.scaleY = model.scaleZ = binModel.scale;
+			this.shared.current3d = this.local3d;
+			model.make();
+			sceneEditor.refreshInteractive(model);
+		}
+
+		binaryMeshes = [];
+		#end
 	}
 
 	#if !editor
@@ -295,8 +333,6 @@ class MeshSpray extends Spray {
 
 	#else
 
-	@:s var editChildren = false;
-
 	var binaryChanged : Bool = false;
 
 	var MESH_SPRAY_CONFIG_FILE = "meshSprayProps.json";
@@ -350,8 +386,11 @@ class MeshSpray extends Spray {
 
 	override function updateInstance(?propName) {
 		cast(local3d, MeshSprayObject).editChildren = editChildren;
-		if ( editChildren)
-			locked = false;
+		if (propName == "binaryStorage") {
+			if (!binaryStorage)
+				convertDataFromBinary();
+		}
+
 		cast(local3d, MeshSprayObject).redraw();
 		super.updateInstance(propName);
 	}
@@ -1021,13 +1060,17 @@ class MeshSpray extends Spray {
 		<div class="group" name="Extra">
 		<dl>
 			<dt>Split</dt><dd><input type="range" min="0" max="2048" field="split"/></dd>
-			<dt>Binary Storage</dt><dd><input type="checkbox" field="binaryStorage" ${binaryStorage?"disabled":""}/></dd>
-			<dt>Edit children</dt><dd><input type="checkbox" field="editChildren"}/></dd>
+			<dt>Binary Storage</dt><dd><input type="checkbox" field="binaryStorage"/></dd>
+			<dt>Edit children</dt><dd><input type="checkbox" field="editChildren" ${binaryStorage ? "disabled" : ""}}/></dd>
 		</dl>
 		</div>'), this, function(pname: String) {
 			if (pname == "editChildren") {
+				ectx.scene.editor.setLock([this], !editChildren, false);
+				ectx.scene.editor.refreshInteractive(this);
 				ectx.scene.editor.sceneTree.refreshItem(this);
 			}
+
+			updateInstance(pname);
 		});
 	}
 
