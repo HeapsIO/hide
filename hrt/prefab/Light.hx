@@ -80,7 +80,7 @@ class Light extends Object3D {
 
 	// Cascade
 	@:s public var cascade : Bool = false;
-	@:s public var cascadeNbr : Int = 0;
+	@:s public var cascadeNbr : Int = 1;
 	@:s public var cascadePow : Float = 2;
 	@:s public var firstCascadeSize : Float = 10;
 	@:s public var minPixelSize : Int = 1;
