@@ -138,11 +138,13 @@ class CollisionSettings {
 				return parentObj;
 
 			case Shapes:
-				var parentObj = new h3d.scene.Object();
+				var root = new h3d.scene.Object();
+				var defaultTransformObj = new h3d.scene.Object(root);
+				defaultTransformObj.defaultTransform = mesh.defaultTransform?.getInverse();
 				for (s in toShapeEditor())
-					hide.comp.ShapeEditor.getInteractive(s, false, parentObj);
+					hide.comp.ShapeEditor.getInteractive(s, false, defaultTransformObj);
 
-				return parentObj;
+				return root;
 
 			default:
 				null;
@@ -237,7 +239,6 @@ class ModelSceneEditor extends hide.comp.SceneEditor {
 
 				newCol.addChild(debug);
 				debug.follow = obj;
-				debug.defaultTransform = obj.defaultTransform?.getInverse();
 
 				var colliderColor = 0x55FFFFFF;
 				var intersectionColor = 0x55FF0000;
