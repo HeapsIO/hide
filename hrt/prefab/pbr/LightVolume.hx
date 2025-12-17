@@ -207,6 +207,17 @@ class LightVolume extends Object3D {
 		lvo.shader.opacity = opacity;
 	}
 
+	override function edit2( ctx : hrt.prefab.EditContext2 ) {
+		super.edit2(ctx);
+		ctx.build(
+			<category("Fog")>
+				<checkbox label="USE SHADOW MAP" field={USE_SHADOW_MAP}/>
+				<range(0, 1) field={opacity}/>
+				<range(0.2, 4) field={fallOff}/>
+			</category>
+		);
+	}
+
 	#if editor
 
 	override function edit( ctx : hide.prefab.EditContext ) {
