@@ -171,6 +171,33 @@ class RelativeTransformSimulation extends SimulationShader {
 		updateInstance();
 	}
 
+	override function edit2( ctx : hrt.prefab.EditContext2 ) {
+		ctx.build(
+			<category("Simulation")>
+				<line label="Position">
+					<slider field={x}/>
+					<slider field={y}/>
+					<slider field={z}/>
+				</line>
+				<slider-group label="Scale">
+					<slider label="X" field={scaleX}/>
+					<slider label="Y" field={scaleY}/>
+					<slider label="Z" field={scaleZ}/>
+				</slider-group>
+				<line label="Rotation">
+					<slider label="X" field={rotX}/>
+					<slider label="Y" field={rotY}/>
+					<slider label="Z" field={rotZ}/>
+				</line>
+				<line label="Speed">
+					<slider label="X" field={speedX}/>
+					<slider label="Y" field={speedY}/>
+					<slider label="Z" field={speedZ}/>
+				</line>
+			</category>
+		);
+	}
+
 	#if editor
 	override function edit( ctx : hide.prefab.EditContext ) {
 		ctx.properties.add(new hide.Element('
