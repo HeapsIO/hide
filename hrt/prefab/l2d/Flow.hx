@@ -45,6 +45,82 @@ class Flow extends Object2D {
 		}
 	}
 
+	override function edit2( ctx : hrt.prefab.EditContext2 ) {
+		super.edit2(ctx);
+
+		ctx.build(
+			<category("Parameters")>
+				<line label="Horizontal Align">
+					<button("Left") id="hLeftBtn"/>
+					<button("Center") id="hCenterBtn"/>
+					<button("Right") id="hRightBtn"/>
+				</line>
+				<line label="Vertical Align">
+					<button("Top") id="vTopBtn"/>
+					<button("Center") id="vCenterBtn"/>
+					<button("Bottom") id="vBottomBtn"/>
+				</line>
+				<range(0, 500) field={height}/>
+				<range(0, 500) field={width}/>
+			</category>
+		);
+
+		function updateHorizontalBtn() {
+			hLeftBtn.disabled = false;
+			hCenterBtn.disabled = false;
+			hRightBtn.disabled = false;
+			switch( hAlign ) {
+				case 1: hCenterBtn.disabled = true;
+				case 2: hRightBtn.disabled = true;
+				default: hLeftBtn.disabled = true;
+			}
+		}
+		hLeftBtn.onClick = function() {
+			hAlign = 0;
+			updateHorizontalBtn();
+			updateInstance("hAlign");
+		}
+		hCenterBtn.onClick = function() {
+			hAlign = 1;
+			updateHorizontalBtn();
+			updateInstance("hAlign");
+		}
+		hRightBtn.onClick = function() {
+			hAlign = 2;
+			updateHorizontalBtn();
+			updateInstance("hAlign");
+		}
+
+		inline function updateVerticalBtn() {
+			vTopBtn.disabled = false;
+			vCenterBtn.disabled = false;
+			vBottomBtn.disabled = false;
+			switch( vAlign ) {
+				case 1: vCenterBtn.disabled = true;
+				case 2: vBottomBtn.disabled = true;
+				default: vTopBtn.disabled = true;
+			}
+		}
+		vTopBtn.onClick = function() {
+			vAlign = 0;
+			updateVerticalBtn();
+			updateInstance("vAlign");
+		}
+		vCenterBtn.onClick = function() {
+			vAlign = 1;
+			updateVerticalBtn();
+			updateInstance("vAlign");
+		}
+		vBottomBtn.onClick = function() {
+			vAlign = 2;
+			updateVerticalBtn();
+			updateInstance("vAlign");
+		}
+
+		updateHorizontalBtn();
+		updateVerticalBtn();
+	}
+
 	#if editor
 
 	override function edit( ctx : hide.prefab.EditContext ) {
