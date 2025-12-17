@@ -123,7 +123,7 @@ class List<T> extends Widget<Array<T>> {
 			var content = new Element(this, 'item_content_$i');
 			makeLine(header, content, item, i);
 
-			var headerString = '<kit-line><kit-label class="first"><kit-image draggable="true" data-id="$i" class="drag" style="background-image: url(\'res/icons/svg/drag.svg\')"></kit-image>$i</kit-label><kit-div class="header-content"></kit-div><kit-button class="square"><kit-image style="background-image: url(\'res/icons/svg/substract.svg\')"/></kit-button></kit-line>';
+			var headerString = '<kit-line><kit-label class="first"><kit-image draggable="true" data-id="$i" class="drag" style="background-image: url(\'res/icons/svg/drag.svg\')"></kit-image>$i</kit-label><kit-div class="header-content"></kit-div><kit-button class="square btn-remove"><kit-image style="background-image: url(\'res/icons/svg/substract.svg\')"/></kit-button></kit-line>';
 
 			var itemElement = if (content.children.length == 0) {
 				new hide.Element('
@@ -171,7 +171,7 @@ class List<T> extends Widget<Array<T>> {
 			header.target = itemElement.querySelector(".header-content");
 			header.make(false);
 
-			var removeButton = itemElement.querySelector("kit-button");
+			var removeButton = itemElement.querySelector(".btn-remove");
 
 			removeButton.onclick = (e) -> {
 				parent?.change(() -> {

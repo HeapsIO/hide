@@ -36,6 +36,14 @@ typedef ListItem = {
 	name: String,
 }
 
+class KitTestTool1 extends hrt.prefab.editor.Tool {
+
+}
+
+class KitTestTool2 extends hrt.prefab.editor.Tool {
+
+}
+
 class KitTest extends Object3D {
 
 	override function makeObject(parent3d: h3d.scene.Object) : h3d.scene.Object {
@@ -165,6 +173,18 @@ class KitTest extends Object3D {
 		for (i in 0...3) {
 			addToMe.build(<button({'$i';}) id="button"/>, null);
 			button.onClick = () -> trace('onclick $i');
+		}
+
+		// TOOLS
+		{
+			var tool1 = new KitTestTool1(ctx);
+			var tool2 = new KitTestTool2(ctx);
+			ctx.build(
+				<category("Tools")>
+					<button("Tool 1") onClick={tool1.enter} />
+					<button("Tool 2") onClick={tool2.enter} />
+				</category>
+			);
 		}
 
 		// GENERAL API

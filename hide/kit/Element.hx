@@ -457,13 +457,30 @@ class Element {
 	}
 
 	/**
-		Find the child of this element that has the given id. Not reccursive
+		Find the child of this element that has the given id. Not recursive
 	**/
 	function getChildById(id: String) : Element {
 		for (child in children) {
 			if (child.id == id) {
 				return child;
 			}
+		}
+		return null;
+	}
+
+	/**
+		Find the first element that has the given id in this element children, recursive
+	**/
+	public function getById<T:Element>(id: String, ?cl: Class<T>) : T {
+		for (child in children) {
+			if (child.id == id) {
+				var asCl = cl != null ? Std.downcast(child, cl) : cast child;
+				if (asCl != null)
+					return asCl;
+			}
+			var found = child.getById(id);
+			if (found != null)
+				return found;
 		}
 		return null;
 	}
@@ -482,8 +499,8 @@ class Element {
 	}
 	#end
 
-	public macro function build(ethis: haxe.macro.Expr, dml: haxe.macro.Expr, ?contextObj: haxe.macro.Expr) : haxe.macro.Expr {
-		return hide.kit.Macros.build(ethis, dml, contextObj);
+	public macro function build(ethis: haxe.macro.Expr, dml: haxe.macro.Expr, ?contextObj: haxe.macro.Expr, ?onAnyChange: haxe.macro.Expr.ExprOf<(isTemp:Bool) -> Void>) : haxe.macro.Expr {
+		return hide.kit.Macros.build(ethis, dml, contextObj, onAnyChange);
 	}
 }
 

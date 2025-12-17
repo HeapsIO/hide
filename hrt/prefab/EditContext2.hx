@@ -10,6 +10,7 @@ enum SettingCategory {
 }
 
 @:allow(hide.kit.Element)
+@:allow(hrt.prefab.editor.Tool)
 abstract class EditContext2 {
 	var parent : EditContext2 = null;
 
@@ -21,6 +22,15 @@ abstract class EditContext2 {
 	#if domkit
 	public var root: hide.kit.KitRoot;
 	#end
+
+	public var s3d(get, never): h3d.scene.Scene;
+	public var s2d(get, never): h2d.Scene;
+
+	function get_s3d() {return getScene3d();}
+	function get_s2d() {return getScene2d();}
+
+	public var foregroundEditorTool: hrt.prefab.editor.Tool;
+	public var otherEditorTools: Array<hrt.prefab.editor.Tool> = [];
 
 	/**
 		Request the inspector to be rebuild, resulting in edit2 to be called again
@@ -41,6 +51,11 @@ abstract class EditContext2 {
 		Return the scene3d of the current editor
 	**/
 	public abstract function getScene3d() : h3d.scene.Scene;
+
+	/**
+		Return the scene2d of the current editor
+	**/
+	public abstract function getScene2d() : h2d.Scene;
 
 	/**
 		Return the camera controller of the current editor
@@ -66,17 +81,33 @@ abstract class EditContext2 {
 	**/
 	public abstract function quickError(message: String) : Void;
 
-	abstract function recordUndo(callback: (isUndo: Bool) -> Void ) : Void;
+	public abstract function screenToGround(sx: Float, sy: Float, ?paintOn : hrt.prefab.Prefab, ignoreTerrain: Bool = false) : h3d.Vector;
+
+	public abstract function recordUndo(callback: (isUndo: Bool) -> Void ) : Void;
+
 	abstract function saveSetting(category: SettingCategory, key: String, value: Dynamic) : Void;
 	abstract function getSetting(category: SettingCategory, key: String) : Null<Dynamic>;
 
 	abstract function getRootObjects3d() : Array<h3d.scene.Object>;
 
+
+	function cleanup() {
+		quitAllEditors();
+	}
+
+	function quitAllEditors() {
+		foregroundEditorTool?.quit();
+
+		for (tool in otherEditorTools.copy()) {
+			tool.quit();
+		}
+	}
+
 	#end
 
 	#if domkit
-	public macro function build(ethis: haxe.macro.Expr, dml: haxe.macro.Expr, ?contextObj: haxe.macro.Expr) : haxe.macro.Expr {
-		return hide.kit.Macros.build(macro $ethis.root, dml, contextObj);
+	public macro function build(ethis: haxe.macro.Expr, dml: haxe.macro.Expr, ?contextObj: haxe.macro.Expr, ?onAnyChange: haxe.macro.Expr.ExprOf<(isTemp:Bool) -> Void>) : haxe.macro.Expr {
+		return hide.kit.Macros.build(macro $ethis.root, dml, contextObj, onAnyChange);
 	}
 	#end
 

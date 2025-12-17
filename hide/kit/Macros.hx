@@ -13,6 +13,7 @@ typedef BuildExprArgs = {
 	globalElements: Array<Var>,
 	markup: domkit.MarkupParser.Markup,
 	outputExprs: Array<Expr>,
+	?onAnyChange: haxe.macro.Expr.ExprOf<(isTemp:Bool) -> Void>
 };
 #end
 
@@ -52,10 +53,10 @@ class Macros {
 	}
 
 	#if macro
-	public static function build(parentElement: Expr, dml: Expr, ?contextObj: Expr) : Expr {
+	public static function build(parentElement: Expr, dml: Expr, ?contextObj: Expr, ?onAnyChange: haxe.macro.Expr.ExprOf<(isTemp:Bool) -> Void>) : Expr {
 		#if domkit
 		try {
-			return buildDml(dml, contextObj, parentElement);
+			return buildDml(dml, contextObj, parentElement, onAnyChange);
 		}
 		catch (e : domkit.Error) {
 			haxe.macro.Context.error(e.message, @:privateAccess domkit.Macros.makePos(dml.pos,e.pmin,e.pmax));
@@ -64,7 +65,7 @@ class Macros {
 		return macro {};
 	}
 
-	static function buildDml(dml: Expr, ?contextObj: Expr, parentElement: Expr) : Expr {
+	static function buildDml(dml: Expr, ?contextObj: Expr, parentElement: Expr, ?onAnyChange: haxe.macro.Expr.ExprOf<(isTemp:Bool) -> Void>) : Expr {
 		#if domkit
 		switch (dml.expr) {
 			case EMeta({name :":markup"} ,{expr: EConst(CString(dmlString))}): {
@@ -81,12 +82,17 @@ class Macros {
 					}
 				}
 
+				if (onAnyChange?.expr.match(EConst(CIdent("null")))) {
+					onAnyChange = null;
+				}
+
 				var args : BuildExprArgs = {
 					markup: markup,
 					outputExprs: [],
 					parent: parentElement,
 					contextObj: contextObj,
 					globalElements: [],
+					onAnyChange: onAnyChange,
 				}
 
 
@@ -318,6 +324,19 @@ class Macros {
 					}
 					block.push({expr: EBinop(OpAssign, elementExpr, newExpr), pos: pos});
 
+					if (args.onAnyChange != null) {
+						var curClass = classType;
+						while(curClass != null) {
+							if (curClass.name == "Widget") {
+								block.push(macro $elementExpr.onValueChange = ${args.onAnyChange});
+								break;
+							} else if (curClass.name =="Button") {
+								block.push(macro $elementExpr.onClick = ${args.onAnyChange}.bind(false));
+								break;
+							}
+							curClass = curClass.superClass?.t.get();
+						}
+					}
 
 					for (attribute in fieldsAttributes) {
 						var attributePos = makePos(globalPos, attribute.pmin, attribute.pmax);
@@ -450,6 +469,7 @@ class Macros {
 							markup: childMarkup,
 							globalElements: args.globalElements,
 							contextObj: args.contextObj,
+							onAnyChange: args.onAnyChange,
 						};
 
 						buildExpr(childrenArgs);

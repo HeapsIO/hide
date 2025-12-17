@@ -986,6 +986,7 @@ class SceneEditor {
 	public var properties : hide.comp.PropsEditor;
 
 	public var curEdit(default, null) : SceneEditorContext;
+	public var curEdit2(default, null) : hide.prefab.EditContext.HideJsEditContext2;
 	public var snapToGround = false;
 
 	public var snapToggle = false;
@@ -4138,6 +4139,8 @@ class SceneEditor {
 			scene.setCurrent();
 			if( curEdit != null )
 				curEdit.cleanup();
+			if (curEdit2 != null )
+				@:privateAccess curEdit2.cleanup();
 			var edit = makeEditContext(elts);
 
 			var doRefreshRenderProps = false;
@@ -4219,6 +4222,7 @@ class SceneEditor {
 					}
 
 					var ectx2 = new hide.prefab.EditContext.HideJsEditContext2(null, edit);
+					curEdit2 = ectx2;
 
 					var baseRoot = new hide.kit.KitRoot(null, null, proxyPrefab, ectx2);
 					@:privateAccess baseRoot.isMultiEdit = isMultiEdit;
