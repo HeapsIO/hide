@@ -36,6 +36,17 @@ class SphereSpawn extends SpawnShader {
 		sh.maxRadius = maxRadius;
 	}
 
+	override function edit2( ctx : hrt.prefab.EditContext2 ) {
+		ctx.build(
+			<category("Spawn")>
+				<line label="Radius">
+					<range(0.1, 10) label="Min" field={minRadius}/>
+					<range(0.1, 10) label="Max" field={maxRadius}/>
+				</line>
+			</category>
+		);
+	}
+
 	#if editor
 	override function edit( ctx : hide.prefab.EditContext ) {
 		ctx.properties.add(new hide.Element('
