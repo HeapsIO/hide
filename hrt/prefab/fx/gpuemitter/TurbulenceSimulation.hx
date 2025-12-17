@@ -66,7 +66,7 @@ class TurbulenceSimulationShader extends ComputeUtils {
 
 class TurbulenceSimulation extends SimulationShader {
 	static var noiseTex : h3d.mat.Texture;
-	
+
 	@:s var intensity : Float = 1.0;
 	@:s var octaves : Int = 2;
 	@:s var noiseScale : Float = 1.0;
@@ -115,6 +115,24 @@ class TurbulenceSimulation extends SimulationShader {
 		sh.innerTurmoil = innerTurmoil;
 		sh.lacunarity = lacunarity;
 		sh.persistence = persistence;
+	}
+
+	override function edit2( ctx : hrt.prefab.EditContext2 ) {
+		ctx.build(
+			<category("Simulation")>
+				<range(0, 5) field={intensity}/>
+				<range(1, 4) field={octaves}/>
+				<range(0, 1) field={noiseScale}/>
+				<line label="Noise speed">
+					<range(-1, 1) label="X" field={scrollSpeedX}/>
+					<range(-1, 1) label="Y" field={scrollSpeedY}/>
+					<range(-1, 1) label="Z" field={scrollSpeedZ}/>
+				</line>
+				<range(0, 1) label="Turmoil" field={innerTurmoil}/>
+				<range(0, 2) field={lacunarity}/>
+				<range(0, 1) field={persistence}/>
+			</category>
+		);
 	}
 
 	#if editor
