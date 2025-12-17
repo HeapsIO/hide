@@ -109,6 +109,31 @@ class Anisotropy extends Prefab {
 		}
 	}
 
+	override function edit2( ctx : hrt.prefab.EditContext2 ) {
+		super.edit2(ctx);
+
+		function rebuild( isTemp : Bool){
+			ctx.rebuildInspector();
+			refreshShaders();
+		}
+
+		ctx.build(
+			<root>
+				<category("Anisotropy")>
+					<select field={mode} onValueChange={rebuild}/>
+					<range(0, 1) field={intensity} if(mode == Flat || mode == Frequency)/>
+					<range(0, 360) field={direction} if(mode == Flat || mode == Frequency)/>
+					<range(0, 1) label="Factor" field={intensityFactor} if(mode == Texture)/>
+					<range(0, 360) field={rotationOffset} if(mode == Texture)/>
+					<texture label="Intensity" field={noiseIntensityPath} if(mode == Texture)/>
+					<texture label="Direction" field={noiseDirectionPath} if(mode == Texture)/>
+					<range(0, 1) field={noiseIntensity} if(mode == Frequency)/>
+					<range(0, 100) field={noiseFrequency} if(mode == Frequency)/>
+				</category>
+			</root>
+		);
+	}
+
 	#if editor
 	override function getHideProps() : hide.prefab.HideProps {
 		return { 	icon : "cube",
