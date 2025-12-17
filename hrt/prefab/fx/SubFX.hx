@@ -68,6 +68,16 @@ class SubFX extends Reference implements hrt.prefab.fx.Event.IEvent{
 		}
 	}
 
+	override function edit2( ctx : hrt.prefab.EditContext2 ) {
+		ctx.build(
+			<category("Event")>
+				<slider field={time}/>
+				<checkbox field={loop}/>
+			</category>
+		);
+		super.edit2(ctx);
+	}
+
 	#if editor
 
 	override function edit( ctx : hide.prefab.EditContext ) {
