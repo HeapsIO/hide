@@ -306,7 +306,7 @@ class Prefab extends hide.view.FileView {
 						</div>
 					</div>
 
-					<div class="props-column">
+					<div class="props-column" style="min-width: 320px">
 						<div class="hide-toolbar">
 							<div class="toolbar-label">
 								<div class="icon ico ico-sitemap"></div>
@@ -340,6 +340,12 @@ class Prefab extends hide.view.FileView {
 		resizablePanel = new hide.comp.ResizablePanel(Horizontal, treeColumn);
 		resizablePanel.saveDisplayKey = "treeColumn";
 		resizablePanel.onResize = () -> @:privateAccess if( scene.window != null) scene.window.checkResize();
+
+		var propsColumn = element.find(".props-column").first();
+		var resizablePanel2 = new hide.comp.ResizablePanel(Horizontal, propsColumn);
+		resizablePanel2.saveDisplayKey = "propsColunm";
+		resizablePanel2.onResize = () -> @:privateAccess if( scene.window != null) scene.window.checkResize();
+
 
 		sceneEditor.sceneTree.element.addClass("small");
 		sceneEditor.renderPropsTree.element.addClass("small");

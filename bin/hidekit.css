@@ -21,6 +21,9 @@
   border-right: 1px solid #444;
   min-height: 100%;
 }
+.tree-column .props-column:has(kit-root) {
+  width: 100% !important;
+}
 kit-root .is-cdb-editor {
   margin: 2px;
   margin-top: 2px !important;
