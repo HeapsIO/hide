@@ -14,7 +14,7 @@ class Category extends Widget<Null<Bool>> {
 
 	public function new(parent: Element, id: String, name: String) : Void {
 		this.name = name;
-		super(parent, name);
+		super(parent, id);
 	}
 
 	#if js
