@@ -81,7 +81,8 @@ class Slider<T:Float> extends Widget<T> {
 		slider = js.Browser.document.createInputElement();
 		container.append(slider);
 
-		slider.title = "Shift : Precise movement\nCtrl : Fast Movement";
+		if (tooltip == null)
+			slider.title = "Shift : Precise movement\nCtrl : Fast Movement";
 
 		var capture = false;
 		var hasMoved = false;

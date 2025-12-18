@@ -157,6 +157,15 @@ class KitTest extends Object3D {
 				<slider label="Value" field={props.float}/>
 				<button("Delete Value") id="delete"/>
 
+				<category("Tooltips") tooltip="This is a category for tooltips">
+					<text("I have a tooltip") tooltip="This is the tooltip"/>
+					<slider value={0} tooltip="This is a slider"/>
+					<line tooltip="This is the line tooltip">
+						<slider value={0} tooltip="This is the slider A tooltip"/>
+						<slider value={0} tooltip="This is the slider B tooltip"/>
+					</line>
+				</category>
+
 			</category>);
 
 		delete.onClick = () -> {

@@ -18,6 +18,7 @@ package hide.kit;
 					<category("B")/>
 				</root>
 			);
+	- An optional onChange callback can be passed as the 3rd argument to ctx.build. If set, this function will be bound to all the onValueChange / onClick functions of the widgets in this ctx.build
 
 	- `<div class="Group" name="Reference></div>` -> `<category("Reference")></category>`
 	- `<dl></dl>` -> Nothing (this syntax is not needed anymore)
@@ -30,6 +31,7 @@ package hide.kit;
 		`<input type="text">` -> `<input/>`
 		`<select></select>` -> `<select(["Choice 1", "Choice 2"])/>`
 			Note : the option list can either be a string or an Array<{value: Dynamic, label: String}>. A string array will automatically be converted in a value/label string using the string as the value and the label. The widget `value` will be equal to the `value` of the currently selected item
+			Additionally, if the field is an enum, a list of values generated from the enum possible values is generated automatically if you don't supply an option list
 		`<input type="texturepath"/>` -> `<file type="texture">` if you don't want to support gratiend (95% of non shader use-cases), otherwise use a `<texture/>`
 		`<input type="fileselect" extensions="..."/>` -> `<file type="type_name"/>` The list of allowed type can be found in hide.kit.File.types, you can add more types to the list if needed
 		`<p>Info message</p>` -> `<text("Info message")/>`
@@ -39,6 +41,7 @@ package hide.kit;
 		`shaded.editor.refreshInteractive(this)` -> `ctx.rebuildPrefab(this)`;
 		`shaded.editor.refreshTree(All)` -> `ctx.rebuildTree(this)`;
 		`ctx.rebuildPrefab(this)` -> `ctx.rebuildPrefab(this)`;
+		`<input title="Tooltip"/>` -> `<element tooltip="Tooltip"/>`
 		Callbacks bound in the onChange function should be bound on the relevant widget onValueChange instead
 	**/
 
@@ -59,6 +62,11 @@ class Element {
 		If set, the element will take width units of space in its line
 	**/
 	public var width : Null<Int> = null;
+
+	/**
+		If set, add a tooltip on hover for this element
+	**/
+	public var tooltip : String = null;
 
 
 	/**
@@ -137,6 +145,12 @@ class Element {
 		disabled = disabled;
 
 		makeChildren();
+
+		#if js
+		if (native != null && tooltip != null) {
+			native.title = tooltip;
+		}
+		#end
 	}
 
 	function makeChildren() {
