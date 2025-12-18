@@ -177,6 +177,7 @@ kit-root .detached .is-cdb-editor {
     margin: 2px;
     width: 12px;
     height: 12px;
+    position: absolute;
     transition: transform 0.2s;
     background-color: currentColor;
     mask-image: url("res/icons/svg/right_caret.svg");
@@ -184,6 +185,9 @@ kit-root .detached .is-cdb-editor {
     mask-repeat: no-repeat;
     mask-size: contain;
     pointer-events: all;
+  }
+  :scope kit-collapse-line.no-collapse > kit-line::before {
+    display: none;
   }
   :scope kit-collapse-line.open > kit-line::before {
     transform: rotate(90deg);

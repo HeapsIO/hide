@@ -3,6 +3,8 @@ package hide.kit;
 #if domkit
 
 class List<T> extends Widget<Array<T>> {
+	public var noCollapse = false;
+
 	var openState : Bool;
 
 	#if js
@@ -33,6 +35,7 @@ class List<T> extends Widget<Array<T>> {
 		}
 
 		#if js
+
 		native = new hide.Element('
 			<kit-collapse-line>
 				<kit-line><kit-label class="first">$label</kit-label><kit-text class="info"></kit-text><kit-button class="add square"><kit-image style="background-image: url(\'res/icons/svg/add.svg\')"/></kit-button><kit-button class="clear square"><kit-image style="background-image: url(\'res/icons/svg/delete.svg\')"/></kit-button></kit-line>
@@ -48,9 +51,10 @@ class List<T> extends Widget<Array<T>> {
 
 		var line = native.querySelector("kit-line");
 		listElement = native.querySelector("kit-list");
+		native.classList.toggle("no-collapse", noCollapse);
 
 		line.addEventListener("mousedown", (event: js.html.MouseEvent) -> {
-			if (event.button != 0)
+			if (event.button != 0 || noCollapse)
 				return;
 			openState = !openState;
 			saveSetting(SameKind, "openState", openState ? true : null);
@@ -295,7 +299,7 @@ class List<T> extends Widget<Array<T>> {
 
 	function refresh() {
 		#if js
-		native.classList.toggle("open", openState);
+		native.classList.toggle("open", openState || noCollapse);
 		#end
 	}
 

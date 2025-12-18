@@ -252,6 +252,7 @@ kit-root {
 					content: "";
 					margin: 2px;
 					width: 12px; height: 12px;
+					position: absolute;
 
 					transition: transform 0.2s;
 					background-color: currentColor;
@@ -263,6 +264,10 @@ kit-root {
 
 					pointer-events: all;
 				}
+			}
+
+			&.no-collapse > kit-line::before {
+				display: none;
 			}
 
 			&.open>kit-line::before {
