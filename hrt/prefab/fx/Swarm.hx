@@ -492,6 +492,45 @@ class Swarm extends Object3D {
 		swarm.init();
 	}
 
+	override function edit2( ctx : hrt.prefab.EditContext2 ) {
+		ctx.build(
+			<root>
+				<category("Swarm Entities")>
+					<range(1, 100) label="Count" field={numObjects} tooltip="Total number of entities in the swarm"/>
+					<slider label="Random Seed" field={seed} tooltip="Randomize the values of the swarm"/>
+					<range(0.0, 1.0) label="Random Scale" field={randScale} tooltip="Uniform Random scale applied to each entity in the swarm"/>
+
+					<range(0.01, 10.0) field={acceleration} tooltip="The acceleration of an entity"/>
+					<range(0.0, 1.0) field={accelerationRandom} tooltip="Randomly multiply the acceleration of each entity. A value"/>
+					<range(0.0, 1.0) field={accelerationNoise} tooltip="Add a noise to the acceleration"/>
+
+					<range(0.01, 100.0) field={maxSpeed} tooltip="The maximum speed at witch a entity can move"/>
+					<range(0.0, 1.0) field={maxSpeedRandom} tooltip="Randomly multiply the max speed of each entity"/>
+					<range(0.0, 1.0) field={maxSpeedNoise} tooltip="Add a noise to the max speed"/>
+
+					<range(0.01, 10.0) field={braking} tooltip="How much the entity brakes when approaching the target"/>
+					<range(0.01, 10.0) label="Move Sin Amp." field={objectSelfSin} tooltip="Add a sinusoid to the entities movement that scales with the current speed of the entity"/>
+					<range(0.01, 10.0) label="Move Sin Freq." field={objectSelfSinFreq} tooltip="The frequency of the sinusoid that\' added to the movement"/>
+				</category>
+				<category("Targets")>
+					<text("Controls the targets that the entities follow. Each entity has a fixed target that it will try to reach. Use theses settings to add some movement to the targets to randomise the placement of the entities.")/>
+					<range(0.0, 1.0) label="Angle Min/Max" field={sphereAngleRange}/>
+					<range(0.0, 1.0) label="Rand Radius" field={sphereDistanceScale}/>
+
+					<range(-10.0, 10.0) label="Auto Rot." field={baseTargetRotationSpeed} tooltip="Add a rotation to the targets that helps randomize the spread of the entities"/>
+
+					<checkbox label="Align Vel." field={autoTrackRotation} tooltip="Align the targets with the velocity of the swarm target object"/>
+					<range(0.01, 1.0) label="Align Vel. Spd." field={trackRotationSpeed} tooltip="At which speed the targets realign themselves"/>
+
+					<checkbox label="View Targets" field={debugTargets} tooltip="Displays the current position of the targets (editor only)"/>
+				</category>
+				<category("Advanced")>
+					<range(0.01, 10.0) field={noiseSpeed}/>
+				</category>
+			</root>
+		);
+	}
+
 	#if editor
 	override function getHideProps() : hide.prefab.HideProps {
 		return { icon : "random", name : "Swarm" };
