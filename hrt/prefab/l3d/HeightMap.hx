@@ -961,7 +961,7 @@ class HeightMap extends Object3D {
 			header.build(
 				<line full>
 					<checkbox label="" field={tex.enable}/>
-					<texture label="" field={tex.path} onValueChange={(b) -> tex.enable = true}/>
+					<file label="" field={tex.path} type="texture" onValueChange={(b) -> tex.enable = true}/>
 					<select label="" field={tex.kind} onValueChange={(b) -> ctx.rebuildInspector()}/>
 				</line>
 			);

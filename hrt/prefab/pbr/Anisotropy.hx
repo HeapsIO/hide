@@ -125,8 +125,8 @@ class Anisotropy extends Prefab {
 					<range(0, 360) field={direction} if(mode == Flat || mode == Frequency)/>
 					<range(0, 1) label="Factor" field={intensityFactor} if(mode == Texture)/>
 					<range(0, 360) field={rotationOffset} if(mode == Texture)/>
-					<texture label="Intensity" field={noiseIntensityPath} if(mode == Texture)/>
-					<texture label="Direction" field={noiseDirectionPath} if(mode == Texture)/>
+					<file label="Intensity" field={noiseIntensityPath} type="texture" if(mode == Texture)/>
+					<file label="Direction" field={noiseDirectionPath} type="texture" if(mode == Texture)/>
 					<range(0, 1) field={noiseIntensity} if(mode == Frequency)/>
 					<range(0, 100) field={noiseFrequency} if(mode == Frequency)/>
 				</category>
