@@ -541,6 +541,13 @@ enum abstract SplatMode(String) {
 	var I1I2W1W2;
 }
 
+typedef TextureItem = {
+	path : String,
+	kind : HeightMaPTexturePathKind,
+	enable : Bool,
+	?props : { color : Int, scale : Float }
+}
+
 @:allow(hrt.prefab.l3d)
 class HeightMap extends Object3D {
 
@@ -549,7 +556,7 @@ class HeightMap extends Object3D {
 	#end
 	var tilesCache : Map<Int,HeightMapTile> = new Map();
 	var emptyTile : HeightMapTile;
-	@:c var textures : Array<{ path : String, kind : HeightMaPTexturePathKind, enable : Bool, ?props : { color : Int, scale : Float } }> = [];
+	@:c var textures : Array<TextureItem> = [];
 	@:s var size = 128.;
 	@:s var heightScale = 0.2;
 	@:s var heightFlipX = false;
@@ -939,6 +946,96 @@ class HeightMap extends Object3D {
 
 	function getHScale() {
 		return heightScale * size * 0.1;
+	}
+
+	override function edit2( ctx : hrt.prefab.EditContext2 ) {
+		super.edit2(ctx);
+		var hasSplat = false;
+		for( t in textures )
+			if( t.kind == SplatMap ) {
+				hasSplat = true;
+				break;
+			}
+
+		function makeTextureItem( header : hide.kit.Element, content : hide.kit.Element, tex : TextureItem, index : Int ) {
+			header.build(
+				<line full>
+					<checkbox label="" field={tex.enable}/>
+					<texture label="" field={tex.path} onValueChange={(b) -> tex.enable = true}/>
+					<select label="" field={tex.kind} onValueChange={(b) -> ctx.rebuildInspector()}/>
+				</line>
+			);
+
+			if( tex.kind == Albedo ) {
+				if( tex.props == null ) {
+					tex.props = {
+						color : 0xFFFFFF,
+						scale : 1,
+					};
+				}
+				content.build(
+					<root>
+						<range(0, 10) field={tex.props.scale}/>
+						<color field={tex.props.color}/>
+					</root>
+				);
+			} else {
+				if( tex.props != null ) {
+					tex.props = null;
+				}
+			}
+		}
+
+		ctx.build(
+			<root>
+				<category("View")>
+					<range(0, 1000) field={size}/>
+					<range(0, 1) field={heightScale}/>
+					<range(0.1, 1) field={heightPrecision}/>
+					<line label="Height Flip">
+						<checkbox label="X" field={heightFlipX}/>
+						<checkbox label="Y" field={heightFlipY}/>
+					</line>
+					<range(0, 2) field={normalScale}/>
+					<line label="Z">
+						<range(-1000, 0) label="Min" field={minZ}/>
+						<range(0, 1000) label="Max" field={maxZ}/>
+					</line>
+					<range(0, 4) field={quality}/>
+					<checkbox field={castShadows}/>
+					<range(0, 4) field={shadowQuality}/>
+					<range(0, 4) label="Gamma" field={albedoGamma}/>
+					<range(0, 4) label="Gamma Color" field={albedoColorGamma}/>
+					<line label="Fixed Size">
+						<slider label="X" field={sizeX}/>
+						<slider label="Y" field={sizeY}/>
+						<checkbox label="Auto" field={autoSize}/>
+					</line>
+					<line label="Min Tile">
+						<range(-1000, 0) label="X" field={minTileX}/>
+						<range(-1000, 0) label="Y" field={minTileY}/>
+					</line>
+					<checkbox field={bakedAlbedo}/>
+					<slider field={bakedAlbedoSize} step={2}/>
+					<block id="splatBlock"/>
+				</category>
+				<category("Textures")>
+					<list(makeTextureItem, () -> { path : null, kind : Albedo, enable: true }) field={textures}/>
+				</category>
+			</root>
+		);
+
+		if( hasSplat ) {
+			splatBlock.build(
+				<category("Splat")>
+					<slider field={albedoTiling}/>
+					<select field={splatMode}/>
+					<checkbox field={splatNearest}/>
+					<range(0, 1) field={albedoNormals}/>
+					<range(0, 1) field={albedoRoughness}/>
+				</category>
+			);
+		}
 	}
 
 	#if editor
