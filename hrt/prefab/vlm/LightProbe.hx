@@ -436,6 +436,103 @@ class LightProbe extends Object3D {
 		return true;
 	}
 
+	override function edit2( ctx : hrt.prefab.EditContext2 ) {
+		super.edit2(ctx);
+		ctx.build(
+			<root>
+				<category("Probe")>
+					<select field={mode} onValueChange={(b) -> ctx.rebuildInspector()}/>
+				</category>
+				<category("Environment")>
+					<file type="texture" field={texturePath} if(mode == Texture)/>
+					<slider field={rotation} min="0" max="360" wrap if(mode == Texture)/>
+					<range(0, 10) field={power}/>
+					<range(1, 3) field={bounce} if(mode == Capture)/>
+					<range(0, 1) field={emissive} if(mode == Capture)/>
+					<line full if(mode == Capture)>
+						<button("Bake") id="bakeBtn"/>
+						<button("Clear") id="clearBtn"/>
+					</line>
+					<line full if(mode == Capture)>
+						<button("Export") id="exportBtn"/>
+						<button("Import") id="importBtn"/>
+					</line>
+				</category>
+				<category("Resolution")>
+					<range(1, 512) label="Diffuse" field={diffSize}/>
+					<range(1, 2048) label="Specular" field={specSize}/>
+					<range(1, 12) label="Sample Count" field={sampleBits}/>
+					<range(0, 3) field={ignoredSpecLevels}/>
+				</category>
+				<category("Fade")>
+					<select field={fadeMode}/>
+					<range(0, 10) field={fadeDist}/>
+				</category>
+				<category("Shape")>
+					<select field={shape}/>
+				</category>
+				<category("Debug")>
+					<checkbox field={debugDisplay}/>
+					<range(0.1, 4) field={sphereRadius}/>
+				</category>
+			</root>
+		);
+
+		if( mode == Capture ) {
+			bakeBtn.onClick = function() {
+				var lpo : LightProbeObject = cast local3d;
+				var captureSize = specSize;
+
+				// Start with a black texture, need to override the default env
+				lpo.env.createTextures();
+				lpo.clear();
+
+				if( lpo.env.env == null || lpo.env.env.width != captureSize ) {
+					if( lpo.env.env != null )
+						lpo.env.env.dispose();
+					lpo.env.env = new h3d.mat.Texture(captureSize, captureSize, [Cube, Target], RGBA32F);
+				}
+
+				var probeBaker = new ProbeBaker();
+				@:privateAccess probeBaker.emissive = emissive;
+				if( bounce > 1 ) {
+					var tmPTexturePath = new h3d.mat.Texture(captureSize, captureSize, [Cube, Target], RGBA32F);
+					var curCapture : h3d.mat.Texture = tmPTexturePath;
+					for( b in 0 ... bounce ) {
+						probeBaker.captureEnvironment(lpo.getAbsPos().getPosition(), captureSize, ctx.s3d, curCapture);
+						var tmp = lpo.env.env;
+						lpo.env.env = curCapture;
+						lpo.env.compute();
+						curCapture = tmp;
+					}
+					curCapture.dispose();
+				}
+				else {
+					probeBaker.captureEnvironment(lpo.getAbsPos().getPosition(), captureSize, ctx.s3d, lpo.env.env);
+					lpo.env.compute();
+				}
+
+				probeBaker.dispose();
+
+				saveBinary(lpo.env);
+			}
+			clearBtn.onClick = function() {
+				var lpo : LightProbeObject = cast local3d;
+				lpo.env.createTextures();
+				lpo.clear();
+				shared.savePrefabDat("envd", "dds", name, null);
+				shared.savePrefabDat("envs", "dds", name, null);
+				shared.savePrefabDat("data", "bake", name, null);
+			}
+			exportBtn.onClick = function() {
+				ctx.quickError("Not implemented. Use old editor");
+			}
+			importBtn.onClick = function() {
+				ctx.quickError("Not implemented. Use old editor");
+			}
+		}
+	}
+
 	#if editor
 
 	function exportData( env : Environment ) : haxe.io.Bytes {
