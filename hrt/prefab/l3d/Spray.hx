@@ -584,6 +584,21 @@ class Spray extends Object3D {
 		}
 	}
 
+	public function flattenSpray<T:Prefab>( ?cl : Class<T>, ?arr: Array<T> ) : Array<T> {
+		if(arr == null)
+			arr = [];
+		if( cl == null )
+			arr.push(cast this);
+		else {
+			var i = to(cl);
+			if(i != null)
+				arr.push(i);
+		}
+		return arr;
+	}
+
+	#end
+
 	static public function makePrimCircle(segments: Int, inner : Float = 0, rings : Int = 0) {
 		var points = [];
 		var uvs = [];
@@ -626,19 +641,4 @@ class Spray extends Object3D {
 		primitive.colors = [for(p in points) new h3d.col.Point(1,1,1)];
 		return primitive;
 	}
-
-	public function flattenSpray<T:Prefab>( ?cl : Class<T>, ?arr: Array<T> ) : Array<T> {
-		if(arr == null)
-			arr = [];
-		if( cl == null )
-			arr.push(cast this);
-		else {
-			var i = to(cl);
-			if(i != null)
-				arr.push(i);
-		}
-		return arr;
-	}
-
-	#end
 }

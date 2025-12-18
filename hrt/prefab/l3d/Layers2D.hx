@@ -141,6 +141,523 @@ class Layer2DRFX extends hrt.prefab.rfx.RendererFX {
 
 }
 
+#if domkit
+@:access(hrt.prefab.l3d.Layers2D)
+@:allow(hrt.prefab.l3d.Layers2D)
+class Layers2DTool extends hrt.prefab.editor.Tool {
+	var layers: Layers2D;
+	var rfx : Layer2DRFX;
+
+	var currentLayer : String;
+	var currentLayerValue : Null<Int>;
+	var currentTexture : h3d.mat.Texture = null;
+	var currentPixels : hxd.Pixels = null;
+
+	var brushRadius : Float = 20;
+	var eraseRadius : Float = 10;
+	var paintOverride : Bool = true;
+	var layerAlpha : Float = 0.6;
+
+	var highlightNotPaintedPixels : Bool = false;
+
+	var revertList : Array<{ pixels : hxd.Pixels, layer : String }> = [];
+	var revertCurrentIdx : Int = 0;
+	var currentRevertData : { pixels : hxd.Pixels, layer : String };
+
+	var collideEnable : Bool = true;
+	var collideMap : h3d.mat.Texture;
+	var collidePixels : hxd.Pixels;
+	var colorMap : h3d.mat.Texture;
+
+	public function new(ctx: EditContext2, layers: Layers2D) {
+		super(ctx);
+		this.layers = layers;
+		this.mouseSupport = true;
+	}
+
+	var brushes: Array<h3d.scene.Mesh> = [];
+
+	function layerLine(header: hide.kit.Element, content: hide.kit.Element, item: Layer2D, index: Int) {
+		header.build(
+			<root>
+				<input field={item.name} label=""/>
+				<button("Select") onClick={() -> {selectLayer(item.name); ctx.rebuildInspector();}} highlight={currentLayer == item.name}/>
+			</root>
+		);
+
+		if (item.name == currentLayer) {
+			function valueLine(header: hide.kit.Element, content: hide.kit.Element, item: Layer2DValue, index: Int) {
+				header.build(
+					<root>
+						<color field={item.color} label=""/>
+						<input field={item.name} label=""/>
+						<button("Paint") onClick={() -> {currentLayerValue = item.index; ctx.rebuildInspector();}} highlight={item.index == currentLayerValue}/>
+					</root>
+				);
+			}
+
+			function valueCreate() {
+				var i = 1;
+				var found = true;
+				while(found) {
+					found = false;
+					for (value in item.values) {
+						if (value.index == i) {
+							i++;
+							found = true;
+							break;
+						}
+					}
+				}
+				return {
+					index: i,
+					name: "newValue",
+					color: 0xFF0000,
+				}
+			}
+
+			content.build(
+				<list(valueLine, valueCreate) field={item.values} no-collapse onValueChange={(_) -> updateColors()}/>
+			);
+		}
+	}
+
+	function layerCreate() {
+		return {
+			name: "newLayer",
+			values: [],
+		};
+	}
+
+	function setup() {
+		ctx.build(
+			<category("Layers") single-edit>
+				<line label="Collide">
+					<checkbox field={collideEnable} label=""/>
+					<file type="texture" field={layers.collidePath} label="" onValueChange={(_:Bool) -> {
+						collideMap?.dispose();
+						collideMap = null;
+						updateVisuals();
+					}}/>
+					<color field={layers.collideMask} label=""/>
+				</line>
+				<line label="Highlight Unpainted">
+					<checkbox field={highlightNotPaintedPixels} label=""/>
+					<color field={layers.highlightColor} label=""/>
+				</line>
+				<slider field={brushRadius} min={0.0}/>
+				<slider field={eraseRadius} min={0.0}/>
+				<range(0.0,1.0) field={layerAlpha}/>
+				<checkbox field={paintOverride}/>
+				<checkbox field={layers.keepVisible}/>
+				<text("Hold down SHIFT to erase")/>
+				<text("Hold down CTRL+ Whell to adjust brush radius")/>
+
+				<list(layerLine, layerCreate) field={layers.layers}/>
+
+			</category>
+		, null, (isTemp:Bool) -> {
+			updateVisuals();
+		});
+
+		enter();
+		updateVisuals();
+	}
+
+	function clearBrushes() {
+		if( brushes != null ) {
+			for (brush in brushes) brush.remove();
+			brushes.resize(0);
+		}
+	}
+
+	function setupRfx( b : Bool ) {
+		if ( ctx == null )
+			return;
+		if ( b ) {
+			if ( rfx == null ) {
+				rfx = new Layer2DRFX(null, null);
+				var renderer = Std.downcast(ctx.s3d.renderer, h3d.scene.pbr.Renderer);
+				renderer.effects.push(rfx);
+			}
+		} else if ( rfx != null ) {
+			var renderer = Std.downcast(ctx.s3d.renderer, h3d.scene.pbr.Renderer);
+			renderer.effects.remove(rfx);
+			rfx = null;
+		}
+	}
+
+	function updateColors() {
+
+		var layer = layers.layers.filter(l -> l.name == currentLayer)[0];
+
+		var maxIndex = 0;
+		for ( v in layer.values ) {
+			if ( maxIndex < v.index )
+				maxIndex = v.index;
+		}
+		var pixels = hxd.Pixels.alloc(maxIndex+1, 1, RGBA);
+		for ( v in layer.values ) {
+			pixels.setPixel(v.index, 0, v.color);
+		}
+
+		if ( colorMap != null )
+			colorMap.dispose();
+
+		colorMap = h3d.mat.Texture.fromPixels(pixels);
+		colorMap.filter = Nearest;
+	}
+
+	override function onEnter() {
+		setupRfx(true);
+	}
+
+	override function onQuit() {
+		setupRfx(false);
+		clearBrushes();
+		collideMap?.dispose();
+		collideMap = null;
+	}
+
+	function prepareUploadPixels() {
+		if ( revertList.length == 0 ) {
+			saveUploadPixels();
+		}
+	}
+
+	function saveUploadPixels() {
+		currentTexture.uploadPixels(currentPixels);
+
+		if ( revertCurrentIdx < revertList.length )
+			revertList.resize(revertCurrentIdx);
+
+		revertList.push({ pixels : currentPixels.clone(), layer: currentLayer });
+
+		revertCurrentIdx = revertList.length;
+
+		ctx.recordUndo(function(undo) {
+
+			var revertDataToApply = if ( undo )
+										revertList[--revertCurrentIdx];
+									else
+										revertList[revertCurrentIdx++];
+
+			currentPixels = revertDataToApply.pixels;
+
+			layers.layerTextures.set(revertDataToApply.layer, currentPixels);
+
+			if ( currentLayer == revertDataToApply.layer ) {
+				currentTexture.uploadPixels(currentPixels);
+				updateVisuals();
+			}
+		});
+	}
+
+	function selectLayer( name : String ) {
+		if ( currentLayer != name ) {
+			currentLayer = name;
+
+			currentPixels = layers.layerTextures.get(currentLayer);
+			if ( currentPixels == null ) {
+				currentPixels = hxd.Pixels.alloc(Math.floor(layers.worldSize / layers.layerScale), Math.floor(layers.worldSize / layers.layerScale), R8);
+				layers.layerTextures.set(currentLayer, currentPixels);
+			}
+			currentTexture = h3d.mat.Texture.fromPixels(currentPixels, R8);
+			currentTexture.filter = Nearest;
+			updateColors();
+
+			currentLayerValue = null;
+		} else {
+			currentPixels = null;
+			currentTexture?.dispose();
+			currentTexture = null;
+
+			currentLayer = null;
+			currentLayerValue = null;
+		}
+		ctx.rebuildInspector();
+	}
+
+	function updateVisuals() {
+		if ( rfx != null ) {
+			var sh : LayerView2DRFXShader = cast rfx.pass.shader;
+			if( collideMap == null || collideMap.isDisposed() ) {
+				if ( layers.collidePath != null ) {
+					collideMap = layers.shared.loadTexture(layers.collidePath);
+					collideMap.filter = Nearest;
+					collidePixels = layers.loadPixels(layers.collidePath);
+				}
+			}
+
+			sh.layerAlpha = layerAlpha;
+			sh.worldSize = layers.worldSize;
+			sh.offsetX = layers.offsetX;
+			sh.offsetY = layers.offsetY;
+			sh.collideScale = (collideMap != null) ? layers.worldSize / collideMap.width : 1;
+			sh.collideMap = collideMap;
+
+			sh.collideEnable = collideEnable && collideMap != null;
+			sh.collideMask = h3d.Vector4.fromColor(layers.collideMask);
+
+			sh.layerEnable = currentTexture != null;
+			sh.layerMap = currentTexture;
+			sh.layerScale = layers.layerScale;
+
+			if ( sh.layerEnable ) {
+				sh.colors = colorMap;
+				sh.nbColorsIndexes = colorMap.width;
+			}
+
+			sh.highlightNoPixels = highlightNotPaintedPixels;
+			sh.highlightColor = h3d.Vector4.fromColor(layers.highlightColor);
+		}
+	}
+
+	override function postInitInteractive() {
+		super.postInitInteractive();
+		if ( currentLayerValue != null ) {
+			createInteractiveBrush();
+		}
+	}
+
+	function createInteractiveBrush() {
+		var s2d = ctx.s2d;
+
+		var modified = false;
+
+		var layer = layers.layers.filter(l -> l.name == currentLayer)[0];
+
+		var layerValue = layer.values.filter( vl -> vl.index == currentLayerValue )[0];
+
+		function drawBrush() {
+			var worldPos = ctx.screenToGround(s2d.mouseX, s2d.mouseY);
+
+			if( worldPos == null ) {
+				clearBrushes();
+				return;
+			}
+
+			var radius = brushRadius;
+			var color = layerValue.color;
+			if ( hxd.Key.isDown(hxd.Key.SHIFT) ) {
+				radius = eraseRadius;
+				color = 0xff0000;
+			}
+
+			drawCircle(worldPos.x, worldPos.y, worldPos.z, radius, 5, color);
+		}
+
+		interactive.onWheel = function(e) {
+			if ( hxd.Key.isDown(hxd.Key.CTRL) ) {
+				if ( hxd.Key.isDown(hxd.Key.SHIFT) ) {
+					eraseRadius += e.wheelDelta * 2;
+					if ( eraseRadius < 1 )
+						eraseRadius = 1;
+					ctx.root.getById("eraseRadius", hide.kit.Slider).value = eraseRadius;
+				} else {
+					brushRadius += e.wheelDelta * 2;
+					if ( brushRadius < 1 )
+						brushRadius = 1;
+					ctx.root.getById("brushRadius", hide.kit.Slider).value = brushRadius;
+				}
+				e.propagate = false;
+				drawBrush();
+			}
+		};
+
+		function paint() {
+			var clean = hxd.Key.isDown( hxd.Key.SHIFT);
+			var worldPos = ctx.screenToGround(s2d.mouseX, s2d.mouseY);
+
+			var MAX_X = Math.floor(currentPixels.width * layers.layerScale) - 1;
+			var MAX_Y = Math.floor(currentPixels.height * layers.layerScale) - 1;
+
+			var collideScale = (collidePixels?.width ?? 4096) / layers.worldSize;
+
+			if ( worldPos != null ) {
+				var startX = worldPos.x - layers.offsetX;
+				var startY = worldPos.y - layers.offsetY;
+
+				var brRadius = ( clean ) ? eraseRadius : brushRadius;
+				var radiusSq = brRadius * brRadius;
+
+				var minX = hxd.Math.iclamp(Math.floor(startX - brRadius), 0, MAX_X);
+				var maxX = hxd.Math.iclamp(Math.ceil(startX + brRadius), 0, MAX_X);
+				var minY = hxd.Math.iclamp(Math.floor(startY - brRadius), 0, MAX_Y);
+				var maxY = hxd.Math.iclamp(Math.ceil(startY + brRadius), 0, MAX_Y);
+
+				if ( clean ) {
+					for ( iy in minY...maxY ) {
+						for ( ix in minX...maxX ) {
+							var vec = new h2d.col.Point(ix - startX, iy - startY);
+							var distSq = vec.x*vec.x + vec.y*vec.y;
+							var tx = Math.floor(ix / layers.layerScale);
+							var ty = Math.floor(iy / layers.layerScale);
+							if ( distSq <= radiusSq && currentPixels.getPixel(tx, ty) != 0 ) {
+								currentPixels.setPixel(tx, ty, 0x00000000);
+								modified = true;
+							}
+						}
+					}
+				} else {
+					var distances : Array<Null<Int>> = [];
+					var queue : Array<Int> = [];
+
+					inline function isCollide( ix : Int, iy : Int ) {
+						return collideEnable && collidePixels != null &&
+								(collidePixels.getPixel(Math.floor(ix * collideScale), Math.floor(iy * collideScale)) & layers.collideMask) == layers.collideMask;
+					}
+
+					function add( ix : Int, iy : Int, d : Int ) {
+						var flagIdx = (iy - minY) * (maxX - minX) + ix;
+						var dist = distances[ flagIdx ];
+						if ( dist != null && dist <= d )
+							return;
+
+						distances[ flagIdx ] = d;
+
+						queue.push(ix);
+						queue.push(iy);
+						queue.push(d);
+					}
+
+					function process( ix : Int, iy : Int, d : Int ) {
+						if( ix < 0 || ix > MAX_X )
+							return;
+						if( iy < 0 || iy > MAX_Y )
+							return;
+
+						var dx = Math.abs(ix - startX);
+						var dy = Math.abs(iy - startY);
+
+						var distSq = dx * dx + dy * dy;
+
+						if ( distSq > radiusSq )
+							return;
+
+						var collide = isCollide(ix, iy);
+
+						if ( d == 0 && collide )
+							return;
+
+						if ( d > brushRadius * 1.414 )
+							return;
+
+						var tx = Math.floor(ix / layers.layerScale);
+						var ty = Math.floor(iy / layers.layerScale);
+						var currentColor = currentPixels.getPixel(tx, ty);
+						if ( (paintOverride || currentColor == 0) && currentColor != currentLayerValue ) {
+							currentPixels.setPixel(tx, ty, currentLayerValue);
+							modified = true;
+						}
+
+						if ( collide )
+							return;
+
+						var newD = d + 1;
+
+						add(ix-layers.layerScale, iy, newD);
+						add(ix+layers.layerScale, iy, newD);
+						add(ix, iy-layers.layerScale, newD);
+						add(ix, iy+layers.layerScale, newD);
+					}
+
+					add(Math.round(startX), Math.round(startY), 0);
+
+					while ( queue.length > 0 ) {
+						process(queue.shift(), queue.shift(), queue.shift());
+					}
+
+				}
+
+				currentTexture.uploadPixels(currentPixels);
+			}
+		}
+
+		interactive.onPush = function(e) {
+			e.propagate = false;
+
+			modified = false;
+
+			prepareUploadPixels();
+
+			drawBrush();
+			paint();
+		};
+
+		interactive.onRelease = function(e) {
+			e.propagate = false;
+			drawBrush();
+			if ( modified )
+				saveUploadPixels();
+		};
+
+		var layerChanged = false;
+		interactive.onKeyDown = function(e) {
+			if ( layerChanged )
+				return;
+			var NB_KEYS = layer.values.length+1;
+			for ( k in hxd.Key.NUMBER_0...hxd.Key.NUMBER_0+NB_KEYS ) {
+				if ( hxd.Key.isPressed(k) ) {
+					layerChanged = true;
+					currentLayerValue = layer.values[(((k-hxd.Key.NUMBER_0)-1+NB_KEYS)%NB_KEYS)].index;
+				}
+			}
+
+			drawBrush();
+
+			if ( layerChanged ) {
+				haxe.Timer.delay(function() ctx.rebuildInspector(), 0);
+			}
+		}
+
+		interactive.onMove = function(e) {
+			drawBrush();
+
+			if( hxd.Key.isDown( hxd.Key.MOUSE_LEFT) ) {
+				e.propagate = false;
+
+				paint();
+			}
+		};
+		updateVisuals();
+	}
+
+	public function drawCircle(originX : Float, originY : Float, originZ : Float, radius: Float, thickness: Float, color) {
+		var newColor = h3d.Vector4.fromColor(color);
+		if (brushes == null || brushes.length == 0 || brushes[0].scaleX != radius || brushes[0].material.color != newColor) {
+			clearBrushes();
+			brushes = [];
+			var gBrush = new h3d.scene.Mesh(hrt.prefab.l3d.Spray.makePrimCircle(64, 0.95), ctx.s3d);
+			gBrush.scaleX = gBrush.scaleY = radius;
+			var pass = gBrush.material.mainPass;
+			pass.setPassName("outline");
+			pass.depthTest = Always;
+			pass.depthWrite = false;
+			gBrush.material.shadows = false;
+			gBrush.material.color = newColor;
+			brushes.push(gBrush);
+			gBrush = new h3d.scene.Mesh(new h3d.prim.Sphere(Math.min(radius*0.05, 0.35)), ctx.s3d);
+			var pass = gBrush.material.mainPass;
+			pass.setPassName("outline");
+			pass.depthTest = Always;
+			pass.depthWrite = false;
+			gBrush.material.shadows = false;
+			gBrush.material.color = newColor;
+			brushes.push(gBrush);
+		}
+		for (g in brushes) g.visible = true;
+		for (g in brushes) {
+			g.x = originX;
+			g.y = originY;
+			g.z = originZ + 0.025;
+		}
+	}
+}
+
+#end
+
+
 @:allow(hrt.prefab.l3d)
 class Layers2D extends hrt.prefab.Object3D {
 
@@ -156,6 +673,10 @@ class Layers2D extends hrt.prefab.Object3D {
 	@:s var highlightColor : Int = 0xff00ff;
 
 	@:s public var keepVisible : Bool = false;
+
+	#if domkit
+	var tool : Layers2DTool = null;
+	#end
 
 	#if editor
 
@@ -265,6 +786,15 @@ class Layers2D extends hrt.prefab.Object3D {
 		}
 
 		return null;
+	}
+
+	override function edit2(ctx: hrt.prefab.EditContext2) {
+		super.edit2(ctx);
+		if (tool == null)
+			tool = new Layers2DTool(ctx, this);
+		@:privateAccess tool.ctx = ctx;
+
+		tool.setup();
 	}
 
 	#if editor
@@ -639,6 +1169,7 @@ class Layers2D extends hrt.prefab.Object3D {
 		colorMap = h3d.mat.Texture.fromPixels(pixels);
 		colorMap.filter = Nearest;
 	}
+
 
 	override function edit( ectx : hide.prefab.EditContext ) {
 		super.edit(ectx);
