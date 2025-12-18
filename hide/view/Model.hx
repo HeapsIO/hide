@@ -1823,7 +1823,10 @@ class Model extends FileView {
 		sceneEditor.setPrefab(root);
 
 		collisionSettings = [];
+		var meshes = obj.getMeshes();
 		for (o in scene.s3d.getMeshes()) {
+			if (!meshes.contains(o)) // Prevent adding collision settings to meshes added with render props
+				continue;
 			if (Std.isOfType(o, h3d.scene.Graphics) || @:privateAccess sceneEditor.gizmo.isGizmo(o))
 				continue;
 
