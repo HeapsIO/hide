@@ -8,9 +8,12 @@ class QuickTool extends Tool {
 
 	public function new(ctx, onEnter, onQuit, update) {
 		super(ctx);
-		customOnEnter = onEnter;
-		customOnQuit = onQuit;
-		customUpdate = update;
+		if (onEnter != null)
+			customOnEnter = onEnter;
+		if (onQuit != null)
+			customOnQuit = onQuit;
+		if (update != null)
+			customUpdate = update;
 	}
 
 	override function onEnter() {
