@@ -898,6 +898,96 @@ class Trails extends Object3D {
 		}
 	}
 
+	override function edit2( ctx : hrt.prefab.EditContext2 ) {
+		super.edit2(ctx);
+
+		var orientStr : String = "Camera";
+		var orientX : Float = 0.0;
+		var orientY : Float = 0.0;
+		var orientZ : Float = 0.0;
+
+		function updateOrient() {
+			switch (this.orientation) {
+			case Up(x, y, z):
+				orientStr = "Custom Up";
+				orientX = x;
+				orientY = y;
+				orientZ = z;
+			case Right(x, y, z):
+				orientStr = "Custom Right";
+				orientX = x;
+				orientY = y;
+				orientZ = z;
+			default:
+				orientStr = "Camera";
+			}
+		}
+		updateOrient();
+
+		function onOrientValueChange(b) {
+			if( orientStr == "Camera" ) {
+				orientation = Camera;
+			}
+			if( orientStr == "Custom Up") {
+				orientation = Up(orientX, orientY, orientZ);
+			}
+			if( orientStr == "Custom Right") {
+				orientation = Right(orientX, orientY, orientZ);
+			}
+		}
+
+		function onOrientTypeChange(b) {
+			onOrientValueChange(b);
+			ctx.rebuildInspector();
+		}
+
+		function onResetTrail() {
+			var trailObj : TrailObj = cast local3d;
+			trailObj.reset();
+		}
+
+		ctx.build(
+			<root>
+				<category("Trail Properties")>
+					<range(1, 60) field={framerate}/>
+					<range(0, 1) field={lifetime}/>
+					<line label="Width">
+						<range(0, 10) label="Start" field={startWidth}/>
+						<range(0, 10) label="End" field={endWidth}/>
+					</line>
+					<line label="Speed">
+						<range(0, 1000) label="Min" field={minSpeed}/>
+						<range(0, 1000) label="Max" field={maxSpeed}/>
+					</line>
+					<checkbox field={useScale}/>
+					<checkbox field={useColor}/>
+					<color field={color} alpha/>
+					<select(["Camera", "Custom Up", "Custom Right"]) label="Orientation" field={orientStr} onValueChange={onOrientTypeChange}/>
+					<line if(orientation != Camera)>
+						<slider label="X" field={orientX} onValueChange={onOrientValueChange}/>
+						<slider label="Y" field={orientY} onValueChange={onOrientValueChange}/>
+						<slider label="Z" field={orientZ} onValueChange={onOrientValueChange}/>
+					</line>
+				</category>
+				<category("Magnification")>
+					<checkbox label="Enable" field={useMagnification}/>
+					<range(1, 100) label="Ref Distance" field={magnificationRefDist}/>
+					<checkbox field={useMinify}/>
+					<range(100, 1000) label="Max Distance" field={magnificationMaxDist}/>
+				</category>
+				<category("UV")>
+					<select label="UV Mode" field={uvMode}/>
+					<select label="UV Repeat" field={uvRepeat}/>
+					<range(0, 5) label="UV Scale" field={uvStretch}/>
+				</category>
+				<category("Debug")>
+					<checkbox label="Show Debug" field={debug} onValueChange={(b) -> ctx.rebuildInspector()}/>
+					<button("Reset Trail") onClick={onResetTrail} if(debug)/>
+				</category>
+			</root>
+		);
+	}
+
 	#if editor
 
 	override function getHideProps():hide.prefab.HideProps {
