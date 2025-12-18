@@ -3,7 +3,7 @@ package hide.kit;
 #if domkit
 
 class Text extends Element {
-	var content(default, set) : String;
+	public var content(default, set) : String;
 
 	#if js
 	var text: NativeElement;
