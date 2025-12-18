@@ -486,12 +486,13 @@ class Element {
 		Find the first element that has the given id in this element children, recursive
 	**/
 	public function getById<T:Element>(id: String, ?cl: Class<T>) : T {
+		if (this.id == id) {
+			var asCl = cl != null ? Std.downcast(this, cl) : cast this;
+			if (asCl != null)
+				return asCl;
+		}
+
 		for (child in children) {
-			if (child.id == id) {
-				var asCl = cl != null ? Std.downcast(child, cl) : cast child;
-				if (asCl != null)
-					return asCl;
-			}
 			var found = child.getById(id);
 			if (found != null)
 				return found;

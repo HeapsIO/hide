@@ -282,7 +282,7 @@ class Macros {
 						if (fieldId != null) {
 							kitInternalId = makeStringExpr(fieldId, pos);
 						}
-						if (label != null) {
+						else if (label != null) {
 							kitInternalId = macro @:privateAccess hide.kit.Macros.toInternalIdentifier(${label});
 						} else {
 							kitInternalId = makeStringExpr('#${elementName}', pos);
