@@ -5772,6 +5772,13 @@ class SceneEditor {
 		event.update(dt);
 		for( f in updates )
 			f(dt);
+		if (curEdit2 != null) {
+			@:privateAccess curEdit2.foregroundEditorTool?.update(dt);
+			for (tool in curEdit2.otherEditorTools) {
+				@:privateAccess tool.update(dt);
+			}
+		}
+
 		if( customEditor != null )
 			customEditor.update(dt);
 

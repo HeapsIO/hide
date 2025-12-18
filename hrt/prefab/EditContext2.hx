@@ -92,15 +92,26 @@ abstract class EditContext2 {
 
 
 	function cleanup() {
-		quitAllEditors();
+		quitAllTools();
 	}
 
-	function quitAllEditors() {
+	function quitAllTools() {
 		foregroundEditorTool?.quit();
 
 		for (tool in otherEditorTools.copy()) {
 			tool.quit();
 		}
+	}
+
+
+	/**
+		Create a Tool from three callbacks.
+		return the created Tool
+		Call enter() on the tool to start it
+	**/
+	public function quickTool(onEnter: () -> Void, onQuit: () -> Void, update: (dt: Float) -> Void) : hrt.prefab.editor.Tool {
+		var tool = new hrt.prefab.editor.QuickTool(this, onEnter, onQuit, update);
+		return tool;
 	}
 
 	#end

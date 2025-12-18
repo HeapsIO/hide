@@ -187,7 +187,7 @@ class KitTest extends Object3D {
 		// TOOLS
 		{
 			var tool1 = new KitTestTool1(ctx);
-			var tool2 = new KitTestTool2(ctx);
+			var tool2 = ctx.quickTool(() -> trace("Enter"), () -> trace("Quit"), (dt) -> trace("Update"));
 			ctx.build(
 				<category("Tools")>
 					<button("Tool 1") onClick={tool1.enter} />

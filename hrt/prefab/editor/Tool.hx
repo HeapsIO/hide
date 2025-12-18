@@ -41,12 +41,12 @@ class Tool {
 		}
 
 		enabled = true;
+		syncInteractive();
 
 		onEnter();
 	}
 
 	function onEnter() {
-		syncInteractive();
 		debugText = new h2d.Text(hxd.res.DefaultFont.get(), ctx.s2d);
 		debugText.dropShadow = {
 			dx: 1,
