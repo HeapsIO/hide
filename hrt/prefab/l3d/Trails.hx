@@ -983,9 +983,22 @@ class Trails extends Object3D {
 				<category("Debug")>
 					<checkbox label="Show Debug" field={debug} onValueChange={(b) -> ctx.rebuildInspector()}/>
 					<button("Reset Trail") onClick={onResetTrail} if(debug)/>
+					<text("") id="debugTxt" if(debug)/>
 				</category>
 			</root>
 		);
+
+		var tl = ctx.quickTool(null, null, function(dt) {
+			if( debug && debugTxt != null ) {
+				var str = "";
+				var trailObj : TrailObj = cast local3d;
+				for (i in 0...numTrails) {
+					str += " trail[" + i + "].len = " + @:privateAccess trailObj.trails[i].totalLength + "\n";
+				}
+				debugTxt.content = str;
+			}
+		});
+		tl.enter();
 	}
 
 	#if editor
