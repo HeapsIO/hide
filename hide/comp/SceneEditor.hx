@@ -3138,11 +3138,13 @@ class SceneEditor {
 		for (selectable in selectables) {
 			var int3d = interactives.get(selectable);
 			if (int3d != null) {
-				var distance = int3d.shape?.rayIntersection(ray, false);
+				var localRay = ray.clone();
+				localRay.transform(int3d.getAbsPos().getInverse());
+				var distance = int3d.shape?.rayIntersection(localRay, false);
 				if (distance < 0)
 					continue;
 
-				var distance = int3d.preciseShape?.rayIntersection(ray, true) ?? distance;
+				var distance = int3d.preciseShape?.rayIntersection(localRay, true) ?? distance;
 
 				if (distance > 0) {
 					hits.push({d: distance, prefab: selectable});
