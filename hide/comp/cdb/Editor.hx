@@ -356,7 +356,7 @@ class Editor extends Component {
 		// Apply filters on lines
 		var results = 0;
 		var seps = @:privateAccess table.separators;
-		var displayedSeps = new Map<String, Separator>();
+		var displayedSeps = new Map<Int, Separator>();
 		for (l in table.lines) {
 			var filtered = isLineFilteredBySearch(table, l);
 			if (!filtered)
@@ -373,14 +373,14 @@ class Editor extends Component {
 				if (seps != null) {
 					var parentSeps = Separator.getParentSeparators(l.index, seps);
 					for (s in parentSeps)
-						displayedSeps.set(s.data.path, s);
+						displayedSeps.set(s.data.index, s);
 				}
 			}
 		}
 
 		if (seps != null) {
 			for (s in seps) {
-				@:privateAccess s.filtered = displayedSeps.get(s.data.path) == null;
+				@:privateAccess s.filtered = displayedSeps.get(s.data.index) == null;
 				if (@:privateAccess !s.filtered)
 					s.reveal();
 				s.refresh(false);
