@@ -488,6 +488,8 @@ class Macros {
 				}
 				args.outputExprs.push(finalExpr);
 			}
+			case CodeBlock(v):
+				error("Code blocks are not supported at the moment", args.markup.pmin, args.markup.pmax);
 			default:
 				throw "Internal error : unhandled node kind " + args.markup.kind;
 		}

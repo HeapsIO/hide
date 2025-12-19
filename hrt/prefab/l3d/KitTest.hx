@@ -75,6 +75,9 @@ class KitTest extends Object3D {
 	@:s var testAbstractString: TestAbstractString;
 	@:s var testAbstractInt: TestAbstractInt;
 
+	@:s var ifBlockCondition: TestAbstractInt;
+
+
 	var substruct: SubStruct = { innerValue: 0.0, };
 
 
@@ -695,6 +698,16 @@ class KitTest extends Object3D {
 
 		hide.kit.Macros.testError(
 			<line multiline="True"/>, this, 'cannot convert "True" to Bool for attribute multiline (must be either "true" or "false")'
+		);
+
+		hide.kit.Macros.testError(
+			<category("If blocks")>
+				<checkbox field={ifBlockCondition} label="If" onValueChange={(_) -> ctx.rebuildInspector()}/>
+				${if(ifBlockCondition) {
+					<text("I'm hidden if the condition above is false")/>
+				}}
+			</category>, this,
+			"Code blocks are not supported at the moment"
 		);
 
 		var abstractString : TestAbstractString = Foo;
