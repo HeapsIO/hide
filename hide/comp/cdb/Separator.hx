@@ -230,7 +230,7 @@ class Separator extends Component {
 		var lines = getLines();
 		for (l in lines) {
 			var visible = getLinesVisiblity();
-			if (!visible) {
+			if (!visible || @:privateAccess l.filtered) {
 				l.hide();
 				continue;
 			}
@@ -308,17 +308,17 @@ class Separator extends Component {
 		return visible && expanded && !filtered;
 	}
 
-	function get_visible() {
-		if (parent == null)
-			return !filtered;
-		return parent.visible && parent.expanded && !filtered;
-	}
-
 	public function getLines() {
 		var sIdx = @:privateAccess table.separators.indexOf(this);
 		var startIdx = data.index;
 		var endIdx = sIdx < table.sheet.separators.length - 1 ? table.sheet.separators[sIdx + 1].index : table.sheet.lines.length;
 		return [for (idx in startIdx...endIdx) table.lines[idx]];
+	}
+
+	function get_visible() {
+		if (parent == null)
+			return !filtered;
+		return parent.visible && parent.expanded && !filtered;
 	}
 
 	function getSeparatorKey() : String {

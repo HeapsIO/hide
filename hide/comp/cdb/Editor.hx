@@ -316,21 +316,23 @@ class Editor extends Component {
 			return;
 
 		// Reset visibility
-		for (l in table.lines)
-			l.element.removeClass("filtered");
-
 		if (@:privateAccess table.separators != null) {
+			for (l in table.lines)
+				@:privateAccess l.filtered = false;
 			for (s in @:privateAccess table.separators) {
 				@:privateAccess s.filtered = false;
 				s.refresh(false);
 			}
 		}
+		else {
+			for (l in table.lines) {
+				@:privateAccess l.filtered = false;
+				l.element.removeClass("filtered");
+			}
+		}
 
 		if (filters.length == 0 && filterFlags.has(Regular) && filterFlags.has(Warning) && filterFlags.has(Error))
 			return;
-
-		for (s in @:privateAccess table.separators)
-			@:privateAccess s.filtered = true;
 
 		// Clean filters
 		var idx = filters.length;
@@ -353,6 +355,8 @@ class Editor extends Component {
 
 		// Apply filters on lines
 		var results = 0;
+		var seps = @:privateAccess table.separators;
+		var displayedSeps = new Map<String, Separator>();
 		for (l in table.lines) {
 			var filtered = isLineFilteredBySearch(table, l);
 			if (!filtered)
@@ -361,28 +365,28 @@ class Editor extends Component {
 			filtered = filtered || isLineFilteredByStatus(l);
 
 			if (filtered) {
-				l.element.addClass("filtered");
-				if (l.subTable != null)
-					l.subTable.immediateClose();
+				@:privateAccess l.filtered = true;
+				@:privateAccess l.hide();
 			}
 			else {
-				var seps = Separator.getParentSeparators(l.index, @:privateAccess table.separators);
-				for (s in seps)
-					@:privateAccess s.filtered = false;
+				if (seps != null) {
+					var parentSeps = Separator.getParentSeparators(l.index, seps);
+					for (s in parentSeps)
+						displayedSeps.set(s.data.path, s);
+				}
 			}
 		}
 
-		for (s in @:privateAccess table.separators)
-			s.refresh(false);
-
-		// Force show lines that are not filtered (even if their parent sep is collapsed)
-		for (l in table.lines) {
-			if (l.element.hasClass("hidden") && !l.element.hasClass("filtered"))
-				l.create();
+		if (seps != null) {
+			for (s in seps) {
+				@:privateAccess s.filtered = displayedSeps.get(s.data.path) == null;
+				if (@:privateAccess !s.filtered)
+					s.reveal();
+				s.refresh(false);
+			}
 		}
 
 		searchBox.find("#results").text(results > 0 ? '$results Results' : 'No results');
-
 		cursor.update();
 	}
 

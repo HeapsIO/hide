@@ -9,6 +9,7 @@ class Line extends Component {
 	public var columns : Array<cdb.Data.Column>;
 	public var subTable : SubTable;
 	public var status : Formulas.ValidationResult;
+	var filtered : Bool = false;
 
 	public function new(table, columns, index, root) {
 		super(null,root);
@@ -32,6 +33,7 @@ class Line extends Component {
 	}
 
 	public function create() {
+		filtered = false;
 		var view = table.view;
 		element.get(0).classList.remove("hidden");
 		var id: String = null;
