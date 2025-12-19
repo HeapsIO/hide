@@ -315,29 +315,29 @@ class Editor extends Component {
 		if (table.displayMode == AllProperties)
 			return;
 
-		// Reset visibility
-		if (@:privateAccess table.separators != null) {
-			for (l in table.lines)
-				@:privateAccess l.filtered = false;
-			for (s in @:privateAccess table.separators) {
-				@:privateAccess s.filtered = false;
-				s.refresh(false);
+		if (filters.length == 0 && filterFlags.has(Regular) && filterFlags.has(Warning) && filterFlags.has(Error)) {
+			// Reset visibility
+			if (@:privateAccess table.separators != null) {
+				for (l in table.lines)
+					@:privateAccess l.filtered = false;
+				for (s in @:privateAccess table.separators) {
+					@:privateAccess s.filtered = false;
+					s.refresh(false);
+				}
 			}
-		}
-		else {
-			for (l in table.lines) {
-				@:privateAccess l.filtered = false;
-				l.element.removeClass("filtered");
+			else {
+				for (l in table.lines) {
+					@:privateAccess l.filtered = false;
+					l.element.removeClass("filtered");
+				}
 			}
-		}
-
-		if (filters.length == 0 && filterFlags.has(Regular) && filterFlags.has(Warning) && filterFlags.has(Error))
 			return;
+		}
 
 		// Clean filters
 		var idx = filters.length;
 		while (idx >= 0) {
-			if (filters[idx] == null || filters[idx] == "")
+			if (filters[idx] == null || filters[idx].length == 0)
 				filters.remove(filters[idx]);
 			idx--;
 		}
@@ -366,7 +366,8 @@ class Editor extends Component {
 
 			if (filtered) {
 				@:privateAccess l.filtered = true;
-				@:privateAccess l.hide();
+				if (seps == null)
+					@:privateAccess l.hide();
 			}
 			else {
 				if (seps != null) {
@@ -382,7 +383,8 @@ class Editor extends Component {
 				@:privateAccess s.filtered = displayedSeps.get(s.data.path) == null;
 				if (@:privateAccess !s.filtered)
 					s.reveal();
-				s.refresh(false);
+				else
+					s.refresh(false);
 			}
 		}
 
