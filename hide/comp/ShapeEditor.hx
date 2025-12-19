@@ -161,6 +161,7 @@ class ShapeEditor extends Component {
 			initialRelPos.load(interactives[selectedShapeIdx].getTransform());
 
 			gizmo.setTransform(interactives[selectedShapeIdx].getAbsPos());
+			gizmo.snap = scene.editor.gizmoSnap;
 		}
 
 		gizmo.onMove = function(position: h3d.Vector, rotation: h3d.Quat, scale: h3d.Vector) {
@@ -326,8 +327,8 @@ class ShapeEditor extends Component {
 				var e = new Element('
 					<label>Center</label>
 					<div class="inlined vector"><input type="number" id="x" value="${center.x}"/><input type="number" id="y" value="${center.y}"/><input type="number" id="z" value="${center.z}"/></div>
-					<label>Rotation (Radians)</label>
-					<div class="inlined vector"><input type="number" id="rotation-x" value="${rotation.x}"/><input type="number" id="rotation-y" value="${rotation.y}"/><input type="number" id="rotation-z" value="${rotation.z}"/></div>
+					<label>Rotation (Degrees)</label>
+					<div class="inlined vector rotation"><input type="number" id="rotation-x" value="${rotation.x * 180 / Math.PI}"/><input type="number" id="rotation-y" value="${rotation.y * 180 / Math.PI}"/><input type="number" id="rotation-z" value="${rotation.z * 180 / Math.PI}"/></div>
 					<label>Size</label>
 					<div class="inlined"><input type="number" min="0" id="size-x" value="$x"/><input type="number" min="0" id="size-y" value="$y"/><input type="number" min="0" id="size-z" value="$z"/></div>
 				');
@@ -348,8 +349,8 @@ class ShapeEditor extends Component {
 				var e = new Element('
 					<label>Center</label>
 					<div class="inlined vector"><input type="number" id="x" value="${center.x}"/><input type="number" id="y" value="${center.y}"/><input type="number" id="z" value="${center.z}"/></div>
-					<label>Rotation (Radians)</label>
-					<div class="inlined vector"><input type="number" id="rotation-x" value="${rotation.x}"/><input type="number" id="rotation-y" value="${rotation.y}"/><input type="number" id="rotation-z" value="${rotation.z}"/></div>
+					<label>Rotation (Degrees)</label>
+					<div class="inlined vector rotation"><input type="number" id="rotation-x" value="${rotation.x * 180 / Math.PI}"/><input type="number" id="rotation-y" value="${rotation.y * 180 / Math.PI}"/><input type="number" id="rotation-z" value="${rotation.z * 180 / Math.PI}"/></div>
 					<label>Radius</label>
 					<div><input type="number" min="0" id="radius" value="$radius"/></div>
 					<label>Height</label>
@@ -484,6 +485,8 @@ class ShapeEditor extends Component {
 					var vec = new h3d.Vector(Std.parseFloat(new Element(inputs[idx]).val()),
 				Std.parseFloat(new Element(inputs[idx + 1]).val()),
 				Std.parseFloat(new Element(inputs[idx + 2]).val()));
+				if (input.parent().hasClass("rotation"))
+					vec *= Math.PI / 180;
 				params.push(vec);
 				idx += 3;
 			}
