@@ -296,8 +296,7 @@ class FileBrowser extends hide.ui.View<FileBrowserState> {
 		for (i => _ in currentSearch) {
 			var child = currentSearch[currentSearch.length - i - 1];
 			if ((child.iconPath == null || child.iconPath == "loading") && child.kind == File) {
-				child.iconPath = "loading";
-				hide.tools.FileManager.inst.renderMiniature(child.getPath(), (path: String) -> {child.iconPath = path; fancyGallery.queueRefresh();} );
+				child.getIcon((_) -> fancyGallery.queueRefresh());
 			}
 		}
 
@@ -367,6 +366,22 @@ class FileBrowser extends hide.ui.View<FileBrowserState> {
 		}
 		return '<div class="ico ico-file ${vcsClass}" title="Unknown"></div>';
 	}
+
+	static public function getThumbnail(item : FileEntry) {
+			if (item.kind == Dir) {
+				return '<fancy-image style="background-image:url(\'res/icons/svg/big_folder.svg\')"></fancy-image>';
+			}
+			else if (item.iconPath == "loading") {
+				return '<fancy-image class="loading" style="background-image:url(\'res/icons/loading.gif\')"></fancy-image>';
+			}
+			else if (item.iconPath != null) {
+				var url = "file://" + item.iconPath;
+				return '<fancy-image class="thumb" style="background-image:url(\'${url}\')"></fancy-image>';
+			}
+			else {
+				return '<fancy-image style="background-image:url(\'res/icons/svg/file.svg\')"></fancy-image>';
+			}
+		};
 
 	override function onDisplay() {
 		keys.register("undo", function() undo.undo());
@@ -831,21 +846,7 @@ class FileBrowser extends hide.ui.View<FileBrowserState> {
 		fancyGallery.getTitle = (item : FileEntry) -> item.getRelPath();
 		fancyGallery.getItemRanges = (item: FileEntry) -> currentSearchRanges.get(item);
 
-		fancyGallery.getThumbnail = (item : FileEntry) -> {
-			if (item.kind == Dir) {
-				return '<fancy-image style="background-image:url(\'res/icons/svg/big_folder.svg\')"></fancy-image>';
-			}
-			else if (item.iconPath == "loading") {
-				return '<fancy-image class="loading" style="background-image:url(\'res/icons/loading.gif\')"></fancy-image>';
-			}
-			else if (item.iconPath != null) {
-				var url = "file://" + item.iconPath;
-				return '<fancy-image class="thumb" style="background-image:url(\'${url}\')"></fancy-image>';
-			}
-			else {
-				return '<fancy-image style="background-image:url(\'res/icons/svg/file.svg\')"></fancy-image>';
-			}
-		};
+		fancyGallery.getThumbnail = getThumbnail;
 
 		fancyGallery.getIcon = getIcon;
 

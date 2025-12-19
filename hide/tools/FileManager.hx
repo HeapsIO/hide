@@ -47,7 +47,7 @@ class FileEntry {
 	public var children: Array<FileEntry>;
 	public var kind: FileKind;
 	public var parent: FileEntry;
-	public var iconPath: String;
+	public var iconPath: String; // can be null if the icon has not been loaded, call getIconPath to load it
 	public var disposed: Bool = false;
 	public var vcsStatus: VCSStatus = None;
 	public var ignored: Bool = false;
@@ -83,6 +83,14 @@ class FileEntry {
 			registeredWatcher = null;
 		}
 		FileManager.inst.fileIndex.remove(this.getRelPath());
+	}
+
+	public function getIcon(onReady: MiniatureReadyCallback) {
+		if (iconPath != null && iconPath != "loading")
+			onReady(iconPath);
+		else {
+			@:privateAccess FileManager.inst.renderMiniature(this, onReady);
+		}
 	}
 
 	function refreshChildren() {
@@ -191,7 +199,7 @@ class FileManager {
 
 	var windowManager : RenderWindowManager = null;
 
-	var onReadyCallbacks : Map<String, MiniatureReadyCallback> = [];
+	var onReadyCallbacks : Map<String, Array<MiniatureReadyCallback>> = [];
 
 	var serverSocket : hxd.net.Socket = null;
 	var generatorSocket : hxd.net.Socket = null;
@@ -483,12 +491,16 @@ class FileManager {
 			switch(message.type) {
 				case success:
 					var message : GenToManagerSuccessMessage = message.data;
-					var cb = onReadyCallbacks.get(message.originalPath);
-					if (cb == null) {
+					var cbs = onReadyCallbacks.get(message.originalPath);
+					if (cbs == null) {
 						return;
 						//throw "Generated a thumbnail for a file not registered";
 					}
-					cb(message.thumbnailPath);
+					var file = getFileEntry(message.originalPath);
+					file.iconPath = message.thumbnailPath;
+					for (cb in cbs) {
+						cb(message.thumbnailPath);
+					}
 					onReadyCallbacks.remove(message.originalPath);
 				default:
 					throw "Unknown message type " + message.type;
@@ -501,20 +513,25 @@ class FileManager {
 	var queued = false;
 
 	/**
-		Asyncrhonusly generates a miniature.
+		Asynchronously generates a miniature.
 		onReady is called back with the path of the loaded miniature, or null if the miniature couldn't be loaded
 	**/
-	public function renderMiniature(path: String, onReady: MiniatureReadyCallback) {
+	function renderMiniature(file: FileEntry, onReady: MiniatureReadyCallback) {
 		if (retries >= maxRetries) {
 			onReady(null);
 			return;
 		}
+		var path = file.getPath();
 		var ext = path.split(".").pop().toLowerCase();
 		switch(ext) {
 			case "prefab" | "fbx" | "l3d" | "fx" | "shgraph" | "jpg" | "jpeg" | "png":
-				if (!onReadyCallbacks.exists(path)) {
-					onReadyCallbacks.set(path, onReady);
+				file.iconPath = "loading";
+				var callbacks = onReadyCallbacks.get(path);
+				if (callbacks == null) {
+					onReadyCallbacks.set(path, [onReady]);
 					sendGenerateCommand(path);
+				} else {
+					callbacks.push(onReady);
 				}
 			default:
 				onReady(null);

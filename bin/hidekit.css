@@ -46,6 +46,28 @@ kit-root .detached .is-cdb-editor {
     flex-direction: column;
     --basic-border: 1px solid;
   }
+  :scope kit-file {
+    position: relative;
+    width: 100%;
+  }
+  :scope kit-file > fancy-image {
+    position: absolute;
+    right: 0;
+    top: 0;
+    width: 22px;
+    height: 22px;
+  }
+  :scope fancy-tooltip {
+    background-color: #1b1b1b;
+    padding: 1px;
+    border: 1px solid #484848;
+    border-radius: 4px;
+    box-shadow: 2px 2px 10px 2px rgba(0, 0, 0, 0.75);
+  }
+  :scope fancy-tooltip fancy-image {
+    margin: 8px;
+    transform: none;
+  }
   :scope .dragover,
   :scope .dragover > kit-line {
     position: relative;
@@ -666,20 +688,22 @@ kit-root .detached .is-cdb-editor {
     aspect-ratio: 1 / 1;
     padding: 3px;
     min-height: 100%;
-    height: unset;
   }
   :scope kit-line kit-button.kit-medium,
   :scope kit-line .hide-button.kit-medium {
     flex: 0 1 32px;
+    height: unset;
   }
   :scope kit-line kit-button.kit-big,
   :scope kit-line .hide-button.kit-big {
     flex: 0 1 64px;
     aspect-ratio: 1 / 1;
+    height: unset;
   }
   :scope kit-line kit-button.kit-huge,
   :scope kit-line .hide-button.kit-huge {
     flex: 0 1 64px;
+    height: unset;
   }
   :scope kit-line input,
   :scope kit-line kit-select {

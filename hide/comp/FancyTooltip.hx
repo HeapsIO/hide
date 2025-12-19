@@ -30,10 +30,10 @@ class FancyTooltip extends hide.comp.Component {
 	}
 
 	public function show() {
-      untyped htmlElem.showPopover();
+		untyped htmlElem.showPopover();
 	}
 
 	public function hide() {
-      untyped htmlElem.hidePopover();
+		untyped htmlElem.hidePopover();
 	}
 }

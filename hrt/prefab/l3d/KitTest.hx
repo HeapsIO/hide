@@ -61,6 +61,12 @@ class KitTest extends Object3D {
 
 	@:s var inputString : String;
 	@:s var filePath : String;
+
+	@:s var fileFile : String;
+	@:s var fileTexture : String;
+	@:s var fileModel : String;
+	@:s var filePrefab : String;
+
 	@:s var color : Int;
 	@:s var gradient : hrt.impl.Gradient.GradientData;
 	@:s var select : String;
@@ -524,6 +530,19 @@ class KitTest extends Object3D {
 					<select(["Earth", "Wind", "Fire", "Water"]) label="Strings" value={"Earth"}/>
 					<select([{value: 0, label: "Earth"}, {value: 1, label: "Wind"}, {value: 2, label: "Fire"}, {value: 3, label: "Water"}]) label="Objects" value={0}/>
 					<select(generator()) label="From Generator" value={0}/>
+				</category>
+			);
+		}
+
+
+		// Files
+		{
+			ctx.build(
+				<category("Files")>
+					<file type="file" field={fileFile} label="File"/>
+					<file type="prefab" field={filePrefab} label="Prefab"/>
+					<file type="texture" field={fileTexture} label="Texture"/>
+					<file type="model" field={fileModel} label="Model"/>
 				</category>
 			);
 		}
