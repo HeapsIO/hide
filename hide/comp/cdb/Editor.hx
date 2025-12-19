@@ -383,8 +383,7 @@ class Editor extends Component {
 				@:privateAccess s.filtered = displayedSeps.get(s.data.path) == null;
 				if (@:privateAccess !s.filtered)
 					s.reveal();
-				else
-					s.refresh(false);
+				s.refresh(false);
 			}
 		}
 
