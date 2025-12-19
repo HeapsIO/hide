@@ -2,6 +2,17 @@ package hide.kit;
 
 #if domkit
 
+enum LabelColor {
+	White;
+	Red;
+	Orange;
+	Yellow;
+	Green;
+	Cyan;
+	Blue;
+	Purple;
+}
+
 /**
 	Base class for all hide elements that manipulate a Value, like sliders, inputs etc...
 **/
@@ -9,6 +20,9 @@ abstract class Widget<ValueType> extends Element {
 	public var label(default, set): String;
 	@:isVar public var value(get, set): ValueType;
 	public var defaultValue: ValueType;
+
+	public var labelColor(default, set): LabelColor = White;
+
 	var fieldName: String;
 
 	function new(parent: Element, id: String) {
@@ -26,6 +40,12 @@ abstract class Widget<ValueType> extends Element {
 			labelElement.text = label;
 		#end
 		return label;
+	}
+
+	function set_labelColor(v: LabelColor) : LabelColor {
+		labelColor = v;
+		syncLabelColor();
+		return labelColor;
 	}
 
 	var input: NativeElement;
@@ -49,6 +69,20 @@ abstract class Widget<ValueType> extends Element {
 		return value;
 	}
 	var syncQueued = false;
+
+	function syncLabelColor() {
+		#if js
+		if (labelElement != null) {
+			labelElement.classList.toggle("color-red", labelColor == Red);
+			labelElement.classList.toggle("color-orange", labelColor == Orange);
+			labelElement.classList.toggle("color-yellow", labelColor == Yellow);
+			labelElement.classList.toggle("color-green", labelColor == Green);
+			labelElement.classList.toggle("color-cyan", labelColor == Cyan);
+			labelElement.classList.toggle("color-blue", labelColor == Blue);
+			labelElement.classList.toggle("color-purple", labelColor == Purple);
+		}
+		#end
+	}
 
 	override function makeSelf():Void {
 		var parentLine = Std.downcast(parent, Line);
@@ -83,6 +117,8 @@ abstract class Widget<ValueType> extends Element {
 			setupPropLine(labelElement, input);
 			syncValueUI();
 		}
+
+		syncLabelColor();
 	}
 
 	function makeIndeterminateWidget() : Void {

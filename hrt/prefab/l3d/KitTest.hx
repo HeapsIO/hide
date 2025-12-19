@@ -113,6 +113,7 @@ class KitTest extends Object3D {
 			<category("All Elements")>
 				<text("Text")/>
 				<slider label="Slider" value={12.34}/>
+				<slider label="Red Label"  value={12.34}/>
 				<slider label="Disabled slider" value={12.34} disabled/>
 				<slider label="Slider Exp" value={12.34} exp step={0.001}/>
 				<slider label="Slider Exp Custom" value={12.34} exp step={0.0001}/>
@@ -195,8 +196,21 @@ class KitTest extends Object3D {
 				<category("Tools")>
 					<button("Tool 1") onClick={tool1.enter} />
 					<button("Tool 2") onClick={tool2.enter} />
+
+					<text("") id="toolDemo"/>
 				</category>
 			);
+
+			var time = 0.0;
+			var tool3 = ctx.quickTool(null, null, (dt) -> {
+				var fmtTime = '$time';
+				fmtTime = fmtTime.substr(0, fmtTime.indexOf(".") + 3);
+				toolDemo.content = 'Tools can be used to have a function periodically called by the editor : time since editor was open : $fmtTime s';
+				time += dt;
+			});
+			tool3.foreground = false; // set tool to background mode so it can coexist with other tools
+									  // because there can only be one "foreground" tool active at the same time
+			tool3.enter(); // Start the tool
 		}
 
 		// GENERAL API
@@ -249,6 +263,29 @@ class KitTest extends Object3D {
 				</root>
 			);
 		}
+
+		// LABELS
+		{
+			var autoNamed: Float = 0.0;
+			ctx.build(
+				<category("Labels")>
+					<slider label="Normal"/>
+					<slider field={autoNamed}/> // Widgets without a label try to use the field as the name
+
+					// Label Colors
+					<text("Label can have different colors")/>
+					<slider label="White" label-color={White}/>
+					<slider label="Red" label-color={Red}/>
+					<slider label="Orange" label-color={Orange}/>
+					<slider label="Yellow" label-color={Yellow}/>
+					<slider label="Green" label-color={Green}/>
+					<slider label="Cyan" label-color={Cyan}/>
+					<slider label="Blue" label-color={Blue}/>
+					<slider label="Purple" label-color={Purple}/>
+				</category>
+			);
+		}
+
 
 		// CATEGORIES
 		{

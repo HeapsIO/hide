@@ -456,6 +456,27 @@ kit-root .detached .is-cdb-editor {
     gap: 4px;
     margin-left: 3px;
   }
+  :scope kit-line kit-label.color-red {
+    color: #d20f39;
+  }
+  :scope kit-line kit-label.color-orange {
+    color: #fe640b;
+  }
+  :scope kit-line kit-label.color-yellow {
+    color: #df8e1d;
+  }
+  :scope kit-line kit-label.color-green {
+    color: #40a02b;
+  }
+  :scope kit-line kit-label.color-cyan {
+    color: #04a5e5;
+  }
+  :scope kit-line kit-label.color-blue {
+    color: #1e66f5;
+  }
+  :scope kit-line kit-label.color-purple {
+    color: #8839ef;
+  }
   :scope kit-line kit-label:empty:not(.first) {
     display: none;
   }
