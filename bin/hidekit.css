@@ -519,6 +519,9 @@ kit-root .detached .is-cdb-editor {
   }
   :scope kit-line .texture-choice {
     display: flex;
+    width: unset;
+    height: 22px;
+    flex: 1 1;
     align-items: center;
   }
   :scope kit-line .texture-choice > :first-child {
@@ -528,6 +531,9 @@ kit-root .detached .is-cdb-editor {
   :scope kit-line .texture-choice > :first-child input {
     height: 100%;
     width: 100% !important;
+    border-top-right-radius: 0;
+    border-bottom-right-radius: 0;
+    border-right-width: 0;
   }
   :scope kit-line .texture-choice > :first-child .texture-preview {
     position: absolute;
@@ -542,12 +548,18 @@ kit-root .detached .is-cdb-editor {
     top: 0;
   }
   :scope kit-line .texture-choice .hide-button {
-    height: unset;
-    width: unset;
-    aspect-ratio: 1/1;
+    flex: 0 0;
     height: 22px;
+    min-height: 22px;
+    width: 22px;
+    min-width: 22px;
     margin: 0;
     box-sizing: border-box;
+    text-shadow: none;
+    background: unset;
+    background-color: #4d4d4d;
+    border-top-left-radius: 0;
+    border-bottom-left-radius: 0;
   }
   :scope kit-line kit-slider {
     flex: var(--width, 1) 1;
@@ -603,7 +615,8 @@ kit-root .detached .is-cdb-editor {
     display: block;
     height: 22px;
   }
-  :scope kit-line kit-button {
+  :scope kit-line kit-button,
+  :scope kit-line .hide-button {
     display: flex;
     align-items: center;
     justify-content: center;
@@ -618,21 +631,26 @@ kit-root .detached .is-cdb-editor {
     background-color: #4d4d4d;
     border-color: #5d5d5d;
   }
-  :scope kit-line kit-button:active {
+  :scope kit-line kit-button:active,
+  :scope kit-line .hide-button:active {
     position: relative;
     top: 1px;
   }
-  :scope kit-line kit-button:hover {
+  :scope kit-line kit-button:hover,
+  :scope kit-line .hide-button:hover {
     background-color: #3185ce;
     border-color: #777777;
   }
-  :scope kit-line kit-button.highlight {
+  :scope kit-line kit-button.highlight,
+  :scope kit-line .hide-button.highlight {
     background-color: #3185ce;
   }
-  :scope kit-line kit-button.highlight:hover {
+  :scope kit-line kit-button.highlight:hover,
+  :scope kit-line .hide-button.highlight:hover {
     background-color: #5a9dd8;
   }
-  :scope kit-line kit-button > kit-image {
+  :scope kit-line kit-button > kit-image,
+  :scope kit-line .hide-button > kit-image {
     flex: 1 1 auto;
     max-width: 100%;
     aspect-ratio: 1/1;
@@ -641,19 +659,24 @@ kit-root .detached .is-cdb-editor {
     display: block;
   }
   :scope kit-line kit-button:has(kit-image),
-  :scope kit-line kit-button.square {
+  :scope kit-line .hide-button:has(kit-image),
+  :scope kit-line kit-button.square,
+  :scope kit-line .hide-button.square {
     flex: 0 1 auto;
     aspect-ratio: 1 / 1;
     padding: 3px;
     min-height: 100%;
   }
-  :scope kit-line kit-button.kit-medium {
+  :scope kit-line kit-button.kit-medium,
+  :scope kit-line .hide-button.kit-medium {
     flex: 0 1 32px;
   }
-  :scope kit-line kit-button.kit-big {
+  :scope kit-line kit-button.kit-big,
+  :scope kit-line .hide-button.kit-big {
     flex: 0 1 64px;
   }
-  :scope kit-line kit-button.kit-huge {
+  :scope kit-line kit-button.kit-huge,
+  :scope kit-line .hide-button.kit-huge {
     flex: 0 1 64px;
   }
   :scope kit-line input,

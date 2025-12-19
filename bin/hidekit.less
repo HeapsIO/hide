@@ -543,6 +543,8 @@ kit-root {
 
 			}
 
+
+
 			kit-label:empty:not(.first) {
 				display: none;
 			}
@@ -594,6 +596,9 @@ kit-root {
 
 			.texture-choice {
 				display: flex;
+				width: unset;
+				height: @widget-height;
+				flex: 1 1;
 
 				align-items: center;
 				> :first-child {
@@ -603,6 +608,10 @@ kit-root {
 					input {
 						height: 100%;
 						width: 100% !important;
+
+						border-top-right-radius: 0;
+						border-bottom-right-radius: 0;
+						border-right-width: 0;
 					}
 
 					.texture-preview {
@@ -620,12 +629,19 @@ kit-root {
 				}
 
 				.hide-button {
-					height: unset;
-					width: unset;
-					aspect-ratio: 1/1;
+					flex: 0 0;
 					height: @widget-height;
+					min-height: @widget-height;
+					width: @widget-height;
+					min-width: @widget-height;
 					margin: 0;
 					box-sizing: border-box;
+
+					text-shadow: none;
+					background: unset;
+					background-color: @button-bg;
+					border-top-left-radius: 0;
+					border-bottom-left-radius: 0;
 				}
 			}
 
@@ -700,7 +716,7 @@ kit-root {
 				}
 			}
 
-			kit-button {
+			kit-button, .hide-button {
 				display: flex;
 				align-items: center;
 				justify-content: center;
