@@ -666,6 +666,7 @@ kit-root .detached .is-cdb-editor {
     aspect-ratio: 1 / 1;
     padding: 3px;
     min-height: 100%;
+    height: unset;
   }
   :scope kit-line kit-button.kit-medium,
   :scope kit-line .hide-button.kit-medium {
@@ -674,6 +675,7 @@ kit-root .detached .is-cdb-editor {
   :scope kit-line kit-button.kit-big,
   :scope kit-line .hide-button.kit-big {
     flex: 0 1 64px;
+    aspect-ratio: 1 / 1;
   }
   :scope kit-line kit-button.kit-huge,
   :scope kit-line .hide-button.kit-huge {

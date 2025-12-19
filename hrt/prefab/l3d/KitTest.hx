@@ -475,7 +475,7 @@ class KitTest extends Object3D {
 						<slider label="D"/>
 					</line>
 
-					<line>
+					<line label="Texture">
 						<texture />
 						<select(["AAAA", "BBBB", "CCCC"]) />
 					</line>
