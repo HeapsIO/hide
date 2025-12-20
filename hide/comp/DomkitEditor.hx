@@ -80,6 +80,7 @@ class DomkitChecker {
 						}
 				}
 			}
+			definedIdents.clear();
 			getChecker().parse(dmlCode,filePath,position,locals);
 		} catch( e : hscript.Expr.Error ) {
 			var offset = 1; // hscript is pmax-included whereas domkit is pmax-excluded
