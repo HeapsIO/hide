@@ -650,14 +650,44 @@ class Editor extends Component {
 		// aren't allowed anymore
 		var rtfText = '${CLIPBOARD_PREFIX}${haxe.Json.stringify({data: data, schema: schema})}';
 
-		// Plain text will contain only text value of cells
+		// Plain text will contain only text value of cells formatted with \n and \t
 		var plainText = "";
-		for (cell in cursor.getSelectedCells())
-			plainText += (plainText != "" ? " " : "") + Std.string(cell.value);
+		var selectedCells = cursor.getSelectedCells();
+		selectedCells.sort((c1, c2) -> {
+			if (c1.line.index < c2.line.index) return -1;
+			if (c1.line.index > c2.line.index) return 1;
+			if (c1.columnIndex < c2.columnIndex) return -1;
+			if (c1.columnIndex > c2.columnIndex) return 1;
+			return 0;
+		});
+
+		var minX : Int = cast Math.POSITIVE_INFINITY;
+		var minY : Int = cast Math.POSITIVE_INFINITY;
+		for (c in selectedCells) {
+			if (c.columnIndex < minX)
+				minX = c.columnIndex;
+			if (c.line.index < minY)
+				minY = c.line.index;
+		}
+
+		var x = minX;
+		var y = minY;
+		for (cell in selectedCells) {
+			var newLine = cell.line.index != y;
+			if (newLine) {
+				x = minX;
+				plainText = StringTools.rpad(plainText, '\n', plainText.length + cell.line.index - y);
+			}
+			plainText = StringTools.rpad(plainText, '\t', plainText.length + cell.columnIndex - x);
+
+			x = cell.columnIndex;
+			y = cell.line.index;
+			plainText += (plainText != "" && !newLine ? " " : "") + Std.string(cell.value);
+		}
 
 		ide.setClipboardMultiple([
 			{ type: nw.Clipboard.ClipboardType.Text, data: plainText },
-			{ type:nw.Clipboard.ClipboardType.Rtf, data: rtfText }
+			{ type: nw.Clipboard.ClipboardType.Rtf, data: rtfText }
 		]);
 	}
 
