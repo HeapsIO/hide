@@ -392,6 +392,7 @@ class KitTest extends Object3D {
 						<slider label="Exp" value={10} exp wrap/> // Exponential curve
 						<slider label="Poly" value={10} poly wrap/> // Polynomial curve
 						<slider label="Int" value={10} int/> // Int Slider
+						<slider label="Unit" value={10.0} unit="m/s"/>
 
 						<separator/>
 						<text("A slider group add a little \"link\" button that allow one slider to change all the other sliders proportionally")/>

@@ -673,7 +673,7 @@ kit-root {
 
 			kit-slider {
 				flex: var(--width,1) 1;
-
+				position: relative;
 				display: flex;
 
 				>input {
@@ -685,6 +685,14 @@ kit-root {
 
 				height: @widget-height;
 				align-self: flex-start;
+
+				kit-unit {
+					right: 14px;
+					color: #666;
+					position: absolute;
+					align-self: center;
+					font-style: italic;
+				}
 			}
 
 			kit-select {

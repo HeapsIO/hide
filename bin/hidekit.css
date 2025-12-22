@@ -585,6 +585,7 @@ kit-root .detached .is-cdb-editor {
   }
   :scope kit-line kit-slider {
     flex: var(--width, 1) 1;
+    position: relative;
     display: flex;
     height: 22px;
     align-self: flex-start;
@@ -594,6 +595,13 @@ kit-root .detached .is-cdb-editor {
     cursor: ew-resize;
     height: 100%;
     vertical-align: center;
+  }
+  :scope kit-line kit-slider kit-unit {
+    right: 14px;
+    color: #666;
+    position: absolute;
+    align-self: center;
+    font-style: italic;
   }
   :scope kit-line kit-select {
     flex: var(--width, 1) 1;

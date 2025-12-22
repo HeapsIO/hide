@@ -40,6 +40,11 @@ class Slider<T:Float> extends Widget<T> {
 	**/
 	public var int : Bool = false;
 
+	/**
+		If set, a unit will be displayed along the value like this "10.0 m/s"
+	**/
+	public var unit : String = null;
+
 
 	#if js
 	var slider: js.html.InputElement;
@@ -80,6 +85,12 @@ class Slider<T:Float> extends Widget<T> {
 		var container = js.Browser.document.createElement("kit-slider");
 		slider = js.Browser.document.createInputElement();
 		container.append(slider);
+
+		if (unit != null) {
+			var unitElement = js.Browser.document.createElement("kit-unit");
+			container.append(unitElement);
+			unitElement.textContent = unit;
+		}
 
 		if (tooltip == null)
 			slider.title = "Shift : Precise movement\nCtrl : Fast Movement";
