@@ -1679,6 +1679,7 @@ class Editor extends Component {
 		// Setup for search bar
 		searchBox = new Element('<div>
 			<div class="buttons">
+				<div class="btn ico ico-ellipsis-v" id="grab" title="Add filter"></div>
 				<div class="btn add-btn ico ico-plus" title="Add filter"></div>
 				<div class="btn remove-btn ico ico-minus" title="Remove filter"></div>
 			</div>
@@ -1739,7 +1740,27 @@ class Editor extends Component {
 		inputs.attr("placeholder", "Find");
 		inputs.keyup(search);
 
-		var inputCont = searchBox.find(".input-cont");
+		function startDrag(onMove: js.jquery.Event->Void, onStop: js.jquery.Event->Void) {
+			var el = new Element(element[0].ownerDocument.body);
+			el.on("mousemove.cdb.search", onMove);
+			el.on("mouseup.cdb.search", function(e: js.jquery.Event) {
+				el.off("mousemove.cdb.search");
+				el.off("mouseup.cdb.search");
+				e.preventDefault();
+				e.stopPropagation();
+				onStop(e);
+			});
+		}
+
+		searchBox.find("#grab").mousedown(function(e) {
+			var x = Std.parseInt(searchBox.css("right"));
+			var prevClientX = e.clientX;
+			startDrag(function(e: js.jquery.Event) {
+				searchBox.css("right", x - (e.clientX - prevClientX));
+			}, function(e) {
+
+			});
+		});
 
 		searchBox.find(".add-btn").click(function(_) {
 			var newInput = new Element('<input type="text" class="search-bar-cdb"></input>');
@@ -1750,6 +1771,7 @@ class Editor extends Component {
 			searchBox.find(".remove-btn").show();
 		});
 
+		var inputCont = searchBox.find(".input-cont");
 		searchBox.find(".remove-btn").hide();
 		searchBox.find(".remove-btn").click(function(_) {
 			var searchBars = inputCont.find(".search-bar-cdb");

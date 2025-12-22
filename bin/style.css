@@ -1062,6 +1062,9 @@ input[type=checkbox].indeterminate:after {
 .search-box .buttons {
   margin-right: 10px;
 }
+.search-box .buttons #grab {
+  cursor: grab;
+}
 .search-box .search-type {
   margin-left: 30px;
 }
