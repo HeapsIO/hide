@@ -55,6 +55,7 @@ class Element {
 
 	/**
 		If set, the element and its children can't be edited and will be grayed out
+		use isDisabled to know if this element is editable or not (because it depend on the disabled state of it's parent)
 	**/
 	public var disabled(default, set) = false;
 
@@ -97,17 +98,6 @@ class Element {
 		disabled = v;
 		refreshDisabled();
 		return disabled;
-	}
-
-	function refreshDisabled() {
-		#if js
-		if (native != null) {
-			native.classList.toggle("disabled", isDisabled());
-		}
-		#end
-		for (child in children) {
-			child.refreshDisabled();
-		}
 	}
 
 	function isDisabled() {
@@ -153,13 +143,6 @@ class Element {
 		#end
 	}
 
-	function makeChildren() {
-		for (c in children) {
-			c.disabled = c.disabled || disabled;
-			c.make();
-		}
-	}
-
 	/**
 		Get a path uniquely identifying this Element from the root
 	**/
@@ -167,6 +150,24 @@ class Element {
 		if (parent == null || parent is KitRoot)
 			return id;
 		return parent.getIdPath() + "." + id;
+	}
+
+	/**
+		Find the first element that has the given id in this element children, recursive
+	**/
+	public function getById<T:Element>(id: String, ?cl: Class<T>) : T {
+		if (this.id == id) {
+			var asCl = cl != null ? Std.downcast(this, cl) : cast this;
+			if (asCl != null)
+				return asCl;
+		}
+
+		for (child in children) {
+			var found = child.getById(id);
+			if (found != null)
+				return found;
+		}
+		return null;
 	}
 
 	// Overridable API
@@ -201,6 +202,25 @@ class Element {
 		#else
 		native = new hrt.ui.HuiElement();
 		#end
+	}
+
+
+	// Overridable API
+
+	function makeChildren() {
+		for (c in children) {
+			c.disabled = c.disabled || disabled;
+			c.make();
+		}
+	}
+
+	function getEditMenuContent() : Array<hide.comp.ContextMenu.MenuItem> {
+		return [
+			{label: "Copy", click: copyToClipboard, enabled: canCopy()},
+			{label: "Paste", click: pasteFromClipboard, enabled: canPaste()},
+			{isSeparator: true},
+			{label: "Reset", click: resetWithUndo, enabled: canReset()}
+		];
 	}
 
 	// Internal API
@@ -251,15 +271,6 @@ class Element {
 				return true;
 		}
 		return false;
-	}
-
-	function getEditMenuContent() : Array<hide.comp.ContextMenu.MenuItem> {
-		return [
-			{label: "Copy", click: copyToClipboard, enabled: canCopy()},
-			{label: "Paste", click: pasteFromClipboard, enabled: canPaste()},
-			{isSeparator: true},
-			{label: "Reset", click: resetWithUndo, enabled: canReset()}
-		];
 	}
 
 	public function collapse() {
@@ -482,24 +493,6 @@ class Element {
 		return null;
 	}
 
-	/**
-		Find the first element that has the given id in this element children, recursive
-	**/
-	public function getById<T:Element>(id: String, ?cl: Class<T>) : T {
-		if (this.id == id) {
-			var asCl = cl != null ? Std.downcast(this, cl) : cast this;
-			if (asCl != null)
-				return asCl;
-		}
-
-		for (child in children) {
-			var found = child.getById(id);
-			if (found != null)
-				return found;
-		}
-		return null;
-	}
-
 	function makeUniqueId(id: String) : String {
 		if (this.root == null)
 			return id;
@@ -512,8 +505,22 @@ class Element {
 		}
 		return newId;
 	}
+
+	function refreshDisabled() {
+		#if js
+		if (native != null) {
+			native.classList.toggle("disabled", isDisabled());
+		}
+		#end
+		for (child in children) {
+			child.refreshDisabled();
+		}
+	}
 	#end
 
+	/**
+		Create elements from a DML expression and append them at the end of this element
+	**/
 	public macro function build(ethis: haxe.macro.Expr, dml: haxe.macro.Expr, ?contextObj: haxe.macro.Expr, ?onAnyChange: haxe.macro.Expr.ExprOf<(isTemp:Bool) -> Void>) : haxe.macro.Expr {
 		return hide.kit.Macros.build(ethis, dml, contextObj, onAnyChange);
 	}
