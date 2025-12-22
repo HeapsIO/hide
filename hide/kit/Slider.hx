@@ -15,7 +15,9 @@ class Slider<T:Float> extends Widget<T> {
 
 	/**
 		Override the default step for editing the curve. Note that if min and max are set the step will be calculated accordingly, but setting
-		this will override the automaticaly calculated value.
+		this will override the automatically calculated value.
+		The step basically control how much each value is rounded each time the slider is moved. Note that at the moment,
+		values pasted from the clipboard or manually entered by the user using the keyboard are allowed to bypass the step value.
 	**/
 	public var step : Null<T> = null;
 
@@ -81,7 +83,11 @@ class Slider<T:Float> extends Widget<T> {
 			throw "Slider can't be both exp and poly";
 		}
 
+		if (value == null)
+			value = getDefaultFallback();
+
 		#if js
+
 		var container = js.Browser.document.createElement("kit-slider");
 		slider = js.Browser.document.createInputElement();
 		container.append(slider);
@@ -212,7 +218,7 @@ class Slider<T:Float> extends Widget<T> {
 
 		slider.addEventListener("blur", (e: js.html.FocusEvent) -> {
 			var newValue = Std.parseFloat(slider.value);
-			slideTo(cast newValue ?? value, false);
+			slideTo(cast newValue ?? value, false, false);
 		});
 
 		return container;
@@ -230,13 +236,14 @@ class Slider<T:Float> extends Widget<T> {
 	}
 
 	function snap(value: Float) : T {
-		var snap : Float = (step:Float) ?? (int ? 1.0 : 0.01);
-		return cast hxd.Math.round(value / snap) * snap;
+		var snap : Float = step != null ? 1.0/step : (int ? 1.0 : 100);
+		return cast hxd.Math.round(value * snap) / snap;
 	}
 
-	function slideTo(newValue: T, isTemporary: Bool) {
+	function slideTo(newValue: T, isTemporary: Bool, doSnap: Bool = true) {
 		var group = Std.downcast(parent, SliderGroup);
-		newValue = snap(newValue);
+		if (doSnap || int)
+			newValue = snap(newValue);
 
 		if (group != null && group.isLocked) {
 			var changeDelta : Float = (newValue:Float) / (value:Float);
@@ -312,7 +319,7 @@ class Slider<T:Float> extends Widget<T> {
 			return;
 		}
 		#if js
-		slider.value = Std.string(hxd.Math.round(value * 100) / 100);
+		slider.value = Std.string(value);
 		#else
 		slider.slider.value = value;
 		#end
