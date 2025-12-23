@@ -1,0 +1,230 @@
+package hide.comp;
+
+class FileSelect2 extends Component {
+
+	var extensions : Array<String>;
+	public var path(default, set) : String;
+	public var disabled(default, set) = false;
+	public var directory : Bool = false;
+	var preview : Element;
+	var input : Element;
+
+
+	public function new(extensions,?parent,?root, handleDragAndDrop=true) {
+		if( root == null )
+			root = new Element("<fancy-file-select>");
+
+		super(parent,root);
+		root.html("<input class='file'><fancy-image class='texture-preview'></fancy-image>");
+		root.addClass("file");
+
+		preview = root.find("fancy-image");
+		input = root = root.find("input");
+
+		this.extensions = extensions;
+		path = null;
+		root.mousedown(function(e) {
+			e.preventDefault();
+			if (disabled) return;
+			if( e.button == 0 ) {
+				if (!directory) {
+					ide.chooseFile(extensions, function(path) {
+						this.path = path;
+						onChange();
+					}, false, path);
+				} else {
+					ide.chooseDirectory(function(path) {
+						this.path = path;
+						onChange();
+					}, false);
+				}
+			}
+		});
+
+		function contextMenu(e) {
+			e.preventDefault();
+			var fpath = getFullPath();
+			ContextMenu.createFromEvent(cast e, [				{ label : "View", enabled : fpath != null, click : function() onView() },
+				{ label : "Clear", enabled : path != null && !disabled, click : function() { path = null; onChange(); } },
+				{ label : "Copy Path", enabled : path != null, click : function() ide.setClipboard(path) },
+				{ label : "Copy Absolute Path", enabled : fpath != null, click : function() { ide.setClipboard(fpath); } },
+				{ label : "Paste Path", enabled: !disabled, click : function() {
+					path = ide.getClipboard();
+					onChange();
+				}},
+				{ label : "Open in Explorer", enabled : fpath != null, click : function(){
+					Ide.showFileInExplorer(fpath);
+				} },
+				{ label : "Open in Resources", enabled : path != null, click : function() {
+					ide.showFileInResources(path);
+				}},
+			]);
+			return false;
+		}
+
+		root.parent().prev("dt").contextmenu(contextMenu);
+		root.contextmenu(contextMenu);
+
+		if (handleDragAndDrop) {
+
+			hide.tools.DragAndDrop.makeDropTarget(root.get(0), (event: hide.tools.DragAndDrop.DropEvent, dragData: hide.tools.DragAndDrop.DragData) -> {
+				var paths : Array<hide.tools.FileManager.FileEntry> = cast dragData.data.get("drag/filetree") ?? [];
+				if (paths.length == 0) {
+					dragData.dropTargetValidity = ForbidDrop;
+					return;
+				}
+
+				var newPath = ide.makeRelative(paths[0].path);
+				if (!pathIsValid(newPath)) {
+					dragData.dropTargetValidity = ForbidDrop;
+					return;
+				}
+
+				switch (event) {
+					case Enter:
+						root.addClass("fancy-drag-drop-target");
+					case Leave:
+						root.removeClass("fancy-drag-drop-target");
+					case Move:
+					case Drop:
+						path = newPath;
+						onChange();
+				}
+			});
+		}
+
+		// allow drag files
+		root.on("dragover", function(e) {
+			root.addClass("dragover");
+		});
+		root.on("dragleave", function(e) {
+			root.removeClass("dragover");
+		});
+		root.on("drop", function(e) {
+			root.removeClass("dragover");
+		});
+	}
+
+	override function remove() {
+		super.remove();
+	}
+
+	public dynamic function onView() {
+		ide.openFile(getFullPath());
+	}
+
+	function pathIsValid( path : String ) : Bool {
+		return pathIsValidStatic(path, extensions, directory);
+	}
+
+	static public function pathIsValidStatic(path: String, extensions: Array<String>, directory: Bool) : Bool {
+		if (!directory) {
+			return (
+				path != null
+				&& sys.FileSystem.exists(hide.Ide.inst.getPath(path))
+				&& extensions.indexOf(path.split(".").pop().toLowerCase()) >= 0
+			);
+		} else {
+			return (
+				path != null
+				&& sys.FileSystem.exists(hide.Ide.inst.getPath(path))
+				&& sys.FileSystem.isDirectory(path)
+			);
+		}
+	}
+
+
+	public function getFullPath() {
+		if( path == null )
+			return null;
+		var fpath = ide.getPath(path);
+		if( sys.FileSystem.exists(fpath) )
+			return fpath;
+		return null;
+	}
+
+	function set_path(p:String) {
+		// We need to do this comparison since sys.FileSystem.exists() is case insensitive on Windows
+		var fullPath = ide.getPath(p);
+		var exists = false;
+		try {
+			if (fullPath != null) {
+				var filename = fullPath.substr(fullPath.lastIndexOf('/') + 1);
+				var parentDir = fullPath.substring(0, fullPath.lastIndexOf('/'));
+				var files = sys.FileSystem.readDirectory(parentDir);
+				for (f in files) {
+					if (f == filename) {
+						exists = true;
+						break;
+					}
+				}
+			}
+		} catch(e) {
+		}
+
+		var text = p == null ? "-- select --" : (exists ? "" : "[NOT FOUND] ") + p;
+		input.val(text);
+		input.attr("title", p == null ? "" : p);
+
+		this.path = p;
+
+		preview.hide();
+		if (path == null) {
+			return null;
+		}
+
+		var fileEntry = hide.tools.FileManager.inst.getFileEntry(path);
+		if (fileEntry != null) {
+			if (fileEntry.iconPath == null || fileEntry.iconPath == "loading") {
+				fileEntry.getIcon((_) -> setPreviewCss(fileEntry.iconPath));
+			} else {
+				setPreviewCss(fileEntry.iconPath);
+			}
+		}
+
+		return p;
+	}
+
+	static function bindTooltip(element: hide.Element, fileEntry: hide.tools.FileManager.FileEntry) {
+		var elementHtml = element[0];
+		var tooltip = null;
+		elementHtml.onmouseenter = () -> {
+			tooltip?.remove();
+
+			if (fileEntry == null)
+				return;
+			tooltip = new hide.comp.FancyTooltip(element);
+
+			tooltip.element.html(hide.view.FileBrowser.getThumbnail(fileEntry));
+			tooltip.element.children()[0].style.width = "256px";
+			tooltip.element.children()[0].style.height = "256px";
+
+			var geom = elementHtml.getBoundingClientRect();
+			tooltip.show();
+			var tooltipGeom = tooltip.element[0].getBoundingClientRect();
+			tooltip.x = Std.int(geom.right - tooltipGeom.width);
+			tooltip.y = Std.int(geom.bottom);
+		}
+
+		elementHtml.onmouseleave = () -> {
+			tooltip?.remove();
+			tooltip = null;
+		}
+	}
+
+	function setPreviewCss(path: String) {
+		preview.show();
+		bindTooltip(preview, hide.tools.FileManager.inst.getFileEntry(this.path));
+		preview.css("background-image", "url('file://" + path + "')");
+		preview.css("background-size", "15px 15px");
+	}
+
+	function set_disabled(disabled : Bool) {
+		input.toggleClass("disabled", disabled);
+		return this.disabled = disabled;
+	}
+
+	public dynamic function onChange() {
+	}
+
+}

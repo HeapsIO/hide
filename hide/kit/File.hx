@@ -7,14 +7,13 @@ class File extends Widget<String> {
 	public var type : String = "file";
 
 	#if js
-	var file: hide.comp.FileSelect;
+	var file: hide.comp.FileSelect2;
 	var element: hide.Element;
 	#end
 
 	function makeInput():NativeElement {
 		#if js
-		element = new hide.Element("<kit-file></kit-file>");
-		file = new hide.comp.FileSelect(types.get(type), element, null, true);
+		file = new hide.comp.FileSelect2(types.get(type), element, null, true);
 
 		file.onChange = () -> {
 			value = file.path;
@@ -22,69 +21,16 @@ class File extends Widget<String> {
 		}
 		file.onView = () -> onView();
 
-		return element[0];
+		return file.element[0];
 		#else
 		throw "implment";
 		#end
 	}
 
-	#if js
-	function bindTooltip(element: hide.Element, fileEntry: hide.tools.FileManager.FileEntry) {
-		var element = element[0];
-		var tooltip = null;
-		element.onmouseenter = () -> {
-			tooltip?.remove();
-
-			if (value == null)
-				return;
-
-			if (fileEntry == null)
-				return;
-			tooltip = new hide.comp.FancyTooltip(new hide.Element(root.native));
-
-			var refresh = (_) -> {
-				tooltip.element.html(hide.view.FileBrowser.getThumbnail(fileEntry));
-				tooltip.element.children()[0].style.width = "256px";
-				tooltip.element.children()[0].style.height = "256px";
-			};
-
-			refresh(null);
-			fileEntry.getIcon(refresh);
-
-			var geom = element.getBoundingClientRect();
-			tooltip.show();
-			var tooltipGeom = tooltip.element[0].getBoundingClientRect();
-			tooltip.x = Std.int(geom.right - tooltipGeom.width);
-			tooltip.y = Std.int(geom.bottom);
-		}
-
-		element.onmouseleave = () -> {
-			tooltip?.remove();
-			tooltip = null;
-		}
-	}
-	#end
-
 	override function syncValueUI() {
 		#if js
 		if (file != null)
 			file.path = value ?? '-- Choose ${type.toUpperCase()} --';
-		if (element != null) {
-			element.find("fancy-image").remove();
-			if (value != null) {
-				var fileEntry = hide.tools.FileManager.inst.getFileEntry(value);
-				if (fileEntry != null) {
-					var refresh = (_) -> {
-						element.find("fancy-image").remove();
-						element.append(hide.view.FileBrowser.getThumbnail(fileEntry));
-						bindTooltip(element.find("fancy-image"), fileEntry);
-					};
-
-					refresh(null);
-					fileEntry.getIcon(refresh);
-				}
-			}
-		}
 		#end
 	}
 

@@ -4,12 +4,12 @@ package hide.kit;
 
 class Texture extends Widget<Dynamic> {
 	#if js
-	var textureChoice: hide.comp.TextureChoice;
+	var textureChoice: hide.comp.TextureChoice2;
 	#end
 
 	function makeInput() : NativeElement {
 		#if js
-		textureChoice = new hide.comp.TextureChoice();
+		textureChoice = new hide.comp.TextureChoice2();
 		textureChoice.onChange = (shoudSaveUndo) -> {
 			value = textureChoice.value;
 			broadcastValueChange(!shoudSaveUndo);
