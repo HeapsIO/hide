@@ -469,18 +469,23 @@ class FileManager {
 			throw "File already exists";
 		}
 
-		if( sys.FileSystem.isDirectory(sourcePath) ) {
-			sys.FileSystem.createDirectory(targetPath + "/");
-			for( f in sys.FileSystem.readDirectory(sourcePath) ) {
-				sys.io.File.saveBytes(targetPath + "/" + f, sys.io.File.getBytes(sourcePath + "/" + f));
+		function rec(origin : String, target : String, depth : Int = 0) {
+			if (sys.FileSystem.isDirectory(origin)) {
+				sys.FileSystem.createDirectory(target + "/");
+				for (f in sys.FileSystem.readDirectory(origin))
+					rec(origin + "/" + f, target + "/" + f, depth + 1);
+			} else {
+				if (depth == 0 && target.indexOf(".") != -1) {
+					var oldExt = origin.split(".").pop();
+					target += "." + oldExt;
+				}
+
+				sys.io.File.saveBytes(target, sys.io.File.getBytes(origin));
 			}
-		} else {
-			if (targetPath.indexOf(".") == -1) {
-				var oldExt = sourcePath.split(".").pop();
-				targetPath += "." + oldExt;
-			}
-			sys.io.File.saveBytes(targetPath, sys.io.File.getBytes(sourcePath));
 		}
+
+		rec(sourcePath, targetPath, 0);
+
 		return true;
 	}
 
