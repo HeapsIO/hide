@@ -671,7 +671,7 @@ class VolumetricLighting extends RendererFX {
 					<range(0,1) label="Emissive Intensity" field={emissiveIntensity} />
 				</category>
 				<category("Noise")>
-					<range(0,4) label="Octaves" field={noiseOctave} />
+					<range(0,4) label="Octaves" field={noiseOctave} label-color={Red} />
 					<range(0,100) label="Scale" field={noiseScale} />
 					<range(0,100) label="Turmoil" field={noiseTurmoil} />
 					<range(0,1) label="Persistence" field={noisePersistence} />
@@ -679,7 +679,7 @@ class VolumetricLighting extends RendererFX {
 					<range(0,2) label="Sharpness" field={noiseSharpness} />
 				</category>
 				<category("Rendering")>
-					<range(0,255) label="Steps" field={steps} />
+					<range(0,255) label="Steps" field={steps} label-color={Red} />
 					<range(0,100) step="1" field={blur} />
 					<slider field={blurDepthThreshold} />
 					<range(0,1) field={ditheringIntensity} />
