@@ -5824,11 +5824,16 @@ class SceneEditor {
 
 		for( g in (view.config.get("sceneeditor.newgroups") : Array<String>) ) {
 			var parts = g.split("|");
-			var cl : Dynamic = Type.resolveClass(parts[1]);
-			if( cl == null ) continue;
+			final classes : Array<Dynamic> = [];
+			for (partIdx in 1...parts.length) {
+				var cl : Class<Dynamic> = Type.resolveClass(parts[partIdx]);
+				if( cl == null ) continue;
+				classes.push(cl);
+			}
+			if( classes.length == 0 ) continue;
 			groups.push({
 				label : parts[0],
-				cl : cl,
+				classes : classes,
 				group : [],
 			});
 		}
@@ -5847,12 +5852,16 @@ class SceneEditor {
 				newItems.push(m);
 			else {
 				var found = false;
-				for( g in groups )
-					if( hrt.prefab.Prefab.isOfType(hrt.prefab.Prefab.getPrefabInfoByName(ptype).prefabClass,g.cl) ) {
-						g.group.push(m);
-						found = true;
-						break;
-					}
+				for( g in groups ) {
+					for(cls in g.classes)
+						if( hrt.prefab.Prefab.isOfType(hrt.prefab.Prefab.getPrefabInfoByName(ptype).prefabClass, cls) ) {
+							g.group.push(m);
+							found = true;
+							break;
+						}
+					
+					if (found) break;
+				}
 				if( !found ) gother.push(m);
 			}
 		}
