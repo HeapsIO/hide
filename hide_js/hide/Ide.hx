@@ -1774,6 +1774,7 @@ class Ide extends hide.tools.IdeData {
 				Sys.command(cmd);
 			};
 			case "Mac":	Sys.command("open " + haxe.io.Path.directory(path));
+			case "Linux": Sys.command("xdg-open " + haxe.io.Path.directory(path));
 			default: throw "Exploration not implemented on this platform";
 		}
 	}
