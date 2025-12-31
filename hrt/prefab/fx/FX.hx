@@ -328,7 +328,7 @@ class FXAnimation extends h3d.scene.Object {
 	/**
 		Prefer using seek or update depending on the context
 	**/
-	@:deprecated
+	@:deprecated("Use seek() instead")
 	public function setTime(newTime: Float, fullsync: Bool = true) {
 		seek(newTime, fullsync);
 	}
