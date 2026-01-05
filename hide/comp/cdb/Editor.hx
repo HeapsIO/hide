@@ -1718,6 +1718,7 @@ class Editor extends Component {
 					<input type="text" class="search-bar-cdb"></input>
 				</div>
 			</div>
+			${!Ide.inst.ideConfig.searchOnKeyPress ? '<div class="btn ico ico-search" id="btn-search" title="Search"></div>' : ''}
 			<p id="results">No results</p>
 			<div class="btn search-type fa fa-font" title="Change search type"></div>
 			<div class="btn search-hidden fa fa-eye" title="Search through hidden categories"></div>
@@ -1725,16 +1726,10 @@ class Editor extends Component {
 		</div>').addClass("search-box").appendTo(element);
 		searchBox.hide();
 
-		function search(e: js.jquery.Event) {
-			// Close search with escape
-			if( e.keyCode == K.ESCAPE ) {
-				searchBox.find(".close-search").click();
-				return;
-			}
-
+		function search(searchText : String, idxSearchBar : Int) {
 			// Change to expresion mode if we detect an expression character in the search (qol)
 			for (c in Editor.COMPARISON_EXPR_CHARS) {
-				if (StringTools.contains(Element.getVal(e.getThis()), c) && !searchExp) {
+				if (StringTools.contains(searchText, c) && !searchExp) {
 					searchExp = true;
 					var searchTypeBtn = searchBox.find(".search-type");
 					searchTypeBtn.toggleClass("fa-superscript", searchExp);
@@ -1744,11 +1739,10 @@ class Editor extends Component {
 				}
 			}
 
-			var index = e.getThis().parent().find('.search-bar-cdb').index(e.getThis());
-			if (filters[index] == null)
-				filters[index] = "";
+			if (filters[idxSearchBar] == null)
+				filters[idxSearchBar] = "";
 
-			filters[index] = Element.getVal(e.getThis());
+			filters[idxSearchBar] = searchText;
 
 			// Slow table refresh protection
 			if (currentSheet.lines.length > 300) {
@@ -1768,7 +1762,32 @@ class Editor extends Component {
 
 		var inputs = searchBox.find(".search-bar-cdb");
 		inputs.attr("placeholder", "Find");
-		inputs.keyup(search);
+
+		for (idx in 0...inputs.length) {
+			var i = new Element(inputs.get(idx));
+			i.keyup((e) -> {
+				// Close search with escape
+				if (e.keyCode == K.ESCAPE) {
+					searchBox.find(".close-search").click();
+					return;
+				}
+
+				// Search on enter
+				if (e.keyCode == K.ENTER) {
+					for (idx in 0...inputs.length)
+						search(i.val(), idx);
+					return;
+				}
+
+				if (ide.ideConfig.searchOnKeyPress)
+					search(i.val(), idx);
+			});
+		}
+
+		searchBox.find("#btn-search").on("click", (_) -> {
+			for (idx in 0...inputs.length)
+				search(new Element(inputs.get(idx)).val(), idx);
+		});
 
 		function startDrag(onMove: js.jquery.Event->Void, onStop: js.jquery.Event->Void) {
 			var el = new Element(element[0].ownerDocument.body);

@@ -31,6 +31,7 @@ class IdeData {
 		"orientMeshOnDrag" => true,
 		"collisionOnDrag" => true,
 		"minDistFromCameraOnDrag" => 1,
+		"searchOnKeyPress" => true
 	];
 
 	public var currentConfig(get,never) : Config;

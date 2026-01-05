@@ -39,6 +39,7 @@ typedef HideGlobalConfig = {
 	var sceneEditorClickCycleObjects : Bool;
 
 	// CDB
+	var searchOnKeyPress : Bool;
 	var highlightActiveLine : Bool;
 	var highlightActiveLineHeader : Bool;
 	var highlightActiveColumnHeader : Bool;
