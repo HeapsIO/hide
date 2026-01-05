@@ -366,7 +366,7 @@ class Editor extends Component {
 
 			if (filtered) {
 				@:privateAccess l.filtered = true;
-				if (seps == null)
+				if (seps == null || seps.length == 0)
 					@:privateAccess l.hide();
 			}
 			else {
