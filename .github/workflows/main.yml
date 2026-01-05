@@ -11,7 +11,7 @@ jobs:
   build:
     strategy:
       matrix:
-        haxe-version: [latest, 4.3.7]
+        haxe-version: [3aed86e, 4.3.7]
       fail-fast: false
     runs-on: ubuntu-latest
     steps:
