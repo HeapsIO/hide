@@ -823,17 +823,30 @@ class EmitterObject extends h3d.scene.Object {
 		}
 	}
 
-	inline function checkList() { /*
+	function error() {
+		var path = name;
+		var obj : h3d.scene.Object = this.parent;
+		while (obj != null) {
+			if(obj.name != null && obj.name.length > 0) {
+				path = obj.name + "/" + path;
+			}
+			obj = obj.parent;
+		}
+		throw 'Emitter error ($path)'; // TODO: Add more information
+	}
+
+	inline function checkList() {
+		#if 0
 		var p = listHead;
 		var tail = null;
 		var count = 0;
 		while(p != null) {
 			++count;
 			if(p.idx == ParticleInstance.REMOVED_IDX)
-				throw "!";
+				error();
 			var n = p.next;
 			if(n != null)
-				if(n.prev != p) throw "!";
+				if(n.prev != p) error();
 			if(p.next != null)
 				p = p.next;
 			else {
@@ -841,19 +854,19 @@ class EmitterObject extends h3d.scene.Object {
 				break;
 			}
 		}
-		if(count != numInstances) throw count + "!=" + numInstances;
+		if(count != numInstances) error();
 		p = tail;
 		count = 0;
 		while(p != null) {
 			++count;
 			p = p.prev;
 		}
-		if(count != numInstances) throw count + "!=" + numInstances;
-		#end */
+		if(count != numInstances) error();
+		#end
 	}
 
 	function allocInstance() {
-		if(numInstances >= maxCount) throw "assert";
+		if(numInstances >= maxCount) error();
 		var p = particles[numInstances++];
 		p.init(instanceCounter, this);
 		p.prev = null;
@@ -870,12 +883,12 @@ class EmitterObject extends h3d.scene.Object {
 		checkList();
 		--numInstances;
 		if(numInstances < 0)
-			throw "assert";
+			error();
 
 		// stitch list after remove
 		var o = particles[idx];
 
-		if(o.idx == ParticleInstance.REMOVED_IDX) throw "!";
+		if(o.idx == ParticleInstance.REMOVED_IDX) error();
 
 		// Transfer remaining subemitter to this emitter array
 		o.clear(this);
@@ -883,16 +896,16 @@ class EmitterObject extends h3d.scene.Object {
 		var prev = o.prev;
 		var next = o.next;
 		if(prev != null) {
-			if(prev.next == next) throw "!";
+			if(prev.next == next) error();
 			prev.next = next;
 		}
 		else {
-			if(listHead != o) throw "!";
-			if(listHead == next) throw "!";
+			if(listHead != o) error();
+			if(listHead == next) error();
 			listHead = next;
 		}
 		if(next != null) {
-			if(next.prev == prev) throw "!";
+			if(next.prev == prev) error();
 			next.prev = prev;
 		}
 
