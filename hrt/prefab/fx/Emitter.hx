@@ -188,7 +188,7 @@ class ParticleInstance {
 		scaleZ = 1.0;
 
 		colorMult = -1;
-		if(this.idx != REMOVED_IDX) throw this.idx;
+		if(this.idx != REMOVED_IDX) emitter.error();
 		this.idx = idx;
 		speedAccumulation.load(new h3d.Vector());
 		life = 0;
