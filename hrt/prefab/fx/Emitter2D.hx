@@ -58,7 +58,7 @@ class Particle2DInstance extends h2d.SpriteBatch.BatchElement {
 		this.y = absPos.getPosition().y;
 
 		var d = new Vector(1, 0);
-		d.transform2x2(basisAbsPos);
+		d.transform2x2(absPos);
 		this.rotation = d.getRotation();
 
 		this.scaleX = absPos.getScale().x;
@@ -130,9 +130,9 @@ class Particle2DInstance extends h2d.SpriteBatch.BatchElement {
 					var posX = r * Math.cos(a);
 					var posY = r * Math.sin(a);
 					if (emitter.emitOrientation.match(Normal))
-						movementAbsPos.initRotate(new Vector(posX, posY).getRotation());
+						m.initRotate(new Vector(posX, posY).getRotation());
 
-					movementAbsPos.translate(posX, posY);
+					m.translate(posX, posY);
 
 				case Rectangle:
 					var width = evaluator.getFloat(emitter.emitWidth, emitter.curTime);
@@ -148,14 +148,14 @@ class Particle2DInstance extends h2d.SpriteBatch.BatchElement {
 					}
 
 					if (emitter.emitOrientation.match(Normal))
-						movementAbsPos.initRotate(new Vector(posX, posY).getRotation());
+						m.initRotate(new Vector(posX, posY).getRotation());
 
-					movementAbsPos.translate(posX, posY);
+					m.translate(posX, posY);
 			}
 
 			// START LOCAL SPEED
 			evaluator.getVector2(idx, emitter.startSpeed, emitter.curTime, tmpVec);
-			tmpVec.transform2x2(movementAbsPos);
+			tmpVec.transform2x2(m);
 			speed += tmpVec;
 
 			// START WORLD SPEED
@@ -168,7 +168,7 @@ class Particle2DInstance extends h2d.SpriteBatch.BatchElement {
 		if (def.acceleration != VZero) {
 			evaluator.getVector2(idx, def.acceleration, t, tmpVec);
 			tmpVec.scale(dt);
-			tmpVec.transform2x2(movementAbsPos);
+			tmpVec.transform2x2(m);
 			speed += tmpVec;
 		}
 
@@ -185,7 +185,7 @@ class Particle2DInstance extends h2d.SpriteBatch.BatchElement {
 		// SPEED
 		if (def.localSpeed != VZero) {
 			evaluator.getVector2(idx, def.localSpeed, t, tmpVec);
-			tmpVec.transform2x2(movementAbsPos);
+			tmpVec.transform2x2(m);
 			tmpSpeed += tmpVec;
 		}
 
@@ -214,7 +214,7 @@ class Particle2DInstance extends h2d.SpriteBatch.BatchElement {
 			}
 		}
 
-		movementAbsPos.translate(tmpSpeed.x * dt, tmpSpeed.y * dt);
+		m.translate(tmpSpeed.x * dt, tmpSpeed.y * dt);
 
 		if (def.orbitSpeed != VZero) {
 			var orbitSpeed = evaluator.getFloat(idx, def.orbitSpeed, t);
@@ -222,11 +222,11 @@ class Particle2DInstance extends h2d.SpriteBatch.BatchElement {
 			var factorOverTime = evaluator.getFloat(idx, def.orbitSpeedOverTime, emitter.curTime);
 			orbitSpeed *= factorOverTime;
 
-			var prevPos = movementAbsPos.getPosition().clone();
+			var prevPos = m.getPosition().clone();
 			tmpMat.initRotate(orbitSpeed * dt);
-			tmpMat.multiply(movementAbsPos, tmpMat);
+			tmpMat.multiply(m, tmpMat);
 			var delta = tmpMat.getPosition().sub(prevPos);
-			movementAbsPos.prependTranslate(delta.x, delta.y);
+			m.prependTranslate(delta.x, delta.y);
 
 			// Take transform into account into local speed
 			delta.scale(1 / dt);
