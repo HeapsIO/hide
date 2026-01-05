@@ -225,6 +225,56 @@ class Shader extends Prefab {
 
 	override function edit2(ctx:hrt.prefab.EditContext2) {
 		super.edit2(ctx);
+
+		var shaderDef = getShaderDefinition();
+		if( shaderDef == null) {
+			ctx.build(
+				<root>
+					<text("Shader definition is missing") /*label-color={Orange}*/ />
+				</root>
+			);
+			return;
+		}
+
+		function refresh(_:Bool) {
+			if( targetMaterial == "" ) targetMaterial = null;
+
+			var o3d = this.findParent(Object3D);
+			if (o3d != null)
+				ctx.rebuildPrefab(o3d);
+
+			var o2d = this.findParent(Object2D);
+			if (o2d != null)
+				ctx.rebuildPrefab(o2d);
+		}
+
+		function getMaterialList() : Array<{value:String, label:String}> {
+			var materials = [];
+			iterMaterials(function(_,m) if( m.name != null && materials.indexOf(m.name) < 0 ) materials.push(m.name));
+			if( targetMaterial != null && materials.indexOf(targetMaterial) < 0 )
+				materials.push(targetMaterial);
+
+			var materialList = [];
+			materialList.push({value: null, label:"All"});
+			for( m in materials )
+				materialList.push({value: m, label: m});
+			return materialList;
+		}
+
+		ctx.build(
+			<category("Properties") id="properties">
+			</category>
+		);
+
+		var materialList = getMaterialList();
+		trace(targetMaterial);
+		if( materialList.length >= 2 || targetMaterial != null ) {
+			properties.build(
+				<select(materialList) label="Material" field={targetMaterial} onValueChange={refresh}/>
+			);
+		}
+
+		properties.build(<checkbox field={recursiveApply} onValueChange={refresh}/>);
 	}
 
 	override function edit( ectx : hide.prefab.EditContext ) {
