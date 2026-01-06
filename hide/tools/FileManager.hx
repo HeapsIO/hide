@@ -550,10 +550,12 @@ class FileManager {
 			}
 			return;
 		}
-		var thumbnail = ThumbnailGenerator.getThumbnailPath(file.getPath());
-		try {
-			sys.FileSystem.deleteFile(thumbnail.toString());
-		} catch (e) {};
+		if (file.iconPath != null && file.iconPath != "loading") {
+			try {
+				sys.FileSystem.deleteFile(file.iconPath);
+			} catch (e) {};
+		}
+
 		file.iconPath = null;
 	}
 

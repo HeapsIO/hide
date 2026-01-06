@@ -346,11 +346,23 @@ class ThumbnailGenerator {
 				toRender.cb(path);
 			}
 			catch (e) {
-				toRender.cb(null);
+				hide.Ide.inst.quickError('miniature render fail for ${toRender.path} : $e');
+				abort = true;
 			}
-		} else {
+		}
+
+		if (abort) {
+			resetScene();
 			toRender.cb(null);
 		}
+	}
+
+	function resetScene() {
+		renderCanvas.s3d.dispose();
+		renderCanvas.s2d.dispose();
+
+		renderCanvas.s3d = new h3d.scene.Scene();
+		renderCanvas.s2d = new h2d.Scene();
 	}
 
 	function convertAndWriteThumbnail(basePath: String, texture: h3d.mat.Texture) {
@@ -452,6 +464,7 @@ class ThumbnailGenerator {
 						js.html.Console.log('handleTexture DONE (${toRender.path})');
 				} catch (e) {
 					waitingAsyncLoad = false;
+					resetScene();
 					toRender.cb(null);
 					js.html.Console.warn('handleTexture ERR : $e (${toRender.path})');
 				}
@@ -459,6 +472,7 @@ class ThumbnailGenerator {
 		} catch (e) {
 			waitingAsyncLoad = false;
 			toRender.cb(null);
+			resetScene();
 			js.html.Console.warn('handleTexture ERR : $e (${toRender.path})');
 		}
 
