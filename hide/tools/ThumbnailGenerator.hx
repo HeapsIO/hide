@@ -63,6 +63,8 @@ class ThumbnailGenerator {
 	var renderTexture : h3d.mat.Texture;
 	final renderRes = 512;
 
+	var waitingAsyncLoad = false;
+
 	var sceneRoot : h3d.scene.Object;
 
 	var socket : hxd.net.Socket = null;
@@ -143,7 +145,7 @@ class ThumbnailGenerator {
 		}
 		switch((message.type:FileManager.ManagerToGenCommand)) {
 			case queue:
-					renderMiniature(message.path, sendSuccess.bind(message.path));
+				renderMiniature(message.path, sendSuccess.bind(message.path));
 			case clear:
 				miniaturesToRender = [];
 			case prio:
@@ -169,12 +171,14 @@ class ThumbnailGenerator {
 	}
 
 	public static final thumbRoot = ".tmp/";
-	public static final thumbExt = "thumb.jpg";
+	public static final thumbExt = "jpg";
 
-	static public function getThumbPath(basePath: String) : haxe.io.Path {
+	static public function getThumbnailPath(basePath: String) : haxe.io.Path {
+		var hash = getThumbnailHash(basePath);
 		basePath = StringTools.replace(basePath, hide.Ide.inst.resourceDir, "");
 		var path = new haxe.io.Path(haxe.io.Path.join([hide.Ide.inst.resourceDir, thumbRoot, basePath]));
-		path.ext += "." + thumbExt;
+		path.file += "." + path.ext + "_thumb_" + hash;
+		path.ext = thumbExt;
 		return path;
 	}
 
@@ -238,6 +242,7 @@ class ThumbnailGenerator {
 		renderCanvas.engine.setCurrent();
 
 		renderCanvas.s3d.removeChildren();
+		renderCanvas.s2d.removeChildren();
 
 		var config = Config.loadForFile(Ide.inst, toRender.path);
 		var renderPropsPath = getRenderProps(toRender.path, config);
@@ -344,7 +349,7 @@ class ThumbnailGenerator {
 	}
 
 	function convertAndWriteThumbnail(basePath: String, texture: h3d.mat.Texture) {
-		var path = getThumbPath(basePath).toString();
+		var path = getThumbnailPath(basePath).toString();
 		path = StringTools.replace(path, "\\", "/");
 
 		var dir = path.split("/");
@@ -366,7 +371,6 @@ class ThumbnailGenerator {
 		});
 
 		sys.io.File.saveBytes(path, bytes.getBytes());
-		sys.io.File.saveContent(path + ".meta", getThumbnailHash(basePath));
 		return path;
 	}
 
@@ -376,53 +380,69 @@ class ThumbnailGenerator {
 		try {
 			var cut = StringTools.replace(toRender.path, hide.Ide.inst.resourceDir + "/", "");
 			var img = hxd.res.Loader.currentInstance.load(cut).toTexture();
-			var width = img.width;
-			var height = img.height;
 
-			final size = 512;
+			waitingAsyncLoad = true;
+			img.waitLoad(() -> {
+				try {
+					waitingAsyncLoad = false;
+					var width = img.width;
+					var height = img.height;
 
-			if (width > height) {
-				height = hxd.Math.floor(height / width * size);
-				width = size;
-			} else if (width < height) {
-				width = hxd.Math.floor(width / height * size);
-				height = size;
-			} else {
-				width = size;
-				height = size;
-			}
+					final size = 512;
 
-			renderCanvas.s2d.removeChildren();
+					if (width > height) {
+						height = hxd.Math.floor(height / width * size);
+						width = size;
+					} else if (width < height) {
+						width = hxd.Math.floor(width / height * size);
+						height = size;
+					} else {
+						width = size;
+						height = size;
+					}
 
-			var bg = new h2d.Bitmap(h2d.Tile.fromColor(0), renderCanvas.s2d);
-			bg.width = size;
-			bg.height = size;
+					renderCanvas.s3d.removeChildren();
+					renderCanvas.s2d.removeChildren();
 
-			var bmp = new h2d.Bitmap(h2d.Tile.fromTexture(img), renderCanvas.s2d);
-			bmp.width = width;
-			bmp.height = height;
-			bmp.x = (size - width) / 2;
-			bmp.y = (size - height) / 2;
+					var bg = new h2d.Bitmap(h2d.Tile.fromColor(0), renderCanvas.s2d);
+					bg.width = size;
+					bg.height = size;
 
-			bmp.blendMode = None;
+					var bmp = new h2d.Bitmap(h2d.Tile.fromTexture(img), renderCanvas.s2d);
+					bmp.width = width;
+					bmp.height = height;
+					bmp.x = (size - width) / 2;
+					bmp.y = (size - height) / 2;
 
-			var shader = new hide.view.GraphEditor.PreviewShaderAlpha();
-			bmp.addShader(shader);
+					bmp.blendMode = None;
 
-			var engine = renderCanvas.engine;
+					var shader = new hide.view.GraphEditor.PreviewShaderAlpha();
+					bmp.addShader(shader);
 
-			engine.pushTarget(renderTexture);
-			engine.clear();
-			renderCanvas.render(engine);
-			engine.popTarget();
+					var engine = renderCanvas.engine;
 
-			var path = convertAndWriteThumbnail(toRender.path, renderTexture);
+					@:privateAccess renderCanvas.doSync();
 
-			// restore renderTexture original size
-			renderTexture.resize(512, 512);
+					renderTexture.clear(0,1.0);
 
-			toRender.cb(path);
+					engine.pushTarget(renderTexture);
+					engine.clear(0);
+					renderCanvas.render(engine);
+					engine.popTarget();
+
+					var path = convertAndWriteThumbnail(toRender.path, renderTexture);
+
+					// restore renderTexture original size
+					renderTexture.resize(512, 512);
+
+					toRender.cb(path);
+				} catch (e) {
+					waitingAsyncLoad = false;
+					toRender.cb(null);
+				}
+			});
 		} catch (e) {
+			waitingAsyncLoad = false;
 			toRender.cb(null);
 		}
 
@@ -431,7 +451,7 @@ class ThumbnailGenerator {
 	}
 
 	function processMiniature() {
-		if (!ready || renderCanvas.s3d == null) {
+		if (!ready || renderCanvas.s3d == null || waitingAsyncLoad) {
 			haxe.Timer.delay(processMiniature, 1);
 			return;
 		}
@@ -456,16 +476,28 @@ class ThumbnailGenerator {
 			var toRender = miniaturesToRender.pop();
 
 			// Check thumbnail cache
-			var thumbPath = getThumbPath(toRender.path).toString();
-			var metaPath = thumbPath + ".meta";
+
+			var thumbnailPath = getThumbnailPath(toRender.path);
+			var thumbnailPathString = thumbnailPath.toString();
+
 			var shouldGenerate = true;
-			if (!Ide.inst.ideConfig.filebrowserDebugIgnoreThumbnailCache && sys.FileSystem.exists(thumbPath) && sys.FileSystem.exists(metaPath)) {
-				var savedHash = sys.io.File.getContent(metaPath);
-				var hash = getThumbnailHash(toRender.path);
-				if (hash == savedHash) {
-					shouldGenerate = false;
-					sendSuccess(toRender.path, thumbPath);
-					continue;
+			if (!Ide.inst.ideConfig.filebrowserDebugIgnoreThumbnailCache && sys.FileSystem.exists(thumbnailPathString)) {
+				shouldGenerate = false;
+				sendSuccess(toRender.path, thumbnailPathString);
+				continue;
+			} else {
+				// remove previous thumbnails for this file
+				try {
+					var filesDir = sys.FileSystem.readDirectory(thumbnailPath.dir);
+					var commonPart = toRender.path.split("/").pop();
+
+					for (file in filesDir) {
+						if (StringTools.startsWith(file, commonPart)) {
+							sys.FileSystem.deleteFile(thumbnailPath.dir + "/" + file);
+						}
+					}
+				} catch(e) {
+
 				}
 			}
 
@@ -473,8 +505,16 @@ class ThumbnailGenerator {
 			switch(ext) {
 				case "prefab" | "fbx" | "l3d" | "fx" | "shgraph":
 					handleModel(toRender);
-				case "jpg" | "jpeg" | "png":
+				case "png" | "dds" | "jpg" | "jpeg":
 					handleTexture(toRender);
+				// case "jpg" | "jpeg":
+				// 	// simply return the same texture if it's a jpeg, because
+				// 	// generating jpeg miniatures has some issues on the js target :
+				// 	// the loading is done asynchronously when doing load().toTexture()
+				// 	// so our texture is not ready when we try to load it and it's filled with pink
+				// 	// and if trying to load the texture with load().toBitmap() the jpeg loader that is
+				// 	// used generates some artifacts in the texture.
+				// 	toRender.cb(toRender.path);
 				default:
 					toRender.cb(null);
 			}

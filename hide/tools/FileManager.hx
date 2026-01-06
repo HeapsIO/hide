@@ -529,7 +529,7 @@ class FileManager {
 		var path = file.getPath();
 		var ext = path.split(".").pop().toLowerCase();
 		switch(ext) {
-			case "prefab" | "fbx" | "l3d" | "fx" | "shgraph" | "jpg" | "jpeg" | "png":
+			case "prefab" | "fbx" | "l3d" | "fx" | "shgraph" | "jpg" | "jpeg" | "png" | "dds":
 				file.iconPath = "loading";
 				var callbacks = onReadyCallbacks.get(path);
 				if (callbacks == null) {
@@ -550,7 +550,7 @@ class FileManager {
 			}
 			return;
 		}
-		var thumbnail = ThumbnailGenerator.getThumbPath(file.getPath());
+		var thumbnail = ThumbnailGenerator.getThumbnailPath(file.getPath());
 		try {
 			sys.FileSystem.deleteFile(thumbnail.toString());
 		} catch (e) {};
