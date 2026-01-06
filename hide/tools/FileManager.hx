@@ -475,7 +475,7 @@ class FileManager {
 				for (f in sys.FileSystem.readDirectory(origin))
 					rec(origin + "/" + f, target + "/" + f, depth + 1);
 			} else {
-				if (depth == 0 && target.indexOf(".") != -1) {
+				if (depth == 0 && target.indexOf(".") == -1) {
 					var oldExt = origin.split(".").pop();
 					target += "." + oldExt;
 				}
