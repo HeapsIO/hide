@@ -1774,6 +1774,8 @@ class Ide extends hide.tools.IdeData {
 				Sys.command(cmd);
 			};
 			case "Mac":	Sys.command("open " + haxe.io.Path.directory(path));
+			case "Linux":
+				Sys.command('dbus-send --session --dest=org.freedesktop.FileManager1 --type=method_call /org/freedesktop/FileManager1 org.freedesktop.FileManager1.ShowItems array:string:"$path" string:""');
 			default: throw "Exploration not implemented on this platform";
 		}
 	}
