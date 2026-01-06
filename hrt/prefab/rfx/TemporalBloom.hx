@@ -207,7 +207,7 @@ class TemporalBloom extends RendererFX {
 				<range(0.1,1) label="Texture Size" field={size} />
 				<range(1,5) field={downScaleCount} />
 			</category>
-			<category("Temporal Filtering")>
+			<category("Temporal Filtering") id="temporalFiltering">
 				<checkbox label="Enable" field={useTemporalFilter} />
 				<range(0,1) label="Strength" field={temporalStrength} />
 			</category>
