@@ -1,7 +1,6 @@
 package hide.tools;
 
 typedef RenderInfo = {path: String, cb: hide.tools.FileManager.MiniatureReadyCallback, priority: Int};
-
 /**
 	Handle recieving messages separated by `\n` characters by a socket, correctly buffering the data
 **/
@@ -145,10 +144,16 @@ class ThumbnailGenerator {
 		}
 		switch((message.type:FileManager.ManagerToGenCommand)) {
 			case queue:
+				if (Ide.inst.ideConfig.filebrowserDebugServerCommands)
+					js.html.Console.log('queue ${message.path}');
 				renderMiniature(message.path, sendSuccess.bind(message.path));
 			case clear:
+				if (Ide.inst.ideConfig.filebrowserDebugServerCommands)
+					js.html.Console.log('clear');
 				miniaturesToRender = [];
 			case prio:
+				if (Ide.inst.ideConfig.filebrowserDebugServerCommands)
+					js.html.Console.log('prio ${message.path} ->  ${message.prio}');
 				var toSet = Lambda.find(miniaturesToRender, (m) -> m.path == message.path);
 				if (toSet != null) {
 					toSet.priority = message.prio;
@@ -376,6 +381,8 @@ class ThumbnailGenerator {
 
 	function handleTexture(toRender: RenderInfo) {
 		renderCanvas.engine.setCurrent();
+		if (Ide.inst.ideConfig.filebrowserDebugServerCommands)
+			js.html.Console.log('handleTexture ${toRender.path}');
 
 		try {
 			var cut = StringTools.replace(toRender.path, hide.Ide.inst.resourceDir + "/", "");
@@ -384,6 +391,10 @@ class ThumbnailGenerator {
 			waitingAsyncLoad = true;
 			img.waitLoad(() -> {
 				try {
+					if (Ide.inst.ideConfig.filebrowserDebugServerCommands)
+						js.html.Console.log('handleTexture waitLoad finished (${toRender.path})');
+					renderCanvas.engine.setCurrent();
+
 					waitingAsyncLoad = false;
 					var width = img.width;
 					var height = img.height;
@@ -436,18 +447,22 @@ class ThumbnailGenerator {
 					renderTexture.resize(512, 512);
 
 					toRender.cb(path);
+
+					if (Ide.inst.ideConfig.filebrowserDebugServerCommands)
+						js.html.Console.log('handleTexture DONE (${toRender.path})');
 				} catch (e) {
 					waitingAsyncLoad = false;
 					toRender.cb(null);
+					js.html.Console.warn('handleTexture ERR : $e (${toRender.path})');
 				}
 			});
 		} catch (e) {
 			waitingAsyncLoad = false;
 			toRender.cb(null);
+			js.html.Console.warn('handleTexture ERR : $e (${toRender.path})');
 		}
 
-		renderCanvas.s2d.removeChildren();
-
+		//renderCanvas.s2d.removeChildren();
 	}
 
 	function processMiniature() {
@@ -507,20 +522,16 @@ class ThumbnailGenerator {
 					handleModel(toRender);
 				case "png" | "dds" | "jpg" | "jpeg":
 					handleTexture(toRender);
-				// case "jpg" | "jpeg":
-				// 	// simply return the same texture if it's a jpeg, because
-				// 	// generating jpeg miniatures has some issues on the js target :
-				// 	// the loading is done asynchronously when doing load().toTexture()
-				// 	// so our texture is not ready when we try to load it and it's filled with pink
-				// 	// and if trying to load the texture with load().toBitmap() the jpeg loader that is
-				// 	// used generates some artifacts in the texture.
-				// 	toRender.cb(toRender.path);
 				default:
 					toRender.cb(null);
 			}
+
+			if (waitingAsyncLoad) {
+				break;
+			}
 		}
 
-		if (miniaturesToRender.length > 0) {
+		if (miniaturesToRender.length > 0 || waitingAsyncLoad) {
 			haxe.Timer.delay(processMiniature, 1);
 		}
 	}

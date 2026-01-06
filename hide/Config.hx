@@ -46,6 +46,7 @@ typedef HideGlobalConfig = {
 
 	// Filebrowser
 	var filebrowserDebugIgnoreThumbnailCache : Bool;
+	var filebrowserDebugServerCommands : Bool;
 	var filebrowserDebugShowWindow : Bool;
 	var filebrowserDebugShowMenu : Bool;
 };

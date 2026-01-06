@@ -43,6 +43,7 @@ class UserSettings extends Settings {
 
 		var debug = new hide.view.settings.Settings.Categorie("Debug");
 		debug.add("Filebrowser ignore thumbnail cache", new Element('<input type="checkbox"/>'), ide.ideConfig.filebrowserDebugIgnoreThumbnailCache, (v) -> ide.ideConfig.filebrowserDebugIgnoreThumbnailCache = v);
+		debug.add("Filebrowser print server logs", new Element('<input type="checkbox"/>'), ide.ideConfig.filebrowserDebugServerCommands, (v) -> ide.ideConfig.filebrowserDebugServerCommands = v);
 		debug.add("Filebrowser show thumbnail gen window", new Element('<input type="checkbox"/>'), ide.ideConfig.filebrowserDebugShowWindow, (v) -> ide.ideConfig.filebrowserDebugShowWindow = v);
 		debug.add("Filebrowser show debug menu", new Element('<input type="checkbox"/>'), ide.ideConfig.filebrowserDebugShowMenu, (v) -> ide.ideConfig.filebrowserDebugShowMenu = v);
 		categories.push(debug);
