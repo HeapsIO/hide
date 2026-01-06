@@ -178,7 +178,7 @@ class ThumbnailGenerator {
 	public static final thumbRoot = ".tmp/";
 	public static final thumbExt = "jpg";
 
-	static public function getThumbnailPath(basePath: String) : haxe.io.Path {
+	static function getThumbnailPath(basePath: String) : haxe.io.Path {
 		var hash = getThumbnailHash(basePath);
 		basePath = StringTools.replace(basePath, hide.Ide.inst.resourceDir, "");
 		var path = new haxe.io.Path(haxe.io.Path.join([hide.Ide.inst.resourceDir, thumbRoot, basePath]));
