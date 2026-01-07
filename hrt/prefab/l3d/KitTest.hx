@@ -83,6 +83,8 @@ class KitTest extends Object3D {
 
 	@:s var ifBlockCondition: TestAbstractInt;
 
+	@:s var propsList : Dynamic;
+
 
 	var substruct: SubStruct = { innerValue: 0.0, };
 
@@ -623,6 +625,40 @@ class KitTest extends Object3D {
 				dynamicArray.resize(0);
 				ctx.rebuildInspector();
 			}
+		}
+
+
+		// Props List
+		{
+			ctx.build(
+				<category("Props List") id="propsListCat"/>
+			);
+
+			propsList = propsList ?? {};
+
+			propsListCat.buildPropList(
+				[
+					{name: "int", t: PInt()},
+					{name: "float", t: PFloat()},
+					{name: "bool", t: PBool},
+					{name: "texturePath", t: PTexturePath},
+					{name: "texture", t: PTexture},
+					{name: "color", t: PColor},
+					{name: "gradient", t: PGradient},
+					{name: "unsupported", t: PUnsupported("unsupported")},
+					{name: "vec1", t: PVec(1)},
+					{name: "vec2", t: PVec(2)},
+					{name: "vec3", t: PVec(3)},
+					{name: "vec3color", t: PVec(3)},
+					{name: "vec4", t: PVec(4)},
+					{name: "vec4color", t: PVec(4)},
+					{name: "choice", t: PChoice(["Fire", "Earth", "Water", "Air"])},
+					{name: "enum", t: PEnum(TestEnum)}, // Doesn't serialize at the moment. Need special handling
+					{name: "file", t: PFile(["png"])},
+					{name: "string", t: PString(32)},
+				],
+				propsList
+			);
 		}
 	}
 

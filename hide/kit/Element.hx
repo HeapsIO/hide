@@ -516,6 +516,109 @@ class Element {
 			child.refreshDisabled();
 		}
 	}
+
+	/**
+		Create elements from a runtime propsDef to edit the
+	**/
+	public function buildPropList(defs: Array<hrt.prefab.Props.PropDef>, props: Dynamic) : Void {
+		if (props == null)
+			throw "Props shouldn't be null";
+		for (def in defs) {
+			buildProp(def, props);
+		}
+	}
+
+	public function buildProp(def: hrt.prefab.Props.PropDef, props: Dynamic) : Void {
+		var defValue: Dynamic = null;
+		var widget : hide.kit.Widget<Dynamic> = switch(def.t) {
+			case PInt(min, max):
+				var slider = new hide.kit.Slider(this, def.name);
+				slider.min = min;
+				slider.max = max;
+				slider.int = true;
+				@:privateAccess slider.showRange = min != null && max != null;
+				slider;
+			case PFloat(min, max):
+				var slider = new hide.kit.Slider(this, def.name);
+				slider.min = min;
+				slider.max = max;
+				@:privateAccess slider.showRange = min != null && max != null;
+				slider;
+			case PBool:
+				new hide.kit.Slider(this, def.name);
+			case PTexturePath:
+				var file = new hide.kit.File(this, def.name);
+				file.type = "texture";
+				file;
+			case PTexture:
+				new hide.kit.Texture(this, def.name);
+			case PColor:
+				var color = new hide.kit.Color(this, def.name);
+				color.arr = true;
+				defValue = [0,0,0,1];
+				color;
+			case PGradient:
+				new hide.kit.Gradient(this, def.name);
+			case PUnsupported(debug):
+				new hide.kit.Text(this, def.name, debug);
+				null;
+			case PVec(n, min, max):
+				var isColor = def.name.toLowerCase().indexOf("color") >= 0;
+				if(isColor && (n == 3 || n == 4)) {
+					var color = new hide.kit.Color(this, def.name);
+					color.arr = true;
+					defValue = [];
+					color.alpha = n == 4;
+					color;
+				} else {
+					var line = new Line(this, def.name);
+					line.label = def.disp ?? hide.kit.Macros.camelToSpaceCase(def.name);
+					var vec : Array<Dynamic> = Reflect.field(props, def.name);
+					if (vec == null) {
+						vec = [];
+						Reflect.setField(props, def.name, vec);
+					}
+					vec.resize(n);
+					for (i in 0...n) {
+						var slider = new Slider(line, '${def.name}.i');
+						slider.label = ["X", "Y", "Z", "W"][i];
+						slider.value = vec[i];
+						slider.min = min;
+						slider.max = max;
+						@:privateAccess slider.showRange = min != null && max != null;
+						@:privateAccess slider.onFieldChange = (_) -> {
+							vec[i] = slider.value;
+						}
+					}
+					null;
+				}
+			case PChoice(choices):
+				new hide.kit.Select(this, def.name, choices);
+			case PEnum(en):
+				var select = new hide.kit.Select(this, def.name);
+				var entries = [];
+				for (constructor in haxe.EnumTools.getConstructors(en)) {
+					entries.push({value: haxe.EnumTools.createByName(en, constructor), label: hide.kit.Macros.camelToSpaceCase(constructor)});
+				}
+
+				select.setEntries(entries);
+				select;
+			case PFile(exts):
+				var file = new File(this, def.name);
+				file.exts = exts;
+				file;
+			case PString(len):
+				new Input(this, def.name);
+		}
+		if (widget != null) {
+			widget.label =  def.disp ?? hide.kit.Macros.camelToSpaceCase(def.name);
+			widget.value = Reflect.field(props, def.name) ?? defValue;
+			@:privateAccess widget.onFieldChange = (_) -> {
+				Reflect.setField(props, def.name, widget.value);
+			};
+		}
+	}
+
 	#end
 
 	/**

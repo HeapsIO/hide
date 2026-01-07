@@ -502,7 +502,7 @@ class Macros {
 	}
 	#end
 
-	static function camelToSpaceCase(str:String):String {
+	public static function camelToSpaceCase(str:String):String {
 		var wasCap = false;
 		var finalString = "";
 		for (charIndex in 0...str.length) {

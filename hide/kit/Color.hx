@@ -4,7 +4,16 @@ package hide.kit;
 
 class Color extends Widget<Dynamic> {
 	public var alpha : Bool = false;
+
+	/**
+		If the input is an h3d.Vector
+	**/
 	public var vec : Bool = false;
+
+	/**
+		If the input is an Array<Float>
+	**/
+	public var arr : Bool = false;
 
 	#if js
 	var colorBox : hide.comp.ColorPicker.ColorBox;
@@ -14,7 +23,11 @@ class Color extends Widget<Dynamic> {
 		#if js
 		colorBox = new hide.comp.ColorPicker.ColorBox(null, null, true, alpha);
 		colorBox.onChange = (isTemp) -> {
-			if (vec) {
+			if (arr) {
+				var vec = h3d.Vector4.fromColor(colorBox.value);
+				value = alpha ? [vec.x, vec.y, vec.z, vec.w] : [vec.x, vec.y, vec.z];
+			}
+			else if (vec) {
 				(value:h3d.Vector4).setColor(colorBox.value);
 			} else {
 				value = colorBox.value;
@@ -29,7 +42,11 @@ class Color extends Widget<Dynamic> {
 	override function syncValueUI() {
 		#if js
 		if (colorBox != null) {
-			if (vec) {
+			if (arr) {
+				var v = h3d.Vector4.fromArray(value);
+				colorBox.value = v.toColor();
+			}
+			else if (vec) {
 				colorBox.value = (value:h3d.Vector4).toColor();
 			} else {
 				colorBox.value = value;
