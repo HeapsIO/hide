@@ -6,6 +6,11 @@ class File extends Widget<String> {
 
 	public var type : String = "file";
 
+	/**
+		Override type with a custom list of extensions (without the ".")
+	**/
+	public var exts : Array<String> = null;
+
 	#if js
 	var file: hide.comp.FileSelect2;
 	var element: hide.Element;
@@ -13,7 +18,7 @@ class File extends Widget<String> {
 
 	function makeInput():NativeElement {
 		#if js
-		file = new hide.comp.FileSelect2(types.get(type), element, null, true);
+		file = new hide.comp.FileSelect2(exts ?? types.get(type), element, null, true);
 
 		file.onChange = () -> {
 			value = file.path;
@@ -52,7 +57,7 @@ class File extends Widget<String> {
 		"file" => ["*"],
 		"prefab" => ["prefab", "l3d", "fx"],
 		"fx" => ["fx"],
-		"texture" => ["png", "dds", "jpeg", "jpg"],
+		"texture" => ["png", "dds", "jpeg", "jpg", "hdr"],
 		"model" => ["fbx", "hmd"],
 		"atlas" => ["atlas"],
 		"font" => ["fnt"],
