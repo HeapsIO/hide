@@ -520,7 +520,7 @@ class Element {
 	/**
 		Create elements from a runtime propsDef to edit the
 	**/
-	public function buildPropList(defs: Array<hrt.prefab.Props.PropDef>, props: Dynamic) : Void {
+	public function buildPropsList(defs: Array<hrt.prefab.Props.PropDef>, props: Dynamic) : Void {
 		if (props == null)
 			throw "Props shouldn't be null";
 		for (def in defs) {

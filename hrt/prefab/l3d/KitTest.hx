@@ -636,7 +636,7 @@ class KitTest extends Object3D {
 
 			propsList = propsList ?? {};
 
-			propsListCat.buildPropList(
+			propsListCat.buildPropsList(
 				[
 					{name: "int", t: PInt()},
 					{name: "float", t: PFloat()},
