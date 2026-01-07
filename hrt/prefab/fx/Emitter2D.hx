@@ -539,6 +539,71 @@ class Emitter2D extends Object2D {
 		}
 	}
 
+	override function save() {
+		var data = super.save();
+		data.props = Reflect.copy(props);
+		for(param in PARAMS) {
+			var f : Dynamic = Reflect.field(props, param.name);
+			if(f != null && haxe.Json.stringify(f) != haxe.Json.stringify(param.def)) {
+				var val : Dynamic = f;
+				switch(param.t) {
+					case PEnum(en):
+						val = Type.enumConstructor(val);
+					default:
+				}
+				Reflect.setField(data.props, param.name, val);
+			}
+			else {
+				Reflect.deleteField(data.props, param.name);
+			}
+		}
+		return data;
+	}
+
+	override function load( obj : Dynamic ) {
+		super.load(obj);
+		for(param in emitterParams) {
+			if(Reflect.hasField(obj.props, param.name)) {
+				var val : Dynamic = Reflect.field(obj.props, param.name);
+				switch(param.t) {
+					case PEnum(en):
+						#if editor
+						try {
+						#end
+							val = Type.createEnum(en, val);
+						#if editor
+						} catch (e) {
+							val = param.def;
+						};
+						#end
+					default:
+				}
+				Reflect.setField(props, param.name, val);
+			}
+			else if(param.def != null)
+				EmitterHelper.resetParam(props, param);
+			else if (param.name == "randomGradient")
+				(props:Dynamic).randomGradient = Gradient.getDefaultGradientData();
+		}
+	}
+
+	override function copy(obj:Prefab) {
+		super.copy(obj);
+		for(param in emitterParams) {
+			if(Reflect.hasField(obj.props, param.name)) {
+				var val : Dynamic = Reflect.field(obj.props, param.name);
+				/*switch(param.t) {
+					case PEnum(en):
+						val = Type.createEnum(en, val);
+					default:
+				}*/
+				Reflect.setField(props, param.name, val);
+			}
+			else if(param.def != null)
+				EmitterHelper.resetParam(props, param);
+		}
+	}
+
 	override function makeObject(parent2d : h2d.Object) {
 		return new Emitter2DObject(parent2d);
 	}
