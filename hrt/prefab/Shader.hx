@@ -275,6 +275,12 @@ class Shader extends Prefab {
 		}
 
 		properties.build(<checkbox field={recursiveApply} onValueChange={refresh}/>);
+
+		var props = getEditProps(shaderDef);
+		ctx.build(
+			<category("Shader") id="shaderCat"/>
+		);
+		shaderCat.buildPropsList(props, this.props);
 	}
 
 	override function edit( ectx : hide.prefab.EditContext ) {
