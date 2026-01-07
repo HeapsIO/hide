@@ -560,7 +560,8 @@ class Element {
 			case PGradient:
 				new hide.kit.Gradient(this, def.name);
 			case PUnsupported(debug):
-				new hide.kit.Text(this, def.name, debug);
+				var text = new hide.kit.Text(this, def.name, debug);
+				text.color = Red;
 				null;
 			case PVec(n, min, max):
 				var isColor = def.name.toLowerCase().indexOf("color") >= 0;
@@ -617,6 +618,20 @@ class Element {
 				Reflect.setField(props, def.name, widget.value);
 			};
 		}
+	}
+
+	static public function setNativeColor(element: NativeElement, color: KitColor) {
+		#if js
+		if (element != null) {
+			element.classList.toggle("color-red", color == Red);
+			element.classList.toggle("color-orange", color == Orange);
+			element.classList.toggle("color-yellow", color == Yellow);
+			element.classList.toggle("color-green", color == Green);
+			element.classList.toggle("color-cyan", color == Cyan);
+			element.classList.toggle("color-blue", color == Blue);
+			element.classList.toggle("color-purple", color == Purple);
+		}
+		#end
 	}
 
 	#end

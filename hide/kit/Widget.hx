@@ -2,17 +2,6 @@ package hide.kit;
 
 #if domkit
 
-enum LabelColor {
-	White;
-	Red;
-	Orange;
-	Yellow;
-	Green;
-	Cyan;
-	Blue;
-	Purple;
-}
-
 /**
 	Base class for all hide elements that manipulate a Value, like sliders, inputs etc...
 **/
@@ -21,7 +10,7 @@ abstract class Widget<ValueType> extends Element {
 	@:isVar public var value(get, set): ValueType;
 	public var defaultValue: ValueType;
 
-	public var labelColor(default, set): LabelColor = White;
+	public var labelColor(default, set): KitColor = White;
 
 	var fieldName: String;
 
@@ -42,9 +31,9 @@ abstract class Widget<ValueType> extends Element {
 		return label;
 	}
 
-	function set_labelColor(v: LabelColor) : LabelColor {
+	function set_labelColor(v: KitColor) : KitColor {
 		labelColor = v;
-		syncLabelColor();
+		syncKitColor();
 		return labelColor;
 	}
 
@@ -70,18 +59,8 @@ abstract class Widget<ValueType> extends Element {
 	}
 	var syncQueued = false;
 
-	function syncLabelColor() {
-		#if js
-		if (labelElement != null) {
-			labelElement.classList.toggle("color-red", labelColor == Red);
-			labelElement.classList.toggle("color-orange", labelColor == Orange);
-			labelElement.classList.toggle("color-yellow", labelColor == Yellow);
-			labelElement.classList.toggle("color-green", labelColor == Green);
-			labelElement.classList.toggle("color-cyan", labelColor == Cyan);
-			labelElement.classList.toggle("color-blue", labelColor == Blue);
-			labelElement.classList.toggle("color-purple", labelColor == Purple);
-		}
-		#end
+	function syncKitColor() {
+		Element.setNativeColor(labelElement, labelColor);
 	}
 
 	override function makeSelf():Void {
@@ -118,7 +97,7 @@ abstract class Widget<ValueType> extends Element {
 			syncValueUI();
 		}
 
-		syncLabelColor();
+		syncKitColor();
 	}
 
 	function makeIndeterminateWidget() : Void {

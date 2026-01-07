@@ -4,10 +4,15 @@ package hide.kit;
 
 class Text extends Element {
 	public var content(default, set) : String;
+	public var color(default, set) : KitColor;
 
-	#if js
+	function set_color(v: KitColor) : KitColor {
+		color = v;
+		Element.setNativeColor(text, color);
+		return color;
+	}
+
 	var text: NativeElement;
-	#end
 
 	function set_content(v: String) : String {
 		content = v;
@@ -28,6 +33,7 @@ class Text extends Element {
 		#else
 		throw "HideKitHL Implement";
 		#end
+		Element.setNativeColor(text, color);
 	}
 
 	function refreshText() {

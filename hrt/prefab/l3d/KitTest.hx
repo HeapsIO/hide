@@ -430,6 +430,9 @@ class KitTest extends Object3D {
 			ctx.build(
 				<category("Text")>
 					<text("This is a text element example")/>
+					<text("Text can be colored") color={Red}/>
+					<text("Text can be colored") color={Green}/>
+					<text("Text can be colored") color={Blue}/>
 				</category>
 			);
 		}
