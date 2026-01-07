@@ -364,17 +364,14 @@ class Editor extends Component {
 
 			filtered = filtered || isLineFilteredByStatus(l);
 
-			if (filtered) {
-				@:privateAccess l.filtered = true;
-				if (seps == null || seps.length == 0)
-					@:privateAccess l.hide();
+			if (filtered) @:privateAccess {
+				l.filtered = true;
+				l.hide();
 			}
 			else {
-				if (seps != null) {
-					var parentSeps = Separator.getParentSeparators(l.index, seps);
-					for (s in parentSeps)
-						displayedSeps.set(s.data.index, s);
-				}
+				var parentSeps = seps == null ? [] : Separator.getParentSeparators(l.index, seps);
+				for (s in parentSeps)
+					displayedSeps.set(s.data.index, s);
 			}
 		}
 
