@@ -79,6 +79,9 @@ class Diff {
 						throw "Can't diff class " + subClass;
 				}
 			}
+			case TEnum(e):
+				if (haxe.EnumTools.EnumValueTools.equals(originalValue,modifiedValue))
+					return Skip;
 			default:
 				throw "Unhandled type " + modifiedType;
 		}
