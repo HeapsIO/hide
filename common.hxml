@@ -12,4 +12,5 @@
 -D editor
 -D no-deprecation-warnings
 -D manual_sync_pad
--cp libs
+-cp hide_js
+-cp hide_js/libs
