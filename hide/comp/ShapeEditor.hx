@@ -446,7 +446,7 @@ class ShapeEditor extends Component {
 		for (idx => s in shapes) {
 			var el = new Element('<div class="shape-list-entry ${idx == selectedShapeIdx ? "selected" : ""}">${s.getName()}</div>');
 
-			el.on("click", function() {
+			el.on("mouseup", function(e) {
 				var interactive = interactives[selectedShapeIdx];
 				var interactiveMaterial = interactive?.material;
 				var intersectionMaterial = cast (interactive?.getObjectByName("intersection"), h3d.scene.Mesh)?.material;
@@ -467,6 +467,23 @@ class ShapeEditor extends Component {
 				gizmo?.setTransform(interactives[selectedShapeIdx].getAbsPos());
 				interactiveMaterial.color.setColor(SELECTED_COLOR);
 				intersectionMaterial.color.setColor(SELECTED_INTERSECTION_COLOR);
+
+				if (e.originalEvent.button == 2) {
+					ContextMenu.createFromPoint(ide.mouseX, ide.mouseY, [{ label : "Clone", click: () -> {
+						shapes.insert(selectedShapeIdx, shapes[selectedShapeIdx]);
+						updateShapeList();
+						var i = getInteractive(this.shapes[selectedShapeIdx], true, rootDebugObj);
+						interactives.push(i);
+						onChange();
+					} }]);
+					e.preventDefault();
+					e.stopPropagation();
+				}
+			});
+
+			el.on("contextmenu", function(e) {
+				e.preventDefault();
+				e.stopPropagation();
 			});
 
 			el.appendTo(list);
