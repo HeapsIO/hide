@@ -170,6 +170,13 @@ class Cell {
 			menu = [
 				{ label : "Formula", menu : forms }
 			];
+		case TFile:
+			menu = [
+				{ label : "Open in Explorer", enabled : value != null && value != "", click : function(){
+					Ide.showFileInExplorer(value);
+				} }
+			];
+
 		default:
 		}
 		if( menu != null ) {
