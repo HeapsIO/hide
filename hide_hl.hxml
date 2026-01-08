@@ -1,0 +1,33 @@
+-lib heaps
+-lib hscript
+-lib castle
+-lib hx3compat
+-lib domkit
+-lib hashlink
+-D hscriptPos
+# -D editor # Disabled at the moment because most of the #if editor code of hide depends on js and we don't have it in the hl target
+-D no-deprecation-warnings
+-D manual_sync_pad
+
+-D hide
+-cp hide_hl
+-hl hide.hl
+-lib hlsdl
+-main hide.App
+--macro hide.tools.Macros.includeShaderSources()
+--macro include("h3d.shader")
+--macro include("h3d.anim")
+--macro include("h3d.prim")
+--macro include("h3d.scene")
+--macro include("h3d.pass")
+--macro include("h3d.mat")
+--macro include("h2d.col")
+--macro include("hxd.poly2tri")
+--macro include("hxd.clipper")
+--macro include("hxd.earcut")
+--macro include("hide.view")
+--macro include("hide.prefab")
+--macro include("hide.tools")
+--macro include("hrt")
+-dce no
+-debug
