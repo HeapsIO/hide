@@ -201,8 +201,8 @@ class List<T> extends Widget<Array<T>> {
 				resetDragStyle();
 			}, true);
 
-			itemElement.addEventListener("dragenter", dragOverHandler.bind(true), true);
-			itemElement.addEventListener("dragover", dragOverHandler.bind(true), true);
+			itemElement.addEventListener("dragenter", dragOverHandler.bind(true));
+			itemElement.addEventListener("dragover", dragOverHandler.bind(true));
 			itemElement.addEventListener("drop", (e:js.html.DragEvent) -> {
 				var rectangle = itemElement.getBoundingClientRect();
 				var halfHeight = rectangle.y + rectangle.height / 2.0;
