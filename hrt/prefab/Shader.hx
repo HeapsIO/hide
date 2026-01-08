@@ -230,7 +230,7 @@ class Shader extends Prefab {
 		if( shaderDef == null) {
 			ctx.build(
 				<root>
-					<text("Shader definition is missing") /*label-color={Orange}*/ />
+					<text("Shader definition is missing") color={Orange} />
 				</root>
 			);
 			return;
