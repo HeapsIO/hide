@@ -217,7 +217,9 @@ class IdeData {
 		if( dbWatcher == null )
 			dbWatcher = fileWatcher.register(databaseFile,function() {
 				loadDatabase(true);
+				#if js
 				hide.comp.cdb.Editor.refreshAll(true);
+				#end
 			});
 	}
 
@@ -237,7 +239,7 @@ class IdeData {
 			if( stats.mtime.getTime() != lastStats.mtime.getTime() )
 				throw "Save when database is changed outside of Hide. Please reload Hide.";
 		}
-
+		#if js
 		hide.comp.cdb.DataFiles.save(function() {
 			if( databaseDiff != null ) {
 				checkBeforeWrite();
@@ -269,6 +271,7 @@ class IdeData {
 				hide.comp.cdb.Editor.restoreOptionals(backup);
 			}
 		}, forcePrefabs);
+		#end
 	}
 
 	public function fileExists( path : String ) {
