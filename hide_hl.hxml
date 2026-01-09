@@ -13,8 +13,11 @@
 -cp hide_hl
 -hl hide.hl
 -lib hlsdl
+-xml api.xml
 -main hide.App
---macro hide.tools.Macros.includeShaderSources()
+--macro hide.HlMacros.init()
+--macro include("hide.ui.comp")
+--macro include("hide.ui")
 --macro include("h3d.shader")
 --macro include("h3d.anim")
 --macro include("h3d.prim")
@@ -31,3 +34,4 @@
 --macro include("hrt")
 -dce no
 -debug
+-D resourcesPath=hide_hl/res

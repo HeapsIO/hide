@@ -18,3 +18,4 @@
 *.hl
 res/.tmp
 shaders/
+api.xml

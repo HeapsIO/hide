@@ -1,0 +1,64 @@
+hui-main-layout {
+	background: #770077;
+	layout: vertical;
+
+	auto-size: 1;
+	fill-width: 1;
+	fill-height: 1;
+	padding: 4;
+
+	#navbar {
+		background: #007700;
+		auto-size-width: 1;
+		fill-width: 1;
+		padding: 2;
+	}
+
+	#app-panel-internal {
+		auto-size: 1;
+		fill-height: 1;
+		fill-width: 1;
+
+		padding: 4;
+
+		background: #777700;
+
+		layout: horizontal;
+
+		#left-panel {
+			width: 200;
+			background: #000077;
+
+			auto-size-height: 1;
+			fill-height: 1;
+		}
+
+		#right-panel-internal {
+			layout: vertical;
+
+			auto-size: 1;
+			fill-height: 1;
+			fill-width: 1;
+
+			padding: 4;
+
+			#main-panel {
+				auto-size: 1;
+				fill-height: 1;
+				fill-width: 1;
+
+				background: #FF0000;
+			}
+
+			#bottom-panel {
+				auto-size-width: 1;
+				fill-width: 1;
+
+				height: 200;
+				background: #00FF00;
+			}
+
+			background: #009999;
+		}
+	}
+}

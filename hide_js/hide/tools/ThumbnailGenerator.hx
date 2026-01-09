@@ -518,7 +518,7 @@ class ThumbnailGenerator {
 				// remove previous thumbnails for this file
 				try {
 					var filesDir = sys.FileSystem.readDirectory(thumbnailPath.dir);
-					var commonPart = toRender.path.split("/").pop();
+					var commonPart = toRender.path.split("/").pop() + "_thumb_";
 
 					for (file in filesDir) {
 						if (StringTools.startsWith(file, commonPart)) {

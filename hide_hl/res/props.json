@@ -1,0 +1,12 @@
+{
+	"script.api.files": [
+		"../../api.xml"
+	],
+	"haxe.classPath": [
+		"../",
+		"../../hrt"
+	],
+	"domkit.components": [
+		"ui/style"
+	]
+}
