@@ -180,19 +180,18 @@ class Shader extends Prefab {
 		if( shader == null )
 			return;
 
-		if( shared.current2d != null ) {
-			var drawable = Std.downcast(shared.current2d, h2d.Drawable);
-			if (drawable != null) {
-				drawable.addShader(shader);
-			} else {
-				var flow = Std.downcast(shared.current2d, h2d.Flow);
-				if (flow != null) {
-					@:privateAccess if (flow.background != null) {
-						flow.background.addShader(shader);
-					}
-				}
+		if (shared.current2d != null) {
+			switch (Type.getClass(shared.current2d)) {
+				case h2d.Drawable:
+					cast (shared.current2d, h2d.Drawable).addShader(shader);
+				case h2d.Flow:
+					@:privateAccess cast (shared.current2d, h2d.Flow).background?.addShader(shader);
+				case hrt.prefab.fx.Emitter2D.Emitter2DObject:
+					cast (shared.current2d, hrt.prefab.fx.Emitter2D.Emitter2DObject).batch?.addShader(shader);
+				default:
 			}
 		}
+
 		// can't use apply3d(), macros?
 		if( shared.current3d != null )
 			iterMaterials(function(obj,mat) if(checkMaterial(mat)) applyShader(obj, mat, shader));
