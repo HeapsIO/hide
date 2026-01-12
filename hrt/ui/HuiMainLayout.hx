@@ -3,7 +3,7 @@ package hrt.ui;
 class HuiMainLayout extends HuiElement {
 	static var SRC =
 		<hui-main-layout>
-			<hui-element public id="navbar">
+			<hui-element public id="main-navbar">
 				<hui-fmt-text("File")/>
 			</hui-element>
 
@@ -11,19 +11,22 @@ class HuiMainLayout extends HuiElement {
 				<hui-element public id="left-panel">
 				</hui-element>
 
-				<hui-splitter/>
+				<hui-splitter class="horizontal"/>
 
 				<hui-element id="right-panel-internal">
 					<hui-element public id="main-panel">
 					</hui-element>
 
-					<hui-splitter/>
+					<hui-splitter class="vertical"/>
 
 					<hui-element public id="bottom-panel">
 					</hui-element>
 				</hui-element>
 			</hui-element>
 
+			<hui-element public id="main-footer">
+				<hui-fmt-text("hide_hl v0.0.0")/>
+			</hui-element>
 		</hui-main-layout>
 
 	public function new(?parent: h2d.Object) {

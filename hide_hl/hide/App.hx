@@ -10,6 +10,10 @@ class App extends hxd.App {
 		ide = new hide.Ide();
 	}
 
+	override public function update(dt: Float) {
+		trace(hxd.Key.isDown(hxd.Key.MOUSE_LEFT));
+	}
+
 	static function main() {
 		hxd.Res.initLocal();
 
