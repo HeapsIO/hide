@@ -110,6 +110,7 @@ class Particles extends h2d.Particles {
 
 }
 
+@:deprecated("Use Emitter2D instead")
 class Particle2D extends Object2D {
 
 	@:s var paramsParticleGroup : Dynamic;
@@ -216,7 +217,7 @@ class Particle2D extends Object2D {
 	}
 
 	override function getHideProps() : hide.prefab.HideProps {
-		return { icon : "square", name : "Particle2D" };
+		return { icon : "square", name : "Particle2D", allowParent: (_) -> false };
 	}
 
 	#end
