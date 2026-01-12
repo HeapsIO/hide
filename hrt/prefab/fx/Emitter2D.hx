@@ -684,7 +684,8 @@ class Emitter2D extends Object2D {
 		d.stretch = makeParam(this, "instStretch");
 		d.rotation = makeParam(this, "instRotation");
 		emitterObj.instDef = d;
-
+		emitterObj.blendMode  			= 	this.blendMode;
+		emitterObj.batch.blendMode      =   this.blendMode;
 		emitterObj.spriteType          	= 	EmitterHelper.getParamVal(PARAMS, props, "spriteType");
 		emitterObj.texture 			   	= 	EmitterHelper.getParamVal(PARAMS, props, "texture");
 		emitterObj.color 			   	= 	EmitterHelper.getParamVal(PARAMS, props, "color");
