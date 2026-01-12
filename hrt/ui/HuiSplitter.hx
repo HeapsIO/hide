@@ -77,6 +77,7 @@ class HuiSplitter extends HuiElement {
 		var other : h2d.Flow;
 		var parentSize: Float = 0;
 		var parentPadding: Float = 0;
+		var thisSize: Float = 0;
 		var parentGap : Float = 0;
 		var parentOrigin: Float = 0;
 		var splitterMargin: Float = 0;
@@ -88,10 +89,13 @@ class HuiSplitter extends HuiElement {
 				if (props.autoSizeWidth != null) {
 					toChange = after;
 					other = before;
+					parentPadding = parentFlow.paddingRight;
 				} else {
 					toChange = before;
 					other = after;
+					parentPadding = parentFlow.paddingLeft;
 				}
+				thisSize = calculatedWidth;
 				parentSize = parentFlow.calculatedWidth;
 				parentOrigin = parentFlow.absX;
 				parentGap = parentFlow.horizontalSpacing;
@@ -99,9 +103,12 @@ class HuiSplitter extends HuiElement {
 			case Vertical:
 				if (props.autoSizeHeight != null) {
 					toChange = after;
+					parentPadding = parentFlow.paddingBottom;
 				} else {
 					toChange = before;
+					parentPadding = parentFlow.paddingTop;
 				}
+				thisSize = calculatedHeight;
 				parentSize = parentFlow.calculatedHeight;
 				parentOrigin = parentFlow.absY;
 				parentGap = parentFlow.verticalSpacing;
@@ -110,9 +117,10 @@ class HuiSplitter extends HuiElement {
 		}
 
 
-		var size = (newAbsPos - parentOrigin) - parentPadding - parentGap;
+		var size = (newAbsPos - parentOrigin);
 		if (toChange == after)
-			size = parentSize - size;
+			size = parentSize - size - thisSize;
+		size -= parentPadding - parentGap;
 
 		switch(direction) {
 			case Horizontal:
