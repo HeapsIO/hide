@@ -868,7 +868,7 @@ class Emitter2D extends Object2D {
 	override function getHideProps() : hide.prefab.HideProps {
 		return {
 			icon : "asterisk",
-			name : "emitter2D",
+			name : "Emitter 2D",
 			allowParent : function(p) return p.to(FX2D) != null || p.findParent(FX2D) != null,
 			onChildUpdate: function(p) shared.editor.queueRebuild(this),
 		};

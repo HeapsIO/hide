@@ -197,7 +197,7 @@ private class FXSceneEditor extends hide.comp.SceneEditor {
 		var simulationItems : Array<hide.comp.ContextMenu.MenuItem> = [];
 
 		if (parent.is2D) {
-			for(name in ["Group 2D", "Bitmap", "Anim2D", "Atlas", "Particle2D", "Text", "Shader", "Shader Graph", "Placeholder"]) {
+			for(name in ["Group 2D", "Bitmap", "Anim2D", "Atlas", "Emitter 2D", "Text", "Shader", "Shader Graph", "Placeholder"]) {
 				var item = allTypes.find(i -> i.label == name);
 				if(item == null) continue;
 				allTypes.remove(item);
