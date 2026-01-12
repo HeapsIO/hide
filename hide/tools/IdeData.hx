@@ -22,6 +22,7 @@ class IdeData {
 		"closeSearchOnFileOpen" => false,
 		"typingDebounceThreshold" => 300,
 		"autoSavePrefab" => false,
+		"colorPickerEscUndo" => true,
 		"trackGpuAlloc" => false,
 		"svnShowVersionedFiles" => true,
 		"svnShowModifiedFiles" => true,

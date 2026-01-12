@@ -23,6 +23,8 @@ typedef HideGlobalConfig = {
 	var enableDBFormulas : Bool;
 	var screenCaptureResolution : Int;
 	var minDistFromCameraOnDrag : Float;
+	var colorPickerEscUndo : Bool;
+
 
 	// Search
 	var closeSearchOnFileOpen : Bool;

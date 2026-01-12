@@ -22,6 +22,8 @@ class ColorBox extends Component {
 	public var value(get, set) : Int;
 	var workValue : Int;
 
+	var startValue : Int;
+
 	public function isPickerOpen() : Bool {
 		return picker != null;
 	}
@@ -59,12 +61,16 @@ class ColorBox extends Component {
 			if (picker == null && isPickerEnabled) {
 				picker = new ColorPicker(canEditAlpha, this.element);
 				picker.value = workValue;
+				startValue = workValue;
 				picker.onChange = function(isDragging) {
 					workValue = picker.value;
 					repaint();
-					onChange(isDragging);
+					onChange(true);
 				};
 				picker.onClose = function() {
+					workValue = (picker.wasCancelled && ide.ideConfig.colorPickerEscUndo) ? startValue : picker.value;
+					repaint();
+					onChange(false);
 					picker.onClose = function(){};
 					picker.onChange = function(e){};
 					picker = null;
@@ -108,6 +114,7 @@ typedef ColorSliderComponent = {label:Element};
 
 class ColorPicker extends Popup {
 
+	var startValue: Int;
 	public var value(get, set) : Int;
 	var workValue : Int;
 	var mask : Int;

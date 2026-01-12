@@ -13,6 +13,8 @@ class UserSettings extends Settings {
 		general.add("Show modified files in filetree", new Element('<input type="checkbox"/>'), ide.ideConfig.svnShowModifiedFiles, (v) -> {ide.ideConfig.svnShowModifiedFiles = v; for(view in ide.getViews(FileBrowser)) view.refreshVCS(); });
 		general.add("Screen capture resolution", new Element('<input type="number"/>'), ide.ideConfig.screenCaptureResolution, (v) -> {ide.ideConfig.screenCaptureResolution = v; });
 		general.add("Minimal distance from camera on drag", new Element('<input type="number"/>'), ide.ideConfig.minDistFromCameraOnDrag, (v) -> {ide.ideConfig.minDistFromCameraOnDrag = v; });
+		general.add("ESC on Color Picker undo changes", new Element('<input type="checkbox"/>'), ide.ideConfig.colorPickerEscUndo, (v) -> ide.ideConfig.colorPickerEscUndo = v);
+
 
 		categories.push(general);
 

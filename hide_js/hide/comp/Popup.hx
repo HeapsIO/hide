@@ -17,6 +17,11 @@ class Popup extends Component {
 	public var offsetY(default, set) : Float = 0;
 	public var position(default, set): PopupPosition = Bellow;
 
+	/**
+		Indicates if the user cancelled the popup operation with ESC
+	**/
+	public var wasCancelled: Bool = false;
+
 	function set_offsetX(v) {
 		offsetX = v;
 		reflow();
@@ -58,7 +63,7 @@ class Popup extends Component {
 
 		// Prevent parent elements from e.preventDefault(), which would break the
 		// ESC to dismiss the popover behavior
-		element[0].addEventListener("keydown", (e) -> {e.stopPropagation();});
+		element[0].addEventListener("keydown", (e: js.html.KeyboardEvent) -> {e.stopPropagation(); wasCancelled = wasCancelled || e.key == "Escape";});
 
 		this.isSearchable = isSearchable;
 
@@ -101,6 +106,9 @@ class Popup extends Component {
 	}
 
 	function onToggle(e: Dynamic) {
+		if (e.newState == "open") {
+			wasCancelled = false;
+		}
 		if (e.newState == "closed") {
 			timer.stop();
 			var parent = element[0].parentElement;
