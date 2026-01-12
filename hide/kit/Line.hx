@@ -14,7 +14,7 @@ class Line extends Element {
 	override function get_nativeContent():NativeElement {
 		return multilineElement ?? native;
 	}
-	#else
+	#elseif hui
 	public var labelContainer: hrt.ui.HuiElement;
 	public var labelText: hrt.ui.HuiFmtText;
 	#end
@@ -45,7 +45,7 @@ class Line extends Element {
 		setupPropLine(labelElement, me, false);
 
 		this.multilineElement = me;
-		#else
+		#elseif hui
 		native = new hrt.ui.HuiElement();
 		native.dom.addClass("line");
 		#end

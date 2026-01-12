@@ -24,7 +24,7 @@ abstract class Widget<ValueType> extends Element {
 		#if js
 		if (labelElement != null)
 			labelElement.innerHTML = label;
-		#else
+		#elseif hui
 		if (labelElement != null)
 			labelElement.text = label;
 		#end
@@ -39,11 +39,7 @@ abstract class Widget<ValueType> extends Element {
 
 	var input: NativeElement;
 
-	#if js
-	var labelElement: NativeElement;
-	#else
-	var labelElement: hrt.ui.HuiFmtText;
-	#end
+	var labelElement: #if js NativeElement #elseif hui hrt.ui.HuiFmtText #else Dynamic #end;
 
 	function get_value() return value;
 	function set_value(v:ValueType) {
@@ -69,7 +65,7 @@ abstract class Widget<ValueType> extends Element {
 		#if js
 		labelElement = js.Browser.document.createElement("kit-label");
 		labelElement.innerHTML = label;
-		#else
+		#elseif hui
 		if (parentLine == null) {
 			native = new hrt.ui.HuiElement();
 			native.dom.addClass("line");

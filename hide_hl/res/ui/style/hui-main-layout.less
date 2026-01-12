@@ -5,17 +5,20 @@ hui-main-layout {
 	auto-size: 1;
 	fill-width: 1;
 	fill-height: 1;
-	padding: 4;
 
 	#main-navbar {
-		background: #007700;
+		> hui-background {
+			background: @bg-main-toolbar;
+		}
 		auto-size-width: 1;
 		fill-width: 1;
-		padding: 2;
+		padding: 5;
 	}
 
 	#main-footer {
-		background: #007755;
+		> hui-background {
+			background: @bg-main-footer;
+		}
 		auto-size-width: 1;
 		fill-width: 1;
 		padding: 2;
@@ -26,11 +29,13 @@ hui-main-layout {
 		fill-height: 1;
 		fill-width: 1;
 
-		padding: 4;
-
+		padding: 1;
 		background: #777700;
 
 		layout: horizontal;
+
+		spacing: 1;
+
 
 		#left-panel {
 			width: 200;
@@ -47,7 +52,7 @@ hui-main-layout {
 			fill-height: 1;
 			fill-width: 1;
 
-			padding: 4;
+			spacing: 1;
 
 			#main-panel {
 				auto-size: 1;

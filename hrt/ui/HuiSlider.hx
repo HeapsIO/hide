@@ -1,6 +1,6 @@
 package hrt.ui;
 
-#if domkit
+#if hui
 
 class HuiSlider extends HuiElement {
 	public var slider: h2d.Slider;

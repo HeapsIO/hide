@@ -8,7 +8,7 @@ class Spacer extends Element {
 		native = js.Browser.document.createElement("kit-spacer");
 		if (width != null)
 			native.style.setProperty("--width", '$width');
-		#else
+		#elseif hui
 		throw "todo";
 		#end
 	}

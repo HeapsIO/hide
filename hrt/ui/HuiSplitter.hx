@@ -1,6 +1,6 @@
 package hrt.ui;
 
-#if domkit
+#if hui
 
 class HuiSplitter extends HuiElement {
 	static var SRC =
@@ -120,7 +120,7 @@ class HuiSplitter extends HuiElement {
 		var size = (newAbsPos - parentOrigin);
 		if (toChange == after)
 			size = parentSize - size - thisSize;
-		size -= parentPadding - parentGap;
+		size -= parentPadding + parentGap;
 
 		switch(direction) {
 			case Horizontal:

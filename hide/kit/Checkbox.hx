@@ -5,7 +5,7 @@ package hide.kit;
 class Checkbox extends Widget<Bool> {
 	#if js
 	var checkbox : js.html.InputElement;
-	#else
+	#elseif hui
 	var checkbox : NativeElement;
 	#end
 
@@ -20,8 +20,10 @@ class Checkbox extends Widget<Bool> {
 		});
 
 		return checkbox;
-		#else
+		#elseif hui
 		return new hrt.ui.HuiFmtText("checkbox");
+		#else
+		return null;
 		#end
 	}
 

@@ -43,7 +43,7 @@ class KitRoot #if !macro extends Element #end {
 		});
 
 
-		#else
+		#elseif hui
 		native = new hrt.ui.HuiElement();
 		native.dom.addClass("root");
 		#end

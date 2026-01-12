@@ -70,6 +70,10 @@ class Plugin {
 	}
 
 	static function init() {
+		#if domkit
+		var parser : hrt.ui.CssParser = null; // force compilation of css parser
+		#end
+
 		var hidePath = getLibraryPath("hide");
 
 		for( f in sys.io.File.getContent(hidePath+"/common.hxml").split("\n") ) {

@@ -30,7 +30,7 @@ class Text extends Element {
 		text = js.Browser.document.createElement("kit-text");
 		setupPropLine(null, text, false);
 		refreshText();
-		#else
+		#elseif hui
 		throw "HideKitHL Implement";
 		#end
 		Element.setNativeColor(text, color);
@@ -40,7 +40,7 @@ class Text extends Element {
 		#if js
 		if (text != null)
 			text.textContent = content;
-		#else
+		#elseif hui
 		throw "HideKitHL Implement";
 		#end
 	}

@@ -48,8 +48,10 @@ class Input extends Widget<String> {
 		syncPlaceholder();
 
 		return input;
-		#else
+		#elseif hui
 		throw "Implement";
+		#else
+		return null;
 		#end
 	}
 

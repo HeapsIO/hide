@@ -1,6 +1,6 @@
 package hrt.ui;
 
-#if domkit
+#if hui
 
 class HuiScene extends HuiElement {
 	static var SRC =

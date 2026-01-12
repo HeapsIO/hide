@@ -1,6 +1,6 @@
 package hrt.ui;
 
-#if domkit
+#if hui
 
 class HuiCategory extends HuiElement {
 	public var headerName(get, set) : String;

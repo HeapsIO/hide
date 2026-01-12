@@ -81,6 +81,8 @@ class Object3dRef extends Widget<String> {
 		});
 
 		return select;
+		#elseif hui
+		return null;
 		#else
 		return null;
 		#end

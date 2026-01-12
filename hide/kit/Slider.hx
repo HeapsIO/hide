@@ -50,8 +50,10 @@ class Slider<T:Float> extends Widget<T> {
 
 	#if js
 	var slider: js.html.InputElement;
-	#else
+	#elseif hui
 	var slider: hrt.ui.HuiSlider;
+	#else
+	var slider = null;
 	#end
 
 	var showRange: Bool = false;
@@ -222,7 +224,7 @@ class Slider<T:Float> extends Widget<T> {
 		});
 
 		return container;
-		#else
+		#elseif hui
 		// slider = new hrt.ui.HuiSlider();
 		// slider.slider.onChange = () -> {
 		// 	value = slider.slider.value;
@@ -231,6 +233,8 @@ class Slider<T:Float> extends Widget<T> {
 		// slider.slider.minValue = -10;
 		// slider.slider.maxValue = 10;
 		// return slider;
+		return null;
+		#else
 		return null;
 		#end
 	}
@@ -320,7 +324,7 @@ class Slider<T:Float> extends Widget<T> {
 		}
 		#if js
 		slider.value = Std.string(value);
-		#else
+		#elseif hui
 		slider.slider.value = value;
 		#end
 

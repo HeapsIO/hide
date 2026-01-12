@@ -27,8 +27,10 @@ class File extends Widget<String> {
 		file.onView = () -> onView();
 
 		return file.element[0];
-		#else
+		#elseif hui
 		throw "implment";
+		#else
+		return null;
 		#end
 	}
 

@@ -8,7 +8,7 @@ class Separator extends Element {
 		native = js.Browser.document.createElement("kit-separator");
 		if (width != null)
 			native.style.setProperty("--width", '$width');
-		#else
+		#elseif hui
 		throw "todo";
 		#end
 	}

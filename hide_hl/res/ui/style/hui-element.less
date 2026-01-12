@@ -1,0 +1,15 @@
+hui-element {
+	background-type: hui;
+
+	&.panel {
+		>hui-background {background: @bg-panel-lvl1;}
+
+		.panel {
+			>hui-background {background: @bg-panel-lvl2;}
+
+			.panel {
+				>hui-background {background: @bg-panel-lvl3;}
+			}
+		}
+	}
+}

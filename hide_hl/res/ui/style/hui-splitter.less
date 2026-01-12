@@ -1,4 +1,5 @@
 hui-splitter {
+	background-type: hui;
 
 	@size:3;
 
@@ -14,5 +15,7 @@ hui-splitter {
 		height: @size;
 	}
 
-	background: #FF00FF;
+	> hui-background {
+		background: @splitter-color;
+	}
 }

@@ -1,0 +1,61 @@
+# AngelCode Bitmap Font Generator configuration file
+fileVersion=1
+
+# font settings
+fontName=Inter Inter-cv05-cv08
+fontFile=../../../../../../Users/cespeute/Documents/TMP/Inter_freeze.ttf
+charSet=0
+fontSize=13
+aa=1
+scaleH=100
+useSmoothing=1
+isBold=0
+isItalic=0
+useUnicode=1
+disableBoxChars=1
+outputInvalidCharGlyph=0
+dontIncludeKerningPairs=0
+useHinting=1
+renderFromOutline=0
+useClearType=1
+autoFitNumPages=0
+autoFitFontSizeMin=0
+autoFitFontSizeMax=0
+
+# character alignment
+paddingDown=0
+paddingUp=0
+paddingRight=0
+paddingLeft=0
+spacingHoriz=1
+spacingVert=1
+useFixedHeight=0
+forceZero=0
+widthPaddingFactor=0.00
+
+# output file
+outWidth=512
+outHeight=512
+outBitDepth=32
+fontDescFormat=0
+fourChnlPacked=0
+textureFormat=png
+textureCompression=0
+alphaChnl=0
+redChnl=4
+greenChnl=4
+blueChnl=4
+invA=0
+invR=0
+invG=0
+invB=0
+
+# outline
+outlineThickness=0
+
+# selected chars
+chars=32-126,160-172,174-328,330-451,453-591,8192-8203,8208-8231,8239-8277,8279,8287,8304-8305,8308-8334
+chars=8336-8348,8592-8601,8617-8618,8624-8625,8627-8629,8634-8635,8656,8658,8660,8670-8671,8676-8677,8679
+chars=8682,8963-8965,8984,8997-8999,9003,9088,9095,9099,9166-9167,9251
+
+# imported icon images

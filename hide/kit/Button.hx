@@ -74,8 +74,7 @@ class Button extends Element {
 		});
 
 		syncHightlight();
-		#else
-
+		#elseif hui
 		#end
 		setupPropLine(null, button);
 	}

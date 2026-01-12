@@ -1,6 +1,6 @@
 package hrt.ui;
 
-#if domkit
+#if hui
 
 class HuiBase {
 	static var inst: HuiBase;

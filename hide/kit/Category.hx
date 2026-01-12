@@ -23,7 +23,7 @@ class Category extends Widget<Null<Bool>> {
 	var headerCheckbox : js.html.InputElement;
 	var currentSection : js.html.Element;
 	var sections: Array<js.html.Element> = [];
-	#else
+	#elseif hui
 	var hlCategory : hrt.ui.HuiCategory;
 	override function get_nativeContent() return hlCategory.content;
 	#end
@@ -81,7 +81,7 @@ class Category extends Widget<Null<Bool>> {
 
 		syncValueUI();
 
-		#else
+		#elseif hui
 		native = hlCategory = new hrt.ui.HuiCategory();
 		hlCategory.headerName = name;
 		#end

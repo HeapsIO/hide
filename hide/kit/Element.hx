@@ -199,7 +199,7 @@ class Element {
 	function makeSelf() : Void {
 		#if js
 		native = js.Browser.document.createDivElement();
-		#else
+		#elseif hui
 		native = new hrt.ui.HuiElement();
 		#end
 	}
@@ -445,7 +445,7 @@ class Element {
 	function attachChildNative(child: Element) : Void {
 		#if js
 		nativeContent.appendChild(child.native);
-		#else
+		#elseif hui
 		nativeContent.addChild(child.native);
 		#end
 	}

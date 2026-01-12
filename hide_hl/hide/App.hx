@@ -11,7 +11,6 @@ class App extends hxd.App {
 	}
 
 	override public function update(dt: Float) {
-		trace(hxd.Key.isDown(hxd.Key.MOUSE_LEFT));
 	}
 
 	static function main() {

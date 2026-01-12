@@ -10,9 +10,10 @@
 -D manual_sync_pad
 
 -D hide
+-D hui
 -cp hide_hl
 -hl hide.hl
--lib hlsdl
+-lib hldx
 -xml api.xml
 -main hide.App
 --macro hide.HlMacros.init()
@@ -32,6 +33,7 @@
 --macro include("hide.prefab")
 --macro include("hide.tools")
 --macro include("hrt")
+--macro include("hrt.ui")
 -dce no
 -debug
 -D resourcesPath=hide_hl/res
