@@ -10,11 +10,11 @@ hui-context-menu-item {
 	min-height: @item-height;
 	auto-size-width: 1;
 	fill-width: 1;
-	content-valign: middle;
+	content-valign: bottom;
 	background-type: hui;
 
 	padding-left: 8;
-	padding-right: 8;
+	padding-right: 4;
 	padding-top: 1;
 	padding-bottom: 1;
 
@@ -22,7 +22,7 @@ hui-context-menu-item {
 
 	&:hover {
 		> hui-background {
-			background: rgba(255,255,255,0.1);
+			background: @color-over;
 		}
 	}
 
@@ -36,10 +36,74 @@ hui-context-menu-item {
 		min-width: @item-height;
 		min-height: @item-height;
 		background-type: hui;
+		> hui-background {
+			image-color: @color-forground-muted;
+		}
 	}
 
 	>#content {
 		auto-size-width: 1;
 		fill-width: 1;
+
+		>hui-fmt-text {
+			margin-bottom: 4;
+		}
+	}
+
+	>#end-of-line {
+		min-width: @item-height;
+		min-height: @item-height;
+		background-type: hui;
+		> hui-background {
+			image-color: @color-foreground;
+		}
+	}
+
+	&.separator {
+		content-valign: bottom;
+		height: 16;
+
+		&:hover {
+			> hui-background {
+				background: none;
+			}
+		}
+
+		>#content {
+			auto-size-width: 0;
+			fill-width: 0;
+
+			// Because auto-size-width doesn't work well
+			// in nested flows
+			position: absolute;
+
+			> hui-fmt-text {
+				color: #999;
+			}
+
+			padding-right: 4;
+			padding-left: 4;
+
+			background-type: hui;
+			> hui-background {
+				background: @popup-bg;
+			}
+		}
+
+		>#icon {
+			background-type: hui;
+			auto-size-width: 1;
+			fill-width: 1;
+			height: 1;
+			> hui-background {
+				background: #555;
+			}
+
+			margin-bottom: 8;
+		}
+
+		>#end-of-line {
+			width: 0;
+		}
 	}
 }

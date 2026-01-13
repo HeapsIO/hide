@@ -33,14 +33,29 @@ class HuiBase {
 
 		root.enableInteractive = true;
 		root.interactive.enableRightButton = true;
-		root.interactive.onClick = (e) -> {
+		root.interactive.onRelease = (e) -> {
 			if(e.button == 1) {
 				e.cancel = true;
 				e.propagate = false;
 
-				@:privateAccess var popup = new HuiContextMenu([{label: "File"}, {label: "Edit"}, {label: "Copy", icon: "ui/icons/copy.png"}, {label: "Paste"}], {}, root);
-				popup.x = s2d.mouseX;
-				popup.y = s2d.mouseY;
+				@:privateAccess var popup = new HuiContextMenu(
+					[
+						{label: "File"},
+						{label: "Edit"},
+						{label: "Copy", icon: "ui/icons/copy.png"},
+						{label: "Paste"},
+						{isSeparator: true},
+						{label: "Submenu", menu: [
+							{label: "Fire"},
+							{label: "Water"},
+							{label: "Air"},
+							{label: "Earth"},
+						]},
+						{isSeparator: true, label: "Label"},
+						{label: "Bar"},
+						], {});
+				popup.addDismissable(root);
+				popup.setPositionAnchor(s2d.mouseX, s2d.mouseY);
 			}
 		}
 	}

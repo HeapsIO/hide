@@ -23,6 +23,7 @@ class BackgroundShader extends hxsl.Shader {
 		@const(4) @param var imgBlendMode : Int;
 		@param var imgBounds : Vec4;
 		@param var imgTex : Sampler2D;
+		@param var imgColor : Vec4;
 		@param var imgAngle : Float;
 		@param var imgAlpha : Float = 1.0;
 		@param var imgScale : Float = 1.0;
@@ -144,7 +145,8 @@ class BackgroundShader extends hxsl.Shader {
 					tuv = pos / imgSize + 0.5;
 				else // Stretch
 					tuv = relPos * 0.5 + 0.5;
-				var c = imgTex.get(imgBounds.xy + tOffset + tuv * tsize);
+				var c = imgTex.get(imgBounds.xy + tOffset + tuv * tsize) * imgColor;
+
 				fillColor = blendMode(fillColor, c, imgAlpha * c.a, imgBlendMode);
 			}
 
@@ -291,6 +293,7 @@ class BackgroundShader extends hxsl.Shader {
 		borderRadius.set(0, 0, 0, 0);
 		borderBevel.set(0, 0, 0, 0);
 		borderSkew.set(0, 0);
+		imgColor.set(1,1,1,1);
 	}
 }
 
@@ -469,8 +472,9 @@ class HuiBackground extends h2d.ScaleGrid implements h2d.domkit.Object {
 		return imageOffsetY = y;
 	}
 
-	@:p public var imageAlpha(never, set) : Null<Float>;
-	function set_imageAlpha(v) { return shader.imgAlpha = v != null ? v : 1.0; }
+
+	@:p(color) public var imageColor(never, set) : Null<Int>;
+	function set_imageColor(v) { shader.imgColor.setColor(v);return v; }
 	@:p(angleRad) public var imageAngle(never, set) : Float;
 	function set_imageAngle(v) { return shader.imgAngle = v; }
 	@:p public var imageScale(never, set) : Null<Float>;

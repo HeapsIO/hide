@@ -42,6 +42,10 @@ class HuiContextMenuItem extends HuiElement {
 
 		onClick = click;
 
+		if (item.isSeparator) {
+			dom.addClass("separator");
+		}
+
 		if (item.icon != null) {
 			icon.backgroundType = "hui";
 			icon.huiBg.image = {path: item.icon, mode: Fit};
@@ -49,6 +53,11 @@ class HuiContextMenuItem extends HuiElement {
 
 		if (item.label != null) {
 			var ftmText = new HuiFmtText(item.label, content);
+		}
+
+		if (item.menu != null) {
+			endOfLine.backgroundType = "hui";
+			endOfLine.huiBg.image = {path: "ui/icons/chevronRight.png", mode: Fit};
 		}
 	}
 

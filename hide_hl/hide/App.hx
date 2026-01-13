@@ -26,7 +26,7 @@ class App extends hxd.App {
 		new App();
 	}
 
-	static function tryCall(f: Void->Void) {
+	static public function tryCall(f: Void->Void) {
 		if (DEBUG)
 			f();
 		else
@@ -35,5 +35,9 @@ class App extends hxd.App {
 			} catch(e) {
 
 			}
+	}
+
+	static public function defer(f: Void->Void) {
+		haxe.Timer.delay(tryCall.bind(f), 0);
 	}
 }

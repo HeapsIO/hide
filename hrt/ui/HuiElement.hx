@@ -18,6 +18,7 @@ class HuiElement extends h2d.Flow #if hui implements h2d.domkit.Object #end {
 	public var onPush(default, set) : hxd.Event->Void = emptyFunc;
 
 	public var huiBg(get, never) : HuiBackground;
+	public var parentElement(get, never): HuiElement;
 
 	function set_enable(b) {
 		if( !b && dom != null )
@@ -52,6 +53,7 @@ class HuiElement extends h2d.Flow #if hui implements h2d.domkit.Object #end {
 	}
 
 	function get_huiBg() : HuiBackground {return Std.downcast(background, HuiBackground);};
+	function get_parentElement() : HuiElement {return Std.downcast(parent, HuiElement);};
 
 	public function new(?parent: h2d.Object) {
 		super(parent);
@@ -62,12 +64,16 @@ class HuiElement extends h2d.Flow #if hui implements h2d.domkit.Object #end {
 		if (enableInteractive)
 			return;
 		enableInteractive = true;
+
+		interactive.name = Type.getClassName(Type.getClass(this));
+
 		interactive.onOver = onOverInternal;
 		interactive.onOut = onOutInternal;
 		interactive.onClick = onClickInternal;
 		interactive.onPush = onPushInternal;
 		interactive.onRelease = onReleaseInternal;
 		interactive.onReleaseOutside = onReleaseOutsideInternal;
+		interactive.enableRightButton = true;
 	}
 
 	override function makeBackground(tile): h2d.ScaleGrid {
