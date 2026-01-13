@@ -180,16 +180,13 @@ class Shader extends Prefab {
 		if( shader == null )
 			return;
 
-		if (shared.current2d != null) {
-			switch (Type.getClass(shared.current2d)) {
-				case h2d.Drawable:
-					cast (shared.current2d, h2d.Drawable).addShader(shader);
-				case h2d.Flow:
-					@:privateAccess cast (shared.current2d, h2d.Flow).background?.addShader(shader);
-				case hrt.prefab.fx.Emitter2D.Emitter2DObject:
-					cast (shared.current2d, hrt.prefab.fx.Emitter2D.Emitter2DObject).batch?.addShader(shader);
-				default:
-			}
+		if (shared.current2d != null) @:privateAccess {
+			if (Std.isOfType(shared.current2d, hrt.prefab.fx.Emitter2D.Emitter2DObject))
+				cast (shared.current2d, hrt.prefab.fx.Emitter2D.Emitter2DObject).batch?.addShader(shader);
+			if (Std.isOfType(shared.current2d, h2d.Flow))
+				cast (shared.current2d, h2d.Flow).background?.addShader(shader);
+			if (Std.isOfType(shared.current2d, h2d.Drawable))
+				cast (shared.current2d, h2d.Drawable).addShader(shader);
 		}
 
 		// can't use apply3d(), macros?
