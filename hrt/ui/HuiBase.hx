@@ -30,7 +30,6 @@ class HuiBase {
 		s2d.add(root);
 
 		var mainLayout = new HuiMainLayout(root);
-		style.addObject(mainLayout);
 
 		root.enableInteractive = true;
 		root.interactive.enableRightButton = true;
