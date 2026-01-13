@@ -2163,6 +2163,8 @@ class SceneEditor {
 		}
 		tree.applyStyle = (p : hrt.prefab.Prefab, el : js.html.Element) -> {
 			applyTreeStyle(p, targetTree);
+			if (el == null)
+				return;
 			var props = p.getHideProps();
 			if (props.applyTreeStyle != null)
 				props.applyTreeStyle(p, el);
