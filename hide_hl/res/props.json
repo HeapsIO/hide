@@ -8,5 +8,8 @@
 	],
 	"domkit.components": [
 		"ui/style"
+	],
+	"domkit.parsers": [
+		"hrt.ui.CssParser"
 	]
 }

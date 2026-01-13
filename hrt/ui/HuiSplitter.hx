@@ -21,16 +21,14 @@ class HuiSplitter extends HuiElement {
 		super(parent);
 		initComponent();
 
-		enableInteractive = true;
-
-		interactive.onOver = onOver;
-		interactive.onPush = onPush;
+		onOver = over;
+		onPush = push;
 
 		if (getParentFlow() == null)
 			throw "Splitter parent must be a flow";
 	}
 
-	public function onOver(e: hxd.Event) {
+	function over(e: hxd.Event) {
 		interactive.cursor = switch(direction) {
 			case Horizontal:
 				ResizeWE;
@@ -41,7 +39,7 @@ class HuiSplitter extends HuiElement {
 		}
 	}
 
-	public function onPush(e: hxd.Event) {
+	function push(e: hxd.Event) {
 		if (e.button == 0) {
 			var originalOffset = switch(direction) {
 				case Horizontal:

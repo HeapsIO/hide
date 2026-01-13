@@ -1,0 +1,45 @@
+hui-context-menu {
+	layout: vertical;
+	padding-top: 8;
+	padding-bottom: 8;
+}
+
+@item-height: 16;
+hui-context-menu-item {
+	layout: horizontal;
+	min-height: @item-height;
+	auto-size-width: 1;
+	fill-width: 1;
+	content-valign: middle;
+	background-type: hui;
+
+	padding-left: 8;
+	padding-right: 8;
+	padding-top: 1;
+	padding-bottom: 1;
+
+	spacing: 4;
+
+	&:hover {
+		> hui-background {
+			background: rgba(255,255,255,0.1);
+		}
+	}
+
+	&:active {
+		> hui-background {
+			background: #FF00FF;
+		}
+	}
+
+	>#icon {
+		min-width: @item-height;
+		min-height: @item-height;
+		background-type: hui;
+	}
+
+	>#content {
+		auto-size-width: 1;
+		fill-width: 1;
+	}
+}

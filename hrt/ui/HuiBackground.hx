@@ -64,7 +64,7 @@ class BackgroundShader extends hxsl.Shader {
 
 			if(useShadow) {
 				var dist = boxSDF(pos - shadowOffset, rectSize - shadowBlurRadius * 0.5) - shadowBlurRadius * 0.5 - shadowSpreadRadius;
-				pixelColor = vec4(shadowColor.rgb, shadowColor.a * smoothstep(-shadowBlurRadius, shadowBlurRadius , -dist));
+				pixelColor = vec4(shadowColor.rgb, shadowColor.a * saturate(smoothstep(-shadowBlurRadius, shadowBlurRadius , -dist)));
 			}
 
 			var alpha = 1.0;
