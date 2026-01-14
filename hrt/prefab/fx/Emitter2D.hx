@@ -254,6 +254,7 @@ class Emitter2DObject extends h2d.Object {
 	var randomValues : Array<Float>;
 	var randSlots : Int;
 	var instanceCounter = 0;
+	var animatedTexShader : h3d.shader.AnimatedTexture = null;
 
 	// Emitter parameters
 	public var instDef : InstanceDef;
@@ -314,6 +315,20 @@ class Emitter2DObject extends h2d.Object {
 	public function init(randSlots: Int, prefab: Emitter2D) {
 		var randomValues = [for(_ in 0...(maxCount * randSlots)) rand.srand()];
 		evaluator = new Evaluator(randomValues, randSlots);
+
+		if (animatedTexShader != null)
+			batch.removeShader(animatedTexShader);
+
+		if (spriteSheet != null) {
+			var tex = hxd.res.Loader.currentInstance.load(spriteSheet).toTexture();
+			animatedTexShader = new h3d.shader.AnimatedTexture(tex, frameDivisionX, frameDivisionY, frameCount, frameCount * animationSpeed / lifeTime);
+			animatedTexShader.useSourceUVs = animationUseSourceUVs;
+			animatedTexShader.startTime = 0;
+			animatedTexShader.loop = animationLoop;
+			animatedTexShader.blendBetweenFrames = animationBlendBetweenFrames;
+			animatedTexShader.setPriority(1);
+			batch.addShader(animatedTexShader);
+		}
 	}
 
 	public function setTime(time : Float, inCatchup : Bool = false) {
@@ -434,8 +449,7 @@ class Emitter2DObject extends h2d.Object {
 				}
 			case Texture:
 				t = h2d.Tile.fromTexture(hxd.res.Loader.currentInstance.load(texture).toTexture());
-			case SpriteSheet:
-				// TODO
+			default:
 		}
 
 		t.dx = -t.width / 2;
@@ -764,6 +778,12 @@ class Emitter2D extends Object2D {
 				refresh();
 			}
 
+			if (pname == "spriteType") {
+				if ((props:Dynamic).spriteType != SpriteType.SpriteSheet)
+					(props:Dynamic).spriteSheet = null;
+				refresh();
+			}
+
 			ctx.onChange(this, pname);
 
 			if (pname == "warmUpTime") {
@@ -778,8 +798,7 @@ class Emitter2D extends Object2D {
 			if(["emitShape",
 				"useCollision",
 				"emitType",
-				"useRandomColor",
-				"spriteType"
+				"useRandomColor"
 				].indexOf(pname) >= 0) {
 					refresh();
 				}
