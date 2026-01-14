@@ -2,6 +2,18 @@ package hrt.ui;
 
 #if hui
 
+enum Anchor {
+	Point(x: Float, y: Float);
+	Element(element: HuiElement);
+}
+
+enum AnchorPos {
+	Start;
+	Stretch;
+	Middle;
+	End;
+}
+
 /**
 	A floating element appearing above all other element in the scene
 **/
@@ -10,11 +22,11 @@ class HuiPopup extends HuiElement {
 		<hui-popup>
 		</hui-popup>
 
-	var wantedAnchorX: Float = hxd.Math.NaN;
-	var wantedAnchorY: Float = hxd.Math.NaN;
+	public var anchor(default, set) : Anchor = Point(0,0);
+	var anchorX : AnchorPos = End;
+	var anchorY : AnchorPos = End;
 
 	final anchorMargin: Float = 4;
-
 
 	public function new(?parent: h2d.Object) {
 		super(parent);
@@ -28,24 +40,62 @@ class HuiPopup extends HuiElement {
 		If this causes the popup rectangle to go out of bound, the popup will try anchor
 		itself to the left and/or top of the given point so it fits the screen
 	**/
-	public function setPositionAnchor(newX: Float, newY: Float) {
-		wantedAnchorX = newX;
-		wantedAnchorY = newY;
+	public function set_anchor(v: Anchor) {
+		anchor = v;
 		needReflow = true;
+		return v;
+	}
+
+	static function constraint(anchorPos: AnchorPos, anchorStart: Float, anchorEnd: Float, size: Float) : Float {
+		switch(anchorPos) {
+			case Start:
+				return anchorStart - size;
+			case Middle:
+				return anchorStart + (anchorEnd - anchorStart) / 2.0 - size / 2.0;
+			case Stretch:
+				return anchorStart;
+			case End:
+				return anchorEnd;
+		}
+	}
+
+	static function fixAnchor(anchorPos: AnchorPos, pos: Float, size: Float, min: Float, max: Float) {
+		switch (anchorPos) {
+			case Start:
+				if (pos < min)
+					return End;
+			case End:
+				if (pos > max - size)
+					return Start;
+			default:
+		}
+		return anchorPos;
 	}
 
 	public function onAfterReflowInternal() {
-		if (!hxd.Math.isNaN(wantedAnchorX) && !hxd.Math.isNaN(wantedAnchorY)) {
-			if (wantedAnchorX > parentElement.calculatedWidth - calculatedWidth - anchorMargin) {
-				wantedAnchorX -= calculatedWidth;
-			}
-			if (wantedAnchorY > parentElement.calculatedHeight - calculatedHeight - anchorMargin) {
-				wantedAnchorY -= calculatedHeight;
-			}
-			setPosition(wantedAnchorX, wantedAnchorY);
-			wantedAnchorX = hxd.Math.NaN;
-			wantedAnchorY = hxd.Math.NaN;
+		var left: Float;
+		var top: Float;
+		var down: Float;
+		var right: Float;
+
+		switch(anchor) {
+			case Point(px,py):
+				left = right = px;
+				top = down = py;
+			case Element(element):
+				left = element.absX;
+				right = element.absX + element.calculatedWidth;
+				top = element.absY;
+				down = element.absY + element.calculatedHeight;
 		}
+
+		var candidateX = constraint(anchorX, left, right, calculatedWidth);
+		anchorX = fixAnchor(anchorX, candidateX, calculatedWidth, 0, parentElement.calculatedWidth);
+		x = constraint(anchorX, left, right, calculatedWidth);
+
+		var candidateY = constraint(anchorY, top, down, calculatedHeight);
+		anchorY = fixAnchor(anchorY, candidateY, calculatedHeight, 0, parentElement.calculatedHeight);
+		y = constraint(anchorY, top, down, calculatedHeight);
 	}
 
 	public function close() {

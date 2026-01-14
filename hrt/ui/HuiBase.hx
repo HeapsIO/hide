@@ -53,9 +53,9 @@ class HuiBase {
 						]},
 						{isSeparator: true, label: "Label"},
 						{label: "Bar"},
-						], {});
+					], {});
 				popup.addDismissable(root);
-				popup.setPositionAnchor(s2d.mouseX, s2d.mouseY);
+				popup.anchor = Point(s2d.mouseX, s2d.mouseY);
 			}
 		}
 	}
