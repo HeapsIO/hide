@@ -318,7 +318,7 @@ class Emitter2DObject extends h2d.Object {
 
 	public function setTime(time : Float, inCatchup : Bool = false) {
 		prevTime = curTime;
-		curTime = (time + warmUpTime) - delay;
+		curTime = (time * speedFactor + warmUpTime) - delay;
 
 		if (curTime < 0) {
 			if (prevTime > 0)
@@ -422,7 +422,16 @@ class Emitter2DObject extends h2d.Object {
 		var t = h2d.Tile.fromColor(0xFF00FF, 10, 10);
 		switch (spriteType) {
 			case Color:
-				t = h2d.Tile.fromColor(color.toColor(), 10, 10);
+				if (!useRandomColor && !useRandomGradient)
+					t = h2d.Tile.fromColor(color.toColor(), 10, 10);
+				else if (useRandomColor && !useRandomGradient) {
+					var c = new h3d.Vector();
+					c.lerp(randomColor1, randomColor2, rand.rand());
+					t = h2d.Tile.fromColor(c.toColor(), 10, 10);
+				}
+				else if (useRandomGradient) {
+					t = h2d.Tile.fromColor(Gradient.evalData(randomGradient, rand.rand()).toColor(), 10, 10);
+				}
 			case Texture:
 				t = h2d.Tile.fromTexture(hxd.res.Loader.currentInstance.load(texture).toTexture());
 			case SpriteSheet:
