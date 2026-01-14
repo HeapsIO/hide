@@ -7,11 +7,22 @@ enum Anchor {
 	Element(element: HuiElement);
 }
 
+/**
+				Anchors :
+               +--------------------------------+
+               |                                |
+               +--------------------------------+
+StartOutside<--|-->S   t   r   e    t   c   h<--|-->EndOutside
+               |-->StartInside  |  EndInside <--|
+			                 Middle
+**/
 enum AnchorPos {
-	Start;
+	StartOutside;
+	StartInside;
 	Stretch;
 	Middle;
-	End;
+	EndInside;
+	EndOutside;
 }
 
 /**
@@ -23,8 +34,8 @@ class HuiPopup extends HuiElement {
 		</hui-popup>
 
 	public var anchor(default, set) : Anchor = Point(0,0);
-	var anchorX : AnchorPos = End;
-	var anchorY : AnchorPos = End;
+	var anchorX : AnchorPos = EndOutside;
+	var anchorY : AnchorPos = EndOutside;
 
 	final anchorMargin: Float = 4;
 
@@ -48,25 +59,35 @@ class HuiPopup extends HuiElement {
 
 	static function constraint(anchorPos: AnchorPos, anchorStart: Float, anchorEnd: Float, size: Float) : Float {
 		switch(anchorPos) {
-			case Start:
+			case StartOutside:
 				return anchorStart - size;
+			case StartInside:
+				return anchorStart;
 			case Middle:
 				return anchorStart + (anchorEnd - anchorStart) / 2.0 - size / 2.0;
 			case Stretch:
 				return anchorStart;
-			case End:
+			case EndInside:
+				return anchorEnd - size;
+			case EndOutside:
 				return anchorEnd;
 		}
 	}
 
 	static function fixAnchor(anchorPos: AnchorPos, pos: Float, size: Float, min: Float, max: Float) {
 		switch (anchorPos) {
-			case Start:
+			case StartOutside:
 				if (pos < min)
-					return End;
-			case End:
+					return EndOutside;
+			case EndOutside:
 				if (pos > max - size)
-					return Start;
+					return StartOutside;
+			case StartInside:
+				if (pos > max - size)
+					return EndInside;
+			case EndInside:
+				if (pos < min)
+					return StartInside;
 			default:
 		}
 		return anchorPos;

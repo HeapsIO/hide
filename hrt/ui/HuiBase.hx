@@ -38,6 +38,13 @@ class HuiBase {
 				e.cancel = true;
 				e.propagate = false;
 
+				var submenu: Array<HuiContextMenu.MenuItem> = [
+					{label: "Fire"},
+					{label: "Water"},
+					{label: "Air"},
+				];
+				submenu.push({label: "Recursive", menu: submenu});
+
 				@:privateAccess var popup = new HuiContextMenu(
 					[
 						{label: "File"},
@@ -45,7 +52,14 @@ class HuiBase {
 						{label: "Copy", icon: "ui/icons/copy.png"},
 						{label: "Paste"},
 						{isSeparator: true},
-						{label: "Submenu", menu: [
+						{label: "Recmenu", menu: submenu,},
+						{label: "Submenu2", menu: [
+							{label: "Fire"},
+							{label: "Water"},
+							{label: "Air"},
+							{label: "Earth"},
+						]},
+						{label: "Submenu3", menu: [
 							{label: "Fire"},
 							{label: "Water"},
 							{label: "Air"},
