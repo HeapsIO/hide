@@ -56,10 +56,6 @@ class HuiContextMenu extends HuiPopup {
 				keyboardFocused = 0;
 				regenerateElements();
 			}
-			searchBar.onFocusLost = (e) -> {
-				searchBar.visible = false;
-				regenerateElements();
-			}
 		}
 
 		regenerateElements();
@@ -202,8 +198,14 @@ class HuiContextMenu extends HuiPopup {
 		if (!isSearchBar && searchBar.textInput.hasFocus())
 			return;
 
-		if (e.keyCode == hxd.Key.ESCAPE && !searchBar.visible) {
-			if (submenu != null && submenu.keyboardFocused >= 0) {
+		if (e.keyCode == hxd.Key.ESCAPE) {
+
+			if (searchBar.visible) {
+				searchBar.visible = false;
+				regenerateElements();
+				return;
+			}
+			else if (submenu != null && submenu.keyboardFocused >= 0) {
 				submenu.keyDownHandler(isSearchBar, e);
 				return;
 			}
