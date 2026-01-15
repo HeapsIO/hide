@@ -47,7 +47,7 @@ class HuiBase {
 
 				var longMenu = [{label: "Lorem"},{label: "proident"},{label: "in"},{label: "quis"},{label: "deserunt"},{label: "magna"},{label: "voluptate"},{label: "sit"},{label: "irure"},{label: "amet"},{label: "deserunt"},{label: "laborum"},{label: "mollit"},{label: "occaecat"},{label: "ullamco"},{label: "id"},{label: "anim"},{label: "reprehenderit"},{label: "laborum"},{label: "aute"},{label: "aliqua"},{label: "minim"},{label: "ea"},{label: "pariatur"},{label: "magna"},{label: "amet"},{label: "cupidatat"},{label: "esse"},{label: "officia"},{label: "ad"},{label: "nostrud"},{label: "labore"},{label: "magna"},{label: "sint"},{label: "proident"},{label: "voluptate"},{label: "ex"},{label: "eiusmod"},{label: "anim"},{label: "et"},{label: "officia"},{label: "quis"},{label: "ullamco"},{label: "nisi"},{label: "id"},{label: "reprehenderit"},{label: "irure"},{label: "deserunt"},{label: "commodo"},{label: "culpa"}];
 
-
+				var radio = 0;
 				@:privateAccess var popup = new HuiContextMenu(
 					[
 						{label: "File"},
@@ -66,6 +66,14 @@ class HuiBase {
 						]},
 						{isSeparator: true, label: "Label"},
 						{label: "Bar"},
+						{isSeparator: true, label: "Check"},
+						{label: "A", checked: false, stayOpen: true},
+						{label: "B", checked: true, stayOpen: true},
+						{label: "C", checked: false, stayOpen: true},
+						{isSeparator: true, label: "Radio"},
+						{label: "A", radio: () -> radio == 0, stayOpen: true, click: () -> radio = 0},
+						{label: "B", radio: () -> radio == 1, stayOpen: true, click: () -> radio = 1},
+						{label: "C", radio: () -> radio == 2, stayOpen: true, click: () -> radio = 2},
 					], {});
 				popup.addDismissable(root);
 				popup.anchor = Point(s2d.mouseX, s2d.mouseY);

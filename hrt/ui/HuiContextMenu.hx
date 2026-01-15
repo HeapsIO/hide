@@ -334,8 +334,9 @@ class HuiContextMenuItem extends HuiElement {
 			dom.addClass("separator");
 		}
 
+		icon.backgroundType = "hui";
+
 		if (item.icon != null) {
-			icon.backgroundType = "hui";
 			icon.huiBg.image = {path: item.icon, mode: Fit};
 		}
 
@@ -349,6 +350,16 @@ class HuiContextMenuItem extends HuiElement {
 		}
 
 		interactive.propagateEvents = true;
+
+		updateCheck();
+	}
+
+	function updateCheck() {
+		if (item.checked != null) {
+			icon.huiBg.image = {path: item.checked ? "ui/icons/check.png" : "ui/icons/checkBlank.png", mode: Fit};
+		} else if (item.radio != null) {
+			icon.huiBg.image = {path: item.radio() ? "ui/icons/radio.png" : "ui/icons/radioBlank.png", mode: Fit};
+		}
 	}
 
 	function click(e: hxd.Event) : Void {
@@ -360,6 +371,17 @@ class HuiContextMenuItem extends HuiElement {
 	public function validate() {
 		if (item.click != null)
 			item.click();
+
+		if (item.checked != null) {
+			item.checked = !item.checked;
+			updateCheck();
+		}
+
+		if (item.radio != null) {
+			for (item in contextMenu.itemElements) {
+				item.updateCheck();
+			}
+		}
 
 		if (item.menu != null) {
 			contextMenu.openSubmenu(this);
