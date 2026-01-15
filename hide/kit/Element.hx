@@ -240,6 +240,8 @@ class Element {
 		#if js
 		if (!disabled) {
 			native.addEventListener("contextmenu", (e: js.html.MouseEvent) -> {
+				if ((cast e.target:js.html.Element).closest(".is-cdb-editor") != null)
+					return;
 				e.preventDefault();
 				e.stopPropagation();
 
