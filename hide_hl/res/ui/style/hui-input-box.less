@@ -1,0 +1,32 @@
+hui-input-box {
+	min-width: 50px;
+	height: @widget-base-height;
+
+	padding-left: 4;
+	padding-right: 0;
+
+	background-type: hui;
+	> hui-background {
+		background: @widget-bg;
+		border-radius: @base-corner-radius;
+		outline: 1 @widget-border;
+	}
+
+	> hui-fmt-text-input {
+		margin-bottom: 1;
+	}
+
+	> #icon {
+		position: absolute;
+		halign: right;
+		valign: middle;
+
+		height: @widget-base-height;
+		width: @widget-base-height;
+		background-type: hui;
+
+		> hui-background {
+			image: "ui/icons/search.png" fit;
+		}
+	}
+}

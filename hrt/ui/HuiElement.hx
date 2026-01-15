@@ -16,6 +16,11 @@ class HuiElement extends h2d.Flow #if hui implements h2d.domkit.Object #end {
 	public var onOver(default, set) : hxd.Event->Void = emptyFunc;
 	public var onClick(default, set) : hxd.Event->Void = emptyFunc;
 	public var onPush(default, set) : hxd.Event->Void = emptyFunc;
+	public var onKeyDown(default, set) : hxd.Event->Void = emptyFunc;
+	public var onKeyUp(default, set) : hxd.Event->Void = emptyFunc;
+	public var onTextInput(default, set) : hxd.Event->Void = emptyFunc;
+	public var onFocus(default, set) : hxd.Event->Void = emptyFunc;
+	public var onFocusLost(default, set) : hxd.Event->Void = emptyFunc;
 
 	public var huiBg(get, never) : HuiBackground;
 	public var parentElement(get, never): HuiElement;
@@ -32,6 +37,11 @@ class HuiElement extends h2d.Flow #if hui implements h2d.domkit.Object #end {
 	function set_onOver(v) {onOver = v; makeInteractive(); return v;};
 	function set_onClick(v) {onClick = v; makeInteractive(); return v;};
 	function set_onPush(v) {onPush = v; makeInteractive(); return v;};
+	function set_onKeyDown(v) {onKeyDown = v; makeInteractive(); return v;};
+	function set_onKeyUp(v) {onKeyUp = v; makeInteractive(); return v;};
+	function set_onTextInput(v) {onTextInput = v; makeInteractive(); return v;};
+	function set_onFocus(v) {onFocus = v; makeInteractive(); return v;};
+	function set_onFocusLost(v) {onFocusLost = v; makeInteractive(); return v;};
 
 	function set_backgroundType(v) {
 		if (backgroundType == v)
@@ -73,6 +83,11 @@ class HuiElement extends h2d.Flow #if hui implements h2d.domkit.Object #end {
 		interactive.onPush = onPushInternal;
 		interactive.onRelease = onReleaseInternal;
 		interactive.onReleaseOutside = onReleaseOutsideInternal;
+		interactive.onKeyDown = onKeyDownInternal;
+		interactive.onKeyUp = onKeyUpInternal;
+		interactive.onTextInput = onTextInputInternal;
+		interactive.onFocus = onFocusInternal;
+		interactive.onFocusLost = onFocusLostInternal;
 		interactive.enableRightButton = true;
 	}
 
@@ -85,6 +100,21 @@ class HuiElement extends h2d.Flow #if hui implements h2d.domkit.Object #end {
 			default:
 				return super.makeBackground(tile);
 		}
+	}
+
+	override function makeScrollBar() {
+		var bar = new HuiElement();
+		bar.dom.addClass("scrollbar");
+		@:privateAccess bar.makeInteractive();
+		return bar;
+	}
+
+	override function makeScrollBarCursor() {
+		var cursor = new HuiElement();
+		cursor.dom.addClass("cursor");
+		@:privateAccess cursor.makeInteractive();
+		cursor.interactive.propagateEvents = true;
+		return cursor;
 	}
 
 	function onOverInternal(e: hxd.Event) {
@@ -127,6 +157,43 @@ class HuiElement extends h2d.Flow #if hui implements h2d.domkit.Object #end {
 			return;
 
 		dom.active = false;
+	}
+
+	function onKeyDownInternal(e: hxd.Event) {
+		if (!enable)
+			return;
+
+		onKeyDown(e);
+	}
+
+	function onKeyUpInternal(e: hxd.Event) {
+		if (!enable)
+			return;
+
+		onKeyUp(e);
+	}
+
+	function onTextInputInternal(e: hxd.Event) {
+		if (!enable)
+			return;
+
+		onTextInput(e);
+	}
+
+	function onFocusInternal(e: hxd.Event) {
+		if (!enable) {
+			e.cancel = true;
+			return;
+		}
+
+		onFocus(e);
+	}
+
+	function onFocusLostInternal(e: hxd.Event) {
+		if (!enable)
+			return;
+
+		onFocusLost(e);
 	}
 
 	static function emptyFunc(e: hxd.Event) { }

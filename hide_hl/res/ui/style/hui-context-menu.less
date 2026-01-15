@@ -1,7 +1,48 @@
 hui-context-menu {
 	layout: vertical;
-	padding-top: 8;
-	padding-bottom: 8;
+	padding-top: 4;
+	padding-bottom: 4;
+
+
+	>#searchBar {
+		auto-size-width: 1;
+		fill-width: 1;
+		margin-left: 2;
+		margin-right: 2;
+	}
+
+	>#itemsContainer {
+		width: 150;
+		max-height: 250;
+		overflow: scroll;
+
+		layout: vertical;
+
+		> .scrollbar {
+
+			margin-right: 3;
+			width: 5;
+			> hui-background {
+				background: rgba(127,127,127,0.5);
+				border-radius: 3;
+				alpha: 0.8;
+			}
+			>.cursor {
+				background-type: hui;
+				width: 5;
+				min-height: 10;
+				> hui-background {
+					background: rgba(127,127,127,0.9);
+					border-radius: 3;
+					alpha: 0.8;
+				}
+			}
+		}
+	}
+
+	width: 150;
+
+	max-height: 400;
 }
 
 @item-height: 16;
@@ -20,6 +61,7 @@ hui-context-menu-item {
 
 	spacing: 4;
 
+
 	&:hover {
 		> hui-background {
 			background: @color-over;
@@ -29,6 +71,13 @@ hui-context-menu-item {
 	&:active {
 		> hui-background {
 			background: @color-over-lighter;
+		}
+	}
+
+	&.keyboard-focused {
+		> hui-background {
+			outline: 1 @color-over-lighter;
+			border-radius: 3;
 		}
 	}
 

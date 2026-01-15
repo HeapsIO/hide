@@ -14,6 +14,9 @@ class HuiModalContainer extends HuiElement {
 	public function new(?parent: h2d.Object) {
 		super(parent);
 		initComponent();
+
+		makeInteractive();
+		interactive.propagateEvents = true;
 	}
 }
 

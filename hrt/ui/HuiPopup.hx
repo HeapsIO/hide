@@ -38,6 +38,11 @@ class HuiPopup extends HuiElement {
 	var anchorY : AnchorPos = EndOutside;
 
 	final anchorMargin: Float = 4;
+	var modal: HuiModalContainer = null;
+
+	public dynamic function onClose() {
+
+	};
 
 	public function new(?parent: h2d.Object) {
 		super(parent);
@@ -120,7 +125,9 @@ class HuiPopup extends HuiElement {
 	}
 
 	public function close() {
+		onClose();
 		remove();
+		modal?.remove();
 	}
 
 
@@ -128,13 +135,10 @@ class HuiPopup extends HuiElement {
 		Add popup in parent in a way that it can be close when the user clicks anywhere else. Return the created modal element
 	**/
 	public function addDismissable(?parent: h2d.Object) : HuiModalContainer {
-		var modal = new HuiModalContainer(parent);
+		modal = new HuiModalContainer(parent);
 		modal.addChild(this);
 
 		modal.onClick = (e: hxd.Event) -> {
-			e.cancel = true;
-			e.propagate = true;
-
 			// We need to delay the closing of the
 			// popup because it messes up with the input handling code
 			// to remove interactibles from the scene in the middle of the event handling code
@@ -143,6 +147,10 @@ class HuiPopup extends HuiElement {
 				modal.remove();
 			});
 		}
+
+		modal.onKeyDown = onKeyDown;
+		modal.onKeyUp = onKeyUp;
+		modal.onTextInput = onTextInput;
 
 		return modal;
 	}

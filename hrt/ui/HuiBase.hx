@@ -33,7 +33,7 @@ class HuiBase {
 
 		root.enableInteractive = true;
 		root.interactive.enableRightButton = true;
-		root.interactive.onRelease = (e) -> {
+		root.interactive.onClick = (e) -> {
 			if(e.button == 1) {
 				e.cancel = true;
 				e.propagate = false;
@@ -45,20 +45,19 @@ class HuiBase {
 				];
 				submenu.push({label: "Recursive", menu: submenu});
 
+				var longMenu = [{label: "Lorem"},{label: "proident"},{label: "in"},{label: "quis"},{label: "deserunt"},{label: "magna"},{label: "voluptate"},{label: "sit"},{label: "irure"},{label: "amet"},{label: "deserunt"},{label: "laborum"},{label: "mollit"},{label: "occaecat"},{label: "ullamco"},{label: "id"},{label: "anim"},{label: "reprehenderit"},{label: "laborum"},{label: "aute"},{label: "aliqua"},{label: "minim"},{label: "ea"},{label: "pariatur"},{label: "magna"},{label: "amet"},{label: "cupidatat"},{label: "esse"},{label: "officia"},{label: "ad"},{label: "nostrud"},{label: "labore"},{label: "magna"},{label: "sint"},{label: "proident"},{label: "voluptate"},{label: "ex"},{label: "eiusmod"},{label: "anim"},{label: "et"},{label: "officia"},{label: "quis"},{label: "ullamco"},{label: "nisi"},{label: "id"},{label: "reprehenderit"},{label: "irure"},{label: "deserunt"},{label: "commodo"},{label: "culpa"}];
+
+
 				@:privateAccess var popup = new HuiContextMenu(
 					[
 						{label: "File"},
 						{label: "Edit"},
 						{label: "Copy", icon: "ui/icons/copy.png"},
 						{label: "Paste"},
+						{label: "Paste"},
 						{isSeparator: true},
 						{label: "Recmenu", menu: submenu,},
-						{label: "Submenu2", menu: [
-							{label: "Fire"},
-							{label: "Water"},
-							{label: "Air"},
-							{label: "Earth"},
-						]},
+						{label: "LongSubmenu", menu: longMenu},
 						{label: "Submenu3", menu: [
 							{label: "Fire"},
 							{label: "Water"},
