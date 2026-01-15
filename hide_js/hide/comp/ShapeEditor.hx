@@ -328,7 +328,7 @@ class ShapeEditor extends Component {
 					<label>Center</label>
 					<div class="inlined vector"><input type="number" id="x" value="${center.x}"/><input type="number" id="y" value="${center.y}"/><input type="number" id="z" value="${center.z}"/></div>
 					<label>Rotation (Degrees)</label>
-					<div class="inlined vector rotation"><input type="number" id="rotation-x" value="${rotation.x * 180 / Math.PI}"/><input type="number" id="rotation-y" value="${rotation.y * 180 / Math.PI}"/><input type="number" id="rotation-z" value="${rotation.z * 180 / Math.PI}"/></div>
+					<div class="inlined vector rotation"><input type="number" id="rotation-x" value="${hxd.Math.radToDeg(rotation.x)}"/><input type="number" id="rotation-y" value="${hxd.Math.radToDeg(rotation.y)}"/><input type="number" id="rotation-z" value="${hxd.Math.radToDeg(rotation.z)}"/></div>
 					<label>Size</label>
 					<div class="inlined"><input type="number" min="0" id="size-x" value="$x"/><input type="number" min="0" id="size-y" value="$y"/><input type="number" min="0" id="size-z" value="$z"/></div>
 				');
@@ -350,7 +350,7 @@ class ShapeEditor extends Component {
 					<label>Center</label>
 					<div class="inlined vector"><input type="number" id="x" value="${center.x}"/><input type="number" id="y" value="${center.y}"/><input type="number" id="z" value="${center.z}"/></div>
 					<label>Rotation (Degrees)</label>
-					<div class="inlined vector rotation"><input type="number" id="rotation-x" value="${rotation.x * 180 / Math.PI}"/><input type="number" id="rotation-y" value="${rotation.y * 180 / Math.PI}"/><input type="number" id="rotation-z" value="${rotation.z * 180 / Math.PI}"/></div>
+					<div class="inlined vector rotation"><input type="number" id="rotation-x" value="${hxd.Math.radToDeg(rotation.x)}"/><input type="number" id="rotation-y" value="${hxd.Math.radToDeg(rotation.y)}"/><input type="number" id="rotation-z" value="${hxd.Math.radToDeg(rotation.z)}"/></div>
 					<label>Radius</label>
 					<div><input type="number" min="0" id="radius" value="$radius"/></div>
 					<label>Height</label>

@@ -29,12 +29,12 @@ class CollisionSettings {
 			case Capsule:
 				var halfExtent = makeVector(s.halfExtent);
 				var qrot = new h3d.Quat();
-				qrot.initMoveTo(new h3d.Vector(0.0, 0.0, 1.0), halfExtent);
+				qrot.initMoveTo(new h3d.Vector(0.0, 0.0, 1.0), halfExtent.normalized());
 				arr.push(Capsule(position, qrot.toEuler(), s.radius, halfExtent.length() * 2));
 			case Cylinder:
 				var halfExtent = makeVector(s.halfExtent);
 				var qrot = new h3d.Quat();
-				qrot.initMoveTo(new h3d.Vector(0.0, 0.0, 1.0), halfExtent);
+				qrot.initMoveTo(new h3d.Vector(0.0, 0.0, 1.0), halfExtent.normalized());
 				arr.push(Cylinder(position, qrot.toEuler(), s.radius, halfExtent.length() * 2));
 			default:
 				hide.Ide.inst.quickError("Don't know how to handle shape type " + s.type);
