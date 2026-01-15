@@ -80,6 +80,7 @@ class HuiSplitter extends HuiElement {
 		var parentOrigin: Float = 0;
 		var splitterMargin: Float = 0;
 		var otherMinSize: Float = 0;
+		var otherPadding: Float = 0;
 
 		var props = parentFlow.getProperties(before);
 		switch(direction) {
@@ -88,28 +89,34 @@ class HuiSplitter extends HuiElement {
 					toChange = after;
 					other = before;
 					parentPadding = parentFlow.paddingRight;
+					otherPadding = parentFlow.paddingLeft;
+
 				} else {
 					toChange = before;
 					other = after;
 					parentPadding = parentFlow.paddingLeft;
+					otherPadding = parentFlow.paddingRight;
 				}
 				thisSize = calculatedWidth;
 				parentSize = parentFlow.calculatedWidth;
 				parentOrigin = parentFlow.absX;
 				parentGap = parentFlow.horizontalSpacing;
-				otherMinSize = other.minWidth;
+				otherMinSize = other.minWidth ?? 4; //need to find out why where these 4 pixels are
 			case Vertical:
 				if (props.autoSizeHeight != null) {
 					toChange = after;
+					other = before;
 					parentPadding = parentFlow.paddingBottom;
 				} else {
 					toChange = before;
+					other = after;
 					parentPadding = parentFlow.paddingTop;
 				}
 				thisSize = calculatedHeight;
 				parentSize = parentFlow.calculatedHeight;
 				parentOrigin = parentFlow.absY;
 				parentGap = parentFlow.verticalSpacing;
+				otherMinSize = other.minHeight ?? 4;
 			default:
 				throw "unsupported";
 		}
@@ -119,6 +126,11 @@ class HuiSplitter extends HuiElement {
 		if (toChange == after)
 			size = parentSize - size - thisSize;
 		size -= parentPadding + parentGap;
+		var remaining = (parentSize - (otherMinSize + otherPadding + parentGap)) - size;
+		trace(remaining);
+		if (remaining < 0) {
+			size += remaining;
+		}
 
 		switch(direction) {
 			case Horizontal:
