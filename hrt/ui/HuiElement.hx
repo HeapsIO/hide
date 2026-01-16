@@ -25,6 +25,7 @@ class HuiElement extends h2d.Flow #if hui implements h2d.domkit.Object #end {
 
 	public var huiBg(get, never) : HuiBackground;
 	public var parentElement(get, never): HuiElement;
+	public var childElements(get, never): Array<HuiElement>;
 	public var uiBase(get, never) : HuiBase;
 
 	function set_enable(b) {
@@ -34,7 +35,6 @@ class HuiElement extends h2d.Flow #if hui implements h2d.domkit.Object #end {
 			dom.toggleClass("disabled", !b);
 		return enable = b;
 	}
-
 
 	function set_onOut(v) {onOut = v; makeInteractive(); return v;};
 	function set_onOver(v) {onOver = v; makeInteractive(); return v;};
@@ -67,6 +67,7 @@ class HuiElement extends h2d.Flow #if hui implements h2d.domkit.Object #end {
 
 	function get_huiBg() : HuiBackground {return Std.downcast(background, HuiBackground);};
 	function get_parentElement() : HuiElement {return Std.downcast(parent, HuiElement);};
+	function get_childElements() : Array<HuiElement> {return cast children.filter((e) -> Std.downcast(e, HuiElement) != null);};
 
 	function get_uiBase() : HuiBase {
 		var p = parent;
@@ -103,6 +104,14 @@ class HuiElement extends h2d.Flow #if hui implements h2d.domkit.Object #end {
 		interactive.onFocus = onFocusInternal;
 		interactive.onFocusLost = onFocusLostInternal;
 		interactive.enableRightButton = true;
+	}
+
+	public function setWidth(v: Int) {
+		minWidth = maxWidth = v;
+	}
+
+	public function setHeight(v: Int) {
+		minHeight = maxHeight = v;
 	}
 
 	override function makeBackground(tile): h2d.ScaleGrid {

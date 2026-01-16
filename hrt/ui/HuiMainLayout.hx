@@ -16,22 +16,19 @@ class HuiMainLayout extends HuiElement {
 				</hui-button-menu>
 			</hui-element>
 
-			<hui-element id="app-panel-internal">
+			<hui-split-container id="app-panel-internal" direction={hrt.ui.HuiSplitContainer.Direction.Horizontal}>
 				<hui-element public id="left-panel" class="panel">
 				</hui-element>
 
-				<hui-splitter class="horizontal"/>
 
-				<hui-element id="right-panel-internal">
+				<hui-split-container id="right-panel-internal" direction={hrt.ui.HuiSplitContainer.Direction.Vertical}>
 					<hui-element public id="main-panel" class="panel">
 					</hui-element>
 
-					<hui-splitter class="vertical"/>
-
 					<hui-element public id="bottom-panel" class="panel">
 					</hui-element>
-				</hui-element>
-			</hui-element>
+				</hui-split-container>
+			</hui-split-container>
 
 			<hui-element public id="main-footer">
 				<hui-fmt-text("hide_hl v0.0.0")/>

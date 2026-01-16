@@ -13,19 +13,12 @@ class HuiSplitter extends HuiElement {
 		return dom.hasClass("vertical") ? Vertical : Horizontal;
 	}
 
-	inline function getParentFlow() : h2d.Flow {
-		return cast parent;
-	}
-
-	public function new(?parent: h2d.Object) {
+	function new(?parent: h2d.Object) {
 		super(parent);
 		initComponent();
 
 		onOver = over;
 		onPush = push;
-
-		if (getParentFlow() == null)
-			throw "Splitter parent must be a flow";
 	}
 
 	function over(e: hxd.Event) {
@@ -55,9 +48,9 @@ class HuiSplitter extends HuiElement {
 				} else {
 					switch(direction) {
 						case Horizontal:
-							resize(getScene().mouseX - originalOffset);
+							onResize(getScene().mouseX - originalOffset - parent.absX);
 						case Vertical:
-							resize(getScene().mouseY - originalOffset);
+							onResize(getScene().mouseY - originalOffset - parent.absY);
 						default:
 							throw "unsupported";
 					}
@@ -66,8 +59,12 @@ class HuiSplitter extends HuiElement {
 		}
 	}
 
+	dynamic public function onResize(newAbsPos: Float) {
+
+	}
+
 	public function resize(newAbsPos: Float) {
-		var parentFlow = getParentFlow();
+		var parentFlow = parentElement;
 		var before : h2d.Flow = cast parent.children[parent.children.length - 3];
 		var after : h2d.Flow = cast parent.children[parent.children.length - 1];
 
