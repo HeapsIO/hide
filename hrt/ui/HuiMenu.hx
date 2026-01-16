@@ -21,14 +21,14 @@ class HuiMenu extends HuiPopup {
 
 	var keyboardFocused(default, set): Int = -1;
 	function set_keyboardFocused(v: Int) : Int {
-			selectableElements[keyboardFocused]?.dom.removeClass("keyboard-focused");
-			keyboardFocused = v;
-			var item = selectableElements[keyboardFocused];
-			if (item != null) {
-				itemsContainer.scrollIntoView(item);
-				item.dom.addClass("keyboard-focused");
-			}
-			return keyboardFocused;
+		selectableElements[keyboardFocused]?.dom.removeClass("keyboard-focused");
+		keyboardFocused = v;
+		var item = selectableElements[keyboardFocused];
+		if (item != null) {
+			itemsContainer.scrollIntoView(item);
+			item.dom.addClass("keyboard-focused");
+		}
+		return keyboardFocused;
 	}
 
 	@:p var submenuOpenDelaySec : Float = 0.25;
