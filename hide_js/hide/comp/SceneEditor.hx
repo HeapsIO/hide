@@ -1019,16 +1019,19 @@ class SceneEditor {
 	var hideList : Map<PrefabElement, Bool> = new Map();
 	public var selectedPrefabs : Array<PrefabElement> = [];
 
-	public var guide2d : h2d.Object = null;
-	public var grid2d : h2d.Graphics = null;
 	public var root2d : h2d.Object = null;
 	public var root3d : h3d.scene.Object = null;
 
 	public var showOverlays : Bool = true;
-	var grid : h3d.scene.Graphics;
 	public var gridStep : Float = 0.;
 	public var gridSize : Int;
 	public var showGrid = false;
+
+	var guide2d : h2d.Object = null;
+	var grid2d : h2d.Graphics = null;
+	var grid : h3d.scene.Graphics;
+	var jointsGraphics : h3d.scene.Graphics = null;
+	var rootDebugCollider : h3d.scene.Object = null;
 
 	var currentRenderProps: hrt.prefab.RenderProps;
 
@@ -1241,12 +1244,12 @@ class SceneEditor {
 
 	public function updateJointsVisibility() {
 		var visible = getOrInitConfig("sceneeditor.jointsToggle", false) && showOverlays;
-		setJoints(visible, null);
+		setJointsDebugVisibility(visible, null);
 	}
 
 	public function updateCollidersVisibility() {
 		var visible = getOrInitConfig("sceneeditor.colliderToggle", false) && showOverlays;
-		setCollider(visible);
+		setColliderDebugVisiblity(visible);
 	}
 
 	public function updateGizmoVisibility() {
@@ -3655,10 +3658,9 @@ class SceneEditor {
 		}
 	}
 
-	var jointsGraphics : h3d.scene.Graphics = null;
 	@:access(h3d.scene.Skin)
-	public function setJoints(showJoints = true, selectedJoints : Array<String>) {
-		if( showJoints ) {
+	public function setJointsDebugVisibility(visible = true, selectedJoints : Array<String>) {
+		if( visible ) {
 			if( jointsGraphics == null ) {
 				jointsGraphics = new h3d.scene.Graphics(scene.s3d);
 				jointsGraphics.material.mainPass.depth(false, Always);
@@ -3705,15 +3707,17 @@ class SceneEditor {
 		}
 	}
 
-	var collider : h3d.scene.Object = null;
-	var debugColliders : Map<h3d.scene.Object, h3d.scene.Object> = [];
-	public function setCollider(showCollider = true) {
-		if( showCollider ) {
-			if( collider == null )
-				collider = new h3d.scene.Object(scene.s3d);
-			collider.removeChildren();
-			var meshes = scene.s3d.getMeshes();
-			var gizmos = scene.s3d.findAll((f) -> Std.downcast(f, hrt.tools.Gizmo));
+	public function setColliderDebugVisiblity(visible = true) {
+		if (visible) {
+			if (rootDebugCollider == null) {
+				rootDebugCollider = new h3d.scene.Object(scene.s3d);
+				rootDebugCollider.name = "rootDebugCollider";
+			}
+
+			rootDebugCollider.removeChildren();
+
+			var meshes = root3d.getMeshes();
+			var gizmos = root3d.findAll((f) -> Std.downcast(f, hrt.tools.Gizmo));
 			meshes = meshes.filter(function (m : h3d.scene.Mesh) {
 				if (Std.isOfType(m, h3d.scene.Graphics))
 					return false;
@@ -3722,27 +3726,26 @@ class SceneEditor {
 						return false;
 				return true;
 			});
-			for ( m in meshes ) {
+
+			for (m in meshes) {
 				var prim = Std.downcast(m.primitive, h3d.prim.HMDModel);
-				if ( prim == null )
+				if (prim == null)
 					continue;
 				var col = m.getCollider();
-				if ( col == null )
+				if (col == null)
 					continue;
 				var d = col.makeDebugObj();
-				for ( mat in d.getMaterials() ) {
+				for (mat in d.getMaterials()) {
 					mat.name = "$collider";
 					mat.mainPass.setPassName("overlay");
 					mat.shadows = false;
 					mat.mainPass.wireframe = true;
 				}
-				collider.addChild(d);
-				debugColliders.set(m, d);
+				rootDebugCollider.addChild(d);
 			}
-		} else if( collider != null ) {
-			debugColliders = [];
-			collider.remove();
-			collider = null;
+		} else if (rootDebugCollider != null) {
+			rootDebugCollider.remove();
+			rootDebugCollider = null;
 		}
 	}
 

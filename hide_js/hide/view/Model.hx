@@ -139,10 +139,8 @@ class CollisionSettings {
 
 			case Shapes:
 				var root = new h3d.scene.Object();
-				var defaultTransformObj = new h3d.scene.Object(root);
-				defaultTransformObj.defaultTransform = mesh.defaultTransform?.getInverse();
 				for (s in toShapeEditor())
-					hide.comp.ShapeEditor.getInteractive(s, false, defaultTransformObj);
+					hide.comp.ShapeEditor.getInteractive(s, false, root);
 
 				return root;
 
@@ -182,15 +180,6 @@ class ModelSceneEditor extends hide.comp.SceneEditor {
 		parent = cast view;
 	}
 
-	override function updateCollidersVisibility() {
-		super.updateCollidersVisibility();
-
-		if (parent.collisionSettings == null || this.parent.scene == null)
-			return;
-
-		createColliderDebugs();
-	}
-
 	override function setWireframe(val : Bool = true) {
 		super.setWireframe(val);
 		var wireframes : Array<h3d.scene.Mesh> = scene.s3d.findAll((f) -> f.name == "debugWireframe" ? Std.downcast(f, h3d.scene.Mesh) : null);
@@ -200,76 +189,82 @@ class ModelSceneEditor extends hide.comp.SceneEditor {
 			cast (m, h3d.scene.Mesh).material.mainPass.wireframe = true;
 	}
 
-	function createColliderDebugs() {
-		var fs : hxd.fs.LocalFileSystem = Std.downcast(hxd.res.Loader.currentInstance.fs, hxd.fs.LocalFileSystem);
-		var convertRule = @:privateAccess fs.convert.getConvertRule(parent.state.path);
+	override function setColliderDebugVisiblity(visible = true) {
+		if (visible) {
+			if (parent.collisionSettings == null || this.parent.scene == null)
+				return;
 
-		for (k in parent.collisionSettings.keys()) {
-			var obj = parent.scene.s3d.getObjectByName(k);
-			if (obj == null)
-				continue;
+			if (rootDebugCollider == null) {
+				rootDebugCollider = new h3d.scene.Object(scene.s3d);
+				rootDebugCollider.name = "rootDebugCollider";
+			}
 
-			var col = debugColliders.get(obj);
-			var rootDebugObjects = col?.parent ?? collider;
-			var newCol = new h3d.scene.Object(rootDebugObjects);
-			newCol.name = "debugCollider";
-			debugColliders.set(obj, newCol);
-			col?.remove();
+			rootDebugCollider.removeChildren();
 
-			for (c in parent.collisionSettings.get(k)) {
-				var debugCreated = false;
-				for (shapeEditor in parent.shapesEditor) {
-					shapeEditor.removeAllInteractives();
-					if (parent.shapesEditor.length > 0 && c.mode == Shapes) {
-						var d = new h3d.scene.Object(newCol);
-						d.follow = obj;
-						d.defaultTransform = obj.defaultTransform?.getInverse();
-						shapeEditor.rootDebugObj = d;
-						shapeEditor.createAllInteractives();
-						debugCreated = true;
+			for (k in parent.collisionSettings.keys()) {
+				var obj = this.root3d.getObjectByName(k);
+				if (obj == null)
+					continue;
+
+				var debugCollider = new h3d.scene.Object(rootDebugCollider);
+				debugCollider.name = 'debug collider (${obj.name})';
+
+				var fs : hxd.fs.LocalFileSystem = Std.downcast(hxd.res.Loader.currentInstance.fs, hxd.fs.LocalFileSystem);
+				var convertRule = @:privateAccess fs.convert.getConvertRule(parent.state.path);
+				for (c in parent.collisionSettings.get(k)) {
+					// If user is currently using the shape editor, use the shape editors debug as debug colliders
+					var debugCreated = false;
+					for (shapeEditor in parent.shapesEditor) {
+						shapeEditor.removeAllInteractives();
+						if (parent.shapesEditor.length > 0 && c.mode == Shapes) {
+							shapeEditor.rootDebugObj = debugCollider;
+							shapeEditor.createAllInteractives();
+							debugCreated = true;
+						}
+					}
+
+					if (debugCreated)
+						continue;
+
+					var debug = c.getDebugCollider(cast obj, convertRule);
+					if (debug == null)
+						continue;
+
+					debugCollider.addChild(debug);
+
+					var colliderColor = 0x55FFFFFF;
+					var intersectionColor = 0x55FF0000;
+
+					for (m in debug.getMeshes()) {
+						m.material.castShadows = false;
+						m.material.blendMode = Alpha;
+						m.material.color.setColor(colliderColor);
+						m.material.mainPass.setPassName("afterTonemapping");
+
+						var debugWireframe = new h3d.scene.Mesh(m.primitive, null, m);
+						debugWireframe.forcedLod = m.forcedLod;
+						debugWireframe.name = "debugWireframe";
+						debugWireframe.material.mainPass.wireframe = true;
+						debugWireframe.material.castShadows = false;
+						debugWireframe.material.color.setColor(colliderColor);
+						debugWireframe.material.mainPass.setPassName("afterTonemapping");
+
+						var debugIntersection = new h3d.scene.Mesh(m.primitive, null, m);
+						debugIntersection.forcedLod = m.forcedLod;
+						debugIntersection.name = "debugIntersection";
+						debugIntersection.material.castShadows = false;
+						debugIntersection.material.blendMode = Alpha;
+						debugIntersection.material.mainPass.culling = Front;
+						debugIntersection.material.mainPass.depth(false, GreaterEqual);
+						debugIntersection.material.color.setColor(intersectionColor);
+						debugIntersection.material.mainPass.setPassName("afterTonemapping");
 					}
 				}
-
-				if (debugCreated)
-					continue;
-
-				var debug = c.getDebugCollider(cast obj, convertRule);
-				if (debug == null)
-					continue;
-
-				newCol.addChild(debug);
-				debug.follow = obj;
-
-				var colliderColor = 0x55FFFFFF;
-				var intersectionColor = 0x55FF0000;
-
-				for (m in debug.getMeshes()) {
-					m.material.castShadows = false;
-					m.material.blendMode = Alpha;
-					m.material.color.setColor(colliderColor);
-					m.material.mainPass.setPassName("afterTonemapping");
-
-					var debugWireframe = new h3d.scene.Mesh(m.primitive, null, m);
-					debugWireframe.forcedLod = m.forcedLod;
-					debugWireframe.name = "debugWireframe";
-					debugWireframe.material.mainPass.wireframe = true;
-					debugWireframe.material.castShadows = false;
-					debugWireframe.material.color.setColor(colliderColor);
-					debugWireframe.material.mainPass.setPassName("afterTonemapping");
-
-					var debugIntersection = new h3d.scene.Mesh(m.primitive, null, m);
-					debugIntersection.forcedLod = m.forcedLod;
-					debugIntersection.name = "debugIntersection";
-					debugIntersection.material.castShadows = false;
-					debugIntersection.material.blendMode = Alpha;
-					debugIntersection.material.mainPass.culling = Front;
-					debugIntersection.material.mainPass.depth(false, GreaterEqual);
-					debugIntersection.material.color.setColor(intersectionColor);
-					debugIntersection.material.mainPass.setPassName("afterTonemapping");
-				}
-
-				newCol.addChild(debug);
 			}
+		}
+		else if (rootDebugCollider != null) {
+			rootDebugCollider.remove();
+			rootDebugCollider = null;
 		}
 	}
 }
@@ -1419,7 +1414,7 @@ class Model extends FileView {
 	function onSelectJoints(joints : Array<h3d.scene.Skin.Joint>) {
 		// Graphic debug for selected joints
 		if ( @:privateAccess sceneEditor.jointsGraphics != null )
-			sceneEditor.setJoints(true, [for (j in joints) j.name]);
+			sceneEditor.setJointsDebugVisibility(true, [for (j in joints) j.name]);
 
 		if (joints.length == 0)
 			return;
@@ -1940,7 +1935,7 @@ class Model extends FileView {
 
 		scene.setCurrent();
 		obj = scene.loadModel(state.path, true, true);
-		new h3d.scene.Object(scene.s3d).addChild(obj);
+		this.sceneEditor.root3d.addChild(obj);
 
 		var autoHide : Array<String> = config.get("scene.autoHide");
 
