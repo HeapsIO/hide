@@ -11,12 +11,12 @@ typedef MenuOptions = {
 	Use HuiBase.contextMenu to create a context menu
 **/
 @:allow(hrt.ui.HuiBase)
-class HuiContextMenu extends HuiPopup {
-	var parentMenu: HuiContextMenu = null;
-	var submenu : HuiContextMenu = null;
+class HuiMenu extends HuiPopup {
+	var parentMenu: HuiMenu = null;
+	var submenu : HuiMenu = null;
 	var openTimer: haxe.Timer.Timer;
-	var itemElements: Array<HuiContextMenuItem> = [];
-	var selectableElements: Array<HuiContextMenuItem> = [];
+	var itemElements: Array<HuiMenuItem> = [];
+	var selectableElements: Array<HuiMenuItem> = [];
 	var items: Array<MenuItem>;
 
 	var keyboardFocused(default, set): Int = -1;
@@ -34,13 +34,13 @@ class HuiContextMenu extends HuiPopup {
 	@:p var submenuOpenDelaySec : Float = 0.25;
 
 	static var SRC =
-		<hui-context-menu>
+		<hui-menu>
 			<hui-input-box id="searchBar"/>
 			<hui-element id="itemsContainer"/>
-		</hui-context-menu>
+		</hui-menu>
 
 
-	function new(items: Array<MenuItem>, options: MenuOptions, ?parentMenu: HuiContextMenu, ?parent: h2d.Object) {
+	function new(items: Array<MenuItem>, options: MenuOptions, ?parentMenu: HuiMenu, ?parent: h2d.Object) {
 		super(parent);
 		initComponent();
 		this.parentMenu = parentMenu;
@@ -121,7 +121,7 @@ class HuiContextMenu extends HuiPopup {
 			submenu.close();
 
 		for (item in filteredList) {
-			var itemElement = new HuiContextMenuItem(item, itemsContainer);
+			var itemElement = new HuiMenuItem(item, itemsContainer);
 			itemElement.onOver = (e) -> {
 				e.propagate = true;
 				openTimer?.stop();
@@ -144,7 +144,7 @@ class HuiContextMenu extends HuiPopup {
 		}
 	}
 
-	function openSubmenu(element: HuiContextMenuItem) {
+	function openSubmenu(element: HuiMenuItem) {
 		// we were removed from the scene
 		if (this.parent == null)
 			return;
@@ -157,7 +157,7 @@ class HuiContextMenu extends HuiPopup {
 		}
 
 		if (element != null && element.item.menu != null) {
-			submenu = new HuiContextMenu(element.item.menu, {}, this);
+			submenu = new HuiMenu(element.item.menu, {}, this);
 			var index = parent.children.indexOf(this);
 			parent.addChildAt(submenu, index+1);
 			submenu.anchor = Element(element);
@@ -315,19 +315,19 @@ class HuiContextMenu extends HuiPopup {
 	}
 }
 
-@:access(hrt.ui.HuiContextMenu)
-class HuiContextMenuItem extends HuiElement {
+@:access(hrt.ui.HuiMenu)
+class HuiMenuItem extends HuiElement {
 	static var SRC =
-		<hui-context-menu-item>
+		<hui-menu-item>
 			<hui-element id="icon"></hui-element>
 			<hui-element id="content"></hui-element>
 			<hui-element id="end-of-line"></hui-element>
-		</hui-context-menu-item>
+		</hui-menu-item>
 
-	var contextMenu(get, never): HuiContextMenu;
+	var contextMenu(get, never): HuiMenu;
 	public var item: MenuItem;
 
-	function get_contextMenu() : HuiContextMenu {return Std.downcast(parent.parent, HuiContextMenu);};
+	function get_contextMenu() : HuiMenu {return Std.downcast(parent.parent, HuiMenu);};
 
 
 	public function new(item: MenuItem, ?parent: h2d.Object) {

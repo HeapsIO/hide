@@ -11,7 +11,7 @@ class HuiBase {
 	var style : h2d.domkit.Style;
 
 	var layers : Array<h2d.Flow>;
-	var contextMenu: HuiContextMenu;
+	var currentMenu: HuiMenu;
 
 	public function new(s2d: h2d.Scene) {
 		inst = this;
@@ -39,7 +39,7 @@ class HuiBase {
 				e.cancel = true;
 				e.propagate = false;
 
-				var submenu: Array<HuiContextMenu.MenuItem> = [
+				var submenu: Array<HuiMenu.MenuItem> = [
 					{label: "Fire"},
 					{label: "Water"},
 					{label: "Air"},
@@ -49,7 +49,7 @@ class HuiBase {
 				var longMenu = [{label: "Lorem"},{label: "proident"},{label: "in"},{label: "quis"},{label: "deserunt"},{label: "magna"},{label: "voluptate"},{label: "sit"},{label: "irure"},{label: "amet"},{label: "deserunt"},{label: "laborum"},{label: "mollit"},{label: "occaecat"},{label: "ullamco"},{label: "id"},{label: "anim"},{label: "reprehenderit"},{label: "laborum"},{label: "aute"},{label: "aliqua"},{label: "minim"},{label: "ea"},{label: "pariatur"},{label: "magna"},{label: "amet"},{label: "cupidatat"},{label: "esse"},{label: "officia"},{label: "ad"},{label: "nostrud"},{label: "labore"},{label: "magna"},{label: "sint"},{label: "proident"},{label: "voluptate"},{label: "ex"},{label: "eiusmod"},{label: "anim"},{label: "et"},{label: "officia"},{label: "quis"},{label: "ullamco"},{label: "nisi"},{label: "id"},{label: "reprehenderit"},{label: "irure"},{label: "deserunt"},{label: "commodo"},{label: "culpa"}];
 
 				var radio = 0;
-				@:privateAccess var popup = new HuiContextMenu(
+				openMenu(
 					[
 						{label: "File"},
 						{label: "Edit"},
@@ -75,19 +75,20 @@ class HuiBase {
 						{label: "A", radio: () -> radio == 0, stayOpen: true, click: () -> radio = 0},
 						{label: "B", radio: () -> radio == 1, stayOpen: true, click: () -> radio = 1},
 						{label: "C", radio: () -> radio == 2, stayOpen: true, click: () -> radio = 2},
-					], {});
-				popup.addDismissable(root);
-				popup.anchor = Point(s2d.mouseX, s2d.mouseY);
+					], {}, Point(s2d.mouseX, s2d.mouseY));
 			}
 		}
 	}
 
-	function contextMenu(items: Array<MenuItem>, options: MenuOptions) {
-		if (contextMenu != null)
-			contextMenu.close();
+	function openMenu(items: Array<hrt.ui.HuiMenu.MenuItem>, options: hrt.ui.HuiMenu.MenuOptions, anchor: hrt.ui.HuiPopup.Anchor) : HuiMenu {
+		if (currentMenu != null)
+			currentMenu.close();
 
-		contextMenu = new HuiContextMenu(items, options);
-		contextMenu.addDismissable(root);
+		currentMenu = new HuiMenu(items, options);
+		currentMenu.addDismissable(root);
+		currentMenu.anchor = anchor;
+
+		return currentMenu;
 	}
 
 	function loadStyle() {

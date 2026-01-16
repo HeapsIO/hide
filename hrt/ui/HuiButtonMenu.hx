@@ -7,19 +7,23 @@ package hrt.ui;
 **/
 class HuiButtonMenu extends HuiElement {
 	static var SRC =
-		<hui-menu>
-		</hui-menu>
+		<hui-button-menu>
+		</hui-button-menu>
 
-	var items: Array<hrt.ui.HuiContextMenu.MenuItem>;
-	var contextMenu: HuiContextMenu;
+	var items: Array<hrt.ui.HuiMenu.MenuItem>;
+	var contextMenu: HuiMenu;
 
-	override function new(items: Array<hrt.ui.HuiContextMenu.MenuItem>, ?parent) {
+	override function new(items: Array<hrt.ui.HuiMenu.MenuItem>, ?parent) {
 		super(parent);
 		initComponent();
 
 		this.items = items;
 
 		onClick = click;
+	}
+
+	function click(e:hxd.Event) {
+
 	}
 }
 
