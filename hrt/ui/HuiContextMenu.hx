@@ -7,6 +7,10 @@ typedef MenuItem = hide.comp.ContextMenu.MenuItem;
 typedef MenuOptions = {
 };
 
+/**
+	Use HuiBase.contextMenu to create a context menu
+**/
+@:allow(hrt.ui.HuiBase)
 class HuiContextMenu extends HuiPopup {
 	var parentMenu: HuiContextMenu = null;
 	var submenu : HuiContextMenu = null;
@@ -34,6 +38,7 @@ class HuiContextMenu extends HuiPopup {
 			<hui-input-box id="searchBar"/>
 			<hui-element id="itemsContainer"/>
 		</hui-context-menu>
+
 
 	function new(items: Array<MenuItem>, options: MenuOptions, ?parentMenu: HuiContextMenu, ?parent: h2d.Object) {
 		super(parent);

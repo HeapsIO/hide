@@ -11,6 +11,7 @@ class HuiBase {
 	var style : h2d.domkit.Style;
 
 	var layers : Array<h2d.Flow>;
+	var contextMenu: HuiContextMenu;
 
 	public function new(s2d: h2d.Scene) {
 		inst = this;
@@ -81,6 +82,13 @@ class HuiBase {
 		}
 	}
 
+	function contextMenu(items: Array<MenuItem>, options: MenuOptions) {
+		if (contextMenu != null)
+			contextMenu.close();
+
+		contextMenu = new HuiContextMenu(items, options);
+		contextMenu.addDismissable(root);
+	}
 
 	function loadStyle() {
 		#if !js
