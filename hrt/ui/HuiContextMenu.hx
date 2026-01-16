@@ -129,7 +129,7 @@ class HuiContextMenu extends HuiPopup {
 				openTimer = haxe.Timer.delay(openSubmenu.bind(null), Std.int(submenuOpenDelaySec * 1000));
 			}
 			itemElements.push(itemElement);
-			if (!item.isSeparator) {
+			if (!item.isSeparator && item.enabled != false) {
 				selectableElements.push(itemElement);
 			}
 		}
@@ -330,7 +330,11 @@ class HuiContextMenuItem extends HuiElement {
 		this.item = item;
 		initComponent();
 
-		onClick = click;
+			onClick = click;
+
+		if (item.enabled == false) {
+			enable = false;
+		}
 
 		if (item.isSeparator) {
 			dom.addClass("separator");

@@ -54,7 +54,7 @@ class HuiBase {
 						{label: "Edit"},
 						{label: "Copy", icon: "ui/icons/copy.png"},
 						{label: "Paste"},
-						{label: "Paste"},
+						{label: "Disabled", enabled: false},
 						{isSeparator: true},
 						{label: "Recmenu", menu: submenu,},
 						{label: "LongSubmenu", menu: longMenu},

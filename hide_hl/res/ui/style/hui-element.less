@@ -15,4 +15,24 @@ hui-element {
 			}
 		}
 	}
+
+	> .scrollbar {
+		margin-right: 3;
+		width: 5;
+		> hui-background {
+			background: rgba(127,127,127,0.5);
+			border-radius: 3;
+			alpha: 0.8;
+		}
+		>.cursor {
+			background-type: hui;
+			width: 5;
+			min-height: 10;
+			> hui-background {
+				background: rgba(127,127,127,0.9);
+				border-radius: 3;
+				alpha: 0.8;
+			}
+		}
+	}
 }

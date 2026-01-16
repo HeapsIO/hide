@@ -7,7 +7,7 @@
 @color-gray-6: #545454;
 
 @color-foreground: #FCFCFC;
-@color-forground-muted: #878787;
+@color-foreground-muted: #878787;
 
 @color-over: rgba(255,255,255,0.15);
 @color-over-lighter: rgba(255,255,255,0.25);
@@ -26,12 +26,21 @@
 
 @popup-bg: @color-gray-2;
 @popup-border: @color-gray-3;
+@popup-shadow: 0 3 3 0 rgba(0,0,0,0.5);
 
 @text-color: @color-foreground;
+@text-disabled: @color-foreground-muted;
 
 @splitter-color: @color-gray-3;
 @splitter-hover: @color-gray-4;
 
+
 #root {
 	layout: stack;
+}
+
+.disabled {
+	&hui-fmt-text, hui-fmt-text {
+		color: @text-disabled;
+	}
 }
