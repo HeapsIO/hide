@@ -1,0 +1,19 @@
+hui-button-menu {
+	background-type: hui;
+
+	height: 16;
+	valign: middle;
+	padding: 4;
+
+	&:hover, &.open {
+		>hui-background {
+			background: @color-over;
+		}
+	}
+
+	&:active {
+		>hui-background {
+			background: @color-over-lighter;
+		}
+	}
+}

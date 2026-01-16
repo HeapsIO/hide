@@ -160,8 +160,7 @@ class HuiMenu extends HuiPopup {
 			submenu = new HuiMenu(element.item.menu, {}, this);
 			var index = parent.children.indexOf(this);
 			parent.addChildAt(submenu, index+1);
-			submenu.anchor = Element(element);
-			submenu.anchorY = StartInside;
+			submenu.anchor = {object: Element(element), directionX: EndOutside, directionY: StartInside};
 
 			submenu.onOver = (e) -> {
 				openTimer?.stop();
@@ -183,9 +182,9 @@ class HuiMenu extends HuiPopup {
 				onFinalClose();
 			}
 
-			submenu.onClose = () -> {
+			submenu.onCloseListeners.push(() -> {
 				submenu = null;
-			}
+			});
 		}
 	}
 

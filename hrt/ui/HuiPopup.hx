@@ -2,7 +2,7 @@ package hrt.ui;
 
 #if hui
 
-enum Anchor {
+enum AnchorObject {
 	Point(x: Float, y: Float);
 	Element(element: HuiElement);
 }
@@ -16,7 +16,7 @@ StartOutside<--|-->S   t   r   e    t   c   h<--|-->EndOutside
                |-->StartInside  |  EndInside <--|
 			                 Middle
 **/
-enum AnchorPos {
+enum AnchorDirection {
 	StartOutside;
 	StartInside;
 	Stretch;
@@ -24,6 +24,12 @@ enum AnchorPos {
 	EndInside;
 	EndOutside;
 }
+
+typedef Anchor = {
+	object: AnchorObject,
+	directionX: AnchorDirection,
+	directionY: AnchorDirection,
+};
 
 /**
 	A floating element appearing above all other element in the scene
@@ -33,16 +39,13 @@ class HuiPopup extends HuiElement {
 		<hui-popup>
 		</hui-popup>
 
-	public var anchor(default, set) : Anchor = Point(0,0);
-	var anchorX : AnchorPos = EndOutside;
-	var anchorY : AnchorPos = EndOutside;
+	public var anchor(default, set) : Anchor = {object: Point(0,0), directionX: EndOutside, directionY: EndOutside};
 
 	final anchorMargin: Float = 4;
 	var modal: HuiModalContainer = null;
 
-	public dynamic function onClose() {
-
-	};
+	public var onCloseListeners : Array<Void -> Void> = [];
+	var closed = false;
 
 	public function new(?parent: h2d.Object) {
 		super(parent);
@@ -62,8 +65,8 @@ class HuiPopup extends HuiElement {
 		return v;
 	}
 
-	static function constraint(anchorPos: AnchorPos, anchorStart: Float, anchorEnd: Float, size: Float) : Float {
-		switch(anchorPos) {
+	static function constraint(anchorDirection: AnchorDirection, anchorStart: Float, anchorEnd: Float, size: Float) : Float {
+		switch(anchorDirection) {
 			case StartOutside:
 				return anchorStart - size;
 			case StartInside:
@@ -79,8 +82,8 @@ class HuiPopup extends HuiElement {
 		}
 	}
 
-	static function fixAnchor(anchorPos: AnchorPos, pos: Float, size: Float, min: Float, max: Float) {
-		switch (anchorPos) {
+	static function fixAnchor(anchorDirection: AnchorDirection, pos: Float, size: Float, min: Float, max: Float) {
+		switch (anchorDirection) {
 			case StartOutside:
 				if (pos < min)
 					return EndOutside;
@@ -95,7 +98,7 @@ class HuiPopup extends HuiElement {
 					return StartInside;
 			default:
 		}
-		return anchorPos;
+		return anchorDirection;
 	}
 
 	public function onAfterReflowInternal() {
@@ -104,7 +107,7 @@ class HuiPopup extends HuiElement {
 		var down: Float;
 		var right: Float;
 
-		switch(anchor) {
+		switch(anchor.object) {
 			case Point(px,py):
 				left = right = px;
 				top = down = py;
@@ -115,19 +118,27 @@ class HuiPopup extends HuiElement {
 				down = element.absY + element.calculatedHeight;
 		}
 
-		var candidateX = constraint(anchorX, left, right, calculatedWidth);
-		anchorX = fixAnchor(anchorX, candidateX, calculatedWidth, 0, parentElement.calculatedWidth);
+		var candidateX = constraint(anchor.directionX, left, right, calculatedWidth);
+		var anchorX = fixAnchor(anchor.directionX, candidateX, calculatedWidth, 0, parentElement.calculatedWidth);
 		x = constraint(anchorX, left, right, calculatedWidth);
 
-		var candidateY = constraint(anchorY, top, down, calculatedHeight);
-		anchorY = fixAnchor(anchorY, candidateY, calculatedHeight, 0, parentElement.calculatedHeight);
+		var candidateY = constraint(anchor.directionY, top, down, calculatedHeight);
+		var anchorY = fixAnchor(anchor.directionY, candidateY, calculatedHeight, 0, parentElement.calculatedHeight);
 		y = constraint(anchorY, top, down, calculatedHeight);
 	}
 
 	public function close() {
-		onClose();
 		remove();
-		modal?.remove();
+	}
+
+	override function onRemove() {
+		if (!closed) {
+			closed = true;
+			for (onClose in onCloseListeners)
+				onClose();
+			onCloseListeners.resize(0);
+		}
+		super.onRemove();
 	}
 
 
@@ -151,6 +162,7 @@ class HuiPopup extends HuiElement {
 		modal.onKeyDown = onKeyDown;
 		modal.onKeyUp = onKeyUp;
 		modal.onTextInput = onTextInput;
+		onCloseListeners.push(() -> modal.remove());
 
 		return modal;
 	}

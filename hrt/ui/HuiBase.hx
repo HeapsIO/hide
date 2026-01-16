@@ -2,39 +2,31 @@ package hrt.ui;
 
 #if hui
 
-class HuiBase {
-	static var inst: HuiBase;
-
-	var s2d: h2d.Scene;
-	var root : h2d.Flow;
+class HuiBase extends HuiElement {
 	public var rootOverlay : h2d.Flow;
 	var style : h2d.domkit.Style;
 
 	var layers : Array<h2d.Flow>;
 	var currentMenu: HuiMenu;
 
-	public function new(s2d: h2d.Scene) {
-		inst = this;
-		this.s2d = s2d;
-		root = new h2d.Flow();
-		root.dom = domkit.Properties.create("flow", root, {"id": "root"});
-		root.fillWidth = root.fillHeight = true;
+	public function new(?parent: h2d.Object) {
+		super(parent);
+		initComponent();
 
 		rootOverlay = new h2d.Flow();
 		style = new h2d.domkit.Style();
 
-		style.allowInspect = true;
+		if (hide.App.DEBUG) {
+			style.allowInspect = true;
+		}
 
 		loadStyle();
 
-		style.addObject(root);
-		s2d.add(root);
+		style.addObject(this);
 
-		var mainLayout = new HuiMainLayout(root);
+		var mainLayout = new HuiMainLayout(this);
 
-		root.enableInteractive = true;
-		root.interactive.enableRightButton = true;
-		root.interactive.onClick = (e) -> {
+		onClick = (e) -> {
 			if(e.button == 1) {
 				e.cancel = true;
 				e.propagate = false;
@@ -49,7 +41,7 @@ class HuiBase {
 				var longMenu = [{label: "Lorem"},{label: "proident"},{label: "in"},{label: "quis"},{label: "deserunt"},{label: "magna"},{label: "voluptate"},{label: "sit"},{label: "irure"},{label: "amet"},{label: "deserunt"},{label: "laborum"},{label: "mollit"},{label: "occaecat"},{label: "ullamco"},{label: "id"},{label: "anim"},{label: "reprehenderit"},{label: "laborum"},{label: "aute"},{label: "aliqua"},{label: "minim"},{label: "ea"},{label: "pariatur"},{label: "magna"},{label: "amet"},{label: "cupidatat"},{label: "esse"},{label: "officia"},{label: "ad"},{label: "nostrud"},{label: "labore"},{label: "magna"},{label: "sint"},{label: "proident"},{label: "voluptate"},{label: "ex"},{label: "eiusmod"},{label: "anim"},{label: "et"},{label: "officia"},{label: "quis"},{label: "ullamco"},{label: "nisi"},{label: "id"},{label: "reprehenderit"},{label: "irure"},{label: "deserunt"},{label: "commodo"},{label: "culpa"}];
 
 				var radio = 0;
-				openMenu(
+				contextMenu(
 					[
 						{label: "File"},
 						{label: "Edit"},
@@ -75,18 +67,24 @@ class HuiBase {
 						{label: "A", radio: () -> radio == 0, stayOpen: true, click: () -> radio = 0},
 						{label: "B", radio: () -> radio == 1, stayOpen: true, click: () -> radio = 1},
 						{label: "C", radio: () -> radio == 2, stayOpen: true, click: () -> radio = 2},
-					], {}, Point(s2d.mouseX, s2d.mouseY));
+					]);
 			}
 		}
 	}
 
-	function openMenu(items: Array<hrt.ui.HuiMenu.MenuItem>, options: hrt.ui.HuiMenu.MenuOptions, anchor: hrt.ui.HuiPopup.Anchor) : HuiMenu {
+	public function contextMenu(items: Array<hrt.ui.HuiMenu.MenuItem>) {
+		openMenu(items, {}, {object: Point(getScene().mouseX, getScene().mouseY), directionX: EndOutside, directionY: EndOutside});
+	}
+
+	public function openMenu(items: Array<hrt.ui.HuiMenu.MenuItem>, options: hrt.ui.HuiMenu.MenuOptions, ?anchor: hrt.ui.HuiPopup.Anchor) : HuiMenu {
 		if (currentMenu != null)
 			currentMenu.close();
 
-		currentMenu = new HuiMenu(items, options);
-		currentMenu.addDismissable(root);
-		currentMenu.anchor = anchor;
+		var menu = new HuiMenu(items, options);
+		menu.addDismissable(this);
+		menu.anchor = anchor;
+		currentMenu = menu;
+		menu.onCloseListeners.push(() -> if (menu == currentMenu) currentMenu = null);
 
 		return currentMenu;
 	}

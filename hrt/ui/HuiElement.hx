@@ -9,6 +9,7 @@ class HuiElement extends h2d.Flow #if hui implements h2d.domkit.Object #end {
 		<hui-element>
 		</hui-element>
 
+
 	@:p public var enable(default, set) : Bool = true;
 	@:p(bgType) var backgroundType(default, set) : String;
 
@@ -24,6 +25,7 @@ class HuiElement extends h2d.Flow #if hui implements h2d.domkit.Object #end {
 
 	public var huiBg(get, never) : HuiBackground;
 	public var parentElement(get, never): HuiElement;
+	public var uiBase(get, never) : HuiBase;
 
 	function set_enable(b) {
 		if( !b && dom != null )
@@ -32,6 +34,7 @@ class HuiElement extends h2d.Flow #if hui implements h2d.domkit.Object #end {
 			dom.toggleClass("disabled", !b);
 		return enable = b;
 	}
+
 
 	function set_onOut(v) {onOut = v; makeInteractive(); return v;};
 	function set_onOver(v) {onOver = v; makeInteractive(); return v;};
@@ -64,6 +67,17 @@ class HuiElement extends h2d.Flow #if hui implements h2d.domkit.Object #end {
 
 	function get_huiBg() : HuiBackground {return Std.downcast(background, HuiBackground);};
 	function get_parentElement() : HuiElement {return Std.downcast(parent, HuiElement);};
+
+	function get_uiBase() : HuiBase {
+		var p = parent;
+		while(p != null) {
+			if (Std.downcast(p, HuiBase) != null)
+				return cast p;
+			p = p.parent;
+		}
+		return null;
+	}
+
 
 	public function new(?parent: h2d.Object) {
 		super(parent);
