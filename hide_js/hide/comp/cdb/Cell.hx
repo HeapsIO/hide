@@ -57,7 +57,7 @@ class Cell {
 		refresh();
 
 		switch( column.type ) {
-		case TList, TProperties:
+		case TList, TProperties, TPolymorph:
 			elementHtml.addEventListener("click", function(e) {
 				if( e.shiftKey ) return;
 				e.stopPropagation();
@@ -467,15 +467,20 @@ class Cell {
 			if( out.length == 0 )
 				return val("");
 			return {str: out.join(", "), containsHtml: true};
-		case TProperties:
+		case TProperties | TPolymorph:
 			var ps = sheet.getSub(c);
 			var out = [];
 			scope.push({ s : sheet, obj : obj });
-			for( c in ps.columns ) {
-				var pval = Reflect.field(v, c.name);
-				if( pval == null && c.opt ) continue;
-				if( !canViewSubColumn(ps, c) ) continue;
-				out.push('<div class="label">${c.name} : <div class="content">${valueHtml(c, pval, ps, v, scope).str}</div></div>');
+			for( pc in ps.columns ) {
+				var pval = Reflect.field(v, pc.name);
+				if( pval == null && pc.opt ) continue;
+				if( !canViewSubColumn(ps, pc) ) continue;
+				if(c.type == TPolymorph) {
+					out.push('<div class="content">${valueHtml(pc, pval, ps, v, scope).str}</div>');
+					break;
+				}
+				else
+					out.push('<div class="label">${pc.name} : <div class="content">${valueHtml(pc, pval, ps, v, scope).str}</div></div>');
 			}
 			scope.pop();
 			html(out.join(""));
@@ -961,7 +966,7 @@ class Cell {
 		case TBool:
 			setValue( currentValue == false && column.opt && table.displayMode != Properties ? null : currentValue == null ? true : currentValue ? false : true );
 			closeEdit();
-		case TProperties, TList:
+		case TProperties, TPolymorph, TList:
 			open();
 		case TRef(name):
 			var sdat = editor.base.getSheet(name);

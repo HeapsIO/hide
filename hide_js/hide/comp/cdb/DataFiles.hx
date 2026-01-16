@@ -759,7 +759,7 @@ class DataFiles {
 						if( ref == null )
 							return null;
 						value = ref.obj;
-					case TProperties, TList:
+					case TProperties, TPolymorph, TList:
 						sheet = current.getSub(c);
 					default:
 					}

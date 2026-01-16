@@ -290,7 +290,7 @@ class ScriptChecker {
 				case TDynamic: TDynamic;
 				case TRef(other): TInst(cdefs.get(other),[]);
 				case TCustom(_), TImage, TLayer(_), TTileLayer, TTilePos, TGradient, TCurve: null;
-				case TList, TProperties:
+				case TList, TProperties, TPolymorph:
 					var t = TInst(cdefs.get(s.name+"@"+c.name),[]);
 					c.type == TList ? @:privateAccess checker.types.getType("Array",[t]) : t;
 				case TString, TFile, TGuid:

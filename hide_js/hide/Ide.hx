@@ -1154,7 +1154,7 @@ class Ide extends hide.tools.IdeData {
 														}
 
 														var sub = sheet.getSub(c);
-														var subObjs: Array<Dynamic> = c.type.match(cdb.Data.ColumnType.TProperties) ? [Reflect.field(obj, c.name)] : Reflect.field(obj, c.name);
+														var subObjs: Array<Dynamic> = c.type.match(cdb.Data.ColumnType.TProperties | cdb.Data.ColumnType.TPolymorph) ? [Reflect.field(obj, c.name)] : Reflect.field(obj, c.name);
 														if (sub != null && subObjs != null) {
 															var newPath = new hide.comp.cdb.Editor.Path();
 															for (p in path)

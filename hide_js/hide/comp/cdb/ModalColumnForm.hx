@@ -49,6 +49,7 @@ class ModalColumnForm extends Modal {
 				<option value="ref">Reference</option>
 				<option value="list">List</option>
 				<option value="properties">Properties</option>
+				<option value="polymorph">Polymorph</option>
 				<option value="color">Color</option>
 				<option value="file">File</option>
 				<option value="image">Image</option>
@@ -318,7 +319,7 @@ class ModalColumnForm extends Modal {
 		} else {
 			form.addClass("create");
 			form.find("input").not("[type=submit]").val("");
-			var isProp = sheet.parent != null && sheet.parent.sheet.columns[sheet.parent.column].type == TProperties;
+			var isProp = sheet.parent != null && (sheet.parent.sheet.columns[sheet.parent.column].type == TProperties || sheet.parent.sheet.columns[sheet.parent.column].type == TPolymorph);
 			form.find("[name=req]").prop("checked", !isProp);
 			form.find("[name=kind]").val("");
 		}
@@ -465,6 +466,8 @@ class ModalColumnForm extends Modal {
 			TDynamic;
 		case "properties":
 			TProperties;
+		case "polymorph":
+			TPolymorph;
 		case "guid":
 			TGuid;
 		default:

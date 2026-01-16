@@ -17,11 +17,11 @@ class SubTable extends Table {
 		line.subTable = this;
 
 		var mode : Table.DisplayMode = switch( cell.column.type ) {
-			case TProperties: Properties;
+			case TProperties, TPolymorph: Properties;
 			default: Table;
 		};
 
-		insertedTR = new Element("<tr>").addClass(cell.column.type == TProperties ? "props" : "list");
+		insertedTR = new Element("<tr>").addClass((cell.column.type == TProperties || cell.column.type == TPolymorph) ? "props" : "list");
 		var group;
 		if( editor.displayMode == AllProperties && cell.table.parent == null ) {
 			group = new Element("<td>").attr("colspan","2").appendTo(insertedTR);
@@ -80,7 +80,7 @@ class SubTable extends Table {
 				if (v != sheet.lines) {
 					hide.Ide.inst.error("Editor integrity compromised, please refresh the editor and contact someone in the tool team");
 				}
-			case TProperties:
+			case TProperties, TPolymorph:
 				if (v != sheet.lines[0]) {
 					hide.Ide.inst.error("Editor integrity compromised, please refresh the editor and contact someone in the tool team");
 				}
@@ -107,7 +107,7 @@ class SubTable extends Table {
 				// do not save for now
 			}
 			value;
-		case TProperties:
+		case TProperties, TPolymorph:
 			if( value == null ) {
 				value = {};
 				Reflect.setField(cell.line.obj, cell.column.name, value);

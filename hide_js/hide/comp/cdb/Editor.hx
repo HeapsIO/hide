@@ -928,7 +928,7 @@ class Editor extends Component {
 
 				setValue(d, obj, c1, c2);
 
-				if( c2.type == TList || c2.type == TProperties )
+				if( c2.type == TList || c2.type == TProperties || c2.type == TPolymorph )
 					shouldFullRefresh = true;
 				if( !shouldFullRefresh )
 					toRefresh.push(cursor.table.lines[curPosY].cells[cid + curPosX]);
@@ -1079,7 +1079,7 @@ class Editor extends Component {
 						var cell = t.lines[s.parent.line].cells[t.displayMode == Properties || t.displayMode == AllProperties ? 0 : s.parent.column];
 						if (cell == null)
 							return null;
-						if( cell.line.subTable == null && (cell.column.type == TList || cell.column.type == TProperties) )
+						if( cell.line.subTable == null && (cell.column.type == TList || cell.column.type == TProperties || cell.column.type == TPolymorph) )
 							cell.open(true);
 						return cell.line.subTable;
 					}
@@ -1219,7 +1219,7 @@ class Editor extends Component {
 								var sub = sheet.getSub(column);
 								cleanupOptionalLines(list, sub, optionalBackup);
 							}
-						case TProperties:
+						case TProperties, TPolymorph:
 							var props : Dynamic = cast data;
 							if	(Reflect.fields(props).length == 0 && column.opt) {
 								optionalBackup.push({line: line, colName: column.name, data: props});
@@ -2378,10 +2378,13 @@ class Editor extends Component {
 		}
 
 		var hasLocText = false;
+		var checked : Map<cdb.Sheet, Bool> = new Map();
 		function checkRec(s:cdb.Sheet) {
+			if( checked.get(s) ) return;
+			checked.set(s, true);
 			for( c in s.columns ) {
 				switch( c.type ) {
-				case TList, TProperties:
+				case TList, TProperties, TPolymorph:
 					var sub = s.getSub(c);
 					checkRec(sub);
 				case TString if( c.kind == Localizable ):

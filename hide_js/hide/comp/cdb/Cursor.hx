@@ -200,7 +200,7 @@ class Cursor {
 			for (cIdx => c in curTable.columns) {
 				if (c.name == targetCol) {
 					var cell = curTable.lines[targetLineIdx].cells[ curTable.displayMode == Properties || curTable.displayMode == AllProperties ? 0 : cIdx];
-					if( cell.line.subTable == null && (cell.column.type == TList || cell.column.type == TProperties) )
+					if( cell.line.subTable == null && (cell.column.type == TList || cell.column.type == TProperties || cell.column.type == TPolymorph) )
 						cell.open(true);
 
 					curTable = cell.line.subTable;

@@ -508,7 +508,7 @@ class Table extends Component {
 		var isLarge = false;
 		for( c in columns ) {
 
-			if( c.type.match(TList | TProperties) ) isLarge = true;
+			if( c.type.match(TList | TProperties | TPolymorph) ) isLarge = true;
 
 			if(!shouldDisplayProp(props, c)) {
 				available.push(c);

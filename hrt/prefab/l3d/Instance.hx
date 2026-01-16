@@ -103,7 +103,7 @@ class Instance extends Object3D {
 		}
 		for(col in sheet.columns) {
 			switch(col.type) {
-			case TProperties:
+			case TProperties, TPolymorph:
 				var sub = sheet.getSub(col);
 				for( col2 in sub.columns )
 					switch( col2.type ) {

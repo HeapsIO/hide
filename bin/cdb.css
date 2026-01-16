@@ -339,7 +339,8 @@
   color: #888;
 }
 .cdb .cdb-sheet td.t_list,
-.cdb .cdb-sheet td.t_properties {
+.cdb .cdb-sheet td.t_properties,
+.cdb .cdb-sheet td.t_polymorph {
   white-space: nowrap;
   cursor: pointer;
   text-overflow: ellipsis;
@@ -347,7 +348,8 @@
   overflow: hidden!important;
 }
 .cdb .cdb-sheet td.t_list img,
-.cdb .cdb-sheet td.t_properties img {
+.cdb .cdb-sheet td.t_properties img,
+.cdb .cdb-sheet td.t_polymorph img {
   max-height: 32px;
   max-width: 32px;
 }
@@ -573,11 +575,13 @@
   background-color: #54FF85;
   pointer-events: none;
 }
-.cdb .cdb-sheet .t_properties .cell-root .label {
+.cdb .cdb-sheet .t_properties .cell-root .label,
+.cdb .cdb-sheet .t_polymorph .cell-root .label {
   display: flex;
   gap: 5px;
 }
-.cdb .cdb-sheet .t_properties .cell-root .content .color {
+.cdb .cdb-sheet .t_properties .cell-root .content .color,
+.cdb .cdb-sheet .t_polymorph .cell-root .content .color {
   height: 15px !important;
   width: 15px !important;
   border: solid 1px white;

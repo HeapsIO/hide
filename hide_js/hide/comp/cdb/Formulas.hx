@@ -160,7 +160,7 @@ class Formulas {
 				var o2 = sother.index.get(v);
 				if( o2 == null ) continue;
 				v = remap(o2.obj, sother);
-			case TProperties:
+			case TProperties, TPolymorph:
 				v = remap(v, s.getSub(c));
 			case TList:
 				var sub = s.getSub(c);
