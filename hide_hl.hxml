@@ -12,7 +12,7 @@
 -D hide
 -D hui
 -cp hide_hl
--hl hide.hl
+-hl bin_hl/hide.hl
 -lib hlsdl
 -xml api.xml
 -main hide.App

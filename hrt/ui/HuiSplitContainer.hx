@@ -50,6 +50,12 @@ class HuiSplitContainer extends HuiElement {
 		onAfterReflow = updateLayout;
 	}
 
+
+	override function onLoadState() {
+		splitterPos = getDisplayState("splitterPos", splitterPos);
+		needReflow = true;
+	}
+
 	function updateLayout() {
 		var childElement = childElements;
 		var paddingStart = 0;
@@ -143,6 +149,8 @@ class HuiSplitContainer extends HuiElement {
 			case End:
 				size - localSplitterPos;
 		}
+
+		saveDisplayState("splitterPos", splitterPos);
 	}
 
 	function onSplitterMove(newPos: Float) {

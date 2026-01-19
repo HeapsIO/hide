@@ -115,6 +115,7 @@ class IdeData {
 		var path = #if hl Sys.programPath() #else js.Node.process.argv[0] #end.split("\\").join("/").split("/");
 		path.pop();
 		var hidePath = path.join("/");
+		#if js
 		if( !sys.FileSystem.exists(hidePath + "/package.json") ) {
 			var prevPath = new haxe.io.Path(hidePath).dir;
 			if( sys.FileSystem.exists(prevPath + "/hide.js") )
@@ -125,6 +126,7 @@ class IdeData {
 				return path;
 			return null;
 		}
+		#end
 		return hidePath;
 	}
 

@@ -12,6 +12,7 @@ class HuiElement extends h2d.Flow #if hui implements h2d.domkit.Object #end {
 
 	@:p public var enable(default, set) : Bool = true;
 	@:p(bgType) var backgroundType(default, set) : String;
+	@:p var saveDisplayKey(default, set): String;
 
 	public var onOut(default, set) : hxd.Event->Void = emptyFunc;
 	public var onOver(default, set) : hxd.Event->Void = emptyFunc;
@@ -27,6 +28,7 @@ class HuiElement extends h2d.Flow #if hui implements h2d.domkit.Object #end {
 	public var parentElement(get, never): HuiElement;
 	public var childElements(get, never): Array<HuiElement>;
 	public var uiBase(get, never) : HuiBase;
+
 
 	function set_enable(b) {
 		if( !b && dom != null )
@@ -53,6 +55,14 @@ class HuiElement extends h2d.Flow #if hui implements h2d.domkit.Object #end {
 		if (v == "hui" && !built)
 			buildBackground(backgroundTile);
 		return v;
+	}
+
+	function set_saveDisplayKey(v: String) : Dynamic {
+		if (v == saveDisplayKey)
+			return v;
+		saveDisplayKey = v;
+		onLoadState();
+		return saveDisplayKey;
 	}
 
 	function set_onOut(v) {onOut = v; makeInteractive(); return v;};
@@ -139,6 +149,36 @@ class HuiElement extends h2d.Flow #if hui implements h2d.domkit.Object #end {
 		cursor.interactive.propagateEvents = true;
 		return cursor;
 	}
+
+	/**
+		Override this to load data with "getDisplayState". It will be
+		called when saveDisplayKey is properly initialized
+	**/
+	function onLoadState() {
+
+	}
+
+	function saveDisplayState(key: String, value : Dynamic) : Void {
+		if (saveDisplayKey == null)
+			return;
+
+		hide.Ide.inst.saveLocalStorage(saveDisplayKey + "/" + key, value);
+	}
+
+	function getDisplayState(key: String, def: Dynamic) : Dynamic {
+		if (saveDisplayKey == null)
+			return def;
+
+		return hide.Ide.inst.getLocalStorage(saveDisplayKey + "/" + key) ?? def;
+	}
+
+	function clearDisplayState(key: String) : Void {
+		if (saveDisplayKey == null)
+			return;
+
+		hide.Ide.inst.clearLocalStorage(saveDisplayKey + "/" + key);
+	}
+
 
 	function onOverInternal(e: hxd.Event) {
 		if (!enable)

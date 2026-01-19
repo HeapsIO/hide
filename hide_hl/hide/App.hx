@@ -1,5 +1,9 @@
 package hide;
 
+#if !hui
+#error "Need hui compiler flag"
+#end
+
 class App extends hxd.App {
 	public var ui : hrt.ui.HuiBase;
 	public var ide : hide.Ide;
@@ -7,8 +11,8 @@ class App extends hxd.App {
 
 	override public function init() {
 		hxd.Window.getInstance().title = "HideHL";
-		ui = new hrt.ui.HuiBase(s2d);
 		ide = new hide.Ide();
+		ui = new hrt.ui.HuiBase(s2d);
 	}
 
 	override public function update(dt: Float) {

@@ -16,12 +16,12 @@ class HuiMainLayout extends HuiElement {
 				</hui-button-menu>
 			</hui-element>
 
-			<hui-split-container id="app-panel-internal" direction={hrt.ui.HuiSplitContainer.Direction.Horizontal}>
+			<hui-split-container id="app-panel-internal" direction={hrt.ui.HuiSplitContainer.Direction.Horizontal} save-display-key="left-panel-split">
 				<hui-element public id="left-panel" class="panel">
 				</hui-element>
 
 
-				<hui-split-container id="right-panel-internal" direction={hrt.ui.HuiSplitContainer.Direction.Vertical} anchor-to={hrt.ui.HuiSplitContainer.AnchorTo.End}>
+				<hui-split-container id="right-panel-internal" direction={hrt.ui.HuiSplitContainer.Direction.Vertical} anchor-to={hrt.ui.HuiSplitContainer.AnchorTo.End} save-display-key="bottom-panel-split">
 					<hui-element public id="main-panel" class="panel">
 					</hui-element>
 
