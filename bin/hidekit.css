@@ -528,6 +528,11 @@ kit-root .detached .is-cdb-editor {
     align-items: center;
     gap: 4px;
     margin-left: 3px;
+    pointer-events: all;
+    cursor: pointer;
+  }
+  :scope kit-line kit-label:hover {
+    color: #8fdfff;
   }
   :scope kit-line kit-label:empty:not(.first) {
     display: none;

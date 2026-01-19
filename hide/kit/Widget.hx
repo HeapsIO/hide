@@ -80,6 +80,7 @@ abstract class Widget<ValueType> extends Element {
 		labelElement = new hrt.ui.HuiFmtText(labelContainer);
 		labelElement.text = label;
 
+
 		input = makeInput();
 		native.addChild(input);
 		#end

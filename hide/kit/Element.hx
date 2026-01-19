@@ -307,6 +307,7 @@ class Element {
 			if (parentLine == null) {
 				label.classList.add("first");
 			}
+			setupLabelReset(label);
 			native.appendChild(label);
 		}
 		if (content != null) {
@@ -314,6 +315,16 @@ class Element {
 			if (width != null)
 				native.style.setProperty('--width', '$width');
 		}
+		#end
+	}
+
+	function setupLabelReset(label: NativeElement) {
+		#if js
+		label.onclick = (e: js.html.MouseEvent) -> {
+			if (e.button == 0) {
+				resetWithUndo();
+			}
+		};
 		#end
 	}
 
