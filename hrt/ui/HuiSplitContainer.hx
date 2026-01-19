@@ -7,6 +7,11 @@ enum Direction {
 	Vertical;
 }
 
+enum AnchorTo {
+	Start;
+	End;
+}
+
 class HuiSplitContainer extends HuiElement {
 	static var SRC =
 		<hui-split-container>
@@ -18,6 +23,11 @@ class HuiSplitContainer extends HuiElement {
 	@:p var firstMaxSize(default, set): Int = 100_000;
 	@:p var secondMinSize(default, set): Int = 0;
 	@:p var secondMaxSize(default, set): Int = 100_000;
+
+	/**
+		Whenever the splitterPos value is relative to the start or end position of this container
+	**/
+	@:p var anchorTo: AnchorTo = Start;
 
 	function set_firstMinSize(v) {needReflow = true; return firstMinSize = v;};
 	function set_firstMaxSize(v) {needReflow = true; return firstMaxSize = v;};
@@ -77,30 +87,37 @@ class HuiSplitContainer extends HuiElement {
 		var secondPos = 0;
 		var secondSize = 0;
 
+		var localSplitterPos = switch (anchorTo) {
+			case Start:
+				splitterPos;
+			case End:
+				size - splitterPos;
+		}
+
 		// try to fit constraints for min/max sizes
 		for (maxConstraint in 0...4) {
 			firstPos = paddingStart;
-			firstSize = splitterPos - firstPos - spacing;
-			secondPos = splitterPos + splitterSize + spacing;
+			firstSize = localSplitterPos - firstPos - spacing;
+			secondPos = localSplitterPos + splitterSize + spacing;
 			secondSize = size - secondPos - paddingEnd;
 
 			if (firstSize < firstMinSize) {
-				splitterPos += firstMinSize - firstSize;
+				localSplitterPos += firstMinSize - firstSize;
 				continue;
 			}
 
 			if (firstSize > firstMaxSize) {
-				splitterPos += firstMaxSize - firstSize;
+				localSplitterPos += firstMaxSize - firstSize;
 				continue;
 			}
 
 			if (secondSize < secondMinSize) {
-				splitterPos -= secondMinSize - secondSize;
+				localSplitterPos -= secondMinSize - secondSize;
 				continue;
 			}
 
 			if (secondSize > secondMaxSize) {
-				splitterPos -= secondMaxSize - secondSize;
+				localSplitterPos -= secondMaxSize - secondSize;
 				continue;
 			}
 		}
@@ -111,18 +128,36 @@ class HuiSplitContainer extends HuiElement {
 				childElement[1].setWidth(firstSize);
 				childElement[2].x = secondPos;
 				childElement[2].setWidth(secondSize);
-				splitter.x = splitterPos;
+				splitter.x = localSplitterPos;
 			case Vertical:
 				childElement[1].y = firstPos;
 				childElement[1].setHeight(firstSize);
 				childElement[2].y = secondPos;
 				childElement[2].setHeight(secondSize);
-				splitter.y = splitterPos;
+				splitter.y = localSplitterPos;
+		}
+
+		splitterPos = switch(anchorTo) {
+			case Start:
+				localSplitterPos;
+			case End:
+				size - localSplitterPos;
 		}
 	}
 
 	function onSplitterMove(newPos: Float) {
 		splitterPos = Std.int(newPos);
+		switch (anchorTo) {
+			case Start:
+			case End:
+				var size = switch (direction) {
+					case Horizontal:
+						calculatedWidth;
+					case Vertical:
+						calculatedHeight;
+					}
+				splitterPos = Std.int(size) - splitterPos;
+		}
 		needReflow = true;
 	}
 }

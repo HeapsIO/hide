@@ -21,7 +21,7 @@ class HuiMainLayout extends HuiElement {
 				</hui-element>
 
 
-				<hui-split-container id="right-panel-internal" direction={hrt.ui.HuiSplitContainer.Direction.Vertical}>
+				<hui-split-container id="right-panel-internal" direction={hrt.ui.HuiSplitContainer.Direction.Vertical} anchor-to={hrt.ui.HuiSplitContainer.AnchorTo.End}>
 					<hui-element public id="main-panel" class="panel">
 					</hui-element>
 
