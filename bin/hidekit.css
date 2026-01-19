@@ -532,7 +532,7 @@ kit-root .detached .is-cdb-editor {
     cursor: pointer;
   }
   :scope kit-line kit-label:hover {
-    color: #8fdfff;
+    color: #CCC;
   }
   :scope kit-line kit-label:empty:not(.first) {
     display: none;
