@@ -47,7 +47,6 @@ class HuiSplitContainer extends HuiElement {
 		var spacing = 0;
 		var splitterSize = 0;
 		var size = 0;
-		trace(paddingTop);
 		switch (direction) {
 			case Horizontal:
 				for (element in childElements) {
