@@ -212,11 +212,13 @@ class ModelSceneEditor extends hide.comp.SceneEditor {
 				var fs : hxd.fs.LocalFileSystem = Std.downcast(hxd.res.Loader.currentInstance.fs, hxd.fs.LocalFileSystem);
 				var convertRule = @:privateAccess fs.convert.getConvertRule(parent.state.path);
 				for (c in parent.collisionSettings.get(k)) {
-					// If user is currently using the shape editor, use the shape editors debug as debug colliders
 					var debugCreated = false;
-					for (shapeEditor in parent.shapesEditor) {
-						shapeEditor.removeAllInteractives();
-						if (parent.shapesEditor.length > 0 && c.mode == Shapes) {
+
+					// If user is currently using the shape editor, use the shape editors debug as debug colliders
+					if (parent.collisionList != null) {
+						var shapeEditor = parent.shapesEditor.get(parent.collisionList.getItemName(c));
+						if (shapeEditor != null && c.mode == Shapes) {
+							shapeEditor.removeAllInteractives();
 							shapeEditor.rootDebugObj = debugCollider;
 							shapeEditor.createAllInteractives();
 							debugCreated = true;
@@ -308,7 +310,7 @@ class Model extends FileView {
 	var shader2 = new h3d.shader.FixedColor(0xff8000);
 
 	var animSelector : hide.comp.Toolbar.ToolSelect<String>;
-	var shapesEditor : Array<hide.comp.ShapeEditor> = [];
+	var shapesEditor = new Map<String, hide.comp.ShapeEditor>();
 
 	override function onDisplay() {
 		this.saveDisplayKey = "Model:" + state.path;
@@ -1032,7 +1034,7 @@ class Model extends FileView {
 
 				var shapeEditor = new hide.comp.ShapeEditor(scene, obj, settings.toShapeEditor(), null, collisionParams.find(".collision-shape-editor"));
 				shapeEditor.onChange = collisionParams.change;
-				shapesEditor.push(shapeEditor);
+				shapesEditor.set(collisionList.getItemName(settings), shapeEditor);
 
 				function applySettings( settings : CollisionSettings ) {
 					collisionParams.find(".collision-param").hide();
@@ -2032,11 +2034,12 @@ class Model extends FileView {
 		};
 		tree.onSelectionCleared = () -> {
 			element.find(".collision-editor").empty();
-			var wasShapeEditing = shapesEditor?.length > 0;
-			for (s in shapesEditor)
-				s.remove();
-			shapesEditor = [];
-			if (wasShapeEditing)
+			var shouldRefresh = false;
+			for (k in shapesEditor.keys()) {
+				shapesEditor.get(k).remove();
+				shouldRefresh = true;
+			}
+			if (shouldRefresh)
 				sceneEditor.updateCollidersVisibility();
 		}
 		tree.onDoubleClick = (item: Dynamic) -> {
