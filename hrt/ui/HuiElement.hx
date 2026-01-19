@@ -36,16 +36,6 @@ class HuiElement extends h2d.Flow #if hui implements h2d.domkit.Object #end {
 		return enable = b;
 	}
 
-	function set_onOut(v) {onOut = v; makeInteractive(); return v;};
-	function set_onOver(v) {onOver = v; makeInteractive(); return v;};
-	function set_onClick(v) {onClick = v; makeInteractive(); return v;};
-	function set_onPush(v) {onPush = v; makeInteractive(); return v;};
-	function set_onKeyDown(v) {onKeyDown = v; makeInteractive(); return v;};
-	function set_onKeyUp(v) {onKeyUp = v; makeInteractive(); return v;};
-	function set_onTextInput(v) {onTextInput = v; makeInteractive(); return v;};
-	function set_onFocus(v) {onFocus = v; makeInteractive(); return v;};
-	function set_onFocusLost(v) {onFocusLost = v; makeInteractive(); return v;};
-
 	function set_backgroundType(v) {
 		if (backgroundType == v)
 			return v;
@@ -64,6 +54,16 @@ class HuiElement extends h2d.Flow #if hui implements h2d.domkit.Object #end {
 			buildBackground(backgroundTile);
 		return v;
 	}
+
+	function set_onOut(v) {onOut = v; makeInteractive(); return v;};
+	function set_onOver(v) {onOver = v; makeInteractive(); return v;};
+	function set_onClick(v) {onClick = v; makeInteractive(); return v;};
+	function set_onPush(v) {onPush = v; makeInteractive(); return v;};
+	function set_onKeyDown(v) {onKeyDown = v; makeInteractive(); return v;};
+	function set_onKeyUp(v) {onKeyUp = v; makeInteractive(); return v;};
+	function set_onTextInput(v) {onTextInput = v; makeInteractive(); return v;};
+	function set_onFocus(v) {onFocus = v; makeInteractive(); return v;};
+	function set_onFocusLost(v) {onFocusLost = v; makeInteractive(); return v;};
 
 	function get_huiBg() : HuiBackground {return Std.downcast(background, HuiBackground);};
 	function get_parentElement() : HuiElement {return Std.downcast(parent, HuiElement);};
