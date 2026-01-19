@@ -1386,7 +1386,8 @@ class Editor extends Component {
 				var tableName = sheet.name;
 				var first = tableName.substr(0,1);
 				var caseInsentive = '[${first.toLowerCase()}${first.toUpperCase()}]${tableName.substr(1)}';
-				var regResolve = new EReg('${caseInsentive}\\.resolve\\(\\s*"$id"\\s*\\)', "");
+				var regResolve = new EReg('(\\w+\\.)*${caseInsentive}\\.resolve\\(\\s*"$id"\\s*\\)', "");
+				var regConst = new EReg('\\b(\\w+\\.)+$id\\b', "");
 
 				for (file in codeFileCache) {
 
@@ -1395,7 +1396,7 @@ class Editor extends Component {
 					if( content.indexOf(id) < 0 ) continue;
 					for( line => str in content.split("\n") ) {
 						if( regall.match(str) ) {
-							if( !regexp.match(str) && !regResolve.match(str) ) {
+							if( !regexp.match(str) && !regResolve.match(str) && !regConst.match(str) ) {
 								var str2 = str.split(id+".").join("").split("."+id).join("").split(id+"(").join("").split(id+"<").join("");
 								if( regall.match(str2) ) trace("Skip "+str);
 								continue;
