@@ -179,6 +179,10 @@ class HuiElement extends h2d.Flow #if hui implements h2d.domkit.Object #end {
 		hide.Ide.inst.clearLocalStorage(saveDisplayKey + "/" + key);
 	}
 
+	function getDisplayName() : String {
+		return toString();
+	}
+
 
 	function onOverInternal(e: hxd.Event) {
 		if (!enable)
