@@ -3728,9 +3728,6 @@ class SceneEditor {
 			});
 
 			for (m in meshes) {
-				var prim = Std.downcast(m.primitive, h3d.prim.HMDModel);
-				if (prim == null)
-					continue;
 				var col = m.getCollider();
 				if (col == null)
 					continue;
@@ -3759,7 +3756,7 @@ class SceneEditor {
 		if (modifiedRef != null && modifiedRef.editMode == Edit) {
 			var path = modifiedRef.source;
 
-			var others = sceneData.findAll(Reference, (r) -> r.source == path && r != modifiedRef, true);
+			var others = sceneData.findAll(Reference, (r) -> r.source == path && r != modifiedRef && r.refInstance != null, true);
 			@:privateAccess
 			if (others.length > 0) {
 				var data = modifiedRef.refInstance.serialize();
