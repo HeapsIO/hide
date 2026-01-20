@@ -140,7 +140,8 @@ class Reference extends Object3D {
 	}
 
 	function initRefInstance() {
-		var shouldLoad = refInstance == null && source != null && shouldBeInstanciated();
+		var shouldLoad = refInstance == null && source != null;
+		shouldLoad = shouldLoad && shouldBeInstanciated();
 
 		#if editor
 		if (hasCycle())
