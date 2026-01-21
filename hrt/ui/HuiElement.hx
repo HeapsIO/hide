@@ -14,21 +14,22 @@ class HuiElement extends h2d.Flow #if hui implements h2d.domkit.Object #end {
 	@:p(bgType) var backgroundType(default, set) : String;
 	@:p var saveDisplayKey(default, set): String;
 
-	public var onOut(default, set) : hxd.Event->Void = emptyFunc;
-	public var onOver(default, set) : hxd.Event->Void = emptyFunc;
-	public var onClick(default, set) : hxd.Event->Void = emptyFunc;
-	public var onPush(default, set) : hxd.Event->Void = emptyFunc;
-	public var onKeyDown(default, set) : hxd.Event->Void = emptyFunc;
-	public var onKeyUp(default, set) : hxd.Event->Void = emptyFunc;
-	public var onTextInput(default, set) : hxd.Event->Void = emptyFunc;
-	public var onFocus(default, set) : hxd.Event->Void = emptyFunc;
-	public var onFocusLost(default, set) : hxd.Event->Void = emptyFunc;
+	public var onOut(default, set) : hxd.Event->Void = emptyFuncEventVoid;
+	public var onOver(default, set) : hxd.Event->Void = emptyFuncEventVoid;
+	public var onClick(default, set) : hxd.Event->Void = emptyFuncEventVoid;
+	public var onPush(default, set) : hxd.Event->Void = emptyFuncEventVoid;
+	public var onKeyDown(default, set) : hxd.Event->Void = emptyFuncEventVoid;
+	public var onKeyUp(default, set) : hxd.Event->Void = emptyFuncEventVoid;
+	public var onTextInput(default, set) : hxd.Event->Void = emptyFuncEventVoid;
+	public var onFocus(default, set) : hxd.Event->Void = emptyFuncEventVoid;
+	public var onFocusLost(default, set) : hxd.Event->Void = emptyFuncEventVoid;
+
+	public var onChildrenChanged : Void -> Void = emtpyFuncVoidVoid;
 
 	public var huiBg(get, never) : HuiBackground;
 	public var parentElement(get, never): HuiElement;
 	public var childElements(get, never): Array<HuiElement>;
 	public var uiBase(get, never) : HuiBase;
-
 
 	function set_enable(b) {
 		if( !b && dom != null )
@@ -158,6 +159,24 @@ class HuiElement extends h2d.Flow #if hui implements h2d.domkit.Object #end {
 
 	}
 
+	override function addChildAt(s:h2d.Object, pos:Int) {
+		super.addChildAt(s, pos);
+		onChildrenChanged();
+	}
+
+	override function removeChild(s:h2d.Object) {
+		super.removeChild(s);
+		onChildrenChanged();
+	}
+
+	function removeChildElements() {
+		for (child in childElements) {
+			if (child.dom.hasClass("scrollbar"))
+				continue;
+			removeChild(child);
+		}
+	}
+
 	function saveDisplayState(key: String, value : Dynamic) : Void {
 		if (saveDisplayKey == null)
 			return;
@@ -263,7 +282,8 @@ class HuiElement extends h2d.Flow #if hui implements h2d.domkit.Object #end {
 		onFocusLost(e);
 	}
 
-	static function emptyFunc(e: hxd.Event) { }
+	static function emptyFuncEventVoid(e: hxd.Event) { }
+	static function emtpyFuncVoidVoid() {}
 }
 
 #end

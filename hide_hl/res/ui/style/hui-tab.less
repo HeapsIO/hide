@@ -4,8 +4,8 @@ hui-tab {
 	height: @tab-height;
 
 	background-type: hui;
-	padding-left: 4;
-	padding-right: 4;
+	padding-left: 8;
+	padding-right: 8;
 
 	>#title {
 		margin-bottom: 3;
@@ -15,22 +15,24 @@ hui-tab {
 	> hui-background {
 		background: @tab-tab-bg;
 
-		border-radius: 3 3 0 0;
-		outline: 1 @tab-tab-border;
+		border-radius: 4 4 0 0;
 	}
 
 	&:hover {
 		> hui-background {
-			background: @tab-tab-hover-bg;
-
-			border-radius: 3 3 0 0;
-			outline: 1 @tab-tab-border;
+			background: lighten(@tab-tab-bg, @light-hover);
 		}
 	}
 
 	&.active {
 		> hui-background {
 			background: @tab-tab-active-bg;
+		}
+
+		&:hover {
+			> hui-background {
+				background: lighten(@tab-tab-active-bg, @light-hover);
+			}
 		}
 
 		>#title {

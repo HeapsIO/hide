@@ -1,6 +1,6 @@
 {
 	"script.api.files": [
-		"../../api.xml"
+		"../api.xml"
 	],
 	"haxe.classPath": [
 		"../",

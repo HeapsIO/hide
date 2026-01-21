@@ -1,6 +1,8 @@
 package hrt.ui;
 
 #if hui
+
+@:uiInitFunction(init)
 class HuiMainLayout extends HuiElement {
 	static var SRC =
 		<hui-main-layout>
@@ -22,7 +24,7 @@ class HuiMainLayout extends HuiElement {
 
 
 				<hui-split-container id="right-panel-internal" direction={hrt.ui.HuiSplitContainer.Direction.Vertical} anchor-to={hrt.ui.HuiSplitContainer.AnchorTo.End} save-display-key="bottom-panel-split">
-					<hui-tab-container public id="main-panel">
+					<hui-tab-view-container public id="main-panel">
 						<hui-element>
 							<hui-fmt-text("1")/>
 						</hui-element>
@@ -32,7 +34,7 @@ class HuiMainLayout extends HuiElement {
 						<hui-element>
 							<hui-fmt-text("3")/>
 						</hui-element>
-					</hui-tab-container>
+					</hui-tab-view-container>
 
 					<hui-element public id="bottom-panel" class="panel">
 					</hui-element>
@@ -46,11 +48,17 @@ class HuiMainLayout extends HuiElement {
 
 	public function new(?parent: h2d.Object) {
 		super(parent);
-		initComponent();
+		init();
+	}
 
-		var parentFlow = Std.downcast(parent, h2d.Flow);
-		if (parentFlow == null)
-			throw "Splitter parent must be a flow";
+	function init() {
+		initComponent();
+	}
+
+	function rebuild() {
+		removeChildren();
+		@:privateAccess dom.contentRoot = this;
+		init();
 	}
 }
 

@@ -1,0 +1,104 @@
+package hrt.ui.hide;
+
+#if hui
+
+class HideViewGym extends HuiView<{}> {
+	static var SRC =
+		<hide-view-gym>
+			<hui-fmt-text("hui-fmt-text")/>
+			<hui-element class="example">
+				<hui-fmt-text("Example ! This is a text")/>
+				<hui-fmt-text("Lorem ipsum dolor sit amet consectetur adipiscing elit. Placerat in id cursus mi pretium tellus duis. Urna tempor pulvinar vivamus fringilla lacus nec metus. Integer nunc posuere ut hendrerit semper vel class. Conubia nostra inceptos himenaeos orci varius natoque penatibus. Mus donec rhoncus eros lobortis nulla molestie mattis. Purus est efficitur laoreet mauris pharetra vestibulum fusce. Sodales consequat magna ante condimentum neque at luctus. Ligula congue sollicitudin erat viverra ac tincidunt nam. Lectus commodo augue arcu dignissim velit aliquam imperdiet. Cras eleifend turpis fames primis vulputate ornare sagittis. Libero feugiat tristique accumsan maecenas potenti ultricies habitant. Cubilia curae hac habitasse platea dictumst lorem ipsum. Faucibus ex sapien vitae pellentesque sem placerat in. Tempus leo eu aenean sed diam urna tempor.")/>
+			</hui-element>
+
+			<hui-fmt-text("hui-fmt-text-input")/>
+			<hui-element class="example">
+				<hui-input-box/>
+			</hui-element>
+
+			<hui-fmt-text("hui-background")/>
+			<hui-element class="example horizontal">
+				<hui-element class="hui-background example-1"></hui-element>
+				<hui-element class="hui-background example-2"></hui-element>
+				<hui-element class="hui-background example-3"></hui-element>
+			</hui-element>
+
+
+			<hui-fmt-text("hui-menu")/>
+			<hui-element class="example">
+				<hui-button-menu(testMenu)><hui-fmt-text("Click me")/></hui-button-menu>
+			</hui-element>
+
+			<hui-fmt-text("hui-split-container")/>
+			<hui-element class="example">
+				<hui-split-container direction="horizontal">
+					<hui-element class="panel"><hui-fmt-text("Left")/></hui-element>
+					<hui-element class="panel"><hui-fmt-text("Right")/></hui-element>
+				</hui-split-container>
+
+				<hui-split-container direction="vertical">
+					<hui-element class="panel"><hui-fmt-text("Up")/></hui-element>
+					<hui-element class="panel"><hui-fmt-text("Down")/></hui-element>
+				</hui-split-container>
+			</hui-element>
+
+			<hui-fmt-text("hui-tab-container")/>
+			<hui-element class="example">
+				<hui-tab-container>
+					<hui-element><hui-fmt-text("Tab 1")/></hui-element>
+					<hui-element><hui-fmt-text("Tab 2")/></hui-element>
+					<hui-element><hui-fmt-text("Tab 3")/></hui-element>
+				</hui-tab-container>
+			</hui-element>
+
+
+
+		</hide-view-gym>
+
+	function testMenu() :  Array<hrt.ui.HuiMenu.MenuItem> {
+		var submenu: Array<HuiMenu.MenuItem> = [
+			{label: "Fire"},
+			{label: "Water"},
+			{label: "Air"},
+		];
+		submenu.push({label: "Recursive", menu: submenu});
+		var radio = 0;
+
+		var longMenu = [{label: "Lorem"},{label: "proident"},{label: "in"},{label: "quis"},{label: "deserunt"},{label: "magna"},{label: "voluptate"},{label: "sit"},{label: "irure"},{label: "amet"},{label: "deserunt"},{label: "laborum"},{label: "mollit"},{label: "occaecat"},{label: "ullamco"},{label: "id"},{label: "anim"},{label: "reprehenderit"},{label: "laborum"},{label: "aute"},{label: "aliqua"},{label: "minim"},{label: "ea"},{label: "pariatur"},{label: "magna"},{label: "amet"},{label: "cupidatat"},{label: "esse"},{label: "officia"},{label: "ad"},{label: "nostrud"},{label: "labore"},{label: "magna"},{label: "sint"},{label: "proident"},{label: "voluptate"},{label: "ex"},{label: "eiusmod"},{label: "anim"},{label: "et"},{label: "officia"},{label: "quis"},{label: "ullamco"},{label: "nisi"},{label: "id"},{label: "reprehenderit"},{label: "irure"},{label: "deserunt"},{label: "commodo"},{label: "culpa"}];
+		return [
+					{label: "File"},
+					{label: "Edit"},
+					{label: "Copy", icon: "ui/icons/copy.png"},
+					{label: "Paste"},
+					{label: "Disabled", enabled: false},
+					{isSeparator: true},
+					{label: "Recmenu", menu: submenu,},
+					{label: "LongSubmenu", menu: longMenu},
+					{label: "Submenu3", menu: [
+						{label: "Fire"},
+						{label: "Water"},
+						{label: "Air"},
+						{label: "Earth"},
+					]},
+					{isSeparator: true, label: "Label"},
+					{label: "Bar"},
+					{isSeparator: true, label: "Check"},
+					{label: "A", checked: false, stayOpen: true},
+					{label: "B", checked: true, stayOpen: true},
+					{label: "C", checked: false, stayOpen: true},
+					{isSeparator: true, label: "Radio"},
+					{label: "A", radio: () -> radio == 0, stayOpen: true, click: () -> radio = 0},
+					{label: "B", radio: () -> radio == 1, stayOpen: true, click: () -> radio = 1},
+					{label: "C", radio: () -> radio == 2, stayOpen: true, click: () -> radio = 2},
+			];
+	}
+
+	function new(?parent) {
+		super(parent);
+		initComponent();
+	}
+
+	static var _ = HuiView.register("gym", HideViewGym);
+}
+
+#end

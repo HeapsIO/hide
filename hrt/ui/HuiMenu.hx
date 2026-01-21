@@ -35,7 +35,7 @@ class HuiMenu extends HuiPopup {
 
 	static var SRC =
 		<hui-menu>
-			<hui-input-box id="searchBar"/>
+			<hui-input-box id="searchBar" class="search"/>
 			<hui-element id="itemsContainer"/>
 		</hui-menu>
 
@@ -113,7 +113,7 @@ class HuiMenu extends HuiPopup {
 			filteredList = rec(items);
 		}
 
-		itemsContainer.removeChildren();
+		itemsContainer.removeChildElements();
 		itemElements.resize(0);
 		selectableElements.resize(0);
 

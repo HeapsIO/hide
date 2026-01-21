@@ -7,7 +7,7 @@ hui-tab-container {
 	background-type: hui;
 
 	> hui-background {
-		background: rgb(75, 75, 255);
+		background: @bg-panel-lvl1;
 	}
 
 	> #tab-bar {
@@ -17,7 +17,8 @@ hui-tab-container {
 		padding-top: 1;
 		padding-left: 1;
 		padding-right: 1;
-		spacing: -1;
+		padding-bottom: 1;
+		spacing: 1;
 
 		background-type: hui;
 
@@ -32,15 +33,5 @@ hui-tab-container {
 		auto-size: 1;
 		fill-width: 1;
 		fill-height: 1;
-
-		// > hui-element {
-		// 	position: absolute;
-		// }
-
-		background-type: hui;
-
-		> hui-background {
-			background: rgb(60, 66, 0);
-		}
 	}
 }

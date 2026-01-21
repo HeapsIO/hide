@@ -3,6 +3,7 @@ package hrt.ui;
 #if hui
 
 @:access(hrt.ui.HuiTab)
+@:access(hrt.ui.HuiView)
 class HuiTabContainer extends HuiElement {
 	static var SRC =
 		<hui-tab-container>
@@ -10,43 +11,61 @@ class HuiTabContainer extends HuiElement {
 			<hui-element id="content" __content__/>
 		</hui-tab-container>
 
-	var activeTabIndex = 0;
-	var lastActiveTabIndex = -1;
+	var activeTabElement: HuiElement = null;
 
 	function new(?parent) {
 		super(parent);
 		initComponent();
 
 		syncTabsQueued = true;
+
+		content.onChildrenChanged = () -> syncTabsQueued = true;
 	}
 
-	function setTab(id: Int) {
-		activeTabIndex = id;
+	function setTab(newElement: HuiElement) {
+		if (newElement != null && content.children.indexOf(newElement) < 0)
+			throw "element must be a child of content";
+
+		if (activeTabElement != null) {
+			var view = Std.downcast(activeTabElement, HuiView);
+			if (view != null) {
+				view.onHide();
+			}
+		}
+
+		activeTabElement = newElement;
+
+		if (activeTabElement != null) {
+			var view = Std.downcast(activeTabElement, HuiView);
+			if (view != null) {
+				view.onDisplay();
+			}
+		}
 
 		syncTabsQueued = true;
 	}
 
-	var syncTabsQueued = false;
-
-	dynamic function onTabChange(newTab: Int, oldTab: Int) {
+	function closeTab(id: Int) {
 
 	}
 
+	var syncTabsQueued = false;
+
 	function syncTabs() {
 		if (syncTabsQueued) {
-			if (activeTabIndex != lastActiveTabIndex) {
-				onTabChange(activeTabIndex, lastActiveTabIndex);
-				lastActiveTabIndex = activeTabIndex;
+			var elements = content.childElements;
+			if (activeTabElement == null && elements.length > 0) {
+				setTab(elements[0]);
 			}
 
-			var elements = content.childElements;
+			var activeTabIndex = elements.indexOf(activeTabElement);
 
 			syncTabsQueued = false;
 			if (tabBar.childElements.length != elements.length) {
-				tabBar.removeChildren();
+				tabBar.removeChildElements();
 				for (i in 0...elements.length) {
 					var tab = new HuiTab(tabBar);
-					tab.onClick = (e) -> setTab(i);
+					tab.onClick = (e) -> setTab(elements[i]);
 				}
 			}
 
@@ -56,17 +75,15 @@ class HuiTabContainer extends HuiElement {
 
 				tab.dom.toggleClass("active", activeTabIndex == i);
 			}
+
+			for (i => element in elements) {
+				element.visible = i == activeTabIndex;
+			}
 		}
 	}
 
 	override function sync(ctx) {
-		var elements = content.childElements;
-
 		syncTabs();
-
-		for (i => element in elements) {
-			element.visible = i == activeTabIndex;
-		}
 
 		super.sync(ctx);
 	}
