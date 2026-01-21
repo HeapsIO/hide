@@ -521,9 +521,8 @@ class ModalColumnForm extends Modal {
 		}
 		if( t == TId && v.scope != "" ) c.scope = Std.parseInt(v.scope);
 		if( v.doc != "" ) c.documentation = v.doc;
-		
-		// Handle structRef and shared fields
-		if( v.stype != null && v.stype != "" ) c.structRef = v.stype;
+
+		if( v.type == "structref" && v.stype != null && v.stype != "" ) c.structRef = v.stype;
 		if( v.shared == "on" ) {
 			c.shared = true;
 		}
