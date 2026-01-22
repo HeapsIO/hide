@@ -53,7 +53,11 @@ class File extends Widget<String> {
 		return null;
 	}
 
-	public dynamic function onView() {}
+	public dynamic function onView() {
+		#if js
+		hide.Ide.inst.openFile(file.getFullPath());
+		#end
+	}
 
 	static var types : Map<String, Array<String>> = [
 		"file" => ["*"],
