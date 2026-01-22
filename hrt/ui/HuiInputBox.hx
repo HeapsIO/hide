@@ -4,7 +4,7 @@ package hrt.ui;
 class HuiInputBox extends HuiElement {
 	static var SRC =
 		<hui-input-box>
-			<hui-fmt-text-input public id="textInput"/>
+			<hui-text-input public id="textInput"/>
 			<hui-element id="icon"/>
 		</hui-input-box>
 

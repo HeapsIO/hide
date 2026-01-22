@@ -351,7 +351,7 @@ class HuiMenuItem extends HuiElement {
 		}
 
 		if (item.label != null) {
-			var ftmText = new HuiFmtText(item.label, content);
+			var ftmText = new HuiText(item.label, content);
 		}
 
 		if (item.menu != null) {

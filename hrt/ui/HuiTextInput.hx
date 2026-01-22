@@ -2,7 +2,7 @@ package hrt.ui;
 
 #if hui
 
-class HuiFmtTextInput extends h2d.TextInput implements h2d.domkit.Object {
+class HuiTextInput extends h2d.TextInput implements h2d.domkit.Object {
 	public function new(?txt : String, ?maxCharacters: Int, ?parent) {
 		super(hxd.res.DefaultFont.get(), parent);
 		initComponent();

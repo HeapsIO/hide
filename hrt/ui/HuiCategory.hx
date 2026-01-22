@@ -10,7 +10,7 @@ class HuiCategory extends HuiElement {
 
 	static var SRC =
 		<hui-category>
-			<hui-element id="header"><hui-fmt-text("") id="header-text"/></hui-element>
+			<hui-element id="header"><hui-text("") id="header-text"/></hui-element>
 			<hui-element id="content" __content__ public/>
 		</hui-category>
 

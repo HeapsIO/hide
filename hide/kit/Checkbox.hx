@@ -21,7 +21,7 @@ class Checkbox extends Widget<Bool> {
 
 		return checkbox;
 		#elseif hui
-		return new hrt.ui.HuiFmtText("checkbox");
+		return new hrt.ui.HuiText("checkbox");
 		#else
 		return null;
 		#end

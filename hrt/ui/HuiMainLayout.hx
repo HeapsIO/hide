@@ -8,13 +8,13 @@ class HuiMainLayout extends HuiElement {
 		<hui-main-layout>
 			<hui-element public id="main-navbar">
 				<hui-button-menu(() -> [{label: "Open Project ..."}, {label: "Recent", menu: [{label: "Wartales"}, {label: "Mog"}, {label: "Northgard 2"}, {label: "Spacecraft"}, {label: "D4X2"}]}])>
-					<hui-fmt-text("File")/>
+					<hui-text("File")/>
 				</hui-button-menu>
 				<hui-button-menu(() -> [{label: "Copy"}, {label: "Paste"}, {label: "Cut"}, {isSeparator: true}, {label: "Other stuff", menu: [{label: "Hello there"}]}])>
-					<hui-fmt-text("Edit")/>
+					<hui-text("Edit")/>
 				</hui-button-menu>
 				<hui-button-menu(() -> [{label: "CDB"}, {label: "Scene"}, {label: "Settings"}, {label: "Gym"}])>
-					<hui-fmt-text("View")/>
+					<hui-text("View")/>
 				</hui-button-menu>
 			</hui-element>
 
@@ -26,13 +26,13 @@ class HuiMainLayout extends HuiElement {
 				<hui-split-container id="right-panel-internal" direction={hrt.ui.HuiSplitContainer.Direction.Vertical} anchor-to={hrt.ui.HuiSplitContainer.AnchorTo.End} save-display-key="bottom-panel-split">
 					<hui-tab-view-container public id="main-panel">
 						<hui-element>
-							<hui-fmt-text("1")/>
+							<hui-text("1")/>
 						</hui-element>
 						<hui-element>
-							<hui-fmt-text("2")/>
+							<hui-text("2")/>
 						</hui-element>
 						<hui-element>
-							<hui-fmt-text("3")/>
+							<hui-text("3")/>
 						</hui-element>
 					</hui-tab-view-container>
 
@@ -42,7 +42,7 @@ class HuiMainLayout extends HuiElement {
 			</hui-split-container>
 
 			<hui-element public id="main-footer">
-				<hui-fmt-text("hide_hl v0.0.0")/>
+				<hui-text("hide_hl v0.0.0")/>
 			</hui-element>
 		</hui-main-layout>
 

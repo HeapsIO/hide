@@ -16,7 +16,7 @@ class Line extends Element {
 	}
 	#elseif hui
 	public var labelContainer: hrt.ui.HuiElement;
-	public var labelText: hrt.ui.HuiFmtText;
+	public var labelText: hrt.ui.HuiText;
 	#end
 
 	override function makeSelf():Void {

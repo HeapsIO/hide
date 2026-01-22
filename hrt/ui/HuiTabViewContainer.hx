@@ -38,7 +38,7 @@ class HuiTabViewContainer extends HuiTabContainer {
 				}
 			}
 			var error = new HuiElement(content);
-			var errorText = new HuiFmtText('Missing HuiView for kind ${state.kind}', error);
+			var errorText = new HuiText('Missing HuiView for kind ${state.kind}', error);
 		}
 	}
 }

@@ -39,7 +39,7 @@ abstract class Widget<ValueType> extends Element {
 
 	var input: NativeElement;
 
-	var labelElement: #if js NativeElement #elseif hui hrt.ui.HuiFmtText #else Dynamic #end;
+	var labelElement: #if js NativeElement #elseif hui hrt.ui.HuiText #else Dynamic #end;
 
 	function get_value() return value;
 	function set_value(v:ValueType) {
@@ -77,7 +77,7 @@ abstract class Widget<ValueType> extends Element {
 		var labelContainer = new hrt.ui.HuiElement(native);
 		labelContainer.dom.addClass("label");
 
-		labelElement = new hrt.ui.HuiFmtText(labelContainer);
+		labelElement = new hrt.ui.HuiText(labelContainer);
 		labelElement.text = label;
 
 
