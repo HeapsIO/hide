@@ -89,14 +89,17 @@ class CollisionSettings {
 			return null;
 
 		return switch (colliderType) {
-			case Mesh(model):
-				var g = hmd.lib.header.geometries[model.geometry];
+			case Mesh(colliderModel):
+				var g = hmd.lib.header.geometries[colliderModel.geometry];
 				var buffers = hmd.lib.getBuffers(g, hxd.BufferFormat.POS3D);
 				var polygonBuffer = new h3d.col.PolygonBuffer();
 				polygonBuffer.setData(buffers.vertexes, buffers.indexes);
-				return polygonBuffer.makeDebugObj();
+				var obj = polygonBuffer.makeDebugObj();
+				obj.defaultTransform = colliderModel.position.toMatrix();
+				obj.defaultTransform.multiply(obj.defaultTransform, model.position.toMatrix().getInverse());
+				return obj;
 
-			case ConvexHulls(model):
+			case ConvexHulls(colliderModel):
 				var hmd = Std.downcast(mesh.primitive, h3d.prim.HMDModel);
 
 				var dim = hmd.getBounds().dimension();
@@ -111,7 +114,7 @@ class CollisionSettings {
 					if (Reflect.field(m.props, "ignoreCollide"))
 						continue;
 
-					var bufs = hmd.lib.getBuffers(hmd.lib.header.geometries[model.geometry], hxd.BufferFormat.POS3D, null, idx);
+					var bufs = hmd.lib.getBuffers(hmd.lib.header.geometries[colliderModel.geometry], hxd.BufferFormat.POS3D, null, idx);
 					for (v in bufs.vertexes)
 						vertices.push(v);
 					for (i in bufs.indexes)
@@ -132,9 +135,12 @@ class CollisionSettings {
 					for (i => idx in convexHull.indexes)
 						ibuf[i] = idx;
 					polygonBuffer.setData(vbuf, ibuf, true);
-					parentObj.addChild(polygonBuffer.makeDebugObj());
+					var obj = polygonBuffer.makeDebugObj();
+					obj.defaultTransform = colliderModel.position.toMatrix();
+					parentObj.addChild(obj);
 				}
 
+				parentObj.defaultTransform = model.position.toMatrix().getInverse();
 				return parentObj;
 
 			case Shapes:
@@ -208,6 +214,7 @@ class ModelSceneEditor extends hide.comp.SceneEditor {
 
 				var debugCollider = new h3d.scene.Object(rootDebugCollider);
 				debugCollider.name = 'debug collider (${obj.name})';
+				debugCollider.follow = obj;
 
 				var fs : hxd.fs.LocalFileSystem = Std.downcast(hxd.res.Loader.currentInstance.fs, hxd.fs.LocalFileSystem);
 				var convertRule = @:privateAccess fs.convert.getConvertRule(parent.state.path);
