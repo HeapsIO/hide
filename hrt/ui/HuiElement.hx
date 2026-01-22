@@ -23,6 +23,7 @@ class HuiElement extends h2d.Flow #if hui implements h2d.domkit.Object #end {
 	public var onTextInput(default, set) : hxd.Event->Void = emptyFuncEventVoid;
 	public var onFocus(default, set) : hxd.Event->Void = emptyFuncEventVoid;
 	public var onFocusLost(default, set) : hxd.Event->Void = emptyFuncEventVoid;
+	public var onWheel(default, set) : hxd.Event->Void = null;
 
 	public var onChildrenChanged : Void -> Void = emtpyFuncVoidVoid;
 
@@ -75,6 +76,7 @@ class HuiElement extends h2d.Flow #if hui implements h2d.domkit.Object #end {
 	function set_onTextInput(v) {onTextInput = v; makeInteractive(); return v;};
 	function set_onFocus(v) {onFocus = v; makeInteractive(); return v;};
 	function set_onFocusLost(v) {onFocusLost = v; makeInteractive(); return v;};
+	function set_onWheel(v) {onWheel = v; makeInteractive(); return v;};
 
 	function get_huiBg() : HuiBackground {return Std.downcast(background, HuiBackground);};
 	function get_parentElement() : HuiElement {return Std.downcast(parent, HuiElement);};
@@ -114,6 +116,7 @@ class HuiElement extends h2d.Flow #if hui implements h2d.domkit.Object #end {
 		interactive.onTextInput = onTextInputInternal;
 		interactive.onFocus = onFocusInternal;
 		interactive.onFocusLost = onFocusLostInternal;
+		interactive.onWheel = onWheelInternal;
 		interactive.enableRightButton = true;
 	}
 
@@ -280,6 +283,16 @@ class HuiElement extends h2d.Flow #if hui implements h2d.domkit.Object #end {
 			return;
 
 		onFocusLost(e);
+	}
+
+	function onWheelInternal(e: hxd.Event) {
+		if (!enable)
+			return;
+
+		if (onWheel == null)
+			onMouseWheel(e);
+		else
+			onWheel(e);
 	}
 
 	static function emptyFuncEventVoid(e: hxd.Event) { }
