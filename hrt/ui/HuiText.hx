@@ -10,7 +10,9 @@ class HuiText extends h2d.HtmlText #if hui implements h2d.domkit.Object #end {
 		super(hxd.res.DefaultFont.get(), parent);
 		initComponent();
 		this.text = text;
+
+		// Highlight text
+		defineHtmlTag("h", 0x3185ce);
 	}
 }
-
 #end

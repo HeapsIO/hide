@@ -68,6 +68,7 @@ class HuiMenu extends HuiPopup {
 
 	function regenerateElements() {
 		var filteredList = items;
+		var coloredText: Map<{}, String> = [];
 		if (searchBar.visible) {
 			var query = hide.Search.createSearchQuery(searchBar.text);
 			if (minWidth == null) {
@@ -90,6 +91,8 @@ class HuiMenu extends HuiPopup {
 
 					var ranges = hide.Search.computeSearchRanges(item.label, query, false);
 					if (ranges != null) {
+						var remap = hide.Search.splitSearchRanges(item.label, ranges, "<h>", "</h>");
+						coloredText.set(cast item, remap);
 						filteredList.push(item);
 					}
 				}
@@ -121,7 +124,7 @@ class HuiMenu extends HuiPopup {
 			submenu.close();
 
 		for (item in filteredList) {
-			var itemElement = new HuiMenuItem(item, itemsContainer);
+			var itemElement = new HuiMenuItem(item, coloredText.get(cast item), itemsContainer);
 			itemElement.onOver = (e) -> {
 				e.propagate = true;
 				openTimer?.stop();
@@ -329,7 +332,7 @@ class HuiMenuItem extends HuiElement {
 	function get_contextMenu() : HuiMenu {return Std.downcast(parent.parent, HuiMenu);};
 
 
-	public function new(item: MenuItem, ?parent: h2d.Object) {
+	public function new(item: MenuItem, ?nameOverride: String, ?parent: h2d.Object) {
 		super(parent);
 		this.item = item;
 		initComponent();
@@ -351,7 +354,7 @@ class HuiMenuItem extends HuiElement {
 		}
 
 		if (item.label != null) {
-			var ftmText = new HuiText(item.label, content);
+			var ftmText = new HuiText(nameOverride ?? item.label, content);
 		}
 
 		if (item.menu != null) {
