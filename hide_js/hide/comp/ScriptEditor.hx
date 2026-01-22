@@ -749,8 +749,15 @@ class ScriptEditor extends CodeEditor {
 		haxe.Timer.delay(function() doCheckScript(), 0);
 	}
 
+	// Crude way of checking if there is no tab between the cursor position and the start of the line
+	static final globalScopeRegex = ~/(^|\n)\S*($|\n)/;
+
+
 	override function getCompletion( position : Int ) : Array<monaco.Languages.CompletionItem> {
 		var script = code.substr(0,position);
+
+		var results : Array<monaco.Languages.CompletionItem> = [];
+
 		var vars : Map<String,TType>;
 		if( script.charCodeAt(script.length-1) == ".".code ) {
 			vars = [];
@@ -762,17 +769,32 @@ class ScriptEditor extends CodeEditor {
 			}
 		} else {
 			vars = checker.checker.getGlobals();
-			for( ev => t in @:privateAccess checker.checker.events ) {
-				vars.set(ev,t);
-				switch( t ) {
-				case TFun(args,_):
-					vars.set("function "+ev+"("+[for( a in args ) a.name].join(",")+") {\n}", t);
-				default:
+
+			// only push function ... snippets if we are in the global scope
+			if (globalScopeRegex.match(script)) {
+				for( ev => t in @:privateAccess checker.checker.events ) {
+					vars.set(ev,t);
+					switch( t ) {
+					case TFun(args,_):
+						results.push({
+							kind : Snippet,
+							label: "function " + ev + "(...)",
+							insertText : "function "+ev+"("+[for( a in args ) a.name].join(",")+") {\n\t$0\n}",
+							filterText: ev,
+							documentation: {value: "```js\nfunction "+ev+"("+[for( a in args ) a.name].join(",")+") {\n\t\n}\n```"},
+							insertTextRules: InsertAsSnippet,
+							detail : hscript.Checker.typeStr(t),
+							commitCharacters: ["("],
+						});
+					default:
+					}
 				}
 			}
 		}
+
+
 		var checker = checker.checker;
-		return [for( k in vars.keys() ) {
+		for( k in vars.keys() ) {
 			var t = vars.get(k);
 			if( StringTools.startsWith(k,"a_") ) {
 				var t2 = checker.unasync(t);
@@ -783,20 +805,22 @@ class ScriptEditor extends CodeEditor {
 			}
 			var isFun = checker.follow(t).match(TFun(_));
 			if( isFun ) {
-				{
+				results.push({
 					kind : Method,
 					label : k,
 					detail : hscript.Checker.typeStr(t),
 					commitCharacters: ["("],
-				}
+				});
 			} else {
-				{
+				results.push({
 					kind : Field,
 					label : k,
 					detail : hscript.Checker.typeStr(t),
-				}
+				});
 			}
-		}];
+		}
+
+		return results;
 	}
 
 	public function doCheckScript() {

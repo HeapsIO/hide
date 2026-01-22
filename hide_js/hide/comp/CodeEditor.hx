@@ -88,10 +88,21 @@ class CodeEditor extends Component {
 				provideCompletionItems : function(model,position,_,_) {
 					var comp : CodeEditor = (model : Dynamic).__comp__;
 			        var code = model.getValueInRange({startLineNumber: 1, startColumn: 1, endLineNumber: position.lineNumber, endColumn: position.column});
+					var word = (model : Dynamic).getWordUntilPosition(position);
+
+					var range = {
+						startLineNumber: position.lineNumber,
+						endLineNumber: position.lineNumber,
+						startColumn: word.startColumn,
+						endColumn: word.endColumn,
+					};
+
 					var res = comp.getCompletion(code.length);
-					for( r in res )
+					for( r in res ) {
 						if( r.insertText == null )
 							r.insertText = r.label;
+						(r:Dynamic).range = range;
+					}
 
 					return { suggestions : res };
 				}

@@ -2,7 +2,7 @@ package monaco;
 
 typedef CompletionProvider = {
 	var ?triggerCharacters : Array<String>;
-	function provideCompletionItems( model : Model, position : Position, token : Any, context : CompletionContext ) : { suggestions : Array<CompletionItem> };
+	function provideCompletionItems( model : Model, position : Position, token : Any, context : CompletionContext ) : { suggestions : Array<CompletionItem>, ?incomplete: Bool };
 }
 
 typedef CompletionContext = {
@@ -38,6 +38,12 @@ enum abstract CompletionItemKind(Int) {
 	var Variable = 5;
 }
 
+enum abstract CompletionItemInsertTextRule(Int) {
+	var InsertAsSnippet = 4;
+	var KeepWhitespace = 1;
+	var None = 0;
+}
+
 typedef CompletionItem = {
 	var ?additionalTextEdits : Any;
 	var ?command : Any;
@@ -50,6 +56,7 @@ typedef CompletionItem = {
 	var label : String;
 	var ?range : Range;
 	var ?sortText : String;
+	var ?insertTextRules: CompletionItemInsertTextRule;
 	//var ?textEdit : deprecated
 }
 
