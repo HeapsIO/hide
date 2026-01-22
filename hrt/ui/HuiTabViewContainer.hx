@@ -54,6 +54,9 @@ class HuiTabViewContainer extends HuiTabContainer {
 		}
 		viewsState ??= [
 			{
+				kind: "test",
+			},
+			{
 				kind: "gym",
 			}
 		];
