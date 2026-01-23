@@ -316,21 +316,23 @@ class Editor extends Component {
 			return;
 
 		if (filters.length == 0 && filterFlags.has(Regular) && filterFlags.has(Warning) && filterFlags.has(Error)) {
-			// Reset visibility
-			if (@:privateAccess table.separators != null) {
-				for (l in table.lines)
-					@:privateAccess l.filtered = false;
-				for (s in @:privateAccess table.separators) {
-					@:privateAccess s.filtered = false;
-					s.refresh(false);
-				}
-			}
-			else {
-				for (l in table.lines) {
-					@:privateAccess l.filtered = false;
+			var seps = @:privateAccess table.separators ?? [];
+			var firstSepIdx = seps.length > 0 ? seps[0].data.index : hxd.Math.POSITIVE_INFINITY;
+
+			for (l in table.lines) {
+				l.filtered = false;
+				if (l.index < firstSepIdx) {
 					l.element.removeClass("filtered");
+					if (l.element.hasClass("hidden"))
+						l.create();
 				}
 			}
+
+			for (s in seps) {
+				@:privateAccess s.filtered = false;
+				s.refresh(false);
+			}
+
 			return;
 		}
 
@@ -1837,9 +1839,8 @@ class Editor extends Component {
 			updateFilters();
 			searchBox.find(".search-bar-cdb").not(':first').remove();
 			searchBox.find(".expr-btn").not(':first').remove();
-			filters.clear();
 			searchBox.find(".remove-btn").hide();
-			if(searchBox.find(".expr-btn").hasClass("fa-superscript"))
+			if (searchBox.find(".expr-btn").hasClass("fa-superscript"))
 				searchBox.find(".expr-btn").removeClass("fa-superscript").addClass("fa-font");
 			searchBox.toggle();
 			var c = cursor.save();
