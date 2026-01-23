@@ -10,12 +10,20 @@ package hrt.ui;
 class HuiTabViewContainer extends HuiTabContainer {
 
 	var viewsState : Array<Dynamic>;
+	var firstInit = true;
 
 	override function new(?parent) {
 		super(parent);
 		initComponent();
+	}
 
-		loadViewState();
+	override function sync(ctx) {
+		super.sync(ctx);
+
+		if (firstInit) {
+			firstInit = false;
+			loadViewState();
+		}
 	}
 
 	function loadViewState() {
@@ -26,6 +34,7 @@ class HuiTabViewContainer extends HuiTabContainer {
 		];
 
 		content.removeChildElements();
+		activeTabElement = null;
 
 		for (state in viewsState) {
 			var success = false;
@@ -40,6 +49,8 @@ class HuiTabViewContainer extends HuiTabContainer {
 			var error = new HuiElement(content);
 			var errorText = new HuiText('Missing HuiView for kind ${state.kind}', error);
 		}
+
+		syncTabsQueued = true;
 	}
 }
 
