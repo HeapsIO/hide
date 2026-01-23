@@ -856,6 +856,8 @@ class Cell {
 		return StringTools.replace(str, "\u00A0", " ");
 	}
 
+	static final isWhiteSpace = ~/^\s*$/;
+
 	public function edit() {
 		if( !canEdit() )
 			return;
@@ -1420,7 +1422,12 @@ class Cell {
 	function parseEditorValue(str : String) : Dynamic {
 		var newValue : Dynamic;
 		if ( !column.type.match(TFloat) && !column.type.match(TDynamic) && Std.isOfType(str,String) ) {
-			newValue = editor.base.parseValue(column.type, str, false);
+			if ((str == "" || isWhiteSpace.match(str)) && column.type.match(TId) && column.opt) {
+				newValue = null;
+			}
+			else {
+				newValue = editor.base.parseValue(column.type, str, false);
+			}
 		} else
 			newValue = str;
 
@@ -1468,6 +1475,19 @@ class Cell {
 
 	function setRawValue( str : Dynamic ) {
 		var newValue : Dynamic = try parseEditorValue(str) catch (e : Dynamic) return;
+		if (column.opt && newValue == null) {
+
+			if (column.type.match(TId)) {
+				var refs = editor.getReferences(value, table.sheet);
+				if( refs.length > 0 ) {
+					var message = [for (r in refs) r.str].join("\n");
+					if( !ide.confirm('$value is referenced elswhere. Are you sure you want to delete?\n$message') )
+						return;
+				}
+			}
+			setValue(newValue);
+			return;
+		}
 		if( newValue == null || newValue == currentValue )
 			return;
 
