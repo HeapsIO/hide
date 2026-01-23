@@ -366,6 +366,8 @@ class Scene extends hide.comp.Component implements h3d.IDrawable {
 			dirs.unshift(ide.getPath(parts.join("/")));
 
 			var lib = loadHMD(path, false);
+			if (lib == null)
+				return [];
 			if( lib.header.animations.length > 0 )
 				anims.push(ide.getPath(path));
 		} else {
@@ -408,12 +410,12 @@ class Scene extends hide.comp.Component implements h3d.IDrawable {
 	public function loadModel( path : String, mainScene = false, reload = false ) {
 		checkCurrent();
 		var lib = loadHMD(path, false, reload);
-		return lib.makeObject(texturePath -> loadTexture(path, texturePath));
+		return lib?.makeObject(texturePath -> loadTexture(path, texturePath));
 	}
 
 	public function loadAnimation( path : String ) {
 		var lib = loadHMD(path,true);
-		return lib.loadAnimation();
+		return lib?.loadAnimation();
 	}
 
 	function resolvePathImpl( modelPath : String, filePath : String ) {
@@ -526,6 +528,10 @@ class Scene extends hide.comp.Component implements h3d.IDrawable {
 			null;
 		}
 		if( e == null ) {
+			if (!sys.FileSystem.exists(fullPath)) {
+				ide.quickError('Failed to load HMD at path $path : Missing file');
+				return null;
+			}
 			var data = sys.io.File.getBytes(fullPath);
 			if( data.get(0) != 'H'.code ) {
 				var hmdOut = new hxd.fmt.fbx.HMDOut(fullPath);

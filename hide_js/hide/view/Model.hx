@@ -570,6 +570,8 @@ class Model extends FileView {
 			{ label : "Export", click : function() {
 				ide.chooseFileSave(this.getPath().substr(0,-4)+"_dump.txt", function(file) {
 					var lib = @:privateAccess scene.loadHMD(this.getPath(),false);
+					if (!lib)
+						return;
 					var hmd = lib.header;
 					hmd.data = lib.getData();
 					sys.io.File.saveContent(ide.getPath(file), new hxd.fmt.hmd.Dump().dump(hmd));
@@ -578,6 +580,8 @@ class Model extends FileView {
 			{ label : "Export Animation", enabled : currentAnimation != null, click : function() {
 				ide.chooseFileSave(this.getPath().substr(0,-4)+"_"+currentAnimation.name+"_dump.txt", function(file) {
 					var lib = @:privateAccess scene.loadHMD(ide.getPath(currentAnimation.file),true);
+					if (!lib)
+						return;
 					var hmd = lib.header;
 					hmd.data = lib.getData();
 					sys.io.File.saveContent(ide.getPath(file), new hxd.fmt.hmd.Dump().dump(hmd));
@@ -1371,6 +1375,8 @@ class Model extends FileView {
 		});
 
 		var lib = @:privateAccess scene.loadHMD(this.getPath(),false);
+		if (!lib)
+			return;
 		var hmd = lib.header;
 		var defaultProps = null;
 		for ( mat in hmd.materials ) {
