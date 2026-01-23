@@ -1,10 +1,5 @@
 package hide;
 
-typedef LayoutState = {
-	var content : Any;
-	var fullScreen : { name : String, state : Any };
-}
-
 typedef HideGlobalConfig = {
 	var autoSaveLayout : Null<Bool>;
 	var useAlternateFont : Null<Bool>;

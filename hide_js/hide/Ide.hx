@@ -34,7 +34,7 @@ class Ide extends hide.tools.IdeData {
 	var saveMenu : nw.Menu;
 	var layout : golden.Layout;
 
-	var currentLayout : { name : String, state : Config.LayoutState };
+	var currentLayout : { name : String, state : HideProjectConfig.LayoutState };
 	var currentFullScreen(default,set) : hide.ui.View<Dynamic>;
 	var maximized : Bool;
 	var fullscreen : Bool;
@@ -426,7 +426,7 @@ class Ide extends hide.tools.IdeData {
 		return target;
 	}
 
-	function initLayout( ?state : { name : String, state : Config.LayoutState } ) {
+	function initLayout( ?state : { name : String, state : HideProjectConfig.LayoutState } ) {
 		initializing = true;
 
 		if( layout != null ) {
@@ -434,10 +434,10 @@ class Ide extends hide.tools.IdeData {
 			layout = null;
 		}
 
-		var emptyLayout : Config.LayoutState = { content : [], fullScreen : null };
+		var emptyLayout : HideProjectConfig.LayoutState = { content : [], fullScreen : null };
 
 		if( state == null ) {
-			var emptyLayout : Config.LayoutState = {
+			var emptyLayout : HideProjectConfig.LayoutState = {
 				content: [{type: golden.Config.ItemType.Row, isClosable: false, id: "content_root"}], fullScreen : null,
 			};
 
@@ -654,7 +654,7 @@ class Ide extends hide.tools.IdeData {
 		if( subView == null ) this.config.user.save();
 	}
 
-	function saveLayout() : Config.LayoutState {
+	function saveLayout() : HideProjectConfig.LayoutState {
 		return {
 			content : layout.toConfig().content,
 			fullScreen : currentFullScreen == null ? null : { name : currentFullScreen.viewClass, state : currentFullScreen.state }
