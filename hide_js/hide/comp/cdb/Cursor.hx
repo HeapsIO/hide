@@ -162,21 +162,8 @@ class Cursor {
 			if( y >= maxY ) y = maxY - 1;
 		}
 
-		// Allow area selection while moving cursor with arrows and holding shift
-		if (shift) {
-			if (selection != null && selection[selection.length - 1].origin != null) {
-				var prev = selection[selection.length - 1];
-				selection = [ { x1: Std.int(hxd.Math.min(prev.origin.x, x)), y1: Std.int(hxd.Math.min(prev.origin.y, y)),
-					x2: Std.int(hxd.Math.max(prev.origin.x, x)), y2: Std.int(hxd.Math.max(prev.origin.y, y)),
-					origin: prev.origin }];
-			}
-			else {
-				addElementToSelection(line.table, line, x, y, true, false);
-				selection[selection.length -1].origin = { x: x - dx, y: y - dy };
-			}
-		}
-		else
-			addElementToSelection(line.table, line, x, y);
+		// Moving cursor update selection
+		addElementToSelection(line.table, line, x, y, shift, ctrl);
 
 		this.scrollIntoView();
 		update();
@@ -382,7 +369,7 @@ class Cursor {
 		var array : Array<Line> = [];
 		for( iy in sel.y1...(sel.y2 + 1) ) {
 			var line = table.lines[iy];
-			if (!line.element.hasClass("filtered"))
+			if (!line.filtered)
 				array.push(line);
 		}
 		return array;
@@ -396,7 +383,7 @@ class Cursor {
 		if (sel.x1 == -1) {
 			for (y in sel.y1...(sel.y2 + 1)) {
 				var line = table.lines[y];
-				if (line.element.hasClass("filtered"))
+				if (line.filtered)
 					continue;
 				for (x in 0...(line.cells.length)) {
 					cells.push(line.cells[x]);
@@ -406,7 +393,7 @@ class Cursor {
 		else {
 			for (y in sel.y1...(sel.y2 + 1)) {
 				var line = table.lines[y];
-				if (line.element.hasClass("filtered"))
+				if (line.filtered)
 					continue;
 				for (x in sel.x1...(sel.x2 + 1)) {
 					cells.push(line.cells[x]);
@@ -487,13 +474,18 @@ class Cursor {
 		var p1 = new h3d.Vector(x, y, 0);
 		var p2 = new h3d.Vector(xIndex, yIndex, 0);
 		if (shift && this.table == table) {
-			var prev = selection != null && selection.length >= 1 ? selection[selection.length - 1] : null;
-			if (prev != null && prev.origin != null)
-				p1 = new h3d.Vector(prev.origin.x, prev.origin.y, 0);
-			selection = [];
-			selection.push({ x1: Std.int(hxd.Math.min(p1.x, p2.x)), x2: Std.int(hxd.Math.max(p1.x, p2.x)),
-				 y1: Std.int(hxd.Math.min(p1.y, p2.y)), y2: Std.int(hxd.Math.max(p1.y, p2.y)),
-				origin: prev != null && prev.origin != null ? prev.origin : {x: x, y: y} });
+			var lastSelection = selection != null && selection.length >= 1 ? selection[selection.length - 1] : null;
+			if (lastSelection != null && lastSelection.origin != null)
+				p1 = new h3d.Vector(lastSelection.origin.x, lastSelection.origin.y, 0);
+			var newSelection = { x1: Std.int(hxd.Math.min(p1.x, p2.x)), x2: Std.int(hxd.Math.max(p1.x, p2.x)),
+				y1: Std.int(hxd.Math.min(p1.y, p2.y)), y2: Std.int(hxd.Math.max(p1.y, p2.y)),
+				origin: lastSelection != null && lastSelection.origin != null ? lastSelection.origin : {x: x, y: y} };
+
+			if (hxd.Math.abs(lastSelection.y1 - newSelection.y1) >= 2 || hxd.Math.abs(lastSelection.y2 - newSelection.y2) >= 2) {
+				selection.push({ x1: xIndex, x2: xIndex, y1: yIndex, y2: yIndex, origin: {x: xIndex, y:yIndex} });
+			} else {
+				selection.push(newSelection);
+			}
 		}
 		else if(ctrl) {
 			if (selection == null) {

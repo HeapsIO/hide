@@ -9,7 +9,7 @@ class Line extends Component {
 	public var columns : Array<cdb.Data.Column>;
 	public var subTable : SubTable;
 	public var status : Formulas.ValidationResult;
-	var filtered : Bool = false;
+	public var filtered : Bool = false;
 
 	public function new(table, columns, index, root) {
 		super(null,root);
