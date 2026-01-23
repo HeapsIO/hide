@@ -481,11 +481,26 @@ class Cursor {
 				y1: Std.int(hxd.Math.min(p1.y, p2.y)), y2: Std.int(hxd.Math.max(p1.y, p2.y)),
 				origin: lastSelection != null && lastSelection.origin != null ? lastSelection.origin : {x: x, y: y} };
 
-			if (hxd.Math.abs(lastSelection.y1 - newSelection.y1) >= 2 || hxd.Math.abs(lastSelection.y2 - newSelection.y2) >= 2) {
-				selection.push({ x1: xIndex, x2: xIndex, y1: yIndex, y2: yIndex, origin: {x: xIndex, y:yIndex} });
-			} else {
-				selection.push(newSelection);
+			selection.pop();
+
+			// Verify if in the whole selection there isn't filtered lines by search. In this case, create several selection
+			// to exclude filtered lines from the current zone selection
+			var s = { x1: newSelection.x1, x2: newSelection.x2, y1: newSelection.y1, y2: newSelection.y1, origin: newSelection.origin };
+			for (idx in newSelection.y1...newSelection.y2+1) {
+				if (table.lines[idx].filtered) {
+					selection.push(s);
+					s = null;
+				}
+				else {
+					if (s == null)
+						s = { x1: newSelection.x1, x2: newSelection.x2, y1: idx, y2: idx, origin: {x: newSelection.x1, y: idx} };
+					else
+						s.y2 = idx;
+				}
 			}
+
+			if (s != null)
+				selection.push(s);
 		}
 		else if(ctrl) {
 			if (selection == null) {
