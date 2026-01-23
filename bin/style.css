@@ -1274,6 +1274,7 @@ input[type=checkbox].indeterminate:after {
   left: 5px;
 }
 .hide-properties .group > .content {
+  width: 100%;
   margin-bottom: 5px;
 }
 .hide-properties .group > .content .array {
