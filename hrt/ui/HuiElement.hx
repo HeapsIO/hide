@@ -16,6 +16,7 @@ class HuiElement extends h2d.Flow #if hui implements h2d.domkit.Object #end {
 
 	public var onOut(default, set) : hxd.Event->Void = emptyFuncEventVoid;
 	public var onOver(default, set) : hxd.Event->Void = emptyFuncEventVoid;
+	public var onMove(default, set) : hxd.Event->Void = emptyFuncEventVoid;
 	public var onClick(default, set) : hxd.Event->Void = emptyFuncEventVoid;
 	public var onPush(default, set) : hxd.Event->Void = emptyFuncEventVoid;
 	public var onKeyDown(default, set) : hxd.Event->Void = emptyFuncEventVoid;
@@ -23,7 +24,7 @@ class HuiElement extends h2d.Flow #if hui implements h2d.domkit.Object #end {
 	public var onTextInput(default, set) : hxd.Event->Void = emptyFuncEventVoid;
 	public var onFocus(default, set) : hxd.Event->Void = emptyFuncEventVoid;
 	public var onFocusLost(default, set) : hxd.Event->Void = emptyFuncEventVoid;
-	public var onWheel(default, set) : hxd.Event->Void = null;
+	public var onWheel(default, set) : hxd.Event->Void = emptyFuncEventVoid;
 
 	public var onChildrenChanged : Void -> Void = emtpyFuncVoidVoid;
 
@@ -69,6 +70,7 @@ class HuiElement extends h2d.Flow #if hui implements h2d.domkit.Object #end {
 
 	function set_onOut(v) {onOut = v; makeInteractive(); return v;};
 	function set_onOver(v) {onOver = v; makeInteractive(); return v;};
+	function set_onMove(v) {onMove = v; makeInteractive(); return v;};
 	function set_onClick(v) {onClick = v; makeInteractive(); return v;};
 	function set_onPush(v) {onPush = v; makeInteractive(); return v;};
 	function set_onKeyDown(v) {onKeyDown = v; makeInteractive(); return v;};
@@ -78,12 +80,19 @@ class HuiElement extends h2d.Flow #if hui implements h2d.domkit.Object #end {
 	function set_onFocusLost(v) {onFocusLost = v; makeInteractive(); return v;};
 	function set_onWheel(v) {onWheel = v; makeInteractive(); return v;};
 
+	override function set_overflow(v) {
+		if (v == h2d.Flow.FlowOverflow.Scroll) {
+			makeInteractive();
+		}
+		return super.set_overflow(v);
+	}
+
 	function get_huiBg() : HuiBackground {return Std.downcast(background, HuiBackground);};
 	function get_parentElement() : HuiElement {return Std.downcast(parent, HuiElement);};
 	function get_childElements() : Array<HuiElement> {return cast children.filter((e) -> Std.downcast(e, HuiElement) != null);};
 
 	function get_uiBase() : HuiBase {
-		var p = parent;
+		var p : h2d.Object = this;
 		while(p != null) {
 			if (Std.downcast(p, HuiBase) != null)
 				return cast p;
@@ -107,6 +116,7 @@ class HuiElement extends h2d.Flow #if hui implements h2d.domkit.Object #end {
 
 		interactive.onOver = onOverInternal;
 		interactive.onOut = onOutInternal;
+		interactive.onMove = onMoveInternal;
 		interactive.onClick = onClickInternal;
 		interactive.onPush = onPushInternal;
 		interactive.onRelease = onReleaseInternal;
@@ -116,7 +126,6 @@ class HuiElement extends h2d.Flow #if hui implements h2d.domkit.Object #end {
 		interactive.onTextInput = onTextInputInternal;
 		interactive.onFocus = onFocusInternal;
 		interactive.onFocusLost = onFocusLostInternal;
-		interactive.onWheel = onWheelInternal;
 		interactive.enableRightButton = true;
 	}
 
@@ -220,6 +229,13 @@ class HuiElement extends h2d.Flow #if hui implements h2d.domkit.Object #end {
 		onOut(e);
 	}
 
+	function onMoveInternal(e: hxd.Event) {
+		if (!enable)
+			return;
+
+		onMove(e);
+	}
+
 	function onClickInternal(e: hxd.Event) {
 		if (!enable)
 			return;
@@ -285,14 +301,33 @@ class HuiElement extends h2d.Flow #if hui implements h2d.domkit.Object #end {
 		onFocusLost(e);
 	}
 
-	function onWheelInternal(e: hxd.Event) {
+	override function onMouseWheel(e: hxd.Event) {
 		if (!enable)
 			return;
 
-		if (onWheel == null)
-			onMouseWheel(e);
-		else
-			onWheel(e);
+		var base = uiBase;
+		var now = haxe.Timer.stamp();
+
+		if (base.lastScrollTime + 0.35 < now) {
+			uiBase.scrollFocus = null;
+		}
+
+		if( overflow == Scroll && (base.scrollFocus == null || base.scrollFocus == this) ) {
+
+			var maxScroll = Std.int(contentHeight - calculatedHeight);
+			var newPos = hxd.Math.clamp(scrollPosY + e.wheelDelta * scrollWheelSpeed, 0, maxScroll);
+
+			if (newPos != scrollPosY) {
+				scrollPosY = newPos;
+
+				// only take focus if we actually did scroll
+				uiBase.scrollFocus = this;
+				base.lastScrollTime = now;
+			}
+			e.propagate = uiBase.scrollFocus == null;
+		}
+
+		onWheel(e);
 	}
 
 	static function emptyFuncEventVoid(e: hxd.Event) { }

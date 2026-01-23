@@ -9,6 +9,11 @@ class HuiBase extends HuiElement {
 	var layers : Array<h2d.Flow>;
 	var currentMenu: HuiMenu;
 
+	// Keep track of the element that currently own the scroll event.
+	// Reset when lastScrollTime is too old compared to now (inspired by the same behavior in google chrome)
+	@:allow(hrt.ui.HuiElement) var scrollFocus: HuiElement;
+	@:allow(hrt.ui.HuiElement) var lastScrollTime: Float;
+
 	public function new(?parent: h2d.Object) {
 		super(parent);
 		initComponent();
@@ -25,6 +30,8 @@ class HuiBase extends HuiElement {
 		style.addObject(this);
 
 		var mainLayout = new HuiMainLayout(this);
+
+		makeInteractive();
 
 		onClick = (e) -> {
 			if(e.button == 1) {

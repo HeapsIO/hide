@@ -14,6 +14,7 @@ class HideViewGym extends HuiView<{}> {
 			<hui-text("hui-text-input")/>
 			<hui-element class="example">
 				<hui-input-box/>
+				<hui-input-box class="search"/>
 			</hui-element>
 
 			<hui-text("hui-background")/>
