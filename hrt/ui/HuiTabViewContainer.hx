@@ -2,6 +2,15 @@ package hrt.ui;
 
 #if hui
 
+typedef TabViewData = {
+	var tabs: Array<ViewData>;
+}
+
+typedef ViewData = {
+	var type: String;
+	var ?data: Dynamic;
+}
+
 /**
 	TabContainer specialized in displaying HuiView elements, and saving/reloading their
 	state
@@ -15,6 +24,18 @@ class HuiTabViewContainer extends HuiTabContainer {
 	override function new(?parent) {
 		super(parent);
 		initComponent();
+	}
+
+	override function syncTabs() {
+		super.syncTabs();
+
+		if (dom.id.isDefined()) {
+			hide.Ide.inst.projectConfig.tabViews.set(dom.id.toString(), {
+				tabs: cast viewsState,
+			});
+			hide.Ide.inst.config.user.save();
+		}
+
 	}
 
 	override function sync(ctx) {

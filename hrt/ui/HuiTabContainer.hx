@@ -52,38 +52,37 @@ class HuiTabContainer extends HuiElement {
 	var syncTabsQueued = false;
 
 	function syncTabs() {
-		if (syncTabsQueued) {
-			var elements = content.childElements;
-			if (activeTabElement == null && elements.length > 0) {
-				setTab(elements[0]);
+		var elements = content.childElements;
+		if (activeTabElement == null && elements.length > 0) {
+			setTab(elements[0]);
+		}
+
+		var activeTabIndex = elements.indexOf(activeTabElement);
+
+		syncTabsQueued = false;
+		if (tabBar.childElements.length != elements.length) {
+			tabBar.removeChildElements();
+			for (i in 0...elements.length) {
+				var tab = new HuiTab(tabBar);
+				tab.onClick = (e) -> setTab(elements[i]);
 			}
+		}
 
-			var activeTabIndex = elements.indexOf(activeTabElement);
+		for (i => tab in tabBar.childElements) {
+			var tab : HuiTab = cast tab;
+			tab.title.text = elements[i].getDisplayName();
 
-			syncTabsQueued = false;
-			if (tabBar.childElements.length != elements.length) {
-				tabBar.removeChildElements();
-				for (i in 0...elements.length) {
-					var tab = new HuiTab(tabBar);
-					tab.onClick = (e) -> setTab(elements[i]);
-				}
-			}
+			tab.dom.toggleClass("active", activeTabIndex == i);
+		}
 
-			for (i => tab in tabBar.childElements) {
-				var tab : HuiTab = cast tab;
-				tab.title.text = elements[i].getDisplayName();
-
-				tab.dom.toggleClass("active", activeTabIndex == i);
-			}
-
-			for (i => element in elements) {
-				element.visible = i == activeTabIndex;
-			}
+		for (i => element in elements) {
+			element.visible = i == activeTabIndex;
 		}
 	}
 
 	override function sync(ctx) {
-		syncTabs();
+		if (syncTabsQueued)
+			syncTabs();
 
 		super.sync(ctx);
 	}

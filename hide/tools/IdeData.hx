@@ -37,7 +37,7 @@ class IdeData {
 
 	public var currentConfig(get,never) : Config;
 	public var ideConfig(get, never) : hide.Config.HideGlobalConfig;
-	public var projectConfig(get, never) : hide.Config.HideProjectConfig;
+	public var projectConfig(get, never) : hide.HideProjectConfig;
 	public var config : {
 		global : Config, // Per user, for all projects
 		user : Config, // Per user, specific project

@@ -53,13 +53,6 @@ typedef HideGlobalConfig = {
 	var filebrowserDebugShowMenu : Bool;
 };
 
-typedef HideProjectConfig = {
-	var layouts : Array<{ name : String, state : LayoutState }>;
-	var renderer : String;
-	var dbCategories : Array<String>;
-	var dbProofread : Null<Bool>;
-};
-
 typedef ConfigDef = {
 	var hide : {};
 };
@@ -220,8 +213,14 @@ class Config {
 
 		var projectUserCustom = loadConfig(new Config(perProject), appDataPath + "/" + projectPath.split("\\").join("/").split("/").join("_").split(":").join("_") + ".json");
 		var p = projectUserCustom;
-		if( p.source.hide == null )
+		if( p.source.hide == null ) {
+		#if js
 			p.source.hide = ({ layouts : [], renderer : null, dbCategories: null, dbProofread: null } : HideProjectConfig);
+		#else
+			p.source.hide = ({ tabViews: []} : HideProjectConfig);
+
+		#end
+		}
 
 		var current = new Config(projectUserCustom);
 
