@@ -772,6 +772,8 @@ class ScriptEditor extends CodeEditor {
 
 			// only push function ... snippets if we are in the global scope
 			if (globalScopeRegex.match(script)) {
+				var lastLine = script.substr(0, position).split("\n").pop();
+				var isFunction = lastLine.indexOf("function") >= 0;
 				for( ev => t in @:privateAccess checker.checker.events ) {
 					vars.set(ev,t);
 					switch( t ) {
@@ -779,7 +781,7 @@ class ScriptEditor extends CodeEditor {
 						results.push({
 							kind : Snippet,
 							label: "function " + ev + "(...)",
-							insertText : "function "+ev+"("+[for( a in args ) a.name].join(",")+") {\n\t$0\n}",
+							insertText : (isFunction ? "" : "function ")+ev+"("+[for( a in args ) a.name].join(",")+") {\n\t$0\n}",
 							filterText: ev,
 							documentation: {value: "```js\nfunction "+ev+"("+[for( a in args ) a.name].join(",")+") {\n\t\n}\n```"},
 							insertTextRules: InsertAsSnippet,
