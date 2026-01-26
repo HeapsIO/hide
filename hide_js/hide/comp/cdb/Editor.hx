@@ -453,7 +453,7 @@ class Editor extends Component {
 					var expr = try parser.parseString(f) catch( e : Dynamic ) { return true; }
 					replaceRec(expr);
 
-					var res = try interp.execute(expr) catch( e : hscript.Expr.Error ) { return true; } // Catch errors that can be thrown if search input text is not interpretabled
+					var res = try interp.execute(expr) catch( e : Dynamic ) { return true; } // Catch errors that can be thrown if search input text is not interpretabled
 					if (res)
 						return false;
 				}
@@ -1836,12 +1836,14 @@ class Editor extends Component {
 
 		searchBox.find(".close-search").click(function(_) {
 			filters = [];
+			searchExp = false;
+			searchHidden = true;
 			updateFilters();
 			searchBox.find(".search-bar-cdb").not(':first').remove();
 			searchBox.find(".expr-btn").not(':first').remove();
 			searchBox.find(".remove-btn").hide();
-			if (searchBox.find(".expr-btn").hasClass("fa-superscript"))
-				searchBox.find(".expr-btn").removeClass("fa-superscript").addClass("fa-font");
+			if (searchBox.find(".search-type").hasClass("fa-superscript"))
+				searchBox.find(".search-type").removeClass("fa-superscript").addClass("fa-font");
 			searchBox.toggle();
 			var c = cursor.save();
 			focus();
@@ -1877,11 +1879,11 @@ class Editor extends Component {
 				for (f in filters)
 					inputs.val(f);
 
-				if (searchExp)
-					searchBox.find(".search-type").click();
+				searchBox.find(".search-type").toggleClass("fa-superscript", searchExp);
+				searchBox.find(".search-type").toggleClass("fa-font", !searchExp);
 
-				if (!searchHidden)
-					searchBox.find(".search-type").click();
+				searchBox.find(".search-hidden").toggleClass("fa-eye", searchHidden);
+				searchBox.find(".search-hidden").toggleClass("fa-eye-slash", !searchHidden);
 			}
 
 			updateFilters();
