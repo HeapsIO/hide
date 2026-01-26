@@ -1,4 +1,5 @@
 package hrt.ui;
+using Lambda;
 
 #if hui
 
@@ -7,7 +8,11 @@ package hrt.ui;
 class HuiTabContainer extends HuiElement {
 	static var SRC =
 		<hui-tab-container>
-			<hui-element id="tab-bar"/>
+			<hui-element id="tab-bar">
+				<hui-element id="tab-bar-content"/>
+				<hui-button-menu(null) id="tab-bar-more">
+				</hui-button-menu>
+			</hui-element>
 			<hui-element id="content" __content__/>
 		</hui-tab-container>
 
@@ -35,12 +40,23 @@ class HuiTabContainer extends HuiElement {
 
 		activeTabElement = newElement;
 
+		var currentTabs : Array<HuiTab> = cast tabBarContent.childElements;
+		var tab = currentTabs.find((t) -> t.targetElement == activeTabElement);
+		if (tab != null) {
+			if (tab.visible == false) {
+				tab.visible = true;
+				tabBarContent.addChildAt(tab, 0);
+			}
+		}
+
 		if (activeTabElement != null) {
 			var view = Std.downcast(activeTabElement, HuiView);
 			if (view != null) {
 				view.onDisplay();
 			}
 		}
+
+		syncActiveTabStyle();
 
 		syncTabsQueued = true;
 	}
@@ -52,31 +68,80 @@ class HuiTabContainer extends HuiElement {
 	var syncTabsQueued = false;
 
 	function syncTabs() {
+		syncTabsQueued = false;
+
 		var elements = content.childElements;
+
+		var currentTabs : Array<HuiTab> = cast tabBarContent.childElements;
+		var oldTabs: Map<{}, Bool> = [];
+		for (tab in currentTabs) {
+			oldTabs.set(cast tab, true);
+		}
+
+		for (element in elements) {
+			var tab = currentTabs.find((t) -> t.targetElement == element);
+			if (tab == null) {
+				tab = new HuiTab(element, tabBarContent);
+				tab.onClick = (e) -> setTab(tab.targetElement);
+				tab.title.text = element.getDisplayName();
+			} else {
+				oldTabs.remove(cast tab);
+			}
+		}
+
+		for (old => _ in oldTabs) {
+			(cast old: HuiTab).remove();
+		}
+
+
 		if (activeTabElement == null && elements.length > 0) {
 			setTab(elements[0]);
 		}
 
-		var activeTabIndex = elements.indexOf(activeTabElement);
+		var cumulativeWidth = 0.0;
+		var anyInvisible = false;
 
-		syncTabsQueued = false;
-		if (tabBar.childElements.length != elements.length) {
-			tabBar.removeChildElements();
-			for (i in 0...elements.length) {
-				var tab = new HuiTab(tabBar);
-				tab.onClick = (e) -> setTab(elements[i]);
-			}
-		}
+		currentTabs = cast tabBarContent.childElements;
 
-		for (i => tab in tabBar.childElements) {
+		for (tab in currentTabs) {
 			var tab : HuiTab = cast tab;
-			tab.title.text = elements[i].getDisplayName();
 
-			tab.dom.toggleClass("active", activeTabIndex == i);
+			tab.dom.toggleClass("active", tab.targetElement == activeTabElement);
+			tab.reflow();
+
+			cumulativeWidth += tab.calculatedWidth;
+			tab.visible = cumulativeWidth < tabBarContent.calculatedWidth;
+			trace(tab.visible, tabBarContent.calculatedWidth);
 		}
 
-		for (i => element in elements) {
-			element.visible = i == activeTabIndex;
+		var invisibles : Array<HuiTab> = cast currentTabs.filter((e) -> !e.visible);
+		if (invisibles.length > 0) {
+			tabBarMore.visible = true;
+			tabBarMore.getItems = () -> {
+				return [
+					for (tab in invisibles) {
+						{
+							label: tab.title.text,
+							click: setTab.bind(tab.targetElement),
+						}
+					}
+				];
+			}
+		} else {
+			tabBarMore.visible = false;
+		}
+
+		for (element in elements) {
+			element.visible = element == activeTabElement;
+		}
+	}
+
+	function syncActiveTabStyle() {
+		var currentTabs : Array<HuiTab> = cast tabBarContent.childElements;
+
+		for (tab in currentTabs) {
+			var tab : HuiTab = cast tab;
+			tab.dom.toggleClass("active", tab.targetElement == activeTabElement);
 		}
 	}
 

@@ -46,9 +46,21 @@ class HideViewGym extends HuiView<{}> {
 			<hui-text("hui-tab-container")/>
 			<hui-element class="example">
 				<hui-tab-container>
-					<hui-element><hui-text("Tab 1")/></hui-element>
-					<hui-element><hui-text("Tab 2")/></hui-element>
-					<hui-element><hui-text("Tab 3")/></hui-element>
+					<hui-element display-name={"Tab 1"}><hui-text("Tab 1")/></hui-element>
+					<hui-element display-name={"Tab 2"}><hui-text("Tab 2")/></hui-element>
+					<hui-element display-name={"Tab 3"}><hui-text("Tab 3")/></hui-element>
+					<hui-element display-name={"Tab 4"}><hui-text("Tab 4")/></hui-element>
+					<hui-element display-name={"Tab 5"}><hui-text("Tab 5")/></hui-element>
+					<hui-element display-name={"Tab 6"}><hui-text("Tab 6")/></hui-element>
+					<hui-element display-name={"Tab 7"}><hui-text("Tab 7")/></hui-element>
+					<hui-element display-name={"Tab 8"}><hui-text("Tab 8")/></hui-element>
+					<hui-element display-name={"Tab 9"}><hui-text("Tab 9")/></hui-element>
+					<hui-element display-name={"Tab 10"}><hui-text("Tab 10")/></hui-element>
+					<hui-element display-name={"Tab 11"}><hui-text("Tab 11")/></hui-element>
+					<hui-element display-name={"Tab 12"}><hui-text("Tab 12")/></hui-element>
+					<hui-element display-name={"Tab 13"}><hui-text("Tab 13")/></hui-element>
+					<hui-element display-name={"Tab 14"}><hui-text("Tab 14")/></hui-element>
+					<hui-element display-name={"Tab 15"}><hui-text("Tab 15")/></hui-element>
 				</hui-tab-container>
 			</hui-element>
 

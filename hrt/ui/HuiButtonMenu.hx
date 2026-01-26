@@ -10,7 +10,7 @@ class HuiButtonMenu extends HuiElement {
 		<hui-button-menu>
 		</hui-button-menu>
 
-	var getItems: Void -> Array<hrt.ui.HuiMenu.MenuItem>;
+	public var getItems: Void -> Array<hrt.ui.HuiMenu.MenuItem>;
 	var menu: HuiMenu;
 
 	override function new(getItems: Void -> Array<hrt.ui.HuiMenu.MenuItem>, ?parent) {

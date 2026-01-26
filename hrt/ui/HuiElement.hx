@@ -13,6 +13,7 @@ class HuiElement extends h2d.Flow #if hui implements h2d.domkit.Object #end {
 	@:p public var enable(default, set) : Bool = true;
 	@:p(bgType) var backgroundType(default, set) : String;
 	@:p var saveDisplayKey(default, set): String;
+	@:p public var displayName: String;
 
 	public var onOut(default, set) : hxd.Event->Void = emptyFuncEventVoid;
 	public var onOver(default, set) : hxd.Event->Void = emptyFuncEventVoid;
@@ -211,7 +212,7 @@ class HuiElement extends h2d.Flow #if hui implements h2d.domkit.Object #end {
 	}
 
 	function getDisplayName() : String {
-		return toString();
+		return displayName ?? toString();
 	}
 
 

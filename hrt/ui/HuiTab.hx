@@ -8,6 +8,15 @@ class HuiTab extends HuiElement {
 			<hui-text("") id="title"/>
 			<hui-element id="close-button"/>
 		</hui-tab>
+
+	var targetElement: HuiElement;
+
+	public function new(targetElement: HuiElement, ?parent) {
+		super(parent);
+		initComponent();
+
+		this.targetElement = targetElement;
+	}
 }
 
 #end

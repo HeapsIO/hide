@@ -20,10 +20,31 @@ hui-tab-container {
 		padding-bottom: 1;
 		spacing: 1;
 
+		> #tab-bar-content {
+			fill-width: 1;
+			overflow: hidden;
+			margin-right: 24;
+		}
+
+		> #tab-bar-more {
+			position: absolute;
+			halign: right;
+		}
+
 		background-type: hui;
 
 		> hui-background {
 			background: @tab-bar-bg;
+		}
+
+		> #tab-bar-more {
+			width: 16;
+			height: 16;
+			background-type: hui;
+
+			> hui-background {
+				image: "ui/icons/dropDown.png" fit;
+			}
 		}
 	}
 
