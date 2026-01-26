@@ -94,6 +94,10 @@ class HideViewGym extends HuiView<{}> {
 			];
 	}
 
+	override function getDisplayName() : String {
+		return "Hui Gym";
+	}
+
 	function new(?parent) {
 		super(parent);
 		initComponent();

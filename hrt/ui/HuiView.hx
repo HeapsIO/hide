@@ -31,6 +31,10 @@ class HuiView<T> extends HuiElement {
 
 	}
 
+	override function getDisplayName() : String {
+		return "unknown";
+	};
+
 	static var REGISTRY : Map<String, Class<HuiView<Dynamic>>> = [];
 	public static function get(name: String) : Class<HuiView<Dynamic>> {
 		return REGISTRY.get(name);

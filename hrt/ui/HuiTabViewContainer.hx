@@ -29,8 +29,8 @@ class HuiTabViewContainer extends HuiTabContainer {
 	override function syncTabs() {
 		super.syncTabs();
 
-		if (dom.id.isDefined()) {
-			hide.Ide.inst.projectConfig.tabViews.set(dom.id.toString(), {
+		if (dom.id.isDefined() && viewsState != null) {
+			Reflect.setField(hide.Ide.inst.projectConfig.tabViews, dom.id.toString(), {
 				tabs: cast viewsState,
 			});
 			hide.Ide.inst.config.user.save();
@@ -48,7 +48,11 @@ class HuiTabViewContainer extends HuiTabContainer {
 	}
 
 	function loadViewState() {
-		viewsState = [
+		if (dom.id.isDefined()) {
+			var tabViews = hide.Ide.inst.projectConfig.tabViews;
+			viewsState = Reflect.field(tabViews, dom.id.toString())?.tabs;
+		}
+		viewsState ??= [
 			{
 				kind: "gym",
 			}
