@@ -488,8 +488,10 @@ class Cursor {
 			var s = { x1: newSelection.x1, x2: newSelection.x2, y1: newSelection.y1, y2: newSelection.y1, origin: newSelection.origin };
 			for (idx in newSelection.y1...newSelection.y2+1) {
 				if (table.lines[idx].filtered) {
-					selection.push(s);
-					s = null;
+					if (s != null) {
+						selection.push(s);
+						s = null;
+					}
 				}
 				else {
 					if (s == null)
