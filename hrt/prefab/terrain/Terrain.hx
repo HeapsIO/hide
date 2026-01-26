@@ -116,7 +116,7 @@ class Terrain extends Object3D {
 	}
 
 	override function localRayIntersection(ray:h3d.col.Ray):Float {
-		return terrain.localRayIntersection(ray);
+		return terrain?.localRayIntersection(ray);
 	}
 
 	function loadTiles() {
