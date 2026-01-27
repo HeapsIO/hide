@@ -10,12 +10,15 @@ class App extends hxd.App {
 	static public var DEBUG = false;
 
 	override public function init() {
+		super.init();
+
 		hxd.Window.getInstance().title = "HideHL";
 		ide = new hide.Ide();
-		ui = new hrt.ui.HuiBase(s2d);
+		ui = new hrt.ui.HuiBase(this, s2d);
 	}
 
 	override public function update(dt: Float) {
+		super.update(dt);
 
 		tryCall(() -> ui.updateStyle(dt));
 	}

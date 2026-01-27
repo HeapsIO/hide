@@ -4,17 +4,20 @@ package hrt.ui;
 
 class HuiBase extends HuiElement {
 	public var rootOverlay : h2d.Flow;
+	public var app(default, null): hide.App;
 	var style : h2d.domkit.Style;
 
 	var layers : Array<h2d.Flow>;
 	var currentMenu: HuiMenu;
+	public var focusedScene: HuiScene.Hui3DInteractiveScene = null;
 
 	// Keep track of the element that currently own the scroll event.
 	// Reset when lastScrollTime is too old compared to now (inspired by the same behavior in google chrome)
 	@:allow(hrt.ui.HuiElement) var scrollFocus: HuiElement;
 	@:allow(hrt.ui.HuiElement) var lastScrollTime: Float;
 
-	public function new(?parent: h2d.Object) {
+	public function new(app: hide.App, ?parent: h2d.Object) {
+		this.app = app;
 		super(parent);
 		initComponent();
 
@@ -76,6 +79,10 @@ class HuiBase extends HuiElement {
 						{label: "C", radio: () -> radio == 2, stayOpen: true, click: () -> radio = 2},
 					]);
 			}
+		}
+
+		onWheel = (e) -> {
+			e.propagate = false;
 		}
 	}
 
