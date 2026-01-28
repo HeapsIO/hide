@@ -774,28 +774,6 @@ class Material extends Prefab {
 		updateHighlightOverrides(ctx);
 	}
 
-	public function addOverrideProperty2(pname : String, isMatSetupProp : Bool) {
-		// Remove previous value of this props name in overrides
-		var idx = 0;
-		while (idx < overrides.length) {
-			if (overrides[idx].pname == (isMatSetupProp ? h3d.mat.MaterialSetup.current.name+"/"+pname : pname)) {
-				overrides.remove(overrides[idx]);
-				continue;
-			}
-
-			idx++;
-		}
-
-		if (isMatSetupProp) {
-			var materialSetupObj = Reflect.getProperty(this.props, h3d.mat.MaterialSetup.current.name);
-			var v = Reflect.getProperty(materialSetupObj, pname);
-			overrides.push( { pname:h3d.mat.MaterialSetup.current.name+"/"+pname, value:v == null ? "__toremove" : v } );
-		}
-		else {
-			overrides.push( { pname:pname, value:Reflect.field(this, pname) } );
-		}
-	}
-
 	public function updateHighlightOverrides(ctx : hide.prefab.EditContext) {
 		ctx.properties.element.find(".override").removeClass("override");
 		ctx.properties.element.find(".remove-override-btn").remove();
@@ -995,6 +973,28 @@ class Material extends Prefab {
 		return refs;
 	}
 	#end
+
+	public function addOverrideProperty2(pname : String, isMatSetupProp : Bool) {
+		// Remove previous value of this props name in overrides
+		var idx = 0;
+		while (idx < overrides.length) {
+			if (overrides[idx].pname == (isMatSetupProp ? h3d.mat.MaterialSetup.current.name+"/"+pname : pname)) {
+				overrides.remove(overrides[idx]);
+				continue;
+			}
+
+			idx++;
+		}
+
+		if (isMatSetupProp) {
+			var materialSetupObj = Reflect.getProperty(this.props, h3d.mat.MaterialSetup.current.name);
+			var v = Reflect.getProperty(materialSetupObj, pname);
+			overrides.push( { pname:h3d.mat.MaterialSetup.current.name+"/"+pname, value:v == null ? "__toremove" : v } );
+		}
+		else {
+			overrides.push( { pname:pname, value:Reflect.field(this, pname) } );
+		}
+	}
 
 	public static function hasOverride(p: Prefab) {
 		if(Lambda.exists(p.children, c -> Std.isOfType(c, Material) && c.enabled))
