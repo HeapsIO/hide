@@ -440,7 +440,6 @@ kit-root .detached .is-cdb-editor {
     flex: var(--width, 1) 0;
     margin: 0;
     padding: 0;
-    min-width: 50px;
   }
   :scope kit-separator {
     margin-top: 5px;
@@ -507,7 +506,7 @@ kit-root .detached .is-cdb-editor {
     padding-block: 8px;
   }
   :scope kit-line {
-    padding-block: 1px;
+    margin-block: 1px;
     padding-right: 8px;
     padding-left: 2px;
     box-sizing: border-box;
@@ -533,6 +532,14 @@ kit-root .detached .is-cdb-editor {
   }
   :scope kit-line kit-label:hover {
     color: #CCC;
+  }
+  :scope kit-line kit-label > .deco-left {
+    text-align: left;
+    min-width: 0;
+    flex: 0 1;
+  }
+  :scope kit-line kit-label > kit-push {
+    flex: 1 1;
   }
   :scope kit-line kit-label:empty:not(.first) {
     display: none;
@@ -688,6 +695,16 @@ kit-root .detached .is-cdb-editor {
   :scope kit-line .hide-button:active {
     position: relative;
     top: 1px;
+  }
+  :scope kit-line kit-button.kit-quiet,
+  :scope kit-line .hide-button.kit-quiet {
+    border-color: transparent;
+    background-color: transparent;
+  }
+  :scope kit-line kit-button.kit-quiet:hover,
+  :scope kit-line .hide-button.kit-quiet:hover {
+    background-color: #444;
+    border-color: transparent;
   }
   :scope kit-line kit-button:hover,
   :scope kit-line .hide-button:hover {

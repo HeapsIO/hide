@@ -329,6 +329,20 @@ class Material extends Prefab {
 
 					var over = overrides.filter((f) -> f.pname.split("/").pop() == widget.id);
 					if (over.length > 0) {
+						var line = widget.getOrMakeLine();
+
+						var clearBtn = new hide.kit.Button(null, "reset-" + widget.id, "");
+						clearBtn.image = "icons/override.png";
+						clearBtn.quiet = true;
+						clearBtn.onClick = () -> {
+							for (o in over) {
+								overrides.remove(o);
+							}
+							ctx.rebuildInspector();
+						}
+						clearBtn.tooltip = "This material property is currently overridden";
+						line.addDecorationLeft(clearBtn);
+
 						widget.labelColor = Red;
 					}
 				} else {

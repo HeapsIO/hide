@@ -234,6 +234,8 @@ class Element {
 
 	function addChildAt(newChild: Element, position: Int) : Void {
 		children.insert(position, newChild);
+		newChild.parent = this;
+		newChild.root = this.root;
 	}
 
 	function addEditMenu(e: NativeElement) {
@@ -349,6 +351,33 @@ class Element {
 		if (parent != null) {
 			parent.change(callback, isTemporary);
 		}
+	}
+
+	/**
+		Place `element` between this and this.parent
+		Only guaranteed to work if the widget hasn't been made yet
+	**/
+	function wrapWith(element: Element) : Void {
+		var index = this.parent.children.indexOf(this);
+		parent.addChildAt(element, index);
+		this.parent.children.remove(this);
+		element.addChild(this);
+	}
+
+	/**
+		Get the line of this widget, or wrap this widget in one if it doesn't exist
+		Only guaranteed to work if the widget hasn't been made yet
+	**/
+	public function getOrMakeLine() : Line {
+		var p = parent;
+		while(p != null) {
+			if (Std.downcast(p, Line) != null)
+				return cast p;
+			p = p.parent;
+		}
+		var line = new Line(null, null);
+		wrapWith(line);
+		return line;
 	}
 
 	final function resetWithUndo() {

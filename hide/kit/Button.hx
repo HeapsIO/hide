@@ -9,6 +9,7 @@ class Button extends Element {
 	public var medium : Bool = false;
 	public var big : Bool = false;
 	public var huge : Bool = false;
+	public var quiet : Bool = false;
 
 	var button : NativeElement;
 
@@ -55,7 +56,7 @@ class Button extends Element {
 		button.innerHTML = label;
 		if (image != null) {
 			var imageElement = js.Browser.document.createElement("kit-image");
-			imageElement.style.backgroundImage = 'url(file://${hide.Ide.inst.getPath(image)})';
+			imageElement.style.backgroundImage = 'url(file://${hide.Ide.inst.getHideResPath(image)})';
 			button.appendChild(imageElement);
 		}
 		if (medium) {
@@ -63,6 +64,10 @@ class Button extends Element {
 		}
 		if (big) {
 			button.classList.add("kit-big");
+		}
+
+		if (quiet) {
+			button.classList.add("kit-quiet");
 		}
 
 		button.addEventListener("click", (e:js.html.MouseEvent) -> {

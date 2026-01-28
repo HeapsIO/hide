@@ -7,6 +7,7 @@ class Line extends Element {
 	@:attr public var multiline: Bool = false;
 	@:attr public var full: Bool = false;
 
+	var decorationsLeft: Array<Element> = null;
 
 	#if js
 	public var labelElement: NativeElement;
@@ -23,6 +24,16 @@ class Line extends Element {
 		#if js
 		if (!full) {
 			labelElement = js.Browser.document.createElement("kit-label");
+
+			if (decorationsLeft != null) {
+				for (deco in decorationsLeft) {
+					deco.make(false);
+					labelElement.appendChild(deco.native);
+					deco.native.classList.add("deco-left");
+				}
+
+				labelElement.appendChild(js.Browser.document.createElement("kit-push"));
+			}
 
 			if (label != null) {
 				var span = js.Browser.document.createSpanElement();
@@ -49,6 +60,14 @@ class Line extends Element {
 		native = new hrt.ui.HuiElement();
 		native.dom.addClass("line");
 		#end
+	}
+
+	/**Add a widget to the line that appears at the left edge of the property panel **/
+	public function addDecorationLeft(element: Element) : Void {
+		decorationsLeft ??= [];
+		decorationsLeft.push(element);
+		element.parent = this;
+		element.root = this.root;
 	}
 }
 

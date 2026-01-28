@@ -485,7 +485,6 @@ kit-root {
 			flex: var(--width, 1) 0;
 			margin: 0;
 			padding: 0;
-			min-width: 50px;
 		}
 
 		kit-separator {
@@ -567,7 +566,7 @@ kit-root {
 		}
 
 		kit-line {
-			padding-block: @widget-gap;
+			margin-block: @widget-gap;
 			padding-right: @section-padding;
 			padding-left: 2px;
 			box-sizing: border-box;
@@ -604,6 +603,17 @@ kit-root {
 				&:hover {
 					color: #CCC;
 				}
+
+				> .deco-left {
+					text-align: left;
+					min-width: 0;
+					flex: 0 1;
+				}
+
+				> kit-push {
+					flex: 1 1;
+				}
+
 			}
 
 
@@ -791,6 +801,8 @@ kit-root {
 
 				cursor: pointer;
 
+
+
 				&:active {
 					position: relative;
 					top: 1px;
@@ -799,10 +811,22 @@ kit-root {
 				background-color: @button-bg;
 				border-color: @button-border-color;
 
+				&.kit-quiet {
+					border-color: transparent;
+					background-color: transparent;
+
+					&:hover {
+						background-color: #444;
+						border-color: transparent;
+					}
+				}
+
 				&:hover {
 					background-color: @button-bg-highlight;
 					border-color: @button-border-color-hover;
 				}
+
+
 
 				&.highlight {
 					background-color: @button-bg-highlight;
