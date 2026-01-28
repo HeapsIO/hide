@@ -73,7 +73,7 @@ class Element {
 	/**
 		Internal ID of this element that is unique between this element siblings (use getIdPath for a unique identifier in this element tree)
 	**/
-	var id(default, null) : String;
+	public var id(default, null) : String;
 
 	var root(default, null) : hide.kit.KitRoot;
 	var parent(default, null) : Element;

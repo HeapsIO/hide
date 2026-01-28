@@ -1,6 +1,6 @@
 package hide.prefab.materialEditor;
 
-class MaterialEditor<T:h3d.mat.Material> extends hrt.prefab.Prefab {
+class MaterialEditor<T:h3d.mat.Material> {
 	public var material : T;
 
 	public static function makeEditor(material: h3d.mat.Material) {
@@ -24,6 +24,10 @@ class MaterialEditor<T:h3d.mat.Material> extends hrt.prefab.Prefab {
 	static function registerEditor(materialClass: Class<h3d.mat.Material>, editorClass: Class<MaterialEditor<Dynamic>>) : Bool {
 		editors.set(Type.getClassName(materialClass), editorClass);
 		return true;
+	}
+
+	/** add element to root**/
+	public function edit2(ctx: hrt.prefab.EditContext2, root: hide.kit.Element) : Void {
 	}
 
 	static var editors : Map<String, Class<MaterialEditor<Dynamic>>> = [];

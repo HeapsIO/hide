@@ -299,14 +299,45 @@ class Material extends Prefab {
 	override function edit2(ctx:EditContext2) {
 
 		ctx.build(
-			<matlib(this.getAbsPath()) label="Mat Lib" field={refMatLib}/>
+			<root>
+				<matlib(this.getAbsPath()) label="Mat Lib" field={refMatLib}/>
+				<category("Material") id="materialCategory">
+				</category>
+			</root>
 		);
 
 		var mat = h3d.mat.Material.create();
 		mat.props = renderProps();
 
+
 		var editor = hide.prefab.materialEditor.MaterialEditor.makeEditor(mat);
-		editor.edit2(ctx);
+		editor.edit2(ctx, materialCategory);
+
+		function rec(elements: Array<hide.kit.Element>) {
+			for (element in elements) {
+				var widget = Std.downcast(element, hide.kit.Widget);
+				if (widget != null) {
+					trace(widget.id);
+					@:privateAccess var old = widget.onFieldChange;
+					@:privateAccess widget.onFieldChange = (temp) -> {
+						old(temp);
+						addOverrideProperty2(widget.id, true);
+						if (!temp) {
+							ctx.rebuildInspector();
+						}
+					}
+
+					var over = overrides.filter((f) -> f.pname.split("/").pop() == widget.id);
+					if (over.length > 0) {
+						widget.labelColor = Red;
+					}
+				} else {
+					rec(@:privateAccess element.children);
+				}
+			}
+		}
+
+		rec(@:privateAccess materialCategory.children);
 	}
 
 	#if editor
@@ -724,6 +755,12 @@ class Material extends Prefab {
 	}
 
 	public function addOverrideProperty(ctx : hide.prefab.EditContext, pname : String, isMatSetupProp : Bool) {
+		addOverrideProperty2(pname, isMatSetupProp);
+
+		updateHighlightOverrides(ctx);
+	}
+
+	public function addOverrideProperty2(pname : String, isMatSetupProp : Bool) {
 		// Remove previous value of this props name in overrides
 		var idx = 0;
 		while (idx < overrides.length) {
@@ -743,8 +780,6 @@ class Material extends Prefab {
 		else {
 			overrides.push( { pname:pname, value:Reflect.field(this, pname) } );
 		}
-
-		updateHighlightOverrides(ctx);
 	}
 
 	public function updateHighlightOverrides(ctx : hide.prefab.EditContext) {
