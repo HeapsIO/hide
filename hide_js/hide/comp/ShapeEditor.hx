@@ -150,7 +150,10 @@ class ShapeEditor extends Component {
 		gizmo = new hrt.tools.Gizmo(scene.s3d, scene.s2d);
 		gizmo.allowNegativeScale = true;
 
-		gizmo.setTransform(interactives[selectedShapeIdx].getAbsPos());
+		var abs = interactives[selectedShapeIdx].getAbsPos().clone();
+		var s = abs.getScale();
+		abs.scale(1 / s.x, 1 / s.y, 1 / s.z);
+		gizmo.setTransform(abs);
 
 		gizmo.onStartMove = function(mode : hrt.tools.Gizmo.TransformMode) {
 			lclOffsetPosition.set(0, 0, 0);
@@ -160,7 +163,11 @@ class ShapeEditor extends Component {
 			initialShape = shapes[selectedShapeIdx];
 			initialRelPos.load(interactives[selectedShapeIdx].getTransform());
 
-			gizmo.setTransform(interactives[selectedShapeIdx].getAbsPos());
+			var abs = interactives[selectedShapeIdx].getAbsPos().clone();
+			var s = abs.getScale();
+			abs.scale(1 / s.x, 1 / s.y, 1 / s.z);
+			gizmo.setTransform(abs);
+
 			gizmo.snap = scene.editor.gizmoSnap;
 		}
 
