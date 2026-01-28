@@ -78,7 +78,7 @@ class Matlib extends Widget<String> {
 		onValueChange(isTemporaryEdit);
 	}
 
-	function getMaterialList(library: String) {
+	function getMaterialList(library: String) : Array<hide.kit.Select.SelectEntry> {
 		var none = {value: null, label:"None"};
 		var entries = [];
 
@@ -92,7 +92,7 @@ class Matlib extends Widget<String> {
 		return entries;
 	}
 
-	function getLibraryList() {
+	function getLibraryList() : Array<hide.kit.Select.SelectEntry> {
 		var matLibs = root.editor.listMaterialLibraries(path);
 		var libEntries = [{value: null, label: "None"}];
 		for (lib in matLibs) {

@@ -527,7 +527,7 @@ class KitTest extends Object3D {
 
 		// SELECT
 		{
-			function generator() {
+			function generator() : Array<hide.kit.Select.SelectEntry> {
 				return [for (i in 0...10) {value: i, label: '$i'}];
 			}
 

@@ -244,7 +244,7 @@ class Shader extends Prefab {
 				ctx.rebuildPrefab(o2d);
 		}
 
-		function getMaterialList() : Array<{value:String, label:String}> {
+		function getMaterialList() : Array<hide.kit.Select.SelectEntry> {
 			var materials = [];
 			iterMaterials(function(_,m) if( m.name != null && materials.indexOf(m.name) < 0 ) materials.push(m.name));
 			if( targetMaterial != null && materials.indexOf(targetMaterial) < 0 )

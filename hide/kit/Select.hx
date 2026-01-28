@@ -2,7 +2,11 @@ package hide.kit;
 
 #if domkit
 
-typedef SelectEntry = {value:Dynamic, label:String};
+typedef SelectEntry = {
+	value:Dynamic,
+	label:String,
+	?equalsNull: Bool, // if true, this value will be displayed if the input value is null
+};
 
 abstract EntriesOrStrings(Array<SelectEntry>) from Array<SelectEntry> to Array<SelectEntry> {
 	inline function new(i:Array<SelectEntry>) {
@@ -73,7 +77,7 @@ class Select extends Widget<Dynamic> {
 			return;
 		var label = "--- Select ---";
 		for (entry in entries) {
-			if (entry.value == value) {
+			if ((entry.value == value) || (entry.equalsNull && value == null) ) {
 				label = entry.label;
 				break;
 			}
