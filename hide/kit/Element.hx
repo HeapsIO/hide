@@ -92,6 +92,10 @@ class Element {
 	**/
 	var nativeContent(get, never) : NativeElement;
 
+	public function getChildren() : haxe.ds.ReadOnlyArray<Element> {
+		return children;
+	}
+
 	inline function get_numChildren() return children.length;
 	function get_nativeContent() return native;
 	function set_disabled(v: Bool) {
@@ -369,7 +373,7 @@ class Element {
 		Only guaranteed to work if the widget hasn't been made yet
 	**/
 	public function getOrMakeLine() : Line {
-		var p = parent;
+		var p = this;
 		while(p != null) {
 			if (Std.downcast(p, Line) != null)
 				return cast p;

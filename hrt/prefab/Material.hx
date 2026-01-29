@@ -342,8 +342,6 @@ class Material extends Prefab {
 						}
 						clearBtn.tooltip = "This material property is currently overridden";
 						line.addDecorationLeft(clearBtn);
-
-						widget.labelColor = Red;
 					}
 				} else {
 					rec(@:privateAccess element.children);

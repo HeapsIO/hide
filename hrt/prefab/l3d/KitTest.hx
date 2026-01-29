@@ -663,6 +663,35 @@ class KitTest extends Object3D {
 				propsList
 			);
 		}
+
+		// Decorations
+
+		{
+			// a kinda experimental API to add widgets to a line before the label, for stuff like property overrides and
+			// animation curves
+			ctx.build(
+				<category("Decorations") id="deco">
+					<slider value={2.0}/>
+					<line><slider value={2.0}/></line>
+				</category>
+			);
+
+			for (child in deco.getChildren()) {
+				var line = child.getOrMakeLine();
+				var button = new hide.kit.Button(null, null, "x2");
+				button.onClick = () -> {
+					for (child in line.getChildren()) {
+						var slider : hide.kit.Slider<Float> = Std.downcast(child, hide.kit.Slider);
+						if (slider != null) {
+							slider.value *= 2.0;
+							slider.onValueChange(false);
+						}
+					}
+				}
+
+				line.addDecorationLeft(button);
+			}
+		}
 	}
 
 	@:keep
