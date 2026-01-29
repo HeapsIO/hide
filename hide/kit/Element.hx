@@ -666,6 +666,13 @@ class Element {
 		}
 	}
 
+	public function remove() {
+		if (parent != null) {
+			parent.children.remove(this);
+		}
+		this.parent = null;
+	}
+
 	static public function setNativeColor(element: NativeElement, color: KitColor) {
 		#if js
 		if (element != null) {
