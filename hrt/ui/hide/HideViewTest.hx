@@ -48,8 +48,12 @@ class HideViewTest extends HuiView<{}> {
 
 	function genItem(item: Item) : HuiElement {
 		var element = new HuiElement();
-		var text = new HuiFmtText(Std.string(item.id), element);
-		var text = new HuiFmtText(item.phrase, element);
+		element.dom.addClass("testrow");
+		element.backgroundType = "hui";
+		element.huiBg.background = item.id % 2 == 0 ? 0xFF777777 : 0xFF555555;
+		var text = new HuiText(Std.string(item.id), element);
+		var text = new HuiText(item.phrase, element);
+		text.dom.addClass("t2");
 		var image = new HuiElement(element);
 		image.backgroundType = "hui";
 		image.huiBg.image = {path: item.icon, mode: Fit};

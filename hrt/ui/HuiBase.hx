@@ -5,7 +5,7 @@ package hrt.ui;
 class HuiBase extends HuiElement {
 	public var rootOverlay : h2d.Flow;
 	public var app(default, null): hide.App;
-	var style : h2d.domkit.Style;
+	public var style : h2d.domkit.Style;
 
 	var layers : Array<h2d.Flow>;
 	var currentMenu: HuiMenu;

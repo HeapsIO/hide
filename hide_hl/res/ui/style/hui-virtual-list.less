@@ -5,20 +5,26 @@ hui-virtual-list {
 		fill-height: 1;
 		layout: stack;
 		spacing: 4;
-
-		> * {
-			position: absolute;
-		}
 	}
 	overflow: hidden;
 
 	background-type: hui;
 	> hui-background {
-		background: @bg-panel-lvl2;
+		// background: @bg-panel-lvl2;
+		background: #440044;
 	}
 
-	height: 600;
+	height: 300;
 	fill-width: 1;
 
+	.testrow {
+		width: 500;
+		overflow: hidden;
 
+		spacing: 8;
+
+		.t2 {
+			max-width: 300;
+		}
+	}
 }
