@@ -150,10 +150,14 @@ class ShapeEditor extends Component {
 		gizmo = new hrt.tools.Gizmo(scene.s3d, scene.s2d);
 		gizmo.allowNegativeScale = true;
 
-		var abs = interactives[selectedShapeIdx].getAbsPos().clone();
-		var s = abs.getScale();
-		abs.scale(1 / s.x, 1 / s.y, 1 / s.z);
-		gizmo.setTransform(abs);
+		function applyTransformToGizmo(abs : h3d.Matrix) {
+			var pos = abs.getPosition();
+			var eulers = abs.getEulerAngles();
+			gizmo.setPosition(pos.x, pos.y, pos.z);
+			gizmo.setRotation(eulers.x, eulers.y, eulers.z);
+		}
+
+		applyTransformToGizmo(interactives[selectedShapeIdx].getAbsPos());
 
 		gizmo.onStartMove = function(mode : hrt.tools.Gizmo.TransformMode) {
 			lclOffsetPosition.set(0, 0, 0);
@@ -163,10 +167,7 @@ class ShapeEditor extends Component {
 			initialShape = shapes[selectedShapeIdx];
 			initialRelPos.load(interactives[selectedShapeIdx].getTransform());
 
-			var abs = interactives[selectedShapeIdx].getAbsPos().clone();
-			var s = abs.getScale();
-			abs.scale(1 / s.x, 1 / s.y, 1 / s.z);
-			gizmo.setTransform(abs);
+			applyTransformToGizmo(interactives[selectedShapeIdx].getAbsPos());
 
 			gizmo.snap = scene.editor.gizmoSnap;
 		}
@@ -174,8 +175,12 @@ class ShapeEditor extends Component {
 		gizmo.onMove = function(position: h3d.Vector, rotation: h3d.Quat, scale: h3d.Vector) {
 			var interactive = interactives[selectedShapeIdx];
 
-			var relPos = gizmo.getAbsPos().multiplied(interactive.parent.getAbsPos().getInverse());
-			interactive.setTransform(relPos);
+			var rel = gizmo.getAbsPos().multiplied(interactive.parent.getAbsPos().getInverse());
+			var p = rel.getPosition();
+			var r = rel.getEulerAngles();
+			interactive.setPosition(p.x, p.y, p.z);
+			interactive.setRotation(r.x, r.y, r.z);
+			interactive.setScale(1);
 			var curRelPos = interactive.getTransform();
 
 			if (position != null)
@@ -184,7 +189,7 @@ class ShapeEditor extends Component {
 			if (rotation != null)
 				lclOffsetRotation.load(curRelPos.getEulerAngles() - initialRelPos.getEulerAngles());
 
-			if (scale != null)
+			 if (scale != null)
 				lclOffsetScale.load(scale);
 
 			// Update interactive
