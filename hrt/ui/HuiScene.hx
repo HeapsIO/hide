@@ -56,10 +56,7 @@ class HuiScene extends HuiElement {
 		// (cast interactive:Interactive2).huiScene = this;
 
 		new h3d.scene.CameraController(s3d);
-		var base = new HuiBase(uiBase.app, s2d);
-		base.overflow = Hidden;
-
-		@:privateAccess new hrt.ui.HuiButtonMenu(() -> [], base);
+		// @:privateAccess new hrt.ui.HuiButtonMenu(() -> [], base);
 	}
 
 	var wasVisible = false;
@@ -189,8 +186,8 @@ class Hui3DInteractiveScene implements hxd.SceneEvents.InteractiveScene {
 			var base = huiScene.uiBase;
 
 			if ((base.focusedScene == this && e.kind != EPush) || (e.relX >= 0 && e.relY >= 0 && e.relX < huiScene.s3d.scenePosition?.width && e.relY < huiScene.s3d.scenePosition?.height)) {
-				if (e.kind == EPush)
-					base.focusedScene = this;
+				/*if (e.kind == EPush)
+					base.focusedScene = this;*/
 				dispatchListeners(e);
 				e.propagate = false;
 
