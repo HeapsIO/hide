@@ -46,7 +46,7 @@ class HuiVirtualList<T> extends HuiElement {
 	}
 
 	function wheel(e: hxd.Event) {
-		requestedScroll = Std.int(e.wheelDelta* 20.0) ;
+		requestedScroll = Std.int(e.wheelDelta* 10.0) ;
 		needRefresh = true;
 		e.propagate = false;
 	}
@@ -59,8 +59,11 @@ class HuiVirtualList<T> extends HuiElement {
 			var oldElements = elements.copy();
 			var newScrollIndex = scrollIndex;
 
-			var hl2 = calculatedHeight/2;
-			var startY = calculatedHeight/2 + itemPixelScroll;
+			itemPixelScroll = itemPixelScroll + requestedScroll;
+			if (scrollIndex == 0 && itemPixelScroll < 0) {
+				itemPixelScroll = 0;
+			}
+
 			var nextScrollIndex = scrollIndex;
 			var nextItemPixelScroll = itemPixelScroll;
 
@@ -87,13 +90,16 @@ class HuiVirtualList<T> extends HuiElement {
 				element.y = height;
 				element.reflow();
 
-				if (element.x < 0 && element.x + element.calculatedHeight > 0) {
-					nextScrollIndex = index;
-				}
-
 				if (above) {
 					element.y -= element.calculatedHeight;
 				}
+
+				if (element.y <= 0 && element.y + element.calculatedHeight > 0) {
+					nextScrollIndex = index;
+					nextItemPixelScroll = -Std.int(element.y);
+				}
+
+
 
 
 				return element;
@@ -103,10 +109,9 @@ class HuiVirtualList<T> extends HuiElement {
 			var minY = 0;
 			var maxY = calculatedHeight;
 
-			itemPixelScroll -= requestedScroll;
 			requestedScroll = 0;
 
-			var startY : Float = itemPixelScroll;
+			var startY : Float = -itemPixelScroll;
 			var currentItem = genItem(scrollIndex, startY, false);
 			currentItem.x += 10;
 
@@ -127,34 +132,17 @@ class HuiVirtualList<T> extends HuiElement {
 				var item = genItem(i2, currentY, true);
 				currentY = item.y;
 				if (currentY < minY) {
-					trace(item.y, item.y + item.calculatedHeight);
-					trace("break after rendering " + i2);
 					break;
 				}
 			}
-
-			// var relY = startY;
-			// for (i in scrollIndex...items.length) {
-			// 	relY += genItem(i, relY);
-			// 	if (relY > calculatedHeight) {
-			// 		break;
-			// 	}
-			// }
-
-			// relY = startY;
-			// // for (i in 1...scrollIndex) {
-			// // 	var i2 = scrollIndex - i;
-			// // 	var h = genItem(i2, relY);
-			// // 	if (relY-h < 0)
-			// // 		break;
-			// // 	relY -= h;
-			// // }
 
 			for (old in oldElements) {
 				old.remove();
 			}
 
-			itemContainer.needReflow = true;
+			scrollIndex = nextScrollIndex;
+			itemPixelScroll = nextItemPixelScroll;
+
 		}
 	}
 
