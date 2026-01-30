@@ -46,7 +46,7 @@ class HuiVirtualList<T> extends HuiElement {
 	}
 
 	function wheel(e: hxd.Event) {
-		requestedScroll = Std.int(e.wheelDelta* 10.0) ;
+		requestedScroll = Std.int(e.wheelDelta* 25.0) ;
 		needRefresh = true;
 		e.propagate = false;
 	}
@@ -57,19 +57,16 @@ class HuiVirtualList<T> extends HuiElement {
 			needRefresh = false;
 
 			var oldElements = elements.copy();
-			var newScrollIndex = scrollIndex;
 
 			itemPixelScroll = itemPixelScroll + requestedScroll;
-			if (scrollIndex == 0 && itemPixelScroll < 0) {
-				itemPixelScroll = 0;
-			}
-
-			var nextScrollIndex = scrollIndex;
-			var nextItemPixelScroll = itemPixelScroll;
 
 			itemContainer.removeChildren();
 
-			function genItem(index: Int, height: Float, above: Bool) : HuiElement {
+			var layoutLines : Array<{index: Int, element: HuiElement}> = [];
+
+			function genItem(index: Int, above: Bool) : HuiElement {
+				var item = items[index];
+
 				var item = items[index];
 
 				var element = elements.get(cast item);
@@ -79,28 +76,20 @@ class HuiVirtualList<T> extends HuiElement {
 					itemContainer.addChild(element);
 					itemContainer.getProperties(element).isAbsolute = true;
 
-					// Force apply style because we need the accura
+					// Force apply style because we need the accurate font info for the layout
 					element.dom.applyStyle(style, false);
 				} else {
 					itemContainer.addChild(element);
 				}
 				oldElements.remove(cast item);
-				element.setWidth(Std.int(calculatedWidth-25));
-				element.x = 0;
-				element.y = height;
+				element.setWidth(Std.int(calculatedWidth));
 				element.reflow();
-
+				element.x = 0;
 				if (above) {
-					element.y -= element.calculatedHeight;
+					layoutLines.unshift({index: index, element: element});
+				} else {
+					layoutLines.push({index: index, element: element});
 				}
-
-				if (element.y <= 0 && element.y + element.calculatedHeight > 0) {
-					nextScrollIndex = index;
-					nextItemPixelScroll = -Std.int(element.y);
-				}
-
-
-
 
 				return element;
 			}
@@ -112,26 +101,64 @@ class HuiVirtualList<T> extends HuiElement {
 			requestedScroll = 0;
 
 			var startY : Float = -itemPixelScroll;
-			var currentItem = genItem(scrollIndex, startY, false);
+			var currentItem = genItem(scrollIndex, false);
+			currentItem.y = startY;
 			currentItem.x += 10;
+			var genMargin = 30;
 
 			var startY2 = startY + currentItem.calculatedHeight;
 
+			var reachedBottom = false;
+
 			var currentY = startY2;
 			for (i in scrollIndex+1...items.length) {
-				var item = genItem(i, currentY, false);
+				var item = genItem(i, false);
+				item.y = currentY;
 				currentY += item.calculatedHeight;
-				if (currentY > maxY) {
+				if (currentY > maxY + genMargin) {
 					break;
 				}
 			}
+			if (currentY <= maxY) {
+				reachedBottom = true;
+			}
 
-			var currentY = startY;
+			var currentY : Float = startY;
+			var reachedTop = false;
 			for (i in 0...scrollIndex) {
 				var i2 = scrollIndex - 1 - i;
-				var item = genItem(i2, currentY, true);
-				currentY = item.y;
-				if (currentY < minY) {
+				var item = genItem(i2, true);
+				currentY -= item.calculatedHeight;
+				item.y = currentY;
+				if (currentY < minY - genMargin) {
+					break;
+				}
+			}
+			if (currentY >= minY) {
+				reachedTop = true;
+			}
+
+			if (reachedTop) {
+				var currentY = 0.0;
+				for (line in layoutLines) {
+					line.element.y = currentY;
+					currentY += line.element.calculatedHeight;
+				}
+			}
+			else if (reachedBottom) {
+				var currentY = maxY;
+				for (i in 0...layoutLines.length) {
+					var line = layoutLines[layoutLines.length - 1 - i];
+					currentY -= line.element.calculatedHeight;
+					line.element.y = currentY;
+				}
+			}
+
+			for (i => line in layoutLines) {
+				if (line.element.y <= 0 && line.element.y + line.element.calculatedHeight > 0) {
+					scrollIndex = line.index;
+					itemPixelScroll = -Std.int(line.element.y);
+					trace(scrollIndex, itemPixelScroll);
 					break;
 				}
 			}
@@ -139,10 +166,6 @@ class HuiVirtualList<T> extends HuiElement {
 			for (old in oldElements) {
 				old.remove();
 			}
-
-			scrollIndex = nextScrollIndex;
-			itemPixelScroll = nextItemPixelScroll;
-
 		}
 	}
 

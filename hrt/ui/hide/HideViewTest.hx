@@ -25,7 +25,7 @@ class HideViewTest extends HuiView<{}> {
 		super(parent);
 		initComponent();
 
-		for (i in 0...10000) {
+		for (i in 0...20) {
 			items.push({id: i, phrase: phrases[Std.int(hxd.Math.random(1.0) * phrases.length)], icon: icons[Std.int(hxd.Math.random(1.0) * icons.length)]});
 		}
 
