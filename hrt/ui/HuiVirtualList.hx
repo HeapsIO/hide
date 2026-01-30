@@ -18,12 +18,49 @@ class HuiVirtualList<T> extends HuiElement {
 	var itemPixelScroll : Int = 0;
 	var requestedScroll : Int = 0;
 
+	var customScrollbar: HuiElement;
+	var customScrollbarCursor: HuiElement;
+
 	function new(?parent) {
 		super(parent);
 		initComponent();
 
 		onBeforeReflow = () -> {
 			needRefresh = true;
+		}
+
+		{
+			customScrollbar = makeScrollBar();
+			addChild(customScrollbar);
+			customScrollbarCursor = makeScrollBarCursor();
+			customScrollbar.addChild(customScrollbarCursor);
+
+			customScrollbar.onPush = (e) -> {
+
+				function scroll(e) {
+					var y = getScene().mouseY - customScrollbar.absY;
+					var percent = y / customScrollbar.innerHeight;
+					scrollIndex = Std.int(percent * (items.length - 1));
+					scrollIndex = hxd.Math.iclamp(scrollIndex, 0, (items.length - 1));
+					needRefresh = true;
+				}
+
+				scroll(e);
+
+				getScene().startCapture((e) -> {
+					scroll(e);
+					if (e.kind == ERelease || e.kind == EReleaseOutside || !hxd.Key.isDown(hxd.Key.MOUSE_LEFT)) {
+						getScene().stopCapture();
+					}
+				});
+			}
+
+			var p = getProperties(customScrollbar);
+			p.isAbsolute = true;
+			p.horizontalAlign = Right;
+			p.verticalAlign = Top;
+
+			customScrollbar.getProperties(customScrollbarCursor).isAbsolute = true;
 		}
 	}
 
@@ -33,7 +70,6 @@ class HuiVirtualList<T> extends HuiElement {
 	override function contentChanged(s : h2d.Object) {
 		onContentChanged();
 	}
-
 
 	override function sync(ctx:h2d.RenderContext) {
 
@@ -154,18 +190,31 @@ class HuiVirtualList<T> extends HuiElement {
 				}
 			}
 
+			var maxVisible = layoutLines[layoutLines.length-1].index;
 			for (i => line in layoutLines) {
 				if (line.element.y <= 0 && line.element.y + line.element.calculatedHeight > 0) {
 					scrollIndex = line.index;
 					itemPixelScroll = -Std.int(line.element.y);
 					trace(scrollIndex, itemPixelScroll);
-					break;
+				}
+
+				if (line.element.y < calculatedHeight && line.element.y + line.element.calculatedHeight >= maxY) {
+					maxVisible = line.index;
 				}
 			}
 
 			for (old in oldElements) {
 				old.remove();
 			}
+
+			customScrollbar.setHeight(Std.int(calculatedHeight));
+			var scrollBarHeight = customScrollbar.innerHeight;
+			trace((scrollIndex / (items.length-1)), (maxVisible / (items.length-1)));
+			customScrollbarCursor.y = (scrollIndex / (items.length-1)) * scrollBarHeight;
+			customScrollbarCursor.setHeight(
+				hxd.Math.imax(10,Std.int(((maxVisible-scrollIndex) / (items.length-1)) * scrollBarHeight))
+			);
+			//customScrollbarCursor.setHeight(20);
 		}
 	}
 
