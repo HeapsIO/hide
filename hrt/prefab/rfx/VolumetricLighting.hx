@@ -341,11 +341,7 @@ class VolumetricLighting extends RendererFX {
 			var ls = cast(r.getLightSystem(), h3d.scene.pbr.LightSystem);
 			ls.lightBuffer.setBuffers(vshader);
 			vshader.halfDepthMap = halfDepth;
-			vshader.startDistance = startDistance;
-			vshader.endDistance = endDistance;
-			vshader.maxCamDist = maxCamDist;
-			vshader.distanceOpacity = distanceOpacity;
-			vshader.steps = steps;
+			vshader.targetSize.set(tex.width, tex.height);
 			vshader.invViewProj = r.ctx.camera.getInverseViewProj();
 			if ( vshader.ditheringNoise == null ) {
 				// can't wrap the following code in a method in h3d.Engine because of macro.
@@ -358,40 +354,7 @@ class VolumetricLighting extends RendererFX {
 				vshader.ditheringNoise = t;
 				vshader.ditheringNoise.wrap = Repeat;
 			}
-			vshader.targetSize.set(tex.width, tex.height);
-			vshader.ditheringSize.set(vshader.ditheringNoise.width, vshader.ditheringNoise.height);
-			vshader.ditheringIntensity = ditheringIntensity;
-			vshader.noiseTex = noiseTex;
-			vshader.noiseScale = noiseScale;
-			vshader.noiseOctave = noiseOctave;
-			vshader.noiseTurmoil = noiseTurmoil;
-			vshader.noiseSharpness = noiseSharpness;
-			vshader.noisePersistence = noisePersistence;
-			vshader.noiseLacunarity = noiseLacunarity;
-			vshader.fogEnvPower = fogEnvPower;
-
-			vshader.color.load(h3d.Vector.fromColor(color));
-			vshader.fogDensity = fogDensity * 0.002;
-			vshader.fogUseNoise = fogUseNoise;
-			vshader.fogBottom = fogBottom;
-			vshader.fogTop = fogTop;
-			vshader.fogEnvColorMult = fogEnvColorMult;
-			vshader.fogHeightFalloff = fogHeightFalloff;
-
-			vshader.secondFogColor.load(h3d.Vector.fromColor(secondFogColor));
-			vshader.secondFogDensity = secondFogDensity * 0.002;
-			vshader.secondFogUseNoise = secondFogUseNoise;
-			vshader.secondFogBottom = secondFogBottom;
-			vshader.secondFogTop = secondFogTop;
-			vshader.secondFogHeightFalloff = secondFogHeightFalloff;
-
-			vshader.emissiveColor.load(h3d.Vector.fromColor(emissiveColor));
-			vshader.emissiveIntensity = emissiveIntensity;
-
-			vshader.offsetCamHeight = offsetCamHeight ? 1.0 : 0.0;
-
-			vshader.intensity = intensity;
-
+			fillShaderParams(vshader);
 			pass.pass.setBlendMode(Alpha);
 			pass.render();
 
@@ -459,6 +422,46 @@ class VolumetricLighting extends RendererFX {
 		tex.uploadPixels(pix);
 		tex.wrap = Repeat;
 		return tex;
+	}
+
+	function fillShaderParams(s : VolumetricLightingShader) {
+		vshader.startDistance = startDistance;
+		vshader.endDistance = endDistance;
+		vshader.maxCamDist = maxCamDist;
+		vshader.distanceOpacity = distanceOpacity;
+		vshader.steps = steps;
+		vshader.ditheringSize.set(vshader.ditheringNoise.width, vshader.ditheringNoise.height);
+		vshader.ditheringIntensity = ditheringIntensity;
+		vshader.noiseTex = noiseTex;
+		vshader.noiseScale = noiseScale;
+		vshader.noiseOctave = noiseOctave;
+		vshader.noiseTurmoil = noiseTurmoil;
+		vshader.noiseSharpness = noiseSharpness;
+		vshader.noisePersistence = noisePersistence;
+		vshader.noiseLacunarity = noiseLacunarity;
+		vshader.fogEnvPower = fogEnvPower;
+
+		vshader.color.load(h3d.Vector.fromColor(color));
+		vshader.fogDensity = fogDensity * 0.002;
+		vshader.fogUseNoise = fogUseNoise;
+		vshader.fogBottom = fogBottom;
+		vshader.fogTop = fogTop;
+		vshader.fogEnvColorMult = fogEnvColorMult;
+		vshader.fogHeightFalloff = fogHeightFalloff;
+
+		vshader.secondFogColor.load(h3d.Vector.fromColor(secondFogColor));
+		vshader.secondFogDensity = secondFogDensity * 0.002;
+		vshader.secondFogUseNoise = secondFogUseNoise;
+		vshader.secondFogBottom = secondFogBottom;
+		vshader.secondFogTop = secondFogTop;
+		vshader.secondFogHeightFalloff = secondFogHeightFalloff;
+
+		vshader.emissiveColor.load(h3d.Vector.fromColor(emissiveColor));
+		vshader.emissiveIntensity = emissiveIntensity;
+
+		vshader.offsetCamHeight = offsetCamHeight ? 1.0 : 0.0;
+
+		vshader.intensity = intensity;
 	}
 
 	override function modulate(t : Float) {
