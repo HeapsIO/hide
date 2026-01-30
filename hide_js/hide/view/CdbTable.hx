@@ -3,8 +3,6 @@ package hide.view;
 using hide.tools.Extensions;
 
 class CdbTable extends hide.ui.View<{}> {
-
-	public var sheetsOrder : Array<String>;
 	var tabContents : Array<Element>;
 	var editor : hide.comp.cdb.Editor;
 	var currentSheet : String;
@@ -31,8 +29,6 @@ class CdbTable extends hide.ui.View<{}> {
 		currentSheet = this.config.get("cdb.currentSheet");
 		view = cast this.config.get("cdb.view");
 		saveDisplayKey = "cdb:" + ide.getPath(@:privateAccess ide.databaseFile);
-		sheetsOrder = getDisplayState("sheetsOrder");
-		if( sheetsOrder == null ) sheetsOrder = [];
 	}
 
 	override function destroy() {
@@ -197,25 +193,13 @@ class CdbTable extends hide.ui.View<{}> {
 
 	public function getSheets() {
 		var arr = [for( s in ide.database.sheets ) if( !s.props.hide && (view == null || view.exists(s.name)) ) s];
-		haxe.ds.ArraySort.sort(arr, (s1, s2) -> sheetsOrder.indexOf(s1.name) - sheetsOrder.indexOf(s2.name));
-		sheetsOrder = arr.map(s -> s.name);
-		saveSheetsOrder();
+		haxe.ds.ArraySort.sort(arr, (s1, s2) -> hide.comp.cdb.Editor.getSheetProps(s1).index - hide.comp.cdb.Editor.getSheetProps(s2).index);
+		for (idx => s in arr) {
+			var props = hide.comp.cdb.Editor.getSheetProps(s);
+			props.index = idx;
+			s.props.editor = props;
+		}
 		return arr;
-	}
-
-	public function saveSheetsOrder() {
-		saveDisplayState("sheetsOrder", sheetsOrder);
-	}
-
-	public function moveSheetDisplayOrder( s : cdb.Sheet, delta : Int ) {
-		var index = sheetsOrder.findIndex(o -> o == s.name);
-		var newIndex = index + delta;
-		if( index < 0 || newIndex < 0 || newIndex >= sheetsOrder.length )
-			return false;
-		var order = sheetsOrder[index];
-		sheetsOrder.remove(order);
-		sheetsOrder.insert(newIndex, order);
-		return true;
 	}
 
 	function getTabCache() {
