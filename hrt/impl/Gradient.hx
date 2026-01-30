@@ -193,6 +193,23 @@ class Gradient {
 	}
 	#end
 
+	public static function fillTexArrayFromData(tex : h3d.mat.TextureArray, data : GradientData, idx : Int) {
+		function genPixels(data : hrt.impl.Gradient.GradientData) : hxd.Pixels {
+			var xScale = data.isVertical ? 0 : 1;
+			var yScale = 1 - xScale;
+			var pixels = hxd.Pixels.alloc(data.resolution * xScale + 1 * yScale,1 * xScale + data.resolution * yScale, ARGB);
+
+			var vec = new h3d.Vector4();
+			for (x in 0...data.resolution) {
+				hrt.impl.Gradient.evalData(data, x / (data.resolution-1), vec);
+				pixels.setPixelF(x * xScale,x*yScale, vec);
+			}
+			return pixels;
+		}
+
+		tex.uploadPixels(genPixels(data), 0, idx);
+	}
+
 	public static function textureFromData(data : GradientData) : h3d.mat.Texture {
 		function genPixels() {
 			var xScale = data.isVertical ? 0 : 1;
