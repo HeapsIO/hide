@@ -571,16 +571,21 @@ class RemoteConsoleConnection {
 		}
 	}
 
-	@cmd function profTrack( args : { action : String } ) : Int {
+	@cmd function profTrack( args : { action : String, alloc : Bool, casts : Bool, dyn : Bool, bySize : Bool } ) : Int {
 		switch( args?.action ) {
 		case "start":
 			var tmp = hl.Profile.globalBits;
-			tmp.set(Alloc);
+			if( args.alloc ) tmp.set(Alloc);
+			if( args.casts ) tmp.set(Cast);
+			if( args.dyn ) {
+				tmp.set(DynCall);
+				tmp.set(DynField);
+			}
 			hl.Profile.globalBits = tmp;
 			hl.Profile.reset();
 		case "dump":
-			hl.Profile.dump("memprofSize.dump", true, false);
-			hl.Profile.dump("memprofCount.dump", false, true);
+			hl.Profile.globalBits = new haxe.EnumFlags();
+			hl.Profile.dump("track.dump", args.bySize);
 		default:
 			sendLogError('Action ${args?.action} not supported');
 			return -1;

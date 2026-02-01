@@ -556,16 +556,23 @@ class RemoteConsoleCommandHL extends RemoteConsoleCommand {
 		).element.appendTo(subcmd);
 		var subcmd = new Element('<div class="sub-command">
 			<h5>Prof Alloc</h5>
+			<label><input type="checkbox" name="alloc" checked> Alloc</label>
+			<label><input type="checkbox" name="dyn"> Dyn Access</label>
+			<label><input type="checkbox" name="cast"> Casts</label>
+			<label><input type="checkbox" name="byCount"> ByCount</label>
 		</div>').appendTo(element);
 		var startBtn = new Element('<input type="button" value="Start"/>').appendTo(subcmd);
+		inline function checked(name) {
+			return subcmd.find('[name=$name]').is(":checked");
+		}
 		startBtn.on('click', function(e) {
-			panel.sendCommand("profTrack", { action : "start" }, function(r) {
+			panel.sendCommand("profTrack", { action : "start", alloc : checked("alloc"), casts : checked("cast"), dyn : checked("dyn") }, function(r) {
 				panel.log("CPU alloc track started");
 			});
 		});
 		var dump = new RemoteConsoleSubCommandDump(panel, function(onResult) {
-			panel.sendCommand("profTrack", { action : "dump" }, function(r) {
-				onResult("memprofCount.dump", "Profile alloc dump");
+			panel.sendCommand("profTrack", { action : "dump", bySize : !checked("byCount") }, function(r) {
+				onResult("track.dump", "Profile alloc dump");
 			});
 		}, function(file) {
 			ide.open("hide.view.Script", { path : file });
