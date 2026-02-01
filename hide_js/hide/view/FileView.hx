@@ -52,6 +52,9 @@ class FileView extends hide.ui.View<{ path : String }> {
 	function exists(fs : hxd.fs.LocalFileSystem) {
 		if (state.path == '')
 			return true;
+		// absolute path, always allow
+		if( state.path.charCodeAt(1) == ':'.code )
+			return true;
 
 		// We want to check if the file still exist (it could still exists but not with the same case !)
 		var absPath = Ide.inst.getPath(state.path);
