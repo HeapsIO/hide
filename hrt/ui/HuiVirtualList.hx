@@ -3,6 +3,12 @@ package hrt.ui;
 
 #if hui
 
+enum ScrollRequest {
+	Start;
+	Middle;
+	End;
+}
+
 class HuiVirtualList<T> extends HuiElement {
 	static var SRC =
 		<hui-virtual-list>
@@ -16,7 +22,7 @@ class HuiVirtualList<T> extends HuiElement {
 	var needRefresh = true;
 	var scrollIndex : Int = 0;
 	var itemPixelScroll : Int = 0;
-	var requestedScroll : Int = 0;
+	var scrollRequest : ScrollRequest = null;
 
 	var customScrollbar: HuiElement;
 	var customScrollbarCursor: HuiElement;
@@ -40,9 +46,9 @@ class HuiVirtualList<T> extends HuiElement {
 				function scroll(e) {
 					var y = getScene().mouseY - customScrollbar.absY;
 					var percent = y / customScrollbar.innerHeight;
-					scrollIndex = Std.int(percent * (items.length - 1));
-					scrollIndex = hxd.Math.iclamp(scrollIndex, 0, (items.length - 1));
-					needRefresh = true;
+					var id = Std.int(percent * (items.length - 1));
+					id = hxd.Math.iclamp(id, 0, (items.length - 1));
+					scrollToIndex(id, Middle);
 				}
 
 				scroll(e);
@@ -82,7 +88,8 @@ class HuiVirtualList<T> extends HuiElement {
 	}
 
 	function wheel(e: hxd.Event) {
-		requestedScroll = Std.int(e.wheelDelta* 25.0) ;
+		itemPixelScroll = Std.int(e.wheelDelta* 25.0) ;
+
 		needRefresh = true;
 		e.propagate = false;
 	}
@@ -96,7 +103,6 @@ class HuiVirtualList<T> extends HuiElement {
 
 			if (items.length > 0) {
 				scrollIndex = hxd.Math.iclamp(scrollIndex, 0, items.length-1);
-				itemPixelScroll = itemPixelScroll + requestedScroll;
 
 				itemContainer.removeChildren();
 
@@ -136,10 +142,17 @@ class HuiVirtualList<T> extends HuiElement {
 				var minY = 0;
 				var maxY = calculatedHeight;
 
-				requestedScroll = 0;
-
-				var startY : Float = -itemPixelScroll;
 				var currentItem = genItem(scrollIndex, false);
+
+				var startY : Float = switch (scrollRequest) {
+					case Start: minY;
+					case End: maxY;
+					case Middle: (maxY + minY - currentItem.calculatedHeight) * 0.5;
+					case null: -itemPixelScroll;
+				}
+				trace(scrollIndex, startY);
+				scrollRequest = null;
+
 				currentItem.y = startY;
 				var genMargin = 30;
 
@@ -156,8 +169,16 @@ class HuiVirtualList<T> extends HuiElement {
 						break;
 					}
 				}
+
+				// fix list if it has gone out of bounds
 				if (currentY <= maxY) {
-					reachedBottom = true;
+					var currentY = maxY;
+					for (i in 0...layoutLines.length) {
+						var line = layoutLines[layoutLines.length - 1 - i];
+						currentY -= line.element.calculatedHeight;
+						line.element.y = currentY;
+					}
+					startY = currentY;
 				}
 
 				var currentY : Float = startY;
@@ -172,22 +193,10 @@ class HuiVirtualList<T> extends HuiElement {
 					}
 				}
 				if (currentY >= minY) {
-					reachedTop = true;
-				}
-
-				if (reachedTop) {
 					var currentY = 0.0;
 					for (line in layoutLines) {
 						line.element.y = currentY;
 						currentY += line.element.calculatedHeight;
-					}
-				}
-				else if (reachedBottom) {
-					var currentY = maxY;
-					for (i in 0...layoutLines.length) {
-						var line = layoutLines[layoutLines.length - 1 - i];
-						currentY -= line.element.calculatedHeight;
-						line.element.y = currentY;
 					}
 				}
 
@@ -206,11 +215,15 @@ class HuiVirtualList<T> extends HuiElement {
 
 
 				customScrollbar.setHeight(Std.int(calculatedHeight));
+
 				var scrollBarHeight = customScrollbar.innerHeight;
-				customScrollbarCursor.y = (scrollIndex / (items.length-1)) * scrollBarHeight;
-				customScrollbarCursor.setHeight(
-					hxd.Math.imax(10,Std.int(((maxVisible-scrollIndex) / (items.length-1)) * scrollBarHeight))
-				);
+
+				var scrollbarMin = scrollIndex / (items.length-1) * scrollBarHeight;
+				var scrollbarMax = (maxVisible) / (items.length-1) * scrollBarHeight;
+				var avg = (scrollbarMax + scrollbarMin) / 2.0;
+				var height = hxd.Math.imax(10,Std.int(((maxVisible-scrollIndex) / (items.length-1)) * scrollBarHeight));
+				customScrollbarCursor.y = avg - height*0.5;
+				customScrollbarCursor.setHeight(height);
 			}
 
 			for (old in oldElements) {
@@ -238,6 +251,17 @@ class HuiVirtualList<T> extends HuiElement {
 		this.items = items;
 		needRefresh = true;
 		scrollIndex = hxd.Math.iclamp(scrollIndex, 0, items.length-1);
+	}
+
+	public function scrollTo(item: T, request: ScrollRequest = null) {
+		scrollToIndex(items.indexOf(item), request);
+	}
+
+	public function scrollToIndex(id: Int, request: ScrollRequest = null) {
+		scrollRequest = request;
+		scrollIndex = id;
+		itemPixelScroll = 0;
+		needRefresh = true;
 	}
 
 	public var generateItem(default, set) : (item: T) -> HuiElement = null;

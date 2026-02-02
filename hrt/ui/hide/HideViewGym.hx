@@ -189,10 +189,10 @@ class HideViewGym extends HuiView<{}> {
 		var rand = hxd.Rand.create();
 		rand.init(0x42);
 
-		for (i in 0...10000) {
+		for (i in 0...10) {
 			items.push({
 				id: '$i',
-				name: randomNames[rand.random(randomNames.length)],
+				name: randomNames[rand.random(randomNames.length)] + " " + '$i',
 				children: [for (j in 0...100) {
 					name: randomNames[rand.random(randomNames.length)],
 					children: null,
