@@ -14,7 +14,7 @@ class HuiVirtualList<T> extends HuiElement {
 	var elements : Map<{}, HuiElement> = [];
 
 	var needRefresh = true;
-	var scrollIndex : Int = 10;
+	var scrollIndex : Int = 0;
 	var itemPixelScroll : Int = 0;
 	var requestedScroll : Int = 0;
 
@@ -88,133 +88,134 @@ class HuiVirtualList<T> extends HuiElement {
 	}
 
 	function refreshInternal() {
-		if (needRefresh) {
+		if (needRefresh && generateItem != null) {
 			var style = uiBase.style;
 			needRefresh = false;
 
 			var oldElements = elements.copy();
 
-			itemPixelScroll = itemPixelScroll + requestedScroll;
+			if (items.length > 0) {
+				scrollIndex = hxd.Math.iclamp(scrollIndex, 0, items.length-1);
+				itemPixelScroll = itemPixelScroll + requestedScroll;
 
-			itemContainer.removeChildren();
+				itemContainer.removeChildren();
 
-			var layoutLines : Array<{index: Int, element: HuiElement}> = [];
+				var layoutLines : Array<{index: Int, element: HuiElement}> = [];
 
-			function genItem(index: Int, above: Bool) : HuiElement {
-				var item = items[index];
+				function genItem(index: Int, above: Bool) : HuiElement {
+					var item = items[index];
 
-				var item = items[index];
+					var item = items[index];
 
-				var element = elements.get(cast item);
-				if (element == null) {
-					element = generateItemInternal(item);
-					//elements.set(cast item, element);
-					itemContainer.addChild(element);
-					itemContainer.getProperties(element).isAbsolute = true;
+					var element = elements.get(cast item);
+					if (element == null) {
+						element = generateItemInternal(item);
+						//elements.set(cast item, element);
+						itemContainer.addChild(element);
+						itemContainer.getProperties(element).isAbsolute = true;
 
-					// Force apply style because we need the accurate font info for the layout
-					element.dom.applyStyle(style, false);
-				} else {
-					itemContainer.addChild(element);
-				}
-				oldElements.remove(cast item);
-				element.setWidth(Std.int(calculatedWidth));
-				element.reflow();
-				element.x = 0;
-				if (above) {
-					layoutLines.unshift({index: index, element: element});
-				} else {
-					layoutLines.push({index: index, element: element});
-				}
+						// Force apply style because we need the accurate font info for the layout
+						element.dom.applyStyle(style, false);
+					} else {
+						itemContainer.addChild(element);
+					}
+					oldElements.remove(cast item);
+					element.setWidth(Std.int(calculatedWidth));
+					element.reflow();
+					element.x = 0;
+					if (above) {
+						layoutLines.unshift({index: index, element: element});
+					} else {
+						layoutLines.push({index: index, element: element});
+					}
 
-				return element;
-			}
-
-
-			var minY = 0;
-			var maxY = calculatedHeight;
-
-			requestedScroll = 0;
-
-			var startY : Float = -itemPixelScroll;
-			var currentItem = genItem(scrollIndex, false);
-			currentItem.y = startY;
-			currentItem.x += 10;
-			var genMargin = 30;
-
-			var startY2 = startY + currentItem.calculatedHeight;
-
-			var reachedBottom = false;
-
-			var currentY = startY2;
-			for (i in scrollIndex+1...items.length) {
-				var item = genItem(i, false);
-				item.y = currentY;
-				currentY += item.calculatedHeight;
-				if (currentY > maxY + genMargin) {
-					break;
-				}
-			}
-			if (currentY <= maxY) {
-				reachedBottom = true;
-			}
-
-			var currentY : Float = startY;
-			var reachedTop = false;
-			for (i in 0...scrollIndex) {
-				var i2 = scrollIndex - 1 - i;
-				var item = genItem(i2, true);
-				currentY -= item.calculatedHeight;
-				item.y = currentY;
-				if (currentY < minY - genMargin) {
-					break;
-				}
-			}
-			if (currentY >= minY) {
-				reachedTop = true;
-			}
-
-			if (reachedTop) {
-				var currentY = 0.0;
-				for (line in layoutLines) {
-					line.element.y = currentY;
-					currentY += line.element.calculatedHeight;
-				}
-			}
-			else if (reachedBottom) {
-				var currentY = maxY;
-				for (i in 0...layoutLines.length) {
-					var line = layoutLines[layoutLines.length - 1 - i];
-					currentY -= line.element.calculatedHeight;
-					line.element.y = currentY;
-				}
-			}
-
-			var maxVisible = layoutLines[layoutLines.length-1].index;
-			for (i => line in layoutLines) {
-				if (line.element.y <= 0 && line.element.y + line.element.calculatedHeight > 0) {
-					scrollIndex = line.index;
-					itemPixelScroll = -Std.int(line.element.y);
-					trace(scrollIndex, itemPixelScroll);
+					return element;
 				}
 
-				if (line.element.y < calculatedHeight && line.element.y + line.element.calculatedHeight >= maxY) {
-					maxVisible = line.index;
+
+				var minY = 0;
+				var maxY = calculatedHeight;
+
+				requestedScroll = 0;
+
+				var startY : Float = -itemPixelScroll;
+				var currentItem = genItem(scrollIndex, false);
+				currentItem.y = startY;
+				var genMargin = 30;
+
+				var startY2 = startY + currentItem.calculatedHeight;
+
+				var reachedBottom = false;
+
+				var currentY = startY2;
+				for (i in scrollIndex+1...items.length) {
+					var item = genItem(i, false);
+					item.y = currentY;
+					currentY += item.calculatedHeight;
+					if (currentY > maxY + genMargin) {
+						break;
+					}
 				}
+				if (currentY <= maxY) {
+					reachedBottom = true;
+				}
+
+				var currentY : Float = startY;
+				var reachedTop = false;
+				for (i in 0...scrollIndex) {
+					var i2 = scrollIndex - 1 - i;
+					var item = genItem(i2, true);
+					currentY -= item.calculatedHeight;
+					item.y = currentY;
+					if (currentY < minY - genMargin) {
+						break;
+					}
+				}
+				if (currentY >= minY) {
+					reachedTop = true;
+				}
+
+				if (reachedTop) {
+					var currentY = 0.0;
+					for (line in layoutLines) {
+						line.element.y = currentY;
+						currentY += line.element.calculatedHeight;
+					}
+				}
+				else if (reachedBottom) {
+					var currentY = maxY;
+					for (i in 0...layoutLines.length) {
+						var line = layoutLines[layoutLines.length - 1 - i];
+						currentY -= line.element.calculatedHeight;
+						line.element.y = currentY;
+					}
+				}
+
+				var maxVisible = layoutLines[layoutLines.length-1].index;
+				for (i => line in layoutLines) {
+					if (line.element.y <= 0 && line.element.y + line.element.calculatedHeight > 0) {
+						scrollIndex = line.index;
+						itemPixelScroll = -Std.int(line.element.y);
+					}
+
+					if (line.element.y < calculatedHeight && line.element.y + line.element.calculatedHeight >= maxY) {
+						maxVisible = line.index;
+					}
+				}
+
+
+
+				customScrollbar.setHeight(Std.int(calculatedHeight));
+				var scrollBarHeight = customScrollbar.innerHeight;
+				customScrollbarCursor.y = (scrollIndex / (items.length-1)) * scrollBarHeight;
+				customScrollbarCursor.setHeight(
+					hxd.Math.imax(10,Std.int(((maxVisible-scrollIndex) / (items.length-1)) * scrollBarHeight))
+				);
 			}
 
 			for (old in oldElements) {
 				old.remove();
 			}
-
-			customScrollbar.setHeight(Std.int(calculatedHeight));
-			var scrollBarHeight = customScrollbar.innerHeight;
-			trace((scrollIndex / (items.length-1)), (maxVisible / (items.length-1)));
-			customScrollbarCursor.y = (scrollIndex / (items.length-1)) * scrollBarHeight;
-			customScrollbarCursor.setHeight(
-				hxd.Math.imax(10,Std.int(((maxVisible-scrollIndex) / (items.length-1)) * scrollBarHeight))
-			);
-			//customScrollbarCursor.setHeight(20);
 		}
 	}
 
@@ -233,9 +234,19 @@ class HuiVirtualList<T> extends HuiElement {
 		return container;
 	}
 
-	dynamic function generateItem(item: T) : HuiElement {
-		return null;
+	public function setItems(items: Array<T>) : Void {
+		this.items = items;
+		needRefresh = true;
+		scrollIndex = hxd.Math.iclamp(scrollIndex, 0, items.length-1);
+	}
+
+	public var generateItem(default, set) : (item: T) -> HuiElement = null;
+
+	function set_generateItem(v) {
+		needRefresh = true;
+		return generateItem = v;
 	}
 }
+
 
 #end

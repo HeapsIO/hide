@@ -3,7 +3,6 @@ package hrt.ui;
 #if hui
 
 @:parser(hrt.ui.CssParser)
-
 class HuiElement extends h2d.Flow #if hui implements h2d.domkit.Object #end {
 	static var SRC =
 		<hui-element>
