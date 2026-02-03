@@ -15,8 +15,8 @@ class Tabs extends Component {
 		if( t != null ) currentTab = new Element(t);
 	}
 
-	public function createTab( title : String, ?icon : String ) {
-		var e = new Element('<div class="tab" name="$title">');
+	public function createTab(title : String, ?icon : String, ?group : Bool) {
+		var e = new Element('<div class="tab${group ? ' tab-group' : ''}" name="$title">');
 		if( icon != null ) e.attr("icon",icon);
 		e.appendTo(element);
 		syncTabs();
@@ -54,6 +54,10 @@ class Tabs extends Component {
 		return element.children(".tab");
 	}
 
+	public function getGroupTabs() : Element {
+		return element.children(".tab-group");
+	}
+
 	public dynamic function onTabRightClick( index : Int ) {
 	}
 
@@ -70,9 +74,18 @@ class Tabs extends Component {
 			var tab = new Element("<div>").html( (icon != null ? '<div class="ico ico-$icon"></div> ' : '') + (name != null ? (name:String) : '') );
 			t.attr("index", index);
 			tab.attr("index", index);
+			tab.toggleClass("tab-group", t.hasClass('tab-group'));
 			tab.appendTo(header);
 			tab.click(function(e) {
-				currentTab = t;
+				if (tab.hasClass("tab-group")) {
+					var isOpen = tab.hasClass('open');
+					isOpen = !isOpen;
+					tab.toggleClass('open', isOpen);
+					tab.children().toggleClass('ico-folder', !isOpen);
+					tab.children().toggleClass('ico-folder-open', isOpen);
+				}
+				else
+					currentTab = t;
 			}).contextmenu(function(e) {
 				e.preventDefault();
 				onTabRightClick(index);

@@ -250,10 +250,29 @@ class CdbTable extends hide.ui.View<{}> {
 			var tab = tabs == null ? element : tabs.createTab(sheet.name);
 			tabContents.push(tab);
 		}
+		for (c in hide.comp.cdb.Editor.getCategories(ide.database))
+			tabs.createTab(c, "folder", true);
 		if( tabs != null ) {
 			tabs.onTabChange = setEditor;
 			tabs.onTabRightClick = function(index) {
-				var sheet = getSheets()[index];
+				var sheets = getSheets();
+				if (index >= sheets.length) {
+					var allCats = hide.comp.cdb.Editor.getCategories(ide.database);
+					var c = allCats[index % sheets.length];
+					var content : Array<hide.comp.ContextMenu.MenuItem> = [];
+					for (idx => s in sheets) {
+						var props = hide.comp.cdb.Editor.getSheetProps(s);
+						if (props.categories == null || props.categories.indexOf(c) < 0)
+							continue;
+						content.push({ label: s.name, click: () -> {
+							tabs.currentTab = tabs.getTabs().siblings('[index=$idx]');
+						} });
+					}
+					hide.comp.ContextMenu.createFromPoint(ide.mouseX, ide.mouseY, content);
+					return;
+				}
+
+				var sheet = sheets[index];
 				editor.popupSheet(true, sheet, function() {
 					var newSheets = getSheets();
 					var delta = newSheets.length - sheets.length;
@@ -343,19 +362,48 @@ class CdbTable extends hide.ui.View<{}> {
 		applyCategories(ide.projectConfig.dbCategories, doRefresh);
 	}
 
-	public function applyCategories(cats: Array<String>, doRefresh=true) {
+	public function applyCategories(displayedCats: Array<String>, doRefresh=true) {
 		var sheets = getSheets();
 		var header = @:privateAccess tabs.header;
-		for(i in 0...sheets.length) {
+		for (i in 0...sheets.length) {
 			var props = hide.comp.cdb.Editor.getSheetProps(sheets[i]);
-			var show = cats == null || props.categories == null || cats.filter(c -> props.categories.indexOf(c) >= 0).length > 0;
+			var show = displayedCats == null || props.categories == null || displayedCats.filter(c -> props.categories.indexOf(c) >= 0).length > 0;
 			var tab = header.find('[index=$i]');
-			tab.toggleClass("hidden", !show);
 			tab.toggleClass("cat", props.categories != null);
 			tab.get(0).className = ~/(cat-[^\s]+)/g.replace(tab.get(0).className, "");
 			if(props.categories != null)
 				for(c in props.categories)
 					tab.addClass("cat-" + c);
+		}
+
+		// Reset order of header tabs and visibility
+		var cur = header;
+		for (idx in 0...header.children().length) {
+			var e = header.find('[index=$idx]');
+			e.toggleClass('hidden', false);
+			e.toggleClass('tiny', false);
+			if (cur == header)
+				e.appendTo(cur);
+			else
+				e.insertAfter(cur);
+			cur = e;
+		}
+
+		var allCats = hide.comp.cdb.Editor.getCategories(ide.database);
+		for (idx in 0...allCats.length) {
+			var cat = allCats[idx];
+			var tabHeader = header.find('[index=${sheets.length + idx}]');
+			var grouped = displayedCats?.indexOf(cat) < 0;
+			tabHeader.toggleClass("hidden", !grouped);
+			var grouppedHeaders = header.find('.cat-${cat}');
+			if (grouped) {
+				grouppedHeaders.insertAfter(tabHeader);
+				grouppedHeaders.toggleClass('hidden', true);
+				grouppedHeaders.toggleClass('tiny', true);
+			}
+			tabHeader.click(function(e) {
+				grouppedHeaders.toggleClass('hidden', !tabHeader.hasClass('open'));
+			});
 		}
 		if( doRefresh ) editor.refresh();
 	}
