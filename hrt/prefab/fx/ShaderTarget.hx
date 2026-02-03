@@ -19,10 +19,12 @@ class ShaderTargetObj extends h3d.scene.Object {
 		}
 
 		var children = shadersRoot.children.copy();
-		shadersRoot.children = [];
-		for (c in children) {
-			if (Std.isOfType(c, Object3D))
-				reparentChildren(cast c);
+		if (children.length > 0) {
+			@:privateAccess shadersRoot._children = [];
+			for (c in children) {
+				if (Std.isOfType(c, Object3D))
+					reparentChildren(cast c);
+			}
 		}
 
 		var fxAnim : hrt.prefab.fx.FX.FXAnimation = cast fx.local3d;

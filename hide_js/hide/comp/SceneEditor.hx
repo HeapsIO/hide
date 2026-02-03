@@ -1791,7 +1791,7 @@ class SceneEditor {
 					if(Type.getClass(elt.parent) == hrt.prefab.Object3D)
 						selectElements([elt.parent]);
 					else
-						selectElements(elt.parent.children);
+						selectElements(elt.parent.children.copy());
 
 				}
 				else if (K.isDown(K.CTRL)) {
@@ -2074,12 +2074,12 @@ class SceneEditor {
 		tree.getChildren = (p : hrt.prefab.Prefab) -> {
 			if (p == null) {
 				if (isSceneTree)
-					return sceneData == null ? [] : sceneData.children;
+					return sceneData == null ? [] : sceneData._children ?? [];
 				return renderPropsRoot == null ? [] : [renderPropsRoot];
 			}
 
 			var ref = Std.downcast(p, Reference);
-			var children = (ref != null && ref.refInstance != null && (ref.editMode == Edit || ref.editMode == Override)) ? ref.refInstance.children : p.children;
+			var children = ((ref != null && ref.refInstance != null && (ref.editMode == Edit || ref.editMode == Override)) ? ref.refInstance._children : p._children) ?? [];
 
 			var props = p.getHideProps();
 			if (props != null && props.hideChildren != null)
@@ -2293,8 +2293,7 @@ class SceneEditor {
 						var p = createDroppedElement(f.relPath, parent, dragData.shiftKey);
 						if (p == null)
 							continue;
-						parent.children.remove(p);
-						parent.children.insert(idx, p);
+						parent.addChildAt(p, idx);
 						queueRebuild(p);
 						createdPrefab.push({ p : p, idx : idx });
 					}
@@ -2302,13 +2301,13 @@ class SceneEditor {
 					undo.change(Custom((undo) -> {
 						if (undo) {
 							for (p in createdPrefab) {
-								parent.children.remove(p.p);
+								parent.removeChild(p.p);
 								p.p.editorRemoveInstanceObjects();
 							}
 						}
 						else {
 							for (p in createdPrefab) {
-								parent.children.insert(p.idx, p.p);
+								parent.addChildAt(p.p, p.idx);
 								queueRebuild(p.p);
 							}
 						}
@@ -3872,7 +3871,7 @@ class SceneEditor {
 				beginRebuild();
 				for (e in elts) {
 					removeInstance(e);
-					e.parent.children.remove(e);
+					e.parent.removeChild(e);
 				}
 				endRebuild();
 				refreshTree(SceneTree, () -> selectElements([], NoHistory));
@@ -3881,7 +3880,7 @@ class SceneEditor {
 
 				beginRebuild();
 				for (e in elts) {
-					e.parent.children.push(e);
+					e.parent.addChild(e);
 					makePrefab(e);
 					if (e.parent != null && doRefresh)
 						onPrefabChange(e.parent, "children");
@@ -4445,7 +4444,7 @@ class SceneEditor {
 						beginRebuild();
 						for(e in elts) {
 							removeInstance(e);
-							e.parent.children.remove(e);
+							e.remove();
 						}
 						endRebuild();
 						refreshTree(SceneTree, () -> selectElements([], NoHistory));
@@ -4453,7 +4452,7 @@ class SceneEditor {
 					else {
 						beginRebuild();
 						for(e in elts) {
-							e.parent.children.push(e);
+							sceneData.addChild(e);
 							makePrefab(e);
 						}
 						endRebuild();
@@ -4638,12 +4637,11 @@ class SceneEditor {
 			return null;
 
 		prefab.parent = parent;
-		parent.children.remove(prefab);
-		parent.children.insert(index, prefab);
+		parent.addChildAt(prefab, index);
 
 		var ref = Std.downcast(prefab, Reference);
 		if (ref != null && (ref.hasCycle() || ref.source == @:privateAccess view.state.path) ) {
-			parent.children.remove(ref);
+			parent.removeChild(ref);
 			hide.Ide.inst.quickError('Reference to $relative is creating a cycle. The reference creation was aborted.');
 			return null;
 		}
@@ -5206,8 +5204,7 @@ class SceneEditor {
 		for(i => elt in elements) {
 			@:pirvateAccess var clone = hrt.prefab.Prefab.createFromDynamic(haxe.Json.parse(Ide.inst.toJSON(elt.serialize())), null, elt.parent.shared);
 			var index = lastIndex+1+i;
-			elt.parent.children.insert(index, clone);
-			@:bypassAccessor clone.parent = elt.parent;
+			elt.parent.addChildAt(clone, index);
 			autoName(clone);
 
 			queueRebuild(clone);
@@ -5222,8 +5219,8 @@ class SceneEditor {
 			onPrefabChange(elt.parent, "children");
 
 			undoes.push(function(undo) {
-				if(undo) elt.parent.children.remove(clone);
-				else elt.parent.children.insert(index, clone);
+				if(undo) elt.parent.removeChild(clone);
+				else elt.parent.addChildAt(clone, index);
 				onPrefabChange(elt.parent, "children");
 			});
 		}
@@ -5290,12 +5287,12 @@ class SceneEditor {
 			var parent = elt.parent;
 			var index = elt.parent.children.indexOf(elt);
 			removeInstance(elt);
-			parent.children.remove(elt);
+			parent.removeChild(elt);
 			uniqueParents.set(parent, true);
 			undoes.unshift(function(undo) {
-				if(undo) elt.parent.children.insert(index, elt);
-				else elt.parent.children.remove(elt);
-				onPrefabChange(elt.parent, "children");
+				if(undo) parent.addChildAt(elt, index);
+				else parent.removeChild(elt);
+				onPrefabChange(parent, "children");
 			});
 		}
 
@@ -5349,12 +5346,8 @@ class SceneEditor {
 			return Reflect.compare(prefabIndex.get(a), prefabIndex.get(b));
 		});
 
-		var offset = 0;
-		for (p in e)
-			if (p.parent == to && p.parent.children.indexOf(p) < index)
-				offset++;
-		var targetIndex = index - offset;
-		var exec = reparentImpl(e, to, targetIndex);
+
+		var exec = reparentImpl(e, to, index);
 		undo.change(Custom(function(undo) {
 			exec(undo);
 		}));
@@ -5418,22 +5411,17 @@ class SceneEditor {
 
 			effects.push(function(undo) {
 				if( undo ) {
-					prefab.parent = prevParent;
+					prefab.remove(); // ensure prevIndex target the correct slot
+					prevParent.addChildAt(prefab, prevIndex);
+
 					checkWantRebuild(toPrefab, prefab);
-
-					prevParent.children.remove(prefab);
-					prevParent.children.insert(prevIndex, prefab);
-
 					if(obj3d != null && prevTransform != null)
 						obj3d.loadTransform(prevTransform);
 					if (obj2d != null && prevTransform2d != null)
 						obj2d.setTransformMatrix(prevTransform2d);
 				} else {
-					@:bypassAccessor prefab.parent = toPrefab;
+					toPrefab.addChildAt(prefab, index + i);
 					checkWantRebuild(prevParent, prefab);
-
-					prefab.shared = toPrefab.shared;
-					toPrefab.children.insert(index + i, prefab);
 					if(obj3d != null && newTransform != null)
 						obj3d.loadTransform(newTransform);
 					if (obj2d != null && newTransform2d != null)
@@ -5448,9 +5436,6 @@ class SceneEditor {
 		function exec(undo: Bool) {
 			beginRebuild();
 
-			for (prefab in prefabs) {
-				prefab.parent.children.remove(prefab);
-			}
 
 			for (effect in effects) {
 				effect(undo);

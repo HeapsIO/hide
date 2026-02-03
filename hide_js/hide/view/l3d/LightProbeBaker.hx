@@ -71,7 +71,7 @@ class LightProbeBaker {
 		function filter( p : hrt.prefab.Prefab ) {
 			for( c in p.children ) {
 				if(!keep(c))
-					sceneData.children.remove(c);
+					c.remove();
 			}
 			for( c in p.children )
 					filter(c);

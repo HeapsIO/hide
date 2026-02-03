@@ -694,7 +694,7 @@ class FXEditor extends hide.view.FileView {
 				while (toRemove.length > 0) {
 					var c = toRemove.pop();
 					//c.removeInstance();
-					c.parent.children.remove(c);
+					c.remove();
 				}
 			}
 
@@ -1364,9 +1364,9 @@ class FXEditor extends hide.view.FileView {
 		undo.change(Custom(function(undo) {
 			for(c in added) {
 				if(undo)
-					element.children.remove(c);
+					c.remove();
 				else
-					element.children.push(c);
+					element.addChild(c);
 			}
 			sceneEditor.queueRebuild(@:privateAccess sceneEditor.sceneData);
 			sceneEditor.queueRebuildCallback(() -> @:privateAccess sceneEditor.refreshTree(SceneTree, () -> sceneEditor.selectElements(!undo ? [for (a in added) a] : [], NoHistory)));

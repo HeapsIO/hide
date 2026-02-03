@@ -672,7 +672,7 @@ class GradientEditor extends Popup {
 
 				for (prefab in currentPrefabs) {
 					if (searchName == "*") {
-						nextCurrent = nextCurrent.concat(prefab.children);
+						nextCurrent = nextCurrent.concat(cast prefab.children);
 					}
 					else if (searchName == "**") {
 						nextCurrent = nextCurrent.concat(prefab.flatten());

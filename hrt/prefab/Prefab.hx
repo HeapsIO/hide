@@ -72,7 +72,8 @@ class Prefab {
 	/**
 		The parent of the prefab in the tree view
 	**/
-	public var children : Array<Prefab> = [];
+	public var children(get, never) : haxe.ds.ReadOnlyArray<Prefab>;
+	var _children : Array<Prefab> = null;
 
 	/**
 		Tells if the prefab will create an instance when calling make() or be ignored. Also apply to this prefab children.
@@ -132,18 +133,10 @@ class Prefab {
 		return getClassTypeName(thisClass);
 	}
 
+	inline function get_children() return _children ?? NULL_CHILDREN;
+
 	function set_parent(p) {
-		if( parent != null ) {
-			parent.children.remove(this);
-		}
-		parent = p;
-		if( parent != null ) {
-			setSharedRec(parent.shared);
-			parent.children.push(this);
-		}
-		else {
-			setSharedRec(new ContextShared(false));
-		}
+		handleParenting(this, this.parent, p, p?.children.length ?? 0);
 		return p;
 	}
 
@@ -211,19 +204,19 @@ class Prefab {
 		// serializable fields, because they will be initialized by the copy function
 		var inst = Type.createEmptyInstance(thisClass);
 		inst.postCloneInit();		// Macro function that init all the non serializable fields of a prefab
-		inst.children = [];
 		inst.__newInit(parent, sh);// Macro function that contains the code of the new function
 
 		inst.copy(this);
-		if (withChildren) {
-			inst.children.resize(children.length);
+		if (withChildren && children.length > 0) {
+			inst._children = [];
+			inst._children.resize(children.length);
 			for (idx => child in children) {
 				var cloneChild = child.clone(null, sh);
 
 				// "parent" setter pushes into children, but we don't want that
 				// as we have prealocated the array children
 				@:bypassAccessor cloneChild.parent = inst;
-				inst.children[idx] = cloneChild;
+				inst._children[idx] = cloneChild;
 			}
 		}
 
@@ -290,8 +283,8 @@ class Prefab {
 		}
 
 		var childData : Array<Dynamic> = p.children;
-		if( childData == null ) {
-			if( this.children.length > 0 ) this.children = [];
+		if( childData == null || childData.length <= 0 ) {
+			this._children = null;
 			return;
 		}
 		var curChild = new Map();
@@ -323,7 +316,7 @@ class Prefab {
 				newchild.push(createFromDynamic(v,this));
 			}
 		}
-		children = newchild;
+		_children = newchild;
 	}
 
 	/**
@@ -333,6 +326,22 @@ class Prefab {
 		for (child in children) {
 			child.dispose();
 		}
+	}
+
+	public function addChild(child: Prefab) : Void {
+		inline addChildAt(child, children.length);
+	}
+
+	public function addChildAt(child: Prefab, index: Int) : Void {
+		handleParenting(child, child.parent, this, index);
+	}
+
+	public function removeChild(child: Prefab) : Void {
+		handleParenting(child, this, null, 0);
+	}
+
+	public function remove() : Void {
+		parent = null;
 	}
 
 	/**
@@ -432,7 +441,7 @@ class Prefab {
 	}
 
 	/**
-		Find a the first prefab in the tree with the given class that matches the optionnal `filter`.
+		Find a the first prefab in the tree with the given class that matches the optional `filter`.
 		Returns null if no matching prefab was found
 	**/
 	public function find<T:Prefab>(?cl: Class<T>, ?filter : T -> Bool, followRefs : Bool = false, includeDisabled: Bool = true) : Null<T> {
@@ -828,6 +837,33 @@ class Prefab {
 	}
 
 	/**
+		Change hierarchy between prefabs, properly handling parent set
+	**/
+	static function handleParenting(child : Prefab, oldParent : Null<Prefab>, newParent : Null<Prefab>, indexPos: Int) {
+		if (oldParent != null && oldParent._children != null) {
+			var oldPos = oldParent._children.indexOf(child);
+			if (oldPos != -1) {
+				oldParent._children.splice(oldPos, 1);
+				if (oldParent == newParent && indexPos > oldPos) {
+					indexPos --;
+				}
+			}
+			if (oldParent._children.length == 0) {
+				oldParent._children = null;
+			}
+		}
+		@:bypassAccessor child.parent = newParent;
+		if (newParent != null) {
+			if (newParent._children == null)
+				newParent._children = [];
+			child.setSharedRec(newParent.shared);
+			newParent._children.insert(indexPos, child);
+		} else {
+			child.setSharedRec(new ContextShared(false));
+		}
+	}
+
+	/**
 		Create a new prefab from the given `data`.
 	**/
 	static function createFromDynamic(data:Dynamic, parent:Prefab = null, contextShared:ContextShared = null) : Prefab {
@@ -892,6 +928,8 @@ class Prefab {
 	// Map prefab class name to the serialized name of the prefab
 	static var reverseRegistry : Map<String, String> = new Map();
 	static var extensionRegistry : Map<String, String> = new Map();
+
+	static var NULL_CHILDREN = [];
 
 	/**
 		Register the given prefab class with the given typeName in the prefab regsitry.
