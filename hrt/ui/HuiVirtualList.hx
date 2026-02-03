@@ -121,7 +121,7 @@ class HuiVirtualList<T> extends HuiElement {
 						itemContainer.getProperties(element).isAbsolute = true;
 
 						// Force apply style because we need the accurate font info for the layout
-						element.dom.applyStyle(style, false);
+						element.dom.applyStyle(style);
 					} else {
 						itemContainer.addChild(element);
 					}
