@@ -251,27 +251,49 @@ class CdbTable extends hide.ui.View<{}> {
 			tabContents.push(tab);
 		}
 		for (c in hide.comp.cdb.Editor.getCategories(ide.database))
-			tabs.createTab(c, "folder", true);
+			tabs.createTab(c, null, true);
 		if( tabs != null ) {
 			tabs.onTabChange = setEditor;
+			tabs.onTabClick = function(index) {
+				var sheets = getSheets();
+				if (index < sheets.length)
+					return;
+				var allCats = hide.comp.cdb.Editor.getCategories(ide.database);
+				var c = allCats[index % sheets.length];
+				var content : Array<hide.comp.ContextMenu.MenuItem> = [];
+				for (idx => s in sheets) {
+					var props = hide.comp.cdb.Editor.getSheetProps(s);
+					if (props.categories == null || props.categories.indexOf(c) < 0)
+						continue;
+					content.push({ label: s.name, click: () -> {
+						tabs.currentTab = tabs.getTabs().siblings('[index=$idx]');
+					} });
+				}
+				var catMenu : Array<hide.comp.ContextMenu.MenuItem> = [];
+				for (c in allCats) {
+					var visibleCats = ide.projectConfig.dbCategories;
+					catMenu.push({ label: c, icon: visibleCats != null && visibleCats.indexOf(c) < 0 ? null : "check", click: () -> {
+						if (visibleCats == null)
+							visibleCats = [c];
+						else if (visibleCats.contains(c))
+							visibleCats.remove(c);
+						else
+							visibleCats.push(c);
+						if (visibleCats.length == 0)
+							visibleCats = null;
+						ide.projectConfig.dbCategories = visibleCats;
+						ide.config.user.save();
+						applyCategories(ide.projectConfig.dbCategories);
+						ide.initMenu();
+					} });
+				}
+				content.push({ label: "Categories", menu: catMenu });
+				hide.comp.ContextMenu.createFromPoint(ide.mouseX, ide.mouseY, content);
+			}
 			tabs.onTabRightClick = function(index) {
 				var sheets = getSheets();
-				if (index >= sheets.length) {
-					var allCats = hide.comp.cdb.Editor.getCategories(ide.database);
-					var c = allCats[index % sheets.length];
-					var content : Array<hide.comp.ContextMenu.MenuItem> = [];
-					for (idx => s in sheets) {
-						var props = hide.comp.cdb.Editor.getSheetProps(s);
-						if (props.categories == null || props.categories.indexOf(c) < 0)
-							continue;
-						content.push({ label: s.name, click: () -> {
-							tabs.currentTab = tabs.getTabs().siblings('[index=$idx]');
-						} });
-					}
-					hide.comp.ContextMenu.createFromPoint(ide.mouseX, ide.mouseY, content);
+				if (index >= sheets.length)
 					return;
-				}
-
 				var sheet = sheets[index];
 				editor.popupSheet(true, sheet, function() {
 					var newSheets = getSheets();
@@ -377,16 +399,9 @@ class CdbTable extends hide.ui.View<{}> {
 		}
 
 		// Reset order of header tabs and visibility
-		var cur = header;
 		for (idx in 0...header.children().length) {
 			var e = header.find('[index=$idx]');
 			e.toggleClass('hidden', false);
-			e.toggleClass('tiny', false);
-			if (cur == header)
-				e.appendTo(cur);
-			else
-				e.insertAfter(cur);
-			cur = e;
 		}
 
 		var allCats = hide.comp.cdb.Editor.getCategories(ide.database);
@@ -396,14 +411,8 @@ class CdbTable extends hide.ui.View<{}> {
 			var grouped = displayedCats?.indexOf(cat) < 0;
 			tabHeader.toggleClass("hidden", !grouped);
 			var grouppedHeaders = header.find('.cat-${cat}');
-			if (grouped) {
-				grouppedHeaders.insertAfter(tabHeader);
+			if (grouped)
 				grouppedHeaders.toggleClass('hidden', true);
-				grouppedHeaders.toggleClass('tiny', true);
-			}
-			tabHeader.click(function(e) {
-				grouppedHeaders.toggleClass('hidden', !tabHeader.hasClass('open'));
-			});
 		}
 		if( doRefresh ) editor.refresh();
 	}

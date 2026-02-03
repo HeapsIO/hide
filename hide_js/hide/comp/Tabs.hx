@@ -58,11 +58,11 @@ class Tabs extends Component {
 		return element.children(".tab-group");
 	}
 
-	public dynamic function onTabRightClick( index : Int ) {
-	}
+	public dynamic function onTabClick( index : Int ) {}
 
-	public dynamic function onTabChange( index : Int ) {
-	}
+	public dynamic function onTabRightClick( index : Int ) {}
+
+	public dynamic function onTabChange( index : Int ) {}
 
 	function syncTabs() {
 		header.html("");
@@ -77,15 +77,10 @@ class Tabs extends Component {
 			tab.toggleClass("tab-group", t.hasClass('tab-group'));
 			tab.appendTo(header);
 			tab.click(function(e) {
-				if (tab.hasClass("tab-group")) {
-					var isOpen = tab.hasClass('open');
-					isOpen = !isOpen;
-					tab.toggleClass('open', isOpen);
-					tab.children().toggleClass('ico-folder', !isOpen);
-					tab.children().toggleClass('ico-folder-open', isOpen);
-				}
-				else
+				if (!tab.hasClass("tab-group"))
 					currentTab = t;
+				e.preventDefault();
+				onTabClick(index);
 			}).contextmenu(function(e) {
 				e.preventDefault();
 				onTabRightClick(index);

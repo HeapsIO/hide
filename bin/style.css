@@ -1021,10 +1021,8 @@ input[type=checkbox].indeterminate:after {
 .hide-tabs .tabs-header > div.hidden {
   display: none;
 }
-.hide-tabs .tabs-header > div.tiny {
-  font-size: 0.9em;
-  padding: 1px;
-  vertical-align: top;
+.hide-tabs .tabs-header > div.tab-group {
+  font-style: italic;
 }
 .hide-tabs .tab {
   flex: 1 1;
