@@ -1543,7 +1543,7 @@ class Spline extends hrt.prefab.Object3D {
 	function clearPreviewSpline() {
 		previewSpline?.graphics?.clear();
 		previewSpline?.local3d.remove();
-		previewSpline?.parent.children.remove(previewSpline);
+		previewSpline?.remove();
 		previewSpline = null;
 	}
 

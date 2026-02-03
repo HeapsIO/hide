@@ -78,10 +78,11 @@ class Spray extends Object3D {
 
 	override function makeInstance() {
 		super.makeInstance();
-		children.sort(function(c1, c2) {
-			return Std.isOfType(c1, Object3D) ? -1 : 1;
-		});
-
+		if (_children != null) {
+			_children.sort(function(c1, c2) {
+				return Std.isOfType(c1, Object3D) ? -1 : 1;
+			});
+		}
 	}
 
 	#else

@@ -123,7 +123,7 @@ class Model extends Object3D {
 		function change(toRemove : hrt.prefab.Object3D, toAddPath : String, undo : Bool) {
 			var parent = toRemove.parent;
 			var idx = parent.children.indexOf(toRemove);
-			parent.children.remove(toRemove);
+			toRemove.remove();
 			toRemove.local3d.remove();
 
 			var toAdd = undo ? new hrt.prefab.Model(null, toRemove.shared) : new hrt.prefab.Reference(null, toRemove.shared);
@@ -131,7 +131,7 @@ class Model extends Object3D {
 			toAdd.name = toRemove.name;
 			toAdd.props = toRemove.props;
 			toAdd.setTransform(toRemove.getTransform());
-			parent.children.insert(idx, toAdd);
+			parent.addChildAt(toAdd, idx);
 			@:bypassAccessor toAdd.parent = parent;
 			@:privateAccess ctx.scene.editor.rebuild(toAdd);
 		}

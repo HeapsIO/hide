@@ -1886,8 +1886,8 @@ class Model extends FileView {
 
 		// Remove current library to create a new one with the actual render prop
 		root = new hrt.prefab.Prefab(null, null);
-		for (c in @:privateAccess sceneEditor.sceneData.children)
-			@:privateAccess sceneEditor.sceneData.children.remove(c);
+		for (c in @:privateAccess sceneEditor.sceneData.children.copy())
+			@:privateAccess c.remove();
 
 		if (sceneEditor.renderPropsRoot != null) {
 			@:privateAccess sceneEditor.removeInstance(sceneEditor.renderPropsRoot);
@@ -1897,7 +1897,7 @@ class Model extends FileView {
 		@:privateAccess sceneEditor.queueRefreshRenderProps();
 
 		if (sceneEditor.renderPropsRoot != null && sceneEditor.renderPropsRoot.source != null)
-			root.children.push(sceneEditor.renderPropsRoot);
+			root.addChild(sceneEditor.renderPropsRoot);
 
 		// Create default render props if no render props has been created yet
 		var r = root.getOpt(hrt.prefab.RenderProps, true);

@@ -276,10 +276,10 @@ class FX2D extends Object2D implements BaseFX {
 		var useFXRoot = #if editor fromRef #else true #end;
 		var root = hrt.prefab.fx.BaseFX.BaseFXTools.getFXRoot(this);
 		if( useFXRoot && root != null ) {
-			var childrenBackup = children;
-			children = [root];
+			var childrenBackup = _children;
+			_children = [root];
 			var r = super.__makeInternal(sh);
-			children = childrenBackup;
+			_children = childrenBackup;
 			return r;
 		} else
 			return super.__makeInternal(sh);
