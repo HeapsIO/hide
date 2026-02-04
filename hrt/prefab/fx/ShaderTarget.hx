@@ -11,7 +11,7 @@ class ShaderTargetObj extends h3d.scene.Object {
 			while ( i < obj.children.length ) {
 				var c = obj.children[i];
 				if ( (c.enabled && !c.editorOnly) && (Std.isOfType(c, Shader) || Std.isOfType(c, Material) || Std.isOfType(c, MaterialSelector)) ) {
-					c.parent = shadersRoot;
+					shadersRoot.addChild(c);
 					i--;
 				}
 				i++;

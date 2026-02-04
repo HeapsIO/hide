@@ -132,7 +132,6 @@ class Model extends Object3D {
 			toAdd.props = toRemove.props;
 			toAdd.setTransform(toRemove.getTransform());
 			parent.addChildAt(toAdd, idx);
-			@:bypassAccessor toAdd.parent = parent;
 			@:privateAccess ctx.scene.editor.rebuild(toAdd);
 		}
 

@@ -593,8 +593,7 @@ class Reference extends Object3D {
 						break;
 					}
 					editor.removeInstance(selectedRef, false);
-					@:bypassAccessor clones[i].parent = parents[i];
-					@:bypassAccessor selectedRef.parent = null;
+					selectedRef.remove();
 					newSelection.push(clones[i]);
 				}
 				else {
@@ -607,8 +606,7 @@ class Reference extends Object3D {
 						break;
 					}
 					editor.removeInstance(clones[i], false);
-					@:bypassAccessor clones[i].parent = null;
-					@:bypassAccessor selectedRef.parent = parents[i];
+					clones[i].remove();
 					newSelection.push(selectedRef);
 				}
 				editor.queueRebuild(parents[i]);
