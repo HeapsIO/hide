@@ -180,7 +180,7 @@ class Object3D extends Prefab {
 	}
 
 	public function getAbsPos( followRefs : Bool = false ) {
-		inline function getParent( p ) {
+		inline function getParent( p : Prefab ) {
 			var parent = p.parent;
 			if( parent == null && followRefs )
 				parent = p.shared.parentPrefab;

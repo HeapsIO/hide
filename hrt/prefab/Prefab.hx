@@ -104,7 +104,8 @@ class Prefab {
 	/**
 		The parent of the prefab in the tree view
 	**/
-	public var parent(default, null) : Prefab;
+	public var parent(get, never) : Prefab;
+	var _parent : Prefab; // Catch invalid usages of parent in old prefabs
 
 	/**
 		Infos shared by all the prefabs in a given prefab hierarchy (but not by references)
@@ -133,7 +134,8 @@ class Prefab {
 		return getClassTypeName(thisClass);
 	}
 
-	inline function get_children() return _children ?? NULL_CHILDREN;
+	inline function get_parent() : Prefab return _parent;
+	inline function get_children() : Array<Prefab> return _children ?? NULL_CHILDREN;
 
 	/**
 		Instanciate this prefab. If `newContextShared` is given or if `this.shared.isInstance` is false,
@@ -844,7 +846,7 @@ class Prefab {
 				oldParent._children = null;
 			}
 		}
-		child.parent = newParent;
+		child._parent = newParent;
 		if (newParent != null) {
 			if (newParent._children == null)
 				newParent._children = [];

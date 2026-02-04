@@ -761,7 +761,7 @@ class ModelLibrary extends Prefab {
 			throw "There is no destination path for saving the model library";
 
 		var root = new hrt.prefab.Prefab(null, null);
-		parent = root;
+		root.addChild(this);
 		sys.io.File.saveContent(getSystemPath(path), haxe.Json.stringify(@:privateAccess root.serialize(), "\t"));
 	}
 

@@ -2483,7 +2483,7 @@ class SceneEditor {
 		}
 
 		for (prefab in prefabs) {
-			prefab.parent = targetPrefab;
+			targetPrefab.addChild(prefab);
 		}
 
 		var ser = ide.toJSON(targetPrefab.serialize());
@@ -4636,7 +4636,6 @@ class SceneEditor {
 		if (prefab == null)
 			return null;
 
-		prefab.parent = parent;
 		parent.addChildAt(prefab, index);
 
 		var ref = Std.downcast(prefab, Reference);
@@ -4843,10 +4842,10 @@ class SceneEditor {
 		undo.change(Custom(function(undo) {
 			if(undo) {
 				effectFunc(true);
-				group.parent = null;
+				group.remove();
 			}
 			else {
-				group.parent = parent;
+				parent.addChild(group);
 				effectFunc(false);
 			}
 			if(undo)

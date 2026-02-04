@@ -706,7 +706,7 @@ class FXEditor extends hide.view.FileView {
 						// We're currently supporting blending with only 2 curves
 						for (i in 0...2) {
 							var c = new Curve(null, null);
-							c.parent = curve;
+							curve.addChild(c.parent);
 							c.name = '$i';
 							if (i == 0) {
 								for (k in curve.keys) {

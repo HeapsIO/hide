@@ -277,7 +277,7 @@ class ThumbnailGenerator {
 				// Remove all editor only prefabs
 				var toRemove = prefab.findAll(hrt.prefab.Prefab, (p) -> p.editorOnly == true, true);
 				for (r in toRemove) {
-					r.parent = null;
+					r.remove();
 				}
 
 				var prefab = prefab.make(ctx);

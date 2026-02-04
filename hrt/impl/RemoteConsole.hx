@@ -364,7 +364,7 @@ class RemoteConsoleConnection {
 					var prefabView : hide.view.Prefab = cast v;
 					var toEdit = hrt.prefab.Prefab.createFromDynamic(args.data);
 					prefabView.createData();
-					toEdit.parent = prefabView.data;
+					prefabView.data.addChild(toEdit);
 					prefabView.sceneEditor.delayReady(() -> {
 						prefabView.sceneEditor.setPrefab(cast prefabView.data);
 						prefabView.sceneEditor.selectElements([toEdit], NoHistory);

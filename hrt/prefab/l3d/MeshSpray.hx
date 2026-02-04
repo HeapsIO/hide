@@ -431,7 +431,7 @@ class MeshSpray extends Spray {
 			c.editorRemoveInstanceObjects();
 			c.dispose();
 			#end
-			c.parent = null;
+			c.remove();
 			binaryChanged = true;
 		}
 		if( !binaryChanged )
