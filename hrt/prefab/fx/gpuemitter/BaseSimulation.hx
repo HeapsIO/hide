@@ -3,6 +3,7 @@ package hrt.prefab.fx.gpuemitter;
 class BaseSimulation extends ComputeUtils {
 	static var SRC = {
 		@param var batchBuffer : RWPartialBuffer<{
+			previousModelView : Mat4,
 			modelView : Mat4,
 		}>;
 		@param var particleBuffer : RWPartialBuffer<{
@@ -37,7 +38,12 @@ class BaseSimulation extends ComputeUtils {
 		var prevModelView : Mat4;
 		var prevSpeed : Vec3;
 		var relativeTransform : Mat4;
+		var computeCameraBounds : Bool;
+		var absoluteTranslation : Mat4;
+
 		function __init__() {
+			absoluteTranslation = translationMatrix(vec3(0.0));
+			var computeCameraBounds = true;
 			dt = dtParam;
 			speed = particleBuffer[computeVar.globalInvocation.x].speed;
 			life = particleBuffer[computeVar.globalInvocation.x].life;
@@ -56,14 +62,16 @@ class BaseSimulation extends ComputeUtils {
 			} else
 				align = rotateMatrixZ(computeVar.globalInvocation.x * 0.35487) * alignMatrix(vec3(0.0, 0.0, 1.0), normalize(speed));
 			var newPos = prevPos + speed * dt;
-			if ( CAMERA_BOUNDS )
+			if ( CAMERA_BOUNDS && computeCameraBounds){
 				newPos = ((newPos - boundsPos) % boundsSize) + boundsPos;
-			modelView = relativeTransform * align * translationMatrix(newPos);
+			}
+			modelView = relativeTransform * align * translationMatrix(newPos) * absoluteTranslation;
 			var idx = computeVar.globalInvocation.x;
 			particleBuffer[idx].life = life + dt;
 			particleBuffer[idx].speed = speed;
 			particleBuffer[idx].color = intBitsToFloat(packIntColor(particleColor));
 			batchBuffer[idx].modelView = modelView;
+			batchBuffer[idx].previousModelView = prevModelView;
 		}
 	}
 }
