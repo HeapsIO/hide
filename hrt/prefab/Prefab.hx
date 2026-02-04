@@ -104,7 +104,7 @@ class Prefab {
 	/**
 		The parent of the prefab in the tree view
 	**/
-	public var parent(default, set) : Prefab;
+	public var parent(default, null) : Prefab;
 
 	/**
 		Infos shared by all the prefabs in a given prefab hierarchy (but not by references)
@@ -125,7 +125,7 @@ class Prefab {
 			}
 		}
 		else
-			this.parent = parent;
+			parent.addChild(this);
 	}
 
 	function get_type() {
@@ -134,11 +134,6 @@ class Prefab {
 	}
 
 	inline function get_children() return _children ?? NULL_CHILDREN;
-
-	function set_parent(p) {
-		handleParenting(this, this.parent, p, p?.children.length ?? 0);
-		return p;
-	}
 
 	/**
 		Instanciate this prefab. If `newContextShared` is given or if `this.shared.isInstance` is false,
@@ -208,15 +203,10 @@ class Prefab {
 
 		inst.copy(this);
 		if (withChildren && children.length > 0) {
-			inst._children = [];
-			inst._children.resize(children.length);
 			for (idx => child in children) {
 				var cloneChild = child.clone(null, sh);
 
-				// "parent" setter pushes into children, but we don't want that
-				// as we have prealocated the array children
-				@:bypassAccessor cloneChild.parent = inst;
-				inst._children[idx] = cloneChild;
+				inst.addChildAt(cloneChild, idx);
 			}
 		}
 
@@ -341,7 +331,9 @@ class Prefab {
 	}
 
 	public function remove() : Void {
-		parent = null;
+		if (parent != null) {
+			parent.removeChild(this);
+		}
 	}
 
 	/**
@@ -852,7 +844,7 @@ class Prefab {
 				oldParent._children = null;
 			}
 		}
-		@:bypassAccessor child.parent = newParent;
+		child.parent = newParent;
 		if (newParent != null) {
 			if (newParent._children == null)
 				newParent._children = [];
