@@ -88,7 +88,7 @@ class HuiVirtualList<T> extends HuiElement {
 	}
 
 	function wheel(e: hxd.Event) {
-		itemPixelScroll = Std.int(e.wheelDelta* 25.0) ;
+		itemPixelScroll += Std.int(e.wheelDelta* 25.0) ;
 
 		needRefresh = true;
 		e.propagate = false;
@@ -104,19 +104,17 @@ class HuiVirtualList<T> extends HuiElement {
 			if (items.length > 0) {
 				scrollIndex = hxd.Math.iclamp(scrollIndex, 0, items.length-1);
 
-				itemContainer.removeChildren();
+				//itemContainer.removeChildren();
 
 				var layoutLines : Array<{index: Int, element: HuiElement}> = [];
 
 				function genItem(index: Int, above: Bool) : HuiElement {
 					var item = items[index];
 
-					var item = items[index];
-
 					var element = elements.get(cast item);
 					if (element == null) {
 						element = generateItemInternal(item);
-						//elements.set(cast item, element);
+						elements.set(cast item, element);
 						itemContainer.addChild(element);
 						itemContainer.getProperties(element).isAbsolute = true;
 
@@ -154,7 +152,6 @@ class HuiVirtualList<T> extends HuiElement {
 				scrollRequest = null;
 
 				currentItem.y = startY;
-				var genMargin = 30;
 
 				var startY2 = startY + currentItem.calculatedHeight;
 
@@ -165,7 +162,7 @@ class HuiVirtualList<T> extends HuiElement {
 					var item = genItem(i, false);
 					item.y = currentY;
 					currentY += item.calculatedHeight;
-					if (currentY > maxY + genMargin) {
+					if (currentY > maxY) {
 						break;
 					}
 				}
@@ -188,7 +185,7 @@ class HuiVirtualList<T> extends HuiElement {
 					var item = genItem(i2, true);
 					currentY -= item.calculatedHeight;
 					item.y = currentY;
-					if (currentY < minY - genMargin) {
+					if (currentY < minY) {
 						break;
 					}
 				}
@@ -226,8 +223,9 @@ class HuiVirtualList<T> extends HuiElement {
 				customScrollbarCursor.setHeight(height);
 			}
 
-			for (old in oldElements) {
+			for (item => old in oldElements) {
 				old.remove();
+				elements.remove(cast item);
 			}
 		}
 	}
