@@ -2982,6 +2982,9 @@ class SceneEditor {
 			if(list != null) {
 				var m = [for(i in (list:Array<Dynamic>)) i => true];
 				for(p in all) {
+					// Prevent root from being hidden sometimes
+					if (p == sceneData)
+						continue;
 					if(m.exists(p.getAbsPath(true, true)))
 						hideList.set(p, true);
 				}
