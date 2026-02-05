@@ -153,47 +153,54 @@ class HuiVirtualList<T> extends HuiElement {
 
 				currentItem.y = startY;
 
-				var startY2 = startY + currentItem.calculatedHeight;
 
-				var reachedBottom = false;
+				var finalOffset = 0.0;
+				var topOffset = 0.0;
+				var botOffset = currentItem.calculatedHeight;
 
-				var currentY = startY2;
-				for (i in scrollIndex+1...items.length) {
-					var item = genItem(i, false);
-					item.y = currentY;
-					currentY += item.calculatedHeight;
-					if (currentY > maxY) {
-						break;
+				var topIndex = scrollIndex - 1;
+				var botIndex = scrollIndex + 1;
+
+				var leftToProcess = true;
+				inline function topY() {return startY + topOffset + finalOffset;};
+				inline function botY() {return startY + botOffset + finalOffset;};
+
+				while(leftToProcess) {
+					leftToProcess = false;
+
+					if (botY() < maxY && botIndex < items.length) {
+						leftToProcess = true;
+						var item = genItem(botIndex, false);
+						item.y = startY + botOffset;
+						botOffset += item.calculatedHeight;
+						botIndex ++;
+					}
+
+					// we reached the bottom
+					if (botIndex >= items.length && botY() < maxY) {
+						finalOffset = maxY - botY();
+						leftToProcess = true;
+					}
+
+					if (topY() > minY && topIndex >= 0) {
+						leftToProcess = true;
+						var item = genItem(topIndex, true);
+						topOffset -= item.calculatedHeight;
+						item.y = startY + topOffset;
+						topIndex--;
+					}
+
+					// reached the top
+					if (topIndex < 0 && topY() > minY) {
+						finalOffset = minY - topY();
+						leftToProcess = true;
+						trace(finalOffset, topY());
 					}
 				}
 
-				// fix list if it has gone out of bounds
-				if (currentY <= maxY) {
-					var currentY = maxY;
-					for (i in 0...layoutLines.length) {
-						var line = layoutLines[layoutLines.length - 1 - i];
-						currentY -= line.element.calculatedHeight;
-						line.element.y = currentY;
-					}
-					startY = currentY;
-				}
-
-				var currentY : Float = startY;
-				var reachedTop = false;
-				for (i in 0...scrollIndex) {
-					var i2 = scrollIndex - 1 - i;
-					var item = genItem(i2, true);
-					currentY -= item.calculatedHeight;
-					item.y = currentY;
-					if (currentY < minY) {
-						break;
-					}
-				}
-				if (currentY >= minY) {
-					var currentY = 0.0;
+				if (finalOffset != 0) {
 					for (line in layoutLines) {
-						line.element.y = currentY;
-						currentY += line.element.calculatedHeight;
+						line.element.y += finalOffset;
 					}
 				}
 
@@ -208,8 +215,6 @@ class HuiVirtualList<T> extends HuiElement {
 						maxVisible = line.index;
 					}
 				}
-
-
 
 				customScrollbar.setHeight(Std.int(calculatedHeight));
 
