@@ -3,7 +3,6 @@ package hrt.prefab.fx.gpuemitter;
 class BaseSimulation extends ComputeUtils {
 	static var SRC = {
 		@param var batchBuffer : RWPartialBuffer<{
-			previousModelView : Mat4,
 			modelView : Mat4,
 		}>;
 		@param var particleBuffer : RWPartialBuffer<{
@@ -71,7 +70,6 @@ class BaseSimulation extends ComputeUtils {
 			particleBuffer[idx].speed = speed;
 			particleBuffer[idx].color = intBitsToFloat(packIntColor(particleColor));
 			batchBuffer[idx].modelView = modelView;
-			batchBuffer[idx].previousModelView = prevModelView;
 		}
 	}
 }

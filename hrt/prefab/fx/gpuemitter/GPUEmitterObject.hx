@@ -61,6 +61,8 @@ class GPUEmitterObject extends h3d.scene.MeshBatch {
 	var particleShader : ParticleShader;
 	var particleCounter : h3d.GPUCounter;
 
+	var prevModelViewSimulation : PreviousModelViewSimulation;
+
 	var rateAccumulation : Float = 0.0;
 	var firstDispatch : Bool = true;
 
@@ -291,6 +293,18 @@ class GPUEmitterObject extends h3d.scene.MeshBatch {
 
 				baseSimulation.batchBuffer = b;
 				baseSimulation.particleBuffer = particleBuffer;
+
+				var s = simulationPass.getShader(PreviousModelViewSimulation);
+				if ( b.format.hasInput("previousModelView") ) {
+					if ( prevModelViewSimulation == null )
+						prevModelViewSimulation = new PreviousModelViewSimulation();
+					if ( s == null )
+						simulationPass.addShader(prevModelViewSimulation);
+					prevModelViewSimulation.batchBuffer = b;
+				} else {
+					if ( s != null )
+						simulationPass.removeShader(s);
+				}
 
 				ctx.computeList(@:privateAccess spawnPass.shaders);
 				ctx.computeDispatch(instanceCount);
