@@ -1027,6 +1027,7 @@ class SceneEditor {
 	public var gridSize : Int;
 	public var showGrid = false;
 
+	var viewportAxis : hrt.tools.ViewportAxis = null;
 	var guide2d : h2d.Object = null;
 	var grid2d : h2d.Graphics = null;
 	var grid : h3d.scene.Graphics;
@@ -2034,6 +2035,7 @@ class SceneEditor {
 
 		makeGuide2d();
 
+		viewportAxis = new hrt.tools.ViewportAxis(scene.s3d.camera, cameraController, scene.s2d);
 
 		for (callback in readyDelayed) {
 			callback();
