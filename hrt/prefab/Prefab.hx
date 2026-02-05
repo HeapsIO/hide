@@ -705,6 +705,10 @@ class Prefab {
 	// Internal
 
 	function setSharedRec(newShared : ContextShared) {
+		#if editor
+		// ensure we always have a valid editor pointer even if our shared is reset
+		newShared.editor = newShared.editor ?? shared?.editor;
+		#end
 		this.shared = newShared;
 		for (c in children)
 			c.setSharedRec(newShared);
@@ -853,7 +857,9 @@ class Prefab {
 			child.setSharedRec(newParent.shared);
 			newParent._children.insert(indexPos, child);
 		} else {
-			child.setSharedRec(new ContextShared(false));
+			var sh = new ContextShared(false);
+
+			child.setSharedRec(sh);
 		}
 	}
 
