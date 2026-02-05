@@ -43,7 +43,7 @@ class BaseSimulation extends ComputeUtils {
 
 		function __init__() {
 			absoluteTranslation = translationMatrix(vec3(0.0));
-			var computeCameraBounds = true;
+			computeCameraBounds = true;
 			dt = dtParam;
 			speed = particleBuffer[computeVar.globalInvocation.x].speed;
 			life = particleBuffer[computeVar.globalInvocation.x].life;
