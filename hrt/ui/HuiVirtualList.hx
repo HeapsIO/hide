@@ -119,12 +119,13 @@ class HuiVirtualList<T> extends HuiElement {
 						itemContainer.getProperties(element).isAbsolute = true;
 
 						// Force apply style because we need the accurate font info for the layout
-						element.dom.applyStyle(style);
+						// element.dom.applyStyle(style);
 					} else {
 						itemContainer.addChild(element);
 					}
 					oldElements.remove(cast item);
 					element.setWidth(Std.int(calculatedWidth));
+					element.dom.applyStyle(style);
 					element.reflow();
 					element.x = 0;
 					if (above) {
@@ -178,8 +179,7 @@ class HuiVirtualList<T> extends HuiElement {
 
 					// we reached the bottom
 					if (botIndex >= items.length && botY() < maxY) {
-						finalOffset = maxY - botY();
-						leftToProcess = true;
+						finalOffset = maxY - (startY + botOffset);
 					}
 
 					if (topY() > minY && topIndex >= 0) {
@@ -192,9 +192,7 @@ class HuiVirtualList<T> extends HuiElement {
 
 					// reached the top
 					if (topIndex < 0 && topY() > minY) {
-						finalOffset = minY - topY();
-						leftToProcess = true;
-						trace(finalOffset, topY());
+						finalOffset = minY - (startY + topOffset);
 					}
 				}
 
@@ -202,6 +200,10 @@ class HuiVirtualList<T> extends HuiElement {
 					for (line in layoutLines) {
 						line.element.y += finalOffset;
 					}
+				}
+
+				for (line in layoutLines) {
+					line.element.reflow();
 				}
 
 				var maxVisible = layoutLines[layoutLines.length-1].index;
