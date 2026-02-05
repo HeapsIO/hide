@@ -118,7 +118,7 @@ class HuiTree<TreeItem> extends HuiElement {
 	}
 
 	function generateItem(data: TreeItemData) : HuiElement {
-		var line = new HuiTreeLine(data);
+		var line = new HuiTreeLine(data, this);
 
 		line.onClick = (e) -> {
 			if (hasChildren(cast data.item)) {
@@ -128,6 +128,7 @@ class HuiTree<TreeItem> extends HuiElement {
 				} else {
 					openState.remove(data.identifier);
 				}
+				line.refresh();
 				refreshFlags.set(RegenerateFlatten);
 			}
 		}
@@ -189,7 +190,7 @@ class HuiTree<TreeItem> extends HuiElement {
 		rec(rootData);
 	}
 
-	function isOpen(data: TreeItemData) {
+	public function isOpen(data: TreeItemData) {
 		return (openState.get(data.identifier) ?? false) || data.filterState.has(Open);
 	}
 }

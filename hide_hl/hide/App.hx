@@ -8,6 +8,7 @@ class App extends hxd.App {
 	public var ui : hrt.ui.HuiBase;
 	public var ide : hide.Ide;
 	static public var DEBUG = false;
+	static public var fs : hxd.fs.EmbedFileSystem;
 
 	override public function init() {
 		super.init();
@@ -27,6 +28,7 @@ class App extends hxd.App {
 		DEBUG = #if hl hl.Api.hasDebugger() #else false #end;
 
 		hxd.Res.initLocal();
+		hrt.ui.HuiRes.init();
 
 		new App();
 	}

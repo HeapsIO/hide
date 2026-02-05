@@ -415,7 +415,7 @@ class HuiBackground extends h2d.ScaleGrid implements h2d.domkit.Object {
 	function set_image(v) {
 		if(v != null) {
 			try {
-				setTexture(hxd.res.Loader.currentInstance.load(v.path).toTexture());
+				setTexture(hrt.ui.HuiRes.loader.load(v.path).toTexture());
 				imageMode = v.mode;
 				shader.imgBounds.set(0,0,1,1);
 			} catch(e: Dynamic) { }
@@ -518,7 +518,7 @@ class HuiBackground extends h2d.ScaleGrid implements h2d.domkit.Object {
 			shader.useBorderTex = false;
 		else {
 			try {
-				shader.borderTex = hxd.res.Loader.currentInstance.load(v).toTexture();
+				shader.borderTex = hrt.ui.HuiRes.loader.load(v).toTexture();
 				shader.borderTex.wrap = Repeat;
 				shader.useBorderTex = true;
 			} catch(e : Dynamic) { }
