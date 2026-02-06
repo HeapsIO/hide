@@ -5309,7 +5309,8 @@ class SceneEditor {
 		endRebuild();
 
 		if (doRefresh) {
-			refreshTree(SceneTree, () -> selectElements([], NoHistory));
+			selectElements([], NoHistory);
+			refreshTree(SceneTree);
 		}
 
 		if (enableUndo) {
@@ -5324,7 +5325,12 @@ class SceneEditor {
 					for(e in elts) rebuild(e);
 				endRebuild();
 				if (doRefresh) {
-					refreshTree(SceneTree, () -> selectElements(undo ? elts : [], NoHistory));
+					if (undo) {
+						refreshTree(SceneTree, () -> selectElements(elts, NoHistory));
+					} else {
+						selectElements([], NoHistory);
+						refreshTree(SceneTree);
+					}
 				}
 			}));
 		}
