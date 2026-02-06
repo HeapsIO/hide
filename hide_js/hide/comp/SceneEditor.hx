@@ -3557,7 +3557,7 @@ class SceneEditor {
 
 	function moveGizmoToSelection() {
 		// Snap Gizmo at center of objects
-		gizmo.getRotationQuat().identity();
+		gizmo.setRotation(0,0,0);
 		var roots = getRootObjects3d();
 		if(roots.length > 0) {
 			var pos = getPivot(roots);
