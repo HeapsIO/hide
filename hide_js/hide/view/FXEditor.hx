@@ -936,7 +936,7 @@ class FXEditor extends hide.view.FileView {
 
 			function addVisibilityButtonListener(parentEl: Element, affectedElements : Array<Dynamic>) {
 				var visibilityEl = parentEl.find(".visibility");
-				var saveKey = affectedElements.length == 1 ? affectedElements[0].getAbsPath(true) : parentEl.hasClass("section") ? section.root.getAbsPath(true) : affectedElements[0]._parent.getAbsPath(true);
+				var saveKey = affectedElements.length == 1 ? affectedElements[0].getAbsPath(true) : parentEl.hasClass("section") ? section.root.getAbsPath(true) : affectedElements[0]?._parent.getAbsPath(true) ?? "null";
 
 				if (savedHiddenList.contains(saveKey))
 					toHiddenList.push( {parentEl:parentEl, elements:affectedElements} );
@@ -968,7 +968,7 @@ class FXEditor extends hide.view.FileView {
 
 			function addLockButtonListener(parentEl: Element, affectedElements : Array<Dynamic>) {
 				var lockEl = parentEl.find(".lock");
-				var saveKey = affectedElements.length == 1 ? affectedElements[0].getAbsPath(true) : parentEl.hasClass("section") ? section.root.getAbsPath(true) : affectedElements[0]._parent.getAbsPath(true);
+				var saveKey = affectedElements.length == 1 ? affectedElements[0].getAbsPath(true) : parentEl.hasClass("section") ? section.root.getAbsPath(true) : affectedElements[0]?._parent.getAbsPath(true) ?? "null";
 
 				if (savedLockList.contains(saveKey))
 					toLockList.push( {parentEl:parentEl, elements:affectedElements} );
