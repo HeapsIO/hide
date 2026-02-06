@@ -1,14 +1,26 @@
 hui-tree-line {
+	padding-top: 1;
+	padding-bottom: 1;
 	> #caret {
 		background-type: hui;
 
-		width: 16;
+		width: 8;
 		height: 16;
 		> hui-background {
 			image: none;
 			image-angle: 0;
 			transition: image-angle 0.07 ease-in-out;
+		}
+	}
 
+	> #icon {
+		background-type: hui;
+
+		width: 16;
+		height: 16;
+
+		> hui-background {
+			image: "ui/icons/file_blank.png" fit;
 		}
 	}
 
@@ -25,6 +37,12 @@ hui-tree-line {
 	&.children {
 		> #caret > hui-background {
 			image: "ui/icons/chevronRight.png" fit;
+		}
+	}
+
+	&.keyboard-selected {
+		> hui-background {
+			background: #FF00FF;
 		}
 	}
 }

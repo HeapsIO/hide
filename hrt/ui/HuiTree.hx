@@ -38,6 +38,7 @@ class HuiTree<TreeItem> extends HuiElement {
 
 	var rootData: Array<TreeItemData> = [];
 	var flatList: Array<TreeItemData> = [];
+	var keyboardFocus: TreeItemData = null;
 
 	/**TreeItem -> TreeItemData map**/
 	var itemMap : Map<{}, TreeItemData> = [];
@@ -53,12 +54,55 @@ class HuiTree<TreeItem> extends HuiElement {
 		initComponent();
 
 		list.generateItem = generateItem;
+		list.refreshItem = cast refreshItem;
 		requestRefresh(RegenerateFlatten);
 		requestRefresh(RootData);
+
+		onKeyDown = (e:hxd.Event) -> {
+			if (e.keyCode == hxd.Key.UP) {
+				focusMove(-1);
+				e.propagate = false;
+			} else if (e.keyCode == hxd.Key.DOWN) {
+				focusMove(1);
+				e.propagate = false;
+			}
+		}
+
+		onPush = (e:hxd.Event) -> {
+			if (e.button == 0) {
+				interactive.focus();
+				e.propagate = false;
+			}
+		}
 	}
 
 	function requestRefresh(refreshFlag: RefreshFlag) {
 		refreshFlags.set(refreshFlag);
+	}
+
+	public function focusSet(newFocus: TreeItem) : Void {
+		focusSetInternal(itemMap.get(cast newFocus));
+	}
+
+	function focusSetInternal(newFocus: TreeItemData) : Void {
+		keyboardFocus = newFocus;
+		if (keyboardFocus != null) {
+			list.scrollTo(keyboardFocus);
+		}
+	}
+
+	public function focusMove(offset: Int) : Void {
+		var id = flatList.indexOf(keyboardFocus);
+		if (id < 0) {
+			if (offset < 0) {
+				id = flatList.length;
+			} else {
+				id = 0;
+			}
+		} else {
+			id = (id + offset + flatList.length) % flatList.length;
+		}
+		focusSetInternal(flatList[id]);
 	}
 
 	/**
@@ -134,6 +178,10 @@ class HuiTree<TreeItem> extends HuiElement {
 		}
 
 		return line;
+	}
+
+	function refreshItem(item: TreeItemData, element: HuiTreeLine) : Void {
+		element?.refresh();
 	}
 
 	function generateChildren(parent: TreeItemData) : Array<TreeItemData> {
