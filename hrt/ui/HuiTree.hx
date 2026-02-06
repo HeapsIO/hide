@@ -65,6 +65,27 @@ class HuiTree<TreeItem> extends HuiElement {
 			} else if (e.keyCode == hxd.Key.DOWN) {
 				focusMove(1);
 				e.propagate = false;
+			} else if (e.keyCode == hxd.Key.RIGHT) {
+
+				if (keyboardFocus != null) {
+					if (!isOpen(keyboardFocus)) {
+						toggleItemOpen(keyboardFocus, true);
+					} else if (keyboardFocus.children?.length > 0) {
+						focusSetInternal(keyboardFocus.children[0]);
+					}
+					e.propagate = false;
+				}
+			} else if (e.keyCode == hxd.Key.LEFT) {
+				if (keyboardFocus != null) {
+					if (!isOpen(keyboardFocus)) {
+						if (keyboardFocus.parent != null) {
+							focusSetInternal(keyboardFocus.parent);
+						}
+					} else {
+						toggleItemOpen(keyboardFocus, false);
+					}
+					e.propagate = false;
+				}
 			}
 		}
 
@@ -165,19 +186,27 @@ class HuiTree<TreeItem> extends HuiElement {
 		var line = new HuiTreeLine(data, this);
 
 		line.onClick = (e) -> {
-			if (hasChildren(cast data.item)) {
-				if (!isOpen(data)) {
-					generateChildren(data);
-					openState.set(data.identifier, true);
-				} else {
-					openState.remove(data.identifier);
-				}
-				line.refresh();
-				refreshFlags.set(RegenerateFlatten);
-			}
+			toggleItemOpen(data);
 		}
-
 		return line;
+	}
+
+	function toggleItemOpen(data: TreeItemData, ?force : Bool) : Void {
+		if (!hasChildren(cast data.item))
+			return;
+		var currentState = isOpen(data);
+		var newState = force ?? !currentState;
+		if (currentState == newState)
+			return;
+
+		if (newState) {
+			generateChildren(data);
+			openState.set(data.identifier, true);
+		} else {
+			openState.remove(data.identifier);
+		}
+		refreshFlags.set(RegenerateFlatten);
+
 	}
 
 	function refreshItem(item: TreeItemData, element: HuiTreeLine) : Void {
