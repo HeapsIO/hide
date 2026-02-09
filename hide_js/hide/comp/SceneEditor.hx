@@ -2035,7 +2035,7 @@ class SceneEditor {
 
 		makeGuide2d();
 
-		viewportAxis = new hrt.tools.ViewportAxis(scene.s3d.camera, cameraController, scene.s2d);
+		// viewportAxis = new hrt.tools.ViewportAxis(scene.s3d.camera, cameraController, scene.s2d);
 
 		for (callback in readyDelayed) {
 			callback();
