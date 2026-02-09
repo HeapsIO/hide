@@ -58,22 +58,19 @@ class Text3DPrimitive extends h2d.TileGroup.TileLayerContent {
 	override public function alloc(engine:h3d.Engine) {
 		if( tmp == null ) {
 			clear();
-			indexes = null;
 			return;
 		}
 		if( tmp.length > 0 ) {
 			buffer = tmp.length < useAllocatorLimit
 				? hxd.impl.Allocator.get().ofFloats(tmp, hxd.BufferFormat.POS3D_NORMAL_UV)
 				: h3d.Buffer.ofFloats(tmp, hxd.BufferFormat.POS3D_NORMAL_UV);
-
-			indexes = engine.mem.getQuadIndexes(buffer.vertices);
 		}
 	}
 
 	override public function render( engine : h3d.Engine ) {
 		if( tmp == null || tmp.length == 0) return;
 		if( buffer == null || buffer.isDisposed() ) alloc(engine);
-		engine.renderIndexed(buffer,indexes, 0, buffer.vertices >> 1);
+		engine.renderQuadBuffer(buffer, 0, buffer.vertices >> 1);
 	}
 
 	override function getBounds() {
@@ -238,10 +235,10 @@ class Text3D extends Object3D {
 			mesh.primitive = text2d.glyphs.content;
 			mesh.material.texture = h2dFont.tile.getTexture();
 			mesh.material.shadows = false;
-			mesh.material.mainPass.setPassName("afterTonemapping");
+//			mesh.material.mainPass.setPassName("afterTonemapping");
 
-			//mesh.material.mainPass.setPassName("overlay");
-			//mesh.material.mainPass.depth(false, LessEqual);
+			mesh.material.mainPass.setPassName("overlay");
+			mesh.material.mainPass.depth(false, LessEqual);
 
 			var shader = mesh.material.mainPass.getShader(SignedDistanceField3D);
 			if (shader != null) {
