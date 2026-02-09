@@ -127,6 +127,7 @@ class ViewportAxis extends h2d.Object {
 			var prevRZ = ctx.getCurrentRenderZone();
 			@:privateAccess ctx.clearRZ();
 
+			@:privateAccess s2d.ctx.killAlpha = true;
 			var engine = ctx.engine;
 			s3d.setOutputTarget(ctx.engine, renderTexture);
 			engine.clear(backgroundColor, 1.0);
@@ -139,7 +140,6 @@ class ViewportAxis extends h2d.Object {
 			if( prevRZ != null )
 				@:privateAccess ctx.setRZ(prevRZ.x, prevRZ.y, prevRZ.width, prevRZ.height);
 
-			@:privateAccess ctx.initShaders(ctx.baseShaderList);
 			ctx.setCurrent();
 		}
 	}
