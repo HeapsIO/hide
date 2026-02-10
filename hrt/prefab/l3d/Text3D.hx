@@ -235,11 +235,7 @@ class Text3D extends Object3D {
 			mesh.primitive = text2d.glyphs.content;
 			mesh.material.texture = h2dFont.tile.getTexture();
 			mesh.material.shadows = false;
-//			mesh.material.mainPass.setPassName("afterTonemapping");
-
-			mesh.material.mainPass.setPassName("overlay");
-			mesh.material.mainPass.depth(false, LessEqual);
-
+			mesh.material.mainPass.setPassName("afterTonemapping");
 			var shader = mesh.material.mainPass.getShader(SignedDistanceField3D);
 			if (shader != null) {
 				mesh.material.mainPass.removeShader(shader);
