@@ -8,7 +8,7 @@ typedef TabViewData = {
 
 typedef ViewData = {
 	var type: String;
-	var ?data: Dynamic;
+	var ?state: Dynamic;
 }
 
 /**
@@ -18,7 +18,7 @@ typedef ViewData = {
 @:access(hrt.ui.HuiView)
 class HuiTabViewContainer extends HuiTabContainer {
 
-	var viewsState : Array<Dynamic>;
+	var prevState : String;
 	var firstInit = true;
 
 	override function new(?parent) {
@@ -29,13 +29,26 @@ class HuiTabViewContainer extends HuiTabContainer {
 	override function syncTabs() {
 		super.syncTabs();
 
-		if (dom.id.isDefined() && viewsState != null) {
+		if (!firstInit && dom.id.isDefined()) {
+			var tabState : Array<ViewData> = [];
+
+			for (child in getTabs()) {
+				var view = Std.downcast(child, HuiView);
+				if (view == null)
+					continue;
+				var state : ViewData = {type: view.getTypeName()};
+				if (Reflect.fields(view.state).length > 0) {
+					state.state = view.state;
+				}
+
+				tabState.push(state);
+			}
+
 			Reflect.setField(hide.Ide.inst.projectConfig.tabViews, dom.id.toString(), {
-				tabs: cast viewsState,
+				tabs: tabState,
 			});
 			hide.Ide.inst.config.user.save();
 		}
-
 	}
 
 	override function sync(ctx) {
@@ -44,30 +57,31 @@ class HuiTabViewContainer extends HuiTabContainer {
 		if (firstInit) {
 			firstInit = false;
 			loadViewState();
+			syncTabs();
 		}
 	}
 
 	function loadViewState() {
+		var tabList : Array<ViewData> = [];
 		if (dom.id.isDefined()) {
-			var tabViews = hide.Ide.inst.projectConfig.tabViews;
-			viewsState = Reflect.field(tabViews, dom.id.toString())?.tabs;
+			var state = hide.Ide.inst.projectConfig.tabViews.get(dom.id.toString());
+			tabList = state?.tabs ?? tabList;
 		}
-		viewsState ??= [];
 
 		content.removeChildElements();
 		activeTabElement = null;
 
-		for (state in viewsState) {
+		for (tab in tabList) {
 			var success = false;
-			if (state.kind != null) {
-				var cl = HuiView.get(state.kind);
+			if (tab.type != null) {
+				var cl = HuiView.get(tab.type);
 				if (cl != null) {
-					var view : HuiView<Dynamic> = Type.createInstance(cl, [state.state, content]);
+					var view : HuiView<Dynamic> = Type.createInstance(cl, [tab.state, content]);
 					continue;
 				}
 			}
 			var error = new HuiElement(content);
-			var errorText = new HuiText('Missing HuiView for kind ${state.kind}', error);
+			var errorText = new HuiText('Missing HuiView for type ${tab.type}', error);
 		}
 
 		syncTabsQueued = true;

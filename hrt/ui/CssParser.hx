@@ -1,5 +1,6 @@
 package hrt.ui;
 
+#if hui
 import domkit.CssValue;
 
 enum TextTransform {
@@ -214,3 +215,5 @@ class CssParser extends h2d.domkit.BaseComponents.CustomParser {
 		#end
 	}
 }
+
+#end

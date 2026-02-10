@@ -72,5 +72,16 @@ class Ide extends hide.tools.IdeData {
 		queueStorageSave();
 	}
 
+	public function openFile(filePath: String) {
+		if (filePath.split(".").pop() == "prefab") {
+			var tab = new hide.view.Prefab({path: filePath});
+			app.ui.uiBase.mainLayout.projectLayout.mainPanel.addTab(tab);
+			app.ui.uiBase.mainLayout.projectLayout.mainPanel.setTab(tab);
+			return;
+		}
+
+		throw "No handler for file " + filePath;
+	}
+
 
 }

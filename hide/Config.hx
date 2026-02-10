@@ -60,6 +60,8 @@ class Config {
 	public var source(default, null) : ConfigDef = cast {};
 	public var current : ConfigDef = cast {};
 
+	var prevConfig: String = null;
+
 	public function new( ?parent : Config ) {
 		ide = Ide.inst;
 		this.parent = parent;
@@ -93,7 +95,11 @@ class Config {
 			if( !sys.FileSystem.exists(directory) ) {
 				sys.FileSystem.createDirectory(directory);
 			}
-			sys.io.File.saveContent(fullPath, ide.toJSON(source));
+			var newSer = ide.toJSON(source);
+
+			if (prevConfig != newSer)
+				sys.io.File.saveContent(fullPath, newSer);
+			prevConfig = newSer;
 		}
 	}
 
@@ -215,7 +221,7 @@ class Config {
 			p.source.hide = ({ tabViews:
 				{
 					"left-panel": {
-						tabs: [{"kind": "fileBrowser"}]
+						tabs: [{type: "fileBrowser"}]
 					},
 				}
 			} : HideProjectConfig);

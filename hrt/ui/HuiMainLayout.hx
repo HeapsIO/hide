@@ -27,6 +27,8 @@ class HuiMainLayout extends HuiElement {
 			</hui-element>
 		</hui-main-layout>
 
+	public var projectLayout : HuiProjectLayout;
+
 	public function new(?parent: h2d.Object) {
 		super(parent);
 		init();
@@ -60,8 +62,7 @@ class HuiMainLayout extends HuiElement {
 
 	public function onSetProject() {
 		mainPanel.removeChildElements();
-		new HuiProjectLayout(mainPanel);
-
+		projectLayout = new HuiProjectLayout(mainPanel);
 	}
 }
 

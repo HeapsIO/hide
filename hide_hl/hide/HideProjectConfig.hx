@@ -1,5 +1,5 @@
 package hide;
 
 typedef HideProjectConfig = {
-	var tabViews: Dynamic;
+	var tabViews: haxe.DynamicAccess<hrt.ui.HuiTabViewContainer.TabViewData>;
 };

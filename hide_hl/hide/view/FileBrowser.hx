@@ -12,7 +12,7 @@ class FileBrowser extends HuiView<{path: String}> {
 		var path = state.path ?? hide.Ide.inst.resourceDir;
 		fileBrowser = new HuiFileBrowser(path, this);
 		fileBrowser.onOpen = (file) -> {
-			trace("open " + file.fullPath);
+			hide.Ide.inst.openFile(file.fullPath);
 		};
 	}
 

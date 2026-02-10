@@ -45,6 +45,15 @@ class HuiView<T> extends HuiElement {
 		REGISTRY.set(name, cl);
 		return true;
 	}
+
+	public function getTypeName() {
+		var cl = Type.getClass(this);
+		for (name => otherCl in REGISTRY) {
+			if (otherCl == cl)
+				return name;
+		}
+		throw "unregistred view " + cl;
+	}
 }
 
 #end

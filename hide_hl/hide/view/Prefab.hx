@@ -11,6 +11,15 @@ class Prefab extends HuiView<{}> {
 
 	static var _ = HuiView.register("prefab", Prefab);
 
+	public function new(state: Dynamic, ?parent) {
+		super(state, parent);
+		initComponent();
+
+		var path = Ide.inst.getRelPath(state.path);
+
+		prefabEditor.setPrefab(hxd.res.Loader.currentInstance.load(path).toPrefab().load().clone());
+	}
+
 }
 
 #end

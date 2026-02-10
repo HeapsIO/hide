@@ -72,7 +72,7 @@ class KitTest extends Object3D {
 	@:s var select : String;
 	@:s var checkbox: Bool;
 	@:s var texture: Dynamic;
-	@:s var vector4: h3d.Vector4 = new h3d.Vector4();
+	var vector4: h3d.Vector4 = new h3d.Vector4();
 	@:s var category: Bool = false;
 
 	@:s var advancedDetails: Bool;

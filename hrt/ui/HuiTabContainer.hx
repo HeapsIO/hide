@@ -27,7 +27,7 @@ class HuiTabContainer extends HuiElement {
 		content.onChildrenChanged = () -> syncTabsQueued = true;
 	}
 
-	function setTab(newElement: HuiElement) {
+	public function setTab(newElement: HuiElement) {
 		if (newElement != null && content.children.indexOf(newElement) < 0)
 			throw "element must be a child of content";
 
@@ -134,6 +134,14 @@ class HuiTabContainer extends HuiElement {
 		for (element in elements) {
 			element.visible = element == activeTabElement;
 		}
+	}
+
+	public function addTab(tab: HuiElement) {
+		content.addChild(tab);
+	}
+
+	public function getTabs() : Array<HuiElement> {
+		return content.childElements;
 	}
 
 	function syncActiveTabStyle() {
