@@ -17,6 +17,7 @@ class HuiSplitter extends HuiElement {
 		super(parent);
 		initComponent();
 
+
 		onOver = over;
 		onPush = push;
 	}

@@ -13,7 +13,7 @@
 -D hui
 -cp hide_hl
 -hl bin_hl/hide.hl
--lib hlsdl
+-lib hldx
 -xml hide_hl/api.xml
 -main hide.App
 --macro hide.HlMacros.init()

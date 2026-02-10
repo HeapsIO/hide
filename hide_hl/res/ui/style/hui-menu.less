@@ -12,14 +12,14 @@ hui-menu {
 	}
 
 	>#itemsContainer {
-		width: 150;
+		min-width: 150;
 		max-height: 250;
 		overflow: scroll;
 
 		layout: vertical;
 	}
 
-	width: 150;
+	min-width: 150;
 
 	max-height: 400;
 }
@@ -74,8 +74,10 @@ hui-menu-item {
 		auto-size-width: 1;
 		fill-width: 1;
 
+
 		>hui-text {
 			margin-bottom: 4;
+			line-break: false;
 		}
 	}
 

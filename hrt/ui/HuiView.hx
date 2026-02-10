@@ -5,9 +5,11 @@ package hrt.ui;
 class HuiView<T> extends HuiElement {
 	var state : T;
 
-	function new(?parent: h2d.Object) {
+	function new(state: Dynamic, ?parent: h2d.Object) {
 		super(parent);
 		initComponent();
+
+		this.state = cast state;
 	}
 
 	/**

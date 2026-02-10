@@ -9,7 +9,7 @@ class HuiBase extends HuiElement {
 
 	var layers : Array<h2d.Flow>;
 	var currentMenu: HuiMenu;
-	public var focusedScene: HuiScene.Hui3DInteractiveScene = null;
+	public var mainLayout: HuiMainLayout;
 
 	// Keep track of the element that currently own the scroll event.
 	// Reset when lastScrollTime is too old compared to now (inspired by the same behavior in google chrome)
@@ -32,7 +32,7 @@ class HuiBase extends HuiElement {
 
 		style.addObject(this);
 
-		var mainLayout = new HuiMainLayout(this);
+		mainLayout = new HuiMainLayout(this);
 
 		makeInteractive();
 

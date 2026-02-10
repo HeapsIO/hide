@@ -15,6 +15,7 @@ class App extends hxd.App {
 
 		hxd.Window.getInstance().title = "HideHL";
 		ide = new hide.Ide();
+		ide.app = this;
 		ui = new hrt.ui.HuiBase(this, s2d);
 	}
 

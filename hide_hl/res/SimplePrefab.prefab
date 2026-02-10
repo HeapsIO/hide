@@ -1,0 +1,24 @@
+{
+	"type": "prefab",
+	"children": [
+		{
+			"type": "polygon",
+			"name": "polygon",
+			"kind": 0,
+			"args": [
+				0
+			],
+			"children": [
+				{
+					"type": "polygon",
+					"name": "polygon",
+					"z": -0.89,
+					"kind": 0,
+					"args": [
+						0
+					]
+				}
+			]
+		}
+	]
+}

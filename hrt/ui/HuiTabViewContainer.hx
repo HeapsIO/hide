@@ -69,8 +69,7 @@ class HuiTabViewContainer extends HuiTabContainer {
 			if (state.kind != null) {
 				var cl = HuiView.get(state.kind);
 				if (cl != null) {
-					var view : HuiView<Dynamic> = Type.createInstance(cl, [content]);
-					view.state = state.data;
+					var view : HuiView<Dynamic> = Type.createInstance(cl, [state.state, content]);
 					continue;
 				}
 			}

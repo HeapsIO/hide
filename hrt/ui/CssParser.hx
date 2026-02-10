@@ -199,4 +199,18 @@ class CssParser extends h2d.domkit.BaseComponents.CustomParser {
 			left : lerp(a.left, b.left),
 		}
 	}
+
+	override function loadResource( path : String ) {
+		#if macro
+		return true;
+		#else
+		return try {
+			var f = HuiRes.loader.load(path);
+			if( f.entry.isDirectory ) invalidProp("Resource should be a file "+path);
+			return f;
+		} catch( e : hxd.res.NotFound ) {
+			invalidProp("Resource not found "+path);
+		}
+		#end
+	}
 }

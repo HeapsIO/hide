@@ -48,6 +48,7 @@ class HuiSplitContainer extends HuiElement {
 		initComponent();
 		splitter.onResize = onSplitterMove;
 		onAfterReflow = updateLayout;
+		direction = direction;
 	}
 
 

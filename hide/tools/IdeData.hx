@@ -70,7 +70,7 @@ class IdeData {
 	function setProject( dir : String ) {
 		fileWatcher.dispose();
 		dbWatcher = null;
-		if( dir != ideConfig.currentProject ) {
+		if(dir != ideConfig.currentProject ) {
 			ideConfig.currentProject = dir;
 			ideConfig.recentProjects.remove(dir);
 			ideConfig.recentProjects.unshift(dir);

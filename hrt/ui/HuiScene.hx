@@ -46,16 +46,17 @@ class HuiScene extends HuiElement {
 		initComponent();
 
 
+
 		s2d = new h2d.Scene();
 		s3d = new h3d.scene.Scene();
-		new h3d.scene.Box(0x000000, s3d);
-		var t = new h2d.Text(hxd.res.DefaultFont.get(), s2d);
-		t.text = "Hello scene";
+		// new h3d.scene.Box(0x000000, s3d);
+		// var t = new h2d.Text(hxd.res.DefaultFont.get(), s2d);
+		// t.text = "Hello scene";
 
 		// enableInteractive = true;
 		// (cast interactive:Interactive2).huiScene = this;
 
-		new h3d.scene.CameraController(s3d);
+		// new h3d.scene.CameraController(s3d);
 		// @:privateAccess new hrt.ui.HuiButtonMenu(() -> [], base);
 	}
 
@@ -83,6 +84,14 @@ class HuiScene extends HuiElement {
 				base.app.sevents.removeScene(s3dinter);
 				base.app.sevents.removeScene(s2d);
 			}
+		}
+
+		if (currentVisible) {
+			s3d.scenePosition = s3d.scenePosition ?? {offsetX: 0, offsetY: 0, width: 0, height: 0};
+			s3d.scenePosition.offsetX = display.absX;
+			s3d.scenePosition.offsetY = display.absY;
+			s3d.scenePosition.width = Std.int(display.width);
+			s3d.scenePosition.height = Std.int(display.height);
 		}
 
 		super.sync(ctx);
@@ -169,9 +178,11 @@ class HuiScene extends HuiElement {
 @:access(h3d.scene.Scene)
 class Hui3DInteractiveScene implements hxd.SceneEvents.InteractiveScene {
 	var huiScene: HuiScene;
+	var dummyInteractive : Hui3DInteractive;
 
 	public function new(huiScene: HuiScene) {
 		this.huiScene = huiScene;
+		dummyInteractive = new Hui3DInteractive(this);
 	}
 
 	public function setEvents( s : hxd.SceneEvents ) : Void {
@@ -180,18 +191,17 @@ class Hui3DInteractiveScene implements hxd.SceneEvents.InteractiveScene {
 	public function handleEvent( e : hxd.Event, last : hxd.SceneEvents.Interactive ) : hxd.SceneEvents.Interactive {
 		var i = huiScene.s3d.handleEvent(e, last);
 		if (i == null) {
-			e.relX -= huiScene.s3d.scenePosition?.offsetX;
-			e.relY -= huiScene.s3d.scenePosition?.offsetY;
+			var x = e.relX - huiScene.s3d.scenePosition?.offsetX;
+			var y = e.relY - huiScene.s3d.scenePosition?.offsetY;
 
 			var base = huiScene.uiBase;
 
-			if ((base.focusedScene == this && e.kind != EPush) || (e.relX >= 0 && e.relY >= 0 && e.relX < huiScene.s3d.scenePosition?.width && e.relY < huiScene.s3d.scenePosition?.height)) {
-				/*if (e.kind == EPush)
-					base.focusedScene = this;*/
+			if (x >= 0 && y >= 0 && x < huiScene.s3d.scenePosition?.width && y < huiScene.s3d.scenePosition?.height) {
+
 				dispatchListeners(e);
 				e.propagate = false;
 
-				return new Hui3DInteractive(this);
+				return dummyInteractive;
 			}
 		}
 		return i;

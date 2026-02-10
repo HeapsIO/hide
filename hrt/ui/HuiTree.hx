@@ -164,6 +164,10 @@ class HuiTree<TreeItem> extends HuiElement {
 		return "";
 	}
 
+	public dynamic function onItemDoubleClick(e: hxd.Event, item: TreeItem) : Void {
+
+	}
+
 	override function sync(ctx:h2d.RenderContext) {
 		super.sync(ctx);
 
@@ -187,6 +191,10 @@ class HuiTree<TreeItem> extends HuiElement {
 
 		line.onClick = (e) -> {
 			toggleItemOpen(data);
+		}
+
+		line.onDoubleClick = (e) -> {
+			onItemDoubleClick(e, data.item);
 		}
 		return line;
 	}

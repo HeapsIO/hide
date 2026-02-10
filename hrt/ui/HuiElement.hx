@@ -25,6 +25,7 @@ class HuiElement extends h2d.Flow #if hui implements h2d.domkit.Object #end {
 	public var onFocus(default, set) : hxd.Event->Void = emptyFuncEventVoid;
 	public var onFocusLost(default, set) : hxd.Event->Void = emptyFuncEventVoid;
 	public var onWheel(default, set) : hxd.Event->Void = emptyFuncEventVoid;
+	public var onDoubleClick(default, set) : hxd.Event->Void = null;
 
 	public var onChildrenChanged : Void -> Void = emtpyFuncVoidVoid;
 
@@ -79,6 +80,7 @@ class HuiElement extends h2d.Flow #if hui implements h2d.domkit.Object #end {
 	function set_onFocus(v) {onFocus = v; makeInteractive(); return v;};
 	function set_onFocusLost(v) {onFocusLost = v; makeInteractive(); return v;};
 	function set_onWheel(v) {onWheel = v; makeInteractive(); return v;};
+	function set_onDoubleClick(v) {onDoubleClick = v; makeInteractive(); return v;};
 
 	override function set_overflow(v) {
 		if (v == h2d.Flow.FlowOverflow.Scroll) {
@@ -101,6 +103,7 @@ class HuiElement extends h2d.Flow #if hui implements h2d.domkit.Object #end {
 		return null;
 	}
 
+	var lastClickTime : Float = 0;
 
 	public function new(?parent: h2d.Object) {
 		super(parent);
@@ -239,6 +242,17 @@ class HuiElement extends h2d.Flow #if hui implements h2d.domkit.Object #end {
 	function onClickInternal(e: hxd.Event) {
 		if (!enable)
 			return;
+
+		if (onDoubleClick != null) {
+			var time = haxe.Timer.stamp();
+			if (time - lastClickTime < 0.5) {
+				onDoubleClick(e);
+				lastClickTime = time;
+				return;
+			}
+			lastClickTime = time;
+		}
+
 		onClick(e);
 	}
 

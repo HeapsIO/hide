@@ -2,6 +2,7 @@ package hide;
 
 class Ide extends hide.tools.IdeData {
 	public static var inst : Ide;
+	public var app : hide.App;
 
 	static final localUserDataSave = "hidehl.json";
 
@@ -42,6 +43,23 @@ class Ide extends hide.tools.IdeData {
 			trace("Error loading localUserSave", e);
 			localStorage = {};
 		}
+	}
+
+	public function chooseProject() {
+		hxd.File.browse((select) -> {
+			var path = select.fileName.split("\\");
+			path.pop();
+			var dir = path.join("\\");
+			setProject(dir);
+		}, {fileTypes: [{name: "hxml", extensions: ["hxml"]}]});
+	}
+
+	override function setProject(dir:String) {
+		super.setProject(dir);
+		trace("set project " + dir);
+		hxd.res.Loader.currentInstance?.dispose();
+		hxd.res.Loader.currentInstance = new hxd.res.Loader(new hxd.fs.LocalFileSystem(resourceDir, null));
+		app.ui.mainLayout.onSetProject();
 	}
 
 	public function getLocalStorage(key: String) : Null<Dynamic> {
