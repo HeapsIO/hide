@@ -5,11 +5,12 @@ class FileBrowser extends HuiView<{path: String}> {
 
 	var fileBrowser : HuiFileBrowser;
 
-	public function new(state: Dynamic, ?parent) {
+	public function new(_state: Dynamic, ?parent) {
 		super(state, parent);
 		initComponent();
 
-		fileBrowser = new HuiFileBrowser(state.path, this);
+		var path = state.path ?? hide.Ide.inst.resourceDir;
+		fileBrowser = new HuiFileBrowser(path, this);
 		fileBrowser.onOpen = (file) -> {
 			trace("open " + file.fullPath);
 		};

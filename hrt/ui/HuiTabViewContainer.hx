@@ -52,14 +52,7 @@ class HuiTabViewContainer extends HuiTabContainer {
 			var tabViews = hide.Ide.inst.projectConfig.tabViews;
 			viewsState = Reflect.field(tabViews, dom.id.toString())?.tabs;
 		}
-		viewsState ??= [
-			{
-				kind: "test",
-			},
-			{
-				kind: "gym",
-			}
-		];
+		viewsState ??= [];
 
 		content.removeChildElements();
 		activeTabElement = null;

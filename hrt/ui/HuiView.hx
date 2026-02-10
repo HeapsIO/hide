@@ -9,7 +9,7 @@ class HuiView<T> extends HuiElement {
 		super(parent);
 		initComponent();
 
-		this.state = cast state;
+		this.state = cast state ?? {};
 	}
 
 	/**

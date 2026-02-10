@@ -212,7 +212,13 @@ class Config {
 		#if js
 			p.source.hide = ({ layouts : [], renderer : null, dbCategories: null, dbProofread: null } : HideProjectConfig);
 		#else
-			p.source.hide = ({ tabViews: {}} : HideProjectConfig);
+			p.source.hide = ({ tabViews:
+				{
+					"left-panel": {
+						tabs: [{"kind": "fileBrowser"}]
+					},
+				}
+			} : HideProjectConfig);
 		#end
 		}
 
