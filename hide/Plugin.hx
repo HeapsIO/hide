@@ -70,7 +70,7 @@ class Plugin {
 	}
 
 	static function init() {
-		#if domkit
+		#if (domkit && hui)
 		var parser : hrt.ui.CssParser = null; // force compilation of css parser
 		#end
 
