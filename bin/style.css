@@ -3207,6 +3207,10 @@ div.gradient-box:hover {
 .gradient-editor .color-box {
   border: 3px solid #333333;
 }
+.gradient-editor .stop-editor > input {
+  width: 50px;
+  appearance: textfield;
+}
 .gradient-editor .stop-editor.disabled {
   opacity: 50%;
 }

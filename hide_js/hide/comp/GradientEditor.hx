@@ -126,6 +126,7 @@ class GradientEditor extends Popup {
 	var selectNextRepaint : Int = -1;
 	var stopEditor : Element;
 	var stopLabel : Element;
+	var stopInput : Element;
 
 	var resolutionInput : Element;
 	var isVerticalCheckbox : Element;
@@ -179,6 +180,8 @@ class GradientEditor extends Popup {
 		element.focus();
 
 		element.on("keydown", function (e : KeyboardEvent) {
+			if (stopInput.get(0) == Browser.document.activeElement)
+				return;
 			if (e.key == "Delete" || e.key =="Backspace") {
 				if (selectedStop != null) {
 					removeStop(selectedStop);
@@ -243,6 +246,20 @@ class GradientEditor extends Popup {
 		stopEditor = new Element("<div>").addClass("stop-editor").appendTo(editor);
 
 		stopLabel = new Element("<p>").appendTo(stopEditor);
+		var stopInputContainer = new Element("<div><label>Position</label><input></div>").appendTo(stopEditor);
+		stopInput = stopInputContainer.find("input");
+
+		stopInput.on("change", (e) -> {
+			if (selectedStop != null) {
+				var id = stopMarquers.indexOf(selectedStop);
+				var v = Std.parseFloat(stopInput.val());
+				if (Math.isFinite(v)) {
+					v = hxd.Math.clamp(v);
+					setStopPos(id, v);
+					onChange(false);
+				}
+			}
+		});
 
 		colorbox = new ColorBox(stopEditor, null, true, true);
 		colorbox.element.width(64);
@@ -454,11 +471,14 @@ class GradientEditor extends Popup {
 			stopEditor.removeClass("disabled");
 			stopLabel.text('Stop ${selectedStopId+1} / ${stopMarquers.length}');
 			colorbox.isPickerEnabled = true;
+			stopInput.val('${Math.floor(innerValue.stops[selectedStopId].position * 100.0) / 100}');
+			stopInput.removeClass("disabled");
 		} else {
 			selectStop(null, false);
 			stopEditor.addClass("disabled");
 			stopLabel.text('Stop');
 			colorbox.value = 0x77777777;
+			stopInput.val('');
 			colorbox.isPickerEnabled = false;
 		}
 
