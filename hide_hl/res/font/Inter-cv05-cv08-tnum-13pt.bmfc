@@ -2,8 +2,8 @@
 fileVersion=1
 
 # font settings
-fontName=Inter Inter-cv05-cv08
-fontFile=../../../../../../Users/cespeute/Documents/TMP/Inter_freeze.ttf
+fontName=Inter cv05-cv08-tnum
+fontFile=../../../../../../Users/cespeute/Downloads/Inter-Regular_freeze.ttf
 charSet=0
 fontSize=13
 aa=1
@@ -56,6 +56,6 @@ outlineThickness=0
 # selected chars
 chars=32-126,160-172,174-328,330-451,453-591,8192-8203,8208-8231,8239-8277,8279,8287,8304-8305,8308-8334
 chars=8336-8348,8592-8601,8617-8618,8624-8625,8627-8629,8634-8635,8656,8658,8660,8670-8671,8676-8677,8679
-chars=8682,8963-8965,8984,8997-8999,9003,9088,9095,9099,9166-9167,9251
+chars=8682,8963,8965,8984,8997-8999,9003,9088,9095,9099,9166-9167,9251
 
 # imported icon images

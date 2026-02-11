@@ -11,6 +11,8 @@
 
 -D hide
 -D hui
+-D dx12
+-D hl-profile
 -cp hide_hl
 -hl bin_hl/hide.hl
 -lib hldx
