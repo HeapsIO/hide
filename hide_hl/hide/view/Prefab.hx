@@ -3,7 +3,7 @@ import hrt.ui.*;
 
 #if hui
 
-class Prefab extends HuiView<{}> {
+class Prefab extends HuiView<{path: String}> {
 	static var SRC =
 		<prefab>
 			<hui-prefab-editor id="prefab-editor"/>
@@ -11,13 +11,17 @@ class Prefab extends HuiView<{}> {
 
 	static var _ = HuiView.register("prefab", Prefab);
 
-	public function new(state: Dynamic, ?parent) {
-		super(state, parent);
+	public function new(_state: Dynamic, ?parent) {
+		super(_state, parent);
 		initComponent();
 
 		var path = Ide.inst.getRelPath(state.path);
 
 		prefabEditor.setPrefab(hxd.res.Loader.currentInstance.load(path).toPrefab().load().clone());
+	}
+
+	override function getDisplayName():String {
+		return state.path.split("/").splice(-1, 2).join("/");
 	}
 
 }

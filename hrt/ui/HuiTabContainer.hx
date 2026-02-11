@@ -111,7 +111,6 @@ class HuiTabContainer extends HuiElement {
 
 			cumulativeWidth += tab.calculatedWidth;
 			tab.visible = cumulativeWidth < tabBarContent.calculatedWidth;
-			trace(tab.visible, tabBarContent.calculatedWidth);
 		}
 
 		var invisibles : Array<HuiTab> = cast currentTabs.filter((e) -> !e.visible);

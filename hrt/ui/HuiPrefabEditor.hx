@@ -26,13 +26,14 @@ class HuiPrefabEditor extends HuiElement {
 
 	var prefab: hrt.prefab.Prefab;
 	var errorMessage : h2d.Text;
+	var cameraController : h3d.scene.CameraController;
 
 	override function new(?parent) {
 		super(parent);
 		initComponent();
 
 		errorMessage = new h2d.Text(hxd.res.DefaultFont.get(), scene.s2d);
-		new h3d.scene.CameraController(scene.s3d);
+		cameraController = new h3d.scene.CameraController(scene.s3d);
 	}
 
 	public function setPrefab(newPrefab: hrt.prefab.Prefab) {
@@ -44,7 +45,39 @@ class HuiPrefabEditor extends HuiElement {
 
 		prefab = newPrefab;
 		tryMake();
+
+		focusObjects([for (i in 0...scene.s3d.numChildren) scene.s3d.getChildAt(i)]);
 	}
+
+	public function focusObjects(objs : Array<h3d.scene.Object>) {
+		var focusChanged = false;
+		// for (o in objs) {
+		// 	if (!lastFocusObjects.contains(o)) {
+		// 		focusChanged = true;
+		// 		break;
+		// 	}
+		// }
+
+		if(objs.length > 0) {
+			var bnds = new h3d.col.Bounds();
+			var centroid = new h3d.Vector();
+			for(obj in objs) {
+				centroid = centroid.add(obj.getAbsPos().getPosition());
+				bnds.add(obj.getBounds());
+			}
+			if(!bnds.isEmpty()) {
+				var s = bnds.toSphere();
+				var r = focusChanged ? null : s.r * 4.0;
+				cameraController.set(r, null, null, s.getCenter());
+			}
+			else {
+				centroid.scale(1.0 / objs.length);
+				cameraController.set(centroid.toPoint());
+			}
+		}
+		//lastFocusObjects = objs;
+	}
+
 
 	public function tryMake() {
 		if (prefab != null) {

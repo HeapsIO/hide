@@ -24,6 +24,8 @@ class HuiMainLayout extends HuiElement {
 
 			<hui-element public id="main-footer">
 				<hui-text("hide_hl v0.0.0")/>
+
+				<hui-text("fps") id="fps"/>
 			</hui-element>
 		</hui-main-layout>
 
@@ -52,6 +54,30 @@ class HuiMainLayout extends HuiElement {
 				click: @:privateAccess hide.Ide.inst.setProject.bind(project),
 			}
 		];
+	}
+
+	var maxFrameTime = 0.0;
+	var lastmaxFrameTimeTime = 0.0;
+
+	override function sync(ctx) : Void {
+		super.sync(ctx);
+
+		var frameTime = hxd.Timer.elapsedTime;
+		var time = haxe.Timer.stamp();
+		if (frameTime > maxFrameTime || time - lastmaxFrameTimeTime > 1.0) {
+			maxFrameTime = frameTime;
+			lastmaxFrameTimeTime = time;
+		}
+
+		function fmt(f: Float) : String {
+			var str = '${hxd.Math.floor(f * 10000.0) / 10}';
+			if (str.indexOf(".") == -1) {
+				str += ".0";
+			}
+			return str + "ms";
+		}
+
+		fps.text = 'frame: ${fmt(frameTime)}, max: ${fmt(maxFrameTime)}';
 	}
 
 	function rebuild() {
