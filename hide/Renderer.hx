@@ -63,13 +63,15 @@ class Renderer extends h3d.scene.fwd.Renderer {
 		renderPass(defaultPass, get("default"), frontToBack);
 		renderPass(defaultPass, get("alpha"), backToFront);
 		renderPass(defaultPass, get("additive") );
+		#if editor
 		if(showEditorGuides) {
 			renderPass(defaultPass, get("debuggeom"), backToFront);
 			renderPass(defaultPass, get("debuggeom_alpha"), backToFront);
 		}
+		#end
 		renderPass(defaultPass, get("overlay"), backToFront );
 		renderPass(defaultPass, get("ui"), backToFront);
-
+		#if editor
 		if (showEditorOutlines) {
 			{
 				var outlineTex = allocTarget("outlineBlur", false);
@@ -83,6 +85,7 @@ class Renderer extends h3d.scene.fwd.Renderer {
 				composite.shader.outline = outlineTex;
 			}
 		}
+		#end
 		resetTarget();
 		composite.shader.texture = output;
 		composite.render();
@@ -93,6 +96,7 @@ class Renderer extends h3d.scene.fwd.Renderer {
 
 // ----- PBR Rendering --------------------------------
 
+#if editor
 class PbrSetup extends h3d.mat.PbrMaterialSetup {
 
 	function getEnvMap() {
@@ -130,6 +134,7 @@ class PbrSetup extends h3d.mat.PbrMaterialSetup {
 		return super.getDefaults(type);
 	}
 }
+#end
 
 class ScreenOutline extends h3d.shader.ScreenShader {
 	static var SRC = {
@@ -145,11 +150,11 @@ class ScreenOutline extends h3d.shader.ScreenShader {
 }
 
 class PbrRenderer extends h3d.scene.pbr.Renderer {
-
-
 	public function new(env) {
 		super(env);
+		#if editor
 		outline.pass.setBlendMode(Alpha);
+		#end
 	}
 
 	override function getPassByName(name:String):h3d.pass.Output {

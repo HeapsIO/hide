@@ -60,6 +60,9 @@ class Ide extends hide.tools.IdeData {
 		hxd.res.Loader.currentInstance?.dispose();
 		hxd.res.Loader.currentInstance = new hxd.res.Loader(new hxd.fs.LocalFileSystem(resourceDir, null));
 		app.ui.mainLayout.onSetProject();
+
+		h3d.mat.MaterialSetup.current = new h3d.mat.PbrMaterialSetup();
+
 	}
 
 	public function getLocalStorage(key: String) : Null<Dynamic> {

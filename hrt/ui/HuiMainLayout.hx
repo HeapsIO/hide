@@ -58,6 +58,7 @@ class HuiMainLayout extends HuiElement {
 
 	var maxFrameTime = 0.0;
 	var lastmaxFrameTimeTime = 0.0;
+	var smoothedTime = 0.0;
 
 	override function sync(ctx) : Void {
 		super.sync(ctx);
@@ -69,6 +70,8 @@ class HuiMainLayout extends HuiElement {
 			lastmaxFrameTimeTime = time;
 		}
 
+		smoothedTime = hxd.Math.lerp(smoothedTime, frameTime, 0.02);
+
 		function fmt(f: Float) : String {
 			var str = '${hxd.Math.floor(f * 10000.0) / 10}';
 			if (str.indexOf(".") == -1) {
@@ -77,7 +80,7 @@ class HuiMainLayout extends HuiElement {
 			return str + "ms";
 		}
 
-		fps.text = 'frame: ${fmt(frameTime)}, max: ${fmt(maxFrameTime)}';
+		fps.text = 'frame: ${fmt(smoothedTime)}, max: ${fmt(maxFrameTime)}';
 	}
 
 	function rebuild() {

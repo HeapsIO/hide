@@ -48,7 +48,7 @@ class HuiScene extends HuiElement {
 
 
 		s2d = new h2d.Scene();
-		s3d = new h3d.scene.Scene();
+		s3d = new h3d.scene.Scene(false, false);
 		// new h3d.scene.Box(0x000000, s3d);
 		// var t = new h2d.Text(hxd.res.DefaultFont.get(), s2d);
 		// t.text = "Hello scene";

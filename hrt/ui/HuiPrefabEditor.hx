@@ -28,6 +28,8 @@ class HuiPrefabEditor extends HuiElement {
 	var errorMessage : h2d.Text;
 	var cameraController : h3d.scene.CameraController;
 
+	var config : hide.Config;
+
 	override function new(?parent) {
 		super(parent);
 		initComponent();
@@ -35,6 +37,23 @@ class HuiPrefabEditor extends HuiElement {
 		errorMessage = new h2d.Text(hxd.res.DefaultFont.get(), scene.s2d);
 		cameraController = new h3d.scene.CameraController(scene.s3d);
 	}
+
+	function getEnvMap() {
+		var env = config.get("scene.environment") ?? "";
+		var path = "";
+		var image = if (hxd.res.Loader.currentInstance.exists(env)) {
+			path = env;
+			hxd.res.Loader.currentInstance.load(env).toImage();
+		} else {
+			path = "env/defaultEnv.jpg";
+			HuiRes.loader.load(path).toImage();
+		}
+		var pix = image.getPixels();
+		var t = h3d.mat.Texture.fromPixels(pix, h3d.mat.Texture.nativeFormat); // sync
+		t.setName(path);
+		return t;
+	}
+
 
 	public function setPrefab(newPrefab: hrt.prefab.Prefab) {
 		if (prefab != null) {
@@ -44,9 +63,37 @@ class HuiPrefabEditor extends HuiElement {
 		}
 
 		prefab = newPrefab;
-		tryMake();
+
+		if (prefab.shared.prefabSource != null) {
+			config = hide.Config.loadForFile(hide.Ide.inst, prefab.shared.prefabSource);
+		} else {
+			config = hide.Ide.inst.currentConfig;
+		}
+
+		var env = new h3d.scene.pbr.Environment(getEnvMap());
+		env.compute();
+		scene.s3d.renderer = new hide.Renderer.PbrRenderer(env);
+		scene.s3d.lightSystem = new h3d.scene.pbr.LightSystem();
+
+		tryMake(prefab);
+		makeRenderProps();
 
 		focusObjects([for (i in 0...scene.s3d.numChildren) scene.s3d.getChildAt(i)]);
+	}
+
+	function getRenderPropsPaths() : Array<{name: String, value: String}> {
+		var renderProps = config.getLocal("scene.renderProps");
+		if (renderProps == null)
+			return [];
+
+		if (renderProps is String) {
+			return [{name: "", value: (cast renderProps: String)}];
+		}
+
+		if (renderProps is Array) {
+			return cast renderProps;
+		}
+		return [];
 	}
 
 	public function focusObjects(objs : Array<h3d.scene.Object>) {
@@ -79,7 +126,7 @@ class HuiPrefabEditor extends HuiElement {
 	}
 
 
-	public function tryMake() {
+	public function tryMake(prefab: hrt.prefab.Prefab) : Bool {
 		if (prefab != null) {
 			prefab.shared.root2d?.remove();
 			prefab.shared.root3d?.remove();
@@ -98,6 +145,17 @@ class HuiPrefabEditor extends HuiElement {
 			errorMessage.text = "Error loading prefab : " + e;
 
 			trace("Error loading prefab " + e);
+			return false;
+		}
+		return true;
+	}
+
+	public function makeRenderProps() {
+		var paths = getRenderPropsPaths();
+		for (path in paths) {
+			var renderProp = hxd.res.Loader.currentInstance.load(path.value).toPrefab().load().clone();
+			if (tryMake(renderProp))
+				break;
 		}
 	}
 }
