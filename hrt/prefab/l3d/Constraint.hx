@@ -6,7 +6,7 @@ class Constraint extends Prefab {
 	@:s public var target(default,null) : String;
 	@:s public var positionOnly(default,null) : Bool;
 
-	public function apply(root : h3d.scene.Object) : Bool {
+	public function apply(root : h3d.scene.Object = null) : Bool {
 		var binds = getBindedObjects(root);
 		if( binds.object != null && binds.target != null ){
 			#if editor
@@ -27,15 +27,15 @@ class Constraint extends Prefab {
 
 	function getBindedObjects(root : h3d.scene.Object) : { object : h3d.scene.Object, target : h3d.scene.Object } {
 		var res = { object : null, target : null };
-		if (object != null)
-			res.object = root.getObjectByName(object.split(".").pop());
-		if (target != null)
-				res.target = root.getObjectByName(target.split(".").pop());
+		if (object != null && object.length > 0)
+			res.object = root != null ? root.getObjectByName(object.split(".").pop()) : locateObject(object);
+		if (target != null && target.length > 0)
+				res.target = root != null ? root.getObjectByName(target.split(".").pop()) : locateObject(target);
 		return res;
 	}
 
 	override function makeInstance() {
-		apply(shared.root3d);
+		apply();
 	}
 
 	override function edit2(ctx: hrt.prefab.EditContext2) {
@@ -87,7 +87,7 @@ class Constraint extends Prefab {
 			</dl>
 		'),this, function(_) {
 			if( curObj != null ) curObj.follow = null;
-			if (!apply(shared.root3d)) {
+			if (!apply()) {
 				hide.Ide.inst.quickError("Loop detected in constraints");
 				ctx.rebuildProperties();
 			}
