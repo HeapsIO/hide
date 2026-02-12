@@ -51,6 +51,12 @@ class HuiTabViewContainer extends HuiTabContainer {
 		}
 	}
 
+	override function makeTab(forElement: HuiElement) : HuiTab {
+		var tab = super.makeTab(forElement);
+		tab.onClose = () -> removeTab(forElement);
+		return tab;
+	}
+
 	override function sync(ctx) {
 		super.sync(ctx);
 

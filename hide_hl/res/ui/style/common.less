@@ -47,3 +47,17 @@
 		color: @text-disabled;
 	}
 }
+
+.button() {
+	&:hover {
+		> hui-background {
+			background: @color-over;
+		}
+	}
+
+	&:active {
+		> hui-background {
+			background: @color-over-lighter;
+		}
+	}
+}

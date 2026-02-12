@@ -5,11 +5,22 @@ hui-tab {
 
 	background-type: hui;
 	padding-left: 8;
-	padding-right: 8;
 
 	>#title {
 		margin-bottom: 3;
 		color: @color-foreground-muted;
+	}
+
+	>#close-button {
+		.button();
+
+		width: 16;
+		height: 16;
+
+		background-type: hui;
+		> hui-background {
+			image: "ui/icons/close.png" fit;
+		}
 	}
 
 	> hui-background {
