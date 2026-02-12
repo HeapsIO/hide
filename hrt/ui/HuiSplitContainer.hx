@@ -59,6 +59,16 @@ class HuiSplitContainer extends HuiElement {
 
 	function updateLayout() {
 		var childElement = childElements;
+
+		// Ensure splitter is always at the end (so it's over other elements)
+		if (childElements.indexOf(splitter) != childElements.length - 1) {
+			splitter.remove();
+			addChild(splitter);
+		}
+
+		childElement = this.childElements;
+
+
 		var paddingStart = 0;
 		var paddingEnd = 0;
 		var spacing = 0;
@@ -131,16 +141,16 @@ class HuiSplitContainer extends HuiElement {
 
 		switch (direction) {
 			case Horizontal:
-				childElement[1].x = firstPos;
-				childElement[1].setWidth(firstSize);
-				childElement[2].x = secondPos;
-				childElement[2].setWidth(secondSize);
+				childElement[0].x = firstPos;
+				childElement[0].setWidth(firstSize);
+				childElement[1].x = secondPos;
+				childElement[1].setWidth(secondSize);
 				splitter.x = localSplitterPos;
 			case Vertical:
-				childElement[1].y = firstPos;
-				childElement[1].setHeight(firstSize);
-				childElement[2].y = secondPos;
-				childElement[2].setHeight(secondSize);
+				childElement[0].y = firstPos;
+				childElement[0].setHeight(firstSize);
+				childElement[1].y = secondPos;
+				childElement[1].setHeight(secondSize);
 				splitter.y = localSplitterPos;
 		}
 
