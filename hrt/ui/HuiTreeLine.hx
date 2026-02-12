@@ -20,6 +20,10 @@ class HuiTreeLine extends HuiElement {
 		this.data = data;
 		makeInteractive();
 		this.tree = tree;
+
+		caret.onClick = (e) -> {
+			onCaretClick();
+		}
 	}
 
 	public function refresh() {
@@ -29,6 +33,10 @@ class HuiTreeLine extends HuiElement {
 		dom.toggleClass("children", tree.hasChildren(data.item));
 		dom.toggleClass("open", tree.isOpen(data));
 		@:privateAccess dom.toggleClass("keyboard-selected", tree.keyboardFocus == data);
+	}
+
+	dynamic public function onCaretClick() {
+
 	}
 }
 

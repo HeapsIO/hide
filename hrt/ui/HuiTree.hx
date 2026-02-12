@@ -203,7 +203,7 @@ class HuiTree<TreeItem> extends HuiElement {
 	function generateItem(data: TreeItemData) : HuiElement {
 		var line = new HuiTreeLine(data, this);
 
-		line.onClick = (e) -> {
+		line.onCaretClick = () -> {
 			toggleItemOpen(data);
 		}
 
