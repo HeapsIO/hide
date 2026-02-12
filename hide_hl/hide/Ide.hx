@@ -61,16 +61,16 @@ class Ide extends hide.tools.IdeData {
 		hxd.res.Loader.currentInstance = new hxd.res.Loader(new hxd.fs.LocalFileSystem(resourceDir, null));
 		loadDatabase(true);
 
-		var pluginPath = getPath("../hide-plugin.hl");
-		if (sys.FileSystem.exists(pluginPath)) {
-			if (!hl.Api.loadPlugin(pluginPath)) {
-				throw "Plugin failed to load";
-			} else {
-				trace("Plugin loaded");
-			}
-		} else {
-			trace('No plugin found for project (searched $pluginPath )');
-		}
+		// var pluginPath = getPath("../hide-plugin.hl");
+		// if (sys.FileSystem.exists(pluginPath)) {
+		// 	if (!hl.Api.loadPlugin(pluginPath)) {
+		// 		throw "Plugin failed to load";
+		// 	} else {
+		// 		trace("Plugin loaded");
+		// 	}
+		// } else {
+		// 	trace('No plugin found for project (searched $pluginPath )');
+		// }
 
 		app.ui.mainLayout.onSetProject();
 
