@@ -14,7 +14,7 @@ class HuiPrefabEditor extends HuiElement {
 						<hui-scene id="scene"/>
 					</hui-element>
 					<hui-element id="panel-tree">
-						<hui-tree id="tree-prefab"/>
+
 					</hui-element>
 				</hui-split-container>
 
@@ -27,6 +27,7 @@ class HuiPrefabEditor extends HuiElement {
 	var prefab: hrt.prefab.Prefab;
 	var errorMessage : h2d.Text;
 	var cameraController : h3d.scene.CameraController;
+	var treePrefab: hrt.ui.HuiTree<hrt.prefab.Prefab>;
 
 	var config : hide.Config;
 
@@ -36,6 +37,15 @@ class HuiPrefabEditor extends HuiElement {
 
 		errorMessage = new h2d.Text(hxd.res.DefaultFont.get(), scene.s2d);
 		cameraController = new h3d.scene.CameraController(scene.s3d);
+
+		treePrefab = new hrt.ui.HuiTree<hrt.prefab.Prefab>(panelTree);
+		treePrefab.getItemChildren = treePrefabGetItemChildren;
+		treePrefab.getItemName = (p: hrt.prefab.Prefab) -> p.name;
+	}
+
+	function treePrefabGetItemChildren(prefab: hrt.prefab.Prefab) {
+		prefab = prefab ?? this.prefab;
+		return cast prefab.children;
 	}
 
 	function getEnvMap() {
@@ -147,6 +157,8 @@ class HuiPrefabEditor extends HuiElement {
 			trace("Error loading prefab " + e);
 			return false;
 		}
+
+		treePrefab.rebuild();
 		return true;
 	}
 

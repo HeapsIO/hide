@@ -97,6 +97,20 @@ class HuiTree<TreeItem> extends HuiElement {
 		}
 	}
 
+	/**
+		Request to rebuild an item in the tree
+	**/
+	public function rebuild(item: TreeItem = null) {
+		if (item != null) {
+			var data = itemMap.get(cast item);
+			updateData(data);
+			requestRefresh(RegenerateFlatten);
+			return;
+		} else {
+			requestRefresh(RootData);
+		}
+	}
+
 	function requestRefresh(refreshFlag: RefreshFlag) {
 		refreshFlags.set(refreshFlag);
 	}
