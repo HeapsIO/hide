@@ -4,8 +4,6 @@
 -lib hx3compat
 -lib domkit
 -lib hashlink
--D hui
--D hscriptPos
 # -D editor
 #-D no-deprecation-warnings
 -D manual_sync_pad
