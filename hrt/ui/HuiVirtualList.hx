@@ -215,6 +215,7 @@ class HuiVirtualList<T> extends HuiElement {
 				case Auto: throw "error";
 				case null: -itemPixelScroll;
 			}
+			startY = hxd.Math.round(startY);
 			scrollRequest = null;
 
 			currentItem.y = startY;
