@@ -76,7 +76,16 @@ class Plugin {
 
 		var hidePath = getLibraryPath("hide");
 
-		for( f in sys.io.File.getContent(hidePath+"/common.hxml").split("\n") ) {
+		var path = if (Context.defined("js")) {
+			hidePath+"/common.hxml";
+		} else if (Context.defined("hl")) {
+			hidePath+"/common-hl.hxml";
+		}
+		else {
+			Context.fatalError("Hide plugin only support js or hl targets", Context.currentPos());
+		}
+
+		for( f in sys.io.File.getContent(path).split("\n") ) {
 			var f = StringTools.trim(f);
 			if( f == "" ) continue;
 			var pl = f.split(" ");

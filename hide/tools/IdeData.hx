@@ -78,7 +78,7 @@ class IdeData {
 			config.global.save();
 		}
 		config = Config.loadForProject(projectDir, resourceDir, getAppDataPath());
-		databaseFile = config.project.get("cdb.databaseFile");
+		databaseFile = config.project.get("cdb.databaseFile") ?? "data.cdb";
 		databaseDiff = config.user.get("cdb.databaseDiff");
 
 		var pak = config.project.get("pak.dataFile");

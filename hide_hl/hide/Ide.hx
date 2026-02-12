@@ -59,6 +59,19 @@ class Ide extends hide.tools.IdeData {
 		trace("set project " + dir);
 		hxd.res.Loader.currentInstance?.dispose();
 		hxd.res.Loader.currentInstance = new hxd.res.Loader(new hxd.fs.LocalFileSystem(resourceDir, null));
+		loadDatabase(true);
+
+		var pluginPath = getPath("../hide-plugin.hl");
+		if (sys.FileSystem.exists(pluginPath)) {
+			if (!hl.Api.loadPlugin(pluginPath)) {
+				throw "Plugin failed to load";
+			} else {
+				trace("Plugin loaded");
+			}
+		} else {
+			trace('No plugin found for project (searched $pluginPath )');
+		}
+
 		app.ui.mainLayout.onSetProject();
 
 		h3d.mat.MaterialSetup.current = new h3d.mat.PbrMaterialSetup();
@@ -83,7 +96,18 @@ class Ide extends hide.tools.IdeData {
 			return;
 		}
 
-		throw "No handler for file " + filePath;
+		//throw "No handler for file " + filePath;
+	}
+
+	public function getCDBContent<T>( sheetName : String ) : Array<T> {
+		for( s in database.sheets )
+			if( s.name == sheetName ) {
+				var s = Reflect.copy(@:privateAccess s.realSheet.sheet);
+				s.lines = [for( l in s.lines ) Reflect.copy(l)];
+				@:privateAccess cdb.Types.Index.initLines(s);
+				return cast s.lines;
+			}
+		return null;
 	}
 
 

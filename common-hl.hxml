@@ -1,0 +1,13 @@
+-lib heaps
+-lib hscript
+-lib castle
+-lib hx3compat
+-lib domkit
+-lib hashlink
+-D hui
+-D hscriptPos
+# -D editor
+#-D no-deprecation-warnings
+-D manual_sync_pad
+-cp hide_hl
+# -cp hide_js/libs
