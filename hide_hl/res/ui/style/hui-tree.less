@@ -5,7 +5,7 @@ hui-tree {
 
 	background-type: hui;
 	> hui-background {
-		background: #FF00FF;
+		background: @tree-bg;
 	}
 }
 
@@ -15,12 +15,12 @@ hui-tree-line {
 	fill-width: 1;
 	margin-right: 24;
 	> hui-background {
-		background: #333;
+		background: @tree-bg;
 	}
 
 	&:hover {
 		> hui-background {
-			background: #777;
+			background: @tree-hover;
 		}
 	}
 }
