@@ -1,0 +1,66 @@
+hui-toast {
+	halign: middle;
+	valign: bottom;
+	margin: 4;
+
+	max-width: 400;
+
+	background-type: hui;
+
+	> hui-background {
+		background: @popup-bg;
+		border-radius: 3;
+		shadow: @popup-shadow;
+		outline: 1 @popup-border;
+	}
+
+	&:hover {
+		> hui-background {
+			background: lighten(@popup-bg, @light-hover);
+		}
+	}
+
+
+	&.info {
+		>#icon-container > hui-background { background: @color-info;}
+
+		>#icon-container > #icon > hui-background { image: "ui/icons/info.png" fit; }
+	}
+
+	&.warning {
+		>#icon-container > hui-background { background: @color-warning;}
+		>#icon-container > #icon > hui-background { image: "ui/icons/warning.png" fit; image-color: #000;}
+	}
+
+	&.error {
+		>#icon-container > hui-background { background: @color-error;}
+		>#icon-container > #icon > hui-background { image: "ui/icons/error.png" fit; image-color: #000;}
+	}
+
+	>#icon-container {
+		padding: 2;
+		background-type: hui;
+
+		> hui-background {
+			border-radius: 3 0 0 3;
+		}
+		auto-size-height: 1;
+		fill-height: 1;
+		> #icon {
+			width: 16;
+			height: 16;
+			background-type: hui;
+
+			> hui-background {
+				image-color: #FFF;
+			}
+
+			valign: middle;
+		}
+	}
+
+	> #text-container {
+		padding: 8;
+		valign: middle;
+	}
+}

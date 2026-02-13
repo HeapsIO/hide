@@ -27,6 +27,13 @@ class HuiMainLayout extends HuiElement {
 
 				<hui-text("fps") id="fps"/>
 			</hui-element>
+
+			<hui-element id="toast-overlay">
+				<hui-toast("This is the test toast message", hrt.ui.HuiToast.ToastKind.Info)/>
+				<hui-toast("This is the test toast message with a really really really really long text that should wrap if everything is according to keikaku (keikaku means plan)", hrt.ui.HuiToast.ToastKind.Info)/>
+				<hui-toast("This is the test toast message", hrt.ui.HuiToast.ToastKind.Warning)/>
+				<hui-toast("This is the test toast message", hrt.ui.HuiToast.ToastKind.Error)/>
+			</hui-element>
 		</hui-main-layout>
 
 	public var projectLayout : HuiProjectLayout;
@@ -72,15 +79,17 @@ class HuiMainLayout extends HuiElement {
 
 		smoothedTime = hxd.Math.lerp(smoothedTime, frameTime, 0.02);
 
-		function fmt(f: Float) : String {
-			var str = '${hxd.Math.floor(f * 10000.0) / 10}';
-			if (str.indexOf(".") == -1) {
-				str += ".0";
-			}
-			return str + "ms";
-		}
+
 
 		fps.text = 'frame: ${fmt(smoothedTime)}, max: ${fmt(maxFrameTime)}';
+	}
+
+	function fmt(f: Float) : String {
+		var str = '${hxd.Math.floor(f * 10000.0) / 10}';
+		if (str.indexOf(".") == -1) {
+			str += ".0";
+		}
+		return str + "ms";
 	}
 
 	function rebuild() {
