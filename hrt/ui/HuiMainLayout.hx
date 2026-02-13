@@ -16,6 +16,10 @@ class HuiMainLayout extends HuiElement {
 				<hui-button-menu(() -> [{label: "CDB"}, {label: "Scene"}, {label: "Settings"}, {label: "Gym"}])>
 					<hui-text("View")/>
 				</hui-button-menu>
+
+				<hui-button-menu(() -> [{label: "Toast", menu: [{label: "Info", click:() -> addToast("Debug toast", Info), stayOpen: true}, {label: "Warning", click:() -> addToast("Debug toast", Warning), stayOpen: true}, {label: "Error", click:() -> addToast("Debug toast", Error), stayOpen: true}]}])>
+					<hui-text("Debug")/>
+				</hui-button-menu>
 			</hui-element>
 
 			<hui-element public id="main-panel">
@@ -101,6 +105,21 @@ class HuiMainLayout extends HuiElement {
 	public function onSetProject() {
 		mainPanel.removeChildElements();
 		projectLayout = new HuiProjectLayout(mainPanel);
+	}
+
+	public function addToast(message:String, kind: HuiToast.ToastKind, ?timeout: Float) {
+
+
+		for (child in toastOverlay.childElements) {
+			var toast = Std.downcast(child, HuiToast);
+			if (toast == null)
+				continue;
+			if (toast.canMerge(message, kind)) {
+				toast.resetTimer();
+				return;
+			}
+		}
+		new HuiToast(message, kind, timeout, toastOverlay);
 	}
 }
 
