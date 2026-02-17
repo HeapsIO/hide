@@ -72,7 +72,9 @@ class Ide extends hide.tools.IdeData {
 		// 	trace('No plugin found for project (searched $pluginPath )');
 		// }
 
-		app.ui.mainLayout.onSetProject();
+		@:privateAccess app.ui.mainLayout.rebuild();
+
+		hxd.Window.getInstance().title = "HideHL - " + new haxe.io.Path(dir).file;
 
 		h3d.mat.MaterialSetup.current = new h3d.mat.PbrMaterialSetup();
 

@@ -96,11 +96,11 @@ class HuiMainLayout extends HuiElement {
 		removeChildren();
 		@:privateAccess dom.contentRoot = this;
 		init();
-	}
 
-	public function onSetProject() {
+		if (hide.Ide.inst.ideConfig.currentProject != null) {
 		mainPanel.removeChildElements();
 		projectLayout = new HuiProjectLayout(mainPanel);
+		}
 	}
 
 	public function addToast(message:String, kind: HuiToast.ToastKind, ?timeout: Float) {
