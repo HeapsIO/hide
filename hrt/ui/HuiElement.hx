@@ -27,6 +27,7 @@ class HuiElement extends h2d.Flow #if hui implements h2d.domkit.Object #end {
 	public var onFocusLost(default, set) : hxd.Event->Void = emptyFuncEventVoid;
 	public var onWheel(default, set) : hxd.Event->Void = emptyFuncEventVoid;
 	public var onDoubleClick(default, set) : hxd.Event->Void = null;
+	@:p public var propagateEvents(get, set): Bool;
 
 	public var onChildrenChanged : Void -> Void = emtpyFuncVoidVoid;
 
@@ -83,6 +84,9 @@ class HuiElement extends h2d.Flow #if hui implements h2d.domkit.Object #end {
 	function set_onFocusLost(v) {onFocusLost = v; makeInteractive(); return v;};
 	function set_onWheel(v) {onWheel = v; makeInteractive(); return v;};
 	function set_onDoubleClick(v) {onDoubleClick = v; makeInteractive(); return v;};
+
+	function get_propagateEvents() {return interactive?.propagateEvents;}
+	function set_propagateEvents(v) {makeInteractive(); return interactive.propagateEvents = v;};
 
 	override function set_overflow(v) {
 		if (v == h2d.Flow.FlowOverflow.Scroll) {
@@ -221,6 +225,7 @@ class HuiElement extends h2d.Flow #if hui implements h2d.domkit.Object #end {
 
 
 	function onOverInternal(e: hxd.Event) {
+		trace("over",name);
 		if (!enable)
 			return;
 		dom.hover = true;
@@ -229,6 +234,7 @@ class HuiElement extends h2d.Flow #if hui implements h2d.domkit.Object #end {
 	}
 
 	function onOutInternal(e: hxd.Event) {
+		trace("out",name);
 		if (!enable)
 			return;
 		dom.hover = false;
