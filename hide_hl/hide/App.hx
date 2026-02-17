@@ -34,13 +34,13 @@ class App extends hxd.App {
 	function updateProfiling() {
 		if (hxd.Key.isPressed(hxd.Key.F9)) {
 			if (!hide.tools.Profiler.processing) {
-				trace("Strating profiler");
+				Ide.showInfo("Starting profiler");
 				hide.tools.Profiler.start();
 			} else {
 				hide.tools.Profiler.save();
 				var converted = Sys.command(".vscode\\post_profile.bat") == 0;
 				hide.tools.Profiler.stop();
-				trace("Stopping profiler", converted);
+				Ide.showInfo("Stopping profiler");
 			}
 		}
 	}

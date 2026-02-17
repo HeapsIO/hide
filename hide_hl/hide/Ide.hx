@@ -121,14 +121,17 @@ class Ide extends hide.tools.IdeData {
 
 
 	static public function showError(message: String) {
+		Sys.stdout().writeString('[Err ] $message\n');
 		inst.app.ui.uiBase.mainLayout.addToast(message, Error);
 	}
 
 	static public function showWarning(message: String) {
+		Sys.stdout().writeString('[Warn] $message\n');
 		inst.app.ui.uiBase.mainLayout.addToast(message, Warning);
 	}
 
 	static public function showInfo(message: String) {
+		Sys.stdout().writeString('[Info] $message\n');
 		inst.app.ui.uiBase.mainLayout.addToast(message, Info);
 	}
 }
