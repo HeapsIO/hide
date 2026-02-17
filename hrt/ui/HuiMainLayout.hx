@@ -104,8 +104,6 @@ class HuiMainLayout extends HuiElement {
 	}
 
 	public function addToast(message:String, kind: HuiToast.ToastKind, ?timeout: Float) {
-
-
 		for (child in toastOverlay.childElements) {
 			var toast = Std.downcast(child, HuiToast);
 			if (toast == null)

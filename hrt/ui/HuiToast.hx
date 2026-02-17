@@ -60,7 +60,8 @@ class HuiToast extends HuiElement {
 
 	override function sync(ctx:h2d.RenderContext) {
 		super.sync(ctx);
-		timer -= ctx.elapsedTime;
+		if (!dom.hover)
+			timer -= ctx.elapsedTime;
 		if (timer < 0) {
 			remove();
 		}

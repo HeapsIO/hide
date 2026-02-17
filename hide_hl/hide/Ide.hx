@@ -93,9 +93,13 @@ class Ide extends hide.tools.IdeData {
 	public function openFile(filePath: String) {
 		var path = new haxe.io.Path(filePath);
 
-		switch (path.ext) {
-			case "prefab", "fx":
-				openView(new hide.view.Prefab({path: filePath}));
+		try {
+			switch (path.ext) {
+				case "prefab", "fx":
+					openView(new hide.view.Prefab({path: filePath}));
+			}
+		} catch (e) {
+			showError('Could not open file ${getRelPath(filePath)} :<br/>$e');
 		}
 	}
 
@@ -116,4 +120,15 @@ class Ide extends hide.tools.IdeData {
 	}
 
 
+	static public function showError(message: String) {
+		inst.app.ui.uiBase.mainLayout.addToast(message, Error);
+	}
+
+	static public function showWarning(message: String) {
+		inst.app.ui.uiBase.mainLayout.addToast(message, Warning);
+	}
+
+	static public function showInfo(message: String) {
+		inst.app.ui.uiBase.mainLayout.addToast(message, Info);
+	}
 }
