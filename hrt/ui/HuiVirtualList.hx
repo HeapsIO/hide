@@ -181,11 +181,6 @@ class HuiVirtualList<T> extends HuiElement {
 					elements.set(cast item, element);
 					itemContainer.addChild(element);
 					itemContainer.getProperties(element).isAbsolute = true;
-
-					// Force apply style because we need the accurate font info for the layout
-					// element.dom.applyStyle(style);
-				} else {
-					itemContainer.addChild(element);
 				}
 				refreshItem(item, cast element.childElements[0]);
 				oldElements.remove(cast item);
