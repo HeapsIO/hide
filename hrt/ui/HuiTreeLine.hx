@@ -21,8 +21,9 @@ class HuiTreeLine extends HuiElement {
 		makeInteractive();
 		this.tree = tree;
 
-		caret.onClick = (e) -> {
-			onCaretClick();
+		caret.onPush = (e) -> {
+			if (e.button == 0)
+				onCaretClick();
 		}
 	}
 
