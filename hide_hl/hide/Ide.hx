@@ -91,12 +91,12 @@ class Ide extends hide.tools.IdeData {
 	}
 
 	public function openFile(filePath: String) {
-		if (filePath.split(".").pop() == "prefab") {
-			openView(new hide.view.Prefab({path: filePath}));
-			return;
-		}
+		var path = new haxe.io.Path(filePath);
 
-		//throw "No handler for file " + filePath;
+		switch (path.ext) {
+			case "prefab", "fx":
+				openView(new hide.view.Prefab({path: filePath}));
+		}
 	}
 
 	public function openView(view: hrt.ui.HuiView<Dynamic>) {

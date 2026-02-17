@@ -158,6 +158,11 @@ class HuiPrefabEditor extends HuiElement {
 			return false;
 		}
 
+		var fx = Std.downcast(prefab.findFirstLocal3d(), hrt.prefab.fx.FX.FXAnimation);
+		if (fx != null) {
+			fx.loop = true;
+		}
+
 		treePrefab.rebuild();
 		return true;
 	}
