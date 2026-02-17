@@ -325,7 +325,7 @@ class Slider<T:Float> extends Widget<T> {
 		#if js
 		slider.value = Std.string(value);
 		#elseif hui
-		slider.slider.value = value;
+		slider.value = value;
 		#end
 
 		if (showRange && min != null && max != null) {

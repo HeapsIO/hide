@@ -1,0 +1,41 @@
+hui-slider {
+	min-width: 50px;
+	width: 200px;
+	height: @widget-base-height;
+	layout: stack;
+
+	background-type: hui;
+	> hui-background {
+		background: @widget-bg;
+		border-radius: @base-corner-radius;
+		outline: 1 @widget-border;
+	}
+
+	> #fillBar {
+		height: @widget-base-height;
+
+		background-type: hui;
+		> hui-background {
+			background: @color-accent;
+			border-radius: @base-corner-radius;
+			outline: 1 @color-accent;
+		}
+	}
+
+	> #valueText {
+		text-align: left;
+		valign: middle;
+		margin-left: 10;
+		margin-bottom: 2;
+	}
+
+	> #inputText {
+		text-align: left;
+		margin-left: 10;
+		valign: middle;
+		> hui-background {
+			outline-alpha: 0;
+			background-alpha: 0;
+		}
+	}
+}

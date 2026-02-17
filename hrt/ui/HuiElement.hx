@@ -19,6 +19,7 @@ class HuiElement extends h2d.Flow #if hui implements h2d.domkit.Object #end {
 	public var onMove(default, set) : hxd.Event->Void = emptyFuncEventVoid;
 	public var onClick(default, set) : hxd.Event->Void = emptyFuncEventVoid;
 	public var onPush(default, set) : hxd.Event->Void = emptyFuncEventVoid;
+	public var onRelease(default, set) : hxd.Event->Void = emptyFuncEventVoid;
 	public var onKeyDown(default, set) : hxd.Event->Void = emptyFuncEventVoid;
 	public var onKeyUp(default, set) : hxd.Event->Void = emptyFuncEventVoid;
 	public var onTextInput(default, set) : hxd.Event->Void = emptyFuncEventVoid;
@@ -74,6 +75,7 @@ class HuiElement extends h2d.Flow #if hui implements h2d.domkit.Object #end {
 	function set_onMove(v) {onMove = v; makeInteractive(); return v;};
 	function set_onClick(v) {onClick = v; makeInteractive(); return v;};
 	function set_onPush(v) {onPush = v; makeInteractive(); return v;};
+	function set_onRelease(v) {onRelease = v; makeInteractive(); return v;};
 	function set_onKeyDown(v) {onKeyDown = v; makeInteractive(); return v;};
 	function set_onKeyUp(v) {onKeyUp = v; makeInteractive(); return v;};
 	function set_onTextInput(v) {onTextInput = v; makeInteractive(); return v;};
@@ -271,6 +273,7 @@ class HuiElement extends h2d.Flow #if hui implements h2d.domkit.Object #end {
 			return;
 
 		dom.active = false;
+		onRelease(e);
 	}
 
 	function onReleaseOutsideInternal(e: hxd.Event) {

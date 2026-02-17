@@ -75,18 +75,10 @@ class HuiViewGym extends HuiView<{}> {
 					<hui-element display-name={"Tab 15"}><hui-text("Tab 15")/></hui-element>
 				</hui-tab-container>
 			</hui-element>
-
-			// <hui-text("hui-scene")/>
-			// <hui-element class="example">
-			// 	<hui-split-container direction="vertical">
-			// 		<hui-split-container direction="horizontal">
-			// 			<hui-scene id="test-scene"/>
-			// 			<hui-scene id="test-scene2"/>
-			// 		</hui-split-container>
-			// 			<hui-element/>
-			// 	</hui-split-container>
-			// </hui-element>
-
+			<hui-element class="example">
+				<hui-slider/>
+				<hui-slider step={1} min={0} max={10} decimals={2}/>
+			</hui-element>
 		</hui-view-gym>
 
 	function testMenu() :  Array<HuiMenu.MenuItem> {
