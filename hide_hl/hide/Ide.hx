@@ -90,13 +90,16 @@ class Ide extends hide.tools.IdeData {
 
 	public function openFile(filePath: String) {
 		if (filePath.split(".").pop() == "prefab") {
-			var tab = new hide.view.Prefab({path: filePath});
-			app.ui.uiBase.mainLayout.projectLayout.mainPanel.addTab(tab);
-			app.ui.uiBase.mainLayout.projectLayout.mainPanel.setTab(tab);
+			openView(new hide.view.Prefab({path: filePath}));
 			return;
 		}
 
 		//throw "No handler for file " + filePath;
+	}
+
+	public function openView(view: hrt.ui.HuiView<Dynamic>) {
+		app.ui.uiBase.mainLayout.projectLayout.mainPanel.addTab(view);
+		app.ui.uiBase.mainLayout.projectLayout.mainPanel.setTab(view);
 	}
 
 	public function getCDBContent<T>( sheetName : String ) : Array<T> {

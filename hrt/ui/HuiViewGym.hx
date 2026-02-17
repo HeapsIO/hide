@@ -76,16 +76,16 @@ class HuiViewGym extends HuiView<{}> {
 				</hui-tab-container>
 			</hui-element>
 
-			<hui-text("hui-scene")/>
-			<hui-element class="example">
-				<hui-split-container direction="vertical">
-					<hui-split-container direction="horizontal">
-						<hui-scene id="test-scene"/>
-						<hui-scene id="test-scene2"/>
-					</hui-split-container>
-						<hui-element/>
-				</hui-split-container>
-			</hui-element>
+			// <hui-text("hui-scene")/>
+			// <hui-element class="example">
+			// 	<hui-split-container direction="vertical">
+			// 		<hui-split-container direction="horizontal">
+			// 			<hui-scene id="test-scene"/>
+			// 			<hui-scene id="test-scene2"/>
+			// 		</hui-split-container>
+			// 			<hui-element/>
+			// 	</hui-split-container>
+			// </hui-element>
 
 		</hui-view-gym>
 
