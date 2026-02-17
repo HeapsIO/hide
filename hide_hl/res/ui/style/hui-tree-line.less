@@ -12,9 +12,17 @@ hui-tree-line {
 			image: none;
 			image-angle: 0;
 			transition: image-angle 0.07 ease-in-out;
+			image-color: @color-foreground-muted;
+
 		}
 
-		.button();
+		&:hover {
+			> hui-background {
+				image-color: @color-foreground;
+			}
+		}
+
+		propagate-events: true;
 	}
 
 	> #icon {
