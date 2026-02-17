@@ -17,6 +17,10 @@ class App extends hxd.App {
 		ide = new hide.Ide();
 		ide.app = this;
 		ui = new hrt.ui.HuiBase(this, s2d);
+
+		if (hide.Ide.inst.ideConfig.recentProjects?.length > 0) {
+			@:privateAccess hide.Ide.inst.setProject(hide.Ide.inst.ideConfig.recentProjects[0]);
+		}
 	}
 
 	override public function update(dt: Float) {
