@@ -270,6 +270,10 @@ class LightProbe extends Object3D {
 		updateInstance(texturePath == null ? null : "texturePath");
 	}
 
+	override function getPreloadFiles() {
+		return mode == Texture && texturePath != null ? [texturePath] : [];
+	}
+
 	override function updateInstance(?propName : String ) {
 		super.updateInstance(propName);
 		var lpo : LightProbeObject = cast local3d;

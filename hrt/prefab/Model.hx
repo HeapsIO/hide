@@ -14,6 +14,12 @@ class Model extends Object3D {
 		#end
 	}
 
+	override function getPreloadFiles() {
+		var files = super.getPreloadFiles();
+		if( animation != null && animation != source ) files.push(animation);
+		return files;
+	}
+
 	override function save() : Dynamic {
 		if( retargetIgnore == "" ) retargetIgnore = null;
 		return super.save();

@@ -635,6 +635,14 @@ class Prefab {
 	function editorRemoveInstanceObjects() : Void {
 	}
 
+
+	/**
+		Return a list of files required by this prefab to be eventually loaded. Not recursive.
+	**/
+	function getPreloadFiles() : Array<String> {
+		return source == null ? [] : [source];
+	}
+
 	/**
 		New hideKit based edit function. Return false if the edit function was not yet ported to the new system
 	**/

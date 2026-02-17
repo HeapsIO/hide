@@ -1765,6 +1765,13 @@ class Emitter extends Object3D {
 		}
 	}
 
+	override function getPreloadFiles():Array<String> {
+		var files = super.getPreloadFiles();
+		var sprite = EmitterHelper.getParamVal(PARAMS, props, "spriteSheet");
+		if( sprite != null ) files.push(sprite);
+		return files;
+	}
+
 	override function updateInstance(?propName : String ) {
 		super.updateInstance(propName);
 		var emitterObj = Std.downcast(local3d, EmitterObject);

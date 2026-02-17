@@ -45,6 +45,25 @@ class Shader extends Prefab {
 		#end
 	}
 
+	override function getPreloadFiles() {
+		var files : Array<String> = [];
+		var shaderDef = getShaderDefinition();
+		if( shaderDef == null )
+			return files;
+		for(v in shaderDef.data.vars) {
+			if(v.kind != Param)
+				continue;
+			switch( v.type ) {
+			case TSampler(_):
+				var val : Dynamic = Reflect.field(props, v.name);
+				if (Std.isOfType(val, String))
+					files.push(val);
+			default:
+			}
+		}
+		return files;
+	}
+
 	function syncShaderVars( shader : hxsl.Shader, shaderDef : hxsl.SharedShader ) {
 		for(v in shaderDef.data.vars) {
 			if(v.kind != Param)
