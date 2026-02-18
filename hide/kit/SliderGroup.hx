@@ -17,9 +17,9 @@ class SliderGroup extends Line {
 
 		lock = new hide.Element('<fancy-button class="fancy-tiny quiet" title="Link sliders">')[0];
 		lockIcon = new hide.Element('<div class="icon ico">')[0];
-		lock.appendChild(lockIcon);
+		lock.addChild(lockIcon);
 
-		lock.onclick = (e: js.html.MouseEvent) -> {
+		lock.get().onclick = (e: js.html.MouseEvent) -> {
 			isLocked = !isLocked;
 			saveSetting(Global, "lock", isLocked ? null : false);
 			refresh();
@@ -27,13 +27,13 @@ class SliderGroup extends Line {
 		isLocked = getSetting(Global, "lock") ?? true;
 		refresh();
 
-		labelGroup.appendChild(lock);
+		labelGroup.addChild(lock);
 
 
 		if (label != null) {
 			labelElement = js.Browser.document.createSpanElement();
-			labelElement.innerText = label ?? "";
-			labelGroup.appendChild(labelElement);
+			labelElement.get().innerText = label ?? "";
+			labelGroup.addChild(labelElement);
 		}
 
 		stealChildLabel(labelGroup);
@@ -41,20 +41,18 @@ class SliderGroup extends Line {
 		setupPropLine(labelGroup, null);
 
 		if (multiline) {
-			native.classList.add("multiline");
+			native.addClass("multiline");
 		}
 
 		#elseif hui
-		native = new hrt.ui.HuiElement();
-		native.dom.addClass("line");
-		//refreshLabel();
+		native = NativeElement.create("kit-line");
 		#end
 	}
 
 	function refresh() {
 		#if js
-        lockIcon.classList.toggle("ico-link", isLocked);
-        lockIcon.classList.toggle("ico-unlink", !isLocked);
+        lockIcon.toggleClass("ico-link", isLocked);
+        lockIcon.toggleClass("ico-unlink", !isLocked);
 		#end
 	}
 }

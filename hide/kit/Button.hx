@@ -53,24 +53,24 @@ class Button extends Element {
 		#if js
 
 		button = js.Browser.document.createElement("kit-button");
-		button.innerHTML = label;
+		button.get().innerHTML = label;
 		if (image != null) {
 			var imageElement = js.Browser.document.createElement("kit-image");
 			imageElement.style.backgroundImage = 'url(file://${hide.Ide.inst.getHideResPath(image)})';
-			button.appendChild(imageElement);
+			button.get().appendChild(imageElement);
 		}
 		if (medium) {
-			button.classList.add("kit-medium");
+			button.get().classList.add("kit-medium");
 		}
 		if (big) {
-			button.classList.add("kit-big");
+			button.get().classList.add("kit-big");
 		}
 
 		if (quiet) {
-			button.classList.add("kit-quiet");
+			button.get().classList.add("kit-quiet");
 		}
 
-		button.addEventListener("click", (e:js.html.MouseEvent) -> {
+		button.get().addEventListener("click", (e:js.html.MouseEvent) -> {
 			if (!disabled) {
 				broadcastClick();
 				e.preventDefault();
@@ -87,7 +87,7 @@ class Button extends Element {
 	function syncHightlight() {
 		#if js
 		if (button != null)
-			button.classList.toggle("highlight", highlight);
+			button.toggleClass("highlight", highlight);
 		#end
 	}
 }

@@ -58,7 +58,7 @@ class Input extends Widget<String> {
 	function syncPlaceholder() {
 		#if js
 		if (input != null && placeholder != null) {
-			input.setAttribute("placeholder", placeholder);
+			input.get().setAttribute("placeholder", placeholder);
 		}
 		#end
 	}

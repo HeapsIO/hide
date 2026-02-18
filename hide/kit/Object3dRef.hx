@@ -33,11 +33,11 @@ class Object3dRef extends Widget<String> {
 
 		select = js.Browser.document.createElement("kit-select");
 		text = js.Browser.document.createSpanElement();
-		select.appendChild(text);
+		select.addChild(text);
 
 		var entries = getNamedObjects();
 
-		select.onclick = (e: js.html.MouseEvent) -> {
+		select.get().onclick = (e: js.html.MouseEvent) -> {
 			var selectEntries: Array<hide.comp.ContextMenu.MenuItem> = [for (i => entry in entries) {label: entry.label, click: valueChanged.bind(entry.value)}];
 			if (dropdown == null) {
 				dropdown = hide.comp.ContextMenu.createDropdown(select, selectEntries);
@@ -54,7 +54,7 @@ class Object3dRef extends Widget<String> {
 				case Enter, Move, Leave:
 					if (data.data.get("drag/scenetree") != null)
 						data.dropTargetValidity = AllowDrop;
-					select.classList.toggle("fancy-drag-drop-target", event != Leave);
+					select.toggleClass("fancy-drag-drop-target", event != Leave);
 				case Drop: {
 					var objects : Array<hrt.prefab.Prefab> = cast data.data.get("drag/scenetree");
 					if (objects == null || objects.length == 0)
@@ -99,7 +99,7 @@ class Object3dRef extends Widget<String> {
 		var label = "--- Select ---";
 		if (value != null)
 			label = value.split(".").pop();
-		text.innerText = label;
+		text.get().innerText = label;
 		#end
 	}
 

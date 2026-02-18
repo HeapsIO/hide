@@ -147,7 +147,7 @@ class Element {
 
 		#if js
 		if (native != null && tooltip != null) {
-			native.title = tooltip;
+			native.get().title = tooltip;
 		}
 		#end
 	}
@@ -250,7 +250,7 @@ class Element {
 	function addEditMenu(e: NativeElement) {
 		#if js
 		if (!disabled) {
-			native.addEventListener("contextmenu", (e: js.html.MouseEvent) -> {
+			native.get().addEventListener("contextmenu", (e: js.html.MouseEvent) -> {
 				if ((cast e.target:js.html.Element).closest(".is-cdb-editor") != null)
 					return;
 				e.preventDefault();
@@ -298,40 +298,40 @@ class Element {
 		element instead.
 	**/
 	function setupPropLine(label: NativeElement, content: NativeElement, autoCreateLabel: Bool = true, bigContent: Bool = false) {
-		#if js
 		var parentLine = Std.downcast(parent, Line);
 
 		if (parentLine == null) {
-			native = js.Browser.document.createElement("kit-line");
-
+			native = NativeElement.create("kit-line");
 			addEditMenu(native);
-
 		} else {
-			native = js.Browser.document.createElement("kit-div");
+			native = NativeElement.create("kit-div");
 		}
 
 		if (label == null && autoCreateLabel) {
-			label = js.Browser.document.createElement("kit-label");
+			label = NativeElement.create("kit-label");
 		}
 
 		if (label != null) {
 			if (parentLine == null) {
-				label.classList.add("first");
+				label.addClass("first");
 			}
 			setupLabelReset(label);
-			native.appendChild(label);
+			native.addChild(label);
 		}
 		if (content != null) {
-			native.appendChild(content);
-			if (width != null)
-				native.style.setProperty('--width', '$width');
+			native.addChild(content);
+			if (width != null) {
+				#if js
+				native.get().style.setProperty('--width', '$width');
+				#end
+			}
 		}
-		#end
 	}
+
 
 	function setupLabelReset(label: NativeElement) {
 		#if js
-		label.onclick = (e: js.html.MouseEvent) -> {
+		label.get().onclick = (e: js.html.MouseEvent) -> {
 			if (e.button == 0) {
 				resetWithUndo();
 			}
@@ -349,7 +349,7 @@ class Element {
 			if (childWidget.label != null && childWidget.label.length > 0) {
 				var span = js.Browser.document.createSpanElement();
 				span.innerText = childWidget.label;
-				target.appendChild(span);
+				target.addChild(span);
 				childWidget.label = null;
 			}
 		}
@@ -494,11 +494,7 @@ class Element {
 	}
 
 	function attachChildNative(child: Element) : Void {
-		#if js
-		nativeContent.appendChild(child.native);
-		#elseif hui
 		nativeContent.addChild(child.native);
-		#end
 	}
 
 	function setEnabled(enabled: Bool) : Void {
@@ -560,7 +556,7 @@ class Element {
 	function refreshDisabled() {
 		#if js
 		if (native != null) {
-			native.classList.toggle("disabled", isDisabled());
+			native.toggleClass("disabled", isDisabled());
 		}
 		#end
 		for (child in children) {
@@ -679,17 +675,15 @@ class Element {
 	}
 
 	static public function setNativeColor(element: NativeElement, color: KitColor) {
-		#if js
 		if (element != null) {
-			element.classList.toggle("color-red", color == Red);
-			element.classList.toggle("color-orange", color == Orange);
-			element.classList.toggle("color-yellow", color == Yellow);
-			element.classList.toggle("color-green", color == Green);
-			element.classList.toggle("color-cyan", color == Cyan);
-			element.classList.toggle("color-blue", color == Blue);
-			element.classList.toggle("color-purple", color == Purple);
+			element.toggleClass("color-red", color == Red);
+			element.toggleClass("color-orange", color == Orange);
+			element.toggleClass("color-yellow", color == Yellow);
+			element.toggleClass("color-green", color == Green);
+			element.toggleClass("color-cyan", color == Cyan);
+			element.toggleClass("color-blue", color == Blue);
+			element.toggleClass("color-purple", color == Purple);
 		}
-		#end
 	}
 
 	#end

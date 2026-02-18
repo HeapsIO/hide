@@ -52,9 +52,9 @@ class Select extends Widget<Dynamic> {
 
 		select = js.Browser.document.createElement("kit-select");
 		text = js.Browser.document.createSpanElement();
-		select.appendChild(text);
+		select.addChild(text);
 
-		select.onclick = (e: js.html.MouseEvent) -> {
+		select.get().onclick = (e: js.html.MouseEvent) -> {
 			var selectEntries: Array<hide.comp.ContextMenu.MenuItem> = [for (i => entry in entries) {label: entry.label, click: valueChanged.bind(entry)}];
 			if (dropdown == null) {
 				dropdown = hide.comp.ContextMenu.createDropdown(select, selectEntries);
@@ -82,7 +82,7 @@ class Select extends Widget<Dynamic> {
 				break;
 			}
 		}
-		text.innerText = label;
+		text.get().innerText = label;
 		#end
 	}
 

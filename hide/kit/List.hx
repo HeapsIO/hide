@@ -49,9 +49,9 @@ class List<T> extends Widget<Array<T>> {
 		'
 		)[0];
 
-		var line = native.querySelector("kit-line");
-		listElement = native.querySelector("kit-list");
-		native.classList.toggle("no-collapse", noCollapse);
+		var line = native.get().querySelector("kit-line");
+		listElement = native.get().querySelector("kit-list");
+		native.toggleClass("no-collapse", noCollapse);
 
 		line.addEventListener("mousedown", (event: js.html.MouseEvent) -> {
 			if (event.button != 0 || noCollapse)
@@ -61,7 +61,7 @@ class List<T> extends Widget<Array<T>> {
 			refresh();
 		});
 
-		var add = native.querySelector(".add");
+		var add = native.get().querySelector(".add");
 		add.onmousedown = (e) -> {
 			e.stopPropagation();
 		}
@@ -76,7 +76,7 @@ class List<T> extends Widget<Array<T>> {
 			syncValueUI();
 		}
 
-		var clear = native.querySelector(".clear");
+		var clear = native.get().querySelector(".clear");
 		clear.onmousedown = (e) -> {
 			e.stopPropagation();
 		}
@@ -91,7 +91,7 @@ class List<T> extends Widget<Array<T>> {
 			syncValueUI();
 		}
 
-		listElement.addEventListener("dragleave", (e:js.html.DragEvent) -> {
+		listElement.get().addEventListener("dragleave", (e:js.html.DragEvent) -> {
 			if (!js.Browser.document.elementsFromPoint(e.clientX, e.clientY).contains(listElement)) {
 				resetDragStyle();
 			}
@@ -224,7 +224,7 @@ class List<T> extends Widget<Array<T>> {
 			});
 
 
-			listElement.appendChild(itemElement);
+			listElement.addChild(itemElement);
 		}
 		#end
 	}
@@ -278,7 +278,7 @@ class List<T> extends Widget<Array<T>> {
 
 	override function syncValueUI() {
 		#if js
-		var info = native.querySelector(".info");
+		var info = native.get().querySelector(".info");
 		info.innerHTML = '(${value.length} element(s))';
 		#end
 		regenerateItems();
@@ -298,9 +298,7 @@ class List<T> extends Widget<Array<T>> {
 	}
 
 	function refresh() {
-		#if js
-		native.classList.toggle("open", openState || noCollapse);
-		#end
+		native.toggleClass("open", openState || noCollapse);
 	}
 
 	override function valueEqual(a:Array<T>, b:Array<T>):Bool {

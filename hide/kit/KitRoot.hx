@@ -26,10 +26,10 @@ class KitRoot #if !macro extends Element #end {
 		if (editedPrefabsProperties.length > 1)
 			titleText += ' (${editedPrefabsProperties.length})';
 		title.textContent = titleText;
-		native.appendChild(title);
+		native.addChild(title);
 
 		var toolbar = js.Browser.document.createElement("kit-toolbar");
-		native.appendChild(toolbar);
+		native.addChild(toolbar);
 		var copyButton = new hide.Element('<fancy-button title="Copy all properties">').append(new hide.Element('<div class="icon ico ico-copy">'))[0];
 		toolbar.appendChild(copyButton);
 		copyButton.addEventListener("click", (e: js.html.MouseEvent) -> {
@@ -45,7 +45,7 @@ class KitRoot #if !macro extends Element #end {
 
 		#elseif hui
 		native = new hrt.ui.HuiElement();
-		native.dom.setId("root");
+		native.get().dom.setId("root");
 		#end
 	}
 

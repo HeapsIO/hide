@@ -48,9 +48,9 @@ class Category extends Widget<Null<Bool>> {
 				parent = parent.parent;
 			}
 		}
-		native.classList.add('level-$level');
-		jsContent = native.querySelector(".content");
-		var title = native.querySelector(".title");
+		native.addClass('level-$level');
+		jsContent = native.get().querySelector(".content");
+		var title = native.get().querySelector(".title");
 		title.addEventListener("mousedown", (event: js.html.MouseEvent) -> {
 			if (event.button != 0 || event.target == headerCheckbox)
 				return;
@@ -63,7 +63,7 @@ class Category extends Widget<Null<Bool>> {
 			refresh();
 		});
 
-		headerCheckbox = cast native.querySelector(".header-checkbox");
+		headerCheckbox = cast native.get().querySelector(".header-checkbox");
 		if (value != null) {
 			input = headerCheckbox;
 			headerCheckbox.addEventListener("input", () -> {
@@ -167,9 +167,7 @@ class Category extends Widget<Null<Bool>> {
 	}
 
 	function refresh() {
-		#if js
-		native.classList.toggle("open", openState);
-		#end
+		native.toggleClass("open", openState);
 	}
 }
 

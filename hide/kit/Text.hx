@@ -41,7 +41,7 @@ class Text extends Element {
 	function refreshText() {
 		#if js
 		if (text != null)
-			text.textContent = content;
+			text.get().textContent = content;
 		#elseif hui
 		if (text != null)
 			text.text = content;
