@@ -455,6 +455,7 @@ class FXEditor extends hide.view.FileView {
 		leftAnimPanel.onResize = () -> { @:privateAccess if( scene.window != null) scene.window.checkResize(); rebuildAnimPanel(); };
 
 		tlKeys.empty();
+		tlKeys.push({name:"Insert key", shortcut:"Ctrl + Click"});
 		tlKeys.push({name:"Undo", shortcut:"Ctrl Z"});
 		tlKeys.push({name:"Drag / zoom on Y axis", shortcut:"Hold shift during action"});
 		tlKeys.push({name:"Drag / zoom on X axis", shortcut:"Hold alt during action"});
