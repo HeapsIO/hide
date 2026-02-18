@@ -1,0 +1,21 @@
+hui-checkbox {
+	height: @widget-base-height;
+	width: @widget-base-height;
+	cursor: button;
+
+	background-type: hui;
+	> hui-background {
+		border-radius: @base-corner-radius;
+		outline: 1 @widget-border;
+	}
+
+	>#icon {
+		fill-width: true;
+		fill-height: true;
+		cursor: button;
+		background-type: hui;
+		> hui-background {
+			image: "ui/icons/tick.png" fit;
+		}
+	}
+}

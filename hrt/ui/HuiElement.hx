@@ -225,7 +225,6 @@ class HuiElement extends h2d.Flow #if hui implements h2d.domkit.Object #end {
 
 
 	function onOverInternal(e: hxd.Event) {
-		trace("over",name);
 		if (!enable)
 			return;
 		dom.hover = true;
@@ -234,7 +233,6 @@ class HuiElement extends h2d.Flow #if hui implements h2d.domkit.Object #end {
 	}
 
 	function onOutInternal(e: hxd.Event) {
-		trace("out",name);
 		if (!enable)
 			return;
 		dom.hover = false;

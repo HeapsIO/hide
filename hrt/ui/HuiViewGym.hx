@@ -75,9 +75,16 @@ class HuiViewGym extends HuiView<{}> {
 					<hui-element display-name={"Tab 15"}><hui-text("Tab 15")/></hui-element>
 				</hui-tab-container>
 			</hui-element>
+
+			<hui-text("hui-sliders")/>
 			<hui-element class="example">
 				<hui-slider/>
 				<hui-slider step={1} min={0} max={10} decimals={2}/>
+			</hui-element>
+
+			<hui-text("hui-checkbox")/>
+			<hui-element class="example">
+				<hui-checkbox/>
 			</hui-element>
 		</hui-view-gym>
 
