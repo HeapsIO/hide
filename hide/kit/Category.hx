@@ -83,6 +83,7 @@ class Category extends Widget<Null<Bool>> {
 
 		#elseif hui
 		native = hlCategory = new hrt.ui.HuiCategory();
+		openState = true;
 		hlCategory.headerName = name;
 		#end
 	}
@@ -119,6 +120,12 @@ class Category extends Widget<Null<Bool>> {
 				sections.push(currentSection);
 			}
 			currentSection.appendChild(child.native);
+		}
+		#else
+		if (child is Category) {
+			throw "handle subsections";
+		} else {
+			nativeContent.addChild(child.native);
 		}
 		#end
 	}

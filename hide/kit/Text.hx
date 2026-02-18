@@ -12,7 +12,7 @@ class Text extends Element {
 		return color;
 	}
 
-	var text: NativeElement;
+	var text: #if hui hrt.ui.HuiText #else NativeElement #end;
 
 	function set_content(v: String) : String {
 		content = v;
@@ -31,7 +31,9 @@ class Text extends Element {
 		setupPropLine(null, text, false);
 		refreshText();
 		#elseif hui
-		throw "HideKitHL Implement";
+		text = new hrt.ui.HuiText();
+		setupPropLine(null, text, false);
+		refreshText();
 		#end
 		Element.setNativeColor(text, color);
 	}
@@ -41,7 +43,8 @@ class Text extends Element {
 		if (text != null)
 			text.textContent = content;
 		#elseif hui
-		throw "HideKitHL Implement";
+		if (text != null)
+			text.text = content;
 		#end
 	}
 }

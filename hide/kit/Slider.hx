@@ -233,7 +233,7 @@ class Slider<T:Float> extends Widget<T> {
 		// slider.slider.minValue = -10;
 		// slider.slider.maxValue = 10;
 		// return slider;
-		return null;
+		return new hrt.ui.HuiSlider();
 		#else
 		return null;
 		#end

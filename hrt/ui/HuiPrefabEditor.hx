@@ -26,7 +26,7 @@ class HuiPrefabEditor extends HuiElement {
 				</hui-split-container>
 
 				<hui-element id="inspector-panel">
-					<hui-text("inspector")/>
+					<hui-inspector id="inspector"/>
 				</hui-element>
 			</hui-split-container>
 		</hui-prefab-editor>
@@ -74,45 +74,7 @@ class HuiPrefabEditor extends HuiElement {
 	}
 
 	function refreshInspector() {
-		var selection : Array<hrt.prefab.Prefab> = [ for (prefab => _ in selectedPrefabs) prefab];
-
-		var commonClass = hrt.tools.ClassUtils.getCommonClass(selection, hrt.prefab.Prefab);
-
-		var isMultiEdit = selection.length > 1;
-		var editPrefab : hrt.prefab.Prefab = if (isMultiEdit) {
-			var p = Type.createInstance(commonClass, [null, new hrt.prefab.ContextShared(selection[0].shared.currentPath)]);
-			p.load(haxe.Json.parse(haxe.Json.stringify(selection[0].save())));
-			p;
-		} else {
-			selection[0];
-		}
-
-		var editContext = new EditContext(this, null);
-		var baseRoot = new hide.kit.KitRoot(null, null, editPrefab, editContext);
-		@:privateAccess baseRoot.isMultiEdit = isMultiEdit;
-
-		//@:privateAccess editContext.saveKey = Type.getClassName(commonClass);
-		editContext.root = baseRoot;
-
-		editPrefab.edit2(editContext);
-		baseRoot.postEditStep();
-
-		if (isMultiEdit) {
-			for (i => prefab in selection) {
-				var childEditContext = new EditContext(this, editContext);
-				//@:privateAccess childEditContext.saveKey = Type.getClassName(commonClass);
-				var childRoot = new hide.kit.KitRoot(null, null, prefab, childEditContext);
-				@:privateAccess childRoot.isMultiEdit = true;
-				childEditContext.root = childRoot;
-				prefab.edit2(childEditContext);
-				childRoot.postEditStep();
-			}
-		}
-
-		baseRoot.make();
-
-		inspectorPanel.removeChildElements();
-		inspectorPanel.addChild(@:privateAccess baseRoot.native);
+		inspector.inspect([ for (prefab => _ in selectedPrefabs) prefab], (parent) -> new EditContext(this, parent));
 	}
 
 	function treePrefabGetItemChildren(prefab: hrt.prefab.Prefab) {
