@@ -80,8 +80,7 @@ abstract class Widget<ValueType> extends Element {
 		labelElement = new hrt.ui.HuiText(labelContainer);
 		labelElement.text = label;
 
-
-		input = makeInput();
+		input = makeInput() ?? new hrt.ui.HuiText('Missing makeInput for ${Type.getClassName(Type.getClass(this))}');
 		native.addChild(input);
 		#end
 

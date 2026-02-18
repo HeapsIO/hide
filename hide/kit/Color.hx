@@ -35,8 +35,9 @@ class Color extends Widget<Dynamic> {
 			broadcastValueChange(isTemp);
 		}
 		return colorBox.element[0];
+		#else
+		return null;
 		#end
-		throw "implement";
 	}
 
 	override function syncValueUI() {

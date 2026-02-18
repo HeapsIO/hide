@@ -131,6 +131,11 @@ class Element {
 			disabled = true;
 
 		makeSelf();
+		#if hui
+		if (native == null) {
+			native = new hrt.ui.HuiText('missing makeSelf implem for ${Type.getClassName(Type.getClass(this))}');
+		}
+		#end
 
 		if (attach && parent != null)
 			parent.attachChildNative(this);

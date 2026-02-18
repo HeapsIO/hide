@@ -2,6 +2,13 @@ package hrt.ui;
 
 #if hui
 
+enum SelectionFlag {
+	NoRefreshTree;
+	NoRecordUndo;
+}
+
+typedef SelectionFlags = haxe.EnumFlags<SelectionFlag>;
+
 @:access(hrt.prefab.Prefab)
 class HuiPrefabEditor extends HuiElement {
 	static var SRC =
@@ -29,6 +36,8 @@ class HuiPrefabEditor extends HuiElement {
 	var cameraController : h3d.scene.CameraController;
 	var treePrefab: hrt.ui.HuiTree<hrt.prefab.Prefab>;
 
+	var selectedPrefabs: Map<hrt.prefab.Prefab, Bool> = [];
+
 	var config : hide.Config;
 
 	override function new(?parent) {
@@ -41,6 +50,69 @@ class HuiPrefabEditor extends HuiElement {
 		treePrefab = new hrt.ui.HuiTree<hrt.prefab.Prefab>(panelTree);
 		treePrefab.getItemChildren = treePrefabGetItemChildren;
 		treePrefab.getItemName = (p: hrt.prefab.Prefab) -> p.name;
+		treePrefab.onUserSelectionChanged = () -> {
+			setSelection(treePrefab.getSelectedItems(), NoRefreshTree);
+		}
+	}
+
+	function setSelection(selection: Array<hrt.prefab.Prefab>, flags: SelectionFlags) {
+		if (!flags.has(NoRecordUndo)) {
+
+		}
+
+		selectedPrefabs.clear();
+
+		for (prefab in selection) {
+			selectedPrefabs.set(prefab, true);
+		}
+
+		if (!flags.has(NoRefreshTree)) {
+			treePrefab.setSelection(selection);
+		}
+
+		refreshInspector();
+	}
+
+	function refreshInspector() {
+		var selection : Array<hrt.prefab.Prefab> = [ for (prefab => _ in selectedPrefabs) prefab];
+
+		var commonClass = hrt.tools.ClassUtils.getCommonClass(selection, hrt.prefab.Prefab);
+
+		var isMultiEdit = selection.length > 1;
+		var editPrefab : hrt.prefab.Prefab = if (isMultiEdit) {
+			var p = Type.createInstance(commonClass, [null, new hrt.prefab.ContextShared(selection[0].shared.currentPath)]);
+			p.load(haxe.Json.parse(haxe.Json.stringify(selection[0].save())));
+			p;
+		} else {
+			selection[0];
+		}
+
+		var editContext = new EditContext(this, null);
+		var baseRoot = new hide.kit.KitRoot(null, null, editPrefab, editContext);
+		@:privateAccess baseRoot.isMultiEdit = isMultiEdit;
+
+		//@:privateAccess editContext.saveKey = Type.getClassName(commonClass);
+		editContext.root = baseRoot;
+
+		editPrefab.edit2(editContext);
+		baseRoot.postEditStep();
+
+		if (isMultiEdit) {
+			for (i => prefab in selection) {
+				var childEditContext = new EditContext(this, editContext);
+				//@:privateAccess childEditContext.saveKey = Type.getClassName(commonClass);
+				var childRoot = new hide.kit.KitRoot(null, null, prefab, childEditContext);
+				@:privateAccess childRoot.isMultiEdit = true;
+				childEditContext.root = childRoot;
+				prefab.edit2(childEditContext);
+				childRoot.postEditStep();
+			}
+		}
+
+		baseRoot.make();
+
+		inspectorPanel.removeChildElements();
+		inspectorPanel.addChild(@:privateAccess baseRoot.native);
 	}
 
 	function treePrefabGetItemChildren(prefab: hrt.prefab.Prefab) {
@@ -174,6 +246,90 @@ class HuiPrefabEditor extends HuiElement {
 			if (tryMake(renderProp))
 				break;
 		}
+	}
+}
+
+@:access(hrt.ui.HuiPrefabEditor)
+class EditContext extends hrt.prefab.EditContext2 {
+	var editor : HuiPrefabEditor;
+
+	public function new(editor: HuiPrefabEditor, parent: hrt.prefab.EditContext2) {
+		super(parent);
+		this.editor = editor;
+	}
+
+	public function rebuildInspector() : Void {
+		throw "implement";
+	};
+
+	public function rebuildPrefab(prefab: hrt.prefab.Prefab) : Void {
+		throw "implement";
+	}
+
+	/**
+		Request that the scene tree widget should be rebuild for the given prefab
+	**/
+	public function rebuildTree(prefab: hrt.prefab.Prefab) : Void {
+		editor.treePrefab.rebuild();
+	}
+
+
+	public function getScene3d() : h3d.scene.Scene {
+		return editor.scene.s3d;
+	}
+
+	public function getScene2d() : h2d.Scene {
+		return editor.scene.s2d;
+	}
+
+	/**
+		Return the camera controller of the current editor
+	**/
+	public function getCameraController3d() : Dynamic {
+		return editor.cameraController;
+	}
+
+	public function openFile(path: String) : Void {
+		return hide.Ide.inst.openFile(path);
+	}
+
+	public function openPrefab(path: String, ?afterOpen : (ctx: hrt.prefab.SceneEditorAPI) -> Void) : Void {
+		throw "implement";
+		return hide.Ide.inst.openFile(path);
+	}
+
+	/**
+		Prompt the user to select a file, and then call callback with the chosen path.
+	**/
+	public function chooseFileSave(path: String, callback:(absPath: String) -> Void, allowNull: Bool = false) : Void {
+		throw "implement";
+	}
+
+	public function listMaterialLibraries(path: String) : Array<{path: String, name: String}> {
+		throw "implement";
+	}
+
+	public function quickError(message: String) : Void {
+		hide.Ide.showError(message);
+	}
+
+	public function screenToGround(sx: Float, sy: Float, ?paintOn : hrt.prefab.Prefab, ignoreTerrain: Bool = false) : h3d.Vector {
+		throw "implement";
+	}
+
+	public function recordUndo(callback: (isUndo: Bool) -> Void ) : Void {
+		throw "implement";
+	}
+
+	function saveSetting(category: hrt.prefab.EditContext2.SettingCategory, key: String, value: Dynamic) : Void {
+		throw "implement";
+	}
+	function getSetting(category: hrt.prefab.EditContext2.SettingCategory, key: String) : Null<Dynamic> {
+		throw "implement";
+	}
+
+	function getRootObjects3d() : Array<h3d.scene.Object> {
+		throw "implement";
 	}
 }
 

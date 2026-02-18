@@ -100,7 +100,7 @@ class HuiTree<TreeItem> extends HuiElement {
 
 				if (!hxd.Key.isDown(hxd.Key.CTRL)) {
 					selectedElements.clear();
-					requestRefresh();
+					userSelectionChanged();
 				}
 			}
 		}
@@ -191,6 +191,22 @@ class HuiTree<TreeItem> extends HuiElement {
 
 	}
 
+	/**
+		Called every time the selection changed by an action from the user
+	**/
+	public dynamic function onUserSelectionChanged() : Void {
+
+	}
+
+	function userSelectionChanged() : Void {
+		requestRefresh();
+		onUserSelectionChanged();
+	}
+
+	/**
+		Replace the current selected elements in the tree with selection.
+		Does not call onUserSelectionChanged
+	**/
 	public function setSelection(selection: Array<TreeItem>) : Void {
 		selectedElements.clear();
 		for (item in selection) {
@@ -200,6 +216,10 @@ class HuiTree<TreeItem> extends HuiElement {
 			}
 		}
 		requestRefresh();
+	}
+
+	public function getSelectedItems() : Array<TreeItem> {
+		return [for (item => _ in selectedElements) (cast item:TreeItemData).item];
 	}
 
 	override function sync(ctx:h2d.RenderContext) {
@@ -249,7 +269,7 @@ class HuiTree<TreeItem> extends HuiElement {
 				selectedElements.set(cast data, true);
 				lastSelectedElement = data;
 			}
-			requestRefresh();
+			userSelectionChanged();
 		}
 
 		line.onDoubleClick = (e) -> {
