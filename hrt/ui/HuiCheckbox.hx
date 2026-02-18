@@ -17,7 +17,10 @@ class HuiCheckbox extends HuiElement {
 		onClick = (e: hxd.Event) -> {
 			value = !value;
 			icon.visible = value;
+			onValueChanged();
 		}
 	}
+
+	public dynamic function onValueChanged() {}
 }
 #end
