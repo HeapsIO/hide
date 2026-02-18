@@ -1,0 +1,21 @@
+hui-button {
+	min-height: @widget-base-height;
+	min-width: @widget-base-height;
+	padding: 3 5 3 5;
+	.button();
+
+	background-type: hui;
+	> hui-background {
+		border-radius: @base-corner-radius;
+		outline: 1 @widget-border;
+	}
+
+	hui-element {
+		valign: middle;
+	}
+
+	>hui-text {
+		valign: middle;
+		margin-top: -1px;
+	}
+}
