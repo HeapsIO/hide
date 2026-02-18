@@ -25,6 +25,12 @@ class HuiTreeLine extends HuiElement {
 			if (e.button == 0)
 				onCaretClick();
 		}
+
+		onPush = (e) -> {
+			if (e.button == 0) {
+				onItemSelect(hxd.Key.isDown(hxd.Key.SHIFT), hxd.Key.isDown(hxd.Key.CTRL));
+			}
+		}
 	}
 
 	public function refresh() {
@@ -33,10 +39,15 @@ class HuiTreeLine extends HuiElement {
 		paddingLeft = data.depth * 5;
 		dom.toggleClass("children", tree.hasChildren(data.item));
 		dom.toggleClass("open", tree.isOpen(data));
+		dom.toggleClass("selected", tree.isSelected(data));
 		@:privateAccess dom.toggleClass("keyboard-selected", tree.keyboardFocus == data);
 	}
 
 	dynamic public function onCaretClick() {
+
+	}
+
+	dynamic public function onItemSelect(shift: Bool, ctrl: Bool) {
 
 	}
 }

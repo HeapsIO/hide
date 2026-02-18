@@ -44,6 +44,17 @@ hui-tree-line {
 		> #caret > hui-background {
 			image-angle: -1.57079632679489661923;
 		}
+
+	}
+
+	&.selected {
+		> hui-background {
+			background: @color-accent;
+		}
+
+		&:hover > hui-background {
+			background: lighten(@color-accent, @light-hover);
+		}
 	}
 
 	&.children {

@@ -4,6 +4,7 @@ import hrt.ui.HuiTreeLine;
 #if hui
 
 enum RefreshFlag {
+	Refresh;
 	RegenerateFlatten;
 	RootData;
 }
@@ -39,6 +40,9 @@ class HuiTree<TreeItem> extends HuiElement {
 	var rootData: Array<TreeItemData> = [];
 	var flatList: Array<TreeItemData> = [];
 	var keyboardFocus: TreeItemData = null;
+
+	var selectedElements: Map<{}, Bool> = [];
+	var lastSelectedElement: TreeItemData = null;
 
 	/**TreeItem -> TreeItemData map**/
 	var itemMap : Map<{}, TreeItemData> = [];
@@ -93,6 +97,11 @@ class HuiTree<TreeItem> extends HuiElement {
 			if (e.button == 0) {
 				interactive.focus();
 				e.propagate = false;
+
+				if (!hxd.Key.isDown(hxd.Key.CTRL)) {
+					selectedElements.clear();
+					requestRefresh();
+				}
 			}
 		}
 	}
@@ -111,7 +120,7 @@ class HuiTree<TreeItem> extends HuiElement {
 		}
 	}
 
-	function requestRefresh(refreshFlag: RefreshFlag) {
+	function requestRefresh(refreshFlag: RefreshFlag = RefreshFlag.Refresh) {
 		refreshFlags.set(refreshFlag);
 	}
 
@@ -182,6 +191,17 @@ class HuiTree<TreeItem> extends HuiElement {
 
 	}
 
+	public function setSelection(selection: Array<TreeItem>) : Void {
+		selectedElements.clear();
+		for (item in selection) {
+			var data = itemMap.get(cast item);
+			if (data == null) {
+				selectedElements.set(cast item, true);
+			}
+		}
+		requestRefresh();
+	}
+
 	override function sync(ctx:h2d.RenderContext) {
 		super.sync(ctx);
 
@@ -196,6 +216,8 @@ class HuiTree<TreeItem> extends HuiElement {
 				list.setItems(flatList);
 			}
 
+			list.refresh();
+
 			refreshFlags = RefreshFlags.ofInt(0);
 		}
 	}
@@ -205,6 +227,29 @@ class HuiTree<TreeItem> extends HuiElement {
 
 		line.onCaretClick = () -> {
 			toggleItemOpen(data);
+		}
+
+		line.onItemSelect = (shift, ctrl) -> {
+			if (!ctrl) {
+				selectedElements.clear();
+			}
+
+			if (shift && lastSelectedElement != null) {
+				var idx = flatList.indexOf(lastSelectedElement);
+				var ourIndex = flatList.indexOf(data);
+				var min = hxd.Math.imin(idx, ourIndex);
+				var max = hxd.Math.imax(idx, ourIndex);
+
+				if (min >= 0) {
+					for (i in min...max+1) {
+						selectedElements.set(cast flatList[i], true);
+					}
+				}
+			} else {
+				selectedElements.set(cast data, true);
+				lastSelectedElement = data;
+			}
+			requestRefresh();
 		}
 
 		line.onDoubleClick = (e) -> {
@@ -289,8 +334,12 @@ class HuiTree<TreeItem> extends HuiElement {
 		rec(rootData);
 	}
 
-	public function isOpen(data: TreeItemData) {
+	public function isOpen(data: TreeItemData) : Bool {
 		return (openState.get(data.identifier) ?? false) || data.filterState.has(Open);
+	}
+
+	public function isSelected(data: TreeItemData) : Bool {
+		return selectedElements.get(cast data) == true;
 	}
 }
 

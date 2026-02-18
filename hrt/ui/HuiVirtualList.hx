@@ -44,6 +44,10 @@ class HuiVirtualList<T> extends HuiElement {
 
 	}
 
+	public function refresh() {
+		needRefresh = true;
+	}
+
 	function new(?parent) {
 		super(parent);
 		initComponent();
