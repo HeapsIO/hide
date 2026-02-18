@@ -1,7 +1,29 @@
 hui-category {
 	layout: vertical;
 
+	> #header {
+		fill-width: true;
+		padding: 1 0 1 0;
+		cursor: button;
+
+		background-type: hui;
+		> hui-background {
+			background: @widget-bg;
+		}
+
+		&:hover {
+			> hui-background {
+				background: @color-over;
+			}
+		}
+
+		> * {
+			valign: middle;
+		}
+	}
+
 	> #content {
 		layout: vertical;
+		padding: 10;
 	}
 }

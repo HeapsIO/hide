@@ -9,6 +9,10 @@ class HuiIcon extends HuiElement {
 		super(parent);
 		initComponent();
 		this.backgroundType = "hui";
+		setIcon(iconName);
+	}
+
+	public function setIcon(iconName : String) {
 		this.huiBg.image = { path: 'ui/icons/${iconName}.png', mode: CssParser.BackgroundImageMode.Fit };
 	}
 }
