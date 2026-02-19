@@ -80,7 +80,7 @@ class SliderGroup extends Line {
 
 		#else
 
-		lineContent = NativeElement.create("kit-line-content");
+		lineContent = new hrt.ui.HuiLine();
 		setupPropLine(labelGroup, lineContent);
 
 		#end

@@ -320,10 +320,9 @@ class Element {
 		}
 		if (content != null) {
 			#if hui
-			if (!content.get().dom.hasClass("kit-line-content")) {
-				var wrapper = NativeElement.create("kit-line-content");
+			if (Std.downcast(content, hrt.ui.HuiLine) == null) {
+				var wrapper = new hrt.ui.HuiLine(native);
 				wrapper.addChild(content);
-				native.addChild(wrapper);
 			} else {
 				native.addChild(content);
 			}
