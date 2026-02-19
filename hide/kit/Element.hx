@@ -362,7 +362,7 @@ class Element {
 				childWidget.label = null;
 			}
 		}
-		#else
+		#elseif hui
 		var childWidget = Std.downcast(children[0], Widget);
 		if (childWidget != null) {
 			if (childWidget.label != null && childWidget.label.length > 0) {

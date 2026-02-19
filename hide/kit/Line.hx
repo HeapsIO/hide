@@ -53,7 +53,7 @@ class Line extends Element {
 		if (multiline) {
 			me = NativeElement.create("kit-multiline");
 		}
-		#else
+		#elseif hui
 		me = new hrt.ui.HuiLine();
 		#end
 

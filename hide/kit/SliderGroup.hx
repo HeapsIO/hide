@@ -78,7 +78,7 @@ class SliderGroup extends Line {
 			native.addClass("multiline");
 		}
 
-		#else
+		#elseif hui
 
 		lineContent = new hrt.ui.HuiLine();
 		setupPropLine(labelGroup, lineContent);
