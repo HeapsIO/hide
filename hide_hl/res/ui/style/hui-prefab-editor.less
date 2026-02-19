@@ -9,4 +9,52 @@ hui-prefab-editor {
 			anchor-to: end;
 		}
 	}
+
+	#inspector-panel {
+		valign: top;
+
+		> #root {
+			valign: top;
+			layout: vertical;
+
+			.kit-line {
+				height: 16;
+			}
+
+			.first {
+				width: 80;
+				height: 16;
+				> * {
+					halign: right;
+				}
+			}
+
+			.kit-label {
+
+			}
+
+			.kit-line-content {
+				width: 300;
+			}
+
+			.kit-lock {
+				width: 16;
+				height: 16;
+
+				background-type: hui;
+				> hui-background {
+					image: "ui/icons/link-break.png" fit;
+					image-color: @color-foreground-muted;
+				}
+
+				&:hover > hui-background {
+					image-color: @color-foreground;
+				}
+
+				&.locked > hui-background {
+					image: "ui/icons/link.png" fit;
+				}
+			}
+		}
+	}
 }

@@ -26,7 +26,6 @@ class HuiPrefabEditor extends HuiElement {
 				</hui-split-container>
 
 				<hui-element id="inspector-panel">
-					<hui-inspector id="inspector"/>
 				</hui-element>
 			</hui-split-container>
 		</hui-prefab-editor>
@@ -74,7 +73,50 @@ class HuiPrefabEditor extends HuiElement {
 	}
 
 	function refreshInspector() {
-		inspector.inspect([ for (prefab => _ in selectedPrefabs) prefab], (parent) -> new EditContext(this, parent));
+		var prefabs = [for (prefab => _ in selectedPrefabs) prefab];
+
+		inspectorPanel.removeChildElements();
+
+		if (prefabs.length == 0)
+			return;
+
+		var commonClass = hrt.tools.ClassUtils.getCommonClass(prefabs, hrt.prefab.Prefab);
+
+		var isMultiEdit = prefabs.length > 1;
+		var editPrefab : hrt.prefab.Prefab = if (isMultiEdit) {
+			var p = Type.createInstance(commonClass, [null, new hrt.prefab.ContextShared(prefabs[0].shared.currentPath)]);
+			p.load(haxe.Json.parse(haxe.Json.stringify(prefabs[0].save())));
+			p;
+		} else {
+			prefabs[0];
+		}
+
+		var editContext = new EditContext(this, null);
+		var baseRoot = new hide.kit.KitRoot(null, null, editPrefab, editContext);
+		@:privateAccess baseRoot.isMultiEdit = isMultiEdit;
+
+		@:privateAccess editContext.saveKey = Type.getClassName(commonClass);
+		editContext.root = baseRoot;
+
+		editPrefab.edit2(editContext);
+		baseRoot.postEditStep();
+
+		if (isMultiEdit) {
+			for (i => prefab in prefabs) {
+				var childEditContext = new EditContext(this, editContext);
+				@:privateAccess childEditContext.saveKey = Type.getClassName(commonClass);
+				var childRoot = new hide.kit.KitRoot(null, null, prefab, childEditContext);
+				@:privateAccess childRoot.isMultiEdit = true;
+				baseRoot.editedPrefabsProperties.push(childRoot);
+				childEditContext.root = childRoot;
+				prefab.edit2(childEditContext);
+				childRoot.postEditStep();
+			}
+		}
+
+		baseRoot.make();
+
+		inspectorPanel.addChild(@:privateAccess baseRoot.native);
 	}
 
 	function treePrefabGetItemChildren(prefab: hrt.prefab.Prefab) {
@@ -214,6 +256,7 @@ class HuiPrefabEditor extends HuiElement {
 @:access(hrt.ui.HuiPrefabEditor)
 class EditContext extends hrt.prefab.EditContext2 {
 	var editor : HuiPrefabEditor;
+	var saveKey: String;
 
 	public function new(editor: HuiPrefabEditor, parent: hrt.prefab.EditContext2) {
 		super(parent);
@@ -284,14 +327,36 @@ class EditContext extends hrt.prefab.EditContext2 {
 	}
 
 	function saveSetting(category: hrt.prefab.EditContext2.SettingCategory, key: String, value: Dynamic) : Void {
-		throw "implement";
+		if (parent != null)
+			return;
+
+		if (value == null) {
+			hide.Ide.inst.deleteLocalStorage(getSaveKey(category, key));
+			return;
+		}
+		hide.Ide.inst.saveLocalStorage(getSaveKey(category, key), value);
 	}
+
 	function getSetting(category: hrt.prefab.EditContext2.SettingCategory, key: String) : Null<Dynamic> {
-		throw "implement";
+		var v = hide.Ide.inst.getLocalStorage(getSaveKey(category, key));
+		if (v == null)
+			return null;
+		return v;
 	}
 
 	function getRootObjects3d() : Array<h3d.scene.Object> {
 		throw "implement";
+	}
+
+	function getSaveKey(category: hrt.prefab.EditContext2.SettingCategory, key: String) {
+		var mid = switch(category) {
+			case Global:
+				"global";
+			case SameKind:
+				saveKey;
+		};
+
+		return 'inspector/$mid/$key';
 	}
 }
 

@@ -10,10 +10,12 @@ class SliderGroup extends Line {
 	var lockIcon : NativeElement;
 
 	override function makeSelf():Void {
+
+
+		labelGroup = NativeElement.create("kit-label");
+
+
 		#if js
-
-
-		labelGroup = js.Browser.document.createElement("kit-label");
 
 		lock = new hide.Element('<fancy-button class="fancy-tiny quiet" title="Link sliders">')[0];
 		lockIcon = new hide.Element('<div class="icon ico">')[0];
@@ -24,8 +26,6 @@ class SliderGroup extends Line {
 			saveSetting(Global, "lock", isLocked ? null : false);
 			refresh();
 		}
-		isLocked = getSetting(Global, "lock") ?? true;
-		refresh();
 
 		labelGroup.addChild(lock);
 
@@ -36,6 +36,25 @@ class SliderGroup extends Line {
 			labelGroup.addChild(labelElement);
 		}
 
+		#elseif hui
+
+		var huiLock = new hrt.ui.HuiElement(labelGroup);
+		huiLock.dom.addClass("kit-lock");
+
+		huiLock.onClick = (e) ->  {
+			isLocked = !isLocked;
+			saveSetting(Global, "lock", isLocked ? null : false);
+			refresh();
+		}
+
+		lock = huiLock;
+
+		#end
+
+
+		isLocked = getSetting(Global, "lock") ?? true;
+		refresh();
+
 		stealChildLabel(labelGroup);
 
 		setupPropLine(labelGroup, null);
@@ -43,16 +62,14 @@ class SliderGroup extends Line {
 		if (multiline) {
 			native.addClass("multiline");
 		}
-
-		#elseif hui
-		native = new hrt.ui.HuiLine();
-		#end
 	}
 
 	function refresh() {
 		#if js
         lockIcon.toggleClass("ico-link", isLocked);
         lockIcon.toggleClass("ico-unlink", !isLocked);
+		#elseif hui
+        lock.toggleClass("locked", isLocked);
 		#end
 	}
 }

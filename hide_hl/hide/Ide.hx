@@ -25,6 +25,12 @@ class Ide extends hide.tools.IdeData {
 		queueStorageSave();
 	}
 
+	public function deleteLocalStorage(key: String) {
+		Reflect.deleteField(localStorage, key);
+
+		queueStorageSave();
+	}
+
 	function queueStorageSave() {
 		if (!localStorageSaveQueued) {
 		localStorageSaveQueued = true;
