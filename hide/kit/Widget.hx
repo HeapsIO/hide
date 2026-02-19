@@ -68,7 +68,7 @@ abstract class Widget<ValueType> extends Element {
 		labelElement.get().innerHTML = label;
 		#elseif hui
 		labelElement = NativeElement.create("kit-label");
-		new hrt.ui.HuiText(label, labelElement);
+		new hrt.ui.HuiText(label ?? "", labelElement);
 		#end
 
 		if (!customIndeterminate() && isIndeterminate()) {

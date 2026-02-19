@@ -353,6 +353,16 @@ class Element {
 				childWidget.label = null;
 			}
 		}
+		#else
+		var childWidget = Std.downcast(children[0], Widget);
+		if (childWidget != null) {
+			if (childWidget.label != null && childWidget.label.length > 0) {
+				var span = new hrt.ui.HuiElement();
+				var text = new hrt.ui.HuiText(childWidget.label, span);
+				target.addChild(span);
+				childWidget.label = null;
+			}
+		}
 		#end
 	}
 
