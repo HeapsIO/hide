@@ -75,6 +75,8 @@ abstract class Widget<ValueType> extends Element {
 			makeIndeterminateWidget();
 		}
 		else {
+			if (parentLine != null)
+				trace("e");
 			input = makeInput();
 			setupPropLine(labelElement, input);
 			syncValueUI();

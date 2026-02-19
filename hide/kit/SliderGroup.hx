@@ -45,7 +45,7 @@ class SliderGroup extends Line {
 		}
 
 		#elseif hui
-		native = NativeElement.create("kit-line");
+		native = new hrt.ui.HuiLine();
 		#end
 	}
 

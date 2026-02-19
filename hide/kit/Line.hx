@@ -54,9 +54,10 @@ class Line extends Element {
 			me = NativeElement.create("kit-multiline");
 		}
 		#else
-		me = NativeElement.create("kit-line-content");
-		if (multiline)
-			me.addClass("kit-multiline");
+		// me = NativeElement.create("kit-line-content");
+		// if (multiline)
+		// 	me.addClass("kit-multiline");
+		me = new hrt.ui.HuiLine();
 		#end
 
 		setupPropLine(labelElement, me, false);
