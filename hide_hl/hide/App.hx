@@ -21,11 +21,30 @@ class App extends hxd.App {
 		if (hide.Ide.inst.ideConfig.recentProjects?.length > 0) {
 			@:privateAccess hide.Ide.inst.setProject(hide.Ide.inst.ideConfig.recentProjects[0]);
 		}
+
+
+
+		var winSize = ide.getLocalStorage("windowSize") ?? {w: 800, h: 600};
+		// hxd.Window.getInstance().resize(winSize.w, winSize.h);
+		#if hldx
+		@:privateAccess hxd.Window.getInstance().window.maximize();
+		#end
+	}
+
+	override function onResize() {
+		super.onResize();
+		var win = hxd.Window.getInstance();
+		hide.Ide.inst.saveLocalStorage("windowSize", {w: win.width, h: win.height});
+	}
+
+	override function dispose() {
+		ide.dispose();
 	}
 
 	override public function update(dt: Float) {
 		super.update(dt);
 
+		ide.update(dt);
 		tryCall(() -> ui.updateStyle(dt));
 
 		updateProfiling();
