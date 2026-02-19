@@ -6,7 +6,7 @@ abstract NativeElement(NativeElementType) from NativeElementType to NativeElemen
 	public function addClass(name: String) {
 		#if js
 		this.classList.add(name);
-		#else
+		#elseif hui
 		this.dom.addClass(name);
 		#end
 	}
@@ -14,7 +14,7 @@ abstract NativeElement(NativeElementType) from NativeElementType to NativeElemen
 	public function toggleClass(name: String, ?force: Bool) {
 		#if js
 		this.classList.toggle(name, force);
-		#else
+		#elseif hui
 		this.dom.toggleClass(name, force);
 		#end
 	}
