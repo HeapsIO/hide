@@ -30,7 +30,7 @@ class Line extends Element {
 				labelElement.addChild(NativeElement.create("kit-push"));
 			}
 
-			if (label != null) {
+			if (label != null && label.length > 0) {
 				#if js
 				var span = js.Browser.document.createSpanElement();
 				span.innerText = label;

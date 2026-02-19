@@ -9,6 +9,13 @@ class SliderGroup extends Line {
 	var lock : NativeElement;
 	var lockIcon : NativeElement;
 
+	#if hui
+	var lineContent : NativeElement;
+	override function get_nativeContent():NativeElement {
+		return lineContent;
+	}
+	#end
+
 	override function makeSelf():Void {
 
 
@@ -47,6 +54,12 @@ class SliderGroup extends Line {
 			refresh();
 		}
 
+		if (label != null) {
+			labelElement = NativeElement.create("kit-label");
+			new hrt.ui.HuiText(label, labelElement);
+			labelGroup.addChild(labelElement);
+		}
+
 		lock = huiLock;
 
 		#end
@@ -57,11 +70,20 @@ class SliderGroup extends Line {
 
 		stealChildLabel(labelGroup);
 
+		#if js
+
 		setupPropLine(labelGroup, null);
 
 		if (multiline) {
 			native.addClass("multiline");
 		}
+
+		#else
+
+		lineContent = NativeElement.create("kit-line-content");
+		setupPropLine(labelGroup, lineContent);
+
+		#end
 	}
 
 	function refresh() {

@@ -67,8 +67,10 @@ abstract class Widget<ValueType> extends Element {
 		labelElement = js.Browser.document.createElement("kit-label");
 		labelElement.get().innerHTML = label;
 		#elseif hui
-		labelElement = NativeElement.create("kit-label");
-		new hrt.ui.HuiText(label ?? "", labelElement);
+		if (label != null && label.length > 0) {
+			labelElement = NativeElement.create("kit-label");
+			new hrt.ui.HuiText(label, labelElement);
+		}
 		#end
 
 		if (!customIndeterminate() && isIndeterminate()) {
@@ -78,7 +80,7 @@ abstract class Widget<ValueType> extends Element {
 			if (parentLine != null)
 				trace("e");
 			input = makeInput();
-			setupPropLine(labelElement, input);
+			setupPropLine(labelElement, input, #if hui false #else true #end);
 			syncValueUI();
 		}
 

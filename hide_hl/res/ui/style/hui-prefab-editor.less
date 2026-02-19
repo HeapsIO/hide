@@ -17,8 +17,20 @@ hui-prefab-editor {
 			valign: top;
 			layout: vertical;
 
+			#content {
+				spacing: 2;
+			}
+
 			.kit-line {
 				height: 16;
+				spacing: 2;
+
+				.kit-line-content {
+					spacing: 4;
+				}
+				.kit-div {
+					spacing: 2;
+				}
 			}
 
 			.first {
@@ -29,8 +41,16 @@ hui-prefab-editor {
 				}
 			}
 
-			.kit-label {
 
+			.kit-label {
+				spacing: 4;
+				> * {
+					halign: right;
+				}
+
+				hui-text {
+					margin-bottom: 3;
+				}
 			}
 
 			.kit-line-content {

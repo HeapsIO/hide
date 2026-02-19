@@ -319,7 +319,17 @@ class Element {
 			native.addChild(label);
 		}
 		if (content != null) {
+			#if hui
+			if (!content.get().dom.hasClass("kit-line-content")) {
+				var wrapper = NativeElement.create("kit-line-content");
+				wrapper.addChild(content);
+				native.addChild(wrapper);
+			} else {
+				native.addChild(content);
+			}
+			#else
 			native.addChild(content);
+			#end
 			if (width != null) {
 				#if js
 				native.get().style.setProperty('--width', '$width');
