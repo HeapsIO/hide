@@ -225,15 +225,18 @@ class Slider<T:Float> extends Widget<T> {
 
 		return container;
 		#elseif hui
-		// slider = new hrt.ui.HuiSlider();
-		// slider.slider.onChange = () -> {
-		// 	value = slider.slider.value;
-		// 	broadcastValueChange(true);
-		// }
-		// slider.slider.minValue = -10;
-		// slider.slider.maxValue = 10;
-		// return slider;
-		return new hrt.ui.HuiSlider();
+		var s = new hrt.ui.HuiSlider();
+		s.decimals = 2;
+		s.value = value;
+		s.min = min;
+		s.max = max;
+		s.defaultValue = defaultValue;
+		s.step = step;
+		s.onValueChanged = (tempChanges : Bool) -> {
+			value = cast s.value;
+			broadcastValueChange(tempChanges);
+		}
+		return s;
 		#else
 		return null;
 		#end

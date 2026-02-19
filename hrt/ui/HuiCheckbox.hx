@@ -6,7 +6,7 @@ class HuiCheckbox extends HuiElement {
 		<hui-element id="icon"/>
 	</hui-checkbox>
 
-	@:p public var value : Bool = false;
+	@:p public var value(default, set) : Bool = false;
 
 	public function new(?parent: h2d.Object) {
 		super(parent);
@@ -19,6 +19,11 @@ class HuiCheckbox extends HuiElement {
 			icon.visible = value;
 			onValueChanged();
 		}
+	}
+
+	public function set_value(v: Bool) {
+		icon.visible = v;
+		return value = v;
 	}
 
 	public dynamic function onValueChanged() {}

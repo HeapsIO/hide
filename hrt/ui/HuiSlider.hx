@@ -25,6 +25,7 @@ class HuiSlider extends HuiElement {
 			inputText.visible = false;
 			valueText.visible = true;
 			value = Std.parseFloat(inputText.text);
+			onValueChanged(false);
 		};
 
 		var moved = false;
@@ -41,6 +42,7 @@ class HuiSlider extends HuiElement {
 				if (min != null) value = hxd.Math.max(min, value);
 				if (max != null) value = hxd.Math.min(max, value);
 				moved = true;
+				onValueChanged(true);
 			}, true);
 		};
 
@@ -52,7 +54,10 @@ class HuiSlider extends HuiElement {
 				inputText.text = valueText.text;
 				haxe.Timer.delay(() -> inputText.focus(), 0);
 			}
-			moved = false;
+			else {
+				moved = false;
+				onValueChanged(false);
+			}
 		}
 	}
 
@@ -70,5 +75,7 @@ class HuiSlider extends HuiElement {
 		refreshSlider();
 		return value;
 	}
+
+	public dynamic function onValueChanged(tempChanges : Bool) {}
 }
 #end

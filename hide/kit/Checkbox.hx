@@ -24,7 +24,7 @@ class Checkbox extends Widget<Bool> {
 		var cb = new hrt.ui.HuiCheckbox();
 		cb.value = value;
 		cb.onValueChanged = () -> {
-			value = value;
+			value = cb.value;
 			broadcastValueChange(false);
 		};
 		checkbox = cb;

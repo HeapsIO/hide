@@ -280,7 +280,7 @@ class EditContext extends hrt.prefab.EditContext2 {
 	}
 
 	public function recordUndo(callback: (isUndo: Bool) -> Void ) : Void {
-		throw "implement";
+		// throw "implement";
 	}
 
 	function saveSetting(category: hrt.prefab.EditContext2.SettingCategory, key: String, value: Dynamic) : Void {
