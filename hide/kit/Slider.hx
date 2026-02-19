@@ -232,9 +232,47 @@ class Slider<T:Float> extends Widget<T> {
 		s.max = max;
 		s.defaultValue = defaultValue;
 		s.step = step;
+		slider = s;
 		s.onValueChanged = (tempChanges : Bool) -> {
+			var oldValue = value;
 			value = cast s.value;
-			broadcastValueChange(tempChanges);
+
+			var group = Std.downcast(parent, SliderGroup);
+			if (group != null && group.isLocked) {
+				var changeDelta : Float = (value:Float) / (oldValue:Float);
+
+				var sliders : Array<Widget<Dynamic>> = [];
+				for (sibling in parent.children) {
+					var siblingSlider : Slider<T> = Std.downcast(sibling, Slider);
+
+					if (siblingSlider == null)
+						continue;
+
+					sliders.push(siblingSlider);
+					if (sibling == this)
+						continue;
+
+					if (Math.isFinite(changeDelta)) {
+						if (siblingSlider.int) {
+							siblingSlider.value = cast Std.int(changeDelta * siblingSlider.value);
+						} else {
+							siblingSlider.value = cast changeDelta * (cast siblingSlider.value:Float);
+						}
+					} else {
+						// if we divided by zero, just set the value to be equal to the new one
+						siblingSlider.value = cast value;
+					}
+				}
+
+				parent?.change(() -> {
+					for (slider in sliders) {
+						slider.changeBehaviorInternal(tempChanges);
+					}
+				}, tempChanges);
+			} else {
+				broadcastValueChange(tempChanges);
+			}
+
 		}
 		return s;
 		#else
