@@ -385,7 +385,7 @@ class Light extends Object3D {
 				</category>
 				<category("Shadows")>
 					<select field={shadows.mode} onValueChange={refresh}/>
-					<select(["64", "128", "256", "512", "1024", "2048", "4096"]) field={shadows.size}/>
+					<select([{ value:64, label:"64" }, { value:128, label:"128" }, { value:256, label:"256" }, { value:512, label:"512" }, { value:1024, label:"1024" }, { value:2048, label:"2048" }, { value:4096, label:"4096" }]) field={shadows.size}/>
 					<block if (!cascade)>
 						<range(0, 20) label="Blur Radius" field={shadows.radius}/>
 						<range(0, 1) label="Blur Quality" field={shadows.quality}/>
