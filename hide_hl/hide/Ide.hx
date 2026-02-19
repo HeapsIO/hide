@@ -4,6 +4,9 @@ class Ide extends hide.tools.IdeData {
 	public static var inst : Ide;
 	public var app : hide.App;
 
+	// Keep a small delay between saves to avoid spamming the disk with writes
+	var localStorageSaveDelay: Float = 0.0;
+
 	static final localUserDataSave = "hidehl.json";
 
 	public override function new() {
@@ -32,12 +35,28 @@ class Ide extends hide.tools.IdeData {
 	}
 
 	function queueStorageSave() {
-		if (!localStorageSaveQueued) {
 		localStorageSaveQueued = true;
-		hide.App.defer(() -> {
-				sys.io.File.saveContent(appPath + "/" + localUserDataSave, haxe.Json.stringify(localStorage, "\t"));
+	}
+
+	function saveLocalStorageToDisk() {
+		sys.io.File.saveContent(appPath + "/" + localUserDataSave, haxe.Json.stringify(localStorage, "\t"));
+	}
+
+	public function update(dt: Float) {
+		localStorageSaveDelay -= dt;
+		if (localStorageSaveQueued) {
+			if (localStorageSaveDelay < 0) {
+				saveLocalStorageToDisk();
+				localStorageSaveDelay = 5.0;
 				localStorageSaveQueued = false;
-			});
+			}
+		}
+	}
+
+	public function dispose() {
+		if (localStorageSaveQueued) {
+			saveLocalStorageToDisk();
+			localStorageSaveQueued = false;
 		}
 	}
 
