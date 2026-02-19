@@ -3,10 +3,10 @@ package hrt.ui;
 #if hui
 
 typedef TreeItem = {
-			name: String,
-			children: Array<TreeItem>,
-			id: String,
-		};
+	name: String,
+	children: Array<TreeItem>,
+	id: String,
+};
 
 class HuiViewGym extends HuiView<{}> {
 	static var SRC =

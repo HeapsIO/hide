@@ -28,7 +28,13 @@ class File extends Widget<String> {
 
 		return file.element[0];
 		#elseif hui
-		throw "implment";
+		var f = new hrt.ui.HuiFilePicker();
+		f.value = value;
+		f.onValueChanged = () -> {
+			value = f.value;
+			broadcastValueChange(false);
+		}
+		return f;
 		#else
 		return null;
 		#end
