@@ -1,5 +1,10 @@
 package hide;
 
+enum HideViewPosition {
+	Left;
+	Main;
+	Bottom;
+}
 class Ide extends hide.tools.IdeData {
 	public static var inst : Ide;
 	public var app : hide.App;
@@ -121,16 +126,22 @@ class Ide extends hide.tools.IdeData {
 		try {
 			switch (path.ext) {
 				case "prefab", "fx":
-					openView(new hide.view.Prefab({path: filePath}));
+					openView(new hide.view.Prefab({path: filePath}), Main);
 			}
 		} catch (e) {
 			showError('Could not open file ${getRelPath(filePath)} :<br/>$e');
 		}
 	}
 
-	public function openView(view: hrt.ui.HuiView<Dynamic>) {
-		app.ui.uiBase.mainLayout.projectLayout.mainPanel.addTab(view);
-		app.ui.uiBase.mainLayout.projectLayout.mainPanel.setTab(view);
+	public function openView(view: hrt.ui.HuiView<Dynamic>, position: HideViewPosition = Main) {
+		var layout = app.ui.uiBase.mainLayout.projectLayout;
+		var panel = switch(position) {
+			case Left: layout.leftPanel;
+			case Main: layout.mainPanel;
+			case Bottom: layout.bottomPanel;
+		}
+		panel.addTab(view);
+		panel.setTab(view);
 	}
 
 	public function getCDBContent<T>( sheetName : String ) : Array<T> {
