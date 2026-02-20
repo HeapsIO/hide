@@ -29,7 +29,11 @@ class HuiSlider extends HuiElement {
 		};
 
 		var moved = false;
+		var startX = 0;
+		var startY = 0;
 		this.onPush = (e : hxd.Event) -> {
+			startX = hxd.Window.getInstance().mouseX;
+			startY = hxd.Window.getInstance().mouseY;
 			hxd.Window.getInstance().mouseMode = Relative((event: hxd.Event) -> {
 				var scale = hxd.Key.isDown(hxd.Key.SHIFT) ? 0.1 : 1.0;
 
@@ -48,6 +52,7 @@ class HuiSlider extends HuiElement {
 
 		this.onRelease = (e : hxd.Event) -> {
 			hxd.Window.getInstance().mouseMode = Absolute;
+			hxd.Window.getInstance().setCursorPos(startX, startY);
 			if (!moved) {
 				inputText.visible = true;
 				valueText.visible = false;
