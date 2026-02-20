@@ -1,0 +1,33 @@
+hui-select {
+	min-height: @widget-base-height;
+	min-width: @widget-base-height;
+	fill-width: true;
+	cursor: button;
+	padding: 0 3 0 3;
+
+	background-type: hui;
+	> hui-background {
+		background: @widget-bg;
+		border-radius: @base-corner-radius;
+		outline: 1 @widget-border;
+	}
+
+	&:hover {
+		> hui-background {
+			background: @color-over;
+		}
+	}
+
+	>hui-element {
+		valign: middle;
+	}
+
+	#value-text-container {
+		auto-size: 1;
+		fill-width: true;
+	}
+
+	hui-text {
+		margin-bottom: 2;
+	}
+}

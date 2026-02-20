@@ -36,6 +36,8 @@ class Select extends Widget<Dynamic> {
 	var select: NativeElement;
 	var text: NativeElement;
 	var dropdown = null;
+	#elseif hui
+	var select : hrt.ui.HuiSelect;
 	#end
 
 	public function new(parent: Element, id: String, entries: EntriesOrStrings = null) {
@@ -67,6 +69,12 @@ class Select extends Widget<Dynamic> {
 		}
 
 		return select;
+		#elseif hui
+		var s = new hrt.ui.HuiSelect();
+		s.items = [for (i => entry in entries) { label: entry.label, value: entry.value }];
+		s.value = value;
+		select = s;
+		return s;
 		#end
 		return null;
 	}
@@ -83,6 +91,15 @@ class Select extends Widget<Dynamic> {
 			}
 		}
 		text.get().innerText = label;
+		#elseif hui
+		if (select == null)
+			return;
+		for (entry in entries) {
+			if ((entry.value == value) || (entry.equalsNull && value == null) ) {
+				select.value = entry.value;
+				break;
+			}
+		}
 		#end
 	}
 
