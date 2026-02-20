@@ -32,7 +32,8 @@ typedef Anchor = {
 };
 
 /**
-	A floating element appearing above all other element in the scene
+	A floating element appearing above all other element in the scene.
+	To add the popup to the ui, use uiBase.addPopup(popup)
 **/
 class HuiPopup extends HuiElement {
 	static var SRC =
@@ -145,7 +146,7 @@ class HuiPopup extends HuiElement {
 	/**
 		Add popup in parent in a way that it can be close when the user clicks anywhere else. Return the created modal element
 	**/
-	public function addDismissable(?parent: h2d.Object) : HuiModalContainer {
+	function addDismissable(?parent: h2d.Object) : HuiModalContainer {
 		modal = new HuiModalContainer(parent);
 		modal.addChild(this);
 

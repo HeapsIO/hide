@@ -98,8 +98,8 @@ class HuiMainLayout extends HuiElement {
 		init();
 
 		if (hide.Ide.inst.ideConfig.currentProject != null) {
-		mainPanel.removeChildElements();
-		projectLayout = new HuiProjectLayout(mainPanel);
+			mainPanel.removeChildElements();
+			projectLayout = new HuiProjectLayout(mainPanel);
 		}
 	}
 

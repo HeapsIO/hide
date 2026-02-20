@@ -90,13 +90,17 @@ class HuiBase extends HuiElement {
 		openMenu(items, {}, {object: Point(getScene().mouseX, getScene().mouseY), directionX: EndOutside, directionY: EndOutside});
 	}
 
+	public function addPopup(popup: HuiPopup, ?anchor: hrt.ui.HuiPopup.Anchor) {
+		popup.anchor = anchor;
+		@:privateAccess popup.addDismissable(this);
+	}
+
 	public function openMenu(items: Array<hrt.ui.HuiMenu.MenuItem>, options: hrt.ui.HuiMenu.MenuOptions, ?anchor: hrt.ui.HuiPopup.Anchor) : HuiMenu {
 		if (currentMenu != null)
 			currentMenu.close();
 
 		var menu = new HuiMenu(items, options);
-		menu.addDismissable(this);
-		menu.anchor = anchor;
+		addPopup(menu, anchor);
 		currentMenu = menu;
 		menu.onCloseListeners.push(() -> if (menu == currentMenu) currentMenu = null);
 
