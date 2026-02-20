@@ -220,7 +220,7 @@ class HuiElement extends h2d.Flow #if hui implements h2d.domkit.Object #end {
 	}
 
 	function getDisplayName() : String {
-		return displayName ?? toString();
+		return displayName ?? Type.getClassName(Type.getClass(this));
 	}
 
 

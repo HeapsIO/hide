@@ -16,5 +16,9 @@ class FileBrowser extends HuiView<{path: String}> {
 		};
 	}
 
+	override function getDisplayName():String {
+		return "File Browser";
+	}
+
 	static var _ = HuiView.register("fileBrowser", FileBrowser);
 }

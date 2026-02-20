@@ -221,6 +221,7 @@ class Config {
 			p.source.hide = ({ tabViews:
 				{
 					"left-panel": {
+						tabIndex: 0,
 						tabs: [{type: "fileBrowser"}]
 					},
 				}

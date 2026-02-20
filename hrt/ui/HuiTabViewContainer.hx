@@ -3,6 +3,7 @@ package hrt.ui;
 #if hui
 
 typedef TabViewData = {
+	var tabIndex: Int;
 	var tabs: Array<ViewData>;
 }
 
@@ -44,9 +45,12 @@ class HuiTabViewContainer extends HuiTabContainer {
 				tabState.push(state);
 			}
 
-			Reflect.setField(hide.Ide.inst.projectConfig.tabViews, dom.id.toString(), {
+			var state : TabViewData = {
+				tabIndex: getTabs().indexOf(activeTabElement),
 				tabs: tabState,
-			});
+			}
+
+			Reflect.setField(hide.Ide.inst.projectConfig.tabViews, dom.id.toString(), state);
 			hide.Ide.inst.config.user.save();
 		}
 	}
@@ -65,6 +69,15 @@ class HuiTabViewContainer extends HuiTabContainer {
 			loadViewState();
 			syncTabs();
 		}
+	}
+
+	// Restore default tab from save
+	override function getDefaultCurrentTab() {
+		var state = hide.Ide.inst.projectConfig.tabViews.get(dom.id.toString());
+		var index = state?.tabIndex ?? 0;
+		var tabs = getTabs();
+		index = hxd.Math.iclamp(index, 0, tabs.length);
+		return tabs[index];
 	}
 
 	function loadViewState() {
