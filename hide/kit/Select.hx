@@ -73,6 +73,10 @@ class Select extends Widget<Dynamic> {
 		var s = new hrt.ui.HuiSelect();
 		s.items = [for (i => entry in entries) { label: entry.label, value: entry.value }];
 		s.value = value;
+		s.onValueChanged = () -> {
+			value = s.value;
+			broadcastValueChange(false);
+		}
 		select = s;
 		return s;
 		#end

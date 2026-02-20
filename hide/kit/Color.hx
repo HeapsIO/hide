@@ -17,6 +17,8 @@ class Color extends Widget<Dynamic> {
 
 	#if js
 	var colorBox : hide.comp.ColorPicker.ColorBox;
+	#elseif hui
+	var colorBox : hrt.ui.HuiColorPicker.HuiColorBox;
 	#end
 
 	function makeInput():NativeElement {
@@ -35,13 +37,21 @@ class Color extends Widget<Dynamic> {
 			broadcastValueChange(isTemp);
 		}
 		return colorBox.element[0];
+		#elseif hui
+		colorBox = new hrt.ui.HuiColorPicker.HuiColorBox();
+		colorBox.value = value;
+		colorBox.onValueChanged = (isTemp) -> {
+			value = colorBox.value;
+			broadcastValueChange(isTemp);
+		}
+		return colorBox;
 		#else
 		return null;
 		#end
 	}
 
 	override function syncValueUI() {
-		#if js
+		#if js || hui
 		if (colorBox != null) {
 			if (arr) {
 				var v = h3d.Vector4.fromArray(value);

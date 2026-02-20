@@ -1,0 +1,117 @@
+hui-color-box {
+	min-height: @widget-base-height;
+	min-width: @widget-base-height;
+	cursor: button;
+
+	background-type: hui;
+	>hui-background {
+		border-radius: @base-corner-radius;
+		outline: 1 @widget-border;
+	}
+
+	&:hover {
+		> hui-background {
+			outline: 1 @color-over-lighter;
+		}
+	}
+}
+
+hui-color-slider {
+	min-width: 16;
+	min-height: 16;
+	padding: 0;
+	margin: 0;
+}
+
+hui-color-picker {
+	content-align: middle middle;
+	spacing: 10;
+	padding: 10;
+	layout: vertical;
+	background-type: hui;
+	>hui-background {
+		background: @widget-bg;
+		border-radius: @base-corner-radius;
+		outline: 2 @widget-border;
+	}
+
+	hui-input-box {
+		padding: 2!important;
+		background-type: hui;
+		>hui-background {
+			background: @widget-bg !important;
+			border-radius: @base-corner-radius;
+			outline: 2 @widget-border;
+		}
+
+		hui-text-input {
+			align: middle middle;
+			text-align: center;
+		}
+	}
+
+	#color-space-picker {
+		#value-text-container {
+			width: 256;
+		}
+
+		fill-width: true;
+		auto-size: 1;
+	}
+
+	.picker-row {
+		layout: horizontal;
+		content-valign: middle;
+		spacing: 5;
+
+		>hui-input-box {
+			width: 30;
+			padding: 0;
+			padding-left: 2;
+
+			fill-height: true;
+			auto-size-height: 1;
+
+			background-type: hui;
+			>hui-background {
+				background: @color-foreground;
+				border-radius: 2;
+			}
+		}
+	}
+
+	.picker-col {
+		layout: vertical;
+		fill-width: true;
+		auto-size: 1;
+
+		spacing: 2;
+
+		hui-color-slider {
+			fill-width: true;
+			auto-size: 1;
+		}
+	}
+
+	#slider-main {
+		width: 256;
+		height: 256;
+	}
+
+	#slider-hue {
+		height: 256;
+	}
+
+	#preview, #preview-alpha {
+		width: 32;
+		height: 64;
+	}
+
+	#color-space-picker {
+		width: 75;
+	}
+
+	#color-hex {
+		width: 90;
+	}
+}
