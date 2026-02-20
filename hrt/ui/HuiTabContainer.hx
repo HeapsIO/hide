@@ -157,7 +157,17 @@ class HuiTabContainer extends HuiElement {
 	}
 
 	public function removeTab(tab: HuiElement) {
-		content.removeChild(tab);
+		if (tab == activeTabElement) {
+			var index = getTabs().indexOf(activeTabElement);
+			content.removeChild(tab);
+			index = hxd.Math.iclamp(index, 0, getTabs().length - 1);
+			var newTab = getTabs()[index];
+			if (newTab != null) {
+				setTab(newTab);
+			}
+		} else {
+			content.removeChild(tab);
+		}
 	}
 
 	public function getTabs() : Array<HuiElement> {
