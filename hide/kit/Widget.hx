@@ -156,7 +156,12 @@ abstract class Widget<ValueType> extends Element {
 			var childInput = Std.downcast(childElement, Type.getClass(this));
 
 			if (childInput != null) {
-				childInput.value = haxe.Json.parse(haxe.Json.stringify(value));
+				switch(Type.typeof(value)) {
+					case TEnum(_):
+						childInput.value = value;
+					default:
+						childInput.value = haxe.Json.parse(haxe.Json.stringify(value));
+				}
 				childInput.onFieldChange(isTemporaryEdit);
 				childInput.onValueChange(isTemporaryEdit);
 				@:privateAccess childProperties.prefab?.updateInstance(fieldName);

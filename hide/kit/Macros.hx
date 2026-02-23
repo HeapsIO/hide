@@ -13,7 +13,8 @@ typedef BuildExprArgs = {
 	globalElements: Array<Var>,
 	markup: domkit.MarkupParser.Markup,
 	outputExprs: Array<Expr>,
-	?onAnyChange: haxe.macro.Expr.ExprOf<(isTemp:Bool) -> Void>
+	?onAnyChange: haxe.macro.Expr.ExprOf<(isTemp:Bool) -> Void>,
+	index: Int,
 };
 #end
 
@@ -93,6 +94,7 @@ class Macros {
 					contextObj: contextObj,
 					globalElements: [],
 					onAnyChange: onAnyChange,
+					index: 0,
 				}
 
 
@@ -284,8 +286,10 @@ class Macros {
 						}
 						else if (label != null) {
 							kitInternalId = macro @:privateAccess hide.kit.Macros.toInternalIdentifier(${label});
+						} else if (elementName == "Category") {
+							kitInternalId = macro null;
 						} else {
-							kitInternalId = makeStringExpr('#${elementName}', pos);
+							kitInternalId = makeStringExpr('#${elementName}:${args.index}', pos);
 						}
 					}
 
@@ -470,6 +474,7 @@ class Macros {
 							globalElements: args.globalElements,
 							contextObj: args.contextObj,
 							onAnyChange: args.onAnyChange,
+							index: childIndex,
 						};
 
 						buildExpr(childrenArgs);
