@@ -264,7 +264,7 @@ class EditContext extends hrt.prefab.EditContext2 {
 	}
 
 	public function rebuildInspector() : Void {
-		throw "implement";
+		editor.refreshInspector();
 	};
 
 	public function rebuildPrefab(prefab: hrt.prefab.Prefab) : Void {
