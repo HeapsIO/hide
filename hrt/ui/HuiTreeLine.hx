@@ -36,6 +36,8 @@ class HuiTreeLine extends HuiElement {
 	public function refresh() {
 		var tree : HuiTree<Dynamic> = tree;
 		title.text = data.name;
+		icon.backgroundType = "hui";
+		icon.huiBg.image = { path: data.icon, mode: Fit };
 		paddingLeft = data.depth * 5;
 		dom.toggleClass("children", tree.hasChildren(data.item));
 		dom.toggleClass("open", tree.isOpen(data));

@@ -33,6 +33,7 @@ class HuiFileBrowser extends HuiElement {
 		var tree = new HuiTree<File>(this);
 		tree.getItemChildren = getItemChild;
 		tree.getItemName = getItemName;
+		tree.getItemIcon = getItemIcon;
 		tree.onItemDoubleClick = (e, file) -> onOpen(file);
 	}
 
@@ -82,6 +83,13 @@ class HuiFileBrowser extends HuiElement {
 
 	function getItemName(res: File) : String {
 		return res.name;
+	}
+
+	function getItemIcon(res: File) : String {
+		if (res.isDirectory)
+			return HuiRes.icons.folder_filled;
+		else
+			return HuiRes.icons.file_blank_filled;
 	}
 }
 

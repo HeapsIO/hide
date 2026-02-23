@@ -26,6 +26,7 @@ typedef TreeItemData = {
 	parent: TreeItemData,
 	children: Array<TreeItemData>,
 	name: String,
+	icon: String,
 	depth: Int,
 	filterState: FilterFlags,
 	identifier: String,
@@ -187,6 +188,10 @@ class HuiTree<TreeItem> extends HuiElement {
 		return "";
 	}
 
+	public dynamic function getItemIcon(item: TreeItem) : String {
+		return HuiRes.icons.file_blank;
+	}
+
 	public dynamic function onItemDoubleClick(e: hxd.Event, item: TreeItem) : Void {
 
 	}
@@ -315,6 +320,7 @@ class HuiTree<TreeItem> extends HuiElement {
 					depth: 0,
 					line: null,
 					name: null,
+					icon: null,
 					identifier: null,
 				});
 
@@ -334,6 +340,7 @@ class HuiTree<TreeItem> extends HuiElement {
 	function updateData(data: TreeItemData) {
 		data.children = null; // invalidate children if we are regenerating the tree
 		data.name = StringTools.htmlEscape(getItemName(cast data.item));
+		data.icon = getItemIcon(cast data.item);
 		data.identifier = getIdentifier(cast data.item);
 	}
 
