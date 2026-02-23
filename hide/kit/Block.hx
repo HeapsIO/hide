@@ -7,8 +7,12 @@ class Block extends Element {
 		#if js
 		native = js.Browser.document.createElement("kit-block");
 		#elseif hui
-		native = new hrt.ui.HuiElement();
+		native = null;
 		#end
+	}
+
+	override function get_nativeContent():NativeElement {
+		return parent.nativeContent;
 	}
 }
 

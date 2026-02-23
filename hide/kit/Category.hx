@@ -125,7 +125,9 @@ class Category extends Widget<Null<Bool>> {
 		if (child is Category) {
 			throw "handle subsections";
 		} else {
-			nativeContent.addChild(child.native);
+			if (child.native != null) {
+				nativeContent.addChild(child.native);
+			}
 		}
 		#end
 	}

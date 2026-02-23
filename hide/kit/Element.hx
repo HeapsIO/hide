@@ -132,7 +132,7 @@ class Element {
 
 		makeSelf();
 		#if hui
-		if (native == null) {
+		if (!(this is Block) && native == null) {
 			native = new hrt.ui.HuiText('missing makeSelf implem for ${Type.getClassName(Type.getClass(this))}');
 		}
 		#end
