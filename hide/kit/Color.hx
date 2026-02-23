@@ -51,7 +51,7 @@ class Color extends Widget<Dynamic> {
 	}
 
 	override function syncValueUI() {
-		#if js || hui
+		#if (js || hui)
 		if (colorBox != null) {
 			if (arr) {
 				var v = h3d.Vector4.fromArray(value);
