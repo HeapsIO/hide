@@ -26,6 +26,7 @@ class HuiBase extends HuiElement {
 
 		if (hide.App.DEBUG) {
 			style.allowInspect = true;
+			style.inspectKeyCode = hxd.Key.SHIFT;
 		}
 
 		loadStyle();
