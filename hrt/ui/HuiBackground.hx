@@ -533,7 +533,7 @@ class HuiBackground extends h2d.ScaleGrid implements h2d.domkit.Object {
 		else {
 			shader.useOutline = true;
 			shader.outlineColor.setColor(v.color);
-			shader.outlineThickness.set(v.thick, v.thick, v.thick, v.thick);
+			_outlineThickness.set(v.thick, v.thick, v.thick, v.thick);
 			shader.separateThicknesses = false;
 		}
 		return v;
@@ -541,13 +541,14 @@ class HuiBackground extends h2d.ScaleGrid implements h2d.domkit.Object {
 	@:p(color) @:t(color) public var outlineColor(never, set) : Int;
 	function set_outlineColor(v) { shader.outlineColor.setColor(v); return v; }
 
-	@:p(boxF) @:t(boxF) public var outlineThickness(never, set) : { left : Float, top : Float, right : Float, bottom : Float };
+	@:p(boxF) @:t(boxF) public var outlineThickness : { left : Float, top : Float, right : Float, bottom : Float };
+	var _outlineThickness : h3d.Vector4 = new h3d.Vector4();
 	function set_outlineThickness(v) {
 		if( v == null ) {
-			shader.outlineThickness.set(0, 0, 0, 0);
+			_outlineThickness.set(0, 0, 0, 0);
 			shader.separateThicknesses = false;
 		} else {
-			shader.outlineThickness.set(v.top, v.right, v.bottom, v.left);
+			_outlineThickness.set(v.top, v.right, v.bottom, v.left);
 			shader.separateThicknesses = v.left != v.top || v.left != v.right || v.left != v.bottom;
 		}
 		return v;
@@ -612,6 +613,8 @@ class HuiBackground extends h2d.ScaleGrid implements h2d.domkit.Object {
 		shader.margins.y += shadowExtraMargin;
 		shader.margins.z += shadowExtraMargin;
 		shader.margins.w += shadowExtraMargin;
+
+		shader.outlineThickness.set(_outlineThickness.x * scale, _outlineThickness.y * scale, _outlineThickness.z * scale, _outlineThickness.w * scale);
 
 		if(borderRadius != null) {
 			var maxRad = hxd.Math.min(width, height) / 2;
