@@ -11,6 +11,8 @@ class HuiBase extends HuiElement {
 	var currentMenu: HuiMenu;
 	public var mainLayout: HuiMainLayout;
 
+	var previousUiScale: Float = 0;
+
 	// Keep track of the element that currently own the scroll event.
 	// Reset when lastScrollTime is too old compared to now (inspired by the same behavior in google chrome)
 	@:allow(hrt.ui.HuiElement) var scrollFocus: HuiElement;
@@ -132,10 +134,14 @@ class HuiBase extends HuiElement {
 				// snap to 0.5
 				var upscale = hxd.Math.round((monitor.height / 1080.0) * 2.0) / 2.0;
 
-
 				upscale = hxd.Math.max(upscale, 1.0);
 
-				getScene().scaleMode = Zoom(upscale);
+				if (previousUiScale != upscale) {
+					previousUiScale = upscale;
+					getScene().scaleMode = Zoom(upscale);
+
+					dom.toggleClass("high-dpi", upscale > 1.0);
+				}
 			}
 		}
 		#end
