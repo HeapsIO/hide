@@ -105,13 +105,20 @@ class HuiScene extends HuiElement {
 	}
 
 	override function onAfterReflow() {
-		var textureWidth = hxd.Math.iclamp(hxd.Math.round(innerWidth), 1, 4096);
-		var textureHeight = hxd.Math.iclamp(hxd.Math.round(innerHeight), 1, 4096);
+		var scene = getScene();
+		var scale = switch(scene.scaleMode) {
+			case Zoom(level):
+				level;
+			default:
+				1.0;
+		}
+
+		var textureWidth = hxd.Math.iclamp(hxd.Math.round(innerWidth * scale) , 1, 4096);
+		var textureHeight = hxd.Math.iclamp(hxd.Math.round(innerHeight * scale) , 1, 4096);
 
 		if (renderTexture == null) {
 			renderTexture = new h3d.mat.Texture(1,1, [Target]);
 			renderTexture.depthBuffer = new h3d.mat.Texture(1,1, hxd.PixelFormat.Depth24Stencil8);
-
 		}
 
 		if(renderTexture.width != textureWidth || renderTexture.height != textureHeight) {
