@@ -114,13 +114,7 @@ class RenderProps extends Object3D {
 		var env = getOpt(hrt.prefab.l3d.Environment);
 		if( env != null )
 			env.applyToRenderer(renderer);
-		// #if editor
-		// else {
-		// 	var r = Std.downcast(renderer, h3d.scene.pbr.Renderer);
-		// 	if( r != null )
-		// 		r.env = hide.Renderer.PbrSetup.getEnvMap();
-		// }
-		// #end
+
 		renderer.refreshProps();
 		return true;
 	}

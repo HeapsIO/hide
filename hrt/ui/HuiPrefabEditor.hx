@@ -59,10 +59,30 @@ class HuiPrefabEditor extends HuiElement {
 
 		}
 
+		for (s in selectedPrefabs.keys()) {
+			var obj3d = Std.downcast(s, hrt.prefab.Object3D);
+			if (obj3d != null) {
+				for (m in obj3d.local3d.getMaterials()) {
+					var p = m.getPass("highlight");
+					if (p == null) continue;
+					m.removePass(p);
+				}
+			}
+		}
+
 		selectedPrefabs.clear();
 
 		for (prefab in selection) {
 			selectedPrefabs.set(prefab, true);
+			var obj3d = Std.downcast(prefab, hrt.prefab.Object3D);
+			if (obj3d != null) {
+				for (m in obj3d.local3d.getMaterials()) {
+					var p = m.allocPass("highlight");
+					p.culling = None;
+					p.depthWrite = false;
+					p.depthTest = Always;
+				}
+			}
 		}
 
 		if (!flags.has(NoRefreshTree)) {
@@ -159,6 +179,9 @@ class HuiPrefabEditor extends HuiElement {
 		var env = new h3d.scene.pbr.Environment(getEnvMap());
 		env.compute();
 		scene.s3d.renderer = new hide.Renderer.PbrRenderer(env);
+		var o = new hrt.prefab.rfx.Outline(null, null);
+		o.outlineColor = 0xFF6600;
+		scene.s3d.renderer.effects.push(o);
 		scene.s3d.lightSystem = new h3d.scene.pbr.LightSystem();
 
 		tryMake(prefab);

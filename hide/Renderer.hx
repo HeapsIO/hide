@@ -1,23 +1,6 @@
 package hide;
 
-import h3d.pass.ScreenFx;
-
 // ----- Default Rendering --------------------------------
-
-class DefaultForwardComposite extends h3d.shader.ScreenShader {
-	static var SRC = {
-		@param var texture : Sampler2D;
-		@param var outline : Sampler2D;
-
-		function fragment() {
-			pixelColor = texture.get(calculatedUV);
-			var outval = outline.get(calculatedUV).rgb;
-			if(outval.r > 0.1 && outval.r < 0.5)
-				pixelColor.rgb += outval.rgb * 3.0 + 0.1;
-		}
-	}
-}
-
 class MaterialSetup extends h3d.mat.MaterialSetup {
     override public function createRenderer() {
 	    return new Renderer();
@@ -36,17 +19,11 @@ class MaterialSetup extends h3d.mat.MaterialSetup {
 
 class Renderer extends h3d.scene.fwd.Renderer {
 
-	var composite: h3d.pass.ScreenFx<DefaultForwardComposite>;
-	var outline = new ScreenOutline();
-	var outlineBlur = new h3d.pass.Blur(4);
-
 	public function new() {
 		super();
-		composite = new h3d.pass.ScreenFx(new DefaultForwardComposite());
 	}
 
 	override function render() {
-
 		var output = allocTarget("output");
 		setTarget(output);
 		clear(h3d.Engine.getCurrent().backgroundColor, 1, 0);
@@ -71,26 +48,7 @@ class Renderer extends h3d.scene.fwd.Renderer {
 		#end
 		renderPass(defaultPass, get("overlay"), backToFront );
 		renderPass(defaultPass, get("ui"), backToFront);
-		#if editor
-		if (showEditorOutlines) {
-			{
-				var outlineTex = allocTarget("outlineBlur", false);
-				var outlineSrcTex = allocTarget("outline", true);
-				setTarget(outlineSrcTex);
-				clear(0);
-				draw("highlightBack");
-				draw("highlight");
-				resetTarget();
-				outlineBlur.apply(ctx, outlineSrcTex, outlineTex);
-				composite.shader.outline = outlineTex;
-			}
-		}
-		#end
 		resetTarget();
-		composite.shader.texture = output;
-		composite.render();
-
-
 	}
 }
 
@@ -138,13 +96,13 @@ class PbrSetup extends h3d.mat.PbrMaterialSetup {
 
 class ScreenOutline extends h3d.shader.ScreenShader {
 	static var SRC = {
-
 		@param var texture: Sampler2D;
+		@param var outlineColor: Vec3 = vec3(1, 1, 1);
 
 		function fragment() {
 			var outval = texture.get(calculatedUV).rgb;
 			pixelColor.a = outval.r > 0.1 && outval.r < 0.5 ? 1.0 : 0.0;
-			pixelColor.rgb = (outval.r > outval.g ? 0.5 : 1.0).xxx;
+			pixelColor.rgb = outlineColor;
 		}
 	};
 }

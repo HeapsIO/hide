@@ -2033,6 +2033,8 @@ class SceneEditor {
 
 		updateViewportOverlays();
 
+		scene.s3d.renderer.effects.push(new hrt.prefab.rfx.Outline(null, null));
+
 		makeGuide2d();
 
 		viewportAxis = new hrt.tools.ViewportAxis(scene.s3d.camera, cameraController, scene.s2d);
