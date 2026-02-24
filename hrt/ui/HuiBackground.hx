@@ -594,6 +594,17 @@ class HuiBackground extends h2d.ScaleGrid implements h2d.domkit.Object {
 
 		calcAbsPos();
 
+		var scene = getScene();
+		var scale = switch(scene.scaleMode) {
+			case Zoom(level):
+				level;
+			default:
+				1.0;
+		}
+
+		var width = width * scale;
+		var height = height * scale;
+
 		shader.size.set(width, height);
 
 		shader.margins.load(_margin);
@@ -608,7 +619,7 @@ class HuiBackground extends h2d.ScaleGrid implements h2d.domkit.Object {
 			inline function clamp(v: Float) {
 				return hxd.Math.min(v, maxRad);
 			}
-			shader.borderRadius.set(clamp(v.top), clamp(v.right), clamp(v.bottom), clamp(v.left));
+			shader.borderRadius.set(clamp(v.top * scale), clamp(v.right * scale), clamp(v.bottom * scale), clamp(v.left * scale));
 		}
 		else
 			shader.borderRadius.set(0, 0, 0, 0);
@@ -619,7 +630,7 @@ class HuiBackground extends h2d.ScaleGrid implements h2d.domkit.Object {
 			inline function clamp(v: Float) {
 				return hxd.Math.min(v, maxBev);
 			}
-			shader.borderBevel.set(clamp(v.top), clamp(v.right), clamp(v.bottom), clamp(v.left));
+			shader.borderBevel.set(clamp(v.top * scale), clamp(v.right * scale), clamp(v.bottom * scale), clamp(v.left * scale));
 		}
 		else
 			shader.borderBevel.set(0, 0, 0, 0);
@@ -630,7 +641,7 @@ class HuiBackground extends h2d.ScaleGrid implements h2d.domkit.Object {
 			inline function clamp(v: Float) {
 				return hxd.Math.min(v, maxSkew);
 			}
-			shader.borderSkew.set(clamp(v.left), clamp(v.right));
+			shader.borderSkew.set(clamp(v.left * scale), clamp(v.right * scale));
 		}
 		else
 			shader.borderSkew.set(0, 0);
