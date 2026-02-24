@@ -119,6 +119,26 @@ class HuiBase extends HuiElement {
 
 	public function updateStyle(dt: Float) {
 		style.sync(dt);
+
+
+		// HiDPI support for hldx targets
+		#if hldx
+		var monitorDx = @:privateAccess hxd.Window.getInstance().window.getCurrentMonitor();
+		var monitors = hxd.Window.getMonitors();
+
+		if (monitorDx != null) {
+			var monitor = Lambda.find(monitors, (m) -> m.name == monitorDx);
+			if (monitor != null) {
+				// snap to 0.5
+				var upscale = hxd.Math.round((monitor.height / 1080.0) * 2.0) / 2.0;
+
+
+				upscale = hxd.Math.max(upscale, 1.0);
+
+				getScene().scaleMode = Zoom(upscale);
+			}
+		}
+		#end
 	}
 }
 
