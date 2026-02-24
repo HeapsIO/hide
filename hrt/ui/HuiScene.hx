@@ -87,11 +87,18 @@ class HuiScene extends HuiElement {
 		}
 
 		if (currentVisible) {
+			var scene = getScene();
+			var scale = switch(scene.scaleMode) {
+				case Zoom(level):
+					level;
+				default:
+					1.0;
+			}
 			s3d.scenePosition = s3d.scenePosition ?? {offsetX: 0, offsetY: 0, width: 0, height: 0};
-			s3d.scenePosition.offsetX = display.absX;
-			s3d.scenePosition.offsetY = display.absY;
-			s3d.scenePosition.width = Std.int(display.width);
-			s3d.scenePosition.height = Std.int(display.height);
+			s3d.scenePosition.offsetX = display.absX * scale;
+			s3d.scenePosition.offsetY = display.absY * scale;
+			s3d.scenePosition.width = Std.int(display.width * scale);
+			s3d.scenePosition.height = Std.int(display.height * scale);
 		}
 
 		super.sync(ctx);
