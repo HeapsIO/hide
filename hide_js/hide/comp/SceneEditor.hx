@@ -1027,6 +1027,7 @@ class SceneEditor {
 	public var gridSize : Int;
 	public var showGrid = false;
 
+	var outlineRfx : hrt.prefab.rfx.Outline;
 	var viewportAxis : hrt.tools.ViewportAxis = null;
 	var guide2d : h2d.Object = null;
 	var grid2d : h2d.Graphics = null;
@@ -1278,7 +1279,9 @@ class SceneEditor {
 			return;
 
 		var show = showOverlays && getOrInitConfig("sceneeditor.showOutlines", true);
-		scene.s3d.renderer.showEditorOutlines = show;
+		for (e in scene.s3d.renderer.effects)
+			if (e == outlineRfx)
+				e.enabled = show;
 	}
 
 	public function delayReady(callback: () -> Void) {
@@ -2033,7 +2036,8 @@ class SceneEditor {
 
 		updateViewportOverlays();
 
-		scene.s3d.renderer.effects.push(new hrt.prefab.rfx.Outline(null, null));
+		outlineRfx = new hrt.prefab.rfx.Outline(null, null);
+		scene.s3d.renderer.effects.push(outlineRfx);
 
 		makeGuide2d();
 
