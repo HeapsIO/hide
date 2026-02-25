@@ -3738,7 +3738,12 @@ class SceneEditor {
 			});
 
 			for (m in meshes) {
-				var col = m.getCollider();
+				var col = try {
+					m.getCollider();
+				} catch(e : Dynamic) {
+					ide.quickError('Error while trying to display debug colliders');
+					null;
+				}
 				if (col == null)
 					continue;
 				var d = col.makeDebugObj();
