@@ -214,6 +214,107 @@ class CssParser extends h2d.domkit.BaseComponents.CustomParser {
 		}
 		#end
 	}
+
+	override function parseFont( value : CssValue ) {
+		var path = null;
+		var sdf = null;
+		var offset: Null<Int> = null, offsetChar = 0;
+		var lineHeight : Null<Float> = null, baseLine: Null<Int> = null;
+		var scale : Null<Float> = null;
+		switch(value) {
+			case VIdent("default"):
+				#if macro
+				return false;
+				#else
+				return hxd.res.DefaultFont.get();
+				#end
+			case VGroup(args):
+				var args = args.copy();
+				path = parsePath(args[0]);
+				while (args[1] != null && args[1].match(VCall(_))) {
+					switch( args[1] ) {
+					case VCall("offset", [VIdent("auto")]):
+						offsetChar = -1;
+					case VCall("offset", [VString(c)]) if( c.length == 1 ):
+						offsetChar = c.charCodeAt(0);
+					case VCall("offset", [v]):
+						offset = parseInt(v);
+					case VCall("line-height", [v]):
+						lineHeight = parseFloat(v);
+					case VCall("base-line", [v]):
+						baseLine = parseInt(v);
+					case VCall("scale", [v]):
+						scale = parseFloat(v);
+					default:
+						break;
+					}
+					args.splice(1,1);
+				}
+				if( args[1] != null ) {
+					sdf = {
+						size: parseInt(args[1]),
+						channel: args.length >= 3 ? switch(args[2]) {
+							case VIdent("red"): h2d.Font.SDFChannel.Red;
+							case VIdent("green"): h2d.Font.SDFChannel.Green;
+							case VIdent("blue"): h2d.Font.SDFChannel.Blue;
+							case VIdent("multi"): h2d.Font.SDFChannel.MultiChannel;
+							default: h2d.Font.SDFChannel.Alpha;
+						} : h2d.Font.SDFChannel.Alpha,
+						cutoff: args.length >= 4 ? parseFloat(args[3]) : 0.5,
+						smooth: args.length >= 5 ? parseFloat(args[4]) : 1.0/32.0
+					};
+					h2d.domkit.BaseComponents.CustomParser.adjustSdfParams(sdf);
+				}
+			default:
+
+				path = parsePath(value);
+		}
+		var res = loadResource(path);
+		#if macro
+		return res;
+		#else
+		var fnt;
+
+		if(sdf != null)
+			return res.to(hxd.res.BitmapFont).toSdfFont(sdf.size, sdf.channel, sdf.cutoff, sdf.smooth);
+		else
+			return getBitmapFont(res, scale, offset, offsetChar, baseLine, lineHeight);
+		#end
+	}
+
+	#if !macro
+	var bitmapFontCache: Map<String, h2d.Font> = [];
+	function getBitmapFont(res: hxd.res.Resource, scale: Null<Float>, offset: Null<Float>, offsetChar: Null<Int>, baseLine: Null<Int>, lineHeight: Null<Float>) {
+		if (scale == null && offset == null && offsetChar == null && baseLine == null && lineHeight == null)
+			return res.to(hxd.res.BitmapFont).toFont();
+		var key = '$res|$scale|$offset|$offsetChar|$baseLine|$lineHeight';
+
+		var fnt = bitmapFontCache.get(key);
+		if (fnt != null) {
+			return fnt;
+		}
+
+		fnt = res.to(hxd.res.BitmapFont).toFont().clone();
+
+		var defChar = offsetChar <= 0 ? fnt.getChar("A".code) ?? fnt.getChar("0".code) ?? fnt.getChar("a".code) : fnt.getChar(offsetChar);
+		if( offsetChar != 0 && defChar != null )
+			offset = -Math.ceil(defChar.t.dy) + Std.int(@:privateAccess fnt.offsetY);
+		if( offset != null || baseLine != null) {
+			var prev = @:privateAccess fnt.offsetY;
+			fnt.setOffset(0,offset);
+			@:privateAccess fnt.lineHeight += offset - prev;
+			@:privateAccess fnt.baseLine = fnt.calcBaseLine() + baseLine;
+		}
+		if (scale != null) {
+			fnt.resizeTo(hxd.Math.round(fnt.size * scale));
+		}
+		if( lineHeight != null && defChar != null ) {
+			@:privateAccess fnt.lineHeight = Math.ceil(defChar.t.height * lineHeight);
+		}
+		bitmapFontCache.set(key, fnt);
+		return fnt;
+	}
+	#end
 }
 
 #end

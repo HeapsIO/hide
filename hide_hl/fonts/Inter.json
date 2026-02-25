@@ -1,9 +1,8 @@
 [
 	{
 		"inputs": ["Inter-Regular_freeze.ttf"],
-		"output": "../res/font/Inter-cv05-cv08-tnum-msdf.fnt",
-		"mode": "msdf",
-		"dfSize": 6,
+		"output": "../res/font/Inter-cv05-cv08-tnum-26pt.fnt",
+		"mode": "raster",
 		"charset": ["charset_default.txt"],
 		"fontSize": 26
 	}

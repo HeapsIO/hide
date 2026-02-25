@@ -9,6 +9,7 @@ typedef TreeItem = {
 };
 
 class HuiViewGym extends HuiView<{}> {
+	static var asciiChars = " !&quot;#$%&amp;'()*+,-./0123456789:;&lt;=&gt;?@ABCDEFGHIJKLMNOPQRSTUVWXYZ[\\]^_`abcdefghijklmnopqrstuvwxyz{|}~'";
 	static var SRC =
 		<hui-view-gym>
 
@@ -20,6 +21,7 @@ class HuiViewGym extends HuiView<{}> {
 			<hui-text("hui-text")/>
 			<hui-element class="example">
 				<hui-text("Example ! This is a text")/>
+				<hui-text(asciiChars)/>
 				<hui-text("Lorem ipsum dolor sit amet consectetur adipiscing elit. Placerat in id cursus mi pretium tellus duis. Urna tempor pulvinar vivamus fringilla lacus nec metus. Integer nunc posuere ut hendrerit semper vel class. Conubia nostra inceptos himenaeos orci varius natoque penatibus. Mus donec rhoncus eros lobortis nulla molestie mattis. Purus est efficitur laoreet mauris pharetra vestibulum fusce. Sodales consequat magna ante condimentum neque at luctus. Ligula congue sollicitudin erat viverra ac tincidunt nam. Lectus commodo augue arcu dignissim velit aliquam imperdiet. Cras eleifend turpis fames primis vulputate ornare sagittis. Libero feugiat tristique accumsan maecenas potenti ultricies habitant. Cubilia curae hac habitasse platea dictumst lorem ipsum. Faucibus ex sapien vitae pellentesque sem placerat in. Tempus leo eu aenean sed diam urna tempor.")/>
 			</hui-element>
 
