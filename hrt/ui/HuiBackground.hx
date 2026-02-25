@@ -45,6 +45,8 @@ class BackgroundShader extends hxsl.Shader {
 		@const @param var separateThicknesses: Bool;
 		@param var outlineOffset : Float;
 
+		@const var debug : Bool = false;
+
 		@const @param var pixelPerfect : Bool = true;
 
 		var calculatedUV : Vec2;
@@ -164,6 +166,9 @@ class BackgroundShader extends hxsl.Shader {
 			pixelColor = alphaBlend(pixelColor, outlineColor, outlineAlpha);
 
 			pixelColor.a *= baseAlpha;
+			if (debug) {
+				pixelColor.rgba = pixelColor.rgba * 0.00001 + vec4(1.0,0.0,0.0,1.0);
+			}
 		}
 
 		function boxSDF(pos: Vec2, size: Vec2) : Float {
@@ -335,6 +340,9 @@ class HuiBackground extends h2d.ScaleGrid implements h2d.domkit.Object {
 		return v;
 	}
 	var _margin : h3d.Vector4 = new h3d.Vector4(0.0,0.0,0.0,0.0);
+
+	@:p public var debug(never, set) : Bool;
+	function set_debug(v) {return shader.debug = v;};
 
 	@:p public var marginLeft(never, set) : Int;
 	function set_marginLeft(v) { shader.margins.w = v; return v; }
@@ -533,7 +541,7 @@ class HuiBackground extends h2d.ScaleGrid implements h2d.domkit.Object {
 		else {
 			shader.useOutline = true;
 			shader.outlineColor.setColor(v.color);
-			_outlineThickness.set(v.thick, v.thick, v.thick, v.thick);
+			shader.outlineThickness.set(v.thick, v.thick, v.thick, v.thick);
 			shader.separateThicknesses = false;
 		}
 		return v;
@@ -541,14 +549,13 @@ class HuiBackground extends h2d.ScaleGrid implements h2d.domkit.Object {
 	@:p(color) @:t(color) public var outlineColor(never, set) : Int;
 	function set_outlineColor(v) { shader.outlineColor.setColor(v); return v; }
 
-	@:p(boxF) @:t(boxF) public var outlineThickness : { left : Float, top : Float, right : Float, bottom : Float };
-	var _outlineThickness : h3d.Vector4 = new h3d.Vector4();
+	@:p(boxF) @:t(boxF) public var outlineThickness(never, set) : { left : Float, top : Float, right : Float, bottom : Float };
 	function set_outlineThickness(v) {
 		if( v == null ) {
-			_outlineThickness.set(0, 0, 0, 0);
+			shader.outlineThickness.set(0, 0, 0, 0);
 			shader.separateThicknesses = false;
 		} else {
-			_outlineThickness.set(v.top, v.right, v.bottom, v.left);
+			shader.outlineThickness.set(v.top, v.right, v.bottom, v.left);
 			shader.separateThicknesses = v.left != v.top || v.left != v.right || v.left != v.bottom;
 		}
 		return v;
@@ -595,18 +602,9 @@ class HuiBackground extends h2d.ScaleGrid implements h2d.domkit.Object {
 
 		calcAbsPos();
 
-		var scene = getScene();
-		var scale = switch(scene.scaleMode) {
-			case Zoom(level):
-				level;
-			default:
-				1.0;
-		}
+		var scale = getScene().viewportScaleX;
 
-		var width = width * scale;
-		var height = height * scale;
-
-		shader.size.set(width, height);
+		shader.size.set(width * scale, height * scale);
 
 		shader.margins.load(_margin);
 		shader.margins.x += shadowExtraMargin;
@@ -614,15 +612,13 @@ class HuiBackground extends h2d.ScaleGrid implements h2d.domkit.Object {
 		shader.margins.z += shadowExtraMargin;
 		shader.margins.w += shadowExtraMargin;
 
-		shader.outlineThickness.set(_outlineThickness.x * scale, _outlineThickness.y * scale, _outlineThickness.z * scale, _outlineThickness.w * scale);
-
 		if(borderRadius != null) {
 			var maxRad = hxd.Math.min(width, height) / 2;
 			var v = borderRadius;
 			inline function clamp(v: Float) {
 				return hxd.Math.min(v, maxRad);
 			}
-			shader.borderRadius.set(clamp(v.top * scale), clamp(v.right * scale), clamp(v.bottom * scale), clamp(v.left * scale));
+			shader.borderRadius.set(clamp(v.top), clamp(v.right), clamp(v.bottom), clamp(v.left));
 		}
 		else
 			shader.borderRadius.set(0, 0, 0, 0);
@@ -633,7 +629,7 @@ class HuiBackground extends h2d.ScaleGrid implements h2d.domkit.Object {
 			inline function clamp(v: Float) {
 				return hxd.Math.min(v, maxBev);
 			}
-			shader.borderBevel.set(clamp(v.top * scale), clamp(v.right * scale), clamp(v.bottom * scale), clamp(v.left * scale));
+			shader.borderBevel.set(clamp(v.top), clamp(v.right), clamp(v.bottom), clamp(v.left));
 		}
 		else
 			shader.borderBevel.set(0, 0, 0, 0);
@@ -644,7 +640,7 @@ class HuiBackground extends h2d.ScaleGrid implements h2d.domkit.Object {
 			inline function clamp(v: Float) {
 				return hxd.Math.min(v, maxSkew);
 			}
-			shader.borderSkew.set(clamp(v.left * scale), clamp(v.right * scale));
+			shader.borderSkew.set(clamp(v.left), clamp(v.right));
 		}
 		else
 			shader.borderSkew.set(0, 0);

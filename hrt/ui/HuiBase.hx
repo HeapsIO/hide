@@ -129,6 +129,7 @@ class HuiBase extends HuiElement {
 		var monitors = hxd.Window.getMonitors();
 
 		if (monitorDx != null) {
+			var scene = getScene();
 			var monitor = Lambda.find(monitors, (m) -> m.name == monitorDx);
 			if (monitor != null) {
 				// snap to 0.5
@@ -138,10 +139,10 @@ class HuiBase extends HuiElement {
 
 				if (previousUiScale != upscale) {
 					previousUiScale = upscale;
-					getScene().scaleMode = Zoom(upscale);
-
 					dom.toggleClass("high-dpi", upscale > 1.0);
 				}
+				var engine = scene.renderer.engine;
+				scene.scaleMode = Fixed(Math.ceil(engine.width / upscale), Math.ceil(engine.height / upscale), upscale, Center, Center);
 			}
 		}
 		#end

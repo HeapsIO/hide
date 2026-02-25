@@ -88,12 +88,8 @@ class HuiScene extends HuiElement {
 
 		if (currentVisible) {
 			var scene = getScene();
-			var scale = switch(scene.scaleMode) {
-				case Zoom(level):
-					level;
-				default:
-					1.0;
-			}
+			var scale = getScene().viewportScaleX;
+
 			s3d.scenePosition = s3d.scenePosition ?? {offsetX: 0, offsetY: 0, width: 0, height: 0};
 			s3d.scenePosition.offsetX = display.absX * scale;
 			s3d.scenePosition.offsetY = display.absY * scale;
@@ -105,13 +101,7 @@ class HuiScene extends HuiElement {
 	}
 
 	override function onAfterReflow() {
-		var scene = getScene();
-		var scale = switch(scene.scaleMode) {
-			case Zoom(level):
-				level;
-			default:
-				1.0;
-		}
+		var scale = getScene().viewportScaleX;
 
 		var textureWidth = hxd.Math.iclamp(hxd.Math.round(innerWidth * scale) , 1, 4096);
 		var textureHeight = hxd.Math.iclamp(hxd.Math.round(innerHeight * scale) , 1, 4096);
