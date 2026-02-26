@@ -2751,8 +2751,10 @@ class Model extends FileView {
 
 		var hideData = loadProps();
 		var animData = hideData.animations?.get(currentAnimation.file.split("/").pop());
-		if( animData != null && animData.events != null )
-			anim.setEvents(animData.events);
+		if( animData != null && animData.events != null ) {
+			for (e in animData.events)
+				anim.addEvent(e.frame, e.data);
+		}
 
 		obj.playAnimation(anim);
 		var skin = Std.downcast(obj, h3d.scene.Skin);
