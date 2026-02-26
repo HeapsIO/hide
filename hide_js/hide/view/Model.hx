@@ -84,7 +84,7 @@ class CollisionSettings {
 
 		var collisionThresholdHeight = Reflect.field(convertRule.cmd.params, "collisionThresholdHeight");
 		var collisionUseLowLod = Reflect.field(convertRule.cmd.params, "collisionUseLowLod");
-		var colliderType = hxd.fmt.hmd.Data.Collider.resolveColliderType(hmd.lib.header, model, params, collisionThresholdHeight, collisionUseLowLod);
+		var colliderType = hxd.fmt.hmd.Data.Collider.resolveColliderType(hmd.lib.resource.entry.path, hmd.lib.header, model, params, collisionThresholdHeight, collisionUseLowLod);
 		if (colliderType == null)
 			return null;
 
