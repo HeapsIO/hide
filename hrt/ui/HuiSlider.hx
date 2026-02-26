@@ -33,20 +33,28 @@ class HuiSlider extends HuiElement {
 		var startY = 0;
 		this.onPush = (e : hxd.Event) -> {
 			startX = hxd.Window.getInstance().mouseX;
+			var accumulator= 0.0;
 			startY = hxd.Window.getInstance().mouseY;
 			hxd.Window.getInstance().mouseMode = Relative((event: hxd.Event) -> {
 				var scale = hxd.Key.isDown(hxd.Key.SHIFT) ? 0.1 : 1.0;
 
-				if (min != null && max != null) {
-					value += (event.relX * scale) * (max - min) / 400.0;
-				} else {
-					value += (event.relX * scale) * (step ?? 1);
+				accumulator += event.relX / getScene().viewportScaleX;
+				var steps = hxd.Math.round(accumulator);
+
+				if (hxd.Math.abs(steps) > 0) {
+					if (min != null && max != null) {
+						value += (steps * scale) * (max - min) / 400.0;
+					} else {
+						value += (steps * scale) * (step ?? 1);
+					}
+					accumulator -= steps;
+
+					if (min != null) value = hxd.Math.max(min, value);
+					if (max != null) value = hxd.Math.min(max, value);
+					moved = true;
+					onValueChanged(true);
 				}
 
-				if (min != null) value = hxd.Math.max(min, value);
-				if (max != null) value = hxd.Math.min(max, value);
-				moved = true;
-				onValueChanged(true);
 			}, true);
 		};
 
