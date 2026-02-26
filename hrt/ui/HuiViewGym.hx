@@ -96,6 +96,16 @@ class HuiViewGym extends HuiView<{}> {
 				<hui-button><hui-text("Text Button")/></hui-button>
 				<hui-button><hui-icon("tick")/><hui-text("Icon Button")/></hui-button>
 			</hui-element>
+
+			<hui-text("hui-commands")/>
+			<hui-element class="example">
+				<hui-element id="commands-first">
+					<hui-text("Paste in me") id="commands-first-text"/>
+					<hui-element id="commands-second">
+						<hui-text("Paste in me") id="commands-second-text"/>
+					</hui-element>
+				</hui-element>
+			</hui-element>
 		</hui-view-gym>
 
 	function testMenu() :  Array<HuiMenu.MenuItem> {
@@ -146,6 +156,39 @@ class HuiViewGym extends HuiView<{}> {
 		initComponent();
 
 		setupTree();
+		setupCommands();
+	}
+
+	function setupCommands() {
+		// Register command is usually only reserved for internal hui usage, but we make
+		// an exception here for demo purpose
+		@:privateAccess
+		{
+			commandsFirst.registerCommand(HuiCommands.paste, () -> {
+				commandsFirstText.text = "Paste";
+				return true;
+			});
+
+			commandsFirst.registerCommand(HuiCommands.copy, () -> {
+				commandsFirstText.text = "Copy";
+				return true;
+			});
+
+			commandsFirst.registerCommand(HuiCommands.undo, () -> {
+				commandsFirstText.text = "Undo";
+				return true;
+			});
+
+			commandsSecond.registerCommand(HuiCommands.paste, () -> {
+				commandsSecondText.text = "Paste";
+				return true;
+			});
+
+			commandsSecond.registerCommand(HuiCommands.copy, () -> {
+				commandsSecondText.text = "Copy";
+				return true;
+			});
+		}
 	}
 
 	function setupTree() {

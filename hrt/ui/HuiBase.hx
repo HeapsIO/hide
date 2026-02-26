@@ -10,6 +10,7 @@ class HuiBase extends HuiElement {
 	var layers : Array<h2d.Flow>;
 	var currentMenu: HuiMenu;
 	public var mainLayout: HuiMainLayout;
+	var commandFocus: HuiElement;
 
 	var previousUiScale: Float = 0;
 
@@ -87,6 +88,23 @@ class HuiBase extends HuiElement {
 		onWheel = (e) -> {
 			e.propagate = false;
 		}
+
+		var scene = getScene();
+		var commandHandler = new h2d.Interactive(10000,10000);
+		commandHandler.cursor = null;
+		scene.add(commandHandler, 30);
+		commandHandler.propagateEvents = true;
+		commandHandler.onKeyDown = (e) -> {
+			trace(commandFocus, e);
+			var current = commandFocus;
+			while(current != null) {
+				if(current.handleCommand(e)) {
+					e.propagate = false;
+					break;
+				}
+				current = current.parentElement;
+			}
+		};
 	}
 
 	public function contextMenu(items: Array<hrt.ui.HuiMenu.MenuItem>) {
@@ -96,6 +114,10 @@ class HuiBase extends HuiElement {
 	public function addPopup(popup: HuiPopup, ?anchor: hrt.ui.HuiPopup.Anchor) {
 		popup.anchor = anchor;
 		@:privateAccess popup.addDismissable(this);
+	}
+
+	public function setCommandFocus(element: HuiElement) {
+		commandFocus = element;
 	}
 
 	public function openMenu(items: Array<hrt.ui.HuiMenu.MenuItem>, options: hrt.ui.HuiMenu.MenuOptions, ?anchor: hrt.ui.HuiPopup.Anchor) : HuiMenu {

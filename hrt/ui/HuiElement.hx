@@ -36,6 +36,8 @@ class HuiElement extends h2d.Flow #if hui implements h2d.domkit.Object #end {
 	public var childElements(get, never): Array<HuiElement>;
 	public var uiBase(get, never) : HuiBase;
 
+	var registeredCommands: Map<hrt.ui.HuiCommands.HuiCommand, Void -> Bool> = null;
+
 	function set_enable(b) {
 		if( !b && dom != null )
 			dom.hover = dom.active = false;
@@ -114,6 +116,18 @@ class HuiElement extends h2d.Flow #if hui implements h2d.domkit.Object #end {
 	public function new(?parent: h2d.Object) {
 		super(parent);
 		initComponent();
+	}
+
+	function registerCommand(command: hrt.ui.HuiCommands.HuiCommand, cb: () -> Bool) {
+		makeInteractive();
+		registeredCommands ??= [];
+		registeredCommands.set(command, cb);
+	}
+
+	function unregisterCommand(command: hrt.ui.HuiCommands.HuiCommand) {
+		if (registeredCommands == null)
+			return;
+		registeredCommands.remove(command);
 	}
 
 	public function makeInteractive() {
@@ -269,6 +283,9 @@ class HuiElement extends h2d.Flow #if hui implements h2d.domkit.Object #end {
 			return;
 
 		dom.active = true;
+
+		grabCommandFocus();
+
 		onPush(e);
 	}
 
@@ -301,6 +318,10 @@ class HuiElement extends h2d.Flow #if hui implements h2d.domkit.Object #end {
 		onKeyUp(e);
 	}
 
+	function grabCommandFocus() {
+		uiBase.setCommandFocus(this);
+	}
+
 	function onTextInputInternal(e: hxd.Event) {
 		if (!enable)
 			return;
@@ -322,6 +343,23 @@ class HuiElement extends h2d.Flow #if hui implements h2d.domkit.Object #end {
 			return;
 
 		onFocusLost(e);
+	}
+
+	/**
+		Returns if the command was handled by this element
+	**/
+	function handleCommand(e: hxd.Event) : Bool {
+		if (registeredCommands != null) {
+			for (command => cb in registeredCommands) {
+				if(command.check(e)) {
+					var r = cb();
+					if (r) {
+						return true;
+					}
+				}
+			}
+		}
+		return false;
 	}
 
 	override function onMouseWheel(e: hxd.Event) {
