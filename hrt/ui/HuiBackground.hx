@@ -387,26 +387,10 @@ class HuiBackground extends h2d.ScaleGrid implements h2d.domkit.Object {
 		return shader.shadowColor.a = v;
 	}
 
-	@:p @:t public var shadowOffsetX(never, set): Float;
-	function set_shadowOffsetX(v) {
-		return shader.shadowOffset.x = v;
-	}
-
-	@:p @:t public var shadowOffsetY(never, set): Float;
-	function set_shadowOffsetY(v) {
-		return shader.shadowOffset.y = v;
-	}
-
-	@:p @:t public var shadowBlurRadius(never, set) : Float;
-	function set_shadowBlurRadius(v) {
-		return shader.shadowBlurRadius = v;
-	}
-
-	@:p @:t public var shadowSpreadRadius(never, set) : Float;
-	function set_shadowSpreadRadius(v) {
-		// set minimum to 0.5 to get anti aliased corners
-		return shader.shadowSpreadRadius = hxd.Math.max(v, 0.5);
-	}
+	@:p @:t public var shadowOffsetX: Float;
+	@:p @:t public var shadowOffsetY: Float;
+	@:p @:t public var shadowBlurRadius : Float;
+	@:p @:t public var shadowSpreadRadius : Float;
 
 	function setTexture(t: h3d.mat.Texture) {
 		if(t == null) {
@@ -541,7 +525,7 @@ class HuiBackground extends h2d.ScaleGrid implements h2d.domkit.Object {
 		else {
 			shader.useOutline = true;
 			shader.outlineColor.setColor(v.color);
-			shader.outlineThickness.set(v.thick, v.thick, v.thick, v.thick);
+			_outlineThickness.set(v.thick, v.thick, v.thick, v.thick);
 			shader.separateThicknesses = false;
 		}
 		return v;
@@ -552,14 +536,15 @@ class HuiBackground extends h2d.ScaleGrid implements h2d.domkit.Object {
 	@:p(boxF) @:t(boxF) public var outlineThickness(never, set) : { left : Float, top : Float, right : Float, bottom : Float };
 	function set_outlineThickness(v) {
 		if( v == null ) {
-			shader.outlineThickness.set(0, 0, 0, 0);
+			_outlineThickness.set(0, 0, 0, 0);
 			shader.separateThicknesses = false;
 		} else {
-			shader.outlineThickness.set(v.top, v.right, v.bottom, v.left);
+			_outlineThickness.set(v.top, v.right, v.bottom, v.left);
 			shader.separateThicknesses = v.left != v.top || v.left != v.right || v.left != v.bottom;
 		}
 		return v;
 	}
+	var _outlineThickness : h3d.Vector4 = new h3d.Vector4();
 
 	@:p public var outlineOffset(never, set) : Float;
 	function set_outlineOffset(v) { return shader.outlineOffset = v; }
@@ -586,9 +571,15 @@ class HuiBackground extends h2d.ScaleGrid implements h2d.domkit.Object {
 		y = 0;
 		var flowParent = Std.downcast(parent, h2d.Flow);
 
+		var scale = getScene().viewportScaleX;
+
 		var shadowExtraMargin = 0.0;
 		if (shader.useShadow) {
-			shadowExtraMargin = hxd.Math.ceil(hxd.Math.max(hxd.Math.abs(shader.shadowOffset.x), hxd.Math.abs(shader.shadowOffset.y)) + shader.shadowSpreadRadius + shader.shadowBlurRadius);
+			shader.shadowOffset.x = shadowOffsetX * scale;
+			shader.shadowOffset.y = shadowOffsetY * scale;
+			shader.shadowBlurRadius = shadowBlurRadius * scale;
+			shader.shadowSpreadRadius = hxd.Math.max(shadowSpreadRadius, 0.5) * scale;
+			shadowExtraMargin = hxd.Math.ceil(hxd.Math.max(hxd.Math.abs(shadowOffsetX), hxd.Math.abs(shadowOffsetY)) + hxd.Math.max(shadowSpreadRadius, 0.5) + shadowBlurRadius);
 		}
 		if (flowParent != null && this == @:privateAccess flowParent.background) {
 			width = @:privateAccess flowParent.flowCeil(flowParent.calculatedWidth);
@@ -602,15 +593,15 @@ class HuiBackground extends h2d.ScaleGrid implements h2d.domkit.Object {
 
 		calcAbsPos();
 
-		var scale = getScene().viewportScaleX;
+		var width = width * scale;
+		var height = height * scale;
 
-		shader.size.set(width * scale, height * scale);
-
-		shader.margins.load(_margin);
-		shader.margins.x += shadowExtraMargin;
-		shader.margins.y += shadowExtraMargin;
-		shader.margins.z += shadowExtraMargin;
-		shader.margins.w += shadowExtraMargin;
+		shader.size.set(width, height);
+		shader.outlineThickness.set(_outlineThickness.x * scale, _outlineThickness.y * scale, _outlineThickness.z * scale, _outlineThickness.w * scale);
+		shader.margins.x = (_margin.x + shadowExtraMargin) * scale;
+		shader.margins.y = (_margin.y + shadowExtraMargin) * scale;
+		shader.margins.z = (_margin.z + shadowExtraMargin) * scale;
+		shader.margins.w = (_margin.w + shadowExtraMargin) * scale;
 
 		if(borderRadius != null) {
 			var maxRad = hxd.Math.min(width, height) / 2;
@@ -618,7 +609,7 @@ class HuiBackground extends h2d.ScaleGrid implements h2d.domkit.Object {
 			inline function clamp(v: Float) {
 				return hxd.Math.min(v, maxRad);
 			}
-			shader.borderRadius.set(clamp(v.top), clamp(v.right), clamp(v.bottom), clamp(v.left));
+			shader.borderRadius.set(clamp(v.top * scale), clamp(v.right * scale), clamp(v.bottom * scale), clamp(v.left * scale));
 		}
 		else
 			shader.borderRadius.set(0, 0, 0, 0);
@@ -629,7 +620,7 @@ class HuiBackground extends h2d.ScaleGrid implements h2d.domkit.Object {
 			inline function clamp(v: Float) {
 				return hxd.Math.min(v, maxBev);
 			}
-			shader.borderBevel.set(clamp(v.top), clamp(v.right), clamp(v.bottom), clamp(v.left));
+			shader.borderBevel.set(clamp(v.top * scale), clamp(v.right * scale), clamp(v.bottom * scale), clamp(v.left * scale));
 		}
 		else
 			shader.borderBevel.set(0, 0, 0, 0);
@@ -640,7 +631,7 @@ class HuiBackground extends h2d.ScaleGrid implements h2d.domkit.Object {
 			inline function clamp(v: Float) {
 				return hxd.Math.min(v, maxSkew);
 			}
-			shader.borderSkew.set(clamp(v.left), clamp(v.right));
+			shader.borderSkew.set(clamp(v.left * scale), clamp(v.right * scale));
 		}
 		else
 			shader.borderSkew.set(0, 0);
