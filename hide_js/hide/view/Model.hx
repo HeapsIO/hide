@@ -2769,9 +2769,13 @@ class Model extends FileView {
 
 		var hideData = loadProps();
 		var animData = hideData.animations?.get(currentAnimation.file.split("/").pop());
-		if( animData != null && animData.events != null ) {
-			for (e in animData.events)
-				anim.addEvent(e.frame, e.data);
+		if (animData != null && animData.events != null) {
+			for (e in animData.events) {
+				var events = anim.getEvents();
+				var toAdd = events == null || events.length <= e.frame || !events[e.frame]?.contains(e.data);
+				if (toAdd)
+					anim.addEvent(e.frame, e.data);
+			}
 		}
 
 		obj.playAnimation(anim);
