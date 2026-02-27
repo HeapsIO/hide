@@ -82,9 +82,27 @@ class CollisionSettings {
 					model = m;
 		}
 
+		var defaultParams : hxd.fmt.fbx.HMDOut.CollideParams = null;
+		#if ((sys || nodejs) && !macro)
+		var fs : hxd.fs.LocalFileSystem = Std.downcast(hxd.res.Loader.currentInstance.fs, hxd.fs.LocalFileSystem);
+		if (fs != null) {
+			var convertRule = @:privateAccess fs.convert.getConvertRule(hmd.lib.resource.entry.path);
+			var collide = convertRule.cmd?.params?.collide;
+			if (collide != null) {
+				defaultParams = {
+					precision : collide.precision,
+					maxConvexHulls : collide.maxConvexHulls,
+					maxSubdiv : collide.maxSubdiv,
+				};
+			}
+		}
+		#end
+
 		var collisionThresholdHeight = Reflect.field(convertRule.cmd.params, "collisionThresholdHeight");
 		var collisionUseLowLod = Reflect.field(convertRule.cmd.params, "collisionUseLowLod");
-		var colliderType = hxd.fmt.hmd.Data.Collider.resolveColliderType(hmd.lib.resource.entry.path, hmd.lib.header, model, params, collisionThresholdHeight, collisionUseLowLod);
+		var isDefaultParams = params == null || (params != null && params.useDefault);
+		var params = isDefaultParams ? defaultParams : params;
+		var colliderType = hxd.fmt.hmd.Data.Collider.resolveColliderType(hmd.lib.header, model, params, isDefaultParams, collisionThresholdHeight, collisionUseLowLod);
 		if (colliderType == null)
 			return null;
 
