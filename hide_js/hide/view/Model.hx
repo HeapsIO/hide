@@ -82,6 +82,9 @@ class CollisionSettings {
 					model = m;
 		}
 
+		if (model == null)
+			return null;
+
 		var defaultParams : hxd.fmt.fbx.HMDOut.CollideParams = null;
 		#if ((sys || nodejs) && !macro)
 		var fs : hxd.fs.LocalFileSystem = Std.downcast(hxd.res.Loader.currentInstance.fs, hxd.fs.LocalFileSystem);
