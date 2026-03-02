@@ -36,7 +36,7 @@ class ShaderTargetObj extends h3d.scene.Object {
 				s.makeShader();
 				@:privateAccess s.updateInstance();
 			}
-			s.apply3d((o) -> return !Std.isOfType(o, hrt.prefab.fx.FX.FXAnimation) );
+			applyShader(s);
 		}
 
 		if (fxAnim == null)
@@ -45,6 +45,10 @@ class ShaderTargetObj extends h3d.scene.Object {
 		if (fxAnim.shaderTargets == null)
 			fxAnim.shaderTargets = [];
 		fxAnim.shaderTargets.push(this);
+	}
+
+	function applyShader(s: Shader) {
+		s.apply3d((o) -> return !Std.isOfType(o, hrt.prefab.fx.FX.FXAnimation) );
 	}
 
 	override function onRemove() {
@@ -82,10 +86,14 @@ class ShaderTarget extends Object3D {
 		}
 	}
 
+	function makeShaderTargetObj(target : h3d.scene.Object) {
+		return new hrt.prefab.fx.ShaderTarget.ShaderTargetObj(target);
+	}
+
 	public function applyShaderTarget(fx : hrt.prefab.fx.FX, target : h3d.scene.Object) {
 		if (target == null)
 			return;
-		var o = new hrt.prefab.fx.ShaderTarget.ShaderTargetObj(target);
+		var o = makeShaderTargetObj(target);
 		o.priority = this.priority;
 		o.tag = this.tag;
 		o.shadersRoot = this;
