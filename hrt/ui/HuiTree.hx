@@ -35,6 +35,7 @@ typedef TreeItemData = {
 class HuiTree<TreeItem> extends HuiElement {
 	static var SRC =
 		<hui-tree>
+			<hui-input-box id="searchBar" class="search"/>
 			<hui-virtual-list id="list"/>
 		</hui-tree>
 
@@ -62,6 +63,16 @@ class HuiTree<TreeItem> extends HuiElement {
 		list.refreshItem = cast refreshItem;
 		requestRefresh(RegenerateFlatten);
 		requestRefresh(RootData);
+
+		searchBar.visible = false;
+
+		registerCommand(HuiCommands.search,  ElementAndChildren, () -> {
+			openSearch();
+		});
+
+		searchBar.onFocusLost = (e) -> {
+			searchBar.visible = false;
+		}
 
 		onKeyDown = (e:hxd.Event) -> {
 			if (e.keyCode == hxd.Key.UP) {
@@ -105,6 +116,12 @@ class HuiTree<TreeItem> extends HuiElement {
 				}
 			}
 		}
+	}
+
+
+	public function openSearch() {
+		searchBar.visible = true;
+		@:privateAccess searchBar.textInput.focus();
 	}
 
 	/**

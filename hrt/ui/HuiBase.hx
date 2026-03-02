@@ -12,6 +12,8 @@ class HuiBase extends HuiElement {
 	public var mainLayout: HuiMainLayout;
 	var commandFocus: HuiElement;
 
+	var checkedCommandEvents: Map<hxd.Event, Bool> = [];
+
 	var previousUiScale: Float = 0;
 
 	// Keep track of the element that currently own the scroll event.
@@ -89,22 +91,38 @@ class HuiBase extends HuiElement {
 			e.propagate = false;
 		}
 
-		var scene = getScene();
-		var commandHandler = new h2d.Interactive(10000,10000);
-		commandHandler.cursor = null;
-		scene.add(commandHandler, 30);
-		commandHandler.propagateEvents = true;
-		commandHandler.onKeyDown = (e) -> {
-			trace(commandFocus, e);
-			var current = commandFocus;
-			while(current != null) {
-				if(current.handleCommand(e)) {
-					e.propagate = false;
-					break;
-				}
-				current = current.parentElement;
-			}
-		};
+		// var scene = getScene();
+		// var commandHandler = new h2d.Interactive(10000,10000);
+		// commandHandler.cursor = null;
+		// scene.add(commandHandler, 30);
+		// commandHandler.propagateEvents = true;
+		// commandHandler.onKeyDown = (e) -> {
+		// 	trace(commandFocus, e);
+		// 	var current = commandFocus;
+		// 	while(current != null) {
+		// 		if(current.handleCommand(e)) {
+		// 			e.propagate = false;
+		// 			break;
+		// 		}
+		// 		current = current.parentElement;
+		// 	}
+		// };
+	}
+
+	/**
+		Try to get the HuiBase for a given h2d object by searching if one of it's parent is a HuiBase.
+		Should only be used with element that can't inherit from HuiElement (because they need to inherit another h2d base class).
+		For HuiElements, see uiBase
+	**/
+	public static function get(object: h2d.Object) {
+		var current = object;
+		while (current != null) {
+			var base = Std.downcast(current, HuiBase);
+			if (base != null)
+				return base;
+			current = current.parent;
+		}
+		return null;
 	}
 
 	public function contextMenu(items: Array<hrt.ui.HuiMenu.MenuItem>) {
@@ -132,6 +150,36 @@ class HuiBase extends HuiElement {
 		return currentMenu;
 	}
 
+	/**
+		Check if event triggers a event if object is the currently focused object in the h2d scene.
+		Return true if the event has been handled by a registered command
+	**/
+	public function checkCommand(event: hxd.Event, object: h2d.Object) : Bool {
+		if (checkedCommandEvents.exists(event)) {
+			return false;
+		}
+		checkedCommandEvents.set(event, true);
+		var current = object;
+		while(current != null) {
+			var element = Std.downcast(current, HuiElement);
+			if (element != null && element.registeredCommands != null) {
+				for (command in element.registeredCommands) {
+					if (command.context == ElementAndChildren || (current == object && command.context == Element)) {
+						if (command.command.check(event)) {
+							event.propagate = false;
+							command.callback();
+							if (!event.propagate) {
+								return true;
+							}
+						}
+					}
+				}
+			}
+			current = current.parent;
+		}
+		return false;
+	}
+
 	function loadStyle() {
 		#if !js
 		style.loadComponents("ui/style",[hxd.Res.ui.style.common]);
@@ -143,7 +191,7 @@ class HuiBase extends HuiElement {
 
 	public function updateStyle(dt: Float) {
 		style.sync(dt);
-
+		checkedCommandEvents.clear();
 
 		// HiDPI support for hldx targets
 		#if hldx

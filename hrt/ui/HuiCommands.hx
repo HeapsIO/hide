@@ -17,6 +17,30 @@ class HuiCommands {
 	static public var search = new HuiCommand("Search", {ctrl: true, key: K.F});
 }
 
+/**
+	How a registered command shortcut is handled, by decreasing level of priority
+**/
+enum ShortcutContext {
+	/**
+		The element is focused
+	**/
+	Element;
+	/**
+		The element or one of it's children is focused
+	**/
+	ElementAndChildren;
+
+	/**
+		The element parent view is focused
+	**/
+	View;
+
+	/**
+		Global shortcut
+	**/
+	Global;
+}
+
 typedef Shortcut = {
 	?ctrl: Bool,
 	?alt: Bool,

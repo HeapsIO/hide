@@ -99,10 +99,13 @@ class HuiViewGym extends HuiView<{}> {
 
 			<hui-text("hui-commands")/>
 			<hui-element class="example">
+				<hui-text("This is a sandbox for hui-commands and how nested command contexts interacts")/>
+
 				<hui-element id="commands-first">
 					<hui-text("Paste in me") id="commands-first-text"/>
 					<hui-element id="commands-second">
 						<hui-text("Paste in me") id="commands-second-text"/>
+						<hui-input-box/>
 					</hui-element>
 				</hui-element>
 			</hui-element>
@@ -164,29 +167,28 @@ class HuiViewGym extends HuiView<{}> {
 		// an exception here for demo purpose
 		@:privateAccess
 		{
-			commandsFirst.registerCommand(HuiCommands.paste, () -> {
+			commandsFirst.registerCommand(HuiCommands.search, ElementAndChildren, () -> {
+				commandsFirstText.text = "Search";
+			});
+
+			commandsFirst.registerCommand(HuiCommands.paste, ElementAndChildren, () -> {
 				commandsFirstText.text = "Paste";
-				return true;
 			});
 
-			commandsFirst.registerCommand(HuiCommands.copy, () -> {
+			commandsFirst.registerCommand(HuiCommands.copy, ElementAndChildren, () -> {
 				commandsFirstText.text = "Copy";
-				return true;
 			});
 
-			commandsFirst.registerCommand(HuiCommands.undo, () -> {
+			commandsFirst.registerCommand(HuiCommands.undo, ElementAndChildren, () -> {
 				commandsFirstText.text = "Undo";
-				return true;
 			});
 
-			commandsSecond.registerCommand(HuiCommands.paste, () -> {
+			commandsSecond.registerCommand(HuiCommands.paste, ElementAndChildren, () -> {
 				commandsSecondText.text = "Paste";
-				return true;
 			});
 
-			commandsSecond.registerCommand(HuiCommands.copy, () -> {
+			commandsSecond.registerCommand(HuiCommands.copy, ElementAndChildren, () -> {
 				commandsSecondText.text = "Copy";
-				return true;
 			});
 		}
 	}

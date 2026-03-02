@@ -2,6 +2,12 @@ package hrt.ui;
 
 #if hui
 
+typedef RegisteredCommand = {
+	command: hrt.ui.HuiCommands.HuiCommand,
+	context: hrt.ui.HuiCommands.ShortcutContext,
+	callback: Void -> Void,
+};
+
 @:parser(hrt.ui.CssParser)
 class HuiElement extends h2d.Flow #if hui implements h2d.domkit.Object #end {
 	static var SRC =
@@ -36,7 +42,7 @@ class HuiElement extends h2d.Flow #if hui implements h2d.domkit.Object #end {
 	public var childElements(get, never): Array<HuiElement>;
 	public var uiBase(get, never) : HuiBase;
 
-	var registeredCommands: Map<hrt.ui.HuiCommands.HuiCommand, Void -> Bool> = null;
+	var registeredCommands: Array<RegisteredCommand> = null;
 
 	function set_enable(b) {
 		if( !b && dom != null )
@@ -118,16 +124,22 @@ class HuiElement extends h2d.Flow #if hui implements h2d.domkit.Object #end {
 		initComponent();
 	}
 
-	function registerCommand(command: hrt.ui.HuiCommands.HuiCommand, cb: () -> Bool) {
+	function registerCommand(command: hrt.ui.HuiCommands.HuiCommand, context: hrt.ui.HuiCommands.ShortcutContext, cb: Void -> Void) {
 		makeInteractive();
 		registeredCommands ??= [];
-		registeredCommands.set(command, cb);
+		unregisterCommand(command);
+		registeredCommands.push({command: command, callback: cb, context: context});
 	}
 
 	function unregisterCommand(command: hrt.ui.HuiCommands.HuiCommand) {
 		if (registeredCommands == null)
 			return;
-		registeredCommands.remove(command);
+		for (i => registeredCommand in registeredCommands) {
+			if (registeredCommand.command == command) {
+				registeredCommands.splice(i, 1);
+				return;
+			}
+		}
 	}
 
 	public function makeInteractive() {
@@ -308,6 +320,9 @@ class HuiElement extends h2d.Flow #if hui implements h2d.domkit.Object #end {
 		if (!enable)
 			return;
 
+		if (uiBase.checkCommand(e, this))
+			return;
+
 		onKeyDown(e);
 	}
 
@@ -343,23 +358,6 @@ class HuiElement extends h2d.Flow #if hui implements h2d.domkit.Object #end {
 			return;
 
 		onFocusLost(e);
-	}
-
-	/**
-		Returns if the command was handled by this element
-	**/
-	function handleCommand(e: hxd.Event) : Bool {
-		if (registeredCommands != null) {
-			for (command => cb in registeredCommands) {
-				if(command.check(e)) {
-					var r = cb();
-					if (r) {
-						return true;
-					}
-				}
-			}
-		}
-		return false;
 	}
 
 	override function onMouseWheel(e: hxd.Event) {

@@ -9,6 +9,8 @@ class HuiTextInput extends h2d.TextInput implements h2d.domkit.Object {
 
 		interactive.onKeyDown = function(e:hxd.Event) {
 			preventDefault = false;
+			if(HuiBase.get(this).checkCommand(e, this))
+				return;
 			onKeyDown(e);
 			if (preventDefault) {
 				return;
