@@ -9,10 +9,26 @@ typedef TreeItem = {
 };
 
 class HuiViewGym extends HuiView<{}> {
-	static var asciiChars = " !&quot;#$%&amp;'()*+,-./0123456789:;&lt;=&gt;?@ABCDEFGHIJKLMNOPQRSTUVWXYZ[\\]^_`abcdefghijklmnopqrstuvwxyz{|}~'";
 	static var SRC =
 		<hui-view-gym>
+			<hui-tab-container>
+				<gym-widgets display-name="Widgets"/>
+				<gym-layouts display-name="Layouts"/>
+			</hui-tab-container>
+		</hui-view-gym>
 
+	override function getDisplayName() : String {
+		return "Hui Gym";
+	}
+
+	static var _ = HuiView.register("gym", HuiViewGym);
+}
+
+class GymWidgets extends HuiElement {
+	static var asciiChars = " !&quot;#$%&amp;'()*+,-./0123456789:;&lt;=&gt;?@ABCDEFGHIJKLMNOPQRSTUVWXYZ[\\]^_`abcdefghijklmnopqrstuvwxyz{|}~'";
+
+	static var SRC =
+		<gym-widgets>
 			<hui-text("hui-tree")/>
 			<hui-element class="example">
 				<hui-tree id="tree"/>
@@ -109,7 +125,15 @@ class HuiViewGym extends HuiView<{}> {
 					</hui-element>
 				</hui-element>
 			</hui-element>
-		</hui-view-gym>
+		</gym-widgets>
+
+	function new(?parent) {
+		super(parent);
+		initComponent();
+
+		setupTree();
+		setupCommands();
+	}
 
 	function testMenu() :  Array<HuiMenu.MenuItem> {
 		var submenu: Array<HuiMenu.MenuItem> = [
@@ -148,18 +172,6 @@ class HuiViewGym extends HuiView<{}> {
 					{label: "B", radio: () -> radio == 1, stayOpen: true, click: () -> radio = 1},
 					{label: "C", radio: () -> radio == 2, stayOpen: true, click: () -> radio = 2},
 			];
-	}
-
-	override function getDisplayName() : String {
-		return "Hui Gym";
-	}
-
-	function new(state: Dynamic, ?parent) {
-		super(state, parent);
-		initComponent();
-
-		setupTree();
-		setupCommands();
 	}
 
 	function setupCommands() {
@@ -266,8 +278,19 @@ class HuiViewGym extends HuiView<{}> {
 			return item.children;
 		};
 	}
-
-	static var _ = HuiView.register("gym", HuiViewGym);
 }
+
+class GymLayouts extends HuiElement {
+	static var SRC =
+		<gym-layouts>
+			<hui-element class="example">
+				<hui-split-container direction="vertical">
+					<hui-element class="first"/>
+					<hui-element class="second"/>
+				</hui-split-container>
+			</hui-element>
+		</gym-layouts>
+}
+
 
 #end

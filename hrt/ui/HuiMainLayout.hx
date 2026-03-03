@@ -17,7 +17,13 @@ class HuiMainLayout extends HuiElement {
 					<hui-text("View")/>
 				</hui-button-menu>
 
-				<hui-button-menu(() -> [{label: "Toast", menu: [{label: "Info", click:() -> addToast("Debug toast", Info), stayOpen: true}, {label: "Warning", click:() -> addToast("Debug toast", Warning), stayOpen: true}, {label: "Error", click:() -> addToast("Debug toast", Error), stayOpen: true}]}])>
+				<hui-button-menu(() -> [
+						{label: "Toast", menu: [
+							{label: "Info", click:() -> addToast("Debug toast", Info), stayOpen: true},
+							{label: "Warning", click:() -> addToast("Debug toast", Warning), stayOpen: true},
+							{label: "Error", click:() -> addToast("Debug toast", Error), stayOpen: true}
+						]},
+					])>
 					<hui-text("Debug")/>
 				</hui-button-menu>
 			</hui-element>

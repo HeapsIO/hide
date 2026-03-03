@@ -103,6 +103,13 @@ class HuiElement extends h2d.Flow #if hui implements h2d.domkit.Object #end {
 		return super.set_overflow(v);
 	}
 
+	/* Avoid reflows when visibility don't actually change */
+	override function set_visible(b:Bool):Bool {
+		if (b != visible)
+			return super.set_visible(b);
+		return visible;
+	}
+
 	function get_huiBg() : HuiBackground {return Std.downcast(background, HuiBackground);};
 	function get_parentElement() : HuiElement {return Std.downcast(parent, HuiElement);};
 	function get_childElements() : Array<HuiElement> {return cast children.filter((e) -> Std.downcast(e, HuiElement) != null);};

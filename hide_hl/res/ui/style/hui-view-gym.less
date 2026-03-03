@@ -1,8 +1,12 @@
 hui-view-gym {
-	layout: vertical;
 
 	> hui-text {
 		margin-top: 10;
+	}
+
+	> hui-tab-container {
+		auto-size-height: 1;
+		fill-height: 1;
 	}
 
 	.example {
@@ -26,7 +30,13 @@ hui-view-gym {
 
 		spacing: 8;
 	}
+}
 
+gym-widgets {
+	layout: vertical;
+	overflow: scroll;
+	fill-width: 1;
+	fill-height: 1;
 
 	.hui-background {
 		height: 32;
@@ -80,5 +90,4 @@ hui-view-gym {
 		min-width: 200;
 		min-height: 50;
 	}
-
 }

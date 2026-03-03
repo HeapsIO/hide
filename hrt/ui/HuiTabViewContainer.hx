@@ -22,6 +22,10 @@ class HuiTabViewContainer extends HuiTabContainer {
 	var prevState : String;
 	var firstInit = true;
 
+	override function set_needReflow(v:Bool):Bool {
+		return super.set_needReflow(v);
+	}
+
 	override function new(?parent) {
 		super(parent);
 		initComponent();
