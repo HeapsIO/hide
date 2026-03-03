@@ -5,7 +5,7 @@ import hrt.ui.*;
 
 typedef Item = {id: Int, phrase: String, icon: String};
 
-class Test extends HuiView<{}> {
+class VirtualListTest extends HuiView<{}> {
 
 	static var phrases = [
 		"Lorem ipsum dolor sit amet consectetur adipiscing elit. Placerat in id cursus mi pretium tellus duis.",
@@ -61,7 +61,7 @@ class Test extends HuiView<{}> {
 		return element;
 	}
 
-	static var _ = HuiView.register("test", Test);
+	static var _ = HuiView.register("virtualListTest", VirtualListTest);
 }
 
 #end
