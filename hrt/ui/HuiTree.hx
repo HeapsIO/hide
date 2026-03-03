@@ -30,6 +30,7 @@ typedef TreeItemData = {
 	depth: Int,
 	filterState: FilterFlags,
 	identifier: String,
+	?searchRanges: hide.Search.SearchRanges,
 }
 
 class HuiTree<TreeItem> extends HuiElement {
@@ -79,7 +80,7 @@ class HuiTree<TreeItem> extends HuiElement {
 		searchBar.onKeyDown = keyDownHandler.bind(true);
 		searchBar.onChange = () -> {
 			keyboardFocus = null;
-			requestRefresh();
+			requestRefresh(RegenerateFlatten);
 		}
 
 		onKeyDown = keyDownHandler.bind(false);
@@ -380,7 +381,52 @@ class HuiTree<TreeItem> extends HuiElement {
 	}
 
 	function flatten() {
+
+		var query = null;
+		if (searchBar.visible) {
+			var currentSearch = searchBar.text;
+			var searchQuery = hide.Search.createSearchQuery(searchBar.text.toLowerCase());
+			function filterRec(children: Array<TreeItemData>, parentMatch: Bool = false) : Bool {
+				var anyVisible = false;
+				for (child in children) {
+					child.filterState = FilterFlags.ofInt(0);
+					child.searchRanges = null;
+
+					if (child.children == null) {
+						generateChildren(child);
+					}
+
+					if (parentMatch) {
+						child.filterState |= Visible;
+					}
+
+					if (currentSearch.length == 0) {
+						child.filterState |= Visible;
+					} else {
+						child.searchRanges = hide.Search.computeSearchRanges(child.name, searchQuery);
+						if (child.searchRanges != null) {
+							child.filterState |= MatchSearch;
+							child.filterState |= Visible;
+							child.filterState |= Open;
+						}
+					}
+
+					if(filterRec(child.children, child.filterState.has(MatchSearch)) && currentSearch.length > 0) {
+						child.filterState |= Visible;
+						child.filterState |= Open;
+					}
+
+					anyVisible = anyVisible || child.filterState.has(Visible);
+				}
+
+				return anyVisible;
+			}
+
+			filterRec(rootData);
+		}
+
 		flatList.resize(0);
+
 		function rec(items: Array<TreeItemData>) {
 			for (item in items) {
 				if (!item.filterState.has(Visible)) continue;

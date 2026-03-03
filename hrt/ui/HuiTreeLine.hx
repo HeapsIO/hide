@@ -35,7 +35,11 @@ class HuiTreeLine extends HuiElement {
 
 	public function refresh() {
 		var tree : HuiTree<Dynamic> = tree;
-		title.text = data.name;
+		if (data.searchRanges != null) {
+			title.text = hide.Search.splitSearchRanges(data.name, data.searchRanges, "<h>", "</h>");
+		} else {
+			title.text = data.name;
+		}
 		icon.backgroundType = "hui";
 		icon.huiBg.image = { path: data.icon, mode: Fit };
 		paddingLeft = data.depth * 5;
