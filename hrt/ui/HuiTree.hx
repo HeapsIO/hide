@@ -76,36 +76,13 @@ class HuiTree<TreeItem> extends HuiElement {
 			searchBar.visible = false;
 		}
 
-		onKeyDown = (e:hxd.Event) -> {
-			if (e.keyCode == hxd.Key.UP) {
-				focusMove(-1);
-				e.propagate = false;
-			} else if (e.keyCode == hxd.Key.DOWN) {
-				focusMove(1);
-				e.propagate = false;
-			} else if (e.keyCode == hxd.Key.RIGHT) {
-
-				if (keyboardFocus != null) {
-					if (!isOpen(keyboardFocus)) {
-						toggleItemOpen(keyboardFocus, true);
-					} else if (keyboardFocus.children?.length > 0) {
-						focusSetInternal(keyboardFocus.children[0]);
-					}
-					e.propagate = false;
-				}
-			} else if (e.keyCode == hxd.Key.LEFT) {
-				if (keyboardFocus != null) {
-					if (!isOpen(keyboardFocus)) {
-						if (keyboardFocus.parent != null) {
-							focusSetInternal(keyboardFocus.parent);
-						}
-					} else {
-						toggleItemOpen(keyboardFocus, false);
-					}
-					e.propagate = false;
-				}
-			}
+		searchBar.onKeyDown = keyDownHandler.bind(true);
+		searchBar.onChange = () -> {
+			keyboardFocus = null;
+			requestRefresh();
 		}
+
+		onKeyDown = keyDownHandler.bind(false);
 
 		onPush = (e:hxd.Event) -> {
 			if (e.button == 0) {
@@ -116,6 +93,45 @@ class HuiTree<TreeItem> extends HuiElement {
 					selectedElements.clear();
 					userSelectionChanged();
 				}
+			}
+		}
+	}
+
+	function keyDownHandler(isSearchBar: Bool, e: hxd.Event) {
+		// we need to do this because e.cancel = true will make the event propagate even
+		// if e.propagate is false, and we need the e.cancel = true to override the search bar
+		// default behavior
+		if (!isSearchBar && searchBar.textInput.hasFocus())
+			return;
+
+		if (e.keyCode == hxd.Key.UP) {
+			focusMove(-1);
+			e.propagate = false;
+		} else if (e.keyCode == hxd.Key.DOWN) {
+			focusMove(1);
+			searchBar.textInput.preventDefault = true;
+			e.propagate = false;
+		} else if (e.keyCode == hxd.Key.RIGHT) {
+			if (keyboardFocus != null) {
+				if (!isOpen(keyboardFocus)) {
+					toggleItemOpen(keyboardFocus, true);
+				} else if (keyboardFocus.children?.length > 0) {
+					focusSetInternal(keyboardFocus.children[0]);
+				}
+				e.propagate = false;
+				searchBar.textInput.preventDefault = true;
+			}
+		} else if (e.keyCode == hxd.Key.LEFT) {
+			if (keyboardFocus != null) {
+				if (!isOpen(keyboardFocus)) {
+					if (keyboardFocus.parent != null) {
+						focusSetInternal(keyboardFocus.parent);
+					}
+				} else {
+					toggleItemOpen(keyboardFocus, false);
+				}
+				searchBar.textInput.preventDefault = true;
+				e.propagate = false;
 			}
 		}
 	}
