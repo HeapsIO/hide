@@ -36,7 +36,10 @@ typedef TreeItemData = {
 class HuiTree<TreeItem> extends HuiElement {
 	static var SRC =
 		<hui-tree>
-			<hui-input-box id="search-bar" class="search"/>
+			<hui-element id="search-bar-container">
+				<hui-input-box id="search-bar" class="search"/>
+				<hui-button class="small-square quiet" id="search-bar-close"><hui-icon("close")/></hui-button>
+			</hui-element>
 			<hui-element id="wrapper">
 				<hui-virtual-list id="list"/>
 			</hui-element>
@@ -67,20 +70,19 @@ class HuiTree<TreeItem> extends HuiElement {
 		requestRefresh(RegenerateFlatten);
 		requestRefresh(RootData);
 
-		searchBar.visible = false;
+		searchBarContainer.visible = false;
 
 		registerCommand(HuiCommands.search,  ElementAndChildren, () -> {
 			openSearch();
 		});
 
-		searchBar.onFocusLost = (e) -> {
-			searchBar.visible = false;
-		}
-
 		searchBar.onKeyDown = keyDownHandler.bind(true);
 		searchBar.onChange = () -> {
 			keyboardFocus = null;
 			requestRefresh(RegenerateFlatten);
+		}
+		searchBarClose.onClick = (e) -> {
+			closeSearch();
 		}
 
 		onKeyDown = keyDownHandler.bind(false);
@@ -98,6 +100,12 @@ class HuiTree<TreeItem> extends HuiElement {
 		}
 	}
 
+	function closeSearch() {
+		searchBar.textInput.blur();
+		searchBarContainer.visible = false;
+		requestRefresh(RegenerateFlatten);
+	}
+
 	function keyDownHandler(isSearchBar: Bool, e: hxd.Event) {
 		// we need to do this because e.cancel = true will make the event propagate even
 		// if e.propagate is false, and we need the e.cancel = true to override the search bar
@@ -105,6 +113,12 @@ class HuiTree<TreeItem> extends HuiElement {
 		if (!isSearchBar && searchBar.textInput.hasFocus())
 			return;
 
+		if (e.keyCode == hxd.Key.ESCAPE) {
+			if (searchBarContainer.visible) {
+				closeSearch();
+				e.propagate = false;
+			}
+		}
 		if (e.keyCode == hxd.Key.UP) {
 			focusMove(-1);
 			e.propagate = false;
@@ -139,7 +153,7 @@ class HuiTree<TreeItem> extends HuiElement {
 
 
 	public function openSearch() {
-		searchBar.visible = true;
+		searchBarContainer.visible = true;
 		@:privateAccess searchBar.textInput.focus();
 	}
 
@@ -382,8 +396,7 @@ class HuiTree<TreeItem> extends HuiElement {
 
 	function flatten() {
 
-		var query = null;
-		if (searchBar.visible) {
+		if (searchBarContainer.visible) {
 			var currentSearch = searchBar.text;
 			var searchQuery = hide.Search.createSearchQuery(searchBar.text.toLowerCase());
 			function filterRec(children: Array<TreeItemData>, parentMatch: Bool = false) : Bool {
@@ -429,7 +442,7 @@ class HuiTree<TreeItem> extends HuiElement {
 
 		function rec(items: Array<TreeItemData>) {
 			for (item in items) {
-				if (!item.filterState.has(Visible)) continue;
+				if (searchBarContainer.visible && !item.filterState.has(Visible)) continue;
 				flatList.push(item);
 				if (isOpen(item)) {
 					if (item.children == null) {

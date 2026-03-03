@@ -5,10 +5,19 @@ hui-tree {
 	fill-width: 1;
 	fill-height: 1;
 	layout: vertical;
-	> #search-bar {
-		fill-width: 1;
-		auto-size-width: 1;
+	>  #search-bar-container {
+		padding: 2;
+		margin-bottom: 2;
+		> #search-bar {
+			fill-width: 1;
+			auto-size-width: 1;
+		}
 
+		> hui-background {
+			background: @color-gray-2;
+			shadow: 2px 2px 4px rgba(0,0,0,0.3);
+
+		}
 	}
 
 	background-type: hui;

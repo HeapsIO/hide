@@ -51,6 +51,7 @@ class HuiFileBrowser extends HuiElement {
 			var files = sys.FileSystem.readDirectory(child.fullPath);
 			child.children = [];
 			for (file in files) {
+				if (file == ".tmp") continue;
 				var fullPath = child.fullPath + "/" + file;
 				child.children.push({
 					name: file,

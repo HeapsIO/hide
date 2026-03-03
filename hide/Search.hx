@@ -20,20 +20,27 @@ class Search {
 		if (query == null)
 			return null;
 
+		haystack = haystack.toLowerCase();
+
 		var ranges : SearchRanges = [];
 		for (needle in query) {
 			var startPos = ranges[0] == 0 ? ranges[1] : 0;
 			while(true) {
-				var pos = haystack.toLowerCase().indexOf(needle, startPos);
+				var pos = haystack.indexOf(needle, startPos);
 				if (pos < 0)
 					return null;
 
 				// skip the ranges we already matched
+				var shouldContinue = false;
 				for (i in 0...ranges.length>>1) {
 					if (pos >= ranges[2*i] && pos < ranges[2*i+1]) {
 						startPos = ranges[2*i+1];
-						continue;
+						shouldContinue = true;
+						break;
 					}
+				}
+				if (shouldContinue) {
+					continue;
 				}
 
 				ranges.push(pos);

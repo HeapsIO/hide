@@ -3,6 +3,7 @@ import hrt.ui.HuiTree;
 
 #if hui
 
+@:access(hrt.ui.HuiTree)
 class HuiTreeLine extends HuiElement {
 	static var SRC =
 		<hui-tree-line>
@@ -35,7 +36,7 @@ class HuiTreeLine extends HuiElement {
 
 	public function refresh() {
 		var tree : HuiTree<Dynamic> = tree;
-		if (data.searchRanges != null) {
+		if (tree.searchBarContainer.visible && data.searchRanges != null) {
 			title.text = hide.Search.splitSearchRanges(data.name, data.searchRanges, "<h>", "</h>");
 		} else {
 			title.text = data.name;
