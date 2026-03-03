@@ -595,6 +595,37 @@ class RemoteConsoleConnection {
 
 	// ----- Heaps ------
 
+	public static function allocStatsFormat( stats : Array<h3d.impl.MemoryManager.AllocStats> ) {
+		var sb = new StringBuf();
+		stats.sort((s1, s2) -> (s1.size > s2.size && s2.size > 0) ? -1 : 1);
+		var total = 0;
+		var textureSize = 0;
+		var bufferSize = 0;
+		for( s in stats ) {
+			var size = Std.int(s.size / 1024);
+			total += size;
+			if ( s.tex )
+				textureSize += size;
+			else
+				bufferSize += size;
+			sb.add((s.tex?"Texture ":"Buffer ") + '${s.position} #${s.count} ${Std.int(s.size/1024)}kb\n');
+		}
+		sb.add('TOTAL: ${total}kb\n');
+		sb.add('TEXTURE TOTAL: ${textureSize}kb\n');
+		sb.add('BUFFER TOTAL: ${bufferSize}kb\n');
+		sb.add('\nDETAILS\n');
+		for(s in stats) {
+			sb.add('${s.position} #${s.count} ${Std.int(s.size/1024)}kb\n');
+			s.stacks.sort((s1, s2) -> (s1.size > s2.size && s2.size > 0) ? -1 : 1);
+			for (stack in s.stacks) {
+				sb.add('\t#${stack.count} ${Std.int(stack.size/1024)}kb ${stack.stack.split('\n').join('\n\t\t')}\n');
+				for ( s in stack.stats )
+					sb.add('\t\t${s.name} ${Std.int(s.size/1024)}kb\n');
+			}
+		}
+		return sb.toString();
+	}
+
 	@cmd function dumpGpu( args : { action : String } ) : Int {
 		switch( args?.action ) {
 		case "enable":
@@ -613,34 +644,8 @@ class RemoteConsoleConnection {
 				sendLogError(msg);
 				return -2;
 			}
-			var sb = new StringBuf();
-			stats.sort((s1, s2) -> (s1.size > s2.size && s2.size > 0) ? -1 : 1);
-			var total = 0;
-			var textureSize = 0;
-			var bufferSize = 0;
-			for( s in stats ) {
-				var size = Std.int(s.size / 1024);
-				total += size;
-				if ( s.tex )
-					textureSize += size;
-				else
-					bufferSize += size;
-				sb.add((s.tex?"Texture ":"Buffer ") + '${s.position} #${s.count} ${Std.int(s.size/1024)}kb\n');
-			}
-			sb.add('TOTAL: ${total}kb\n');
-			sb.add('TEXTURE TOTAL: ${textureSize}kb\n');
-			sb.add('BUFFER TOTAL: ${bufferSize}kb\n');
-			sb.add('\nDETAILS\n');
-			for(s in stats) {
-				sb.add('${s.position} #${s.count} ${Std.int(s.size/1024)}kb\n');
-				s.stacks.sort((s1, s2) -> (s1.size > s2.size && s2.size > 0) ? -1 : 1);
-				for (stack in s.stacks) {
-					sb.add('\t#${stack.count} ${Std.int(stack.size/1024)}kb ${stack.stack.split('\n').join('\n\t\t')}\n');
-					for ( s in stack.stats )
-						sb.add('\t\t${s.name} ${Std.int(s.size/1024)}kb\n');
-				}
-			}
-			sys.io.File.saveContent("gpudump.txt", sb.toString());
+			var str = allocStatsFormat(stats);
+			sys.io.File.saveContent("gpudump.txt", str);
 		default:
 			sendLogError('Action ${args?.action} not supported');
 			return -1;
