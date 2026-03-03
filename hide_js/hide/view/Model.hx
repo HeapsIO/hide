@@ -516,7 +516,6 @@ class Model extends FileView {
 			@:privateAccess hxd.res.Loader.currentInstance.cache.remove(path);
 			needRefresh = true;
 
-
 			if (dynamicJointScope == "folder") {
 				// Check if data were saved in a local model.props, and in this case, delete it
 				var modelPropsFile = ide.getPath(input.resourceDirectory + "/" + h3d.prim.ModelDatabase.FILE_NAME);
@@ -548,18 +547,19 @@ class Model extends FileView {
 		}
 
 		// Save current Anim data
-		if( currentAnimation != null ) {
-			var hideData = loadProps();
-
-			var events : Array<{ frame : Int, data : String }> = [];
+		if (currentAnimation != null) {
+			var events : Array<h3d.anim.Animation.Event> = [];
 			if (obj.currentAnimation.events != null) {
-				for(i in 0 ... obj.currentAnimation.events.length){
-					if( obj.currentAnimation.events[i] == null) continue;
-					for( e in obj.currentAnimation.events[i])
-						events.push({frame:i, data:e});
+				for (idx in 0 ... obj.currentAnimation.events.length) {
+					if (obj.currentAnimation.events[idx] == null)
+						continue;
+					for (e in obj.currentAnimation.events[idx])
+						events.push(e);
 				}
 			}
-			hideData.animations.set(currentAnimation.file.split("/").pop(), {events : events} );
+
+			var hideData = loadProps();
+			hideData.animations.set(currentAnimation.file.split("/").pop(), { events : events } );
 
 			var bytes = new haxe.io.BytesOutput();
 			bytes.writeString(haxe.Json.stringify(hideData, "\t"));
@@ -2588,10 +2588,9 @@ class Model extends FileView {
 	function loadProps() {
 		var propsPath = getPropsPath();
 		var hideData : h3d.prim.ModelCache.HideProps;
-		if( sys.FileSystem.exists(propsPath) )
+		hideData = { animations : {} };
+		if (sys.FileSystem.exists(propsPath))
 			hideData = haxe.Json.parse(sys.io.File.getContent(propsPath));
-		else
-			hideData = { animations : {} };
 		return hideData;
 	}
 
@@ -2767,19 +2766,10 @@ class Model extends FileView {
 			this.removeDisplayState(KEY_ANIM_PLAYING);
 			return;
 		}
+
 		var anim = scene.loadAnimation(file);
 		currentAnimation = { file : file, name : scene.animationName(file) };
-
-		var hideData = loadProps();
-		var animData = hideData.animations?.get(currentAnimation.file.split("/").pop());
-		if (animData != null && animData.events != null) {
-			for (e in animData.events) {
-				var events = anim.getEvents();
-				var toAdd = events == null || events.length <= e.frame || !events[e.frame]?.contains(e.data);
-				if (toAdd)
-					anim.addEvent(e.frame, e.data);
-			}
-		}
+		anim.loadProps(loadProps());
 
 		obj.playAnimation(anim);
 		var skin = Std.downcast(obj, h3d.scene.Skin);
@@ -2806,7 +2796,7 @@ class Model extends FileView {
 				var el = events[i];
 				if( el == null || el.length == 0 ) continue;
 				for( e in el )
-					addEvent(e, i, fbxEventList);
+					addEvent(e.name, i, fbxEventList);
 			}
 		}
 		eventList.append(fbxEventList);
@@ -2908,8 +2898,9 @@ class Model extends FileView {
 					{ label : "New", click: function(){ addEvent("NewEvent", frame); }},
 				];
 				if(obj.currentAnimation.events != null && obj.currentAnimation.events[frame] != null){
-					for(e in obj.currentAnimation.events[frame])
-						menuItems.push({ label : "Delete " + e, click: function(){ deleteEvent(e, frame); }});
+					for (e in obj.currentAnimation.events[frame])
+						if (e.originalEvent == null)
+							menuItems.push({ label : "Delete " + e.name, click: function(){ deleteEvent(e.name, frame); }});
 				}
 				hide.comp.ContextMenu.createFromPoint(ide.mouseX, ide.mouseY, menuItems);
 			}
@@ -2942,7 +2933,7 @@ class Model extends FileView {
 					tf.onFocusLost = function(e) {
 						var newName = tf.text;
 						var oldName = events[i][j];
-						events[i][j] = newName;
+						events[i][j].name = newName;
 						if( newName == "" ) {
 							events[i].splice(j,1);
 							if( events[i].length == 0 ) events[i] = null;
@@ -2954,13 +2945,13 @@ class Model extends FileView {
 							if(undo) {
 								if (events[i] == null)
 									events[i] = [oldName];
-								else if (events[i][j] != newName)
+								else if (events[i][j].name != newName)
 									events[i].insert(j, oldName);
 								else
 									events[i][j] = oldName;
 							}
 							else {
-								events[i][j] = newName;
+								events[i][j].name = newName;
 								if( newName == "" ) {
 									events[i].splice(j,1);
 									if( events[i].length == 0 ) events[i] = null;
@@ -2973,7 +2964,7 @@ class Model extends FileView {
 
 						sceneEditor.view.keys.popDisable();
 					}
-					tf.text = event;
+					tf.text = event.name;
 					tf.x = px - Std.int(tf.textWidth * 0.5);
 					if( tf.textWidth > 100 && j == 0 ) {
 						upperLines++;
@@ -3012,10 +3003,12 @@ class Model extends FileView {
 											if(undo) {
 												events[curFrame].remove(event);
 												events[startFrame].push(event);
+												event.frame = startFrame;
 											}
 											else {
 												events[curFrame].push(event);
 												events[startFrame].remove(event);
+												event.frame = curFrame;
 											}
 
 											buildTimeline();
@@ -3029,6 +3022,7 @@ class Model extends FileView {
 										if(events[newFrame] == null)
 											events[newFrame] = [];
 										events[newFrame].insert(0, event);
+										event.frame = newFrame;
 										curFrame = newFrame;
 										buildTimeline();
 										buildEventPanel();
