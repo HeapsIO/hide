@@ -293,6 +293,8 @@ class HuiVirtualList<T> extends HuiElement {
 			var height = hxd.Math.imax(10,Std.int(((maxVisible-scrollIndex) / (items.length-1)) * scrollBarHeight));
 			customScrollbarCursor.y = avg - height*0.5;
 			customScrollbarCursor.setHeight(height);
+
+			customScrollbar.visible = scrollbarMin > 0 || scrollbarMax < scrollBarHeight;
 		}
 
 		for (item => old in oldElements) {

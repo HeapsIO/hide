@@ -91,3 +91,36 @@ gym-widgets {
 		min-height: 50;
 	}
 }
+
+gym-layouts {
+	.first {
+		layout: vertical;
+		> hui-background {
+			background: green;
+		}
+
+		> .first-fixed {
+			height: 32;
+			fill-width: 1;
+			> hui-background {
+				background: red;
+			}
+		}
+		> .first-dynamic {
+			fill-height: 1;
+			auto-size-height: 1;
+			fill-width: 1;
+
+			> hui-background {
+				background: blue;
+			}
+
+			> .first-content {
+				layout: vertical;
+				overflow: scroll;
+				fill-height: 1;
+				fill-width: 1;
+			}
+		}
+	}
+}

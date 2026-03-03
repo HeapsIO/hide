@@ -285,7 +285,43 @@ class GymLayouts extends HuiElement {
 		<gym-layouts>
 			<hui-element class="example">
 				<hui-split-container direction="vertical">
-					<hui-element class="first"/>
+					<hui-element class="first">
+						<hui-element class="first-fixed"/>
+						<hui-element class="first-dynamic">
+							<hui-element class="first-content">
+								<hui-text("0")/>
+								<hui-text("1")/>
+								<hui-text("2")/>
+								<hui-text("3")/>
+								<hui-text("4")/>
+								<hui-text("5")/>
+								<hui-text("6")/>
+								<hui-text("7")/>
+								<hui-text("8")/>
+								<hui-text("9")/>
+								<hui-text("0")/>
+								<hui-text("1")/>
+								<hui-text("2")/>
+								<hui-text("3")/>
+								<hui-text("4")/>
+								<hui-text("5")/>
+								<hui-text("6")/>
+								<hui-text("7")/>
+								<hui-text("8")/>
+								<hui-text("9")/>
+								<hui-text("0")/>
+								<hui-text("1")/>
+								<hui-text("2")/>
+								<hui-text("3")/>
+								<hui-text("4")/>
+								<hui-text("5")/>
+								<hui-text("6")/>
+								<hui-text("7")/>
+								<hui-text("8")/>
+								<hui-text("9")/>
+							</hui-element>
+						</hui-element>
+					</hui-element>
 					<hui-element class="second"/>
 				</hui-split-container>
 			</hui-element>
