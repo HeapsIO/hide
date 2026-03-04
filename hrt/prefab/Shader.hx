@@ -401,7 +401,24 @@ class Shader extends Prefab {
 		return {
 			icon : "cog",
 			name : name,
-			fileSource : inheritDynamicShader ? ["hx"] : null
+			fileSource : inheritDynamicShader ? ["hx"] : null,
+			applyTreeStyle: (p : hrt.prefab.Prefab, element : js.html.Element) -> {
+				if (this.editorOnly)
+					return;
+
+				var isShaderTargetChildren = false;
+				var p = this.parent;
+				while (p != null) {
+					if (Std.isOfType(p, hrt.prefab.fx.ShaderTarget)) {
+						isShaderTargetChildren = true;
+						break;
+					}
+					p = p.parent;
+				}
+
+				if (isShaderTargetChildren)
+					element.classList.remove("editorOnly");
+			}
 		};
 	}
 

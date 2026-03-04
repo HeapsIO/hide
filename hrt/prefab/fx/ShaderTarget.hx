@@ -3,7 +3,7 @@ package hrt.prefab.fx;
 class ShaderTargetObj extends h3d.scene.Object {
 	public var tag : String;
 	public var priority : Int = 1;
-	public var shadersRoot : hrt.prefab.Object3D;
+	public var shadersRoot : ShaderTarget;
 
 	public function apply(fx : hrt.prefab.fx.FX) {
 		function reparentChildren(obj : hrt.prefab.Object3D) {
@@ -29,15 +29,7 @@ class ShaderTargetObj extends h3d.scene.Object {
 
 		var fxAnim : hrt.prefab.fx.FX.FXAnimation = cast fx.local3d;
 		shadersRoot.local3d = parent;
-		for ( s in shadersRoot.findAll(Shader) ) {
-			if (!s.enabled || s.editorOnly)
-				continue;
-			if (s.shader == null) {
-				s.makeShader();
-				@:privateAccess s.updateInstance();
-			}
-			applyShader(s);
-		}
+		applyShaders();
 
 		if (fxAnim == null)
 			return;
@@ -47,14 +39,34 @@ class ShaderTargetObj extends h3d.scene.Object {
 		fxAnim.shaderTargets.push(this);
 	}
 
+	public function applyShaders() {
+		for ( s in shadersRoot.findAll(Shader) ) {
+			if (!s.enabled || s.editorOnly)
+				continue;
+			if (s.shader == null) {
+				s.makeShader();
+				@:privateAccess s.updateInstance();
+			}
+			applyShader(s);
+		}
+	}
+
+	public function removeShaders() {
+		for (s in shadersRoot.findAll(Shader))
+			s.dispose();
+	}
+
 	function applyShader(s: Shader) {
 		s.apply3d((o) -> return !Std.isOfType(o, hrt.prefab.fx.FX.FXAnimation) );
 	}
 
 	override function onRemove() {
 		super.onRemove();
-		for ( s in shadersRoot.findAll(Shader) )
-			s.dispose();
+		removeShaders();
+
+		var activeShaderTarget = ShaderTarget.updateShaderTargets(shadersRoot.target);
+		if (activeShaderTarget != null)
+			activeShaderTarget.applyShaders();
 	}
 }
 
@@ -66,10 +78,9 @@ class ShaderTarget extends Object3D {
 
 	public function new(parent:Prefab, contextShared: ContextShared) {
 		super(parent, contextShared);
-		this.editorOnly = true;
 	}
 
-	public static function updateShaderTargets(o : h3d.scene.Object) {
+	public static function updateShaderTargets(o : h3d.scene.Object) : ShaderTargetObj {
 		var sts = o.findAll(obj -> Std.downcast(obj, ShaderTargetObj));
 		for (st in sts) {
 			if (st.tag == null) continue;
@@ -79,11 +90,16 @@ class ShaderTarget extends Object3D {
 				if (st2.tag != st.tag) continue;
 
 				var toRemove = st.priority > st2.priority ? st2 : st;
-				toRemove.remove();
+				toRemove.visible = false;
+				toRemove.removeShaders();
 				sts.remove(toRemove);
 				break;
 			}
 		}
+
+		if (sts.length > 0)
+			return sts[0];
+		return null;
 	}
 
 	function makeShaderTargetObj(target : h3d.scene.Object) {
@@ -98,9 +114,8 @@ class ShaderTarget extends Object3D {
 		o.tag = this.tag;
 		o.shadersRoot = this;
 
-		updateShaderTargets(target);
-
-		if (o.parent != null)
+		var activeShaderTarget = updateShaderTargets(target);
+		if (activeShaderTarget == o)
 			o.apply(fx);
 	}
 
@@ -115,6 +130,16 @@ class ShaderTarget extends Object3D {
 				<slider field={priority} min={0}/>
 			</category>
 		);
+	}
+
+	override function load(data : Dynamic) {
+		super.load(data);
+		this.editorOnly = false;
+	}
+
+	override function copy(data: Prefab) {
+		super.copy(data);
+		this.editorOnly = false;
 	}
 
 	#if editor

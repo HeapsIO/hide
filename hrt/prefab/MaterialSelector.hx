@@ -88,6 +88,23 @@ class MaterialSelector extends hrt.prefab.Prefab {
 			icon : "cog",
 			name : "Material Selector",
 			allowChildren: function(t) return true,
+			applyTreeStyle: (p : hrt.prefab.Prefab, element : js.html.Element) -> {
+				if (this.editorOnly)
+					return;
+
+				var isShaderTargetChildren = false;
+				var p = this.parent;
+				while (p != null) {
+					if (Std.isOfType(p, hrt.prefab.fx.ShaderTarget)) {
+						isShaderTargetChildren = true;
+						break;
+					}
+					p = p.parent;
+				}
+
+				if (isShaderTargetChildren)
+					element.classList.remove("editorOnly");
+			}
 		};
 	}
 
