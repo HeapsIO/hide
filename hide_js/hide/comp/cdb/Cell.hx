@@ -424,7 +424,16 @@ class Cell {
 				html('<span class="error">#MISSING</span>');
 			else {
 				var s = editor.base.getSheet(sname);
-				var i = s.index.get(s.idCol.scope != null ? table.makeId(refScope(s,sheet,obj,scope),s.idCol.scope,v) : v);
+				var id : String = null;
+				if (s.idCol.scope != null) {
+					var refScope = refScope(s,sheet,obj,scope);
+					if (refScope.length > 0)
+						id = table.makeId(refScope, s.idCol.scope, v);
+				}
+				else {
+					id = v;
+				}
+				var i = s.index.get(id);
 				html(i == null ? '<span class="error">#REF($v)</span>' : (i.ico == null ? "" : tileHtml(i.ico,true).str+" ") + StringTools.htmlEscape(i.disp));
 			}
 		case TBool:
