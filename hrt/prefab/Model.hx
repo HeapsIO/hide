@@ -5,6 +5,7 @@ class Model extends Object3D {
 	@:s public var animation : Null<String>;
 	@:s var lockAnimation : Bool = false;
 	@:s var retargetAnim : Bool = false;
+	@:s var randomStart : Bool = false;
 	@:s var retargetIgnore : String;
 
 	public function new(parent, shared: ContextShared) {
@@ -55,8 +56,12 @@ class Model extends Object3D {
 			obj.name = name;
 			parent3d.addChild(obj);
 
-			if( animation != null )
+			if( animation != null ) {
 				obj.playAnimation(shared.loadAnimation(animation));
+				if (randomStart) {
+					obj.currentAnimation.setFrame(hxd.Math.random(obj.currentAnimation.frameCount));
+				}
+			}
 
 			return obj;
 		#if editor
@@ -116,12 +121,14 @@ class Model extends Object3D {
 					<dt/><dd><input type="button" value="Change All" id="changeAll"/></dd>
 					<dt>Animation</dt><dd><input id="anim" value="--- Choose ---"></dd>
 					<dt title="Don\'t save animation changes">Lock</dt><dd><input type="checkbox" field="lockAnimation"></dd>
+					<dt title="Randomize the start time of the animation">Random Start</dt><dd><input type="checkbox" field="randomStart"></dd>
 					<dt>Retarget</dt><dd><input type="checkbox" field="retargetAnim"></dd>
 					<dt>Retarget Ignore</dt><dd><input type="text" field="retargetIgnore"></dd>
 				</dl>
 			</div>
 		'),this, function(pname) {
 			if( pname == "retargetIgnore" && ctx.properties.isTempChange ) return;
+			if (pname == "randomStart") @:privateAccess ctx.scene.editor.rebuild(this);
 
 			ctx.onChange(this, pname);
 		});
