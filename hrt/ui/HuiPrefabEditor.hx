@@ -103,7 +103,7 @@ class HuiPrefabEditor extends HuiElement {
 		if (prefabs.length == 0)
 			return;
 
-		var commonClass = hrt.tools.ClassUtils.getCommonClass(prefabs, hrt.prefab.Prefab);
+		var commonClass = hrt.tools.ClassUtils.getCommonClassInstance(prefabs, hrt.prefab.Prefab);
 
 		var isMultiEdit = prefabs.length > 1;
 		var editPrefab : hrt.prefab.Prefab = if (isMultiEdit) {

@@ -4187,7 +4187,7 @@ class SceneEditor {
 			properties.clear();
 
 			if( elts.length > 0 ) {
-				var commonClass = hrt.tools.ClassUtils.getCommonClass(elts, hrt.prefab.Prefab);
+				var commonClass = hrt.tools.ClassUtils.getCommonClassInstance(elts, hrt.prefab.Prefab);
 				var parentClass = Type.getSuperClass(commonClass);
 				var hasNewInspector = false;
 
@@ -4273,7 +4273,7 @@ class SceneEditor {
 					properties.element.addClass("hide-properties");
 					properties.element.addClass("props");
 					if (elts.length > 1) {
-						var commonClass = hrt.tools.ClassUtils.getCommonClass(elts, hrt.prefab.Prefab);
+						var commonClass = hrt.tools.ClassUtils.getCommonClassInstance(elts, hrt.prefab.Prefab);
 
 						var proxyPrefab = Type.createInstance(commonClass, [null, new ContextShared()]);
 						proxyPrefab.load(haxe.Json.parse(haxe.Json.stringify(elts[0].save())));

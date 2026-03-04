@@ -134,18 +134,13 @@ class Model extends Object3D {
 		});
 
 		function change(toRemove : hrt.prefab.Object3D, toAddPath : String, undo : Bool) {
-			var parent = toRemove.parent;
-			var idx = parent.children.indexOf(toRemove);
-			toRemove.remove();
-			toRemove.local3d.remove();
+			var targetClass : Class<Prefab> = (undo ? Model : Reference);
+			toRemove.editorRemoveObjects();
 
-			var toAdd = undo ? new hrt.prefab.Model(null, toRemove.shared) : new hrt.prefab.Reference(null, toRemove.shared);
+			var toAdd = toRemove.editorConvert(targetClass);
 			toAdd.source = toAddPath;
-			toAdd.name = toRemove.name;
-			toAdd.props = toRemove.props;
-			toAdd.setTransform(toRemove.getTransform());
-			parent.addChildAt(toAdd, idx);
-			@:privateAccess ctx.scene.editor.rebuild(toAdd);
+
+			ctx.scene.editor.queueRebuild(toAdd);
 		}
 
 		function changeToReference(source : hrt.prefab.Object3D, path : String) {
@@ -161,6 +156,7 @@ class Model extends Object3D {
 					change(toRemove, toAddPath, undo);
 
 				@:privateAccess ctx.scene.editor.refreshTree(SceneTree);
+				ctx.scene.editor.selectElements([parent.children[idxToRemove]], NoHistory);
 			}
 
 			exec(false);
@@ -181,6 +177,7 @@ class Model extends Object3D {
 				}
 
 				@:privateAccess ctx.scene.editor.refreshTree(SceneTree);
+				ctx.scene.editor.selectElements([], NoHistory);
 			}
 
 			exec(false);
@@ -188,29 +185,22 @@ class Model extends Object3D {
 		}
 
 		function changeAllModels(source : hrt.prefab.Object3D, path : String) {
-			@:privateAccess var all = ctx.scene.editor.sceneData.all();
+			var root = getRoot(true);
 			var oldPath = source.source;
-			var changedModels = [];
-			for (child in all) {
-				var model = child.to(hrt.prefab.Object3D);
-				if (model != null && model.source == oldPath) {
-					model.source = path;
+			var sameModels = root.findAll(Model, (model: Model) -> model.source == oldPath);
+
+			var exec = function(isUndo: Bool) {
+				for (model in sameModels) {
+					model.source = isUndo ? oldPath : path;
 					model.name = "";
 					@:privateAccess ctx.scene.editor.autoName(model);
-					changedModels.push(model);
-					Object3D.getLocal3d(this).remove();
+					model.editorRemoveObjects();
 					model.make();
 				}
-			}
-			@:privateAccess ctx.scene.editor.undo.change(Custom(function(u) {
-				for (model in changedModels) {
-					model.source = u ? oldPath : path;
-					model.name = "";
-					@:privateAccess ctx.scene.editor.autoName(model);
-					Object3D.getLocal3d(this).remove();
-					model.make();
-				}
-			}));
+			};
+
+			exec(false);
+			@:privateAccess ctx.scene.editor.undo.change(Custom(exec));
 		}
 
 		var sourceSelect = new hide.comp.FileSelect(["hmd", "fbx", "l3d", "prefab"], null, null);
