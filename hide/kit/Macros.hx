@@ -589,6 +589,8 @@ class Macros {
 			case TAbstract(abstractType, _):
 				if (abstractType.toString() == "Int")
 					return macro {};
+				if (abstractType.toString() == "Null")
+					return macro {};
 				var statics = abstractType.get().impl.get().statics.get();
 				for (s in statics) {
 					if (s.meta.has(":value"))
