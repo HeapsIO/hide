@@ -11,6 +11,7 @@ enum SettingCategory {
 
 @:allow(hide.kit.Element)
 @:allow(hrt.prefab.editor.Tool)
+@:allow(hide.kit.KitRoot)
 abstract class EditContext2 {
 	var parent : EditContext2 = null;
 
@@ -32,6 +33,27 @@ abstract class EditContext2 {
 	public var foregroundEditorTool: hrt.prefab.editor.Tool;
 	public var otherEditorTools: Array<hrt.prefab.editor.Tool> = [];
 
+	/** Tracks which prefabs have been rebuild during onValueChange calls**/
+	var requestedPrefabRebuilds : Array<Prefab> = [];
+
+	/** Tracks if a tree refresh was requested during onValueChange calls**/
+	var requestedTreeRebuild : Bool = false;
+
+	function resetRebuilds() {
+		requestedPrefabRebuilds = [];
+		requestedTreeRebuild = false;
+	}
+
+	public function animName(path: String) : String {
+		var name = path.split("/").pop();
+		if( StringTools.startsWith(name, "Anim_") )
+			name = name.substr(5);
+		name = name.substr(0, -4);
+		if( StringTools.endsWith(name,"_loop") )
+			name = name.substr(0,-5);
+		return name;
+	}
+
 	/**
 		Request the inspector to be rebuild, resulting in edit2 to be called again
 	**/
@@ -40,12 +62,31 @@ abstract class EditContext2 {
 	/**
 		Request that the given prefab should be recreated in the editor
 	**/
-	public abstract function rebuildPrefab(prefab: Prefab) : Void;
+	public final function rebuildPrefab(prefab: Prefab) : Void {
+		requestedPrefabRebuilds = requestedPrefabRebuilds ?? [];
+		if (requestedPrefabRebuilds.indexOf(prefab) < 0)
+			requestedPrefabRebuilds.push(prefab);
+		rebuildPrefabImpl(prefab);
+	}
 
 	/**
-		Request that the scene tree widget should be rebuild for the given prefab
+		Implement this to support rebuild prefab
 	**/
-	public abstract function rebuildTree(prefab: Prefab) : Void;
+	abstract function rebuildPrefabImpl(prefab: Prefab) : Void;
+
+
+	/**
+		Request that the scene tree widget should be rebuild
+	**/
+	public final function rebuildTree(prefab: Prefab) : Void {
+		requestedTreeRebuild = true;
+		rebuildTreeImpl();
+	}
+
+	/**
+		Implement this to support rebuilding the tree
+	**/
+	public abstract function rebuildTreeImpl() : Void;
 
 	/**
 		Return the scene3d of the current editor
@@ -75,6 +116,8 @@ abstract class EditContext2 {
 	public abstract function chooseFileSave(path: String, callback:(absPath: String) -> Void, allowNull: Bool = false) : Void;
 
 	public abstract function listMaterialLibraries(path: String) : Array<{path: String, name: String}>;
+
+	public abstract function listModelAnimations(path: String) : Array<String>;
 
 	/**
 		Displays an error message to the user

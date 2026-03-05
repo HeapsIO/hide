@@ -60,12 +60,14 @@ class KitRoot #if !macro extends Element #end {
 		return currentElement;
 	}
 
-	override function change(callback: () -> Void, isTemporaryEdit: Bool) : Void {
-		prepareUndoPoint();
+	override function change(params: hide.kit.Element.ChangeParams) : Void {
+		if (params.recordUndo) {
+			prepareUndoPoint();
+		}
 
-		callback();
+		params.callback();
 
-		if (!isTemporaryEdit) {
+		if (!params.isTemporaryEdit && params.recordUndo) {
 			finishUndoPoint();
 		}
 	}
@@ -75,6 +77,7 @@ class KitRoot #if !macro extends Element #end {
 	**/
 	function prepareUndoPoint() : Void {
 		if (prefabUndoPoint == null) {
+			editor.resetRebuilds();
 			prefabUndoPoint = hrt.prefab.Diff.deepCopy(prefab.save());
 			for (childProperties in editedPrefabsProperties) {
 				childProperties.prefabUndoPoint = hrt.prefab.Diff.deepCopy(childProperties.prefab.save());
@@ -90,6 +93,14 @@ class KitRoot #if !macro extends Element #end {
 			childProperties.createUndoStep(sideEffects);
 		}
 
+		for (prefab in editor.requestedPrefabRebuilds) {
+			sideEffects.push((_) -> editor.rebuildPrefab(prefab));
+		}
+
+		if (editor.requestedTreeRebuild) {
+			sideEffects.push((_) -> editor.rebuildTree(null));
+		}
+
 		if (sideEffects.length > 0) {
 			editor.recordUndo((isUndo: Bool) -> {
 				for (sideEffect in sideEffects) {
@@ -98,6 +109,8 @@ class KitRoot #if !macro extends Element #end {
 				editor.rebuildInspector();
 			});
 		}
+
+
 	}
 
 	function createUndoStep(sideEffects : Array<(isUndo:Bool) -> Void>) : Void {

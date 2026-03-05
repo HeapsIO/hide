@@ -217,7 +217,7 @@ class HideJsEditContext2 extends hrt.prefab.EditContext2 {
 		ctx.ide.openFile(path);
 	}
 
-	public function rebuildPrefab(prefab:Prefab) {
+	public function rebuildPrefabImpl(prefab:Prefab) {
 		ctx.scene.editor.queueRebuild(prefab);
 	}
 
@@ -227,12 +227,16 @@ class HideJsEditContext2 extends hrt.prefab.EditContext2 {
 		}, allowNull);
 	}
 
-	public function rebuildTree(prefab: Prefab) {
-		ctx.scene.editor.sceneTree.refreshItem(prefab);
+	public function rebuildTreeImpl() {
+		@:privateAccess ctx.scene.editor.refreshTree(SceneTree);
 	}
 
 	public function listMaterialLibraries(path: String) : Array<{path: String, name: String}> {
 		return cast ctx.scene.listMatLibraries(path);
+	}
+
+	public function listModelAnimations(path: String) : Array<String> {
+		return try ctx.scene.listAnims(path) catch(e: Dynamic) [];
 	}
 
 	public function openPrefab(path: String, ?afterOpen : (api: hrt.prefab.SceneEditorAPI) -> Void) : Void {

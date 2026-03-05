@@ -10,6 +10,7 @@ class Button extends Element {
 	public var big : Bool = false;
 	public var huge : Bool = false;
 	public var quiet : Bool = false;
+	public var noUndo: Bool = false;
 
 	var button : NativeElement;
 
@@ -29,7 +30,7 @@ class Button extends Element {
 	}
 
 	function broadcastClick() {
-		parent?.change(onClickChange, false);
+		parent?.change({callback: onClickChange, isTemporaryEdit: false, recordUndo: !noUndo});
 	}
 
 	/** Internal function passed to change() **/

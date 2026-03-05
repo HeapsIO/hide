@@ -45,6 +45,13 @@ package hide.kit;
 		Callbacks bound in the onChange function should be bound on the relevant widget onValueChange instead
 	**/
 
+typedef ChangeParams = {
+	var callback: () -> Void;
+	var isTemporaryEdit: Bool;
+	var recordUndo: Bool;
+}
+
+
 @:keepSub
 class Element {
 	#if !macro
@@ -375,9 +382,9 @@ class Element {
 		#end
 	}
 
-	function change(callback: () -> Void, isTemporary: Bool) {
+	function change(params: ChangeParams) {
 		if (parent != null) {
-			parent.change(callback, isTemporary);
+			parent.change(params);
 		}
 	}
 

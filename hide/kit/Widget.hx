@@ -8,11 +8,19 @@ package hide.kit;
 abstract class Widget<ValueType> extends Element {
 	public var label(default, set): String;
 	@:isVar public var value(get, set): ValueType;
+
+	/** Value that will be set if the user use the "reset to default value" feature **/
 	public var defaultValue: ValueType;
 
 	public var labelColor(default, set): KitColor = White;
 
+	/** If set, modifying the value don't save an undo step (use ctx.recordUndo to handle that yourself))**/
+	public var noUndo: Bool = false;
+
 	var fieldName: String;
+
+	var input: NativeElement;
+	var labelElement: NativeElement;
 
 	function new(parent: Element, id: String) {
 		super(parent, id);
@@ -37,10 +45,6 @@ abstract class Widget<ValueType> extends Element {
 		syncKitColor();
 		return labelColor;
 	}
-
-	var input: NativeElement;
-
-	var labelElement: NativeElement;
 
 	function get_value() return value;
 	function set_value(v:ValueType) {
@@ -125,10 +129,11 @@ abstract class Widget<ValueType> extends Element {
 	abstract function makeInput() : NativeElement;
 
 	/**
-		Called when value has been changed by the user
+		Called when value has been changed by the user. Not called when undo/redoing
 	**/
 	public dynamic function onValueChange(temporaryEdit: Bool) : Void {
 	}
+
 
 	/**
 		Internal version of onValueChange for field editing
@@ -141,7 +146,10 @@ abstract class Widget<ValueType> extends Element {
 		Call this internally when the user interact with the widget to indicate to the Inspector that the value has changed
 	**/
 	function broadcastValueChange(temporaryEdit: Bool) : Void {
-		parent?.change(changeBehaviorInternal.bind(temporaryEdit), temporaryEdit);
+		parent?.change({
+			callback: changeBehaviorInternal.bind(temporaryEdit),
+			isTemporaryEdit: temporaryEdit, recordUndo: !noUndo
+		});
 	}
 
 	/** Internal function passed to change() **/

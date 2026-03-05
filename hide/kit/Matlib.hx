@@ -73,11 +73,6 @@ class Matlib extends Widget<String> {
 		syncValueUI();
 	}
 
-	override function change(callback: () -> Void, isTemporaryEdit: Bool) {
-		callback();
-		onValueChange(isTemporaryEdit);
-	}
-
 	function getMaterialList(library: String) : Array<hide.kit.Select.SelectEntry> {
 		var none = {value: null, label:"None"};
 		var entries = [];

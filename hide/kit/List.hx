@@ -68,10 +68,11 @@ class List<T> extends Widget<Array<T>> {
 		add.onclick = (e) -> {
 			e.stopPropagation();
 
-			parent?.change(() -> {
+			parent?.change({
+				callback: () -> {
 				value.push(createItem());
 				changeBehaviorInternal(false);
-			}, false);
+			}, isTemporaryEdit: false, recordUndo: !noUndo});
 
 			syncValueUI();
 		}
@@ -83,10 +84,11 @@ class List<T> extends Widget<Array<T>> {
 		clear.onclick = (e) -> {
 			e.stopPropagation();
 
-			parent?.change(() -> {
+			parent?.change({
+				callback: () -> {
 				value.resize(0);
 				changeBehaviorInternal(false);
-			}, false);
+			}, isTemporaryEdit: false, recordUndo: !noUndo});
 
 			syncValueUI();
 		}
@@ -178,11 +180,12 @@ class List<T> extends Widget<Array<T>> {
 			var removeButton = itemElement.querySelector(".btn-remove");
 
 			removeButton.onclick = (e) -> {
-				parent?.change(() -> {
+				parent?.change({
+					callback: () -> {
 					value.splice(i, 1);
 					changeBehaviorInternal(false);
 					syncValueUI();
-				}, false);
+				}, isTemporaryEdit: false, recordUndo: !noUndo});
 
 				e.stopPropagation();
 				e.preventDefault();
@@ -207,7 +210,8 @@ class List<T> extends Widget<Array<T>> {
 				var rectangle = itemElement.getBoundingClientRect();
 				var halfHeight = rectangle.y + rectangle.height / 2.0;
 
-				parent?.change(() -> {
+				parent?.change({
+					callback: () -> {
 					var draggedId : Int = Std.parseInt(e.dataTransfer.getData(getDragKey()));
 					if (draggedId == null)
 						return;
@@ -220,7 +224,7 @@ class List<T> extends Widget<Array<T>> {
 
 					changeBehaviorInternal(false);
 					syncValueUI();
-				}, false);
+				}, isTemporaryEdit: false, recordUndo: !noUndo});
 			});
 
 
@@ -257,11 +261,14 @@ class List<T> extends Widget<Array<T>> {
 	}
 	#end
 
-	override function change(callback: () -> Void, isTemporaryEdit: Bool) {
-		parent?.change(() -> {
-			callback();
-			changeBehaviorInternal(isTemporaryEdit);
-		}, isTemporaryEdit);
+	override function change(params: hide.kit.Element.ChangeParams) {
+		parent?.change({
+			callback: () -> {
+				params.callback();
+				changeBehaviorInternal(params.isTemporaryEdit);
+		},
+		isTemporaryEdit: params.isTemporaryEdit,
+		recordUndo: params.recordUndo && !noUndo});
 	}
 
 	// override function propagateChange(kind:hide.kit.Element.ChangeKind) {

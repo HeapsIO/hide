@@ -298,14 +298,14 @@ class EditContext extends hrt.prefab.EditContext2 {
 		editor.refreshInspector();
 	};
 
-	public function rebuildPrefab(prefab: hrt.prefab.Prefab) : Void {
+	public function rebuildPrefabImpl(prefab: hrt.prefab.Prefab) : Void {
 		throw "implement";
 	}
 
 	/**
 		Request that the scene tree widget should be rebuild for the given prefab
 	**/
-	public function rebuildTree(prefab: hrt.prefab.Prefab) : Void {
+	public function rebuildTreeImpl() : Void {
 		editor.treePrefab.rebuild();
 	}
 
@@ -344,6 +344,11 @@ class EditContext extends hrt.prefab.EditContext2 {
 	public function listMaterialLibraries(path: String) : Array<{path: String, name: String}> {
 		throw "implement";
 	}
+
+	public function listModelAnimations(path: String) : Array<String> {
+		throw "implement";
+	}
+
 
 	public function quickError(message: String) : Void {
 		hide.Ide.showError(message);

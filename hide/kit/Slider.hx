@@ -264,11 +264,12 @@ class Slider<T:Float> extends Widget<T> {
 					}
 				}
 
-				parent?.change(() -> {
+				parent?.change(
+					{callback: () -> {
 					for (slider in sliders) {
 						slider.changeBehaviorInternal(tempChanges);
 					}
-				}, tempChanges);
+				}, isTemporaryEdit: tempChanges, recordUndo: !noUndo});
 			} else {
 				broadcastValueChange(tempChanges);
 			}
@@ -309,11 +310,12 @@ class Slider<T:Float> extends Widget<T> {
 				sliders.push(siblingSlider);
 			}
 
-			parent?.change(() -> {
+			parent?.change({
+				callback: () -> {
 				for (slider in sliders) {
 					slider.changeBehaviorInternal(isTemporary);
 				}
-			}, isTemporary);
+			}, isTemporaryEdit: isTemporary, recordUndo: !noUndo});
 		}
 		else {
 			value = newValue;

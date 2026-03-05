@@ -101,6 +101,23 @@ class Model extends Object3D {
 		}
 	}
 
+	override function edit2(ctx: hrt.prefab.EditContext2) {
+		super.edit2(ctx);
+
+		var anims : Array<hide.kit.Select.SelectEntry> = [
+			for (anim in ctx.listModelAnimations(source)) {value: anim, label: ctx.animName(anim)}
+		];
+
+		var txt = "For model -> prefab conversion and Change all, switch back to the old inspector. These feature will be reworked in hide hl";
+		ctx.build(
+			<category("Animation")>
+				<text(txt)/>
+				<file label="Model" type={"model"} field={source} onValueChange={(_) -> {animation = null; ctx.rebuildPrefab(this); ctx.rebuildInspector();}}/>
+				<select(anims) field={animation} onValueChange={(_) -> ctx.rebuildPrefab(this);} disabled={anims.length == 0}/>
+			</category>
+		);
+	}
+
 	#if editor
 
 	override function onEditorTreeChanged(child:Prefab):hrt.prefab.Prefab.TreeChangedResult {
