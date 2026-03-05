@@ -256,7 +256,7 @@ class AnimGraphEditor extends GenericGraphEditor {
                     if (ext == "prefab") {
                         paths.push(dirPath + "/" + path);
                     }
-                    if (ext == "fbx" && !StringTools.startsWith(filename, "Anim_")) {
+                    if (ext == "fbx" && !StringTools.startsWith(filename.toLowerCase(), "anim_")) {
                         paths.push(dirPath + "/" + path);
                     }
                 }
