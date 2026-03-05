@@ -5494,7 +5494,20 @@ class SceneEditor {
 
 		if (target == sceneData) {
 			var renderProps = original.find(hrt.prefab.RenderProps, null, true, false);
-			if (renderProps != null)
+			var shouldRebuild = renderProps != null;
+
+			if (shouldRebuild) {
+				var cur : hrt.prefab.Prefab = renderProps;
+				while(cur != null && cur != original) {
+					if (cur.editorOnly && cur.shared.parentPrefab != null) {
+						shouldRebuild = false;
+						break;
+					}
+					cur = cur.parent;
+				}
+			}
+
+			if (shouldRebuild)
 				queueRebuild(target);
 		}
 	}
@@ -5509,10 +5522,6 @@ class SceneEditor {
 
 		if (rebuildQueue != null && rebuildQueue.exists(prefab))
 			return;
-
-		trace("queueRebuild", prefab);
-		if (prefab == sceneData)
-			trace("break");
 
 		var instant = false;
 		if (rebuildQueue == null) {
