@@ -3000,8 +3000,13 @@ class SceneEditor {
 		rebuild(sceneData);
 
 		var all = sceneData.all();
+
+		// Prevent a bug in the fx editor where each shader in a fx would trigger a separate rebuild of the whole scene
+		beginRebuild();
+
 		for(elt in all)
 			applySceneStyle(elt);
+		endRebuild();
 
 		refreshTree(All);
 
@@ -5501,8 +5506,13 @@ class SceneEditor {
 		if (rebuildStack > 0)
 			return;
 
+
 		if (rebuildQueue != null && rebuildQueue.exists(prefab))
 			return;
+
+		trace("queueRebuild", prefab);
+		if (prefab == sceneData)
+			trace("break");
 
 		var instant = false;
 		if (rebuildQueue == null) {
@@ -5511,9 +5521,10 @@ class SceneEditor {
 		}
 
 		var parent = prefab.parent;
-		checkWantRebuild(parent, prefab);
 
 		rebuildQueue.set(prefab, Rebuild);
+		checkWantRebuild(parent, prefab);
+
 		if (instant) {
 			endRebuild();
 		}
