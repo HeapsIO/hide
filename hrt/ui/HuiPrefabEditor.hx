@@ -35,12 +35,14 @@ class HuiPrefabEditor extends HuiElement {
 	var cameraController : h3d.scene.CameraController;
 	var treePrefab: hrt.ui.HuiTree<hrt.prefab.Prefab>;
 
-	// Gizmos and guides
-	var viewportAxis : hrt.tools.ViewportAxis = null;
-
 	var selectedPrefabs: Map<hrt.prefab.Prefab, Bool> = [];
 
 	var config : hide.Config;
+
+	// Gizmos and guides
+	var grid : hrt.tools.Grid = null;
+	var viewportAxis : hrt.tools.ViewportAxis = null;
+	var gizmo : hrt.tools.Gizmo = null;
 
 	override function new(?parent) {
 		super(parent);
@@ -281,6 +283,9 @@ class HuiPrefabEditor extends HuiElement {
 
 	public function makeGizmos() {
 		viewportAxis = new hrt.tools.ViewportAxis(scene.s3d.camera, cameraController, scene.s2d);
+		grid = new hrt.tools.Grid(scene.s3d);
+		gizmo = new hrt.tools.Gizmo(scene.s3d, scene.s2d);
+		gizmo.visible = false;
 	}
 }
 
