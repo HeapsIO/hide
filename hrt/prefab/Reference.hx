@@ -63,6 +63,12 @@ class Reference extends Object3D {
 
 			var s = refInstance.serialize();
 			sys.io.File.saveContent(hide.Ide.inst.getPath(source), hide.Ide.inst.toJSON(s));
+
+			var res = hxd.res.Loader.currentInstance.load(source)?.toPrefab();
+			if (res != null) {
+				@:privateAccess res.prefab = null;
+				@:privateAccess res.reloadedVersion ++;
+			}
 		}
 		#end
 
@@ -162,6 +168,14 @@ class Reference extends Object3D {
 		Loads the prefab referenced by `source`, apply overrides to it if applicable and store it in refInstance and returns it.
 	**/
 	public function resolve() : Prefab {
+		#if editor
+		try {
+			if (refInstanceVersion != hxd.res.Loader.currentInstance.load(source).toPrefab().reloadedVersion) {
+				refInstance = null;
+			}
+		} catch(e) {}
+		#end
+
 		if (refInstance != null)
 			return refInstance;
 
