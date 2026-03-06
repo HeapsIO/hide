@@ -618,7 +618,7 @@ class Element {
 				@:privateAccess slider.showRange = min != null && max != null;
 				slider;
 			case PBool:
-				new hide.kit.Slider(this, def.name);
+				new hide.kit.Checkbox(this, def.name);
 			case PTexturePath:
 				var file = new hide.kit.File(this, def.name);
 				file.type = "texture";
