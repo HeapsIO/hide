@@ -29,6 +29,14 @@ class GymWidgets extends HuiElement {
 
 	static var SRC =
 		<gym-widgets>
+			<hui-text("hui-scene")/>
+			<hui-element class="example">
+				<hui-split-container direction="horizontal">
+					<hui-element class="panel"><hui-scene id="scene-a"/></hui-element>
+					<hui-element class="panel"><hui-scene id="scene-b"/></hui-element>
+				</hui-split-container>
+			</hui-element>
+
 			<hui-text("hui-tree")/>
 			<hui-element class="example">
 				<hui-tree id="tree"/>
@@ -133,6 +141,7 @@ class GymWidgets extends HuiElement {
 
 		setupTree();
 		setupCommands();
+		setupScene();
 	}
 
 	function testMenu() :  Array<HuiMenu.MenuItem> {
@@ -277,6 +286,18 @@ class GymWidgets extends HuiElement {
 				return items;
 			return item.children;
 		};
+	}
+
+	function setupScene() {
+		for (scene in [sceneA, sceneB]) {
+			scene.s3d.renderer = h3d.mat.MaterialSetup.current.createRenderer();
+			scene.s3d.lightSystem = h3d.mat.MaterialSetup.current.createLightSystem();
+
+			var cameraController = new h3d.scene.CameraController(scene.s3d);
+			var box = new h3d.scene.Box(0xFFFFFFFF, scene.s3d);
+			var text = new h2d.Text(hxd.res.DefaultFont.get(), scene.s2d);
+			text.text = "hello world";
+		}
 	}
 }
 
