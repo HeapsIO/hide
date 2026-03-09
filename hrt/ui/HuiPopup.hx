@@ -150,7 +150,7 @@ class HuiPopup extends HuiElement {
 		modal = new HuiModalContainer(parent);
 		modal.addChild(this);
 
-		modal.onClick = (e: hxd.Event) -> {
+		modal.onPush = (e: hxd.Event) -> {
 			// We need to delay the closing of the
 			// popup because it messes up with the input handling code
 			// to remove interactibles from the scene in the middle of the event handling code

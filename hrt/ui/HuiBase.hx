@@ -3,7 +3,6 @@ package hrt.ui;
 #if hui
 
 class HuiBase extends HuiElement {
-	public var rootOverlay : h2d.Flow;
 	public var app(default, null): hide.App;
 	public var style : h2d.domkit.Style;
 
@@ -26,7 +25,6 @@ class HuiBase extends HuiElement {
 		super(parent);
 		initComponent();
 
-		rootOverlay = new h2d.Flow();
 		style = new h2d.domkit.Style();
 
 		if (hide.App.DEBUG) {

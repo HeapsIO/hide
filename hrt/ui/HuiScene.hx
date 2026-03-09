@@ -22,6 +22,7 @@ class HuiScene extends HuiElement {
 		if( b ) {
 			if( interactive == null ) {
 				var interactive = new Interactive2(0, 0);
+				interactive.huiScene = this;
 				addChildAt(interactive,0);
 				this.interactive = interactive;
 				interactive.cursor = Default;
@@ -31,6 +32,10 @@ class HuiScene extends HuiElement {
 					interactive.height = calculatedHeight;
 				}
 				interactive.onWheel = onMouseWheel;
+
+				interactive.onClick = (e) -> {
+					trace("click");
+				}
 			}
 		} else {
 			if( interactive != null ) {
@@ -41,6 +46,8 @@ class HuiScene extends HuiElement {
 		return enableInteractive = b;
 	}
 
+	var sceneEvents : hxd.SceneEvents;
+
 	public function new(?parent: h2d.Object) {
 		super(parent);
 		initComponent();
@@ -49,6 +56,15 @@ class HuiScene extends HuiElement {
 
 		s2d = new h2d.Scene();
 		s3d = new h3d.scene.Scene(false, false);
+
+		sceneEvents = new hxd.SceneEvents();
+		@:privateAccess hxd.Window.getInstance().removeEventTarget(sceneEvents.onEvent);
+
+		var base = uiBase;
+		sceneEvents.addScene(s2d);
+		sceneEvents.addScene(s3d);
+
+		enableInteractive = true;
 		// new h3d.scene.Box(0x000000, s3d);
 		// var t = new h2d.Text(hxd.res.DefaultFont.get(), s2d);
 		// t.text = "Hello scene";
@@ -76,26 +92,27 @@ class HuiScene extends HuiElement {
 			wasVisible = currentVisible;
 			var base = uiBase;
 
-			if (currentVisible) {
-				s3dinter = new Hui3DInteractiveScene(this);
-				base.app.sevents.addScene(s3dinter,0);
-				base.app.sevents.addScene(s2d,0);
-			} else {
-				base.app.sevents.removeScene(s3dinter);
-				base.app.sevents.removeScene(s2d);
-			}
+			// if (currentVisible) {
+			// 	s3dinter = new Hui3DInteractiveScene(this);
+			// 	base.app.sevents.addScene(s3dinter,0);
+			// 	base.app.sevents.addScene(s2d,0);
+			// } else {
+			// 	base.app.sevents.removeScene(s3dinter);
+			// 	base.app.sevents.removeScene(s2d);
+			// }
 		}
 
 		if (currentVisible) {
 			var scene = getScene();
 			var scale = getScene().viewportScaleX;
 
-			s3d.scenePosition = s3d.scenePosition ?? {offsetX: 0, offsetY: 0, width: 0, height: 0};
-			s3d.scenePosition.offsetX = display.absX * scale;
-			s3d.scenePosition.offsetY = display.absY * scale;
-			s3d.scenePosition.width = Std.int(display.width * scale);
-			s3d.scenePosition.height = Std.int(display.height * scale);
+			// s3d.scenePosition = s3d.scenePosition ?? {offsetX: 0, offsetY: 0, width: 0, height: 0};
+			// s3d.scenePosition.offsetX = display.absX * scale;
+			// s3d.scenePosition.offsetY = display.absY * scale;
+			// s3d.scenePosition.width = Std.int(display.width * scale);
+			// s3d.scenePosition.height = Std.int(display.height * scale);
 		}
+
 
 		super.sync(ctx);
 	}
@@ -158,6 +175,7 @@ class HuiScene extends HuiElement {
 			@:privateAccess ctx.clearRZ();
 
 			var engine = ctx.engine;
+			sceneEvents.checkEvents();
 
 			s3d.setOutputTarget(ctx.engine, renderTexture);
 			engine.clear(backgroundColor, 1.0);
@@ -253,13 +271,48 @@ class Hui3DInteractive implements hxd.SceneEvents.Interactive {
 
 class Interactive2 extends h2d.Interactive {
 	public var huiScene: HuiScene;
+	var capturing = false;
 	override function handleEvent( e : hxd.Event ) {
 		super.handleEvent(e);
-		e.propagate = true;
-		var i = huiScene.s3d.handleEvent(e, null);
-		if (i == null) {
-			huiScene.s3d.dispatchListeners(e);
+
+		var scale = huiScene.getScene().viewportScaleX;
+
+		var oldX = e.relX;
+		var oldY = e.relY;
+		e.relX += huiScene.display.absX * scale;
+		e.relY += huiScene.display.absY * scale;
+
+		if (e.kind == EPush) {
+			capturing = true;
+			@:privateAccess getScene().events.startCapture(handleEvent, () -> {
+				capturing = false;
+			});
+		} else if (capturing && (e.kind == ERelease || e.kind == EReleaseOutside)) {
+			@:privateAccess getScene().events.stopCapture();
 		}
+
+		@:privateAccess huiScene.sceneEvents.onEvent(e);
+
+		e.relX = oldX;
+		e.relY = oldY;
+
+		// // e.relX += huiScene.s3d.scenePosition?.offsetX;
+		// // e.relY += huiScene.s3d.scenePosition?.offsetY;
+		// e.propagate = true;
+		// if (e.kind.match(EPush) || e.kind.match(ERelease)) {
+		// 	trace(".....", e, @:privateAccess huiScene.s3d.hitInteractives.length);
+		// }
+		// var i = huiScene.s3d.handleEvent(e, null);
+		// if (e.kind.match(EPush) || e.kind.match(ERelease)) {
+		// 	trace("     -> ", i);
+		// }
+
+		// if (i == null) {
+		// 	huiScene.s3d.dispatchListeners(e);
+		// }
+
+		// e.relX -= huiScene.display.absX * scale;
+		// e.relY -= huiScene.display.absY * scale;
 		e.propagate = false;
 	}
 }
