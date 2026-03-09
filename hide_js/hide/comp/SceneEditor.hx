@@ -5404,6 +5404,7 @@ class SceneEditor {
 
 	function reparentImpl(prefabs: Array<PrefabElement>, toPrefab: PrefabElement, index: Int) : Bool -> Void {
 		var effects = [];
+		trace(prefabs, toPrefab);
 		for(i => prefab in prefabs) {
 			var prevParent = prefab.parent;
 			var prevIndex = prevParent.children.indexOf(prefab);
@@ -6192,6 +6193,7 @@ class SceneEditor {
 	}
 
 	public function worldMat(?obj: Object, ?elt: PrefabElement) {
+		var obj = obj ?? elt?.findFirstLocal3d(true);
 		if(obj != null) {
 			if(obj.defaultTransform != null) {
 				var m = obj.defaultTransform.clone();
@@ -6203,19 +6205,7 @@ class SceneEditor {
 				return obj.getAbsPos().clone();
 			}
 		}
-		else {
-			var mat = new h3d.Matrix();
-			mat.identity();
-			var o = Std.downcast(elt ?? elt.shared.parentPrefab, Object3D);
-			while (o != null) {
-				mat.multiply(mat, o.getTransform());
-				var parent = o?.parent;
-				o = Std.downcast(parent, hrt.prefab.Object3D);
-				if (o == null)
-					o = Std.downcast(parent?.shared?.parentPrefab, hrt.prefab.Object3D);
-			}
-			return mat;
-		}
+		return h3d.Matrix.I();
 	}
 
 	public function worldMat2d(elt: PrefabElement) : h2d.col.Matrix {
