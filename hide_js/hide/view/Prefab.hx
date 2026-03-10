@@ -628,29 +628,110 @@ class Prefab extends hide.view.FileView {
 
 		// Save render props
 		if (Ide.inst.currentConfig.get("sceneeditor.renderprops.edit", false) && sceneEditor.renderPropsRoot != null)
-			sceneEditor.renderPropsRoot.save();
+			savePrefab(sceneEditor.renderPropsRoot, sceneEditor);
 
+		currentSign = savePrefab(data, sceneEditor);
+
+		super.save();
+	}
+
+	public static function savePrefab(prefab: hrt.prefab.Prefab, sceneEditor: hide.comp.SceneEditor) : String {
 		var backup = [];
-		cleanupPrefabCdb(data, backup);
 
-		@:privateAccess var content = ide.toJSON(data.serialize());
+		var toSave : Array<{prefab: hrt.prefab.Prefab, serialization: String}> = [];
+
+		var contents : Array<String> = [];
+
+		cleanupPrefabCdb(prefab, backup);
+
+		toSave.push({prefab: prefab, serialization: Ide.inst.toJSON(prefab.serialize())});
 
 		hide.comp.cdb.Editor.restoreOptionals(backup);
 
-		var newSign = ide.makeSignature(content);
-		if(newSign != currentSign)
-			haxe.Timer.delay(saveBackup.bind(content), 0);
-		currentSign = newSign;
-		sys.io.File.saveContent(getPath(), content);
-		super.save();
+		function gatherEditedReferences(prefab: hrt.prefab.Prefab) {
+			var flat = prefab.flatten();
+			for (p in flat) {
+				var ref = Std.downcast(p, hrt.prefab.Reference);
+				if (ref == null || ref.refInstance == null)
+					continue;
 
-		// if (renameMatsHistory != null) {
-		// 	for (entry in renameMatsHistory)
-		// 		saveMatLibsRenames(entry.previousName, entry.newName, entry.prefab);
+				if (ref.editMode == Edit) {
+					backup = [];
+					cleanupPrefabCdb(ref.refInstance, backup);
 
-		// 	renameMatsHistory = [];
-		// }
+					var ser = ref.refInstance?.serialize() ?? null;
+					hide.comp.cdb.Editor.restoreOptionals(backup);
+
+					var oldData = sys.io.File.getContent(Ide.inst.getPath(ref.source));
+
+					var json = Ide.inst.toJSON(ser);
+
+					if (json != oldData) {
+						toSave.push({prefab: ref.refInstance, serialization: json});
+					}
+				}
+
+				if (ref.editMode == Edit || ref.editMode == Override) {
+					gatherEditedReferences(@:privateAccess ref.refInstance);
+				}
+			}
+		}
+
+		gatherEditedReferences(prefab);
+
+
+		var savedPaths: Map<String, Bool> = [];
+		var reloadSameRef: Array<hrt.prefab.Prefab> = [];
+
+		var sign : String = null;
+
+		for (save in toSave) {
+			var path = save.prefab.shared.parentPrefab != null ? save.prefab.shared.prefabSource : save.prefab.shared.currentPath;
+			if (path == null || path.length == 0)
+				throw "Cannot save reference : null path";
+
+			if (savedPaths.get(path) != null) {
+				Ide.inst.quickError('Trying to save EditMode reference $path that was edited in two or more separate instances in this prefab. Only the first one will be saved');
+				continue;
+			}
+
+			savedPaths.set(path, true);
+
+			reloadSameRef.push(save.prefab);
+
+			sceneEditor.watchIgnoreChanges(path);
+
+			haxe.Timer.delay(hide.view.FileView.saveBackupStatic.bind(save.serialization, path), 0);
+			sys.io.File.saveContent(Ide.inst.getPath(path), save.serialization);
+
+			// instantly invalidate cache
+			var resource = hxd.res.Loader.currentInstance.load(path)?.toPrefab();
+			@:privateAccess resource.reloadCache();
+
+			if (save.prefab == prefab) {
+				sign = Ide.inst.makeSignature(save.serialization);
+			}
+		}
+
+		@:privateAccess
+		{
+			sceneEditor.beginRebuild();
+			for (toReload in reloadSameRef) {
+				var path = toReload.shared.parentPrefab != null ? toReload.shared.prefabSource : toReload.shared.currentPath;
+				var otherRefs = prefab.findAll(hrt.prefab.Reference, (r) -> r.source == path && r.refInstance != null && r.refInstance != toReload, true);
+				for (ref in otherRefs) {
+					sceneEditor.removeInstance(ref.refInstance, false);
+					ref.refInstance = null;
+					sceneEditor.queueRebuild(ref);
+				}
+			}
+			sceneEditor.endRebuild();
+			sceneEditor.refreshTree(All);
+		}
+
+		return sign;
 	}
+
 	function saveMatLibsRenames(oldName : String, newName : String, prefab : hrt.prefab.Prefab) {
 		function renameContent(content:Dynamic) {
 			var visited = new Array<Dynamic>();

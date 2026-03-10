@@ -56,15 +56,12 @@ class Reference extends Object3D {
 
 		var obj : Dynamic = super.save();
 
-		#if editor
-		if( editMode == Edit && refInstance != null ) {
-			var sheditor = Std.downcast(shared, hide.prefab.ContextShared);
-			if( sheditor.editor != null ) sheditor.editor.watchIgnoreChanges(source);
-
-			var s = refInstance.serialize();
-			sys.io.File.saveContent(hide.Ide.inst.getPath(source), hide.Ide.inst.toJSON(s));
-		}
-		#end
+		// #if editor
+		// if( editMode == Edit && refInstance != null ) {
+		// 	var s = refInstance.serialize();
+		// 	sys.io.File.saveContent(hide.Ide.inst.getPath(source), hide.Ide.inst.toJSON(s));
+		// }
+		// #end
 
 		return obj;
 	}
@@ -210,8 +207,17 @@ class Reference extends Object3D {
 		if( source == null )
 			return;
 
+		#if editor
+		if (editMode == None) {
+			if (refInstanceVersion != hxd.res.Loader.currentInstance.load(source)?.toPrefab()?.reloadedVersion) {
+				refInstance = null;
+			}
+		}
+		#end
+
 		// in the case source has changed since the last load (can happen when creating references manually)
 		if (refInstance?.shared.currentPath != source) {
+			refInstance = null;
 			initRefInstance();
 			if (refInstance == null)
 				return;

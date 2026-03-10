@@ -3772,7 +3772,7 @@ class SceneEditor {
 				refreshTreeStyle(p, All);
 		}
 
-		var modifiedRef = Std.downcast(p.shared.parentPrefab, hrt.prefab.Reference);
+		/*var modifiedRef = Std.downcast(p.shared.parentPrefab, hrt.prefab.Reference);
 		if (modifiedRef != null && modifiedRef.editMode == Edit) {
 			var path = modifiedRef.source;
 
@@ -3789,7 +3789,7 @@ class SceneEditor {
 				endRebuild();
 				refreshTree(All);
 			}
-		}
+		}*/
 
 		applySceneStyle(p);
 	}
@@ -5520,9 +5520,10 @@ class SceneEditor {
 		if (rebuildStack > 0)
 			return;
 
-
 		if (rebuildQueue != null && rebuildQueue.exists(prefab))
 			return;
+
+		var path = prefab.getAbsPath(true, true);
 
 		var instant = false;
 		if (rebuildQueue == null) {
@@ -5573,9 +5574,13 @@ class SceneEditor {
 		beginRebuildStack++;
 		if (beginRebuildStack > 1)
 			return;
+		trace("============ Begin rebuild ============");
 		rebuildQueue = [];
 		rebuildEndCallbacks = [];
+		rebuildCount = 0;
+
 	}
+	var rebuildCount = 0;
 
 	function endRebuild() {
 		beginRebuildStack --;
@@ -5623,7 +5628,9 @@ class SceneEditor {
 						}
 					}
 
+					trace("rebuilding " + prefab.getAbsPath(true, true));
 					rebuild(prefab);
+					rebuildCount ++;
 
 					if (prefab == sceneData && Std.downcast(prefab, hrt.prefab.fx.FX) != null) {
 						var fxAnimation : hrt.prefab.fx.FX.FXAnimation = cast prefab.findFirstLocal3d();
@@ -5672,6 +5679,9 @@ class SceneEditor {
 		}
 		rebuildQueue = null;
 		rebuildEndCallbacks = null;
+
+		trace("============= End rebuild ===============");
+		trace('$rebuildCount prefab have been rebuilt');
 	}
 
 	var rebuildStack = 0;

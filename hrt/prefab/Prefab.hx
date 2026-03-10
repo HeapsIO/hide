@@ -554,24 +554,26 @@ class Prefab {
 	/**
 		Returns the absolute name path for this prefab
 	**/
-	public function getAbsPath(unique=false, followRef : Bool = false) {
-		var origParent = parent;
-		var parent = parent;
-		if (parent != null && followRef) {
-			var ref = Std.downcast(parent.shared.parentPrefab, Reference);
-			if (ref != null && ref.refInstance == parent)
-				parent = ref;
+	public function getAbsPath(unique=false, followRefs : Bool = false) {
+
+		// root never write their paths
+		if (parent == null) {
+			if (followRefs && shared.parentPrefab != null) {
+				return shared.parentPrefab.getAbsPath(unique, followRefs);
+			}
+			return null;
 		}
-		if(parent == null)
-			return "";
+
 		var path = name ?? "";
 		if (path == "")
 			path = hrt.prefab.Prefab.emptyNameReplacement;
 		if(unique) {
 			path = getUniqueName();
 		}
-		if(parent.parent != null)
-			path = parent.getAbsPath(unique) + "." + path;
+
+		var parentPath = parent.getAbsPath(unique, followRefs);
+		if (parentPath != null)
+			return parentPath + "." + path;
 		return path;
 	}
 
