@@ -281,7 +281,7 @@ class FXAnimation extends h3d.scene.Object {
 			}
 		}
 
-		for (t in trails) {
+		for (t in trails ?? []) {
 			t.timeScale = 0.0;
 		}
 
@@ -411,7 +411,7 @@ class FXAnimation extends h3d.scene.Object {
 
 		if (fullSync) {
 
-			for (t in trails) {
+			for (t in trails ?? []) {
 				t.update(hxd.Math.max(dt, 0.0));
 			}
 

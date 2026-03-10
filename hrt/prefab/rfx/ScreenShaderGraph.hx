@@ -112,7 +112,7 @@ class ScreenShaderGraph extends RendererFX {
 	public function loadShaderDef() {
 		if (shaderGraph == null)
 			resolve();
-		shaderDef = shaderGraph.compile(null);
+		shaderDef = shaderGraph?.compile(null);
 		if(shaderDef == null)
 			return;
 
@@ -143,6 +143,8 @@ class ScreenShaderGraph extends RendererFX {
 	}
 
 	function syncShaderVars() {
+		if (shaderDef == null)
+			return;
 		for(v in shaderDef.shader.data.vars) {
 			if(v.kind != Param)
 				continue;
