@@ -49,6 +49,7 @@ class UserSettings extends Settings {
 		debug.add("Filebrowser show thumbnail gen window", new Element('<input type="checkbox"/>'), ide.ideConfig.filebrowserDebugShowWindow, (v) -> ide.ideConfig.filebrowserDebugShowWindow = v);
 		debug.add("Filebrowser show debug menu", new Element('<input type="checkbox"/>'), ide.ideConfig.filebrowserDebugShowMenu, (v) -> ide.ideConfig.filebrowserDebugShowMenu = v);
 		debug.add("Scene Editor verbose rebuilds", new Element('<input type="checkbox"/>'), ide.ideConfig.sceneEditorVerboseRebuilds, (v) -> ide.ideConfig.sceneEditorVerboseRebuilds = v);
+		debug.add("Scene Editor verbose saves", new Element('<input type="checkbox"/>'), ide.ideConfig.sceneEditorVerboseSave, (v) -> ide.ideConfig.sceneEditorVerboseSave = v);
 		categories.push(debug);
 	}
 

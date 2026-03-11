@@ -642,6 +642,40 @@ class Prefab extends hide.view.FileView {
 
 		var contents : Array<String> = [];
 
+		function checkShouldSave(prefab: hrt.prefab.Prefab, originalPath: String) {
+			var backup = [];
+
+			cleanupPrefabCdb(prefab, backup);
+
+			var ser = prefab?.serialize() ?? null;
+
+			hide.comp.cdb.Editor.restoreOptionals(backup);
+
+			// If the root prefab of a Reference is a 3D object (that is only the case if the prefab is an FX),
+			// the reference will override the root prefab name and transform, and we don't want to save that
+			Reflect.deleteField(ser, "name");
+			Reflect.deleteField(ser, "x");
+			Reflect.deleteField(ser, "y");
+			Reflect.deleteField(ser, "z");
+			Reflect.deleteField(ser, "scaleX");
+			Reflect.deleteField(ser, "scaleY");
+			Reflect.deleteField(ser, "scaleZ");
+			Reflect.deleteField(ser, "rotationX");
+			Reflect.deleteField(ser, "rotationY");
+			Reflect.deleteField(ser, "rotationZ");
+			Reflect.deleteField(ser, "visible");
+
+			var oldData = sys.io.File.getContent(Ide.inst.getPath(originalPath));
+
+			var json = Ide.inst.toJSON(ser);
+
+			if (json != oldData) {
+				toSave.push({prefab: prefab, serialization: json});
+			}
+		}
+
+		checkShouldSave(prefab, prefab.shared.currentPath);
+
 		cleanupPrefabCdb(prefab, backup);
 
 		toSave.push({prefab: prefab, serialization: Ide.inst.toJSON(prefab.serialize())});
@@ -649,48 +683,21 @@ class Prefab extends hide.view.FileView {
 		hide.comp.cdb.Editor.restoreOptionals(backup);
 
 		function gatherEditedReferences(prefab: hrt.prefab.Prefab) {
-			var flat = prefab.flatten();
-			for (p in flat) {
+			for (p in prefab.children) {
 				var ref = Std.downcast(p, hrt.prefab.Reference);
-				if (ref == null || ref.refInstance == null)
-					continue;
-
-				if (ref.editMode == Edit) {
-					backup = [];
-					cleanupPrefabCdb(ref.refInstance, backup);
-
-					var ser = ref.refInstance?.serialize() ?? null;
-
-					if (ser == null)
+				if (ref != null) {
+					if (ref.refInstance == null)
 						continue;
 
-					// If the root prefab of a Reference is a 3D object (that is only the case if the prefab is an FX),
-					// the reference will override the root prefab name and transform, and we don't want to save that
-					Reflect.deleteField(ser, "name");
-					Reflect.deleteField(ser, "x");
-					Reflect.deleteField(ser, "y");
-					Reflect.deleteField(ser, "z");
-					Reflect.deleteField(ser, "scaleX");
-					Reflect.deleteField(ser, "scaleY");
-					Reflect.deleteField(ser, "scaleZ");
-					Reflect.deleteField(ser, "rotationX");
-					Reflect.deleteField(ser, "rotationY");
-					Reflect.deleteField(ser, "rotationZ");
-					Reflect.deleteField(ser, "visible");
-
-					hide.comp.cdb.Editor.restoreOptionals(backup);
-
-					var oldData = sys.io.File.getContent(Ide.inst.getPath(ref.source));
-
-					var json = Ide.inst.toJSON(ser);
-
-					if (json != oldData) {
-						toSave.push({prefab: ref.refInstance, serialization: json});
+					if (ref.editMode == Edit) {
+						checkShouldSave(ref.refInstance, ref.source);
 					}
-				}
 
-				if (ref.editMode == Edit || ref.editMode == Override) {
-					gatherEditedReferences(@:privateAccess ref.refInstance);
+					if (ref.editMode == Edit || ref.editMode == Override) {
+						gatherEditedReferences(@:privateAccess ref.refInstance);
+					}
+				} else {
+					gatherEditedReferences(p);
 				}
 			}
 		}
@@ -722,6 +729,10 @@ class Prefab extends hide.view.FileView {
 			haxe.Timer.delay(hide.view.FileView.saveBackupStatic.bind(save.serialization, path), 0);
 			sys.io.File.saveContent(Ide.inst.getPath(path), save.serialization);
 
+			if (Ide.inst.ideConfig.sceneEditorVerboseSave) {
+				Ide.inst.quickMessage('Saved $path');
+			}
+
 			// instantly invalidate cache
 			var resource = hxd.res.Loader.currentInstance.load(path)?.toPrefab();
 			@:privateAccess resource.reloadCache();
@@ -735,7 +746,7 @@ class Prefab extends hide.view.FileView {
 		{
 			sceneEditor.beginRebuild();
 			for (toReload in reloadSameRef) {
-				var path = toReload.shared.parentPrefab != null ? toReload.shared.prefabSource : toReload.shared.currentPath;
+				var path = toReload.shared.parentPrefab != null ? toReload.shared.parentPrefab.source : toReload.shared.currentPath;
 				var otherRefs = prefab.findAll(hrt.prefab.Reference, (r) -> r.source == path && r.refInstance != null && r.refInstance != toReload, true);
 				for (ref in otherRefs) {
 					sceneEditor.removeInstance(ref.refInstance, false);
@@ -744,7 +755,6 @@ class Prefab extends hide.view.FileView {
 				}
 			}
 			sceneEditor.endRebuild();
-			sceneEditor.refreshTree(All);
 		}
 
 		return sign;

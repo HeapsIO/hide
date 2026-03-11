@@ -5682,6 +5682,21 @@ class SceneEditor {
 			queuedRenderProps = null;
 			queuedRefreshRenderProps = false;
 		}
+
+		// rebuild selection
+
+		sceneTree.rebuildTree();
+
+		var newSelection : Array<hrt.prefab.Prefab> = [];
+		for (select in selectedPrefabs) {
+			var path = select.getAbsPath(true, true);
+			var newPrefab = sceneData.locatePrefab(path, true);
+			if (newPrefab != null) {
+				newSelection.push(newPrefab);
+			}
+		}
+		selectElements(newSelection, NoHistory);
+
 		rebuildQueue = null;
 		rebuildEndCallbacks = null;
 
@@ -5689,6 +5704,8 @@ class SceneEditor {
 			trace("============= End rebuild ===============");
 			trace('$rebuildCount prefab have been rebuilt');
 		}
+
+
 	}
 
 	var rebuildStack = 0;

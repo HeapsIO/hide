@@ -47,6 +47,7 @@ typedef HideGlobalConfig = {
 	var filebrowserDebugShowWindow : Bool;
 	var filebrowserDebugShowMenu : Bool;
 	var sceneEditorVerboseRebuilds : Bool;
+	var sceneEditorVerboseSave : Bool;
 };
 
 typedef ConfigDef = {
