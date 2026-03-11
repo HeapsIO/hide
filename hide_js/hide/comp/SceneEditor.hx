@@ -5574,7 +5574,10 @@ class SceneEditor {
 		beginRebuildStack++;
 		if (beginRebuildStack > 1)
 			return;
-		trace("============ Begin rebuild ============");
+
+		if (Ide.inst.ideConfig.sceneEditorVerboseRebuilds) {
+			trace("============ Begin rebuild ============");
+		}
 		rebuildQueue = [];
 		rebuildEndCallbacks = [];
 		rebuildCount = 0;
@@ -5628,7 +5631,9 @@ class SceneEditor {
 						}
 					}
 
-					trace("rebuilding " + prefab.getAbsPath(true, true));
+					if (Ide.inst.ideConfig.sceneEditorVerboseRebuilds) {
+						trace("rebuilding " + prefab.getAbsPath(true, true));
+					}
 					rebuild(prefab);
 					rebuildCount ++;
 
@@ -5680,8 +5685,10 @@ class SceneEditor {
 		rebuildQueue = null;
 		rebuildEndCallbacks = null;
 
-		trace("============= End rebuild ===============");
-		trace('$rebuildCount prefab have been rebuilt');
+		if (Ide.inst.ideConfig.sceneEditorVerboseRebuilds) {
+			trace("============= End rebuild ===============");
+			trace('$rebuildCount prefab have been rebuilt');
+		}
 	}
 
 	var rebuildStack = 0;
