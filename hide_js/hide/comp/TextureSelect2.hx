@@ -1,7 +1,7 @@
 package hide.comp;
 
 class TextureSelect2 extends FileSelect2 {
-	public static var IMG_EXTS = hide.Ide.IMG_EXTS.concat(["svg"]);
+	public static var IMG_EXTS = hide.Ide.IMG_EXTS.concat(["svg", "envd", "envs"]);
 
 	public var value(default, set) : h3d.mat.Texture;
 	public var area(default, set) : { x : Int, y : Int, width : Int, height : Int };
