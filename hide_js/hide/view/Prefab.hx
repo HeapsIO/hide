@@ -660,6 +660,24 @@ class Prefab extends hide.view.FileView {
 					cleanupPrefabCdb(ref.refInstance, backup);
 
 					var ser = ref.refInstance?.serialize() ?? null;
+
+					if (ser == null)
+						continue;
+
+					// If the root prefab of a Reference is a 3D object (that is only the case if the prefab is an FX),
+					// the reference will override the root prefab name and transform, and we don't want to save that
+					Reflect.deleteField(ser, "name");
+					Reflect.deleteField(ser, "x");
+					Reflect.deleteField(ser, "y");
+					Reflect.deleteField(ser, "z");
+					Reflect.deleteField(ser, "scaleX");
+					Reflect.deleteField(ser, "scaleY");
+					Reflect.deleteField(ser, "scaleZ");
+					Reflect.deleteField(ser, "rotationX");
+					Reflect.deleteField(ser, "rotationY");
+					Reflect.deleteField(ser, "rotationZ");
+					Reflect.deleteField(ser, "visible");
+
 					hide.comp.cdb.Editor.restoreOptionals(backup);
 
 					var oldData = sys.io.File.getContent(Ide.inst.getPath(ref.source));
