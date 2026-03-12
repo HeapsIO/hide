@@ -48,6 +48,10 @@ class UserSettings extends Settings {
 		debug.add("Filebrowser print server logs", new Element('<input type="checkbox"/>'), ide.ideConfig.filebrowserDebugServerCommands, (v) -> ide.ideConfig.filebrowserDebugServerCommands = v);
 		debug.add("Filebrowser show thumbnail gen window", new Element('<input type="checkbox"/>'), ide.ideConfig.filebrowserDebugShowWindow, (v) -> ide.ideConfig.filebrowserDebugShowWindow = v);
 		debug.add("Filebrowser show debug menu", new Element('<input type="checkbox"/>'), ide.ideConfig.filebrowserDebugShowMenu, (v) -> ide.ideConfig.filebrowserDebugShowMenu = v);
+		debug.add("Scene Editor verbose rebuilds", new Element('<input type="checkbox"/>'), ide.ideConfig.sceneEditorVerboseRebuilds, (v) -> ide.ideConfig.sceneEditorVerboseRebuilds = v);
+		debug.add("Scene Editor verbose saves", new Element('<input type="checkbox"/>'), ide.ideConfig.sceneEditorVerboseSave, (v) -> ide.ideConfig.sceneEditorVerboseSave = v);
+		debug.add("Scene Editor Enable Rebuild in Context Menu", new Element('<input type="checkbox"/>'), ide.ideConfig.sceneEditorContextMenuEnableRebuild, (v) -> ide.ideConfig.sceneEditorContextMenuEnableRebuild = v);
+
 		categories.push(debug);
 	}
 
