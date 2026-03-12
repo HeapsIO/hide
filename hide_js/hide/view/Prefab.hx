@@ -636,11 +636,7 @@ class Prefab extends hide.view.FileView {
 	}
 
 	public static function savePrefab(prefab: hrt.prefab.Prefab, sceneEditor: hide.comp.SceneEditor) : String {
-		var backup = [];
-
 		var toSave : Array<{prefab: hrt.prefab.Prefab, serialization: String}> = [];
-
-		var contents : Array<String> = [];
 
 		function checkShouldSave(prefab: hrt.prefab.Prefab, originalPath: String) {
 			var backup = [];
@@ -674,14 +670,6 @@ class Prefab extends hide.view.FileView {
 			}
 		}
 
-		checkShouldSave(prefab, prefab.shared.currentPath);
-
-		cleanupPrefabCdb(prefab, backup);
-
-		toSave.push({prefab: prefab, serialization: Ide.inst.toJSON(prefab.serialize())});
-
-		hide.comp.cdb.Editor.restoreOptionals(backup);
-
 		function gatherEditedReferences(prefab: hrt.prefab.Prefab) {
 			for (p in prefab.children) {
 				var ref = Std.downcast(p, hrt.prefab.Reference);
@@ -702,8 +690,9 @@ class Prefab extends hide.view.FileView {
 			}
 		}
 
-		gatherEditedReferences(prefab);
+		checkShouldSave(prefab, prefab.shared.currentPath);
 
+		gatherEditedReferences(prefab);
 
 		var savedPaths: Map<String, Bool> = [];
 		var reloadSameRef: Array<hrt.prefab.Prefab> = [];
@@ -749,13 +738,23 @@ class Prefab extends hide.view.FileView {
 				var path = toReload.shared.parentPrefab != null ? toReload.shared.parentPrefab.source : toReload.shared.currentPath;
 				var otherRefs = prefab.findAll(hrt.prefab.Reference, (r) -> r.source == path && r.refInstance != null && r.refInstance != toReload, true);
 				for (ref in otherRefs) {
-					sceneEditor.removeInstance(ref.refInstance, false);
+					var toReload : hrt.prefab.Reference = ref;
+					while(toReload.shared.parentPrefab != null) {
+						if (ref.shared.parentPrefab.to(hrt.prefab.Reference).editMode == None) {
+							toReload = ref.shared.parentPrefab.to(hrt.prefab.Reference);
+						} else {
+							break;
+						}
+					}
+					sceneEditor.removeInstance(toReload.refInstance, false);
 					ref.refInstance = null;
-					sceneEditor.queueRebuild(ref);
+					sceneEditor.queueRebuild(toReload);
 				}
 			}
 			sceneEditor.endRebuild();
 		}
+
+		@:privateAccess sceneEditor.refreshTree(All);
 
 		return sign;
 	}
