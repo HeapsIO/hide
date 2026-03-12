@@ -345,8 +345,8 @@ class FileBrowser extends hide.ui.View<FileBrowserState> {
 	}
 
 	public function refreshVCS() {
-		fancyTree.queueRefresh(RegenHeader);
-		fancyGallery.queueRefresh(RegenHeader);
+		fancyTree.queueRefresh();
+		fancyGallery.queueRefresh();
 	}
 
 	function getIcon(item : FileEntry) : String {
