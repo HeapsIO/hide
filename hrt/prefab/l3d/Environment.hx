@@ -29,7 +29,9 @@ class Environment extends Object3D {
 		}
 	}
 
-	function getBinaryPath( diffuse : Bool ) {
+	function getBinaryPath( diffuse : Bool, ?sourceMapPath : String ) {
+		if (sourceMapPath == null)
+			sourceMapPath = this.sourceMapPath;
 		var path = new haxe.io.Path(sourceMapPath);
 		if( configName != null )
 			path.file += "-" + configName;
@@ -46,6 +48,15 @@ class Environment extends Object3D {
 		var specular = hxd.Pixels.toDDSLayers([for( i in 0...6 ) for( mip in 0...env.getMipLevels() ) env.specular.capturePixels(i,mip)],true);
 		sys.io.File.saveBytes(fs.baseDir + getBinaryPath(false), specular);
 		#end
+	}
+
+	function compute() {
+		env.dispose();
+		env.specular = null;
+		env.diffuse = null;
+		env.source = shared.loadTexture(sourceMapPath);
+		env.compute();
+		saveToBinary();
 	}
 
 	override function updateInstance(?propName : String ) {
@@ -91,14 +102,8 @@ class Environment extends Object3D {
 		env.rotation = hxd.Math.degToRad(rotation);
 		env.power = power;
 
-		if( propName == "force" || (needLoad && !loadFromBinary()) ) {
-			env.dispose();
-			env.specular = null;
-			env.diffuse = null;
-			env.source = shared.loadTexture(sourceMapPath);
-			env.compute();
-			saveToBinary();
-		}
+		if( propName == "force" || (needLoad && !loadFromBinary()) )
+			compute();
 
 		var scene = local3d.getScene();
 		// Auto Apply on change
