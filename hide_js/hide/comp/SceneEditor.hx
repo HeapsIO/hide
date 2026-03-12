@@ -3772,7 +3772,7 @@ class SceneEditor {
 				refreshTreeStyle(p, All);
 		}
 
-		/*var modifiedRef = Std.downcast(p.shared.parentPrefab, hrt.prefab.Reference);
+		var modifiedRef = Std.downcast(p.shared.parentPrefab, hrt.prefab.Reference);
 		if (modifiedRef != null && modifiedRef.editMode == Edit) {
 			var path = modifiedRef.source;
 
@@ -3789,7 +3789,7 @@ class SceneEditor {
 				endRebuild();
 				refreshTree(All);
 			}
-		}*/
+		}
 
 		applySceneStyle(p);
 	}
@@ -5520,10 +5520,9 @@ class SceneEditor {
 		if (rebuildStack > 0)
 			return;
 
+
 		if (rebuildQueue != null && rebuildQueue.exists(prefab))
 			return;
-
-		var path = prefab.getAbsPath(true, true);
 
 		var instant = false;
 		if (rebuildQueue == null) {
@@ -5531,7 +5530,7 @@ class SceneEditor {
 			instant = true;
 		}
 
-		var parent = prefab.parent ?? prefab.shared.parentPrefab;
+		var parent = prefab.parent;
 
 		rebuildQueue.set(prefab, Rebuild);
 		checkWantRebuild(parent, prefab);
@@ -5574,16 +5573,9 @@ class SceneEditor {
 		beginRebuildStack++;
 		if (beginRebuildStack > 1)
 			return;
-
-		if (Ide.inst.ideConfig.sceneEditorVerboseRebuilds) {
-			trace("============ Begin rebuild ============");
-		}
 		rebuildQueue = [];
 		rebuildEndCallbacks = [];
-		rebuildCount = 0;
-
 	}
-	var rebuildCount = 0;
 
 	function endRebuild() {
 		beginRebuildStack --;
@@ -5631,11 +5623,7 @@ class SceneEditor {
 						}
 					}
 
-					if (Ide.inst.ideConfig.sceneEditorVerboseRebuilds) {
-						trace("rebuilding " + prefab.getAbsPath(true, true));
-					}
 					rebuild(prefab);
-					rebuildCount ++;
 
 					if (prefab == sceneData && Std.downcast(prefab, hrt.prefab.fx.FX) != null) {
 						var fxAnimation : hrt.prefab.fx.FX.FXAnimation = cast prefab.findFirstLocal3d();
@@ -5682,37 +5670,8 @@ class SceneEditor {
 			queuedRenderProps = null;
 			queuedRefreshRenderProps = false;
 		}
-
-		// rebuild selection
-
-
-		var newSelection : Array<hrt.prefab.Prefab> = [];
-		var needReselect = false;
-		for (select in selectedPrefabs) {
-			var path = select.getAbsPath(true, true);
-			var newPrefab = sceneData.locatePrefab(path, true);
-			if (newPrefab != null) {
-				newSelection.push(newPrefab);
-				// check if the prefab was actually re-created
-				if (newPrefab != select) {
-					needReselect = true;
-				}
-			}
-		}
-		if (needReselect) {
-			sceneTree.rebuildTree();
-			selectElements(newSelection, NoHistory);
-		}
-
 		rebuildQueue = null;
 		rebuildEndCallbacks = null;
-
-		if (Ide.inst.ideConfig.sceneEditorVerboseRebuilds) {
-			trace("============= End rebuild ===============");
-			trace('$rebuildCount prefab have been rebuilt');
-		}
-
-
 	}
 
 	var rebuildStack = 0;

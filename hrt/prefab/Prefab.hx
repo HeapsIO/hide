@@ -554,26 +554,24 @@ class Prefab {
 	/**
 		Returns the absolute name path for this prefab
 	**/
-	public function getAbsPath(unique=false, followRefs : Bool = false) {
-
-		// root never write their paths
-		if (parent == null) {
-			if (followRefs && shared.parentPrefab != null) {
-				return shared.parentPrefab.getAbsPath(unique, followRefs);
-			}
-			return null;
+	public function getAbsPath(unique=false, followRef : Bool = false) {
+		var origParent = parent;
+		var parent = parent;
+		if (parent != null && followRef) {
+			var ref = Std.downcast(parent.shared.parentPrefab, Reference);
+			if (ref != null && ref.refInstance == parent)
+				parent = ref;
 		}
-
+		if(parent == null)
+			return "";
 		var path = name ?? "";
 		if (path == "")
 			path = hrt.prefab.Prefab.emptyNameReplacement;
 		if(unique) {
 			path = getUniqueName();
 		}
-
-		var parentPath = parent.getAbsPath(unique, followRefs);
-		if (parentPath != null)
-			return parentPath + "." + path;
+		if(parent.parent != null)
+			path = parent.getAbsPath(unique) + "." + path;
 		return path;
 	}
 
@@ -776,7 +774,7 @@ class Prefab {
 		Returns null if the path is invalid or does not match any prefabs in the hierarchy
 		If the path contains many prefabs with the same name, they can be disambiguated in the path with `name-index`
 	**/
-	public function locatePrefab(path: String, followRefs: Bool = false) : Null<Prefab> {
+	public function locatePrefab(path: String) : Null<Prefab> {
 		if (path == null)
 			return null;
 		var parts = path.split(".");
@@ -790,31 +788,18 @@ class Prefab {
 				name = subIndex[0];
 			}
 			var found = null;
-
-			inline function searchIn(prefabs : Array<hrt.prefab.Prefab>) {
-				var currentNth = 0;
-				for (o in prefabs) {
-					if (o.name == name)
-					{
-						if (currentNth == chooseNth) {
-							found = o;
-							break;
-						} else {
-							currentNth ++;
-						}
+			var currentNth = 0;
+			for (o in p.children) {
+				if (o.name == name)
+				{
+					if (currentNth == chooseNth) {
+						found = o;
+						break;
+					} else {
+						currentNth ++;
 					}
 				}
 			}
-
-			var ref = p.to(Reference);
-			if (followRefs && ref != null && ref.refInstance != null) {
-				searchIn(cast ref.refInstance.children);
-			}
-
-			if (found == null) {
-				searchIn(cast p.children);
-			}
-
 			p = found;
 		}
 		return p;

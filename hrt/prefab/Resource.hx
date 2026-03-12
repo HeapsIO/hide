@@ -6,10 +6,6 @@ class Resource extends hxd.res.Resource {
 	var prefab : Prefab;
 	var cacheVersion : Int;
 
-	#if editor
-	var loadHash : String;
-	#end
-
 	/**Increase each time this resource get reloaded, can be used for cache invalidation**/
 	public var reloadedVersion(default, null) : Int = 0;
 	var isWatched : Bool;
@@ -25,19 +21,13 @@ class Resource extends hxd.res.Resource {
 		isWatched = true;
 		super.watch(function() {
 			if( prefab != null ) {
-				reloadCache();
+				var data = try loadData() catch( e : Dynamic ) return; // parsing error (conflict ?)
+				prefab.reload(data);
+				reloadedVersion ++;
+				onPrefabLoaded(prefab);
 			}
 			onChanged();
 		});
-	}
-
-	function reloadCache() {
-		reloadedVersion ++;
-		if (prefab != null) {
-			var data = try loadData() catch( e : Dynamic ) return; // parsing error (conflict ?)
-			prefab.reload(data);
-			onPrefabLoaded(prefab);
-		}
 	}
 
 	function loadData() {

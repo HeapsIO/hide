@@ -130,23 +130,21 @@ class FileView extends hide.ui.View<{ path : String }> {
 	}
 
 	function saveBackup(content: String) {
-		saveBackupStatic(content, state.path);
-	}
-
-	static function saveBackupStatic(content: String, path: String) {
-		var tmpPath = Ide.inst.resourceDir + "/.tmp/" + path;
+		var tmpPath = ide.resourceDir + "/.tmp/" + state.path;
 		var baseName = haxe.io.Path.withoutExtension(tmpPath);
 		var tmpDir = haxe.io.Path.directory(tmpPath);
 
+		// Save backup file
 		try {
 			sys.FileSystem.createDirectory(tmpDir);
 			var dateFmt = DateTools.format(Date.now(), "%Y%m%d-%H%M%S");
-			sys.io.File.saveContent(baseName + "-backup" + dateFmt + "." + haxe.io.Path.extension(path), content);
+			sys.io.File.saveContent(baseName + "-backup" + dateFmt + "." + haxe.io.Path.extension(state.path), content);
 		}
 		catch (e: Dynamic) {
 			trace("Cannot save backup", e);
 		}
 
+		// Delete old files
 		var allTemp = [];
 		for( f in try sys.FileSystem.readDirectory(tmpDir) catch( e : Dynamic ) [] ) {
 			if(~/-backup[0-9]{8}-[0-9]{6}$/.match(haxe.io.Path.withoutExtension(f))) {
@@ -154,9 +152,8 @@ class FileView extends hide.ui.View<{ path : String }> {
 			}
 		}
 		allTemp.sort(Reflect.compare);
-		while(allTemp.length > 10) {
-			var toRemove = allTemp.shift();
-			sys.FileSystem.deleteFile(tmpDir + "/" + toRemove);
+		if(allTemp.length > 10) {
+			sys.FileSystem.deleteFile(tmpDir + "/" + allTemp[0]);
 		}
 	}
 
