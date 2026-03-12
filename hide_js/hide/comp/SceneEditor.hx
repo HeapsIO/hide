@@ -5685,7 +5685,6 @@ class SceneEditor {
 
 		// rebuild selection
 
-		sceneTree.rebuildTree();
 
 		var newSelection : Array<hrt.prefab.Prefab> = [];
 		var needReselect = false;
@@ -5701,6 +5700,7 @@ class SceneEditor {
 			}
 		}
 		if (needReselect) {
+			sceneTree.rebuildTree();
 			selectElements(newSelection, NoHistory);
 		}
 
