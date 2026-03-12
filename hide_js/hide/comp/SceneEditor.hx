@@ -5531,7 +5531,7 @@ class SceneEditor {
 			instant = true;
 		}
 
-		var parent = prefab.parent;
+		var parent = prefab.parent ?? prefab.shared.parentPrefab;
 
 		rebuildQueue.set(prefab, Rebuild);
 		checkWantRebuild(parent, prefab);
@@ -5688,14 +5688,21 @@ class SceneEditor {
 		sceneTree.rebuildTree();
 
 		var newSelection : Array<hrt.prefab.Prefab> = [];
+		var needReselect = false;
 		for (select in selectedPrefabs) {
 			var path = select.getAbsPath(true, true);
 			var newPrefab = sceneData.locatePrefab(path, true);
 			if (newPrefab != null) {
 				newSelection.push(newPrefab);
+				// check if the prefab was actually re-created
+				if (newPrefab != select) {
+					needReselect = true;
+				}
 			}
 		}
-		selectElements(newSelection, NoHistory);
+		if (needReselect) {
+			selectElements(newSelection, NoHistory);
+		}
 
 		rebuildQueue = null;
 		rebuildEndCallbacks = null;

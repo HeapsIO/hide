@@ -740,15 +740,17 @@ class Prefab extends hide.view.FileView {
 				for (ref in otherRefs) {
 					var toReload : hrt.prefab.Reference = ref;
 					while(toReload.shared.parentPrefab != null) {
-						if (ref.shared.parentPrefab.to(hrt.prefab.Reference).editMode == None) {
+						if (toReload.shared.parentPrefab.to(hrt.prefab.Reference).editMode == None) {
 							toReload = ref.shared.parentPrefab.to(hrt.prefab.Reference);
 						} else {
 							break;
 						}
 					}
-					sceneEditor.removeInstance(toReload.refInstance, false);
-					ref.refInstance = null;
-					sceneEditor.queueRebuild(toReload);
+					if (toReload.refInstance != null) {
+						sceneEditor.removeInstance(toReload.refInstance, false);
+						toReload.refInstance = null;
+						sceneEditor.queueRebuild(toReload);
+					}
 				}
 			}
 			sceneEditor.endRebuild();

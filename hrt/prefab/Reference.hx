@@ -374,6 +374,13 @@ class Reference extends Object3D {
 
 	#if editor
 
+	override function onEditorTreeChanged(child: Prefab) : hrt.prefab.Prefab.TreeChangedResult {
+		if (child == refInstance) {
+			return Rebuild;
+		}
+		return super.onEditorTreeChanged(child);
+	}
+
 	override function setEditorChildren(sceneEditor:hide.comp.SceneEditor, scene: hide.comp.Scene) {
 		super.setEditorChildren(sceneEditor, scene);
 
