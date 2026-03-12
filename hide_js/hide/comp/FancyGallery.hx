@@ -340,6 +340,11 @@ class FancyGallery<GalleryItem> extends hide.comp.Component {
 	function onRefreshInternal() {
 		refreshQueued = false;
 
+		// Freeze refresh while something is edited
+		if (js.Browser.document.activeElement.contentEditable == "plaintext-only" && element.get(0).contains(js.Browser.document.activeElement)) {
+			return;
+		}
+
 		var margin = 8;
 
 		var bounds = scroll.getBoundingClientRect();
