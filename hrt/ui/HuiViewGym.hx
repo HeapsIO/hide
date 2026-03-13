@@ -14,6 +14,7 @@ class HuiViewGym extends HuiView<{}> {
 			<hui-tab-container>
 				<gym-widgets display-name="Widgets"/>
 				<gym-layouts display-name="Layouts"/>
+				<gym-search display-name="Search"/>
 			</hui-tab-container>
 		</hui-view-gym>
 
@@ -349,5 +350,117 @@ class GymLayouts extends HuiElement {
 		</gym-layouts>
 }
 
+class GymSearch extends HuiElement {
+	static var SRC = <gym-search>
+		<hui-button id="test-search"><hui-text("Fuzzy search Survey/Surgery")/></hui-button>
+		<hui-input-box id="search-box" class="search"/>
+		<hui-virtual-list id="results"/>
+		<hui-text id="time"/>
+	</gym-search>
+
+	var allFiles : Array<String> = [];
+	var allFilesLowercase : Array<String> = [];
+	var currentSearch : Int = 0;
+
+	public function new(?parent) {
+		super(parent);
+		initComponent();
+
+		testSearch.onClick = (e) -> {
+			trace(hide.Search.fuzzySearch("surgery", "survey"));
+		}
+
+		function rec(path: String) {
+			var files = sys.FileSystem.readDirectory(path);
+			for (file in files) {
+				var childPath = path + "/" + file;
+				if (sys.FileSystem.isDirectory(childPath)) {
+					rec(childPath);
+				} else {
+					allFiles.push(childPath);
+					allFilesLowercase.push(childPath.toLowerCase());
+				}
+			}
+		}
+
+		rec(hide.Ide.inst.resourceDir);
+
+		searchBox.onChange = () -> searchFiles();
+
+		results.generateItem = (i:Dynamic) -> {
+			var e = new HuiElement();
+
+			if (i is String) {
+				new HuiText(i, e);
+			} else {
+				var str = allFiles[i.pos];
+				var lastCharPos: Int = i.lastCharPos;
+				var split = str.substr(0, lastCharPos-searchBox.text.length+1) + "<h>" + str.substr(lastCharPos-searchBox.text.length+1, searchBox.text.length) + "</h>" + str.substr(lastCharPos+1);
+				new HuiText('$split (${i.distance})', e);
+			}
+
+			return e;
+		}
+
+		searchFiles();
+	}
+
+	public function searchFiles() {
+		currentSearch ++;
+		var thisSearch = currentSearch;
+		var needle = searchBox.text.toLowerCase();
+
+		var items : Array<String> = [];
+
+		if (needle.length == 0) {
+			items = allFiles;
+
+			results.setItems(cast items);
+
+			time.text = "";
+			return;
+		}
+
+
+		hide.Search.batchFuzzySearchAsync(allFilesLowercase, needle, 0.01, 3, (results: Array<hide.Search.BatchFuzzySearchAsyncResult>, progress: Int) -> {
+			if (thisSearch != currentSearch)
+				return false;
+
+			if (items.length == 0 && progress == allFiles.length) {
+				items.push("no matches");
+			}
+
+			time.text = 'Searching $progress / ${allFiles.length} ( ${Std.int(progress / allFiles.length * 100)}% ) - ${results.length} results';
+
+			this.results.setItems(cast results);
+
+			return true;
+		});
+
+		// var start = haxe.Timer.stamp();
+
+		// var search: Array<{path: String, distance: Int}> = [];
+		// for (file in allFiles) {
+		// 	var r = hide.Search.searchWithErrors(file.toLowerCase(), needle);
+		// 	if (r.distance > 4)
+		// 		continue;
+		// 	search.push({path: file, distance: r.distance});
+		// }
+
+		// search.sort((a, b) -> Reflect.compare(a.distance, b.distance));
+
+		// for (file in search) {
+		// 	items.push('${file.path} (${file.distance})');
+		// }
+
+		// if (search.length == 0) {
+		// 	items.push("no matches");
+		// }
+
+		// results.setItems(cast items);
+
+		// time.text = 'Searching ${allFiles.length} took ${(haxe.Timer.stamp() - start) * 1000.0}ms';
+	}
+}
 
 #end
