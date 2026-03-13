@@ -421,8 +421,6 @@ class Editor extends Component {
 			}
 
 			var interp = new hscript.Interp();
-			this.formulas.evaluateAll(this.currentSheet.realSheet);
-
 			isFiltered = function(line: Dynamic) {
 				@:privateAccess interp.resetVariables();
 				@:privateAccess interp.initOps();
@@ -1730,7 +1728,6 @@ class Editor extends Component {
 					var searchTypeBtn = searchBox.find(".search-type");
 					searchTypeBtn.toggleClass("fa-superscript", searchExp);
 					searchTypeBtn.toggleClass("fa-font", !searchExp);
-					updateFilters();
 					break;
 				}
 			}
