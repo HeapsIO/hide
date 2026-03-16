@@ -351,7 +351,7 @@ class EditContext extends hrt.prefab.EditContext2 {
 	}
 
 	public function listModelAnimations(path: String) : Array<String> {
-		throw "implement";
+		return  [];
 	}
 
 
