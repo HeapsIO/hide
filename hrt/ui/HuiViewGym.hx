@@ -352,7 +352,6 @@ class GymLayouts extends HuiElement {
 
 class GymSearch extends HuiElement {
 	static var SRC = <gym-search>
-		<hui-button id="test-search"><hui-text("Fuzzy search Survey/Surgery")/></hui-button>
 		<hui-input-box id="search-box" class="search"/>
 		<hui-virtual-list id="results"/>
 		<hui-text id="time"/>
@@ -365,25 +364,6 @@ class GymSearch extends HuiElement {
 	public function new(?parent) {
 		super(parent);
 		initComponent();
-
-		testSearch.onClick = (e) -> {
-			trace(hide.Search.fuzzySearch("surgery", "survey"));
-		}
-
-		function rec(path: String) {
-			var files = sys.FileSystem.readDirectory(path);
-			for (file in files) {
-				var childPath = path + "/" + file;
-				if (sys.FileSystem.isDirectory(childPath)) {
-					rec(childPath);
-				} else {
-					allFiles.push(childPath);
-					allFilesLowercase.push(childPath.toLowerCase());
-				}
-			}
-		}
-
-		rec(hide.Ide.inst.resourceDir);
 
 		searchBox.onChange = () -> searchFiles();
 
@@ -460,6 +440,35 @@ class GymSearch extends HuiElement {
 		// results.setItems(cast items);
 
 		// time.text = 'Searching ${allFiles.length} took ${(haxe.Timer.stamp() - start) * 1000.0}ms';
+	}
+
+	override function sync(ctx:h2d.RenderContext) {
+		super.sync(ctx);
+
+		var current : h2d.Object = this;
+		while(current != null) {
+			if (!current.visible)
+				return;
+			current = current.parent;
+		}
+
+		if (allFiles.length == 0) {
+			// init filesystem
+			function rec(path: String) {
+				var files = sys.FileSystem.readDirectory(path);
+				for (file in files) {
+					var childPath = path + "/" + file;
+					if (sys.FileSystem.isDirectory(childPath)) {
+						rec(childPath);
+					} else {
+						allFiles.push(childPath);
+						allFilesLowercase.push(childPath.toLowerCase());
+					}
+				}
+			}
+
+			rec(hide.Ide.inst.resourceDir);
+		}
 	}
 }
 
