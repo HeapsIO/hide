@@ -2,6 +2,8 @@ package hrt.ui;
 
 #if hui
 
+using Lambda;
+
 enum SelectionFlag {
 	NoRefreshTree;
 	NoRecordUndo;
@@ -45,6 +47,10 @@ class HuiPrefabEditor extends HuiElement {
 	var viewportAxis : hrt.tools.ViewportAxis = null;
 	var gizmo : hrt.tools.Gizmo = null;
 
+	var lastPushX : Float = -100;
+	var lastPushY : Float = -100;
+	var movedSinceLastPush : Bool = false;
+
 	override function new(?parent) {
 		super(parent);
 		initComponent();
@@ -58,6 +64,8 @@ class HuiPrefabEditor extends HuiElement {
 		treePrefab.onUserSelectionChanged = () -> {
 			setSelection(treePrefab.getSelectedItems(), NoRefreshTree);
 		}
+
+		scene.s3d.addEventListener(onSceneEvents);
 	}
 
 	function setSelection(selection: Array<hrt.prefab.Prefab>, flags: SelectionFlags) {
@@ -165,7 +173,6 @@ class HuiPrefabEditor extends HuiElement {
 		t.setName(path);
 		return t;
 	}
-
 
 	public function setPrefab(newPrefab: hrt.prefab.Prefab) {
 		if (prefab != null) {
@@ -282,13 +289,14 @@ class HuiPrefabEditor extends HuiElement {
 			var i3d = Std.downcast(int, h3d.scene.Interactive);
 			if (i3d != null) {
 				interactives.set(prefab, i3d);
+				i3d.cursor = Default;
 			}
 		}
 	}
 
 	public function getAllPrefabsUnder(x: Float, y: Float) : Array<{d: Float, prefab: hrt.prefab.Prefab}> {
 		var camera = scene.s3d.camera;
-		var ray = camera.rayFromScreen(x, y);
+		var ray = camera.rayFromScreen(x, y, Std.int(scene.calculatedWidth), Std.int(scene.calculatedHeight));
 
 		var selectables = getAllSelectable(true, true);
 
@@ -375,6 +383,74 @@ class HuiPrefabEditor extends HuiElement {
 		grid = new hrt.tools.Grid(scene.s3d);
 		gizmo = new hrt.tools.Gizmo(scene.s3d, scene.s2d);
 		gizmo.visible = false;
+	}
+
+	function onSceneEvents(e: hxd.Event) : Void {
+		var oldX = e.relX;
+		var oldY = e.relY;
+
+		e.relX -= scene.absX;
+		e.relY -= scene.absY;
+		switch (e.kind) {
+			case EMove:
+				onSceneMove(e);
+			case EPush:
+				onScenePush(e);
+			default:
+		}
+
+		e.relX = oldX;
+		e.relY = oldY;
+	}
+
+	function onScenePush(e: hxd.Event) : Void {
+		if (e.button == 0) {
+			var mouseX = e.relX - scene.absX;
+			var mouseX = e.relY - scene.absY;
+
+			lastPushX = e.relX;
+			lastPushY = e.relY;
+
+			trace(e.relX, e.relY);
+
+			var prefabs = getAllPrefabsUnder(e.relX, e.relY);
+
+			var newPrefab : hrt.prefab.Prefab = null;
+
+			if (prefabs.length > 0) {
+
+				newPrefab = prefabs[0].prefab;
+
+				if (!movedSinceLastPush) {
+					// select next prefab in the selection stack
+					for (i => under in prefabs) {
+						if (selectedPrefabs.get(under.prefab)) {
+							newPrefab = prefabs[(i + 1) % prefabs.length].prefab;
+							break;
+						}
+					}
+				}
+			}
+
+			var newSelection : Array<hrt.prefab.Prefab> = [];
+			if (hxd.Key.isDown(hxd.Key.CTRL)) {
+				newSelection = [for (p in selectedPrefabs.keys()) p];
+			}
+
+			if (newPrefab != null)
+				newSelection.push(newPrefab);
+
+			setSelection(newSelection, SelectionFlags.ofInt(0));
+
+			e.propagate = false;
+			movedSinceLastPush = false;
+		}
+	}
+
+	function onSceneMove(e: hxd.Event) : Void {
+		if (hxd.Math.distance(lastPushX - e.relX, lastPushY - e.relY) > 5.0) {
+			movedSinceLastPush = true;
+		}
 	}
 }
 

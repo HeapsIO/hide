@@ -14,6 +14,8 @@ class HuiScene extends HuiElement {
 	public var s2d : h2d.Scene;
 	public var s3d : h3d.scene.Scene;
 	public var s3dinter: Hui3DInteractiveScene;
+	public var sceneEvents : hxd.SceneEvents;
+
 	var renderTexture : h3d.mat.Texture;
 
 	override function set_enableInteractive(b:Bool):Bool {
@@ -32,10 +34,6 @@ class HuiScene extends HuiElement {
 					interactive.height = calculatedHeight;
 				}
 				interactive.onWheel = onMouseWheel;
-
-				interactive.onClick = (e) -> {
-					trace("click");
-				}
 			}
 		} else {
 			if( interactive != null ) {
@@ -46,7 +44,6 @@ class HuiScene extends HuiElement {
 		return enableInteractive = b;
 	}
 
-	var sceneEvents : hxd.SceneEvents;
 
 	public function new(?parent: h2d.Object) {
 		super(parent);
@@ -64,7 +61,9 @@ class HuiScene extends HuiElement {
 		sceneEvents.addScene(s2d);
 		sceneEvents.addScene(s3d);
 
-		enableInteractive = true;
+		makeInteractive();
+		propagateEvents = true;
+
 		// new h3d.scene.Box(0x000000, s3d);
 		// var t = new h2d.Text(hxd.res.DefaultFont.get(), s2d);
 		// t.text = "Hello scene";
@@ -274,6 +273,9 @@ class Interactive2 extends h2d.Interactive {
 	var capturing = false;
 	override function handleEvent( e : hxd.Event ) {
 		super.handleEvent(e);
+
+		if (!e.propagate)
+			return;
 
 		var scale = huiScene.getScene().viewportScaleX;
 
