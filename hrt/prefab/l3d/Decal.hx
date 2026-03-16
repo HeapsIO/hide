@@ -30,9 +30,7 @@ class Decal extends Object3D {
 	@:s var normalFadeEnd : Float = 1;
 	@:s var refMatLib : String;
 
-	#if editor
 	var editorIcon2 : hrt.impl.EditorTools.EditorIcon;
-	#end
 
 	override function save() : Dynamic {
 		var obj : Dynamic = super.save();
@@ -89,7 +87,6 @@ class Decal extends Object3D {
 		return mesh;
 	}
 
-	#if editor
 	override function makeInteractive():hxd.SceneEvents.Interactive {
 		if (editorIcon2 != null) {
 			var int = new h3d.scene.Interactive(editorIcon2.getCollider(), editorIcon2);
@@ -101,6 +98,8 @@ class Decal extends Object3D {
 			return super.makeInteractive();
 		}
 	}
+
+	#if editor
 
 	function makeEditorIcon(parentObject: h3d.scene.Object) {
 		var offsetter = new h3d.scene.Object(parentObject);

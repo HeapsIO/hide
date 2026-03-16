@@ -266,6 +266,103 @@ class Object3D extends Prefab {
 		);
 	}
 
+	override function makeInteractive() : hxd.SceneEvents.Interactive {
+		if(local3d == null)
+			return null;
+
+		var meshes = getObjects(h3d.scene.Mesh);
+		var ref = Std.downcast(this, Reference);
+		if (ref != null) {
+			meshes = [];
+			function rec(p : Prefab) {
+				var o = Std.downcast(p, Object3D);
+				if (!p.locked) {
+					if (o != null)
+						meshes = meshes.concat(o.getObjects(h3d.scene.Mesh));
+
+					for (c in p.children)
+						rec(c);
+				}
+			}
+
+			if ( ref.refInstance != null )
+				rec(ref.refInstance);
+		}
+
+		var mesh = Std.downcast(local3d, h3d.scene.Mesh);
+		if (mesh != null ) {
+			meshes.push(mesh);
+		}// ctx.shared.getObjects(this, h3d.scene.Mesh);
+		var invRootMat = local3d.getAbsPos().clone();
+		invRootMat.invert();
+		var bounds = new h3d.col.Bounds();
+		var localBounds = [];
+		var totalSeparateBounds = 0.;
+		var visibleMeshes = [];
+		var hasSkin = false;
+
+		inline function getVolume(b:h3d.col.Bounds) {
+			var c = b.getSize();
+			return c.x * c.y * c.z;
+		}
+		for(mesh in meshes) {
+			if(mesh.ignoreCollide)
+				continue;
+
+			// invisible objects are ignored collision wise
+			var p : h3d.scene.Object = mesh;
+			while( p != null && p != local3d ) {
+				if( !p.visible ) break;
+				p = p.parent;
+			}
+			if( p != local3d ) continue;
+
+			var localMat = mesh.getAbsPos().clone();
+			localMat.multiply(localMat, invRootMat);
+
+			if( mesh.primitive == null ) continue;
+			visibleMeshes.push(mesh);
+
+			if( Std.downcast(mesh, h3d.scene.Skin) != null ) {
+				hasSkin = true;
+				continue;
+			}
+
+			var lb = mesh.primitive.getBounds().clone();
+			lb.transform(localMat);
+			bounds.add(lb);
+
+			totalSeparateBounds += getVolume(lb);
+			for( b in localBounds ) {
+				var tmp = new h3d.col.Bounds();
+				tmp.intersection(lb, b);
+				totalSeparateBounds -= getVolume(tmp);
+			}
+			localBounds.push(lb);
+		}
+		if( visibleMeshes.length == 0 )
+			return null;
+		var colliders = [for(m in visibleMeshes) {
+			var c : h3d.col.Collider = try m.getGlobalCollider() catch(e: Dynamic) null;
+			if(c != null) c;
+		}];
+		var meshCollider = colliders.length == 1 ? colliders[0] : new h3d.col.Collider.GroupCollider(colliders);
+		var collider : h3d.col.Collider = new h3d.col.ObjectCollider(local3d, bounds);
+		if( hasSkin ) {
+			collider = meshCollider; // can't trust bounds
+			meshCollider = null;
+		} else {
+			collider = new h3d.col.Collider.OptimizedCollider(collider, meshCollider);
+			meshCollider = null;
+		}
+		var int = new h3d.scene.Interactive(collider, local3d);
+		int.ignoreParentTransform = true;
+		int.preciseShape = meshCollider;
+		int.propagateEvents = true;
+		int.enableRightButton = true;
+		return int;
+	}
+
 #if editor
 	override function setSelected(b:Bool):Bool {
 		if (local3d == null)
@@ -414,103 +511,6 @@ class Object3D extends Prefab {
 
 		if (editorIcon != null)
 			editorIcon.removeChildren();
-	}
-
-	override function makeInteractive() : hxd.SceneEvents.Interactive {
-		if(local3d == null)
-			return null;
-
-		var meshes = getObjects(h3d.scene.Mesh);
-		var ref = Std.downcast(this, Reference);
-		if (ref != null) {
-			meshes = [];
-			function rec(p : Prefab) {
-				var o = Std.downcast(p, Object3D);
-				if (!p.locked) {
-					if (o != null)
-						meshes = meshes.concat(o.getObjects(h3d.scene.Mesh));
-
-					for (c in p.children)
-						rec(c);
-				}
-			}
-
-			if ( ref.refInstance != null )
-				rec(ref.refInstance);
-		}
-
-		var mesh = Std.downcast(local3d, h3d.scene.Mesh);
-		if (mesh != null ) {
-			meshes.push(mesh);
-		}// ctx.shared.getObjects(this, h3d.scene.Mesh);
-		var invRootMat = local3d.getAbsPos().clone();
-		invRootMat.invert();
-		var bounds = new h3d.col.Bounds();
-		var localBounds = [];
-		var totalSeparateBounds = 0.;
-		var visibleMeshes = [];
-		var hasSkin = false;
-
-		inline function getVolume(b:h3d.col.Bounds) {
-			var c = b.getSize();
-			return c.x * c.y * c.z;
-		}
-		for(mesh in meshes) {
-			if(mesh.ignoreCollide)
-				continue;
-
-			// invisible objects are ignored collision wise
-			var p : h3d.scene.Object = mesh;
-			while( p != null && p != local3d ) {
-				if( !p.visible ) break;
-				p = p.parent;
-			}
-			if( p != local3d ) continue;
-
-			var localMat = mesh.getAbsPos().clone();
-			localMat.multiply(localMat, invRootMat);
-
-			if( mesh.primitive == null ) continue;
-			visibleMeshes.push(mesh);
-
-			if( Std.downcast(mesh, h3d.scene.Skin) != null ) {
-				hasSkin = true;
-				continue;
-			}
-
-			var lb = mesh.primitive.getBounds().clone();
-			lb.transform(localMat);
-			bounds.add(lb);
-
-			totalSeparateBounds += getVolume(lb);
-			for( b in localBounds ) {
-				var tmp = new h3d.col.Bounds();
-				tmp.intersection(lb, b);
-				totalSeparateBounds -= getVolume(tmp);
-			}
-			localBounds.push(lb);
-		}
-		if( visibleMeshes.length == 0 )
-			return null;
-		var colliders = [for(m in visibleMeshes) {
-			var c : h3d.col.Collider = try m.getGlobalCollider() catch(e: Dynamic) null;
-			if(c != null) c;
-		}];
-		var meshCollider = colliders.length == 1 ? colliders[0] : new h3d.col.Collider.GroupCollider(colliders);
-		var collider : h3d.col.Collider = new h3d.col.ObjectCollider(local3d, bounds);
-		if( hasSkin ) {
-			collider = meshCollider; // can't trust bounds
-			meshCollider = null;
-		} else {
-			collider = new h3d.col.Collider.OptimizedCollider(collider, meshCollider);
-			meshCollider = null;
-		}
-		var int = new h3d.scene.Interactive(collider, local3d);
-		int.ignoreParentTransform = true;
-		int.preciseShape = meshCollider;
-		int.propagateEvents = true;
-		int.enableRightButton = true;
-		return int;
 	}
 
 	override function edit( ctx : hide.prefab.EditContext ) {

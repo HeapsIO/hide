@@ -649,19 +649,19 @@ class Prefab {
 	public function edit2(ctx: hrt.prefab.EditContext2) : Void {
 	}
 
+	/**
+		Create an interactive object to the scene objects of this prefab
+	**/
+	public function makeInteractive() : hxd.SceneEvents.Interactive {
+		return null;
+	}
+
 	#if editor
 	/**
 		Allows to customize how the prefab object is displayed / handled within Hide
 	**/
 	public function getHideProps() : Null<hide.prefab.HideProps> {
 		return { icon : "question-circle", name : Type.getClassName(Type.getClass(this)), hideInAddMenu: true };
-	}
-
-	/**
-		Create an interactive object to the scene objects of this prefab
-	**/
-	public function makeInteractive() : hxd.SceneEvents.Interactive {
-		return null;
 	}
 
 	/**

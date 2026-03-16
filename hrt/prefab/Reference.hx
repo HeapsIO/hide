@@ -365,6 +365,11 @@ class Reference extends Object3D {
 
 	}
 
+	override function makeInteractive() {
+		if( editMode != None )
+			return null;
+		return super.makeInteractive();
+	}
 
 	#if editor
 
@@ -448,12 +453,6 @@ class Reference extends Object3D {
 		}
 
 		return rec(this, [this.shared.currentPath => true]);
-	}
-
-	override function makeInteractive() {
-		if( editMode != None )
-			return null;
-		return super.makeInteractive();
 	}
 
 	override function edit( ctx : hide.prefab.EditContext ) {

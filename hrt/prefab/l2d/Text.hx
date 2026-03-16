@@ -176,8 +176,6 @@ class Text extends Object2D {
 		#end
 	}
 
-	#if editor
-
 	override function makeInteractive():h2d.Interactive {
 		if(local2d == null)
 			return null;
@@ -188,6 +186,8 @@ class Text extends Object2D {
 		int.propagateEvents = true;
 		return int;
 	}
+
+	#if editor
 
 	override function edit( ctx : hide.prefab.EditContext ) {
 		super.edit(ctx);

@@ -852,6 +852,39 @@ class Spline extends hrt.prefab.Object3D {
 		return p1.sub(p0).scaled(3 * (1 - t) * (1 - t)).add(p2.sub(p1).scaled(6 * (1 - t) * t)).add(p3.sub(p2).scaled(3 * t * t)).normalized();
 	}
 
+	override function makeInteractive() : hxd.SceneEvents.Interactive {
+		if(local3d == null)
+			return null;
+
+		var lineWidth = 1;
+		var colliders : Array<h3d.col.Collider> = [];
+		if (samples != null) {
+			for (sIdx in 1...samples.length) {
+				var col = new h3d.col.Bounds();
+				var s0 = samples[sIdx - 1];
+				col.addPoint(new h3d.col.Point(s0.pos.x - lineWidth, s0.pos.y, s0.pos.z));
+				col.addPoint(new h3d.col.Point(s0.pos.x + lineWidth, s0.pos.y, s0.pos.z));
+				col.addPoint(new h3d.col.Point(s0.pos.x, s0.pos.y - lineWidth, s0.pos.z));
+				col.addPoint(new h3d.col.Point(s0.pos.x, s0.pos.y + lineWidth, s0.pos.z));
+
+				var s1 = samples[sIdx];
+				col.addPoint(new h3d.col.Point(s1.pos.x - lineWidth, s1.pos.y, s1.pos.z));
+				col.addPoint(new h3d.col.Point(s1.pos.x + lineWidth, s1.pos.y, s1.pos.z));
+				col.addPoint(new h3d.col.Point(s1.pos.x, s1.pos.y - lineWidth, s1.pos.z));
+				col.addPoint(new h3d.col.Point(s1.pos.x, s1.pos.y + lineWidth, s1.pos.z));
+				colliders.push(col);
+			}
+		}
+
+		var col = new h3d.col.Collider.GroupCollider(colliders);
+
+		var int = new h3d.scene.Interactive(col, local3d);
+		int.ignoreParentTransform = true;
+		int.preciseShape = col;
+		int.propagateEvents = true;
+		int.enableRightButton = true;
+		return int;
+	}
 
 	#if editor
 	override function edit(ctx : hide.prefab.EditContext) {
@@ -1038,40 +1071,6 @@ class Spline extends hrt.prefab.Object3D {
 
 	override function getHideProps() : hide.prefab.HideProps {
 		return { icon : "arrows-v", name : "Spline" };
-	}
-
-	override function makeInteractive() : hxd.SceneEvents.Interactive {
-		if(local3d == null)
-			return null;
-
-		var lineWidth = 1;
-		var colliders : Array<h3d.col.Collider> = [];
-		if (samples != null) {
-			for (sIdx in 1...samples.length) {
-				var col = new h3d.col.Bounds();
-				var s0 = samples[sIdx - 1];
-				col.addPoint(new h3d.col.Point(s0.pos.x - lineWidth, s0.pos.y, s0.pos.z));
-				col.addPoint(new h3d.col.Point(s0.pos.x + lineWidth, s0.pos.y, s0.pos.z));
-				col.addPoint(new h3d.col.Point(s0.pos.x, s0.pos.y - lineWidth, s0.pos.z));
-				col.addPoint(new h3d.col.Point(s0.pos.x, s0.pos.y + lineWidth, s0.pos.z));
-
-				var s1 = samples[sIdx];
-				col.addPoint(new h3d.col.Point(s1.pos.x - lineWidth, s1.pos.y, s1.pos.z));
-				col.addPoint(new h3d.col.Point(s1.pos.x + lineWidth, s1.pos.y, s1.pos.z));
-				col.addPoint(new h3d.col.Point(s1.pos.x, s1.pos.y - lineWidth, s1.pos.z));
-				col.addPoint(new h3d.col.Point(s1.pos.x, s1.pos.y + lineWidth, s1.pos.z));
-				colliders.push(col);
-			}
-		}
-
-		var col = new h3d.col.Collider.GroupCollider(colliders);
-
-		var int = new h3d.scene.Interactive(col, local3d);
-		int.ignoreParentTransform = true;
-		int.preciseShape = col;
-		int.propagateEvents = true;
-		int.enableRightButton = true;
-		return int;
 	}
 
 	override function setSelected(b: Bool) : Bool {

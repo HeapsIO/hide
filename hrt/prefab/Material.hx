@@ -20,8 +20,9 @@ class Material extends Prefab {
 	@:s public var refMatLib : String;
 	@:s public var overrides : Array<Dynamic> = [];
 
-	#if editor
 	var previewSphere : h3d.scene.Object;
+
+	#if editor
 	var gradientFollower : GradientFollower;
 	#end
 
@@ -352,6 +353,18 @@ class Material extends Prefab {
 		rec(@:privateAccess materialCategory.children);
 	}
 
+
+	override function makeInteractive() : hxd.SceneEvents.Interactive {
+		if (previewSphere != null) {
+			var col = new h3d.col.Sphere(0,0,0,1.);
+			var int = new h3d.scene.Interactive(col, previewSphere);
+			int.propagateEvents = true;
+			int.enableRightButton = true;
+			return int;
+		}
+		return null;
+	}
+
 	#if editor
 	override function editorRemoveInstanceObjects() : Void {
 		if (gradientFollower != null) {
@@ -375,17 +388,6 @@ class Material extends Prefab {
 			return Rebuild;
 		}
 		return Skip;
-	}
-
-	override function makeInteractive() : hxd.SceneEvents.Interactive {
-		if (previewSphere != null) {
-			var col = new h3d.col.Sphere(0,0,0,1.);
-			var int = new h3d.scene.Interactive(col, previewSphere);
-			int.propagateEvents = true;
-			int.enableRightButton = true;
-			return int;
-		}
-		return null;
 	}
 
 	override function edit( ctx : hide.prefab.EditContext ) {

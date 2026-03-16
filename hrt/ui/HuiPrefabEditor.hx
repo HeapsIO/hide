@@ -34,6 +34,7 @@ class HuiPrefabEditor extends HuiElement {
 	var errorMessage : h2d.Text;
 	var cameraController : h3d.scene.CameraController;
 	var treePrefab: hrt.ui.HuiTree<hrt.prefab.Prefab>;
+	var interactives: Map<hrt.prefab.Prefab, h3d.scene.Interactive> = [];
 
 	var selectedPrefabs: Map<hrt.prefab.Prefab, Bool> = [];
 
@@ -184,10 +185,10 @@ class HuiPrefabEditor extends HuiElement {
 		var env = new h3d.scene.pbr.Environment(getEnvMap());
 		env.compute();
 		scene.s3d.renderer = new hide.Renderer.PbrRenderer(env);
+		scene.s3d.lightSystem = new h3d.scene.pbr.LightSystem();
 		var o = new hrt.prefab.rfx.Outline(null, null);
 		o.outlineColor = 0xFF6600;
 		scene.s3d.renderer.effects.push(o);
-		scene.s3d.lightSystem = new h3d.scene.pbr.LightSystem();
 
 		tryMake(prefab);
 		makeRenderProps();
@@ -253,6 +254,9 @@ class HuiPrefabEditor extends HuiElement {
 
 		try {
 			prefab.make();
+			for (p in prefab.flatten()) {
+				makePrefabInteractive(p);
+			}
 		} catch (e) {
 			prefab.shared.root2d?.remove();
 			prefab.shared.root3d?.remove();
@@ -270,6 +274,91 @@ class HuiPrefabEditor extends HuiElement {
 
 		treePrefab.rebuild();
 		return true;
+	}
+
+	public function makePrefabInteractive(prefab: hrt.prefab.Prefab) {
+		var int = prefab.makeInteractive();
+		if (int != null) {
+			var i3d = Std.downcast(int, h3d.scene.Interactive);
+			if (i3d != null) {
+				interactives.set(prefab, i3d);
+			}
+		}
+	}
+
+	public function getAllPrefabsUnder(x: Float, y: Float) : Array<{d: Float, prefab: hrt.prefab.Prefab}> {
+		var camera = scene.s3d.camera;
+		var ray = camera.rayFromScreen(x, y);
+
+		var selectables = getAllSelectable(true, true);
+
+		var hits : Array<{d: Float, prefab: hrt.prefab.Prefab}> = [];
+		var order2d : Map<hrt.prefab.Prefab, Int> = null;
+
+		var tmpRay = new h3d.col.Ray();
+
+		for (selectable in selectables) {
+			var int3d = interactives.get(selectable);
+			if (int3d != null) {
+				var localRay = tmpRay;
+				localRay.load(ray);
+				localRay.transform(int3d.getAbsPos().getInverse());
+
+				var distance = int3d.shape?.rayIntersection(localRay, false);
+				if (distance < 0)
+					continue;
+
+				var distance = int3d.preciseShape?.rayIntersection(localRay, true) ?? distance;
+
+				if (distance > 0) {
+					hits.push({d: distance, prefab: selectable});
+				}
+			}
+		}
+
+		hits.sort((a,b) -> Reflect.compare(a.d, b.d));
+
+		return hits;
+	}
+
+	public function getAllSelectable(include3d: Bool, include2d: Bool) : Array<hrt.prefab.Prefab> {
+		var ret = [];
+
+		function rec(prefab: hrt.prefab.Prefab) {
+			if (prefab == null)
+				return;
+
+			var o3d = prefab.to(hrt.prefab.Object3D);
+			var o2d = prefab.to(hrt.prefab.Object2D);
+
+			var visible = if (o3d != null) {
+				o3d.visible;
+			} else if (o2d != null) {
+				o2d.visible;
+			} else true;
+
+			if (interactives.get(prefab) != null) ret.push(prefab);
+
+			// if (!visible || isHidden(prefab))
+			// 	return;
+			// if (!isLocked(prefab)) {
+			// 	if (interactives.get(prefab) != null) ret.push(prefab);
+			// 	//else if (interactives2d.get(prefab) != null) ret.push(prefab);
+			// }
+
+			for (child in prefab.children) {
+				rec(child);
+			}
+
+			var ref = Std.downcast(prefab, hrt.prefab.Reference);
+			if (ref != null && ref.editMode != None) {
+				rec(ref.refInstance);
+			}
+		}
+
+		rec(prefab);
+
+		return ret;
 	}
 
 	public function makeRenderProps() {
