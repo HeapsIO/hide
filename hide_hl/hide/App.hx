@@ -10,6 +10,8 @@ class App extends hxd.App {
 	static public var DEBUG = false;
 	static public var fs : hxd.fs.EmbedFileSystem;
 
+	var fpsGraph : hrt.tools.FpsGraph;
+
 	override public function init() {
 		super.init();
 
@@ -42,12 +44,22 @@ class App extends hxd.App {
 	}
 
 	override public function update(dt: Float) {
+		fpsGraph?.begin();
 		super.update(dt);
 
 		ide.update(dt);
 		tryCall(() -> ui.updateStyle(dt));
 
 		updateProfiling();
+		fpsGraph?.update(dt);
+		if (fpsGraph != null) {
+			fpsGraph.setPosition(s2d.width - fpsGraph.width, s2d.height - fpsGraph.height);
+		}
+	}
+
+	override public function render(ctx) {
+		super.render(ctx);
+		fpsGraph?.end();
 	}
 
 	function updateProfiling() {
@@ -60,6 +72,14 @@ class App extends hxd.App {
 				var converted = Sys.command(".vscode\\post_profile.bat") == 0;
 				hide.tools.Profiler.stop();
 				Ide.showInfo("Stopping profiler");
+			}
+		}
+		if (hxd.Key.isPressed(hxd.Key.F10)) {
+			if (fpsGraph == null) {
+				fpsGraph = new hrt.tools.FpsGraph(ui);
+			} else {
+				fpsGraph.dispose();
+				fpsGraph = null;
 			}
 		}
 	}
