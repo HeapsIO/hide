@@ -61,6 +61,7 @@ class GymWidgets extends HuiElement {
 				<hui-element class="hui-background example-1"></hui-element>
 				<hui-element class="hui-background example-2"></hui-element>
 				<hui-element class="hui-background example-3"></hui-element>
+				<hui-element class="hui-background example-4"></hui-element>
 			</hui-element>
 
 
