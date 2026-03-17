@@ -104,16 +104,25 @@ class BackgroundShader extends hxsl.Shader {
 				var halfBorderWidth = (outline-1) / 2.0;
 				var remaining = fract(halfBorderWidth)+0.5;
 				var boxSize = rectSize - remaining;
+				var boxSizeOutline = boxSize;
 
-				if (outline == 0.0) {
-					boxSize += 1.0;
+				// reset box size if the outline is not on the edge so
+				// it get properly antialiased too
+				if (outline == 0.0 || outlineOffset != 0.0) {
+					boxSize = rectSize + 1.0;
 				}
 
 				var dist = boxSDF(pos, boxSize);
 
 				if(useOutline) {
-					alpha = dist > 0 ? 0.0 : 1.0;
-					outlineAlpha = saturate(1+halfBorderWidth-abs(dist+floor(halfBorderWidth)));
+					var distOutline = dist;
+					if (outlineOffset != 0.0) {
+						distOutline = boxSDF(pos, boxSizeOutline) + outlineOffset - 1;
+						alpha = saturate(0.5-dist);
+					} else {
+						alpha = (dist > 0 ? 0.0 : 1.0);
+					}
+					outlineAlpha = saturate(1+halfBorderWidth-abs((distOutline)+floor(halfBorderWidth)));
 				} else {
 					alpha = saturate(0.5-dist);
 				}
@@ -573,22 +582,27 @@ class HuiBackground extends h2d.ScaleGrid implements h2d.domkit.Object {
 
 		var scale = getScene().viewportScaleX;
 
-		var shadowExtraMargin = 0.0;
+		var extraMargin = 0.0;
 		if (shader.useShadow) {
 			shader.shadowOffset.x = shadowOffsetX * scale;
 			shader.shadowOffset.y = shadowOffsetY * scale;
 			shader.shadowBlurRadius = shadowBlurRadius * scale;
 			shader.shadowSpreadRadius = hxd.Math.max(shadowSpreadRadius, 0.5) * scale;
-			shadowExtraMargin = hxd.Math.ceil(hxd.Math.max(hxd.Math.abs(shadowOffsetX), hxd.Math.abs(shadowOffsetY)) + hxd.Math.max(shadowSpreadRadius, 0.5) + shadowBlurRadius);
+			extraMargin = hxd.Math.ceil(hxd.Math.max(hxd.Math.abs(shadowOffsetX), hxd.Math.abs(shadowOffsetY)) + hxd.Math.max(shadowSpreadRadius, 0.5) + shadowBlurRadius);
 		}
+
+		if (shader.outlineOffset < 0) {
+			extraMargin = hxd.Math.max(extraMargin, -shader.outlineOffset+1);
+		}
+
 		if (flowParent != null && this == @:privateAccess flowParent.background) {
 			width = @:privateAccess flowParent.flowCeil(flowParent.calculatedWidth);
 			height = @:privateAccess flowParent.flowCeil(flowParent.calculatedHeight);
 
-			width += 2 * shadowExtraMargin;
-			height += 2* shadowExtraMargin;
-			x -= shadowExtraMargin;
-			y -= shadowExtraMargin;
+			width += 2 * extraMargin;
+			height += 2* extraMargin;
+			x -= extraMargin;
+			y -= extraMargin;
 		}
 
 		calcAbsPos();
@@ -598,10 +612,10 @@ class HuiBackground extends h2d.ScaleGrid implements h2d.domkit.Object {
 
 		shader.size.set(width, height);
 		shader.outlineThickness.set(_outlineThickness.x * scale, _outlineThickness.y * scale, _outlineThickness.z * scale, _outlineThickness.w * scale);
-		shader.margins.x = (_margin.x + shadowExtraMargin) * scale;
-		shader.margins.y = (_margin.y + shadowExtraMargin) * scale;
-		shader.margins.z = (_margin.z + shadowExtraMargin) * scale;
-		shader.margins.w = (_margin.w + shadowExtraMargin) * scale;
+		shader.margins.x = (_margin.x + extraMargin) * scale;
+		shader.margins.y = (_margin.y + extraMargin) * scale;
+		shader.margins.z = (_margin.z + extraMargin) * scale;
+		shader.margins.w = (_margin.w + extraMargin) * scale;
 
 		if(borderRadius != null) {
 			var maxRad = hxd.Math.min(width, height) / 2;
