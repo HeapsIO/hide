@@ -27,6 +27,9 @@ class Batcher extends h3d.scene.Object {
 
 	public function emitInstance(mesh : h3d.scene.Mesh, ?absPos : h3d.Matrix, ?cb : (h3d.scene.MeshBatch, Int) -> Void) {
 		var meshEmitter = library.getMeshEmitter(mesh);
+		if(meshEmitter == null) {
+			throw "No MeshEmitter found for mesh " + mesh.name;
+		}
 		meshEmitter.emitInstance(this, absPos, cb);
 	}
 
