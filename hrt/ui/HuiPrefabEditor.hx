@@ -171,6 +171,7 @@ class HuiPrefabEditor extends HuiElement {
 		baseRoot.make();
 
 		inspectorPanel.addChild(@:privateAccess baseRoot.native);
+		@:privateAccess baseRoot.native.get().dom.applyStyle(uiBase.style);
 	}
 
 	function treePrefabGetItemChildren(prefab: hrt.prefab.Prefab) {

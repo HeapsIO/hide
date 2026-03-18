@@ -105,6 +105,12 @@ class HuiScene extends HuiElement {
 			var scene = getScene();
 			var scale = getScene().viewportScaleX;
 
+			sceneEvents.checkEvents();
+
+			s3d.setElapsedTime(hxd.Timer.dt);
+			s2d.setElapsedTime(hxd.Timer.dt);
+
+
 			// s3d.scenePosition = s3d.scenePosition ?? {offsetX: 0, offsetY: 0, width: 0, height: 0};
 			// s3d.scenePosition.offsetX = display.absX * scale;
 			// s3d.scenePosition.offsetY = display.absY * scale;
@@ -174,13 +180,10 @@ class HuiScene extends HuiElement {
 			@:privateAccess ctx.clearRZ();
 
 			var engine = ctx.engine;
-			sceneEvents.checkEvents();
 
 			s3d.setOutputTarget(ctx.engine, renderTexture);
 			engine.clear(backgroundColor, 1.0);
-			s3d.setElapsedTime(hxd.Timer.dt);
 			s3d.render(ctx.engine);
-			s2d.setElapsedTime(hxd.Timer.dt);
 			s2d.render(ctx.engine);
 
 			s3d.setOutputTarget();
