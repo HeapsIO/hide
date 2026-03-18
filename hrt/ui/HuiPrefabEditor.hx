@@ -123,8 +123,53 @@ class HuiPrefabEditor extends HuiElement {
 	}
 
 	function save() {
-		hide.Ide.showInfo("Save requested (not implemented yet)");
+		trySavePrefab(prefab);
 	}
+
+	function trySavePrefab(prefab: hrt.prefab.Prefab) {
+		var path = prefab.shared.parentPrefab != null ? prefab.shared.parentPrefab.source : prefab.shared.currentPath;
+
+		try {
+			var data = prefab.serialize();
+			var realPath = hide.Ide.inst.getPath(path);
+			var text = hide.Ide.inst.toJSON(data);
+			sys.io.File.saveContent(realPath, text);
+
+			hide.App.defer(() -> saveBackup(text, path));
+			hide.Ide.showInfo('Saved $path');
+		} catch(e) {
+			hide.Ide.showError('Save failed for $path : $e');
+		}
+	}
+
+	function saveBackup(content: String, basePath: String) {
+		var tmpPath = hide.Ide.inst.resourceDir + "/.tmp/" + basePath;
+		var baseName = haxe.io.Path.withoutExtension(tmpPath);
+		var tmpDir = haxe.io.Path.directory(tmpPath);
+
+		// Save backup file
+		try {
+			sys.FileSystem.createDirectory(tmpDir);
+			var dateFmt = DateTools.format(Date.now(), "%Y%m%d-%H%M%S");
+			sys.io.File.saveContent(baseName + "-backup" + dateFmt + "." + haxe.io.Path.extension(basePath), content);
+		}
+		catch (e: Dynamic) {
+			hide.Ide.showError('Backup save failed for $basePath : $e');
+		}
+
+		// Delete old files
+		var allTemp = [];
+		for( f in try sys.FileSystem.readDirectory(tmpDir) catch( e : Dynamic ) [] ) {
+			if(~/-backup[0-9]{8}-[0-9]{6}$/.match(haxe.io.Path.withoutExtension(f))) {
+				allTemp.push(f);
+			}
+		}
+		allTemp.sort(Reflect.compare);
+		while(allTemp.length > 10) {
+			sys.FileSystem.deleteFile(tmpDir + "/" + allTemp.shift());
+		}
+	}
+
 
 	function refreshInspector() {
 		var prefabs = [for (prefab => _ in selectedPrefabs) prefab];
