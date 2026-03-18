@@ -266,8 +266,8 @@ class HuiTree<TreeItem> extends HuiElement {
 		selectedElements.clear();
 		for (item in selection) {
 			var data = itemMap.get(cast item);
-			if (data == null) {
-				selectedElements.set(cast item, true);
+			if (data != null) {
+				selectedElements.set(cast data, true);
 			}
 		}
 		requestRefresh();
