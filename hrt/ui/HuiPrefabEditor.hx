@@ -446,7 +446,7 @@ class HuiPrefabEditor extends HuiElement {
 
 		viewportAxis = new hrt.tools.ViewportAxis(scene.s3d.camera, cameraController, scene.s2d);
 		grid = new hrt.tools.Grid(scene.s3d);
-		gizmo = new hrt.tools.Gizmo(scene.s3d, scene.s2d);
+		gizmo = new hrt.tools.Gizmo(scene.s3d);
 		gizmo.visible = false;
 	}
 
