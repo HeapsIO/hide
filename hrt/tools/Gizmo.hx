@@ -115,9 +115,10 @@ class Gizmo extends h3d.scene.Object {
 		// Find centroid of objects
 		var centroid = new h3d.col.Point(0, 0, 0);
 		for (o in objs) {
-			centroid.x += o.x;
-			centroid.y += o.y;
-			centroid.z += o.z;
+			var p = o.getAbsPos().getPosition();
+			centroid.x += p.x;
+			centroid.y += p.y;
+			centroid.z += p.z;
 		}
 		centroid.x /= objs.length;
 		centroid.y /= objs.length;
