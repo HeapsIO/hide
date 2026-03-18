@@ -7,6 +7,7 @@ class HuiCommands {
 	static public var copy = new HuiCommand("Copy", {ctrl: true, key: K.C});
 	static public var paste = new HuiCommand("Paste", {ctrl: true, key: K.V});
 	static public var cut = new HuiCommand("Cut", {ctrl: true, key: K.X});
+	static public var save = new HuiCommand("Save", {ctrl: true, key: K.S});
 
 	static public var delete = new HuiCommand("Delete", {key: K.DELETE});
 	static public var escape = new HuiCommand("Escape", {key: K.ESCAPE});
@@ -15,6 +16,10 @@ class HuiCommands {
 	static public var redo = new HuiCommand("Redo", {ctrl: true, key: K.Y});
 
 	static public var search = new HuiCommand("Search", {ctrl: true, key: K.F});
+}
+
+class HuiDebugCommands {
+	static public var debugReload = new HuiCommand("Debug Reload", {ctrl: true, shift: true, key: K.R});
 }
 
 /**

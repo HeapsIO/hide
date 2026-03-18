@@ -131,11 +131,29 @@ class HuiElement extends h2d.Flow #if hui implements h2d.domkit.Object #end {
 		initComponent();
 	}
 
+	function findParent<T:HuiElement>(?cl: Class<T>, ?filter: T -> Bool) : T {
+		var current = this;
+		while(current != null) {
+			var toClass : T = cl != null ? Std.downcast(current, cl) : cast current;
+			if (toClass != null) {
+				if (filter == null || filter(toClass))
+					return toClass;
+			}
+			current = current.parentElement;
+		}
+		return null;
+	}
+
 	function registerCommand(command: hrt.ui.HuiCommands.HuiCommand, context: hrt.ui.HuiCommands.ShortcutContext, cb: Void -> Void) {
-		makeInteractive();
-		registeredCommands ??= [];
-		unregisterCommand(command);
-		registeredCommands.push({command: command, callback: cb, context: context});
+		if (context == Element || context == ElementAndChildren) {
+			makeInteractive();
+			registeredCommands ??= [];
+			unregisterCommand(command);
+			registeredCommands.push({command: command, callback: cb, context: context});
+		} else if (context == View) {
+			var view = findParent(HuiView);
+			view.registerCommand(command, ElementAndChildren, cb);
+		}
 	}
 
 	function unregisterCommand(command: hrt.ui.HuiCommands.HuiCommand) {

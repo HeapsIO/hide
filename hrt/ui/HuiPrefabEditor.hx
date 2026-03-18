@@ -33,6 +33,8 @@ class HuiPrefabEditor extends HuiElement {
 		</hui-prefab-editor>
 
 	var prefab: hrt.prefab.Prefab;
+	var renderProps: hrt.prefab.Prefab;
+
 	var errorMessage : h2d.Text;
 	var cameraController : h3d.scene.CameraController;
 	var treePrefab: hrt.ui.HuiTree<hrt.prefab.Prefab>;
@@ -66,6 +68,9 @@ class HuiPrefabEditor extends HuiElement {
 		}
 
 		scene.s3d.addEventListener(onSceneEvents);
+
+		registerCommand(hrt.ui.HuiCommands.HuiDebugCommands.debugReload, View, reload);
+		registerCommand(HuiCommands.save, View, save);
 	}
 
 	function setSelection(selection: Array<hrt.prefab.Prefab>, flags: SelectionFlags) {
@@ -104,6 +109,21 @@ class HuiPrefabEditor extends HuiElement {
 		}
 
 		refreshInspector();
+	}
+
+	function reload() {
+		if (selectedPrefabs.empty()) {
+			setPrefab(prefab);
+		} else {
+			for (prefab => _ in selectedPrefabs) {
+				tryMake(prefab);
+			}
+		}
+		hide.Ide.showInfo("Reloaded prefab");
+	}
+
+	function save() {
+		hide.Ide.showInfo("Save requested (not implemented yet)");
 	}
 
 	function refreshInspector() {
@@ -176,8 +196,10 @@ class HuiPrefabEditor extends HuiElement {
 
 	public function setPrefab(newPrefab: hrt.prefab.Prefab) {
 		if (prefab != null) {
+			removePrefabInstance(prefab);
 			prefab.shared.root2d.remove();
 			prefab.shared.root3d.remove();
+			interactives.clear();
 			prefab = null;
 		}
 
@@ -191,8 +213,13 @@ class HuiPrefabEditor extends HuiElement {
 
 		var env = new h3d.scene.pbr.Environment(getEnvMap());
 		env.compute();
+
+		scene.s3d.renderer?.dispose();
 		scene.s3d.renderer = new hide.Renderer.PbrRenderer(env);
+
+		scene.s3d.lightSystem?.dispose();
 		scene.s3d.lightSystem = new h3d.scene.pbr.LightSystem();
+
 		var o = new hrt.prefab.rfx.Outline(null, null);
 		o.outlineColor = 0xFF6600;
 		scene.s3d.renderer.effects.push(o);
@@ -202,6 +229,11 @@ class HuiPrefabEditor extends HuiElement {
 		makeGizmos();
 
 		focusObjects([for (i in 0...scene.s3d.numChildren) scene.s3d.getChildAt(i)]);
+
+		trace("=========================");
+		trace('Num objects in scene after reload :  ${scene.s3d.flatten().length}');
+		trace("\n" + dumpObject(scene.s3d));
+		trace("=========================");
 	}
 
 	function getRenderPropsPaths() : Array<{name: String, value: String}> {
@@ -250,14 +282,14 @@ class HuiPrefabEditor extends HuiElement {
 
 
 	public function tryMake(prefab: hrt.prefab.Prefab) : Bool {
-		if (prefab != null) {
-			prefab.shared.root2d?.remove();
-			prefab.shared.root3d?.remove();
+		removePrefabInstance(prefab);
+		if (prefab.parent == null && prefab.shared.parentPrefab == null) {
+			@:privateAccess prefab.shared.root2d = prefab.shared.current2d = new h2d.Object(scene.s2d);
+			@:privateAccess prefab.shared.root3d = prefab.shared.current3d = new h3d.scene.Object(scene.s3d);
+		} else {
+			prefab.shared.current2d = prefab.findFirstLocal2d(true);
+			prefab.shared.current3d = prefab.findFirstLocal3d(true);
 		}
-		errorMessage.text = "";
-
-		@:privateAccess prefab.shared.root2d = prefab.shared.current2d = new h2d.Object(scene.s2d);
-		@:privateAccess prefab.shared.root3d = prefab.shared.current3d = new h3d.scene.Object(scene.s3d);
 
 		try {
 			prefab.make();
@@ -265,12 +297,11 @@ class HuiPrefabEditor extends HuiElement {
 				makePrefabInteractive(p);
 			}
 		} catch (e) {
-			prefab.shared.root2d?.remove();
-			prefab.shared.root3d?.remove();
+			removePrefabInstance(prefab);
 
 			errorMessage.text = "Error loading prefab : " + e;
 
-			trace("Error loading prefab " + e);
+			hide.Ide.showError("Error loading prefab " + e);
 			return false;
 		}
 
@@ -280,6 +311,8 @@ class HuiPrefabEditor extends HuiElement {
 		}
 
 		treePrefab.rebuild();
+		setSelection([for (p in selectedPrefabs.keys()) p], NoRecordUndo | NoRefreshTree);
+
 		return true;
 	}
 
@@ -369,16 +402,47 @@ class HuiPrefabEditor extends HuiElement {
 		return ret;
 	}
 
+	/** Remove all the prefab instantiated objects from the scene**/
+	public function removePrefabInstance(prefab: hrt.prefab.Prefab) {
+		if (prefab == null)
+			return;
+		prefab.editorRemoveObjects();
+		for (child in prefab.flatten()) {
+			interactives.get(child)?.remove();
+			interactives.remove(child);
+		}
+		if (prefab.parent == null && prefab.shared.parentPrefab == null) {
+			prefab.shared.root3d.remove();
+			prefab.shared.root2d.remove();
+		}
+	}
+
+	static function dumpObject(obj: h3d.scene.Object, pad: String = "") : String {
+		var str = "";
+		str += '$pad${obj.name}[${Type.getClassName(Type.getClass(obj))}]\n';
+		var nextPad = pad + "\t";
+		for (i in 0...obj.numChildren) {
+			str += dumpObject(obj.getChildAt(i), nextPad);
+		}
+		return str;
+	}
+
 	public function makeRenderProps() {
 		var paths = getRenderPropsPaths();
 		for (path in paths) {
-			var renderProp = hxd.res.Loader.currentInstance.load(path.value).toPrefab().load().clone();
-			if (tryMake(renderProp))
+			removePrefabInstance(renderProps);
+
+			renderProps = hxd.res.Loader.currentInstance.load(path.value).toPrefab().load().clone();
+			if (tryMake(renderProps))
 				break;
 		}
 	}
 
 	public function makeGizmos() {
+		grid?.remove();
+		gizmo?.remove();
+		viewportAxis?.remove();
+
 		viewportAxis = new hrt.tools.ViewportAxis(scene.s3d.camera, cameraController, scene.s2d);
 		grid = new hrt.tools.Grid(scene.s3d);
 		gizmo = new hrt.tools.Gizmo(scene.s3d, scene.s2d);
