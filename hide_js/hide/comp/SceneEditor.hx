@@ -326,7 +326,7 @@ class SnapSettingsPopup extends hide.comp.Popup {
 
 		var form_div = new Element("<div>").addClass("form-grid").appendTo(element);
 
-		var editMode : hrt.tools.Gizmo.EditMode = @:privateAccess editor.gizmo.editMode;
+		var editMode : hrt.tools.Gizmo.EditMode = @:privateAccess editor.gizmo.mode;
 
 		var steps : Array<Float> = [];
 		switch (editMode) {
@@ -334,8 +334,9 @@ class SnapSettingsPopup extends hide.comp.Popup {
 				steps = editor.view.config.get("sceneeditor.gridSnapSteps");
 			case Rotation:
 				steps = editor.view.config.get("sceneeditor.rotateStepCoarses");
-			case Scaling:
+			case Scale:
 				steps = editor.view.config.get("sceneeditor.gridSnapSteps");
+			case Full:
 		}
 
 		for (value in steps) {
@@ -346,8 +347,10 @@ class SnapSettingsPopup extends hide.comp.Popup {
 					editor.snapMoveStep == value;
 				case Rotation:
 					editor.snapRotateStep == value;
-				case Scaling:
+				case Scale:
 					editor.snapScaleStep == value;
+				case Full:
+					null;
 			}
 
 			if (equals)
@@ -358,8 +361,10 @@ class SnapSettingsPopup extends hide.comp.Popup {
 						editor.snapMoveStep = value;
 					case Rotation:
 						editor.snapRotateStep = value;
-					case Scaling:
+					case Scale:
 						editor.snapScaleStep = value;
+					case Full:
+						null;
 				}
 				editor.updateGrid();
 				editor.saveSnapSettings();
@@ -721,8 +726,6 @@ class IconVisibilityPopup extends hide.comp.Popup {
 		  element.css("max-width", "300px");
 
 		  var form_div = new Element("<div>").addClass("form-grid").appendTo(element);
-
-		  var editMode : hrt.tools.Gizmo.EditMode = @:privateAccess editor.gizmo.editMode;
 
 		var ide = hide.Ide.inst;
 		  for (k => v in ide.show3DIconsCategory) {
@@ -1446,8 +1449,10 @@ class SceneEditor {
 				return snap(value, snapMoveStep);
 			case Rotation:
 				return snap(value, snapRotateStep);
-			case Scaling:
+			case Scale:
 				return snap(value, snapScaleStep);
+			case Full:
+				null;
 		}
 		return value;
 	}
@@ -1850,7 +1855,7 @@ class SceneEditor {
 					if(dragBtn == K.MOUSE_LEFT && selectedPrefabs.length > 0) {
 						if( selectedPrefabs[0].to(Object3D) != null ) {
 							moveGizmoToSelection();
-							gizmo.startMove(MoveXY);
+							// @:privateAccess gizmo.startMove(MoveXY);
 						}
 						if( selectedPrefabs[0].to(Object2D) != null ) {
 							moveGizmoToSelection();
@@ -1964,7 +1969,7 @@ class SceneEditor {
 	}
 
 	function onSceneReadyInternal() {
-		gizmo = new hrt.tools.Gizmo(scene.s3d, scene.s2d);
+		gizmo = new hrt.tools.Gizmo(scene.s3d);
 		view.keys.register("sceneeditor.translationMode", gizmo.translationMode);
 		view.keys.register("sceneeditor.rotationMode", gizmo.rotationMode);
 		view.keys.register("sceneeditor.scalingMode", gizmo.scalingMode);
@@ -3310,7 +3315,7 @@ class SceneEditor {
 			return x;
 		}
 
-		gizmo.onStartMove = function(mode) {
+		gizmo.onStartMove = function(handle) {
 			var objects3d = [for(o in selectedPrefabs) {
 				var obj3d = o.to(hrt.prefab.Object3D);
 				if(obj3d != null)
@@ -3349,7 +3354,7 @@ class SceneEditor {
 					var newMat = localMats[i].clone();
 					newMat.multiply(newMat, transf);
 					newMat.multiply(newMat, pivot);
-					if(snapToGround && mode == MoveXY) {
+					if (snapToGround && handle == XYPlane) {
 						newMat.tz = getZ(newMat.tx, newMat.ty);
 					}
 
@@ -3528,6 +3533,7 @@ class SceneEditor {
 	}
 
 	public function updateBasis() {
+		return;
 		if (basis == null) return;
 		showBasis = getOrInitConfig("sceneeditor.axisToggle", true);
 		if (selectedPrefabs != null && selectedPrefabs.length == 1) {
@@ -3567,36 +3573,13 @@ class SceneEditor {
 	}
 
 	function moveGizmoToSelection() {
-		// Snap Gizmo at center of objects
-		gizmo.setRotation(0,0,0);
 		var roots = getRootObjects3d();
-		if(roots.length > 0) {
-			var pos = getPivot(roots);
+		if (roots.length > 0) {
 			gizmo.visible = showGizmo && getOrInitConfig("sceneeditor.showGizmo", true) && showOverlays;
-			gizmo.setPosition(pos.x, pos.y, pos.z);
-
-			if(roots.length >= 1 && (localTransform || K.isDown(K.ALT) || gizmo.editMode == Scaling)) {
-				var obj = roots[roots.length-1];
-				var mat = worldMat(obj);
-				var s = mat.getScale();
-				if(s.x != 0 && s.y != 0 && s.z != 0) {
-					mat.prependScale(1.0 / s.x, 1.0 / s.y, 1.0 / s.z);
-					gizmo.getRotationQuat().initRotateMatrix(mat);
-				}
-			}
+			gizmo.moveToObjects(roots);
 		}
-		else {
+		else
 			gizmo.visible = false;
-		}
-		var root2d = getRootObjects2d();
-		if( root2d.length > 0 && !gizmo.visible ) {
-			var pos = getPivot2D(root2d);
-			gizmo2d.visible = showGizmo && getOrInitConfig("sceneeditor.showGizmo", true) && showOverlays;
-			gizmo2d.setPosition(pos.getCenter().x, pos.getCenter().y);
-			gizmo2d.setSize(pos.width, pos.height);
-		} else {
-			gizmo2d.visible = false;
-		}
 	}
 
 	var inLassoMode = false;
@@ -5213,8 +5196,8 @@ class SceneEditor {
 		if( isDuplicating )
 			return;
 		isDuplicating = true;
-		if( gizmo.moving ) {
-			@:privateAccess gizmo.finishMove();
+		if( @:privateAccess gizmo.moving ) {
+			@:privateAccess gizmo.finishMove(null);
 		}
 		var undoes = [];
 		var newElements = [];
@@ -5248,15 +5231,6 @@ class SceneEditor {
 
 		refreshTree(SceneTree, function() {
 			selectElements(newElements, NoHistory);
-			if(thenMove && selectedPrefabs.length > 0) {
-				if (!gizmo.moving) {
-					gizmo.startMove(MoveXY, true);
-					gizmo.onFinishMove = function() {
-						refreshProps();
-						setupGizmo();
-					}
-				}
-			}
 			isDuplicating = false;
 		});
 		gizmo.translationMode();
@@ -5794,10 +5768,11 @@ class SceneEditor {
 			@:privateAccess view.saveDisplayState("Camera2D", save);
 		}
 		if(gizmo != null) {
-			if(!gizmo.moving) {
+			if(@:privateAccess !gizmo.moving) {
 				moveGizmoToSelection();
 			}
-			gizmo.update(dt, localTransform);
+			gizmo.isLocalTransform = localTransform;
+			gizmo.update(dt);
 		}
 		updateBasis();
 		event.update(dt);

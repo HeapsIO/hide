@@ -147,8 +147,7 @@ class ShapeEditor extends Component {
 		var initialRelPos = new h3d.Matrix();
 
 		@:privateAccess scene.editor.showGizmo = false;
-		gizmo = new hrt.tools.Gizmo(scene.s3d, scene.s2d);
-		gizmo.allowNegativeScale = true;
+		gizmo = new hrt.tools.Gizmo(scene.s3d);
 
 		function applyTransformToGizmo(abs : h3d.Matrix) {
 			var pos = abs.getPosition();
@@ -159,7 +158,7 @@ class ShapeEditor extends Component {
 
 		applyTransformToGizmo(interactives[selectedShapeIdx].getAbsPos());
 
-		gizmo.onStartMove = function(mode : hrt.tools.Gizmo.TransformMode) {
+		gizmo.onStartMove = function(_) {
 			lclOffsetPosition.set(0, 0, 0);
 			lclOffsetRotation.set(0, 0, 0);
 			lclOffsetScale.set(1, 1, 1);
@@ -277,14 +276,16 @@ class ShapeEditor extends Component {
 					gizmo.translationMode();
 				case Rotation:
 					gizmo.rotationMode();
-				case Scaling:
+				case Scale:
 					gizmo.scalingMode();
+				case Full:
+					null;
 			}
 		}
 
 		var el = new Element(element[0].ownerDocument.body);
 		el.on("mousemove.shapeeditor", (e) -> {
-			gizmo.update(0, true);
+			gizmo.update(0);
 			e.stopPropagation();
 			e.preventDefault();
 		});

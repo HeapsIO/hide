@@ -549,11 +549,11 @@ class Prefab extends hide.view.FileView {
 		var onSetGizmoMode = function(mode: hrt.tools.Gizmo.EditMode) {
 			tools.element.find("#translationMode").get(0).toggleAttribute("checked", mode == Translation);
 			tools.element.find("#rotationMode").get(0).toggleAttribute("checked", mode == Rotation);
-			tools.element.find("#scalingMode").get(0).toggleAttribute("checked", mode == Scaling);
+			tools.element.find("#scalingMode").get(0).toggleAttribute("checked", mode == Scale);
 		};
 
 		gizmo.onChangeMode = onSetGizmoMode;
-		onSetGizmoMode(gizmo.editMode);
+		onSetGizmoMode(gizmo.mode);
 
 		initGraphicsFilters();
 
