@@ -131,7 +131,7 @@ class HuiElement extends h2d.Flow #if hui implements h2d.domkit.Object #end {
 		initComponent();
 	}
 
-	function findParent<T:HuiElement>(?cl: Class<T>, ?filter: T -> Bool) : T {
+	public function findParent<T:HuiElement>(?cl: Class<T>, ?filter: T -> Bool) : T {
 		var current = this;
 		while(current != null) {
 			var toClass : T = cl != null ? Std.downcast(current, cl) : cast current;
@@ -142,6 +142,10 @@ class HuiElement extends h2d.Flow #if hui implements h2d.domkit.Object #end {
 			current = current.parentElement;
 		}
 		return null;
+	}
+
+	public function getView() {
+		return findParent(HuiView);
 	}
 
 	function registerCommand(command: hrt.ui.HuiCommands.HuiCommand, context: hrt.ui.HuiCommands.ShortcutContext, cb: Void -> Void) {

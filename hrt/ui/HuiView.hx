@@ -4,12 +4,16 @@ package hrt.ui;
 
 class HuiView<T> extends HuiElement {
 	var state : T;
+	public var undo(default, never): hrt.tools.Undo = new hrt.tools.Undo();
 
 	function new(state: Dynamic, ?parent: h2d.Object) {
 		super(parent);
 		initComponent();
 
 		this.state = cast state ?? {};
+
+		registerCommand(HuiCommands.undo, ElementAndChildren, () -> undo.undo());
+		registerCommand(HuiCommands.redo, ElementAndChildren, () -> undo.redo());
 	}
 
 	/**

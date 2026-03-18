@@ -74,9 +74,7 @@ class HuiPrefabEditor extends HuiElement {
 	}
 
 	function setSelection(selection: Array<hrt.prefab.Prefab>, flags: SelectionFlags) {
-		if (!flags.has(NoRecordUndo)) {
-
-		}
+		var oldSelection = [for (p => _ in selectedPrefabs) p];
 
 		for (s in selectedPrefabs.keys()) {
 			var obj3d = Std.downcast(s, hrt.prefab.Object3D);
@@ -106,6 +104,10 @@ class HuiPrefabEditor extends HuiElement {
 
 		if (!flags.has(NoRefreshTree)) {
 			treePrefab.setSelection(selection);
+		}
+
+		if (!flags.has(NoRecordUndo)) {
+			getView().undo.record((isUndo) -> setSelection(isUndo ? oldSelection : selection, NoRecordUndo));
 		}
 
 		refreshInspector();
@@ -639,7 +641,7 @@ class EditContext extends hrt.prefab.EditContext2 {
 	}
 
 	public function recordUndo(callback: (isUndo: Bool) -> Void ) : Void {
-		// throw "implement";
+		editor.findParent(HuiView).undo.record(callback);
 	}
 
 	function saveSetting(category: hrt.prefab.EditContext2.SettingCategory, key: String, value: Dynamic) : Void {
