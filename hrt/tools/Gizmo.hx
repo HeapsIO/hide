@@ -105,7 +105,10 @@ class Gizmo extends h3d.scene.Object {
 
 	public function moveToObjects(objs : Array<h3d.scene.Object>) {
 		if (isLocalTransform && objs.length == 1) {
-			var invDefMat = objs[0].defaultTransform.getInverse();
+			var invDefMat = new h3d.Matrix();
+			invDefMat.identity();
+			if (objs[0].defaultTransform != null)
+				invDefMat = objs[0].defaultTransform?.getInverse();
 			var euler = invDefMat.multiplied(objs[0].getAbsPos()).getEulerAngles();
 			setRotation(euler.x, euler.y, euler.z);
 		}
