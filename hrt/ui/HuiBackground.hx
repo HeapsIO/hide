@@ -109,7 +109,7 @@ class BackgroundShader extends hxsl.Shader {
 				// reset box size if the outline is not on the edge so
 				// it get properly antialiased too
 				if (outline == 0.0 || outlineOffset != 0.0) {
-					boxSize = rectSize + 1.0;
+					boxSize = rectSize;
 				}
 
 				var dist = boxSDF(pos, boxSize);
@@ -117,7 +117,7 @@ class BackgroundShader extends hxsl.Shader {
 				if(useOutline) {
 					var distOutline = dist;
 					if (outlineOffset != 0.0) {
-						distOutline = boxSDF(pos, boxSizeOutline) + outlineOffset - 1;
+						distOutline = boxSDF(pos, boxSizeOutline) + outlineOffset;
 						alpha = saturate(0.5-dist);
 					} else {
 						alpha = (dist > 0 ? 0.0 : 1.0);
