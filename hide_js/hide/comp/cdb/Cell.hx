@@ -1638,19 +1638,30 @@ class Cell {
 							text : "None",
 						});
 
-						function makeIcon(c: hide.comp.Dropdown.Choice) {
-							if (sdat.props.displayIcon == null)
-								return null;
-							if (c.ico == null)
-								return new Element("<div style='display:inline-block;width:16px'/>");
-							return new Element(tileHtml(c.ico, true).str);
+						var valueIdx = 0;
+						for (idx => el in elts) {
+							if (el.id == value)
+								valueIdx = idx;
 						}
 
-						var html = new Element('
-						<select name="ref">
-							${ [for(idx in 0...elts.length) '<option value="${idx}" ${elts[idx].text == value ? "selected":""}>${elts[idx].text}</option>'].join('') }
-						</select>');
-						return html;
+						var e = new Element('<input type="text" class="select-root" readonly ${'value="${elts[valueIdx].text}"'}></input>');
+						e.on('click', function(_) {
+							var d = new Dropdown(e, elts, elts[valueIdx].id, null, true);
+							dropdown = d.element[0];
+							d.onSelect = function(v) {
+								for (option in elts) {
+									if (v == option.id) {
+										e.val(option.text);
+										e.text(option.text);
+										break;
+									}
+								}
+							}
+							d.onClose = function() {
+								dropdown = null;
+							}
+						});
+						return e;
 					}
 				case TCustom(name):
 					{
@@ -1736,6 +1747,12 @@ class Cell {
 							var sel = paramValue.find(":selected");
 							if (sel.val() != 0)
 								newCtValue.push(sel.text());
+							else
+								newCtValue.push("");
+						}
+						else if (paramValue.hasClass("select-root")) {
+							if (paramValue.val() != "None")
+								newCtValue.push(paramValue.text());
 							else
 								newCtValue.push("");
 						}
