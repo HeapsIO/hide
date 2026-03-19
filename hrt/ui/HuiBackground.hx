@@ -56,6 +56,7 @@ class BackgroundShader extends hxsl.Shader {
 		function fragment() {
 			var pos = (calculatedUV - 0.5) * size;
 			var smooth = smoothSpan;
+			var debugSDF = 0.0;
 
 			var baseAlpha = pixelColor.a;
 
@@ -67,7 +68,7 @@ class BackgroundShader extends hxsl.Shader {
 			var relPos = pos / rectSize;
 
 			if(useShadow && !shadowInset) {
-				var dist = boxSDF(pos - shadowOffset, rectSize - shadowBlurRadius * 0.5 + shadowSpreadRadius) - shadowBlurRadius * 0.5;
+				var dist = boxSDF(pos - shadowOffset, rectSize - shadowBlurRadius * 0.5 + shadowSpreadRadius, 0) - shadowBlurRadius * 0.5;
 				pixelColor = vec4(shadowColor.rgb, shadowColor.a * saturate(smoothstep(-shadowBlurRadius, shadowBlurRadius , -dist)));
 			}
 
@@ -75,7 +76,7 @@ class BackgroundShader extends hxsl.Shader {
 			var outlineAlpha = 0.0;
 
 			if (!pixelPerfect) {
-				var dist = boxSDF(pos, rectSize);
+				var dist = boxSDF(pos, rectSize, 0);
 				alpha = saturate(-dist/smoothSpan);
 
 				// https://www.desmos.com/calculator/fgpiqhvjvr
@@ -113,12 +114,13 @@ class BackgroundShader extends hxsl.Shader {
 					boxSize = rectSize;
 				}
 
-				var dist = boxSDF(pos, boxSize);
+				var dist = boxSDF(pos, boxSize, 0);
+				debugSDF = dist;
 
 				if(useOutline) {
 					var distOutline = dist;
 					if (outlineOffset != 0.0) {
-						distOutline = boxSDF(pos, boxSizeOutline) + outlineOffset;
+						distOutline = boxSDF(pos, boxSizeOutline, 0) + outlineOffset;
 						alpha = saturate(0.5-dist);
 					} else {
 						alpha = (dist > 0 ? 0.0 : 1.0);
@@ -174,7 +176,8 @@ class BackgroundShader extends hxsl.Shader {
 				pixelColor = vec4(fillColor.rgb, fillColor.a * alpha);
 
 			if(useShadow && shadowInset) {
-				var dist = boxSDF(pos - shadowOffset, rectSize - shadowBlurRadius * 0.5 - shadowSpreadRadius) - shadowBlurRadius * 0.5;
+				var dist = boxSDF(pos - shadowOffset, rectSize - shadowBlurRadius * 0.5 - shadowSpreadRadius, shadowBlurRadius * 0.5) - shadowBlurRadius * 0.5;
+				//debugSDF = dist;
 				var shadow = vec4(shadowColor.rgb, shadowColor.a * saturate(smoothstep(-shadowBlurRadius, shadowBlurRadius , dist)));
 				pixelColor.rgb = alphaBlend(pixelColor, shadow, 1.0).rgb;
 			}
@@ -183,11 +186,13 @@ class BackgroundShader extends hxsl.Shader {
 
 			pixelColor.a *= baseAlpha;
 			if (debug) {
-				pixelColor.rgba = pixelColor.rgba * 0.00001 + vec4(1.0,0.0,0.0,1.0);
+				pixelColor.rgba = pixelColor.rgba * 0.00001 + vec4(vec3(fract(debugSDF / 32.0)),1.0);
+				if (dist<0.0)
+					pixelColor.r = 0.0;
 			}
 		}
 
-		function boxSDF(pos: Vec2, size: Vec2) : Float {
+		function boxSDF(pos: Vec2, size: Vec2, minRadius: Float) : Float {
 			// map coordinates to top-left, top-right, bottom-right and bottom-left quadrants respectively
 			var index = if (pos.x < 0) {
 				pos.y < 0 ? 0 : 3;
@@ -197,7 +202,7 @@ class BackgroundShader extends hxsl.Shader {
 
 			var skew = borderSkew[(index == 0 || index == 3) ? 0 : 1];
 			var bevel = borderBevel[index];
-			var radius = borderRadius[index];
+			var radius = min(max(borderRadius[index], minRadius), size[(index == 0 || index == 3) ? 0 : 1]);
 
 			// select the right sdf function depending on which corner value is the most
 			// relevant for our current quadrant
@@ -206,7 +211,7 @@ class BackgroundShader extends hxsl.Shader {
 			} else if (bevel > radius) {
 				return sdBevelBox(pos, size, vec4(borderBevel));
 			} else {
-				return sdRoundBox(pos, size, vec4(borderRadius));
+				return sdRoundBox(pos, size, vec4(min(max(borderRadius, radius), size[(index == 0 || index == 3) ? 0 : 1])));
 			}
 		}
 
@@ -393,6 +398,12 @@ class HuiBackground extends h2d.ScaleGrid implements h2d.domkit.Object {
 			shader.shadowInset = s.inset;
 		}
 		return s;
+	}
+
+	@:p public var shadowInset(never, set) : Bool;
+	function set_shadowInset(v) {
+		shader.shadowInset = v;
+		return v;
 	}
 
 	@:p(color) @:t(color) public var shadowColor(never, set) : Int;

@@ -89,7 +89,7 @@ class CssParser extends h2d.domkit.BaseComponents.CustomParser {
 			inset: inset,
 			offsetX: parseFloat(values[0]),
 			offsetY: parseFloat(values[1]),
-			blurRadius: values.length > 3 ? parseFloat(values[2]) : 0.0,
+			blurRadius: values.length > 3 ? parseFloat(values[2]) : 0.5, // default antialiased shadow
 			spreadRadiusX: spreadRadiusX,
 			spreadRadiusY: spreadRadiusY,
 			color: parseColor(values[values.length-1]),
