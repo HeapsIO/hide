@@ -1437,7 +1437,7 @@ class SceneEditor {
 		return (snapToggle && !ctrl) || (!snapToggle && ctrl);
 	};
 
-	public function snap(value: Float, step:Float) : Float {
+	public function snap(value: Float, step: Float) : Float {
 		if (step > 0.0 && getSnapStatus())
 			value = hxd.Math.round(value / step) * step;
 		return value;
@@ -1448,7 +1448,7 @@ class SceneEditor {
 			case Translation:
 				return snap(value, snapMoveStep);
 			case Rotation:
-				return snap(value, snapRotateStep);
+				return hxd.Math.degToRad(snap(hxd.Math.radToDeg(value), snapRotateStep));
 			case Scale:
 				return snap(value, snapScaleStep);
 			case Full:
