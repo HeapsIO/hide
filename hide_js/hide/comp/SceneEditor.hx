@@ -197,7 +197,6 @@ class ViewportOverlaysPopup extends hide.comp.Popup {
 		{
 			var group = element.find("#guidesGroup");
 			addButton("Grid", "th", "gridToggle", () -> editor.updateGrid()).appendTo(group);
-			addButton("Axis", "arrows", "axisToggle", () -> editor.updateBasis()).appendTo(group);
 			addButton("Joints", "share-alt", "jointsToggle", () -> editor.updateJointsVisibility()).appendTo(group);
 			addButton("Colliders", "codepen", "colliderToggle", () -> editor.updateCollidersVisibility()).appendTo(group);
 			addButton("Other", "question-circle", "showOtherGuides", () -> editor.updateOtherGuidesVisibility()).appendTo(group);
@@ -283,33 +282,6 @@ class ViewportOverlaysPopup extends hide.comp.Popup {
 
 
 		refreshIconMenu();
-
-
-
-		// <input type="checkbox" name"showAxis" id="showAxis"/><label for="showAxis" class="left">Axis</label>
-
-
-		// {
-		// 	var input = element.find("#showGrid");
-		// 	input.get(0).toggleAttribute("checked", editor.showGrid);
-		// 	input.click(function(e){
-		// 		if (e.button == 0) {
-		// 			var v = !editor.ide.currentConfig.get("sceneeditor.gridToggle", false);
-		// 			editor.ide.currentConfig.set("sceneeditor.gridToggle", v);
-		// 			input.get(0).toggleAttribute("checked", v);
-		// 			editor.updateGrid();
-		// 		}
-		// 	});
-		// }
-
-		// {
-		// 	var input = element.find("#showAxis");
-		// 	input.prop("checked", editor.showBasis);
-		// 	input.on("change", function(){
-		// 		editor.showBasis = input.prop("checked");
-		// 		editor.updateBasis();
-		// 	});
-		// }
 	}
 }
 
@@ -1012,8 +984,6 @@ class SceneEditor {
 	var showGizmo = true;
 	var gizmo : hrt.tools.Gizmo;
 	var gizmo2d : hide.view.l3d.Gizmo2D;
-	var basis : h3d.scene.Object;
-	public var showBasis = false;
 	static var customPivot : CustomPivot;
 	var interactives : Map<PrefabElement, h3d.scene.Interactive> = [];
 	var interactives2d : Map<PrefabElement, h2d.Interactive> = [];
@@ -1220,7 +1190,6 @@ class SceneEditor {
 
 
 		updateGrid();
-		updateBasis();
 		updateGizmoVisibility();
 		updateOutlineVisibility();
 		updateOtherGuidesVisibility();
@@ -1987,45 +1956,6 @@ class SceneEditor {
 
 		gizmo2d = new hide.view.l3d.Gizmo2D();
 		scene.s2d.add(gizmo2d, 2); // over local3d
-
-		basis = new h3d.scene.Object(scene.s3d);
-
-		// Note : we create 2 different graphics because
-		// 1 graohic can only handle one line style, and
-		// we want the forward vector to be thicker so
-		// it's easier to recognise
-		{
-			var fwd = new h3d.scene.Graphics(basis);
-			fwd.is3D = false;
-			fwd.lineStyle(1.25, 0xFF0000);
-			fwd.lineTo(1.0,0.0,0.0);
-
-			var mat = fwd.getMaterials()[0];
-			mat.mainPass.depth(false, Always);
-			mat.mainPass.setPassName("ui");
-			mat.mainPass.blend(SrcAlpha, OneMinusSrcAlpha);
-		}
-
-		{
-			var otheraxis = new h3d.scene.Graphics(basis);
-
-			otheraxis.lineStyle(.75, 0x00FF00);
-
-			otheraxis.moveTo(0.0,0.0,0.0);
-			otheraxis.setColor(0x00FF00);
-			otheraxis.lineTo(0.0,2.0,0.0);
-
-			otheraxis.moveTo(0.0,0.0,0.0);
-			otheraxis.setColor(0x0000FF);
-			otheraxis.lineTo(0.0,0.0,2.0);
-
-			var mat = otheraxis.getMaterials()[0];
-			mat.mainPass.depth(false, Always);
-			mat.mainPass.setPassName("ui");
-			mat.mainPass.blend(SrcAlpha, OneMinusSrcAlpha);
-		}
-
-		basis.visible = true;
 
 		loadCam3D();
 		loadSnapSettings();
@@ -3530,46 +3460,6 @@ class SceneEditor {
 					o.updateInstance();
 			};
 		};
-	}
-
-	public function updateBasis() {
-		return;
-		if (basis == null) return;
-		showBasis = getOrInitConfig("sceneeditor.axisToggle", true);
-		if (selectedPrefabs != null && selectedPrefabs.length == 1) {
-			basis.visible = showBasis && showOverlays;
-			var rootObj = selectedPrefabs[0].getLocal3d();
-			if (rootObj == null) {
-				basis.visible = false;
-				return;
-			}
-
-			var pos = getPivot([rootObj]);
-			basis.setPosition(pos.x, pos.y, pos.z);
-			var obj = getRootObjects3d()[0];
-			var mat = worldMat(obj);
-			var s = mat.getScale();
-
-			if(s.x != 0 && s.y != 0 && s.z != 0) {
-				mat.prependScale(1.0 / s.x, 1.0 / s.y, 1.0 / s.z);
-				basis.getRotationQuat().initRotateMatrix(mat);
-			}
-
-			var cam = scene.s3d.camera;
-			var gpos = gizmo.getAbsPos().getPosition();
-			var distToCam = cam.pos.sub(gpos).length();
-			var engine = h3d.Engine.getCurrent();
-			var ratio = 150 / engine.height;
-
-				var scale = ratio * distToCam * Math.tan(cam.fovY * 0.5 * Math.PI / 180.0);
-				if (cam.orthoBounds != null) {
-					 scale = ratio *  (cam.orthoBounds.xSize) * 0.5;
-				}
-			basis.setScale(scale);
-
-		} else {
-			basis.visible = false;
-		}
 	}
 
 	function moveGizmoToSelection() {
@@ -5774,7 +5664,6 @@ class SceneEditor {
 			gizmo.isLocalTransform = localTransform;
 			gizmo.update(dt);
 		}
-		updateBasis();
 		event.update(dt);
 		for( f in updates )
 			f(dt);
