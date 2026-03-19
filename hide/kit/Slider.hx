@@ -232,6 +232,7 @@ class Slider<T:Float> extends Widget<T> {
 		s.max = max;
 		s.defaultValue = defaultValue;
 		s.step = step;
+		s.wrap = wrap;
 		slider = s;
 		s.onValueChanged = (tempChanges : Bool) -> {
 			var oldValue = value;
