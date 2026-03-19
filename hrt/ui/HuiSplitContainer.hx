@@ -68,6 +68,12 @@ class HuiSplitContainer extends HuiElement {
 
 		childElement = this.childElements;
 
+		var engine = h3d.Engine.getCurrent();
+		if (engine.width <= 32 || engine.height <= 32) {
+			// skip updating layout when window is minimized
+			return;
+		}
+
 
 		var paddingStart = 0;
 		var paddingEnd = 0;
