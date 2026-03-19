@@ -17,6 +17,7 @@ class HuiModalContainer extends HuiElement {
 
 		makeInteractive();
 		interactive.propagateEvents = true;
+		interactive.cursor = null;
 	}
 }
 
