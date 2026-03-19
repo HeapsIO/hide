@@ -13,6 +13,7 @@ class BackgroundShader extends hxsl.Shader {
 		@param var backgroundColor : Vec4;
 
 		@const @param var useShadow : Bool;
+		@const @param var shadowInset : Bool;
 		@param var shadowOffset : Vec2;
 		@param var shadowBlurRadius : Float;
 		@param var shadowSpreadRadius : Float;
@@ -65,7 +66,7 @@ class BackgroundShader extends hxsl.Shader {
 			pos += offset;
 			var relPos = pos / rectSize;
 
-			if(useShadow) {
+			if(useShadow && !shadowInset) {
 				var dist = boxSDF(pos - shadowOffset, rectSize - shadowBlurRadius * 0.5) - shadowBlurRadius * 0.5 - shadowSpreadRadius;
 				pixelColor = vec4(shadowColor.rgb, shadowColor.a * saturate(smoothstep(-shadowBlurRadius, shadowBlurRadius , -dist)));
 			}
@@ -167,10 +168,16 @@ class BackgroundShader extends hxsl.Shader {
 				fillColor = blendMode(fillColor, g, gradAlpha, gradBlendMode);
 			}
 
-			if(useShadow)
+			if(useShadow && !shadowInset)
 				pixelColor = alphaBlend(pixelColor, fillColor, alpha);
 			else
 				pixelColor = vec4(fillColor.rgb, fillColor.a * alpha);
+
+			if(useShadow && shadowInset) {
+				var dist = boxSDF(pos - shadowOffset, rectSize - shadowBlurRadius * 0.5 - shadowSpreadRadius) - shadowBlurRadius * 0.5;
+				var shadow = vec4(shadowColor.rgb, shadowColor.a * saturate(smoothstep(-shadowBlurRadius, shadowBlurRadius , dist)));
+				pixelColor.rgb = alphaBlend(pixelColor, shadow, 1.0).rgb;
+			}
 
 			pixelColor = alphaBlend(pixelColor, outlineColor, outlineAlpha);
 
@@ -373,7 +380,7 @@ class HuiBackground extends h2d.ScaleGrid implements h2d.domkit.Object {
 		return v;
 	}
 
-	@:p(bgShadow) public var shadow(never, set) : { offsetX: Float, offsetY: Float, blurRadius: Float, spreadRadius: Float, color: Int };
+	@:p(bgShadow) public var shadow(never, set) : hrt.ui.CssParser.BackgroundShadow;
 	function set_shadow(s) {
 		shader.useShadow = s != null;
 		if(s != null) {
@@ -382,6 +389,7 @@ class HuiBackground extends h2d.ScaleGrid implements h2d.domkit.Object {
 			shadowOffsetY = s.offsetY;
 			shadowBlurRadius = s.blurRadius;
 			shadowSpreadRadius = s.spreadRadius;
+			shader.shadowInset = s.inset;
 		}
 		return s;
 	}
@@ -587,7 +595,7 @@ class HuiBackground extends h2d.ScaleGrid implements h2d.domkit.Object {
 			shader.shadowOffset.x = shadowOffsetX * scale;
 			shader.shadowOffset.y = shadowOffsetY * scale;
 			shader.shadowBlurRadius = shadowBlurRadius * scale;
-			shader.shadowSpreadRadius = hxd.Math.max(shadowSpreadRadius, 0.5) * scale;
+			shader.shadowSpreadRadius = shadowSpreadRadius * scale;
 			extraMargin = hxd.Math.ceil(hxd.Math.max(hxd.Math.abs(shadowOffsetX), hxd.Math.abs(shadowOffsetY)) + hxd.Math.max(shadowSpreadRadius, 0.5) + shadowBlurRadius);
 		}
 

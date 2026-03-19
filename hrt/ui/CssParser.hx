@@ -3,6 +3,8 @@ package hrt.ui;
 #if hui
 import domkit.CssValue;
 
+typedef BackgroundShadow = { offsetX: Float, offsetY: Float, blurRadius: Float, spreadRadius: Float, color: Int, inset: Bool };
+
 enum TextTransform {
 	Capitalize;
 	Uppercase;
@@ -57,30 +59,36 @@ class CssParser extends h2d.domkit.BaseComponents.CustomParser {
 		}
 	}
 
-	function parseBgShadow(value : CssValue) {
-		return switch(value) {
-		case VGroup([x, y, color]):
-			var x = parseFloat(x);
-			var y = parseFloat(y);
-			var c = parseColor(color);
-			{ offsetX: x, offsetY: y, blurRadius: 0.0, spreadRadius: 0.0, color: c };
-		case VGroup([x, y, blur, color]):
-			var x = parseFloat(x);
-			var y = parseFloat(y);
-			var b = parseFloat(blur);
-			var c = parseColor(color);
-			{ offsetX: x, offsetY: y, blurRadius: b, spreadRadius: 0.0, color: c };
-		case VGroup([x, y, blur, spread, color]):
-			var x = parseFloat(x);
-			var y = parseFloat(y);
-			var b = parseFloat(blur);
-			var s = parseFloat(spread);
-			var c = parseColor(color);
-			{ offsetX: x, offsetY: y, blurRadius: b, spreadRadius: s, color: c };
-		case VIdent("none"):
-			null;
-		default:
+	function parseBgShadow(value : CssValue) : BackgroundShadow {
+		var inset = false;
+		var values : Array<CssValue> = null;
+
+		switch(value) {
+			case VGroup(v):
+				values = v;
+			case VIdent("none"):
+				return null;
+			default:
+				invalidProp();
+		}
+
+		switch (values[0]) {
+			case VIdent("inset"):
+				inset = true;
+				values.shift();
+			default:
+		}
+
+		if (values.length < 3)
 			invalidProp();
+
+		return {
+			inset: inset,
+			offsetX: parseFloat(values[0]),
+			offsetY: parseFloat(values[1]),
+			blurRadius: values.length > 3 ? parseFloat(values[2]) : 0.0,
+			spreadRadius: values.length > 4 ? parseFloat(values[3]) : 0.0,
+			color: parseColor(values[values.length-1]),
 		}
 	}
 

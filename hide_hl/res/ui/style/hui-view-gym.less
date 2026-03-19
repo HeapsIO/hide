@@ -41,7 +41,7 @@ gym-widgets {
 	.hui-background {
 		height: 32;
 		width: 64;
-		margin: 16;
+		margin: 8;
 
 		background-type: hui;
 	}
@@ -50,7 +50,7 @@ gym-widgets {
 		> hui-background {
 			background: green;
 			border-radius: 2 4 6 16;
-			shadow: 2px 2px 2px rgba(255,0,0,0.5);
+			shadow: 2px 2px 0px rgba(255,0,0,0.5);
 		}
 	}
 
@@ -59,7 +59,7 @@ gym-widgets {
 			background: green;
 			outline: 1 white;
 			border-radius: 2 4 6 16;
-			shadow: 2px 2px 2px rgba(255,0,0,0.5);
+			shadow: 2px 2px 0px rgba(255,0,0,0.5);
 		}
 	}
 
@@ -68,7 +68,7 @@ gym-widgets {
 			background: green;
 			outline: 1 white;
 			border-radius: 2 4 6 16;
-			shadow: 2px 2px 2px rgba(255,0,0,0.5);
+			shadow: 2px 2px 2px -10 rgba(255,0,0,0.5);
 			outline-offset: 1;
 		}
 	}
@@ -78,7 +78,17 @@ gym-widgets {
 			background: green;
 			outline: 1 white;
 			border-radius: 2 4 6 16;
-			shadow: 2px 2px 2px rgba(255,0,0,0.5);
+			shadow: 2px 2px 0px rgba(255,0,0,0.5);
+			outline-offset: -2;
+		}
+	}
+
+	.example-5 {
+		> hui-background {
+			background: green;
+			outline: 1 #F0F;
+			border-radius: 2 4 6 8;
+			shadow: inset 2 2 4 2 rgba(0,0,0,0.5);
 			outline-offset: -2;
 		}
 	}
