@@ -16,7 +16,7 @@ class BackgroundShader extends hxsl.Shader {
 		@const @param var shadowInset : Bool;
 		@param var shadowOffset : Vec2;
 		@param var shadowBlurRadius : Float;
-		@param var shadowSpreadRadius : Float;
+		@param var shadowSpreadRadius : Vec2;
 		@param var shadowColor : Vec4;
 
 		@const @param var useImage : Bool;
@@ -67,7 +67,7 @@ class BackgroundShader extends hxsl.Shader {
 			var relPos = pos / rectSize;
 
 			if(useShadow && !shadowInset) {
-				var dist = boxSDF(pos - shadowOffset, rectSize - shadowBlurRadius * 0.5) - shadowBlurRadius * 0.5 - shadowSpreadRadius;
+				var dist = boxSDF(pos - shadowOffset, rectSize - shadowBlurRadius * 0.5 + shadowSpreadRadius) - shadowBlurRadius * 0.5;
 				pixelColor = vec4(shadowColor.rgb, shadowColor.a * saturate(smoothstep(-shadowBlurRadius, shadowBlurRadius , -dist)));
 			}
 
@@ -388,7 +388,8 @@ class HuiBackground extends h2d.ScaleGrid implements h2d.domkit.Object {
 			shadowOffsetX = s.offsetX;
 			shadowOffsetY = s.offsetY;
 			shadowBlurRadius = s.blurRadius;
-			shadowSpreadRadius = s.spreadRadius;
+			shadowSpreadRadiusX = s.spreadRadiusX;
+			shadowSpreadRadiusY = s.spreadRadiusY;
 			shader.shadowInset = s.inset;
 		}
 		return s;
@@ -407,7 +408,15 @@ class HuiBackground extends h2d.ScaleGrid implements h2d.domkit.Object {
 	@:p @:t public var shadowOffsetX: Float;
 	@:p @:t public var shadowOffsetY: Float;
 	@:p @:t public var shadowBlurRadius : Float;
-	@:p @:t public var shadowSpreadRadius : Float;
+	@:p @:t public var shadowSpreadRadius(never, set) : Float;
+	@:p @:t public var shadowSpreadRadiusX : Float;
+	@:p @:t public var shadowSpreadRadiusY : Float;
+
+	function set_shadowSpreadRadius(v: Float) {
+		shadowSpreadRadiusX = v;
+		shadowSpreadRadiusY = v;
+		return v;
+	}
 
 	function setTexture(t: h3d.mat.Texture) {
 		if(t == null) {
@@ -595,8 +604,10 @@ class HuiBackground extends h2d.ScaleGrid implements h2d.domkit.Object {
 			shader.shadowOffset.x = shadowOffsetX * scale;
 			shader.shadowOffset.y = shadowOffsetY * scale;
 			shader.shadowBlurRadius = shadowBlurRadius * scale;
-			shader.shadowSpreadRadius = shadowSpreadRadius * scale;
-			extraMargin = hxd.Math.ceil(hxd.Math.max(hxd.Math.abs(shadowOffsetX), hxd.Math.abs(shadowOffsetY)) + hxd.Math.max(shadowSpreadRadius, 0.5) + shadowBlurRadius);
+			shader.shadowSpreadRadius.set(shadowSpreadRadiusX * scale, shadowSpreadRadiusY * scale);
+			if (!shader.shadowInset) {
+				extraMargin = hxd.Math.ceil(hxd.Math.max(hxd.Math.abs(shadowOffsetX), hxd.Math.abs(shadowOffsetY)) + hxd.Math.max(shadowSpreadRadiusX, shadowSpreadRadiusY) + shadowBlurRadius);
+			}
 		}
 
 		if (shader.outlineOffset < 0) {

@@ -3,7 +3,7 @@ package hrt.ui;
 #if hui
 import domkit.CssValue;
 
-typedef BackgroundShadow = { offsetX: Float, offsetY: Float, blurRadius: Float, spreadRadius: Float, color: Int, inset: Bool };
+typedef BackgroundShadow = { offsetX: Float, offsetY: Float, blurRadius: Float, spreadRadiusX: Float, spreadRadiusY: Float, color: Int, inset: Bool };
 
 enum TextTransform {
 	Capitalize;
@@ -82,12 +82,16 @@ class CssParser extends h2d.domkit.BaseComponents.CustomParser {
 		if (values.length < 3)
 			invalidProp();
 
+		var spreadRadiusX = values.length > 4 ? parseFloat(values[3]) : 0.0;
+		var spreadRadiusY = values.length > 5 ? parseFloat(values[4]) : spreadRadiusX;
+
 		return {
 			inset: inset,
 			offsetX: parseFloat(values[0]),
 			offsetY: parseFloat(values[1]),
 			blurRadius: values.length > 3 ? parseFloat(values[2]) : 0.0,
-			spreadRadius: values.length > 4 ? parseFloat(values[3]) : 0.0,
+			spreadRadiusX: spreadRadiusX,
+			spreadRadiusY: spreadRadiusY,
 			color: parseColor(values[values.length-1]),
 		}
 	}
