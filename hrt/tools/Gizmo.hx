@@ -71,6 +71,7 @@ class Gizmo extends h3d.scene.Object {
 	}
 
 	var gizmo: h3d.scene.Object;
+	var scaleRot : h3d.Matrix;
 	var updateFunc: Float -> Void;
 	var rotateAxisShader : RotateAxisShader = new RotateAxisShader();
 	var moving : Bool;
@@ -107,14 +108,21 @@ class Gizmo extends h3d.scene.Object {
 
 
 	public function moveToObjects(objs : Array<h3d.scene.Object>) {
-		if (isLocalTransform && objs.length == 1) {
-			var invDefMat = new h3d.Matrix();
-			invDefMat.identity();
-			if (objs[0].defaultTransform != null)
-				invDefMat = objs[0].defaultTransform?.getInverse();
-			var euler = invDefMat.multiplied(objs[0].getAbsPos()).getEulerAngles();
-			setRotation(euler.x, euler.y, euler.z);
+		var invDefMat = new h3d.Matrix();
+		invDefMat.identity();
+		if (objs[0].defaultTransform != null)
+			invDefMat = objs[0].defaultTransform?.getInverse();
+		var euler = invDefMat.multiplied(objs[0].getAbsPos()).getEulerAngles();
+
+		scaleRot = new h3d.Matrix();
+		scaleRot.identity();
+		if (!isLocalTransform){
+			scaleRot.initRotation(euler.x, euler.y, euler.z);
+			scaleRot.invert();
 		}
+
+		if (isLocalTransform && objs.length == 1)
+			setRotation(euler.x, euler.y, euler.z);
 		else
 			setRotation(0,0,0);
 
@@ -205,9 +213,9 @@ class Gizmo extends h3d.scene.Object {
 			initialRotation.initRotateMatrix(initialAbsPos);
 			var ray = getScene().camera.rayFromScreen(mouseX, mouseY);
 			var dragPlane = h3d.col.Plane.fromNormalPoint(switch(handle) {
-				case XYPlane: initialAbsPos.up();
-				case XZPlane: initialAbsPos.right();
-				case YZPlane: initialAbsPos.front();
+				case XYPlane: mode == Scale ? scaleRot.up() : initialAbsPos.up();
+				case XZPlane: mode == Scale ? scaleRot.right() : initialAbsPos.right();
+				case YZPlane: mode == Scale ? scaleRot.front() : initialAbsPos.front();
 				default: initialRay.getDir();
 			}, initialPosition);
 
@@ -218,11 +226,11 @@ class Gizmo extends h3d.scene.Object {
 			var delta = ray.intersect(dragPlane) - initialRay.intersect(dragPlane);
 			var axis = switch (handle) {
 				case XArrow, XRing:
-					initialAbsPos.front();
+					mode == Scale ? scaleRot.front() : initialAbsPos.front();
 				case YArrow, YRing:
-					initialAbsPos.right();
+					mode == Scale ? scaleRot.right() : initialAbsPos.right();
 				case ZArrow, ZRing:
-					initialAbsPos.up();
+					mode == Scale ? scaleRot.up() : initialAbsPos.up();
 				default:
 					null;
 			}
