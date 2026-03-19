@@ -14,13 +14,22 @@ class HuiSelect extends HuiElement {
 
 	public var value(default, set) : Dynamic;
 	public var items : Array<HuiSelectOption> = [];
+	var menu : HuiMenu = null;
 
 	public function new(?parent) {
 		super(parent);
 		initComponent();
 
-		this.onClick = (e: hxd.Event) -> {
-			uiBase.openMenu([for (i in items) { label: i.label, click:() -> { value = i.value; onValueChanged();} }], {}, { object: Element(this), directionX: Stretch, directionY: EndOutside });
+		this.onPush = (e: hxd.Event) -> {
+			if (e.button == 0) {
+				if (menu != null) {
+					menu.close();
+				}
+				else {
+					menu = uiBase.openMenu([for (i in items) { label: i.label, click:() -> { value = i.value; onValueChanged();} }], {}, { object: Element(this), directionX: Stretch, directionY: EndOutside });
+					menu.onCloseListeners.push(() -> menu = null);
+				}
+			}
 		}
 	}
 
