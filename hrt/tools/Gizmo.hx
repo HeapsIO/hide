@@ -19,6 +19,7 @@ enum Handle {
 	XYPlane;
 	XZPlane;
 	YZPlane;
+	Center;
 }
 
 class RotateAxisShader extends hxsl.Shader {
@@ -47,6 +48,7 @@ class Gizmo extends h3d.scene.Object {
 	public static final X_COLOR = new h3d.Vector4(0.96, 0.21, 0.32, 1);
 	public static final Y_COLOR = new h3d.Vector4(0.43, 0.64, 0.10, 1);
 	public static final Z_COLOR = new h3d.Vector4(0.18, 0.51, 0.89, 1);
+	public static final DEFAULT_COLOR = new h3d.Vector4(1, 1, 1, 1);
 
 	public var mode : EditMode = Translation;
 	public var isLocalTransform : Bool = false;
@@ -74,6 +76,7 @@ class Gizmo extends h3d.scene.Object {
 	var moving : Bool;
 	var initialAbsPos : h3d.Matrix;
 	var initialRay : h3d.col.Ray;
+	var initialMousePos : h2d.col.Point;
 
 	public function new(parent: h3d.scene.Object) {
 		super(parent);
@@ -187,6 +190,7 @@ class Gizmo extends h3d.scene.Object {
 			initialAbsPos = this.getAbsPos().clone();
 			onStartMove(handle);
 
+			initialMousePos = new h2d.col.Point(mouseX, mouseY);
 			initialRay = getScene().camera.rayFromScreen(mouseX, mouseY);
 		}
 
@@ -240,9 +244,19 @@ class Gizmo extends h3d.scene.Object {
 					localQuat.multiply(deltaRotation, initialRotation);
 					setRotationQuat(localQuat);
 				case Scale:
-					if (axis != null)
-						delta = delta.dot(axis) * axis;
-					deltaScale = new h3d.Vector(snap((delta.x * 0.5) + 1, mode), snap((delta.y * 0.5) + 1, mode), snap((delta.z * 0.5) + 1, mode));
+					if (handle == Center) {
+						var v = new h2d.col.Point(mouseX, mouseY) - initialMousePos;
+						v.y *= -1;
+						v.normalize();
+						var f = v.x + v.y < 0 ? -1 : 1;
+						var s = snap((delta.length() * f * 0.5) + 1, mode);
+						deltaScale = new h3d.Vector(s, s, s);
+					}
+					else {
+						if (axis != null)
+							delta = delta.dot(axis) * axis;
+						deltaScale = new h3d.Vector(snap((delta.x * 0.5) + 1, mode), snap((delta.y * 0.5) + 1, mode), snap((delta.z * 0.5) + 1, mode));
+					}
 
 			}
 
@@ -275,7 +289,7 @@ class Gizmo extends h3d.scene.Object {
 		gizmo = model.makeObject();
 
 		for (o in gizmo.getMeshes()) {
-			var axis = o.name.indexOf("_X_") >= 0 ? 0 : o.name.indexOf("_Y_") >= 0 ? 1 : 2;
+			var axis = o.name.indexOf("_X_") >= 0 ? 0 : o.name.indexOf("_Y_") >= 0 ? 1 : o.name.indexOf("_Z_") >= 0 ? 2 : -1;
 			var isPlane = o.name.indexOf("Plane") >= 0;
 
 			var mat = o.getMaterials()[0];
@@ -290,7 +304,7 @@ class Gizmo extends h3d.scene.Object {
 				case 0: X_COLOR;
 				case 1: Y_COLOR;
 				case 2: Z_COLOR;
-				case _: Z_COLOR;
+				case _: DEFAULT_COLOR;
 			}).toColor();
 			color = hxd.Math.colorLerp(color, 0x000000, 0.2);
 			color = (color & 0x00ffffff) | 0x80000000;
@@ -298,7 +312,7 @@ class Gizmo extends h3d.scene.Object {
 
 			var highlight = hxd.Math.colorLerp(color, 0xffffff, 0.3);
 			var interactive = new h3d.scene.Interactive(getHandleCollider(o), o);
-			interactive.priority = 100;
+			interactive.priority = o.name.indexOf("Full_Scale") >= 0 ? 101 : 100;
 			interactive.onOver = function(e : hxd.Event) {
 				mat.color.setColor(highlight);
 				mat.color.w = 1.0;
@@ -318,7 +332,8 @@ class Gizmo extends h3d.scene.Object {
 							handle = mode == Rotation ? YRing : isPlane ? XZPlane : YArrow;
 						else if (axis == 2)
 							handle = mode == Rotation ? ZRing : isPlane ? XYPlane : ZArrow;
-
+						else
+							handle = Center;
 						if (!moving)
 							startMove(handle);
 						else
