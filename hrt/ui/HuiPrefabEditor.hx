@@ -521,7 +521,7 @@ class HuiPrefabEditor extends HuiElement {
 		registerCommand(gizmoRotateCommand, View, gizmo.rotationMode);
 		registerCommand(gizmoScaleCommand, View, gizmo.scalingMode);
 
-		var centroid = new h3d.Matrix();
+		var initialTransform = new h3d.Matrix();
 		var obj3ds : Array<hrt.prefab.Object3D> = [];
 
 		gizmo.onStartMove = (handle : hrt.tools.Gizmo.Handle) -> {
@@ -532,7 +532,7 @@ class HuiPrefabEditor extends HuiElement {
 					continue;
 				obj3ds.push(o);
 			}
-			centroid.load(obj3ds[0].getAbsPos());
+			initialTransform.load(obj3ds[0].getTransform());
 		};
 
 		gizmo.onMove = (offsetPosition, offsetRotation, offsetScale) -> {
@@ -546,9 +546,8 @@ class HuiPrefabEditor extends HuiElement {
 				transform.translate(offsetPosition.x, offsetPosition.y, offsetPosition.z);
 			if (offsetScale != null)
 				transform.prependScale(offsetScale.x, offsetScale.y, offsetScale.z);
-			obj3d.getTransform().multiplied(transform);
+			obj3d.setTransform(transform.multiplied(initialTransform));
 			obj3d.applyTransform();
-			
 		};
 
 		gizmo.onFinishMove = () -> {};
