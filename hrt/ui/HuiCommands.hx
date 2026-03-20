@@ -59,7 +59,7 @@ class HuiCommand {
 	public var defaultShortcut: Shortcut;
 	public var registeredShortcut : Shortcut;
 
-	function new(display: String, defaultShortcut: Shortcut) {
+	public function new(display: String, defaultShortcut: Shortcut) {
 		this.display = display;
 		this.defaultShortcut = defaultShortcut;
 		this.registeredShortcut = defaultShortcut;

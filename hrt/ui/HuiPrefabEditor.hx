@@ -32,6 +32,11 @@ class HuiPrefabEditor extends HuiElement {
 			</hui-split-container>
 		</hui-prefab-editor>
 
+	static public var gizmoSwitchModeCommand = new hrt.ui.HuiCommands.HuiCommand("Copy", {key: hxd.Key.SPACE});
+	static public var gizmoTranslateCommand = new hrt.ui.HuiCommands.HuiCommand("Paste", {key: hxd.Key.W});
+	static public var gizmoRotateCommand = new hrt.ui.HuiCommands.HuiCommand("Save", {key: hxd.Key.E});
+	static public var gizmoScaleCommand = new hrt.ui.HuiCommands.HuiCommand("Cut", {key: hxd.Key.R});
+
 	var prefab: hrt.prefab.Prefab;
 	var renderProps: hrt.prefab.Prefab;
 
@@ -77,6 +82,11 @@ class HuiPrefabEditor extends HuiElement {
 		debugGraph = new h2d.Graphics(scene.s2d);
 	}
 
+	override function sync(ctx : h2d.RenderContext) {
+		super.sync(ctx);
+		gizmo.update(ctx.elapsedTime);
+	}
+
 	function setSelection(selection: Array<hrt.prefab.Prefab>, flags: SelectionFlags) {
 		var oldSelection = [for (p => _ in selectedPrefabs) p];
 
@@ -93,10 +103,12 @@ class HuiPrefabEditor extends HuiElement {
 
 		selectedPrefabs.clear();
 
+		var objs = [];
 		for (prefab in selection) {
 			selectedPrefabs.set(prefab, true);
 			var obj3d = Std.downcast(prefab, hrt.prefab.Object3D);
 			if (obj3d != null) {
+				objs.push(obj3d.local3d);
 				for (m in obj3d.local3d.getMaterials()) {
 					var p = m.allocPass("highlight");
 					p.culling = None;
@@ -105,6 +117,10 @@ class HuiPrefabEditor extends HuiElement {
 				}
 			}
 		}
+
+		if (objs.length > 0)
+			gizmo.moveToObjects(objs);
+		gizmo.visible = objs.length > 0;
 
 		if (!flags.has(NoRefreshTree)) {
 			treePrefab.setSelection(selection);
@@ -276,9 +292,9 @@ class HuiPrefabEditor extends HuiElement {
 		o.outlineColor = 0xFF6600;
 		scene.s3d.renderer.effects.push(o);
 
+		makeGizmos();
 		tryMake(prefab);
 		makeRenderProps();
-		makeGizmos();
 
 		focusObjects([for (i in 0...scene.s3d.numChildren) scene.s3d.getChildAt(i)]);
 
@@ -496,9 +512,46 @@ class HuiPrefabEditor extends HuiElement {
 		viewportAxis?.remove();
 
 		viewportAxis = new hrt.tools.ViewportAxis(scene.s3d.camera, cameraController, scene.s2d);
+
 		grid = new hrt.tools.Grid(scene.s3d);
 		gizmo = new hrt.tools.Gizmo(scene.s3d);
 		gizmo.visible = false;
+		registerCommand(gizmoSwitchModeCommand, View, gizmo.switchMode);
+		registerCommand(gizmoTranslateCommand, View, gizmo.translationMode);
+		registerCommand(gizmoRotateCommand, View, gizmo.rotationMode);
+		registerCommand(gizmoScaleCommand, View, gizmo.scalingMode);
+
+		var centroid = new h3d.Matrix();
+		var obj3ds : Array<hrt.prefab.Object3D> = [];
+
+		gizmo.onStartMove = (handle : hrt.tools.Gizmo.Handle) -> {
+			obj3ds = [];
+			for (p in selectedPrefabs.keys()) {
+				var o = Std.downcast(p, hrt.prefab.Object3D);
+				if (o == null)
+					continue;
+				obj3ds.push(o);
+			}
+			centroid.load(obj3ds[0].getAbsPos());
+		};
+
+		gizmo.onMove = (offsetPosition, offsetRotation, offsetScale) -> {
+			var transform = new h3d.Matrix();
+			transform.identity();
+
+			var obj3d = obj3ds[0];
+			if (offsetRotation != null)
+				offsetRotation.toMatrix(transform);
+			if (offsetPosition != null)
+				transform.translate(offsetPosition.x, offsetPosition.y, offsetPosition.z);
+			if (offsetScale != null)
+				transform.prependScale(offsetScale.x, offsetScale.y, offsetScale.z);
+			obj3d.getTransform().multiplied(transform);
+			obj3d.applyTransform();
+			
+		};
+
+		gizmo.onFinishMove = () -> {};
 	}
 
 	function onSceneEvents(e: hxd.Event) : Void {
