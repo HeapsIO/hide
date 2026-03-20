@@ -39,8 +39,8 @@ gym-widgets {
 	fill-height: 1;
 
 	.hui-background {
-		height: 10;
-		width: 10;
+		height: 32;
+		width: 64;
 		margin: 8;
 
 		background-type: hui;
@@ -77,7 +77,7 @@ gym-widgets {
 		> hui-background {
 			background: green;
 			outline: 1 white;
-			border-radius: 2 4 6 128;
+			border-radius: 2 4 6 16;
 			shadow: 2px 2px 0px rgba(255,0,0,0.5);
 			outline-offset: -2;
 		}
@@ -87,13 +87,11 @@ gym-widgets {
 		> hui-background {
 			background: white;
 			//outline: 1 #F0F;
-			border-radius: 0 0 0 128;
-			shadow: inset 0 0 10 0 rgba(255,0,0,1.0);
+			border-radius: 2 4 6 16;
+			shadow: inset 0 0 10 0 rgba(0,0,0,1.0);
 			outline-offset: -2;
 			debug: false;
 		}
-		height: 256;
-		width: 256;
 	}
 
 	#commands-first {
@@ -160,6 +158,73 @@ gym-search {
 		overflow: scroll;
 		> hui-background {
 			background: @color-gray-3;
+		}
+	}
+}
+
+gym-hui-background {
+	layout: vertical;
+	fill-width: 1;
+	fill-height: 1;
+	padding: 16;
+	spacing: 16;
+
+	overflow: scroll;
+
+	> hui-background {
+		background: white;
+	}
+
+	> hui-element {
+		width: 128;
+		height: 128;
+
+		> hui-background {
+			outline: 1 black;
+
+			background: white;
+			border-radius: 0 2 8 32;
+		}
+	}
+
+	.example-1 {
+		> hui-background {
+			shadow: 2 2 5 rgba(0,0,0,0.5);
+		}
+	}
+
+	.example-2 {
+		> hui-background {
+			shadow: inset 0 0 5 rgba(0,0,0,1.0);
+		}
+	}
+
+	.example-3 {
+		> hui-background {
+			shadow: inset 0 0 5 5 rgba(0,0,0,0.7);
+		}
+	}
+
+	.example-4 {
+		> hui-background {
+			border-radius: 4;
+			shadow: inset 0 0 5 -100 2 rgba(0,0,0,0.7);
+		}
+	}
+
+	.example-5 {
+		> hui-background {
+			outline: 1 black;
+			border-radius: 4;
+			shadow: inset 0 -100 5 2 -98 rgba(0,0,0,0.7);
+		}
+	}
+
+	.example-6 {
+		> hui-background {
+			outline: 1 black;
+			border-radius: 4;
+			shadow: inset 0 -100 5 -98 rgba(0,0,0,0.7);
 		}
 	}
 }

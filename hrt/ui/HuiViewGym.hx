@@ -15,6 +15,7 @@ class HuiViewGym extends HuiView<{}> {
 				<gym-widgets display-name="Widgets"/>
 				<gym-layouts display-name="Layouts"/>
 				<gym-search display-name="Search"/>
+				<gym-hui-background display-name="HuiBackground"/>
 			</hui-tab-container>
 		</hui-view-gym>
 
@@ -472,6 +473,18 @@ class GymSearch extends HuiElement {
 			rec(hide.Ide.inst.resourceDir);
 		}
 	}
+}
+
+class GymHuiBackground extends HuiElement {
+	static var SRC =
+		<gym-hui-background>
+			<hui-element class="example-1"/>
+			<hui-element class="example-2"/>
+			<hui-element class="example-3"/>
+			<hui-element class="example-4"/>
+			<hui-element class="example-5"/>
+			<hui-element class="example-6"/>
+		</gym-hui-background>
 }
 
 #end
