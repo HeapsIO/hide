@@ -53,6 +53,8 @@ class HuiPrefabEditor extends HuiElement {
 	var lastPushY : Float = -100;
 	var movedSinceLastPush : Bool = false;
 
+	var debugGraph: h2d.Graphics;
+
 	override function new(?parent) {
 		super(parent);
 		initComponent();
@@ -71,6 +73,8 @@ class HuiPrefabEditor extends HuiElement {
 
 		registerCommand(hrt.ui.HuiCommands.HuiDebugCommands.debugReload, View, reload);
 		registerCommand(HuiCommands.save, View, save);
+
+		debugGraph = new h2d.Graphics(scene.s2d);
 	}
 
 	function setSelection(selection: Array<hrt.prefab.Prefab>, flags: SelectionFlags) {
@@ -498,11 +502,11 @@ class HuiPrefabEditor extends HuiElement {
 	}
 
 	function onSceneEvents(e: hxd.Event) : Void {
-		var oldX = e.relX;
-		var oldY = e.relY;
+		// debugGraph.clear();
+		// debugGraph.setColor(0xFF00FF, 1.0);
+		// debugGraph.lineStyle(1, 0xFF00FF);
+		// debugGraph.drawCircle(e.relX, e.relY, 10);
 
-		e.relX -= scene.absX;
-		e.relY -= scene.absY;
 		switch (e.kind) {
 			case EMove:
 				onSceneMove(e);
@@ -510,9 +514,6 @@ class HuiPrefabEditor extends HuiElement {
 				onScenePush(e);
 			default:
 		}
-
-		e.relX = oldX;
-		e.relY = oldY;
 	}
 
 	function onScenePush(e: hxd.Event) : Void {
