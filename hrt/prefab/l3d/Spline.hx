@@ -468,12 +468,30 @@ class Spline extends hrt.prefab.Object3D {
 		this.updateInstance();
 	}
 
+	#if !editor
+	var cachedAbsPos : h3d.Matrix;
+	var cachedInvAbsPos : h3d.Matrix;
+	#end
+	function getCachedAbsPos( inverse : Bool = false ) {
+		#if editor
+		var m = getAbsPos(true);
+		if( inverse ) m = m.getInverse();
+		return m;
+		#else
+		if( cachedAbsPos == null ) {
+			cachedAbsPos = getAbsPos(true);
+			cachedInvAbsPos = cachedAbsPos.getInverse();
+		}
+		return inverse ? cachedAbsPos : cachedInvAbsPos;
+		#end
+	}
+
 	public function localToGlobal(point : h3d.col.Point) {
-		return point.transformed(getAbsPos(true));
+		return point.transformed(getCachedAbsPos());
 	}
 
 	public function globalToLocal(point : h3d.col.Point) {
-		return point.transformed(getAbsPos(true).getInverse());
+		return point.transformed(getCachedAbsPos(true));
 	}
 
 	public function globalToLocalSplinePoint(sp : SplinePoint) {
@@ -483,7 +501,7 @@ class Spline extends hrt.prefab.Object3D {
 		var out = new SplinePoint(sp.pos, sp.up, sp.tangentIn, sp.tangentOut);
 		out.pos = localToGlobal(out.pos);
 
-		var absInv = getAbsPos(true).getInverse();
+		var absInv = getCachedAbsPos(true);
 		out.up = out.up.transformed3x3(absInv);
 		out.up.normalize();
 		out.tangentIn = out.tangentIn.transformed3x3(absInv);
@@ -498,7 +516,7 @@ class Spline extends hrt.prefab.Object3D {
 		var out = new SplinePoint(sp.pos, sp.up, sp.tangentIn, sp.tangentOut);
 		out.pos = localToGlobal(out.pos);
 
-		var abs = getAbsPos(true);
+		var abs = getCachedAbsPos();
 		out.up = out.up.transformed3x3(abs);
 		out.up.normalize();
 		out.tangentIn = out.tangentIn.transformed3x3(abs);
