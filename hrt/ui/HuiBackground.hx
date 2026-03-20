@@ -68,7 +68,7 @@ class BackgroundShader extends hxsl.Shader {
 			var relPos = pos / rectSize;
 
 			if(useShadow && !shadowInset) {
-				var dist = boxSDF(pos - shadowOffset, rectSize - shadowBlurRadius * 0.5 + shadowSpreadRadius, 0) - shadowBlurRadius * 0.5;
+				var dist = boxSDF(pos - shadowOffset, rectSize + shadowSpreadRadius, 0);
 				pixelColor = vec4(shadowColor.rgb, shadowColor.a * saturate(smoothstep(-shadowBlurRadius, shadowBlurRadius , -dist)));
 			}
 
@@ -176,7 +176,7 @@ class BackgroundShader extends hxsl.Shader {
 				pixelColor = vec4(fillColor.rgb, fillColor.a * alpha);
 
 			if(useShadow && shadowInset) {
-				var dist = boxSDF(pos - shadowOffset, rectSize - shadowBlurRadius * 0.5 - shadowSpreadRadius, shadowBlurRadius * 0.5) - shadowBlurRadius * 0.5;
+				var dist = boxSDF(pos - shadowOffset, rectSize - shadowSpreadRadius, shadowBlurRadius * 1.0);
 				//debugSDF = dist;
 				var shadow = vec4(shadowColor.rgb, shadowColor.a * saturate(smoothstep(-shadowBlurRadius, shadowBlurRadius , dist)));
 				pixelColor.rgb = alphaBlend(pixelColor, shadow, 1.0).rgb;
@@ -200,9 +200,10 @@ class BackgroundShader extends hxsl.Shader {
 				pos.y < 0 ? 1 : 2;
 			}
 
-			var skew = borderSkew[(index == 0 || index == 3) ? 0 : 1];
+			var halfIndex = (index == 0 || index == 3) ? 0 : 1;
+			var skew = borderSkew[halfIndex];
 			var bevel = borderBevel[index];
-			var radius = min(max(borderRadius[index], minRadius), size[(index == 0 || index == 3) ? 0 : 1]);
+			var radius = min(max(borderRadius[index], minRadius), size[halfIndex]);
 
 			// select the right sdf function depending on which corner value is the most
 			// relevant for our current quadrant
@@ -211,7 +212,7 @@ class BackgroundShader extends hxsl.Shader {
 			} else if (bevel > radius) {
 				return sdBevelBox(pos, size, vec4(borderBevel));
 			} else {
-				return sdRoundBox(pos, size, vec4(min(max(borderRadius, radius), size[(index == 0 || index == 3) ? 0 : 1])));
+				return sdRoundBox(pos, size, vec4(min(max(borderRadius, radius), size[halfIndex])));
 			}
 		}
 
