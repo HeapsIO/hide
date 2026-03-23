@@ -10,14 +10,14 @@ class CrashTest extends hrt.prefab.Object3D {
 	@:s public var crashOnMake: Bool = false;
 	@:s public var crashOnSync: Bool = false;
 
-	override public function load(data) {
+	override public function load(data: Dynamic) {
 		super.load(data);
 		if (crashOnLoad) {
 			throw "CrashTest crashOnLoad";
 		}
 	}
 
-	override public function copy(p) {
+	override public function copy(p: Dynamic) {
 		super.copy(p);
 	}
 
