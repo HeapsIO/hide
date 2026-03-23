@@ -170,4 +170,11 @@ class Ide extends hide.tools.IdeData {
 		Sys.stdout().writeString('[Info] $message\n');
 		inst.app.ui.uiBase.mainLayout.addToast(message, Info);
 	}
+
+	static inline public function formatError(message: String, e: haxe.Exception, ?lineBreak: String) {
+		var string = 'Error : $message\n$e\n\nStack trace : ${haxe.CallStack.toString(haxe.CallStack.exceptionStack(true))}';
+		if (lineBreak != null)
+			string = StringTools.replace(string, "\n", lineBreak);
+		return string;
+	}
 }

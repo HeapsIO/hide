@@ -60,7 +60,7 @@ class CrashTestObject extends h3d.scene.Object {
 	override function sync(ctx:h3d.scene.RenderContext) {
 		super.sync(ctx);
 		if (prefab.crashOnSync) {
-			throw "CrasTest crashOnSync";
+			throw "CrashTest crashOnSync";
 		}
 	}
 }

@@ -532,12 +532,16 @@ class HuiPrefabEditor extends HuiElement {
 					continue;
 				obj3ds.push(o);
 			}
-			initialTransform.load(obj3ds[0].getTransform());
+			if (obj3ds.length > 0)
+				initialTransform.load(obj3ds[0].getTransform());
 		};
 
 		gizmo.onMove = (offsetPosition, offsetRotation, offsetScale) -> {
 			var transform = new h3d.Matrix();
 			transform.identity();
+
+			if (obj3ds.length <= 0)
+				return;
 
 			var obj3d = obj3ds[0];
 			if (offsetRotation != null)

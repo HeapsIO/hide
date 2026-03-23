@@ -6,6 +6,7 @@ class HuiScene extends HuiElement {
 	static var SRC =
 	<hui-scene>
 		<bitmap public id="display"/>
+		<hui-error-display id="error"/>
 	</hui-scene>
 
 	/**Clear color of the 3d scene. Must include the alpha component in order to be visible**/
@@ -166,7 +167,6 @@ class HuiScene extends HuiElement {
 	override function draw(ctx:h2d.RenderContext) {
 		if (renderTexture != null) {
 
-
 			var prevRZ = ctx.getCurrentRenderZone();
 			@:privateAccess ctx.clearRZ();
 
@@ -174,8 +174,19 @@ class HuiScene extends HuiElement {
 
 			s3d.setOutputTarget(ctx.engine, renderTexture);
 			engine.clear(backgroundColor, 1.0);
-			s3d.render(ctx.engine);
-			s2d.render(ctx.engine);
+
+			var anyError = false;
+			try {
+				s3d.render(ctx.engine);
+				s2d.render(ctx.engine);
+			} catch(e) {
+				anyError = true;
+				error.setError("Scene render failed", e);
+			}
+
+			if (!anyError) {
+				error.clearError();
+			}
 
 			s3d.setOutputTarget();
 
@@ -184,7 +195,6 @@ class HuiScene extends HuiElement {
 
 			@:privateAccess ctx.initShaders(ctx.baseShaderList);
 			ctx.setCurrent();
-
 		}
 	}
 }

@@ -1,0 +1,27 @@
+hui-error-display {
+	halign: middle;
+	valign: middle;
+
+	height: 500;
+	width: 500;
+
+	spacing: 8;
+
+	layout: vertical;
+	padding: 8;
+
+	> hui-background {
+		outline: 1 @popup-border;
+		background: @popup-bg-darker;
+		shadow: 2 2 5 rgba(0,0,0,0.5);
+		border-radius: @base-corner-radius;
+	}
+
+	#stack-trace {
+		hui-text {
+			font: default;
+		}
+	}
+
+
+}
