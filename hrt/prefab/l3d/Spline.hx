@@ -482,7 +482,7 @@ class Spline extends hrt.prefab.Object3D {
 			cachedAbsPos = getAbsPos(true);
 			cachedInvAbsPos = cachedAbsPos.getInverse();
 		}
-		return inverse ? cachedAbsPos : cachedInvAbsPos;
+		return inverse ? cachedInvAbsPos : cachedAbsPos;
 		#end
 	}
 
