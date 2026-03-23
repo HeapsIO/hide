@@ -638,7 +638,7 @@ class EditContext extends hrt.prefab.EditContext2 {
 	};
 
 	public function rebuildPrefabImpl(prefab: hrt.prefab.Prefab) : Void {
-		throw "implement";
+		editor.tryMake(prefab);
 	}
 
 	/**
@@ -685,7 +685,7 @@ class EditContext extends hrt.prefab.EditContext2 {
 	}
 
 	public function listModelAnimations(path: String) : Array<String> {
-		return  [];
+		return hide.Ide.inst.listAnims(path);
 	}
 
 

@@ -236,7 +236,7 @@ class HideJsEditContext2 extends hrt.prefab.EditContext2 {
 	}
 
 	public function listModelAnimations(path: String) : Array<String> {
-		return try ctx.scene.listAnims(path) catch(e: Dynamic) [];
+		return [for( p in try ctx.scene.listAnims(path) catch(e: Dynamic) []) hide.Ide.inst.makeRelative(p)];
 	}
 
 	public function openPrefab(path: String, ?afterOpen : (api: hrt.prefab.SceneEditorAPI) -> Void) : Void {

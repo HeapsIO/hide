@@ -155,6 +155,55 @@ class Ide extends hide.tools.IdeData {
 		return null;
 	}
 
+	public function listAnims( path : String, customFilter : (f:String) -> Bool = null ) {
+		var isDir = sys.FileSystem.isDirectory(getPath(path));
+
+		var config = hide.Config.loadForFile(this, path);
+
+		var dirs : Array<String> = config.get("hmd.animPaths");
+		if( dirs == null ) dirs = [];
+		dirs = [for( d in dirs ) haxe.io.Path.join([resourceDir, d])];
+
+
+		var parts = path.split("/");
+		var anims = [];
+
+		if (!isDir) {
+			parts.pop();
+			dirs.unshift(getPath(parts.join("/")));
+
+			var lib = hxd.res.Loader.currentInstance.load(path).toModel().toHmd();
+			if (lib == null)
+				return [];
+			if( lib.header.animations.length > 0 )
+				anims.push(path);
+		} else {
+			dirs.unshift(haxe.io.Path.join([resourceDir, path]));
+		}
+
+		function loadAnims( path : String, rec : Bool ) {
+			for( f in try sys.FileSystem.readDirectory(path) catch( e : Dynamic ) [] ) {
+				var file = f.toLowerCase();
+				var filePath = path+"/"+f;
+				if( h3d.anim.Animation.isAnimation(f) && (StringTools.endsWith(file,".hmd") || StringTools.endsWith(file,".fbx")) )
+					anims.push(makeRelative(filePath));
+				if (customFilter != null && customFilter(f))
+					anims.push(makeRelative(filePath));
+				if( rec && sys.FileSystem.isDirectory(getPath(filePath)) )
+					loadAnims(filePath, rec);
+			}
+		}
+
+		for( dir in dirs ) {
+			var dir = dir;
+			var recursive = StringTools.endsWith(dir, "*");
+			if( recursive ) dir = dir.substr(0,-1);
+			if( StringTools.endsWith(dir, "/") ) dir = dir.substr(0,-1);
+			loadAnims(dir, recursive);
+		}
+		return anims;
+	}
+
 
 	static public function showError(message: String) {
 		Sys.stdout().writeString('[Err ] $message\n');
