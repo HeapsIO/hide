@@ -348,6 +348,7 @@ class Gizmo extends h3d.scene.Object {
 							move(handle);
 					}
 				}
+				e.propagate = false;
 			}
 		}
 
