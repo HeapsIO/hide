@@ -60,9 +60,9 @@ class Gizmo extends h3d.scene.Object {
 	var window(get, never) : hxd.Window;
 	function get_window() return @:privateAccess getScene().window;
 	var mouseX(get,never) : Float;
-	function get_mouseX() return @:privateAccess window.mouseX;
+	function get_mouseX() return @:privateAccess getScene().events.mouseX;
 	var mouseY(get,never) : Float;
-	function get_mouseY() return @:privateAccess window.mouseY;
+	function get_mouseY() return @:privateAccess getScene().events.mouseY;
 	var mouseLock(get, set) : Bool;
 	function get_mouseLock() return @:privateAccess window.mouseMode != Absolute;
 	function set_mouseLock(v : Bool) {
@@ -199,7 +199,8 @@ class Gizmo extends h3d.scene.Object {
 			onStartMove(handle);
 
 			initialMousePos = new h2d.col.Point(mouseX, mouseY);
-			initialRay = getScene().camera.rayFromScreen(mouseX, mouseY);
+			var scene = getScene();
+			initialRay = scene.camera.rayFromScreen(mouseX, mouseY, scene.scenePosition?.width ?? -1, scene.scenePosition?.height ?? -1);
 		}
 
 		moving = true;
@@ -211,7 +212,9 @@ class Gizmo extends h3d.scene.Object {
 			var initialScale = initialAbsPos.getScale();
 			var initialRotation = new h3d.Quat();
 			initialRotation.initRotateMatrix(initialAbsPos);
-			var ray = getScene().camera.rayFromScreen(mouseX, mouseY);
+			trace(mouseX, mouseY);
+			var scene = getScene();
+			var ray = scene.camera.rayFromScreen(mouseX, mouseY, scene.scenePosition?.width ?? -1, scene.scenePosition?.height ?? -1);
 			var dragPlane = h3d.col.Plane.fromNormalPoint(switch(handle) {
 				case XYPlane: mode == Scale ? scaleRot.up() : initialAbsPos.up();
 				case XZPlane: mode == Scale ? scaleRot.right() : initialAbsPos.right();
