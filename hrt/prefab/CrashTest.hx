@@ -32,6 +32,15 @@ class CrashTest extends hrt.prefab.Object3D {
 	override function edit2(ctx) {
 		super.edit2(ctx);
 
+		ctx.build(
+			<category("Crash Test")>
+				<checkbox field={crashOnLoad}/>
+				<checkbox field={crashOnInspector}/>
+				<checkbox field={crashOnMake}/>
+				<checkbox field={crashOnSync}/>
+			</category>
+		);
+
 		if(crashOnInspector) {
 			throw "CrashTest crashOnInspector";
 		}
