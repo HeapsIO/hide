@@ -17,7 +17,16 @@ class Prefab extends HuiView<{path: String}> {
 
 		var path = Ide.inst.getRelPath(state.path);
 
-		prefabEditor.setPrefab(hxd.res.Loader.currentInstance.load(path).toPrefab().load().clone());
+		try {
+			var prefabData = hxd.res.Loader.currentInstance.load(path).toPrefab().load().clone();
+			prefabEditor.setPrefab(prefabData);
+		} catch(e) {
+			prefabEditor.remove();
+			var error = 'Couldn\'t load $path : $e';
+			hide.Ide.showError(error);
+			new HuiText(error, this);
+		}
+
 	}
 
 	override function getDisplayName():String {
