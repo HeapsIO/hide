@@ -468,10 +468,8 @@ class Spline extends hrt.prefab.Object3D {
 		this.updateInstance();
 	}
 
-	#if !editor
 	var cachedAbsPos : h3d.Matrix;
 	var cachedInvAbsPos : h3d.Matrix;
-	#end
 	function getCachedAbsPos( inverse : Bool = false ) {
 		#if editor
 		var m = getAbsPos(true);
