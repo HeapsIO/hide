@@ -40,7 +40,7 @@ class HuiPopup extends HuiElement {
 		<hui-popup>
 		</hui-popup>
 
-	public var anchor(default, set) : Anchor = {object: Point(0,0), directionX: EndOutside, directionY: EndOutside};
+	public var anchor(default, set) : Anchor = null;
 
 	final anchorMargin: Float = 4;
 	var modal: HuiModalContainer = null;
@@ -106,6 +106,12 @@ class HuiPopup extends HuiElement {
 	}
 
 	public function updateAnchor(fixDirection: Bool) {
+		if (anchor == null) {
+			x = hxd.Math.round((parentElement.calculatedWidth - calculatedWidth) * 0.5);
+			y = hxd.Math.round((parentElement.calculatedHeight - calculatedHeight) * 0.5);
+			return;
+		}
+
 		var left: Float;
 		var top: Float;
 		var down: Float;
@@ -159,7 +165,7 @@ class HuiPopup extends HuiElement {
 		Add popup in parent in a way that it can be close when the user clicks anywhere else. Return the created modal element
 	**/
 	function addDismissable(?parent: h2d.Object) : HuiModalContainer {
-		modal = new HuiModalContainer(parent);
+		modal = new HuiModalContainer(false, parent);
 		modal.addChild(this);
 
 		modal.onPush = (e: hxd.Event) -> {
@@ -177,6 +183,20 @@ class HuiPopup extends HuiElement {
 		modal.onTextInput = onTextInput;
 		onCloseListeners.push(() -> modal.remove());
 
+		return modal;
+	}
+
+	/**
+		Add popup in parent that cannot be dismissed
+	**/
+	function addModal(?parent: h2d.Object) : HuiModalContainer {
+		modal = new HuiModalContainer(true, parent);
+		modal.addChild(this);
+
+		modal.onKeyDown = onKeyDown;
+		modal.onKeyUp = onKeyUp;
+		modal.onTextInput = onTextInput;
+		onCloseListeners.push(() -> modal.remove());
 		return modal;
 	}
 

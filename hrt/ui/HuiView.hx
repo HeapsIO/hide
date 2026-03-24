@@ -37,6 +37,13 @@ class HuiView<T> extends HuiElement {
 
 	}
 
+	/**
+		Request for this tab to be closed. The tab should call the callback with canClose to true if the tab can be closed, or false if the closure of the tab should be cancelled
+	**/
+	function requestClose(callback: (canClose: Bool) -> Void) {
+		callback(true);
+	}
+
 	function getContextMenuContent(content: Array<hide.comp.ContextMenu.MenuItem>) {
 
 	}

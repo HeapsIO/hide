@@ -132,6 +132,11 @@ class HuiBase extends HuiElement {
 		@:privateAccess popup.addDismissable(this);
 	}
 
+	public function confirm(message: String, ?buttons: hrt.ui.HuiConfirmPopup.ConfirmButtons, onCompletion: hrt.ui.HuiConfirmPopup.ConfirmButton -> Void) {
+		var popup = new hrt.ui.HuiConfirmPopup(message, buttons, onCompletion);
+		@:privateAccess popup.addModal(this);
+	}
+
 	public function setCommandFocus(element: HuiElement) {
 		commandFocus = element;
 	}

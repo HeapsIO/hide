@@ -38,6 +38,9 @@ class Prefab extends HuiView<{path: String}> {
 		return state.path.split("/").splice(-1, 2).join("/");
 	}
 
+	override function requestClose(cb: (canClose:Bool) -> Void) {
+		uiBase.confirm("Really close ?", (choice: hrt.ui.HuiConfirmPopup.ConfirmButton) -> cb(choice == hrt.ui.HuiConfirmPopup.ConfirmButton.Ok));
+	}
 }
 
 #end

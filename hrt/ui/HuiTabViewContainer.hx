@@ -36,14 +36,19 @@ class HuiTabViewContainer extends HuiTabContainer {
 				return;
 			var tabContent : Array<hide.comp.ContextMenu.MenuItem> = [];
 
-			tabContent.push({label: "Close", click: () -> removeTab(forElement)});
+			tabContent.push({label: "Close", click: requestClose.bind(cast forElement)});
 			tabContent.push({label: "Reload", click: () -> {
-				var index = getTabs().indexOf(forElement);
-				removeTab(forElement);
-				var state = getViewState(forElement);
-				var newView = loadView(state);
-				content.addChildAt(newView, index);
-				activeTabElement = newView;
+					var view : HuiView<Dynamic> = cast forElement;
+					if (view == null)
+						return;
+					view.requestClose((canClose) -> {
+						var index = getTabs().indexOf(forElement);
+						removeTab(forElement);
+						var state = getViewState(forElement);
+						var newView = loadView(state);
+						content.addChildAt(newView, index);
+						activeTabElement = newView;
+					});
 				}
 			});
 			tabContent.push({isSeparator: true});
@@ -89,8 +94,16 @@ class HuiTabViewContainer extends HuiTabContainer {
 
 	override function makeTab(forElement: HuiElement) : HuiTab {
 		var tab = super.makeTab(forElement);
-		tab.onClose = () -> removeTab(forElement);
+		tab.onClose = requestClose.bind(cast forElement);
 		return tab;
+	}
+
+	function requestClose(forElement: HuiView<Dynamic>) {
+		forElement.requestClose((canClose:Bool) -> {
+			if (canClose) {
+				removeTab(forElement);
+			}
+		});
 	}
 
 	override function sync(ctx) {

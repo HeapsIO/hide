@@ -31,6 +31,11 @@ class App extends hxd.App {
 		#if hldx
 		@:privateAccess hxd.Window.getInstance().window.maximize();
 		#end
+
+		hxd.Window.getInstance().onClose = () -> {
+			ui.confirm("Really close", (yes) -> if (yes == Ok) {hxd.Window.getInstance().close();});
+			return false;
+		};
 	}
 
 	override function onResize() {
