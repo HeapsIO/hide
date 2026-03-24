@@ -52,7 +52,10 @@ class HuiPopup extends HuiElement {
 		super(parent);
 		initComponent();
 
-		onAfterReflow = onAfterReflowInternal;
+		makeInteractive();
+		interactive.propagateEvents = false;
+
+		onAfterReflow = () -> updateAnchor(true);
 	}
 
 	/**
@@ -102,7 +105,7 @@ class HuiPopup extends HuiElement {
 		return anchorDirection;
 	}
 
-	public function onAfterReflowInternal() {
+	public function updateAnchor(fixDirection: Bool) {
 		var left: Float;
 		var top: Float;
 		var down: Float;
@@ -119,13 +122,17 @@ class HuiPopup extends HuiElement {
 				down = element.absY + element.calculatedHeight;
 		}
 
-		var candidateX = constraint(anchor.directionX, left, right, calculatedWidth);
-		var anchorX = fixAnchor(anchor.directionX, candidateX, calculatedWidth, 0, parentElement.calculatedWidth);
-		x = constraint(anchorX, left, right, calculatedWidth);
+		if (fixDirection) {
+			var candidateX = constraint(anchor.directionX, left, right, calculatedWidth);
+			anchor.directionX = fixAnchor(anchor.directionX, candidateX, calculatedWidth, 0, parentElement.calculatedWidth);
+		}
+		x = constraint(anchor.directionX, left, right, calculatedWidth);
 
-		var candidateY = constraint(anchor.directionY, top, down, calculatedHeight);
-		var anchorY = fixAnchor(anchor.directionY, candidateY, calculatedHeight, 0, parentElement.calculatedHeight);
-		y = constraint(anchorY, top, down, calculatedHeight);
+		if (fixDirection) {
+			var candidateY = constraint(anchor.directionY, top, down, calculatedHeight);
+			anchor.directionY = fixAnchor(anchor.directionY, candidateY, calculatedHeight, 0, parentElement.calculatedHeight);
+		}
+		y = constraint(anchor.directionY, top, down, calculatedHeight);
 	}
 
 	public function close() {
@@ -140,6 +147,11 @@ class HuiPopup extends HuiElement {
 			onCloseListeners.resize(0);
 		}
 		super.onRemove();
+	}
+
+	override function onMouseWheel(e:hxd.Event) {
+		super.onMouseWheel(e);
+		e.propagate = false;
 	}
 
 
@@ -166,6 +178,11 @@ class HuiPopup extends HuiElement {
 		onCloseListeners.push(() -> modal.remove());
 
 		return modal;
+	}
+
+	override function sync(ctx:h2d.RenderContext) {
+		super.sync(ctx);
+		updateAnchor(false);
 	}
 }
 

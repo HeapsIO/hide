@@ -163,9 +163,6 @@ class HuiColorPicker extends HuiPopup {
 			return;
 		}
 
-		var pos = box.getAbsPos();
-		x = pos.x - calculatedWidth + box.calculatedWidth;
-		y = pos.y + box.calculatedHeight;
 		super.sync(ctx);
 	}
 
