@@ -516,6 +516,7 @@ class HuiPrefabEditor extends HuiElement {
 		grid = new hrt.tools.Grid(scene.s3d);
 		gizmo = new hrt.tools.Gizmo(scene.s3d);
 		gizmo.visible = false;
+		gizmo.isLocalTransform = true;
 		registerCommand(gizmoSwitchModeCommand, View, gizmo.switchMode);
 		registerCommand(gizmoTranslateCommand, View, gizmo.translationMode);
 		registerCommand(gizmoRotateCommand, View, gizmo.rotationMode);
@@ -523,7 +524,6 @@ class HuiPrefabEditor extends HuiElement {
 
 		var initialTransform = new h3d.Matrix();
 		var obj3ds : Array<hrt.prefab.Object3D> = [];
-
 		gizmo.onStartMove = (handle : hrt.tools.Gizmo.Handle) -> {
 			obj3ds = [];
 			for (p in selectedPrefabs.keys()) {
@@ -537,24 +537,57 @@ class HuiPrefabEditor extends HuiElement {
 		};
 
 		gizmo.onMove = (offsetPosition, offsetRotation, offsetScale) -> {
-			var transform = new h3d.Matrix();
-			transform.identity();
-
 			if (obj3ds.length <= 0)
 				return;
 
 			var obj3d = obj3ds[0];
-			if (offsetRotation != null)
-				offsetRotation.toMatrix(transform);
-			if (offsetPosition != null)
-				transform.translate(offsetPosition.x, offsetPosition.y, offsetPosition.z);
-			if (offsetScale != null)
+			if (offsetRotation != null) {
+				var euler = offsetRotation.toMatrix().getEulerAngles();
+				obj3d.rotationX = hxd.Math.radToDeg(initialTransform.getEulerAngles().x) + hxd.Math.radToDeg(euler.x);
+				obj3d.rotationY = hxd.Math.radToDeg(initialTransform.getEulerAngles().y) + hxd.Math.radToDeg(euler.y);
+				obj3d.rotationZ = hxd.Math.radToDeg(initialTransform.getEulerAngles().z) + hxd.Math.radToDeg(euler.z);
+			}
+
+			if (offsetPosition != null) {
+				obj3d.x = initialTransform.getPosition().x + offsetPosition.x;
+				obj3d.y = initialTransform.getPosition().y + offsetPosition.y;
+				obj3d.z = initialTransform.getPosition().z + offsetPosition.z;
+			}
+
+			if (offsetScale != null) {
+				var transform = initialTransform.clone();
 				transform.prependScale(offsetScale.x, offsetScale.y, offsetScale.z);
-			obj3d.setTransform(transform.multiplied(initialTransform));
+				obj3d.scaleX = transform.getScale().x;
+				obj3d.scaleY = transform.getScale().y;
+				obj3d.scaleZ = transform.getScale().z;
+			}
+
+			// if (!gizmo.isLocalTransform)
+			// 	transform.multiplied(initialTransform.getInverse());
+
 			obj3d.applyTransform();
 		};
 
-		gizmo.onFinishMove = () -> {};
+		gizmo.onFinishMove = () -> {
+			var prevTransforms = [];
+			var newTransforms = [];
+			var modifiedObj3ds = obj3ds.copy();
+			for (idx => o in modifiedObj3ds) {
+				prevTransforms.push(initialTransform.clone());
+				newTransforms.push(o.getTransform());
+			}
+
+			getView().undo.record((isUndo) -> {
+				var objs = [];
+				for (idx => o in modifiedObj3ds) {
+					o.setTransform(isUndo ? prevTransforms[idx] : newTransforms[idx]);
+					o.applyTransform();
+					if (o.local3d != null)
+						objs.push(o.local3d);
+				}
+				gizmo.moveToObjects(objs);
+			});
+		};
 	}
 
 	function onSceneEvents(e: hxd.Event) : Void {
@@ -579,8 +612,6 @@ class HuiPrefabEditor extends HuiElement {
 
 			lastPushX = e.relX;
 			lastPushY = e.relY;
-
-			trace(e.relX, e.relY);
 
 			var prefabs = getAllPrefabsUnder(e.relX, e.relY);
 

@@ -325,13 +325,16 @@ class Gizmo extends h3d.scene.Object {
 			var interactive = new h3d.scene.Interactive(getHandleCollider(o), o);
 			interactive.priority = o.name.indexOf("Full_Scale") >= 0 ? 101 : 100;
 			interactive.onOver = function(e : hxd.Event) {
+				e.propagate = false;
 				mat.color.setColor(highlight);
 				mat.color.w = 1.0;
 			}
 			interactive.onOut = function(e : hxd.Event) {
+				e.propagate = false;
 				mat.color.setColor(color);
 			}
 			interactive.onPush = function(e) {
+				e.propagate = false;
 				var startPt = new h2d.col.Point(mouseX, mouseY);
 				updateFunc = function(dt) {
 					var mousePt = new h2d.col.Point(mouseX, mouseY);
