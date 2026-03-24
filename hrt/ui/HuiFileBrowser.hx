@@ -21,6 +21,18 @@ class HuiFileBrowser extends HuiElement {
 		super(parent);
 		initComponent();
 
+		this.rootPath = rootPath;
+
+		tree = new HuiTree<File>(this);
+		tree.getItemChildren = getItemChild;
+		tree.getItemName = getItemName;
+		tree.getItemIcon = getItemIcon;
+		tree.onItemDoubleClick = (e, file) -> onOpen(file);
+
+		refresh();
+	}
+
+	public function refresh() {
 		rootFile = {
 			name: new haxe.io.Path(rootPath).file,
 			nameSort: new haxe.io.Path(rootPath).file,
@@ -30,11 +42,7 @@ class HuiFileBrowser extends HuiElement {
 			isDirectory: true,
 		};
 
-		var tree = new HuiTree<File>(this);
-		tree.getItemChildren = getItemChild;
-		tree.getItemName = getItemName;
-		tree.getItemIcon = getItemIcon;
-		tree.onItemDoubleClick = (e, file) -> onOpen(file);
+		tree.rebuild();
 	}
 
 	function getItemChild(child: File) : Array<File> {

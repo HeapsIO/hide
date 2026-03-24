@@ -37,6 +37,10 @@ class HuiView<T> extends HuiElement {
 
 	}
 
+	function getContextMenuContent(content: Array<hide.comp.ContextMenu.MenuItem>) {
+
+	}
+
 	override function getDisplayName() : String {
 		return "unknown";
 	};

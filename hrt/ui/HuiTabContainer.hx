@@ -58,7 +58,7 @@ class HuiTabContainer extends HuiElement {
 			}
 		}
 
-		saveDisplayState("currentTab", childElements.indexOf(activeTabElement));
+		saveDisplayState("currentTab", content.childElements.indexOf(activeTabElement));
 
 		syncActiveTabStyle();
 
@@ -69,7 +69,7 @@ class HuiTabContainer extends HuiElement {
 		return getTabs()[0];
 	}
 
-	function closeTab(id: Int) {
+	dynamic function onContextMenu(forElement: HuiElement) {
 
 	}
 
@@ -78,7 +78,13 @@ class HuiTabContainer extends HuiElement {
 
 	function makeTab(forElement: HuiElement) : HuiTab {
 		var tab = new HuiTab(forElement, tabBarContent);
-		tab.onClick = (e) -> setTab(tab.targetElement);
+		tab.onClick = (e) -> {
+			switch(e.button) {
+				case 0: setTab(tab.targetElement);
+				case 1: onContextMenu(forElement);
+				case 2: removeTab(forElement);
+			}
+		}
 		tab.title.text = forElement.getDisplayName();
 		return tab;
 	}
@@ -150,6 +156,11 @@ class HuiTabContainer extends HuiElement {
 		for (element in elements) {
 			element.visible = element == activeTabElement;
 		}
+	}
+
+	public function getTabTab(forElement: HuiElement) {
+		var index = getTabs().indexOf(forElement);
+		return tabBarContent.childElements[index];
 	}
 
 	public function addTab(tab: HuiElement) {

@@ -29,6 +29,22 @@ class HuiTabViewContainer extends HuiTabContainer {
 	override function new(?parent) {
 		super(parent);
 		initComponent();
+
+		onContextMenu = (forElement: HuiElement) -> {
+			var tab = getTabTab(forElement);
+			if (tab == null)
+				return;
+			var tabContent : Array<hide.comp.ContextMenu.MenuItem> = [];
+
+			tabContent.push({label: "Close", click: () -> removeTab(forElement)});
+			tabContent.push({isSeparator: true});
+
+			var view = Std.downcast(forElement, HuiView);
+			if (view != null)
+				view.getContextMenuContent(tabContent);
+
+			uiBase.openMenu(tabContent, {}, {object: Element(tab), directionX: StartInside, directionY: EndOutside});
+		}
 	}
 
 	override function syncTabs() {

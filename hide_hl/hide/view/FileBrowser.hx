@@ -20,5 +20,9 @@ class FileBrowser extends HuiView<{path: String}> {
 		return "File Browser";
 	}
 
+	override function getContextMenuContent(content:Array<hide.comp.ContextMenu.MenuItem>) {
+		content.push({label: "Refresh", click: () -> fileBrowser.refresh()});
+	}
+
 	static var _ = HuiView.register("fileBrowser", FileBrowser);
 }
