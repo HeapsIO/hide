@@ -37,6 +37,15 @@ class HuiTabViewContainer extends HuiTabContainer {
 			var tabContent : Array<hide.comp.ContextMenu.MenuItem> = [];
 
 			tabContent.push({label: "Close", click: () -> removeTab(forElement)});
+			tabContent.push({label: "Reload", click: () -> {
+				var index = getTabs().indexOf(forElement);
+				removeTab(forElement);
+				var state = getViewState(forElement);
+				var newView = loadView(state);
+				content.addChildAt(newView, index);
+				activeTabElement = newView;
+				}
+			});
 			tabContent.push({isSeparator: true});
 
 			var view = Std.downcast(forElement, HuiView);
@@ -54,15 +63,7 @@ class HuiTabViewContainer extends HuiTabContainer {
 			var tabState : Array<ViewData> = [];
 
 			for (child in getTabs()) {
-				var view = Std.downcast(child, HuiView);
-				if (view == null)
-					continue;
-				var state : ViewData = {type: view.getTypeName()};
-				if (Reflect.fields(view.state).length > 0) {
-					state.state = view.state;
-				}
-
-				tabState.push(state);
+				tabState.push(getViewState(child));
 			}
 
 			var state : TabViewData = {
@@ -73,6 +74,17 @@ class HuiTabViewContainer extends HuiTabContainer {
 			Reflect.setField(hide.Ide.inst.projectConfig.tabViews, dom.id.toString(), state);
 			hide.Ide.inst.config.user.save();
 		}
+	}
+
+	function getViewState(element: HuiElement) : ViewData {
+		var view = Std.downcast(element, HuiView);
+		if (view == null)
+			return null;
+		var state : ViewData = {type: view.getTypeName()};
+		if (Reflect.fields(view.state).length > 0) {
+			state.state = view.state;
+		}
+		return state;
 	}
 
 	override function makeTab(forElement: HuiElement) : HuiTab {
@@ -111,19 +123,23 @@ class HuiTabViewContainer extends HuiTabContainer {
 		activeTabElement = null;
 
 		for (tab in tabList) {
-			var success = false;
-			if (tab.type != null) {
-				var cl = HuiView.get(tab.type);
-				if (cl != null) {
-					var view : HuiView<Dynamic> = Type.createInstance(cl, [tab.state, content]);
-					continue;
-				}
-			}
-			var error = new HuiElement(content);
-			var errorText = new HuiText('Missing HuiView for type ${tab.type}', error);
+			loadView(tab);
 		}
+	}
 
+	function loadView(data: ViewData) : HuiView<Dynamic> {
+		var success = false;
 		syncTabsQueued = true;
+		if (data.type != null) {
+			var cl = HuiView.get(data.type);
+			if (cl != null) {
+				var view : HuiView<Dynamic> = Type.createInstance(cl, [data.state, content]);
+				return view;
+			}
+		}
+		var error = new HuiElement(content);
+		var errorText = new HuiText('Missing HuiView for type ${data.type}', error);
+		return null;
 	}
 }
 
