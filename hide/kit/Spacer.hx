@@ -9,7 +9,7 @@ class Spacer extends Element {
 		if (width != null)
 			native.get().style.setProperty("--width", '$width');
 		#elseif hui
-		throw "todo";
+		native = new hrt.ui.HuiSpacer();
 		#end
 	}
 }

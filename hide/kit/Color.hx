@@ -39,9 +39,23 @@ class Color extends Widget<Dynamic> {
 		return colorBox.element[0];
 		#elseif hui
 		colorBox = new hrt.ui.HuiColorPicker.HuiColorBox();
-		colorBox.value = value;
+		if (arr) {
+			colorBox.value = h3d.Vector4.fromArray(value).toColor();
+		} else if (vec) {
+			colorBox.value = (value:h3d.Vector4).toColor();
+		} else {
+			colorBox.value = value;
+		}
 		colorBox.onValueChanged = (isTemp) -> {
-			value = colorBox.value;
+			if (arr) {
+				var vec = h3d.Vector4.fromColor(colorBox.value);
+				value = alpha ? [vec.x, vec.y, vec.z, vec.w] : [vec.x, vec.y, vec.z];
+			}
+			else if (vec) {
+				(value:h3d.Vector4).setColor(colorBox.value);
+			} else {
+				value = colorBox.value;
+			}
 			broadcastValueChange(isTemp);
 		}
 		return colorBox;

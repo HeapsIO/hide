@@ -49,6 +49,15 @@ class Input extends Widget<String> {
 
 		return input;
 		#elseif hui
+		var textInput = new hrt.ui.HuiTextInput();
+
+		textInput.onChange = () -> {
+			value = textInput.text;
+			broadcastValueChange(false);
+		};
+
+		input = textInput;
+		return input;
 		throw "Implement";
 		#else
 		return null;
