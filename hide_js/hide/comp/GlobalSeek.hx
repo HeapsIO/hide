@@ -29,14 +29,32 @@ class GlobalSeek extends Modal {
             function addSheet(s: cdb.Sheet) {
                 if (s.idCol == null)
                     return;
+                var sepLevels = [];
+                var sepIndex = 0;
                 for (i in 0...s.lines.length) {
+                    while (sepIndex < s.separators.length && s.separators[sepIndex].index == i) {
+                        var sep = s.separators[sepIndex];
+                        var level = sep.level ?? 0;
+                        if (sepLevels.length > level)
+                            sepLevels.splice(level, sepLevels.length);
+                        if (sep.title != null) {
+                            choices.push({
+                                id: '#${s.name}:$i',
+                                ico: s.name + " -> " + (sepLevels.isEmpty() ? "" : sepLevels.join(" -> ") + " -> "),
+                                text: sep.title,
+                                searchText: "" + i,
+                            });
+                        }
+                        sepLevels[level] = sep.title;
+                        sepIndex++;
+                    }
                     var l = s.lines[i];
                     var id = Reflect.field(l, s.idCol.name);
                     if (id == null || id == "")
                         continue;
                     var dispL = s.index.get(id);
                     choices.push({
-                        id: '#${s.name}:$id',
+                        id: '#${s.name}:$i',
                         ico: s.name,
                         text: dispL?.disp,
                         searchText: "" + i,
@@ -71,9 +89,9 @@ class GlobalSeek extends Modal {
             if (StringTools.startsWith(val, "#") && currentSheet != null) {
                 var parts = val.substr(1).split(":");
                 var sname = parts[0];
-                var id = parts[1];
+                var lineNo = Std.parseInt(parts[1]);
                 var s = sheets.find(s -> s.name == sname);
-                cdbTable.goto2(s, [Id(s.idCol.name, id)]);
+                cdbTable.goto2(s, [Line(lineNo)]);
             }
         }
         d.onClose = close;
