@@ -265,7 +265,7 @@ class IdeData {
 					}
 				}
 
-				lastDBContent = database.save();
+				lastDBContent = toJSON(database.save());
 				checkBeforeWrite();
 				sys.io.File.saveContent(getPath(databaseFile), lastDBContent);
 				if ( dbWatcher != null )
