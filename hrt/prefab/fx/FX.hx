@@ -30,6 +30,7 @@ class FXAnimation extends h3d.scene.Object {
 	public var loopEnd: Float = -1;
 	public var hasLoopPoints(default, null): Bool = false;
 	public var duration : Float;
+	public var prefab : FX;
 
 	function set_loop(v: Bool) {
 		loop = v;
@@ -80,6 +81,7 @@ class FXAnimation extends h3d.scene.Object {
 	}
 
 	function init(def: FX, ?root: PrefabElement) {
+		this.prefab = def;
 		if(root == null)
 			root = def;
 

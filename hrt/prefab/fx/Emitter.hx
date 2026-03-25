@@ -619,6 +619,16 @@ class EmitterObject extends h3d.scene.Object {
 		prefab.updateInstance();
 	}
 
+	function getParentFX() : hrt.prefab.fx.FX.FXAnimation {
+		var p = parent;
+		while (p != null) {
+			var anim = Std.downcast(p, hrt.prefab.fx.FX.FXAnimation);
+			if( anim != null ) return anim;
+			p = p.parent;
+		}
+		return null;
+	}
+
 	function init(randSlots: Int, prefab: Emitter) {
 		this.emitterPrefab = prefab;
 		this.randSlots = randSlots;
@@ -747,16 +757,9 @@ class EmitterObject extends h3d.scene.Object {
 		randomValues = [for(i in 0...(maxCount * randSlots)) 0];
 		evaluator = new Evaluator(randomValues, randSlots);
 
-		{
-			var p = parent;
-			while (p != null && Std.downcast(p, hrt.prefab.fx.FX.FXAnimation) == null) {
-				p = p.parent;
-			}
-			if (p != null) {
-				var fx : hrt.prefab.fx.FX.FXAnimation = cast p;
-				@:privateAccess evaluator.parameters = fx.evaluator.parameters;
-			}
-		}
+		var anim = getParentFX();
+		if(anim != null)
+			evaluator.parameters = @:privateAccess anim.evaluator.parameters;
 
 		reset();
 	}
@@ -823,16 +826,19 @@ class EmitterObject extends h3d.scene.Object {
 		}
 	}
 
-	function error() {
+	function error(?kind : String) {
 		var path = name;
 		var obj : h3d.scene.Object = this.parent;
 		while (obj != null) {
-			if(obj.name != null && obj.name.length > 0) {
-				path = obj.name + "/" + path;
-			}
+			var name = (obj.name != null && obj.name.length > 0) ? obj.name : Type.getClassName(Type.getClass(obj));
+			path = name + "/" + path;
 			obj = obj.parent;
 		}
-		throw 'Emitter error ($path)'; // TODO: Add more information
+		trace('curTime: $curTime, numInstances: $numInstances, emitCount: $emitCount');
+		var fx = getParentFX();
+		if(fx != null)
+			trace("parent fx: " + fx.prefab.name);
+		throw (kind != null ? kind : "emitter error") + ' ($path)';
 	}
 
 	inline function checkList() {
@@ -866,7 +872,7 @@ class EmitterObject extends h3d.scene.Object {
 	}
 
 	function allocInstance() {
-		if(numInstances >= maxCount) error();
+		if(numInstances >= maxCount) error("allocInstance");
 		var p = particles[numInstances++];
 		p.init(instanceCounter, this);
 		p.prev = null;
@@ -881,14 +887,14 @@ class EmitterObject extends h3d.scene.Object {
 
 	function disposeInstance(idx: Int) {
 		checkList();
+		if(numInstances <= 0)
+			error("dispose");
 		--numInstances;
-		if(numInstances < 0)
-			error();
 
 		// stitch list after remove
 		var o = particles[idx];
 
-		if(o.idx == ParticleInstance.REMOVED_IDX) error();
+		if(o.idx == ParticleInstance.REMOVED_IDX) error("double dispose");
 
 		// Transfer remaining subemitter to this emitter array
 		o.clear(this);
