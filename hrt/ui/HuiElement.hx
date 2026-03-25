@@ -148,6 +148,10 @@ class HuiElement extends h2d.Flow #if hui implements h2d.domkit.Object #end {
 		return findParent(HuiView);
 	}
 
+	function execCommand(command: hrt.ui.HuiCommands.HuiCommand) {
+		uiBase.checkCommand2(command, this);
+	}
+
 	function registerCommand(command: hrt.ui.HuiCommands.HuiCommand, context: hrt.ui.HuiCommands.ShortcutContext, cb: Void -> Void) {
 		if (context == Element || context == ElementAndChildren) {
 			makeInteractive();

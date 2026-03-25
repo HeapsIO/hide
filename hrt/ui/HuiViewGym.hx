@@ -19,7 +19,7 @@ class HuiViewGym extends HuiView<{}> {
 			</hui-tab-container>
 		</hui-view-gym>
 
-	override function getDisplayName() : String {
+	override function getViewName() : String {
 		return "Hui Gym";
 	}
 

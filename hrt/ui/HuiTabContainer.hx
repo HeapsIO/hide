@@ -82,11 +82,14 @@ class HuiTabContainer extends HuiElement {
 			switch(e.button) {
 				case 0: setTab(tab.targetElement);
 				case 1: onContextMenu(forElement);
-				case 2: removeTab(forElement);
+				case 2: requestClose(forElement);
 			}
 		}
-		tab.title.text = forElement.getDisplayName();
 		return tab;
+	}
+
+	function requestClose(forElement: HuiElement) {
+
 	}
 
 	function syncTabs() {
@@ -107,6 +110,8 @@ class HuiTabContainer extends HuiElement {
 			} else {
 				oldTabs.remove(cast tab);
 			}
+
+			tab.title.text = element.getDisplayName();
 		}
 
 		for (old => _ in oldTabs) {

@@ -4,7 +4,7 @@ package hrt.ui.hide;
 #if hui
 
 class HuiViewTest extends HuiView<Dynamic> {
-	override function getDisplayName() : String {
+	override function getViewName() : String {
 		return "Hui View Test";
 	}
 }

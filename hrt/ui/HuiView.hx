@@ -6,6 +6,18 @@ class HuiView<T> extends HuiElement {
 	var state : T;
 	public var undo(default, never): hrt.tools.Undo = new hrt.tools.Undo();
 
+	var hasUnsavedChanges(default, set): Bool = false;
+
+	function set_hasUnsavedChanges(v: Bool) {
+		if (v != hasUnsavedChanges) {
+			hasUnsavedChanges = v;
+			onHasUnsavedChangesChanged();
+		}
+		return v;
+	}
+
+	public dynamic function onHasUnsavedChangesChanged() {};
+
 	function new(state: Dynamic, ?parent: h2d.Object) {
 		super(parent);
 		initComponent();
@@ -48,9 +60,13 @@ class HuiView<T> extends HuiElement {
 
 	}
 
-	override function getDisplayName() : String {
-		return "unknown";
+	final override function getDisplayName() : String {
+		return getViewName() + (hasUnsavedChanges ? " *" : "");
 	};
+
+	function getViewName() : String {
+		return "unknown";
+	}
 
 	static var REGISTRY : Map<String, Class<HuiView<Dynamic>>> = [];
 	public static function get(name: String) : Class<HuiView<Dynamic>> {

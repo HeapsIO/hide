@@ -95,10 +95,19 @@ class HuiTabViewContainer extends HuiTabContainer {
 	override function makeTab(forElement: HuiElement) : HuiTab {
 		var tab = super.makeTab(forElement);
 		tab.onClose = requestClose.bind(cast forElement);
+		var view = Std.downcast(forElement, HuiView);
+		if (view != null) {
+			view.onHasUnsavedChangesChanged = () -> {
+				syncTabsQueued = true;
+			};
+		}
 		return tab;
 	}
 
-	function requestClose(forElement: HuiView<Dynamic>) {
+	override function requestClose(forElement: HuiElement) {
+		var forElement = Std.downcast(forElement, HuiView);
+		if (forElement == null)
+			return;
 		forElement.requestClose((canClose:Bool) -> {
 			if (canClose) {
 				removeTab(forElement);

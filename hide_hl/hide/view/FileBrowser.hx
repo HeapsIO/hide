@@ -16,7 +16,7 @@ class FileBrowser extends HuiView<{path: String}> {
 		};
 	}
 
-	override function getDisplayName():String {
+	override function getViewName():String {
 		return "File Browser";
 	}
 

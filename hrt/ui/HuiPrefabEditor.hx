@@ -44,6 +44,7 @@ class HuiPrefabEditor extends HuiElement {
 	var cameraController : h3d.scene.CameraController;
 	var treePrefab: hrt.ui.HuiTree<hrt.prefab.Prefab>;
 	var interactives: Map<hrt.prefab.Prefab, h3d.scene.Interactive> = [];
+	var lastSaveUndo: Any = null;
 
 	var selectedPrefabs: Map<hrt.prefab.Prefab, Bool> = [];
 
@@ -77,7 +78,6 @@ class HuiPrefabEditor extends HuiElement {
 		scene.s3d.addEventListener(onSceneEvents);
 
 		registerCommand(hrt.ui.HuiCommands.HuiDebugCommands.debugReload, View, reload);
-		registerCommand(HuiCommands.save, View, save);
 
 		debugGraph = new h2d.Graphics(scene.s2d);
 	}
@@ -127,10 +127,14 @@ class HuiPrefabEditor extends HuiElement {
 		}
 
 		if (!flags.has(NoRecordUndo)) {
-			getView().undo.record((isUndo) -> setSelection(isUndo ? oldSelection : selection, NoRecordUndo));
+			getView().undo.record((isUndo) -> setSelection(isUndo ? oldSelection : selection, NoRecordUndo), false);
 		}
 
 		refreshInspector();
+	}
+
+	public function hasUnsavedChanges() : Bool {
+		return getView()?.undo.hasDataChanges(lastSaveUndo);
 	}
 
 	function reload() {
@@ -159,6 +163,8 @@ class HuiPrefabEditor extends HuiElement {
 
 			hide.App.defer(() -> saveBackup(text, path));
 			hide.Ide.showInfo('Saved $path');
+
+			lastSaveUndo = getView().undo.getCurrentUndo();
 		} catch(e) {
 			hide.Ide.showError('Save failed for $path : $e');
 		}
@@ -586,7 +592,7 @@ class HuiPrefabEditor extends HuiElement {
 						objs.push(o.local3d);
 				}
 				gizmo.moveToObjects(objs);
-			});
+			}, true);
 		};
 	}
 
@@ -729,7 +735,7 @@ class EditContext extends hrt.prefab.EditContext2 {
 	}
 
 	public function recordUndo(callback: (isUndo: Bool) -> Void ) : Void {
-		editor.findParent(HuiView).undo.record(callback);
+		editor.findParent(HuiView).undo.record(callback, true);
 	}
 
 	function saveSetting(category: hrt.prefab.EditContext2.SettingCategory, key: String, value: Dynamic) : Void {

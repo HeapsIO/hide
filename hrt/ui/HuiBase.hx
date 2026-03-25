@@ -183,6 +183,29 @@ class HuiBase extends HuiElement {
 		return false;
 	}
 
+	/**
+		Check if event triggers a event if object is the currently focused object in the h2d scene.
+		Return true if the event has been handled by a registered command
+	**/
+	public function checkCommand2(toCheck: hrt.ui.HuiCommands.HuiCommand, object: h2d.Object) : Bool {
+		var current = object;
+		while(current != null) {
+			var element = Std.downcast(current, HuiElement);
+			if (element != null && element.registeredCommands != null) {
+				for (command in element.registeredCommands) {
+					if (command.context == ElementAndChildren || (current == object && command.context == Element)) {
+						if (command.command == toCheck) {
+							command.callback();
+							return true;
+						}
+					}
+				}
+			}
+			current = current.parent;
+		}
+		return false;
+	}
+
 	function loadStyle() {
 		#if !js
 		style.loadComponents("ui/style",[hxd.Res.ui.style.common]);

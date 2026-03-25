@@ -27,19 +27,44 @@ class Prefab extends HuiView<{path: String}> {
 			new HuiText(error, this);
 		}
 
+		undo.onAfterChange = () -> {
+			hasUnsavedChanges = prefabEditor.hasUnsavedChanges();
+		}
+
+		registerCommand(HuiCommands.save, View, () -> {@:privateAccess prefabEditor.save(); hasUnsavedChanges = prefabEditor.hasUnsavedChanges();});
+	}
+
+	override function sync(ctx) {
+		super.sync(ctx);
 	}
 
 	override function getContextMenuContent(content: Array<hide.comp.ContextMenu.MenuItem>) {
-		content.push({label: "Save", click: () -> @:privateAccess prefabEditor.save()});
+		content.push({label: "Save", click: () -> execCommand(HuiCommands.save)});
 		content.push({label: "Rebuild", click: () -> @:privateAccess prefabEditor.tryMake(prefabEditor.prefab)});
 	}
 
-	override function getDisplayName():String {
+	override function getViewName():String {
 		return state.path.split("/").splice(-1, 2).join("/");
 	}
 
 	override function requestClose(cb: (canClose:Bool) -> Void) {
-		uiBase.confirm("Really close ?", (choice: hrt.ui.HuiConfirmPopup.ConfirmButton) -> cb(choice == hrt.ui.HuiConfirmPopup.ConfirmButton.Ok));
+		if (hasUnsavedChanges) {
+			uiBase.confirm("Save change before closing ?", Save | DontSave | Cancel, (choice: hrt.ui.HuiConfirmPopup.ConfirmButton) -> {
+				switch (choice) {
+					case Save:
+						execCommand(HuiCommands.save);
+						cb(true);
+					case DontSave:
+						cb(true);
+					case Cancel:
+						cb(false);
+					default:
+						throw "???";
+				}
+			});
+		} else {
+			cb(true);
+		}
 	}
 }
 
