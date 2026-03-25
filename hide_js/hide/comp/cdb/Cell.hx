@@ -132,7 +132,11 @@ class Cell {
 						label : "Show unreferenced IDs",
 						click : () -> editor.findUnreferenced(this.column, this.table),
 						keys : this.editor.config.get("key.cdb.showUnreferenced"),
-					}
+					},
+					{
+						label : "Add to favorites",
+						click : () -> editor.addToFavorites(this.value),
+					},
 				];
 				var remoteMenu = hide.view.RemoteConsoleView.getCdbMenuActions(this.table.sheet.name, this.value);
 				if (!remoteMenu.isEmpty()) {

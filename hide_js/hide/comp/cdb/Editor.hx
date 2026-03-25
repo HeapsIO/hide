@@ -1609,6 +1609,21 @@ class Editor extends Component {
 		});
 	}
 
+	public function addToFavorites(id: String, ?sheet: cdb.Sheet) {
+		if( cursor.table == null ) return;
+		if( sheet == null )
+			sheet = cursor.table.sheet;
+		var path: Path = [Id(sheet.idCol.name, id, sheet.idCol.name)];
+
+		ide.open("hide.view.CdbFavorites", null, function(view) {
+			var favoritesView : hide.view.CdbFavorites = cast view;
+			favoritesView.addFavorite({
+				text: sheet.name+"."+id,
+				goto: () -> openReference2(sheet, path),
+			});
+		});
+	}
+
 	function gotoReference( c : Cell ) {
 		if( c == null || c.value == null ) return;
 		switch( c.column.type ) {
