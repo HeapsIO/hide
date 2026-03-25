@@ -18,7 +18,6 @@ class HuiToast extends HuiElement {
 			<hui-element id="text-container">
 				<hui-text("") id="text"/>
 			</hui-element>
-			<hui-element id="timeout-overlay"/>
 		</hui-toast>
 
 	var timer : Float;
@@ -66,10 +65,11 @@ class HuiToast extends HuiElement {
 			remove();
 		}
 
-		timeoutOverlay.setWidth(Std.int(textContainer.calculatedWidth * (1.0-timer / startTimer)));
-		timeoutOverlay.setHeight(Std.int(textContainer.calculatedHeight));
-		timeoutOverlay.x = textContainer.x;
-		timeoutOverlay.y = textContainer.y;
+		if (textContainer.huiBg != null) {
+			textContainer.huiBg.background = 0xFFFFFF;
+			// makes the toast flash when spawned
+			textContainer.huiBg.backgroundAlpha = hxd.Math.pow(1.0 - hxd.Math.clamp(startTimer - timer),3.0) * 0.4;
+		}
 	}
 }
 
