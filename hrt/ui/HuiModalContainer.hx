@@ -22,6 +22,11 @@ class HuiModalContainer extends HuiElement {
 		}
 		interactive.cursor = null;
 	}
+
+	override function onPushInternal(e:hxd.Event) {
+		super.onPushInternal(e);
+		e.propagate = false;
+	}
 }
 
 #end
