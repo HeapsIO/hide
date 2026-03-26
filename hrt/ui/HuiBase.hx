@@ -213,21 +213,30 @@ class HuiBase extends HuiElement {
 		trace("startDragOperation");
 		stopDrag();
 		currentDrag = @:privateAccess new HuiDragOp(who, type, data);
+
+		rec((e) -> e.onAnyDragStart(currentDrag));
+
 		@:privateAccess getScene().events.startCapture((e) -> {
 			e.propagate = true;
 			switch(e.kind) {
 				case ERelease, EReleaseOutside:
-					hide.App.defer(() -> stopDrag());
+					if (currentDrag.lastOver != null) {
+						currentDrag.lastOver.onDrop(currentDrag);
+					}
 					@:privateAccess getScene().events.stopCapture();
 				default:
 			}
+		}, () -> {
+			trace("cancelled");
+			stopDrag();
 		});
 	}
 
 	public function stopDrag() {
 		if (currentDrag != null) {
-			trace("dragStop");
+			@:privateAccess currentDrag.lastOver?.onDragOut(currentDrag);
 			currentDrag.origin.onDragEnd(currentDrag);
+			rec((e) -> e.onAnyDragEnd(currentDrag));
 			currentDrag = null;
 		}
 	}

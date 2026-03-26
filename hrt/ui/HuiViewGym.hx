@@ -16,6 +16,7 @@ class HuiViewGym extends HuiView<{}> {
 				<gym-layouts display-name="Layouts"/>
 				<gym-search display-name="Search"/>
 				<gym-hui-background display-name="HuiBackground"/>
+				<gym-hui-drag-and-drop display-name="DragAndDrop"/>
 			</hui-tab-container>
 		</hui-view-gym>
 
@@ -487,6 +488,62 @@ class GymHuiBackground extends HuiElement {
 
 			<hui-button class="btn-1"/>
 		</gym-hui-background>
+}
+
+class GymHuiDragAndDrop extends HuiElement {
+	static var SRC =
+		<gym-hui-drag-and-drop>
+
+			<hui-element id="draggable"><hui-text("drag me") id="draggable-text"/></hui-element>
+			<hui-element id="dropTarget1"><hui-text("drop on me") id="drop-target-text"/></hui-element>
+
+		</gym-hui-drag-and-drop>
+
+	function new(?parent) {
+		super(parent);
+		initComponent();
+
+		draggable.onDragStart = () -> {
+			draggable.startDrag("gym-drag", "hello world");
+			draggable.dom.addClass("dragged");
+			draggableText.text = "dragged";
+		}
+
+		draggable.onDragEnd = (op) -> {
+			draggable.dom.removeClass("dragged");
+			draggableText.text = "drag me";
+		}
+
+		dropTarget1.onAnyDragStart = (op) -> {
+			if (op.type == "gym-drag") {
+				dropTarget1.dom.addClass("can-drop");
+			}
+		}
+
+		dropTarget1.onAnyDragEnd = (op) -> {
+			if (op.type == "gym-drag") {
+				dropTarget1.dom.removeClass("can-drop");
+			}
+		}
+
+		dropTarget1.onDragOver = (op) -> {
+			dropTarget1.dom.addClass("drag-over");
+			dropTargetText.text = "dragging over";
+		}
+
+		dropTarget1.onDragMove = (op) -> {
+			dropTargetText.text = 'over ${op.event.relX}, ${op.event.relY}';
+		}
+
+		dropTarget1.onDragOut = (op) -> {
+			dropTarget1.dom.removeClass("drag-over");
+			dropTargetText.text = "drop on me";
+		}
+
+		dropTarget1.onDrop = (op) -> {
+			hide.Ide.showInfo("Dropped " + op.data);
+		}
+	}
 }
 
 #end

@@ -253,3 +253,63 @@ gym-hui-background {
 		}
 	}
 }
+
+gym-hui-drag-and-drop {
+	#draggable {
+		margin: 8;
+
+		width: 96;
+		height: 96;
+
+		> hui-text {
+			valign: middle;
+			halign: middle;
+		}
+
+		> hui-background {
+			outline: 1 black;
+			border-radius: 4;
+			background: #999;
+		}
+
+		&.dragged {
+			> hui-background {
+				outline: 1 black;
+				border-radius: 4;
+				background: #333;
+			}
+		}
+	}
+
+	#dropTarget1 {
+		margin: 8;
+
+		width: 96;
+		height: 96;
+
+		> hui-text {
+			valign: middle;
+			halign: middle;
+		}
+
+		> hui-background {
+			outline: 1 black;
+			border-radius: 4;
+			background: #999;
+		}
+
+		&.can-drop {
+			> hui-background {
+				outline: 2 green;
+				border-radius: 4;
+			}
+		}
+
+		&.drag-over {
+			> hui-background {
+				outline: 2 red;
+				border-radius: 4;
+			}
+		}
+	}
+}

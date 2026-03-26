@@ -41,6 +41,9 @@ class HuiElement extends h2d.Flow #if hui implements h2d.domkit.Object #end {
 	public var onDragMove(default, set) : HuiDragOp -> Void = emptyFuncDragVoid; /** Called when someone is draging an item above this object and moves **/
 	public var onDrop(default, set) : HuiDragOp -> Void = emptyFuncDragVoid; /** Called when the user drops a dragged operation on THIS element**/
 
+	public var onAnyDragStart : HuiDragOp -> Void = emptyFuncDragVoid; /** Called when any drag and drop operation has started**/
+	public var onAnyDragEnd : HuiDragOp -> Void = emptyFuncDragVoid; /** Called when any drag and drop operation has ended**/
+
 	@:p public var propagateEvents(get, set): Bool;
 
 	public var onChildrenChanged : Void -> Void = emtpyFuncVoidVoid;
@@ -157,6 +160,19 @@ class HuiElement extends h2d.Flow #if hui implements h2d.domkit.Object #end {
 			current = current.parentElement;
 		}
 		return null;
+	}
+
+	/** Call a function on every HuiElement in this element tree**/
+	public function rec(fn: (e: HuiElement) -> Void) {
+		fn(this);
+		for (child in this.children) {
+			if (child == background)
+				continue;
+			var e = Std.downcast(child, HuiElement);
+			if (e != null) {
+				e.rec(fn);
+			}
+		}
 	}
 
 	public function getView() {
@@ -297,18 +313,45 @@ class HuiElement extends h2d.Flow #if hui implements h2d.domkit.Object #end {
 		return displayName ?? Type.getClassName(Type.getClass(this));
 	}
 
+	function checkDragFn(fn: HuiDragOp -> Void, event: hxd.Event) : Bool{
+		if (fn != emptyFuncDragVoid) {
+			var base = uiBase;
+			if (base.currentDrag != null) {
+				base.currentDrag.event = event;
+				fn(base.currentDrag);
+				base.currentDrag.event = null;
+				event.propagate = false;
+				return true;
+			}
+		}
+		return false;
+	}
+
 
 	function onOverInternal(e: hxd.Event) {
 		if (!enable)
 			return;
+
+		if (checkDragFn(onDragOver, e)) {
+			@:privateAccess uiBase.currentDrag.setLastOver(this);
+			return;
+		}
+
 		dom.hover = true;
 		e.propagate = true;
+
 		onOver(e);
 	}
 
 	function onOutInternal(e: hxd.Event) {
 		if (!enable)
 			return;
+
+		if (onDragOut != emptyFuncDragVoid && @:privateAccess uiBase.currentDrag?.lastOver == this && checkDragFn(onDragOut, e)) {
+			@:privateAccess uiBase.currentDrag.setLastOver(null);
+			return;
+		}
+
 		dom.hover = false;
 		e.propagate = true;
 		onOut(e);
@@ -316,6 +359,9 @@ class HuiElement extends h2d.Flow #if hui implements h2d.domkit.Object #end {
 
 	function onMoveInternal(e: hxd.Event) {
 		if (!enable)
+			return;
+
+		if (checkDragFn(onDragMove, e))
 			return;
 
 		onMove(e);
@@ -367,10 +413,9 @@ class HuiElement extends h2d.Flow #if hui implements h2d.domkit.Object #end {
 			case EMove:
 				var base = uiBase;
 				var dist = hxd.Math.distance(base.startDragX - e.relX, base.startDragY - e.relY, 0);
-				trace(dist, e.relX, e.relY, base.startDragX);
 				if (dist > HuiBase.dragDistanceThreshold) {
-					onDragStart();
 					interactive.stopCapture();
+					onDragStart();
 				}
 			default:
 		}
@@ -386,14 +431,6 @@ class HuiElement extends h2d.Flow #if hui implements h2d.domkit.Object #end {
 
 		dom.active = false;
 
-		if (onDrop != emptyFuncDragVoid) {
-			var base = uiBase;
-			if (base.currentDrag != null) {
-				onDrop(base.currentDrag);
-				base.stopDrag();
-				e.propagate = false;
-			}
-		}
 		onRelease(e);
 	}
 
