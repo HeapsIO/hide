@@ -45,10 +45,10 @@ class RotateAxisShader extends hxsl.Shader {
 }
 
 class Gizmo extends h3d.scene.Object {
-	public static final X_COLOR = new h3d.Vector4(0.96, 0.21, 0.32, 1);
-	public static final Y_COLOR = new h3d.Vector4(0.43, 0.64, 0.10, 1);
-	public static final Z_COLOR = new h3d.Vector4(0.18, 0.51, 0.89, 1);
-	public static final DEFAULT_COLOR = new h3d.Vector4(1, 1, 1, 1);
+	public static final X_COLOR = 0xfff44336;
+	public static final Y_COLOR = 0xff4dae51;
+	public static final Z_COLOR = 0xff2196f3;
+	public static final DEFAULT_COLOR = 0xFFFFFFFF;
 
 	public var mode : EditMode = Translation;
 	public var isLocalTransform : Bool = false;
@@ -308,7 +308,7 @@ class Gizmo extends h3d.scene.Object {
 			mat.mainPass.blend(SrcAlpha, OneMinusSrcAlpha);
 			mat.mainPass.culling = None;
 			mat.mainPass.depth(false, Always);
-			mat.mainPass.setPassName("ui");
+			mat.mainPass.setPassName("overlay");
 			if (o.name.indexOf("Rotate") >= 0)
 				mat.mainPass.addShader(rotateAxisShader);
 			var color = (switch (axis) {
@@ -316,9 +316,7 @@ class Gizmo extends h3d.scene.Object {
 				case 1: Y_COLOR;
 				case 2: Z_COLOR;
 				case _: DEFAULT_COLOR;
-			}).toColor();
-			color = hxd.Math.colorLerp(color, 0x000000, 0.2);
-			color = (color & 0x00ffffff) | 0x80000000;
+			});
 			mat.color.setColor(color);
 
 			var highlight = hxd.Math.colorLerp(color, 0xffffff, 0.3);
