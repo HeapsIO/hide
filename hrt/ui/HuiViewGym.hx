@@ -484,6 +484,8 @@ class GymHuiBackground extends HuiElement {
 			<hui-element class="example-4"/>
 			<hui-element class="example-5"/>
 			<hui-element class="example-6"/>
+
+			<hui-button class="btn-1"/>
 		</gym-hui-background>
 }
 

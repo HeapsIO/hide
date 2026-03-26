@@ -187,6 +187,31 @@ gym-hui-background {
 		}
 	}
 
+	.btn-1 {
+		width: 64;
+		height: 64;
+
+		> hui-background {
+			border-radius: 0 2 8 8;
+
+			background: #999;
+			shadow: 2 2 5 rgba(0,0,0,0.5);
+
+			filter: brightness(0.50);
+		}
+
+		&:hover {
+			> hui-background {
+				shadow: 2 2 0 16 rgba(255,0,0,1.0);
+
+				filter: brightness(0.50);
+			}
+
+			filter: brightness(-0.1);
+
+		}
+	}
+
 	.example-1 {
 		> hui-background {
 			shadow: 2 2 5 rgba(0,0,0,0.5);

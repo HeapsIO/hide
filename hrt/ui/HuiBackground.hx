@@ -604,7 +604,7 @@ class HuiBackground extends h2d.ScaleGrid implements h2d.domkit.Object {
 		// skip super.checkUpdate()
 	}
 
-	override function draw( ctx ) {
+	override function sync( ctx ) {
 		x = 0;
 		y = 0;
 		var flowParent = Std.downcast(parent, h2d.Flow);
@@ -681,7 +681,7 @@ class HuiBackground extends h2d.ScaleGrid implements h2d.domkit.Object {
 		else
 			shader.borderSkew.set(0, 0);
 
-		super.draw(ctx);
+		super.sync(ctx);
 	}
 }
 
