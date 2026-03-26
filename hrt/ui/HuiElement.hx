@@ -33,6 +33,14 @@ class HuiElement extends h2d.Flow #if hui implements h2d.domkit.Object #end {
 	public var onFocusLost(default, set) : hxd.Event->Void = emptyFuncEventVoid;
 	public var onWheel(default, set) : hxd.Event->Void = emptyFuncEventVoid;
 	public var onDoubleClick(default, set) : hxd.Event->Void = null;
+
+	public var onDragStart(default, set) : Void -> Void = emtpyFuncVoidVoid;
+	public var onDragEnd(default, set) : HuiDragOp -> Void = emptyFuncDragVoid; /** Called when the element started a drag opetaion and the operation ended (either cancelled or succesfull) **/
+	public var onDragOver(default, set) : HuiDragOp -> Void = emptyFuncDragVoid; /** Called when someone starts to drag an item above this one**/
+	public var onDragOut(default, set) : HuiDragOp -> Void = emptyFuncDragVoid; /** Called when someone leave this item **/
+	public var onDragMove(default, set) : HuiDragOp -> Void = emptyFuncDragVoid; /** Called when someone is draging an item above this object and moves **/
+	public var onDrop(default, set) : HuiDragOp -> Void = emptyFuncDragVoid; /** Called when the user drops a dragged operation on THIS element**/
+
 	@:p public var propagateEvents(get, set): Bool;
 
 	public var onChildrenChanged : Void -> Void = emtpyFuncVoidVoid;
@@ -92,6 +100,13 @@ class HuiElement extends h2d.Flow #if hui implements h2d.domkit.Object #end {
 	function set_onFocusLost(v) {onFocusLost = v; makeInteractive(); return v;};
 	function set_onWheel(v) {onWheel = v; makeInteractive(); return v;};
 	function set_onDoubleClick(v) {onDoubleClick = v; makeInteractive(); return v;};
+
+	function set_onDragStart(v) {onDragStart = v; makeInteractive(); return v;};
+	function set_onDragEnd(v) {onDragEnd = v; makeInteractive(); return v;};
+	function set_onDragOver(v) {onDragOver = v; makeInteractive(); return v;};
+	function set_onDragOut(v) {onDragOut = v; makeInteractive(); return v;};
+	function set_onDragMove(v) {onDragMove = v; makeInteractive(); return v;};
+	function set_onDrop(v) {onDrop = v; makeInteractive(); return v;};
 
 	function get_propagateEvents() {return interactive?.propagateEvents;}
 	function set_propagateEvents(v) {makeInteractive(); return interactive.propagateEvents = v;};
@@ -329,9 +344,40 @@ class HuiElement extends h2d.Flow #if hui implements h2d.domkit.Object #end {
 
 		dom.active = true;
 
-		grabCommandFocus();
+		if (onDragStart != emtpyFuncVoidVoid) {
+			var base = uiBase;
+			base.startDragX = e.relX;
+			base.startDragY = e.relY;
+
+			interactive.startCapture(dragTester, () -> {
+				var base = uiBase;
+				base.startDragX = hxd.Math.NaN;
+				base.startDragY = hxd.Math.NaN;
+			});
+		}
 
 		onPush(e);
+	}
+
+	function dragTester(e:hxd.Event) {
+		e.propagate = true;
+		switch (e.kind) {
+			case ERelease, EReleaseOutside:
+				interactive.stopCapture();
+			case EMove:
+				var base = uiBase;
+				var dist = hxd.Math.distance(base.startDragX - e.relX, base.startDragY - e.relY, 0);
+				trace(dist, e.relX, e.relY, base.startDragX);
+				if (dist > HuiBase.dragDistanceThreshold) {
+					onDragStart();
+					interactive.stopCapture();
+				}
+			default:
+		}
+	}
+
+	function startDrag(type: String, data: Dynamic) {
+		uiBase.startDragOperation(this, type, data);
 	}
 
 	function onReleaseInternal(e: hxd.Event) {
@@ -339,6 +385,15 @@ class HuiElement extends h2d.Flow #if hui implements h2d.domkit.Object #end {
 			return;
 
 		dom.active = false;
+
+		if (onDrop != emptyFuncDragVoid) {
+			var base = uiBase;
+			if (base.currentDrag != null) {
+				onDrop(base.currentDrag);
+				base.stopDrag();
+				e.propagate = false;
+			}
+		}
 		onRelease(e);
 	}
 
@@ -364,10 +419,6 @@ class HuiElement extends h2d.Flow #if hui implements h2d.domkit.Object #end {
 			return;
 
 		onKeyUp(e);
-	}
-
-	function grabCommandFocus() {
-		uiBase.setCommandFocus(this);
 	}
 
 	function onTextInputInternal(e: hxd.Event) {
@@ -424,6 +475,7 @@ class HuiElement extends h2d.Flow #if hui implements h2d.domkit.Object #end {
 
 	static function emptyFuncEventVoid(e: hxd.Event) { }
 	static function emtpyFuncVoidVoid() {}
+	static function emptyFuncDragVoid(op: HuiDragOp) {}
 }
 
 #end

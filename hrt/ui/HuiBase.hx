@@ -2,6 +2,7 @@ package hrt.ui;
 
 #if hui
 
+@:allow(hrt.ui.HuiElement)
 class HuiBase extends HuiElement {
 	public var app(default, null): hide.App;
 	public var style : h2d.domkit.Style;
@@ -14,6 +15,12 @@ class HuiBase extends HuiElement {
 	var checkedCommandEvents: Map<hxd.Event, Bool> = [];
 
 	var previousUiScale: Float = 0;
+
+	var startDragX : Float = hxd.Math.NaN;
+	var startDragY : Float = hxd.Math.NaN;
+	var currentDrag: HuiDragOp = null;
+
+	static final dragDistanceThreshold = 5.0;
 
 	// Keep track of the element that currently own the scroll event.
 	// Reset when lastScrollTime is too old compared to now (inspired by the same behavior in google chrome)
@@ -137,10 +144,6 @@ class HuiBase extends HuiElement {
 		@:privateAccess popup.addModal(this);
 	}
 
-	public function setCommandFocus(element: HuiElement) {
-		commandFocus = element;
-	}
-
 	public function openMenu(items: Array<hrt.ui.HuiMenu.MenuItem>, options: hrt.ui.HuiMenu.MenuOptions, ?anchor: hrt.ui.HuiPopup.Anchor) : HuiMenu {
 		if (currentMenu != null)
 			currentMenu.close();
@@ -205,6 +208,30 @@ class HuiBase extends HuiElement {
 		}
 		return false;
 	}
+
+	public function startDragOperation(who: HuiElement, type: String, data: Dynamic) {
+		trace("startDragOperation");
+		stopDrag();
+		currentDrag = @:privateAccess new HuiDragOp(who, type, data);
+		@:privateAccess getScene().events.startCapture((e) -> {
+			e.propagate = true;
+			switch(e.kind) {
+				case ERelease, EReleaseOutside:
+					hide.App.defer(() -> stopDrag());
+					@:privateAccess getScene().events.stopCapture();
+				default:
+			}
+		});
+	}
+
+	public function stopDrag() {
+		if (currentDrag != null) {
+			trace("dragStop");
+			currentDrag.origin.onDragEnd(currentDrag);
+			currentDrag = null;
+		}
+	}
+
 
 	function loadStyle() {
 		#if !js

@@ -327,6 +327,15 @@ class HuiTree<TreeItem> extends HuiElement {
 			userSelectionChanged();
 		}
 
+		line.onDragStart = () -> {
+			trace("drag started");
+			startDrag("treeDrag", {});
+		}
+
+		line.onDrop = (op: HuiDragOp) -> {
+			trace("drop");
+		}
+
 		line.onDoubleClick = (e) -> {
 			onItemDoubleClick(e, data.item);
 		}
