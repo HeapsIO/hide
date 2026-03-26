@@ -1,9 +1,9 @@
 package hide.view;
 
-class CdbFavorites extends hide.ui.View<> {
+class CdbFavorites extends hide.ui.View<{}> {
     var favorites: Array<RefViewer.Result> = [];
 	public function new(state: Dynamic) {
-		super(state);
+        super(state);
 	}
 
 	override function getTitle() {
