@@ -62,7 +62,8 @@ class ShaderTargetObj extends h3d.scene.Object {
 	override function onRemove() {
 		super.onRemove();
 		removeShaders();
-		ShaderTarget.updateShaderTargets(shadersRoot.target);
+		if (parent?.allocated)
+			ShaderTarget.updateShaderTargets(shadersRoot.target);
 	}
 }
 
