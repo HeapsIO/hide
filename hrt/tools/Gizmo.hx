@@ -48,7 +48,7 @@ class Gizmo extends h3d.scene.Object {
 	public static final X_COLOR = 0xfff44336;
 	public static final Y_COLOR = 0xff4dae51;
 	public static final Z_COLOR = 0xff2196f3;
-	public static final DEFAULT_COLOR = 0xFFFFFFFF;
+	public static final DEFAULT_COLOR = 0xFFAAAAAA;
 
 	public var mode : EditMode = Translation;
 	public var isLocalTransform : Bool = false;
