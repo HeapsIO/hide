@@ -209,10 +209,10 @@ class HuiBase extends HuiElement {
 		return false;
 	}
 
-	public function startDragOperation(who: HuiElement, type: String, data: Dynamic) {
-		trace("startDragOperation");
+	public function startDragOperation(who: HuiElement, type: String, data: Dynamic) : HuiDragOp {
 		stopDrag();
 		currentDrag = @:privateAccess new HuiDragOp(who, type, data);
+		currentDrag.base = this;
 
 		rec((e) -> e.onAnyDragStart(currentDrag));
 
@@ -221,15 +221,23 @@ class HuiBase extends HuiElement {
 			switch(e.kind) {
 				case ERelease, EReleaseOutside:
 					if (currentDrag.lastOver != null) {
+						currentDrag.event = e;
 						currentDrag.lastOver.onDrop(currentDrag);
+						currentDrag.event = null;
 					}
 					@:privateAccess getScene().events.stopCapture();
+				case EMove:
+					if (currentDrag.previewWidget != null) {
+						currentDrag.updatePreviewPos(e.relX, e.relY);
+					}
 				default:
 			}
 		}, () -> {
 			trace("cancelled");
 			stopDrag();
 		});
+
+		return currentDrag;
 	}
 
 	public function stopDrag() {
@@ -237,6 +245,7 @@ class HuiBase extends HuiElement {
 			@:privateAccess currentDrag.lastOver?.onDragOut(currentDrag);
 			currentDrag.origin.onDragEnd(currentDrag);
 			rec((e) -> e.onAnyDragEnd(currentDrag));
+			currentDrag.dispose();
 			currentDrag = null;
 		}
 	}

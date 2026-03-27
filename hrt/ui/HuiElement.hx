@@ -361,8 +361,10 @@ class HuiElement extends h2d.Flow #if hui implements h2d.domkit.Object #end {
 		if (!enable)
 			return;
 
-		if (checkDragFn(onDragMove, e))
-			return;
+		if (onDragMove != null && @:privateAccess uiBase.currentDrag?.lastOver == this) {
+			if (checkDragFn(onDragMove, e))
+				return;
+		}
 
 		onMove(e);
 	}
@@ -421,8 +423,8 @@ class HuiElement extends h2d.Flow #if hui implements h2d.domkit.Object #end {
 		}
 	}
 
-	function startDrag(type: String, data: Dynamic) {
-		uiBase.startDragOperation(this, type, data);
+	function startDrag(type: String, data: Dynamic) : HuiDragOp {
+		return uiBase.startDragOperation(this, type, data);
 	}
 
 	function onReleaseInternal(e: hxd.Event) {

@@ -66,4 +66,24 @@ hui-tree-line {
 			background: #FF00FF;
 		}
 	}
+
+	> #drop-indicator {
+		position: absolute;
+
+		> hui-background {
+			outline: 0 #5e98f5;
+		}
+	}
+
+	&.drop-inside > #drop-indicator > hui-background {
+		outline-thickness: 1;
+	}
+
+	&.drop-before > #drop-indicator > hui-background {
+		outline-thickness: 1 0 0 0;
+	}
+
+	&.drop-after > #drop-indicator > hui-background {
+		outline-thickness: 0 0 1 0;
+	}
 }

@@ -291,6 +291,24 @@ class GymWidgets extends HuiElement {
 				return items;
 			return item.children;
 		};
+
+		tree.dragAndDropInterface = {
+			onDragStart: (item) -> {
+				var op = tree.startDrag("testDrag", tree.getSelectedItems());
+				op.setPreviewText("" + tree.getSelectedItems());
+			},
+			getItemDropFlags: function(item, op) : hrt.ui.HuiTree.DropFlags {
+				if (op.type == "testDrag") {
+					return hrt.ui.HuiTree.DropFlag.Reorder | hrt.ui.HuiTree.DropFlag.Reparent;
+				}
+				return hrt.ui.HuiTree.DropFlags.ofInt(0);
+			},
+			onDrop: (item, where, op) -> {
+				if (op.type == "testDrag") {
+					hide.Ide.showInfo('Dropped ${op.data} $where $item');
+				}
+			}
+		};
 	}
 
 	function setupScene() {
@@ -504,7 +522,8 @@ class GymHuiDragAndDrop extends HuiElement {
 		initComponent();
 
 		draggable.onDragStart = () -> {
-			draggable.startDrag("gym-drag", "hello world");
+			var op = draggable.startDrag("gym-drag", "hello world");
+			op.setPreviewText("hello world");
 			draggable.dom.addClass("dragged");
 			draggableText.text = "dragged";
 		}

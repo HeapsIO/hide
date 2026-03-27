@@ -2,4 +2,24 @@ hui-base {
 	layout: stack;
 	fill-width: 1;
 	fill-height: 1;
+
+	.drag-preview {
+		position: absolute;
+
+		alpha: 0.7;
+	}
+
+	hui-drag-drop-preview {
+		padding: 4;
+		padding-left: 8;
+
+		margin-top: -8;
+		margin-left: -4;
+
+		> hui-background {
+			background: @popup-bg-darker;
+			outline: 1 @popup-border;
+			border-radius: @base-corner-radius;
+		}
+	}
 }

@@ -3,6 +3,19 @@ import hrt.ui.HuiTreeLine;
 
 #if hui
 
+enum DropFlag {
+	Reorder;
+	Reparent;
+}
+
+typedef DropFlags = haxe.EnumFlags<DropFlag>;
+
+enum DropOperation {
+	Before;
+	After;
+	Inside;
+}
+
 enum RefreshFlag {
 	Refresh;
 	RegenerateFlatten;
@@ -327,13 +340,28 @@ class HuiTree<TreeItem> extends HuiElement {
 			userSelectionChanged();
 		}
 
-		line.onDragStart = () -> {
-			trace("drag started");
-			startDrag("treeDrag", {});
-		}
+		if (dragAndDropInterface != null) {
+			line.onDragStart = () -> {
+				dragAndDropInterface.onDragStart(data.item);
+			}
 
-		line.onDrop = (op: HuiDragOp) -> {
-			trace("drop");
+			line.onDrop = (op: HuiDragOp) -> {
+				dragAndDropInterface.onDrop(data.item, line.getDropOperation(op), op);
+			}
+
+			line.onDragOver = line.onDragMove = (op) -> {
+				var dropOp = line.getDropOperation(op);
+
+				line.dom.toggleClass("drop-before", dropOp==Before);
+				line.dom.toggleClass("drop-inside", dropOp==Inside);
+				line.dom.toggleClass("drop-after", dropOp==After);
+			}
+
+			line.onDragOut = (e) -> {
+				line.dom.removeClass("drop-before");
+				line.dom.removeClass("drop-inside");
+				line.dom.removeClass("drop-after");
+			}
 		}
 
 		line.onDoubleClick = (e) -> {
@@ -395,6 +423,31 @@ class HuiTree<TreeItem> extends HuiElement {
 		}
 		return childrenData;
 	}
+
+	/**
+		Drag and drop interface.
+		Set this struct with all of it's function callback to handle drag and drop inside your tree.
+	**/
+	public var dragAndDropInterface :
+	{
+		/**
+			Called when the user starts a drag and drop operation on `item`.
+			Call startDrag with your data to initiate the drag
+		**/
+		onDragStart: (item: TreeItem) -> Void,
+
+		/**
+			Called when the user hovers on `target` with a drag and drop operation. You need to return what drop operation is allowed
+			on the given object
+		**/
+		getItemDropFlags: (target: TreeItem, op : HuiDragOp) -> DropFlags,
+
+		/**
+			Called when the user drops an item on `target` and getItemDropFlags returned at least one valid flag.
+			`where` tells you where the item was dropped
+		**/
+		onDrop: (target: TreeItem, where: DropOperation, op : HuiDragOp) -> Void
+	} = null;
 
 	function updateData(data: TreeItemData) {
 		data.children = null; // invalidate children if we are regenerating the tree
