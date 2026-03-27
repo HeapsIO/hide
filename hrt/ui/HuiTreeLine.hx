@@ -29,12 +29,19 @@ class HuiTreeLine extends HuiElement {
 		}
 
 		onPush = (e) -> {
-			if (e.button == 0) {
+			if (e.button == 0 || e.button == 1) {
 				onItemSelect(hxd.Key.isDown(hxd.Key.SHIFT), hxd.Key.isDown(hxd.Key.CTRL));
+
+				if (e.button == 1) {
+					onContextMenu();
+				}
 			}
 		}
 
 		var tree : HuiTree<Dynamic> = tree;
+	}
+
+	public dynamic function onContextMenu() {
 	}
 
 	public function getDropOperation(op: HuiDragOp) : hrt.ui.HuiTree.DropOperation {
@@ -64,7 +71,7 @@ class HuiTreeLine extends HuiElement {
 			if (percentHeight < split) {
 				return Before;
 			}
-			if (percentHeight > (1.0-split)) {
+			if (percentHeight > (1.0-split) && !tree.isOpen(data)) {
 				return After;
 			}
 			return Inside;

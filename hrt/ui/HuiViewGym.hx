@@ -278,6 +278,10 @@ class GymWidgets extends HuiElement {
 			});
 		}
 
+		tree.onItemContextMenu = (item) -> {
+			uiBase.contextMenu([{label: item?.name ?? "no item"}]);
+		}
+
 		tree.getItemName = (item) -> {
 			return item?.name ?? "";
 		}

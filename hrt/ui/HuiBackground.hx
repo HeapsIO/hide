@@ -449,6 +449,8 @@ class HuiBackground extends h2d.ScaleGrid implements h2d.domkit.Object {
 				imageMode = v.mode;
 				shader.imgBounds.set(0,0,1,1);
 			} catch(e: Dynamic) { }
+		} else {
+			setTexture(null);
 		}
 		return v;
 	}

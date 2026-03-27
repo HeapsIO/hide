@@ -101,13 +101,17 @@ class HuiTree<TreeItem> extends HuiElement {
 		onKeyDown = keyDownHandler.bind(false);
 
 		onPush = (e:hxd.Event) -> {
-			if (e.button == 0) {
+			if (e.button == 0 || e.button == 1) {
 				interactive.focus();
 				e.propagate = false;
 
 				if (!hxd.Key.isDown(hxd.Key.CTRL)) {
 					selectedElements.clear();
 					userSelectionChanged();
+				}
+
+				if (e.button == 1) {
+					onItemContextMenu(null);
 				}
 			}
 		}
@@ -142,7 +146,7 @@ class HuiTree<TreeItem> extends HuiElement {
 		} else if (e.keyCode == hxd.Key.RIGHT) {
 			if (keyboardFocus != null) {
 				if (!isOpen(keyboardFocus)) {
-					toggleItemOpen(keyboardFocus, true);
+					toggleItemDataOpen(keyboardFocus, true);
 				} else if (keyboardFocus.children?.length > 0) {
 					focusSetInternal(keyboardFocus.children[0]);
 				}
@@ -156,7 +160,7 @@ class HuiTree<TreeItem> extends HuiElement {
 						focusSetInternal(keyboardFocus.parent);
 					}
 				} else {
-					toggleItemOpen(keyboardFocus, false);
+					toggleItemDataOpen(keyboardFocus, false);
 				}
 				searchBar.textInput.preventDefault = true;
 				e.propagate = false;
@@ -247,12 +251,23 @@ class HuiTree<TreeItem> extends HuiElement {
 		return rec(data);
 	}
 
+	public function toggleItemOpen(item: TreeItem, ?force: Bool) {
+		var data = itemMap.get(cast item);
+		if (data == null)
+			return;
+		toggleItemDataOpen(data, force);
+	}
+
 	public dynamic function getItemName(item: TreeItem) : String {
 		return "";
 	}
 
 	public dynamic function getItemIcon(item: TreeItem) : String {
 		return HuiRes.icons.file_blank;
+	}
+
+	public dynamic function onItemContextMenu(item: TreeItem) : Void {
+
 	}
 
 	public dynamic function onItemDoubleClick(e: hxd.Event, item: TreeItem) : Void {
@@ -314,7 +329,7 @@ class HuiTree<TreeItem> extends HuiElement {
 		var line = new HuiTreeLine(data, this);
 
 		line.onCaretClick = () -> {
-			toggleItemOpen(data);
+			toggleItemDataOpen(data);
 		}
 
 		line.onItemSelect = (shift, ctrl) -> {
@@ -340,6 +355,10 @@ class HuiTree<TreeItem> extends HuiElement {
 			userSelectionChanged();
 		}
 
+		line.onContextMenu = () -> {
+			onItemContextMenu(data.item);
+		}
+
 		if (dragAndDropInterface != null) {
 			line.onDragStart = () -> {
 				dragAndDropInterface.onDragStart(data.item);
@@ -348,6 +367,7 @@ class HuiTree<TreeItem> extends HuiElement {
 			line.onDrop = (op: HuiDragOp) -> {
 				dragAndDropInterface.onDrop(data.item, line.getDropOperation(op), op);
 			}
+
 
 			line.onDragOver = line.onDragMove = (op) -> {
 				var dropOp = line.getDropOperation(op);
@@ -370,7 +390,7 @@ class HuiTree<TreeItem> extends HuiElement {
 		return line;
 	}
 
-	function toggleItemOpen(data: TreeItemData, ?force : Bool) : Void {
+	function toggleItemDataOpen(data: TreeItemData, ?force : Bool) : Void {
 		if (!hasChildren(cast data.item))
 			return;
 		var currentState = isOpen(data);
