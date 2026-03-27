@@ -99,11 +99,15 @@ class ShaderTarget extends Object3D {
 			for (s in sts) {
 				if (actives.get(s.tag) != null)
 					continue;
-				actives.set(s.tag, s);
+				if (s.tag != null)
+					actives.set(s.tag, s);
 			}
 
-			for (k in actives.keys())
-				actives.get(k).applyShaders();
+			for (s in sts) {
+				if (s.tag != null && actives.get(s.tag) != s)
+					continue;
+				s.applyShaders();
+			}
 		}
 	}
 
