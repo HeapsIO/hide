@@ -12,10 +12,21 @@ class KuwaharaShader extends hrt.shader.PbrShader {
 
 		@param var texture : Sampler2D;
 
+		@const var FETCH_OPTIM_2x2 : Bool;
+
+		//interlaced 5x5 masks for the 4 regions
+		final mask : Array<Vec4, 25> = [
+			vec4(1.0,0.0,0.0,0.0), vec4(1.0,0.0,0.0,0.0), vec4(1.0,1.0,0.0,0.0), vec4(0.0,1.0,0.0,0.0), vec4(0.0,1.0,0.0,0.0),
+			vec4(1.0,0.0,0.0,0.0), vec4(1.0,0.0,0.0,0.0), vec4(1.0,1.0,0.0,0.0), vec4(0.0,1.0,0.0,0.0), vec4(0.0,1.0,0.0,0.0),
+			vec4(1.0,0.0,0.0,1.0), vec4(1.0,0.0,0.0,1.0), vec4(1.0,1.0,1.0,1.0), vec4(0.0,1.0,1.0,0.0), vec4(0.0,1.0,1.0,0.0),
+			vec4(0.0,0.0,0.0,1.0), vec4(0.0,0.0,0.0,1.0), vec4(0.0,0.0,1.0,1.0), vec4(0.0,0.0,1.0,0.0), vec4(0.0,0.0,1.0,0.0),
+			vec4(0.0,0.0,0.0,1.0), vec4(0.0,0.0,0.0,1.0), vec4(0.0,0.0,1.0,1.0), vec4(0.0,0.0,1.0,0.0), vec4(0.0,0.0,1.0,0.0)
+		];
+
 		function fragment() {
 			var size = texture.size();
 			var invSize = 1.0 / size;
-			var n = float((scaledRadius + 1) * (scaledRadius + 1));
+			var invN = 1.0 /float((scaledRadius + 1) * (scaledRadius + 1));
 			var m0 = vec3(0.0);
 			var m1 = vec3(0.0);
 			var m2 = vec3(0.0);
@@ -26,42 +37,60 @@ class KuwaharaShader extends hrt.shader.PbrShader {
 			var s2 = vec3(0.0);
 			var s3 = vec3(0.0);
 
-			for ( j in -scaledRadius...1 )  {
-				for ( i in -scaledRadius...1 )  {
-					var c = texture.get(calculatedUV + vec2(i,j) * invSize).rgb;
-					m0 += c;
-					s0 += c * c;
+			if(FETCH_OPTIM_2x2){
+				var cursor = 0;
+				@unroll for ( j in -scaledRadius...scaledRadius+1) {
+					@unroll for ( i in -scaledRadius...scaledRadius+1)  {
+						var c = texture.get(calculatedUV + vec2(i,j) * invSize).rgb;
+						var cc = c * c;
+						m0 += c * mask[cursor].x;
+						s0 += cc * mask[cursor].x;
+						m1 += c * mask[cursor].y;
+						s1 += cc * mask[cursor].y;
+						m2 += c * mask[cursor].z;
+						s2 += cc * mask[cursor].z;
+						m3 += c * mask[cursor].w;
+						s3 += cc * mask[cursor].w;
+						cursor++;
+					}
+				}
+			} else {
+				for ( j in -scaledRadius...1 )  {
+					for ( i in -scaledRadius...1 )  {
+						var c = texture.get(calculatedUV + vec2(i,j) * invSize).rgb;
+						m0 += c;
+						s0 += c * c;
+					}
+				}
+
+				for ( j in -scaledRadius...1 )  {
+					for ( i in 0...scaledRadius + 1)  {
+						var c = texture.get(calculatedUV + vec2(i,j) * invSize).rgb;
+						m1 += c;
+						s1 += c * c;
+					}
+				}
+
+				for ( j in 0...scaledRadius + 1 )  {
+					for ( i in 0...scaledRadius + 1)  {
+						var c = texture.get(calculatedUV + vec2(i,j) * invSize).rgb;
+						m2 += c;
+						s2 += c * c;
+					}
+				}
+
+				for ( j in 0... scaledRadius + 1 )  {
+					for ( i in -scaledRadius...1 )  {
+						var c = texture.get(calculatedUV + vec2(i,j) * invSize).rgb;
+						m3 += c;
+						s3 += c * c;
+					}
 				}
 			}
-
-			for ( j in -scaledRadius...1 )  {
-				for ( i in 0...scaledRadius + 1)  {
-					var c = texture.get(calculatedUV + vec2(i,j) * invSize).rgb;
-					m1 += c;
-					s1 += c * c;
-				}
-			}
-
-			for ( j in 0...scaledRadius + 1 )  {
-				for ( i in 0...scaledRadius + 1)  {
-					var c = texture.get(calculatedUV + vec2(i,j) * invSize).rgb;
-					m2 += c;
-					s2 += c * c;
-				}
-			}
-
-			for ( j in 0... scaledRadius + 1 )  {
-				for ( i in -scaledRadius...1 )  {
-					var c = texture.get(calculatedUV + vec2(i,j) * invSize).rgb;
-					m3 += c;
-					s3 += c * c;
-				}
-			}
-
 
 			var minSigma2 = 1e+10;
-			m0 /= n;
-			s0 = abs(s0 / n - m0 * m0);
+			m0 *= invN;
+			s0 = abs(s0 * invN - m0 * m0);
 
 			var filteredColor = vec3(0.0);
 
@@ -71,8 +100,8 @@ class KuwaharaShader extends hrt.shader.PbrShader {
 				filteredColor = vec3(m0);
 			}
 
-			m1 /= n;
-			s1 = abs(s1 / n - m1 * m1);
+			m1 *= invN;
+			s1 = abs(s1 * invN - m1 * m1);
 
 			sigma2 = s1.r + s1.g + s1.b;
 			if (sigma2 < minSigma2) {
@@ -80,8 +109,8 @@ class KuwaharaShader extends hrt.shader.PbrShader {
 				filteredColor = vec3(m1);
 			}
 
-			m2 /= n;
-			s2 = abs(s2 / n - m2 * m2);
+			m2 *= invN;
+			s2 = abs(s2 * invN - m2 * m2);
 
 			sigma2 = s2.r + s2.g + s2.b;
 			if (sigma2 < minSigma2) {
@@ -89,8 +118,8 @@ class KuwaharaShader extends hrt.shader.PbrShader {
 				filteredColor = vec3(m2);
 			}
 
-			m3 /= n;
-			s3 = abs(s3 / n - m3 * m3);
+			m3 *= invN;
+			s3 = abs(s3 * invN - m3 * m3);
 
 			sigma2 = s3.r + s3.g + s3.b;
 			if (sigma2 < minSigma2) {
@@ -126,17 +155,20 @@ class KuwaharaFilter extends RendererFX {
 
 	function execute(r : h3d.scene.Renderer) {
 		r.mark("Kuwahara");
+		r.ctx.engine.driver.beginEvent("Kuwahara");
 
 		var input = getInput(r);
 		pass.shader.texture = input;
 
 		pass.shader.scaledRadius = Std.int(radius * hxd.Math.max(input.width / 1920, input.height / 1080));
+		pass.shader.FETCH_OPTIM_2x2 = pass.shader.scaledRadius == 2 ? true : false;
 		pass.shader.startOpacity = startOpacity;
 		pass.shader.endOpacity = endOpacity;
 		pass.shader.startDist = startDist;
 		pass.shader.endDist = endDist;
 		pass.pass.setBlendMode(Alpha);
 		pass.render();
+		r.ctx.engine.driver.endEvent();
 	}
 
 	override function begin(r:h3d.scene.Renderer, step:h3d.impl.RendererFX.Step) {
