@@ -29,7 +29,6 @@ class ShaderTargetObj extends h3d.scene.Object {
 
 		var fxAnim : hrt.prefab.fx.FX.FXAnimation = cast fx.local3d;
 		shadersRoot.local3d = parent;
-		applyShaders();
 
 		if (fxAnim == null)
 			return;
@@ -63,10 +62,7 @@ class ShaderTargetObj extends h3d.scene.Object {
 	override function onRemove() {
 		super.onRemove();
 		removeShaders();
-
-		var activeShaderTarget = ShaderTarget.updateShaderTargets(shadersRoot.target);
-		if (activeShaderTarget != null)
-			activeShaderTarget.applyShaders();
+		ShaderTarget.updateShaderTargets(shadersRoot.target);
 	}
 }
 
@@ -80,7 +76,7 @@ class ShaderTarget extends Object3D {
 		super(parent, contextShared);
 	}
 
-	public static function updateShaderTargets(o : h3d.scene.Object) : ShaderTargetObj {
+	public static function updateShaderTargets(o : h3d.scene.Object) {
 		var sts = o.findAll(obj -> Std.downcast(obj, ShaderTargetObj));
 		for (st in sts) {
 			if (st.tag == null) continue;
@@ -97,9 +93,17 @@ class ShaderTarget extends Object3D {
 			}
 		}
 
-		if (sts.length > 0)
-			return sts[0];
-		return null;
+		if (sts.length > 0) {
+			var actives = new Map<String, ShaderTargetObj>();
+			for (s in sts) {
+				if (actives.get(s.tag) != null)
+					continue;
+				actives.set(s.tag, s);
+			}
+
+			for (k in actives.keys())
+				actives.get(k).applyShaders();
+		}
 	}
 
 	function makeShaderTargetObj(target : h3d.scene.Object) {
@@ -113,10 +117,8 @@ class ShaderTarget extends Object3D {
 		o.priority = this.priority;
 		o.tag = this.tag;
 		o.shadersRoot = this;
-
-		var activeShaderTarget = updateShaderTargets(target);
-		if (activeShaderTarget == o)
-			o.apply(fx);
+		o.apply(fx);
+		updateShaderTargets(target);
 	}
 
 	override function edit2(ctx:EditContext2) {
