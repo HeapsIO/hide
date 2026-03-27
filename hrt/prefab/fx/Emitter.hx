@@ -841,8 +841,14 @@ class EmitterObject extends h3d.scene.Object {
 		throw (kind != null ? kind : "emitter error") + ' ($path)';
 	}
 
+	#if emitter_check_list
+	public var enableListCheck = false;
 	inline function checkList() {
-		#if 0
+		if(enableListCheck)
+			doCheckList();
+	}
+
+	function doCheckList() {
 		var p = listHead;
 		var tail = null;
 		var count = 0;
@@ -868,8 +874,10 @@ class EmitterObject extends h3d.scene.Object {
 			p = p.prev;
 		}
 		if(count != numInstances) error();
-		#end
 	}
+	#else
+	inline function checkList() { }
+	#end
 
 	function allocInstance() {
 		if(numInstances >= maxCount) error("allocInstance");
@@ -918,6 +926,7 @@ class EmitterObject extends h3d.scene.Object {
 		// remove swap
 		if(idx < numInstances) {
 			var swap = particles[numInstances];
+			if(swap.idx == ParticleInstance.REMOVED_IDX) error();
 			o.load(swap);
 			swap.idx = ParticleInstance.REMOVED_IDX;
 			swap.subEmitters = null;
@@ -1412,13 +1421,13 @@ class EmitterObject extends h3d.scene.Object {
 			parentTransform.scale(1.0/scale.x, 1.0/scale.y, 1.0/scale.z);
 		}
 
-		var prev : ParticleInstance = null;
 		var camPos = scene.camera.pos;
 
 		if (trails != null) {
 			trails.numTrails = maxCount;
 		}
 
+		checkList();
 		var i = 0;
 		while(i < numInstances) {
 			var p = particles[i];
@@ -1444,7 +1453,6 @@ class EmitterObject extends h3d.scene.Object {
 					}
 					i = disposeInstance(i);
 				} else {
-					prev = p;
 					++i;
 				}
 			}
@@ -1458,7 +1466,6 @@ class EmitterObject extends h3d.scene.Object {
 						p.distToCam = camPos.distanceSq(p.absPos.getPosition());
 				}
 				p.life += dt;  // After updateAbsPos(), which uses current life
-				prev = p;
 				++i;
 
 				if (trails != null) {
@@ -1470,6 +1477,7 @@ class EmitterObject extends h3d.scene.Object {
 				}
 			}
 		}
+		checkList();
 	}
 
 	public function hasActiveParts() : Bool {
