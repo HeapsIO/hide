@@ -74,6 +74,7 @@ class HuiPrefabEditor extends HuiElement {
 		treePrefab.onUserSelectionChanged = () -> {
 			setSelection(treePrefab.getSelectedItems(), NoRefreshTree);
 		}
+		treePrefab.onItemContextMenu = contextMenu;
 
 		scene.s3d.addEventListener(onSceneEvents);
 
@@ -89,6 +90,19 @@ class HuiPrefabEditor extends HuiElement {
 
 	function setSelection(selection: Array<hrt.prefab.Prefab>, flags: SelectionFlags) {
 		var oldSelection = [for (p => _ in selectedPrefabs) p];
+		if (selection.length == oldSelection.length) {
+			var same = true;
+			for (p in selection) {
+				if (selectedPrefabs.get(p) == null) {
+					same = false;
+					break;
+				}
+			}
+			if (same) {
+
+				return;
+			}
+		}
 
 		for (s in selectedPrefabs.keys()) {
 			var obj3d = Std.downcast(s, hrt.prefab.Object3D);
@@ -198,7 +212,6 @@ class HuiPrefabEditor extends HuiElement {
 		}
 	}
 
-
 	function refreshInspector() {
 		var prefabs = [for (prefab => _ in selectedPrefabs) prefab];
 
@@ -246,6 +259,62 @@ class HuiPrefabEditor extends HuiElement {
 		inspectorPanel.addChild(@:privateAccess baseRoot.native);
 		@:privateAccess baseRoot.native.get().dom.applyStyle(uiBase.style);
 	}
+
+	function contextMenu(target: hrt.prefab.Prefab) {
+		if (target == null) {
+			target = prefab;
+		}
+
+		var entries: Array<hrt.ui.HuiMenu.MenuItem> = [];
+
+		entries.push({label: "Add Child Prefab", menu: createPrefabMenu((cl) -> getView().undo.run(makePrefabAction(target, target.children.length, cl), true))});
+
+		uiBase.contextMenu(entries);
+	}
+
+	function makePrefabAction(parent: hrt.prefab.Prefab, index: Int, cl: Class<hrt.prefab.Prefab>) : hrt.tools.Undo.Action {
+		var newPrefab = Type.createInstance(cl, []);
+		newPrefab.name = Type.getClassName(cl).split(".").pop();
+
+		return reparentPrefabAction(newPrefab, parent, index);
+	}
+
+	function reparentPrefabAction(prefab: hrt.prefab.Prefab, parent: hrt.prefab.Prefab, index: Int) : hrt.tools.Undo.Action {
+		var oldParent = prefab.parent;
+		var oldIndex = -1;
+		if (oldParent != null) {
+			oldIndex = parent.children.indexOf(prefab);
+		}
+
+		return (isUndo: Bool) -> {
+			if (isUndo) {
+				if (oldParent == null) {
+					prefab.remove();
+				} else {
+					oldParent.addChildAt(prefab, oldIndex);
+				}
+			} else {
+				parent.addChildAt(prefab, index);
+			}
+			treePrefab.rebuild();
+
+			if (!isUndo) {
+				treePrefab.toggleItemOpen(parent, true);
+			}
+		};
+	}
+
+	function createPrefabMenu(click: (cl: Class<hrt.prefab.Prefab>) -> Void) : Array<hrt.ui.HuiMenu.MenuItem> {
+		var lines: Array<hrt.ui.HuiMenu.MenuItem> = [];
+
+		for (prefab in hrt.prefab.Prefab.registry) {
+			lines.push({label: Type.getClassName(prefab.prefabClass), click: () -> click(prefab.prefabClass)});
+		}
+
+		return lines;
+	}
+
+
 
 	function treePrefabGetItemChildren(prefab: hrt.prefab.Prefab) {
 		prefab = prefab ?? this.prefab;

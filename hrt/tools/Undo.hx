@@ -17,6 +17,11 @@ class Undo {
 		onAfterChange();
 	}
 
+	public function run(action: Action, hasDataChanges: Bool) {
+		action(false);
+		record(action, hasDataChanges);
+	}
+
 	public dynamic function onAfterChange() {
 
 	}
