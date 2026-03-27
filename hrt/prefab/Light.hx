@@ -352,7 +352,7 @@ class Light extends Object3D {
 					<range(0, 1) field={occlusionFactor}/>
 					<block if (kind == Directional)>
 						<range(0, 1000) field={maxDist}/>
-						<range(0, 50) field={maxDist}/>
+						<range(0, 50) field={minDist}/>
 						<checkbox field={autoShrink} onValueChange={refresh}/>
 						<checkbox field={autoZPlanes} if (autoShrink)/>
 						<checkbox field={cascade} onValueChange={refresh}/>
