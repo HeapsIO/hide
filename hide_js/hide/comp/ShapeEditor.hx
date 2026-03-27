@@ -148,16 +148,8 @@ class ShapeEditor extends Component {
 
 		@:privateAccess scene.editor.showGizmo = false;
 		gizmo = new hrt.tools.Gizmo(scene.s3d);
-
-		function applyTransformToGizmo(abs : h3d.Matrix) {
-			var pos = abs.getPosition();
-			var eulers = abs.getEulerAngles();
-			gizmo.setPosition(pos.x, pos.y, pos.z);
-			gizmo.setRotation(eulers.x, eulers.y, eulers.z);
-		}
-
-		applyTransformToGizmo(interactives[selectedShapeIdx].getAbsPos());
-
+		gizmo.isLocalTransform = true;
+		gizmo.moveToObjects([interactives[selectedShapeIdx]]);
 		gizmo.onStartMove = function(_) {
 			lclOffsetPosition.set(0, 0, 0);
 			lclOffsetRotation.set(0, 0, 0);
@@ -166,7 +158,7 @@ class ShapeEditor extends Component {
 			initialShape = shapes[selectedShapeIdx];
 			initialRelPos.load(interactives[selectedShapeIdx].getTransform());
 
-			applyTransformToGizmo(interactives[selectedShapeIdx].getAbsPos());
+			gizmo.moveToObjects([interactives[selectedShapeIdx]]);
 
 			gizmo.snap = scene.editor.gizmoSnap;
 		}

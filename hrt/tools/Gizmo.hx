@@ -212,7 +212,6 @@ class Gizmo extends h3d.scene.Object {
 			var initialScale = initialAbsPos.getScale();
 			var initialRotation = new h3d.Quat();
 			initialRotation.initRotateMatrix(initialAbsPos);
-			trace(mouseX, mouseY);
 			var scene = getScene();
 			var ray = scene.camera.rayFromScreen(mouseX, mouseY, scene.scenePosition?.width ?? -1, scene.scenePosition?.height ?? -1);
 			var dragPlane = h3d.col.Plane.fromNormalPoint(switch(handle) {
