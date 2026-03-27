@@ -4,6 +4,7 @@ class ShaderTargetObj extends h3d.scene.Object {
 	public var tag : String;
 	public var priority : Int = 1;
 	public var shadersRoot : ShaderTarget;
+	var guard = 0;
 
 	public function apply(fx : hrt.prefab.fx.FX) {
 		function reparentChildren(obj : hrt.prefab.Object3D) {
@@ -53,10 +54,16 @@ class ShaderTargetObj extends h3d.scene.Object {
 	public function removeShaders() {
 		for (s in shadersRoot.findAll(Shader))
 			s.dispose();
+		guard--;
+	}
+
+	public function isApplied() {
+		return guard > 0;
 	}
 
 	function applyShader(s: Shader) {
 		s.apply3d((o) -> return !Std.isOfType(o, hrt.prefab.fx.FX.FXAnimation) );
+		guard++;
 	}
 
 	override function onRemove() {
@@ -104,7 +111,7 @@ class ShaderTarget extends Object3D {
 			}
 
 			for (s in sts) {
-				if (s.tag != null && actives.get(s.tag) != s)
+				if ((s.tag != null && actives.get(s.tag) != s) || s.isApplied())
 					continue;
 				s.applyShaders();
 			}
