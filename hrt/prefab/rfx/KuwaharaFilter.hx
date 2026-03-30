@@ -23,7 +23,7 @@ class KuwaharaShader extends hrt.shader.PbrShader {
 			vec4(0.0,0.0,0.0,1.0), vec4(0.0,0.0,0.0,1.0), vec4(0.0,0.0,1.0,1.0), vec4(0.0,0.0,1.0,0.0), vec4(0.0,0.0,1.0,0.0)
 		];
 
-		function fragment() {
+		function getFilteredColor() : Vec3 {
 			var size = texture.size();
 			var invSize = 1.0 / size;
 			var invN = 1.0 /float((scaledRadius + 1) * (scaledRadius + 1));
@@ -126,7 +126,11 @@ class KuwaharaShader extends hrt.shader.PbrShader {
 				minSigma2 = sigma2;
 				filteredColor = vec3(m3);
 			}
+			return filteredColor;
+		}
 
+		function fragment() {
+			var filteredColor = getFilteredColor();
 			var wPos = getPosition();
 			var dist = distance(camera.position, wPos);
 			var opacity = mix(startOpacity, endOpacity, smoothstep(startDist, endDist, dist));
