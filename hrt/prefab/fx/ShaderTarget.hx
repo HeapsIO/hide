@@ -54,7 +54,7 @@ class ShaderTargetObj extends h3d.scene.Object {
 	public function removeShaders() {
 		for (s in shadersRoot.findAll(Shader))
 			s.dispose();
-		guard--;
+		guard = Std.int(hxd.Math.max(0, guard - 1));
 	}
 
 	public function isApplied() {
@@ -85,35 +85,48 @@ class ShaderTarget extends Object3D {
 	}
 
 	public static function updateShaderTargets(o : h3d.scene.Object) {
-		var sts = o.findAll(obj -> Std.downcast(obj, ShaderTargetObj));
-		for (st in sts) {
-			if (st.tag == null) continue;
-
-			for (st2 in sts) {
-				if (st2 == st) continue;
-				if (st2.tag != st.tag) continue;
-
-				var toRemove = st.priority > st2.priority ? st2 : st;
-				toRemove.visible = false;
-				toRemove.removeShaders();
-				sts.remove(toRemove);
-				break;
-			}
+		var sts : Array<ShaderTargetObj> = [];
+		for (idx in 0...o.numChildren) {
+			if (!Std.isOfType(o.getChildAt(idx), ShaderTargetObj))
+				continue;
+			sts.push(cast o.getChildAt(idx));
 		}
 
-		if (sts.length > 0) {
-			var actives = new Map<String, ShaderTargetObj>();
-			for (s in sts) {
-				if (actives.get(s.tag) != null)
-					continue;
-				if (s.tag != null)
-					actives.set(s.tag, s);
+		var actives = new Map<String, Array<ShaderTargetObj>>();
+		for (st in sts) {
+			if (st.tag == null) {
+				if (!st.isApplied())
+					st.applyShaders();
+				continue;
 			}
 
-			for (s in sts) {
-				if ((s.tag != null && actives.get(s.tag) != s) || s.isApplied())
+			var arr = actives.get(st.tag);
+			if (arr == null) {
+				arr = [];
+				actives.set(st.tag, arr);
+			}
+
+			var idx = 0;
+			while (idx < arr.length) {
+				if (arr[idx].priority >= st.priority)
+					break;
+				idx++;
+			}
+
+			arr.insert(idx, st);
+		}
+
+		for (k in actives.keys()) {
+			var arr = actives.get(k);
+			for (idx in 0...arr.length) {
+				if (idx == 0) {
+					if (!arr[idx].isApplied())
+						arr[idx].applyShaders();
 					continue;
-				s.applyShaders();
+				}
+
+				if (arr[idx].isApplied())
+					arr[idx].removeShaders();
 			}
 		}
 	}
