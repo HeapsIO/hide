@@ -24,8 +24,10 @@ class HuiTreeLine extends HuiElement {
 		this.tree = tree;
 
 		caret.onPush = (e) -> {
-			if (e.button == 0)
+			if (e.button == 0) {
 				onCaretClick();
+				e.propagate = false;
+			}
 		}
 
 		onPush = (e) -> {

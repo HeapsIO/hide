@@ -37,6 +37,8 @@ class HuiPrefabEditor extends HuiElement {
 	static public var gizmoRotateCommand = new hrt.ui.HuiCommands.HuiCommand("Save", {key: hxd.Key.E});
 	static public var gizmoScaleCommand = new hrt.ui.HuiCommands.HuiCommand("Cut", {key: hxd.Key.R});
 
+	var rethrowMakeErrors: Bool = false;
+
 	var prefab: hrt.prefab.Prefab;
 	var renderProps: hrt.prefab.Prefab;
 
@@ -137,7 +139,11 @@ class HuiPrefabEditor extends HuiElement {
 		gizmo.visible = objs.length > 0;
 
 		if (!flags.has(NoRefreshTree)) {
+			@:privateAccess treePrefab.forceRefreshTree();
 			treePrefab.setSelection(selection);
+			for (item in selection) {
+				treePrefab.revealItem(item);
+			}
 		}
 
 		if (!flags.has(NoRecordUndo)) {
@@ -268,6 +274,7 @@ class HuiPrefabEditor extends HuiElement {
 		var entries: Array<hrt.ui.HuiMenu.MenuItem> = [];
 
 		entries.push({label: "Add Child Prefab", menu: createPrefabMenu((cl) -> getView().undo.run(makePrefabAction(target, target.children.length, cl), true))});
+		entries.push({label: "Delete Selected", click: () -> getView().undo.run(actionRemovePrefabs([for (p => _ in selectedPrefabs) p]), true)});
 
 		uiBase.contextMenu(entries);
 	}
@@ -286,6 +293,19 @@ class HuiPrefabEditor extends HuiElement {
 		};
 	}
 
+	function actionRemovePrefabs(prefabs: Array<hrt.prefab.Prefab>) : hrt.tools.Undo.Action {
+
+		var reparents = [for (prefab in prefabs) reparentPrefabAction(prefab, null, 0)];
+		var select = makeSelectionAction([]);
+
+		return (isUndo) -> {
+			select(isUndo);
+			for (reparent in reparents)
+				reparent(isUndo);
+			tryMake(this.prefab);
+		};
+	}
+
 	function makeSelectionAction(newSelection: Array<hrt.prefab.Prefab>) : hrt.tools.Undo.Action {
 		var oldSelection = [for (p => _ in selectedPrefabs) p];
 
@@ -298,19 +318,18 @@ class HuiPrefabEditor extends HuiElement {
 		var oldParent = prefab.parent;
 		var oldIndex = -1;
 		if (oldParent != null) {
-			oldIndex = parent.children.indexOf(prefab);
+			oldIndex = oldParent.children.indexOf(prefab);
 		}
 
 		return (isUndo: Bool) -> {
-			if (isUndo) {
-				if (oldParent == null) {
-					prefab.remove();
-				} else {
-					oldParent.addChildAt(prefab, oldIndex);
-				}
+			var newParent = isUndo ? oldParent : parent;
+			var newIndex = isUndo ? oldIndex : index;
+			if (newParent == null) {
+				prefab.remove();
 			} else {
-				parent.addChildAt(prefab, index);
+				newParent.addChildAt(prefab, newIndex);
 			}
+
 			treePrefab.rebuild();
 
 			if (!isUndo) {
@@ -393,6 +412,9 @@ class HuiPrefabEditor extends HuiElement {
 			interactives.clear();
 			prefab = null;
 		}
+		if (!newPrefab.shared.isInstance) {
+			throw "prefab must be an instance prefab to be editable";
+		}
 
 		prefab = newPrefab;
 
@@ -421,10 +443,10 @@ class HuiPrefabEditor extends HuiElement {
 
 		focusObjects([for (i in 0...scene.s3d.numChildren) scene.s3d.getChildAt(i)]);
 
-		trace("=========================");
-		trace('Num objects in scene after reload :  ${scene.s3d.flatten().length}');
-		trace("\n" + dumpObject(scene.s3d));
-		trace("=========================");
+		// trace("=========================");
+		// trace('Num objects in scene after reload :  ${scene.s3d.flatten().length}');
+		// trace("\n" + dumpObject(scene.s3d));
+		// trace("=========================");
 	}
 
 	function getRenderPropsPaths() : Array<{name: String, value: String}> {
@@ -490,10 +512,13 @@ class HuiPrefabEditor extends HuiElement {
 		} catch (e) {
 			removePrefabInstance(prefab);
 
-			errorMessage.text = "Error loading prefab : " + e;
-
-			hide.Ide.showError("Error loading prefab " + e);
-			return false;
+			if (rethrowMakeErrors) {
+				hl.Api.rethrow(e);
+			} else {
+				errorMessage.text = "Error loading prefab : " + e;
+				hide.Ide.showError("Error loading prefab " + e);
+				return false;
+			}
 		}
 
 		var fx = Std.downcast(prefab.findFirstLocal3d(), hrt.prefab.fx.FX.FXAnimation);
@@ -835,7 +860,7 @@ class EditContext extends hrt.prefab.EditContext2 {
 	}
 
 	public function listMaterialLibraries(path: String) : Array<{path: String, name: String}> {
-		throw "implement";
+		return [];
 	}
 
 	public function listModelAnimations(path: String) : Array<String> {

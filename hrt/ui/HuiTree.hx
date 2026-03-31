@@ -259,6 +259,18 @@ class HuiTree<TreeItem> extends HuiElement {
 		toggleItemDataOpen(data, force);
 	}
 
+	/** Open all of item parents so that item becomes visible in the tree **/
+	public function revealItem(item: TreeItem) {
+		function rec(data: TreeItemData) {
+			if (data == null)
+				return;
+			toggleItemDataOpen(data, true);
+			rec(data.parent);
+		}
+
+		rec(itemMap.get(cast item)?.parent);
+	}
+
 	public dynamic function getItemName(item: TreeItem) : String {
 		return "";
 	}
@@ -403,11 +415,18 @@ class HuiTree<TreeItem> extends HuiElement {
 			openState.remove(data.identifier);
 		}
 		refreshFlags.set(RegenerateFlatten);
-
 	}
 
 	function refreshItem(item: TreeItemData, element: HuiTreeLine) : Void {
 		element?.refresh();
+	}
+
+	function forceRefreshTree() {
+		for (data in itemMap) {
+			data.children = null;
+		}
+		rootData = generateChildren(null);
+		requestRefresh();
 	}
 
 	function generateChildren(parent: TreeItemData) : Array<TreeItemData> {

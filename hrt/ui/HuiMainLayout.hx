@@ -23,6 +23,10 @@ class HuiMainLayout extends HuiElement {
 							{label: "Warning", click:() -> addToast("Debug toast", Warning), stayOpen: true},
 							{label: "Error", click:() -> addToast("Debug toast", Error), stayOpen: true}
 						]},
+						{
+							label: "Prefab Editor Tests",
+							click: ()->hide.Ide.inst.openView(@:privateAccess new hrt.ui.tests.HuiPrefabEditorTests({})),
+						}
 					])>
 					<hui-text("Debug")/>
 				</hui-button-menu>

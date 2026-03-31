@@ -156,6 +156,7 @@ class Ide extends hide.tools.IdeData {
 	}
 
 	public function listAnims( path : String, customFilter : (f:String) -> Bool = null ) {
+		var path = path ?? "";
 		var isDir = sys.FileSystem.isDirectory(getPath(path));
 
 		var config = hide.Config.loadForFile(this, path);

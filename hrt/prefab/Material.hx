@@ -318,7 +318,6 @@ class Material extends Prefab {
 			for (element in elements) {
 				var widget = Std.downcast(element, hide.kit.Widget);
 				if (widget != null) {
-					trace(widget.id);
 					@:privateAccess var old = widget.onFieldChange;
 					@:privateAccess widget.onFieldChange = (temp) -> {
 						old(temp);

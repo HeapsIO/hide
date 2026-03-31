@@ -242,6 +242,17 @@ class CloudShadow extends RendererFX {
 	#end
 
 	override function edit2( ctx : hrt.prefab.EditContext2 ) {
+
+		var dist = distort;
+		if( dist == null )
+			dist = {
+				path : null,
+				scale : 1,
+				speed : 0,
+				angle : 0,
+				amount : 1,
+			};
+
 		ctx.build(
 			<root>
 				<category("Cloud")>
@@ -252,14 +263,19 @@ class CloudShadow extends RendererFX {
 					<file field={texturePath} label="Texture"type="texture"/>
 				</category>
 				<category("Distort")>
-					<file field={distort.path} label="Texture"type="texture"/>
-					<range(0,1) field={distort.amount}/>
-					<range(0.1,2) field={distort.scale}/>
-					<range(-1,1) field={distort.speed}/>
-					<slider min={-180.0} max={180.0} field={distort.angle} wrap/>
+					<file field={dist.path} label="Texture"type="texture"/>
+					<range(0,1) field={dist.amount}/>
+					<range(0.1,2) field={dist.scale}/>
+					<range(-1,1) field={dist.speed}/>
+					<slider min={-180.0} max={180.0} field={dist.angle} wrap/>
 				</category>
 			</root>
-		);
+		, null, (_) -> {
+			if( dist.path == null )
+				distort = null;
+			else
+				distort = dist;
+		});
 	}
 
 	static var _ = Prefab.register("rfx.cloudShadow", CloudShadow);

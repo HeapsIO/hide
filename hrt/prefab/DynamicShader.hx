@@ -82,7 +82,7 @@ class DynamicShader extends Shader {
 	}
 
 	function loadShaderClass(opt=false) : Class<hxsl.Shader> {
-		var path = source;
+		var path = source ?? "";
 		if(StringTools.endsWith(path, ".hx")) path = path.substr(0, -3);
 		var cpath = path.split("/").join(".");
 		var cl = cast Type.resolveClass(cpath);
@@ -91,7 +91,7 @@ class DynamicShader extends Shader {
 	}
 
 	public function loadShaderDef() {
-		if(shaderDef.shader == null) {
+		if(shaderDef.shader == null && source != null) {
 			fixSourcePath();
 			if (StringTools.endsWith(source, ".shgraph")) {
 				shaderDef.isShaderGraph = true;
@@ -153,6 +153,7 @@ class DynamicShader extends Shader {
 
 	override function edit2(ctx:hrt.prefab.EditContext2) {
 		var isCorrupted = false;
+		var source = source ?? "";
 		if (StringTools.endsWith(source, ".shgraph")) {
 			var res = hxd.res.Loader.currentInstance.load(source);
 			var shgraph = Std.downcast(res.toPrefab().load(), hrt.shgraph.ShaderGraph);
