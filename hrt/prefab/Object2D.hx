@@ -159,6 +159,13 @@ class Object2D extends Prefab {
 		);
 	}
 
+	override function editorRemoveInstanceObjects() : Void {
+		if (local2d != null) {
+			local2d.remove();
+		}
+		super.editorRemoveInstanceObjects();
+	}
+
 	#if editor
 	override function getHideProps() : hide.prefab.HideProps {
 		// Check children
@@ -166,13 +173,6 @@ class Object2D extends Prefab {
 			icon : children == null || children.length > 0 ? "folder-open" : "genderless",
 			name : "Group 2D"
 		};
-	}
-
-	override function editorRemoveInstanceObjects() : Void {
-		if (local2d != null) {
-			local2d.remove();
-		}
-		super.editorRemoveInstanceObjects();
 	}
 
 	override function edit( ctx : hide.prefab.EditContext ) {

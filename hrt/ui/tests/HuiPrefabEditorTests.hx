@@ -121,9 +121,38 @@ class HuiPrefabEditorTests extends HuiView<{}> {
 			// add to root
 			undo.run(prefabEditor.makePrefabAction(prefabEditor.prefab, 0, prefab.prefabClass), true);
 
+			// return to base state
+			while(undo.canUndo()) {
+				undo.undo();
+			}
+
+			// check if there is any difference in the scene after that
+			var sceneStateAfter = dumpScene();
+			var prefabStateAfter = @:privateAccess prefabEditor.prefab.serialize();
+
+			var diff = hrt.prefab.Diff.diff(sceneStateBefore, sceneStateAfter);
+			switch(diff) {
+				case Skip:
+				case Set(diff):
+					throw new TestError("Make Prefab Action", 'Creating and removing prefab ${Type.getClassName(prefab.prefabClass)} had some side effects on the scene', haxe.Json.stringify(diff, null, "\t"));
+			}
+
+			var diff = hrt.prefab.Diff.diff(prefabStateBefore, prefabStateAfter);
+			switch(diff) {
+				case Skip:
+				case Set(diff):
+					throw new TestError("Make Prefab Action", 'Creating and removing prefab ${Type.getClassName(prefab.prefabClass)} had some side effects on the prefab', haxe.Json.stringify(diff, null, "\t"));
+			}
+
+			trace('${Type.getClassName(prefab.prefabClass)} ok');
+		}
+
+		for (prefab in @:privateAccess hrt.prefab.Prefab.registry) {
+			if (skipMakeTest.contains(prefab.prefabClass))
+				continue;
+
 			// add to node
 			undo.run(prefabEditor.makePrefabAction(node, 0, prefab.prefabClass), true);
-
 
 			// return to base state
 			while(undo.canUndo()) {
@@ -148,8 +177,6 @@ class HuiPrefabEditorTests extends HuiView<{}> {
 				case Set(diff):
 					throw new TestError("Make Prefab Action", 'Creating and removing prefab ${Type.getClassName(prefab.prefabClass)} had some side effects on the prefab', haxe.Json.stringify(diff, null, "\t"));
 			}
-
-			trace('${Type.getClassName(prefab.prefabClass)} ok');
 		}
 	}
 }

@@ -326,14 +326,9 @@ class HuiPrefabEditor extends HuiElement {
 			var newIndex = isUndo ? oldIndex : index;
 			if (newParent == null) {
 				prefab.remove();
+				removePrefabInstance(prefab);
 			} else {
 				newParent.addChildAt(prefab, newIndex);
-			}
-
-			treePrefab.rebuild();
-
-			if (!isUndo) {
-				treePrefab.toggleItemOpen(parent, true);
 			}
 		};
 	}

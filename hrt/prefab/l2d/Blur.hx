@@ -40,6 +40,11 @@ class Blur extends Prefab {
 		bitmap.visible = false;
 	}
 
+	override function editorRemoveInstanceObjects() {
+		bitmap.remove();
+		super.editorRemoveInstanceObjects();
+	}
+
 	function syncBitmap() {
 		var t;
 		if( image != null )
