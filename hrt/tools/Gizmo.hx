@@ -303,11 +303,9 @@ class Gizmo extends h3d.scene.Object {
 			var isPlane = o.name.indexOf("Plane") >= 0;
 
 			var mat = o.getMaterials()[0];
-			mat.props = h3d.mat.MaterialSetup.current.getDefaults("ui");
-			mat.mainPass.blend(SrcAlpha, OneMinusSrcAlpha);
 			mat.mainPass.culling = None;
-			mat.mainPass.depth(false, Always);
-			mat.mainPass.setPassName("overlay");
+			mat.mainPass.depth(true, Always);
+			mat.mainPass.setPassName("ui");
 			if (o.name.indexOf("Rotate") >= 0)
 				mat.mainPass.addShader(rotateAxisShader);
 			var color = (switch (axis) {
