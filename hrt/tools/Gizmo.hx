@@ -215,9 +215,9 @@ class Gizmo extends h3d.scene.Object {
 			var scene = getScene();
 			var ray = scene.camera.rayFromScreen(mouseX, mouseY, scene.scenePosition?.width ?? -1, scene.scenePosition?.height ?? -1);
 			var dragPlane = h3d.col.Plane.fromNormalPoint(switch(handle) {
-				case XYPlane: mode == Scale ? scaleRot.up() : initialAbsPos.up();
+				case XYPlane, XArrow, YArrow: mode == Scale ? scaleRot.up() : initialAbsPos.up();
 				case XZPlane: mode == Scale ? scaleRot.right() : initialAbsPos.right();
-				case YZPlane: mode == Scale ? scaleRot.front() : initialAbsPos.front();
+				case YZPlane, ZArrow: mode == Scale ? scaleRot.front() : initialAbsPos.front();
 				default: initialRay.getDir();
 			}, initialPosition);
 
@@ -303,6 +303,8 @@ class Gizmo extends h3d.scene.Object {
 			var isPlane = o.name.indexOf("Plane") >= 0;
 
 			var mat = o.getMaterials()[0];
+			mat.props = h3d.mat.MaterialSetup.current.getDefaults("ui");
+			mat.mainPass.blend(SrcAlpha, OneMinusSrcAlpha);
 			mat.mainPass.culling = None;
 			mat.mainPass.depth(true, Always);
 			mat.mainPass.setPassName("ui");
