@@ -62,6 +62,7 @@ class HuiTree<TreeItem> extends HuiElement {
 	var flatList: Array<TreeItemData> = [];
 	var keyboardFocus: TreeItemData = null;
 
+	/**TreeItem -> Bool map**/
 	var selectedElements: Map<{}, Bool> = [];
 	var lastSelectedElement: TreeItemData = null;
 
@@ -293,16 +294,13 @@ class HuiTree<TreeItem> extends HuiElement {
 	public function setSelection(selection: Array<TreeItem>) : Void {
 		selectedElements.clear();
 		for (item in selection) {
-			var data = itemMap.get(cast item);
-			if (data != null) {
-				selectedElements.set(cast data, true);
-			}
+			selectedElements.set(cast item, true);
 		}
 		requestRefresh();
 	}
 
 	public function getSelectedItems() : Array<TreeItem> {
-		return [for (item => _ in selectedElements) (cast item:TreeItemData).item];
+		return [for (item => _ in selectedElements) cast item];
 	}
 
 	override function sync(ctx:h2d.RenderContext) {
@@ -345,11 +343,11 @@ class HuiTree<TreeItem> extends HuiElement {
 
 				if (min >= 0) {
 					for (i in min...max+1) {
-						selectedElements.set(cast flatList[i], true);
+						selectedElements.set(cast flatList[i].item, true);
 					}
 				}
 			} else {
-				selectedElements.set(cast data, true);
+				selectedElements.set(cast data.item, true);
 				lastSelectedElement = data;
 			}
 			userSelectionChanged();
@@ -542,7 +540,7 @@ class HuiTree<TreeItem> extends HuiElement {
 	}
 
 	public function isSelected(data: TreeItemData) : Bool {
-		return selectedElements.get(cast data) == true;
+		return selectedElements.get(cast data.item) == true;
 	}
 }
 

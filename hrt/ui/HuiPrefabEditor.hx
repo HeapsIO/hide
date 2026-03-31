@@ -276,7 +276,22 @@ class HuiPrefabEditor extends HuiElement {
 		var newPrefab = Type.createInstance(cl, []);
 		newPrefab.name = Type.getClassName(cl).split(".").pop();
 
-		return reparentPrefabAction(newPrefab, parent, index);
+		var reparent = reparentPrefabAction(newPrefab, parent, index);
+		var select = makeSelectionAction([newPrefab]);
+
+		return (isUndo) -> {
+			reparent(isUndo);
+			tryMake(parent);
+			select(isUndo);
+		};
+	}
+
+	function makeSelectionAction(newSelection: Array<hrt.prefab.Prefab>) : hrt.tools.Undo.Action {
+		var oldSelection = [for (p => _ in selectedPrefabs) p];
+
+		return (isUndo) -> {
+			setSelection(isUndo ? oldSelection : newSelection, NoRecordUndo);
+		}
 	}
 
 	function reparentPrefabAction(prefab: hrt.prefab.Prefab, parent: hrt.prefab.Prefab, index: Int) : hrt.tools.Undo.Action {
@@ -307,11 +322,44 @@ class HuiPrefabEditor extends HuiElement {
 	function createPrefabMenu(click: (cl: Class<hrt.prefab.Prefab>) -> Void) : Array<hrt.ui.HuiMenu.MenuItem> {
 		var lines: Array<hrt.ui.HuiMenu.MenuItem> = [];
 
+		var submenus : Map<String, Array<hrt.ui.HuiMenu.MenuItem>> = [];
+
 		for (prefab in hrt.prefab.Prefab.registry) {
-			lines.push({label: Type.getClassName(prefab.prefabClass), click: () -> click(prefab.prefabClass)});
+			var category = getPrefabCategoryLabel(prefab.prefabClass);
+			var label = Type.getClassName(prefab.prefabClass).split(".").pop();
+			var submenu = hrt.tools.MapUtils.getOrPut(submenus, category, []);
+			submenu.push({label: label, click: click.bind(prefab.prefabClass)});
 		}
 
+		for (category => submenu in submenus) {
+			lines.sort((a,b) -> Reflect.compare(a.label, b.label));
+			lines.push({label: category, menu: submenu});
+		}
+
+		lines.sort((a,b) -> Reflect.compare(a.label, b.label));
+
 		return lines;
+	}
+
+	function getPrefabCategoryLabel(cl: Class<hrt.prefab.Prefab>) : String {
+		static var categories : Array<{label: String, cl: Array<Class<hrt.prefab.Prefab>>}> = [
+			{label: "3D", cl: [hrt.prefab.Object3D]},
+			{label: "2D", cl: [hrt.prefab.Object2D]},
+			{label: "RFX", cl: [hrt.prefab.rfx.RendererFX]},
+			{label: "Spawn", cl: [hrt.prefab.fx.gpuemitter.SpawnShader]},
+			{label: "Simulation", cl: [hrt.prefab.fx.gpuemitter.SimulationShader]},
+		];
+
+		var currentClass = cl;
+		while (currentClass != null) {
+			for (category in categories) {
+				if (category.cl.contains(currentClass))
+					return category.label;
+			}
+
+			currentClass = cast Type.getSuperClass(currentClass);
+		}
+		return "Unknown";
 	}
 
 
