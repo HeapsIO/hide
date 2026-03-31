@@ -258,7 +258,13 @@ class Gizmo extends h3d.scene.Object {
 						var v = new h2d.col.Point(mouseX, mouseY) - initialMousePos;
 						v.y *= -1;
 						v.normalize();
-						var f = v.x + v.y < 0 ? -1 : 1;
+						var d = new h2d.col.Point(1, 1);
+						d.normalize();
+
+						var f = d.dot(v);
+						var margin = 0.4;
+						f = f < margin && f > -margin ? f / margin : f < 0 ? -1 : 1;
+
 						var s = snap((delta.length() * f * 0.5) + 1, mode);
 						deltaScale = new h3d.Vector(s, s, s);
 					}
