@@ -553,7 +553,6 @@
 }
 .cdb .cdb-sheet .cdb-types input {
   cursor: pointer;
-  width: 50px;
 }
 .cdb .cdb-sheet .cdb-types input[type="checkbox"] {
   width: auto;
