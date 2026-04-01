@@ -288,7 +288,6 @@ class HuiPrefabEditor extends HuiElement {
 
 		return (isUndo) -> {
 			reparent(isUndo);
-			tryMake(parent);
 			select(isUndo);
 		};
 	}
@@ -302,8 +301,26 @@ class HuiPrefabEditor extends HuiElement {
 			select(isUndo);
 			for (reparent in reparents)
 				reparent(isUndo);
-			tryMake(this.prefab);
 		};
+	}
+
+	function actionReparentPrefabs(prefabs: Array<hrt.prefab.Prefab>, newParent: hrt.prefab.Prefab, index: Int) : hrt.tools.Undo.Action {
+
+		var reparents = [];
+		var i = 0;
+		for (prefab in prefabs) {
+			reparents.push(reparentPrefabAction(prefab, newParent, index + i));
+			if (prefab.parent == newParent && newParent.children.indexOf(prefab) < index) {
+				i--;
+			}
+			i++;
+		}
+
+		return (isUndo) -> {
+			for (reparent in reparents)
+				reparent(isUndo);
+		};
+
 	}
 
 	function makeSelectionAction(newSelection: Array<hrt.prefab.Prefab>) : hrt.tools.Undo.Action {
@@ -324,11 +341,14 @@ class HuiPrefabEditor extends HuiElement {
 		return (isUndo: Bool) -> {
 			var newParent = isUndo ? oldParent : parent;
 			var newIndex = isUndo ? oldIndex : index;
+
+			removePrefabInstance(prefab);
+
 			if (newParent == null) {
 				prefab.remove();
-				removePrefabInstance(prefab);
 			} else {
 				newParent.addChildAt(prefab, newIndex);
+				tryMakeChildren(newParent);
 			}
 		};
 	}
@@ -489,6 +509,12 @@ class HuiPrefabEditor extends HuiElement {
 	}
 
 
+	/**
+		Try to make the given prefab. If the prefab is already instantiated, tries do cleanup it first.
+		It should be an error to call this on a prefab that is not the root without also rebuilding this prefab sibiling,
+		as it will change the ordering of the heaps objects in the scene (which can cause subtle differences, espetially with 2d scenes where the order really matters).
+		For that you should call tryMakeChildren(prefab.parent) instead.
+	**/
 	public function tryMake(prefab: hrt.prefab.Prefab) : Bool {
 		removePrefabInstance(prefab);
 		if (prefab.parent == null && prefab.shared.parentPrefab == null) {
@@ -500,7 +526,11 @@ class HuiPrefabEditor extends HuiElement {
 		}
 
 		try {
-			prefab.make();
+			if (prefab.parent != null) {
+				prefab.parent.makeChild(prefab);
+			} else {
+				prefab.make();
+			}
 			for (p in prefab.flatten()) {
 				makePrefabInteractive(p);
 			}
@@ -525,6 +555,20 @@ class HuiPrefabEditor extends HuiElement {
 		setSelection([for (p in selectedPrefabs.keys()) p], NoRecordUndo | NoRefreshTree);
 
 		return true;
+	}
+
+	public function tryMakeChildren(prefab: hrt.prefab.Prefab) : Void {
+		for (child in prefab.children) {
+			removePrefabInstance(child);
+		}
+
+		removePrefabInteractives(prefab);
+
+		for (child in prefab.children) {
+			tryMake(child);
+		}
+
+		makePrefabInteractive(prefab);
 	}
 
 	public function makePrefabInteractive(prefab: hrt.prefab.Prefab) {
@@ -619,13 +663,17 @@ class HuiPrefabEditor extends HuiElement {
 			return;
 		prefab.editorRemoveObjects();
 		for (child in prefab.flatten()) {
-			interactives.get(child)?.remove();
-			interactives.remove(child);
+			removePrefabInteractives(child);
 		}
 		if (prefab.parent == null && prefab.shared.parentPrefab == null) {
 			prefab.shared.root3d.remove();
 			prefab.shared.root2d.remove();
 		}
+	}
+
+	public function removePrefabInteractives(prefab: hrt.prefab.Prefab) {
+		interactives.get(prefab)?.remove();
+		interactives.remove(prefab);
 	}
 
 	static function dumpObject(obj: h3d.scene.Object, pad: String = "") : String {
@@ -812,7 +860,12 @@ class EditContext extends hrt.prefab.EditContext2 {
 	};
 
 	public function rebuildPrefabImpl(prefab: hrt.prefab.Prefab) : Void {
-		editor.tryMake(prefab);
+		if (prefab == null || prefab.parent == null) {
+			editor.tryMake(editor.prefab);
+			return;
+		}
+
+		editor.tryMakeChildren(prefab.parent);
 	}
 
 	/**

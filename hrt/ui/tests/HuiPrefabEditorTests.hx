@@ -21,6 +21,8 @@ class HuiPrefabEditorTests extends HuiView<{}> {
 		// try {
 			testTryMake();
 			testMakePrefabAction();
+			actionRemovePrefabs();
+			actionReparentPrefabs();
 		// } catch (e) {
 		// 	hide.Ide.showError("Test failed " + e);
 		// }
@@ -179,8 +181,278 @@ class HuiPrefabEditorTests extends HuiView<{}> {
 			}
 		}
 	}
+
+
+	public function actionReparentPrefabs() {
+		var prefabData = {
+			"type": "prefab",
+			"children": [
+				{"type": "box", "name": "a"},
+				{"type": "box", "name": "b"},
+				{"type": "box", "name": "c"},
+				{"type": "box", "name": "d", "children": [
+					{"type": "box", "name": "e"},
+					{"type": "box", "name": "f"},
+					{"type": "box", "name": "g"},
+				]}
+			]
+		};
+
+		@:privateAccess prefabEditor.setPrefab(hrt.prefab.Prefab.createFromDynamic(prefabData, new hrt.prefab.ContextShared("huiPrefabEditorTests.prefab")));
+
+		{
+			var state = dumpState();
+
+			undo.run(prefabEditor.actionReparentPrefabs([prefabEditor.prefab.locatePrefab("a")], prefabEditor.prefab.locatePrefab("b"), 0), true);
+
+			assert(prefabEditor.prefab.locatePrefab("a") == null);
+			assert(prefabEditor.prefab.locatePrefab("b.a") != null);
+
+			assertSnapshot(dumpState(), '{"prefab":{"type":"prefab","children":[{"type":"box","name":"b","children":[{"type":"box","name":"a"}]},{"type":"box","name":"c"},{"type":"box","name":"d","children":[{"type":"box","name":"e"},{"type":"box","name":"f"},{"type":"box","name":"g"}]}]},"scene":{"root2d":{"children":[],"name":null,"type":"h2d.Object"},"root3d":{"children":[{"children":[{"children":[{"children":[],"name":null,"type":"h3d.scene.Interactive"}],"name":"a","type":"h3d.scene.Mesh"},{"children":[],"name":null,"type":"h3d.scene.Interactive"}],"name":"b","type":"h3d.scene.Mesh"},{"children":[{"children":[],"name":null,"type":"h3d.scene.Interactive"}],"name":"c","type":"h3d.scene.Mesh"},{"children":[{"children":[{"children":[],"name":null,"type":"h3d.scene.Interactive"}],"name":"e","type":"h3d.scene.Mesh"},{"children":[{"children":[],"name":null,"type":"h3d.scene.Interactive"}],"name":"f","type":"h3d.scene.Mesh"},{"children":[{"children":[],"name":null,"type":"h3d.scene.Interactive"}],"name":"g","type":"h3d.scene.Mesh"},{"children":[],"name":null,"type":"h3d.scene.Interactive"}],"name":"d","type":"h3d.scene.Mesh"}],"name":null,"type":"h3d.scene.Object"}}}');
+
+			// return to base state
+			while(undo.canUndo()) {
+				undo.undo();
+			}
+
+			checkState(state);
+		}
+
+		{
+			var state = dumpState();
+
+			undo.run(prefabEditor.actionReparentPrefabs([prefabEditor.prefab.locatePrefab("a"), prefabEditor.prefab.locatePrefab("b"), prefabEditor.prefab.locatePrefab("c")], prefabEditor.prefab, 0), true);
+
+			assert(prefabEditor.prefab.locatePrefab("a") != null);
+			assert(prefabEditor.prefab.locatePrefab("b") != null);
+			assert(prefabEditor.prefab.locatePrefab("c") != null);
+			assert(prefabEditor.prefab.children.indexOf(prefabEditor.prefab.locatePrefab("a")) == 0);
+			assert(prefabEditor.prefab.children.indexOf(prefabEditor.prefab.locatePrefab("b")) == 1);
+			assert(prefabEditor.prefab.children.indexOf(prefabEditor.prefab.locatePrefab("c")) == 2);
+
+			checkState(state);
+
+			assertSnapshot(dumpState(), '{"prefab":{"type":"prefab","children":[{"type":"box","name":"a"},{"type":"box","name":"b"},{"type":"box","name":"c"},{"type":"box","name":"d","children":[{"type":"box","name":"e"},{"type":"box","name":"f"},{"type":"box","name":"g"}]}]},"scene":{"root2d":{"children":[],"name":null,"type":"h2d.Object"},"root3d":{"children":[{"children":[{"children":[],"name":null,"type":"h3d.scene.Interactive"}],"name":"a","type":"h3d.scene.Mesh"},{"children":[{"children":[],"name":null,"type":"h3d.scene.Interactive"}],"name":"b","type":"h3d.scene.Mesh"},{"children":[{"children":[],"name":null,"type":"h3d.scene.Interactive"}],"name":"c","type":"h3d.scene.Mesh"},{"children":[{"children":[{"children":[],"name":null,"type":"h3d.scene.Interactive"}],"name":"e","type":"h3d.scene.Mesh"},{"children":[{"children":[],"name":null,"type":"h3d.scene.Interactive"}],"name":"f","type":"h3d.scene.Mesh"},{"children":[{"children":[],"name":null,"type":"h3d.scene.Interactive"}],"name":"g","type":"h3d.scene.Mesh"},{"children":[],"name":null,"type":"h3d.scene.Interactive"}],"name":"d","type":"h3d.scene.Mesh"}],"name":null,"type":"h3d.scene.Object"}}}');
+
+			// return to base state
+			while(undo.canUndo()) {
+				undo.undo();
+			}
+
+			checkState(state);
+		}
+
+		{
+			var state = dumpState();
+
+			undo.run(prefabEditor.actionReparentPrefabs([prefabEditor.prefab.locatePrefab("a"), prefabEditor.prefab.locatePrefab("c")], prefabEditor.prefab.locatePrefab("b"), 0), true);
+
+			var b = prefabEditor.prefab.locatePrefab("b");
+			assert(prefabEditor.prefab.locatePrefab("a") == null);
+			assert(prefabEditor.prefab.locatePrefab("c") == null);
+			assert(prefabEditor.prefab.locatePrefab("b.a") != null);
+			assert(prefabEditor.prefab.locatePrefab("b.c") != null);
+
+			assert(prefabEditor.prefab.children.indexOf(prefabEditor.prefab.locatePrefab("b")) == 0);
+			assert(b.children.indexOf(b.locatePrefab("a")) == 0);
+			assert(b.children.indexOf(b.locatePrefab("c")) == 1);
+			assert(b.children.length == 2);
+
+			assertSnapshot(dumpState(), '{"prefab":{"type":"prefab","children":[{"type":"box","name":"b","children":[{"type":"box","name":"a"},{"type":"box","name":"c"}]},{"type":"box","name":"d","children":[{"type":"box","name":"e"},{"type":"box","name":"f"},{"type":"box","name":"g"}]}]},"scene":{"root2d":{"children":[],"name":null,"type":"h2d.Object"},"root3d":{"children":[{"children":[{"children":[{"children":[],"name":null,"type":"h3d.scene.Interactive"}],"name":"a","type":"h3d.scene.Mesh"},{"children":[{"children":[],"name":null,"type":"h3d.scene.Interactive"}],"name":"c","type":"h3d.scene.Mesh"},{"children":[],"name":null,"type":"h3d.scene.Interactive"}],"name":"b","type":"h3d.scene.Mesh"},{"children":[{"children":[{"children":[],"name":null,"type":"h3d.scene.Interactive"}],"name":"e","type":"h3d.scene.Mesh"},{"children":[{"children":[],"name":null,"type":"h3d.scene.Interactive"}],"name":"f","type":"h3d.scene.Mesh"},{"children":[{"children":[],"name":null,"type":"h3d.scene.Interactive"}],"name":"g","type":"h3d.scene.Mesh"},{"children":[],"name":null,"type":"h3d.scene.Interactive"}],"name":"d","type":"h3d.scene.Mesh"}],"name":null,"type":"h3d.scene.Object"}}}');
+
+			// return to base state
+			while(undo.canUndo()) {
+				undo.undo();
+			}
+
+			checkState(state);
+		}
+
+	}
+
+
+	public function actionRemovePrefabs() {
+		var prefabData = {
+			"type": "prefab",
+			"children": [
+				{"type": "box", "name": "a"},
+				{"type": "box", "name": "b"},
+				{"type": "box", "name": "c"},
+				{"type": "box", "name": "d", "children": [
+					{"type": "box", "name": "e"},
+					{"type": "box", "name": "f"},
+					{"type": "box", "name": "g"},
+				]}
+			]
+		};
+
+		@:privateAccess prefabEditor.setPrefab(hrt.prefab.Prefab.createFromDynamic(prefabData, new hrt.prefab.ContextShared("huiPrefabEditorTests.prefab")));
+
+		// remove one
+		{
+			var state = dumpState();
+
+			undo.run(prefabEditor.actionRemovePrefabs([prefabEditor.prefab.locatePrefab("a")]), true);
+
+			assert(prefabEditor.prefab.locatePrefab("a") == null);
+			assert(prefabEditor.prefab.locatePrefab("b") != null);
+
+			assertSnapshot(dumpState(), '{"prefab":{"type":"prefab","children":[{"type":"box","name":"b"},{"type":"box","name":"c"},{"type":"box","name":"d","children":[{"type":"box","name":"e"},{"type":"box","name":"f"},{"type":"box","name":"g"}]}]},"scene":{"root2d":{"children":[],"name":null,"type":"h2d.Object"},"root3d":{"children":[{"children":[{"children":[],"name":null,"type":"h3d.scene.Interactive"}],"name":"b","type":"h3d.scene.Mesh"},{"children":[{"children":[],"name":null,"type":"h3d.scene.Interactive"}],"name":"c","type":"h3d.scene.Mesh"},{"children":[{"children":[{"children":[],"name":null,"type":"h3d.scene.Interactive"}],"name":"e","type":"h3d.scene.Mesh"},{"children":[{"children":[],"name":null,"type":"h3d.scene.Interactive"}],"name":"f","type":"h3d.scene.Mesh"},{"children":[{"children":[],"name":null,"type":"h3d.scene.Interactive"}],"name":"g","type":"h3d.scene.Mesh"},{"children":[],"name":null,"type":"h3d.scene.Interactive"}],"name":"d","type":"h3d.scene.Mesh"}],"name":null,"type":"h3d.scene.Object"}}}');
+
+			// return to base state
+			while(undo.canUndo()) {
+				undo.undo();
+			}
+
+			checkState(state);
+		}
+
+
+
+		@:privateAccess prefabEditor.setPrefab(hrt.prefab.Prefab.createFromDynamic(prefabData, new hrt.prefab.ContextShared("huiPrefabEditorTests.prefab")));
+		// sequentially remove
+		{
+			var state = dumpState();
+
+			undo.run(prefabEditor.actionRemovePrefabs([prefabEditor.prefab.locatePrefab("a")]), true);
+			undo.run(prefabEditor.actionRemovePrefabs([prefabEditor.prefab.locatePrefab("b")]), true);
+			undo.run(prefabEditor.actionRemovePrefabs([prefabEditor.prefab.locatePrefab("c")]), true);
+			undo.run(prefabEditor.actionRemovePrefabs([prefabEditor.prefab.locatePrefab("d")]), true);
+
+			assert(prefabEditor.prefab.locatePrefab("a") == null);
+			assert(prefabEditor.prefab.locatePrefab("b") == null);
+			assert(prefabEditor.prefab.locatePrefab("c") == null);
+			assert(prefabEditor.prefab.locatePrefab("d") == null);
+			assert(prefabEditor.prefab.locatePrefab("d.e") == null);
+			assert(prefabEditor.prefab.locatePrefab("d.f") == null);
+			assert(prefabEditor.prefab.locatePrefab("d.g") == null);
+
+			assertSnapshot(dumpState(), '{"prefab":{"type":"prefab"},"scene":{"root2d":{"children":[],"name":null,"type":"h2d.Object"},"root3d":{"children":[],"name":null,"type":"h3d.scene.Object"}}}');
+
+			// return to base state
+			while(undo.canUndo()) {
+				undo.undo();
+			}
+
+			checkState(state);
+		}
+
+		// Remove many at the same time
+		@:privateAccess prefabEditor.setPrefab(hrt.prefab.Prefab.createFromDynamic(prefabData, new hrt.prefab.ContextShared("huiPrefabEditorTests.prefab")));
+		{
+			var state = dumpState();
+
+			undo.run(prefabEditor.actionRemovePrefabs([
+				prefabEditor.prefab.locatePrefab("a"),
+				prefabEditor.prefab.locatePrefab("b"),
+				prefabEditor.prefab.locatePrefab("c"),
+				prefabEditor.prefab.locatePrefab("d")
+			]), true);
+
+			assert(prefabEditor.prefab.locatePrefab("a") == null);
+			assert(prefabEditor.prefab.locatePrefab("b") == null);
+			assert(prefabEditor.prefab.locatePrefab("c") == null);
+			assert(prefabEditor.prefab.locatePrefab("d") == null);
+
+			assertSnapshot(dumpState(), '{"prefab":{"type":"prefab"},"scene":{"root2d":{"children":[],"name":null,"type":"h2d.Object"},"root3d":{"children":[],"name":null,"type":"h3d.scene.Object"}}}');
+
+			// return to base state
+			while(undo.canUndo()) {
+				undo.undo();
+			}
+
+			checkState(state);
+		}
+
+		@:privateAccess prefabEditor.setPrefab(hrt.prefab.Prefab.createFromDynamic(prefabData, new hrt.prefab.ContextShared("huiPrefabEditorTests.prefab")));
+		{
+			var state = dumpState();
+
+			undo.run(prefabEditor.actionRemovePrefabs([
+				prefabEditor.prefab.locatePrefab("d.e"),
+				prefabEditor.prefab.locatePrefab("d.f"),
+				prefabEditor.prefab.locatePrefab("d.g"),
+			]), true);
+
+			assert(prefabEditor.prefab.locatePrefab("d.e") == null);
+			assert(prefabEditor.prefab.locatePrefab("d.f") == null);
+			assert(prefabEditor.prefab.locatePrefab("d.g") == null);
+			assert(prefabEditor.prefab.locatePrefab("a") != null);
+			assert(prefabEditor.prefab.locatePrefab("b") != null);
+			assert(prefabEditor.prefab.locatePrefab("c") != null);
+			assert(prefabEditor.prefab.locatePrefab("d") != null);
+
+			assertSnapshot(dumpState(), '{"prefab":{"type":"prefab","children":[{"type":"box","name":"a"},{"type":"box","name":"b"},{"type":"box","name":"c"},{"type":"box","name":"d"}]},"scene":{"root2d":{"children":[],"name":null,"type":"h2d.Object"},"root3d":{"children":[{"children":[{"children":[],"name":null,"type":"h3d.scene.Interactive"}],"name":"a","type":"h3d.scene.Mesh"},{"children":[{"children":[],"name":null,"type":"h3d.scene.Interactive"}],"name":"b","type":"h3d.scene.Mesh"},{"children":[{"children":[],"name":null,"type":"h3d.scene.Interactive"}],"name":"c","type":"h3d.scene.Mesh"},{"children":[{"children":[],"name":null,"type":"h3d.scene.Interactive"}],"name":"d","type":"h3d.scene.Mesh"}],"name":null,"type":"h3d.scene.Object"}}}');
+
+			// return to base state
+			while(undo.canUndo()) {
+				undo.undo();
+			}
+
+			checkState(state);
+		}
+	}
+
+	function dumpState() {
+		return {
+			scene: dumpScene(),
+			prefab: @:privateAccess prefabEditor.prefab.serialize(),
+		};
+	}
+
+	function assert(condition: Bool) {
+		if (!condition)
+			throw "assert";
+	}
+
+	/**
+		Check if actualState matches a previous known correct state.
+		To setup this, first call `assertSnapshot(yourKnownValidState, "")`, then run your code.
+		The function will assert and print into the console a string to replace the "" with that is a serialisation of `yourKnownValidState`.
+	**/
+	function assertSnapshot(actualState: Dynamic, snapshotTest: String) {
+		var ser = haxe.Json.stringify(actualState);
+		if (snapshotTest == "") {
+			Sys.stdout().writeString('Empty snapshot. Paste the following string into the second argument to set the current state as the valid one : \n');
+			Sys.stdout().writeString('\'$ser\'');
+			Sys.stdout().flush();
+			throw "Set snapshot test";
+		}
+		if (snapshotTest != ser) {
+			Sys.stdout().writeString('Snapshot test failed. Had :\n');
+			Sys.stdout().writeString(actualState);
+			Sys.stdout().writeString('Wanted :\n');
+			Sys.stdout().writeString(haxe.Json.parse(snapshotTest));
+			Sys.stdout().flush();
+			throw new TestError("Snapshot test failed", "Snapshot test failed", "");
+		}
+	}
+
+	function checkState(prevDump: EditorDump) {
+		var sceneStateAfter = dumpScene();
+		var prefabStateAfter = @:privateAccess prefabEditor.prefab.serialize();
+
+
+		var diff = hrt.prefab.Diff.diff(prevDump.scene, sceneStateAfter);
+		switch(diff) {
+			case Skip:
+			case Set(diff):
+				throw new TestError("Remove Prefab Action", '', haxe.Json.stringify(diff, null, "\t"));
+		}
+
+		var diff = hrt.prefab.Diff.diff(prevDump.prefab, prefabStateAfter);
+		switch(diff) {
+			case Skip:
+			case Set(diff):
+				throw new TestError("Make Prefab Action", '', haxe.Json.stringify(diff, null, "\t"));
+		}
+	}
 }
 
+typedef EditorDump = {
+	scene: Dynamic,
+	prefab: Dynamic,
+}
 class TestError extends haxe.Exception {
 	var test: String;
 	var reason: String;
