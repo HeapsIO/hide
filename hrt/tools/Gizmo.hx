@@ -44,6 +44,28 @@ class RotateAxisShader extends hxsl.Shader {
 	}
 }
 
+class RotateSphereShader extends hxsl.Shader {
+	static var SRC = {
+		@global var camera : {
+			@var var dir : Vec3;
+		};
+		@global var global : {
+			@perObject var modelView : Mat4;
+		};
+
+		var transformedPosition : Vec3;
+		var modelView : Mat4;
+		var pixelColor : Vec4;
+
+		function fragment() {
+			var center = vec3(global.modelView[0].w, global.modelView[1].w, global.modelView[2].w);
+			var camDir = camera.dir * -1;
+			var dot = dot(camDir, (center - transformedPosition).normalize());
+			pixelColor.a = dot < 0.2 && dot > -0.2 ? 1 : 0;
+		}
+	}
+}
+
 class Gizmo extends h3d.scene.Object {
 	public static final X_COLOR = 0xfff44336;
 	public static final Y_COLOR = 0xff4dae51;
@@ -359,6 +381,21 @@ class Gizmo extends h3d.scene.Object {
 				}
 				e.propagate = false;
 			}
+		}
+
+		var p = new h3d.prim.Sphere(0.8, 25, 25);
+		p.addNormals();
+
+		var m = new h3d.scene.Mesh(p, null, gizmo);
+		m.name = "Sphere_Rotate";
+		for (mat in m.getMaterials()) {
+			mat.props = h3d.mat.MaterialSetup.current.getDefaults("ui");
+			mat.mainPass.culling = None;
+			mat.mainPass.depth(true, Always);
+			mat.mainPass.addShader(new RotateSphereShader());
+			mat.mainPass.setPassName("ui");
+			mat.color = new h3d.Vector4(1, 1, 1, 1);
+			mat.blendMode = Alpha;
 		}
 
 		return gizmo;
