@@ -585,7 +585,7 @@ class Prefab {
 		return Reflect.field(props, "$cdbtype");
 	}
 
-	public final function toString() : String{
+	public function toString() : String{
 		var str = type;
 		if ( name != "" ) str += '($name)';
 		return str;
