@@ -11,6 +11,12 @@ class HuiPrefabEditorTests extends HuiView<{}> {
 
 	static var _ = HuiView.register("hui-prefab-editor-tests", HuiPrefabEditorTests);
 
+	public var prefab(get, never) : hrt.prefab.Prefab;
+
+	inline function get_prefab() {
+		return prefabEditor.prefab;
+	}
+
 	public function new(_state: Dynamic, ?parent) {
 		super(_state, parent);
 		initComponent();
@@ -26,6 +32,10 @@ class HuiPrefabEditorTests extends HuiView<{}> {
 		// } catch (e) {
 		// 	hide.Ide.showError("Test failed " + e);
 		// }
+	}
+
+	inline public function locate(path: String) : hrt.prefab.Prefab {
+		return prefab.locatePrefab(path);
 	}
 
 	public function serializeScenes(s3d: h3d.scene.Object, s2d: h2d.Object) {
@@ -55,7 +65,7 @@ class HuiPrefabEditorTests extends HuiView<{}> {
 	}
 
 	public function dumpScene() : Dynamic {
-		@:privateAccess return serializeScenes(prefabEditor.prefab.shared.root3d, prefabEditor.prefab.shared.root2d);
+		@:privateAccess return serializeScenes(prefab.shared.root3d, prefab.shared.root2d);
 	}
 
 	public function checkDumpEqual(a: Dynamic, b: Dynamic) {
@@ -112,16 +122,16 @@ class HuiPrefabEditorTests extends HuiView<{}> {
 		@:privateAccess prefabEditor.setPrefab(hrt.prefab.Prefab.createFromDynamic(prefabData, new hrt.prefab.ContextShared("huiPrefabEditorTests.prefab")));
 		var sceneStateBefore = dumpScene();
 
-		var prefabStateBefore = @:privateAccess prefabEditor.prefab.serialize();
+		var prefabStateBefore = @:privateAccess prefab.serialize();
 
-		var node = prefabEditor.prefab.locatePrefab("node");
+		var node = locate("node");
 
-		for (prefab in @:privateAccess hrt.prefab.Prefab.registry) {
-			if (skipMakeTest.contains(prefab.prefabClass))
+		for (entry in @:privateAccess hrt.prefab.Prefab.registry) {
+			if (skipMakeTest.contains(entry.prefabClass))
 				continue;
 
 			// add to root
-			undo.run(prefabEditor.makePrefabAction(prefabEditor.prefab, 0, prefab.prefabClass), true);
+			undo.run(prefabEditor.makePrefabAction(prefab, 0, entry.prefabClass), true);
 
 			// return to base state
 			while(undo.canUndo()) {
@@ -130,31 +140,29 @@ class HuiPrefabEditorTests extends HuiView<{}> {
 
 			// check if there is any difference in the scene after that
 			var sceneStateAfter = dumpScene();
-			var prefabStateAfter = @:privateAccess prefabEditor.prefab.serialize();
+			var prefabStateAfter = @:privateAccess prefab.serialize();
 
 			var diff = hrt.prefab.Diff.diff(sceneStateBefore, sceneStateAfter);
 			switch(diff) {
 				case Skip:
 				case Set(diff):
-					throw new TestError("Make Prefab Action", 'Creating and removing prefab ${Type.getClassName(prefab.prefabClass)} had some side effects on the scene', haxe.Json.stringify(diff, null, "\t"));
+					throw new TestError("Make Prefab Action", 'Creating and removing prefab ${Type.getClassName(entry.prefabClass)} had some side effects on the scene', haxe.Json.stringify(diff, null, "\t"));
 			}
 
 			var diff = hrt.prefab.Diff.diff(prefabStateBefore, prefabStateAfter);
 			switch(diff) {
 				case Skip:
 				case Set(diff):
-					throw new TestError("Make Prefab Action", 'Creating and removing prefab ${Type.getClassName(prefab.prefabClass)} had some side effects on the prefab', haxe.Json.stringify(diff, null, "\t"));
+					throw new TestError("Make Prefab Action", 'Creating and removing prefab ${Type.getClassName(entry.prefabClass)} had some side effects on the prefab', haxe.Json.stringify(diff, null, "\t"));
 			}
-
-			trace('${Type.getClassName(prefab.prefabClass)} ok');
 		}
 
-		for (prefab in @:privateAccess hrt.prefab.Prefab.registry) {
-			if (skipMakeTest.contains(prefab.prefabClass))
+		for (entry in @:privateAccess hrt.prefab.Prefab.registry) {
+			if (skipMakeTest.contains(entry.prefabClass))
 				continue;
 
 			// add to node
-			undo.run(prefabEditor.makePrefabAction(node, 0, prefab.prefabClass), true);
+			undo.run(prefabEditor.makePrefabAction(node, 0, entry.prefabClass), true);
 
 			// return to base state
 			while(undo.canUndo()) {
@@ -163,21 +171,21 @@ class HuiPrefabEditorTests extends HuiView<{}> {
 
 			// check if there is any difference in the scene after that
 			var sceneStateAfter = dumpScene();
-			var prefabStateAfter = @:privateAccess prefabEditor.prefab.serialize();
+			var prefabStateAfter = @:privateAccess prefab.serialize();
 
 
 			var diff = hrt.prefab.Diff.diff(sceneStateBefore, sceneStateAfter);
 			switch(diff) {
 				case Skip:
 				case Set(diff):
-					throw new TestError("Make Prefab Action", 'Creating and removing prefab ${Type.getClassName(prefab.prefabClass)} had some side effects on the scene', haxe.Json.stringify(diff, null, "\t"));
+					throw new TestError("Make Prefab Action", 'Creating and removing prefab ${Type.getClassName(entry.prefabClass)} had some side effects on the scene', haxe.Json.stringify(diff, null, "\t"));
 			}
 
 			var diff = hrt.prefab.Diff.diff(prefabStateBefore, prefabStateAfter);
 			switch(diff) {
 				case Skip:
 				case Set(diff):
-					throw new TestError("Make Prefab Action", 'Creating and removing prefab ${Type.getClassName(prefab.prefabClass)} had some side effects on the prefab', haxe.Json.stringify(diff, null, "\t"));
+					throw new TestError("Make Prefab Action", 'Creating and removing prefab ${Type.getClassName(entry.prefabClass)} had some side effects on the prefab', haxe.Json.stringify(diff, null, "\t"));
 			}
 		}
 	}
@@ -203,10 +211,10 @@ class HuiPrefabEditorTests extends HuiView<{}> {
 		{
 			var state = dumpState();
 
-			undo.run(prefabEditor.actionReparentPrefabs([prefabEditor.prefab.locatePrefab("a")], prefabEditor.prefab.locatePrefab("b"), 0), true);
+			undo.run(prefabEditor.actionReparentPrefabs([locate("a")], locate("b"), 0), true);
 
-			assert(prefabEditor.prefab.locatePrefab("a") == null);
-			assert(prefabEditor.prefab.locatePrefab("b.a") != null);
+			assert(locate("a") == null);
+			assert(locate("b.a") != null);
 
 			assertSnapshot(dumpState(), '{"prefab":{"type":"prefab","children":[{"type":"box","name":"b","children":[{"type":"box","name":"a"}]},{"type":"box","name":"c"},{"type":"box","name":"d","children":[{"type":"box","name":"e"},{"type":"box","name":"f"},{"type":"box","name":"g"}]}]},"scene":{"root2d":{"children":[],"name":null,"type":"h2d.Object"},"root3d":{"children":[{"children":[{"children":[{"children":[],"name":null,"type":"h3d.scene.Interactive"}],"name":"a","type":"h3d.scene.Mesh"},{"children":[],"name":null,"type":"h3d.scene.Interactive"}],"name":"b","type":"h3d.scene.Mesh"},{"children":[{"children":[],"name":null,"type":"h3d.scene.Interactive"}],"name":"c","type":"h3d.scene.Mesh"},{"children":[{"children":[{"children":[],"name":null,"type":"h3d.scene.Interactive"}],"name":"e","type":"h3d.scene.Mesh"},{"children":[{"children":[],"name":null,"type":"h3d.scene.Interactive"}],"name":"f","type":"h3d.scene.Mesh"},{"children":[{"children":[],"name":null,"type":"h3d.scene.Interactive"}],"name":"g","type":"h3d.scene.Mesh"},{"children":[],"name":null,"type":"h3d.scene.Interactive"}],"name":"d","type":"h3d.scene.Mesh"}],"name":null,"type":"h3d.scene.Object"}}}');
 
@@ -221,14 +229,14 @@ class HuiPrefabEditorTests extends HuiView<{}> {
 		{
 			var state = dumpState();
 
-			undo.run(prefabEditor.actionReparentPrefabs([prefabEditor.prefab.locatePrefab("a"), prefabEditor.prefab.locatePrefab("b"), prefabEditor.prefab.locatePrefab("c")], prefabEditor.prefab, 0), true);
+			undo.run(prefabEditor.actionReparentPrefabs([locate("a"), locate("b"), locate("c")], prefab, 0), true);
 
-			assert(prefabEditor.prefab.locatePrefab("a") != null);
-			assert(prefabEditor.prefab.locatePrefab("b") != null);
-			assert(prefabEditor.prefab.locatePrefab("c") != null);
-			assert(prefabEditor.prefab.children.indexOf(prefabEditor.prefab.locatePrefab("a")) == 0);
-			assert(prefabEditor.prefab.children.indexOf(prefabEditor.prefab.locatePrefab("b")) == 1);
-			assert(prefabEditor.prefab.children.indexOf(prefabEditor.prefab.locatePrefab("c")) == 2);
+			assert(locate("a") != null);
+			assert(locate("b") != null);
+			assert(locate("c") != null);
+			assert(prefab.children.indexOf(locate("a")) == 0);
+			assert(prefab.children.indexOf(locate("b")) == 1);
+			assert(prefab.children.indexOf(locate("c")) == 2);
 
 			checkState(state);
 
@@ -245,15 +253,15 @@ class HuiPrefabEditorTests extends HuiView<{}> {
 		{
 			var state = dumpState();
 
-			undo.run(prefabEditor.actionReparentPrefabs([prefabEditor.prefab.locatePrefab("a"), prefabEditor.prefab.locatePrefab("c")], prefabEditor.prefab.locatePrefab("b"), 0), true);
+			undo.run(prefabEditor.actionReparentPrefabs([locate("a"), locate("c")], locate("b"), 0), true);
 
-			var b = prefabEditor.prefab.locatePrefab("b");
-			assert(prefabEditor.prefab.locatePrefab("a") == null);
-			assert(prefabEditor.prefab.locatePrefab("c") == null);
-			assert(prefabEditor.prefab.locatePrefab("b.a") != null);
-			assert(prefabEditor.prefab.locatePrefab("b.c") != null);
+			var b = locate("b");
+			assert(locate("a") == null);
+			assert(locate("c") == null);
+			assert(locate("b.a") != null);
+			assert(locate("b.c") != null);
 
-			assert(prefabEditor.prefab.children.indexOf(prefabEditor.prefab.locatePrefab("b")) == 0);
+			assert(prefab.children.indexOf(locate("b")) == 0);
 			assert(b.children.indexOf(b.locatePrefab("a")) == 0);
 			assert(b.children.indexOf(b.locatePrefab("c")) == 1);
 			assert(b.children.length == 2);
@@ -264,6 +272,83 @@ class HuiPrefabEditorTests extends HuiView<{}> {
 			while(undo.canUndo()) {
 				undo.undo();
 			}
+
+			checkState(state);
+		}
+
+		{
+			var state = dumpState();
+
+			undo.run(prefabEditor.actionReparentPrefabs([locate("a"), locate("c")], prefab, prefab.children.indexOf(locate("b")) + 1), true);
+
+			assert(prefab.children.indexOf(locate("b")) == 0);
+			assert(prefab.children.indexOf(locate("a")) == 1);
+			assert(prefab.children.indexOf(locate("c")) == 2);
+
+			assertSnapshot(dumpState(), '{"prefab":{"type":"prefab","children":[{"type":"box","name":"b"},{"type":"box","name":"a"},{"type":"box","name":"c"},{"type":"box","name":"d","children":[{"type":"box","name":"e"},{"type":"box","name":"f"},{"type":"box","name":"g"}]}]},"scene":{"root2d":{"children":[],"name":null,"type":"h2d.Object"},"root3d":{"children":[{"children":[{"children":[],"name":null,"type":"h3d.scene.Interactive"}],"name":"b","type":"h3d.scene.Mesh"},{"children":[{"children":[],"name":null,"type":"h3d.scene.Interactive"}],"name":"a","type":"h3d.scene.Mesh"},{"children":[{"children":[],"name":null,"type":"h3d.scene.Interactive"}],"name":"c","type":"h3d.scene.Mesh"},{"children":[{"children":[{"children":[],"name":null,"type":"h3d.scene.Interactive"}],"name":"e","type":"h3d.scene.Mesh"},{"children":[{"children":[],"name":null,"type":"h3d.scene.Interactive"}],"name":"f","type":"h3d.scene.Mesh"},{"children":[{"children":[],"name":null,"type":"h3d.scene.Interactive"}],"name":"g","type":"h3d.scene.Mesh"},{"children":[],"name":null,"type":"h3d.scene.Interactive"}],"name":"d","type":"h3d.scene.Mesh"}],"name":null,"type":"h3d.scene.Object"}}}');
+
+			// return to base state
+			while(undo.canUndo()) {
+				undo.undo();
+			}
+
+			checkState(state);
+		}
+
+		{
+			var state = dumpState();
+
+			undo.run(prefabEditor.actionReparentPrefabs([locate("a"), locate("b"), locate("d")], prefab, prefab.children.indexOf(locate("c")) + 1), true);
+
+			assert(prefab.children.indexOf(locate("c")) == 0);
+			assert(prefab.children.indexOf(locate("a")) == 1);
+			assert(prefab.children.indexOf(locate("b")) == 2);
+			assert(prefab.children.indexOf(locate("d")) == 3);
+			assert(locate("d.e") != null);
+			assert(locate("d.f") != null);
+			assert(locate("d.g") != null);
+
+			assertSnapshot(dumpState(), '{"prefab":{"type":"prefab","children":[{"type":"box","name":"c"},{"type":"box","name":"a"},{"type":"box","name":"b"},{"type":"box","name":"d","children":[{"type":"box","name":"e"},{"type":"box","name":"f"},{"type":"box","name":"g"}]}]},"scene":{"root2d":{"children":[],"name":null,"type":"h2d.Object"},"root3d":{"children":[{"children":[{"children":[],"name":null,"type":"h3d.scene.Interactive"}],"name":"c","type":"h3d.scene.Mesh"},{"children":[{"children":[],"name":null,"type":"h3d.scene.Interactive"}],"name":"a","type":"h3d.scene.Mesh"},{"children":[{"children":[],"name":null,"type":"h3d.scene.Interactive"}],"name":"b","type":"h3d.scene.Mesh"},{"children":[{"children":[{"children":[],"name":null,"type":"h3d.scene.Interactive"}],"name":"e","type":"h3d.scene.Mesh"},{"children":[{"children":[],"name":null,"type":"h3d.scene.Interactive"}],"name":"f","type":"h3d.scene.Mesh"},{"children":[{"children":[],"name":null,"type":"h3d.scene.Interactive"}],"name":"g","type":"h3d.scene.Mesh"},{"children":[],"name":null,"type":"h3d.scene.Interactive"}],"name":"d","type":"h3d.scene.Mesh"}],"name":null,"type":"h3d.scene.Object"}}}');
+
+			// return to base state
+			while(undo.canUndo()) {
+				undo.undo();
+			}
+
+			checkState(state);
+		}
+
+		{
+			var state = dumpState();
+
+			undo.run(prefabEditor.actionReparentPrefabs([locate("a")], prefab, prefab.children.indexOf(locate("c")) + 1), true);
+			var after1 = dumpState();
+
+			assert(prefab.children.indexOf(locate("a")) == prefab.children.indexOf(locate("c")) + 1);
+
+			undo.run(prefabEditor.actionReparentPrefabs([locate("b")], prefab, prefab.children.indexOf(locate("c")) + 1), true);
+			var after2 = dumpState();
+
+			assert(prefab.children.indexOf(locate("b")) == prefab.children.indexOf(locate("c")) + 1);
+			assert(prefab.children.indexOf(locate("a")) == prefab.children.indexOf(locate("c")) + 2);
+
+			undo.run(prefabEditor.actionReparentPrefabs([locate("d")], prefab, prefab.children.indexOf(locate("c")) + 1), true);
+
+			assert(prefab.children.indexOf(locate("d")) == prefab.children.indexOf(locate("c")) + 1);
+			assert(prefab.children.indexOf(locate("b")) == prefab.children.indexOf(locate("c")) + 2);
+			assert(prefab.children.indexOf(locate("a")) == prefab.children.indexOf(locate("c")) + 3);
+
+			assertSnapshot(dumpState(), '{"prefab":{"type":"prefab","children":[{"type":"box","name":"c"},{"type":"box","name":"d","children":[{"type":"box","name":"e"},{"type":"box","name":"f"},{"type":"box","name":"g"}]},{"type":"box","name":"b"},{"type":"box","name":"a"}]},"scene":{"root2d":{"children":[],"name":null,"type":"h2d.Object"},"root3d":{"children":[{"children":[{"children":[],"name":null,"type":"h3d.scene.Interactive"}],"name":"c","type":"h3d.scene.Mesh"},{"children":[{"children":[{"children":[],"name":null,"type":"h3d.scene.Interactive"}],"name":"e","type":"h3d.scene.Mesh"},{"children":[{"children":[],"name":null,"type":"h3d.scene.Interactive"}],"name":"f","type":"h3d.scene.Mesh"},{"children":[{"children":[],"name":null,"type":"h3d.scene.Interactive"}],"name":"g","type":"h3d.scene.Mesh"},{"children":[],"name":null,"type":"h3d.scene.Interactive"}],"name":"d","type":"h3d.scene.Mesh"},{"children":[{"children":[],"name":null,"type":"h3d.scene.Interactive"}],"name":"b","type":"h3d.scene.Mesh"},{"children":[{"children":[],"name":null,"type":"h3d.scene.Interactive"}],"name":"a","type":"h3d.scene.Mesh"}],"name":null,"type":"h3d.scene.Object"}}}');
+
+			undo.undo();
+			checkState(after2);
+
+			undo.undo();
+			checkState(after1);
+
+			undo.undo();
+
+			assert(!undo.canUndo());
 
 			checkState(state);
 		}
@@ -292,10 +377,10 @@ class HuiPrefabEditorTests extends HuiView<{}> {
 		{
 			var state = dumpState();
 
-			undo.run(prefabEditor.actionRemovePrefabs([prefabEditor.prefab.locatePrefab("a")]), true);
+			undo.run(prefabEditor.actionRemovePrefabs([locate("a")]), true);
 
-			assert(prefabEditor.prefab.locatePrefab("a") == null);
-			assert(prefabEditor.prefab.locatePrefab("b") != null);
+			assert(locate("a") == null);
+			assert(locate("b") != null);
 
 			assertSnapshot(dumpState(), '{"prefab":{"type":"prefab","children":[{"type":"box","name":"b"},{"type":"box","name":"c"},{"type":"box","name":"d","children":[{"type":"box","name":"e"},{"type":"box","name":"f"},{"type":"box","name":"g"}]}]},"scene":{"root2d":{"children":[],"name":null,"type":"h2d.Object"},"root3d":{"children":[{"children":[{"children":[],"name":null,"type":"h3d.scene.Interactive"}],"name":"b","type":"h3d.scene.Mesh"},{"children":[{"children":[],"name":null,"type":"h3d.scene.Interactive"}],"name":"c","type":"h3d.scene.Mesh"},{"children":[{"children":[{"children":[],"name":null,"type":"h3d.scene.Interactive"}],"name":"e","type":"h3d.scene.Mesh"},{"children":[{"children":[],"name":null,"type":"h3d.scene.Interactive"}],"name":"f","type":"h3d.scene.Mesh"},{"children":[{"children":[],"name":null,"type":"h3d.scene.Interactive"}],"name":"g","type":"h3d.scene.Mesh"},{"children":[],"name":null,"type":"h3d.scene.Interactive"}],"name":"d","type":"h3d.scene.Mesh"}],"name":null,"type":"h3d.scene.Object"}}}');
 
@@ -314,18 +399,18 @@ class HuiPrefabEditorTests extends HuiView<{}> {
 		{
 			var state = dumpState();
 
-			undo.run(prefabEditor.actionRemovePrefabs([prefabEditor.prefab.locatePrefab("a")]), true);
-			undo.run(prefabEditor.actionRemovePrefabs([prefabEditor.prefab.locatePrefab("b")]), true);
-			undo.run(prefabEditor.actionRemovePrefabs([prefabEditor.prefab.locatePrefab("c")]), true);
-			undo.run(prefabEditor.actionRemovePrefabs([prefabEditor.prefab.locatePrefab("d")]), true);
+			undo.run(prefabEditor.actionRemovePrefabs([locate("a")]), true);
+			undo.run(prefabEditor.actionRemovePrefabs([locate("b")]), true);
+			undo.run(prefabEditor.actionRemovePrefabs([locate("c")]), true);
+			undo.run(prefabEditor.actionRemovePrefabs([locate("d")]), true);
 
-			assert(prefabEditor.prefab.locatePrefab("a") == null);
-			assert(prefabEditor.prefab.locatePrefab("b") == null);
-			assert(prefabEditor.prefab.locatePrefab("c") == null);
-			assert(prefabEditor.prefab.locatePrefab("d") == null);
-			assert(prefabEditor.prefab.locatePrefab("d.e") == null);
-			assert(prefabEditor.prefab.locatePrefab("d.f") == null);
-			assert(prefabEditor.prefab.locatePrefab("d.g") == null);
+			assert(locate("a") == null);
+			assert(locate("b") == null);
+			assert(locate("c") == null);
+			assert(locate("d") == null);
+			assert(locate("d.e") == null);
+			assert(locate("d.f") == null);
+			assert(locate("d.g") == null);
 
 			assertSnapshot(dumpState(), '{"prefab":{"type":"prefab"},"scene":{"root2d":{"children":[],"name":null,"type":"h2d.Object"},"root3d":{"children":[],"name":null,"type":"h3d.scene.Object"}}}');
 
@@ -343,16 +428,16 @@ class HuiPrefabEditorTests extends HuiView<{}> {
 			var state = dumpState();
 
 			undo.run(prefabEditor.actionRemovePrefabs([
-				prefabEditor.prefab.locatePrefab("a"),
-				prefabEditor.prefab.locatePrefab("b"),
-				prefabEditor.prefab.locatePrefab("c"),
-				prefabEditor.prefab.locatePrefab("d")
+				locate("a"),
+				locate("b"),
+				locate("c"),
+				locate("d")
 			]), true);
 
-			assert(prefabEditor.prefab.locatePrefab("a") == null);
-			assert(prefabEditor.prefab.locatePrefab("b") == null);
-			assert(prefabEditor.prefab.locatePrefab("c") == null);
-			assert(prefabEditor.prefab.locatePrefab("d") == null);
+			assert(locate("a") == null);
+			assert(locate("b") == null);
+			assert(locate("c") == null);
+			assert(locate("d") == null);
 
 			assertSnapshot(dumpState(), '{"prefab":{"type":"prefab"},"scene":{"root2d":{"children":[],"name":null,"type":"h2d.Object"},"root3d":{"children":[],"name":null,"type":"h3d.scene.Object"}}}');
 
@@ -369,18 +454,18 @@ class HuiPrefabEditorTests extends HuiView<{}> {
 			var state = dumpState();
 
 			undo.run(prefabEditor.actionRemovePrefabs([
-				prefabEditor.prefab.locatePrefab("d.e"),
-				prefabEditor.prefab.locatePrefab("d.f"),
-				prefabEditor.prefab.locatePrefab("d.g"),
+				locate("d.e"),
+				locate("d.f"),
+				locate("d.g"),
 			]), true);
 
-			assert(prefabEditor.prefab.locatePrefab("d.e") == null);
-			assert(prefabEditor.prefab.locatePrefab("d.f") == null);
-			assert(prefabEditor.prefab.locatePrefab("d.g") == null);
-			assert(prefabEditor.prefab.locatePrefab("a") != null);
-			assert(prefabEditor.prefab.locatePrefab("b") != null);
-			assert(prefabEditor.prefab.locatePrefab("c") != null);
-			assert(prefabEditor.prefab.locatePrefab("d") != null);
+			assert(locate("d.e") == null);
+			assert(locate("d.f") == null);
+			assert(locate("d.g") == null);
+			assert(locate("a") != null);
+			assert(locate("b") != null);
+			assert(locate("c") != null);
+			assert(locate("d") != null);
 
 			assertSnapshot(dumpState(), '{"prefab":{"type":"prefab","children":[{"type":"box","name":"a"},{"type":"box","name":"b"},{"type":"box","name":"c"},{"type":"box","name":"d"}]},"scene":{"root2d":{"children":[],"name":null,"type":"h2d.Object"},"root3d":{"children":[{"children":[{"children":[],"name":null,"type":"h3d.scene.Interactive"}],"name":"a","type":"h3d.scene.Mesh"},{"children":[{"children":[],"name":null,"type":"h3d.scene.Interactive"}],"name":"b","type":"h3d.scene.Mesh"},{"children":[{"children":[],"name":null,"type":"h3d.scene.Interactive"}],"name":"c","type":"h3d.scene.Mesh"},{"children":[{"children":[],"name":null,"type":"h3d.scene.Interactive"}],"name":"d","type":"h3d.scene.Mesh"}],"name":null,"type":"h3d.scene.Object"}}}');
 
@@ -396,7 +481,7 @@ class HuiPrefabEditorTests extends HuiView<{}> {
 	function dumpState() {
 		return {
 			scene: dumpScene(),
-			prefab: @:privateAccess prefabEditor.prefab.serialize(),
+			prefab: @:privateAccess prefab.serialize(),
 		};
 	}
 
@@ -413,15 +498,16 @@ class HuiPrefabEditorTests extends HuiView<{}> {
 	function assertSnapshot(actualState: Dynamic, snapshotTest: String) {
 		var ser = haxe.Json.stringify(actualState);
 		if (snapshotTest == "") {
-			Sys.stdout().writeString('Empty snapshot. Paste the following string into the second argument to set the current state as the valid one : \n');
+			Sys.stdout().writeString('Empty snapshot. Paste the following string into the second argument to set the current state as the valid one : \r\n');
+			Sys.stdout().flush();
 			Sys.stdout().writeString('\'$ser\'');
 			Sys.stdout().flush();
 			throw "Set snapshot test";
 		}
 		if (snapshotTest != ser) {
-			Sys.stdout().writeString('Snapshot test failed. Had :\n');
+			Sys.stdout().writeString('Snapshot test failed. Had :\r\n');
 			Sys.stdout().writeString(actualState);
-			Sys.stdout().writeString('Wanted :\n');
+			Sys.stdout().writeString('Wanted :\r\n');
 			Sys.stdout().writeString(haxe.Json.parse(snapshotTest));
 			Sys.stdout().flush();
 			throw new TestError("Snapshot test failed", "Snapshot test failed", "");
@@ -430,13 +516,20 @@ class HuiPrefabEditorTests extends HuiView<{}> {
 
 	function checkState(prevDump: EditorDump) {
 		var sceneStateAfter = dumpScene();
-		var prefabStateAfter = @:privateAccess prefabEditor.prefab.serialize();
+		var prefabStateAfter = @:privateAccess prefab.serialize();
 
 
 		var diff = hrt.prefab.Diff.diff(prevDump.scene, sceneStateAfter);
 		switch(diff) {
 			case Skip:
 			case Set(diff):
+				trace("Diff failed");
+				trace("had:");
+				trace(prevDump.scene);
+				trace("wanted:");
+				trace(sceneStateAfter);
+				trace("diff:");
+				trace(diff);
 				throw new TestError("Remove Prefab Action", '', haxe.Json.stringify(diff, null, "\t"));
 		}
 

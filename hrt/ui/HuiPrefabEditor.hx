@@ -336,6 +336,8 @@ class HuiPrefabEditor extends HuiElement {
 		var oldIndex = -1;
 		if (oldParent != null) {
 			oldIndex = oldParent.children.indexOf(prefab);
+			if (oldParent == parent && oldIndex > index)
+				oldIndex += 1;
 		}
 
 		return (isUndo: Bool) -> {
