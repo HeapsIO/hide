@@ -222,7 +222,15 @@ class HuiBase extends HuiElement {
 				case ERelease, EReleaseOutside:
 					if (currentDrag.lastOver != null) {
 						currentDrag.event = e;
+						var oldX = e.relX;
+						var oldY = e.relY;
+						var scale = getScene().viewportScaleX;
+
+						e.relX = e.relX / scale - currentDrag.lastOver.absX;
+						e.relY = e.relY / scale - currentDrag.lastOver.absY;
 						currentDrag.lastOver.onDrop(currentDrag);
+						e.relX = oldX;
+						e.relY = oldY;
 						currentDrag.event = null;
 					}
 					@:privateAccess getScene().events.stopCapture();
