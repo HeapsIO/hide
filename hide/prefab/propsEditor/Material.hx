@@ -1,6 +1,6 @@
-package hide.prefab.materialEditor;
+package hide.prefab.propsEditor;
 
-class Material extends MaterialEditor<h3d.mat.Material> {
+class Material extends AnyPropsEditor<h3d.mat.Material> {
 
 	override function edit2(ctx:hrt.prefab.EditContext2, root: hide.kit.Element) {
 		root.build(
@@ -9,9 +9,9 @@ class Material extends MaterialEditor<h3d.mat.Material> {
 				<checkbox field={shadows}/>
 				<checkbox field={culling}/>
 				<checkbox field={light}/>
-			</root>, material.props
+			</root>, props.props
 		);
 	}
 
-	static var _ = MaterialEditor.registerEditor(h3d.mat.Material, Material);
+	static var _ = AnyPropsEditor.registerEditor(h3d.mat.Material, Material);
 }
