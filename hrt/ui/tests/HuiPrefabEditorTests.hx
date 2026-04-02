@@ -33,6 +33,7 @@ class HuiPrefabEditorTests extends HuiView<{}> {
 			testMakePrefabAction();
 			actionRemovePrefabs();
 			actionReparentPrefabs();
+			actionReparentPrefabKeepTransform();
 
 			Macros.writeSnapshotModifs();
 
@@ -253,7 +254,7 @@ class HuiPrefabEditorTests extends HuiView<{}> {
 			assert(locate("a") == null);
 			assert(locate("b.a") != null);
 
-			Macros.assertSnapshot(dumpState(), '{"prefab":{"type":"prefab","children":[{"type":"box","name":"b","children":[{"type":"box","name":"a"}]},{"type":"box","name":"c"},{"type":"box","name":"d","children":[{"type":"box","name":"e"},{"type":"box","name":"f"},{"type":"box","name":"g"}]}]},"scene":{"root2d":{"children":[],"name":null,"type":"h2d.Object"},"root3d":{"children":[{"children":[{"children":[{"children":[],"name":null,"type":"h3d.scene.Interactive"}],"name":"a","type":"h3d.scene.Mesh"},{"children":[],"name":null,"type":"h3d.scene.Interactive"}],"name":"b","type":"h3d.scene.Mesh"},{"children":[{"children":[],"name":null,"type":"h3d.scene.Interactive"}],"name":"c","type":"h3d.scene.Mesh"},{"children":[{"children":[{"children":[],"name":null,"type":"h3d.scene.Interactive"}],"name":"e","type":"h3d.scene.Mesh"},{"children":[{"children":[],"name":null,"type":"h3d.scene.Interactive"}],"name":"f","type":"h3d.scene.Mesh"},{"children":[{"children":[],"name":null,"type":"h3d.scene.Interactive"}],"name":"g","type":"h3d.scene.Mesh"},{"children":[],"name":null,"type":"h3d.scene.Interactive"}],"name":"d","type":"h3d.scene.Mesh"}],"name":null,"type":"h3d.scene.Object"}}}');
+			Macros.assertSnapshot(dumpState(), 'oy6:prefaboy4:typeR0y8:childrenaoR1y3:boxy4:namey1:bR2aoR1R3R4y1:aghgoR1R3R4y1:cgoR1R3R4y1:dR2aoR1R3R4y1:egoR1R3R4y1:fgoR1R3R4y1:gghghgy5:sceneoy6:root2doR4nR1y10:h2d.ObjectR2ahy1:xzy1:yzy2:sxi1y2:syi1y1:rzgy6:root3doR4nR1y16:h3d.scene.ObjectR2aoR4R5R1y14:h3d.scene.MeshR2aoR4R6R1R22R2aoR4nR1y21:h3d.scene.InteractiveR2ahR15zR16zy1:zzR17i1R18i1y2:szi1y2:rxzy2:ryzy2:rzzghR15zR16zR24zR17i1R18i1R25i1R26zR27zR28zgoR4nR1R23R2ahR15zR16zR24zR17i1R18i1R25i1R26zR27zR28zghR15zR16zR24zR17i1R18i1R25i1R26zR27zR28zgoR4R7R1R22R2aoR4nR1R23R2ahR15zR16zR24zR17i1R18i1R25i1R26zR27zR28zghR15zR16zR24zR17i1R18i1R25i1R26zR27zR28zgoR4R8R1R22R2aoR4R9R1R22R2aoR4nR1R23R2ahR15zR16zR24zR17i1R18i1R25i1R26zR27zR28zghR15zR16zR24zR17i1R18i1R25i1R26zR27zR28zgoR4R10R1R22R2aoR4nR1R23R2ahR15zR16zR24zR17i1R18i1R25i1R26zR27zR28zghR15zR16zR24zR17i1R18i1R25i1R26zR27zR28zgoR4R11R1R22R2aoR4nR1R23R2ahR15zR16zR24zR17i1R18i1R25i1R26zR27zR28zghR15zR16zR24zR17i1R18i1R25i1R26zR27zR28zgoR4nR1R23R2ahR15zR16zR24zR17i1R18i1R25i1R26zR27zR28zghR15zR16zR24zR17i1R18i1R25i1R26zR27zR28zghR15zR16zR24zR17i1R18i1R25i1R26zR27zR28zggg');
 
 			// return to base state
 			while(undo.canUndo()) {
@@ -277,7 +278,7 @@ class HuiPrefabEditorTests extends HuiView<{}> {
 
 			checkState(state);
 
-			Macros.assertSnapshot(dumpState(), '{"prefab":{"type":"prefab","children":[{"type":"box","name":"a"},{"type":"box","name":"b"},{"type":"box","name":"c"},{"type":"box","name":"d","children":[{"type":"box","name":"e"},{"type":"box","name":"f"},{"type":"box","name":"g"}]}]},"scene":{"root2d":{"children":[],"name":null,"type":"h2d.Object"},"root3d":{"children":[{"children":[{"children":[],"name":null,"type":"h3d.scene.Interactive"}],"name":"a","type":"h3d.scene.Mesh"},{"children":[{"children":[],"name":null,"type":"h3d.scene.Interactive"}],"name":"b","type":"h3d.scene.Mesh"},{"children":[{"children":[],"name":null,"type":"h3d.scene.Interactive"}],"name":"c","type":"h3d.scene.Mesh"},{"children":[{"children":[{"children":[],"name":null,"type":"h3d.scene.Interactive"}],"name":"e","type":"h3d.scene.Mesh"},{"children":[{"children":[],"name":null,"type":"h3d.scene.Interactive"}],"name":"f","type":"h3d.scene.Mesh"},{"children":[{"children":[],"name":null,"type":"h3d.scene.Interactive"}],"name":"g","type":"h3d.scene.Mesh"},{"children":[],"name":null,"type":"h3d.scene.Interactive"}],"name":"d","type":"h3d.scene.Mesh"}],"name":null,"type":"h3d.scene.Object"}}}');
+			Macros.assertSnapshot(dumpState(), 'oy6:prefaboy4:typeR0y8:childrenaoR1y3:boxy4:namey1:agoR1R3R4y1:bgoR1R3R4y1:cgoR1R3R4y1:dR2aoR1R3R4y1:egoR1R3R4y1:fgoR1R3R4y1:gghghgy5:sceneoy6:root2doR4nR1y10:h2d.ObjectR2ahy1:xzy1:yzy2:sxi1y2:syi1y1:rzgy6:root3doR4nR1y16:h3d.scene.ObjectR2aoR4R5R1y14:h3d.scene.MeshR2aoR4nR1y21:h3d.scene.InteractiveR2ahR15zR16zy1:zzR17i1R18i1y2:szi1y2:rxzy2:ryzy2:rzzghR15zR16zR24zR17i1R18i1R25i1R26zR27zR28zgoR4R6R1R22R2aoR4nR1R23R2ahR15zR16zR24zR17i1R18i1R25i1R26zR27zR28zghR15zR16zR24zR17i1R18i1R25i1R26zR27zR28zgoR4R7R1R22R2aoR4nR1R23R2ahR15zR16zR24zR17i1R18i1R25i1R26zR27zR28zghR15zR16zR24zR17i1R18i1R25i1R26zR27zR28zgoR4R8R1R22R2aoR4R9R1R22R2aoR4nR1R23R2ahR15zR16zR24zR17i1R18i1R25i1R26zR27zR28zghR15zR16zR24zR17i1R18i1R25i1R26zR27zR28zgoR4R10R1R22R2aoR4nR1R23R2ahR15zR16zR24zR17i1R18i1R25i1R26zR27zR28zghR15zR16zR24zR17i1R18i1R25i1R26zR27zR28zgoR4R11R1R22R2aoR4nR1R23R2ahR15zR16zR24zR17i1R18i1R25i1R26zR27zR28zghR15zR16zR24zR17i1R18i1R25i1R26zR27zR28zgoR4nR1R23R2ahR15zR16zR24zR17i1R18i1R25i1R26zR27zR28zghR15zR16zR24zR17i1R18i1R25i1R26zR27zR28zghR15zR16zR24zR17i1R18i1R25i1R26zR27zR28zggg');
 
 			// return to base state
 			while(undo.canUndo()) {
@@ -303,7 +304,7 @@ class HuiPrefabEditorTests extends HuiView<{}> {
 			assert(b.children.indexOf(b.locatePrefab("c")) == 1);
 			assert(b.children.length == 2);
 
-			Macros.assertSnapshot(dumpState(), '{"prefab":{"type":"prefab","children":[{"type":"box","name":"b","children":[{"type":"box","name":"a"},{"type":"box","name":"c"}]},{"type":"box","name":"d","children":[{"type":"box","name":"e"},{"type":"box","name":"f"},{"type":"box","name":"g"}]}]},"scene":{"root2d":{"children":[],"name":null,"type":"h2d.Object"},"root3d":{"children":[{"children":[{"children":[{"children":[],"name":null,"type":"h3d.scene.Interactive"}],"name":"a","type":"h3d.scene.Mesh"},{"children":[{"children":[],"name":null,"type":"h3d.scene.Interactive"}],"name":"c","type":"h3d.scene.Mesh"},{"children":[],"name":null,"type":"h3d.scene.Interactive"}],"name":"b","type":"h3d.scene.Mesh"},{"children":[{"children":[{"children":[],"name":null,"type":"h3d.scene.Interactive"}],"name":"e","type":"h3d.scene.Mesh"},{"children":[{"children":[],"name":null,"type":"h3d.scene.Interactive"}],"name":"f","type":"h3d.scene.Mesh"},{"children":[{"children":[],"name":null,"type":"h3d.scene.Interactive"}],"name":"g","type":"h3d.scene.Mesh"},{"children":[],"name":null,"type":"h3d.scene.Interactive"}],"name":"d","type":"h3d.scene.Mesh"}],"name":null,"type":"h3d.scene.Object"}}}');
+			Macros.assertSnapshot(dumpState(), 'oy6:prefaboy4:typeR0y8:childrenaoR1y3:boxy4:namey1:bR2aoR1R3R4y1:agoR1R3R4y1:cghgoR1R3R4y1:dR2aoR1R3R4y1:egoR1R3R4y1:fgoR1R3R4y1:gghghgy5:sceneoy6:root2doR4nR1y10:h2d.ObjectR2ahy1:xzy1:yzy2:sxi1y2:syi1y1:rzgy6:root3doR4nR1y16:h3d.scene.ObjectR2aoR4R5R1y14:h3d.scene.MeshR2aoR4R6R1R22R2aoR4nR1y21:h3d.scene.InteractiveR2ahR15zR16zy1:zzR17i1R18i1y2:szi1y2:rxzy2:ryzy2:rzzghR15zR16zR24zR17i1R18i1R25i1R26zR27zR28zgoR4R7R1R22R2aoR4nR1R23R2ahR15zR16zR24zR17i1R18i1R25i1R26zR27zR28zghR15zR16zR24zR17i1R18i1R25i1R26zR27zR28zgoR4nR1R23R2ahR15zR16zR24zR17i1R18i1R25i1R26zR27zR28zghR15zR16zR24zR17i1R18i1R25i1R26zR27zR28zgoR4R8R1R22R2aoR4R9R1R22R2aoR4nR1R23R2ahR15zR16zR24zR17i1R18i1R25i1R26zR27zR28zghR15zR16zR24zR17i1R18i1R25i1R26zR27zR28zgoR4R10R1R22R2aoR4nR1R23R2ahR15zR16zR24zR17i1R18i1R25i1R26zR27zR28zghR15zR16zR24zR17i1R18i1R25i1R26zR27zR28zgoR4R11R1R22R2aoR4nR1R23R2ahR15zR16zR24zR17i1R18i1R25i1R26zR27zR28zghR15zR16zR24zR17i1R18i1R25i1R26zR27zR28zgoR4nR1R23R2ahR15zR16zR24zR17i1R18i1R25i1R26zR27zR28zghR15zR16zR24zR17i1R18i1R25i1R26zR27zR28zghR15zR16zR24zR17i1R18i1R25i1R26zR27zR28zggg');
 
 			// return to base state
 			while(undo.canUndo()) {
@@ -322,7 +323,7 @@ class HuiPrefabEditorTests extends HuiView<{}> {
 			assert(prefab.children.indexOf(locate("a")) == 1);
 			assert(prefab.children.indexOf(locate("c")) == 2);
 
-			Macros.assertSnapshot(dumpState(), '{"prefab":{"type":"prefab","children":[{"type":"box","name":"b"},{"type":"box","name":"a"},{"type":"box","name":"c"},{"type":"box","name":"d","children":[{"type":"box","name":"e"},{"type":"box","name":"f"},{"type":"box","name":"g"}]}]},"scene":{"root2d":{"children":[],"name":null,"type":"h2d.Object"},"root3d":{"children":[{"children":[{"children":[],"name":null,"type":"h3d.scene.Interactive"}],"name":"b","type":"h3d.scene.Mesh"},{"children":[{"children":[],"name":null,"type":"h3d.scene.Interactive"}],"name":"a","type":"h3d.scene.Mesh"},{"children":[{"children":[],"name":null,"type":"h3d.scene.Interactive"}],"name":"c","type":"h3d.scene.Mesh"},{"children":[{"children":[{"children":[],"name":null,"type":"h3d.scene.Interactive"}],"name":"e","type":"h3d.scene.Mesh"},{"children":[{"children":[],"name":null,"type":"h3d.scene.Interactive"}],"name":"f","type":"h3d.scene.Mesh"},{"children":[{"children":[],"name":null,"type":"h3d.scene.Interactive"}],"name":"g","type":"h3d.scene.Mesh"},{"children":[],"name":null,"type":"h3d.scene.Interactive"}],"name":"d","type":"h3d.scene.Mesh"}],"name":null,"type":"h3d.scene.Object"}}}');
+			Macros.assertSnapshot(dumpState(), 'oy6:prefaboy4:typeR0y8:childrenaoR1y3:boxy4:namey1:bgoR1R3R4y1:agoR1R3R4y1:cgoR1R3R4y1:dR2aoR1R3R4y1:egoR1R3R4y1:fgoR1R3R4y1:gghghgy5:sceneoy6:root2doR4nR1y10:h2d.ObjectR2ahy1:xzy1:yzy2:sxi1y2:syi1y1:rzgy6:root3doR4nR1y16:h3d.scene.ObjectR2aoR4R5R1y14:h3d.scene.MeshR2aoR4nR1y21:h3d.scene.InteractiveR2ahR15zR16zy1:zzR17i1R18i1y2:szi1y2:rxzy2:ryzy2:rzzghR15zR16zR24zR17i1R18i1R25i1R26zR27zR28zgoR4R6R1R22R2aoR4nR1R23R2ahR15zR16zR24zR17i1R18i1R25i1R26zR27zR28zghR15zR16zR24zR17i1R18i1R25i1R26zR27zR28zgoR4R7R1R22R2aoR4nR1R23R2ahR15zR16zR24zR17i1R18i1R25i1R26zR27zR28zghR15zR16zR24zR17i1R18i1R25i1R26zR27zR28zgoR4R8R1R22R2aoR4R9R1R22R2aoR4nR1R23R2ahR15zR16zR24zR17i1R18i1R25i1R26zR27zR28zghR15zR16zR24zR17i1R18i1R25i1R26zR27zR28zgoR4R10R1R22R2aoR4nR1R23R2ahR15zR16zR24zR17i1R18i1R25i1R26zR27zR28zghR15zR16zR24zR17i1R18i1R25i1R26zR27zR28zgoR4R11R1R22R2aoR4nR1R23R2ahR15zR16zR24zR17i1R18i1R25i1R26zR27zR28zghR15zR16zR24zR17i1R18i1R25i1R26zR27zR28zgoR4nR1R23R2ahR15zR16zR24zR17i1R18i1R25i1R26zR27zR28zghR15zR16zR24zR17i1R18i1R25i1R26zR27zR28zghR15zR16zR24zR17i1R18i1R25i1R26zR27zR28zggg');
 
 			// return to base state
 			while(undo.canUndo()) {
@@ -345,7 +346,7 @@ class HuiPrefabEditorTests extends HuiView<{}> {
 			assert(locate("d.f") != null);
 			assert(locate("d.g") != null);
 
-			Macros.assertSnapshot(dumpState(), '{"prefab":{"type":"prefab","children":[{"type":"box","name":"c"},{"type":"box","name":"a"},{"type":"box","name":"b"},{"type":"box","name":"d","children":[{"type":"box","name":"e"},{"type":"box","name":"f"},{"type":"box","name":"g"}]}]},"scene":{"root2d":{"children":[],"name":null,"type":"h2d.Object"},"root3d":{"children":[{"children":[{"children":[],"name":null,"type":"h3d.scene.Interactive"}],"name":"c","type":"h3d.scene.Mesh"},{"children":[{"children":[],"name":null,"type":"h3d.scene.Interactive"}],"name":"a","type":"h3d.scene.Mesh"},{"children":[{"children":[],"name":null,"type":"h3d.scene.Interactive"}],"name":"b","type":"h3d.scene.Mesh"},{"children":[{"children":[{"children":[],"name":null,"type":"h3d.scene.Interactive"}],"name":"e","type":"h3d.scene.Mesh"},{"children":[{"children":[],"name":null,"type":"h3d.scene.Interactive"}],"name":"f","type":"h3d.scene.Mesh"},{"children":[{"children":[],"name":null,"type":"h3d.scene.Interactive"}],"name":"g","type":"h3d.scene.Mesh"},{"children":[],"name":null,"type":"h3d.scene.Interactive"}],"name":"d","type":"h3d.scene.Mesh"}],"name":null,"type":"h3d.scene.Object"}}}');
+			Macros.assertSnapshot(dumpState(), 'oy6:prefaboy4:typeR0y8:childrenaoR1y3:boxy4:namey1:cgoR1R3R4y1:agoR1R3R4y1:bgoR1R3R4y1:dR2aoR1R3R4y1:egoR1R3R4y1:fgoR1R3R4y1:gghghgy5:sceneoy6:root2doR4nR1y10:h2d.ObjectR2ahy1:xzy1:yzy2:sxi1y2:syi1y1:rzgy6:root3doR4nR1y16:h3d.scene.ObjectR2aoR4R5R1y14:h3d.scene.MeshR2aoR4nR1y21:h3d.scene.InteractiveR2ahR15zR16zy1:zzR17i1R18i1y2:szi1y2:rxzy2:ryzy2:rzzghR15zR16zR24zR17i1R18i1R25i1R26zR27zR28zgoR4R6R1R22R2aoR4nR1R23R2ahR15zR16zR24zR17i1R18i1R25i1R26zR27zR28zghR15zR16zR24zR17i1R18i1R25i1R26zR27zR28zgoR4R7R1R22R2aoR4nR1R23R2ahR15zR16zR24zR17i1R18i1R25i1R26zR27zR28zghR15zR16zR24zR17i1R18i1R25i1R26zR27zR28zgoR4R8R1R22R2aoR4R9R1R22R2aoR4nR1R23R2ahR15zR16zR24zR17i1R18i1R25i1R26zR27zR28zghR15zR16zR24zR17i1R18i1R25i1R26zR27zR28zgoR4R10R1R22R2aoR4nR1R23R2ahR15zR16zR24zR17i1R18i1R25i1R26zR27zR28zghR15zR16zR24zR17i1R18i1R25i1R26zR27zR28zgoR4R11R1R22R2aoR4nR1R23R2ahR15zR16zR24zR17i1R18i1R25i1R26zR27zR28zghR15zR16zR24zR17i1R18i1R25i1R26zR27zR28zgoR4nR1R23R2ahR15zR16zR24zR17i1R18i1R25i1R26zR27zR28zghR15zR16zR24zR17i1R18i1R25i1R26zR27zR28zghR15zR16zR24zR17i1R18i1R25i1R26zR27zR28zggg');
 
 			// return to base state
 			while(undo.canUndo()) {
@@ -375,7 +376,7 @@ class HuiPrefabEditorTests extends HuiView<{}> {
 			assert(prefab.children.indexOf(locate("b")) == prefab.children.indexOf(locate("c")) + 2);
 			assert(prefab.children.indexOf(locate("a")) == prefab.children.indexOf(locate("c")) + 3);
 
-			Macros.assertSnapshot(dumpState(), '{"prefab":{"type":"prefab","children":[{"type":"box","name":"c"},{"type":"box","name":"d","children":[{"type":"box","name":"e"},{"type":"box","name":"f"},{"type":"box","name":"g"}]},{"type":"box","name":"b"},{"type":"box","name":"a"}]},"scene":{"root2d":{"children":[],"name":null,"type":"h2d.Object"},"root3d":{"children":[{"children":[{"children":[],"name":null,"type":"h3d.scene.Interactive"}],"name":"c","type":"h3d.scene.Mesh"},{"children":[{"children":[{"children":[],"name":null,"type":"h3d.scene.Interactive"}],"name":"e","type":"h3d.scene.Mesh"},{"children":[{"children":[],"name":null,"type":"h3d.scene.Interactive"}],"name":"f","type":"h3d.scene.Mesh"},{"children":[{"children":[],"name":null,"type":"h3d.scene.Interactive"}],"name":"g","type":"h3d.scene.Mesh"},{"children":[],"name":null,"type":"h3d.scene.Interactive"}],"name":"d","type":"h3d.scene.Mesh"},{"children":[{"children":[],"name":null,"type":"h3d.scene.Interactive"}],"name":"b","type":"h3d.scene.Mesh"},{"children":[{"children":[],"name":null,"type":"h3d.scene.Interactive"}],"name":"a","type":"h3d.scene.Mesh"}],"name":null,"type":"h3d.scene.Object"}}}');
+			Macros.assertSnapshot(dumpState(), 'oy6:prefaboy4:typeR0y8:childrenaoR1y3:boxy4:namey1:cgoR1R3R4y1:dR2aoR1R3R4y1:egoR1R3R4y1:fgoR1R3R4y1:gghgoR1R3R4y1:bgoR1R3R4y1:aghgy5:sceneoy6:root2doR4nR1y10:h2d.ObjectR2ahy1:xzy1:yzy2:sxi1y2:syi1y1:rzgy6:root3doR4nR1y16:h3d.scene.ObjectR2aoR4R5R1y14:h3d.scene.MeshR2aoR4nR1y21:h3d.scene.InteractiveR2ahR15zR16zy1:zzR17i1R18i1y2:szi1y2:rxzy2:ryzy2:rzzghR15zR16zR24zR17i1R18i1R25i1R26zR27zR28zgoR4R6R1R22R2aoR4R7R1R22R2aoR4nR1R23R2ahR15zR16zR24zR17i1R18i1R25i1R26zR27zR28zghR15zR16zR24zR17i1R18i1R25i1R26zR27zR28zgoR4R8R1R22R2aoR4nR1R23R2ahR15zR16zR24zR17i1R18i1R25i1R26zR27zR28zghR15zR16zR24zR17i1R18i1R25i1R26zR27zR28zgoR4R9R1R22R2aoR4nR1R23R2ahR15zR16zR24zR17i1R18i1R25i1R26zR27zR28zghR15zR16zR24zR17i1R18i1R25i1R26zR27zR28zgoR4nR1R23R2ahR15zR16zR24zR17i1R18i1R25i1R26zR27zR28zghR15zR16zR24zR17i1R18i1R25i1R26zR27zR28zgoR4R10R1R22R2aoR4nR1R23R2ahR15zR16zR24zR17i1R18i1R25i1R26zR27zR28zghR15zR16zR24zR17i1R18i1R25i1R26zR27zR28zgoR4R11R1R22R2aoR4nR1R23R2ahR15zR16zR24zR17i1R18i1R25i1R26zR27zR28zghR15zR16zR24zR17i1R18i1R25i1R26zR27zR28zghR15zR16zR24zR17i1R18i1R25i1R26zR27zR28zggg');
 
 			undo.undo();
 			checkState(after2);
@@ -389,7 +390,164 @@ class HuiPrefabEditorTests extends HuiView<{}> {
 
 			checkState(state);
 		}
+	}
 
+	function dumpAbsTransform(prefab: hrt.prefab.Prefab) {
+		var transform = prefab.findFirstLocal3d()?.getAbsPos();
+		if (transform == null)
+			return "";
+		return haxe.Json.stringify(dumpMat(transform));
+	}
+
+	function dumpMat(m: h3d.Matrix) {
+		inline function round(f:Float) {
+			return hxd.Math.round(f * 1000.0) / 1000.0;
+		}
+
+		var scale = m.getScale();
+		var euler = m.getEulerAngles();
+
+		return {
+			"x": round(m.tx),
+			"y": round(m.ty),
+			"z": round(m.tz),
+			"rx": round(euler.x),
+			"ry": round(euler.y),
+			"rz": round(euler.z),
+			"sx": round(scale.x),
+			"sy": round(scale.y),
+			"sz": round(scale.z)
+		};
+	}
+
+	public function actionReparentPrefabKeepTransform() {
+		var prefabData = {
+			"children": [
+				{"type": "box", "name": "a", "x": 1, "y":2, "z":3, "rotationX": 0.4, "rotationY": 0.6, "rotationZ": 0.8, "scaleX": 1.2, "scaleY": 1.2, "scaleZ": 1.2},
+				{"type": "box", "name": "same", "x": 1, "y":2, "z":3, "rotationX": 0.4, "rotationY": 0.6, "rotationZ": 0.8, "scaleX": 1.2, "scaleY": 1.2, "scaleZ": 1.2},
+				{"type": "box", "name": "identity"},
+				{"type": "box", "name": "trans", "x": -1, "y":5, "z":10, "rotationX": 0.8, "rotationY": 0.2, "rotationZ": 0.1, "scaleX": 1.1, "scaleY": 1.1, "scaleZ": 1.1},
+
+				{"type": "box", "name": "sub", "x": -2, "y":5, "z":3, "rotationX": 0.1, "rotationY": 0.3, "rotationZ": 0.7, "scaleX": 0.9, "scaleY": 0.9, "scaleZ": 0.9,
+					 "children": [
+					{"type": "box", "name": "subsub", "x": 1, "y":2, "z":3, "rotationX": 0.4, "rotationY": 0.6, "rotationZ": 0.8, "scaleX": 1.2, "scaleY": 1.2, "scaleZ": 1.2},
+				]}
+			]
+		};
+
+		{
+			@:privateAccess prefabEditor.setPrefab(hrt.prefab.Prefab.createFromDynamic(prefabData, new hrt.prefab.ContextShared("huiPrefabEditorTests.prefab")));
+			var state = dumpState();
+			var a = locate("a");
+			var aAbs = dumpAbsTransform(a);
+
+			undo.run(prefabEditor.actionReparentPrefabs([locate("a")], locate("same"), 0), true);
+			// Check that the abs pos hasn't changed
+			assert(aAbs == dumpAbsTransform(a));
+
+			Macros.assertSnapshot(dumpState(), "");
+
+			while(undo.canUndo()) {
+				undo.undo();
+			}
+
+			checkState(state);
+		}
+
+		{
+			@:privateAccess prefabEditor.setPrefab(hrt.prefab.Prefab.createFromDynamic(prefabData, new hrt.prefab.ContextShared("huiPrefabEditorTests.prefab")));
+			var state = dumpState();
+			var a = locate("a");
+			var aAbs = dumpAbsTransform(a);
+
+			undo.run(prefabEditor.actionReparentPrefabs([locate("a")], locate("identity"), 0), true);
+			// Check that the abs pos hasn't changed
+			assert(aAbs == dumpAbsTransform(a));
+
+			Macros.assertSnapshot(dumpState(), "");
+
+			while(undo.canUndo()) {
+				undo.undo();
+			}
+
+			checkState(state);
+		}
+
+		{
+			@:privateAccess prefabEditor.setPrefab(hrt.prefab.Prefab.createFromDynamic(prefabData, new hrt.prefab.ContextShared("huiPrefabEditorTests.prefab")));
+			var state = dumpState();
+			var a = locate("a");
+			var aAbs = dumpAbsTransform(a);
+
+			undo.run(prefabEditor.actionReparentPrefabs([locate("a")], locate("trans"), 0), true);
+			// Check that the abs pos hasn't changed
+			assert(aAbs == dumpAbsTransform(a));
+
+			Macros.assertSnapshot(dumpState(), "");
+
+			while(undo.canUndo()) {
+				undo.undo();
+			}
+
+			checkState(state);
+		}
+
+		{
+			@:privateAccess prefabEditor.setPrefab(hrt.prefab.Prefab.createFromDynamic(prefabData, new hrt.prefab.ContextShared("huiPrefabEditorTests.prefab")));
+			var state = dumpState();
+			var a = locate("sub.subsub");
+			var aAbs = dumpAbsTransform(a);
+
+			undo.run(prefabEditor.actionReparentPrefabs([a], prefab, 0), true);
+			// Check that the abs pos hasn't changed
+			assert(aAbs == dumpAbsTransform(a));
+
+			Macros.assertSnapshot(dumpState(), "");
+
+			while(undo.canUndo()) {
+				undo.undo();
+			}
+
+			checkState(state);
+		}
+
+		{
+			@:privateAccess prefabEditor.setPrefab(hrt.prefab.Prefab.createFromDynamic(prefabData, new hrt.prefab.ContextShared("huiPrefabEditorTests.prefab")));
+			var state = dumpState();
+			var a = locate("sub.subsub");
+			var aAbs = dumpAbsTransform(a);
+
+			undo.run(prefabEditor.actionReparentPrefabs([a], locate("a"), 0), true);
+			// Check that the abs pos hasn't changed
+			assert(aAbs == dumpAbsTransform(a));
+
+			Macros.assertSnapshot(dumpState(), "");
+
+			while(undo.canUndo()) {
+				undo.undo();
+			}
+
+			checkState(state);
+		}
+
+		{
+			@:privateAccess prefabEditor.setPrefab(hrt.prefab.Prefab.createFromDynamic(prefabData, new hrt.prefab.ContextShared("huiPrefabEditorTests.prefab")));
+			var state = dumpState();
+			var a = locate("a");
+			var aAbs = dumpAbsTransform(a);
+
+			undo.run(prefabEditor.actionReparentPrefabs([a], locate("sub.subsub"), 0), true);
+			// Check that the abs pos hasn't changed
+			assert(aAbs == dumpAbsTransform(a));
+
+			Macros.assertSnapshot(dumpState(), "");
+
+			while(undo.canUndo()) {
+				undo.undo();
+			}
+
+			checkState(state);
+		}
 	}
 
 
@@ -419,7 +577,7 @@ class HuiPrefabEditorTests extends HuiView<{}> {
 			assert(locate("a") == null);
 			assert(locate("b") != null);
 
-			Macros.assertSnapshot(dumpState(), '{"prefab":{"type":"prefab","children":[{"type":"box","name":"b"},{"type":"box","name":"c"},{"type":"box","name":"d","children":[{"type":"box","name":"e"},{"type":"box","name":"f"},{"type":"box","name":"g"}]}]},"scene":{"root2d":{"children":[],"name":null,"type":"h2d.Object"},"root3d":{"children":[{"children":[{"children":[],"name":null,"type":"h3d.scene.Interactive"}],"name":"b","type":"h3d.scene.Mesh"},{"children":[{"children":[],"name":null,"type":"h3d.scene.Interactive"}],"name":"c","type":"h3d.scene.Mesh"},{"children":[{"children":[{"children":[],"name":null,"type":"h3d.scene.Interactive"}],"name":"e","type":"h3d.scene.Mesh"},{"children":[{"children":[],"name":null,"type":"h3d.scene.Interactive"}],"name":"f","type":"h3d.scene.Mesh"},{"children":[{"children":[],"name":null,"type":"h3d.scene.Interactive"}],"name":"g","type":"h3d.scene.Mesh"},{"children":[],"name":null,"type":"h3d.scene.Interactive"}],"name":"d","type":"h3d.scene.Mesh"}],"name":null,"type":"h3d.scene.Object"}}}');
+			Macros.assertSnapshot(dumpState(), 'oy6:prefaboy4:typeR0y8:childrenaoR1y3:boxy4:namey1:bgoR1R3R4y1:cgoR1R3R4y1:dR2aoR1R3R4y1:egoR1R3R4y1:fgoR1R3R4y1:gghghgy5:sceneoy6:root2doR4nR1y10:h2d.ObjectR2ahy1:xzy1:yzy2:sxi1y2:syi1y1:rzgy6:root3doR4nR1y16:h3d.scene.ObjectR2aoR4R5R1y14:h3d.scene.MeshR2aoR4nR1y21:h3d.scene.InteractiveR2ahR14zR15zy1:zzR16i1R17i1y2:szi1y2:rxzy2:ryzy2:rzzghR14zR15zR23zR16i1R17i1R24i1R25zR26zR27zgoR4R6R1R21R2aoR4nR1R22R2ahR14zR15zR23zR16i1R17i1R24i1R25zR26zR27zghR14zR15zR23zR16i1R17i1R24i1R25zR26zR27zgoR4R7R1R21R2aoR4R8R1R21R2aoR4nR1R22R2ahR14zR15zR23zR16i1R17i1R24i1R25zR26zR27zghR14zR15zR23zR16i1R17i1R24i1R25zR26zR27zgoR4R9R1R21R2aoR4nR1R22R2ahR14zR15zR23zR16i1R17i1R24i1R25zR26zR27zghR14zR15zR23zR16i1R17i1R24i1R25zR26zR27zgoR4R10R1R21R2aoR4nR1R22R2ahR14zR15zR23zR16i1R17i1R24i1R25zR26zR27zghR14zR15zR23zR16i1R17i1R24i1R25zR26zR27zgoR4nR1R22R2ahR14zR15zR23zR16i1R17i1R24i1R25zR26zR27zghR14zR15zR23zR16i1R17i1R24i1R25zR26zR27zghR14zR15zR23zR16i1R17i1R24i1R25zR26zR27zggg');
 
 			// return to base state
 			while(undo.canUndo()) {
@@ -449,7 +607,7 @@ class HuiPrefabEditorTests extends HuiView<{}> {
 			assert(locate("d.f") == null);
 			assert(locate("d.g") == null);
 
-			Macros.assertSnapshot(dumpState(), '{"prefab":{"type":"prefab"},"scene":{"root2d":{"children":[],"name":null,"type":"h2d.Object"},"root3d":{"children":[],"name":null,"type":"h3d.scene.Object"}}}');
+			Macros.assertSnapshot(dumpState(), 'oy6:prefaboy4:typeR0gy5:sceneoy6:root2doy4:namenR1y10:h2d.Objecty8:childrenahy1:xzy1:yzy2:sxi1y2:syi1y1:rzgy6:root3doR4nR1y16:h3d.scene.ObjectR6ahR7zR8zy1:zzR9i1R10i1y2:szi1y2:rxzy2:ryzy2:rzzggg');
 
 			// return to base state
 			while(undo.canUndo()) {
@@ -476,7 +634,7 @@ class HuiPrefabEditorTests extends HuiView<{}> {
 			assert(locate("c") == null);
 			assert(locate("d") == null);
 
-			Macros.assertSnapshot(dumpState(), '{"prefab":{"type":"prefab"},"scene":{"root2d":{"children":[],"name":null,"type":"h2d.Object"},"root3d":{"children":[],"name":null,"type":"h3d.scene.Object"}}}');
+			Macros.assertSnapshot(dumpState(), 'oy6:prefaboy4:typeR0gy5:sceneoy6:root2doy4:namenR1y10:h2d.Objecty8:childrenahy1:xzy1:yzy2:sxi1y2:syi1y1:rzgy6:root3doR4nR1y16:h3d.scene.ObjectR6ahR7zR8zy1:zzR9i1R10i1y2:szi1y2:rxzy2:ryzy2:rzzggg');
 
 			// return to base state
 			while(undo.canUndo()) {
@@ -504,7 +662,7 @@ class HuiPrefabEditorTests extends HuiView<{}> {
 			assert(locate("c") != null);
 			assert(locate("d") != null);
 
-			Macros.assertSnapshot(dumpState(), '{"prefab":{"type":"prefab","children":[{"type":"box","name":"a"},{"type":"box","name":"b"},{"type":"box","name":"c"},{"type":"box","name":"d"}]},"scene":{"root2d":{"children":[],"name":null,"type":"h2d.Object"},"root3d":{"children":[{"children":[{"children":[],"name":null,"type":"h3d.scene.Interactive"}],"name":"a","type":"h3d.scene.Mesh"},{"children":[{"children":[],"name":null,"type":"h3d.scene.Interactive"}],"name":"b","type":"h3d.scene.Mesh"},{"children":[{"children":[],"name":null,"type":"h3d.scene.Interactive"}],"name":"c","type":"h3d.scene.Mesh"},{"children":[{"children":[],"name":null,"type":"h3d.scene.Interactive"}],"name":"d","type":"h3d.scene.Mesh"}],"name":null,"type":"h3d.scene.Object"}}}');
+			Macros.assertSnapshot(dumpState(), 'oy6:prefaboy4:typeR0y8:childrenaoR1y3:boxy4:namey1:agoR1R3R4y1:bgoR1R3R4y1:cgoR1R3R4y1:dghgy5:sceneoy6:root2doR4nR1y10:h2d.ObjectR2ahy1:xzy1:yzy2:sxi1y2:syi1y1:rzgy6:root3doR4nR1y16:h3d.scene.ObjectR2aoR4R5R1y14:h3d.scene.MeshR2aoR4nR1y21:h3d.scene.InteractiveR2ahR12zR13zy1:zzR14i1R15i1y2:szi1y2:rxzy2:ryzy2:rzzghR12zR13zR21zR14i1R15i1R22i1R23zR24zR25zgoR4R6R1R19R2aoR4nR1R20R2ahR12zR13zR21zR14i1R15i1R22i1R23zR24zR25zghR12zR13zR21zR14i1R15i1R22i1R23zR24zR25zgoR4R7R1R19R2aoR4nR1R20R2ahR12zR13zR21zR14i1R15i1R22i1R23zR24zR25zghR12zR13zR21zR14i1R15i1R22i1R23zR24zR25zgoR4R8R1R19R2aoR4nR1R20R2ahR12zR13zR21zR14i1R15i1R22i1R23zR24zR25zghR12zR13zR21zR14i1R15i1R22i1R23zR24zR25zghR12zR13zR21zR14i1R15i1R22i1R23zR24zR25zggg');
 
 			// return to base state
 			while(undo.canUndo()) {

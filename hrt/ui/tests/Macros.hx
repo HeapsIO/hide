@@ -61,7 +61,7 @@ class Macros {
 
 		function flushContent() {
 			if (currentFile != null && currentContent != null) {
-				var finalPath = currentFile + ".tmp.hx";
+				var finalPath = currentFile;
 				trace("patched", finalPath);
 				sys.io.File.saveContent(finalPath, currentContent);
 			}

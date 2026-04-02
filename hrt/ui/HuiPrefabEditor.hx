@@ -373,7 +373,9 @@ class HuiPrefabEditor extends HuiElement {
 		var i = 0;
 		for (prefab in prefabs) {
 			reparents.push(reparentPrefabAction(prefab, newParent, index + i));
+
 			if (prefab.parent == newParent && newParent.children.indexOf(prefab) < index) {
+				// fix offset
 				i--;
 			}
 			i++;
@@ -420,14 +422,15 @@ class HuiPrefabEditor extends HuiElement {
 			oldIndex = oldParent.children.indexOf(prefab);
 			if (oldParent == parent && oldIndex > index)
 				oldIndex += 1;
+		}
 
-			{
-				var parentTransform = worldMat(oldParent);
-				parentTransform.invert();
-				var mat = currentWorldTransform.clone();
-				mat.multiply(mat, parentTransform);
-				newTransform = hrt.prefab.Object3D.makeTransform(mat);
-			}
+		if (parent != null && oldTransform != null)
+		{
+			var parentTransform = worldMat(parent);
+			parentTransform.invert();
+			var mat = currentWorldTransform;
+			mat.multiply(mat, parentTransform);
+			newTransform = hrt.prefab.Object3D.makeTransform(mat);
 		}
 
 		return (isUndo: Bool) -> {
@@ -441,10 +444,10 @@ class HuiPrefabEditor extends HuiElement {
 				prefab.remove();
 			} else {
 				newParent.addChildAt(prefab, newIndex);
-				tryMakeChildren(newParent);
 				if (transform != null) {
 					prefab.to(hrt.prefab.Object3D)?.loadTransform(transform);
 				}
+				tryMakeChildren(newParent);
 			}
 		};
 	}
