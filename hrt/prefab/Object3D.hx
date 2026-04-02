@@ -105,6 +105,28 @@ class Object3D extends Prefab {
 		return { x : x, y : y, z : z, scaleX : scaleX, scaleY : scaleY, scaleZ : scaleZ, rotationX : rotationX, rotationY : rotationY, rotationZ : rotationZ };
 	}
 
+	static function roundSmall(f: Float) {
+		var num = 10_000.0;
+		var r = hxd.Math.round(f * num) / num;
+		// Avoid rounding floats that are too big
+		return hxd.Math.abs(r-f) < 2.0 / num ? r : f;
+	}
+
+	public static function makeTransform(mat: h3d.Matrix) {
+		var rot = mat.getEulerAngles();
+		var x = roundSmall(mat.tx);
+		var y = roundSmall(mat.ty);
+		var z = roundSmall(mat.tz);
+		var s = mat.getScale();
+		var scaleX = roundSmall(s.x);
+		var scaleY = roundSmall(s.y);
+		var scaleZ = roundSmall(s.z);
+		var rotationX = roundSmall(hxd.Math.radToDeg(rot.x));
+		var rotationY = roundSmall(hxd.Math.radToDeg(rot.y));
+		var rotationZ = roundSmall(hxd.Math.radToDeg(rot.z));
+		return { x : x, y : y, z : z, scaleX : scaleX, scaleY : scaleY, scaleZ : scaleZ, rotationX : rotationX, rotationY : rotationY, rotationZ : rotationZ };
+	}
+
 	public function applyTransform() {
 		var o = local3d;
 		if (o == null) return;

@@ -78,11 +78,74 @@ class HuiPrefabEditor extends HuiElement {
 		}
 		treePrefab.onItemContextMenu = contextMenu;
 
+		treePrefab.dragAndDropInterface = {
+			onDragStart: function(p: hrt.prefab.Prefab): Void {
+				startDrag("prefabs", getSelectionOrdered());
+			},
+			getItemDropFlags: function(target: hrt.prefab.Prefab, op: HuiDragOp) : hrt.ui.HuiTree.DropFlags {
+				if (op.type == "prefabs") {
+					var prefabs : Array<hrt.prefab.Prefab> = cast op.data;
+					prefabs = prefabs.copy();
+					sanitizeReparent(target, prefabs);
+					if (prefabs.length == 0) {
+						return hrt.ui.HuiTree.DropFlags.ofInt(0);
+					}
+
+					return Reorder | Reparent;
+				}
+				return  hrt.ui.HuiTree.DropFlags.ofInt(0);
+			},
+			onDrop: function(target: hrt.prefab.Prefab, operation: hrt.ui.HuiTree.DropOperation, op: HuiDragOp) : Void {
+				if (op.type == "prefabs") {
+					var prefabs : Array<hrt.prefab.Prefab> = cast op.data;
+					prefabs = prefabs.copy();
+					sanitizeReparent(target, prefabs);
+					if (prefabs.length == 0) {
+						return;
+					}
+					var reparentTo = target;
+					var index = 0;
+					switch(operation) {
+						case Before:
+							reparentTo = target.parent;
+							index = reparentTo.children.indexOf(target);
+						case After:
+							reparentTo = target.parent;
+							index = reparentTo.children.indexOf(target) + 1;
+						case Inside:
+					}
+					trace(operation, target, reparentTo, index);
+					getView().undo.run(actionReparentPrefabs(prefabs, reparentTo, index), true);
+				}
+			}
+		}
+
 		scene.s3d.addEventListener(onSceneEvents);
 
 		registerCommand(hrt.ui.HuiCommands.HuiDebugCommands.debugReload, View, reload);
 
 		debugGraph = new h2d.Graphics(scene.s2d);
+	}
+
+	function sanitizeReparent(target: hrt.prefab.Prefab, elements: Array<hrt.prefab.Prefab>) {
+		// Avoid moving target onto itelf
+		for (prefab in elements.copy()) {
+			if (target.findParent((p) -> p == prefab, true) != null) {
+				elements.remove(prefab);
+			}
+		}
+	}
+
+	function getSelectionOrdered() : Array<hrt.prefab.Prefab> {
+		var selection : Array<hrt.prefab.Prefab> = [];
+		var flatten = prefab.flatten();
+		for (p in flatten) {
+			if (selectedPrefabs.get(p) == true) {
+				selection.push(p);
+			}
+		}
+
+		return selection;
 	}
 
 	override function sync(ctx : h2d.RenderContext) {
@@ -331,18 +394,46 @@ class HuiPrefabEditor extends HuiElement {
 		}
 	}
 
+	static public function worldMat(?obj: h3d.scene.Object, ?elt: hrt.prefab.Prefab) {
+		var obj = obj ?? elt?.findFirstLocal3d(true);
+		if(obj != null) {
+			if(obj.defaultTransform != null) {
+				var m = obj.defaultTransform.clone();
+				m.invert();
+				m.multiply(m, obj.getAbsPos());
+				return m;
+			}
+			else {
+				return obj.getAbsPos().clone();
+			}
+		}
+		return h3d.Matrix.I();
+	}
+
 	function reparentPrefabAction(prefab: hrt.prefab.Prefab, parent: hrt.prefab.Prefab, index: Int) : hrt.tools.Undo.Action {
 		var oldParent = prefab.parent;
 		var oldIndex = -1;
+		var currentWorldTransform = worldMat(prefab);
+		var oldTransform = prefab.to(hrt.prefab.Object3D)?.saveTransform();
+		var newTransform = oldTransform;
 		if (oldParent != null) {
 			oldIndex = oldParent.children.indexOf(prefab);
 			if (oldParent == parent && oldIndex > index)
 				oldIndex += 1;
+
+			{
+				var parentTransform = worldMat(oldParent);
+				parentTransform.invert();
+				var mat = currentWorldTransform.clone();
+				mat.multiply(mat, parentTransform);
+				newTransform = hrt.prefab.Object3D.makeTransform(mat);
+			}
 		}
 
 		return (isUndo: Bool) -> {
 			var newParent = isUndo ? oldParent : parent;
 			var newIndex = isUndo ? oldIndex : index;
+			var transform = isUndo ? oldTransform : newTransform;
 
 			removePrefabInstance(prefab);
 
@@ -351,6 +442,9 @@ class HuiPrefabEditor extends HuiElement {
 			} else {
 				newParent.addChildAt(prefab, newIndex);
 				tryMakeChildren(newParent);
+				if (transform != null) {
+					prefab.to(hrt.prefab.Object3D)?.loadTransform(transform);
+				}
 			}
 		};
 	}
