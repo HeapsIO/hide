@@ -93,7 +93,6 @@ class Gizmo extends h3d.scene.Object {
 	}
 
 	var gizmo: h3d.scene.Object;
-	var scaleRot : h3d.Matrix;
 	var updateFunc: Float -> Void;
 	var rotateAxisShader : RotateAxisShader = new RotateAxisShader();
 	var moving : Bool;
@@ -136,14 +135,7 @@ class Gizmo extends h3d.scene.Object {
 			invDefMat = objs[0].defaultTransform?.getInverse();
 		var euler = invDefMat.multiplied(objs[0].getAbsPos()).getEulerAngles();
 
-		scaleRot = new h3d.Matrix();
-		scaleRot.identity();
-		if (!isLocalTransform){
-			scaleRot.initRotation(euler.x, euler.y, euler.z);
-			scaleRot.invert();
-		}
-
-		if (isLocalTransform && objs.length == 1)
+		if ((isLocalTransform || mode == Scale) && objs.length == 1)
 			setRotation(euler.x, euler.y, euler.z);
 		else
 			setRotation(0,0,0);
@@ -236,10 +228,26 @@ class Gizmo extends h3d.scene.Object {
 			initialRotation.initRotateMatrix(initialAbsPos);
 			var scene = getScene();
 			var ray = scene.camera.rayFromScreen(mouseX, mouseY, scene.scenePosition?.width ?? -1, scene.scenePosition?.height ?? -1);
+			var forward = scene.camera.getForward() * -1;
 			var dragPlane = h3d.col.Plane.fromNormalPoint(switch(handle) {
-				case XYPlane, XArrow, YArrow: mode == Scale ? scaleRot.up() : initialAbsPos.up();
-				case XZPlane: mode == Scale ? scaleRot.right() : initialAbsPos.right();
-				case YZPlane, ZArrow: mode == Scale ? scaleRot.front() : initialAbsPos.front();
+				case XYPlane: initialAbsPos.up();
+				case XZPlane: initialAbsPos.right();
+				case YZPlane: initialAbsPos.front();
+				case XArrow:
+					forward.x = 0;
+					if (isLocalTransform || mode == Scale)
+						forward.transformed3x3(initialRotation.toMatrix());
+					forward.normalized();
+				case YArrow:
+					forward.y = 0;
+					if (isLocalTransform || mode == Scale)
+						forward.transformed3x3(initialRotation.toMatrix());
+					forward.normalized();
+				case ZArrow:
+					forward.z = 0;
+					if (isLocalTransform || mode == Scale)
+						forward.transformed3x3(initialRotation.toMatrix());
+					forward.normalized();
 				default: initialRay.getDir();
 			}, initialPosition);
 
@@ -250,11 +258,11 @@ class Gizmo extends h3d.scene.Object {
 			var delta = ray.intersect(dragPlane) - initialRay.intersect(dragPlane);
 			var axis = switch (handle) {
 				case XArrow, XRing:
-					mode == Scale ? scaleRot.front() : initialAbsPos.front();
+					initialAbsPos.front();
 				case YArrow, YRing:
-					mode == Scale ? scaleRot.right() : initialAbsPos.right();
+					initialAbsPos.right();
 				case ZArrow, ZRing:
-					mode == Scale ? scaleRot.up() : initialAbsPos.up();
+					initialAbsPos.up();
 				default:
 					null;
 			}
@@ -293,6 +301,7 @@ class Gizmo extends h3d.scene.Object {
 					else {
 						if (axis != null)
 							delta = delta.dot(axis) * axis;
+						delta = delta.transformed3x3(initialRotation.toMatrix().getInverse());
 						deltaScale = new h3d.Vector(snap((delta.x * 0.5) + 1, mode), snap((delta.y * 0.5) + 1, mode), snap((delta.z * 0.5) + 1, mode));
 					}
 
