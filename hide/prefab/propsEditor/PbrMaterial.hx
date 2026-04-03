@@ -2,7 +2,7 @@ package hide.prefab.propsEditor;
 
 class PbrMaterial extends AnyPropsEditor<h3d.mat.PbrMaterial> {
 
-	override function edit2(ctx:hrt.prefab.EditContext2, root: hide.kit.Element) {
+	override function edit2(ctx:hrt.prefab.EditContext2, root: hide.kit.Element, ?customProps: Dynamic) {
 		var layers : Array< { name : String, value : Int }> = hide.Ide.inst.currentConfig.get("material.drawOrder", []);
 
 		var drawOrder : Array<hide.kit.Select.SelectEntry> = [for( layer in layers) {

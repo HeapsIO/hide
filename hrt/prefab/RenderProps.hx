@@ -119,6 +119,33 @@ class RenderProps extends Object3D {
 		return true;
 	}
 
+	override function edit2(ctx) {
+		super.edit2(ctx);
+
+		var renderer = ctx.s3d.renderer;
+		var props = getProps(renderer);
+		var needSet = false;
+		if( props == null ) {
+			props = haxe.Json.parse(haxe.Json.stringify(renderer.props));
+			needSet = true;
+		}
+
+		ctx.build(
+			<category("Renderer") id="renderer-cat"/>
+		, null, (isTemp) -> {
+			if( needSet ) {
+				setProps(props);
+				needSet = false;
+			}
+			shared.editor?.queueRefreshRenderProps();
+		});
+
+		var editor = hide.prefab.propsEditor.AnyPropsEditor.makeEditor(renderer);
+		editor.edit2(ctx, rendererCat, props);
+
+		shared.editor?.queueRefreshRenderProps();
+	}
+
 	#if editor
 	override function updateInstance(?propName:String) {
 		super.updateInstance(propName);
