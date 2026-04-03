@@ -958,6 +958,11 @@ class EditContext extends hrt.prefab.EditContext2 {
 		editor.refreshInspector();
 	};
 
+	public function rebuildRenderProps() : Void {
+		editor.makeRenderProps();
+	}
+
+
 	public function rebuildPrefabImpl(prefab: hrt.prefab.Prefab) : Void {
 		if (prefab == null || prefab.parent == null) {
 			editor.tryMake(editor.prefab);

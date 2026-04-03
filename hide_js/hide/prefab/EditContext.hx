@@ -217,6 +217,10 @@ class HideJsEditContext2 extends hrt.prefab.EditContext2 {
 		ctx.ide.openFile(path);
 	}
 
+	public function rebuildRenderProps() {
+		ctx.scene.editor.queueRefreshRenderProps();
+	}
+
 	public function rebuildPrefabImpl(prefab:Prefab) {
 		ctx.scene.editor.queueRebuild(prefab);
 	}

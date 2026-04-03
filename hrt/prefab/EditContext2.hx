@@ -69,6 +69,8 @@ abstract class EditContext2 {
 		rebuildPrefabImpl(prefab);
 	}
 
+	public
+
 	/**
 		Implement this to support rebuild prefab
 	**/
@@ -82,6 +84,8 @@ abstract class EditContext2 {
 		requestedTreeRebuild = true;
 		rebuildTreeImpl();
 	}
+
+	public abstract function rebuildRenderProps() : Void;
 
 	/**
 		Implement this to support rebuilding the tree
