@@ -87,6 +87,11 @@ class TrailObj extends h3d.scene.Mesh {
 	var yOffset : Float = 0;
 	var zOffset : Float = 0;
 
+	// Apply a constant speed on the trail object to make it look like it's moving even if it's not
+	var constantSpeedX: Float = 0;
+	var constantSpeedY: Float = 0;
+	var constantSpeedZ: Float = 0;
+
 	public var timeScale : Float = 1.0;
 	public var sizeMultiplier : Float = 1.0;
 
@@ -127,6 +132,15 @@ class TrailObj extends h3d.scene.Mesh {
 
 	public function calcMaxTrailPoints() : Int {
 		return hxd.Math.ceil( prefab.lifetime * prefab.framerate ) + 2; // Segment count + head and tail
+	}
+
+	/**
+		Apply a constant speed on the trails points so they appear to move even if the trailObj doesn't move.
+	**/
+	public function setConstantSpeed(x: Float, y: Float, z: Float) {
+		constantSpeedX = x;
+		constantSpeedY = y;
+		constantSpeedZ = z;
 	}
 
 	function calcMaxVertexes() : Int {
@@ -536,6 +550,20 @@ class TrailObj extends h3d.scene.Mesh {
 			zOffset = sceneAbs.z;
 		}
 
+		if (constantSpeedX != 0 || constantSpeedY != 0 || constantSpeedZ != 0) {
+			for (i in 0...numTrails) {
+				var trail = trails[i];
+				var cur = trail.firstPoint;
+				while(cur != null) {
+					cur.x += constantSpeedX * dt;
+					cur.y += constantSpeedY * dt;
+					cur.z += constantSpeedZ * dt;
+
+					cur = cur.next;
+				}
+			}
+		}
+
 		var numObj = 0;
 		for ( i => child in children) {
 			if (Std.downcast(child, TrailsSubTailObj) == null)
@@ -807,6 +835,10 @@ class Trails extends Object3D {
 	@:s public var useColor : Bool = false;
 	@:s public var color : Int = 0xFFFFFFFF;
 
+	@:s public var constantSpeedX: Float = 0.0;
+	@:s public var constantSpeedY: Float = 0.0;
+	@:s public var constantSpeedZ: Float = 0.0;
+
 	// TODO(ces) : find better way to do that
 	// Override this before calling make() to change how many trails are instancied
 	public var numTrails : Int = 1;
@@ -896,6 +928,10 @@ class Trails extends Object3D {
 				@:privateAccess trailObj.dprim.alloc(null);
 			trailObj.updateShader();
 		}
+
+		@:privateAccess trailObj.constantSpeedX = constantSpeedX;
+		@:privateAccess trailObj.constantSpeedY = constantSpeedY;
+		@:privateAccess trailObj.constantSpeedZ = constantSpeedZ;
 	}
 
 	override function edit2( ctx : hrt.prefab.EditContext2 ) {
@@ -967,6 +1003,11 @@ class Trails extends Object3D {
 						<slider label="X" field={orientX} onValueChange={onOrientValueChange}/>
 						<slider label="Y" field={orientY} onValueChange={onOrientValueChange}/>
 						<slider label="Z" field={orientZ} onValueChange={onOrientValueChange}/>
+					</line>
+					<line label="Constant Speed">
+						<slider label="X" field={constantSpeedX}/>
+						<slider label="Y" field={constantSpeedY}/>
+						<slider label="Z" field={constantSpeedZ}/>
 					</line>
 				</category>
 				<category("Magnification")>
