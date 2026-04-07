@@ -6,7 +6,7 @@ class Checkbox extends Widget<Bool> {
 	#if js
 	var checkbox : js.html.InputElement;
 	#elseif hui
-	var checkbox : NativeElement;
+	var checkbox : hrt.ui.HuiCheckbox;
 	#end
 
 	function makeInput() : NativeElement {

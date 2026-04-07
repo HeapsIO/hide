@@ -6,7 +6,7 @@ class Bitflag extends Widget<Int> {
 	#if js
 	var checkbox : js.html.InputElement;
 	#elseif hui
-	var checkbox : NativeElement;
+	var checkbox : hrt.ui.HuiCheckbox;
 	#end
 
 	var bit: Int;
@@ -29,7 +29,7 @@ class Bitflag extends Widget<Int> {
 		return checkbox;
 		#elseif hui
 		var cb = new hrt.ui.HuiCheckbox();
-		cb.value = value;
+		cb.value = getBit();
 		cb.onValueChanged = () -> {
 			setBit(cb.value);
 			broadcastValueChange(false);
