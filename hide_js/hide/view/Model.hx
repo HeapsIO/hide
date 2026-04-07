@@ -2083,9 +2083,19 @@ class Model extends FileView {
 		};
 		function ctxMenu(item : Dynamic, event : js.html.MouseEvent) {
 			event.preventDefault();
+			event.stopPropagation();
+			var item = item;
 			var menuItems : Array<hide.comp.ContextMenu.MenuItem> = [
 				{ label : "Merge selected", enabled : false /*canMergeElements(selectedElements)*/, click: () -> mergeModels(cast selectedElements) },
 				{ label : "Merge all meshes", enabled : true, click: () -> mergeModels(cast [for (m in obj.findAll(o -> Std.downcast(o, h3d.scene.Mesh))) m]) },
+				{ label : "Copy Name", enabled : true, click: () ->  {
+					trace(item);
+					var obj = Std.downcast(item, h3d.scene.Object);
+					if (obj == null) return;
+					var name = item.name;
+					hide.Ide.inst.setClipboard(name);
+					hide.Ide.inst.quickMessage('Copied \'$name\' to the clipboard');
+				}}
 			];
 
 			hide.comp.ContextMenu.createFromEvent(cast event, menuItems);
