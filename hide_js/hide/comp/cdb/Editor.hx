@@ -2475,10 +2475,13 @@ class Editor extends Component {
 				checked : !Reflect.hasField(line.obj,cdb.Lang.IGNORE_EXPORT_FIELD),
 				click : function() {
 					beginChanges();
-					if( Reflect.hasField(line.obj,cdb.Lang.IGNORE_EXPORT_FIELD) )
-						Reflect.deleteField(line.obj,cdb.Lang.IGNORE_EXPORT_FIELD);
-					else
-						Reflect.setField(line.obj,cdb.Lang.IGNORE_EXPORT_FIELD, true);
+					var selectedLines = cursor.getSelectedLines();
+					for (line in selectedLines) {
+						if( Reflect.hasField(line.obj,cdb.Lang.IGNORE_EXPORT_FIELD) )
+							Reflect.deleteField(line.obj,cdb.Lang.IGNORE_EXPORT_FIELD);
+						else
+							Reflect.setField(line.obj,cdb.Lang.IGNORE_EXPORT_FIELD, true);
+					}
 					endChanges();
 					line.syncClasses();
 				},
