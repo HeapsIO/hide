@@ -184,7 +184,10 @@ class Cell {
 					ide.showFileInResources(value);
 				}},
 			];
-
+		case TString:
+			if (!inEdit)
+				return true;
+			return false;
 		default:
 		}
 		if( menu != null ) {
@@ -192,7 +195,7 @@ class Cell {
 			ContextMenu.createFromPoint(ide.mouseX, ide.mouseY, menu);
 			return true;
 		} else {
-			return false;
+			return true;
 		}
 	}
 
