@@ -2,12 +2,18 @@ package hide.kit;
 
 #if domkit
 
-class Checkbox extends Widget<Bool> {
+class Bitflag extends Widget<Int> {
 	#if js
 	var checkbox : js.html.InputElement;
 	#elseif hui
 	var checkbox : NativeElement;
 	#end
+
+	var bit: Int;
+	public function new(parent: Element, id: String, bit: Int) {
+		super(parent, id);
+		this.bit = bit;
+	}
 
 	function makeInput() : NativeElement {
 		#if js
@@ -15,8 +21,9 @@ class Checkbox extends Widget<Bool> {
 		checkbox.type = "checkbox";
 
 		checkbox.addEventListener("input", () -> {
-			value = checkbox.checked;
+			setBit(checkbox.checked);
 			broadcastValueChange(false);
+			root.editor.rebuildInspector(); // stupid hack to sync all the other bitflags that share the same field
 		});
 
 		return checkbox;
@@ -24,14 +31,27 @@ class Checkbox extends Widget<Bool> {
 		var cb = new hrt.ui.HuiCheckbox();
 		cb.value = value;
 		cb.onValueChanged = () -> {
-			value = cb.value;
+			setBit(cb.value);
 			broadcastValueChange(false);
+			root.editor.rebuildInspector(); // stupid hack to sync all the other bitflags that share the same field
 		};
 		checkbox = cb;
 		return checkbox;
 		#else
 		return null;
 		#end
+	}
+
+	function setBit(on: Bool) {
+		if (on) {
+			value = value | (1 << bit);
+		} else {
+			value = value & ~(1 << bit);
+		}
+	}
+
+	function getBit() : Bool {
+		return value & (1 << bit) != 0;
 	}
 
 	override function customIndeterminate():Bool {
@@ -42,23 +62,19 @@ class Checkbox extends Widget<Bool> {
 		#if js
 		if (checkbox != null) {
 			checkbox.indeterminate = isIndeterminate();
-			checkbox.checked = value;
+			checkbox.checked = getBit();
 		}
 		#elseif hui
-		checkbox.value = value;
+		checkbox.value = getBit();
 		#end
 	}
 
-	function getDefaultFallback() : Bool {
-		return false;
+	function getDefaultFallback() : Int {
+		return 0;
 	}
 
-	function stringToValue(obj: String) : Null<Bool> {
-		if (obj.toLowerCase() == "true")
-			return true;
-		if (obj.toLowerCase() == "false")
-			return false;
-		return null;
+	function stringToValue(obj: String) : Null<Int> {
+		return Std.parseInt(obj);
 	}
 }
 

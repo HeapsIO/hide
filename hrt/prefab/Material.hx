@@ -350,6 +350,82 @@ class Material extends Prefab {
 		}
 
 		rec(@:privateAccess materialCategory.children);
+
+		var isPbr = Std.isOfType(ctx.s3d.renderer, h3d.scene.pbr.Renderer);
+
+		if (isPbr) {
+			var pbrProps : h3d.mat.PbrMaterial.PbrProps = mat.props;
+			ctx.build(
+				<category("Color Mask")>
+					<line label="Channels">
+						<bitflag(0) field={colorMask} label="R"/>
+						<bitflag(1) field={colorMask} label="G"/>
+						<bitflag(2) field={colorMask} label="B"/>
+						<bitflag(3) field={colorMask} label="A"/>
+					</line>
+				</category>,pbrProps
+			);
+
+			ctx.build(
+				<category("Stencil") field={enableStencil}>
+					<select field={stencilCompare} label="Compare"/>
+					<select field={stencilFailOp} label="Stencil Fail"/>
+					<select field={depthFailOp} label="Depth Fail"/>
+					<select field={stencilPassOp} label="Stencil Pass"/>
+
+					<line label="Read Mask">
+						<bitflag(7) field={stencilReadMask} label=""/>
+						<bitflag(6) field={stencilReadMask} label=""/>
+						<bitflag(5) field={stencilReadMask} label=""/>
+						<bitflag(4) field={stencilReadMask} label=""/>
+						<bitflag(3) field={stencilReadMask} label=""/>
+						<bitflag(2) field={stencilReadMask} label=""/>
+						<bitflag(1) field={stencilReadMask} label=""/>
+						<bitflag(0) field={stencilReadMask} label=""/>
+					</line>
+
+					<line label="Write Mask">
+						<bitflag(7) field={stencilWriteMask} label=""/>
+						<bitflag(6) field={stencilWriteMask} label=""/>
+						<bitflag(5) field={stencilWriteMask} label=""/>
+						<bitflag(4) field={stencilWriteMask} label=""/>
+						<bitflag(3) field={stencilWriteMask} label=""/>
+						<bitflag(2) field={stencilWriteMask} label=""/>
+						<bitflag(1) field={stencilWriteMask} label=""/>
+						<bitflag(0) field={stencilWriteMask} label=""/>
+					</line>
+
+					<line label="Value">
+						<bitflag(7) field={stencilValue} label=""/>
+						<bitflag(6) field={stencilValue} label=""/>
+						<bitflag(5) field={stencilValue} label=""/>
+						<bitflag(4) field={stencilValue} label=""/>
+						<bitflag(3) field={stencilValue} label=""/>
+						<bitflag(2) field={stencilValue} label=""/>
+						<bitflag(1) field={stencilValue} label=""/>
+						<bitflag(0) field={stencilValue} label=""/>
+					</line>
+				</category>
+			,pbrProps);
+		}
+
+		ctx.build(
+			<category("Overrides")>
+				<file type="texture" field={diffuseMap} label={isPbr ? "Albedo" : "Diffuse"}/>
+				<file type="texture" field={normalMap} label="Normal"/>
+				<file type="texture" field={specularMap} label="Specular"/>
+				<checkbox field={wrapRepeat} label="Wrap"/>
+				<color field={color} arr/>
+				<input field={mainPassName} label="Pass Name"/>
+			</category>,
+			this,
+			function(_) {
+			// if (this.refMatLib != null && this.refMatLib != "")
+			// 	addOverrideProperty2(pname, false);
+			var fx = findParent(hrt.prefab.fx.FX);
+			if(fx != null)
+				ctx.rebuildPrefab(fx);
+		});
 	}
 
 

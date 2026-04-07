@@ -80,6 +80,7 @@ class KitTest extends Object3D {
 	@:s var testEnum: TestEnum;
 	@:s var testAbstractString: TestAbstractString;
 	@:s var testAbstractInt: TestAbstractInt;
+	@:s var testBitflag: Int;
 
 	@:s var ifBlockCondition: TestAbstractInt;
 
@@ -162,6 +163,17 @@ class KitTest extends Object3D {
 				</line>
 
 				<line id="parentLine" multiline>
+				</line>
+
+				<line label="Bitflag">
+					<bitflag(0) field={testBitflag} label=""/>
+					<bitflag(1) field={testBitflag} label=""/>
+					<bitflag(2) field={testBitflag} label=""/>
+					<bitflag(3) field={testBitflag} label=""/>
+					<bitflag(4) field={testBitflag} label=""/>
+					<bitflag(5) field={testBitflag} label=""/>
+					<bitflag(6) field={testBitflag} label=""/>
+					<bitflag(7) field={testBitflag} label=""/>
 				</line>
 
 				<block id="addToMe"></block>
