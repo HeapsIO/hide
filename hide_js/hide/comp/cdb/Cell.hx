@@ -82,9 +82,10 @@ class Cell {
 		});
 
 		root.oncontextmenu = function(e) {
-			showMenu();
 			e.stopPropagation();
-			e.preventDefault();
+			if(showMenu()) {
+				e.preventDefault();
+			}
 		};
 	}
 
@@ -189,6 +190,9 @@ class Cell {
 		if( menu != null ) {
 			focus();
 			ContextMenu.createFromPoint(ide.mouseX, ide.mouseY, menu);
+			return true;
+		} else {
+			return false;
 		}
 	}
 

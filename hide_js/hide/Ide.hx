@@ -303,6 +303,8 @@ class Ide extends hide.tools.IdeData {
 
 		hrt.impl.EditorTools.setupIconCategories();
 
+		untyped chrome.settingsPrivate.setPref('spellcheck.dictionaries', ["en-US","fr-FR"], "null", ()->{});
+
 		refreshFont();
 	}
 
