@@ -853,8 +853,8 @@ class Model extends FileView {
 
 				function getLodRatioFromIdx(idx : Int) {
 					var lodConfig = hmd.getLodConfig();
-					if (idx == 0) return 1.;
-					if (idx == hmd.lodCount() ) return lodConfig[lodConfig.length - 1];
+					if (idx <= 0) return 1.;
+					if (idx > lodConfig.length) return 0.;
 					if (idx >= hmd.lodCount() + 1) return 0.;
 					return lodConfig[idx - 1];
 				}
@@ -865,12 +865,9 @@ class Model extends FileView {
 				}
 
 				function getLodRatioPowedFromIdx(idx : Int) {
-					var lodConfig = hmd.getLodConfig();
-					var prev = idx == 0 ? 1 : hxd.Math.pow(lodConfig[idx - 1] , lodPow);
-					if ( idx == hmd.lodCount() ) prev = lodConfig[lodConfig.length - 1];
-					var c = lodConfig[idx] == null ? 0 : lodConfig[idx];
-					if ( idx + 1 == hmd.lodCount() ) c = lodConfig[lodConfig.length - 1];
-					return (Math.abs(prev - hxd.Math.pow(c, lodPow)));
+					var prev = hxd.Math.pow(getLodRatioFromIdx(idx) , lodPow);
+					var current = hxd.Math.pow(getLodRatioFromIdx(idx+1), lodPow);
+					return Math.abs(prev - current);
 				}
 
 				function startDrag(onMove: js.jquery.Event->Void, onStop: js.jquery.Event->Void) {
@@ -891,6 +888,7 @@ class Model extends FileView {
 					var idx = 0;
 					for (area in areas) {
 						var areaEl = new Element(area);
+						trace(idx, getLodRatioFromIdx(idx));
 						areaEl.css({ width : '${lineEl.width() * getLodRatioPowedFromIdx(idx)}px' });
 
 
@@ -960,10 +958,12 @@ class Model extends FileView {
 							var prevConfig = @:privateAccess hmd.lodConfig?.copy();
 							var newConfig = hmd.getLodConfig()?.copy();
 							var limits = [ getLodRatioFromIdx(currIdx + 2), getLodRatioFromIdx(currIdx)];
-
+							trace(limits);
 							startDrag(function(e) {
 								var newRatio = getLodRatioFromPx(e.clientX - lodsLine.offset().left);
+								trace(newRatio);
 								newRatio = hxd.Math.clamp(newRatio, limits[0], limits[1]);
+								trace("clamp => ", newRatio);
 								newConfig[currIdx] = newRatio;
 								@:privateAccess hmd.lodConfig = newConfig;
 								refreshLodLine();
