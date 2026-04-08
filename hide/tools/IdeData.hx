@@ -319,10 +319,15 @@ class IdeData {
 	}
 
 	public function toJSON( v : Dynamic ) {
-		var str = haxe.Json.stringify(v, "\t");
-		str = ~/,\n\t+"__id__": [0-9]+/g.replace(str, "");
-		str = ~/\t+"__id__": [0-9]+,\n/g.replace(str, "");
-		return str;
+		var replaceFn =
+		#if( js_es == 5 )
+			// filter out `__id__` keys that are added when the objects are used as key in Maps (haxe -> js ECMA 5.0 behavior)
+			(key, value) -> key == "__id__" ? js.Lib.undefined : value;
+		#else
+			null;
+		#end
+
+		return haxe.Json.stringify(v, replaceFn, "\t");
 	}
 
 	public function loadPrefab<T:hrt.prefab.Prefab>( file : String, ?cl : Class<T>, ?checkExists ) : T {
