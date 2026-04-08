@@ -11,12 +11,20 @@ class Signature {
 	}
 
 	public function computeHash() {
-		var content = haxe.Json.stringify(this, "\t");
+		var content = #if editor
+			hide.Ide.inst.toJSON(this);
+		#else
+			haxe.Json.stringify(this);
+		#end
 		return haxe.crypto.Sha1.make(haxe.io.Bytes.ofString(content)).toHex();
 	}
 
 	public function save( path : String ) {
-		var content = haxe.Json.stringify(this, "\t");
+		var content = #if editor
+			hide.Ide.inst.toJSON(this);
+		#else
+			haxe.Json.stringify(this);
+		#end
 		sys.io.File.saveContent(ModelLibrary.getSystemPath(path), content);
 	}
 

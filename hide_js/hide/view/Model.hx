@@ -527,7 +527,7 @@ class Model extends FileView {
 						if (Reflect.fields(content).length == 0)
 							sys.FileSystem.deleteFile(modelPropsFile);
 						else
-							sys.io.File.saveContent(modelPropsFile, haxe.Json.stringify(content, null, '\t'));
+							sys.io.File.saveContent(modelPropsFile, hide.Ide.inst.toJSON(content));
 					}
 				}
 
@@ -541,7 +541,7 @@ class Model extends FileView {
 					defaultConf = {};
 				@:privateAccess h3d.prim.ModelDatabase.current.saveDynamicBonesConfig(input, defaultConf);
 				Reflect.setField(content, h3d.prim.ModelDatabase.DEFAULT_CONFIG_ENTRY, defaultConf);
-				sys.io.File.saveContent(ide.getPath(propsFile), haxe.Json.stringify(content, null, '\t'));
+				sys.io.File.saveContent(ide.getPath(propsFile), hide.Ide.inst.toJSON(content));
 				@:privateAccess hxd.fmt.hmd.Library.defaultModelConfigs.clear();
 			}
 		}
@@ -562,7 +562,7 @@ class Model extends FileView {
 			hideData.animations.set(currentAnimation.file.split("/").pop(), { events : events } );
 
 			var bytes = new haxe.io.BytesOutput();
-			bytes.writeString(haxe.Json.stringify(hideData, "\t"));
+			bytes.writeString(hide.Ide.inst.toJSON(hideData));
 			hxd.File.saveBytes(getPropsPath(), bytes.getBytes());
 		}
 

@@ -44,7 +44,7 @@ class Ide extends hide.tools.IdeData {
 	}
 
 	function saveLocalStorageToDisk() {
-		sys.io.File.saveContent(appPath + "/" + localUserDataSave, haxe.Json.stringify(localStorage, "\t"));
+		sys.io.File.saveContent(appPath + "/" + localUserDataSave, toJSON(localStorage));
 	}
 
 	public function update(dt: Float) {

@@ -762,7 +762,12 @@ class ModelLibrary extends Prefab {
 
 		var root = new hrt.prefab.Prefab(null, null);
 		root.addChild(this);
-		sys.io.File.saveContent(getSystemPath(path), haxe.Json.stringify(@:privateAccess root.serialize(), "\t"));
+		var content = #if editor
+			hide.Ide.inst.toJSON(@:privateAccess root.serialize());
+		#else
+			haxe.Json.stringify(@:privateAccess root.serialize());
+		#end
+		sys.io.File.saveContent(getSystemPath(path), content);
 	}
 
 	public static function createLibrary( dir : String, name : String, paths : Array<String> ) {

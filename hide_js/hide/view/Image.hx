@@ -281,7 +281,7 @@ class Image extends FileView {
 					Reflect.setProperty(propsJson, "fs.convert", fsConvertObj);
 				}
 
-				var data = haxe.Json.stringify(propsJson, "\t");
+				var data = hide.Ide.inst.toJSON(propsJson);
 				bytes.writeString(data);
 				hxd.File.saveBytes(propsFilePath, bytes.getBytes());
 			} else {
@@ -290,7 +290,7 @@ class Image extends FileView {
 
 				Reflect.setProperty(pathObj, state.path, convertRule);
 				Reflect.setProperty(fsConvertObj, "fs.convert", pathObj);
-				var data = haxe.Json.stringify(fsConvertObj, "\t");
+				var data = hide.Ide.inst.toJSON(fsConvertObj);
 				bytes.writeString(data);
 				hxd.File.saveBytes(propsFilePath, bytes.getBytes());
 			}
@@ -326,7 +326,7 @@ class Image extends FileView {
 				}
 
 				var bytes = new haxe.io.BytesOutput();
-				var data = haxe.Json.stringify(rulesObj, "\t");
+				var data = hide.Ide.inst.toJSON(rulesObj);
 				bytes.writeString(data);
 				hxd.File.saveBytes(propsFilePath, bytes.getBytes());
 			}
