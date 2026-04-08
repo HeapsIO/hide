@@ -510,6 +510,8 @@ class ModalColumnForm extends Modal {
 			var defV = form.find("[name=defaultValue]").is(':checked');
 			if (defV != null && defV)
 				c.defaultValue = true;
+			else if (defV != null && !defV && !c.opt)
+				c.defaultValue = false; // force default value to false for required bools
 			else
 				Reflect.deleteField(c, "defaultValue");
 		default:
