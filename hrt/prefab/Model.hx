@@ -53,7 +53,6 @@ class Model extends Object3D {
 			#end
 			if( retargetAnim ) applyRetarget(obj);
 
-			obj.name = name;
 			parent3d.addChild(obj);
 
 			if( animation != null ) {
@@ -62,6 +61,15 @@ class Model extends Object3D {
 					obj.currentAnimation.setFrame(hxd.Math.random(obj.currentAnimation.frameCount));
 				}
 			}
+
+			if (obj.currentAnimation != null) {
+				for (o in obj.currentAnimation.getObjects()) {
+					if (o?.targetObject == obj)
+						o.objectName = name;
+				}
+			}
+
+			obj.name = name;
 
 			return obj;
 		#if editor
