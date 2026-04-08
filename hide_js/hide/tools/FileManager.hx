@@ -780,11 +780,11 @@ class FileManager {
 				var oldDataToSave = oldMatPropsPath == newMatPropsPath ? newMatProps : haxe.Json.parse(haxe.Json.stringify(oldMatProps));
 
 				moveRec(oldMatProps, oldDataToSave, newMatProps);
-				sys.io.File.saveContent(newMatPropsPath, haxe.Json.stringify(newMatProps, null, "\t"));
+				sys.io.File.saveContent(newMatPropsPath, hide.Ide.inst.toJSON(newMatProps));
 
 				if (oldMatPropsPath != newMatPropsPath) {
 					if (Reflect.fields(oldMatProps).length > 0) {
-						sys.io.File.saveContent(oldMatPropsPath, haxe.Json.stringify(oldDataToSave, null, "\t"));
+						sys.io.File.saveContent(oldMatPropsPath, hide.Ide.inst.toJSON(oldDataToSave));
 					} else {
 						sys.FileSystem.deleteFile(oldMatPropsPath);
 					}
