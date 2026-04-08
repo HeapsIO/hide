@@ -208,9 +208,10 @@ class Gizmo extends h3d.scene.Object {
 
 
 	function startMove(handle: Handle, duplicating: Bool = false) {
-		if (onStartMove != null && !moving) {
+		if (!moving) {
 			initialAbsPos = this.getAbsPos().clone();
-			onStartMove(handle);
+			if (onStartMove != null)
+				onStartMove(handle);
 
 			initialMousePos = new h2d.col.Point(mouseX, mouseY);
 			var scene = getScene();
