@@ -3867,6 +3867,7 @@ div.gradient-box:hover {
 }
 .lods .lods-line .line div {
   overflow-x: hidden;
+  overflow-y: hidden;
   height: 100%;
 }
 .lods .lods-line .line div:nth-child(1n) {
