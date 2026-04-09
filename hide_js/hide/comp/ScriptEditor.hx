@@ -291,7 +291,8 @@ class ScriptChecker {
 				case TRef(other): TInst(cdefs.get(other),[]);
 				case TCustom(_), TImage, TLayer(_), TTileLayer, TTilePos, TGradient, TCurve: null;
 				case TList, TProperties, TPolymorph:
-					var t = TInst(cdefs.get(s.name+"@"+c.name),[]);
+					var subName = c.structRef != null ? c.structRef : s.name+"@"+c.name;
+					var t = TInst(cdefs.get(subName),[]);
 					c.type == TList ? @:privateAccess checker.types.getType("Array",[t]) : t;
 				case TString, TFile, TGuid:
 					tstring;
