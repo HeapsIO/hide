@@ -16,6 +16,8 @@ class HuiCommands {
 	static public var redo = new HuiCommand("Redo", {ctrl: true, key: K.Y});
 
 	static public var search = new HuiCommand("Search", {ctrl: true, key: K.F});
+
+	static public var rename = new HuiCommand("Rename", {key: K.F2});
 }
 
 class HuiDebugCommands {

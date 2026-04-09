@@ -169,7 +169,12 @@ class HuiTree<TreeItem> extends HuiElement {
 		}
 	}
 
-
+	public function getLastFocusItem() : TreeItem {
+		if (selectedElements.get(lastSelectedElement) != null) {
+			return lastSelectedElement.item;
+		}
+		return null;
+	}
 	public function openSearch() {
 		searchBarContainer.visible = true;
 		@:privateAccess searchBar.textInput.focus();

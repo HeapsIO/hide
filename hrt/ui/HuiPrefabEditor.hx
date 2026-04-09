@@ -77,6 +77,7 @@ class HuiPrefabEditor extends HuiElement {
 			setSelection(treePrefab.getSelectedItems(), NoRefreshTree);
 		}
 		treePrefab.onItemContextMenu = contextMenu;
+		treePrefab.onItemDoubleClick = (_, prefab) -> renamePrefab(prefab);
 
 		treePrefab.dragAndDropInterface = {
 			onDragStart: function(p: hrt.prefab.Prefab): Void {
@@ -123,6 +124,12 @@ class HuiPrefabEditor extends HuiElement {
 		scene.s3d.addEventListener(onSceneEvents);
 
 		registerCommand(hrt.ui.HuiCommands.HuiDebugCommands.debugReload, View, reload);
+		registerCommand(hrt.ui.HuiCommands.rename, View, () -> {
+			var lastSelection = getSelectionOrdered()[0];
+			if (lastSelection != null) {
+				renamePrefab(lastSelection);
+			}
+		});
 
 		debugGraph = new h2d.Graphics(scene.s2d);
 	}
@@ -336,10 +343,29 @@ class HuiPrefabEditor extends HuiElement {
 
 		var entries: Array<hrt.ui.HuiMenu.MenuItem> = [];
 
+		entries.push({label: "Rename", enabled: target != prefab, click: () -> renamePrefab(target)});
+
+
 		entries.push({label: "Add Child Prefab", menu: createPrefabMenu((cl) -> getView().undo.run(makePrefabAction(target, target.children.length, cl), true))});
 		entries.push({label: "Delete Selected", click: () -> getView().undo.run(actionRemovePrefabs([for (p => _ in selectedPrefabs) p]), true)});
 
 		uiBase.contextMenu(entries);
+	}
+
+	function renamePrefab(target: hrt.prefab.Prefab) {
+		treePrefab.rename(target, (newName: String) -> {
+			getView().undo.run(actionRenamePrefab(target, newName), true);
+		});
+	}
+
+	function actionRenamePrefab(target: hrt.prefab.Prefab, name: String) : hrt.tools.Undo.Action {
+		var oldName = target.name;
+
+		return (isUndo) -> {
+			target.name = isUndo ? oldName : name;
+			target.updateInstance("name");
+			treePrefab.rebuild(target);
+		}
 	}
 
 	function makePrefabAction(parent: hrt.prefab.Prefab, index: Int, cl: Class<hrt.prefab.Prefab>) : hrt.tools.Undo.Action {
