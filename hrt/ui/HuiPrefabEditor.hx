@@ -131,6 +131,8 @@ class HuiPrefabEditor extends HuiElement {
 			}
 		});
 
+		registerCommand(hrt.ui.HuiCommands.delete, View, () -> getView().undo.run(actionRemovePrefabs([for (p => _ in selectedPrefabs) p]), true));
+
 		debugGraph = new h2d.Graphics(scene.s2d);
 	}
 
@@ -343,11 +345,11 @@ class HuiPrefabEditor extends HuiElement {
 
 		var entries: Array<hrt.ui.HuiMenu.MenuItem> = [];
 
-		entries.push({label: "Rename", enabled: target != prefab, click: () -> renamePrefab(target)});
 
 
 		entries.push({label: "Add Child Prefab", menu: createPrefabMenu((cl) -> getView().undo.run(makePrefabAction(target, target.children.length, cl), true))});
-		entries.push({label: "Delete Selected", click: () -> getView().undo.run(actionRemovePrefabs([for (p => _ in selectedPrefabs) p]), true)});
+		entries.push(HuiMenu.itemFromCommand(HuiCommands.rename, this));
+		entries.push(HuiMenu.itemFromCommand(HuiCommands.delete, this));
 
 		uiBase.contextMenu(entries);
 	}
@@ -475,7 +477,20 @@ class HuiPrefabEditor extends HuiElement {
 				}
 				tryMakeChildren(newParent);
 			}
+
+			if (newParent != null)
+				treePrefab.toggleItemOpen(newParent, true);
+			rebuildPrefabTree(prefab);
 		};
+	}
+
+	function rebuildPrefabTree(prefab: hrt.prefab.Prefab) {
+		if (prefab == null)
+			return;
+		if (prefab == this.prefab)
+			treePrefab.rebuild(null);
+		else
+			treePrefab.rebuild(prefab);
 	}
 
 	function createPrefabMenu(click: (cl: Class<hrt.prefab.Prefab>) -> Void) : Array<hrt.ui.HuiMenu.MenuItem> {

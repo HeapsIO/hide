@@ -186,7 +186,8 @@ class HuiTree<TreeItem> extends HuiElement {
 	public function rebuild(item: TreeItem = null) {
 		if (item != null) {
 			var data = itemMap.get(cast item);
-			updateData(data);
+			if(data != null)
+				updateData(data);
 			requestRefresh(RegenerateFlatten);
 			return;
 		} else {

@@ -66,6 +66,14 @@ class HuiMenu extends HuiPopup {
 		regenerateElements();
 	}
 
+	public static function itemFromCommand(command: hrt.ui.HuiCommands.HuiCommand, context: HuiElement) : MenuItem {
+		return {
+			label: command.display,
+			click: () -> context.execCommand(command),
+		};
+	}
+
+
 	function regenerateElements() {
 		var filteredList = items;
 		var coloredText: Map<{}, String> = [];
