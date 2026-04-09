@@ -845,6 +845,8 @@ class Model extends FileView {
 							</div>
 						</div>
 						<div id="buttons">
+							<input type="button" value="Copy" id="copy-lods"/>
+							<input type="button" value="Paste" id="paste-lods"/>
 							<input type="button" value="Reset defaults" id="reset-lods"/>
 						</div>
 					</div>
@@ -902,6 +904,47 @@ class Model extends FileView {
 						idx++;
 					}
 				}
+
+				var copyLod = lodsEl.find('#copy-lods');
+				copyLod.on("click", function() {
+					var config = @:privateAccess hmd.lodConfig?.copy();
+					hide.Ide.inst.setClipboard(hide.Ide.inst.toJSON(config));
+					hide.Ide.inst.quickMessage("Copied current lod config to the clipboard");
+				});
+
+				var pasteLod = lodsEl.find('#paste-lods');
+				pasteLod.on("click", function() {
+					var prevConfig = @:privateAccess hmd.lodConfig?.copy();
+					var newConfig = try haxe.Json.parse(hide.Ide.inst.getClipboard()) catch(e) null;
+
+					if (newConfig is Array) {
+						for (value in (newConfig:Array<Dynamic>)) {
+							if (value is Float || value is Int) {
+								continue;
+							}
+							newConfig = null;
+							break;
+						}
+					}
+
+					if (newConfig == null) {
+						hide.Ide.inst.quickMessage("Couldn't paste config from clipboard (invalid data)");
+						return;
+					}
+					var exec = function(undo) {
+						if (undo) {
+							@:privateAccess hmd.lodConfig = prevConfig;
+						} else {
+							@:privateAccess hmd.lodConfig = cast newConfig;
+						}
+
+						refreshLodLine();
+					}
+					undo.change(Custom(exec));
+					exec(false);
+					hide.Ide.inst.quickMessage("Pasted config from the clipboard");
+				});
+
 
 				var resetLod = lodsEl.find('#reset-lods');
 				resetLod.on("click", function() {
