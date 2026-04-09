@@ -91,7 +91,7 @@ class HuiTree<TreeItem> extends HuiElement {
 		});
 
 		searchBar.onKeyDown = keyDownHandler.bind(true);
-		searchBar.onChange = () -> {
+		searchBar.onChange = (tmp) -> {
 			keyboardFocus = null;
 			requestRefresh(RegenerateFlatten);
 		}
@@ -216,6 +216,14 @@ class HuiTree<TreeItem> extends HuiElement {
 			id = (id + offset + flatList.length) % flatList.length;
 		}
 		focusSetInternal(flatList[id]);
+	}
+
+	public function rename(item: TreeItem, callback: (newName: String) -> Void) {
+		var data = itemMap.get(cast item);
+		var line = Std.downcast(list.tryGetElement(data), HuiTreeLine);
+		if (line != null) {
+			line.rename(callback);
+		}
 	}
 
 	/**

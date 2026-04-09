@@ -2,6 +2,29 @@ hui-tree-line {
 	padding-top: 1;
 	padding-bottom: 1;
 
+	> #title {
+		visible: true;
+	}
+
+	> #title-edit {
+		visible: false;
+
+		padding-left: 4;
+		padding-right: 4;
+
+		fill-width: 1;
+	}
+
+	&.edit {
+		> #title {
+			visible: false;
+		}
+
+		> #title-edit {
+			visible: true;
+		}
+	}
+
 	> #caret {
 		background-type: hui;
 

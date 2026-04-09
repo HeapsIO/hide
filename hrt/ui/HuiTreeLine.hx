@@ -10,6 +10,7 @@ class HuiTreeLine extends HuiElement {
 			<hui-element id="caret"/>
 			<hui-element id="icon"/>
 			<hui-text("") id="title"/>
+			<hui-input-box id="title-edit"/>
 			<hui-element id="drop-indicator"/>
 		</hui-tree-line>
 
@@ -44,6 +45,26 @@ class HuiTreeLine extends HuiElement {
 	}
 
 	public dynamic function onContextMenu() {
+	}
+
+	public function rename(callback: (newName: String) -> Void) : Void {
+		dom.addClass("edit");
+		titleEdit.text = data.name;
+		titleEdit.focus();
+
+		function cleanup() {
+			dom.removeClass("edit");
+		}
+
+		titleEdit.onFocusLost = (e) -> {
+			cleanup();
+		}
+
+		titleEdit.onChange = (temp) -> {
+			if (!temp) {
+				callback(titleEdit.text);
+			}
+		}
 	}
 
 	public function getDropOperation(op: HuiDragOp) : hrt.ui.HuiTree.DropOperation {

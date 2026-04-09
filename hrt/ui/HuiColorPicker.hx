@@ -243,7 +243,7 @@ class HuiColorPicker extends HuiPopup {
 				onValueChanged(isTemporary);
 			}
 
-			inputBox.onChange = () -> {
+			inputBox.onChange = (temp) -> {
 				var value = Std.parseInt(inputBox.textInput.text);
 				if (value != null) {
 					setColorVec(hxd.Math.clamp(value / 255.0), tempColorVec);
@@ -253,7 +253,7 @@ class HuiColorPicker extends HuiPopup {
 					syncColorSecondary(color);
 					syncColorPreview(color);
 
-					onValueChanged(true);
+					onValueChanged(temp);
 				}
 			}
 
@@ -272,7 +272,7 @@ class HuiColorPicker extends HuiPopup {
 		bindSlider(sliderSec2, stringSec2, (value, vec) -> vec.set(sliderSec0.value, sliderSec1.value, value, sliderAlpha.value));
 		bindSlider(sliderAlpha, stringAlpha, (value, vec) -> vec.set(sliderSec0.value, sliderSec1.value, sliderSec2.value, value), true);
 
-		colorHex.onChange = () -> {
+		colorHex.onChange = (temp) -> {
 			var parsedColor = hrt.impl.ColorSpace.Color.intFromString(colorHex.textInput.text, true);
 			if (parsedColor == null) {
 				return;
@@ -283,7 +283,7 @@ class HuiColorPicker extends HuiPopup {
 			syncColorSecondary();
 			syncColorPreview(color);
 
-			onValueChanged(true);
+			onValueChanged(temp);
 		}
 
 		colorHex.textInput.onFocusLost = (e) -> {

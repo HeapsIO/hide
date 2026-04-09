@@ -296,6 +296,15 @@ class GymWidgets extends HuiElement {
 			return item.children;
 		};
 
+		tree.onItemContextMenu = (item) -> {
+			return uiBase.contextMenu([{label:"Rename", enabled: item != null, click: () -> {
+				tree.rename(item, (str) -> {
+					item.name = str;
+					tree.rebuild(item);
+				});
+			}}]);
+		}
+
 		tree.dragAndDropInterface = {
 			onDragStart: (item) -> {
 				var op = tree.startDrag("testDrag", tree.getSelectedItems());
@@ -391,7 +400,7 @@ class GymSearch extends HuiElement {
 		super(parent);
 		initComponent();
 
-		searchBox.onChange = () -> searchFiles();
+		searchBox.onChange = (tmp) -> searchFiles();
 
 		results.generateItem = (i:Dynamic) -> {
 			var e = new HuiElement();

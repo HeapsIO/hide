@@ -94,6 +94,10 @@ class HuiVirtualList<T> extends HuiElement {
 		interactive.propagateEvents = true;
 	}
 
+	public function tryGetElement(item: T) : Null<HuiElement> {
+		return elements.get(cast item)?.childElements[0];
+	}
+
 	/**
 		Prevent need reflow propagation (our layout don't depends of our children)
 	**/
