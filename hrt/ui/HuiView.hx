@@ -7,6 +7,7 @@ class HuiView<T> extends HuiElement {
 	public var undo(default, never): hrt.tools.Undo = new hrt.tools.Undo();
 
 	var hasUnsavedChanges(default, set): Bool = false;
+	var toolbar : HuiToolbar;
 
 	function set_hasUnsavedChanges(v: Bool) {
 		if (v != hasUnsavedChanges) {
@@ -26,6 +27,8 @@ class HuiView<T> extends HuiElement {
 
 		registerCommand(HuiCommands.undo, ElementAndChildren, () -> undo.undo());
 		registerCommand(HuiCommands.redo, ElementAndChildren, () -> undo.redo());
+
+		toolbar = new HuiToolbar(this);
 	}
 
 	/**
@@ -55,6 +58,17 @@ class HuiView<T> extends HuiElement {
 	function requestClose(callback: (canClose: Bool) -> Void) {
 		callback(true);
 	}
+
+
+	function buildToolbar() {
+		for (w in getToolbarWidgets())
+			toolbar.addWidget(w);
+	}
+
+	function getToolbarWidgets() : Array<HuiElement> {
+		return [];
+	}
+
 
 	function getContextMenuContent(content: Array<hide.comp.ContextMenu.MenuItem>) {
 

@@ -1,0 +1,39 @@
+hui-toggle {
+	min-height: @widget-base-height;
+	min-width: @widget-base-height;
+	padding: 8 10 8 10;
+	.button();
+
+	background-type: hui;
+	> hui-background {
+		border-radius: @base-corner-radius;
+		outline: 1 @widget-border;
+	}
+
+	hui-element {
+		valign: middle;
+	}
+
+	>hui-text {
+		align: middle middle;
+		margin-top: -1px;
+	}
+
+	&.small-square {
+		padding: 0;
+		width: 16;
+		height: 16;
+	}
+
+	&.quiet {
+		> hui-background {
+			outline: none;
+		}
+	}
+
+	&.toggled {
+		> hui-background {
+			background: @color-blue;
+		}
+	}
+}

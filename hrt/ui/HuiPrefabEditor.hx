@@ -69,6 +69,7 @@ class HuiPrefabEditor extends HuiElement {
 
 		errorMessage = new h2d.Text(hxd.res.DefaultFont.get(), scene.s2d);
 		cameraController = new h3d.scene.CameraController(scene.s3d);
+		cameraController.lockZPlanes = true;
 
 		treePrefab = new hrt.ui.HuiTree<hrt.prefab.Prefab>(panelTree);
 		treePrefab.getItemChildren = treePrefabGetItemChildren;
@@ -134,6 +135,8 @@ class HuiPrefabEditor extends HuiElement {
 		registerCommand(hrt.ui.HuiCommands.delete, View, () -> getView().undo.run(actionRemovePrefabs([for (p => _ in selectedPrefabs) p]), true));
 
 		debugGraph = new h2d.Graphics(scene.s2d);
+
+		makeGizmos();
 	}
 
 	function sanitizeReparent(target: hrt.prefab.Prefab, elements: Array<hrt.prefab.Prefab>) {
@@ -223,6 +226,20 @@ class HuiPrefabEditor extends HuiElement {
 		}
 
 		refreshInspector();
+	}
+
+	function getSelectedObjects() : Array<h3d.scene.Object> {
+		var objs = [];
+		var selection = selectedPrefabs.keys();
+		for (prefab in selection) {
+			selectedPrefabs.set(prefab, true);
+			var obj3d = Std.downcast(prefab, hrt.prefab.Object3D);
+			if (obj3d != null && obj3d.local3d != null) {
+				objs.push(obj3d.local3d);
+			}
+		}
+
+		return objs;
 	}
 
 	public function hasUnsavedChanges() : Bool {
@@ -592,7 +609,6 @@ class HuiPrefabEditor extends HuiElement {
 		o.outlineColor = 0xFF6600;
 		scene.s3d.renderer.effects.push(o);
 
-		makeGizmos();
 		tryMake(prefab);
 		makeRenderProps();
 
@@ -847,7 +863,6 @@ class HuiPrefabEditor extends HuiElement {
 		grid = new hrt.tools.Grid(scene.s3d);
 		gizmo = new hrt.tools.Gizmo(scene.s3d);
 		gizmo.visible = false;
-		gizmo.isLocalTransform = true;
 		registerCommand(gizmoSwitchModeCommand, View, gizmo.switchMode);
 		registerCommand(gizmoTranslateCommand, View, gizmo.translationMode);
 		registerCommand(gizmoRotateCommand, View, gizmo.rotationMode);

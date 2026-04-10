@@ -73,7 +73,12 @@ class Gizmo extends h3d.scene.Object {
 	public static final DEFAULT_COLOR = 0xFFAAAAAA;
 
 	public var mode : EditMode = Translation;
-	public var isLocalTransform : Bool = false;
+	public var isLocalTransform(default, set) : Bool = false;
+	function set_isLocalTransform(v) {
+		if (v != isLocalTransform)
+			onChangeTransformSpace(v);
+		return isLocalTransform = v;
+	}
 
 	public var onStartMove : Handle -> Void;
 	public var onMove : (offsetPosition: h3d.Vector, offsetRotation: h3d.Quat, offsetScale: h3d.Vector) -> Void;
@@ -432,4 +437,5 @@ class Gizmo extends h3d.scene.Object {
 	}
 
 	public dynamic function onChangeMode(mode : EditMode) {}
+	public dynamic function onChangeTransformSpace(isLocalTransform : Bool) {}
 }
