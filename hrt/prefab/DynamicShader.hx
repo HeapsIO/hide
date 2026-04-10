@@ -29,7 +29,7 @@ class DynamicShader extends Shader {
 		if( isInstance && !shaderDef.isShaderGraph )
 			shader = Type.createInstance(shaderDef.sclass,[]);
 		else {
-			var dshader = new hxsl.DynamicShader(shaderDef.shader);
+			var dshader = new hxsl.DynamicShader(shaderDef.shader, name);
 			for( v in shaderDef.inits ) {
 				dshader.hscriptSet(v.variable.name, v.value);
 			}
