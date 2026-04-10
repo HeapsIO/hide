@@ -238,6 +238,7 @@ class SwarmObject extends h3d.scene.Object {
 
 
 			var target = getPointPos(i, tmpVector);
+			target.transform(absPos);
 
 			if (hxd.Math.isNaN(e.x) ||
 				hxd.Math.isNaN(e.y) ||
@@ -256,7 +257,6 @@ class SwarmObject extends h3d.scene.Object {
 				e.vz = 0.0;
 			}
 
-			target.transform(absPos);
 			var dir = new h3d.Vector(target.x - e.x, target.y - e.y, target.z - e.z);
 			var len = dir.length();
 
