@@ -61,6 +61,8 @@ class HuiPrefabEditor extends HuiElement {
 	var lastPushY : Float = -100;
 	var movedSinceLastPush : Bool = false;
 
+	var inspectorRoot : hide.kit.KitRoot;
+
 	var debugGraph: h2d.Graphics;
 
 	override function new(?parent) {
@@ -311,6 +313,7 @@ class HuiPrefabEditor extends HuiElement {
 		var prefabs = [for (prefab => _ in selectedPrefabs) prefab];
 
 		inspectorPanel.removeChildElements();
+		inspectorRoot = null;
 
 		if (prefabs.length == 0)
 			return;
@@ -327,14 +330,14 @@ class HuiPrefabEditor extends HuiElement {
 		}
 
 		var editContext = new EditContext(this, null);
-		var baseRoot = new hide.kit.KitRoot(null, null, editPrefab, editContext);
-		@:privateAccess baseRoot.isMultiEdit = isMultiEdit;
+		inspectorRoot = new hide.kit.KitRoot(null, null, editPrefab, editContext);
+		@:privateAccess inspectorRoot.isMultiEdit = isMultiEdit;
 
 		@:privateAccess editContext.saveKey = Type.getClassName(commonClass);
-		editContext.root = baseRoot;
+		editContext.root = inspectorRoot;
 
 		editPrefab.edit2(editContext);
-		baseRoot.postEditStep();
+		inspectorRoot.postEditStep();
 
 		if (isMultiEdit) {
 			for (i => prefab in prefabs) {
@@ -342,17 +345,17 @@ class HuiPrefabEditor extends HuiElement {
 				@:privateAccess childEditContext.saveKey = Type.getClassName(commonClass);
 				var childRoot = new hide.kit.KitRoot(null, null, prefab, childEditContext);
 				@:privateAccess childRoot.isMultiEdit = true;
-				baseRoot.editedPrefabsProperties.push(childRoot);
+				inspectorRoot.editedPrefabsProperties.push(childRoot);
 				childEditContext.root = childRoot;
 				prefab.edit2(childEditContext);
 				childRoot.postEditStep();
 			}
 		}
 
-		baseRoot.make();
+		inspectorRoot.make();
 
-		inspectorPanel.addChild(@:privateAccess baseRoot.native);
-		@:privateAccess baseRoot.native.get().dom.applyStyle(uiBase.style);
+		inspectorPanel.addChild(@:privateAccess inspectorRoot.native);
+		@:privateAccess inspectorRoot.native.get().dom.applyStyle(uiBase.style);
 	}
 
 	function contextMenu(target: hrt.prefab.Prefab) {
@@ -913,6 +916,7 @@ class HuiPrefabEditor extends HuiElement {
 			// 	transform.multiplied(initialTransform.getInverse());
 
 			obj3d.applyTransform();
+			inspectorRoot?.refreshFields();
 		};
 
 		gizmo.onFinishMove = () -> {

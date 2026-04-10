@@ -453,6 +453,7 @@ class Macros {
 						block.push(macro @:pos(pos) @:privateAccess $elementExpr.fieldName = $v{fieldName});
 						block.push(macro @:pos(pos) $elementExpr.value = $field);
 						block.push(macro @:pos(pos) @:privateAccess $elementExpr.onFieldChange = (temp:Bool) -> $field = $elementExpr.value);
+						block.push(macro @:pos(pos) @:privateAccess $elementExpr.getFieldValue = () -> $field);
 
 					}
 

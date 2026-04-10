@@ -186,6 +186,15 @@ class Element {
 		return null;
 	}
 
+	/**
+		Refresh the values of all the widgets that are bound to a field to the actual field value
+	**/
+	public function refreshFields() : Void {
+		for (c in children) {
+			c.refreshFields();
+		}
+	}
+
 	// Overridable API
 
 	/**

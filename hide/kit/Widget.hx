@@ -143,6 +143,18 @@ abstract class Widget<ValueType> extends Element {
 	}
 
 	/**
+		If set, allows the widget to query the bound value to the current field
+	**/
+	dynamic function getFieldValue() : ValueType {
+		return value;
+	}
+
+	override function refreshFields() {
+		value = getFieldValue();
+		super.refreshFields();
+	}
+
+	/**
 		Call this internally when the user interact with the widget to indicate to the Inspector that the value has changed
 	**/
 	function broadcastValueChange(temporaryEdit: Bool) : Void {
