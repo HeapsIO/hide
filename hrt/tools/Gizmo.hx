@@ -427,15 +427,8 @@ class Gizmo extends h3d.scene.Object {
 		return obj.primitive.getCollider();
 	}
 
-
-	public dynamic function snap(v: Float, mode: EditMode) : Float {
-		return v;
-	}
-
-	public dynamic function shoudSnapOnGrid() : Bool {
-		return false;
-	}
-
+	public dynamic function snap(v: Float, mode: EditMode) : Float { return v; }
+	public dynamic function shouldSnap() : Bool { return false; }
 	public dynamic function onChangeMode(mode : EditMode) {}
 	public dynamic function onChangeTransformSpace(isLocalTransform : Bool) {}
 }

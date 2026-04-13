@@ -37,6 +37,22 @@ class HuiPrefabEditor extends HuiElement {
 	static public var gizmoRotateCommand = new hrt.ui.HuiCommands.HuiCommand("Save", {key: hxd.Key.E});
 	static public var gizmoScaleCommand = new hrt.ui.HuiCommands.HuiCommand("Cut", {key: hxd.Key.R});
 
+	public var gizmoShouldSnap(default, set) : Bool = true;
+	public function set_gizmoShouldSnap(v : Bool) {
+		hide.Ide.inst.currentConfig.set(hide.view.Prefab.GIZMO_SNAP_CONFIG_KEY, v);
+		return gizmoShouldSnap = v;
+	}
+	public var gizmoSnapStep(default, set) : Float = 1.0;
+	public function set_gizmoSnapStep(v : Float) {
+		hide.Ide.inst.currentConfig.set(hide.view.Prefab.GIZMO_SNAP_STEP_CONFIG_KEY, v);
+		return gizmoSnapStep = v;
+	}
+	public var gizmoForceSnapOnGrid(default, set) : Bool = true;
+	public function set_gizmoForceSnapOnGrid(v : Bool) {
+		hide.Ide.inst.currentConfig.set(hide.view.Prefab.GIZMO_SNAP_GRID_CONFIG_KEY, v);
+		return gizmoForceSnapOnGrid = v;
+	}
+
 	var rethrowMakeErrors: Bool = false;
 
 	var prefab: hrt.prefab.Prefab;
@@ -857,6 +873,10 @@ class HuiPrefabEditor extends HuiElement {
 	}
 
 	public function makeGizmos() {
+		this.gizmoShouldSnap = hide.Ide.inst.currentConfig.get(hide.view.Prefab.GIZMO_SNAP_CONFIG_KEY, true);
+		this.gizmoSnapStep = hide.Ide.inst.currentConfig.get(hide.view.Prefab.GIZMO_SNAP_STEP_CONFIG_KEY, 1.0);
+		this.gizmoForceSnapOnGrid = hide.Ide.inst.currentConfig.get(hide.view.Prefab.GIZMO_SNAP_GRID_CONFIG_KEY, true);
+
 		grid?.remove();
 		gizmo?.remove();
 		viewportAxis?.remove();
@@ -864,7 +884,7 @@ class HuiPrefabEditor extends HuiElement {
 		viewportAxis = new hrt.tools.ViewportAxis(scene.s3d.camera, cameraController, scene.s2d);
 
 		grid = new hrt.tools.Grid(scene.s3d);
-		grid.visible = hide.Ide.inst.currentConfig.get(hide.view.Prefab.SNAP_CONFIG_KEY, true);
+		grid.lineSpacing = this.gizmoSnapStep;
 		gizmo = new hrt.tools.Gizmo(scene.s3d);
 		gizmo.visible = false;
 		registerCommand(gizmoSwitchModeCommand, View, gizmo.switchMode);
@@ -874,6 +894,16 @@ class HuiPrefabEditor extends HuiElement {
 
 		var initialTransform = new h3d.Matrix();
 		var obj3ds : Array<hrt.prefab.Object3D> = [];
+		gizmo.shouldSnap = () -> { return this.gizmoShouldSnap; };
+		gizmo.snap = (v: Float, mode: hrt.tools.Gizmo.EditMode) -> {
+			if (!gizmo.shouldSnap())
+				return v;
+			v = hxd.Math.round(v / this.gizmoSnapStep) * this.gizmoSnapStep;
+			if (!gizmoForceSnapOnGrid)
+				return v;
+			// Force on grid should receive abs value to work here
+			return hxd.Math.round(v / this.grid.lineSpacing) * this.grid.lineSpacing;
+		};
 		gizmo.onStartMove = (handle : hrt.tools.Gizmo.Handle) -> {
 			obj3ds = [];
 			for (p in selectedPrefabs.keys()) {
@@ -941,12 +971,8 @@ class HuiPrefabEditor extends HuiElement {
 		};
 	}
 
-	public function setGridVisibility(visible : Bool) {
-		grid?.visible = visible;
-	}
-
-	public function setGridLineSpacing(spacing : Float) {
-		grid?.lineSpacing = spacing;
+	public function gizmoSnap(v: Float, mode: hrt.tools.Gizmo.EditMode) {
+		return hxd.Math.round(v / this.gizmoSnapStep) * this.gizmoSnapStep;
 	}
 
 	function onSceneEvents(e: hxd.Event) : Void {

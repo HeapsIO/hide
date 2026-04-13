@@ -3260,7 +3260,7 @@ class SceneEditor {
 
 			gizmo.snap = gizmoSnap;
 
-			gizmo.shoudSnapOnGrid = function() {
+			gizmo.shouldSnap = function() {
 				return this.snapForceOnGrid;
 			}
 

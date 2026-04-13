@@ -11,7 +11,9 @@ class Prefab extends HuiView<{path: String}> {
 
 	static var _ = HuiView.register("prefab", Prefab);
 
-	public static var SNAP_CONFIG_KEY = "editor.snapToggle";
+	public static var GIZMO_SNAP_CONFIG_KEY = "editor.gizmoSnap";
+	public static var GIZMO_SNAP_STEP_CONFIG_KEY = "editor.gizmoSnapStep";
+	public static var GIZMO_SNAP_GRID_CONFIG_KEY = "editor.gizmoSnapOnGrid";
 
 	public function new(_state: Dynamic, ?parent) {
 		super(_state, parent);
@@ -117,13 +119,12 @@ class Prefab extends HuiView<{path: String}> {
 
 		var snapBtn = new HuiToggle();
 		snapBtn.dom.addClass("group-start");
-		snapBtn.toggled = Ide.inst.currentConfig.get(SNAP_CONFIG_KEY, true);
+		snapBtn.toggled = prefabEditor.gizmoShouldSnap;
 		snapBtn.onClick = (_) -> {
-			snapBtn.toggled = !snapBtn.toggled;
-			prefabEditor.setGridVisibility(snapBtn.toggled);
-			Ide.inst.currentConfig.set(SNAP_CONFIG_KEY, snapBtn.toggled);
+			prefabEditor.gizmoShouldSnap = !prefabEditor.gizmoShouldSnap;
+			snapBtn.toggled = prefabEditor.gizmoShouldSnap;
 		}
-		new HuiIcon("grid", snapBtn);
+		new HuiIcon("grid-magnet", snapBtn);
 		widgets.push(snapBtn);
 
 		var snapPopupBtn = new HuiButton();
@@ -131,7 +132,7 @@ class Prefab extends HuiView<{path: String}> {
 		snapPopupBtn.dom.addClass("tiny");
 		new HuiIcon("dropDown", snapPopupBtn);
 		snapPopupBtn.onClick = (_) -> {
-			uiBase.addPopup(new HuiGridSettingsPopup(), { object: Element(snapPopupBtn), directionX: StartInside, directionY: EndOutside });
+			uiBase.addPopup(new HuiGridSettingsPopup(prefabEditor), { object: Element(snapPopupBtn), directionX: StartInside, directionY: EndOutside });
 		}
 		widgets.push(snapPopupBtn);
 
@@ -254,14 +255,29 @@ class HuiGridSettingsPopup extends HuiPopup {
 		<hui-grid-settings-popup class="vertical">
 			<hui-text("Snap settings") id="title"/>
 			<hui-element class="horizontal">
+				<hui-text("Grid Size") class="label"/>
+				<hui-slider step={0.01} min={0} max={100} decimals={2} id="gridSize" class="value"/>
+			</hui-element>
+			<hui-element class="horizontal">
 				<hui-text("Force On Grid") class="label"/>
-				<hui-checkbox class="value"/>
+				<hui-checkbox id="forceOnGrid" class="value"/>
 			</hui-element>
 		</hui-grid-settings-popup>
 
-	public function new(?parent: h2d.Object) {
+	public function new(prefabEditor: HuiPrefabEditor, ?parent: h2d.Object) {
 		super(parent);
 		initComponent();
+
+		forceOnGrid.value = prefabEditor.gizmoForceSnapOnGrid;
+		forceOnGrid.onValueChanged = () -> {
+			prefabEditor.gizmoForceSnapOnGrid = forceOnGrid.value;
+		}
+
+		gridSize.value = prefabEditor.gizmoSnapStep;
+		gridSize.onValueChanged = (_) -> {
+			prefabEditor.gizmoSnapStep = gridSize.value;
+			@:privateAccess prefabEditor.grid.lineSpacing = gridSize.value;
+		};
 	}
 }
 
