@@ -546,6 +546,14 @@ class Ide extends hide.tools.IdeData {
 		layout.init();
 		layout.on('stateChanged', onLayoutChanged);
 
+		// remove dangling RefViewers
+		for (v in views) {
+			if (v.state.componentName == "hide.view.RefViewer") {
+				v.close();
+			}
+		}
+
+
 		getOrInitTarget(Center);
 
 		// register a global shortcut that break in the debugger
