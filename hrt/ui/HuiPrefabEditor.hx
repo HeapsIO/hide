@@ -861,6 +861,7 @@ class HuiPrefabEditor extends HuiElement {
 		viewportAxis = new hrt.tools.ViewportAxis(scene.s3d.camera, cameraController, scene.s2d);
 
 		grid = new hrt.tools.Grid(scene.s3d);
+		grid.visible = hide.Ide.inst.currentConfig.get(hide.view.Prefab.SNAP_CONFIG_KEY, true);
 		gizmo = new hrt.tools.Gizmo(scene.s3d);
 		gizmo.visible = false;
 		registerCommand(gizmoSwitchModeCommand, View, gizmo.switchMode);
@@ -934,6 +935,14 @@ class HuiPrefabEditor extends HuiElement {
 				gizmo.moveToObjects(objs);
 			}, true);
 		};
+	}
+
+	public function setGridVisibility(visible : Bool) {
+		grid?.visible = visible;
+	}
+
+	public function setGridLineSpacing(spacing : Float) {
+		grid?.lineSpacing = spacing;
 	}
 
 	function onSceneEvents(e: hxd.Event) : Void {

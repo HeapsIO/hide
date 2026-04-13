@@ -11,6 +11,8 @@ class Prefab extends HuiView<{path: String}> {
 
 	static var _ = HuiView.register("prefab", Prefab);
 
+	public static var SNAP_CONFIG_KEY = "editor.snapToggle";
+
 	public function new(_state: Dynamic, ?parent) {
 		super(_state, parent);
 		initComponent();
@@ -115,6 +117,12 @@ class Prefab extends HuiView<{path: String}> {
 
 		var snapBtn = new HuiToggle();
 		snapBtn.dom.addClass("group-start");
+		snapBtn.toggled = Ide.inst.currentConfig.get(SNAP_CONFIG_KEY, true);
+		snapBtn.onClick = (_) -> {
+			snapBtn.toggled = !snapBtn.toggled;
+			prefabEditor.setGridVisibility(snapBtn.toggled);
+			Ide.inst.currentConfig.set(SNAP_CONFIG_KEY, snapBtn.toggled);
+		}
 		new HuiIcon("grid", snapBtn);
 		widgets.push(snapBtn);
 
@@ -140,6 +148,52 @@ class Prefab extends HuiView<{path: String}> {
 		};
 		new HuiIcon("question_mark", helpBtn);
 		widgets.push(helpBtn);
+
+		var rulerBtn = new HuiToggle();
+		rulerBtn.onClick = (_) -> {
+			// TODO
+		};
+		new HuiIcon("ruler", rulerBtn);
+		widgets.push(rulerBtn);
+
+		var viewportOverlayBtn = new HuiToggle();
+		viewportOverlayBtn.onClick = (_) -> {
+			// TODO
+		};
+		new HuiIcon("visibility", viewportOverlayBtn);
+		widgets.push(viewportOverlayBtn);
+
+		var viewModesBtn = new HuiButton();
+		viewModesBtn.onClick = (_) -> {
+			// TODO
+		};
+		new HuiText("View Modes", viewModesBtn);
+		new HuiIcon("dropDown", viewModesBtn);
+		widgets.push(viewModesBtn);
+
+		var graphicsFilterBtn = new HuiButton();
+		graphicsFilterBtn.onClick = (_) -> {
+			// TODO
+		};
+		new HuiText("Graphics Filters", graphicsFilterBtn);
+		new HuiIcon("dropDown", graphicsFilterBtn);
+		widgets.push(graphicsFilterBtn);
+
+		var sceneFilterBtn = new HuiButton();
+		sceneFilterBtn.onClick = (_) -> {
+			// TODO
+		};
+		new HuiText("Scene Filters", sceneFilterBtn);
+		new HuiIcon("dropDown", sceneFilterBtn);
+		widgets.push(sceneFilterBtn);
+
+		var renderPropsBtn = new HuiButton();
+		renderPropsBtn.onClick = (_) -> {
+			// TODO
+		};
+		new HuiText("Render Props", renderPropsBtn);
+		new HuiIcon("dropDown", renderPropsBtn);
+		widgets.push(renderPropsBtn);
 
 		return widgets;
 	}
