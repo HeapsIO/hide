@@ -29,6 +29,9 @@ class BackgroundShader extends hxsl.Shader {
 		@param var imgAlpha : Float = 1.0;
 		@param var imgScale : Float = 1.0;
 		@param var imgOffset : Vec2;
+		@param var imgShadow : Vec4;
+		@param var imgShadowOffset : Vec2;
+		@const var useImgShadow: Bool;
 
 		@const @param var useGradient : Bool;
 		@const(4) @param var gradBlendMode : Int;
@@ -148,6 +151,7 @@ class BackgroundShader extends hxsl.Shader {
 				var imgSize = imgTex.size() * tsize * imgScale;
 				var tOffset = imgOffset / imgTex.size();
 
+
 				if(imgScaleMode == 0) // Center
 					tuv = saturate(pos / imgSize + 0.5);
 				else if(imgScaleMode == 1) { // Fit
@@ -160,6 +164,11 @@ class BackgroundShader extends hxsl.Shader {
 				else // Stretch
 					tuv = relPos * 0.5 + 0.5;
 				var c = imgTex.get(imgBounds.xy + tOffset + tuv * tsize) * imgColor;
+
+				if (useImgShadow) {
+					var c = imgTex.get(imgBounds.xy + tOffset + tuv * tsize - imgShadowOffset / imgTex.size()) * imgColor;
+					fillColor = blendMode(fillColor, imgShadow, c.a * imgShadow.a, imgBlendMode);
+				}
 
 				fillColor = blendMode(fillColor, c, imgAlpha * c.a, imgBlendMode);
 			}
@@ -515,6 +524,15 @@ class HuiBackground extends h2d.ScaleGrid implements h2d.domkit.Object {
 	function set_imageBlend(v) { shader.imgBlendMode = cast v; return v; }
 	@:p(bgImageMode) public var imageMode(never, set) : Null<CssParser.BackgroundImageMode>;
 	function set_imageMode(v) { shader.imgScaleMode = cast v; return v; }
+
+	@:p(color) public var imageShadow(never, set) : Int;
+	function set_imageShadow(v) {shader.useImgShadow = true; shader.imgShadow.setColor(v); return v;};
+	@:p(tilePos) public var imageShadowOffset(never, set) : Null<{ p : Int, ?y : Int }>;
+	function set_imageShadowOffset(v) {
+		shader.useImgShadow = true;
+		shader.imgShadowOffset.set(v.p, v.y ?? v.p);
+		return v;
+	};
 
 	@:p(bgGradient) public var gradient(never, set) : { angle: Float, color1: Int, color2: Int };
 	function set_gradient(v) {

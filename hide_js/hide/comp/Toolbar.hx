@@ -21,6 +21,8 @@ typedef ToolDef = {
 	?saveToggleState: Bool, // default to true
 }
 
+//
+
 typedef ToolToggle = {
 	var id : String;
 	var element : Element;
