@@ -101,6 +101,7 @@ class Gizmo extends h3d.scene.Object {
 	var updateFunc: Float -> Void;
 	var rotateAxisShader : RotateAxisShader = new RotateAxisShader();
 	var moving : Bool;
+	var objects = [];
 	var initialAbsPos : h3d.Matrix;
 	var initialRay : h3d.col.Ray;
 	var initialMousePos : h2d.col.Point;
@@ -134,28 +135,24 @@ class Gizmo extends h3d.scene.Object {
 
 
 	public function moveToObjects(objs : Array<h3d.scene.Object>) {
-		var invDefMat = new h3d.Matrix();
-		invDefMat.identity();
-		if (objs[0].defaultTransform != null)
-			invDefMat = objs[0].defaultTransform?.getInverse();
-		var euler = invDefMat.multiplied(objs[0].getAbsPos()).getEulerAngles();
-
-		if ((isLocalTransform || mode == Scale) && objs.length == 1)
-			setRotation(euler.x, euler.y, euler.z);
+		objects = objs;
+		var localEuler = getGizmoLocalRotation();
+		if ((isLocalTransform || mode == Scale) && objects.length == 1)
+			setRotation(localEuler.x, localEuler.y, localEuler.z);
 		else
 			setRotation(0,0,0);
 
 		// Find centroid of objects
 		var centroid = new h3d.col.Point(0, 0, 0);
-		for (o in objs) {
+		for (o in objects) {
 			var p = o.getAbsPos().getPosition();
 			centroid.x += p.x;
 			centroid.y += p.y;
 			centroid.z += p.z;
 		}
-		centroid.x /= objs.length;
-		centroid.y /= objs.length;
-		centroid.z /= objs.length;
+		centroid.x /= objects.length;
+		centroid.y /= objects.length;
+		centroid.z /= objects.length;
 
 		setPosition(centroid.x, centroid.y, centroid.z);
 	}
@@ -187,6 +184,11 @@ class Gizmo extends h3d.scene.Object {
 		}
 
 		mode = Translation;
+		var localEuler = getGizmoLocalRotation();
+		if (isLocalTransform)
+			setRotation(localEuler.x, localEuler.y, localEuler.z);
+		else
+			setRotation(0, 0, 0);
 		onChangeMode(mode);
 	}
 
@@ -197,6 +199,11 @@ class Gizmo extends h3d.scene.Object {
 		}
 
 		mode = Rotation;
+		var localEuler = getGizmoLocalRotation();
+		if (isLocalTransform)
+			setRotation(localEuler.x, localEuler.y, localEuler.z);
+		else
+			setRotation(0, 0, 0);
 		onChangeMode(mode);
 	}
 
@@ -208,6 +215,8 @@ class Gizmo extends h3d.scene.Object {
 			o.visible = visible;
 		}
 		mode = Scale;
+		var localEuler = getGizmoLocalRotation();
+		setRotation(localEuler.x, localEuler.y, localEuler.z);
 		onChangeMode(mode);
 	}
 
@@ -425,6 +434,18 @@ class Gizmo extends h3d.scene.Object {
 		}
 
 		return obj.primitive.getCollider();
+	}
+
+	function getGizmoLocalRotation() {
+		var euler = new h3d.Vector(0, 0, 0);
+		if (objects == null || objects.length <= 0)
+			return euler;
+		var invDefMat = new h3d.Matrix();
+		invDefMat.identity();
+		if (objects[0].defaultTransform != null)
+			invDefMat = objects[0].defaultTransform?.getInverse();
+		euler = invDefMat.multiplied(objects[0].getAbsPos()).getEulerAngles();
+		return euler;
 	}
 
 	public dynamic function snap(v: Float, mode: EditMode) : Float { return v; }
