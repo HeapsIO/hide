@@ -893,6 +893,7 @@ class HuiPrefabEditor extends HuiElement {
 		registerCommand(gizmoScaleCommand, View, gizmo.scalingMode);
 
 		var initialTransform = new h3d.Matrix();
+		var initialAbs = new h3d.Matrix();
 		var obj3ds : Array<hrt.prefab.Object3D> = [];
 		gizmo.shouldSnap = () -> { return this.gizmoShouldSnap; };
 		gizmo.snap = (v: Float, mode: hrt.tools.Gizmo.EditMode) -> {
@@ -912,8 +913,10 @@ class HuiPrefabEditor extends HuiElement {
 					continue;
 				obj3ds.push(o);
 			}
-			if (obj3ds.length > 0)
+			if (obj3ds.length > 0) {
 				initialTransform.load(obj3ds[0].getTransform());
+				initialAbs.load(obj3ds[0].getAbsPos(true));
+			}
 		};
 
 		gizmo.onMove = (offsetPosition, offsetRotation, offsetScale) -> {
@@ -921,29 +924,38 @@ class HuiPrefabEditor extends HuiElement {
 				return;
 
 			var obj3d = obj3ds[0];
+			
+			// Transform offsets in local coordinates
+			var inv = initialAbs.getInverse();
+			var euler = inv.getEulerAngles();
+			var rmat = h3d.Matrix.R(euler.x, euler.y, euler.z);
+			var parentAbs = initialAbs.multiplied(initialTransform.getInverse());
+			var parentInv = parentAbs.getInverse();
+			var parentEuler = parentInv.getEulerAngles();
+			var parentRMat = h3d.Matrix.R(parentEuler.x, parentEuler.y, parentEuler.z);
+
 			if (offsetRotation != null) {
-				var euler = offsetRotation.toMatrix().getEulerAngles();
+				var rot = offsetRotation.toMatrix();//.multiplied(parentRMat)
+				var euler = rot.getEulerAngles();
+				euler.transform(parentRMat);
 				obj3d.rotationX = hxd.Math.radToDeg(initialTransform.getEulerAngles().x) + hxd.Math.radToDeg(euler.x);
 				obj3d.rotationY = hxd.Math.radToDeg(initialTransform.getEulerAngles().y) + hxd.Math.radToDeg(euler.y);
 				obj3d.rotationZ = hxd.Math.radToDeg(initialTransform.getEulerAngles().z) + hxd.Math.radToDeg(euler.z);
 			}
 
 			if (offsetPosition != null) {
+				offsetPosition.transform(parentRMat);
 				obj3d.x = initialTransform.getPosition().x + offsetPosition.x;
 				obj3d.y = initialTransform.getPosition().y + offsetPosition.y;
 				obj3d.z = initialTransform.getPosition().z + offsetPosition.z;
 			}
 
 			if (offsetScale != null) {
-				var transform = initialTransform.clone();
-				transform.prependScale(offsetScale.x, offsetScale.y, offsetScale.z);
-				obj3d.scaleX = transform.getScale().x;
-				obj3d.scaleY = transform.getScale().y;
-				obj3d.scaleZ = transform.getScale().z;
+				offsetScale.transform(rmat);
+				obj3d.scaleX = initialTransform.getScale().x + offsetScale.x;
+				obj3d.scaleY = initialTransform.getScale().y + offsetScale.y;
+				obj3d.scaleZ = initialTransform.getScale().z + offsetScale.z;
 			}
-
-			// if (!gizmo.isLocalTransform)
-			// 	transform.multiplied(initialTransform.getInverse());
 
 			obj3d.applyTransform();
 			inspectorRoot?.refreshFields();

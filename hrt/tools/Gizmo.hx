@@ -81,7 +81,7 @@ class Gizmo extends h3d.scene.Object {
 	}
 
 	public var onStartMove : Handle -> Void;
-	public var onMove : (offsetPosition: h3d.Vector, offsetRotation: h3d.Quat, offsetScale: h3d.Vector) -> Void;
+	public var onMove : (offsetPosition: h3d.Vector, offsetRotation: h3d.Quat, offsetScale: h3d.Vector) -> Void; // Offsets are in absolute coordinates
 	public var onFinishMove : Void -> Void;
 
 	var window(get, never) : hxd.Window;
@@ -318,8 +318,8 @@ class Gizmo extends h3d.scene.Object {
 							delta = delta.dot(axis) * axis;
 						delta = delta.transformed3x3(initialRotation.toMatrix().getInverse());
 						deltaScale = new h3d.Vector(snap((delta.x * 0.5) + 1, mode), snap((delta.y * 0.5) + 1, mode), snap((delta.z * 0.5) + 1, mode));
+						// deltaScale = new h3d.Vector(snap(delta.x, mode), snap(delta.y, mode), snap(delta.z, mode));
 					}
-
 			}
 
 			onMove(deltaPosition, deltaRotation, deltaScale);
