@@ -61,8 +61,8 @@ class Threshold extends h3d.shader.ScreenShader {
 		@param var strength : Float;
 
 		function fragment() {
-			var curVal = max(hdr.get(calculatedUV).rgb - threshold, 0.0) * intensity;
-			pixelColor.rgb = min(curVal, maxIntensity);
+			var curVal = min(max(hdr.get(calculatedUV).rgb - threshold, 0.0) * intensity, maxIntensity);
+			pixelColor.rgb = curVal;
 
 			if( USE_TEMPORAL_FILTER ) {
 				var pixelPos = vec4(uvToScreen(calculatedUV), 1, 1) * cameraInverseViewProj;
@@ -71,7 +71,7 @@ class Threshold extends h3d.shader.ScreenShader {
 				prevPos.xyz /= max(prevPos.w, 1e-16);
 				var prevUV = screenToUv(prevPos.xy);
 				var blendStrengh = strength * ceil(1 - max(abs(prevPos.x), abs(prevPos.y)));
-				var prevVal = prev.get(prevUV).rgb;
+				var prevVal = min(prev.get(prevUV).rgb, maxIntensity);
 				pixelColor.rgb = mix(curVal, prevVal, blendStrengh);
 			}
 		}
