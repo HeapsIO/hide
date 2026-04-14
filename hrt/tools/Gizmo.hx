@@ -101,7 +101,7 @@ class Gizmo extends h3d.scene.Object {
 	var updateFunc: Float -> Void;
 	var rotateAxisShader : RotateAxisShader = new RotateAxisShader();
 	var moving : Bool;
-	var objects = [];
+	var objects : Array<h3d.scene.Object> = [];
 	var initialAbsPos : h3d.Matrix;
 	var initialRay : h3d.col.Ray;
 	var initialMousePos : h2d.col.Point;
