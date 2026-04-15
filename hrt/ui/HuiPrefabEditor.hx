@@ -924,40 +924,32 @@ class HuiPrefabEditor extends HuiElement {
 				return;
 
 			var obj3d = obj3ds[0];
-			
-			// Transform offsets in local coordinates
-			var inv = initialAbs.getInverse();
-			var euler = inv.getEulerAngles();
-			var rmat = h3d.Matrix.R(euler.x, euler.y, euler.z);
-			var parentAbs = initialAbs.multiplied(initialTransform.getInverse());
+			var parent3d = Std.downcast(obj3d.parent, hrt.prefab.Object3D);
+			var parentAbs = parent3d != null ? parent3d.getAbsPos(true) : h3d.Matrix.I();
 			var parentInv = parentAbs.getInverse();
-			var parentEuler = parentInv.getEulerAngles();
-			var parentRMat = h3d.Matrix.R(parentEuler.x, parentEuler.y, parentEuler.z);
+
+			var trs = new h3d.Matrix();
+			trs.identity();
 
 			if (offsetRotation != null) {
-				var rot = offsetRotation.toMatrix();//.multiplied(parentRMat)
-				var euler = rot.getEulerAngles();
-				euler.transform(parentRMat);
-				obj3d.rotationX = hxd.Math.radToDeg(initialTransform.getEulerAngles().x) + hxd.Math.radToDeg(euler.x);
-				obj3d.rotationY = hxd.Math.radToDeg(initialTransform.getEulerAngles().y) + hxd.Math.radToDeg(euler.y);
-				obj3d.rotationZ = hxd.Math.radToDeg(initialTransform.getEulerAngles().z) + hxd.Math.radToDeg(euler.z);
+				offsetRotation.toMatrix(trs);
+				var t = initialAbs.getPosition();
+				trs.prependTranslation(-t.x, -t.y, -t.z);
+				trs.translate(t.x, t.y, t.z);
 			}
 
-			if (offsetPosition != null) {
-				offsetPosition.transform(parentRMat);
-				obj3d.x = initialTransform.getPosition().x + offsetPosition.x;
-				obj3d.y = initialTransform.getPosition().y + offsetPosition.y;
-				obj3d.z = initialTransform.getPosition().z + offsetPosition.z;
-			}
+			if (offsetPosition != null)
+				trs.translate(offsetPosition.x, offsetPosition.y, offsetPosition.z);
 
-			if (offsetScale != null) {
-				offsetScale.transform(rmat);
-				obj3d.scaleX = initialTransform.getScale().x + offsetScale.x;
-				obj3d.scaleY = initialTransform.getScale().y + offsetScale.y;
-				obj3d.scaleZ = initialTransform.getScale().z + offsetScale.z;
-			}
+			trs.multiply(initialAbs, trs);
+			trs.multiply(trs, parentInv);
 
+			if (offsetScale != null)
+				trs.prependScale(offsetScale.x, offsetScale.y, offsetScale.z);
+
+			obj3d.setTransform(trs);
 			obj3d.applyTransform();
+
 			inspectorRoot?.refreshFields();
 		};
 

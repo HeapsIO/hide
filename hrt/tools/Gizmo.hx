@@ -81,7 +81,9 @@ class Gizmo extends h3d.scene.Object {
 	}
 
 	public var onStartMove : Handle -> Void;
-	public var onMove : (offsetPosition: h3d.Vector, offsetRotation: h3d.Quat, offsetScale: h3d.Vector) -> Void; // Offsets are in absolute coordinates
+	// offsetPosition & offsetRotation are in absolute coordinates
+	// offsetScale is in local coordinate
+	public var onMove : (offsetPosition: h3d.Vector, offsetRotation: h3d.Quat, offsetScale: h3d.Vector) -> Void;
 	public var onFinishMove : Void -> Void;
 
 	var window(get, never) : hxd.Window;
