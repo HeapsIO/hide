@@ -704,6 +704,65 @@ class KitTest extends Object3D {
 				line.addDecorationLeft(button);
 			}
 		}
+
+
+
+		// This is just to test the the reworked Object3D.getAbsPos api
+
+		function testAbsPos() {
+			var abs = getAbsPos(true);
+			var abs2 = local3d.getAbsPos();
+			var flt = abs.getFloats();
+			var flt2 = abs2.getFloats();
+			var eq = true;
+			for (i => f in flt) {
+				if (hxd.Math.abs(f - flt2[i]) > 0.00001) {
+					eq = false;
+					break;
+				}
+			}
+			if (eq) {
+				trace("Ok");
+			} else {
+				trace("Error");
+				trace(abs);
+				trace(abs2);
+			}
+		}
+
+		function testRelTransform() {
+			var abs = getRelativeTransform(parent?.parent, true);
+
+			var abs2 = local3d.getAbsPos();
+			var grandPa = parent?.parent?.to(Object3D);
+			var root = grandPa?.local3d.getAbsPos() ?? h3d.Matrix.I();
+			root.invert();
+			abs2.multiply(abs2, root);
+
+			var flt = abs.getFloats();
+			var flt2 = abs2.getFloats();
+			var eq = true;
+			for (i => f in flt) {
+				if (hxd.Math.abs(f - flt2[i]) > 0.00001) {
+					eq = false;
+					break;
+				}
+			}
+			if (eq) {
+				trace("Ok");
+			} else {
+				trace("Error");
+				trace(abs);
+				trace(abs2);
+			}
+		}
+
+		ctx.build(
+			<category("Abs pos")>
+				<button("getAbsPos") onClick={testAbsPos}/>
+				<button("getRelativeTransform") onClick={testRelTransform}/>
+			</category>
+		);
 	}
 
 	@:keep

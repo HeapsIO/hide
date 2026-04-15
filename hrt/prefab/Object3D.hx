@@ -202,6 +202,17 @@ class Object3D extends Prefab {
 	}
 
 	public function getAbsPos( followRefs : Bool = false ) {
+		return getRelativeTransform(null, followRefs);
+	}
+
+	static var tmpRelTransformMat = new h3d.Matrix();
+	/**
+		Return the relative transform between this and to prefab. To must be a parent of this object. Pass null to the the AbsPos of the object
+	**/
+	public function getRelativeTransform(to: hrt.prefab.Prefab, ?matrix: h3d.Matrix, followRefs : Bool = false) {
+		if (matrix == null)
+			matrix = new h3d.Matrix();
+
 		inline function getParent( p : Prefab ) {
 			var parent = p.parent;
 			if( parent == null && followRefs )
@@ -209,18 +220,20 @@ class Object3D extends Prefab {
 			return parent;
 		}
 		var p = getParent(this);
-		while( p != null ) {
+		while( p != null && p != to ) {
 			var obj = p.to(Object3D);
 			if( obj == null ) {
 				p = getParent(p);
 				continue;
 			}
-			var m = getTransform();
-			var abs = obj.getAbsPos(followRefs);
-			m.multiply3x4(m, abs);
-			return m;
+			var abs = obj.getRelativeTransform(to, matrix, followRefs);
+			var m = getTransform(tmpRelTransformMat);
+			matrix.multiply3x4(m, abs);
+			return matrix;
 		}
-		return getTransform();
+		if (p == null && to != null)
+			throw "to is not a parent of this prefab";
+		return getTransform(matrix);
 	}
 
 	/**
