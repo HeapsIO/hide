@@ -320,7 +320,6 @@ class Gizmo extends h3d.scene.Object {
 							delta = delta.dot(axis) * axis;
 						delta = delta.transformed3x3(initialRotation.toMatrix().getInverse());
 						deltaScale = new h3d.Vector(snap((delta.x * 0.5) + 1, mode), snap((delta.y * 0.5) + 1, mode), snap((delta.z * 0.5) + 1, mode));
-						// deltaScale = new h3d.Vector(snap(delta.x, mode), snap(delta.y, mode), snap(delta.z, mode));
 					}
 			}
 

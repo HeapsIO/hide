@@ -897,12 +897,11 @@ class HuiPrefabEditor extends HuiElement {
 		var obj3ds : Array<hrt.prefab.Object3D> = [];
 		gizmo.shouldSnap = () -> { return this.gizmoShouldSnap; };
 		gizmo.snap = (v: Float, mode: hrt.tools.Gizmo.EditMode) -> {
-			if (!gizmo.shouldSnap())
+			if ((!gizmo.shouldSnap() && !hxd.Key.isDown(hxd.Key.CTRL)) || mode.match(hrt.tools.Gizmo.EditMode.Rotation))
 				return v;
 			v = hxd.Math.round(v / this.gizmoSnapStep) * this.gizmoSnapStep;
 			if (!gizmoForceSnapOnGrid)
 				return v;
-			// Force on grid should receive abs value to work here
 			return hxd.Math.round(v / this.grid.lineSpacing) * this.grid.lineSpacing;
 		};
 		gizmo.onStartMove = (handle : hrt.tools.Gizmo.Handle) -> {
@@ -942,6 +941,16 @@ class HuiPrefabEditor extends HuiElement {
 				trs.translate(offsetPosition.x, offsetPosition.y, offsetPosition.z);
 
 			trs.multiply(initialAbs, trs);
+
+			if (gizmo.shouldSnap() && gizmoForceSnapOnGrid) {
+				var p = trs.getPosition();
+				p.x = hxd.Math.round(p.x / grid.lineSpacing) * grid.lineSpacing;
+				p.y = hxd.Math.round(p.y / grid.lineSpacing) * grid.lineSpacing;
+				p.z = hxd.Math.round(p.z / grid.lineSpacing) * grid.lineSpacing;
+				trs.setPosition(p);
+				gizmo.setPosition(p.x, p.y, p.z);
+			}
+
 			trs.multiply(trs, parentInv);
 
 			if (offsetScale != null)
