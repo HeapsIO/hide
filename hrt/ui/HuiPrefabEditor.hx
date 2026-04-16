@@ -36,6 +36,8 @@ class HuiPrefabEditor extends HuiElement {
 	static public var gizmoTranslateCommand = new hrt.ui.HuiCommands.HuiCommand("Paste", {key: hxd.Key.W});
 	static public var gizmoRotateCommand = new hrt.ui.HuiCommands.HuiCommand("Save", {key: hxd.Key.E});
 	static public var gizmoScaleCommand = new hrt.ui.HuiCommands.HuiCommand("Cut", {key: hxd.Key.R});
+	static public var focusCommand = new hrt.ui.HuiCommands.HuiCommand("Focus Selection", {key: hxd.Key.F});
+
 
 	public var gizmoShouldSnap(default, set) : Bool = true;
 	public function set_gizmoShouldSnap(v : Bool) {
@@ -77,6 +79,8 @@ class HuiPrefabEditor extends HuiElement {
 	var lastPushY : Float = -100;
 	var movedSinceLastPush : Bool = false;
 
+	var lastFocusObjects: Array<h3d.scene.Object> = [];
+
 	var inspectorRoot : hide.kit.KitRoot;
 
 	// Debugs
@@ -100,7 +104,11 @@ class HuiPrefabEditor extends HuiElement {
 			setSelection(treePrefab.getSelectedItems(), NoRefreshTree);
 		}
 		treePrefab.onItemContextMenu = contextMenu;
-		treePrefab.onItemDoubleClick = (_, prefab) -> renamePrefab(prefab);
+		treePrefab.onItemDoubleClick = (_, prefab) -> {
+			var obj = prefab.findFirstLocal3d();
+			if (obj != null)
+				focusObjects([obj]);
+		};
 
 		treePrefab.dragAndDropInterface = {
 			onDragStart: function(p: hrt.prefab.Prefab): Void {
@@ -155,6 +163,7 @@ class HuiPrefabEditor extends HuiElement {
 		});
 
 		registerCommand(hrt.ui.HuiCommands.delete, View, () -> getView().undo.run(actionRemovePrefabs([for (p => _ in selectedPrefabs) p]), true));
+		registerCommand(focusCommand, View, () -> focusSelection());
 
 		debugGraph = new h2d.Graphics(scene.s2d);
 
@@ -390,6 +399,7 @@ class HuiPrefabEditor extends HuiElement {
 		entries.push({label: "Add Child Prefab", menu: createPrefabMenu((cl) -> getView().undo.run(makePrefabAction(target, target.children.length, cl), true))});
 		entries.push(HuiMenu.itemFromCommand(HuiCommands.rename, this));
 		entries.push(HuiMenu.itemFromCommand(HuiCommands.delete, this));
+		entries.push(HuiMenu.itemFromCommand(focusCommand, this));
 
 		uiBase.contextMenu(entries);
 	}
@@ -635,9 +645,16 @@ class HuiPrefabEditor extends HuiElement {
 		tryMake(prefab);
 		makeRenderProps();
 
-		focusObjects([for (i in 0...scene.s3d.numChildren) scene.s3d.getChildAt(i)]);
+		hide.App.defer(resetCamera);
 
 		updateDebugOverlayVisibility();
+	}
+
+	function resetCamera() {
+		cameraController.set(20.0);
+		var objs = prefab.shared.root3d.findAll((f) -> f);
+		focusObjects(objs);
+		lastFocusObjects = [];
 	}
 
 	function getRenderPropsPaths() : Array<{name: String, value: String}> {
@@ -657,12 +674,12 @@ class HuiPrefabEditor extends HuiElement {
 
 	public function focusObjects(objs : Array<h3d.scene.Object>) {
 		var focusChanged = false;
-		// for (o in objs) {
-		// 	if (!lastFocusObjects.contains(o)) {
-		// 		focusChanged = true;
-		// 		break;
-		// 	}
-		// }
+		for (o in objs) {
+			if (!lastFocusObjects.contains(o)) {
+				focusChanged = true;
+				break;
+			}
+		}
 
 		if(objs.length > 0) {
 			var bnds = new h3d.col.Bounds();
@@ -681,7 +698,21 @@ class HuiPrefabEditor extends HuiElement {
 				cameraController.set(centroid.toPoint());
 			}
 		}
-		//lastFocusObjects = objs;
+		lastFocusObjects = objs;
+	}
+
+	public function focusSelection() {
+		var objects = [];
+		for (prefab => _ in selectedPrefabs) {
+			var object3d = prefab.findFirstLocal3d();
+			if (object3d != null)
+				objects.push(object3d);
+		}
+		if (objects.length == 0) {
+			resetCamera();
+		} else {
+			focusObjects(objects);
+		}
 	}
 
 
