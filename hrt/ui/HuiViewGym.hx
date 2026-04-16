@@ -329,7 +329,7 @@ class GymWidgets extends HuiElement {
 			scene.s3d.renderer = h3d.mat.MaterialSetup.current.createRenderer();
 			scene.s3d.lightSystem = h3d.mat.MaterialSetup.current.createLightSystem();
 
-			var cameraController = new h3d.scene.CameraController(scene.s3d);
+			var cameraController = new h3d.scene.CameraController.OrbitCameraController(scene.s3d);
 			var box = new h3d.scene.Box(0xFFFFFFFF, scene.s3d);
 			var text = new h2d.Text(hxd.res.DefaultFont.get(), scene.s2d);
 			text.text = "hello world";

@@ -478,7 +478,7 @@ class Image extends FileView {
 			sp.material.texture = compressedTexture;
 			sp.material.mainPass.addShader(shader);
 			sp.material.shadows = false;
-			this.cam = new h3d.scene.CameraController(5,scene.s3d);
+			this.cam = new h3d.scene.CameraController.OrbitCameraController(scene.s3d);
 		}
 
 		if( compressedTexture.flags.has(MipMapped) ) {

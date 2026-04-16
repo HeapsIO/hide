@@ -11,7 +11,6 @@ class CameraControllerBase extends h3d.scene.CameraController {
 		super(null, parent);
 	}
 
-	public var wantedFOV = 60.0;
 	public var camSpeed = 1.0;
 
 	public var zNear = 0.1;
@@ -53,12 +52,6 @@ class CameraControllerBase extends h3d.scene.CameraController {
 		data.snapToGround = snapToGround;
 	}
 
-	function offset(pt:h3d.Vector) {
-		targetOffset.x -= pt.x;
-		targetOffset.y -= pt.y;
-		targetOffset.z -= pt.z;
-	}
-
 	override function onEvent( e : hxd.Event ) {
 		var p : h3d.scene.Object = this;
 		while( p != null ) {
@@ -75,20 +68,10 @@ class CameraControllerBase extends h3d.scene.CameraController {
 
 		onEventInternal(e);
 	}
-
-	public dynamic function onCustomEvent(e: hxd.Event) {
-
-	}
-
-	function onEventInternal(e: hxd.Event) {
-
-	}
-
 }
 
 class OrthoController extends CameraControllerBase {
 	public var groundSnapAngle = hxd.Math.degToRad(30);
-	var startPush : h2d.col.Point;
 	var moveCount = 0;
 
 	public var orthoZBounds : Float = 4.0;
@@ -250,8 +233,6 @@ class OrthoController extends CameraControllerBase {
 }
 
 class FPSController extends CameraControllerBase {
-	var startPush : h2d.col.Point;
-
 	override function loadSettings(data : Dynamic) : Void {
 		super.loadSettings(data);
 		var cam = sceneEditor.scene.s3d.camera;
@@ -383,7 +364,6 @@ class FPSController extends CameraControllerBase {
 
 class CamController extends CameraControllerBase {
 	public var groundSnapAngle = hxd.Math.degToRad(30);
-	var startPush : h2d.col.Point;
 	var moveCount = 0;
 
 	override function loadSettings(data : Dynamic) : Void {
@@ -532,8 +512,6 @@ class CamController extends CameraControllerBase {
 }
 
 class FlightController extends CameraControllerBase {
-	var startPush : h2d.col.Point;
-
 	var currentFlightPos : h3d.Vector = new h3d.Vector();
 	var currentFlightRot : h3d.Quat = new h3d.Quat();
 

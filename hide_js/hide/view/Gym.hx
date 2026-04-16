@@ -180,7 +180,7 @@ class Gym extends hide.ui.View<{}> {
 					scene = new hide.comp.Scene(config, container, null);
 
 					scene.onReady = () -> {
-						new h3d.scene.CameraController(scene.s3d);
+						new h3d.scene.CameraController.OrbitCameraController(scene.s3d);
 						var box = new h3d.scene.Box(scene.s3d);
 						box.material.mainPass.setPassName("overlay");
 

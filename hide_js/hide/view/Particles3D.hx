@@ -171,7 +171,7 @@ class Particles3D extends FileView {
 		haxe.Timer.delay(function() {
 			scene.resetCamera(2);
 		}, 0);
-		new h3d.scene.CameraController(scene.s3d).loadFromCamera();
+		new h3d.scene.CameraController.OrbitCameraController(scene.s3d).loadFromCamera();
 		scene.init();
 
 		tf = new h2d.Text(hxd.res.DefaultFont.get(), scene.s2d);

@@ -138,11 +138,7 @@ class Gizmo extends h3d.scene.Object {
 
 	public function moveToObjects(objs : Array<h3d.scene.Object>) {
 		objects = objs;
-		var localEuler = getGizmoLocalRotation();
-		if ((isLocalTransform || mode == Scale) && objects.length == 1)
-			setRotation(localEuler.x, localEuler.y, localEuler.z);
-		else
-			setRotation(0,0,0);
+		updateTransformSpace();
 
 		// Find centroid of objects
 		var centroid = new h3d.col.Point(0, 0, 0);
@@ -186,11 +182,7 @@ class Gizmo extends h3d.scene.Object {
 		}
 
 		mode = Translation;
-		var localEuler = getGizmoLocalRotation();
-		if (isLocalTransform)
-			setRotation(localEuler.x, localEuler.y, localEuler.z);
-		else
-			setRotation(0, 0, 0);
+		updateTransformSpace();
 		onChangeMode(mode);
 	}
 
@@ -201,11 +193,7 @@ class Gizmo extends h3d.scene.Object {
 		}
 
 		mode = Rotation;
-		var localEuler = getGizmoLocalRotation();
-		if (isLocalTransform)
-			setRotation(localEuler.x, localEuler.y, localEuler.z);
-		else
-			setRotation(0, 0, 0);
+		updateTransformSpace();
 		onChangeMode(mode);
 	}
 
@@ -217,9 +205,16 @@ class Gizmo extends h3d.scene.Object {
 			o.visible = visible;
 		}
 		mode = Scale;
-		var localEuler = getGizmoLocalRotation();
-		setRotation(localEuler.x, localEuler.y, localEuler.z);
+		updateTransformSpace();
 		onChangeMode(mode);
+	}
+
+	public function updateTransformSpace() {
+		var localEuler = getGizmoLocalRotation();
+		if (isLocalTransform || mode.match(Scale))
+			setRotation(localEuler.x, localEuler.y, localEuler.z);
+		else
+			setRotation(0, 0, 0);
 	}
 
 
