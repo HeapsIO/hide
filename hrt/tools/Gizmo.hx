@@ -314,6 +314,18 @@ class Gizmo extends h3d.scene.Object {
 						if (axis != null)
 							delta = delta.dot(axis) * axis;
 						delta = delta.transformed3x3(initialRotation.toMatrix().getInverse());
+						if (handle == XYPlane) {
+							var max = Math.abs(delta.x) > Math.abs(delta.y) ? delta.x : delta.y;
+							delta.x = delta.y = max;
+						}
+						if (handle == XZPlane) {
+							var max = Math.abs(delta.x) > Math.abs(delta.z) ? delta.x : delta.z;
+							delta.x = delta.z = max;
+						}
+						if (handle == YZPlane) {
+							var max = Math.abs(delta.y) > Math.abs(delta.z) ? delta.y : delta.z;
+							delta.y = delta.z = max;
+						}
 						deltaScale = new h3d.Vector(snap((delta.x * 0.5) + 1, mode), snap((delta.y * 0.5) + 1, mode), snap((delta.z * 0.5) + 1, mode));
 					}
 			}
