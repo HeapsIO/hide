@@ -450,9 +450,9 @@ class Gizmo extends h3d.scene.Object {
 			return euler;
 		var invDefMat = new h3d.Matrix();
 		invDefMat.identity();
-		if (objects[0].defaultTransform != null)
-			invDefMat = objects[0].defaultTransform?.getInverse();
-		euler = invDefMat.multiplied(objects[0].getAbsPos()).getEulerAngles();
+		if (objects[objects.length - 1].defaultTransform != null)
+			invDefMat = objects[objects.length - 1].defaultTransform?.getInverse();
+		euler = invDefMat.multiplied(objects[objects.length - 1].getAbsPos()).getEulerAngles();
 		return euler;
 	}
 
