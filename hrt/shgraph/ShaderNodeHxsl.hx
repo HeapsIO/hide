@@ -157,6 +157,7 @@ class ShaderNodeHxsl extends ShaderNode {
 
 	override public function generate(ctx: NodeGenContext) : Void {
 		var cl = std.Type.getClass(this);
+		var shortName = std.Type.getClassName(cl).split(".").pop();
 		var cache = MapUtils.getOrPut(cache, cast cl, genCache(cl));
 
 		var infos : Map<Int, SgHxslVar> = cast (cl:Dynamic)._variablesInfos;
@@ -164,6 +165,10 @@ class ShaderNodeHxsl extends ShaderNode {
 		var varsRemap : Map<Int, TVar> = [];
 		var outputs : Array<TVar> = [];
 		var genFailure : Bool = false;
+
+		inline function getVarName(name: String) {
+			return '${shortName}_${id}_$name';
+		}
 
 		function patch(e: TExpr) : TExpr {
 			switch (e.e) {
@@ -205,7 +210,7 @@ class ShaderNodeHxsl extends ShaderNode {
 							var t = ctx.getType(cache.outputs[outputId].type);
 
 							var outputVar : TVar= {
-								name: v.name,
+								name: getVarName(v.name),
 								id: hxsl.Ast.Tools.allocVarId(),
 								type: t,
 								kind: v.kind,
@@ -236,7 +241,7 @@ class ShaderNodeHxsl extends ShaderNode {
 				case TVarDecl(v, init):
 					var tvar = MapUtils.getOrPut(varsRemap, v.id,
 						{
-							name: v.name,
+							name: getVarName(v.name),
 							id: hxsl.Ast.Tools.allocVarId(),
 							type: v.type,
 							kind: v.kind,
@@ -247,7 +252,7 @@ class ShaderNodeHxsl extends ShaderNode {
 				case TFor(v, it, loop):
 					var tvar = MapUtils.getOrPut(varsRemap, v.id,
 						{
-							name: v.name,
+							name: getVarName(v.name),
 							id: hxsl.Ast.Tools.allocVarId(),
 							type: v.type,
 							kind: v.kind,
