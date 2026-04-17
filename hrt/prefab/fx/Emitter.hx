@@ -1737,8 +1737,8 @@ class Emitter extends Object3D {
 
 	override function load( obj : Dynamic ) {
 		super.load(obj);
-		for(param in emitterParams) {
-			if(Reflect.hasField(obj.props, param.name)) {
+		for (param in emitterParams) {
+			if (Reflect.hasField(obj.props, param.name)) {
 				var val : Dynamic = Reflect.field(obj.props, param.name);
 				switch(param.t) {
 					case PEnum(en):
@@ -1753,9 +1753,16 @@ class Emitter extends Object3D {
 						#end
 					default:
 				}
-				Reflect.setField(props, param.name, val);
+				// Negative warmup time is an old verison of delay
+				if (param.name == "warmUpTime" && val < 0) {
+					Reflect.setField(props, "delay", hxd.Math.abs(val));
+					Reflect.deleteField(props, "warmUpTime");
+				}
+				else {
+					Reflect.setField(props, param.name, val);
+				}
 			}
-			else if(param.def != null)
+			else if (param.def != null)
 				EmitterHelper.resetParam(props, param);
 			else if (param.name == "randomGradient")
 				(props:Dynamic).randomGradient = Gradient.getDefaultGradientData();
