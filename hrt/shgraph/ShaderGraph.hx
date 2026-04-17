@@ -780,6 +780,53 @@ class ShaderGraph extends hrt.prefab.Prefab {
 	public function getGraph(domain: Domain) {
 		return graphs[domain.getIndex()];
 	}
+
+	#if editor
+	static var removeFnRegex = ~/@function var.*$/gm;
+	static var trimWhitepsaceStart = ~/^\s*/;
+	static var trimWhitepsaceEnd = ~/\s*$/;
+	static var removeLocal = ~/@local\s*/gm;
+
+	static public function convertToHXLS(shgraphPath: String, hxslPath: String) {
+ 		var shaderGraph = Std.downcast(hide.Ide.inst.loadPrefab(shgraphPath, null,  true), hrt.shgraph.ShaderGraph);
+
+		var hxslPathSanitised = StringTools.replace(hxslPath, "\\", "/");
+		var path = hxslPathSanitised.split("/");
+		var className = path.pop().split(".").shift();
+		if (!path.contains("src"))
+		{
+			hide.Ide.inst.error("target hx file should be in the src of the project, aborting");
+			return;
+		}
+		while(path.length > 0 && path.shift() != "src") {
+		}
+		var cp = path.join(".");
+
+		var code = hxsl.Printer.shaderToString(shaderGraph.compile(null).shader.data, false);
+		code = removeFnRegex.replace(code, "");
+		code = trimWhitepsaceStart.replace(code, "");
+		code = trimWhitepsaceEnd.replace(code, "");
+		code = removeLocal.replace(code, "");
+		code = code.split("\n").join("\n\t\t");
+
+		var toGen =
+'package $cp;
+
+class $className extends hxsl.Shader {
+	static var SRC = {
+		$code
+	}
+}
+';
+
+		sys.io.File.saveContent(hxslPath, toGen);
+		var oldPath = hide.Ide.inst.makeRelative(shgraphPath);
+		var newPath = path.join("/") + "/" + className + ".hx";
+		if(hide.Ide.inst.confirm('Replace $oldPath with $newPath in the project files ? (Can\'t undo !)')) {
+			hide.tools.FileManager.replacePathInFiles([{from: oldPath, to:  newPath}]);
+		}
+	}
+	#end
 }
 
 class Graph {

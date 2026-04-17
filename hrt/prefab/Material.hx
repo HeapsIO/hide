@@ -887,20 +887,17 @@ class Material extends Prefab {
 				normalMap = f(normalMap);
 				specularMap = f(specularMap);
 
-				if (refMatLib == null)
-					refMatLib = "";
-
-				// handle just the source file of the mat lib being renamed
-				var refPath = refMatLib.substr(0,refMatLib.lastIndexOf("/"));
-				var newPath = f(refPath);
-				if (newPath != refPath) {
-					refMatLib = newPath + refMatLib.substr(refMatLib.lastIndexOf("/"));
-				} else {
-					// handle the whole path being renamed (by sceneEditor.migrateMaterialLibrary)
-					var old = refMatLib;
-					refMatLib = f(refMatLib);
-					if (old != refMatLib)
-						trace("break");
+				if (refMatLib != null) {
+					// handle just the source file of the mat lib being renamed
+					var refPath = refMatLib.substr(0,refMatLib.lastIndexOf("/"));
+					var newPath = f(refPath);
+					if (newPath != refPath) {
+						refMatLib = newPath + refMatLib.substr(refMatLib.lastIndexOf("/"));
+					} else {
+						// handle the whole path being renamed (by sceneEditor.migrateMaterialLibrary)
+						var old = refMatLib;
+						refMatLib = f(refMatLib);
+					}
 				}
 			},
 			allowChildren: function(t) return !Prefab.isOfType(t, Material),

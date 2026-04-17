@@ -1290,6 +1290,21 @@ class FileBrowser extends hide.ui.View<FileBrowserState> {
 					}
 				});
 			}});
+
+			if (StringTools.endsWith(item.path, ".shgraph")) {
+				options.push({ label: "Convert Shadergraph to HXSL", click: () -> {
+					var name = item.name.split(".").shift();
+					ide.chooseFileOptions((paths: Array<String>) -> {
+						if (paths.length > 0) {
+							hrt.shgraph.ShaderGraph.convertToHXLS(item.path, paths[0]);
+						}
+					}, {
+						saveAs: '$name.hx',
+						isAbsolute: true,
+						allowNull: false,
+					});
+				}});
+			}
 		}
 
 		if (!this.favorites.contains(item.getPath())) {
