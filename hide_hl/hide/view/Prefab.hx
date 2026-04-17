@@ -82,25 +82,7 @@ class Prefab extends HuiView<{path: String}> {
 		var widgets : Array<HuiElement> = [];
 
 		widgets.push(new hrt.ui.HuiToolbar.HuiTransformWidgets(@:privateAccess prefabEditor.gizmo));
-
-		var snapBtn = new HuiToggle();
-		snapBtn.dom.addClass("group-start");
-		snapBtn.toggled = prefabEditor.gizmoShouldSnap;
-		snapBtn.onClick = (_) -> {
-			prefabEditor.gizmoShouldSnap = !prefabEditor.gizmoShouldSnap;
-			snapBtn.toggled = prefabEditor.gizmoShouldSnap;
-		}
-		new HuiIcon("grid-magnet", snapBtn);
-		widgets.push(snapBtn);
-
-		var snapPopupBtn = new HuiButton();
-		snapPopupBtn.dom.addClass("group-end");
-		snapPopupBtn.dom.addClass("tiny");
-		new HuiIcon("dropDown", snapPopupBtn);
-		snapPopupBtn.onClick = (_) -> {
-			uiBase.addPopup(new hrt.ui.HuiToolbar.HuiGridSettingsPopup(prefabEditor), { object: Element(snapPopupBtn), directionX: StartInside, directionY: EndOutside });
-		}
-		widgets.push(snapPopupBtn);
+		widgets.push(new hrt.ui.HuiToolbar.SnapWidget(prefabEditor));
 
 		var cameraBtn = new HuiButton();
 		new HuiIcon("camera", cameraBtn);
@@ -115,13 +97,6 @@ class Prefab extends HuiView<{path: String}> {
 		};
 		new HuiIcon("question_mark", helpBtn);
 		widgets.push(helpBtn);
-
-		var rulerBtn = new HuiToggle();
-		rulerBtn.onClick = (_) -> {
-			// TODO
-		};
-		new HuiIcon("ruler", rulerBtn);
-		widgets.push(rulerBtn);
 
 		var viewportOverlayBtn = new HuiToggle();
 		viewportOverlayBtn.onClick = (_) -> {

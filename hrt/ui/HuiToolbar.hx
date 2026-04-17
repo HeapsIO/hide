@@ -60,6 +60,33 @@ class HuiTransformWidgets extends HuiElement {
 	}
 }
 
+class SnapWidget extends HuiElement {
+	static var SRC = <snap-widget>
+		<hui-toggle class="group-start" id="snap-btn">
+			<hui-icon("grid-magnet")/>
+		</hui-toggle>
+		<hui-button class="grup-end tiny" id="snap-popup-btn">
+			<hui-icon("dropDown")/>
+		</hui-button>
+	</snap-widget>
+
+	public function new(editor: HuiPrefabEditor, ?parent : h2d.Object) {
+		super(parent);
+		initComponent();
+
+		snapBtn.toggled = editor.gizmoShouldSnap;
+		snapBtn.onClick = (_) -> {
+			editor.gizmoShouldSnap = !editor.gizmoShouldSnap;
+			snapBtn.toggled = editor.gizmoShouldSnap;
+		}
+
+		snapPopupBtn.onClick = (_) -> {
+			uiBase.addPopup(new hrt.ui.HuiToolbar.HuiGridSettingsPopup(editor), { object: Element(snapPopupBtn), directionX: StartInside, directionY: EndOutside });
+		}
+	}
+}
+
+
 class HuiCameraSettingsPopup extends HuiPopup {
 	static var SRC =
 		<hui-camera-settings-popup class="vertical">
