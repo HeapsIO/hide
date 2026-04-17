@@ -86,7 +86,10 @@ class HuiPrefabEditor extends HuiElement {
 		initComponent();
 
 		errorMessage = new h2d.Text(hxd.res.DefaultFont.get(), scene.s2d);
-		cameraController = new h3d.scene.CameraController.OrbitCameraController(scene.s3d);
+
+		var ctrlClass = h3d.scene.CameraController.getCameraControllersClass()[hide.Ide.inst.currentConfig.get(hide.view.Prefab.CAM_CTRL_CONFIG_KEY, 0)];
+		cameraController = Type.createInstance(ctrlClass, []);
+		scene.s3d.addChild(cameraController);
 
 		treePrefab = new hrt.ui.HuiTree<hrt.prefab.Prefab>(panelTree);
 		treePrefab.getItemChildren = treePrefabGetItemChildren;
@@ -672,11 +675,11 @@ class HuiPrefabEditor extends HuiElement {
 			if(!bnds.isEmpty()) {
 				var s = bnds.toSphere();
 				var r = focusChanged ? null : s.r * 4.0;
-				// cameraController.set(r, null, null, s.getCenter());
+				cameraController.set(r, null, null, s.getCenter());
 			}
 			else {
 				centroid.scale(1.0 / objs.length);
-				// cameraController.set(centroid.toPoint());
+				cameraController.set(centroid.toPoint());
 			}
 		}
 		//lastFocusObjects = objs;
@@ -880,7 +883,7 @@ class HuiPrefabEditor extends HuiElement {
 		gizmo?.remove();
 		viewportAxis?.remove();
 
-		// viewportAxis = new hrt.tools.ViewportAxis(scene.s3d.camera, cameraController, scene.s2d);
+		viewportAxis = new hrt.tools.ViewportAxis(scene.s3d.camera, cameraController, scene.s2d);
 
 		grid = new hrt.tools.Grid(scene.s3d);
 		grid.lineSpacing = this.gizmoSnapStep;

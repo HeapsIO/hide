@@ -15,6 +15,11 @@ class Prefab extends HuiView<{path: String}> {
 	public static var GIZMO_SNAP_STEP_CONFIG_KEY = "editor.gizmoSnapStep";
 	public static var GIZMO_SNAP_GRID_CONFIG_KEY = "editor.gizmoSnapOnGrid";
 
+	public static var CAM_CTRL_CONFIG_KEY = "editor.camera.type";
+	public static var CAM_CTRL_FOV_CONFIG_KEY = "editor.camera.fov";
+	public static var CAM_CTRL_NEAR_CONFIG_KEY = "editor.camera.near";
+	public static var CAM_CTRL_FAR_CONFIG_KEY = "editor.camera.far";
+
 	public function new(_state: Dynamic, ?parent) {
 		super(_state, parent);
 		initComponent();

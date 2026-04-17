@@ -97,7 +97,7 @@ class HuiCameraSettingsPopup extends HuiPopup {
 		var s3d = @:privateAccess editor.scene.s3d;
 
 		camType.items = [ {label: "Orbital", value: 0}, {label: "FPS", value: 1} ];
-		camType.value = Std.isOfType(@:privateAccess editor.cameraController, h3d.scene.CameraController.OrbitCameraController) ? 0 : 1;
+		camType.value = h3d.scene.CameraController.getCameraControllerClassIdx(@:privateAccess editor.cameraController);
 		camType.onValueChanged = () -> {
 			@:privateAccess editor.cameraController = switch (camType.value) {
 				case 0:
@@ -107,6 +107,8 @@ class HuiCameraSettingsPopup extends HuiPopup {
 				default:
 					null;
 			};
+
+			hide.Ide.inst.currentConfig.set(hide.view.Prefab.CAM_CTRL_CONFIG_KEY,  h3d.scene.CameraController.getCameraControllerClassIdx(@:privateAccess editor.cameraController));
 
 			@:privateAccess editor.cameraController.loadFromCamera();
 			zoomDistance.dom.toggleClass("hidden", camType.value != 0);
