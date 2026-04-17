@@ -98,12 +98,7 @@ class Prefab extends HuiView<{path: String}> {
 		new HuiIcon("question_mark", helpBtn);
 		widgets.push(helpBtn);
 
-		var viewportOverlayBtn = new HuiToggle();
-		viewportOverlayBtn.onClick = (_) -> {
-			// TODO
-		};
-		new HuiIcon("visibility", viewportOverlayBtn);
-		widgets.push(viewportOverlayBtn);
+		widgets.push(new hrt.ui.HuiToolbar.VisibilityWidget(prefabEditor));
 
 		var viewModesBtn = new HuiButton();
 		viewModesBtn.onClick = (_) -> {

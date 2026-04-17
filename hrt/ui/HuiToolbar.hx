@@ -86,6 +86,32 @@ class SnapWidget extends HuiElement {
 	}
 }
 
+class VisibilityWidget extends HuiElement {
+	static var SRC = <visibility-widget>
+		<hui-toggle class="group-start" id="visibility-btn">
+			<hui-icon("visibility")/>
+		</hui-toggle>
+		<hui-button class="grup-end tiny" id="visibility-popup-btn">
+			<hui-icon("dropDown")/>
+		</hui-button>
+	</visibility-widget>
+
+	public function new(editor: HuiPrefabEditor, ?parent : h2d.Object) {
+		super(parent);
+		initComponent();
+
+		visibilityBtn.toggled = true;
+		visibilityBtn.onClick = (_) -> {
+			// editor.gizmoShouldSnap = !editor.gizmoShouldSnap;
+			// visibilityBtn.toggled = editor.gizmoShouldSnap;
+		}
+
+		visibilityPopupBtn.onClick = (_) -> {
+			// uiBase.addPopup(new hrt.ui.HuiToolbar.HuiGridSettingsPopup(editor), { object: Element(snapPopupBtn), directionX: StartInside, directionY: EndOutside });
+		}
+	}
+}
+
 
 class HuiCameraSettingsPopup extends HuiPopup {
 	static var SRC =

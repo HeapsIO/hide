@@ -8,7 +8,7 @@ class CameraControllerBase extends h3d.scene.CameraController {
 
 	public function new(parent, sceneEditor) {
 		this.sceneEditor = sceneEditor;
-		super(parent);
+		super(null, parent);
 	}
 
 	public var camSpeed = 1.0;
