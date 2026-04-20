@@ -60,15 +60,15 @@ class HuiTransformWidgets extends HuiElement {
 	}
 }
 
-class SnapWidget extends HuiElement {
-	static var SRC = <snap-widget>
+class HuiSnapWidget extends HuiElement {
+	static var SRC = <hui-snap-widget>
 		<hui-toggle class="group-start" id="snap-btn">
 			<hui-icon("grid-magnet")/>
 		</hui-toggle>
 		<hui-button class="grup-end tiny" id="snap-popup-btn">
 			<hui-icon("dropDown")/>
 		</hui-button>
-	</snap-widget>
+	</hui-snap-widget>
 
 	public function new(editor: HuiPrefabEditor, ?parent : h2d.Object) {
 		super(parent);
@@ -86,15 +86,15 @@ class SnapWidget extends HuiElement {
 	}
 }
 
-class VisibilityWidget extends HuiElement {
-	static var SRC = <visibility-widget>
+class HuiVisibilityWidget extends HuiElement {
+	static var SRC = <hui-visibility-widget>
 		<hui-toggle class="group-start" id="visibility-btn">
 			<hui-icon("visibility")/>
 		</hui-toggle>
 		<hui-button class="grup-end tiny" id="visibility-popup-btn">
 			<hui-icon("dropDown")/>
 		</hui-button>
-	</visibility-widget>
+	</hui-visibility-widget>
 
 	public function new(editor: HuiPrefabEditor, ?parent : h2d.Object) {
 		super(parent);
@@ -102,21 +102,120 @@ class VisibilityWidget extends HuiElement {
 
 		visibilityBtn.toggled = true;
 		visibilityBtn.onClick = (_) -> {
-			// editor.gizmoShouldSnap = !editor.gizmoShouldSnap;
-			// visibilityBtn.toggled = editor.gizmoShouldSnap;
 		}
 
 		visibilityPopupBtn.onClick = (_) -> {
-			// uiBase.addPopup(new hrt.ui.HuiToolbar.HuiGridSettingsPopup(editor), { object: Element(snapPopupBtn), directionX: StartInside, directionY: EndOutside });
+			uiBase.addPopup(new hrt.ui.HuiToolbar.HuiVisibilitySettingsPopup(editor), { object: Element(this), directionX: StartInside, directionY: EndOutside });
 		}
 	}
 }
 
+class HuiVisibilitySettingsPopup extends HuiPopup {
+	static var SRC =
+		<hui-visibility-settings-popup class="vertical">
+			<hui-text("Visibility settings") class="title"/>
+			<hui-text("Guides") class="sub-title"/>
+			<hui-element class="horizontal">
+				<hui-toggle id="grid-tog">
+					<hui-icon("grid")/>
+				</hui-toggle>
+				<hui-text("Grid") class="label"/>
+			</hui-element>
+			<hui-element class="horizontal">
+				<hui-toggle id="bone-tog">
+					<hui-icon("bone")/>
+				</hui-toggle>
+				<hui-text("Joints") class="label"/>
+			</hui-element>
+			<hui-element class="horizontal">
+				<hui-toggle id="collider-tog">
+					<hui-icon("local")/>
+				</hui-toggle>
+				<hui-text("Colliders") class="label"/>
+			</hui-element>
+			<hui-element class="horizontal">
+				<hui-toggle>
+					<hui-icon("question_mark")/>
+				</hui-toggle>
+				<hui-text("Others") class="label"/>
+			</hui-element>
+
+			<hui-text("Sélection") class="sub-title"/>
+			<hui-element class="horizontal">
+				<hui-toggle>
+					<hui-icon("translation")/>
+				</hui-toggle>
+				<hui-text("Gizmo") class="label"/>
+			</hui-element>
+			<hui-element class="horizontal">
+				<hui-toggle>
+					<hui-icon("question_mark")/>
+				</hui-toggle>
+				<hui-text("Outline") class="label"/>
+			</hui-element>
+
+			<hui-text("Debug") class="sub-title"/>
+			<hui-element class="horizontal">
+				<hui-toggle>
+					<hui-icon("info")/>
+				</hui-toggle>
+				<hui-text("Scene info") class="label"/>
+			</hui-element>
+			<hui-element class="horizontal">
+				<hui-toggle>
+					<hui-icon("grid")/>
+				</hui-toggle>
+				<hui-text("Wireframe") class="label"/>
+			</hui-element>
+			<hui-element class="horizontal">
+				<hui-toggle>
+					<hui-icon("visibility_off")/>
+				</hui-toggle>
+				<hui-text("Disable Scene Render") class="label"/>
+			</hui-element>
+
+			<hui-text("Icons") class="sub-title"/>
+			<hui-element class="horizontal">
+				<hui-toggle>
+					<hui-icon("visibility")/>
+				</hui-toggle>
+				<hui-text("3D Icons") class="label"/>
+			</hui-element>
+		</hui-visibility-settings-popup>
+
+	public function new(editor : HuiPrefabEditor, ?parent: h2d.Object) {
+		super(parent);
+		initComponent();
+
+		var s3d = @:privateAccess editor.scene.s3d;
+
+		gridTog.toggled = @:privateAccess editor.grid.visible;
+		gridTog.onClick = (_) -> {
+			@:privateAccess editor.grid.visible = @:privateAccess !editor.grid.visible;
+			gridTog.toggled = !gridTog.toggled;
+			hide.Ide.inst.currentConfig.set(hide.view.Prefab.VISIBILITY_GRID_CONFIG_KEY, @:privateAccess editor.grid.visible);
+		}
+
+		boneTog.toggled = hide.Ide.inst.currentConfig.get(hide.view.Prefab.VISIBILITY_JOINTS_CONFIG_KEY, true);
+		boneTog.onClick = (_) -> {
+			boneTog.toggled = !boneTog.toggled;
+			editor.setJointsDebugVisibility(boneTog.toggled);
+			hide.Ide.inst.currentConfig.set(hide.view.Prefab.VISIBILITY_JOINTS_CONFIG_KEY, boneTog.toggled);
+		}
+
+		colliderTog.toggled = hide.Ide.inst.currentConfig.get(hide.view.Prefab.VISIBILITY_COLLIDERS_CONFIG_KEY, true);
+		colliderTog.onClick = (_) -> {
+			colliderTog.toggled = !colliderTog.toggled;
+			editor.setColliderDebugVisibility(colliderTog.toggled);
+			hide.Ide.inst.currentConfig.set(hide.view.Prefab.VISIBILITY_COLLIDERS_CONFIG_KEY, colliderTog.toggled);
+		}
+	}
+}
 
 class HuiCameraSettingsPopup extends HuiPopup {
 	static var SRC =
 		<hui-camera-settings-popup class="vertical">
-			<hui-text("Camera settings") id="title"/>
+			<hui-text("Camera settings") class="title"/>
 			<hui-element class="horizontal">
 				<hui-text("Camera Type") class="label"/>
 				<hui-select id="cam-type" class="value"/>
@@ -192,7 +291,7 @@ class HuiCameraSettingsPopup extends HuiPopup {
 class HuiGridSettingsPopup extends HuiPopup {
 	static var SRC =
 		<hui-grid-settings-popup class="vertical">
-			<hui-text("Snap settings") id="title"/>
+			<hui-text("Snap settings") class="title"/>
 			<hui-element class="horizontal">
 				<hui-text("Grid Size") class="label"/>
 				<hui-slider step={0.01} min={0} max={100} decimals={2} id="gridSize" class="value"/>
@@ -223,7 +322,7 @@ class HuiGridSettingsPopup extends HuiPopup {
 class HuiHelpPopup extends HuiPopup {
 	static var SRC =
 		<hui-help-popup class="vertical">
-			<hui-text("Shortcuts") id="title"/>
+			<hui-text("Shortcuts") class="title"/>
 			<hui-element class="vertical" id="commands-container">
 			</hui-element>
 		</hui-help-popup>

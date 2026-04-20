@@ -20,6 +20,11 @@ class Prefab extends HuiView<{path: String}> {
 	public static var CAM_CTRL_NEAR_CONFIG_KEY = "editor.camera.near";
 	public static var CAM_CTRL_FAR_CONFIG_KEY = "editor.camera.far";
 
+	public static var VISIBILITY_OVERLAY_CONFIG_KEY = "editor.visibility.overlay";
+	public static var VISIBILITY_GRID_CONFIG_KEY = "editor.visibility.grid";
+	public static var VISIBILITY_JOINTS_CONFIG_KEY = "editor.visibility.joints";
+	public static var VISIBILITY_COLLIDERS_CONFIG_KEY = "editor.visibility.colliders";
+
 	public function new(_state: Dynamic, ?parent) {
 		super(_state, parent);
 		initComponent();
@@ -82,7 +87,7 @@ class Prefab extends HuiView<{path: String}> {
 		var widgets : Array<HuiElement> = [];
 
 		widgets.push(new hrt.ui.HuiToolbar.HuiTransformWidgets(@:privateAccess prefabEditor.gizmo));
-		widgets.push(new hrt.ui.HuiToolbar.SnapWidget(prefabEditor));
+		widgets.push(new hrt.ui.HuiToolbar.HuiSnapWidget(prefabEditor));
 
 		var cameraBtn = new HuiButton();
 		new HuiIcon("camera", cameraBtn);
@@ -98,7 +103,7 @@ class Prefab extends HuiView<{path: String}> {
 		new HuiIcon("question_mark", helpBtn);
 		widgets.push(helpBtn);
 
-		widgets.push(new hrt.ui.HuiToolbar.VisibilityWidget(prefabEditor));
+		widgets.push(new hrt.ui.HuiToolbar.HuiVisibilityWidget(prefabEditor));
 
 		var viewModesBtn = new HuiButton();
 		viewModesBtn.onClick = (_) -> {

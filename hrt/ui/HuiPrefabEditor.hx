@@ -79,7 +79,9 @@ class HuiPrefabEditor extends HuiElement {
 
 	var inspectorRoot : hide.kit.KitRoot;
 
+	// Debugs
 	var debugGraph: h2d.Graphics;
+	var rootDebugCollider : h3d.scene.Object = null;
 
 	override function new(?parent) {
 		super(parent);
@@ -635,10 +637,7 @@ class HuiPrefabEditor extends HuiElement {
 
 		focusObjects([for (i in 0...scene.s3d.numChildren) scene.s3d.getChildAt(i)]);
 
-		// trace("=========================");
-		// trace('Num objects in scene after reload :  ${scene.s3d.flatten().length}');
-		// trace("\n" + dumpObject(scene.s3d));
-		// trace("=========================");
+		updateDebugOverlayVisibility();
 	}
 
 	function getRenderPropsPaths() : Array<{name: String, value: String}> {
@@ -874,6 +873,7 @@ class HuiPrefabEditor extends HuiElement {
 		}
 	}
 
+
 	public function makeGizmos() {
 		this.gizmoShouldSnap = hide.Ide.inst.currentConfig.get(hide.view.Prefab.GIZMO_SNAP_CONFIG_KEY, true);
 		this.gizmoSnapStep = hide.Ide.inst.currentConfig.get(hide.view.Prefab.GIZMO_SNAP_STEP_CONFIG_KEY, 1.0);
@@ -989,6 +989,68 @@ class HuiPrefabEditor extends HuiElement {
 	public function gizmoSnap(v: Float, mode: hrt.tools.Gizmo.EditMode) {
 		return hxd.Math.round(v / this.gizmoSnapStep) * this.gizmoSnapStep;
 	}
+
+
+	public function updateDebugOverlayVisibility() {
+		grid.visible = hide.Ide.inst.currentConfig.get(hide.view.Prefab.VISIBILITY_GRID_CONFIG_KEY, true);
+		setJointsDebugVisibility(hide.Ide.inst.currentConfig.get(hide.view.Prefab.VISIBILITY_JOINTS_CONFIG_KEY, true));
+		setColliderDebugVisibility(hide.Ide.inst.currentConfig.get(hide.view.Prefab.VISIBILITY_COLLIDERS_CONFIG_KEY, true));
+	}
+
+	@:access(h3d.scene.Skin)
+	public function setJointsDebugVisibility(visible : Bool) {
+		for (m in scene.s3d.getMeshes()) {
+			var sk = Std.downcast(m,h3d.scene.Skin);
+			if (sk != null)
+				sk.showJoints = visible;
+		}
+	}
+
+	public function setColliderDebugVisibility(visible : Bool) {
+		if (visible) {
+			if (rootDebugCollider == null) {
+				rootDebugCollider = new h3d.scene.Object(scene.s3d);
+				rootDebugCollider.name = "rootDebugCollider";
+			}
+
+			rootDebugCollider.removeChildren();
+
+			var root3d = prefab.findFirstLocal3d();
+			var meshes = root3d.getMeshes();
+			var gizmos = root3d.findAll((f) -> Std.downcast(f, hrt.tools.Gizmo));
+			meshes = meshes.filter(function (m : h3d.scene.Mesh) {
+				if (Std.isOfType(m, h3d.scene.Graphics))
+					return false;
+				for (g in gizmos)
+					if (g.isGizmo(m))
+						return false;
+				return true;
+			});
+
+			for (m in meshes) {
+				var col = try {
+					m.getCollider();
+				} catch(e : Dynamic) {
+					hide.Ide.showError('Error while trying to display debug colliders');
+					null;
+				}
+				if (col == null)
+					continue;
+				var d = col.makeDebugObj();
+				for (mat in d.getMaterials()) {
+					mat.name = "$collider";
+					mat.mainPass.setPassName("overlay");
+					mat.shadows = false;
+					mat.mainPass.wireframe = true;
+				}
+				rootDebugCollider.addChild(d);
+			}
+		} else if (rootDebugCollider != null) {
+			rootDebugCollider.remove();
+			rootDebugCollider = null;
+		}
+	}
+
 
 	function onSceneEvents(e: hxd.Event) : Void {
 		// debugGraph.clear();
