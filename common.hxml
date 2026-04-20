@@ -10,6 +10,7 @@
 -D hscriptPos
 -D multidriver
 -D editor
+-D editor_hl
 -D no-deprecation-warnings
 -D manual_sync_pad
 -cp hide_js

@@ -1028,6 +1028,7 @@ class HuiPrefabEditor extends HuiElement {
 		grid.visible = visibility && hide.Ide.inst.currentConfig.get(hide.view.Prefab.VISIBILITY_GRID_CONFIG_KEY, true);
 		setJointsDebugVisibility(visibility && hide.Ide.inst.currentConfig.get(hide.view.Prefab.VISIBILITY_JOINTS_CONFIG_KEY, true));
 		setColliderDebugVisibility(visibility && hide.Ide.inst.currentConfig.get(hide.view.Prefab.VISIBILITY_COLLIDERS_CONFIG_KEY, true));
+		setMiscDebugVisibility(visibility && hide.Ide.inst.currentConfig.get(hide.view.Prefab.VISIBILITY_COLLIDERS_CONFIG_KEY, true));
 	}
 
 	@:access(h3d.scene.Skin)
@@ -1082,6 +1083,12 @@ class HuiPrefabEditor extends HuiElement {
 			rootDebugCollider.remove();
 			rootDebugCollider = null;
 		}
+	}
+
+	public function setMiscDebugVisibility(visible : Bool) {
+		if (scene?.s3d?.renderer == null)
+			return;
+		scene.s3d.renderer.showEditorGuides = visible;
 	}
 
 

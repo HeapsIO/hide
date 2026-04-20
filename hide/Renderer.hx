@@ -40,7 +40,7 @@ class Renderer extends h3d.scene.fwd.Renderer {
 		renderPass(defaultPass, get("default"), frontToBack);
 		renderPass(defaultPass, get("alpha"), backToFront);
 		renderPass(defaultPass, get("additive") );
-		#if editor
+		#if editor_hl
 		if(showEditorGuides) {
 			renderPass(defaultPass, get("debuggeom"), backToFront);
 			renderPass(defaultPass, get("debuggeom_alpha"), backToFront);

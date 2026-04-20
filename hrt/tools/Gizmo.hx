@@ -159,6 +159,14 @@ class Gizmo extends h3d.scene.Object {
 		return gizmo.findAll((f) -> f).contains(obj);
 	}
 
+	public function setVisible(visible : Bool) {
+		this.gizmo.visible = visible;
+	}
+
+	public function isVisible() {
+		return this.gizmo.visible;
+	}
+
 
 	public function switchMode() {
 		switch (mode) {

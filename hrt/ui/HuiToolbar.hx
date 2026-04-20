@@ -137,7 +137,7 @@ class HuiVisibilitySettingsPopup extends HuiPopup {
 				<hui-text("Colliders") class="label"/>
 			</hui-element>
 			<hui-element class="horizontal">
-				<hui-toggle>
+				<hui-toggle id="misc-tog">
 					<hui-icon("question_mark")/>
 				</hui-toggle>
 				<hui-text("Others") class="label"/>
@@ -145,7 +145,7 @@ class HuiVisibilitySettingsPopup extends HuiPopup {
 
 			<hui-text("Sélection") class="sub-title"/>
 			<hui-element class="horizontal">
-				<hui-toggle>
+				<hui-toggle id="gizmo-tog">
 					<hui-icon("translation")/>
 				</hui-toggle>
 				<hui-text("Gizmo") class="label"/>
@@ -211,6 +211,20 @@ class HuiVisibilitySettingsPopup extends HuiPopup {
 			colliderTog.toggled = !colliderTog.toggled;
 			editor.setColliderDebugVisibility(colliderTog.toggled);
 			hide.Ide.inst.currentConfig.set(hide.view.Prefab.VISIBILITY_COLLIDERS_CONFIG_KEY, colliderTog.toggled);
+		}
+
+		miscTog.toggled = hide.Ide.inst.currentConfig.get(hide.view.Prefab.VISIBILITY_MISC_CONFIG_KEY, true);
+		miscTog.onClick = (_) -> {
+			miscTog.toggled = !miscTog.toggled;
+			editor.setMiscDebugVisibility(miscTog.toggled);
+			hide.Ide.inst.currentConfig.set(hide.view.Prefab.VISIBILITY_MISC_CONFIG_KEY, miscTog.toggled);
+		}
+
+		gizmoTog.toggled = hide.Ide.inst.currentConfig.get(hide.view.Prefab.VISIBILITY_GIZMO_CONFIG_KEY, true);
+		gizmoTog.onClick = (_) -> {
+			gizmoTog.toggled = !gizmoTog.toggled;
+			@:privateAccess editor.gizmo.setVisible(gizmoTog.toggled);
+			hide.Ide.inst.currentConfig.set(hide.view.Prefab.VISIBILITY_GIZMO_CONFIG_KEY, gizmoTog.toggled);
 		}
 	}
 }
