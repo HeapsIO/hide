@@ -435,7 +435,7 @@ class BlendSpace2DEditor extends hide.view.FileView {
 			new AnimPicker(dd, undo, () -> blendSpace2D.points[selectedSave].animPath, (s) -> {
 				blendSpace2D.points[selectedSave].animPath = s;
 				refreshPreviewAnimation();
-			});
+			}, AnimGraphEditor.getAnims(scenePreview, {animDirectory: blendSpace2D.animFolder, assetPath: state.path}));
 		}
 
 		var preview = new hide.Element('

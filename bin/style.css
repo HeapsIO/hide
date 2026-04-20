@@ -4091,6 +4091,7 @@ hide-popover hide-content {
 .context-menu2 menu {
   max-height: min(500px, 90vh);
   overflow-y: auto;
+  overflow-x: auto;
   margin: 0px;
   padding: 0px;
 }

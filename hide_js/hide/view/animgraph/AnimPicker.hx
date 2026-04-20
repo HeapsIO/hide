@@ -5,7 +5,7 @@ package hide.view.animgraph;
 class AnimPicker extends hide.comp.Component {
 	var button : hide.comp.Button;
 
-	public function new(parent = null, undo: hide.ui.UndoHistory, get: () -> String, set: (string: String) -> Void) {
+	public function new(parent = null, undo: hide.ui.UndoHistory, get: () -> String, set: (string: String) -> Void, ?animations: Array<String> ) {
 		button = new hide.comp.Button(parent, null, "", {hasDropdown: true});
 		super(parent, button.element);
 
@@ -43,8 +43,19 @@ class AnimPicker extends hide.comp.Component {
 			}
 		}
 
+		if (animations != null && animations.length > 0) {
+			items.push({isSeparator: true});
+
+			for (animation in animations) {
+				items.push({
+					label: ide.makeRelative(animation),
+					click: setPointPath.bind(ide.makeRelative(animation)),
+				});
+			}
+		}
+
 		button.onClick = () -> {
-			hide.comp.ContextMenu.createDropdown(button.element.get(0), items, {search: Visible, autoWidth: true});
+			hide.comp.ContextMenu.createDropdown(button.element.get(0), items, {search: Visible, widthOverride: 500});
 		};
 
 		button.element.get(0).ondragover = (e:js.html.DragEvent) -> {
