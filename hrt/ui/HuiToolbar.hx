@@ -65,7 +65,7 @@ class HuiSnapWidget extends HuiElement {
 		<hui-toggle class="group-start" id="snap-btn">
 			<hui-icon("grid-magnet")/>
 		</hui-toggle>
-		<hui-button class="grup-end tiny" id="snap-popup-btn">
+		<hui-button class="group-end tiny" id="snap-popup-btn">
 			<hui-icon("dropDown")/>
 		</hui-button>
 	</hui-snap-widget>
@@ -91,7 +91,7 @@ class HuiVisibilityWidget extends HuiElement {
 		<hui-toggle class="group-start" id="visibility-btn">
 			<hui-icon("visibility")/>
 		</hui-toggle>
-		<hui-button class="grup-end tiny" id="visibility-popup-btn">
+		<hui-button class="group-end tiny" id="visibility-popup-btn">
 			<hui-icon("dropDown")/>
 		</hui-button>
 	</hui-visibility-widget>
