@@ -74,6 +74,7 @@ class HuiPrefabEditor extends HuiElement {
 	var grid : hrt.tools.Grid = null;
 	var viewportAxis : hrt.tools.ViewportAxis = null;
 	var gizmo : hrt.tools.Gizmo = null;
+	var outline : hrt.prefab.rfx.Outline;
 
 	var lastPushX : Float = -100;
 	var lastPushY : Float = -100;
@@ -638,9 +639,9 @@ class HuiPrefabEditor extends HuiElement {
 		scene.s3d.lightSystem?.dispose();
 		scene.s3d.lightSystem = new h3d.scene.pbr.LightSystem();
 
-		var o = new hrt.prefab.rfx.Outline(null, null);
-		o.outlineColor = 0xFF6600;
-		scene.s3d.renderer.effects.push(o);
+		outline = new hrt.prefab.rfx.Outline(null, null);
+		outline.outlineColor = 0xFF6600;
+		scene.s3d.renderer.effects.push(outline);
 
 		tryMake(prefab);
 		makeRenderProps();
@@ -1026,9 +1027,11 @@ class HuiPrefabEditor extends HuiElement {
 		var visibility = hide.Ide.inst.currentConfig.get(hide.view.Prefab.VISIBILITY_OVERLAY_CONFIG_KEY, true);
 
 		grid.visible = visibility && hide.Ide.inst.currentConfig.get(hide.view.Prefab.VISIBILITY_GRID_CONFIG_KEY, true);
+		gizmo.setVisible(visibility && hide.Ide.inst.currentConfig.get(hide.view.Prefab.VISIBILITY_GIZMO_CONFIG_KEY, true));
 		setJointsDebugVisibility(visibility && hide.Ide.inst.currentConfig.get(hide.view.Prefab.VISIBILITY_JOINTS_CONFIG_KEY, true));
 		setColliderDebugVisibility(visibility && hide.Ide.inst.currentConfig.get(hide.view.Prefab.VISIBILITY_COLLIDERS_CONFIG_KEY, true));
 		setMiscDebugVisibility(visibility && hide.Ide.inst.currentConfig.get(hide.view.Prefab.VISIBILITY_COLLIDERS_CONFIG_KEY, true));
+		setOutlineVisibility(visibility && hide.Ide.inst.currentConfig.get(hide.view.Prefab.VISIBILITY_OUTLINE_CONFIG_KEY, true));
 	}
 
 	@:access(h3d.scene.Skin)
@@ -1091,6 +1094,13 @@ class HuiPrefabEditor extends HuiElement {
 		scene.s3d.renderer.showEditorGuides = visible;
 	}
 
+	public function setOutlineVisibility(visible : Bool) {
+		if (scene?.s3d?.renderer == null)
+			return;
+		for (e in scene.s3d.renderer.effects)
+			if (e == outline)
+				e.enabled = visible;
+	}
 
 	function onSceneEvents(e: hxd.Event) : Void {
 		// debugGraph.clear();

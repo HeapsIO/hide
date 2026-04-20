@@ -151,7 +151,7 @@ class HuiVisibilitySettingsPopup extends HuiPopup {
 				<hui-text("Gizmo") class="label"/>
 			</hui-element>
 			<hui-element class="horizontal">
-				<hui-toggle>
+				<hui-toggle id="outline-tog">
 					<hui-icon("question_mark")/>
 				</hui-toggle>
 				<hui-text("Outline") class="label"/>
@@ -225,6 +225,13 @@ class HuiVisibilitySettingsPopup extends HuiPopup {
 			gizmoTog.toggled = !gizmoTog.toggled;
 			@:privateAccess editor.gizmo.setVisible(gizmoTog.toggled);
 			hide.Ide.inst.currentConfig.set(hide.view.Prefab.VISIBILITY_GIZMO_CONFIG_KEY, gizmoTog.toggled);
+		}
+
+		outlineTog.toggled = hide.Ide.inst.currentConfig.get(hide.view.Prefab.VISIBILITY_OUTLINE_CONFIG_KEY, true);
+		outlineTog.onClick = (_) -> {
+			outlineTog.toggled = !outlineTog.toggled;
+			editor.setOutlineVisibility(outlineTog.toggled);
+			hide.Ide.inst.currentConfig.set(hide.view.Prefab.VISIBILITY_OUTLINE_CONFIG_KEY, outlineTog.toggled);
 		}
 	}
 }
