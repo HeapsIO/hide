@@ -1,0 +1,18 @@
+hui-virtual-list {
+  overflow: hidden;
+  fill-width: 1;
+}
+hui-virtual-list #item-container {
+  fill-width: 1;
+  fill-height: 1;
+  layout: stack;
+  spacing: 4;
+}
+hui-virtual-list .testrow {
+  width: 500;
+  overflow: hidden;
+  spacing: 8;
+}
+hui-virtual-list .testrow .t2 {
+  max-width: 300;
+}
