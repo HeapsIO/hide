@@ -100,8 +100,11 @@ class HuiVisibilityWidget extends HuiElement {
 		super(parent);
 		initComponent();
 
-		visibilityBtn.toggled = true;
+		visibilityBtn.toggled = hide.Ide.inst.currentConfig.get(hide.view.Prefab.VISIBILITY_OVERLAY_CONFIG_KEY, true);
 		visibilityBtn.onClick = (_) -> {
+			visibilityBtn.toggled = !visibilityBtn.toggled;
+			hide.Ide.inst.currentConfig.set(hide.view.Prefab.VISIBILITY_OVERLAY_CONFIG_KEY, visibilityBtn.toggled);
+			editor.updateDebugOverlayVisibility();
 		}
 
 		visibilityPopupBtn.onClick = (_) -> {
