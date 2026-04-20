@@ -121,7 +121,7 @@ class HuiSplitContainer extends HuiElement {
 		for (maxConstraint in 0...4) {
 			firstPos = paddingStart;
 			firstSize = localSplitterPos - firstPos - spacing;
-			secondPos = localSplitterPos + splitterSize + spacing;
+			secondPos = localSplitterPos /*+ splitterSize*/ + spacing;
 			secondSize = size - secondPos - paddingEnd;
 
 			if (firstSize < firstMinSize) {
@@ -151,13 +151,13 @@ class HuiSplitContainer extends HuiElement {
 				childElement[0].setWidth(firstSize);
 				childElement[1].x = secondPos;
 				childElement[1].setWidth(secondSize);
-				splitter.x = localSplitterPos;
+				splitter.x = localSplitterPos - (splitterSize >> 1);
 			case Vertical:
 				childElement[0].y = firstPos;
 				childElement[0].setHeight(firstSize);
 				childElement[1].y = secondPos;
 				childElement[1].setHeight(secondSize);
-				splitter.y = localSplitterPos;
+				splitter.y = localSplitterPos - (splitterSize >> 1);
 		}
 
 		splitterPos = switch(anchorTo) {

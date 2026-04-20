@@ -1,0 +1,13 @@
+.disabledhui-text,
+.disabled hui-text {
+  color: #878787;
+}
+.vertical {
+  layout: vertical;
+}
+.horizontal {
+  layout: horizontal;
+}
+hui-background {
+  debug: false;
+}

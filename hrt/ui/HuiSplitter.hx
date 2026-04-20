@@ -5,6 +5,7 @@ package hrt.ui;
 class HuiSplitter extends HuiElement {
 	static var SRC =
 		<hui-splitter>
+			<hui-element id="line"/>
 		</hui-splitter>
 
 	var direction(get, never): h2d.Flow.FlowLayout;

@@ -1,18 +1,37 @@
 hui-splitter {
 	background-type: hui;
 
-	@size:3;
+	@size:5;
 
 	&.horizontal {
 		width: @size;
+
+		>#line {
+			fill-height: 1;
+			width: 1;
+			halign: middle;
+
+			>hui-background {
+				background: @splitter-color;
+			}
+		}
 	}
 
 	&.vertical {
 		height: @size;
+		>#line {
+			valign: middle;
+
+			fill-width: 1;
+			height: 1;
+			>hui-background {
+				background: @splitter-color;
+			}
+		}
 	}
 
 	> hui-background {
-		background: @splitter-color;
+		//background: @splitter-color;
 		border-radius: 2;
 	}
 
