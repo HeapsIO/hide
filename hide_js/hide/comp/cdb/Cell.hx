@@ -1722,14 +1722,6 @@ class Cell {
 						new Element('<p>,&nbsp</p>').appendTo(paramsContent);
 				}
 			}
-
-			if (rightAnchor > 0)
-				content.css("right", '${depth == 0 ? rightAnchor - content.width() / 2.0 : rightAnchor}px');
-
-			var box = content.get(0).getBoundingClientRect();
-			if (box.right > js.Browser.window.innerWidth) {
-				content.css("right", '0px');
-			}
 		}
 
 		function applyModifications(ctElement : Element) {
