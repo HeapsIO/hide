@@ -332,6 +332,10 @@ class HuiTree<TreeItem> extends HuiElement {
 	override function sync(ctx:h2d.RenderContext) {
 		super.sync(ctx);
 
+		refreshInternal();
+	}
+
+	function refreshInternal() {
 		if (refreshFlags.toInt() != 0) {
 			if (refreshFlags.has(RootData)) {
 				rootData = generateChildren(null);
@@ -347,6 +351,13 @@ class HuiTree<TreeItem> extends HuiElement {
 
 			refreshFlags = RefreshFlags.ofInt(0);
 		}
+	}
+
+	function refreshSync() {
+		refreshFlags.set(RootData);
+		refreshInternal();
+		list.refresh();
+		@:privateAccess list.refreshInternal();
 	}
 
 	function generateItem(data: TreeItemData) : HuiElement {

@@ -28,7 +28,6 @@ class HuiView<T> extends HuiElement {
 		registerCommand(HuiCommands.undo, ElementAndChildren, () -> undo.undo());
 		registerCommand(HuiCommands.redo, ElementAndChildren, () -> undo.redo());
 
-		toolbar = new HuiToolbar(this);
 	}
 
 	/**
@@ -61,6 +60,10 @@ class HuiView<T> extends HuiElement {
 
 
 	function buildToolbar() {
+		if (toolbar == null) {
+			toolbar = new HuiToolbar();
+			addChildAt(toolbar, 0);
+		}
 		for (w in getToolbarWidgets())
 			toolbar.addWidget(w);
 	}
