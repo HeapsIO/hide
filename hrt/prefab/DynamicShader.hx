@@ -4,6 +4,7 @@ class DynamicShader extends Shader {
 
 	@:c var shaderDef : {> hrt.prefab.Cache.ShaderDef, ?sclass : Class<hxsl.Shader>, ?isShaderGraph : Bool } = { shader : null, inits : null };
 	@:s var isInstance : Bool = false;
+	var template : DynamicShader;
 
 	public function new(parent,  shared: ContextShared) {
 		super(parent, shared);
@@ -23,10 +24,28 @@ class DynamicShader extends Shader {
 		return shaderDef.shader;
 	}
 
+	override function copy(data: Prefab) : Void {
+		super.copy(data);
+		template = cast data;
+	}
+	
 	override function makeShader() {
 		if( getShaderDefinition() == null )
 			return null;
-		if( isInstance && !shaderDef.isShaderGraph )
+		var concrete = isInstance && !shaderDef.isShaderGraph;
+
+		#if !editor
+		// Optim: all copies of the same DynamicShader template
+		// directly clone the shader instance, which uses fast macro copies
+		if( template != null && concrete ) {
+			if( template.shader == null )
+				template.makeShader();
+			shader = template.shader.clone();
+			return shader;
+		}
+		#end
+
+		if( concrete )
 			shader = Type.createInstance(shaderDef.sclass,[]);
 		else {
 			var dshader = new hxsl.DynamicShader(shaderDef.shader, name);
