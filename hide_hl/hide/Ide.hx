@@ -11,8 +11,11 @@ class Ide extends hide.tools.IdeData {
 
 	// Keep a small delay between saves to avoid spamming the disk with writes
 	var localStorageSaveDelay: Float = 0.0;
+	public var isSVNAvailable(default, null): Bool;
 
 	static final localUserDataSave = "hidehl.json";
+
+	var updates : Array<(dt: Float) -> Void> = [];
 
 	public override function new() {
 		super();
@@ -22,6 +25,10 @@ class Ide extends hide.tools.IdeData {
 		initConfig(cwd);
 
 		loadLocalStorage();
+
+		isSVNAvailable = Sys.command("svn",["--version"]) == 0 &&
+			Sys.command("where.exe", ["TortoiseProc.exe"]) == 0 &&
+			Sys.command("svn", ["info", getPath(projectDir)]) == 0;
 	}
 
 	var localStorage: Dynamic = {};
@@ -56,6 +63,25 @@ class Ide extends hide.tools.IdeData {
 				localStorageSaveQueued = false;
 			}
 		}
+
+		for (update in updates) {
+			update(dt);
+		}
+	}
+
+	public function addUpdate(cb: (dt: Float) -> Void) {
+		if (!updates.contains(cb)) {
+			updates.push(cb);
+		}
+	}
+
+	public function removeUpdate(cb: (dt: Float) -> Void) {
+		for (i => update in updates) {
+			if (Reflect.compareMethods(update, cb)) {
+				updates.splice(i, 1);
+				return;
+			}
+		}
 	}
 
 	public function dispose() {
@@ -86,6 +112,13 @@ class Ide extends hide.tools.IdeData {
 
 	override function setProject(dir:String) {
 		super.setProject(dir);
+
+		if (@:bypassAccessor hrt.tools.FileManager.inst == null) {
+			var inst = hrt.tools.FileManager.inst;
+		} else {
+			@:privateAccess hrt.tools.FileManager.inst.init();
+		}
+
 		trace("set project " + dir);
 		hxd.res.Loader.currentInstance?.dispose();
 		hxd.res.Loader.currentInstance = new hxd.res.Loader(new hxd.fs.LocalFileSystem(resourceDir, null));
@@ -118,6 +151,39 @@ class Ide extends hide.tools.IdeData {
 	public function clearLocalStorage(key: String) {
 		Reflect.deleteField(localStorage, key);
 		queueStorageSave();
+	}
+
+
+	/**
+		Blocks until the user confirms they want to perform an operation, and returns true if the user want to proceed.
+		Prefer using BaseUI.confirm, as it uses a more integrated UI and has more parameters, but requires an async callback.
+	**/
+	public function confirm(message: String) : Bool {
+		var log = new hl.UI.WinLog("Proceed ?", 300,200);
+		log.setTextContent(message);
+
+		var cancel = false;
+
+		var cancelButton = new hl.UI.Button(log, "Cancel");
+		cancelButton.onClick = function() {
+			cancel = true;
+			hl.UI.stopLoop();
+		}
+
+		var yesButton = new hl.UI.Button(log, "Yes");
+		yesButton.onClick = function() {
+			hl.UI.stopLoop();
+		}
+
+		while( hl.UI.loop(true) != Quit )
+			Sys.sleep(0.0);
+		log.destroy();
+		/*var f = new haxe.EnumFlags<hl.UI.DialogFlags>();
+		f.set(YesNo);
+		if(hl.UI.dialog("Unsaved changes", "Save changes before quit?", f))
+			save();*/
+
+		return !cancel;
 	}
 
 	public function openFile(filePath: String) {

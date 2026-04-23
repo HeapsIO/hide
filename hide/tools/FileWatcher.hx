@@ -225,7 +225,7 @@ class FileWatcher {
 			haxe.Timer.delay(onEventChanged.bind(w),100);
 		});
 		#else
-		w.w = new hl.uv.Fs(w.path, function(ev) {
+		w.w = new hl.uv.Fs(w.path, function(path, ev) {
 			if( w.isDir && ev == Change ) return;
 			if( ev == Change ) w.wasChanged = true;
 			if( w.changed ) return;
