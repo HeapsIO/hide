@@ -1617,11 +1617,13 @@ class Emitter extends Object3D {
 
 	public function new(parent, shared: ContextShared) {
 		super(parent, shared);
+		#if editor  // in game, all emitters are going to be loaded anyway
 		props = { };
 		for(param in emitterParams) {
 			if(param.def != null)
 				EmitterHelper.resetParam(props, param);
 		}
+		#end
 	}
 
 	public static var emitterParams : Array<hrt.prefab.fx.EmitterHelper.ParamDef> = [
@@ -1777,19 +1779,6 @@ class Emitter extends Object3D {
 
 	override function copy(obj:Prefab) {
 		super.copy(obj);
-		for(param in emitterParams) {
-			if(Reflect.hasField(obj.props, param.name)) {
-				var val : Dynamic = Reflect.field(obj.props, param.name);
-				/*switch(param.t) {
-					case PEnum(en):
-						val = Type.createEnum(en, val);
-					default:
-				}*/
-				Reflect.setField(props, param.name, val);
-			}
-			else if(param.def != null)
-				EmitterHelper.resetParam(props, param);
-		}
 	}
 
 	override function getPreloadFiles():Array<String> {
