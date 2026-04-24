@@ -1277,7 +1277,10 @@ class EmitterObject extends h3d.scene.Object {
 
 	function updateAlignment() {
 		if(alignMode == Screen) {
-			tmpMat.load(getScene().camera.mcam);
+			var cam = getScene()?.camera;
+			if (cam == null)
+				return;
+			tmpMat.load(cam.mcam);
 			tmpMat.invert();
 
 			if(simulationSpace == Local) {  // Compensate parent rotation
@@ -1292,6 +1295,9 @@ class EmitterObject extends h3d.scene.Object {
 			screenRot.multiply(screenRot, tmpMat);
 		}
 		else if(alignMode == Axis) {
+			var cam = getScene()?.camera;
+			if (cam == null)
+				return;
 			var lockAxis = new h3d.Vector();
 			var rightAxis = new h3d.Vector();
 			var upAxis = new h3d.Vector();
@@ -1314,7 +1320,7 @@ class EmitterObject extends h3d.scene.Object {
 					upAxis.set(-1, 0, 0);
 			}
 			var lookAtPos = tmpVec;
-			lookAtPos.load(getScene().camera.pos);
+			lookAtPos.load(cam.pos);
 
 			if ( followRotation ) {
 				var invAbsPos = getInvPos();
