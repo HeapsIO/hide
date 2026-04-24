@@ -49,23 +49,36 @@ class FileEntry {
 	public var iconPath: String; // can be null if the icon has not been loaded, call getIconPath to load it
 	public var disposed: Bool = false;
 	public var vcsStatus: VCSStatus = None;
+
+	/**
+		The file should not appear in the hierarchy, it's children are not computed, and is not watched
+	**/
 	public var ignored: Bool = false;
 
 	#if hl
 	var watcher : hl.uv.Fs = null;
 	#end
 
-	public function new(name: String, parent: FileEntry, kind: FileKind) {
+	public function new(name: String, parent: FileEntry, kind: FileKind, absDir: String = null) {
+		if (absDir != null && parent != null)
+			throw "Parent and rootPath parameters are exclusive";
 		this.name = name;
 		this.parent = parent;
 		this.kind = kind;
-		this.relPath = computeRelPath();
-		this.path = computePath();
+		this.relPath = parent == null ? name : parent.getChildRelPath(name);
+		if (absDir != null) {
+			this.path = absDir + "/" + name;
+		} else {
+			this.path = parent.getChildPath(name);
+		}
 		this.ignored = computeIgnore();
 
 		trace("added " + getRelPath());
 		watch();
-		FileManager.inst.fileIndex.set(this.getRelPath(), this);
+		if (!ignored) {
+			FileManager.inst.fileIndex.set(this.getRelPath(), this);
+		}
+		refreshChildren();
 	}
 
 	public final function toString() : String{
@@ -87,7 +100,9 @@ class FileEntry {
 			watcher.close();
 		}
 		#end
-		FileManager.inst.fileIndex.remove(this.getRelPath());
+		if (!ignored) {
+			FileManager.inst.fileIndex.remove(this.getRelPath());
+		}
 	}
 
 	// public function getIcon(onReady: MiniatureReadyCallback) {
@@ -100,6 +115,8 @@ class FileEntry {
 
 	function refreshChildren() {
 		if (kind != Dir)
+			return;
+		if (ignored)
 			return;
 		var fullPath = getPath();
 
@@ -122,7 +139,6 @@ class FileEntry {
 					oldChildren.remove(path);
 				} else {
 					var newEntry = new FileEntry(path, this, sys.FileSystem.isDirectory(fullPath + "/" + path) ? Dir : File);
-					newEntry.refreshChildren();
 					children.push(newEntry);
 				}
 			}
@@ -143,25 +159,29 @@ class FileEntry {
 		#if hl
 		if (watcher != null)
 			throw "already watching";
+		if (ignored)
+			return;
 		if (kind == Dir) {
-			watcher = new hl.uv.Fs(this.getPath(), (name, event) -> onChildrenChange(name));
-			if (watcher == null)
+			watcher = new hl.uv.Fs(this.getPath(), (name, event) -> onChildChange(name));
+			if (watcher.handle == null)
 				throw "Couldn't watch directory " + this.getPath();
 		}
 		#end
 	}
 
-	function getChildrenRelPath(name: String) {
-		return parent != null ? getRelPath() + "/" + name : name;
-	}
-
-	function onChildrenChange(name: String) {
+	function onChildChange(name: String) {
 		trace(this.getPath(), name);
 
-		var childPath = getChildrenRelPath(name);
+		if (name == null) {
+			refreshChildren();
+			changed();
+			return;
+		}
+
+		var childPath = getChildRelPath(name);
 		var child = FileManager.inst.fileIndex.get(childPath);
 
-		if (child != null && !children.contains(child)) {
+		if (child != null && !children?.contains(child)) {
 			throw "child was in fileIndex but not in this children";
 		}
 		else if (child != null) {
@@ -172,7 +192,10 @@ class FileEntry {
 				changed();
 			}
 		} else {
-			child = new FileEntry(name, this, sys.FileSystem.isDirectory(getPath() + "/" + name) ? Dir : File);
+			child = new FileEntry(name, this, sys.FileSystem.isDirectory(getChildPath(name)) ? Dir : File);
+			if (children == null) {
+				children = [];
+			}
 			children.push(child);
 			children.sort(compareFile);
 			changed();
@@ -188,23 +211,24 @@ class FileEntry {
 		return this.path;
 	}
 
-	function computePath() {
-		if (this.parent == null) return hide.Ide.inst.resourceDir;
-		return this.parent.computePath() + "/" + this.name;
+	function getChildRelPath(name: String) {
+		return relPath + "/" + name;
 	}
 
-	function computeRelPath() {
-		if (this.parent == null) return "";
-		if (this.parent.parent == null) return this.name;
-		return this.parent.computeRelPath() + "/" + this.name;
+	function getChildPath(name: String) {
+		return path + "/" + name;
 	}
 
 	function computeIgnore() {
+		return isIgnored(getRelPath());
+	}
+
+	public static function isIgnored(relPath: String) {
 		for (excl in FileManager.inst.ignorePatterns) {
-			if (excl.match(getRelPath()))
+			if (excl.match(relPath))
 				return true;
 		}
-		return return false;
+		return false;
 	}
 
 	// sort directories before files, and then dirs and files alphabetically
@@ -473,6 +497,17 @@ class FileManager {
 		//setupServer();
 		//checkWindowReady();
 		initFileSystem();
+
+		var lastIntegrity = true;
+		var timer = new haxe.Timer(1000);
+		timer.run = () -> {
+			var newIntegrity = checkIntegrity();
+			if (!newIntegrity && !lastIntegrity) {
+				throw "Filesystem integrity compromised";
+			}
+			lastIntegrity = newIntegrity;
+			trace("integrity ok");
+		}
 	}
 
 	function initFileSystem() {
@@ -480,8 +515,9 @@ class FileManager {
 			entry.refreshChildren();
 		});
 
-		fileRoot = new FileEntry("res", null, Dir);
-		fileRoot.refreshChildren();
+
+		var rootPath = new haxe.io.Path(hide.Ide.inst.resourceDir);
+		fileRoot = new FileEntry(rootPath.file, null, Dir, rootPath.dir);
 
 		queueRefreshSVN();
 	}
@@ -551,6 +587,34 @@ class FileManager {
 
 	function execSvnModifiedCommand(cb: (sys.io.Process) -> Void) {
 		new ProcessAsync('svn', ["status", hide.Ide.inst.projectDir], cb);
+	}
+
+	/**
+		Checks that the live file system matches the actual file system (to check that there are no desyncs)
+	**/
+	function checkIntegrity() : Bool {
+		var rootPath = new haxe.io.Path(hide.Ide.inst.resourceDir);
+
+		function rec(path: String) : Bool {
+
+			var relPath = StringTools.replace(path, rootPath.dir + "/", "");
+			if (FileEntry.isIgnored(relPath))
+				return true;
+
+			var entry = fileIndex.get(relPath);
+			if (entry == null)
+				return false;
+
+			if (entry.kind == Dir) {
+				for (fileName in sys.FileSystem.readDirectory(path)) {
+					rec(path + "/" + fileName);
+				}
+			}
+
+			return true;
+		}
+
+		return rec(hide.Ide.inst.resourceDir);
 	}
 
 	/*public function cloneFile(entry: FileEntry) {
