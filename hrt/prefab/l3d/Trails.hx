@@ -170,11 +170,11 @@ class TrailObj extends h3d.scene.Mesh {
 				format = hxd.BufferFormat.POS3D_NORMAL_UV;
 			}
 		}
-		vbuf = new hxd.FloatBuffer(currentAllocatedVertexCount * format.stride);
+		vbuf = alloc.allocFloats(currentAllocatedVertexCount * format.stride);
 		if (ibuf != null)
 			alloc.disposeIndexes(ibuf);
 		currentAllocatedIndexCount = calcMaxIndexes();
-		ibuf = new hxd.IndexBuffer(currentAllocatedIndexCount);
+		ibuf = alloc.allocIndexes(currentAllocatedIndexCount);
 
 		pool = null;
 		firstFreePointID = 0;
