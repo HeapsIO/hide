@@ -1032,6 +1032,8 @@ class HuiPrefabEditor extends HuiElement {
 		setColliderDebugVisibility(visibility && hide.Ide.inst.currentConfig.get(hide.view.Prefab.VISIBILITY_COLLIDERS_CONFIG_KEY, true));
 		setMiscDebugVisibility(visibility && hide.Ide.inst.currentConfig.get(hide.view.Prefab.VISIBILITY_COLLIDERS_CONFIG_KEY, true));
 		setOutlineVisibility(visibility && hide.Ide.inst.currentConfig.get(hide.view.Prefab.VISIBILITY_OUTLINE_CONFIG_KEY, true));
+		setSceneInfoVisibility(visibility && hide.Ide.inst.currentConfig.get(hide.view.Prefab.VISIBILITY_SCENE_INFOS_CONFIG_KEY, true));
+		setWireframeVisibility(visibility && hide.Ide.inst.currentConfig.get(hide.view.Prefab.VISIBILITY_WIREFRAME_CONFIG_KEY, true));
 	}
 
 	@:access(h3d.scene.Skin)
@@ -1106,6 +1108,21 @@ class HuiPrefabEditor extends HuiElement {
 		#if editor_hl
 		scene?.showSceneInfos = visible;
 		#end
+	}
+
+	public function setWireframeVisibility(visible : Bool) {
+		var engine = h3d.Engine.getCurrent();
+		if (engine.driver.hasFeature(Wireframe)) {
+			for (mesh in scene.s3d.getMeshes()) {
+				if (gizmo.isGizmo(mesh) || @:privateAccess grid.plane == mesh)
+					continue;
+				for (mat in mesh.getMaterials()) {
+					if (mat.name == "$collider")
+						continue;
+					mat.mainPass.wireframe = visible;
+				}
+			}
+		}
 	}
 
 	function onSceneEvents(e: hxd.Event) : Void {

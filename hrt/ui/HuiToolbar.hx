@@ -165,7 +165,7 @@ class HuiVisibilitySettingsPopup extends HuiPopup {
 				<hui-text("Scene info") class="label"/>
 			</hui-element>
 			<hui-element class="horizontal">
-				<hui-toggle>
+				<hui-toggle id="wireframe-tog">
 					<hui-icon("grid")/>
 				</hui-toggle>
 				<hui-text("Wireframe") class="label"/>
@@ -239,6 +239,13 @@ class HuiVisibilitySettingsPopup extends HuiPopup {
 			sceneInfoTog.toggled = !sceneInfoTog.toggled;
 			editor.setSceneInfoVisibility(sceneInfoTog.toggled);
 			hide.Ide.inst.currentConfig.set(hide.view.Prefab.VISIBILITY_SCENE_INFOS_CONFIG_KEY, sceneInfoTog.toggled);
+		}
+
+		wireframeTog.toggled = hide.Ide.inst.currentConfig.get(hide.view.Prefab.VISIBILITY_WIREFRAME_CONFIG_KEY, true);
+		wireframeTog.onClick = (_) -> {
+			wireframeTog.toggled = !wireframeTog.toggled;
+			editor.setWireframeVisibility(wireframeTog.toggled);
+			hide.Ide.inst.currentConfig.set(hide.view.Prefab.VISIBILITY_WIREFRAME_CONFIG_KEY, wireframeTog.toggled);
 		}
 	}
 }

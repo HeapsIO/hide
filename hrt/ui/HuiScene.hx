@@ -78,7 +78,6 @@ class HuiScene extends HuiElement {
 
 		#if editor_hl
 		sceneInfos = new HuiSceneInfos(this, this);
-		sceneInfos.visible = hide.Ide.inst.currentConfig.get(hide.view.Prefab.VISIBILITY_SCENE_INFOS_CONFIG_KEY, true);
 		#end
 
 		// new h3d.scene.Box(0x000000, s3d);
