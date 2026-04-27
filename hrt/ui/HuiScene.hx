@@ -18,6 +18,12 @@ class HuiScene extends HuiElement {
 
 	var renderTexture : h3d.mat.Texture;
 
+	#if editor_hl
+	public var showSceneInfos(default, set) : Bool = false;
+	var sceneInfos : HuiSceneInfos;
+	function set_showSceneInfos(v) { sceneInfos.visible = v; return showSceneInfos = v; }
+	#end
+
 	override function set_enableInteractive(b:Bool):Bool {
 		if( enableInteractive == b )
 			return b;
@@ -70,6 +76,11 @@ class HuiScene extends HuiElement {
 		makeInteractive();
 		propagateEvents = true;
 
+		#if editor_hl
+		sceneInfos = new HuiSceneInfos(this, this);
+		sceneInfos.visible = hide.Ide.inst.currentConfig.get(hide.view.Prefab.VISIBILITY_SCENE_INFOS_CONFIG_KEY, true);
+		#end
+
 		// new h3d.scene.Box(0x000000, s3d);
 		// var t = new h2d.Text(hxd.res.DefaultFont.get(), s2d);
 		// t.text = "Hello scene";
@@ -112,11 +123,7 @@ class HuiScene extends HuiElement {
 
 			s3d.setElapsedTime(hxd.Timer.dt);
 			s2d.setElapsedTime(hxd.Timer.dt);
-
-
-
 		}
-
 
 		super.sync(ctx);
 	}
@@ -167,7 +174,6 @@ class HuiScene extends HuiElement {
 
 	override function draw(ctx:h2d.RenderContext) {
 		if (renderTexture != null) {
-
 			var prevRZ = ctx.getCurrentRenderZone();
 			@:privateAccess ctx.clearRZ();
 
@@ -179,6 +185,10 @@ class HuiScene extends HuiElement {
 			var anyError = false;
 			try {
 				s3d.render(ctx.engine);
+				#if editor_hl
+				if (sceneInfos.visible)
+					sceneInfos.updateStats(ctx.engine);
+				#end
 				s2d.render(ctx.engine);
 			} catch(e) {
 				anyError = true;
@@ -198,6 +208,7 @@ class HuiScene extends HuiElement {
 			ctx.setCurrent();
 		}
 	}
+
 }
 
 class Interactive2 extends h2d.Interactive {
@@ -246,6 +257,86 @@ class Interactive2 extends h2d.Interactive {
 
 		@:privateAccess huiScene.sceneEvents.onEvent(clone);
 		e.propagate = false;
+	}
+}
+
+class HuiSceneInfos extends HuiElement {
+	static var SRC = <hui-scene-infos class="vertical">
+		<hui-text("Statistics") class="title"/>
+		<hui-text("Scene") class="sub-title"/>
+		<hui-element class="horizontal">
+			<hui-text("FPS : ") class="label"/>
+			<hui-text("78") id="fps"/>
+		</hui-element>
+		<hui-element class="horizontal">
+			<hui-text("Scene objects : ") class="label"/>
+			<hui-text("78") id="scene-obj-count"/>
+		</hui-element>
+		<hui-element class="horizontal">
+			<hui-text("Interactives 3D : ") class="label"/>
+			<hui-text("78") id="int-3d"/>
+		</hui-element>
+		<hui-element class="horizontal">
+			<hui-text("Interactives 2D : ") class="label"/>
+			<hui-text("78") id="int-2d"/>
+		</hui-element>
+
+		<hui-text("Graphics") class="sub-title"/>
+		<hui-element class="horizontal">
+			<hui-text("Triangles : ") class="label"/>
+			<hui-text("78") id="triangles-count"/>
+		</hui-element>
+		<hui-element class="horizontal">
+			<hui-text("Buffers : ") class="label"/>
+			<hui-text("78") id="buffers-count"/>
+		</hui-element>
+		<hui-element class="horizontal">
+			<hui-text("Textures : ") class="label"/>
+			<hui-text("78") id="tex-count"/>
+		</hui-element>
+		<hui-element class="horizontal">
+			<hui-text("Draw Calls : ") class="label"/>
+			<hui-text("78") id="draw-calls-count"/>
+		</hui-element>
+		<hui-element class="horizontal">
+			<hui-text("V Ram : ") class="label"/>
+			<hui-text("78") id="vram-count"/>
+		</hui-element>
+	</hui-scene-infos>
+
+	var scene : HuiScene;
+
+	public function new(scene : HuiScene, ?parent: h2d.Object) {
+		super(parent);
+		initComponent();
+		this.scene = scene;
+	}
+
+	public function updateStats(engine: h3d.Engine) {
+		function splitCentaines(v: Int) {
+			var str = Std.string(v);
+			var endStr = "";
+			for (char in 0...str.length) {
+				if (char % 3 == 0 && char > 0) {
+					endStr = " " + endStr;
+				}
+				endStr = str.charAt(str.length - char - 1) + endStr;
+			}
+			return endStr;
+		}
+
+		var memStats = engine.mem.stats();
+
+		// Scene stats
+		fps.text = '${Math.round(@:privateAccess engine.realFps)}';
+		sceneObjCount.text = '${splitCentaines(scene.s3d.getObjectsCount())}';
+
+		// Graphics stats
+		trianglesCount.text = '${splitCentaines(Std.int(engine.drawTriangles))}';
+		buffersCount.text = '${splitCentaines(memStats.bufferCount)}';
+		texCount.text = '${splitCentaines(memStats.textureCount)}';
+		drawCallsCount.text = '${splitCentaines(engine.drawCalls)}';
+		vramCount.text = '${Std.int(memStats.totalMemory / (1024 * 1024))} Mb';
 	}
 }
 

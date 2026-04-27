@@ -159,7 +159,7 @@ class HuiVisibilitySettingsPopup extends HuiPopup {
 
 			<hui-text("Debug") class="sub-title"/>
 			<hui-element class="horizontal">
-				<hui-toggle>
+				<hui-toggle id="scene-info-tog">
 					<hui-icon("info")/>
 				</hui-toggle>
 				<hui-text("Scene info") class="label"/>
@@ -232,6 +232,13 @@ class HuiVisibilitySettingsPopup extends HuiPopup {
 			outlineTog.toggled = !outlineTog.toggled;
 			editor.setOutlineVisibility(outlineTog.toggled);
 			hide.Ide.inst.currentConfig.set(hide.view.Prefab.VISIBILITY_OUTLINE_CONFIG_KEY, outlineTog.toggled);
+		}
+
+		sceneInfoTog.toggled = hide.Ide.inst.currentConfig.get(hide.view.Prefab.VISIBILITY_SCENE_INFOS_CONFIG_KEY, true);
+		sceneInfoTog.onClick = (_) -> {
+			sceneInfoTog.toggled = !sceneInfoTog.toggled;
+			editor.setSceneInfoVisibility(sceneInfoTog.toggled);
+			hide.Ide.inst.currentConfig.set(hide.view.Prefab.VISIBILITY_SCENE_INFOS_CONFIG_KEY, sceneInfoTog.toggled);
 		}
 	}
 }

@@ -1102,6 +1102,12 @@ class HuiPrefabEditor extends HuiElement {
 				e.enabled = visible;
 	}
 
+	public function setSceneInfoVisibility(visible : Bool) {
+		#if editor_hl
+		scene?.showSceneInfos = visible;
+		#end
+	}
+
 	function onSceneEvents(e: hxd.Event) : Void {
 		// debugGraph.clear();
 		// debugGraph.setColor(0xFF00FF, 1.0);
