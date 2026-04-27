@@ -33,8 +33,6 @@ class HierarchicalSSR extends RendererFX {
 		if ( !checkEnabled() )
 			return;
 
-		return;
-
 		var ctx = r.ctx;
 		r.mark("SSR");
 
