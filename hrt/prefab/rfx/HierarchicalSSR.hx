@@ -33,13 +33,17 @@ class HierarchicalSSR extends RendererFX {
 		if ( !checkEnabled() )
 			return;
 
+		return;
+
 		var ctx = r.ctx;
 		r.mark("SSR");
 
 		var hdr = @:privateAccess r.textures.hdr;
 		var normal = @:privateAccess r.textures.normal;
 		var roughness = @:privateAccess r.textures.pbr;
-		var hzb = r.computeHZB();
+		var hzbMax = ctx.camera.reverseDepth ? true : false;
+		r.updateHZB(false);
+		var hzb = ctx.hzb;
 
 		var width = hdr.width;
 		var height = hdr.height;
