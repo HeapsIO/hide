@@ -3906,6 +3906,9 @@ div.gradient-box:hover {
   text-align: center;
   margin-top: 2px;
 }
+.lods .lods-line .precent {
+  font-variant-numeric: tabular-nums;
+}
 .lods #buttons {
   width: 100%;
 }

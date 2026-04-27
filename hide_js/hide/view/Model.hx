@@ -337,6 +337,8 @@ class Model extends FileView {
 	var lastSelectedObject : h3d.scene.Object = null;
 	var ignoreReload : Int = 0;
 
+	var maxLod: Float = 1.0;
+
 	var highlightSelection : Bool = true;
 	var shader = new h3d.shader.FixedColor(0xffffff);
 	var shader2 = new h3d.shader.FixedColor(0xff8000);
@@ -841,13 +843,15 @@ class Model extends FileView {
 							</select>
 						</dd>
 						<dt>LOD Vertexes</dt><dd id="vertexes-count">-</dd>
-						<div class="lods-line">
+						<dt>Max Lod</dt><dd><input value="100" id="max-lod"/></dd>
+						<div class="lods-line" title="Change the maximum range of lod editable in the editor">
 							<div class="line"></div>
 							<div class="cursor">
 								<div class="cursor-line"></div>
 								<p class="ratio">100%</p>
 							</div>
 						</div>
+
 						<div id="buttons">
 							<input type="button" value="Copy" id="copy-lods"/>
 							<input type="button" value="Paste" id="paste-lods"/>
@@ -859,21 +863,21 @@ class Model extends FileView {
 
 				function getLodRatioFromIdx(idx : Int) {
 					var lodConfig = hmd.getLodConfig();
-					if (idx <= 0) return 1.;
+					if (idx <= 0) return maxLod;
 					if (idx > lodConfig.length) return 0.;
 					if (idx >= hmd.lodCount() + 1) return 0.;
 					return lodConfig[idx - 1];
 				}
 
 				function getLodRatioFromPx(px : Float) {
-					var ratio = 1 - (px / lodsEl.find(".line").width());
-					return Math.pow(ratio, 1.0 / lodPow);
+					var ratio = 1.0 - (px / lodsEl.find(".line").width());
+					return Math.pow(ratio, 1.0 / lodPow) * getLodRatioFromIdx(0);
 				}
 
 				function getLodRatioPowedFromIdx(idx : Int) {
-					var prev = hxd.Math.pow(getLodRatioFromIdx(idx) , lodPow);
-					var current = hxd.Math.pow(getLodRatioFromIdx(idx+1), lodPow);
-					return Math.abs(prev - current);
+					var prev = hxd.Math.pow(getLodRatioFromIdx(idx) / getLodRatioFromIdx(0) , lodPow);
+					var current = hxd.Math.pow(getLodRatioFromIdx(idx+1) / getLodRatioFromIdx(0), lodPow);
+					return Math.max(prev - current, 0);
 				}
 
 				function startDrag(onMove: js.jquery.Event->Void, onStop: js.jquery.Event->Void) {
@@ -894,12 +898,11 @@ class Model extends FileView {
 					var idx = 0;
 					for (area in areas) {
 						var areaEl = new Element(area);
-						trace(idx, getLodRatioFromIdx(idx));
 						areaEl.css({ width : '${lineEl.width() * getLodRatioPowedFromIdx(idx)}px' });
 
 
-						var roundedRatio = Std.int(getLodRatioFromIdx(idx) * 10000.) / 100.;
-						areaEl.find('#percent').text('${roundedRatio}%');
+						var roundedRatio = getLodRatioFromIdx(idx);
+						areaEl.find('#percent').text('${hrt.tools.MathUtils.roundToSignificantFigures(roundedRatio * 100, 3)}%');
 
 						var text = "";
 						areaEl.children().each((idx, el) -> text += el.textContent + "\n");
@@ -968,6 +971,31 @@ class Model extends FileView {
 					}));
 				});
 
+				maxLod = Math.max(getLodRatioFromIdx(1), maxLod);
+
+				var maxLodElem = lodsEl.find("#max-lod");
+				maxLodElem.val(getLodRatioFromIdx(0) * 100);
+				maxLodElem.get(0).onchange = (e) -> {
+					var newMax = Std.parseFloat(maxLodElem.val());
+					if (Math.isNaN(newMax)) {
+						maxLodElem.val(getLodRatioFromIdx(0) * 100);
+						return;
+					}
+
+					var oldVal = maxLod;
+					var newVal = newMax / 100.0;
+					newVal = Math.max(getLodRatioFromIdx(1), newVal);
+
+					var exec = function(undo) {
+						maxLod = undo ? oldVal : newVal;
+						maxLodElem.val(maxLod * 100);
+						refreshLodLine();
+					};
+					undo.change(Custom(exec), false);
+					exec(false);
+				};
+
+
 				var selectLod = lodsEl.find("select");
 				selectLod.on("change", function(){
 					mesh.forcedLod = Std.int(lodsEl.find("select").val());
@@ -1008,9 +1036,10 @@ class Model extends FileView {
 							trace(limits);
 							startDrag(function(e) {
 								var newRatio = getLodRatioFromPx(e.clientX - lodsLine.offset().left);
-								trace(newRatio);
+								if (Math.isNaN(newRatio))
+									newRatio = 0;
+								newRatio = hrt.tools.MathUtils.roundToSignificantFigures(newRatio, 3);
 								newRatio = hxd.Math.clamp(newRatio, limits[0], limits[1]);
-								trace("clamp => ", newRatio);
 								newConfig[currIdx] = newRatio;
 								@:privateAccess hmd.lodConfig = newConfig;
 								refreshLodLine();
@@ -2375,16 +2404,17 @@ class Model extends FileView {
 				return Math.round(number) / Math.pow(10, precision);
 			}
 
-			var screenRatio = @:privateAccess selectedMesh.curScreenRatio;
-			var line = sceneEditor.properties.element.find(".line");
-			var cursor = sceneEditor.properties.element.find(".cursor");
-			if (cursor.length > 0) {
-				cursor?.css({left: '${line.position().left + line.width() * hxd.Math.clamp((1 - hxd.Math.pow(screenRatio, lodPow)), 0, 1)}px'});
-				cursor?.find(".ratio").text('${round(hxd.Math.clamp(screenRatio * 100, 0, 100), 2)}%');
-			}
-
 			var hmd = selectedMesh != null ? Std.downcast(selectedMesh.primitive, h3d.prim.HMDModel) : null;
+
 			if ( hmd != null ) {
+				var screenRatio = @:privateAccess selectedMesh.curScreenRatio;
+				var line = sceneEditor.properties.element.find(".line");
+				var cursor = sceneEditor.properties.element.find(".cursor");
+				if (cursor.length > 0) {
+					cursor?.css({left: '${line.position().left + line.width() * hxd.Math.clamp((1 - hxd.Math.pow(screenRatio / maxLod, lodPow)), 0, 1)}px'});
+					cursor?.find(".ratio").text('${round(hxd.Math.max(screenRatio * 100, 0), 2)}%');
+				}
+
 				var lodsCountEl = sceneEditor.properties.element.find("#vertexes-count");
 				var curLod = selectedMesh.getLodIndex();
 				var lodVertexesCount = @:privateAccess { ( curLod < hmd.lods.length ) ? hmd.lods[curLod].vertexCount : 0; };
