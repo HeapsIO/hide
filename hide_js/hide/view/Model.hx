@@ -116,7 +116,9 @@ class CollisionSettings {
 				var polygonBuffer = new h3d.col.PolygonBuffer();
 				polygonBuffer.setData(buffers.vertexes, buffers.indexes);
 				var obj = polygonBuffer.makeDebugObj();
-				obj.defaultTransform = colliderModel.skin != null ? colliderModel.skin.joints[0].position.toMatrix() : colliderModel.position.toMatrix();
+				obj.defaultTransform = colliderModel.position.toMatrix();
+				if (colliderModel.skin != null)
+					obj.defaultTransform.multiply(obj.defaultTransform, colliderModel.skin.joints[0].position.toMatrix());
 				obj.defaultTransform.multiply(obj.defaultTransform, model.position.toMatrix().getInverse());
 				return obj;
 
@@ -157,7 +159,9 @@ class CollisionSettings {
 						ibuf[i] = idx;
 					polygonBuffer.setData(vbuf, ibuf, true);
 					var obj = polygonBuffer.makeDebugObj();
-					obj.defaultTransform = colliderModel.skin != null ? colliderModel.skin.joints[0].position.toMatrix() : colliderModel.position.toMatrix();
+					obj.defaultTransform = colliderModel.position.toMatrix();
+					if (colliderModel.skin != null)
+						obj.defaultTransform.multiply(obj.defaultTransform, colliderModel.skin.joints[0].position.toMatrix());
 					parentObj.addChild(obj);
 				}
 
