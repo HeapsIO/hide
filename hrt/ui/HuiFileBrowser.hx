@@ -2,14 +2,9 @@ package hrt.ui;
 
 #if hui
 
-typedef File = {
-	var name: String;
-	var nameSort: String;
-	var fullPath: String;
-	var parent: File;
-	var children: Array<File>;
-	var isDirectory: Bool;
-}
+import hrt.tools.FileManager;
+
+typedef File = FileEntry;
 
 class HuiFileBrowser extends HuiElement {
 	var rootFile: File;
@@ -17,6 +12,8 @@ class HuiFileBrowser extends HuiElement {
 	var tree: HuiTree<File>;
 	var rootPath: String;
 	var needRefresh: Bool = false;
+
+	var fileManager = FileManager.inst;
 
 	public function new(rootPath: String, ?parent) {
 		super(parent);
@@ -35,6 +32,17 @@ class HuiFileBrowser extends HuiElement {
 		tree.onItemContextMenu = itemContextMenu;
 
 		markRefresh();
+
+		fileManager.watchFileChange(onFileChange);
+	}
+
+	override function onRemove() {
+		fileManager.unwatchFileChange(onFileChange);
+		super.onRemove();
+	}
+
+	public function onFileChange(file: File) {
+		tree.rebuild(file == rootFile ? null : file);
 	}
 
 	public function markRefresh() {
@@ -51,10 +59,10 @@ class HuiFileBrowser extends HuiElement {
 			label: "Directory",
 			click: () -> {
 				var dir = file;
-				if (!dir.isDirectory) {
+				if (dir.kind != Dir) {
 					dir = file.parent;
 				}
-				var basePath = dir.fullPath + '/' + "New directory";
+				var basePath = dir.path + '/' + "New directory";
 				var pathToCreate = basePath;
 				var tries = 0;
 				while(sys.FileSystem.exists(pathToCreate)) {
@@ -93,8 +101,8 @@ class HuiFileBrowser extends HuiElement {
 				var newFile = getItemByPath(pathToCreate);
 				tree.setSelection([newFile]);
 				tree.rename(newFile, (newName) -> {
-					var oldPath = newFile.fullPath;
-					var path = new haxe.io.Path(newFile.fullPath);
+					var oldPath = newFile.path;
+					var path = new haxe.io.Path(newFile.path);
 					var newPath = path.dir + "/" + newName;
 
 					if (oldPath != newPath) {
@@ -120,12 +128,12 @@ class HuiFileBrowser extends HuiElement {
 		uiBase.confirm('Really delete $message ? (Cannot be undone)', Cancel | Ok, (button) -> {
 			if (button == Ok) {
 				for (file in selectedFiles) {
-					if (sys.FileSystem.exists(file.fullPath)) {
+					if (sys.FileSystem.exists(file.path)) {
 						try {
-							if (file.isDirectory) {
-								deleteDir(file.fullPath);
+							if (file.kind == Dir) {
+								deleteDir(file.path);
 							} else {
-								sys.FileSystem.deleteFile(file.fullPath);
+								sys.FileSystem.deleteFile(file.path);
 							}
 						} catch(e) {
 							hide.Ide.showError('Error while removing ${file.name} : $e');
@@ -185,14 +193,7 @@ class HuiFileBrowser extends HuiElement {
 	}
 
 	function refreshInternal() {
-		rootFile = {
-			name: new haxe.io.Path(rootPath).file,
-			nameSort: new haxe.io.Path(rootPath).file,
-			fullPath: rootPath,
-			parent: null,
-			children: null,
-			isDirectory: true,
-		};
+		rootFile = fileManager.fileRoot;
 
 		tree.rebuild();
 		needRefresh = false;
@@ -217,38 +218,10 @@ class HuiFileBrowser extends HuiElement {
 			child = rootFile;
 		}
 
-		if (!child.isDirectory)
+		if (child.kind != Dir)
 			return null;
 
-		if (child.children == null) {
-			var files = sys.FileSystem.readDirectory(child.fullPath);
-			child.children = [];
-			for (file in files) {
-				if (file == ".tmp") continue;
-				var fullPath = child.fullPath + "/" + file;
-				child.children.push({
-					name: file,
-					nameSort: file.toLowerCase(),
-					fullPath: fullPath,
-					parent: child,
-					children: null,
-					isDirectory: sys.FileSystem.isDirectory(fullPath),
-				});
-			}
-
-			child.children.sort(sortEntries);
-		}
-
 		return child.children;
-	}
-
-	function sortEntries(a: File, b: File) {
-		if (a.isDirectory && !b.isDirectory) {
-			return -1;
-		} else if (!a.isDirectory && b.isDirectory) {
-			return 1;
-		}
-		return Reflect.compare(a.nameSort, b.nameSort);
 	}
 
 	public dynamic function onOpen(file: File) {
@@ -260,10 +233,10 @@ class HuiFileBrowser extends HuiElement {
 	}
 
 	function getItemIcon(res: File) : String {
-		if (res.isDirectory)
-			return HuiRes.icons.folder_filled;
-		else
-			return HuiRes.icons.file_blank_filled;
+		return switch(res.kind) {
+			case Dir: HuiRes.icons.folder_filled;
+			case File: HuiRes.icons.file_blank_filled;
+		}
 	}
 
 	function getItemByPath(path: String) : File {

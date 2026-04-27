@@ -50,6 +50,11 @@ class FileEntry {
 	public var disposed: Bool = false;
 	public var vcsStatus: VCSStatus = None;
 
+	// Change this flag to true to watch each folder independently (causes issues on windows where watched
+	// folders can't be removed in the explorer, but is needed on linux because libUV doesn't support recursive
+	// filewatches on it)
+	static final emulateRecursive = false;
+
 	/**
 		The file should not appear in the hierarchy, it's children are not computed, and is not watched
 	**/
@@ -152,7 +157,7 @@ class FileEntry {
 	}
 
 	function changed() {
-		trace("change ! " + getRelPath());
+		FileManager.inst.fileChangeInternal(this);
 	}
 
 	function watch() {
@@ -161,32 +166,45 @@ class FileEntry {
 			throw "already watching";
 		if (ignored)
 			return;
+		if (!emulateRecursive && parent != null)
+			return;
 		if (kind == Dir) {
-			watcher = new hl.uv.Fs(this.getPath(), (name, event) -> onChildChange(name));
+			watcher = new hl.uv.Fs(null, this.getPath(), (name: String, event) -> {
+				if (!emulateRecursive) {
+					name = StringTools.replace(name, "\\", "/");
+				}
+				onChildChange(name);
+			} , !emulateRecursive);
 			if (watcher.handle == null)
 				throw "Couldn't watch directory " + this.getPath();
 		}
 		#end
 	}
 
-	function onChildChange(name: String) {
+	function onChildChange(name: String) : FileEntry {
 		trace(this.getPath(), name);
+
+		if (!emulateRecursive) {
+			var parts = name.split("/");
+			if (parts.length >= 2) {
+				var directChild = onChildChange(parts.shift());
+				return directChild.onChildChange(parts.join("/"));
+			}
+		}
 
 		if (name == null) {
 			refreshChildren();
 			changed();
-			return;
+			return this;
 		}
 
 		var childPath = getChildRelPath(name);
 		var child = FileManager.inst.fileIndex.get(childPath);
 
-		if (child != null && !children?.contains(child)) {
-			throw "child was in fileIndex but not in this children";
-		}
-		else if (child != null) {
+		if (child != null) {
 			child.changed();
-			if (!sys.FileSystem.exists(child.getPath())) {
+			var current = child;
+			if (!sys.FileSystem.exists(current.getPath())) {
 				children.remove(child);
 				child.dispose();
 				changed();
@@ -200,6 +218,7 @@ class FileEntry {
 			children.sort(compareFile);
 			changed();
 		}
+		return child;
 	}
 
 
@@ -244,6 +263,7 @@ class FileEntry {
 }
 
 typedef MiniatureReadyCallback = (miniaturePath: String) -> Void;
+typedef FileChangeCallback = (entry: FileEntry) -> Void;
 
 /**
 	Class that handle parsing and maintaining the state of the project files, and generate miniatures for them on demand
@@ -257,7 +277,7 @@ class FileManager {
 	public static final thumbnailGeneratorUrl = "localhost";
 
 	public static var inst(get, default) : FileManager;
-	public var onFileChangeHandlers: Array<(entry: FileEntry) -> Void> = [];
+	public var onFileChangeHandlers: Array<FileChangeCallback> = [];
 	public var onVCSStatusUpdateHandlers: Array<() -> Void> = [];
 
 	//var windowManager : RenderWindowManager = null;
@@ -292,6 +312,25 @@ class FileManager {
 			//inst.cleanupGenerator();
 			//inst.cleanupServer();
 		}
+	}
+
+	public function watchFileChange(callback: FileChangeCallback) {
+		for (i => cb in onFileChangeHandlers) {
+			if (Reflect.compareMethods(cb, callback) == true) {
+				throw "callback already registered";
+			}
+		}
+		onFileChangeHandlers.push(callback);
+	}
+
+	public function unwatchFileChange(callback: FileChangeCallback) {
+		for (i => cb in onFileChangeHandlers) {
+			if (Reflect.compareMethods(cb, callback) == true) {
+				onFileChangeHandlers.splice(i, 1);
+				return;
+			}
+		}
+		throw "No callback was registered";
 	}
 
 
