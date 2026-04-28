@@ -60,12 +60,12 @@ class MeshSpawnShader extends ComputeUtils {
 
 		var skinShader = mesh.material.mainPass.getShader(h3d.shader.SkinBase);
 		bonesMatrixes = skinShader.bonesMatrixes;
-		MaxBones = skinShader.MaxBones;
+		JOINTS_BUFFER_SIZE = skinShader.BUFFER_SIZE;
 		absPosInv = mesh.getAbsPos().getInverse();
 	}
 
 	static var SRC = {
-		@const var MaxBones : Int;
+		@const(1024) var JOINTS_BUFFER_SIZE : Int;
 
 		@param var vertexCount : Int;
 		@param var vbuf : RWPartialBuffer<{
@@ -77,7 +77,7 @@ class MeshSpawnShader extends ComputeUtils {
 			indexes : Bytes4
 		}>;
 		@param var absPosInv : Mat3x4;
-		@param var bonesMatrixes : Array<Mat3x4,MaxBones>;
+		@param var bonesMatrixes : Buffer<Vec4, JOINTS_BUFFER_SIZE>;
 
 		var speed : Vec3;
 		var emitNormal : Vec3;
@@ -91,17 +91,23 @@ class MeshSpawnShader extends ComputeUtils {
 			var relativeNormal = vertexData.normal;
 
 			var weights = vertexData.weights;
-			var transformedPosition = (relativePosition * bonesMatrixes[int(vertexData.indexes.x * 127.0)] * absPosInv) * weights.x +
-				(relativePosition * bonesMatrixes[int(vertexData.indexes.y * 127.0)] * absPosInv) * weights.y +
-				(relativePosition * bonesMatrixes[int(vertexData.indexes.z * 127.0)] * absPosInv) * weights.z;
+			var transformedPosition =
+				(relativePosition * getBoneMatrix(vertexData.indexes.x * 127.0) * absPosInv) * weights.x +
+				(relativePosition * getBoneMatrix(vertexData.indexes.y * 127.0) * absPosInv) * weights.y +
+				(relativePosition * getBoneMatrix(vertexData.indexes.z * 127.0) * absPosInv) * weights.z;
 
 			var transformedNormal =
-				(vertexData.normal * absPosInv.mat3() * mat3(bonesMatrixes[int(vertexData.indexes.x * 127.0)])) * vertexData.weights.x +
-				(vertexData.normal * absPosInv.mat3() * mat3(bonesMatrixes[int(vertexData.indexes.y * 127.0)])) * vertexData.weights.y +
-				(vertexData.normal * absPosInv.mat3() * mat3(bonesMatrixes[int(vertexData.indexes.z * 127.0)])) * vertexData.weights.z;
+				(vertexData.normal * absPosInv.mat3() * mat3(getBoneMatrix(vertexData.indexes.x * 127.0))) * vertexData.weights.x +
+				(vertexData.normal * absPosInv.mat3() * mat3(getBoneMatrix(vertexData.indexes.y * 127.0))) * vertexData.weights.y +
+				(vertexData.normal * absPosInv.mat3() * mat3(getBoneMatrix(vertexData.indexes.z * 127.0))) * vertexData.weights.z;
 			emitNormal = transformedNormal;
 
 			relativeTransform = translationMatrix(transformedPosition);
+		}
+
+		function getBoneMatrix( index : Float ) : Mat3x4 {
+			var i = int(index) * 3;
+			return mat3x4(bonesMatrixes[i], bonesMatrixes[i + 1], bonesMatrixes[i + 2]);
 		}
 	}
 }
