@@ -1755,7 +1755,7 @@ class Cell {
 						}
 						else if (paramValue.hasClass("select-root")) {
 							if (paramValue.val() != "None")
-								newCtValue.push(paramValue.text());
+								newCtValue.push(paramValue.val());
 							else
 								newCtValue.push("");
 						}
