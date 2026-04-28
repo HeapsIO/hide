@@ -307,10 +307,11 @@ class GPUEmitterObject extends h3d.scene.MeshBatch {
 				}
 
 				ctx.computeList(@:privateAccess spawnPass.shaders);
-				ctx.computeDispatch(instanceCount);
+				var threadGroupX = hxd.Math.ceil(instanceCount/64);
+				ctx.computeDispatch(threadGroupX);
 
 				ctx.computeList(@:privateAccess simulationPass.shaders);
-				ctx.computeDispatch(instanceCount);
+				ctx.computeDispatch(threadGroupX);
 
 				for ( row => p in shaderParams ) {
 					p.shader.paramTexture = paramTexture;
@@ -328,7 +329,7 @@ class GPUEmitterObject extends h3d.scene.MeshBatch {
 				}
 				if ( updateParamPass != null ) {
 					ctx.computeList(@:privateAccess updateParamPass.shaders);
-					ctx.computeDispatch(instanceCount);
+					ctx.computeDispatch(threadGroupX);
 				}
 
 				i += p.maxInstance;

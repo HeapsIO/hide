@@ -14,6 +14,7 @@ class UpdateParamShader extends hxsl.Shader {
 		@param var row : Float;
 
 		function main() {
+			setLayout(64, 1, 1);
 			var idx = computeVar.globalInvocation.x;
 			batchBuffer[idx * stride + pos] = paramTexture.getLod(vec2(1.0 - particleBuffer[idx].life / particleBuffer[idx].lifeTime, row), 0.0).x;
 		}

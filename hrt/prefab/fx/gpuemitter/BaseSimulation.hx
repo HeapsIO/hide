@@ -41,6 +41,7 @@ class BaseSimulation extends ComputeUtils {
 		var absoluteTranslation : Mat4;
 
 		function __init__() {
+			setLayout(64, 1, 1);
 			absoluteTranslation = translationMatrix(vec3(0.0));
 			computeCameraBounds = true;
 			dt = dtParam;
