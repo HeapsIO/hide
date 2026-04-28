@@ -224,11 +224,17 @@ class HuiTree<TreeItem> extends HuiElement {
 		focusSetInternal(flatList[id]);
 	}
 
-	public function rename(item: TreeItem, callback: (newName: String) -> Void) {
+	/**
+		Return true if the rename operation was started, false if not
+	**/
+	public function rename(item: TreeItem, callback: (newName: String) -> Void) : Bool {
 		var data = itemMap.get(cast item);
 		var line = Std.downcast(list.tryGetElement(data), HuiTreeLine);
 		if (line != null) {
 			line.rename(callback);
+			return true;
+		} {
+			return false;
 		}
 	}
 

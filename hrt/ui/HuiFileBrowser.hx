@@ -15,6 +15,8 @@ class HuiFileBrowser extends HuiElement {
 
 	var fileManager = FileManager.inst;
 
+	var delayRename: String = null;
+
 	public function new(rootPath: String, ?parent) {
 		super(parent);
 		initComponent();
@@ -96,19 +98,7 @@ class HuiFileBrowser extends HuiElement {
 					markRefresh();
 				}, false);
 
-				refreshSync();
-
-				var newFile = getItemByPath(pathToCreate);
-				tree.setSelection([newFile]);
-				tree.rename(newFile, (newName) -> {
-					var oldPath = newFile.path;
-					var path = new haxe.io.Path(newFile.path);
-					var newPath = path.dir + "/" + newName;
-
-					if (oldPath != newPath) {
-						getView().undo.run(actionRenameFile(oldPath, newPath), false);
-					}
-				});
+				delayRename = pathToCreate;
 			}
 		}];
 
@@ -189,6 +179,17 @@ class HuiFileBrowser extends HuiElement {
 			refreshInternal();
 		}
 
+		if (delayRename != null) {
+			var file = fileManager.getFileAbs(delayRename);
+			if (file != null) {
+				if(tree.rename(file, (newName) -> {
+					trace(newName);
+				})) {
+					delayRename = null;
+				}
+			}
+		}
+
 		super.sync(ctx);
 	}
 
@@ -237,20 +238,6 @@ class HuiFileBrowser extends HuiElement {
 			case Dir: HuiRes.icons.folder_filled;
 			case File: HuiRes.icons.file_blank_filled;
 		}
-	}
-
-	function getItemByPath(path: String) : File {
-		var relPath = StringTools.replace(path, rootPath + "/", "");
-		relPath = StringTools.replace(relPath, "\\", "");
-		var parts = relPath.split("/");
-		var paths = new haxe.io.Path(relPath);
-		var curFile = rootFile;
-		for (part in parts) {
-			curFile = Lambda.find(curFile.children, (f) -> f.name == part);
-			if (curFile == null)
-				return null;
-		}
-		return curFile;
 	}
 }
 

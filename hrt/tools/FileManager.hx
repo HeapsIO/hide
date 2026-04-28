@@ -1265,6 +1265,11 @@ class FileManager {
 		}
 		browseRec("");
 	}
+
+	public function getFileAbs(absPath: String) : Null<FileEntry> {
+		var relPath = fileRoot.name + StringTools.replace(absPath, fileRoot.path, "");
+		return fileIndex.get(relPath);
+	}
 }
 
 @:allow(hrt.tools.FileManager)
