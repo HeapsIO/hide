@@ -171,7 +171,7 @@ class HuiVisibilitySettingsPopup extends HuiPopup {
 				<hui-text("Wireframe") class="label"/>
 			</hui-element>
 			<hui-element class="horizontal">
-				<hui-toggle>
+				<hui-toggle id="disable-scene-tog">
 					<hui-icon("visibility_off")/>
 				</hui-toggle>
 				<hui-text("Disable Scene Render") class="label"/>
@@ -246,6 +246,13 @@ class HuiVisibilitySettingsPopup extends HuiPopup {
 			wireframeTog.toggled = !wireframeTog.toggled;
 			editor.setWireframeVisibility(wireframeTog.toggled);
 			hide.Ide.inst.currentConfig.set(hide.view.Prefab.VISIBILITY_WIREFRAME_CONFIG_KEY, wireframeTog.toggled);
+		}
+
+		disableSceneTog.toggled = hide.Ide.inst.currentConfig.get(hide.view.Prefab.VISIBILITY_DISABLE_SCENE_RENDER_CONFIG_KEY, false);
+		disableSceneTog.onClick = (_) -> {
+			disableSceneTog.toggled = !disableSceneTog.toggled;
+			editor.setSceneVisibility(!disableSceneTog.toggled);
+			hide.Ide.inst.currentConfig.set(hide.view.Prefab.VISIBILITY_DISABLE_SCENE_RENDER_CONFIG_KEY, disableSceneTog.toggled);
 		}
 	}
 }

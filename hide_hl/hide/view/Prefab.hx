@@ -29,6 +29,7 @@ class Prefab extends HuiView<{path: String}> {
 	public static var VISIBILITY_OUTLINE_CONFIG_KEY = "editor.visibility.outline";
 	public static var VISIBILITY_SCENE_INFOS_CONFIG_KEY = "editor.visibility.sceneInfos";
 	public static var VISIBILITY_WIREFRAME_CONFIG_KEY = "editor.visibility.wireframe";
+	public static var VISIBILITY_DISABLE_SCENE_RENDER_CONFIG_KEY = "editor.visibility.disableSceneRender";
 
 	public function new(_state: Dynamic, ?parent) {
 		super(_state, parent);

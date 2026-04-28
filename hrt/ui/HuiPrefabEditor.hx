@@ -70,12 +70,6 @@ class HuiPrefabEditor extends HuiElement {
 
 	var config : hide.Config;
 
-	// Gizmos and guides
-	var grid : hrt.tools.Grid = null;
-	var viewportAxis : hrt.tools.ViewportAxis = null;
-	var gizmo : hrt.tools.Gizmo = null;
-	var outline : hrt.prefab.rfx.Outline;
-
 	var lastPushX : Float = -100;
 	var lastPushY : Float = -100;
 	var movedSinceLastPush : Bool = false;
@@ -83,6 +77,13 @@ class HuiPrefabEditor extends HuiElement {
 	var lastFocusObjects: Array<h3d.scene.Object> = [];
 
 	var inspectorRoot : hide.kit.KitRoot;
+	var disableSceneRender : Bool = false;
+
+	// Gizmos and guides
+	var grid : hrt.tools.Grid = null;
+	var viewportAxis : hrt.tools.ViewportAxis = null;
+	var gizmo : hrt.tools.Gizmo = null;
+	var outline : hrt.prefab.rfx.Outline;
 
 	// Debugs
 	var debugGraph: h2d.Graphics;
@@ -1034,6 +1035,7 @@ class HuiPrefabEditor extends HuiElement {
 		setOutlineVisibility(visibility && hide.Ide.inst.currentConfig.get(hide.view.Prefab.VISIBILITY_OUTLINE_CONFIG_KEY, true));
 		setSceneInfoVisibility(visibility && hide.Ide.inst.currentConfig.get(hide.view.Prefab.VISIBILITY_SCENE_INFOS_CONFIG_KEY, true));
 		setWireframeVisibility(visibility && hide.Ide.inst.currentConfig.get(hide.view.Prefab.VISIBILITY_WIREFRAME_CONFIG_KEY, true));
+		setSceneVisibility(!hide.Ide.inst.currentConfig.get(hide.view.Prefab.VISIBILITY_DISABLE_SCENE_RENDER_CONFIG_KEY, false));
 	}
 
 	@:access(h3d.scene.Skin)
@@ -1123,6 +1125,10 @@ class HuiPrefabEditor extends HuiElement {
 				}
 			}
 		}
+	}
+
+	public function setSceneVisibility(visible : Bool) {
+		scene.disableSceneRender = !visible;
 	}
 
 	function onSceneEvents(e: hxd.Event) : Void {

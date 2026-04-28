@@ -15,6 +15,7 @@ class HuiScene extends HuiElement {
 	public var s2d : h2d.Scene;
 	public var s3d : h3d.scene.Scene;
 	public var sceneEvents : hxd.SceneEvents;
+	public var disableSceneRender : Bool = false;
 
 	var renderTexture : h3d.mat.Texture;
 
@@ -183,12 +184,14 @@ class HuiScene extends HuiElement {
 
 			var anyError = false;
 			try {
-				s3d.render(ctx.engine);
-				#if editor_hl
-				if (sceneInfos.visible)
-					sceneInfos.updateStats(ctx.engine);
-				#end
-				s2d.render(ctx.engine);
+				if (!disableSceneRender) {
+					s3d.render(ctx.engine);
+					#if editor_hl
+					if (sceneInfos.visible)
+						sceneInfos.updateStats(ctx.engine);
+					#end
+					s2d.render(ctx.engine);
+				}
 			} catch(e) {
 				anyError = true;
 				error.setError("Scene render failed", e);
