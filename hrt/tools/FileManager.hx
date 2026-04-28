@@ -169,7 +169,8 @@ class FileEntry {
 		if (!emulateRecursive && parent != null)
 			return;
 		if (kind == Dir) {
-			watcher = new hl.uv.Fs(null, this.getPath(), (name: String, event) -> {
+			watcher = new hl.uv.Fs(null, this.getPath(), (event) -> {
+				var name = watcher.contentChangedPath;
 				if (!emulateRecursive) {
 					name = StringTools.replace(name, "\\", "/");
 				}
