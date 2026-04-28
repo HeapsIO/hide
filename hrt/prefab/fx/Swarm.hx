@@ -49,6 +49,8 @@ class SwarmObject extends h3d.scene.Object {
 
 	public var shader : PerObjectRandom;
 
+	var relativeTo: h3d.scene.Object;
+
 
 	var time = 0.0;
 	var stepTime = 0.0;
@@ -161,6 +163,13 @@ class SwarmObject extends h3d.scene.Object {
 			//updateMeshBatch();
 		}
 
+		if (prefab.relativeToRoot) {
+			var cur = parent;
+			while(cur != null && Std.downcast(cur, hrt.prefab.fx.FX.FXAnimation) == null) {
+				cur = cur.parent;
+			}
+			relativeTo = cur;
+		}
 	}
 
 	function makeShaderInstance(prefab: hrt.prefab.Shader) {
@@ -179,13 +188,20 @@ class SwarmObject extends h3d.scene.Object {
 	// Performs a fixed step in the simulation
 	// Avoid degenerating parameters at low framerates
 	function step() {
-		var absPos = getAbsPos();
+
+		var relativePos = tmpMatrix;
+		relativePos.identity();
+		if (relativeTo != null) {
+			relativePos.load(relativeTo.absPos);
+			relativePos.invert();
+		}
+		relativePos.multiply(getAbsPos(), relativePos);
 
 		if (lastPos == null) {
-			lastPos = absPos.getPosition();
+			lastPos = relativePos.getPosition();
 		}
 
-		var curPos = absPos.getPosition();
+		var curPos = relativePos.getPosition();
 
 		if (prefab.autoTrackRotation) {
 			var delta = curPos.sub(lastPos);
@@ -219,7 +235,7 @@ class SwarmObject extends h3d.scene.Object {
 		elements.resize(prefab.numObjects);
 		for (i in prevLen...prefab.numObjects) {
 			var pos = getPointPos(i, tmpVector);
-			pos.transform(absPos);
+			pos.transform(relativePos);
 			var e = new SwarmElement();
 			e.x = pos.x;
 			e.y = pos.y;
@@ -238,7 +254,7 @@ class SwarmObject extends h3d.scene.Object {
 
 
 			var target = getPointPos(i, tmpVector);
-			target.transform(absPos);
+			target.transform(relativePos);
 
 			if (hxd.Math.isNaN(e.x) ||
 				hxd.Math.isNaN(e.y) ||
@@ -339,12 +355,15 @@ class SwarmObject extends h3d.scene.Object {
 	}
 
 	static var tmpMatrix = new h3d.Matrix();
+	static var tmpScale = new h3d.Vector();
+
 
 	function updateMeshBatch() {
 		if(batch == null) return;
 
-		var parentScale = new h3d.Vector(1., 1., 1.);
-		if (parent != null) {
+		var parentScale = tmpScale;
+		parentScale.set(1.0,1.0,1.0);
+		if (parent != null && relativeTo == null) {
 			parentScale.load(parent.getAbsPos().getScale());
 		}
 		batch.begin(hxd.Math.nextPOT(prefab.numObjects));
@@ -387,6 +406,10 @@ class SwarmObject extends h3d.scene.Object {
 			batch.worldPosition.ty = y;
 			batch.worldPosition.tz = z;
 			batch.worldPosition._44 = 1.0;
+
+			if (relativeTo != null) {
+				batch.worldPosition.multiply(batch.worldPosition, relativeTo.absPos);
+			}
 
 			shader.randomParam = hashf(i, 77894 + prefab.seed);
 			batch.emitInstance();
@@ -438,6 +461,7 @@ class SwarmObject extends h3d.scene.Object {
 }
 
 class Swarm extends Object3D {
+	@:s public var relativeToRoot : Bool = false;
 	@:s public var numObjects : Int = 3;
 	@:s public var seed : Int = 0;
 	@:s public var randScale: Float = 0.0;
@@ -496,6 +520,7 @@ class Swarm extends Object3D {
 		ctx.build(
 			<root>
 				<category("Swarm Entities")>
+					<checkbox label="Relative" field={relativeToRoot} tooltip="Animate relative to the root fx world pos instead of always being in world space"/>
 					<range(1, 100) label="Count" field={numObjects} tooltip="Total number of entities in the swarm"/>
 					<slider label="Random Seed" field={seed} tooltip="Randomize the values of the swarm"/>
 					<range(0.0, 1.0) label="Random Scale" field={randScale} tooltip="Uniform Random scale applied to each entity in the swarm"/>
