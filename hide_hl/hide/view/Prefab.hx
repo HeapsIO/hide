@@ -65,6 +65,11 @@ class Prefab extends HuiView<{path: String}> {
 	override function getContextMenuContent(content: Array<hide.comp.ContextMenu.MenuItem>) {
 		content.push({label: "Save", click: () -> execCommand(HuiCommands.save)});
 		content.push({label: "Rebuild", click: () -> @:privateAccess prefabEditor.tryMake(prefabEditor.prefab)});
+		content.push({isSeparator: true});
+		content.push({label: "Debug dump", click: () -> {
+			var ser = @:privateAccess prefabEditor.prefab.serialize();
+			trace(haxe.Json.stringify(ser, "\t"));
+		}});
 	}
 
 	override function getViewName():String {

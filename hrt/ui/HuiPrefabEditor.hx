@@ -386,7 +386,9 @@ class HuiPrefabEditor extends HuiElement {
 		inspectorRoot.make();
 
 		inspectorPanel.addChild(@:privateAccess inspectorRoot.native);
-		@:privateAccess inspectorRoot.native.get().dom.applyStyle(uiBase.style);
+		if (uiBase != null) {
+			@:privateAccess inspectorRoot.native.get().dom.applyStyle(uiBase.style);
+		}
 	}
 
 	function contextMenu(target: hrt.prefab.Prefab) {
@@ -532,7 +534,9 @@ class HuiPrefabEditor extends HuiElement {
 
 			if (newParent != null)
 				treePrefab.toggleItemOpen(newParent, true);
-			rebuildPrefabTree(prefab);
+			rebuildPrefabTree(oldParent);
+			rebuildPrefabTree(newParent);
+			updateDebugOverlayVisibility();
 		};
 	}
 

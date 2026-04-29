@@ -153,6 +153,8 @@ class HuiBase extends HuiElement {
 		currentMenu = menu;
 		menu.onCloseListeners.push(() -> if (menu == currentMenu) currentMenu = null);
 
+		menu.interactive.focus();
+
 		return currentMenu;
 	}
 

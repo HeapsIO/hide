@@ -107,7 +107,7 @@ class HuiTree<TreeItem> extends HuiElement {
 
 		onPush = (e:hxd.Event) -> {
 			if (e.button == 0 || e.button == 1) {
-				interactive.focus();
+				//interactive.focus();
 				e.propagate = false;
 
 				if (!hxd.Key.isDown(hxd.Key.CTRL)) {
@@ -120,6 +120,12 @@ class HuiTree<TreeItem> extends HuiElement {
 				}
 			}
 		}
+	}
+
+	override function onFocusLostInternal(e:hxd.Event) {
+		super.onFocusLostInternal(e);
+		keyboardFocus = null;
+		refreshInternal();
 	}
 
 	function closeSearch() {
