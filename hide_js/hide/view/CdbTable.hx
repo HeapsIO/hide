@@ -40,7 +40,7 @@ class CdbTable extends hide.ui.View<{}> {
 		super.destroy();
 	}
 
-	public function goto2(rootSheet : cdb.Sheet, path: hide.comp.cdb.Editor.Path) {
+	public function goto2(rootSheet : cdb.Sheet, path: hrt.tools.CdbUtils.Path) {
 		var sheets = [for( s in getSheets() ) s.name];
 		var index = sheets.indexOf(rootSheet.name);
 		if( index < 0 ) return;

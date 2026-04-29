@@ -15,6 +15,8 @@ package hrt.tools;
 // 	var thumbnailPath : String;
 // }
 
+#if hui
+
 enum FileKind {
 	Dir;
 	File;
@@ -1302,6 +1304,8 @@ class FilterPathContext {
 
 	public var getRef : () -> {str: String, ?goto: () -> Void};
 }
+
+#end
 
 
 // enum RenderWindowState {

@@ -1274,7 +1274,7 @@ class Editor extends Component {
 	}
 
 	public static function splitPath(rs: {s:Array<{s:cdb.Sheet, c:String, id:Null<String>}>, o:{path:Array<Dynamic>, indexes:Array<Int>}}) {
-		return hrt.Tools.CdbUtils(rs, o);
+		return hrt.tools.CdbUtils.splitPath(rs);
 	}
 
 	public function getReferences(id: String, withCodePaths = true, returnAtFirstRef = false, sheet: cdb.Sheet, ?codeFileCache: Array<{path: String, data:String}>, ?prefabFileCache: Array<{path: String, data:String}>) : Array<{str:String, ?goto:Void->Void, ?file: String}> {

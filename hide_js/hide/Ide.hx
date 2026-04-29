@@ -1146,37 +1146,37 @@ class Ide extends hide.tools.IdeData {
 										});
 
 									case "cdb":
-										var hits : Array<{sheet: cdb.Sheet, path: hide.comp.cdb.Editor.Path}> = [];
+										var hits : Array<{sheet: cdb.Sheet, path: hrt.tools.CdbUtils.Path}> = [];
 										for( rootSheet in database.sheets ) {
 											// Don't search through datafiles since we already searched them before with prefabs
 											if (rootSheet.props.dataFiles != null && rootSheet.lines == null)
 												continue;
 
-											function rec(sheet : cdb.Sheet, objs : Array<Dynamic>, path : hide.comp.cdb.Editor.Path, depth : Int) {
+											function rec(sheet : cdb.Sheet, objs : Array<Dynamic>, path : hrt.tools.CdbUtils.Path, depth : Int) {
 												for (idx => obj in objs) {
 													for (c in sheet.columns) {
 														if (Reflect.field(obj, c.name) == text) {
-															var newPath = new hide.comp.cdb.Editor.Path();
+															var newPath = new hrt.tools.CdbUtils.Path();
 															for (p in path)
 																newPath.push(p);
-															newPath.push(hide.comp.cdb.Editor.PathPart.Prop(c.name));
+															newPath.push(hrt.tools.CdbUtils.PathPart.Prop(c.name));
 															hits.push({ sheet: rootSheet, path: newPath });
 														}
 
 														var sub = sheet.getSub(c);
 														var subObjs: Array<Dynamic> = c.type.match(cdb.Data.ColumnType.TProperties | cdb.Data.ColumnType.TPolymorph) ? [Reflect.field(obj, c.name)] : Reflect.field(obj, c.name);
 														if (sub != null && subObjs != null) {
-															var newPath = new hide.comp.cdb.Editor.Path();
+															var newPath = new hrt.tools.CdbUtils.Path();
 															for (p in path)
 																newPath.push(p);
-															newPath.push(hide.comp.cdb.Editor.PathPart.Line(idx, c.name));
+															newPath.push(hrt.tools.CdbUtils.PathPart.Line(idx, c.name));
 															rec(sub, subObjs, newPath, depth+1);
 														}
 													}
 												}
 											}
 
-											var path = new hide.comp.cdb.Editor.Path();
+											var path = new hrt.tools.CdbUtils.Path();
 											rec(rootSheet, rootSheet.lines, path, 0);
 										}
 
