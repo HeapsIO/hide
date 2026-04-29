@@ -46,11 +46,13 @@ class HuiInputBox extends HuiElement {
 	override function onKeyDownInternal(e:hxd.Event) {
 		if (e.keyCode == hxd.Key.ENTER) {
 			textInput.blur();
+			e.propagate = true;
 			return;
 		}
 		if (e.keyCode == hxd.Key.ESCAPE) {
 			canceled = true;
 			textInput.blur();
+			e.propagate = true;
 			return;
 		}
 		super.onKeyDownInternal(e);
