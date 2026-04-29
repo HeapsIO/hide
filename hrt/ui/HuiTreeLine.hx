@@ -47,7 +47,7 @@ class HuiTreeLine extends HuiElement {
 	public dynamic function onContextMenu() {
 	}
 
-	public function rename(callback: (newName: String) -> Void, ?selectionRange: { start : Int, length : Int }) : Void {
+	public function rename(callback: (newName: String) -> Void, ?selectionRange: HuiTree.SelectionRange) : Void {
 		dom.addClass("edit");
 		// force visibility to prevent direct unfocus if the style is not applied before the SceneEvents.checkEvents function is called
 		titleEdit.visible = true;
@@ -58,7 +58,6 @@ class HuiTreeLine extends HuiElement {
 			titleEdit.textInput.selectionRange = selectionRange;
 			@:privateAccess titleEdit.textInput.onCursorChange();
 		}
-
 
 		function cleanup() {
 			dom.removeClass("edit");

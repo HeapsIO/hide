@@ -46,6 +46,8 @@ typedef TreeItemData = {
 	?searchRanges: hide.Search.SearchRanges,
 }
 
+typedef SelectionRange = {start: Int, length: Int};
+
 class HuiTree<TreeItem> extends HuiElement {
 	static var SRC =
 		<hui-tree>
@@ -66,7 +68,7 @@ class HuiTree<TreeItem> extends HuiElement {
 	var selectedElements: Map<{}, Bool> = [];
 	var lastSelectedElement: TreeItemData = null;
 
-	var renamedElement: {item: TreeItem, callback: (String) -> Void, ?selectionRange: { start : Int, length : Int }};
+	var renamedElement: {item: TreeItem, callback: (String) -> Void, selectionRange: SelectionRange};
 
 	/**TreeItem -> TreeItemData map**/
 	var itemMap : Map<{}, TreeItemData> = [];
@@ -229,7 +231,7 @@ class HuiTree<TreeItem> extends HuiElement {
 	/**
 		Return true if the rename operation was started, false if not
 	**/
-	public function rename(item: TreeItem, callback: (newName: String) -> Void, ?selectionRange: { start : Int, length : Int }) {
+	public function rename(item: TreeItem, callback: (newName: String) -> Void, ?selectionRange: SelectionRange) {
 		renamedElement = {
 			item: item,
 			callback: callback,
