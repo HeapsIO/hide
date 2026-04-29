@@ -31,6 +31,8 @@ class Prefab extends HuiView<{path: String}> {
 	public static var VISIBILITY_WIREFRAME_CONFIG_KEY = "editor.visibility.wireframe";
 	public static var VISIBILITY_DISABLE_SCENE_RENDER_CONFIG_KEY = "editor.visibility.disableSceneRender";
 
+	public static var VIEW_MODE_TYPE = "editor.visibility.viewModeType";
+
 	public function new(_state: Dynamic, ?parent) {
 		super(_state, parent);
 		initComponent();
@@ -110,14 +112,7 @@ class Prefab extends HuiView<{path: String}> {
 		widgets.push(helpBtn);
 
 		widgets.push(new hrt.ui.HuiToolbar.HuiVisibilityWidget(prefabEditor));
-
-		var viewModesBtn = new HuiButton();
-		viewModesBtn.onClick = (_) -> {
-			// TODO
-		};
-		new HuiText("View Modes", viewModesBtn);
-		new HuiIcon("dropDown", viewModesBtn);
-		widgets.push(viewModesBtn);
+		widgets.push(new hrt.ui.HuiToolbar.HuiViewModesWidget(@:privateAccess prefabEditor.scene.s3d));
 
 		var graphicsFilterBtn = new HuiButton();
 		graphicsFilterBtn.onClick = (_) -> {

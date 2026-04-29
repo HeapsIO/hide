@@ -257,6 +257,56 @@ class HuiVisibilitySettingsPopup extends HuiPopup {
 	}
 }
 
+class HuiViewModesWidget extends HuiElement {
+	static var SRC = <hui-view-modes-widget>
+		<hui-button id="btn">
+			<hui-text("View Modes")/>
+			<hui-icon("dropDown")/>
+		</hui-button>
+	</hui-view-modes-widget>
+
+	public function new(s3d: h3d.scene.Scene, ?parent : h2d.Object) {
+		super(parent);
+		initComponent();
+
+		btn.onClick = (_) -> {
+			var renderer = Std.downcast(@:privateAccess s3d.renderer, h3d.scene.pbr.Renderer);
+			if (renderer != null)
+				uiBase.addPopup(new hrt.ui.HuiToolbar.HuiViewModesPopup(renderer), { object: Element(this), directionX: StartInside, directionY: EndOutside });
+		}
+	}
+}
+
+class HuiViewModesPopup extends HuiPopup {
+	static var SRC =
+		<hui-view-modes-popup class="vertical">
+			<hui-text("View Modes") class="title"/>
+			for (m in modes) {
+				<hui-checkbox class="label"/>
+				<hui-text("LIT") class="label"/>
+			}
+		</hui-view-modes-popup>
+
+	public static var modes = [1, 2, 3];
+	var checked : HuiCheckbox;
+
+	public function new(renderer : h3d.scene.pbr.Renderer, ?parent: h2d.Object) {
+		super(parent);
+		initComponent();
+
+		// litCb.value = true;
+		// checked = litCb;
+
+		var shader = @:privateAccess renderer.slides.shader;
+	}
+
+	function updateChecked(cb : HuiCheckbox) {
+		checked.value = false;
+		checked = cb;
+		checked.value = true;
+	}
+}
+
 class HuiCameraSettingsPopup extends HuiPopup {
 	static var SRC =
 		<hui-camera-settings-popup class="vertical">

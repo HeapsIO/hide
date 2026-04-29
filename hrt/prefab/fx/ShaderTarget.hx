@@ -108,7 +108,7 @@ class ShaderTarget extends Object3D {
 
 			var idx = 0;
 			while (idx < arr.length) {
-				if (arr[idx].priority >= st.priority)
+				if (arr[idx].priority <= st.priority)
 					break;
 				idx++;
 			}
