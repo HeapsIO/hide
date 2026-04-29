@@ -24,6 +24,8 @@ class HuiFileBrowser extends HuiElement {
 	var delayRename: String = null;
 	var delaySelect: Array<String> = null;
 
+	static public final fileDragOp = "fileDrag";
+
 	public function new(rootPath: String, ?parent) {
 		super(parent);
 		initComponent();
@@ -38,6 +40,29 @@ class HuiFileBrowser extends HuiElement {
 		tree.getItemName = getItemName;
 		tree.getItemIcon = getItemIcon;
 		tree.onItemDoubleClick = (e, file) -> onOpen(file);
+
+		tree.dragAndDropInterface = {
+			onDragStart: (item) -> {
+				var filePaths = [for (file in tree.getSelectedItems()) file.path];
+				var op = tree.startDrag(fileDragOp, filePaths);
+				op.setPreviewText(filePaths.join("<br/>"));
+			},
+			getItemDropFlags: function(item, op) : hrt.ui.HuiTree.DropFlags {
+				if (op.type == fileDragOp) {
+					if (item.kind == Dir) {
+						return hrt.ui.HuiTree.DropFlag.Reorder | hrt.ui.HuiTree.DropFlag.Reparent;
+					}
+					return hrt.ui.HuiTree.DropFlag.Reorder;
+				}
+				return hrt.ui.HuiTree.DropFlags.ofInt(0);
+			},
+			onDrop: (item, where, op) -> {
+				if (op.type == fileDragOp) {
+					trace("drop");
+				}
+			}
+		};
+
 
 		tree.onItemContextMenu = itemContextMenu;
 
@@ -178,6 +203,16 @@ class HuiFileBrowser extends HuiElement {
 		markRefresh();
 	}
 
+	function actionMoveFiles(targetPath: String, paths: Array<String>) {
+		for (path in paths) {
+			if (StringTools.startsWith(targetPath, path)) {
+				hide.Ide.showError('Cannot move $path as it contains destination folder ($targetPath)');
+				return;
+			}
+		}
+	}
+
+
 	function actionRenameFile(oldPath: String, newPath: String) : hrt.tools.Undo.Action {
 		return (isUndo) -> {
 			var from = isUndo ? newPath : oldPath;
@@ -192,7 +227,8 @@ class HuiFileBrowser extends HuiElement {
 			}
 
 			if (wasSelected) {
-				delaySelect = [to];
+				delaySelect ??= [];
+				delaySelect.push(to);
 			}
 		}
 	}
