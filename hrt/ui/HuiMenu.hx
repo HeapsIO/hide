@@ -58,8 +58,11 @@ class HuiMenu extends HuiPopup {
 
 			searchBar.onKeyDown = keyDownHandler.bind(true);
 			searchBar.onChange = (tmp) -> {
-				keyboardFocused = 0;
-				regenerateElements();
+				// only update on temporary changes to avoid focus issues
+				if (tmp) {
+					keyboardFocused = 0;
+					regenerateElements();
+				}
 			}
 		}
 
