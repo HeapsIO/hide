@@ -198,9 +198,9 @@ class HuiPrefabEditor extends HuiElement {
 		gizmo.update(ctx.elapsedTime);
 	}
 
-	function setSelection(selection: Array<hrt.prefab.Prefab>, flags: SelectionFlags) {
+	function setSelection(selection: Array<hrt.prefab.Prefab>, flags: SelectionFlags, force: Bool = false) {
 		var oldSelection = [for (p => _ in selectedPrefabs) p];
-		if (selection.length == oldSelection.length) {
+		if (selection.length == oldSelection.length && !force) {
 			var same = true;
 			for (p in selection) {
 				if (selectedPrefabs.get(p) == null) {
@@ -765,7 +765,7 @@ class HuiPrefabEditor extends HuiElement {
 		}
 
 		treePrefab.rebuild();
-		setSelection([for (p in selectedPrefabs.keys()) p], NoRecordUndo | NoRefreshTree);
+		setSelection([for (p in selectedPrefabs.keys()) p], NoRecordUndo | NoRefreshTree, true);
 
 		return true;
 	}
