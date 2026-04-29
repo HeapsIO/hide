@@ -49,6 +49,8 @@ class HuiTreeLine extends HuiElement {
 
 	public function rename(callback: (newName: String) -> Void) : Void {
 		dom.addClass("edit");
+		// force visibility to prevent direct unfocus if the style is not applied before the SceneEvents.checkEvents function is called
+		titleEdit.visible = true;
 		titleEdit.text = data.name;
 		titleEdit.focus();
 
@@ -116,6 +118,12 @@ class HuiTreeLine extends HuiElement {
 		dom.toggleClass("children", tree.hasChildren(data.item));
 		dom.toggleClass("open", tree.isOpen(data));
 		dom.toggleClass("selected", tree.isSelected(data));
+
+		if (tree.renamedElement?.item == data.item) {
+			rename(tree.renamedElement.callback);
+			tree.renamedElement = null;
+		}
+
 		@:privateAccess dom.toggleClass("keyboard-selected", tree.keyboardFocus == data);
 	}
 

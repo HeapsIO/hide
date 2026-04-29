@@ -66,6 +66,8 @@ class HuiTree<TreeItem> extends HuiElement {
 	var selectedElements: Map<{}, Bool> = [];
 	var lastSelectedElement: TreeItemData = null;
 
+	var renamedElement: {item: TreeItem, callback: (String) -> Void};
+
 	/**TreeItem -> TreeItemData map**/
 	var itemMap : Map<{}, TreeItemData> = [];
 
@@ -227,15 +229,12 @@ class HuiTree<TreeItem> extends HuiElement {
 	/**
 		Return true if the rename operation was started, false if not
 	**/
-	public function rename(item: TreeItem, callback: (newName: String) -> Void) : Bool {
-		var data = itemMap.get(cast item);
-		var line = Std.downcast(list.tryGetElement(data), HuiTreeLine);
-		if (line != null) {
-			line.rename(callback);
-			return true;
-		} {
-			return false;
-		}
+	public function rename(item: TreeItem, callback: (newName: String) -> Void) {
+		renamedElement = {
+			item: item,
+			callback: callback,
+		};
+		requestRefresh();
 	}
 
 	/**

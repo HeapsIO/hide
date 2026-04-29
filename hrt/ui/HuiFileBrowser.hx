@@ -15,7 +15,14 @@ class HuiFileBrowser extends HuiElement {
 
 	var fileManager = FileManager.inst;
 
+	/**
+		Wait for this path to become available in the FileManager, and then
+		do a rename action in the filebrowser. This is needed because we rely on
+		the filemanager filewatch to refresh the browser (in order to not have to manually
+		update the Filemanager internal filesystem manually when we add files).
+	**/
 	var delayRename: String = null;
+	var delaySelect: Array<String> = null;
 
 	public function new(rootPath: String, ?parent) {
 		super(parent);
@@ -103,6 +110,14 @@ class HuiFileBrowser extends HuiElement {
 		}];
 
 		var items : Array<hrt.ui.HuiMenu.MenuItem> = [{label: "New ...", menu: createMenu}];
+
+		items.push({label: "Rename",
+			click: () -> {
+				tree.rename(file, (newName) -> trace(newName));
+			},
+			enabled: file != rootFile,
+		});
+
 		items.push({label: "Delete",
 				click: deleteSelection,
 			enabled: file != rootFile,
@@ -169,8 +184,6 @@ class HuiFileBrowser extends HuiElement {
 				hide.Ide.showError('Couldn\'t rename $from -> $to : $e');
 				return;
 			}
-
-			markRefresh();
 		}
 	}
 
@@ -182,11 +195,24 @@ class HuiFileBrowser extends HuiElement {
 		if (delayRename != null) {
 			var file = fileManager.getFileAbs(delayRename);
 			if (file != null) {
-				if(tree.rename(file, (newName) -> {
-					trace(newName);
-				})) {
-					delayRename = null;
-				}
+				tree.setSelection([file]);
+				tree.rename(file, (newName) -> {
+					var path = new haxe.io.Path(file.path);
+					if (path.file != newName) {
+						var newPath = haxe.io.Path.join([path.dir, newName]);
+						getView().undo.run(actionRenameFile(file.path, newPath), false);
+						delaySelect = [newPath];
+					}
+				});
+				delayRename = null;
+			}
+		}
+
+		if (delaySelect != null) {
+			var files = [for (file in delaySelect) fileManager.getFileAbs(file)];
+			if (!files.contains(null)) {
+				tree.setSelection(files);
+				delaySelect = null;
 			}
 		}
 

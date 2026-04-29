@@ -171,7 +171,7 @@ class FileEntry {
 		if (kind == Dir) {
 			watcher = new hl.uv.Fs(null, this.getPath(), (event) -> {
 				var name = watcher.contentChangedPath;
-				if (!emulateRecursive) {
+				if (!emulateRecursive && name != null) {
 					name = StringTools.replace(name, "\\", "/");
 				}
 				onChildChange(name);
@@ -183,7 +183,11 @@ class FileEntry {
 	}
 
 	function onChildChange(name: String) : FileEntry {
-		trace(this.getPath(), name);
+		if (name == null) {
+			refreshChildren();
+			changed();
+			return this;
+		}
 
 		if (!emulateRecursive) {
 			var parts = name.split("/");
@@ -191,12 +195,6 @@ class FileEntry {
 				var directChild = onChildChange(parts.shift());
 				return directChild.onChildChange(parts.join("/"));
 			}
-		}
-
-		if (name == null) {
-			refreshChildren();
-			changed();
-			return this;
 		}
 
 		var childPath = getChildRelPath(name);
@@ -538,16 +536,16 @@ class FileManager {
 		//checkWindowReady();
 		initFileSystem();
 
-		var lastIntegrity = true;
-		var timer = new haxe.Timer(1000);
-		timer.run = () -> {
-			var newIntegrity = checkIntegrity();
-			if (!newIntegrity && !lastIntegrity) {
-				throw "Filesystem integrity compromised";
-			}
-			lastIntegrity = newIntegrity;
-			trace("integrity ok");
-		}
+		// var lastIntegrity = true;
+		// var timer = new haxe.Timer(1000);
+		// timer.run = () -> {
+		// 	var newIntegrity = checkIntegrity();
+		// 	if (!newIntegrity && !lastIntegrity) {
+		// 		throw "Filesystem integrity compromised";
+		// 	}
+		// 	lastIntegrity = newIntegrity;
+		// 	trace("integrity ok");
+		// }
 	}
 
 	function initFileSystem() {
