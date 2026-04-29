@@ -66,7 +66,7 @@ class HuiTree<TreeItem> extends HuiElement {
 	var selectedElements: Map<{}, Bool> = [];
 	var lastSelectedElement: TreeItemData = null;
 
-	var renamedElement: {item: TreeItem, callback: (String) -> Void};
+	var renamedElement: {item: TreeItem, callback: (String) -> Void, ?selectionRange: { start : Int, length : Int }};
 
 	/**TreeItem -> TreeItemData map**/
 	var itemMap : Map<{}, TreeItemData> = [];
@@ -229,10 +229,11 @@ class HuiTree<TreeItem> extends HuiElement {
 	/**
 		Return true if the rename operation was started, false if not
 	**/
-	public function rename(item: TreeItem, callback: (newName: String) -> Void) {
+	public function rename(item: TreeItem, callback: (newName: String) -> Void, ?selectionRange: { start : Int, length : Int }) {
 		renamedElement = {
 			item: item,
 			callback: callback,
+			selectionRange: selectionRange,
 		};
 		requestRefresh();
 	}
@@ -584,12 +585,16 @@ class HuiTree<TreeItem> extends HuiElement {
 		rec(rootData);
 	}
 
-	public function isOpen(data: TreeItemData) : Bool {
+	function isOpen(data: TreeItemData) : Bool {
 		return (openState.get(data.identifier) ?? false) || data.filterState.has(Open);
 	}
 
-	public function isSelected(data: TreeItemData) : Bool {
+	function isSelected(data: TreeItemData) : Bool {
 		return selectedElements.get(cast data.item) == true;
+	}
+
+	public function isItemSelected(data: TreeItem) : Bool {
+		return isSelected(itemMap.get(cast data));
 	}
 }
 

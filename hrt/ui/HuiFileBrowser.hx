@@ -31,6 +31,7 @@ class HuiFileBrowser extends HuiElement {
 		this.rootPath = rootPath;
 
 		registerCommand(HuiCommands.delete, View, deleteSelection);
+		registerCommand(HuiCommands.rename, View, renameSelection);
 
 		tree = new HuiTree<File>(this);
 		tree.getItemChildren = getItemChild;
@@ -111,17 +112,13 @@ class HuiFileBrowser extends HuiElement {
 
 		var items : Array<hrt.ui.HuiMenu.MenuItem> = [{label: "New ...", menu: createMenu}];
 
-		items.push({label: "Rename",
-			click: () -> {
-				tree.rename(file, (newName) -> trace(newName));
-			},
-			enabled: file != rootFile,
-		});
+		var rename = HuiMenu.itemFromCommand(HuiCommands.rename, this);
+		rename.enabled = file != rootFile;
+		items.push(rename);
 
-		items.push({label: "Delete",
-				click: deleteSelection,
-			enabled: file != rootFile,
-		});
+		var delete = HuiMenu.itemFromCommand(HuiCommands.delete, this);
+		delete.enabled = file != rootFile;
+		items.push(delete);
 
 		uiBase.contextMenu(items);
 	}
@@ -148,6 +145,14 @@ class HuiFileBrowser extends HuiElement {
 				markRefresh();
 			}
 		});
+	}
+
+	function renameSelection() {
+		var selectedFiles = tree.getSelectedItems();
+
+		if (selectedFiles.length > 0) {
+			promptRenameFile(selectedFiles[0]);
+		}
 	}
 
 	/**
@@ -177,6 +182,7 @@ class HuiFileBrowser extends HuiElement {
 		return (isUndo) -> {
 			var from = isUndo ? newPath : oldPath;
 			var to = isUndo ? oldPath : newPath;
+			var wasSelected = tree.isItemSelected(fileManager.getFileAbs(from));
 
 			try {
 				sys.FileSystem.rename(from, to);
@@ -184,7 +190,21 @@ class HuiFileBrowser extends HuiElement {
 				hide.Ide.showError('Couldn\'t rename $from -> $to : $e');
 				return;
 			}
+
+			if (wasSelected) {
+				delaySelect = [to];
+			}
 		}
+	}
+
+	function promptRenameFile(file: File) {
+		var path = new haxe.io.Path(file.path);
+		tree.rename(file, (newName) -> {
+			if (path.file != newName) {
+				var newPath = haxe.io.Path.join([path.dir, newName]);
+				getView().undo.run(actionRenameFile(file.path, newPath), false);
+			}
+		}, {start: 0, length: path.file.length} /* Select before the . of the file*/);
 	}
 
 	override function sync(ctx: h2d.RenderContext) {
@@ -196,14 +216,7 @@ class HuiFileBrowser extends HuiElement {
 			var file = fileManager.getFileAbs(delayRename);
 			if (file != null) {
 				tree.setSelection([file]);
-				tree.rename(file, (newName) -> {
-					var path = new haxe.io.Path(file.path);
-					if (path.file != newName) {
-						var newPath = haxe.io.Path.join([path.dir, newName]);
-						getView().undo.run(actionRenameFile(file.path, newPath), false);
-						delaySelect = [newPath];
-					}
-				});
+				promptRenameFile(file);
 				delayRename = null;
 			}
 		}
