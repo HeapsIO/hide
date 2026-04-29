@@ -534,7 +534,7 @@ class HuiPrefabEditor extends HuiElement {
 
 			if (newParent != null)
 				treePrefab.toggleItemOpen(newParent, true);
-			rebuildPrefabTree(oldParent);
+			rebuildPrefabTree(isUndo ? parent : oldParent);
 			rebuildPrefabTree(newParent);
 			updateDebugOverlayVisibility();
 		};
