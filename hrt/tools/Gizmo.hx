@@ -119,7 +119,13 @@ class Gizmo extends h3d.scene.Object {
 		var cam = this.getScene().camera;
 		var abs = gizmo.getAbsPos();
 		var gpos = abs.getPosition();
-		var distToCam = cam.pos.sub(gpos).length();
+
+		// get distance from the camera plane
+		var toCam = cam.pos.sub(gpos);
+		var camForward = cam.getForward();
+		var proj = camForward.scaled(camForward.dot(toCam));
+
+		var distToCam = proj.length();
 		if (hxd.Math.isNaN(distToCam))
 			distToCam = 1000000000.0;
 		var engine = h3d.Engine.getCurrent();
