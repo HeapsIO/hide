@@ -34,6 +34,7 @@ class App extends hxd.App {
 
 		#if hldx
 		@:privateAccess hxd.Window.getInstance().window.maximize();
+		@:privateAccess hxd.Window.getInstance().window.setDarkMode(true);
 		#end
 
 		hxd.Window.getInstance().onClose = () -> {
