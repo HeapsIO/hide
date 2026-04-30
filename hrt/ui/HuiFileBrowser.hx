@@ -92,47 +92,10 @@ class HuiFileBrowser extends HuiElement {
 
 		var createMenu : Array<hrt.ui.HuiMenu.MenuItem> = [{
 			label: "Directory",
-			click: () -> {
-				var dir = file;
-				if (dir.kind != Dir) {
-					dir = file.parent;
-				}
-				var basePath = dir.path + '/' + "New directory";
-				var pathToCreate = basePath;
-				var tries = 0;
-				while(sys.FileSystem.exists(pathToCreate)) {
-					tries ++;
-					pathToCreate = basePath + ' ($tries)';
-				}
-
-				try {
-					sys.FileSystem.createDirectory(pathToCreate);
-				} catch(e) {
-					hide.Ide.showError('Couldn\'t create directory : $e');
-					return;
-				}
-
-				getView().undo.record((isUndo) -> {
-					if (isUndo) {
-						try {
-							sys.FileSystem.deleteDirectory(pathToCreate);
-						} catch(e) {
-							hide.Ide.showError('Couldn\'t create directory : $e');
-							return;
-						}
-					} else {
-						try {
-							sys.FileSystem.createDirectory(pathToCreate);
-						} catch(e) {
-							hide.Ide.showError('Couldn\'t create directory : $e');
-							return;
-						}
-					}
-					markRefresh();
-				}, false);
-
-				delayRename = pathToCreate;
-			}
+			click: () -> createNewDirectory(file),
+		},{
+			label: "Prefab",
+			click: () -> createNewFile(file, "New Prefab", "prefab", hide.Ide.inst.toJSON(@:privateAccess new hrt.prefab.Prefab(null, null).serialize()))
 		}];
 
 		var items : Array<hrt.ui.HuiMenu.MenuItem> = [{label: "New ...", menu: createMenu}];
@@ -147,6 +110,91 @@ class HuiFileBrowser extends HuiElement {
 
 		uiBase.contextMenu(items);
 	}
+
+	function createNewDirectory(parent: File) {
+		var dir = parent;
+		if (dir.kind != Dir) {
+			dir = parent.parent;
+		}
+		var basePath = dir.path + '/' + "New directory";
+		var pathToCreate = basePath;
+		var tries = 0;
+		while(sys.FileSystem.exists(pathToCreate)) {
+			tries ++;
+			pathToCreate = basePath + ' ($tries)';
+		}
+
+		try {
+			sys.FileSystem.createDirectory(pathToCreate);
+		} catch(e) {
+			hide.Ide.showError('Couldn\'t create directory : $e');
+			return;
+		}
+
+		getView().undo.record((isUndo) -> {
+			if (isUndo) {
+				try {
+					sys.FileSystem.deleteDirectory(pathToCreate);
+				} catch(e) {
+					hide.Ide.showError('Couldn\'t create directory : $e');
+					return;
+				}
+			} else {
+				try {
+					sys.FileSystem.createDirectory(pathToCreate);
+				} catch(e) {
+					hide.Ide.showError('Couldn\'t create directory : $e');
+					return;
+				}
+			}
+			markRefresh();
+		}, false);
+
+		delayRename = pathToCreate;
+	}
+
+	public function createNewFile(parent: File, baseName: String, extension: String, baseContent: String) {
+		var dir = parent;
+		if (dir.kind != Dir) {
+			dir = parent.parent;
+		}
+		var basePath = dir.path + '/' + baseName + '.' + extension;
+		var pathToCreate = basePath;
+		var tries = 0;
+		while(sys.FileSystem.exists(pathToCreate)) {
+			tries ++;
+			pathToCreate = dir.path + '/' + baseName + ' ($tries).' + extension;
+		}
+
+		try {
+			sys.io.File.saveContent(pathToCreate, baseContent);
+		} catch(e) {
+			hide.Ide.showError('Couldn\'t create directory : $e');
+			return;
+		}
+
+		getView().undo.record((isUndo) -> {
+			if (isUndo) {
+				try {
+					sys.FileSystem.deleteFile(pathToCreate);
+				} catch(e) {
+					hide.Ide.showError('Couldn\'t create directory : $e');
+					return;
+				}
+			} else {
+				try {
+					sys.io.File.saveContent(pathToCreate, baseContent);
+				} catch(e) {
+					hide.Ide.showError('Couldn\'t create directory : $e');
+					return;
+				}
+			}
+			markRefresh();
+		}, false);
+
+		delayRename = pathToCreate;
+	}
+
 
 	function deleteSelection() {
 		var selectedFiles = tree.getSelectedItems();
