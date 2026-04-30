@@ -155,12 +155,6 @@ class HuiPopup extends HuiElement {
 		super.onRemove();
 	}
 
-	override function onMouseWheel(e:hxd.Event) {
-		super.onMouseWheel(e);
-		e.propagate = false;
-	}
-
-
 	/**
 		Add popup in parent in a way that it can be close when the user clicks anywhere else. Return the created modal element
 	**/

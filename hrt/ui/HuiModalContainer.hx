@@ -27,6 +27,11 @@ class HuiModalContainer extends HuiElement {
 		super.onPushInternal(e);
 		e.propagate = false;
 	}
+
+	override function onMouseWheel(e: hxd.Event) {
+		super.onMouseWheel(e);
+		e.propagate = false;
+	}
 }
 
 #end
