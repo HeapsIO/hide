@@ -537,6 +537,7 @@ class HuiPrefabEditor extends HuiElement {
 			rebuildPrefabTree(isUndo ? parent : oldParent);
 			rebuildPrefabTree(newParent);
 			updateDebugOverlayVisibility();
+			checkRemakeRenderProps(prefab);
 		};
 	}
 
@@ -765,7 +766,6 @@ class HuiPrefabEditor extends HuiElement {
 		}
 
 		treePrefab.rebuild();
-		setSelection([for (p in selectedPrefabs.keys()) p], NoRecordUndo | NoRefreshTree, true);
 
 		return true;
 	}
@@ -899,14 +899,59 @@ class HuiPrefabEditor extends HuiElement {
 		return str;
 	}
 
-	public function makeRenderProps() {
-		var paths = getRenderPropsPaths();
-		for (path in paths) {
-			removePrefabInstance(renderProps);
 
-			renderProps = hxd.res.Loader.currentInstance.load(path.value).toPrefab().load().clone();
-			if (tryMake(renderProps))
+	public function checkRemakeRenderProps(changedPrefab: hrt.prefab.Prefab = null) : Bool {
+		if (changedPrefab != null) {
+			if (changedPrefab.findParent(hrt.prefab.RenderProps) == renderProps) {
+				makeRenderProps();
+				return true;
+			}
+		}
+		if (prefab.find(hrt.prefab.RenderProps) != renderProps) {
+			makeRenderProps();
+			return true;
+		}
+		return false;
+	}
+
+	public function makeRenderProps() {
+
+		var paths = getRenderPropsPaths();
+
+		var candidates: Array<hrt.prefab.Prefab> = [];
+
+		var prefabRenderProp = prefab.find(hrt.prefab.RenderProps);
+		if (prefabRenderProp != null)
+			candidates.push(prefabRenderProp);
+
+		for (path in paths) {
+			hxd.res.Loader.currentInstance.load(path.value).toPrefab().load();
+		}
+
+		removePrefabInstance(renderProps);
+		renderProps = null;
+
+		for (candidate in candidates) {
+			renderProps = candidate;
+			if (tryMake(renderProps)) {
+				var trueRenderProps = renderProps.find(hrt.prefab.RenderProps);
+				if (trueRenderProps == null)
+					throw 'Render props ${renderProps.shared.prefabSource} does not contains a render props prefab';
+				trueRenderProps.applyProps(scene.s3d.renderer);
 				break;
+			}
+			removePrefabInstance(renderProps);
+			renderProps = null;
+		}
+
+	}
+
+	public function updateRenderProps() {
+		if (!checkRemakeRenderProps()) {
+			var trueRenderProps = renderProps.find(hrt.prefab.RenderProps);
+			if (trueRenderProps == null)
+				throw 'Render props ${renderProps.shared.prefabSource} does not contains a render props prefab';
+			trueRenderProps.applyProps(scene.s3d.renderer);
 		}
 	}
 
@@ -1214,7 +1259,7 @@ class EditContext extends hrt.prefab.EditContext2 {
 	};
 
 	public function rebuildRenderProps() : Void {
-		editor.makeRenderProps();
+		editor.updateRenderProps();
 	}
 
 

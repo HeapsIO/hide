@@ -312,7 +312,7 @@ class Material extends Prefab {
 
 
 		var editor = hide.prefab.propsEditor.AnyPropsEditor.makeEditor(mat);
-		editor.edit2(ctx, materialCategory);
+		editor.edit2(ctx, materialCategory, null);
 
 		function rec(elements: Array<hide.kit.Element>) {
 			for (element in elements) {

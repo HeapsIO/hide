@@ -2,7 +2,7 @@ package hide.prefab.propsEditor;
 
 class PbrMaterial extends AnyPropsEditor<h3d.mat.PbrMaterial> {
 
-	override function edit2(ctx:hrt.prefab.EditContext2, root: hide.kit.Element, ?customProps: Dynamic) {
+	override function edit2(ctx:hrt.prefab.EditContext2, root: hide.kit.Element, ?customProps: Dynamic, onChange: (tmp: Bool) -> Void = null) {
 		var layers : Array< { name : String, value : Int }> = hide.Ide.inst.currentConfig.get("material.drawOrder", []);
 
 		var drawOrder : Array<hide.kit.Select.SelectEntry> = [for( layer in layers) {
@@ -66,7 +66,7 @@ class PbrMaterial extends AnyPropsEditor<h3d.mat.PbrMaterial> {
 				<checkbox field={depthPrepass}/>
 				<checkbox field={flipBackFaceNormal}/>
 				<checkbox field={ignoreCollide}/>
-			</root>, props.props
+			</root>, props.props, onChange
 		);
 	}
 

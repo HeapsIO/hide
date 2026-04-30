@@ -141,7 +141,13 @@ class RenderProps extends Object3D {
 		});
 
 		var editor = hide.prefab.propsEditor.AnyPropsEditor.makeEditor(renderer);
-		editor.edit2(ctx, rendererCat, props);
+		editor.edit2(ctx, rendererCat, props, (isTemp) -> {
+			if( needSet ) {
+				setProps(props);
+				needSet = false;
+			}
+			ctx.rebuildRenderProps();
+		});
 
 		ctx.rebuildRenderProps();
 	}

@@ -27,7 +27,7 @@ class AnyPropsEditor<T:hxd.impl.AnyProps> {
 	}
 
 	/** add element to root**/
-	public function edit2(ctx: hrt.prefab.EditContext2, root: hide.kit.Element, ?customProps: Dynamic) : Void {
+	public function edit2(ctx: hrt.prefab.EditContext2, root: hide.kit.Element, ?customProps: Dynamic, onChange: (tmp: Bool) -> Void = null) : Void {
 	}
 
 	static var editors : Map<String, Class<AnyPropsEditor<Dynamic>>> = [];

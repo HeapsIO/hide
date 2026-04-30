@@ -2,7 +2,7 @@ package hide.prefab.propsEditor;
 
 class PbrRenderer extends AnyPropsEditor<h3d.scene.pbr.Renderer> {
 
-	override function edit2(ctx:hrt.prefab.EditContext2, root: hide.kit.Element, ?customProps: Dynamic) {
+	override function edit2(ctx:hrt.prefab.EditContext2, root: hide.kit.Element, ?customProps: Dynamic, onChange: (tmp: Bool) -> Void = null) {
 		var props : h3d.scene.pbr.Renderer.RenderProps = customProps ?? props.props;
 
 		root.build(
@@ -30,7 +30,7 @@ class PbrRenderer extends AnyPropsEditor<h3d.scene.pbr.Renderer> {
 					<range(-3.0, 3.0) field={exposure}/>
 				</category>
 			</root>
-		, props);
+		, props, onChange);
 	}
 
 	static var _ = AnyPropsEditor.registerEditor(h3d.scene.pbr.Renderer, PbrRenderer);
