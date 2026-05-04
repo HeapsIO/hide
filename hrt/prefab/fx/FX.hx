@@ -492,7 +492,7 @@ class FXAnimation extends h3d.scene.Object {
 	function syncAnims(newTime: Float, dt: Float) {
 		if(objAnims != null) {
 			for(anim in objAnims) {
-				if(anim.scale != null || anim.rotation != null || anim.position != null) {
+				if(anim.obj != null && (anim.scale != null || anim.rotation != null || anim.position != null)) {
 					var m = tempMat;
 					if(anim.scale != null) {
 						var scale = evaluator.getVector(anim.scale, newTime, tempVec);
