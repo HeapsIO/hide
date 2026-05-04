@@ -82,9 +82,12 @@ class FileEntry {
 
 		trace("added " + getRelPath());
 		watch();
-		if (!ignored) {
-			FileManager.inst.fileIndex.set(this.getRelPath(), this);
+
+		if (FileManager.inst.fileIndex.get(this.getRelPath()) != null) {
+			throw "Entry already exists";
 		}
+
+		FileManager.inst.fileIndex.set(this.getRelPath(), this);
 		refreshChildren();
 	}
 
@@ -107,9 +110,8 @@ class FileEntry {
 			watcher.close();
 		}
 		#end
-		if (!ignored) {
-			FileManager.inst.fileIndex.remove(this.getRelPath());
-		}
+		FileManager.inst.fileIndex.remove(this.getRelPath());
+
 	}
 
 	// public function getIcon(onReady: MiniatureReadyCallback) {
@@ -125,6 +127,7 @@ class FileEntry {
 			return;
 		if (ignored)
 			return;
+
 		var fullPath = getPath();
 
 		var oldChildren : Map<String, FileEntry> = [for (file in (children ?? [])) file.name => file];
@@ -138,8 +141,6 @@ class FileEntry {
 			var paths = sys.FileSystem.readDirectory(fullPath);
 
 			for (path in paths) {
-				if (StringTools.startsWith(path, "."))
-					continue;
 				var prev = oldChildren.get(path);
 				if (prev != null) {
 					children.push(prev);
@@ -185,6 +186,9 @@ class FileEntry {
 	}
 
 	function onChildChange(name: String) : FileEntry {
+		if (ignored)
+			return null;
+
 		if (name == null) {
 			refreshChildren();
 			changed();
@@ -195,7 +199,7 @@ class FileEntry {
 			var parts = name.split("/");
 			if (parts.length >= 2) {
 				var directChild = onChildChange(parts.shift());
-				return directChild.onChildChange(parts.join("/"));
+				return directChild?.onChildChange(parts.join("/"));
 			}
 		}
 
@@ -531,6 +535,8 @@ class FileManager {
 	function init() {
 		var exclPatterns : Array<String> = hide.Ide.inst.currentConfig.get("filetree.excludes", []);
 		ignorePatterns = [];
+		ignorePatterns.push(~/\.tmp/i);
+
 		for(pat in exclPatterns)
 			ignorePatterns.push(new EReg(pat, "i"));
 

@@ -345,7 +345,7 @@ class HuiFileBrowser extends HuiElement {
 		if (child.kind != Dir)
 			return null;
 
-		return child.children;
+		return child.children.filter((f) -> !f.ignored);
 	}
 
 	public dynamic function onOpen(file: File) {
