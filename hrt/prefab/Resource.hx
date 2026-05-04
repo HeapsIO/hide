@@ -59,19 +59,6 @@ class Resource extends hxd.res.Resource {
 		return cast prefab;
 	}
 
-	public function load2d(?shared: ContextShared) : Object2D {
-		if( Std.downcast(prefab, Object2D) != null && cacheVersion == CACHE_VERSION )
-			return cast prefab;
-		var data = loadData();
-		prefab = Std.downcast(Prefab.createFromDynamic(data), Object2D);
-		prefab.shared.prefabSource = entry.path;
-		prefab.shared.currentPath = entry.path;
-		cacheVersion = CACHE_VERSION;
-		onPrefabLoaded(prefab);
-		if( !isWatched ) watch(function() {}); // auto lib reload
-		return cast prefab;
-	}
-
 	public static function make( p : Object3D ) {
 		if( p == null ) throw "assert";
 		var r = new Resource(null);
