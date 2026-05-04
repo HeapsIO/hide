@@ -30,7 +30,7 @@ class HuiPrefabEditorTests extends HuiView<{}> {
 			Macros.init();
 
 			testTryMake();
-			testMakePrefabAction();
+			testActionCreatePrefab();
 			actionRemovePrefabs();
 			actionReparentPrefabs();
 			actionReparentPrefabKeepTransform();
@@ -149,7 +149,7 @@ class HuiPrefabEditorTests extends HuiView<{}> {
 	];
 
 
-	public function testMakePrefabAction() {
+	public function testActionCreatePrefab() {
 		var prefabData = {
 			"type": "prefab",
 			"children": [
@@ -169,7 +169,7 @@ class HuiPrefabEditorTests extends HuiView<{}> {
 				continue;
 
 			// add to root
-			undo.run(prefabEditor.makePrefabAction(prefab, 0, entry.prefabClass), true);
+			undo.run(prefabEditor.actionCreatePrefab(prefab, 0, entry.prefabClass), true);
 
 			// return to base state
 			while(undo.canUndo()) {
@@ -200,7 +200,7 @@ class HuiPrefabEditorTests extends HuiView<{}> {
 				continue;
 
 			// add to node
-			undo.run(prefabEditor.makePrefabAction(node, 0, entry.prefabClass), true);
+			undo.run(prefabEditor.actionCreatePrefab(node, 0, entry.prefabClass), true);
 
 			// return to base state
 			while(undo.canUndo()) {

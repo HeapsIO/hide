@@ -32,10 +32,10 @@ class HuiPrefabEditor extends HuiElement {
 			</hui-split-container>
 		</hui-prefab-editor>
 
-	static public var gizmoSwitchModeCommand = new hrt.ui.HuiCommands.HuiCommand("Copy", {key: hxd.Key.SPACE});
-	static public var gizmoTranslateCommand = new hrt.ui.HuiCommands.HuiCommand("Paste", {key: hxd.Key.W});
-	static public var gizmoRotateCommand = new hrt.ui.HuiCommands.HuiCommand("Save", {key: hxd.Key.E});
-	static public var gizmoScaleCommand = new hrt.ui.HuiCommands.HuiCommand("Cut", {key: hxd.Key.R});
+	static public var gizmoSwitchModeCommand = new hrt.ui.HuiCommands.HuiCommand("Gizmo Switch Mode", {key: hxd.Key.SPACE});
+	static public var gizmoTranslateCommand = new hrt.ui.HuiCommands.HuiCommand("Gizmo Translate", {key: hxd.Key.W});
+	static public var gizmoRotateCommand = new hrt.ui.HuiCommands.HuiCommand("Gizmo Rotate", {key: hxd.Key.E});
+	static public var gizmoScaleCommand = new hrt.ui.HuiCommands.HuiCommand("Gizmo Scale", {key: hxd.Key.R});
 	static public var focusCommand = new hrt.ui.HuiCommands.HuiCommand("Focus Selection", {key: hxd.Key.F});
 
 
@@ -163,6 +163,9 @@ class HuiPrefabEditor extends HuiElement {
 				renamePrefab(lastSelection);
 			}
 		});
+
+		registerCommand(hrt.ui.HuiCommands.copy, View, () -> hxd.System.setClipboardText(hide.Ide.inst.toJSON([for (p in getSelectionOrdered()) p.serialize()])));
+		registerCommand(hrt.ui.HuiCommands.paste, View, () -> getView().undo.run(actionPasteFromClipboard(), true));
 
 		registerCommand(hrt.ui.HuiCommands.delete, View, () -> getView().undo.run(actionRemovePrefabs([for (p => _ in selectedPrefabs) p]), true));
 		registerCommand(focusCommand, View, () -> focusSelection());
@@ -400,13 +403,63 @@ class HuiPrefabEditor extends HuiElement {
 
 
 
-		entries.push({label: "Add Child Prefab", menu: createPrefabMenu((cl) -> getView().undo.run(makePrefabAction(target, target.children.length, cl), true))});
+		entries.push({label: "Add Child Prefab", menu: createPrefabMenu((cl) -> getView().undo.run(actionCreatePrefab(target, target.children.length, cl), true))});
 		entries.push(HuiMenu.itemFromCommand(HuiCommands.rename, this));
+
+		entries.push(HuiMenu.itemFromCommand(HuiCommands.cut, this));
+		entries.push(HuiMenu.itemFromCommand(HuiCommands.copy, this));
+		entries.push(HuiMenu.itemFromCommand(HuiCommands.paste, this));
+
 		entries.push(HuiMenu.itemFromCommand(HuiCommands.delete, this));
 		entries.push(HuiMenu.itemFromCommand(focusCommand, this));
 
 		uiBase.contextMenu(entries);
 	}
+
+	function actionPasteFromClipboard() : hrt.tools.Undo.Action {
+
+		var content = hxd.System.getClipboardText();
+		var json = try haxe.Json.parse(content) catch(e) return null;
+
+		if (!(json is Array))
+			return null;
+
+		var json : Array<Dynamic> = json;
+
+		var makePrefabs: Array<hrt.tools.Undo.Action> = [];
+		var selectPrefabs: Array<hrt.prefab.Prefab> = [];
+		var selection = getSelectionOrdered();
+		if (selection.length == 0) {
+			selection.push(prefab);
+		}
+		for (parent in selection) {
+			var createdPrefabs : Array<hrt.prefab.Prefab> = [];
+			for (data in json) {
+				if (!Reflect.hasField(data, "type"))
+					continue;
+
+				try {
+					var prefab = hrt.prefab.Prefab.createFromDynamic(data, null);
+					createdPrefabs.push(prefab);
+					selectPrefabs.push(prefab);
+				} catch (e) {
+					continue;
+				}
+			}
+
+			makePrefabs.push(actionReparentPrefabs(createdPrefabs, parent, parent.children.length));
+		}
+
+		var selection = actionMakeSelection(selectPrefabs);
+
+		return (isUndo) -> {
+			for (makePrefab in makePrefabs){
+				makePrefab(isUndo);
+			}
+			selection(isUndo);
+		};
+	}
+
 
 	function renamePrefab(target: hrt.prefab.Prefab) {
 		treePrefab.rename(target, (newName: String) -> {
@@ -424,12 +477,12 @@ class HuiPrefabEditor extends HuiElement {
 		}
 	}
 
-	function makePrefabAction(parent: hrt.prefab.Prefab, index: Int, cl: Class<hrt.prefab.Prefab>) : hrt.tools.Undo.Action {
+	function actionCreatePrefab(parent: hrt.prefab.Prefab, index: Int, cl: Class<hrt.prefab.Prefab>) : hrt.tools.Undo.Action {
 		var newPrefab = Type.createInstance(cl, []);
 		newPrefab.name = Type.getClassName(cl).split(".").pop();
 
-		var reparent = reparentPrefabAction(newPrefab, parent, index);
-		var select = makeSelectionAction([newPrefab]);
+		var reparent = actionReparentPrefab(newPrefab, parent, index);
+		var select = actionMakeSelection([newPrefab]);
 
 		return (isUndo) -> {
 			reparent(isUndo);
@@ -439,8 +492,8 @@ class HuiPrefabEditor extends HuiElement {
 
 	function actionRemovePrefabs(prefabs: Array<hrt.prefab.Prefab>) : hrt.tools.Undo.Action {
 
-		var reparents = [for (prefab in prefabs) reparentPrefabAction(prefab, null, 0)];
-		var select = makeSelectionAction([]);
+		var reparents = [for (prefab in prefabs) actionReparentPrefab(prefab, null, 0)];
+		var select = actionMakeSelection([]);
 
 		return (isUndo) -> {
 			select(isUndo);
@@ -454,7 +507,7 @@ class HuiPrefabEditor extends HuiElement {
 		var reparents = [];
 		var i = 0;
 		for (prefab in prefabs) {
-			reparents.push(reparentPrefabAction(prefab, newParent, index + i));
+			reparents.push(actionReparentPrefab(prefab, newParent, index + i));
 
 			if (prefab.parent == newParent && newParent.children.indexOf(prefab) < index) {
 				// fix offset
@@ -470,7 +523,7 @@ class HuiPrefabEditor extends HuiElement {
 
 	}
 
-	function makeSelectionAction(newSelection: Array<hrt.prefab.Prefab>) : hrt.tools.Undo.Action {
+	function actionMakeSelection(newSelection: Array<hrt.prefab.Prefab>) : hrt.tools.Undo.Action {
 		var oldSelection = [for (p => _ in selectedPrefabs) p];
 
 		return (isUndo) -> {
@@ -494,7 +547,7 @@ class HuiPrefabEditor extends HuiElement {
 		return h3d.Matrix.I();
 	}
 
-	function reparentPrefabAction(prefab: hrt.prefab.Prefab, parent: hrt.prefab.Prefab, index: Int) : hrt.tools.Undo.Action {
+	function actionReparentPrefab(prefab: hrt.prefab.Prefab, parent: hrt.prefab.Prefab, index: Int) : hrt.tools.Undo.Action {
 		var oldParent = prefab.parent;
 		var oldIndex = -1;
 		var currentWorldTransform = worldMat(prefab);

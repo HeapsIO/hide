@@ -18,6 +18,8 @@ class Undo {
 	}
 
 	public function run(action: Action, hasDataChanges: Bool) {
+		if (action == null)
+			return;
 		action(false);
 		record(action, hasDataChanges);
 	}
