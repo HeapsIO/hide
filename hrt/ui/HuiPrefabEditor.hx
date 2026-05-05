@@ -111,6 +111,9 @@ class HuiPrefabEditor extends HuiElement {
 			if (obj != null)
 				focusObjects([obj]);
 		};
+		treePrefab.getIdentifier = (prefab) -> {
+			prefab.getAbsPath(true, true);
+		}
 
 		treePrefab.dragAndDropInterface = {
 			onDragStart: function(p: hrt.prefab.Prefab): Void {
