@@ -266,14 +266,16 @@ class HuiViewModesWidget extends HuiElement {
 		</hui-button>
 	</hui-view-modes-widget>
 
+	var currentMode = 0;
 	public function new(s3d: h3d.scene.Scene, ?parent : h2d.Object) {
 		super(parent);
 		initComponent();
 
 		btn.onClick = (_) -> {
 			var renderer = Std.downcast(@:privateAccess s3d.renderer, h3d.scene.pbr.Renderer);
-			if (renderer != null)
-				uiBase.addPopup(new hrt.ui.HuiToolbar.HuiViewModesPopup(renderer, s3d), { object: Element(this), directionX: StartInside, directionY: EndOutside });
+			if (renderer != null) {
+				uiBase.addPopup(new hrt.ui.HuiToolbar.HuiViewModesPopup(this, s3d), { object: Element(this), directionX: StartInside, directionY: EndOutside });
+			}
 		}
 	}
 }
@@ -292,12 +294,16 @@ class HuiViewModesPopup extends HuiPopup {
 		</hui-view-modes-popup>
 
 	var modes : Array<Dynamic> = [];
+	var currentMode : Int = 0;
+	var widget : HuiViewModesWidget;
 	var s3d : h3d.scene.Scene;
-	var checked : HuiCheckbox;
 
-	public function new(renderer : h3d.scene.pbr.Renderer, s3d : h3d.scene.Scene, ?parent: h2d.Object) {
+	public function new(widget : HuiViewModesWidget, s3d : h3d.scene.Scene, ?parent: h2d.Object) {
 		super(parent);
 		this.s3d = s3d;
+		this.widget = widget;
+		var renderer = @:privateAccess s3d.renderer;
+
 		modes =  [
 			{ label : "LIT", enable : (renderer : Renderer) -> { renderer.displayMode = Pbr; }},
 			{ label : "Full", enable : (renderer : Renderer) -> { renderer.displayMode = Debug; renderer.slides.shader.mode = Full; }},
@@ -309,21 +315,20 @@ class HuiViewModesPopup extends HuiPopup {
 			{ label : "AO", enable : (renderer : Renderer) -> { renderer.displayMode = Debug; renderer.slides.shader.mode = AO; }},
 			{ label : "Shadows", enable : (renderer : Renderer) -> { renderer.displayMode = Debug; renderer.slides.shader.mode = Shadow; }},
 			{ label : "Performance", enable : (renderer : Renderer) -> { renderer.displayMode = Performance; }},
-			{ label : "UV Checker", enable : (renderer : Renderer) -> { renderer.displayMode = Pbr; renderer.slides.shader.mode = Normal; setUVChecker(true); }},
-			{ label : "Displacement", enable : (renderer : Renderer) -> { renderer.displayMode = Debug; renderer.slides.shader.mode = Albedo; }},
-			{ label : "Velocity", enable : (renderer : Renderer) -> { renderer.displayMode = Debug; renderer.slides.shader.mode = Velocity; }}
+			{ label : "UV Checker", disable : () -> { setUVChecker(false); }, enable : (renderer : Renderer) -> { renderer.displayMode = Pbr; renderer.slides.shader.mode = Normal; setUVChecker(true); }}
 		];
 
 		initComponent();
-
-		checked = cb[0];
-		cb[0].value = true;
+		@:privateAccess currentMode = widget.currentMode;
+		cb[currentMode].value = true;
 	}
 
-	function updateChecked(cb : HuiCheckbox) {
-		checked?.value = false;
-		checked = cb;
-		checked.value = true;
+	function updateChecked(checkbox : HuiCheckbox) {
+		cb[currentMode].value = false;
+		if (modes[currentMode].disable != null)
+			modes[currentMode].disable();
+		@:privateAccess widget.currentMode = currentMode = cb.indexOf(checkbox);
+		cb[currentMode].value = true;
 	}
 
 	function setUVChecker(enable : Bool) {
@@ -350,14 +355,6 @@ class HuiViewModesPopup extends HuiPopup {
 
 		checkUV(s3d);
 	}
-
-	// function setUVChecker(enable : Bool) {
-
-	// }
-
-	// function setUVChecker(enable : Bool) {
-
-	// }
 }
 
 class HuiCameraSettingsPopup extends HuiPopup {
