@@ -258,6 +258,97 @@ class HuiVisibilitySettingsPopup extends HuiPopup {
 	}
 }
 
+class HuiSceneFiltersWidget extends HuiElement {
+	static var SRC = <hui-scene-filters-widget>
+		<hui-button id="btn">
+			<hui-text("Scene Filters")/>
+			<hui-icon("dropDown")/>
+		</hui-button>
+	</hui-scene-filters-widget>
+
+	public static var FILTER_TYPES_KEY = "prefabeditor.filterTypes";
+	public static var HIDDEN_FILTERS_TYPES_KEY = "hiddenFiltersType";
+
+	public var filters = new Map<String, Bool>();
+	var prefab : hrt.prefab.Prefab;
+	var editor : hrt.ui.HuiPrefabEditor;
+
+	public function new(editor : hrt.ui.HuiPrefabEditor, ?parent : h2d.Object) {
+		super(parent);
+		this.prefab = @:privateAccess editor.prefab;
+		this.editor = editor;
+		initComponent();
+		getSceneFilters();
+		applySceneFilters();
+
+		btn.onClick = (_) -> {
+			uiBase.addPopup(new hrt.ui.HuiToolbar.HuiSceneFiltersPopup(this), { object: Element(this), directionX: StartInside, directionY: EndOutside });
+		}
+	}
+
+	function getSceneFilters() {
+		var availableFilters : Array<String> = hide.Ide.inst.currentConfig.get(FILTER_TYPES_KEY);
+		var hiddenFilters = editor.getDisplayState(HIDDEN_FILTERS_TYPES_KEY, []);
+		filters = new Map();
+		for (f in availableFilters ?? [])
+			filters.set(f, !hiddenFilters.contains(f));
+	}
+
+	function applySceneFilters() {
+		if (prefab == null)
+			return;
+
+		var hiddenFilters = editor.getDisplayState(HIDDEN_FILTERS_TYPES_KEY, []);
+		for (f in filters.keys()) {
+			if (filters.get(f))
+				hiddenFilters.remove(f);
+			else if (!hiddenFilters.contains(f))
+				hiddenFilters.push(f);
+
+			var all = prefab.flatten(hrt.prefab.Prefab);
+			var tag = StringTools.replace(f, "tag:", "");
+			tag = tag != f ? tag : null;
+			for (p in all) {
+				if (p.type == f || p.getCdbType() == f || (tag != null && (p.props:Dynamic)?.tag == tag)) {
+					var obj3d = Std.downcast(p, hrt.prefab.Object3D);
+					obj3d?.local3d.visible = filters.get(f);
+				}
+			}
+		}
+		editor.saveDisplayState(HIDDEN_FILTERS_TYPES_KEY, hiddenFilters);
+	}
+}
+
+class HuiSceneFiltersPopup extends HuiPopup {
+	static var SRC =
+		<hui-scene-filters-popup class="vertical">
+			<hui-text("Scene Filters") class="title"/>
+			for (f in widget.filters.keys()) {
+				<hui-element class="horizontal">
+					<hui-checkbox id="filterCb[]"/>
+					<hui-text(f) class="label"/>
+				</hui-element>
+			}
+		</hui-scene-filters-popup>
+
+
+	public function new(widget : HuiSceneFiltersWidget, ?parent: h2d.Object) {
+		super(parent);
+
+		initComponent();
+
+		var idx = 0;
+		for (k in widget.filters.keys()) {
+			filterCb[idx].value = widget.filters.get(k);
+			filterCb[idx].onValueChanged = () -> {
+				widget.filters.set(k, !widget.filters.get(k));
+				@:privateAccess widget.applySceneFilters();
+			}
+			idx++;
+		}
+	}
+}
+
 class HuiViewModesWidget extends HuiElement {
 	static var SRC = <hui-view-modes-widget>
 		<hui-button id="btn">

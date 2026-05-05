@@ -118,22 +118,7 @@ class Prefab extends HuiView<{path: String}> {
 
 		widgets.push(new hrt.ui.HuiToolbar.HuiVisibilityWidget(prefabEditor));
 		widgets.push(new hrt.ui.HuiToolbar.HuiViewModesWidget(@:privateAccess prefabEditor.scene.s3d));
-
-		var graphicsFilterBtn = new HuiButton();
-		graphicsFilterBtn.onClick = (_) -> {
-			// TODO
-		};
-		new HuiText("Graphics Filters", graphicsFilterBtn);
-		new HuiIcon("dropDown", graphicsFilterBtn);
-		widgets.push(graphicsFilterBtn);
-
-		var sceneFilterBtn = new HuiButton();
-		sceneFilterBtn.onClick = (_) -> {
-			// TODO
-		};
-		new HuiText("Scene Filters", sceneFilterBtn);
-		new HuiIcon("dropDown", sceneFilterBtn);
-		widgets.push(sceneFilterBtn);
+		widgets.push(new hrt.ui.HuiToolbar.HuiSceneFiltersWidget(prefabEditor));
 
 		var renderPropsBtn = new HuiButton();
 		renderPropsBtn.onClick = (_) -> {

@@ -93,6 +93,7 @@ class HuiPrefabEditor extends HuiElement {
 		super(parent);
 		initComponent();
 
+		saveDisplayKey = "prefabeditor";
 		errorMessage = new h2d.Text(hxd.res.DefaultFont.get(), scene.s2d);
 
 		var ctrlClass = h3d.scene.CameraController.getCameraControllersClass()[hide.Ide.inst.currentConfig.get(hide.view.Prefab.CAM_CTRL_CONFIG_KEY, 0)];
