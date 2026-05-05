@@ -1,4 +1,5 @@
 package hrt.ui;
+import h3d.scene.pbr.Renderer;
 
 #if hui
 class HuiToolbar extends HuiElement {
@@ -272,39 +273,91 @@ class HuiViewModesWidget extends HuiElement {
 		btn.onClick = (_) -> {
 			var renderer = Std.downcast(@:privateAccess s3d.renderer, h3d.scene.pbr.Renderer);
 			if (renderer != null)
-				uiBase.addPopup(new hrt.ui.HuiToolbar.HuiViewModesPopup(renderer), { object: Element(this), directionX: StartInside, directionY: EndOutside });
+				uiBase.addPopup(new hrt.ui.HuiToolbar.HuiViewModesPopup(renderer, s3d), { object: Element(this), directionX: StartInside, directionY: EndOutside });
 		}
 	}
 }
 
+@:access(h3d.scene.pbr.Renderer)
 class HuiViewModesPopup extends HuiPopup {
 	static var SRC =
 		<hui-view-modes-popup class="vertical">
 			<hui-text("View Modes") class="title"/>
-			for (m in modes) {
-				<hui-checkbox class="label"/>
-				<hui-text("LIT") class="label"/>
+			for (idx => m in modes) {
+				<hui-element class="horizontal">
+					<hui-checkbox id="cb[]" onValueChanged={() -> { updateChecked(cb[idx]); m.enable(renderer); }}/>
+					<hui-text(m.label) class="label"/>
+				</hui-element>
 			}
 		</hui-view-modes-popup>
 
-	public static var modes = [1, 2, 3];
+	var modes : Array<Dynamic> = [];
+	var s3d : h3d.scene.Scene;
 	var checked : HuiCheckbox;
 
-	public function new(renderer : h3d.scene.pbr.Renderer, ?parent: h2d.Object) {
+	public function new(renderer : h3d.scene.pbr.Renderer, s3d : h3d.scene.Scene, ?parent: h2d.Object) {
 		super(parent);
+		this.s3d = s3d;
+		modes =  [
+			{ label : "LIT", enable : (renderer : Renderer) -> { renderer.displayMode = Pbr; }},
+			{ label : "Full", enable : (renderer : Renderer) -> { renderer.displayMode = Debug; renderer.slides.shader.mode = Full; }},
+			{ label : "Albedo", enable : (renderer : Renderer) -> { renderer.displayMode = Debug; renderer.slides.shader.mode = Albedo; }},
+			{ label : "Normal", enable : (renderer : Renderer) -> { renderer.displayMode = Debug; renderer.slides.shader.mode = Normal; }},
+			{ label : "Roughness", enable : (renderer : Renderer) -> { renderer.displayMode = Debug; renderer.slides.shader.mode = Roughness; }},
+			{ label : "Metalness", enable : (renderer : Renderer) -> { renderer.displayMode = Debug; renderer.slides.shader.mode = Metalness; }},
+			{ label : "Emissive", enable : (renderer : Renderer) -> { renderer.displayMode = Debug; renderer.slides.shader.mode = Emissive; }},
+			{ label : "AO", enable : (renderer : Renderer) -> { renderer.displayMode = Debug; renderer.slides.shader.mode = AO; }},
+			{ label : "Shadows", enable : (renderer : Renderer) -> { renderer.displayMode = Debug; renderer.slides.shader.mode = Shadow; }},
+			{ label : "Performance", enable : (renderer : Renderer) -> { renderer.displayMode = Performance; }},
+			{ label : "UV Checker", enable : (renderer : Renderer) -> { renderer.displayMode = Pbr; renderer.slides.shader.mode = Normal; setUVChecker(true); }},
+			{ label : "Displacement", enable : (renderer : Renderer) -> { renderer.displayMode = Debug; renderer.slides.shader.mode = Albedo; }},
+			{ label : "Velocity", enable : (renderer : Renderer) -> { renderer.displayMode = Debug; renderer.slides.shader.mode = Velocity; }}
+		];
+
 		initComponent();
 
-		// litCb.value = true;
-		// checked = litCb;
-
-		var shader = @:privateAccess renderer.slides.shader;
+		checked = cb[0];
+		cb[0].value = true;
 	}
 
 	function updateChecked(cb : HuiCheckbox) {
-		checked.value = false;
+		checked?.value = false;
 		checked = cb;
 		checked.value = true;
 	}
+
+	function setUVChecker(enable : Bool) {
+		function checkUV(obj: h3d.scene.Object) {
+			var mesh = Std.downcast(obj, h3d.scene.Mesh);
+			if (mesh != null && mesh.primitive != null && mesh.primitive.buffer != null &&
+				!mesh.primitive.buffer.isDisposed() &&
+				mesh.primitive.buffer.format != null &&
+				mesh.primitive.buffer.format.getInput("uv") != null) {
+				for (mat in mesh.getMaterials(null, false)) {
+					if (enable) {
+						if (mat.mainPass.getShader(h3d.shader.Checker) == null)
+							mat.mainPass.addShader(new h3d.shader.Checker());
+					} else {
+					var s = mat.mainPass.getShader(h3d.shader.Checker);
+					if (s != null)
+						mat.mainPass.removeShader(s);
+					}
+				}
+			}
+			for (idx in 0...obj.numChildren)
+				checkUV(obj.getChildAt(idx));
+		}
+
+		checkUV(s3d);
+	}
+
+	// function setUVChecker(enable : Bool) {
+
+	// }
+
+	// function setUVChecker(enable : Bool) {
+
+	// }
 }
 
 class HuiCameraSettingsPopup extends HuiPopup {

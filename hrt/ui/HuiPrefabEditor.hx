@@ -1233,6 +1233,7 @@ class HuiPrefabEditor extends HuiElement {
 		scene.disableSceneRender = !visible;
 	}
 
+
 	function onSceneEvents(e: hxd.Event) : Void {
 		// debugGraph.clear();
 		// debugGraph.setColor(0xFF00FF, 1.0);

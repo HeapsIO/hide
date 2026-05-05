@@ -38,33 +38,6 @@ class DirLightWithClouds extends h3d.shader.pbr.Light {
 	};
 }
 
-class DirLightWithCloudsBlend extends DirLightWithClouds {
-
-	static var SRC = {
-
-		@param var blendFactor : Float;
-
-		@param var clouds1 : Sampler2D;
-		@param var clouds2 : Sampler2D;
-
-		@param var distort1 : Sampler2D;
-		@param var distort2 : Sampler2D;
-
-		function fragment() {
-			pbrLightDirection = lightDir;
-			pbrLightColor = lightColor;
-			pbrOcclusionFactor = occlusionFactor;
-
-			var pos = transformedPosition.xy * scale;
-			var uv = pos + time * speed;
-			if( hasDistort )
-				uv += mix(distort1.get(uv).r, distort2.get(uv).r, blendFactor) * distortAmount;
-			var cloudIntensity =  mix(clouds1.get(uv).r, clouds2.get(uv).r, blendFactor) * opacity;
-			pbrLightColor *= 1.0 - cloudIntensity.saturate();
-		}
-	};
-}
-
 @:access(h3d.scene.pbr.DirLight)
 @:access(h3d.scene.Renderer)
 class CloudShadow extends RendererFX {
@@ -87,6 +60,18 @@ class CloudShadow extends RendererFX {
 	override function makeInstance() : Void {
 		super.makeInstance();
 		updateInstance();
+	}
+
+	override function updateInstance(?propName : String ) {
+		super.updateInstance(propName);
+
+		if( texturePath != null )
+			dlwc.clouds = Loader.currentInstance.load(texturePath).toTexture().clone();
+		if( dlwc.clouds != null )
+			dlwc.clouds.wrap = Repeat;
+
+		dlwc.distort = Loader.currentInstance.load(distort.path).toTexture().clone();
+		if( dlwc.distort != null ) dlwc.distort.wrap = Repeat;
 	}
 
 	override function end(r:h3d.scene.Renderer, step:h3d.impl.RendererFX.Step) {
@@ -116,16 +101,10 @@ class CloudShadow extends RendererFX {
 				dlwc.scale = 1.0 / scale;
 				dlwc.opacity = opacity;
 				dlwc.time = ctx.time;
-				if( texturePath != null )
-					dlwc.clouds = Loader.currentInstance.load(texturePath).toTexture();
-				if( dlwc.clouds != null )
-					dlwc.clouds.wrap = Repeat;
 				var dist = distort;
 				dlwc.hasDistort = dist != null;
 				if( dist != null && dist.path != null ) {
 					var angle = dist.angle * Math.PI / 180;
-					dlwc.distort = Loader.currentInstance.load(dist.path).toTexture();
-					if( dlwc.distort != null ) dlwc.distort.wrap = Repeat;
 					dlwc.distortAmount = dist.amount * 0.01;
 					dlwc.distortSpeed.set(Math.cos(angle) * dist.speed * 0.1, Math.sin(angle) * dist.speed * 0.1);
 					dlwc.distortScale = dist.scale;
@@ -151,25 +130,7 @@ class CloudShadow extends RendererFX {
 
 		var c = new CloudShadow(null, null);
 
-		@:privateAccess {
-			var dlwcBlend = new DirLightWithCloudsBlend();
-
-			dlwcBlend.clouds1 = Loader.currentInstance.load(c1.texturePath).toTexture();
-			dlwcBlend.clouds1.wrap = Repeat;
-			dlwcBlend.clouds2 = Loader.currentInstance.load(c2.texturePath).toTexture();
-			dlwcBlend.clouds2.wrap = Repeat;
-
-			dlwcBlend.distort1 = Loader.currentInstance.load(c1.distort.path).toTexture();
-			if( dlwcBlend.distort1 != null ) dlwcBlend.distort1.wrap = Repeat;
-			dlwcBlend.distort2 = Loader.currentInstance.load(c2.distort.path).toTexture();
-			if( dlwcBlend.distort2 != null ) dlwcBlend.distort2.wrap = Repeat;
-
-			dlwcBlend.hasDistort = dlwcBlend.distort1 != null && dlwcBlend.distort2 != null;
-
-			dlwcBlend.blendFactor = 0.;
-			c.dlwc = dlwcBlend;
-		}
-
+		c.instance = c1.instance;
 		c.opacity = c1.opacity;
 		c.scale = c1.scale;
 		c.speed = c1.speed;
@@ -182,6 +143,16 @@ class CloudShadow extends RendererFX {
 			angle : c1.distort.angle,
 			amount : c1.distort.amount
 		}
+		c.makeInstance();
+		if (texturePath != null) {
+			c.dlwc.clouds?.dispose();
+			c.dlwc.clouds = new h3d.mat.Texture(c1.dlwc.clouds.width, c1.dlwc.clouds.height, [Target], c1.dlwc.clouds.format);
+		}
+		if( c.dlwc.clouds != null )
+			c.dlwc.clouds.wrap = Repeat;
+		c.dlwc.distort?.dispose();
+		c.dlwc.distort = new h3d.mat.Texture(c1.dlwc.distort.width, c1.dlwc.distort.height, [Target], c1.dlwc.distort.format);
+		if( c.dlwc.distort != null ) c.dlwc.distort.wrap = Repeat;
 
 		return { effect : cast c, setFactor : (f : Float) -> {
 			c.opacity = hxd.Math.lerp(c1.opacity, c2.opacity, f);
@@ -189,6 +160,8 @@ class CloudShadow extends RendererFX {
 			c.speed = hxd.Math.lerp(c1.speed, c2.speed, f);
 			c.angle = hxd.Math.lerp(c1.angle, c2.angle, f);
 			c.texturePath = f < 0.5 ? c1.texturePath : c2.texturePath;
+			h3d.pass.Merge.run(c1.dlwc.clouds, c2.dlwc.clouds, f, c.dlwc.clouds);
+			h3d.pass.Merge.run(c1.dlwc.distort, c2.dlwc.distort, f, c.dlwc.distort);
 			c.distort = {
 				path : f < 0.5 ? c1.distort.path : c2.distort.path,
 				scale : hxd.Math.lerp(c1.distort.scale, c2.distort.scale, f),
@@ -196,7 +169,6 @@ class CloudShadow extends RendererFX {
 				angle : hxd.Math.lerp(c1.distort.angle, c2.distort.angle, f),
 				amount : hxd.Math.lerp(c1.distort.amount, c2.distort.amount, f)
 			}
-			@:privateAccess cast (c.dlwc, DirLightWithCloudsBlend).blendFactor = f;
 		} };
 	}
 
@@ -279,5 +251,4 @@ class CloudShadow extends RendererFX {
 	}
 
 	static var _ = Prefab.register("rfx.cloudShadow", CloudShadow);
-
 }
