@@ -164,7 +164,8 @@ class HuiPrefabEditor extends HuiElement {
 			}
 		});
 
-		registerCommand(hrt.ui.HuiCommands.copy, View, () -> hxd.System.setClipboardText(hide.Ide.inst.toJSON([for (p in getSelectionOrdered()) p.serialize()])));
+		registerCommand(hrt.ui.HuiCommands.cut, View, () -> getView().undo.run(actionCutToClipboard(), true));
+		registerCommand(hrt.ui.HuiCommands.copy, View, () -> copySelectionToClipboard());
 		registerCommand(hrt.ui.HuiCommands.paste, View, () -> getView().undo.run(actionPasteFromClipboard(), true));
 
 		registerCommand(hrt.ui.HuiCommands.delete, View, () -> getView().undo.run(actionRemovePrefabs([for (p => _ in selectedPrefabs) p]), true));
@@ -173,6 +174,20 @@ class HuiPrefabEditor extends HuiElement {
 		debugGraph = new h2d.Graphics(scene.s2d);
 
 		makeGizmos();
+	}
+
+	/**
+		Returns the list of prefabs that don't have a parent in the list
+	**/
+	function getRoots(prefabs: Array<hrt.prefab.Prefab>) : Array<hrt.prefab.Prefab> {
+		var newList = [];
+		for (prefab in prefabs) {
+			if (prefab.findParent((p) -> prefabs.contains(p)) != null) {
+				continue;
+			}
+			newList.push(prefab);
+		}
+		return newList;
 	}
 
 	function sanitizeReparent(target: hrt.prefab.Prefab, elements: Array<hrt.prefab.Prefab>) {
@@ -401,19 +416,32 @@ class HuiPrefabEditor extends HuiElement {
 
 		var entries: Array<hrt.ui.HuiMenu.MenuItem> = [];
 
-
-
 		entries.push({label: "Add Child Prefab", menu: createPrefabMenu((cl) -> getView().undo.run(actionCreatePrefab(target, target.children.length, cl), true))});
 		entries.push(HuiMenu.itemFromCommand(HuiCommands.rename, this));
 
+		entries.push({isSeparator: true});
 		entries.push(HuiMenu.itemFromCommand(HuiCommands.cut, this));
 		entries.push(HuiMenu.itemFromCommand(HuiCommands.copy, this));
 		entries.push(HuiMenu.itemFromCommand(HuiCommands.paste, this));
 
 		entries.push(HuiMenu.itemFromCommand(HuiCommands.delete, this));
+
+		entries.push({isSeparator: true});
+
 		entries.push(HuiMenu.itemFromCommand(focusCommand, this));
 
 		uiBase.contextMenu(entries);
+	}
+
+	function actionCutToClipboard() : hrt.tools.Undo.Action {
+		copySelectionToClipboard();
+		return actionRemovePrefabs(getSelectionOrdered());
+	}
+
+	function copySelectionToClipboard() {
+		var selection = getSelectionOrdered();
+		selection = getRoots(selection);
+		hxd.System.setClipboardText(hide.Ide.inst.toJSON([for (p in selection) p.serialize()]));
 	}
 
 	function actionPasteFromClipboard() : hrt.tools.Undo.Action {
