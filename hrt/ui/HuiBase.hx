@@ -19,6 +19,9 @@ class HuiBase extends HuiElement {
 	var startDragX : Float = hxd.Math.NaN;
 	var startDragY : Float = hxd.Math.NaN;
 	var currentDrag: HuiDragOp = null;
+	var cursorOverrideOverlay: h2d.Interactive;
+
+	public var cursorOverride: Null<hxd.Cursor> = null;
 
 	static final dragDistanceThreshold = 5.0;
 
@@ -54,6 +57,10 @@ class HuiBase extends HuiElement {
 		onWheel = (e) -> {
 			e.propagate = false;
 		}
+
+		cursorOverrideOverlay = new h2d.Interactive(10000,10000);
+		cursorOverrideOverlay.propagateEvents = true;
+		getScene().add(cursorOverrideOverlay, 100);
 	}
 
 	/**
@@ -212,19 +219,23 @@ class HuiBase extends HuiElement {
 		#end
 	}
 
+	public function updateCursor() {
+
+	}
+
 	public function updateStyle(dt: Float) {
 		style.sync(dt);
 		checkedCommandEvents.clear();
 
-		var wantedCursor : hxd.Cursor = null;
+		var wantedCursor : hxd.Cursor = cursorOverride;
 
 		if (currentDrag != null) {
 			if (currentDrag.lastOver == null)
 				wantedCursor = cursorForbidden;
 		}
 
-		if (interactive.cursor != wantedCursor) {
-			interactive.cursor = wantedCursor;
+		if (cursorOverrideOverlay.cursor != wantedCursor) {
+			cursorOverrideOverlay.cursor = wantedCursor;
 		}
 
 		// HiDPI support for hldx targets

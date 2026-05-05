@@ -2,6 +2,24 @@ package hrt.ui;
 
 #if hui
 
+class HuiSceneEvents extends hxd.SceneEvents {
+	public var huiScene: HuiScene;
+
+	override function selectCursor() {
+		var cur : hxd.Cursor = defaultCursor;
+		for ( o in overList ) {
+			if ( o.cursor != null ) {
+				cur = o.cursor;
+				break;
+			}
+		}
+		switch( cur ) {
+			case Callback(f): f();
+			default: huiScene.interactive.cursor = cur;
+		}
+	}
+}
+
 class HuiScene extends HuiElement {
 	static var SRC =
 	<hui-scene>
@@ -14,7 +32,7 @@ class HuiScene extends HuiElement {
 
 	public var s2d : h2d.Scene;
 	public var s3d : h3d.scene.Scene;
-	public var sceneEvents : hxd.SceneEvents;
+	public var sceneEvents : HuiSceneEvents;
 	public var disableSceneRender : Bool = false;
 
 	var renderTexture : h3d.mat.Texture;
@@ -67,7 +85,8 @@ class HuiScene extends HuiElement {
 		}
 
 
-		sceneEvents = new hxd.SceneEvents();
+		sceneEvents = new HuiSceneEvents();
+		sceneEvents.huiScene = this;
 		@:privateAccess hxd.Window.getInstance().removeEventTarget(sceneEvents.onEvent);
 
 		var base = uiBase;
