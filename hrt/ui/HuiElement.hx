@@ -210,6 +210,7 @@ class HuiElement extends h2d.Flow #if hui implements h2d.domkit.Object #end {
 		if (enableInteractive)
 			return;
 		enableInteractive = true;
+		interactive.cursor = null;
 
 		interactive.name = Type.getClassName(Type.getClass(this));
 
@@ -318,10 +319,12 @@ class HuiElement extends h2d.Flow #if hui implements h2d.domkit.Object #end {
 			var base = uiBase;
 			if (base.currentDrag != null) {
 				base.currentDrag.event = event;
+				base.currentDrag.acceptDrop = true;
 				fn(base.currentDrag);
 				base.currentDrag.event = null;
-				event.propagate = false;
-				return true;
+				if (base.currentDrag.acceptDrop)
+					event.propagate = false;
+				return base.currentDrag.acceptDrop;
 			}
 		}
 		return false;
@@ -334,6 +337,7 @@ class HuiElement extends h2d.Flow #if hui implements h2d.domkit.Object #end {
 
 		if (checkDragFn(onDragOver, e)) {
 			@:privateAccess uiBase.currentDrag.setLastOver(this);
+			e.propagate = false;
 			return;
 		}
 
@@ -349,6 +353,7 @@ class HuiElement extends h2d.Flow #if hui implements h2d.domkit.Object #end {
 
 		if (onDragOut != emptyFuncDragVoid && @:privateAccess uiBase.currentDrag?.lastOver == this && checkDragFn(onDragOut, e)) {
 			@:privateAccess uiBase.currentDrag.setLastOver(null);
+			e.propagate = false;
 			return;
 		}
 
@@ -362,9 +367,13 @@ class HuiElement extends h2d.Flow #if hui implements h2d.domkit.Object #end {
 			return;
 
 		if (onDragMove != null && @:privateAccess uiBase.currentDrag?.lastOver == this) {
-			if (checkDragFn(onDragMove, e))
+			if (checkDragFn(onDragMove, e)) {
+				e.propagate = false;
 				return;
+			}
 		}
+
+		e.propagate = true;
 
 		onMove(e);
 	}

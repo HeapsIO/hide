@@ -13,6 +13,8 @@ class HuiDragOp {
 	var previewOffsetY: Int;
 
 	public var event: hxd.Event;
+	public var acceptDrop: Bool = false;
+
 
 	var lastOver: HuiElement;
 
@@ -32,6 +34,7 @@ class HuiDragOp {
 		if (lastOver != null)
 			lastOver.onDragOut(this);
 		lastOver = newElement;
+		trace("Set last over", newElement);
 	}
 
 	public function setPreview(newElement: HuiElement, offsetX: Int, offsetY: Int) {

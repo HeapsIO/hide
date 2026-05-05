@@ -27,7 +27,6 @@ class HuiView<T> extends HuiElement {
 
 		registerCommand(HuiCommands.undo, ElementAndChildren, () -> undo.undo());
 		registerCommand(HuiCommands.redo, ElementAndChildren, () -> undo.redo());
-
 	}
 
 	/**

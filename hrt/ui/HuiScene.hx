@@ -34,7 +34,7 @@ class HuiScene extends HuiElement {
 				interactive.huiScene = this;
 				addChildAt(interactive,0);
 				this.interactive = interactive;
-				interactive.cursor = Default;
+				interactive.cursor = null;
 				getProperties(interactive).isAbsolute = true;
 				if( !needReflow ) {
 					interactive.width = calculatedWidth;

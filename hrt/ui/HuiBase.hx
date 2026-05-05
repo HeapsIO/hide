@@ -27,6 +27,8 @@ class HuiBase extends HuiElement {
 	@:allow(hrt.ui.HuiElement) var scrollFocus: HuiElement;
 	@:allow(hrt.ui.HuiElement) var lastScrollTime: Float;
 
+	public static var cursorForbidden : hxd.Cursor;
+
 	public function new(app: hide.App, ?parent: h2d.Object) {
 		this.app = app;
 		super(parent);
@@ -44,6 +46,8 @@ class HuiBase extends HuiElement {
 		style.addObject(this);
 
 		mainLayout = new HuiMainLayout(this);
+
+		cursorForbidden = hxd.Cursor.Custom(new hxd.Cursor.CustomCursor([HuiRes.loader.load("ui/cursors/forbidden.png").toImage().toBitmap()], 0, 12, 12));
 
 		makeInteractive();
 
@@ -273,6 +277,17 @@ class HuiBase extends HuiElement {
 	public function updateStyle(dt: Float) {
 		style.sync(dt);
 		checkedCommandEvents.clear();
+
+		var wantedCursor : hxd.Cursor = null;
+
+		if (currentDrag != null) {
+			if (currentDrag.lastOver == null)
+				wantedCursor = cursorForbidden;
+		}
+
+		if (interactive.cursor != wantedCursor) {
+			interactive.cursor = wantedCursor;
+		}
 
 		// HiDPI support for hldx targets
 		#if hldx

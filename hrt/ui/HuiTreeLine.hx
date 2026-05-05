@@ -7,6 +7,7 @@ import hrt.ui.HuiTree;
 class HuiTreeLine extends HuiElement {
 	static var SRC =
 		<hui-tree-line>
+			<hui-element id="spacing"/>
 			<hui-element id="caret"/>
 			<hui-element id="icon"/>
 			<hui-text("") id="title"/>
@@ -16,6 +17,13 @@ class HuiTreeLine extends HuiElement {
 
 	var data : TreeItemData;
 	var tree : Any;
+
+	@:p var depthPadding(never, set): Int;
+
+	function set_depthPadding(v) {
+		spacing.setWidth(data.depth * v);
+		return v;
+	}
 
 	public function new(data: TreeItemData, tree: Any, ?parent) {
 		super(parent);
@@ -118,8 +126,6 @@ class HuiTreeLine extends HuiElement {
 		icon.backgroundType = "hui";
 		icon.huiBg.image = { path: data.icon, mode: Fit };
 
-		paddingLeft = data.depth * 5;
-
 		dom.toggleClass("children", tree.hasChildren(data.item));
 		dom.toggleClass("open", tree.isOpen(data));
 		dom.toggleClass("selected", tree.isSelected(data));
@@ -133,9 +139,10 @@ class HuiTreeLine extends HuiElement {
 	}
 
 	override public function draw(ctx) {
-		dropIndicator.x = paddingLeft;
+		var xOffset = spacing.x + spacing.maxWidth;
+		dropIndicator.x = xOffset;
 		dropIndicator.y = 0;
-		dropIndicator.setWidth(Std.int(calculatedWidth - paddingLeft));
+		dropIndicator.setWidth(Std.int(calculatedWidth - xOffset));
 		dropIndicator.setHeight(Std.int(calculatedHeight));
 		super.draw(ctx);
 	}

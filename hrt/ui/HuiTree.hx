@@ -421,6 +421,8 @@ class HuiTree<TreeItem> extends HuiElement {
 			line.onDragOver = line.onDragMove = (op) -> {
 				var dropOp = line.getDropOperation(op);
 
+				op.acceptDrop = dropOp != null;
+
 				line.dom.toggleClass("drop-before", dropOp==Before);
 				line.dom.toggleClass("drop-inside", dropOp==Inside);
 				line.dom.toggleClass("drop-after", dropOp==After);
@@ -488,7 +490,11 @@ class HuiTree<TreeItem> extends HuiElement {
 				});
 
 				childData.parent = parent;
-				childData.depth = parent?.depth + 1 ?? 0;
+				if (parent != null) {
+					childData.depth = parent.depth + 1;
+				} else {
+					childData.depth = 0;
+				}
 				updateData(childData);
 				childrenData.push(childData);
 			}
