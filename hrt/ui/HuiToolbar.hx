@@ -349,6 +349,41 @@ class HuiSceneFiltersPopup extends HuiPopup {
 	}
 }
 
+class HuiRenderPropsWidget extends HuiElement {
+	static var SRC = <hui-render-props-widget>
+		<hui-button id="btn">
+			<hui-text("Render Props")/>
+			<hui-icon("dropDown")/>
+		</hui-button>
+	</hui-render-props-widget>
+
+	var editor : hrt.ui.HuiPrefabEditor;
+
+	public function new(editor : hrt.ui.HuiPrefabEditor, ?parent : h2d.Object) {
+		super(parent);
+		this.editor = editor;
+		initComponent();
+
+		btn.onClick = (_) -> {
+			uiBase.addPopup(new hrt.ui.HuiToolbar.HuiRenderPropsPopup(this), { object: Element(this), directionX: StartInside, directionY: EndOutside });
+		}
+	}
+}
+
+class HuiRenderPropsPopup extends HuiPopup {
+	static var SRC =
+		<hui-render-props-popup class="vertical">
+			<hui-text("Render Props") class="title"/>
+		</hui-render-props-popup>
+
+
+	public function new(widget : HuiRenderPropsWidget, ?parent: h2d.Object) {
+		super(parent);
+
+		initComponent();
+	}
+}
+
 class HuiViewModesWidget extends HuiElement {
 	static var SRC = <hui-view-modes-widget>
 		<hui-button id="btn">
