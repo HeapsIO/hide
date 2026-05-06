@@ -8,13 +8,21 @@ class HuiFilePicker extends HuiElement {
 
 	public var value(default, set) : String;
 
+	/** Path relative to the res directory **/
+	public var relative : Bool = true;
+
+
 	public function new(?parent) {
 		super(parent);
 		initComponent();
 
 		this.onClick = (e: hxd.Event) -> {
 			hxd.File.browse((select) -> {
-				value = select.fileName;
+				var path = StringTools.replace(select.fileName, "\\", "/");
+				if (relative) {
+					path = hide.Ide.inst.getRelPath(path);
+				}
+				value = path;
 				onValueChanged();
 			}, {fileTypes: [{name: "prefab, l3d, fx", extensions: ["prefab", "l3d", "fx"]}]});
 		}

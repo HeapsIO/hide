@@ -791,8 +791,7 @@ class HuiPrefabEditor extends HuiElement {
 				var s = bnds.toSphere();
 				var r = focusChanged ? null : s.r * 4.0;
 				cameraController.set(r, null, null, s.getCenter());
-			}
-			else {
+			} else {
 				centroid.scale(1.0 / objs.length);
 				cameraController.set(centroid.toPoint());
 			}
