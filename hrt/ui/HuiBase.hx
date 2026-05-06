@@ -171,7 +171,7 @@ class HuiBase extends HuiElement {
 			e.propagate = true;
 			switch(e.kind) {
 				case ERelease, EReleaseOutside:
-					if (currentDrag.lastOver != null) {
+					if (currentDrag?.lastOver != null) {
 						currentDrag.event = e;
 						var oldX = e.relX;
 						var oldY = e.relY;
@@ -192,8 +192,8 @@ class HuiBase extends HuiElement {
 				default:
 			}
 		}, () -> {
-			trace("cancelled");
-			stopDrag();
+			if (currentDrag != null)
+				stopDrag();
 		});
 
 		return currentDrag;
@@ -206,6 +206,7 @@ class HuiBase extends HuiElement {
 			rec((e) -> e.onAnyDragEnd(currentDrag));
 			currentDrag.dispose();
 			currentDrag = null;
+			@:privateAccess getScene().events.stopCapture();
 		}
 	}
 
@@ -226,6 +227,12 @@ class HuiBase extends HuiElement {
 	public function updateStyle(dt: Float) {
 		style.sync(dt);
 		checkedCommandEvents.clear();
+
+		if (hxd.Key.isPressed(hxd.Key.ESCAPE)) {
+			if (currentDrag != null) {
+				stopDrag();
+			}
+		}
 
 		var wantedCursor : hxd.Cursor = cursorOverride;
 

@@ -341,8 +341,12 @@ class HuiElement extends h2d.Flow #if hui implements h2d.domkit.Object #end {
 			return;
 		}
 
-		dom.hover = true;
 		e.propagate = true;
+
+		if (uiBase.currentDrag != null)
+			return;
+
+		dom.hover = true;
 
 		onOver(e);
 	}
@@ -359,6 +363,10 @@ class HuiElement extends h2d.Flow #if hui implements h2d.domkit.Object #end {
 
 		dom.hover = false;
 		e.propagate = true;
+
+		if (uiBase.currentDrag != null)
+			return;
+
 		onOut(e);
 	}
 
@@ -373,7 +381,11 @@ class HuiElement extends h2d.Flow #if hui implements h2d.domkit.Object #end {
 			}
 		}
 
+
 		e.propagate = true;
+
+		if (uiBase.currentDrag != null)
+			return;
 
 		onMove(e);
 	}
