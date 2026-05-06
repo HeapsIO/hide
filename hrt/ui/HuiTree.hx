@@ -76,6 +76,8 @@ class HuiTree<TreeItem> extends HuiElement {
 	/**Identifier to item open state (item if considered closed if no entry exist in the map)**/
 	var openState: Map<String, Bool> = [];
 
+	var afterRefreshCallbacks: Array<Void -> Void> = [];
+
 
 	var refreshFlags : RefreshFlags = RefreshFlags.ofInt(0);
 
@@ -288,7 +290,12 @@ class HuiTree<TreeItem> extends HuiElement {
 	}
 
 	/** Open all of item parents so that item becomes visible in the tree **/
-	public function revealItem(item: TreeItem) {
+	public function revealItem(item: TreeItem) : Void {
+		if (refreshFlags.toInt() != 0) {
+			afterRefreshCallbacks.push(revealItem.bind(item));
+			return;
+		}
+
 		function rec(data: TreeItemData) {
 			if (data == null)
 				return;
@@ -350,7 +357,8 @@ class HuiTree<TreeItem> extends HuiElement {
 	}
 
 	function refreshInternal() {
-		if (refreshFlags.toInt() != 0) {
+		var iterCount = 0;
+		while (refreshFlags.toInt() != 0 && iterCount < 2) {
 			if (refreshFlags.has(RootData)) {
 				rootData = generateChildren(null);
 				refreshFlags.set(RegenerateFlatten);
@@ -364,6 +372,16 @@ class HuiTree<TreeItem> extends HuiElement {
 			list.refresh();
 
 			refreshFlags = RefreshFlags.ofInt(0);
+
+			var callbacks = afterRefreshCallbacks.copy();
+			afterRefreshCallbacks = [];
+			for (callback in callbacks) {
+				callback();
+			}
+			iterCount++;
+		}
+		if (refreshFlags.toInt() != 0) {
+			throw "afterRefreshCallback loop detected !";
 		}
 	}
 
@@ -600,7 +618,7 @@ class HuiTree<TreeItem> extends HuiElement {
 	}
 
 	function isOpen(data: TreeItemData) : Bool {
-		return (openState.get(data.identifier) ?? false) || data.filterState.has(Open);
+		return data.children?.length > 0 && ((openState.get(data.identifier) ?? false) || data.filterState.has(Open));
 	}
 
 	function isSelected(data: TreeItemData) : Bool {

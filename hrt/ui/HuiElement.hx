@@ -287,6 +287,12 @@ class HuiElement extends h2d.Flow #if hui implements h2d.domkit.Object #end {
 				continue;
 			removeChild(child);
 		}
+		// very cursed
+		for (child in children.copy()) {
+			if (child is HuiText) {
+				removeChild(child);
+			}
+		}
 	}
 
 	function saveDisplayState(key: String, value : Dynamic) : Void {

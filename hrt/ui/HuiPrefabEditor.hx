@@ -358,7 +358,11 @@ class HuiPrefabEditor extends HuiElement {
 		}
 		allTemp.sort(Reflect.compare);
 		while(allTemp.length > 10) {
-			sys.FileSystem.deleteFile(tmpDir + "/" + allTemp.shift());
+			try {
+				sys.FileSystem.deleteFile(tmpDir + "/" + allTemp.shift());
+			} catch (e) {
+
+			}
 		}
 	}
 
@@ -406,6 +410,8 @@ class HuiPrefabEditor extends HuiElement {
 		}
 
 		inspectorRoot.make();
+
+		new HuiText(Type.getClassName(commonClass).split(".").pop(), inspectorPanel);
 
 		inspectorPanel.addChild(@:privateAccess inspectorRoot.native);
 		if (uiBase != null) {
@@ -623,6 +629,7 @@ class HuiPrefabEditor extends HuiElement {
 			rebuildPrefabTree(newParent);
 			updateDebugOverlayVisibility();
 			checkRemakeRenderProps(prefab);
+			treePrefab.revealItem(prefab);
 		};
 	}
 
