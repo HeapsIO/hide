@@ -70,8 +70,10 @@ class CloudShadow extends RendererFX {
 		if( dlwc.clouds != null )
 			dlwc.clouds.wrap = Repeat;
 
-		dlwc.distort = Loader.currentInstance.load(distort.path).toTexture().clone();
-		if( dlwc.distort != null ) dlwc.distort.wrap = Repeat;
+		if (distort != null && distort.path != null) {
+			dlwc.distort = Loader.currentInstance.load(distort.path).toTexture().clone();
+			if( dlwc.distort != null ) dlwc.distort.wrap = Repeat;
+		}
 	}
 
 	override function end(r:h3d.scene.Renderer, step:h3d.impl.RendererFX.Step) {
