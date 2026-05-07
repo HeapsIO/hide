@@ -1,0 +1,31 @@
+hui-curve-box {
+	min-width: 30px;
+	max-width: 200px;
+	width: 200px;
+	height: @widget-base-height;
+	
+	background-type: hui;
+	> hui-background {
+		background: @widget-bg;
+		border-radius: @base-corner-radius;
+		outline: 1 @widget-border;
+	}
+
+	&:hover {
+		> hui-background {
+			background: lighten(@widget-bg, @light-hover);
+		}
+	}
+}
+
+hui-curve-editor {
+	height: 400px;
+	width: 700px;
+
+	background-type: hui;
+	> hui-background {
+		background: @widget-bg;
+		border-radius: @base-corner-radius;
+		outline: 1 @widget-border;
+	}
+}

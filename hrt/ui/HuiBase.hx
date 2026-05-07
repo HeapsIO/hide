@@ -83,9 +83,12 @@ class HuiBase extends HuiElement {
 		openMenu(items, {}, {object: Point(getScene().mouseX, getScene().mouseY), directionX: EndOutside, directionY: EndOutside});
 	}
 
-	public function addPopup(popup: HuiPopup, ?anchor: hrt.ui.HuiPopup.Anchor) {
+	public function addPopup(popup: HuiPopup, ?anchor: hrt.ui.HuiPopup.Anchor, ?dismissable: Bool = true) {
 		popup.anchor = anchor;
-		@:privateAccess popup.addDismissable(this);
+		if (dismissable)
+			@:privateAccess popup.addDismissable(this);
+		else 
+			@:privateAccess popup.addModal(this);
 	}
 
 	public function confirm(message: String, ?buttons: hrt.ui.HuiConfirmPopup.ConfirmButtons, onCompletion: hrt.ui.HuiConfirmPopup.ConfirmButton -> Void) {

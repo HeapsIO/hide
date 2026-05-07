@@ -377,6 +377,8 @@ class Curve extends Prefab {
 			var v = 0.0;
 			v = getVal(duration * i/(numPts-1));
 			vals.push(v);
+			if (v < minValue) minValue = v;
+			if (v > maxValue) maxValue = v;
 		}
 		return vals;
 	}

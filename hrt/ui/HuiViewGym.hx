@@ -138,6 +138,9 @@ class GymWidgets extends HuiElement {
 					</hui-element>
 				</hui-element>
 			</hui-element>
+
+			<hui-text("curve-editor")/>
+			<hui-curve-box/>
 		</gym-widgets>
 
 	function new(?parent) {
