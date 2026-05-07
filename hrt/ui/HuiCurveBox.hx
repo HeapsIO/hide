@@ -123,3 +123,4 @@ class HuiCurveEditor extends HuiPopup {
 
 	public dynamic function onValueChanged(isTemporary: Bool) {}
 }
+#end
