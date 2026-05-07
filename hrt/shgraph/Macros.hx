@@ -188,7 +188,7 @@ class Macros {
 		fields.push({
 			name: "_",
 			access: [Access.AStatic],
-			kind: FieldType.FVar(macro:Bool, macro ShaderNode.register($v{cl.name}, ${clPath.toFieldExpr()})),
+			kind: FieldType.FVar(macro:Bool, macro hrt.shgraph.ShaderNode.register($v{cl.name}, ${clPath.toFieldExpr()})),
 			pos: Context.currentPos(),
 		});
 		#end
