@@ -1015,9 +1015,8 @@ class HuiPrefabEditor extends HuiElement {
 		if (prefabRenderProp != null)
 			candidates.push(prefabRenderProp);
 
-		for (path in paths) {
-			hxd.res.Loader.currentInstance.load(path.value).toPrefab().load();
-		}
+		for (path in paths)
+			candidates.push(hxd.res.Loader.currentInstance.load(path.value).toPrefab().load());
 
 		removePrefabInstance(renderProps);
 		renderProps = null;
