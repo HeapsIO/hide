@@ -11,6 +11,8 @@ class App extends hxd.App {
 	static public var fs : hxd.fs.EmbedFileSystem;
 
 	var fpsGraph : hrt.tools.FpsGraph;
+	public var lastUpdateTime: Float = 0.0;
+	var currentUpdateTime: Float = 0.0;
 
 	override public function init() {
 		super.init();
@@ -54,6 +56,7 @@ class App extends hxd.App {
 	}
 
 	override public function update(dt: Float) {
+		currentUpdateTime = haxe.Timer.stamp();
 		fpsGraph?.begin();
 		super.update(dt);
 
@@ -70,6 +73,7 @@ class App extends hxd.App {
 	override public function render(ctx) {
 		super.render(ctx);
 		fpsGraph?.end();
+		lastUpdateTime = haxe.Timer.stamp() - currentUpdateTime;
 	}
 
 	function updateProfiling() {

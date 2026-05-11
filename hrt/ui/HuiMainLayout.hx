@@ -80,7 +80,7 @@ class HuiMainLayout extends HuiElement {
 	override function sync(ctx) : Void {
 		super.sync(ctx);
 
-		var frameTime = hxd.Timer.elapsedTime;
+		var frameTime = hide.Ide.inst.app.lastUpdateTime;
 		var time = haxe.Timer.stamp();
 		if (frameTime > maxFrameTime || time - lastmaxFrameTimeTime > 1.0) {
 			maxFrameTime = frameTime;
