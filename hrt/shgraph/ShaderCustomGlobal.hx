@@ -29,16 +29,30 @@ class ShaderCustomGlobal extends ShaderNode {
 	}
 
 	override function generate(ctx:NodeGenContext) {
-		var tvar : TVar = {
-			name: name,
-			id: 0,
-			qualifiers: [],
-			parent: null,
-			kind: Global,
-			type: ShaderGraph.sgTypeToType(types.get(type)?.type ?? SgFloat(4)),
+		var v : TExpr = null;
+		if (name != null && name.length > 0) {
+			var tvar : TVar = {
+				name: name,
+				id: 0,
+				qualifiers: [],
+				parent: null,
+				kind: Global,
+				type: ShaderGraph.sgTypeToType(types.get(type)?.type ?? SgFloat(4)),
+			}
+			v = ctx.getGlobalTVar(tvar);
+		} else {
+			v = NodeGenContext.convertToType(ShaderGraph.sgTypeToType(types.get(type)?.type ?? SgFloat(4)), makeVec([0.0,0.0,0.0,1.0]));
 		}
-		var v = ctx.getGlobalTVar(tvar);
 		ctx.setOutput(0, v);
+
+		if (v.t.match(TSampler(_,_))) {
+			var uv = ctx.getGlobalInput(CalculatedUV);
+			var sample = AstTools.makeGlobalCall(Texture, [v, uv], TVec(4, VFloat));
+			ctx.addPreview(sample);
+		} else {
+			ctx.addPreview(v);
+		}
+
 	}
 
 	#if editor

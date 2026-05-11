@@ -1753,7 +1753,6 @@ class ShaderEditor extends hide.view.FileView implements GraphInterface.IGraphEd
 
 
 	public function onPreviewUpdate() {
-		checkCompileShader();
 
 		@:privateAccess
 		{
@@ -1763,12 +1762,24 @@ class ShaderEditor extends hide.view.FileView implements GraphInterface.IGraphEd
 			graphEditor.previewsScene.s2d.ctx.globals.set("blackChannel", h3d.mat.Texture.fromColor(0));
 			graphEditor.previewsScene.s2d.ctx.globals.set("global.screenShaderInput", h3d.mat.Texture.fromColor(0xFF00FF));
 
+			var pbr = Std.downcast(graphEditor.previewsScene.s3d.renderer, h3d.scene.pbr.Renderer);
+			if (pbr != null) {
+				// make sure globals are properly init
+				pbr.beginPbr();
+				pbr.endPbr();
+			}
+			// copy 3d globals into 2d context for previews
+			for (id => val in graphEditor.previewsScene.s3d.renderer.ctx.globals.map) {
+				graphEditor.previewsScene.s2d.ctx.globals.fastSet(id, val);
+			}
 		}
 
 		@:privateAccess
 		if (meshPreviewScene != null && meshPreviewScene.s3d != null) {
 			meshPreviewScene.s3d.renderer.ctx.time = graphEditor.previewsScene.s3d.renderer.ctx.time;
 		}
+
+		checkCompileShader();
 
 		return true;
 	}

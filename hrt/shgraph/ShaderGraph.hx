@@ -565,7 +565,7 @@ class ShaderGraph extends hrt.prefab.Prefab {
 
 			// Patch unknow global variables to be locals instead with a dummy value
 			// so the preview shader doesn't crash
-			if (previewDomain != null && v.paramIndex == null) {
+			/*if (previewDomain != null && v.paramIndex == null) {
 				var fullName = AstTools.getFullName(v.v);
 				if (Variables.getGlobalNameMap().get(fullName) == null) {
 					AstTools.removeFromParent(v.v);
@@ -603,7 +603,7 @@ class ShaderGraph extends hrt.prefab.Prefab {
 					if (expr != null)
 						v.__init__ = AstTools.makeAssign(AstTools.makeVar(v.v), expr);
 				}
-			}
+			}*/
 
 			if (v.v.parent == null) {
 				shaderData.vars.push(v.v);
