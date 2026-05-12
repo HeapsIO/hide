@@ -79,6 +79,9 @@ class NodeGenContext {
 	public var previewDomain: ShaderGraph.Domain = null;
 	public var graph: ShaderGraph.Graph = null;
 
+	/**If true, generate human readable names for variables in the shader cache (exists to support backward shader generation when var names where not explicit)**/
+	public var explicitVarNames: Bool = false;
+
 	public function new(graph: ShaderGraph.Graph, domain: ShaderGraph.Domain) {
 		this.domain = domain;
 		this.graph = graph;

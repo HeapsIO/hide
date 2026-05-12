@@ -168,7 +168,10 @@ class ShaderNodeHxsl extends ShaderNode {
 		var genFailure : Bool = false;
 
 		inline function getVarName(name: String) {
-			return '${shortName}_${id}_$name';
+			if (ctx.explicitVarNames)
+				return '${shortName}_${id}_$name';
+			else
+				return name;
 		}
 
 		function patch(e: TExpr) : TExpr {
