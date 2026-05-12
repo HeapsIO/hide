@@ -662,7 +662,7 @@ class ShaderGraph extends hrt.prefab.Prefab {
 	}
 
 	public function makeShaderInstance() : hxsl.DynamicShader {
-		var def = compile(null);
+		var def = compile({});
 		var s = new hxsl.DynamicShader(def.shader);
 		for (init in def.inits)
 			setParamValue(s, init.variable, init.value);
