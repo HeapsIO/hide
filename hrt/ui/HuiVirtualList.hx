@@ -193,7 +193,8 @@ class HuiVirtualList<T> extends HuiElement {
 				refreshItem(item, cast element.childElements[0]);
 				oldElements.remove(cast item);
 				element.setWidth(Std.int(calculatedWidth));
-				element.dom.applyStyle(style);
+				if (@:privateAccess element.dom.isDirty())
+					element.dom.applyStyle(style);
 				element.reflow();
 				element.x = 0;
 				if (above) {

@@ -19,6 +19,7 @@ class HuiElement extends h2d.Flow #if hui implements h2d.domkit.Object #end {
 	@:p(bgType) var backgroundType(default, set) : String;
 	@:p var saveDisplayKey(default, set): String;
 	@:p public var displayName: String;
+	@:p public var styleEvents: Bool = true;
 
 	public var onOut(default, set) : hxd.Event->Void = emptyFuncEventVoid;
 	public var onOver(default, set) : hxd.Event->Void = emptyFuncEventVoid;
@@ -352,7 +353,8 @@ class HuiElement extends h2d.Flow #if hui implements h2d.domkit.Object #end {
 		if (uiBase.currentDrag != null)
 			return;
 
-		dom.hover = true;
+		if (styleEvents)
+			dom.hover = true;
 
 		onOver(e);
 	}
@@ -367,7 +369,8 @@ class HuiElement extends h2d.Flow #if hui implements h2d.domkit.Object #end {
 			return;
 		}
 
-		dom.hover = false;
+		if (styleEvents)
+			dom.hover = false;
 		e.propagate = true;
 
 		if (uiBase.currentDrag != null)
@@ -458,7 +461,8 @@ class HuiElement extends h2d.Flow #if hui implements h2d.domkit.Object #end {
 		if (!enable)
 			return;
 
-		dom.active = false;
+		if (styleEvents)
+			dom.active = false;
 
 		onRelease(e);
 	}
@@ -467,7 +471,8 @@ class HuiElement extends h2d.Flow #if hui implements h2d.domkit.Object #end {
 		if (!enable)
 			return;
 
-		dom.active = false;
+		if (styleEvents)
+			dom.active = false;
 	}
 
 	function onKeyDownInternal(e: hxd.Event) {
