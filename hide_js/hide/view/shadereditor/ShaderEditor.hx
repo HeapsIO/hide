@@ -492,15 +492,15 @@ class ShaderEditor extends hide.view.FileView implements GraphInterface.IGraphEd
 			hide.comp.ContextMenu.createDropdown(rightPannel.find("#debugMenu").get(0), [
 				{
 					label : "Print Preview Shader code to Console",
-					click: () -> trace(hxsl.Printer.shaderToString(shaderGraph.compile(currentGraph.domain).shader.data, true))
+					click: () -> trace(hxsl.Printer.shaderToString(shaderGraph.compile({previewDomain: currentGraph.domain, explicitVarNames: true}).shader.data, true))
 				},
 				{
 					label : "Print Complete Shader code to Console",
-					click: () -> trace(hxsl.Printer.shaderToString(shaderGraph.compile(null).shader.data, true))
+					click: () -> trace(hxsl.Printer.shaderToString(shaderGraph.compile({explicitVarNames: true}).shader.data, true))
 				},
 				{
 					label : "Print Complete Shader code to Console (no ID)",
-					click: () -> trace(hxsl.Printer.shaderToString(shaderGraph.compile(null).shader.data, false))
+					click: () -> trace(hxsl.Printer.shaderToString(shaderGraph.compile({explicitVarNames: true}).shader.data, false))
 				},
 			]);
 		});
@@ -2005,8 +2005,8 @@ class ShaderEditor extends hide.view.FileView implements GraphInterface.IGraphEd
 		needRecompile = false;
 		try {
 			var start = Timer.stamp();
-			compiledShader = shaderGraph.compile();
-			compiledShaderPreview = shaderGraph.compile(currentGraph.domain);
+			compiledShader = shaderGraph.compile({});
+			compiledShaderPreview = shaderGraph.compile({previewDomain: currentGraph.domain});
 			bitmapToShader.clear();
 			previewVar = compiledShaderPreview.inits.find((e) -> e.variable.name == hrt.shgraph.Variables.previewSelectName)?.variable;
 			var end = Timer.stamp();

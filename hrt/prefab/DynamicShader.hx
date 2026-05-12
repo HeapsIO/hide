@@ -28,7 +28,7 @@ class DynamicShader extends Shader {
 		super.copy(data);
 		template = cast data;
 	}
-	
+
 	override function makeShader() {
 		if( getShaderDefinition() == null )
 			return null;
@@ -118,7 +118,7 @@ class DynamicShader extends Shader {
 				var shgraph = Std.downcast(res.toPrefab().load(), hrt.shgraph.ShaderGraph);
 				if (shgraph == null)
 					return;
-				var sh = shgraph.compile(null);
+				var sh = shgraph.compile({});
 				shaderDef.shader = sh.shader;
 				shaderDef.inits = sh.inits;
 				#if !editor

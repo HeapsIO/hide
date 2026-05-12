@@ -504,7 +504,8 @@ class ShaderGraph extends hrt.prefab.Prefab {
 		return dynamicType;
 	}
 
-	public function compile(?previewDomain: Domain) : hrt.prefab.Cache.ShaderDef {
+	public function compile(options: {?previewDomain: Domain, ?explicitVarNames: Bool}) : hrt.prefab.Cache.ShaderDef {
+		var previewDomain = options.previewDomain;
 		#if !editor
 		if ( cachedDef != null )
 			return cachedDef;
@@ -520,6 +521,7 @@ class ShaderGraph extends hrt.prefab.Prefab {
 
 
 		var nodeGen = new NodeGenContext(null, Vertex);
+		nodeGen.explicitVarNames = options.explicitVarNames ?? false;
 		nodeGen.previewDomain = previewDomain;
 
 		for (i => graph in graphs) {
@@ -802,7 +804,7 @@ class ShaderGraph extends hrt.prefab.Prefab {
 		}
 		var cp = path.join(".");
 
-		var code = hxsl.Printer.shaderToString(shaderGraph.compile(null).shader.data, false);
+		var code = hxsl.Printer.shaderToString(shaderGraph.compile({}).shader.data, false);
 		code = removeFnRegex.replace(code, "");
 		code = trimWhitepsaceStart.replace(code, "");
 		code = trimWhitepsaceEnd.replace(code, "");
