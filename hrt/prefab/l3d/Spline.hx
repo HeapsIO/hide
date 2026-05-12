@@ -561,19 +561,36 @@ class Spline extends hrt.prefab.Object3D {
 	}
 
 	public function drawHandle(point: SplinePoint) {
-		var precision = 100;
+		var precision = 16;
 
+		static var tmpPoint = new h3d.Vector();
 		function getPointOnCircle(center : h3d.Vector, radius : Float, t : Float) {
 			var angle = t * 2 * Math.PI;
 			var x = Math.sin(angle) * radius;
 			var y = Math.cos(angle) * radius;
 
-			return new h3d.Vector(center.x + x, center.y + y, center.z);
+			tmpPoint.set(center.x + x, center.y + y, center.z);
+			return tmpPoint;
 		}
 
-		function drawCircle(center : h3d.Vector, radius : Float, g : h3d.scene.Graphics) {
+		function drawCircle(center : h3d.Vector, radius : Float, g : h3d.scene.Graphics, rot: Int) {
 			for (idx in 0...precision) {
-				var pos = getPointOnCircle(center, radius, 1.0 / precision * idx);
+				var pos = getPointOnCircle(center, radius, 1.0 / (precision-1.0) * idx);
+
+				switch(rot) {
+					case 1:
+						var tmp = pos.x;
+						pos.x = pos.y;
+						pos.y = -pos.z;
+						pos.z = tmp;
+					case 2:
+						var tmp = pos.z;
+						pos.z = -pos.y;
+						pos.y = pos.x;
+						pos.x = tmp;
+					default:
+				};
+
 				if (idx == 0)
 					g.moveTo(pos.x, pos.y, pos.z);
 				else
@@ -655,8 +672,10 @@ class Spline extends hrt.prefab.Object3D {
 			g.lineTo(tPos.x, tPos.y, tPos.z);
 			g.setPosition(pos.x, pos.y, pos.z);
 
-			graphics.lineStyle(handlesThickness, pointColor);
-			drawCircle(new h3d.Vector(0,0,0), 0.2, graphics);
+			graphics.lineStyle(1, pointColor);
+			drawCircle(new h3d.Vector(0,0,0), 0.5, graphics, 0);
+			drawCircle(new h3d.Vector(0,0,0), 0.5, graphics, 1);
+			drawCircle(new h3d.Vector(0,0,0), 0.5, graphics, 2);
 
 			var abs = pos + tPos;
 			graphics.setPosition(abs.x, abs.y, abs.z);
