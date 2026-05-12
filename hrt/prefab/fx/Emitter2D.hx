@@ -342,7 +342,7 @@ class Emitter2DObject extends h2d.Object {
 		}
 
 		var dt = curTime - prevTime;
-		if (dt < 0 || dt > hxd.Timer.maxDeltaTime) {
+		if ((dt < 0 || dt > hxd.Timer.maxDeltaTime) && !inCatchup) {
 			reset();
 			var targetTime = curTime;
 			prevTime = 0;
