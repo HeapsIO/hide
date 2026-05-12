@@ -38,6 +38,8 @@ class HuiPrefabEditor extends HuiElement {
 	static public var gizmoScaleCommand = new hrt.ui.HuiCommands.HuiCommand("Gizmo Scale", {key: hxd.Key.R});
 	static public var focusCommand = new hrt.ui.HuiCommands.HuiCommand("Focus Selection", {key: hxd.Key.F});
 
+	static final RENDER_PROPS_SAVE_KEY = "renderPropsPath";
+
 
 	public var gizmoShouldSnap(default, set) : Bool = true;
 	public function set_gizmoShouldSnap(v : Bool) {
@@ -59,6 +61,7 @@ class HuiPrefabEditor extends HuiElement {
 
 	var prefab: hrt.prefab.Prefab;
 	var renderProps: hrt.prefab.Prefab;
+	public var renderPropsPath(get, never) : Null<String>; /**Null if the renderProps is in the scene**/
 
 	var errorMessage : h2d.Text;
 	var cameraController : h3d.scene.CameraController;
@@ -68,7 +71,7 @@ class HuiPrefabEditor extends HuiElement {
 
 	var selectedPrefabs: Map<hrt.prefab.Prefab, Bool> = [];
 
-	var config : hide.Config;
+	public var config(default, null) : hide.Config;
 
 	var lastPushX : Float = -100;
 	var lastPushY : Float = -100;
@@ -89,11 +92,20 @@ class HuiPrefabEditor extends HuiElement {
 	var debugGraph: h2d.Graphics;
 	var rootDebugCollider : h3d.scene.Object = null;
 
+	function get_renderPropsPath() : Null<String> {
+		if (renderProps == null)
+			return null;
+		if (renderProps.getRoot(true) == prefab)
+			return null;
+		return renderProps.shared.currentPath;
+	}
+
+
 	override function new(?parent) {
 		super(parent);
 		initComponent();
 
-		saveDisplayKey = "prefabeditor";
+		saveDisplayKey = "prefabEditor:__empty";
 		errorMessage = new h2d.Text(hxd.res.DefaultFont.get(), scene.s2d);
 
 		var ctrlClass = h3d.scene.CameraController.getCameraControllersClass()[hide.Ide.inst.currentConfig.get(hide.view.Prefab.CAM_CTRL_CONFIG_KEY, 0)];
@@ -724,8 +736,11 @@ class HuiPrefabEditor extends HuiElement {
 
 		if (prefab.shared.prefabSource != null) {
 			config = hide.Config.loadForFile(hide.Ide.inst, prefab.shared.prefabSource);
+			saveDisplayKey = 'prefabEditor:${prefab.shared.prefabSource}';
+
 		} else {
 			config = hide.Ide.inst.currentConfig;
+			saveDisplayKey = "prefabEditor:__empty";
 		}
 
 		var env = new h3d.scene.pbr.Environment(getEnvMap());
@@ -756,7 +771,7 @@ class HuiPrefabEditor extends HuiElement {
 		lastFocusObjects = [];
 	}
 
-	function getRenderPropsPaths() : Array<{name: String, value: String}> {
+	public function getRenderPropsPaths() : Array<{name: String, value: String}> {
 		var renderProps = config.getLocal("scene.renderProps");
 		if (renderProps == null)
 			return [];
@@ -769,6 +784,10 @@ class HuiPrefabEditor extends HuiElement {
 			return cast renderProps;
 		}
 		return [];
+	}
+
+	function setRenderProps(path: String) {
+
 	}
 
 	public function focusObjects(objs : Array<h3d.scene.Object>) {
@@ -990,6 +1009,12 @@ class HuiPrefabEditor extends HuiElement {
 		return str;
 	}
 
+	public function setRenderPropsPath(newPath: String) : Void {
+		if (newPath == renderPropsPath)
+			return;
+		saveDisplayState(RENDER_PROPS_SAVE_KEY, newPath);
+		makeRenderProps();
+	}
 
 	public function checkRemakeRenderProps(changedPrefab: hrt.prefab.Prefab = null) : Bool {
 		if (changedPrefab != null) {
@@ -1009,40 +1034,50 @@ class HuiPrefabEditor extends HuiElement {
 
 		var paths = getRenderPropsPaths();
 
-		var candidates: Array<hrt.prefab.Prefab> = [];
-
-		var prefabRenderProp = prefab.find(hrt.prefab.RenderProps);
-		if (prefabRenderProp != null)
-			candidates.push(prefabRenderProp);
-
-		for (path in paths)
-			candidates.push(hxd.res.Loader.currentInstance.load(path.value).toPrefab().load());
-
 		removePrefabInstance(renderProps);
 		renderProps = null;
+
+		var prefabRenderProp = prefab.find(hrt.prefab.RenderProps, (p) -> p.enabled);
+		if (prefabRenderProp != null) {
+			renderProps = prefabRenderProp;
+			if (tryMake(renderProps)) {
+				updateRenderPropsInternal();
+				return;
+			}
+		}
+
+		var candidates: Array<hrt.prefab.Prefab> = [];
+
+		for (path in paths) {
+			var currentPath = getDisplayState(RENDER_PROPS_SAVE_KEY, "");
+			var prefab = hxd.res.Loader.currentInstance.load(path.value).toPrefab().load().clone();
+			if (path.value == currentPath)
+				candidates.unshift(prefab);
+			else
+				candidates.push(prefab);
+		}
 
 		for (candidate in candidates) {
 			renderProps = candidate;
 			if (tryMake(renderProps)) {
-				var trueRenderProps = renderProps.find(hrt.prefab.RenderProps);
-				if (trueRenderProps == null)
-					throw 'Render props ${renderProps.shared.prefabSource} does not contains a render props prefab';
-				trueRenderProps.applyProps(scene.s3d.renderer);
+				updateRenderPropsInternal();
 				break;
 			}
 			removePrefabInstance(renderProps);
 			renderProps = null;
 		}
-
 	}
 
 	public function updateRenderProps() {
 		if (!checkRemakeRenderProps()) {
-			var trueRenderProps = renderProps.find(hrt.prefab.RenderProps);
-			if (trueRenderProps == null)
-				throw 'Render props ${renderProps.shared.prefabSource} does not contains a render props prefab';
-			trueRenderProps.applyProps(scene.s3d.renderer);
+			updateRenderPropsInternal();
 		}
+	}
+
+	function updateRenderPropsInternal() {
+		var trueRenderProps = renderProps.find(hrt.prefab.RenderProps);
+		if (trueRenderProps != null)
+			trueRenderProps.applyProps(scene.s3d.renderer);
 	}
 
 

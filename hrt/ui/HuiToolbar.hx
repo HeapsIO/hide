@@ -367,7 +367,29 @@ class HuiRenderPropsWidget extends HuiElement {
 		initComponent();
 
 		btn.onClick = (_) -> {
-			uiBase.addPopup(new hrt.ui.HuiToolbar.HuiRenderPropsPopup(this), { object: Element(this), directionX: StartInside, directionY: EndOutside });
+			var items : Array<hrt.ui.HuiMenu.MenuItem> = [];
+
+
+			if (editor.renderPropsPath == null) {
+				items.push({enabled: false, label: "Render already in scene"});
+			} else {
+				var renderProps = editor.getRenderPropsPaths();
+				items.push({label: "Edit", checked: false, stayOpen: true});
+				items.push({isSeparator: true});
+
+				if (renderProps == null || renderProps.length == 0) {
+					items.push({enabled: false, label: "No render props found"});
+				} else {
+					for (renderProp in renderProps) {
+						items.push({label: renderProp.name, radio: () -> renderProp.value == editor.renderPropsPath, stayOpen: true, click: () -> editor.setRenderPropsPath(renderProp.value)});
+					}
+				}
+			}
+
+
+
+			uiBase.openMenu(items, {}, { object: Element(this), directionX: StartInside, directionY: EndOutside });
+			//uiBase.addPopup(new hrt.ui.HuiToolbar.HuiRenderPropsPopup(this), { object: Element(this), directionX: StartInside, directionY: EndOutside });
 		}
 	}
 
