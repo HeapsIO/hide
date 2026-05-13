@@ -560,10 +560,10 @@ class Spline extends hrt.prefab.Object3D {
 		}
 	}
 
+	static var tmpPoint = new h3d.Vector();
 	public function drawHandle(point: SplinePoint) {
 		var precision = 16;
 
-		static var tmpPoint = new h3d.Vector();
 		function getPointOnCircle(center : h3d.Vector, radius : Float, t : Float) {
 			var angle = t * 2 * Math.PI;
 			var x = Math.sin(angle) * radius;
