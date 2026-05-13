@@ -21,6 +21,7 @@ hui-curve-box {
 hui-curve-editor {
 	height: 400px;
 	width: 700px;
+	layout: stack;
 	overflow: hidden;
 
 	background-type: hui;
@@ -28,5 +29,11 @@ hui-curve-editor {
 		background: @widget-bg;
 		border-radius: @base-corner-radius;
 		outline: 1 @widget-border;
+	}
+
+	hui-icon {
+		position: absolute;
+		width: 20;
+		height: 20;
 	}
 }

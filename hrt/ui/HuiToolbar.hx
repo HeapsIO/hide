@@ -311,7 +311,7 @@ class HuiSceneFiltersWidget extends HuiElement {
 			for (p in all) {
 				if (p.type == f || p.getCdbType() == f || (tag != null && (p.props:Dynamic)?.tag == tag)) {
 					var obj3d = Std.downcast(p, hrt.prefab.Object3D);
-					obj3d?.local3d.visible = filters.get(f);
+					obj3d?.local3d?.visible = filters.get(f);
 				}
 			}
 		}

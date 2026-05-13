@@ -33,6 +33,7 @@ class HuiCurveBox extends HuiElement {
 				editor.onValueChanged = (isTemporary) -> {
 					editorGuard++;
 					editorGuard--;
+					this.value = editor.value;
 					onValueChanged(isTemporary);
 				};
 			}
@@ -40,9 +41,6 @@ class HuiCurveBox extends HuiElement {
 				editor.close();
 			}
 		};
-
-		// Debug
-		// value = hxd.res.Loader.currentInstance.load("prefabs/simple.prefab").toPrefab().load().getOpt(hrt.prefab.Curve);
 	}
 
 	override function onAfterReflow() {
@@ -83,19 +81,27 @@ class HuiCurveEditor extends HuiPopup {
 	public static var MIN_ZOOM = 0.1;
 	public static var MAX_ZOOM = 2;
 
+	static public var deleteKeyCmd = new hrt.ui.HuiCommands.HuiCommand("Delete Key", {key: hxd.Key.DELETE});
+
 	public var value : hrt.prefab.Curve = null;
 
 	var root : h2d.Object;
 	var gridGraphics : h2d.Graphics;
 	var gridLabels = [];
 	var curveGraphics : h2d.Graphics;
+	var keysBitmaps = [];
+	var draggedKey = -1;
+	var selectedKey = -1;
 
+	var huiCurveBox : HuiCurveBox = null;
 	var zoom = new h2d.col.Point(1, 1);
 	var pan = new h2d.col.Point(0, 0);
 
 	public function new (b : HuiCurveBox, ?parent) {
 		super(parent);
 		initComponent();
+
+		registerCommand(deleteKeyCmd, ElementAndChildren, deleteSelectedKey);
 
 		root = new h2d.Object(this);
 		this.getProperties(root).isAbsolute = true;
@@ -119,6 +125,13 @@ class HuiCurveEditor extends HuiPopup {
 		}
 
 		onMove = (e : hxd.Event) -> {
+			if (draggedKey != -1) {
+				var x = px(e.relX);
+				var y = py(e.relY);
+				value.keys[draggedKey].time = x;
+				value.keys[draggedKey].value = y;
+			}
+
 			if (!hxd.Key.isDown(hxd.Key.MOUSE_MIDDLE))
 				return;
 
@@ -128,16 +141,31 @@ class HuiCurveEditor extends HuiPopup {
 			}
 
 			var dx = e.relX - originDrag.x;
-			pan.x = originPan.x - (dx / calculatedWidth);
+			pan.x = originPan.x - (dx / calculatedWidth) / zoom.x;
 			var dy = e.relY - originDrag.y;
-			pan.y = originPan.y + (dy / calculatedHeight);
+			pan.y = originPan.y + (dy / calculatedHeight) / zoom.y;
 			refresh();
+		}
+
+		onClick = (e : hxd.Event) -> {
+			if (hxd.Key.isDown(hxd.Key.CTRL) && e.keyCode == hxd.Key.MOUSE_LEFT) {
+				addKey(px(e.relX), py(e.relY));
+				refresh();
+			}
+
+			selectKey(-1);
 		}
 
 		onAfterReflow = () -> {
 			updateAnchor(true);
 			refresh();
 		}
+	}
+
+	public function refresh() {
+		refreshGrid();
+		refreshCurve();
+		refreshKeys();
 	}
 
 	public function refreshGrid() {
@@ -152,7 +180,7 @@ class HuiCurveEditor extends HuiPopup {
 		// Grid columns
 		var min = Math.floor(px(0));
 		var max = Math.ceil(px(calculatedWidth));
-		var step = 0.1;
+		var step = Math.floor((0.1 * (1 / zoom.x) * 20)) / 20;
 		var minS = Math.floor(min / step);
 		var maxS = Math.ceil(max / step);
 		for (i in minS...(maxS+1)) {
@@ -163,15 +191,15 @@ class HuiCurveEditor extends HuiPopup {
 			gridGraphics.moveTo(sx(ix), 0);
 			gridGraphics.lineTo(sx(ix), -calculatedHeight);
 
-			var l = new HuiText(""+hxd.Math.fmt(ix), gridGraphics);
-			l.setPosition(sx(ix) + 5, -18);
+			var l = new HuiText(""+hxd.Math.fmt(ix), this);
+			l.setPosition(sx(ix) + 5, calculatedHeight - 18);
 			gridLabels.push(l);
 		}
 
 		// Grid lines
-		min = Math.floor(py(0));
-		max = Math.ceil(py(-calculatedHeight));
-		step = 0.1;
+		min = Math.floor(py(calculatedHeight));
+		max = Math.ceil(py(0));
+		step = Math.floor((0.1 * (1 / zoom.y) * 20)) / 20;
 		minS = Math.floor(min / step);
 		maxS = Math.ceil(max / step);
 		for (i in minS...(maxS+1)) {
@@ -182,8 +210,8 @@ class HuiCurveEditor extends HuiPopup {
 			gridGraphics.moveTo(0, sy(iy));
 			gridGraphics.lineTo(calculatedWidth, sy(iy));
 
-			var l = new HuiText(""+hxd.Math.fmt(iy), gridGraphics);
-			l.setPosition(0, sy(iy) - 18);
+			var l = new HuiText(""+hxd.Math.fmt(iy), this);
+			l.setPosition(0, calculatedHeight + sy(iy) - 18);
 			gridLabels.push(l);
 		}
 	}
@@ -208,15 +236,66 @@ class HuiCurveEditor extends HuiPopup {
 		}
 	}
 
-	public function refresh() {
-		refreshGrid();
-		refreshCurve();
+	public function refreshKeys() {
+		if (value == null)
+			return;
+
+		if (value.keys.length != keysBitmaps.length) {
+			for (k in keysBitmaps)
+				k.remove();
+			keysBitmaps = [];
+			for (idx => k in value.keys) {
+				var bmp = new HuiIcon("diamound", this);
+				bmp.alpha = 0.5;
+				keysBitmaps.push(bmp);
+				bmp.onPush = (e) -> {
+					if (e.keyCode == hxd.Key.MOUSE_LEFT)
+						draggedKey = idx;
+				}
+
+				bmp.onRelease = (e) -> {
+					if (e.keyCode == hxd.Key.MOUSE_LEFT)
+						draggedKey = -1;
+				}
+
+				bmp.onClick = (_) -> {
+					selectKey(idx);
+				}
+			}
+		}
+
+		var iconSize = 20;
+		for (idx => k in value.keys)
+			keysBitmaps[idx].setPosition(sx(k.time) - (iconSize / 2), calculatedHeight + sy(k.value) - (iconSize / 2));
 	}
 
-	inline function sx(px : Float) { return Math.round((px - pan.x) * calculatedWidth); }
-	inline function sy(py : Float) { return Math.round((-py + pan.y) * calculatedHeight); }
-	inline function px(sx : Float) { return (sx / calculatedWidth) + pan.x; }
-	inline function py(sy : Float) { return (-sy / calculatedHeight) + pan.y; }
+	function selectKey(idx : Int) {
+		if (selectedKey != -1)
+			keysBitmaps[selectedKey].alpha = 0.5;
+		selectedKey = idx;
+		if (selectedKey != -1)
+			keysBitmaps[selectedKey].alpha = 1;
+	}
+
+	function addKey(px : Float, py : Float) {
+		if (value == null)
+			value = new hrt.prefab.Curve(null, null);
+
+		value.addKey(px, py);
+		onValueChanged(false);
+	}
+
+	function deleteSelectedKey() {
+		if (selectedKey == -1)
+			return;
+
+		value.keys.remove(value.keys[selectedKey]);
+	}
+
+	inline function sx(px : Float) { return Math.round((px - pan.x) * zoom.x * calculatedWidth); }
+	inline function sy(py : Float) { return Math.round((-py + pan.y) * zoom.y * calculatedHeight); }
+	inline function px(sx : Float) { return (sx / calculatedWidth) / zoom.x + pan.x; }
+	inline function py(sy : Float) { return ((calculatedHeight - sy) / calculatedHeight) / zoom.y + pan.y; }
 
 	public dynamic function onValueChanged(isTemporary: Bool) {}
 }
