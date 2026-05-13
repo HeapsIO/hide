@@ -279,7 +279,7 @@ class Material extends Prefab {
 			if (pname.indexOf("/") > 0) {
 
 				pname = pname.substring(pname.indexOf("/") + 1);
-				var v = o.value;
+				var v : Dynamic = o.value;
 
 				if (v == "__toremove") {
 					Reflect.deleteField(newProps, pname);
