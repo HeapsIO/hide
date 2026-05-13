@@ -82,6 +82,7 @@ class HuiCurveEditor extends HuiPopup {
 	public static var MAX_ZOOM = 2;
 
 	static public var deleteKeyCmd = new hrt.ui.HuiCommands.HuiCommand("Delete Key", {key: hxd.Key.DELETE});
+	static public var focusCmd = new hrt.ui.HuiCommands.HuiCommand("Focus", {key: hxd.Key.F});
 
 	public var value : hrt.prefab.Curve = null;
 
@@ -97,11 +98,17 @@ class HuiCurveEditor extends HuiPopup {
 	var zoom = new h2d.col.Point(1, 1);
 	var pan = new h2d.col.Point(0, 0);
 
+	inline function sx(px : Float) { return Math.round((px - pan.x) * zoom.x * calculatedWidth); }
+	inline function sy(py : Float) { return Math.round((-py + pan.y) * zoom.y * calculatedHeight); }
+	inline function px(sx : Float) { return (sx / calculatedWidth) / zoom.x + pan.x; }
+	inline function py(sy : Float) { return ((calculatedHeight - sy) / calculatedHeight) / zoom.y + pan.y; }
+
 	public function new (b : HuiCurveBox, ?parent) {
 		super(parent);
 		initComponent();
 
 		registerCommand(deleteKeyCmd, ElementAndChildren, deleteSelectedKey);
+		registerCommand(focusCmd, ElementAndChildren, focus);
 
 		root = new h2d.Object(this);
 		this.getProperties(root).isAbsolute = true;
@@ -269,6 +276,28 @@ class HuiCurveEditor extends HuiPopup {
 			keysBitmaps[idx].setPosition(sx(k.time) - (iconSize / 2), calculatedHeight + sy(k.value) - (iconSize / 2));
 	}
 
+	function focus() {
+		if (value == null)
+			return;
+
+		var bounds = value.getBounds();
+		if (bounds.width <= 0) {
+			bounds.xMin = 0.0;
+			bounds.xMax = 1.0;
+		}
+
+		if (bounds.height <= 0) {
+			bounds.yMin = -1.0;
+			bounds.yMax = 1.0;
+		}
+
+		pan.x = bounds.xMin;
+		pan.y = bounds.yMin;
+		zoom.x = hxd.Math.clamp(1 / (bounds.width * 1.1), MIN_ZOOM, MAX_ZOOM);
+		zoom.y = hxd.Math.clamp(1 / (bounds.height * 1.1), MIN_ZOOM, MAX_ZOOM);
+		refresh();
+	}
+
 	function selectKey(idx : Int) {
 		if (selectedKey != -1)
 			keysBitmaps[selectedKey].alpha = 0.5;
@@ -291,11 +320,6 @@ class HuiCurveEditor extends HuiPopup {
 
 		value.keys.remove(value.keys[selectedKey]);
 	}
-
-	inline function sx(px : Float) { return Math.round((px - pan.x) * zoom.x * calculatedWidth); }
-	inline function sy(py : Float) { return Math.round((-py + pan.y) * zoom.y * calculatedHeight); }
-	inline function px(sx : Float) { return (sx / calculatedWidth) / zoom.x + pan.x; }
-	inline function py(sy : Float) { return ((calculatedHeight - sy) / calculatedHeight) / zoom.y + pan.y; }
 
 	public dynamic function onValueChanged(isTemporary: Bool) {}
 }
