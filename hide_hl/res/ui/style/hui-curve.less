@@ -31,9 +31,22 @@ hui-curve-editor {
 		outline: 1 @widget-border;
 	}
 
+	hui-text {
+		position: absolute;
+	}
+
 	hui-icon {
 		position: absolute;
 		width: 20;
 		height: 20;
+	}
+
+	.selection {
+		position: absolute;
+		background-type: hui;
+		> hui-background {
+			background: rgb(201, 201, 201);
+			alpha: 0.2;
+		}
 	}
 }
