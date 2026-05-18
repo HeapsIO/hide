@@ -303,6 +303,23 @@ class NodeGenContext {
 	}
 
 	public function addExpr(e: TExpr) {
+
+		if (explicitVarNames == true) {
+			// Patch variable names to be unique in the scope
+			function rec(e: TExpr) {
+				trace(e.e.getName());
+				switch(e.e) {
+					case TVarDecl(v, init):
+						var shortName = std.Type.getClassName(std.Type.getClass(node)).split(".").pop();
+						shortName = shortName.substr(0,1).toLowerCase() + shortName.substr(1);
+						v.name = '${shortName}_${node.id}_${v.name}';
+					default:
+				}
+				return e.map(rec);
+			};
+			e = rec(e);
+		}
+
 		expressions.push(e);
 	}
 

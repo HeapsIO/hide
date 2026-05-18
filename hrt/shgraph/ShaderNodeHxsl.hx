@@ -167,13 +167,6 @@ class ShaderNodeHxsl extends ShaderNode {
 		var outputs : Array<TVar> = [];
 		var genFailure : Bool = false;
 
-		inline function getVarName(name: String) {
-			if (ctx.explicitVarNames)
-				return '${shortName}_${id}_$name';
-			else
-				return name;
-		}
-
 		function patch(e: TExpr) : TExpr {
 			switch (e.e) {
 				case TVar(v):
@@ -214,7 +207,7 @@ class ShaderNodeHxsl extends ShaderNode {
 							var t = ctx.getType(cache.outputs[outputId].type);
 
 							var outputVar : TVar= {
-								name: getVarName(v.name),
+								name: v.name,
 								id: hxsl.Ast.Tools.allocVarId(),
 								type: t,
 								kind: v.kind,
@@ -245,7 +238,7 @@ class ShaderNodeHxsl extends ShaderNode {
 				case TVarDecl(v, init):
 					var tvar = MapUtils.getOrPut(varsRemap, v.id,
 						{
-							name: getVarName(v.name),
+							name: v.name,
 							id: hxsl.Ast.Tools.allocVarId(),
 							type: v.type,
 							kind: v.kind,
@@ -256,7 +249,7 @@ class ShaderNodeHxsl extends ShaderNode {
 				case TFor(v, it, loop):
 					var tvar = MapUtils.getOrPut(varsRemap, v.id,
 						{
-							name: getVarName(v.name),
+							name: v.name,
 							id: hxsl.Ast.Tools.allocVarId(),
 							type: v.type,
 							kind: v.kind,

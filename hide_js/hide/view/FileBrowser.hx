@@ -1296,7 +1296,7 @@ class FileBrowser extends hide.ui.View<FileBrowserState> {
 					var name = item.name.split(".").shift();
 					ide.chooseFileOptions((paths: Array<String>) -> {
 						if (paths.length > 0) {
-							hrt.shgraph.ShaderGraph.convertToHXLS(item.path, paths[0]);
+							hrt.shgraph.ShaderGraph.convertToHXSL(item.path, paths[0]);
 						}
 					}, {
 						saveAs: '$name.hx',

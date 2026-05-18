@@ -789,7 +789,7 @@ class ShaderGraph extends hrt.prefab.Prefab {
 	static var trimWhitepsaceEnd = ~/\s*$/;
 	static var removeLocal = ~/@local\s*/gm;
 
-	static public function convertToHXLS(shgraphPath: String, hxslPath: String) {
+	static public function convertToHXSL(shgraphPath: String, hxslPath: String) {
  		var shaderGraph = Std.downcast(hide.Ide.inst.loadPrefab(shgraphPath, null,  true), hrt.shgraph.ShaderGraph);
 
 		var hxslPathSanitised = StringTools.replace(hxslPath, "\\", "/");
@@ -804,7 +804,7 @@ class ShaderGraph extends hrt.prefab.Prefab {
 		}
 		var cp = path.join(".");
 
-		var code = hxsl.Printer.shaderToString(shaderGraph.compile({}).shader.data, false);
+		var code = hxsl.Printer.shaderToString(shaderGraph.compile({explicitVarNames: true}).shader.data, false);
 		code = removeFnRegex.replace(code, "");
 		code = trimWhitepsaceStart.replace(code, "");
 		code = trimWhitepsaceEnd.replace(code, "");
