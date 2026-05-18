@@ -43,10 +43,10 @@ class FXAnimation extends h3d.scene.Object {
 		return playState;
 	}
 
-		/** Enable automatic culling based on `cullingRadius` and `cullingDistance`. Will override `culled` on every sync. **/
+	/** Enable automatic culling based on `cullingRadius` and `cullingDistance`. Will override `culled` on every sync. **/
 	public var autoCull(default, set) = true;
 	public var cullingRadius : Float;
-	public var cullingDistance = defaultCullingDistance;
+	public var cullingDistance : Float;
 
 	public var objAnims: Array<ObjectAnimation>;
 	public var events: Array<hrt.prefab.fx.Event.EventInstance>;
@@ -825,6 +825,7 @@ class FX extends Object3D implements BaseFX {
 	@:s public var startDelay : Float = 0.0;
 	@:c public var scriptCode : String;
 	@:s public var cullingRadius : Float;
+	@:s public var cullingDistance : Float;
 	@:s public var markers : Array<{t: Float}> = [];
 
 	@:s public var parameters : Array<Parameter> = [];
@@ -858,6 +859,7 @@ class FX extends Object3D implements BaseFX {
 		var fxanim = createInstance(parent3d);
 		fxanim.duration = duration;
 		fxanim.cullingRadius = cullingRadius;
+		fxanim.cullingDistance = cullingDistance > 0 ? cullingDistance : FXAnimation.defaultCullingDistance;
 
 		var p = fxanim.parent;
 		while(p != null) {
@@ -925,6 +927,7 @@ class FX extends Object3D implements BaseFX {
 				<dl>
 					<dt>Duration</dt><dd><input type="number" value="0" field="duration"/></dd>
 					<dt>Culling radius</dt><dd><input type="number" field="cullingRadius"/></dd>
+					<dt>Culling distance</dt><dd><input type="number" field="cullingDistance"/></dd>
 				</dl>
 			</div>');
 		ctx.properties.add(props, this, function(pname) {
