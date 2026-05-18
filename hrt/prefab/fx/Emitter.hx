@@ -121,7 +121,7 @@ class ParticleInstance {
 	#end
 
 	var colorMult : Int;
-	var idx : hxd.impl.UInt16;
+	var idx : Int;
 	var startFrame : hxd.impl.UInt16;
 	var life : Single;
 	var lifeTime : Single;
@@ -129,7 +129,7 @@ class ParticleInstance {
 	var distToCam : Single;
 	var startTime : Single;
 
-	inline static var REMOVED_IDX : hxd.impl.UInt16 = -1;
+	inline static var REMOVED_IDX : Int = -1;
 
 	function new() { }
 
