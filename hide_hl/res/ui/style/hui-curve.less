@@ -41,11 +41,20 @@ hui-curve-editor {
 		height: 20;
 	}
 
-	.selection {
+	.selection-rectangle {
 		position: absolute;
 		background-type: hui;
 		> hui-background {
 			background: rgb(201, 201, 201);
+			alpha: 0.2;
+		}
+	}
+
+	.selection-bounds {
+		position: absolute;
+		background-type: hui;
+		> hui-background {
+			background: rgb(112, 140, 190);
 			alpha: 0.2;
 		}
 	}

@@ -90,7 +90,10 @@ class HuiCurveEditor extends HuiPopup {
 	var zoom = new h2d.col.Point(1, 1);
 	var pan = new h2d.col.Point(0, 0);
 	var selection : Array<Int> = null;
+	var selectionRectangle : HuiElement;
+	var selectionBounds : HuiElement;
 	var onDrag : (e : hxd.Event) -> Void;
+	var onDragFinished : (e : hxd.Event) -> Void;
 
 	var root : h2d.Object;
 	var gridGraphics : h2d.Graphics;
@@ -98,7 +101,6 @@ class HuiCurveEditor extends HuiPopup {
 	var curveGraphics : h2d.Graphics;
 	var keysBitmaps = [];
 	var draggedKey = -1;
-	var selectionRectangle : HuiElement;
 
 	inline function sx(px : Float) { return px * calculatedWidth * zoom.x + pan.x; }
 	inline function sy(py : Float) { return calculatedHeight - (py * calculatedHeight * zoom.y + pan.y); }
@@ -115,8 +117,10 @@ class HuiCurveEditor extends HuiPopup {
 		root = new h2d.Object(this);
 		this.getProperties(root).isAbsolute = true;
 
+		selectionBounds = new HuiElement(this);
+		selectionBounds.dom.addClass("selection-bounds");
 		selectionRectangle = new HuiElement(this);
-		selectionRectangle.dom.addClass("selection");
+		selectionRectangle.dom.addClass("selection-rectangle");
 
 		onPush = (e : hxd.Event) -> {
 			if (onDrag != null)
@@ -154,11 +158,19 @@ class HuiCurveEditor extends HuiPopup {
 						select(s);
 					}
 				}
+
+				onDragFinished = (e) -> {
+					selectionRectangle.setWidth(0);
+					selectionRectangle.setHeight(0);
+				}
 			}
 		}
 
 		onRelease = (e : hxd.Event) -> {
+			if (onDragFinished != null)
+				onDragFinished(e);
 			onDrag = null;
+			onDragFinished = null;
 		}
 
 		onMove = (e : hxd.Event) -> {
@@ -268,6 +280,9 @@ class HuiCurveEditor extends HuiPopup {
 		if (value == null)
 			return;
 
+		selectionBounds.setHeight(0);
+		selectionBounds.setWidth(0);
+
 		if (value.keys.length != keysBitmaps.length) {
 			for (k in keysBitmaps)
 				k.remove();
@@ -284,20 +299,39 @@ class HuiCurveEditor extends HuiPopup {
 							value.keys[idx].time = x;
 							value.keys[idx].value = y;
 						}
-						e.propagate = false;
-						e.cancel = true;
 					}
 				}
 
-				bmp.onClick = (_) -> {
-					select([idx]);
+				bmp.onRelease = (e) -> {
+					if (onDragFinished != null)
+						onDragFinished(e);
+					onDrag = null;
+					onDragFinished = null;
+				}
+
+				bmp.onClick = (e) -> {
+					if (hxd.Key.isDown(hxd.Key.CTRL)) {
+						if (!selection.contains(idx))
+							selection.push(idx);
+						select(selection);
+					}
+					else {
+						select([idx]);
+					}
 				}
 			}
 		}
 
 		var iconSize = 20;
-		for (idx => k in value.keys)
+		var b = new h2d.col.Bounds();
+		for (idx => k in value.keys) {
 			keysBitmaps[idx].setPosition(sx(k.time) - (iconSize / 2), sy(k.value) - (iconSize / 2));
+			b.addPoint(new h2d.col.Point(k.time, k.value));
+		}
+
+		selectionBounds.setPosition(sx(b.xMin), sy(b.yMin));
+		selectionBounds.setWidth(Std.int(b.width * calculatedWidth));
+		selectionBounds.setHeight(Std.int(b.height * calculatedHeight));
 	}
 
 	function focus() {
