@@ -103,9 +103,10 @@ class CollisionSettings {
 
 		var collisionThresholdHeight = Reflect.field(convertRule.cmd.params, "collisionThresholdHeight");
 		var collisionUseLowLod = Reflect.field(convertRule.cmd.params, "collisionUseLowLod");
+		var noCollision = Reflect.field(convertRule.cmd.params, "noCollision");
 		var isDefaultParams = params == null || (params != null && params.useDefault);
 		var params = isDefaultParams ? defaultParams : params;
-		var colliderType = hxd.fmt.hmd.Data.Collider.resolveColliderType(hmd.lib.header, model, params, isDefaultParams, collisionThresholdHeight, collisionUseLowLod);
+		var colliderType = hxd.fmt.hmd.Data.Collider.resolveColliderType(hmd.lib.header, model, params, isDefaultParams, collisionThresholdHeight, collisionUseLowLod, noCollision);
 		if (colliderType == null)
 			return null;
 
