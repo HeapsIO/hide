@@ -105,11 +105,7 @@ class TrailObj extends h3d.scene.Mesh {
 	// If set to false, trail can be created by manually calling addPoint()
 	public var autoTrackPosition : Bool = true;
 
-	var currentAllocatedVertexCount = 0;
-	var currentAllocatedIndexCount = 0;
-
-	public var numTrails(default, set) : Int = -1;
-	var subTrailChildIndices : Array<Int> = [];
+	var numTrails : Int;
 
 	static var tmpHead = new TrailPoint();
 	static var tmpNormal = new h3d.Vector();
@@ -117,15 +113,6 @@ class TrailObj extends h3d.scene.Mesh {
 	static var tmpTangent = new h3d.Vector();
 	static var tmpColor = new h3d.Vector4();
 
-	public function set_numTrails(new_value : Int) : Int {
-		if (numTrails != new_value) {
-			numTrails = new_value;
-			allocBuffers();
-			if (dprim != null)
-				dprim.alloc(null);
-		}
-		return numTrails;
-	}
 
 	var shader : hrt.shader.BaseTrails;
 	var colorShader : h3d.shader.VertexColorAlpha;
@@ -158,11 +145,26 @@ class TrailObj extends h3d.scene.Mesh {
 		return indicesPerTrail * numTrails;
 	}
 
-	function allocBuffers() {
+	function dispose() {
+		if( dprim != null ) {
+			dprim.dispose();
+			dprim = null;
+		}
 		var alloc = hxd.impl.Allocator.get();
-		if (vbuf != null)
+		if( vbuf != null ) {
 			alloc.disposeFloats(vbuf);
-		currentAllocatedVertexCount = calcMaxVertexes();
+			vbuf = null;
+		}
+		if( ibuf != null ) {
+			alloc.disposeIndexes(ibuf);
+			ibuf = null;
+		}
+	}
+
+	public function init() {
+		dispose();
+
+		var alloc = hxd.impl.Allocator.get();
 		if(format == null) {
 			if(prefab.useColor){
 				format = hxd.BufferFormat.POS3D_NORMAL_UV_RGBA;
@@ -170,11 +172,9 @@ class TrailObj extends h3d.scene.Mesh {
 				format = hxd.BufferFormat.POS3D_NORMAL_UV;
 			}
 		}
-		vbuf = alloc.allocFloats(currentAllocatedVertexCount * format.stride);
-		if (ibuf != null)
-			alloc.disposeIndexes(ibuf);
-		currentAllocatedIndexCount = calcMaxIndexes();
-		ibuf = alloc.allocIndexes(currentAllocatedIndexCount);
+
+		vbuf = alloc.allocFloats(calcMaxVertexes() * format.stride);
+		ibuf = alloc.allocIndexes(calcMaxIndexes());
 
 		pool = null;
 		firstFreePointID = 0;
@@ -189,8 +189,6 @@ class TrailObj extends h3d.scene.Mesh {
 		for (i in 0...numTrails-1)
 			trails[i].nextTrail = trails[i+1];
 		trailsPool = trails[0];
-
-		reset();
 	}
 
 	var maxNumPoints : Int = 0;
@@ -223,7 +221,7 @@ class TrailObj extends h3d.scene.Mesh {
 		return r;
 	}
 
-	function disposeTrail(t : TrailHead) {
+	public function disposeTrail(t : TrailHead) {
 		t.firstPoint = null;
 		t.totalLength = 0;
 		t.numPoints = 0;
@@ -252,12 +250,7 @@ class TrailObj extends h3d.scene.Mesh {
 				fx.trails.remove(this);
 			}
 		}
-		dprim.dispose();
-	}
-
-	override function onAdd() {
-		super.onAdd();
-		dprim.alloc(null);
+		dispose();
 	}
 
 	public function reset() {
@@ -365,20 +358,13 @@ class TrailObj extends h3d.scene.Mesh {
 		};
 	}
 
-	public function new(parentPrefab: Trails, ?parent : h3d.scene.Object, ?numTrails : Int) {
+	public function new(parentPrefab: Trails, parent : h3d.scene.Object, numTrails : Int) {
+		this.numTrails = numTrails;
 		bounds = new h3d.col.Bounds();
 		prefab = parentPrefab;
 
-		var nTrails = numTrails != null ? numTrails : 1;
-		if ( nTrails == 1 && parentPrefab.children.length > 1 )
-			nTrails = parentPrefab.children.length;
-
-		this.numTrails = nTrails;
-
-		dprim = new h3d.prim.RawPrimitive(onDprimContextLost(), true);
-		dprim.onContextLost = onDprimContextLost;
-
-		super(dprim,parent);
+		// Defer primitive alloc to emit
+		super(null, parent);
 
 		#if editor
 		icon = hrt.impl.EditorTools.create3DIcon(this, hide.Ide.inst.getHideResPath("icons/icon-trails.png"), 0.75, Trails);
@@ -398,6 +384,8 @@ class TrailObj extends h3d.scene.Mesh {
 
 		ignoreCollide = true;
 		ignoreBounds = true;
+
+		init();
 	}
 
 	var lastUpdateDuration = 0.0;
@@ -513,15 +501,6 @@ class TrailObj extends h3d.scene.Mesh {
 		}
 	}
 
-	function updateSubTrails(dt : Float) {
-		for (i => childIndex in subTrailChildIndices) {
-			var c = children[childIndex];
-			var t = trails[i];
-			var absPos = c.getAbsPos();
-			updateTrail(t, dt, absPos.tx, absPos.ty, absPos.tz);
-		}
-	}
-
 	public function update(dt: Float) {
 		cooldown -= dt;
 
@@ -564,47 +543,28 @@ class TrailObj extends h3d.scene.Mesh {
 			}
 		}
 
-		var numObj = 0;
-		for ( i => child in children) {
-			if (Std.downcast(child, TrailsSubTailObj) == null)
-				continue;
-			subTrailChildIndices[numObj] = i;
-			numObj++;
-		}
-
-		if (numObj > 0) {
-			subTrailChildIndices.resize(numObj);
-			autoTrackPosition = false;
-			numTrails = numObj;
-			updateSubTrails(dt);
-		} else {
-			subTrailChildIndices = null;
-			numTrails = 1;
+		if( autoTrackPosition ) {
 			syncPos();
 			calcAbsPos();
 			updateTrail(trails[0], dt, absPos.tx, absPos.ty, absPos.tz);
-		}
 
-		#if editor
-		icon.color.a = (numObj > 0) ? 0.50 : 1.0;
-		#end
+			if ( cooldown > 0.0 )
+				return;
+			cooldown = 1.0 / prefab.framerate;
 
-		if ( cooldown > 0.0 )
-			return;
-		cooldown = 1.0 / prefab.framerate;
-
-		if ( numObj > 0) {
-			for (i => childIndex in subTrailChildIndices) {
-				var c = children[childIndex];
-				var t = trails[i];
-				var pos = c.getAbsPos();
-				addPoint(t, pos.tx, pos.ty, pos.tz);
-			}
-		} else if (autoTrackPosition)
 			addPoint(trails[0], absPos.tx, absPos.ty, absPos.tz);
+		}
 	}
 
-	override function emit(ctx) {
+	override function getLodIndex() return 0;
+
+	override function emit(ctx : h3d.scene.RenderContext) {
+		if( dprim == null ) {
+			dprim = new h3d.prim.RawPrimitive(onDprimContextLost(), true);
+			dprim.onContextLost = onDprimContextLost;
+			primitive = dprim;
+		}
+
 		super.emit(ctx);
 
 		var buffer = vbuf;
@@ -698,7 +658,7 @@ class TrailObj extends h3d.scene.Mesh {
 			var cur = trail.firstPoint;
 			var totalLen = trail.totalLength;
 
-			var absPos = subTrailChildIndices == null ? this.absPos : children[subTrailChildIndices[i]].absPos;
+			var absPos = this.absPos;
 			var curToHead = new h3d.Vector(absPos.tx - cur.x, absPos.ty - cur.y, absPos.tz - cur.z);
 			var curToHeadSq = curToHead.lengthSq();
 
@@ -779,38 +739,6 @@ class TrailObj extends h3d.scene.Mesh {
 	}
 }
 
-// Empty class just for casting purposes
-class TrailsSubTailObj extends h3d.scene.Object {
-
-	public function new(?parent) {
-		super(parent);
-		#if editor
-		hrt.impl.EditorTools.create3DIcon(this, hide.Ide.inst.getHideResPath("icons/icon-trails.png"), 0.33, Trails);
-		#end
-	}
-}
-
-class TrailsSubTrail extends Object3D {
-
-	override function makeObject(parent3d: h3d.scene.Object) : h3d.scene.Object {
-		var obj = new TrailsSubTailObj(parent3d);
-		return obj;
-	}
-
-	override function updateInstance(?props: String) {
-		applyTransform();
-	}
-
-	#if editor
-	override function getHideProps():hide.prefab.HideProps {
-		return { icon : "toggle-on", name : "Sub Trail" , allowChildren: (name) -> name == Trails};
-	}
-	#end
-
-	static var _ = Prefab.register("SubTrail", TrailsSubTrail);
-
-}
-
 class Trails extends Object3D {
 
 	@:s public var startWidth : Float = 1.0;
@@ -839,9 +767,6 @@ class Trails extends Object3D {
 	@:s public var constantSpeedY: Float = 0.0;
 	@:s public var constantSpeedZ: Float = 0.0;
 
-	// TODO(ces) : find better way to do that
-	// Override this before calling make() to change how many trails are instancied
-	public var numTrails : Int = 1;
 	public var debug : Bool = false;
 
 	function new(parent, shared) {
@@ -887,7 +812,7 @@ class Trails extends Object3D {
 		return obj;
 	}
 
-	public function create( ?parent : h3d.scene.Object, ?numTrails : Int ) {
+	public function create( parent : h3d.scene.Object, numTrails : Int ) {
 		var tr = new TrailObj(this, parent, numTrails);
 		applyTransform();
 		tr.name = name;
@@ -896,7 +821,7 @@ class Trails extends Object3D {
 	}
 
 	override function makeObject(parent3d: h3d.scene.Object) : h3d.scene.Object {
-		return create(parent3d, numTrails);
+		return create(parent3d, 1);
 	}
 
 	override function updateInstance(?props: String) {
@@ -910,22 +835,14 @@ class Trails extends Object3D {
 
 		if ( props == "lifetime" ) {
 			lifetime = hxd.Math.max(lifetime, 0.00001);
-			@:privateAccess trailObj.allocBuffers();
-			if ( @:privateAccess trailObj.dprim != null )
-				@:privateAccess trailObj.dprim.alloc(null);
+			@:privateAccess trailObj.init();
 		}
 
-		if(props == "framerate") {
-			@:privateAccess trailObj.allocBuffers();
-			if ( @:privateAccess trailObj.dprim != null )
-				@:privateAccess trailObj.dprim.alloc(null);
-		}
+		if( props == "framerate" )
+			@:privateAccess trailObj.init();
 
-		if(props == "useColor") {
-			@:privateAccess trailObj.format = useColor ? hxd.BufferFormat.POS3D_NORMAL_UV_RGBA : hxd.BufferFormat.POS3D_NORMAL_UV;
-			@:privateAccess trailObj.allocBuffers();
-			if ( @:privateAccess trailObj.dprim != null )
-				@:privateAccess trailObj.dprim.alloc(null);
+		if( props == "useColor" ) {
+			@:privateAccess trailObj.init();
 			trailObj.updateShader();
 		}
 
@@ -1033,7 +950,7 @@ class Trails extends Object3D {
 			if( debug && debugTxt != null ) {
 				var str = "";
 				var trailObj : TrailObj = cast local3d;
-				for (i in 0...numTrails) {
+				@:privateAccess for (i in 0...trailObj.numTrails) {
 					str += " trail[" + i + "].len = " + @:privateAccess trailObj.trails[i].totalLength + "\n";
 				}
 				debugTxt.content = str;

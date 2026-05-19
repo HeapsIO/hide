@@ -161,20 +161,22 @@ class ParticleInstance {
 		subEmitters = p.subEmitters;
 	}
 
-	function clear(transferSubemitters: EmitterObject = null) {
+	function clear(emitter: EmitterObject = null) {
 		if (subEmitters != null) {
 			for (sub in subEmitters) {
-				if (transferSubemitters != null)
-				{
-					transferSubemitters.subEmitters = transferSubemitters.subEmitters ?? [];
-					transferSubemitters.subEmitters.push(sub);
+				if( emitter != null ) {
+					emitter.subEmitters = emitter.subEmitters ?? [];
+					emitter.subEmitters.push(sub);
 					sub.enable = false;
-				}
-				else {
+				} else {
 					sub.remove();
 				}
 			}
 			subEmitters = null;
+		}
+		if( trail != null && emitter != null && emitter.trails != null ) {
+			@:privateAccess emitter.trails.disposeTrail(trail);
+			trail = null;
 		}
 		idx = REMOVED_IDX;
 	}
@@ -741,7 +743,7 @@ class EmitterObject extends h3d.scene.Object {
 		// Dispose previous particles
 		if(particles != null) {
 			for(i in 0...particlesCount) {
-				particles[i].clear();
+				particles[i].clear(this);
 			}
 		}
 
@@ -773,7 +775,7 @@ class EmitterObject extends h3d.scene.Object {
 		}
 
 		for (i in 0...numInstances) {
-			particles[i].clear();
+			particles[i].clear(this);
 		}
 
 		#if editor
@@ -804,7 +806,7 @@ class EmitterObject extends h3d.scene.Object {
 
 		if(particles != null) {
 			for(i in 0...particlesCount) {
-				particles[i].clear();
+				particles[i].clear(this);
 			}
 		}
 
@@ -959,8 +961,7 @@ class EmitterObject extends h3d.scene.Object {
 			var scene = relativeScenePosition ? getScene() : null;
 
 			if (trailsTemplate != null && trails == null) {
-				var made = trailsTemplate.make(this);
-				trails = cast made.local3d;
+				trails = trailsTemplate.create(this, maxCount);
 				trails.autoTrackPosition = false;
 			}
 
@@ -1422,16 +1423,17 @@ class EmitterObject extends h3d.scene.Object {
 
 		var camPos = scene.camera.pos;
 
-		if (trails != null) {
-			trails.numTrails = maxCount;
-		}
-
 		checkList();
 		var i = 0;
 		while(i < numInstances) {
 			var p = particles[i];
 			if(p.life > p.lifeTime) {
-				if (p.trail == null || p.trail.generation != p.trailGeneration) {
+				if (trails != null && p.trail != null && p.trail.numPoints > 0) {
+					// trail still fading out, keep particle slot alive until all points expire
+					var pos = p.absPos.getPosition();
+					trails.updateTrail(p.trail, dt, pos.x, pos.y, pos.z);
+					++i;
+				} else {
 					// SUB EMITTER
 					if( subEmitterTemplates != null ) {
 						for (template in subEmitterTemplates) {
@@ -1451,8 +1453,6 @@ class EmitterObject extends h3d.scene.Object {
 						}
 					}
 					i = disposeInstance(i);
-				} else {
-					++i;
 				}
 			}
 			else {
@@ -1468,10 +1468,11 @@ class EmitterObject extends h3d.scene.Object {
 				++i;
 
 				if (trails != null) {
-					trails.updateTrail(p.trail, dt, p.absPos._41, p.absPos._42, p.absPos._43);
+					var pos = p.absPos.getPosition();
+					trails.updateTrail(p.trail, dt, pos.x, pos.y, pos.z);
 					if ( @:privateAccess trails.cooldown < 0 ) {
 						@:privateAccess trails.cooldown = 1 / trails.prefab.framerate;
-						trails.addPoint(p.trail, p.absPos._41, p.absPos._42, p.absPos._43);
+						trails.addPoint(p.trail, pos.x, pos.y, pos.z);
 					}
 				}
 			}
