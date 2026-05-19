@@ -415,6 +415,7 @@ class SwarmObject extends h3d.scene.Object {
 			batch.emitInstance();
 		}
 
+		batch.cullingCollider = batch.primitive.getBounds();
 	}
 
 	#if editor
