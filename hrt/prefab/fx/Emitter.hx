@@ -962,6 +962,7 @@ class EmitterObject extends h3d.scene.Object {
 
 			if (trailsTemplate != null && trails == null) {
 				trails = trailsTemplate.create(this, maxCount);
+				trailsTemplate.local3d = trails;
 				trails.autoTrackPosition = false;
 			}
 
@@ -1470,10 +1471,6 @@ class EmitterObject extends h3d.scene.Object {
 				if (trails != null) {
 					var pos = p.absPos.getPosition();
 					trails.updateTrail(p.trail, dt, pos.x, pos.y, pos.z);
-					if ( @:privateAccess trails.cooldown < 0 ) {
-						@:privateAccess trails.cooldown = 1 / trails.prefab.framerate;
-						trails.addPoint(p.trail, pos.x, pos.y, pos.z);
-					}
 				}
 			}
 		}

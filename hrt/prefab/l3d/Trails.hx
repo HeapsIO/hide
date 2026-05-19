@@ -29,6 +29,10 @@ class TrailHead {
 	public var numPoints : Int = 0;
 	public var generation : Int = 0;
 	public var nextTrail : TrailHead = null;
+	public var x : Float = 0;
+	public var y : Float = 0;
+	public var z : Float = 0;
+	public var cooldown : Float = 0;
 
 	public function new(){};
 }
@@ -411,6 +415,16 @@ class TrailObj extends h3d.scene.Mesh {
 	}
 
 	public function updateTrail( t : TrailHead, dt : Float, x : Float, y : Float, z : Float) {
+		t.x = x;
+		t.y = y;
+		t.z = z;
+
+		t.cooldown -= dt;
+		if ( t.cooldown <= 0 ) {
+			t.cooldown = 1.0 / prefab.framerate;
+			addPoint(t, x, y, z);
+		}
+
 		var cur = t.firstPoint;
 		if ( cur == null )
 			return;
@@ -547,12 +561,6 @@ class TrailObj extends h3d.scene.Mesh {
 			syncPos();
 			calcAbsPos();
 			updateTrail(trails[0], dt, absPos.tx, absPos.ty, absPos.tz);
-
-			if ( cooldown > 0.0 )
-				return;
-			cooldown = 1.0 / prefab.framerate;
-
-			addPoint(trails[0], absPos.tx, absPos.ty, absPos.tz);
 		}
 	}
 
@@ -658,14 +666,13 @@ class TrailObj extends h3d.scene.Mesh {
 			var cur = trail.firstPoint;
 			var totalLen = trail.totalLength;
 
-			var absPos = this.absPos;
-			var curToHead = new h3d.Vector(absPos.tx - cur.x, absPos.ty - cur.y, absPos.tz - cur.z);
+			var curToHead = new h3d.Vector(trail.x - cur.x, trail.y - cur.y, trail.z - cur.z);
 			var curToHeadSq = curToHead.lengthSq();
 
 			if ( curToHeadSq > 0.01 ) {
-				tmpHead.x = absPos.tx;
-				tmpHead.y = absPos.ty;
-				tmpHead.z = absPos.tz;
+				tmpHead.x = trail.x;
+				tmpHead.y = trail.y;
+				tmpHead.z = trail.z;
 
 				var tangent = curToHead.normalized();
 				tmpHead.tx = tangent.x;
