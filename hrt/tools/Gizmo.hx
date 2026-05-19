@@ -310,6 +310,7 @@ class Gizmo extends h3d.scene.Object {
 					localQuat.multiply(deltaRotation, initialRotation);
 					setRotationQuat(localQuat);
 				case Scale:
+					var speedFactor = hxd.Key.isDown(K.SHIFT) ? 0.1 : 1.0;
 					if (handle == Center) {
 						var v = new h2d.col.Point(mouseX, mouseY) - initialMousePos;
 						v.y *= -1;
@@ -321,7 +322,7 @@ class Gizmo extends h3d.scene.Object {
 						var margin = 0.4;
 						f = f < margin && f > -margin ? f / margin : f < 0 ? -1 : 1;
 
-						var s = snap((delta.length() * f * 0.5) + 1, mode);
+						var s = snap((delta.length() * f * speedFactor * 0.5) + 1, mode);
 						deltaScale = new h3d.Vector(s, s, s);
 					}
 					else {
@@ -340,6 +341,7 @@ class Gizmo extends h3d.scene.Object {
 							var max = Math.abs(delta.y) > Math.abs(delta.z) ? delta.y : delta.z;
 							delta.y = delta.z = max;
 						}
+						delta *= speedFactor;
 						deltaScale = new h3d.Vector(snap((delta.x * 0.5) + 1, mode), snap((delta.y * 0.5) + 1, mode), snap((delta.z * 0.5) + 1, mode));
 					}
 			}
