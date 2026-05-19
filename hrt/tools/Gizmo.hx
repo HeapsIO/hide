@@ -293,24 +293,26 @@ class Gizmo extends h3d.scene.Object {
 					null;
 			}
 
+			var speedFactor = hxd.Key.isDown(K.SHIFT) ? 0.08 : 1.0;
 			switch (mode) {
 				case Full:
 				case Translation:
 					if (axis != null)
 						delta = delta.dot(axis) * axis;
 					deltaPosition = new h3d.Vector(snap(delta.x, mode), snap(delta.y, mode), snap(delta.z, mode));
+					deltaPosition *= speedFactor;
 					setPosition(initialPosition.x + deltaPosition.x, initialPosition.y + deltaPosition.y, initialPosition.z + deltaPosition.z);
 				case Rotation:
 					var v1 = initialPosition.sub(initialRay.intersect(dragPlane)).normalized();
 					var v2 = initialPosition.sub(ray.intersect(dragPlane)).normalized();
 					var angle = snap(Math.atan2(v1.cross(v2).dot(axis), v1.dot(v2)), Rotation);
+					angle *= speedFactor;
 					deltaRotation = new h3d.Quat();
 					deltaRotation.initRotateAxis(axis.x, axis.y, axis.z, angle);
 					var localQuat = new h3d.Quat();
 					localQuat.multiply(deltaRotation, initialRotation);
 					setRotationQuat(localQuat);
 				case Scale:
-					var speedFactor = hxd.Key.isDown(K.SHIFT) ? 0.1 : 1.0;
 					if (handle == Center) {
 						var v = new h2d.col.Point(mouseX, mouseY) - initialMousePos;
 						v.y *= -1;
