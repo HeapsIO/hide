@@ -31,7 +31,7 @@ class App extends hxd.App {
 		var winSize = ide.getLocalStorage("windowSize") ?? {w: 800, h: 600};
 		// hxd.Window.getInstance().resize(winSize.w, winSize.h);
 
-		var icon: hxd.res.Image = hrt.ui.HuiRes.loader.load(hrt.ui.HuiRes.icons.folder_filled).toImage();
+		var icon: hxd.res.Image = hrt.ui.HuiRes.loader.load(hrt.ui.HuiRes.icons.hide_icon).toImage();
 		hxd.Window.getInstance().setIcon(icon.toBitmap());
 
 		#if hldx
