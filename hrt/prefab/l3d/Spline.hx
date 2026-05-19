@@ -238,6 +238,9 @@ class Spline extends hrt.prefab.Object3D {
 
 		if (propName == "factorTanLengthEdition")
 			refreshHandles();
+		#else
+		if ( shared.parentPrefab != null )
+			samples = null;
 		#end
 
 
