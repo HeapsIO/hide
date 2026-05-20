@@ -315,6 +315,8 @@ class TrailObj extends h3d.scene.Mesh {
 		}
 
 		var point = allocPoint();
+		if(point == null)
+			return;
 		point.x = x;
 		point.y = y;
 		point.z = z;
