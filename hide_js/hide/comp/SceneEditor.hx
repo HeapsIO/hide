@@ -3604,26 +3604,13 @@ class SceneEditor {
 
 			rootDebugCollider.removeChildren();
 
-			var meshes = root3d.getMeshes();
-			var gizmos = root3d.findAll((f) -> Std.downcast(f, hrt.tools.Gizmo));
-			meshes = meshes.filter(function (m : h3d.scene.Mesh) {
-				if (Std.isOfType(m, h3d.scene.Graphics))
-					return false;
-				for (g in gizmos)
-					if (g.isGizmo(m))
-						return false;
-				return true;
-			});
-
-			for (m in meshes) {
-				var col = try {
-					m.getCollider();
-				} catch(e : Dynamic) {
-					ide.quickError('Error while trying to display debug colliders');
-					null;
-				}
-				if (col == null)
-					continue;
+			var col = try {
+				root3d.getCollider();
+			} catch(e : Dynamic) {
+				ide.quickError('Error while trying to display debug colliders');
+				null;
+			}
+			if (col != null) {
 				var d = col.makeDebugObj();
 				for (mat in d.getMaterials()) {
 					mat.name = "$collider";
