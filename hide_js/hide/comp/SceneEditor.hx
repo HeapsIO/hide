@@ -3612,13 +3612,15 @@ class SceneEditor {
 			}
 			if (col != null) {
 				var d = col.makeDebugObj();
-				for (mat in d.getMaterials()) {
-					mat.name = "$collider";
-					mat.mainPass.setPassName("overlay");
-					mat.shadows = false;
-					mat.mainPass.wireframe = true;
+				if (d != null) {
+					for (mat in d.getMaterials()) {
+						mat.name = "$collider";
+						mat.mainPass.setPassName("overlay");
+						mat.shadows = false;
+						mat.mainPass.wireframe = true;
+					}
+					rootDebugCollider.addChild(d);
 				}
-				rootDebugCollider.addChild(d);
 			}
 		} else if (rootDebugCollider != null) {
 			rootDebugCollider.remove();
