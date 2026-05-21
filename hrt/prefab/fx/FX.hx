@@ -25,7 +25,7 @@ class FXAnimation extends h3d.scene.Object {
 	static var debugRFX : DesaturateRFX;
 
 	// Note : to work, the renderer need to have a Debug pass enabled
-	public static function setDebugFX(?enabled: Bool, s3d: h3d.scene.Scene) {
+	public static function setDebugFX(?enabled: Bool, renderer: h3d.scene.Renderer) {
 		if (enabled == null)
 			enabled = !debugFX;
 
@@ -35,9 +35,9 @@ class FXAnimation extends h3d.scene.Object {
 		debugFX = enabled;
 		if (debugFX) {
 			debugRFX = new DesaturateRFX();
-			s3d.renderer.effects.push(debugRFX);
+			renderer.effects.push(debugRFX);
 		} else {
-			s3d.renderer.effects.remove(debugRFX);
+			renderer.effects.remove(debugRFX);
 			debugRFX = null;
 		}
 	}
