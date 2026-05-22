@@ -1,68 +1,6 @@
 package hrt.ui;
 
-class PreviewShaderAlpha extends hxsl.Shader {
-	static var SRC = {
-		var absolutePosition : Vec4;
-
-		var pixelColor : Vec4;
-
-		function fragment() {
-			var cb = floor(mod(absolutePosition.xy / 16.0, vec2(2.0)));
-			var check = mod(cb.x + cb.y, 2.0);
-			var color = check >= 1.0 ? vec3(0.22) : vec3(0.44);
-			pixelColor.rgb = mix(color, pixelColor.rgb, pixelColor.a);
-			pixelColor.a = 1.0;
-		}
-	}
-}
-
 #if hui
-class HuiColorBox extends HuiElement {
-	static var SRC = <hui-color-box>
-	</hui-color-box>
-
-	public var value(default, set) : Int = 0xFF00FF;
-	var pickerGuard : Int = 0;
-	var picker : HuiColorPicker = null;
-
-	public function new(?parent: h2d.Object) {
-		super(parent);
-		initComponent();
-
-		function onPickerClose() {
-			picker.remove();
-			picker = null;
-		}
-
-		this.backgroundType = "hui";
-		this.huiBg.imageTile = h2d.Tile.fromColor(value, 60, 20);
-		this.onClick = (e : hxd.Event) -> {
-			if (picker == null) {
-				picker = new HuiColorPicker(this, null);
-				uiBase.addPopup(picker, { object: Element(this), directionX: StartInside, directionY: EndOutside });
-				picker.setColor(value, false);
-				picker.onCloseListeners.push(onPickerClose);
-				picker.onValueChanged = (isTemporary) -> {
-					pickerGuard++;
-					value = picker.getColor(false);
-					pickerGuard--;
-					onValueChanged(isTemporary);
-				};
-			}
-			else {
-				picker.close();
-			}
-		};
-	}
-
-	public function set_value(v : Int) {
-		this.huiBg.imageTile = h2d.Tile.fromColor(v, 60, 20);
-		return value = v;
-	}
-
-	public dynamic function onValueChanged(isTemporary: Bool) {}
-}
-
 class HuiColorPicker extends HuiPopup {
 	static var SRC =
 	 	<hui-color-picker>
@@ -135,8 +73,8 @@ class HuiColorPicker extends HuiPopup {
 		preview.backgroundType = "hui";
 		previewAlpha.backgroundType = "hui";
 
-		previewAlpha.huiBg.addShader(new PreviewShaderAlpha());
-		sliderAlpha.huiBg.addShader(new PreviewShaderAlpha());
+		previewAlpha.huiBg.addShader(new hrt.shader.PreviewShaderAlpha());
+		sliderAlpha.huiBg.addShader(new hrt.shader.PreviewShaderAlpha());
 
 		setColorsFunctions();
 		syncColorMain(color);

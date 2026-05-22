@@ -302,7 +302,7 @@ class FXAnimation extends h3d.scene.Object {
 				// display fixed position fx in red (color is in hsv)
 				debugShader.color.set(0.0,1.0,1.0);
 			} else {
-				// Hash color of fx with it's id so each fx has a different color
+				// Hash color of fx with its id so each fx has a different color
 				debugShader.color.set((fxId * 1.618033988749) % 1.0, 0.75, 0.75);
 			}
 		} else if (debugShader != null) {
@@ -1182,6 +1182,7 @@ class DebugFXShader extends hxsl.Shader {
 		@param var color : Vec4;
 
 		@:import h3d.shader.ColorSpaces;
+		@const var reverseDepth : Bool;
 
 
 		var output : { color : Vec4 };

@@ -32,6 +32,11 @@ class GymWidgets extends HuiElement {
 
 	static var SRC =
 		<gym-widgets>
+			<hui-text("hui-gradient-box")/>
+			<hui-element class="example">
+				<hui-gradient-box/>
+			</hui-element>
+
 			<hui-text("hui-scene")/>
 			<hui-element class="example">
 				<hui-split-container direction="horizontal">
@@ -140,7 +145,9 @@ class GymWidgets extends HuiElement {
 			</hui-element>
 
 			<hui-text("curve-editor")/>
-			<hui-curve-box/>
+			<hui-element class="example">
+				<hui-curve-box/>
+			</hui-element>
 		</gym-widgets>
 
 	function new(?parent) {

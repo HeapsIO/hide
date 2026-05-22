@@ -18,7 +18,7 @@ class Color extends Widget<Dynamic> {
 	#if js
 	var colorBox : hide.comp.ColorPicker.ColorBox;
 	#elseif hui
-	var colorBox : hrt.ui.HuiColorPicker.HuiColorBox;
+	var colorBox : hrt.ui.HuiColorBox;
 	#end
 
 	function makeInput():NativeElement {
@@ -38,7 +38,7 @@ class Color extends Widget<Dynamic> {
 		}
 		return colorBox.element[0];
 		#elseif hui
-		colorBox = new hrt.ui.HuiColorPicker.HuiColorBox();
+		colorBox = new hrt.ui.HuiColorBox();
 		if (arr) {
 			colorBox.value = h3d.Vector4.fromArray(value).toColor();
 		} else if (vec) {

@@ -1,0 +1,23 @@
+hui-gradient-editor {
+	layout: vertical;
+
+	width: 400;
+
+	#gradient-container {
+		fill-width: 1;
+		auto-size-width: 1;
+		height: 128;
+		layout: stack;
+		overflow: hidden;
+
+		>#gradient-display {
+			position: absolute;
+			smooth: true;
+		}
+	}
+
+	#color-picker {
+		width: 64;
+		height: 64;
+	}
+}
