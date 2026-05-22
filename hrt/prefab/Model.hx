@@ -56,10 +56,12 @@ class Model extends Object3D {
 			parent3d.addChild(obj);
 
 			if( animation != null ) {
-				obj.playAnimation(shared.loadAnimation(animation));
-				if (randomStart) {
+				var a = shared.loadAnimation(animation);
+				if( a == null )
+					throw('Missing animation file $animation');
+				obj.playAnimation(a);
+				if (randomStart)
 					obj.currentAnimation.setFrame(hxd.Math.random(obj.currentAnimation.frameCount));
-				}
 			}
 
 			if (obj.currentAnimation != null) {
