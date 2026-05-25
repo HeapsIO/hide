@@ -120,8 +120,7 @@ class HuiSceneEditor extends HuiElement {
 		var engine = h3d.Engine.getCurrent();
 		var ray = scene.s3d.camera.rayFromScreen(sx, sy, cast scene.calculatedWidth, cast scene.calculatedHeight);
 		for (o in r.findAll((o) -> o)) {
-			// TODO: use better collision than bounds
-			var c = o.getBounds();
+			var c = o.getCollider() ?? o.getBounds();
 			if (c == null)
 				continue;
 
