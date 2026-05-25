@@ -73,6 +73,16 @@ class Image extends FileView {
 	var tools : hide.comp.Toolbar;
 	var cam : Dynamic;
 
+	static var defaultFilter = "Box";
+	static var filters = ["Point", "Box"];
+	static var filtersParams = ["POINT", "FANT"];
+	function filterToParam(f : String) {
+		return filtersParams[filters.indexOf(f)];
+	}
+	function paramToFilter(p : String) {
+		return filters[filtersParams.indexOf(p)];
+	}
+
 	override function onDisplay() {
 		cleanUp();
 
@@ -110,7 +120,7 @@ class Image extends FileView {
 				</select>
 			</div>');
 
-			var select = field.find(".select-format");
+			var select = field.find('.$selectClass');
 			for (opt in options) {
 				select.append(new Element('<option value="${opt}">${opt}</option>'));
 			}
@@ -146,15 +156,17 @@ class Image extends FileView {
 		<label class="max-size">/ 128 px</label>
 		</div>');
 		compressionInfo.append(sizeField);
+		addField(compressionInfo, "Filter :", "Image filter used to resize texture", "select-filter", filters );
 
 		var format = compressionInfo.find(".select-format");
 		var mips = compressionInfo.find(".mips-checkbox");
 		var size = compressionInfo.find(".size");
+		var filter = compressionInfo.find(".select-filter");
 		var useAlpha = compressionInfo.find(".use-alpha");
 		var alpha = compressionInfo.find(".alpha-threshold");
 
 		format.on("change", function(_) {
-			createPreviewTexture(format, useAlpha, alpha, mips, size);
+			createPreviewTexture(format, useAlpha, alpha, mips, size, filter);
 
 			// Alpha treshold make sense for BC1 format
 			if (format.val() != "BC1")
@@ -179,19 +191,23 @@ class Image extends FileView {
 				alpha.prop("disabled", true);
 			}
 
-			createPreviewTexture(format, useAlpha, alpha, mips, size);
+			createPreviewTexture(format, useAlpha, alpha, mips, size, filter);
 		});
 
 		alpha.on("change", function(_) {
-			createPreviewTexture(format, useAlpha, alpha, mips, size);
+			createPreviewTexture(format, useAlpha, alpha, mips, size, filter);
 		});
 
 		size.on("change", function(_) {
-			createPreviewTexture(format, useAlpha, alpha, mips, size);
+			createPreviewTexture(format, useAlpha, alpha, mips, size, filter);
+		});
+
+		filter.on("change", function(_){
+			createPreviewTexture(format, useAlpha, alpha, mips, size, filter);
 		});
 
 		mips.on("change", function(_) {
-			createPreviewTexture(format, useAlpha, alpha, mips, size);
+			createPreviewTexture(format, useAlpha, alpha, mips, size, filter);
 		});
 
 		var fs:hxd.fs.LocalFileSystem = Std.downcast(hxd.res.Loader.currentInstance.fs, hxd.fs.LocalFileSystem);
@@ -218,6 +234,7 @@ class Image extends FileView {
 			format.val(convertRuleEmpty ? "none" : textureConvertRule.cmd.params.format);
 			alpha.val(convertRuleEmpty || Reflect.field(textureConvertRule.cmd.params, "alpha") == null ? null : textureConvertRule.cmd.params.alpha);
 			size.val(convertRuleEmpty || Reflect.field(textureConvertRule.cmd.params, "size") == null ? texMaxSize : textureConvertRule.cmd.params.size);
+			filter.val(convertRuleEmpty || Reflect.field(textureConvertRule.cmd.params, "filter") == null ? defaultFilter : paramToFilter(textureConvertRule.cmd.params.filter));
 
 			if (!convertRuleEmpty && Reflect.field(textureConvertRule.cmd.params, "alpha") != null) {
 				useAlpha.prop("checked", true);
@@ -246,7 +263,7 @@ class Image extends FileView {
 			else
 				mips.parent().css({"display":"flex"});
 
-			createPreviewTexture(format, useAlpha, alpha, mips, size);
+			createPreviewTexture(format, useAlpha, alpha, mips, size, filter);
 		});
 
 		var saveCompression = element.find(".save-compression");
@@ -261,8 +278,10 @@ class Image extends FileView {
 			else {
 				convertRule = { convert : "dds", format : format.val(), mips : mips.is(':checked'), priority: 10000000 };
 
-				if (size.val() != texMaxSize)
+				if (size.val() != texMaxSize) {
 					Reflect.setField(convertRule, "size", size.val());
+					Reflect.setField(convertRule, "filter", filterToParam(filter.val()));
+				}
 
 				if (useAlpha.is(':checked'))
 					Reflect.setField(convertRule, "alpha", alpha.val());
@@ -593,6 +612,7 @@ class Image extends FileView {
 		var format = compressionInfo.find(".select-format");
 		var mips = compressionInfo.find(".mips-checkbox");
 		var size = compressionInfo.find(".size");
+		var filter = compressionInfo.find(".select-filter");
 		var useAlpha = compressionInfo.find(".use-alpha");
 		var alpha = compressionInfo.find(".alpha-threshold");
 		var maxSize = compressionInfo.find(".max-size");
@@ -646,6 +666,7 @@ class Image extends FileView {
 
 		var strMaxSize = getTextureMaxSize();
 		size.val(convertRuleEmpty || Reflect.field(texConvRule.cmd.params, "size") == null ? strMaxSize : texConvRule.cmd.params.size);
+		filter.val(convertRuleEmpty || Reflect.field(texConvRule.cmd.params, "filter") == null ? defaultFilter : paramToFilter(texConvRule.cmd.params.filter));
 
 		if (!convertRuleEmpty && texConvRule.cmd.params.mips)
 			mips.prop("checked", true);
@@ -722,7 +743,7 @@ class Image extends FileView {
 		onResize();
 	}
 
-	public function createPreviewTexture(format: Element, useAlpha: Element, alpha: Element, mips: Element, size: Element) {
+	public function createPreviewTexture(format: Element, useAlpha: Element, alpha: Element, mips: Element, size: Element, filter: Element) {
 		var dirPos = state.path.lastIndexOf("/");
 		var name = dirPos < 0 ? state.path : state.path.substr(dirPos + 1);
 		var tmpPath = StringTools.replace(Sys.getEnv("TEMP"), "\\","/") + "/tempTexture.dds";
@@ -734,9 +755,9 @@ class Image extends FileView {
 			comp.originalFilename = name;
 
 			if (useAlpha.is(':checked'))
-				comp.params = { alpha:Std.parseInt(alpha.val()), format:format.val().toString(), mips:mips.is(':checked'), size:Std.parseInt(size.val()) };
+				comp.params = { alpha:Std.parseInt(alpha.val()), format:format.val().toString(), mips:mips.is(':checked'), size:Std.parseInt(size.val()),  filter:filterToParam(filter.val().toString()) };
 			else
-				comp.params = { format:format.val().toString(), mips:mips.is(':checked'), size:Std.parseInt(size.val()) };
+				comp.params = { format:format.val().toString(), mips:mips.is(':checked'), size:Std.parseInt(size.val()), filter:filterToParam(filter.val().toString()) };
 
 			try {
 				comp.convert();
