@@ -41,8 +41,25 @@ class Prefab extends HuiView<{path: String}> {
 
 	public static var VIEW_MODE_TYPE = "editor.visibility.viewModeType";
 
+	static public var gizmoSwitchModeCommand = new hrt.ui.HuiCommands.HuiCommand("Gizmo Switch Mode", {key: hxd.Key.SPACE});
+	static public var gizmoTranslateCommand = new hrt.ui.HuiCommands.HuiCommand("Gizmo Translate", {key: hxd.Key.W});
+	static public var gizmoRotateCommand = new hrt.ui.HuiCommands.HuiCommand("Gizmo Rotate", {key: hxd.Key.E});
+	static public var gizmoScaleCommand = new hrt.ui.HuiCommands.HuiCommand("Gizmo Scale", {key: hxd.Key.R});
+
+	public var gizmoShouldSnap(default, set) : Bool = true;
+	public function set_gizmoShouldSnap(v : Bool) {
+		hide.Ide.inst.currentConfig.set(hide.view.Prefab.GIZMO_SNAP_CONFIG_KEY, v);
+		return gizmoShouldSnap = v;
+	}
+	public var gizmoForceSnapOnGrid(default, set) : Bool = true;
+	public function set_gizmoForceSnapOnGrid(v : Bool) {
+		hide.Ide.inst.currentConfig.set(hide.view.Prefab.GIZMO_SNAP_GRID_CONFIG_KEY, v);
+		return gizmoForceSnapOnGrid = v;
+	}
+
 	public var config(default, null) : hide.Config;
 	var prefabLookup : Map<h3d.scene.Object, hrt.prefab.Object3D> = new Map();
+	var gizmo : hrt.tools.Gizmo = null;
 	var rethrowMakeErrors: Bool = false;
 	var errorMessage : h2d.Text;
 	var prefab: hrt.prefab.Prefab;
@@ -81,7 +98,6 @@ class Prefab extends HuiView<{path: String}> {
 
 		registerCommand(HuiCommands.save, View, () -> { save();});
 
-		buildToolbar();
 		sceneEditor.load();
 
 		registerCommand(hrt.ui.HuiCommands.HuiDebugCommands.debugReload, View, reload);
@@ -194,10 +210,112 @@ class Prefab extends HuiView<{path: String}> {
 				}
 			}
 		}
+
+		this.gizmoShouldSnap = hide.Ide.inst.currentConfig.get(hide.view.Prefab.GIZMO_SNAP_CONFIG_KEY, true);
+		this.gizmoForceSnapOnGrid = hide.Ide.inst.currentConfig.get(hide.view.Prefab.GIZMO_SNAP_GRID_CONFIG_KEY, true);
+
+		gizmo = new hrt.tools.Gizmo(sceneEditor.scene.s3d);
+		gizmo.visible = false;
+		registerCommand(gizmoSwitchModeCommand, View, gizmo.switchMode);
+		registerCommand(gizmoTranslateCommand, View, gizmo.translationMode);
+		registerCommand(gizmoRotateCommand, View, gizmo.rotationMode);
+		registerCommand(gizmoScaleCommand, View, gizmo.scalingMode);
+
+		var initialTransform = new h3d.Matrix();
+		var initialAbs = new h3d.Matrix();
+		var obj3ds : Array<hrt.prefab.Object3D> = [];
+		gizmo.shouldSnap = () -> { return this.gizmoShouldSnap; };
+		gizmo.snap = (v: Float, mode: hrt.tools.Gizmo.EditMode) -> {
+			if ((!gizmo.shouldSnap() && !hxd.Key.isDown(hxd.Key.CTRL)) || mode.match(hrt.tools.Gizmo.EditMode.Rotation))
+				return v;
+			v = hxd.Math.round(v / sceneEditor.gizmoSnapStep) * sceneEditor.gizmoSnapStep;
+			if (!gizmoForceSnapOnGrid)
+				return v;
+			return hxd.Math.round(v / sceneEditor.grid.lineSpacing) * sceneEditor.grid.lineSpacing;
+		};
+		gizmo.onStartMove = (handle : hrt.tools.Gizmo.Handle) -> {
+			obj3ds = [];
+			for (p in selectedPrefabs.keys()) {
+				var o = Std.downcast(p, hrt.prefab.Object3D);
+				if (o == null)
+					continue;
+				obj3ds.push(o);
+			}
+			if (obj3ds.length > 0) {
+				initialTransform.load(obj3ds[0].getTransform());
+				initialAbs.load(obj3ds[0].getAbsPos(true));
+			}
+		};
+		gizmo.onMove = (offsetPosition, offsetRotation, offsetScale) -> {
+			if (obj3ds.length <= 0)
+				return;
+
+			var obj3d = obj3ds[0];
+			var parent3d = Std.downcast(obj3d.parent, hrt.prefab.Object3D);
+			var parentAbs = parent3d != null ? parent3d.getAbsPos(true) : h3d.Matrix.I();
+			var parentInv = parentAbs.getInverse();
+
+			var trs = new h3d.Matrix();
+			trs.identity();
+
+			if (offsetRotation != null) {
+				offsetRotation.toMatrix(trs);
+				var t = initialAbs.getPosition();
+				trs.prependTranslation(-t.x, -t.y, -t.z);
+				trs.translate(t.x, t.y, t.z);
+			}
+
+			if (offsetPosition != null)
+				trs.translate(offsetPosition.x, offsetPosition.y, offsetPosition.z);
+
+			trs.multiply(initialAbs, trs);
+
+			if (gizmo.shouldSnap() && gizmoForceSnapOnGrid) {
+				var p = trs.getPosition();
+				p.x = hxd.Math.round(p.x / sceneEditor.grid.lineSpacing) * sceneEditor.grid.lineSpacing;
+				p.y = hxd.Math.round(p.y / sceneEditor.grid.lineSpacing) * sceneEditor.grid.lineSpacing;
+				p.z = hxd.Math.round(p.z / sceneEditor.grid.lineSpacing) * sceneEditor.grid.lineSpacing;
+				trs.setPosition(p);
+				gizmo.setPosition(p.x, p.y, p.z);
+			}
+
+			trs.multiply(trs, parentInv);
+
+			if (offsetScale != null)
+				trs.prependScale(offsetScale.x, offsetScale.y, offsetScale.z);
+
+			obj3d.setTransform(trs);
+			obj3d.applyTransform();
+
+			sceneEditor.inspectorRoot?.refreshFields();
+		};
+		gizmo.onFinishMove = () -> {
+			var prevTransforms = [];
+			var newTransforms = [];
+			var modifiedObj3ds = obj3ds.copy();
+			for (idx => o in modifiedObj3ds) {
+				prevTransforms.push(initialTransform.clone());
+				newTransforms.push(o.getTransform());
+			}
+
+			getView().undo.record((isUndo) -> {
+				var objs = [];
+				for (idx => o in modifiedObj3ds) {
+					o.setTransform(isUndo ? prevTransforms[idx] : newTransforms[idx]);
+					o.applyTransform();
+					if (o.local3d != null)
+						objs.push(o.local3d);
+				}
+				gizmo.moveToObjects(objs);
+			}, true);
+		};
+
+		buildToolbar();
 	}
 
 	override function sync(ctx) {
 		super.sync(ctx);
+		gizmo.update(ctx.elapsedTime);
 	}
 
 	override function getContextMenuContent(content: Array<hide.comp.ContextMenu.MenuItem>) {
@@ -237,8 +355,8 @@ class Prefab extends HuiView<{path: String}> {
 	override function getToolbarWidgets() : Array<HuiElement> {
 		var widgets : Array<HuiElement> = [];
 
-		widgets.push(new hrt.ui.HuiToolbar.HuiTransformWidgets(sceneEditor.gizmo));
-		widgets.push(new hrt.ui.HuiToolbar.HuiSnapWidget(sceneEditor));
+		widgets.push(new hrt.ui.HuiToolbar.HuiTransformWidgets(gizmo));
+		widgets.push(new hrt.ui.HuiToolbar.HuiSnapWidget(this));
 
 		var cameraBtn = new HuiButton();
 		new HuiIcon("camera", cameraBtn);
@@ -451,8 +569,8 @@ class Prefab extends HuiView<{path: String}> {
 		}
 
 		if (objs.length > 0)
-			sceneEditor.gizmo.moveToObjects(objs);
-		sceneEditor.gizmo.visible = objs.length > 0;
+			gizmo.moveToObjects(objs);
+		gizmo.visible = objs.length > 0;
 
 		if (!flags.has(NoRefreshTree)) {
 			@:privateAccess sceneEditor.tree.forceRefreshTree();

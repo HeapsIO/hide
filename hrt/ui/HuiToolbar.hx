@@ -71,7 +71,7 @@ class HuiSnapWidget extends HuiElement {
 		</hui-button>
 	</hui-snap-widget>
 
-	public function new(editor: HuiSceneEditor, ?parent : h2d.Object) {
+	public function new(editor: hide.view.Prefab, ?parent : h2d.Object) {
 		super(parent);
 		initComponent();
 
@@ -191,8 +191,6 @@ class HuiVisibilitySettingsPopup extends HuiPopup {
 		super(parent);
 		initComponent();
 
-		var s3d = @:privateAccess editor.scene.s3d;
-
 		gridTog.toggled = @:privateAccess editor.grid.visible;
 		gridTog.onClick = (_) -> {
 			@:privateAccess editor.grid.visible = @:privateAccess !editor.grid.visible;
@@ -224,7 +222,7 @@ class HuiVisibilitySettingsPopup extends HuiPopup {
 		gizmoTog.toggled = hide.Ide.inst.currentConfig.get(hide.view.Prefab.VISIBILITY_GIZMO_CONFIG_KEY, true);
 		gizmoTog.onClick = (_) -> {
 			gizmoTog.toggled = !gizmoTog.toggled;
-			@:privateAccess editor.gizmo.setVisible(gizmoTog.toggled);
+			// @:privateAccess editor.gizmo.setVisible(gizmoTog.toggled);
 			hide.Ide.inst.currentConfig.set(hide.view.Prefab.VISIBILITY_GIZMO_CONFIG_KEY, gizmoTog.toggled);
 		}
 
@@ -645,19 +643,19 @@ class HuiGridSettingsPopup extends HuiPopup {
 			</hui-element>
 		</hui-grid-settings-popup>
 
-	public function new(sceneEditor: HuiSceneEditor, ?parent: h2d.Object) {
+	public function new(editor: hide.view.Prefab, ?parent: h2d.Object) {
 		super(parent);
 		initComponent();
 
-		forceOnGrid.value = sceneEditor.gizmoForceSnapOnGrid;
+		forceOnGrid.value = editor.gizmoForceSnapOnGrid;
 		forceOnGrid.onValueChanged = () -> {
-			sceneEditor.gizmoForceSnapOnGrid = forceOnGrid.value;
+			editor.gizmoForceSnapOnGrid = forceOnGrid.value;
 		}
 
-		gridSize.value = sceneEditor.gizmoSnapStep;
+		@:privateAccess gridSize.value = editor.sceneEditor.gizmoSnapStep;
 		gridSize.onValueChanged = (_) -> {
-			sceneEditor.gizmoSnapStep = gridSize.value;
-			@:privateAccess sceneEditor.grid.lineSpacing = gridSize.value;
+			@:privateAccess editor.sceneEditor.gizmoSnapStep = gridSize.value;
+			@:privateAccess editor.sceneEditor.grid.lineSpacing = gridSize.value;
 		};
 	}
 }

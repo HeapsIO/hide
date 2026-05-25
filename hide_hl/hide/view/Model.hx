@@ -336,9 +336,6 @@ class Model extends HuiView<{path: String}> {
 			}
 		}
 
-		if (objs.length > 0)
-			sceneEditor.gizmo.moveToObjects(objs);
-
 		refreshInspector();
 	}
 

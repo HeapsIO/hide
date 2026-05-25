@@ -22,11 +22,6 @@ class HuiSceneEditor extends HuiElement {
 		</hui-scene-editor>
 
 	static final RENDER_PROPS_SAVE_KEY = "renderPropsPath";
-
-	static public var gizmoSwitchModeCommand = new hrt.ui.HuiCommands.HuiCommand("Gizmo Switch Mode", {key: hxd.Key.SPACE});
-	static public var gizmoTranslateCommand = new hrt.ui.HuiCommands.HuiCommand("Gizmo Translate", {key: hxd.Key.W});
-	static public var gizmoRotateCommand = new hrt.ui.HuiCommands.HuiCommand("Gizmo Rotate", {key: hxd.Key.E});
-	static public var gizmoScaleCommand = new hrt.ui.HuiCommands.HuiCommand("Gizmo Scale", {key: hxd.Key.R});
 	static public var focusCommand = new hrt.ui.HuiCommands.HuiCommand("Focus Selection", {key: hxd.Key.F});
 
 	public var tree :  hrt.ui.HuiTree<Dynamic>;
@@ -44,7 +39,6 @@ class HuiSceneEditor extends HuiElement {
 	// }
 
 	// Gizmos and guides
-	var gizmo : hrt.tools.Gizmo = null;
 	var grid : hrt.tools.Grid = null;
 	var viewportAxis : hrt.tools.ViewportAxis = null;
 	var outline : hrt.prefab.rfx.Outline;
@@ -53,20 +47,10 @@ class HuiSceneEditor extends HuiElement {
 	var debugGraph: h2d.Graphics;
 	var rootDebugCollider : h3d.scene.Object = null;
 
-	public var gizmoShouldSnap(default, set) : Bool = true;
-	public function set_gizmoShouldSnap(v : Bool) {
-		hide.Ide.inst.currentConfig.set(hide.view.Prefab.GIZMO_SNAP_CONFIG_KEY, v);
-		return gizmoShouldSnap = v;
-	}
 	public var gizmoSnapStep(default, set) : Float = 1.0;
 	public function set_gizmoSnapStep(v : Float) {
 		hide.Ide.inst.currentConfig.set(hide.view.Prefab.GIZMO_SNAP_STEP_CONFIG_KEY, v);
 		return gizmoSnapStep = v;
-	}
-	public var gizmoForceSnapOnGrid(default, set) : Bool = true;
-	public function set_gizmoForceSnapOnGrid(v : Bool) {
-		hide.Ide.inst.currentConfig.set(hide.view.Prefab.GIZMO_SNAP_GRID_CONFIG_KEY, v);
-		return gizmoForceSnapOnGrid = v;
 	}
 
 	override function new(?parent) {
@@ -109,15 +93,9 @@ class HuiSceneEditor extends HuiElement {
 		updateDebugOverlayVisibility();
 	}
 
-	override function sync(ctx) {
-		super.sync(ctx);
-		gizmo.update(ctx.elapsedTime);
-	}
-
 	public function getObjectsAt(sx : Int, sy : Int, ?root : h3d.scene.Object, ?f : h3d.scene.Object -> Bool) {
 		var hits : Array<{ o : h3d.scene.Object, d : Float }> = [];
 		var r = root ?? scene.s3d;
-		var engine = h3d.Engine.getCurrent();
 		var ray = scene.s3d.camera.rayFromScreen(sx, sy, cast scene.calculatedWidth, cast scene.calculatedHeight);
 		for (o in r.findAll((o) -> o)) {
 			var c = o.getCollider() ?? o.getBounds();
@@ -147,7 +125,6 @@ class HuiSceneEditor extends HuiElement {
 		var visibility = hide.Ide.inst.currentConfig.get(hide.view.Prefab.VISIBILITY_OVERLAY_CONFIG_KEY, true);
 
 		grid.visible = visibility && hide.Ide.inst.currentConfig.get(hide.view.Prefab.VISIBILITY_GRID_CONFIG_KEY, true);
-		gizmo.setVisible(visibility && hide.Ide.inst.currentConfig.get(hide.view.Prefab.VISIBILITY_GIZMO_CONFIG_KEY, true));
 		setJointsDebugVisibility(visibility && hide.Ide.inst.currentConfig.get(hide.view.Prefab.VISIBILITY_JOINTS_CONFIG_KEY, true));
 		setColliderDebugVisibility(visibility && hide.Ide.inst.currentConfig.get(hide.view.Prefab.VISIBILITY_COLLIDERS_CONFIG_KEY, true));
 		setMiscDebugVisibility(visibility && hide.Ide.inst.currentConfig.get(hide.view.Prefab.VISIBILITY_COLLIDERS_CONFIG_KEY, true));
@@ -235,7 +212,7 @@ class HuiSceneEditor extends HuiElement {
 		var engine = h3d.Engine.getCurrent();
 		if (engine.driver.hasFeature(Wireframe)) {
 			for (mesh in scene.s3d.getMeshes()) {
-				if (gizmo.isGizmo(mesh) || @:privateAccess grid.plane == mesh)
+				if (@:privateAccess grid.plane == mesh)
 					continue;
 				for (mat in mesh.getMaterials()) {
 					if (mat.name == "$collider")
@@ -341,108 +318,16 @@ class HuiSceneEditor extends HuiElement {
 	}
 
 	function makeGizmos() {
-		this.gizmoShouldSnap = hide.Ide.inst.currentConfig.get(hide.view.Prefab.GIZMO_SNAP_CONFIG_KEY, true);
 		this.gizmoSnapStep = hide.Ide.inst.currentConfig.get(hide.view.Prefab.GIZMO_SNAP_STEP_CONFIG_KEY, 1.0);
-		this.gizmoForceSnapOnGrid = hide.Ide.inst.currentConfig.get(hide.view.Prefab.GIZMO_SNAP_GRID_CONFIG_KEY, true);
-
 		grid?.remove();
-		gizmo?.remove();
 		viewportAxis?.remove();
 
 		viewportAxis = new hrt.tools.ViewportAxis(scene.s3d.camera, cameraController, scene.s2d);
 
 		grid = new hrt.tools.Grid(scene.s3d);
 		grid.lineSpacing = this.gizmoSnapStep;
-		gizmo = new hrt.tools.Gizmo(scene.s3d);
-		gizmo.visible = false;
-		registerCommand(gizmoSwitchModeCommand, View, gizmo.switchMode);
-		registerCommand(gizmoTranslateCommand, View, gizmo.translationMode);
-		registerCommand(gizmoRotateCommand, View, gizmo.rotationMode);
-		registerCommand(gizmoScaleCommand, View, gizmo.scalingMode);
+
 		registerCommand(focusCommand, View, () -> focusSelection());
-
-		var initialTransform = new h3d.Matrix();
-		var initialAbs = new h3d.Matrix();
-		var objs : Array<h3d.scene.Object> = [];
-		gizmo.shouldSnap = () -> { return this.gizmoShouldSnap; };
-		gizmo.snap = (v: Float, mode: hrt.tools.Gizmo.EditMode) -> {
-			if ((!gizmo.shouldSnap() && !hxd.Key.isDown(hxd.Key.CTRL)) || mode.match(hrt.tools.Gizmo.EditMode.Rotation))
-				return v;
-			v = hxd.Math.round(v / this.gizmoSnapStep) * this.gizmoSnapStep;
-			if (!gizmoForceSnapOnGrid)
-				return v;
-			return hxd.Math.round(v / this.grid.lineSpacing) * this.grid.lineSpacing;
-		};
-		gizmo.onStartMove = (handle : hrt.tools.Gizmo.Handle) -> {
-			objs = getSelectedObjects();
-			if (objs.length > 0) {
-				initialTransform.load(objs[0].getTransform());
-				initialAbs.load(objs[0].getAbsPos());
-			}
-		};
-		gizmo.onMove = (offsetPosition, offsetRotation, offsetScale) -> {
-			if (objs.length <= 0)
-				return;
-
-			var obj = objs[0];
-			var parentAbs = obj.parent != null ? obj.parent.getAbsPos() : h3d.Matrix.I();
-			var parentInv = parentAbs.getInverse();
-
-			var trs = new h3d.Matrix();
-			trs.identity();
-
-			if (offsetRotation != null) {
-				offsetRotation.toMatrix(trs);
-				var t = initialAbs.getPosition();
-				trs.prependTranslation(-t.x, -t.y, -t.z);
-				trs.translate(t.x, t.y, t.z);
-			}
-
-			if (offsetPosition != null)
-				trs.translate(offsetPosition.x, offsetPosition.y, offsetPosition.z);
-
-			trs.multiply(initialAbs, trs);
-
-			if (gizmo.shouldSnap() && gizmoForceSnapOnGrid) {
-				var p = trs.getPosition();
-				p.x = hxd.Math.round(p.x / grid.lineSpacing) * grid.lineSpacing;
-				p.y = hxd.Math.round(p.y / grid.lineSpacing) * grid.lineSpacing;
-				p.z = hxd.Math.round(p.z / grid.lineSpacing) * grid.lineSpacing;
-				trs.setPosition(p);
-				gizmo.setPosition(p.x, p.y, p.z);
-			}
-
-			trs.multiply(trs, parentInv);
-
-			if (offsetScale != null)
-				trs.prependScale(offsetScale.x, offsetScale.y, offsetScale.z);
-
-			obj.setTransform(trs);
-			// obj3d.setTransform(trs);
-			// obj3d.applyTransform();
-
-			inspectorRoot?.refreshFields();
-		};
-		gizmo.onFinishMove = () -> {
-			// var prevTransforms = [];
-			// var newTransforms = [];
-			// var modifiedObj3ds = obj3ds.copy();
-			// for (idx => o in modifiedObj3ds) {
-			// 	prevTransforms.push(initialTransform.clone());
-			// 	newTransforms.push(o.getTransform());
-			// }
-
-			// getView().undo.record((isUndo) -> {
-			// 	var objs = [];
-			// 	for (idx => o in modifiedObj3ds) {
-			// 		o.setTransform(isUndo ? prevTransforms[idx] : newTransforms[idx]);
-			// 		o.applyTransform();
-			// 		if (o.local3d != null)
-			// 			objs.push(o.local3d);
-			// 	}
-			// 	gizmo.moveToObjects(objs);
-			// }, true);
-		};
 	}
 
 	function getEnvMap() {
