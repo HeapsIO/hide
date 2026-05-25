@@ -71,7 +71,7 @@ class HuiSnapWidget extends HuiElement {
 		</hui-button>
 	</hui-snap-widget>
 
-	public function new(editor: HuiPrefabEditor, ?parent : h2d.Object) {
+	public function new(editor: HuiSceneEditor, ?parent : h2d.Object) {
 		super(parent);
 		initComponent();
 
@@ -97,7 +97,7 @@ class HuiVisibilityWidget extends HuiElement {
 		</hui-button>
 	</hui-visibility-widget>
 
-	public function new(editor: HuiPrefabEditor, ?parent : h2d.Object) {
+	public function new(editor: HuiSceneEditor, ?parent : h2d.Object) {
 		super(parent);
 		initComponent();
 
@@ -187,7 +187,7 @@ class HuiVisibilitySettingsPopup extends HuiPopup {
 			</hui-element>
 		</hui-visibility-settings-popup>
 
-	public function new(editor : HuiPrefabEditor, ?parent: h2d.Object) {
+	public function new(editor : HuiSceneEditor, ?parent: h2d.Object) {
 		super(parent);
 		initComponent();
 
@@ -271,11 +271,11 @@ class HuiSceneFiltersWidget extends HuiElement {
 
 	public var filters = new Map<String, Bool>();
 	var prefab : hrt.prefab.Prefab;
-	var editor : hrt.ui.HuiPrefabEditor;
+	var editor : hrt.ui.HuiSceneEditor;
 
-	public function new(editor : hrt.ui.HuiPrefabEditor, ?parent : h2d.Object) {
+	public function new(editor : hrt.ui.HuiSceneEditor, ?parent : h2d.Object) {
 		super(parent);
-		this.prefab = @:privateAccess editor.prefab;
+		this.prefab = null;//@:privateAccess editor.prefab;
 		this.editor = editor;
 		initComponent();
 		getSceneFilters();
@@ -359,9 +359,9 @@ class HuiRenderPropsWidget extends HuiElement {
 
 	public static var RENDER_PROPS_KEY = "renderProps";
 
-	var editor : hrt.ui.HuiPrefabEditor;
+	var editor : hrt.ui.HuiSceneEditor;
 
-	public function new(editor : hrt.ui.HuiPrefabEditor, ?parent : h2d.Object) {
+	public function new(editor : hrt.ui.HuiSceneEditor, ?parent : h2d.Object) {
 		super(parent);
 		this.editor = editor;
 		initComponent();
@@ -370,21 +370,21 @@ class HuiRenderPropsWidget extends HuiElement {
 			var items : Array<hrt.ui.HuiMenu.MenuItem> = [];
 
 
-			if (editor.renderPropsPath == null) {
-				items.push({enabled: false, label: "Render already in scene"});
-			} else {
-				var renderProps = editor.getRenderPropsPaths();
-				items.push({label: "Edit", checked: false, stayOpen: true});
-				items.push({isSeparator: true});
+			// if (editor.renderPropsPath == null) {
+			// 	items.push({enabled: false, label: "Render already in scene"});
+			// } else {
+				// var renderProps = editor.getRenderPropsPaths();
+				// items.push({label: "Edit", checked: false, stayOpen: true});
+				// items.push({isSeparator: true});
 
-				if (renderProps == null || renderProps.length == 0) {
-					items.push({enabled: false, label: "No render props found"});
-				} else {
-					for (renderProp in renderProps) {
-						items.push({label: renderProp.name, radio: () -> renderProp.value == editor.renderPropsPath, stayOpen: true, click: () -> editor.setRenderPropsPath(renderProp.value)});
-					}
-				}
-			}
+				// if (renderProps == null || renderProps.length == 0) {
+				// 	items.push({enabled: false, label: "No render props found"});
+				// } else {
+					// for (renderProp in renderProps) {
+					// 	items.push({label: renderProp.name, radio: () -> renderProp.value == editor.renderPropsPath, stayOpen: true, click: () -> editor.setRenderPropsPath(renderProp.value)});
+					// }
+				// }
+			// }
 
 
 
@@ -410,12 +410,13 @@ class HuiRenderPropsWidget extends HuiElement {
 	}
 
 	public function getCurrentRenderProps() : String {
-		return hide.Ide.inst.getLocalStorage(@:privateAccess editor.prefab.shared.currentPath + "/" + RENDER_PROPS_KEY);
+		return null;
+		// return hide.Ide.inst.getLocalStorage(@:privateAccess editor.prefab.shared.currentPath + "/" + RENDER_PROPS_KEY);
 	}
 
 	public function setCurrentRenderProps(value : String) {
-		hide.Ide.inst.saveLocalStorage(@:privateAccess editor.prefab.shared.currentPath + "/" + RENDER_PROPS_KEY, value);
-		@:privateAccess editor.reload();
+		// hide.Ide.inst.saveLocalStorage(@:privateAccess editor.prefab.shared.currentPath + "/" + RENDER_PROPS_KEY, value);
+		// @:privateAccess editor.reload();
 	}
 }
 
@@ -584,7 +585,7 @@ class HuiCameraSettingsPopup extends HuiPopup {
 			</hui-element>
 		</hui-camera-settings-popup>
 
-	public function new(editor : HuiPrefabEditor, ?parent: h2d.Object) {
+	public function new(editor : HuiSceneEditor, ?parent: h2d.Object) {
 		super(parent);
 		initComponent();
 
@@ -644,19 +645,19 @@ class HuiGridSettingsPopup extends HuiPopup {
 			</hui-element>
 		</hui-grid-settings-popup>
 
-	public function new(prefabEditor: HuiPrefabEditor, ?parent: h2d.Object) {
+	public function new(sceneEditor: HuiSceneEditor, ?parent: h2d.Object) {
 		super(parent);
 		initComponent();
 
-		forceOnGrid.value = prefabEditor.gizmoForceSnapOnGrid;
+		forceOnGrid.value = sceneEditor.gizmoForceSnapOnGrid;
 		forceOnGrid.onValueChanged = () -> {
-			prefabEditor.gizmoForceSnapOnGrid = forceOnGrid.value;
+			sceneEditor.gizmoForceSnapOnGrid = forceOnGrid.value;
 		}
 
-		gridSize.value = prefabEditor.gizmoSnapStep;
+		gridSize.value = sceneEditor.gizmoSnapStep;
 		gridSize.onValueChanged = (_) -> {
-			prefabEditor.gizmoSnapStep = gridSize.value;
-			@:privateAccess prefabEditor.grid.lineSpacing = gridSize.value;
+			sceneEditor.gizmoSnapStep = gridSize.value;
+			@:privateAccess sceneEditor.grid.lineSpacing = gridSize.value;
 		};
 	}
 }

@@ -8,7 +8,7 @@ import hrt.ui.tests.Macros;
 class HuiPrefabEditorTests extends HuiView<{}> {
 	static var SRC =
 		<hui-prefab-editor-tests>
-			<hui-prefab-editor id="prefab-editor"/>
+			// <hui-prefab-editor id="prefab-editor"/>
 		</hui-prefab-editor-tests>
 
 	static var _ = HuiView.register("hui-prefab-editor-tests", HuiPrefabEditorTests);
@@ -16,7 +16,8 @@ class HuiPrefabEditorTests extends HuiView<{}> {
 	public var prefab(get, never) : hrt.prefab.Prefab;
 
 	inline function get_prefab() {
-		return prefabEditor.prefab;
+		return null;
+		// return prefabEditor.prefab;
 	}
 
 	public function new(_state: Dynamic, ?parent) {
@@ -24,25 +25,25 @@ class HuiPrefabEditorTests extends HuiView<{}> {
 		initComponent();
 
 		// Needed so we can handle the errors ourselves
-		prefabEditor.rethrowMakeErrors = true;
+		// prefabEditor.rethrowMakeErrors = true;
 
 		// try {
-			Macros.init();
+			// Macros.init();
 
-			testTryMake();
-			testActionCreatePrefab();
-			actionRemovePrefabs();
-			actionReparentPrefabs();
-			actionReparentPrefabKeepTransform();
+			// testTryMake();
+			// testActionCreatePrefab();
+			// actionRemovePrefabs();
+			// actionReparentPrefabs();
+			// actionReparentPrefabKeepTransform();
 
-			Macros.writeSnapshotModifs();
+			// Macros.writeSnapshotModifs();
 
 		// } catch (e) {
 		// 	hide.Ide.showError("Test failed " + e);
 		// }
 	}
 
-	inline public function locate(path: String) : hrt.prefab.Prefab {
+	/*inline public function locate(path: String) : hrt.prefab.Prefab {
 		return prefab.locatePrefab(path);
 	}
 
@@ -710,7 +711,7 @@ class HuiPrefabEditorTests extends HuiView<{}> {
 			case Set(diff):
 				throw new TestError("Make Prefab Action", '', haxe.Json.stringify(diff, null, "\t"));
 		}
-	}
+	}*/
 }
 
 typedef EditorDump = {

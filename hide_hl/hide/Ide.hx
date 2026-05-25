@@ -193,6 +193,8 @@ class Ide extends hide.tools.IdeData {
 			switch (path.ext) {
 				case "prefab", "fx":
 					openView(new hide.view.Prefab({path: filePath}), Main);
+				case "fbx":
+					openView(new hide.view.Model({path: filePath}), Main);
 			}
 		} catch (e) {
 			showError('Could not open file ${getRelPath(filePath)} :<br/>$e');
