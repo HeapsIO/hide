@@ -140,6 +140,10 @@ class Model extends HuiView<{path: String}> {
 
 		var path = Ide.inst.getRelPath(state.path);
 		sceneEditor.load = () -> load(path);
+		sceneEditor.onScenePush = (e) -> {
+			if (e.button == 0)
+				setSelection(sceneEditor.getObjectsAt(cast e.relX, cast e.relY, obj, (o) -> Std.isOfType(o, h3d.scene.Mesh)));
+		}
 
 		// undo.onAfterChange = () -> {
 		// 	hasUnsavedChanges = prefabEditor.hasUnsavedChanges();

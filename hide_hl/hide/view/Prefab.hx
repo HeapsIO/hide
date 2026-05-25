@@ -41,9 +41,10 @@ class Prefab extends HuiView<{path: String}> {
 
 	public static var VIEW_MODE_TYPE = "editor.visibility.viewModeType";
 
+	public var config(default, null) : hide.Config;
+	var prefabLookup : Map<h3d.scene.Object, hrt.prefab.Object3D> = new Map();
 	var rethrowMakeErrors: Bool = false;
 	var errorMessage : h2d.Text;
-	public var config(default, null) : hide.Config;
 	var prefab: hrt.prefab.Prefab;
 	var interactives: Map<hrt.prefab.Prefab, h3d.scene.Interactive> = [];
 	var selectedPrefabs: Map<hrt.prefab.Prefab, Bool> = [];
@@ -307,6 +308,12 @@ class Prefab extends HuiView<{path: String}> {
 			}
 			for (p in prefab.flatten()) {
 				makePrefabInteractive(p);
+				var obj3d = Std.downcast(p, hrt.prefab.Object3D);
+				if (obj3d != null && obj3d.local3d != null) {
+					var objects = obj3d.local3d.findAll((o) -> Std.downcast(o, h3d.scene.Mesh));
+					for (o in objects)
+						prefabLookup.set(o, obj3d);
+				}
 			}
 		} catch (e) {
 			removePrefabInstance(prefab);
@@ -872,25 +879,30 @@ class Prefab extends HuiView<{path: String}> {
 
 	function onScenePush(e: hxd.Event) : Void {
 		if (e.button == 0) {
+			var prefabs = [];
+			var objs = sceneEditor.getObjectsAt(cast e.relX, cast e.relY, prefab.findFirstLocal3d(), (o) -> Std.isOfType(o, h3d.scene.Mesh));
+			var newSelection : Array<hrt.prefab.Prefab> = [];
+			for (o in objs) {
+				var p = prefabLookup.get(o);
+				if (p == null)
+					continue;
+				prefabs.push(p);
+			}
+
 			var mouseX = e.relX - sceneEditor.scene.absX;
 			var mouseX = e.relY - sceneEditor.scene.absY;
 
 			lastPushX = e.relX;
 			lastPushY = e.relY;
 
-			var prefabs = getAllPrefabsUnder(e.relX, e.relY);
-
 			var newPrefab : hrt.prefab.Prefab = null;
-
 			if (prefabs.length > 0) {
-
-				newPrefab = prefabs[0].prefab;
-
+				newPrefab = prefabs[0];
 				if (!movedSinceLastPush) {
 					// select next prefab in the selection stack
-					for (i => under in prefabs) {
-						if (selectedPrefabs.get(under.prefab)) {
-							newPrefab = prefabs[(i + 1) % prefabs.length].prefab;
+					for (idx => p in prefabs) {
+						if (selectedPrefabs.get(p)) {
+							newPrefab = prefabs[(idx + 1) % prefabs.length];
 							break;
 						}
 					}
@@ -931,81 +943,6 @@ class Prefab extends HuiView<{path: String}> {
 		}
 
 		makePrefabInteractive(prefab);
-	}
-
-	public function getAllPrefabsUnder(x: Float, y: Float) : Array<{d: Float, prefab: hrt.prefab.Prefab}> {
-		var camera = sceneEditor.scene.s3d.camera;
-		var ray = camera.rayFromScreen(x, y, Std.int(sceneEditor.scene.calculatedWidth), Std.int(sceneEditor.scene.calculatedHeight));
-
-		var selectables = getAllSelectable(true, true);
-
-		var hits : Array<{d: Float, prefab: hrt.prefab.Prefab}> = [];
-		var order2d : Map<hrt.prefab.Prefab, Int> = null;
-
-		var tmpRay = new h3d.col.Ray();
-
-		for (selectable in selectables) {
-			var int3d = interactives.get(selectable);
-			if (int3d != null) {
-				var localRay = tmpRay;
-				localRay.load(ray);
-				localRay.transform(int3d.getAbsPos().getInverse());
-
-				var distance = int3d.shape?.rayIntersection(localRay, false);
-				if (distance < 0)
-					continue;
-
-				var distance = int3d.preciseShape?.rayIntersection(localRay, true) ?? distance;
-
-				if (distance > 0) {
-					hits.push({d: distance, prefab: selectable});
-				}
-			}
-		}
-
-		hits.sort((a,b) -> Reflect.compare(a.d, b.d));
-
-		return hits;
-	}
-
-	public function getAllSelectable(include3d: Bool, include2d: Bool) : Array<hrt.prefab.Prefab> {
-		var ret = [];
-
-		function rec(prefab: hrt.prefab.Prefab) {
-			if (prefab == null)
-				return;
-
-			var o3d = prefab.to(hrt.prefab.Object3D);
-			var o2d = prefab.to(hrt.prefab.Object2D);
-
-			var visible = if (o3d != null) {
-				o3d.visible;
-			} else if (o2d != null) {
-				o2d.visible;
-			} else true;
-
-			if (interactives.get(prefab) != null) ret.push(prefab);
-
-			// if (!visible || isHidden(prefab))
-			// 	return;
-			// if (!isLocked(prefab)) {
-			// 	if (interactives.get(prefab) != null) ret.push(prefab);
-			// 	//else if (interactives2d.get(prefab) != null) ret.push(prefab);
-			// }
-
-			for (child in prefab.children) {
-				rec(child);
-			}
-
-			var ref = Std.downcast(prefab, hrt.prefab.Reference);
-			if (ref != null && ref.editMode != None) {
-				rec(ref.refInstance);
-			}
-		}
-
-		rec(prefab);
-
-		return ret;
 	}
 
 	static function dumpObject(obj: h3d.scene.Object, pad: String = "") : String {

@@ -114,6 +114,36 @@ class HuiSceneEditor extends HuiElement {
 		gizmo.update(ctx.elapsedTime);
 	}
 
+	public function getObjectsAt(sx : Int, sy : Int, ?root : h3d.scene.Object, ?f : h3d.scene.Object -> Bool) {
+		var hits : Array<{ o : h3d.scene.Object, d : Float }> = [];
+		var r = root ?? scene.s3d;
+		var engine = h3d.Engine.getCurrent();
+		var ray = scene.s3d.camera.rayFromScreen(sx, sy, cast scene.calculatedWidth, cast scene.calculatedHeight);
+		for (o in r.findAll((o) -> o)) {
+			// TODO: use better collision than bounds
+			var c = o.getBounds();
+			if (c == null)
+				continue;
+
+			var dist = c.rayIntersection(ray, true);
+			if ((f != null && f(o)) && dist >= 0) {
+				var added = false;
+				for (idx in 0...hits.length) {
+					if (hits[idx].d > dist) {
+						hits.insert(idx, { o: o, d : dist });
+						added = true;
+						break;
+					}
+				}
+
+				if (!added)
+					hits.push({ o: o, d : dist });
+			}
+		}
+
+		return [for (h in hits) h.o];
+	}
+
 	public function updateDebugOverlayVisibility() {
 		var visibility = hide.Ide.inst.currentConfig.get(hide.view.Prefab.VISIBILITY_OVERLAY_CONFIG_KEY, true);
 
