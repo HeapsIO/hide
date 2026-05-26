@@ -429,8 +429,6 @@ class ShaderGraph extends hrt.prefab.Prefab {
 					var lastTime = @:privateAccess entry.getModifTime();
 					if (cache.lastTime >= lastTime) {
 						cachedDef = cache.def;
-					} else {
-						trace('Shadergraph cache miss for $path');
 					}
 				} else {
 					// If not a local entry, force the use of the cache
@@ -439,8 +437,6 @@ class ShaderGraph extends hrt.prefab.Prefab {
 				#else
 				cachedDef = cache.def;
 				#end
-			} else {
-				trace('Shadergraph cache miss for $path');
 			}
 		}
 
