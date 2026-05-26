@@ -279,12 +279,12 @@ class Image extends FileView {
 				convertRule = { convert : "dds", format : format.val(), mips : mips.is(':checked'), priority: 10000000 };
 
 				if (size.val() != texMaxSize) {
-					Reflect.setField(convertRule, "size", size.val());
+					Reflect.setField(convertRule, "size", Std.parseInt(size.val()));
 					Reflect.setField(convertRule, "filter", filterToParam(filter.val()));
 				}
 
 				if (useAlpha.is(':checked'))
-					Reflect.setField(convertRule, "alpha", alpha.val());
+					Reflect.setField(convertRule, "alpha", Std.parseInt(alpha.val()));
 			}
 
 			if (sys.FileSystem.exists(propsFilePath)) {
