@@ -395,11 +395,20 @@ class ShaderGraphGenContext {
 		return sortedNodes;
 	}
 }
+
+@:structInit
+class ShaderGraphCacheEntry {
+	public var lastTime : Float;
+	public var def: hrt.prefab.Cache.ShaderDef;
+}
+
 @:privateAccess(hrt.shgraph.Graph)
 class ShaderGraph extends hrt.prefab.Prefab {
 
 	var graphs : Array<Graph> = [];
 	public var variables : Array<ShaderGraphVariable> = [];
+
+	static var shaderGraphCache: Map<String, ShaderGraphCacheEntry> = [];
 
 	var cachedDef : hrt.prefab.Cache.ShaderDef = null;
 
@@ -409,6 +418,31 @@ class ShaderGraph extends hrt.prefab.Prefab {
 		super.load(json);
 		graphs = [];
 		parametersAvailable = [];
+
+		if (cachedDef == null) {
+			var path = this.shared.prefabSource;
+			var cache = shaderGraphCache.get(path);
+			if (cache != null) {
+				#if !release
+				var entry = Std.downcast(hxd.res.Loader.currentInstance.load(path).entry,hxd.fs.LocalFileSystem.LocalEntry);
+				if (entry != null) {
+					var lastTime = @:privateAccess entry.getModifTime();
+					if (cache.lastTime >= lastTime) {
+						cachedDef = cache.def;
+					} else {
+						trace('Shadergraph cache miss for $path');
+					}
+				} else {
+					// If not a local entry, force the use of the cache
+					cachedDef = cache.def;
+				}
+				#else
+				cachedDef = cache.def;
+				#end
+			} else {
+				trace('Shadergraph cache miss for $path');
+			}
+		}
 
 		for (variable in json.variables ?? []) {
 			variables.push({
@@ -657,7 +691,17 @@ class ShaderGraph extends hrt.prefab.Prefab {
 		@:privateAccess shared.data = shaderData;
 		@:privateAccess shared.initialize();
 
-		cachedDef = {shader : shared, inits: inits}
+		cachedDef = {shader : shared, inits: inits};
+
+		var lastTime = 0.0;
+		#if !release
+		var entry = Std.downcast(hxd.res.Loader.currentInstance.load(this.shared.prefabSource).entry,hxd.fs.LocalFileSystem.LocalEntry);
+		if (entry != null) {
+			lastTime = @:privateAccess entry.getModifTime();
+		}
+		#end
+		shaderGraphCache.set(this.shared.prefabSource, {lastTime: lastTime, def: cachedDef});
+
 		return cachedDef;
 	}
 
