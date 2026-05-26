@@ -5826,6 +5826,7 @@ class SceneEditor {
 		hrt.shader.GradientMapLife,
 		hrt.shader.TextureMult,
 		hrt.shader.EmissiveMult,
+		hrt.shader.GradientFlat,
 	];
 
 	function getNewShaderMenu(parentElt: PrefabElement, ?onMake: PrefabElement->Void) : hide.comp.ContextMenu.MenuItem {
