@@ -15,9 +15,10 @@ class HuiCategory extends HuiElement {
 	inline function set_headerName(s: String) return headerText.text = s;
 	inline function get_headerName() return headerText.text;
 
-	public function new(?parent: h2d.Object) {
+	public function new(?headerName : String, ?parent: h2d.Object) {
 		super(parent);
 		initComponent();
+		this.headerName = headerName;
 
 		header.onClick = (e) -> {
 			isOpen = !isOpen;

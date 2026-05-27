@@ -4,28 +4,44 @@ import hrt.ui.*;
 #if hui
 class HuiModelInspector extends HuiElement {
 	static var SRC = <hui-model-inspector>
-		<hui-element class="header"><hui-text("Infos")/></hui-element>
-		<hui-element class="horizontal"><hui-text("Objects") class="label"/><hui-text("1") class="value" id="obj-count"/></hui-element>
-		<hui-element class="horizontal"><hui-text("Meshes") class="label"/><hui-text("1") class="value" id="meshes-count"/></hui-element>
-		<hui-element class="horizontal"><hui-text("Materials") class="label"/><hui-text("1") class="value" id="mats-count"/></hui-element>
-		<hui-element class="horizontal"><hui-text("Draws") class="label"/><hui-text("1") class="value" id="draws-count"/></hui-element>
-		<hui-element class="horizontal"><hui-text("Bones") class="label"/><hui-text("1") class="value" id="bones-count"/></hui-element>
-		<hui-element class="horizontal"><hui-text("Vertexes") class="label"/><hui-text("1") class="value" id="vertices-count"/></hui-element>
-		<hui-element class="horizontal"><hui-text("Triangles") class="label"/><hui-text("1") class="value" id="triangles-count"/></hui-element>
-		<hui-element class="horizontal"><hui-text("Vertex Format") class="label"/><hui-text("1") class="value" id="vertex-format"/></hui-element>
-		<hui-element class="horizontal"><hui-text("Collider Vertices") class="label"/><hui-text("1") class="value" id="collider-vertices"/></hui-element>
-		<hui-element class="horizontal"><hui-text("Collider Triangle") class="label"/><hui-text("1") class="value" id="collider-triangles"/></hui-element>
-		<hui-element class="horizontal"><hui-text("Local Pos") class="label"/><hui-text("1") class="value" id="local-pos"/></hui-element>
-		<hui-element class="horizontal"><hui-text("Local Rot") class="label"/><hui-text("1") class="value" id="local-rot"/></hui-element>
-		<hui-element class="horizontal"><hui-text("Local Scale") class="label"/><hui-text("1") class="value" id="local-scale"/></hui-element>
-		<hui-element class="horizontal"><hui-text("Total Size") class="label"/><hui-text("1") class="value" id="total-size"/></hui-element>
-		<hui-element class="horizontal"><hui-text("Mesh Size") class="label"/><hui-text("1") class="value" id="mesh-size"/></hui-element>
+		<hui-category("Info")>
+			<hui-element class="horizontal"><hui-text("Objects") class="label"/><hui-text("1") class="value" id="obj-count"/></hui-element>
+			<hui-element class="horizontal"><hui-text("Meshes") class="label"/><hui-text("1") class="value" id="meshes-count"/></hui-element>
+			<hui-element class="horizontal"><hui-text("Materials") class="label"/><hui-text("1") class="value" id="mats-count"/></hui-element>
+			<hui-element class="horizontal"><hui-text("Draws") class="label"/><hui-text("1") class="value" id="draws-count"/></hui-element>
+			<hui-element class="horizontal"><hui-text("Bones") class="label"/><hui-text("1") class="value" id="bones-count"/></hui-element>
+			<hui-element class="horizontal"><hui-text("Vertexes") class="label"/><hui-text("1") class="value" id="vertices-count"/></hui-element>
+			<hui-element class="horizontal"><hui-text("Triangles") class="label"/><hui-text("1") class="value" id="triangles-count"/></hui-element>
+			<hui-element class="horizontal"><hui-text("Vertex Format") class="label"/><hui-text("1") class="value" id="vertex-format"/></hui-element>
+			<hui-element class="horizontal"><hui-text("Collider Vertices") class="label"/><hui-text("1") class="value" id="collider-vertices"/></hui-element>
+			<hui-element class="horizontal"><hui-text("Collider Triangle") class="label"/><hui-text("1") class="value" id="collider-triangles"/></hui-element>
+			<hui-element class="horizontal"><hui-text("Local Pos") class="label"/><hui-text("1") class="value" id="local-pos"/></hui-element>
+			<hui-element class="horizontal"><hui-text("Local Rot") class="label"/><hui-text("1") class="value" id="local-rot"/></hui-element>
+			<hui-element class="horizontal"><hui-text("Local Scale") class="label"/><hui-text("1") class="value" id="local-scale"/></hui-element>
+			<hui-element class="horizontal"><hui-text("Total Size") class="label"/><hui-text("1") class="value" id="total-size"/></hui-element>
+			<hui-element class="horizontal"><hui-text("Mesh Size") class="label"/><hui-text("1") class="value" id="mesh-size"/></hui-element>
+		</hui-category>
+		<hui-category("LODs")>
+			<hui-element class="horizontal"><hui-text("LOD Count") class="label"/><hui-text("1") class="value" id="lod-count"/></hui-element>
+			<hui-element class="horizontal"><hui-text("LOD Vertices") class="label"/><hui-text("1") class="value" id="lod-vertices-count"/></hui-element>
+			<hui-element class="horizontal"><hui-text("Force Display LOD") class="label"/><hui-select id="force-display-lod" class="value"></hui-select></hui-element>
+			<hui-element class="horizontal"><hui-text("Max LOD") class="label"/><hui-input-box id="max-lod" class="value"></hui-input-box></hui-element>
+			<hui-lod-line id="lod-line"></hui-lod-line>
+			<hui-button class="full" id="copy-lods"><hui-text("Copy")></hui-text></hui-button>
+			<hui-button class="full" id="paste-lods"><hui-text("Paste")></hui-text></hui-button>
+			<hui-button class="full" id="reset-lods"><hui-text("Reset Defaults")></hui-text></hui-button>
+		</hui-category>
 	</hui-model-inspector>
 
 	public function new(obj : h3d.scene.Object, ?parent: h2d.Object) {
 		super(parent);
 		initComponent();
 
+		updateInfos(obj);
+		updateLODsInspector(obj);
+	}
+
+	public function updateInfos(obj : h3d.scene.Object) {
 		var meshes = obj.getMeshes();
 		var vertCount = 0, triCount = 0, materialDraws = 0, materialCount = 0, jointsCount = 0;
 		var uniqueMats = new Map();
@@ -118,6 +134,108 @@ class HuiModelInspector extends HuiElement {
 			localScale.text = 'X: ${round(s.x)}  Y: ${round(s.y)}  Z: ${round(s.z)}';
 		}
 	}
+
+	public function updateLODsInspector(obj : h3d.scene.Object) {
+		var mesh = Std.downcast(obj, h3d.scene.Mesh);
+		var hmd = Std.downcast(mesh?.primitive, h3d.prim.HMDModel);
+
+		if (hmd == null || hmd.lodCount() <= 1)
+			return;
+
+		lodCount.text = '${hmd.lodCount()}';
+		lodVerticesCount.text = '${@:privateAccess hmd.lods[mesh.getLodIndex()].vertexCount}';
+
+		var options = [];
+		options.push({ label: 'None', value: -1 });
+		for (idx in 0...hmd.lodCount())
+			options.push({ label: 'LOD ${idx}', value: idx });
+		forceDisplayLod.items = options;
+		forceDisplayLod.value = mesh.forcedLod;
+		forceDisplayLod.onValueChanged = () -> { mesh.forcedLod = forceDisplayLod.value; updateLODsInspector(obj); };
+
+		lodLine.mesh = mesh;
+
+		maxLod.text = '${lodLine.maxLodRatio * 100}';
+		maxLod.onChange = (isTempChange) -> {
+			if (isTempChange)
+				return;
+			var v = Std.parseFloat(maxLod.text) / 100;
+			if (hxd.Math.isNaN(v)) {
+				maxLod.text = '${lodLine.maxLodRatio * 100}';
+				return;
+			}
+
+			var oldVal = lodLine.maxLodRatio;
+			var newVal = v;
+			newVal = Math.max(@:privateAccess lodLine.getLodRatio(0), newVal);
+
+			var exec = function(undo) {
+				var m = undo ? oldVal : newVal;
+				maxLod.text = '${m * 100}';
+				lodLine.maxLodRatio = m;
+				@:privateAccess lodLine.updateAreas();
+			};
+
+			getView().undo.record(exec, false);
+			exec(false);
+		}
+
+		copyLods.onClick = (_) -> {
+			var config = @:privateAccess hmd.lodConfig?.copy();
+			hxd.System.setClipboardText(hide.Ide.inst.toJSON(config));
+			Ide.showInfo("Copied current lod config to the clipboard");
+		}
+
+		pasteLods.onClick = (_) -> {
+			var prevConfig = @:privateAccess hmd.lodConfig?.copy();
+			var newConfig = try haxe.Json.parse(hxd.System.getClipboardText()) catch(e) null;
+
+			if (newConfig is Array) {
+				for (value in (newConfig:Array<Dynamic>)) {
+					if (value is Float || value is Int) {
+						continue;
+					}
+					newConfig = null;
+					break;
+				}
+			}
+
+			if (newConfig == null) {
+				Ide.showError("Couldn't paste config from clipboard (invalid data)");
+				return;
+			}
+
+			var exec = function(undo) {
+				if (undo) {
+					@:privateAccess hmd.lodConfig = prevConfig;
+				} else {
+					@:privateAccess hmd.lodConfig = cast newConfig;
+				}
+				@:privateAccess lodLine.updateAreas();
+			}
+
+			getView().undo.record(exec, true);
+			exec(false);
+			Ide.showInfo("Pasted config from the clipboard");
+		};
+
+		resetLods.onClick = (_) -> {
+			var prevConfig = @:privateAccess hmd.lodConfig?.copy();
+			@:privateAccess hmd.lodConfig = h3d.prim.ModelDatabase.current.getDefaultLodConfig(hmd.lib.resource.entry.directory);
+			Ide.showInfo('Lod config reset for object : ${obj.name}');
+			@:privateAccess lodLine.updateAreas();
+
+			getView().undo.record((isUndo) -> {
+				if (isUndo) {
+					@:privateAccess hmd.lodConfig = prevConfig;
+				} else {
+					@:privateAccess hmd.lodConfig = null;
+				}
+
+				@:privateAccess lodLine.updateAreas();
+			}, true);
+		}
+	}
 }
 
 @:access(hrt.ui.HuiSceneEditor)
@@ -202,6 +320,15 @@ class Model extends HuiView<{path: String}> {
 
 			return "";
 		};
+		sceneEditor.tree.getItemIcon = (item : Dynamic) -> {
+			if (Std.isOfType(item, h3d.scene.Object))
+				return HuiRes.icons.cube;
+			if (Std.isOfType(item, h3d.mat.Material))
+				return HuiRes.icons.material;
+			if (Std.isOfType(item, h3d.scene.Skin.Joint))
+				return HuiRes.icons.bone;
+			return HuiRes.icons.file_blank;
+		}
 		sceneEditor.tree.getIdentifier = (item: Dynamic) -> {
 			var o = Std.downcast(item, h3d.scene.Object);
 			if (o == null) return item.name;

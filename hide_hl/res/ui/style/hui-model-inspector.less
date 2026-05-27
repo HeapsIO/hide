@@ -1,19 +1,8 @@
 hui-model-inspector {
 	layout: vertical;
 
-	.header {
-		margin-top: 5;
-		height: 15;
-
-		fill-width: true;
-		> hui-background {
-			background: @color-gray-5;
-		}
-
-		>hui-text {
-			text-align: center;
-			valign: middle;
-		}
+	hui-category {
+		padding-bottom: 5;
 	}
 
 	.label {
@@ -22,10 +11,16 @@ hui-model-inspector {
 		margin-top: 5;
 		auto-size: 1;
 		color: darken(@text-color, 20%);
+		valign: middle;
 	}
 
 	.value {
 		auto-size: 2;
-		text-align: left;
+	}
+
+	.full {
+		margin-top: 5;
+		auto-size: 1;
+		fill-width: true;
 	}
 }

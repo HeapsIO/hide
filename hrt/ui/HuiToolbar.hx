@@ -56,7 +56,7 @@ class HuiTransformWidgets extends HuiElement {
 		};
 
 		gizmo.onChangeTransformSpace = (isLocalTransform) -> {
-			transformSpaceIcon.setIcon(isLocalTransform ? "local" : "world");
+			transformSpaceIcon.setIcon(isLocalTransform ? "cube" : "world");
 		}
 	}
 }

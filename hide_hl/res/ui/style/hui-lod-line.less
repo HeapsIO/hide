@@ -1,0 +1,57 @@
+hui-lod-line {
+	layout: stack;
+	margin-top: 10;
+	margin-bottom: 10;
+
+	#cursor {
+		layout: vertical;
+		position: absolute;
+		#bar {
+			height: 30;
+			width: 3;
+			background-type: hui;
+			> hui-background {
+				background: black;
+			}
+		}
+
+		#label {
+			// text-align: center;
+		}
+	}
+
+	#areas {
+		layout: stack;
+		fill-width: true;
+		height: 30;
+		max-width: 300;
+		overflow:hidden;
+
+		background-type: hui;
+		> hui-background {
+			background: red;
+		}
+
+		.area {
+			height: 30;
+			layout: vertical;
+			padding-top: 2;
+			padding-left: 2;
+			overflow: hidden;
+
+			.area-label {
+				color: @color-gray-0;
+			}
+
+			.area-ratio {
+				color: @color-gray-0;
+			}
+		}
+
+		.handle {
+			height: 30;
+			width: 5;
+			cursor: ew-resize;
+		}
+	}
+}
