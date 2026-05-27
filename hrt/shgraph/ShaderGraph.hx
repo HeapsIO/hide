@@ -423,7 +423,7 @@ class ShaderGraph extends hrt.prefab.Prefab {
 			var path = this.shared.prefabSource;
 			var cache = shaderGraphCache.get(path);
 			if (cache != null) {
-				#if !release
+				#if (!release && (sys || nodejs))
 				var entry = try Std.downcast(hxd.res.Loader.currentInstance.load(this.shared.prefabSource).entry,hxd.fs.LocalFileSystem.LocalEntry) catch(e) null;
 				if (entry != null) {
 					var lastTime = @:privateAccess entry.getModifTime();
@@ -704,7 +704,7 @@ class ShaderGraph extends hrt.prefab.Prefab {
 		cachedDef = {shader : shared, inits: inits};
 
 		var lastTime = 0.0;
-		#if !release
+		#if (!release && (sys || nodejs))
 		var entry = try Std.downcast(hxd.res.Loader.currentInstance.load(this.shared.prefabSource).entry,hxd.fs.LocalFileSystem.LocalEntry) catch(e) null;
 		if (entry != null) {
 			lastTime = @:privateAccess entry.getModifTime();
