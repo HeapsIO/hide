@@ -83,6 +83,20 @@ class Image extends FileView {
 		return filters[filtersParams.indexOf(p)];
 	}
 
+	function buildParams(format: Element, useAlpha: Element, alpha: Element, mips: Element, size: Element, filter: Element, maxSize : Int) {
+		if (format.val() == "none")
+			return { convert : "none", priority: 10000000 };
+
+		var	convertRule = { convert : "dds", format : format.val(), mips : mips.is(':checked'), priority: 10000000 };
+		if (size.val() != maxSize) {
+			Reflect.setField(convertRule, "size", Std.parseInt(size.val()));
+			Reflect.setField(convertRule, "filter", filterToParam(filter.val()));
+		}
+		if (useAlpha.is(':checked'))
+			Reflect.setField(convertRule, "alpha", Std.parseInt(alpha.val()));
+		return convertRule;
+	}
+
 	override function onDisplay() {
 		cleanUp();
 
@@ -268,24 +282,8 @@ class Image extends FileView {
 
 		var saveCompression = element.find(".save-compression");
 		saveCompression.on("click", function(_) {
-			var texMaxSize = getTextureMaxSize();
 			var bytes = new haxe.io.BytesOutput();
-			var convertRule = { };
-
-			if (format.val() == "none") {
-				convertRule = { convert : "none", priority: 10000000 };
-			}
-			else {
-				convertRule = { convert : "dds", format : format.val(), mips : mips.is(':checked'), priority: 10000000 };
-
-				if (size.val() != texMaxSize) {
-					Reflect.setField(convertRule, "size", Std.parseInt(size.val()));
-					Reflect.setField(convertRule, "filter", filterToParam(filter.val()));
-				}
-
-				if (useAlpha.is(':checked'))
-					Reflect.setField(convertRule, "alpha", Std.parseInt(alpha.val()));
-			}
+			var convertRule = buildParams(format, useAlpha, alpha, mips, size, filter, getTextureMaxSize());
 
 			if (sys.FileSystem.exists(propsFilePath)) {
 				var propsJson = haxe.Json.parse(sys.io.File.getContent(propsFilePath));
@@ -753,11 +751,7 @@ class Image extends FileView {
 			comp.srcPath = Ide.inst.getPath(state.path);
 			comp.dstPath = Ide.inst.getPath(tmpPath);
 			comp.originalFilename = name;
-
-			if (useAlpha.is(':checked'))
-				comp.params = { alpha:Std.parseInt(alpha.val()), format:format.val().toString(), mips:mips.is(':checked'), size:Std.parseInt(size.val()),  filter:filterToParam(filter.val().toString()) };
-			else
-				comp.params = { format:format.val().toString(), mips:mips.is(':checked'), size:Std.parseInt(size.val()), filter:filterToParam(filter.val().toString()) };
+			comp.params = buildParams(format, useAlpha, alpha, mips, size, filter, getTextureMaxSize());
 
 			try {
 				comp.convert();
