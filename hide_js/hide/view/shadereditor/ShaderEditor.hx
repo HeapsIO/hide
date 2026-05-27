@@ -1751,7 +1751,7 @@ class ShaderEditor extends hide.view.FileView implements GraphInterface.IGraphEd
 		}
 	}
 
-
+	static var I = h3d.Matrix.I();
 	public function onPreviewUpdate() {
 
 		@:privateAccess
@@ -1762,6 +1762,10 @@ class ShaderEditor extends hide.view.FileView implements GraphInterface.IGraphEd
 			graphEditor.previewsScene.s2d.ctx.globals.set("blackChannel", h3d.mat.Texture.fromColor(0));
 			graphEditor.previewsScene.s2d.ctx.globals.set("global.screenShaderInput", h3d.mat.Texture.fromColor(0xFF00FF));
 
+			graphEditor.previewsScene.s2d.ctx.globals.set("global.previousModelView", I);
+			graphEditor.previewsScene.s2d.ctx.globals.set("global.modelView", I);
+			graphEditor.previewsScene.s2d.ctx.globals.set("global.modelViewInverse", I);
+
 			var pbr = Std.downcast(graphEditor.previewsScene.s3d.renderer, h3d.scene.pbr.Renderer);
 			if (pbr != null) {
 				// make sure globals are properly init
@@ -1769,7 +1773,7 @@ class ShaderEditor extends hide.view.FileView implements GraphInterface.IGraphEd
 				pbr.endPbr();
 			}
 			// copy 3d globals into 2d context for previews
-			for (id => val in graphEditor.previewsScene.s3d.renderer.ctx.globals.map) {
+			for (id => val in graphEditor.previewsScene.s3d.ctx.globals.map) {
 				graphEditor.previewsScene.s2d.ctx.globals.fastSet(id, val);
 			}
 		}
