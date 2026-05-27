@@ -1,6 +1,36 @@
 package hide.view;
 import hrt.ui.*;
 
+private enum abstract CollisionMode(Int) from Int to Int {
+	var Default = 0;
+	var None    = 1;
+	var Auto    = 2;
+	var Mesh    = 3;
+	var Shapes  = 4;
+	var Count   = 5;
+
+	public function toString() {
+		return switch (this) {
+			case Default: "Default";
+			case None: "None";
+			case Auto: "Auto";
+			case Mesh: "Mesh";
+			case Shapes: "Shapes";
+			default: "Undefined";
+		}
+	}
+}
+
+class CollisionSettings {
+	public var mode : Int;
+	public var params : hxd.fmt.fbx.HMDOut.CollideParams;
+
+	public function new( mode : Int, params : hxd.fmt.fbx.HMDOut.CollideParams ) {
+		this.mode = mode;
+		this.params = params;
+	}
+}
+
 #if hui
 class HuiModelInspector extends HuiElement {
 	static var SRC = <hui-model-inspector>
@@ -21,6 +51,14 @@ class HuiModelInspector extends HuiElement {
 			<hui-element class="horizontal"><hui-text("Total Size") class="label"/><hui-text("1") class="value" id="total-size"/></hui-element>
 			<hui-element class="horizontal"><hui-text("Mesh Size") class="label"/><hui-text("1") class="value" id="mesh-size"/></hui-element>
 		</hui-category>
+		<hui-category("Collision")>
+			<hui-element class="horizontal"><hui-text("Collision Mode") class="label"/><hui-select class="value" id="collision-mode-el"/></hui-element>
+			<hui-element class="horizontal"><hui-text("Precision") class="label"/><hui-input-box class="value" id="precision-el"/></hui-element>
+			<hui-element class="horizontal"><hui-text("Max Convex Hulls") class="label"/><hui-input-box class="value" id="max-convex-hulls-el"/></hui-element>
+			<hui-element class="horizontal"><hui-text("Max Subdivision") class="label"/><hui-input-box class="value" id="max-subdivision-el"/></hui-element>
+			<hui-element class="horizontal"><hui-text("Mesh") class="label"/><hui-select class="value" id="mesh-el"/></hui-element>
+			<hui-button class="full"><hui-text("Compute Collider")></hui-text></hui-button>
+		</hui-category>
 		<hui-category("LODs")>
 			<hui-element class="horizontal"><hui-text("LOD Count") class="label"/><hui-text("1") class="value" id="lod-count"/></hui-element>
 			<hui-element class="horizontal"><hui-text("LOD Vertices") class="label"/><hui-text("1") class="value" id="lod-vertices-count"/></hui-element>
@@ -31,17 +69,28 @@ class HuiModelInspector extends HuiElement {
 			<hui-button class="full" id="paste-lods"><hui-text("Paste")></hui-text></hui-button>
 			<hui-button class="full" id="reset-lods"><hui-text("Reset Defaults")></hui-text></hui-button>
 		</hui-category>
+		<hui-category("Material Library")>
+		</hui-category>
+		<hui-category("Textures")>
+		</hui-category>
+		<hui-category("Material")>
+		</hui-category>
+		<hui-category("Dynamic Bones")>
+		</hui-category>
+		<hui-category("Blend Shapes")>
+		</hui-category>
 	</hui-model-inspector>
 
 	public function new(obj : h3d.scene.Object, ?parent: h2d.Object) {
 		super(parent);
 		initComponent();
 
-		updateInfos(obj);
+		updateInfosInspector(obj);
 		updateLODsInspector(obj);
+		updateCollisionInspector(obj);
 	}
 
-	public function updateInfos(obj : h3d.scene.Object) {
+	function updateInfosInspector(obj : h3d.scene.Object) {
 		var meshes = obj.getMeshes();
 		var vertCount = 0, triCount = 0, materialDraws = 0, materialCount = 0, jointsCount = 0;
 		var uniqueMats = new Map();
@@ -135,7 +184,7 @@ class HuiModelInspector extends HuiElement {
 		}
 	}
 
-	public function updateLODsInspector(obj : h3d.scene.Object) {
+	function updateLODsInspector(obj : h3d.scene.Object) {
 		var mesh = Std.downcast(obj, h3d.scene.Mesh);
 		var hmd = Std.downcast(mesh?.primitive, h3d.prim.HMDModel);
 
@@ -236,6 +285,63 @@ class HuiModelInspector extends HuiElement {
 			}, true);
 		}
 	}
+
+	function updateCollisionInspector(obj : h3d.scene.Object) {
+		var mesh = Std.downcast(obj, h3d.scene.Mesh);
+		var hmd = Std.downcast(mesh?.primitive, h3d.prim.HMDModel);
+
+		if (hmd == null)
+			return;
+
+		var dirPath = @:privateAccess hmd.lib.resource.entry.directory;
+		var resName = @:privateAccess hmd.lib.resource.name;
+		var props = @:privateAccess h3d.prim.ModelDatabase.current.getModelData(dirPath, resName, obj.name);
+		var settings = new CollisionSettings(Default, { useDefault : true });
+		if (props != null && Reflect.hasField(props, h3d.prim.ModelDatabase.COLLIDE_CONFIG)) {
+			var collideFields = Reflect.field(props, h3d.prim.ModelDatabase.COLLIDE_CONFIG);
+			if (collideFields == null)
+				settings = new CollisionSettings(None, null);
+			else if(collideFields != null && Std.isOfType(collideFields, Array) ) {
+				for (cf in (collideFields:Array<Dynamic>)) {
+					var mode = Default;
+					if( cf == null )
+						mode = None;
+					else if( Reflect.field(cf, "useDefault") )
+						mode = Default;
+					else if( Reflect.hasField(cf, "precision") )
+						mode = Auto;
+					else if( Reflect.hasField(cf, "mesh") )
+						mode = Mesh;
+					else if( Reflect.hasField(cf, "shapes") )
+						mode = Shapes;
+					settings = new CollisionSettings(mode, cf);
+				}
+			}
+		}
+
+
+		function refreshCollisionEdition() {
+			precisionEl.parent.visible = collisionModeEl.value == CollisionMode.Auto;
+			precisionEl.text = '${settings.params.precision ?? 1.0}';
+
+			maxConvexHullsEl.parent.visible = collisionModeEl.value == CollisionMode.Auto;
+			maxConvexHullsEl.text = '${settings.params.maxConvexHulls ?? 1}';
+
+			maxSubdivisionEl.parent.visible = collisionModeEl.value == CollisionMode.Auto;
+			maxSubdivisionEl.text = '${settings.params.maxSubdiv ?? 32}';
+
+			meshEl.parent.visible = collisionModeEl.value == CollisionMode.Auto || collisionModeEl.value == CollisionMode.Mesh;
+			meshEl.value = settings.params.mesh;
+		}
+
+		collisionModeEl.items = [for(idx in 0...CollisionMode.Count) { value: idx, label: cast(idx, CollisionMode).toString()}];
+		collisionModeEl.value = settings.mode;
+		collisionModeEl.onValueChanged = () -> {
+			refreshCollisionEdition();
+		}
+
+		refreshCollisionEdition();
+	}
 }
 
 @:access(hrt.ui.HuiSceneEditor)
@@ -263,11 +369,9 @@ class Model extends HuiView<{path: String}> {
 				setSelection(sceneEditor.getObjectsAt(cast e.relX, cast e.relY, obj, (o) -> Std.isOfType(o, h3d.scene.Mesh)));
 		}
 
-		// undo.onAfterChange = () -> {
-		// 	hasUnsavedChanges = prefabEditor.hasUnsavedChanges();
-		// }
-
-		// registerCommand(HuiCommands.save, View, () -> {@:privateAccess prefabEditor.save(); hasUnsavedChanges = prefabEditor.hasUnsavedChanges();});
+		undo.onAfterChange = () -> {
+			hasUnsavedChanges = undo.isDirty();
+		}
 
 		buildToolbar();
 		sceneEditor.load();
@@ -412,6 +516,11 @@ class Model extends HuiView<{path: String}> {
 		widgets.push(new hrt.ui.HuiToolbar.HuiRenderPropsWidget(sceneEditor));
 
 		return widgets;
+	}
+
+	function save() {
+		undo.markClean();
+		hasUnsavedChanges = false;
 	}
 
 	function load(path : String) {

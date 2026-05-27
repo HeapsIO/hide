@@ -5,6 +5,7 @@ typedef Action = (isUndo: Bool) -> Void;
 class Undo {
 	var stack : Array<{action: Action, hasDataChanges: Bool}> = [];
 	var currentAction : Int = -1;
+	var lastSaveUndo: Any = null;
 
 	public function new() {
 
@@ -59,15 +60,19 @@ class Undo {
 		return stack[currentAction];
 	}
 
-	public function hasDataChanges(otherUndo: Any) : Bool {
+	public function isDirty() : Bool {
 		var current = currentAction;
 		while(current >= -1) {
-			if (stack[current] != otherUndo && stack[current]?.hasDataChanges == true)
+			if (stack[current] != lastSaveUndo && stack[current]?.hasDataChanges == true)
 				return true;
-			else if (stack[current] == otherUndo)
+			else if (stack[current] == lastSaveUndo)
 				return false;
 			current --;
 		}
 		return true;
+	}
+
+	public function markClean() {
+		lastSaveUndo = getCurrentUndo();
 	}
 }

@@ -65,7 +65,6 @@ class Prefab extends HuiView<{path: String}> {
 	var prefab: hrt.prefab.Prefab;
 	var interactives: Map<hrt.prefab.Prefab, h3d.scene.Interactive> = [];
 	var selectedPrefabs: Map<hrt.prefab.Prefab, Bool> = [];
-	var lastSaveUndo: Any = null;
 	var lastPushX : Float = -100;
 	var lastPushY : Float = -100;
 	var movedSinceLastPush : Bool = false;
@@ -495,10 +494,6 @@ class Prefab extends HuiView<{path: String}> {
 			hide.Ide.showError(error);
 			new HuiText(error, this);
 		}
-
-		// undo.onAfterChange = () -> {
-		// 	hasUnsavedChanges = prefabEditor.hasUnsavedChanges();
-		// }
 	}
 
 	function reload() {
@@ -627,6 +622,8 @@ class Prefab extends HuiView<{path: String}> {
 
 
 	function save() {
+		undo.markClean();
+		hasUnsavedChanges = false;
 		trySavePrefab(prefab);
 	}
 
@@ -641,8 +638,6 @@ class Prefab extends HuiView<{path: String}> {
 
 			hide.App.defer(() -> saveBackup(text, path));
 			hide.Ide.showInfo('Saved $path');
-
-			lastSaveUndo = getView().undo.getCurrentUndo();
 		} catch(e) {
 			hide.Ide.showError('Save failed for $path : $e');
 		}

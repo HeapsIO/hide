@@ -25,6 +25,10 @@ class HuiView<T> extends HuiElement {
 
 		this.state = cast state ?? {};
 
+		undo.onAfterChange = () -> {
+			hasUnsavedChanges = undo.isDirty();
+		}
+
 		registerCommand(HuiCommands.undo, ElementAndChildren, () -> undo.undo());
 		registerCommand(HuiCommands.redo, ElementAndChildren, () -> undo.redo());
 	}
