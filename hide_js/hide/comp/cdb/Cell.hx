@@ -888,9 +888,6 @@ class Cell {
 			open();
 		case TInt, TFloat, TString, TId, TDynamic, TGuid:
 			var val = value;
-			if (column.display == Percent)
-				val *= 100;
-
 			var str = value == null ? "" : Std.isOfType(value, String) ? value : editor.base.valToString(column.type, val, false);
 
 			elementHtml.innerHTML = null;
