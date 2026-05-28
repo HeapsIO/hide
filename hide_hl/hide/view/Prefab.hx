@@ -23,24 +23,6 @@ class Prefab extends HuiView<{path: String}> {
 	public static var GIZMO_SNAP_STEP_CONFIG_KEY = "editor.gizmoSnapStep";
 	public static var GIZMO_SNAP_GRID_CONFIG_KEY = "editor.gizmoSnapOnGrid";
 
-	public static var CAM_CTRL_CONFIG_KEY = "editor.camera.type";
-	public static var CAM_CTRL_FOV_CONFIG_KEY = "editor.camera.fov";
-	public static var CAM_CTRL_NEAR_CONFIG_KEY = "editor.camera.near";
-	public static var CAM_CTRL_FAR_CONFIG_KEY = "editor.camera.far";
-
-	public static var VISIBILITY_OVERLAY_CONFIG_KEY = "editor.visibility.overlay";
-	public static var VISIBILITY_GRID_CONFIG_KEY = "editor.visibility.grid";
-	public static var VISIBILITY_JOINTS_CONFIG_KEY = "editor.visibility.joints";
-	public static var VISIBILITY_COLLIDERS_CONFIG_KEY = "editor.visibility.colliders";
-	public static var VISIBILITY_MISC_CONFIG_KEY = "editor.visibility.misc";
-	public static var VISIBILITY_GIZMO_CONFIG_KEY = "editor.visibility.gizmo";
-	public static var VISIBILITY_OUTLINE_CONFIG_KEY = "editor.visibility.outline";
-	public static var VISIBILITY_SCENE_INFOS_CONFIG_KEY = "editor.visibility.sceneInfos";
-	public static var VISIBILITY_WIREFRAME_CONFIG_KEY = "editor.visibility.wireframe";
-	public static var VISIBILITY_DISABLE_SCENE_RENDER_CONFIG_KEY = "editor.visibility.disableSceneRender";
-
-	public static var VIEW_MODE_TYPE = "editor.visibility.viewModeType";
-
 	static public var gizmoSwitchModeCommand = new hrt.ui.HuiCommands.HuiCommand("Gizmo Switch Mode", {key: hxd.Key.SPACE});
 	static public var gizmoTranslateCommand = new hrt.ui.HuiCommands.HuiCommand("Gizmo Translate", {key: hxd.Key.W});
 	static public var gizmoRotateCommand = new hrt.ui.HuiCommands.HuiCommand("Gizmo Rotate", {key: hxd.Key.E});
@@ -622,6 +604,9 @@ class Prefab extends HuiView<{path: String}> {
 
 
 	function save() {
+		if (!hasUnsavedChanges)
+			return;
+
 		undo.markClean();
 		hasUnsavedChanges = false;
 		trySavePrefab(prefab);

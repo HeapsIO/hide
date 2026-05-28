@@ -29,6 +29,116 @@ class CollisionSettings {
 		this.mode = mode;
 		this.params = params;
 	}
+
+	public function getDebugCollider(mesh : h3d.scene.Mesh, convertRule : hxd.fs.FileConverter.ConvertRule) : h3d.scene.Object {
+		var hmd = Std.downcast(mesh.primitive, h3d.prim.HMDModel);
+		if (hmd == null)
+			return null;
+		var model : hxd.fmt.hmd.Data.Model = null;
+		if (params != null) {
+			for (m in hmd.lib.header.models)
+				if (m.getObjectName() == params.mesh || m.getObjectName() == mesh.name)
+					model = m;
+		}
+
+		if (model == null)
+			return null;
+
+		var defaultParams : hxd.fmt.fbx.HMDOut.CollideParams = null;
+		#if ((sys || nodejs) && !macro)
+		var fs : hxd.fs.LocalFileSystem = Std.downcast(hxd.res.Loader.currentInstance.fs, hxd.fs.LocalFileSystem);
+		if (fs != null) {
+			var convertRule = @:privateAccess fs.convert.getConvertRule(hmd.lib.resource.entry.path);
+			var collide = convertRule.cmd?.params?.collide;
+			if (collide != null) {
+				defaultParams = {
+					precision : collide.precision,
+					maxConvexHulls : collide.maxConvexHulls,
+					maxSubdiv : collide.maxSubdiv,
+				};
+			}
+		}
+		#end
+
+		var collisionThresholdHeight = Reflect.field(convertRule.cmd.params, "collisionThresholdHeight");
+		var collisionUseLowLod = Reflect.field(convertRule.cmd.params, "collisionUseLowLod");
+		var noCollision = Reflect.field(convertRule.cmd.params, "noCollision");
+		var isDefaultParams = params == null || (params != null && params.useDefault);
+		var params = isDefaultParams ? defaultParams : params;
+		var colliderType = hxd.fmt.hmd.Data.Collider.resolveColliderType(hmd.lib.header, model, params, isDefaultParams, collisionThresholdHeight, collisionUseLowLod, noCollision);
+		if (colliderType == null)
+			return null;
+
+		return switch (colliderType) {
+			case Mesh(colliderModel):
+				var g = hmd.lib.header.geometries[colliderModel.geometry];
+				var buffers = hmd.lib.getBuffers(g, hxd.BufferFormat.POS3D);
+				var polygonBuffer = new h3d.col.PolygonBuffer();
+				polygonBuffer.setData(buffers.vertexes, buffers.indexes);
+				var obj = polygonBuffer.makeDebugObj();
+				obj.defaultTransform = colliderModel.position.toMatrix();
+				if (colliderModel.skin != null)
+					obj.defaultTransform.multiply(obj.defaultTransform, colliderModel.skin.joints[0].position.toMatrix());
+				obj.defaultTransform.multiply(obj.defaultTransform, model.position.toMatrix().getInverse());
+				return obj;
+
+			case ConvexHulls(colliderModel):
+				var hmd = Std.downcast(mesh.primitive, h3d.prim.HMDModel);
+
+				var dim = hmd.getBounds().dimension();
+				var prec = hxd.Math.min(dim, params.precision);
+				var subdiv = hxd.Math.ceil(dim / prec);
+				subdiv = hxd.Math.imin(subdiv, params.maxSubdiv);
+				var p = { maxConvexHulls: params.maxConvexHulls, maxResolution: subdiv * subdiv * subdiv };
+
+				var vertices : Array<Float> = [];
+				var indexes : Array<Int> = [];
+				for (idx => m in mesh.getMaterials()) {
+					if (Reflect.field(m.props, "ignoreCollide"))
+						continue;
+
+					var bufs = hmd.lib.getBuffers(hmd.lib.header.geometries[colliderModel.geometry], hxd.BufferFormat.POS3D, null, idx);
+					for (v in bufs.vertexes)
+						vertices.push(v);
+					for (i in bufs.indexes)
+						indexes.push(i);
+				}
+
+				var convexHulls = hxd.fmt.hmd.Data.ConvexHullsCollider.buildConvexHulls(vertices, indexes, p);
+				if (convexHulls == null)
+					return null;
+
+				var parentObj = new h3d.scene.Object();
+				for (convexHull in convexHulls) {
+					var polygonBuffer = new h3d.col.PolygonBuffer();
+					var vbuf = new haxe.ds.Vector<hxd.impl.Float32>(convexHull.vertices.length);
+					for (vIdx => v in convexHull.vertices)
+						vbuf[vIdx] = v;
+					var ibuf = new haxe.ds.Vector<Int>(convexHull.indexes.length);
+					for (i => idx in convexHull.indexes)
+						ibuf[i] = idx;
+					polygonBuffer.setData(vbuf, ibuf, true);
+					var obj = polygonBuffer.makeDebugObj();
+					obj.defaultTransform = colliderModel.position.toMatrix();
+					if (colliderModel.skin != null)
+						obj.defaultTransform.multiply(obj.defaultTransform, colliderModel.skin.joints[0].position.toMatrix());
+					parentObj.addChild(obj);
+				}
+
+				parentObj.defaultTransform = model.position.toMatrix().getInverse();
+				return parentObj;
+
+			// case Shapes:
+				// var root = new h3d.scene.Object();
+				// for (s in toShapeEditor())
+				// 	hide.comp.ShapeEditor.getInteractive(s, false, root);
+
+				// return root;
+
+			default:
+				null;
+		}
+	}
 }
 
 #if hui
@@ -57,7 +167,7 @@ class HuiModelInspector extends HuiElement {
 			<hui-element class="horizontal"><hui-text("Max Convex Hulls") class="label"/><hui-input-box class="value" id="max-convex-hulls-el"/></hui-element>
 			<hui-element class="horizontal"><hui-text("Max Subdivision") class="label"/><hui-input-box class="value" id="max-subdivision-el"/></hui-element>
 			<hui-element class="horizontal"><hui-text("Mesh") class="label"/><hui-select class="value" id="mesh-el"/></hui-element>
-			<hui-button class="full"><hui-text("Compute Collider")></hui-text></hui-button>
+			<hui-button class="full" id="compute-collider-btn"><hui-text("Compute Collider")></hui-text></hui-button>
 		</hui-category>
 		<hui-category("LODs")>
 			<hui-element class="horizontal"><hui-text("LOD Count") class="label"/><hui-text("1") class="value" id="lod-count"/></hui-element>
@@ -81,8 +191,12 @@ class HuiModelInspector extends HuiElement {
 		</hui-category>
 	</hui-model-inspector>
 
-	public function new(obj : h3d.scene.Object, ?parent: h2d.Object) {
+	var model : Model;
+
+	public function new(obj : h3d.scene.Object, model: Model, ?parent: h2d.Object) {
 		super(parent);
+		this.model = model;
+
 		initComponent();
 
 		updateInfosInspector(obj);
@@ -293,52 +407,90 @@ class HuiModelInspector extends HuiElement {
 		if (hmd == null)
 			return;
 
-		var dirPath = @:privateAccess hmd.lib.resource.entry.directory;
-		var resName = @:privateAccess hmd.lib.resource.name;
-		var props = @:privateAccess h3d.prim.ModelDatabase.current.getModelData(dirPath, resName, obj.name);
-		var settings = new CollisionSettings(Default, { useDefault : true });
-		if (props != null && Reflect.hasField(props, h3d.prim.ModelDatabase.COLLIDE_CONFIG)) {
-			var collideFields = Reflect.field(props, h3d.prim.ModelDatabase.COLLIDE_CONFIG);
-			if (collideFields == null)
-				settings = new CollisionSettings(None, null);
-			else if(collideFields != null && Std.isOfType(collideFields, Array) ) {
-				for (cf in (collideFields:Array<Dynamic>)) {
-					var mode = Default;
-					if( cf == null )
-						mode = None;
-					else if( Reflect.field(cf, "useDefault") )
-						mode = Default;
-					else if( Reflect.hasField(cf, "precision") )
-						mode = Auto;
-					else if( Reflect.hasField(cf, "mesh") )
-						mode = Mesh;
-					else if( Reflect.hasField(cf, "shapes") )
-						mode = Shapes;
-					settings = new CollisionSettings(mode, cf);
-				}
-			}
-		}
-
-
+		var settings = @:privateAccess model.collisionSettings.get(obj.name);
 		function refreshCollisionEdition() {
 			precisionEl.parent.visible = collisionModeEl.value == CollisionMode.Auto;
-			precisionEl.text = '${settings.params.precision ?? 1.0}';
+			precisionEl.text = '${settings.params?.precision ?? 1.0}';
 
 			maxConvexHullsEl.parent.visible = collisionModeEl.value == CollisionMode.Auto;
-			maxConvexHullsEl.text = '${settings.params.maxConvexHulls ?? 1}';
+			maxConvexHullsEl.text = '${settings.params?.maxConvexHulls ?? 1}';
 
 			maxSubdivisionEl.parent.visible = collisionModeEl.value == CollisionMode.Auto;
-			maxSubdivisionEl.text = '${settings.params.maxSubdiv ?? 32}';
+			maxSubdivisionEl.text = '${settings.params?.maxSubdiv ?? 32}';
 
+			meshEl.items = [ { value: null, label: "None" } ];
+			if (hmd != null) {
+				for (m in hmd.lib.header.models) {
+					if (m.geometry >= 0)
+						meshEl.items.push({ label: m.name, value: m.name });
+				}
+			}
 			meshEl.parent.visible = collisionModeEl.value == CollisionMode.Auto || collisionModeEl.value == CollisionMode.Mesh;
-			meshEl.value = settings.params.mesh;
+			meshEl.value = settings.params?.mesh;
+
+			computeColliderBtn.visible = collisionModeEl.value == CollisionMode.Auto;
+		}
+
+		function applyCollisionEdition() {
+			var prevMode = settings.mode;
+			var prevParams = settings.params;
+			var meshName = meshEl.value;
+			var curMode = collisionModeEl.value;
+			var curParams = {};
+			switch (curMode) {
+				case Default:
+					Reflect.setField(curParams, "useDefault", true);
+				case None:
+					curParams = null;
+				case Auto:
+					Reflect.setField(curParams, "precision", Std.parseFloat(precisionEl.text));
+					Reflect.setField(curParams, "maxConvexHulls", Std.parseInt(maxConvexHullsEl.text));
+					Reflect.setField(curParams, "maxSubdiv", Std.parseInt(maxSubdivisionEl.text));
+					Reflect.setField(curParams, "mesh", meshName == "null" ? null : meshName);
+				case Mesh:
+					Reflect.setField(curParams, "mesh", meshName == "null" ? null : meshName);
+				case Shapes:
+					// var shapes = settings.fromShapeEditor(shapeEditor.getValue());
+					// if( shapes.length == 0 )
+					// 	curParams = null;
+					// else
+					// 	Reflect.setField(curParams, "shapes", shapes);
+				default:
+					throw "Unknown collision mode";
+			}
+			settings.mode = curMode;
+			settings.params = curParams;
+			refreshCollisionEdition();
+			if (curMode != Auto || curMode != prevMode)
+				@:privateAccess model.sceneEditor.updateDebugOverlayVisibility();
+
+			model.undo.record((isUndo) -> {
+				var mode = isUndo ? prevMode : curMode;
+				var params = isUndo ? prevParams : curParams;
+				settings.mode = mode;
+				settings.params = params;
+				refreshCollisionEdition();
+				if (curMode != Auto || curMode != prevMode)
+					@:privateAccess model.sceneEditor.updateDebugOverlayVisibility();
+				// if (settings.mode == Shapes) {
+				// 	for (s in shapesEditor)
+				// 		s.refresh(settings.toShapeEditor());
+				// }
+			}, true);
+		}
+
+		collisionModeEl.onValueChanged = () -> applyCollisionEdition();
+		precisionEl.onChange = (_) -> applyCollisionEdition();
+		maxConvexHullsEl.onChange = (_) -> applyCollisionEdition();
+		maxSubdivisionEl.onChange = (_) -> applyCollisionEdition();
+		meshEl.onValueChanged = () -> applyCollisionEdition();
+		computeColliderBtn.onClick = (_) -> {
+			applyCollisionEdition();
+			@:privateAccess model.sceneEditor.updateDebugOverlayVisibility();
 		}
 
 		collisionModeEl.items = [for(idx in 0...CollisionMode.Count) { value: idx, label: cast(idx, CollisionMode).toString()}];
 		collisionModeEl.value = settings.mode;
-		collisionModeEl.onValueChanged = () -> {
-			refreshCollisionEdition();
-		}
 
 		refreshCollisionEdition();
 	}
@@ -353,10 +505,10 @@ class Model extends HuiView<{path: String}> {
 
 	static var _ = HuiView.register("model", Model);
 
-	public static var VIEW_MODE_TYPE = "editor.visibility.viewModeType";
-
 	var obj : h3d.scene.Object;
 	var selectedObjects: Array<Dynamic> = [];
+
+	var collisionSettings : Map<String, CollisionSettings>;
 
 	public function new(_state: Dynamic, ?parent) {
 		super(_state, parent);
@@ -368,12 +520,16 @@ class Model extends HuiView<{path: String}> {
 			if (e.button == 0)
 				setSelection(sceneEditor.getObjectsAt(cast e.relX, cast e.relY, obj, (o) -> Std.isOfType(o, h3d.scene.Mesh)));
 		}
+		sceneEditor.setColliderDebugVisibility = setColliderDebugVisibility;
 
 		undo.onAfterChange = () -> {
 			hasUnsavedChanges = undo.isDirty();
 		}
 
+		registerCommand(HuiCommands.save, View, () -> { save();});
+
 		buildToolbar();
+
 		sceneEditor.load();
 		sceneEditor.tree.getItemChildren = (item: Dynamic) -> {
 			if (item == null)
@@ -453,6 +609,43 @@ class Model extends HuiView<{path: String}> {
 				sceneEditor.focusObjects([obj]);
 		};
 		sceneEditor.tree.revealItem(obj);
+
+		// Load collision settings
+		collisionSettings = [];
+		for (o in obj.getMeshes()) {
+			var mesh = Std.downcast(obj, h3d.scene.Mesh);
+			var hmd = Std.downcast(mesh?.primitive, h3d.prim.HMDModel);
+			if (hmd == null) continue;
+
+			var dirPath = @:privateAccess hmd.lib.resource.entry.directory;
+			var resName = @:privateAccess hmd.lib.resource.name;
+			var props = @:privateAccess h3d.prim.ModelDatabase.current.getModelData(dirPath, resName, obj.name);
+			var settings = new CollisionSettings(Default, { useDefault : true });
+			if (props != null && Reflect.hasField(props, h3d.prim.ModelDatabase.COLLIDE_CONFIG)) {
+				var collideFields = Reflect.field(props, h3d.prim.ModelDatabase.COLLIDE_CONFIG);
+				if (collideFields == null)
+					settings = new CollisionSettings(None, null);
+				else if(collideFields != null && Std.isOfType(collideFields, Array) ) {
+					for (cf in (collideFields:Array<Dynamic>)) {
+						var mode = Default;
+						if (cf == null)
+							mode = None;
+						else if (Reflect.field(cf, "useDefault"))
+							mode = Default;
+						else if (Reflect.hasField(cf, "precision"))
+							mode = Auto;
+						else if (Reflect.hasField(cf, "mesh"))
+							mode = Mesh;
+						else if (Reflect.hasField(cf, "shapes"))
+							mode = Shapes;
+						settings = new CollisionSettings(mode, cf);
+					}
+				}
+			}
+
+			collisionSettings.set(o.name, settings);
+		}
+		sceneEditor.updateDebugOverlayVisibility();
 	}
 
 	override function sync(ctx) {
@@ -474,23 +667,23 @@ class Model extends HuiView<{path: String}> {
 	}
 
 	override function requestClose(cb: (canClose:Bool) -> Void) {
-		// if (hasUnsavedChanges) {
-		// 	uiBase.confirm("Save change before closing ?", Save | DontSave | Cancel, (choice: hrt.ui.HuiConfirmPopup.ConfirmButton) -> {
-		// 		switch (choice) {
-		// 			case Save:
-		// 				execCommand(HuiCommands.save);
-		// 				cb(true);
-		// 			case DontSave:
-		// 				cb(true);
-		// 			case Cancel:
-		// 				cb(false);
-		// 			default:
-		// 				throw "???";
-		// 		}
-		// 	});
-		// } else {
-		// 	cb(true);
-		// }
+		if (hasUnsavedChanges) {
+			uiBase.confirm("Save change before closing ?", Save | DontSave | Cancel, (choice: hrt.ui.HuiConfirmPopup.ConfirmButton) -> {
+				switch (choice) {
+					case Save:
+						execCommand(HuiCommands.save);
+						cb(true);
+					case DontSave:
+						cb(true);
+					case Cancel:
+						cb(false);
+					default:
+						throw "???";
+				}
+			});
+		} else {
+			cb(true);
+		}
 	}
 
 	override function getToolbarWidgets() : Array<HuiElement> {
@@ -519,8 +712,43 @@ class Model extends HuiView<{path: String}> {
 	}
 
 	function save() {
+		if (!hasUnsavedChanges)
+			return;
+
 		undo.markClean();
 		hasUnsavedChanges = false;
+
+		// Save model props
+		for (o in obj.findAll(o -> Std.downcast(o, h3d.scene.Mesh))) {
+			var hmd = Std.downcast(o.primitive, h3d.prim.HMDModel);
+			if (hmd == null)
+				continue;
+
+			var settings = collisionSettings.get(o.name);
+			var collide = {};
+			if (settings != null) {
+				switch (settings.mode) {
+					case Default: collide = {};
+					case None: collide = { collide : null };
+					case Auto, Mesh, Shapes: collide = { collide : [settings.params] };
+					default: throw "Unexpected collision mode";
+				}
+			}
+
+			var input : h3d.prim.ModelDatabase.ModelDataInput = {
+				resourceDirectory : @:privateAccess hmd.lib.resource.entry.directory,
+				resourceName : @:privateAccess hmd.lib.resource.name,
+				objectName : o.name,
+				hmd : hmd,
+				skin : o.find((o) -> Std.downcast(o, h3d.scene.Skin)),
+				collide : collide
+			}
+
+			h3d.prim.ModelDatabase.current.saveModelProps(input);
+			var lfs = cast(hxd.res.Loader.currentInstance.fs, hxd.fs.LocalFileSystem);
+			lfs.removePathFromCache(state.path);
+			@:privateAccess hxd.res.Loader.currentInstance.cache.remove(state.path);
+		}
 	}
 
 	function load(path : String) {
@@ -585,7 +813,91 @@ class Model extends HuiView<{path: String}> {
 		var el = selectedObjects[0];
 		var o = Std.downcast(el, h3d.scene.Object);
 		if (o != null)
-			new HuiModelInspector(o, sceneEditor.inspectorPanel);
+			new HuiModelInspector(o, this, sceneEditor.inspectorPanel);
+	}
+
+	function setColliderDebugVisibility(visible : Bool) {
+		if (visible) {
+			if (collisionSettings == null || sceneEditor.scene == null)
+				return;
+
+			if (sceneEditor.rootDebugCollider == null) {
+				sceneEditor.rootDebugCollider = new h3d.scene.Object(sceneEditor.scene.s3d);
+				sceneEditor.rootDebugCollider.name = "rootDebugCollider";
+			}
+
+			sceneEditor.rootDebugCollider.removeChildren();
+
+			for (k in collisionSettings.keys()) {
+				var obj = obj.getObjectByName(k);
+				if (obj == null)
+					continue;
+
+				var debugCollider = new h3d.scene.Object(sceneEditor.rootDebugCollider);
+				debugCollider.name = 'debug collider (${obj.name})';
+				debugCollider.follow = obj;
+
+				var fs : hxd.fs.LocalFileSystem = Std.downcast(hxd.res.Loader.currentInstance.fs, hxd.fs.LocalFileSystem);
+				var convertRule = @:privateAccess fs.convert.getConvertRule(state.path);
+				var c = collisionSettings.get(k);
+				var debugCreated = false;
+
+				// If user is currently using the shape editor, use the shape editors debug as debug colliders
+				// if (parent.collisionList != null) {
+					// var shapeEditor = parent.shapesEditor.get(parent.collisionList.getItemName(c));
+					// if (shapeEditor != null && c.mode == Shapes) {
+					// 	shapeEditor.removeAllInteractives();
+					// 	shapeEditor.rootDebugObj = debugCollider;
+					// 	shapeEditor.createAllInteractives();
+					// 	debugCreated = true;
+					// }
+				// }
+
+				if (debugCreated)
+					continue;
+
+				var debug = c.getDebugCollider(cast obj, convertRule);
+				if (debug == null)
+					continue;
+
+				debugCollider.addChild(debug);
+
+				var colliderColor = 0x55FFFFFF;
+				var intersectionColor = 0x55FF0000;
+
+				for (m in debug.getMeshes()) {
+					m.material.castShadows = false;
+					m.material.blendMode = Alpha;
+					m.material.name = "$collider";
+					m.material.color.setColor(colliderColor);
+					m.material.mainPass.setPassName("afterTonemapping");
+
+					var debugWireframe = new h3d.scene.Mesh(m.primitive, null, m);
+					debugWireframe.forcedLod = m.forcedLod;
+					debugWireframe.name = "debugWireframe";
+					debugWireframe.material.name = "$collider";
+					debugWireframe.material.mainPass.wireframe = true;
+					debugWireframe.material.castShadows = false;
+					debugWireframe.material.color.setColor(colliderColor);
+					debugWireframe.material.mainPass.setPassName("afterTonemapping");
+
+					var debugIntersection = new h3d.scene.Mesh(m.primitive, null, m);
+					debugIntersection.forcedLod = m.forcedLod;
+					debugIntersection.name = "debugIntersection";
+					debugIntersection.material.name = "$collider";
+					debugIntersection.material.castShadows = false;
+					debugIntersection.material.blendMode = Alpha;
+					debugIntersection.material.mainPass.culling = Front;
+					debugIntersection.material.mainPass.depth(false, GreaterEqual);
+					debugIntersection.material.color.setColor(intersectionColor);
+					debugIntersection.material.mainPass.setPassName("afterTonemapping");
+				}
+			}
+		}
+		else if (sceneEditor.rootDebugCollider != null) {
+			sceneEditor.rootDebugCollider.remove();
+			sceneEditor.rootDebugCollider = null;
+		}
 	}
 }
 

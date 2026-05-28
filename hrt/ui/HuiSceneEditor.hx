@@ -21,7 +21,20 @@ class HuiSceneEditor extends HuiElement {
 			</hui-split-container>
 		</hui-scene-editor>
 
-	static final RENDER_PROPS_SAVE_KEY = "renderPropsPath";
+	public static var CAM_CTRL_CONFIG_KEY = "editor.camera.type";
+
+	public static final VISIBILITY_OVERLAY_CONFIG_KEY = "editor.visibility.overlay";
+	public static final VISIBILITY_GRID_CONFIG_KEY = "editor.visibility.grid";
+	public static final VISIBILITY_JOINTS_CONFIG_KEY = "editor.visibility.joints";
+	public static final VISIBILITY_COLLIDERS_CONFIG_KEY = "editor.visibility.colliders";
+	public static final VISIBILITY_MISC_CONFIG_KEY = "editor.visibility.misc";
+	public static final VISIBILITY_GIZMO_CONFIG_KEY = "editor.visibility.gizmo";
+	public static final VISIBILITY_OUTLINE_CONFIG_KEY = "editor.visibility.outline";
+	public static final VISIBILITY_SCENE_INFOS_CONFIG_KEY = "editor.visibility.sceneInfos";
+	public static final VISIBILITY_WIREFRAME_CONFIG_KEY = "editor.visibility.wireframe";
+	public static final VISIBILITY_DISABLE_SCENE_RENDER_CONFIG_KEY = "editor.visibility.disableSceneRender";
+	public static final RENDER_PROPS_SAVE_KEY = "renderPropsPath";
+
 	static public var focusCommand = new hrt.ui.HuiCommands.HuiCommand("Focus Selection", {key: hxd.Key.F});
 
 	public var tree :  hrt.ui.HuiTree<Dynamic>;
@@ -72,7 +85,7 @@ class HuiSceneEditor extends HuiElement {
 
 		makeRenderProps();
 
-		var ctrlClass = h3d.scene.CameraController.getCameraControllersClass()[hide.Ide.inst.currentConfig.get(hide.view.Prefab.CAM_CTRL_CONFIG_KEY, 0)];
+		var ctrlClass = h3d.scene.CameraController.getCameraControllersClass()[hide.Ide.inst.currentConfig.get(hrt.ui.HuiSceneEditor.CAM_CTRL_CONFIG_KEY, 0)];
 		cameraController = Type.createInstance(ctrlClass, []);
 		scene.s3d.addChild(cameraController);
 
@@ -122,20 +135,20 @@ class HuiSceneEditor extends HuiElement {
 	}
 
 	public function updateDebugOverlayVisibility() {
-		var visibility = hide.Ide.inst.currentConfig.get(hide.view.Prefab.VISIBILITY_OVERLAY_CONFIG_KEY, true);
+		var visibility = hide.Ide.inst.currentConfig.get(VISIBILITY_OVERLAY_CONFIG_KEY, true);
 
-		grid.visible = visibility && hide.Ide.inst.currentConfig.get(hide.view.Prefab.VISIBILITY_GRID_CONFIG_KEY, true);
-		setJointsDebugVisibility(visibility && hide.Ide.inst.currentConfig.get(hide.view.Prefab.VISIBILITY_JOINTS_CONFIG_KEY, true));
-		setColliderDebugVisibility(visibility && hide.Ide.inst.currentConfig.get(hide.view.Prefab.VISIBILITY_COLLIDERS_CONFIG_KEY, true));
-		setMiscDebugVisibility(visibility && hide.Ide.inst.currentConfig.get(hide.view.Prefab.VISIBILITY_COLLIDERS_CONFIG_KEY, true));
-		setOutlineVisibility(visibility && hide.Ide.inst.currentConfig.get(hide.view.Prefab.VISIBILITY_OUTLINE_CONFIG_KEY, true));
-		setSceneInfoVisibility(visibility && hide.Ide.inst.currentConfig.get(hide.view.Prefab.VISIBILITY_SCENE_INFOS_CONFIG_KEY, true));
-		setWireframeVisibility(visibility && hide.Ide.inst.currentConfig.get(hide.view.Prefab.VISIBILITY_WIREFRAME_CONFIG_KEY, true));
-		setSceneVisibility(!hide.Ide.inst.currentConfig.get(hide.view.Prefab.VISIBILITY_DISABLE_SCENE_RENDER_CONFIG_KEY, false));
+		grid.visible = visibility && hide.Ide.inst.currentConfig.get(VISIBILITY_GRID_CONFIG_KEY, true);
+		setJointsDebugVisibility(visibility && hide.Ide.inst.currentConfig.get(VISIBILITY_JOINTS_CONFIG_KEY, true));
+		setColliderDebugVisibility(visibility && hide.Ide.inst.currentConfig.get(VISIBILITY_COLLIDERS_CONFIG_KEY, true));
+		setMiscDebugVisibility(visibility && hide.Ide.inst.currentConfig.get(VISIBILITY_COLLIDERS_CONFIG_KEY, true));
+		setOutlineVisibility(visibility && hide.Ide.inst.currentConfig.get(VISIBILITY_OUTLINE_CONFIG_KEY, true));
+		setSceneInfoVisibility(visibility && hide.Ide.inst.currentConfig.get(VISIBILITY_SCENE_INFOS_CONFIG_KEY, true));
+		setWireframeVisibility(visibility && hide.Ide.inst.currentConfig.get(VISIBILITY_WIREFRAME_CONFIG_KEY, true));
+		setSceneVisibility(!hide.Ide.inst.currentConfig.get(VISIBILITY_DISABLE_SCENE_RENDER_CONFIG_KEY, false));
 	}
 
 	@:access(h3d.scene.Skin)
-	public function setJointsDebugVisibility(visible : Bool) {
+	public dynamic function setJointsDebugVisibility(visible : Bool) {
 		for (m in scene.s3d.getMeshes()) {
 			var sk = Std.downcast(m,h3d.scene.Skin);
 			if (sk != null)
@@ -143,7 +156,7 @@ class HuiSceneEditor extends HuiElement {
 		}
 	}
 
-	public function setColliderDebugVisibility(visible : Bool) {
+	public dynamic function setColliderDebugVisibility(visible : Bool) {
 		if (visible) {
 			if (rootDebugCollider == null) {
 				rootDebugCollider = new h3d.scene.Object(scene.s3d);
@@ -188,13 +201,13 @@ class HuiSceneEditor extends HuiElement {
 		}
 	}
 
-	public function setMiscDebugVisibility(visible : Bool) {
+	public dynamic function setMiscDebugVisibility(visible : Bool) {
 		if (scene?.s3d?.renderer == null)
 			return;
 		scene.s3d.renderer.showEditorGuides = visible;
 	}
 
-	public function setOutlineVisibility(visible : Bool) {
+	public dynamic function setOutlineVisibility(visible : Bool) {
 		if (scene?.s3d?.renderer == null)
 			return;
 		for (e in scene.s3d.renderer.effects)
@@ -202,13 +215,13 @@ class HuiSceneEditor extends HuiElement {
 				e.enabled = visible;
 	}
 
-	public function setSceneInfoVisibility(visible : Bool) {
+	public dynamic function setSceneInfoVisibility(visible : Bool) {
 		#if editor_hl
 		scene?.showSceneInfos = visible;
 		#end
 	}
 
-	public function setWireframeVisibility(visible : Bool) {
+	public dynamic function setWireframeVisibility(visible : Bool) {
 		var engine = h3d.Engine.getCurrent();
 		if (engine.driver.hasFeature(Wireframe)) {
 			for (mesh in scene.s3d.getMeshes()) {
@@ -223,7 +236,7 @@ class HuiSceneEditor extends HuiElement {
 		}
 	}
 
-	public function setSceneVisibility(visible : Bool) {
+	public dynamic function setSceneVisibility(visible : Bool) {
 		scene.disableSceneRender = !visible;
 	}
 
