@@ -8,7 +8,7 @@ class HuiColorBox extends HuiElement {
 	</hui-color-box>
 
 	public var value(default, set) : Int = 0xFF00FF;
-	public var useAlpha: Bool = false;
+	public var useAlpha(default, set): Bool = false;
 	var pickerGuard : Int = 0;
 	var picker : HuiColorPicker = null;
 	var alphaShader : hrt.shader.PreviewShaderAlpha;
@@ -23,7 +23,6 @@ class HuiColorBox extends HuiElement {
 		}
 
 		alphaShader = new hrt.shader.PreviewShaderAlpha();
-		alphaShader.split = 0.5;
 
 		this.backgroundType = "hui";
 		bitmap.tile = h2d.Tile.fromColor(0xFFFFFF);
@@ -47,6 +46,13 @@ class HuiColorBox extends HuiElement {
 		};
 
 		set_value(value);
+		set_useAlpha(useAlpha);
+	}
+
+	function set_useAlpha(v) {
+		useAlpha = v;
+		alphaShader.split = useAlpha ? 0.5 : 1.1;
+		return useAlpha;
 	}
 
 	override function onAfterReflow() {

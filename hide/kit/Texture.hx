@@ -5,6 +5,8 @@ package hide.kit;
 class Texture extends Widget<Dynamic> {
 	#if js
 	var textureChoice: hide.comp.TextureChoice2;
+	#elseif hui
+	var textureChoice: hrt.ui.HuiTextureChoice;
 	#end
 
 	function makeInput() : NativeElement {
@@ -16,12 +18,20 @@ class Texture extends Widget<Dynamic> {
 		}
 
 		return textureChoice.element[0];
+		#else
+		textureChoice = new hrt.ui.HuiTextureChoice();
+		textureChoice.onValueChange = (temp) -> {
+			value = textureChoice.value;
+			broadcastValueChange(temp);
+		}
+
+		return textureChoice;
 		#end
 		return null;
 	}
 
 	override function syncValueUI() {
-		#if js
+		#if (js || hui)
 		if (textureChoice != null)
 			textureChoice.value = value;
 		#end

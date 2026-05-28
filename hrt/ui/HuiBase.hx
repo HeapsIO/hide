@@ -87,7 +87,7 @@ class HuiBase extends HuiElement {
 		popup.anchor = anchor;
 		if (dismissable)
 			@:privateAccess popup.addDismissable(this);
-		else 
+		else
 			@:privateAccess popup.addModal(this);
 	}
 

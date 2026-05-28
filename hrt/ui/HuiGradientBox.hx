@@ -35,13 +35,15 @@ class HuiGradientBox extends HuiElement {
 		return value;
 	}
 
-	dynamic function onValueChanged(isTempChanged: Bool) {
+	public dynamic function onValueChanged(isTempChanged: Bool) {
 
 	}
 
 	override function onAfterReflow() {
-		gradientDisplay.width = innerWidth;
-		gradientDisplay.height = innerHeight;
+		gradientDisplay.x = 2;
+		gradientDisplay.y = 2;
+		gradientDisplay.width = innerWidth-4;
+		gradientDisplay.height = innerHeight-4;
 	}
 
 	public function refreshGradient() {

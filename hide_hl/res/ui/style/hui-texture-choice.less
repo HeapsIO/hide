@@ -1,0 +1,32 @@
+hui-texture-choice {
+	> #widget {
+		fill-width: 1;
+		auto-size: 1;
+
+		>#file-picker, >#gradient-box {
+			> hui-background {
+				border-radius:  @base-corner-radius 0 0 @base-corner-radius;
+			}
+		}
+	}
+
+	> #button-menu {
+		visible: true;
+		width: 16;
+		height: 16;
+		padding: 0;
+		margin: 0;
+		> hui-icon {
+			margin: 0;
+			padding: 0;
+		}
+
+		margin-left: -1;
+
+		.button-border();
+
+		> hui-background {
+			border-radius: 0 @base-corner-radius @base-corner-radius 0;
+		}
+	}
+}

@@ -529,19 +529,22 @@ class HuiElement extends h2d.Flow #if hui implements h2d.domkit.Object #end {
 			uiBase.scrollFocus = null;
 		}
 
-		if( overflow == Scroll && (base.scrollFocus == null || base.scrollFocus == this) ) {
+		if (!uiBase.style.inspectModeActive || !hxd.Key.isDown(hxd.Key.SHIFT)) {
 
-			var maxScroll = Std.int(contentHeight - calculatedHeight);
-			var newPos = hxd.Math.clamp(scrollPosY + e.wheelDelta * scrollWheelSpeed, 0, maxScroll);
+			if( overflow == Scroll && (base.scrollFocus == null || base.scrollFocus == this) ) {
 
-			if (newPos != scrollPosY) {
-				scrollPosY = newPos;
+				var maxScroll = Std.int(contentHeight - calculatedHeight);
+				var newPos = hxd.Math.clamp(scrollPosY + e.wheelDelta * scrollWheelSpeed, 0, maxScroll);
 
-				// only take focus if we actually did scroll
-				uiBase.scrollFocus = this;
-				base.lastScrollTime = now;
+				if (newPos != scrollPosY) {
+					scrollPosY = newPos;
+
+					// only take focus if we actually did scroll
+					uiBase.scrollFocus = this;
+					base.lastScrollTime = now;
+				}
+				e.propagate = uiBase.scrollFocus == null;
 			}
-			e.propagate = uiBase.scrollFocus == null;
 		}
 
 		onWheel(e);

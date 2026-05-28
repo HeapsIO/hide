@@ -25,6 +25,7 @@ class HuiGradientEditor extends HuiPopup {
 
 						<hui-button-menu(settingsMenu)>
 							<hui-text("Texture settings")/>
+							<hui-icon("dropDown")/>
 						</hui-button-menu>
 					</hui-element>
 

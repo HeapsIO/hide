@@ -6,6 +6,7 @@
 @color-gray-4: #333333;
 @color-gray-5: #373737;
 @color-gray-6: #545454;
+@color-gray-7: #727272;
 
 // From Catppuccin Mocha
 @color-red: #f38ba8;
@@ -25,6 +26,7 @@
 @widget-base-height: 16;
 @widget-bg: @color-gray-4;
 @widget-border: @color-gray-6;
+@widget-border-lighter: @color-gray-7;
 
 @base-corner-radius: 3;
 
@@ -66,6 +68,8 @@
 	&hui-text, hui-text {
 		color: @text-disabled;
 	}
+
+	cursor: none;
 }
 
 .vertical {
@@ -86,6 +90,21 @@
 	&:active {
 		> hui-background {
 			background: @color-over-lighter;
+		}
+		offset-y: 1;
+	}
+}
+
+.button-border() {
+	.button();
+	> hui-background {
+		border-radius: @base-corner-radius;
+		outline: 1 @widget-border;
+	}
+
+	&:hover {
+		> hui-background {
+			outline: 1 @widget-border-lighter;
 		}
 	}
 }

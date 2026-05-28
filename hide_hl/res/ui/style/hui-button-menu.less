@@ -7,15 +7,9 @@ hui-button-menu {
 	padding-left: 8;
 	padding-right: 8;
 
-	&:hover, &.open {
-		>hui-background {
-			background: @color-over;
-		}
-	}
+	.button();
 
-	&:active {
-		>hui-background {
-			background: @color-over-lighter;
-		}
+	&.border {
+		.button-border();
 	}
 }

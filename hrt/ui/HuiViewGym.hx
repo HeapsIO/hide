@@ -37,6 +37,11 @@ class GymWidgets extends HuiElement {
 				<hui-gradient-box/>
 			</hui-element>
 
+			<hui-text("hui-texture-choice")/>
+			<hui-element class="example">
+				<hui-texture-choice/>
+			</hui-element>
+
 			<hui-text("hui-scene")/>
 			<hui-element class="example">
 				<hui-split-container direction="horizontal">

@@ -39,6 +39,7 @@ class Color extends Widget<Dynamic> {
 		return colorBox.element[0];
 		#elseif hui
 		colorBox = new hrt.ui.HuiColorBox();
+		colorBox.useAlpha = alpha;
 		if (arr) {
 			colorBox.value = h3d.Vector4.fromArray(value).toColor();
 		} else if (vec) {
