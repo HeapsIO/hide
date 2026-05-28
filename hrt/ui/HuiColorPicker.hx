@@ -125,6 +125,7 @@ class HuiColorPicker extends HuiPopup {
 			color.r = tempColor.r;
 			color.g = tempColor.g;
 			color.b = tempColor.b;
+			color.a = tempColor.a;
 			syncColorSecondary(color);
 			syncColorPreview(color);
 
@@ -167,6 +168,8 @@ class HuiColorPicker extends HuiPopup {
 				outColor.z = tempColor.b / 255.0;
 				if (alpha) {
 					outColor.w = tempColor.a / 255.0;
+				} else {
+					outColor.w = 1.0;
 				}
 			}
 
