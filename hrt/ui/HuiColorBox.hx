@@ -4,12 +4,14 @@ package hrt.ui;
 
 class HuiColorBox extends HuiElement {
 	static var SRC = <hui-color-box>
+		<bitmap id="bitmap"/>
 	</hui-color-box>
 
 	public var value(default, set) : Int = 0xFF00FF;
 	public var useAlpha: Bool = false;
 	var pickerGuard : Int = 0;
 	var picker : HuiColorPicker = null;
+	var alphaShader : hrt.shader.PreviewShaderAlpha;
 
 	public function new(?parent: h2d.Object) {
 		super(parent);
@@ -20,8 +22,12 @@ class HuiColorBox extends HuiElement {
 			picker = null;
 		}
 
+		alphaShader = new hrt.shader.PreviewShaderAlpha();
+		alphaShader.split = 0.5;
+
 		this.backgroundType = "hui";
-		this.huiBg.imageTile = h2d.Tile.fromColor(value, 60, 20);
+		bitmap.tile = h2d.Tile.fromColor(0xFFFFFF);
+		bitmap.addShader(alphaShader);
 		this.onClick = (e : hxd.Event) -> {
 			if (picker == null) {
 				picker = new HuiColorPicker(this, null);
@@ -39,14 +45,21 @@ class HuiColorBox extends HuiElement {
 				picker.close();
 			}
 		};
+
+		set_value(value);
+	}
+
+	override function onAfterReflow() {
+		bitmap.x = 1;
+		bitmap.y = 1;
+		bitmap.width = calculatedWidth-2;
+		bitmap.height = calculatedHeight-2;
 	}
 
 	public function set_value(v : Int) {
-		this.huiBg.imageTile = h2d.Tile.fromColor(v, 60, 20);
+		bitmap.color = h3d.Vector4.fromColor(v);
 		return value = v;
 	}
-
-
 
 	public dynamic function onValueChanged(isTemporary: Bool) {}
 }

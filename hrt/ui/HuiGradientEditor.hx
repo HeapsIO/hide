@@ -10,11 +10,30 @@ class HuiGradientEditor extends HuiPopup {
 				<bitmap id="gradient-display"/>
 			</hui-element>
 
-			<hui-line>
-				<hui-text("Position")/>
-				<hui-input-box id="stop-position"/>
-			</hui-line>
-			<hui-color-box id="color-picker"/>
+
+			<hui-element id="stop-editor">
+				<hui-text id="stop-number"/>
+
+				<hui-element id="h-layout">
+					<hui-color-box id="color-picker"/>
+
+					<hui-element id="v-layout">
+						<hui-element class="edit-line">
+							<hui-element class="label"><hui-text("Position") /></hui-element>
+							<hui-slider min={0.0} max={1.0} decimals={3} id="stop-position"/>
+						</hui-element>
+
+						<hui-button-menu(settingsMenu)>
+							<hui-text("Texture settings")/>
+						</hui-button-menu>
+					</hui-element>
+
+				</hui-element>
+
+			</hui-element>
+
+
+
 		</hui-gradient-editor>
 
 	public function new(?parent) {
@@ -32,6 +51,10 @@ class HuiGradientEditor extends HuiPopup {
 
 		colorPicker.useAlpha = true;
 		colorPicker.onValueChanged = colorPickerColorChanged;
+
+		stopPosition.onValueChanged = stopPositionChanged;
+
+		refreshSelectedStop();
 	}
 
 	public var value(default, set): hrt.impl.Gradient.GradientData;
@@ -63,6 +86,29 @@ class HuiGradientEditor extends HuiPopup {
 			refreshStops();
 		}
 	}
+
+	function settingsMenu() : Array<hrt.ui.HuiMenu.MenuItem> {
+
+		var resolutionMenu : Array<hrt.ui.HuiMenu.MenuItem> = [];
+		for (i in 3...9) {
+			var val = 1 << i;
+			resolutionMenu.push({label: '$val px', radio: () -> value.resolution == val, click: () -> {value.resolution = val; refreshGradient(); onValueChanged(false);}, stayOpen: true});
+		}
+
+		return [
+			{label: "Resolution", menu: resolutionMenu},
+			{label: "Orientation", menu: [
+				{label: "Vertical", radio: () -> value.isVertical, click: () -> {value.isVertical = true; onValueChanged(false);}, stayOpen: true},
+				{label: "Horizontal", radio: () -> !value.isVertical, click: () -> {value.isVertical = false; onValueChanged(false);}, stayOpen: true},
+			]},
+			{label: "Interpolation", menu: [
+				{label: "Linear", radio: () -> value.interpolation == Linear, click: () -> {value.interpolation = Linear; refreshGradient(); onValueChanged(false);}, stayOpen: true},
+				{label: "Cubic", radio: () -> value.interpolation == Cubic, click: () -> {value.interpolation = Cubic; refreshGradient(); onValueChanged(false);}, stayOpen: true},
+				{label: "Constant", radio: () -> value.interpolation == Constant, click: () -> {value.interpolation = Constant; refreshGradient(); onValueChanged(false);}, stayOpen: true},
+			]},
+		];
+	}
+
 
 	function gradientMousePush(e: hxd.Event) {
 		if (e.button == 0) {
@@ -113,7 +159,8 @@ class HuiGradientEditor extends HuiPopup {
 
 				sortStops(() -> value.stops[selectedStop].position = x);
 
-				refresh();
+				refreshGradient();
+				refreshSelectedStop();
 			default:
 		}
 		e.propagate = false;
@@ -138,13 +185,22 @@ class HuiGradientEditor extends HuiPopup {
 		if (selectedStop == -1)
 			return;
 		value.stops[selectedStop].color = colorPicker.value;
-		refresh();
+		refreshGradient();
+		onValueChanged(tempChange);
+	}
+
+	function stopPositionChanged(tempChange: Bool) {
+		if (selectedStop == -1)
+			return;
+
+		sortStops(() -> value.stops[selectedStop].position = stopPosition.value);
+		refreshGradient();
 		onValueChanged(tempChange);
 	}
 
 	function set_value(v: hrt.impl.Gradient.GradientData) : hrt.impl.Gradient.GradientData {
 		value = v;
-		refresh();
+		refreshGradient();
 		return value;
 	}
 
@@ -156,15 +212,23 @@ class HuiGradientEditor extends HuiPopup {
 	}
 
 	function refreshSelectedStop() {
+
+		stopPosition.enable = selectedStop != -1;
+		colorPicker.enable = selectedStop != -1;
+
 		if (selectedStop == -1) {
-			colorPicker.value = 0x777777;
+			colorPicker.value = 0x77777777;
+			stopNumber.text = 'No stop selected';
+			stopPosition.value = 0;
 		} else {
 			colorPicker.value = value.stops[selectedStop].color;
+			stopNumber.text = 'Stop ${selectedStop + 1} / ${value.stops.length}';
+			stopPosition.value = value.stops[selectedStop].position;
 		}
 	}
 
-	function refresh() {
-		var tex = hrt.impl.Gradient.textureFromData(value);
+	function refreshGradient() {
+		var tex = hrt.impl.Gradient.textureFromData(value, false);
 		gradientDisplay.tile = h2d.Tile.fromTexture(tex);
 
 		refreshStops();

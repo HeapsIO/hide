@@ -16,8 +16,55 @@ hui-gradient-editor {
 		}
 	}
 
-	#color-picker {
-		width: 64;
-		height: 64;
+	> #stop-editor {
+		layout: vertical;
+		fill-width: 1;
+
+		padding: 8;
+		#color-picker {
+			width: 64;
+			height: 64;
+		}
+
+		hui-text {
+			margin-bottom: 3;
+		}
+
+		> #h-layout {
+			layout: horizontal;
+			fill-width: 1;
+
+			> #v-layout {
+				layout: vertical;
+				auto-size: 1;
+				fill-height: 1;
+
+
+				> * {
+					valign: top;
+				}
+
+				> .edit-line {
+					fill-width: 1;
+
+					layout: horizontal;
+					>.label {
+						width: 80;
+						padding-right: 5;
+
+						hui-text {
+							halign: right;
+							margin-bottom: 3;
+						}
+					}
+				}
+
+				> hui-button-menu {
+					halign: right;
+					valign: bottom;
+				}
+			}
+
+		}
 	}
 }

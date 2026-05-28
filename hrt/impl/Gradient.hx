@@ -161,10 +161,10 @@ class Gradient {
 	}
 	#end
 
-	public static function getDataHash(data : GradientData) : Int32 {
+	public static function getDataHash(data : GradientData, ?forceOrientation: Bool) : Int32 {
 
 		var hash = hxd.Rand.hash(data.resolution);
-		hash = hxd.Rand.hash(data.isVertical ? 0 : 1, hash);
+		hash = hxd.Rand.hash((forceOrientation ?? data.isVertical) ? 0 : 1, hash);
 
 		// Vieux hack nul
 		hash = hxd.Rand.hash((data.interpolation:String).charCodeAt(0), hash);
@@ -210,9 +210,9 @@ class Gradient {
 		tex.uploadPixels(genPixels(data), 0, idx);
 	}
 
-	public static function textureFromData(data : GradientData) : h3d.mat.Texture {
+	public static function textureFromData(data : GradientData, ?forceOrientation: Bool) : h3d.mat.Texture {
 		function genPixels() {
-			var xScale = data.isVertical ? 0 : 1;
+			var xScale = (forceOrientation ?? data.isVertical) ? 0 : 1;
 			var yScale = 1 - xScale;
 			var pixels = hxd.Pixels.alloc(data.resolution * xScale + 1 * yScale,1 * xScale + data.resolution * yScale, ARGB);
 
@@ -226,7 +226,7 @@ class Gradient {
 
 
 		#if !editor
-		var hash = getDataHash(data);
+		var hash = getDataHash(data, forceOrientation);
 
 		var cache = getCache();
 		var entry = cache.get(hash);
