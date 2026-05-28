@@ -186,7 +186,9 @@ class RemoteConsoleConnection {
 	}
 
 	function sendData( cmd : String, args : Dynamic, id : Int ) {
-		var obj = { cmd : cmd, args : args, id : id};
+		if( sock == null )
+			return;
+		var obj = { cmd : cmd, args : args, id : id };
 		var bytes = haxe.io.Bytes.ofString(haxe.Json.stringify(obj) + "\n");
 		sock.out.writeBytes(bytes, 0, bytes.length);
 	}

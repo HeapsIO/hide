@@ -16,9 +16,8 @@
 /bin/credits.html
 /bin/icudtl.dat
 *.hl
-res/.tmp
+.tmp
 shaders/
 api.xml
-hide_hl/res/.tmp
 bin_hl/
 *.dump
