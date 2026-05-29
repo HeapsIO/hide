@@ -1,5 +1,6 @@
 package hrt.ui;
 
+#if hui
 // Shapes center and rotation are defined relative to parent
 enum Shape {
 	Box(center : h3d.col.Point, rotation : h3d.Vector, sizeX : Float, sizeY : Float, sizeZ : Float);
@@ -566,3 +567,4 @@ class HuiShapeEditor extends HuiElement {
 		}
 	}
 }
+#end

@@ -1,6 +1,7 @@
 package hide.view;
 import hrt.ui.*;
 
+#if hui
 private enum abstract CollisionMode(Int) from Int to Int {
 	var Default = 0;
 	var None    = 1;
@@ -202,7 +203,6 @@ class CollisionSettings {
 	}
 }
 
-#if hui
 class HuiModelInspector extends HuiElement {
 	static var SRC = <hui-model-inspector>
 		<hui-category("Info")>
