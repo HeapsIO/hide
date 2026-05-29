@@ -128,16 +128,77 @@ class CollisionSettings {
 				parentObj.defaultTransform = model.position.toMatrix().getInverse();
 				return parentObj;
 
-			// case Shapes:
-				// var root = new h3d.scene.Object();
-				// for (s in toShapeEditor())
-				// 	hide.comp.ShapeEditor.getInteractive(s, false, root);
+			case Shapes:
+				var root = new h3d.scene.Object();
+				for (s in toShapeEditor())
+					hrt.ui.HuiShapeEditor.getInteractive(s, false, root);
 
-				// return root;
+				return root;
 
 			default:
 				null;
 		}
+	}
+
+	public function toShapeEditor() {
+		if (params == null || mode != Shapes || params.shapes == null)
+			return [];
+		var arr : Array<hrt.ui.HuiShapeEditor.Shape> = [];
+		inline function makeVector(dyn) {
+			return new h3d.Vector(dyn.x, dyn.y, dyn.z);
+		}
+		for (s in params.shapes) {
+			var position = makeVector(s.position);
+			switch( s.type ) {
+			case Sphere:
+				arr.push(Sphere(position, s.radius));
+			case Box:
+				var halfExtent = makeVector(s.halfExtent);
+				var rotation = makeVector(s.rotation);
+				arr.push(Box(position, rotation, halfExtent.x * 2, halfExtent.y * 2, halfExtent.z * 2));
+			case Capsule:
+				var halfExtent = makeVector(s.halfExtent);
+				var qrot = new h3d.Quat();
+				qrot.initMoveTo(new h3d.Vector(0.0, 0.0, 1.0), halfExtent.normalized());
+				arr.push(Capsule(position, qrot.toEuler(), s.radius, halfExtent.length() * 2));
+			case Cylinder:
+				var halfExtent = makeVector(s.halfExtent);
+				var qrot = new h3d.Quat();
+				qrot.initMoveTo(new h3d.Vector(0.0, 0.0, 1.0), halfExtent.normalized());
+				arr.push(Cylinder(position, qrot.toEuler(), s.radius, halfExtent.length() * 2));
+			default:
+				Ide.showError("Don't know how to handle shape type " + s.type);
+			}
+		}
+		return arr;
+	}
+
+	public function fromShapeEditor(arr : Array<hrt.ui.HuiShapeEditor.Shape>) {
+		var shapes : Array<hxd.fmt.fbx.HMDOut.ShapeColliderParams> = [];
+		for( s in arr ) {
+			switch(s) {
+			case Sphere(center, radius):
+				shapes.push({ type : Sphere, position : center, radius : radius });
+			case Box(center, rotation, sizeX, sizeY, sizeZ):
+				var halfExtent = new h3d.Vector(sizeX * 0.5, sizeY * 0.5, sizeZ * 0.5);
+				shapes.push({ type : Box, position : center, rotation : rotation, halfExtent: halfExtent });
+			case Capsule(center, rotation, radius, height):
+				var rmat = h3d.Matrix.R(rotation.x, rotation.y, rotation.z);
+				var halfExtent = new h3d.Vector(0.0, 0.0, 1.0);
+				halfExtent.transform3x3(rmat);
+				halfExtent.normalize();
+				halfExtent.scale(height * 0.5);
+				shapes.push({ type : Capsule, position: center, halfExtent : halfExtent, radius : radius });
+			case Cylinder(center, rotation, radius, height):
+				var rmat = h3d.Matrix.R(rotation.x, rotation.y, rotation.z);
+				var halfExtent = new h3d.Vector(0.0, 0.0, 1.0);
+				halfExtent.transform3x3(rmat);
+				halfExtent.normalize();
+				halfExtent.scale(height * 0.5);
+				shapes.push({ type : Cylinder, position: center, halfExtent : halfExtent, radius : radius });
+			}
+		}
+		return shapes;
 	}
 }
 
@@ -168,6 +229,7 @@ class HuiModelInspector extends HuiElement {
 			<hui-element class="horizontal"><hui-text("Max Subdivision") class="label"/><hui-input-box class="value" id="max-subdivision-el"/></hui-element>
 			<hui-element class="horizontal"><hui-text("Mesh") class="label"/><hui-select class="value" id="mesh-el"/></hui-element>
 			<hui-button class="full" id="compute-collider-btn"><hui-text("Compute Collider")></hui-text></hui-button>
+			<hui-shape-editor(obj) id="shape-editor"></hui-shape-editor>
 		</hui-category>
 		<hui-category("LODs")>
 			<hui-element class="horizontal"><hui-text("LOD Count") class="label"/><hui-text("1") class="value" id="lod-count"/></hui-element>
@@ -429,6 +491,10 @@ class HuiModelInspector extends HuiElement {
 			meshEl.value = settings.params?.mesh;
 
 			computeColliderBtn.visible = collisionModeEl.value == CollisionMode.Auto;
+
+			shapeEditor.visible = collisionModeEl.value == CollisionMode.Shapes;
+			shapeEditor.refresh(settings.toShapeEditor());
+			shapeEditor.rootDebugObj = obj;
 		}
 
 		function applyCollisionEdition() {
@@ -450,11 +516,11 @@ class HuiModelInspector extends HuiElement {
 				case Mesh:
 					Reflect.setField(curParams, "mesh", meshName == "null" ? null : meshName);
 				case Shapes:
-					// var shapes = settings.fromShapeEditor(shapeEditor.getValue());
-					// if( shapes.length == 0 )
-					// 	curParams = null;
-					// else
-					// 	Reflect.setField(curParams, "shapes", shapes);
+					var shapes = settings.fromShapeEditor(shapeEditor.getValue());
+					if (shapes.length == 0)
+						curParams = null;
+					else
+						Reflect.setField(curParams, "shapes", shapes);
 				default:
 					throw "Unknown collision mode";
 			}
@@ -472,14 +538,13 @@ class HuiModelInspector extends HuiElement {
 				refreshCollisionEdition();
 				if (curMode != Auto || curMode != prevMode)
 					@:privateAccess model.sceneEditor.updateDebugOverlayVisibility();
-				// if (settings.mode == Shapes) {
-				// 	for (s in shapesEditor)
-				// 		s.refresh(settings.toShapeEditor());
-				// }
+				if (settings.mode == Shapes)
+					shapeEditor.refresh(settings.toShapeEditor());
 			}, true);
 		}
 
 		collisionModeEl.onValueChanged = () -> applyCollisionEdition();
+		shapeEditor.onChange = () -> applyCollisionEdition();
 		precisionEl.onChange = (_) -> applyCollisionEdition();
 		maxConvexHullsEl.onChange = (_) -> applyCollisionEdition();
 		maxSubdivisionEl.onChange = (_) -> applyCollisionEdition();
@@ -507,8 +572,8 @@ class Model extends HuiView<{path: String}> {
 
 	var obj : h3d.scene.Object;
 	var selectedObjects: Array<Dynamic> = [];
-
 	var collisionSettings : Map<String, CollisionSettings>;
+	var modelInspector : HuiModelInspector;
 
 	public function new(_state: Dynamic, ?parent) {
 		super(_state, parent);
@@ -813,7 +878,7 @@ class Model extends HuiView<{path: String}> {
 		var el = selectedObjects[0];
 		var o = Std.downcast(el, h3d.scene.Object);
 		if (o != null)
-			new HuiModelInspector(o, this, sceneEditor.inspectorPanel);
+			modelInspector = new HuiModelInspector(o, this, sceneEditor.inspectorPanel);
 	}
 
 	function setColliderDebugVisibility(visible : Bool) {
@@ -843,15 +908,13 @@ class Model extends HuiView<{path: String}> {
 				var debugCreated = false;
 
 				// If user is currently using the shape editor, use the shape editors debug as debug colliders
-				// if (parent.collisionList != null) {
-					// var shapeEditor = parent.shapesEditor.get(parent.collisionList.getItemName(c));
-					// if (shapeEditor != null && c.mode == Shapes) {
-					// 	shapeEditor.removeAllInteractives();
-					// 	shapeEditor.rootDebugObj = debugCollider;
-					// 	shapeEditor.createAllInteractives();
-					// 	debugCreated = true;
-					// }
-				// }
+				var shapeEditor = @:privateAccess modelInspector?.shapeEditor;
+				if (shapeEditor != null && shapeEditor.visible == true && c.mode == Shapes) {
+					shapeEditor.removeAllInteractives();
+					shapeEditor.rootDebugObj = debugCollider;
+					shapeEditor.createAllInteractives();
+					debugCreated = true;
+				}
 
 				if (debugCreated)
 					continue;

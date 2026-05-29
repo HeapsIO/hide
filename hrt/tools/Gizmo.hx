@@ -72,6 +72,11 @@ class Gizmo extends h3d.scene.Object {
 	public static final Z_COLOR = 0xff2196f3;
 	public static final DEFAULT_COLOR = 0xFFAAAAAA;
 
+	static public var gizmoSwitchModeCommand = new hrt.ui.HuiCommands.HuiCommand("Gizmo Switch Mode", {key: hxd.Key.SPACE});
+	static public var gizmoTranslateCommand = new hrt.ui.HuiCommands.HuiCommand("Gizmo Translate", {key: hxd.Key.W});
+	static public var gizmoRotateCommand = new hrt.ui.HuiCommands.HuiCommand("Gizmo Rotate", {key: hxd.Key.E});
+	static public var gizmoScaleCommand = new hrt.ui.HuiCommands.HuiCommand("Gizmo Scale", {key: hxd.Key.R});
+
 	public var mode : EditMode = Translation;
 	public var isLocalTransform(default, set) : Bool = false;
 	function set_isLocalTransform(v) {

@@ -1,0 +1,91 @@
+hui-shape-editor {
+	auto-size: 1;
+	fill-width: true;
+	layout: vertical;
+	padding-left: 5;
+	padding-right: 5;
+	margin-top: 5;
+
+	#shape-list {
+		layout: vertical;
+		fill-width: true;
+		min-height: 10;
+		padding: 5;
+		spacing: 3;
+
+		background-type: hui;
+		> hui-background {
+			background: @color-gray-4;
+			border-radius: @base-corner-radius;
+		}
+
+		.shape-list-entry {
+			fill-width: true;
+			height: 18;
+			background-type: hui;
+			> hui-background {
+				background: @color-gray-6;
+				border-radius: @base-corner-radius;
+			}
+
+			&.selected {
+				background-type: hui;
+				> hui-background {
+					background: @color-blue;
+				}
+			}
+
+			hui-text {
+				margin-left: 5;
+				valign: middle;
+			}
+		}
+	}
+
+	#buttons {
+		hui-button {
+			padding: 2 5 2 5;
+			background-type: hui;
+			> hui-background {
+				background: @color-gray-4;
+				outline: 0 @widget-border;
+			}
+		}
+
+		#add-btn {
+			background-type: hui;
+			> hui-background {
+				border-radius: 0 0 0 @base-corner-radius;
+			}
+		}
+
+		#remove-btn {
+			background-type: hui;
+			> hui-background {
+				border-radius: 0 0 @base-corner-radius 0;
+			}
+		}
+	}
+
+	#shape-inspector {
+		layout: vertical;
+
+		#edit-btn {
+			fill-width: true;
+			padding: 1;
+			hui-icon {
+				halign: middle;
+			}
+
+			&.activated {
+				> hui-background {
+					background: @color-blue;
+				}
+			}
+		}
+
+		.group {
+			spacing: 3;
+		}
+	}
+}

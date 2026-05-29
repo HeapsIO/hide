@@ -23,11 +23,6 @@ class Prefab extends HuiView<{path: String}> {
 	public static var GIZMO_SNAP_STEP_CONFIG_KEY = "editor.gizmoSnapStep";
 	public static var GIZMO_SNAP_GRID_CONFIG_KEY = "editor.gizmoSnapOnGrid";
 
-	static public var gizmoSwitchModeCommand = new hrt.ui.HuiCommands.HuiCommand("Gizmo Switch Mode", {key: hxd.Key.SPACE});
-	static public var gizmoTranslateCommand = new hrt.ui.HuiCommands.HuiCommand("Gizmo Translate", {key: hxd.Key.W});
-	static public var gizmoRotateCommand = new hrt.ui.HuiCommands.HuiCommand("Gizmo Rotate", {key: hxd.Key.E});
-	static public var gizmoScaleCommand = new hrt.ui.HuiCommands.HuiCommand("Gizmo Scale", {key: hxd.Key.R});
-
 	public var gizmoShouldSnap(default, set) : Bool = true;
 	public function set_gizmoShouldSnap(v : Bool) {
 		hide.Ide.inst.currentConfig.set(hide.view.Prefab.GIZMO_SNAP_CONFIG_KEY, v);
@@ -197,10 +192,10 @@ class Prefab extends HuiView<{path: String}> {
 
 		gizmo = new hrt.tools.Gizmo(sceneEditor.scene.s3d);
 		gizmo.visible = false;
-		registerCommand(gizmoSwitchModeCommand, View, gizmo.switchMode);
-		registerCommand(gizmoTranslateCommand, View, gizmo.translationMode);
-		registerCommand(gizmoRotateCommand, View, gizmo.rotationMode);
-		registerCommand(gizmoScaleCommand, View, gizmo.scalingMode);
+		registerCommand(hrt.tools.Gizmo.gizmoSwitchModeCommand, View, gizmo.switchMode);
+		registerCommand(hrt.tools.Gizmo.gizmoTranslateCommand, View, gizmo.translationMode);
+		registerCommand(hrt.tools.Gizmo.gizmoRotateCommand, View, gizmo.rotationMode);
+		registerCommand(hrt.tools.Gizmo.gizmoScaleCommand, View, gizmo.scalingMode);
 
 		var initialTransform = new h3d.Matrix();
 		var initialAbs = new h3d.Matrix();
