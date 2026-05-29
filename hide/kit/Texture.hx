@@ -18,7 +18,7 @@ class Texture extends Widget<Dynamic> {
 		}
 
 		return textureChoice.element[0];
-		#else
+		#elseif hui
 		textureChoice = new hrt.ui.HuiTextureChoice();
 		textureChoice.onValueChange = (temp) -> {
 			value = textureChoice.value;

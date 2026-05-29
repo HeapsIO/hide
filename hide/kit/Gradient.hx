@@ -5,6 +5,8 @@ package hide.kit;
 class Gradient extends Widget<hrt.impl.Gradient.GradientData> {
 	#if js
 	var gradientBox: hide.comp.GradientEditor.GradientBox;
+	#elseif hui
+	var gradientBox: hrt.ui.HuiGradientBox;
 	#end
 
 	function makeInput() : NativeElement {
@@ -16,12 +18,18 @@ class Gradient extends Widget<hrt.impl.Gradient.GradientData> {
 		}
 
 		return gradientBox.element[0];
+		#elseif hui
+		gradientBox = new hrt.ui.HuiGradientBox();
+		gradientBox.onValueChanged = (isTemp) -> {
+			value = gradientBox.value;
+			broadcastValueChange(isTemp);
+		}
 		#end
 		return null;
 	}
 
 	override function syncValueUI() {
-		#if js
+		#if (js || hui)
 		if (gradientBox != null)
 			gradientBox.value = value ?? getDefaultFallback();
 		#end

@@ -29,7 +29,12 @@ class HuiFilePicker extends HuiElement {
 	}
 
 	public function set_value(v: String) {
-		path.text = v;
+		dom.toggleClass("unset", v == null);
+		if (v == null) {
+			path.text = "--- Choose file ---";
+		} else {
+			path.text = v;
+		}
 		return value = v;
 	}
 
