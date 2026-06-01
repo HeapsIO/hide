@@ -3,6 +3,12 @@ hui-gradient-editor {
 
 	width: 400;
 
+	>hui-background {
+		background: @popup-bg;
+		border-radius: @base-corner-radius;
+		outline: 1 @popup-border;
+	}
+
 	#gradient-container {
 		fill-width: 1;
 		auto-size-width: 1;
@@ -59,7 +65,7 @@ hui-gradient-editor {
 					}
 				}
 
-				> hui-button-menu {
+				> .edit-toolbar {
 					halign: right;
 					valign: bottom;
 				}

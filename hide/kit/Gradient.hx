@@ -24,6 +24,7 @@ class Gradient extends Widget<hrt.impl.Gradient.GradientData> {
 			value = gradientBox.value;
 			broadcastValueChange(isTemp);
 		}
+		return gradientBox;
 		#end
 		return null;
 	}

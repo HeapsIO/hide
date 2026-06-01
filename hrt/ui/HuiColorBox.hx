@@ -51,7 +51,7 @@ class HuiColorBox extends HuiElement {
 
 	function set_useAlpha(v) {
 		useAlpha = v;
-		alphaShader.split = useAlpha ? 0.5 : 1.1;
+		alphaShader.split.x = useAlpha ? 0.5 : 1.1;
 		return useAlpha;
 	}
 

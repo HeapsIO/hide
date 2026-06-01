@@ -23,10 +23,17 @@ class HuiGradientEditor extends HuiPopup {
 							<hui-slider min={0.0} max={1.0} decimals={3} id="stop-position"/>
 						</hui-element>
 
-						<hui-button-menu(settingsMenu)>
-							<hui-text("Texture settings")/>
-							<hui-icon("dropDown")/>
-						</hui-button-menu>
+
+						<hui-element class="edit-toolbar">
+							<hui-button-menu(editMenu)>
+								<hui-text("Edit")/>
+								<hui-icon("dropDown")/>
+							</hui-button-menu>
+							<hui-button-menu(settingsMenu)>
+								<hui-text("Texture settings")/>
+								<hui-icon("dropDown")/>
+							</hui-button-menu>
+						</hui-element>
 					</hui-element>
 
 				</hui-element>
@@ -48,12 +55,22 @@ class HuiGradientEditor extends HuiPopup {
 		gradientContainer.onMove = gradientMouseMove;
 		gradientContainer.onPush = gradientMousePush;
 
-		gradientDisplay.addShader(new hrt.shader.PreviewShaderAlpha());
+		var previewAlpha = new hrt.shader.PreviewShaderAlpha();
+		gradientDisplay.addShader(previewAlpha);
+		previewAlpha.split.y = 0.05;
+		previewAlpha.split.w = 0.95;
 
 		colorPicker.useAlpha = true;
 		colorPicker.onValueChanged = colorPickerColorChanged;
 
 		stopPosition.onValueChanged = stopPositionChanged;
+
+		registerCommand(hrt.ui.HuiCommands.delete, ElementAndChildren, () -> {
+			if (selectedStop != -1 && value.stops.length > 1) {
+				sortStops(() -> value.stops.splice(selectedStop, 1));
+				onValueChanged(false);
+			}
+		});
 
 		refreshSelectedStop();
 	}
@@ -87,6 +104,32 @@ class HuiGradientEditor extends HuiPopup {
 			refreshStops();
 		}
 	}
+
+	function editMenu() : Array<hrt.ui.HuiMenu.MenuItem> {
+		return [
+			{label: "Flip", click: flip, stayOpen: true},
+			{label: "Reset", click: reset, stayOpen: true},
+		];
+	}
+
+	function reset() {
+		value = hrt.impl.Gradient.getDefaultGradientData();
+		refreshGradient();
+		refreshSelectedStop();
+		onValueChanged(false);
+	}
+
+	function flip() {
+		sortStops(() -> {
+			for (stop in value.stops) {
+				stop.position = 1.0 - stop.position;
+			}
+		});
+
+		refreshGradient();
+		refreshSelectedStop();
+		onValueChanged(false);
+	};
 
 	function settingsMenu() : Array<hrt.ui.HuiMenu.MenuItem> {
 
@@ -143,10 +186,8 @@ class HuiGradientEditor extends HuiPopup {
 			return;
 		}
 		else if (e.button == 1) {
-			if (hoveredStop != -1) {
-				sortStops(() -> value.stops.splice(hoveredStop, 1));
-				onValueChanged(false);
-			}
+			selectedStop = hoveredStop;
+			execCommand(hrt.ui.HuiCommands.delete);
 		}
 	}
 
@@ -155,7 +196,6 @@ class HuiGradientEditor extends HuiPopup {
 			case ERelease | EReleaseOutside:
 				gradientContainer.interactive.stopCapture();
 			case EMove:
-				trace(e.relX);
 				var x = hxd.Math.clamp(e.relX / gradientContainer.calculatedWidth);
 
 				sortStops(() -> value.stops[selectedStop].position = x);
@@ -247,8 +287,20 @@ class HuiGradientEditor extends HuiPopup {
 		return v;
 	}
 
+	static var tmpVector = new h3d.Vector();
 	function refreshStops() {
 		stopGraphics.clear();
+
+		var y = gradientContainer.calculatedHeight * 0.5;
+
+		stopGraphics.beginFill(0, 1.0);
+		stopGraphics.drawRect(0, y - 1, gradientContainer.calculatedWidth, 3);
+		stopGraphics.endFill();
+
+		stopGraphics.beginFill(0xFFFFFF, 1.0);
+		stopGraphics.drawRect(0, y, gradientContainer.calculatedWidth, 1);
+		stopGraphics.endFill();
+
 
 		function drawStop(i: Int) {
 			var stop = value.stops[i];
@@ -266,6 +318,21 @@ class HuiGradientEditor extends HuiPopup {
 				stopGraphics.lineTo(x - size, y);
 				stopGraphics.lineTo(x, y - size);
 				stopGraphics.endFill();
+
+				tmpVector = h3d.Vector.fromColor(color);
+				var lineColor = 0xFFFFFF;
+				if (tmpVector.length() > 0.5) {
+					lineColor = 0;
+				}
+
+				stopGraphics.lineStyle(1, lineColor, 1.0);
+				stopGraphics.moveTo(x, 0);
+				stopGraphics.lineTo(x, 10);
+
+				stopGraphics.moveTo(x, gradientContainer.calculatedHeight - 10);
+				stopGraphics.lineTo(x, gradientContainer.calculatedHeight);
+				stopGraphics.lineStyle();
+
 			}
 
 			var expandOutline = 0;

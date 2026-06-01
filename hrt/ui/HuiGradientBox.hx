@@ -58,7 +58,7 @@ class HuiGradientBox extends HuiElement {
 			editor.onCloseListeners.push(() -> {
 				editor = null;
 			});
-			editor.onValueChanged = onEditorValueChanged;
+			editor.onValueChanged = editorValueChanged;
 			uiBase.addPopup(editor, { object: Element(this), directionX: StartInside, directionY: EndOutside });
 		} else {
 			editor.close();
@@ -66,7 +66,8 @@ class HuiGradientBox extends HuiElement {
 		}
 	}
 
-	function onEditorValueChanged(tempChange: Bool) {
+	function editorValueChanged(tempChange: Bool) {
+		value = editor.value;
 		refreshGradient();
 		onValueChanged(tempChange);
 	}
