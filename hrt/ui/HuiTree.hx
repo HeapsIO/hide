@@ -78,7 +78,6 @@ class HuiTree<TreeItem> extends HuiElement {
 
 	var afterRefreshCallbacks: Array<Void -> Void> = [];
 
-
 	var refreshFlags : RefreshFlags = RefreshFlags.ofInt(0);
 
 	public function new(?parent) {
@@ -304,6 +303,17 @@ class HuiTree<TreeItem> extends HuiElement {
 		}
 
 		rec(itemMap.get(cast item)?.parent);
+	}
+
+	public function revealAll() : Void {
+		if (refreshFlags.toInt() != 0) {
+			afterRefreshCallbacks.push(revealAll);
+			return;
+		}
+
+		for (data in itemMap) {
+			toggleItemDataOpen(data, true);
+		}
 	}
 
 	public dynamic function getItemName(item: TreeItem) : String {
@@ -606,12 +616,10 @@ class HuiTree<TreeItem> extends HuiElement {
 			for (item in items) {
 				if (searchBarContainer.visible && !item.filterState.has(Visible)) continue;
 				flatList.push(item);
-				if (isOpen(item)) {
-					if (item.children == null) {
-						generateChildren(item);
-					}
-					rec(item.children);
+				if (item.children == null) {
+					generateChildren(item);
 				}
+				rec(item.children);
 			}
 		}
 		rec(rootData);
