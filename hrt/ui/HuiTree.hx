@@ -619,7 +619,8 @@ class HuiTree<TreeItem> extends HuiElement {
 				if (item.children == null) {
 					generateChildren(item);
 				}
-				rec(item.children);
+				if (isOpen(item))
+					rec(item.children);
 			}
 		}
 		rec(rootData);
