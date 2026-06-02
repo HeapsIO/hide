@@ -30,7 +30,7 @@ class HuiColorBox extends HuiElement {
 		this.onClick = (e : hxd.Event) -> {
 			if (picker == null) {
 				picker = new HuiColorPicker(this, null);
-				uiBase.addPopup(picker, { object: Element(this), directionX: StartInside, directionY: EndOutside });
+				uiBase.addPopup(picker, getPopupAnchor());
 				picker.setColor(value, useAlpha);
 				picker.onCloseListeners.push(onPickerClose);
 				picker.onValueChanged = (isTemporary) -> {
@@ -53,6 +53,10 @@ class HuiColorBox extends HuiElement {
 		useAlpha = v;
 		alphaShader.split.x = useAlpha ? 0.5 : 1.1;
 		return useAlpha;
+	}
+
+	public dynamic function getPopupAnchor() : HuiPopup.Anchor {
+		return { object: Element(this), directionX: StartInside, directionY: EndOutside };
 	}
 
 	override function onAfterReflow() {

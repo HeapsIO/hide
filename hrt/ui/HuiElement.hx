@@ -185,7 +185,7 @@ class HuiElement extends h2d.Flow #if hui implements h2d.domkit.Object #end {
 	}
 
 	function registerCommand(command: hrt.ui.HuiCommands.HuiCommand, context: hrt.ui.HuiCommands.ShortcutContext, cb: Void -> Void) {
-		if (context == Element || context == ElementAndChildren) {
+		if (context == Element || context == ElementAndChildren || Std.downcast(this, HuiView) != null) {
 			makeInteractive();
 			registeredCommands ??= [];
 			unregisterCommand(command);
@@ -193,6 +193,9 @@ class HuiElement extends h2d.Flow #if hui implements h2d.domkit.Object #end {
 		} else if (context == View) {
 			var view = findParent(HuiView);
 			view.registerCommand(command, ElementAndChildren, cb);
+		} else if (context == FocusedView) {
+			var view = findParent(HuiView);
+			view.registerCommand(command, FocusedView, cb);
 		}
 	}
 
@@ -405,6 +408,8 @@ class HuiElement extends h2d.Flow #if hui implements h2d.domkit.Object #end {
 	function onClickInternal(e: hxd.Event) {
 		if (!enable)
 			return;
+
+		uiBase.focusView(this);
 
 		if (onDoubleClick != null) {
 			var time = haxe.Timer.stamp();

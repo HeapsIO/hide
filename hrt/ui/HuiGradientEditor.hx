@@ -62,6 +62,7 @@ class HuiGradientEditor extends HuiPopup {
 
 		colorPicker.useAlpha = true;
 		colorPicker.onValueChanged = colorPickerColorChanged;
+		colorPicker.getPopupAnchor = () -> { object: Element(this), directionX: StartOutside, directionY: EndInside };
 
 		stopPosition.onValueChanged = stopPositionChanged;
 
@@ -240,8 +241,12 @@ class HuiGradientEditor extends HuiPopup {
 	}
 
 	function set_value(v: hrt.impl.Gradient.GradientData) : hrt.impl.Gradient.GradientData {
-		value = v;
+		value = v ?? hrt.impl.Gradient.getDefaultGradientData(); // ensure we allways have a valid data for the editor
+		selectedStop = hxd.Math.imin(selectedStop, value.stops.length);
+		hoveredStop = hxd.Math.imin(hoveredStop, value.stops.length);
 		refreshGradient();
+		refreshSelectedStop();
+		refreshStops();
 		return value;
 	}
 

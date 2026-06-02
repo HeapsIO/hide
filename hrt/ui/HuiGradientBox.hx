@@ -6,6 +6,7 @@ class HuiGradientBox extends HuiElement {
 	static var SRC =
 		<hui-gradient-box>
 			<bitmap id="gradient-display"/>
+			<hui-text(" -- null gradient --") id="null-text"/>
 		</hui-gradient-box>
 
 	public var value(default, set): hrt.impl.Gradient.GradientData;
@@ -47,8 +48,12 @@ class HuiGradientBox extends HuiElement {
 	}
 
 	public function refreshGradient() {
-		var tex = hrt.impl.Gradient.textureFromData(value);
-		gradientDisplay.tile = h2d.Tile.fromTexture(tex);
+		gradientDisplay.visible = value != null;
+		nullText.visible = value == null;
+		if (value != null) {
+			var tex = hrt.impl.Gradient.textureFromData(value);
+			gradientDisplay.tile = h2d.Tile.fromTexture(tex);
+		}
 	}
 
 	public function click(e: hxd.Event) {
@@ -70,6 +75,13 @@ class HuiGradientBox extends HuiElement {
 		value = editor.value;
 		refreshGradient();
 		onValueChanged(tempChange);
+	}
+
+	override function onRemove() {
+		super.onRemove();
+		if (editor != null) {
+			editor.remove();
+		}
 	}
 }
 

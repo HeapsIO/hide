@@ -75,7 +75,7 @@ class Prefab extends HuiView<{path: String}> {
 			return selectedObjects;
 		}
 
-		registerCommand(HuiCommands.save, View, () -> { save();});
+		registerCommand(HuiCommands.save, FocusedView, () -> { save();});
 
 		sceneEditor.load();
 

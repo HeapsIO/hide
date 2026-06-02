@@ -38,14 +38,19 @@ enum ShortcutContext {
 	ElementAndChildren;
 
 	/**
-		The element parent view is focused
+		The first view in this element hierarchy will handle register the command as a ElementAndChildren
 	**/
 	View;
 
 	/**
-		Global shortcut
+		If the event was not handled, process it by the current focused view (bypass things like modal input block)
 	**/
-	Global;
+	FocusedView;
+
+	// /**
+	// 	Global shortcut
+	// **/
+	// Global;
 }
 
 typedef Shortcut = {

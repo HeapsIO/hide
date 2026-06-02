@@ -234,7 +234,7 @@ class Model extends HuiView<{path: String}> {
 			hasUnsavedChanges = undo.isDirty();
 		}
 
-		registerCommand(HuiCommands.save, View, () -> { save();});
+		registerCommand(HuiCommands.save, FocusedView, () -> { save();});
 
 		buildToolbar();
 

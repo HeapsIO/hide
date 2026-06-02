@@ -246,6 +246,7 @@ class Gradient {
 				texture.resize(pixels.width, pixels.height);
 			}
 			texture.uploadPixels(pixels);
+
 			return texture;
 		}
 		#end

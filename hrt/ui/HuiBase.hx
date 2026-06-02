@@ -10,7 +10,7 @@ class HuiBase extends HuiElement {
 	var layers : Array<h2d.Flow>;
 	var currentMenu: HuiMenu;
 	public var mainLayout: HuiMainLayout;
-	var commandFocus: HuiElement;
+	var focusedView: HuiView<Any>;
 
 	var checkedCommandEvents: Map<hxd.Event, Bool> = [];
 
@@ -110,6 +110,13 @@ class HuiBase extends HuiElement {
 		return currentMenu;
 	}
 
+	public function focusView(element: HuiElement) {
+		var view = element.getView();
+		if (view != null) {
+			focusedView = view;
+		}
+	}
+
 	/**
 		Check if event triggers a event if object is the currently focused object in the h2d scene.
 		Return true if the event has been handled by a registered command
@@ -136,6 +143,22 @@ class HuiBase extends HuiElement {
 				}
 			}
 			current = current.parent;
+		}
+
+		if (focusedView != null) {
+			if (focusedView.registeredCommands != null) {
+				for (command in focusedView.registeredCommands) {
+					if (command.context == FocusedView) {
+						if (command.command.check(event)) {
+							event.propagate = false;
+							command.callback();
+							if (!event.propagate) {
+								return true;
+							}
+						}
+					}
+				}
+			}
 		}
 		return false;
 	}

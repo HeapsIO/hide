@@ -29,8 +29,8 @@ class HuiView<T> extends HuiElement {
 			hasUnsavedChanges = undo.isDirty();
 		}
 
-		registerCommand(HuiCommands.undo, ElementAndChildren, () -> undo.undo());
-		registerCommand(HuiCommands.redo, ElementAndChildren, () -> undo.redo());
+		registerCommand(HuiCommands.undo, FocusedView, () -> undo.undo());
+		registerCommand(HuiCommands.redo, FocusedView, () -> undo.redo());
 	}
 
 	/**

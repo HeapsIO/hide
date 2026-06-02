@@ -21,8 +21,29 @@ class Gradient extends Widget<hrt.impl.Gradient.GradientData> {
 		#elseif hui
 		gradientBox = new hrt.ui.HuiGradientBox();
 		gradientBox.onValueChanged = (isTemp) -> {
+			//var oldData = haxe.Json.parse(haxe.Json.stringify(value));
 			value = gradientBox.value;
 			broadcastValueChange(isTemp);
+			//var newData = haxe.Json.parse(haxe.Json.stringify(value));
+
+			// custom undo redo for gradient
+
+			// parent?.change({
+			// 	callback: changeBehaviorInternal.bind(isTemp),
+			// 	isTemporaryEdit: isTemp, recordUndo: false
+			// });
+
+			// if (!isTemp) {
+			// 	root.editor.recordUndo((isUndo) -> {
+			// 		value = isUndo ? oldData : newData;
+			// 		gradientBox.value = value;
+
+			// 		parent?.change({
+			// 			callback: changeBehaviorInternal.bind(isTemp),
+			// 			isTemporaryEdit: false, recordUndo: false, widget: this,
+			// 		});
+			// 	});
+			// }
 		}
 		return gradientBox;
 		#end
