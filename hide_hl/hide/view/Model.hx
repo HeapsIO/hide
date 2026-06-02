@@ -495,8 +495,6 @@ class Model extends HuiView<{path: String}> {
 				Reflect.deleteField((mat.props:Dynamic), "__refMode");
 			}
 			h3d.mat.MaterialSetup.current.saveMaterialProps(mat);
-			// Ide.inst.quickMessage('Properties for mat (${m.name}) had been saved');
-			// tree.queueRefresh(RegenHeader);
 		}
 	}
 
