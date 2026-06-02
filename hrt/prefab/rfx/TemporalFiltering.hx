@@ -197,10 +197,10 @@ class TemporalFiltering extends hrt.prefab.rfx.RendererFX {
 			frustumJitter.patternScale = jitterScale;
 			frustumJitter.update();
 
-			var prevJitterOffsetX = -frustumJitter.prevSample.x / ctx.engine.width;
-			var prevJitterOffsetY = frustumJitter.prevSample.y / ctx.engine.height;
-			var jitterOffsetX = -frustumJitter.curSample.x / ctx.engine.width;
-			var jitterOffsetY = frustumJitter.curSample.y / ctx.engine.height;
+			var prevJitterOffsetX = -frustumJitter.prevSample.x / ctx.renderResolutionWidth;
+			var prevJitterOffsetY = frustumJitter.prevSample.y / ctx.renderResolutionHeight;
+			var jitterOffsetX = -frustumJitter.curSample.x / ctx.renderResolutionWidth;
+			var jitterOffsetY = frustumJitter.curSample.y / ctx.renderResolutionHeight;
 
 			curMatNoJitter.load(ctx.camera.m);
 			ctx.camera.jitterOffsetX = jitterOffsetX;

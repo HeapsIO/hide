@@ -37,7 +37,7 @@ class Sharpen extends RendererFX {
 			ctx.engine.pushTarget(sharpen, NotBound);
 			sharpenPass.shader.source = ctx.getGlobal("ldrMap");
 			sharpenPass.shader.intensity = intensity;
-			sharpenPass.shader.resolution.set(ctx.engine.width, ctx.engine.height);
+			sharpenPass.shader.resolution.set(ctx.renderResolutionWidth, ctx.renderResolutionHeight);
 			sharpenPass.render();
 			ctx.engine.popTarget();
 			ctx.setGlobal("ldrMap", sharpen);

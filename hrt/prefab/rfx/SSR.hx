@@ -226,7 +226,7 @@ class SSR extends RendererFX {
 		var normalMap = r.ctx.getGlobal("normalMap").texture;
 		ssrShader.normalMap = normalMap;
 		var t = r.ctx.engine.getCurrentTarget();
-		ssrShader.texSize = new h3d.Vector((t == null ? r.ctx.engine.width : t.width), (t == null ? r.ctx.engine.height : t.height));
+		ssrShader.texSize = new h3d.Vector((t == null ? r.ctx.renderResolutionWidth : t.width), (t == null ? r.ctx.renderResolutionHeight : t.height));
 		ssrShader.colorMul = colorMul;
 		ssrShader.intensity = intensity;
 		ssrShader.thickness = thicknessValue;
