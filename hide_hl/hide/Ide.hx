@@ -186,16 +186,22 @@ class Ide extends hide.tools.IdeData {
 		return !cancel;
 	}
 
-	public function openFile(filePath: String) {
+	public function openFile(filePath: String, ?callback : (v : hrt.ui.HuiView<Dynamic>) -> Void) {
 		var path = new haxe.io.Path(filePath);
 
 		try {
-			switch (path.ext) {
+			var v = switch (path.ext) {
 				case "prefab", "fx":
-					openView(new hide.view.Prefab({path: filePath}), Main);
+					new hide.view.Prefab({path: filePath});
 				case "fbx":
-					openView(new hide.view.Model({path: filePath}), Main);
-			}
+					new hide.view.Model({path: filePath});
+				case _:
+					null;
+			};
+
+			openView(v, Main);
+			if (callback != null)
+				callback(v);
 		} catch (e) {
 			showError('Could not open file ${getRelPath(filePath)} :<br/>$e');
 		}

@@ -106,6 +106,55 @@ class HuiSceneEditor extends HuiElement {
 		updateDebugOverlayVisibility();
 	}
 
+	public static function getMaterialLibraries(path : String) {
+		var config = hide.Config.loadForFile(hide.Ide.inst, path);
+
+		var matLibs : Array<Dynamic> = config.get("materialLibraries");
+		if( matLibs == null ) matLibs = [];
+
+		if (matLibs.length > 0) {
+			for (idx in 0...matLibs.length) {
+				var m = Std.isOfType(matLibs[idx], String) ? cast (matLibs[idx]) : null;
+				if (m == null)
+					continue;
+				matLibs[idx] = { name : m.substring(m.lastIndexOf("/") + 1), path : m };
+			}
+		}
+
+		return matLibs;
+	}
+
+	public static function getMaterialsFromLibrary(path : String, library : String) : Array<{ path: String, mat: hrt.prefab.Material }> {
+		var libraries = getMaterialLibraries(path);
+		var lPath = "";
+		for (l in libraries) {
+			if (l.name == library) {
+				lPath = l.path;
+				break;
+			}
+		}
+
+		if (lPath == "")
+			return [];
+
+		var materials = [];
+		function pathRec(p : String) {
+			try {
+				var prefab = hxd.res.Loader.currentInstance.load(p).toPrefab().load();
+				var mats = prefab.findAll(hrt.prefab.Material);
+				for ( m in mats )
+					materials.push({ path : p, mat : m});
+			} catch ( e : hxd.res.NotFound ) {
+				hide.Ide.showError('Material library ${p} not found, please update props.json');
+			}
+		}
+
+		pathRec(lPath);
+
+		materials.sort((m1, m2) -> { return (m1.mat.name > m2.mat.name ? 1 : -1); });
+		return materials;
+	}
+
 	public function getObjectsAt(sx : Int, sy : Int, ?root : h3d.scene.Object, ?f : h3d.scene.Object -> Bool) {
 		var hits : Array<{ o : h3d.scene.Object, d : Float }> = [];
 		var r = root ?? scene.s3d;
