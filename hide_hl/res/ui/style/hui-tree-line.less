@@ -118,4 +118,52 @@ hui-tree-line {
 	&.drop-after > #drop-indicator > hui-background {
 		outline-thickness: 0 0 1 0;
 	}
+
+	&.disable {
+		> #caret {
+			>hui-background {
+				image-color :@color-red;
+			}
+		}
+		>#icon {
+			>hui-background {
+				image-color :@color-red;
+			}
+		}
+		>#title {
+			color: @color-red;
+		}
+	}
+
+	&.editor-only {
+		> #caret {
+			>hui-background {
+				image-color :@color-blue;
+			}
+		}
+		>#icon {
+			>hui-background {
+				image-color :@color-blue;
+			}
+		}
+		>#title {
+			color: @color-blue;
+		}
+	}
+
+	&.ingame-only {
+		> #caret {
+			>hui-background {
+				image-color : @color-yellow;
+			}
+		}
+		>#icon {
+			>hui-background {
+				image-color : @color-yellow;
+			}
+		}
+		>#title {
+			color: @color-yellow;
+		}
+	}
 }

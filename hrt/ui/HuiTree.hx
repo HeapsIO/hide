@@ -281,6 +281,12 @@ class HuiTree<TreeItem> extends HuiElement {
 		return rec(data);
 	}
 
+	/**
+		Called for each of your items in the tree. Allow custom style on tree elements
+	**/
+	public dynamic function applyTreeStyle(item: TreeItem, element : HuiTreeLine) {
+	}
+
 	public function toggleItemOpen(item: TreeItem, ?force: Bool) {
 		var data = itemMap.get(cast item);
 		if (data == null)
@@ -499,6 +505,7 @@ class HuiTree<TreeItem> extends HuiElement {
 
 	function refreshItem(item: TreeItemData, element: HuiTreeLine) : Void {
 		element?.refresh();
+		applyTreeStyle(item.item, element);
 	}
 
 	function forceRefreshTree() {

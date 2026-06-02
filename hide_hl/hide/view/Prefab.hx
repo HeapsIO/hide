@@ -19,6 +19,7 @@ class Prefab extends HuiView<{path: String}> {
 
 	static var _ = HuiView.register("prefab", Prefab);
 
+	public static var HIDDEN_CONFIG_KEY = "editor.hidden";
 	public static var GIZMO_SNAP_CONFIG_KEY = "editor.gizmoSnap";
 	public static var GIZMO_SNAP_STEP_CONFIG_KEY = "editor.gizmoSnapStep";
 	public static var GIZMO_SNAP_GRID_CONFIG_KEY = "editor.gizmoSnapOnGrid";
@@ -35,6 +36,8 @@ class Prefab extends HuiView<{path: String}> {
 	}
 
 	public var config(default, null) : hide.Config;
+	public var hidden : Map<hrt.prefab.Prefab, Bool> = new Map();
+
 	var prefabLookup : Map<h3d.scene.Object, hrt.prefab.Object3D> = new Map();
 	var gizmo : hrt.tools.Gizmo = null;
 	var rethrowMakeErrors: Bool = false;
@@ -75,6 +78,11 @@ class Prefab extends HuiView<{path: String}> {
 		registerCommand(HuiCommands.save, View, () -> { save();});
 
 		sceneEditor.load();
+
+		var hiddenArr : Array<String> = getDisplayState(HIDDEN_CONFIG_KEY, []);
+		for (p in this.prefab.flatten())
+			if (hiddenArr.contains(p.getAbsPath(true, true)))
+				setEditorVisibility(p, false);
 
 		registerCommand(hrt.ui.HuiCommands.HuiDebugCommands.debugReload, View, reload);
 		registerCommand(hrt.ui.HuiCommands.rename, View, () -> {
@@ -129,7 +137,12 @@ class Prefab extends HuiView<{path: String}> {
 			var entries: Array<hrt.ui.HuiMenu.MenuItem> = [];
 
 			entries.push({label: "Add Child Prefab", menu: createPrefabMenu((cl) -> getView().undo.run(actionCreatePrefab(prefab, prefab.children.length, cl), true))});
-			entries.push(HuiMenu.itemFromCommand(HuiCommands.rename, this));
+
+			entries.push({ label : "Enable", checked: prefab.enabled, click: () -> { prefab.enabled = !prefab.enabled; }});
+			entries.push({ label : "Editor Only", checked: prefab.editorOnly, click: () -> { prefab.editorOnly = !prefab.editorOnly; }});
+			entries.push({ label : "In Game Only", checked: prefab.inGameOnly, click: () -> { prefab.inGameOnly = !prefab.inGameOnly; }});
+			entries.push({ label : "Show In Editor", checked: getEditorVisibility(prefab), click: () -> { setEditorVisibility(prefab, !getEditorVisibility(prefab)); }});
+			entries.push({ label : "Locked", checked: prefab.locked, click: () -> { prefab.locked = !prefab.locked; }});
 
 			entries.push({isSeparator: true});
 			entries.push(HuiMenu.itemFromCommand(HuiCommands.cut, this));
@@ -137,6 +150,7 @@ class Prefab extends HuiView<{path: String}> {
 			entries.push(HuiMenu.itemFromCommand(HuiCommands.paste, this));
 
 			entries.push(HuiMenu.itemFromCommand(HuiCommands.delete, this));
+			entries.push(HuiMenu.itemFromCommand(HuiCommands.rename, this));
 
 			entries.push({isSeparator: true});
 
@@ -194,6 +208,23 @@ class Prefab extends HuiView<{path: String}> {
 					getView().undo.run(actionReparentPrefabs(prefabs, reparentTo, index), true);
 				}
 			}
+		}
+
+		sceneEditor.tree.applyTreeStyle = (item, el) -> {
+			function is(p: hrt.prefab.Prefab, status : (p : hrt.prefab.Prefab) -> Bool) {
+				var res = status(p);
+				var parent = p.parent;
+				while (parent != null) {
+					res = res || status(parent);
+					parent = parent.parent;
+				}
+
+				return res;
+			}
+
+			el.dom.toggleClass("disable", is(item, (p) -> !p.enabled));
+			el.dom.toggleClass("editor-only", is(item, (p) -> p.editorOnly));
+			el.dom.toggleClass("ingame-only", is(item, (p) -> p.inGameOnly));
 		}
 
 		this.gizmoShouldSnap = hide.Ide.inst.currentConfig.get(hide.view.Prefab.GIZMO_SNAP_CONFIG_KEY, true);
@@ -605,6 +636,22 @@ class Prefab extends HuiView<{path: String}> {
 		}
 	}
 
+	function getEditorVisibility(prefab: hrt.prefab.Prefab) {
+		return hidden.get(prefab) == null;
+	}
+
+	function setEditorVisibility(prefab : hrt.prefab.Prefab, isVisible : Bool) {
+		if (isVisible)
+			hidden.remove(prefab);
+		else
+			hidden.set(prefab, true);
+
+		var hiddenArr = [for (h in hidden.keys()) h.getAbsPath(true, true)];
+		saveDisplayState(HIDDEN_CONFIG_KEY, hiddenArr);
+
+		var obj3d = Std.downcast(prefab, hrt.prefab.Object3D);
+		obj3d.local3d?.visible = isVisible;
+	}
 
 
 	function save() {
