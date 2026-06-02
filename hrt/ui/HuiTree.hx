@@ -316,6 +316,17 @@ class HuiTree<TreeItem> extends HuiElement {
 		}
 	}
 
+	public function closeAll() : Void {
+		if (refreshFlags.toInt() != 0) {
+			afterRefreshCallbacks.push(revealAll);
+			return;
+		}
+
+		for (data in itemMap) {
+			toggleItemDataOpen(data, false);
+		}
+	}
+
 	public dynamic function getItemName(item: TreeItem) : String {
 		return "";
 	}

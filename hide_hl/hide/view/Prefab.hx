@@ -140,6 +140,15 @@ class Prefab extends HuiView<{path: String}> {
 
 			entries.push({isSeparator: true});
 
+			entries.push({ label: "Collapse", click: () -> {
+				var items = sceneEditor.tree.getSelectedItems();
+				for (i in items)
+					sceneEditor.tree.toggleItemOpen(i, false);
+			}});
+			entries.push({ label : "Collapse All", click: () -> { sceneEditor.tree.closeAll(); }});
+
+			entries.push({isSeparator: true});
+
 			entries.push(HuiMenu.itemFromCommand(HuiSceneEditor.focusCommand, this));
 
 			uiBase.contextMenu(entries);
