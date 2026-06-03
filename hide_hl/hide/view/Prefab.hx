@@ -9,6 +9,7 @@ enum SelectionFlag {
 }
 
 typedef SelectionFlags = haxe.EnumFlags<SelectionFlag>;
+typedef TagInfo = {id: String, color: String};
 
 @:access(hrt.ui.HuiSceneEditor)
 class Prefab extends HuiView<{path: String}> {
@@ -152,6 +153,7 @@ class Prefab extends HuiView<{path: String}> {
 			
 			entries.push(HuiMenu.itemFromCommand(HuiCommands.selectAll, this));
 			entries.push({ label : "Select Children", click: () -> { setSelection(prefab._children, SelectionFlags.ofInt(0)); }});
+			entries.push({ label : "Tag", click: () -> { setSelection(prefab._children, SelectionFlags.ofInt(0)); }});
 
 			entries.push({isSeparator: true});
 			entries.push(HuiMenu.itemFromCommand(HuiCommands.cut, this));
@@ -730,6 +732,76 @@ class Prefab extends HuiView<{path: String}> {
 			else
 				apply(true);
 		}, true);
+	}
+
+	function getTagMenu(prefabs: Array<hrt.prefab.Prefab>) : Array<hide.comp.ContextMenu.MenuItem> {
+		var tags = getAvailableTags();
+		if (tags == null) return null;
+		tags = tags.copy();
+		var ret = [];
+		// var noTag = {id: "-- none --", color: "rgba(0,0,0,0)"};
+		// tags.unshift(noTag);
+		// for (tag in tags) {
+		// 	var style = 'background-color: ${tag.color};';
+		// 	var checked = false;
+		// 	for (p in prefabs) {
+		// 		if (getTag(p) == tag)
+		// 			checked = true;
+		// 	}
+		// 	ret.push({
+		// 		label: '<span class="tag-disp-expand"><span class="tag-disp" style="$style">${tag.id}</span></span>',
+		// 		click: function () {
+		// 			if (tag == noTag) {
+		// 				setTags(prefabs, null);
+		// 			} else {
+		// 				setTags(prefabs, tag.id);
+		// 			}
+		// 		},
+		// 		stayOpen: true,
+		// 		radio: () -> {
+		// 			for (p in prefabs) {
+		// 				if ((p.props:Dynamic)?.tag == tag.id || ((p.props:Dynamic)?.tag == null && tag == noTag))
+		// 					return true;
+		// 			}
+		// 			return false;
+		// 		}
+		// 	});
+		// }
+		return ret;
+	}
+
+	function getAvailableTags() : Array<TagInfo>{
+		return null;
+	}
+
+	public function getTag(p: hrt.prefab.Prefab) : TagInfo {
+		if (p.props != null) {
+			var tagId = Reflect.field(p.props, "tag");
+			if(tagId != null) {
+				var tags = getAvailableTags();
+				if(tags != null)
+					return Lambda.find(tags, t -> t.id == tagId);
+			}
+		}
+		return null;
+	}
+
+	public function setTags(prefabs: Array<hrt.prefab.Prefab>, tag: String) {
+		var oldValues = [for (prefab in prefabs) (prefab.props:Dynamic)?.tag];
+
+		function exec(isUndo : Bool) {
+			for (i => prefab in prefabs) {
+				prefab.props ??= {};
+				if (!isUndo) {
+					(prefab.props:Dynamic).tag = tag;
+				}
+				else {
+					(prefab.props:Dynamic).tag = oldValues[i];
+				}
+			}
+		}
+		exec(false);
+		undo.record(exec, true);
 	}
 
 
