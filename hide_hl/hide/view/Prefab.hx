@@ -98,6 +98,12 @@ class Prefab extends HuiView<{path: String}> {
 
 		registerCommand(hrt.ui.HuiCommands.delete, View, () -> getView().undo.run(actionRemovePrefabs([for (p => _ in selectedPrefabs) p]), true));
 
+		registerCommand(hrt.ui.HuiCommands.selectAll, View, () -> {
+			var all = this.prefab.flatten();
+			all.remove(this.prefab);
+			setSelection(all, SelectionFlags.ofInt(0));
+		});
+
 		@:privateAccess sceneEditor.debugGraph = new h2d.Graphics(sceneEditor.scene.s2d);
 
 		sceneEditor.onScenePush = onScenePush;
@@ -143,6 +149,9 @@ class Prefab extends HuiView<{path: String}> {
 			entries.push({ label : "In Game Only", checked: prefab.inGameOnly, click: () -> { setInGameOnly(cast sceneEditor.tree.getSelectedItems(), !prefab.inGameOnly); }});
 			entries.push({ label : "Show In Editor", checked: getEditorVisibility(prefab), click: () -> { setEditorVisibility(prefab, !getEditorVisibility(prefab)); }});
 			entries.push({ label : "Locked", checked: prefab.locked, click: () -> { setLock(cast sceneEditor.tree.getSelectedItems(), !prefab.locked); }});
+			
+			entries.push(HuiMenu.itemFromCommand(HuiCommands.selectAll, this));
+			entries.push({ label : "Select Children", click: () -> { setSelection(prefab._children, SelectionFlags.ofInt(0)); }});
 
 			entries.push({isSeparator: true});
 			entries.push(HuiMenu.itemFromCommand(HuiCommands.cut, this));
