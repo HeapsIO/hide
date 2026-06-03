@@ -4798,8 +4798,11 @@ class SceneEditor {
 		view.setClipboard(Ide.inst.toJSON(ser), "prefab", {source : view.state.path});
 	}
 
-	function getDataPath( prefabName : String, ?sourceFile : String ) {
+	function getDataPath( prefabName : String, ?sourceFile : String ) : Null<String> {
+		if (prefabName == null)
+			return null;
 		if( sourceFile == null ) sourceFile = view.state.path;
+		if ( sourceFile == null) return null;
 		var datPath = new haxe.io.Path(sourceFile);
 		datPath.ext = "dat";
 		return ide.getPath(datPath.toString()+"/"+prefabName);
@@ -4833,20 +4836,22 @@ class SceneEditor {
 
 				var srcDir = getDataPath(prevName, opts.ref.source);
 
-				if( sys.FileSystem.exists(srcDir) && sys.FileSystem.isDirectory(srcDir) ) {
+				if( srcDir != null && sys.FileSystem.exists(srcDir) && sys.FileSystem.isDirectory(srcDir) ) {
 					var dstDir = getDataPath(p.name);
-					function copyRec( src : String, dst : String ) {
-						if( !sys.FileSystem.exists(dst) ) sys.FileSystem.createDirectory(dst);
-						for( f in sys.FileSystem.readDirectory(src) ) {
-							var file = src+"/"+f;
-							if( sys.FileSystem.isDirectory(file) ) {
-								copyRec(file,dst+"/"+f);
-								continue;
+					if (dstDir != null) {
+						function copyRec( src : String, dst : String ) {
+							if( !sys.FileSystem.exists(dst) ) sys.FileSystem.createDirectory(dst);
+							for( f in sys.FileSystem.readDirectory(src) ) {
+								var file = src+"/"+f;
+								if( sys.FileSystem.isDirectory(file) ) {
+									copyRec(file,dst+"/"+f);
+									continue;
+								}
+								sys.io.File.copy(file,dst+"/"+f);
 							}
-							sys.io.File.copy(file,dst+"/"+f);
 						}
+						copyRec(srcDir, dstDir);
 					}
-					copyRec(srcDir, dstDir);
 				}
 			}
 		}
@@ -5607,7 +5612,8 @@ class SceneEditor {
 		if( p.type == "volumetricLightmap" || p.type == "light" )
 			uniqueName = true;
 
-		if( !uniqueName && p.name != null && p.name.length > 0 && sys.FileSystem.exists(getDataPath(p.name)) )
+		var dataPath = getDataPath(p.name);
+		if( !uniqueName && p.name != null && p.name.length > 0 && dataPath != null && sys.FileSystem.exists(dataPath) )
 			uniqueName = true;
 
 		var mat = Std.downcast(p, hrt.prefab.Material);
