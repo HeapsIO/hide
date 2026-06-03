@@ -185,18 +185,25 @@ class HuiElement extends h2d.Flow #if hui implements h2d.domkit.Object #end {
 	}
 
 	function registerCommand(command: hrt.ui.HuiCommands.HuiCommand, context: hrt.ui.HuiCommands.ShortcutContext, cb: Void -> Void) {
-		if (context == Element || context == ElementAndChildren || Std.downcast(this, HuiView) != null) {
-			makeInteractive();
-			registeredCommands ??= [];
-			unregisterCommand(command);
-			registeredCommands.push({command: command, callback: cb, context: context});
-		} else if (context == View) {
+		if (Std.downcast(this, HuiView) == null) {
 			var view = findParent(HuiView);
-			view.registerCommand(command, ElementAndChildren, cb);
-		} else if (context == FocusedView) {
-			var view = findParent(HuiView);
-			view.registerCommand(command, FocusedView, cb);
+
+			if (context == View) {
+				view.registerCommand(command, context, cb);
+				return;
+			} else {
+				view.registerCommand(command, context, cb);
+				return;
+			}
 		}
+
+		if (context == View)
+			context = ElementAndChildren;
+
+		makeInteractive();
+		registeredCommands ??= [];
+		unregisterCommand(command);
+		registeredCommands.push({command: command, callback: cb, context: context});
 	}
 
 	function unregisterCommand(command: hrt.ui.HuiCommands.HuiCommand) {
