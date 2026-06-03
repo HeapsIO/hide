@@ -140,7 +140,7 @@ class Prefab extends HuiView<{path: String}> {
 
 			entries.push({ label : "Enable", checked: prefab.enabled, click: () -> { setEnable(cast sceneEditor.tree.getSelectedItems(), !prefab.enabled); }});
 			entries.push({ label : "Editor Only", checked: prefab.editorOnly, click: () -> { setEditorOnly(cast sceneEditor.tree.getSelectedItems(), !prefab.editorOnly); }});
-			entries.push({ label : "In Game Only", checked: prefab.inGameOnly, click: () -> { prefab.inGameOnly = !prefab.inGameOnly; }});
+			entries.push({ label : "In Game Only", checked: prefab.inGameOnly, click: () -> { setInGameOnly(cast sceneEditor.tree.getSelectedItems(), !prefab.inGameOnly); }});
 			entries.push({ label : "Show In Editor", checked: getEditorVisibility(prefab), click: () -> { setEditorVisibility(prefab, !getEditorVisibility(prefab)); }});
 			entries.push({ label : "Locked", checked: prefab.locked, click: () -> { prefab.locked = !prefab.locked; }});
 
@@ -675,6 +675,23 @@ class Prefab extends HuiView<{path: String}> {
 		function apply(on) {
 			for (i in 0...prefabs.length) {
 				prefabs[i].editorOnly = on ? isEditorOnly : old[i];
+				tryMake(prefabs[i]);
+			}
+		}
+		apply(true);
+		undo.record((undo) -> {
+			if (undo)
+				apply(false);
+			else
+				apply(true);
+		}, true);
+	}
+
+	public function setInGameOnly(prefabs : Array<hrt.prefab.Prefab>, isInGameOnly: Bool) {
+		var old = [for(p in prefabs) p.enabled];
+		function apply(on) {
+			for (i in 0...prefabs.length) {
+				prefabs[i].inGameOnly = on ? isInGameOnly : old[i];
 				tryMake(prefabs[i]);
 			}
 		}
