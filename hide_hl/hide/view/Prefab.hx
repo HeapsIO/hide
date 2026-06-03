@@ -75,7 +75,7 @@ class Prefab extends HuiView<{path: String}> {
 			return selectedObjects;
 		}
 
-		registerCommand(HuiCommands.save, FocusedView, () -> { save();});
+		registerCommand(HuiCommands.save, View, () -> { save();});
 
 		sceneEditor.load();
 
@@ -142,7 +142,7 @@ class Prefab extends HuiView<{path: String}> {
 			entries.push({ label : "Editor Only", checked: prefab.editorOnly, click: () -> { setEditorOnly(cast sceneEditor.tree.getSelectedItems(), !prefab.editorOnly); }});
 			entries.push({ label : "In Game Only", checked: prefab.inGameOnly, click: () -> { setInGameOnly(cast sceneEditor.tree.getSelectedItems(), !prefab.inGameOnly); }});
 			entries.push({ label : "Show In Editor", checked: getEditorVisibility(prefab), click: () -> { setEditorVisibility(prefab, !getEditorVisibility(prefab)); }});
-			entries.push({ label : "Locked", checked: prefab.locked, click: () -> { prefab.locked = !prefab.locked; }});
+			entries.push({ label : "Locked", checked: prefab.locked, click: () -> { setLock(cast sceneEditor.tree.getSelectedItems(), !prefab.locked); }});
 
 			entries.push({isSeparator: true});
 			entries.push(HuiMenu.itemFromCommand(HuiCommands.cut, this));
@@ -226,6 +226,7 @@ class Prefab extends HuiView<{path: String}> {
 			el.dom.toggleClass("editor-only", is(item, (p) -> p.editorOnly));
 			el.dom.toggleClass("ingame-only", is(item, (p) -> p.inGameOnly));
 			el.dom.toggleClass("hidden", is(item, (p) -> !getEditorVisibility(p)));
+			el.dom.toggleClass("locked", is(item, (p) -> p.locked));
 		}
 
 		this.gizmoShouldSnap = hide.Ide.inst.currentConfig.get(hide.view.Prefab.GIZMO_SNAP_CONFIG_KEY, true);
@@ -705,6 +706,23 @@ class Prefab extends HuiView<{path: String}> {
 		}, true);
 	}
 
+	public function setLock(prefabs : Array<hrt.prefab.Prefab>, isLocked: Bool) {
+		var old = [for(p in prefabs) p.enabled];
+		function apply(on) {
+			for (i in 0...prefabs.length) {
+				prefabs[i].locked = on ? isLocked : old[i];
+				tryMake(prefabs[i]);
+			}
+		}
+		apply(true);
+		undo.record((undo) -> {
+			if (undo)
+				apply(false);
+			else
+				apply(true);
+		}, true);
+	}
+
 
 	function save() {
 		if (!hasUnsavedChanges)
@@ -1085,7 +1103,7 @@ class Prefab extends HuiView<{path: String}> {
 			var newSelection : Array<hrt.prefab.Prefab> = [];
 			for (o in objs) {
 				var p = prefabLookup.get(o);
-				if (p == null)
+				if (p == null || p.locked)
 					continue;
 				prefabs.push(p);
 			}
