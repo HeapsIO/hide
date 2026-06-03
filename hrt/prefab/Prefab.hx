@@ -808,7 +808,7 @@ class Prefab {
 	function shouldBeInstanciated() : Bool {
 		if (!enabled) return false;
 
-		#if editor
+		#if (editor || editor_hl)
 		if (inGameOnly)
 			return false;
 		#else
