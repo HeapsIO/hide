@@ -112,6 +112,7 @@ class ShaderNodeHxsl extends ShaderNode {
 					outputs.push({name: v.name, type: isDynamic ? SgGeneric(0, ShaderGraph.ConstraintFloat) : typeToSgType(v.type)});
 					idOutputOrder.set(v.id, outputCount++);
 				case SgConst:
+				case SgInit:
 				case null:
 			}
 		}
@@ -216,7 +217,7 @@ class ShaderNodeHxsl extends ShaderNode {
 							};
 							replacement = makeVar(outputVar);
 							outputs[outputId] = outputVar;
-						case null:
+						case SgInit | null:
 							var tvar = varsRemap.get(v.id);
 							if (tvar != null) {
 								replacement = {e: TVar(tvar), p: e.p, t: e.t};
@@ -225,6 +226,9 @@ class ShaderNodeHxsl extends ShaderNode {
 									case TFun(_): return e;// don't replace tfun vars with global decls
 									default:
 										replacement = ctx.getGlobalTVar(v);
+										if (info == SgInit) {
+											ctx.ensureVarInit(v);
+										}
 								}
 							}
 					}

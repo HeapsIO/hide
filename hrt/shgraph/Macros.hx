@@ -100,6 +100,16 @@ class Macros {
 													default:
 														throw "sgconst must be used with variables only";
 												}
+											case "sginit":
+												switch(subexpr.expr) {
+													case EVars(vars):
+														for (v in vars) {
+															varmap.set(v.name, SgInit);
+														}
+														e.expr = subexpr.expr;
+													default:
+														throw "sginit must be used with variables only";
+												}
 											default:
 										}
 									default:

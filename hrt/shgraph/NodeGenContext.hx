@@ -141,6 +141,20 @@ class NodeGenContext {
 		return variable.variable;
 	}
 
+	/**
+		Add a default value init for the variable in case it doesn't exist
+	**/
+	public function ensureVarInit(tvar: TVar) {
+		var fullName = AstTools.getFullName(tvar);
+		var def = globalVars.get(fullName);
+		if (def == null) {
+			throw "var not created";
+		}
+		if (def.__init__ != null)
+			return;
+		def.__init__ = makeAssign(makeVar(def.v), convertToType(def.v.type, makeFloat(0)));
+	}
+
 	function getOrAllocateFromTVar(tvar: TVar) : TVar {
 		var fullName = AstTools.getFullName(tvar);
 

@@ -594,7 +594,8 @@ class ShaderGraph extends hrt.prefab.Prefab {
 		externs.sort((a,b) -> Reflect.compare(a.paramIndex ?? -1, b.paramIndex ?? -1));
 
 		for (v in externs) {
-
+			if (v.v.name == "emissiveMask")
+				trace("break");
 			// Patch unknow global variables to be locals instead with a dummy value
 			// so the preview shader doesn't crash
 			if (previewDomain != null && v.paramIndex == null) {
@@ -611,43 +612,43 @@ class ShaderGraph extends hrt.prefab.Prefab {
 						}
 						c = c.parent;
 					}
-					if (!isInput)
-						continue;
+					if (isInput) {
+						AstTools.removeFromParent(v.v);
+						v.v.name =  StringTools.replace(fullName, ".", "_") + "_SG";
+						v.v.kind = Local;
 
-					AstTools.removeFromParent(v.v);
-					v.v.name =  StringTools.replace(fullName, ".", "_") + "_SG";
-					v.v.kind = Local;
+						var expr = switch (v.v.type) {
+							case TInt:
+								AstTools.makeInt(0);
+							case TFloat:
+								AstTools.makeFloat(0.0);
+							case TVec(size, VFloat):
+								AstTools.makeVec([for (i in 0...size) 0.0]);
+							case TMat3:
+								AstTools.makeGlobalCall(Mat3, [
+									AstTools.makeVec([1.0,0.0,0.0]),
+									AstTools.makeVec([0.0,1.0,0.0]),
+									AstTools.makeVec([0.0,0.0,1.0]),
+								], TMat3);
+							case TMat4:
+								AstTools.makeGlobalCall(Mat4, [
+									AstTools.makeVec([1.0,0.0,0.0,0.0]),
+									AstTools.makeVec([0.0,1.0,0.0,0.0]),
+									AstTools.makeVec([0.0,0.0,1.0,0.0]),
+									AstTools.makeVec([0.0,0.0,0.0,1.0]),
+								], TMat4);
+							case TChannel(_), TSampler(T2D, false):
+								v.v.name = "blackChannel";
+								v.v.kind = Global;
+								null;
+							default:
+								throw 'Can not default initialize global vaiable $fullName in preview shader (type ${v.v.type})';
+						}
 
-					var expr = switch (v.v.type) {
-						case TInt:
-							AstTools.makeInt(0);
-						case TFloat:
-							AstTools.makeFloat(0.0);
-						case TVec(size, VFloat):
-							AstTools.makeVec([for (i in 0...size) 0.0]);
-						case TMat3:
-							AstTools.makeGlobalCall(Mat3, [
-								AstTools.makeVec([1.0,0.0,0.0]),
-								AstTools.makeVec([0.0,1.0,0.0]),
-								AstTools.makeVec([0.0,0.0,1.0]),
-							], TMat3);
-						case TMat4:
-							AstTools.makeGlobalCall(Mat4, [
-								AstTools.makeVec([1.0,0.0,0.0,0.0]),
-								AstTools.makeVec([0.0,1.0,0.0,0.0]),
-								AstTools.makeVec([0.0,0.0,1.0,0.0]),
-								AstTools.makeVec([0.0,0.0,0.0,1.0]),
-							], TMat4);
-						case TChannel(_), TSampler(T2D, false):
-							v.v.name = "blackChannel";
-							v.v.kind = Global;
-							null;
-						default:
-							throw 'Can not default initialize global vaiable $fullName in preview shader (type ${v.v.type})';
+						if (expr != null)
+							v.__init__ = AstTools.makeAssign(AstTools.makeVar(v.v), expr);
 					}
 
-					if (expr != null)
-						v.__init__ = AstTools.makeAssign(AstTools.makeVar(v.v), expr);
 				}
 			}
 
