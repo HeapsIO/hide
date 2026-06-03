@@ -225,6 +225,7 @@ class Prefab extends HuiView<{path: String}> {
 			el.dom.toggleClass("disable", is(item, (p) -> !p.enabled));
 			el.dom.toggleClass("editor-only", is(item, (p) -> p.editorOnly));
 			el.dom.toggleClass("ingame-only", is(item, (p) -> p.inGameOnly));
+			el.dom.toggleClass("hidden", is(item, (p) -> !getEditorVisibility(p)));
 		}
 
 		this.gizmoShouldSnap = hide.Ide.inst.currentConfig.get(hide.view.Prefab.GIZMO_SNAP_CONFIG_KEY, true);
