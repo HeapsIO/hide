@@ -138,7 +138,7 @@ class Prefab extends HuiView<{path: String}> {
 
 			entries.push({label: "Add Child Prefab", menu: createPrefabMenu((cl) -> getView().undo.run(actionCreatePrefab(prefab, prefab.children.length, cl), true))});
 
-			entries.push({ label : "Enable", checked: prefab.enabled, click: () -> { prefab.enabled = !prefab.enabled; }});
+			entries.push({ label : "Enable", checked: prefab.enabled, click: () -> { setEnable(cast sceneEditor.tree.getSelectedItems(), !prefab.enabled); }});
 			entries.push({ label : "Editor Only", checked: prefab.editorOnly, click: () -> { prefab.editorOnly = !prefab.editorOnly; }});
 			entries.push({ label : "In Game Only", checked: prefab.inGameOnly, click: () -> { prefab.inGameOnly = !prefab.inGameOnly; }});
 			entries.push({ label : "Show In Editor", checked: getEditorVisibility(prefab), click: () -> { setEditorVisibility(prefab, !getEditorVisibility(prefab)); }});
@@ -651,6 +651,23 @@ class Prefab extends HuiView<{path: String}> {
 
 		var obj3d = Std.downcast(prefab, hrt.prefab.Object3D);
 		obj3d.local3d?.visible = isVisible;
+	}
+
+	public function setEnable(prefabs : Array<hrt.prefab.Prefab>, isEnable: Bool) {
+		var old = [for(p in prefabs) p.enabled];
+		function apply(on) {
+			for (i in 0...prefabs.length) {
+				prefabs[i].enabled = on ? isEnable : old[i];
+				tryMake(prefabs[i]);
+			}
+		}
+		apply(true);
+		undo.record((undo) -> {
+			if (undo)
+				apply(false);
+			else
+				apply(true);
+		}, true);
 	}
 
 

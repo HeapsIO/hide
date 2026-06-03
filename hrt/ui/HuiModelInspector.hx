@@ -29,7 +29,7 @@ class HuiModelInspector extends HuiElement {
 			<hui-button class="full" id="compute-collider-btn"><hui-text("Compute Collider")></hui-text></hui-button>
 			<hui-shape-editor(obj) id="shape-editor"></hui-shape-editor>
 		</hui-category>
-		<hui-category("LODs")>
+		<hui-category("LODs") id="lods-cat">
 			<hui-element class="horizontal"><hui-text("LOD Count") class="label"/><hui-text("1") class="value" id="lod-count"/></hui-element>
 			<hui-element class="horizontal"><hui-text("LOD Vertices") class="label"/><hui-text("1") class="value" id="lod-vertices-count"/></hui-element>
 			<hui-element class="horizontal"><hui-text("Force Display LOD") class="label"/><hui-select id="force-display-lod" class="value"></hui-select></hui-element>
@@ -156,9 +156,12 @@ class HuiModelInspector extends HuiElement {
 		var mesh = Std.downcast(obj, h3d.scene.Mesh);
 		var hmd = Std.downcast(mesh?.primitive, h3d.prim.HMDModel);
 
-		if (hmd == null || hmd.lodCount() <= 1)
+		if (hmd == null || hmd.lodCount() <= 1) {
+			lodsCat.visible = false;
 			return;
+		}
 
+		lodsCat.visible = true;
 		lodCount.text = '${hmd.lodCount()}';
 		lodVerticesCount.text = '${@:privateAccess hmd.lods[mesh.getLodIndex()].vertexCount}';
 
