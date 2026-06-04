@@ -370,6 +370,11 @@ class HuiMenuItem extends HuiElement {
 			icon.huiBg.image = {path: item.icon, mode: Fit};
 		}
 
+		if (item.color != null) {
+			content.backgroundType = "hui";
+			content.huiBg.background = item.color;
+		}
+
 		if (item.label != null) {
 			var ftmText = new HuiText(nameOverride ?? item.label, content);
 		}

@@ -12,6 +12,7 @@ typedef MenuItem = {
     ?checked: Bool,
     ?tooltip: String,
     ?radio: () -> Bool, // Radio button instead of checked.
+	?color: Int
 }
 
 #if js

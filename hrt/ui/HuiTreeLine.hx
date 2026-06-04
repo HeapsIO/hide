@@ -13,6 +13,7 @@ class HuiTreeLine extends HuiElement {
 			<hui-text("") id="title"/>
 			<hui-input-box id="title-edit"/>
 			<hui-element id="drop-indicator"/>
+			<hui-element id="tag-color"/>
 		</hui-tree-line>
 
 	var data : TreeItemData;

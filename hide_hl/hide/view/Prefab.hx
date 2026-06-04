@@ -20,6 +20,7 @@ class Prefab extends HuiView<{path: String}> {
 
 	static var _ = HuiView.register("prefab", Prefab);
 
+	public static var TAGS_CONFIG_KEY = "sceneeditor.tags";
 	public static var HIDDEN_CONFIG_KEY = "editor.hidden";
 	public static var GIZMO_SNAP_CONFIG_KEY = "editor.gizmoSnap";
 	public static var GIZMO_SNAP_STEP_CONFIG_KEY = "editor.gizmoSnapStep";
@@ -150,10 +151,10 @@ class Prefab extends HuiView<{path: String}> {
 			entries.push({ label : "In Game Only", checked: prefab.inGameOnly, click: () -> { setInGameOnly(cast sceneEditor.tree.getSelectedItems(), !prefab.inGameOnly); }});
 			entries.push({ label : "Show In Editor", checked: getEditorVisibility(prefab), click: () -> { setEditorVisibility(prefab, !getEditorVisibility(prefab)); }});
 			entries.push({ label : "Locked", checked: prefab.locked, click: () -> { setLock(cast sceneEditor.tree.getSelectedItems(), !prefab.locked); }});
-			
+
 			entries.push(HuiMenu.itemFromCommand(HuiCommands.selectAll, this));
-			entries.push({ label : "Select Children", click: () -> { setSelection(prefab._children, SelectionFlags.ofInt(0)); }});
-			entries.push({ label : "Tag", click: () -> { setSelection(prefab._children, SelectionFlags.ofInt(0)); }});
+			entries.push({ label : "Select Children", click: () -> { setSelection(prefab._children ?? [], SelectionFlags.ofInt(0)); }});
+			entries.push({ label : "Tag", menu: getTagMenu(cast sceneEditor.tree.getSelectedItems()) });
 
 			entries.push({isSeparator: true});
 			entries.push(HuiMenu.itemFromCommand(HuiCommands.cut, this));
@@ -238,6 +239,16 @@ class Prefab extends HuiView<{path: String}> {
 			el.dom.toggleClass("ingame-only", is(item, (p) -> p.inGameOnly));
 			el.dom.toggleClass("hidden", is(item, (p) -> !getEditorVisibility(p)));
 			el.dom.toggleClass("locked", is(item, (p) -> p.locked));
+
+			var t = getTag(item);
+			if (t != null) {
+				var c = hrt.impl.ColorSpace.Color.intFromString(t.color, true);
+				@:privateAccess el.tagColor.visible = true;
+				@:privateAccess el.tagColor.huiBg.background = c;
+			}
+			else {
+				@:privateAccess el.tagColor.visible = false;
+			}
 		}
 
 		this.gizmoShouldSnap = hide.Ide.inst.currentConfig.get(hide.view.Prefab.GIZMO_SNAP_CONFIG_KEY, true);
@@ -739,39 +750,40 @@ class Prefab extends HuiView<{path: String}> {
 		if (tags == null) return null;
 		tags = tags.copy();
 		var ret = [];
-		// var noTag = {id: "-- none --", color: "rgba(0,0,0,0)"};
-		// tags.unshift(noTag);
-		// for (tag in tags) {
-		// 	var style = 'background-color: ${tag.color};';
-		// 	var checked = false;
-		// 	for (p in prefabs) {
-		// 		if (getTag(p) == tag)
-		// 			checked = true;
-		// 	}
-		// 	ret.push({
-		// 		label: '<span class="tag-disp-expand"><span class="tag-disp" style="$style">${tag.id}</span></span>',
-		// 		click: function () {
-		// 			if (tag == noTag) {
-		// 				setTags(prefabs, null);
-		// 			} else {
-		// 				setTags(prefabs, tag.id);
-		// 			}
-		// 		},
-		// 		stayOpen: true,
-		// 		radio: () -> {
-		// 			for (p in prefabs) {
-		// 				if ((p.props:Dynamic)?.tag == tag.id || ((p.props:Dynamic)?.tag == null && tag == noTag))
-		// 					return true;
-		// 			}
-		// 			return false;
-		// 		}
-		// 	});
-		// }
+		var noTag : hide.view.TagInfo = cast { id: "None" };
+		tags.unshift(noTag);
+		for (tag in tags) {
+			var style = 'background-color: ${tag.color};';
+			var checked = false;
+			for (p in prefabs) {
+				if (getTag(p) == tag)
+					checked = true;
+			}
+			ret.push({
+				label: tag.id,
+				color: tag.color == null ? null : hrt.impl.ColorSpace.Color.intFromString(tag.color, true),
+				click: function () {
+					if (tag == noTag) {
+						setTags(prefabs, null);
+					} else {
+						setTags(prefabs, tag.id);
+					}
+				},
+				stayOpen: true,
+				radio: () -> {
+					for (p in prefabs) {
+						if ((p.props:Dynamic)?.tag == tag.id || ((p.props:Dynamic)?.tag == null && tag == noTag))
+							return true;
+					}
+					return false;
+				}
+			});
+		}
 		return ret;
 	}
 
 	function getAvailableTags() : Array<TagInfo>{
-		return null;
+		return cast Ide.inst.config.current.get(TAGS_CONFIG_KEY);
 	}
 
 	public function getTag(p: hrt.prefab.Prefab) : TagInfo {
