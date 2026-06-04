@@ -357,8 +357,8 @@ class Model extends HuiView<{path: String}> {
 		sceneEditor.updateDebugOverlayVisibility();
 	}
 
-	override function sync(ctx) {
-		super.sync(ctx);
+	override function safeSync(ctx) {
+		super.safeSync(ctx);
 	}
 
 	override function getContextMenuContent(content: Array<hide.comp.ContextMenu.MenuItem>) {

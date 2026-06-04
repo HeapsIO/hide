@@ -212,7 +212,12 @@ class Reference extends Object3D {
 
 		#if editor_hl
 		if (hasCycle()) {
-			throw 'Reference "${getAbsPath()}" to $source is creating a cycle.';
+			throw 'Cyclic reference';
+			return;
+		}
+
+		if (!hxd.res.Loader.currentInstance.exists(source)) {
+			throw 'Source prefab `${source}` does not exist';
 			return;
 		}
 		#end

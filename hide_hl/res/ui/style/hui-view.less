@@ -19,4 +19,42 @@ hui-view {
 		auto-size: none;
 		fill-height: 0;
 	}
+
+	&.has-error {
+		> * {
+			visible: false;
+		}
+
+		> hui-error-display {
+			visible: true;
+			auto-size: none;
+			fill-height: 0;
+		}
+	}
+
+	> hui-suppressed-errors-warning {
+		auto-size: none;
+
+		fill-width: true;
+		fill-height: 0;
+
+		spacing: 4;
+		padding: 4;
+
+		hui-text {
+			color: @color-gray-0;
+			valign: middle;
+			halign: middle;
+			text-shadow: 0 1 #FFF 0.5;
+		}
+
+		> hui-button {
+			padding-top: 4;
+			padding-bottom: 4;
+		}
+
+		> hui-background {
+			background: @color-red;
+		}
+	}
 }

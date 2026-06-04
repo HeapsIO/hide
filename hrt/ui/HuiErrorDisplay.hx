@@ -10,7 +10,9 @@ class HuiErrorDisplay extends HuiPopup {
 			<hui-text id="error-title"/>
 			<hui-text id="error-exception"/>
 			<hui-virtual-list id="stack-trace"/>
-			<hui-button id="copy-button"><hui-text("Copy Error")/></hui-button>
+			<hui-element id="buttons">
+				<hui-button id="copy-button"><hui-text("Copy Error")/></hui-button>
+			</hui-element>
 		</hui-error-display>
 
 	var prevError: String = null;
@@ -32,6 +34,12 @@ class HuiErrorDisplay extends HuiPopup {
 		@:privateAccess haxe.CallStack.itemToString(b, e);
 		var text = new HuiText(b.toString(), elem);
 		return elem;
+	}
+
+	public function addButton(title: String, click: Void -> Void) {
+		var button = new HuiButton(buttons);
+		var text = new HuiText(title, button);
+		button.onClick = (_) -> click();
 	}
 
 	public function setError(title: String, exception: haxe.Exception) {

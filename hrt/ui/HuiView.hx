@@ -8,6 +8,8 @@ class HuiView<T> extends HuiElement {
 
 	var hasUnsavedChanges(default, set): Bool = false;
 	var toolbar : HuiToolbar;
+	var errorMessage : Null<HuiErrorDisplay> = null;
+	var suppressErrors: Bool = false;
 
 	function set_hasUnsavedChanges(v: Bool) {
 		if (v != hasUnsavedChanges) {
@@ -31,6 +33,41 @@ class HuiView<T> extends HuiElement {
 
 		registerCommand(HuiCommands.undo, FocusedView, () -> undo.undo());
 		registerCommand(HuiCommands.redo, FocusedView, () -> undo.redo());
+	}
+
+	function setException(e: haxe.Exception) {
+		if (suppressErrors)
+			e = null;
+		dom.toggleClass("has-error", e != null);
+
+		if (e == null) {
+			errorMessage?.remove();
+			errorMessage = null;
+			return;
+		}
+
+		if (errorMessage == null) {
+			errorMessage = new HuiErrorDisplay(this);
+			errorMessage.addButton("Ignore Errors", () -> {suppressErrors = true; addSuppressErrorWarning();});
+
+		}
+		errorMessage.setError("Unhandled view exception", e);
+	}
+
+	final override function sync(ctx : h2d.RenderContext) {
+
+		var exception : haxe.Exception = null;
+		try {
+			safeSync(ctx);
+		} catch(e) {
+			exception = e;
+		}
+
+		setException(exception);
+	}
+
+	function safeSync(ctx : h2d.RenderContext) {
+		super.sync(ctx);
 	}
 
 	/**
@@ -71,6 +108,14 @@ class HuiView<T> extends HuiElement {
 			toolbar.addWidget(w);
 	}
 
+	function addSuppressErrorWarning() {
+		var warn = new HuiSuppressedErrorsWarning(this);
+		warn.showError.onClick = (e) -> {
+			suppressErrors = false;
+			warn.remove();
+		}
+	}
+
 	function getToolbarWidgets() : Array<HuiElement> {
 		return [];
 	}
@@ -105,6 +150,17 @@ class HuiView<T> extends HuiElement {
 		}
 		throw "unregistred view " + cl;
 	}
+}
+
+class HuiSuppressedErrorsWarning extends HuiElement {
+	static var SRC =
+		<hui-suppressed-errors-warning>
+			<hui-text("Warning : Errors are suppressed for this view")/>
+
+			<hui-button public id="show-error">
+				<hui-text("Show errors")/>
+			</hui-button>
+		</hui-suppressed-errors-warning>
 }
 
 #end

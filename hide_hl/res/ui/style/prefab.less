@@ -3,7 +3,7 @@ prefab {
 }
 
 hui-prefab-inspector-error {
-	layout: horizontal;
+	layout: vertical;
 	fill-width: 1;
 
 	margin: 4;
@@ -22,14 +22,18 @@ hui-prefab-inspector-error {
 
 
 
-	> hui-text {
-		color: @color-gray-0;
-		text-shadow: 0 1 #FFF 0.5;
-		halign: middle;
+	> #error-text-container {
+		fill-width: 1;
+		auto-size-width: 1;
+		hui-text {
+			color: @color-gray-0;
+			text-shadow: 0 1 #FFF 0.5;
+			halign: left;
+		}
 	}
 
 	> hui-button {
-		halign: right;
+		halign: middle;
 		> hui-text {
 			color: @color-gray-0;
 			text-shadow: 0 1 #FFF 0.5;

@@ -368,9 +368,15 @@ class Prefab extends HuiView<{path: String}> {
 		buildToolbar();
 	}
 
-	override function sync(ctx) {
-		super.sync(ctx);
+	var crashSync = false;
+
+	override function safeSync(ctx) {
+		super.safeSync(ctx);
 		gizmo.update(ctx.elapsedTime);
+
+		if (crashSync) {
+			throw "test crash sync";
+		}
 	}
 
 	override function getContextMenuContent(content: Array<hide.comp.ContextMenu.MenuItem>) {
@@ -431,6 +437,17 @@ class Prefab extends HuiView<{path: String}> {
 		widgets.push(new hrt.ui.HuiToolbar.HuiViewModesWidget(sceneEditor.scene.s3d));
 		widgets.push(new hrt.ui.HuiToolbar.HuiSceneFiltersWidget(sceneEditor));
 		widgets.push(new hrt.ui.HuiToolbar.HuiRenderPropsWidget(sceneEditor));
+
+
+		var crashButton = new HuiButton();
+		new HuiIcon("error", crashButton);
+		crashButton.onClick = (e) -> {
+			uiBase.contextMenu([
+				{label: "Crash sync", click: () -> crashSync = !crashSync, checked: crashSync},
+				{label: "Crash instant", click: () -> throw "crash instant"},
+			]);
+		};
+		widgets.push(crashButton);
 
 		return widgets;
 	}
@@ -519,11 +536,9 @@ class Prefab extends HuiView<{path: String}> {
 
 			var parentPrefab = prefab.shared.parentPrefab;
 			while(parentPrefab != null) {
-				if (parentPrefab != null) {
-					var ref = Std.downcast(parentPrefab, hrt.prefab.Reference);
-					if (ref != null && ref.editMode == None) {
-						errorPrefabs.set(prefab, {title: "Reference has errors", exception: e});
-					}
+				var ref = Std.downcast(parentPrefab, hrt.prefab.Reference);
+				if (ref != null && ref.editMode == None) {
+					errorPrefabs.set(parentPrefab, {title: "Reference has errors", exception: e});
 				}
 				parentPrefab = parentPrefab.shared.parentPrefab;
 			}
@@ -1497,7 +1512,9 @@ class EditContext extends hrt.prefab.EditContext2 {
 class HuiPrefabInspectorError extends HuiElement {
 	static var SRC =
 		<hui-prefab-inspector-error>
-			<hui-text public id="error-text"/>
+			<hui-element id="error-text-container">
+				<hui-text public id="error-text"/>
+			</hui-element>
 			<hui-button public id="button">
 				<hui-text("Stack Trace")/>
 			</hui-button>
