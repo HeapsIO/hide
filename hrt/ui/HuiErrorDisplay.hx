@@ -4,7 +4,7 @@ package hrt.ui;
 
 #if hui
 
-class HuiErrorDisplay extends HuiElement {
+class HuiErrorDisplay extends HuiPopup {
 	static var SRC =
 		<hui-error-display>
 			<hui-text id="error-title"/>

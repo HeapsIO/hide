@@ -60,6 +60,13 @@ class KitRoot #if !macro extends Element #end {
 		return currentElement;
 	}
 
+	/**
+		Execute the given callback. Allows editors to try to throw in the cb in a graceful manner
+	**/
+	public dynamic function doTry(cb: Void -> Void) {
+		cb();
+	}
+
 	override function change(params: hide.kit.Element.ChangeParams) : Void {
 		if (params.recordUndo) {
 			prepareUndoPoint();
@@ -124,7 +131,7 @@ class KitRoot #if !macro extends Element #end {
 				} else {
 					prefab.load(after);
 				}
-				prefab.updateInstance();
+				doTry(() -> prefab.updateInstance());
 			});
 		}
 	}

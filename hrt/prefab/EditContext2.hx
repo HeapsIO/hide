@@ -69,8 +69,6 @@ abstract class EditContext2 {
 		rebuildPrefabImpl(prefab);
 	}
 
-	public
-
 	/**
 		Implement this to support rebuild prefab
 	**/

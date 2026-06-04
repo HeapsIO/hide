@@ -1,4 +1,5 @@
 hui-scene-editor {
+	fill-width: 1;
 
 	> #main-split {
 		second-min-size: 300;
@@ -8,6 +9,12 @@ hui-scene-editor {
 			second-min-size: 300;
 			anchor-to: end;
 		}
+	}
+
+	>#critical-error {
+		visible: false;
+		halign: middle;
+		valign: middle;
 	}
 
 	#inspector-panel {
@@ -75,6 +82,16 @@ hui-scene-editor {
 					image: "ui/icons/link.png" fit;
 				}
 			}
+		}
+	}
+
+	&.critical-error {
+		&>#critical-error {
+			visible: true;
+		}
+
+		>#main-split {
+			visible: false;
 		}
 	}
 }

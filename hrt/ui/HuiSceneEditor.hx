@@ -19,6 +19,8 @@ class HuiSceneEditor extends HuiElement {
 				<hui-element id="inspector-panel">
 				</hui-element>
 			</hui-split-container>
+
+			<hui-error-display id="critical-error" public/>
 		</hui-scene-editor>
 
 	public static var CAM_CTRL_CONFIG_KEY = "editor.camera.type";
@@ -153,6 +155,11 @@ class HuiSceneEditor extends HuiElement {
 
 		materials.sort((m1, m2) -> { return (m1.mat.name > m2.mat.name ? 1 : -1); });
 		return materials;
+	}
+
+	public function setCriticalError(title: String, exception: haxe.Exception) {
+		dom.addClass("critical-error");
+		criticalError.setError(title, exception);
 	}
 
 	public function getObjectsAt(sx : Int, sy : Int, ?root : h3d.scene.Object, ?f : h3d.scene.Object -> Bool) {

@@ -1,0 +1,38 @@
+prefab {
+
+}
+
+hui-prefab-inspector-error {
+	layout: horizontal;
+	fill-width: 1;
+
+	margin: 4;
+	padding: 4;
+
+	spacing: 4;
+
+	> hui-background {
+		background: @color-red;
+		border-radius: @base-corner-radius;
+	}
+
+	> * {
+		valign: middle;
+	}
+
+
+
+	> hui-text {
+		color: @color-gray-0;
+		text-shadow: 0 1 #FFF 0.5;
+		halign: middle;
+	}
+
+	> hui-button {
+		halign: right;
+		> hui-text {
+			color: @color-gray-0;
+			text-shadow: 0 1 #FFF 0.5;
+		}
+	}
+}

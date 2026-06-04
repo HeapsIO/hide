@@ -31,7 +31,7 @@ class Resource extends hxd.res.Resource {
 	}
 
 	function loadData() {
-		#if editor
+		#if (editor || editor_hl)
 		// Force loading the original prefab data from disc to avoid sync errors between
 		// original data and bson
 		var localEntry = Std.downcast(entry, hxd.fs.LocalFileSystem.LocalEntry);

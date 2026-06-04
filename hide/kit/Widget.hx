@@ -167,8 +167,10 @@ abstract class Widget<ValueType> extends Element {
 	/** Internal function passed to change() **/
 	function changeBehaviorInternal(isTemporaryEdit: Bool) {
 		onFieldChange(isTemporaryEdit);
-		onValueChange(isTemporaryEdit);
-		@:privateAccess root.prefab?.updateInstance(fieldName);
+		root.doTry(() -> {
+			onValueChange(isTemporaryEdit);
+			@:privateAccess root.prefab?.updateInstance(fieldName);
+		});
 
 		var idPath = getIdPath();
 		for (childProperties in root.editedPrefabsProperties) {
@@ -182,9 +184,12 @@ abstract class Widget<ValueType> extends Element {
 					default:
 						childInput.value = haxe.Json.parse(haxe.Json.stringify(value));
 				}
+
 				childInput.onFieldChange(isTemporaryEdit);
-				childInput.onValueChange(isTemporaryEdit);
-				@:privateAccess childProperties.prefab?.updateInstance(fieldName);
+				childInput.root.doTry(() -> {
+					childInput.onValueChange(isTemporaryEdit);
+					@:privateAccess childProperties.prefab?.updateInstance(fieldName);
+				});
 			}
 		}
 	}

@@ -9,6 +9,7 @@ class CrashTest extends hrt.prefab.Object3D {
 	@:s public var crashOnInspector: Bool = false;
 	@:s public var crashOnMake: Bool = false;
 	@:s public var crashOnSync: Bool = false;
+	@:s public var crashOnUpdateInstance: Bool = false;
 
 	override public function load(data: Dynamic) {
 		super.load(data);
@@ -36,14 +37,21 @@ class CrashTest extends hrt.prefab.Object3D {
 			<category("Crash Test")>
 				<checkbox field={crashOnLoad}/>
 				<checkbox field={crashOnInspector}/>
-				<checkbox field={crashOnMake}/>
+				<checkbox field={crashOnMake} onValueChange={(_)->ctx.rebuildPrefab(this)}/>
 				<checkbox field={crashOnSync}/>
+				<checkbox field={crashOnUpdateInstance}/>
 			</category>
 		);
 
 		if(crashOnInspector) {
 			throw "CrashTest crashOnInspector";
 		}
+	}
+
+	override function updateInstance(?propName:String) {
+		super.updateInstance(propName);
+		if (crashOnUpdateInstance)
+			throw "CrashTest crashOnUpdateInstance";
 	}
 
 	static var _ = Prefab.register("crashTest", CrashTest);

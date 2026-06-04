@@ -11,6 +11,10 @@ enum SelectionFlag {
 typedef SelectionFlags = haxe.EnumFlags<SelectionFlag>;
 typedef TagInfo = {id: String, color: String};
 
+typedef PrefabError = {
+	var title: String;
+	var exception: haxe.Exception;
+};
 @:access(hrt.ui.HuiSceneEditor)
 class Prefab extends HuiView<{path: String}> {
 	static var SRC =
@@ -43,13 +47,15 @@ class Prefab extends HuiView<{path: String}> {
 	var prefabLookup : Map<h3d.scene.Object, hrt.prefab.Object3D> = new Map();
 	var gizmo : hrt.tools.Gizmo = null;
 	var rethrowMakeErrors: Bool = false;
-	var errorMessage : h2d.Text;
 	var prefab: hrt.prefab.Prefab;
 	var interactives: Map<hrt.prefab.Prefab, h3d.scene.Interactive> = [];
 	var selectedPrefabs: Map<hrt.prefab.Prefab, Bool> = [];
 	var lastPushX : Float = -100;
 	var lastPushY : Float = -100;
 	var movedSinceLastPush : Bool = false;
+
+	// List of prefabs that have make errors
+	var errorPrefabs : Map<hrt.prefab.Prefab, PrefabError> = new Map();
 
 	public function new(_state: Dynamic, ?parent) {
 		super(_state, parent);
@@ -82,9 +88,11 @@ class Prefab extends HuiView<{path: String}> {
 		sceneEditor.load();
 
 		var hiddenArr : Array<String> = getDisplayState(HIDDEN_CONFIG_KEY, []);
-		for (p in this.prefab.flatten())
-			if (hiddenArr.contains(p.getAbsPath(true, true)))
-				setEditorVisibility(p, false);
+		if (this.prefab != null) {
+			for (p in this.prefab.flatten())
+				if (hiddenArr.contains(p.getAbsPath(true, true)))
+					setEditorVisibility(p, false);
+		}
 
 		registerCommand(hrt.ui.HuiCommands.HuiDebugCommands.debugReload, View, reload);
 		registerCommand(hrt.ui.HuiCommands.rename, View, () -> {
@@ -249,6 +257,13 @@ class Prefab extends HuiView<{path: String}> {
 			else {
 				@:privateAccess el.tagColor.visible = false;
 			}
+		}
+
+		sceneEditor.tree.getItemIcon = (item: hrt.prefab.Prefab) -> {
+			if (errorPrefabs.get(item) != null) {
+				return HuiRes.icons.error;
+			}
+			return return HuiRes.icons.file_blank;
 		}
 
 		this.gizmoShouldSnap = hide.Ide.inst.currentConfig.get(hide.view.Prefab.GIZMO_SNAP_CONFIG_KEY, true);
@@ -448,8 +463,9 @@ class Prefab extends HuiView<{path: String}> {
 		as it will change the ordering of the heaps objects in the scene (which can cause subtle differences, espetially with 2d scenes where the order really matters).
 		For that you should call tryMakeChildren(prefab.parent) instead.
 	**/
-	public function tryMake(prefab: hrt.prefab.Prefab) : Bool {
+	public function tryMake(prefab: hrt.prefab.Prefab) {
 		removePrefabInstance(prefab);
+
 		if (prefab.parent == null && prefab.shared.parentPrefab == null) {
 			@:privateAccess prefab.shared.root2d = prefab.shared.current2d = new h2d.Object(sceneEditor.scene.s2d);
 			@:privateAccess prefab.shared.root3d = prefab.shared.current3d = new h3d.scene.Object(sceneEditor.scene.s3d);
@@ -458,12 +474,36 @@ class Prefab extends HuiView<{path: String}> {
 			prefab.shared.current3d = prefab.findFirstLocal3d(true);
 		}
 
+		prefab.shared.customMake = customTryMake;
+
+		if (prefab.parent != null) {
+			prefab.parent.makeChild(prefab);
+		} else {
+			customTryMake(prefab);
+		}
+
+		var fx = Std.downcast(prefab.findFirstLocal3d(), hrt.prefab.fx.FX.FXAnimation);
+		if (fx != null) {
+			fx.loop = true;
+		}
+
+		sceneEditor.tree.rebuild();
+	}
+
+	function customTryMake(prefab: hrt.prefab.Prefab) {
+		// Don't make prefab that have error in their parents
+		var prevError = errorPrefabs.get(prefab.parent);
+		if (prefab.parent != null && prevError != null) {
+			errorPrefabs.set(prefab, {title: "Didn't make prefab, parent has error", exception: prevError.exception});
+			return;
+		}
+
+		var errorState = errorPrefabs.get(prefab) != null;
+		var newErrorState = false;
+		errorPrefabs.remove(prefab);
+
 		try {
-			if (prefab.parent != null) {
-				prefab.parent.makeChild(prefab);
-			} else {
-				prefab.make();
-			}
+			prefab.make();
 			for (p in prefab.flatten()) {
 				makePrefabInteractive(p);
 				var obj3d = Std.downcast(p, hrt.prefab.Object3D);
@@ -475,24 +515,38 @@ class Prefab extends HuiView<{path: String}> {
 			}
 		} catch (e) {
 			removePrefabInstance(prefab);
+			errorPrefabs.set(prefab, {title: "Couldn't make prefab", exception: e});
+
+			var parentPrefab = prefab.shared.parentPrefab;
+			while(parentPrefab != null) {
+				if (parentPrefab != null) {
+					var ref = Std.downcast(parentPrefab, hrt.prefab.Reference);
+					if (ref != null && ref.editMode == None) {
+						errorPrefabs.set(prefab, {title: "Reference has errors", exception: e});
+					}
+				}
+				parentPrefab = parentPrefab.shared.parentPrefab;
+			}
+
+			for (child in prefab.flatten()) {
+				if (child == prefab)
+					continue;
+				errorPrefabs.set(child, {title: "Didn't make prefab, parent has error", exception: e});
+			}
+
+			@:privateAccess sceneEditor.tree.requestRefresh(Refresh);
 
 			if (rethrowMakeErrors) {
 				hl.Api.rethrow(e);
 			} else {
-				errorMessage.text = "Error loading prefab : " + e;
-				hide.Ide.showError("Error loading prefab " + e);
-				return false;
+				hide.Ide.showError('Error making prefab ${prefab.getAbsPath(true)} : $e');
 			}
+			newErrorState = true;
 		}
 
-		var fx = Std.downcast(prefab.findFirstLocal3d(), hrt.prefab.fx.FX.FXAnimation);
-		if (fx != null) {
-			fx.loop = true;
+		if (errorState != newErrorState && selectedPrefabs.exists(prefab)) {
+			App.defer(() -> refreshInspector());
 		}
-
-		sceneEditor.tree.rebuild();
-
-		return true;
 	}
 
 	public function makePrefabInteractive(prefab: hrt.prefab.Prefab) {
@@ -527,13 +581,10 @@ class Prefab extends HuiView<{path: String}> {
 
 	function load(path : String) {
 		try {
-			var prefabData = hxd.res.Loader.currentInstance.load(path).toPrefab().load().clone();
+			var prefabData = hxd.res.Loader.currentInstance.load(path).toPrefab().loadBypassCache().clone();
 			setPrefab(prefabData);
 		} catch(e) {
-			// prefabEditor.remove();
-			var error = 'Couldn\'t load $path : $e';
-			hide.Ide.showError(error);
-			new HuiText(error, this);
+			sceneEditor.setCriticalError('Couldn\'t load $path', e);
 		}
 	}
 
@@ -874,6 +925,21 @@ class Prefab extends HuiView<{path: String}> {
 		}
 	}
 
+	function inspectorDoTry(prefab: hrt.prefab.Prefab, callback: Void -> Void) {
+		try {
+			callback();
+
+			// try to make the prefab if it it's in a error state even if
+			// callback didn't throw
+			if (errorPrefabs.exists(prefab)) {
+				tryMake(prefab);
+			}
+		} catch(e) {
+			trace(e);
+			tryMake(prefab);
+		}
+	}
+
 	function refreshInspector() {
 		var prefabs = [for (prefab => _ in selectedPrefabs) prefab];
 
@@ -894,28 +960,70 @@ class Prefab extends HuiView<{path: String}> {
 			prefabs[0];
 		}
 
+		var anyPrefabErrors : PrefabError = null;
+		for (prefab in prefabs) {
+			anyPrefabErrors  = errorPrefabs.get(prefab);
+			if (anyPrefabErrors != null)
+				break;
+		}
+
 		var editContext = new EditContext(this, null);
 		sceneEditor.inspectorRoot = new hide.kit.KitRoot(null, null, editPrefab, editContext);
+		sceneEditor.inspectorRoot.doTry = inspectorDoTry.bind(editPrefab);
 		@:privateAccess sceneEditor.inspectorRoot.isMultiEdit = isMultiEdit;
 
 		@:privateAccess editContext.saveKey = Type.getClassName(commonClass);
 		editContext.root = sceneEditor.inspectorRoot;
 
-		editPrefab.edit2(editContext);
-		sceneEditor.inspectorRoot.postEditStep();
+		static final inspectorErrorMsg = "Couldn't create the inspector";
 
-		if (isMultiEdit) {
+		var inspectorError : PrefabError = null; // If building the inspector results in an error
+		try {
+			editPrefab.edit2(editContext);
+			sceneEditor.inspectorRoot.postEditStep();
+		} catch(e) {
+			inspectorError = {title: inspectorErrorMsg, exception: e};
+		}
+
+		if (isMultiEdit && inspectorError == null) {
 			for (i => prefab in prefabs) {
 				var childEditContext = new EditContext(this, editContext);
 				@:privateAccess childEditContext.saveKey = Type.getClassName(commonClass);
 				var childRoot = new hide.kit.KitRoot(null, null, prefab, childEditContext);
+				sceneEditor.inspectorRoot.doTry = inspectorDoTry.bind(prefab);
 				@:privateAccess childRoot.isMultiEdit = true;
 				sceneEditor.inspectorRoot.editedPrefabsProperties.push(childRoot);
 				childEditContext.root = childRoot;
-				prefab.edit2(childEditContext);
-				childRoot.postEditStep();
+				try {
+					prefab.edit2(childEditContext);
+					childRoot.postEditStep();
+				} catch (e) {
+					inspectorError = {title: inspectorErrorMsg, exception: e};
+					break;
+				}
 			}
 		}
+
+		if (inspectorError != null) {
+			sceneEditor.inspectorPanel.removeChildElements();
+			sceneEditor.inspectorRoot = null;
+		}
+
+		var error = inspectorError ?? anyPrefabErrors;
+
+		if (error != null) {
+			var errorDisplay = new HuiPrefabInspectorError(sceneEditor.inspectorPanel);
+			errorDisplay.errorText.text = error.title + "<br/>Exception : " + error.exception.message;
+
+			errorDisplay.button.onClick = (e) -> {
+				var errorInfo = new HuiErrorDisplay();
+				errorInfo.setError(error.title, error.exception);
+				uiBase.addPopup(errorInfo);
+			}
+		}
+
+		if (inspectorError != null)
+			return;
 
 		sceneEditor.inspectorRoot.make();
 
@@ -1289,12 +1397,7 @@ class EditContext extends hrt.prefab.EditContext2 {
 
 
 	public function rebuildPrefabImpl(prefab: hrt.prefab.Prefab) : Void {
-		// if (prefab == null || prefab.parent == null) {
-		// 	editor.tryMake(editor.prefab);
-		// 	return;
-		// }
-
-		// editor.tryMakeChildren(prefab.parent);
+		editor.tryMake(prefab);
 	}
 
 	/**
@@ -1389,6 +1492,16 @@ class EditContext extends hrt.prefab.EditContext2 {
 
 		return 'inspector/$mid/$key';
 	}
+}
+
+class HuiPrefabInspectorError extends HuiElement {
+	static var SRC =
+		<hui-prefab-inspector-error>
+			<hui-text public id="error-text"/>
+			<hui-button public id="button">
+				<hui-text("Stack Trace")/>
+			</hui-button>
+		</hui-prefab-inspector-error>
 }
 
 #end
