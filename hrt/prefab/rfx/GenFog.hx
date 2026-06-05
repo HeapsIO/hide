@@ -411,6 +411,7 @@ class GenFog extends RendererFX {
 		var g = new GenFog(null, null);
 		@:privateAccess g.initShader(true);
 
+		g.renderMode = g1.renderMode;
 		g.fogPassBlend.shader.intensity1 = g1.intensity;
 		g.fogPassBlend.shader.startDistance1 = g1.startDistance;
 		g.fogPassBlend.shader.distanceScale1 = 1 / (g1.endDistance - g1.startDistance);
