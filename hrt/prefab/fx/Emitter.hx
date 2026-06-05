@@ -495,7 +495,8 @@ class EmitterObject extends h3d.scene.Object {
 	public var parentEmitter : EmitterObject = null;
 	public var enable : Bool;
 
-	public var startTime = 0.0;
+	public var scene : h3d.scene.Scene;
+
 	public var catchupSpeed = 4; // Use larger ticks when catching-up to save calculations
 	public var totalBurstCount : Int = 0; // Keep track of burst count
 	#if !editor
@@ -624,6 +625,16 @@ class EmitterObject extends h3d.scene.Object {
 		return null;
 	}
 
+	override function onAdd() {
+		super.onAdd();
+		scene = getScene();
+	}
+
+	override function onParentChanged() {
+		super.onParentChanged();
+		scene = getScene();
+	}
+
 	function init(randSlots: Int, prefab: Emitter) {
 		this.emitterPrefab = prefab;
 		this.randSlots = randSlots;
@@ -723,7 +734,7 @@ class EmitterObject extends h3d.scene.Object {
 				var tex = hxd.res.Loader.currentInstance.load(spriteSheet).toTexture();
 				animatedTextureShader = new h3d.shader.AnimatedTexture(tex, frameDivisionX, frameDivisionY, frameCount, frameCount * animationSpeed / lifeTime);
 				animatedTextureShader.useSourceUVs = animationUseSourceUVs;
-				animatedTextureShader.startTime = startTime;
+				animatedTextureShader.startTime = @:privateAccess scene?.renderer.ctx.globalTime ?? 0.0;
 				animatedTextureShader.loop = animationLoop;
 				animatedTextureShader.blendBetweenFrames = animationBlendBetweenFrames;
 				animatedTextureShader.setPriority(1);
@@ -781,6 +792,8 @@ class EmitterObject extends h3d.scene.Object {
 		#if editor
 		debugGraphics.remove();
 		#end
+
+		scene = null;
 		super.onRemove();
 	}
 
@@ -956,9 +969,10 @@ class EmitterObject extends h3d.scene.Object {
 		if( instDef == null)
 			return;
 
+		@:privateAccess var globalTime = scene?.renderer.ctx.globalTime ?? curTime;
+
 		var emitterQuat : h3d.Quat = null;
 		if (count > 0) {
-			var scene = relativeScenePosition ? getScene() : null;
 
 			if (trailsTemplate != null && trails == null) {
 				trails = trailsTemplate.create(this, maxCount);
@@ -968,7 +982,7 @@ class EmitterObject extends h3d.scene.Object {
 
 			for( i in 0...count ) {
 				var part = allocInstance();
-				part.startTime = startTime + curTime;
+				part.startTime = globalTime;
 				part.lifeTime = hxd.Math.max(0.01, lifeTime + random.srand(lifeTimeRand));
 
 				if(useRandomColor) {
@@ -1091,7 +1105,7 @@ class EmitterObject extends h3d.scene.Object {
 							continue;
 						}
 
-						var subEmitterInstance : Emitter = @:privateAccess template.make(this.getScene());
+						var subEmitterInstance : Emitter = @:privateAccess template.make(scene);
 						var emitter : EmitterObject = cast subEmitterInstance.local3d;
 						emitter.isSubEmitter = true;
 						emitter.parentEmitter = this;
@@ -1272,7 +1286,7 @@ class EmitterObject extends h3d.scene.Object {
 
 	function updateAlignment() {
 		if(alignMode == Screen) {
-			var cam = getScene()?.camera;
+			var cam = scene?.camera;
 			if (cam == null)
 				return;
 			tmpMat.load(cam.mcam);
@@ -1290,7 +1304,7 @@ class EmitterObject extends h3d.scene.Object {
 			screenRot.multiply(screenRot, tmpMat);
 		}
 		else if(alignMode == Axis) {
-			var cam = getScene()?.camera;
+			var cam = scene?.camera;
 			if (cam == null)
 				return;
 			var lockAxis = new h3d.Vector();
@@ -1405,7 +1419,6 @@ class EmitterObject extends h3d.scene.Object {
 	}
 
 	function updateParticles(full: Bool, dt: Float) {
-		var scene = getScene();
 		if (scene == null)
 			return;
 
@@ -1941,12 +1954,6 @@ class Emitter extends Object3D {
 		// DEBUG
 		#if editor
 		emitterObj.debugGraphics.visible = EmitterHelper.getParamVal(PARAMS, props, "viewDebug");
-		#end
-
-		#if !editor  // Keep startTime at 0 in Editor, since global.time is synchronized to timeline
-		var scene = local3d.getScene();
-		if(scene != null)
-			emitterObj.startTime = @:privateAccess scene.renderer.ctx.time;
 		#end
 
 		emitterObj.init(randIdx, this);
