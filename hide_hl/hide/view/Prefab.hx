@@ -158,20 +158,8 @@ class Prefab extends HuiView<{path: String}> {
 			entries.push({ label : "Editor Only", checked: prefab.editorOnly, click: () -> { setEditorOnly(cast sceneEditor.tree.getSelectedItems(), !prefab.editorOnly); }});
 			entries.push({ label : "In Game Only", checked: prefab.inGameOnly, click: () -> { setInGameOnly(cast sceneEditor.tree.getSelectedItems(), !prefab.inGameOnly); }});
 			entries.push({ label : "Show In Editor", checked: getEditorVisibility(prefab), click: () -> { setEditorVisibility(prefab, !getEditorVisibility(prefab)); }});
-			entries.push({ label : "Locked", checked: prefab.locked, click: () -> { setLock(cast sceneEditor.tree.getSelectedItems(), !prefab.locked); }});
-
-			entries.push(HuiMenu.itemFromCommand(HuiCommands.selectAll, this));
-			entries.push({ label : "Select Children", click: () -> { setSelection(prefab._children ?? [], SelectionFlags.ofInt(0)); }});
+			entries.push({ label : "Locked", checked: prefab.locked, click: () -> { setLock(cast sceneEditor.tree.getSelectedItems(), !prefab.locked);}});
 			entries.push({ label : "Tag", menu: getTagMenu(cast sceneEditor.tree.getSelectedItems()) });
-
-			entries.push({isSeparator: true});
-			entries.push(HuiMenu.itemFromCommand(HuiCommands.cut, this));
-			entries.push(HuiMenu.itemFromCommand(HuiCommands.copy, this));
-			entries.push(HuiMenu.itemFromCommand(HuiCommands.paste, this));
-
-			entries.push(HuiMenu.itemFromCommand(HuiCommands.delete, this));
-			entries.push(HuiMenu.itemFromCommand(HuiCommands.rename, this));
-
 			entries.push({isSeparator: true});
 
 			entries.push({ label: "Collapse", click: () -> {
@@ -183,7 +171,18 @@ class Prefab extends HuiView<{path: String}> {
 
 			entries.push({isSeparator: true});
 
+			entries.push(HuiMenu.itemFromCommand(HuiCommands.selectAll, this));
+			entries.push({ label : "Select Children", click: () -> { setSelection(prefab._children ?? [], SelectionFlags.ofInt(0)); }});
 			entries.push(HuiMenu.itemFromCommand(HuiSceneEditor.focusCommand, this));
+
+			entries.push({isSeparator: true});
+			entries.push(HuiMenu.itemFromCommand(HuiCommands.cut, this));
+			entries.push(HuiMenu.itemFromCommand(HuiCommands.copy, this));
+			entries.push(HuiMenu.itemFromCommand(HuiCommands.paste, this));
+
+			entries.push(HuiMenu.itemFromCommand(HuiCommands.delete, this));
+			entries.push(HuiMenu.itemFromCommand(HuiCommands.rename, this));
+			entries.push({ label : "Locked", checked: prefab.locked, click: () -> { setLock(cast sceneEditor.tree.getSelectedItems(), !prefab.locked); }});
 
 			uiBase.contextMenu(entries);
 		};
