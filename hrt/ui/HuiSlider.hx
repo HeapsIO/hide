@@ -30,9 +30,11 @@ class HuiSlider extends HuiElement {
 		};
 
 		var moved = false;
-		var startX = 0;
-		var startY = 0;
+		var startX = -1;
+		var startY = -1;
 		this.onPush = (e : hxd.Event) -> {
+			if (inputText.visible)
+				return;
 			startX = hxd.Window.getInstance().mouseX;
 			var accumulator= 0.0;
 			startY = hxd.Window.getInstance().mouseY;
@@ -67,18 +69,24 @@ class HuiSlider extends HuiElement {
 		};
 
 		this.onRelease = (e : hxd.Event) -> {
-			hxd.Window.getInstance().mouseMode = Absolute;
-			hxd.Window.getInstance().setCursorPos(startX, startY);
-			if (!moved) {
-				inputText.visible = true;
-				valueText.visible = false;
-				inputText.text = valueText.text;
-				haxe.Timer.delay(() -> inputText.focus(), 0);
+			if (inputText.visible)
+				return;
+			if (startX >= 0 && startY >= 0) {
+				hxd.Window.getInstance().mouseMode = Absolute;
+				hxd.Window.getInstance().setCursorPos(startX, startY);
+				if (!moved) {
+					inputText.visible = true;
+					valueText.visible = false;
+					inputText.text = valueText.text;
+					haxe.Timer.delay(() -> inputText.focus(), 0);
+				}
+				else {
+					moved = false;
+					onValueChanged(false);
+				}
 			}
-			else {
-				moved = false;
-				onValueChanged(false);
-			}
+			startX = -1;
+			startY = -1;
 		}
 	}
 
