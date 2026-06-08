@@ -832,234 +832,220 @@ class Model extends FileView {
 			}
 
 			// LODs edition
-			if (@:privateAccess hmd.lodCount() > 1) {
-				var lodsEl = new Element('
-					<div class="group lods" name="LODs">
-						<dt>LOD Count</dt><dd>${hmd.lodCount()}</dd>
-						<dt>Force display LOD</dt>
-						<dd>
-							<select id="select-lods">
-								<option value="-1">None</option>
-								${[ for(idx in 0...hmd.lodCount()) '<option value="${idx}">LOD ${idx}</option>'].join("")}
-							</select>
-						</dd>
-						<dt>LOD Vertexes</dt><dd id="vertexes-count">-</dd>
-						<dt>Max Lod</dt><dd><input value="100" id="max-lod"/></dd>
-						<div class="lods-line" title="Change the maximum range of lod editable in the editor">
-							<div class="line"></div>
-							<div class="cursor">
-								<div class="cursor-line"></div>
-								<p class="ratio">100%</p>
-							</div>
-						</div>
-
-						<div id="buttons">
-							<input type="button" value="Copy" id="copy-lods"/>
-							<input type="button" value="Paste" id="paste-lods"/>
-							<input type="button" value="Reset defaults" id="reset-lods"/>
+			var lodsEl = new Element('
+				<div class="group lods" name="LODs">
+					<dt>LOD Count</dt><dd>${hmd.lodCount()}</dd>
+					<dt>Force display LOD</dt>
+					<dd>
+						<select id="select-lods">
+							<option value="-1">None</option>
+							${[ for(idx in 0...hmd.lodCount() + 1) '<option value="${idx}">LOD ${idx}</option>'].join("")}
+						</select>
+					</dd>
+					<dt>LOD Vertexes</dt><dd id="vertexes-count">-</dd>
+					<dt>Max Lod</dt><dd><input value="100" id="max-lod"/></dd>
+					<div class="lods-line" title="Change the maximum range of lod editable in the editor">
+						<div class="line"></div>
+						<div class="cursor">
+							<div class="cursor-line"></div>
+							<p class="ratio">100%</p>
 						</div>
 					</div>
-				');
-				properties.add(lodsEl, null, null);
+					<div id="buttons">
+						<input type="button" value="Copy" id="copy-lods"/>
+						<input type="button" value="Paste" id="paste-lods"/>
+						<input type="button" value="Reset defaults" id="reset-lods"/>
+					</div>
+				</div>
+			');
+			properties.add(lodsEl, null, null);
 
-				function getLodRatioFromIdx(idx : Int) {
-					var lodConfig = hmd.getLodConfig();
-					if (idx <= 0) return maxLod;
-					if (idx > lodConfig.length) return 0.;
-					if (idx >= hmd.lodCount() + 1) return 0.;
-					return lodConfig[idx - 1];
-				}
+			function getLodRatioFromIdx(idx : Int) {
+				var lodConfig = hmd.getLodConfig();
+				if (idx <= 0) return maxLod;
+				if (idx == hmd.lodCount()) return hmd.getCullingScreenRatio();
+				if (idx > lodConfig.length || idx > hmd.lodCount()) return 0.;
+				return lodConfig[idx - 1];
+			}
 
-				function getLodRatioFromPx(px : Float) {
-					var ratio = 1.0 - (px / lodsEl.find(".line").width());
-					return Math.pow(ratio, 1.0 / lodPow) * getLodRatioFromIdx(0);
-				}
+			function getLodRatioFromPx(px : Float) {
+				var ratio = 1.0 - (px / lodsEl.find(".line").width());
+				return Math.pow(ratio, 1.0 / lodPow) * getLodRatioFromIdx(0);
+			}
 
-				function getLodRatioPowedFromIdx(idx : Int) {
-					var prev = hxd.Math.pow(getLodRatioFromIdx(idx) / getLodRatioFromIdx(0) , lodPow);
-					var current = hxd.Math.pow(getLodRatioFromIdx(idx+1) / getLodRatioFromIdx(0), lodPow);
-					return Math.max(prev - current, 0);
-				}
+			function getLodRatioPowedFromIdx(idx : Int) {
+				var prev = hxd.Math.pow(getLodRatioFromIdx(idx) / getLodRatioFromIdx(0) , lodPow);
+				var current = hxd.Math.pow(getLodRatioFromIdx(idx+1) / getLodRatioFromIdx(0), lodPow);
+				return Math.max(prev - current, 0);
+			}
 
-				function startDrag(onMove: js.jquery.Event->Void, onStop: js.jquery.Event->Void) {
-					var el = new Element(element[0].ownerDocument.body);
-					el.on("mousemove.lods", onMove);
-					el.on("mouseup.lods", function(e: js.jquery.Event) {
-						el.off("mousemove.lods");
-						el.off("mouseup.lods");
-						e.preventDefault();
-						e.stopPropagation();
-						onStop(e);
-					});
-				}
-
-				function refreshLodLine() {
-					var areas = lodsEl.find(".area");
-					var lineEl = lodsEl.find(".line");
-					var idx = 0;
-					for (area in areas) {
-						var areaEl = new Element(area);
-						areaEl.css({ width : '${lineEl.width() * getLodRatioPowedFromIdx(idx)}px' });
-
-
-						var roundedRatio = getLodRatioFromIdx(idx);
-						areaEl.find('#percent').text('${hrt.tools.MathUtils.roundToSignificantFigures(roundedRatio * 100, 3)}%');
-
-						var text = "";
-						areaEl.children().each((idx, el) -> text += el.textContent + "\n");
-						areaEl.get(0).title = text;
-
-						idx++;
-					}
-				}
-
-				var copyLod = lodsEl.find('#copy-lods');
-				copyLod.on("click", function() {
-					var config = @:privateAccess hmd.lodConfig?.copy();
-					hide.Ide.inst.setClipboard(hide.Ide.inst.toJSON(config));
-					hide.Ide.inst.quickMessage("Copied current lod config to the clipboard");
+			function startDrag(onMove: js.jquery.Event->Void, onStop: js.jquery.Event->Void) {
+				var el = new Element(element[0].ownerDocument.body);
+				el.on("mousemove.lods", onMove);
+				el.on("mouseup.lods", function(e: js.jquery.Event) {
+					el.off("mousemove.lods");
+					el.off("mouseup.lods");
+					e.preventDefault();
+					e.stopPropagation();
+					onStop(e);
 				});
+			}
 
-				var pasteLod = lodsEl.find('#paste-lods');
-				pasteLod.on("click", function() {
-					var prevConfig = @:privateAccess hmd.lodConfig?.copy();
-					var newConfig = try haxe.Json.parse(hide.Ide.inst.getClipboard()) catch(e) null;
+			function refreshLodLine() {
+				var areas = lodsEl.find(".area");
+				var lineEl = lodsEl.find(".line");
+				var idx = 0;
+				for (area in areas) {
+					var areaEl = new Element(area);
+					areaEl.css({ width : '${lineEl.width() * getLodRatioPowedFromIdx(idx)}px' });
 
-					if (newConfig is Array) {
-						for (value in (newConfig:Array<Dynamic>)) {
-							if (value is Float || value is Int) {
-								continue;
-							}
-							newConfig = null;
-							break;
-						}
-					}
+					var roundedRatio = getLodRatioFromIdx(idx);
+					areaEl.find('#percent').text('${hrt.tools.MathUtils.roundToSignificantFigures(roundedRatio * 100, 3)}%');
 
-					if (newConfig == null) {
-						hide.Ide.inst.quickMessage("Couldn't paste config from clipboard (invalid data)");
-						return;
-					}
-					var exec = function(undo) {
-						if (undo) {
-							@:privateAccess hmd.lodConfig = prevConfig;
-						} else {
-							@:privateAccess hmd.lodConfig = cast newConfig;
-						}
+					var text = "";
+					areaEl.children().each((_, el) -> text += el.textContent + "\n");
+					areaEl.get(0).title = text;
 
-						refreshLodLine();
-					}
-					undo.change(Custom(exec));
-					exec(false);
-					hide.Ide.inst.quickMessage("Pasted config from the clipboard");
-				});
-
-
-				var resetLod = lodsEl.find('#reset-lods');
-				resetLod.on("click", function() {
-					var prevConfig = @:privateAccess hmd.lodConfig?.copy();
-					@:privateAccess hmd.lodConfig = h3d.prim.ModelDatabase.current.getDefaultLodConfig(hmd.lib.resource.entry.directory);
-					Ide.inst.quickMessage('Lod config reset for object : ${obj.name}');
-					refreshLodLine();
-
-					undo.change(Custom(function(undo) {
-						if (undo) {
-							@:privateAccess hmd.lodConfig = prevConfig;
-						} else {
-							@:privateAccess hmd.lodConfig = null;
-						}
-
-						refreshLodLine();
-					}));
-				});
-
-				maxLod = Math.max(getLodRatioFromIdx(1), maxLod);
-
-				var maxLodElem = lodsEl.find("#max-lod");
-				maxLodElem.val(getLodRatioFromIdx(0) * 100);
-				maxLodElem.get(0).onchange = (e) -> {
-					var newMax = Std.parseFloat(maxLodElem.val());
-					if (Math.isNaN(newMax)) {
-						maxLodElem.val(getLodRatioFromIdx(0) * 100);
-						return;
-					}
-
-					var oldVal = maxLod;
-					var newVal = newMax / 100.0;
-					newVal = Math.max(getLodRatioFromIdx(1), newVal);
-
-					var exec = function(undo) {
-						maxLod = undo ? oldVal : newVal;
-						maxLodElem.val(maxLod * 100);
-						refreshLodLine();
-					};
-					undo.change(Custom(exec), false);
-					exec(false);
-				};
-
-
-				var selectLod = lodsEl.find("select");
-				selectLod.on("change", function(){
-					mesh.forcedLod = Std.int(lodsEl.find("select").val());
-				});
-
-				var lodsLine = lodsEl.find(".line");
-				for (idx in 0...(hmd.lodCount() + 1)) {
-					var isCulledLod = idx == hmd.lodCount();
-					var areaEl = new Element('
-					<div class="area">
-						<p>${isCulledLod ? 'Culled' : 'LOD&nbsp${idx}'}</p>
-						<p id="percent">-%</p>
-					</div>');
-
-					if (isCulledLod)
-						areaEl.css({ flex : 1 });
-
-					lodsLine.append(areaEl);
-					refreshLodLine();
-
-					var widthHandle = 10;
-					areaEl.on("mousemove", function(e:js.jquery.Event) {
-						if ((e.offsetX <= widthHandle && idx != 0) || (areaEl.width() - e.offsetX) <= widthHandle && idx != hmd.lodCount())
-							areaEl.css({ cursor : 'w-resize' });
-						else
-							areaEl.css({ cursor : 'default' });
-					});
-
-					areaEl.on("mousedown", function(e:js.jquery.Event) {
-						var firstHandle = e.offsetX <= widthHandle && idx != 0;
-						var secondHandle = areaEl.width() - e.offsetX <= widthHandle && idx != hmd.lodCount();
-
-						if (firstHandle || secondHandle) {
-							var currIdx = secondHandle ? idx : idx - 1;
-							var prevConfig = @:privateAccess hmd.lodConfig?.copy();
-							var newConfig = hmd.getLodConfig()?.copy();
-							var limits = [ getLodRatioFromIdx(currIdx + 2), getLodRatioFromIdx(currIdx)];
-							trace(limits);
-							startDrag(function(e) {
-								var newRatio = getLodRatioFromPx(e.clientX - lodsLine.offset().left);
-								if (Math.isNaN(newRatio))
-									newRatio = 0;
-								newRatio = hrt.tools.MathUtils.roundToSignificantFigures(newRatio, 3);
-								newRatio = hxd.Math.clamp(newRatio, limits[0], limits[1]);
-								newConfig[currIdx] = newRatio;
-								@:privateAccess hmd.lodConfig = newConfig;
-								refreshLodLine();
-							}, function(e) {
-
-								undo.change(Custom(function(undo) {
-									if (undo) {
-										@:privateAccess hmd.lodConfig = prevConfig;
-									} else {
-										@:privateAccess hmd.lodConfig = newConfig;
-									}
-
-									refreshLodLine();
-								}));
-							});
-						}
-					});
+					idx++;
 				}
 			}
+
+			var copyLod = lodsEl.find('#copy-lods');
+			copyLod.on("click", function() {
+				var config = { config : @:privateAccess hmd.lodConfig?.copy(), cullingRatio : hmd.getCullingScreenRatio() };
+				hide.Ide.inst.setClipboard(hide.Ide.inst.toJSON(config));
+				hide.Ide.inst.quickMessage("Copied current lod config to the clipboard");
+			});
+
+			var pasteLod = lodsEl.find('#paste-lods');
+			pasteLod.on("click", function() {
+				var prevConfig = { config : @:privateAccess hmd.lodConfig?.copy(), cullingRatio : hmd.getCullingScreenRatio() };
+				var newConfig = try haxe.Json.parse(hide.Ide.inst.getClipboard()) catch(e) null;
+
+				if (newConfig == null) {
+					hide.Ide.inst.quickMessage("Couldn't paste config from clipboard (invalid data)");
+					return;
+				}
+
+				var exec = function(undo) {
+					@:privateAccess hmd.lodConfig = undo ? prevConfig?.config : newConfig?.config;
+					@:privateAccess hmd.cullingScreenRatio = undo ? prevConfig.cullingRatio : newConfig.cullingRatio;
+					refreshLodLine();
+				}
+
+				undo.change(Custom(exec));
+				exec(false);
+				hide.Ide.inst.quickMessage("Pasted config from the clipboard");
+			});
+
+
+			var resetLod = lodsEl.find('#reset-lods');
+			resetLod.on("click", function() {
+				var prevConfig = { config : @:privateAccess hmd.lodConfig?.copy(), cullingRatio : hmd.getCullingScreenRatio() };
+				@:privateAccess hmd.lodConfig = h3d.prim.ModelDatabase.current.getDefaultLodConfig(hmd.lib.resource.entry.directory);
+				@:privateAccess hmd.cullingScreenRatio = 0.;
+				Ide.inst.quickMessage('Lod config reset for object : ${obj.name}');
+				refreshLodLine();
+
+				undo.change(Custom(function(undo) {
+					if (undo) {
+						@:privateAccess hmd.lodConfig = prevConfig.config;
+						@:privateAccess hmd.cullingScreenRatio = prevConfig.cullingRatio;
+					} else {
+						@:privateAccess hmd.lodConfig = null;
+						@:privateAccess hmd.cullingScreenRatio = 0.;
+					}
+
+					refreshLodLine();
+				}));
+			});
+
+			maxLod = Math.max(getLodRatioFromIdx(1), maxLod);
+
+			var maxLodElem = lodsEl.find("#max-lod");
+			maxLodElem.val(getLodRatioFromIdx(0) * 100);
+			maxLodElem.get(0).onchange = (e) -> {
+				var newMax = Std.parseFloat(maxLodElem.val());
+				if (Math.isNaN(newMax)) {
+					maxLodElem.val(getLodRatioFromIdx(0) * 100);
+					return;
+				}
+
+				var oldVal = maxLod;
+				var newVal = newMax / 100.0;
+				newVal = Math.max(getLodRatioFromIdx(1), newVal);
+
+				var exec = function(undo) {
+					maxLod = undo ? oldVal : newVal;
+					maxLodElem.val(maxLod * 100);
+					refreshLodLine();
+				};
+				undo.change(Custom(exec), false);
+				exec(false);
+			};
+
+			var selectLod = lodsEl.find("select");
+			selectLod.on("change", function(){
+				mesh.forcedLod = Std.int(lodsEl.find("select").val());
+			});
+
+			var lodsLine = lodsEl.find(".line");
+			for (idx in 0...(hmd.lodCount() + 1)) {
+				var isCulledLod = idx == hmd.lodCount();
+				var areaEl = new Element('
+				<div class="area">
+					<p>${isCulledLod ? 'Culled' : 'LOD&nbsp${idx}'}</p>
+					<p id="percent">-%</p>
+				</div>');
+
+				if (isCulledLod)
+					areaEl.css({ flex : 1 });
+
+				lodsLine.append(areaEl);
+
+				var widthHandle = 10;
+				areaEl.on("mousemove", function(e:js.jquery.Event) {
+					if ((e.offsetX <= widthHandle && idx != 0) || (areaEl.width() - e.offsetX) <= widthHandle && idx != hmd.lodCount())
+						areaEl.css({ cursor : 'w-resize' });
+					else
+						areaEl.css({ cursor : 'default' });
+				});
+
+				areaEl.on("mousedown", function(e:js.jquery.Event) {
+					var firstHandle = e.offsetX <= widthHandle && idx != 0;
+					var secondHandle = areaEl.width() - e.offsetX <= widthHandle && idx != hmd.lodCount();
+
+					if (firstHandle || secondHandle) {
+						var currIdx = secondHandle ? idx : idx - 1;
+						var prevConfig = { config : @:privateAccess hmd.lodConfig?.copy(), cullingRatio : hmd.getCullingScreenRatio() };
+						var newConfig = { config : @:privateAccess hmd.getLodConfig()?.copy(), cullingRatio : hmd.getCullingScreenRatio() };
+						var limits = [ getLodRatioFromIdx(currIdx + 2), getLodRatioFromIdx(currIdx)];
+						startDrag(function(e) {
+							var newRatio = getLodRatioFromPx(e.clientX - lodsLine.offset().left);
+							if (Math.isNaN(newRatio))
+								newRatio = 0;
+							newRatio = hrt.tools.MathUtils.roundToSignificantFigures(newRatio, 3);
+							newRatio = hxd.Math.clamp(newRatio, limits[0], limits[1]);
+							if (currIdx + 1 == hmd.lodCount())
+								newConfig.cullingRatio = newRatio;
+							else
+								newConfig.config[currIdx] = newRatio;
+							@:privateAccess hmd.lodConfig = newConfig.config;
+							@:privateAccess hmd.cullingScreenRatio = newConfig.cullingRatio;
+							refreshLodLine();
+						}, function(e) {
+							undo.change(Custom(function(undo) {
+								@:privateAccess hmd.lodConfig = undo ? prevConfig.config : newConfig.config;
+								@:privateAccess hmd.cullingScreenRatio = undo ? prevConfig.cullingRatio : newConfig.cullingRatio;
+
+								refreshLodLine();
+							}));
+						});
+					}
+				});
+			}
+
+			refreshLodLine();
 
 			// Collision edition
 			var modelName = mesh.name;
