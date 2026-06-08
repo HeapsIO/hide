@@ -594,8 +594,6 @@ class ShaderGraph extends hrt.prefab.Prefab {
 		externs.sort((a,b) -> Reflect.compare(a.paramIndex ?? -1, b.paramIndex ?? -1));
 
 		for (v in externs) {
-			if (v.v.name == "emissiveMask")
-				trace("break");
 			// Patch unknow global variables to be locals instead with a dummy value
 			// so the preview shader doesn't crash
 			if (previewDomain != null && v.paramIndex == null) {
