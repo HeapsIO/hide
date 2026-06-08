@@ -299,7 +299,7 @@ class Ide extends hide.tools.IdeData {
 	}
 
 	static inline public function formatError(message: String, e: haxe.Exception, ?lineBreak: String) {
-		var string = 'Error : $message\n$e\n\nStack trace : ${haxe.CallStack.toString(haxe.CallStack.exceptionStack(true))}';
+		var string = 'Error : $message\n$e\n\nStack trace : ${e.stack.toString()}';
 		if (lineBreak != null)
 			string = StringTools.replace(string, "\n", lineBreak);
 		return string;

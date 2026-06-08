@@ -49,7 +49,7 @@ class HuiErrorDisplay extends HuiPopup {
 		prevError = fmtError;
 
 		this.visible = true;
-		stackTrace.setItems(haxe.CallStack.exceptionStack(true));
+		stackTrace.setItems(exception.stack.asArray());
 		errorTitle.text = title;
 		errorException.text = 'Exception : $exception';
 	}
