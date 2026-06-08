@@ -288,6 +288,7 @@ class HuiBase extends HuiElement {
 				if (previousUiScale != upscale) {
 					previousUiScale = upscale;
 					dom.toggleClass("high-dpi", upscale > 1.0);
+					highDpi = upscale > 1.0;
 				}
 				var engine = scene.renderer.engine;
 				scene.scaleMode = Fixed(Math.ceil(engine.width / upscale), Math.ceil(engine.height / upscale), upscale, Center, Center);
@@ -295,6 +296,8 @@ class HuiBase extends HuiElement {
 		}
 		#end
 	}
+
+	public static var highDpi = false;
 }
 
 #end

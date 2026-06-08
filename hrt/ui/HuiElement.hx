@@ -189,6 +189,9 @@ class HuiElement extends h2d.Flow #if hui implements h2d.domkit.Object #end {
 			if (Std.downcast(this, HuiView) == null) {
 				var view = findParent(HuiView);
 
+				if (view == null)
+					throw "Cannot register command with View or FocusedView context if it doesn't have a view parent (you are probably in a popup)";
+
 				if (context == View) {
 					view.registerCommand(command, context, cb);
 					return;

@@ -531,13 +531,13 @@ class Prefab extends HuiView<{path: String}> {
 			}
 		} catch (e) {
 			removePrefabInstance(prefab);
-			errorPrefabs.set(prefab, {title: "Couldn't make prefab", exception: e});
+			errorPrefabs.set(prefab, {title: "Prefab make raised an exception", exception: e});
 
 			var parentPrefab = prefab.shared.parentPrefab;
 			while(parentPrefab != null) {
 				var ref = Std.downcast(parentPrefab, hrt.prefab.Reference);
 				if (ref != null && ref.editMode == None) {
-					errorPrefabs.set(parentPrefab, {title: "Reference has errors", exception: e});
+					errorPrefabs.set(parentPrefab, {title: "Referenced prefab has errors", exception: e});
 				}
 				parentPrefab = parentPrefab.shared.parentPrefab;
 			}
@@ -545,7 +545,7 @@ class Prefab extends HuiView<{path: String}> {
 			for (child in prefab.flatten()) {
 				if (child == prefab)
 					continue;
-				errorPrefabs.set(child, {title: "Didn't make prefab, parent has error", exception: e});
+				errorPrefabs.set(child, {title: "Parent prefab has errors", exception: e});
 			}
 
 			@:privateAccess sceneEditor.tree.requestRefresh(Refresh);
@@ -1025,9 +1025,14 @@ class Prefab extends HuiView<{path: String}> {
 
 		var error = inspectorError ?? anyPrefabErrors;
 
+		var wrapper = new HuiElement(sceneEditor.inspectorPanel);
+		var className = new HuiText(Type.getClassName(commonClass).split(".").pop(), wrapper);
+		className.dom.addClass("italic");
+		wrapper.dom.addClass("class-name");
+
 		if (error != null) {
 			var errorDisplay = new HuiPrefabInspectorError(sceneEditor.inspectorPanel);
-			errorDisplay.errorText.text = error.title + "<br/>Exception : " + error.exception.message;
+			errorDisplay.errorText.text = "This <i>prefab</i> had an error : " + error.title + "<br/>Exception : " + error.exception.message;
 
 			errorDisplay.button.onClick = (e) -> {
 				var errorInfo = new HuiErrorDisplay();
@@ -1040,8 +1045,6 @@ class Prefab extends HuiView<{path: String}> {
 			return;
 
 		sceneEditor.inspectorRoot.make();
-
-		new HuiText(Type.getClassName(commonClass).split(".").pop(), sceneEditor.inspectorPanel);
 
 		sceneEditor.inspectorPanel.addChild(@:privateAccess sceneEditor.inspectorRoot.native);
 		if (uiBase != null) {

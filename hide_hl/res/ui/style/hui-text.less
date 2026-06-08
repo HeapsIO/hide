@@ -1,9 +1,16 @@
 hui-text {
-	font: url("font/Inter-cv05-cv08-tnum-13pt.fnt");
+	base-font: regular;
+	&.italic {
+		base-font: italic;
+	}
 	color: @text-color;
 	text-shadow: 0 1 #000 0.5;
 }
 
 .high-dpi hui-text {
-	font: url("font/Inter-cv05-cv08-tnum-26pt.fnt") scale(0.5);
+	base-font: regular;
+
+	&.italic {
+		base-font: italic;
+	}
 }
