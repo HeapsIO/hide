@@ -35,6 +35,9 @@ class CullingContainer extends Object3D {
 	function createDebugSphere() {
 		prim = new h3d.prim.GeoSphere(2);
 		m = new h3d.scene.Mesh(prim, null, this.local3d.parent);
+		m.x = x;
+		m.y = y;
+		m.z = z;
 		m.setScale(cullDistance);
 		m.name = "debugWireframe";
 		m.material.name = "$collider";
@@ -61,7 +64,12 @@ class CullingContainer extends Object3D {
 
 	override function updateInstance(?propName : String) {
 		super.updateInstance(propName);
-		m?.setScale(cullDistance);
+		if(m != null){
+			m.x = x;
+			m.y = y;
+			m.z = z;
+			m?.setScale(cullDistance);
+		}
 		var obj = Std.downcast(this.local3d, CullingContainerObject);
 		if(obj != null) {
 			obj.cullDistanceSq = cullDistance * cullDistance;
