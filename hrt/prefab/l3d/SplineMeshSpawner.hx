@@ -25,7 +25,7 @@ class SplineMeshSpawnerObject extends h3d.scene.Object {
 			if ( prim == null )
 				continue;
 			var positions = [];
-			instances.push({mesh : mesh, path : @:privateAccess prim.lib.resource.entry.path, positions : positions});
+			instances.push({mesh : mesh, positions : positions});
 			var meshRelPos = new h3d.Matrix();
 			meshRelPos.multiply3x4inline(mesh.getAbsPos(), this.getAbsPos().getInverse());
 
@@ -95,7 +95,6 @@ class SplineMeshSpawnerObject extends h3d.scene.Object {
 typedef InstanceData = {
 	var positions : Array<h3d.Matrix>;
 	var mesh : h3d.scene.Mesh;
-	var path : String;
 }
 
 class SplineMeshSpawner extends hrt.prefab.Object3D {
