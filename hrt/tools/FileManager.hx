@@ -72,7 +72,7 @@ class FileEntry {
 		this.name = name;
 		this.parent = parent;
 		this.kind = kind;
-		this.relPath = parent == null ? name : parent.getChildRelPath(name);
+		this.relPath = parent == null ? "" : parent.getChildRelPath(name);
 		if (absDir != null) {
 			this.path = absDir + "/" + name;
 		} else {
@@ -236,6 +236,8 @@ class FileEntry {
 	}
 
 	function getChildRelPath(name: String) {
+		if (parent == null)
+			return name;
 		return relPath + "/" + name;
 	}
 
@@ -1466,6 +1468,7 @@ class FileManager {
 		return fileIndex.get(relPath);
 	}
 }
+
 
 @:allow(hrt.tools.FileManager)
 class FilterPathContext {
