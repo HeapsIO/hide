@@ -196,7 +196,8 @@ class Ide extends hide.tools.IdeData {
 				case "fbx":
 					new hide.view.Model({path: filePath});
 				case _:
-					null;
+					hide.tools.IdeData.openExternalFile(filePath);
+					return;
 			};
 
 			openView(v, Main);

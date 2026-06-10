@@ -122,6 +122,14 @@ class HuiFileBrowser extends HuiElement {
 
 		var items : Array<hrt.ui.HuiMenu.MenuItem> = [{label: "New ...", menu: createMenu}];
 
+		items.push({isSeparator: true});
+
+		items.push({label: "Copy Path", click: () -> hxd.System.setClipboardText(file.getRelPath())});
+		items.push({label: "Copy Absolute Path", click: () -> hxd.System.setClipboardText(file.getPath())});
+		items.push({label: "Open In Explorer", click: () -> hide.tools.IdeData.showFileInExplorer(file.getPath())});
+
+		items.push({isSeparator: true});
+
 		var rename = HuiMenu.itemFromCommand(HuiCommands.rename, this);
 		rename.enabled = file != rootFile;
 		items.push(rename);

@@ -178,7 +178,7 @@ class Cell {
 		case TFile:
 			menu = [
 				{ label : "Open in Explorer", enabled : value != null && value != "", click : function(){
-					Ide.showFileInExplorer(value);
+					hide.tools.IdeData.showFileInExplorer(value);
 				} },
 				{ label : "Open in Resources", enabled : value != null && value != "", click : function() {
 					ide.showFileInResources(value);

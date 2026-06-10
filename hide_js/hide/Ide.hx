@@ -1184,7 +1184,7 @@ class Ide extends hide.tools.IdeData {
 										hide.comp.cdb.Editor.openReference2(hits[idx].sheet, hits[idx].path);
 
 									default:
-										Ide.showFileInExplorer(absPath + "/" + f);
+										hide.tools.IdeData.showFileInExplorer(absPath + "/" + f);
 								}
 							}});
 						}
@@ -1289,7 +1289,7 @@ class Ide extends hide.tools.IdeData {
 			var currentPath : String = null;
 			context.getRef = () -> {
 				var p = currentPath;
-				return {str: p, goto : Ide.showFileInExplorer.bind(getPath(p))};
+				return {str: p, goto : hide.tools.IdeData.showFileInExplorer.bind(getPath(p))};
 			}
 
 			filterProps(function(content:Dynamic, path: String) {
@@ -1769,24 +1769,6 @@ class Ide extends hide.tools.IdeData {
 				filebrowser.onDisplay();
 			filebrowser.activate();
 			filebrowser.reveal(path);
-		}
-	}
-
-	public static function showFileInExplorer(path : String) {
-		if(!haxe.io.Path.isAbsolute(path)) {
-			path = Ide.inst.getPath(path);
-		}
-
-		switch(Sys.systemName()) {
-			case "Windows": {
-				var cmd = "explorer.exe /select," + '"' + StringTools.replace(path, "/", "\\") + '"';
-				trace("OpenInExplorer: " + cmd);
-				Sys.command(cmd);
-			};
-			case "Mac":	Sys.command("open " + haxe.io.Path.directory(path));
-			case "Linux":
-				Sys.command('dbus-send --session --dest=org.freedesktop.FileManager1 --type=method_call /org/freedesktop/FileManager1 org.freedesktop.FileManager1.ShowItems array:string:"$path" string:""');
-			default: throw "Exploration not implemented on this platform";
 		}
 	}
 

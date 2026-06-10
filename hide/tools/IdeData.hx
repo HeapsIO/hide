@@ -243,6 +243,42 @@ class IdeData {
 			});
 	}
 
+	public static function openExternalFile(filePath: String) {
+		if(!haxe.io.Path.isAbsolute(filePath)) {
+			filePath = Ide.inst.getPath(filePath);
+		}
+
+		switch(Sys.systemName()) {
+			case "Windows":
+				// note : the "" is not a typo but a quirk in the way start use the first quoted argument as the
+				// window title when spawning a command, which we don't want
+				Sys.command('start "" "${StringTools.replace(filePath, "/", "\\")}"');
+			case "Mac":
+				Sys.command('open "$filePath"');
+			case "Linux":
+				Sys.command('xdg-open "$filePath"');
+			default: throw "OpenExternalFile not implemented on this platform";
+		}
+	}
+
+	public static function showFileInExplorer(path : String) {
+		if(!haxe.io.Path.isAbsolute(path)) {
+			path = Ide.inst.getPath(path);
+		}
+
+		switch(Sys.systemName()) {
+			case "Windows": {
+				var cmd = "explorer.exe /select," + '"' + StringTools.replace(path, "/", "\\") + '"';
+				trace("OpenInExplorer: " + cmd);
+				Sys.command(cmd);
+			};
+			case "Mac":	Sys.command("open " + haxe.io.Path.directory(path));
+			case "Linux":
+				Sys.command('dbus-send --session --dest=org.freedesktop.FileManager1 --type=method_call /org/freedesktop/FileManager1 org.freedesktop.FileManager1.ShowItems array:string:"$path" string:""');
+			default: throw "Exploration not implemented on this platform";
+		}
+	}
+
 
 	function databaseHasExternChanges() : Bool{
 		var stats = fileStat(databaseFile);

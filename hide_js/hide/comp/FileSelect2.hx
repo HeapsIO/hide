@@ -53,7 +53,7 @@ class FileSelect2 extends Component {
 					onChange();
 				}},
 				{ label : "Open in Explorer", enabled : fpath != null, click : function(){
-					Ide.showFileInExplorer(fpath);
+					hide.tools.IdeData.showFileInExplorer(fpath);
 				} },
 				{ label : "Open in Resources", enabled : path != null, click : function() {
 					ide.showFileInResources(path);

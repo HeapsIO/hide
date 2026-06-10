@@ -1226,7 +1226,7 @@ class FileBrowser extends hide.ui.View<FileBrowserState> {
 
 			options.push({
 				label : "Open in Explorer",
-				click : () -> Ide.showFileInExplorer(item.getPath())
+				click : () -> hide.tools.IdeData.showFileInExplorer(item.getPath())
 			});
 
 			if (isGallery) {

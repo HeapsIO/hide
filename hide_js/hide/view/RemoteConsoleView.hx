@@ -416,7 +416,7 @@ class RemoteConsoleSubCommandDump extends hide.comp.Component {
 		openInExplorerBtn.on('click', function(e) {
 			var file = dumpFile.val();
 			if( file.length > 0 && sys.FileSystem.exists(file) ) {
-				hide.Ide.showFileInExplorer(file);
+				hide.tools.IdeData.showFileInExplorer(file);
 			} else {
 				panel.log('File $file does not exist', true);
 			}
