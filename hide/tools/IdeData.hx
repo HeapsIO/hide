@@ -252,7 +252,8 @@ class IdeData {
 			case "Windows":
 				// note : the "" is not a typo but a quirk in the way start use the first quoted argument as the
 				// window title when spawning a command, which we don't want
-				Sys.command('start "" "${StringTools.replace(filePath, "/", "\\")}"');
+				filePath = StringTools.replace(filePath, "/", "\\");
+				Sys.command('start "" "$filePath"');
 			case "Mac":
 				Sys.command('open "$filePath"');
 			case "Linux":
