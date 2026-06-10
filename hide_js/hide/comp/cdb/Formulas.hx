@@ -120,7 +120,6 @@ class Formulas {
 				}
 			}
 		}
-		editor.save();
 		currentMap = null;
 	}
 

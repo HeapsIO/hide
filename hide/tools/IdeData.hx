@@ -9,6 +9,7 @@ class IdeData {
 	public var database : cdb.Database = new cdb.Database();
 	public var fileWatcher : hide.tools.FileWatcher;
 
+	static final dBReloadMaxRetries = 5;
 	var databaseFile : String;
 	var databaseDiff : String;
 	var originDataBase : cdb.Database;
@@ -191,7 +192,10 @@ class IdeData {
 	}
 
 	var lastDBContent = null;
-	function loadDatabase( ?checkExists ) {
+	var lastStats: Null<sys.FileStat> = null;
+	function loadDatabase( ?checkExists, retries: Int = 0) {
+
+
 		var exists = fileExists(databaseFile);
 		if( checkExists && !exists )
 			return; // cancel load
@@ -200,11 +204,24 @@ class IdeData {
 			database = loadedDatabase;
 			return;
 		}
+		var prevLoadedDatabase = lastDBContent;
+		var prevStats = lastStats;
 		try {
 			lastDBContent = getFileText(databaseFile);
+			lastStats = fileStat(databaseFile);
 			loadedDatabase.load(lastDBContent);
 		} catch( e : Dynamic ) {
-			error(e);
+			lastDBContent = prevLoadedDatabase;
+			lastStats = prevStats;
+
+			// Sometimes, loading the database can fail because getFileText returns an empty string
+			// this seems to happen when another program tries to write to to the file when we are trying to read it. In that
+			// case, we schedule another loadDatabase call in the future
+			if (retries < dBReloadMaxRetries) {
+				haxe.Timer.delay(() -> loadDatabase(checkExists, retries + 1), 100);
+			} else {
+				error(e);
+			}
 			return;
 		}
 		database = loadedDatabase;
@@ -226,8 +243,20 @@ class IdeData {
 			});
 	}
 
+
+	function databaseHasExternChanges() : Bool{
+		var stats = fileStat(databaseFile);
+		if( stats == null || lastStats == null )
+			return false;
+		return stats.mtime.getTime() > lastStats.mtime.getTime();
+	}
+
 	public function saveDatabase( ?forcePrefabs ) {
-		var lastStats = fileStat(databaseFile);
+		#if js
+		if (Ide.inst.thumbnailMode == true)
+			throw "Thumbnail generator can't save the cdb database";
+		#end
+
 		if( dbWatcher != null ) {
 			var b = fileWatcher.isChangePending(dbWatcher);
 			if( b ) {
@@ -236,10 +265,7 @@ class IdeData {
 		}
 
 		function checkBeforeWrite() {
-			var stats = fileStat(databaseFile);
-			if( stats == null || lastStats == null )
-				return;
-			if( stats.mtime.getTime() != lastStats.mtime.getTime() )
+			if (databaseHasExternChanges())
 				throw "Save when database is changed outside of Hide. Please reload Hide.";
 		}
 		#if js
@@ -266,6 +292,8 @@ class IdeData {
 				}
 
 				lastDBContent = database.save();
+				lastStats = fileStat(databaseFile);
+
 				checkBeforeWrite();
 				sys.io.File.saveContent(getPath(databaseFile), lastDBContent);
 				if ( dbWatcher != null )
