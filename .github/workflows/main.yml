@@ -15,7 +15,7 @@ jobs:
       fail-fast: false
     runs-on: ubuntu-latest
     steps:
-    - uses: actions/checkout@v2
+    - uses: actions/checkout@v6
     - uses: krdlab/setup-haxe@v2
       with:
         haxe-version: ${{ matrix.haxe-version }}
@@ -35,7 +35,7 @@ jobs:
         haxelib git hashlink https://github.com/HaxeFoundation/hashlink master other/haxelib/
         haxe hide.hxml
     - name: Upload artifact
-      uses: actions/upload-artifact@v4
+      uses: actions/upload-artifact@v7
       with:
         name: js-${{ matrix.haxe-version }}
         path: |
@@ -57,9 +57,9 @@ jobs:
     env:
       nwjs-version: v0.101.2
     steps:
-    - uses: actions/checkout@v2
+    - uses: actions/checkout@v6
     - name: Download js
-      uses: actions/download-artifact@v4
+      uses: actions/download-artifact@v8
       with:
         name: js-4.3.7
         path: bin
