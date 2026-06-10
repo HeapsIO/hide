@@ -398,7 +398,7 @@ class FileManager {
 
 	public function getFileEntry(path: String) {
 		var relPath = hide.Ide.inst.makeRelative(path);
-		return fileIndex.get(relPath);
+		return fileIndex.get(fileRoot.name + "/" + relPath);
 	}
 
 	// Deduplicate paths if they are contained in a directory
@@ -838,6 +838,14 @@ class FileManager {
 		replacePathInFiles(operations);
 	}
 
+	public static function doRenameAbs(operations: Array<{from: String, to:String}>) {
+		for (op in operations) {
+			renameAbsInternal(op.from, op.to);
+		}
+
+		replacePathInFilesAbs(operations);
+	}
+
 	public static function onRenameRec(path:String, name:String) {
 		var ide = hide.Ide.inst;
 		var parts = path.split("/");
@@ -1014,6 +1022,182 @@ class FileManager {
 		}
 
 		return true;
+	}
+
+
+	static function renameAbsInternal(sourceAbs: String, destAbs: String) : Bool {
+		if( sourceAbs == destAbs )
+			return false;
+
+		if (!sys.FileSystem.exists(sourceAbs))
+			return false;
+
+		if( sys.FileSystem.exists(destAbs) ) {
+			throw '$destAbs already exists';
+			// function addPath(path:String,rand:String) {
+			// 	var p = path.split(".");
+			// 	if( p.length > 1 )
+			// 		p[p.length-2] += rand;
+			// 	else
+			// 		p[p.length-1] += rand;
+			// 	return p.join(".");
+			// }
+			// if( path.toLowerCase() == newPath.toLowerCase() ) {
+			// 	// case change
+			// 	var rand = "__tmp"+Std.random(10000);
+			// 	onRenameRec(path, "/"+addPath(path,rand));
+			// 	onRenameRec(addPath(path,rand), name);
+			// } else {
+
+			// 	ide.app.ui.confirm(newPath+" already exists, invert files?", Cancel | Ok, (button) -> {
+			// 		if (button == Ok) {
+			// 			var rand = "__tmp"+Std.random(10000);
+			// 			onRenameRec(path, "/"+addPath(path,rand));
+			// 			onRenameRec(newPath, "/"+path);
+			// 			onRenameRec(addPath(path,rand), name);
+			// 		}
+			// 	});
+			// }
+			return false;
+		}
+
+		var ide = hide.Ide.inst;
+
+		var isDir = sys.FileSystem.isDirectory(sourceAbs);
+		var wasRenamed = false;
+
+		var isSVNRepo = sys.FileSystem.exists(ide.projectDir+"/.svn"); /*|| js.node.ChildProcess.spawnSync("svn",["info"], { cwd : ide.resourceDir }).status == 0;*/ // handle not root dirs
+		if( isSVNRepo ) {
+			if( hide.Ide.inst.isSVNAvailable ) {
+				if( isDir && !ide.confirm("Renaming a SVN directory, but 'svn' system command was not found. Continue ?") )
+					return false;
+			} else {
+				// Check if origin file and target directory are versioned
+				var isFileVersioned = Sys.command("svn",["info", sourceAbs]) == 0;
+				var newAbsPath = sourceAbs;
+				var parentFolder = newAbsPath.substring(0, newAbsPath.lastIndexOf('/'));
+				var isDirVersioned = Sys.command("svn",["info", parentFolder]) == 0;
+				if (isFileVersioned && isDirVersioned) {
+					var cwd = Sys.getCwd();
+					Sys.setCwd(ide.resourceDir);
+					var code = Sys.command("svn",["rename", sourceAbs, newAbsPath]);
+					Sys.setCwd(cwd);
+					if( code == 0 )
+						wasRenamed = true;
+					else {
+						if( !ide.confirm("SVN rename failure, perform file rename ?") )
+							return false;
+					}
+				}
+			}
+		}
+
+		if( !wasRenamed )
+			sys.FileSystem.rename(sourceAbs, destAbs);
+
+		var dataDir = new haxe.io.Path(sourceAbs);
+		if( dataDir.ext != "dat" ) {
+			dataDir.ext = "dat";
+			var dataPath = dataDir.toString();
+			if( sys.FileSystem.isDirectory(dataPath) ) {
+				var destPath = new haxe.io.Path(destAbs);
+				destPath.ext = "dat";
+				renameAbsInternal(dataPath, destPath.toString());
+			}
+		}
+
+		// update Materials.props if an FBX is moved/renamed
+		var newSysPath = new haxe.io.Path(destAbs);
+		var oldSysPath = new haxe.io.Path(sourceAbs);
+		if (newSysPath.dir == null) {
+			newSysPath.dir = oldSysPath.dir;
+		}
+		if (newSysPath.ext?.toLowerCase() == "fbx" && oldSysPath.ext?.toLowerCase() == "fbx") {
+
+			var oldMatPropsPath = (oldSysPath.dir ?? "") + "/materials.props";
+
+			if (sys.FileSystem.exists(oldMatPropsPath)) {
+				var newMatPropsPath = ide.getPath((newSysPath.dir ?? "") + "/materials.props");
+
+				var oldMatProps = haxe.Json.parse(sys.io.File.getContent(oldMatPropsPath));
+
+				var newMatProps : Dynamic =
+					if (sys.FileSystem.exists(newMatPropsPath))
+						haxe.Json.parse(sys.io.File.getContent(newMatPropsPath))
+					else {};
+
+				var oldNameExt = oldSysPath.file + "." + oldSysPath.ext;
+				var newNameExt = newSysPath.file + "." + newSysPath.ext;
+				function moveRec(originalData: Dynamic, oldData:Dynamic, newData: Dynamic) {
+
+					for (field in Reflect.fields(originalData)) {
+						if (StringTools.endsWith(field, oldNameExt)) {
+							var innerData = Reflect.getProperty(originalData, field);
+							var newField = StringTools.replace(field, oldNameExt, newNameExt);
+							Reflect.setProperty(newData, newField, innerData);
+							Reflect.deleteField(oldData, field);
+						}
+						else {
+							var originalInner = Reflect.getProperty(originalData, field);
+							if (Type.typeof(originalInner) != TObject)
+								continue;
+
+							var oldInner = Reflect.getProperty(oldData, field);
+							var newInner = Reflect.getProperty(newData, field) ?? {};
+							moveRec(originalInner, oldInner, newInner);
+
+							// Avoid creating empty fields
+							if (Reflect.fields(newInner).length > 0) {
+								Reflect.setProperty(newData, field, newInner);
+							}
+
+							// Cleanup removed fields in old props
+							if (Reflect.fields(oldInner).length == 0) {
+								Reflect.deleteField(oldData, field);
+							}
+						}
+					}
+				}
+
+				var sourceData = oldMatProps;
+				var oldDataToSave = oldMatPropsPath == newMatPropsPath ? newMatProps : haxe.Json.parse(haxe.Json.stringify(oldMatProps));
+
+				moveRec(oldMatProps, oldDataToSave, newMatProps);
+				sys.io.File.saveContent(newMatPropsPath, hide.Ide.inst.toJSON(newMatProps));
+
+				if (oldMatPropsPath != newMatPropsPath) {
+					if (Reflect.fields(oldMatProps).length > 0) {
+						sys.io.File.saveContent(oldMatPropsPath, hide.Ide.inst.toJSON(oldDataToSave));
+					} else {
+						sys.FileSystem.deleteFile(oldMatPropsPath);
+					}
+				}
+
+				// Clear caches
+				@:privateAccess
+				{
+					if (h3d.mat.MaterialSetup.current != null) {
+						h3d.mat.MaterialSetup.current.database.db.remove(ide.makeRelative(oldMatPropsPath));
+						h3d.mat.MaterialSetup.current.database.db.remove(ide.makeRelative(newMatPropsPath));
+					}
+					hxd.res.Loader.currentInstance.cache.remove(ide.makeRelative(oldMatPropsPath));
+					hxd.res.Loader.currentInstance.cache.remove(ide.makeRelative(newMatPropsPath));
+				}
+			}
+
+		}
+
+		return true;
+	}
+
+	public static function replacePathInFilesAbs(operations: Array<{from: String, to: String}>) {
+		var copy = operations.copy();
+		var ide = hide.Ide.inst;
+		for (op in copy) {
+			op.from = ide.getRelPath(op.from);
+			op.to = ide.getRelPath(op.to);
+		}
+		replacePathInFiles(copy);
 	}
 
 	public static function replacePathInFiles(operations: Array<{from: String, to: String}>) {
@@ -1219,7 +1403,12 @@ class FileManager {
 		browseFiles(function(path) {
 			var ext = path.split(".").pop();
 			if( exts.indexOf(ext) < 0 ) return;
-			var prefab = ide.loadPrefab(path);
+			var prefab = try {
+				ide.loadPrefab(path);
+			} catch (e) {
+				hide.Ide.showWarning("Couldn't open '" + path + "' to fix paths, error:" + e);
+				return;
+			}
 			var changed = false;
 			function filterRec(p) {
 				if( callb(p, path) ) changed = true;

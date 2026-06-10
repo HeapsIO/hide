@@ -56,9 +56,22 @@ class HuiFileBrowser extends HuiElement {
 				}
 				return hrt.ui.HuiTree.DropFlags.ofInt(0);
 			},
-			onDrop: (item, where, op) -> {
+			onDrop: (target: hrt.tools.FileManager.FileEntry, where, op:HuiDragOp) -> {
 				if (op.type == fileDragOp) {
-					trace("drop");
+					var folder = target.kind == Dir ? target : target.parent;
+
+					var paths: Array<String> = cast op.data;
+					var files = [for (path in paths) hrt.tools.FileManager.inst.getFileEntry(path)];
+					files = files.filter((f) -> f != null);
+					var roots = hrt.tools.FileManager.inst.getRoots(files);
+
+					var operations = [];
+					var operationsRev = [];
+					for (root in roots) {
+						operations.push({from: root.getPath(), to: folder.getPath() + "/" + root.name});
+					}
+
+					getView().undo.run(actionMoveFilesAbs(operations), false);
 				}
 			}
 		};
@@ -69,6 +82,15 @@ class HuiFileBrowser extends HuiElement {
 		markRefresh();
 
 		fileManager.watchFileChange(onFileChange);
+	}
+
+	function actionMoveFilesAbs(operations: Array<{from: String, to: String}>) : hrt.tools.Undo.Action {
+		var operationsRev = [];
+		for (op in operations) {
+			operationsRev.push({to: op.from, from: op.to});
+		}
+
+		return (isUndo) -> FileManager.doRenameAbs(isUndo ? operationsRev : operations);
 	}
 
 	override function onRemove() {
@@ -260,7 +282,9 @@ class HuiFileBrowser extends HuiElement {
 		}
 	}
 
-
+	/**
+		Path in absolute form
+	**/
 	function actionRenameFile(oldPath: String, newPath: String) : hrt.tools.Undo.Action {
 		return (isUndo) -> {
 			var from = isUndo ? newPath : oldPath;
@@ -268,7 +292,7 @@ class HuiFileBrowser extends HuiElement {
 			var wasSelected = tree.isItemSelected(fileManager.getFileAbs(from));
 
 			try {
-				sys.FileSystem.rename(from, to);
+				FileManager.doRenameAbs([{from: from, to: to}]);
 			} catch(e) {
 				hide.Ide.showError('Couldn\'t rename $from -> $to : $e');
 				return;
