@@ -61,6 +61,8 @@ class Prefab extends HuiView<{path: String}> {
 		super(_state, parent);
 		initComponent();
 
+		hrt.tools.FileManager.inst.watchFileChange(onFileChange);
+
 		if (state != null) {
 			config = hide.Config.loadForFile(hide.Ide.inst, state.path);
 			saveDisplayKey = 'prefabEditor:${state.path}';
@@ -70,8 +72,7 @@ class Prefab extends HuiView<{path: String}> {
 			saveDisplayKey = "prefabEditor:__empty";
 		}
 
-		var path = Ide.inst.getRelPath(state.path);
-		sceneEditor.load = () -> load(path);
+		sceneEditor.load = () -> reload();
 		sceneEditor.getConfig = () -> { return config; };
 		sceneEditor.getSelectedObjects = () -> {
 			var selectedObjects = [];
@@ -388,6 +389,12 @@ class Prefab extends HuiView<{path: String}> {
 		}});
 	}
 
+	function onFileChange(fileEntry: hrt.tools.FileManager.FileEntry) {
+		if (fileEntry.getPath() == state.path) {
+			onExternalChange();
+		}
+	}
+
 	override function getViewName():String {
 		return state.path.split("/").splice(-1, 2).join("/");
 	}
@@ -449,6 +456,10 @@ class Prefab extends HuiView<{path: String}> {
 		widgets.push(crashButton);
 
 		return widgets;
+	}
+
+	override function onRemove() {
+		hrt.tools.FileManager.inst.unwatchFileChange(onFileChange);
 	}
 
 	public function setPrefab(newPrefab: hrt.prefab.Prefab) {
@@ -602,15 +613,27 @@ class Prefab extends HuiView<{path: String}> {
 		}
 	}
 
+	var waitingExternal = false;
+	function onExternalChange() {
+		if (waitingExternal)
+			return;
+
+		if (hasUnsavedChanges) {
+			waitingExternal = true;
+			uiBase.confirm('${state.path} has been modified on disk, reload and ignore local changes ?', Ok | Cancel, (result) -> {
+				waitingExternal = false;
+				if (result == Ok) {
+					reload();
+				}
+			});
+		} else {
+			reload();
+		}
+	}
+
 	function reload() {
-		// if (selectedPrefabs.empty()) {
-		// 	setPrefab(prefab);
-		// } else {
-		// 	for (prefab => _ in selectedPrefabs) {
-		// 		tryMake(prefab);
-		// 	}
-		// }
-		hide.Ide.showInfo("Reloaded prefab");
+		var path = Ide.inst.getRelPath(state.path);
+		load(path);
 	}
 
 	function getSelectionOrdered() : Array<hrt.prefab.Prefab> {
