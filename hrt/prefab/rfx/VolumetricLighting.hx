@@ -136,11 +136,11 @@ class VolumetricLightingShader extends h3d.shader.pbr.DefaultForward {
 		function evaluateCascadeShadow() : Float {
 			var i = cascadeLightStride;
 			var shadow = 1.0;
-			var shadowProj = mat3x4(lightInfos[i + 2], lightInfos[i + 3], lightInfos[i + 4]);
+			var shadowViewProj = mat3x4(lightInfos[i + 2], lightInfos[i + 3], lightInfos[i + 4]);
 
 			@unroll for ( c in 0...CASCADE_COUNT ) {
 				var cascadeScale = lightInfos[i + 5 + 2 * c];
-				var shadowPos0 = transformedPosition * shadowProj;
+				var shadowPos0 = transformedPosition * shadowViewProj;
 				var shadowPos = c == 0 ? shadowPos0 : shadowPos0 * cascadeScale.xyz + lightInfos[i + 6 + 2 * c].xyz;
 				if ( inside(shadowPos) ) {
 					var zMax = saturate(shadowPos.z);

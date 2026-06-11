@@ -94,7 +94,7 @@ class SpotLightVolumeShader extends LightVolumeShader {
 
 	static var SRC = {
 		@param var shadowMap : Sampler2D;
-		@param var shadowProj : Mat4;
+		@param var shadowViewProj : Mat4;
 		@param var angleFalloff : Float;
 		@param var angle : Float;
 		@param var lightDir : Vec3;
@@ -112,7 +112,7 @@ class SpotLightVolumeShader extends LightVolumeShader {
 				d = 0.0;
 
 			if ( HAS_SHADOW ) {
-				var shadowPos = vec4(pos, 1.0) * shadowProj;
+				var shadowPos = vec4(pos, 1.0) * shadowViewProj;
 				shadowPos.xyz = shadowPos.xyz / shadowPos.w;
 				var shadowUv = screenToUv(shadowPos.xy);
 				var depth = shadowMap.get(shadowUv.xy).r;
@@ -154,7 +154,7 @@ class LightVolumeObject extends h3d.scene.Mesh {
 				shader.HAS_SHADOW = USE_SHADOW_MAP && spotLight.shadows != null && spotLight.shadows.enabled && spotLight.shadows.mode != None;
 				if ( shader.HAS_SHADOW ) {
 					shader.shadowMap = spotLight.shadows.getShadowTex();
-					shader.shadowProj.load(spotLight.shadows.getShadowProj());
+					shader.shadowViewProj.load(spotLight.shadows.getShadowViewProj());
 				}
 				shader.lightColor = spotLight.color;
 			}
