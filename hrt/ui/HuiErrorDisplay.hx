@@ -23,7 +23,7 @@ class HuiErrorDisplay extends HuiPopup {
 
 		stackTrace.generateItem = generateItem;
 		copyButton.onClick = (e) -> {
-			hxd.System.setClipboardText(prevError);
+			hide.Ide.inst.setClipboard(prevError, null);
 			hide.Ide.showInfo("Error copied to clipboard");
 		}
 	}

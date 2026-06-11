@@ -34,6 +34,8 @@ class HuiFileBrowser extends HuiElement {
 
 		registerCommand(HuiCommands.delete, View, deleteSelection);
 		registerCommand(HuiCommands.rename, View, renameSelection);
+		registerCommand(HuiCommands.copy, View, copySelection);
+		registerCommand(HuiCommands.paste, View, pasteSelection);
 
 		tree = new HuiTree<File>(this);
 		tree.getItemChildren = getItemChild;
@@ -124,11 +126,18 @@ class HuiFileBrowser extends HuiElement {
 
 		items.push({isSeparator: true});
 
-		items.push({label: "Copy Path", click: () -> hxd.System.setClipboardText(file.getRelPath())});
-		items.push({label: "Copy Absolute Path", click: () -> hxd.System.setClipboardText(file.getPath())});
+		items.push({label: "Copy Path", click: () -> hide.Ide.inst.setClipboard(file.getRelPath(), null)});
+		items.push({label: "Copy Absolute Path", click: () -> hide.Ide.inst.setClipboard(file.getPath(), null)});
 		items.push({label: "Open In Explorer", click: () -> hide.tools.IdeData.showFileInExplorer(file.getPath())});
 
 		items.push({isSeparator: true});
+
+		var copy = HuiMenu.itemFromCommand(HuiCommands.copy, this);
+		items.push(copy);
+
+		var paste = HuiMenu.itemFromCommand(HuiCommands.paste, this);
+		paste.enabled = hide.Ide.inst.getClipboardData()?.type == "file";
+		items.push(paste);
 
 		var rename = HuiMenu.itemFromCommand(HuiCommands.rename, this);
 		rename.enabled = file != rootFile;
@@ -139,6 +148,26 @@ class HuiFileBrowser extends HuiElement {
 		items.push(delete);
 
 		uiBase.contextMenu(items);
+	}
+
+	function copySelection() {
+		hide.Ide.inst.setClipboard(null, {
+			type: "file",
+			files: [for (file in tree.getSelectedItems()) file.getPath()],
+		});
+	}
+
+	function pasteSelection() {
+		var data = hide.Ide.inst.getClipboardData();
+		if (data == null || data.type != "file")
+			return;
+
+		var target = tree.getSelectedItems()[0] ?? rootFile;
+		if (target.kind != Dir) {
+			target = target.parent;
+		}
+
+		copyFilesToFolder(cast data.files, target.getPath());
 	}
 
 	function createNewDirectory(parent: File) {
@@ -297,7 +326,13 @@ class HuiFileBrowser extends HuiElement {
 		return (isUndo) -> {
 			var from = isUndo ? newPath : oldPath;
 			var to = isUndo ? oldPath : newPath;
-			var wasSelected = tree.isItemSelected(fileManager.getFileAbs(from));
+			var entry = fileManager.getFileAbs(from);
+			var wasSelected = false;
+			if (entry != null) {
+				wasSelected = tree.isItemSelected(entry);
+			} else {
+				wasSelected = delaySelect?.contains(from);
+			}
 
 			try {
 				FileManager.doRenameAbs([{from: from, to: to}]);
@@ -313,10 +348,58 @@ class HuiFileBrowser extends HuiElement {
 		}
 	}
 
+	static var simpleFilenameRegex = ~/(.*) \(\d+\)/;
+
+	function copyFilesToFolder(filePaths: Array<String>, folderPath: String) {
+		var operations = [
+			for (path in filePaths) {
+				var dest = new haxe.io.Path(path);
+				dest.dir = folderPath;
+				var destPathBase = dest.toString();
+
+				// return name to base
+				if (simpleFilenameRegex.match(dest.file)) {
+					dest.file = simpleFilenameRegex.matched(1);
+				}
+				var baseFile = dest.file;
+
+				var tries = 0;
+				// deduplicate paths
+				while(sys.FileSystem.exists(dest.toString())) {
+					tries += 1;
+					dest.file = baseFile + ' ($tries)';
+				}
+
+				{source: path, destination: dest.toString()};
+			}
+		];
+
+		getView().undo.run(actionCopyFiles(operations), false);
+	}
+
+	function actionCopyFiles(operations: Array<{source: String, destination: String}>) {
+		var operations = operations.copy();
+		var selection = [for (file in tree.getSelectedItems()) file.getPath()];
+
+		if (operations.length == 1)
+			delayRename = operations[0].destination;
+
+		return (isUndo) -> {
+			if (isUndo) {
+				hrt.tools.FileManager.inst.deleteFilesPaths([for (op in operations) op.destination]);
+				delaySelect = selection;
+			} else {
+				hrt.tools.FileManager.inst.copyFilesPaths(operations);
+				delaySelect = [for (op in operations) op.destination];
+			}
+			markRefresh();
+		}
+	}
+
 	function promptRenameFile(file: File) {
 		var path = new haxe.io.Path(file.path);
 		tree.rename(file, (newName) -> {
-			if (path.file != newName) {
+			if (path.file + "." + path.ext != newName) {
 				var newPath = haxe.io.Path.join([path.dir, newName]);
 				getView().undo.run(actionRenameFile(file.path, newPath), false);
 			}

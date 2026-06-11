@@ -13,6 +13,12 @@ class Ide extends hide.tools.IdeData {
 	var localStorageSaveDelay: Float = 0.0;
 	public var isSVNAvailable(default, null): Bool;
 
+	/**
+		Application local clipboard. For copy / pastes of data that doesn't make sense outside of hide
+		as we don't have access to advanced clipboard capabilities like MIME
+	**/
+	var localClipboard: Dynamic = null;
+
 	static final localUserDataSave = "hidehl.json";
 
 	var updates : Array<(dt: Float) -> Void> = [];
@@ -33,6 +39,20 @@ class Ide extends hide.tools.IdeData {
 
 	var localStorage: Dynamic = {};
 	var localStorageSaveQueued: Bool = false;
+
+	public function setClipboard(text: String, data: Dynamic) {
+		hxd.System.setClipboardText(text);
+		localClipboard = data;
+	}
+
+	public function getClipboardText() : String {
+		return hxd.System.getClipboardText();
+	}
+
+	public function getClipboardData() : Dynamic {
+		return localClipboard;
+	}
+
 
 	public function saveLocalStorage(key: String, data: Dynamic) {
 		Reflect.setField(localStorage, key, data);

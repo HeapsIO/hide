@@ -215,13 +215,15 @@ class FileEntry {
 				changed();
 			}
 		} else {
-			child = new FileEntry(name, this, sys.FileSystem.isDirectory(getChildPath(name)) ? Dir : File);
-			if (children == null) {
-				children = [];
+			if (sys.FileSystem.exists(getChildPath(name))) {
+				child = new FileEntry(name, this, sys.FileSystem.isDirectory(getChildPath(name)) ? Dir : File);
+				if (children == null) {
+					children = [];
+				}
+				children.push(child);
+				children.sort(compareFile);
+				changed();
 			}
-			children.push(child);
-			children.sort(compareFile);
-			changed();
 		}
 		return child;
 	}
@@ -363,17 +365,92 @@ class FileManager {
 	// 	}
 	// }
 
+	public function deleteFilesPaths(filePathsAbs : Array<String>) {
+		var roots = getRootsPaths(filePathsAbs);
+		for (file in roots) {
+			if (sys.FileSystem.isDirectory(file)) {
+				deleteDir(file);
+			} else {
+				deleteFile(file);
+			}
+		}
+	}
+
 	public function deleteFiles(files : Array<FileEntry>) {
 		//trace(fullPaths);
 		var roots = getRoots(files);
 		for (file in roots) {
 			if( file.kind == Dir ) {
-				file.dispose(); // kill watchers
+				//file.dispose(); // kill watchers
 				deleteDir(file.getPath());
 			} else {
-				file.dispose(); // kill watchers
+				//file.dispose(); // kill watchers
 				deleteFile(file.getPath());
 			}
+		}
+	}
+
+	function ensureAbs(path: String) : String {
+		if (!haxe.io.Path.isAbsolute(path))
+			return hide.Ide.inst.getPath(path);
+		return path;
+	}
+
+	public function copyFilesPaths(operations: Array<{source: String, destination: String}>) {
+		var roots = getRootsPaths([for (op in operations) op.source]);
+		var newOp = [];
+		for (source in roots) {
+			for (op in operations) {
+				if (source == op.source)
+					newOp.push(op);
+			}
+		}
+
+		operations = newOp;
+
+		for (op in operations) {
+			var absSource = ensureAbs(op.source);
+			var absDest = ensureAbs(op.destination);
+			if (sys.FileSystem.exists(absDest))
+				throw '$absDest already exists';
+
+			var newOps : Array<{source: String, destination: String, isDir: Bool}> = [];
+			gatherCopyOperations(op.source, op.destination, newOps);
+
+			for (op in newOps) {
+				if (op.isDir) {
+					sys.FileSystem.createDirectory(op.destination);
+				} else {
+					var content = sys.io.File.getBytes(op.source);
+					sys.io.File.saveBytes(op.destination, content);
+				}
+			}
+		}
+	}
+
+	function gatherCopyOperations(currentPath: String, currentDest: String, op: Array<{source: String, destination: String, isDir: Bool}>) : Void {
+		if (sys.FileSystem.isDirectory(currentPath)) {
+			op.push({source: currentPath, destination: currentDest, isDir: true});
+			for (file in sys.FileSystem.readDirectory(currentPath)) {
+				gatherCopyOperations(currentPath + "/" + file, currentDest + "/" + file, op);
+			}
+		} else {
+			op.push({source: currentPath, destination: currentDest, isDir: false});
+		}
+	}
+
+	function copyFilePath(absSource: String, absDestination: String) {
+		if (sys.FileSystem.isDirectory(absSource)) {
+			sys.FileSystem.createDirectory(absDestination);
+			for (file in sys.FileSystem.readDirectory(absSource)) {
+				var subSource = absSource + "/" + file;
+				if (subSource == absDestination)
+					continue;
+				copyFilePath(absSource + "/" + file, absDestination + "/" + file);
+			}
+		} else {
+			var content = sys.io.File.getBytes(absSource);
+			sys.io.File.saveBytes(absDestination, content);
 		}
 	}
 
@@ -422,6 +499,35 @@ class FileManager {
 				if (file == dir2)
 					continue;
 				if (StringTools.contains(file.getPath(), dir2.getPath())) {
+					isContainedInAnotherDir = true;
+					continue;
+				}
+			}
+			if (!isContainedInAnotherDir) {
+				roots.push(file);
+			}
+		}
+
+		return roots;
+	}
+
+	public function getRootsPaths(filesAbs: Array<String>) : Array<String> {
+		var dirs: Array<String> = [];
+
+		for (file in filesAbs) {
+			if (sys.FileSystem.isDirectory(file)) {
+				dirs.push(file);
+			}
+		}
+
+		var roots: Array<String> = [];
+		for (file in filesAbs) {
+			var isContainedInAnotherDir = false;
+			for (dir in dirs) {
+				if (file == dir) {
+					continue;
+				}
+				if (StringTools.contains(file, dir)) {
 					isContainedInAnotherDir = true;
 					continue;
 				}
@@ -1464,7 +1570,7 @@ class FileManager {
 	}
 
 	public function getFileAbs(absPath: String) : Null<FileEntry> {
-		var relPath = fileRoot.name + StringTools.replace(absPath, fileRoot.path, "");
+		var relPath = StringTools.replace(absPath, fileRoot.path + "/", "");
 		return fileIndex.get(relPath);
 	}
 }

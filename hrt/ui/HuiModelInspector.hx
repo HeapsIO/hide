@@ -202,7 +202,7 @@ class HuiModelInspector extends HuiElement {
 
 		copyLods.onClick = (_) -> {
 			var config = @:privateAccess hmd.lodConfig?.copy();
-			hxd.System.setClipboardText(hide.Ide.inst.toJSON(config));
+			hide.Ide.inst.setClipboard(hide.Ide.inst.toJSON(config), null);
 			hide.Ide.showInfo("Copied current lod config to the clipboard");
 		}
 

@@ -244,6 +244,7 @@ class HuiTree<TreeItem> extends HuiElement {
 			callback: callback,
 			selectionRange: selectionRange,
 		};
+		revealItem(cast item);
 		requestRefresh();
 	}
 
@@ -369,6 +370,7 @@ class HuiTree<TreeItem> extends HuiElement {
 		selectedElements.clear();
 		for (item in selection) {
 			selectedElements.set(cast item, true);
+			revealItem(cast item);
 		}
 		requestRefresh();
 	}
