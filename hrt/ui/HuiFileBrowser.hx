@@ -163,7 +163,7 @@ class HuiFileBrowser extends HuiElement {
 			return;
 
 		var target = tree.getSelectedItems()[0] ?? rootFile;
-		if (target.kind != Dir) {
+		if (target.kind != Dir || !tree.isItemOpen(target)) {
 			target = target.parent;
 		}
 

@@ -657,6 +657,13 @@ class HuiTree<TreeItem> extends HuiElement {
 	public function isItemSelected(data: TreeItem) : Bool {
 		return isSelected(itemMap.get(cast data));
 	}
+
+	public function isItemOpen(data: TreeItem) : Bool {
+		var data = itemMap.get(cast data);
+		if (data == null)
+			return false;
+		return isOpen(data);
+	}
 }
 
 #end
