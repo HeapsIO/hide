@@ -193,7 +193,7 @@ class HuiFileBrowser extends HuiElement {
 		getView().undo.record((isUndo) -> {
 			if (isUndo) {
 				try {
-					sys.FileSystem.deleteDirectory(pathToCreate);
+					deletePathInternal(pathToCreate);
 				} catch(e) {
 					hide.Ide.showError('Couldn\'t create directory : $e');
 					return;
@@ -235,7 +235,7 @@ class HuiFileBrowser extends HuiElement {
 		getView().undo.record((isUndo) -> {
 			if (isUndo) {
 				try {
-					sys.FileSystem.deleteFile(pathToCreate);
+					deletePathInternal(pathToCreate);
 				} catch(e) {
 					hide.Ide.showError('Couldn\'t create directory : $e');
 					return;
@@ -261,18 +261,10 @@ class HuiFileBrowser extends HuiElement {
 		var message = if (selectedFiles.length == 1) selectedFiles[0].name else '${selectedFiles.length} files';
 		uiBase.confirm('Really delete $message ? (Cannot be undone)', Cancel | Ok, (button) -> {
 			if (button == Ok) {
-				for (file in selectedFiles) {
-					if (sys.FileSystem.exists(file.path)) {
-						try {
-							if (file.kind == Dir) {
-								deleteDir(file.path);
-							} else {
-								sys.FileSystem.deleteFile(file.path);
-							}
-						} catch(e) {
-							hide.Ide.showError('Error while removing ${file.name} : $e');
-						}
-					}
+				try {
+					hrt.tools.FileManager.deleteFilesPaths([for(file in selectedFiles) file.getPath()]);
+				} catch (e) {
+					hide.Ide.showError("" + e);
 				}
 				markRefresh();
 			}
@@ -285,29 +277,6 @@ class HuiFileBrowser extends HuiElement {
 		if (selectedFiles.length > 0) {
 			promptRenameFile(selectedFiles[0]);
 		}
-	}
-
-	/**
-		Delete a directory and its content
-		Expect an absolute path
-	**/
-	function deleteDir(dirPath: String) : Void {
-		var files = sys.FileSystem.readDirectory(dirPath);
-		for (file in files) {
-			var filePath = haxe.io.Path.join([dirPath, file]);
-			if (sys.FileSystem.isDirectory(filePath)) {
-				deleteDir(filePath);
-			} else {
-				deleteFile(filePath);
-			}
-		}
-		sys.FileSystem.deleteDirectory(dirPath);
-		markRefresh();
-	}
-
-	function deleteFile(absPath: String) : Void {
-		sys.FileSystem.deleteFile(absPath);
-		markRefresh();
 	}
 
 	function actionMoveFiles(targetPath: String, paths: Array<String>) {
@@ -326,7 +295,7 @@ class HuiFileBrowser extends HuiElement {
 		return (isUndo) -> {
 			var from = isUndo ? newPath : oldPath;
 			var to = isUndo ? oldPath : newPath;
-			var entry = fileManager.getFileAbs(from);
+			var entry = fileManager.getFileEntry(from);
 			var wasSelected = false;
 			if (entry != null) {
 				wasSelected = tree.isItemSelected(entry);
@@ -386,10 +355,10 @@ class HuiFileBrowser extends HuiElement {
 
 		return (isUndo) -> {
 			if (isUndo) {
-				hrt.tools.FileManager.inst.deleteFilesPaths([for (op in operations) op.destination]);
+				hrt.tools.FileManager.deleteFilesPaths([for (op in operations) op.destination]);
 				delaySelect = selection;
 			} else {
-				hrt.tools.FileManager.inst.copyFilesPaths(operations);
+				hrt.tools.FileManager.copyFilesPaths(operations);
 				delaySelect = [for (op in operations) op.destination];
 			}
 			markRefresh();
@@ -412,7 +381,7 @@ class HuiFileBrowser extends HuiElement {
 		}
 
 		if (delayRename != null) {
-			var file = fileManager.getFileAbs(delayRename);
+			var file = fileManager.getFileEntry(delayRename);
 			if (file != null) {
 				tree.setSelection([file]);
 				promptRenameFile(file);
@@ -421,7 +390,7 @@ class HuiFileBrowser extends HuiElement {
 		}
 
 		if (delaySelect != null) {
-			var files = [for (file in delaySelect) fileManager.getFileAbs(file)];
+			var files = [for (file in delaySelect) fileManager.getFileEntry(file)];
 			if (!files.contains(null)) {
 				tree.setSelection(files);
 				delaySelect = null;
@@ -448,7 +417,10 @@ class HuiFileBrowser extends HuiElement {
 		@:privateAccess tree.refreshSync();
 	}
 
-
+	function deletePathInternal(absPath: String) : Void {
+		hrt.tools.FileManager.deleteFilePath(absPath);
+		markRefresh();
+	}
 
 	function getItemChild(child: File) : Array<File> {
 		var path : String = "";

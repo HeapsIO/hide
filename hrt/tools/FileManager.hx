@@ -289,16 +289,6 @@ class FileManager {
 	public var onFileChangeHandlers: Array<FileChangeCallback> = [];
 	public var onVCSStatusUpdateHandlers: Array<() -> Void> = [];
 
-	//var windowManager : RenderWindowManager = null;
-
-	//var onReadyCallbacks : Map<String, Array<MiniatureReadyCallback>> = [];
-
-	// var serverSocket : hxd.net.Socket = null;
-	// var generatorSocket : hxd.net.Socket = null;
-	// var pendingMessages : Array<String> = [];
-	// var retries = 0;
-	// static final maxRetries = 5;
-
 	var ignorePatterns: Array<EReg> = [];
 
 	var fileEntryRefreshDelay : Delayer<FileEntry>;
@@ -342,61 +332,12 @@ class FileManager {
 		throw "No callback was registered";
 	}
 
+	// Path-based filesystem api
 
-	// var pendingMessageQueued = false;
-	// function queueProcessPendingMessages() {
-	// 	if (!pendingMessageQueued) {
-	// 		haxe.Timer.delay(processPendingMessages, 10);
-	// 		pendingMessageQueued = true;
-	// 	}
-	// }
-	// function processPendingMessages() {
-	// 	pendingMessageQueued = false;
-	// 	if (!checkWindowReady()) {
-	// 		return;
-	// 	}
-	// 	var len = hxd.Math.imin(300, pendingMessages.length);
-	// 	for (i in 0 ... len) {
-	// 		generatorSocket.out.writeString(pendingMessages[i]);
-	// 	}
-	// 	pendingMessages.splice(0, len);
-	// 	if (pendingMessages.length > 0) {
-	// 		queueProcessPendingMessages();
-	// 	}
-	// }
-
-	public function deleteFilesPaths(filePathsAbs : Array<String>) {
-		var roots = getRootsPaths(filePathsAbs);
-		for (file in roots) {
-			if (sys.FileSystem.isDirectory(file)) {
-				deleteDir(file);
-			} else {
-				deleteFile(file);
-			}
-		}
-	}
-
-	public function deleteFiles(files : Array<FileEntry>) {
-		//trace(fullPaths);
-		var roots = getRoots(files);
-		for (file in roots) {
-			if( file.kind == Dir ) {
-				//file.dispose(); // kill watchers
-				deleteDir(file.getPath());
-			} else {
-				//file.dispose(); // kill watchers
-				deleteFile(file.getPath());
-			}
-		}
-	}
-
-	function ensureAbs(path: String) : String {
-		if (!haxe.io.Path.isAbsolute(path))
-			return hide.Ide.inst.getPath(path);
-		return path;
-	}
-
-	public function copyFilesPaths(operations: Array<{source: String, destination: String}>) {
+	/**
+		Copy multiple files to their given destinations
+	**/
+	public static function copyFilesPaths(operations: Array<{source: String, destination: String}>) {
 		var roots = getRootsPaths([for (op in operations) op.source]);
 		var newOp = [];
 		for (source in roots) {
@@ -409,8 +350,8 @@ class FileManager {
 		operations = newOp;
 
 		for (op in operations) {
-			var absSource = ensureAbs(op.source);
-			var absDest = ensureAbs(op.destination);
+			var absSource = ensureAbsPath(op.source);
+			var absDest = ensureAbsPath(op.destination);
 			if (sys.FileSystem.exists(absDest))
 				throw '$absDest already exists';
 
@@ -428,18 +369,10 @@ class FileManager {
 		}
 	}
 
-	function gatherCopyOperations(currentPath: String, currentDest: String, op: Array<{source: String, destination: String, isDir: Bool}>) : Void {
-		if (sys.FileSystem.isDirectory(currentPath)) {
-			op.push({source: currentPath, destination: currentDest, isDir: true});
-			for (file in sys.FileSystem.readDirectory(currentPath)) {
-				gatherCopyOperations(currentPath + "/" + file, currentDest + "/" + file, op);
-			}
-		} else {
-			op.push({source: currentPath, destination: currentDest, isDir: false});
-		}
-	}
-
-	function copyFilePath(absSource: String, absDestination: String) {
+	/**
+		Copy a file/folder from absSource to absDestination
+	**/
+	public static function copyFilePath(absSource: String, absDestination: String) {
 		if (sys.FileSystem.isDirectory(absSource)) {
 			sys.FileSystem.createDirectory(absDestination);
 			for (file in sys.FileSystem.readDirectory(absSource)) {
@@ -454,34 +387,103 @@ class FileManager {
 		}
 	}
 
-	/**
-		Delete a directory and its content
-		Expect an absolute path
-	**/
-	function deleteDir(dirPath: String) : Void {
-		var files = sys.FileSystem.readDirectory(dirPath);
-		for (file in files) {
-			var filePath = haxe.io.Path.join([dirPath, file]);
-			if (sys.FileSystem.isDirectory(filePath)) {
-				deleteDir(filePath);
-			} else {
-				deleteFile(filePath);
+	public static function deleteFilePath(absPath: String) : Void {
+		if (sys.FileSystem.isDirectory(absPath)) {
+			for (file in sys.FileSystem.readDirectory(absPath)) {
+				deleteFilePath(haxe.io.Path.join([absPath, file]));
+			}
+			sys.FileSystem.deleteDirectory(absPath);
+		} else {
+			sys.FileSystem.deleteFile(absPath);
+		}
+	}
+
+	static public function deleteFilesPaths(filePathsAbs : Array<String>) {
+		var roots = getRootsPaths(filePathsAbs);
+		for (file in roots) {
+			try {
+				deleteFilePath(file);
+			} catch (e) {
+				throw "Couldn't delete " + file + " : " + e;
 			}
 		}
-		sys.FileSystem.deleteDirectory(dirPath);
 	}
 
-	function deleteFile(absPath: String) : Void {
-		sys.FileSystem.deleteFile(absPath);
+	public function deleteFiles(files : Array<FileEntry>) {
+		var roots = getRoots(files);
+		for (file in roots) {
+			deleteFilePath(file.getPath());
+		}
 	}
 
-	public function getFileEntry(path: String) {
-		var relPath = hide.Ide.inst.makeRelative(path);
-		return fileIndex.get(fileRoot.name + "/" + relPath);
+	/**
+		Like getRoots, but directly manipulate absolute paths instead of FileEntry objects
+	**/
+	static public function getRootsPaths(filesAbs: Array<String>) : Array<String> {
+		var dirs: Array<String> = [];
+
+		for (file in filesAbs) {
+			if (sys.FileSystem.isDirectory(file)) {
+				dirs.push(file);
+			}
+		}
+
+		var roots: Array<String> = [];
+		for (file in filesAbs) {
+			var isContainedInAnotherDir = false;
+			for (dir in dirs) {
+				if (file == dir) {
+					continue;
+				}
+				if (StringTools.contains(file, dir)) {
+					isContainedInAnotherDir = true;
+					continue;
+				}
+			}
+			if (!isContainedInAnotherDir) {
+				roots.push(file);
+			}
+		}
+
+		return roots;
 	}
 
-	// Deduplicate paths if they are contained in a directory
-	// also present in paths, to simplify bulk operations
+	/**
+		Ensure that the given path is absolute (if it's not absolute, it is assumed that it is relative to the
+		res path of the current project)
+	**/
+	static function ensureAbsPath(path: String) : String {
+		if (!haxe.io.Path.isAbsolute(path))
+			return hide.Ide.inst.getPath(path);
+		return path;
+	}
+
+	/**
+		List all the filesystem operations that must happen to copy currentPath to currentDest
+	**/
+	static function gatherCopyOperations(currentPath: String, currentDest: String, op: Array<{source: String, destination: String, isDir: Bool}>) : Void {
+		if (sys.FileSystem.isDirectory(currentPath)) {
+			op.push({source: currentPath, destination: currentDest, isDir: true});
+			for (file in sys.FileSystem.readDirectory(currentPath)) {
+				gatherCopyOperations(currentPath + "/" + file, currentDest + "/" + file, op);
+			}
+		} else {
+			op.push({source: currentPath, destination: currentDest, isDir: false});
+		}
+	}
+
+	/**
+		Return file entry corresponding to given path if it exists
+	**/
+	public function getFileEntry(path: String) : Null<FileEntry> {
+		var relPath = haxe.io.Path.isAbsolute(path) ? hide.Ide.inst.makeRelative(path) : path;
+		return fileIndex.get(relPath);
+	}
+
+	/**
+		Return a filtered array that that only contains files/directories that are not already contained in
+		another directory in the list, to simplify bulk operations
+	**/
 	public function getRoots(files: Array<FileEntry>) : Array<FileEntry> {
 		var dirs : Array<FileEntry> = [];
 
@@ -511,135 +513,6 @@ class FileManager {
 		return roots;
 	}
 
-	public function getRootsPaths(filesAbs: Array<String>) : Array<String> {
-		var dirs: Array<String> = [];
-
-		for (file in filesAbs) {
-			if (sys.FileSystem.isDirectory(file)) {
-				dirs.push(file);
-			}
-		}
-
-		var roots: Array<String> = [];
-		for (file in filesAbs) {
-			var isContainedInAnotherDir = false;
-			for (dir in dirs) {
-				if (file == dir) {
-					continue;
-				}
-				if (StringTools.contains(file, dir)) {
-					isContainedInAnotherDir = true;
-					continue;
-				}
-			}
-			if (!isContainedInAnotherDir) {
-				roots.push(file);
-			}
-		}
-
-		return roots;
-	}
-
-	function onSVNFileModified(modifiedFiles: Array<String>) {
-		for (file in fileIndex) {
-			file.vcsStatus = UpToDate;
-		}
-
-		for (modifiedFile in modifiedFiles) {
-			var relPath = hide.Ide.inst.getRelPath(modifiedFile);
-			var file = fileIndex.get(relPath);
-
-			while(file != null && file.vcsStatus != Modified) {
-				file.vcsStatus = Modified;
-				file = file.parent;
-			}
-		}
-
-		for (handler in onVCSStatusUpdateHandlers) {
-			handler();
-		}
-	}
-
-	/**
-		Return the path to a temporary file with all the paths in the files array inside
-	**/
-	public function createSVNFileList(files: Array<FileEntry>) : String {
-		var tmpdir = Sys.getEnv("TEMP");
-		var name = 'hidefiles${Std.int(hxd.Math.random(100000000))}.txt';
-		var path = tmpdir + "/" + name;
-
-		var str = [for(f in files) f.getPath()].join("\n");
-
-		// Encode paths as utf-16 because tortoiseproc want the file encoded that way
-		var bytes = haxe.io.Bytes.alloc(str.length * 2);
-		var pos = 0;
-
-		for (char in 0...str.length) {
-			bytes.setUInt16(pos, str.charCodeAt(char));
-			pos += 2;
-		}
-		sys.io.File.saveBytes(path, bytes);
-		return path;
-	}
-
-	// function setupServer() {
-	// 	if (serverSocket != null)
-	// 		throw "Server already exists";
-
-	// 	serverSocket = new hxd.net.Socket();
-	// 	serverSocket.onError = (msg) -> {
-	// 		hide.Ide.inst.quickError("FileManager socket error : " + msg);
-	// 		cleanupGenerator();
-	// 		cleanupServer();
-	// 	}
-	// 	serverSocket.bind(thumbnailGeneratorUrl, thumbnailGeneratorPort, (remoteSocket) -> {
-	// 		if (generatorSocket != null) {
-	// 			generatorSocket.close();
-	// 		}
-	// 		generatorSocket = remoteSocket;
-	// 		generatorSocket.onError = (msg) -> {
-	// 			hide.Ide.inst.quickError("Generator socket error : " + msg);
-	// 			cleanupGenerator();
-	// 		}
-
-	// 		var handler = new hide.tools.ThumbnailGenerator.MessageHandler(generatorSocket, processThumbnailGeneratorMessage);
-
-	// 		trace("Thumbnail generator connected");
-
-	// 		// resend command that weren't completed
-	// 		for (path => _ in onReadyCallbacks) {
-	// 			sendGenerateCommand(path);
-	// 		}
-
-	// 	});
-	// }
-
-	// function cleanupServer() {
-	// 	if (serverSocket != null) {
-	// 		serverSocket.close();
-	// 		serverSocket = null;
-	// 	}
-	// }
-
-	// function cleanupGenerator() {
-	// 	if (generatorSocket != null) {
-	// 		generatorSocket.close();
-	// 		generatorSocket = null;
-	// 	}
-
-	// 	if (windowManager != null && windowManager.generatorWindow != null) {
-	// 		windowManager.generatorWindow.close(true);
-	// 	}
-
-	// 	windowManager = null;
-
-	// 	untyped nw.Window.getAll((win:nw.Window) -> {
-	// 		if (win.title == "HideThumbnailGenerator") {
-	// 			win.close(true);
-	// 		}
-	// 	});
-	// }
-
 	function init() {
 		var exclPatterns : Array<String> = hide.Ide.inst.currentConfig.get("filetree.excludes", []);
 		ignorePatterns = [];
@@ -648,20 +521,7 @@ class FileManager {
 		for(pat in exclPatterns)
 			ignorePatterns.push(new EReg(pat, "i"));
 
-		//setupServer();
-		//checkWindowReady();
 		initFileSystem();
-
-		// var lastIntegrity = true;
-		// var timer = new haxe.Timer(1000);
-		// timer.run = () -> {
-		// 	var newIntegrity = checkIntegrity();
-		// 	if (!newIntegrity && !lastIntegrity) {
-		// 		throw "Filesystem integrity compromised";
-		// 	}
-		// 	lastIntegrity = newIntegrity;
-		// 	trace("integrity ok");
-		// }
 	}
 
 	function initFileSystem() {
@@ -691,58 +551,6 @@ class FileManager {
 		}
 	}
 
-	public function queueRefreshSVN() {
-		if (hide.Ide.inst.isSVNAvailable) {
-			getSVNModifiedFiles(onSVNFileModified);
-		}
-	}
-
-
-	var delayedSvnStatusCallbacks : Array<(files : Array<String>) -> Void> = null;
-
-	public function getSVNModifiedFiles(callback: (files : Array<String>) -> Void) : Void{
-		if (!hide.Ide.inst.isSVNAvailable)
-			throw "SVN not available";
-
-		if (delayedSvnStatusCallbacks == null) {
-			delayedSvnStatusCallbacks = [];
-			execSvnModifiedCommand(onSvnStatusFinished.bind([callback]));
-		} else {
-			delayedSvnStatusCallbacks.push(callback);
-		}
-	}
-
-	function onSvnStatusFinished(callbacks: Array<(files : Array<String>) -> Void>, process: sys.io.Process) {
-		var modifiedFiles : Array<String> = [];
-		var ide = hide.Ide.inst;
-
-		var stdout = process.stdout.readAll().toString();
-		var outputs : Array<String> = stdout.split("\r\n");
-		for (o in outputs) {
-			if (o.length == 0)
-				continue;
-
-			o = StringTools.replace(o, '\\', "/");
-			var file = ide.getPath(o.substr(o.indexOf("res/") + 4));
-			modifiedFiles.push(file);
-		}
-		for (callback in callbacks) {
-			callback(modifiedFiles);
-		}
-
-		if (delayedSvnStatusCallbacks != null && delayedSvnStatusCallbacks.length > 0) {
-			var oldCallbacks = delayedSvnStatusCallbacks;
-			delayedSvnStatusCallbacks = [];
-			execSvnModifiedCommand(onSvnStatusFinished.bind(delayedSvnStatusCallbacks));
-		} else {
-			delayedSvnStatusCallbacks = null;
-		}
-	}
-
-	function execSvnModifiedCommand(cb: (sys.io.Process) -> Void) {
-		new ProcessAsync('svn', ["status", hide.Ide.inst.projectDir], cb);
-	}
-
 	/**
 		Checks that the live file system matches the actual file system (to check that there are no desyncs)
 	**/
@@ -770,173 +578,6 @@ class FileManager {
 
 		return rec(hide.Ide.inst.resourceDir);
 	}
-
-	/*public function cloneFile(entry: FileEntry) {
-		var sourcePath = entry.getPath();
-		var nameNewFile = hide.Ide.inst.ask("New filename:", new haxe.io.Path(sourcePath).file);
-		if (nameNewFile == null || nameNewFile.length == 0) {
-			return false;
-		}
-
-		var targetPath = new haxe.io.Path(sourcePath).dir + "/" + nameNewFile;
-		if ( sys.FileSystem.exists(targetPath) ) {
-			throw "File already exists";
-		}
-
-		function rec(origin : String, target : String, depth : Int = 0) {
-			if (sys.FileSystem.isDirectory(origin)) {
-				sys.FileSystem.createDirectory(target + "/");
-				for (f in sys.FileSystem.readDirectory(origin))
-					rec(origin + "/" + f, target + "/" + f, depth + 1);
-			} else {
-				if (depth == 0 && target.indexOf(".") == -1) {
-					var oldExt = origin.split(".").pop();
-					target += "." + oldExt;
-				}
-
-				sys.io.File.saveBytes(target, sys.io.File.getBytes(origin));
-			}
-		}
-
-		rec(sourcePath, targetPath, 0);
-
-		return true;
-	}*/
-
-
-	// function processThumbnailGeneratorMessage(message: String) {
-	// 	try {
-	// 		var message = haxe.Json.parse(message);
-	// 		switch(message.type) {
-	// 			case success:
-	// 				var message : GenToManagerSuccessMessage = message.data;
-	// 				var cbs = onReadyCallbacks.get(message.originalPath);
-	// 				if (cbs == null) {
-	// 					return;
-	// 					//throw "Generated a thumbnail for a file not registered";
-	// 				}
-	// 				var file = getFileEntry(message.originalPath);
-	// 				file.iconPath = message.thumbnailPath;
-	// 				for (cb in cbs) {
-	// 					cb(message.thumbnailPath);
-	// 				}
-	// 				onReadyCallbacks.remove(message.originalPath);
-	// 			default:
-	// 				throw "Unknown message type " + message.type;
-	// 		}
-	// 	} catch(e) {
-	// 		hide.Ide.inst.quickError("Thumb Generator invalid message : " + e + "\n" + message);
-	// 	}
-	// }
-
-	var queued = false;
-
-	/**
-		Asynchronously generates a miniature.
-		onReady is called back with the path of the loaded miniature, or null if the miniature couldn't be loaded
-	**/
-	// function renderMiniature(file: FileEntry, onReady: MiniatureReadyCallback) {
-	// 	if (retries >= maxRetries) {
-	// 		onReady(null);
-	// 		return;
-	// 	}
-	// 	var path = file.getPath();
-	// 	var ext = path.split(".").pop().toLowerCase();
-	// 	switch(ext) {
-	// 		case "prefab" | "fbx" | "l3d" | "fx" | "shgraph" | "jpg" | "jpeg" | "png" | "dds":
-	// 			file.iconPath = "loading";
-	// 			var callbacks = onReadyCallbacks.get(path);
-	// 			if (callbacks == null) {
-	// 				onReadyCallbacks.set(path, [onReady]);
-	// 				sendGenerateCommand(path);
-	// 			} else {
-	// 				callbacks.push(onReady);
-	// 			}
-	// 		default:
-	// 			onReady(null);
-	// 	}
-	// }
-
-	// public function invalidateMiniature(file: FileEntry) {
-	// 	if (file.children != null) {
-	// 		for (child in file.children) {
-	// 			invalidateMiniature(child);
-	// 		}
-	// 		return;
-	// 	}
-	// 	if (file.iconPath != null && file.iconPath != "loading") {
-	// 		try {
-	// 			sys.FileSystem.deleteFile(file.iconPath);
-	// 		} catch (e) {};
-	// 	}
-
-	// 	file.iconPath = null;
-	// }
-
-	// public function checkWindowReady() {
-	// 	if (serverSocket == null)
-	// 		return false;
-	// 	if (windowManager == null) {
-	// 		if (retries < maxRetries) {
-	// 			retries ++;
-	// 			windowManager = new RenderWindowManager();
-	// 		}
-	// 		if (retries == maxRetries) {
-	// 			js.Browser.window.alert("Max retries for thumbnail render window reached");
-	// 			retries++;
-	// 		}
-	// 		return false;
-	// 	}
-	// 	if (windowManager.state == Pending) {
-	// 		return false;
-	// 	}
-	// 	if (windowManager.state == Ready && generatorSocket != null) {
-	// 		return true;
-	// 	}
-	// 	return false;
-	// }
-
-	// public function clearRenderQueue() {
-	// 	onReadyCallbacks.clear();
-	// 	if (!checkWindowReady()) {
-	// 		return;
-	// 	}
-	// 	var message = {
-	// 		type: ManagerToGenCommand.clear,
-	// 	};
-	// 	var cmd = haxe.Json.stringify(message) + "\n";
-	// 	generatorSocket.out.writeString(cmd);
-	// 	pendingMessages = [];
-	// }
-
-	// public function setPriority(path: String, newPriority: Int) {
-	// 	if (!onReadyCallbacks.exists(path)) {
-	// 		return;
-	// 	}
-	// 	if (retries >= maxRetries)
-	// 		return;
-	// 	var message = {
-	// 		type: ManagerToGenCommand.prio,
-	// 		path: path,
-	// 		prio: newPriority
-	// 	};
-	// 	var cmd = haxe.Json.stringify(message) + "\n";
-	// 	pendingMessages.push(cmd);
-	// 	queueProcessPendingMessages();
-	// }
-
-	// function sendGenerateCommand(path: String) {
-	// 	if (!checkWindowReady()) {
-	// 		return;
-	// 	}
-	// 	var message = {
-	// 		type: ManagerToGenCommand.queue,
-	// 		path: path,
-	// 	};
-	// 	var cmd = haxe.Json.stringify(message) + "\n";
-	// 	pendingMessages.push(cmd);
-	// 	queueProcessPendingMessages();
-	// }
 
 	public static function doRename(operations: Array<{from: String, to: String}>) {
 		for (op in operations) {
@@ -1569,9 +1210,99 @@ class FileManager {
 		browseRec("");
 	}
 
-	public function getFileAbs(absPath: String) : Null<FileEntry> {
-		var relPath = StringTools.replace(absPath, fileRoot.path + "/", "");
-		return fileIndex.get(relPath);
+
+
+	// SVN Support
+	function queueRefreshSVN() {
+		if (hide.Ide.inst.isSVNAvailable) {
+			getSVNModifiedFiles(onSVNFileModified);
+		}
+	}
+
+	var delayedSvnStatusCallbacks : Array<(files : Array<String>) -> Void> = null;
+	function getSVNModifiedFiles(callback: (files : Array<String>) -> Void) : Void{
+		if (!hide.Ide.inst.isSVNAvailable)
+			throw "SVN not available";
+
+		if (delayedSvnStatusCallbacks == null) {
+			delayedSvnStatusCallbacks = [];
+			execSvnModifiedCommand(onSvnStatusFinished.bind([callback]));
+		} else {
+			delayedSvnStatusCallbacks.push(callback);
+		}
+	}
+
+	function onSvnStatusFinished(callbacks: Array<(files : Array<String>) -> Void>, process: sys.io.Process) {
+		var modifiedFiles : Array<String> = [];
+		var ide = hide.Ide.inst;
+
+		var stdout = process.stdout.readAll().toString();
+		var outputs : Array<String> = stdout.split("\r\n");
+		for (o in outputs) {
+			if (o.length == 0)
+				continue;
+
+			o = StringTools.replace(o, '\\', "/");
+			var file = ide.getPath(o.substr(o.indexOf("res/") + 4));
+			modifiedFiles.push(file);
+		}
+		for (callback in callbacks) {
+			callback(modifiedFiles);
+		}
+
+		if (delayedSvnStatusCallbacks != null && delayedSvnStatusCallbacks.length > 0) {
+			var oldCallbacks = delayedSvnStatusCallbacks;
+			delayedSvnStatusCallbacks = [];
+			execSvnModifiedCommand(onSvnStatusFinished.bind(delayedSvnStatusCallbacks));
+		} else {
+			delayedSvnStatusCallbacks = null;
+		}
+	}
+
+	function execSvnModifiedCommand(cb: (sys.io.Process) -> Void) {
+		new ProcessAsync('svn', ["status", hide.Ide.inst.projectDir], cb);
+	}
+
+	function onSVNFileModified(modifiedFiles: Array<String>) {
+		for (file in fileIndex) {
+			file.vcsStatus = UpToDate;
+		}
+
+		for (modifiedFile in modifiedFiles) {
+			var relPath = hide.Ide.inst.getRelPath(modifiedFile);
+			var file = fileIndex.get(relPath);
+
+			while(file != null && file.vcsStatus != Modified) {
+				file.vcsStatus = Modified;
+				file = file.parent;
+			}
+		}
+
+		for (handler in onVCSStatusUpdateHandlers) {
+			handler();
+		}
+	}
+
+	/**
+		Return the path to a temporary file with all the paths in the files array inside
+	**/
+	public function createSVNFileList(files: Array<FileEntry>) : String {
+		var tmpdir = Sys.getEnv("TEMP");
+		var name = 'hidefiles${Std.int(hxd.Math.random(100000000))}.txt';
+		var path = tmpdir + "/" + name;
+
+		var str = [for(f in files) f.getPath()].join("\n");
+
+		// Encode paths as utf-16 because tortoiseproc want the file encoded that way
+		var bytes = haxe.io.Bytes.alloc(str.length * 2);
+		var pos = 0;
+
+		for (char in 0...str.length) {
+			bytes.setUInt16(pos, str.charCodeAt(char));
+			pos += 2;
+		}
+		sys.io.File.saveBytes(path, bytes);
+		return path;
 	}
 }
 
