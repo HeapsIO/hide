@@ -1523,7 +1523,7 @@ class ShaderEditor extends hide.view.FileView implements GraphInterface.IGraphEd
 
 		var sp = new h3d.prim.Sphere(1, 128, 128);
 		sp.addNormals();
-		sp.addUVs();
+		sp.setUVCount(4);
 		sp.addTangents();
 		setMeshPreviewMesh(new h3d.scene.Mesh(sp));
 	}

@@ -90,6 +90,9 @@ class ShaderInput extends ShaderNode {
 		"occlusion" => {display: "Occlusion", k: IGlobal(Occlusion)},
 
 		"uv" => {display: "Source UV", k: IGlobal(UV)},
+		"uv2" => {display: "Source UV 2", k: IGlobal(UV2)},
+		"uv3" => {display: "Source UV 3", k: IGlobal(UV3)},
+		"uv4" => {display: "Source UV 4", k: IGlobal(UV4)},
 	];
 
 	#if editor

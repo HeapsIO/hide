@@ -45,6 +45,10 @@ enum abstract Global(Int) to Int {
 	var EmitterPosition;
 
 	var SourceTexture;
+
+	var UV2;
+	var UV3;
+	var UV4;
 }
 
 enum VariableKind {
@@ -69,6 +73,9 @@ class Variables {
 
 		g[Input]			= {type: TVoid, name: "input", varkind: KVar(Input)};
 		g[UV] 					= {type: TVec(2, VFloat), 	name: "uv", varkind: KVar(Input, Input)};
+		g[UV2] 					= {type: TVec(2, VFloat), 	name: "uv2", varkind: KVar(Input, Input)};
+		g[UV3] 					= {type: TVec(2, VFloat), 	name: "uv3", varkind: KVar(Input, Input)};
+		g[UV4] 					= {type: TVec(2, VFloat), 	name: "uv4", varkind: KVar(Input, Input)};
 		g[RelativePosition]			= {type: TVec(3, VFloat), name: "relativePosition", varkind: KVar(Local)};
 		g[TransformedPosition]		= {type: TVec(3, VFloat), name: "transformedPosition", varkind: KVar(Local)};
 		g[ProjectedPosition]		= {type: TVec(4, VFloat), name: "projectedPosition", varkind: KVar(Local)};

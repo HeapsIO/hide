@@ -158,14 +158,24 @@ class NodeGenContext {
 	function getOrAllocateFromTVar(tvar: TVar) : TVar {
 		var fullName = AstTools.getFullName(tvar);
 
-		// special case handling for normal because it gets replaced in the preview shader
-		if (fullName == "input.normal")
-			return getOrAllocateGlobal(Normal);
-
 		var def = globalVars.get(fullName);
 		if (def != null) {
 			return def.v;
 		}
+
+		// special case handling for normal because it gets replaced in the preview shader
+		if (fullName == "input.normal")
+			return getOrAllocateGlobal(Normal);
+
+		if (fullName == "input.uv2")
+			return getOrAllocateGlobal(UV2);
+
+		if (fullName == "input.uv3")
+			return getOrAllocateGlobal(UV3);
+
+		if (fullName == "input.uv4")
+			return getOrAllocateGlobal(UV4);
+
 
 		var type = tvar.type;
 		switch (type) {
@@ -190,10 +200,14 @@ class NodeGenContext {
 
 	function getOrAllocateGlobal(id: Variables.Global) : TVar {
 		// Remap id for certains variables
-		switch (id) {
-			case Normal if (previewDomain == domain):
-				id = FakeNormal;
-			default:
+		if (previewDomain == domain) {
+			switch (id) {
+				case Normal:
+					id = FakeNormal;
+				case UV2, UV3, UV4:
+					id = UV;
+				default:
+			}
 		}
 
 		var global = Variables.Globals[id];
