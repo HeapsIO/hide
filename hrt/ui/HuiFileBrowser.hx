@@ -34,6 +34,7 @@ class HuiFileBrowser extends HuiElement {
 
 		registerCommand(HuiCommands.delete, View, deleteSelection);
 		registerCommand(HuiCommands.rename, View, renameSelection);
+		registerCommand(HuiCommands.duplicate, View, duplicateSelection);
 		registerCommand(HuiCommands.copy, View, copySelection);
 		registerCommand(HuiCommands.paste, View, pasteSelection);
 
@@ -132,7 +133,12 @@ class HuiFileBrowser extends HuiElement {
 
 		items.push({isSeparator: true});
 
+		var duplicate = HuiMenu.itemFromCommand(HuiCommands.duplicate, this);
+		duplicate.enabled = tree.getSelectedItems().length > 0;
+		items.push(duplicate);
+
 		var copy = HuiMenu.itemFromCommand(HuiCommands.copy, this);
+		copy.enabled = tree.getSelectedItems().length > 0;
 		items.push(copy);
 
 		var paste = HuiMenu.itemFromCommand(HuiCommands.paste, this);
@@ -168,6 +174,15 @@ class HuiFileBrowser extends HuiElement {
 		}
 
 		copyFilesToFolder(cast data.files, target.getPath());
+	}
+
+	function duplicateSelection() {
+		var sources = [for (file in tree.getSelectedItems()) file.getPath()];
+		var destinations = ensureUniquePaths(sources);
+
+		var operations = [for (i in 0...sources.length) {source: sources[i], destination: destinations[i]}];
+
+		getView().undo.run(actionCopyFiles(operations), false);
 	}
 
 	function createNewDirectory(parent: File) {
@@ -320,30 +335,50 @@ class HuiFileBrowser extends HuiElement {
 	static var simpleFilenameRegex = ~/(.*) \(\d+\)/;
 
 	function copyFilesToFolder(filePaths: Array<String>, folderPath: String) {
-		var operations = [
-			for (path in filePaths) {
-				var dest = new haxe.io.Path(path);
-				dest.dir = folderPath;
-				var destPathBase = dest.toString();
 
-				// return name to base
-				if (simpleFilenameRegex.match(dest.file)) {
-					dest.file = simpleFilenameRegex.matched(1);
-				}
-				var baseFile = dest.file;
+		var destinations = [];
+		for (path in filePaths) {
+			var dest = new haxe.io.Path(path);
+			dest.dir = folderPath;
+			destinations.push(dest.toString());
+		}
 
-				var tries = 0;
-				// deduplicate paths
-				while(sys.FileSystem.exists(dest.toString())) {
-					tries += 1;
-					dest.file = baseFile + ' ($tries)';
-				}
+		destinations = ensureUniquePaths(destinations);
 
-				{source: path, destination: dest.toString()};
-			}
-		];
+		var operations = [for (i in 0...filePaths.length) {source: filePaths[i], destination: destinations[i]}];
 
 		getView().undo.run(actionCopyFiles(operations), false);
+	}
+
+	/**
+		Ensure that all the paths in the given array are unique between themselves and files on disk
+	**/
+	function ensureUniquePaths(paths: Array<String>) : Array<String> {
+		var newPaths = [];
+
+		for (i => path in paths) {
+			var dest = new haxe.io.Path(path);
+			var destPathBase = dest.toString();
+
+			// return name to base
+			if (simpleFilenameRegex.match(dest.file)) {
+				dest.file = simpleFilenameRegex.matched(1);
+			}
+
+			var baseFile = dest.file;
+
+			var tries = 0;
+			// deduplicate paths
+			var newPath = dest.toString();
+			while(sys.FileSystem.exists(newPath) || newPaths.contains(newPath)) {
+				tries += 1;
+				dest.file = baseFile + ' ($tries)';
+				newPath = dest.toString();
+			}
+			newPaths.push(newPath);
+		}
+
+		return newPaths;
 	}
 
 	function actionCopyFiles(operations: Array<{source: String, destination: String}>) {

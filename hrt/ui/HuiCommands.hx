@@ -8,6 +8,7 @@ class HuiCommands {
 	static public var paste = new HuiCommand("Paste", {ctrl: true, key: K.V});
 	static public var cut = new HuiCommand("Cut", {ctrl: true, key: K.X});
 	static public var save = new HuiCommand("Save", {ctrl: true, key: K.S});
+	static public var duplicate = new HuiCommand("Duplicate", {ctrl: true, key: K.D});
 
 	static public var delete = new HuiCommand("Delete", {key: K.DELETE});
 	static public var escape = new HuiCommand("Escape", {key: K.ESCAPE});
