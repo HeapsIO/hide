@@ -407,6 +407,8 @@ class GraphEditor extends hide.comp.Component {
 		if (!onPreviewUpdate())
 			return;
 
+		previewsScene.s2d.setScale(js.Browser.window.devicePixelRatio);
+
 		var newBoxToPreview : Map<Box, h2d.Bitmap> = [];
 		for (box in boxes) {
 			if (box.info.preview == null) {
