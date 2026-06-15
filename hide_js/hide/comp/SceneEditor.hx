@@ -6015,8 +6015,12 @@ class SceneEditor {
 				return minDist;
 		}
 
-
-		var zPlane = h3d.col.Plane.Z(ray.pz >= 0 ? 0 : ray.pz - 10);
+		var zPlane = if (ray.lz > 0) {
+			h3d.col.Plane.Z(ray.pz <= 0 ? 0 : ray.pz + 10);
+		}
+		else {
+			h3d.col.Plane.Z(ray.pz >= 0 ? 0 : ray.pz - 10);
+		}
 		var pt = ray.intersect(zPlane);
 		if( pt != null ) {
 			minDist = pt.sub(ray.getPos()).length();
