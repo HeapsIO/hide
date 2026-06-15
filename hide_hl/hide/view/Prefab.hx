@@ -459,6 +459,7 @@ class Prefab extends HuiView<{path: String}> {
 	}
 
 	override function onRemove() {
+		super.onRemove();
 		hrt.tools.FileManager.inst.unwatchFileChange(onFileChange);
 	}
 
