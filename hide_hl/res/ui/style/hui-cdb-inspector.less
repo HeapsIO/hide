@@ -1,0 +1,53 @@
+hui-cdb-inspector {
+	auto-size: 1;
+	fill-width: true;
+	layout: vertical;
+	margin-top: 5;
+
+	hui-props-inspector {
+		layout:vertical;
+		spacing: 5;
+
+		&.value {
+			padding: 2;
+			> hui-background {
+				background: @color-gray-5;
+				border-radius: @base-corner-radius;
+			}
+
+			.label {
+				width: 30;
+				margin-right: 5;
+				valign: middle;
+				>hui-text {
+					text-align: right;
+				}
+			}
+
+			.value {
+				fill-width: true;
+				auto-size: 1;
+				valign: middle;
+			}
+		}
+	}
+
+	hui-text {
+		valign:middle;
+	}
+
+	.label {
+		width: 80;
+		margin-right: 5;
+		valign: middle;
+		>hui-text {
+			text-align: right;
+		}
+	}
+
+	.value {
+		fill-width: true;
+		auto-size: 1;
+		valign: middle;
+	}
+}

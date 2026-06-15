@@ -3965,11 +3965,11 @@ class SceneEditor {
 
 		select.change(function(v) {
 			var typeId = select.val();
-			if(typeId == null || typeId == "") {
+			if (typeId == null || typeId == "") {
 				changeProps(null);
 				return;
 			}
-			var props = hide.view.Prefab.makeCdbProps(e, view.state.path, DataFiles.resolveType(typeId));
+			var props = hrt.prefab.Prefab.makeCdbProps(e, view.state.path, DataFiles.resolveType(typeId));
 			changeProps(props);
 		});
 

@@ -503,8 +503,10 @@ class DataFiles {
 			reloadFile(f);
 			if (delayedReload == null) {
 				delayedReload = haxe.Timer.delay(() -> {
+					#if editor
 					Editor.refreshAll(false, false);
 					delayedReload = null;
+					#end
 				},1);
 			}
 		},0);
@@ -780,6 +782,7 @@ class DataFiles {
 		var prefabs = new Map();
 		for( s in base.sheets ) {
 			for( c in s.columns ) {
+				#if editor
 				var p : Editor.EditorColumnProps = c.editor;
 				if( p != null && p.ignoreExport ) {
 					var prev = [for( o in s.lines ) Reflect.field(o, c.name)];
@@ -792,6 +795,7 @@ class DataFiles {
 						}
 					});
 				}
+				#end
 			}
 			if( s.props.dataFiles != null ) {
 				var sheet = @:privateAccess s.sheet;
@@ -836,6 +840,7 @@ class DataFiles {
 			skip++;
 			var path = ide.getPath(file);
 
+			#if editor
 			var backup = [];
 			hide.view.Prefab.cleanupPrefabCdb(pf, backup);
 			@:privateAccess var out = ide.toJSON(pf.serialize());
@@ -846,6 +851,7 @@ class DataFiles {
 				if( txt == out ) continue;
 			}
 			sys.io.File.saveContent(path, out);
+			#end
 		}
 		if( onSaveBase != null )
 			onSaveBase();

@@ -14,6 +14,7 @@
 -D dx12
 -D hl-profile
 -D editor_hl
+-D cdb_datafiles
 -cp hide_hl
 -hl bin_hl/hide.hl
 -lib hldx

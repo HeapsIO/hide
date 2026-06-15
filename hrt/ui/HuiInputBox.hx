@@ -19,7 +19,7 @@ class HuiInputBox extends HuiElement {
 		return textInput.text = v;
 	}
 
-	function new(?parent: h2d.Object) {
+	public function new(?parent: h2d.Object) {
 		super(parent);
 		initComponent();
 
