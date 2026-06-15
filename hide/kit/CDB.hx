@@ -11,6 +11,7 @@ class CDB extends Element {
 	override public function new(parent: Element, id: String) {
 		super(parent, id);
 
+		#if editor_hl
 		var types = DataFiles.getAvailableTypes();
 		if (types.length <= 0)
 			return;
@@ -54,6 +55,7 @@ class CDB extends Element {
 			}
 			root.editor.rebuildInspector();
 		}
+		#end
 		#end
 	}
 
