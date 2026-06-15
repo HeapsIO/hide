@@ -101,5 +101,5 @@ class CDB extends Element {
 
 	override function addEditMenu(e: NativeElement) {
 	}
-	#end
 }
+#end
