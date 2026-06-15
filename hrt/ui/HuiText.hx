@@ -35,6 +35,7 @@ class HuiText extends h2d.HtmlText #if hui implements h2d.domkit.Object #end {
 
 	static var fontPairs: Map<String, Array<String>> = [
 		"regular" => ["font/Inter-Regular-cv05-cv08-tnum-13pt.fnt", "font/Inter-Regular-cv05-cv08-tnum-26pt.fnt"],
+		"regular-small" => ["font/Inter-Regular-cv05-cv08-tnum-10pt.fnt", "font/Inter-Regular-cv05-cv08-tnum-20pt.fnt"],
 		"italic" => ["font/Inter-Italic-cv05-cv08-tnum-13pt.fnt", "font/Inter-Italic-cv05-cv08-tnum-26pt.fnt"],
 	];
 

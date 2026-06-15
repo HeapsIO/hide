@@ -10,6 +10,10 @@ build() {
 	mv "../res/font/${1}_0.png" "../res/font/${1}.png"
 }
 
+
+build Inter-Regular-cv05-cv08-tnum-10pt
+build Inter-Regular-cv05-cv08-tnum-20pt
+
 build Inter-Regular-cv05-cv08-tnum-13pt
 build Inter-Regular-cv05-cv08-tnum-26pt
 build Inter-Italic-cv05-cv08-tnum-13pt

@@ -73,6 +73,7 @@ class HuiMenu extends HuiPopup {
 		return {
 			label: command.display,
 			click: () -> context.execCommand(command),
+			keys: hrt.ui.HuiCommands.HuiCommand.shortcutToString(command.registeredShortcut),
 		};
 	}
 
@@ -205,6 +206,9 @@ class HuiMenu extends HuiPopup {
 			submenu.onCloseListeners.push(() -> {
 				submenu = null;
 			});
+
+			// fix scrollbar
+			submenu.itemsContainer.scrollBar?.reflow();
 		}
 	}
 
@@ -340,6 +344,7 @@ class HuiMenuItem extends HuiElement {
 		<hui-menu-item>
 			<hui-element id="icon"></hui-element>
 			<hui-element id="content"></hui-element>
+			<hui-element id="keys"></hui-element>
 			<hui-element id="end-of-line"></hui-element>
 		</hui-menu-item>
 
@@ -379,10 +384,11 @@ class HuiMenuItem extends HuiElement {
 			var ftmText = new HuiText(nameOverride ?? item.label, content);
 		}
 
-		if (item.menu != null) {
-			endOfLine.backgroundType = "hui";
-			endOfLine.huiBg.image = {path: "ui/icons/chevronRight.png", mode: Fit};
+		if (item.keys != null) {
+			var text = new HuiText(item.keys, keys);
 		}
+
+		dom.toggleClass("has-child", item.menu != null);
 
 		interactive.propagateEvents = true;
 
@@ -426,6 +432,8 @@ class HuiMenuItem extends HuiElement {
 			contextMenu.onFinalClose();
 		}
 	}
+
+
 }
 
 #end

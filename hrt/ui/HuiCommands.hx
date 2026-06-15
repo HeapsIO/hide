@@ -87,5 +87,20 @@ class HuiCommand {
 		}
 		return false;
 	}
+
+	static public function shortcutToString(s: Shortcut) : String {
+		var str = "";
+		if (s.ctrl) {
+			str += "Ctrl+";
+		}
+		if (s.alt) {
+			str += "Alt+";
+		}
+		if (s.shift) {
+			str += "Shift+";
+		}
+		str += hxd.Key.getKeyName(s.key);
+		return str;
+	}
 }
 #end

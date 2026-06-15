@@ -106,6 +106,8 @@ class HuiPopup extends HuiElement {
 	}
 
 	public function updateAnchor(fixDirection: Bool) {
+		if (parentElement == null)
+			return;
 		if (anchor == null) {
 			x = hxd.Math.round((parentElement.calculatedWidth - calculatedWidth) * 0.5);
 			y = hxd.Math.round((parentElement.calculatedHeight - calculatedHeight) * 0.5);
