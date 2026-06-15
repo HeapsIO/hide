@@ -22,6 +22,10 @@ class HuiModalContainer extends HuiElement {
 		}
 		interactive.cursor = null;
 	}
+
+	public function setPropagateEvents(value: Bool) {
+		interactive.propagateEvents = value;
+	}
 }
 
 #end

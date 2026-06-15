@@ -29,6 +29,12 @@ class HuiButtonMenu extends HuiElement {
 
 	function open() {
 		menu = uiBase.openMenu(getItems(), {}, {object: Element(this), directionX: StartInside, directionY: EndOutside});
+
+		var isInMenuBar = parent.children.filter((f) -> f != this && f is HuiButtonMenu) != null;
+		if (isInMenuBar) {
+			// Allow over to open sibling menus
+			menu.findParent(HuiModalContainer)?.setPropagateEvents(true);
+		}
 		menu.onCloseListeners.push(onClose);
 		dom.addClass("open");
 	}
