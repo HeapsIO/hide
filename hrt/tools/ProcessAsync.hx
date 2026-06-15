@@ -16,7 +16,7 @@ class ProcessAsync {
 	}
 
 	function update() {
-		if (process.exitCode() == null) {
+		if (process.exitCode(false) == null) {
 			timer = haxe.Timer.delay(update, 0);
 		} else {
 			onCompletion(process);
