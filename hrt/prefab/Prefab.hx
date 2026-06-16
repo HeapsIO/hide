@@ -585,6 +585,7 @@ class Prefab {
 		return Reflect.field(props, "$cdbtype");
 	}
 
+	#if castle
 	public static function makeCdbProps( e : hrt.prefab.Prefab, prefabFilePath: String, type : cdb.Sheet ) {
 		var props = type.getDefaults();
 		Reflect.setField(props, "$cdbtype", hide.comp.cdb.DataFiles.getTypeName(type));
@@ -598,6 +599,7 @@ class Prefab {
 		}
 		return props;
 	}
+	#end
 
 	public function toString() : String{
 		var str = type;
