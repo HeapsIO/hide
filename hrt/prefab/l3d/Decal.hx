@@ -217,6 +217,57 @@ class Decal extends Object3D {
 		updateRenderParams();
 	}
 
+	override function edit2(ctx:hrt.prefab.EditContext2) {
+		super.edit2(ctx);
+
+		var layers : Array<{ name : String, value : Int }> = #if editor hide.Ide.inst.currentConfig.get("material.drawOrder", []); #else []; #end
+		ctx.build(
+			<root>
+				<category("Material Library")>
+					<matlib(this.getAbsPath()) label="Mat Lib" field={refMatLib}/>
+				</category>
+				<category("Decal")>
+					<select id="render-mode-select" field={renderMode}/>
+					<select field={blendMode}/>
+					<select([for (l in layers) { label: l.name, value: l.value }]) field={drawOrder}/>
+				</category>
+				<category("PBR Parameters") if (renderMode == Default || renderMode == Terrain)>
+					<file type="texture" field={albedoMap}/>
+					<range(0, 1) field={albedoStrength}/>
+					<file type="texture" field={normalMap}/>
+					<range(0, 1) field={normalStrength}/>
+					<file type="texture" field={pbrMap}/>
+					<range(0, 1) field={pbrStrength}/>
+					<range(0, 10) field={emissive}/>
+					<range(0, 1) field={emissiveStrength}/>
+					<checkbox field={centered}/>
+				</category>
+				<category("Overlay Parameters") if (renderMode == BeforeTonemapping || renderMode == AfterTonemapping)>
+					<file type="texture" field={albedoMap}/>
+					<range(0, 10) field={emissive}/>
+					<checkbox field={autoAlpha}/>
+					<checkbox field={centered}/>
+				</category>
+				<category("Fade")>
+					<range(0, 3) field={fadePower}/>
+					<range(0, 1) field={fadeStart}/>
+					<range(0, 1) field={fadeEnd}/>
+					<checkbox field={normalFade}/>
+					<range(0, 1) field={normalFadeStart}/>
+					<range(0, 1) field={normalFadeEnd}/>
+				</category>
+			</root>
+		);
+
+		renderModeSelect.onValueChange = (_) -> {
+			#if editor
+			clearSelection();
+			#end
+			ctx.rebuildPrefab(this);
+			ctx.rebuildInspector();
+		}
+	}
+
 	#if editor
 	override function getHideProps() : hide.prefab.HideProps {
 		return { icon : "paint-brush", name : "Decal" };
