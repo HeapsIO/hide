@@ -62,6 +62,32 @@ class Blur extends Prefab {
 		bitmap.setScale(zoom);
 	}
 
+	override function edit2(ctx:hrt.prefab.EditContext2) {
+		ctx.build(
+			<root>
+				<category("Blur")>
+					<slider field={radius}/>
+					<slider field={gain}/>
+					<slider field={linear}/>
+					<slider field={quality}/>
+				</category>
+				<category("Fetch")>
+					<line><text("Fetch count")/><text("0") id="fetch-count-text"/></line>
+					<file type="texture" field={image}/>
+					<range(0, 8) field={quality}/>
+				</category>
+			</root>
+		);
+
+		function sync(bmp : h2d.Bitmap) {
+			var k = @:privateAccess Std.downcast(bmp.filter, h2d.filter.Blur).pass.getKernelSize();
+			fetchCountText.content = (k + k) +"x";
+		}
+
+		bitmap.visible = true;
+		sync(bitmap);
+	}
+
 	#if editor
 	override function getHideProps() : hide.prefab.HideProps {
 		return { name : "Blur", icon : "bullseye" };
