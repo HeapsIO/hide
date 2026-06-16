@@ -207,6 +207,10 @@ class Ide extends hide.tools.IdeData {
 	}
 
 	public function openFile(filePath: String, ?callback : (v : hrt.ui.HuiView<Dynamic>) -> Void) {
+		if (filePath == null)
+			return;
+		if (!haxe.io.Path.isAbsolute(filePath))
+			filePath = getPath(filePath);
 		var path = new haxe.io.Path(filePath);
 
 		try {
