@@ -378,10 +378,10 @@ class Object3D extends Prefab {
 		if( visibleMeshes.length == 0 )
 			return null;
 		var colliders = [for(m in visibleMeshes) {
-			var c : h3d.col.Collider = try m.getGlobalCollider() catch(e: Dynamic) null;
+			var c : h3d.col.Collider = try m.getLocalCollider() catch(e: Dynamic) null;
 			if(c != null) c;
 		}];
-		var meshCollider = colliders.length == 1 ? colliders[0] : new h3d.col.Collider.GroupCollider(colliders);
+		var meshCollider = new h3d.col.ObjectCollider(local3d, colliders.length == 1 ? colliders[0] : new h3d.col.Collider.GroupCollider(colliders));
 		var collider : h3d.col.Collider = new h3d.col.ObjectCollider(local3d, bounds);
 		if( hasSkin ) {
 			collider = meshCollider; // can't trust bounds
