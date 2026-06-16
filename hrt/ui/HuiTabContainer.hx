@@ -77,7 +77,10 @@ class HuiTabContainer extends HuiElement {
 
 
 	function makeTab(forElement: HuiElement) : HuiTab {
-		var tab = new HuiTab(forElement, tabBarContent);
+		var tab = new HuiTab(forElement);
+		var index = content.childElements.indexOf(forElement);
+		tabBarContent.addChildAt(tab, index);
+
 		tab.onClick = (e) -> {
 			switch(e.button) {
 				case 0: setTab(tab.targetElement);
@@ -168,8 +171,8 @@ class HuiTabContainer extends HuiElement {
 		return tabBarContent.childElements[index];
 	}
 
-	public function addTab(tab: HuiElement) {
-		content.addChild(tab);
+	public function addTab(tab: HuiElement, ?index: Int) {
+		content.addChildAt(tab, index ?? content.children.length);
 	}
 
 	public function removeTab(tab: HuiElement) {

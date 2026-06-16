@@ -167,7 +167,7 @@ class HuiSceneEditor extends HuiElement {
 		var r = root ?? scene.s3d;
 		var ray = scene.s3d.camera.rayFromScreen(sx, sy, cast scene.calculatedWidth, cast scene.calculatedHeight);
 		for (o in r.findAll((o) -> o)) {
-			var c = o.getCollider() ?? o.getBounds();
+			var c = try o.getCollider() ?? o.getBounds()  catch(e) null;
 			if (c == null)
 				continue;
 
@@ -188,6 +188,58 @@ class HuiSceneEditor extends HuiElement {
 		}
 
 		return [for (h in hits) h.o];
+	}
+
+	public function projectToGround(ray: h3d.col.Ray, ?paintOn : hrt.prefab.Prefab, ignoreTerrain: Bool = false) : Float {
+		var minDist = -1.;
+		// if (!ignoreTerrain) {
+		// 	var arr = (paintOn == null ? getGroundPrefabs() : [paintOn]);
+		// 	for( elt in arr ) {
+		// 		var obj = Std.downcast(elt, Object3D);
+		// 		if( obj == null ) continue;
+
+		// 		var local3d = obj.findFirstLocal3d();
+		// 		if (local3d == null) continue;
+		// 		var lray = ray.clone();
+		// 		lray.transform(local3d.getInvPos());
+		// 		var dist = obj.localRayIntersection(lray);
+		// 		if( dist > 0 ) {
+		// 			var pt = lray.getPoint(dist);
+		// 			pt.transform(local3d.getAbsPos());
+		// 			var dist = pt.sub(ray.getPos()).length();
+		// 			if( minDist < 0 || dist < minDist )
+		// 				minDist = dist;
+		// 		}
+		// 	}
+		// 	if( minDist >= 0 )
+		// 		return minDist;
+		// }
+
+		var zPlane = if (ray.lz > 0) {
+			h3d.col.Plane.Z(ray.pz <= 0 ? 0 : ray.pz + 10);
+		}
+		else {
+			h3d.col.Plane.Z(ray.pz >= 0 ? 0 : ray.pz - 10);
+		}
+		var pt = ray.intersect(zPlane);
+		if( pt != null ) {
+			minDist = pt.sub(ray.getPos()).length();
+			var dirToPt = pt.sub(ray.getPos());
+			if( dirToPt.dot(ray.getDir()) < 0 )
+				return -1.0;
+		}
+
+		return minDist;
+	}
+
+	public function screenToGround(sx: Float, sy: Float, ?paintOn : hrt.prefab.Prefab, ignoreTerrain: Bool = false) {
+		var camera = scene.s3d.camera;
+		var ray = camera.rayFromScreen(sx, sy);
+		var dist = projectToGround(ray, paintOn, ignoreTerrain);
+		if(dist >= 0) {
+			return ray.getPoint(dist);
+		}
+		return null;
 	}
 
 	public function updateDebugOverlayVisibility() {

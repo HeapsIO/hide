@@ -43,10 +43,10 @@ class HuiTabViewContainer extends HuiTabContainer {
 						return;
 					view.requestClose((canClose) -> {
 						var index = getTabs().indexOf(forElement);
-						removeTab(forElement);
 						var state = getViewState(forElement);
-						var newView = loadView(state);
-						content.addChildAt(newView, index);
+						removeTab(forElement);
+
+						var newView = loadView(state, index);
 						activeTabElement = newView;
 					});
 				}
@@ -149,13 +149,14 @@ class HuiTabViewContainer extends HuiTabContainer {
 		}
 	}
 
-	function loadView(data: ViewData) : HuiView<Dynamic> {
+	function loadView(data: ViewData, ?index: Int) : HuiView<Dynamic> {
 		var success = false;
 		syncTabsQueued = true;
 		if (data.type != null) {
 			var cl = HuiView.get(data.type);
 			if (cl != null) {
-				var view : HuiView<Dynamic> = Type.createInstance(cl, [data.state, content]);
+				var view : HuiView<Dynamic> = Type.createInstance(cl, [data.state]);
+				addTab(view, index);
 				return view;
 			}
 		}

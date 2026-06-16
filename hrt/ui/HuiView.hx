@@ -10,6 +10,8 @@ class HuiView<T> extends HuiElement {
 	var toolbar : HuiToolbar;
 	var errorMessage : Null<HuiErrorDisplay> = null;
 	var suppressErrors: Bool = false;
+	var currentException: Null<haxe.Exception> = null;
+	var currentExceptionTime : Int = 0;
 
 	function set_hasUnsavedChanges(v: Bool) {
 		if (v != hasUnsavedChanges) {
@@ -38,6 +40,24 @@ class HuiView<T> extends HuiElement {
 	function setException(e: haxe.Exception) {
 		if (suppressErrors)
 			e = null;
+
+		var isLoopError = false;
+
+		// If an error was only present for one frame, keep it on screen
+		if (e?.message != currentException?.message) {
+			if (currentExceptionTime == 0) {
+				e = currentException;
+			} else {
+				currentException = e;
+				currentExceptionTime = 0;
+			}
+		}
+		else {
+			currentException = e;
+			currentExceptionTime += 1;
+			isLoopError = true;
+		}
+
 		dom.toggleClass("has-error", e != null);
 
 		if (e == null) {
@@ -48,14 +68,16 @@ class HuiView<T> extends HuiElement {
 
 		if (errorMessage == null) {
 			errorMessage = new HuiErrorDisplay(this);
+			errorMessage.addButton("Clear Error", () -> {currentException = null;});
+		}
+		if (currentExceptionTime == 1) {
+			errorMessage.childElements[1].remove();
 			errorMessage.addButton("Ignore Errors", () -> {suppressErrors = true; addSuppressErrorWarning();});
-
 		}
 		errorMessage.setError("Unhandled view exception", e);
 	}
 
 	final override function sync(ctx : h2d.RenderContext) {
-
 		var exception : haxe.Exception = null;
 		try {
 			safeSync(ctx);

@@ -269,6 +269,14 @@ class Prefab extends HuiView<{path: String}> {
 		this.gizmoShouldSnap = hide.Ide.inst.currentConfig.get(hide.view.Prefab.GIZMO_SNAP_CONFIG_KEY, true);
 		this.gizmoForceSnapOnGrid = hide.Ide.inst.currentConfig.get(hide.view.Prefab.GIZMO_SNAP_GRID_CONFIG_KEY, true);
 
+
+		sceneEditor.scene.onDragMove = sceneDragMove;
+		sceneEditor.scene.onDragOut = sceneDragOut;
+		sceneEditor.scene.onDragOver = sceneDragOver;
+		sceneEditor.scene.onDrop = sceneDrop;
+
+
+
 		gizmo = new hrt.tools.Gizmo(sceneEditor.scene.s3d);
 		gizmo.visible = false;
 		registerCommand(hrt.tools.Gizmo.gizmoSwitchModeCommand, View, gizmo.switchMode);
@@ -368,7 +376,83 @@ class Prefab extends HuiView<{path: String}> {
 		buildToolbar();
 	}
 
+	function getDropPath(op: HuiDragOp) : Null<String> {
+		if (op.type != HuiFileBrowser.fileDragOp)
+			return null;
+		var files : Array<String> = op.data;
+		if (files == null)
+			return null;
+		if (files.length == 0)
+			return null;
+		var file = files[0];
+		if (!StringTools.endsWith(file, ".prefab") && !StringTools.endsWith(file, ".fx"))
+			return null;
+		return file;
+	}
+
+	function sceneDragOver(op: HuiDragOp) {
+		op.acceptDrop = false;
+		var path = getDropPath(op);
+		if (path == null)
+			return;
+		op.acceptDrop = true;
+	}
+
+	function sceneDragOut(op: HuiDragOp) {
+
+	}
+
+	function sceneDragMove(op: HuiDragOp) {
+		sceneDragOver(op);
+	}
+
+	function sceneDrop(op: HuiDragOp) {
+		var pathAbs = getDropPath(op);
+		if (pathAbs == null)
+			return;
+
+		var path = Ide.inst.makeRelative(pathAbs);
+
+		if (!hxd.res.Loader.currentInstance.exists(path)) {
+			Ide.showError('Path "$path" is not available from this project resource folder');
+			return;
+		}
+
+		var pos = sceneEditor.screenToGround(op.event.relX, op.event.relY);
+		if (pos == null) {
+			pos = new h3d.Vector();
+			Ide.showWarning("Couldn't find a position to place the droppped prefab. It was created at the scene origin");
+		}
+
+		var parent = getSelectionOrdered()[0] ?? prefab;
+		var ref : hrt.prefab.Reference = if (StringTools.endsWith(path, ".fx")) {
+			new hrt.prefab.fx.SubFX(null, prefab.shared);
+		} else {
+			new hrt.prefab.Reference(null, prefab.shared);
+		}
+
+		ref.name = new haxe.io.Path(path).file;
+		ref.source = path;
+		if (ref.hasCycle()) {
+			Ide.showError('Adding $path to scene would create a cycle');
+			return;
+		}
+
+		var reparent = actionReparentPrefab(ref, parent, parent.children.length);
+		var select = actionMakeSelection([ref]);
+
+		var action = (isUndo) -> {
+			reparent(isUndo);
+			select(isUndo);
+		};
+
+		getView().undo.run(action, true);
+	}
+
+
 	var crashSync = false;
+	var crashSyncOneFrame = false;
+
 
 	override function safeSync(ctx) {
 		super.safeSync(ctx);
@@ -376,6 +460,11 @@ class Prefab extends HuiView<{path: String}> {
 
 		if (crashSync) {
 			throw "test crash sync";
+		}
+
+		if (crashSyncOneFrame) {
+			crashSyncOneFrame = false;
+			throw "test crash sync one frame";
 		}
 	}
 
@@ -450,6 +539,7 @@ class Prefab extends HuiView<{path: String}> {
 		crashButton.onClick = (e) -> {
 			uiBase.contextMenu([
 				{label: "Crash sync", click: () -> crashSync = !crashSync, checked: crashSync},
+				{label: "Crash sync one frame", click: () -> crashSyncOneFrame = true},
 				{label: "Crash instant", click: () -> throw "crash instant"},
 			]);
 		};
