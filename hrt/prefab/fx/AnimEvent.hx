@@ -60,9 +60,11 @@ class AnimEvent extends hrt.prefab.fx.Event {
 		);
 
 		if (parent.source != null) {
-			var anims = try shared.editor.scene.listAnims(parent.source) catch(e: Dynamic) [];
-			animSelect.setEntries([ for (a in anims) { label: shared.editor.scene.animationName(a), value: hide.Ide.inst.makeRelative(a) } ]);
+			#if editor
+			var anims = try shared.scene.listAnims(parent.source) catch(e: Dynamic) [];
+			animSelect.setEntries([ for (a in anims) { label: shared.scene.animationName(a), value: hide.Ide.inst.makeRelative(a) } ]);
 			animSelect.value = animation;
+			#end
 		}
 	}
 
