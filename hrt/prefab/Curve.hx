@@ -383,6 +383,36 @@ class Curve extends Prefab {
 		return vals;
 	}
 
+	override function edit2(ctx: hrt.prefab.EditContext2) {
+		super.edit2(ctx);
+
+		ctx.build(
+			<root>
+				<category("Parameters")>
+					<checkbox field={loop}/>
+					<select field={blendMode} id="blend-mode-select"/>
+					<select([{label: "None", value: null}]) field={blendParam} if (this.blendMode == CurveBlendMode.Blend || this.blendMode == CurveBlendMode.Reference)/>
+					<range(0., 1.) field={offset} if (this.blendMode == CurveBlendMode.Reference)/>
+					<range(0., 1.) field={scale} if (this.blendMode == CurveBlendMode.Reference)/>
+					<select([{label: "None", value: null}]) label="Time Remap" id="blend-param-select" field={remapPath}/>
+					<line label="Curve"><curve(this) id="curve-editor"/></line>
+				</category>
+			</root>
+		);
+
+		blendModeSelect.onValueChange = (_) -> {
+			ctx.rebuildInspector();
+		}
+
+		var root = Std.downcast(getRoot(false), hrt.prefab.fx.FX);
+		if (root != null && blendParamSelect != null) {
+			var entries = [for(p in root.parameters) { label: p.name, value: p.name }];
+			entries.insert(0, { label: "None", value: null });
+			blendParamSelect.setEntries(entries);
+			blendParamSelect.value = blendParam;
+		}
+	}
+
 	#if editor
 	override function edit( ctx : EditContext ) {
 		super.edit(ctx);

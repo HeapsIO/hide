@@ -16,8 +16,10 @@ class HuiCurveBox extends HuiElement {
 	var graphics : h2d.Graphics;
 	var editor : HuiCurveEditor = null;
 	var editorGuard : Int = 0;
-	public function new(?parent: h2d.Object) {
+	public function new(?value : hrt.prefab.Curve, ?parent: h2d.Object) {
 		super(parent);
+		this.value = value;
+
 		initComponent();
 
 		root = new h2d.Object(this);
