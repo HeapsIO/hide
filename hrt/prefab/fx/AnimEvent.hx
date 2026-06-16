@@ -47,6 +47,25 @@ class AnimEvent extends hrt.prefab.fx.Event {
 		}
 	}
 
+	override function edit2(ctx:hrt.prefab.EditContext2) {
+		super.edit2(ctx);
+
+		ctx.build(
+			<category("Event")>
+				<checkbox field={loop}/>
+				<select id="anim-select" field={animation}/>
+				<slider field={speed}/>
+				<slider field={offset}/>
+			</category>
+		);
+
+		if (parent.source != null) {
+			var anims = try shared.editor.scene.listAnims(parent.source) catch(e: Dynamic) [];
+			animSelect.setEntries([ for (a in anims) { label: shared.editor.scene.animationName(a), value: hide.Ide.inst.makeRelative(a) } ]);
+			animSelect.value = animation;
+		}
+	}
+
 	#if editor
 	override function edit( ctx : hide.prefab.EditContext ) {
 		super.edit(ctx);
