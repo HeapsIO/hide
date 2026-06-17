@@ -376,6 +376,15 @@ class Prefab extends HuiView<{path: String}> {
 		buildToolbar();
 	}
 
+	var camInit = false;
+	override function onDisplay() {
+		super.onDisplay();
+		if (!camInit) {
+			camInit = true;
+			sceneEditor.resetCamera();
+		}
+	}
+
 	function getDropPath(op: HuiDragOp) : Null<String> {
 		if (op.type != HuiFileBrowser.fileDragOp)
 			return null;
@@ -570,7 +579,7 @@ class Prefab extends HuiView<{path: String}> {
 		tryMake(prefab);
 		// makeRenderProps();
 
-		// hide.App.defer(resetCamera);
+		sceneEditor.resetCamera();
 
 		sceneEditor.updateDebugOverlayVisibility();
 	}

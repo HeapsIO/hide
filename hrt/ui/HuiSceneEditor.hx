@@ -42,6 +42,7 @@ class HuiSceneEditor extends HuiElement {
 	public var tree :  hrt.ui.HuiTree<Dynamic>;
 	var inspectorRoot : hide.kit.KitRoot;
 	var cameraController : h3d.scene.CameraController;
+	public var lastFocusObjects : Array<h3d.scene.Object> = [];
 
 	// public var renderPropsPath(get, never) : Null<String>; /**Null if the renderProps is in the scene**/
 	var renderProps: hrt.prefab.Prefab;
@@ -419,9 +420,27 @@ class HuiSceneEditor extends HuiElement {
 		focusObjects(getSelectedObjects());
 	}
 
-	public function focusObjects(objs : Array<h3d.scene.Object>) {
+	/**
+		forceFocusChanged allow to control if the camera distance from the focus point should also change to
+		see the whole bound of the object. If left null, the value will be determined using the last objs passed to
+		this function
+	**/
+	public function focusObjects(objs : Array<h3d.scene.Object>, ?forceMoveCameraDistance: Bool) {
 		if (objs == null || objs.length < 0)
 			return;
+
+		var focusChanged = false;
+		if (forceMoveCameraDistance == null) {
+			for (o in objs) {
+				if (!lastFocusObjects.contains(o)) {
+					focusChanged = true;
+					break;
+				}
+			}
+		} else {
+			focusChanged = !forceMoveCameraDistance;
+		}
+
 		var bnds = new h3d.col.Bounds();
 		var centroid = new h3d.Vector();
 		for(obj in objs) {
@@ -430,12 +449,13 @@ class HuiSceneEditor extends HuiElement {
 		}
 		if (!bnds.isEmpty()) {
 			var s = bnds.toSphere();
-			var r = s.r * 4.0;
+			var r = focusChanged ? null : s.r * 4.0;
 			cameraController.set(r, null, null, s.getCenter());
 		} else {
 			centroid.scale(1.0 / objs.length);
 			cameraController.set(centroid.toPoint());
 		}
+		lastFocusObjects = objs;
 	}
 
 	function makeGizmos() {
@@ -468,9 +488,10 @@ class HuiSceneEditor extends HuiElement {
 	}
 
 	function resetCamera() {
-		cameraController.set(20.0);
+		cameraController.set(20.0, null, null, null, 25.);
 		var objs = [for (o in @:privateAccess scene.s3d.children) o];
-		focusObjects(objs);
+		focusObjects(objs, false);
+		cameraController.toTarget();
 	}
 
 	public function gizmoSnap(v: Float, mode: hrt.tools.Gizmo.EditMode) {
