@@ -239,7 +239,12 @@ class HuiBase extends HuiElement {
 
 	function loadStyle() {
 		#if !js
-		style.loadComponents("ui/style",[hxd.Res.ui.style.common]);
+		var loader = hxd.res.Loader.currentInstance;
+		hxd.res.Loader.currentInstance = HuiRes.loader;
+
+		style.loadComponents("ui/style",[HuiRes.ui.style.common]);
+
+		hxd.res.Loader.currentInstance = loader;
 		#if !release
 		style.watchInterpComponents();
 		#end

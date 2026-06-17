@@ -39,7 +39,7 @@ typedef TreeItemData = {
 	parent: TreeItemData,
 	children: Array<TreeItemData>,
 	name: String,
-	icon: String,
+	icon: hxd.res.Image,
 	depth: Int,
 	filterState: FilterFlags,
 	identifier: String,
@@ -338,8 +338,8 @@ class HuiTree<TreeItem> extends HuiElement {
 		return "";
 	}
 
-	public dynamic function getItemIcon(item: TreeItem) : String {
-		return HuiRes.icons.file_blank;
+	public dynamic function getItemIcon(item: TreeItem) : hxd.res.Image {
+		return HuiRes.ui.icons.file_blank;
 	}
 
 	public dynamic function onItemContextMenu(item: TreeItem) : Void {

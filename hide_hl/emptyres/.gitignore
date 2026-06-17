@@ -1,0 +1,9 @@
+# Keep this directory empty but in the repository
+# this is a workaround to have hxd.Res be init in a empty
+# directory, as instead we want to use HuiRes for that
+# as it embeds the resources for the editor data in the project
+
+# Ignore everything in this directory
+*
+# Except this file
+!.gitignore

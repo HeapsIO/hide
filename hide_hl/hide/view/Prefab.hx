@@ -261,9 +261,9 @@ class Prefab extends HuiView<{path: String}> {
 
 		sceneEditor.tree.getItemIcon = (item: hrt.prefab.Prefab) -> {
 			if (errorPrefabs.get(item) != null) {
-				return HuiRes.icons.error;
+				return HuiRes.ui.icons.error;
 			}
-			return return HuiRes.icons.file_blank;
+			return HuiRes.ui.icons.file_blank;
 		}
 
 		this.gizmoShouldSnap = hide.Ide.inst.currentConfig.get(hide.view.Prefab.GIZMO_SNAP_CONFIG_KEY, true);

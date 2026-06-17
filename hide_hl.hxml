@@ -41,4 +41,6 @@
 --macro include("hrt.ui")
 -dce no
 -debug
--D resourcesPath=hide_hl/res
+
+# hack so hxd.Res doesn't create conflicting packages when building hrt.ui.HuiRes
+-D resourcesPath=hide_hl/emptyres

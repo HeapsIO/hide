@@ -290,12 +290,12 @@ class Model extends HuiView<{path: String}> {
 		};
 		sceneEditor.tree.getItemIcon = (item : Dynamic) -> {
 			if (Std.isOfType(item, h3d.scene.Object))
-				return HuiRes.icons.cube;
+				return HuiRes.ui.icons.cube;
 			if (Std.isOfType(item, h3d.mat.Material))
-				return HuiRes.icons.material;
+				return HuiRes.ui.icons.material;
 			if (Std.isOfType(item, h3d.scene.Skin.Joint))
-				return HuiRes.icons.bone;
-			return HuiRes.icons.file_blank;
+				return HuiRes.ui.icons.bone;
+			return HuiRes.ui.icons.file_blank;
 		}
 		sceneEditor.tree.getIdentifier = (item: Dynamic) -> {
 			var o = Std.downcast(item, h3d.scene.Object);

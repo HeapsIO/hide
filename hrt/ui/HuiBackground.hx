@@ -439,7 +439,7 @@ class HuiBackground extends h2d.ScaleGrid implements h2d.domkit.Object {
 		return v;
 	}
 
-	function setTexture(t: h3d.mat.Texture) {
+	public function setTexture(t: h3d.mat.Texture) {
 		if(t == null) {
 			shader.useImage = false;
 			shader.imgTex = null;

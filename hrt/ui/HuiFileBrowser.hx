@@ -478,10 +478,10 @@ class HuiFileBrowser extends HuiElement {
 		return res.name;
 	}
 
-	function getItemIcon(res: File) : String {
+	function getItemIcon(res: File) : hxd.res.Image {
 		return switch(res.kind) {
-			case Dir: HuiRes.icons.folder_filled;
-			case File: HuiRes.icons.file_blank_filled;
+			case Dir: HuiRes.ui.icons.folder_filled;
+			case File: HuiRes.ui.icons.file_blank_filled;
 		}
 	}
 }
