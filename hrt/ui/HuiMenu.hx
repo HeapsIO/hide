@@ -410,6 +410,9 @@ class HuiMenuItem extends HuiElement {
 	}
 
 	public function validate() {
+		if (item.isSeparator == true)
+			return;
+
 		if (item.click != null)
 			item.click();
 
