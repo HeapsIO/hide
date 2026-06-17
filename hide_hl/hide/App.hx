@@ -78,26 +78,33 @@ class App extends hxd.App {
 
 	function updateProfiling() {
 		if (hxd.Key.isPressed(hxd.Key.F9)) {
-			if (!hide.tools.Profiler.processing) {
-				Ide.showInfo("Starting profiler");
-				hide.tools.Profiler.start();
-			} else {
-				hide.tools.Profiler.save();
-				var converted = Sys.command(".vscode\\post_profile.bat") == 0;
-				hide.tools.Profiler.stop();
-				Ide.showInfo("Stopping profiler");
-			}
+			toggleProfiler();
 		}
 		if (hxd.Key.isPressed(hxd.Key.F10)) {
-			if (fpsGraph == null) {
-				fpsGraph = new hrt.tools.FpsGraph(ui);
-			} else {
-				fpsGraph.dispose();
-				fpsGraph = null;
-			}
+			toggleFPSGraph();
 		}
 	}
 
+	public function toggleProfiler() {
+		if (!hide.tools.Profiler.processing) {
+			Ide.showInfo("Starting profiler");
+			hide.tools.Profiler.start();
+		} else {
+			hide.tools.Profiler.save();
+			var converted = Sys.command(".vscode\\post_profile.bat") == 0;
+			hide.tools.Profiler.stop();
+			Ide.showInfo("Stopping profiler");
+		}
+	}
+
+	public function toggleFPSGraph() {
+		if (fpsGraph == null) {
+			fpsGraph = new hrt.tools.FpsGraph(ui);
+		} else {
+			fpsGraph.dispose();
+			fpsGraph = null;
+		}
+	}
 
 	var bench: h3d.impl.Benchmark;
 

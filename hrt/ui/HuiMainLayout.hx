@@ -18,6 +18,9 @@ class HuiMainLayout extends HuiElement {
 				</hui-button-menu>
 
 				<hui-button-menu(() -> [
+						{label: "Profiler", click: () -> hide.Ide.inst.app.toggleProfiler(), checked: hide.tools.Profiler.processing, keys: "F9", stayOpen: true},
+						{label: "FPS Graph", click: () -> hide.Ide.inst.app.toggleFPSGraph(), checked: @:privateAccess hide.Ide.inst.app.fpsGraph != null, keys: "F10", stayOpen: true},
+						{isSeparator: true},
 						{label: "Toast", menu: [
 							{label: "Info", click:() -> addToast("Debug toast", Info), stayOpen: true},
 							{label: "Warning", click:() -> addToast("Debug toast", Warning), stayOpen: true},
