@@ -1402,8 +1402,6 @@ class Ide extends hide.tools.IdeData {
 			var ext = path.split(".").pop();
 			if( exts.indexOf(ext) < 0 ) return;
 			try {
-				if (path == "assets/Enviro_Props/Props/materials.props")
-					trace("break");
 				var content = parseJSON(sys.io.File.getContent(getPath(path)));
 				var changed = callb(content, path);
 				if( !changed ) return;

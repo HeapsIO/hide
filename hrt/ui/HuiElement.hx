@@ -371,9 +371,6 @@ class HuiElement extends h2d.Flow #if hui implements h2d.domkit.Object #end {
 		if (styleEvents)
 			dom.hover = true;
 
-		if (hxd.Key.isDown(hxd.Key.ALT))
-			trace("break");
-
 		onOver(e);
 	}
 
