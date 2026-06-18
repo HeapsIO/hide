@@ -1451,23 +1451,20 @@ class Cell {
 		if (column.display == Percent)
 			newValue *= 0.01;
 
-		switch( column.type ) {
-		case TString:
-			var v = trimNonBreakableSpaces(newValue);
-			if (v == "")
-				v = editor.base.getDefault(column, false, table.sheet);
-			return v;
-		case TFloat:
+		function interpValue(input : Dynamic) : Dynamic {
+			// Check if the input can be interpreted as a calculation
+			var r = new EReg('^([-+/*]\\d+(\\.\\d+)?)*', "");
+			if (!r.match(input.toString())) return input;
+
 			var interp = new hscript.Interp();
 			@:privateAccess interp.initOps();
 			interp.variables.set("Math", Math);
 
 			// Remove leading + if the user miss typed the expression
-			var str : String = str;
-			if(str.charAt(0) == "+") {
+			var str : String = input.toString();
+			if (str.charAt(0) == "+") {
 				str = str.substr(1);
 			}
-
 			try {
 				var parser = new hscript.Parser();
 				var expr = parser.parseString(str);
@@ -1476,17 +1473,27 @@ class Cell {
 			} catch (e : Dynamic) {
 				throw '$str is not a float';
 			}
+		}
 
-		case TDynamic:
-			newValue = try editor.base.parseValue(column.type, str, false) catch( e : Dynamic ) null;
-			if (newValue == null) {
-				newValue = Std.parseFloat(str);
-				if (hxd.Math.isNaN(newValue))
-					newValue = str;
-			}
-			return newValue;
-		default:
-			return newValue;
+		switch( column.type ) {
+			case TString:
+				var v = trimNonBreakableSpaces(newValue);
+				if (v == "")
+					v = editor.base.getDefault(column, false, table.sheet);
+				return v;
+			case TFloat:
+				return interpValue(str);
+
+			case TDynamic:
+				newValue = try editor.base.parseValue(column.type, str, false) catch( e : Dynamic ) null;
+				if (newValue == null) {
+					newValue = interpValue(str);
+					if (hxd.Math.isNaN(newValue))
+						newValue = str;
+				}
+				return newValue;
+			default:
+				return newValue;
 		}
 	}
 
