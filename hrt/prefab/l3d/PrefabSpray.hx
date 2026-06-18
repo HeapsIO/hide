@@ -1,5 +1,7 @@
 package hrt.prefab.l3d;
 
+@:prefabIcon(HuiRes.ui.icons.prefab.prefab_spray)
+@:prefabName("Prefab Spray")
 class PrefabSpray extends Spray {
 
 	#if editor

@@ -1,6 +1,8 @@
 package hrt.prefab;
 import hxd.Math;
 
+@:prefabName("Object 3D")
+@:prefabIcon(hrt.ui.HuiRes.ui.icons.prefab.object3d)
 class Object3D extends Prefab {
 
 	public var local3d : h3d.scene.Object = null;

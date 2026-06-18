@@ -12,6 +12,7 @@ enum abstract RepeatMode(String) {
 	var None;
 }
 
+@:prefabIcon(HuiRes.ui.icons.prefab.noise_generator)
 class NoiseGenerator extends Object2D {
 
 	@:s public var seed : Int;

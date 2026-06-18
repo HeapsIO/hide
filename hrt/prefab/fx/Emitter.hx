@@ -1617,6 +1617,8 @@ class EmitterObject extends h3d.scene.Object {
 	}
 }
 
+@:prefabName("Emitter")
+@:prefabIcon(hrt.ui.HuiRes.ui.icons.prefab.emitter)
 class Emitter extends Object3D {
 
 	public function new(parent, shared: ContextShared) {

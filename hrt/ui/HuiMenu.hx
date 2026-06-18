@@ -2,7 +2,20 @@ package hrt.ui;
 
 #if hui
 
-typedef MenuItem = hide.comp.ContextMenu.MenuItem;
+typedef MenuItem = {
+    ?label: String,
+    ?isSeparator: Bool,
+    ?menu: Array<MenuItem>,
+    ?click: Void -> Void,
+    ?enabled: Bool,
+    ?stayOpen : Bool,
+    ?icon: hxd.res.Image,
+    ?keys: String,
+    ?checked: Bool,
+    ?tooltip: String,
+    ?radio: () -> Bool, // Radio button instead of checked.
+	?color: Int
+}
 
 typedef MenuOptions = {
 };
@@ -372,7 +385,8 @@ class HuiMenuItem extends HuiElement {
 		icon.backgroundType = "hui";
 
 		if (item.icon != null) {
-			icon.huiBg.image = {path: item.icon, mode: Fit};
+			icon.huiBg.setTexture(item.icon.toTexture());
+			icon.huiBg.imageMode = Fit;
 		}
 
 		if (item.color != null) {

@@ -2,6 +2,8 @@ package hrt.prefab.l3d;
 
 
 @:access(h3d.scene.pbr.Environment)
+@:prefabIcon(HuiRes.ui.icons.prefab.environment)
+
 class Environment extends Object3D {
 
 	@:s public var power : Float = 1.0;

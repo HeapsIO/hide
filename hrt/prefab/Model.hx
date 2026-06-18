@@ -1,5 +1,7 @@
 package hrt.prefab;
 
+@:prefabIcon(HuiRes.ui.icons.prefab.model)
+@:prefabHideInAddMenu
 class Model extends Object3D {
 
 	@:s public var animation : Null<String>;

@@ -459,6 +459,8 @@ class Emitter2DObject extends h2d.Object {
 }
 
 @:access(hrt.prefab.fx.Emitter2DObject)
+@:prefabName("Emitter 2D")
+@:prefabIcon(hrt.ui.HuiRes.ui.icons.prefab.emitter2d)
 class Emitter2D extends Object2D {
 
 	public static var emitterParams : Array<hrt.prefab.fx.EmitterHelper.ParamDef> = [

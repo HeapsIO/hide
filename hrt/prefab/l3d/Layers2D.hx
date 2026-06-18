@@ -659,6 +659,8 @@ class Layers2DTool extends hrt.prefab.editor.Tool {
 
 
 @:allow(hrt.prefab.l3d)
+@:prefabIcon(HuiRes.ui.icons.prefab.layers_2d)
+@:prefabName("Layers 2D")
 class Layers2D extends hrt.prefab.Object3D {
 
 	@:s var layers : Array<Layer2D> = [];

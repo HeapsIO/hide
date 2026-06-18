@@ -111,6 +111,7 @@ class Particles extends h2d.Particles {
 }
 
 @:deprecated("Use Emitter2D instead")
+@:prefabHideInAddMenu
 class Particle2D extends Object2D {
 
 	@:s var paramsParticleGroup : Dynamic;

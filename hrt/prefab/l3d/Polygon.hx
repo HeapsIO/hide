@@ -21,6 +21,8 @@ enum Shape {
 
 typedef PrimCache = Map<Shape, h3d.prim.Polygon>;
 
+
+@:prefabIcon(HuiRes.ui.icons.prefab.polygon)
 class Polygon extends Object3D {
 
 	@:c public var shape(default, null) : Shape = Quad(0);

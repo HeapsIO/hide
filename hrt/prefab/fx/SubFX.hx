@@ -1,5 +1,6 @@
 package hrt.prefab.fx;
 
+@:prefabIcon(HuiRes.ui.icons.prefab.sub_fx)
 class SubFX extends Reference implements hrt.prefab.fx.Event.IEvent{
 
 	@:s public var time(default, set) : Float;

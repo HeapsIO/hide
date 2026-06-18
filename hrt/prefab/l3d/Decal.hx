@@ -7,6 +7,7 @@ enum abstract DecalMode(String) {
 	var Terrain;
 }
 
+@:prefabIcon(HuiRes.ui.icons.prefab.decal)
 class Decal extends Object3D {
 
 	@:s var albedoMap : String;

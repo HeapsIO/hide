@@ -404,6 +404,8 @@ class LocalVolumetricLightingObject extends h3d.scene.Object {
 	}
 }
 
+@:prefabIcon(HuiRes.ui.icons.prefab.local_volumetric_lighting)
+@:prefabName("Local Volumetric Lighting")
 class LocalVolumetricLighting extends hrt.prefab.Object3D {
 
 	var localVolumeObject : LocalVolumetricLightingObject;

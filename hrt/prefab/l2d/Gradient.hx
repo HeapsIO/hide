@@ -1,5 +1,6 @@
 package hrt.prefab.l2d;
 
+@:prefabIcon(HuiRes.ui.icons.prefab.gradient)
 class Gradient extends Object2D {
     @:s var gradient: hrt.impl.Gradient.GradientData = hrt.impl.Gradient.getDefaultGradientData();
     @:s var dx: Float;

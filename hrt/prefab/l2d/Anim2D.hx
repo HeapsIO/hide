@@ -1,5 +1,6 @@
 package hrt.prefab.l2d;
 
+@:prefabIcon(HuiRes.ui.icons.prefab.anim2d)
 class Anim2D extends Object2D {
 
 	// parameters

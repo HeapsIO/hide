@@ -1,6 +1,7 @@
 package hrt.prefab;
 import hxd.Math;
 
+@:prefabIcon(HuiRes.ui.icons.prefab.object2d)
 class Object2D extends Prefab {
 
 	public var local2d : h2d.Object = null;

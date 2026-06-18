@@ -134,6 +134,7 @@ class LookAtObject extends h3d.scene.Object {
 }
 
 @:allow(hrt.prefab.fx.LookAt.LookAtInstance)
+@:prefabIcon(HuiRes.ui.icons.prefab.look_at)
 class LookAt extends Object3D {
 
 	@:s var target(default,null) : String;

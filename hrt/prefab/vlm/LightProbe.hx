@@ -184,6 +184,8 @@ class LightProbeObject extends h3d.scene.Mesh {
 }
 
 @:access(h3d.scene.pbr.Environment)
+@:prefabIcon(HuiRes.ui.icons.prefab.light_probe)
+@:prefabName("Light Probe")
 class LightProbe extends Object3D {
 
 	// Probe

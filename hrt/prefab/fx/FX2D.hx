@@ -197,6 +197,7 @@ class FX2DAnimation extends h2d.Object {
 	}
 }
 
+@:prefabHideInAddMenu
 class FX2D extends Object2D implements BaseFX {
 
 	@:s public var duration : Float;

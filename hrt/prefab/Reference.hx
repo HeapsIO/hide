@@ -10,6 +10,8 @@ enum EditMode {
 	/** The reference can be edited, and saving it will save a diff between the original prefab and this in the `overrides` field **/
 	Override;
 }
+
+@:prefabIcon(HuiRes.ui.icons.prefab.reference)
 class Reference extends Object3D {
 	/**
 		The referenced prefab loaded by this reference

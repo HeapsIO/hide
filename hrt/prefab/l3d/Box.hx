@@ -1,5 +1,6 @@
 package hrt.prefab.l3d;
 
+@:prefabIcon(HuiRes.ui.icons.prefab.box)
 class Box extends Object3D {
 
 

@@ -2,6 +2,7 @@ package hrt.prefab.l2d;
 import hxd.Math;
 using Lambda;
 
+@:prefabIcon(HuiRes.ui.icons.prefab.flow)
 class Flow extends Object2D {
 
 	@:s public var width : Int = 0;

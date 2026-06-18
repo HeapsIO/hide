@@ -161,6 +161,11 @@ class Ide extends hide.tools.IdeData {
 
 		h3d.mat.MaterialSetup.current = new h3d.mat.PbrMaterialSetup();
 
+		// init prefab editor metadata
+		for (prefab in hrt.prefab.Prefab.registry) {
+			var cl = Type.createEmptyInstance(prefab.prefabClass);
+			prefab.editorProps = cl.getEditorProps();
+		}
 	}
 
 	public function getLocalStorage(key: String) : Null<Dynamic> {

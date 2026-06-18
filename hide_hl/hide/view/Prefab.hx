@@ -260,10 +260,7 @@ class Prefab extends HuiView<{path: String}> {
 		}
 
 		sceneEditor.tree.getItemIcon = (item: hrt.prefab.Prefab) -> {
-			if (errorPrefabs.get(item) != null) {
-				return HuiRes.ui.icons.error;
-			}
-			return HuiRes.ui.icons.file_blank;
+			return item.getEditorProps().icon;
 		}
 
 		this.gizmoShouldSnap = hide.Ide.inst.currentConfig.get(hide.view.Prefab.GIZMO_SNAP_CONFIG_KEY, true);
@@ -477,7 +474,7 @@ class Prefab extends HuiView<{path: String}> {
 		}
 	}
 
-	override function getContextMenuContent(content: Array<hide.comp.ContextMenu.MenuItem>) {
+	override function getContextMenuContent(content: Array<hrt.ui.HuiMenu.MenuItem>) {
 		content.push({label: "Save", click: () -> execCommand(HuiCommands.save)});
 		content.push({label: "Rebuild", click: () -> tryMake(prefab)});
 		content.push({isSeparator: true});
@@ -933,7 +930,7 @@ class Prefab extends HuiView<{path: String}> {
 		}, true);
 	}
 
-	function getTagMenu(prefabs: Array<hrt.prefab.Prefab>) : Array<hide.comp.ContextMenu.MenuItem> {
+	function getTagMenu(prefabs: Array<hrt.prefab.Prefab>) : Array<hrt.ui.HuiMenu.MenuItem> {
 		var tags = getAvailableTags();
 		if (tags == null) return null;
 		tags = tags.copy();
@@ -1380,14 +1377,16 @@ class Prefab extends HuiView<{path: String}> {
 		var submenus : Map<String, Array<hrt.ui.HuiMenu.MenuItem>> = [];
 
 		for (prefab in hrt.prefab.Prefab.registry) {
+			if (prefab.editorProps.hideInAddMenu)
+				continue;
 			var category = getPrefabCategoryLabel(prefab.prefabClass);
-			var label = Type.getClassName(prefab.prefabClass).split(".").pop();
+			var label = prefab.editorProps.name;
 			var submenu = hrt.tools.MapUtils.getOrPut(submenus, category, []);
-			submenu.push({label: label, click: click.bind(prefab.prefabClass)});
+			submenu.push({label: label, click: click.bind(prefab.prefabClass), icon: prefab.editorProps.icon});
 		}
 
 		for (category => submenu in submenus) {
-			lines.sort((a,b) -> Reflect.compare(a.label, b.label));
+			submenu.sort((a,b) -> Reflect.compare(a.label, b.label));
 			lines.push({label: category, menu: submenu});
 		}
 

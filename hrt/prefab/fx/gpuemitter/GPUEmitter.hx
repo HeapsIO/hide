@@ -50,6 +50,8 @@ class EditorParticleShader extends hxsl.Shader {
 }
 
 @:access(hrt.prefab.fx.gpuemitter.GPUEmitterObject)
+@:prefabIcon(HuiRes.ui.icons.prefab.gpu_emitter)
+@:prefabName("GPU Emitter")
 class GPUEmitter extends Object3D {
 
 	static function getDefaultPrimitive() {

@@ -8,6 +8,7 @@ import h3d.mat.PbrMaterial;
 import hide.prefab.HideProps;
 #end
 
+@:prefabIcon(HuiRes.ui.icons.prefab.material)
 class Material extends Prefab {
 
 	@:s public var wrapRepeat = false;

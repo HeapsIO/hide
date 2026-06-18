@@ -1,6 +1,8 @@
 package hrt.prefab.l3d;
 using Lambda;
 
+@:prefabIcon(HuiRes.ui.icons.prefab.instance)
+
 class Instance extends Object3D {
 
 	var instance : Prefab;

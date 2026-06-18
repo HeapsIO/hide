@@ -109,6 +109,7 @@ class MeshGeneratorRoot extends h3d.scene.Object {
 	}
 }
 
+@:prefabIcon(HuiRes.ui.icons.prefab.mesh_generator)
 class MeshGenerator extends Object3D {
 
 	@:c public var root : MeshPart;

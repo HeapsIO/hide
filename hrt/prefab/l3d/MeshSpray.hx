@@ -101,6 +101,8 @@ class MeshSprayObject extends Spray.SprayObject {
 	#end
 }
 
+@:prefabIcon(HuiRes.ui.icons.prefab.mesh_spray)
+@:prefabName("Mesh Spray")
 class MeshSpray extends Spray {
 
 	@:s var split : Int;

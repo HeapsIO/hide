@@ -41,6 +41,7 @@ typedef CascadeParams = {
 	var slopeBias : Float;
 }
 
+@:prefabIcon(HuiRes.ui.icons.prefab.light)
 class Light extends Object3D {
 
 	@:s public var kind : LightKind = Point;

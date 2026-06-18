@@ -34,7 +34,7 @@ class HuiTabViewContainer extends HuiTabContainer {
 			var tab = getTabTab(forElement);
 			if (tab == null)
 				return;
-			var tabContent : Array<hide.comp.ContextMenu.MenuItem> = [];
+			var tabContent : Array<hrt.ui.HuiMenu.MenuItem> = [];
 
 			tabContent.push({label: "Close", click: requestClose.bind(cast forElement)});
 			tabContent.push({label: "Reload", click: () -> {

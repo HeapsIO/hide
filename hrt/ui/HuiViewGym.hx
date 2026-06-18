@@ -177,7 +177,7 @@ class GymWidgets extends HuiElement {
 		return [
 					{label: "File"},
 					{label: "Edit"},
-					{label: "Copy", icon: "ui/icons/copy.png", keys: "Ctrl+C"},
+					{label: "Copy", icon: hrt.ui.HuiRes.ui.icons.copy, keys: "Ctrl+C"},
 					{label: "Paste", keys: "Ctrl+V"},
 					{label: "Disabled", enabled: false},
 					{isSeparator: true},

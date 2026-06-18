@@ -23,6 +23,7 @@ interface IEvent {
 	#end
 }
 
+@:prefabIcon(HuiRes.ui.icons.prefab.event)
 class Event extends hrt.prefab.Prefab implements IEvent {
 	@:s public var time(default, set): Float = 0.0;
 	@:s public var duration: Float = 0.0;
@@ -167,6 +168,7 @@ class Event extends hrt.prefab.Prefab implements IEvent {
 	static var _ = Prefab.register("event", Event);
 }
 
+@:prefabIcon(HuiRes.ui.icons.prefab.event3d)
 class Event3D extends hrt.prefab.Object3D implements IEvent {
 	@:s public var time(default, set): Float = 0.0;
 	@:s public var duration: Float = 0.0;

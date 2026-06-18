@@ -21,6 +21,10 @@ typedef PrefabInfo = {
 	#if editor
 	var inf : hide.prefab.HideProps;
 	#end
+	#if editor_hl
+	// note : initialized by hide_hl.Ide.setProject
+	var ?editorProps : hrt.prefab.editor.Props;
+	#end
 };
 
 @:access(Prefab)
@@ -47,6 +51,9 @@ enum TreeChangedResult {
 @:keepSub
 @:autoBuild(hrt.prefab.Macros.buildPrefab())
 @:build(hrt.prefab.Macros.buildPrefab())
+@:prefabName("Prefab")
+@:prefabIcon(hrt.ui.HuiRes.ui.icons.question_mark)
+@:prefabHideInAddMenu
 class Prefab {
 
 	/**

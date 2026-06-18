@@ -2,6 +2,9 @@ package hrt.prefab.l3d;
 
 // NOTE(ces) : Not Tested
 
+@:prefabIcon(HuiRes.ui.icons.prefab.game_controller)
+@:prefabName("Game Controller")
+
 class GameController extends Object3D {
 
 	@:s public var moveSpeed : Float = 1.;

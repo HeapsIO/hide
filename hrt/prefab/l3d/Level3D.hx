@@ -4,6 +4,7 @@ package hrt.prefab.l3d;
 	Alias of Object for compatibility with the old prefab system
 **/
 @:deprecated("Use hrt.prefab.Library instead")
+@:prefabHideInAddMenu
 class Level3D extends Object3D
 {
 	override function edit2(ctx:hrt.prefab.EditContext2) {

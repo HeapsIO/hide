@@ -891,6 +891,7 @@ typedef Parameter = {
 	var def: Dynamic;
 };
 
+@:prefabHideInAddMenu
 class FX extends Object3D implements BaseFX {
 
 	@:s public var duration : Float;

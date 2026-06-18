@@ -361,7 +361,7 @@ class Model extends HuiView<{path: String}> {
 		super.safeSync(ctx);
 	}
 
-	override function getContextMenuContent(content: Array<hide.comp.ContextMenu.MenuItem>) {
+	override function getContextMenuContent(content: Array<hrt.ui.HuiMenu.MenuItem>) {
 		// content.push({label: "Save", click: () -> execCommand(HuiCommands.save)});
 		// content.push({label: "Rebuild", click: () -> @:privateAccess prefabEditor.tryMake(prefabEditor.prefab)});
 		// content.push({isSeparator: true});

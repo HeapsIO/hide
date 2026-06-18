@@ -1,5 +1,6 @@
 package hrt.prefab.l2d;
 
+@:prefabIcon(HuiRes.ui.icons.prefab.atlas)
 class Atlas extends Object2D {
 
 	// parameters

@@ -9,6 +9,7 @@ import haxe.macro.ExprTools;
 	This is needed because hxd.Res uses hxd.res.Loader.currentInstance which is set
 	to the hide project res folder, and so we can't access our files from there.
 **/
+#if hui
 #if !macro
 @:build(hxd.res.FileTree.build("hide_hl/res"))
 #end
@@ -27,3 +28,4 @@ class HuiRes {
 	}
 	#end
 }
+#end

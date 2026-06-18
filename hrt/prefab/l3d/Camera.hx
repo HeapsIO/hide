@@ -23,6 +23,7 @@ class CameraSyncObject extends h3d.scene.Object {
 	}
 }
 
+@:prefabIcon(HuiRes.ui.icons.prefab.camera)
 class Camera extends Object3D {
 
 	@:s var fovY : Float = 45;

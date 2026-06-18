@@ -44,6 +44,8 @@ class KitTestTool2 extends hrt.prefab.editor.Tool {
 
 }
 
+@:prefabHideInAddMenu
+@:prefabIcon(HuiRes.ui.icons.prefab.kit_test)
 class KitTest extends Object3D {
 
 	override function makeObject(parent3d: h3d.scene.Object) : h3d.scene.Object {

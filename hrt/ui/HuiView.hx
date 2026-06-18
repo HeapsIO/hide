@@ -143,7 +143,7 @@ class HuiView<T> extends HuiElement {
 	}
 
 
-	function getContextMenuContent(content: Array<hide.comp.ContextMenu.MenuItem>) {
+	function getContextMenuContent(content: Array<hrt.ui.HuiMenu.MenuItem>) {
 
 	}
 

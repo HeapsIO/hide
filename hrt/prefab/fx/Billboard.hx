@@ -71,6 +71,7 @@ class BillboardObject extends h3d.scene.Object {
 
 @:allow(hrt.prefab.fx.Billboard.BillboardInstance)
 @:deprecated("Use LookAt instead")
+@:prefabHideInAddMenu
 class Billboard extends Object3D {
 	@:s public var IsAbsolute: Bool;
 	@:s public var LockX: Bool;

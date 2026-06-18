@@ -56,6 +56,7 @@ class SprayObject extends h3d.scene.Object {
 	#end
 }
 
+@:prefabHideInAddMenu
 class Spray extends Object3D {
 
 	override function makeObject(parent3d: h3d.scene.Object ) : h3d.scene.Object {

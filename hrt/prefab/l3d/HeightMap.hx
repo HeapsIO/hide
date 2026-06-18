@@ -549,6 +549,8 @@ typedef TextureItem = {
 }
 
 @:allow(hrt.prefab.l3d)
+@:prefabIcon(HuiRes.ui.icons.prefab.heightmap)
+
 class HeightMap extends Object3D {
 
 	#if editor

@@ -162,6 +162,8 @@ class LightVolumeObject extends h3d.scene.Mesh {
 	}
 }
 
+@:prefabIcon(HuiRes.ui.icons.prefab.light_volume)
+@:prefabName("Light Volume")
 class LightVolume extends Object3D {
 
 	@:s var fallOff : Float = 1.0;

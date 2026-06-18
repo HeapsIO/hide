@@ -13,6 +13,7 @@ class CullingContainerObject extends h3d.scene.Object {
 	}
 }
 
+@:prefabIcon(HuiRes.ui.icons.prefab.culling_container)
 class CullingContainer extends Object3D {
 	@:s var cullDistance : Float = 100;
 
