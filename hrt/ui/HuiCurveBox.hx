@@ -124,11 +124,20 @@ class HuiCurveEditor extends HuiPopup {
 		selectionRectangle = new HuiElement(this);
 		selectionRectangle.dom.addClass("selection-rectangle");
 
-		onPush = (e : hxd.Event) -> {
-			if (onDrag != null)
-				return;
+		onRelease = (e : hxd.Event) -> {
+			if (onDrag == null)
+				select(null);
+			if (onDragFinished != null)
+				onDragFinished(e);
+			onDrag = null;
+			onDragFinished = null;
+		}
 
-			if (hxd.Key.isDown(hxd.Key.MOUSE_MIDDLE)) {
+		onMove = (e : hxd.Event) -> {
+			if (onDrag != null)
+				onDrag(e);
+
+			if (hxd.Key.isDown(hxd.Key.MOUSE_MIDDLE) && onDrag == null) {
 				var originDrag = new h2d.col.Point(e.relX, e.relY);
 				var originPan = pan.clone();
 				onDrag = (e) -> {
@@ -139,7 +148,8 @@ class HuiCurveEditor extends HuiPopup {
 					refresh();
 				}
 			}
-			else {
+
+			if (hxd.Key.isDown(hxd.Key.MOUSE_LEFT) && onDrag == null) {
 				var start = new h2d.col.Point(e.relX, e.relY);
 				onDrag = (e) -> {
 					var end = new h2d.col.Point(e.relX, e.relY);
@@ -161,23 +171,13 @@ class HuiCurveEditor extends HuiPopup {
 					}
 				}
 
-				onDragFinished = (e) -> {
-					selectionRectangle.setWidth(0);
-					selectionRectangle.setHeight(0);
+				if (onDragFinished == null) {
+					onDragFinished = (e) -> {
+						selectionRectangle.setWidth(0);
+						selectionRectangle.setHeight(0);
+					}
 				}
 			}
-		}
-
-		onRelease = (e : hxd.Event) -> {
-			if (onDragFinished != null)
-				onDragFinished(e);
-			onDrag = null;
-			onDragFinished = null;
-		}
-
-		onMove = (e : hxd.Event) -> {
-			if (onDrag != null)
-				onDrag(e);
 		}
 
 		onWheel = (e : hxd.Event) -> {
@@ -194,8 +194,6 @@ class HuiCurveEditor extends HuiPopup {
 				addKey(px(e.relX), py(e.relY));
 				refresh();
 			}
-
-			select(null);
 		}
 
 		onAfterReflow = () -> {
@@ -300,6 +298,7 @@ class HuiCurveEditor extends HuiPopup {
 							var y = py(e.relY);
 							value.keys[idx].time = x;
 							value.keys[idx].value = y;
+							fixKey(idx);
 						}
 					}
 				}
@@ -328,12 +327,14 @@ class HuiCurveEditor extends HuiPopup {
 		var b = new h2d.col.Bounds();
 		for (idx => k in value.keys) {
 			keysBitmaps[idx].setPosition(sx(k.time) - (iconSize / 2), sy(k.value) - (iconSize / 2));
-			b.addPoint(new h2d.col.Point(k.time, k.value));
+			b.addPoint(new h2d.col.Point(sx(k.time), sy(k.value)));
 		}
 
-		selectionBounds.setPosition(sx(b.xMin), sy(b.yMin));
-		selectionBounds.setWidth(Std.int(b.width * calculatedWidth));
-		selectionBounds.setHeight(Std.int(b.height * calculatedHeight));
+		if (selection?.length > 1) {
+			selectionBounds.setPosition(b.xMin, b.yMin);
+			selectionBounds.setWidth(Std.int(b.width));
+			selectionBounds.setHeight(Std.int(b.height));
+		}
 	}
 
 	function focus() {
@@ -384,6 +385,54 @@ class HuiCurveEditor extends HuiPopup {
 
 		value.addKey(px, py);
 		onValueChanged(false);
+	}
+
+	function fixKeys(keys : Array<Int>) {
+		for (k in keys)
+			fixKey(k);
+	}
+
+	function fixKey(k : Int) {
+		var key = value.keys[k];
+
+		var prev = value.keys[k-1];
+		var next = value.keys[k+1];
+
+		inline function addPrevH() {
+			if(key.prevHandle == null)
+				key.prevHandle = new hrt.prefab.Curve.CurveHandle(prev != null ? (prev.time - key.time) / 3 : -0.5, 0);
+		}
+
+		inline function addNextH() {
+			if(key.nextHandle == null)
+				key.nextHandle = new hrt.prefab.Curve.CurveHandle(next != null ? (next.time - key.time) / 3 : -0.5, 0);
+		}
+
+		switch(key.mode) {
+			case Aligned:
+				addPrevH();
+				addNextH();
+			case Free:
+				addPrevH();
+				addNextH();
+			case Linear:
+				key.nextHandle = null;
+				key.prevHandle = null;
+			case Constant:
+				key.nextHandle = null;
+				key.prevHandle = null;
+		}
+
+		if(key.time < 0)
+			key.time = 0;
+		// if(maxLength > 0 && key.time > maxLength)
+		// 	key.time = maxLength;
+		if(key.time > value.maxTime)
+			key.time = value.maxTime;
+		if(prev != null && key.time < prev.time)
+			key.time = prev.time + 0.01;
+		if(next != null && key.time > next.time)
+			key.time = next.time - 0.01;
 	}
 
 	public dynamic function onValueChanged(isTemporary: Bool) {}

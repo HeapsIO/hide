@@ -47,14 +47,23 @@ hui-curve-editor {
 			background: rgb(201, 201, 201);
 			alpha: 0.2;
 		}
+
+		&:hover {
+			cursor: ew-resize;
+		}
 	}
 
 	.selection-bounds {
+		cursor: pointer;
 		position: absolute;
 		background-type: hui;
 		> hui-background {
 			background: rgb(112, 140, 190);
 			alpha: 0.2;
+		}
+
+		&:hover {
+			cursor: ew-resize;
 		}
 	}
 }
