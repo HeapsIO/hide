@@ -1,6 +1,8 @@
 package hrt.prefab.l3d;
 
-@:deprecated("Use Trails instead")
+/**
+	Use Trails instead of this class
+**/
 @:prefabHideInAddMenu
 class Trail extends Object3D {
 
