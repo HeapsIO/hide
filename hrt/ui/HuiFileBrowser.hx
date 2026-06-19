@@ -496,6 +496,8 @@ class HuiFileBrowser extends HuiElement {
 						HuiRes.ui.icons.file.text;
 					case "fbx":
 						HuiRes.ui.icons.file.mesh;
+					case "dds", "jpg", "jpeg", "png", "hdr":
+						HuiRes.ui.icons.file.bitmap;
 				}
 			}
 		}
