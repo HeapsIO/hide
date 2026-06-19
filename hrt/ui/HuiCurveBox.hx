@@ -1,6 +1,50 @@
 package hrt.ui;
 
 #if hui
+
+class HuiKeyPopup extends HuiPopup {
+	static var SRC =
+		<hui-key-popup class="vertical">
+			<hui-element class="horizontal">
+				<hui-text("Time") class="label"/>
+				<hui-input-box class="value" id="time-input"/>
+			</hui-element>
+			<hui-element class="horizontal">
+				<hui-text("Value") class="label"/>
+				<hui-input-box class="value" id="value-input"/>
+			</hui-element>
+			<hui-element class="horizontal">
+				<hui-text("Mode") class="label"/>
+				<hui-select class="value" id="mode-select"/>
+			</hui-element>
+		</hui-key-popup>
+
+	public function new(k : hrt.prefab.Curve.CurveKey, editor : HuiCurveEditor, ?parent: h2d.Object) {
+		super(parent);
+		initComponent();
+
+		function onChange() {
+			k.time = Std.parseFloat(timeInput.text);
+			k.value = Std.parseFloat(valueInput.text);
+			@:privateAccess editor.fixKey(editor.value.keys.indexOf(k));
+		}
+
+		modeSelect.items = [
+			{ label: "Aligned", value: 0},
+			{ label: "Free", value: 1},
+			{ label: "Linear", value: 2},
+			{ label: "Constant", value: 3}
+		];
+
+		timeInput.text = '${k.time}';
+		valueInput.text = '${k.value}';
+
+		timeInput.onChange = valueInput.onChange = (isTemp) -> {
+			if (isTemp) return;
+			onChange();
+		}
+	}
+}
 @:access(hrt.prefab.Curve)
 class HuiCurveBox extends HuiElement {
 	static var SRC = <hui-curve-box>
@@ -125,12 +169,14 @@ class HuiCurveEditor extends HuiPopup {
 		selectionRectangle.dom.addClass("selection-rectangle");
 
 		onRelease = (e : hxd.Event) -> {
-			if (onDrag == null)
-				select(null);
-			if (onDragFinished != null)
-				onDragFinished(e);
-			onDrag = null;
-			onDragFinished = null;
+			if (e.button == hxd.Key.MOUSE_LEFT || e.button == hxd.Key.MOUSE_MIDDLE) {
+				if (onDrag == null)
+					select(null);
+				if (onDragFinished != null)
+					onDragFinished(e);
+				onDrag = null;
+				onDragFinished = null;
+			}
 		}
 
 		onMove = (e : hxd.Event) -> {
@@ -318,6 +364,10 @@ class HuiCurveEditor extends HuiPopup {
 					}
 					else {
 						select([idx]);
+					}
+
+					if (e.button == hxd.Key.MOUSE_RIGHT) {
+						uiBase.addPopup(new HuiKeyPopup(value.keys[idx], this), { object: Element(bmp), directionX: StartInside, directionY: EndOutside });
 					}
 				}
 			}
