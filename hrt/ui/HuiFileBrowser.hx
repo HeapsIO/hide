@@ -481,7 +481,23 @@ class HuiFileBrowser extends HuiElement {
 	function getItemIcon(res: File) : hxd.res.Image {
 		return switch(res.kind) {
 			case Dir: HuiRes.ui.icons.folder_filled;
-			case File: HuiRes.ui.icons.file_blank_filled;
+			case File: {
+				var ext = res.name.split(".").pop();
+				switch (ext) {
+					default:
+						HuiRes.ui.icons.file.unknown;
+					case "shgraph":
+						HuiRes.ui.icons.file.shader_graph;
+					case "prefab":
+						HuiRes.ui.icons.file.prefab;
+					case "json":
+						HuiRes.ui.icons.file.props;
+					case "txt":
+						HuiRes.ui.icons.file.text;
+					case "fbx":
+						HuiRes.ui.icons.file.mesh;
+				}
+			}
 		}
 	}
 }

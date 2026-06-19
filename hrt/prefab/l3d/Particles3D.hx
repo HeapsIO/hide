@@ -2,6 +2,7 @@ package hrt.prefab.l3d;
 
 // NOTE(ces) : Not Tested
 
+@:prefabHideInAddMenu
 class Particles3D extends Object3D {
 
 	@:s var data : Any;
